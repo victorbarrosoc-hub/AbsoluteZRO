@@ -36,8 +36,10 @@ export default async function Admin() {
     plans:
       await tx`select p.id, p.code, p.version, p.name, p.kind, p.status, p.grace_days, p.price_cents, (select json_agg(json_build_object('product', pp.product_id, 'limits', pp.limits)) from zro.plan_products pp where pp.plan_id = p.id) as products from zro.plans p order by p.code, p.version`,
     products: await tx`select id, name, stage from zro.products order by step_order`,
-    clients:
-      await tx`select id, name, product_id, kind, redirect_uris, allow_loopback, trusted, status, created_at from zro.oauth_clients order by created_at desc`,
+    clients: await tx`select c.id, c.name, c.product_id, c.kind, c.redirect_uris, c.allow_loopback, c.trusted, c.status, c.created_at,
+                      (select count(*)::int from zro.app_accounts a where a.client_id = c.id) as accounts,
+                      (select count(*)::int from zro.app_accounts a where a.client_id = c.id and a.first_login_at > now() - interval '30 days') as accounts_30d
+               from zro.oauth_clients c order by c.created_at desc`,
     billing: await tx`select provider, provider_event_id, type, status, error, received_at from zro.billing_events order by received_at desc limit 50`,
     stuck:
       await tx`select r.id, r.handler, r.status, r.last_error, r.updated_at, o.name as org from zro.workflow_runs r join zro.organizations o on o.id = r.org_id where r.status in ('dead_letter', 'requires_review', 'failed') order by r.updated_at desc limit 50`,
@@ -343,6 +345,9 @@ export default async function Admin() {
                     <td>
                       {c.kind === 'public' ? 'Público (PKCE)' : 'Confidencial'}
                       {c.trusted ? <div className="zro-faint">da família · entra direto</div> : null}
+                      <div className="zro-faint">
+                        {c.accounts as number} {c.accounts === 1 ? 'conta' : 'contas'} · {c.accounts_30d as number} nos últimos 30 dias
+                      </div>
                     </td>
                     <td>
                       {(c.redirect_uris as string[]).map((u) => (
