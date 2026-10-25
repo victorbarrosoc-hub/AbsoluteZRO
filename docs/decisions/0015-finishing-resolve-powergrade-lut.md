@@ -38,6 +38,12 @@ técnico continua `finishing`; migration 0009 troca o nome no catálogo):
   contraste, não grão, lente ou luz; referência sem conteúdo em comum erra a cor, e para isso há o conta-gotas
   (até 3 pares "isto no meu frame é aquilo na referência"). Tudo roda no navegador: as imagens não são enviadas.
 
+- **Entrega por destino (pedido do titular, 25/10/2026):** presets de codec, cor e áudio por destino, cada um com
+  fonte e data de verificação (selo Oficial, Mercado ou parcial), e um script do Resolve Studio que configura o Deliver
+  pela API de render (`GetRenderFormats`/`GetRenderCodecs`, `SetCurrentRenderFormatAndCodec`, `SetRenderSettings`,
+  `SaveAsNewRenderPreset`) e relata o que não conseguiu aplicar. SDR sai marcado BT.709 (H.273 1-1-1); HDR só com
+  timeline HDR. A Revela não renderiza nem mexe na mídia.
+
 **O que um pacote real mostrou (25/10/2026).** Pacote comercial de terceiros enviado pelo titular, estudado só fora do
 repositório (nenhum arquivo dele entra aqui):
 

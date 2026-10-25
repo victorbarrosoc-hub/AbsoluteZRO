@@ -42,6 +42,18 @@ Publicação: projeto Vercel `revela` (autorizado pelo titular em 25/10/2026) em
 publica só quando a pasta muda. OG do link: `og.jpg` (1200×630), gerado de `marca/og.html` (cubo de cor isométrico
 em `marca/og-cubo.svg`): abra no Chromium e capture 1200×630.
 
+## Entrega por destino
+
+`entrega.html` + `src/entrega/`: presets de exportação por destino (YouTube, YouTube HDR, Vimeo, Instagram Reels,
+TikTok, TV aberta no Brasil, streaming/servicing e master de arquivo) com codec, contêiner, resolução, bitrate, cor
+(tags H.273 e nomes do Deliver do Resolve) e áudio com loudness. **Cada preset mostra fonte e data de verificação**,
+com selo Oficial (a plataforma publica), Mercado (não publica) ou parcial (TV aberta: só o loudness é lei).
+
+O botão baixa um script Python para o Resolve Studio (Workspace › Scripts) que procura formato e codec pelo nome nas
+listas do próprio Resolve, aplica cada ajuste do Deliver, escolhe o bitrate pela resolução da timeline, avisa o que o
+Resolve recusar e salva o preset "Revela · <destino>". Loudness não tem chave na API: vai na lista do que conferir.
+Os testes rodam o script num Resolve simulado.
+
 ## Protótipo: referência → LUT criativa
 
 A pessoa dá um frame de referência (o estilo que quer) e um frame do material dela; sai uma LUT `.cube` que leva o

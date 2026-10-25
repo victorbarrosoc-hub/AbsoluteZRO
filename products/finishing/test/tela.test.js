@@ -209,3 +209,50 @@ test('conta-gotas: marca um par, refaz o look e limpa', async () => {
   assert.deepEqual(erros, [])
   await pagina.close()
 })
+
+test('entrega: escolhe o destino, mostra fonte e baixa o script do Resolve', async () => {
+  const pagina = await navegador.newPage({ acceptDownloads: true, viewport: { width: 1280, height: 1000 } })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  pagina.on('console', (m) => m.type() === 'error' && erros.push(m.text()))
+  await pagina.goto(endereco + 'entrega.html')
+  await pagina.getByRole('heading', { name: 'Cada destino, do jeito certo.' }).waitFor()
+  assert.equal(await pagina.locator('.destino').count(), 8)
+
+  // YouTube abre por padrão: bitrate oficial e selo
+  await pagina.getByRole('heading', { name: 'YouTube', exact: true }).waitFor()
+  assert.match(await pagina.locator('#detalhe').innerText(), /1080p: 8 Mbps \(24–30 fps\) · 12 Mbps \(48–60 fps\)/)
+  assert.equal(await pagina.locator('#detalhe .cabeca .etiqueta').innerText(), 'Oficial')
+
+  // Reels: valor de mercado, vertical, e o endereço guarda o destino
+  await pagina.getByRole('button', { name: /Instagram Reels/ }).click()
+  assert.equal(await pagina.locator('#detalhe .cabeca .etiqueta').innerText(), 'Mercado')
+  assert.match(await pagina.locator('#detalhe').innerText(), /1080×1920/)
+  assert.ok(pagina.url().endsWith('#reels'))
+
+  const [baixado] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Baixar script do Resolve (.py)' }).click()])
+  assert.equal(baixado.suggestedFilename(), 'revela-entrega-reels.py')
+  const script = readFileSync(await baixado.path(), 'utf8')
+  assert.match(script, /NOME = "Revela · Instagram Reels e Stories"/)
+  assert.match(script, /SetCurrentRenderFormatAndCodec/)
+
+  // TV aberta: loudness da portaria
+  await pagina.getByRole('button', { name: /TV aberta/ }).click()
+  assert.match(await pagina.locator('#detalhe').innerText(), /-23 LKFS ±2/)
+  assert.equal(await pagina.locator('#detalhe .cabeca .etiqueta').innerText(), 'Loudness oficial') // o resto é da emissora
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('entrega: link direto para um destino e celular sem rolagem lateral', async () => {
+  const pagina = await navegador.newPage({ viewport: { width: 375, height: 800 } })
+  await pagina.goto(endereco + 'entrega.html#master')
+  await pagina.getByRole('heading', { name: 'Master de arquivo' }).waitFor()
+  assert.equal(await pagina.getByRole('button', { name: /Master de arquivo/ }).getAttribute('aria-pressed'), 'true')
+  const largura = await pagina.evaluate(() => document.documentElement.scrollWidth)
+  assert.ok(largura <= 375, `rolagem horizontal: ${largura}px`)
+  // as duas ferramentas se ligam pelas abas
+  await pagina.getByRole('link', { name: 'LUT por referência' }).click()
+  await pagina.getByRole('heading', { name: 'Revela a cor que você quer.' }).waitFor()
+  await pagina.close()
+})

@@ -373,3 +373,16 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   de volta sobre o preto, difere da original em no máximo 0,5 nível (arredondamento).
 - Aplicada no cabeçalho da tela, no guia (capa e seção "Logo") e no OG do link (`og.jpg`, tags com `?v=2`).
   `products/finishing`: `npm test` (**20/20**), com a logo carregando no cabeçalho.
+
+## Revela: entrega por destino (25/10/2026)
+
+- Fontes conferidas em 25/10/2026: YouTube (codificação recomendada e HDR), Vimeo (compressão), Netflix Partner Help
+  (servicing em ProRes 422 HQ, Rec.709/BT.1886), Portaria MC 354/2012 (−23 LKFS ±2). Instagram e TikTok não publicam
+  especificação técnica: presets marcados como Mercado. API de render do Resolve conferida no README de script da v20.
+- `products/finishing`: `npm test` (**27/27**). Dados: todo preset tem fonte com link, tipo e data; bitrate pela
+  altura/cadência. Script: roda num Resolve simulado (Python) e escolhe H.264/H.265/ProRes 422 HQ pelo nome (sem
+  confundir com ProRes 422), bitrate de 2160p numa timeline 4K, 1080×1920 nos verticais, PCM 24 bits na TV, e relata
+  ajuste recusado. Tela: 8 destinos, selos Oficial/Mercado/"Loudness oficial", download do `.py`, link direto por
+  `#destino`, celular sem rolagem lateral, sem erro de console com a CSP de produção.
+- Não validado: o script no DaVinci Resolve Studio real (nomes de tags HDR como `ST2084` podem variar por versão; o
+  script avisa se o Resolve recusar).
