@@ -1,30 +1,30 @@
-# Gera o app de desktop num Mac e num Windows de verdade (na nuvem do GitHub) e publica no Release
-# "Synquei · app de desktop" (tag app-desktop). O site entrega por /baixar/mac e /baixar/windows.
-# Roda na main quando o app muda, em tags v* e pelo botão "Run workflow". Pull requests só testam (sem publicar).
-name: App de desktop
+# App de desktop do Synquei (products/synquei): gera o .dmg num Mac e o .exe num Windows do GitHub e publica no
+# Release "Synquei · app de desktop" (tag synquei-app-desktop). O site entrega por /baixar/mac e /baixar/windows; os
+# instaladores antigos continuam no repositório arquivado victorbarrosoc-hub/synquei (api/baixar.js usa como reserva).
+# Roda na main quando o app muda, em tags synquei-v* e pelo botão "Run workflow". Pull requests só testam.
+name: Synquei · app de desktop
 
 on:
   push:
     branches: [main]
-    tags: ["v*"]
+    tags: ['synquei-v*']
     paths:
-      - "app/**"
-      - "desktop/**"
-      - "build/**"
-      - "icons/**"
-      - "package.json"
-      - "package-lock.json"
-      - "electron-builder.yml"
-      - "scripts/release.mjs"
-      - ".github/workflows/desktop.yml"
+      - 'products/synquei/app/**'
+      - 'products/synquei/desktop/**'
+      - 'products/synquei/build/**'
+      - 'products/synquei/icons/**'
+      - 'products/synquei/package.json'
+      - 'products/synquei/package-lock.json'
+      - 'products/synquei/electron-builder.yml'
+      - 'products/synquei/scripts/release.mjs'
+      - '.github/workflows/synquei-desktop.yml'
   pull_request:
-    branches: [main]
     paths:
-      - "app/**"
-      - "desktop/**"
-      - "electron-builder.yml"
-      - "package.json"
-      - ".github/workflows/desktop.yml"
+      - 'products/synquei/app/**'
+      - 'products/synquei/desktop/**'
+      - 'products/synquei/electron-builder.yml'
+      - 'products/synquei/package.json'
+      - '.github/workflows/synquei-desktop.yml'
   workflow_dispatch:
 
 # Só leitura por padrão; escrita só nos jobs que publicam no Release.
@@ -33,8 +33,17 @@ permissions:
   contents: read
 
 concurrency:
-  group: desktop-${{ github.ref }}
+  group: synquei-desktop-${{ github.ref }}
   cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: products/synquei
+
+env:
+  # Build = número da execução + 1000: no repositório antigo os builds iam até 25, e o atualizador só aceita build maior.
+  SYNQUEI_BUILD_BASE: '1000'
+  SYNQUEI_TAG: synquei-app-desktop
 
 jobs:
   testes:
@@ -42,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -51,6 +60,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: products/synquei/package-lock.json
       - run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg libxml2-utils unzip luajit
       - run: npm ci
       - run: npm test
@@ -75,8 +85,8 @@ jobs:
             plataforma: windows
             build: npm run dist:win
     env:
-      CSC_IDENTITY_AUTO_DISCOVERY: "false"
-      CSC_FOR_PULL_REQUEST: "true"
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      CSC_FOR_PULL_REQUEST: 'true'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -85,6 +95,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: products/synquei/package-lock.json
       - run: npm ci
       # Identidade do build (vai dentro do app): o aviso "Nova versão do Synquei" compara com o versao.json do site.
       - run: node scripts/release.mjs build-info
@@ -121,13 +132,13 @@ jobs:
       - if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
-          tag_name: app-desktop
+          tag_name: synquei-app-desktop
           name: Synquei · app de desktop
           target_commitish: ${{ github.sha }}
           files: |
-            dist/Synquei-*-mac-universal.dmg
-            dist/Synquei-*-windows-setup.exe
-            dist/Synquei-sha256-*.json
+            products/synquei/dist/Synquei-*-mac-universal.dmg
+            products/synquei/dist/Synquei-*-windows-setup.exe
+            products/synquei/dist/Synquei-sha256-*.json
           fail_on_unmatched_files: false
           body: Instaladores gerados automaticamente a partir da main. Sem assinatura da Apple/Microsoft por enquanto; o site ensina a instalar (synquei.vercel.app/#baixar).
 
@@ -144,18 +155,18 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
-      - run: gh release download app-desktop -R "$GITHUB_REPOSITORY" -p "Synquei-sha256-b${GITHUB_RUN_NUMBER}-*.json" -D sha256
+      - run: gh release download synquei-app-desktop -R "$GITHUB_REPOSITORY" -p "Synquei-sha256-*.json" -D sha256
         env:
           GH_TOKEN: ${{ github.token }}
       - run: node scripts/release.mjs versao sha256 versao.json
       - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
-          tag_name: app-desktop
+          tag_name: synquei-app-desktop
           name: Synquei · app de desktop
           target_commitish: ${{ github.sha }}
-          files: versao.json
+          files: products/synquei/versao.json
           fail_on_unmatched_files: true
           body: Instaladores gerados automaticamente a partir da main. Sem assinatura da Apple/Microsoft por enquanto; o site ensina a instalar (synquei.vercel.app/#baixar).
-      - run: node scripts/release.mjs limpar ${{ github.run_number }}
+      - run: node scripts/release.mjs limpar
         env:
           GITHUB_TOKEN: ${{ github.token }}

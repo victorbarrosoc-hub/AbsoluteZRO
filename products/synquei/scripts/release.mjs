@@ -1,25 +1,32 @@
-// Ajudantes do Release do app de desktop, usados pelo GitHub Actions (.github/workflows/desktop.yml).
+// Ajudantes do Release do app de desktop, usados pelo GitHub Actions (.github/workflows/synquei-desktop.yml na raiz do
+// repositório AbsoluteZRO). O Release é "synquei-app-desktop" (tag com o prefixo do app, ADR 0013).
 //
 //   node scripts/release.mjs nomear <mac|windows> <dist> <saida>
 //       põe o número do build no nome do instalador (Synquei-1.0.0-b42-mac-universal.dmg) e grava o SHA-256 em
 //       <dist>/Synquei-sha256-b42-<plataforma>.json (vai para o Release junto do instalador). Com o build no nome, o
 //       build seguinte não troca o arquivo que o site está entregando.
 //   node scripts/release.mjs versao <pasta-dos-sha> <versao.json>
-//       (a pasta vem do Release: gh release download app-desktop -p 'Synquei-sha256-b42-*') junta os dois SHA-256 no versao.json que o site serve em /baixar/versao (os instaladores de uma linha conferem).
+//       (a pasta vem do Release: gh release download synquei-app-desktop -p 'Synquei-sha256-*') junta os dois SHA-256 no versao.json que o site serve em /baixar/versao (os instaladores de uma linha conferem).
 //   node scripts/release.mjs build-info
 //       grava desktop/build-info.json (vai dentro do app): o build deste app, que o aviso de versão nova compara com o
 //       versao.json do site (desktop/atualizador.cjs). Sem GITHUB_RUN_NUMBER fica 0 = versão de desenvolvimento.
-//   node scripts/release.mjs limpar <build>
+//   node scripts/release.mjs limpar [build]
 //       tira do Release os instaladores de builds antigos (fica o atual e os dois anteriores).
+//
+// Build = GITHUB_RUN_NUMBER + SYNQUEI_BUILD_BASE. No repositório antigo os builds iam até 25; no AbsoluteZRO a contagem
+// recomeça, então o workflow soma 1000 para o número só crescer (o atualizador do app compara builds).
 
 import { createHash } from 'node:crypto'
 import { createReadStream } from 'node:fs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-const REPO = process.env.GITHUB_REPOSITORY || 'victorbarrosoc-hub/synquei'
-export const TAG = 'app-desktop'
-const build = () => Number(process.env.GITHUB_RUN_NUMBER || 0)
+const REPO = process.env.GITHUB_REPOSITORY || 'victorbarrosoc-hub/AbsoluteZRO'
+export const TAG = process.env.SYNQUEI_TAG || 'synquei-app-desktop'
+export const build = () => {
+  const run = Number(process.env.GITHUB_RUN_NUMBER || 0)
+  return run > 0 ? run + (Number(process.env.SYNQUEI_BUILD_BASE) || 0) : 0
+}
 
 const sha256 = (file) =>
   new Promise((resolve, reject) => {
@@ -87,7 +94,7 @@ async function limpar(atual) {
 }
 
 const [cmd, ...args] = process.argv.slice(2)
-const run = { nomear: () => nomear(...args), versao: () => versao(...args), limpar: () => limpar(Number(args[0])), 'build-info': () => buildInfo() }[cmd]
+const run = { nomear: () => nomear(...args), versao: () => versao(...args), limpar: () => limpar(args[0] ? Number(args[0]) : build()), 'build-info': () => buildInfo() }[cmd]
 if (!run) {
   console.error('uso: release.mjs nomear|versao|build-info|limpar …')
   process.exit(2)
