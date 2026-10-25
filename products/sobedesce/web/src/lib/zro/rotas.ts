@@ -25,9 +25,15 @@ function paginaDeErro(modo: ModoZro, volta: string, codigo: string): string {
   return comParametro(volta, "erro", codigo);
 }
 
+/**
+ * ?modo=entrar|criar|vincular. "criar" (a tela Criar conta) é o "entrar" com `prompt=create`: a Absolute ZRO abre
+ * direto em criar conta, e a volta segue igual (conta nova no SOBEDESCE só nasce por aqui).
+ */
 export async function entrar(req: Request): Promise<Response> {
   const url = new URL(req.url);
-  const modo: ModoZro = url.searchParams.get("modo") === "vincular" ? "vincular" : "entrar";
+  const pedido = url.searchParams.get("modo");
+  const modo: ModoZro = pedido === "vincular" ? "vincular" : "entrar";
+  const criar = pedido === "criar";
   const volta = voltaSegura(url.searchParams.get("volta"));
 
   // A Absolute ZRO volta para o endereço cadastrado: o cookie do state precisa nascer nele.
@@ -48,7 +54,7 @@ export async function entrar(req: Request): Promise<Response> {
   const desafio = createHash("sha256").update(verificador).digest("base64url");
   let destino: string;
   try {
-    destino = await urlDeLogin({ state, desafio, nonce, origem: retorno.origin });
+    destino = await urlDeLogin({ state, desafio, nonce, origem: retorno.origin, criar });
   } catch {
     return redirecionar(new URL(paginaDeErro(modo, volta, "zro_erro"), url.origin));
   }

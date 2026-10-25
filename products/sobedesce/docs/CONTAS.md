@@ -15,7 +15,8 @@ Mudou algo aqui? Avise as outras frentes.
   com limite de cerca de 100 usuários até verificar. Escopo **Drive completo**
   (`https://www.googleapis.com/auth/drive`). O refresh token não vence mais em 7 dias, mas a tela
   continua lidando bem com "reconectar" (senha trocada, acesso removido).
-- Login: **conta própria da SOBEDESCE** (e-mail + senha). Dentro da conta, **"Conectar Google
+- Login: **conta Absolute ZRO** (§12). Desde 25/10/2026 conta nova só nasce por ela; e-mail + senha e o Google de
+  entrar continuam abrindo as contas antigas. Dentro da conta, **"Conectar Google
   Drive"** vincula uma ou mais contas Google. Só **uma** delas serve para **entrar** ("Entrar com
   Google"): a que criou a conta, ou a escolhida em `/conta` → "Entrar com Google" (pede a senha atual).
   Conectar outro Drive não abre a conta (`contas_google.login_permitido`, no máximo um por conta).
@@ -164,7 +165,7 @@ renova no Google (uma renovação por vez por conta). `invalid_grant` → `estad
 |---|---|---|
 | `/` | home | Página inicial animada (downloads do .dmg/.exe, celular, criar conta). |
 | `/privacidade`, `/termos` | home | Exigidas pela tela de consentimento do Google. |
-| `/entrar`, `/criar-conta` | contas | E-mail e senha. `/entrar` também tem "Entrar com Google". |
+| `/entrar`, `/criar-conta` | contas | "Entrar com Absolute ZRO" e "Criar com Absolute ZRO". `/entrar` mantém e-mail e senha e o link "Já tenho conta antiga com Google" para as contas antigas. |
 | `/conta` | contas | Drives conectados (conectar, reconectar, remover), computadores conectados (desconectar), dados da conta, sair, apagar a conta. |
 | `/dispositivo?codigo=` | contas | Liberar um computador (pede login). Ao liberar, a conta recebe um e-mail de aviso. |
 | `/esqueci-a-senha`, `/nova-senha` | contas | Senha nova por e-mail. |
@@ -277,7 +278,7 @@ Só números e datas: nunca nome de arquivo, pasta ou conta do Drive de quem tra
   mandar de novo não soma. Dias fora de hoje −16 / +2 são ignorados. O app (`src/engine/uso.js`) conta o que terminou com
   ele aberto (uma vez por arquivo), soma o tempo com algo correndo, guarda em `uso.json` e manda ~1 min depois de abrir,
   a cada 15 min quando mudou e ao fechar.
-- **Avisos por e-mail aos admins** (`web/src/lib/email/admin.ts`): conta nova (e-mail e senha ou Google) e, quando a
+- **Avisos por e-mail aos admins** (`web/src/lib/email/admin.ts`): conta nova (hoje sempre "Absolute ZRO") e, quando a
   soma de erros da pessoa no dia passa de 10, "Transferências com erro". Cada aviso tem uma chave em `avisos_admin`
   (`conta:<id>`, `erros:<id>:<dia>`) e sai uma vez só.
 - **Tela:** online agora (uso nos últimos 15 min ou app com notícia em 2 min), ativas hoje / 7 / 30 dias, paradas há
@@ -329,7 +330,17 @@ emissor, público (`ZRO_CLIENT_ID`), validade e nonce.
 
 - **Entrar ≠ conectar o Drive.** A conta Absolute ZRO diz quem é a pessoa; o Google Drive continua em
   `contas_google`, conectado em Sua conta, como antes.
-- **Rotas:** `GET /api/zro/entrar?modo=entrar|vincular&volta=` (cookie `sd_zro`, cifrado, 10 min, só em `/api/zro`)
+- **Conta nova só pela Absolute ZRO.** `/criar-conta` manda para `GET /api/zro/entrar?modo=criar`, que pede
+  `prompt=create` no `/oauth/authorize` do HUB; a pessoa cria a conta lá e volta logada. E-mail e senha não criam
+  mais conta (`acaoCriarConta` recusa sempre) e "Entrar com Google" não cria conta (`google_sem_conta`): só abre as
+  contas antigas pelo Google de entrar delas. Conectar o Google Drive em Sua conta não mudou.
+- **Direito de uso (`zro_products`).** A cada login ou religação pela Absolute ZRO, `contas_zro.produtos` recebe a
+  lista do id_token. Conta ligada sem `sobedesce` na lista entra, mas `/conta` e `/dispositivo` mostram "Sua conta
+  Absolute ZRO ainda não tem acesso ao SOBEDESCE." (botões "Ver na Absolute ZRO" → `/ferramentas` e "Já liberaram?
+  Atualizar", que religa e traz a lista nova); a API responde 403 `sem_acesso_zro` (`exigirNaApi`, `/api/eu`,
+  Drives, computador, rede local) e o app do celular mostra o aviso. Conta antiga sem `contas_zro` segue como sempre
+  (`src/lib/zro/acesso.ts`, campo `liberado` de `autenticar`).
+- **Rotas:** `GET /api/zro/entrar?modo=entrar|criar|vincular&volta=` (cookie `sd_zro`, cifrado, 10 min, só em `/api/zro`)
   e `GET /api/zro/callback`. Mesmo molde do Google (`src/lib/zro/`).
 - **Tabela `contas_zro`** (migração 0013): `usuario_id` (uma por conta), `zro_sub` (único), e-mail, organização e
   produtos contratados no último login (`zro_products`).
@@ -345,7 +356,8 @@ emissor, público (`ZRO_CLIENT_ID`), validade e nonce.
   `http://localhost:3000/api/zro/callback` para desenvolvimento).
 - **Testes:** `web/tests/zro.test.mts` contra `web/tests/zro-falso.mts` (assina tokens ES256 de verdade): conta nova,
   segunda entrada, e-mail em uso, e-mail não confirmado, recusa, token adulterado (assinatura, nonce, público,
-  emissor), state trocado, volta externo, ligar/desligar.
+  emissor), state trocado, volta externo, ligar/desligar, criar conta com `prompt=create`, produto fora de
+  `zro_products` bloqueado e liberado depois, conta antiga sem vínculo livre.
 - **Ainda não:** o desktop continua entrando pelo código de aparelho do site (quem entrou pela Absolute ZRO no site
-  aprova o computador como hoje); planos da SOBEDESCE ainda não leem `zro_products`.
+  aprova o computador como hoje); os planos internos da SOBEDESCE continuam valendo por cima do `zro_products`.
 

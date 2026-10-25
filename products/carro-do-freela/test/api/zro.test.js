@@ -70,7 +70,10 @@ const pedir = (caminho, o = {}) =>
 async function fluxo(o = {}) {
   Z._interno.esquecer();
   zro.estado.proximo = { pessoa: 'pessoa' in o ? o.pessoa : LIA, negar: !!o.negar, adulterar: o.adulterar || null };
-  const ida = await pedir('/api/zro/entrar' + (o.volta !== undefined ? '?volta=' + encodeURIComponent(o.volta) : ''));
+  const q = new URLSearchParams();
+  if (o.volta !== undefined) q.set('volta', o.volta);
+  if (o.criar) q.set('criar', '1');
+  const ida = await pedir('/api/zro/entrar' + (q.toString() ? '?' + q : ''));
   assert.equal(ida.status, 302);
   const destino = new URL(ida.headers.get('location'));
   assert.equal(destino.origin, zro.url);
@@ -101,6 +104,36 @@ test('a ida para o HUB: código + PKCE S256, escopos, nonce e retorno do própri
   assert.match(q.get('code_challenge'), /^[A-Za-z0-9_-]{43}$/);
   assert.ok(q.get('nonce') && q.get('state') && q.get('nonce') !== q.get('state'));
   assert.equal(q.get('redirect_uri'), SITE + '/api/zro/callback');
+  assert.equal(q.get('prompt'), null, 'entrar não pede prompt');
+});
+
+test('criar conta = criar a conta Absolute ZRO: prompt=create no HUB, e volta já dentro', async () => {
+  const { destino, local, cookies } = await fluxo({ criar: true, volta: '/?conta=criar' });
+  assert.equal(destino.searchParams.get('prompt'), 'create');
+  assert.equal(zro.estado.ultimoAuthorize.prompt, 'create');
+  assert.equal(local, '/?conta=criar&zro=entrou');
+  assert.ok(cookies.get('cdf_sessao'));
+  /* qualquer outro valor não vira prompt */
+  const r = await pedir('/api/zro/entrar?criar=sim');
+  assert.equal(new URL(r.headers.get('location')).searchParams.get('prompt'), null);
+});
+
+test('direito de uso: sem "carro-do-freela" em zro_products entra, mas /eu diz liberado:false', async () => {
+  for (const [produtos, liberado] of [[['nossom', 'synquei'], false], [[], false], [['carro-do-freela', 'nossom'], true]]) {
+    const { cookies } = await fluxo({ pessoa: Object.assign({}, LIA, { produtos }) });
+    const sessao = cookies.get('cdf_sessao');
+    assert.ok(sessao, 'a sessão abre mesmo sem acesso: a pessoa entra e vê o aviso');
+    const eu = await (await pedir('/api/zro/eu', { cookie: 'cdf_sessao=' + encodeURIComponent(sessao) })).json();
+    assert.deepEqual(eu.produtos, produtos);
+    assert.equal(eu.liberado, liberado, JSON.stringify(produtos));
+  }
+  assert.equal(Z._interno.PRODUTO, 'carro-do-freela');
+});
+
+test('sessão antiga, de antes da lista de produtos, não vale: volta pelo HUB', async () => {
+  const velha = Z._interno.selar({ sub: 'zro-111', nome: 'Lia', email: 'lia@produtora.com', org: null, exp: Math.floor(Date.now() / 1000) + 3600 }, CLIENTE.clientSecret, Z._interno.COOKIE_SESSAO);
+  const r = await pedir('/api/zro/eu', { cookie: 'cdf_sessao=' + encodeURIComponent(velha) });
+  assert.equal(r.status, 401);
 });
 
 test('entra: sessão de 30 dias, volta marcada, /eu diz quem é e sair apaga', async () => {
@@ -120,7 +153,14 @@ test('entra: sessão de 30 dias, volta marcada, /eu diz quem é e sair apaga', a
   const eu = await pedir('/api/zro/eu', { cookie: 'cdf_sessao=' + encodeURIComponent(sessao) });
   assert.equal(eu.status, 200);
   assert.equal(eu.headers.get('cache-control'), 'no-store');
-  assert.deepEqual(await eu.json(), { sub: 'zro-111', nome: 'Lia Produtora', email: 'lia@produtora.com', organizacao: 'Produtora Lia' });
+  assert.deepEqual(await eu.json(), {
+    sub: 'zro-111',
+    nome: 'Lia Produtora',
+    email: 'lia@produtora.com',
+    organizacao: 'Produtora Lia',
+    produtos: ['carro-do-freela'],
+    liberado: true,
+  });
 
   const sair = await pedir('/api/zro/sair', { method: 'POST', cookie: 'cdf_sessao=' + encodeURIComponent(sessao), headers: { origin: SITE } });
   assert.equal(sair.status, 204);

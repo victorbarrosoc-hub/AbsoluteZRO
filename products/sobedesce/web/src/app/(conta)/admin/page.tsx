@@ -179,7 +179,7 @@ function Pessoa({
           <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
             <p className="text-[13px] text-ink-3">
               Desde {dataCurta.format(p.criadoEm)} ·{" "}
-              {p.comSenha ? "e-mail e senha" : "Google"}
+              {p.comSenha ? "e-mail e senha" : p.soZro ? "Absolute ZRO" : "Google"}
             </p>
             <Plano p={p} />
           </div>

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requirePlatformAdmin } from '@zro/core'
 import { Card, Field, Notice, Pill } from '@zro/ui'
@@ -47,9 +48,14 @@ export default async function Admin() {
   const activePlans = d.plans.filter((p) => p.status === 'active')
   return (
     <div className="page">
-      <div className="page-head__text">
-        <h1>Administração</h1>
-        <p>Planos, concessões e saúde da fila. Toda ação pede um motivo e fica na auditoria.</p>
+      <div className="page-head">
+        <div className="page-head__text">
+          <h1>Administração</h1>
+          <p>Planos, concessões e saúde da fila. Toda ação pede um motivo e fica na auditoria.</p>
+        </div>
+        <Link className="zro-btn zro-btn--primary" href="/admin/pessoas">
+          Pessoas
+        </Link>
       </div>
       {!isAdmin && <Notice title="Suporte: somente leitura">Concessões e catálogo exigem papel admin.</Notice>}
 

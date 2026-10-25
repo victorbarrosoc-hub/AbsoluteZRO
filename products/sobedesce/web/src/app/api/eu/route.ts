@@ -1,5 +1,5 @@
 import { aprenderAparelho, COOKIE_APARELHO, opcoesCookieAparelho } from "@/lib/auth/aparelho";
-import { usuarioDaRequisicao, SEM_SESSAO } from "@/lib/auth/requisicao";
+import { semAcesso, usuarioDaRequisicao, SEM_SESSAO } from "@/lib/auth/requisicao";
 import { listarContas } from "@/lib/google/contas";
 import { json, lerCookie, origemDoPedido, serializarCookie } from "@/lib/http";
 import { recursosDe } from "@/lib/recursos";
@@ -9,6 +9,9 @@ import { cookieSeguro } from "@/lib/site";
 export async function GET(req: Request) {
   const atual = await usuarioDaRequisicao(req);
   if (!atual) return SEM_SESSAO();
+  // Conta ligada à Absolute ZRO sem a SOBEDESCE liberada: 403 sem_acesso_zro (o app mostra o aviso; a sessão fica).
+  const bloqueio = semAcesso(atual);
+  if (bloqueio) return bloqueio;
   const [contas, recursos, aparelho] = await Promise.all([
     listarContas(atual.usuario.id),
     recursosDe(atual.usuario),

@@ -1,6 +1,6 @@
 import { statusSchema, LIMITE_BYTES } from "@/lib/acompanhar/formato";
 import { apagarStatus, gravarStatus } from "@/lib/acompanhar/status";
-import { SEM_SESSAO, usuarioDaRequisicao } from "@/lib/auth/requisicao";
+import { SEM_SESSAO, semAcesso, usuarioDaRequisicao } from "@/lib/auth/requisicao";
 import { erro, json, semConteudo } from "@/lib/http";
 
 /**
@@ -17,6 +17,8 @@ async function computador(req: Request) {
 export async function POST(req: Request) {
   const atual = await computador(req);
   if (atual instanceof Response) return atual;
+  const bloqueio = semAcesso(atual);
+  if (bloqueio) return bloqueio;
   const tamanho = Number(req.headers.get("content-length"));
   if (Number.isFinite(tamanho) && tamanho > LIMITE_BYTES) return erro(413, "grande_demais", "Andamento grande demais.");
   let texto: string;
