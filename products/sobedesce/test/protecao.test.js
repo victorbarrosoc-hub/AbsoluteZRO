@@ -362,7 +362,7 @@ test('electron-builder: asar, fusíveis e o QuickJS no pacote; o yt-dlp não dep
   assert.match(yml, /from: build\/quickjs\/\$\{os\}-\$\{arch\}\n\s+to: quickjs/)
   const servico = await fs.readFile(new URL('../src/referencias/service.js', import.meta.url), 'utf8')
   assert.doesNotMatch(servico, /ELECTRON_RUN_AS_NODE/)
-  const wf = await fs.readFile(new URL('../.github/workflows/desktop.yml', import.meta.url), 'utf8')
+  const wf = await fs.readFile(new URL('../../../.github/workflows/sobedesce-desktop.yml', import.meta.url), 'utf8')
   assert.match(wf, /--smoke/)
   assert.match(wf, /quickjs-baixar\.mjs/)
   for (const m of wf.matchAll(/uses: ([^\s]+)/g)) assert.match(m[1], /@[0-9a-f]{40}$/, `action fixada por SHA: ${m[1]}`)
