@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, useReducedMotion } from 'motion/react';
 import {
@@ -19,6 +19,11 @@ import { accountPlan, type Account } from '@/lib/accounts';
 import StudioLink from './studio-link';
 import UserAvatar, { avatarFromFile } from './user-avatar';
 import { usageLabel, type AudioUsage } from '@/lib/usage';
+import { zroMessage } from '@/lib/zro-messages';
+type ZroStatus = {
+  configured: boolean;
+  link: { email: string; organization: string | null; onlyLogin: boolean } | null;
+};
 export default function AccountSettings({
   account,
   usage,
@@ -42,6 +47,48 @@ export default function AccountSettings({
     [success, setSuccess] = useState(''),
     [photo, setPhoto] = useState<number | undefined>(account.avatar);
   const picker = useRef<HTMLInputElement>(null);
+  const [zro, setZro] = useState<ZroStatus | null>(null);
+  useEffect(() => {
+    // Volta da Absolute ZRO: mostra o resultado e tira o aviso do endereço.
+    const url = new URL(location.href);
+    const code = url.searchParams.get('erro'),
+      linked = url.searchParams.get('zro') === 'ok';
+    if (linked || zroMessage(code)) {
+      if (linked) setSuccess('Absolute ZRO ligada. Agora você também entra por ela.');
+      else setError(zroMessage(code)!);
+      url.searchParams.delete('erro');
+      url.searchParams.delete('zro');
+      history.replaceState(history.state, '', url.pathname + url.search + url.hash);
+    }
+    let active = true;
+    fetch('/api/zro/conta')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: ZroStatus | null) => {
+        if (active && data) setZro(data);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
+  async function unlinkZro() {
+    if (busy) return;
+    setBusy('zro');
+    setError('');
+    setSuccess('');
+    try {
+      const response = await fetch('/api/zro/conta', { method: 'DELETE' });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Não deu para desligar agora.');
+      setZro((current) => current && { ...current, link: null });
+      setSuccess('Absolute ZRO desligada. Você continua entrando com e-mail e senha.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Não deu para desligar agora.');
+    } finally {
+      setBusy('');
+    }
+  }
+  const zroOnly = !!zro?.link?.onlyLogin;
   async function changePhoto(file?: File | null) {
     if (!file || busy) return;
     setBusy('photo');
@@ -250,80 +297,125 @@ export default function AccountSettings({
                 : 'Consulte seu saldo na navegação.'}
           </p>
         </section>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void update('email');
-          }}
-        >
-          <header className="settings-card-heading">
-            <Mail size={21} />
-            <h2>E-mail</h2>
-          </header>
-          <label>
-            Novo e-mail
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              maxLength={254}
-              required
-              disabled={!!busy}
-            />
-          </label>
-          <label>
-            Senha atual para alterar e-mail
-            <input
-              type="password"
-              value={emailPassword}
-              onChange={(e) => setEmailPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-              disabled={!!busy}
-            />
-          </label>
-          <p>
-            A mudança exige confirmação. O acesso ADM depende do endereço administrativo confirmado.
-          </p>
-          {button('email', 'Alterar e-mail')}
-        </form>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void update('password');
-          }}
-        >
-          <header className="settings-card-heading">
-            <LockKeyhole size={21} />
-            <h2>Senha</h2>
-          </header>
-          <label>
-            Senha atual
-            <input
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-              disabled={!!busy}
-            />
-          </label>
-          <label>
-            Nova senha
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="new-password"
-              minLength={8}
-              maxLength={128}
-              required
-              disabled={!!busy}
-            />
-          </label>
-          {button('password', 'Atualizar senha')}
-        </form>
+        {zro?.configured && (
+          <section className="account-zro-card">
+            <header className="settings-card-heading">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/absolute-zro-o-alpha.webp" alt="" width={21} height={21} />
+              <h2>Absolute ZRO</h2>
+            </header>
+            {zro.link ? (
+              <>
+                <p>
+                  Ligada a <strong>{zro.link.email}</strong>
+                  {zro.link.organization ? ' · ' + zro.link.organization : ''}.
+                </p>
+                {zroOnly ? (
+                  <p>Esta conta entra só pela Absolute ZRO, então a ligação fica.</p>
+                ) : (
+                  <button
+                    type="button"
+                    className="button secondary"
+                    disabled={!!busy}
+                    onClick={() => void unlinkZro()}
+                  >
+                    {busy === 'zro' ? <LoaderCircle className="spin" size={18} /> : null}
+                    Desligar
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                <p>Ligue sua conta Absolute ZRO para entrar na NOSSOM com um clique.</p>
+                <a
+                  className="button primary"
+                  href={'/api/zro/entrar?modo=ligar&volta=' + encodeURIComponent('/studio/conta')}
+                >
+                  Ligar Absolute ZRO
+                </a>
+              </>
+            )}
+          </section>
+        )}
+        {!zroOnly && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void update('email');
+            }}
+          >
+            <header className="settings-card-heading">
+              <Mail size={21} />
+              <h2>E-mail</h2>
+            </header>
+            <label>
+              Novo e-mail
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                maxLength={254}
+                required
+                disabled={!!busy}
+              />
+            </label>
+            <label>
+              Senha atual para alterar e-mail
+              <input
+                type="password"
+                value={emailPassword}
+                onChange={(e) => setEmailPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+                disabled={!!busy}
+              />
+            </label>
+            <p>
+              A mudança exige confirmação. O acesso ADM depende do endereço administrativo
+              confirmado.
+            </p>
+            {button('email', 'Alterar e-mail')}
+          </form>
+        )}
+        {!zroOnly && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void update('password');
+            }}
+          >
+            <header className="settings-card-heading">
+              <LockKeyhole size={21} />
+              <h2>Senha</h2>
+            </header>
+            <label>
+              Senha atual
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+                disabled={!!busy}
+              />
+            </label>
+            <label>
+              Nova senha
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+                minLength={8}
+                maxLength={128}
+                required
+                disabled={!!busy}
+              />
+            </label>
+            {button('password', 'Atualizar senha')}
+          </form>
+        )}
       </div>
       <StudioLink className="account-plan-link lg" href="/studio/planos">
         <Gem size={18} />

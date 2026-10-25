@@ -37,5 +37,8 @@ export const config = {
     '/api/account',
     '/api/account/:path*',
     '/api/subscription',
+    // Renova a sessão antes de ligar a Absolute ZRO; o callback não passa por aqui.
+    '/api/zro/entrar',
+    '/api/zro/conta',
   ],
 };

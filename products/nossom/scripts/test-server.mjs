@@ -295,6 +295,10 @@ server.listen(55440, '127.0.0.1', () => {
         STRIPE_WEBHOOK_SECRET: webhookSecret,
         STRIPE_API_URL: origin + '/stripe',
         NOSSOM_AUTH_SECRET: 'local-e2e-session-key-placeholder',
+        // Absolute ZRO sem servidor de verdade: o botão aparece e a ida falha com aviso amigável.
+        ZRO_ISSUER: origin + '/zro',
+        ZRO_CLIENT_ID: 'nossom-web',
+        ZRO_CLIENT_SECRET: 'zro-e2e-placeholder',
         ANTHROPIC_API_KEY: '',
         NEXT_PUBLIC_ELEVENLABS_AGENT_ID: '',
       },

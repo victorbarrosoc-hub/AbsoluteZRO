@@ -25,6 +25,14 @@ Os três assets 0.2.2 foram verificados por HEAD HTTPS sem login:
 
 A revisão ampla identificou expectativas antigas de texto/cor e o teste de abertura do login anterior ao fim da animação. Elas foram alinhadas à interface aprovada, preservando as verificações de autenticação, separação de contas, cota, conversa, contraste e pausa da animação. O CI final acima passou após esses ajustes.
 
+## 25/10/2026 · Login único e CI no monorepo
+
+- `tests/zro.test.ts` (ZRO e Supabase falsos em `tests/helpers/zro-fake.ts`): abertura direta pelo HUB, conta nova só com e-mail confirmado, vínculo existente → sessão, state/nonce/iss (token e redirect)/aud/assinatura errados, e-mail em uso sem vínculo, ligar/desligar e recusa de desligar o único login.
+- `tests/quota-postgres.integration.ts`: `nossom_zro_link` só para `service_role`, tabela com RLS e sem acesso de `anon`/`authenticated`, uma pessoa por conta, exclusão em cascata (rodado em PostgreSQL 16 local).
+- `tests/desktop-releases.test.ts`: downloads seguem na prévia `desktop-v0.2.2` até a release `nossom-v<versão>` existir.
+- `tests/e2e/zro-login.spec.ts`: botão, volta preservada e aviso quando a Absolute ZRO não responde.
+- Limite: sem teste contra a Absolute ZRO e o Supabase reais; isso fica para depois de aplicar a migração e configurar as variáveis.
+
 ## Reproduzir
 
 ```sh

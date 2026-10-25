@@ -61,4 +61,4 @@ Não enviar certificados, senhas ou chaves pelo Git/chat. Configure nos gerencia
 
 Execute `platform=all`, `publish_signed=true`, `publish_preview=false`. O workflow exige todas as plataformas, verifica assinatura/notarização no Mac e Authenticode no Windows. Publica feeds `latest-mac.yml` e `latest.yml`, hashes e arquivos reais numa release estável versionada, sem habilitar Latest antes do upload completo.
 
-O feed padrão assinado usa `https://github.com/victorbarrosoc-hub/nossom/releases/latest/download/`. Builds próprios podem configurar `NOSSOM_UPDATE_BASE_URL` e `NOSSOM_UPDATE_FLAT_FEED`, mantendo verificação, ausência de downgrade e rejeição de prerelease. Não contornar essas garantias para evitar a exigência de certificados.
+O feed padrão assinado usa `https://github.com/victorbarrosoc-hub/AbsoluteZRO/releases/download/nossom-atualizacoes/` (release fixa do NOSSOM no monorepo; as versões ficam em `nossom-v<versão>`). Builds próprios podem configurar `NOSSOM_UPDATE_BASE_URL` e `NOSSOM_UPDATE_FLAT_FEED`, mantendo verificação, ausência de downgrade e rejeição de prerelease. Não contornar essas garantias para evitar a exigência de certificados.
