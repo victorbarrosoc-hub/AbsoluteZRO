@@ -350,3 +350,8 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - `main` (Padrão Apple, app para computador) trazido para o PR #31 por merge. Conflitos: página de planos (fica o layout
   novo do `main`, com "Revela") e esta página (as duas seções mantidas). Segredos (1758 arquivos), lint, formatação,
   tipos, `npm test` (**113/113**), build, `npm run test:e2e` (**16/16**) e `products/finishing` (**19/19**) verdes.
+
+## OG com a Revela (25/10/2026)
+
+- A pedido do titular, `scripts/marca/og-claro.html` ganhou o ícone da Revela na fileira das ferramentas;
+  `opengraph-image.jpg` e `twitter-image.jpg` recapturados em 1200×630 (Chromium, Figtree carregada).
