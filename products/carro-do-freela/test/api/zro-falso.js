@@ -77,7 +77,7 @@ async function iniciarZroFalsa(cliente) {
           email_verified: true,
           name: c.pessoa.nome,
           zro_org: c.pessoa.org ? { id: 'org-1', name: c.pessoa.org, role: 'owner' } : null,
-          zro_products: ['carro-do-freela'],
+          zro_products: Array.isArray(c.pessoa.produtos) ? c.pessoa.produtos : ['carro-do-freela'],
         },
         ad === 'assinatura',
       );

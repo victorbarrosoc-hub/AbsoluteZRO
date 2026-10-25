@@ -2044,6 +2044,16 @@ body.sem-rodape{padding-bottom:0}
 .blogin:active{transform:scale(.98)}
 .blogin .ic{width:22px;height:22px;flex:none;display:grid;place-items:center}
 .lgzro{margin-top:10px}
+/* CONTA ÚNICA (25/out · 2): no domínio a porta principal é a Absolute ZRO.
+   Ela sobe para logo abaixo das abas, e o "ou" vem depois dela. */
+.lgzro.prim{margin-top:clamp(10px,calc(1.6svh / var(--zoom,1)),16px)}
+.lgzro.prim ~ .blogin[data-login]{margin-top:10px}
+/* sem direito de uso no Carro: o cartão vira um aviso curto e nada mais */
+.lgn-cx.bloq > :not(.lgn-bloq):not(.lgn-fundo):not(.lgn-selo){display:none!important}
+.lgn-bloq h2{margin:0;font:750 clamp(22px,3vw,26px)/1.15 var(--ui);letter-spacing:-.02em;color:var(--cal)}
+.lgn-bloq p{margin:10px 0 18px;font-size:15px;line-height:1.45;color:var(--cal-fraco)}
+.lgn-bloq a.lgn-ok{text-decoration:none}
+.lgn-bloq .lgn-troca{margin-top:14px}
 .lgzro .ic img{width:22px;height:20px;border-radius:5px;background:#05070a;padding:1px;display:block}
 .lgn-troca{text-align:center;margin:clamp(8px,calc(1.3svh / var(--zoom,1)),14px) 0 0;font-size:14px;color:var(--cal-fraco)}
 .lgn-nota{display:flex;gap:8px;align-items:flex-start;justify-content:center;margin:clamp(8px,calc(1.3svh / var(--zoom,1)),12px) 0 0;
@@ -6803,6 +6813,15 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
       </button>
       <p class="lgn-troca" data-lgi style="--i:6"><span id="lg-pergunta">Ainda não tem conta?</span> <button type="button" class="lgn-link" id="lg-cad">Criar conta</button></p>
       <p class="lgn-nota" data-lgi style="--i:7" id="lg-nota"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M8.6 12.2l2.3 2.3 4.6-4.8" stroke-linecap="round"/></svg><span>Nesta prévia, e-mail e senha não ficam guardados.</span></p>
+      <!-- ⚠️ SEM DIREITO DE USO (25/out · 2): quem entrou com a Absolute ZRO
+           mas não tem o Carro liberado para a organização vê só isto. Quem
+           libera é o admin da Absolute ZRO; aqui não há atalho. -->
+      <div class="lgn-bloq" id="lg-bloq" role="status" hidden>
+        <h2 id="lg-bloq-t">Sua conta Absolute ZRO ainda não tem acesso ao Carro do Freela.</h2>
+        <p id="lg-bloq-s">Quem cuida da sua organização na Absolute ZRO pode liberar.</p>
+        <a class="lgn-ok" id="lg-bloq-ir" href="https://absolutezro.vercel.app/ferramentas" rel="noopener"><span>Ver na Absolute ZRO</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <p class="lgn-troca"><button type="button" class="lgn-link" id="lg-bloq-sair">Sair desta conta</button></p>
+      </div>
     </div>
   </div>
 </section>
@@ -12780,6 +12799,7 @@ function pintarLogin(){
     b.setAttribute("aria-selected",String(b.dataset.lgtipo===LG_TIPO)));
   const im=document.querySelector(".lgn-carimg");
   if(im&&!im.getAttribute("src")&&HOME3D.carro) im.src=HOME3D.carro.src;
+  pintarZro();
   ligarVideoLogin();
 }
 /* ⚠️ O VÍDEO SÓ É PEDIDO QUANDO A TELA DE ENTRAR ABRE: baixar o vídeo no
@@ -12817,7 +12837,7 @@ const lgCartao=(function(){
   const mq=matchMedia("(min-width:821px) and (hover:hover) and (pointer:fine)");
   const PERTO=120, LONGE=210;
   let px=-1e5, py=-1e5, tm=0;
-  const preso=()=>cx.matches(":focus-within")||!!(v("lg-email").value||v("lg-senha").value)||LG_MODO==="criar"||!v("lg-erro").hidden;
+  const preso=()=>cx.matches(":focus-within")||!!(v("lg-email").value||v("lg-senha").value)||LG_MODO==="criar"||!v("lg-erro").hidden||cx.classList.contains("bloq");
   /* o vidro compacto: a altura vai até o fim da linha da pílula, mais o
      respiro de baixo; e ele DESCE (18/out · 6) até o centro dele ficar perto
      do meio da janela, sem passar do fim do cartão. Tudo medido na TELA e
@@ -12909,6 +12929,10 @@ function partirDoLogin(){
   setTimeout(()=>o.remove(),900);
 }
 function entrarNaConta(prov,criar){
+  /* ⚠️ DIREITO DE USO (25/out · 2): com sessão Absolute ZRO, quem decide é o
+     admin dela. Sem "carro-do-freela" em zro_products, nenhuma porta abre a
+     conta — nem a da conta Absolute ZRO, nem a antiga deste aparelho. */
+  if(zroBloqueado()){ zroMostrarBloqueio(); return }
   partirDoLogin();
   lgAviso("");
   MODO=LG_TIPO;
@@ -26965,7 +26989,7 @@ const FBK_KEY=/*__WEB3FORMS_KEY__*/"";   /* Web3Forms → carrodofreela@gmail.co
    suporte: durante os testes a primeira pergunta de todo relato e "qual
    versao voce esta usando?", e sem ela nao da para saber se o defeito ja
    foi consertado ou se a pessoa esta com um arquivo velho no cache. */
-const VERSAO="19/out · 5";
+const VERSAO="25/out · 2";
 /* ?diag na URL faz a linha de contexto do suporte mostrar as medidas do
    aparelho. Existe porque daqui não dá para inspecionar o Safari do
    Victor: em vez de adivinhar uma quarta vez, ele abre com ?diag, toca no
@@ -27491,17 +27515,42 @@ const ZRO_MSG={
   indisponivel:"Entrar com a Absolute ZRO ainda não está ligado aqui."
 };
 const zroLigavel=()=>/^https?:$/.test(location.protocol)&&!emIframe();
+/* ⚠️ CONTA ÚNICA (25/out · 2, regra do titular). No domínio, a conta é a
+   Absolute ZRO: "Entrar" e "Criar conta" vão ao HUB (criar = prompt=create).
+   O Carro não cria mais conta própria — o formulário e o Google somem para
+   quem chega agora. Quem JÁ tinha passado pela porta neste aparelho (conta
+   antiga, sem vínculo) continua vendo o formulário para entrar, como antes,
+   com a Absolute ZRO em cima como caminho recomendado. Fora do domínio
+   (file://, artifact, suítes) nada disto roda e a prévia segue igual. */
+function zroBloqueado(){ return !!(ZRO_CONTA&&!ZRO_CONTA.liberado) }
+function zroMostrarBloqueio(){
+  LG_MODO="entrar"; lgAviso("");
+  if(v("v-entrar").hidden) show("entrar"); else pintarLogin();
+}
 function pintarZro(){
   const b=v("lg-zro"); if(!b) return;
+  const cx=v("lg-cx"), criar=LG_MODO==="criar";
   b.hidden=!ZRO_PRONTO;
   b.title=ZRO_CONTA&&ZRO_CONTA.email?"Entrar como "+ZRO_CONTA.email:"";
   const n=document.querySelector("#lg-nota span");
-  if(n){
-    if(n.dataset.orig===undefined) n.dataset.orig=n.textContent;
-    n.textContent=ZRO_CONTA&&ZRO_CONTA.email?"Conta Absolute ZRO: "+ZRO_CONTA.email:n.dataset.orig;
-  }
+  if(n&&n.dataset.orig===undefined) n.dataset.orig=n.textContent;
+  const bl=zroBloqueado();
+  cx.classList.toggle("bloq",bl); v("lg-bloq").hidden=!bl;
+  if(!ZRO_PRONTO){ if(n) n.textContent=n.dataset.orig; return }
+  /* a porta principal sobe para logo abaixo das abas, e o "ou" vem depois */
+  const form=v("lg-form"), ou=cx.querySelector(".div");
+  if(!b.classList.contains("prim")){ b.classList.add("prim"); form.parentNode.insertBefore(b,form); if(ou) form.parentNode.insertBefore(ou,form) }
+  /* o formulário antigo só para quem já tinha conta neste aparelho, só para
+     ENTRAR, e só sem sessão Absolute ZRO (com ela, a conta é a da ZRO) */
+  const antigo=!criar&&!ZRO_CONTA&&lgJaEntrou();
+  form.hidden=!antigo; if(ou) ou.hidden=!antigo;
+  const g=document.querySelector("#lg-cx [data-login=\"Google\"]"); if(g) g.hidden=!antigo;
+  v("lg-zro-t").textContent=ZRO_CONTA?"Continuar como "+(ZRO_CONTA.nome||ZRO_CONTA.email||"você")
+    :(criar?"Criar conta Absolute ZRO":"Entrar com Absolute ZRO");
+  if(n) n.textContent=ZRO_CONTA&&ZRO_CONTA.email?"Conta Absolute ZRO: "+ZRO_CONTA.email
+    :antigo?n.dataset.orig:(criar?"Uma conta só para o Carro e a família Absolute ZRO.":"Sua conta do Carro é a da Absolute ZRO.");
 }
-function zroEntrar(){ entrarNaConta("Absolute ZRO",LG_MODO==="criar") }
+function zroEntrar(criar){ entrarNaConta("Absolute ZRO",criar===undefined?LG_MODO==="criar":criar) }
 /* o perfil que acabou de nascer recebe o nome da conta; o que a pessoa
    já escreveu aqui nunca é trocado pelo da conta */
 function zroNoPerfil(){
@@ -27517,16 +27566,21 @@ function zroSair(){
 }
 v("lg-zro").onclick=()=>{
   if(ZRO_CONTA) return zroEntrar();
-  const volta=location.pathname+(LG_TIPO==="contratante"?"?lado=contratante":"");
-  location.href="/api/zro/entrar?volta="+encodeURIComponent(volta);
+  const criar=LG_MODO==="criar";
+  const q=new URLSearchParams();
+  if(LG_TIPO==="contratante") q.set("lado","contratante");
+  if(criar) q.set("conta","criar");
+  const volta=location.pathname+(q.toString()?"?"+q:"");
+  location.href="/api/zro/entrar?volta="+encodeURIComponent(volta)+(criar?"&criar=1":"");
 };
+v("lg-bloq-sair").onclick=()=>{ zroSair(); pintarLogin() };
 (function(){
   if(!zroLigavel()) return;
-  let marca=null, lado=null;
+  let marca=null, lado=null, conta=null;
   try{
     const u=new URL(location.href);
-    marca=u.searchParams.get("zro"); lado=u.searchParams.get("lado");
-    if(marca||lado){ u.searchParams.delete("zro"); u.searchParams.delete("lado");
+    marca=u.searchParams.get("zro"); lado=u.searchParams.get("lado"); conta=u.searchParams.get("conta");
+    if(marca||lado||conta){ u.searchParams.delete("zro"); u.searchParams.delete("lado"); u.searchParams.delete("conta");
       history.replaceState(history.state,"",u.pathname+u.search+u.hash) }
   }catch(e){}
   fetch("/api/zro/eu",{credentials:"same-origin",cache:"no-store",headers:{Accept:"application/json"}})
@@ -27536,12 +27590,15 @@ v("lg-zro").onclick=()=>{
       const j=r.j;
       if(j&&typeof j.sub==="string"&&j.sub){
         ZRO_CONTA={sub:j.sub,nome:typeof j.nome==="string"?j.nome:"",email:typeof j.email==="string"?j.email:"",
-          organizacao:typeof j.organizacao==="string"?j.organizacao:""};
+          organizacao:typeof j.organizacao==="string"?j.organizacao:"",
+          /* o direito de uso vem do admin da Absolute ZRO, a cada login */
+          liberado:j.liberado===true};
         ZRO_PRONTO=true;
       } else ZRO_PRONTO=!!r.ligado;
       pintarZro();
       if(lado==="contratante"||lado==="freela"){ LG_TIPO=lado; pintarLogin() }
-      if(marca==="entrou"&&ZRO_CONTA) zroEntrar();
+      if(marca==="entrou"&&ZRO_CONTA) zroEntrar(conta==="criar");
+      else if(zroBloqueado()&&!v("v-entrar").hidden) pintarLogin();
       else if(marca&&ZRO_MSG[marca]){ LG_MODO="entrar"; pintarLogin(); show("entrar"); lgAviso(ZRO_MSG[marca]) }
     })
     .catch(()=>{});

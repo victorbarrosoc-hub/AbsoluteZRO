@@ -83,18 +83,27 @@ Trocar `ZRO_CLIENT_SECRET` derruba as sessões abertas (os cookies deixam de con
   `https://carrodofreela.com.br/api/zro/callback`, `https://www.carrodofreela.com.br/api/zro/callback` e
   `https://carrodofreela-app.vercel.app/api/zro/callback`. Endereço do Abrir do HUB (`sso_start_url`):
   `https://carrodofreela.com.br/api/zro/entrar`.
-- `GET /api/zro/entrar?volta=/caminho`: gera state, nonce e verificador PKCE, guarda os três num cookie `cdf_zro`
+- `GET /api/zro/entrar?volta=/caminho[&criar=1]`: gera state, nonce e verificador PKCE, guarda os três num cookie `cdf_zro`
   assinado (HMAC, 10 min, httpOnly, Secure, SameSite=Lax, só em `/api/zro`) e leva ao HUB com
-  `code_challenge_method=S256` e escopos `openid email profile org`. `volta` só aceita caminho do próprio site.
+  `code_challenge_method=S256` e escopos `openid email profile org`. `volta` só aceita caminho do próprio site. Com
+  `criar=1` (o "Criar conta" da tela) o HUB recebe `prompt=create` e cria a conta Absolute ZRO.
 - `GET /api/zro/callback`: confere state (e o `iss` da resposta), troca o código com `client_secret_basic` + verificador,
   confere o id_token pela JWKS (ES256: assinatura, `iss`, `aud`, `exp`, `nonce`) e grava `cdf_sessao` (assinado, 30
-  dias) com sub, nome, e-mail e organização. Volta para `volta?zro=entrou`; erro volta como `?zro=erro|recusado|expirou`.
-- `GET /api/zro/eu`: JSON `{sub, nome, email, organizacao}` ou 401, sempre `no-store`. Sem as variáveis do ZRO: 503.
+  dias) com sub, nome, e-mail, organização e `zro_products` (relido a cada login). Volta para `volta?zro=entrou`; erro volta como `?zro=erro|recusado|expirou`.
+- `GET /api/zro/eu`: JSON `{sub, nome, email, organizacao, produtos, liberado}` ou 401, sempre `no-store`.
+  `liberado` = `carro-do-freela` está em `zro_products`. Sessão antiga sem a lista dá 401 (entra de novo pelo HUB).
+  Sem as variáveis do ZRO: 503.
 - `POST /api/zro/sair`: apaga `cdf_sessao` (não encerra a sessão do HUB).
 - Só respondem nos três domínios acima e em `localhost`/`127.0.0.1`; outro Host recebe 400.
 - Na tela: "Continuar com Absolute ZRO" nasce escondido e só aparece quando `/api/zro/eu` responde 200 ou 401 num site
   servido (nunca em `file://`, iframe ou nas suítes). Com sessão, entra como o login do protótipo, com nome e e-mail da
   conta; o Sair do menu também apaga a sessão deste site.
+- **Conta única (25/out · 2, regra do titular).** No domínio, "Entrar com Absolute ZRO" é a porta principal e "Criar
+  conta" vira "Criar conta Absolute ZRO" (HUB com `prompt=create`). O Carro não cria conta própria: quem chega agora
+  não vê o formulário de e-mail/senha nem o Google. Quem já tinha entrado neste aparelho (conta antiga, sem vínculo
+  ZRO) continua vendo o formulário para entrar. Com sessão ZRO sem `carro-do-freela` em `zro_products`, a tela de
+  entrar vira o aviso "Sua conta Absolute ZRO ainda não tem acesso ao Carro do Freela." + "Ver na Absolute ZRO"
+  (`/ferramentas`) e nenhuma porta abre a conta. A landing e a lista de convite continuam abertas, sem conta.
 
 ## Como conferir
 
