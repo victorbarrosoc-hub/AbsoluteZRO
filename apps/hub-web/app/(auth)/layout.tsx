@@ -4,14 +4,13 @@ import { Wordmark } from '@/components/brand'
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="auth-wrap public">
-      <aside className="auth-art" aria-hidden="false">
+      <div className="auth-eclipse" aria-hidden="true" />
+      <header className="auth-top">
         <Wordmark />
-        <p className="zro-serif" style={{ fontSize: '1.6rem', color: '#e6e6e6' }}>
-          Toda história começa do zero.
-        </p>
-      </aside>
+      </header>
       <main id="conteudo" className="auth-panel">
-        <div className="auth-box">{children}</div>
+        <div className="auth-box zro-card zro-card--glass">{children}</div>
+        <p className="auth-tag">Toda história começa do zero.</p>
       </main>
     </div>
   )

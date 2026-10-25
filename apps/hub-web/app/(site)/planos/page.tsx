@@ -10,10 +10,12 @@ export default async function Planos() {
   const { products, plans } = await publicCatalog()
   const name = Object.fromEntries(products.map((p) => [p.id as string, p.name as string]))
   return (
-    <section className="section" aria-labelledby="planos-title">
+    <section className="section section--page" aria-labelledby="planos-title">
       <div className="section__head">
         <p className="zro-eyebrow">Planos</p>
-        <h1 id="planos-title">Uma ferramenta ou o ciclo inteiro.</h1>
+        <h1 id="planos-title" className="display-2">
+          Uma ferramenta ou o ciclo inteiro.
+        </h1>
         <p>A conta é gratuita. Você contrata o que usa, e o mesmo login abre tudo o que foi contratado.</p>
       </div>
       <Notice tone="accent" title="Contratação online ainda fechada">

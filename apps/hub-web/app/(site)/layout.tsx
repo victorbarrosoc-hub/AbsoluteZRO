@@ -7,32 +7,40 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
   const auth = await getAuth()
   return (
     <div className="public">
-      <header className="public-header">
-        <Wordmark />
-        <nav aria-label="Principal">
-          <Link href="/#ciclo">Ciclo do O</Link>
-          <Link href="/#ferramentas">Ferramentas</Link>
-          <Link href="/planos">Planos</Link>
-          {auth ? (
-            <Link className="zro-btn zro-btn--primary zro-btn--small" href="/inicio">
-              Abrir o HUB
-            </Link>
-          ) : (
-            <>
-              <Link href="/entrar">Entrar</Link>
-              <Link className="zro-btn zro-btn--primary zro-btn--small" href="/criar-conta">
-                Criar conta
+      <div className="public-glow" aria-hidden="true" />
+      <header className="capsule-wrap">
+        <div className="capsule">
+          <Wordmark />
+          <nav aria-label="Principal" className="capsule__links">
+            <Link href="/#ciclo">Ciclo do O</Link>
+            <Link href="/#ferramentas">Ferramentas</Link>
+            <Link href="/planos">Planos</Link>
+          </nav>
+          <div className="capsule__cta">
+            {auth ? (
+              <Link className="zro-btn zro-btn--primary zro-btn--small" href="/inicio">
+                Abrir o HUB
               </Link>
-            </>
-          )}
-        </nav>
+            ) : (
+              <>
+                <Link className="capsule__login" href="/entrar">
+                  Entrar
+                </Link>
+                <Link className="zro-btn zro-btn--primary zro-btn--small" href="/criar-conta">
+                  Criar conta
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
       </header>
       <main id="conteudo" className="public-main">
         {children}
       </main>
       <footer className="public-footer">
-        <span>© {new Date().getFullYear()} Absolute ZRO</span>
+        <Wordmark height={18} />
         <span>Da oportunidade à entrega. Um só fluxo.</span>
+        <span>© {new Date().getFullYear()} Absolute ZRO</span>
       </footer>
     </div>
   )

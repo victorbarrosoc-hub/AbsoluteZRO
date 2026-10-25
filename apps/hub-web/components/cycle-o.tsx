@@ -4,7 +4,7 @@
  * "reduzir movimento"). SVG estático renderizado no servidor; nenhum estado por frame no React.
  * Para leitores de tela e telas pequenas, a mesma informação vem numa lista ordenada logo abaixo.
  */
-import { Pill } from '@zro/ui'
+import { Pill, ProductMark } from '@zro/ui'
 import { STEP_LABEL, STEP_TONE } from '@/lib/labels'
 
 export type CycleStep = {
@@ -43,7 +43,7 @@ export function CycleO({ steps, title, subtitle, labelledBy }: { steps: CycleSte
   const litIndex = lit === -1 ? -1 : n - 1 - lit
   return (
     <div className="cycle">
-      <svg className="cycle__svg" viewBox="0 0 400 400" role={interactive ? 'group' : 'img'} aria-labelledby={labelledBy}>
+      <svg className="cycle__svg" viewBox="-80 -10 560 420" role={interactive ? 'group' : 'img'} aria-labelledby={labelledBy}>
         <defs>
           <radialGradient id="cycle-flare" cx="50%" cy="50%" r="50%">
             <stop offset="0" stopColor="#ffffff" stopOpacity="1" />
@@ -109,6 +109,7 @@ export function CycleO({ steps, title, subtitle, labelledBy }: { steps: CycleSte
         {steps.map((s, i) => (
           <li key={s.key}>
             <span className="cycle__num">{String(i + 1).padStart(2, '0')}</span>
+            <ProductMark productId={s.key} name={s.name} size={30} />
             <span className="cycle__list-main">
               {s.href ? <a href={s.href}>{s.name}</a> : <strong>{s.name}</strong>}
               <span className="zro-faint">{s.note ?? s.role}</span>
