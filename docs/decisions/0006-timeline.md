@@ -5,3 +5,5 @@ de relink por `asset_id`. O HUB não converte nem promete fidelidade de efeitos,
 
 **Próximo passo.** Escolher o editor-alvo (Resolve é o candidato: o Synquei já tem ponte com o Resolve Studio) e criar
 testes de ida e volta com projetos reais/anonimizados antes de qualquer conversão automática.
+
+**Atualização (25/10/2026).** Para o Finishing o editor-alvo é o DaVinci Resolve ([ADR 0015](0015-finishing-resolve-powergrade-lut.md)).
