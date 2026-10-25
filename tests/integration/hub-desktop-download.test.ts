@@ -62,7 +62,7 @@ function github({ release = 'ok', assets = ASSETS }: { release?: 'ok' | 'ausente
   return { f, pedidos }
 }
 
-const deps = (g: ReturnType<typeof github>, token: string | undefined = TOKEN): Deps => ({ fetch: g.f, env: { GITHUB_TOKEN: token } })
+const deps = (g: ReturnType<typeof github>, token: string | undefined = TOKEN): Deps => ({ fetch: g.f, env: { GITHUB_TOKEN: token, HUB_DESKTOP_PUBLICO: '1' } })
 const pedido = (caminho: string) => new URL(caminho, 'https://absolutezro.vercel.app')
 
 beforeEach(() => limparCache())
@@ -117,6 +117,18 @@ describe('/baixar/hub com GITHUB_TOKEN', () => {
       versaoJson: true,
       linkAssinado: true,
     })
+  })
+})
+
+describe('/baixar/hub antes de liberar (sem HUB_DESKTOP_PUBLICO)', () => {
+  it('"Em breve" e o instalador volta para /baixar, mesmo com o Release no ar', async () => {
+    const g = github()
+    const fechado: Deps = { fetch: g.f, env: { GITHUB_TOKEN: TOKEN } }
+    expect(await disponibilidade(fechado)).toEqual({ mac: false, windows: false, versao: null, build: null })
+    const r = await respostaInstalador('mac', pedido('/baixar/hub/mac'), fechado)
+    expect(r.headers.get('location')).toContain('/baixar?hub=indisponivel')
+    expect(g.pedidos.some((p) => /assets\/\d+$/.test(p.url))).toBe(false)
+    expect(await (await respostaDiag(fechado)).json()).toMatchObject({ publico: false })
   })
 })
 
