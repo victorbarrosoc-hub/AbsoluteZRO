@@ -46,9 +46,12 @@ const pedir = (caminho, { cookies = {}, ...init } = {}) =>
   })
 
 /** Navegador: /api/zro/entrar → Absolute ZRO falsa → /api/zro/callback. */
-async function fluxo({ pessoa = LIA, volta, adulterar = null, negar = false, trocarState = false, mexerNaIda = null } = {}) {
+async function fluxo({ pessoa = LIA, volta, criar = false, adulterar = null, negar = false, trocarState = false, mexerNaIda = null } = {}) {
   Object.assign(zro.estado, { pessoa, adulterar, negar })
-  const ida = await pedir(`/api/zro/entrar${volta !== undefined ? `?volta=${encodeURIComponent(volta)}` : ''}`)
+  const q = new URLSearchParams()
+  if (volta !== undefined) q.set('volta', volta)
+  if (criar) q.set('criar', '1')
+  const ida = await pedir(`/api/zro/entrar${q.size ? `?${q}` : ''}`)
   assert.equal(ida.status, 302)
   const u = new URL(ida.headers.get('location'))
   assert.equal(u.origin, zro.url)
@@ -81,6 +84,8 @@ describe('entrar', () => {
     assert.equal(eu.status, 200)
     assert.equal(eu.headers.get('cache-control'), 'no-store')
     const j = await eu.json()
+    assert.equal(j.acesso, true, 'synquei está em zro_products')
+    assert.equal(zro.estado.prompt, null, 'entrar não pede cadastro')
     assert.deepEqual(j.pessoa, { nome: 'Lia Produtora', email: 'lia@produtora.com', organizacao: { nome: 'Produtora Lia', papel: 'owner' }, produtos: ['synquei', 'sobedesce'] })
     const bruto = Buffer.from(r.conta.split('.')[0], 'base64url').toString()
     assert.ok(!/id_token|access_token|"at"/.test(bruto), 'nenhum token da Absolute ZRO no cookie')
@@ -102,6 +107,40 @@ describe('entrar', () => {
     const r = await fluxo({ negar: true })
     assert.equal(r.destino, '/app/?zro=recusado')
     assert.equal(r.conta, undefined)
+  })
+})
+
+describe('conta única e direito de uso', () => {
+  test('criar conta: o mesmo fluxo com prompt=create e volta já logado', async () => {
+    const r = await fluxo({ criar: true, volta: '/app/#/ajustes' })
+    assert.equal(zro.estado.prompt, 'create')
+    assert.equal(r.destino, '/app/?zro=ok#/ajustes')
+    const j = await (await pedir('/api/zro/eu', { cookies: { sq_conta: r.conta } })).json()
+    assert.equal(j.ok, true)
+    assert.equal(j.acesso, true)
+  })
+
+  test('criar conta fora do endereço oficial leva o criar=1 junto', async () => {
+    const r = await pedir('/api/zro/entrar?volta=/app/&criar=1', { headers: { 'x-forwarded-host': 'synquei-git-teste.vercel.app', 'x-forwarded-proto': 'https' } })
+    assert.equal(r.status, 307)
+    assert.equal(r.headers.get('location'), 'https://synquei.vercel.app/api/zro/entrar?volta=%2Fapp%2F&criar=1')
+  })
+
+  test('synquei fora de zro_products: entra, mas /eu diz sem acesso e aponta a Absolute ZRO', async () => {
+    const r = await fluxo({ pessoa: { ...LIA, sub: 'zro-222', produtos: ['sobedesce'] } })
+    assert.equal(r.destino, '/app/?zro=ok')
+    const j = await (await pedir('/api/zro/eu', { cookies: { sq_conta: r.conta } })).json()
+    assert.equal(j.ok, true)
+    assert.equal(j.acesso, false)
+    assert.equal(j.ferramentas, 'https://absolutezro.vercel.app/ferramentas')
+    assert.deepEqual(j.pessoa.produtos, ['sobedesce'])
+  })
+
+  test('liberado depois: o novo login reavalia zro_products', async () => {
+    const antes = await fluxo({ pessoa: { ...LIA, produtos: [] } })
+    assert.equal((await (await pedir('/api/zro/eu', { cookies: { sq_conta: antes.conta } })).json()).acesso, false)
+    const depois = await fluxo({ pessoa: { ...LIA, produtos: ['synquei'] } })
+    assert.equal((await (await pedir('/api/zro/eu', { cookies: { sq_conta: depois.conta } })).json()).acesso, true)
   })
 })
 
@@ -165,7 +204,9 @@ describe('sessão', () => {
     const r = await pedir('/api/zro/eu')
     assert.equal(r.status, 401)
     assert.equal(r.headers.get('cache-control'), 'no-store')
-    assert.equal((await r.json()).entrar, '/api/zro/entrar')
+    const j = await r.json()
+    assert.equal(j.entrar, '/api/zro/entrar')
+    assert.equal(j.criar, '/api/zro/entrar?criar=1')
   })
 
   test('sair apaga a sessão; GET não sai; outra origem não derruba', async () => {
