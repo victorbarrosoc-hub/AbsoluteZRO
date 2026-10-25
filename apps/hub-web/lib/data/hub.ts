@@ -105,3 +105,14 @@ export async function profileData(auth: Authenticated) {
     where user_id = ${auth.user.id} and revoked_at is null and expires_at > now() order by last_used_at desc`,
   )
 }
+
+/** Perfil › Apps com acesso (RLS: só os consentimentos da própria pessoa). */
+export async function connectedAppsData(auth: Authenticated) {
+  return db().asUser(
+    { userId: auth.user.id, orgId: auth.session.activeOrgId },
+    (tx) => tx`
+    select c.client_id, c.scopes, c.granted_at, cl.name, cl.product_id from zro.oauth_consents c
+    join zro.oauth_clients cl on cl.id = c.client_id
+    where c.user_id = ${auth.user.id} and c.revoked_at is null order by c.granted_at desc`,
+  )
+}

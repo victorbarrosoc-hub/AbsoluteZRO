@@ -138,3 +138,34 @@ paths:
           '400': { description: assinatura inválida },
           '404': { description: provedor não habilitado },
         }
+  # Login único (OpenID Connect, ADR 0012). Fora de /api: caminhos padrão de provedor OIDC.
+  /.well-known/openid-configuration:
+    get:
+      summary: Descoberta OIDC (issuer, endpoints, ES256, PKCE S256)
+      responses: { '200': { description: documento de descoberta } }
+  /oauth/authorize:
+    get:
+      summary: Início do login (código + PKCE S256 obrigatório). Pede login e permissão; volta ao app com code, state e iss
+      responses: { '307': { description: volta ao redirect_uri cadastrado }, '200': { description: tela de permissão ou de erro } }
+  /oauth/token:
+    post:
+      summary: Troca code (com code_verifier) ou refresh_token por tokens. Apps confidenciais usam client_secret_basic/post
+      requestBody: { content: { application/x-www-form-urlencoded: { schema: { type: object } } } }
+      responses:
+        {
+          '200': { description: access_token (JWT at+jwt, 10 min), id_token, refresh_token rotativo },
+          '400': { description: invalid_request | invalid_grant | unsupported_grant_type },
+          '401': { description: invalid_client },
+        }
+  /oauth/userinfo:
+    get:
+      summary: Dados da pessoa (sub, email, name, zro_org, zro_products) pelo access token Bearer
+      responses: { '200': { description: claims }, '401': { description: invalid_token } }
+  /oauth/jwks:
+    get:
+      summary: Chaves públicas (ES256) para conferir tokens
+      responses: { '200': { description: JWKS } }
+  /oauth/revoke:
+    post:
+      summary: Revoga refresh token (RFC 7009); sempre 200
+      responses: { '200': { description: ok } }

@@ -145,7 +145,14 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - `tests/integration/downloads.test.ts`: catálogo inteiro, só HTTPS em domínios oficiais, nada para instalar no que está
   em desenvolvimento. E2E com axe em `/baixar` e `/downloads` nos dois temas: 10/10.
 
-## O que NÃO foi validado
+## Login único (25/10/2026)
+
+- `tests/integration/oidc.test.ts` (8): retorno só cadastrado (sem redirecionamento aberto), loopback por porta,
+  PKCE obrigatório, troca com organização e produtos contratados, verifier/segredo errados, código reapresentado
+  revoga o refresh, rotação com detecção de reuso, remoção do app no Perfil, isolamento (`zro_app` não lê segredo,
+  códigos, refresh tokens nem a chave).
+- `tests/e2e/sso.spec.ts`: do app ao HUB, criar conta, criar organização, permitir, voltar com código, trocar por
+  tokens, userinfo, reautorização silenciosa, descoberta, JWKS e retorno malicioso recusado; axe na tela de permissão.
 
 - Deploy real (Vercel, Supabase novo, domínio): aguardando autorização.
 - CI no GitHub: roda no primeiro push deste branch.

@@ -5,12 +5,14 @@ import { PASSWORD_MIN } from '@zro/auth'
 import { Field } from '@zro/ui'
 import { ActionForm } from '@/components/action-form'
 import { signupAction } from '@/lib/actions/auth'
+import { safeNext } from '@/lib/actions/helpers'
 import { getAuth } from '@/lib/session'
 
 export const metadata: Metadata = { title: 'Criar conta' }
 
-export default async function CriarConta() {
-  if (await getAuth()) redirect('/inicio')
+export default async function CriarConta({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+  const next = safeNext((await searchParams).next)
+  if (await getAuth()) redirect(next ?? '/inicio')
   return (
     <>
       <div className="stack">
@@ -18,6 +20,7 @@ export default async function CriarConta() {
         <p className="zro-mute">A conta é gratuita. Ter conta não libera as ferramentas: cada uma depende do plano da organização.</p>
       </div>
       <ActionForm action={signupAction} submit="Criar conta">
+        <input type="hidden" name="next" value={next ?? ''} />
         <Field label="Nome" htmlFor="name">
           <input className="zro-input" id="name" name="name" autoComplete="name" required maxLength={120} />
         </Field>

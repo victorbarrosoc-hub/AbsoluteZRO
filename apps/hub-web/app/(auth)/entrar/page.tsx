@@ -4,13 +4,14 @@ import { redirect } from 'next/navigation'
 import { Field, Notice } from '@zro/ui'
 import { ActionForm } from '@/components/action-form'
 import { loginAction } from '@/lib/actions/auth'
+import { safeNext } from '@/lib/actions/helpers'
 import { getAuth } from '@/lib/session'
 
 export const metadata: Metadata = { title: 'Entrar' }
 
 export default async function Entrar({ searchParams }: { searchParams: Promise<{ next?: string; senha?: string }> }) {
-  if (await getAuth()) redirect('/inicio')
   const sp = await searchParams
+  if (await getAuth()) redirect(safeNext(sp.next) ?? '/inicio')
   return (
     <>
       <div className="stack">
@@ -29,7 +30,7 @@ export default async function Entrar({ searchParams }: { searchParams: Promise<{
       </ActionForm>
       <div className="row row--between zro-faint">
         <Link href="/esqueci-a-senha">Esqueci a senha</Link>
-        <Link href="/criar-conta">Criar conta</Link>
+        <Link href={sp.next ? `/criar-conta?next=${encodeURIComponent(sp.next)}` : '/criar-conta'}>Criar conta</Link>
       </div>
       <p className="zro-faint">Os apps de cada marca (SOBEDESCE, Synquei, NOSSOM…) ainda têm login próprio. O login único vale para o HUB.</p>
     </>

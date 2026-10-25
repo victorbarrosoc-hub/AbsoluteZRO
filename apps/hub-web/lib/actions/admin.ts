@@ -1,7 +1,9 @@
 'use server'
 import { revalidatePath } from 'next/cache'
 import { assignPlan, cancelManualSubscription, createPlanVersion, grantEntitlement, publishPlanVersion, revokeEntitlement } from '@zro/billing'
+import { OAuthError, registerClient } from '@zro/auth'
 import { requirePlatformAdmin } from '@zro/core'
+import { pgErrorCode, PG } from '@zro/db'
 import { DomainError } from '@zro/observability'
 import type { FormState } from '@/components/action-form'
 import { db, getAuth } from '../session'
@@ -130,6 +132,56 @@ export async function publishPlanAction(_: FormState, fd: FormData): Promise<For
     await db().asSystem('admin: publicar plano', (tx) => publishPlanVersion(tx, actor, str(fd, 'planId')))
     revalidatePath('/admin')
     return { ok: 'Versão publicada. As anteriores ficam só para quem já assinou.' }
+  } catch (e) {
+    return toFormError(e)
+  }
+}
+
+/** Login único: cadastra um app como cliente. O segredo aparece uma vez, aqui. */
+export async function registerOAuthClientAction(_: FormState, fd: FormData): Promise<FormState> {
+  try {
+    const actor = await adminActor(fd)
+    const kind = str(fd, 'kind') === 'public' ? 'public' : 'confidential'
+    const r = await db().asSystem('admin: cadastrar app no login único', async (tx) => {
+      const out = await registerClient(tx, {
+        id: str(fd, 'clientId'),
+        name: str(fd, 'name'),
+        productId: str(fd, 'productId') || null,
+        kind,
+        redirectUris: str(fd, 'redirectUris').split(/\s+/),
+        allowLoopback: fd.get('allowLoopback') === 'on',
+        createdBy: actor.userId,
+      })
+      await tx`insert into zro.audit_logs (actor_user_id, actor_kind, action, target_type, target_id, metadata)
+               values (${actor.userId}, 'admin', 'oauth_client.created', 'oauth_client', ${out.clientId}, ${tx.json({ reason: actor.reason, kind })})`
+      return out
+    })
+    revalidatePath('/admin')
+    return {
+      ok: r.clientSecret
+        ? `App cadastrado. client_id: ${r.clientId} · client_secret (copie agora, não aparece de novo): ${r.clientSecret}`
+        : `App cadastrado. client_id: ${r.clientId} (app público: sem segredo, usa PKCE).`,
+    }
+  } catch (e) {
+    if (e instanceof OAuthError) return { error: e.description }
+    if (pgErrorCode(e) === PG.uniqueViolation) return { error: 'Já existe um app com esse identificador.' }
+    return toFormError(e)
+  }
+}
+
+export async function setOAuthClientStatusAction(_: FormState, fd: FormData): Promise<FormState> {
+  try {
+    const actor = await adminActor(fd)
+    const status = str(fd, 'status') === 'active' ? 'active' : 'disabled'
+    const id = str(fd, 'clientId')
+    await db().asSystem('admin: status de app no login único', async (tx) => {
+      await tx`update zro.oauth_clients set status = ${status} where id = ${id}`
+      if (status === 'disabled') await tx`update zro.oauth_refresh_tokens set revoked_at = now() where client_id = ${id} and revoked_at is null`
+      await tx`insert into zro.audit_logs (actor_user_id, actor_kind, action, target_type, target_id, metadata)
+               values (${actor.userId}, 'admin', ${`oauth_client.${status}`}, 'oauth_client', ${id}, ${tx.json({ reason: actor.reason })})`
+    })
+    revalidatePath('/admin')
+    return { ok: status === 'active' ? 'App reativado.' : 'App desativado e sessões dele encerradas.' }
   } catch (e) {
     return toFormError(e)
   }

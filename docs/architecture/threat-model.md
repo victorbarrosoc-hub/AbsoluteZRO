@@ -19,6 +19,10 @@
 | Segredos no repositório público | Chave anon/produção das cópias            | Saneamento no snapshot e `scan-secrets.mjs` no CI                                                                                                | CI                                 |
 | Dependência vulnerável          | Next com RCE publicado                    | Next 16.4.3 (corrige GHSA-2464, GHSA-p3m5, GHSA-673q), `npm audit` limpo, Dependabot                                                             | `docs/validation.md`               |
 | Console exposto                 | Usuário comum abrindo /admin              | 404 no layout **e** na página (renderização paralela), papel de plataforma + e-mail confirmado                                                   | E2E                                |
+| Roubo de código OAuth           | Interceptar o retorno do app              | PKCE S256 obrigatório, código de 60 s e uso único; reuso revoga o que ele emitiu                                                                 | `oidc.test.ts`                     |
+| Redirecionamento aberto         | redirect_uri apontando para outro site    | Só retornos cadastrados (https, loopback ou esquema do app); erro de cliente/retorno não redireciona                                             | `oidc.test.ts`, E2E `sso.spec.ts`  |
+| Refresh token vazado            | Reusar token antigo                       | Rotação a cada uso; reapresentar um já trocado revoga a família; remover o app no Perfil derruba tudo                                            | `oidc.test.ts`                     |
+| Chave de assinatura exposta     | Ler a chave privada pelo app              | `zro.oidc_keys` sem acesso para `zro_app`; só o sistema lê                                                                                       | `oidc.test.ts`                     |
 
-Pendentes (roadmap): 2FA, rotação de chaves de assinatura de webhook, limites de taxa na API além do login, CSP com
+Pendentes (roadmap): limite de tentativas no /oauth/token, logout federado, 2FA, rotação de chaves de assinatura de webhook, limites de taxa na API além do login, CSP com
 nonce para scripts, varredura de dependências em PR (CodeQL/Snyk) e testes de carga da fila.

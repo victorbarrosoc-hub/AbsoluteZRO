@@ -14,3 +14,6 @@ export function toFormError(err: unknown): FormState {
 }
 
 export const str = (fd: FormData, k: string) => String(fd.get(k) ?? '').trim()
+
+/** Volta só para caminho do próprio HUB (nunca //host nem /\\host, que o navegador trata como outro site). */
+export const safeNext = (n: string | null | undefined): string | null => (n && n.startsWith('/') && !n.startsWith('//') && !n.includes('\\') ? n : null)
