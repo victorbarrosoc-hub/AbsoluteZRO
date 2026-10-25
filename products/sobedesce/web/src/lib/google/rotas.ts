@@ -6,10 +6,10 @@ import { COOKIE_APARELHO, conferirAparelho, opcoesCookieAparelho } from "@/lib/a
 import { autenticar, COOKIE_SESSAO, criarSessao, opcoesCookieSessao } from "@/lib/auth/sessao";
 import { voltaSegura } from "@/lib/auth/volta";
 import { depoisDaResposta, type Depois } from "@/lib/depois";
-import { ipDe, lerCookie, lugarDe, origemDoPedido, redirecionar, serializarCookie } from "@/lib/http";
+import { lerCookie, lugarDe, origemDoPedido, redirecionar, serializarCookie } from "@/lib/http";
 import { cookieSeguro } from "@/lib/site";
 import { googleConfigurado, redirectUri } from "./config";
-import { criarContaComGoogle, donoDaContaGoogle, vincularConta } from "./contas";
+import { donoDaContaGoogle, vincularConta } from "./contas";
 import { chaveConfigurada } from "./cripto";
 import { abrirEstado, COOKIE_OAUTH, DURACAO_OAUTH_S, novoState, selarEstado, stateConfere, type ModoGoogle } from "./estado";
 import { escopoTemDrive, perfil, pkce, trocarCodigo, urlDeConsentimento, type PerfilGoogle, type Tokens } from "./oauth";
@@ -44,6 +44,8 @@ export async function conectar(req: Request): Promise<Response> {
   if (modo === "vincular") {
     const atual = await autenticar({ cookie: lerCookie(req, COOKIE_SESSAO) });
     if (!atual) return redirecionar(new URL(comParametro("/entrar", "volta", volta), url.origin));
+    // Conectar Drive é função da conta: sem a SOBEDESCE liberada pela Absolute ZRO, não começa.
+    if (!atual.liberado) return redirecionar(new URL(paginaDeErro(modo, volta, "zro_sem_acesso"), url.origin));
     usuarioId = atual.usuario.id;
   }
 
@@ -100,29 +102,21 @@ export async function callback(req: Request, depois: Depois = depoisDaResposta):
   }
 
   // Continuar com Google: o Google de entrar de uma conta entra nela; um Google que só está conectado como Drive
-  // não abre a conta (revisão A3); um Google novo cria a conta SOBEDESCE com este Drive.
+  // não abre a conta (revisão A3); um Google sem conta SOBEDESCE não cria nada: conta nova só pela Absolute ZRO.
   const entrada = await donoDaContaGoogle(quem, temDrive ? tokens : { ...tokens, refresh: null });
   if (entrada.tipo === "nao_e_login") return falhar("google_nao_e_login");
-  let usuarioId = entrada.tipo === "ok" ? entrada.usuarioId : null;
-  let criou = false;
-  if (!usuarioId) {
-    if (!temDrive) return falhar("google_sem_drive");
-    if (!tokens.refresh) return falhar("google_erro");
-    const novo = await criarContaComGoogle(quem, { ...tokens, refresh: tokens.refresh }, ipDe(req.headers), depois);
-    if (!novo.ok) return falhar(novo.erro);
-    usuarioId = novo.usuarioId;
-    criou = true;
-  }
+  if (entrada.tipo === "nao_vinculada") return falhar("google_sem_conta");
+  const usuarioId = entrada.usuarioId;
   const sessao = await criarSessao(usuarioId, "web");
   const o = opcoesCookieSessao(seguro);
   const cookieSessao = serializarCookie(COOKIE_SESSAO, sessao.token, { maxAge: o.maxAge, path: o.path, secure: o.secure });
-  // Aparelho que a conta ainda não usou: aviso de entrada nova (conta que acabou de nascer só aprende o aparelho).
+  // Aparelho que a conta ainda não usou: aviso de entrada nova.
   const aparelho = await conferirAparelho({
     usuarioId,
     cookie: lerCookie(req, COOKIE_APARELHO),
     via: "google",
     entrada: { userAgent: req.headers.get("user-agent"), lugar: lugarDe(req.headers) },
-    avisar: !criou,
+    avisar: true,
     depois,
   });
   const cookies = [cookieSessao];
@@ -132,6 +126,6 @@ export async function callback(req: Request, depois: Depois = depoisDaResposta):
   }
   // No celular, quem só entrou (sem pedir outra página) vai direto para o envio.
   const celular = /iPhone|iPad|iPod|Android|Mobile/i.test(req.headers.get("user-agent") ?? "");
-  const destino = volta === "/conta" && celular ? "/app/" : criou ? comParametro(volta, "google", "ok") : volta;
+  const destino = volta === "/conta" && celular ? "/app/" : volta;
   return ir(destino, cookies);
 }

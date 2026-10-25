@@ -1,13 +1,17 @@
 // GET /api/zro/entrar?volta=/app/%23/ajustes — começa o "Entrar com Absolute ZRO". O botão Abrir do HUB também chega
 // por aqui: quem já está logado na Absolute ZRO volta ao app logado, sem tela de permissão (app da família).
+// GET /api/zro/entrar?criar=1 — "Criar conta": o mesmo fluxo com prompt=create. A conta nasce na Absolute ZRO (o
+// Synquei não tem cadastro próprio) e a pessoa volta ao app já logada.
 
 import { clientId, comAviso, configurado, consulta, cookie, COOKIE_IDA, desafioPkce, descobrir, ESCOPOS, IDA_S, novoValor, origemDoPedido, origemPermitida, redirecionar, retorno, selar, voltaSegura } from '../_zro.js'
 
 export default async function entrar(req, res) {
-  const volta = voltaSegura(consulta(req).get('volta'))
+  const q = consulta(req)
+  const volta = voltaSegura(q.get('volta'))
+  const criar = q.get('criar') === '1'
   // A Absolute ZRO volta para o endereço cadastrado: o cookie da ida precisa nascer nele.
   const origem = origemPermitida(req)
-  if (origemDoPedido(req) !== origem) return redirecionar(res, 307, `${origem}/api/zro/entrar?volta=${encodeURIComponent(volta)}`)
+  if (origemDoPedido(req) !== origem) return redirecionar(res, 307, `${origem}/api/zro/entrar?volta=${encodeURIComponent(volta)}${criar ? '&criar=1' : ''}`)
   if (!configurado()) return redirecionar(res, 303, comAviso(volta, 'config'))
 
   const state = novoValor()
@@ -24,6 +28,7 @@ export default async function entrar(req, res) {
     u.searchParams.set('nonce', nonce)
     u.searchParams.set('code_challenge', desafioPkce(verificador))
     u.searchParams.set('code_challenge_method', 'S256')
+    if (criar) u.searchParams.set('prompt', 'create')
     destino = u.toString()
   } catch {
     return redirecionar(res, 303, comAviso(volta, 'erro'))

@@ -1,5 +1,6 @@
 // GET /api/zro/eu — quem está no app: 200 com o perfil, 401 sem sessão, 503 sem configuração. Nunca vai para cache.
-import { COOKIE_SESSAO, abrir, configurado, json, lerCookie } from './_zro.mjs'
+// `acesso` diz se a organização ativa liberou o TPeasy (zro_products, reavaliado a cada entrada).
+import { COOKIE_SESSAO, abrir, configurado, json, lerCookie, temAcesso } from './_zro.mjs'
 
 export default function eu(req, res) {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -16,5 +17,6 @@ export default function eu(req, res) {
     email: s.email,
     organizacao: s.organizacao ?? null,
     produtos: Array.isArray(s.produtos) ? s.produtos : [],
+    acesso: temAcesso(s.produtos),
   })
 }

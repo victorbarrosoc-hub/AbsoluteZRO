@@ -33,10 +33,10 @@ export default async function BoasVindas({ searchParams }: { searchParams: Promi
         <ActionForm action={createOrgAction} submit="Criar e continuar">
           <input type="hidden" name="next" value={next ?? ''} />
           <Field label="Nome" htmlFor="name" hint="Ex.: o nome da produtora ou o seu nome.">
-            <input className="zro-input" id="name" name="name" required maxLength={120} />
+            <input className="zro-input" id="name" name="name" required maxLength={120} defaultValue={next ? auth.user.displayName : undefined} />
           </Field>
           <Field label="Tipo" htmlFor="kind">
-            <select className="zro-select" id="kind" name="kind" defaultValue="team">
+            <select className="zro-select" id="kind" name="kind" defaultValue={next ? 'person' : 'team'}>
               <option value="person">Só eu</option>
               <option value="team">Equipe</option>
               <option value="company">Empresa</option>

@@ -7,7 +7,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 import { emailsAdmin } from "@/lib/admin";
 import { enviarEmail, type Email } from "./enviar";
-import { emailAdminContaNova, emailAdminErros } from "./modelos";
+import { emailAdminContaNova, emailAdminErros, type ComoCriou } from "./modelos";
 
 /** A partir de quantos erros no dia (somando os computadores da pessoa) o admin recebe o aviso. */
 export const ERROS_PARA_AVISAR = 10;
@@ -28,8 +28,8 @@ async function paraTodos(nome: string, chave: string, montar: (para: string) => 
   }
 }
 
-export function avisarAdminContaNova(u: { id: string; nome: string; email: string }, comGoogle: boolean): Promise<void> {
-  return paraTodos("conta nova", `conta:${u.id}`, (para) => emailAdminContaNova(para, { nome: u.nome, email: u.email, quando: new Date(), comGoogle }));
+export function avisarAdminContaNova(u: { id: string; nome: string; email: string }, como: ComoCriou): Promise<void> {
+  return paraTodos("conta nova", `conta:${u.id}`, (para) => emailAdminContaNova(para, { nome: u.nome, email: u.email, quando: new Date(), como }));
 }
 
 /** Depois de gravar o uso do dia: soma os erros da pessoa naquele dia e avisa uma vez se passou do limite. */

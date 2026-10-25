@@ -9,7 +9,8 @@ export function LogoZro({ className }: { className?: string }) {
 
 /**
  * Link para o login único da Absolute ZRO (navegação de página inteira: <a>, não <Link>).
- * "entrar": entra na conta SOBEDESCE ligada (ou cria uma). "vincular": liga a Absolute ZRO à conta aberta.
+ * "entrar": entra na conta SOBEDESCE ligada (ou cria uma). "criar": o mesmo, abrindo direto a tela de criar conta
+ * da Absolute ZRO. "vincular": liga a Absolute ZRO à conta aberta.
  */
 export function BotaoZro({
   modo,
@@ -19,7 +20,7 @@ export function BotaoZro({
   size = "lg",
   className,
 }: {
-  modo: "entrar" | "vincular";
+  modo: "entrar" | "criar" | "vincular";
   volta?: string;
   children: React.ReactNode;
   variant?: "primary" | "secondary";

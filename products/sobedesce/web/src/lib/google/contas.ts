@@ -11,7 +11,6 @@ import { conferirSenha } from "@/lib/auth/senha";
 import { novoId } from "@/lib/auth/tokens";
 import { emSegundoPlano, type Depois } from "@/lib/depois";
 import { avisarGoogleDeEntrar } from "@/lib/email/avisos";
-import { avisarAdminContaNova } from "@/lib/email/admin";
 import { abrir, ChaveErrada, selar } from "./cripto";
 import { GoogleError } from "./erros";
 import { renovarAcesso, revogar, type PerfilGoogle, type Tokens } from "./oauth";
@@ -57,13 +56,12 @@ export type ResultadoVinculo = { ok: true; conta: Conta; nova: boolean } | { ok:
  * Grava a conta Google do consentimento na conta SOBEDESCE `usuarioId`.
  * Já é desta conta: atualiza tokens e perfil (é o "Reconectar"). É de outra: recusa sem gravar nada.
  * O `email_verified` do Google é gravado a cada vez (admin exige e-mail confirmado).
- * Um Drive novo nunca vira porta de entrada sozinho: `login` só no "Continuar com Google" que cria a conta.
+ * Um Drive novo nunca vira porta de entrada sozinho: só vira quando a pessoa escolhe o Google de entrar em /conta.
  */
 export async function vincularConta(
   usuarioId: string,
   p: PerfilGoogle,
   tokens: Tokens & { refresh: string },
-  opcoes: { login?: boolean } = {},
 ): Promise<ResultadoVinculo> {
   const existente = await db.query.contasGoogle.findFirst({ where: eq(contasGoogle.googleSub, p.sub) });
   if (existente && existente.usuarioId !== usuarioId) return { ok: false, erro: "google_outra_conta" };
@@ -85,7 +83,7 @@ export async function vincularConta(
       nome: p.nome,
       fotoUrl: p.fotoUrl,
       emailVerificado: p.emailVerificado,
-      loginPermitido: opcoes.login === true,
+      loginPermitido: false,
       ...camposDosTokens(id, tokens, tokens.refresh),
     })
     .onConflictDoNothing({ target: contasGoogle.googleSub })
@@ -102,8 +100,8 @@ export async function vincularConta(
 export type ResultadoEntrada = { tipo: "ok"; usuarioId: string } | { tipo: "nao_vinculada" } | { tipo: "nao_e_login" };
 
 /**
- * "Entrar com Google" (revisão A3): só entra pelo Google marcado para entrar (`loginPermitido`): o que criou a conta
- * ou o escolhido em /conta. Um Drive conectado a mais (de um cliente, de uma equipe) não abre a conta: "nao_e_login",
+ * "Entrar com Google" (revisão A3): só entra pelo Google marcado para entrar (`loginPermitido`): o escolhido em /conta
+ * (ou, nas contas antigas, o que criou a conta). Um Drive conectado a mais (de um cliente, de uma equipe) não abre a conta: "nao_e_login",
  * sem mexer em nada. Pelo Google de entrar, aproveita o consentimento para renovar os tokens (tira o "reconectar").
  */
 export async function donoDaContaGoogle(p: PerfilGoogle, tokens: Tokens): Promise<ResultadoEntrada> {
@@ -184,45 +182,11 @@ export async function trocarGoogleDeEntrar(entrada: {
   return { ok: true, conta };
 }
 
-/** Marca de conta criada pelo Google: não é um hash, então nenhuma senha confere até a pessoa criar uma (Esqueci a senha). */
-export const SEM_SENHA = "google";
-
-export type ResultadoCriacao = { ok: true; usuarioId: string } | { ok: false; erro: "google_email_em_uso" | "google_email_nao_verificado" | "google_devagar" };
-
 /**
- * "Continuar com Google" de quem ainda não tem conta: cria a conta SOBEDESCE com o nome e o e-mail
- * do Google e já vincula esse Drive. E-mail que já tem conta (criada com senha) não é tomado: a pessoa
- * entra com a senha e conecta o Drive em Sua conta.
+ * Marca das contas criadas pelo antigo "Continuar com Google" (hoje conta nova só nasce pela Absolute ZRO): não é
+ * um hash, então nenhuma senha confere até a pessoa criar uma (Esqueci a senha).
  */
-export async function criarContaComGoogle(
-  p: PerfilGoogle,
-  tokens: Tokens & { refresh: string },
-  ip: string,
-  depois: Depois = emSegundoPlano,
-): Promise<ResultadoCriacao> {
-  if (!p.emailVerificado) return { ok: false, erro: "google_email_nao_verificado" };
-  const chave = `criar:${ip}`;
-  if (!(await dentroDoLimite(chave, REGRAS.criarConta))) return { ok: false, erro: "google_devagar" };
-  await registrarTentativa(chave);
-
-  const usuarioId = novoId();
-  const nome = (p.nome?.trim() || p.email.split("@")[0]).slice(0, 80);
-  const criado = await db
-    .insert(usuarios)
-    .values({ id: usuarioId, email: p.email, nome, senhaHash: SEM_SENHA, ultimoLoginEm: new Date() })
-    .onConflictDoNothing({ target: usuarios.email })
-    .returning({ id: usuarios.id });
-  if (criado.length === 0) return { ok: false, erro: "google_email_em_uso" };
-  // O Google que cria a conta é o de entrar.
-  const v = await vincularConta(usuarioId, p, tokens, { login: true });
-  if (!v.ok) {
-    // Corrida rara: outra aba vinculou esta conta Google a outro usuário no meio do caminho.
-    await db.delete(usuarios).where(eq(usuarios.id, usuarioId));
-    return { ok: false, erro: "google_email_em_uso" };
-  }
-  depois(() => avisarAdminContaNova({ id: usuarioId, nome, email: p.email }, true));
-  return { ok: true, usuarioId };
-}
+export const SEM_SENHA = "google";
 
 export type ResultadoRemocao = { ok: true } | { ok: false; erro: "nao_encontrada" | "google_de_entrar" };
 

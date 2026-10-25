@@ -10,7 +10,7 @@ import { after } from "next/server";
 import { apagarCookieSessao, gravarCookieSessao, ipAtual, marcarAparelho, origemDaAcaoConfere, usuarioAtual } from "@/lib/auth/atual";
 import { apagarConta } from "@/lib/auth/apagar";
 import { frase as fraseEncerrado } from "@/lib/auth/encerrar";
-import { criarConta, entrarComSenha, trocarNome, trocarSenha } from "@/lib/auth/contas";
+import { entrarComSenha, trocarNome, trocarSenha } from "@/lib/auth/contas";
 import { dentroDoLimite, MENSAGEM_LIMITE, REGRAS, registrarTentativa } from "@/lib/auth/limite";
 import { COOKIE_SESSAO, revogarDispositivo, revogarPorToken, revogarSessaoDe } from "@/lib/auth/sessao";
 import { pedirPrimeiraSenha, pedirRedefinicao, redefinirSenha } from "@/lib/auth/redefinir";
@@ -22,7 +22,8 @@ import { removerConta, trocarGoogleDeEntrar } from "@/lib/google/contas";
 import { ehAdmin } from "@/lib/admin";
 import { avisarMacsTravados } from "@/lib/atualizar-mac";
 import { ehPlano, trocarPlano } from "@/lib/recursos";
-import { desligarZro } from "@/lib/zro/contas";
+import { MENSAGEM_SEM_ACESSO } from "@/lib/zro/acesso";
+import { CRIAR_SO_PELA_ZRO, desligarZro } from "@/lib/zro/contas";
 
 export type EstadoForm = {
   erro?: string;
@@ -47,13 +48,12 @@ export async function acaoEntrar(_: EstadoForm, fd: FormData): Promise<EstadoFor
   redirect(voltaSegura(texto(fd, "volta")));
 }
 
-export async function acaoCriarConta(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
-  if (!(await origemDaAcaoConfere())) return RECUSADO;
-  const r = await criarConta({ nome: texto(fd, "nome"), email: texto(fd, "email"), senha: texto(fd, "senha"), ip: await ipAtual(), depois: depoisDaResposta });
-  if (!r.ok) return { erro: r.mensagem, campo: r.campo, valores: { nome: texto(fd, "nome"), email: texto(fd, "email") } };
-  await gravarCookieSessao(r.token);
-  await marcarAparelho(r.usuario.id, { via: "senha", avisar: false });
-  redirect(voltaSegura(texto(fd, "volta")));
+/**
+ * Conta nova só nasce pela Absolute ZRO (/criar-conta leva para lá). A ação antiga de e-mail e senha fica
+ * respondendo, mas recusa sempre, sem olhar o que veio: um formulário velho aberto ou um POST direto não criam conta.
+ */
+export async function acaoCriarConta(): Promise<EstadoForm> {
+  return { erro: CRIAR_SO_PELA_ZRO };
 }
 
 export async function acaoSair(): Promise<void> {
@@ -140,6 +140,7 @@ export async function acaoDesconectarComputador(sessaoId: string): Promise<Estad
 export async function acaoLiberarComputador(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
   const atual = await sessaoDoSite();
   if (!atual) return RECUSADO;
+  if (!atual.liberado) return { erro: MENSAGEM_SEM_ACESSO };
   const codigo = normalizarCodigo(texto(fd, "codigo"));
   const chave = `disp-codigo:${await ipAtual()}`;
   if (!(await dentroDoLimite(chave, REGRAS.dispositivoCodigo))) return { erro: MENSAGEM_LIMITE };

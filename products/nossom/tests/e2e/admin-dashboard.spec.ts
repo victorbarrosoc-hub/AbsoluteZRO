@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect, signInExisting } from './fixtures';
 import AxeBuilder from '@axe-core/playwright';
 test('administrator manages a plan in a wide, responsive dashboard; ordinary users cannot open it', async ({
   page,
@@ -8,19 +8,7 @@ test('administrator manages a plan in a wide, responsive dashboard; ordinary use
   expect((await page.request.get('/api/admin')).status()).toBe(403);
   expect((await page.request.get('/api/admin/billing')).status()).toBe(403);
   const credentials = { email: 'victorbarrosoc@gmail.com', password: 'test-only-password' };
-  const registered = await page.request.post('/api/account', {
-    headers: { Origin: 'http://localhost:3000' },
-    data: { action: 'register', name: 'Administrador', ...credentials },
-  });
-  if (!registered.ok())
-    expect(
-      (
-        await page.request.post('/api/account', {
-          headers: { Origin: 'http://localhost:3000' },
-          data: { action: 'login', ...credentials },
-        })
-      ).status(),
-    ).toBe(200);
+  await signInExisting(page.request, { ...credentials, name: 'Administrador' });
   const data = {
     plans: [
       { id: 'free', name: 'Grátis', monthly_seconds: 300, price_cents: 0 },

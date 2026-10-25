@@ -16,7 +16,7 @@ export function AccountForm({
   next: string;
   initialMode?: 'login' | 'register';
   expandable?: boolean;
-  /** Mostra "Continuar com Absolute ZRO" (só quando o servidor tem o cliente configurado). */
+  /** Mostra "Entrar com Absolute ZRO" (só quando o servidor tem o cliente configurado). */
   zro?: boolean;
   /** Aviso vindo da volta da Absolute ZRO. */
   notice?: string;
@@ -36,12 +36,12 @@ export function AccountForm({
   }, [expandable]);
   const [showPassword, setShowPassword] = useState(false);
   const [mode, setMode] = useState<'login' | 'register'>(initialMode),
-    [name, setName] = useState(''),
     [email, setEmail] = useState(''),
     [password, setPassword] = useState(''),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState(notice),
-    [confirmation, setConfirmation] = useState(false);
+    [error, setError] = useState(notice);
+  // Conta nova só nasce pela Absolute ZRO; o HUB abre direto a tela de criar conta.
+  const createHref = '/api/zro/entrar?modo=criar&volta=' + encodeURIComponent(next);
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (busy) return;
@@ -51,15 +51,10 @@ export function AccountForm({
       const response = await fetch('/api/account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: mode, name, email, password }),
+        body: JSON.stringify({ action: 'login', email, password }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Não foi possível entrar.');
-      if (result.confirmationRequired) {
-        setConfirmation(true);
-        setBusy(false);
-        return;
-      }
       // A full navigation clears the previous user's client state and any active workers.
       location.assign(next);
     } catch (e) {
@@ -89,7 +84,7 @@ export function AccountForm({
       <h1>{mode === 'register' ? 'Crie sua conta.' : 'Que bom ter você aqui.'}</h1>
       <p>
         {mode === 'register'
-          ? 'Seu assistente já vem conectado. Comece com 5 minutos de restauração por mês.'
+          ? 'A conta do NOSSOM é a sua conta Absolute ZRO.'
           : 'Entre para continuar seus projetos e conversar com a IA da NOSSOM.'}
       </p>
       {expandable && !expanded && (
@@ -120,7 +115,6 @@ export function AccountForm({
                   setPassword('');
                   setShowPassword(false);
                   setError('');
-                  setConfirmation(false);
                 }}
               >
                 <span className="account-mode-text">
@@ -129,111 +123,111 @@ export function AccountForm({
               </button>
             ))}
           </div>
-          <motion.form
-            key={mode}
-            onSubmit={submit}
-            initial={reduced ? false : { opacity: 0, x: mode === 'register' ? 18 : -18 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.26, ease: [0.2, 0.8, 0.2, 1] }}
-          >
-            {mode === 'register' && (
-              <label>
-                Nome
-                <input
-                  name="name"
-                  autoComplete="nickname"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  minLength={2}
-                  maxLength={60}
-                  required
-                  disabled={busy}
-                  placeholder="Como podemos chamar você?"
-                />
-              </label>
-            )}
-            <label>
-              E-mail
-              <input
-                name="email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                maxLength={254}
-                required
-                disabled={busy}
-                autoCapitalize="none"
-                spellCheck={false}
-                placeholder="voce@exemplo.com"
-              />
-            </label>
-            <label htmlFor={id + '-password'}>
-              Senha
-              <span className="account-password">
-                <input
-                  id={id + '-password'}
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  minLength={mode === 'register' ? 8 : 1}
-                  maxLength={128}
-                  required
-                  disabled={busy}
-                  placeholder={mode === 'register' ? 'Pelo menos 8 caracteres' : 'Sua senha'}
-                />
-                <button
-                  type="button"
-                  className="account-password-toggle"
-                  aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                  aria-pressed={showPassword}
-                  onClick={() => setShowPassword(!showPassword)}
-                  disabled={busy}
-                >
-                  {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                </button>
-              </span>
-            </label>
-            {confirmation && (
-              <p className="account-confirmation" role="status">
-                Enviamos um link de confirmação para o seu e-mail. Abra o link e depois entre com
-                sua senha.
-              </p>
-            )}
-            {error && (
-              <p className="account-error" role="alert">
-                {error}
-              </p>
-            )}
-            <motion.button
-              className="button primary"
-              disabled={busy}
-              whileTap={reduced ? undefined : { scale: 0.98 }}
-            >
-              {busy ? (
-                <LoaderCircle size={18} className="spin" />
-              ) : (
-                <>
-                  {mode === 'register' ? 'Criar conta e entrar' : 'Entrar no estúdio'}
-                  <ArrowRight size={17} />
-                </>
-              )}
-            </motion.button>
-          </motion.form>
-          {zro && (
-            <div className="account-zro">
-              <span className="account-zro-divider">ou</span>
+          {zro && mode === 'login' && (
+            // Caminho recomendado: a conta Absolute ZRO. E-mail e senha ficam para contas antigas.
+            <div className="account-zro account-zro-first">
               <a
-                className="button secondary account-zro-button"
+                className="button primary account-zro-button"
                 href={'/api/zro/entrar?volta=' + encodeURIComponent(next)}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/absolute-zro-o-alpha.webp" alt="" width={20} height={20} />
-                Continuar com Absolute ZRO
+                Entrar com Absolute ZRO
               </a>
+              <span className="account-zro-divider">ou com e-mail e senha</span>
             </div>
+          )}
+          {mode === 'register' ? (
+            <motion.div
+              key="register"
+              className="account-zro-create"
+              initial={reduced ? false : { opacity: 0, x: 18 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.26, ease: [0.2, 0.8, 0.2, 1] }}
+            >
+              {error && (
+                <p className="account-error" role="alert">
+                  {error}
+                </p>
+              )}
+              <a className="button primary account-zro-create-button" href={createHref}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/absolute-zro-o-alpha.webp" alt="" width={20} height={20} />
+                Criar conta com a Absolute ZRO
+              </a>
+            </motion.div>
+          ) : (
+            <motion.form
+              key={mode}
+              onSubmit={submit}
+              initial={reduced ? false : { opacity: 0, x: -18 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.26, ease: [0.2, 0.8, 0.2, 1] }}
+            >
+              <label>
+                E-mail
+                <input
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  maxLength={254}
+                  required
+                  disabled={busy}
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  placeholder="voce@exemplo.com"
+                />
+              </label>
+              <label htmlFor={id + '-password'}>
+                Senha
+                <span className="account-password">
+                  <input
+                    id={id + '-password'}
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    minLength={1}
+                    maxLength={128}
+                    required
+                    disabled={busy}
+                    placeholder="Sua senha"
+                  />
+                  <button
+                    type="button"
+                    className="account-password-toggle"
+                    aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                    aria-pressed={showPassword}
+                    onClick={() => setShowPassword(!showPassword)}
+                    disabled={busy}
+                  >
+                    {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                  </button>
+                </span>
+              </label>
+              {error && (
+                <p className="account-error" role="alert">
+                  {error}
+                </p>
+              )}
+              <motion.button
+                className={zro ? 'button secondary' : 'button primary'}
+                disabled={busy}
+                whileTap={reduced ? undefined : { scale: 0.98 }}
+              >
+                {busy ? (
+                  <LoaderCircle size={18} className="spin" />
+                ) : (
+                  <>
+                    Entrar no estúdio
+                    <ArrowRight size={17} />
+                  </>
+                )}
+              </motion.button>
+            </motion.form>
           )}
           <p className="account-local-note">
             Seus projetos ficam neste dispositivo. Sua conta e seus minutos acompanham você.

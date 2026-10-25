@@ -6,6 +6,10 @@
 // uma por cookie (contexto "cookie:<nome>"): trocar o segredo derruba as sessões.
 //   sq_zro    ida para a Absolute ZRO: state, nonce, verificador PKCE e volta. Só em /api/zro, 10 minutos.
 //   sq_conta  sessão do app: quem é (sub, nome, e-mail, organização, produtos). 30 dias. Nenhum token da Absolute ZRO.
+//
+// Conta única: o Synquei não cria conta própria. "Criar conta" é o mesmo fluxo com prompt=create (o HUB abre o
+// cadastro e volta já logado). O direito de uso vem de zro_products (gravado na sessão a cada login): sem "synquei"
+// lá, a pessoa entra, mas a parte de conta mostra o aviso e o caminho para a Absolute ZRO.
 
 import { createHash, createHmac, createPublicKey, hkdfSync, randomBytes, timingSafeEqual, verify } from 'node:crypto'
 
@@ -17,12 +21,17 @@ export const COOKIE_CONTA = 'sq_conta'
 export const IDA_S = 600
 export const CONTA_S = 30 * 24 * 3600
 export const VOLTA_PADRAO = '/app/'
+export const PRODUTO = 'synquei'
+export const FERRAMENTAS = 'https://absolutezro.vercel.app/ferramentas'
 const CACHE_MS = 10 * 60_000
 
 export const emissor = () => (process.env.ZRO_ISSUER || '').trim().replace(/\/+$/, '') || EMISSOR_PADRAO
 export const clientId = () => (process.env.ZRO_CLIENT_ID || '').trim()
 const segredo = () => (process.env.ZRO_CLIENT_SECRET || '').trim()
 export const configurado = () => Boolean(clientId() && segredo())
+
+/** A organização ativa tem o Synquei liberado pelo admin da Absolute ZRO? */
+export const temAcesso = (produtos) => Array.isArray(produtos) && produtos.includes(PRODUTO)
 
 // ───────── origem do site ─────────
 

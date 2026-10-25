@@ -1,5 +1,5 @@
 import { computadoresDaConta, ONLINE_MS } from "@/lib/lan/presenca";
-import { SEM_SESSAO, usuarioDaRequisicao } from "@/lib/auth/requisicao";
+import { SEM_SESSAO, semAcesso, usuarioDaRequisicao } from "@/lib/auth/requisicao";
 import { erro, json } from "@/lib/http";
 
 /**
@@ -10,6 +10,8 @@ export async function GET(req: Request) {
   const atual = await usuarioDaRequisicao(req);
   if (!atual) return SEM_SESSAO();
   if (atual.via !== "bearer" || atual.sessao.tipo !== "dispositivo") return erro(403, "so_computador", "Só o app de computador manda arquivos pela rede.");
+  const bloqueio = semAcesso(atual);
+  if (bloqueio) return bloqueio;
   const computadores = await computadoresDaConta(atual.usuario.id, atual.sessao.id);
   return json({ onlineMs: ONLINE_MS, computadores }, 200, { "cache-control": "no-store" });
 }

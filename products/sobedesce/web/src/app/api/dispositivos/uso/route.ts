@@ -1,4 +1,4 @@
-import { SEM_SESSAO, usuarioDaRequisicao } from "@/lib/auth/requisicao";
+import { SEM_SESSAO, semAcesso, usuarioDaRequisicao } from "@/lib/auth/requisicao";
 import { depoisDaResposta } from "@/lib/depois";
 import { conferirErrosDoDia } from "@/lib/email/admin";
 import { erro, json } from "@/lib/http";
@@ -14,6 +14,8 @@ export async function POST(req: Request) {
   const atual = await usuarioDaRequisicao(req);
   if (!atual) return SEM_SESSAO();
   if (atual.via !== "bearer" || atual.sessao.tipo !== "dispositivo") return erro(403, "so_computador", "Só o app de computador manda o uso.");
+  const bloqueio = semAcesso(atual);
+  if (bloqueio) return bloqueio;
   let texto: string;
   try {
     texto = await req.text();

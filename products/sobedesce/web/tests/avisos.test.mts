@@ -227,25 +227,32 @@ async function entrarComGoogle(conta: ContaFalsa, cookies: Record<string, string
 }
 
 describe("entrada nova pelo Google", () => {
-  test("conta nova pelo Google não avisa; entrar pelo Google num navegador novo avisa, e no conhecido não", async () => {
+  test("Google sem conta não cria nem avisa; com o Google de entrar, navegador novo avisa e o conhecido não", async () => {
     const conta = { sub: "g-301", email: "google.aviso@exemplo.com", name: "Edu Cardoso" };
-    const criou = await entrarComGoogle(conta);
-    assert.equal(criou.status, 303);
-    const cookie = cookiesDe(criou).get("sd_aparelho");
+    const recusada = await entrarComGoogle(conta);
+    assert.equal(recusada.headers.get("location"), `${SITE}/entrar?erro=google_sem_conta`);
+    assert.equal(emailsPara(conta.email).length, 0);
+
+    const v = await criar("Edu Cardoso");
+    const ligada = await vincular(v.id, { ...conta, email: v.email });
+    assert.ok((await googleContas.trocarGoogleDeEntrar({ usuarioId: v.id, contaId: ligada.id, senhaAtual: SENHA, depois })).ok);
+    await esperar();
+    const antes = emailsPara(v.email).length;
+
+    const primeira = await entrarComGoogle({ ...conta, email: v.email });
+    assert.equal(primeira.status, 303);
+    const cookie = cookiesDe(primeira).get("sd_aparelho");
     assert.ok(cookie, "o callback grava o cookie de aparelho");
-    assert.equal(emailsPara(conta.email).length, 0, "quem acabou de criar a conta não recebe aviso");
-
-    await entrarComGoogle(conta, { sd_aparelho: cookie });
-    assert.equal(emailsPara(conta.email).length, 0, "navegador conhecido");
-
-    await entrarComGoogle(conta);
-    const [e] = emailsPara(conta.email);
-    assert.ok(e);
+    const [e] = emailsPara(v.email).slice(antes);
+    assert.ok(e, "navegador novo avisa");
     assert.match(e.text, /Oi, Edu\./);
     assert.match(e.text, /Navegador: Chrome no Windows/);
     assert.match(e.text, /Como: Com o Google de entrar/);
     assert.match(e.text, /Onde, mais ou menos: Não deu para saber/, "fora da Vercel o lugar não vale");
     conferirRegras(e);
+
+    await entrarComGoogle({ ...conta, email: v.email }, { sd_aparelho: cookie });
+    assert.equal(emailsPara(v.email).length, antes + 1, "navegador conhecido não avisa");
   });
 });
 

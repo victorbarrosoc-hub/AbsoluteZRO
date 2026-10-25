@@ -79,7 +79,7 @@ export default async function Perfil() {
           ))}
         </ul>
       </Card>
-      <Card title="Apps com acesso" id="apps">
+      <Card title="Suas contas nos apps" id="apps">
         {apps.length ? (
           <ul className="list-rows">
             {apps.map((a) => (
@@ -87,7 +87,11 @@ export default async function Perfil() {
                 <ProductMark productId={(a.product_id as string) ?? ''} name={a.name as string} size={30} />
                 <span className="list-rows__main">
                   {a.name as string}
-                  <span className="zro-faint"> · entrou com Absolute ZRO em {fmtDate(a.granted_at as Date)}</span>
+                  <span className="zro-faint">
+                    {' '}
+                    · conta desde {fmtDate((a.first_login_at ?? a.granted_at) as Date)}
+                    {a.last_login_at ? ` · último acesso ${fmtDate(a.last_login_at as Date)}` : ''}
+                  </span>
                 </span>
                 <form action={revokeAppAction}>
                   <input type="hidden" name="clientId" value={a.client_id as string} />
@@ -99,7 +103,7 @@ export default async function Perfil() {
             ))}
           </ul>
         ) : (
-          <EmptyState title="Nenhum app conectado">Quando você usar "Entrar com Absolute ZRO" num app da família, ele aparece aqui.</EmptyState>
+          <EmptyState title="Nenhum app ainda">Quando você abrir um app da família com a sua conta Absolute ZRO, a conta dele aparece aqui.</EmptyState>
         )}
       </Card>
     </div>

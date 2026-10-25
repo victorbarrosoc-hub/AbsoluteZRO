@@ -17,6 +17,8 @@ export async function iniciarZroFalsa(cliente: { clientId: string; clientSecret:
   const estado = {
     proximo: { pessoa: null as PessoaZro | null, negar: false, adulterar: null as null | "nonce" | "aud" | "assinatura" | "emissor" },
     trocas: 0,
+    /** `prompt` do último /oauth/authorize ("create" quando a pessoa veio de Criar conta). */
+    ultimoPrompt: null as string | null,
   };
   let base = "";
 
@@ -45,6 +47,7 @@ export async function iniciarZroFalsa(cliente: { clientId: string; clientSecret:
     if (url.pathname === "/oauth/jwks") return responder(res, 200, { keys: [jwk] });
     if (url.pathname === "/oauth/authorize") {
       const q = url.searchParams;
+      estado.ultimoPrompt = q.get("prompt");
       const volta = new URL(q.get("redirect_uri")!);
       volta.searchParams.set("state", q.get("state")!);
       if (q.get("client_id") !== cliente.clientId || q.get("code_challenge_method") !== "S256" || !q.get("nonce")) {

@@ -160,7 +160,10 @@ test('readable controls fit mobile and desktop; desktop navigation collapses and
   expect((await downloads.count()) + (await pending.count())).toBe(3);
   await expect(page.getByRole('link', { name: 'Baixar para Windows', exact: true })).toBeVisible();
   for (const link of await downloads.all()) {
-    expect(await link.getAttribute('href')).toMatch(/^https:\/\//);
+    // Repositórios privados: a página aponta para a rota /baixar deste site (ou para um override HTTPS).
+    expect(await link.getAttribute('href')).toMatch(
+      /^(\/baixar\/(mac-arm64|mac-x64|windows)|https:\/\/(?!github\.com\/).+)$/,
+    );
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.goto('/');

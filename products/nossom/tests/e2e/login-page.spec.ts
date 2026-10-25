@@ -22,12 +22,16 @@ test('desktop access expands by hover and keyboard, keeping fields available whi
   await card.hover();
   await expect(card).toHaveClass(/is-expanded/);
 });
-test('mobile login opens without hover and registration fits the screen', async ({ page }) => {
+test('mobile login opens without hover and account creation goes to the Absolute ZRO', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/entrar');
   await expect(page.getByLabel('E-mail', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Criar conta', exact: true }).click();
-  await expect(page.getByLabel('Nome', { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: 'Criar conta com a Absolute ZRO', exact: true }),
+  ).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: 'artifacts/nossom-login-mobile.png', fullPage: true });
 });

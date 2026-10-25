@@ -1,5 +1,5 @@
 import { apagarPresenca, gravarPresenca, presencaSchema } from "@/lib/lan/presenca";
-import { SEM_SESSAO, usuarioDaRequisicao } from "@/lib/auth/requisicao";
+import { SEM_SESSAO, semAcesso, usuarioDaRequisicao } from "@/lib/auth/requisicao";
 import { erro, ipDe, json, lerJson, semConteudo } from "@/lib/http";
 
 /**
@@ -16,6 +16,8 @@ async function computador(req: Request) {
 export async function POST(req: Request) {
   const atual = await computador(req);
   if (atual instanceof Response) return atual;
+  const bloqueio = semAcesso(atual);
+  if (bloqueio) return bloqueio;
   const corpo = await lerJson(req, 4 * 1024);
   const lido = presencaSchema.safeParse(corpo);
   if (!lido.success) return erro(400, "entrada", "Endereço da rede em formato desconhecido.");

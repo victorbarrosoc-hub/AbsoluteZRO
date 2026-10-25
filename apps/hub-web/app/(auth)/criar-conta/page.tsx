@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { PASSWORD_MIN } from '@zro/auth'
 import { Field } from '@zro/ui'
 import { ActionForm } from '@/components/action-form'
+import { GoogleButton } from '@/components/google-button'
 import { signupAction } from '@/lib/actions/auth'
 import { safeNext } from '@/lib/actions/helpers'
 import { getAuth } from '@/lib/session'
@@ -17,8 +18,9 @@ export default async function CriarConta({ searchParams }: { searchParams: Promi
     <>
       <div className="stack">
         <h1>Criar conta</h1>
-        <p className="zro-mute">A conta é gratuita. Ter conta não libera as ferramentas: cada uma depende do plano da organização.</p>
+        <p className="zro-mute">Uma conta gratuita para entrar em todas as ferramentas da Absolute ZRO. O que fica liberado depende do seu plano.</p>
       </div>
+      <GoogleButton next={next} />
       <ActionForm action={signupAction} submit="Criar conta">
         <input type="hidden" name="next" value={next ?? ''} />
         <Field label="Nome" htmlFor="name">
@@ -32,7 +34,7 @@ export default async function CriarConta({ searchParams }: { searchParams: Promi
         </Field>
       </ActionForm>
       <p className="zro-faint">
-        Já tem conta? <Link href="/entrar">Entrar</Link>
+        Já tem conta? <Link href={next ? `/entrar?next=${encodeURIComponent(next)}` : '/entrar'}>Entrar</Link>
       </p>
     </>
   )

@@ -1,5 +1,5 @@
 import { test as guest } from '@playwright/test';
-import { test, expect } from './fixtures';
+import { test, expect, existingAccount } from './fixtures';
 import AxeBuilder from '@axe-core/playwright';
 guest(
   'homepage login menu animates, traps focus, switches forms and signs in without leaving the homepage first',
@@ -17,11 +17,16 @@ guest(
     ).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(close).toBeFocused();
+    // Conta nova só pela Absolute ZRO; quem já tem conta entra com e-mail e senha.
     await dialog.getByRole('button', { name: 'Criar conta', exact: true }).click();
-    await dialog.getByLabel('Nome', { exact: true }).fill('Pessoa Motion');
-    await dialog
-      .getByLabel('E-mail', { exact: true })
-      .fill('motion.' + crypto.randomUUID() + '@example.test');
+    await expect(
+      dialog.getByRole('link', { name: 'Criar conta com a Absolute ZRO', exact: true }),
+    ).toHaveAttribute('href', '/api/zro/entrar?modo=criar&volta=%2Fstudio');
+    await expect(dialog.getByLabel('Senha', { exact: true })).toHaveCount(0);
+    await dialog.getByRole('button', { name: 'Entrar', exact: true }).click();
+    const email = 'motion.' + crypto.randomUUID() + '@example.test';
+    await existingAccount(page.request, { email, password: 'motion-test-password' });
+    await dialog.getByLabel('E-mail', { exact: true }).fill(email);
     await dialog.getByLabel('Senha', { exact: true }).fill('motion-test-password');
     await dialog.getByRole('button', { name: 'Mostrar senha', exact: true }).click();
     await expect(dialog.getByLabel('Senha', { exact: true })).toHaveAttribute('type', 'text');
@@ -31,7 +36,7 @@ guest(
       (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze())
         .violations,
     ).toEqual([]);
-    await dialog.getByRole('button', { name: 'Criar conta e entrar', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Entrar no estúdio', exact: true }).click();
     await expect(page).toHaveURL(/\/studio$/);
     await expect(
       page.getByRole('button', { name: 'Abrir menu da conta', exact: true }),

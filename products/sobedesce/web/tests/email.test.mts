@@ -226,7 +226,7 @@ describe("avisos e envio", () => {
     assert.match(e.text, /nova-admin@exemplo\.com/);
     assert.match(e.html, /Pessoa &lt;Nova&gt;/, "HTML escapado");
     // Repetir (dois pedidos, retry) não manda de novo.
-    await admin.avisarAdminContaNova({ id: r.usuario.id, nome: "Pessoa <Nova>", email: "nova-admin@exemplo.com" }, false);
+    await admin.avisarAdminContaNova({ id: r.usuario.id, nome: "Pessoa <Nova>", email: "nova-admin@exemplo.com" }, "senha");
     assert.equal(amb.resend.recebidos.length, antes + 1);
   });
 

@@ -1,5 +1,6 @@
 export * from './accounts'
 export * from './email'
+export * from './google'
 export * from './oidc'
 export * from './origin'
 export * from './password'

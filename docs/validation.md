@@ -144,6 +144,12 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   Intel e Windows) e as versões web (200).
 - `tests/integration/downloads.test.ts`: catálogo inteiro, só HTTPS em domínios oficiais, nada para instalar no que está
   em desenvolvimento. E2E com axe em `/baixar` e `/downloads` nos dois temas: 10/10.
+- Repositórios privados (25/10/2026): nenhum link do HUB vai para o `github.com`; o NOSSOM passa por
+  `https://nossom-teal.vercel.app/baixar/<sistema>` como SOBEDESCE e Synquei. `tests/integration/downloads.test.ts` recusa
+  `github.com`/`githubusercontent.com` e exige `/baixar/<sistema>` nos instaladores de desktop. Rotas do NOSSOM cobertas
+  com GitHub falso em `products/nossom/tests/desktop-releases.test.ts`. Não validado aqui: download real com o
+  `GITHUB_TOKEN` de produção (depende da variável nos projetos Vercel, ver
+  [downloads-privados](operations/downloads-privados.md)).
 
 ## Login único (25/10/2026)
 
@@ -153,6 +159,35 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   códigos, refresh tokens nem a chave).
 - `tests/e2e/sso.spec.ts`: do app ao HUB, criar conta, criar organização, permitir, voltar com código, trocar por
   tokens, userinfo, reautorização silenciosa, descoberta, JWKS e retorno malicioso recusado; axe na tela de permissão.
+
+## Conta única (25/10/2026)
+
+- `tests/integration/accounts.test.ts` (9): plano grátis na organização nova com as cinco ferramentas e no
+  `zro_products`, idempotência, `zro_app` sem acesso à função; conta por app com contagem de entradas e RLS
+  (cada pessoa só lê as próprias, não grava); Google com PKCE, state, nonce, aud, iss, validade e e-mail
+  confirmado; conta nova sem senha, vínculo reaproveitado, mescla com conta confirmada mantendo a senha, conta
+  nunca confirmada perde senha e sessões, conta suspensa recusada sem vínculo.
+- `tests/e2e/sso.spec.ts`: "Criar conta" vindo de um app abre `/criar-conta`, passa por Boas-vindas já
+  preenchida e volta ao app com código, sem botão do Google quando não configurado; `app_accounts` registrado.
+- `tests/e2e/hub.spec.ts`: conta nova recebe as ferramentas do plano grátis; os testes de bloqueio tiram o plano.
+- Suite completa local: 92 testes Vitest e 14 e2e passando; lint, format e typecheck limpos.
+
+## Painel de pessoas (25/10/2026)
+
+- `tests/integration/people.test.ts` (10): `changeOrgPlan` grátis → manual (encerra o grátis, concede o novo,
+  recalcula acessos, audita `subscription_canceled`, `plan_assigned` e `plan_changed` com o motivo), volta ao grátis
+  e recusa o mesmo plano, bloqueio com assinatura Stripe ("Pago pelo Stripe", nada muda), motivo e plano ativo
+  obrigatórios; suspender encerra sessões e refresh tokens, audita, reativar não reabre sessão; não suspende a si
+  mesmo nem outro admin; números, série de 30 dias e funil; busca, filtros (plano, sem plano, sem organização,
+  suspensas, Google, app), ordem; CSV com BOM e sem fórmula; página da pessoa com assinaturas, acessos, sessões e
+  linha do tempo.
+- `tests/e2e/admin.spec.ts` (2): quem não é da plataforma recebe 404 em `/admin/pessoas`, no CSV e na página da
+  pessoa; admin (promovido por SQL no banco de e2e) vê a lista, busca, troca o plano na linha, exporta o CSV, abre
+  a página da pessoa; axe WCAG 2.1 A/AA sem violações nas duas telas em claro e escuro; sem rolagem horizontal em
+  390 px.
+- Suite completa local: 102 testes Vitest (13 arquivos) e 16 e2e passando; lint, format, typecheck, build e
+  `scan-secrets` limpos. Bancos de teste próprios (`zro_pessoas_test`, `zro_pessoas_e2e_test`) porque outra sessão
+  usava `zro_test` ao mesmo tempo.
 
 ## Virada das plataformas (25/10/2026)
 
@@ -175,7 +210,19 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   `prompt=create` e volta no perfil; sem o produto, só o aviso e "Ver na Absolute ZRO" (nem `entrarNaConta()` abre);
   conta antiga do aparelho ainda entra pelo formulário; `file://` igual a antes.
 
+## Synquei: conta pela Absolute ZRO (25/10/2026)
+
+- `products/synquei`: `npm test` 67/67. `tests/zro.test.mjs` (HUB falso): Criar conta manda `prompt=create` e volta
+  logado; `synquei` fora de `zro_products` entra com `acesso: false` e o link de `/ferramentas`; novo login reavalia.
+  `tests/conta-ui.test.mjs`: botões Entrar/Criar conta, aviso sem acesso com "Ver na Absolute ZRO", conta liberada.
+- Sem conferência visual em navegador nesta rodada (sem Chromium no ambiente).
+
 ## SOBEDESCE no monorepo (25/10/2026)
+
+- Conta só pela Absolute ZRO: `web/tests/zro.test.mts` confere `prompt=create` no Criar conta, produto fora de
+  `zro_products` com `/api/eu` e Drives em 403 `sem_acesso_zro`, liberação depois de religar e conta antiga sem
+  vínculo livre; `web/tests/google.test.mts` confere que o Google não cria conta e que o Google de entrar antigo
+  continua entrando. `npm test` 231/231, lint, typecheck e build.
 
 - `products/sobedesce/web`: `npm run lint`, `npm run typecheck`, `npm run build` e `npm test` (227/227) com Postgres
   local (`TEST_DATABASE_URL`) e de novo com PGlite.
@@ -197,3 +244,11 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - Provedor de pagamento e de e-mail reais (não escolhidos).
 - Worker como processo contínuo por horas (validado via `runOnce`/`recoverStaleRuns` nos testes e no seed).
 - Carga e concorrência além do teste de quota em paralelo.
+
+## TPeasy: conta única Absolute ZRO (25/10/2026)
+
+- `products/tpeasy`: `node --test tests/*.test.mjs` (23/23) com a Absolute ZRO falsa: `?criar=1` manda `prompt=create`
+  e volta logado; `tpeasy` fora de `zro_products` entra com `acesso: false`; liberado dá `acesso: true`; nova entrada
+  reavalia. Sintaxe dos módulos conferida como no CI.
+- Ajustes conferidos no Chromium (Playwright) com `/api/zro/eu` simulado: fora (Entrar + Criar conta), sem acesso
+  (aviso + "Ver na Absolute ZRO") e liberado (só a conta).
