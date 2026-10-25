@@ -26,6 +26,13 @@ const PATHS = {
   check: 'M5 12.5 10 17 19 7',
   menu: 'M4 7h16M4 12h16M4 17h16',
   lock: 'M6 11h12v9H6zM8 11V8a4 4 0 0 1 8 0v3',
+  download: 'M12 4v11M7 10.5l5 5 5-5M4 20h16',
+  laptop: 'M5 5h14v10H5zM2.5 19h19',
+  monitor: 'M3.5 4h17v11h-17zM9 20h6M12 15v5',
+  phone: 'M8 2.5h8a1 1 0 0 1 1 1v17a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-17a1 1 0 0 1 1-1zM11 18.5h2',
+  globe: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3 12h18M12 3c2.4 2.5 3.6 5.5 3.6 9s-1.2 6.5-3.6 9c-2.4-2.5-3.6-5.5-3.6-9S9.6 5.5 12 3z',
+  copy: 'M9 9h11v11H9zM5 15H4V4h11v1',
+  terminal: 'M4 5h16v14H4zM7.5 9.5 10 12l-2.5 2.5M12.5 15h4',
 } as const
 
 export type IconName = keyof typeof PATHS

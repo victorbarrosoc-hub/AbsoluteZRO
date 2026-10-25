@@ -13,6 +13,7 @@ const GROUPS: { label: string; items: Item[] }[] = [
       { href: '/projetos', label: 'Meus projetos', icon: 'projects' },
       { href: '/ciclo', label: 'Ciclo do O', icon: 'cycle' },
       { href: '/ferramentas', label: 'Ferramentas', icon: 'apps' },
+      { href: '/downloads', label: 'Downloads', icon: 'download' },
       { href: '/arquivos', label: 'Arquivos', icon: 'files' },
       { href: '/atividades', label: 'Atividades', icon: 'activity' },
     ],

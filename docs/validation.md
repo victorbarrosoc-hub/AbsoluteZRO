@@ -137,6 +137,14 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   projeto, Ciclo do O e Ferramentas. Referência: telas reais de Synquei, TPeasy e SOBEDESCE servidas a partir das
   cópias em `products/`.
 
+## Downloads (25/10/2026)
+
+- Cada instalador listado em `apps/hub-web/lib/downloads.ts` foi conferido com download real de 1 byte (HTTP 206):
+  SOBEDESCE e Synquei (`/baixar/mac`, `/baixar/windows`), NOSSOM (release `desktop-v0.2.2`, Mac Apple Silicon, Mac
+  Intel e Windows) e as versões web (200).
+- `tests/integration/downloads.test.ts`: catálogo inteiro, só HTTPS em domínios oficiais, nada para instalar no que está
+  em desenvolvimento. E2E com axe em `/baixar` e `/downloads` nos dois temas: 10/10.
+
 ## O que NÃO foi validado
 
 - Deploy real (Vercel, Supabase novo, domínio): aguardando autorização.

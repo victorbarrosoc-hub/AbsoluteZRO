@@ -276,6 +276,22 @@ export default async function Landing() {
         </div>
       </section>
 
+      <section className="get-apps reveal" aria-labelledby="get-apps-title">
+        <div className="get-apps__marks" aria-hidden="true">
+          {['sobedesce', 'synquei', 'nossom'].map((id) => (
+            <ProductMark key={id} productId={id} name={id} size={52} />
+          ))}
+        </div>
+        <div className="get-apps__text">
+          <h2 id="get-apps-title">Instale no seu computador.</h2>
+          <p className="zro-mute">SOBEDESCE, Synquei e NOSSOM para Mac e Windows. TPeasy no iPhone. Tudo num lugar só.</p>
+        </div>
+        <Link className="zro-btn zro-btn--primary" href="/baixar">
+          <Icon name="download" />
+          Ver downloads
+        </Link>
+      </section>
+
       <section className="beam reveal on-dark" aria-labelledby="beam-title">
         <p className="zro-eyebrow">Absolute ZRO HUB</p>
         <h2 id="beam-title" className="display-2">

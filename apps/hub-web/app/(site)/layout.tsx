@@ -15,6 +15,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
           <nav aria-label="Principal" className="capsule__links">
             <Link href="/#ciclo">Ciclo do O</Link>
             <Link href="/#ferramentas">Ferramentas</Link>
+            <Link href="/baixar">Downloads</Link>
             <Link href="/planos">Planos</Link>
           </nav>
           <div className="capsule__cta">
@@ -41,7 +42,13 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
       </main>
       <footer className="public-footer">
         <Wordmark height={18} />
-        <span>Da oportunidade à entrega. Um só fluxo.</span>
+        <nav aria-label="Rodapé" className="public-footer__nav">
+          <Link href="/#ciclo">Ciclo do O</Link>
+          <Link href="/#ferramentas">Ferramentas</Link>
+          <Link href="/baixar">Downloads</Link>
+          <Link href="/planos">Planos</Link>
+          <Link href="/entrar">Entrar</Link>
+        </nav>
         <span>© {new Date().getFullYear()} Absolute ZRO</span>
       </footer>
     </div>
