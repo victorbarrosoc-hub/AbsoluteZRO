@@ -1,0 +1,8 @@
+{
+  "name": "@zro/integrations",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@zro/core": "*", "@zro/db": "*", "@zro/billing": "*", "@zro/media-contracts": "*", "@zro/observability": "*", "zod": "^4.1.12" }
+}
