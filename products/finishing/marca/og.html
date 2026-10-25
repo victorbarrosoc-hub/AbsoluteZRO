@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <!-- OG da Revela (1200×630). Abra no Chromium/Playwright e capture 1200×630 em products/finishing/og.jpg. -->
+    <style>
+      * {
+        margin: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+      }
+      body {
+        position: relative;
+        background:
+          radial-gradient(520px 420px at 900px 330px, rgba(139, 63, 232, 0.28), transparent 70%),
+          radial-gradient(420px 320px at 1010px 220px, rgba(255, 184, 0, 0.14), transparent 70%), #0e0e10;
+        color: #f5f5f7;
+        font-family:
+          'Inter Variable',
+          Inter,
+          ui-sans-serif,
+          -apple-system,
+          'SF Pro Display',
+          system-ui,
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      .texto {
+        position: absolute;
+        left: 80px;
+        top: 0;
+        bottom: 0;
+        width: 560px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .assinatura {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        margin-bottom: 44px;
+      }
+      .assinatura img {
+        width: 76px;
+        height: 76px;
+        border-radius: 18px;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+      }
+      .assinatura span {
+        font-size: 52px;
+        font-weight: 750;
+        letter-spacing: -0.045em;
+      }
+      h1 {
+        font-size: 60px;
+        line-height: 1.04;
+        font-weight: 750;
+        letter-spacing: -0.04em;
+      }
+      p {
+        margin-top: 22px;
+        font-size: 25px;
+        line-height: 1.35;
+        color: #aeaeb2;
+      }
+      .rodape {
+        position: absolute;
+        left: 80px;
+        bottom: 40px;
+        font-size: 17px;
+        color: #8e8e93;
+      }
+      .cubo {
+        position: absolute;
+        right: 70px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 440px;
+      }
+      .cube {
+        position: absolute;
+        right: 92px;
+        bottom: 46px;
+        padding: 8px 16px;
+        border-radius: 999px;
+        border: 1px solid rgba(235, 235, 245, 0.18);
+        background: rgba(23, 23, 26, 0.8);
+        font:
+          600 18px ui-monospace,
+          'SF Mono',
+          Menlo,
+          monospace;
+        color: #f5f5f7;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="texto">
+      <div class="assinatura"><img src="revela-icone.svg" alt="" /><span>Revela</span></div>
+      <h1>Revela a cor que você quer.</h1>
+      <p>Um frame de referência vira uma LUT para o DaVinci Resolve.</p>
+    </div>
+    <span class="rodape">An Absolute ZRO Company</span>
+    <img class="cubo" src="og-cubo.svg" alt="" />
+    <span class="cube">look.cube</span>
+  </body>
+</html>

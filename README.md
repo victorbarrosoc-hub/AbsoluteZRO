@@ -1,7 +1,7 @@
 # Absolute ZRO HUB
 
 **Da oportunidade à entrega. Um só fluxo.** Conta central, permissões por assinatura, o plano completo **Ciclo do O**
-e a camada de projeto que liga Carro do Freela, TPeasy, SOBEDESCE, Synquei, NOSSOM e as futuras AI Edit e Finishing.
+e a camada de projeto que liga Carro do Freela, TPeasy, SOBEDESCE, Synquei, NOSSOM e as futuras AI Edit e Revela.
 
 - Especificação: [PRD.md](PRD.md) (referência principal).
 - Regras permanentes para agentes: [CLAUDE.md](CLAUDE.md).

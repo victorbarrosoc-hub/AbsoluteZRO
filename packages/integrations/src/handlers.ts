@@ -58,7 +58,7 @@ export const HANDLERS: Record<string, HandlerDef> = {
 
 /**
  * Rotas atuais. Os demais eventos ficam registrados no histórico do projeto: os consumidores são apps externos
- * (Synquei sync, NOSSOM) ou ferramentas futuras (AI Edit, Finishing), e o HUB não finge processá-los.
+ * (Synquei sync, NOSSOM) ou ferramentas futuras (AI Edit, Revela), e o HUB não finge processá-los.
  */
 export const ROUTES: RouteTable = {
   'media.manifest.ready': [{ handler: synqueiOrganizationPlan.name, productId: 'synquei', feature: 'organization_plan', maxAttempts: 5 }],

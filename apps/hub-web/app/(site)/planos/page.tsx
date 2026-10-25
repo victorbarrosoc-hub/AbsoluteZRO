@@ -43,7 +43,7 @@ export default async function Planos() {
               ) : (
                 <p className="zro-faint">Conta, painel, organização e catálogo.</p>
               )}
-              {featured && <p className="zro-faint">AI Edit e Finishing entram no Ciclo do O só depois de lançados.</p>}
+              {featured && <p className="zro-faint">AI Edit e Revela entram no Ciclo do O só depois de lançados.</p>}
               <Link
                 className={`zro-btn${featured ? ' zro-btn--primary' : ''}`}
                 href={p.kind === 'free' ? '/criar-conta' : 'mailto:zro.contato@gmail.com?subject=Absolute%20ZRO%20-%20' + encodeURIComponent(String(p.name))}

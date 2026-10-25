@@ -76,7 +76,7 @@ funcionalidades autorizadas.
 | Synquei                     | Organização, alinhamento e sincronização              | Manifest SOBEDESCE ou import manual, mídias e áudio                 | Pastas, logs, metadados, sync maps, projeto de edição               |
 | AI Edit — nome provisório   | Decupagem, seleção e montagem assistida               | Mídias, transcrições, brief, referências e presets de linguagem     | Decupagem, selects, markers, edição preliminar/timeline editável    |
 | NOSSOM                      | Tratamento sonoro e SFX                               | Sequência/timeline, áudio, marcações da edição e bancos autorizados | Sugestões de efeitos, áudio limpo, mix, master e relatórios         |
-| Finishing — nome provisório | GMA/Media Manager, color grading assistido e entregas | Timeline aprovada, mídia vinculada, perfis de destino               | Master, versões, QC e pacotes de entrega                            |
+| Revela (ex-Finishing)       | GMA/Media Manager, color grading assistido e entregas | Timeline aprovada, mídia vinculada, perfis de destino               | Master, versões, QC e pacotes de entrega                            |
 
 **Importante:** AI Edit e Finishing **ainda não existem**. São espaços
 de produto, com interfaces e contratos iniciais e implementação
@@ -707,7 +707,7 @@ locais ou de desenvolvimento autorizados.
 - Mecanismo de SSO suportado por cada produto e editor inicial de
   integração (Premiere, Resolve, Final Cut etc.).
 
-- Nomes definitivos das plataformas de AI Edit e Finishing.
+- Nome definitivo da plataforma de AI Edit (Finishing virou Revela, ADR 0015).
 
 - Política de propriedade e retenção de mídia, LGPD, termos,
   privacidade, licenças e suporte.

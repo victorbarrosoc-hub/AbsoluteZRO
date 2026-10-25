@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Revela · LUT a partir de uma referência</title>
+    <meta name="description" content="Dê um frame de referência e um frame do seu material. Sai uma LUT para o DaVinci Resolve." />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0e0e10" />
+    <link rel="canonical" href="https://revela-zro.vercel.app/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Revela" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:url" content="https://revela-zro.vercel.app/" />
+    <meta property="og:title" content="Revela · a cor que você quer, numa LUT" />
+    <meta property="og:description" content="Dê um frame de referência e um frame do seu material. Sai uma LUT para o DaVinci Resolve." />
+    <meta property="og:image" content="https://revela-zro.vercel.app/og.jpg?v=1" />
+    <meta property="og:image:secure_url" content="https://revela-zro.vercel.app/og.jpg?v=1" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Revela: revela a cor que você quer. Um frame de referência vira uma LUT para o DaVinci Resolve." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Revela · a cor que você quer, numa LUT" />
+    <meta name="twitter:description" content="Dê um frame de referência e um frame do seu material. Sai uma LUT para o DaVinci Resolve." />
+    <meta name="twitter:image" content="https://revela-zro.vercel.app/og.jpg?v=1" />
+    <meta name="twitter:image:alt" content="Revela: revela a cor que você quer. Um frame de referência vira uma LUT para o DaVinci Resolve." />
+    <link rel="icon" href="marca/revela-icone.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="app/revela.css" />
+    <script type="module" src="app/revela.js"></script>
+  </head>
+  <body>
+    <header class="topo">
+      <span class="marca"><img src="marca/revela-icone.svg" alt="" width="28" height="28" />Revela</span>
+      <span class="selo">Protótipo</span>
+      <span class="assinatura">An Absolute ZRO Company</span>
+    </header>
+
+    <main>
+      <section class="abertura">
+        <h1>Revela a cor que você quer.</h1>
+        <p>Dê um frame de referência e um frame do seu material. Sai uma LUT para o DaVinci Resolve.</p>
+      </section>
+
+      <section class="entradas" aria-label="Imagens">
+        <label class="entrada" id="caixa-referencia" for="arquivo-referencia">
+          <span class="passo">1</span>
+          <strong>Referência</strong>
+          <span class="dica">O estilo que você quer: um frame de filme, um still.</span>
+          <img alt="" hidden />
+          <span class="acao">Escolher imagem ou soltar aqui</span>
+          <input id="arquivo-referencia" type="file" accept="image/*" />
+        </label>
+        <label class="entrada" id="caixa-material" for="arquivo-material">
+          <span class="passo">2</span>
+          <strong>Seu frame</strong>
+          <span class="dica">Em Rec.709. No Resolve, exporte o still depois da conversão do LOG.</span>
+          <img alt="" hidden />
+          <span class="acao">Escolher imagem ou soltar aqui</span>
+          <input id="arquivo-material" type="file" accept="image/*" />
+        </label>
+      </section>
+
+      <p id="estado" class="estado" role="status" aria-live="polite"></p>
+
+      <section id="resultado" class="resultado" hidden aria-label="Resultado">
+        <div class="palco">
+          <canvas id="previa" aria-label="Seu frame antes e depois da LUT"></canvas>
+          <span class="rotulo rotulo-antes" aria-hidden="true">Antes</span>
+          <span class="rotulo rotulo-depois" aria-hidden="true">Depois</span>
+          <input id="divisao" class="divisao" type="range" min="0" max="100" value="50" aria-label="Comparar antes e depois" />
+        </div>
+
+        <div class="painel">
+          <div class="controle">
+            <label for="intensidade"><strong>Intensidade</strong></label>
+            <input id="intensidade" type="range" min="0" max="100" value="100" />
+            <output id="valor-intensidade" for="intensidade">100%</output>
+          </div>
+
+          <fieldset class="controle">
+            <legend><strong>Copiar</strong></legend>
+            <label><input id="usar-tom" type="checkbox" checked /> Contraste</label>
+            <label><input id="usar-cor" type="checkbox" checked /> Cor</label>
+          </fieldset>
+
+          <div class="controle">
+            <label for="tamanho"><strong>Tamanho da LUT</strong></label>
+            <select id="tamanho">
+              <option value="33">33 pontos · monitor e câmera</option>
+              <option value="65">65 pontos · grading</option>
+            </select>
+          </div>
+
+          <div class="controle conta-gotas">
+            <strong>Conta-gotas</strong>
+            <p class="dica">Clique numa coisa na referência e na mesma coisa no seu frame: pele com pele, branco com branco. Até 3 pares.</p>
+            <ul id="pares" class="pares" aria-label="Pares de cor"></ul>
+            <div class="acoes">
+              <button id="marcar-par" class="botao-secundario" type="button">Marcar par de cor</button>
+              <button id="limpar-pares" class="botao-secundario" type="button" hidden>Limpar</button>
+            </div>
+          </div>
+
+          <button id="baixar" class="botao" type="button">Baixar LUT (.cube)</button>
+
+          <div class="leitura">
+            <strong>O que a referência tem</strong>
+            <p id="tom"></p>
+            <ul id="faixas"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="notas" aria-label="Como funciona">
+        <div>
+          <strong>Suas imagens não saem daqui</strong>
+          <p>Tudo é calculado no seu navegador. Nada é enviado.</p>
+        </div>
+        <div>
+          <strong>No Resolve</strong>
+          <p>Aplique a LUT num nó depois da conversão para Rec.709.</p>
+        </div>
+        <div>
+          <strong>O que dá para copiar</strong>
+          <p>Cor e contraste. Grão, lente e luz do set não cabem numa LUT, e a exposição fica a do seu frame.</p>
+        </div>
+        <div>
+          <strong>Quando erra</strong>
+          <p>Se a referência não tem nada em comum com o seu frame, a cor sai torta. Use o conta-gotas: pele com pele, branco com branco.</p>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

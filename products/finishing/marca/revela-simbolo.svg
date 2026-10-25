@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="200 290 624 444">
+  <title>Revela</title>
+  <defs>
+    <mask id="furos"><rect x="200" y="290" width="624" height="444" fill="#fff"/><g fill="#000"><rect x="236" y="312" width="44" height="36" rx="9"/><rect x="316" y="312" width="44" height="36" rx="9"/><rect x="396" y="312" width="44" height="36" rx="9"/><rect x="476" y="312" width="44" height="36" rx="9"/><rect x="556" y="312" width="44" height="36" rx="9"/><rect x="636" y="312" width="44" height="36" rx="9"/><rect x="716" y="312" width="44" height="36" rx="9"/><rect x="236" y="676" width="44" height="36" rx="9"/><rect x="316" y="676" width="44" height="36" rx="9"/><rect x="396" y="676" width="44" height="36" rx="9"/><rect x="476" y="676" width="44" height="36" rx="9"/><rect x="556" y="676" width="44" height="36" rx="9"/><rect x="636" y="676" width="44" height="36" rx="9"/><rect x="716" y="676" width="44" height="36" rx="9"/></g><rect x="252" y="372" width="520" height="280" rx="28" fill="#000"/></mask>
+    <clipPath id="quadro"><rect x="252" y="372" width="520" height="280" rx="28"/></clipPath>
+  </defs>
+  <rect x="200" y="290" width="624" height="444" rx="40" fill="#FFB800" mask="url(#furos)"/>
+  <g clip-path="url(#quadro)">
+    <rect x="252" y="372" width="520" height="280" fill="#1B1B1F"/>
+    <polygon points="566,372 640,372 544,652 470,652" fill="#4B1FB8"/>
+    <polygon points="640,372 700,372 604,652 544,652" fill="#8B3FE8"/>
+    <polygon points="700,372 750,372 654,652 604,652" fill="#E52B1A"/>
+    <polygon points="750,372 790,372 790,652 654,652" fill="#FF7A1A"/>
+  </g>
+</svg>
