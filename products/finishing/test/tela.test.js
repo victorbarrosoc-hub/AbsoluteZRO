@@ -122,6 +122,18 @@ test('escolhe as duas imagens, compara, ajusta e baixa a LUT', async () => {
   await pagina.close()
 })
 
+test('fundo sempre preto fosco, mesmo com o sistema no tema claro', async () => {
+  const pagina = await navegador.newPage({ colorScheme: 'light' })
+  await pagina.goto(endereco)
+  const { fundo, texto } = await pagina.evaluate(() => ({
+    fundo: getComputedStyle(document.body).backgroundColor,
+    texto: getComputedStyle(document.body).color,
+  }))
+  assert.equal(fundo, 'rgb(14, 14, 16)')
+  assert.equal(texto, 'rgb(245, 245, 247)')
+  await pagina.close()
+})
+
 test('arquivo que não é imagem avisa sem quebrar', async () => {
   const pagina = await navegador.newPage()
   await pagina.goto(endereco)

@@ -20,6 +20,8 @@ perfurado, emulsão); o titular escolheu o **perfurado** e pediu **roxo** nas co
 - **Inspiração só de cor:** nada de nome, logotipo ou desenho de marcas de filme (Kodak, Fuji etc.).
 - **Tipografia e nome:** Inter, como a família. Nome em Inter 750, espaçamento −0,045em, nunca em caixa alta e nunca
   redesenhado. Assinatura "An Absolute ZRO Company".
+- **Fundo:** a tela da Revela é sempre preto fosco (`#0E0E10` com grão neutro da família), sem tema claro, para não
+  enganar o olho na avaliação de cor (pedido do titular); perto da imagem, nada de brilho colorido. Diferente do HUB, que tem tema claro.
 - **Guia:** `products/finishing/marca/index.html`.
 
 **Consequências.** O HUB mostra o ícone da Revela no catálogo e usa as cores dela nos brilhos dos cartões. A tela da

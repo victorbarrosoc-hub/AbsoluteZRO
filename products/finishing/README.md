@@ -28,7 +28,8 @@ de uma cor, cores, regras de uso e as alternativas estudadas (`marca/alternativa
 `index.html` + `app/`: a pessoa escolhe (ou solta) a referência e o frame dela, compara antes e depois arrastando sobre
 a imagem, ajusta intensidade, liga só contraste ou só cor, escolhe 33 ou 65 pontos e baixa o `.cube`. **Tudo roda no
 navegador**: as imagens não são enviadas para lugar nenhum. Imagens lidas sem conversão de perfil de cor
-(`colorSpaceConversion: 'none'`), como o Resolve exportou.
+(`colorSpaceConversion: 'none'`), como o Resolve exportou. **Fundo sempre preto fosco** (`#0E0E10` com grão neutro),
+sem tema claro: em volta de imagem que se avalia cor, fundo claro engana o olho.
 
 ```sh
 cd products/finishing

@@ -295,3 +295,9 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   O servidor do teste aplica os cabeçalhos do `vercel.json` e a tela roda sem erro de console com a CSP de produção.
 - HUB com amarelo e roxo em `--p-finishing`/`--p-finishing-2`: segredos, lint, formatação, tipos, `npm test` (**103/103**),
   build e `npm run test:e2e` (**16/16**) verdes.
+
+## Revela: fundo sempre escuro (25/10/2026)
+
+- A pedido do titular, a tela da Revela é sempre preto fosco (`#0E0E10` com grão neutro), sem tema claro; a sombra da
+  comparação ficou neutra (sem brilho colorido perto da imagem). `products/finishing`: `npm test` (**19/19**), com
+  teste novo: com o sistema no tema claro, fundo continua `rgb(14, 14, 16)` e texto claro. Conferido em captura.
