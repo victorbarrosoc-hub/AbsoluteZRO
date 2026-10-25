@@ -8,9 +8,13 @@ import assert from 'node:assert/strict';
 import { GET as start } from '../app/api/zro/entrar/route';
 import { GET as callback } from '../app/api/zro/callback/route';
 import { GET as linkStatus, DELETE as unlink } from '../app/api/zro/conta/route';
+import { GET as accountStatus } from '../app/api/account/route';
 import {
+  accountFromToken,
+  currentAccount,
   decodeSession,
   encodeSession,
+  refreshAccount,
   sessionCookie,
   sessionFromProvider,
 } from '../lib/server/account';
@@ -252,7 +256,11 @@ test('the signed-in owner links the ZRO in settings, then signs in through it an
   assert.equal(anonymous.location, '/entrar?next=%2Fstudio%2Fconta');
   const linked = await flow({ query: '?modo=ligar', session: cookie });
   assert.equal(linked.location, '/studio/conta?zro=ok');
-  assert.equal(linked.session, null, 'ligar não troca a sessão');
+  // Ligar não troca a sessão: só guarda nela os produtos liberados na Absolute ZRO.
+  const before = decodeSession(decodeURIComponent(cookie.split('=')[1]))!;
+  assert.equal(linked.session?.sid, before.sid);
+  assert.equal(linked.session?.refresh, before.refresh);
+  assert.deepEqual(linked.session?.zroProducts, ['nossom']);
   assert.equal(fakes.links.get(owner.id)?.created_by_zro, false);
   const login = await flow();
   assert.equal(login.session?.account.id, owner.id);
@@ -271,4 +279,88 @@ test('the signed-in owner links the ZRO in settings, then signs in through it an
     await linkStatus(new Request(SITE + '/api/zro/conta', { headers: { cookie } }))
   ).json();
   assert.deepEqual(status, { configured: true, link: null });
+});
+
+const cookieFor = (session: NonNullable<ReturnType<typeof decodeSession>>) =>
+  sessionCookie(encodeSession(session)).split(';')[0];
+
+test('"Criar conta" asks the HUB for its sign-up screen (prompt=create); signing in does not', async () => {
+  const create = await start(
+    new Request(SITE + '/api/zro/entrar?modo=criar&volta=%2Fstudio%2Fia', {
+      headers: { 'x-forwarded-for': '10.1.0.1' },
+    }),
+  );
+  assert.equal(create.status, 302);
+  const authorize = new URL(create.headers.get('location')!);
+  assert.equal(authorize.searchParams.get('prompt'), 'create');
+  const login = await start(
+    new Request(SITE + '/api/zro/entrar', { headers: { 'x-forwarded-for': '10.1.0.2' } }),
+  );
+  assert.equal(new URL(login.headers.get('location')!).searchParams.get('prompt'), null);
+  // A volta de "criar" é a de sempre: a conta nasce ligada e entra já logada.
+  const r = await flow({ query: '?modo=criar&volta=%2Fstudio%2Fia' });
+  assert.equal(r.location, '/studio/ia');
+  assert.equal(r.session?.account.email, 'lia@produtora.com');
+  assert.equal(fakes.state.created, 1);
+});
+
+test('without "nossom" in zro_products the person signs in but every account function is closed', async () => {
+  const r = await flow({ person: { ...LIA, products: ['synquei'] } });
+  assert.equal(r.location, '/studio');
+  assert.deepEqual(r.session?.zroProducts, ['synquei']);
+  assert.deepEqual(fakes.links.get(r.session!.account.id)?.products, ['synquei']);
+  const cookie = cookieFor(r.session!);
+  const token = decodeURIComponent(cookie.split('=')[1]);
+  // A tela sabe quem entrou e mostra o aviso; as funções recusam no servidor.
+  assert.equal(accountFromToken(token)?.zroBlocked, true);
+  const status = await accountStatus(new Request(SITE + '/api/account', { headers: { cookie } }));
+  assert.equal(status.status, 200);
+  assert.equal((await status.json()).account.zroBlocked, true);
+  assert.equal(await currentAccount(new Request(SITE + '/x', { headers: { cookie } })), null);
+  assert.equal(
+    (await linkStatus(new Request(SITE + '/api/zro/conta', { headers: { cookie } }))).status,
+    401,
+  );
+});
+
+test('with "nossom" released the account opens, and a refresh re-reads the products in the link', async () => {
+  const r = await flow();
+  assert.deepEqual(r.session?.zroProducts, ['nossom']);
+  const cookie = cookieFor(r.session!);
+  const opened = await currentAccount(new Request(SITE + '/x', { headers: { cookie } }));
+  assert.equal(opened?.id, r.session!.account.id);
+  assert.equal(opened?.zroBlocked, undefined);
+  // O admin tira o NOSSOM da organização; o vínculo guarda a lista nova no próximo login ZRO.
+  fakes.links.get(r.session!.account.id)!.products = [];
+  const expired = encodeSession({ ...r.session!, expires: Date.now() - 1000 });
+  const refreshed = await refreshAccount(expired);
+  assert.ok(refreshed && refreshed !== 'unavailable');
+  assert.equal(refreshed.account.zroBlocked, true);
+  assert.deepEqual(decodeSession(refreshed.token)?.zroProducts, []);
+  // Liberado de novo: a próxima renovação abre.
+  fakes.links.get(r.session!.account.id)!.products = ['nossom'];
+  const again = await refreshAccount(
+    encodeSession({ ...decodeSession(refreshed.token)!, expires: Date.now() - 1000 }),
+  );
+  assert.ok(again && again !== 'unavailable');
+  assert.equal(again.account.zroBlocked, undefined);
+});
+
+test('an older account without a ZRO link is never blocked', async () => {
+  const owner = fakes.addUser('antiga@example.test', 'Antiga');
+  const cookie = sessionFor(owner);
+  const token = decodeURIComponent(cookie.split('=')[1]);
+  assert.equal(decodeSession(token)?.zroProducts, undefined);
+  assert.equal(accountFromToken(token)?.zroBlocked, undefined);
+  assert.equal(
+    (await currentAccount(new Request(SITE + '/x', { headers: { cookie } })))?.id,
+    owner.id,
+  );
+  // A renovação confere o vínculo e, sem ele, segue igual.
+  const refreshed = await refreshAccount(
+    encodeSession({ ...decodeSession(token)!, refresh: 'refresh-' + owner.id, expires: 0 }),
+  );
+  assert.ok(refreshed && refreshed !== 'unavailable');
+  assert.equal(refreshed.account.zroBlocked, undefined);
+  assert.equal(decodeSession(refreshed.token)?.zroProducts, undefined);
 });

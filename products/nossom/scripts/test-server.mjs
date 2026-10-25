@@ -12,7 +12,9 @@ const users = new Map(),
   stripeSubscriptions = new Map(),
   subscriptionRows = new Map(),
   memberships = new Map(),
-  portalReturns = new Map();
+  portalReturns = new Map(),
+  // Vínculo com a Absolute ZRO (nossom_private.zro_links): user_id → { sub, products, ... }.
+  zroLinks = new Map();
 const app = 'http://localhost:3000',
   webhookSecret = 'whsec_e2e_placeholder';
 const plansCatalog = [
@@ -178,17 +180,20 @@ const server = createServer(async (req, res) => {
   };
   const token = req.headers.authorization?.replace('Bearer ', ''),
     user = tokens.get(token);
-  if (url.pathname === '/auth/v1/signup') {
-    if (users.has(body.email)) return send({ error_code: 'user_already_exists' }, 400);
+  // Sem cadastro público: a NOSSOM só cria conta pela Absolute ZRO. Contas "que já existem"
+  // entram aqui pela Admin API (service role), como no Supabase de verdade.
+  if (url.pathname === '/auth/v1/signup') return send({ error_code: 'signup_disabled' }, 422);
+  if (url.pathname === '/auth/v1/admin/users' && req.method === 'POST') {
+    if (token !== 'service-e2e-placeholder') return send({ code: 403 }, 403);
+    if (users.has(body.email)) return send({ error_code: 'email_exists' }, 422);
     const user = {
       id: randomUUID(),
       email: body.email,
-      email_confirmed_at: body.email.startsWith('confirm.') ? null : new Date().toISOString(),
-      user_metadata: body.data || {},
+      email_confirmed_at: body.email_confirm === false ? null : new Date().toISOString(),
+      user_metadata: body.user_metadata || {},
     };
     users.set(body.email, { user, password: body.password });
-    if (!user.email_confirmed_at) return send({ user });
-    return send(session(user));
+    return send(user);
   }
   if (url.pathname === '/auth/v1/token') {
     if (url.searchParams.get('grant_type') === 'refresh_token') {
@@ -216,6 +221,52 @@ const server = createServer(async (req, res) => {
     tokens.delete(token);
     if (user) for (const [t, u] of refreshTokens) if (u.id === user.id) refreshTokens.delete(t);
     return send({});
+  }
+  // nossom_zro_link (só service role), com as mesmas ações da migração. Os testes ligam uma conta
+  // "como se" tivesse entrado pela Absolute ZRO para conferir o bloqueio por zro_products.
+  if (url.pathname === '/rest/v1/rpc/nossom_zro_link') {
+    if (token !== 'service-e2e-placeholder') return send({ code: '42501' }, 403);
+    const data = body.p_data || {},
+      products = Array.isArray(data.products) ? data.products : [];
+    if (body.p_action === 'find') {
+      const found = [...zroLinks.values()].find((l) => l.sub === body.p_sub);
+      if (found) found.products = products;
+      return send({ userId: found?.userId ?? null });
+    }
+    if (![...users.values()].some((u) => u.user.id === body.p_user))
+      return send({ message: 'Account required' }, 400);
+    const row = zroLinks.get(body.p_user);
+    if (body.p_action === 'get')
+      return send({
+        link: row
+          ? {
+              email: row.email,
+              organization: row.organization,
+              products: row.products,
+              createdByZro: row.createdByZro,
+              linkedAt: row.linkedAt,
+              lastLoginAt: null,
+            }
+          : null,
+      });
+    if (body.p_action === 'link') {
+      zroLinks.set(body.p_user, {
+        userId: body.p_user,
+        sub: body.p_sub,
+        email: String(data.email || ''),
+        organization: data.organization || null,
+        products,
+        createdByZro: data.createdByZro === true,
+        linkedAt: row?.linkedAt ?? new Date().toISOString(),
+      });
+      return send({ ok: true });
+    }
+    if (body.p_action === 'unlink') {
+      if (row?.createdByZro) return send({ error: 'only_login' });
+      zroLinks.delete(body.p_user);
+      return send({ ok: true });
+    }
+    return send({ message: 'Invalid action' }, 400);
   }
   if (url.pathname === '/rest/v1/rpc/nossom_plan_catalog') return send(plansCatalog);
   if (url.pathname === '/rest/v1/rpc/nossom_subscription') {

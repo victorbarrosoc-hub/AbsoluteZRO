@@ -9,7 +9,7 @@ export async function iniciarZroFalsa(cliente) {
   const { privateKey, publicKey } = generateKeyPairSync('ec', { namedCurve: 'P-256' })
   const jwk = { ...publicKey.export({ format: 'jwk' }), kid: 'chave-teste', alg: 'ES256', use: 'sig' }
   const codigos = new Map()
-  const estado = { pessoa: null, negar: false, adulterar: null, trocas: 0 }
+  const estado = { pessoa: null, negar: false, adulterar: null, trocas: 0, prompt: null }
   let base = ''
 
   const jwt = (dados, assinarErrado = false) => {
@@ -31,6 +31,8 @@ export async function iniciarZroFalsa(cliente) {
     if (url.pathname === '/oauth/jwks') return responder(res, 200, { keys: [jwk] })
     if (url.pathname === '/oauth/authorize') {
       const q = url.searchParams
+      // prompt=create: o HUB de verdade abre /criar-conta antes de voltar; aqui só registra o pedido
+      estado.prompt = q.get('prompt')
       const volta = new URL(q.get('redirect_uri'))
       volta.searchParams.set('state', q.get('state'))
       if (q.get('client_id') !== cliente.clientId || q.get('code_challenge_method') !== 'S256' || !q.get('code_challenge') || !q.get('nonce') || q.get('scope') !== 'openid email profile org') {

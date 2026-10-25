@@ -147,6 +147,24 @@ export async function zroLinkOf(userId: string): Promise<ZroLink | null> {
   return (await rpc<{ link: ZroLink | null }>('get', { user: userId }))?.link ?? null;
 }
 
+/**
+ * Produtos liberados (`zro_products`) guardados no vínculo, ou null para conta sem vínculo.
+ * Sem o cliente da Absolute ZRO configurado não há vínculo a conferir.
+ */
+export async function zroProductsOf(userId: string): Promise<string[] | null> {
+  if (
+    !process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
+    !process.env.ZRO_CLIENT_ID?.trim() ||
+    !process.env.ZRO_CLIENT_SECRET?.trim()
+  )
+    return null;
+  const link = await zroLinkOf(userId);
+  if (!link) return null;
+  return Array.isArray(link.products)
+    ? link.products.filter((p): p is string => typeof p === 'string')
+    : [];
+}
+
 /** Desliga. Conta criada pela Absolute ZRO (sem senha) não desliga: ficaria sem como entrar. */
 export async function unlinkZro(
   userId: string,

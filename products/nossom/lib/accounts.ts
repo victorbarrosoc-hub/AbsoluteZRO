@@ -7,6 +7,8 @@ export type Account = {
   isAdmin: boolean;
   /** Version of the profile photo (upload time); absent when the person has none. */
   avatar?: number;
+  /** Conta Absolute ZRO cuja organização ainda não tem o NOSSOM liberado (zro_products). */
+  zroBlocked?: true;
 };
 export function accountPlan(
   account: Pick<Account, 'isAdmin'>,

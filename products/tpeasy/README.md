@@ -32,10 +32,12 @@ aparelho**: entrar mostra quem você é, mas não liga sincronização.
 - **`api/zro/`** quatro funções da Vercel, só com módulos do Node (sem `package.json`, sem build):
   - `entrar` (GET, `?volta=/app/...`): cria state, nonce e PKCE S256 num cookie assinado de 10 min (`tp_zro_ida`,
     HttpOnly, Secure, SameSite=Lax, só em `/api/zro`) e manda para o HUB. O botão **Abrir** do HUB usa este endereço.
+    Com `&criar=1` é o **Criar conta**: o HUB abre o cadastro (`prompt=create`) e volta já logado.
   - `callback` (GET): confere o state, troca o código com `client_secret_basic`, confere o id_token ES256 pela JWKS
     (iss, aud, exp, nonce) e grava o cookie `tp_zro` (30 dias, assinado) com sub, nome, e-mail, organização e produtos.
     Nenhum token do HUB chega ao navegador.
-  - `eu` (GET): JSON com a pessoa, `401` sem sessão, `503` sem configuração. Sempre `no-store`.
+  - `eu` (GET): JSON com a pessoa e `acesso` (`tpeasy` está em `zro_products`), `401` sem sessão, `503` sem
+    configuração. Sempre `no-store`.
   - `sair` (POST, só do próprio site): apaga `tp_zro`. A conta no HUB continua aberta.
 - As chaves dos cookies saem de `ZRO_CLIENT_SECRET` por HKDF (uma por finalidade).
 - Só aceita `tpeasy.vercel.app` e `localhost`/`127.0.0.1`; outro endereço (prévia da Vercel) vai para o site oficial
@@ -60,13 +62,20 @@ logado.
 **Testes:** `node --test tests/*.test.mjs` (Absolute ZRO falsa local, chave P-256 gerada no teste). Rodam no CI em
 `.github/workflows/tpeasy.yml` quando `products/tpeasy/**` muda.
 
+**Conta única.** Conta nova nasce só na Absolute ZRO: em Ajustes ficam **Entrar com Absolute ZRO** e **Criar conta**.
+O direito de uso vem do admin da Absolute ZRO: se a organização ativa não liberou o `tpeasy`, a pessoa entra, mas a
+conta mostra "Sua conta Absolute ZRO ainda não tem acesso ao TPeasy." com o botão **Ver na Absolute ZRO**
+(`/ferramentas`). O site e o teleprompter continuam abertos, com ou sem conta. A lista é reavaliada a cada entrada.
+
 ## Conta e nuvem (sincronização, desligada)
 
-O código da conta está pronto em `app/js/sync.js` (código por e-mail ou Google, roteiros e perfis com "o mais novo vence"). Para ligar:
+O código está em `app/js/sync.js` (roteiros e perfis com "o mais novo vence"). O código por e-mail só serve para
+**contas antigas** (`create_user: false`); o app não cria mais contas próprias nem entra pelo Google (o Google mora no
+HUB). Para ligar:
 
 1. Crie um projeto no Supabase e rode `supabase/migrations/0001_tpeasy_sync.sql`.
 2. Em Authentication › Email Templates › Magic Link, inclua `{{ .Token }}` para o e-mail mandar o código de 6 dígitos.
-3. (Opcional) Ative o Google em Authentication › Providers e adicione `https://tpeasy.vercel.app/app/` às URLs de redirecionamento.
+3. Deixe desligado o cadastro novo (Authentication › Sign In / Providers › Allow new users to sign up).
 4. Preencha `SUPABASE_URL` e `SUPABASE_KEY` (chave publicável) em `app/js/config.js`.
 
 ## Rodar local

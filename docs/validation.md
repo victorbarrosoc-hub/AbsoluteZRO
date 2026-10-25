@@ -144,6 +144,12 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   Intel e Windows) e as versões web (200).
 - `tests/integration/downloads.test.ts`: catálogo inteiro, só HTTPS em domínios oficiais, nada para instalar no que está
   em desenvolvimento. E2E com axe em `/baixar` e `/downloads` nos dois temas: 10/10.
+- Repositórios privados (25/10/2026): nenhum link do HUB vai para o `github.com`; o NOSSOM passa por
+  `https://nossom-teal.vercel.app/baixar/<sistema>` como SOBEDESCE e Synquei. `tests/integration/downloads.test.ts` recusa
+  `github.com`/`githubusercontent.com` e exige `/baixar/<sistema>` nos instaladores de desktop. Rotas do NOSSOM cobertas
+  com GitHub falso em `products/nossom/tests/desktop-releases.test.ts`. Não validado aqui: download real com o
+  `GITHUB_TOKEN` de produção (depende da variável nos projetos Vercel, ver
+  [downloads-privados](operations/downloads-privados.md)).
 
 ## Login único (25/10/2026)
 
@@ -196,6 +202,13 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   (mesmas rotas, chaves e CSP) antes da produção.
 - Login único nas cinco: `/api/zro/entrar` de cada domínio leva ao HUB; apps marcados como da família.
 
+## Synquei: conta pela Absolute ZRO (25/10/2026)
+
+- `products/synquei`: `npm test` 67/67. `tests/zro.test.mjs` (HUB falso): Criar conta manda `prompt=create` e volta
+  logado; `synquei` fora de `zro_products` entra com `acesso: false` e o link de `/ferramentas`; novo login reavalia.
+  `tests/conta-ui.test.mjs`: botões Entrar/Criar conta, aviso sem acesso com "Ver na Absolute ZRO", conta liberada.
+- Sem conferência visual em navegador nesta rodada (sem Chromium no ambiente).
+
 ## SOBEDESCE no monorepo (25/10/2026)
 
 - `products/sobedesce/web`: `npm run lint`, `npm run typecheck`, `npm run build` e `npm test` (227/227) com Postgres
@@ -218,3 +231,11 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - Provedor de pagamento e de e-mail reais (não escolhidos).
 - Worker como processo contínuo por horas (validado via `runOnce`/`recoverStaleRuns` nos testes e no seed).
 - Carga e concorrência além do teste de quota em paralelo.
+
+## TPeasy: conta única Absolute ZRO (25/10/2026)
+
+- `products/tpeasy`: `node --test tests/*.test.mjs` (23/23) com a Absolute ZRO falsa: `?criar=1` manda `prompt=create`
+  e volta logado; `tpeasy` fora de `zro_products` entra com `acesso: false`; liberado dá `acesso: true`; nova entrada
+  reavalia. Sintaxe dos módulos conferida como no CI.
+- Ajustes conferidos no Chromium (Playwright) com `/api/zro/eu` simulado: fora (Entrar + Criar conta), sem acesso
+  (aviso + "Ver na Absolute ZRO") e liberado (só a conta).

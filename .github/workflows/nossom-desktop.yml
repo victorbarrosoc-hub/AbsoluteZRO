@@ -57,9 +57,13 @@ jobs:
       - name: Inspect previous Mac preview
         if: matrix.platform == 'mac'
         shell: bash
-        # Prévia histórica 0.1.0, publicada no repositório antigo (arquivado, releases continuam públicas).
+        # Prévia histórica 0.1.0, no repositório antigo (arquivado e privado). O token do Actions só lê este
+        # repositório: sem acesso, a inspeção (só diagnóstico) é pulada em vez de travar o build.
         run: |
-          curl --fail --location --silent --show-error "https://github.com/victorbarrosoc-hub/nossom/releases/download/desktop-v0.1.0/NOSSOM-0.1.0-mac-${{ matrix.arch }}.zip" -o "$RUNNER_TEMP/previous.zip"
+          if ! curl --fail --location --silent --show-error "https://github.com/victorbarrosoc-hub/nossom/releases/download/desktop-v0.1.0/NOSSOM-0.1.0-mac-${{ matrix.arch }}.zip" -o "$RUNNER_TEMP/previous.zip"; then
+            echo '::notice::Prévia 0.1.0 inacessível (repositório antigo privado); inspeção pulada.'
+            exit 0
+          fi
           ditto -x -k "$RUNNER_TEMP/previous.zip" "$RUNNER_TEMP/previous"
           python3 desktop/verify-mac.py "$RUNNER_TEMP/previous/NOSSOM.app" --inspect
       - name: Package installer
@@ -70,8 +74,9 @@ jobs:
         working-directory: products/nossom/desktop
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-          # Canal fixo do NOSSOM: "releases/latest" do monorepo poderia ser de outra plataforma.
-          NOSSOM_UPDATE_BASE_URL: ${{ inputs.publish_signed && 'https://github.com/victorbarrosoc-hub/AbsoluteZRO/releases/download/nossom-atualizacoes' || vars.NOSSOM_UPDATE_BASE_URL }}
+          # Canal fixo do NOSSOM (release nossom-atualizacoes), lido pelo site: o repositório é privado, então o app
+          # pergunta a /baixar/atualizacoes/<arquivo>, que redireciona para o endereço assinado do GitHub.
+          NOSSOM_UPDATE_BASE_URL: ${{ inputs.publish_signed && 'https://nossom-teal.vercel.app/baixar/atualizacoes' || vars.NOSSOM_UPDATE_BASE_URL }}
           NOSSOM_UPDATE_FLAT_FEED: ${{ inputs.publish_signed && 'true' || 'false' }}
           NOSSOM_WINDOWS_PUBLISHER: ${{ vars.NOSSOM_WINDOWS_PUBLISHER }}
           CSC_LINK: ${{ matrix.platform == 'mac' && secrets.MAC_CSC_LINK || secrets.WIN_CSC_LINK }}
