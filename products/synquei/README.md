@@ -5,6 +5,7 @@
 - **Site:** [synquei.vercel.app](https://synquei.vercel.app) · **App:** [/app/](https://synquei.vercel.app/app/) · **Formatos:** [/formatos/](https://synquei.vercel.app/formatos/)
 - Sem build e sem dependências: HTML, CSS e módulos ES. É só servir a pasta.
 - Nada sai do computador: os arquivos são lidos direto do disco pelo navegador.
+- Mora em `products/synquei` do repositório [AbsoluteZRO](https://github.com/victorbarrosoc-hub/AbsoluteZRO) (fonte oficial desde 25/10/2026, ver `ORIGEM.md`). Na Vercel, o projeto `synquei` usa **Root Directory = `products/synquei`**.
 
 ---
 
@@ -97,8 +98,9 @@ O mesmo app, empacotado com Electron (`desktop/main.cjs`). Vantagens sobre o nav
 
 Distribuição (mesmo modelo do SOBEDESCE):
 
-1. `.github/workflows/desktop.yml` gera o `.dmg` (universal, Apple Silicon e Intel) num Mac e o `.exe` (x64 e ARM) num Windows do GitHub, roda o teste de fumaça do app empacotado (`--smoke`: monta o exemplo, sincroniza, exporta) e publica no Release **"Synquei · app de desktop"** (tag `app-desktop`), com o build no nome e um `versao.json` com o SHA-256 de cada instalador.
-2. `api/baixar.js` (função da Vercel) atende `/baixar/mac`, `/baixar/windows` e `/baixar/versao` e manda direto para o arquivo do GitHub. **Repositório privado:** crie na Vercel a variável `GITHUB_TOKEN` (token fino, só leitura de *Contents* deste repositório).
+1. `.github/workflows/synquei-desktop.yml` (na raiz do AbsoluteZRO) gera o `.dmg` (universal, Apple Silicon e Intel) num Mac e o `.exe` (x64 e ARM) num Windows do GitHub, roda o teste de fumaça do app empacotado (`--smoke`: monta o exemplo, sincroniza, exporta) e publica no Release **"Synquei · app de desktop"** (tag `synquei-app-desktop`), com o build no nome (número da execução + 1000, para ficar acima dos builds do repositório antigo, que iam até 25) e um `versao.json` com o SHA-256 de cada instalador.
+2. `api/baixar.js` (função da Vercel) atende `/baixar/mac`, `/baixar/windows` e `/baixar/versao` e manda direto para o arquivo do GitHub. Procura primeiro no Release `synquei-app-desktop` do AbsoluteZRO; enquanto ele não tiver instalador, usa o Release `app-desktop` do repositório antigo `victorbarrosoc-hub/synquei` (arquivado). `?build=N` acha o build em qualquer dos dois. Os dois repositórios são públicos: não precisa de token. Se algum virar privado, crie na Vercel a variável `GITHUB_TOKEN` (token fino, só leitura de *Contents*). `/baixar/diag` diz de onde está entregando.
+   Tags `synquei-v*` também disparam o build e a publicação.
 3. `instalar.sh` e `instalar.ps1`: instalação de uma linha, sem os avisos do macOS/Windows, conferindo o SHA-256:
    - Mac: `curl -fsSL https://synquei.vercel.app/instalar.sh | bash`
    - Windows: `irm https://synquei.vercel.app/instalar.ps1 | iex`
@@ -140,6 +142,33 @@ Como funciona:
 
 Testes: `tests/organizador.test.mjs` (resumo, linha pela metade, cancelado, segunda leva, permissões de leitura e escrita) e `tests/davinci.test.mjs` (o script do Resolve roda no LuaJIT com um Resolve de mentira: pastas, cores, Cena/Take, sem importar duas vezes, linha do tempo editada guardada, projeto errado esperando). Falta testar num DaVinci Resolve Studio de verdade.
 
+## Conta Absolute ZRO (opcional)
+
+O Synquei continua sem conta própria: tudo funciona sem entrar. No site, dá para **Entrar com Absolute ZRO** (login único, ADR 0012 do AbsoluteZRO) em Ajustes ou no cartão do plano; a pessoa aparece no cartão da barra lateral e em Ajustes (nome, e-mail, organização, Sair). A conta só identifica: não libera nem bloqueia recurso, e o plano continua o de `app/js/plano.js`. No app de desktop, offline ou aberto como arquivo, nada muda.
+
+Funções da Vercel (só Node, sem dependências; código comum em `api/_zro.js`, que a Vercel não publica como função):
+
+| Rota | O que faz |
+| --- | --- |
+| `GET /api/zro/entrar?volta=/app/%23/ajustes` | Cria state, nonce e PKCE S256, guarda num cookie assinado (`sq_zro`, 10 min, só em `/api/zro`) e manda para a Absolute ZRO. `volta` só aceita caminho deste site (padrão `/app/`). É o endereço de entrada que o HUB usa para abrir o app já logado. |
+| `GET /api/zro/callback` | Confere o state, troca o código com `client_secret_basic` + `code_verifier`, confere o id_token (ES256 pela JWKS, `iss`, `aud`, `exp`, `nonce`) e cria a sessão `sq_conta` (30 dias) com sub, nome, e-mail, organização e produtos. Nenhum token da Absolute ZRO vai para o navegador. Erros voltam como `?zro=expirou\|recusado\|erro\|config`. |
+| `GET /api/zro/eu` | 200 com a pessoa, 401 sem sessão, 503 se o login não estiver configurado. `no-store`. |
+| `POST /api/zro/sair` | Apaga `sq_conta` (a sessão na Absolute ZRO continua). |
+
+Cookies `HttpOnly; Secure; SameSite=Lax`, assinados com HMAC-SHA256; a chave de cada cookie sai de `ZRO_CLIENT_SECRET` por HKDF (trocar o segredo derruba as sessões). O retorno só vale em `https://synquei.vercel.app` e `localhost`/`127.0.0.1`; qualquer outro endereço (prévia da Vercel) é mandado para o site oficial antes de começar.
+
+Variáveis na Vercel (projeto `synquei`, Production):
+
+| Variável | Valor |
+| --- | --- |
+| `ZRO_CLIENT_ID` | `synquei-web` |
+| `ZRO_CLIENT_SECRET` | o segredo do cliente `synquei-web` no console da Absolute ZRO (sensível) |
+| `ZRO_ISSUER` | opcional; padrão `https://absolutezro.vercel.app` |
+
+No console da Absolute ZRO, o cliente `synquei-web` precisa do retorno `https://synquei.vercel.app/api/zro/callback` e o produto Synquei do endereço de entrada `https://synquei.vercel.app/api/zro/entrar`. Sem `ZRO_CLIENT_ID`/`ZRO_CLIENT_SECRET`, o botão não aparece e o app segue como antes.
+
+Testes: `tests/zro.test.mjs` com uma Absolute ZRO falsa local (`tests/zro-falso.mjs`, chave EC P-256 gerada no teste): fluxo completo, state, nonce, emissor e público errados, assinatura inválida, token vencido, cookies adulterados e volta para fora do site.
+
 ## Rodar local
 
 ```sh
@@ -162,7 +191,8 @@ app/                            o app (index.html, app.css, js/)
 sw.js                           modo offline
 desktop/                        app de desktop (Electron)
 api/baixar.js                   /baixar/* na Vercel
+api/zro/, api/_zro.js           Entrar com Absolute ZRO (funções da Vercel)
+app/js/conta.js                 quem entrou (cartão do plano e Ajustes)
 instalar.sh, instalar.ps1       instalação de uma linha
-.github/workflows/desktop.yml   instaladores no GitHub Actions
 tests/                          node --test
 ```

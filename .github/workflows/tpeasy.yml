@@ -1,0 +1,36 @@
+name: TPeasy
+
+on:
+  push:
+    branches: ['**']
+    paths:
+      - 'products/tpeasy/**'
+      - '.github/workflows/tpeasy.yml'
+  pull_request:
+    paths:
+      - 'products/tpeasy/**'
+      - '.github/workflows/tpeasy.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tpeasy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: products/tpeasy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Sintaxe dos módulos do app
+        run: for f in app/js/*.js sw.js site.js; do node --input-type=module --check < "$f" || exit 1; done
+      - name: Login com Absolute ZRO (OIDC falso)
+        run: node --test tests/*.test.mjs
