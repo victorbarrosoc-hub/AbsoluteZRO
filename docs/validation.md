@@ -365,3 +365,11 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - OG da Revela (`products/finishing/og.jpg`, 1200×630, fundo preto fosco, cubo de cor isométrico) gerado de
   `marca/og.html`; tags `og:*` e `twitter:*` com URL absoluta. `npm test` (**20/20**): teste novo confere as tags e que
   a imagem servida tem 1200×630.
+
+## Revela: logo do titular (25/10/2026)
+
+- Logo entregue pelo titular guardada sem alteração (`revela-logo-original.png`, 2172×724, fundo preto). Versão para o
+  preto fosco (`revela-logo.png`, 1740×325): fundo preto retirado por "cor para alfa" e margens recortadas; composta
+  de volta sobre o preto, difere da original em no máximo 0,5 nível (arredondamento).
+- Aplicada no cabeçalho da tela, no guia (capa e seção "Logo") e no OG do link (`og.jpg`, tags com `?v=2`).
+  `products/finishing`: `npm test` (**20/20**), com a logo carregando no cabeçalho.

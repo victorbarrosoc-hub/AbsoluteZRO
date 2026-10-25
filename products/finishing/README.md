@@ -19,7 +19,8 @@ Absolute ZRO vem do serviço de color grading e finalização da ZRO Filmes (zro
 
 ## Marca
 
-Guia em [`marca/index.html`](marca/index.html) ([ADR 0016](../../docs/decisions/0016-identidade-revela.md)): película
+Logo oficial do titular em `marca/revela-logo-original.png` (sem alterar) e `marca/revela-logo.png` (a mesma arte sem
+o fundo preto, para o preto fosco). Guia em [`marca/index.html`](marca/index.html) ([ADR 0016](../../docs/decisions/0016-identidade-revela.md)): película
 perfurada em amarelo filme, com o quadro revelado na diagonal em roxo → vermelho → laranja → amarelo; versões plana e
 de uma cor, cores, regras de uso e as alternativas estudadas (`marca/alternativas`).
 
