@@ -18,7 +18,7 @@ export function ClosingSection() {
           <h2 id="fim-titulo" className="font-display text-[34px] leading-[1.06] font-semibold tracking-[-0.03em] text-balance sm:text-[56px] lg:text-[clamp(56px,4.4vw,112px)]">
             Seus arquivos não passam pelos nossos servidores.
           </h2>
-          <p className="max-w-xl text-[17px] leading-relaxed text-white/65 sm:text-[19px]">Crie a conta, conecte o Drive e comece pelo maior arquivo que você tem.</p>
+          <p className="max-w-xl text-[17px] leading-relaxed text-white/65 sm:text-[19px]">Crie a conta com a Absolute ZRO, conecte o Drive e comece pelo maior arquivo que você tem.</p>
           <div className="mt-2 flex flex-wrap justify-center gap-3">
             <Link href={ROTAS.criarConta} className={buttonClasses({ variant: "secondary", size: "lg", className: "bg-white text-ink ring-0 hover:bg-white/90" })}>
               Criar conta

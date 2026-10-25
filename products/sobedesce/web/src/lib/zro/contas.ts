@@ -1,7 +1,8 @@
 /**
  * Conta Absolute ZRO ligada a uma conta SOBEDESCE (tabela contas_zro).
  * - Entrar: a pessoa da Absolute ZRO (zroSub) que já está ligada entra na conta dela.
- * - Primeira vez, sem conta SOBEDESCE com o e-mail: cria a conta (como o "Continuar com Google").
+ * - Primeira vez, sem conta SOBEDESCE com o e-mail: cria a conta. É o único caminho de conta nova (e-mail e senha
+ *   e Google não criam mais).
  * - E-mail que já tem conta SOBEDESCE: nunca liga sozinho (não toma conta pelo e-mail). A pessoa entra como sempre
  *   e liga a Absolute ZRO em Sua conta.
  * O Drive não muda: continua em contas_google, conectado em Sua conta.
@@ -15,6 +16,9 @@ import { avisarAdminContaNova } from "@/lib/email/admin";
 import type { PerfilZro } from "./oidc";
 
 const { contasZro, usuarios } = schema;
+
+/** Resposta a qualquer tentativa de criar conta fora da Absolute ZRO (e-mail e senha). */
+export const CRIAR_SO_PELA_ZRO = "A conta do SOBEDESCE é a sua conta Absolute ZRO. Crie a conta por lá.";
 
 /** Marca de conta criada pela Absolute ZRO: não é hash, nenhuma senha confere até a pessoa criar uma. */
 export const SEM_SENHA_ZRO = "zro";
@@ -63,7 +67,7 @@ export async function criarContaComZro(p: PerfilZro, ip: string, depois: Depois 
     await db.delete(usuarios).where(eq(usuarios.id, usuarioId));
     return { ok: false, erro: "zro_email_em_uso" };
   }
-  depois(() => avisarAdminContaNova({ id: usuarioId, nome, email: p.email }, false));
+  depois(() => avisarAdminContaNova({ id: usuarioId, nome, email: p.email }, "zro"));
   return { ok: true, usuarioId };
 }
 

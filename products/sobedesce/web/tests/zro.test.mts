@@ -16,6 +16,8 @@ let rotaVolta: typeof import("../src/app/api/zro/callback/route");
 let contas: typeof import("../src/lib/auth/contas");
 let sessao: typeof import("../src/lib/auth/sessao");
 let zroContas: typeof import("../src/lib/zro/contas");
+let rotaEu: typeof import("../src/app/api/eu/route");
+let rotaDrives: typeof import("../src/app/api/drive/contas/route");
 
 const PRODUTORA: PessoaZro = { sub: "zro-111", email: "lia@produtora.com", nome: "Lia Produtora", org: "Produtora Lia", produtos: ["sobedesce", "synquei"] };
 
@@ -28,6 +30,8 @@ before(async () => {
   contas = await import("../src/lib/auth/contas");
   sessao = await import("../src/lib/auth/sessao");
   zroContas = await import("../src/lib/zro/contas");
+  rotaEu = await import("../src/app/api/eu/route");
+  rotaDrives = await import("../src/app/api/drive/contas/route");
 });
 
 after(async () => {
@@ -36,7 +40,7 @@ after(async () => {
 });
 
 /** Navegador: /api/zro/entrar → Absolute ZRO falsa → /api/zro/callback. Devolve o destino e os cookies da volta. */
-async function fluxo(o: { modo?: "entrar" | "vincular"; pessoa: PessoaZro | null; sessao?: string; volta?: string; negar?: boolean; adulterar?: "nonce" | "aud" | "assinatura" | "emissor"; trocarState?: boolean }) {
+async function fluxo(o: { modo?: "entrar" | "criar" | "vincular"; pessoa: PessoaZro | null; sessao?: string; volta?: string; negar?: boolean; adulterar?: "nonce" | "aud" | "assinatura" | "emissor"; trocarState?: boolean }) {
   zro.estado.proximo = { pessoa: o.pessoa, negar: Boolean(o.negar), adulterar: o.adulterar ?? null };
   const q = new URLSearchParams({ modo: o.modo ?? "entrar" });
   if (o.volta) q.set("volta", o.volta);
@@ -160,5 +164,62 @@ describe("Sua conta", () => {
     const r = await fluxo({ pessoa: PRODUTORA });
     const a = await sessao.autenticar({ cookie: r.cookies.get("sd_sessao") });
     assert.deepEqual(await zroContas.desligarZro(a!.usuario.id), { ok: false, erro: "zro_unico_login" });
+  });
+});
+
+describe("criar conta", () => {
+  test("Criar conta abre a Absolute ZRO em criar conta (prompt=create) e volta já logada", async () => {
+    const nova: PessoaZro = { sub: "zro-nova", email: "nova@produtora.com", nome: "Nova Pessoa", produtos: ["sobedesce"] };
+    const r = await fluxo({ modo: "criar", pessoa: nova });
+    assert.equal(zro.estado.ultimoPrompt, "create");
+    assert.equal(new URL(r.ida.headers.get("location")!).searchParams.get("prompt"), "create");
+    assert.equal(r.destino, "/conta?zro=ok");
+    const a = await sessao.autenticar({ cookie: r.cookies.get("sd_sessao") });
+    assert.equal(a?.usuario.email, "nova@produtora.com");
+    assert.equal(a?.liberado, true);
+  });
+
+  test("Entrar não pede prompt=create", async () => {
+    await fluxo({ pessoa: PRODUTORA });
+    assert.equal(zro.estado.ultimoPrompt, null);
+  });
+});
+
+describe("direito de uso (zro_products)", () => {
+  const SEM: PessoaZro = { sub: "zro-sem-produto", email: "caio@outra.com", nome: "Caio", org: "Outra", produtos: ["synquei"] };
+
+  test("SOBEDESCE fora de zro_products: entra, mas as funções ficam bloqueadas; liberou, atualiza e usa", async () => {
+    const r = await fluxo({ modo: "criar", pessoa: SEM });
+    const token = r.cookies.get("sd_sessao");
+    assert.ok(token, "a pessoa entra");
+    const a = await sessao.autenticar({ cookie: token });
+    assert.equal(a?.liberado, false);
+
+    const eu = await rotaEu.GET(pedido("/api/eu", { cookies: { sd_sessao: token } }));
+    assert.equal(eu.status, 403);
+    const corpo = await eu.json();
+    assert.equal(corpo.erro, "sem_acesso_zro");
+    assert.match(corpo.mensagem, /Sua conta Absolute ZRO ainda não tem acesso ao SOBEDESCE\./);
+    assert.match(corpo.mensagem, /absolutezro\.vercel\.app\/ferramentas/);
+    assert.equal((await rotaDrives.GET(pedido("/api/drive/contas", { cookies: { sd_sessao: token } }))).status, 403);
+
+    // O admin da Absolute ZRO libera; "Já liberaram? Atualizar" religa e traz a lista nova.
+    const v = await fluxo({ modo: "vincular", pessoa: { ...SEM, produtos: ["synquei", "sobedesce"] }, sessao: token });
+    assert.equal(v.destino, "/conta?zro=ok");
+    assert.equal((await sessao.autenticar({ cookie: token }))?.liberado, true);
+    assert.equal((await rotaEu.GET(pedido("/api/eu", { cookies: { sd_sessao: token } }))).status, 200);
+    assert.equal((await rotaDrives.GET(pedido("/api/drive/contas", { cookies: { sd_sessao: token } }))).status, 200);
+
+    // Tirou de novo: o próximo login pela Absolute ZRO grava e bloqueia outra vez.
+    const de = await fluxo({ pessoa: SEM });
+    assert.equal((await sessao.autenticar({ cookie: de.cookies.get("sd_sessao") }))?.liberado, false);
+    assert.equal((await sessao.autenticar({ cookie: token }))?.liberado, false, "vale para todas as sessões da conta");
+  });
+
+  test("conta antiga sem vínculo com a Absolute ZRO segue como sempre", async () => {
+    const c = await contas.criarConta({ nome: "Antiga", email: "antiga@exemplo.com", senha: "senha da antiga!", ip: "5.5.5.5" });
+    assert.ok(c.ok);
+    assert.equal((await sessao.autenticar({ cookie: c.token }))?.liberado, true);
+    assert.equal((await rotaEu.GET(pedido("/api/eu", { cookies: { sd_sessao: c.token } }))).status, 200);
   });
 });

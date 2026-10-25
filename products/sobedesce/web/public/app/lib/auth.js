@@ -73,6 +73,13 @@ async function load() {
     r = null
   }
   if (r?.status === 401) return endSession(first ? null : 'Sua sessão terminou. Entre de novo.')
+  if (r?.status === 403 && r.json?.erro === 'sem_acesso_zro') {
+    // A conta Absolute ZRO ainda não tem a SOBEDESCE liberada: nada de Drive nem envio até o admin liberar.
+    forget()
+    stopRecheck()
+    setState({ account: null, drives: [], drive: null })
+    return setAuth({ status: 'error', issue: null, error: r.json.mensagem || 'Sua conta Absolute ZRO ainda não tem acesso ao SOBEDESCE.' })
+  }
   if (!r?.ok || !r.json?.usuario) {
     // Sem rede (ou servidor fora do ar). Com a tela principal aberta, não derruba ninguém: só não atualiza.
     if (getState().auth.status !== 'signedIn') {

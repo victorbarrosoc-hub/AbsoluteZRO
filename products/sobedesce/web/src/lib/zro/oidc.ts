@@ -41,7 +41,8 @@ export function novoValor(): string {
   return randomBytes(32).toString("base64url");
 }
 
-export async function urlDeLogin(o: { state: string; desafio: string; nonce: string; origem?: string | null }): Promise<string> {
+/** `criar`: a pessoa veio de "Criar conta"; `prompt=create` pede à Absolute ZRO para abrir direto a tela de criar conta. */
+export async function urlDeLogin(o: { state: string; desafio: string; nonce: string; origem?: string | null; criar?: boolean }): Promise<string> {
   const d = await descobrir();
   const u = new URL(d.authorization_endpoint);
   u.searchParams.set("response_type", "code");
@@ -52,6 +53,7 @@ export async function urlDeLogin(o: { state: string; desafio: string; nonce: str
   u.searchParams.set("nonce", o.nonce);
   u.searchParams.set("code_challenge", o.desafio);
   u.searchParams.set("code_challenge_method", "S256");
+  if (o.criar) u.searchParams.set("prompt", "create");
   return u.toString();
 }
 

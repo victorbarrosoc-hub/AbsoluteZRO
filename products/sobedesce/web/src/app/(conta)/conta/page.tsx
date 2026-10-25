@@ -27,13 +27,15 @@ import { Drives } from "./drives";
 import { FormDesligarZro, FormGoogleDeEntrar, FormNome, FormPrimeiraSenha, FormSenha } from "./forms";
 import { ApagarConta } from "./apagar";
 import { BotaoSair } from "./sair";
+import { SemAcessoZro } from "../sem-acesso";
 
 export const metadata: Metadata = { title: "Sua conta" };
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 export default async function Conta({ searchParams }: Props) {
-  const { usuario } = await exigirUsuario("/conta");
+  const { usuario, liberado } = await exigirUsuario("/conta");
+  if (!liberado) return <SemAcessoZro volta="/conta" />;
   const q = await searchParams;
   const [contas, dispositivos, temSenha, admin, referencias, computadores, links, entrar, macs, zro] = await Promise.all([
     listarContas(usuario.id),

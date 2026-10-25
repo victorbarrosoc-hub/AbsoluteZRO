@@ -56,7 +56,7 @@ export default async function PessoaAdmin({ params }: { params: Promise<{ id: st
         <Avatar src={foto} nome={p.nome} />
         <div className="flex flex-wrap items-center gap-1.5">
           <Selo>Plano {NOME_PLANO[p.plano]}</Selo>
-          <Selo>{p.comSenha ? "E-mail e senha" : "Entrou com o Google"}</Selo>
+          <Selo>{p.comSenha ? "E-mail e senha" : p.soZro ? "Entrou com a Absolute ZRO" : "Entrou com o Google"}</Selo>
           {p.usou.celular ? <Selo>Usa o celular</Selo> : null}
           {p.avisosCelular ? <Selo>Avisos no celular ligados</Selo> : null}
           <Tira dias={p.tira30} className="ml-1" />

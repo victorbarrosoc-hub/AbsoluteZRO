@@ -57,7 +57,7 @@ export async function criarConta(entrada: { nome: unknown; email: unknown; senha
     return { ok: false, erro: "email_em_uso", campo: "email", mensagem: "Este e-mail já tem uma conta. Entre com ele." };
   }
   const sessao = await criarSessao(id, "web");
-  (entrada.depois ?? emSegundoPlano)(() => avisarAdminContaNova({ id, nome, email }, false));
+  (entrada.depois ?? emSegundoPlano)(() => avisarAdminContaNova({ id, nome, email }, "senha"));
   return { ok: true, usuario: { id, email, nome }, token: sessao.token, expiraEm: sessao.expiraEm };
 }
 
