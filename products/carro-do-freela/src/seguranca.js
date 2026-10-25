@@ -48,6 +48,14 @@ function chavesDeFora(env = process.env) {
   const w3f = limpo('CARRO_WEB3FORMS_KEY');
   if (url && !/^https:\/\/[a-z0-9.-]+$/i.test(url)) throw new Error('CARRO_SUPABASE_URL tem de ser só a origem https://… (veio "' + url.slice(0, 40) + '")');
   if (key && !/^[A-Za-z0-9._-]+$/.test(key)) throw new Error('CARRO_SUPABASE_ANON_KEY com caractere estranho');
+  /* ⚠️ A CHAVE QUE VAI NO HTML TEM DE SER A ANON. A de serviço passa por cima
+     da RLS: publicada, ela entregaria a lista inteira a quem abrisse o
+     código-fonte. Chave em formato JWT com outro papel reprova o build. */
+  if (key && key.split('.').length === 3) {
+    let papel = '?';
+    try { papel = JSON.parse(Buffer.from(key.split('.')[1], 'base64url').toString('utf8')).role || '?' } catch (e) {}
+    if (papel !== 'anon') throw new Error('CARRO_SUPABASE_ANON_KEY não é a chave anon (papel "' + papel + '") — a de serviço nunca vai para o HTML');
+  }
   if (w3f && !/^[A-Za-z0-9-]+$/.test(w3f)) throw new Error('CARRO_WEB3FORMS_KEY com caractere estranho');
   /* meia configuração do Supabase é configuração nenhuma: o app só liga a
      nuvem com as duas (nuvemLigada), e a CSP não abre origem que não fala */

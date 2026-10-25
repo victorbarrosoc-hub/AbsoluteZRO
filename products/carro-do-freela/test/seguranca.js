@@ -27,7 +27,9 @@
  * O Supabase também saiu do fonte: a suíte usa uma origem de TESTE.
  */
 process.env.CARRO_SUPABASE_URL = process.env.CARRO_SUPABASE_URL || 'https://carro-teste.supabase.co';
-process.env.CARRO_SUPABASE_ANON_KEY = process.env.CARRO_SUPABASE_ANON_KEY || 'chave.de.teste';
+/* chave de TESTE com cara de anon (montada aqui, nunca uma chave de verdade) */
+const b64 = o => Buffer.from(JSON.stringify(o)).toString('base64url');
+process.env.CARRO_SUPABASE_ANON_KEY = process.env.CARRO_SUPABASE_ANON_KEY || [b64({ alg: 'HS256', typ: 'JWT' }), b64({ role: 'anon', ref: 'teste' }), 'assinatura-de-teste'].join('.');
 const SUPA = process.env.CARRO_SUPABASE_URL;
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');

@@ -238,10 +238,15 @@ if (corte < 8) throw new Error('template sem bloco <style> — não achei onde p
 const pagina = '<!doctype html>\n<html lang="pt-BR">\n<head>\n' + META + '\n' +
   html.slice(0, corte) + '\n</head>\n<body>\n' + html.slice(corte).trim() + '\n</body>\n</html>\n';
 
-fs.mkdirSync(path.join(ROOT, 'public'), { recursive: true });
-const base = fase ? 'public/fase-' + fase : 'public/index';
-fs.writeFileSync(path.join(ROOT, base + '.html'), pagina);
-fs.writeFileSync(path.join(ROOT, fase ? base + '-artifact.html' : 'public/artifact.html'), html);
+/* --saida=<pasta> (25/out): escreve as duas saídas em outra pasta, sem tocar
+   no public/ que a bateria lê — é o que a suíte `registro` usa para montar
+   uma página com chaves de TESTE. A mídia continua indo para public/m/. */
+const argSaida = process.argv.find(a => a.startsWith('--saida='));
+const DIR_SAIDA = argSaida ? path.resolve(argSaida.slice(8)) : path.join(ROOT, 'public');
+fs.mkdirSync(DIR_SAIDA, { recursive: true });
+const base = path.join(DIR_SAIDA, fase ? 'fase-' + fase : 'index');
+fs.writeFileSync(base + '.html', pagina);
+fs.writeFileSync(fase ? base + '-artifact.html' : path.join(DIR_SAIDA, 'artifact.html'), html);
 
 const kb = (Buffer.byteLength(pagina) / 1024).toFixed(0);
 if (fase) {
