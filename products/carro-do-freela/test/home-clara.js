@@ -145,9 +145,37 @@ const PRE=pg=>pg.addInitScript(()=>{ try{
     t(vd.cenas.length>=4&&new Set(vd.cenas).size===vd.cenas.length,'⟶⟶ e cada cena entra UMA vez por volta: '+vd.cenas.join(' → ')+' → (de volta ao começo)');
     t(vd.seg>12&&vd.seg<20,'o ciclo inteiro dura '+vd.seg.toFixed(1)+'s');
     t(vd.plays.length>0&&vd.plays.every(q=>q.abriu),'⟶⟶ a carona não dá a partida embaixo do véu da abertura do site ('+vd.plays.map(q=>q.id+(q.abriu?'':'·cedo')).join(', ')+')');
-    /* sem H.264 (este Chromium) o vídeo falha e a cena cai no quadro do
-       banco do carona — a mesma saída do iPhone em economia de bateria */
-    t(!vd.vis&&vd.parado,'⟶⟶ sem vídeo, a cena descansa no quadro do banco do carona');
+    /* ⚠️ (25/out) A ASSERÇÃO ANTIGA ADIVINHAVA O NAVEGADOR: "este Chromium
+       não toca H.264", então o vídeo tinha de falhar. O Chromium do
+       Playwright novo (e o do CI) TOCA H.264 — o produto fez o certo e a
+       suíte reprovava. Agora são duas conferências, e nenhuma depende de
+       qual Chromium roda:
+       1. o que ACONTECEU de verdade: se o vídeo está à vista, ele tem de
+          estar tocando (o tempo anda); se não está, a cena tem de estar no
+          quadro do banco do carona;
+       2. a saída de emergência é PROVOCADA, sempre: o vídeo falha (o que um
+          navegador sem o codec dispara) e o play é recusado (iPhone em
+          economia de bateria) — nos dois a cena descansa no quadro parado. */
+    const real=await p.evaluate(async()=>{ const x=v('hp-video'), t0=x.currentTime;
+      await new Promise(r=>setTimeout(r,900));
+      return {vis:!x.hidden, andou:x.currentTime>t0, pausado:x.paused,
+        parado:!!HOME_VIDEO.parado&&(v('hp-cena').style.backgroundImage||'').includes(HOME_VIDEO.parado)} });
+    if(real.vis) t(real.andou&&!real.pausado,'⟶⟶ este Chromium toca H.264: a carona está à vista e TOCANDO (o tempo anda)');
+    else t(real.parado,'⟶⟶ este Chromium não toca o vídeo: a cena descansa no quadro do banco do carona');
+    const emergencia=await p.evaluate(async()=>{
+      const x=v('hp-video'), cena=v('hp-cena'), noParado=()=>(cena.style.backgroundImage||'').includes(HOME_VIDEO.parado);
+      x.dispatchEvent(new Event('error'));
+      const erro={vis:!x.hidden, parado:noParado()};
+      /* de novo à vista, e agora o play é recusado */
+      cena.style.backgroundImage=''; x.hidden=false;
+      x.play=()=>Promise.reject(new DOMException('recusado','NotAllowedError'));
+      ligarVideoHome(); await new Promise(r=>setTimeout(r,50));
+      const recusa={vis:!x.hidden, parado:noParado()};
+      delete x.play;
+      return {erro, recusa};
+    });
+    t(!emergencia.erro.vis&&emergencia.erro.parado,'⟶⟶ quando o vídeo falha (navegador sem o codec), ele some e a cena descansa no quadro do banco do carona');
+    t(!emergencia.recusa.vis&&emergencia.recusa.parado,'⟶⟶ quando o play é recusado (economia de bateria), a mesma saída: quadro parado, sem vídeo à vista');
     const pausa=await p.evaluate(()=>{ show('entrar'); const r=v('hp-video').paused; show('home'); return r });
     t(pausa,'sair da home pausa a cena');
     t(r.busca.abaixo&&r.busca.largura>.98,'a busca fica logo embaixo do topo, na largura inteira do conteúdo');
