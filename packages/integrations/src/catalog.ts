@@ -19,8 +19,8 @@ export const ADAPTERS: AdapterInfo[] = [
     inputs: ['Oportunidade, briefing, equipe, datas'],
     outputs: ['Job → projeto no HUB, referências, funções da equipe'],
     hubCan: ['Criar projeto a partir de um job no formato carro-do-freela.job/1', 'Guardar o vínculo com o job de origem'],
-    notYet: ['O protótipo ainda não envia jobs sozinho', 'Login único com o app original (exige mudança no original)'],
-    sourceManifest: 'products/carro-do-freela/SOURCE_MANIFEST.md',
+    notYet: ['O protótipo ainda não envia jobs sozinho'],
+    sourceManifest: 'products/carro-do-freela/ORIGEM.md',
   },
   {
     productId: 'tpeasy',
@@ -29,7 +29,7 @@ export const ADAPTERS: AdapterInfo[] = [
     outputs: ['Roteiro versionado no HUB', 'Arquivo de backup que o TPeasy importa'],
     hubCan: ['Exportar o roteiro do projeto para o TPeasy', 'Importar um roteiro do TPeasy como nova versão'],
     notYet: ['Sincronização automática (o TPeasy sincroniza só com a própria conta)'],
-    sourceManifest: 'products/tpeasy/SOURCE_MANIFEST.md',
+    sourceManifest: 'products/tpeasy/ORIGEM.md',
   },
   {
     productId: 'sobedesce',
@@ -38,7 +38,7 @@ export const ADAPTERS: AdapterInfo[] = [
     outputs: ['Manifest com checksums por destino e relatório de integridade'],
     hubCan: ['Importar o resumo do cartão e os relatórios de checksum', 'Mostrar o que está conferido, não conferido ou divergente'],
     notYet: ['Ler os discos direto (o SOBEDESCE roda no computador; o HUB recebe o que ele grava)'],
-    sourceManifest: 'products/sobedesce/SOURCE_MANIFEST.md',
+    sourceManifest: 'products/sobedesce/ORIGEM.md',
   },
   {
     productId: 'synquei',
@@ -47,7 +47,7 @@ export const ADAPTERS: AdapterInfo[] = [
     outputs: ['Prévia de pastas e bins, sem mover arquivos'],
     hubCan: ['Validar o manifest', 'Propor a organização preservando os IDs dos ativos'],
     notYet: ['Sincronizar pelo som (roda no app Synquei)', 'Executar movimentações no disco'],
-    sourceManifest: 'products/synquei/SOURCE_MANIFEST.md',
+    sourceManifest: 'products/synquei/ORIGEM.md',
   },
   {
     productId: 'ai-edit',
@@ -65,7 +65,7 @@ export const ADAPTERS: AdapterInfo[] = [
     outputs: ['Áudio limpo, mix, master'],
     hubCan: ['Abrir o NOSSOM', 'Contrato edit.timeline.ready para a passagem futura'],
     notYet: ['Enviar áudio: o áudio fica no dispositivo, por desenho do NOSSOM'],
-    sourceManifest: 'products/nossom/SOURCE_MANIFEST.md',
+    sourceManifest: 'products/nossom/ORIGEM.md',
   },
   {
     productId: 'finishing',
