@@ -33,6 +33,13 @@ A revisão ampla identificou expectativas antigas de texto/cor e o teste de aber
 - `tests/e2e/zro-login.spec.ts`: botão, volta preservada e aviso quando a Absolute ZRO não responde.
 - Limite: sem teste contra a Absolute ZRO e o Supabase reais; isso fica para depois de aplicar a migração e configurar as variáveis.
 
+## 25/10/2026 · Conta única Absolute ZRO e direito de uso
+
+- Conta nova só pela Absolute ZRO: "Criar conta" leva a `/api/zro/entrar?modo=criar`, que pede `prompt=create` ao HUB; `POST /api/account` recusa `register` (403, `zro_only`) antes de falar com o Supabase. Contas antigas entram com e-mail e senha como sempre; o botão recomendado é "Entrar com Absolute ZRO".
+- Direito de uso: `zro_products` (já guardado em `nossom_private.zro_links.products`) vai para a sessão no login ZRO, no login com senha de conta ligada, ao ligar em Minha conta e a cada renovação. Sem `nossom` na lista, a pessoa entra, vê "Sua conta Absolute ZRO ainda não tem acesso ao NOSSOM." e as APIs da conta respondem como sem conta (`currentAccount` = null). Conta sem vínculo ZRO nunca é bloqueada. Nada do dispositivo (projetos, versões, jobs) é apagado.
+- `tests/zro.test.ts`: `prompt=create` só em "criar"; produto fora da lista → bloqueio; liberado → acesso; renovação relê o vínculo; conta antiga sem vínculo segue igual. `tests/account.test.ts`: login sem cadastro.
+- `tests/e2e/zro-access.spec.ts` (Supabase falso com `nossom_zro_link`): tela de bloqueio, APIs 401, página pública aberta, liberação na próxima entrada; conta antiga sem vínculo entra normalmente. `tests/e2e/zro-login.spec.ts`: criar conta vai para a Absolute ZRO e o formulário de cadastro sumiu.
+
 ## Reproduzir
 
 ```sh

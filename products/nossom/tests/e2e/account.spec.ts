@@ -1,19 +1,20 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { existingAccount } from './fixtures';
 async function openAccess(page: Page) {
   const card = page.locator('.account-form-wrap');
   await expect(card).toHaveCSS('opacity', '1');
   await card.hover();
   await expect(card).toHaveClass(/is-expanded/);
 }
+/** Conta e-mail/senha que já existe no Supabase entra pela tela, como sempre. */
 async function create(page: Page, name: string, email: string) {
+  await existingAccount(page.request, { email, password: 'senha-de-teste', name });
   await page.goto('/entrar');
   await openAccess(page);
-  await page.getByRole('button', { name: 'Criar conta', exact: true }).click();
-  await page.getByLabel('Nome', { exact: true }).fill(name);
   await page.getByLabel('E-mail', { exact: true }).fill(email);
   await page.getByLabel('Senha', { exact: true }).fill('senha-de-teste');
-  await page.getByRole('button', { name: 'Criar conta e entrar', exact: true }).click();
+  await page.getByRole('button', { name: 'Entrar no estúdio', exact: true }).click();
   await expect(page).toHaveURL(/\/studio(?:\?|$)/);
   await expect(page.getByText(email, { exact: true })).toBeVisible();
 }
@@ -35,12 +36,27 @@ test('every studio route and the paid assistant require an account; public shari
     data: { action: 'register', name: 'Pessoa', username: 'fake', password: 'senha-de-teste' },
   });
   expect(cross.status()).toBe(403);
+  // Conta nova só pela Absolute ZRO: o cadastro por e-mail e senha é recusado no servidor.
+  const signup = await request.post('/api/account', {
+    headers: { Origin: 'http://localhost:3000' },
+    data: {
+      action: 'register',
+      name: 'Pessoa',
+      email: 'nova.' + crypto.randomUUID() + '@example.test',
+      password: 'senha-de-teste',
+    },
+  });
+  expect(signup.status()).toBe(403);
+  const refused = await signup.json();
+  expect(refused.code).toBe('zro_only');
+  expect(refused.createWith).toBe('/api/zro/entrar?modo=criar');
+  expect(signup.headers()['set-cookie']).toBeUndefined();
   const manifest = await request.get('/manifest.webmanifest');
   expect(manifest.ok()).toBe(true);
   const social = await request.get('/opengraph-image');
   expect(social.ok()).toBe(true);
 });
-test('Supabase accounts can sign up, sign out and sign in from another browser with their own password', async ({
+test('existing Supabase accounts sign in, sign out and sign in from another browser with their own password', async ({
   page,
   context,
 }) => {
@@ -128,9 +144,12 @@ test('account access is responsive and accessible with email and no per-user API
 }) => {
   await page.goto('/entrar');
   await openAccess(page);
-  await page.getByRole('button', { name: 'Criar conta', exact: true }).click();
-  await expect(page.getByLabel('Nome', { exact: true })).toBeVisible();
   await expect(page.getByLabel('E-mail', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Criar conta', exact: true }).click();
+  await expect(
+    page.getByRole('link', { name: 'Criar conta com a Absolute ZRO', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByLabel('Nome', { exact: true })).toHaveCount(0);
   for (const label of ['API Key', 'Agent ID', 'Environment ID', 'Código de acesso da NOSSOM'])
     await expect(page.getByLabel(label, { exact: true })).toHaveCount(0);
   expect(

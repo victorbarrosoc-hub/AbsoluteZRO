@@ -55,7 +55,7 @@ test('admin privileges require the exact email and verified Supabase identity; m
     false,
   );
 });
-test('registration and login use GoTrue, verified identity, and never return provider credentials to the interface', async () => {
+test('login uses GoTrue, verified identity, and never returns provider credentials to the interface', async () => {
   const restore = authEnvironment(),
     oldFetch = globalThis.fetch;
   const calls: { url: string; body: any }[] = [];
@@ -71,17 +71,12 @@ test('registration and login use GoTrue, verified identity, and never return pro
     });
   };
   try {
-    const result = await authenticate(
-      'register',
-      'teste@example.test',
-      'valid-password',
-      'Fictício',
-      'https://nossom-teal.vercel.app',
-    );
+    const result = await authenticate('teste@example.test', 'valid-password');
     assert.equal(result.account?.id, testUser.id);
     assert.equal(result.account?.email, testUser.email);
-    assert.equal(calls[0].body.data.name, 'Fictício');
-    assert.match(calls[0].url, /redirect_to=/);
+    // Conta nova só nasce pela Absolute ZRO: aqui é só login, nunca cadastro.
+    assert.match(calls[0].url, /\/auth\/v1\/token\?grant_type=password$/);
+    assert.ok(!calls.some((c) => c.url.includes('/signup')));
     const req = new Request('https://nossom.test/api/usage', {
       headers: { cookie: 'nossom-account=' + result.token },
     });
@@ -106,21 +101,12 @@ test('registration and login use GoTrue, verified identity, and never return pro
     restore();
   }
 });
-test('email confirmation does not issue a login cookie and an expired session refresh keeps conversation ownership', async () => {
+test('an unconfirmed e-mail does not get a login cookie and an expired session refresh keeps conversation ownership', async () => {
   const restore = authEnvironment(),
     oldFetch = globalThis.fetch;
   try {
     globalThis.fetch = async () => Response.json({ user: testUser });
-    assert.deepEqual(
-      await authenticate(
-        'register',
-        testUser.email,
-        'valid-password',
-        'Nome',
-        'https://nossom.test',
-      ),
-      { confirmationRequired: true },
-    );
+    await assert.rejects(authenticate(testUser.email, 'valid-password'), /Confirme seu e-mail/);
     const session = sessionFromProvider({
       user: testUser,
       access_token: 'old-access',
@@ -159,14 +145,9 @@ test('email confirmation does not issue a login cookie and an expired session re
   }
 });
 test('input validation rejects unsafe returns and weak credentials before provider traffic', async () => {
-  await assert.rejects(
-    authenticate('register', 'bad', 'long-password', 'Nome', 'https://nossom.test'),
-    /e-mail/,
-  );
-  await assert.rejects(
-    authenticate('register', 'valid@example.test', 'short', 'Nome', 'https://nossom.test'),
-    /senha/,
-  );
+  await assert.rejects(authenticate('bad', 'long-password'), /e-mail/);
+  await assert.rejects(authenticate('valid@example.test', ''), /senha/);
+  await assert.rejects(authenticate('valid@example.test', 'x'.repeat(129)), /senha/);
   for (const value of [
     'https://evil.test',
     '//evil.test',

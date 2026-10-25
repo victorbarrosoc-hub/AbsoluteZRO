@@ -11,6 +11,7 @@ import {
   authenticate,
   currentAccount,
   sessionCookie,
+  signedInAccount,
 } from '@/lib/server/account';
 import {
   allowRequest,
@@ -62,7 +63,8 @@ export async function GET(request: Request) {
       );
     }
   }
-  const account = await currentAccount(request);
+  // Quem entrou, mesmo sem o NOSSOM liberado na Absolute ZRO (`zroBlocked`), para a tela explicar.
+  const account = await signedInAccount(request);
   return Response.json(
     { account, configured: accountConfigured() },
     { status: account ? 200 : 401, headers: privateHeaders },
@@ -85,33 +87,28 @@ export async function POST(request: Request) {
   try {
     const body = JSON.parse(raw),
       ip = (request.headers.get('x-forwarded-for') ?? 'local').split(',')[0];
-    if (!['register', 'login'].includes(body.action))
+    // Conta nova só nasce pela Absolute ZRO: o cadastro por e-mail e senha é recusado aqui,
+    // antes de qualquer chamada ao Supabase (não basta esconder o formulário).
+    if (body.action === 'register')
+      return Response.json(
+        {
+          error: 'A conta do NOSSOM é a sua conta Absolute ZRO. Crie a sua por lá.',
+          code: 'zro_only',
+          createWith: '/api/zro/entrar?modo=criar',
+        },
+        { status: 403, headers: privateHeaders },
+      );
+    if (body.action !== 'login')
       return Response.json({ error: 'Ação inválida.' }, { status: 400, headers: privateHeaders });
-    if (
-      !allowRequest(
-        'account:' + body.action + ':' + ip,
-        body.action === 'register' ? 60 : 30,
-        900000,
-      )
-    )
+    if (!allowRequest('account:login:' + ip, 30, 900000))
       return Response.json(
         { error: 'Muitas tentativas. Aguarde alguns minutos.' },
         { status: 429, headers: privateHeaders },
       );
-    const result = await authenticate(
-      body.action,
-      body.email,
-      body.password,
-      body.name,
-      requestOrigin(request),
-    );
+    const result = await authenticate(body.email, body.password);
     const headers = new Headers(privateHeaders);
-    if ('token' in result && result.token)
-      headers.append('Set-Cookie', sessionCookie(result.token));
-    return Response.json(
-      { account: result.account, confirmationRequired: result.confirmationRequired || false },
-      { headers },
-    );
+    headers.append('Set-Cookie', sessionCookie(result.token));
+    return Response.json({ account: result.account, confirmationRequired: false }, { headers });
   } catch (error) {
     return Response.json(
       { error: publicError(error, 'Não foi possível entrar.') },
@@ -215,8 +212,12 @@ export async function PATCH(request: Request) {
       { method: 'PUT', token: auth?.access_token || session.access, body: changes },
     );
     const updated = accountFromUser(user);
+    // Os produtos da Absolute ZRO guardados na sessão continuam valendo depois da troca.
     const token = auth
-      ? encodeSession(sessionFromProvider({ ...auth, user }))
+      ? encodeSession({
+          ...sessionFromProvider({ ...auth, user }),
+          zroProducts: session.zroProducts,
+        })
       : encodeSession({ ...session, account: updated });
     return Response.json(
       { account: updated, confirmationRequired: body.action === 'email' },
