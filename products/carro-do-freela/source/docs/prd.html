@@ -1,0 +1,1280 @@
+<title>PRD do Carro do Freela</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;900&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --ground:#F5F2ED; --paper:#FFFFFF; --paper2:#EFEBE4;
+  --rule:#E0DAD1; --rule2:#CBC3B8;
+  --ink:#1B1815; --ink2:#544E47; --ink3:#615A52;
+  --accent:#0C627C; --accent-soft:rgba(12,98,124,.10);
+  --ok:#0F6230; --ok-soft:rgba(15,98,48,.10);
+  --meio:#6E4E05; --meio-soft:rgba(110,78,5,.11);
+  --nao:#615A52; --nao-soft:rgba(97,90,82,.10);
+  --alerta:#B41E66; --alerta-soft:rgba(180,30,102,.08);
+  --ciano-esc:#8FC3D2; --segurando:#725007;
+  --ui:"Schibsted Grotesk",system-ui,-apple-system,Helvetica,Arial,sans-serif;
+  --mono:"Spline Sans Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --col:min(72ch,100%);
+  --pad:clamp(18px,5vw,40px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#121110; --paper:#1A1917; --paper2:#221F1D;
+    --rule:#2B2724; --rule2:#3A3531;
+    --ink:#EFEDE7; --ink2:#AEA79E; --ink3:#9A9188;
+    --accent:#17D1E8; --accent-soft:rgba(23,209,232,.10);
+    --ok:#4BAE72; --ok-soft:rgba(75,174,114,.12);
+    --meio:#C9963F; --meio-soft:rgba(201,150,63,.12);
+    --nao:#A29990; --nao-soft:rgba(162,153,144,.10);
+    --alerta:#E24B8E; --alerta-soft:rgba(226,75,142,.10);
+  --ciano-esc:#0B7C8B; --segurando:#F2C14E;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#121110; --paper:#1A1917; --paper2:#221F1D;
+  --rule:#2B2724; --rule2:#3A3531;
+  --ink:#EFEDE7; --ink2:#AEA79E; --ink3:#9A9188;
+  --accent:#17D1E8; --accent-soft:rgba(23,209,232,.10);
+  --ok:#4BAE72; --ok-soft:rgba(75,174,114,.12);
+  --meio:#C9963F; --meio-soft:rgba(201,150,63,.12);
+  --nao:#A29990; --nao-soft:rgba(162,153,144,.10);
+  --alerta:#E24B8E; --alerta-soft:rgba(226,75,142,.10);
+  --ciano-esc:#0B7C8B; --segurando:#F2C14E;
+}
+
+*{box-sizing:border-box}
+/* o navegador de celular infla texto em bloco largo por conta própria
+   quando acha que a página não é responsiva; com o layout já sendo, isso
+   só desalinha a escada de tamanhos */
+html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:var(--ui); font-size:16px; line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:var(--col); margin:0 auto; padding:0 var(--pad)}
+.larga{max-width:min(96ch,100%); margin:0 auto; padding:0 var(--pad)}
+
+/* ---------- capa ---------- */
+/* padding-top/bottom, NUNCA o atalho: a .capa também é .wrap, e o atalho
+   zeraria a folga lateral dela — o texto encostaria no vidro no celular */
+.capa{padding-top:clamp(48px,11vw,96px); padding-bottom:clamp(30px,6vw,52px);
+  border-bottom:1px solid var(--rule)}
+.mono{font-family:var(--mono); font-size:.92em}
+.kicker{font-family:var(--mono); font-size:11.5px; font-weight:500; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--ink3); margin:0 0 18px}
+h1{font-size:clamp(38px,9vw,68px); line-height:1.02; letter-spacing:-.035em; font-weight:900;
+  margin:0 0 6px; text-wrap:balance}
+.sub1{font-size:clamp(19px,4.2vw,26px); line-height:1.3; letter-spacing:-.02em; font-weight:500;
+  color:var(--ink2); margin:0 0 30px; text-wrap:balance}
+.meta{display:flex; flex-wrap:wrap; gap:8px 26px; font-family:var(--mono);
+  font-size:12px; color:var(--ink3); letter-spacing:.01em}
+.meta b{color:var(--ink2); font-weight:500}
+
+/* ---------- estrutura ---------- */
+section{padding:clamp(38px,8vw,62px) 0; border-bottom:1px solid var(--rule)}
+section:last-of-type{border-bottom:0}
+h2{font-size:clamp(24px,5.2vw,33px); line-height:1.12; letter-spacing:-.028em; font-weight:800;
+  margin:0 0 8px; text-wrap:balance}
+h2 .n{font-family:var(--mono); font-size:.5em; font-weight:500; color:var(--ink3);
+  letter-spacing:.06em; display:block; margin-bottom:10px}
+h3{font-size:clamp(17px,3.6vw,20px); line-height:1.25; letter-spacing:-.015em; font-weight:700;
+  margin:34px 0 8px; text-wrap:balance}
+h4{font-size:14px; font-weight:700; letter-spacing:-.005em; margin:22px 0 6px; color:var(--ink)}
+p{margin:0 0 14px; color:var(--ink2)}
+p.dest{color:var(--ink); font-size:17.5px; line-height:1.55}
+strong,b{color:var(--ink); font-weight:600}
+a{color:var(--accent)}
+ul,ol{margin:0 0 16px; padding-left:22px; color:var(--ink2)}
+li{margin-bottom:7px}
+li::marker{color:var(--ink3)}
+hr{border:0; border-top:1px solid var(--rule); margin:30px 0}
+.nota{font-size:13.5px; line-height:1.6; color:var(--ink3)}
+
+/* ---------- a frase ---------- */
+.tese{margin:26px 0 6px; padding:22px 24px; background:var(--paper);
+  border:1px solid var(--rule2); border-left:3px solid var(--accent); border-radius:3px}
+.tese p{margin:0; font-size:clamp(18px,4vw,22px); line-height:1.38; letter-spacing:-.02em;
+  color:var(--ink); font-weight:600; text-wrap:balance}
+.tese .quem{display:block; margin-top:12px; font-family:var(--mono); font-size:11.5px;
+  letter-spacing:.09em; text-transform:uppercase; color:var(--ink3); font-weight:500}
+
+/* ---------- citação do Victor ---------- */
+.fala{margin:22px 0; padding-left:20px; border-left:2px solid var(--rule2)}
+.fala p{font-style:italic; color:var(--ink2); margin:0 0 6px}
+.fala cite{font-style:normal; font-family:var(--mono); font-size:11.5px; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--ink3)}
+
+/* ---------- caixas ---------- */
+.caixa{background:var(--paper); border:1px solid var(--rule); border-radius:10px;
+  padding:20px 22px; margin:22px 0}
+.caixa > :last-child{margin-bottom:0}
+.caixa.linha-alerta{border-left:3px solid var(--alerta); background:var(--alerta-soft)}
+.caixa.linha-ok{border-left:3px solid var(--ok)}
+.caixa .tit{font-family:var(--mono); font-size:11px; letter-spacing:.13em; text-transform:uppercase;
+  color:var(--ink3); font-weight:600; margin:0 0 10px; display:block}
+
+/* ---------- tabelas ---------- */
+.tabw{overflow-x:auto; margin:20px 0; border:1px solid var(--rule); border-radius:10px;
+  background:var(--paper)}
+table{border-collapse:collapse; width:100%; min-width:520px; font-size:14px}
+th{text-align:left; font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink3); padding:12px 14px; background:var(--paper2);
+  border-bottom:1px solid var(--rule2); white-space:nowrap; vertical-align:bottom}
+td{padding:11px 14px; border-bottom:1px solid var(--rule); color:var(--ink2); vertical-align:top;
+  line-height:1.5}
+tr:last-child td{border-bottom:0}
+td b, td strong{color:var(--ink)}
+.num{font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap; color:var(--ink)}
+.tabw.compacta table{min-width:420px}
+
+/* ---------- selo de estado ---------- */
+.st{display:inline-block; font-family:var(--mono); font-size:10.5px; font-weight:600;
+  letter-spacing:.06em; text-transform:uppercase; padding:3px 8px; border-radius:4px;
+  white-space:nowrap; border:1px solid transparent}
+.st.ok{color:var(--ok); background:var(--ok-soft); border-color:var(--ok)}
+.st.meio{color:var(--meio); background:var(--meio-soft); border-color:var(--meio)}
+.st.nao{color:var(--nao); background:var(--nao-soft); border-color:var(--rule2)}
+
+.fasecel{font-family:var(--mono);font-weight:600;color:var(--accent);text-align:center}
+/* ---------- dentro / fora do MVP ---------- */
+.corte{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:24px 0}
+@media(max-width:660px){ .corte{grid-template-columns:1fr} }
+.corte > div{background:var(--paper); border:1px solid var(--rule); border-radius:10px; padding:18px 20px}
+.corte .dentro{border-top:3px solid var(--ok)}
+.corte .fora{border-top:3px solid var(--rule2)}
+.corte h4{margin:0 0 12px; font-family:var(--mono); font-size:11px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--ink3)}
+.corte ul{margin:0; padding-left:18px; font-size:14.5px}
+.corte li{margin-bottom:6px}
+
+/* ---------- o loop ---------- */
+.loop{counter-reset:l; margin:24px 0; padding:0; list-style:none}
+.loop li{counter-increment:l; position:relative; padding:0 0 18px 46px; margin:0;
+  border-left:1px solid var(--rule2); margin-left:13px}
+.loop li:last-child{border-left-color:transparent; padding-bottom:0}
+.loop li::before{content:counter(l); position:absolute; left:-13px; top:-2px; width:26px; height:26px;
+  border-radius:50%; background:var(--paper); border:1px solid var(--rule2); color:var(--ink3);
+  font-family:var(--mono); font-size:12px; font-weight:600; display:grid; place-items:center}
+.loop b{display:block; color:var(--ink); font-size:15.5px; margin-bottom:2px}
+.loop span{font-size:14.5px; color:var(--ink2); line-height:1.55}
+
+/* ---------- fases ---------- */
+.fase{background:var(--paper); border:1px solid var(--rule); border-radius:10px;
+  padding:20px 22px; margin:14px 0}
+.fase .cab{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:8px}
+.fase .id{font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--accent)}
+.fase .quando{font-family:var(--mono); font-size:11px; color:var(--ink3); margin-left:auto}
+.fase h4{margin:0; font-size:17px; letter-spacing:-.015em}
+.fase p{margin:0 0 6px; font-size:14.5px}
+.fase p:last-child{margin-bottom:0}
+
+/* ---------- métrica ---------- */
+.mets{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin:22px 0}
+.met{background:var(--paper); border:1px solid var(--rule); border-radius:10px; padding:16px 18px}
+.met .k{font-family:var(--mono); font-size:10.5px; letter-spacing:.11em; text-transform:uppercase;
+  color:var(--ink3); font-weight:600; display:block; margin-bottom:6px}
+.met .v{font-family:var(--mono); font-size:22px; font-weight:600; color:var(--ink);
+  font-variant-numeric:tabular-nums; display:block; line-height:1.15}
+.met .d{font-size:13px; color:var(--ink2); line-height:1.5; margin-top:6px; display:block}
+
+/* ---------- rodapé ---------- */
+footer{padding:40px 0 60px; color:var(--ink3); font-size:13px; line-height:1.6}
+footer p{color:var(--ink3); margin-bottom:8px}
+
+/* ---------- identidade: o selo, a estrada e as moedas ----------
+   Tudo daqui sai do protótipo: a marca é o #mk (as três barras), o carro é
+   o SVG da pista, e as moedas são a fabricarMoeda portada no fim do
+   arquivo. Nenhum desenho novo — o documento veste o que o produto já é. */
+::selection{background:var(--accent-soft); color:var(--ink)}
+.selo{display:block; width:42px; height:42px; margin-bottom:20px; fill:var(--accent)}
+
+/* a estrada da capa: o carro estaciona sobre o próprio fio da capa —
+   a margem negativa come o padding para as rodas tocarem a linha da
+   página, sem inventar uma segunda linha de asfalto */
+.rodovia{position:relative; overflow:hidden;
+  margin-top:clamp(24px,5vw,40px); margin-bottom:calc(-1*clamp(30px,6vw,52px));
+  --ciano:var(--accent); --grafite:var(--ground); --grafite2:var(--paper);
+  --grafite3:var(--paper2); --linha2:var(--rule2); --cal-tenue:var(--ink3)}
+.rodovia svg{display:block; width:min(190px,46vw); height:auto; margin-left:auto; margin-right:4px}
+@keyframes prd-chega{from{transform:translateX(-100vw)}to{transform:none}}
+@keyframes prd-gira{to{transform:rotate(360deg)}}
+@media screen and (prefers-reduced-motion: no-preference){
+  .rodovia svg{animation:prd-chega 1.5s cubic-bezier(.22,.9,.32,1) both}
+  .rodovia .roda{transform-box:fill-box; transform-origin:center; animation:prd-gira .18s linear 8}
+}
+
+/* as duas moedas do cofre, na seção de receita */
+.moedas{display:flex; gap:clamp(18px,6vw,44px); flex-wrap:wrap; justify-content:center;
+  margin:26px 0 8px}
+.moeda{display:grid; justify-items:center; gap:2px}
+.moeda canvas{width:clamp(128px,34vw,158px); height:auto}
+.moeda .leg{font-family:var(--mono); font-size:11px; letter-spacing:.07em;
+  text-transform:uppercase; color:var(--ink3); text-align:center}
+.moeda .leg b{color:var(--ink); font-weight:600}
+
+/* a assinatura do rodapé, como a faixa de cima do app */
+.assina{display:flex; align-items:center; gap:9px; margin-bottom:14px}
+.assina svg{width:22px; height:22px; fill:var(--accent); flex:none}
+.assina b{font-weight:900; letter-spacing:-.03em; font-size:15px; color:var(--ink2)}
+
+/* ============ IMPRESSÃO / PDF ============
+   Quem imprime pode estar com o tema escuro ligado. Sem forçar os tokens
+   claros aqui, o PDF sairia com texto claro sobre papel branco — invisível.
+   É o mesmo princípio da folha dos documentos do produto: papel é papel. */
+@media print{
+  :root, :root[data-theme="dark"], :root:not([data-theme="light"]){
+    --ground:#FFFFFF; --paper:#FFFFFF; --paper2:#F1EDE6;
+    --rule:#DBD5CC; --rule2:#BFB7AC;
+    --ink:#16130F; --ink2:#4A443C; --ink3:#5C554D;
+    --accent:#0A5266; --accent-soft:rgba(10,82,102,.08);
+    --ok:#0C5228; --ok-soft:rgba(12,82,40,.09);
+    --meio:#63460A; --meio-soft:rgba(99,70,10,.10);
+    --nao:#5C554D; --nao-soft:rgba(92,85,77,.09);
+    --alerta:#96154F; --alerta-soft:rgba(150,21,79,.07);
+    --ciano-esc:#8FC3D2; --segurando:#725007;
+    --pad:0px;
+  }
+  html{font-size:10.5pt}
+  body{background:#fff}
+  .wrap{max-width:100%}
+  /* a tabela deixa de rolar e passa a caber: no papel não existe arrastar */
+  .tabw{overflow:visible; break-inside:auto}
+  table{min-width:0; font-size:9pt}
+  th,td{padding:6px 8px}
+  .capa{padding-top:0; padding-bottom:20px; break-after:avoid}
+  .rodovia{margin-bottom:-20px}
+  h1{font-size:30pt}
+  .sub1{font-size:13pt}
+  section{padding:20px 0; break-before:auto}
+  h2{font-size:17pt; break-after:avoid; break-inside:avoid}
+  h3,h4{break-after:avoid; break-inside:avoid}
+  p,li{orphans:3; widows:3}
+  /* blocos que perdem o sentido partidos ao meio */
+  .caixa,.fase,.tese,.met,.corte > div,.loop li,.fala{break-inside:avoid}
+  .mets{break-inside:auto}
+  footer{break-before:avoid}
+}
+@page{size:A4; margin:16mm 15mm}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <g id="mk"><g transform="translate(16,0) skewX(-12)">
+    <rect x="14" y="24" width="7" height="52" rx="2" opacity=".34"/>
+    <rect x="29" y="24" width="13" height="52" rx="2.5" opacity=".64"/>
+    <rect x="50" y="24" width="26" height="52" rx="3.5"/>
+  </g></g>
+</defs></svg>
+
+<div class="wrap capa">
+  <svg class="selo" viewBox="0 0 100 100" role="img" aria-label="Marca do Carro do Freela"><use href="#mk"/></svg>
+  <p class="kicker">Documento de requisitos do produto · PRD</p>
+  <h1>Carro do Freela</h1>
+  <p class="sub1">A rede do audiovisual de Natal — quem está rodando, quem está livre, e o dinheiro que passa entre os dois.</p>
+  <div class="meta">
+    <span><b>Versão</b> 3.1</span>
+    <span><b>Base</b> protótipo v12/set · 1</span>
+    <span><b>Praça</b> Natal/RN</span>
+    <span><b>Produto</b> Victor Barroso</span>
+  </div>
+  <div class="rodovia" aria-hidden="true">
+    <svg viewBox="0 0 210 92" fill="none">
+      <!-- rastro: as três barras da marca viram linhas de velocidade -->
+      <g fill="var(--ciano)" opacity=".9">
+        <rect x="2" y="40" width="16" height="4" rx="2" opacity=".28"/>
+        <rect x="7" y="50" width="26" height="4" rx="2" opacity=".5"/>
+        <rect x="0" y="60" width="20" height="4" rx="2" opacity=".34"/>
+      </g>
+      <rect x="86" y="18" width="52" height="9" rx="2" fill="var(--grafite3)" stroke="var(--linha2)"/>
+      <rect x="94" y="10" width="34" height="9" rx="2" fill="var(--ciano-esc)"/>
+      <path d="M44 66V52c0-4 3-7 7-7h11l14-16c2-2 4-3 7-3h33c3 0 5 1 7 3l13 16h18c5 0 9 4 9 9v12z"
+            fill="var(--ciano)"/>
+      <path d="M79 45l12-14c1-1 2-2 4-2h16v16z" fill="var(--grafite)" opacity=".55"/>
+      <path d="M115 45V29h14c2 0 3 1 4 2l11 14z" fill="var(--grafite)" opacity=".55"/>
+      <rect x="44" y="60" width="120" height="6" rx="3" fill="var(--grafite)" opacity=".28"/>
+      <circle class="roda" cx="72" cy="68" r="13" fill="var(--grafite2)" stroke="var(--cal-tenue)" stroke-width="3"/>
+      <circle class="roda" cx="140" cy="68" r="13" fill="var(--grafite2)" stroke="var(--cal-tenue)" stroke-width="3"/>
+      <circle cx="72" cy="68" r="3.4" fill="var(--ciano)"/>
+      <circle cx="140" cy="68" r="3.4" fill="var(--ciano)"/>
+      <rect x="160" y="49" width="7" height="5" rx="2" fill="var(--segurando)"/>
+    </svg>
+  </div>
+</div>
+
+<div class="wrap">
+
+<section>
+  <h2><span class="n">01</span>O problema</h2>
+
+  <p class="dest">O mercado de freela do audiovisual em Natal já funciona. Ele funciona num grupo de WhatsApp, e o nome deste produto vem de lá: <b>“olha o carro do freela passando”</b> é como alguém avisa que tem trabalho sobrando.</p>
+
+  <p>O grupo resolve o encontro e não resolve mais nada. Quatro coisas quebram todo mês:</p>
+
+  <h4>1. Ninguém sabe quem está livre</h4>
+  <p>Quem monta uma escala de cinco pessoas para quinta-feira manda mensagem para quinze e espera. As respostas chegam em ordem aleatória, algumas no dia seguinte, e metade já fechou outra coisa. O contratante acaba ligando para as três pessoas que ele já conhece — e o mercado inteiro fica do tamanho da agenda dele.</p>
+
+  <h4>2. Data furada não tem consequência</h4>
+  <p>O freela recusa outro job para segurar a data. Se o contratante cancela na véspera, ele perde o dia e não recebe nada. Se o freela some, o contratante perde a diária inteira procurando substituto às 6h. Nos dois casos vira palavra contra palavra num grupo, e ninguém cobra ninguém.</p>
+
+  <h4>3. Quem está começando não entra</h4>
+  <p>Sem histórico e sem contato, o novo não aparece. Não é falta de competência: é que a única forma de ser descoberto é alguém lembrar do seu nome. Isso concentra o trabalho em quem já está dentro e desvaloriza quem chega — segundo o Victor, com peso especial sobre as mulheres do mercado.</p>
+
+  <h4>4. O trabalho de escritório come o dia</h4>
+  <p>Orçamento, proposta, ordem do dia, boletim de câmera, contrato de aluguel, lista do que saiu e do que voltou. Tudo à mão, no Word e no Excel, refeito toda vez que um bloco muda de horário. É trabalho não pago que ninguém cobra do cliente.</p>
+
+  <p class="nota">Há um quinto problema, que a v1.0 deste documento não nomeava: <b>na maioria dos dias, ninguém te chamou</b> — e um aplicativo que só serve no dia do job é aberto uma vez por semana. A resposta a ele é a seção 04.</p>
+</section>
+
+<section>
+  <h2><span class="n">02</span>Quem usa</h2>
+
+  <div class="tabw">
+    <table>
+      <thead><tr><th>Papel</th><th>Quem é</th><th>O que ele vem fazer</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>Freela</b></td>
+          <td>Op. de câmera, editor, gaffer, fotógrafo, drone, assistente. Vive de diária.</td>
+          <td>Declarar em que dias está livre, receber chamada, mostrar o que entrega, ter registro do que fez e receber com garantia.</td>
+        </tr>
+        <tr>
+          <td><b>Contratante</b></td>
+          <td>Produtora, agência, marca, veículo — <b>e o freela que também pega trabalho.</b></td>
+          <td>Achar quem está livre na data, montar equipe com o custo somando, fechar com contrato.</td>
+        </tr>
+        <tr>
+          <td><b>Os dois</b></td>
+          <td>O caso mais comum da praça.</td>
+          <td>Trocar de chapéu na mesma conta, sem cadastro novo.</td>
+        </tr>
+        <tr>
+          <td><b>O convidado</b></td>
+          <td>O contratante que ainda não tem conta — chamou um freela por fora, como sempre chamou.</td>
+          <td>Confirmar pelo link o que já combinou, sem cadastro. É a porta de entrada do lado da demanda (seção 05).</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="caixa">
+    <span class="tit">Vocabulário</span>
+    <p><b>“Contratante”, nunca “produtora”.</b> Foi decisão do Victor e ela carrega produto: muito freela pega trabalho e monta equipe sem ser produtora. Chamar o papel de “produtora” expulsaria exatamente essa pessoa, que é a que mais transaciona.</p>
+  </div>
+
+  <h3>A base que existe hoje</h3>
+  <p>109 cadastros reais, coletados por formulário no grupo, com autorização. 73 em Natal, o resto espalhado por 20 praças do RN. 20 funções distintas. É o motivo de o produto começar por Natal e não por “o Brasil”.</p>
+
+  <div class="fala">
+    <p>“Quando eu for lançar a plataforma vou zerar todos os cadastros. Cada pessoa vai entrar e cadastrar seu perfil.”</p>
+    <cite>Victor</cite>
+  </div>
+
+  <p>Isso muda o que os 109 são: <b>lista de convocação, não contas pré-criadas</b>. Ninguém nasce com perfil público; o perfil só existe quando a própria pessoa o cria — o que também resolve o consentimento de publicação da LGPD no lugar certo, o próprio cadastro (seção 14).</p>
+</section>
+
+<section>
+  <h2><span class="n">03</span>A tese</h2>
+
+  <div class="tese">
+    <p>Você pode chamar quem quiser, de graça. Só quem paga sabe quem está&nbsp;livre.</p>
+    <span class="quem">A frase que decide o modelo inteiro</span>
+  </div>
+
+  <p>Essa única frase resolve os dois problemas mais difíceis de um marketplace de duas pontas:</p>
+
+  <ul>
+    <li><b>Cold start.</b> Ninguém paga para entrar. O freela é grátis para sempre; o contratante entra grátis no Carona, segue quem já conhece, fala com quem já conhece e chama pelo nome — que é literalmente o que ele faz no WhatsApp hoje, só que aqui rende contrato, sinal, registro e taxa.</li>
+    <li><b>Vazamento.</b> A lista de quem está livre é o ativo. Ela é o que a assinatura compra, e é a única coisa que fica atrás do paywall. Um diretório de contatos aberto seria copiado em uma tarde.</li>
+  </ul>
+
+  <p>A camada social (seção 04) afiou a linha do pago até ela caber numa frase: <b>seguir e falar é o que a pessoa já faz de graça no WhatsApp; saber quem está livre é a única coisa daqui que o WhatsApp não faz.</b></p>
+
+  <p>A receita nasce de transação desde o primeiro dia, não de mensalidade. A mensalidade é o que aparece depois, quando a pessoa contrata com frequência suficiente para a lista valer mais que o esforço de perguntar.</p>
+</section>
+
+<section>
+  <h2><span class="n">04</span>A rede — a porta de entrada</h2>
+
+  <div class="fala">
+    <p>“Agora que tá virando uma rede social do audiovisual, vou ter que criar um feed, pra que possam testar, curtir postagens, fazer comentários, compartilhar no feed.”</p>
+    <cite>Victor</cite>
+  </div>
+
+  <p class="dest">A busca resolve o dia do job. O feed resolve os outros dias — e os outros dias são a maioria.</p>
+
+  <p>A caixa de propostas só tem conteúdo quando alguém te chamou, e na maioria dos dias ninguém chamou. O feed tem conteúdo todo dia. Por isso <b>o login cai no feed</b>: é o que faz valer a pena abrir o aplicativo num dia sem job — e quem abre todo dia é quem mantém a agenda em dia, que é a hipótese mais arriscada do negócio inteiro (seção 12). A rede não é um enfeite ao lado do marketplace; <b>é a alavanca conhecida da métrica-mãe.</b></p>
+
+  <h3>O que a rede tem</h3>
+  <ul>
+    <li><b>Seguir.</b> Um botão com todas as letras — na busca, no perfil e em cada post — e um estado só por trás dos três. A lista “Quem eu sigo” mostra uma linha por pessoa, com falar e chamar, os dois de graça.</li>
+    <li><b>Mensagem direta.</b> Exceção declarada à regra “um fio por negociação”: aqui o contexto não é um job, é a pessoa. Sem ela, o Carona não consegue nem dizer oi para quem já conhece.</li>
+    <li><b>Contadores.</b> Seguidores e seguindo aparecem no perfil. No produto real são contagens reais; no protótipo são derivados e a tela declara a simulação.</li>
+    <li><b>Feed</b> com quatro tipos de post, comentário com resposta, curtida e fixado, e compartilhar com confirmação.</li>
+    <li><b>Rodando</b> — o que some em 24 horas. Vai junto com a rede, na Fase 4 (seção 11).</li>
+  </ul>
+
+  <h3>Os quatro tipos de post</h3>
+  <div class="tabw compacta">
+    <table>
+      <thead><tr><th>Tipo</th><th>Para quê</th></tr></thead>
+      <tbody>
+        <tr><td><b>Entreguei</b></td><td>O que saiu. É o que faz alguém querer seguir — e com foto oferece <b>guardar no portfólio</b>: postar alimenta o currículo em vez de criar um segundo sistema de conteúdo que ninguém mantém.</td></tr>
+        <tr><td><b>Bastidor</b></td><td>O que quase deu errado. É o que gera comentário.</td></tr>
+        <tr><td><b>Preciso de gente</b></td><td>Função, data e praça — e ganha o botão <b>“Me chama”</b>. É o único lugar onde o feed encosta no trabalho. No próprio post o botão aparece desligado com o motivo escrito: quem publica precisa ver o que publicou.</td></tr>
+        <tr><td><b>Recado</b></td><td>O resto.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Onde cada coisa mora</h3>
+  <p>A preocupação é do Victor, e está certa: <i>“o perfil do usuário também é o portfólio dele”</i>. A régua é <b>obra curada ≠ atividade</b> — o perfil ganhou a aba <b>Publicações</b>, primeira a abrir, separada de Trabalhos:</p>
+
+  <div class="tabw compacta">
+    <table>
+      <thead><tr><th></th><th>Portfólio (Trabalhos)</th><th>Publicações</th><th>Feed</th></tr></thead>
+      <tbody>
+        <tr><td><b>Trabalho que subiu</b></td><td>sim</td><td>não</td><td>só se compartilhar</td></tr>
+        <tr><td><b>Post próprio</b></td><td>só se marcar a caixa</td><td>sim</td><td>sim</td></tr>
+        <tr><td><b>Repost de outro</b></td><td><b>nunca</b></td><td><b>nunca</b></td><td>sim</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p><b>Repost nunca sai do feed.</b> O perfil é onde alguém decide contratar; repost é conversa, não obra. E a tela diz a regra, em vez de a pessoa descobrir por ausência.</p>
+
+  <h3>A conversa</h3>
+  <ul>
+    <li><b>Compartilhar sempre confirma</b>, com campo de texto opcional. Era a única ação do feed que publicava em nome da pessoa com um toque só, sem desfazer — deixou de ser.</li>
+    <li><b>Fixar comentário é do dono do post, e só um por vez.</b> Fixar é escolher o que fica no topo da conversa embaixo do seu trabalho; dois destaques não destacam nada.</li>
+    <li><b>Resposta desce um nível só</b>, como no Instagram, com o @ dizendo a quem. Escada de neto não cabe em tela de celular. As respostas nascem recolhidas.</li>
+    <li><b>A mídia abre em tela cheia</b> na proporção original do arquivo; vídeo abre tocando.</li>
+  </ul>
+
+  <h3>As regras da casa dentro do feed</h3>
+  <ul>
+    <li><b>Post nasce com zero curtida.</b> Curtida de brinde é a plataforma mentindo para o próprio dono da conta.</li>
+    <li><b>Nenhum número social é inventado.</b> No protótipo, os derivados se declaram; no produto, só existe o real.</li>
+    <li><b>O feed é cronológico e mostra quem você segue.</b> A segunda aba, “A praça”, mostra a cidade — dita com todas as letras — para o feed não ser um beco quando a conta é nova. Não há ordenação por engajamento: ranking de conteúdo é o top 10 com outra roupa (seção 06).</li>
+    <li><b>Ninguém publica em nome de ninguém.</b> Vale para o repost (confirma antes) e vale para a casa: o conteúdo semeado da demonstração se declara na tela.</li>
+  </ul>
+
+  <h3>Rodando — o que some em 24 horas</h3>
+  <p>As bolinhas no topo do feed. O nome vem do que a praça já fala — <i>“tô rodando hoje”</i> é estar gravando — e diz por que o conteúdo expira: acabou o dia. Foto fica 5 segundos; vídeo vai até 30, <b>e o limite é lido do arquivo antes de aceitar</b> — vídeo mais longo é recusado com o motivo, nunca cortado em silêncio, porque cortar o vídeo de alguém é decidir por ela qual pedaço importa. A própria bolinha é sempre a primeira da fileira, com o “+”: é a porta de publicar.</p>
+  <p class="nota">“Stories” e “timeline” foram descartados de propósito: o primeiro é marca alheia na boca de todo mundo; o segundo nomearia as bolinhas com o nome do que fica logo abaixo delas — timeline é o feed.</p>
+</section>
+
+<section>
+  <h2><span class="n">05</span>Como o contratante entra — o convite de job</h2>
+
+  <div class="fala">
+    <p>“Acabei de ser chamado pra um freela por um amigo de mercado, e aceitei. O que faria esse contratante falar: certo, vou deixar as informações lá na plataforma, te convidar pro job lá e pagar o seu sinal também?”</p>
+    <cite>Victor — a pergunta que originou esta seção</cite>
+  </div>
+
+  <p>A resposta honesta é <b>nada</b> — e a pergunta está invertida. Pedir a um amigo que crie conta e adiante 20% é pedir favor com risco social para resolver um problema que ele não tem: ele já confia em quem chamou. Vender garantia a quem não sente risco é o pitch mais fraco que existe.</p>
+
+  <p class="dest">Então quem convida é o freela, que é quem tem interesse. E a plataforma não precisa ganhar a contratação — precisa ganhar o job <b>depois</b> da contratação.</p>
+
+  <p>O “topa dia 12?” pode ficar no WhatsApp para sempre. O que o freela manda não parece convite de plataforma — parece ele sendo mais organizado que os outros: <i>“Fechou! Te mandei aqui os dados pra nota, confere se o horário tá certo.”</i> A partir daí o contratante sobe uma escada de três degraus, cada um no seu tempo:</p>
+
+  <ol class="loop">
+    <li><b>Ele confirma um link, sem conta, de graça</b><span>A tela do convidado abre com a identidade visual de quem mandou, não com a marca da plataforma — é o que separa isso de spam. Tela de cadastro antes de ver o combinado mataria o convite ali. <b>Este degrau entra na Fase 1</b> — ele não move dinheiro, só mostra o combinado.</span></li>
+    <li><b>Ele cria conta porque quer os documentos</b><span>Depois de quatro ou cinco jobs confirmados, ele tem tudo num lugar só — e a ordem do dia e a lista de equipe são coisas que <b>ele</b> quer dar ao cliente dele. Este degrau chega com a Fase 1 (documentos de produção).</span></li>
+    <li><b>Quando contratar quem não conhece, o sinal passa a fazer sentido</b><span>Aí existe risco de verdade, e ele pede a garantia sozinho. Cobrar o degrau 3 no degrau 1 é o erro.</span></li>
+  </ol>
+
+  <div class="caixa linha-ok">
+    <span class="tit">O sinal nasce desligado — e isso é requisito, com teste</span>
+    <p>O sinal serve contra o desconhecido; entre gente que já trabalha junta, ele é uma desconfiança que ninguém pediu. No convite, a caixa do sinal explica para que ele serve e <b>nasce desmarcada</b> — quem quiser liga. O padrão é escolha, não limitação. Há asserção de teste protegendo isso contra “otimização” futura.</p>
+  </div>
+
+  <div class="caixa">
+    <span class="tit">A OD é documento do contratante</span>
+    <p>A ordem do dia é o documento de organização que <b>o contratante</b> fornece aos freelas e ao cliente dele. O freela abre e copia; quem edita é quem contrata. (Registrado aqui porque um texto de pitch chegou a inverter esse fluxo — o produto nunca inverteu.)</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">06</span>O que o produto não é</h2>
+
+  <p>Estas linhas já estão escritas dentro do produto, em tela, e são requisito — não estilo. Cada uma existe porque cruzá-la muda o enquadramento regulatório ou quebra a confiança que faz o dado ser bom.</p>
+
+  <div class="tabw">
+    <table>
+      <thead><tr><th>Não é</th><th>Por quê</th></tr></thead>
+      <tbody>
+        <tr><td><b>Não é banco.</b> Não existe “recarregar carteira”.</td>
+            <td>Saldo parado sem destino é conta de pagamento e exige autorização do BACEN. Dinheiro amarrado a uma transação é custódia, que pega carona na licença do parceiro. <b>O take nasce de recebimento, nunca de depósito.</b></td></tr>
+        <tr><td><b>Não é locadora.</b> Não guarda, não entrega, não confere equipamento.</td>
+            <td>O que ela faz é aproximar e emitir o contrato. Reter valor de aluguel seria operar seguro sem ser seguradora.</td></tr>
+        <tr><td><b>Não vende seguro e não indeniza.</b></td>
+            <td>Quem paga sinistro tem que ser seguradora com nome na apólice. A plataforma organiza a <b>prova</b> — posse, valor, estado anterior — que é o que faz sinistro ser aceito.</td></tr>
+        <tr><td><b>Não vende posição na busca, nem selo, nem prioridade.</b></td>
+            <td>Vender ordenação destrói o dado que é o produto. Destaque pago existe só para <b>equipamento</b> no brechó, nunca para pessoa.</td></tr>
+        <tr><td><b>Não tem estrelas, nota, nem top 10.</b></td>
+            <td>Reputação são fatos de operação (jobs concluídos, tempo de resposta, cancelamentos). Nota vira ranking, e ranking concentra.</td></tr>
+        <tr><td><b>Não tem algoritmo de engajamento.</b> O feed é cronológico: quem você segue, ou a praça — dita com todas as letras.</td>
+            <td>Ordenar conteúdo por engajamento é o top 10 com outra roupa: concentra a atenção em quem já a tem, que é o problema nº 3 sendo reconstruído dentro do próprio produto.</td></tr>
+        <tr><td><b>Não fabrica engajamento.</b> Post nasce com zero curtida; nenhum seguidor é inventado.</td>
+            <td>Número social falso é a plataforma mentindo para o dono da conta — e numa praça onde todo mundo se conhece, mentira aritmética aparece em uma semana.</td></tr>
+        <tr><td><b>Não é parte do contrato de trabalho</b> entre freela e contratante.</td>
+            <td>Precisa estar escrito nos termos de uso. A plataforma intermedia pagamento e emite documento; a relação é entre as duas pessoas.</td></tr>
+        <tr><td><b>Não usa IA e não diz que usa.</b></td>
+            <td>O leitor de roteiro é busca de palavras e a tela diz isso. Anunciar IA que não existe é o tipo de mentira que derruba a confiança no resto.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">07</span>Modelo de receita</h2>
+
+  <h3>A escada de planos</h3>
+  <p>Cinco degraus, dois lados, uma régua só. <b>Um degrau contém tudo o que está abaixo dele</b> — inclusive do outro lado da conta. Como o preço sobe monotonicamente, não existe combinação que entregue mais por menos, e ninguém precisa assinar dos dois lados.</p>
+
+  <div class="tabw">
+    <table>
+      <thead><tr><th>Nível</th><th>Plano</th><th>Lado</th><th class="num">Preço</th><th>O que abre</th></tr></thead>
+      <tbody>
+        <tr><td class="num">0</td><td><b>Freela</b> / <b>Carona</b></td><td>ambos</td><td class="num">grátis</td><td>Perfil, agenda própria, <b>feed, seguir e mensagem</b>, receber chamada, chamar quem você já conhece, convite de job, contrato e sinal</td></tr>
+        <tr><td class="num">1</td><td><b>Premium</b></td><td>freela</td><td class="num">R$ 19/mês</td><td>Relatório do ano: de onde entrou o dinheiro, por contratante e por função</td></tr>
+        <tr><td class="num">2</td><td><b>Estrada</b></td><td>freela</td><td class="num">R$ 49/mês</td><td>Orçamento e proposta timbrada, cláusulas próprias, tabela por tipo de cliente</td></tr>
+        <tr><td class="num">3</td><td><b>Volante</b></td><td>contratante</td><td class="num">R$ 89/mês</td><td><b>Ver quem está livre</b>, montar equipe, passar o carro, meu time</td></tr>
+        <tr><td class="num">4</td><td><b>Frota</b></td><td>contratante</td><td class="num">R$ 189/mês</td><td>Taxa 4%, cláusulas no contrato, relatório de custo, escala recorrente</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="nota">O Volante não desconta taxa — paga os mesmos 6% do Carona. É de propósito: o valor dele mora <b>inteiro</b> na lista de quem está livre. A consequência disso vira risco na seção 13.</p>
+
+  <h3>Taxa por transação</h3>
+  <div class="tabw compacta">
+    <table>
+      <thead><tr><th>Fonte</th><th class="num">Taxa</th><th>Quem paga</th></tr></thead>
+      <tbody>
+        <tr><td>Job com sinal e contrato</td><td class="num">6% · 4% na Frota</td><td>quem contrata</td></tr>
+        <tr><td>Venda no brechó</td><td class="num">5%</td><td>quem vende</td></tr>
+        <tr><td>Anúncio impulsionado</td><td class="num">10%</td><td>quem vende</td></tr>
+        <tr><td>Contrato de locação de equipamento</td><td class="num">5% · mínimo R$ 15</td><td>quem formaliza</td></tr>
+        <tr><td>Fundar guilda</td><td class="num">R$ 249 única</td><td>quem funda</td></tr>
+        <tr><td><b>Pedágio</b> — submoeda de brinde, abate destas linhas</td><td class="num">não saca</td><td>concedido pela plataforma</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Pedágio — a submoeda de brinde</h3>
+  <p>Moeda promocional que a plataforma <b>concede</b>, e que <b>nunca vira dinheiro</b>. Paga plano, taxa da plataforma e fundação de guilda. <b>Não</b> paga equipamento, <b>não</b> paga o sinal e <b>não</b> saca. O nome é do Victor, e explica o produto em uma frase: <i>“é o que paga pra avançar na estrada.”</i></p>
+
+  <div class="moedas">
+    <div class="moeda"><canvas id="mo-take" width="170" height="170" role="img" aria-label="Moeda take girando: anodizado ciano, a marca da casa gravada de um lado e o símbolo T cifrão do outro"></canvas><span class="leg"><b>T$ take</b> · o dinheiro — saca</span></div>
+    <div class="moeda"><canvas id="mo-ped" width="170" height="170" role="img" aria-label="Moeda pedágio girando: latão âmbar, uma cancela erguida gravada de um lado e o símbolo P cifrão do outro"></canvas><span class="leg"><b>P$ pedágio</b> · o brinde — não saca</span></div>
+  </div>
+  <p class="nota">As moedas acima são as do produto, desenhadas pelo mesmo código do protótipo. Duas ligas do mesmo cofre: o take no anodizado ciano leva a marca da casa; o pedágio, no latão, leva uma cancela erguida — a cara diz o que a moeda faz.</p>
+
+  <div class="caixa linha-ok">
+    <span class="tit">Por que a restrição é estrutural, não comercial</span>
+    <p>No brechó, no aluguel e no sinal o dinheiro é de <b>outro usuário</b>. Um crédito emitido pela plataforma que pagasse aquilo seria a plataforma <b>transferindo valor entre pessoas com moeda própria</b> — exatamente a linha da instituição de pagamento.</p>
+    <p>Pagando só a receita da <b>própria</b> plataforma, o pedágio nunca vira direito sobre dinheiro: é <b>desconto pré-concedido</b>. Não pede custódia, não pede subconta no parceiro, e contabilmente é receita diferida em vez de passivo com terceiro. <b>É a diferença entre uma moeda e um cupom</b> — e ela mora inteira nessa regra.</p>
+  </div>
+
+  <p>Onde ele entra na conta, e é o caso que define tudo: ao fechar uma escala de R$ 507 (R$ 390 de sinal + R$ 117 de taxa), o pedágio abate <b>R$ 117 e nada mais</b>, mesmo com saldo de sobra. O sinal continua saindo em dinheiro porque é o cachê de quem vai trabalhar.</p>
+
+  <p class="nota">Vencimento é <b>por lote</b>, não por política global: campanha de lançamento quer prazo, bônus de indicação não precisa. Na carteira ele aparece em <b>linha separada do take, nunca somada</b> — total único faria a pessoa achar que saca o brinde. E ele aparece <b>na estrada</b>: a tela de planos mostra quanto do próximo degrau o saldo cobre, derivado — saldo zero não se anuncia.</p>
+
+  <p><b>Onde ele entra:</b> Fase 2, junto com o dinheiro. É cupom, não moeda — não depende do parceiro de pagamento —, mas só faz sentido quando existe taxa e plano pago dos dois lados para ele abater. Cada fase do roadmap (seção 11) é uma campanha, e o pedágio é o instrumento padrão delas: <i>“este mês, a taxa é por nossa conta”</i> custa uma concessão de lote, não uma mudança de tabela.</p>
+
+  <div class="caixa">
+    <span class="tit">Duas decisões que já foram tomadas e revertidas</span>
+    <p><b>A taxa sai na venda, não no saque.</b> Já foi o contrário; o Victor reverteu — <i>“as pessoas vão começar a armazenar dinheiro na conta”</i>. Saque é grátis.</p>
+    <p><b>A taxa do job é de quem contrata.</b> Cobrar do freela devolveria todo mundo para o Pix no mesmo dia.</p>
+  </div>
+
+  <p class="nota">Custo de adquirência (Pix ~1%, cartão 3–4%) sai destes brutos. Os 6% viram algo perto de 4% líquidos — é o número a confirmar com cada parceiro de pagamento antes de fechar a tabela.</p>
+</section>
+
+<section>
+  <h2><span class="n">08</span>Fase 1 — o que vai ao ar primeiro</h2>
+
+  <div class="fala">
+    <p>“Quero que na primeira fase a agenda dos freelas e o brechó só com venda de equipamento seja implementado principalmente. Isso que vai dar valor ao produto, vai resolver a dor dos usuários de cara.”</p>
+    <cite>Victor, 23/ago — a decisão que reordenou este documento</cite>
+  </div>
+
+  <p>O protótipo cobre a plataforma inteira. A Fase 1 não é uma versão pior dela: é o recorte que <b>resolve as duas dores imediatas do mercado sem depender de ninguém de fora</b>.</p>
+
+  <div class="caixa linha-ok">
+    <span class="tit">A régua do corte, versão 3 — e por que ela mudou</span>
+    <p>A v1.0 cortava por <i>“o que o primeiro job precisa para fechar”</i>. A v2.0 somou <i>“o que faz o aplicativo valer a pena num dia sem job”</i>. As duas colocavam o <b>sinal em custódia</b> dentro do lançamento — e é aí que estava o erro de sequência.</p>
+    <p>A régua da v3.0 é: <b>fica dentro o que resolve a dor sem depender de terceiro.</b></p>
+    <p>Custódia exige parceiro de pagamento aprovado, CNPJ aberto conforme a exigência dele, subconta por usuário e homologação. É a dependência <b>mais lenta e mais incerta</b> do plano inteiro — e o MVP anterior colocava ela no caminho crítico do primeiro usuário. Com a régua nova, <b>a Fase 1 sobe sem parceiro, sem CNPJ de custódia e sem homologação</b>, enquanto a conversa com o parceiro corre em paralelo.</p>
+  </div>
+
+  <h3>As duas dores que a Fase 1 resolve</h3>
+  <ol class="loop">
+    <li><b>“Quem tá livre no dia 12?”</b><span>Hoje isso é uma mensagem no grupo que 59 pessoas leem e 3 respondem. A agenda pública por dia transforma a pergunta numa busca — e é a única informação do produto que não dá para derivar de nenhuma outra.</span></li>
+    <li><b>“Tenho equipamento parado e não sei pra quem vender.”</b><span>Câmera, lente e acessório encostados são capital morto no armário de todo mundo. O brechó é a vitrine da praça, com ficha de conservação e avaliador de conta aberta.</span></li>
+  </ol>
+
+  <div class="caixa">
+    <span class="tit">O feed e o brechó respondem à mesma pergunta, e por isso vão juntos</span>
+    <p>A pergunta é: <b>num dia sem job, por que abrir o aplicativo?</b> A v2.0 respondia com o feed e carregava o risco que ela mesma registrou — <i>feed vazio no lançamento</i>, porque conteúdo social precisa ser fabricado até a base pegar o hábito.</p>
+    <p><b>Com os dois na Fase 1, o risco encolhe em vez de mudar de lugar.</b> O brechó chega com conteúdo que já existe: ninguém precisa ser convencido a anunciar a lente que quer vender, e todo mundo do meio olha vitrine de equipamento por prazer. Ele segura o tráfego diário enquanto o feed pega ritmo — e o feed é o que faz a pessoa <i>voltar</i>, porque tem gente do outro lado.</p>
+    <p class="nota">O <b>Rodando</b> continua fora, e por motivo próprio: é o anúncio mais visível e mais barato do calendário. Gastá-lo no dia do lançamento seria desperdiçar uma campanha pronta — ele é a Fase 4.</p>
+  </div>
+
+  <div class="caixa linha-alerta">
+    <span class="tit">O que entra obrigatoriamente junto: a denúncia</span>
+    <p>Com o feed na Fase 1, a <b>denúncia de post e a regra de remoção nos termos</b> passam a ser Fase 1 também. Este documento já registrava o risco: <i>rede de nomes reais em praça pequena</i>, onde um post “fulano me deixou na mão” é a regra de não atribuir defeito a pessoa real — só que escrita por um usuário, não pela casa.</p>
+    <p><b>É a única peça social que o protótipo ainda não desenhou</b>, e ela deixou de ser adiável: feed sem botão de denúncia num mercado onde todo mundo se conhece é o tipo de risco que se paga caro uma vez só.</p>
+  </div>
+
+  <h3>O corte</h3>
+  <div class="corte">
+    <div class="dentro">
+      <h4>Dentro da Fase 1</h4>
+      <ul>
+        <li>Cadastro e login (Google, Microsoft, telefone)</li>
+        <li>Perfil-portfólio público, com trabalhos e álbum</li>
+        <li><b>Agenda própria e disponibilidade por dia</b> — o coração da fase</li>
+        <li>Busca por praça, data, função, nome e equipamento</li>
+        <li>Montar equipe com o custo somando</li>
+        <li>Passar o carro, a corrida pela vaga e a <b>Sirene</b></li>
+        <li>Caixa de propostas: aceitar e recusar com motivo</li>
+        <li><b>Feed</b>: os quatro tipos de post, curtir, comentar, compartilhar com confirmação e “Me chama”</li>
+        <li><b>Seguir</b>, publicações no perfil e mensagem direta</li>
+        <li><b>Denúncia de post</b> — entra junto com o feed, não depois dele</li>
+        <li>Painel do job — o combinado à vista para os dois lados</li>
+        <li><b>Brechó, só venda, em acerto direto</b>: anunciar com ficha de conservação, avaliador com a conta aberta, contraproposta e conversa direta entre as duas pessoas. <b>Sem pagamento na plataforma</b> — nem taxa, nem carteira, nem custódia, nem impulsionado: tudo isso é Fase 2</li>
+        <li><b>Inventário</b> — a lista do que é seu, com ficha por peça. Tem porta no brechó e uma aba no Meu perfil</li>
+        <li>Assinatura <b>Volante</b> — ver quem está livre. <b>É o único plano à venda nesta fase</b></li>
+        <li>Suporte, mapa de telas e o guia das quatro portas</li>
+      </ul>
+    </div>
+    <div class="fora">
+      <h4>Fora — cada uma vira um lançamento</h4>
+      <ul>
+        <li><b>Todo o dinheiro dentro da plataforma</b>: sinal, custódia, contrato assinado, carteira, take, taxa</li>
+        <li>Cofre (o painel financeiro)</li>
+        <li><b>Rodando</b> (as bolinhas de 24h)</li>
+        <li>Guildas, salão e coletivos</li>
+        <li>Orçamento, proposta e leitor de roteiro</li>
+        <li>Ordem do dia e boletim de câmera</li>
+        <li>Inventário, dossiê, ocorrência e kits</li>
+        <li>Catálogo de aluguel e contrato de locação</li>
+        <li>Avaliação mútua pós-job</li>
+        <li>Pedágio</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="caixa linha-alerta">
+    <span class="tit">O que essa escolha CUSTA, dito na cara</span>
+    <p><b>A Fase 1 não tem receita de transação.</b> Sem custódia não há taxa de 6%, e sem pagamento no brechó não há os 5%. A única receita da fase é a assinatura do Volante — que é justamente o que ela entrega (<i>saber quem está livre</i>), então a oferta é coerente, mas o teto é baixo e depende de quantos contratantes pagam.</p>
+    <p><b>O freela não paga nada na Fase 1</b>, e isso é decisão, não esquecimento: a base precisa encher antes de a agenda valer alguma coisa. Plano de freela chega quando há o que ele proteja — relatório na Fase 2, orçamento na Fase 3.</p>
+    <p><b>O acerto continua por fora</b>, como é hoje no WhatsApp. A plataforma organiza, registra e aproxima; ela ainda não garante. Isso precisa estar escrito na tela, e não sugerido — prometer garantia antes de existir custódia é a mentira mais cara que este produto poderia contar.</p>
+  </div>
+
+  <div class="caixa">
+    <span class="tit">Os planos também são faseados — plano não vende o que a fase não faz</span>
+    <p>É a régua da vitrine aplicada ao catálogo. A <b>Frota</b> vende taxa reduzida, cláusulas próprias e relatório de custo: tudo Fase 2. O <b>Premium</b> vende o relatório do ano, que só existe quando há dinheiro passando. A <b>Estrada</b> vende o orçamento, Fase 3.</p>
+    <p><b>E o plano que falta não some — ele se explica</b> (24/ago, achado do Victor: <i>"tem lugar que fala do plano, mas na versão não tem o plano"</i>). Em cada fase, o plano de fase futura aparece como cartão apagado com preço, o que vai abrir e <em>quando chega</em> — e nenhum botão de assinar. Sumir com ele parece defeito; vendê-lo seria mentira; datá-lo é roadmap.</p>
+    <p>Sobram na Fase 1 exatamente os dois que ela entrega: o <b>Carona</b> (grátis) e o <b>Volante</b> — que é <i>“ver quem está livre”</i>, ou seja, a própria fase. <b>Do lado do freela não há nada à venda</b>, e é decisão: a base precisa encher antes de a agenda valer alguma coisa.</p>
+    <p class="nota">A escada de cinco degraus continua sendo o desenho do produto — ela só é mostrada inteira quando existe inteira. Nos protótipos das fases anteriores o mapa da estrada some, e a tela diz que os outros degraus chegam depois.</p>
+  </div>
+
+  <div class="caixa linha-alerta">
+    <span class="tit">⚠ O código discordava deste documento — e quem estava errado era o código (12/set)</span>
+    <p>Rodando o build da Fase 1 num navegador, o painel <b>“Minhas vendas” não existia</b>: <span class="mono">FASE_BP</span> punha <span class="mono">vender</span> na Fase 2, junto com <span class="mono">alugar</span>. A fase abria uma vitrine de equipamento <b>onde ninguém podia pôr nada à venda</b> — e o chip da versão prometia “anunciar e vender equipamento” com um ✓ na frente.</p>
+    <p>A origem foi um mal-entendido de uma frase: <i>“a segunda fase em diante já pode mandar a aba brechó completa”</i> foi lida como “o brechó todo vai para a 2”. O argumento registrado para mover — <i>só fica de pé com pagamento</i> — vale para o <b>aluguel</b>, que cobra 5% do período. <b>Anunciar não cobra nada de ninguém</b>, igual ao inventário, que ficou na Fase 1 por esse mesmo motivo.</p>
+    <div class="fala">
+      <p>“Comprar e vender é algo meio óbvio que tem que ter, pq se a pessoa vai comprar, alguém tem que colocar pra vender.”</p>
+      <cite>Victor, 12/set</cite>
+    </div>
+    <p><b>Consertado:</b> o painel voltou para a Fase 1 e o dinheiro ficou na 2, atrás de um gate único — irmão exato do que já fazia a escala inteira fechar em acerto direto. Na Fase 1 a carteira, o extrato, a taxa, a custódia e o impulsionado <b>não aparecem e não são citados em nenhuma linha</b>, e há asserção de teste exigindo exatamente isso.</p>
+    <p class="nota">Junto veio um defeito do <b>produto completo</b>, que estava no ar: num anúncio sem garantia o botão dizia <i>“Falar com o vendedor”</i> e abria um modal intitulado <i>“Comprar com garantia”</i>, com Pix e cartão. Hoje ele abre a conversa — que é o que ele diz.</p>
+  </div>
+
+  <h3>Critérios de pronto para a Fase 1</h3>
+  <ul>
+    <li>Um freela se cadastra, marca 15 dias e é encontrado por alguém que nunca ouviu falar dele.</li>
+    <li>Um contratante acha três pessoas livres numa data e chama as três — e a resposta volta para dentro do aplicativo, não para o WhatsApp.</li>
+    <li>A Sirene fecha uma vaga de última hora em menos de 10 minutos, com o freela aceitando pelo celular.</li>
+    <li>Um freela anuncia uma lente em menos de 3 minutos, com ficha de conservação preenchida, e recebe uma proposta de valor.</li>
+    <li>Quem já preencheu o inventário anuncia <b>sem digitar a ficha de novo</b> — é o que prova que as duas metades da fase se pagam.</li>
+    <li><b>A agenda de pelo menos 40% da base tem menos de 7 dias de idade</b> — é a métrica-mãe, e é ela que decide se existe Fase 2.</li>
+    <li>Nenhuma tela promete garantia, custódia ou pagamento que ainda não existe.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">08a</span>O agente de WhatsApp — o mecanismo da métrica-mãe</h2>
+
+  <div class="fala">
+    <p>“Um agente da Carro do Freela pra WhatsApp, onde o usuário conseguiria atualizar a agenda — fechar a data, ou deixar livre, ou falar que está negociando nessa data, e horários, se é uma diária inteira ou meia diária e dizer quais horários ainda tem livre. Assim o usuário consegue atualizar a agenda mais fácil. E essa é uma das maiores resoluções de problema pra o freela manter a agenda atualizada.”</p>
+    <cite>Victor, 12/set</cite>
+  </div>
+
+  <p>Esta seção existe porque o agente <b>não é um item a mais na lista da Fase 1</b>. A seção 12 diz que a hipótese mais arriscada do negócio é <b>se a agenda fica atualizada</b>, e fixa a métrica-mãe em 40% da base com agenda de menos de 7 dias. O agente é o <b>mecanismo</b> dessa métrica — a peça que a faz acontecer, em vez de esperar que aconteça.</p>
+
+  <div class="caixa linha-ok">
+    <span class="tit">O produto já prometia isso, sem chamar de agente</span>
+    <p>A tela da agenda diz, hoje, com todas as letras: <i>“Um toque por dia. No produto real isso chega por WhatsApp toda quinta — você responde ali e nem abre o app.”</i> O botão que a acompanha (<span class="mono">Ativar lembrete no WhatsApp</span>) é, no protótipo, um interruptor que só troca o próprio texto.</p>
+    <p>O que muda com esta seção é a <b>direção</b>: não é só a plataforma lembrando a pessoa, é a pessoa <b>respondendo em texto livre</b> e a agenda mudando com isso. O lembrete empurra; o agente recebe.</p>
+  </div>
+
+  <div class="caixa linha-ok">
+    <span class="tit">✓ O modelo de agenda já foi construído (12/set)</span>
+    <p>Esta caixa registrava um bloqueio: a disponibilidade do protótipo tinha três estados, todos <b>derivados</b>, e o bloqueio era de <b>dia inteiro</b> — não havia onde guardar “negociando”, meia diária nem horário. <b>Isso foi resolvido antes do agente, e de propósito:</b> primeiro o modelo, depois a boca que fala com ele.</p>
+    <p>Hoje cada dia aceita uma <b>declaração</b> com três campos: o estado (<i>fechado</i> ou <i>negociando</i> — livre é a ausência de declaração, nunca um valor guardado), a <b>parte do dia</b> (diária inteira, só de manhã, só à tarde) e a <b>hora da virada</b>, que só existe se a pessoa disser. Os dois primeiros são eixos independentes: quem fechou a manhã e depois diz “estou negociando” continua falando da manhã.</p>
+    <p><b>Meia diária fechada continua sendo um dia livre</b> — é o ponto do pedido original (“dá pra fazer os dois trabalhos no mesmo dia”): quem procura precisa achar a pessoa naquela data, e o que muda é a janela no card, não o status. Só o dia inteiro tira da busca. <b>35 asserções</b> guardam o comportamento, em suíte própria.</p>
+    <p class="nota">⚠ Junto veio um defeito que estava no produto: <b>o dia fechado não sobrevivia ao recarregar</b>. A lista de bloqueados nunca entrou no registro de persistência — a pessoa fechava os dias, recarregava, e a agenda voltava inteira livre, passando a mostrá-la como disponível em datas em que não está. Num produto cuja métrica-mãe é agenda viva, era o mecanismo para a busca mentir. Provado com controle e consertado na mesma leva.</p>
+    <p>O que a tabela abaixo registrava como “não existe” hoje existe — ela fica como o retrato do que precisou ser feito:</p>
+    <div class="tabw compacta">
+    <table>
+      <thead><tr><th>O que a pessoa diz no WhatsApp</th><th>Onde isso é guardado</th></tr></thead>
+      <tbody>
+        <tr><td>“fecha o dia 12”</td><td><span class="st ok">sim</span></td></tr>
+        <tr><td>“deixa o dia 12 livre”</td><td><span class="st ok">sim</span></td></tr>
+        <tr><td>“tô <b>negociando</b> o dia 12”</td><td><span class="st nao">antes: só inventando um job</span> → <span class="st ok">estado próprio</span></td></tr>
+        <tr><td>“dia 12 só <b>meia diária</b>”</td><td><span class="st nao">antes: não existia</span> → <span class="st ok">parte do dia</span></td></tr>
+        <tr><td>“dia 12 tô livre <b>até as 14h</b>”</td><td><span class="st nao">antes: não existia</span> → <span class="st ok">hora da virada</span></td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p>A regra que governava a <b>janela do dia</b> de 29/ago continua valendo, e agora nos dois lados: <b>hora só de job registrado</b> de um lado, <b>hora só se a pessoa declarar</b> do outro. Quem diz “de manhã” declarou <i>de manhã</i>, e é isso que a busca mostra — o produto exibe o que a pessoa disse, no grão em que ela disse. Os cadastros com agenda simulada continuam <b>sem janela nenhuma</b>: sorteio não tem hora dentro, e inventar uma seria mentir com precisão.</p>
+    <p><b>O que falta para o agente</b> é tudo do lado de fora: número dedicado, webhook, templates aprovados e o backend por baixo. As quatro ferramentas que ele vai chamar já existem como funções do produto.</p>
+  </div>
+
+  <h3>O que o agente faz, e o que ele não faz</h3>
+  <ul>
+    <li><b>Recebe</b> texto livre no número da plataforma e escreve na agenda: fechar dia, liberar dia, marcar negociando, definir diária inteira ou meia, e declarar janela de horário.</li>
+    <li><b>Manda</b> o lembrete da quinta para quem está com a agenda parada há mais de 7 dias — a pessoa responde na mesma conversa.</li>
+    <li><b>Confirma sempre</b>, em uma linha, com a data por extenso: <i>“Fechei quinta 12 e sexta 13. Sábado 14 continua livre. Certo?”</i> Agenda que muda sozinha sem eco vira agenda em que ninguém confia.</li>
+    <li><b>Não inventa horário.</b> Se a pessoa disse “de manhã”, grava “de manhã” — a mesma regra que já governa a janela do dia.</li>
+    <li><b>Só escreve na agenda.</b> Não fecha job, não aceita proposta, não mexe em dinheiro. Escopo apertado é o que o mantém confiável.</li>
+  </ul>
+
+  <div class="caixa">
+    <span class="tit">O que ele custa, e o que ele economiza</span>
+    <p>Uma mensagem de template por semana por pessoa; as respostas, dentro da janela de 24 horas, <b>não são cobradas</b>. Com a base de 109 são ~436 mensagens por mês: algo como <b>US$ 3</b> se o template for classificado como <i>utility</i>, ou ~US$ 27 se a Meta o classificar como <i>marketing</i> — <b>nove vezes mais</b>. Acertar a categoria é o maior botão de custo que o produto tem, e ele é decidido escrevendo texto: template seco e sobre o dado (a data, o estado da agenda dela) é utility; qualquer coisa que soe como convite vira marketing.</p>
+    <p>É o mesmo canal que a seção 12 já mede em <b>mensagens por vaga preenchida</b>, desenhado para cair de ~59 para ~12.</p>
+    <p><b>⚠ Correção de uma suposição anterior:</b> a verificação do negócio na Meta <b>não trava o piloto</b>. Sem verificação nenhuma a Cloud API já entrega a <b>250 destinatários únicos por 24 h</b> — a base de 109 cabe inteira, com folga de mais do dobro — e não exige CNPJ, que é justamente o que ainda não existe. A verificação (2 a 10 dias úteis, com documento de empresa) desbloqueia os degraus acima de 250/dia, então ela é pré-requisito de <b>crescimento</b>, não de lançamento. O que é obrigatório desde o primeiro envio, verificado ou não, é o <b>template aprovado</b>.</p>
+    <p class="nota">A dependência de gente que sobra é uma só, e é de perna: um <b>número de celular dedicado</b>, que não pode ter conta de WhatsApp ativa — nem no normal, nem no Business. Se tiver, é preciso apagar a conta antes, e isso leva o histórico junto. É a única decisão irreversível da lista.</p>
+  </div>
+
+  <div class="caixa linha-alerta">
+    <span class="tit">⚠ Ele mexe na restrição nº 1 da casa — e isso é decisão, não detalhe</span>
+    <p>A regra é <b>“telefone nunca é versionado nem exibido”</b>. O agente não a quebra como está escrita — versionar e exibir continuam proibidos —, mas <b>muda a postura</b>: hoje o telefone só existe no aparelho de quem digitou; com o agente ele passa a existir num banco operado pela plataforma.</p>
+    <p>O que isso exige, e entra na seção 14: finalidade declarada na política de privacidade; <b>consentimento separado no cadastro</b> — botão, nunca caixa já marcada, do mesmo jeito que o convite de lançamento já faz; saída fácil, com “PARAR” encerrando; e o número <b>nunca</b> aparecendo para outro usuário.</p>
+  </div>
+
+  <h3>Critérios de pronto do agente</h3>
+  <ul>
+    <li>Uma pessoa fecha e libera três datas por mensagem, sem abrir o aplicativo, e vê a agenda certa quando abrir.</li>
+    <li>“Sábado”, “semana que vem” e “dia 12” caem na data certa no fuso de Natal — e o eco mostra a data por extenso antes de valer.</li>
+    <li>Uma declaração de meia diária ou de janela aparece na busca de quem procura naquele dia.</li>
+    <li>Nenhuma resposta do agente inventa hora que a pessoa não disse.</li>
+    <li>Dez pessoas de verdade usam por duas semanas antes de o número ser aberto para a base.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">09</span>Requisitos por área</h2>
+
+  <p><b>Fase</b> é o lançamento em que o requisito entra (seção 11). Estado hoje: <span class="st ok">Desenhado</span> quer dizer que existe e funciona no protótipo, tela por tela e estado por estado. <span class="st meio">Parcial</span> quer dizer que a tela existe mas depende de serviço externo. <span class="st nao">A construir</span> é backend puro.</p>
+
+  <div class="tabw">
+    <table>
+      <thead><tr><th>Área</th><th>Requisito</th><th>Fase</th><th>Estado</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="3"><b>Identidade</b></td><td>Login social e por telefone; um cadastro, dois chapéus</td><td class="fasecel">1</td><td><span class="st meio">Parcial</span></td></tr>
+        <tr><td>Perfil com funções (catálogo fechado de 20), praça, equipamento, softskills</td><td class="fasecel">1</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td>Verificado grátis e conquistado: perfil ≥85% + 6 jobs. Nunca vendido.</td><td class="fasecel">1</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td rowspan="5"><b>Rede</b></td><td>Feed com 4 tipos de post; curtir, comentar, responder, fixar; compartilhar com confirmação; mídia em tela cheia</td><td class="fasecel">1</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td>Seguir num lugar só (busca, perfil e feed leem o mesmo estado); Quem eu sigo com falar e chamar</td><td class="fasecel">1</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td>Mensagem direta; convite de job sem conta, com sinal nascendo desligado</td><td class="fasecel">1</td><td><span class="st meio">Parcial</span></td></tr>
+        <tr><td>Denúncia de post e regra de remoção nos termos</td><td class="fasecel">1</td><td><span class="st nao">A construir</span></td></tr>
+        <tr><td>Rodando: 24h derivadas da hora, foto 5s, vídeo ≤30s recusado com motivo</td><td class="fasecel">4</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td rowspan="3"><b>Agenda</b></td><td>Freela marca dias livres; a disponibilidade é pública por dia</td><td class="fasecel">1</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td>Lembrete semanal para manter a agenda viva</td><td class="fasecel">1</td><td><span class="st nao">A construir</span></td></tr>
+        <tr><td>Ver agenda alheia exige Volante e modo contratante</td><td class="fasecel">1</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td rowspan="4"><b>Busca</b></td><td>Achar alguém: pessoa por nome, função ou cidade — grátis, dos dois lados, e SEM mostrar disponibilidade (que é o que o Volante vende)</td><td class="fasecel">1</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td>Filtro por praça, data, função, nome, forma de pagamento</td><td class="fasecel">1</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td>Ordem por disponibilidade e agenda em dia. Nunca por pagamento.</td><td class="fasecel">1</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td>Agregados sem nome visíveis a todos (censo por função e praça)</td><td class="fasecel">1</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td rowspan="4"><b>Contratação</b></td><td>Montar equipe com custo somando e vagas por função</td><td class="fasecel">1</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td>Passar o carro: chamada para vários, corrida pela vaga</td><td class="fasecel">1</td><td><span class="st meio">Parcial</span></td></tr>
+        <tr><td>Aceitar ou recusar com motivo. <b>Sem contraproposta de diária.</b></td><td class="fasecel">1</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td><b>Sirene</b>: chamada de última hora que toma a tela do freela, com contagem derivada e recusa em um toque</td><td class="fasecel">1</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td rowspan="6"><b>Dinheiro</b></td><td>Sinal de 20% + taxa na confirmação; 80% na conferência</td><td class="fasecel">2</td><td><span class="st nao">A construir</span></td></tr>
+        <tr><td>Liberação por função, não por job</td><td class="fasecel">2</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td>Cancelamento: +7d integral · 3–7d 50% · &lt;72h 100% para quem estava escalado</td><td class="fasecel">2</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td><b>Cofre</b>: a receber e a pagar com prazo e nome, metas escritas pela pessoa e registro do que ela guardou — <b>sem guardar dinheiro</b></td><td class="fasecel">2</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td>Carteira, extrato e saque grátis</td><td class="fasecel">2</td><td><span class="st nao">A construir</span></td></tr>
+        <tr><td>Pedágio: abate só receita da própria plataforma; lotes com vencimento; duas linhas na carteira, nunca somadas</td><td class="fasecel">2</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td rowspan="2"><b>Contrato</b></td><td>Contrato por dupla com partes, objeto, valor, cancelamento e foro</td><td class="fasecel">2</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td>Assinatura eletrônica pelos dois lados</td><td class="fasecel">2</td><td><span class="st nao">A construir</span></td></tr>
+        <tr><td rowspan="3"><b>Brechó</b></td><td>Anúncio com ficha de conservação por categoria e avaliador com a conta aberta</td><td class="fasecel">1</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td>Contraproposta de valor e conversa entre as duas pessoas</td><td class="fasecel">1</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td>Pagamento dentro da plataforma, taxa de 5% e impulsionado de 10%</td><td class="fasecel">2</td><td><span class="st nao">A construir</span></td></tr>
+        <tr><td rowspan="2"><b>Reputação</b></td><td>Fatos de operação: jobs, resposta, agenda em dia, cancelamentos</td><td class="fasecel">1</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td>Avaliação mútua em fatos + “trabalharia de novo?”, agregada como frase</td><td class="fasecel">4</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td><b>Arquivos</b></td><td>Porta-malas: Drive sem zip, em pedaços retomáveis com MD5 conferido; preview de RAW (.braw, .R3D) por proxy de servidor</td><td class="fasecel">3</td><td><span class="st ok">Desenhado</span></td></tr>
+        <tr><td><b>Notificação</b></td><td>Chamada e resposta por WhatsApp; aviso em tela para quem está olhando</td><td class="fasecel">1</td><td><span class="st meio">Parcial</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="caixa">
+    <span class="tit">Sobre o protótipo</span>
+    <p>Ele <b>não guarda nada</b> — tudo vive na memória do navegador e some quando a aba fecha. Não é meio caminho de código: é um <b>desenho completo</b>, com cada tela, cada estado e cada frase já decidida, validado por 43 suítes de teste automatizado. É a parte que normalmente leva meses de idas e vindas. O backend é do zero.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">10</span>Regras que não podem quebrar</h2>
+
+  <p>São invariantes. Se alguma cair, cai junto o motivo de o produto existir.</p>
+
+  <h4>Dados de pessoas reais</h4>
+  <ul>
+    <li><b>Telefone nunca é versionado nem exibido.</b></li>
+    <li><b>Não inventar diária de ninguém.</b> Quem não publicou tabela aparece com a faixa de referência da praça, nunca com um valor atribuído a ela.</li>
+    <li><b>Não atribuir defeito, trabalho, guilda, coletivo ou softskill a pessoa real.</b> Tudo isso é declaração do próprio dono da conta.</li>
+    <li>Gênero é autodeclarado, opcional, nunca vira selo e nunca entra na ordenação.</li>
+  </ul>
+
+  <h4>Rede</h4>
+  <ul>
+    <li><b>Ninguém publica em nome de ninguém.</b> Toda ação que publica confirma antes — o repost inclusive.</li>
+    <li><b>Nenhum número social é inventado.</b> Post nasce com zero curtida; seguidor é contagem real ou é declarado simulação.</li>
+    <li><b>Repost nunca entra no perfil.</b> O perfil é onde alguém decide contratar; repost é conversa, não obra.</li>
+    <li><b>Mídia recusada se explica.</b> Vídeo longo demais é recusado com o motivo, nunca cortado em silêncio.</li>
+  </ul>
+
+  <h4>Dinheiro</h4>
+  <ul>
+    <li>O valor retido <b>não passa pela conta bancária da empresa</b>. Ele fica na subconta do usuário dentro do parceiro de pagamento, e a plataforma só manda ordens. Cair na conta e repassar depois transforma a empresa em instituição de pagamento.</li>
+    <li>Take é saldo de subconta no parceiro, não número em banco de dados coberto por conta bancária.</li>
+    <li><b>Pedágio só abate receita da própria plataforma.</b> A lista do que ele paga é fechada; coisa nova só entra depois de responder: <i>esse dinheiro é nosso ou é de outro usuário?</i></li>
+  </ul>
+
+  <h4>Acesso</h4>
+  <ul>
+    <li>Toda tela que tranca pergunta <b>o degrau da escada</b>, nunca uma flag de plano específico. Foi assim que a brecha do chapéu trocado apareceu — o freela virava contratante grátis para usar o que era pago do lado dele.</li>
+    <li>Toda tela que tranca <b>se redesenha quando o plano muda</b>. Quem assina de dentro da tranca precisa ver a porta abrir.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">11</span>O roadmap faseado</h2>
+
+  <p>Cada fase é um lançamento com campanha própria. A ordem obedece a três critérios, nesta prioridade: <b>o que resolve dor sem depender de terceiro</b>, <b>o que reaproveita o encanamento da fase anterior</b> e <b>o que a base pede primeiro</b>. Datas são relativas ao início da construção, não ao calendário.</p>
+
+  <div class="fase">
+    <div class="cab"><span class="id">Fase 1</span><h4>A agenda e o brechó</h4><span class="quando">o lançamento</span></div>
+    <p>Detalhada na seção 08. Agenda pública por dia, busca, chamada com Sirene, e o brechó só com venda. <b>Zero dependência regulatória</b> — sobe enquanto a conversa com o parceiro de pagamento corre em paralelo.</p>
+    <p class="nota">Receita: assinatura Volante (R$ 89). Nenhuma transação.</p>
+  </div>
+
+  <div class="fase">
+    <div class="cab"><span class="id">Fase 2</span><h4>O dinheiro e o brechó completo</h4><span class="quando">~3 meses</span></div>
+    <p>Sinal de 20% + contrato eletrônico assinado pelos dois, custódia na subconta do parceiro, liberação por função, regras de cancelamento, carteira em take e saque. Entra também o <b>Cofre</b>, que organiza o que falta pagar e receber sem guardar um centavo, e o <b>pedágio</b> como instrumento de campanha.</p>
+    <p><b>E o brechó fica completo</b> — decisão do Victor: pagamento com taxa de 5% e impulsionado de 10%, kits por tipo de trabalho, transferência de posse, catálogo de aluguel entre pares e o contrato de locação com o estado congelado na entrega. O motivo é de encanamento: <b>o aluguel só fica de pé com pagamento</b> — ele cobra 5% do período —, e construir a canalização duas vezes seria desperdício.</p>
+    <p><b>O inventário desceu para a Fase 1</b>, e a razão é a mesma invertida: ele é <b>declaração</b>, não cobra nada de ninguém, e é ele que faz o anúncio do brechó nascer com a ficha pronta. Na Fase 1 ele é a peça que barateia a outra metade da fase.</p>
+    <p><b>É a fase que muda o modelo de negócio</b>: a receita deixa de ser só mensalidade e passa a crescer com o volume da praça. É também a mais cara e a mais lenta, porque depende de parceiro aprovado e CNPJ nascido conforme a exigência dele.</p>
+    <p class="nota">Receita nova: 6% por job com contrato (4% na Frota), 5% e 10% no brechó, 5% do período de locação com mínimo de R$ 15. Puxa o Premium (R$ 19) do lado do freela. <b>É a fase que mais acrescenta receita de uma vez.</b></p>
+  </div>
+
+  <div class="fase">
+    <div class="cab"><span class="id">Fase 3</span><h4>Os documentos da produção</h4><span class="quando">~5 meses</span></div>
+    <p>Orçamento a partir do roteiro com a faixa da praça, proposta timbrada (que <b>não</b> mostra a diária de ninguém ao cliente), ordem do dia em cronograma encadeado, boletim de câmera e lista de equipamento do job — todos saindo em Word e PDF com o timbre do usuário.</p>
+    <p><b>E o Porta-malas</b> (24/ago, pedido do Victor): subir e baixar material do Google Drive do usuário <b>sem o zip que trava</b> — arquivo por arquivo pela API oficial, em pedaços retomáveis de 32&nbsp;MB, várias conexões, e o MD5 que o Drive publica conferido no fim. Mais o <b>preview de RAW</b> (.braw, .R3D) sem baixar: um proxy leve gerado no nosso servidor com os SDKs oficiais — gratuitos — da Blackmagic e da RED, uma vez por arquivo. É a dor que hoje empurra o mercado para Cyberduck e FileZilla Pro. Mora nesta fase, e não na 1, porque <b>depende de servidor nosso</b> — e a régua da Fase 1 é não depender de terceiro.</p>
+    <p><b>É o degrau 2 do funil do contratante</b> (seção 05): a OD e a lista de equipe são o motivo de o convidado criar conta. Não mexe em dinheiro nem em regulação, e resolve trabalho que hoje ninguém cobra do cliente.</p>
+    <p class="nota">Receita nova: Estrada (R$ 49) do lado do freela e Frota (R$ 189) do lado de quem contrata.</p>
+  </div>
+
+  <div class="fase">
+    <div class="cab"><span class="id">Fase 4</span><h4>Rodando e a comunidade</h4><span class="quando">~7 meses</span></div>
+    <p>Rodando (as bolinhas de 24h), guildas com salão e time compartilhado, coletivos com o filtro Apenas mulheres, e a avaliação mútua em fatos.</p>
+    <p><b>O feed desceu para a Fase 1</b> (decisão do Victor) — o que fica aqui é o que só faz sentido com a base já rodando. O Rodando precisa de gente publicando todo dia para não abrir vazio; a guilda precisa de histórico de jobs para ter nível; a avaliação mútua precisa de jobs concluídos. Nenhum dos três funciona no dia um.</p>
+    <p class="nota">Receita nova: R$ 249 de fundação de guilda, R$ 49/mês VIP. Efeito principal é retenção.</p>
+  </div>
+
+  <div class="fase">
+    <div class="cab"><span class="id">Fase 5</span><h4>Seguro de equipamento</h4><span class="quando">~9 meses</span></div>
+    <p>O <b>dossiê por peça</b> — série, nota fiscal, ficha de conservação, fotos, ano e cadeia de posse — e a <b>ocorrência</b>, que congela o estado da peça antes do dano. Os dois já estão desenhados e se apoiam no inventário que chegou na Fase 2.</p>
+    <p><b>É a parte que ninguém consegue fazer sozinho</b>: o motivo nº 1 de sinistro negado é não conseguir provar posse, valor e estado anterior. O pacote sai da plataforma pronto para a corretora. Modelo: <b>comissão da seguradora, não do usuário</b> — dado preciso é vantagem para ela.</p>
+    <p class="nota">Receita nova: comissão de corretagem. <b>A plataforma não vende seguro e não indeniza em nenhuma fase.</b></p>
+  </div>
+
+  <div class="fase">
+    <div class="cab"><span class="id">Fase 6</span><h4>A segunda praça</h4><span class="quando">~12 meses</span></div>
+    <p>A tese do produto inteiro: <b>repetir a primeira cidade, não crescer em cima dela.</b> Audiovisual se contrata por proximidade, então densidade local vale mais que alcance nacional — é a estratégia do Uber e da JET, e é o que separa este produto de um hub nacional raso.</p>
+    <p>Com volume nas duas praças entra a <b>apólice coletiva</b>: um grupo de profissionais documentados comprando junto, que é preço que ninguém consegue sozinho — e é literalmente para isso que a guilda existe.</p>
+    <p class="nota"><b>É a única fase que não acrescenta tela.</b> O que se leva daqui é o método: a lista de convocação, a semana de operação manual e a métrica-mãe. Por isso o protótipo desta fase é o produto completo.</p>
+  </div>
+
+  <div class="caixa">
+    <span class="tit">O que foi construído depois da v3.0, e em que fase cada peça entra</span>
+    <p>A v3.0 foi escrita a partir do protótipo de 23/ago. Entre 25/ago e 12/set o produto ganhou nove peças que este documento ainda não registrava — <b>todas desenhadas e testadas</b>, cada uma num lugar do roadmap.</p>
+    <div class="tabw compacta">
+    <table>
+      <thead><tr><th>Peça</th><th>O que é</th><th class="num">Fase</th></tr></thead>
+      <tbody>
+        <tr><td><b>A doca</b></td><td>a barra de baixo nas duas formas — doca flutuante no computador, barra cheia no celular — e o feed do dia 1, sem banner mentiroso</td><td class="num">1</td></tr>
+        <tr><td><b>A janela do dia</b></td><td><i>“livre até 14:00”</i> no card de quem procura, derivada de job com hora de verdade. Nasceu de um pedido do Victor: dá para fazer dois trabalhos no mesmo dia</td><td class="num">1</td></tr>
+        <tr><td><b>Viaja a trabalho</b></td><td>declarado no perfil, vira chip e filtro na busca — quem topa sair da praça aparece para quem precisa</td><td class="num">1</td></tr>
+        <tr><td><b>O paradrop</b></td><td>a carga com nome real que desce de paraquedas e só age no pouso — o mecanismo que deixa uma lista privada entrar sem passar pelo git</td><td class="num">1</td></tr>
+        <tr><td><b>Caderneta de voo</b></td><td>derivada dos jobs de drone, com o aviso do que ela <b>não</b> é: o registro oficial continua exigindo o papel oficial</td><td class="num">1</td></tr>
+        <tr><td><b>Job embaixo do card</b> e o dono de fora editando</td><td>o detalhe do job abre no lugar, e quem criou o job de fora corrige os fatos dele</td><td class="num">1</td></tr>
+        <tr><td><b>Material do job</b></td><td>links e arquivos do trabalho — logo do cliente, GCs, animação — com a honestidade dos documentos</td><td class="num">3</td></tr>
+        <tr><td><b>Ordem do dia em PDF</b></td><td>anexo do job, com desfazer no Substituir</td><td class="num">3</td></tr>
+        <tr><td><b>A mesa de descarga</b></td><td>o controle do logger: arrastar a pasta cria o cartão, adivinha o rolo por dois caminhos, e a unidade é a <b>chegada</b>, não o cartão. Mora na 3 porque depende de servidor nosso</td><td class="num">3</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="nota">A mesa de descarga é a única que abre uma <b>área nova</b> do produto — ela não resolve contratação, resolve ofício. Vale registrar que ela nasceu de uma dor trazida pelo Victor em 29/ago e que um dia simulado de ponta a ponta achou nela o defeito mais caro do projeto: dois cartões formatados na mesma câmera, com os mesmos nomes de arquivo, faziam a tela <b>descartar material inteiro dizendo que estava tudo certo</b>. O que separa os dois casos é o tamanho em bytes.</p>
+  </div>
+
+  <div class="caixa linha-ok">
+    <span class="tit">O que mudou da v2.0 para a v3.0, e por quê</span>
+    <p>A v2.0 lançava com o ciclo do dinheiro fechado: sinal, contrato e custódia no dia um. A v3.0 <b>troca isso de lugar com a agenda e o brechó</b>, e o ganho é de cronograma, não de escopo — nada saiu do produto.</p>
+    <ul>
+      <li><b>O caminho crítico encurtou.</b> A dependência mais lenta do plano (parceiro de pagamento + CNPJ + homologação) saiu da frente do primeiro usuário e passou a correr em paralelo.</li>
+      <li><b>A hipótese mais arriscada é testada primeiro.</b> Se as pessoas não mantêm a agenda em dia, nada mais funciona — e agora isso se descobre em três meses, não depois de construir custódia.</li>
+      <li><b>O feed deixou de nascer vazio.</b> Ele chega na Fase 4 com base ativa.</li>
+      <li><b>O custo:</b> a Fase 1 vive de assinatura, sem receita de transação. É teto baixo por um período — e está dito na seção 08.</li>
+    </ul>
+  </div>
+
+  <div class="caixa">
+    <span class="tit">Por que faseado, e o nome disso</span>
+    <p>É <b>lançamento faseado com produto inteiro desenhado</b> — subir o núcleo que resolve a dor e liberar o resto em levas, cada uma com campanha. Para investidor e para sócio, mostra duas coisas ao mesmo tempo: o produto completo <b>já desenhado e testado</b>, e um calendário de crescimento com receita nova em cada fase. É a diferença entre pedir dinheiro para uma ideia e pedir dinheiro para uma sequência.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">12</span>O que medir</h2>
+
+  <p>A hipótese mais arriscada do negócio não é pagamento. É <b>se a agenda fica atualizada</b> — e ela pode ser testada sem tocar em um centavo, sem CNPJ e sem regulação nenhuma. O feed existe, antes de qualquer outra coisa, para empurrar esta métrica.</p>
+
+  <div class="mets">
+    <div class="met"><span class="k">Métrica-mãe</span><span class="v">Agenda viva</span><span class="d">% da base com disponibilidade atualizada nos últimos 7 dias. Abaixo de 40%, a busca mente e o produto não vale a assinatura.</span></div>
+    <div class="met"><span class="k">A porta</span><span class="v">Dia sem job</span><span class="d">% de aberturas do app em dias sem proposta nem job ativo. É o trabalho do feed — e é a alavanca que move a métrica-mãe.</span></div>
+    <div class="met"><span class="k">Encontro</span><span class="v">Chamadas → aceite</span><span class="d">Quantas chamadas viram vaga preenchida, e em quanto tempo. É a promessa central.</span></div>
+    <div class="met"><span class="k">Ciclo fechado</span><span class="v">Jobs com sinal</span><span class="d">Quantos jobs passam pelo contrato em vez de furar para o Pix. É a receita.</span></div>
+    <div class="met"><span class="k">Funil invertido</span><span class="v">Convite → conta</span><span class="d">Convites de job confirmados que viram conta de contratante — e depois de quantos jobs. Mede a escada da seção 05.</span></div>
+    <div class="met"><span class="k">Custo variável</span><span class="v">Msg / vaga</span><span class="d">Mensagens de WhatsApp por vaga preenchida. O produto foi desenhado para derrubar de ~59 para ~12.</span></div>
+    <div class="met"><span class="k">Descoberta</span><span class="v">Novos escalados</span><span class="d">% de jobs com pelo menos uma pessoa que o contratante não conhecia. Mede se o produto abre o mercado ou só digitaliza a panelinha.</span></div>
+    <div class="met"><span class="k">Conversão</span><span class="v">Carona → Volante</span><span class="d">Quantos contratantes grátis passam a pagar, e depois de quantas chamadas.</span></div>
+  </div>
+
+  <p class="nota">A métrica de descoberta é a que diz se o produto cumpriu o problema nº 3. Sem ela, dá para ter receita crescendo e o mercado igualzinho ao do WhatsApp.</p>
+</section>
+
+<section>
+  <h2><span class="n">13</span>Riscos e o que ainda não foi validado</h2>
+
+  <div class="caixa linha-ok">
+    <span class="tit">O que JÁ foi validado em campo (25/ago) — e o que isso não prova</span>
+    <p>Duas rodadas de observação do Victor, em grupos de WhatsApp do mercado. <b>Nenhum nome, telefone ou empresa é registrado aqui — só a forma.</b></p>
+    <p><b>Rodada 1, dois grupos observados.</b> Num, um contratante pergunta quem está livre sábado à noite; duas pessoas respondem no mesmo minuto, e <b>dezenove minutos depois ele reclama que “só um respondeu”</b> — a confirmação final vem por áudio de cinco segundos, citando outra mensagem. No outro grupo, com meia hora de diferença: um cartão de equipamento à venda (preço item a item) e um anúncio de serviço (“disponível para novos trabalhos, valor a combinar”), um embaixo do outro na rolagem.</p>
+    <p>Isto é, literalmente, <b>o feed desenhado na seção 04</b> — post de quem procura trabalho misturado com cartão do brechó, ordenados pela hora. A praça já funciona assim. O que muda é que ali tudo escorre para cima em duas horas, sem registro, sem data e sem preço fixado.</p>
+    <p><b>E o mesmo print mostra o lado forte do WhatsApp:</b> quem respondeu, respondeu em segundos. Alcance e hábito o grupo já tem. O que falta é memória — então a promessa não é “aqui você acha gente”, é <b>“aqui não se perde o que foi combinado”</b>. Vender alcance contra o WhatsApp é escolher o campo em que ele ganha.</p>
+    <p><b>Rodada 2, o Victor testou na própria pele.</b> Postou num grupo a chamada de “Passar o carro” em texto puro, com a frase do próprio produto — <b>sem resposta visível</b>. Foi então no direto com um contato, que devolveu três cartões de gente e disse “vê com essa galera”.</p>
+    <div class="fala">
+      <p>“Eu conheço uma ruma de gente, só não queria ter que ir um em um pra saber que eles desenrolam.”</p>
+      <cite>a resposta que voltou — a tese do produto, dita com as palavras do mercado</cite>
+    </div>
+    <p>São <b>duas coisas separadas</b> nessa frase, e o produto trata cada uma num lugar: <b>disponibilidade</b> (quem está livre — a busca e “Quem tá na escuta”) e <b>confiança de entrega</b> (“que eles desenrolam” — portfólio, perfil-canal e a avaliação pós-job). A segunda não existe em grupo nenhum.</p>
+    <p>A resposta que voltou mede o tamanho do buraco: dois áudios, um dizendo <i>“fulano tá disponível, beltrano depende, depende um pouquinho…”</i> e o segundo, sete segundos depois, só <i>“Ai eu não sei.”</i> Isso é o <b>estado</b> que a plataforma estrutura — livre, preso, negociando, por pessoa, com motivo. Ali ele mora na cabeça de uma pessoa, sai em voz hesitante e evapora quando a conversa rola para baixo.</p>
+    <p class="nota">⚠ <b>O que isto NÃO prova:</b> dor comprovada não é disposição de trocar de ferramenta. Valida o <b>problema</b> — os dois lados da fricção, achar quem está livre e saber se dá conta —, não a migração para o produto. Tudo abaixo desta caixa continua sendo hipótese.</p>
+  </div>
+
+  <div class="caixa linha-alerta">
+    <span class="tit">Números do protótipo que são hipótese, não medição</span>
+    <p>Estão no produto para a tela poder existir, e <b>precisam ser confirmados antes de virarem promessa</b>:</p>
+    <ul style="margin-bottom:0">
+      <li><b>74% aceitam garantia / 26% exigem</b> — gerado por semente no protótipo. Ninguém foi perguntado.</li>
+      <li><b>A faixa de referência da praça</b> (ex.: Op. de câmera R$ 700–1.100) é estimativa de mercado escrita à mão. Ninguém dos 109 declarou tabela. No produto real ela precisa ser derivada de tabelas publicadas e jobs fechados — senão a plataforma está inventando preço, que é a regra que ela mesma proíbe.</li>
+      <li><b>Sinal de 20% e taxa de 6%</b> — chute de mercado do Victor, não testado com nenhum contratante.</li>
+      <li><b>Reputação de operação</b> (jobs, resposta, streak) é simulada no protótipo.</li>
+      <li><b>Toda a atividade social do protótipo é semeada pela casa</b> — posts, curtidas, seguidores e respostas. O aviso na tela diz isso com todas as letras; ninguém dos 109 publicou nada.</li>
+      <li><b>Assinatura gov.br</b> é simulada, e a tela diz isso.</li>
+    </ul>
+  </div>
+
+  <h3>Riscos de produto</h3>
+  <div class="tabw">
+    <table>
+      <thead><tr><th>Risco</th><th>Como saber cedo</th></tr></thead>
+      <tbody>
+        <tr><td><b>A agenda não fica atualizada.</b> É o risco que mata o produto, e não tem contorno técnico.</td><td>Métrica-mãe desde a semana 1. As duas alavancas conhecidas: o lembrete semanal por WhatsApp e o feed como razão de abrir o app todo dia.</td></tr>
+        <tr><td><b>O feed vira o classificado que esvazia o Volante.</b> Risco levantado pelo próprio Victor: o freela posta que está disponível, o contratante olha o feed em vez de assinar — “Me chama” e um eventual post de “minha semana” são a agenda vazando pela porta de trás.</td><td>Medir contratantes ativos sem assinatura com consumo alto de posts “preciso de gente”. Se um canal de disponibilidade um dia existir, ele já tem quatro regras escritas <b>antes</b> de nascer: derivado da agenda, um por semana, expira sozinho e <b>nunca filtrável</b> — o Volante continua sendo o único lugar onde disponibilidade é consultável por data.</td></tr>
+        <tr><td><b>O feed nasce vazio.</b> Os cadastros zeram no lançamento; um feed sem posts na primeira semana ensina que ali não tem nada.</td><td>% da base que publica no 1º mês. A mitigação está no desenho: a campanha de lançamento é o próprio feed, “Entreguei” alimenta o portfólio (razão egoísta de postar) e “A praça” faz o pouco conteúdo aparecer para todo mundo.</td></tr>
+        <tr><td><b>Rede de nomes reais em praça pequena.</b> Um post “fulano me deixou na mão” é a regra de não atribuir defeito a pessoa real — só que agora escrita por um usuário, não pela casa.</td><td>Denúncia e regra de remoção nos termos <b>na Fase 1, junto com o feed</b>. É a única peça social que o protótipo ainda não desenhou, e com o feed no lançamento ela deixou de ser adiável.</td></tr>
+        <tr><td><b>O ciclo fecha por fora.</b> As duas pessoas se acham na plataforma e combinam no Pix para fugir dos 6%.</td><td>Comparar chamadas aceitas com jobs que chegam ao sinal. O convite de job é a resposta estrutural: o job fechado por fora ganha um caminho de volta para dentro, sem sinal e sem taxa — e a taxa só chega quando o risco chega.</td></tr>
+        <tr><td><b>O duplo check acrescenta fricção.</b> Contrato + sinal + entrega + conferência é muito passo para uma diária de R$ 700.</td><td>Medir abandono entre aceite e assinatura. Foi um risco levantado pelo próprio Victor.</td></tr>
+        <tr><td><b>Praça pequena demais.</b> 109 convocáveis em 20 praças pode não dar liquidez em nenhuma data específica.</td><td>Contar quantas datas dos próximos 15 dias têm ≥3 pessoas livres por função principal.</td></tr>
+        <tr><td><b>O Volante não desconta taxa</b> — os R$ 89 compram só a lista. Se a agenda viva cair, o degrau 3 fica sem valor nenhum para mostrar.</td><td>É decisão de desenho, não defeito: amarra a assinatura do contratante à métrica-mãe. Acompanhar churn do Volante contra a agenda viva da praça dele.</td></tr>
+        <tr><td><b>O Premium do freela (R$ 19) é fino.</b> Ele abre só o relatório do ano, e quem quer orçar pula direto para a Estrada.</td><td>Decisão de produto ainda em aberto: engordar o degrau 1 ou fundir com a Estrada.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">14</span>Regulatório, LGPD e o caminho crítico</h2>
+
+  <p>O detalhe técnico e de custo está no documento <b>“O que falta para ir ao ar”</b>. O que precisa estar aqui, porque é requisito de produto:</p>
+
+  <h4>O caminho crítico</h4>
+  <p class="dest">CNPJ → parceiro de pagamento → custódia. Ele leva mais tempo do que escrever o código, e trava a fase que gera receita.</p>
+  <p>A ordem importa: <b>conversar com dois ou três parceiros antes de abrir a empresa</b>, porque a exigência deles (CNAE, capital social, documentação) define como o CNPJ tem que nascer. Abrir primeiro e descobrir depois custa uma alteração contratual.</p>
+
+  <h4>O que pedir a cada parceiro</h4>
+  <ul>
+    <li>Split de pagamento entre plataforma e recebedor</li>
+    <li>Subconta por usuário, com saldo próprio dentro do parceiro</li>
+    <li>Retenção com liberação por ordem — é o coração da custódia</li>
+    <li>Pix na entrada e transferência de saída</li>
+    <li>Estorno parcial, para a política de cancelamento funcionar sozinha</li>
+  </ul>
+
+  <p class="nota">O pedágio não entra nesta conversa: é desconto pré-concedido sobre receita própria — cupom, não moeda. Não pede custódia nem subconta, e é por isso que ele não acrescenta risco regulatório à Fase 2.</p>
+
+  <h4>LGPD</h4>
+  <ul>
+    <li><b>Os cadastros do protótipo morrem no lançamento.</b> Ninguém nasce com conta: os 109 do formulário viram lista de convite, e o perfil público só existe quando a própria pessoa o cria — o consentimento de publicação é o próprio cadastro.</li>
+    <li>Telefone não é publicado em nenhuma hipótese.</li>
+    <li>A pessoa precisa poder sair e levar o próprio dado embora — <b>posts e mídia do feed incluídos</b>.</li>
+  </ul>
+
+  <h4>Termos de uso</h4>
+  <p>Precisa deixar escrito que a plataforma não é parte do contrato de trabalho entre freela e contratante, quem responde pelo valor retido, e a política de cancelamento — que já está desenhada e testada dentro do produto. Com a rede, entram dois pontos novos: <b>de quem é o conteúdo publicado</b> (do usuário, que responde por ele) e <b>como ele sai do ar</b> — o caminho da denúncia e a regra de remoção. A plataforma modera; não edita e não reescreve.</p>
+</section>
+
+</div>
+
+<div class="wrap">
+<footer>
+  <div class="assina" aria-hidden="true"><svg viewBox="0 0 100 100"><use href="#mk"/></svg><b>Carro do Freela</b></div>
+  <p><b>Carro do Freela — PRD v3.1</b> · escrito a partir do protótipo v12/set · 1, validado por 74 suítes de teste.</p>
+  <p>O que a v3.0 mudou: a régua do corte passou a ser <b>“resolve a dor sem depender de terceiro”</b>, e com ela a Fase 1 virou <b>agenda + brechó só com venda</b> — decisão do Victor. O dinheiro em custódia foi para a Fase 2, os documentos para a 3 e a camada social para a 4, que é quando o feed já não nasce vazio. Entraram também a Sirene, o Cofre, a identidade por área e a régua de vitrines.</p>
+  <p>O que a v3.1 acrescenta: o <b>agente de WhatsApp</b> entrou na Fase 1 como o mecanismo da métrica-mãe (seção 08a); a <b>evidência de campo</b> de 25/ago entrou na seção 13, porque o problema deixou de ser só hipótese; o produto construído entre 25 e 29/ago foi somado ao roadmap; e o domínio saiu do caminho crítico — <b>já está registrado</b>. Esta versão também registra que o código e este documento <b>discordavam</b> sobre o brechó da Fase 1, e que quem estava errado era o código.</p>
+  <p>Documento de trabalho. As decisões de produto aqui são do Victor; o que está marcado como hipótese ainda não foi validado com o mercado e não deve ser apresentado como fato.</p>
+</footer>
+</div>
+
+<script>
+/* As moedas são as do produto: fabricarMoeda portada do protótipo com as
+   ligas exatas. Uma diferença só — o "claro" aqui vem do tema do documento
+   (data-theme, ou prefers-color-scheme quando nada está estampado), não da
+   classe app-light do aplicativo. */
+(function(){
+"use strict";
+var LIGA_TAKE={
+  esc:{d:"#0C1B22",l:"#5E7C86"}, med:{d:"#1D4C5C",l:"#9FBEC7"},
+  cla:{d:"#8FE8F5",l:"#E7F4F7"}, brilho:"23,209,232",
+  simbolo:function(){return "T$"},
+  /* a cara é a marca da casa: as três barras inclinadas */
+  cara:function(ctx,R){
+    var k=R*0.0115;
+    ctx.save(); ctx.transform(1,0,-0.213,1,0,0);
+    var bar=function(x,w,op){ ctx.globalAlpha=op;
+      ctx.beginPath(); ctx.roundRect((x-50+16)*k,(24-50)*k,w*k,52*k,3*k); ctx.fill(); };
+    bar(14,7,.34); bar(29,13,.64); bar(50,26,1);
+    ctx.globalAlpha=1; ctx.restore();
+  }
+};
+var LIGA_PEDAGIO={
+  esc:{d:"#241A05",l:"#7A6220"}, med:{d:"#6E5512",l:"#C9A94E"},
+  cla:{d:"#F6DFA2",l:"#FFF4DA"}, brilho:"242,193,78",
+  simbolo:function(){return "P$"},
+  /* e a cara é uma cancela erguida — é o que a moeda faz */
+  cara:function(ctx,R){
+    var k=R/50, i;
+    ctx.save(); ctx.translate(3*k,5*k);
+    ctx.beginPath(); ctx.roundRect(-30*k,-14*k,9*k,44*k,2.5*k); ctx.fill();
+    ctx.save();
+    ctx.translate(-25.5*k,-12*k);
+    ctx.rotate(-Math.PI/7);
+    for(i=0;i<3;i++){
+      ctx.globalAlpha=i%2?.42:1;
+      ctx.beginPath(); ctx.roundRect(i*17*k,-5*k,15*k,10*k,2.5*k); ctx.fill();
+    }
+    ctx.globalAlpha=1; ctx.restore();
+    ctx.restore();
+  }
+};
+var FORCA_CLARO=false;
+function temaClaro(){
+  if(FORCA_CLARO) return true;
+  var t=document.documentElement.getAttribute("data-theme");
+  if(t==="light") return true;
+  if(t==="dark") return false;
+  return matchMedia("(prefers-color-scheme: light)").matches;
+}
+function fabricarMoeda(ctx,W,H,liga){
+  var R=W*0.36, T=W*0.062, cx=W/2, cy=H/2;
+  var DENTES=104;
+  var Lx=-0.40, Ly=-0.52, Lz=0.76;
+  var CALMO=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var a=CALMO?-0.62:0;
+  var mix=function(c1,c2,k){
+    var p=function(h){h=h.replace("#","");return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]};
+    var A=p(c1),B=p(c2);
+    return "rgb("+A.map(function(v,i){return Math.round(v+(B[i]-v)*k)}).join(",")+")";
+  };
+  var passo=function(dt){
+    if(!CALMO) a+=dt/2600;
+    var c=Math.cos(a), s=Math.sin(a), ac=Math.abs(c);
+    var claro=temaClaro();
+    var METAL_ESC=claro?liga.esc.l:liga.esc.d;
+    var METAL_MED=claro?liga.med.l:liga.med.d;
+    var METAL_CLA=claro?liga.cla.l:liga.cla.d;
+    ctx.clearRect(0,0,W,H);
+
+    /* sombra de contato */
+    var sg=ctx.createRadialGradient(cx,cy+R*1.03,0,cx,cy+R*1.03,R*1.15);
+    sg.addColorStop(0,"rgba(0,0,0,"+(claro?.14:.5)+")");
+    sg.addColorStop(1,"rgba(0,0,0,0)");
+    ctx.fillStyle=sg;
+    ctx.save(); ctx.translate(cx,cy+R*1.0); ctx.scale(1,.14);
+    ctx.beginPath(); ctx.arc(0,0,R*1.1,0,Math.PI*2); ctx.fill(); ctx.restore();
+
+    /* corpo do cilindro */
+    var dx=(T/2)*s, rxx=Math.max(.5,R*ac);
+    ctx.beginPath();
+    ctx.ellipse(cx+dx,cy,rxx,R,0,0,Math.PI*2);
+    ctx.ellipse(cx-dx,cy,rxx,R,0,0,Math.PI*2);
+    ctx.rect(cx-Math.abs(dx),cy-R,Math.abs(dx)*2,R*2);
+    var cg=ctx.createLinearGradient(cx-R,0,cx+R,0);
+    cg.addColorStop(0,mix(METAL_ESC,METAL_MED,s>0?.10:.62));
+    cg.addColorStop(.5,mix(METAL_ESC,METAL_MED,.42));
+    cg.addColorStop(1,mix(METAL_ESC,METAL_MED,s>0?.62:.10));
+    ctx.fillStyle=cg; ctx.fill();
+
+    /* serrilha */
+    ctx.lineCap="butt";
+    for(var i=0;i<DENTES;i++){
+      var th=(i/DENTES)*Math.PI*2;
+      var ct=Math.cos(th), st=Math.sin(th);
+      if(ct*s>=0) continue;
+      var nx=ct*c, ny=st, nz=-ct*s;
+      var lam=Math.max(0,nx*Lx+ny*Ly+nz*Lz);
+      var esp=Math.pow(Math.max(0,nz),18);
+      var kk=Math.min(1,lam*.92+esp*.9);
+      var x1=R*ct*c+(T/2)*s, x2=R*ct*c-(T/2)*s, y=R*st;
+      ctx.strokeStyle=mix(METAL_ESC,METAL_CLA,kk);
+      ctx.lineWidth=Math.max(1.6,(Math.PI*2*R/DENTES)*Math.abs(st)*.72+1.3);
+      ctx.beginPath(); ctx.moveTo(cx+x1,cy+y); ctx.lineTo(cx+x2,cy+y); ctx.stroke();
+    }
+    ctx.strokeStyle=mix(METAL_ESC,METAL_MED,.5); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.ellipse(cx+(T/2)*s,cy,Math.max(.6,R*ac),R,0,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(cx-(T/2)*s,cy,Math.max(.6,R*ac),R,0,0,Math.PI*2); ctx.stroke();
+
+    /* face visível */
+    var fx=cx+(c>0?1:-1)*(T/2)*s;
+    var rx=Math.max(.5,R*ac);
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(fx,cy,rx,R,0,0,Math.PI*2); ctx.clip();
+
+    var fg=ctx.createLinearGradient(fx-rx,cy-R,fx+rx,cy+R);
+    fg.addColorStop(0,mix(METAL_MED,METAL_CLA,.55));
+    fg.addColorStop(.42,METAL_MED);
+    fg.addColorStop(1,METAL_ESC);
+    ctx.fillStyle=fg; ctx.fillRect(fx-rx,cy-R,rx*2,R*2);
+
+    /* varredura especular */
+    var sw=((a*0.9)%(Math.PI*2))/(Math.PI*2);
+    var bg=ctx.createLinearGradient(fx-rx,cy-R,fx+rx,cy+R);
+    var pos=Math.max(0,Math.min(1,sw));
+    bg.addColorStop(Math.max(0,pos-.16),"rgba(255,255,255,0)");
+    bg.addColorStop(pos,"rgba(255,255,255,"+(claro?.5:.24)+")");
+    bg.addColorStop(Math.min(1,pos+.16),"rgba(255,255,255,0)");
+    ctx.fillStyle=bg; ctx.fillRect(fx-rx,cy-R,rx*2,R*2);
+
+    /* anéis usinados */
+    ctx.strokeStyle="rgba(255,255,255,"+(claro?.34:.15)+")"; ctx.lineWidth=1.4;
+    [0.86,0.78].forEach(function(k){
+      ctx.beginPath(); ctx.ellipse(fx,cy,rx*k,R*k,0,0,Math.PI*2); ctx.stroke();
+    });
+
+    /* gravado: cara é o desenho da liga, coroa é o símbolo */
+    ctx.save(); ctx.translate(fx,cy); ctx.scale(Math.max(.001,ac),1);
+    var emboss=function(desenha){
+      ctx.save(); ctx.translate(-R*.016,-R*.016);
+      ctx.fillStyle="rgba(255,255,255,"+(claro?.72:.55)+")"; desenha(); ctx.restore();
+      ctx.save(); ctx.translate(R*.016,R*.016);
+      ctx.fillStyle="rgba(0,0,0,"+(claro?.38:.62)+")"; desenha(); ctx.restore();
+      ctx.fillStyle=mix(METAL_MED,METAL_CLA,claro?.35:.22); desenha();
+    };
+    if(c>0){
+      emboss(function(){liga.cara(ctx,R)});
+    }else{
+      ctx.font='900 '+(R*0.62)+'px "Schibsted Grotesk",system-ui,sans-serif';
+      ctx.textAlign="center"; ctx.textBaseline="middle";
+      emboss(function(){ctx.fillText(liga.simbolo(),0,R*0.02)});
+    }
+    ctx.restore();
+
+    /* vinheta da face */
+    var vg=ctx.createRadialGradient(fx-rx*.3,cy-R*.35,R*.1,fx,cy,R*1.05);
+    vg.addColorStop(0,"rgba(255,255,255,0)");
+    vg.addColorStop(1,"rgba(0,0,0,"+(claro?.16:.42)+")");
+    ctx.fillStyle=vg; ctx.fillRect(fx-rx,cy-R,rx*2,R*2);
+    ctx.restore();
+
+    /* brilho do anodizado, só no escuro */
+    if(!claro){
+      ctx.globalCompositeOperation="lighter";
+      var gg=ctx.createRadialGradient(cx,cy,R*.5,cx,cy,R*1.5);
+      gg.addColorStop(0,"rgba("+liga.brilho+",.10)");
+      gg.addColorStop(1,"rgba("+liga.brilho+",0)");
+      ctx.fillStyle=gg; ctx.fillRect(0,0,W,H);
+      ctx.globalCompositeOperation="source-over";
+    }
+  };
+  /* pousar: leva a moeda ao ângulo de repouso (a cara), para papel */
+  return { passo:passo, pousar:function(){ a=-0.62; } };
+}
+function montar(id,liga){
+  var cv=document.getElementById(id);
+  if(!cv||!cv.getContext||!CanvasRenderingContext2D.prototype.roundRect) return null;
+  var W=+cv.getAttribute("width"), H=+cv.getAttribute("height");
+  var dpr=Math.min(2,devicePixelRatio||1);
+  cv.width=W*dpr; cv.height=H*dpr; cv.style.aspectRatio=W+"/"+H;
+  var ctx=cv.getContext("2d"); ctx.scale(dpr,dpr);
+  return fabricarMoeda(ctx,W,H,liga);
+}
+var moedas=[montar("mo-take",LIGA_TAKE),montar("mo-ped",LIGA_PEDAGIO)].filter(Boolean);
+if(!moedas.length) return;
+var CALMO=matchMedia("(prefers-reduced-motion: reduce)").matches;
+var desenhaTudo=function(){ moedas.forEach(function(m){m.passo(0)}); };
+if(CALMO){
+  desenhaTudo();
+  /* estática, então o tema precisa repintar por evento */
+  matchMedia("(prefers-color-scheme: light)").addEventListener("change",desenhaTudo);
+  new MutationObserver(desenhaTudo)
+    .observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+}else{
+  var ultimo=performance.now();
+  var laco=function(agora){
+    var dt=Math.min(64,agora-ultimo); ultimo=agora;
+    moedas.forEach(function(m){m.passo(dt)});
+    requestAnimationFrame(laco);
+  };
+  requestAnimationFrame(laco);
+}
+/* papel é papel: a moeda pousa na cara, em liga clara */
+addEventListener("beforeprint",function(){
+  FORCA_CLARO=true; moedas.forEach(function(m){m.pousar()}); desenhaTudo();
+});
+addEventListener("afterprint",function(){ FORCA_CLARO=false; desenhaTudo(); });
+})();
+</script>

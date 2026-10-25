@@ -1,0 +1,291 @@
+<title>Carro do Freela — o que falta para ir ao ar</title>
+<style>
+/*__FONTS__*/
+
+:root{
+  --grafite:#0E1216; --grafite2:#151B21; --grafite3:#1D242B;
+  --ciano:#17D1E8; --ciano-esc:#0B7C8B; --ciano-tint:rgba(23,209,232,.10);
+  --magenta:#FF3D9A; --magenta-tint:rgba(255,61,154,.10);
+  --ambar:#F2C14E; --ambar-tint:rgba(242,193,78,.10);
+  --livre:#3DD17E; --livre-tint:rgba(61,209,126,.10);
+  --cal:#E9EEF0; --cal-fraco:#93A0A8; --cal-tenue:#7F8C96;
+  --linha:#1C242B; --linha2:#2A343D;
+  --display:"Schibsted Grotesk",system-ui,sans-serif;
+  --mono:"Spline Sans Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+:root.claro{
+  --grafite:#F4F7F8; --grafite2:#FFFFFF; --grafite3:#E9EFF1;
+  --ciano:#0D6882; --ciano-esc:#8FC3D2; --ciano-tint:rgba(13,104,130,.08);
+  --magenta:#B41E66; --magenta-tint:rgba(180,30,102,.07);
+  --ambar:#7F5807; --ambar-tint:rgba(127,88,7,.09);
+  --livre:#126E34; --livre-tint:rgba(18,110,52,.08);
+  --cal:#11171C; --cal-fraco:#48545C; --cal-tenue:#5F6B74;
+  --linha:#DCE3E6; --linha2:#C6D0D5;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--grafite);color:var(--cal);font-family:var(--display);
+  line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{width:min(920px,90vw);margin:0 auto;padding:0 0 90px}
+
+.topo{position:sticky;top:0;z-index:20;background:var(--grafite);border-bottom:1px solid var(--linha);
+  padding:14px 0;margin-bottom:44px}
+.topo .wrap{display:flex;align-items:center;gap:14px;padding:0}
+.topo b{font-weight:900;font-size:14.5px;letter-spacing:-.03em}
+.tema{margin-left:auto;display:inline-flex;gap:2px;background:var(--grafite2);border:1px solid var(--linha2);
+  border-radius:9px;padding:3px}
+.tema button{display:grid;place-items:center;width:28px;height:24px;border:0;border-radius:7px;background:none;
+  color:var(--cal-tenue);cursor:pointer}
+.tema button[aria-pressed="true"]{background:var(--ciano);color:var(--grafite)}
+
+h1{font-weight:900;font-size:clamp(31px,5.2vw,50px);line-height:1.04;letter-spacing:-.045em;margin:52px 0 18px;
+  text-wrap:balance;max-width:18ch}
+h2{font-weight:900;font-size:clamp(21px,2.8vw,29px);line-height:1.12;letter-spacing:-.038em;
+  margin:56px 0 14px;padding-top:26px;border-top:1px solid var(--linha);text-wrap:balance}
+h3{font-weight:700;font-size:17.5px;letter-spacing:-.025em;margin:26px 0 8px}
+p{margin:0 0 15px;color:var(--cal-fraco);font-size:16px;max-width:68ch}
+p.lead{font-size:18.5px;color:var(--cal);max-width:60ch;line-height:1.55}
+strong{color:var(--cal);font-weight:700}
+a{color:var(--ciano)}
+em.mono{font-family:var(--mono);font-style:normal;font-size:13.5px;color:var(--ciano)}
+
+.rot{font-family:var(--mono);font-size:11px;letter-spacing:.19em;text-transform:uppercase;color:var(--cal-tenue);
+  display:block;margin-bottom:9px}
+
+ul{list-style:none;padding:0;margin:15px 0}
+li{position:relative;padding-left:23px;margin-bottom:11px;color:var(--cal-fraco);font-size:15.5px;max-width:66ch}
+li::before{content:"";position:absolute;left:0;top:.66em;width:10px;height:1px;background:var(--ciano)}
+li strong{color:var(--cal)}
+
+.fases{display:grid;gap:1px;background:var(--linha);border:1px solid var(--linha);border-radius:13px;
+  overflow:hidden;margin:22px 0}
+.fase{background:var(--grafite2);padding:22px 24px;display:grid;grid-template-columns:96px 1fr;gap:20px}
+.fase .n{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ciano);
+  border-right:1px solid var(--linha2);padding-right:16px}
+.fase .n b{display:block;font-size:25px;letter-spacing:-.04em;color:var(--cal);margin-bottom:4px;font-weight:500}
+.fase h3{margin:0 0 6px}
+.fase p{margin:0;font-size:14.5px}
+.fase .tag{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  border:1px solid var(--linha2);border-radius:5px;padding:2px 7px;margin-top:11px;color:var(--cal-tenue)}
+.fase .tag.trava{border-color:var(--magenta);color:var(--magenta)}
+.fase .tag.livre{border-color:var(--livre);color:var(--livre)}
+@media(max-width:640px){.fase{grid-template-columns:1fr;gap:12px}.fase .n{border-right:0;padding-right:0}}
+
+.rola{overflow-x:auto;border:1px solid var(--linha);border-radius:12px;background:var(--grafite2);margin:18px 0;
+  max-width:100%}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th,td{text-align:left;padding:13px 17px;border-bottom:1px solid var(--linha);vertical-align:top}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--cal-tenue);
+  font-weight:400;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td b{color:var(--cal)}
+td.num{font-family:var(--mono);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+tr.tot td{background:var(--ciano-tint);color:var(--cal);font-weight:700}
+
+.nota{border-left:2px solid var(--ciano);background:var(--ciano-tint);border-radius:0 10px 10px 0;
+  padding:17px 21px;margin:22px 0}
+.nota p{margin:0;color:var(--cal);font-size:15.5px}
+.nota.alerta{border-left-color:var(--magenta);background:var(--magenta-tint)}
+.nota.atencao{border-left-color:var(--ambar);background:var(--ambar-tint)}
+
+.check{display:grid;gap:1px;background:var(--linha);border:1px solid var(--linha);border-radius:12px;
+  overflow:hidden;margin:20px 0}
+.check div{background:var(--grafite2);padding:15px 19px;display:grid;grid-template-columns:24px 1fr;gap:13px;
+  align-items:start;font-size:15px;color:var(--cal-fraco)}
+.check i{width:18px;height:18px;border:1.5px solid var(--linha2);border-radius:5px;margin-top:3px;font-style:normal}
+.check b{color:var(--cal)}
+
+@media(prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style>
+
+<header class="topo">
+  <div class="wrap">
+    <svg viewBox="0 0 100 100" width="22" height="22" fill="var(--ciano)"><g transform="translate(16,0) skewX(-12)">
+      <rect x="14" y="24" width="7" height="52" rx="2" opacity=".34"></rect>
+      <rect x="29" y="24" width="13" height="52" rx="2.5" opacity=".64"></rect>
+      <rect x="50" y="24" width="26" height="52" rx="3.5"></rect>
+    </g></svg>
+    <b>Carro do Freela</b>
+    <div class="tema" role="group" aria-label="Tema">
+      <button type="button" data-t="escuro" aria-pressed="true" aria-label="Tema escuro"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M20 13.4A8.4 8.4 0 0 1 10.6 4a8.4 8.4 0 1 0 9.4 9.4z"/></svg></button>
+      <button type="button" data-t="claro" aria-pressed="false" aria-label="Tema claro"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.6v2.1M12 19.3v2.1M4.3 4.3l1.5 1.5M18.2 18.2l1.5 1.5M2.6 12h2.1M19.3 12h2.1M4.3 19.7l1.5-1.5M18.2 5.8l1.5-1.5"/></svg></button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<span class="rot">Viabilidade técnica e regulatória</span>
+<h1>O que falta para ir ao ar.</h1>
+<p class="lead">Resposta curta: é viável, e a infraestrutura é barata — algo entre R$ 150 e R$ 800 por mês na primeira praça. O que custa dinheiro e tempo é CNPJ, contador e advogado. E o que trava tudo é uma coisa só: sem empresa aberta não existe custódia, e sem custódia não existe receita.</p>
+
+<div class="nota alerta"><p><strong>A primeira coisa a entender sobre o protótipo:</strong> ele não guarda nada. Tudo o que você clica vive na memória do navegador e some quando a aba fecha. Ele não é meio caminho andado de código — é um <strong>desenho completo</strong>, com cada tela, cada estado e cada frase já decidida. Isso vale muito, porque é a parte que normalmente leva meses de idas e vindas. Mas o backend é do zero.</p></div>
+
+<h2>A ordem importa mais que a lista</h2>
+<p>A tentação é construir tudo e lançar. Não faça. A hipótese mais arriscada do negócio não tem nada a ver com pagamento — é <strong>se a agenda fica atualizada</strong>. E ela pode ser testada sem tocar em um centavo, sem CNPJ e sem regulação nenhuma.</p>
+
+<div class="fases">
+  <div class="fase">
+    <div class="n"><b>0</b>Antes do código</div>
+    <div>
+      <h3>Empresa, domínio e as três conversas</h3>
+      <p>CNPJ, conta PJ, domínio registrado, e conversar com dois ou três parceiros de pagamento <em>antes</em> de abrir a empresa — porque a exigência deles (CNAE, capital social, documentação) define como o CNPJ tem que nascer. Abrir primeiro e descobrir depois custa uma alteração contratual.</p>
+      <span class="tag trava">trava a fase 3</span>
+    </div>
+  </div>
+  <div class="fase">
+    <div class="n"><b>1</b>Semanas 3–8</div>
+    <div>
+      <h3>Cadastro, agenda e busca — sem dinheiro nenhum</h3>
+      <p>Login, perfil, agenda do freela, disponibilidade pública, busca por praça e data, montar equipe. Nada de pagamento. É o produto inteiro que prova a tese, e não precisa de autorização de ninguém para existir.</p>
+      <span class="tag livre">sem regulação</span>
+    </div>
+  </div>
+  <div class="fase">
+    <div class="n"><b>2</b>Semanas 6–10</div>
+    <div>
+      <h3>WhatsApp: chamada e lembrete de quinta</h3>
+      <p>É o que mantém a agenda viva, e é o único custo variável de verdade. Precisa de verificação da Meta e de modelos de mensagem aprovados, o que leva dias — comece o processo junto com a fase 1.</p>
+      <span class="tag">prazo da Meta</span>
+    </div>
+  </div>
+  <div class="fase">
+    <div class="n"><b>3</b>Semanas 10–16</div>
+    <div>
+      <h3>Custódia dos jobs</h3>
+      <p>Split de pagamento, subconta por usuário, retenção e liberação. Só depois de existir empresa, contrato e parceiro aprovado. É aqui que a receita começa.</p>
+      <span class="tag trava">depende da fase 0</span>
+    </div>
+  </div>
+  <div class="fase">
+    <div class="n"><b>4</b>Depois</div>
+    <div>
+      <h3>Brechó, carteira e take</h3>
+      <p>Reaproveita toda a canalização da fase 3. Fazer antes seria construir duas vezes.</p>
+      <span class="tag">reaproveita a 3</span>
+    </div>
+  </div>
+</div>
+
+<h2>Domínio</h2>
+<p>A parte mais barata e a que você deve resolver esta semana, porque custa quase nada e some se alguém pegar.</p>
+<ul>
+  <li><strong>registro.br</strong> é onde se registra <em class="mono">.com.br</em>. Precisa de CPF ou CNPJ, e custa na faixa de <strong>R$ 40 por ano</strong>. Registre no CNPJ quando ele existir, ou no seu CPF agora e transfira depois.</li>
+  <li>Pegue <strong>carrodofreela.com.br</strong> e, se estiver livre, o <em class="mono">.com</em> também. Registre as variações óbvias com e sem hífen só se forem baratas — não vale obsessão.</li>
+  <li>O DNS aponta para a hospedagem em minutos. Não é uma decisão que trava nada.</li>
+</ul>
+
+<h2>Hospedagem e stack</h2>
+<p>Você já usa Vercel, e ela continua sendo a resposta certa para o front. O que falta é banco e autenticação.</p>
+
+<div class="rola"><table>
+  <thead><tr><th>Camada</th><th>Recomendação</th><th>Por quê</th><th class="num">Custo</th></tr></thead>
+  <tbody>
+    <tr><td><b>Front</b></td><td>Next.js na Vercel</td><td>você já tem, faz deploy do GitHub sozinho, e o protótipo atual vira componente quase direto</td><td class="num">grátis → US$ 20</td></tr>
+    <tr><td><b>Banco + login + arquivos</b></td><td>Supabase</td><td>Postgres, autenticação com Google, Apple, Microsoft e telefone, armazenamento das fotos do brechó e do portfólio, tudo num pacote</td><td class="num">grátis → US$ 25</td></tr>
+    <tr><td><b>Alternativa</b></td><td>Firebase</td><td>equivalente. Escolha um e não olhe para trás — trocar depois custa mais que a diferença entre eles</td><td class="num">semelhante</td></tr>
+  </tbody>
+</table></div>
+
+<div class="nota"><p>O plano grátis dos dois aguenta com folga uma praça de 400 pessoas. Você só paga quando o problema já é bom.</p></div>
+
+<h3>Sobre os quatro logins</h3>
+<ul>
+  <li><strong>Google e Microsoft</strong> — direto, sem custo, alguns minutos de configuração cada.</li>
+  <li><strong>Apple</strong> — exige conta de desenvolvedor Apple, <strong>US$ 99 por ano</strong>. Se for cortar algum no começo, corte este.</li>
+  <li><strong>“Continuar com WhatsApp”</strong> é, na verdade, login por telefone com código. Mandar o código <em>pelo WhatsApp</em> exige a API de negócios; mandar por SMS é imediato e mais barato. Comece por SMS e troque depois — a tela é a mesma.</li>
+</ul>
+
+<h2>Pagamento: a parte que decide tudo</h2>
+<p>Aqui mora a única decisão realmente difícil, e ela é mais arquitetural que comercial.</p>
+
+<div class="nota alerta"><p><strong>A regra que mantém você fora da regulação pesada:</strong> o dinheiro retido não pode passar pela sua conta bancária. Ele fica na <strong>subconta do usuário dentro do parceiro de pagamento</strong>, e você só manda ordens — retém, libera, estorna. Se o valor cair na sua conta e você repassar depois, você virou instituição de pagamento, com autorização do Banco Central, conta segregada e capital mínimo. É a mesma função para o usuário e um universo de diferença no papel.</p></div>
+
+<p>É por isso que o <strong>take</strong> tem que ser implementado como saldo da subconta do usuário no parceiro — e não como um número no seu banco de dados coberto pela sua conta bancária. A regra que a gente já escreveu no produto (“take nasce de recebimento, nunca de depósito”) só se sustenta se a canalização for essa.</p>
+
+<h3>O que você precisa pedir a cada parceiro</h3>
+<ul>
+  <li><strong>Split de pagamento</strong> — dividir um pagamento entre plataforma e recebedor automaticamente.</li>
+  <li><strong>Subconta ou conta de recebedor</strong> — cada freela e cada produtora com saldo próprio dentro do parceiro.</li>
+  <li><strong>Retenção com liberação programada</strong> — segurar o valor e soltar por ordem sua ou por prazo. É o coração da custódia.</li>
+  <li><strong>Pix como entrada</strong> e transferência de saída para a conta do usuário.</li>
+  <li><strong>Estorno parcial</strong> — a sua política de cancelamento devolve 100%, 50% ou 0% conforme a antecedência.</li>
+</ul>
+
+<div class="rola"><table>
+  <thead><tr><th>Parceiro</th><th>Ponto forte</th><th>A observar</th></tr></thead>
+  <tbody>
+    <tr><td><b>Asaas</b></td><td>feito para marketplace pequeno e médio, split e subconta claros, atendimento acessível para quem está começando</td><td>menos conhecido por investidor</td></tr>
+    <tr><td><b>Iugu</b></td><td>marketplace é o caso de uso central deles, retenção e split maduros</td><td>onboarding mais formal</td></tr>
+    <tr><td><b>Pagar.me</b></td><td>do grupo Stone, documentação boa, recebedores e split bem resolvidos</td><td>costuma pedir volume ou estrutura maior</td></tr>
+    <tr><td><b>Mercado Pago</b></td><td>alcance e confiança do usuário final, Pix onipresente</td><td>API de marketplace menos flexível para retenção condicionada</td></tr>
+  </tbody>
+</table></div>
+
+<p>Custos de transação giram, aproximadamente, em torno de <strong>1% no Pix</strong> e <strong>3% a 4% no cartão</strong>, mais tarifas por transferência. Confirme com cada um: muda por volume e por negociação, e é exatamente o número que transforma seus 6% brutos em ~4% líquidos.</p>
+
+<h2>WhatsApp Business API</h2>
+<ul>
+  <li>Exige <strong>verificação do negócio na Meta</strong> — documento da empresa, e leva dias. Comece cedo.</li>
+  <li>Mensagem de notificação (a chamada, o lembrete de quinta) precisa de <strong>modelo aprovado</strong> antes de poder ser enviada. Escreva os modelos junto com a fase 1.</li>
+  <li>A cobrança é por mensagem, com preço diferente por categoria. <strong>Confirme a tabela atual</strong> — a Meta mudou o modelo recentemente, e qualquer número que eu desse aqui envelheceria rápido.</li>
+  <li>Dá para ir pela <strong>Cloud API da Meta</strong> direto, ou por um intermediário. Direto é mais barato; intermediário poupa trabalho.</li>
+</ul>
+
+<div class="nota atencao"><p>Esse é o seu único custo variável relevante, e o produto inteiro foi desenhado para gastá-lo bem: filtrar pela agenda derruba a chamada de 59 mensagens para 12. Vale medir esse número desde o primeiro mês.</p></div>
+
+<h2>O que sai por mês, de verdade</h2>
+<div class="rola"><table>
+  <thead><tr><th>Item</th><th>Observação</th><th class="num">Mês</th></tr></thead>
+  <tbody>
+    <tr><td><b>Domínio</b></td><td>~R$ 40 por ano, diluído</td><td class="num">R$ 4</td></tr>
+    <tr><td><b>Vercel</b></td><td>grátis no começo, Pro quando crescer</td><td class="num">R$ 0–110</td></tr>
+    <tr><td><b>Supabase</b></td><td>idem</td><td class="num">R$ 0–140</td></tr>
+    <tr><td><b>WhatsApp</b></td><td>por mensagem — sua estimativa de R$ 600 é razoável</td><td class="num">R$ 300–800</td></tr>
+    <tr><td><b>Apple Developer</b></td><td>só se mantiver login com Apple</td><td class="num">R$ 45</td></tr>
+    <tr><td><b>Contador</b></td><td>obrigatório com CNPJ</td><td class="num">R$ 200–400</td></tr>
+    <tr class="tot"><td>Total</td><td>uma praça, primeiro ano</td><td class="num">R$ 550–1.500</td></tr>
+  </tbody>
+</table></div>
+<p>Fora disso, uma vez só: abertura do CNPJ (na faixa de R$ 1.000 a R$ 2.000 com contador) e o contrato de intermediação com advogado. O parceiro de pagamento não cobra mensalidade — ele fica com um pedaço de cada transação.</p>
+
+<h2>O que precisa de gente, não de código</h2>
+<div class="check">
+  <div><i></i><span><b>CNPJ com o CNAE certo.</b> Marketplace que intermedia pagamento tem exigência específica, e cada parceiro pede uma coisa. Defina isso com o contador <em>depois</em> de falar com eles.</span></div>
+  <div><i></i><span><b>Contrato de intermediação e termos de uso.</b> Precisa deixar escrito que a plataforma não é parte do contrato de trabalho entre freela e produtora, quem responde pelo valor retido, e a política de cancelamento que já está desenhada no produto.</span></div>
+  <div><i></i><span><b>Política de privacidade e a LGPD.</b> Você tem dados de 109 pessoas reais vindos de um grupo. Publicar exige consentimento — o “de acordo do grupo” que já está no seu plano do mês 1 é exatamente isso, e é bom que ele seja por escrito.</span></div>
+  <div><i></i><span><b>Conta PJ</b> em banco que converse bem com o parceiro de pagamento.</span></div>
+  <div><i></i><span><b>Quem escreve o código.</b> Você, com IA, chega longe na fase 1. A fase 3 mexe com dinheiro de terceiros e merece alguém que já tenha integrado split antes — nem que seja para revisar.</span></div>
+</div>
+
+<h2>As decisões que só vocês dois podem tomar</h2>
+<ul>
+  <li><strong>Quem assina o CNPJ e com que divisão.</strong> Antes da primeira transação, não depois.</li>
+  <li><strong>Quem cuida de produto e quem cuida de praça.</strong> A comunidade não se mantém sozinha, e é ela que faz a agenda ficar em dia.</li>
+  <li><strong>Quanto vocês topam gastar nos 90 dias</strong> antes de existir receita.</li>
+  <li><strong>Se o take entra na fase 4 ou fica para depois.</strong> Ele é ótimo para retenção e não é necessário para provar nada. Dá para cortar sem dor.</li>
+</ul>
+
+<h2>Se eu tivesse que resumir em três frases</h2>
+<p class="lead">A infraestrutura é barata e conhecida — não é aí que mora o risco. O caminho crítico é <strong>CNPJ → parceiro de pagamento → custódia</strong>, e ele leva mais tempo do que escrever o software. E a coisa mais valiosa que vocês podem fazer nos próximos 60 dias não depende de nada disso: colocar cem pessoas em Natal mantendo a agenda em dia.</p>
+
+<div class="nota"><p>Sobre a precisão dos números aqui: preços de plataforma e tarifas de transação mudam, e a tabela do WhatsApp mudou recentemente. Trate as faixas como ordem de grandeza para decidir, e confirme cada uma na fonte antes de assinar qualquer coisa.</p></div>
+
+</div>
+
+<script>
+(function(){
+  var K="cf-plano-tema", r=document.documentElement;
+  function ap(t){
+    r.classList.toggle("claro",t==="claro");
+    document.querySelectorAll("[data-t]").forEach(function(b){
+      b.setAttribute("aria-pressed",String(b.dataset.t===t));
+    });
+  }
+  var s=null; try{s=localStorage.getItem(K)}catch(e){}
+  ap(s==="claro"?"claro":"escuro");
+  document.addEventListener("click",function(e){
+    var b=e.target.closest("[data-t]"); if(!b) return;
+    ap(b.dataset.t); try{localStorage.setItem(K,b.dataset.t)}catch(err){}
+  });
+})();
+</script>

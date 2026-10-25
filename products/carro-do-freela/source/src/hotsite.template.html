@@ -1,0 +1,996 @@
+<title>Carro do Freela — a apresentação</title>
+<style>
+/*__FONTS__*/
+
+/* ============================================================
+   Carro do Freela — hotsite da apresentação
+
+   Conceito: a apresentação É uma timeline. O scroll é o playhead,
+   cada cena tem timecode de entrada, e a régua da direita é a linha
+   do tempo. Numeração e marcação existem porque a ordem carrega
+   informação — não são enfeite.
+
+   Tudo é gerado em código: não há uma imagem, um vídeo ou uma fonte
+   vindos de fora. Abre offline.
+   ============================================================ */
+
+:root{
+  --breu:#07090C; --grafite:#0E1216; --grafite2:#151B21; --grafite3:#1D242B;
+  --ciano:#17D1E8; --ciano-esc:#0B7C8B; --ciano-tint:rgba(23,209,232,.11);
+  --magenta:#FF3D9A; --magenta-tint:rgba(255,61,154,.10);
+  --ambar:#F2C14E; --ambar-tint:rgba(242,193,78,.11);
+  --livre:#3DD17E; --livre-tint:rgba(61,209,126,.11);
+  --cal:#E9EEF0; --cal-fraco:#93A0A8; --cal-tenue:#7F8C96;
+  --linha:#1C242B; --linha2:#2A343D;
+  --vinheta:radial-gradient(120% 80% at 50% 0%,rgba(23,209,232,.07),transparent 62%);
+  --sombra:0 30px 80px rgba(0,0,0,.55);
+  --display:"Schibsted Grotesk",system-ui,sans-serif;
+  --mono:"Spline Sans Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+/* Versão clara. Classe própria, nunca [data-theme], que pertence ao
+   viewer que hospeda a página. Paleta desenhada à parte — o ciano
+   escurece para segurar contraste sobre fundo claro. */
+:root.claro{
+  --breu:#EDF2F4; --grafite:#F4F7F8; --grafite2:#FFFFFF; --grafite3:#E7EDEF;
+  --ciano:#0D6882; --ciano-esc:#8FC3D2; --ciano-tint:rgba(13,104,130,.09);
+  --magenta:#B41E66; --magenta-tint:rgba(180,30,102,.08);
+  --ambar:#7F5807; --ambar-tint:rgba(127,88,7,.10);
+  --livre:#126E34; --livre-tint:rgba(18,110,52,.09);
+  --cal:#11171C; --cal-fraco:#48545C; --cal-tenue:#5F6B74;
+  --linha:#DCE3E6; --linha2:#C6D0D5;
+  --vinheta:radial-gradient(120% 80% at 50% 0%,rgba(13,104,130,.06),transparent 62%);
+  --sombra:0 24px 60px rgba(17,23,28,.13);
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--breu);color:var(--cal);font-family:var(--display);
+  font-weight:400;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img,svg,canvas{display:block;max-width:100%}
+::selection{background:var(--ciano);color:var(--breu)}
+
+.wrap{width:min(1240px,92vw);margin:0 auto}
+
+/* ---------- leader (abertura) ---------- */
+#leader{position:fixed;inset:0;z-index:100;background:var(--breu);display:grid;place-items:center;
+  transition:opacity .5s ease,visibility .5s}
+#leader.foi{opacity:0;visibility:hidden;pointer-events:none}
+.acad{position:relative;width:min(58vmin,340px);aspect-ratio:1}
+.acad svg{width:100%;height:100%}
+.acad .sweep{transform-origin:50% 50%;animation:varre 1s linear infinite}
+@keyframes varre{to{transform:rotate(360deg)}}
+.acad b{position:absolute;inset:0;display:grid;place-items:center;
+  font-weight:900;font-size:min(26vmin,150px);letter-spacing:-.06em;color:var(--cal);
+  font-variant-numeric:tabular-nums}
+.pular{position:fixed;bottom:34px;left:50%;transform:translateX(-50%);border:0;background:none;
+  color:var(--cal-tenue);font-family:var(--mono);font-size:11px;letter-spacing:.16em;
+  text-transform:uppercase;cursor:pointer}
+.pular:hover{color:var(--cal)}
+
+/* ---------- HUD ---------- */
+.hud{position:fixed;top:0;left:0;right:0;z-index:60;pointer-events:none;
+  padding:20px 0;background:linear-gradient(180deg,var(--breu) 8%,transparent)}
+.hud .wrap{display:flex;align-items:center;gap:16px}
+.marca{display:flex;align-items:center;gap:10px;pointer-events:auto;text-decoration:none;color:inherit}
+.marca svg{flex:none}
+.marca b{font-weight:900;font-size:15px;letter-spacing:-.03em;white-space:nowrap}
+.tcode{margin-left:auto;font-family:var(--mono);font-size:12.5px;font-weight:500;letter-spacing:.06em;
+  color:var(--ciano);font-variant-numeric:tabular-nums;
+  border:1px solid var(--linha2);border-radius:8px;padding:5px 10px;background:var(--grafite);
+  pointer-events:auto}
+.tema{display:inline-flex;gap:2px;flex:none;pointer-events:auto;
+  background:var(--grafite);border:1px solid var(--linha2);border-radius:9px;padding:3px}
+.tema button{display:grid;place-items:center;width:28px;height:24px;padding:0;border:0;border-radius:7px;
+  background:none;color:var(--cal-tenue);cursor:pointer;transition:background .18s,color .18s}
+.tema button:hover{color:var(--cal)}
+.tema button[aria-pressed="true"]{background:var(--ciano);color:var(--breu)}
+@media(max-width:620px){.marca b{display:none}.tcode{font-size:11px;padding:4px 8px}}
+
+/* ---------- régua da direita ---------- */
+.regua{position:fixed;right:max(14px,calc((100vw - min(1240px,92vw))/2 - 26px));top:50%;
+  transform:translateY(-50%);z-index:55;display:grid;gap:0}
+.regua button{position:relative;display:block;width:26px;height:20px;border:0;background:none;cursor:pointer;padding:0}
+.regua i{position:absolute;right:0;top:50%;display:block;height:1px;width:11px;
+  background:var(--linha2);transition:width .22s ease,background .22s ease}
+.regua button:hover i,.regua button[aria-current="true"] i{width:22px;background:var(--ciano)}
+.regua em{position:absolute;right:30px;top:50%;transform:translateY(-50%);white-space:nowrap;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;font-style:normal;
+  color:var(--ciano);opacity:0;transition:opacity .22s ease;pointer-events:none}
+.regua button:hover em{opacity:1}
+@media(max-width:1100px){.regua{display:none}}
+
+/* ---------- cena ---------- */
+.cena{position:relative;padding:120px 0;border-top:1px solid var(--linha)}
+.cena:first-of-type{border-top:0}
+.cena.alta{min-height:100svh;display:flex;align-items:center}
+.cabeca{display:flex;align-items:baseline;gap:14px;margin-bottom:26px;flex-wrap:wrap}
+.tcin{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.14em;color:var(--ciano);
+  border:1px solid var(--ciano-esc);border-radius:5px;padding:3px 8px;font-variant-numeric:tabular-nums}
+.rot{font-family:var(--mono);font-size:11px;letter-spacing:.19em;text-transform:uppercase;color:var(--cal-tenue)}
+h2{font-weight:900;font-size:clamp(30px,4.6vw,58px);line-height:1.03;letter-spacing:-.045em;
+  margin:0 0 22px;text-wrap:balance;max-width:19ch}
+h3{font-weight:900;font-size:clamp(19px,2.1vw,25px);line-height:1.12;letter-spacing:-.035em;margin:0 0 10px}
+p{margin:0 0 16px;max-width:64ch;color:var(--cal-fraco);font-size:clamp(15px,1.25vw,17.5px);line-height:1.65}
+p.grande{font-size:clamp(17px,1.7vw,21px);color:var(--cal);max-width:52ch;line-height:1.5}
+strong{color:var(--cal);font-weight:700}
+.duas{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(28px,5vw,72px);align-items:center}
+.duas>*{min-width:0}
+.duas.topo{align-items:start}
+@media(max-width:920px){.duas{grid-template-columns:1fr;gap:34px}}
+
+/* ---------- hero ---------- */
+.hero{min-height:100svh;display:flex;align-items:center;position:relative;overflow:hidden;
+  background:var(--vinheta)}
+.hero .wrap{position:relative;z-index:2}
+.mkbig{width:clamp(72px,9vw,116px);height:auto;overflow:visible}
+.mkbig rect{transform-box:fill-box;transform-origin:center}
+.h1{font-weight:900;font-size:clamp(42px,9.4vw,132px);line-height:.93;letter-spacing:-.055em;
+  margin:26px 0 0;text-wrap:balance;max-width:13ch}
+.h1 span{display:inline-block;overflow:hidden;vertical-align:top}
+.h1 span i{display:inline-block;font-style:normal;transform:translateY(105%);
+  animation:sobe .95s cubic-bezier(.2,.85,.25,1) forwards}
+@keyframes sobe{to{transform:translateY(0)}}
+.hsub{font-size:clamp(16px,1.6vw,20px);color:var(--cal-fraco);max-width:56ch;margin:26px 0 0;line-height:1.6}
+.stats{display:flex;gap:clamp(24px,4vw,56px);flex-wrap:wrap;margin-top:46px;padding-top:28px;
+  border-top:1px solid var(--linha)}
+.stats div b{display:block;font-family:var(--mono);font-size:clamp(24px,3vw,34px);font-weight:500;
+  letter-spacing:-.04em;line-height:1;color:var(--ciano);font-variant-numeric:tabular-nums}
+.stats div span{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--cal-tenue);margin-top:8px}
+.rola{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);z-index:2;
+  font-family:var(--mono);font-size:10px;letter-spacing:.19em;text-transform:uppercase;color:var(--cal-tenue);
+  display:flex;flex-direction:column;align-items:center;gap:9px}
+.rola i{display:block;width:1px;height:34px;background:linear-gradient(var(--ciano),transparent);
+  animation:desce 1.9s ease-in-out infinite}
+@keyframes desce{0%,100%{opacity:.25;transform:scaleY(.5);transform-origin:top}50%{opacity:1;transform:scaleY(1)}}
+
+/* ---------- blocos ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(258px,1fr));gap:1px;
+  background:var(--linha);border:1px solid var(--linha);border-radius:14px;overflow:hidden;margin-top:8px}
+.card{background:var(--grafite);padding:26px 24px 28px}
+.card .n{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.12em;color:var(--ciano)}
+.card h3{margin:12px 0 8px;font-size:19px}
+.card p{margin:0;font-size:14.5px;line-height:1.6}
+.nota{border-left:2px solid var(--ciano);background:var(--ciano-tint);border-radius:0 10px 10px 0;
+  padding:18px 22px;margin-top:26px}
+.nota p{margin:0;color:var(--cal);font-size:15px}
+.nota.aviso{border-left-color:var(--ambar);background:var(--ambar-tint)}
+
+.passos{display:grid;gap:1px;background:var(--linha);border:1px solid var(--linha);
+  border-radius:13px;overflow:hidden}
+.passo{background:var(--grafite);display:grid;grid-template-columns:52px 1fr;gap:18px;align-items:start;padding:20px 24px}
+.passo b{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--ciano);padding-top:3px;
+  border-right:1px solid var(--linha2);height:100%}
+.passo h3{font-size:17px;margin:0 0 4px}
+.passo p{margin:0;font-size:14px}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1px;
+  background:var(--linha);border:1px solid var(--linha);border-radius:13px;overflow:hidden;margin-top:24px}
+.kpi{background:var(--grafite);padding:22px 22px 24px}
+.kpi em{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--cal-tenue);font-style:normal}
+.kpi b{display:block;font-family:var(--mono);font-size:clamp(26px,3.2vw,38px);font-weight:500;
+  letter-spacing:-.04em;line-height:1.05;margin-top:10px;font-variant-numeric:tabular-nums}
+.kpi small{display:block;font-size:13px;color:var(--cal-fraco);margin-top:8px;line-height:1.5}
+.kpi.c b{color:var(--ciano)} .kpi.m b{color:var(--magenta)} .kpi.a b{color:var(--ambar)} .kpi.v b{color:var(--livre)}
+
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+.tab-rola{overflow-x:auto;max-width:100%;border:1px solid var(--linha);border-radius:13px;background:var(--grafite);margin-top:8px}
+th,td{text-align:left;padding:14px 18px;border-bottom:1px solid var(--linha);white-space:nowrap}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--cal-tenue);font-weight:400}
+td:last-child,th:last-child{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+tr.total td{color:var(--cal);font-weight:700;background:var(--ciano-tint)}
+td b{color:var(--cal)}
+
+.lista{list-style:none;padding:0;margin:18px 0 0;display:grid;gap:13px}
+.lista li{position:relative;padding-left:22px;color:var(--cal-fraco);font-size:15px;line-height:1.6;max-width:62ch}
+.lista li::before{content:"";position:absolute;left:0;top:.62em;width:9px;height:1px;background:var(--ciano)}
+.lista li strong{color:var(--cal)}
+
+.viz{position:relative;border:1px solid var(--linha);border-radius:15px;background:var(--grafite);
+  overflow:hidden;box-shadow:var(--sombra)}
+.viz canvas{width:100%;height:auto}
+.viz figcaption{position:absolute;left:0;right:0;bottom:0;padding:14px 18px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--cal-tenue);
+  background:linear-gradient(transparent,var(--grafite) 62%)}
+
+/* ---------- cena do take ---------- */
+.take{background:radial-gradient(70% 60% at 50% 45%,var(--ciano-tint),transparent 70%)}
+.moeda-caixa{display:grid;place-items:center;position:relative}
+.moeda-caixa canvas{width:min(460px,74vw);height:auto}
+.paridade{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ciano);margin-top:8px;text-align:center}
+
+/* ---------- rodapé ---------- */
+.fim{padding:120px 0 90px;border-top:1px solid var(--linha);background:var(--vinheta)}
+.fim h2{max-width:16ch}
+.assina{display:flex;align-items:center;gap:13px;margin-top:44px;padding-top:26px;border-top:1px solid var(--linha);
+  font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--cal-tenue)}
+
+/* ---------- revelação ---------- */
+.rev{opacity:0;transform:translateY(26px);filter:blur(6px)}
+.rev.on{opacity:1;transform:none;filter:none;
+  transition:opacity .75s cubic-bezier(.2,.7,.3,1) var(--d,0s),
+             transform .75s cubic-bezier(.2,.7,.3,1) var(--d,0s),
+             filter .75s ease var(--d,0s)}
+
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .rev{opacity:1;transform:none;filter:none}
+  .h1 span i{transform:none;animation:none}
+  .acad .sweep,.rola i{animation:none}
+  #leader{display:none}
+}
+@media print{.hud,.regua,#leader,.rola{display:none}}
+</style>
+
+<div id="leader" aria-hidden="true">
+  <div class="acad">
+    <svg viewBox="0 0 200 200" fill="none" stroke="var(--ciano-esc)" stroke-width="1">
+      <circle cx="100" cy="100" r="96"/><circle cx="100" cy="100" r="70"/><circle cx="100" cy="100" r="44"/>
+      <path d="M100 0v200M0 100h200" stroke="var(--linha2)"/>
+      <path class="sweep" d="M100 100 L100 4 A96 96 0 0 1 168 32 Z" fill="var(--ciano-tint)" stroke="none"/>
+    </svg>
+    <b id="lead-n">3</b>
+  </div>
+</div>
+
+<header class="hud">
+  <div class="wrap">
+    <a class="marca" href="#topo">
+      <svg viewBox="0 0 100 100" width="24" height="24" fill="var(--ciano)"><g transform="translate(16,0) skewX(-12)">
+        <rect x="14" y="24" width="7" height="52" rx="2" opacity=".34"></rect>
+        <rect x="29" y="24" width="13" height="52" rx="2.5" opacity=".64"></rect>
+        <rect x="50" y="24" width="26" height="52" rx="3.5"></rect>
+      </g></svg>
+      <b>Carro do Freela</b>
+    </a>
+    <div class="tema" role="group" aria-label="Tema da apresentação">
+      <button type="button" data-tema="escuro" aria-pressed="true" title="Tema escuro" aria-label="Tema escuro"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13.4A8.4 8.4 0 0 1 10.6 4a8.4 8.4 0 1 0 9.4 9.4z"/></svg></button>
+      <button type="button" data-tema="claro" aria-pressed="false" title="Tema claro" aria-label="Tema claro"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.6v2.1M12 19.3v2.1M4.3 4.3l1.5 1.5M18.2 18.2l1.5 1.5M2.6 12h2.1M19.3 12h2.1M4.3 19.7l1.5-1.5M18.2 5.8l1.5-1.5"/></svg></button>
+    </div>
+    <span class="tcode" id="tc">00:00:00:00</span>
+  </div>
+</header>
+
+<nav class="regua" id="regua" aria-label="Cenas"></nav>
+
+<main>
+
+<!-- ============ 01 ============ -->
+<section class="cena hero" id="topo" data-cena="Abertura">
+  <div class="wrap">
+    <svg class="mkbig" id="mkhero" viewBox="0 0 100 100" fill="var(--ciano)"><g transform="translate(16,0) skewX(-12)">
+      <rect x="14" y="24" width="7" height="52" rx="2" opacity=".34"></rect>
+      <rect x="29" y="24" width="13" height="52" rx="2.5" opacity=".64"></rect>
+      <rect x="50" y="24" width="26" height="52" rx="3.5"></rect>
+    </g></svg>
+    <h1 class="h1"><span><i style="animation-delay:.05s">Escale sua equipe</i></span><br><span><i style="animation-delay:.17s">sem adivinhar.</i></span></h1>
+    <p class="hsub">Agenda, contratação e equipamento do audiovisual no mesmo lugar. Isto não é um slide: é o que já está de pé, e como isso vira negócio.</p>
+    <div class="stats">
+      <div><b>109</b><span>profissionais cadastrados</span></div>
+      <div><b>1</b><span>praça: Natal/RN</span></div>
+      <div><b>0</b><span>servidores para rodar o protótipo</span></div>
+    </div>
+  </div>
+  <div class="rola"><i></i>role</div>
+</section>
+
+<!-- ============ 02 ============ -->
+<section class="cena" data-cena="O problema">
+  <div class="wrap">
+    <div class="cabeca rev"><span class="tcin"></span><span class="rot">O problema</span></div>
+    <h2 class="rev" style="--d:.06s">Três dores que hoje moram num grupo de WhatsApp.</h2>
+    <div class="cards rev" style="--d:.12s">
+      <div class="card"><span class="n">01</span><h3>Ninguém sabe quem está livre</h3>
+        <p>A pergunta que trava um job não é “quem é bom”, é “quem pode sábado”. Sem agenda, isso só se descobre chamando um por um e esperando.</p></div>
+      <div class="card"><span class="n">02</span><h3>O combinado não segura o pagamento</h3>
+        <p>Entregou, mandou nota, espera. Sem registro do escopo e do valor, cobrar vira constrangimento — e o freela some antes de brigar.</p></div>
+      <div class="card"><span class="n">03</span><h3>Equipamento se vende no escuro</h3>
+        <p>Câmera de R$ 12 mil anunciada em três linhas. Ninguém pergunta cliques, ninguém fala de fungo, e o comprador descobre em casa.</p></div>
+    </div>
+    <div class="nota rev" style="--d:.18s"><p>As três têm a mesma raiz: <strong>o grupo não tem memória.</strong> A informação existe, circula e não fica em lugar nenhum. Quem entrou esse ano não sabe quem opera drone, quem já trabalhou com quem, nem quem pagou direito.</p></div>
+  </div>
+</section>
+
+<!-- ============ 03 ============ -->
+<section class="cena alta" data-cena="A virada">
+  <div class="wrap">
+    <div class="duas">
+      <div>
+        <div class="cabeca rev"><span class="tcin"></span><span class="rot">A virada</span></div>
+        <h2 class="rev" style="--d:.06s">A agenda do freela vira o banco de dados de quem contrata.</h2>
+        <p class="grande rev" style="--d:.12s">O freela mantém a própria agenda porque é nela que ele controla job, diária e o que tem a receber. A disponibilidade pública sai daí sozinha — ele não atualiza duas coisas.</p>
+        <p class="rev" style="--d:.16s">Quem contrata escolhe a praça e a data, vê quem está mesmo livre, monta a escala com o custo somando e fecha com o pagamento garantido.</p>
+        <div class="nota aviso rev" style="--d:.2s"><p><strong>Agenda de plataforma sempre morre.</strong> Se ela existir só para os outros verem, desatualiza em duas semanas e o produto vira lista de telefone velho. Por isso aqui ela é o controle financeiro do freela: ele mantém pelo próprio bolso.</p></div>
+      </div>
+      <figure class="viz rev" style="--d:.14s;margin:0">
+        <canvas id="cv-praca" width="720" height="520"></canvas>
+        <figcaption>Quem está na escuta — 14 dias, uma praça</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 04 ============ -->
+<section class="cena" data-cena="Um a um">
+  <div class="wrap">
+    <div class="cabeca rev"><span class="tcin"></span><span class="rot">Como funciona · um a um</span></div>
+    <h2 class="rev" style="--d:.06s">Do job à conta paga, sem conversa de três dias.</h2>
+    <div class="duas topo">
+      <div class="passos rev" style="--d:.12s">
+        <div class="passo"><b>1</b><div><h3>Praça e data</h3><p>Quantos estão na escuta naquele dia, antes de abrir qualquer lista.</p></div></div>
+        <div class="passo"><b>2</b><div><h3>Consulta</h3><p>Data, horário, escopo e valor estimado pela tabela do próprio freela.</p></div></div>
+        <div class="passo"><b>3</b><div><h3>Resposta</h3><p>Aceito, recuso com motivo, ou contraproponho. Um botão, não um chat.</p></div></div>
+        <div class="passo"><b>4</b><div><h3>Job na agenda</h3><p>Data travada, some da busca, valor em custódia.</p></div></div>
+        <div class="passo"><b>5</b><div><h3>Liberação</h3><p>No dia seguinte à entrega, automática.</p></div></div>
+      </div>
+      <div>
+        <h3 class="rev" style="--d:.16s">A discordância de preço é um campo numérico</h3>
+        <p class="rev" style="--d:.18s">Contraproposta até 25% acima do orçamento costuma passar; acima disso o contratante quase sempre volta atrás. A caixa avisa se o valor está abaixo da tabela do freela e se a data bate com job que ele já tem.</p>
+        <div class="nota rev" style="--d:.22s"><p>Negociar dentro de um campo, com a régua à vista, é o que impede a conversa de virar três dias de áudio.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 05 ============ -->
+<section class="cena alta" data-cena="Passar o carro">
+  <div class="wrap">
+    <div class="duas">
+      <figure class="viz rev" style="margin:0">
+        <canvas id="cv-corrida" width="720" height="520"></canvas>
+        <figcaption>Chamada de última hora · 12 de 59 recebem</figcaption>
+      </figure>
+      <div>
+        <div class="cabeca rev" style="--d:.06s"><span class="tcin"></span><span class="rot">Como funciona · um para muitos</span></div>
+        <h2 class="rev" style="--d:.1s">Passar o carro: chamada de última hora, disputada.</h2>
+        <ul class="lista rev" style="--d:.14s">
+          <li><strong>Só para quem está livre.</strong> O anúncio vai para as pessoas com aquela função e a data em aberto — não para o grupo inteiro. Em geral 12 de 59.</li>
+          <li><strong>O primeiro que aceitar leva.</strong> Os outros veem “vaga preenchida” na hora, com o nome de quem aceitou.</li>
+          <li><strong>A vaga se preenche sozinha.</strong> Quem ganhou entra na escala, com o custo já somado no orçamento do job.</li>
+        </ul>
+        <div class="nota rev" style="--d:.2s"><p>Não é detalhe de interface: <strong>cada conversa no WhatsApp Business é cobrada.</strong> Filtrar pela agenda derruba o custo de 59 mensagens para 12 — e a corrida garante que nenhuma seja desperdiçada. A agenda se paga sozinha.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 06 ============ -->
+<section class="cena" data-cena="Pagamento garantido">
+  <div class="wrap">
+    <div class="cabeca rev"><span class="tcin"></span><span class="rot">Pagamento garantido</span></div>
+    <h2 class="rev" style="--d:.06s">O dinheiro sai da conversa.</h2>
+    <p class="grande rev" style="--d:.1s">Quem contrata deposita quando a data é confirmada. A plataforma segura. O freela recebe no dia seguinte à entrega — sem cobrar, sem lembrar, sem “o financeiro paga dia 30”.</p>
+    <div class="kpis rev" style="--d:.14s">
+      <div class="kpi c"><em>Taxa do job</em><b>6%</b><small>sobre o job, paga por quem contrata. O freela recebe exatamente o combinado.</small></div>
+      <div class="kpi v"><em>+ de 7 dias</em><b>100%</b><small>cancelou com antecedência: devolução integral.</small></div>
+      <div class="kpi a"><em>7 a 3 dias</em><b>50%</b><small>metade fica com o freela.</small></div>
+      <div class="kpi m"><em>− de 72h</em><b>100%</b><small>o valor fica com o freela: ele já recusou outro job.</small></div>
+    </div>
+    <div class="nota rev" style="--d:.18s"><p>Se a taxa saísse do freela, todo mundo voltava pro Pix no dia seguinte. Usar é opcional — acerto direto continua existindo e é de graça. Job com garantia nunca entra na conta de “a receber”, e é esse contraste, dentro da própria agenda, que vende a função.</p></div>
+  </div>
+</section>
+
+<!-- ============ 07 ============ -->
+<section class="cena" data-cena="Confiança">
+  <div class="wrap">
+    <div class="cabeca rev"><span class="tcin"></span><span class="rot">Confiança</span></div>
+    <h2 class="rev" style="--d:.06s">Os dois lados prestam contas. Sem estrelas.</h2>
+    <div class="duas topo">
+      <div class="rev" style="--d:.1s">
+        <h3>O freela</h3>
+        <ul class="lista">
+          <li><strong>Agenda em dia</strong> — semanas seguidas atualizando</li>
+          <li><strong>Responde em</strong> — mediana real das consultas respondidas</li>
+          <li><strong>Jobs concluídos</strong> — fechados pela plataforma</li>
+          <li><strong>Perfil completo</strong> — e o selo de verificado sai daí</li>
+        </ul>
+      </div>
+      <div class="rev" style="--d:.14s">
+        <h3>Quem contrata</h3>
+        <ul class="lista">
+          <li><strong>Pagou sem atraso</strong> — n de n jobs</li>
+          <li><strong>Pagamento garantido</strong> — em quantos jobs travou o valor antes</li>
+          <li><strong>Confirma em</strong> — quanto tempo a data fica presa esperando</li>
+          <li><strong>Cancelou</strong> — e quantos com menos de 72h</li>
+        </ul>
+      </div>
+    </div>
+    <div class="nota rev" style="--d:.18s"><p>Nenhuma nota, nenhum ranking, nenhum top 10. <strong>Estrela infla, gera retaliação e concentra os jobs em dez pessoas</strong> — o que mataria o dado das outras noventa e nove. Aqui são fatos de operação, que ninguém escreve à mão: saem do uso.</p></div>
+  </div>
+</section>
+
+<!-- ============ 08 ============ -->
+<section class="cena" data-cena="O brechó">
+  <div class="wrap">
+    <div class="cabeca rev"><span class="tcin"></span><span class="rot">Brechó de equipamento</span></div>
+    <h2 class="rev" style="--d:.06s">A ficha que o grupo nunca teve.</h2>
+    <div class="duas topo">
+      <div>
+        <p class="rev" style="--d:.1s">Cada categoria exige o que o comprador perguntaria se pudesse. Lente pede fungo, elemento frontal e traseiro, névoa, anel de foco, lâminas, baioneta e autofoco. Câmera pede contagem de cliques. Drone pede horas de voo e se já caiu. Mais fotos obrigatórias: a tela com a contagem, o elemento frontal contra a luz.</p>
+        <div class="nota rev" style="--d:.14s"><p><strong>Defeito declarado não é defeito escondido.</strong> A ficha não afasta comprador — ela troca a desconfiança genérica por um desconto que os dois lados entendem.</p></div>
+      </div>
+      <div>
+        <h3 class="rev" style="--d:.16s">O vendedor não pesquisa preço</h3>
+        <p class="rev" style="--d:.18s">A ficha alimenta um avaliador que devolve a faixa saudável e explica cada desconto: 180 mil cliques tira 16%, fungo presente tira 28%. Só o vendedor vê — se o comprador visse, viraria arma de barganha e ninguém mais declararia nada.</p>
+        <div class="kpis rev" style="--d:.22s">
+          <div class="kpi c"><em>Painel de vendas</em><b>1</b><small>tudo o que ele pôs à venda, o que precisa de resposta primeiro, e quanto já arrecadou.</small></div>
+          <div class="kpi a"><em>Proposta de valor</em><b>3</b><small>aceitar, recusar ou contrapropor — sem sair para o WhatsApp.</small></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 09 ============ -->
+<section class="cena alta take" data-cena="Take">
+  <div class="wrap">
+    <div class="duas">
+      <div>
+        <div class="cabeca rev"><span class="tcin"></span><span class="rot">A moeda</span></div>
+        <h2 class="rev" style="--d:.06s">Take nasce de recebimento, nunca de depósito.</h2>
+        <p class="grande rev" style="--d:.1s">Um take vale um real. Job liberado pela garantia e venda liberada no brechó caem na carteira em takes, já líquidos. Sacar não custa nada, e o saldo aparece no topo de qualquer tela.</p>
+        <ul class="lista rev" style="--d:.14s">
+          <li><strong>O que entra vem sempre amarrado.</strong> A produtora deposita em real para <em>aquele</em> job; o comprador paga em real por <em>aquele</em> anúncio. Ninguém compra take, e não existe “recarregar carteira”.</li>
+          <li><strong>O que sai de uma transação concluída vira take.</strong> É saldo de quem recebeu — e ele gasta aqui dentro ou saca em real, pelo mesmo valor.</li>
+          <li><strong>Quem vendeu pode pagar com o saldo.</strong> A produtora que vendeu uma lente por T$ 3.000 paga três diárias com ela. Não é depósito: é dinheiro que já era dela, girando.</li>
+        </ul>
+        <div class="nota aviso rev" style="--d:.2s"><p><strong>É essa distinção que segura a regulação.</strong> Dinheiro que entra com destino fixo é custódia — intermediação de pagamento, o que o parceiro já é licenciado para fazer. Saldo parado sem destino é conta de pagamento, com o Banco Central no meio. Por isso o take só existe na saída.</p></div>
+      </div>
+      <div class="moeda-caixa rev" style="--d:.12s">
+        <canvas id="cv-moeda" width="920" height="920" aria-label="Moeda take girando"></canvas>
+        <div class="paridade">1 take = R$ 1,00</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 10 ============ -->
+<section class="cena" data-cena="Modelo">
+  <div class="wrap">
+    <div class="cabeca rev"><span class="tcin"></span><span class="rot">Modelo de negócio</span></div>
+    <h2 class="rev" style="--d:.06s">Quatro fontes. Nenhuma cobra para existir na plataforma.</h2>
+    <div class="kpis rev" style="--d:.12s">
+      <div class="kpi c"><em>Transação</em><b>6%</b><small>do job com pagamento garantido, pago por quem contrata</small></div>
+      <div class="kpi c"><em>Transação</em><b>5%</b><small>da venda no brechó com compra garantida, descontados quando a custódia libera</small></div>
+      <div class="kpi a"><em>Assinatura</em><b>R$ 19</b><small>Premium do freela: relatório, exportar para o contador, recibo e contrato</small></div>
+      <div class="kpi a"><em>Assinatura</em><b>R$ 89</b><small>conta de produtora: equipe, escalas salvas, histórico e taxa de 4%</small></div>
+    </div>
+    <div class="nota rev" style="--d:.16s"><p>A regra que amarra tudo: <strong>cadastro, agenda, aparecer na busca e o selo de verificado são de graça e vão continuar sendo.</strong> Se a plataforma cobrar para a pessoa existir nela, o banco de dados morre no primeiro mês — e o banco de dados é o produto.</p></div>
+  </div>
+</section>
+
+<!-- ============ 11 ============ -->
+<section class="cena" data-cena="Uma praça">
+  <div class="wrap">
+    <div class="cabeca rev"><span class="tcin"></span><span class="rot">Uma praça madura · Natal/RN no mês 12</span></div>
+    <h2 class="rev" style="--d:.06s">O que uma cidade sozinha gera por mês.</h2>
+    <div class="duas topo">
+      <div class="rev" style="--d:.1s">
+        <div class="tab-rola"><table>
+          <thead><tr><th>Fonte</th><th>Cálculo</th><th>Mês</th></tr></thead>
+          <tbody>
+            <tr><td><b>Taxa de garantia em job</b></td><td>68 × R$ 950 × 6%</td><td>R$ 3.876</td></tr>
+            <tr><td><b>Conta de produtora</b></td><td>14 × R$ 89</td><td>R$ 1.246</td></tr>
+            <tr><td><b>Brechó</b></td><td>8 × R$ 2.800 × 5%</td><td>R$ 1.120</td></tr>
+            <tr><td><b>Premium do freela</b></td><td>18 × R$ 19</td><td>R$ 342</td></tr>
+            <tr class="total"><td>Receita bruta</td><td></td><td>R$ 6.584</td></tr>
+            <tr><td><b>Líquido</b></td><td>depois de adquirência e custódia</td><td>~R$ 4.600</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div>
+        <h3 class="rev" style="--d:.14s">As premissas — discuta estas, não o total</h3>
+        <ul class="lista rev" style="--d:.16s">
+          <li>400 freelas cadastrados na praça (hoje já temos <strong>109 sem esforço</strong>)</li>
+          <li><strong>180 com a agenda atualizada na semana.</strong> Esta é a métrica do negócio: se ela cai, nada acima acontece</li>
+          <li>150 jobs/mês fechados pela plataforma, diária média de R$ 950</li>
+          <li>45% dos jobs com garantia — o resto continua em acerto direto, de graça</li>
+          <li>10% dos freelas ativos pagando Premium</li>
+        </ul>
+        <div class="nota aviso rev" style="--d:.2s"><p>Seja honesto com o número: <strong>uma praça madura paga uma pessoa e a infraestrutura. Não paga uma empresa.</strong> O negócio não está na primeira cidade — está em repetir a primeira cidade.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 12 ============ -->
+<section class="cena" data-cena="Cenário">
+  <div class="wrap">
+    <div class="cabeca rev"><span class="tcin"></span><span class="rot">Cenário · não é previsão</span></div>
+    <h2 class="rev" style="--d:.06s">O negócio é replicar praça, não crescer usuário.</h2>
+    <div class="cards rev" style="--d:.12s">
+      <div class="card"><span class="n">Ano 1 · 1 praça</span><h3>R$ 6,5 mil/mês</h3>
+        <p>No mês 12. O ano fecha em ~R$ 35 mil, porque é rampa. O objetivo do ano não é receita: é provar que a agenda fica em dia.</p></div>
+      <div class="card"><span class="n">Ano 2 · 5 praças</span><h3>R$ 28 mil/mês</h3>
+        <p>RN, PB, PE, CE. Cada praça nova entra mais rápido: o playbook já existe e o encontro presencial é o mesmo formato.</p></div>
+      <div class="card"><span class="n">Ano 3 · 15 praças</span><h3>R$ 85 mil/mês</h3>
+        <p>~R$ 1 milhão anualizado. É onde o time deixa de ser dois e o produto deixa de ser protótipo.</p></div>
+    </div>
+    <div class="nota rev" style="--d:.16s"><p>Praça é cidade com massa crítica própria. <strong>Audiovisual se contrata por proximidade</strong>, então densidade local vale mais que alcance nacional. Uma plataforma com 10 mil pessoas espalhadas pelo Brasil não fecha um job em Natal no sábado. Com 400 em Natal, fecha.</p></div>
+  </div>
+</section>
+
+<!-- ============ 13 ============ -->
+<section class="cena" data-cena="Concorrência">
+  <div class="wrap">
+    <div class="cabeca rev"><span class="tcin"></span><span class="rot">Por que não é o que já existe</span></div>
+    <h2 class="rev" style="--d:.06s">O concorrente real é o grupo do WhatsApp.</h2>
+    <div class="tab-rola rev" style="--d:.12s"><table>
+      <thead><tr><th>Quem</th><th>O que faz</th><th style="text-align:left">Por que não resolve isto</th></tr></thead>
+      <tbody>
+        <tr><td><b>Grupo de WhatsApp</b></td><td>onde o mercado já está</td><td style="text-align:left;white-space:normal;max-width:44ch">não tem memória, nem agenda, nem garantia — e é grátis, então nada pode ser cobrado por existir</td></tr>
+        <tr><td><b>GetNinjas</b></td><td>vende lead ao profissional</td><td style="text-align:left;white-space:normal;max-width:44ch">ele paga para talvez falar com alguém. Aqui ninguém paga para aparecer: a receita só existe quando o job fecha</td></tr>
+        <tr><td><b>Fiverr / Workana</b></td><td>trabalho remoto, global</td><td style="text-align:left;white-space:normal;max-width:44ch">equipe de set se contrata por proximidade e por data. Ninguém contrata cinegrafista de outro estado para sábado</td></tr>
+        <tr><td><b>OLX / Mercado Livre</b></td><td>venda de equipamento</td><td style="text-align:left;white-space:normal;max-width:44ch">sem ficha de conservação, sem histórico profissional do vendedor, sem o contexto de quem trabalha com aquilo</td></tr>
+      </tbody>
+    </table></div>
+    <div class="nota rev" style="--d:.16s"><p>A defesa não é a tecnologia — <strong>é o dado.</strong> Uma agenda viva de quem está livre, por praça, não se copia: leva tempo e confiança para existir. E cada venda no brechó calibra melhor o avaliador de preço, que atrai mais anúncio. O dado melhora o produto, e o produto gera mais dado.</p></div>
+  </div>
+</section>
+
+<!-- ============ 14 ============ -->
+<section class="cena" data-cena="Riscos">
+  <div class="wrap">
+    <div class="cabeca rev"><span class="tcin"></span><span class="rot">Riscos</span></div>
+    <h2 class="rev" style="--d:.06s">Quatro coisas nos matam. Três já têm resposta no produto.</h2>
+    <div class="cards rev" style="--d:.12s">
+      <div class="card"><span class="n">Risco 01</span><h3>A agenda desatualiza</h3>
+        <p>É o risco número um. Resposta: a agenda é o controle financeiro do freela, lembrete por WhatsApp na quinta, e agenda em dia pesa na ordem da busca.</p></div>
+      <div class="card"><span class="n">Risco 02</span><h3>Fecham por fora</h3>
+        <p>Resposta: a taxa só existe onde há custódia — o resto da plataforma é grátis. Ninguém paga por algo que conseguiria sozinho.</p></div>
+      <div class="card"><span class="n">Risco 03</span><h3>Um calote no começo</h3>
+        <p>Resposta: conta nova sem histórico entra com garantia recomendada, e o freela vê isso escrito no card antes de aceitar.</p></div>
+      <div class="card"><span class="n">Risco 04</span><h3>Custódia é atividade regulada</h3>
+        <p>Este ainda não tem resposta. Reter dinheiro de terceiros exige parceiro com split e retenção. Precisa de decisão, contrato e CNPJ antes da primeira transação real.</p></div>
+    </div>
+    <div class="nota aviso rev" style="--d:.16s"><p>A carteira em takes mora nesse mesmo risco. <strong>A regra de “nasce de recebimento, nunca de depósito” é o que mantém o saldo do lado da intermediação</strong>, e não do lado da emissão — mas quem decide isso é advogado, antes do lançamento e não depois.</p></div>
+  </div>
+</section>
+
+<!-- ============ 15 ============ -->
+<section class="cena" data-cena="Já está pronto">
+  <div class="wrap">
+    <div class="cabeca rev"><span class="tcin"></span><span class="rot">O que já está pronto</span></div>
+    <h2 class="rev" style="--d:.06s">Não é slide. É um protótipo navegável.</h2>
+    <ul class="lista rev" style="--d:.1s">
+      <li><strong>109 profissionais reais</strong> já cadastrados, vindos da planilha do grupo</li>
+      <li>Busca por praça e data, montagem de escala com custo somando, e a chamada de última hora disputada</li>
+      <li>Caixa de propostas, agenda com controle de recebimento e <strong>custódia ponta a ponta</strong></li>
+      <li>Cadastro em seis etapas, perfil-portfólio e perfil de produtora — com login de freela ou de produtora pelos mesmos quatro provedores</li>
+      <li><strong>Brechó com ficha por categoria, avaliador de preço, painel de vendas e carteira em takes</strong> — com o espelho da produtora: quanto ela já pagou, para quem, e o que ainda está retido</li>
+      <li>Tema claro e escuro à escolha de quem usa, e identidade visual com manual de marca fechado</li>
+      <li>Roda no celular e no desktop, <strong>sem servidor</strong> — dá para mandar o link hoje</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+<!-- ============ 16 ============ -->
+<section class="fim cena" data-cena="90 dias">
+  <div class="wrap">
+    <div class="cabeca rev"><span class="tcin"></span><span class="rot">Próximos 90 dias</span></div>
+    <h2 class="rev" style="--d:.06s">O que eu preciso decidir com você.</h2>
+    <div class="duas topo">
+      <div class="rev" style="--d:.1s">
+        <h3>Decisões que travam tudo</h3>
+        <ul class="lista">
+          <li><strong>Parceiro de pagamento</strong> com split e retenção — sem isso não existe custódia, e sem custódia não existe receita</li>
+          <li><strong>CNPJ e contrato de intermediação</strong> — quem assina, qual atividade, qual responsabilidade sobre o valor retido</li>
+          <li><strong>Divisão de papéis</strong> — quem cuida de produto e quem cuida de praça e comunidade</li>
+          <li><strong>Orçamento dos 90 dias</strong></li>
+        </ul>
+      </div>
+      <div class="rev" style="--d:.14s">
+        <h3>O plano</h3>
+        <ul class="lista">
+          <li><strong>Mês 1</strong> — pedir o de acordo do grupo, publicar com os 109, abrir cadastro em Natal</li>
+          <li><strong>Mês 2</strong> — backend real, login, WhatsApp e o primeiro encontro presencial</li>
+          <li><strong>Mês 3</strong> — custódia ligada, com dez jobs reais e cinco produtoras pagantes</li>
+        </ul>
+      </div>
+    </div>
+    <div class="nota rev" style="--d:.18s"><p>A meta do trimestre não é faturamento. É chegar em <strong>100 pessoas com a agenda atualizada na mesma semana.</strong> Se isso acontecer, o resto é consequência. Se não acontecer, nada mais importa.</p></div>
+    <div class="assina">
+      <svg viewBox="0 0 100 100" width="20" height="20" fill="var(--ciano)"><g transform="translate(16,0) skewX(-12)">
+        <rect x="14" y="24" width="7" height="52" rx="2" opacity=".34"></rect>
+        <rect x="29" y="24" width="13" height="52" rx="2.5" opacity=".64"></rect>
+        <rect x="50" y="24" width="26" height="52" rx="3.5"></rect>
+      </g></svg>
+      <span>Carro do Freela · Natal/RN · apresentação interna</span>
+    </div>
+  </div>
+</section>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const CALMO=matchMedia("(prefers-reduced-motion:reduce)").matches;
+
+/* ---------- tema ---------- */
+const TKEY="cf-hot-tema";
+function aplicarTema(t){
+  document.documentElement.classList.toggle("claro",t==="claro");
+  $$("[data-tema]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.tema===t)));
+  pintarTudo();
+}
+(function(){
+  let t="escuro";
+  try{ if(localStorage.getItem(TKEY)==="claro") t="claro" }catch(e){}
+  document.documentElement.classList.toggle("claro",t==="claro");
+  addEventListener("click",e=>{
+    const b=e.target.closest("[data-tema]"); if(!b) return;
+    aplicarTema(b.dataset.tema);
+    try{localStorage.setItem(TKEY,b.dataset.tema)}catch(err){}
+  });
+})();
+const cor=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* ---------- timecode ----------
+   24 quadros por segundo, 26 segundos por cena. O playhead é o scroll:
+   a posição na página é literalmente a posição na timeline. */
+const CENAS=$$("[data-cena]"), FPS=24, SEG_CENA=26;
+const TOTAL=CENAS.length*SEG_CENA*FPS;
+const p2=n=>String(n).padStart(2,"0");
+function tc(f){
+  f=Math.max(0,Math.round(f));
+  return p2(Math.floor(f/(FPS*3600)))+":"+p2(Math.floor(f/(FPS*60))%60)+":"+p2(Math.floor(f/FPS)%60)+":"+p2(f%FPS);
+}
+CENAS.forEach((s,i)=>{
+  const alvo=s.querySelector(".tcin");
+  if(alvo) alvo.textContent=tc(i*SEG_CENA*FPS);
+});
+
+/* régua: cada cena é uma marca na linha do tempo */
+const regua=$("#regua");
+regua.innerHTML=CENAS.map((s,i)=>
+  '<button data-ir="'+i+'" aria-label="'+s.dataset.cena+'"><i></i><em>'+tc(i*SEG_CENA*FPS).slice(3,8)+" · "+s.dataset.cena+'</em></button>').join("");
+regua.onclick=e=>{
+  const b=e.target.closest("[data-ir]"); if(!b) return;
+  CENAS[+b.dataset.ir].scrollIntoView({behavior:CALMO?"auto":"smooth",block:"start"});
+};
+const marcas=[...regua.children];
+
+const elTc=$("#tc");
+let ticking=false;
+function aoRolar(){
+  const h=document.documentElement.scrollHeight-innerHeight;
+  const prog=h>0?Math.min(1,Math.max(0,scrollY/h)):0;
+  elTc.textContent=tc(prog*TOTAL);
+  let atual=0;
+  CENAS.forEach((s,i)=>{ if(s.getBoundingClientRect().top<=innerHeight*0.42) atual=i });
+  marcas.forEach((m,i)=>m.setAttribute("aria-current",String(i===atual)));
+  ticking=false;
+}
+addEventListener("scroll",()=>{ if(!ticking){ ticking=true; requestAnimationFrame(aoRolar) } },{passive:true});
+
+/* ---------- revelação ---------- */
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting){ e.target.classList.add("on"); io.unobserve(e.target) }
+}),{rootMargin:"0px 0px -12% 0px",threshold:.12});
+$$(".rev").forEach(el=>io.observe(el));
+
+/* ---------- leader de abertura ----------
+   Contagem de academia: o jeito mais honesto de começar uma apresentação
+   que é, ela própria, uma timeline. */
+(function(){
+  const l=$("#leader"); if(!l) return;
+  if(CALMO){ l.classList.add("foi"); animarMarca(); return }
+  const n=$("#lead-n"); let v=3;
+  const t=setInterval(()=>{ v--; if(v>0) n.textContent=v; else fim() },430);
+  function fim(){ clearInterval(t); l.classList.add("foi"); setTimeout(animarMarca,120);
+    setTimeout(()=>l.remove(),700); document.body.style.overflow="" }
+  document.body.style.overflow="hidden";
+  l.addEventListener("click",fim);
+  addEventListener("keydown",e=>{ if(e.key==="Escape"||e.key===" ") fim() },{once:true});
+})();
+
+/* a marca entra como filme passando pela janela: as três barras deslizam
+   com atraso decrescente e uma passada de luz atravessa no fim */
+function animarMarca(){
+  if(CALMO) return;
+  const barras=$$("#mkhero rect");
+  barras.forEach((r,i)=>{
+    r.animate(
+      [{transform:"translateX(46px) skewX(6deg)",opacity:0},
+       {transform:"translateX(-4px) skewX(-1deg)",opacity:1,offset:.72},
+       {transform:"none",opacity:getComputedStyle(r).opacity}],
+      {duration:760,delay:i*110,easing:"cubic-bezier(.16,.9,.3,1)",fill:"backwards"});
+  });
+}
+
+/* ============================================================
+   CANVAS 1 — a praça: 14 dias, quantos estão na escuta
+   ============================================================ */
+function praca(cv){
+  const ctx=cv.getContext("2d"), W=cv.width, H=cv.height;
+  const DIAS=14, base=[22,31,18,27,35,41,38,24,19,29,33,44,37,26];
+  let t=0;
+  return function(dt,vis){
+    t=Math.min(1,t+(CALMO?1:dt/900));
+    const e=1-Math.pow(1-t,3);
+    ctx.clearRect(0,0,W,H);
+    const padX=54, padT=64, padB=76;
+    const gw=(W-padX*2)/DIAS, gh=H-padT-padB, max=50;
+    ctx.font='500 13px "Spline Sans Mono",monospace';
+    ctx.fillStyle=cor("--cal-tenue"); ctx.textAlign="left";
+    ctx.fillText("LIVRES POR DIA", padX, 34);
+    ctx.textAlign="right";
+    ctx.fillText("59 CADASTRADOS", W-padX, 34);
+    /* grade */
+    ctx.strokeStyle=cor("--linha"); ctx.lineWidth=1;
+    for(let i=0;i<=4;i++){
+      const y=padT+gh*(i/4)+.5;
+      ctx.beginPath(); ctx.moveTo(padX,y); ctx.lineTo(W-padX,y); ctx.stroke();
+    }
+    const destaque=5;
+    for(let i=0;i<DIAS;i++){
+      const v=base[i]*e, hh=gh*(v/max);
+      const x=padX+i*gw+gw*.18, w=gw*.64, y=padT+gh-hh;
+      const on=i===destaque;
+      const g=ctx.createLinearGradient(0,y,0,padT+gh);
+      g.addColorStop(0,on?cor("--ciano"):cor("--ciano-esc"));
+      g.addColorStop(1,on?cor("--ciano-esc"):cor("--linha2"));
+      ctx.fillStyle=g;
+      ctx.beginPath(); ctx.roundRect(x,y,w,hh,[4,4,0,0]); ctx.fill();
+      if(on){
+        ctx.fillStyle=cor("--ciano");
+        ctx.font='500 15px "Spline Sans Mono",monospace'; ctx.textAlign="center";
+        ctx.fillText(Math.round(v), x+w/2, y-14);
+        ctx.strokeStyle=cor("--ciano"); ctx.setLineDash([3,4]);
+        ctx.beginPath(); ctx.moveTo(x+w/2,y-8); ctx.lineTo(x+w/2,padT+gh); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      ctx.fillStyle=on?cor("--ciano"):cor("--cal-tenue");
+      ctx.font='400 11px "Spline Sans Mono",monospace'; ctx.textAlign="center";
+      ctx.fillText(String(i+9).padStart(2,"0"), x+w/2, padT+gh+24);
+    }
+    ctx.strokeStyle=cor("--linha2");
+    ctx.beginPath(); ctx.moveTo(padX,padT+gh+.5); ctx.lineTo(W-padX,padT+gh+.5); ctx.stroke();
+    return t<1;
+  };
+}
+
+/* ============================================================
+   CANVAS 2 — passar o carro: 59 nós, 12 recebem, um leva
+   ============================================================ */
+function corrida(cv){
+  const ctx=cv.getContext("2d"), W=cv.width, H=cv.height;
+  const N=59, cx=W/2, cy=H/2-6;
+  const nos=[];
+  let seed=7; const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+  for(let i=0;i<N;i++){
+    const anel=i<14?0:(i<34?1:2);
+    const r=[86,146,208][anel]+rnd()*16;
+    const a=(i/N)*Math.PI*2*3.1+anel*1.1+rnd()*.22;
+    nos.push({x:cx+Math.cos(a)*r*1.32,y:cy+Math.sin(a)*r*.92,
+      elegivel:i%5===0||i%7===0, venceu:false, d:r});
+  }
+  const eleg=nos.filter(n=>n.elegivel).slice(0,12);
+  eleg.forEach(n=>n.marc=true);
+  const campeao=eleg[4]; if(campeao) campeao.venceu=true;
+  let t=0;
+  return function(dt,vis){
+    t+=CALMO?4000:dt;
+    const T=t%5200;
+    ctx.clearRect(0,0,W,H);
+    ctx.font='500 13px "Spline Sans Mono",monospace';
+    ctx.fillStyle=cor("--cal-tenue"); ctx.textAlign="left";
+    ctx.fillText(T<1200?"CHAMADA ABERTA":T<3000?"12 NA ESCUTA RECEBERAM":"VAGA PREENCHIDA", 40, 34);
+    /* onda */
+    if(T<1500){
+      const p=T/1500, rr=p*300;
+      ctx.strokeStyle=cor("--ciano"); ctx.globalAlpha=(1-p)*.55; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.ellipse(cx,cy,rr*1.32,rr*.92,0,0,Math.PI*2); ctx.stroke();
+      ctx.globalAlpha=1;
+    }
+    nos.forEach(n=>{
+      const chegou=T>((n.d/230)*1400);
+      const ativo=n.marc&&chegou;
+      const ganhou=n.venceu&&T>2600;
+      const outros=n.marc&&!n.venceu&&T>2900;
+      let c=cor("--linha2"), r=4.5;
+      if(ativo){ c=cor("--ciano"); r=6 }
+      if(outros){ c=cor("--cal-tenue"); r=4.5 }
+      if(ganhou){ c=cor("--magenta"); r=9 }
+      ctx.fillStyle=c;
+      ctx.beginPath(); ctx.arc(n.x,n.y,r,0,Math.PI*2); ctx.fill();
+      if(ganhou){
+        const pul=(Math.sin(T/160)+1)/2;
+        ctx.strokeStyle=cor("--magenta"); ctx.globalAlpha=.35+pul*.4; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.arc(n.x,n.y,r+7+pul*5,0,Math.PI*2); ctx.stroke();
+        ctx.globalAlpha=1;
+      }
+    });
+    /* centro */
+    ctx.fillStyle=cor("--grafite2"); ctx.strokeStyle=cor("--ciano"); ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(cx,cy,30,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=cor("--ciano"); ctx.textAlign="center";
+    ctx.font='500 11px "Spline Sans Mono",monospace';
+    ctx.fillText("JOB", cx, cy+4);
+    if(T>2600&&campeao){
+      ctx.strokeStyle=cor("--magenta"); ctx.lineWidth=1.5; ctx.globalAlpha=.65;
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(campeao.x,campeao.y); ctx.stroke();
+      ctx.globalAlpha=1;
+    }
+    return true;
+  };
+}
+
+/* ============================================================
+   CANVAS 3 — a moeda take
+
+   Disco de alumínio anodizado, usinado: borda serrilhada como anel de
+   foco, faces com o gravado em relevo. Cara é a marca, coroa é o T$ —
+   como moeda de verdade. Projeção ortográfica de um cilindro girando
+   em torno do eixo vertical, com lambert + especular por serrilha.
+   ============================================================ */
+function moeda(cv){
+  const ctx=cv.getContext("2d"), W=cv.width, H=cv.height;
+  const R=W*0.36, T=W*0.062, cx=W/2, cy=H/2;
+  const DENTES=104;
+  const Lx=-0.40, Ly=-0.52, Lz=0.76;           /* luz vinda de cima à esquerda */
+  let a=CALMO?-0.62:0;
+  const mix=(c1,c2,k)=>{
+    const p=h=>{h=h.replace("#","");return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]};
+    const A=p(c1),B=p(c2);
+    return "rgb("+A.map((v,i)=>Math.round(v+(B[i]-v)*k)).join(",")+")";
+  };
+  return function(dt,vis){
+    if(!CALMO) a+=dt/2600;
+    const c=Math.cos(a), s=Math.sin(a), ac=Math.abs(c);
+    const claro=document.documentElement.classList.contains("claro");
+    const METAL_ESC = claro?"#5E7C86":"#0C1B22";
+    const METAL_MED = claro?"#9FBEC7":"#1D4C5C";
+    const METAL_CLA = claro?"#E7F4F7":"#8FE8F5";
+    ctx.clearRect(0,0,W,H);
+
+    /* sombra de contato */
+    const sg=ctx.createRadialGradient(cx,cy+R*1.03,0,cx,cy+R*1.03,R*1.15);
+    sg.addColorStop(0,"rgba(0,0,0,"+(claro?.14:.5)+")");
+    sg.addColorStop(1,"rgba(0,0,0,0)");
+    ctx.fillStyle=sg;
+    ctx.save(); ctx.translate(cx,cy+R*1.0); ctx.scale(1,.14);
+    ctx.beginPath(); ctx.arc(0,0,R*1.1,0,Math.PI*2); ctx.fill(); ctx.restore();
+
+    /* ---- corpo do cilindro: união das duas faces com a faixa do meio ---- */
+    const dx=(T/2)*s, rxx=Math.max(.5,R*ac);
+    ctx.beginPath();
+    ctx.ellipse(cx+dx,cy,rxx,R,0,0,Math.PI*2);
+    ctx.ellipse(cx-dx,cy,rxx,R,0,0,Math.PI*2);
+    ctx.rect(cx-Math.abs(dx),cy-R,Math.abs(dx)*2,R*2);
+    const cg=ctx.createLinearGradient(cx-R,0,cx+R,0);
+    cg.addColorStop(0,mix(METAL_ESC,METAL_MED,s>0?.10:.62));
+    cg.addColorStop(.5,mix(METAL_ESC,METAL_MED,.42));
+    cg.addColorStop(1,mix(METAL_ESC,METAL_MED,s>0?.62:.10));
+    ctx.fillStyle=cg; ctx.fill();
+
+    /* ---- serrilha: cada dente é um segmento do cilindro ---- */
+    ctx.lineCap="butt";
+    for(let i=0;i<DENTES;i++){
+      const th=(i/DENTES)*Math.PI*2;
+      const ct=Math.cos(th), st=Math.sin(th);
+      if(ct*s>=0) continue;                     /* dente do lado oculto */
+      const nx=ct*c, ny=st, nz=-ct*s;           /* normal do dente */
+      const lam=Math.max(0,nx*Lx+ny*Ly+nz*Lz);
+      const esp=Math.pow(Math.max(0,nz),18);
+      const k=Math.min(1,lam*.92+esp*.9);
+      const x1=R*ct*c+(T/2)*s, x2=R*ct*c-(T/2)*s, y=R*st;
+      ctx.strokeStyle=mix(METAL_ESC,METAL_CLA,k);
+      ctx.lineWidth=Math.max(1.6,(Math.PI*2*R/DENTES)*Math.abs(st)*.72+1.3);
+      ctx.beginPath(); ctx.moveTo(cx+x1,cy+y); ctx.lineTo(cx+x2,cy+y); ctx.stroke();
+    }
+    /* contorno do corpo, para fechar a silhueta */
+    ctx.strokeStyle=mix(METAL_ESC,METAL_MED,.5); ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.ellipse(cx+(T/2)*s,cy,Math.max(.6,R*ac),R,0,0,Math.PI*2); ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(cx-(T/2)*s,cy,Math.max(.6,R*ac),R,0,0,Math.PI*2); ctx.stroke();
+
+    /* ---- face visível ---- */
+    const fx=cx+(c>0?1:-1)*(T/2)*s;
+    const rx=Math.max(.5,R*ac);
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(fx,cy,rx,R,0,0,Math.PI*2); ctx.clip();
+
+    const fg=ctx.createLinearGradient(fx-rx,cy-R,fx+rx,cy+R);
+    fg.addColorStop(0,mix(METAL_MED,METAL_CLA,.55));
+    fg.addColorStop(.42,METAL_MED);
+    fg.addColorStop(1,METAL_ESC);
+    ctx.fillStyle=fg;
+    ctx.fillRect(fx-rx,cy-R,rx*2,R*2);
+
+    /* varredura especular acompanhando o giro */
+    const sw=((a*0.9)%(Math.PI*2))/(Math.PI*2);
+    const bg=ctx.createLinearGradient(fx-rx,cy-R,fx+rx,cy+R);
+    const pos=Math.max(0,Math.min(1,sw));
+    bg.addColorStop(Math.max(0,pos-.16),"rgba(255,255,255,0)");
+    bg.addColorStop(pos,"rgba(255,255,255,"+(claro?.5:.24)+")");
+    bg.addColorStop(Math.min(1,pos+.16),"rgba(255,255,255,0)");
+    ctx.fillStyle=bg; ctx.fillRect(fx-rx,cy-R,rx*2,R*2);
+
+    /* anéis usinados, como marcação de anel de foco */
+    ctx.strokeStyle="rgba(255,255,255,"+(claro?.34:.15)+")"; ctx.lineWidth=1.4;
+    [0.86,0.78].forEach(k=>{
+      ctx.beginPath(); ctx.ellipse(fx,cy,rx*k,R*k,0,0,Math.PI*2); ctx.stroke();
+    });
+
+    /* gravado: cara é a marca, coroa é o T$ */
+    const escala=ac;
+    ctx.save(); ctx.translate(fx,cy); ctx.scale(Math.max(.001,escala),1);
+    const emboss=(desenha)=>{
+      ctx.save(); ctx.translate(-R*.016,-R*.016);
+      ctx.fillStyle="rgba(255,255,255,"+(claro?.72:.55)+")"; desenha(); ctx.restore();
+      ctx.save(); ctx.translate(R*.016,R*.016);
+      ctx.fillStyle="rgba(0,0,0,"+(claro?.38:.62)+")"; desenha(); ctx.restore();
+      ctx.fillStyle=mix(METAL_MED,METAL_CLA,claro?.35:.22); desenha();
+    };
+    if(c>0){
+      const k=R*0.0115;
+      emboss(()=>{
+        ctx.save(); ctx.transform(1,0,-0.213,1,0,0); /* skewX(-12°) */
+        const bar=(x,w,op)=>{ ctx.globalAlpha=op;
+          ctx.beginPath(); ctx.roundRect((x-50+16)*k,(24-50)*k,w*k,52*k,3*k); ctx.fill(); };
+        bar(14,7,.34); bar(29,13,.64); bar(50,26,1);
+        ctx.globalAlpha=1; ctx.restore();
+      });
+    }else{
+      ctx.font='900 '+(R*0.62)+'px "Schibsted Grotesk",sans-serif';
+      ctx.textAlign="center"; ctx.textBaseline="middle";
+      emboss(()=>ctx.fillText("T$",0,R*0.02));
+    }
+    ctx.restore();
+
+    /* vinheta da face, para dar volume */
+    const vg=ctx.createRadialGradient(fx-rx*.3,cy-R*.35,R*.1,fx,cy,R*1.05);
+    vg.addColorStop(0,"rgba(255,255,255,0)");
+    vg.addColorStop(1,"rgba(0,0,0,"+(claro?.16:.42)+")");
+    ctx.fillStyle=vg; ctx.fillRect(fx-rx,cy-R,rx*2,R*2);
+    ctx.restore();
+
+    /* brilho quente do anodizado, só no escuro */
+    if(!claro){
+      ctx.globalCompositeOperation="lighter";
+      const gg=ctx.createRadialGradient(cx,cy,R*.5,cx,cy,R*1.5);
+      gg.addColorStop(0,"rgba(23,209,232,.10)");
+      gg.addColorStop(1,"rgba(23,209,232,0)");
+      ctx.fillStyle=gg; ctx.fillRect(0,0,W,H);
+      ctx.globalCompositeOperation="source-over";
+    }
+    return true;
+  };
+}
+
+/* ---------- laço de animação, só para o que está à vista ---------- */
+const CENAS_CV=[];
+function registrar(sel,fab){
+  const cv=$(sel); if(!cv) return;
+  const dpr=Math.min(2,devicePixelRatio||1);
+  const w=cv.width, h=cv.height;
+  cv.width=w*dpr; cv.height=h*dpr; cv.style.aspectRatio=w+"/"+h;
+  const ctx=cv.getContext("2d"); ctx.scale(dpr,dpr);
+  cv.width_=w; cv.height_=h;
+  const proxy={width:w,height:h,getContext:()=>ctx};
+  const passo=fab(proxy);
+  const item={cv,passo,vivo:false,pronto:false};
+  CENAS_CV.push(item);
+  new IntersectionObserver(es=>es.forEach(e=>{item.vivo=e.isIntersecting}),{threshold:.05}).observe(cv);
+}
+registrar("#cv-praca",praca);
+registrar("#cv-corrida",corrida);
+registrar("#cv-moeda",moeda);
+
+function pintarTudo(){ CENAS_CV.forEach(i=>{ try{ i.passo(16,true) }catch(e){} }) }
+
+let ultimo=performance.now();
+function laco(agora){
+  const dt=Math.min(48,agora-ultimo); ultimo=agora;
+  CENAS_CV.forEach(i=>{ if(i.vivo||!i.pronto){ i.pronto=true; try{ i.passo(dt,i.vivo) }catch(e){} } });
+  requestAnimationFrame(laco);
+}
+requestAnimationFrame(laco);
+aoRolar();
+</script>

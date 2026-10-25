@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f5f5f7" />
+    <meta name="description" content="Teleprompter para iPhone. Seu texto, no seu ritmo." />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="TPeasy" />
+    <meta name="format-detection" content="telephone=no" />
+    <title>TPeasy</title>
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="TPeasy" />
+    <meta property="og:url" content="https://tpeasy.vercel.app/app/" />
+    <meta property="og:title" content="TPeasy · Seu texto. No seu ritmo." />
+    <meta property="og:description" content="Teleprompter para iPhone e iPad. Margem zero no vidro do seu TP, rola com a sua voz e funciona sem internet." />
+    <meta property="og:image" content="https://tpeasy.vercel.app/og.jpg?v=1" />
+    <meta property="og:image:secure_url" content="https://tpeasy.vercel.app/og.jpg?v=1" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="TPeasy: teleprompter para iPhone. Fale olhando para a câmera." />
+    <meta property="og:locale" content="pt_BR" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="TPeasy · Seu texto. No seu ritmo." />
+    <meta name="twitter:description" content="Teleprompter para iPhone e iPad. Margem zero, rola com a voz, funciona sem internet." />
+    <meta name="twitter:image" content="https://tpeasy.vercel.app/og.jpg?v=1" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png?v=2" />
+    <link rel="apple-touch-icon" sizes="167x167" href="/icons/apple-touch-icon-167.png?v=2" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-touch-icon-152.png?v=2" />
+    <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
+    <link rel="manifest" href="/app/manifest.webmanifest" />
+    <link rel="stylesheet" href="/app/app.css" />
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <defs>
+        <linearGradient id="mk1" x1="0" x2="1"><stop offset="0" style="stop-color: var(--mk1a, #d4d5db)" /><stop offset="1" style="stop-color: var(--mk1b, #7d7e86)" /></linearGradient>
+        <linearGradient id="mk2" x1="0" x2="1"><stop offset="0" style="stop-color: var(--mk2a, #4a4b52)" /><stop offset="1" style="stop-color: var(--mk2b, #121216)" /></linearGradient>
+        <linearGradient id="mk3" x1="0" x2="1"><stop offset="0" style="stop-color: var(--mk3a, #9c9da5)" /><stop offset="1" style="stop-color: var(--mk3b, #3b3c43)" /></linearGradient>
+        <linearGradient id="mk4" x1="0" x2="1"><stop offset="0" style="stop-color: var(--mk4a, #e3e4e8)" /><stop offset="1" style="stop-color: var(--mk4b, #a9aab1)" /></linearGradient>
+        <symbol id="logo" viewBox="14 26 92 68">
+          <rect x="40" y="30" width="54" height="10" rx="5" fill="url(#mk1)" />
+          <rect x="43" y="47" width="58" height="10" rx="5" fill="url(#mk2)" />
+          <rect x="43" y="64" width="50" height="10" rx="5" fill="url(#mk3)" />
+          <rect x="43" y="81" width="36" height="10" rx="5" fill="url(#mk4)" />
+          <path d="M23 51.5a2 2 0 0 1 3-1.7l14 8.6a2 2 0 0 1 0 3.4l-14 8.6a2 2 0 0 1-3-1.7z" fill="currentColor" />
+        </symbol>
+        <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+        <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z" fill="currentColor" stroke="none" /></symbol>
+        <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6.5" y="5" width="3.6" height="14" rx="1.2" fill="currentColor" stroke="none" /><rect x="13.9" y="5" width="3.6" height="14" rx="1.2" fill="currentColor" stroke="none" /></symbol>
+        <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></symbol>
+        <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" /></symbol>
+        <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" /></symbol>
+        <symbol id="i-more" viewBox="0 0 24 24"><circle cx="12" cy="6" r="1.5" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" /><circle cx="12" cy="18" r="1.5" fill="currentColor" stroke="none" /></symbol>
+        <symbol id="i-mirror" viewBox="0 0 24 24"><path d="M12 3v18" stroke-dasharray="2 2.4" /><path d="M9 7L4 17h5zM15 7l5 10h-5z" /></symbol>
+        <symbol id="i-rewind" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.4-5.7" /><path d="M4 4v4h4" /></symbol>
+        <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14" /></symbol>
+        <symbol id="i-area" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3" /></symbol>
+        <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4 4" /></symbol>
+        <symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10A.5.5 0 0 1 7 20z" /><path d="M14 3.5V8h4M10 12h5M10 16h5" /></symbol>
+        <symbol id="i-paste" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="16" rx="2" /><path d="M9 5V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M9 11h6M9 15h4" /></symbol>
+        <symbol id="i-import" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14" /></symbol>
+        <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 19h14" /></symbol>
+        <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="12" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h1" /></symbol>
+        <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V3.5M8 7l4-4 4 4" /><path d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8a1.5 1.5 0 0 0-1.5-1.5H16" /></symbol>
+        <symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13" /></symbol>
+        <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></symbol>
+        <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.8l2.5 5.1 5.6.8-4 3.9.9 5.6-5-2.6-5 2.6.9-5.6-4-3.9 5.6-.8z" /></symbol>
+        <symbol id="i-star-fill" viewBox="0 0 24 24"><path d="M12 3.8l2.5 5.1 5.6.8-4 3.9.9 5.6-5-2.6-5 2.6.9-5.6-4-3.9 5.6-.8z" fill="currentColor" /></symbol>
+        <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" /></symbol>
+        <symbol id="i-scripts" viewBox="0 0 24 24"><rect x="4.5" y="3.5" width="15" height="17" rx="3" /><path d="M8.5 9h7M8.5 12.5h7M8.5 16h4" /></symbol>
+        <symbol id="i-tp" viewBox="0 0 24 24"><path d="M7 5.8v12.4a1 1 0 0 0 1.5.86l9.8-6.2a1 1 0 0 0 0-1.72L8.5 4.94A1 1 0 0 0 7 5.8z" /></symbol>
+        <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l2-1.6-2-3.4-2.4.9a7.5 7.5 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.4A7.5 7.5 0 0 0 7 6.4l-2.4-.9-2 3.4 2 1.6a7.6 7.6 0 0 0 0 3l-2 1.6 2 3.4 2.4-.9a7.5 7.5 0 0 0 2.6 1.5l.4 2.4h4l.4-2.4a7.5 7.5 0 0 0 2.6-1.5l2.4.9 2-3.4z" /></symbol>
+        <symbol id="i-aa" viewBox="0 0 24 24"><path d="M3 18l5-12 5 12M4.8 14h6.4M14.5 18l3.5-8 3.5 8M15.7 15.4h4.6" /></symbol>
+        <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6" /><path d="M5 20c1.2-3.6 3.8-5.4 7-5.4s5.8 1.8 7 5.4" /></symbol>
+        <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18.5h10.5a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.6 9.6 4.5 4.5 0 0 0 7 18.5z" /></symbol>
+        <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0" /></symbol>
+        <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.4 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.4-3.5-8.5s1-5.9 3.5-8.5z" /></symbol>
+        <symbol id="i-remote" viewBox="0 0 24 24"><rect x="3" y="6" width="8" height="14" rx="2" /><rect x="13" y="4" width="8" height="14" rx="2" /><path d="M7 16.5h.01M17 14.5h.01" /></symbol>
+        <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2" /><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10" /></symbol>
+        <symbol id="i-google" viewBox="0 0 24 24"><path d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z" fill="#4285F4" stroke="none" /><path d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z" fill="#34A853" stroke="none" /><path d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.1z" fill="#FBBC05" stroke="none" /><path d="M12 5.9c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10c.8-2.3 3-4.1 5.6-4.1z" fill="#EA4335" stroke="none" /></symbol>
+      </defs>
+    </svg>
+
+    <!-- ═════════ Roteiros ═════════ -->
+    <section class="view" data-tab="roteiros" hidden>
+      <header class="topbar">
+        <h2 class="topbar-title">Roteiros</h2>
+        <div class="topbar-actions">
+          <button class="icon-btn" id="remoteMenu" aria-label="Controle remoto"><svg class="icon"><use href="#i-remote" /></svg></button>
+          <button class="icon-btn" id="searchToggle" aria-label="Buscar"><svg class="icon"><use href="#i-search" /></svg></button>
+          <button class="icon-btn is-blue" id="newScript" aria-label="Novo roteiro"><svg class="icon"><use href="#i-plus" /></svg></button>
+        </div>
+      </header>
+      <div class="page-body esc">
+        <h1 class="wordmark" style="--i: 0"><svg class="wm-mark" aria-hidden="true"><use href="#logo" /></svg>TP<span>easy</span></h1>
+        <label class="search" id="searchWrap" hidden>
+          <svg class="icon"><use href="#i-search" /></svg>
+          <input id="search" type="search" placeholder="Buscar" autocomplete="off" enterkeyhint="search" />
+        </label>
+        <div class="seg seg-lg" id="filters" style="--i: 1">
+          <button data-f="all" aria-pressed="true">Roteiros</button>
+          <button data-f="recent">Recentes</button>
+          <button data-f="fav">Favoritos</button>
+        </div>
+        <button class="install" id="installCard" hidden style="--i: 2">
+          <svg class="icon"><use href="#i-share" /></svg><span>Adicionar à Tela de Início</span><svg class="icon x" id="dismissInstall"><use href="#i-close" /></svg>
+        </button>
+        <ul class="list" id="scriptList" style="--i: 2"></ul>
+        <div class="empty" id="empty" hidden>
+          <svg class="empty-mark" aria-hidden="true"><use href="#logo" /></svg>
+          <h2 id="emptyTitle">Nenhum roteiro</h2>
+          <button class="btn btn-blue" data-new="paste" id="emptyAction"><svg class="icon"><use href="#i-paste" /></svg>Colar texto</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════ Teleprompter ═════════ -->
+    <section class="view" data-tab="tp" hidden>
+      <header class="topbar"><h2 class="topbar-title">Teleprompter</h2><span></span></header>
+      <div class="page-body esc">
+        <h1 class="large-title" style="--i: 0">Teleprompter</h1>
+        <div class="profiles" data-profiles style="--i: 1"></div>
+        <div class="stagebox" style="--i: 2">
+          <div class="mini-wrap"><div class="mini" id="mini"><div class="mini-area" id="miniArea"><div class="mini-flip" id="miniFlip"><div class="mini-text" id="miniText"></div><i class="mini-guide" id="miniGuide"></i></div></div></div></div>
+        </div>
+        <div class="trio" style="--i: 3">
+          <button class="btn btn-soft" data-action="calib"><svg class="icon"><use href="#i-area" /></svg>Área</button>
+          <button class="btn btn-soft" id="tpRemote"><svg class="icon"><use href="#i-remote" /></svg>Controle</button>
+          <button class="btn btn-blue" id="tpRead"><svg class="icon"><use href="#i-play" /></svg>Ler</button>
+        </div>
+        <div class="group" style="--i: 4">
+          <div class="row"><span>Tamanho</span><div class="mini-stepper" data-stepkey="fontSize"><button data-d="-2" aria-label="Menor">−</button><output data-out="fontSize"></output><button data-d="2" aria-label="Maior">+</button></div></div>
+          <div class="row"><span>Velocidade</span><div class="mini-stepper" data-stepkey="wpm"><button data-d="-5" aria-label="Mais devagar">−</button><output data-out="wpm"></output><button data-d="5" aria-label="Mais rápido">+</button></div></div>
+          <div class="row"><span>Espelho</span><button class="switch" role="switch" data-key="mirrorX" aria-label="Espelhar"></button></div>
+          <button class="row row-link" id="moreSettings"><span>Mais ajustes</span><svg class="icon chev"><use href="#i-chev" /></svg></button>
+        </div>
+        <div class="group" style="--i: 5">
+          <a class="row row-link" href="/app/remote.html"><span class="row-ic" style="--c: #8e8e93"><svg class="icon"><use href="#i-remote" /></svg></span><span>Usar este aparelho como controle</span><svg class="icon chev"><use href="#i-chev" /></svg></a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═════════ Ajustes ═════════ -->
+    <section class="view" data-tab="ajustes" hidden>
+      <header class="topbar"><h2 class="topbar-title">Ajustes</h2><span></span></header>
+      <div class="page-body esc">
+        <h1 class="large-title" style="--i: 0">Ajustes</h1>
+        <div id="accountCard" style="--i: 1"></div>
+        <div class="group" style="--i: 2">
+          <button class="row row-link" id="setName"><span class="row-ic" style="--c: #8e8e93"><svg class="icon"><use href="#i-user" /></svg></span><span>Nome</span><em id="nameValue"></em><svg class="icon chev"><use href="#i-chev" /></svg></button>
+          <div class="row"><span class="row-ic" style="--c: #ff9f0a"><svg class="icon"><use href="#i-bell" /></svg></span><span>Sons</span><button class="switch" role="switch" id="soundsSwitch" aria-label="Sons"></button></div>
+        </div>
+        <div class="group" style="--i: 3">
+          <button class="row row-link" id="exportBtn"><span class="row-ic" style="--c: #2f6bff"><svg class="icon"><use href="#i-export" /></svg></span><span>Exportar backup</span><svg class="icon chev"><use href="#i-chev" /></svg></button>
+          <button class="row row-link" id="importBtn"><span class="row-ic" style="--c: #34c759"><svg class="icon"><use href="#i-import" /></svg></span><span>Restaurar backup</span><svg class="icon chev"><use href="#i-chev" /></svg></button>
+        </div>
+        <div class="group" style="--i: 4">
+          <button class="row row-link" id="installRow"><span class="row-ic" style="--c: #5e5ce6"><svg class="icon"><use href="#i-share" /></svg></span><span>Instalar no iPhone</span><em id="installState"></em><svg class="icon chev"><use href="#i-chev" /></svg></button>
+          <a class="row row-link" href="/" target="_blank" rel="noopener"><span class="row-ic" style="--c: #636366"><svg class="icon"><use href="#i-globe" /></svg></span><span>Site</span><svg class="icon chev"><use href="#i-chev" /></svg></a>
+        </div>
+        <p class="footnote" style="--i: 5"><svg class="foot-mark" aria-hidden="true"><use href="#logo" /></svg>Seu texto. No seu ritmo.<br /><span id="appVersion"></span></p>
+      </div>
+    </section>
+
+    <!-- ═════════ Barra de abas ═════════ -->
+    <nav class="tabbar" aria-label="Seções">
+      <button class="tab" data-go="roteiros"><svg class="icon"><use href="#i-scripts" /></svg><span>Roteiros</span></button>
+      <button class="tab" data-go="tp"><svg class="icon"><use href="#i-tp" /></svg><span>Teleprompter</span></button>
+      <button class="tab" data-go="ajustes"><svg class="icon"><use href="#i-gear" /></svg><span>Ajustes</span></button>
+    </nav>
+
+    <!-- ═════════ Editor ═════════ -->
+    <section class="page" id="editor" hidden>
+      <header class="navbar">
+        <button class="nav-back" id="editorBack"><svg class="icon"><use href="#i-back" /></svg>Roteiros</button>
+        <div class="navbar-actions">
+          <button class="icon-btn" id="editorFav" aria-label="Favoritar"><svg class="icon"><use href="#i-star" /></svg></button>
+          <button class="icon-btn" id="editorMore" aria-label="Mais opções"><svg class="icon"><use href="#i-more" /></svg></button>
+        </div>
+      </header>
+      <div class="editor-body">
+        <input class="title-input" id="titleInput" placeholder="Título" autocomplete="off" enterkeyhint="next" />
+        <div class="target-chips" id="targetChips">
+          <button class="chip" data-t="0">Livre</button>
+          <button class="chip" data-t="30">30 s</button>
+          <button class="chip" data-t="60">1 min</button>
+          <button class="chip" data-t="180">3 min</button>
+          <span class="meter" id="targetMeter" hidden><i></i></span>
+        </div>
+        <textarea class="body-input" id="bodyInput" placeholder="Seu texto" spellcheck="true"></textarea>
+      </div>
+      <div class="marks" id="marks">
+        <button data-ins="# ">#</button>
+        <button data-ins="[pausa] ">[pausa]</button>
+        <button data-wrap="**">**ênfase**</button>
+        <button data-wrap="((|))">((nota))</button>
+      </div>
+      <footer class="editor-bar">
+        <div class="stats-line" id="stats"></div>
+        <button class="btn btn-blue" id="readBtn"><svg class="icon"><use href="#i-play" /></svg>Ler</button>
+      </footer>
+    </section>
+
+    <!-- ═════════ Teleprompter (leitura) ═════════ -->
+    <div class="prompter" id="prompter" hidden>
+      <div class="stage" id="stage">
+        <div class="flip" id="flip">
+          <div class="text" id="text"></div>
+          <div class="focus" id="focus"></div>
+          <div class="guide" id="guide"><i></i><i></i></div>
+        </div>
+      </div>
+      <div class="countdown" id="countdown" hidden><span></span></div>
+      <div class="endcard" id="endcard" hidden>
+        <button class="pill" id="restart"><svg class="icon"><use href="#i-rewind" /></svg>Do início</button>
+      </div>
+      <div class="hud" id="hud">
+        <div class="hud-top">
+          <button class="hud-btn" id="pClose" aria-label="Fechar"><svg class="icon"><use href="#i-close" /></svg></button>
+          <div class="hud-group">
+            <button class="hud-btn" id="pSettings" aria-label="Ajustes do texto"><svg class="icon"><use href="#i-aa" /></svg></button>
+            <button class="hud-btn" id="pArea" aria-label="Área do TP"><svg class="icon"><use href="#i-area" /></svg></button>
+            <button class="hud-btn remote-btn" id="pRemote" aria-label="Controle remoto" aria-pressed="false"><svg class="icon"><use href="#i-remote" /></svg></button>
+            <button class="hud-btn" id="pMirror" aria-label="Espelhar" aria-pressed="false"><svg class="icon"><use href="#i-mirror" /></svg></button>
+            <div class="hud-time" id="pTime">0:00</div>
+          </div>
+        </div>
+        <div class="hud-bottom">
+          <div class="speed" aria-label="Velocidade">
+            <button data-step="wpm" data-dir="-1" aria-label="Mais devagar"><svg class="icon"><use href="#i-minus" /></svg></button>
+            <output id="pSpeed"><b>150</b></output>
+            <button data-step="wpm" data-dir="1" aria-label="Mais rápido"><svg class="icon"><use href="#i-plus" /></svg></button>
+          </div>
+          <button class="play" id="pPlay" aria-label="Iniciar"><svg class="icon"><use href="#i-play" /></svg></button>
+          <button class="hud-btn mic" id="pMic" aria-label="Rolar com a voz" aria-pressed="false"><svg class="icon"><use href="#i-mic" /></svg></button>
+        </div>
+        <div class="progress"><i id="pProgress"></i></div>
+      </div>
+      <div class="remote" id="remotePanel" hidden>
+        <div class="remote-card">
+          <b>Controle remoto</b>
+          <div class="remote-qr" id="rpQr"></div>
+          <div class="remote-code" id="rpCode">·····</div>
+          <p class="remote-status" id="rpStatus">Preparando…</p>
+          <p class="remote-link" id="rpLink"></p>
+          <div class="calib-actions">
+            <button class="pill" id="rpOff">Desligar</button>
+            <button class="pill is-blue" id="rpDone">Pronto</button>
+          </div>
+        </div>
+      </div>
+      <div class="calib" id="calib" hidden>
+        <div class="calib-rect" id="calibRect">
+          <span class="h h-t" data-edge="t"></span>
+          <span class="h h-b" data-edge="b"></span>
+          <span class="h h-l" data-edge="l"></span>
+          <span class="h h-r" data-edge="r"></span>
+          <span class="calib-move" data-edge="move"></span>
+        </div>
+        <div class="calib-panel">
+          <p>Arraste as bordas até o que o vidro mostra.</p>
+          <div class="calib-readout" id="calibReadout"></div>
+          <div class="calib-actions">
+            <button class="pill" id="calibFull">Tela toda</button>
+            <button class="pill is-blue" id="calibDone">Pronto</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ajustes completos (do TP e da aba) -->
+    <div class="sheet-layer" id="tpSheetLayer" hidden>
+      <div class="sheet-backdrop" data-close></div>
+      <div class="sheet" role="dialog" aria-label="Ajustes do teleprompter">
+        <div class="sheet-grab"><span></span></div>
+        <header class="sheet-head"><h2>Ajustes</h2><button class="pill is-small" data-close>OK</button></header>
+        <div class="sheet-scroll">
+          <div class="profiles" data-profiles></div>
+          <div data-settings-form class="settings-form"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="action-layer" id="actionLayer" hidden>
+      <div class="sheet-backdrop" data-close></div>
+      <div class="action-sheet">
+        <div class="action-group" id="actionItems"></div>
+        <button class="action-cancel" data-close>Cancelar</button>
+      </div>
+    </div>
+
+    <div class="dialog-layer" id="dialogLayer" hidden>
+      <div class="sheet-backdrop" data-cancel></div>
+      <form class="dialog" id="dialogForm">
+        <b id="dialogTitle"></b>
+        <p id="dialogHint" hidden></p>
+        <input id="dialogInput" autocomplete="off" />
+        <div class="dialog-actions">
+          <button type="button" data-cancel>Cancelar</button>
+          <button type="submit" id="dialogOk">Salvar</button>
+        </div>
+      </form>
+    </div>
+
+    <input type="file" id="fileInput" accept=".txt,.md,.text,text/plain" hidden />
+    <input type="file" id="backupInput" accept=".json,application/json" hidden />
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script type="module" src="/app/js/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,235 @@
+<title>Carro do Freela × FreelaAV</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;900&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --ground:#F5F2ED; --paper:#FFFFFF; --paper2:#EFEBE4;
+  --rule:#E0DAD1; --rule2:#CBC3B8;
+  --ink:#1B1815; --ink2:#544E47; --ink3:#615A52;
+  --accent:#0C627C; --accent-soft:rgba(12,98,124,.10);
+  --ok:#0F6230; --ok-soft:rgba(15,98,48,.10);
+  --meio:#6E4E05; --meio-soft:rgba(110,78,5,.11);
+  --alerta:#B41E66; --alerta-soft:rgba(180,30,102,.08);
+  --ui:"Schibsted Grotesk",system-ui,-apple-system,Helvetica,Arial,sans-serif;
+  --mono:"Spline Sans Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#121110; --paper:#1A1917; --paper2:#221F1D;
+    --rule:#2B2724; --rule2:#3A3531;
+    --ink:#EFEDE7; --ink2:#AEA79E; --ink3:#9A9188;
+    --accent:#17D1E8; --accent-soft:rgba(23,209,232,.10);
+    --ok:#4BAE72; --ok-soft:rgba(75,174,114,.12);
+    --meio:#C9963F; --meio-soft:rgba(201,150,63,.12);
+    --alerta:#E24B8E; --alerta-soft:rgba(226,75,142,.10);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#121110; --paper:#1A1917; --paper2:#221F1D;
+  --rule:#2B2724; --rule2:#3A3531;
+  --ink:#EFEDE7; --ink2:#AEA79E; --ink3:#9A9188;
+  --accent:#17D1E8; --accent-soft:rgba(23,209,232,.10);
+  --ok:#4BAE72; --ok-soft:rgba(75,174,114,.12);
+  --meio:#C9963F; --meio-soft:rgba(201,150,63,.12);
+  --alerta:#E24B8E; --alerta-soft:rgba(226,75,142,.10);
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
+body{margin:0; background:var(--ground); color:var(--ink);
+  font-family:var(--ui); font-size:15.5px; line-height:1.6; -webkit-font-smoothing:antialiased}
+.folha{max-width:min(84ch,100%); margin:0 auto; padding:clamp(30px,7vw,54px) clamp(18px,5vw,40px) 60px}
+::selection{background:var(--accent-soft); color:var(--ink)}
+
+.cab{display:flex; align-items:center; gap:10px; margin-bottom:26px}
+.cab svg{width:26px; height:26px; fill:var(--accent); flex:none}
+.cab b{font-weight:900; letter-spacing:-.03em; font-size:16px}
+h1{font-size:clamp(28px,6.2vw,40px); line-height:1.08; letter-spacing:-.035em; font-weight:900;
+  margin:0 0 10px; text-wrap:balance}
+.linha1{font-size:clamp(16px,3.3vw,18.5px); line-height:1.4; color:var(--ink2); margin:0 0 8px;
+  text-wrap:balance; font-weight:500}
+.gancho{font-family:var(--mono); font-size:11.5px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--ink3); margin:0 0 16px}
+h2{font-size:15px; font-weight:700; letter-spacing:.02em; margin:30px 0 10px; color:var(--ink);
+  padding-bottom:7px; border-bottom:1px solid var(--rule2)}
+p{margin:0 0 11px; color:var(--ink2)}
+strong,b{color:var(--ink); font-weight:600}
+a{color:var(--accent)}
+ul{margin:0 0 12px; padding-left:20px; color:var(--ink2)}
+li{margin-bottom:5px}
+li::marker{color:var(--ink3)}
+.nota{font-size:13px; line-height:1.55; color:var(--ink3)}
+
+/* a caixa de método: de onde a análise veio e o que ela NÃO viu */
+.metodo{background:var(--paper); border:1px solid var(--rule2); border-left:3px solid var(--meio);
+  border-radius:3px; padding:14px 16px; margin:18px 0}
+.metodo p{margin:0 0 6px; font-size:13.5px}
+.metodo p:last-child{margin:0}
+
+/* a tabela lado a lado — rola no próprio trilho, nunca a página */
+.rolagem{overflow-x:auto; margin:14px 0; border:1px solid var(--rule);
+  border-radius:9px; background:var(--paper)}
+table{border-collapse:collapse; width:100%; min-width:640px; font-size:13.5px; line-height:1.5}
+th,td{padding:10px 13px; text-align:left; vertical-align:top; border-bottom:1px solid var(--rule)}
+tr:last-child td{border-bottom:0}
+th{font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--ink3); font-weight:600; background:var(--paper2)}
+td:first-child{font-weight:600; color:var(--ink); width:17%}
+td{color:var(--ink2); width:41.5%}
+.np{color:var(--ink3); font-style:italic}
+.forte{color:var(--ink); font-weight:600}
+
+/* os quatro veredictos da leitura */
+.leitura{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; margin:16px 0}
+.leitura > div{background:var(--paper); border:1px solid var(--rule); border-radius:9px; padding:15px 17px}
+.leitura .bom{border-top:3px solid var(--ok)}
+.leitura .risco{border-top:3px solid var(--alerta)}
+.leitura h3{font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--ink3); font-weight:600; margin:0 0 9px}
+.leitura p{font-size:13.5px; margin:0 0 8px}
+.leitura p:last-child{margin:0}
+
+/* a frase que vai no pitch */
+.frase{background:var(--accent-soft); border:1px solid var(--rule); border-left:3px solid var(--accent);
+  border-radius:9px; padding:15px 18px; margin:16px 0; font-size:15px; color:var(--ink)}
+.frase b{font-weight:700}
+
+.rodape{margin-top:30px; padding-top:16px; border-top:1px solid var(--rule2);
+  font-size:12.5px; color:var(--ink3); font-family:var(--mono); line-height:1.7}
+
+@media print{
+  :root,:root[data-theme="dark"],:root:not([data-theme="light"]){
+    --ground:#FFFFFF; --paper:#FFFFFF; --paper2:#F1EDE6; --rule:#DBD5CC; --rule2:#BFB7AC;
+    --ink:#16130F; --ink2:#4A443C; --ink3:#5C554D; --accent:#0A5266; --accent-soft:rgba(10,82,102,.08);
+    --ok:#0C5228; --meio:#5C4104; --alerta:#96154F; --alerta-soft:rgba(150,21,79,.06);
+  }
+  /* ⚠️ o corpo precisa do tamanho em pt AQUI: os 15.5px de tela não obedecem
+     ao html{font-size} e o documento saía em TRÊS folhas com a terceira quase
+     vazia. Mexeu no texto, rode `node docs/gerar-pdf.js freelaav` e confira. */
+  html{font-size:8.7pt} body{background:#fff; line-height:1.42; font-size:9.6pt}
+  .linha1{font-size:10.5pt} .nota{font-size:8.4pt}
+  .metodo p{font-size:8.8pt} .leitura p{font-size:8.8pt} .frase{font-size:9.6pt}
+  table{font-size:8.4pt} .rodape{font-size:8pt}
+  .folha{max-width:100%; padding:0}
+  .cab{margin-bottom:14px}
+  h1{font-size:19pt; margin-bottom:6px} .linha1{font-size:10.5pt; margin-bottom:4px}
+  .gancho{margin-bottom:10px}
+  h2{margin:13px 0 6px; font-size:10.5pt; padding-bottom:4px}
+  p{margin-bottom:7px} ul{margin-bottom:8px} li{margin-bottom:3px}
+  .metodo{padding:10px 12px; margin:11px 0}
+  .rolagem{overflow:visible; margin:10px 0}
+  table{min-width:0; font-size:8.6pt}
+  th,td{padding:6px 8px}
+  .leitura{margin:11px 0; gap:9px} .leitura > div{padding:11px 13px}
+  .frase{padding:11px 13px; margin:11px 0}
+  .rodape{margin-top:18px; padding-top:12px}
+  .leitura > div,.frase,.metodo,tr{break-inside:avoid}
+  p,li{orphans:2; widows:2}
+}
+@page{size:A4; margin:14mm 14mm}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <g id="mk"><g transform="translate(16,0) skewX(-12)">
+    <rect x="14" y="24" width="7" height="52" rx="2" opacity=".34"/>
+    <rect x="29" y="24" width="13" height="52" rx="2.5" opacity=".64"/>
+    <rect x="50" y="24" width="26" height="52" rx="3.5"/>
+  </g></g>
+</defs></svg>
+
+<div class="folha">
+
+<div class="cab">
+  <svg viewBox="0 0 100 100" role="img" aria-label="Marca do Carro do Freela"><use href="#mk"/></svg>
+  <b>Carro do Freela</b>
+</div>
+
+<p class="gancho">Análise de concorrente · agosto de 2026</p>
+<h1>Carro do Freela × FreelaAV</h1>
+<p class="linha1">Um hub nacional de freelancers de audiovisual de eventos apareceu em anúncio. O que ele é, onde cruza com o Carro e o que isso diz para o pitch.</p>
+
+<div class="metodo">
+  <p><b>De onde veio esta análise.</b> Fontes públicas indexadas sobre a FreelaAV (freelaav.com.br), coletadas em 23/08/2026. O site não foi aberto diretamente — o ambiente desta análise bloqueia o acesso — então o que está aqui é o que a própria plataforma publica de si; preço e regra interna que ela não publica estão marcados como <i>não publicado</i>, nunca deduzidos.</p>
+  <p><b>Sobre o endereço.</b> O anúncio chegou como "freelaoav.com", domínio que não aparece em busca nenhuma. A plataforma real é a FreelaAV — o endereço do anúncio é provavelmente variação de campanha ou erro de digitação.</p>
+</div>
+
+<h2>O que a FreelaAV é</h2>
+<p>Um hub que conecta freelancers de <b>som, vídeo, iluminação e produção</b> com <b>produtoras de eventos</b>, em escala nacional. O freela se cadastra de graça ("15 segundos"), declara especialidades e <b>diária base</b>, marca disponibilidade num calendário, e as produtoras o encontram por habilidade, localização e agenda — e convidam já sabendo o mínimo que ele cobra. Ele acompanha na plataforma o <b>status de cobrança de cada cachê</b>: vencimento, contas a receber, histórico. Quanto mais completo o perfil, melhor o ranking na busca. A monetização do lado das produtoras não está publicada — é o lugar provável da receita.</p>
+
+<h2>Lado a lado</h2>
+
+<div class="rolagem"><table>
+  <tr><th>Dimensão</th><th>FreelaAV</th><th>Carro do Freela</th></tr>
+  <tr><td>Recorte</td>
+    <td>Audiovisual de <b>eventos</b>: som, luz, vídeo, produção de palco</td>
+    <td>Audiovisual de <b>produção</b>: captação, foto, drone, edição — 19 funções do set</td></tr>
+  <tr><td>Abrangência</td>
+    <td>Nacional, rasa em cada praça</td>
+    <td class="forte">Densidade local primeiro: Natal/RN, 109 profissionais mapeados, 73 na cidade</td></tr>
+  <tr><td>O encontro</td>
+    <td>Busca por habilidade, local e calendário; produtora convida</td>
+    <td>Igual no mecanismo — busca por praça, função e data — <b>e é o que se cobra</b>: chamar quem se conhece é grátis, ver quem está livre é o plano pago</td></tr>
+  <tr><td>Preço do freela</td>
+    <td>Diária base declarada; convite já chega sabendo o mínimo</td>
+    <td>Tabela publicada pelo próprio freela; quem não publicou aparece com a faixa da praça, nunca com valor inventado. Job é aceite ou recusa, sem leilão de diária</td></tr>
+  <tr><td>O dinheiro do job</td>
+    <td><b>Registro</b>: painel de contas a receber mostra o que a produtora deve e quando vence — o pagamento acontece fora</td>
+    <td class="forte">Proteção antes do job: sinal de 20% em custódia + contrato assinado pelos dois; o restante só se libera na conferência da entrega, e cancelar em cima da hora tem regra escrita</td></tr>
+  <tr><td>Reputação</td>
+    <td>Ranking na busca melhora com perfil completo</td>
+    <td>Fatos de operação, sem estrelas e sem top 10; posição na busca não se compra nem se ganha por engajamento</td></tr>
+  <tr><td>Equipamento</td>
+    <td class="np">nada publicado</td>
+    <td class="forte">Brechó, inventário, aluguel com contrato e ficha de estado, dossiê para seguro, kits e lista de equipamento por job</td></tr>
+  <tr><td>Documentos de produção</td>
+    <td class="np">nada publicado</td>
+    <td>Ordem do dia derivada do job, boletim de câmera, orçamento a partir do roteiro, proposta timbrada</td></tr>
+  <tr><td>Comunidade</td>
+    <td class="np">nada publicado</td>
+    <td>Feed, Rodando (24h), guildas, coletivos, avaliação mútua pós-job</td></tr>
+  <tr><td>Monetização</td>
+    <td>Grátis para o freela, sem mensalidade; lado da produtora <span class="np">não publicado</span></td>
+    <td>Transação: 6% por job com contrato (4% na Frota), pagos por quem contrata; escada de planos dos dois lados, entrada grátis dos dois lados</td></tr>
+</table></div>
+
+<p class="nota">As células da FreelaAV vêm do que ela publica; "nada publicado" significa exatamente isso — a função pode existir sem estar anunciada.</p>
+
+<h2>A leitura para o pitch</h2>
+
+<div class="leitura">
+  <div class="bom">
+    <h3>Validação de mercado</h3>
+    <p>Uma plataforma nacional anunciando para freelas de audiovisual confirma que a dor é real e que há quem invista nela. Para sócio e edital, isso é argumento <b>a favor</b>: o mercado existe; a pergunta vira execução e recorte.</p>
+  </div>
+  <div class="bom">
+    <h3>Onde o Carro ganha</h3>
+    <p>No dinheiro e na densidade. A FreelaAV <b>anota</b> a dívida da produtora; aqui o sinal entra em custódia antes do job e o resto só sai com a conferência — resolve a causa, não o relatório. E audiovisual se contrata por proximidade: 73 profissionais numa cidade valem mais que mil espalhados no país.</p>
+  </div>
+  <div>
+    <h3>Onde não competimos</h3>
+    <p>O grosso da FreelaAV é palco: som, luz, estrutura de evento. O Carro é o set — captação, foto, drone, edição. Há gente nos dois mundos, mas o fluxo de contratação, o vocabulário e o equipamento são outros. Mercados vizinhos, não o mesmo mercado.</p>
+  </div>
+  <div class="risco">
+    <h3>O risco real</h3>
+    <p>Um player nacional com capital pode acrescentar pagamento com custódia e chegar às praças pequenas. A defesa não é copiar função — é <b>velocidade na primeira praça</b>: quando a base de Natal estiver ativa com contrato e sinal rodando, a plataforma nacional chega atrasada onde importa.</p>
+  </div>
+</div>
+
+<div class="frase">A frase para o pitch: <b>eles mostram para o freela quanto a produtora está devendo; o Carro faz o dinheiro entrar antes de o freela reservar a data.</b> Registro versus proteção — e proteção é o que muda o comportamento da praça.</div>
+
+<h2>O que observar daqui para frente</h2>
+<ul>
+  <li><b>Se a FreelaAV anunciar pagamento dentro da plataforma</b> (custódia, sinal, split), a diferença central encurta — vale rever este comparativo no dia.</li>
+  <li><b>O preço do lado da produtora</b>, quando publicarem: é a referência de mercado mais próxima para calibrar Volante e Frota.</li>
+  <li><b>O calendário como centro da oferta deles</b> confirma a tese do Volante: "quem está livre na data" é o que produtora paga para saber.</li>
+  <li><b>Presença deles no RN</b>: anúncio chegando em Natal indica mídia nacional, não necessariamente base local — mas se aparecer freela da praça lá, é sinal de pressa.</li>
+</ul>
+
+<div class="rodape">
+  Fontes: freelaav.com.br (material público indexado) · análise de 23/08/2026<br>
+  Carro do Freela · Victor Barroso · Natal/RN · carrodofreela.com.br
+</div>
+
+</div>

@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#fbfbfd" />
+    <title>Synquei · Solta o cartão. Sai sincronizado.</title>
+    <meta name="description" content="Sincronize câmeras, celulares e gravadores pelo som, direto no navegador. Exporta para Premiere Pro, DaVinci Resolve, Final Cut Pro, Avid e Vegas. Lê MOV, MP4, MXF, BRAW, R3D, WAV com timecode e muito mais." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Synquei" />
+    <meta property="og:url" content="https://synquei.vercel.app/" />
+    <meta property="og:title" content="Synquei · Solta o cartão. Sai sincronizado." />
+    <meta property="og:description" content="Sincronia de câmeras e áudio pelo som, no navegador. Exporta para Premiere, Resolve, Final Cut, Avid e Vegas." />
+    <meta property="og:image" content="https://synquei.vercel.app/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://synquei.vercel.app/og.png" />
+    <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/app/manifest.webmanifest" />
+    <script>
+      if (navigator.standalone === true || matchMedia('(display-mode: standalone)').matches) location.replace('/app/')
+      // plataforma antes da primeira pintura: o cartão de download certo já aparece em destaque
+      ;(function () {
+        var ua = navigator.userAgent
+        var d = document.documentElement
+        var mobile = /iPhone|iPad|iPod|Android/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+        d.dataset.plat = mobile ? 'celular' : /Mac/.test(navigator.platform || ua) ? 'mac' : /Win/.test(navigator.platform || ua) ? 'windows' : 'outro'
+        d.classList.add('js')
+      })()
+    </script>
+    <link rel="stylesheet" href="/site.css" />
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <defs>
+        <linearGradient id="g-logo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2f6bff" /><stop offset="1" stop-color="#a98bff" /></linearGradient>
+        <symbol id="logo" viewBox="0 0 32 32">
+          <rect x="3" y="11" width="4" height="10" rx="2" fill="url(#g-logo)" />
+          <rect x="9.5" y="6" width="4" height="20" rx="2" fill="url(#g-logo)" />
+          <rect x="16" y="2.5" width="4" height="27" rx="2" fill="currentColor" />
+          <rect x="22.5" y="8" width="4" height="16" rx="2" fill="url(#g-logo)" />
+          <rect x="29" y="12.5" width="3" height="7" rx="1.5" fill="url(#g-logo)" opacity=".7" />
+        </symbol>
+        <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></symbol>
+        <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></symbol>
+        <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z" fill="currentColor" stroke="none" /></symbol>
+        <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></symbol>
+        <symbol id="i-drift" viewBox="0 0 24 24"><path d="M3 17c4 0 5-10 9-10s5 10 9 10" /><path d="M3 7h4M17 17h4" /></symbol>
+        <symbol id="i-island" viewBox="0 0 24 24"><rect x="3" y="6" width="8" height="5" rx="1.5" /><rect x="13" y="13" width="8" height="5" rx="1.5" /><path d="M11 8.5h3a2 2 0 0 1 2 2V13" stroke-dasharray="2 2" /></symbol>
+        <symbol id="i-multicam" viewBox="0 0 24 24"><rect x="3" y="4" width="8" height="7" rx="1.5" /><rect x="13" y="4" width="8" height="7" rx="1.5" /><rect x="3" y="13" width="8" height="7" rx="1.5" /><rect x="13" y="13" width="8" height="7" rx="1.5" /></symbol>
+        <symbol id="i-card" viewBox="0 0 24 24"><path d="M7 3.5h8l4 4V19a1.5 1.5 0 0 1-1.5 1.5h-10A1.5 1.5 0 0 1 6 19V5a1.5 1.5 0 0 1 1-1.5z" /><path d="M10 3.5v3M13 3.5v3M16 4.5v2" /></symbol>
+        <symbol id="i-browser" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2.5" /><path d="M3 9h18M6.5 6.8h.01M9 6.8h.01" /></symbol>
+        <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2" /><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" /></symbol>
+        <symbol id="i-x" viewBox="0 0 24 24"><path d="M7 7l10 10M17 7L7 17" /></symbol>
+        <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14" /></symbol>
+        <symbol id="i-apple" viewBox="0 0 24 24"><path d="M15.5 3.5c-.9.1-2 .7-2.6 1.5-.6.7-1 1.7-.9 2.6 1 .1 2-.5 2.6-1.3.6-.7 1-1.7.9-2.8z" fill="currentColor" stroke="none" /><path d="M17.6 12.6c0-2 1.6-2.9 1.7-3-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.6 0-1.6-.7-2.6-.7-1.3 0-2.6.8-3.3 2-1.4 2.4-.4 6 1 8 .7 1 1.5 2 2.5 2s1.4-.6 2.6-.6 1.5.6 2.6.6c1.1 0 1.8-1 2.4-2 .8-1.1 1.1-2.2 1.1-2.3 0 0-2.1-.8-2.1-3.1z" fill="currentColor" stroke="none" /></symbol>
+        <symbol id="i-windows" viewBox="0 0 24 24"><path d="M3.5 5.6l7-1v7h-7zM12 4.4l8.5-1.2V11.5H12zM3.5 12.8h7v7l-7-1zM12 12.8h8.5v8.4L12 20z" fill="currentColor" stroke="none" /></symbol>
+        <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.4 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.4-3.5-8.5s1-5.9 3.5-8.5z" /></symbol>
+        <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="12" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h1" /></symbol>
+        <symbol id="i-terminal" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2.5" /><path d="M7 10l3 2.5L7 15M12.5 15H17" /></symbol>
+        <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5.5l11-2V16" /><circle cx="6.5" cy="18" r="2.5" /><circle cx="17.5" cy="16" r="2.5" /></symbol>
+        <symbol id="i-stage" viewBox="0 0 24 24"><path d="M3 20h18M5 20l2-6h10l2 6" /><path d="M8 4l3 10M16 4l-3 10" /><circle cx="12" cy="10" r="1.6" /></symbol>
+        <symbol id="i-disc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="2.5" /><path d="M12 5.5a6.5 6.5 0 0 1 6.5 6.5" /></symbol>
+        <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5.5h11a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 15 14.5H9l-3.5 3v-3H4A1.5 1.5 0 0 1 2.5 13V7A1.5 1.5 0 0 1 4 5.5z" /><path d="M16.5 9H20a1.5 1.5 0 0 1 1.5 1.5v5A1.5 1.5 0 0 1 20 17h-1v3l-3.5-3H12" /></symbol>
+        <symbol id="i-podcast" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="10" rx="3" /><path d="M6 10.5a6 6 0 0 0 12 0M12 16.5V21M8.5 21h7" /></symbol>
+        <symbol id="i-play-rect" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="4" /><path d="M10 9.2v5.6l4.8-2.8z" /></symbol>
+        <symbol id="i-grad" viewBox="0 0 24 24"><path d="M2.5 9.5L12 5l9.5 4.5L12 14z" /><path d="M6.5 11.5V16c1.5 1.6 3.4 2.4 5.5 2.4s4-.8 5.5-2.4v-4.5M21.5 9.5V15" /></symbol>
+        <symbol id="i-ring" viewBox="0 0 24 24"><circle cx="12" cy="14.5" r="6" /><path d="M9.5 3.5h5l1.5 2.5-4 3-4-3z" /></symbol>
+        <symbol id="i-mega" viewBox="0 0 24 24"><path d="M4 10v4h3l8 4.5v-13L7 10z" /><path d="M7 14l1.5 5.5h2.5L10 15M18.5 9.5a3.5 3.5 0 0 1 0 5" /></symbol>
+        <symbol id="i-church" viewBox="0 0 24 24"><path d="M12 2.5v4M10 4.5h4" /><path d="M7 21v-9l5-4.5 5 4.5v9M3.5 21h17M10 21v-4a2 2 0 0 1 4 0v4" /></symbol>
+        <symbol id="i-clap" viewBox="0 0 24 24"><rect x="3.5" y="10" width="17" height="10" rx="1.5" /><path d="M3.5 10L3 6.5l15.8-2.6.6 3.5zM7.5 5.9L9.6 9M12.2 5l2.1 3.1" /></symbol>
+        <symbol id="i-mask" viewBox="0 0 24 24"><path d="M4 4.5c3 1.5 6 1.5 9 0v6.5a4.5 4.5 0 0 1-9 0z" /><path d="M13 9.5c2.3 1 4.7 1 7 0V15a4.5 4.5 0 0 1-8 2.8" /><path d="M6.5 9h1M9.5 9h1M7 12.5c.9.7 2.1.7 3 0" /></symbol>
+        <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.3" /><circle cx="12" cy="12" r="1.3" /><circle cx="18" cy="12" r="1.3" /></symbol>
+        <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" /></symbol>
+        <symbol id="i-film" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="2" /><path d="M7.5 4v16M16.5 4v16M3.5 9h4M3.5 15h4M16.5 9h4M16.5 15h4" /></symbol>
+        <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /><path d="M19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7z" /></symbol>
+        <symbol id="i-action" viewBox="0 0 24 24"><rect x="3.5" y="6" width="17" height="12" rx="3" /><circle cx="14" cy="12" r="3.2" /><path d="M6.5 9h2" /></symbol>
+        <symbol id="i-sync" viewBox="0 0 24 24"><path d="M4 9h3l2-4 3 14 3-10 2 4h3" /></symbol>
+      </defs>
+    </svg>
+
+    <header class="head">
+      <div class="head-in">
+        <a class="brand" href="/" aria-label="Synquei, início"><svg class="brand-mark" aria-hidden="true"><use href="#logo" /></svg>Syn<span>quei</span></a>
+        <nav class="nav" aria-label="Seções">
+          <a href="#como">Como funciona</a>
+          <a href="#sobedesce">SOBEDESCE</a>
+          <a href="#planos">Planos</a>
+          <a href="/formatos/">Formatos</a>
+          <a href="#baixar">Baixar</a>
+        </nav>
+        <a class="btn btn-dark btn-sm" href="#baixar">Baixar</a>
+      </div>
+    </header>
+
+    <main>
+      <!-- ═════════ Destaque ═════════ -->
+      <section class="hero" aria-labelledby="hero-titulo">
+        <div class="hero-glow" aria-hidden="true"></div>
+        <div class="hero-in">
+          <div class="hero-copy">
+            <p class="eyebrow-grad rise">Sincronia de câmeras e áudio pelo som</p>
+            <h1 id="hero-titulo" class="rise" style="--d: 1">Solta o cartão. Sai sincronizado.</h1>
+            <p class="hero-sub rise" style="--d: 2">Câmeras, celular e gravador no mesmo segundo, com precisão de amostra. Do videoclipe ao casamento, com multicâmera pronto para o seu editor.</p>
+            <div class="cta rise" style="--d: 3">
+              <a class="btn btn-dark btn-lg" href="#baixar"><svg class="icon" aria-hidden="true"><use href="#i-down" /></svg><span class="only-mac">Baixar para Mac</span><span class="only-win">Baixar para Windows</span><span class="only-other">Baixar o Synquei</span></a>
+              <a class="btn btn-soft btn-lg" href="/app/"><svg class="icon" aria-hidden="true"><use href="#i-play" /></svg>Usar no navegador</a>
+            </div>
+            <p class="hero-note rise" style="--d: 4">Sem conta. Seus arquivos não saem do computador.</p>
+          </div>
+
+          <figure class="stage fade" id="stage" style="--d: 3">
+            <div class="stage-glow" aria-hidden="true"></div>
+            <div class="st-top"><span>Entrevista · 5 aparelhos</span><span class="st-state"><i></i><span id="stState">Lendo o som</span></span></div>
+            <div class="lanes" id="lanes" aria-hidden="true">
+              <div class="scan"></div>
+              <div class="sync-line" id="syncLine"></div>
+              <div class="sync-tag" id="syncTag">10:00:18:21</div>
+            </div>
+            <figcaption class="stage-cap">
+              <span><b><i class="dot dot-sky"></i>Pelo som</b>Cada clipe acha o seu lugar ouvindo os outros</span>
+              <span><b><i class="dot dot-lav"></i>Para o seu editor</b>Premiere, Resolve, Final Cut, Avid e Vegas</span>
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- ═════════ Como funciona ═════════ -->
+      <section class="sec" id="como" aria-labelledby="como-titulo">
+        <div class="wrap">
+          <div class="sec-head reveal">
+            <p class="eyebrow eb-blue">Como funciona</p>
+            <h2 id="como-titulo">Do cartão ao editor, em quatro passos.</h2>
+          </div>
+          <ol class="passos reveal">
+            <li><span>1</span><b>Solta o cartão</b><p>As pastas do jeito que saíram da câmera, do celular e do gravador.</p></li>
+            <li><span>2</span><b>Ele reconhece</b><p>Cada arquivo, cada aparelho e o timecode, sozinho.</p></li>
+            <li><span>3</span><b>Sincroniza pelo som</b><p>Menos de 1 ms de erro nos testes.</p></li>
+            <li><span>4</span><b>Vai para o editor</b><p>Em camadas ou multicâmera.</p></li>
+          </ol>
+          <div class="cloud editores reveal" aria-label="Editores">
+            <span>Premiere Pro</span><span>DaVinci Resolve</span><span>Final Cut Pro</span><span>Avid</span><span>Vegas</span>
+          </div>
+          <p class="center reveal"><a class="btn btn-soft" href="/formatos/">Ver os formatos que ele lê<svg class="icon" aria-hidden="true"><use href="#i-arrow" /></svg></a></p>
+        </div>
+      </section>
+
+      <!-- ═════════ SOBEDESCE + Synquei ═════════ -->
+      <section class="sec sec-alt" id="sobedesce" aria-labelledby="sobedesce-titulo">
+        <div class="wrap">
+          <div class="sec-head reveal">
+            <p class="eyebrow eb-lav">SOBEDESCE + Synquei</p>
+            <h2 id="sobedesce-titulo">Espetou o cartão. Abriu o DaVinci. Já está tudo lá.</h2>
+            <p>Para quem grava com várias câmeras e edita no mesmo dia.</p>
+          </div>
+
+          <div class="combo">
+            <figure class="cd reveal" id="comboDemo" data-fase="0" aria-label="Demonstração: o cartão passa pelo SOBEDESCE, o Synquei sincroniza e o material chega organizado no DaVinci">
+              <div class="stage-glow" aria-hidden="true"></div>
+              <div class="st-top"><span>Diária 01</span><span class="st-state"><i></i><span id="cdEstado">Espetou o cartão</span></span></div>
+              <div class="cd-fluxo" aria-hidden="true">
+                <div class="cd-no cd-n1"><div class="cd-caixa cd-leitor"><div class="cd-sd" id="cdSd"><i></i><b id="cdSdNome">FX30</b></div><span class="cd-boca"></span></div><span class="cd-nome">Cartão</span></div>
+                <span class="cd-seta"></span>
+                <div class="cd-no cd-n2"><div class="cd-caixa"><div class="cd-barra"><i></i></div><div class="cd-hds"><span>HD 1</span><span>HD 2</span></div></div><span class="cd-nome">SOBEDESCE</span></div>
+                <span class="cd-seta"></span>
+                <div class="cd-no cd-n3"><div class="cd-caixa cd-ondas"><div class="cd-onda" id="cdOndaA"></div><div class="cd-onda cd-onda-b" id="cdOndaB"></div><span class="cd-agulha"></span></div><span class="cd-nome">Synquei</span></div>
+                <span class="cd-seta"></span>
+                <div class="cd-no cd-n4"><div class="cd-caixa cd-pool"><div class="cd-pastas" id="cdPastas"></div><div class="cd-tl" id="cdTl"></div></div><span class="cd-nome">DaVinci</span></div>
+              </div>
+              <ol class="cd-passos" aria-hidden="true">
+                <li>Espetou o cartão</li>
+                <li>Backup conferido</li>
+                <li>Sincronizado pelo som</li>
+                <li>Organizado no DaVinci</li>
+              </ol>
+            </figure>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- ═════════ Planos ═════════ -->
+      <section class="sec" id="planos" aria-labelledby="planos-titulo">
+        <div class="wrap">
+          <div class="sec-head reveal">
+            <p class="eyebrow eb-blue">Planos</p>
+            <h2 id="planos-titulo">Comece no grátis.</h2>
+            <p>Passe para o Pro quando precisar de multicâmera e do DaVinci, ou junte o SOBEDESCE para o set inteiro.</p>
+          </div>
+          <div class="planos">
+            <article class="pl reveal">
+              <p class="pl-nome">Grátis</p>
+              <p class="pl-preco"><b>R$&nbsp;0</b></p>
+              <p class="pl-sub">Sem conta e sem cadastro</p>
+              <a class="btn btn-soft btn-block" href="#baixar">Baixar o Synquei</a>
+              <ul>
+                <li><svg class="icon"><use href="#i-check" /></svg>Sincronia pelo som e pelo timecode</li>
+                <li><svg class="icon"><use href="#i-check" /></svg>Linha do tempo com monitor e tela cheia</li>
+                <li><svg class="icon"><use href="#i-check" /></svg>Exporta em camadas pra Premiere, Resolve, Final Cut, Avid e Vegas</li>
+                <li><svg class="icon"><use href="#i-check" /></svg>Mac, Windows e navegador</li>
+                <li><svg class="icon"><use href="#i-check" /></svg>Nada sai do computador</li>
+              </ul>
+            </article>
+            <article class="pl reveal" style="--d: 1">
+              <p class="pl-nome">Synquei Pro</p>
+              <p class="pl-preco"><b>R$&nbsp;49</b><span>/mês</span></p>
+              <p class="pl-sub">ou R$&nbsp;490/ano</p>
+              <span class="btn btn-dark btn-block pl-breve" aria-disabled="true">Assinatura em breve</span>
+              <ul>
+                <li class="pl-tudo"><svg class="icon"><use href="#i-check" /></svg>Tudo do Grátis</li>
+                <li><svg class="icon"><use href="#i-check" /></svg>Multicâmera nos 4 editores</li>
+                <li><svg class="icon"><use href="#i-check" /></svg><span>Direto no DaVinci <span class="beta">Beta</span><br /><small>pastas, cores e linha do tempo a cada cartão</small></span></li>
+              </ul>
+              <p class="pl-fino">O Direto no DaVinci usa as pastas do Backup Automático do SOBEDESCE e precisa do DaVinci Resolve Studio.</p>
+            </article>
+            <article class="pl pl-destaque reveal" style="--d: 2">
+              <p class="pl-nome">SOBEDESCE + Synquei</p>
+              <p class="pl-preco"><b>R$&nbsp;179</b><span>/mês</span></p>
+              <p class="pl-sub">ou R$&nbsp;1.790/ano</p>
+              <a class="btn btn-dark btn-block" href="https://sobedesce.com" target="_blank" rel="noopener">Conhecer o SOBEDESCE<svg class="icon" aria-hidden="true"><use href="#i-arrow" /></svg></a>
+              <ul>
+                <li class="pl-tudo"><svg class="icon"><use href="#i-check" /></svg>Tudo do Synquei Pro</li>
+                <li><svg class="icon"><use href="#i-check" /></svg><span>Plano Produtora do SOBEDESCE<br /><small>5 aparelhos por conta do Drive, +R$&nbsp;25/mês por aparelho extra</small></span></li>
+                <li><svg class="icon"><use href="#i-check" /></svg>Backup automático e conferido</li>
+                <li><svg class="icon"><use href="#i-check" /></svg>Só o material novo, em vários HDs</li>
+                <li><svg class="icon"><use href="#i-check" /></svg>Projeto › Diária › Dono e câmera › Cartão</li>
+              </ul>
+              <p class="pl-fino">A integração com o DaVinci precisa do DaVinci Resolve Studio.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═════════ Baixar ═════════ -->
+      <section class="sec sec-alt" id="baixar" aria-labelledby="baixar-titulo">
+        <div class="wrap">
+          <div class="sec-head reveal">
+            <p class="eyebrow eb-blue">Baixar</p>
+            <h2 id="baixar-titulo">No seu computador.</h2>
+          </div>
+          <div class="baixar-aviso" id="baixarAviso" hidden><svg class="icon"><use href="#i-clock" /></svg><span>O instalador desta versão ainda está sendo gerado. Tente de novo em alguns minutos, ou use o Synquei no navegador enquanto isso.</span></div>
+          <div class="plats">
+            <article class="card plat reveal" data-p="mac">
+              <div class="plat-top"><span class="p-ic"><svg class="icon"><use href="#i-apple" /></svg></span><div><h3>Mac</h3><p>macOS 11 ou mais novo</p></div></div>
+              <a class="btn btn-dark btn-block" href="/baixar/mac"><svg class="icon"><use href="#i-down" /></svg>Baixar para Mac</a>
+              <details class="cmd">
+                <summary><svg class="icon"><use href="#i-terminal" /></svg>Como instalar</summary>
+                <ol>
+                  <li>Abra o <b>Synquei.dmg</b> e arraste para <b>Aplicativos</b></li>
+                  <li>Na primeira vez: <b>botão direito › Abrir › Abrir</b></li>
+                </ol>
+                <p>Sem aviso, pelo Terminal (confere o arquivo antes de instalar):</p>
+                <div class="code"><code id="cmdMac">curl -fsSL https://synquei.vercel.app/instalar.sh | bash</code><button type="button" data-copy="cmdMac" aria-label="Copiar comando"><svg class="icon"><use href="#i-copy" /></svg><span>Copiar</span></button></div>
+              </details>
+            </article>
+            <article class="card plat reveal" data-p="windows" style="--d: 1">
+              <div class="plat-top"><span class="p-ic"><svg class="icon"><use href="#i-windows" /></svg></span><div><h3>Windows</h3><p>Windows 10 e 11</p></div></div>
+              <a class="btn btn-dark btn-block" href="/baixar/windows"><svg class="icon"><use href="#i-down" /></svg>Baixar para Windows</a>
+              <details class="cmd">
+                <summary><svg class="icon"><use href="#i-terminal" /></svg>Como instalar</summary>
+                <ol>
+                  <li>Abra o <b>Synquei-setup.exe</b></li>
+                  <li>Se aparecer o aviso do Windows: <b>Mais informações › Executar assim mesmo</b></li>
+                </ol>
+                <p>Sem aviso, pelo PowerShell (confere o arquivo antes de instalar):</p>
+                <div class="code"><code id="cmdWin">irm https://synquei.vercel.app/instalar.ps1 | iex</code><button type="button" data-copy="cmdWin" aria-label="Copiar comando"><svg class="icon"><use href="#i-copy" /></svg><span>Copiar</span></button></div>
+              </details>
+            </article>
+            <article class="card plat reveal" data-p="outro" style="--d: 2">
+              <div class="plat-top"><span class="p-ic"><svg class="icon"><use href="#i-globe" /></svg></span><div><h3>Navegador</h3><p>Chrome, Edge ou Safari</p></div></div>
+              <a class="btn btn-soft btn-block" href="/app/"><svg class="icon"><use href="#i-play" /></svg>Abrir no navegador</a>
+              <p class="plat-note">Sem instalar. Funciona sem internet depois da primeira visita.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═════════ Fechamento ═════════ -->
+      <section class="closing" aria-labelledby="fim-titulo">
+        <div class="closing-glow" aria-hidden="true"></div>
+        <div class="wrap closing-in reveal">
+          <span class="lock"><svg class="icon"><use href="#i-lock" /></svg>Seus arquivos não saem do seu computador</span>
+          <h2 id="fim-titulo">A próxima diária já sai sincronizada.</h2>
+          <div class="cta">
+            <a class="btn btn-white btn-lg" href="#baixar">Baixar o Synquei</a>
+            <a class="btn btn-ghost btn-lg" href="/app/">Usar no navegador</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap foot-in">
+        <a class="brand" href="/"><svg class="brand-mark" aria-hidden="true"><use href="#logo" /></svg>Syn<span>quei</span></a>
+        <nav><a href="#baixar">Baixar</a><a href="#planos">Planos</a><a href="/app/">App</a><a href="/formatos/">Formatos</a></nav>
+        <p>Todas as câmeras no mesmo segundo.</p>
+      </div>
+    </footer>
+
+    <script type="module" src="/site.js"></script>
+  </body>
+</html>

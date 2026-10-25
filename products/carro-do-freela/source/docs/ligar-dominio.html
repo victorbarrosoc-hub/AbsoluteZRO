@@ -1,0 +1,437 @@
+<title>Ligar o domínio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;900&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --ground:#F5F2ED; --paper:#FFFFFF; --paper2:#EFEBE4;
+  --rule:#E0DAD1; --rule2:#CBC3B8;
+  --ink:#1B1815; --ink2:#544E47; --ink3:#615A52;
+  --accent:#0C627C; --accent-soft:rgba(12,98,124,.10);
+  --ok:#0F6230; --ok-soft:rgba(15,98,48,.10);
+  --meio:#6E4E05; --meio-soft:rgba(110,78,5,.11);
+  --nao:#615A52; --nao-soft:rgba(97,90,82,.10);
+  --alerta:#B41E66; --alerta-soft:rgba(180,30,102,.08);
+  --ciano-esc:#8FC3D2; --segurando:#725007;
+  --ui:"Schibsted Grotesk",system-ui,-apple-system,Helvetica,Arial,sans-serif;
+  --mono:"Spline Sans Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#121110; --paper:#1A1917; --paper2:#221F1D;
+    --rule:#2B2724; --rule2:#3A3531;
+    --ink:#EFEDE7; --ink2:#AEA79E; --ink3:#9A9188;
+    --accent:#17D1E8; --accent-soft:rgba(23,209,232,.10);
+    --ok:#4BAE72; --ok-soft:rgba(75,174,114,.12);
+    --meio:#C9963F; --meio-soft:rgba(201,150,63,.12);
+    --nao:#A29990; --nao-soft:rgba(162,153,144,.10);
+    --alerta:#E24B8E; --alerta-soft:rgba(226,75,142,.10);
+  --ciano-esc:#0B7C8B; --segurando:#F2C14E;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#121110; --paper:#1A1917; --paper2:#221F1D;
+  --rule:#2B2724; --rule2:#3A3531;
+  --ink:#EFEDE7; --ink2:#AEA79E; --ink3:#9A9188;
+  --accent:#17D1E8; --accent-soft:rgba(23,209,232,.10);
+  --ok:#4BAE72; --ok-soft:rgba(75,174,114,.12);
+  --meio:#C9963F; --meio-soft:rgba(201,150,63,.12);
+  --nao:#A29990; --nao-soft:rgba(162,153,144,.10);
+  --alerta:#E24B8E; --alerta-soft:rgba(226,75,142,.10);
+  --ciano-esc:#0B7C8B; --segurando:#F2C14E;
+}
+
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
+body{margin:0; background:var(--ground); color:var(--ink);
+  font-family:var(--ui); font-size:16px; line-height:1.55; -webkit-font-smoothing:antialiased}
+.wrap{max-width:min(62ch,100%); margin:0 auto; padding:0 clamp(16px,4.5vw,32px)}
+::selection{background:var(--accent-soft); color:var(--ink)}
+
+.capa{padding:clamp(30px,8vw,56px) 0 20px}
+.cab{display:flex; align-items:center; gap:9px; margin-bottom:18px}
+.cab svg{width:24px; height:24px; fill:var(--accent); flex:none}
+.cab b{font-weight:900; letter-spacing:-.03em; font-size:15px}
+h1{font-size:clamp(28px,7vw,40px); line-height:1.05; letter-spacing:-.035em; font-weight:900;
+  margin:0 0 8px; text-wrap:balance}
+.sub{font-size:16.5px; color:var(--ink2); margin:0 0 18px; text-wrap:balance}
+
+/* barra de progresso — saber onde parou é metade do problema */
+/* ⚠️ padding-top/bottom, NUNCA o atalho: a .prog também é .wrap, e o
+   atalho zerava a folga lateral dela — o texto encostava no vidro nos dois
+   lados do celular. É a mesma armadilha que a .capa do PRD já documentava. */
+.prog{position:sticky; top:0; z-index:10; background:var(--ground);
+  padding-top:10px; padding-bottom:9px; border-bottom:1px solid var(--rule); margin-bottom:4px}
+.prog .trilho{height:6px; border-radius:3px; background:var(--paper2); overflow:hidden}
+.prog .barra{height:100%; width:0; background:var(--accent); border-radius:3px;
+  transition:width .25s ease}
+.prog .txt{font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink3); margin:7px 0 0; display:flex; justify-content:space-between}
+.prog .txt b{color:var(--ink2); font-weight:600}
+
+.parte{padding:26px 0 8px}
+.parte-cab{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:4px}
+.onde{font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--accent); border:1px solid var(--accent);
+  border-radius:4px; padding:3px 7px}
+h2{font-size:23px; line-height:1.15; letter-spacing:-.026em; font-weight:800; margin:0}
+.parte > p{color:var(--ink2); margin:8px 0 0; font-size:15px}
+
+/* o passo: alvo grande de toque, estado guardado */
+.passo{display:block; width:100%; text-align:left; background:var(--paper);
+  border:1px solid var(--rule); border-radius:11px; padding:0; margin:11px 0;
+  color:inherit; font:inherit; cursor:pointer; overflow:hidden;
+  -webkit-tap-highlight-color:transparent}
+.passo:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.passo .topo{display:flex; gap:12px; align-items:flex-start; padding:15px 17px}
+.marca{flex:none; width:26px; height:26px; border-radius:50%; border:1.5px solid var(--rule2);
+  background:var(--ground); display:grid; place-items:center; margin-top:1px;
+  font-family:var(--mono); font-size:12px; font-weight:600; color:var(--ink3);
+  transition:background .15s, border-color .15s, color .15s}
+.passo[aria-pressed="true"] .marca{background:var(--ok); border-color:var(--ok); color:#fff}
+.passo[aria-pressed="true"] .tit{color:var(--ink3); text-decoration:line-through;
+  text-decoration-thickness:1px}
+.passo[aria-pressed="true"]{background:var(--paper2); border-color:var(--rule)}
+.corpo{flex:1; min-width:0}
+.tit{font-weight:600; font-size:15.5px; color:var(--ink); margin:0 0 3px; line-height:1.35}
+.det{font-size:14px; color:var(--ink2); margin:0; line-height:1.5}
+.det + .det{margin-top:6px}
+.det code{font-family:var(--mono); font-size:13px; background:var(--paper2);
+  border:1px solid var(--rule); border-radius:4px; padding:1px 5px; color:var(--ink)}
+.passo[aria-pressed="true"] .det{color:var(--ink3)}
+.ve{display:block; margin-top:7px; font-size:13.5px; color:var(--ink3); font-style:italic}
+
+/* valor de DNS, com toque para copiar */
+.val{display:flex; align-items:center; gap:8px; margin-top:9px; flex-wrap:wrap}
+/* 44px de altura mínima: é o alvo de toque confortável no polegar, e este
+   botão vive dentro de outro botão — errar nele marca o passo sem querer */
+.copiar{font-family:var(--mono); font-size:13.5px; font-weight:500; color:var(--ink);
+  background:var(--ground); border:1px solid var(--rule2); border-radius:6px;
+  padding:11px 14px; min-height:44px; display:inline-flex; align-items:center;
+  cursor:pointer; -webkit-tap-highlight-color:transparent}
+.copiar:hover{border-color:var(--accent)}
+.copiar:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.copiar[data-ok="1"]{border-color:var(--ok); color:var(--ok)}
+.copiar .ic{font-size:11px; color:var(--ink3); margin-left:6px}
+.copiar[data-ok="1"] .ic{color:var(--ok)}
+
+.aviso{background:var(--paper); border:1px solid var(--rule); border-left:3px solid var(--alerta);
+  border-radius:9px; padding:15px 17px; margin:16px 0; background:var(--alerta-soft)}
+.aviso.ok{border-left-color:var(--ok); background:var(--ok-soft)}
+.aviso.calma{border-left-color:var(--rule2); background:var(--paper)}
+.aviso .tt{font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--ink3); font-weight:600; margin:0 0 8px; display:block}
+.aviso p{margin:0 0 8px; font-size:14.5px; color:var(--ink2)}
+.aviso > :last-child{margin-bottom:0}
+.aviso b{color:var(--ink)}
+
+.tabw{overflow-x:auto; margin:14px 0; border:1px solid var(--rule); border-radius:9px; background:var(--paper)}
+table{border-collapse:collapse; width:100%; min-width:390px; font-size:14px}
+th{text-align:left; font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--ink3); padding:10px 12px; background:var(--paper2);
+  border-bottom:1px solid var(--rule2)}
+td{padding:10px 12px; border-bottom:1px solid var(--rule); color:var(--ink2); vertical-align:top; line-height:1.45}
+tr:last-child td{border-bottom:0}
+td b{color:var(--ink)}
+td code{font-family:var(--mono); font-size:13px; color:var(--ink)}
+
+footer{padding:30px 0 60px; margin-top:24px; border-top:1px solid var(--rule);
+  color:var(--ink3); font-size:13px; line-height:1.6}
+footer p{margin:0 0 7px}
+.zerar{background:none; border:1px solid var(--rule2); border-radius:6px; color:var(--ink3);
+  font-family:var(--mono); font-size:11.5px; padding:7px 12px; cursor:pointer; margin-top:6px}
+.zerar:hover{border-color:var(--alerta); color:var(--alerta)}
+
+@media print{
+  :root,:root[data-theme="dark"],:root:not([data-theme="light"]){
+    --ground:#FFF; --paper:#FFF; --paper2:#F1EDE6; --rule:#DBD5CC; --rule2:#BFB7AC;
+    --ink:#16130F; --ink2:#4A443C; --ink3:#5C554D; --accent:#0A5266;
+    --ok:#0C5228; --ok-soft:rgba(12,82,40,.08); --alerta:#96154F; --alerta-soft:rgba(150,21,79,.06);
+  }
+  body{background:#fff} .prog{display:none} .zerar{display:none}
+  .passo,.aviso{break-inside:avoid}
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <g id="mk"><g transform="translate(16,0) skewX(-12)">
+    <rect x="14" y="24" width="7" height="52" rx="2" opacity=".34"/>
+    <rect x="29" y="24" width="13" height="52" rx="2.5" opacity=".64"/>
+    <rect x="50" y="24" width="26" height="52" rx="3.5"/>
+  </g></g>
+</defs></svg>
+
+<div class="wrap capa">
+  <div class="cab">
+    <svg viewBox="0 0 100 100" role="img" aria-label="Marca do Carro do Freela"><use href="#mk"/></svg>
+    <b>Carro do Freela</b>
+  </div>
+  <h1>Ligar o carrodofreela.com.br</h1>
+  <p class="sub">Toque em cada passo para marcar como feito. A página lembra onde você parou, mesmo se fechar.</p>
+</div>
+
+<div class="wrap prog">
+  <div class="trilho"><div class="barra" id="barra"></div></div>
+  <p class="txt"><span id="quantos">0 de 0</span><b id="agora">Comece pela Parte 1</b></p>
+</div>
+
+<div class="wrap">
+
+<div class="aviso calma">
+  <span class="tt">Antes de começar</span>
+  <p>Faça tudo pelo <b>navegador</b> (Safari ou Chrome), não pelo aplicativo da GoDaddy — o app esconde a parte de DNS. Se o site abrir muito miúdo, use <b>aA → Solicitar site para computador</b>.</p>
+  <p>Separe <b>uns 20 minutos</b>. A última parte é só esperar.</p>
+</div>
+
+<section class="parte">
+  <div class="parte-cab"><span class="onde">Parte 1 · GitHub</span></div>
+  <h2>Trocar o arquivo pelo anônimo</h2>
+  <p>O que está no ar hoje mostra os sobrenomes completos das 109 pessoas. Num domínio de marca isso vira exposição de verdade — troque antes de apontar.</p>
+
+  <button class="passo" aria-pressed="false"><span class="topo"><span class="marca">1</span><span class="corpo">
+    <p class="tit">Baixe o arquivo que eu te mandei aqui no chat</p>
+    <p class="det">É o <code>index-anon.html</code>, de 1,68 MB. Salve nos Arquivos do iPhone.</p>
+  </span></span></button>
+
+  <button class="passo" aria-pressed="false"><span class="topo"><span class="marca">2</span><span class="corpo">
+    <p class="tit">Renomeie para <code>index.html</code></p>
+    <p class="det">Nos Arquivos: segure o arquivo → Renomear. O nome precisa ser exatamente <code>index.html</code>, sem o "-anon".</p>
+  </span></span></button>
+
+  <button class="passo" aria-pressed="false"><span class="topo"><span class="marca">3</span><span class="corpo">
+    <p class="tit">Suba no GitHub, dentro da pasta <code>public</code></p>
+    <p class="det">Abra seu repositório → pasta <code>public</code> → <b>Add file</b> → <b>Upload files</b> → escolha o arquivo → <b>Commit changes</b>.</p>
+    <span class="ve">Ele vai perguntar se quer substituir o que já existe. Pode substituir.</span>
+  </span></span></button>
+
+  <button class="passo" aria-pressed="false"><span class="topo"><span class="marca">4</span><span class="corpo">
+    <p class="tit">Espere a Vercel publicar sozinha</p>
+    <p class="det">Leva 1 ou 2 minutos. Abra <code>carrodofreela-app.vercel.app</code> e confira: na busca, os nomes têm que aparecer <b>reduzidos</b> — primeiro nome mais a inicial do sobrenome, como <b>"Ana S."</b>. Se algum aparecer inteiro, o build que subiu não foi o anônimo.</p>
+    <span class="ve">Se ainda aparecer o nome completo, force a atualização puxando a página para baixo.</span>
+  </span></span></button>
+</section>
+
+<section class="parte">
+  <div class="parte-cab"><span class="onde">Parte 2 · Vercel</span></div>
+  <h2>Avisar a Vercel do domínio</h2>
+  <p>Ela precisa saber que o domínio é dela antes de você mexer no DNS — é ela quem te diz os números certos.</p>
+
+  <button class="passo" aria-pressed="false"><span class="topo"><span class="marca">5</span><span class="corpo">
+    <p class="tit">Entre em <code>vercel.com</code> e <b>troque para o projeto</b></p>
+    <p class="det">No alto da tela, ao lado do nome da conta, tem um seletor. Troque de <b>All Projects</b> para <b>carrodofreela-app</b>.</p>
+    <span class="ve">A barra da esquerda muda inteira quando você faz isso — passa a mostrar Overview, Deployments, Logs, Analytics do projeto.</span>
+  </span></span></button>
+
+  <button class="passo" aria-pressed="false"><span class="topo"><span class="marca">6</span><span class="corpo">
+    <p class="tit">Clique em <b>Domains</b>, na barra da esquerda</p>
+    <p class="det"><b>Não é dentro do Settings</b> — a Vercel tirou de lá. Domains é um item da barra lateral, logo abaixo de Environment Variables.</p>
+    <p class="det"><b>Você sabe que chegou quando a lista mostra os DOIS:</b> <code>carrodofreela.com.br</code> <b>e</b> <code>carrodofreela-app.vercel.app</code>, cada um com Refresh e Edit.</p>
+    <span class="ve">⚠️ Existe um <b>Domains idêntico no nível da CONTA</b>, e ele não serve: lá o domínio aparece com "Third Party" embaixo e o topo da tela diz <b>All Projects</b>. Se estiver assim, troque o seletor do topo para o projeto.</span>
+  </span></span></button>
+
+  <button class="passo" aria-pressed="false"><span class="topo"><span class="marca">7</span><span class="corpo">
+    <p class="tit">Adicione o domínio <b>e o www</b>, com <b>Add Existing</b></p>
+    <p class="det">O botão se chama <b>Add Existing</b> — o nome engana, mas é ele que liga um domínio ao projeto. Primeiro <code>carrodofreela.com.br</code>. Depois de novo, agora <code>www.carrodofreela.com.br</code>.</p>
+    <p class="det"><b>São dois cadastros separados.</b> Sem o segundo, quem digitar o www recebe erro da Vercel — o DNS até chega lá, mas ela não sabe qual projeto atender.</p>
+    <p class="det">⚠️ <b>A caixa tem DOIS campos com a mesma lupa, e eles fazem coisas opostas.</b> O <b>de cima</b> é o que você está adicionando (o www). O <b>de baixo, à direita</b> é para onde redirecionar. Trocar os dois dá o erro <i>"já está atribuído a este projeto"</i>.</p>
+    <p class="det">Marque <b>Connect to an environment → Production</b> e mande <b>Add Domain</b>. Deixe desmarcada a caixa <i>"Redirect apex domains to www"</i> — ela faz o contrário do que se quer aqui: o endereço curto é o principal.</p>
+    <span class="ve">O redirecionamento do www para o endereço curto é refinamento, e nesta caixa ele costuma recusar o destino. Faça depois, pelo <b>Edit</b> na linha do www, com <b>308 Permanent Redirect</b>. Enquanto isso os dois endereços abrem o site, o que já resolve para quem digita.</span>
+  </span></span></button>
+
+  <button class="passo" aria-pressed="false"><span class="topo"><span class="marca">8</span><span class="corpo">
+    <p class="tit">Anote os dois registros que ela mostrar</p>
+    <p class="det">Vai aparecer um aviso amarelo de <b>Invalid Configuration</b> com os valores. <b>É normal</b> — é justamente o que você vai configurar agora na GoDaddy.</p>
+    <p class="det"><b>O que a Vercel mostrou pra você foi este IP</b> — ela está usando uma faixa nova, então não é o número antigo que circula na internet:</p>
+    <span class="val">
+      <button class="copiar" data-copia="216.198.79.1">216.198.79.1<span class="ic">copiar</span></button>
+    </span>
+    <span class="ve">Se você adicionar o www, ela vai mostrar um CNAME junto — costuma ser <code>cname.vercel-dns.com</code>.</span>
+  </span></span></button>
+</section>
+
+<section class="parte">
+  <div class="parte-cab"><span class="onde">Parte 3 · GoDaddy</span></div>
+  <h2>Apontar o DNS</h2>
+  <p>Aqui é onde costuma travar. O segredo é <b>editar</b> o que já existe, não adicionar por cima.</p>
+
+  <button class="passo" aria-pressed="false"><span class="topo"><span class="marca">9</span><span class="corpo">
+    <p class="tit">Entre em <code>godaddy.com</code> → <b>Meus Produtos</b></p>
+    <p class="det">Toque no seu nome no canto e procure <b>Meus Produtos</b> ou <b>Meus Domínios</b>.</p>
+  </span></span></button>
+
+  <button class="passo" aria-pressed="false"><span class="topo"><span class="marca">10</span><span class="corpo">
+    <p class="tit">Ache <code>carrodofreela.com.br</code> e abra o DNS</p>
+    <p class="det">Toque no domínio. Procure o botão <b>DNS</b>, ou <b>Gerenciar DNS</b>, ou os três pontinhos → <b>Editar DNS</b>. O nome muda conforme a versão do site.</p>
+    <span class="ve">Você chegou quando vir uma tabela com colunas Tipo, Nome, Valor.</span>
+  </span></span></button>
+
+  <button class="passo" aria-pressed="false"><span class="topo"><span class="marca">11</span><span class="corpo">
+    <p class="tit">Confira os <i>nameservers</i> antes de tudo</p>
+    <p class="det">Na mesma tela, procure <b>Servidores de nomes</b>. Precisa estar algo terminando em <code>domaincontrol.com</code>.</p>
+    <span class="ve">Se estiver outra coisa, pare e me avise — significa que o DNS é gerenciado em outro lugar e mexer aqui não faria efeito.</span>
+  </span></span></button>
+
+  <button class="passo" aria-pressed="false"><span class="topo"><span class="marca">12</span><span class="corpo">
+    <p class="tit">EDITE o registro <b>A</b> com nome <code>@</code></p>
+    <p class="det">Ele já existe e aponta pra página de estacionamento da GoDaddy. Toque no lápis dele e <b>troque só o valor</b> por <code>216.198.79.1</code>. Salve.</p>
+    <p class="det"><b>Não crie um segundo registro A.</b> Dois registros A brigando é o erro mais comum — o site fica abrindo ora um, ora outro.</p>
+    <span class="ve">Deu certo quando a linha ficar: <b>A · @ · 216.198.79.1</b>. Os outros registros (NS, SOA, _domainconnect, _dmarc) não se mexe — são da própria GoDaddy.</span>
+  </span></span></button>
+
+  <button class="passo" aria-pressed="false"><span class="topo"><span class="marca">13</span><span class="corpo">
+    <p class="tit">Confira o <b>CNAME</b> com nome <code>www</code> — provavelmente não precisa mexer</p>
+    <p class="det">Se ele já aponta pra <code>carrodofreela.com.br.</code>, <b>deixe como está</b>: ele segue o registro A e cai na Vercel do mesmo jeito.</p>
+    <span class="ve">O que falta para o www funcionar não é aqui — é adicionar <code>www.carrodofreela.com.br</code> na Vercel (passo 7). Sem isso ela não sabe qual projeto atender e devolve erro.</span>
+  </span></span></button>
+
+  <button class="passo" aria-pressed="false"><span class="topo"><span class="marca">14</span><span class="corpo">
+    <p class="tit">Desligue o <b>Encaminhamento de domínio</b></p>
+    <p class="det">Na página de DNS tem uma aba chamada <b>Encaminhamento</b>, ao lado de "Registros DNS". Abra e confirme que <b>não há nada configurado</b>.</p>
+    <span class="ve">Ele sequestra o endereço antes do DNS agir — é a causa nº 1 de "configurei tudo certo e não funciona".</span>
+  </span></span></button>
+
+  <button class="passo" aria-pressed="false"><span class="topo"><span class="marca">15</span><span class="corpo">
+    <p class="tit">Baixe o TTL, se ela deixar</p>
+    <p class="det">Nos dois registros que você editou, se tiver campo <b>TTL</b>, escolha o menor valor (600 segundos ou 1 hora). Isso faz a mudança pegar mais rápido.</p>
+    <span class="ve">Opcional. Se não achar, siga em frente.</span>
+  </span></span></button>
+</section>
+
+<section class="parte">
+  <div class="parte-cab"><span class="onde">Parte 4 · Esperar</span></div>
+  <h2>Conferir se subiu</h2>
+
+  <button class="passo" aria-pressed="false"><span class="topo"><span class="marca">16</span><span class="corpo">
+    <p class="tit">Espere de 10 minutos a 2 horas</p>
+    <p class="det">Vá fazer outra coisa. DNS demora e não tem como apressar.</p>
+  </span></span></button>
+
+  <button class="passo" aria-pressed="false"><span class="topo"><span class="marca">17</span><span class="corpo">
+    <p class="tit">Volte na Vercel, em Settings → Domains</p>
+    <p class="det">Toque em <b>Refresh</b> no domínio. O aviso vermelho tem que virar um <b>visto azul</b> escrito <b>Valid Configuration</b>, igual ao que o <code>carrodofreela-app.vercel.app</code> já tem.</p>
+    <span class="ve">O cadeado do https ela emite sozinha. Você não faz nada.</span>
+  </span></span></button>
+
+  <button class="passo" aria-pressed="false"><span class="topo"><span class="marca">18</span><span class="corpo">
+    <p class="tit">Abra <code>carrodofreela.com.br</code> numa aba anônima</p>
+    <p class="det">Aba anônima porque o navegador guarda o endereço antigo e te engana. Tem que abrir o protótipo, com cadeado, e com os nomes abreviados.</p>
+  </span></span></button>
+</section>
+
+<div class="aviso">
+  <span class="tt">Se depois de 2 horas não funcionar</span>
+  <div class="tabw">
+    <table>
+      <thead><tr><th>O que acontece</th><th>Quase sempre é</th></tr></thead>
+      <tbody>
+        <tr><td>Abre a página de propaganda da GoDaddy</td><td>O <b>encaminhamento</b> continua ligado, ou o registro A antigo não foi editado — foi criado um segundo</td></tr>
+        <tr><td>Erro de certificado / "não é seguro"</td><td>O DNS ainda não terminou de propagar. Espere mais e não mexa em nada</td></tr>
+        <tr><td>A Vercel insiste em <b>Invalid Configuration</b></td><td>O valor foi colado com espaço no fim, ou num campo trocado (A e CNAME invertidos). Toque em <b>Refresh</b> na Vercel depois de salvar na GoDaddy</td></tr>
+        <tr><td>O <code>www</code> funciona e o domínio puro não</td><td>Faltou o registro A do <code>@</code></td></tr>
+        <tr><td>O domínio puro funciona e o <code>www</code> dá erro</td><td><b>Faltou adicionar o www na Vercel</b> (passo 7). O DNS está certo — conserta só lá, sem voltar na GoDaddy</td></tr>
+        <tr><td>Na caixa de adicionar: <i>"já está atribuído a este projeto"</i></td><td>O campo <b>de cima</b> está com o domínio errado. Ele é o que você ADICIONA (o www), não o destino do redirecionamento</td></tr>
+        <tr><td><b>Add Domain</b> apagado, com <i>"Select a redirect destination"</i></td><td>Marque <b>Connect to an environment → Production</b>. O redirecionamento se ajusta depois, pelo Edit</td></tr>
+        <tr><td>Abre, mas com os nomes completos</td><td>A Parte 1 não subiu. Confira o commit no GitHub</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Se travar em algum passo, me diga <b>o número do passo</b> e o que apareceu na tela.</p>
+</div>
+
+<div class="aviso ok">
+  <span class="tt">Quando terminar</span>
+  <p>Me avise que eu troco o endereço antigo pelo novo na <b>folha do sócio técnico</b> e no <b>dossiê de edital</b>, e refaço os dois PDFs.</p>
+</div>
+
+</div>
+
+<div class="wrap">
+<footer>
+  <p><b>Carro do Freela</b> · guia de configuração do domínio</p>
+  <p>Os nomes de botão da GoDaddy e da Vercel mudam de tempos em tempos. Se algum estiver com outro nome, procure a palavra parecida na mesma tela — o caminho é o mesmo.</p>
+  <button class="zerar" id="zerar">Desmarcar tudo</button>
+</footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+var K="cf-dominio-passos";
+var passos=[].slice.call(document.querySelectorAll(".passo"));
+var barra=document.getElementById("barra"),
+    quantos=document.getElementById("quantos"),
+    agora=document.getElementById("agora");
+
+function ler(){
+  try{ var v=localStorage.getItem(K); return v?JSON.parse(v):[]; }catch(e){ return []; }
+}
+function gravar(f){
+  try{ localStorage.setItem(K,JSON.stringify(f)); }catch(e){}
+}
+function pintar(){
+  var f=0,prox=null;
+  passos.forEach(function(b,i){
+    if(b.getAttribute("aria-pressed")==="true") f++;
+    else if(prox===null) prox=i;
+  });
+  barra.style.width=(passos.length?100*f/passos.length:0)+"%";
+  quantos.textContent=f+" de "+passos.length;
+  if(prox===null) agora.textContent="Tudo feito";
+  else{
+    /* o rótulo da parte em que o próximo passo mora */
+    var sec=passos[prox].closest(".parte");
+    var rot=sec?sec.querySelector(".onde"):null;
+    agora.textContent="Próximo: passo "+(prox+1)+(rot?" · "+rot.textContent.split("·")[1].trim():"");
+  }
+}
+/* restaura pelo ÍNDICE, e só até onde a lista de hoje alcança:
+   se eu acrescentar passos depois, nada quebra */
+var feitos=ler();
+passos.forEach(function(b,i){
+  if(feitos.indexOf(i)>=0) b.setAttribute("aria-pressed","true");
+  b.addEventListener("click",function(ev){
+    if(ev.target.closest(".copiar")) return;   /* copiar não marca o passo */
+    var on=b.getAttribute("aria-pressed")==="true";
+    b.setAttribute("aria-pressed",String(!on));
+    var f=[];
+    passos.forEach(function(x,j){ if(x.getAttribute("aria-pressed")==="true") f.push(j); });
+    gravar(f); pintar();
+  });
+});
+pintar();
+
+document.getElementById("zerar").addEventListener("click",function(){
+  passos.forEach(function(b){ b.setAttribute("aria-pressed","false"); });
+  gravar([]); pintar();
+});
+
+/* copiar o valor de DNS: clipboard quando existe, seleção quando não */
+document.addEventListener("click",function(ev){
+  var b=ev.target.closest(".copiar"); if(!b) return;
+  ev.stopPropagation();
+  var txt=b.getAttribute("data-copia");
+  var ok=function(){
+    b.setAttribute("data-ok","1");
+    var ic=b.querySelector(".ic"); if(ic) ic.textContent="copiado";
+    setTimeout(function(){ b.removeAttribute("data-ok");
+      if(ic) ic.textContent="copiar"; },1600);
+  };
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(ok,function(){ manual(); });
+    }else manual();
+  }catch(e){ manual(); }
+  function manual(){
+    /* sem clipboard, deixa o texto selecionado para o toque longo copiar */
+    try{
+      var r=document.createRange(); r.selectNodeContents(b.firstChild);
+      var s=getSelection(); s.removeAllRanges(); s.addRange(r);
+      var ic=b.querySelector(".ic"); if(ic) ic.textContent="segure e copie";
+      setTimeout(function(){ if(ic) ic.textContent="copiar"; },2600);
+    }catch(e2){}
+  }
+});
+})();
+</script>

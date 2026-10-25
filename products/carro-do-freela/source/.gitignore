@@ -1,0 +1,16 @@
+node_modules/
+.DS_Store
+.vercel
+*.log
+
+# saída das suítes de teste
+test/saida/*.png
+
+# ⚠️ O COFRE. A lista REAL de 109 pessoas mora só aqui, e um reset de
+# container já a devolveu por cima da fictícia (23/ago). Os dois caminhos
+# de propósito: `git add -A` da raiz e de dentro de src/ pegam iguais.
+src/crew.local.json
+crew.local.json
+
+# a mídia que o build copia de src/midia/ com o hash no nome (18/out · 2)
+public/m/

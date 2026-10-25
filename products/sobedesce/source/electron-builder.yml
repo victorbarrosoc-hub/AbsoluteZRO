@@ -1,0 +1,143 @@
+# Empacotamento do app de desktop (npm run dist:mac / dist:win, ou o GitHub Actions).
+appId: app.sobedesce.desktop
+productName: SOBEDESCE
+copyright: Copyright © 2026 SOBEDESCE
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
+
+directories:
+  output: dist
+  buildResources: build
+
+# Código dentro do app.asar (o Electron lê de lá: ESM, utilityProcess, worker_threads, fs do motor). Com os fusíveis
+# abaixo, o app só carrega o código de dentro do asar e confere o hash dele (gravado no Info.plist no Mac e no .exe no
+# Windows): mexer no JavaScript instalado faz o app não abrir, em vez de rodar código trocado. Os executáveis (ffmpeg,
+# yt-dlp, QuickJS) ficam fora, em extraResources, e não precisam de asarUnpack.
+asar: true
+# O onnxruntime-node (busca por cena, src/cenas/) é biblioteca nativa (.node + .dylib/.dll): o Electron não carrega de
+# dentro do asar, então vai em app.asar.unpacked (fora do hash do asar, como os executáveis).
+asarUnpack:
+  - node_modules/onnxruntime-node/**/*
+
+# Fusíveis do Electron (@electron/fuses, aplicados pelo electron-builder logo antes de assinar). Revisão de segurança A9.
+#  - runAsNode: false → ninguém usa o executável do app como um Node (ELECTRON_RUN_AS_NODE) com as permissões dele.
+#    O yt-dlp das Referências usava isso para o JavaScript do YouTube; agora usa o QuickJS que vai junto.
+#  - enableNodeOptionsEnvironmentVariable / enableNodeCliInspectArguments: false → NODE_OPTIONS e --inspect não entram.
+#  - enableCookieEncryption: true → os cookies do navegador de Referências (login do Instagram…) ficam cifrados com a
+#    chave do sistema (Keychain/DPAPI). Na primeira abertura com isso, o app apaga os cookies antigos em texto puro e a
+#    pessoa entra de novo no Instagram uma vez (desktop/cookies-cifrados.js). Ligar é sem volta: desligar de novo
+#    deixaria os cookies ilegíveis.
+#  - onlyLoadAppFromAsar + enableEmbeddedAsarIntegrityValidation: só o app.asar, conferido pelo hash.
+electronFuses:
+  runAsNode: false
+  enableCookieEncryption: true
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+
+files:
+  - package.json
+  - desktop/**/*
+  - src/**/*
+  - public/**/*
+  # A recepção pelo Wi-Fi (src/mobile/receiver.js) serve a casca do app do celular direto desta pasta.
+  - web/public/app/index.html
+  - web/public/app/app.css
+  - web/public/app/app.js
+  - web/public/app/lib/**/*
+  - web/public/app/components/**/*
+  - web/public/app/vendor/**/*
+  - web/public/app/icons/**/*
+  - "!**/*.map"
+  - "!**/*.md"
+  # onnxruntime-node traz os binários de todos os sistemas (≈ 290 MB): só vai o deste (${platform} = darwin/win32/linux).
+  - "!node_modules/onnxruntime-node/bin/napi-v6/!(${platform})/**"
+
+# ffmpeg da prévia leve (src/media/previa.js), baixado por `node scripts/ffmpeg-baixar.mjs` (o CI roda antes do dist).
+# Fica fora de app/, em <Resources>/ffmpeg/ (o motor procura ali). No Mac universal o electron-builder empacota x64 e
+# arm64 separados (${arch} = x64 / arm64) e o @electron/universal junta os dois ffmpeg num binário só (lipo); por
+# isso cada pasta tem SÓ o executável (arquivo comum diferente entre as arquiteturas faria o universal falhar).
+# Sem a pasta (build local sem o download) o app sai sem ffmpeg e usa o do sistema, se houver.
+extraResources:
+  - from: build/ffmpeg/${os}-${arch}
+    to: ffmpeg
+  - from: build/ffmpeg-licencas
+    to: ffmpeg-licencas
+  # QuickJS-ng: o JavaScript dos desafios do YouTube para o yt-dlp (scripts/quickjs-baixar.mjs, o CI roda antes do dist).
+  # Um por arquitetura, como o ffmpeg (no Mac o @electron/universal junta os dois).
+  - from: build/quickjs/${os}-${arch}
+    to: quickjs
+  - from: build/quickjs-licenca
+    to: quickjs-licenca
+
+mac:
+  target:
+    - target: dmg
+      arch: [universal]
+  category: public.app-category.productivity
+  icon: build/icon.png
+  # yt-dlp das Referências (src/referencias/), baixado por `node scripts/ytdlp-baixar.mjs` (o CI roda antes do dist).
+  # Fica fora de app/, em <Resources>/yt-dlp/ (o motor procura ali; depois o app se atualiza sozinho). O yt-dlp_macos
+  # já é universal: o mesmo arquivo vai nas duas arquiteturas e o x64ArchFiles diz ao @electron/universal para não
+  # tentar juntar (lipo) os dois.
+  extraResources:
+    - from: build/yt-dlp/mac
+      to: yt-dlp
+    # Decodificador de Blackmagic RAW (proxy e miniatura de .braw; native/raw-frame/), feito por
+    # `node scripts/raw-frame-build.mjs` com o SDK baixado no CI; sem a pasta, o app sai sem ele (o .braw fica sem
+    # proxy). Já universal (o clang gera as duas arquiteturas; o framework da Blackmagic também é): fora do lipo.
+    - from: build/raw-frame/mac
+      to: raw-frame
+  # onnxruntime-node: só existe para Apple Silicon (o mesmo arquivo nas duas metades do universal; no Mac Intel a busca
+  # por cena avisa que não roda).
+  x64ArchFiles: "Contents/Resources/{yt-dlp/yt-dlp,raw-frame/**,app.asar.unpacked/node_modules/onnxruntime-node/**}"
+  # Sem certificado da Apple por enquanto: assinatura ad-hoc (o macOS pede "Abrir Mesmo Assim" na primeira vez).
+  identity: "-"
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  notarize: false
+  extendInfo:
+    NSDesktopFolderUsageDescription: O SOBEDESCE lê e grava arquivos que você escolhe para enviar ou baixar.
+    NSDocumentsFolderUsageDescription: O SOBEDESCE lê e grava arquivos que você escolhe para enviar ou baixar.
+    NSDownloadsFolderUsageDescription: O SOBEDESCE grava os downloads na pasta que você escolher.
+    NSRemovableVolumesUsageDescription: O SOBEDESCE lê e grava arquivos em discos externos que você escolher.
+    NSNetworkVolumesUsageDescription: O SOBEDESCE lê e grava arquivos em volumes de rede que você escolher.
+    # macOS 15+: sem a Rede Local, o Wi-Fi com o celular e com outros computadores não conecta (src/celular/rede-local.js).
+    NSLocalNetworkUsageDescription: O SOBEDESCE troca arquivos direto com o seu celular e com outros computadores no mesmo Wi-Fi.
+
+dmg:
+  title: SOBEDESCE
+  contents:
+    - x: 140
+      y: 200
+    - x: 400
+      y: 200
+      type: link
+      path: /Applications
+
+win:
+  target:
+    - target: nsis
+      arch: [x64, arm64]
+  icon: build/icon.png
+  # yt-dlp das Referências: um por arquitetura (yt-dlp.exe e yt-dlp_arm64.exe do Release, gravados como yt-dlp.exe).
+  extraResources:
+    - from: build/yt-dlp/${os}-${arch}
+      to: yt-dlp
+    # Decodificador de Blackmagic RAW, um por arquitetura (ver o do Mac acima).
+    - from: build/raw-frame/${os}-${arch}
+      to: raw-frame
+
+nsis:
+  # Instala só para o usuário atual, sem pedir senha de administrador.
+  oneClick: true
+  perMachine: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: SOBEDESCE
+  artifactName: ${productName}-${version}-windows-setup.${ext}
+
+linux:
+  target: [AppImage]
+  category: Utility
+  icon: build/icon.png

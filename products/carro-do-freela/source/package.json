@@ -1,0 +1,14 @@
+{
+  "name": "carro-do-freela",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Protótipo: agenda e contratação de freelas do audiovisual",
+  "scripts": {
+    "build": "node src/build.js",
+    "build:anon": "node src/build.js --anon",
+    "build:fases": "node -e \"for(const f of [0,1,2,3,4,5,6]) require('child_process').execFileSync(process.execPath,['src/build.js'].concat(f?['--fase='+f]:[]),{stdio:'inherit'})\"",
+    "dev": "node -e \"require('http').createServer((q,s)=>{const f=require('fs'),p=require('path');let u=q.url.split('?')[0];if(u==='/')u='/index.html';const t=p.join(__dirname,'public',u);f.readFile(t,(e,d)=>{if(e){s.writeHead(404);return s.end('404')}s.writeHead(200,{'Content-Type':u.endsWith('.html')?'text/html; charset=utf-8':'application/octet-stream'});s.end(d)})}).listen(5173,()=>console.log('http://localhost:5173'))\"",
+    "test": "node test/run.js",
+    "publicar": "node src/publicar.js"
+  }
+}

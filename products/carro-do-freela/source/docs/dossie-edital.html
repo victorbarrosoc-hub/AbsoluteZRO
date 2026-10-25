@@ -1,0 +1,430 @@
+<title>Dossiê para editais</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;900&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --ground:#F5F2ED; --paper:#FFFFFF; --paper2:#EFEBE4;
+  --rule:#E0DAD1; --rule2:#CBC3B8;
+  --ink:#1B1815; --ink2:#544E47; --ink3:#615A52;
+  --accent:#0C627C; --accent-soft:rgba(12,98,124,.10);
+  --ok:#0F6230; --ok-soft:rgba(15,98,48,.10);
+  --meio:#6E4E05; --meio-soft:rgba(110,78,5,.11);
+  --nao:#615A52; --nao-soft:rgba(97,90,82,.10);
+  --alerta:#B41E66; --alerta-soft:rgba(180,30,102,.08);
+  --ciano-esc:#8FC3D2; --segurando:#725007;
+  --ui:"Schibsted Grotesk",system-ui,-apple-system,Helvetica,Arial,sans-serif;
+  --mono:"Spline Sans Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#121110; --paper:#1A1917; --paper2:#221F1D;
+    --rule:#2B2724; --rule2:#3A3531;
+    --ink:#EFEDE7; --ink2:#AEA79E; --ink3:#9A9188;
+    --accent:#17D1E8; --accent-soft:rgba(23,209,232,.10);
+    --ok:#4BAE72; --ok-soft:rgba(75,174,114,.12);
+    --meio:#C9963F; --meio-soft:rgba(201,150,63,.12);
+    --nao:#A29990; --nao-soft:rgba(162,153,144,.10);
+    --alerta:#E24B8E; --alerta-soft:rgba(226,75,142,.10);
+  --ciano-esc:#0B7C8B; --segurando:#F2C14E;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#121110; --paper:#1A1917; --paper2:#221F1D;
+  --rule:#2B2724; --rule2:#3A3531;
+  --ink:#EFEDE7; --ink2:#AEA79E; --ink3:#9A9188;
+  --accent:#17D1E8; --accent-soft:rgba(23,209,232,.10);
+  --ok:#4BAE72; --ok-soft:rgba(75,174,114,.12);
+  --meio:#C9963F; --meio-soft:rgba(201,150,63,.12);
+  --nao:#A29990; --nao-soft:rgba(162,153,144,.10);
+  --alerta:#E24B8E; --alerta-soft:rgba(226,75,142,.10);
+  --ciano-esc:#0B7C8B; --segurando:#F2C14E;
+}
+
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
+body{margin:0; background:var(--ground); color:var(--ink);
+  font-family:var(--ui); font-size:15.5px; line-height:1.62; -webkit-font-smoothing:antialiased}
+.wrap{max-width:min(76ch,100%); margin:0 auto; padding:0 clamp(18px,5vw,40px)}
+::selection{background:var(--accent-soft); color:var(--ink)}
+
+.capa{padding:clamp(40px,9vw,74px) 0 clamp(24px,5vw,38px); border-bottom:1px solid var(--rule)}
+.cab{display:flex; align-items:center; gap:10px; margin-bottom:22px}
+.cab svg{width:26px; height:26px; fill:var(--accent); flex:none}
+.cab b{font-weight:900; letter-spacing:-.03em; font-size:16px}
+.kicker{font-family:var(--mono); font-size:11.5px; font-weight:500; letter-spacing:.15em;
+  text-transform:uppercase; color:var(--ink3); margin:0 0 14px}
+h1{font-size:clamp(31px,7vw,50px); line-height:1.04; letter-spacing:-.035em; font-weight:900;
+  margin:0 0 10px; text-wrap:balance}
+.sub1{font-size:clamp(17px,3.6vw,21px); line-height:1.35; color:var(--ink2); margin:0 0 22px;
+  text-wrap:balance; font-weight:500}
+
+section{padding:clamp(30px,6vw,46px) 0; border-bottom:1px solid var(--rule)}
+section:last-of-type{border-bottom:0}
+h2{font-size:clamp(21px,4.4vw,27px); line-height:1.14; letter-spacing:-.026em; font-weight:800;
+  margin:0 0 6px; text-wrap:balance}
+h2 .n{font-family:var(--mono); font-size:.52em; font-weight:500; color:var(--ink3);
+  letter-spacing:.08em; display:block; margin-bottom:8px}
+h3{font-size:16px; font-weight:700; letter-spacing:-.01em; margin:26px 0 7px}
+h4{font-size:13.5px; font-weight:700; margin:18px 0 5px}
+p{margin:0 0 12px; color:var(--ink2)}
+strong,b{color:var(--ink); font-weight:600}
+a{color:var(--accent)}
+ul,ol{margin:0 0 14px; padding-left:21px; color:var(--ink2)}
+li{margin-bottom:6px}
+li::marker{color:var(--ink3)}
+.nota{font-size:13px; line-height:1.58; color:var(--ink3)}
+
+/* o bloco de resposta pronta pra copiar — é o coração do documento */
+.resp{background:var(--paper); border:1px solid var(--rule2); border-radius:9px;
+  padding:16px 18px; margin:12px 0}
+.resp > :last-child{margin-bottom:0}
+.resp .cap{display:flex; justify-content:space-between; align-items:baseline; gap:12px;
+  margin:0 0 10px; padding-bottom:8px; border-bottom:1px solid var(--rule)}
+.resp .cap span{font-family:var(--mono); font-size:10.5px; letter-spacing:.11em;
+  text-transform:uppercase; color:var(--ink3); font-weight:600}
+.resp .cap .ct{color:var(--accent); font-variant-numeric:tabular-nums; white-space:nowrap}
+.resp p{color:var(--ink2)}
+
+.tabw{overflow-x:auto; margin:18px 0; border:1px solid var(--rule); border-radius:9px; background:var(--paper)}
+table{border-collapse:collapse; width:100%; min-width:460px; font-size:13.8px}
+th{text-align:left; font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--ink3); padding:11px 13px; background:var(--paper2);
+  border-bottom:1px solid var(--rule2); white-space:nowrap; vertical-align:bottom}
+td{padding:10px 13px; border-bottom:1px solid var(--rule); color:var(--ink2); vertical-align:top; line-height:1.5}
+tr:last-child td{border-bottom:0}
+td b{color:var(--ink)}
+.num{font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap; color:var(--ink)}
+tfoot td{background:var(--paper2); border-top:1px solid var(--rule2)}
+
+.caixa{background:var(--paper); border:1px solid var(--rule); border-radius:9px; padding:17px 19px; margin:18px 0}
+.caixa > :last-child{margin-bottom:0}
+.caixa.alerta{border-left:3px solid var(--alerta); background:var(--alerta-soft)}
+.caixa.ok{border-left:3px solid var(--ok)}
+.caixa .tit{font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--ink3); font-weight:600; margin:0 0 9px; display:block}
+
+.marco{display:grid; grid-template-columns:auto 1fr; gap:0 16px; margin:16px 0}
+.marco > dt{font-family:var(--mono); font-size:11px; font-weight:600; color:var(--accent);
+  letter-spacing:.06em; padding:9px 0; border-top:1px solid var(--rule); white-space:nowrap}
+.marco > dd{margin:0; padding:9px 0; border-top:1px solid var(--rule); font-size:14px; color:var(--ink2)}
+.marco > dd b{display:block; color:var(--ink)}
+
+footer{padding:34px 0 56px; color:var(--ink3); font-size:12.5px; line-height:1.6}
+footer p{color:var(--ink3); margin-bottom:7px}
+.assina{display:flex; align-items:center; gap:9px; margin-bottom:13px}
+.assina svg{width:21px; height:21px; fill:var(--accent); flex:none}
+.assina b{font-weight:900; letter-spacing:-.03em; font-size:14.5px; color:var(--ink2)}
+
+@media print{
+  :root,:root[data-theme="dark"],:root:not([data-theme="light"]){
+    --ground:#FFFFFF; --paper:#FFFFFF; --paper2:#F1EDE6; --rule:#DBD5CC; --rule2:#BFB7AC;
+    --ink:#16130F; --ink2:#4A443C; --ink3:#5C554D; --accent:#0A5266; --accent-soft:rgba(10,82,102,.08);
+    --ok:#0C5228; --alerta:#96154F; --alerta-soft:rgba(150,21,79,.06);
+  }
+  html{font-size:9.6pt} body{background:#fff}
+  .wrap{max-width:100%; padding:0}
+  .capa{padding:0 0 16px; break-after:avoid}
+  h1{font-size:23pt} .sub1{font-size:11.5pt}
+  section{padding:16px 0}
+  h2{font-size:14pt; break-after:avoid} h3,h4{break-after:avoid}
+  .tabw{overflow:visible} table{min-width:0; font-size:8.6pt} th,td{padding:5px 7px}
+  .resp,.caixa,.marco > dt,.marco > dd{break-inside:avoid}
+  p,li{orphans:2; widows:2}
+  footer{break-before:avoid}
+}
+@page{size:A4; margin:15mm 14mm}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <g id="mk"><g transform="translate(16,0) skewX(-12)">
+    <rect x="14" y="24" width="7" height="52" rx="2" opacity=".34"/>
+    <rect x="29" y="24" width="13" height="52" rx="2.5" opacity=".64"/>
+    <rect x="50" y="24" width="26" height="52" rx="3.5"/>
+  </g></g>
+</defs></svg>
+
+<div class="wrap capa">
+  <div class="cab">
+    <svg viewBox="0 0 100 100" role="img" aria-label="Marca do Carro do Freela"><use href="#mk"/></svg>
+    <b>Carro do Freela</b>
+  </div>
+  <p class="kicker">Dossiê para editais e incubação</p>
+  <h1>As respostas prontas, no formato que eles pedem.</h1>
+  <p class="sub1">Centelha, Inova Metrópole, Sebrae, FAPERN, InovAtiva. Quase todos perguntam as mesmas doze coisas — aqui elas estão respondidas, com contagem de caracteres para os campos que limitam.</p>
+</div>
+
+<div class="wrap">
+
+<section>
+  <h2><span class="n">Como usar</span>Antes de copiar qualquer coisa</h2>
+  <ul>
+    <li><b>Cada bloco cinza é resposta pronta para colar</b>, com a contagem de caracteres no canto. Onde o edital apertar mais que isso, corte do fim para o começo — as respostas foram escritas com a informação mais importante na frente.</li>
+    <li><b>Números marcados como <i>cenário</i> não podem virar promessa.</b> Eles são projeção a partir de premissas declaradas, não medição. Editais públicos perdoam projeção honesta e punem número inventado.</li>
+    <li><b>O que só você sabe está listado na última seção</b> — formação, CPF, datas. Não dá para eu preencher.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">01</span>Título e resumo</h2>
+
+  <div class="resp">
+    <div class="cap"><span>Título do projeto</span><span class="ct">92 car.</span></div>
+    <p>Carro do Freela — plataforma de agenda, contratação e pagamento garantido para o audiovisual</p>
+  </div>
+
+  <div class="resp">
+    <div class="cap"><span>Resumo · versão curta</span><span class="ct">271 car.</span></div>
+    <p>Plataforma que mostra quais profissionais de audiovisual estão livres em cada data, permite montar a equipe com o custo somando e fecha o trabalho com contrato e sinal em custódia. Substitui o grupo de WhatsApp onde o mercado se organiza hoje, sem memória e sem garantia.</p>
+  </div>
+
+  <div class="resp">
+    <div class="cap"><span>Resumo · versão média</span><span class="ct">1.071 car.</span></div>
+    <p>O mercado de freelancers do audiovisual se organiza em grupos de WhatsApp: quem precisa de equipe manda mensagem para quinze pessoas e espera respostas em ordem aleatória, sem saber quem está livre na data. Data combinada não tem consequência — quem furou não responde por isso — e quem está começando não é encontrado, porque a única forma de ser lembrado é já ser conhecido.</p>
+    <p>O Carro do Freela transforma a disponibilidade em dado: o profissional declara em que dias está livre, quem contrata busca por praça, data e função, monta a equipe com o custo somando e fecha com contrato eletrônico e sinal de 20% retido em custódia, liberado na entrega. A plataforma não é parte do contrato de trabalho e não retém valores em conta própria — o dinheiro fica em subconta do usuário dentro do parceiro de pagamento regulado.</p>
+    <p>O modelo cobra por transação (6% do job fechado com garantia, pago por quem contrata), nunca pela presença: ninguém paga para existir na plataforma. O projeto tem protótipo navegável completo, 109 profissionais do RN já cadastrados e começa por Natal.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">02</span>Problema</h2>
+
+  <div class="resp">
+    <div class="cap"><span>Problema que o projeto resolve</span><span class="ct">1.020 car.</span></div>
+    <p><b>1. Ninguém sabe quem está livre.</b> Montar uma equipe de cinco pessoas para uma data exige mandar mensagem para quinze e esperar. As respostas chegam fora de ordem, parte no dia seguinte, e metade já fechou outro trabalho. Quem contrata acaba ligando para as três pessoas que já conhece — e o mercado fica do tamanho da agenda dele.</p>
+    <p><b>2. Data furada não tem consequência.</b> O profissional recusa outro trabalho para segurar a data e não recebe nada se o contratante desistir na véspera. Se ele some, quem contratou perde a diária procurando substituto de manhã. Nos dois casos vira palavra contra palavra num grupo.</p>
+    <p><b>3. Quem está começando não entra.</b> Sem histórico e sem contato, o profissional novo não é encontrado — não por falta de competência, mas porque a descoberta depende de alguém lembrar do nome dele. Isso concentra o trabalho em quem já está dentro.</p>
+    <p><b>4. O trabalho administrativo não é pago.</b> Orçamento, proposta, ordem do dia, boletim de câmera e lista de equipamento são refeitos à mão a cada mudança de horário.</p>
+  </div>
+
+  <p class="nota">Evidência disponível: 109 profissionais do RN responderam a um formulário de cadastro distribuído no grupo em que o mercado se organiza, com autorização — 73 em Natal, o restante em 20 praças do estado, cobrindo 20 funções distintas. A coleta em si já demonstra a existência e a acessibilidade da base.</p>
+</section>
+
+<section>
+  <h2><span class="n">03</span>Solução e caráter inovador</h2>
+
+  <div class="resp">
+    <div class="cap"><span>Solução proposta</span><span class="ct">783 car.</span></div>
+    <p>Uma plataforma web onde o profissional declara os dias em que está disponível e mantém essa agenda viva com um lembrete semanal. Quem contrata busca por praça, data e função, vê apenas quem está efetivamente livre, monta a equipe com o custo somando em tempo real e envia a chamada — para uma pessoa ou para várias, disputando a vaga.</p>
+    <p>O aceite gera contrato eletrônico entre as duas partes e um sinal de 20% retido em custódia. Na entrega, o saldo é liberado por função — quem opera câmera encerra no dia, quem edita encerra quando o corte sai. O cancelamento tem regra automática por antecedência.</p>
+    <p>Uma camada social — perfil-portfólio, seguir, mensagem e publicações — dá ao profissional motivo para abrir o aplicativo em dias sem trabalho, que é o que mantém a agenda atualizada.</p>
+  </div>
+
+  <div class="resp">
+    <div class="cap"><span>Caráter inovador</span><span class="ct">890 car.</span></div>
+    <p>A inovação não é tecnológica — é de modelo. Três decisões estruturais separam este projeto das plataformas de freelance existentes:</p>
+    <p><b>Ninguém paga para aparecer.</b> Plataformas de lead vendem contato ao profissional, que paga para talvez falar com alguém. Aqui a receita só existe quando o trabalho fecha, o que alinha a plataforma ao resultado e não ao volume de cadastro.</p>
+    <p><b>O ativo é a disponibilidade, não o diretório.</b> Chamar alguém é gratuito; saber quem está livre é o que a assinatura compra. Uma lista de contatos é copiável numa tarde — uma agenda viva, por praça, exige tempo e confiança para existir e não se replica.</p>
+    <p><b>Densidade local em vez de alcance nacional.</b> Equipe de set se contrata por proximidade e por data: dez mil profissionais espalhados pelo país não preenchem uma vaga em Natal no sábado; quatrocentos em Natal preenchem. O negócio é replicar praça, não acumular usuário.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">04</span>Estágio atual de desenvolvimento</h2>
+
+  <div class="resp">
+    <div class="cap"><span>Estágio · TRL</span><span class="ct">696 car.</span></div>
+    <p><b>TRL 3 — prova de conceito.</b> Existe um protótipo navegável completo e público, que cobre a plataforma inteira: mais de 20 telas com todos os estados de erro e de vazio resolvidos, validado por 43 suítes de teste automatizado, acompanhado de um documento de requisitos de 14 seções com modelo de receita, recorte de MVP, roadmap faseado e análise de risco.</p>
+    <p>O protótipo é integralmente front-end e não persiste dados — é a especificação executável do produto, não o produto. <b>Não existe backend, base de dados, autenticação real nem integração de pagamento</b>, e o sistema ainda não foi operado por usuários. A concepção do produto está concluída e validada em navegação; a implementação começa do zero.</p>
+  </div>
+
+  <p class="nota"><b>Sobre o número do TRL:</b> alguns editais aceitariam TRL 4 pelo protótipo estar validado em ambiente controlado. Declarar 3 é a leitura conservadora e defensável, já que não há sistema funcional nem uso real. Escolha 3 se o edital pedir rigor; 4 se ele descrever TRL 4 como “protótipo validado em laboratório” — e nunca declare acima disso antes de haver usuário.</p>
+</section>
+
+<section>
+  <h2><span class="n">05</span>Mercado e clientes</h2>
+
+  <div class="resp">
+    <div class="cap"><span>Mercado e público-alvo</span><span class="ct">743 car.</span></div>
+    <p><b>Cliente primário:</b> profissionais autônomos do audiovisual — operadores de câmera, editores, fotógrafos, gaffers, operadores de drone, assistentes — que vivem de diária e hoje dependem de indicação para trabalhar. Gratuito para sempre, porque é a oferta que sustenta o valor da plataforma.</p>
+    <p><b>Cliente pagante:</b> quem contrata equipe — produtoras, agências, marcas e veículos, <b>e o próprio profissional que também monta equipe</b>, que é o caso mais comum da praça. Paga 6% sobre o trabalho fechado com garantia e, opcionalmente, assinatura mensal para ver quem está livre.</p>
+    <p><b>Praça inicial:</b> Natal/RN, com 109 profissionais já cadastrados. A expansão é por cidade com massa crítica própria, começando pelo Nordeste, e não por crescimento difuso de usuários.</p>
+  </div>
+
+  <h3>Cenário de uma praça madura</h3>
+  <p class="nota">Projeção do mês 12 da primeira cidade, a partir das premissas abaixo. <b>É cenário, não previsão</b> — e as premissas são o que deve ser discutido, não o total.</p>
+
+  <div class="tabw">
+    <table>
+      <thead><tr><th>Fonte</th><th>Cálculo</th><th class="num">Mês</th></tr></thead>
+      <tbody>
+        <tr><td>Taxa sobre job com garantia</td><td>68 × R$ 950 × 6%</td><td class="num">R$ 3.876</td></tr>
+        <tr><td>Assinatura de quem contrata</td><td>14 × R$ 89</td><td class="num">R$ 1.246</td></tr>
+        <tr><td>Venda de equipamento usado</td><td>8 × R$ 2.800 × 5%</td><td class="num">R$ 1.120</td></tr>
+        <tr><td>Assinatura do profissional</td><td>18 × R$ 19</td><td class="num">R$ 342</td></tr>
+      </tbody>
+      <tfoot><tr><td colspan="2"><b>Receita bruta mensal</b></td><td class="num"><b>R$ 6.584</b></td></tr></tfoot>
+    </table>
+  </div>
+
+  <p><b>Premissas:</b> 400 profissionais cadastrados na praça (109 já existem, sem esforço de aquisição); 180 com agenda atualizada na semana; 150 trabalhos por mês fechados pela plataforma, com diária média de R$ 950; 45% deles com garantia — o restante segue em acerto direto, gratuito; 10% dos profissionais ativos assinando.</p>
+
+  <p>Descontada a adquirência (~2% por transação), a receita líquida de uma praça madura fica em torno de <b>R$ 4.600/mês</b>. <b>Uma praça paga uma pessoa e a infraestrutura — não paga uma empresa.</b> A viabilidade está na repetição: cada cidade nova entra mais rápido, porque o roteiro de implantação já existe.</p>
+</section>
+
+<section>
+  <h2><span class="n">06</span>Modelo de negócio</h2>
+
+  <div class="tabw">
+    <table>
+      <thead><tr><th>Fonte de receita</th><th class="num">Preço</th><th>Quem paga</th></tr></thead>
+      <tbody>
+        <tr><td>Trabalho fechado com contrato e sinal</td><td class="num">6%</td><td>quem contrata</td></tr>
+        <tr><td>Assinatura para ver quem está livre</td><td class="num">R$ 89/mês</td><td>quem contrata</td></tr>
+        <tr><td>Assinatura de documentos de produção</td><td class="num">R$ 19–49/mês</td><td>profissional</td></tr>
+        <tr><td>Venda de equipamento usado entre pares</td><td class="num">5%</td><td>quem vende</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p><b>A regra que define o modelo:</b> chamar quem você já conhece é gratuito, em qualquer plano. O que a assinatura compra é saber quem está livre. Isso resolve o problema clássico de plataforma de dois lados — ninguém paga para entrar, e a receita cresce com transação desde o primeiro mês.</p>
+
+  <div class="caixa ok">
+    <span class="tit">Enquadramento regulatório — e por que ele foi desenhado antes do código</span>
+    <p>O valor retido <b>não passa pela conta da empresa</b>: fica em subconta do usuário dentro do parceiro de pagamento regulado, e a plataforma apenas emite ordens de retenção, liberação e estorno. Receber em conta própria e repassar depois caracterizaria instituição de pagamento, exigindo autorização do Banco Central e capital mínimo.</p>
+    <p>A plataforma <b>não é parte do contrato de trabalho</b> entre as partes, <b>não vende seguro e não indeniza</b>, e <b>não comercializa posição em busca</b>. Essas restrições estão escritas no produto, em tela, e são requisito de arquitetura — não política comercial.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">07</span>Concorrência</h2>
+
+  <div class="tabw">
+    <table>
+      <thead><tr><th>Quem</th><th>O que faz</th><th>Por que não resolve</th></tr></thead>
+      <tbody>
+        <tr><td><b>Grupo de WhatsApp</b><br><span class="nota">o concorrente real</span></td><td>onde o mercado já está</td><td>não tem agenda, memória nem garantia. É gratuito — por isso nada pode ser cobrado por presença</td></tr>
+        <tr><td><b>GetNinjas</b></td><td>vende lead ao profissional</td><td>o profissional paga para talvez falar com alguém; aqui a receita só existe com o trabalho fechado</td></tr>
+        <tr><td><b>Fiverr, Workana</b></td><td>trabalho remoto e global</td><td>equipe de set se contrata por proximidade e por data</td></tr>
+        <tr><td><b>OLX, Mercado Livre</b></td><td>venda de equipamento</td><td>sem ficha de conservação, sem histórico profissional do vendedor</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p><b>Barreira de entrada:</b> não é a tecnologia — é o dado. Uma agenda viva de quem está livre, por praça, leva tempo e confiança para existir e não se copia com investimento.</p>
+</section>
+
+<section>
+  <h2><span class="n">08</span>Equipe</h2>
+
+  <div class="resp">
+    <div class="cap"><span>Equipe · empreendedor</span><span class="ct">488 car.</span></div>
+    <p><b>Victor Barroso</b> — idealizador, responsável por produto e mercado. Profissional de audiovisual atuante em Natal/RN, é o próprio usuário do produto: o problema descrito neste dossiê é o que ele vive e o que a rede em que trabalha vive. Responsável pela concepção integral do produto — especificação funcional, modelo de receita, enquadramento regulatório e prototipagem — e pelo relacionamento com a base de 109 profissionais já cadastrados, construída por ele dentro do mercado em que atua.</p>
+  </div>
+
+  <div class="caixa alerta">
+    <span class="tit">A lacuna que o edital vai perguntar — e a resposta honesta</span>
+    <p><b>Falta o perfil técnico.</b> A implementação exige desenvolvedor responsável por backend, base de dados e integração de pagamento. Isso é ponto de avaliação em qualquer edital, e omitir seria pior do que declarar.</p>
+    <p>A resposta que funciona é ter <b>o plano de suprir</b>, não fingir que está suprido: busca ativa de sócio técnico junto ao ecossistema do Instituto Metrópole Digital da UFRN, e previsão de contratação de desenvolvimento no uso dos recursos. Se você fechar o sócio antes de submeter, esta seção muda — e o projeto fica sensivelmente mais forte.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">09</span>Uso dos recursos</h2>
+
+  <p class="nota">Orçamento dimensionado para uma subvenção na faixa de R$ 60 a 100 mil, que é a ordem de grandeza usual em programas de ideias em estágio inicial. <b>Confirme no edital o que é despesa elegível</b> — cada programa proíbe categorias diferentes, e bolsa para o empreendedor é permitida em alguns e vedada em outros.</p>
+
+  <div class="tabw">
+    <table>
+      <thead><tr><th>Rubrica</th><th>O que cobre</th><th class="num">Valor</th></tr></thead>
+      <tbody>
+        <tr><td><b>Desenvolvimento</b></td><td>backend, base de dados, autenticação, integração de pagamento com custódia e split — fases 1 a 3</td><td class="num">R$ 48.000</td></tr>
+        <tr><td><b>Serviços jurídicos e contábeis</b></td><td>abertura de CNPJ, contrato de intermediação, termos de uso, política de privacidade e adequação à LGPD</td><td class="num">R$ 9.000</td></tr>
+        <tr><td><b>Infraestrutura · 12 meses</b></td><td>hospedagem, base de dados, domínio e certificados</td><td class="num">R$ 4.800</td></tr>
+        <tr><td><b>Mensageria · 12 meses</b></td><td>WhatsApp Business API — chamada e lembrete semanal, o custo variável do produto</td><td class="num">R$ 7.200</td></tr>
+        <tr><td><b>Validação de campo</b></td><td>encontros presenciais mensais na praça: é o canal de aquisição, mais barato que mídia paga</td><td class="num">R$ 6.000</td></tr>
+        <tr><td><b>Reserva técnica</b></td><td>contingência</td><td class="num">R$ 5.000</td></tr>
+      </tbody>
+      <tfoot><tr><td colspan="2"><b>Total</b></td><td class="num"><b>R$ 80.000</b></td></tr></tfoot>
+    </table>
+  </div>
+
+  <p class="nota">A infraestrutura é deliberadamente barata: o produto não tem vídeo, armazenamento pesado nem chat em tempo real, e o custo variável real é a mensagem — que a arquitetura foi desenhada para reduzir, filtrando a chamada pela agenda.</p>
+</section>
+
+<section>
+  <h2><span class="n">10</span>Metas e cronograma</h2>
+
+  <p>Doze meses, com a ordem definida por uma regra: <b>a hipótese mais arriscada é testada primeiro, e ela não depende de código.</b> Se a agenda não ficar atualizada, nada mais no projeto funciona — e isso se descobre no mês 2, não no mês 10.</p>
+
+  <dl class="marco">
+    <dt>Meses 1–2</dt><dd><b>Validação manual da hipótese central</b>Operação assistida com os 109 cadastrados: coleta semanal de disponibilidade e intermediação manual das vagas. <b>Meta: 60 profissionais atualizando a agenda toda semana e 10 vagas preenchidas.</b></dd>
+    <dt>Meses 1–3</dt><dd><b>Constituição e enquadramento</b>Conversa com três parceiros de pagamento, definição do CNAE, abertura do CNPJ, conta PJ, contrato de intermediação e termos de uso. <b>Precede o código porque a exigência do parceiro define como a empresa nasce.</b></dd>
+    <dt>Meses 3–6</dt><dd><b>Fase 1 do sistema no ar</b>Cadastro, perfil, agenda, disponibilidade pública, busca e montagem de equipe. Sem pagamento — não depende de regulação. <b>Meta: 200 cadastros ativos na praça.</b></dd>
+    <dt>Meses 5–7</dt><dd><b>Mensageria</b>WhatsApp Business API com verificação da Meta e modelos aprovados: chamada e lembrete semanal. <b>Meta: 180 profissionais com agenda atualizada na semana.</b></dd>
+    <dt>Meses 7–10</dt><dd><b>Custódia</b>Split, subconta, retenção e liberação por função; contrato eletrônico e assinatura pelas duas partes. <b>Meta: primeiro trabalho fechado com sinal em custódia e liberação automática.</b></dd>
+    <dt>Meses 10–12</dt><dd><b>Operação e medição</b>Ajuste com uso real. <b>Meta: 30 trabalhos por mês fechados pela plataforma e taxa de mensagens por vaga preenchida medida contra a linha de base.</b></dd>
+  </dl>
+
+  <div class="caixa">
+    <span class="tit">Indicador principal do projeto</span>
+    <p><b>Percentual da base com disponibilidade atualizada nos últimos 7 dias.</b> Abaixo de 40%, a busca mente e o produto perde a razão de existir. É a métrica que governa todas as outras e a primeira a ser medida — já na operação manual do mês 1.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">11</span>Riscos e mitigação</h2>
+
+  <div class="tabw">
+    <table>
+      <thead><tr><th>Risco</th><th>Mitigação</th></tr></thead>
+      <tbody>
+        <tr><td><b>A agenda não fica atualizada.</b> É o risco que encerra o projeto e não tem contorno técnico.</td><td>Testado manualmente nos dois primeiros meses, antes de qualquer investimento em código. Duas alavancas: lembrete semanal por WhatsApp e a camada social, que dá motivo para abrir o aplicativo em dias sem trabalho.</td></tr>
+        <tr><td><b>O ciclo fecha por fora.</b> As partes se encontram na plataforma e combinam por fora para evitar a taxa.</td><td>Medir a distância entre chamadas aceitas e trabalhos que chegam ao sinal. O produto oferece um caminho de volta: convite de trabalho sem taxa e sem conta, para o trabalho que a plataforma não intermediou.</td></tr>
+        <tr><td><b>Densidade insuficiente.</b> 109 cadastros podem não gerar liquidez em datas específicas.</td><td>Indicador de acompanhamento: quantas datas dos próximos 15 dias têm ao menos 3 profissionais livres por função principal. Aquisição concentrada em uma praça, nunca difusa.</td></tr>
+        <tr><td><b>Dependência do parceiro de pagamento.</b> O caminho crítico é CNPJ → parceiro → custódia, e ele é mais lento que o software.</td><td>Iniciado no mês 1, em paralelo e antes do código. Três parceiros avaliados simultaneamente para não haver fornecedor único.</td></tr>
+        <tr><td><b>Ausência de perfil técnico na equipe.</b></td><td>Busca ativa de sócio técnico e previsão orçamentária de contratação de desenvolvimento.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">12</span>Impacto</h2>
+
+  <div class="resp">
+    <div class="cap"><span>Impacto econômico, social e regional</span><span class="ct">1.151 car.</span></div>
+    <p><b>Formalização de trabalho informal.</b> O audiovisual freelance opera hoje sem contrato, sem registro e sem comprovação de renda. A plataforma emite contrato eletrônico a cada trabalho e constrói histórico verificável — que é o que permite ao profissional autônomo comprovar renda e acessar crédito.</p>
+    <p><b>Descentralização do acesso ao trabalho.</b> A distribuição de oportunidades depende hoje de proximidade social: quem não é lembrado não é chamado, o que penaliza quem está começando e, segundo a vivência de mercado do proponente, recai com peso maior sobre as mulheres do setor. Tornar a disponibilidade consultável por data e função substitui a memória pessoal de quem contrata por um critério objetivo.</p>
+    <p><b>Economia criativa no Rio Grande do Norte.</b> A base já cadastrada cobre 20 praças do estado — não apenas a capital. Estruturar a demanda local reduz a evasão de profissionais para os grandes centros e retém no estado a renda gerada pela produção audiovisual.</p>
+    <p><b>Redução de custo de transação.</b> A chamada filtrada pela agenda reduz o esforço de montar equipe de aproximadamente 59 mensagens para 12 por vaga — indicador medido desde o primeiro mês de operação.</p>
+  </div>
+
+  <p class="nota">O número de 59 para 12 é derivado do desenho do produto e da estrutura da base, não de medição em campo. Apresente-o como projeção verificável — ele passa a ser medido já na operação manual.</p>
+</section>
+
+<section>
+  <h2><span class="n">13</span>Anexos e o que só você preenche</h2>
+
+  <h3>Links e materiais de apoio</h3>
+  <ul>
+    <li><b>Protótipo navegável:</b> carrodofreela.com.br — abre no celular, sem instalação e sem cadastro</li>
+    <li><b>Documento de requisitos (PRD), 14 seções</b> — problema, tese, receita, MVP, roadmap, riscos e regulatório</li>
+    <li><b>Estudo de viabilidade técnica e regulatória</b> — stack, parceiros de pagamento, custos mensais e caminho crítico</li>
+    <li><b>Apresentação do negócio</b> — mercado, modelo, cenário de receita e concorrência</li>
+  </ul>
+
+  <div class="caixa alerta">
+    <span class="tit">Campos que eu não tenho como preencher</span>
+    <ul>
+      <li>CPF, RG, endereço, dados bancários e currículo formal (Lattes, quando exigido)</li>
+      <li>Formação acadêmica e tempo de atuação no mercado</li>
+      <li>Se haverá coempreendedor, e os dados dele</li>
+      <li>Vínculo institucional, se o edital exigir ICT ou incubadora parceira</li>
+      <li>Datas — submissão, início e término, conforme o cronograma do edital</li>
+      <li><b>Razão social e CNPJ</b>, se o edital exigir empresa constituída. Vários programas de ideias aceitam pessoa física e exigem a abertura só depois da aprovação: verifique antes, porque isso muda a ordem do seu cronograma.</li>
+    </ul>
+  </div>
+</section>
+
+</div>
+
+<div class="wrap">
+<footer>
+  <div class="assina" aria-hidden="true"><svg viewBox="0 0 100 100"><use href="#mk"/></svg><b>Carro do Freela</b></div>
+  <p><b>Dossiê para editais</b> · escrito a partir do PRD v2.0, do estudo de viabilidade e da apresentação do negócio.</p>
+  <p>Os números de receita são cenário construído sobre premissas declaradas, não medição nem previsão. A base de 109 cadastros, as 20 praças e as 20 funções são reais. Nenhum dado pessoal de terceiros é publicado neste documento.</p>
+</footer>
+</div>

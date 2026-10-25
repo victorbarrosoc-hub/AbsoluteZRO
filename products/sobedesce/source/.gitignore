@@ -1,0 +1,11 @@
+node_modules/
+.sobedesce-dev/
+*.sobedesce-part
+.DS_Store
+coverage/
+test/.tmp/
+dist/
+build/yt-dlp/
+build/ffmpeg/
+build/quickjs/
+build/raw-frame/

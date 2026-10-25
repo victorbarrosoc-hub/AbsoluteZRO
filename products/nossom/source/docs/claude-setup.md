@@ -1,0 +1,17 @@
+# IA compartilhada da NOSSOM
+
+A plataforma usa uma única chave Anthropic, o agente e o ambiente cadastrados pelo administrador. Todas as contas Supabase autenticadas recebem essa integração automaticamente. Não existe formulário de chave, código de conexão, Agent ID ou Environment ID para usuários.
+
+Na Vercel, preserve `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL=claude-sonnet-5-5` e o segredo privado de sessão (`NOSSOM_AUTH_SECRET`, ou `NOSSOM_AI_ACCESS_CODE` da instalação existente). Os overrides privados opcionais `ANTHROPIC_AGENT_ID` e `ANTHROPIC_ENVIRONMENT_ID` substituem os IDs já registrados no backend. Nenhum valor secreto deve usar o prefixo `NEXT_PUBLIC_`.
+
+O adaptador Managed Agents usa a API beta `managed-agents-2026-04-01`. Consulta agente, ambiente e capacidades do modelo antes da primeira mensagem. Preserva o system prompt do agente, fixa a versão e solicita o modelo com esforço `high` por override. Ferramentas e servidores MCP externos são desativados nessa sessão. A resposta passa pela lista de operações e parâmetros permitidos e só seleciona ajustes quando o usuário usa **Revisar tratamento**.
+
+Cada conversa tem sua própria sessão na Anthropic e token assinado com validade de uma hora, ligado ao usuário, ao login, ao agente/ambiente e ao modelo. Renovar o token Supabase preserva essa identidade de conversa; entrar novamente cria outro vínculo. Uma conta não pode reutilizar o token de outra conversa. Fechar o assistente solicita exclusão da sessão; cancelar uma continuação interrompe a geração. Retenção depende do provedor e da conectividade.
+
+O orçamento por conversa é US$ 1 de custo de tabela: a API recebe `max_list_cost.amount='100'`, em centavos USD. Esse orçamento do provedor também se aplica à conta ADM; a exceção ADM remove a franquia mensal de minutos de restauração da NOSSOM, não limites financeiros da Anthropic. Há proteção adicional de 20 pedidos/hora por conta comum em memória, sem substituir um rate limiter distribuído. A cota de tratamentos é persistida no Supabase, separadamente.
+
+O assistente visual usa Motion com ondas em prata/azul e estados de espera, análise, resposta, voz e erro. Respeita `prefers-reduced-motion`. Voz ao vivo é opcional e exige um `NEXT_PUBLIC_ELEVENLABS_AGENT_ID` único, configurado pelo administrador, com domínios/custos restritos no painel ElevenLabs. O usuário não configura provedores. Sem ElevenLabs, a IA funciona por texto.
+
+Claude recebe texto e medições numéricas, não o arquivo de áudio. O acabamento e as ferramentas locais continuam no dispositivo; a restauração D e a separação musical usam cópias temporárias privadas no Supabase/RunPod. Isso é separado da conversa Anthropic. `GET /api/ai/status?verify=1`, autenticado, verifica o agente somente com GETs e não cria geração paga. Testes automatizados usam contratos simulados; confirmação de acesso real exige as credenciais da produção. Os IDs e a API key não são retornados pelo status.
+
+Referências de contrato: [Agents](https://github.com/anthropics/anthropic-sdk-typescript/blob/main/src/resources/beta/agents/agents.ts), [Environments](https://github.com/anthropics/anthropic-sdk-typescript/blob/main/src/resources/beta/environments/environments.ts), [Sessions](https://github.com/anthropics/anthropic-sdk-typescript/blob/main/src/resources/beta/sessions/sessions.ts), [Events](https://github.com/anthropics/anthropic-sdk-typescript/blob/main/src/resources/beta/sessions/events.ts).

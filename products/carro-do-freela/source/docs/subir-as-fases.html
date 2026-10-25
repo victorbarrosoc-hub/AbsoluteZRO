@@ -1,0 +1,396 @@
+<title>Subir as versões</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;900&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --ground:#F5F2ED; --paper:#FFFFFF; --paper2:#EFEBE4;
+  --rule:#E0DAD1; --rule2:#CBC3B8;
+  --ink:#1B1815; --ink2:#544E47; --ink3:#615A52;
+  --accent:#0C627C; --accent-soft:rgba(12,98,124,.10);
+  --ok:#0F6230; --ok-soft:rgba(15,98,48,.10);
+  --meio:#6E4E05; --meio-soft:rgba(110,78,5,.11);
+  --nao:#615A52; --nao-soft:rgba(97,90,82,.10);
+  --alerta:#B41E66; --alerta-soft:rgba(180,30,102,.08);
+  --ciano-esc:#8FC3D2; --segurando:#725007;
+  --ui:"Schibsted Grotesk",system-ui,-apple-system,Helvetica,Arial,sans-serif;
+  --mono:"Spline Sans Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#121110; --paper:#1A1917; --paper2:#221F1D;
+    --rule:#2B2724; --rule2:#3A3531;
+    --ink:#EFEDE7; --ink2:#AEA79E; --ink3:#9A9188;
+    --accent:#17D1E8; --accent-soft:rgba(23,209,232,.10);
+    --ok:#4BAE72; --ok-soft:rgba(75,174,114,.12);
+    --meio:#C9963F; --meio-soft:rgba(201,150,63,.12);
+    --nao:#A29990; --nao-soft:rgba(162,153,144,.10);
+    --alerta:#E24B8E; --alerta-soft:rgba(226,75,142,.10);
+  --ciano-esc:#0B7C8B; --segurando:#F2C14E;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#121110; --paper:#1A1917; --paper2:#221F1D;
+  --rule:#2B2724; --rule2:#3A3531;
+  --ink:#EFEDE7; --ink2:#AEA79E; --ink3:#9A9188;
+  --accent:#17D1E8; --accent-soft:rgba(23,209,232,.10);
+  --ok:#4BAE72; --ok-soft:rgba(75,174,114,.12);
+  --meio:#C9963F; --meio-soft:rgba(201,150,63,.12);
+  --nao:#A29990; --nao-soft:rgba(162,153,144,.10);
+  --alerta:#E24B8E; --alerta-soft:rgba(226,75,142,.10);
+  --ciano-esc:#0B7C8B; --segurando:#F2C14E;
+}
+
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
+body{margin:0; background:var(--ground); color:var(--ink);
+  font-family:var(--ui); font-size:16px; line-height:1.55; -webkit-font-smoothing:antialiased}
+.wrap{max-width:min(62ch,100%); margin:0 auto; padding:0 clamp(16px,4.5vw,32px)}
+::selection{background:var(--accent-soft); color:var(--ink)}
+
+.capa{padding:clamp(30px,8vw,56px) 0 20px}
+.cab{display:flex; align-items:center; gap:9px; margin-bottom:18px}
+.cab svg{width:24px; height:24px; fill:var(--accent); flex:none}
+.cab b{font-weight:900; letter-spacing:-.03em; font-size:15px}
+h1{font-size:clamp(28px,7vw,40px); line-height:1.05; letter-spacing:-.035em; font-weight:900;
+  margin:0 0 8px; text-wrap:balance}
+.sub{font-size:16.5px; color:var(--ink2); margin:0 0 18px; text-wrap:balance}
+
+/* barra de progresso — saber onde parou é metade do problema */
+/* ⚠️ padding-top/bottom, NUNCA o atalho: a .prog também é .wrap, e o
+   atalho zerava a folga lateral dela — o texto encostava no vidro nos dois
+   lados do celular. É a mesma armadilha que a .capa do PRD já documentava. */
+.prog{position:sticky; top:0; z-index:10; background:var(--ground);
+  padding-top:10px; padding-bottom:9px; border-bottom:1px solid var(--rule); margin-bottom:4px}
+.prog .trilho{height:6px; border-radius:3px; background:var(--paper2); overflow:hidden}
+.prog .barra{height:100%; width:0; background:var(--accent); border-radius:3px;
+  transition:width .25s ease}
+.prog .txt{font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink3); margin:7px 0 0; display:flex; justify-content:space-between}
+.prog .txt b{color:var(--ink2); font-weight:600}
+
+.parte{padding:26px 0 8px}
+.parte-cab{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:4px}
+.onde{font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--accent); border:1px solid var(--accent);
+  border-radius:4px; padding:3px 7px}
+h2{font-size:23px; line-height:1.15; letter-spacing:-.026em; font-weight:800; margin:0}
+.parte > p{color:var(--ink2); margin:8px 0 0; font-size:15px}
+
+/* o passo: alvo grande de toque, estado guardado */
+.passo{display:block; width:100%; text-align:left; background:var(--paper);
+  border:1px solid var(--rule); border-radius:11px; padding:0; margin:11px 0;
+  color:inherit; font:inherit; cursor:pointer; overflow:hidden;
+  -webkit-tap-highlight-color:transparent}
+.passo:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.passo .topo{display:flex; gap:12px; align-items:flex-start; padding:15px 17px}
+.marca{flex:none; width:26px; height:26px; border-radius:50%; border:1.5px solid var(--rule2);
+  background:var(--ground); display:grid; place-items:center; margin-top:1px;
+  font-family:var(--mono); font-size:12px; font-weight:600; color:var(--ink3);
+  transition:background .15s, border-color .15s, color .15s}
+.passo[aria-pressed="true"] .marca{background:var(--ok); border-color:var(--ok); color:#fff}
+.passo[aria-pressed="true"] .tit{color:var(--ink3); text-decoration:line-through;
+  text-decoration-thickness:1px}
+.passo[aria-pressed="true"]{background:var(--paper2); border-color:var(--rule)}
+.corpo{flex:1; min-width:0}
+.tit{font-weight:600; font-size:15.5px; color:var(--ink); margin:0 0 3px; line-height:1.35}
+.det{font-size:14px; color:var(--ink2); margin:0; line-height:1.5}
+.det + .det{margin-top:6px}
+.det code{font-family:var(--mono); font-size:13px; background:var(--paper2);
+  border:1px solid var(--rule); border-radius:4px; padding:1px 5px; color:var(--ink)}
+.passo[aria-pressed="true"] .det{color:var(--ink3)}
+.ve{display:block; margin-top:7px; font-size:13.5px; color:var(--ink3); font-style:italic}
+
+/* valor de DNS, com toque para copiar */
+.val{display:flex; align-items:center; gap:8px; margin-top:9px; flex-wrap:wrap}
+/* 44px de altura mínima: é o alvo de toque confortável no polegar, e este
+   botão vive dentro de outro botão — errar nele marca o passo sem querer */
+.copiar{font-family:var(--mono); font-size:13.5px; font-weight:500; color:var(--ink);
+  background:var(--ground); border:1px solid var(--rule2); border-radius:6px;
+  padding:11px 14px; min-height:44px; display:inline-flex; align-items:center;
+  cursor:pointer; -webkit-tap-highlight-color:transparent}
+.copiar:hover{border-color:var(--accent)}
+.copiar:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.copiar[data-ok="1"]{border-color:var(--ok); color:var(--ok)}
+.copiar .ic{font-size:11px; color:var(--ink3); margin-left:6px}
+.copiar[data-ok="1"] .ic{color:var(--ok)}
+
+.aviso{background:var(--paper); border:1px solid var(--rule); border-left:3px solid var(--alerta);
+  border-radius:9px; padding:15px 17px; margin:16px 0; background:var(--alerta-soft)}
+.aviso.ok{border-left-color:var(--ok); background:var(--ok-soft)}
+.aviso.calma{border-left-color:var(--rule2); background:var(--paper)}
+.aviso .tt{font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--ink3); font-weight:600; margin:0 0 8px; display:block}
+.aviso p{margin:0 0 8px; font-size:14.5px; color:var(--ink2)}
+.aviso > :last-child{margin-bottom:0}
+.aviso b{color:var(--ink)}
+
+.tabw{overflow-x:auto; margin:14px 0; border:1px solid var(--rule); border-radius:9px; background:var(--paper)}
+table{border-collapse:collapse; width:100%; min-width:390px; font-size:14px}
+th{text-align:left; font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--ink3); padding:10px 12px; background:var(--paper2);
+  border-bottom:1px solid var(--rule2)}
+td{padding:10px 12px; border-bottom:1px solid var(--rule); color:var(--ink2); vertical-align:top; line-height:1.45}
+tr:last-child td{border-bottom:0}
+td b{color:var(--ink)}
+td code{font-family:var(--mono); font-size:13px; color:var(--ink)}
+
+footer{padding:30px 0 60px; margin-top:24px; border-top:1px solid var(--rule);
+  color:var(--ink3); font-size:13px; line-height:1.6}
+footer p{margin:0 0 7px}
+.zerar{background:none; border:1px solid var(--rule2); border-radius:6px; color:var(--ink3);
+  font-family:var(--mono); font-size:11.5px; padding:7px 12px; cursor:pointer; margin-top:6px}
+.zerar:hover{border-color:var(--alerta); color:var(--alerta)}
+
+@media print{
+  :root,:root[data-theme="dark"],:root:not([data-theme="light"]){
+    --ground:#FFF; --paper:#FFF; --paper2:#F1EDE6; --rule:#DBD5CC; --rule2:#BFB7AC;
+    --ink:#16130F; --ink2:#4A443C; --ink3:#5C554D; --accent:#0A5266;
+    --ok:#0C5228; --ok-soft:rgba(12,82,40,.08); --alerta:#96154F; --alerta-soft:rgba(150,21,79,.06);
+  }
+  body{background:#fff} .prog{display:none} .zerar{display:none}
+  .passo,.aviso{break-inside:avoid}
+}
+.linkz{background:none;border:0;color:var(--accent);font:inherit;cursor:pointer;
+  text-decoration:underline;padding:6px 2px;min-height:44px}
+</style>
+
+<div class="folha">
+
+<div class="cab">
+  <svg viewBox="0 0 100 100" role="img" aria-label="Marca do Carro do Freela"><use href="#mk"/></svg>
+  <b>Carro do Freela</b>
+</div>
+
+<p class="gancho">Passo a passo &#183; do iPhone</p>
+<h1>Subir o app e as seis vers&#245;es</h1>
+<p class="linha1">No fim disto, <code>carrodofreela.com.br</code> abre o app completo e <code>carrodofreela.com.br/fase1</code> at&#233; <code>/fase6</code> abrem uma vers&#227;o cada. Toque em cada passo para marcar &#8212; o progresso fica guardado.</p>
+
+<div class="aviso ok">
+  <p class="tt">Isto j&#225; est&#225; no ar &#8212; eu subi por voc&#234;</p>
+  <p>Os sete arquivos e a linha do <code>vercel.json</code> j&#225; foram enviados ao reposit&#243;rio, ent&#227;o <b>voc&#234; n&#227;o precisa fazer nada agora</b>: abra <code>carrodofreela.com.br</code> e as seis vers&#245;es e pronto. V&#225; direto para a <b>Parte 4</b> e para a tabela <b>Onde cada coisa fica</b>, no fim.</p>
+  <p><b>Quem confirma &#233; voc&#234;, e n&#227;o eu:</b> do meu lado a rede n&#227;o alcan&#231;a <code>carrodofreela.com.br</code>, ent&#227;o eu enviei mas n&#227;o consegui abrir para ver. Os passos 14 a 16 s&#227;o exatamente essa confer&#234;ncia &#8212; se algum falhar, a tabela <b>Se der errado</b> diz o que &#233;.</p>
+  <p>As Partes 1 a 3 continuam aqui porque um dia voc&#234; vai querer trocar um arquivo sem me chamar &#8212; e a&#237; este &#233; o caminho, do come&#231;o ao fim.</p>
+</div>
+
+<div class="prog wrap">
+  <div class="trilho"><div class="barra" id="barra"></div></div>
+  <p class="txt"><b id="quantos">0 de 16</b> &#183; <span id="agora">comece pelo passo 1</span></p>
+</div>
+
+<div class="aviso">
+  <b>Os arquivos j&#225; est&#227;o prontos e s&#227;o an&#244;nimos.</b> Os sete que eu mando no chat t&#234;m os nomes reduzidos
+  (&#8220;Paula S.&#8221;) e sem link de portf&#243;lio &#8212; &#233; a regra da casa para endere&#231;o p&#250;blico. <b>N&#227;o troque por outros</b>:
+  os que est&#227;o no reposit&#243;rio t&#234;m nome completo e servem s&#243; para voc&#234; testar.
+</div>
+
+<h2>Parte 1 &#183; Guardar os arquivos no iPhone</h2>
+
+<button class="passo" aria-pressed="false"><span class="topo"><span class="marca">1</span><span class="corpo">
+  <p class="tit">Baixe os sete arquivos que eu mando aqui no chat</p>
+  <p class="det">S&#227;o <code>index.html</code> e <code>fase1.html</code> at&#233; <code>fase6.html</code>. Toque em cada um &#8594; <b>Salvar em Arquivos</b>. Guarde todos na mesma pasta, para achar de uma vez depois.</p>
+</span></span></button>
+
+<button class="passo" aria-pressed="false"><span class="topo"><span class="marca">2</span><span class="corpo">
+  <p class="tit">Confira que os nomes est&#227;o exatos</p>
+  <p class="det">Se o iPhone salvou como <code>fase1-2.html</code> ou <code>index(1).html</code>, renomeie: segure o arquivo &#8594; <b>Renomear</b>. <b>O nome vira a URL</b> &#8212; <code>fase1.html</code> &#233; o que faz <code>/fase1</code> existir.</p>
+</span></span></button>
+
+<h2>Parte 2 &#183; Subir no reposit&#243;rio</h2>
+
+<button class="passo" aria-pressed="false"><span class="topo"><span class="marca">3</span><span class="corpo">
+  <p class="tit">Abra <code>github.com</code> no Safari e entre na sua conta</p>
+  <p class="det">Pelo Safari mesmo, n&#227;o pelo aplicativo do GitHub &#8212; o aplicativo n&#227;o tem a tela de enviar arquivo.</p>
+</span></span></button>
+
+<button class="passo" aria-pressed="false"><span class="topo"><span class="marca">4</span><span class="corpo">
+  <p class="tit">Chegue no reposit&#243;rio <code>carrodofreela-app</code></p>
+  <p class="det">Caminho curto: digite na barra de endere&#231;o <code class="copiar" data-copia="github.com/victorbarrosoc-hub/carrodofreela-app">github.com/victorbarrosoc-hub/carrodofreela-app<span class="ic">copiar</span></code></p>
+</span></span></button>
+
+<button class="passo" aria-pressed="false"><span class="topo"><span class="marca">5</span><span class="corpo">
+  <p class="tit">Confirme que voc&#234; est&#225; na RAIZ, e n&#227;o dentro de uma pasta</p>
+  <p class="det"><b>O sinal de reconhecimento:</b> a lista mostra <code>app</code>, <code>index.html</code>, <code>og.jpg</code>, <code>vercel.json</code> e <code>README.md</code>. Se voc&#234; estiver vendo <code>src</code> e <code>public</code>, entrou em <code>app</code> &#8212; volte um n&#237;vel.</p>
+</span></span></button>
+
+<button class="passo" aria-pressed="false"><span class="topo"><span class="marca">6</span><span class="corpo">
+  <p class="tit">Toque em <b>Add file</b> &#8594; <b>Upload files</b></p>
+  <p class="det">No celular o bot&#227;o costuma ficar &#224; direita, acima da lista de arquivos, e pode estar dentro de um <b>+</b> ou de tr&#234;s pontinhos. <b>Se voc&#234; n&#227;o achar, me mande um print</b> &#8212; eu conserto este passo em vez de te fazer procurar.</p>
+</span></span></button>
+
+<button class="passo" aria-pressed="false"><span class="topo"><span class="marca">7</span><span class="corpo">
+  <p class="tit">Escolha os SETE arquivos de uma vez</p>
+  <p class="det">&#8220;Selecionar arquivos&#8221; &#8594; <b>Procurar</b> (ou Arquivos) &#8594; abra a pasta do passo 1 e marque os sete. D&#225; para enviar todos juntos.</p>
+</span></span></button>
+
+<button class="passo" aria-pressed="false"><span class="topo"><span class="marca">8</span><span class="corpo">
+  <p class="tit">Role at&#233; o fim e toque em <b>Commit changes</b></p>
+  <p class="det">Pode deixar a mensagem que ele sugere. O <code>index.html</code> vai <b>substituir</b> o que est&#225; l&#225; &#8212; &#233; isso mesmo que a gente quer.</p>
+  <p class="det"><b>Espere a lista recarregar</b> mostrando os sete arquivos novos antes de seguir. Com 1,9 MB cada, isso pode levar um ou dois minutos no 4G.</p>
+</span></span></button>
+
+<h2>Parte 3 &#183; Ligar o endere&#231;o <code>/fase1</code></h2>
+
+<div class="aviso">
+  Sem este passo as vers&#245;es s&#243; abrem com <code>.html</code> no fim (<code>/fase1.html</code>). Uma linha resolve.
+</div>
+
+<button class="passo" aria-pressed="false"><span class="topo"><span class="marca">9</span><span class="corpo">
+  <p class="tit">Na mesma lista da raiz, toque em <code>vercel.json</code></p>
+  <p class="det">&#201; um arquivo pequeno, de umas dez linhas. Ele abre mostrando o conte&#250;do.</p>
+</span></span></button>
+
+<button class="passo" aria-pressed="false"><span class="topo"><span class="marca">10</span><span class="corpo">
+  <p class="tit">Toque no <b>l&#225;pis</b> para editar</p>
+  <p class="det">Fica no canto de cima &#224; direita do quadro do arquivo. Em telas estreitas ele pode estar dentro dos tr&#234;s pontinhos, como <b>Edit file</b>.</p>
+</span></span></button>
+
+<button class="passo" aria-pressed="false"><span class="topo"><span class="marca">11</span><span class="corpo">
+  <p class="tit">Acrescente a linha do <code>cleanUrls</code></p>
+  <p class="det">Logo depois da linha do <code>$schema</code>, cole: <code class="copiar" data-copia='"cleanUrls": true,'>"cleanUrls": true,<span class="ic">copiar</span></code></p>
+  <p class="det"><b>A v&#237;rgula no fim importa</b> &#8212; sem ela o arquivo fica inv&#225;lido e a Vercel ignora a configura&#231;&#227;o inteira.</p>
+</span></span></button>
+
+<button class="passo" aria-pressed="false"><span class="topo"><span class="marca">12</span><span class="corpo">
+  <p class="tit">Toque em <b>Commit changes</b> de novo</p>
+  <p class="det">Mesma tela do passo 8.</p>
+</span></span></button>
+
+<h2>Parte 4 &#183; Conferir no ar</h2>
+
+<button class="passo" aria-pressed="false"><span class="topo"><span class="marca">13</span><span class="corpo">
+  <p class="tit">Espere um ou dois minutos</p>
+  <p class="det">A Vercel publica sozinha a cada commit. N&#227;o precisa entrar l&#225; para nada.</p>
+</span></span></button>
+
+<button class="passo" aria-pressed="false"><span class="topo"><span class="marca">14</span><span class="corpo">
+  <p class="tit">Abra <code class="copiar" data-copia="carrodofreela.com.br">carrodofreela.com.br<span class="ic">copiar</span></code></p>
+  <p class="det"><b>Tem que abrir o app completo</b>, sem chip nenhum no canto. Abra o Menu e confira no rodap&#233;: <code>25/ago &#183; 4</code>. Se aparecer outra data, &#233; cache &#8212; puxe a p&#225;gina para baixo para recarregar.</p>
+</span></span></button>
+
+<button class="passo" aria-pressed="false"><span class="topo"><span class="marca">15</span><span class="corpo">
+  <p class="tit">Abra <code class="copiar" data-copia="carrodofreela.com.br/fase1">carrodofreela.com.br/fase1<span class="ic">copiar</span></code></p>
+  <p class="det"><b>O sinal de que deu certo:</b> um chip azul no canto de baixo &#224; esquerda escrito <b>V1 &#183; A agenda e o brech&#243;</b>. Toque nele para ver o que cada fase entrega.</p>
+</span></span></button>
+
+<button class="passo" aria-pressed="false"><span class="topo"><span class="marca">16</span><span class="corpo">
+  <p class="tit">Confira as outras cinco</p>
+  <p class="det">Troque o n&#250;mero no fim do endere&#231;o: <code>/fase2</code>, <code>/fase3</code>, <code>/fase4</code>, <code>/fase5</code>, <code>/fase6</code>. Cada uma tem que abrir com o chip do n&#250;mero certo.</p>
+</span></span></button>
+
+<h2>Onde cada coisa fica, depois de pronto</h2>
+
+<div class="tabw"><table>
+  <tr><th>Endere&#231;o</th><th>O que abre</th></tr>
+  <tr><td><code>carrodofreela.com.br</code></td><td>o app completo &#8212; &#233; o que voc&#234; mostra para s&#243;cio e testador</td></tr>
+  <tr><td><code>/fase1</code></td><td>A agenda e o brech&#243; &#183; o lan&#231;amento</td></tr>
+  <tr><td><code>/fase2</code></td><td>O dinheiro e o brech&#243; completo</td></tr>
+  <tr><td><code>/fase3</code></td><td>Os documentos da produ&#231;&#227;o</td></tr>
+  <tr><td><code>/fase4</code></td><td>Rodando e a comunidade</td></tr>
+  <tr><td><code>/fase5</code></td><td>Seguro de equipamento</td></tr>
+  <tr><td><code>/fase6</code></td><td>A segunda pra&#231;a &#8212; igual ao completo, porque ela n&#227;o acrescenta tela</td></tr>
+</table></div>
+
+<h2>Se der errado</h2>
+
+<div class="tabw"><table>
+  <tr><th>O que voc&#234; v&#234;</th><th>O que &#233;</th></tr>
+  <tr><td><code>/fase1</code> d&#225; <b>404</b></td><td>O <code>cleanUrls</code> n&#227;o entrou. Volte ao <code>vercel.json</code> e confira a v&#237;rgula. Enquanto isso, <code>/fase1.html</code> funciona.</td></tr>
+  <tr><td>Abre a vers&#227;o antiga</td><td>Cache do Safari. Puxe a p&#225;gina para baixo, ou abra numa aba an&#244;nima. O rodap&#233; do Menu diz a data da build.</td></tr>
+  <tr><td>O chip <b>V1</b> n&#227;o aparece em <code>/fase1</code></td><td>Subiu o arquivo errado com esse nome. O <code>index.html</code> n&#227;o tem chip &#8212; ele &#233; o completo.</td></tr>
+  <tr><td>Nomes aparecem por extenso</td><td>N&#227;o &#233; um dos sete que eu mandei. Os do dom&#237;nio s&#227;o an&#244;nimos por regra.</td></tr>
+  <tr><td>O commit n&#227;o termina</td><td>S&#227;o 13 MB no total. No 4G pode demorar; tente no Wi-Fi e envie em duas levas (primeiro o <code>index.html</code>, depois as seis fases).</td></tr>
+</table></div>
+
+<div class="fim">
+  <p><b>Recome&#231;ar a lista?</b> <button class="linkz" id="zerar">Desmarcar todos os passos</button></p>
+  <p><b>Uma coisa que continua pendente e s&#243; voc&#234; pode fazer:</b> o reposit&#243;rio p&#250;blico antigo
+  <code>victorbarrosoc-hub/carrodofreela</code> ainda tem a lista real de contatos. Ele precisa virar privado.</p>
+</div>
+
+</div>
+<script>
+(function(){
+"use strict";
+var K="cf-fases-passos";
+var passos=[].slice.call(document.querySelectorAll(".passo"));
+var barra=document.getElementById("barra"),
+    quantos=document.getElementById("quantos"),
+    agora=document.getElementById("agora");
+
+function ler(){
+  try{ var v=localStorage.getItem(K); return v?JSON.parse(v):[]; }catch(e){ return []; }
+}
+function gravar(f){
+  try{ localStorage.setItem(K,JSON.stringify(f)); }catch(e){}
+}
+function pintar(){
+  var f=0,prox=null;
+  passos.forEach(function(b,i){
+    if(b.getAttribute("aria-pressed")==="true") f++;
+    else if(prox===null) prox=i;
+  });
+  barra.style.width=(passos.length?100*f/passos.length:0)+"%";
+  quantos.textContent=f+" de "+passos.length;
+  if(prox===null) agora.textContent="Tudo feito";
+  else{
+    /* ⚠️ aqui não há wrapper de parte: os <h2> são irmãos dos passos. Então
+       o rótulo se acha andando para trás até o <h2> anterior — com .closest()
+       o `sec` vinha null e o rodapé perdia a metade útil da frase. */
+    var rot=null, ant=passos[prox].previousElementSibling;
+    while(ant && !rot){ if(ant.tagName==="H2") rot=ant.textContent; ant=ant.previousElementSibling; }
+    var curto=rot&&rot.indexOf("\u00b7")>-1?rot.split("\u00b7")[1].trim():rot;
+    agora.textContent="Próximo: passo "+(prox+1)+(curto?" · "+curto:"");
+  }
+}
+/* restaura pelo ÍNDICE, e só até onde a lista de hoje alcança:
+   se eu acrescentar passos depois, nada quebra */
+var feitos=ler();
+passos.forEach(function(b,i){
+  if(feitos.indexOf(i)>=0) b.setAttribute("aria-pressed","true");
+  b.addEventListener("click",function(ev){
+    if(ev.target.closest(".copiar")) return;   /* copiar não marca o passo */
+    var on=b.getAttribute("aria-pressed")==="true";
+    b.setAttribute("aria-pressed",String(!on));
+    var f=[];
+    passos.forEach(function(x,j){ if(x.getAttribute("aria-pressed")==="true") f.push(j); });
+    gravar(f); pintar();
+  });
+});
+pintar();
+
+document.getElementById("zerar").addEventListener("click",function(){
+  passos.forEach(function(b){ b.setAttribute("aria-pressed","false"); });
+  gravar([]); pintar();
+});
+
+/* copiar o valor de DNS: clipboard quando existe, seleção quando não */
+document.addEventListener("click",function(ev){
+  var b=ev.target.closest(".copiar"); if(!b) return;
+  ev.stopPropagation();
+  var txt=b.getAttribute("data-copia");
+  var ok=function(){
+    b.setAttribute("data-ok","1");
+    var ic=b.querySelector(".ic"); if(ic) ic.textContent="copiado";
+    setTimeout(function(){ b.removeAttribute("data-ok");
+      if(ic) ic.textContent="copiar"; },1600);
+  };
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(ok,function(){ manual(); });
+    }else manual();
+  }catch(e){ manual(); }
+  function manual(){
+    /* sem clipboard, deixa o texto selecionado para o toque longo copiar */
+    try{
+      var r=document.createRange(); r.selectNodeContents(b.firstChild);
+      var s=getSelection(); s.removeAllRanges(); s.addRange(r);
+      var ic=b.querySelector(".ic"); if(ic) ic.textContent="segure e copie";
+      setTimeout(function(){ if(ic) ic.textContent="copiar"; },2600);
+    }catch(e2){}
+  }
+});
+})();
+</script>

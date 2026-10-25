@@ -1,0 +1,55 @@
+{
+  "name": "nossom-desktop",
+  "version": "0.2.2",
+  "private": true,
+  "description": "NOSSOM desktop — seu espaço de áudio",
+  "author": "NOSSOM",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "dist": "node package-app.cjs"
+  },
+  "devDependencies": {
+    "electron": "45.0.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "com.nossom.studio",
+    "productName": "NOSSOM",
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "updates.cjs"
+    ],
+    "artifactName": "NOSSOM-${version}-${os}-${arch}.${ext}",
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.music",
+      "hardenedRuntime": true,
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "A NOSSOM usa o microfone quando você inicia uma gravação ou conversa por voz."
+      },
+      "icon": "../public/pwa/icon-512.png"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "../public/pwa/icon-512.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    },
+    "dmg": {
+      "title": "Instalar NOSSOM"
+    }
+  },
+  "dependencies": {
+    "electron-updater": "6.8.9"
+  }
+}

@@ -1,0 +1,33 @@
+import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+test('desktop access expands by hover and keyboard, keeping fields available while typing', async ({
+  page,
+}) => {
+  await page.goto('/entrar');
+  const card = page.locator('.account-expandable');
+  await expect(card).not.toHaveClass(/is-expanded/);
+  await page.getByRole('button', { name: 'Acessar minha conta' }).focus();
+  await expect(card).toHaveClass(/is-expanded/);
+  await expect(page.getByRole('button', { name: 'Entrar', exact: true })).toBeFocused();
+  await page.getByLabel('E-mail', { exact: true }).fill('teste@example.test');
+  await page.mouse.move(0, 0);
+  await expect(card).toHaveClass(/is-expanded/);
+  await page.screenshot({ path: 'artifacts/nossom-login-desktop.png', fullPage: true });
+  expect(
+    (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze())
+      .violations,
+  ).toEqual([]);
+  await page.reload();
+  await expect(card).not.toHaveClass(/is-expanded/);
+  await card.hover();
+  await expect(card).toHaveClass(/is-expanded/);
+});
+test('mobile login opens without hover and registration fits the screen', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/entrar');
+  await expect(page.getByLabel('E-mail', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Criar conta', exact: true }).click();
+  await expect(page.getByLabel('Nome', { exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: 'artifacts/nossom-login-mobile.png', fullPage: true });
+});

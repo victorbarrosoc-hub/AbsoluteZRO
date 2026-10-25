@@ -1,0 +1,833 @@
+/* Steel blue atmosphere; motion is composited and pauses outside the viewport. */
+.cinematic-ribbon {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  isolation: isolate;
+  pointer-events: none;
+}
+.ribbon-sculpture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  animation: chrome-drift 16s ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+.ribbon-halo {
+  position: absolute;
+  inset: 12% 6%;
+  background: radial-gradient(ellipse, #739fc738, transparent 68%);
+  animation: chrome-breathe 12s ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+.ribbon-ground {
+  position: absolute;
+  inset: 74% 20% 4%;
+  background: radial-gradient(ellipse, #02081250, transparent 65%);
+}
+.is-running .ribbon-sculpture,
+.is-running .ribbon-halo {
+  animation-play-state: running;
+}
+.is-energetic .ribbon-sculpture {
+  animation-name: chrome-process;
+  animation-duration: 3.6s;
+}
+.is-energetic .ribbon-halo {
+  animation-duration: 2.6s;
+}
+@keyframes chrome-drift {
+  from {
+    transform: translate3d(0, -5px, 0) rotate(-1.5deg) scale(0.98);
+  }
+  to {
+    transform: translate3d(0, 8px, 0) rotate(1.5deg) scale(1.025);
+  }
+}
+@keyframes chrome-process {
+  0%,
+  100% {
+    transform: translate3d(-6px, 7px, 0) rotate(-3deg) scale(0.96);
+  }
+  50% {
+    transform: translate3d(6px, -9px, 0) rotate(3deg) scale(1.06);
+  }
+}
+@keyframes chrome-breathe {
+  from {
+    opacity: 0.45;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 0.95;
+    transform: scale(1.12);
+  }
+}
+.ai-motion {
+  position: relative;
+  min-height: 165px;
+}
+.ai-motion > .cinematic-ribbon {
+  height: 165px;
+}
+.ai-motion.compact {
+  min-height: 90px;
+}
+.ai-motion.compact > .cinematic-ribbon {
+  height: 90px;
+}
+.account-wave-background .ai-motion,
+.account-wave-background .cinematic-ribbon {
+  width: 100%;
+  height: 100%;
+}
+.chrome-site {
+  background: #080f18;
+  color: #f0f4fa;
+}
+.chrome-site .home-hero {
+  background:
+    radial-gradient(ellipse at 73% 30%, #365c7b50, transparent 65%),
+    linear-gradient(145deg, #101c29, #080f18 80%);
+  padding: 50px 0 32px;
+}
+.chrome-site .home-hero-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 12px;
+  align-items: center;
+  min-height: 450px;
+}
+.chrome-site .home-hero-copy {
+  padding: 25px 0;
+}
+.chrome-site .home-hero-copy h1 {
+  font-size: clamp(52px, 5.3vw, 78px);
+  line-height: 1.06;
+  letter-spacing: -0.06em;
+  max-width: 690px;
+}
+.chrome-site .home-hero-copy h1 span {
+  display: block;
+  background-image: linear-gradient(110deg, #f8fbff, #afc6db 52%, #e5edf6);
+}
+.chrome-site .home-hero-copy > p {
+  max-width: 460px;
+  font-size: 19px;
+  line-height: 1.6;
+  margin-block: 24px;
+}
+.chrome-site .chrome-hero-art {
+  display: block;
+  min-width: 0;
+  width: 100%;
+  height: 360px;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  transform: none;
+  overflow: visible;
+}
+.chrome-site .chrome-intents {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  max-width: 1180px;
+  gap: 12px;
+  margin: 18px auto 0;
+}
+.chrome-site .chrome-intents a {
+  justify-content: center;
+  min-height: 64px;
+  border: 1px solid #b9d1e52c;
+  border-radius: 16px;
+  background: linear-gradient(125deg, #b5cfe515, #91adc905);
+  color: #e5eef7;
+  transition:
+    transform 0.16s,
+    background 0.16s;
+}
+.chrome-site .chrome-intents a:hover {
+  transform: translateY(-2px);
+  background: #95b4d31c;
+}
+[data-intent] {
+  --intent: #adc9e7;
+}
+.chrome-site .button.primary,
+.studio-shell .button.primary {
+  background: linear-gradient(115deg, #fcfdff, #c8d9e9 55%, #edf4fc);
+  color: #142436;
+  border: 1px solid #f6faffaa;
+  box-shadow:
+    inset 0 1px #fff,
+    0 6px 24px #99bddd16;
+}
+.chrome-site .home-listen {
+  padding-block: 48px 30px;
+}
+.chrome-listen-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.chrome-listen-heading h2 {
+  font-size: clamp(28px, 3vw, 38px);
+  letter-spacing: -0.04em;
+}
+.chrome-listen-heading p {
+  color: #acbfd0;
+  font-size: 15px;
+}
+.chrome-site .home-quick {
+  padding-block: 36px;
+}
+.chrome-site .home-quick-steps p svg {
+  color: #b8d1e8;
+}
+.chrome-site .plan-choice.featured {
+  border-color: #aec9e66b;
+  background-image: linear-gradient(135deg, #718fa817, transparent);
+}
+.chrome-site .plan-choice.featured h3 {
+  color: #d8e8f7;
+}
+.studio-shell.tool-vocals .process-button {
+  box-shadow: 0 6px 26px #8baaca20;
+}
+.studio-shell.tool-vocals .cloud-restoration-note {
+  border-color: var(--hairline-strong);
+  background: var(--surface);
+}
+@media (max-width: 680px) {
+  .chrome-site .home-hero {
+    padding: 8px 0 24px;
+  }
+  .chrome-site .home-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+    min-height: 0;
+  }
+  .chrome-site .chrome-hero-art {
+    display: block;
+    grid-row: 1;
+    height: 190px;
+    margin: 0;
+  }
+  .chrome-site .home-hero-copy {
+    padding: 0;
+    text-align: center;
+  }
+  .chrome-site .home-hero-copy h1 {
+    font-size: clamp(42px, 10.8vw, 65px);
+    margin: 0 auto;
+  }
+  .chrome-site .home-hero-copy > p {
+    font-size: 16px;
+    margin: 18px auto;
+  }
+  .chrome-site .ns-actions {
+    justify-content: center;
+  }
+  .chrome-site .home-hero-proof {
+    justify-content: center;
+    font-size: 11px;
+    margin-top: 16px;
+  }
+  .chrome-site .chrome-intents {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin: 24px auto 0;
+  }
+  .chrome-site .chrome-intents a {
+    min-height: 48px;
+    justify-content: flex-start;
+    padding: 12px 18px;
+  }
+  .chrome-listen-heading {
+    display: block;
+  }
+  .chrome-listen-heading p {
+    margin-top: 8px;
+  }
+  .chrome-site .home-listen {
+    padding-block: 30px 16px;
+  }
+  .ai-motion,
+  .ai-motion > .cinematic-ribbon {
+    min-height: 120px;
+    height: 120px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ribbon-sculpture,
+  .ribbon-halo {
+    animation: none !important;
+  }
+  .chrome-site .chrome-intents a:hover {
+    transform: none;
+  }
+}
+/* Approved direction: luminous blue atmosphere and continuous identity lines. */
+.chrome-site main {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  background: #050d18;
+}
+.chrome-site main::before {
+  content: '';
+  position: absolute;
+  z-index: -2;
+  inset: 0 0 auto;
+  height: 1140px;
+  background: url('/brand/blue-atmosphere.webp') center top / cover no-repeat;
+  mask-image: linear-gradient(#000 65%, transparent);
+}
+.chrome-site .ns-header {
+  background: #07182bea;
+  border-color: #89cfff24;
+}
+.chrome-site .home-hero {
+  position: relative;
+  background: none;
+  padding: 28px 0 26px;
+}
+.chrome-site .home-hero-atmosphere {
+  display: none;
+}
+.chrome-site .home-hero-grid {
+  min-height: 440px;
+  grid-template-columns: 1fr 1.1fr;
+}
+.chrome-site .home-hero-copy {
+  position: relative;
+  z-index: 2;
+}
+.chrome-site .home-hero-copy h1 {
+  font-weight: 440;
+  text-shadow: 0 4px 32px #020d1a50;
+}
+.chrome-site .home-hero-copy h1 span {
+  background-image: linear-gradient(110deg, #d2f2ff, #8bd3ff 65%, #c6e9ff);
+}
+.chrome-site .home-hero-copy > p {
+  color: #d5e5f3;
+}
+.chrome-site .chrome-hero-art {
+  height: 390px;
+}
+.chrome-site .chrome-hero-art .ribbon-sculpture {
+  width: 115%;
+  max-width: none;
+  left: -8%;
+}
+.chrome-site .ribbon-halo {
+  background: radial-gradient(ellipse, #73c9ff50, transparent 70%);
+}
+.chrome-site .home-hero-proof {
+  color: #bcd4e8;
+}
+.chrome-site .home-listen-link > span {
+  border: 1px solid #9bd9ff9c;
+  background: radial-gradient(ellipse at 30% 20%, #78bfff38, #0a244199);
+  box-shadow:
+    inset 0 1px #c8eaff33,
+    0 0 22px #61bfff22;
+}
+.chrome-site .button.primary,
+.studio-shell .button.primary {
+  background: linear-gradient(175deg, #fff 0%, #d8eafa 35%, #a4bdd6 58%, #deefff 85%, #f2faff);
+  border-color: #d9f2ffcf;
+  box-shadow:
+    inset 0 1px 2px #fff,
+    inset 0 -1px 2px #7394b875,
+    0 2px 20px #7fbfff33;
+}
+.chrome-site .chrome-intents {
+  max-width: 1320px;
+  gap: 16px;
+  margin-top: 8px;
+}
+.chrome-site .chrome-intents a {
+  min-height: 96px;
+  justify-content: flex-start;
+  padding: 20px 22px;
+  gap: 17px;
+  border-color: #8cc8f363;
+  background: linear-gradient(130deg, #335f873d, #071b36a3 70%);
+  box-shadow:
+    inset 0 1px #c2e6ff1c,
+    0 8px 28px #0002;
+}
+.chrome-site .chrome-intents a > svg:first-child {
+  color: #d8eeff;
+  filter: drop-shadow(0 0 7px #61c0ff70);
+}
+.chrome-site .chrome-intents a > svg:last-child {
+  margin-left: auto;
+  width: 27px;
+  height: 27px;
+  padding: 6px;
+  border: 1px solid #94d6ff50;
+  border-radius: 50%;
+}
+.chrome-intents a > span {
+  display: grid;
+  gap: 6px;
+}
+.chrome-intents strong {
+  font-size: 15px;
+  font-weight: 550;
+}
+.chrome-intents small {
+  color: #bdcede;
+  font-size: 12px;
+  font-weight: 400;
+}
+.chrome-site .chrome-intents a:hover {
+  background: linear-gradient(130deg, #5299cb45, #0b294ac9);
+  border-color: #a9e0ff9c;
+  box-shadow:
+    inset 0 1px #d5f1ff30,
+    0 8px 28px #0003;
+}
+.chrome-site .home-listen {
+  position: relative;
+  padding-top: 34px;
+}
+.chrome-site .voice-player {
+  border: 1px solid #86c8f459;
+  background: linear-gradient(125deg, #0d2b479e, #071321da 75%);
+  box-shadow:
+    inset 0 1px #c2e6ff15,
+    0 20px 60px #0003;
+}
+.chrome-site .voice-player-switch button[aria-pressed='true'] {
+  color: #061a2e;
+  background: linear-gradient(130deg, #d5f3ff, #82cdff);
+  border-color: #bce7ff;
+}
+.chrome-site .voice-player-play {
+  background: radial-gradient(ellipse at 35% 20%, #72bdff44, #071c37);
+  color: #edf9ff;
+  border: 1px solid #a3dfff;
+  box-shadow:
+    0 0 22px #62b7ff25,
+    inset 0 1px #d3f0ff66;
+}
+.signal-field {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1230px;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0.62;
+  mask-image: linear-gradient(#000 70%, transparent);
+}
+.signal-field > svg {
+  width: 100%;
+  height: 100%;
+}
+.signal-bundle {
+  transform-origin: center;
+  animation: signal-drift 22s ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+.signal-lights {
+  opacity: 0.85;
+}
+.signal-pulse {
+  stroke-dasharray: 5 1850;
+  stroke-dashoffset: 1855;
+  animation: signal-travel 11s linear infinite;
+  animation-play-state: paused;
+}
+.signal-pulse.pulse-1 {
+  animation-delay: -4s;
+  animation-duration: 14s;
+}
+.signal-pulse.pulse-2 {
+  animation-delay: -8s;
+  animation-duration: 17s;
+}
+.signal-field.is-running .signal-bundle,
+.signal-field.is-running .signal-pulse {
+  animation-play-state: running;
+}
+@keyframes signal-drift {
+  from {
+    transform: translate3d(-14px, -12px, 0) scale(1.025);
+  }
+  to {
+    transform: translate3d(14px, 12px, 0) scale(1);
+  }
+}
+@keyframes signal-travel {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+/* The same color and material language carries into the assistant and login. */
+.assistant-panel {
+  position: relative;
+  isolation: isolate;
+}
+.assistant-panel::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -30px -24px 30%;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 55% 28%, #2477bd35, transparent 70%);
+}
+.studio-shell:not([data-theme='light']) .assistant-panel .suggestion-chips button {
+  background: linear-gradient(120deg, #27577d37, #0a1c31cc);
+  border-color: #80b5e047;
+  border-left-color: #a7d6fb;
+  box-shadow: inset 0 1px #c4e7ff0a;
+}
+.studio-shell:not([data-theme='light']) .assistant-panel .suggestion-chips button:hover {
+  background: #2d648346;
+  border-color: #a3d7ff8a;
+}
+.account-wave-background {
+  background:
+    linear-gradient(90deg, #0714269c, #07142650),
+    url('/brand/blue-atmosphere.webp') center / cover;
+  opacity: 0.8;
+}
+@media (max-width: 680px) {
+  .chrome-site main::before {
+    height: 1080px;
+    background-position: 64% top;
+    opacity: 0.9;
+  }
+  .chrome-site .home-hero {
+    padding: 4px 0 22px;
+  }
+  .chrome-site .home-hero-grid {
+    min-height: 0;
+    grid-template-columns: 1fr;
+  }
+  .chrome-site .chrome-hero-art {
+    height: 200px;
+  }
+  .chrome-site .chrome-hero-art .ribbon-sculpture {
+    width: 106%;
+    left: -3%;
+  }
+  .chrome-site .home-hero-copy h1 {
+    font-size: clamp(42px, 10.8vw, 65px);
+  }
+  .chrome-site .home-hero-copy > p {
+    margin: 15px auto 20px;
+    font-size: 15px;
+  }
+  .chrome-site .chrome-intents {
+    margin-top: 23px;
+    gap: 8px;
+  }
+  .chrome-site .chrome-intents a {
+    min-height: 74px;
+    padding: 14px 18px;
+    gap: 15px;
+  }
+  .chrome-site .chrome-intents a > svg:first-child {
+    width: 27px;
+    height: 27px;
+  }
+  .chrome-intents strong {
+    font-size: 14px;
+  }
+  .chrome-intents small {
+    font-size: 12px;
+  }
+  .chrome-site .home-listen {
+    padding-top: 22px;
+  }
+  .signal-field {
+    height: 1240px;
+    opacity: 0.42;
+  }
+  .signal-bundle > path:nth-child(even),
+  .signal-bundle > g > path:nth-child(even) {
+    display: none;
+  }
+  .signal-bundle {
+    transform-origin: 65% 15%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .signal-bundle,
+  .signal-pulse {
+    animation: none !important;
+  }
+  .signal-lights {
+    display: none;
+  }
+}
+.ribbon-threads {
+  position: absolute;
+  width: 116%;
+  height: 140%;
+  left: -8%;
+  top: -20%;
+  opacity: 0.3;
+  animation: signal-drift 19s ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+.is-running .ribbon-threads {
+  animation-play-state: running;
+}
+.is-energetic .ribbon-threads {
+  animation-duration: 3.6s;
+  opacity: 0.6;
+}
+.chrome-hero-art .ribbon-threads {
+  opacity: 0.18;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ribbon-threads {
+    animation: none !important;
+  }
+}
+/* Keep the light behind the sculpture and preserve contrast below it. */
+.chrome-site main::before {
+  height: 1100px;
+  background:
+    linear-gradient(180deg, #03102200 20%, #040f2255 50%, #050d18 95%),
+    url('/brand/blue-atmosphere.webp') center top / cover no-repeat;
+}
+.signal-field {
+  mask-image:
+    linear-gradient(#000 70%, transparent),
+    radial-gradient(ellipse 420px 170px at 20% 27%, transparent 40%, #000 100%);
+  mask-composite: intersect;
+}
+.ai-motion {
+  overflow: clip;
+}
+.assistant-panel::before {
+  inset: 0;
+}
+@media (max-width: 680px) {
+  .chrome-site main::before {
+    height: 1150px;
+    background:
+      linear-gradient(180deg, #03102200 6%, #06162c65 24%, #051326e8 49%, #050d18 86%),
+      url('/brand/blue-atmosphere.webp') 64% top / auto 800px no-repeat;
+    opacity: 1;
+  }
+  .signal-field {
+    mask-image:
+      linear-gradient(#000 70%, transparent),
+      radial-gradient(ellipse 230px 150px at 50% 34%, transparent 30%, #000 100%);
+  }
+}
+/* Tighter framing and focused light give the chrome a place in the scene. */
+.chrome-site .home-hero-grid {
+  padding: 14px 0 20px;
+  min-height: 420px;
+}
+.chrome-site .home-hero-copy {
+  padding: 12px 0;
+}
+.chrome-site .chrome-hero-art {
+  height: 380px;
+}
+.chrome-site .chrome-hero-art .ribbon-halo {
+  inset: 0 -4%;
+  background:
+    radial-gradient(ellipse at 42% 42%, #d0f1ff42, transparent 44%),
+    radial-gradient(ellipse at 65% 53%, #4dbaff59, transparent 68%);
+}
+.chrome-site .chrome-hero-art .ribbon-ground {
+  inset: 74% 17% 4%;
+  background: radial-gradient(ellipse, #a8dfff3d, #409bea1c 35%, transparent 70%);
+}
+@media (max-width: 680px) {
+  .chrome-site .home-hero-grid {
+    padding: 0;
+    min-height: 0;
+  }
+  .chrome-site .home-hero-copy {
+    padding: 0;
+  }
+  .chrome-site .chrome-hero-art {
+    height: 200px;
+  }
+}
+/* Bold establishes the hierarchy; supporting copy stays light and compact. */
+.chrome-site .home-hero-copy h1 {
+  font-weight: 650;
+  letter-spacing: -0.055em;
+}
+.chrome-site h2 {
+  font-weight: 620;
+}
+.chrome-site .chrome-intents strong {
+  font-weight: 650;
+}
+.chrome-site .button.primary,
+.studio-shell .process-button,
+.studio-shell .assistant-panel .suggestion-chips strong {
+  font-weight: 650;
+}
+.chrome-site .ns-nav nav {
+  font-weight: 500;
+}
+.assistant-embedded .assistant-panel h1 {
+  font-weight: 620;
+}
+/* The wave is made of moving light lines, rather than a floating static sculpture. */
+.ribbon-canvas,
+.ribbon-static {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.ribbon-canvas {
+  opacity: 0;
+}
+.cinematic-ribbon.is-ready .ribbon-canvas {
+  opacity: 1;
+}
+.cinematic-ribbon.is-ready .ribbon-static {
+  visibility: hidden;
+}
+.chrome-site .chrome-hero-art .ribbon-halo {
+  opacity: 0.7;
+}
+.ribbon-chrome {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 1;
+  animation: chrome-drift 12s ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+.is-running .ribbon-chrome {
+  animation-play-state: running;
+}
+.is-energetic .ribbon-chrome {
+  animation-name: chrome-process;
+  animation-duration: 4s;
+}
+.chrome-hero-art .ribbon-chrome {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ribbon-chrome {
+    animation: none !important;
+  }
+}
+/* Lines and glows fade at the sides of their box instead of ending in a vertical cut. */
+.ribbon-canvas,
+.ribbon-static,
+.ribbon-halo,
+.ribbon-ground {
+  mask-image: linear-gradient(90deg, transparent, #000 14%, #000 82%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 82%, transparent);
+}
+/* Studio, login and processing: the homepage scene in miniature. A line network
+   behind a proportioned chrome symbol, both fading before the edges. */
+.ai-motion > .signal-field {
+  inset: 0;
+  height: auto;
+  z-index: 0;
+  opacity: 0.5;
+  mask-image:
+    linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent),
+    linear-gradient(transparent, #000 22%, #000 78%, transparent);
+  -webkit-mask-image:
+    linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent),
+    linear-gradient(transparent, #000 22%, #000 78%, transparent);
+  mask-composite: intersect;
+  -webkit-mask-composite: source-in;
+}
+.ai-motion > .cinematic-ribbon {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 500px);
+  margin-inline: auto;
+}
+.ai-motion.compact > .cinematic-ribbon {
+  width: min(100%, 240px);
+}
+/* While listening, thinking or processing the scene clearly moves. */
+.signal-field.is-energetic {
+  opacity: 0.8;
+}
+.signal-field.is-energetic .signal-bundle {
+  animation-duration: 4s;
+}
+.signal-field.is-energetic .signal-pulse {
+  animation-duration: 2.6s;
+}
+.signal-field.is-energetic .signal-pulse.pulse-1 {
+  animation-duration: 3.2s;
+}
+.signal-field.is-energetic .signal-pulse.pulse-2 {
+  animation-duration: 3.8s;
+}
+/* The assistant glow fades to nothing inside its box: no straight edges or corners. */
+.assistant-panel::before {
+  background: radial-gradient(closest-side at 50% 32%, #2477bd3d, transparent);
+}
+.ai-motion > .signal-field {
+  opacity: 0.85;
+}
+.ai-motion > .signal-field path {
+  vector-effect: non-scaling-stroke;
+}
+.ai-motion > .signal-field .signal-bundle {
+  stroke-width: 0.9px;
+}
+.assistant-embedded .assistant-panel .ai-motion,
+.assistant-embedded .assistant-panel .ai-motion > .cinematic-ribbon {
+  min-height: 200px;
+  height: 200px;
+}
+@media (max-width: 680px) {
+  .assistant-embedded .assistant-panel .ai-motion,
+  .assistant-embedded .assistant-panel .ai-motion > .cinematic-ribbon {
+    min-height: 150px;
+    height: 150px;
+  }
+}
+/* Login: the scene lives on the card side, never behind the headline. */
+.account-wave-background .ai-motion > .cinematic-ribbon {
+  width: 64%;
+  height: 100%;
+  margin-left: auto;
+}
+@media (max-width: 680px) {
+  .account-wave-background .ai-motion > .cinematic-ribbon {
+    width: 100%;
+    height: 46%;
+    margin-top: 58vh;
+  }
+}
+/* Keep the headline legible over the solid chrome. */
+.account-wave-background::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(90deg, #050d18d9 0%, #050d1899 32%, #050d1800 58%);
+}
+@media (max-width: 680px) {
+  .account-wave-background::after {
+    background: linear-gradient(180deg, #050d1800 20%, #050d18b3 55%, #050d18e6 80%);
+  }
+}
