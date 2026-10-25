@@ -30,9 +30,21 @@ titular decidiu o primeiro recorte da plataforma de finalização e gestão de c
   `delivery.ready` sai quando o pacote é aprovado.
 - **Sem grading criativo automático.** A plataforma não inventa look; só converte (técnico) e entrega (criativo).
 
+**O que um pacote real mostrou (25/10/2026).** Pacote comercial de terceiros enviado pelo titular, estudado só fora do
+repositório (nenhum arquivo dele entra aqui):
+
+- O `.drx` é um XML (`Gallery::GyStill`, com `DbAppVer` da versão do Resolve) com o still ao lado (`.dpx`). O grade fica
+  em `<Body>`: hex de um byte de cabeçalho seguido de um quadro **zstd**; dentro, binário com rótulos dos nós, Color
+  Space Transform (OFX) com os parâmetros e as LUTs.
+- **A LUT não vai dentro do `.drx`: só o caminho relativo à pasta de LUTs do Resolve** (`<Pacote>/<Pasta>/<LUT>.cube`).
+  Então o pacote precisa levar as LUTs nessa mesma árvore, e a plataforma consegue conferir sem o Resolve se cada LUT
+  citada existe no pacote.
+- LUTs de look em 65³ e de monitoramento por câmera (LOG → look, para monitor/câmera) em 33³, todas `.cube`.
+- O XML guarda `GalleryPath` com o caminho da máquina de quem exportou (nome de usuário): é dado pessoal, a plataforma
+  não mostra e avisa antes de publicar.
+
 **A conferir antes de prometer na interface.**
 
-- Se o `.drx` leva a LUT embutida ou só o caminho dela (se for caminho, o pacote precisa instalar a LUT no mesmo lugar).
 - Resolve gratuito: script externo é recurso do Studio; usuário do gratuito recebe as LUTs e importa o PowerGrade à
   mão até termos teste dizendo o contrário.
 - Versões do Resolve suportadas (a API usada aparece no README de script da v20). Teste de ida e volta com projeto real
