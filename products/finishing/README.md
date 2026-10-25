@@ -36,8 +36,10 @@ cd products/finishing
 npm run dev   # http://localhost:8080
 ```
 
-Publicação: projeto Vercel `revela` (autorizado pelo titular em 25/10/2026), Root Directory `products/finishing`, site
-estático sem build (`vercel.json`), publica só quando a pasta muda.
+Publicação: projeto Vercel `revela` (autorizado pelo titular em 25/10/2026) em **revela-zro.vercel.app**
+(`revela.vercel.app` é de outro app), Root Directory `products/finishing`, site estático sem build (`vercel.json`),
+publica só quando a pasta muda. OG do link: `og.jpg` (1200×630), gerado de `marca/og.html` (cubo de cor isométrico
+em `marca/og-cubo.svg`): abra no Chromium e capture 1200×630.
 
 ## Protótipo: referência → LUT criativa
 

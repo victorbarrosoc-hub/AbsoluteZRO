@@ -19,7 +19,7 @@ const RAIZ = fileURLToPath(new URL('..', import.meta.url))
 const CABECALHOS = Object.fromEntries(
   JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8')).headers[0].headers.map((h) => [h.key, h.value]),
 )
-const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' }
+const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg' }
 let servidor
 let endereco
 let navegador
@@ -131,6 +131,26 @@ test('fundo sempre preto fosco, mesmo com o sistema no tema claro', async () => 
   }))
   assert.equal(fundo, 'rgb(14, 14, 16)')
   assert.equal(texto, 'rgb(245, 245, 247)')
+  await pagina.close()
+})
+
+test('link compartilhado: tags de OG e imagem 1200×630', async () => {
+  const pagina = await navegador.newPage()
+  await pagina.goto(endereco)
+  const meta = (seletor) => pagina.locator(seletor).getAttribute('content')
+  const imagem = await meta('meta[property="og:image"]')
+  assert.match(imagem, /^https:\/\/revela-zro\.vercel\.app\/og\.jpg/)
+  assert.equal(await meta('meta[name="twitter:card"]'), 'summary_large_image')
+  assert.equal(await meta('meta[name="twitter:image"]'), imagem)
+  assert.equal(await meta('meta[property="og:url"]'), 'https://revela-zro.vercel.app/')
+  // a mesma imagem, servida daqui
+  const tamanho = await pagina.evaluate(async () => {
+    const img = new Image()
+    img.src = '/og.jpg'
+    await img.decode()
+    return [img.naturalWidth, img.naturalHeight]
+  })
+  assert.deepEqual(tamanho, [1200, 630])
   await pagina.close()
 })
 

@@ -357,3 +357,11 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   `opengraph-image.jpg` e `twitter-image.jpg` recapturados em 1200×630 (Chromium, Figtree carregada).
 - Ícone da Revela sem a margem de ícone de Mac (quadro de borda a borda, como Synquei e NOSSOM): no OG ele tinha
   um aro branco e parecia menor. Tela da Revela e guia ajustados; `npm test` da Revela verde.
+
+## Revela: OG próprio e endereço (25/10/2026)
+
+- `revela.vercel.app` já pertence a outro app ("REVELA – Seu App de Estudo Bíblico"); com o aval do titular, o projeto
+  `revela` ganhou `revela-zro.vercel.app` (verificado na Vercel; antes respondia `DEPLOYMENT_NOT_FOUND`, ou seja, livre).
+- OG da Revela (`products/finishing/og.jpg`, 1200×630, fundo preto fosco, cubo de cor isométrico) gerado de
+  `marca/og.html`; tags `og:*` e `twitter:*` com URL absoluta. `npm test` (**20/20**): teste novo confere as tags e que
+  a imagem servida tem 1200×630.
