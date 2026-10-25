@@ -6,7 +6,7 @@ https://absolutezro.vercel.app, com o projeto Supabase **novo** `AbsoluteZRO` (n
 ## 1. Projeto na Vercel (feito)
 
 - Root Directory `apps/hub-web`, framework Next.js, Node 22, arquivos fora da pasta liberados (monorepo).
-- O resto vem de `apps/hub-web/vercel.json`: instalação com npm 11 na raiz, `npm run vercel-build`, região `gru1`.
+- O resto vem de `apps/hub-web/vercel.json`: instalação com npm 11 na raiz, `npm run vercel-build`, região `iad1` (perto do banco Supabase em us-east-2; cada consulta atravessaria o continente a partir de `gru1`).
 
 ## 2. Banco Supabase
 
