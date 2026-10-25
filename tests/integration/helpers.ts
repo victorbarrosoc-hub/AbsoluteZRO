@@ -22,9 +22,19 @@ export async function refresh(db: Database, token: string): Promise<Authenticate
   return (await authenticate(db, token))!
 }
 
-export async function newOrgWithOwner(db: Database, label = 'org') {
+/**
+ * Organização com dono. Toda organização nova entra no plano grátis (0007); os testes de acesso partem do zero,
+ * então o padrão aqui tira esse plano. `freePlan: true` mantém o que a pessoa recebe de verdade ao criar conta.
+ */
+export async function newOrgWithOwner(db: Database, label = 'org', opts: { freePlan?: boolean } = {}) {
   const u = await newUser(db, `${label}-dono`)
   const org = await createOrganization(db, u.auth, { name: `Produtora ${label}` })
+  if (!opts.freePlan) {
+    await db.asSystem('teste: sem plano grátis', async (tx) => {
+      await tx`delete from zro.entitlements where org_id = ${org.id} and source_id in (select id from zro.subscriptions where org_id = ${org.id} and provider = 'free')`
+      await tx`delete from zro.subscriptions where org_id = ${org.id} and provider = 'free'`
+    })
+  }
   return { ...u, orgId: org.id, auth: await refresh(db, u.token) }
 }
 

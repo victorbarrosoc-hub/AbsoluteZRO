@@ -8,6 +8,7 @@ import {
 } from 'node:crypto';
 import type { Account } from '../accounts';
 import { supabase, supabaseConfig, SupabaseError } from './supabase';
+import { zroProductsOf } from './zro/accounts';
 export const ACCOUNT_COOKIE = 'nossom-account';
 export const ADMIN_EMAIL = 'victorbarrosoc@gmail.com';
 const lifetime = 7 * 24 * 60 * 60 * 1000;
@@ -24,7 +25,28 @@ export type ProviderSession = {
   expires_in?: number;
   user: AuthUser;
 };
-type Session = { account: Account; access: string; refresh: string; expires: number; sid: string };
+type Session = {
+  account: Account;
+  access: string;
+  refresh: string;
+  expires: number;
+  sid: string;
+  /**
+   * `zro_products` guardados no vínculo com a Absolute ZRO (lidos no login e em cada renovação).
+   * Ausente = conta sem vínculo ZRO, que segue como sempre.
+   */
+  zroProducts?: string[];
+};
+/** Id do NOSSOM na lista `zro_products` da Absolute ZRO. */
+export const ZRO_PRODUCT = 'nossom';
+/** Conta ligada à Absolute ZRO cuja organização ainda não tem o NOSSOM liberado. */
+export function zroBlocked(session: Pick<Session, 'zroProducts'>) {
+  return Array.isArray(session.zroProducts) && !session.zroProducts.includes(ZRO_PRODUCT);
+}
+function withAccess(session: Session, account = session.account): Account {
+  const { zroBlocked: _, ...plain } = account;
+  return zroBlocked(session) ? { ...plain, zroBlocked: true } : plain;
+}
 export function sessionSecret() {
   return process.env.NOSSOM_AUTH_SECRET || process.env.NOSSOM_AI_ACCESS_CODE || '';
 }
@@ -102,7 +124,10 @@ export function decodeSession(token: string | undefined): Session | null {
       typeof session.access !== 'string' ||
       typeof session.refresh !== 'string' ||
       typeof session.sid !== 'string' ||
-      typeof session.expires !== 'number'
+      typeof session.expires !== 'number' ||
+      (session.zroProducts !== undefined &&
+        (!Array.isArray(session.zroProducts) ||
+          !session.zroProducts.every((p) => typeof p === 'string')))
     )
       return null;
     return session;
@@ -125,20 +150,26 @@ export function accountToken(request: Request) {
     .find((s) => s.startsWith(ACCOUNT_COOKIE + '='))
     ?.slice(ACCOUNT_COOKIE.length + 1);
 }
+/** Conta do cookie (sem ir ao Supabase). Traz `zroBlocked` quando o NOSSOM não está liberado. */
 export function accountFromToken(token: string | undefined) {
   const s = decodeSession(token);
-  return s && s.expires > Date.now() ? s.account : null;
+  return s && s.expires > Date.now() ? withAccess(s) : null;
 }
 const verified = new WeakMap<Request, Promise<Account | null>>();
-export function currentAccount(request: Request): Promise<Account | null> {
+/**
+ * Quem está logado, conferido no Supabase, com `zroBlocked` quando a organização da Absolute ZRO
+ * ainda não liberou o NOSSOM. Só para dizer à tela quem entrou; as funções usam `currentAccount`.
+ */
+export function signedInAccount(request: Request): Promise<Account | null> {
   let result = verified.get(request);
   if (!result) {
     result = (async () => {
       const session = decodeSession(accountToken(request));
       if (!accountConfigured() || !session || session.expires <= Date.now()) return null;
       try {
-        return accountFromUser(
-          await supabase<AuthUser>('/auth/v1/user', { token: session.access }),
+        return withAccess(
+          session,
+          accountFromUser(await supabase<AuthUser>('/auth/v1/user', { token: session.access })),
         );
       } catch {
         return null;
@@ -147,6 +178,11 @@ export function currentAccount(request: Request): Promise<Account | null> {
     verified.set(request, result);
   }
   return result;
+}
+/** Conta com direito de uso: sem conta, ou com o NOSSOM fora de `zro_products`, é null. */
+export async function currentAccount(request: Request): Promise<Account | null> {
+  const account = await signedInAccount(request);
+  return account && !account.zroBlocked ? account : null;
 }
 export function accountSessionOwner(request: Request) {
   const session = decodeSession(accountToken(request));
@@ -183,65 +219,58 @@ export async function refreshAccount(
       method: 'POST',
       body: { refresh_token: session.refresh },
     });
-    return {
-      account: accountFromUser(data.user),
-      token: encodeSession(sessionFromProvider(data, session.sid)),
-    };
+    // A cada renovação, relê os produtos liberados guardados no vínculo com a Absolute ZRO.
+    // Se não der para ler agora, fica com o que já estava na sessão.
+    let zroProducts = session.zroProducts;
+    try {
+      zroProducts = (await zroProductsOf(data.user.id)) ?? undefined;
+    } catch {
+      /* mantém o valor anterior */
+    }
+    const refreshed = { ...sessionFromProvider(data, session.sid), zroProducts };
+    return { account: withAccess(refreshed), token: encodeSession(refreshed) };
   } catch (error) {
     return sessionRejected(error) ? null : 'unavailable';
   }
 }
-export async function authenticate(
-  action: 'register' | 'login',
-  email: unknown,
-  password: unknown,
-  name: unknown,
-  origin: string,
-) {
+/**
+ * Login com e-mail e senha de uma conta que já existe no Supabase Auth.
+ * Conta nova não nasce aqui: só pela Absolute ZRO (`/api/zro/entrar?modo=criar`).
+ */
+export async function authenticate(email: unknown, password: unknown) {
   if (
     typeof email !== 'string' ||
     email.length > 254 ||
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
   )
     throw new Error('Informe um e-mail válido.');
-  if (
-    typeof password !== 'string' ||
-    password.length < (action === 'register' ? 8 : 1) ||
-    password.length > 128
-  )
-    throw new Error('Use uma senha entre 8 e 128 caracteres.');
-  if (
-    action === 'register' &&
-    (typeof name !== 'string' || name.trim().length < 2 || name.trim().length > 60)
-  )
-    throw new Error('Use um nome entre 2 e 60 caracteres.');
+  if (typeof password !== 'string' || password.length < 1 || password.length > 128)
+    throw new Error('Informe sua senha.');
   try {
-    const data = await supabase<ProviderSession>(
-      action === 'register'
-        ? '/auth/v1/signup?redirect_to=' + encodeURIComponent(origin + '/auth/confirm')
-        : '/auth/v1/token?grant_type=password',
-      {
-        method: 'POST',
-        body: {
-          email: email.trim().toLowerCase(),
-          password,
-          ...(action === 'register' ? { data: { name: (name as string).trim() } } : {}),
-        },
-      },
-    );
-    if (!data.access_token) return { confirmationRequired: true };
+    const data = await supabase<ProviderSession>('/auth/v1/token?grant_type=password', {
+      method: 'POST',
+      body: { email: email.trim().toLowerCase(), password },
+    });
+    if (!data.access_token) throw new Error('Confirme seu e-mail para entrar.');
     // Resolve trusted identity through GoTrue, never through a client-supplied role/profile.
     data.user = await supabase<AuthUser>('/auth/v1/user', { token: data.access_token });
-    return { account: accountFromUser(data.user), token: encodeSession(sessionFromProvider(data)) };
+    // Conta ligada à Absolute ZRO: guarda os produtos liberados na sessão. Sem vínculo, nada muda.
+    let zroProducts: string[] | null;
+    try {
+      zroProducts = await zroProductsOf(data.user.id);
+    } catch {
+      throw new Error('O acesso está temporariamente indisponível. Tente de novo.');
+    }
+    const session = {
+      ...sessionFromProvider(data),
+      ...(zroProducts ? { zroProducts } : {}),
+    };
+    return { account: withAccess(session), token: encodeSession(session) };
   } catch (error) {
     if (error instanceof SupabaseError) {
       if (error.code === 'email_not_confirmed')
         throw new Error('Confirme seu e-mail para entrar. Confira também a pasta de spam.');
       if (error.status === 429) throw new Error('Muitas tentativas. Aguarde alguns minutos.');
-      if (action === 'register')
-        throw new Error(
-          'Não foi possível criar a conta. Confira os dados ou tente entrar com seu e-mail.',
-        );
       throw new Error('E-mail ou senha inválidos.');
     }
     throw error;

@@ -1,5 +1,7 @@
 // Conta e sincronização pela API REST do Supabase, sem biblioteca: login por código no e-mail
-// (não sai do app instalado) ou Google, e roteiros/perfis espelhados com "o mais novo vence".
+// (não sai do app instalado) e roteiros/perfis espelhados com "o mais novo vence".
+// Conta nova nasce só na Absolute ZRO: aqui o código por e-mail serve apenas para contas antigas
+// (create_user: false) e o Google não é mais porta de entrada (ele mora no HUB).
 import { SUPABASE_URL, SUPABASE_KEY } from "./config.js";
 import { store, debounce } from "./util.js";
 import { allScripts, saveScripts, prefs, replacePrefs, on, emit } from "./data.js";
@@ -47,7 +49,12 @@ async function accessToken() {
 
 // ───────────── entrar / sair ─────────────
 export async function sendCode(email) {
-  await api("/auth/v1/otp", { method: "POST", body: { email, create_user: true }, token: false });
+  try {
+    await api("/auth/v1/otp", { method: "POST", body: { email, create_user: false }, token: false });
+  } catch (err) {
+    if (/signup|not allowed|not found/i.test(err.message || "")) throw new Error("Esse e-mail não tem conta antiga aqui. Crie sua conta Absolute ZRO.");
+    throw err;
+  }
 }
 export async function verifyCode(email, code) {
   const a = await api("/auth/v1/verify", { method: "POST", body: { type: "email", email, token: code.trim() }, token: false });
@@ -55,10 +62,7 @@ export async function verifyCode(email, code) {
   setStatus("idle");
   syncNow();
 }
-export function signInWithGoogle() {
-  location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(location.origin + "/app/")}`;
-}
-// volta do Google com os tokens no #hash
+// volta de um login antigo com os tokens no #hash
 export async function handleRedirect() {
   if (!cloudEnabled || !location.hash.includes("access_token=")) return;
   const q = new URLSearchParams(location.hash.slice(1));

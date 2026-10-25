@@ -154,6 +154,18 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - `tests/e2e/sso.spec.ts`: do app ao HUB, criar conta, criar organização, permitir, voltar com código, trocar por
   tokens, userinfo, reautorização silenciosa, descoberta, JWKS e retorno malicioso recusado; axe na tela de permissão.
 
+## Conta única (25/10/2026)
+
+- `tests/integration/accounts.test.ts` (9): plano grátis na organização nova com as cinco ferramentas e no
+  `zro_products`, idempotência, `zro_app` sem acesso à função; conta por app com contagem de entradas e RLS
+  (cada pessoa só lê as próprias, não grava); Google com PKCE, state, nonce, aud, iss, validade e e-mail
+  confirmado; conta nova sem senha, vínculo reaproveitado, mescla com conta confirmada mantendo a senha, conta
+  nunca confirmada perde senha e sessões, conta suspensa recusada sem vínculo.
+- `tests/e2e/sso.spec.ts`: "Criar conta" vindo de um app abre `/criar-conta`, passa por Boas-vindas já
+  preenchida e volta ao app com código, sem botão do Google quando não configurado; `app_accounts` registrado.
+- `tests/e2e/hub.spec.ts`: conta nova recebe as ferramentas do plano grátis; os testes de bloqueio tiram o plano.
+- Suite completa local: 92 testes Vitest e 14 e2e passando; lint, format e typecheck limpos.
+
 ## Virada das plataformas (25/10/2026)
 
 - Origem: o `main` de cada repositório antigo é exatamente o commit importado (2f6716e, f04e517, a5ac3f1, dfa91e3,
@@ -166,6 +178,13 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - Synquei, TPeasy, Carro do Freela: publicados a partir de `products/<app>`; Carro conferido contra o site anterior
   (mesmas rotas, chaves e CSP) antes da produção.
 - Login único nas cinco: `/api/zro/entrar` de cada domínio leva ao HUB; apps marcados como da família.
+
+## Synquei: conta pela Absolute ZRO (25/10/2026)
+
+- `products/synquei`: `npm test` 67/67. `tests/zro.test.mjs` (HUB falso): Criar conta manda `prompt=create` e volta
+  logado; `synquei` fora de `zro_products` entra com `acesso: false` e o link de `/ferramentas`; novo login reavalia.
+  `tests/conta-ui.test.mjs`: botões Entrar/Criar conta, aviso sem acesso com "Ver na Absolute ZRO", conta liberada.
+- Sem conferência visual em navegador nesta rodada (sem Chromium no ambiente).
 
 ## SOBEDESCE no monorepo (25/10/2026)
 
@@ -194,3 +213,11 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - Provedor de pagamento e de e-mail reais (não escolhidos).
 - Worker como processo contínuo por horas (validado via `runOnce`/`recoverStaleRuns` nos testes e no seed).
 - Carga e concorrência além do teste de quota em paralelo.
+
+## TPeasy: conta única Absolute ZRO (25/10/2026)
+
+- `products/tpeasy`: `node --test tests/*.test.mjs` (23/23) com a Absolute ZRO falsa: `?criar=1` manda `prompt=create`
+  e volta logado; `tpeasy` fora de `zro_products` entra com `acesso: false`; liberado dá `acesso: true`; nova entrada
+  reavalia. Sintaxe dos módulos conferida como no CI.
+- Ajustes conferidos no Chromium (Playwright) com `/api/zro/eu` simulado: fora (Entrar + Criar conta), sem acesso
+  (aviso + "Ver na Absolute ZRO") e liberado (só a conta).

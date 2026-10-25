@@ -72,7 +72,8 @@ test('Entrar com Absolute ZRO: cadastro, permissão, código e tokens', async ({
     email_verified: false,
     name: 'Pessoa SSO',
     zro_org: { name: 'Produtora SSO', role: 'owner' },
-    zro_products: [],
+    // Organização nova entra no plano grátis (0007): as ferramentas dele vêm no login único.
+    zro_products: expect.arrayContaining(['carro-do-freela', 'nossom', 'sobedesce', 'synquei', 'tpeasy']),
   })
 
   // Segunda vez: já autorizado, volta direto ao app sem a tela de permissão.
@@ -133,4 +134,49 @@ test('app da família (trusted): entra direto, sem a tela Permitir, e o acesso f
 
   await page.goto('/perfil')
   await expect(page.locator('#apps').getByText('NOSSOM (teste)').first()).toBeVisible()
+})
+
+test('Criar conta num app: a conta nasce na Absolute ZRO e volta ao app já logada', async ({ page }) => {
+  const clientId = `e2e-${randomUUID().slice(0, 8)}`
+  const sql = postgres(DB, { max: 1, onnotice: () => {} })
+  await sql`insert into zro.oauth_clients (id, name, product_id, kind, secret_hash, redirect_uris, trusted)
+            values (${clientId}, 'TPeasy (teste)', 'tpeasy', 'confidential', ${createHash('sha256').update('x').digest('hex')}, ${[APP]}, true)`
+
+  let landed: URL | null = null
+  await page.route('https://app.e2e.teste/**', (route) => {
+    landed = new URL(route.request().url())
+    return route.fulfill({ status: 200, contentType: 'text/html', body: '<title>App</title><p>ok</p>' })
+  })
+  const q = new URLSearchParams({
+    response_type: 'code',
+    client_id: clientId,
+    redirect_uri: APP,
+    scope: 'openid email profile org',
+    state: 'estado-criar',
+    code_challenge: createHash('sha256').update(randomBytes(32).toString('base64url')).digest('base64url'),
+    code_challenge_method: 'S256',
+    prompt: 'create',
+  })
+  await page.goto(`/oauth/authorize?${q}`)
+  await page.waitForURL('**/criar-conta?next=**')
+  const next = new URL(page.url()).searchParams.get('next')!
+  expect(next).toContain('/oauth/authorize?')
+  expect(next).not.toContain('prompt=create')
+  await expect(page.getByRole('link', { name: 'Continuar com o Google' })).toHaveCount(0)
+
+  const email = `criar-${randomUUID().slice(0, 8)}@teste.absolutezro.local`
+  await page.getByLabel('Nome').fill('Pessoa do App')
+  await page.getByLabel('E-mail').fill(email)
+  await page.getByLabel('Senha').fill('senha-e2e-segura-1')
+  await page.getByRole('button', { name: 'Criar conta' }).click()
+  await page.waitForURL('**/boas-vindas**')
+  await expect(page.getByLabel('Nome')).toHaveValue('Pessoa do App')
+  await page.getByRole('button', { name: 'Criar e continuar' }).click()
+
+  // App da família (trusted): sem tela de permissão, direto de volta com o código.
+  await expect.poll(() => landed?.searchParams.get('state')).toBe('estado-criar')
+  expect(landed!.searchParams.get('code')).toMatch(/^zc_/)
+  const [acc] = await sql`select a.logins from zro.app_accounts a join zro.users u on u.id = a.user_id where u.email = ${email} and a.client_id = ${clientId}`
+  expect(acc?.logins).toBe(1)
+  await sql.end()
 })
