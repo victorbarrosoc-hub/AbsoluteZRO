@@ -103,7 +103,7 @@ export async function getProject(db: Database, auth: Authenticated | null, proje
         lastSyncedAt: (s?.last_synced_at as Date) ?? null,
         updatedAt: (s?.updated_at as Date) ?? (project.created_at as Date),
         access: a.access,
-        externalUrl: a.externalUrl,
+        externalUrl: a.ssoStartUrl ?? a.externalUrl,
         detail: (s?.detail as Record<string, unknown>) ?? {},
       }
     })

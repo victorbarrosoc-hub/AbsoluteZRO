@@ -97,6 +97,8 @@ export type ProductAccess = {
   roleInFlow: string
   integrationMode: string
   externalUrl: string | null
+  /** Endereço do app que já começa o "Entrar com Absolute ZRO" (Abrir chega logado). */
+  ssoStartUrl: string | null
   provisionalName: boolean
   /** contracted = entitlement vigente; available = lançado e não contratado; coming_soon = em desenvolvimento. */
   access: 'contracted' | 'available' | 'coming_soon' | 'disabled'
@@ -107,7 +109,7 @@ export type ProductAccess = {
 /** Catálogo com a situação da organização (Ferramentas, Ciclo do O, Início). */
 export async function productAccessFor(tx: Queryable, orgId: string | null, now = new Date()): Promise<ProductAccess[]> {
   const rows = await tx`
-    select p.id, p.name, p.stage, p.step_order, p.role_in_flow, p.integration_mode, p.external_url, p.provisional_name,
+    select p.id, p.name, p.stage, p.step_order, p.role_in_flow, p.integration_mode, p.external_url, p.sso_start_url, p.provisional_name,
            e.ends_at, e.source
     from zro.products p
     left join lateral (
@@ -125,6 +127,7 @@ export async function productAccessFor(tx: Queryable, orgId: string | null, now 
     roleInFlow: r.role_in_flow as string,
     integrationMode: r.integration_mode as string,
     externalUrl: (r.external_url as string) ?? null,
+    ssoStartUrl: (r.sso_start_url as string) ?? null,
     provisionalName: r.provisional_name as boolean,
     access: r.stage === 'disabled' ? 'disabled' : r.stage === 'coming_soon' ? 'coming_soon' : r.source ? 'contracted' : 'available',
     endsAt: (r.ends_at as Date) ?? null,

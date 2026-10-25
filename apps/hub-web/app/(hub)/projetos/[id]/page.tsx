@@ -40,7 +40,7 @@ function StepAccess({ step }: { step: StepView }) {
   if (step.access === 'contracted')
     return step.externalUrl ? (
       <a className="zro-btn zro-btn--small" href={step.externalUrl} target="_blank" rel="noopener noreferrer">
-        Abrir {step.name} (login próprio)
+        Abrir {step.name}
       </a>
     ) : null
   if (step.access === 'available')

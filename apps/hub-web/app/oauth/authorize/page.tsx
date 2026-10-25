@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { denyUrl, hasConsent, issueCode, parseAuthorizeRequest } from '@zro/auth'
+import { denyUrl, grantConsent, hasConsent, issueCode, parseAuthorizeRequest } from '@zro/auth'
 import { listMyOrganizations } from '@zro/core'
 import { Notice, ProductMark } from '@zro/ui'
 import { Icon } from '@/components/icons'
@@ -49,11 +49,15 @@ export default async function Authorize({ searchParams }: { searchParams: Promis
     redirect(`/entrar?next=${encodeURIComponent(here)}`)
   }
 
-  const consented = req.prompt !== 'consent' && (await db().asSystem('oidc: consentimento', (tx) => hasConsent(tx, auth.user.id, req.client.id, req.scopes)))
+  // App da família (trusted): entra direto, como numa central de apps. O consentimento fica registrado e removível no Perfil.
+  const direct = req.client.trusted && req.prompt !== 'consent'
+  const consented =
+    direct || (req.prompt !== 'consent' && (await db().asSystem('oidc: consentimento', (tx) => hasConsent(tx, auth.user.id, req.client.id, req.scopes))))
   if (consented) {
-    const to = await db().asSystem('oidc: emitir código', (tx) =>
-      issueCode(tx, req, { userId: auth.user.id, orgId: auth.session.activeOrgId, authTime: auth.session.createdAt }),
-    )
+    const to = await db().asSystem('oidc: emitir código', async (tx) => {
+      if (direct) await grantConsent(tx, auth.user.id, req.client.id, req.scopes)
+      return issueCode(tx, req, { userId: auth.user.id, orgId: auth.session.activeOrgId, authTime: auth.session.createdAt })
+    })
     redirect(to)
   }
   if (req.prompt === 'none') redirect(denyUrl(req).replace('error=access_denied', 'error=consent_required'))

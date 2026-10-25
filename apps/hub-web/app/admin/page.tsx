@@ -36,7 +36,8 @@ export default async function Admin() {
     plans:
       await tx`select p.id, p.code, p.version, p.name, p.kind, p.status, p.grace_days, p.price_cents, (select json_agg(json_build_object('product', pp.product_id, 'limits', pp.limits)) from zro.plan_products pp where pp.plan_id = p.id) as products from zro.plans p order by p.code, p.version`,
     products: await tx`select id, name, stage from zro.products order by step_order`,
-    clients: await tx`select id, name, product_id, kind, redirect_uris, allow_loopback, status, created_at from zro.oauth_clients order by created_at desc`,
+    clients:
+      await tx`select id, name, product_id, kind, redirect_uris, allow_loopback, trusted, status, created_at from zro.oauth_clients order by created_at desc`,
     billing: await tx`select provider, provider_event_id, type, status, error, received_at from zro.billing_events order by received_at desc limit 50`,
     stuck:
       await tx`select r.id, r.handler, r.status, r.last_error, r.updated_at, o.name as org from zro.workflow_runs r join zro.organizations o on o.id = r.org_id where r.status in ('dead_letter', 'requires_review', 'failed') order by r.updated_at desc limit 50`,
@@ -339,7 +340,10 @@ export default async function Admin() {
                         {c.product_id ? ` · ${c.product_id as string}` : ''}
                       </div>
                     </td>
-                    <td>{c.kind === 'public' ? 'Público (PKCE)' : 'Confidencial'}</td>
+                    <td>
+                      {c.kind === 'public' ? 'Público (PKCE)' : 'Confidencial'}
+                      {c.trusted ? <div className="zro-faint">da família · entra direto</div> : null}
+                    </td>
                     <td>
                       {(c.redirect_uris as string[]).map((u) => (
                         <div key={u}>
@@ -399,6 +403,9 @@ export default async function Admin() {
             </Field>
             <label className="row">
               <input type="checkbox" name="allowLoopback" /> Aceitar qualquer porta em 127.0.0.1 (app de desktop)
+            </label>
+            <label className="row">
+              <input type="checkbox" name="trusted" /> App da família Absolute ZRO (entra direto, sem a tela Permitir)
             </label>
             <Field label="Motivo" htmlFor="oc-reason">
               <input className="zro-input" id="oc-reason" name="reason" required />
