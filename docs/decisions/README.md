@@ -15,3 +15,4 @@ Cada decisão é reversível salvo indicação. Formato: contexto, decisão, con
 | [0009](0009-admin-no-mesmo-app.md)     | Console de administração isolado dentro do hub-web             | aceita   |
 | [0010](0010-fila-no-postgres.md)       | Fila e outbox no próprio Postgres                              | aceita   |
 | [0011](0011-linguagem-da-familia.md)   | Interface na linguagem das ferramentas da família (suíte)      | aceita   |
+| [0012](0012-login-unico-oidc.md)       | Login único: HUB como provedor OpenID Connect                  | aceita   |

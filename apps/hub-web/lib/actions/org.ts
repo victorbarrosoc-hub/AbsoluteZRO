@@ -14,7 +14,7 @@ import {
 import type { FormState } from '@/components/action-form'
 import { appOrigin, showDevLinks } from '../env'
 import { db, getAuth } from '../session'
-import { str, toFormError } from './helpers'
+import { safeNext, str, toFormError } from './helpers'
 
 const mail = defaultSender()
 
@@ -25,7 +25,7 @@ export async function createOrgAction(_: FormState, fd: FormData): Promise<FormS
   } catch (e) {
     return toFormError(e)
   }
-  redirect('/inicio')
+  redirect(safeNext(str(fd, 'next')) ?? '/inicio')
 }
 
 export async function switchOrgAction(fd: FormData) {

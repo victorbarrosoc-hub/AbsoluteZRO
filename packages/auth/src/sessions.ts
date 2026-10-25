@@ -27,6 +27,8 @@ export type CurrentSession = {
   id: string
   activeOrgId: string | null
   expiresAt: Date
+  /** Hora do login (auth_time do login único). */
+  createdAt: Date
 }
 
 export type Authenticated = { user: SessionUser; session: CurrentSession }
@@ -80,7 +82,7 @@ export async function authenticate(db: Database, token: string | null | undefine
         emailVerified: !!r.email_verified_at,
         platformRole: (r.platform_role as SessionUser['platformRole']) ?? null,
       },
-      session: { id: r.id as string, activeOrgId, expiresAt },
+      session: { id: r.id as string, activeOrgId, expiresAt, createdAt: r.created_at as Date },
     }
   })
 }

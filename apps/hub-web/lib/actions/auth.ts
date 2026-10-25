@@ -17,7 +17,7 @@ import {
 import type { FormState } from '@/components/action-form'
 import { appOrigin, showDevLinks } from '../env'
 import { clearSessionCookie, db, getAuth, requestMeta, setSessionCookie } from '../session'
-import { str, toFormError } from './helpers'
+import { safeNext, str, toFormError } from './helpers'
 
 const mail = defaultSender()
 
@@ -38,7 +38,8 @@ export async function signupAction(_: FormState, fd: FormData): Promise<FormStat
   } catch (e) {
     return toFormError(e)
   }
-  if (ok) redirect('/boas-vindas')
+  const next = safeNext(str(fd, 'next'))
+  if (ok) redirect(next ? `/boas-vindas?next=${encodeURIComponent(next)}` : '/boas-vindas')
   return null
 }
 
@@ -49,8 +50,7 @@ export async function loginAction(_: FormState, fd: FormData): Promise<FormState
   } catch (e) {
     return toFormError(e)
   }
-  const next = str(fd, 'next')
-  redirect(next.startsWith('/') && !next.startsWith('//') ? next : '/inicio')
+  redirect(safeNext(str(fd, 'next')) ?? '/inicio')
 }
 
 export async function logoutAction() {

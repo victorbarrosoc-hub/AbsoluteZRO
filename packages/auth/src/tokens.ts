@@ -2,7 +2,8 @@
 import { createHash, randomBytes } from 'node:crypto'
 
 /** Token opaco: 32 bytes em base64url (43 caracteres), com prefixo de finalidade. */
-export function newToken(prefix: 'zs' | 'zv' | 'zr' | 'zi'): string {
+/** zs sessão · zv verificar e-mail · zr nova senha · zi convite · zc código OIDC · zt refresh token · zk segredo de app. */
+export function newToken(prefix: 'zs' | 'zv' | 'zr' | 'zi' | 'zc' | 'zt' | 'zk'): string {
   return `${prefix}_${randomBytes(32).toString('base64url')}`
 }
 

@@ -3,7 +3,16 @@ import { notFound } from 'next/navigation'
 import { requirePlatformAdmin } from '@zro/core'
 import { Card, Field, Notice, Pill } from '@zro/ui'
 import { ActionForm } from '@/components/action-form'
-import { assignPlanAction, cancelSubscriptionAction, createPlanVersionAction, grantAction, publishPlanAction, revokeGrantAction } from '@/lib/actions/admin'
+import {
+  assignPlanAction,
+  cancelSubscriptionAction,
+  createPlanVersionAction,
+  grantAction,
+  publishPlanAction,
+  registerOAuthClientAction,
+  revokeGrantAction,
+  setOAuthClientStatusAction,
+} from '@/lib/actions/admin'
 import { fmtDate, fmtDay, RUN_LABEL } from '@/lib/labels'
 import { db, getAuth } from '@/lib/session'
 
@@ -27,6 +36,7 @@ export default async function Admin() {
     plans:
       await tx`select p.id, p.code, p.version, p.name, p.kind, p.status, p.grace_days, p.price_cents, (select json_agg(json_build_object('product', pp.product_id, 'limits', pp.limits)) from zro.plan_products pp where pp.plan_id = p.id) as products from zro.plans p order by p.code, p.version`,
     products: await tx`select id, name, stage from zro.products order by step_order`,
+    clients: await tx`select id, name, product_id, kind, redirect_uris, allow_loopback, status, created_at from zro.oauth_clients order by created_at desc`,
     billing: await tx`select provider, provider_event_id, type, status, error, received_at from zro.billing_events order by received_at desc limit 50`,
     stuck:
       await tx`select r.id, r.handler, r.status, r.last_error, r.updated_at, o.name as org from zro.workflow_runs r join zro.organizations o on o.id = r.org_id where r.status in ('dead_letter', 'requires_review', 'failed') order by r.updated_at desc limit 50`,
@@ -301,6 +311,101 @@ export default async function Admin() {
           </ul>
         </Card>
       </div>
+
+      <Card title="Login único · apps cadastrados" eyebrow="Entrar com Absolute ZRO (OpenID Connect)" id="login-unico">
+        <p className="zro-faint">
+          Descoberta: <code>/.well-known/openid-configuration</code>. Site do app = confidencial (com segredo). App de desktop ou celular = público (sem
+          segredo, só PKCE; marque o retorno em 127.0.0.1).
+        </p>
+        {d.clients.length ? (
+          <div className="zro-table-wrap">
+            <table className="zro-table">
+              <thead>
+                <tr>
+                  <th>App</th>
+                  <th>Tipo</th>
+                  <th>Retornos</th>
+                  <th>Status</th>
+                  {isAdmin && <th>Ação</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {d.clients.map((c) => (
+                  <tr key={c.id as string}>
+                    <td>
+                      <strong>{c.name as string}</strong>
+                      <div className="zro-faint">
+                        <code>{c.id as string}</code>
+                        {c.product_id ? ` · ${c.product_id as string}` : ''}
+                      </div>
+                    </td>
+                    <td>{c.kind === 'public' ? 'Público (PKCE)' : 'Confidencial'}</td>
+                    <td>
+                      {(c.redirect_uris as string[]).map((u) => (
+                        <div key={u}>
+                          <code>{u}</code>
+                        </div>
+                      ))}
+                      {c.allow_loopback ? <div className="zro-faint">qualquer porta em 127.0.0.1</div> : null}
+                    </td>
+                    <td>
+                      <Pill tone={c.status === 'active' ? 'ok' : 'faint'}>{c.status === 'active' ? 'Ativo' : 'Desativado'}</Pill>
+                    </td>
+                    {isAdmin && (
+                      <td>
+                        <ActionForm action={setOAuthClientStatusAction} submit={c.status === 'active' ? 'Desativar' : 'Reativar'} variant="ghost">
+                          <input type="hidden" name="clientId" value={c.id as string} />
+                          <input type="hidden" name="status" value={c.status === 'active' ? 'disabled' : 'active'} />
+                          <input className="zro-input" name="reason" placeholder="Motivo" aria-label={`Motivo para mudar ${c.name as string}`} required />
+                        </ActionForm>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="zro-mute">Nenhum app cadastrado ainda.</p>
+        )}
+        {isAdmin && (
+          <ActionForm action={registerOAuthClientAction} submit="Cadastrar app">
+            <div className="zro-form-row">
+              <Field label="Identificador (client_id)" htmlFor="oc-id" hint="Ex.: sobedesce-web">
+                <input className="zro-input" id="oc-id" name="clientId" required pattern="[a-z0-9][a-z0-9-]{2,62}" />
+              </Field>
+              <Field label="Nome que a pessoa vê" htmlFor="oc-name">
+                <input className="zro-input" id="oc-name" name="name" required maxLength={80} />
+              </Field>
+              <Field label="Produto" htmlFor="oc-product">
+                <select className="zro-select" id="oc-product" name="productId" defaultValue="">
+                  <option value="">Nenhum</option>
+                  {d.products.map((p) => (
+                    <option key={p.id as string} value={p.id as string}>
+                      {p.name as string}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Tipo" htmlFor="oc-kind">
+                <select className="zro-select" id="oc-kind" name="kind" defaultValue="confidential">
+                  <option value="confidential">Confidencial (site com servidor)</option>
+                  <option value="public">Público (desktop ou celular, PKCE)</option>
+                </select>
+              </Field>
+            </div>
+            <Field label="Endereços de retorno" htmlFor="oc-uris" hint="Um por linha. https, http://127.0.0.1/caminho (desktop) ou esquema do app.">
+              <textarea className="zro-textarea" id="oc-uris" name="redirectUris" required rows={3} />
+            </Field>
+            <label className="row">
+              <input type="checkbox" name="allowLoopback" /> Aceitar qualquer porta em 127.0.0.1 (app de desktop)
+            </label>
+            <Field label="Motivo" htmlFor="oc-reason">
+              <input className="zro-input" id="oc-reason" name="reason" required />
+            </Field>
+          </ActionForm>
+        )}
+      </Card>
     </div>
   )
 }

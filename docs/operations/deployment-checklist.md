@@ -21,6 +21,9 @@ https://absolutezro.vercel.app, com o projeto Supabase **novo** `AbsoluteZRO` (n
 
 ## 3. Variáveis opcionais
 
+- `ZRO_OIDC_SIGNING_KEY` (PEM EC P-256): opcional. Sem ela, o HUB gera a chave do login único no primeiro uso e guarda
+  em `zro.oidc_keys`.
+
 - `ZRO_IP_HASH_SECRET` (openssl rand -hex 32): sem ela, o IP não é guardado nem usado nos limites por IP.
 - Ambiente e origem saem da Vercel (`VERCEL_ENV`, `VERCEL_PROJECT_PRODUCTION_URL`); `ZRO_ENV`/`ZRO_APP_ORIGIN` só se
   quiser forçar.

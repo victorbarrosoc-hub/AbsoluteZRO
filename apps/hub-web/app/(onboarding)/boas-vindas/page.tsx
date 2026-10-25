@@ -4,14 +4,16 @@ import { listMyOrganizations } from '@zro/core'
 import { Card, Field, Notice } from '@zro/ui'
 import { ActionForm } from '@/components/action-form'
 import { resendVerifyAction } from '@/lib/actions/auth'
+import { safeNext } from '@/lib/actions/helpers'
 import { createOrgAction } from '@/lib/actions/org'
 import { db, requirePageAuth } from '@/lib/session'
 
 export const metadata: Metadata = { title: 'Boas-vindas' }
 export const dynamic = 'force-dynamic'
 
-export default async function BoasVindas() {
+export default async function BoasVindas({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const auth = await requirePageAuth()
+  const next = safeNext((await searchParams).next)
   const orgs = await listMyOrganizations(db(), auth)
   return (
     <section className="section" aria-labelledby="bv-title">
@@ -29,6 +31,7 @@ export default async function BoasVindas() {
       )}
       <Card title="Criar organização">
         <ActionForm action={createOrgAction} submit="Criar e continuar">
+          <input type="hidden" name="next" value={next ?? ''} />
           <Field label="Nome" htmlFor="name" hint="Ex.: o nome da produtora ou o seu nome.">
             <input className="zro-input" id="name" name="name" required maxLength={120} />
           </Field>

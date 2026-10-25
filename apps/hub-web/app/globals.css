@@ -2194,3 +2194,70 @@ details.disclosure[open] > summary {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ───── Entrar com Absolute ZRO (consentimento) ───── */
+
+.consent {
+  display: grid;
+  gap: var(--space-5);
+}
+.consent__marks {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.consent__marks img {
+  filter: drop-shadow(0 0 14px rgb(45 123 255 / 0.45));
+}
+.consent__ghost {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--surface-3);
+  color: var(--text-mute);
+}
+.consent__link {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px dashed var(--line-strong);
+  color: var(--text-faint);
+}
+.consent__box {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border-radius: var(--radius-m);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.consent__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+.consent__list li {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.consent__list svg {
+  flex: none;
+  margin-top: 3px;
+  color: var(--ok-text);
+}
+.consent__actions {
+  display: grid;
+  gap: 8px;
+}
+.consent__actions .zro-btn {
+  width: 100%;
+}
