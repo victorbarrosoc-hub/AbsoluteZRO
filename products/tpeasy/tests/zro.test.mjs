@@ -15,7 +15,7 @@ function iniciarZroFalsa() {
   const { privateKey, publicKey } = generateKeyPairSync('ec', { namedCurve: 'P-256' })
   const jwk = { ...publicKey.export({ format: 'jwk' }), kid: 'chave-teste', alg: 'ES256', use: 'sig' }
   const codigos = new Map()
-  const zro = { url: '', proximo: { pessoa: LIA, negar: false, adulterar: null }, trocas: 0, server: null }
+  const zro = { url: '', proximo: { pessoa: LIA, negar: false, adulterar: null }, trocas: 0, prompts: [], server: null }
 
   const jwt = (dados, assinarErrado) => {
     const b = (o) => Buffer.from(JSON.stringify(o)).toString('base64url')
@@ -37,6 +37,7 @@ function iniciarZroFalsa() {
     if (url.pathname === '/oauth/jwks') return responder(res, 200, { keys: [jwk] })
     if (url.pathname === '/oauth/authorize') {
       const q = url.searchParams
+      zro.prompts.push(q.get('prompt'))
       const volta = new URL(q.get('redirect_uri'))
       volta.searchParams.set('state', q.get('state'))
       if (q.get('client_id') !== CLIENTE.clientId || q.get('code_challenge_method') !== 'S256' || !q.get('nonce') || q.get('scope') !== 'openid email profile org') {
@@ -149,8 +150,11 @@ const ir = (caminho, { cookie, headers = {}, method = 'GET' } = {}) =>
   fetch(caminho.startsWith('http') ? caminho : APP + caminho, { method, redirect: 'manual', headers: { ...headers, ...(cookie ? { cookie } : {}) } })
 
 /** Navegador: entrar → Absolute ZRO falsa → callback. */
-async function fluxo({ volta, trocarState = false, cookieIda } = {}) {
-  const ida = await ir(`/api/zro/entrar${volta !== undefined ? `?volta=${encodeURIComponent(volta)}` : ''}`)
+async function fluxo({ volta, trocarState = false, cookieIda, criar = false } = {}) {
+  const q = new URLSearchParams()
+  if (volta !== undefined) q.set('volta', volta)
+  if (criar) q.set('criar', '1')
+  const ida = await ir(`/api/zro/entrar${q.size ? `?${q}` : ''}`)
   assert.equal(ida.status, 302)
   const destino = new URL(ida.headers.get('location'))
   const ida_ = valorCookie(ida, 'tp_zro_ida')
@@ -232,6 +236,7 @@ describe('volta do HUB', () => {
       email: 'lia@produtora.com',
       organizacao: { id: 'org-1', nome: 'Produtora Lia', papel: 'owner' },
       produtos: ['tpeasy', 'sobedesce'],
+      acesso: true,
     })
   })
 
@@ -335,5 +340,57 @@ describe('sessão', () => {
     const linha = setCookies(sair).find((c) => c.startsWith('tp_zro='))
     assert.match(linha, /^tp_zro=;/)
     assert.match(linha, /Max-Age=0/)
+  })
+})
+
+describe('conta única da Absolute ZRO', () => {
+  test('"Entrar" não pede cadastro; "Criar conta" (?criar=1) manda prompt=create ao HUB', async () => {
+    const entrar = new URL((await ir('/api/zro/entrar')).headers.get('location'))
+    assert.equal(entrar.searchParams.get('prompt'), null)
+    const criar = new URL((await ir('/api/zro/entrar?volta=%2Fapp%2F%23ajustes&criar=1')).headers.get('location'))
+    assert.equal(criar.pathname, '/oauth/authorize')
+    assert.equal(criar.searchParams.get('prompt'), 'create')
+    assert.equal(criar.searchParams.get('code_challenge_method'), 'S256')
+    // Fora do site oficial, o pedido de cadastro segue junto para o site oficial.
+    const previa = await ir('/api/zro/entrar?criar=1', { headers: { 'x-forwarded-host': 'tpeasy-git-teste.vercel.app' } })
+    assert.equal(previa.headers.get('location'), 'https://tpeasy.vercel.app/api/zro/entrar?criar=1')
+  })
+
+  test('criar conta volta ao app já logado', async () => {
+    zro.prompts = []
+    const r = await fluxo({ volta: '/app/#ajustes', criar: true })
+    assert.deepEqual(zro.prompts, ['create'])
+    assert.equal(r.local, '/app/#ajustes')
+    const eu = await ir('/api/zro/eu', { cookie: `tp_zro=${encodeURIComponent(r.sessao)}` })
+    assert.equal(eu.status, 200)
+    assert.equal((await eu.json()).acesso, true)
+  })
+
+  test('produto liberado (tpeasy em zro_products): acesso', async () => {
+    const r = await fluxo()
+    const corpo = await (await ir('/api/zro/eu', { cookie: `tp_zro=${encodeURIComponent(r.sessao)}` })).json()
+    assert.equal(corpo.acesso, true)
+    assert.ok(lib.temAcesso(['nossom', 'tpeasy']))
+  })
+
+  test('tpeasy fora de zro_products: entra, mas sem acesso', async () => {
+    zro.proximo.pessoa = { ...LIA, produtos: ['sobedesce', 'nossom'] }
+    const r = await fluxo()
+    assert.ok(r.sessao, 'a pessoa entra')
+    const eu = await ir('/api/zro/eu', { cookie: `tp_zro=${encodeURIComponent(r.sessao)}` })
+    assert.equal(eu.status, 200)
+    const corpo = await eu.json()
+    assert.equal(corpo.entrou, true)
+    assert.equal(corpo.acesso, false)
+    for (const p of [undefined, null, [], ['tp-easy'], 'tpeasy']) assert.equal(lib.temAcesso(p), false, JSON.stringify(p))
+  })
+
+  test('nova entrada reavalia zro_products', async () => {
+    zro.proximo.pessoa = { ...LIA, produtos: [] }
+    const antes = await fluxo()
+    assert.equal((await (await ir('/api/zro/eu', { cookie: `tp_zro=${encodeURIComponent(antes.sessao)}` })).json()).acesso, false)
+    zro.proximo.pessoa = LIA
+    const depois = await fluxo()
+    assert.equal((await (await ir('/api/zro/eu', { cookie: `tp_zro=${encodeURIComponent(depois.sessao)}` })).json()).acesso, true)
   })
 })

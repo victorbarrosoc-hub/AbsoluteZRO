@@ -7,7 +7,7 @@ import { syncSettingsUI, setPref } from "./settings.js";
 import * as Sync from "./sync.js";
 import * as Zro from "./zro.js";
 
-const VERSION = "2.1";
+const VERSION = "2.2";
 const wpm = () => D.S().wpm;
 const durOf = (s) => (D.countWords(s.body) / wpm()) * 60;
 const PALETTE = [
@@ -268,21 +268,22 @@ export function renderAccount() {
     const p = Zro.zro.pessoa;
     const org = p.organizacao && p.organizacao.nome ? `<span>${esc(p.organizacao.nome)}</span>` : "";
     conta = `<div class="account"><span class="avatar is-on">${esc((p.nome || p.email || "?").charAt(0).toUpperCase())}</span><div class="account-text"><b>${esc(p.nome || p.email)}</b>${p.nome ? `<span>${esc(p.email)}</span>` : ""}${org}</div><button class="pill is-small" id="zroSair">Sair</button>${local}</div>`;
+    if (Zro.semAcesso())
+      conta += `<div class="account account-form" id="zroSemAcesso"><div class="account-row"><span class="avatar">${icon("user")}</span><div class="account-text"><b>Sem acesso</b><span>Sua conta Absolute ZRO ainda não tem acesso ao TPeasy.</span></div></div><a class="btn btn-blue btn-block" href="${Zro.HUB_FERRAMENTAS}" target="_blank" rel="noopener">Ver na Absolute ZRO</a></div>`;
   } else if (Zro.zro.estado === "fora") {
-    conta = `<div class="account account-form"><div class="account-row"><span class="avatar">${icon("user")}</span><div class="account-text"><b>Conta</b><span>A mesma da Absolute ZRO</span></div></div><a class="btn btn-blue btn-block" href="${Zro.linkEntrar()}">Entrar com Absolute ZRO</a>${local}</div>`;
+    conta = `<div class="account account-form"><div class="account-row"><span class="avatar">${icon("user")}</span><div class="account-text"><b>Conta</b><span>A mesma da Absolute ZRO</span></div></div><a class="btn btn-blue btn-block" href="${Zro.linkEntrar()}">Entrar com Absolute ZRO</a><a class="btn btn-soft btn-block" href="${Zro.linkCriarConta()}">Criar conta</a>${local}</div>`;
   }
   if (!Sync.cloudEnabled) {
     card.innerHTML = conta || `<div class="account"><span class="avatar">${icon("cloud")}</span><div class="account-text"><b>Sincronização</b><span>Em breve</span></div></div>`;
   } else if (!user) {
     card.innerHTML = conta + `<form class="account account-form" id="loginForm">
-      <div class="account-row"><span class="avatar">${icon("user")}</span><div class="account-text"><b>Entrar</b><span>Seus roteiros em todos os aparelhos</span></div></div>
+      <div class="account-row"><span class="avatar">${icon("user")}</span><div class="account-text"><b>Conta antiga</b><span>Já tinha conta no TPeasy? Entre com o código do e-mail.</span></div></div>
       ${
         login.sent
           ? `<input class="input" id="codeInput" inputmode="numeric" autocomplete="one-time-code" placeholder="Código do e-mail" maxlength="10" required />
              <button class="btn btn-blue btn-block" type="submit">${login.busy ? "Entrando…" : "Entrar"}</button>`
           : `<input class="input" id="emailInput" type="email" autocomplete="email" placeholder="E-mail" value="${esc(login.email)}" required />
-             <button class="btn btn-blue btn-block" type="submit">${login.busy ? "Enviando…" : "Continuar"}</button>
-             <button class="btn btn-soft btn-block" type="button" id="googleBtn">${icon("google")}Google</button>`
+             <button class="btn btn-soft btn-block" type="submit">${login.busy ? "Enviando…" : "Continuar"}</button>`
       }
     </form>`;
   } else {
@@ -326,8 +327,7 @@ $("#accountCard").addEventListener("click", async (e) => {
     } catch (err) {
       toast(err.message || "Não deu certo", 2600);
     }
-  } else if (b.id === "googleBtn") Sync.signInWithGoogle();
-  else if (b.id === "signOutBtn" && (await confirmDanger("Sair da conta? Os roteiros continuam aqui.", "Sair"))) await Sync.signOut();
+  } else if (b.id === "signOutBtn" && (await confirmDanger("Sair da conta? Os roteiros continuam aqui.", "Sair"))) await Sync.signOut();
 });
 $("#setName").addEventListener("click", async () => {
   const name = await ask("Seu nome", { value: D.ui.name });

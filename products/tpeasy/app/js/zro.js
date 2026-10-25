@@ -25,6 +25,12 @@ export async function verificarZro() {
 }
 
 export const linkEntrar = (volta = "/app/#ajustes") => `/api/zro/entrar?volta=${encodeURIComponent(volta)}`;
+// "Criar conta": o cadastro é sempre na Absolute ZRO (prompt=create); a pessoa volta para cá já logada.
+export const linkCriarConta = (volta = "/app/#ajustes") => `${linkEntrar(volta)}&criar=1`;
+// Onde o admin libera o TPeasy para a organização.
+export const HUB_FERRAMENTAS = "https://absolutezro.vercel.app/ferramentas";
+// Quem entrou pela Absolute ZRO só usa a conta no TPeasy se a organização liberou o app.
+export const semAcesso = () => zro.estado === "dentro" && !!zro.pessoa && zro.pessoa.acesso === false;
 
 export async function sairZro() {
   const r = await fetch("/api/zro/sair", { method: "POST", credentials: "same-origin", cache: "no-store" });
