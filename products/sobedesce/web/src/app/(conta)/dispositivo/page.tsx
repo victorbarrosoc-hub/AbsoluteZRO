@@ -5,6 +5,7 @@ import { exigirUsuario, ipAtual } from "@/lib/auth/atual";
 import { buscarPedido, lugarLegivel, mesmaRede, normalizarCodigo } from "@/lib/dispositivo";
 import { NOME_PLATAFORMA, tempoRelativo } from "@/lib/tempo";
 import { DigitarCodigo, Liberar, PedidoVencido } from "./liberar";
+import { SemAcessoZro } from "../sem-acesso";
 
 export const metadata: Metadata = { title: "Conectar computador" };
 
@@ -14,7 +15,9 @@ export default async function Dispositivo({ searchParams }: Props) {
   const q = await searchParams;
   const bruto = typeof q.codigo === "string" ? q.codigo : "";
   const codigo = normalizarCodigo(bruto);
-  const { usuario } = await exigirUsuario(codigo ? `/dispositivo?codigo=${codigo}` : "/dispositivo");
+  const volta = codigo ? `/dispositivo?codigo=${codigo}` : "/dispositivo";
+  const { usuario, liberado } = await exigirUsuario(volta);
+  if (!liberado) return <SemAcessoZro volta={volta} />;
 
   if (!codigo) {
     return (

@@ -258,15 +258,19 @@ export function emailMuitasTentativas(para: string, nome: string, t: { quando: D
 
 // ───── Para o admin (src/lib/email/admin.ts) ─────
 
+/** Por onde a conta nasceu. Hoje só "zro"; "senha" e "google" ficam para os testes e as contas antigas. */
+export type ComoCriou = "senha" | "google" | "zro";
+const COMO_CRIOU: Record<ComoCriou, string> = { senha: "E-mail e senha", google: "Continuar com Google", zro: "Absolute ZRO" };
+
 /** Conta nova na plataforma (um aviso por conta). */
-export function emailAdminContaNova(para: string, c: { nome: string; email: string; quando: Date; comGoogle: boolean }): Email {
+export function emailAdminContaNova(para: string, c: { nome: string; email: string; quando: Date; como: ComoCriou }): Email {
   return montar(para, `Conta nova: ${c.nome}`, {
     previa: `${c.nome} (${c.email}) criou uma conta.`,
     titulo: "Conta nova na SOBEDESCE",
     paragrafos: [`${c.nome} criou uma conta em ${quandoLegivel(c.quando)} (horário de Brasília).`],
     detalhes: [
       { rotulo: "E-mail", valor: c.email },
-      { rotulo: "Como entrou", valor: c.comGoogle ? "Continuar com Google" : "E-mail e senha" },
+      { rotulo: "Como entrou", valor: COMO_CRIOU[c.como] },
     ],
     botao: { texto: "Abrir o admin", url: `${siteUrl()}/admin` },
     rodape: "Aviso para os admins da SOBEDESCE (SOBEDESCE_ADMINS).",

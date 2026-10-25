@@ -6,9 +6,10 @@
 import { and, eq, gt, inArray, isNotNull, isNull, lt, ne, or } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 import type { Plataforma, TipoSessao } from "@/lib/db/schema";
+import { liberadoPelaZro } from "@/lib/zro/acesso";
 import { FORMATO_TOKEN_DISPOSITIVO, FORMATO_TOKEN_WEB, hashToken, novoId, novoToken, PREFIXO_DISPOSITIVO } from "./tokens";
 
-const { sessoes, usuarios, dispositivoStatus, redefinicoesSenha, codigosDispositivo, atividadeDiaria, usoDiario } = schema;
+const { sessoes, usuarios, contasZro, dispositivoStatus, redefinicoesSenha, codigosDispositivo, atividadeDiaria, usoDiario } = schema;
 
 /**
  * Limpeza do que a política de privacidade promete apagar: links de "Esqueci a senha" usados ou vencidos (uma hora)
@@ -78,7 +79,16 @@ export type SessaoAtual = {
   plataforma: Plataforma | null;
   expiraEm: Date;
 };
-export type Autenticado = { usuario: UsuarioPublico; sessao: SessaoAtual; via: "cookie" | "bearer" };
+export type Autenticado = {
+  usuario: UsuarioPublico;
+  sessao: SessaoAtual;
+  via: "cookie" | "bearer";
+  /**
+   * false: a conta está ligada à Absolute ZRO e o admin de lá ainda não liberou a SOBEDESCE (zro_products do último
+   * login). A pessoa continua logada, mas as funções da conta ficam bloqueadas (lib/zro/acesso.ts).
+   */
+  liberado: boolean;
+};
 
 export async function criarSessao(
   usuarioId: string,
@@ -147,9 +157,11 @@ export async function autenticar(credenciais: {
         ultimoUsoEm: sessoes.ultimoUsoEm,
       },
       usuario: { id: usuarios.id, email: usuarios.email, nome: usuarios.nome },
+      produtosZro: contasZro.produtos,
     })
     .from(sessoes)
     .innerJoin(usuarios, eq(usuarios.id, sessoes.usuarioId))
+    .leftJoin(contasZro, eq(contasZro.usuarioId, sessoes.usuarioId))
     .where(and(eq(sessoes.tokenHash, hashToken(token)), eq(sessoes.tipo, tipo), isNull(sessoes.revogadaEm), gt(sessoes.expiraEm, agora)))
     .limit(1);
   if (!linha) return null;
@@ -171,6 +183,7 @@ export async function autenticar(credenciais: {
     usuario: linha.usuario,
     sessao: { id: linha.sessao.id, tipo: linha.sessao.tipo, nome: linha.sessao.nome, plataforma: linha.sessao.plataforma, expiraEm },
     via,
+    liberado: liberadoPelaZro(linha.produtosZro),
   };
 }
 

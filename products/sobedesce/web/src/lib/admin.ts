@@ -51,6 +51,8 @@ export type PessoaAdmin = {
   /** Último uso de qualquer sessão (site ou computador). */
   ultimoUsoEm: Date | null;
   comSenha: boolean;
+  /** Conta criada pela Absolute ZRO e ainda sem senha (marca SEM_SENHA_ZRO). */
+  soZro: boolean;
   drives: DriveAdmin[];
   computadores: number;
 };
@@ -101,8 +103,9 @@ export async function listarPessoas(agora = new Date()): Promise<{ pessoas: Pess
       criadoEm: u.criadoEm,
       ultimoLoginEm: u.ultimoLoginEm,
       ultimoUsoEm: u.ultimoLoginEm,
-      // Conta criada pelo "Continuar com Google" não tem senha (src/lib/google/contas.ts, SEM_SENHA).
+      // Conta criada pelo antigo "Continuar com Google" (SEM_SENHA) ou pela Absolute ZRO (SEM_SENHA_ZRO) não tem senha.
       comSenha: u.senhaHash.startsWith("scrypt$"),
+      soZro: u.senhaHash === "zro",
       drives: [],
       computadores: 0,
     });
@@ -564,7 +567,7 @@ export async function linhaDoTempo(usuarioId: string, pessoa: PessoaUso, agora =
   for (const u of uso) pegar(u.dia).uso = somar(ZERO, u);
   const dias = [...porDia.values()].sort((a, b) => (a.dia < b.dia ? 1 : -1));
 
-  const eventos: Evento[] = [{ quando: pessoa.criadoEm, texto: pessoa.comSenha ? "Criou a conta com e-mail e senha" : "Criou a conta com o Google" }];
+  const eventos: Evento[] = [{ quando: pessoa.criadoEm, texto: pessoa.comSenha ? "Criou a conta com e-mail e senha" : pessoa.soZro ? "Criou a conta com a Absolute ZRO" : "Criou a conta com o Google" }];
   for (const d of pessoa.drives) eventos.push({ quando: d.criadoEm, texto: `Conectou o Drive ${d.email}` });
   for (const c of todas) {
     eventos.push({ quando: c.criadoEm, texto: `Conectou o computador ${c.nome ?? "sem nome"}` });
