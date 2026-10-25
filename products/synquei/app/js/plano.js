@@ -1,8 +1,9 @@
 // Plano do usuário: o cartão da barra lateral, o de Ajustes e a comparação dos planos (Fazer upgrade). Ainda não há
 // conta nem assinatura no app, então todo mundo está no Grátis e tudo continua liberado; os planos e preços são os
-// mesmos da seção Planos do site.
+// mesmos da seção Planos do site. A conta Absolute ZRO (conta.js) só mostra quem é: não muda o plano.
 
 import { h, icon } from './util.js'
+import { linhaConta } from './conta.js'
 
 const SITE_PLANOS = 'https://synquei.vercel.app/#planos'
 const SOBEDESCE = 'https://sobedesce.com'
@@ -43,6 +44,7 @@ export const planoAtual = () => PLANOS[0]
 export function cartaoPlano() {
   const p = planoAtual()
   return `<div class="plano-card">
+    ${linhaConta()}
     <div class="plano-card-topo"><span class="eyebrow">Seu plano</span><span class="plano-chip">${h(p.nome)}</span></div>
     <p>Multicâmera e Direto no DaVinci no <b>Pro</b>.</p>
     <button class="plano-up" data-act="upgrade">${icon('sparkle')}Fazer upgrade</button>

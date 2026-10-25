@@ -1,6 +1,6 @@
 // Modo offline do Synquei: guarda o site e o app na primeira visita. HTML vem da rede quando dá (para pegar
-// versões novas); o resto vem do cache e é atualizado em segundo plano.
-const CACHE = 'synquei-v8'
+// versões novas); o resto vem do cache e é atualizado em segundo plano. /api/ e /baixar/ vão sempre direto à rede.
+const CACHE = 'synquei-v9'
 const CORE = [
   '/',
   '/site.css',
@@ -11,6 +11,7 @@ const CORE = [
   '/app/',
   '/app/app.css',
   '/app/js/atualizacao.js',
+  '/app/js/conta.js',
   '/app/js/demo.js',
   '/app/js/export/fcpxml.js',
   '/app/js/export/index.js',
@@ -78,7 +79,10 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   const req = e.request
-  if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return
+  const u = new URL(req.url)
+  if (req.method !== 'GET' || u.origin !== location.origin) return
+  // funções (login, /api/zro/eu com dados da pessoa) e downloads nunca passam pelo cache
+  if (u.pathname.startsWith('/api/') || u.pathname.startsWith('/baixar/')) return
   const html = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html')
   if (html) {
     e.respondWith(

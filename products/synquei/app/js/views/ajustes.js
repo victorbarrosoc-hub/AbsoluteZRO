@@ -1,10 +1,11 @@
-// Ajustes: aparência, padrões de exportação, atalhos, privacidade e dados guardados no navegador.
+// Ajustes: conta (opcional), aparência, padrões de exportação, atalhos, privacidade e dados guardados no navegador.
 
 import { S, changed } from '../store.js'
 import { h, icon, toast, modal } from '../util.js'
 import { sfx, soundPrefs, setSoundPrefs } from '../sfx.js'
 import { temAtualizador, estadoAtualizacao, buildLabel } from '../atualizacao.js'
 import { planoAtual } from '../plano.js'
+import { cartaoConta, sair } from '../conta.js'
 
 const theme = () => {
   try {
@@ -48,6 +49,7 @@ export default {
     const som = soundPrefs()
     return `<div class="page tela"><header class="page-head"><div><h1>Ajustes</h1><p class="page-lead">Valem para este navegador.</p></div></header>
     <div class="settings stagger">
+      ${cartaoConta()}
       <section class="card"><header class="card-head"><h2>Plano</h2><span class="plano-chip">${h(planoAtual().nome)}</span></header><div class="card-pad">
         <div class="set-row"><div><b>Seu plano: ${h(planoAtual().nome)}</b><small>Sincronia, linha do tempo e exportação para todos os editores. O Pro adiciona multicâmera nos 4 editores e o Direto no DaVinci (Beta).</small></div><button class="btn btn-primary btn-sm" data-act="upgrade">${icon('sparkle')}Fazer upgrade</button></div>
       </div></section>
@@ -86,7 +88,7 @@ export default {
         <div class="set-row"><div><b>Como instalar</b><small>Passo a passo e instalação sem aviso pelo Terminal.</small></div><a class="btn btn-ghost btn-sm" href="/#baixar" target="_blank" rel="noopener">Ver no site</a></div>
       </div></section>`}
       <section class="card"><header class="card-head"><h2>Privacidade</h2></header><div class="card-pad" style="padding:16px 20px;display:grid;gap:10px">
-        <div class="info-box">${icon('lock')}<div>O Synquei roda inteiro no seu computador. Os arquivos são lidos direto do disco e nunca são enviados para servidor nenhum. Não há conta, rastreador nem análise de uso.</div></div>
+        <div class="info-box">${icon('lock')}<div>O Synquei roda inteiro no seu computador. Os arquivos são lidos direto do disco e nunca são enviados para servidor nenhum. Não há rastreador nem análise de uso. A conta Absolute ZRO é opcional e não vê seus arquivos.</div></div>
         <p class="sub">Os projetos (nomes dos arquivos, aparelhos e posições) ficam guardados neste navegador. Para levar a outro computador, exporte o arquivo .synquei em Exportar › Relatório.</p>
       </div></section>
       <section class="card"><header class="card-head"><h2>Dados</h2></header><div class="card-pad"><div class="set-row"><div><b>Projetos guardados</b><small>${S.list.length} neste navegador.</small></div><button class="btn btn-secondary btn-danger" data-act="wipe">${icon('trash')}Apagar todos</button></div></div></section>
@@ -94,6 +96,9 @@ export default {
     </div></div>`
   },
   acts: {
+    'conta-sair'() {
+      sair()
+    },
     testar() {
       sfx.done()
     },
