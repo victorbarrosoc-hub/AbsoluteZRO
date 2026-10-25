@@ -281,3 +281,9 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   `/downloads`, `/perfil`, `/assinatura` e `/equipe`.
 - Telas dos apps capturadas com Playwright dos sites públicos (SOBEDESCE, Synquei `/app/`, NOSSOM, TPeasy, Carro do
   Freela) em 25/10/2026; SOBEDESCE, NOSSOM e Carro do Freela não têm tema escuro e usam a mesma captura nos dois.
+
+## App para computador fechado ao público (25/10/2026)
+
+- O primeiro build da main (run 40236016758) gerou o `.dmg` e o `.exe` e passou nos testes de fumaça de Mac e Windows.
+- `/baixar` mostra "Em breve" e `/baixar/hub/{mac,windows}` volta para `/baixar` enquanto `HUB_DESKTOP_PUBLICO` não for
+  `1`. Isso vale mesmo com o Release no ar. Teste: `tests/integration/hub-desktop-download.test.ts`.

@@ -4,6 +4,9 @@
  * endereço assinado e temporário do arquivo, e a rota só redireciona. Sem token (ou com o repositório público), vale o
  * link normal do Release. Mesmo esquema do Synquei (products/synquei/api/baixar.js).
  *
+ * Download só aparece com HUB_DESKTOP_PUBLICO=1 (pedido do titular, 25/10/2026): os instaladores são gerados a cada
+ * mudança na main, mas o titular decide quando o público pode baixar. Sem a chave, a página mostra "Em breve".
+ *
  * Sem `server-only` e com fetch/env injetáveis para os testes (tests/integration/hub-desktop-download.test.ts).
  */
 
@@ -60,6 +63,7 @@ function config(d: Deps) {
     // colado no painel da Vercel às vezes vem com espaço ou quebra de linha no fim
     token: bruto.trim(),
     bruto,
+    publico: (env.HUB_DESKTOP_PUBLICO ?? '').trim() === '1',
     repo: (env.HUB_DESKTOP_REPO || HUB_DESKTOP_REPO).trim(),
     tag: (env.HUB_DESKTOP_TAG || HUB_DESKTOP_TAG).trim(),
   }
@@ -162,6 +166,7 @@ export async function escolherInstalador(p: Plataforma, d: Deps = {}, build?: nu
 
 /** Para a página /baixar: tem instalador de cada sistema? (sem Release = "Em breve") */
 export async function disponibilidade(d: Deps = {}): Promise<Disponibilidade> {
+  if (!config(d).publico) return SEM_INSTALADOR
   const assets = await assetsDoRelease(d)
   if (!assets) return SEM_INSTALADOR
   const mac = assets.some((a) => QUAL.mac(a.name))
@@ -177,6 +182,7 @@ export async function diagnostico(d: Deps = {}) {
     token: !!c.token,
     tipoToken: !c.token ? null : c.token.startsWith('github_pat_') ? 'fino' : c.token.startsWith('ghp_') ? 'clássico' : 'outro formato',
     espacoNasPontas: !!c.token && c.bruto !== c.token,
+    publico: c.publico,
     repositorio: c.repo,
     tag: c.tag,
   }
@@ -231,6 +237,7 @@ const semCache = { 'cache-control': 'no-store' }
 export async function respostaInstalador(p: Plataforma, pedido: URL, d: Deps = {}): Promise<Response> {
   const build = buildPedido(pedido.searchParams.get('build'))
   const voltar = () => new Response(null, { status: 302, headers: { location: new URL('/baixar?hub=indisponivel#absolute-zro', pedido).href, ...semCache } })
+  if (!config(d).publico) return voltar()
   try {
     const alvo = await escolherInstalador(p, d, build)
     if (!alvo) return build != null ? new Response('Instalador deste build não está mais no ar.', { status: 404, headers: semCache }) : voltar()
