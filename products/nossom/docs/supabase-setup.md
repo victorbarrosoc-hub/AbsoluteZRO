@@ -4,7 +4,7 @@ O login e cadastro usam e-mail/senha no Supabase Auth. Contas já criadas nesse 
 
 ## Ativação no projeto NOSSOM
 
-1. Projeto: `https://projeto-novo-substituir.supabase.co`.
+1. Projeto: `https://iaavcsyoybnswtfnrvtu.supabase.co`.
 2. Em Supabase → Settings → API Keys, copie a chave **publishable** (ou anon legada). Na Vercel → NOSSOM → Settings → Environment Variables, defina `SUPABASE_URL` com essa URL e `SUPABASE_ANON_KEY` com a chave pública. Os aliases `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_PUBLISHABLE_KEY` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` também são aceitos. Não use service_role como chave pública.
 3. Preserve o segredo privado `NOSSOM_AUTH_SECRET` (32 caracteres aleatórios recomendados). A instalação existente pode continuar usando `NOSSOM_AI_ACCESS_CODE` como fallback privado; esse valor não é mais solicitado na interface. Alterá-lo invalida sessões, sem apagar contas Supabase.
 4. Aplique `supabase/migrations/202610220001_accounts_and_weekly_usage.sql` pelo SQL Editor do projeto ou por `supabase db push` com o projeto vinculado. A migração não modifica usuários existentes e não exige chave service_role na aplicação.
