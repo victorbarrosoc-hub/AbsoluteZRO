@@ -1,5 +1,6 @@
 /* Revela · linguagem da família Absolute ZRO (ADR 0011): preto fosco, grafite, pílulas, Inter em bold.
-   Marca (ADR 0016, guia em marca/index.html): o slide em amarelo filme; cor em ícone, brilho e detalhe; texto neutro. */
+   Marca (ADR 0016, guia em marca/index.html): película perfurada em amarelo filme, revelada em roxo → amarelo; cor em
+   ícone, brilho e detalhe; texto neutro. */
 :root {
   --fundo: #0e0e10;
   --superficie: #17171a;
@@ -10,8 +11,8 @@
   --fraco: #8e8e93;
   --destaque: #b9bac2;
   --amarelo: #ffb800;
+  --roxo: #8b3fe8;
   --vermelho: #e52b1a;
-  --mar: #0e8f8c;
   --papel: #fff4e0;
   --azul: #2d7bff;
   --erro: #ff453a;
@@ -199,7 +200,7 @@ main {
   border-radius: var(--raio-g);
   overflow: hidden;
   border: 1px solid var(--linha);
-  box-shadow: 0 30px 80px -30px rgba(255, 122, 26, 0.4);
+  box-shadow: 0 30px 80px -30px rgba(139, 63, 232, 0.45);
 }
 .palco canvas {
   display: block;

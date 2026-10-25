@@ -13,12 +13,12 @@
         --texto: #f5f5f7;
         --mudo: #aeaeb2;
         --amarelo: #ffb800;
+        --roxo: #8b3fe8;
+        --roxo-fundo: #4b1fb8;
         --vermelho: #e52b1a;
         --laranja: #ff7a1a;
-        --mar: #0e8f8c;
-        --sol: #ffe07a;
         --papel: #fff4e0;
-        --gradiente: linear-gradient(180deg, #ff9a1f, #ff5a1f 55%, var(--vermelho));
+        --gradiente: linear-gradient(45deg, var(--roxo-fundo), var(--roxo) 32%, var(--vermelho) 62%, var(--laranja) 82%, #ffc933);
         --fonte: 'Inter Variable', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
       }
       * {
@@ -57,7 +57,7 @@
         gap: 28px;
         padding: 96px 24px;
         border-radius: 32px;
-        background: radial-gradient(60% 70% at 55% 60%, rgba(255, 184, 0, 0.2), transparent 70%), var(--grafite);
+        background: radial-gradient(60% 70% at 55% 60%, rgba(139, 63, 232, 0.22), transparent 70%), var(--grafite);
         border: 1px solid var(--linha);
         overflow: hidden;
       }
@@ -182,7 +182,7 @@
         border-radius: 20px;
         border: 1px solid var(--linha);
         background: #1e1e22;
-        box-shadow: 0 20px 60px -20px rgba(255, 184, 0, 0.35);
+        box-shadow: -30px 20px 60px -24px rgba(255, 184, 0, 0.35), 30px 20px 60px -24px rgba(139, 63, 232, 0.4);
         min-width: 240px;
       }
       .tile img {
@@ -223,38 +223,31 @@
 
       <h2>Conceito</h2>
       <p>
-        O slide. Antes do digital, a cor de um filme se conferia projetando o diapositivo: a moldura com o amarelo das caixas de filme, a imagem revelada na
-        janela e o ponto vermelho no canto, que mostra ao projecionista o lado certo. Na janela, um pôr do sol em laranja e verde-mar, a dupla mais famosa do
-        color grading.
+        A película. Um quadro de filme perfurado, no amarelo das caixas de filme; dentro dele a imagem se revela na
+        diagonal, do latente ao colorido: roxo, vermelho, laranja e amarelo. A linha clara é o instante da revelação, e o
+        corte é o antes e depois que a ferramenta mostra.
       </p>
 
       <h2>Símbolo</h2>
-      <p>A moldura é o próprio ícone. A janela é a imagem; o ponto vermelho fica sempre no canto de cima, à esquerda.</p>
+      <p>Película perfurada com o quadro revelado na diagonal. Perfurações sempre em cima e embaixo.</p>
       <div class="grade">
         <div class="cartao">
           <div class="vitrine"><img src="revela-icone.svg" width="150" height="150" alt="Ícone da Revela" /></div>
           <strong>Ícone de app</strong>
-          <small>Catálogo do HUB, favicon, instalador. Com sombra e brilho de papel cartão.</small>
+          <small>Catálogo do HUB, favicon, instalador. No azulejo grafite da família.</small>
         </div>
         <div class="cartao">
-          <div class="vitrine clara"><img src="revela-simbolo.svg" width="150" height="150" alt="Símbolo da Revela, versão plana" /></div>
+          <div class="vitrine clara"><img src="revela-simbolo.svg" width="190" alt="Símbolo da Revela, versão plana" /></div>
           <strong>Plano</strong>
-          <small>Impressão, tamanhos pequenos, documentos. Sem gradientes nem reflexo no mar.</small>
+          <small>Sem azulejo e sem gradiente: o revelado vira faixas de roxo profundo, roxo, vermelho e laranja. Furos vazados.</small>
         </div>
         <div class="cartao">
           <div class="vitrine clara">
-            <svg viewBox="100 100 824 824" width="150" role="img" aria-label="Símbolo da Revela em uma cor">
-              <mask id="m">
-                <rect x="100" y="100" width="824" height="824" rx="186" fill="#fff" />
-                <rect x="217" y="322" width="590" height="400" rx="40" fill="#000" />
-                <circle cx="212" cy="212" r="28" fill="#000" />
-              </mask>
-              <clipPath id="j"><rect x="217" y="322" width="590" height="400" rx="40" /></clipPath>
-              <rect x="100" y="100" width="824" height="824" rx="186" fill="currentColor" mask="url(#m)" />
-              <g clip-path="url(#j)" fill="currentColor">
-                <circle cx="512" cy="608" r="128" />
-                <rect x="217" y="622" width="590" height="100" />
-              </g>
+            <svg viewBox="200 290 624 444" width="190" role="img" aria-label="Símbolo da Revela em uma cor">
+              <mask id="m"><rect x="200" y="290" width="624" height="444" fill="#fff" /><g fill="#000"><rect x="236" y="312" width="44" height="36" rx="9" /><rect x="316" y="312" width="44" height="36" rx="9" /><rect x="396" y="312" width="44" height="36" rx="9" /><rect x="476" y="312" width="44" height="36" rx="9" /><rect x="556" y="312" width="44" height="36" rx="9" /><rect x="636" y="312" width="44" height="36" rx="9" /><rect x="716" y="312" width="44" height="36" rx="9" /><rect x="236" y="676" width="44" height="36" rx="9" /><rect x="316" y="676" width="44" height="36" rx="9" /><rect x="396" y="676" width="44" height="36" rx="9" /><rect x="476" y="676" width="44" height="36" rx="9" /><rect x="556" y="676" width="44" height="36" rx="9" /><rect x="636" y="676" width="44" height="36" rx="9" /><rect x="716" y="676" width="44" height="36" rx="9" /></g><rect x="252" y="372" width="520" height="280" rx="28" fill="#000" /></mask>
+              <clipPath id="j"><rect x="252" y="372" width="520" height="280" rx="28" /></clipPath>
+              <rect x="200" y="290" width="624" height="444" rx="40" fill="currentColor" mask="url(#m)" />
+              <g clip-path="url(#j)"><polygon points="566,372 790,372 790,652 470,652" fill="currentColor" /></g>
             </svg>
           </div>
           <strong>Uma cor</strong>
@@ -273,7 +266,7 @@
             </div>
           </div>
           <strong>No HUB</strong>
-          <small>Brilho amarelo só atrás do cartão; o texto continua neutro.</small>
+          <small>Brilho amarelo e roxo só atrás do cartão; o texto continua neutro.</small>
         </div>
         <div class="cartao">
           <div class="vitrine papel">
@@ -294,27 +287,27 @@
       </div>
 
       <h2>Cores</h2>
-      <p>Colorida, no espírito das caixas de filme. Cor vai em ícone, brilho, ilustração e detalhe; texto pequeno fica neutro.</p>
+      <p>Colorida, no espírito das caixas de filme, com roxo. Cor vai em ícone, brilho, ilustração e detalhe; texto pequeno fica neutro.</p>
       <div class="grade cores">
         <div class="cor">
           <div class="amostra" style="background: var(--amarelo)"></div>
           <div><strong>Amarelo filme</strong><code>#FFB800 · --p-finishing</code></div>
         </div>
         <div class="cor">
+          <div class="amostra" style="background: var(--roxo)"></div>
+          <div><strong>Roxo</strong><code>#8B3FE8 · --p-finishing-2</code></div>
+        </div>
+        <div class="cor">
+          <div class="amostra" style="background: var(--roxo-fundo)"></div>
+          <div><strong>Roxo profundo</strong><code>#4B1FB8</code></div>
+        </div>
+        <div class="cor">
           <div class="amostra" style="background: var(--vermelho)"></div>
-          <div><strong>Vermelho</strong><code>#E52B1A · --p-finishing-2</code></div>
+          <div><strong>Vermelho</strong><code>#E52B1A</code></div>
         </div>
         <div class="cor">
           <div class="amostra" style="background: var(--laranja)"></div>
-          <div><strong>Pôr do sol</strong><code>#FF7A1A</code></div>
-        </div>
-        <div class="cor">
-          <div class="amostra" style="background: var(--mar)"></div>
-          <div><strong>Verde-mar</strong><code>#0E8F8C</code></div>
-        </div>
-        <div class="cor">
-          <div class="amostra" style="background: var(--sol)"></div>
-          <div><strong>Sol</strong><code>#FFE07A</code></div>
+          <div><strong>Laranja</strong><code>#FF7A1A</code></div>
         </div>
         <div class="cor">
           <div class="amostra" style="background: var(--papel)"></div>
@@ -325,7 +318,7 @@
           <div><strong>Banho</strong><code>#0E0E10 · preto fosco da família</code></div>
         </div>
       </div>
-      <div class="faixa" role="img" aria-label="Céu do slide: laranja, pôr do sol e vermelho"></div>
+      <div class="faixa" role="img" aria-label="Gradiente da revelação: roxo profundo, roxo, vermelho, laranja e amarelo"></div>
 
       <h2>Tipografia</h2>
       <div class="tipo">
@@ -340,15 +333,15 @@
           <strong>Fazer</strong>
           <ul>
             <li>Usar os arquivos de <code>products/finishing/marca</code>, sem redesenhar.</li>
-            <li>Deixar respiro em volta do ícone de pelo menos o tamanho do ponto vermelho, três vezes.</li>
-            <li>Ponto vermelho sempre no canto de cima, à esquerda.</li>
+            <li>Deixar respiro em volta do símbolo de pelo menos a altura de uma perfuração, duas vezes.</li>
+            <li>Gradiente sempre do roxo (embaixo, à esquerda) ao amarelo (em cima, à direita).</li>
             <li>Botão principal branco em pílula, como na família.</li>
           </ul>
         </div>
         <div class="cartao">
           <strong>Não fazer</strong>
           <ul>
-            <li>Girar a moldura, trocar a cena da janela ou mudar o ponto de canto.</li>
+            <li>Girar a película, inverter o corte ou trocar o lado revelado.</li>
             <li>Usar amarelo ou vermelho em texto pequeno.</li>
             <li>Escrever REVELA em caixa alta ou trocar a fonte do nome.</li>
             <li>Usar nome, logotipo ou desenho de marcas de filme (Kodak, Fuji etc.): a inspiração é só de cor.</li>
@@ -357,12 +350,12 @@
       </div>
 
       <h2>Alternativas estudadas</h2>
-      <p>Guardadas em <code>marca/alternativas</code> caso o titular prefira outro caminho.</p>
+      <p>Guardadas em <code>marca/alternativas</code>.</p>
       <div class="grade">
         <div class="cartao">
-          <div class="vitrine"><img src="alternativas/revela-perfurado.svg" width="130" height="130" alt="Alternativa: quadro de película perfurado" /></div>
-          <strong>Perfurado</strong>
-          <small>Quadro de película com perfurações, revelado na diagonal.</small>
+          <div class="vitrine"><img src="alternativas/revela-slide.svg" width="130" height="130" alt="Alternativa: slide" /></div>
+          <strong>Slide</strong>
+          <small>Moldura de diapositivo com um pôr do sol na janela.</small>
         </div>
         <div class="cartao">
           <div class="vitrine"><img src="alternativas/revela-emulsao.svg" width="130" height="130" alt="Alternativa: três camadas de emulsão" /></div>

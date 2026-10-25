@@ -1,18 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="100 100 824 824">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="200 290 624 444">
   <title>Revela</title>
   <defs>
-    <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#FF9A1F"/>
-      <stop offset=".55" stop-color="#FF5A1F"/>
-      <stop offset="1" stop-color="#E52B1A"/>
-    </linearGradient>
-    <clipPath id="janela"><rect x="217" y="322" width="590" height="400" rx="40"/></clipPath>
+    <mask id="furos"><rect x="200" y="290" width="624" height="444" fill="#fff"/><g fill="#000"><rect x="236" y="312" width="44" height="36" rx="9"/><rect x="316" y="312" width="44" height="36" rx="9"/><rect x="396" y="312" width="44" height="36" rx="9"/><rect x="476" y="312" width="44" height="36" rx="9"/><rect x="556" y="312" width="44" height="36" rx="9"/><rect x="636" y="312" width="44" height="36" rx="9"/><rect x="716" y="312" width="44" height="36" rx="9"/><rect x="236" y="676" width="44" height="36" rx="9"/><rect x="316" y="676" width="44" height="36" rx="9"/><rect x="396" y="676" width="44" height="36" rx="9"/><rect x="476" y="676" width="44" height="36" rx="9"/><rect x="556" y="676" width="44" height="36" rx="9"/><rect x="636" y="676" width="44" height="36" rx="9"/><rect x="716" y="676" width="44" height="36" rx="9"/></g><rect x="252" y="372" width="520" height="280" rx="28" fill="#000"/></mask>
+    <clipPath id="quadro"><rect x="252" y="372" width="520" height="280" rx="28"/></clipPath>
   </defs>
-  <rect x="100" y="100" width="824" height="824" rx="186" fill="#FFB800"/>
-  <g clip-path="url(#janela)">
-    <rect x="217" y="322" width="590" height="400" fill="url(#ceu)"/>
-    <circle cx="512" cy="608" r="128" fill="#FFE07A"/>
-    <rect x="217" y="608" width="590" height="114" fill="#0E8F8C"/>
+  <rect x="200" y="290" width="624" height="444" rx="40" fill="#FFB800" mask="url(#furos)"/>
+  <g clip-path="url(#quadro)">
+    <rect x="252" y="372" width="520" height="280" fill="#1B1B1F"/>
+    <polygon points="566,372 640,372 544,652 470,652" fill="#4B1FB8"/>
+    <polygon points="640,372 700,372 604,652 544,652" fill="#8B3FE8"/>
+    <polygon points="700,372 750,372 654,652 604,652" fill="#E52B1A"/>
+    <polygon points="750,372 790,372 790,652 654,652" fill="#FF7A1A"/>
   </g>
-  <circle cx="212" cy="212" r="28" fill="#E52B1A"/>
 </svg>

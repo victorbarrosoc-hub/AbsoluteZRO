@@ -19,8 +19,8 @@ Absolute ZRO vem do serviço de color grading e finalização da ZRO Filmes (zro
 
 ## Marca
 
-Guia em [`marca/index.html`](marca/index.html) ([ADR 0016](../../docs/decisions/0016-identidade-revela.md)): o slide
-(moldura em amarelo filme, pôr do sol laranja e verde-mar na janela, ponto vermelho de orientação), versões plana e
+Guia em [`marca/index.html`](marca/index.html) ([ADR 0016](../../docs/decisions/0016-identidade-revela.md)): película
+perfurada em amarelo filme, com o quadro revelado na diagonal em roxo → vermelho → laranja → amarelo; versões plana e
 de uma cor, cores, regras de uso e as alternativas estudadas (`marca/alternativas`).
 
 ## Tela
