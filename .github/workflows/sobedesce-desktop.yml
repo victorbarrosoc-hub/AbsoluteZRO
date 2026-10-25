@@ -60,7 +60,7 @@ jobs:
         with:
           # Ninguém aqui faz git push: o token não fica gravado no .git/config ao alcance do npm ci e dos scripts.
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
@@ -101,7 +101,7 @@ jobs:
         with:
           # Ninguém aqui faz git push: o token não fica gravado no .git/config ao alcance do npm ci e dos scripts.
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
