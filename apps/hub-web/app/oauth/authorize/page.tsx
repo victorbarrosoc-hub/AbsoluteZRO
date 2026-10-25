@@ -46,6 +46,12 @@ export default async function Authorize({ searchParams }: { searchParams: Promis
   const here = `/oauth/authorize?${q.toString()}`
   if (!auth) {
     if (req.prompt === 'none') redirect(denyUrl(req).replace('error=access_denied', 'error=login_required'))
+    // "Criar conta" num app da família: a conta nasce aqui, na Absolute ZRO, e volta ao app já logada.
+    if (req.prompt === 'create') {
+      const back = new URLSearchParams(q)
+      back.delete('prompt')
+      redirect(`/criar-conta?next=${encodeURIComponent(`/oauth/authorize?${back.toString()}`)}`)
+    }
     redirect(`/entrar?next=${encodeURIComponent(here)}`)
   }
 

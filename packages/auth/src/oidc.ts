@@ -156,7 +156,7 @@ export function discovery(issuer: string) {
     token_endpoint_auth_methods_supported: ['client_secret_basic', 'client_secret_post', 'none'],
     code_challenge_methods_supported: ['S256'],
     claims_supported: ['sub', 'email', 'email_verified', 'name', 'zro_org', 'zro_products', 'auth_time', 'nonce'],
-    prompt_values_supported: ['none', 'consent'],
+    prompt_values_supported: ['none', 'consent', 'create'],
   }
 }
 
@@ -278,7 +278,8 @@ export type AuthorizeRequest = {
   state: string
   codeChallenge: string
   nonce: string | null
-  prompt: 'none' | 'consent' | null
+  /** create = a pessoa ainda não tem conta: o HUB abre direto a tela de criar conta. */
+  prompt: 'none' | 'consent' | 'create' | null
 }
 
 /**
@@ -312,7 +313,7 @@ export async function parseAuthorizeRequest(
   const nonce = q.get('nonce')
   if (nonce && nonce.length > 512) return back('invalid_request', 'nonce longo demais.')
   const p = q.get('prompt')
-  const prompt = p === 'none' || p === 'consent' ? p : null
+  const prompt = p === 'none' || p === 'consent' || p === 'create' ? p : null
   return { ok: true, req: { client, redirectUri, scopes, state, codeChallenge, nonce, prompt } }
 }
 
@@ -330,6 +331,10 @@ export async function grantConsent(tx: Queryable, userId: string, clientId: stri
 /** Emite o código e devolve a URL de retorno ao app. */
 export async function issueCode(tx: Queryable, req: AuthorizeRequest, who: { userId: string; orgId: string | null; authTime: Date }): Promise<string> {
   const code = newToken('zc')
+  // A conta da pessoa neste app (0006): nasce no primeiro acesso e marca o último.
+  await tx`
+    insert into zro.app_accounts (user_id, client_id, product_id) values (${who.userId}, ${req.client.id}, ${req.client.productId})
+    on conflict (user_id, client_id) do update set last_login_at = now(), logins = zro.app_accounts.logins + 1`
   await tx`
     insert into zro.oauth_codes (code_hash, client_id, user_id, org_id, redirect_uri, scopes, code_challenge, nonce, auth_time, expires_at)
     values (${hashToken(code)}, ${req.client.id}, ${who.userId}, ${who.orgId}, ${req.redirectUri}, ${req.scopes}, ${req.codeChallenge},

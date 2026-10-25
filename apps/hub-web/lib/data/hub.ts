@@ -111,8 +111,9 @@ export async function connectedAppsData(auth: Authenticated) {
   return db().asUser(
     { userId: auth.user.id, orgId: auth.session.activeOrgId },
     (tx) => tx`
-    select c.client_id, c.scopes, c.granted_at, cl.name, cl.product_id from zro.oauth_consents c
+    select c.client_id, c.scopes, c.granted_at, cl.name, cl.product_id, a.first_login_at, a.last_login_at from zro.oauth_consents c
     join zro.oauth_clients cl on cl.id = c.client_id
+    left join zro.app_accounts a on a.user_id = c.user_id and a.client_id = c.client_id
     where c.user_id = ${auth.user.id} and c.revoked_at is null order by c.granted_at desc`,
   )
 }
