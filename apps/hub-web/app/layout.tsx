@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 import { appOrigin } from '@/lib/env'
 import './globals.css'
 
-const description = 'Uma conta para todas as ferramentas: do job à entrega, roteiro, backup, sincronia e som no mesmo lugar.'
+const description = 'O futuro começa do zero. Uma conta para todas as ferramentas, do job à entrega.'
 
 export const metadata: Metadata = {
   metadataBase: new URL(appOrigin),
