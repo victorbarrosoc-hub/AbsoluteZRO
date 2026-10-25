@@ -8,7 +8,7 @@ Atualizado em 25/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ✅ Estratégia por produto e ADRs ([decisions](decisions)).
 - ✅ Prova de originais intocados (`scripts/check-originals.mjs`).
 - ✅ Arte oficial da marca (fornecida pelo titular).
-- 🟡 Deploy autorizado (Vercel `absolutezro` + Supabase `AbsoluteZRO`): projeto Vercel configurado (raiz `apps/hub-web`); falta aplicar o SQL, ligar o banco e levar ao `main`.
+- ✅ Deploy autorizado (Vercel `absolutezro` + Supabase `AbsoluteZRO`) no ar em absolutezro.vercel.app.
 
 ## Fase 1 — Fundação
 
@@ -17,8 +17,12 @@ Atualizado em 25/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ✅ Redesign na linguagem das ferramentas da família (preto fosco, suíte com grade de apps, cápsula de vidro, demos em CSS com motion pausável), tema claro completo e seletor claro/escuro em todas as telas — [ADR 0011](decisions/0011-linguagem-da-familia.md).
 - ✅ Downloads no estilo de central de apps (`/baixar` público e `/downloads` no HUB): instaladores oficiais de SOBEDESCE, Synquei e NOSSOM (Mac e Windows), TPeasy no iPhone, Carro do Freela no navegador; destaque do sistema de quem visita e instalação sem aviso pelo Terminal.
 - ✅ Login único: o HUB é provedor OpenID Connect (código + PKCE, refresh com rotação, permissão por app, Apps com acesso no Perfil, cadastro de apps no console) — [ADR 0012](decisions/0012-login-unico-oidc.md).
-- ⬜ Apps originais com "Entrar com Absolute ZRO" (começa pelo SOBEDESCE; exige autorização para mexer em cada original).
-- 🟡 SOBEDESCE publicado deste repositório ([ADR 0013](decisions/0013-monorepo-como-fonte.md)): site na Vercel a partir de `products/sobedesce/web`, CI na raiz (`sobedesce-desktop.yml`, `sobedesce-web.yml`), Release `sobedesce-versao-de-teste` (builds a partir do b1001, com o release antigo como reserva no site) e cópia conferida do Neon para o schema `sobedesce` do Supabase pronta no `vercel-build`. Falta definir as variáveis na Vercel e fazer o deploy da virada.
+- ✅ "Entrar com Absolute ZRO" nas cinco plataformas (SOBEDESCE, NOSSOM, Synquei, TPeasy, Carro do Freela). Apps da família entram direto, sem a tela Permitir, e o Abrir do HUB já chega logado (`products.sso_start_url`, migration 0005).
+- ✅ Um repositório para tudo ([ADR 0013](decisions/0013-monorepo-como-fonte.md)): as cinco plataformas moram em `products/<app>` e publicam nos próprios projetos Vercel a partir daqui (Root Directory por pasta, build só quando a pasta muda). CI e releases de desktop na raiz, com tag por app e o release antigo como reserva.
+- ✅ Um Supabase para tudo: SOBEDESCE (schema `sobedesce`, papel `sobedesce_app`, cópia do Neon conferida tabela a tabela) e NOSSOM (`nossom_private` + Auth) migrados e conferidos. Bancos antigos intactos como reserva.
+- ⬜ Carro do Freela no Supabase AbsoluteZRO (a lista de convite ainda está no projeto antigo; aguardando acesso).
+- ⬜ Arquivar os repositórios antigos (todos conferidos: o `main` de cada um é o commit importado).
+- ⬜ Domínio próprio `absolutezro.com` com subdomínio por app e sessão compartilhada (aguardando a compra).
 - ⬜ App Absolute ZRO para computador (instalar e atualizar todas as ferramentas num lugar só, como o Creative Cloud). Exige instaladores assinados e atualização automática em cada produto.
 - ✅ Conta central: cadastro, login, sair, sessões (lista e encerrar), confirmação de e-mail, nova senha, troca de senha.
 - ✅ Organizações, troca de organização ativa, convites (e-mail confirmado e igual), papéis, remoção, dono garantido.
