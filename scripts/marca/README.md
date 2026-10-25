@@ -20,3 +20,11 @@ Onde cada arquivo vai: `apps/hub-web/app/{apple-icon.png,icon.png,favicon.ico,op
 - `produto-hub-claro.png`: o HUB real (capturas do `/inicio`) num MacBook e num iPhone, fotos de aparelhos geradas no
   Higgsfield com tela verde e trocadas pelas capturas. Base do OG (`og-claro.html`) e da abertura do site.
 - `og-escuro.html` fica como alternativa para o tema escuro.
+
+## Telas dos apps (Padrão Apple, 25/10/2026)
+
+- `aparelhos/aparelhos-{claro,escuro}-verde.png`: MacBook + iPhone de frente com tela verde (Higgsfield).
+- `aparelhos/compor.py modelo.png tela-mac.png tela-iphone.png saida.png`: troca o verde pelas capturas.
+- `aparelhos/produtos.py <pasta>`: gera `public/brand/produto-<app>-{claro,escuro}.webp` (1600 px) e
+  `produto-hub-*.webp` (2400 px) a partir de capturas reais públicas (SOBEDESCE, Synquei `/app/`, NOSSOM, TPeasy, Carro
+  do Freela) e do `/inicio` do HUB. Telas de login foram evitadas; app sem tema escuro usa a mesma captura nos dois.

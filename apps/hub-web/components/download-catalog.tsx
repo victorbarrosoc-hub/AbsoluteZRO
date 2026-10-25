@@ -60,7 +60,7 @@ export function DownloadCatalog({ products, accessPill }: { products: CatalogPro
           >
             <div className="dl-app__glow" aria-hidden="true" />
             <header className="dl-app__head">
-              <ProductMark productId={d.productId} name={p.name} size={56} />
+              <ProductMark productId={d.productId} name={p.name} size={72} />
               <div className="dl-app__title">
                 <h2>
                   {p.name}
@@ -142,12 +142,14 @@ export function DownloadsIntro({ heading }: { heading: 'h1' | 'h2' }) {
     <div className="dl-intro">
       <div className="greet">
         <p className="zro-eyebrow">Downloads</p>
-        <H className="display-2">Instale as ferramentas.</H>
+        <H className="display-2 atitle atitle--inline">
+          <span className="atitle__thin">Instale</span> <span className="atitle__bold">as ferramentas.</span>
+        </H>
         <p className="zro-mute">
           Tudo num lugar só: escolha o app e o sistema. O instalador do seu computador aparece em destaque. Cada app abre com o próprio login.
         </p>
       </div>
-      <aside className="dl-central zro-card on-dark">
+      <aside className="dl-central zro-card">
         <Icon name="download" size={22} />
         <div>
           <strong>App Absolute ZRO para computador</strong>
