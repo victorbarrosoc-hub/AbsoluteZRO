@@ -74,3 +74,4 @@ export async function audit(tx: Queryable, e: AuditEntry): Promise<void> {
 }
 
 export { DomainError, isDomainError, type ErrorCode } from './errors'
+export { zroEnv, type ZroEnv } from './env'

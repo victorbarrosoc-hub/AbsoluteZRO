@@ -1,42 +1,55 @@
-# Checklist de deploy — AGUARDANDO AUTORIZAÇÃO DO TITULAR
+# Deploy — Vercel + Neon
 
-Nada abaixo foi executado. Cada item com custo ou efeito externo precisa de "sim" explícito.
+**Autorizado pelo titular em 25/10/2026** para o projeto `absolutezro` (team Victorbarrosoc) em
+https://absolutezro.vercel.app, com banco Neon criado pela Vercel. O conector da Vercel desta sessão não tem permissão
+para criar projetos (403), então os passos 1 e 2 são feitos no painel.
 
-## 1. Banco novo
+## 1. Importar o projeto (painel da Vercel)
 
-- [ ] Criar projeto Postgres **novo** (recomendado: Supabase, região São Paulo). Nunca o banco de um app original.
-- [ ] Em Supabase: Data API sem exposição do schema `zro` (as migrations já revogam `anon`/`authenticated`).
-- [ ] `DATABASE_URL` do papel `postgres`. Com pooler em modo transação (porta 6543): `DATABASE_PREPARE=false`.
-- [ ] `npm run db:migrate` a partir de máquina confiável ou job de CI com o segredo.
-- [ ] Backups automáticos e PITR ligados; retenção definida.
+1. Add New › Project › Import `victorbarrosoc-hub/AbsoluteZRO`.
+2. Project Name: `absolutezro`.
+3. **Root Directory: `apps/hub-web`** (obrigatório). O resto vem de `apps/hub-web/vercel.json`: instalação com npm 11 na
+   raiz do monorepo, `npm run vercel-build`, região `gru1`.
+4. Deploy. Sem banco o build passa, mas as páginas que usam dados respondem erro até o passo 2.
 
-## 2. Segredos (no provedor, nunca no Git)
+## 2. Banco Neon (painel da Vercel)
 
-- [ ] `ZRO_ENV=production`, `ZRO_APP_ORIGIN=https://<domínio>`, `ZRO_IP_HASH_SECRET` (openssl rand -hex 32).
-- [ ] Cobrança só quando houver provedor: `ZRO_BILLING_PROVIDERS` e `ZRO_BILLING_WEBHOOK_SECRET_<PROVEDOR>`.
-- [ ] Provedor de e-mail (adaptador a escrever em `packages/auth/src/email.ts`).
+1. No projeto: Storage › Create Database › Neon › região São Paulo se houver (ou a mais próxima) › Connect ao
+   `absolutezro` em Production e Preview.
+2. A Vercel injeta `DATABASE_URL`, `DATABASE_URL_UNPOOLED` e afins. Não é o banco de nenhum app original.
+3. Deployments › Redeploy. O build aplica as migrations sozinho (`scripts/vercel-build.mjs`, com a URL sem pooler).
 
-## 3. Vercel (HUB)
+## 3. Variáveis opcionais
 
-- [ ] Criar projeto **novo** ligado a `victorbarrosoc-hub/AbsoluteZRO`, raiz `apps/hub-web`, Node 22,
-      instalação `npx -y npm@11.6.2 ci` (na raiz), build `npm run build`.
-- [ ] Remover `"git": { "deploymentEnabled": false }` de `vercel.json` (raiz e `apps/hub-web`) **só** depois da
-      autorização, ou fazer deploys manuais.
-- [ ] Domínio novo do HUB (DNS só com autorização). Não usar domínios dos apps originais.
-- [ ] Conferir `/api/health`, login, criação de organização e uma importação de teste em staging antes de produção.
+- `ZRO_IP_HASH_SECRET` (openssl rand -hex 32): sem ela, o IP não é guardado nem usado nos limites por IP.
+- Ambiente e origem saem da Vercel (`VERCEL_ENV`, `VERCEL_PROJECT_PRODUCTION_URL`); `ZRO_ENV`/`ZRO_APP_ORIGIN` só se
+  quiser forçar.
+- Cobrança só quando houver provedor: `ZRO_BILLING_PROVIDERS` e `ZRO_BILLING_WEBHOOK_SECRET_<PROVEDOR>`.
 
-## 4. Worker
+## 4. Primeira conta de administração
 
-- [ ] Processo Node contínuo (`npm run worker`) com `DATABASE_URL` (Railway/Fly/VM) ou rotina agendada que chame
-      `runOnce` + `recoverStaleRuns`. Uma instância basta; várias são seguras (SKIP LOCKED).
+Sem provedor de e-mail, ninguém consegue confirmar e-mail em produção. Depois de criar sua conta no site, rode uma vez
+no SQL Editor da Neon (troque o e-mail se for outro):
 
-## 5. Primeira configuração
+```sql
+update zro.users set email_verified_at = now(), platform_role = 'admin'
+where email = 'victorbarrosoc@gmail.com';
+```
 
-- [ ] Criar a conta do titular, marcar `platform_role = 'admin'` direto no banco (uma vez) e confirmar o e-mail.
-- [ ] Definir no console os limites (nova versão do Ciclo do O e dos individuais) e publicar.
-- [ ] **Não** rodar `db:seed:demo` em produção (o script recusa).
+Depois disso o console fica em `/admin` (limites dos planos, concessões, fila parada, eventos de cobrança).
 
-## 6. Depois do deploy
+## 5. Fila
 
-- [ ] `node scripts/check-originals.mjs` de novo para registrar que nenhum original mudou.
-- [ ] Monitorar dead-letter e eventos de cobrança com falha no console.
+Sem worker contínuo, o HUB processa a fila logo depois de cada importação ou "Repetir" (`apps/hub-web/lib/queue.ts`).
+Para volume maior, rodar `npm run worker` num processo contínuo com a mesma `DATABASE_URL`.
+
+## Nunca
+
+- Rodar `db:seed:demo` em produção (o script recusa).
+- Apontar `DATABASE_URL` para o banco de um app original.
+- Usar o domínio de um app original.
+
+## Validação local deste caminho
+
+Simulado com um Postgres novo e um dono **sem superusuário** (como o da Neon): migrations no build, cadastro,
+organização e projeto em modo produção, sem links de desenvolvimento expostos.

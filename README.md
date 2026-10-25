@@ -10,8 +10,9 @@ e a camada de projeto que liga Carro do Freela, TPeasy, SOBEDESCE, Synquei, NOSS
 - O que está pronto e o que falta: [docs/roadmap.md](docs/roadmap.md) · Evidências de teste: [docs/validation.md](docs/validation.md).
 - Deploy (aguarda autorização do titular): [docs/operations/deployment-checklist.md](docs/operations/deployment-checklist.md).
 
-> **Nada aqui foi publicado.** Não há projeto na Vercel ligado a este repositório, e `vercel.json` desliga deploy
-> automático por Git até a autorização explícita do titular.
+> **Deploy autorizado em 25/10/2026** para https://absolutezro.vercel.app (projeto Vercel `absolutezro`, banco Neon
+> novo). Passo a passo e primeira conta de administração em
+> [docs/operations/deployment-checklist.md](docs/operations/deployment-checklist.md).
 
 ## O que existe
 

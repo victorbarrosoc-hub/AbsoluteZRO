@@ -12,9 +12,9 @@ import { assignPlan, grantEntitlement } from '@zro/billing'
 import { createOrganization, runOnce } from '@zro/core'
 import { createDatabase } from '@zro/db'
 import { HANDLERS, importCarroJob, importScriptFromTpeasy, importSobedesceManifest, ROUTES, toTpeasyBackup } from '@zro/integrations'
-import { createLogger } from '@zro/observability'
+import { createLogger, zroEnv } from '@zro/observability'
 
-if (process.env.ZRO_ENV === 'production') {
+if (zroEnv() === 'production') {
   console.error('seed-demo é bloqueado em produção.')
   process.exit(2)
 }

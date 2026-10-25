@@ -9,9 +9,9 @@ Leia antes de mudar qualquer coisa: [PRD.md](PRD.md) (referência principal), [A
 - **Repositórios originais são só leitura**: nossom, synquei, baixadordodrive (SOBEDESCE), tpeasy, carrodofreela-app.
   Nada de commit, push, PR, migration, deploy, `npm install`, mudança de env ou de autenticação neles. Copiar só com
   `scripts/snapshot-product.mjs` e registrar no `SOURCE_MANIFEST.md`. Rode `scripts/check-originals.mjs` ao terminar.
-- **Nunca publicar na Vercel, alterar DNS ou criar deploy de produção sem autorização explícita do titular** na
-  conversa atual. `vercel.json` desliga deploy por Git; não remova sem essa autorização. Ações com custo, irreversíveis
-  ou em dados reais pedem autorização específica.
+- **Deploy só com autorização explícita do titular.** Em 25/10/2026 o titular autorizou o projeto Vercel `absolutezro`
+  (absolutezro.vercel.app) com banco Neon novo; a trava `git.deploymentEnabled: false` saiu. Qualquer outro projeto,
+  domínio, DNS, banco pago ou ação irreversível pede nova autorização.
 - Nunca reutilizar chaves, bancos, projetos Supabase ou secrets dos apps originais. O repositório é **público**:
   nada de `.env`, token, cookie, URL assinada, dado pessoal ou áudio privado. `node scripts/scan-secrets.mjs` antes
   de commitar.

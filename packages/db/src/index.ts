@@ -62,12 +62,14 @@ let shared: Database | null = null
 /** Conexão compartilhada do processo (Next.js e worker). Exige DATABASE_URL. */
 export function getDatabase(): Database {
   if (shared) return shared
-  const url = process.env.DATABASE_URL
+  // Neon pela Vercel injeta DATABASE_URL (com pooler) e POSTGRES_URL.
+  const url = process.env.DATABASE_URL || process.env.POSTGRES_URL
   if (!url) throw new Error('DATABASE_URL não configurada. Veja .env.example e README.md.')
   const g = globalThis as unknown as { __zroDb?: Database }
   g.__zroDb ??= createDatabase(url, {
-    max: Number(process.env.DATABASE_POOL_MAX || 10),
-    prepare: process.env.DATABASE_PREPARE !== 'false',
+    max: Number(process.env.DATABASE_POOL_MAX || (process.env.VERCEL ? 3 : 10)),
+    // Pooler em modo transação (Neon/Supabase na Vercel) não aceita prepared statements.
+    prepare: process.env.DATABASE_PREPARE ? process.env.DATABASE_PREPARE !== 'false' : !process.env.VERCEL,
   })
   shared = g.__zroDb
   return shared

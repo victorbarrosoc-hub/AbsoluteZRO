@@ -3,6 +3,8 @@
  * em desenvolvimento o link aparece no log do servidor; em produção sem provedor, `deliveryAvailable` é false e a
  * interface diz que a confirmação por e-mail está indisponível, em vez de fingir que enviou.
  */
+import { zroEnv } from '@zro/observability'
+
 export type OutgoingEmail = { to: string; subject: string; text: string }
 export type EmailSender = { deliveryAvailable: boolean; send(email: OutgoingEmail): Promise<void> }
 
@@ -27,6 +29,6 @@ export function memorySender(): EmailSender & { outbox: OutgoingEmail[] } {
 }
 
 export function defaultSender(): EmailSender {
-  if (process.env.ZRO_ENV === 'production') return unavailableSender
+  if (zroEnv() === 'production') return unavailableSender
   return devConsoleSender()
 }

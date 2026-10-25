@@ -1,6 +1,7 @@
 import { importSobedesceManifest } from '@zro/integrations'
 import { DomainError } from '@zro/observability'
 import { json, readJson, route } from '@/lib/api'
+import { drainQueueAfterResponse } from '@/lib/queue'
 
 /**
  * Importa uma descarga do SOBEDESCE. Corpo: { descargas: "<conteúdo do descargas.jsonl>", descarga_id?, destinations: [{ id, label, reports: [{ name, text }] }] }.
@@ -17,6 +18,7 @@ export const POST = route<{ id: string }>(
       descargaId: typeof body.descarga_id === 'string' ? body.descarga_id : undefined,
       destinations: body.destinations as never,
     })
+    drainQueueAfterResponse()
     return json(r, r.duplicate ? 200 : 201)
   },
   { mutation: true },

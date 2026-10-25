@@ -5,6 +5,7 @@ import { createProject, reprocessRun, saveDocument, updateProject } from '@zro/c
 import { HANDLERS, importCarroJob, importScriptFromTpeasy, importSobedesceManifest, previewOrganizationPlan } from '@zro/integrations'
 import { DomainError } from '@zro/observability'
 import type { FormState } from '@/components/action-form'
+import { drainQueueAfterResponse } from '../queue'
 import { db, getAuth } from '../session'
 import { str, toFormError } from './helpers'
 
@@ -77,6 +78,7 @@ export async function importSobedesceAction(_: FormState, fd: FormData): Promise
       destinations.push({ id: `destino-${i}`, label: label || `Destino ${i}`, reports })
     }
     const r = await importSobedesceManifest(db(), await getAuth(), { projectId, descargas, destinations })
+    drainQueueAfterResponse()
     revalidatePath(`/projetos/${projectId}`)
     if (r.duplicate) return { ok: 'Essa descarga já tinha sido importada. Nada foi duplicado.' }
     const s = r.summary
@@ -136,6 +138,7 @@ export async function importCarroJobAction(_: FormState, fd: FormData): Promise<
 export async function reprocessAction(_: FormState, fd: FormData): Promise<FormState> {
   try {
     const r = await reprocessRun(db(), await getAuth(), str(fd, 'runId'), HANDLERS)
+    drainQueueAfterResponse()
     const back = str(fd, 'back')
     if (back.startsWith('/')) revalidatePath(back)
     return { ok: r.created ? 'Nova execução na fila.' : 'Essa execução já foi repetida; acompanhe a nova.' }
