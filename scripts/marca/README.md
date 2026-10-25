@@ -1,0 +1,30 @@
+# Marca: OG e ícones
+
+Arte de base gerada no Higgsfield (25/10/2026) a partir do símbolo e das fotos oficiais em
+`apps/hub-web/public/brand`. O anel é o mesmo símbolo do wordmark, só que redesenhado em 2048 px.
+
+- `anel-fonte.png`: o anel em alta, base de todos os ícones.
+- `og-fundo.jpg`: fundo do OG (eclipse sobre o horizonte).
+- `icones.py`: gera `out/` com o ícone do iPhone/Safari (180), PWA (192, 512, maskable), favicon, Mac (grid da
+  Apple, 824 em 1024 com sombra) e Windows (`icon.ico` com 16–256, traço reforçado até 48 px).
+  `python3 scripts/marca/icones.py` (precisa de Pillow e numpy).
+- `og.html`: o OG em 1200×630. Abra no Chromium/Playwright e capture 1200×630.
+
+Onde cada arquivo vai: `apps/hub-web/app/{apple-icon.png,icon.png,favicon.ico,opengraph-image.jpg,twitter-image.jpg}`,
+`apps/hub-web/public/icons/*` (manifest) e `apps/hub-web/public/brand/app-icon-*.png` (apps de desktop).
+
+## Versão clara (padrão desde 25/10/2026)
+
+- `anel-claro-fonte.png`: anel em azul profundo → ciano sobre papel claro. `icones.py` gera `out/claro/` (ícones do
+  site, do iPhone e dos apps de desktop). Os escuros continuam em `out/` e em `public/brand/*-escuro-*`.
+- `produto-hub-claro.png`: o HUB real (capturas do `/inicio`) num MacBook e num iPhone, fotos de aparelhos geradas no
+  Higgsfield com tela verde e trocadas pelas capturas. Base do OG (`og-claro.html`) e da abertura do site.
+- `og-escuro.html` fica como alternativa para o tema escuro.
+
+## Telas dos apps (Padrão Apple, 25/10/2026)
+
+- `aparelhos/aparelhos-{claro,escuro}-verde.png`: MacBook + iPhone de frente com tela verde (Higgsfield).
+- `aparelhos/compor.py modelo.png tela-mac.png tela-iphone.png saida.png`: troca o verde pelas capturas.
+- `aparelhos/produtos.py <pasta>`: gera `public/brand/produto-<app>-{claro,escuro}.webp` (1600 px) e
+  `produto-hub-*.webp` (2400 px) a partir de capturas reais públicas (SOBEDESCE, Synquei `/app/`, NOSSOM, TPeasy, Carro
+  do Freela) e do `/inicio` do HUB. Telas de login foram evitadas; app sem tema escuro usa a mesma captura nos dois.
