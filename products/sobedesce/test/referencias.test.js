@@ -501,7 +501,7 @@ test('o pacote do app leva o yt-dlp fora do app/ e o Mac universal aceita o bin√
   assert.match(yml, /from: build\/yt-dlp\/mac\s+to: yt-dlp/)
   assert.match(yml, /from: build\/yt-dlp\/\$\{os\}-\$\{arch\}\s+to: yt-dlp/)
   assert.match(yml, /x64ArchFiles: .*yt-dlp/)
-  const wf = await fs.readFile(new URL('../.github/workflows/desktop.yml', import.meta.url), 'utf8')
+  const wf = await fs.readFile(new URL('../../../.github/workflows/sobedesce-desktop.yml', import.meta.url), 'utf8')
   assert.match(wf, /node scripts\/ytdlp-baixar\.mjs/)
   const { FONTES } = await import('../scripts/ytdlp-baixar.mjs')
   for (const f of Object.values(FONTES)) assert.match(f.sha256, /^[0-9a-f]{64}$/)

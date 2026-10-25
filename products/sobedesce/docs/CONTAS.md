@@ -1,7 +1,8 @@
 # Contas SOBEDESCE: contrato
 
 Site novo em `web/` (Next.js 16, Tailwind 4, Drizzle). Produção: Vercel, projeto `sobedesce`
-(https://sobedesce.vercel.app), banco Neon (`DATABASE_URL`). Computador: PGlite (`npm run dev`).
+(https://sobedesce.vercel.app), banco no Supabase da Absolute ZRO (schema `sobedesce`, `SOBEDESCE_DATABASE_URL`;
+antes da virada, Neon por `DATABASE_URL`, veja §2.1). Computador: PGlite (`npm run dev`).
 
 Este documento é o contrato entre as quatro frentes: **contas** (servidor + telas de conta),
 **home** (página inicial e páginas legais), **celular** (`/app`) e **desktop** (app Electron).
@@ -31,7 +32,10 @@ Mudou algo aqui? Avise as outras frentes.
 
 | Variável | Para quê |
 |---|---|
-| `DATABASE_URL` | Neon (pooler). Criada pela integração Neon da Vercel. |
+| `SOBEDESCE_DATABASE_URL` | Banco do site: Supabase da Absolute ZRO, papel `sobedesce_app`, pooler de transação (porta 6543). Quando existe, vem antes de `DATABASE_URL`/`POSTGRES_URL`. |
+| `SOBEDESCE_DATABASE_SCHEMA` | Schema do site no Postgres (`sobedesce`). Com ela, as migrações rodam no migrador próprio no schema (`web/src/lib/db/migrador.ts`) e o build confere se o papel usa esse schema por padrão. Nunca vale para o PGlite. |
+| `SOBEDESCE_COPIAR_DE` | Só durante a virada: endereço do Neon (origem da cópia, schema `public`). Com ela, o `vercel-build` copia e confere as tabelas (§2.1). Tire depois que o deploy copiar. |
+| `DATABASE_URL` | Neon (pooler). Criada pela integração Neon da Vercel. Banco do site só enquanto não há `SOBEDESCE_DATABASE_URL`; depois, fica como reserva. |
 | `GOOGLE_CLIENT_ID` | Cliente OAuth "Aplicativo da Web" oficial (`235961238964-e87vitlplbrnu5kb3vsfms7tjgt98q4b...`). |
 | `GOOGLE_CLIENT_SECRET` | Segredo do mesmo cliente. |
 | `SOBEDESCE_KEY` | 32 bytes em base64. Cifra AES-256-GCM dos tokens do Google. |
@@ -47,6 +51,27 @@ Mudou algo aqui? Avise as outras frentes.
 | `ZRO_CLIENT_ID` | "Entrar com Absolute ZRO" (§12): o client_id cadastrado no console da Absolute ZRO. Sem ele, o botão não aparece. |
 | `ZRO_CLIENT_SECRET` | Segredo do mesmo cliente (aparece uma vez no console da Absolute ZRO). |
 | `ZRO_ISSUER` | Opcional. Padrão `https://absolutezro.vercel.app`. Nos testes, a Absolute ZRO falsa (`web/tests/zro-falso.mts`). |
+
+### 2.1 Virada do Neon para o Supabase da Absolute ZRO
+
+No Supabase `AbsoluteZRO` já existem o schema `sobedesce` e o papel `sobedesce_app` (dono do schema,
+`search_path = sobedesce`, sem acesso ao schema `zro`). O `vercel-build` roda, nesta ordem:
+`scripts/db-migrate.mts` (migrações) → `scripts/copiar-do-neon.mts` (cópia, só com `SOBEDESCE_COPIAR_DE`) → `next build`.
+
+1. Na Vercel (projeto `sobedesce`, Production), crie `SOBEDESCE_DATABASE_URL` (pooler de transação do Supabase, 6543,
+   usuário `sobedesce_app.<ref>`), `SOBEDESCE_DATABASE_SCHEMA=sobedesce` e `SOBEDESCE_COPIAR_DE` (o endereço do Neon,
+   o mesmo de `DATABASE_URL`). Não mexa em `DATABASE_URL`/`POSTGRES_URL` (são da integração Neon).
+2. Faça um deploy. As migrações criam as tabelas no schema `sobedesce` (registro em `sobedesce.__drizzle_migrations`,
+   no formato do Drizzle) e a cópia passa tabela por tabela, na ordem das chaves estrangeiras: copia só se o destino
+   estiver vazio, confere contagem e md5 de todas as linhas nas duas pontas, grava em `sobedesce._copia_neon` e
+   ajusta as sequências. Tudo numa transação só: qualquer divergência (ou destino com dados sem registro de cópia)
+   falha o build, nada fica gravado e o deploy anterior (no Neon) continua no ar. O log só mostra nomes e contagens.
+3. Deploy no ar e conferido: apague `SOBEDESCE_COPIAR_DE`. Rodar de novo com ela também seria seguro (no-op), mas
+   o que for gravado no Neon depois da cópia não é copiado, por isso ela sai.
+4. O Neon fica intacto como reserva. Para voltar: apague `SOBEDESCE_DATABASE_URL` e `SOBEDESCE_DATABASE_SCHEMA` e faça
+   deploy (o site volta a usar `DATABASE_URL`). Escritas feitas no Supabase nesse meio-tempo não voltam sozinhas.
+
+Durante a cópia, evite usar o site: o que for gravado no Neon entre o início da cópia e a troca do deploy fica só no Neon.
 
 Redirect do Google: `https://sobedesce.vercel.app/api/google/callback`
 (local: `http://localhost:3000/api/google/callback`).
@@ -152,8 +177,11 @@ Cabeçalho e rodapé do site: `web/src/components/site/` (frente home). As telas
 antigas caem, inclusive computadores, e a pessoa entra); `/sair` pede um toque (POST),
 um link não derruba a sessão. `/dispositivo` sem `codigo` mostra um campo para digitar o código.
 
-Downloads do desktop: Release `versao-de-teste` do GitHub
-(`https://github.com/victorbarrosoc-hub/baixadordodrive/releases/tag/versao-de-teste`).
+Downloads do desktop: Release `sobedesce-versao-de-teste` do repositório AbsoluteZRO
+(`https://github.com/victorbarrosoc-hub/AbsoluteZRO/releases/tag/sobedesce-versao-de-teste`), publicado por
+`.github/workflows/sobedesce-desktop.yml` na raiz. Enquanto ele não existe, o site (`web/src/lib/release.ts`) entrega o
+antigo (`victorbarrosoc-hub/baixadordodrive`, `versao-de-teste`). Os builds daqui começam no b1001
+(`scripts/numero-build.mjs`, `SOBEDESCE_BUILD_BASE=1000`), acima do último do repositório antigo (b379).
 
 ## 7. Desktop
 

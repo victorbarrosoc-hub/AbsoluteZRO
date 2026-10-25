@@ -37,6 +37,7 @@ Rotas principais:
 
 - `/`: homepage, demonstração real A/B e planos.
 - `/entrar`, `/auth/confirm`: acesso e confirmação Supabase.
+- `/api/zro/entrar`, `/api/zro/callback`, `/api/zro/conta`: "Continuar com Absolute ZRO" (OIDC + PKCE) e a ligação em Minha conta; veja [zro-login.md](zro-login.md).
 - `/studio`, `/studio/ia`: assistente com anexo e atalhos para ferramentas reais.
 - `/studio/projetos`, `/studio/conta`, `/studio/admin`: projetos locais, conta e administração restrita.
 - `/studio/automatico`, `/studio/isolar-voz`: restauração remota e separação musical.
@@ -89,7 +90,7 @@ Estados: `uploading`, `submitting`, `queued`, `running`, `completed`, `failed`, 
 
 ## Autenticação, autorização e IA
 
-Sessão Supabase em cookie HttpOnly criptografado AES-256-GCM; Secure em produção e SameSite=Lax. As APIs revalidam identidade. `user_metadata`, nome, query string e corpo de requisição não concedem ADM. O e-mail administrativo precisa estar confirmado; veja a regra efetiva no servidor e nas migrações.
+Sessão Supabase em cookie HttpOnly criptografado AES-256-GCM; Secure em produção e SameSite=Lax. O login pela Absolute ZRO confere o id_token (JWKS ES256, iss, aud, exp, nonce), resolve a conta pelo vínculo `sub` ↔ usuário em `nossom_private.zro_links` e gera a mesma sessão Supabase no servidor (link mágico da Admin API + verify); e-mail já usado nunca é mesclado sozinho. As APIs revalidam identidade. `user_metadata`, nome, query string e corpo de requisição não concedem ADM. O e-mail administrativo precisa estar confirmado; veja a regra efetiva no servidor e nas migrações.
 
 A IA compartilhada usa Managed Agents, modelo/capacidades verificados e esforço alto. O backend restringe a resposta a operações enumeradas. Tokens de conversa são vinculados ao usuário/login e têm expiração; ferramentas externas do agente ficam desativadas nessa sessão. Não enviar IDs, segredos ou mensagens brutas do provedor à UI. A proposta exige revisão do usuário antes de aplicar.
 

@@ -1,11 +1,11 @@
 # Segurança do lado do GitHub (o que o Victor faz)
 
-O app de desktop se atualiza sozinho a partir do Release `versao-de-teste`, e o site mostra o `versao.json`
+O app de desktop se atualiza sozinho a partir do Release `sobedesce-versao-de-teste` (repositório AbsoluteZRO; até o primeiro build daqui, o `versao-de-teste` do baixadordodrive), e o site mostra o `versao.json`
 que está lá. Quem consegue mexer no repositório ou no CI consegue, em tese, trocar o instalador de todo mundo
-(revisão de segurança, achado A8). O workflow (`.github/workflows/desktop.yml`) já foi fechado:
+(revisão de segurança, achado A8). O workflow (`.github/workflows/sobedesce-desktop.yml` na raiz do AbsoluteZRO) já foi fechado:
 
 - **Só leitura por padrão** (`permissions: contents: read`). Escrita só nos três jobs que publicam no Release:
-  `app` (sobe os instaladores, só na `main`), `versao` (sobe o `versao.json`, só na `main`) e `release` (tags `v*`).
+  `app` (sobe os instaladores, só na `main`), `versao` (sobe o `versao.json`, só na `main`) e `release` (tags `sobedesce-v*`).
 - **Actions fixadas pelo SHA do commit**, com a tag ao lado (`# v4.4.0`). Uma tag movida por quem invadir o
   repositório da action não muda o que roda aqui. Para atualizar: `git ls-remote --tags https://github.com/<dono>/<action>`,
   copie o SHA da tag nova e troque o SHA e o comentário juntos.

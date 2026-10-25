@@ -1,0 +1,45 @@
+name: NOSSOM · validar
+# Só roda quando a pasta do NOSSOM (ou este arquivo) muda. O app tem package.json, lockfile e testes próprios.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'products/nossom/**'
+      - '.github/workflows/nossom-ci.yml'
+  pull_request:
+    paths:
+      - 'products/nossom/**'
+      - '.github/workflows/nossom-ci.yml'
+permissions:
+  contents: read
+concurrency:
+  group: nossom-ci-${{ github.ref }}
+  cancel-in-progress: true
+defaults:
+  run:
+    working-directory: products/nossom
+jobs:
+  web-and-audio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: products/nossom/package-lock.json
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:quota
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: nossom-browser-diagnostics
+          path: products/nossom/test-results/
+          retention-days: 7

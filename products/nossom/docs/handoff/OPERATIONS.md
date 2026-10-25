@@ -34,25 +34,26 @@ O Playwright inicia seu próprio servidor Next e o double Supabase em portas 300
 
 Os nomes abaixo são os contratos atuais. `.env.example` é o modelo. Não publique valores em docs, tickets, prompts, screenshots ou logs.
 
-| Local                | Variável                                                                                      | Uso                                                                                             |
-| -------------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Vercel/backend       | `SUPABASE_URL`                                                                                | URL do projeto Supabase                                                                         |
-| Vercel/backend       | `SUPABASE_ANON_KEY`                                                                           | Chave anon/publishable para Auth; aliases aceitos em `lib/server/supabase.ts`                   |
-| Vercel/backend       | `SUPABASE_SERVICE_ROLE_KEY`                                                                   | Jobs, Storage privado e tarefas administrativas autorizadas; nunca pública                      |
-| Vercel/backend       | `NOSSOM_AUTH_SECRET`                                                                          | Criptografia/vínculo das sessões; preserve a existente                                          |
-| Vercel/backend       | `NOSSOM_AI_ACCESS_CODE`                                                                       | Fallback privado legado para o segredo; não é código pedido aos usuários                        |
-| Vercel/backend       | `ANTHROPIC_API_KEY`                                                                           | Integração da plataforma, separada do login do Claude Code                                      |
-| Vercel/backend       | `ANTHROPIC_MODEL`                                                                             | Código atual usa `claude-sonnet-5-5`; confirme disponibilidade/capacidades, não troque às cegas |
-| Vercel/backend       | `ANTHROPIC_AGENT_ID`, `ANTHROPIC_ENVIRONMENT_ID`                                              | Overrides opcionais da conexão Managed Agents; não usar IDs fictícios                           |
-| Vercel/backend       | `RUNPOD_API_KEY`, `RUNPOD_ENDPOINT_ID`                                                        | Autorização e ID do endpoint **Serverless Queue**, não ID de Pod                                |
-| Vercel/backend       | `STRIPE_SECRET_KEY`                                                                           | Chave secreta (ou restrita) da Stripe para Checkout, portal e leitura de assinaturas            |
-| Vercel/backend       | `STRIPE_WEBHOOK_SECRET`                                                                       | Segredo de assinatura do webhook `/api/subscription/webhook` (`whsec_…`)                        |
-| Vercel/backend       | `CRON_SECRET`                                                                                 | Autoriza limpeza de cópias temporárias; valor forte e privado                                   |
-| Vercel/build público | `NEXT_PUBLIC_ELEVENLABS_AGENT_ID`                                                             | ID público opcional do agente de voz; não colocar API key aqui                                  |
-| Vercel/build         | `NOSSOM_DOWNLOAD_MAC_ARM64_URL`, `NOSSOM_DOWNLOAD_MAC_X64_URL`, `NOSSOM_DOWNLOAD_WINDOWS_URL` | Overrides HTTPS dos instaladores publicados                                                     |
-| RunPod/worker        | `NOSSOM_STORAGE_ORIGIN`                                                                       | Origin Supabase autorizada para URLs assinadas, sem caminho nem chave                           |
-| Worker opcional      | `NOSSOM_VOCALS_MODEL`                                                                         | Caminho do checkpoint fixo no disco; normalmente deixar padrão do build                         |
-| Vercel automático    | `VERCEL_GIT_COMMIT_SHA`                                                                       | Identifica o deploy; não é segredo nem versão do instalador                                     |
+| Local                | Variável                                                                                      | Uso                                                                                                           |
+| -------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Vercel/backend       | `SUPABASE_URL`                                                                                | URL do projeto Supabase                                                                                       |
+| Vercel/backend       | `SUPABASE_ANON_KEY`                                                                           | Chave anon/publishable para Auth; aliases aceitos em `lib/server/supabase.ts`                                 |
+| Vercel/backend       | `SUPABASE_SERVICE_ROLE_KEY`                                                                   | Jobs, Storage privado e tarefas administrativas autorizadas; nunca pública                                    |
+| Vercel/backend       | `NOSSOM_AUTH_SECRET`                                                                          | Criptografia/vínculo das sessões; preserve a existente                                                        |
+| Vercel/backend       | `NOSSOM_AI_ACCESS_CODE`                                                                       | Fallback privado legado para o segredo; não é código pedido aos usuários                                      |
+| Vercel/backend       | `ANTHROPIC_API_KEY`                                                                           | Integração da plataforma, separada do login do Claude Code                                                    |
+| Vercel/backend       | `ANTHROPIC_MODEL`                                                                             | Código atual usa `claude-sonnet-5-5`; confirme disponibilidade/capacidades, não troque às cegas               |
+| Vercel/backend       | `ANTHROPIC_AGENT_ID`, `ANTHROPIC_ENVIRONMENT_ID`                                              | Overrides opcionais da conexão Managed Agents; não usar IDs fictícios                                         |
+| Vercel/backend       | `RUNPOD_API_KEY`, `RUNPOD_ENDPOINT_ID`                                                        | Autorização e ID do endpoint **Serverless Queue**, não ID de Pod                                              |
+| Vercel/backend       | `STRIPE_SECRET_KEY`                                                                           | Chave secreta (ou restrita) da Stripe para Checkout, portal e leitura de assinaturas                          |
+| Vercel/backend       | `STRIPE_WEBHOOK_SECRET`                                                                       | Segredo de assinatura do webhook `/api/subscription/webhook` (`whsec_…`)                                      |
+| Vercel/backend       | `ZRO_CLIENT_ID`, `ZRO_CLIENT_SECRET`, `ZRO_ISSUER` (opcional)                                 | "Continuar com Absolute ZRO"; sem as duas primeiras o botão não aparece. Veja [zro-login.md](../zro-login.md) |
+| Vercel/backend       | `CRON_SECRET`                                                                                 | Autoriza limpeza de cópias temporárias; valor forte e privado                                                 |
+| Vercel/build público | `NEXT_PUBLIC_ELEVENLABS_AGENT_ID`                                                             | ID público opcional do agente de voz; não colocar API key aqui                                                |
+| Vercel/build         | `NOSSOM_DOWNLOAD_MAC_ARM64_URL`, `NOSSOM_DOWNLOAD_MAC_X64_URL`, `NOSSOM_DOWNLOAD_WINDOWS_URL` | Overrides HTTPS dos instaladores publicados                                                                   |
+| RunPod/worker        | `NOSSOM_STORAGE_ORIGIN`                                                                       | Origin Supabase autorizada para URLs assinadas, sem caminho nem chave                                         |
+| Worker opcional      | `NOSSOM_VOCALS_MODEL`                                                                         | Caminho do checkpoint fixo no disco; normalmente deixar padrão do build                                       |
+| Vercel automático    | `VERCEL_GIT_COMMIT_SHA`                                                                       | Identifica o deploy; não é segredo nem versão do instalador                                                   |
 
 Nunca mover service role, chave Anthropic/RunPod, segredo de sessão ou certificado para `NEXT_PUBLIC_`. Alterar `NOSSOM_AUTH_SECRET` invalida sessões. Um clone do Git não transfere configurações da Vercel, do Supabase, do RunPod ou os certificados GitHub Actions.
 
@@ -89,7 +90,7 @@ Os links de instalação, ícones e imagem social precisam responder sem autenti
 
 ## RunPod Serverless
 
-O worker é uma imagem Docker externa à Vercel. O workflow manual `.github/workflows/restoration.yml` publica tag imutável `ghcr.io/victorbarrosoc-hub/nossom-restoration:<SHA>`. A alternativa usada pelo titular é Deploy from GitHub/Dockerfile na RunPod; confirme o mecanismo realmente conectado no painel. O repositório é público; o pacote GHCR tem configuração de acesso própria.
+O worker é uma imagem Docker externa à Vercel. O workflow manual `.github/workflows/nossom-restoration.yml` (na raiz do repositório AbsoluteZRO) publica tag imutável `ghcr.io/victorbarrosoc-hub/nossom-restoration:<SHA>`. A alternativa usada pelo titular é Deploy from GitHub/Dockerfile na RunPod; confirme o mecanismo realmente conectado no painel. O repositório é público; o pacote GHCR tem configuração de acesso própria.
 
 Configuração de referência: Queue/Serverless Flex, mínimo 0, máximo 1, concorrência 1 por worker, idle timeout de 15 s. **Isso é orientação, não prova dos valores atuais.** Não aumente workers nem deixe GPU ativa permanentemente para mascarar um problema de startup.
 
@@ -138,16 +139,16 @@ Os produtos `nossom_essential` e `nossom_studio` são criados na primeira compra
 
 O Electron carrega o estúdio online; seus projetos ficam no perfil próprio do app. A PWA é instalada pelo navegador, sem cache offline/service worker. Login compartilhado significa a mesma conta/backend, não transferência dos Blobs locais.
 
-Release de referência: `desktop-v0.2.2`, prévia pública, com DMGs arm64/x64 e EXE Windows x64. Os links estão em `app/apps/page.tsx`; os overrides por variável têm prioridade. Ícones: `public/pwa/` e `scripts/generate-brand-assets.tsx`.
+Release de referência: `desktop-v0.2.2`, prévia pública no repositório antigo `victorbarrosoc-hub/nossom` (arquivado; as releases continuam públicas), com DMGs arm64/x64 e EXE Windows x64. Releases novas saem no repositório AbsoluteZRO com a tag `nossom-v<versão>`. `/apps` (`lib/desktop-releases.ts`) aponta cada instalador para `nossom-v<versão de desktop/package.json>` quando o arquivo existe (conferido de hora em hora) e, se não existir, continua na prévia `desktop-v0.2.2`. Os overrides por variável têm prioridade. Ícones: `public/pwa/` e `scripts/generate-brand-assets.tsx`.
 
 Reabra/atualize o app para receber a interface online quando estiver sem trabalho pendente. O polling de `/api/desktop/version` espera trabalho terminar, 30 s de inatividade, campos sem foco e diálogos fechados antes de recarregar. O novo ícone nativo só chega com um instalador que o contenha.
 
 Não sobrescreva binários já publicados. Incremente `desktop/package.json` **e** `desktop/package-lock.json`; gere uma nova release e valide os três arquivos antes de apontar os downloads para ela.
 
-Workflow manual **Build NOSSOM installers**:
+Workflow manual **NOSSOM · instaladores desktop** (`.github/workflows/nossom-desktop.yml` na raiz):
 
 - Prévia: `platform=all`, `publish_preview=true`, `publish_signed=false`.
-- Canal assinado futuro: nova versão maior que a prévia instalada, `platform=all`, `publish_signed=true`, `publish_preview=false`; requer certificados e notarização reais.
+- Canal assinado futuro: nova versão maior que a prévia instalada, `platform=all`, `publish_signed=true`, `publish_preview=false`; requer certificados e notarização reais. Prévia e assinada usam a mesma tag `nossom-v<versão>`, então cada versão é uma ou outra. O feed fica na release fixa `nossom-atualizacoes` (o "latest" do monorepo pode ser de outra plataforma).
 
 Segredos GitHub para distribuição assinada: `MAC_CSC_LINK`, `MAC_CSC_KEY_PASSWORD`, `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`, `WIN_CSC_LINK`, `WIN_CSC_KEY_PASSWORD`; variável `NOSSOM_WINDOWS_PUBLISHER`. Overrides de feed: `NOSSOM_UPDATE_BASE_URL` e `NOSSOM_UPDATE_FLAT_FEED`. Nunca envie esses valores ao renderer/chat/Git.
 

@@ -1,4 +1,4 @@
-name: Build restoration GPU worker
+name: NOSSOM · worker de restauração (GPU)
 on:
   workflow_dispatch:
 permissions:
@@ -21,7 +21,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - uses: docker/build-push-action@v6
         with:
-          context: .
-          file: Dockerfile
+          context: products/nossom
+          file: products/nossom/Dockerfile
           push: true
           tags: ghcr.io/victorbarrosoc-hub/nossom-restoration:${{ github.sha }}

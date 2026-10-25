@@ -484,3 +484,62 @@ test('a Stripe subscription grants its plan while paid, ends it when cancelled, 
     '3',
   );
 });
+sql(readFileSync('supabase/migrations/202610250002_zro_links.sql', 'utf8'));
+function zroLink(action: string, user: string | null, sub: string | null, data: unknown = {}) {
+  return JSON.parse(
+    sql(
+      `set role service_role; select public.nossom_zro_link('${action}',${user ? `'${user}'` : 'null'},${sub ? `'${sub}'` : 'null'},'${JSON.stringify(data)}'::jsonb);`,
+    )
+      .split('\n')
+      .find((x) => x.startsWith('{'))!,
+  );
+}
+test('Absolute ZRO links stay server-only, one person per account, and the only login is kept', () => {
+  const linked = '99999999-9999-4999-8999-999999999999',
+    created = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    other = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+  sql(
+    `insert into auth.users(id,email,email_confirmed_at) values ('${linked}','lia@example.test',now()),('${created}','zro@example.test',now()),('${other}','other@example.test',now());`,
+  );
+  // Browsers and anonymous callers reach neither the table nor the function, even for themselves.
+  for (const role of ['anon', 'authenticated']) {
+    assert.throws(
+      () =>
+        sql(
+          `begin; set local role ${role}; set local "request.jwt.claim.sub"='${linked}'; select public.nossom_zro_link('get','${linked}'); commit;`,
+        ),
+      /permission denied/,
+    );
+    assert.throws(
+      () =>
+        sql(
+          `begin; set local role ${role}; set local "request.jwt.claim.sub"='${linked}'; select * from nossom_private.zro_links; commit;`,
+        ),
+      /permission denied/,
+    );
+  }
+  assert.equal(
+    sql(`select relrowsecurity from pg_class where oid='nossom_private.zro_links'::regclass;`),
+    't',
+  );
+  const lia = { email: 'Lia@Example.test', organization: 'Produtora', products: ['nossom'] };
+  assert.equal(zroLink('find', null, 'zro-lia', lia).userId, null);
+  assert.equal(zroLink('get', linked, null).link, null);
+  assert.equal(zroLink('link', linked, 'zro-lia', lia).ok, true);
+  assert.equal(zroLink('find', null, 'zro-lia', lia).userId, linked);
+  assert.equal(zroLink('get', linked, null).link.email, 'lia@example.test');
+  // Same person on another account, or another person on this account: refused.
+  assert.equal(zroLink('link', other, 'zro-lia', lia).error, 'other_account');
+  assert.equal(zroLink('link', linked, 'zro-outra', lia).error, 'already_linked');
+  assert.throws(() => zroLink('link', null, 'zro-x', lia), /Account required/);
+  // An account with a password may unlink; one created by the ZRO keeps its only login.
+  assert.equal(zroLink('unlink', linked, null).ok, true);
+  assert.equal(zroLink('find', null, 'zro-lia', lia).userId, null);
+  zroLink('link', created, 'zro-new', { ...lia, email: 'zro@example.test', createdByZro: true });
+  assert.equal(zroLink('get', created, null).link.createdByZro, true);
+  assert.equal(zroLink('unlink', created, null).error, 'only_login');
+  assert.equal(zroLink('find', null, 'zro-new', lia).userId, created);
+  // Deleting the account removes the link.
+  sql(`delete from auth.users where id='${created}';`);
+  assert.equal(zroLink('find', null, 'zro-new', lia).userId, null);
+});

@@ -2008,6 +2008,41 @@
   width: 100%;
   margin-top: 8px;
 }
+.account-zro {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+.account-zro-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #97aac3;
+  font-size: 13px;
+}
+.account-zro-divider::before,
+.account-zro-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #b8d0ed26;
+}
+.account-form-wrap .account-zro-button {
+  width: 100%;
+  font-weight: 650;
+  background: #07101b;
+  border-color: #b8d0ed33;
+  color: #f4f7fc;
+}
+.account-form-wrap .account-zro-button:hover {
+  background: #0d1a2b;
+  border-color: #b8d0ed66;
+}
+.account-zro-button img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
 .account-form-wrap .account-local-note {
   margin: 22px 0 14px;
   font-size: 14px;
