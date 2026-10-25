@@ -1,0 +1,31 @@
+{
+  "name": "absolute-zro-desktop",
+  "productName": "Absolute ZRO",
+  "version": "1.0.0",
+  "description": "Absolute ZRO para computador: o HUB numa janela própria, no Mac e no Windows.",
+  "private": true,
+  "main": "desktop/main.cjs",
+  "author": "Absolute ZRO",
+  "homepage": "https://absolutezro.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/victorbarrosoc-hub/AbsoluteZRO.git",
+    "directory": "apps/hub-desktop"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "desktop": "electron .",
+    "smoke": "electron . --smoke",
+    "test": "node --test test/*.test.mjs",
+    "icons": "node scripts/icons.mjs",
+    "dist:mac": "electron-builder --mac --publish never",
+    "dist:win": "electron-builder --win --publish never",
+    "dist:linux": "electron-builder --linux dir --publish never"
+  },
+  "devDependencies": {
+    "electron": "44.5.1",
+    "electron-builder": "26.15.3"
+  }
+}
