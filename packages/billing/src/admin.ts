@@ -146,3 +146,65 @@ export async function publishPlanVersion(tx: Queryable, actor: Actor, planId: st
     metadata: { code: plan.code, version: plan.version, reason: actor.reason },
   })
 }
+
+/** Assinaturas que o console troca à mão: as manuais e a do plano grátis automático. O resto é de provedor. */
+export const HAND_MANAGED_PROVIDERS = ['manual', 'free'] as const
+
+/** Nome do provedor para a interface ("stripe" → "Stripe"). */
+export function providerLabel(provider: string): string {
+  if (provider === 'free') return 'Grátis'
+  if (provider === 'manual') return 'Manual'
+  return provider.charAt(0).toUpperCase() + provider.slice(1)
+}
+
+/**
+ * Troca o plano de uma organização pelo painel de pessoas: encerra agora as assinaturas manuais e grátis ativas e
+ * concede o plano escolhido como assinatura manual (assignPlan). Organização paga por provedor externo (Stripe)
+ * não muda aqui: a troca é feita no provedor e chega pelo webhook.
+ */
+export async function changeOrgPlan(
+  tx: Queryable,
+  actor: Actor,
+  input: { orgId: string; planId: string; periodEnd?: Date | null },
+): Promise<{ subscriptionId: string; canceled: number }> {
+  if (!actor.reason.trim()) throw new DomainError('invalid_input', 'Informe o motivo da troca.')
+  // Uma troca por vez em cada organização.
+  const [org] = await tx`select id from zro.organizations where id = ${input.orgId} for update`
+  if (!org) throw new DomainError('not_found', 'Organização não encontrada.')
+  const [plan] = await tx`select id, code, version, status from zro.plans where id = ${input.planId}`
+  if (!plan || plan.status !== 'active') throw new DomainError('invalid_input', 'Só planos ativos podem ser escolhidos.')
+  const current = await tx`
+    select s.id, s.provider, s.plan_id, p.code, p.version from zro.subscriptions s join zro.plans p on p.id = s.plan_id
+    where s.org_id = ${input.orgId} and s.status in ('active', 'trialing', 'past_due')
+    for update of s`
+  const external = current.find((s) => !(HAND_MANAGED_PROVIDERS as readonly string[]).includes(s.provider as string))
+  if (external) {
+    throw new DomainError('conflict', `Pago pelo ${providerLabel(external.provider as string)}: a troca é feita lá.`)
+  }
+  if (current.length === 1 && current[0]!.plan_id === input.planId) throw new DomainError('conflict', 'A organização já está nesse plano.')
+  for (const s of current) {
+    await tx`update zro.subscriptions set status = 'canceled', cancel_at_period_end = false, canceled_at = now(),
+               current_period_end = least(coalesce(current_period_end, now()), now())
+             where id = ${s.id as string}`
+    await audit(tx, {
+      orgId: input.orgId,
+      actorUserId: actor.userId,
+      actorKind: 'admin',
+      action: 'billing.subscription_canceled',
+      targetType: 'subscription',
+      targetId: s.id as string,
+      metadata: { atPeriodEnd: false, provider: s.provider, plan: `${s.code}@${s.version}`, reason: actor.reason },
+    })
+  }
+  const subscriptionId = await assignPlan(tx, actor, { orgId: input.orgId, planId: input.planId, periodEnd: input.periodEnd ?? null })
+  await audit(tx, {
+    orgId: input.orgId,
+    actorUserId: actor.userId,
+    actorKind: 'admin',
+    action: 'billing.plan_changed',
+    targetType: 'organization',
+    targetId: input.orgId,
+    metadata: { from: current.map((s) => `${s.code}@${s.version}`), to: `${plan.code}@${plan.version}`, reason: actor.reason },
+  })
+  return { subscriptionId, canceled: current.length }
+}
