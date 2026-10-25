@@ -1,5 +1,5 @@
 /* Revela · linguagem da família Absolute ZRO (ADR 0011): preto fosco, grafite, pílulas, Inter em bold.
-   Sem marca própria ainda: tons neutros (--p-finishing do HUB). */
+   Marca (ADR 0016, guia em marca/index.html): luz de segurança e âmbar só em ícone, brilho e detalhe; texto neutro. */
 :root {
   --fundo: #0e0e10;
   --superficie: #17171a;
@@ -9,6 +9,9 @@
   --mudo: #aeaeb2;
   --fraco: #8e8e93;
   --destaque: #b9bac2;
+  --seguranca: #ff5a36;
+  --ambar: #ffb547;
+  --papel: #fff1dc;
   --azul: #2d7bff;
   --erro: #ff453a;
   --raio: 16px;
@@ -52,9 +55,15 @@ strong {
   border-bottom: 1px solid var(--linha);
 }
 .marca {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 750;
   font-size: 20px;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.045em;
+}
+.marca img {
+  margin: -4px;
 }
 .selo {
   font-size: 12px;
@@ -71,9 +80,25 @@ strong {
 }
 
 main {
+  position: relative;
+  isolation: isolate;
   max-width: 1180px;
   margin: 0 auto;
   padding: 32px 24px 64px;
+}
+.abertura {
+  position: relative;
+}
+.abertura::before {
+  /* luz de segurança atrás do título: brilho, não cor de texto */
+  content: '';
+  position: absolute;
+  inset: -80px auto auto -60px;
+  width: min(520px, 100%); /* nunca passa da borda: sem rolagem lateral no celular */
+  height: 320px;
+  background: radial-gradient(closest-side, rgba(255, 90, 54, 0.18), transparent);
+  pointer-events: none;
+  z-index: -1;
 }
 .abertura h1 {
   margin: 0 0 8px;
@@ -108,7 +133,7 @@ main {
 }
 .entrada:hover,
 .entrada.soltando {
-  border-color: var(--destaque);
+  border-color: var(--ambar);
 }
 .entrada:focus-within {
   outline: 2px solid var(--azul);
@@ -173,6 +198,7 @@ main {
   border-radius: var(--raio-g);
   overflow: hidden;
   border: 1px solid var(--linha);
+  box-shadow: 0 30px 80px -30px rgba(255, 90, 54, 0.35);
 }
 .palco canvas {
   display: block;
@@ -236,7 +262,7 @@ main {
 }
 .controle input[type='range'] {
   width: 100%;
-  accent-color: var(--destaque);
+  accent-color: var(--ambar);
 }
 .controle output {
   font-variant-numeric: tabular-nums;

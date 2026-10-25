@@ -15,7 +15,7 @@ import { aplicarEmImagem, cena, lookConhecido } from './apoio.js'
 const { chromium } = createRequire(import.meta.url)('playwright')
 
 const RAIZ = fileURLToPath(new URL('..', import.meta.url))
-const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css' }
+const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' }
 let servidor
 let endereco
 let navegador
@@ -54,6 +54,11 @@ test('escolhe as duas imagens, compara, ajusta e baixa a LUT', async () => {
   pagina.on('pageerror', (e) => erros.push(e.message))
   await pagina.goto(endereco)
   await assert.doesNotReject(pagina.getByRole('heading', { name: 'Revela a cor que você quer.' }).waitFor())
+  // marca: ícone do cabeçalho e favicon carregados
+  await pagina.waitForFunction(() => document.querySelector('.marca img')?.complete)
+  assert.ok(await pagina.evaluate(() => document.querySelector('.marca img').naturalWidth > 0), 'ícone da marca não carregou')
+  const favicon = await pagina.evaluate(() => document.querySelector('link[rel=icon]').href)
+  assert.equal((await pagina.request.get(favicon)).headers()['content-type'], 'image/svg+xml')
 
   await pagina.setInputFiles('#arquivo-referencia', join(dir, 'filme.png'))
   await pagina.getByText('Agora o seu frame.').waitFor()

@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Revela · marca</title>
+    <link rel="icon" href="revela-icone.svg" type="image/svg+xml" />
+    <style>
+      :root {
+        --banho: #0e0e10;
+        --grafite: #17171a;
+        --linha: #2c2c31;
+        --texto: #f5f5f7;
+        --mudo: #aeaeb2;
+        --seguranca: #ff5a36;
+        --ambar: #ffb547;
+        --papel: #fff1dc;
+        --revelador: #c8321c;
+        --gradiente: linear-gradient(45deg, var(--revelador), var(--seguranca) 38%, var(--ambar) 78%, var(--papel));
+        --fonte: 'Inter Variable', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--banho);
+        color: var(--texto);
+        font: 16px/1.5 var(--fonte);
+        -webkit-font-smoothing: antialiased;
+      }
+      main {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 48px 24px 80px;
+      }
+      h1,
+      h2 {
+        letter-spacing: -0.035em;
+        font-weight: 750;
+        margin: 0;
+      }
+      h2 {
+        font-size: 28px;
+        margin: 64px 0 8px;
+      }
+      p {
+        color: var(--mudo);
+        margin: 0;
+      }
+      .capa {
+        position: relative;
+        display: grid;
+        place-items: center;
+        gap: 28px;
+        padding: 96px 24px;
+        border-radius: 32px;
+        background: radial-gradient(60% 70% at 60% 60%, rgba(255, 90, 54, 0.22), transparent 70%), var(--grafite);
+        border: 1px solid var(--linha);
+        overflow: hidden;
+      }
+      .assinatura {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+      }
+      .assinatura img {
+        width: 112px;
+        height: 112px;
+        margin: -14px;
+      }
+      .palavra {
+        font-size: 88px;
+        font-weight: 750;
+        letter-spacing: -0.045em;
+        line-height: 1;
+      }
+      .capa p {
+        font-size: 18px;
+      }
+      .grade {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 16px;
+        margin-top: 20px;
+      }
+      .cartao {
+        border-radius: 24px;
+        border: 1px solid var(--linha);
+        background: var(--grafite);
+        padding: 24px;
+        display: grid;
+        gap: 12px;
+        align-content: start;
+      }
+      .cartao .vitrine {
+        display: grid;
+        place-items: center;
+        min-height: 180px;
+        border-radius: 16px;
+        background: var(--banho);
+      }
+      .cartao .vitrine.clara {
+        background: #f4f4f6;
+        color: #111114;
+      }
+      .cartao .vitrine.papel {
+        background: var(--papel);
+        color: #2a1206;
+      }
+      .cartao strong {
+        font-weight: 650;
+      }
+      .cartao small {
+        color: var(--mudo);
+      }
+      .cores {
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      }
+      .cor {
+        border-radius: 24px;
+        overflow: hidden;
+        border: 1px solid var(--linha);
+        background: var(--grafite);
+      }
+      .cor .amostra {
+        height: 120px;
+      }
+      .cor div:last-child {
+        padding: 14px 16px;
+        display: grid;
+        gap: 2px;
+      }
+      .cor code {
+        font: 13px ui-monospace, 'SF Mono', Menlo, monospace;
+        color: var(--mudo);
+      }
+      .faixa {
+        height: 56px;
+        border-radius: 16px;
+        background: var(--gradiente);
+        margin-top: 16px;
+      }
+      .tipo {
+        display: grid;
+        gap: 8px;
+        margin-top: 20px;
+      }
+      .tipo .t1 {
+        font-size: 56px;
+        font-weight: 750;
+        letter-spacing: -0.04em;
+        line-height: 1.05;
+      }
+      .tipo .t2 {
+        font-size: 22px;
+        font-weight: 650;
+        letter-spacing: -0.02em;
+      }
+      .regras {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 20px;
+      }
+      .regras ul {
+        margin: 8px 0 0;
+        padding-left: 20px;
+        color: var(--mudo);
+      }
+      .tile {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 16px;
+        border-radius: 20px;
+        border: 1px solid var(--linha);
+        background: #1e1e22;
+        box-shadow: 0 20px 60px -20px rgba(255, 90, 54, 0.35);
+        min-width: 240px;
+      }
+      .tile img {
+        width: 48px;
+        height: 48px;
+        margin: -5px;
+      }
+      .tile span {
+        display: grid;
+      }
+      .tile small {
+        color: var(--mudo);
+      }
+      @media (max-width: 700px) {
+        .palavra {
+          font-size: 56px;
+        }
+        .assinatura img {
+          width: 76px;
+          height: 76px;
+          margin: -9px;
+        }
+        .regras {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="capa">
+        <div class="assinatura">
+          <img src="revela-icone.svg" alt="" />
+          <span class="palavra">Revela</span>
+        </div>
+        <p>Revela a cor que você quer.</p>
+      </section>
+
+      <h2>Conceito</h2>
+      <p>
+        A sala escura. Sob a luz de segurança, a imagem sai do escuro: um lado do quadro ainda latente, o outro já revelado.
+        É o antes e depois que a ferramenta mostra, e é o que um colorista faz.
+      </p>
+
+      <h2>Símbolo</h2>
+      <p>Quadro de filme cortado na diagonal. O corte inclinado dá movimento; a linha clara é o instante da revelação.</p>
+      <div class="grade">
+        <div class="cartao">
+          <div class="vitrine"><img src="revela-icone.svg" width="150" height="150" alt="Ícone da Revela" /></div>
+          <strong>Ícone de app</strong>
+          <small>Catálogo do HUB, favicon, instalador. Mesmo azulejo grafite da família.</small>
+        </div>
+        <div class="cartao">
+          <div class="vitrine"><img src="revela-simbolo.svg" width="170" alt="Símbolo da Revela" style="color: #f5f5f7" /></div>
+          <strong>Símbolo solto</strong>
+          <small>Sobre fundo escuro, sem o azulejo. Mínimo: 24 px de largura.</small>
+        </div>
+        <div class="cartao">
+          <div class="vitrine clara">
+            <svg viewBox="0 0 560 350" width="170" role="img" aria-label="Símbolo da Revela em uma cor">
+              <clipPath id="q"><rect width="560" height="350" rx="44" /></clipPath>
+              <g clip-path="url(#q)"><polygon points="334,0 560,0 560,350 226,350" fill="currentColor" /></g>
+              <rect x="9" y="9" width="542" height="332" rx="36" fill="none" stroke="currentColor" stroke-width="18" />
+            </svg>
+          </div>
+          <strong>Uma cor</strong>
+          <small>Carimbo, gravação, documento impresso. Sempre numa cor só, preta ou branca.</small>
+        </div>
+      </div>
+
+      <h2>Assinatura</h2>
+      <p>Símbolo + nome em Inter 750, entrelinha 1 e espaçamento −0,045em. O nome nunca é redesenhado.</p>
+      <div class="grade">
+        <div class="cartao">
+          <div class="vitrine">
+            <div class="tile">
+              <img src="revela-icone.svg" alt="" />
+              <span><strong>Revela</strong><small>Cor e entrega para o Resolve</small></span>
+            </div>
+          </div>
+          <strong>No HUB</strong>
+          <small>Brilho âmbar só atrás do cartão; o texto continua neutro.</small>
+        </div>
+        <div class="cartao">
+          <div class="vitrine papel">
+            <div style="display: flex; align-items: center; gap: 10px; font-weight: 750; font-size: 34px; letter-spacing: -0.045em">
+              <img src="revela-icone.svg" width="60" height="60" alt="" style="margin: -8px" />Revela
+            </div>
+          </div>
+          <strong>Sobre papel</strong>
+          <small>Em fundos claros o nome vai em tinta escura; o ícone não muda.</small>
+        </div>
+        <div class="cartao">
+          <div class="vitrine">
+            <p style="font-size: 13px; color: #8e8e93">An Absolute ZRO Company</p>
+          </div>
+          <strong>Família</strong>
+          <small>Assinatura discreta da Absolute ZRO, como nos outros apps.</small>
+        </div>
+      </div>
+
+      <h2>Cores</h2>
+      <p>Luz de segurança e âmbar vão em ícone, brilho e detalhe. Nunca em texto pequeno.</p>
+      <div class="grade cores">
+        <div class="cor">
+          <div class="amostra" style="background: var(--seguranca)"></div>
+          <div><strong>Luz de segurança</strong><code>#FF5A36 · --p-finishing</code></div>
+        </div>
+        <div class="cor">
+          <div class="amostra" style="background: var(--ambar)"></div>
+          <div><strong>Âmbar</strong><code>#FFB547 · --p-finishing-2</code></div>
+        </div>
+        <div class="cor">
+          <div class="amostra" style="background: var(--papel)"></div>
+          <div><strong>Papel</strong><code>#FFF1DC</code></div>
+        </div>
+        <div class="cor">
+          <div class="amostra" style="background: var(--revelador)"></div>
+          <div><strong>Revelador</strong><code>#C8321C</code></div>
+        </div>
+        <div class="cor">
+          <div class="amostra" style="background: var(--banho); border-bottom: 1px solid var(--linha)"></div>
+          <div><strong>Banho</strong><code>#0E0E10 · preto fosco da família</code></div>
+        </div>
+      </div>
+      <div class="faixa" role="img" aria-label="Gradiente da revelação: revelador, luz de segurança, âmbar e papel"></div>
+
+      <h2>Tipografia</h2>
+      <div class="tipo">
+        <span class="t1">Revela a cor que você quer.</span>
+        <span class="t2">Inter 750 nos títulos, 650 em destaques, 400 no texto.</span>
+        <p>A mesma fonte de toda a família Absolute ZRO. Títulos curtos, tracking fechado, português direto.</p>
+      </div>
+
+      <h2>Uso</h2>
+      <div class="regras">
+        <div class="cartao">
+          <strong>Fazer</strong>
+          <ul>
+            <li>Usar os arquivos de <code>products/finishing/marca</code>, sem redesenhar.</li>
+            <li>Deixar respiro em volta do símbolo de pelo menos a altura da linha clara.</li>
+            <li>Gradiente sempre na mesma direção: do revelador (baixo, esquerda) ao papel (alto, direita).</li>
+            <li>Botão principal branco em pílula, como na família.</li>
+          </ul>
+        </div>
+        <div class="cartao">
+          <strong>Não fazer</strong>
+          <ul>
+            <li>Inverter o corte, trocar o lado revelado ou girar o quadro.</li>
+            <li>Usar vermelho e âmbar em texto pequeno ou em botões de ação.</li>
+            <li>Trocar a fonte do nome ou escrever REVELA em caixa alta.</li>
+            <li>Misturar com a cor de outro app (o magenta do Carro do Freela, o azul do Synquei).</li>
+          </ul>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>

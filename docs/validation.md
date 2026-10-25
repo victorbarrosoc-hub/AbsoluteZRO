@@ -272,3 +272,13 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   "só cor" avisa contraste desligado, arquivo que não é imagem avisa, celular de 375 px sem rolagem horizontal e
   controles com nome acessível. Sem erros de página.
 - Conferido em captura: escuro e claro no desktop, escuro no celular.
+
+## Revela: identidade visual (25/10/2026)
+
+- Ícone conferido em 512, 128, 64, 32 e 16 px, em fundo escuro e claro; guia (`products/finishing/marca/index.html`)
+  sem rolagem horizontal a 390 px.
+- Tela da Revela: `npm test` (**15/15**); o teste da tela agora confere que o ícone do cabeçalho carregou e que o
+  favicon sai como `image/svg+xml`. O brilho atrás do título cabe na largura (o teste do celular pegou 41 px de rolagem
+  lateral na primeira versão).
+- HUB com `--p-finishing` novo e ícone `finishing.svg` no `ProductMark` (3 lugares na página inicial): segredos, lint,
+  formatação, tipos, `npm test` (**103/103**), build e `npm run test:e2e` (**16/16**, com axe) verdes.

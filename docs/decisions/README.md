@@ -19,3 +19,4 @@ Cada decisão é reversível salvo indicação. Formato: contexto, decisão, con
 | [0013](0013-monorepo-como-fonte.md)              | Este repositório é a fonte de todas as plataformas             | aceita                |
 | [0014](0014-conta-unica-e-acesso.md)             | Conta única Absolute ZRO e acesso decidido no admin            | aceita                |
 | [0015](0015-finishing-resolve-powergrade-lut.md) | Revela (ex-Finishing): só Resolve, cor em PowerGrade e LUT     | aceita                |
+| [0016](0016-identidade-revela.md)                | Identidade visual da Revela                                    | aceita                |

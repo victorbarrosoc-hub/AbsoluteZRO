@@ -39,3 +39,5 @@ com axe (WCAG 2.1 A/AA) seguem verdes.
 
 **Como reverter.** `packages/ui/src/tokens.css`, `components.css` e `apps/hub-web/app/globals.css` concentram a
 linguagem; o histórico do git tem a versão anterior.
+
+**Atualização (25/10/2026).** A Revela (ex-Finishing) ganhou marca própria a pedido do titular ([ADR 0016](0016-identidade-revela.md)); AI Edit segue neutro.

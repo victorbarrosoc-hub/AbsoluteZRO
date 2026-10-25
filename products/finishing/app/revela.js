@@ -153,7 +153,7 @@ function pintar() {
   const ctx = tela.getContext('2d')
   ctx.drawImage(camadas.depois, 0, 0)
   ctx.drawImage(camadas.antes, 0, 0, x, h, 0, 0, x, h)
-  ctx.fillStyle = 'rgba(245, 245, 247, 0.9)'
+  ctx.fillStyle = '#fff1dc' // linha da revelação, a mesma do símbolo
   ctx.fillRect(Math.max(0, x - 1), 0, 2, h)
 }
 

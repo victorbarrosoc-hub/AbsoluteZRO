@@ -41,8 +41,8 @@
   --p-ai-edit-2: #6a6b73;
   --p-nossom: #5aa9ff;
   --p-nossom-2: #dcefff;
-  --p-finishing: #b9bac2;
-  --p-finishing-2: #6a6b73;
+  --p-finishing: #ff5a36; /* Revela: luz de segurança (ADR 0016) */
+  --p-finishing-2: #ffb547; /* âmbar */
 
   --font-brand: 'Inter Variable', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
   --font-display: var(--font-brand);

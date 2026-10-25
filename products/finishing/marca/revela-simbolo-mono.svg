@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 350">
+  <title>Revela</title>
+  <clipPath id="q"><rect width="560" height="350" rx="44"/></clipPath>
+  <g clip-path="url(#q)"><polygon points="334,0 560,0 560,350 226,350" fill="currentColor"/></g>
+  <rect x="9" y="9" width="542" height="332" rx="36" fill="none" stroke="currentColor" stroke-width="18"/>
+</svg>

@@ -62,6 +62,7 @@ Atualizado em 25/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - 🟡 Scaffolds com contratos e formato de presets ([ai-edit](../products/ai-edit/README.md), [finishing](../products/finishing/README.md)).
 - ⬜ Implementação (AI Edit: decupagem/transcrição primeiro).
 - ⬜ Revela, primeiro recorte: só DaVinci Resolve, cor entregue em PowerGrade e LUT, técnica gerada e criativa entregue ([ADR 0015](decisions/0015-finishing-resolve-powergrade-lut.md)). QC, exportação e media manager vêm depois.
+- ✅ Revela: identidade visual (símbolo da sala escura, luz de segurança e âmbar, guia em `products/finishing/marca`) aplicada na tela e no HUB — [ADR 0016](decisions/0016-identidade-revela.md).
 - 🟡 Revela: referência → LUT criativa com tela (`products/finishing`, sem IA, roda no navegador sem enviar imagens, 15 testes com Chromium, CI próprio). ⛔ Publicar depende de autorização (projeto Vercel). Falta: conta-gotas de neutro/pele, LUTs técnicas por câmera, ponte com o Resolve e pacote de entrega.
 
 ## Fase 6 — Escala

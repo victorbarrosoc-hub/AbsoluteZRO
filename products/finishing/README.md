@@ -17,6 +17,12 @@ Absolute ZRO vem do serviço de color grading e finalização da ZRO Filmes (zro
   rodando numa ponte local ao lado do Resolve aberto.
 - **Para usuários da plataforma** (editores e coloristas nos próprios projetos).
 
+## Marca
+
+Guia em [`marca/index.html`](marca/index.html) ([ADR 0016](../../docs/decisions/0016-identidade-revela.md)): símbolo da
+sala escura (quadro cortado na diagonal, lado revelado em luz de segurança → âmbar → papel), ícone de app, versão de
+uma cor, cores e regras de uso.
+
 ## Tela
 
 `index.html` + `app/`: a pessoa escolhe (ou solta) a referência e o frame dela, compara antes e depois arrastando sobre
