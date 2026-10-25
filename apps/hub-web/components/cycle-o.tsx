@@ -47,8 +47,8 @@ export function CycleO({ steps, title, subtitle, labelledBy }: { steps: CycleSte
         <defs>
           <radialGradient id="cycle-flare" cx="50%" cy="50%" r="50%">
             <stop offset="0" stopColor="#ffffff" stopOpacity="1" />
-            <stop offset="0.25" stopColor="#bcd6ff" stopOpacity="0.9" />
-            <stop offset="1" stopColor="#2d7bff" stopOpacity="0" />
+            <stop offset="0.25" stopColor="#e5e5ea" stopOpacity="0.9" />
+            <stop offset="1" stopColor="#8e8e93" stopOpacity="0" />
           </radialGradient>
           <filter id="cycle-glow" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="4" result="b" />

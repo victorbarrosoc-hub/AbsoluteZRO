@@ -35,7 +35,9 @@ export default async function Inicio() {
         <p className="zro-eyebrow">
           {greeting()} · {d.org?.name as string}
         </p>
-        <h1>Olá, {first}.</h1>
+        <h1>
+          <span className="atitle__thin">Olá,</span> {first}.
+        </h1>
         <p className="zro-mute">O que está em andamento e o que precisa de você.</p>
       </header>
 
@@ -85,7 +87,7 @@ export default async function Inicio() {
             <>
               <p className="zro-eyebrow">Primeiro passo</p>
               <h2 id="hero-title" className="home-hero__title">
-                Toda história começa do zero.
+                <span className="atitle__thin">Toda história</span> começa do zero.
               </h2>
               <p className="zro-mute">Crie um projeto e ligue roteiro, backup, organização, som e entrega no mesmo lugar.</p>
               <div className="row">

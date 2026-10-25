@@ -202,6 +202,14 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   (mesmas rotas, chaves e CSP) antes da produção.
 - Login único nas cinco: `/api/zro/entrar` de cada domínio leva ao HUB; apps marcados como da família.
 
+## Carro do Freela: conta única (25/10/2026)
+
+- `npm run test:api` (HUB falso, chave EC P-256): `criar=1` → `prompt=create` (e só ele); `zro_products` sem
+  `carro-do-freela` → sessão abre com `liberado:false`; com o produto → `liberado:true`; sessão antiga sem a lista → 401.
+- `test/conta-zro.js` (Chromium, domínio em miniatura): quem chega não vê formulário nem Google; "Criar conta" leva
+  `prompt=create` e volta no perfil; sem o produto, só o aviso e "Ver na Absolute ZRO" (nem `entrarNaConta()` abre);
+  conta antiga do aparelho ainda entra pelo formulário; `file://` igual a antes.
+
 ## Synquei: conta pela Absolute ZRO (25/10/2026)
 
 - `products/synquei`: `npm test` 67/67. `tests/zro.test.mjs` (HUB falso): Criar conta manda `prompt=create` e volta
@@ -262,3 +270,14 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   `/baixar/hub/diag` sem mostrar o token. Raiz: lint, formato, tipos, Vitest 112/112, build e E2E 16/16.
 - Não validado aqui: `.dmg` e `.exe` (só geram em Mac e Windows do GitHub Actions, em push na `main`), a barra de
   título do Mac numa máquina real e o download com o `GITHUB_TOKEN` de produção.
+
+## Padrão Apple em todo o site e no HUB (25/10/2026)
+
+- `npx eslint . --ignore-pattern '.claude/**'`, `npm run format:check`, `npm run typecheck`, vitest (93/93 com
+  `TEST_DATABASE_URL`), `npm run build` e `E2E_PORT=3260 npx playwright test` (14/14, axe WCAG A/AA nos temas claro e
+  escuro, público e logado) passando.
+- Conferência visual com `next start` e conta criada pela UI: 1440×900 e 390×844, claro e escuro, em `/`, `/planos`,
+  `/baixar`, `/entrar`, `/criar-conta`, `/boas-vindas`, `/inicio`, `/ferramentas`, `/projetos`, projeto, `/ciclo`,
+  `/downloads`, `/perfil`, `/assinatura` e `/equipe`.
+- Telas dos apps capturadas com Playwright dos sites públicos (SOBEDESCE, Synquei `/app/`, NOSSOM, TPeasy, Carro do
+  Freela) em 25/10/2026; SOBEDESCE, NOSSOM e Carro do Freela não têm tema escuro e usam a mesma captura nos dois.

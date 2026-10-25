@@ -6,7 +6,7 @@ export function GoogleButton({ next }: { next: string | null }) {
   const href = next ? `/entrar/google?next=${encodeURIComponent(next)}` : '/entrar/google'
   return (
     <div className="stack">
-      <a className="zro-btn zro-btn--ghost zro-btn--large" href={href}>
+      <a className="zro-btn zro-btn--large" href={href}>
         <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
           <path
             fill="#FFC107"
