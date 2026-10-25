@@ -6,9 +6,11 @@ Leia antes de mudar qualquer coisa: [PRD.md](PRD.md) (referência principal), [A
 
 ## Proibições permanentes
 
-- **Repositórios originais são só leitura**: nossom, synquei, baixadordodrive (SOBEDESCE), tpeasy, carrodofreela-app.
-  Nada de commit, push, PR, migration, deploy, `npm install`, mudança de env ou de autenticação neles. Copiar só com
-  `scripts/snapshot-product.mjs` e registrar no `SOURCE_MANIFEST.md`. Rode `scripts/check-originals.mjs` ao terminar.
+- **Este repositório é a fonte de todas as plataformas** (ADR 0013, pedido do titular em 25/10/2026): cada uma mora em
+  `products/<app>/` com as próprias regras (`CLAUDE.md`/`AGENTS.md` da pasta), `package.json` e testes, e publica no
+  projeto Vercel dela (Root Directory = pasta do app). Os repositórios antigos (nossom, synquei, baixadordodrive,
+  tpeasy, carrodofreela-app) só recebem a importação final (`scripts/import-product.mjs`) e depois são arquivados;
+  nada de trabalho novo neles. Banco: um schema e um papel por app no Supabase `AbsoluteZRO`, nunca dentro de `zro`.
 - **Deploy só com autorização explícita do titular.** Em 25/10/2026 o titular autorizou o projeto Vercel `absolutezro`
   (absolutezro.vercel.app) com o projeto Supabase novo `AbsoluteZRO`; a trava `git.deploymentEnabled: false` saiu. Qualquer outro projeto,
   domínio, DNS, banco pago ou ação irreversível pede nova autorização.
