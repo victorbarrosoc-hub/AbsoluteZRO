@@ -1,5 +1,6 @@
 @import '@fontsource-variable/inter';
 @import '@fontsource-variable/geist-mono';
+@import '@fontsource-variable/inter-tight';
 @import '@zro/ui/tokens.css';
 @import '@zro/ui/components.css';
 
@@ -2264,6 +2265,11 @@ details.disclosure[open] > summary {
 
 /* ───── Padrão Apple (25/10/2026): abertura com a frase da marca, títulos fino × pesado ───── */
 
+/* SF Pro de verdade em Mac/iPhone/iPad (fonte do sistema, não embutida: a licença não permite); Inter Tight no resto. */
+:root {
+  --font-apple: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter Tight Variable', 'Inter Variable', system-ui, sans-serif;
+}
+
 .ahero {
   position: relative;
   margin-inline: calc(50% - 50vw);
@@ -2289,7 +2295,7 @@ details.disclosure[open] > summary {
 .ahero__title {
   display: grid;
   margin: 0;
-  font-family: var(--font-display);
+  font-family: var(--font-apple);
   font-size: clamp(2.5rem, 0.9rem + 6.6vw, 7rem);
   line-height: 0.98;
   letter-spacing: -0.045em;
@@ -2309,6 +2315,7 @@ details.disclosure[open] > summary {
 }
 .ahero__lead {
   margin: 0;
+  font-family: var(--font-apple);
   font-size: clamp(1.15rem, 0.95rem + 0.9vw, 1.7rem);
   font-weight: 300;
   letter-spacing: -0.01em;
@@ -2383,6 +2390,7 @@ details.disclosure[open] > summary {
 
 /* Títulos de seção no mesmo contraste: a ideia em Extra Light, o que importa em ExtraBold. */
 .atitle {
+  font-family: var(--font-apple);
   display: grid;
   justify-items: inherit;
 }
