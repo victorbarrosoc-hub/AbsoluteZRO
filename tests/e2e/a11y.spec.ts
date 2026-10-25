@@ -1,7 +1,11 @@
 // Acessibilidade básica (PRD §10, §14): axe nas telas principais, regras WCAG 2.0/2.1 A e AA.
 import { randomUUID } from 'node:crypto'
 import AxeBuilder from '@axe-core/playwright'
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type BrowserContext, type Page } from '@playwright/test'
+
+const THEMES = ['dark', 'light'] as const
+const useTheme = (context: BrowserContext, theme: string, baseURL?: string) =>
+  context.addCookies([{ name: 'zro_theme', value: theme, url: baseURL ?? 'http://localhost:3000' }])
 
 async function check(page: Page, path: string) {
   await page.goto(path)
@@ -11,11 +15,25 @@ async function check(page: Page, path: string) {
   expect(summary, `${path}\n${summary.join('\n')}`).toEqual([])
 }
 
-test('páginas públicas sem violações WCAG A/AA', async ({ page }) => {
-  for (const p of ['/', '/planos', '/entrar', '/criar-conta']) await check(page, p)
+for (const theme of THEMES) {
+  test(`páginas públicas sem violações WCAG A/AA (tema ${theme})`, async ({ page, context, baseURL }) => {
+    await useTheme(context, theme, baseURL)
+    for (const p of ['/', '/planos', '/entrar', '/criar-conta']) await check(page, p)
+  })
+}
+
+test('seletor de tema troca na hora e guarda a escolha', async ({ page, context, baseURL }) => {
+  await useTheme(context, 'dark', baseURL)
+  await page.goto('/')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+  await page.getByRole('button', { name: 'Tema claro' }).click()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+  expect((await context.cookies()).find((c) => c.name === 'zro_theme')?.value).toBe('light')
+  await page.reload()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
 })
 
-test('área logada e projeto sem violações WCAG A/AA', async ({ page }) => {
+test('área logada e projeto sem violações WCAG A/AA (claro e escuro)', async ({ page, context, baseURL }) => {
   await page.goto('/criar-conta')
   await page.getByLabel('Nome').fill('Pessoa A11y')
   await page.getByLabel('E-mail').fill(`a11y-${randomUUID().slice(0, 8)}@teste.absolutezro.local`)
@@ -31,5 +49,8 @@ test('área logada e projeto sem violações WCAG A/AA', async ({ page }) => {
   await page.getByRole('button', { name: 'Criar projeto' }).click()
   await page.waitForURL(/\/projetos\/[0-9a-f-]{36}$/)
   const projeto = new URL(page.url()).pathname
-  for (const p of ['/inicio', '/projetos', projeto, '/ciclo', '/ferramentas', '/equipe', '/assinatura', '/perfil']) await check(page, p)
+  for (const theme of THEMES) {
+    await useTheme(context, theme, baseURL)
+    for (const p of ['/inicio', '/projetos', projeto, '/ciclo', '/ferramentas', '/equipe', '/assinatura', '/perfil']) await check(page, p)
+  }
 })

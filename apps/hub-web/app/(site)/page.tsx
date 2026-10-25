@@ -35,7 +35,7 @@ function Demo({ id }: { id: string }) {
   switch (id) {
     case 'carro-do-freela':
       return (
-        <div className="demo demo--agenda" aria-hidden="true">
+        <div className="demo on-dark demo--agenda" aria-hidden="true">
           {['Câmera', 'Som', 'Drone', 'Cor', 'Foto', 'Edição'].map((f, i) => (
             <span key={f} className={i % 3 === 1 ? 'is-busy' : 'is-free'} style={{ ['--d' as string]: `${i * 0.18}s` }}>
               {f}
@@ -45,7 +45,7 @@ function Demo({ id }: { id: string }) {
       )
     case 'tpeasy':
       return (
-        <div className="demo demo--prompter" aria-hidden="true">
+        <div className="demo on-dark demo--prompter" aria-hidden="true">
           <div className="demo--prompter__roll">
             {['Grandes ideias', 'merecem ser ditas', 'com clareza.', '[pausa]', 'O texto anda', 'no ritmo da voz.', 'Grandes ideias', 'merecem ser ditas'].map(
               (t, i) => (
@@ -59,7 +59,7 @@ function Demo({ id }: { id: string }) {
       )
     case 'sobedesce':
       return (
-        <div className="demo demo--updown" aria-hidden="true">
+        <div className="demo on-dark demo--updown" aria-hidden="true">
           <span className="demo--updown__bar demo--updown__bar--a" />
           <span className="demo--updown__bar demo--updown__bar--b" />
           <ul>
@@ -74,7 +74,7 @@ function Demo({ id }: { id: string }) {
       )
     case 'synquei':
       return (
-        <div className="demo demo--lanes" aria-hidden="true">
+        <div className="demo on-dark demo--lanes" aria-hidden="true">
           {[0.9, 1.7, 2.3].map((s, i) => (
             <div
               key={i}
@@ -92,7 +92,7 @@ function Demo({ id }: { id: string }) {
       )
     case 'nossom':
       return (
-        <div className="demo demo--chrome" aria-hidden="true">
+        <div className="demo on-dark demo--chrome" aria-hidden="true">
           <svg viewBox="0 0 300 90" preserveAspectRatio="none">
             <defs>
               <linearGradient id="chrome-line" x1="0" x2="1">
@@ -109,7 +109,7 @@ function Demo({ id }: { id: string }) {
       )
     default:
       return (
-        <div className="demo demo--soon" aria-hidden="true">
+        <div className="demo on-dark demo--soon" aria-hidden="true">
           <span />
           <span />
           <span />
@@ -156,7 +156,7 @@ export default async function Landing() {
           <p className="zro-faint">Um login para o HUB. Sua mídia não é enviada nem movida.</p>
         </div>
 
-        <MotionGate className="suite" as="div">
+        <MotionGate className="suite on-dark" as="div">
           <div className="suite__head">
             <span className="suite__label">Exemplo · Show de lançamento</span>
             <span className="suite__live">
@@ -276,7 +276,7 @@ export default async function Landing() {
         </div>
       </section>
 
-      <section className="beam reveal" aria-labelledby="beam-title">
+      <section className="beam reveal on-dark" aria-labelledby="beam-title">
         <p className="zro-eyebrow">Absolute ZRO HUB</p>
         <h2 id="beam-title" className="display-2">
           Seus dados, seus acessos.

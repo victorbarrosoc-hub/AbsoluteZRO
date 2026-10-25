@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { Wordmark } from '@/components/brand'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { getAuth } from '@/lib/session'
 
 export default async function SiteLayout({ children }: { children: ReactNode }) {
@@ -17,6 +18,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
             <Link href="/planos">Planos</Link>
           </nav>
           <div className="capsule__cta">
+            <ThemeToggle />
             {auth ? (
               <Link className="zro-btn zro-btn--primary zro-btn--small" href="/inicio">
                 Abrir o HUB

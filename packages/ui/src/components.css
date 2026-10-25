@@ -34,7 +34,7 @@ body::before {
   opacity: 0.045;
   mix-blend-mode: overlay;
 }
-:root[data-theme='paper'] body::before {
+:root[data-theme='light'] body::before {
   opacity: 0.03;
   mix-blend-mode: multiply;
 }
@@ -208,7 +208,7 @@ code,
   background: var(--text-strong);
   box-shadow: 0 8px 30px rgb(255 255 255 / 0.12);
 }
-:root[data-theme='paper'] .zro-btn--primary:hover {
+:root[data-theme='light'] .zro-btn--primary:hover {
   box-shadow: 0 8px 24px rgb(0 0 0 / 0.16);
 }
 .zro-btn--accent {
@@ -224,7 +224,7 @@ code,
   background: transparent;
 }
 .zro-btn--danger {
-  color: var(--zro-danger);
+  color: var(--danger-text);
   background: transparent;
 }
 .zro-btn--small {
@@ -262,7 +262,7 @@ code,
 }
 .zro-field__error {
   font-size: 0.82rem;
-  color: var(--zro-danger);
+  color: var(--danger-text);
 }
 .zro-input,
 .zro-select,
@@ -336,19 +336,7 @@ code,
   background:
     radial-gradient(70% 90% at 85% 0%, color-mix(in srgb, var(--zro-blue) 16%, transparent), transparent 60%),
     radial-gradient(60% 80% at 10% 110%, color-mix(in srgb, var(--zro-lav) 10%, transparent), transparent 60%), var(--zro-ink);
-  color: var(--zro-light);
   border-color: rgb(255 255 255 / 0.09);
-  --bg: var(--zro-void);
-  --text: #e5e5ea;
-  --text-strong: #fff;
-  --text-mute: var(--zro-ash);
-  --text-faint: var(--zro-mute);
-  --line: rgb(235 235 245 / 0.1);
-  --line-strong: rgb(235 235 245 / 0.2);
-  --surface: var(--zro-smoke);
-  --surface-2: var(--zro-graphite);
-  --surface-3: var(--zro-mist);
-  --accent-text: #7aa2ff;
 }
 .zro-card--glass {
   background: var(--glass-fill), color-mix(in srgb, var(--surface) 72%, transparent);
@@ -413,17 +401,17 @@ code,
   background: currentColor;
 }
 .zro-pill--ok {
-  color: var(--zro-ok);
+  color: var(--ok-text);
   background: color-mix(in srgb, var(--zro-ok) 12%, transparent);
   border-color: color-mix(in srgb, var(--zro-ok) 28%, transparent);
 }
 .zro-pill--warn {
-  color: var(--zro-warn);
+  color: var(--warn-text);
   background: color-mix(in srgb, var(--zro-warn) 12%, transparent);
   border-color: color-mix(in srgb, var(--zro-warn) 28%, transparent);
 }
 .zro-pill--danger {
-  color: var(--zro-danger);
+  color: var(--danger-text);
   background: color-mix(in srgb, var(--zro-danger) 12%, transparent);
   border-color: color-mix(in srgb, var(--zro-danger) 28%, transparent);
 }
@@ -436,15 +424,6 @@ code,
   color: var(--text-faint);
   background: transparent;
   border-style: dashed;
-}
-:root[data-theme='paper'] .zro-pill--ok {
-  color: #1d8a3d;
-}
-:root[data-theme='paper'] .zro-pill--warn {
-  color: #a35c00;
-}
-:root[data-theme='paper'] .zro-pill--danger {
-  color: #c4261d;
 }
 
 .zro-notice {

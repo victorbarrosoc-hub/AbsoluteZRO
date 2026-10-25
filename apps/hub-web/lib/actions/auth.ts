@@ -119,7 +119,7 @@ export async function revokeSessionAction(fd: FormData) {
 }
 
 export async function themeAction(fd: FormData) {
-  const theme = str(fd, 'theme') === 'paper' ? 'paper' : 'dark'
+  const theme = ['light', 'paper'].includes(str(fd, 'theme')) ? 'light' : 'dark'
   ;(await cookies()).set('zro_theme', theme, { path: '/', sameSite: 'lax', maxAge: 60 * 60 * 24 * 365 })
   const back = str(fd, 'back')
   redirect(back.startsWith('/') && !back.startsWith('//') ? back : '/perfil')

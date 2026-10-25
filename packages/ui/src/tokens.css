@@ -85,23 +85,71 @@
   --accent: var(--zro-blue);
   --accent-text: #7aa2ff;
   --focus: #7aa2ff;
+  /* superfícies de interface (sidebar, cápsula, realces) */
+  --chrome-bg: color-mix(in srgb, var(--zro-ink) 92%, transparent);
+  --glass-bg: rgb(20 20 24 / 0.8);
+  --hover: rgb(255 255 255 / 0.05);
+  --active: rgb(255 255 255 / 0.08);
+  --lift: 0 20px 50px rgb(0 0 0 / 0.35);
+  --halo: 0.16;
+  --ok-text: var(--zro-ok);
+  --warn-text: var(--zro-warn);
+  --danger-text: var(--zro-danger);
   color-scheme: dark;
 }
 
-:root[data-theme='paper'] {
-  --bg: var(--zro-paper);
+/* Tema claro: papel fosco, superfícies brancas, mesma marca. Os palcos (.on-dark) continuam escuros. */
+:root[data-theme='light'] {
+  --bg: #f4f4f6;
   --surface: #ffffff;
-  --surface-2: #f5f5f7;
-  --surface-3: #e8e8ed;
+  --surface-2: #f7f7f9;
+  --surface-3: #e9e9ee;
   --text: #1d1d1f;
   --text-strong: var(--zro-paper-ink);
-  --text-mute: var(--zro-paper-mute);
+  --text-mute: #55555b;
   --text-faint: #6e6e73;
   --line: rgb(60 60 67 / 0.12);
   --line-strong: rgb(60 60 67 / 0.24);
   --accent: #2457d6;
-  --accent-text: #2457d6;
-  --focus: #2457d6;
-  --shadow-float: 0 1px 2px rgb(0 0 0 / 0.04), 0 18px 48px rgb(0 0 0 / 0.08);
+  --accent-text: #1f4fc4;
+  --focus: #1f4fc4;
+  --shadow-float: 0 1px 0 rgb(255 255 255 / 0.9) inset, 0 1px 2px rgb(0 0 0 / 0.04), 0 18px 48px rgb(20 30 60 / 0.1);
+  --glass-fill: linear-gradient(165deg, rgb(255 255 255 / 0.7), rgb(235 242 255 / 0.4) 42%, rgb(220 232 255 / 0.35));
+  --glass-rim: linear-gradient(140deg, rgb(255 255 255 / 1), rgb(255 255 255 / 0.3) 32%, rgb(120 150 220 / 0.18) 62%, rgb(255 255 255 / 0.9));
+  --chrome-bg: rgb(250 250 252 / 0.92);
+  --glass-bg: rgb(255 255 255 / 0.72);
+  --hover: rgb(0 0 0 / 0.04);
+  --active: rgb(36 87 214 / 0.08);
+  --lift: 0 20px 50px rgb(20 30 60 / 0.12);
+  --halo: 0.1;
+  --ok-text: #1d7a37;
+  --warn-text: #9a5300;
+  --danger-text: #c4261d;
   color-scheme: light;
+}
+
+/* Palcos: blocos que ficam escuros nos dois temas (demos, hero, Ciclo do O), como nas páginas das ferramentas. */
+.on-dark,
+.zro-card--stage {
+  --bg: var(--zro-void);
+  --surface: var(--zro-smoke);
+  --surface-2: var(--zro-graphite);
+  --surface-3: var(--zro-mist);
+  --text: #e5e5ea;
+  --text-strong: #ffffff;
+  --text-mute: var(--zro-ash);
+  --text-faint: var(--zro-mute);
+  --line: rgb(235 235 245 / 0.1);
+  --line-strong: rgb(235 235 245 / 0.2);
+  --accent: var(--zro-blue);
+  --accent-text: #7aa2ff;
+  --focus: #7aa2ff;
+  --hover: rgb(255 255 255 / 0.05);
+  --active: rgb(255 255 255 / 0.08);
+  --ok-text: var(--zro-ok);
+  --warn-text: var(--zro-warn);
+  --danger-text: var(--zro-danger);
+  --shadow-float: 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 24px 60px rgb(0 0 0 / 0.5);
+  color-scheme: dark;
+  color: var(--text);
 }

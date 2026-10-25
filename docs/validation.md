@@ -130,8 +130,9 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 
 ## Redesign (25/10/2026)
 
-- `npm run lint`, `format:check`, `typecheck`: ok. `npm test`: 69/69. `npm run build`: ok. `npm run test:e2e`: 8/8,
-  incluindo axe WCAG 2.1 A/AA nas páginas públicas e na área logada (corrigidos: nome do avatar e links em texto).
+- `npm run lint`, `format:check`, `typecheck`: ok. `npm test`: 69/69. `npm run build`: ok. `npm run test:e2e`: 10/10,
+  incluindo axe WCAG 2.1 A/AA nas páginas públicas e na área logada **nos temas claro e escuro** e o teste do seletor
+  (troca sem recarregar, cookie gravado, escolha mantida após recarregar).
 - Conferência visual com Playwright em 1440×900 e 390×844, tema escuro e claro: landing, planos, entrar, início,
   projeto, Ciclo do O e Ferramentas. Referência: telas reais de Synquei, TPeasy e SOBEDESCE servidas a partir das
   cópias em `products/`.

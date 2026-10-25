@@ -24,6 +24,13 @@ Pediu também preto fosco em vez de preto puro.
 - Landing: cápsula de vidro, hero com palco de exemplo (rotulado "Exemplo") e capítulos por produto com demos em CSS.
 - Marca: versões com transparência derivadas da arte oficial (`*-alpha.webp`), sem redesenhar nada.
 
+**Tema claro.** Papel fosco (`#f4f4f6`), superfícies brancas e marca em tinta (`absolute-zro-wordmark-ink.webp`,
+derivada da arte oficial com o anel azul preservado). Palcos (demos, hero da suíte, Ciclo do O, faixa com foto)
+ficam escuros nos dois temas pela classe `.on-dark`, como nas páginas claras do Synquei e do TPeasy. No login claro, a
+foto do eclipse vira um anel de luz em CSS. Seletor claro/escuro em todas as telas (`ThemeToggle`): troca na hora,
+sem recarregar, grava o cookie `zro_theme`; sem escolha salva, segue o sistema antes da primeira pintura; sem
+JavaScript, o mesmo formulário grava pelo servidor.
+
 **Movimento.** Só `transform`/`opacity` em CSS. `MotionGate` pausa as animações fora da tela e com a aba oculta;
 "reduzir movimento" desliga tudo. Nenhuma renderização React por frame.
 

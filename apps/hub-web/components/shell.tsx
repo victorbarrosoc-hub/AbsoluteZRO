@@ -3,12 +3,13 @@ import type { ReactNode } from 'react'
 import type { Authenticated } from '@zro/auth'
 import type { OrganizationSummary } from '@zro/core'
 import { Pill } from '@zro/ui'
-import { logoutAction, themeAction } from '@/lib/actions/auth'
+import { logoutAction } from '@/lib/actions/auth'
 import { switchOrgAction } from '@/lib/actions/org'
 import { ROLE_LABEL } from '@/lib/labels'
 import { Wordmark } from './brand'
 import { Icon } from './icons'
 import { BackPath, Nav } from './nav'
+import { ThemeToggle } from './theme-toggle'
 
 const initials = (s: string) =>
   s
@@ -49,7 +50,7 @@ function OrgSwitch({ orgs, id }: { orgs: OrganizationSummary[]; id: string }) {
   )
 }
 
-export function Shell({ auth, orgs, theme, children }: { auth: Authenticated; orgs: OrganizationSummary[]; theme: string; children: ReactNode }) {
+export function Shell({ auth, orgs, children }: { auth: Authenticated; orgs: OrganizationSummary[]; children: ReactNode }) {
   const admin = auth.user.platformRole === 'admin' || auth.user.platformRole === 'support'
   const name = auth.user.displayName || auth.user.email
   return (
@@ -111,18 +112,7 @@ export function Shell({ auth, orgs, theme, children }: { auth: Authenticated; or
             )}
           </div>
           <div className="row">
-            <form action={themeAction}>
-              <BackPath />
-              <input type="hidden" name="theme" value={theme === 'paper' ? 'dark' : 'paper'} />
-              <button
-                className="icon-btn"
-                type="submit"
-                aria-label={theme === 'paper' ? 'Usar tema escuro' : 'Usar tema claro'}
-                title={theme === 'paper' ? 'Tema escuro' : 'Tema claro'}
-              >
-                <Icon name={theme === 'paper' ? 'moon' : 'sun'} />
-              </button>
-            </form>
+            <ThemeToggle />
             <Link className="icon-btn" href="/ferramentas" aria-label="Ferramentas" title="Ferramentas">
               <Icon name="apps" />
             </Link>
