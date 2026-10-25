@@ -10,14 +10,20 @@ export function AccountForm({
   next,
   initialMode = 'login',
   expandable = false,
+  zro = false,
+  notice = '',
 }: {
   next: string;
   initialMode?: 'login' | 'register';
   expandable?: boolean;
+  /** Mostra "Continuar com Absolute ZRO" (só quando o servidor tem o cliente configurado). */
+  zro?: boolean;
+  /** Aviso vindo da volta da Absolute ZRO. */
+  notice?: string;
 }) {
   const reduced = useReducedMotion(),
     id = useId();
-  const [expanded, setExpanded] = useState(!expandable || initialMode === 'register');
+  const [expanded, setExpanded] = useState(!expandable || initialMode === 'register' || !!notice);
   useEffect(() => {
     if (!expandable) return;
     const query = matchMedia('(hover: hover) and (pointer: fine) and (min-width: 901px)');
@@ -34,7 +40,7 @@ export function AccountForm({
     [email, setEmail] = useState(''),
     [password, setPassword] = useState(''),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState(''),
+    [error, setError] = useState(notice),
     [confirmation, setConfirmation] = useState(false);
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -216,6 +222,19 @@ export function AccountForm({
               )}
             </motion.button>
           </motion.form>
+          {zro && (
+            <div className="account-zro">
+              <span className="account-zro-divider">ou</span>
+              <a
+                className="button secondary account-zro-button"
+                href={'/api/zro/entrar?volta=' + encodeURIComponent(next)}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/absolute-zro-o-alpha.webp" alt="" width={20} height={20} />
+                Continuar com Absolute ZRO
+              </a>
+            </div>
+          )}
           <p className="account-local-note">
             Seus projetos ficam neste dispositivo. Sua conta e seus minutos acompanham você.
           </p>
@@ -231,9 +250,13 @@ export function AccountForm({
 export default function AccountAccess({
   next,
   initialMode = 'login',
+  zro = false,
+  notice = '',
 }: {
   next: string;
   initialMode?: 'login' | 'register';
+  zro?: boolean;
+  notice?: string;
 }) {
   return (
     <main className="account-page">
@@ -258,7 +281,7 @@ export default function AccountAccess({
         </small>
       </section>
       <section className="account-form-panel">
-        <AccountForm next={next} initialMode={initialMode} expandable />
+        <AccountForm next={next} initialMode={initialMode} expandable zro={zro} notice={notice} />
       </section>
     </main>
   );

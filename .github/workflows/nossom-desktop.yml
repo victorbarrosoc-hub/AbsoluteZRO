@@ -1,4 +1,6 @@
-name: Build NOSSOM installers
+name: NOSSOM · instaladores desktop
+# Releases deste app usam a tag nossom-v<versão> (o repositório guarda várias plataformas). As prévias antigas
+# (desktop-v*) seguem baixáveis no repositório arquivado victorbarrosoc-hub/nossom.
 on:
   workflow_dispatch:
     inputs:
@@ -17,6 +19,9 @@ on:
         default: false
 permissions:
   contents: read
+defaults:
+  run:
+    working-directory: products/nossom
 jobs:
   package:
     strategy:
@@ -46,12 +51,13 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: desktop/package-lock.json
+          cache-dependency-path: products/nossom/desktop/package-lock.json
       - run: npm ci
-        working-directory: desktop
+        working-directory: products/nossom/desktop
       - name: Inspect previous Mac preview
         if: matrix.platform == 'mac'
         shell: bash
+        # Prévia histórica 0.1.0, publicada no repositório antigo (arquivado, releases continuam públicas).
         run: |
           curl --fail --location --silent --show-error "https://github.com/victorbarrosoc-hub/nossom/releases/download/desktop-v0.1.0/NOSSOM-0.1.0-mac-${{ matrix.arch }}.zip" -o "$RUNNER_TEMP/previous.zip"
           ditto -x -k "$RUNNER_TEMP/previous.zip" "$RUNNER_TEMP/previous"
@@ -61,10 +67,11 @@ jobs:
         run: |
           set -o pipefail
           npm run dist -- --${{ matrix.platform }} --${{ matrix.arch }} 2>&1 | tee "$RUNNER_TEMP/nossom-build.log"
-        working-directory: desktop
+        working-directory: products/nossom/desktop
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-          NOSSOM_UPDATE_BASE_URL: ${{ inputs.publish_signed && 'https://github.com/victorbarrosoc-hub/nossom/releases/latest/download' || vars.NOSSOM_UPDATE_BASE_URL }}
+          # Canal fixo do NOSSOM: "releases/latest" do monorepo poderia ser de outra plataforma.
+          NOSSOM_UPDATE_BASE_URL: ${{ inputs.publish_signed && 'https://github.com/victorbarrosoc-hub/AbsoluteZRO/releases/download/nossom-atualizacoes' || vars.NOSSOM_UPDATE_BASE_URL }}
           NOSSOM_UPDATE_FLAT_FEED: ${{ inputs.publish_signed && 'true' || 'false' }}
           NOSSOM_WINDOWS_PUBLISHER: ${{ vars.NOSSOM_WINDOWS_PUBLISHER }}
           CSC_LINK: ${{ matrix.platform == 'mac' && secrets.MAC_CSC_LINK || secrets.WIN_CSC_LINK }}
@@ -80,7 +87,7 @@ jobs:
           if [ "${{ matrix.arch }}" = arm64 ]; then app=dist/mac-arm64/NOSSOM.app; else app=dist/mac/NOSSOM.app; fi
           python3 verify-mac.py "$app" 2>&1 | tee -a "$RUNNER_TEMP/nossom-build.log"
           for dmg in dist/*.dmg; do hdiutil verify "$dmg"; done
-        working-directory: desktop
+        working-directory: products/nossom/desktop
       - name: Verify Apple notarization
         if: matrix.platform == 'mac' && inputs.publish_signed
         shell: bash
@@ -112,11 +119,11 @@ jobs:
         with:
           name: NOSSOM-${{ matrix.platform }}-${{ matrix.arch }}
           path: |
-            desktop/dist/*.dmg
-            desktop/dist/*.exe
-            desktop/dist/*.zip
-            desktop/dist/*.blockmap
-            desktop/dist/*.yml
+            products/nossom/desktop/dist/*.dmg
+            products/nossom/desktop/dist/*.exe
+            products/nossom/desktop/dist/*.zip
+            products/nossom/desktop/dist/*.blockmap
+            products/nossom/desktop/dist/*.yml
           if-no-files-found: error
           retention-days: 14
 
@@ -132,7 +139,7 @@ jobs:
         with:
           pattern: NOSSOM-*
           merge-multiple: true
-          path: installers
+          path: products/nossom/installers
       - name: Publish test installers
         env:
           GH_TOKEN: ${{ github.token }}
@@ -140,7 +147,7 @@ jobs:
         run: |
           set -euo pipefail
           version=$(node -p "require('./desktop/package.json').version")
-          tag="desktop-v${version}"
+          tag="nossom-v${version}"
           cat > "$RUNNER_TEMP/release-notes.md" <<'EOF'
           Instaladores NOSSOM para teste. O Mac usa assinatura local de integridade (ad-hoc), sem certificado de desenvolvedor ou notarização Apple.
           Não foram homologados em computadores físicos Mac/Windows.
@@ -149,7 +156,7 @@ jobs:
           Baixe apenas o arquivo correspondente ao seu sistema e arquitetura.
           EOF
           if ! gh release view "$tag" >/dev/null 2>&1; then
-            gh release create "$tag" --target "$GITHUB_SHA" --prerelease --title "NOSSOM Desktop ${version} · Prévia" --notes-file "$RUNNER_TEMP/release-notes.md"
+            gh release create "$tag" --target "$GITHUB_SHA" --prerelease --latest=false --title "NOSSOM Desktop ${version} · Prévia" --notes-file "$RUNNER_TEMP/release-notes.md"
           fi
           shopt -s nullglob
           files=(installers/*.dmg installers/*.exe installers/*.zip installers/*.blockmap)
@@ -176,7 +183,7 @@ jobs:
         with:
           pattern: NOSSOM-*
           merge-multiple: true
-          path: installers
+          path: products/nossom/installers
       - name: Prepare complete signed release
         run: node desktop/update-manifests.cjs installers
       - name: Publish installers before activating update channel
@@ -186,7 +193,7 @@ jobs:
         run: |
           set -euo pipefail
           version=$(node -p "require('./desktop/package.json').version")
-          tag="v${version}"
+          tag="nossom-v${version}"
           if gh release view "$tag" >/dev/null 2>&1; then
             echo 'This version already exists. Increment the desktop version; do not overwrite installers.'
             exit 1
@@ -200,6 +207,14 @@ jobs:
           EOF
           gh release create "$tag" --draft --target "$GITHUB_SHA" --title "NOSSOM Desktop ${version}" --notes-file "$RUNNER_TEMP/release-notes.md"
           shopt -s nullglob
-          files=(installers/*.dmg installers/*.exe installers/*.zip installers/*.blockmap installers/latest.yml installers/latest-mac.yml)
-          gh release upload "$tag" "${files[@]}"
-          gh release edit "$tag" --draft=false --latest
+          installers=(installers/*.dmg installers/*.exe installers/*.zip installers/*.blockmap)
+          manifests=(installers/latest.yml installers/latest-mac.yml)
+          gh release upload "$tag" "${installers[@]}" "${manifests[@]}"
+          gh release edit "$tag" --draft=false --latest=false
+          # Canal de atualização (release fixa nossom-atualizacoes): instaladores primeiro, manifestos por último.
+          channel="nossom-atualizacoes"
+          if ! gh release view "$channel" >/dev/null 2>&1; then
+            gh release create "$channel" --target "$GITHUB_SHA" --latest=false --title "NOSSOM Desktop · canal de atualização" --notes "Arquivos usados pela atualização automática do NOSSOM Desktop. Para baixar, use as releases nossom-v*."
+          fi
+          gh release upload "$channel" --clobber "${installers[@]}"
+          gh release upload "$channel" --clobber "${manifests[@]}"

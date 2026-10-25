@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Apple, Monitor, Download, ArrowLeft, Smartphone } from 'lucide-react';
 import { Brand } from '@/components/brand';
 import InstallApp from '@/components/install-app';
+import { desktopInstallers } from '@/lib/desktop-releases';
 export const metadata = {
   title: 'Aplicativos NOSSOM',
   description: 'NOSSOM no Mac, Windows e na tela de início do seu celular.',
@@ -15,42 +16,38 @@ function download(value: string | undefined) {
     return null;
   }
 }
-const releaseTag = 'desktop-v0.2.2';
-const releaseBase = `https://github.com/victorbarrosoc-hub/nossom/releases/download/${releaseTag}/`;
-const installerNames = {
-  macArm64: 'NOSSOM-0.2.2-mac-arm64.dmg',
-  macX64: 'NOSSOM-0.2.2-mac-x64.dmg',
-  windows: 'NOSSOM-0.2.2-win-x64.exe',
-};
-// These versioned installer assets were built by Actions and anonymously
-// verified before enabling the links. Environment URLs override the previews.
-export default function Apps() {
-  const previews = Object.fromEntries(
-    Object.entries(installerNames).map(([key, name]) => [key, releaseBase + name]),
-  );
+// Instaladores publicados pelo Actions: a release nossom-v<versão> do AbsoluteZRO quando existe,
+// senão a prévia desktop-v0.2.2 do repositório antigo. Variáveis de ambiente têm prioridade.
+// Conferido de hora em hora.
+export const revalidate = 3600;
+export default async function Apps() {
+  const previews = await desktopInstallers();
   const builds = [
     {
       title: 'Mac · Apple Silicon',
       detail: 'Para Macs com chips M1, M2, M3, M4 ou mais recentes.',
       file: '.dmg',
-      url: download(process.env.NOSSOM_DOWNLOAD_MAC_ARM64_URL) || previews.macArm64,
+      url: download(process.env.NOSSOM_DOWNLOAD_MAC_ARM64_URL) || previews.macArm64.url,
       preview: !download(process.env.NOSSOM_DOWNLOAD_MAC_ARM64_URL),
+      version: previews.macArm64.version,
       icon: Apple,
     },
     {
       title: 'Mac · Intel',
       detail: 'Para Macs com processador Intel.',
       file: '.dmg',
-      url: download(process.env.NOSSOM_DOWNLOAD_MAC_X64_URL) || previews.macX64,
+      url: download(process.env.NOSSOM_DOWNLOAD_MAC_X64_URL) || previews.macX64.url,
       preview: !download(process.env.NOSSOM_DOWNLOAD_MAC_X64_URL),
+      version: previews.macX64.version,
       icon: Apple,
     },
     {
       title: 'Windows',
       detail: 'Para Windows 10 e 11, em computadores de 64 bits.',
       file: '.exe',
-      url: download(process.env.NOSSOM_DOWNLOAD_WINDOWS_URL) || previews.windows,
+      url: download(process.env.NOSSOM_DOWNLOAD_WINDOWS_URL) || previews.windows.url,
       preview: !download(process.env.NOSSOM_DOWNLOAD_WINDOWS_URL),
+      version: previews.windows.version,
       icon: Monitor,
     },
   ];
@@ -78,7 +75,7 @@ export default function Apps() {
                   <Download size={17} />
                   Baixar para {build.title}
                 </a>
-                {build.preview && <small>Versão de teste · 0.2.2</small>}
+                {build.preview && <small>Versão de teste · {build.version}</small>}
               </>
             ) : (
               <>
@@ -113,7 +110,7 @@ export default function Apps() {
           </p>
           <p>
             Se você baixou a versão 0.1.0 e viu “aplicativo danificado”, substitua o aplicativo pela
-            versão 0.2.2 disponível acima. Seus projetos não precisam ser apagados.
+            versão mais recente disponível acima. Seus projetos não precisam ser apagados.
           </p>
           <p>
             Se a prévia continuar bloqueada, confirme que o arquivo veio desta página e que o NOSSOM
