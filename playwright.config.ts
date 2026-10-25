@@ -16,7 +16,7 @@ export default defineConfig({
     command: `npx next start -p ${PORT}`,
     cwd: 'apps/hub-web',
     // Arquivo estático: o banco de teste só é recriado no globalSetup, depois que o servidor sobe.
-    url: `http://localhost:${PORT}/icon.svg`,
+    url: `http://localhost:${PORT}/icon.png`,
     reuseExistingServer: false,
     timeout: 60_000,
     env: {

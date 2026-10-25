@@ -135,27 +135,35 @@ export default async function Landing() {
   const { products } = await publicCatalog()
   return (
     <>
-      <section className="hero" aria-labelledby="hero-title">
-        <div className="hero__text">
-          <p className="zro-eyebrow">Ecossistema audiovisual</p>
-          <h1 className="hero__title" id="hero-title">
-            Da oportunidade à entrega.
+      <section className="ahero on-dark" aria-labelledby="hero-title">
+        <div className="ahero__text">
+          <h1 className="ahero__title" id="hero-title">
+            <span className="ahero__thin">O futuro começa</span>
+            <span className="ahero__bold">do zero.</span>
           </h1>
-          <p className="hero__lead">
-            Contratar, roteirizar, copiar, sincronizar, editar, tratar o som e entregar. Cada ferramenta com o seu jeito, um projeto ligando tudo.
-          </p>
-          <div className="row">
-            <Link className="zro-btn zro-btn--primary zro-btn--large" href="/criar-conta">
+          <p className="ahero__lead">Uma conta. Todas as ferramentas.</p>
+          <div className="ahero__ctas">
+            <Link className="zro-btn zro-btn--primary zro-btn--large ahero__cta" href="/criar-conta">
               Criar conta
             </Link>
-            <Link className="zro-btn zro-btn--large" href="#ciclo">
-              Ver o Ciclo do O
-              <Icon name="arrow" />
+            <Link className="alink" href="#ferramentas">
+              Ver as ferramentas <span aria-hidden="true">›</span>
             </Link>
           </div>
-          <p className="zro-faint">Um login para o HUB. Sua mídia não é enviada nem movida.</p>
         </div>
+        <picture className="ahero__art" aria-hidden="true">
+          <source media="(max-width: 700px)" srcSet="/brand/hero-eclipse-mobile.webp" />
+          <img src="/brand/hero-eclipse.webp" alt="" width={2400} height={1029} fetchPriority="high" />
+        </picture>
+      </section>
 
+      <section className="aproject reveal" aria-labelledby="projeto-title">
+        <div className="section__head section__head--center">
+          <h2 id="projeto-title" className="display-2 atitle">
+            <span className="atitle__thin">Um projeto.</span> <span className="atitle__bold">Todas as etapas.</span>
+          </h2>
+          <p>Do job à entrega, cada ferramenta faz a sua parte e o projeto guarda o que ela entregou.</p>
+        </div>
         <MotionGate className="suite on-dark" as="div">
           <div className="suite__head">
             <span className="suite__label">Exemplo · Show de lançamento</span>
@@ -216,8 +224,9 @@ export default async function Landing() {
       <section className="section section--center reveal" id="ciclo" aria-labelledby="ciclo-title">
         <div className="section__head">
           <p className="zro-eyebrow">Ciclo do O</p>
-          <h2 id="ciclo-title" className="display-2">
-            Comece em qualquer ponto do círculo.
+          <h2 id="ciclo-title" className="display-2 atitle">
+            <span className="atitle__thin">Comece em qualquer ponto</span>
+            <span className="atitle__bold">do círculo.</span>
           </h2>
           <p>A ordem é sugestão, não obrigação. Use uma ferramenta só ou o ciclo inteiro: o projeto guarda o que cada etapa entregou.</p>
         </div>
@@ -241,10 +250,9 @@ export default async function Landing() {
       <section className="section section--center" id="ferramentas" aria-labelledby="ferr-title">
         <div className="section__head reveal">
           <p className="zro-eyebrow">Ferramentas</p>
-          <h2 id="ferr-title" className="display-2">
-            Sete marcas.
-            <br />
-            Uma conta.
+          <h2 id="ferr-title" className="display-2 atitle">
+            <span className="atitle__thin">Sete marcas.</span>
+            <span className="atitle__bold">Uma conta.</span>
           </h2>
           <p>Cada uma com a própria cara. Em desenvolvimento aparece como tal: nada de recurso de fachada.</p>
         </div>
@@ -294,10 +302,9 @@ export default async function Landing() {
 
       <section className="beam reveal on-dark" aria-labelledby="beam-title">
         <p className="zro-eyebrow">Absolute ZRO HUB</p>
-        <h2 id="beam-title" className="display-2">
-          Seus dados, seus acessos.
-          <br />
-          Nada além do contratado.
+        <h2 id="beam-title" className="display-2 atitle">
+          <span className="atitle__thin">Seus dados, seus acessos.</span>
+          <span className="atitle__bold">Nada além do contratado.</span>
         </h2>
         <p className="zro-mute">Permissões conferidas no servidor em toda ação. Arquivos originais nunca são apagados ou sobrescritos pelo HUB.</p>
         <div>

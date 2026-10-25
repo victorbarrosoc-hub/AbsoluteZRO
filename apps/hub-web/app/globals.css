@@ -2261,3 +2261,156 @@ details.disclosure[open] > summary {
 .consent__actions .zro-btn {
   width: 100%;
 }
+
+/* ───── Padrão Apple (25/10/2026): abertura com a frase da marca, títulos fino × pesado ───── */
+
+.ahero {
+  position: relative;
+  margin-inline: calc(50% - 50vw);
+  margin-top: -76px;
+  padding: clamp(132px, 16vh, 188px) 20px 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  text-align: center;
+  background: #000;
+  color: #f5f5f7;
+  isolation: isolate;
+  overflow: hidden;
+}
+.ahero__text {
+  display: grid;
+  justify-items: center;
+  gap: clamp(14px, 2vw, 22px);
+  position: relative;
+  z-index: 1;
+  animation: rise 1.1s var(--spring) both;
+}
+.ahero__title {
+  display: grid;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 0.9rem + 6.6vw, 7rem);
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+.ahero__thin {
+  font-weight: 200;
+  color: rgb(245 245 247 / 0.94);
+}
+.ahero__bold {
+  font-weight: 800;
+  letter-spacing: -0.055em;
+  background: linear-gradient(92deg, #f5f7fb 0%, #b4ccf2 48%, #6aa2ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.ahero__lead {
+  margin: 0;
+  font-size: clamp(1.15rem, 0.95rem + 0.9vw, 1.7rem);
+  font-weight: 300;
+  letter-spacing: -0.01em;
+  color: rgb(245 245 247 / 0.72);
+}
+.ahero__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px 28px;
+  margin-top: 6px;
+}
+.ahero__cta {
+  border-radius: 999px;
+  padding-inline: 26px;
+}
+.alink {
+  color: #4f9bff;
+  font-size: 1.06rem;
+  text-decoration: none;
+}
+.alink:hover,
+.alink:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ahero__art {
+  display: block;
+  justify-self: start;
+  --w: min(1680px, 118vw);
+  width: var(--w);
+  margin-left: calc(50% - var(--w) / 2);
+  margin-top: clamp(-120px, -7vw, -24px);
+  pointer-events: none;
+  animation: ahero-in 1.6s var(--spring) 0.15s both;
+}
+.ahero__art img {
+  display: block;
+  width: 100%;
+  height: auto;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 22%, #000 72%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 22%, #000 72%, transparent 100%);
+}
+.ahero::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: clamp(80px, 12vw, 160px);
+  background: linear-gradient(180deg, transparent, var(--bg));
+  pointer-events: none;
+}
+@keyframes ahero-in {
+  from {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (max-width: 700px) {
+  .ahero {
+    padding-top: 120px;
+  }
+  .ahero__art {
+    --w: 130vw;
+    margin-top: -12px;
+  }
+}
+
+/* Títulos de seção no mesmo contraste: a ideia em Extra Light, o que importa em ExtraBold. */
+.atitle {
+  display: grid;
+  justify-items: inherit;
+}
+.atitle__thin {
+  font-weight: 200;
+}
+.atitle__bold {
+  font-weight: 800;
+}
+#projeto-title {
+  display: block;
+}
+.section__head--center {
+  text-align: center;
+  justify-items: center;
+  margin-inline: auto;
+}
+.aproject {
+  display: grid;
+  gap: clamp(28px, 4vw, 48px);
+  max-width: 980px;
+  width: 100%;
+  margin-inline: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ahero__text,
+  .ahero__art {
+    animation: none !important;
+  }
+}

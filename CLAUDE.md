@@ -38,9 +38,19 @@ Leia antes de mudar qualquer coisa: [PRD.md](PRD.md) (referência principal), [A
 
 ## Interface
 
-Português, textos curtos, títulos em bold, tom humano. Identidade oficial em `packages/ui/src/tokens.css` e
+Português, textos curtos, tom humano. Identidade oficial em `packages/ui/src/tokens.css` e
 `apps/hub-web/public/brand` (fonte: zrofilmes.vercel.app/absolute). Não inventar logo; produtos mantêm os próprios
 ícones. Respeitar reduzir movimento; nada de animação por frame no React.
+
+**Padrão Apple** (pedido do titular, 25/10/2026): a Absolute ZRO se comporta como produto e ecossistema Apple.
+
+- Frase da marca: **"O futuro começa do zero."** Título da página inicial e do OG.
+- Tipografia em contraste fino × pesado, como o wordmark (ABSOLUTE fino, ZR pesado): uma parte em Extra Light, a
+  palavra que importa em Bold/ExtraBold. Nada de tudo em bold.
+- Uma ideia por tela, uma ação principal (botão em pílula) e uma secundária em link ("Saiba mais ›"). Muito respiro,
+  texto centralizado nas aberturas, imagem de alta qualidade (`scripts/marca`), sem enfeite gratuito.
+- Comportamento de ecossistema: uma conta (como o Apple ID), os apps se reconhecem, o que muda num lugar aparece no
+  outro, nada de cadastro duplicado. Detalhe acabado em todo canto: ícone, OG, estado vazio, erro, carregamento.
 
 ## Antes de entregar
 
