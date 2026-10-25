@@ -386,3 +386,16 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   `#destino`, celular sem rolagem lateral, sem erro de console com a CSP de produção.
 - Não validado: o script no DaVinci Resolve Studio real (nomes de tags HDR como `ST2084` podem variar por versão; o
   script avisa se o Resolve recusar).
+
+## Revela: conversor no navegador (25/10/2026)
+
+- `products/finishing`: `npm test` (**35/35**). Plano (puro): bitrate de 2160p a partir de master 4K, redução sem
+  ampliar, dimensões pares, 1080×1920 no vertical, avisos de HDR/primárias/cadência, sem áudio não pede codec;
+  `vendor/` igual aos pacotes instalados. Tela: ffmpeg gera ProRes 422 HQ 1280×720 com áudio PCM, a página confere
+  `crossOriginIsolated`, converte, baixa e o ffprobe lê H.264 1280×720 com `bt709` nas três tags e faixa de áudio.
+- Experimento fora do teste: ProRes 1080p de 4 s convertido em ~3 s no Chromium headless sem GPU (mais rápido que o
+  tempo real); diferença média de RGB entre o ProRes e a saída: 0,61 nível (sem a remarcação BT.709, a saída ia
+  como `smpte170m`).
+- Chromium no Linux não codifica AAC: a saída usa Opus e a tela avisa. CI do app ganhou o ffmpeg.
+- Celular (390 px) sem rolagem lateral. Não validado: Safari/iOS e Chrome/Android reais, codificador de hardware,
+  arquivos grandes no celular.

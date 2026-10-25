@@ -626,3 +626,97 @@ select {
     width: 100%;
   }
 }
+
+/* conversor */
+.conversor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+}
+.opcao {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 14px;
+  color: var(--mudo);
+}
+.fila {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.item {
+  padding: 16px 18px;
+  background: var(--superficie);
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  display: grid;
+  gap: 8px;
+}
+.item-topo {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.item-nome {
+  overflow-wrap: anywhere;
+}
+.item-estado {
+  color: var(--mudo);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.item[data-estado='feito'] .item-estado {
+  color: #9be7a8;
+}
+.item[data-estado='erro'] .item-estado,
+.item[data-estado='erro'] .item-info {
+  color: var(--erro);
+}
+.item-info {
+  margin: 0;
+  color: var(--mudo);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.item-avisos {
+  margin: 0;
+  padding-left: 18px;
+  color: #ffd27a;
+  font-size: 13px;
+}
+.item-avisos:empty {
+  display: none;
+}
+.barra {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--superficie-2);
+  overflow: hidden;
+}
+.barra-cheia {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--roxo), var(--vermelho), var(--amarelo));
+}
+.item-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.item-acoes:empty {
+  display: none;
+}
+.item-acoes .botao {
+  text-decoration: none;
+}
+@media (max-width: 860px) {
+  .conversor {
+    grid-template-columns: 1fr;
+  }
+}

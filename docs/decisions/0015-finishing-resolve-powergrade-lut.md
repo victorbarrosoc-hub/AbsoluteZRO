@@ -44,6 +44,12 @@ técnico continua `finishing`; migration 0009 troca o nome no catálogo):
   `SaveAsNewRenderPreset`) e relata o que não conseguiu aplicar. SDR sai marcado BT.709 (H.273 1-1-1); HDR só com
   timeline HDR. A Revela não renderiza nem mexe na mídia.
 
+- **Conversor no navegador (pedido do titular, 25/10/2026):** "um Handbrake" no celular e no computador. O Resolve
+  renderiza um master em ProRes e a Revela gera as versões de entrega no aparelho da pessoa (Mediabunny +
+  WebCodecs, decodificador ProRes em WASM), sem enviar o arquivo. Exceção consciente a "não renderiza": converte só o
+  que a pessoa escolhe, gravando arquivo novo, sem tocar no master. Só SDR 8 bits (H.264/HEVC em MP4, marcado
+  BT.709); HDR e conversão de cadência continuam no Resolve.
+
 **O que um pacote real mostrou (25/10/2026).** Pacote comercial de terceiros enviado pelo titular, estudado só fora do
 repositório (nenhum arquivo dele entra aqui):
 

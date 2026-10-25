@@ -1,4 +1,5 @@
-# Testes da Revela (products/finishing): referência → LUT, .cube, PNG, linha de comando e a tela no Chromium.
+# Testes da Revela (products/finishing): referência → LUT, entrega, conversor (ProRes gerado pelo ffmpeg) e as telas
+# no Chromium.
 # Roda só quando a pasta (ou este arquivo) muda.
 name: Revela · testes
 
@@ -39,6 +40,7 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: products/finishing/package-lock.json
+      - run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm test

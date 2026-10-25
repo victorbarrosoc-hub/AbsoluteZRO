@@ -88,7 +88,9 @@ function escolher(id) {
       linha('Amostragem e canais', `${a.taxa / 1000} kHz · ${a.canais}`),
       linha(
         'Loudness',
-        a.loudness ? `${a.loudness.alvo} ${a.loudness.unidade} ±${a.loudness.tolerancia}` : 'Sem alvo publicado pela plataforma. Prática de mercado: picos abaixo de −1 dBTP.',
+        a.loudness
+          ? `${a.loudness.alvo} ${a.loudness.unidade} ±${a.loudness.tolerancia}`
+          : 'Sem alvo publicado pela plataforma. Prática de mercado: picos abaixo de −1 dBTP.',
       ),
     ),
     d.avisos.length

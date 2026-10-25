@@ -1,5 +1,6 @@
 // Tela no Chromium de verdade: escolher as duas imagens, ver a prévia, mexer na intensidade, baixar a LUT.
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import { readFileSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { createRequire } from 'node:module'
@@ -19,7 +20,17 @@ const RAIZ = fileURLToPath(new URL('..', import.meta.url))
 const CABECALHOS = Object.fromEntries(
   JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8')).headers[0].headers.map((h) => [h.key, h.value]),
 )
-const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.png': 'image/png' }
+const TIPOS = {
+  '.html': 'text/html',
+  '.js': 'text/javascript',
+  '.css': 'text/css',
+  '.svg': 'image/svg+xml',
+  '.jpg': 'image/jpeg',
+  '.png': 'image/png',
+  '.mjs': 'text/javascript',
+  '.mov': 'video/quicktime',
+  '.mp4': 'video/mp4',
+}
 let servidor
 let endereco
 let navegador
@@ -254,5 +265,76 @@ test('entrega: link direto para um destino e celular sem rolagem lateral', async
   // as duas ferramentas se ligam pelas abas
   await pagina.getByRole('link', { name: 'LUT por referência' }).click()
   await pagina.getByRole('heading', { name: 'Revela a cor que você quer.' }).waitFor()
+  await pagina.close()
+})
+
+test('converter: ProRes 422 HQ vira MP4 H.264 marcado BT.709, no navegador', async () => {
+  // master de teste: ProRes 422 HQ 1280×720 24 fps, 2 s, com áudio PCM 24 bits, marcado BT.709
+  const master = join(dir, 'master.mov')
+  execFileSync('ffmpeg', [
+    '-loglevel',
+    'error',
+    '-y',
+    '-f',
+    'lavfi',
+    '-i',
+    'testsrc2=size=1280x720:rate=24',
+    '-f',
+    'lavfi',
+    '-i',
+    'sine=frequency=440:sample_rate=48000',
+    '-t',
+    '2',
+    '-c:v',
+    'prores_ks',
+    '-profile:v',
+    '3',
+    '-pix_fmt',
+    'yuv422p10le',
+    '-color_primaries',
+    'bt709',
+    '-color_trc',
+    'bt709',
+    '-colorspace',
+    'bt709',
+    '-c:a',
+    'pcm_s24le',
+    master,
+  ])
+  const pagina = await navegador.newPage({ acceptDownloads: true })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  pagina.on('console', (m) => m.type() === 'error' && erros.push(m.text()))
+  await pagina.goto(endereco + 'converter.html')
+  assert.equal(await pagina.evaluate(() => crossOriginIsolated), true, 'sem isolamento: o ProRes decodifica mais devagar')
+  await pagina.getByText(/^Neste aparelho: H\.264 sim/).waitFor()
+
+  await pagina.setInputFiles('#arquivos', master)
+  await pagina.getByText('Pronto para converter').waitFor()
+  assert.match(await pagina.locator('.item-info').innerText(), /ProRes · 1280×720 · 24 fps · 2 s · cor bt709 · áudio pcm-s24 · → 1280×720/)
+  await pagina.locator('#salvar-pasta').uncheck() // a escolha de pasta não existe no navegador de teste
+  await pagina.getByRole('button', { name: 'Converter' }).click()
+  const link = pagina.getByRole('link', { name: 'Baixar master-youtube.mp4' })
+  await link.waitFor({ timeout: 60_000 })
+  assert.match(await pagina.locator('.item-acoes .dica').innerText(), /H\.264 \+ (AAC|OPUS) · BT\.709/)
+
+  const [baixado] = await Promise.all([pagina.waitForEvent('download'), link.click()])
+  const saida = join(dir, 'saida.mp4')
+  await baixado.saveAs(saida)
+  const sonda = JSON.parse(
+    execFileSync(
+      'ffprobe',
+      ['-v', 'error', '-show_entries', 'stream=codec_type,codec_name,width,height,color_primaries,color_transfer,color_space', '-of', 'json', saida],
+      { encoding: 'utf8' },
+    ),
+  )
+  const video = sonda.streams.find((s) => s.codec_type === 'video')
+  assert.deepEqual([video.codec_name, video.width, video.height], ['h264', 1280, 720])
+  assert.deepEqual([video.color_primaries, video.color_transfer, video.color_space], ['bt709', 'bt709', 'bt709'])
+  assert.ok(
+    sonda.streams.some((s) => s.codec_type === 'audio'),
+    'sem áudio na saída',
+  )
+  assert.deepEqual(erros, [])
   await pagina.close()
 })

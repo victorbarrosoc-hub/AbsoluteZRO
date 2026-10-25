@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Revela · Converter</title>
+    <meta name="description" content="Converta seus arquivos no celular ou no computador, do ProRes para o destino certo. O arquivo não sai do seu aparelho." />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0e0e10" />
+    <link rel="canonical" href="https://revela-zro.vercel.app/converter" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Revela" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:url" content="https://revela-zro.vercel.app/" />
+    <meta property="og:title" content="Revela · a cor que você quer, numa LUT" />
+    <meta property="og:description" content="Dê um frame de referência e um frame do seu material. Sai uma LUT para o DaVinci Resolve." />
+    <meta property="og:image" content="https://revela-zro.vercel.app/og.jpg?v=2" />
+    <meta property="og:image:secure_url" content="https://revela-zro.vercel.app/og.jpg?v=2" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Revela: revela a cor que você quer. Um frame de referência vira uma LUT para o DaVinci Resolve." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Revela · a cor que você quer, numa LUT" />
+    <meta name="twitter:description" content="Dê um frame de referência e um frame do seu material. Sai uma LUT para o DaVinci Resolve." />
+    <meta name="twitter:image" content="https://revela-zro.vercel.app/og.jpg?v=2" />
+    <meta name="twitter:image:alt" content="Revela: revela a cor que você quer. Um frame de referência vira uma LUT para o DaVinci Resolve." />
+    <link rel="icon" href="marca/revela-icone.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="app/revela.css" />
+    <script type="module" src="app/converter.js"></script>
+  </head>
+  <body>
+    <header class="topo">
+      <span class="marca"><img src="marca/revela-logo.png" alt="Revela" width="150" height="28" /></span>
+      <span class="selo">Protótipo</span>
+      <nav class="abas" aria-label="Ferramentas da Revela">
+        <a href="./">LUT por referência</a>
+        <a href="entrega.html">Entrega</a>
+        <a href="converter.html" aria-current="page">Converter</a>
+      </nav>
+      <span class="assinatura">An Absolute ZRO Company</span>
+    </header>
+
+    <main>
+      <section class="abertura">
+        <h1>Converta aqui mesmo.</h1>
+        <p>Do master em ProRes para cada destino, no celular ou no computador. O arquivo não sai do seu aparelho.</p>
+      </section>
+
+      <section class="conversor">
+        <label class="entrada" id="caixa-arquivos" for="arquivos">
+          <strong>Arquivos</strong>
+          <span class="dica">ProRes, H.264, HEVC, MOV, MP4. Pode escolher vários.</span>
+          <span class="acao">Escolher arquivos ou soltar aqui</span>
+          <input id="arquivos" type="file" accept="video/*,.mov,.mp4,.m4v,.mxf" multiple />
+        </label>
+
+        <div class="painel">
+          <div class="controle">
+            <label for="destino"><strong>Destino</strong></label>
+            <select id="destino"></select>
+          </div>
+          <div class="controle">
+            <label for="resolucao"><strong>Resolução</strong></label>
+            <select id="resolucao"></select>
+          </div>
+          <label class="opcao" id="opcao-pasta" hidden
+            ><input id="salvar-pasta" type="checkbox" checked /> Salvar direto numa pasta (melhor para arquivos grandes)</label
+          >
+          <button id="converter" class="botao" type="button" disabled>Converter</button>
+          <p id="aparelho" class="dica"></p>
+        </div>
+      </section>
+
+      <p id="estado" class="estado" role="status" aria-live="polite"></p>
+
+      <ol id="fila" class="fila" aria-label="Arquivos"></ol>
+
+      <section class="notas" aria-label="Como funciona">
+        <div>
+          <strong>Um master, várias entregas</strong>
+          <p>Exporte o master em ProRes no Resolve (preset Master de arquivo) e converta aqui cada versão. A timeline renderiza uma vez só.</p>
+        </div>
+        <div>
+          <strong>No seu aparelho</strong>
+          <p>A conversão roda no navegador, com o codificador de hardware do aparelho quando ele permite. Nada é enviado.</p>
+        </div>
+        <div>
+          <strong>Cor</strong>
+          <p>Sai marcado BT.709 (1-1-1), como pedem YouTube e Vimeo. HDR não é convertido aqui: faça a versão SDR no Resolve.</p>
+        </div>
+        <div>
+          <strong>Arquivos grandes</strong>
+          <p>No computador, salvar direto numa pasta evita encher a memória. No celular, prefira arquivos de até 1,5 GB de saída.</p>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

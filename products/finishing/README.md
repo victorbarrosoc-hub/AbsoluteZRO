@@ -54,6 +54,26 @@ listas do próprio Resolve, aplica cada ajuste do Deliver, escolhe o bitrate pel
 Resolve recusar e salva o preset "Revela · <destino>". Loudness não tem chave na API: vai na lista do que conferir.
 Os testes rodam o script num Resolve simulado.
 
+## Converter (o "Handbrake" da Revela)
+
+`converter.html` + `app/converter.js` + `src/conversao/`: o Resolve exporta **um master** (ProRes, preset "Master de
+arquivo") e o conversor gera cada versão de entrega a partir dele, **no celular ou no computador, dentro do
+navegador**. O arquivo não sai do aparelho.
+
+- Lê ProRes (decodificador WASM, em várias linhas quando a página está isolada: COOP/COEP no `vercel.json`), H.264,
+  HEVC, MOV e MP4, vários de uma vez.
+- Destinos MP4 em 8 bits da Entrega (YouTube, Vimeo, Reels, TikTok): codec, bitrate pela altura e cadência, áudio
+  e resolução saem do mesmo preset. Nunca amplia; vertical vai a 1080 no lado curto, sem cortar.
+- Codificador do aparelho (WebCodecs, hardware quando o navegador permite). Saída marcada **BT.709 (1-1-1)**: o
+  ProRes decodificado vem sem espaço de cor e o navegador assumiria BT.601, então cada quadro é remarcado.
+- Áudio AAC; se o navegador não codifica AAC (Chromium no Linux), sai Opus e a tela avisa.
+- No computador, "Salvar direto numa pasta" grava em pedaços no disco (File System Access). Sem isso, o arquivo é
+  montado na memória: no celular, até ~1,5 GB de saída (a tela avisa acima disso).
+- HDR, primárias diferentes de Rec.709 e mais de 60 fps geram aviso: essas versões saem do Resolve.
+
+Bibliotecas em `vendor/` (copiadas por `npm run vendor`, teste confere a cópia): Mediabunny e
+`@mediabunny/prores` 1.62.1, MPL-2.0 (mediabunny.dev), sem alteração além do caminho de import.
+
 ## Protótipo: referência → LUT criativa
 
 A pessoa dá um frame de referência (o estilo que quer) e um frame do material dela; sai uma LUT `.cube` que leva o
@@ -91,7 +111,7 @@ cenas diferentes sempre aproximam (média ~0,52), e a cor cai 60–80% quando as
 ## Ordem de entrega
 
 1. Cor no Resolve: referência → LUT (protótipo pronto), LUTs técnicas, ponte local (PowerGrade e LUT a partir do grade) e pacote de entrega versionado.
-2. Depois: QC técnico, exportação por destino e media manager (relink por `asset_id`, normalização).
+2. Depois: QC técnico e media manager (exportação por destino e conversor já têm protótipo) (relink por `asset_id`, normalização).
 3. Outros editores só com novo ADR.
 
 ## Entradas
