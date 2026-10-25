@@ -135,26 +135,36 @@ export default async function Landing() {
   const { products } = await publicCatalog()
   return (
     <>
-      <section className="ahero on-dark" aria-labelledby="hero-title">
+      <section className="ahero" aria-labelledby="hero-title">
         <div className="ahero__text">
+          <img className="ahero__mark" src="/brand/absolute-zro-o-alpha.webp" alt="" width={56} height={50} />
           <h1 className="ahero__title" id="hero-title">
             <span className="ahero__thin">O futuro começa</span>
             <span className="ahero__bold">do zero.</span>
           </h1>
           <p className="ahero__lead">Uma conta. Todas as ferramentas.</p>
           <div className="ahero__ctas">
-            <Link className="zro-btn zro-btn--primary zro-btn--large ahero__cta" href="/criar-conta">
+            <Link className="glass-btn glass-btn--ink" href="/criar-conta">
               Criar conta
             </Link>
-            <Link className="alink" href="#ferramentas">
-              Ver as ferramentas <span aria-hidden="true">›</span>
+            <Link className="glass-btn" href="#ferramentas">
+              Ver as ferramentas
             </Link>
           </div>
         </div>
-        <picture className="ahero__art" aria-hidden="true">
-          <source media="(max-width: 700px)" srcSet="/brand/hero-eclipse-mobile.webp" />
-          <img src="/brand/hero-eclipse.webp" alt="" width={2400} height={1029} fetchPriority="high" />
-        </picture>
+        {/* O produto de verdade: telas reais do HUB, uma foto para cada tema. */}
+        <figure className="ahero__product ahero__product--claro">
+          <img
+            src="/brand/produto-hub-claro.webp"
+            alt="O HUB da Absolute ZRO aberto num MacBook e num iPhone"
+            width={2400}
+            height={1500}
+            fetchPriority="high"
+          />
+        </figure>
+        <figure className="ahero__product ahero__product--escuro">
+          <img src="/brand/produto-hub-escuro.webp" alt="O HUB da Absolute ZRO aberto num MacBook e num iPhone" width={2400} height={1393} loading="lazy" />
+        </figure>
       </section>
 
       <section className="aproject reveal" aria-labelledby="projeto-title">

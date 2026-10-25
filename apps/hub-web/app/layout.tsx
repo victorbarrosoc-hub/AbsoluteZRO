@@ -19,19 +19,14 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
 }
 
-export const viewport: Viewport = { themeColor: '#050505', width: 'device-width', initialScale: 1 }
-
-/** Sem escolha salva, segue o sistema antes da primeira pintura (sem piscar). */
-const FOLLOW_SYSTEM = `try{if(!document.documentElement.dataset.theme){var l=matchMedia('(prefers-color-scheme: light)').matches;document.documentElement.dataset.theme=l?'light':'dark'}}catch(e){}`
+export const viewport: Viewport = { themeColor: '#f4f4f6', width: 'device-width', initialScale: 1 }
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const saved = (await cookies()).get('zro_theme')?.value
-  const theme = saved === 'light' || saved === 'paper' ? 'light' : saved === 'dark' ? 'dark' : undefined
+  // Claro é o tema da casa; o escuro é escolha de quem usa o seletor (fica no cookie).
+  const theme = saved === 'dark' ? 'dark' : 'light'
   return (
     <html lang="pt-BR" data-theme={theme} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: FOLLOW_SYSTEM }} />
-      </head>
       <body>
         <a className="zro-skip" href="#conteudo">
           Pular para o conteúdo

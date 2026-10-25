@@ -12,3 +12,11 @@ Arte de base gerada no Higgsfield (25/10/2026) a partir do símbolo e das fotos 
 
 Onde cada arquivo vai: `apps/hub-web/app/{apple-icon.png,icon.png,favicon.ico,opengraph-image.jpg,twitter-image.jpg}`,
 `apps/hub-web/public/icons/*` (manifest) e `apps/hub-web/public/brand/app-icon-*.png` (apps de desktop).
+
+## Versão clara (padrão desde 25/10/2026)
+
+- `anel-claro-fonte.png`: anel em azul profundo → ciano sobre papel claro. `icones.py` gera `out/claro/` (ícones do
+  site, do iPhone e dos apps de desktop). Os escuros continuam em `out/` e em `public/brand/*-escuro-*`.
+- `produto-hub-claro.png`: o HUB real (capturas do `/inicio`) num MacBook e num iPhone, fotos de aparelhos geradas no
+  Higgsfield com tela verde e trocadas pelas capturas. Base do OG (`og-claro.html`) e da abertura do site.
+- `og-escuro.html` fica como alternativa para o tema escuro.

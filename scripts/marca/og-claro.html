@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../node_modules/@fontsource-variable/figtree/index.css" />
+    <style>
+      * {
+        margin: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+        background: #fcfbfc;
+      }
+      body {
+        position: relative;
+        font-family: 'Figtree Variable', sans-serif;
+        color: #1d1d1f;
+        -webkit-font-smoothing: antialiased;
+      }
+      .produto {
+        position: absolute;
+        right: -150px;
+        top: 70px;
+        width: 860px;
+        -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%);
+      }
+      .wrap {
+        position: absolute;
+        left: 72px;
+        top: 70px;
+        bottom: 64px;
+        width: 520px;
+        display: flex;
+        flex-direction: column;
+      }
+      .mark {
+        height: 34px;
+        align-self: flex-start;
+      }
+      h1 {
+        margin-top: 78px;
+        font-size: 74px;
+        line-height: 1;
+        letter-spacing: -2.4px;
+        font-weight: 300;
+        display: grid;
+      }
+      h1 b {
+        font-weight: 800;
+        letter-spacing: -3.2px;
+      }
+      p {
+        margin-top: 22px;
+        font-size: 26px;
+        color: #6e6e73;
+      }
+      .url {
+        margin-top: auto;
+        font-size: 19px;
+        font-weight: 600;
+        color: #1d1d1f;
+        letter-spacing: -0.2px;
+      }
+    </style>
+  </head>
+  <body>
+    <img class="produto" src="produto-hub-claro.png" alt="" />
+    <div class="wrap">
+      <img class="mark" src="../../apps/hub-web/public/brand/absolute-zro-wordmark-ink.webp" alt="" />
+      <h1>O futuro começa<b>do zero.</b></h1>
+      <p>Uma conta. Todas as ferramentas.</p>
+      <span class="url">absolutezro.vercel.app</span>
+    </div>
+  </body>
+</html>
