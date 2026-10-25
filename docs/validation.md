@@ -355,3 +355,5 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 
 - A pedido do titular, `scripts/marca/og-claro.html` ganhou o ícone da Revela na fileira das ferramentas;
   `opengraph-image.jpg` e `twitter-image.jpg` recapturados em 1200×630 (Chromium, Figtree carregada).
+- Ícone da Revela sem a margem de ícone de Mac (quadro de borda a borda, como Synquei e NOSSOM): no OG ele tinha
+  um aro branco e parecia menor. Tela da Revela e guia ajustados; `npm test` da Revela verde.
