@@ -42,11 +42,13 @@ export function AppTile({ p, children, compact }: { p: ProductAccess; children?:
       {children}
       <div className="app-tile__actions">
         {p.access === 'contracted' ? (
-          p.externalUrl ? (
-            <a className="zro-btn zro-btn--small zro-btn--primary" href={p.externalUrl} target="_blank" rel="noopener noreferrer">
+          p.ssoStartUrl || p.externalUrl ? (
+            <a className="zro-btn zro-btn--small zro-btn--primary" href={(p.ssoStartUrl ?? p.externalUrl) as string} target="_blank" rel="noopener noreferrer">
               Abrir
               <Icon name="external" />
-              <span className="zro-sr-only">(abre {p.name} em nova aba, com login próprio)</span>
+              <span className="zro-sr-only">
+                {p.ssoStartUrl ? `(abre ${p.name} em nova aba, já com a sua conta)` : `(abre ${p.name} em nova aba, com login próprio)`}
+              </span>
             </a>
           ) : (
             <span className="zro-faint">Usado dentro do projeto</span>

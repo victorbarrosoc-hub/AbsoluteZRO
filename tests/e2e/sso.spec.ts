@@ -92,3 +92,45 @@ test('Entrar com Absolute ZRO: cadastro, permissão, código e tokens', async ({
   await page.goto(`/oauth/authorize?${new URLSearchParams({ ...Object.fromEntries(q), redirect_uri: 'https://malicioso.teste/cb' })}`)
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Não deu para continuar')
 })
+
+test('app da família (trusted): entra direto, sem a tela Permitir, e o acesso fica no Perfil', async ({ page }) => {
+  const clientId = `e2e-f-${randomUUID().slice(0, 8)}`
+  const sql = postgres(DB, { max: 1, onnotice: () => {} })
+  await sql`insert into zro.oauth_clients (id, name, product_id, kind, secret_hash, redirect_uris, trusted)
+            values (${clientId}, 'NOSSOM (teste)', 'nossom', 'confidential', ${createHash('sha256').update('x').digest('hex')}, ${[APP]}, true)`
+  await sql.end()
+
+  let landed: URL | null = null
+  await page.route('https://app.e2e.teste/**', (route) => {
+    landed = new URL(route.request().url())
+    return route.fulfill({ status: 200, contentType: 'text/html', body: '<title>App</title><p>ok</p>' })
+  })
+  const challenge = createHash('sha256').update(randomBytes(32).toString('base64url')).digest('base64url')
+  const q = new URLSearchParams({
+    response_type: 'code',
+    client_id: clientId,
+    redirect_uri: APP,
+    scope: 'openid email profile org',
+    state: 'estado-familia',
+    nonce: 'n',
+    code_challenge: challenge,
+    code_challenge_method: 'S256',
+  })
+  await page.goto(`/oauth/authorize?${q}`)
+  await page.waitForURL('**/entrar?next=**')
+  await page.getByRole('link', { name: 'Criar conta' }).click()
+  await page.getByLabel('Nome').fill('Pessoa Família')
+  await page.getByLabel('E-mail').fill(`fam-${randomUUID().slice(0, 8)}@teste.absolutezro.local`)
+  await page.getByLabel('Senha').fill('senha-e2e-segura-1')
+  await page.getByRole('button', { name: 'Criar conta' }).click()
+  await page.waitForURL('**/boas-vindas**')
+  await page.getByLabel('Nome').fill('Produtora Família')
+  await page.getByRole('button', { name: 'Criar e continuar' }).click()
+
+  // Sem "Permitir e continuar": o HUB devolve direto ao app.
+  await expect.poll(() => landed?.searchParams.get('state')).toBe('estado-familia')
+  expect(landed!.searchParams.get('code')).toMatch(/^zc_/)
+
+  await page.goto('/perfil')
+  await expect(page.locator('#apps').getByText('NOSSOM (teste)').first()).toBeVisible()
+})

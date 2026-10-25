@@ -169,6 +169,8 @@ export type OAuthClient = {
   kind: 'confidential' | 'public'
   redirectUris: string[]
   allowLoopback: boolean
+  /** App da família: o HUB registra o consentimento sozinho (migration 0005). */
+  trusted: boolean
   scopes: string[]
   secretHash: string | null
 }
@@ -218,6 +220,7 @@ function rowToClient(r: Record<string, unknown>): OAuthClient {
     kind: r.kind as OAuthClient['kind'],
     redirectUris: r.redirect_uris as string[],
     allowLoopback: !!r.allow_loopback,
+    trusted: !!r.trusted,
     scopes: r.scopes as string[],
     secretHash: (r.secret_hash as string) ?? null,
   }
@@ -239,6 +242,7 @@ export async function registerClient(
     kind: 'confidential' | 'public'
     redirectUris: string[]
     allowLoopback: boolean
+    trusted?: boolean
     createdBy: string
   },
 ): Promise<{ clientId: string; clientSecret: string | null }> {
@@ -252,8 +256,9 @@ export async function registerClient(
   }
   const secret = input.kind === 'confidential' ? newToken('zk') : null
   await tx`
-    insert into zro.oauth_clients (id, name, product_id, kind, secret_hash, redirect_uris, allow_loopback, created_by)
-    values (${input.id}, ${input.name.trim()}, ${input.productId}, ${input.kind}, ${secret ? hashToken(secret) : null}, ${uris}, ${input.allowLoopback}, ${input.createdBy})`
+    insert into zro.oauth_clients (id, name, product_id, kind, secret_hash, redirect_uris, allow_loopback, trusted, created_by)
+    values (${input.id}, ${input.name.trim()}, ${input.productId}, ${input.kind}, ${secret ? hashToken(secret) : null}, ${uris}, ${input.allowLoopback},
+            ${!!input.trusted}, ${input.createdBy})`
   return { clientId: input.id, clientSecret: secret }
 }
 

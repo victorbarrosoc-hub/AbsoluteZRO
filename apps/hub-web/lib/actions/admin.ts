@@ -150,6 +150,7 @@ export async function registerOAuthClientAction(_: FormState, fd: FormData): Pro
         kind,
         redirectUris: str(fd, 'redirectUris').split(/\s+/),
         allowLoopback: fd.get('allowLoopback') === 'on',
+        trusted: fd.get('trusted') === 'on',
         createdBy: actor.userId,
       })
       await tx`insert into zro.audit_logs (actor_user_id, actor_kind, action, target_type, target_id, metadata)
