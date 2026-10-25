@@ -59,7 +59,13 @@ const META = [
   '<meta name="twitter:card" content="summary_large_image">'
 ].join('\n');
 
-const corpo = fs.readFileSync(path.join(AQUI, 'corpo.html'), 'utf8');
+/* as chaves vêm do ambiente, como no app (src/seguranca.js → chavesDeFora):
+   o fonte é público. Sem elas a página sai em modo demonstração. */
+const chaves = require('../src/seguranca.js').chavesDeFora();
+const comoJS = v => JSON.stringify(v).replace(/</g, '\\u003c');
+const corpo = fs.readFileSync(path.join(AQUI, 'corpo.html'), 'utf8')
+  .replace('/*__SUPABASE_URL__*/""', () => comoJS(chaves.supabaseUrl))
+  .replace('/*__SUPABASE_ANON_KEY__*/""', () => comoJS(chaves.supabaseKey));
 const corte = corpo.indexOf('</style>') + '</style>'.length;
 if (corte < 8) throw new Error('corpo.html sem bloco <style> — o corte do <head> não achou onde partir');
 const cabeca = corpo.slice(0, corte);   /* <title> + a folha de estilo */

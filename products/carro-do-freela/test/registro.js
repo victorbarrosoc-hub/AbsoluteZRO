@@ -15,9 +15,23 @@
  *              console, isto derrubaria a bateria inteira.
  */
 const { chromium } = require('playwright');
-const fs=require('fs'), path=require('path');
+const fs=require('fs'), path=require('path'), os=require('os');
+const { execFileSync } = require('child_process');
 const ok=[],bad=[]; const t=(c,m)=>(c?ok:bad).push(m);
-const ARQ=path.resolve(__dirname,'..','public','index.html');
+/* ⚠️ 25/out — A CHAVE SAIU DO FONTE (repositório público). O build da
+   Vercel preenche NUVEM com CARRO_SUPABASE_URL e CARRO_SUPABASE_ANON_KEY;
+   o build da bateria sai sem nuvem. Esta suíte então monta a SUA página,
+   com o mesmo build.js e chaves de TESTE (uma "anon" montada aqui), numa
+   pasta à parte — o public/ das outras suítes não é tocado. A conferência
+   do papel da chave mudou de lugar junto: quem barra a de serviço agora é
+   o build (src/seguranca.js → chavesDeFora), e ela é testada aqui. */
+const b64=o=>Buffer.from(JSON.stringify(o)).toString('base64url');
+const jwt=papel=>[b64({alg:'HS256',typ:'JWT'}),b64({role:papel,ref:'teste'}),'assinatura-de-teste'].join('.');
+const PASTA=fs.mkdtempSync(path.join(os.tmpdir(),'carro-registro-'));
+const CHAVES={CARRO_SUPABASE_URL:'https://carro-teste.supabase.co',CARRO_SUPABASE_ANON_KEY:jwt('anon')};
+execFileSync(process.execPath,[path.resolve(__dirname,'..','src','build.js'),'--saida='+PASTA],{env:Object.assign({},process.env,CHAVES),stdio:'ignore'});
+const ARQ=path.join(PASTA,'index.html');
+fs.symlinkSync(path.resolve(__dirname,'..','public','m'),path.join(PASTA,'m'));
 const URL='file://'+ARQ;
 /* ⚠️ PRECISA DAS DUAS ORIGENS. Em `file://` a nuvem tem que ficar MUDA, e
    essa é metade do contrato; a outra metade — a fila, o formulário de
@@ -63,6 +77,14 @@ const {servir,URL:HTTP}=require('./_servir.js');
     try{ return JSON.parse(atob(NUVEM.KEY.split('.')[1])).role }catch(e){ return '?' }
   });
   t(papel==='anon','a chave publicada é a ANON, não a de serviço: role="'+papel+'"');
+  {
+    const SEG=require('../src/seguranca.js');
+    let barrou='';
+    try{ SEG.chavesDeFora({CARRO_SUPABASE_URL:'https://carro-teste.supabase.co',CARRO_SUPABASE_ANON_KEY:jwt('service_role')}) }catch(e){ barrou=e.message }
+    t(/não é a chave anon/.test(barrou),'⟶⟶ e o build REPROVA a chave de serviço antes de ela chegar ao HTML');
+    const sem=SEG.chavesDeFora({});
+    t(sem.supabaseUrl===''&&sem.supabaseKey==='','sem as variáveis, o build sai sem nuvem — e a tela diz que não anota');
+  }
   t(/INSERT|insert/.test(fonte),'e o arquivo registra que a segurança depende da policy ser só de inserção');
 
   /* ⚠️ EM file:// A FILA NEM ENCHE, e é de propósito: `nuvemPost` sai antes
@@ -100,6 +122,8 @@ const {servir,URL:HTTP}=require('./_servir.js');
     if(/Failed to load resource/.test(m.text())) return;
     errs.push(m.text()); });
   await servir(h);
+  /* a página desta suíte, no lugar do public/index.html (rota mais nova vence) */
+  await h.route(u=>u.href===HTTP||u.href.startsWith(HTTP+'?'),r=>r.fulfill({contentType:'text/html; charset=utf-8',body:fs.readFileSync(ARQ,'utf8')}));
   const enviados=[];
   /* ⚠️ 500, NUNCA `abort()`. Abortar dá `net::ERR_FAILED` no console — e
      esta suíte reprova com erro de console, então ela reprovaria por causa
@@ -177,6 +201,7 @@ const {servir,URL:HTTP}=require('./_servir.js');
     'e ele NÃO é apagado por "recomeçar do zero" — senão a lista nasceria com gente repetida');
 
   await ctx2.close(); await b.close();
+  fs.rmSync(PASTA,{recursive:true,force:true});
   console.log('\n== OK =='); ok.forEach(x=>console.log('  ✓ '+x));
   if(bad.length){console.log('\n== FALHOU =='); bad.forEach(x=>console.log('  ✗ '+x));}
   if(errs.length){console.log('\n== CONSOLE =='); [...new Set(errs)].forEach(e=>console.log('  ! '+e));}

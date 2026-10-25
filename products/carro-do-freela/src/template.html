@@ -2043,6 +2043,8 @@ body.sem-rodape{padding-bottom:0}
 .blogin:hover{border-color:var(--cal-tenue)}
 .blogin:active{transform:scale(.98)}
 .blogin .ic{width:22px;height:22px;flex:none;display:grid;place-items:center}
+.lgzro{margin-top:10px}
+.lgzro .ic img{width:22px;height:20px;border-radius:5px;background:#05070a;padding:1px;display:block}
 .lgn-troca{text-align:center;margin:clamp(8px,calc(1.3svh / var(--zoom,1)),14px) 0 0;font-size:14px;color:var(--cal-fraco)}
 .lgn-nota{display:flex;gap:8px;align-items:flex-start;justify-content:center;margin:clamp(8px,calc(1.3svh / var(--zoom,1)),12px) 0 0;
   font-size:12.5px;line-height:1.4;color:var(--cal-tenue);text-align:left}
@@ -6790,6 +6792,15 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
         <span class="ic"><svg viewBox="0 0 24 24" width="20" height="20"><path fill="#4285F4" d="M23 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.2c-.3 1.4-1.1 2.6-2.3 3.4v2.8h3.7C21.7 18.7 23 15.8 23 12.3z"/><path fill="#34A853" d="M12 23.5c3.1 0 5.7-1 7.6-2.8l-3.7-2.8c-1 .7-2.3 1.1-3.9 1.1-3 0-5.5-2-6.4-4.7H1.8v2.9C3.7 21 7.6 23.5 12 23.5z"/><path fill="#FBBC05" d="M5.6 14.3c-.2-.7-.4-1.4-.4-2.3s.1-1.6.4-2.3V6.8H1.8C1 8.4.5 10.1.5 12s.5 3.6 1.3 5.2l3.8-2.9z"/><path fill="#EA4335" d="M12 5c1.7 0 3.2.6 4.4 1.7l3.3-3.3C17.7 1.5 15.1.5 12 .5 7.6.5 3.7 3 1.8 6.8l3.8 2.9C6.5 7 9 5 12 5z"/></svg></span>
         Continuar com Google
       </button>
+      <!-- ⚠️ A CONTA ABSOLUTE ZRO (25/out): o login único do HUB. Nasce
+           ESCONDIDO e só aparece quando /api/zro/eu responde — no domínio.
+           Aberto do disco, no artifact ou nas suítes ele não existe, e a
+           tela fica exatamente como era. O símbolo é o oficial da Absolute
+           ZRO (apps/hub-web/public/brand), reduzido; nada de logo inventado. -->
+      <button class="blogin lgzro" data-lgi style="--i:5" id="lg-zro" type="button" hidden>
+        <span class="ic"><img alt="" width="22" height="20" src="data:image/webp;base64,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"></span>
+        <span id="lg-zro-t">Continuar com Absolute ZRO</span>
+      </button>
       <p class="lgn-troca" data-lgi style="--i:6"><span id="lg-pergunta">Ainda não tem conta?</span> <button type="button" class="lgn-link" id="lg-cad">Criar conta</button></p>
       <p class="lgn-nota" data-lgi style="--i:7" id="lg-nota"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M8.6 12.2l2.3 2.3 4.6-4.8" stroke-linecap="round"/></svg><span>Nesta prévia, e-mail e senha não ficam guardados.</span></p>
     </div>
@@ -10567,7 +10578,7 @@ function initGaveta(){
   v("aj-back").onclick=()=>show(S.voltaAjuda||"pracas");
   document.querySelectorAll("[data-ajuda]").forEach(b=>b.onclick=()=>abrirAjuda(b.dataset.ajuda));
   v("g-trocar").onclick=()=>{fecharGaveta();LG_MODO="entrar";pintarLogin();show("entrar")};
-  v("g-sair").onclick=()=>{fecharGaveta();MODO="freela";aplicarModo();show("home")};
+  v("g-sair").onclick=()=>{fecharGaveta();zroSair();MODO="freela";aplicarModo();show("home")};
   addEventListener("keydown",e=>{if(e.key==="Escape")fecharGaveta()});
 }
 
@@ -12952,6 +12963,9 @@ function entrarNaConta(prov,criar){
     try{ localStorage.setItem(ENTROU_KEY,"1") }catch(e){}
     nuvemPasso("entrou");
   }
+  /* a conta Absolute ZRO traz nome e e-mail DE VERDADE: o perfil novo
+     nasce com eles, e o resto do cadastro continua com a pessoa */
+  if(prov==="Absolute ZRO") zroNoPerfil();
   preencherCadastro(); recalcular(); preencherProd&&preencherProd();
   /* ⚠️ o login cai no feed — que só existe da Fase 4 em diante. Numa fase
      anterior a porta de entrada é a caixa de propostas: é o que o freela
@@ -26946,7 +26960,7 @@ initOrcar();
    Junto com a mensagem vai o contexto que faz um relato virar conserto:
    tela atual, chapeu (freela/contratante), tamanho da janela e navegador.
    O painel mostra o que vai — nada sobe escondido. */
-const FBK_KEY="SUBSTITUIR_PELA_CHAVE_WEB3FORMS_NOVA";   /* Web3Forms → carrodofreela@gmail.com; publica por desenho */
+const FBK_KEY=/*__WEB3FORMS_KEY__*/"";   /* Web3Forms → carrodofreela@gmail.com; publica por desenho. Vem de CARRO_WEB3FORMS_KEY no build (o repositório é público) */
 /* Versao da build. Aparece no rodape do menu e VAI JUNTO no recado de
    suporte: durante os testes a primeira pergunta de todo relato e "qual
    versao voce esta usando?", e sem ela nao da para saber se o defeito ja
@@ -27293,8 +27307,8 @@ medirBarraBaixo();
    pessoas.
    ===================================================================== */
 const NUVEM={
-  URL:"https://projeto-novo-substituir.supabase.co",
-  KEY:"SUBSTITUIR_PELA_CHAVE_ANON_DO_PROJETO_NOVO"
+  URL:/*__SUPABASE_URL__*/"",
+  KEY:/*__SUPABASE_ANON_KEY__*/""
 };
 const NUVEM_FILA="cdf-nuvem-fila";
 const GUARDEI_KEY="cdf-guardei";   /* ja pedi para ser chamado no lancamento */
@@ -27448,5 +27462,88 @@ function guardarContato(caixa){
   }catch(e){ nuvemPasso("abriu") }
   nuvemDesovar();
   drawGuardar();
+})();
+
+/* =====================================================================
+   A CONTA ABSOLUTE ZRO (25/out) — o login único do HUB (ADR 0012).
+
+   O servidor é pequeno e mora em api/zro/: `entrar` leva ao HUB,
+   `callback` confere tudo e grava um cookie de sessão assinado (httpOnly,
+   o script daqui nunca lê), `eu` diz quem está na sessão e `sair` apaga.
+   O botão Abrir do HUB chega por /api/zro/entrar e volta com ?zro=entrou.
+
+   ⚠️ SÓ PERGUNTA NO SITE SERVIDO, pelas mesmas duas exclusões da nuvem:
+   file:// (as suítes e quem salvou a página) e iframe (o artifact). Ali
+   o botão nunca aparece, nada é pedido e o console fica limpo — a bateria
+   reprova erro de console, e o login protótipo segue sendo o login.
+
+   ⚠️ SEM RESPOSTA CERTA, SEM BOTÃO. 200 = tem conta (o botão entra
+   direto, com nome e e-mail reais); 401 = sem sessão (o botão leva ao
+   HUB). Qualquer outra coisa — 404 de um servidor sem as funções, 503 sem
+   as chaves, rede fora — e o botão continua escondido: porta que dá em
+   erro é pior que porta nenhuma.
+   ===================================================================== */
+var ZRO_CONTA=null, ZRO_PRONTO=false;
+const ZRO_MSG={
+  erro:"Não deu para entrar com a Absolute ZRO agora. Tente de novo.",
+  recusado:"O acesso não foi liberado na Absolute ZRO.",
+  expirou:"A entrada demorou demais. Tente de novo.",
+  indisponivel:"Entrar com a Absolute ZRO ainda não está ligado aqui."
+};
+const zroLigavel=()=>/^https?:$/.test(location.protocol)&&!emIframe();
+function pintarZro(){
+  const b=v("lg-zro"); if(!b) return;
+  b.hidden=!ZRO_PRONTO;
+  b.title=ZRO_CONTA&&ZRO_CONTA.email?"Entrar como "+ZRO_CONTA.email:"";
+  const n=document.querySelector("#lg-nota span");
+  if(n){
+    if(n.dataset.orig===undefined) n.dataset.orig=n.textContent;
+    n.textContent=ZRO_CONTA&&ZRO_CONTA.email?"Conta Absolute ZRO: "+ZRO_CONTA.email:n.dataset.orig;
+  }
+}
+function zroEntrar(){ entrarNaConta("Absolute ZRO",LG_MODO==="criar") }
+/* o perfil que acabou de nascer recebe o nome da conta; o que a pessoa
+   já escreveu aqui nunca é trocado pelo da conta */
+function zroNoPerfil(){
+  if(!ZRO_CONTA) return;
+  if(ZRO_CONTA.nome&&vazio(EU.nome)) EU.nome=ZRO_CONTA.nome;
+  if(ZRO_CONTA.email) EU.email=ZRO_CONTA.email;
+}
+function zroSair(){
+  if(!ZRO_CONTA) return;
+  ZRO_CONTA=null;
+  fetch("/api/zro/sair",{method:"POST",credentials:"same-origin",cache:"no-store"}).catch(()=>{});
+  pintarZro();
+}
+v("lg-zro").onclick=()=>{
+  if(ZRO_CONTA) return zroEntrar();
+  const volta=location.pathname+(LG_TIPO==="contratante"?"?lado=contratante":"");
+  location.href="/api/zro/entrar?volta="+encodeURIComponent(volta);
+};
+(function(){
+  if(!zroLigavel()) return;
+  let marca=null, lado=null;
+  try{
+    const u=new URL(location.href);
+    marca=u.searchParams.get("zro"); lado=u.searchParams.get("lado");
+    if(marca||lado){ u.searchParams.delete("zro"); u.searchParams.delete("lado");
+      history.replaceState(history.state,"",u.pathname+u.search+u.hash) }
+  }catch(e){}
+  fetch("/api/zro/eu",{credentials:"same-origin",cache:"no-store",headers:{Accept:"application/json"}})
+    .then(r=>r.status===200?r.json().then(j=>({j:j})):{ligado:r.status===401})
+    .catch(()=>({}))
+    .then(r=>{
+      const j=r.j;
+      if(j&&typeof j.sub==="string"&&j.sub){
+        ZRO_CONTA={sub:j.sub,nome:typeof j.nome==="string"?j.nome:"",email:typeof j.email==="string"?j.email:"",
+          organizacao:typeof j.organizacao==="string"?j.organizacao:""};
+        ZRO_PRONTO=true;
+      } else ZRO_PRONTO=!!r.ligado;
+      pintarZro();
+      if(lado==="contratante"||lado==="freela"){ LG_TIPO=lado; pintarLogin() }
+      if(marca==="entrou"&&ZRO_CONTA) zroEntrar();
+      else if(marca&&ZRO_MSG[marca]){ LG_MODO="entrar"; pintarLogin(); show("entrar"); lgAviso(ZRO_MSG[marca]) }
+    })
+    .catch(()=>{});
 })();
 </script>

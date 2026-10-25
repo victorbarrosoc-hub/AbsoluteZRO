@@ -15,38 +15,60 @@
  *
  * ⚠️ As suítes abrem o build por file://, onde cabeçalho não existe: esta é
  * a única que vê a página do jeito que o domínio entrega.
+ *
+ * ⚠️ 25/out — O DOMÍNIO PASSOU A SAIR DO BUILD DA VERCEL (repositório
+ * AbsoluteZRO, ADR 0013). O vercel.json da raiz do repositório antigo e o
+ * .vercelignore do publicar.js deram lugar ao `src/vercel-build.js`, que
+ * escreve só o que o site serve em `.vercel/output` e as rotas no
+ * config.json (`SEG.rotasVercel`). As asserções de 1 e 2 mudaram de alvo,
+ * não de exigência: os mesmos cabeçalhos, o mesmo /app/ fechado, a mesma
+ * CSP calculada — e agora calculada SEM navegador, por isso a 3a confere
+ * que o leitor de scripts do build devolve o mesmo que o DOMParser.
+ * O Supabase também saiu do fonte: a suíte usa uma origem de TESTE.
  */
+process.env.CARRO_SUPABASE_URL = process.env.CARRO_SUPABASE_URL || 'https://carro-teste.supabase.co';
+/* chave de TESTE com cara de anon (montada aqui, nunca uma chave de verdade) */
+const b64 = o => Buffer.from(JSON.stringify(o)).toString('base64url');
+process.env.CARRO_SUPABASE_ANON_KEY = process.env.CARRO_SUPABASE_ANON_KEY || [b64({ alg: 'HS256', typ: 'JWT' }), b64({ role: 'anon', ref: 'teste' }), 'assinatura-de-teste'].join('.');
+const SUPA = process.env.CARRO_SUPABASE_URL;
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
 const { execFileSync } = require('child_process');
 const SEG = require('../src/seguranca.js');
 const ok = [], bad = []; const t = (c, m) => (c ? ok : bad).push(m);
 const PUB = path.resolve(__dirname, '..', 'public');
-const RAIZ = path.resolve(__dirname, '..', '..');
+const RAIZ = path.resolve(__dirname, '..');
 
-/* ============ 1. o vercel.json da raiz ============ */
-const cfg = JSON.parse(fs.readFileSync(path.join(RAIZ, 'vercel.json'), 'utf8'));
-const geral = (cfg.headers || []).find(r => r.source === '/(.*)');
-const val = k => geral && (geral.headers.find(h => h.key === k) || {}).value;
+/* ============ 1. as rotas do domínio (config.json do build) ============ */
+const rotas = SEG.rotasVercel("default-src 'self'", ['index', 'fase1', 'fase2']);
+const geral = rotas.find(r => r.src === '^/(.*)$' && r.continue);
+const val = k => geral && geral.headers[k];
 for (const [k, v] of Object.entries(SEG.FIXOS)) t(val(k) === v, 'cabeçalho ' + k + ': ' + v + ' (achou ' + val(k) + ')');
 t(/noindex/.test(val('X-Robots-Tag') || ''), 'o noindex continua de pé');
-t(!val('Content-Security-Policy'), 'a CSP NÃO mora escrita à mão no vercel.json — o publicar calcula do build que sobe');
-const redir = cfg.redirects || [];
-t(redir.some(r => r.source === '/app/:caminho*' && r.destination === '/') && redir.some(r => r.source === '/app' && r.destination === '/'),
-  '⟶⟶ /app e /app/... vão para a home: o fonte não abre no domínio');
-t(redir.every(r => r.permanent === false), 'os redirecionamentos são temporários (307) — se um dia /app/ servir algo, o navegador não lembra');
-t((cfg.headers || []).some(r => r.source === '/m/(.*)' && r.headers.some(h => /immutable/.test(h.value))), 'o cache longo da mídia continua');
+t(val('Referrer-Policy') === 'no-referrer', 'Referrer-Policy: no-referrer continua');
+t(val('Content-Security-Policy') === "default-src 'self'", 'a CSP é a calculada no build, não uma escrita à mão');
+const redir = rotas.filter(r => r.status === 307);
+t(['/app', '/app/', '/app/CLAUDE.md', '/README.md', '/README'].every(c => redir.some(r => new RegExp(r.src).test(c) && r.headers.Location === '/')),
+  '⟶⟶ /app, /app/... e /README vão para a home: o fonte não abre no domínio');
+t(redir.length && redir.every(r => r.status === 307), 'os redirecionamentos são temporários (307) — se um dia /app/ servir algo, o navegador não lembra');
+t(rotas.some(r => r.src === '^/m/(.*)$' && /immutable/.test(r.headers['Cache-Control'])), 'o cache longo da mídia continua');
+t(rotas.some(r => r.dest === '/$1.html' && new RegExp(r.src).test('/fase1')) && rotas.some(r => r.status === 308 && new RegExp(r.src).test('/fase1.html')),
+  'cleanUrls: /fase1 serve fase1.html e /fase1.html redireciona');
+const vj = JSON.parse(fs.readFileSync(path.join(RAIZ, 'vercel.json'), 'utf8'));
+t(vj.buildCommand === 'node src/vercel-build.js' && !vj.headers && !vj.redirects, 'o vercel.json da pasta só manda rodar o build — cabeçalhos e rotas saem do build');
 
-/* ============ 2. o .vercelignore ============ */
+/* ============ 2. quem publica ============ */
 {
-  const vi = SEG.vercelignore(['index.html', 'fase1.html', 'og.jpg', 'm', 'vercel.json']);
-  const regras = vi.split('\n').filter(l => l && !l.startsWith('#'));
-  t(regras[0] === '/*', 'o .vercelignore começa ignorando a raiz inteira (lista de permitidos, não de proibidos)');
-  t(regras.includes('!/index.html') && regras.includes('!/m') && regras.includes('!/vercel.json'), 'e devolve só o que o site serve');
-  t(!regras.some(r => /app/.test(r)), '⟶⟶ a pasta app/ não volta por nenhuma regra');
-  const pub = fs.readFileSync(path.join(__dirname, '..', 'src', 'publicar.js'), 'utf8');
-  t(/SEG\.vercelignore\(/.test(pub) && /\.vercelignore/.test(pub), 'o publicar escreve o .vercelignore no clone');
-  t(/blindar\.js/.test(pub) && /quebra com a CSP/.test(pub), 'o publicar prova a CSP antes de subir e trava se ela quebrar a página');
+  const pub = fs.readFileSync(path.join(RAIZ, 'src', 'publicar.js'), 'utf8');
+  t(!/execFileSync|git|push/.test(pub.replace(/\/\*[\s\S]*?\*\//g, '')) && /process\.exit\(1\)/.test(pub),
+    '⟶⟶ o publicar.js está aposentado: não dá push em repositório nenhum');
+  const vb = fs.readFileSync(path.join(RAIZ, 'src', 'vercel-build.js'), 'utf8');
+  t(/sem-nome-real\.js/.test(vb) && /nomes NÃO estão reduzidos/.test(vb) && /TEM TELEFONE/.test(vb), 'o build da Vercel herdou as travas do publicar (selo, anonimato, telefone)');
+  t(/scriptsDoHtml/.test(vb) && /rotasVercel/.test(vb), 'e calcula a CSP do que acabou de gerar');
+  const tpl = fs.readFileSync(path.join(RAIZ, 'src', 'template.html'), 'utf8');
+  const html = fs.readFileSync(path.join(PUB, 'index.html'), 'utf8');
+  t(!/eyJhbGciOi[A-Za-z0-9_-]{20,}\./.test(tpl + html), '⟶⟶ nenhuma chave JWT no template nem no build');
+  t(!/__(WEB3FORMS_KEY|SUPABASE_URL|SUPABASE_ANON_KEY)__/.test(html), 'o build trocou os três marcadores de chave');
 }
 
 (async () => {
@@ -59,10 +81,25 @@ t((cfg.headers || []).some(r => r.source === '/m/(.*)' && r.headers.some(h => /i
   t(/script-src 'self'( 'sha256-[A-Za-z0-9+/=]+')+;/.test(csp) && !/script-src[^;]*unsafe-(inline|eval)/.test(csp),
     '⟶⟶ script só com hash: nada de unsafe-inline nem unsafe-eval no script-src');
   t(/frame-ancestors 'none'/.test(csp) && /object-src 'none'/.test(csp) && /base-uri 'none'/.test(csp), 'sem moldura alheia, sem plugin, sem <base> injetado');
-  t(SEG.CONNECT.every(o => csp.includes(o)) && /connect-src 'self' https:\/\/api\.web3forms\.com https:\/\/projeto-novo-substituir\.supabase\.co;/.test(csp),
+  t(SEG.CONNECT.every(o => csp.includes(o)) && csp.includes("connect-src 'self' https://api.web3forms.com " + SUPA + ';'),
     'o app só fala com o suporte e com o convite — origem nova é bloqueada');
+  t(SEG.conexoes({}).join(' ') === 'https://api.web3forms.com', 'sem Supabase no ambiente, a origem dele nem entra na CSP');
   for (const a of (prova && prova.arquivos) || []) t(a.ok, a.nome + '.html abre inteiro com a CSP, sem violação nem exceção ' + (a.erros || []).join(' · '));
   t(prova && prova.arquivos && prova.arquivos.length === 2, 'os dois builds foram provados');
+  /* ⚠️ o build da Vercel não tem navegador: o hash sai do leitor de Node.
+     Se ele divergir do DOMParser num único script, o domínio bloquearia o
+     app inteiro — então a conta é refeita aqui, script a script. */
+  {
+    const leitor = await chromium.launch({ executablePath: process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+    const pg = await leitor.newPage();
+    for (const n of ['index', 'fase-1']) {
+      const h = fs.readFileSync(path.join(PUB, n + '.html'), 'utf8');
+      const doNavegador = await SEG.scriptsDe(pg, h), doNode = SEG.scriptsDoHtml(h);
+      t(doNavegador.length === doNode.length && doNavegador.every((x, i) => x === doNode[i]),
+        '⟶⟶ ' + n + '.html: o leitor do build acha os mesmos ' + doNavegador.length + ' scripts que o navegador (' + doNode.length + ')');
+    }
+    await leitor.close();
+  }
 
   /* ============ 3b. a página servida com a CSP, nos caminhos que esbarram nela ============ */
   const b = await chromium.launch({ executablePath: process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
@@ -79,7 +116,7 @@ t((cfg.headers || []).some(r => r.source === '/m/(.*)' && r.headers.some(h => /i
   await p.route('**/*', r => {
     const u = r.request().url();
     if (u.startsWith('https://api.web3forms.com')) { suporte++; return r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: '{"success":true}' }) }
-    if (u.startsWith('https://projeto-novo-substituir.supabase.co')) { convite++; return r.fulfill({ status: 201, headers: { 'access-control-allow-origin': '*' }, body: '' }) }
+    if (u.startsWith(SUPA)) { convite++; return r.fulfill({ status: 201, headers: { 'access-control-allow-origin': '*' }, body: '' }) }
     if (!u.startsWith(BASE)) return r.fulfill({ status: 204, body: '' });
     const rel = decodeURIComponent(u.slice(BASE.length).split(/[?#]/)[0]) || 'index.html';
     const arq = path.join(PUB, rel);
@@ -105,10 +142,10 @@ t((cfg.headers || []).some(r => r.source === '/m/(.*)' && r.headers.some(h => /i
   t(await p.evaluate(() => { const f = document.getElementById('folha-print'); return !!(f && f.contentDocument && f.contentDocument.querySelector('table')) }),
     'o documento para imprimir monta no iframe, com o estilo da folha');
   /* as duas únicas origens de fora */
-  await p.evaluate(async () => {
+  await p.evaluate(async supa => {
     await fetch('https://api.web3forms.com/submit', { method: 'POST', body: '{}' }).catch(() => {});
-    await fetch('https://projeto-novo-substituir.supabase.co/rest/v1/passos', { method: 'POST', body: '{}' }).catch(() => {});
-  });
+    await fetch(supa + '/rest/v1/passos', { method: 'POST', body: '{}' }).catch(() => {});
+  }, SUPA);
   t(suporte >= 1 && convite >= 1, 'o suporte e o convite passam pela CSP (' + suporte + '/' + convite + ')');
   const limpas = await p.evaluate(() => window.__csp.slice());
   t(limpas.length === 0, '⟶⟶ nenhuma violação de CSP no uso normal: ' + limpas.slice(0, 4).join(' · '));

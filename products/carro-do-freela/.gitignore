@@ -14,3 +14,12 @@ crew.local.json
 
 # a mídia que o build copia de src/midia/ com o hash no nome (18/out · 2)
 public/m/
+
+# ⚠️ OS HTML GERADOS NÃO SÃO VERSIONADOS (25/out): o repositório AbsoluteZRO
+# é público e o build da Vercel gera tudo, com as chaves do ambiente.
+public/index.html
+public/artifact.html
+public/fase-*.html
+landing/index.html
+# saída do build da Vercel (src/vercel-build.js)
+.vercel/

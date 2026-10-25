@@ -18,7 +18,12 @@ export const PRODUTOS = {
     licenca: 'sem arquivo de licença; código proprietário do titular',
     stack: 'HTML/JS sem dependências; build em Node (src/build.js); testes Playwright; Supabase (projeto do original) e Web3Forms',
     estrategia: '(d) link externo com identidade separada + (c) adaptador de contrato `job.created` no HUB',
-    remover: [/^public\/(index|artifact|fase-\d+(-artifact)?)\.html$/],
+    // Saídas de build com as chaves do original embutidas: o build da Vercel gera de novo, com as chaves do ambiente.
+    remover: [/^public\/(index|artifact|fase-\d+(-artifact)?)\.html$/, /^landing\/index\.html$/],
+    observacoesFonte: [
+      'As chaves (Supabase anon, Web3Forms) saíram do fonte: `src/build.js` e `landing/gerar.js` leem `CARRO_SUPABASE_URL`, `CARRO_SUPABASE_ANON_KEY` e `CARRO_WEB3FORMS_KEY` do ambiente.',
+      '`src/publicar.js` (push no repositório antigo) foi aposentado; quem publica é o build da Vercel (`src/vercel-build.js`).',
+    ],
     trocar: [
       {
         de: /eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g,
