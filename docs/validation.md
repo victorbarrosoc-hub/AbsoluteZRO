@@ -144,6 +144,12 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   Intel e Windows) e as versões web (200).
 - `tests/integration/downloads.test.ts`: catálogo inteiro, só HTTPS em domínios oficiais, nada para instalar no que está
   em desenvolvimento. E2E com axe em `/baixar` e `/downloads` nos dois temas: 10/10.
+- Repositórios privados (25/10/2026): nenhum link do HUB vai para o `github.com`; o NOSSOM passa por
+  `https://nossom-teal.vercel.app/baixar/<sistema>` como SOBEDESCE e Synquei. `tests/integration/downloads.test.ts` recusa
+  `github.com`/`githubusercontent.com` e exige `/baixar/<sistema>` nos instaladores de desktop. Rotas do NOSSOM cobertas
+  com GitHub falso em `products/nossom/tests/desktop-releases.test.ts`. Não validado aqui: download real com o
+  `GITHUB_TOKEN` de produção (depende da variável nos projetos Vercel, ver
+  [downloads-privados](operations/downloads-privados.md)).
 
 ## Login único (25/10/2026)
 

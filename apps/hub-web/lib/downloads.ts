@@ -26,7 +26,9 @@ export type DownloadEntry = {
   moreUrl?: string
 }
 
-const NOSSOM_RELEASE = 'https://github.com/victorbarrosoc-hub/nossom/releases/download/desktop-v0.2.2/'
+// Os repositórios são privados: nada aponta para o github.com. Cada site tem /baixar/<sistema>, que lê o Release com
+// GITHUB_TOKEN e redireciona para o endereço assinado e temporário do arquivo.
+const NOSSOM_BAIXAR = 'https://nossom-teal.vercel.app/baixar/'
 
 export const DOWNLOADS: DownloadEntry[] = [
   {
@@ -65,11 +67,11 @@ export const DOWNLOADS: DownloadEntry[] = [
         os: 'mac',
         label: 'Mac · Apple Silicon',
         detail: 'M1, M2, M3, M4 ou mais novo',
-        href: NOSSOM_RELEASE + 'NOSSOM-0.2.2-mac-arm64.dmg',
+        href: NOSSOM_BAIXAR + 'mac-arm64',
         format: 'Instalador .dmg',
       },
-      { os: 'mac', label: 'Mac · Intel', detail: 'Processador Intel', href: NOSSOM_RELEASE + 'NOSSOM-0.2.2-mac-x64.dmg', format: 'Instalador .dmg' },
-      { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11, 64 bits', href: NOSSOM_RELEASE + 'NOSSOM-0.2.2-win-x64.exe', format: 'Instalador .exe' },
+      { os: 'mac', label: 'Mac · Intel', detail: 'Processador Intel', href: NOSSOM_BAIXAR + 'mac-x64', format: 'Instalador .dmg' },
+      { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11, 64 bits', href: NOSSOM_BAIXAR + 'windows', format: 'Instalador .exe' },
       { os: 'web', label: 'Navegador', detail: 'Estúdio completo, sem instalar', href: 'https://nossom-teal.vercel.app/studio', format: 'Sem instalar' },
     ],
     firstOpen: { mac: 'Se o Mac bloquear: Ajustes do Sistema › Privacidade e Segurança › Abrir Mesmo Assim.' },
