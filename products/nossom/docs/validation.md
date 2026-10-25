@@ -30,6 +30,7 @@ A revisão ampla identificou expectativas antigas de texto/cor e o teste de aber
 - `tests/zro.test.ts` (ZRO e Supabase falsos em `tests/helpers/zro-fake.ts`): abertura direta pelo HUB, conta nova só com e-mail confirmado, vínculo existente → sessão, state/nonce/iss (token e redirect)/aud/assinatura errados, e-mail em uso sem vínculo, ligar/desligar e recusa de desligar o único login.
 - `tests/quota-postgres.integration.ts`: `nossom_zro_link` só para `service_role`, tabela com RLS e sem acesso de `anon`/`authenticated`, uma pessoa por conta, exclusão em cascata (rodado em PostgreSQL 16 local).
 - `tests/desktop-releases.test.ts`: downloads seguem na prévia `desktop-v0.2.2` até a release `nossom-v<versão>` existir.
+- `tests/desktop-releases.test.ts` (GitHub falso, 25/10/2026, repositórios privados): `/baixar/<sistema>` com token lê a API e redireciona para o endereço assinado (Accept octet-stream, sem seguir o 302), sem token usa o link normal, release ausente ou sem o arquivo cai na reserva, nada encontrado volta para `/apps?baixar=indisponivel`, `/baixar/diag` dá o motivo sem mostrar o token, e o canal `/baixar/atualizacoes/<arquivo>` só aceita os arquivos do atualizador. Limite: sem teste contra o GitHub real com o token de produção.
 - `tests/e2e/zro-login.spec.ts`: botão, volta preservada e aviso quando a Absolute ZRO não responde.
 - Limite: sem teste contra a Absolute ZRO e o Supabase reais; isso fica para depois de aplicar a migração e configurar as variáveis.
 
