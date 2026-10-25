@@ -453,8 +453,9 @@
 
 .main {
   min-width: 0;
-  display: grid;
-  grid-template-rows: auto 1fr;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
 }
 .topbar {
   position: sticky;
@@ -483,6 +484,28 @@
   padding: clamp(20px, 3vw, 40px) clamp(16px, 3vw, 40px) var(--space-8);
   max-width: 1320px;
   width: 100%;
+}
+
+/* Esqueleto de carregamento: blocos com brilho que passa, sem texto inventado. */
+.skeleton {
+  display: grid;
+  gap: var(--space-5);
+}
+.skeleton__block {
+  border-radius: var(--radius-l);
+  background: linear-gradient(100deg, var(--surface) 30%, color-mix(in srgb, var(--surface-3) 70%, var(--surface)) 50%, var(--surface) 70%) 0 0 / 300% 100%;
+  border: 1px solid var(--line);
+  animation: shimmer 1.4s linear infinite;
+}
+.skeleton__row {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+}
+@keyframes shimmer {
+  to {
+    background-position: -150% 0;
+  }
 }
 
 .mobile-nav {
