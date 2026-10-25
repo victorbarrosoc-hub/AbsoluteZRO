@@ -191,20 +191,20 @@ describe("scripts/copiar-do-neon.mts", () => {
 
   test("falha sai com código 1 e não mostra endereço nem senha", () => {
     const r = rodar({
-      SOBEDESCE_COPIAR_DE: "postgres://neon:senha-neon@127.0.0.1:1/neondb",
-      SOBEDESCE_DATABASE_URL: "postgres://sobedesce_app.abc:senha-supa@127.0.0.1:2/postgres",
+      SOBEDESCE_COPIAR_DE: "postgres://neon:sNeon@127.0.0.1:1/neondb",
+      SOBEDESCE_DATABASE_URL: "postgres://sobedesce_app.abc:sSupa@127.0.0.1:2/postgres",
       SOBEDESCE_DATABASE_SCHEMA: "sobedesce",
     });
     assert.equal(r.status, 1);
     const saida = r.stdout + r.stderr;
     assert.match(saida, /falhou/);
-    assert.doesNotMatch(saida, /senha|postgres:\/\//);
+    assert.doesNotMatch(saida, /sNeon|sSupa|postgres:\/\//);
   });
 
   test("sem SOBEDESCE_DATABASE_SCHEMA não copia", () => {
     const r = rodar({
-      SOBEDESCE_COPIAR_DE: "postgres://neon:senha-neon@127.0.0.1:1/neondb",
-      SOBEDESCE_DATABASE_URL: "postgres://sobedesce_app.abc:senha-supa@127.0.0.1:2/postgres",
+      SOBEDESCE_COPIAR_DE: "postgres://neon:sNeon@127.0.0.1:1/neondb",
+      SOBEDESCE_DATABASE_URL: "postgres://sobedesce_app.abc:sSupa@127.0.0.1:2/postgres",
     });
     assert.equal(r.status, 1);
     assert.match(r.stderr, /SOBEDESCE_DATABASE_SCHEMA/);

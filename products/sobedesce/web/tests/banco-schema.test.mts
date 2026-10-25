@@ -15,8 +15,8 @@ import { comandosNoSchema, conferirSchemaPadrao, lerMigracoes, migrarNoSchema } 
 import { abrirBancos, type Bancos } from "./bancos-teste.mjs";
 
 const PASTA = fileURLToPath(new URL("../drizzle", import.meta.url));
-const NEON = "postgres://neondb_owner:senha-neon@ep-cool-name-123456-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
-const SUPABASE = "postgres://sobedesce_app.abcdefghijklmnop:senha-supa@aws-0-sa-east-1.pooler.supabase.com:6543/postgres";
+const NEON = "postgres://neondb_owner:sNeon@ep-cool-name-123456-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
+const SUPABASE = "postgres://sobedesce_app.abcdefghijklmnop:sSupa@aws-0-sa-east-1.pooler.supabase.com:6543/postgres";
 
 describe("qual banco o site usa", () => {
   test("SOBEDESCE_DATABASE_URL vem antes de DATABASE_URL e POSTGRES_URL", () => {
@@ -36,13 +36,13 @@ describe("qual banco o site usa", () => {
   test("databaseLabel reconhece o pooler do Supabase e nunca mostra senha", () => {
     for (const [url, esperado] of [
       [SUPABASE, "abcdefghijklmnop (Supabase)"],
-      ["postgres://postgres.abcdefghijklmnop:senha-supa@aws-1-sa-east-1.pooler.supabase.com:5432/postgres", "abcdefghijklmnop (Supabase)"],
-      ["postgres://postgres:senha-supa@db.abcdefghijklmnop.supabase.co:5432/postgres", "abcdefghijklmnop (Supabase)"],
+      ["postgres://postgres.abcdefghijklmnop:sSupa@aws-1-sa-east-1.pooler.supabase.com:5432/postgres", "abcdefghijklmnop (Supabase)"],
+      ["postgres://postgres:sSupa@db.abcdefghijklmnop.supabase.co:5432/postgres", "abcdefghijklmnop (Supabase)"],
       [NEON, "ep-cool-name-123456 (Neon, sa-east-1)"],
     ]) {
       const label = databaseLabel(url);
       assert.equal(label, esperado);
-      assert.doesNotMatch(label, /senha/);
+      assert.doesNotMatch(label, /sNeon|sSupa/);
     }
   });
 
