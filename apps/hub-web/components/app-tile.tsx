@@ -6,6 +6,7 @@ import Link from 'next/link'
 import type { CSSProperties, ReactNode } from 'react'
 import type { ProductAccess } from '@zro/billing'
 import { Pill, ProductMark } from '@zro/ui'
+import { hasDesktopInstaller } from '@/lib/downloads'
 import { fmtDay } from '@/lib/labels'
 import { Icon } from './icons'
 
@@ -56,6 +57,13 @@ export function AppTile({ p, children, compact }: { p: ProductAccess; children?:
           </Link>
         ) : (
           <span className="zro-faint">Em breve no Ciclo do O</span>
+        )}
+        {hasDesktopInstaller(p.productId) && (
+          <Link className="zro-btn zro-btn--small zro-btn--ghost" href={`/downloads#app-${p.productId}`}>
+            <Icon name="download" />
+            Instalar
+            <span className="zro-sr-only"> {p.name}</span>
+          </Link>
         )}
       </div>
     </article>
