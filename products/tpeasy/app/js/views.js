@@ -5,6 +5,7 @@ import { toast, openPage, closePage, enableEdgeBack, actionSheet, confirmDanger,
 import { openPrompter, openCalib, prompterOpen } from "./prompter.js";
 import { syncSettingsUI, setPref } from "./settings.js";
 import * as Sync from "./sync.js";
+import * as Zro from "./zro.js";
 
 const VERSION = "2.1";
 const wpm = () => D.S().wpm;
@@ -261,10 +262,19 @@ export function renderAccount() {
   const card = $("#accountCard");
   const user = Sync.currentUser();
   const st = Sync.syncState;
+  const local = `<p class="account-note">Seus roteiros continuam salvos neste aparelho.</p>`;
+  let conta = "";
+  if (Zro.zro.estado === "dentro") {
+    const p = Zro.zro.pessoa;
+    const org = p.organizacao && p.organizacao.nome ? `<span>${esc(p.organizacao.nome)}</span>` : "";
+    conta = `<div class="account"><span class="avatar is-on">${esc((p.nome || p.email || "?").charAt(0).toUpperCase())}</span><div class="account-text"><b>${esc(p.nome || p.email)}</b>${p.nome ? `<span>${esc(p.email)}</span>` : ""}${org}</div><button class="pill is-small" id="zroSair">Sair</button>${local}</div>`;
+  } else if (Zro.zro.estado === "fora") {
+    conta = `<div class="account account-form"><div class="account-row"><span class="avatar">${icon("user")}</span><div class="account-text"><b>Conta</b><span>A mesma da Absolute ZRO</span></div></div><a class="btn btn-blue btn-block" href="${Zro.linkEntrar()}">Entrar com Absolute ZRO</a>${local}</div>`;
+  }
   if (!Sync.cloudEnabled) {
-    card.innerHTML = `<div class="account"><span class="avatar">${icon("cloud")}</span><div class="account-text"><b>Sincronização</b><span>Em breve</span></div></div>`;
+    card.innerHTML = conta || `<div class="account"><span class="avatar">${icon("cloud")}</span><div class="account-text"><b>Sincronização</b><span>Em breve</span></div></div>`;
   } else if (!user) {
-    card.innerHTML = `<form class="account account-form" id="loginForm">
+    card.innerHTML = conta + `<form class="account account-form" id="loginForm">
       <div class="account-row"><span class="avatar">${icon("user")}</span><div class="account-text"><b>Entrar</b><span>Seus roteiros em todos os aparelhos</span></div></div>
       ${
         login.sent
@@ -277,7 +287,7 @@ export function renderAccount() {
     </form>`;
   } else {
     const status = st.status === "syncing" ? "Sincronizando…" : st.status === "error" ? "Erro ao sincronizar" : st.at ? `Sincronizado ${fmtAgo(st.at)}` : "Conectado";
-    card.innerHTML = `<div class="account"><span class="avatar is-on">${esc((user.email || "?").charAt(0).toUpperCase())}</span><div class="account-text"><b>${esc(user.email || "Conta")}</b><span>${status}</span></div><button class="pill is-small" id="signOutBtn">Sair</button></div>`;
+    card.innerHTML = conta + `<div class="account"><span class="avatar is-on">${esc((user.email || "?").charAt(0).toUpperCase())}</span><div class="account-text"><b>${esc(user.email || "Conta")}</b><span>${status}</span></div><button class="pill is-small" id="signOutBtn">Sair</button></div>`;
   }
   $("#nameValue").textContent = D.ui.name || "";
   $("#soundsSwitch").setAttribute("aria-checked", String(!!D.ui.sounds));
@@ -309,7 +319,14 @@ $("#accountCard").addEventListener("submit", async (e) => {
 $("#accountCard").addEventListener("click", async (e) => {
   const b = e.target.closest("button");
   if (!b) return;
-  if (b.id === "googleBtn") Sync.signInWithGoogle();
+  if (b.id === "zroSair") {
+    if (!(await confirmDanger("Sair da conta? Os roteiros continuam aqui.", "Sair"))) return;
+    try {
+      await Zro.sairZro();
+    } catch (err) {
+      toast(err.message || "Não deu certo", 2600);
+    }
+  } else if (b.id === "googleBtn") Sync.signInWithGoogle();
   else if (b.id === "signOutBtn" && (await confirmDanger("Sair da conta? Os roteiros continuam aqui.", "Sair"))) await Sync.signOut();
 });
 $("#setName").addEventListener("click", async () => {
@@ -505,6 +522,7 @@ D.on("setting", () => {
 });
 D.on("sync", renderAccount);
 D.on("auth", renderAccount);
+D.on("zro", renderAccount);
 D.on("tab", (t) => {
   if (t === "tp") renderTp();
   if (t === "ajustes") renderAccount();

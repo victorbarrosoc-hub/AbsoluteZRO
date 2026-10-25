@@ -1,10 +1,11 @@
 // Ponto de partida do app: monta as telas, liga as abas e registra o modo offline.
 import { $, $$ } from "./util.js";
 import { ui } from "./data.js";
-import { go, TABS, enableSheetDrag } from "./ui.js";
+import { go, TABS, enableSheetDrag, toast } from "./ui.js";
 import { mountSettingsForms, syncSettingsUI } from "./settings.js";
 import { renderAll, newFrom, startCalib } from "./views.js";
 import { handleRedirect } from "./sync.js";
+import { verificarZro, avisoDaVolta } from "./zro.js";
 
 document.querySelector('meta[name="theme-color"]').content = matchMedia("(prefers-color-scheme: dark)").matches ? "#000000" : "#f5f5f7";
 mountSettingsForms();
@@ -44,6 +45,9 @@ const fromHash = location.hash.slice(1);
 go(TABS.includes(fromHash) ? fromHash : TABS.includes(ui.lastTab) ? ui.lastTab : "roteiros", { instant: true });
 document.documentElement.classList.add("ready");
 handleRedirect();
+const aviso = avisoDaVolta();
+if (aviso) toast(aviso, 3200);
+verificarZro();
 
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
   navigator.serviceWorker.register("/sw.js").catch(() => {});
