@@ -414,12 +414,14 @@ select.fld{appearance:auto}
    CONFIG — ligar o envio de verdade:
    1. crie o projeto no supabase.com (grátis);
    2. rode o SQL do README (tabela `leads` + política de INSERT);
-   3. cole aqui a URL e a anon key do projeto.
+   3. defina CARRO_SUPABASE_URL e CARRO_SUPABASE_ANON_KEY no ambiente
+      e rode `node landing/gerar.js` — ele preenche os dois marcadores.
+      ⚠️ Nunca cole a chave aqui: o fonte mora num repositório público.
    Com os dois vazios, a página roda em modo demonstração e avisa.
    ============================================================ */
 var CONFIG={
-  SUPABASE_URL:"https://projeto-novo-substituir.supabase.co",
-  SUPABASE_ANON_KEY:"SUBSTITUIR_PELA_CHAVE_ANON_DO_PROJETO_NOVO"
+  SUPABASE_URL:/*__SUPABASE_URL__*/"",
+  SUPABASE_ANON_KEY:/*__SUPABASE_ANON_KEY__*/""
 };
 
 /* O carro passando fecha o cadastro. O som toca UMA vez, logo depois de

@@ -10,6 +10,16 @@ O nome nasceu no grupo, não numa agência: *"olha o carro do freela passando"*.
 
 ---
 
+## Onde mora e como vai ao ar (desde 25/out)
+
+O fonte oficial é esta pasta, `products/carro-do-freela` no repositório **AbsoluteZRO** (público). O projeto Vercel
+`carrodofreela-app` lê esta pasta e roda `node src/vercel-build.js`, que gera o domínio inteiro (sete HTML anônimos,
+mídia, cabeçalhos, CSP e o login da Absolute ZRO). Para pôr no ar: PR mesclado na `main`. O `publicar.js` foi
+aposentado. Chaves (Supabase, Web3Forms, cliente do HUB) ficam só nas variáveis da Vercel — os nomes, o fluxo do login
+e como conferir estão em [ORIGEM.md](ORIGEM.md).
+
+---
+
 ## ⚠️ Antes de tornar o link público — leia
 
 Este protótipo contém **dados profissionais reais de 109 pessoas**, informados por
@@ -32,7 +42,7 @@ Há um aviso visível no topo da busca, mas um aviso não substitui consentiment
    npm run build:anon
    ```
 
-O `vercel.json` já envia `X-Robots-Tag: noindex, nofollow`, então o site não é
+O build do domínio (`src/vercel-build.js`) já envia `X-Robots-Tag: noindex, nofollow`, então o site não é
 indexado por buscadores. Isso reduz a exposição, mas **não** torna o link privado.
 
 ---

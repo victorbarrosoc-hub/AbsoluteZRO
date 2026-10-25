@@ -114,6 +114,16 @@ if (anon) {
   });
 }
 
+/* ⚠️ AS CHAVES DE FORA VÊM DO AMBIENTE, NUNCA DO FONTE (25/out). O fonte
+   mora num repositório PÚBLICO (AbsoluteZRO, ADR 0013): a chave anon do
+   Supabase e a do Web3Forms saíram do template e entram aqui, na hora do
+   build da Vercel. Sem elas o build sai igual, só que o suporte cai na fila
+   local e o convite não sobe — os dois caminhos que o app já tinha para
+   "sem chave". Valor com cara errada REPROVA o build: chave torta que só
+   aparece como envio quebrado no ar é pior. */
+const deFora = require('./seguranca.js').chavesDeFora();
+const comoJS = v => JSON.stringify(v).replace(/</g, '\\u003c');
+
 const funcoes = [...new Set(crew.flatMap(c => c.func))]
   .filter(f => f !== 'Não informado')
   .sort((a, b) => a.localeCompare(b, 'pt'));
@@ -130,7 +140,10 @@ const html = tpl
   .replace('/*__MIDIA_HD__*/{}', () => JSON.stringify(MIDIA_HD))
   .replace('/*__CREW__*/', JSON.stringify(crew))
   .replace('/*__FUNCOES__*/', JSON.stringify(funcoes))
-  .replace('/*__FASE__*/0', String(fase));
+  .replace('/*__FASE__*/0', String(fase))
+  .replace('/*__WEB3FORMS_KEY__*/""', () => comoJS(deFora.web3forms))
+  .replace('/*__SUPABASE_URL__*/""', () => comoJS(deFora.supabaseUrl))
+  .replace('/*__SUPABASE_ANON_KEY__*/""', () => comoJS(deFora.supabaseKey));
 
 /* ================= as DUAS saídas, e por que são duas =================
    O template começa direto no <title> porque nasceu para virar artifact:

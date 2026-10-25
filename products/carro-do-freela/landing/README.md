@@ -1,6 +1,6 @@
 # Landing de pré-cadastro
 
-> **CONFIG já preenchido** com o projeto `projeto-novo-substituir`. A `anon key`
+> **CONFIG vem do ambiente** (`CARRO_SUPABASE_URL` e `CARRO_SUPABASE_ANON_KEY`, lidos por `node gerar.js`; desde 25/out o fonte é público e a chave não mora mais aqui). A `anon key`
 > fica exposta no HTML de propósito — ela só é segura porque a política é
 > **insert-only**. Se a RLS for desligada ou uma policy de `select` for criada,
 > a lista inteira vaza. Confira com o `curl` do fim deste arquivo.
@@ -81,7 +81,7 @@ Rode no seu terminal. Com a RLS ligada e só a policy de insert, tem que voltar
 
 ```bash
 K="<sua anon key>"
-curl "https://projeto-novo-substituir.supabase.co/rest/v1/leads?select=*" \
+curl "$CARRO_SUPABASE_URL/rest/v1/leads?select=*" \
   -H "apikey: $K" -H "Authorization: Bearer $K"
 ```
 

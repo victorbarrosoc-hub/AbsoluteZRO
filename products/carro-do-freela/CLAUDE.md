@@ -68,6 +68,28 @@ defeito possível numa tela cujo trabalho é convencer.
 
 ---
 
+## 25/out — mudou de casa: repositório AbsoluteZRO, build da Vercel e login único
+
+⚠️ **O fonte oficial agora é `products/carro-do-freela` no repositório
+AbsoluteZRO, que é PÚBLICO** (ADR 0013 da raiz). O repositório antigo fica
+arquivado. Três consequências que valem para toda leva daqui em diante:
+
+1. **Nenhuma chave no fonte.** Supabase e Web3Forms entram por
+   `CARRO_SUPABASE_URL`, `CARRO_SUPABASE_ANON_KEY` e `CARRO_WEB3FORMS_KEY`
+   na hora do build (marcadores `/*__…__*/` no template). Os HTML gerados
+   (`public/index.html`, fases, artifacts, `landing/index.html`) **não são
+   versionados**. A raiz do AbsoluteZRO roda `scripts/scan-secrets.mjs`.
+2. **`npm run publicar` não publica mais.** Quem publica é a Vercel, com
+   `node src/vercel-build.js` (as mesmas travas do publicar + a CSP
+   calculada sem navegador, conferida contra o DOMParser pela suíte
+   `seguranca`). Pôr no ar = PR mesclado na `main`, e só com o aval do Victor.
+3. **"Continuar com Absolute ZRO"** (login único do HUB) mora em `api/zro/`
+   e na tela de entrar (`#lg-zro`). O botão só existe no domínio: no
+   `file://`, no artifact e nas suítes ele nasce e fica escondido.
+   Suítes: `conta-zro` (tela) e `npm run test:api` (servidor, HUB falso).
+
+Tudo — envs, Root Directory, fluxo — em `ORIGEM.md`.
+
 ## Como o projeto é construído
 
 Um HTML sem framework, sem CDN, sem requisição externa — **mais a pasta
@@ -8018,7 +8040,7 @@ Foi feita inteira pelo celular, com o Victor executando cada passo.
 |---|---|---|
 | Landing | `carrodofreela-landing.vercel.app` | no ar, gravando |
 | Repositório da landing | `victorbarrosoc-hub/carrodofreela-landing` — **privado**, só `index.html` na raiz | ok |
-| Banco | Supabase, projeto `projeto-novo-substituir` | tabela `leads`, RLS ligada, 1 policy |
+| Banco | Supabase, o projeto de `CARRO_SUPABASE_URL` (env na Vercel desde 25/out) | tabela `leads`, RLS ligada, 1 policy |
 
 **Verificado com o Victor, não presumido:** `rls_ligada=true`, `politicas=1`,
 `colunas=12`; um cadastro real chegou na tabela; e a anon key exposta no HTML

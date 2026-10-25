@@ -1,0 +1,73 @@
+# Testes do Carro do Freela (products/carro-do-freela): login Absolute ZRO contra um HUB falso, o build do domínio
+# (o mesmo que a Vercel roda) e a bateria de navegador. Roda só quando a pasta do Carro (ou este arquivo) muda.
+name: Carro do Freela · testes
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'products/carro-do-freela/**'
+      - '.github/workflows/carro-testes.yml'
+  pull_request:
+    paths:
+      - 'products/carro-do-freela/**'
+      - '.github/workflows/carro-testes.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: carro-testes-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: products/carro-do-freela
+
+jobs:
+  servidor:
+    name: Login e build do domínio
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Login Absolute ZRO (OIDC falso, chave EC P-256)
+        run: npm run test:api
+      - name: Build do domínio, sem chaves (como um Preview sem variáveis)
+        run: npm run build:vercel
+      - name: Nada de chave nem marcador no que iria ao ar
+        run: |
+          ! grep -RlE 'eyJhbGciOi[A-Za-z0-9_-]{20,}\.|__(WEB3FORMS_KEY|SUPABASE_URL|SUPABASE_ANON_KEY)__' .vercel/output
+
+  navegador:
+    name: Bateria de navegador
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Playwright e Chromium (o protótipo não tem node_modules de propósito)
+        run: |
+          npm install -g playwright@1.63.0
+          npx -y playwright@1.63.0 install --with-deps chromium
+          echo "NODE_PATH=$(npm root -g)" >> "$GITHUB_ENV"
+          echo "CHROME=$(NODE_PATH=$(npm root -g) node -p "require('playwright').chromium.executablePath()")" >> "$GITHUB_ENV"
+      - name: Builds (completo e as seis fases)
+        run: npm run build:fases
+      - name: Bateria
+        run: npm test
+      - name: A CSP do build do domínio, provada num Chromium
+        run: |
+          npm run build:vercel
+          node src/blindar.js .vercel/output/static > blindar.json
+          node -e "const r=require('./blindar.json'); if(r.erro||r.arquivos.length!==7||r.arquivos.some(a=>!a.ok)){console.error(JSON.stringify(r).slice(0,2000));process.exit(1)} console.log('CSP provada nos 7 HTML')"
