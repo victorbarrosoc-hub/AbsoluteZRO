@@ -19,6 +19,14 @@
  *
  * Variáveis (na Vercel, nunca no fonte): ZRO_CLIENT_ID, ZRO_CLIENT_SECRET e
  * ZRO_ISSUER (opcional; o padrão é o HUB de produção).
+ *
+ * CONTA ÚNICA (25/out · 2, regra do titular): toda conta nova nasce no HUB.
+ * `entrar?criar=1` pede `prompt=create`, e o HUB leva a pessoa a /criar-conta
+ * e volta com ela já dentro. O DIREITO DE USO vem do admin da Absolute ZRO:
+ * o id_token traz `zro_products` (produtos liberados para a organização
+ * ativa) e o Carro guarda a lista na sessão, relida a cada novo login. Sem
+ * "carro-do-freela" na lista a pessoa entra, mas o /eu diz `liberado:false`
+ * e a tela fica no aviso curto, com a porta para a Absolute ZRO.
  */
 const crypto = require('crypto');
 
@@ -28,6 +36,8 @@ const COOKIE_IDA = 'cdf_zro';
 const COOKIE_SESSAO = 'cdf_sessao';
 const IDA_S = 10 * 60;
 const SESSAO_S = 30 * 24 * 60 * 60;
+/** o id deste app em zro_products */
+const PRODUTO = 'carro-do-freela';
 
 /* ⚠️ SÓ ESTES ENDEREÇOS, e são os mesmos retornos cadastrados no HUB para o
    cliente `carrodofreela-web`. Um Host que não está aqui não recebe login —
@@ -210,12 +220,17 @@ async function conferirIdToken(cfg, idToken, nonce, agora = Date.now()) {
   if (typeof nonce !== 'string' || !nonce || dados.nonce !== nonce) throw new Error('nonce');
   if (typeof dados.sub !== 'string' || !dados.sub || typeof dados.email !== 'string') throw new Error('sem sub ou e-mail');
   const org = dados.zro_org && typeof dados.zro_org === 'object' ? dados.zro_org : null;
+  /* sem a lista (escopo org não concedido, formato estranho) = nada liberado */
+  const produtos = Array.isArray(dados.zro_products)
+    ? dados.zro_products.filter(p => typeof p === 'string' && p.length <= 64).slice(0, 32)
+    : [];
   return {
     sub: dados.sub.slice(0, 200),
     email: dados.email.trim().toLowerCase().slice(0, 254),
     emailVerificado: dados.email_verified === true,
     nome: typeof dados.name === 'string' && dados.name.trim() ? dados.name.trim().slice(0, 120) : null,
     organizacao: org && typeof org.name === 'string' ? org.name.slice(0, 120) : null,
+    produtos,
   };
 }
 
@@ -248,6 +263,8 @@ async function entrar(req, res) {
   if (!origem) return texto(res, 400, 'Este endereço não está cadastrado para entrar com a Absolute ZRO.');
   const url = new URL(req.url, origem);
   const volta = voltaSegura(url.searchParams.get('volta'));
+  /* "Criar conta" no Carro = criar a conta Absolute ZRO, lá no HUB */
+  const criar = url.searchParams.get('criar') === '1';
   if (!cfg.ligado) return ir(res, 303, comMarca(volta, 'indisponivel'));
   const state = novoValor(), nonce = novoValor(), verificador = novoValor();
   const desafio = crypto.createHash('sha256').update(verificador).digest('base64url');
@@ -266,6 +283,7 @@ async function entrar(req, res) {
   u.searchParams.set('nonce', nonce);
   u.searchParams.set('code_challenge', desafio);
   u.searchParams.set('code_challenge_method', 'S256');
+  if (criar) u.searchParams.set('prompt', 'create');
   const exp = Math.floor(Date.now() / 1000) + IDA_S;
   const ida = selar({ state, nonce, verificador, volta, origem, exp }, cfg.clientSecret, COOKIE_IDA);
   return ir(res, 302, u.toString(), [cookie(COOKIE_IDA, ida, { path: '/api/zro', maxAge: IDA_S, seguro: seguro(origem) })]);
@@ -300,7 +318,7 @@ async function callback(req, res) {
     return falhar('erro');
   }
   const exp = Math.floor(Date.now() / 1000) + SESSAO_S;
-  const sessao = selar({ sub: quem.sub, nome: quem.nome, email: quem.email, org: quem.organizacao, exp }, cfg.clientSecret, COOKIE_SESSAO);
+  const sessao = selar({ sub: quem.sub, nome: quem.nome, email: quem.email, org: quem.organizacao, produtos: quem.produtos, exp }, cfg.clientSecret, COOKIE_SESSAO);
   return ir(res, 303, comMarca(volta, 'entrou'), [limpar, cookie(COOKIE_SESSAO, sessao, { path: '/', maxAge: SESSAO_S, seguro: seguro(origem) })]);
 }
 
@@ -311,7 +329,18 @@ function eu(req, res) {
   if (!cfg.ligado) return json(res, 503, { erro: 'desligado' });
   const s = abrir(lerCookie(req, COOKIE_SESSAO), cfg.clientSecret, COOKIE_SESSAO);
   if (!s || typeof s.sub !== 'string') return json(res, 401, { erro: 'sem_sessao' });
-  return json(res, 200, { sub: s.sub, nome: s.nome || null, email: s.email || null, organizacao: s.org || null });
+  /* sessão de antes da lista de produtos: entra de novo pelo HUB, que é
+     onde o direito de uso é lido — nunca "liberado" nem "bloqueado" no chute */
+  if (!Array.isArray(s.produtos)) return json(res, 401, { erro: 'sem_sessao' });
+  const produtos = s.produtos.filter(p => typeof p === 'string');
+  return json(res, 200, {
+    sub: s.sub,
+    nome: s.nome || null,
+    email: s.email || null,
+    organizacao: s.org || null,
+    produtos,
+    liberado: produtos.includes(PRODUTO),
+  });
 }
 
 /** POST /api/zro/sair — apaga a sessão deste site (não a do HUB) */
@@ -342,5 +371,5 @@ module.exports = {
   eu: protegido(eu),
   sair: protegido(sair),
   /* para os testes */
-  _interno: { abrir, selar, voltaSegura, origemDe, conferirIdToken, config, esquecer: () => (cache = { descoberta: null, chaves: null }), COOKIE_IDA, COOKIE_SESSAO, ORIGENS },
+  _interno: { abrir, selar, voltaSegura, origemDe, conferirIdToken, config, esquecer: () => (cache = { descoberta: null, chaves: null }), COOKIE_IDA, COOKIE_SESSAO, ORIGENS, PRODUTO },
 };

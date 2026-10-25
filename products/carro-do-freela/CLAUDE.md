@@ -87,6 +87,14 @@ arquivado. Três consequências que valem para toda leva daqui em diante:
    e na tela de entrar (`#lg-zro`). O botão só existe no domínio: no
    `file://`, no artifact e nas suítes ele nasce e fica escondido.
    Suítes: `conta-zro` (tela) e `npm run test:api` (servidor, HUB falso).
+4. **Conta única (25/out · 2, regra do titular).** Toda conta nova nasce na
+   Absolute ZRO: no domínio, "Criar conta" vai ao HUB com `prompt=create`,
+   e o formulário próprio e o Google só aparecem para quem já tinha entrado
+   naquele aparelho (conta antiga). O direito de uso vem do admin da ZRO:
+   sem `carro-do-freela` em `zro_products`, a pessoa entra mas vê só o
+   aviso `#lg-bloq` — `entrarNaConta()` tem o portão (`zroBloqueado()`),
+   então nenhuma porta abre a conta. Fora do domínio a prévia é a de sempre.
+   ⚠️ A lista de convite (landing e "guardar") NÃO é conta e fica aberta.
 
 Tudo — envs, Root Directory, fluxo — em `ORIGEM.md`.
 
