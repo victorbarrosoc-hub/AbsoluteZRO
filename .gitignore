@@ -12,3 +12,4 @@ test-results/
 .vercel
 .DS_Store
 next-env.d.ts
+.claude/worktrees/
