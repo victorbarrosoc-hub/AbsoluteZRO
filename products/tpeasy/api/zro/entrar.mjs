@@ -1,0 +1,44 @@
+// GET /api/zro/entrar?volta=/app/ — começa o "Entrar com Absolute ZRO". O HUB também abre o app por aqui.
+import {
+  COOKIE_IDA,
+  DURACAO_IDA_S,
+  SITE_OFICIAL,
+  comAviso,
+  configurado,
+  desafioDe,
+  novoValor,
+  origemDoPedido,
+  redirecionar,
+  selar,
+  seguro,
+  serializarCookie,
+  urlDeLogin,
+  urlDoPedido,
+  voltaSegura,
+} from './_zro.mjs'
+
+export default async function entrar(req, res) {
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    res.setHeader('Allow', 'GET')
+    return redirecionar(res, 303, '/app/')
+  }
+  const url = urlDoPedido(req)
+  const volta = voltaSegura(url.searchParams.get('volta'))
+
+  // O HUB só volta para o endereço cadastrado: o cookie da ida precisa nascer nele.
+  const origem = origemDoPedido(req)
+  if (!origem) return redirecionar(res, 307, `${SITE_OFICIAL}/api/zro/entrar${url.search}`)
+  if (!configurado()) return redirecionar(res, 302, comAviso(volta, 'config'))
+
+  const state = novoValor()
+  const nonce = novoValor()
+  const verificador = novoValor()
+  let destino
+  try {
+    destino = await urlDeLogin({ state, nonce, desafio: desafioDe(verificador), origem })
+  } catch {
+    return redirecionar(res, 302, comAviso(volta, 'erro'))
+  }
+  const ida = selar({ state, nonce, verificador, volta }, 'ida', DURACAO_IDA_S)
+  redirecionar(res, 302, destino, [serializarCookie(COOKIE_IDA, ida, { maxAge: DURACAO_IDA_S, path: '/api/zro', secure: seguro(req) })])
+}

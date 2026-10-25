@@ -1,5 +1,5 @@
 // TPeasy: funciona sem internet no set. Busca a versão nova quando há rede e cai na cópia guardada quando não há.
-const CACHE = "tpeasy-v8";
+const CACHE = "tpeasy-v9";
 const FILES = [
   "/",
   "/site.css",
@@ -18,6 +18,7 @@ const FILES = [
   "/app/js/config.js",
   "/app/js/views.js",
   "/app/js/link.js",
+  "/app/js/zro.js",
   "/app/js/remote.js",
   "/app/remote.html",
   "/icons/favicon.svg",
@@ -41,7 +42,8 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   const url = new URL(req.url);
-  if (req.method !== "GET" || url.origin !== location.origin) return;
+  // /api (conta) nunca passa pelo cache: sempre direto na rede.
+  if (req.method !== "GET" || url.origin !== location.origin || url.pathname.startsWith("/api/")) return;
   e.respondWith(
     caches.open(CACHE).then(async (cache) => {
       const hit = await cache.match(req, { ignoreSearch: true });

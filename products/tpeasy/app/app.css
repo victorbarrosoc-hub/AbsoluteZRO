@@ -984,6 +984,19 @@ input[type="range"]::-moz-range-thumb {
   font-size: 14px;
   color: var(--text-2);
 }
+#accountCard {
+  display: grid;
+  gap: 12px;
+}
+.account-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+a.btn {
+  text-decoration: none;
+}
 .avatar {
   width: 48px;
   height: 48px;
