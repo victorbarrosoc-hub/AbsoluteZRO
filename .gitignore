@@ -13,3 +13,7 @@ test-results/
 .DS_Store
 next-env.d.ts
 .claude/worktrees/
+
+# app de desktop: identidade do build (gravada pelo CI) e versao.json do Release
+apps/hub-desktop/desktop/build-info.json
+apps/hub-desktop/versao.json

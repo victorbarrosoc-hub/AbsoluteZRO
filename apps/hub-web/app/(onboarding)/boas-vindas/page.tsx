@@ -16,10 +16,12 @@ export default async function BoasVindas({ searchParams }: { searchParams: Promi
   const next = safeNext((await searchParams).next)
   const orgs = await listMyOrganizations(db(), auth)
   return (
-    <section className="section" aria-labelledby="bv-title">
+    <section className="section section--page" aria-labelledby="bv-title">
       <div className="section__head">
         <p className="zro-eyebrow">Boas-vindas</p>
-        <h1 id="bv-title">Olá, {auth.user.displayName.split(' ')[0] || 'tudo bem'}.</h1>
+        <h1 id="bv-title">
+          <span className="atitle__thin">Olá,</span> {auth.user.displayName.split(' ')[0] || 'tudo bem'}.
+        </h1>
         <p>Projetos, equipe e plano ficam numa organização. Pode ser só você, uma equipe ou uma empresa.</p>
       </div>
       {!auth.user.emailVerified && (

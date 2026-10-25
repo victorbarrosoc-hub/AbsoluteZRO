@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; img-src 'self'; style-src 'self'; font-src 'self'; script-src 'self'; base-uri 'none'; form-action 'none'"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>Sem conexão · Absolute ZRO</title>
+    <link rel="stylesheet" href="offline.css" />
+  </head>
+  <body>
+    <main class="tela" aria-labelledby="titulo">
+      <img class="simbolo" src="simbolo.webp" alt="" width="64" height="64" />
+      <h1 id="titulo"><span id="titulo-fino" class="fino">Sem</span> <span id="titulo-forte">conexão.</span></h1>
+      <p id="texto" class="texto">O Absolute ZRO precisa de internet. Confira a rede e tente de novo.</p>
+      <div class="acoes">
+        <button id="tentar" class="vidro vidro--tinta" type="button">Tentar de novo</button>
+        <button id="navegador" class="vidro" type="button">Abrir no navegador</button>
+      </div>
+      <p id="estado" class="estado" role="status" aria-live="polite"></p>
+    </main>
+    <img class="marca" src="marca.webp" alt="Absolute ZRO" width="760" height="99" />
+    <script src="offline.js"></script>
+  </body>
+</html>

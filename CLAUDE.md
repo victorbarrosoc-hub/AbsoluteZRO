@@ -38,9 +38,25 @@ Leia antes de mudar qualquer coisa: [PRD.md](PRD.md) (referência principal), [A
 
 ## Interface
 
-Português, textos curtos, títulos em bold, tom humano. Identidade oficial em `packages/ui/src/tokens.css` e
+Português, textos curtos, tom humano. Identidade oficial em `packages/ui/src/tokens.css` e
 `apps/hub-web/public/brand` (fonte: zrofilmes.vercel.app/absolute). Não inventar logo; produtos mantêm os próprios
 ícones. Respeitar reduzir movimento; nada de animação por frame no React.
+
+**Padrão Apple** (pedido do titular, 25/10/2026): a Absolute ZRO se comporta como produto e ecossistema Apple. Antes
+de qualquer tela, pense em como a apple.com faria: visual, motion e elegância.
+
+- Frase da marca: **"O futuro começa do zero."** Título da página inicial e do OG.
+- **Tema claro é o padrão**; o escuro é escolha no seletor.
+- Credibilidade vem do **produto real**: telas de verdade do HUB e dos apps em aparelhos (MacBook, iPhone), não efeitos
+  de luz. O símbolo (o anel) aparece pequeno, como assinatura; não é a peça principal.
+- Títulos em **Figtree**, só em grafite (#1d1d1f) ou branco no escuro, contraste fino (Light) × pesado (ExtraBold).
+  **Nada de texto azul ou em degradê.** Texto de apoio em cinza (#6e6e73).
+- Botões em **Liquid Glass**: pílula de vidro translúcido com brilho de borda (`.glass-btn`); a ação principal em vidro
+  escuro (`.glass-btn--ink`). Nada de botão azul chapado.
+- Uma ideia por tela, uma ação principal e uma secundária. Muito respiro. Motion só com propósito (o produto entra com a
+  rolagem), sempre respeitando "reduzir movimento".
+- Comportamento de ecossistema: uma conta (como o Apple ID), os apps se reconhecem, nada de cadastro duplicado.
+  Detalhe acabado em todo canto: ícone, OG, estado vazio, erro, carregamento.
 
 ## Antes de entregar
 
