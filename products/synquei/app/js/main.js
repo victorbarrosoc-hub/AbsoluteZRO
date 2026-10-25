@@ -22,6 +22,7 @@ import organizar from './views/organizar.js'
 import sfxMontagem from './views/sfx.js'
 import { iniciarOrganizar, O as ORG } from './organizar.js'
 import { cartaoPlano, abrirPlanos } from './plano.js'
+import { iniciarConta } from './conta.js'
 
 const VIEWS = { inicio, projetos, midia, sincronizar, linha, exportar, formatos, ajustes, organizar, sfx: sfxMontagem }
 const ORDER = ['inicio', 'midia', 'sincronizar', 'linha', 'exportar']
@@ -502,6 +503,13 @@ document.addEventListener('synquei:organizar-mudou', () => (S.route === 'organiz
 document.addEventListener('synquei:montagem-mudou', () => S.route === 'sfx' && render())
 // Ajustes mostra a versão e o estado da atualização: redesenha quando muda
 document.addEventListener('synquei:atualizacao-mudou', () => S.route === 'ajustes' && render())
+// Conta Absolute ZRO (só no site): o cartão do plano e Ajustes mostram quem entrou
+document.addEventListener('synquei:conta-mudou', () => {
+  const pc = $('#planoCard')
+  if (pc) pc.innerHTML = cartaoPlano()
+  if (S.route === 'ajustes') render()
+})
+iniciarConta()
 
 if ('serviceWorker' in navigator && !window.synqueiDesktop && location.protocol === 'https:') {
   navigator.serviceWorker.register('/sw.js').catch(() => {})

@@ -83,3 +83,50 @@ test('diag diz o motivo sem mostrar o token', async () => {
   assert.ok(!JSON.stringify(ruim.body).includes('SEGREDO'))
   delete process.env.GITHUB_TOKEN
 })
+
+// Virada para o repositório AbsoluteZRO: o Release novo (synquei-app-desktop) vale quando tem instalador; antes disso,
+// o Release antigo (victorbarrosoc-hub/synquei, app-desktop) continua entregando. O download não quebra.
+async function loadDuas(novo, antigo) {
+  const pedidos = []
+  globalThis.fetch = async (url) => {
+    const u = String(url)
+    pedidos.push(u)
+    if (u.includes('/repos/victorbarrosoc-hub/AbsoluteZRO/releases/tags/synquei-app-desktop')) return novo ? new Response(JSON.stringify({ assets: novo }), { status: 200 }) : new Response('{}', { status: 404 })
+    if (u.includes('/repos/victorbarrosoc-hub/synquei/releases/tags/app-desktop')) return new Response(JSON.stringify({ assets: antigo }), { status: 200 })
+    if (u === 'https://novo/versao.json') return new Response(JSON.stringify({ ...VERSAO, build: 1001, arquivoMac: 'Synquei-1.0.0-b1001-mac-universal.dmg' }), { status: 200 })
+    if (u.endsWith('versao.json')) return new Response(JSON.stringify(VERSAO), { status: 200 })
+    return new Response('?', { status: 404 })
+  }
+  delete process.env.GITHUB_TOKEN
+  delete process.env.SYNQUEI_REPO
+  delete process.env.SYNQUEI_TAG
+  return { h: (await import(`../api/baixar.js?${Math.random()}`)).default, pedidos }
+}
+const NOVO = [
+  { id: 11, name: 'Synquei-1.0.0-b1001-mac-universal.dmg', url: 'https://api/a/11', browser_download_url: 'https://novo/b1001.dmg' },
+  { id: 12, name: 'versao.json', url: 'https://api/a/12', browser_download_url: 'https://novo/versao.json' },
+]
+
+test('sem Release no AbsoluteZRO ainda: entrega o do repositório antigo', async () => {
+  const { h } = await loadDuas(null, ASSETS)
+  const mac = fakeRes()
+  await h({ query: { p: 'mac' } }, mac)
+  assert.equal(mac.loc, 'https://gh/b8.dmg')
+  const v = fakeRes()
+  await h({ query: { p: 'versao' } }, v)
+  assert.equal(v.body.build, 8)
+})
+
+test('com Release no AbsoluteZRO: ele vale; build antigo pedido ainda sai do repositório antigo', async () => {
+  const { h, pedidos } = await loadDuas(NOVO, ASSETS)
+  const mac = fakeRes()
+  await h({ query: { p: 'mac' } }, mac)
+  assert.equal(mac.loc, 'https://novo/b1001.dmg')
+  assert.ok(!pedidos.some((u) => u.includes('/victorbarrosoc-hub/synquei/')), 'não consulta o antigo sem precisar')
+  const v = fakeRes()
+  await h({ query: { p: 'versao' } }, v)
+  assert.equal(v.body.build, 1001)
+  const velho = fakeRes()
+  await h({ query: { p: 'mac', build: '7' } }, velho)
+  assert.equal(velho.loc, 'https://gh/b7.dmg')
+})
