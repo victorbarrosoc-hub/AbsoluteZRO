@@ -44,6 +44,15 @@
       ]
     },
     {
+      "source": "/api/zro/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
       "source": "/(.*)\\.(js|css)",
       "headers": [
         {
