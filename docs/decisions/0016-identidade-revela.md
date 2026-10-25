@@ -18,8 +18,11 @@ perfurado, emulsão); o titular escolheu o **perfurado** e pediu **roxo** nas co
   (embaixo, à esquerda) ao amarelo (em cima, à direita). Cor em ícone, brilho, ilustração e detalhe; texto pequeno
   neutro.
 - **Inspiração só de cor:** nada de nome, logotipo ou desenho de marcas de filme (Kodak, Fuji etc.).
-- **Tipografia e nome:** Inter, como a família. Nome em Inter 750, espaçamento −0,045em, nunca em caixa alta e nunca
-  redesenhado. Assinatura "An Absolute ZRO Company".
+- **Logo (entregue pelo titular, 25/10/2026):** película + "Revela" com o fotograma no fim
+  (`products/finishing/marca/revela-logo-original.png`, intacta). Para assentar no preto fosco há
+  `revela-logo.png`: a mesma arte só sem o fundo preto (composta de volta sobre o preto dá a original, diferença de
+  meio nível). Não se redesenha, estica, recolore nem se escreve o nome em outra fonte; sempre sobre fundo escuro (em
+  fundo claro, numa placa preta fosca). A interface da Revela continua em Inter.
 - **Fundo:** a tela da Revela é sempre preto fosco (`#0E0E10` com grão neutro da família), sem tema claro, para não
   enganar o olho na avaliação de cor (pedido do titular); perto da imagem, nada de brilho colorido. Diferente do HUB, que tem tema claro.
 - **Guia:** `products/finishing/marca/index.html`.

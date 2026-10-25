@@ -76,6 +76,22 @@
         letter-spacing: -0.045em;
         line-height: 1;
       }
+      .logo-capa {
+        width: min(640px, 100%);
+        height: auto;
+      }
+      .logo-vitrine {
+        width: 82%;
+        height: auto;
+      }
+      .placa {
+        background: var(--banho);
+        border-radius: 14px;
+        padding: 18px 22px;
+        width: 86%;
+        display: grid;
+        place-items: center;
+      }
       .capa p {
         font-size: 18px;
       }
@@ -181,7 +197,9 @@
         border-radius: 20px;
         border: 1px solid var(--linha);
         background: #1e1e22;
-        box-shadow: -30px 20px 60px -24px rgba(255, 184, 0, 0.35), 30px 20px 60px -24px rgba(139, 63, 232, 0.4);
+        box-shadow:
+          -30px 20px 60px -24px rgba(255, 184, 0, 0.35),
+          30px 20px 60px -24px rgba(139, 63, 232, 0.4);
         min-width: 240px;
       }
       .tile img {
@@ -211,18 +229,14 @@
   <body>
     <main>
       <section class="capa">
-        <div class="assinatura">
-          <img src="revela-icone.svg" alt="" />
-          <span class="palavra">Revela</span>
-        </div>
+        <img class="logo-capa" src="revela-logo.png" alt="Revela" />
         <p>Revela a cor que você quer.</p>
       </section>
 
       <h2>Conceito</h2>
       <p>
-        A película. Um quadro de filme perfurado, no amarelo das caixas de filme; dentro dele a imagem se revela na
-        diagonal, do latente ao colorido: roxo, vermelho, laranja e amarelo. A linha clara é o instante da revelação, e o
-        corte é o antes e depois que a ferramenta mostra.
+        A película. Um quadro de filme perfurado, no amarelo das caixas de filme; dentro dele a imagem se revela na diagonal, do latente ao colorido: roxo,
+        vermelho, laranja e amarelo. A linha clara é o instante da revelação, e o corte é o antes e depois que a ferramenta mostra.
       </p>
 
       <h2>Símbolo</h2>
@@ -241,7 +255,26 @@
         <div class="cartao">
           <div class="vitrine clara">
             <svg viewBox="200 290 624 444" width="190" role="img" aria-label="Símbolo da Revela em uma cor">
-              <mask id="m"><rect x="200" y="290" width="624" height="444" fill="#fff" /><g fill="#000"><rect x="236" y="312" width="44" height="36" rx="9" /><rect x="316" y="312" width="44" height="36" rx="9" /><rect x="396" y="312" width="44" height="36" rx="9" /><rect x="476" y="312" width="44" height="36" rx="9" /><rect x="556" y="312" width="44" height="36" rx="9" /><rect x="636" y="312" width="44" height="36" rx="9" /><rect x="716" y="312" width="44" height="36" rx="9" /><rect x="236" y="676" width="44" height="36" rx="9" /><rect x="316" y="676" width="44" height="36" rx="9" /><rect x="396" y="676" width="44" height="36" rx="9" /><rect x="476" y="676" width="44" height="36" rx="9" /><rect x="556" y="676" width="44" height="36" rx="9" /><rect x="636" y="676" width="44" height="36" rx="9" /><rect x="716" y="676" width="44" height="36" rx="9" /></g><rect x="252" y="372" width="520" height="280" rx="28" fill="#000" /></mask>
+              <mask id="m">
+                <rect x="200" y="290" width="624" height="444" fill="#fff" />
+                <g fill="#000">
+                  <rect x="236" y="312" width="44" height="36" rx="9" />
+                  <rect x="316" y="312" width="44" height="36" rx="9" />
+                  <rect x="396" y="312" width="44" height="36" rx="9" />
+                  <rect x="476" y="312" width="44" height="36" rx="9" />
+                  <rect x="556" y="312" width="44" height="36" rx="9" />
+                  <rect x="636" y="312" width="44" height="36" rx="9" />
+                  <rect x="716" y="312" width="44" height="36" rx="9" />
+                  <rect x="236" y="676" width="44" height="36" rx="9" />
+                  <rect x="316" y="676" width="44" height="36" rx="9" />
+                  <rect x="396" y="676" width="44" height="36" rx="9" />
+                  <rect x="476" y="676" width="44" height="36" rx="9" />
+                  <rect x="556" y="676" width="44" height="36" rx="9" />
+                  <rect x="636" y="676" width="44" height="36" rx="9" />
+                  <rect x="716" y="676" width="44" height="36" rx="9" />
+                </g>
+                <rect x="252" y="372" width="520" height="280" rx="28" fill="#000" />
+              </mask>
               <clipPath id="j"><rect x="252" y="372" width="520" height="280" rx="28" /></clipPath>
               <rect x="200" y="290" width="624" height="444" rx="40" fill="currentColor" mask="url(#m)" />
               <g clip-path="url(#j)"><polygon points="566,372 790,372 790,652 470,652" fill="currentColor" /></g>
@@ -252,9 +285,24 @@
         </div>
       </div>
 
-      <h2>Assinatura</h2>
-      <p>Símbolo + nome em Inter 750, entrelinha 1 e espaçamento −0,045em. O nome nunca é redesenhado.</p>
+      <h2>Logo</h2>
+      <p>
+        A logo oficial, entregue pelo titular: a película e o nome "Revela", com o fotograma no fim. Use sempre o arquivo: nunca redesenhe, estique, recolora ou
+        escreva o nome em outra fonte.
+      </p>
       <div class="grade">
+        <div class="cartao">
+          <div class="vitrine"><img class="logo-vitrine" src="revela-logo.png" alt="Logo da Revela" /></div>
+          <strong>Sobre o escuro</strong>
+          <small><code>revela-logo.png</code>: a mesma arte, só sem o fundo preto, para assentar no preto fosco.</small>
+        </div>
+        <div class="cartao">
+          <div class="vitrine clara">
+            <div class="placa"><img class="logo-vitrine" src="revela-logo.png" alt="Logo da Revela sobre placa escura" /></div>
+          </div>
+          <strong>Em fundo claro</strong>
+          <small>O nome é branco: em fundo claro, a logo vai numa placa preta fosca. Nunca direto no claro.</small>
+        </div>
         <div class="cartao">
           <div class="vitrine">
             <div class="tile">
@@ -263,23 +311,7 @@
             </div>
           </div>
           <strong>No HUB</strong>
-          <small>Brilho amarelo e roxo só atrás do cartão; o texto continua neutro.</small>
-        </div>
-        <div class="cartao">
-          <div class="vitrine papel">
-            <div style="display: flex; align-items: center; gap: 10px; font-weight: 750; font-size: 34px; letter-spacing: -0.045em">
-              <img src="revela-icone.svg" width="46" height="46" alt="" />Revela
-            </div>
-          </div>
-          <strong>Sobre papel</strong>
-          <small>Em fundos claros o nome vai em tinta escura; o ícone não muda.</small>
-        </div>
-        <div class="cartao">
-          <div class="vitrine">
-            <p style="font-size: 13px; color: #8e8e93">An Absolute ZRO Company</p>
-          </div>
-          <strong>Família</strong>
-          <small>Assinatura discreta da Absolute ZRO, como nos outros apps.</small>
+          <small>No catálogo do HUB vai só o ícone, com o nome no texto do HUB. Original da logo em <code>revela-logo-original.png</code>.</small>
         </div>
       </div>
 
@@ -320,8 +352,8 @@
       <h2>Tipografia</h2>
       <div class="tipo">
         <span class="t1">Revela a cor que você quer.</span>
-        <span class="t2">Inter 750 nos títulos, 650 em destaques, 400 no texto.</span>
-        <p>A mesma fonte de toda a família Absolute ZRO. Títulos curtos, tracking fechado, português direto.</p>
+        <span class="t2">Inter na interface: 750 nos títulos, 650 em destaques, 400 no texto.</span>
+        <p>O nome Revela só aparece pela logo; a fonte da interface nunca substitui a logo. Títulos curtos, português direto.</p>
       </div>
 
       <h2>Uso</h2>
@@ -332,6 +364,7 @@
             <li>Usar os arquivos de <code>products/finishing/marca</code>, sem redesenhar.</li>
             <li>Deixar respiro em volta do símbolo de pelo menos a altura de uma perfuração, duas vezes.</li>
             <li>Gradiente sempre do roxo (embaixo, à esquerda) ao amarelo (em cima, à direita).</li>
+            <li>Logo sempre sobre fundo escuro (ou numa placa preta fosca).</li>
             <li>Botão principal branco em pílula, como na família.</li>
           </ul>
         </div>
@@ -340,7 +373,7 @@
           <ul>
             <li>Girar a película, inverter o corte ou trocar o lado revelado.</li>
             <li>Usar amarelo ou vermelho em texto pequeno.</li>
-            <li>Escrever REVELA em caixa alta ou trocar a fonte do nome.</li>
+            <li>Redesenhar, esticar ou recolorir a logo, ou escrever o nome em outra fonte.</li>
             <li>Usar nome, logotipo ou desenho de marcas de filme (Kodak, Fuji etc.): a inspiração é só de cor.</li>
           </ul>
         </div>

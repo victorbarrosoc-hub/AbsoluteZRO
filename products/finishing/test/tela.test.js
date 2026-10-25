@@ -19,7 +19,7 @@ const RAIZ = fileURLToPath(new URL('..', import.meta.url))
 const CABECALHOS = Object.fromEntries(
   JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8')).headers[0].headers.map((h) => [h.key, h.value]),
 )
-const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg' }
+const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.png': 'image/png' }
 let servidor
 let endereco
 let navegador
@@ -62,7 +62,7 @@ test('escolhe as duas imagens, compara, ajusta e baixa a LUT', async () => {
   await assert.doesNotReject(pagina.getByRole('heading', { name: 'Revela a cor que você quer.' }).waitFor())
   // marca: ícone do cabeçalho e favicon carregados
   await pagina.waitForFunction(() => document.querySelector('.marca img')?.complete)
-  assert.ok(await pagina.evaluate(() => document.querySelector('.marca img').naturalWidth > 0), 'ícone da marca não carregou')
+  assert.ok(await pagina.evaluate(() => document.querySelector('.marca img').naturalWidth > 0), 'logo da Revela não carregou')
   const favicon = await pagina.evaluate(() => document.querySelector('link[rel=icon]').href)
   assert.equal((await pagina.request.get(favicon)).headers()['content-type'], 'image/svg+xml')
 
