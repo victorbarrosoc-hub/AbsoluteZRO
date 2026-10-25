@@ -1,0 +1,24 @@
+{
+  "$id": "https://absolutezro.local/schemas/event.finishing.qc.completed.v1.json",
+  "title": "Payload de finishing.qc.completed v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "source": {
+      "type": "string",
+      "const": "finishing"
+    },
+    "qc_ref": {
+      "type": "string",
+      "maxLength": 300
+    },
+    "passed": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "source",
+    "qc_ref",
+    "passed"
+  ]
+}

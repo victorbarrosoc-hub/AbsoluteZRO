@@ -1,0 +1,25 @@
+{
+  "$id": "https://absolutezro.local/schemas/event.job.created.v1.json",
+  "title": "Payload de job.created v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "product": {
+      "type": "string",
+      "const": "carro-do-freela"
+    },
+    "external_job_id": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 160
+    }
+  },
+  "required": [
+    "product",
+    "external_job_id",
+    "title"
+  ]
+}

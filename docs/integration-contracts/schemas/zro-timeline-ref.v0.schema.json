@@ -1,0 +1,89 @@
+{
+  "$id": "https://absolutezro.local/schemas/zro-timeline-ref.v0.json",
+  "title": "Referência de timeline v0.1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "project_id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "produced_by": {
+      "type": "string",
+      "enum": [
+        "synquei",
+        "ai-edit",
+        "nossom",
+        "finishing",
+        "manual"
+      ]
+    },
+    "format": {
+      "type": "string",
+      "enum": [
+        "otio",
+        "fcpxml",
+        "xmeml",
+        "edl",
+        "aaf"
+      ]
+    },
+    "file": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "fps": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+    },
+    "relink": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "asset_id": {
+            "type": "string"
+          },
+          "media_path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          }
+        },
+        "required": [
+          "asset_id",
+          "media_path"
+        ]
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 300
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "project_id",
+    "produced_by",
+    "format",
+    "file",
+    "fps",
+    "created_at",
+    "relink",
+    "notes"
+  ]
+}

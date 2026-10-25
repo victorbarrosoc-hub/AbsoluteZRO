@@ -1,0 +1,7 @@
+export * from './carro'
+export * from './catalog'
+export * from './handlers'
+export * from './services'
+export * from './sobedesce'
+export * from './synquei'
+export * from './tpeasy'

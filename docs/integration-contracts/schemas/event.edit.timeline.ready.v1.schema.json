@@ -1,0 +1,35 @@
+{
+  "$id": "https://absolutezro.local/schemas/event.edit.timeline.ready.v1.json",
+  "title": "Payload de edit.timeline.ready v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "source": {
+      "type": "string",
+      "enum": [
+        "ai-edit",
+        "synquei",
+        "manual"
+      ]
+    },
+    "timeline_ref": {
+      "type": "string",
+      "maxLength": 300
+    },
+    "format": {
+      "type": "string",
+      "enum": [
+        "otio",
+        "fcpxml",
+        "xmeml",
+        "edl",
+        "aaf"
+      ]
+    }
+  },
+  "required": [
+    "source",
+    "timeline_ref",
+    "format"
+  ]
+}

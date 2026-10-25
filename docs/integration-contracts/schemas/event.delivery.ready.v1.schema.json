@@ -1,0 +1,20 @@
+{
+  "$id": "https://absolutezro.local/schemas/event.delivery.ready.v1.json",
+  "title": "Payload de delivery.ready v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "source": {
+      "type": "string",
+      "const": "finishing"
+    },
+    "package_ref": {
+      "type": "string",
+      "maxLength": 300
+    }
+  },
+  "required": [
+    "source",
+    "package_ref"
+  ]
+}

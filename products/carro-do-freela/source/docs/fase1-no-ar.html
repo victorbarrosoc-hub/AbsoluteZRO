@@ -1,0 +1,692 @@
+<title>Fase 1 no ar</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;900&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* Família dos docs da casa (ligar-dominio, plano, PRD): papel quente, tinta,
+   ciano escuro de acento. Coluna única de leitura; cada item é um cartão com
+   um círculo que marca "feito", e a etiqueta diz de quem é a tarefa. */
+:root{
+  --ground:#F5F2ED; --paper:#FFFFFF; --paper2:#EFEBE4;
+  --rule:#E0DAD1; --rule2:#CBC3B8;
+  --ink:#1B1815; --ink2:#544E47; --ink3:#615A52;
+  --accent:#0C627C; --accent-soft:rgba(12,98,124,.10);
+  --ok:#0F6230; --ok-soft:rgba(15,98,48,.10);
+  --meio:#6E4E05; --meio-soft:rgba(110,78,5,.11);
+  --alerta:#B41E66; --alerta-soft:rgba(180,30,102,.08);
+  --sobre-ok:#FFFFFF;
+  --ui:"Schibsted Grotesk",system-ui,-apple-system,Helvetica,Arial,sans-serif;
+  --mono:"Spline Sans Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#121110; --paper:#1A1917; --paper2:#221F1D;
+    --rule:#2B2724; --rule2:#3A3531;
+    --ink:#EFEDE7; --ink2:#AEA79E; --ink3:#9A9188;
+    --accent:#17D1E8; --accent-soft:rgba(23,209,232,.10);
+    --ok:#4BAE72; --ok-soft:rgba(75,174,114,.12);
+    --meio:#C9963F; --meio-soft:rgba(201,150,63,.12);
+    --alerta:#E24B8E; --alerta-soft:rgba(226,75,142,.10);
+    --sobre-ok:#0E1A12;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#121110; --paper:#1A1917; --paper2:#221F1D;
+  --rule:#2B2724; --rule2:#3A3531;
+  --ink:#EFEDE7; --ink2:#AEA79E; --ink3:#9A9188;
+  --accent:#17D1E8; --accent-soft:rgba(23,209,232,.10);
+  --ok:#4BAE72; --ok-soft:rgba(75,174,114,.12);
+  --meio:#C9963F; --meio-soft:rgba(201,150,63,.12);
+  --alerta:#E24B8E; --alerta-soft:rgba(226,75,142,.10);
+  --sobre-ok:#0E1A12;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
+body{margin:0; background:var(--ground); color:var(--ink);
+  font-family:var(--ui); font-size:16px; line-height:1.55; -webkit-font-smoothing:antialiased}
+body::before{content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top,0px);
+  z-index:10; background:var(--ground)}
+.wrap{max-width:min(66ch,100%); margin:0 auto;
+  padding-left:max(clamp(16px,4.5vw,32px), env(safe-area-inset-left,0px));
+  padding-right:max(clamp(16px,4.5vw,32px), env(safe-area-inset-right,0px))}
+::selection{background:var(--accent-soft); color:var(--ink)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+.capa{padding-top:clamp(30px,8vw,56px); padding-bottom:18px}
+.cab{display:flex; align-items:center; gap:9px; margin-bottom:18px}
+.cab svg{width:24px; height:24px; fill:var(--accent); flex:none}
+.cab b{font-weight:900; letter-spacing:-.03em; font-size:15px}
+.cab span{font-family:var(--mono); font-size:11px; letter-spacing:.08em; color:var(--ink3);
+  text-transform:uppercase; margin-left:auto}
+h1{font-size:clamp(30px,7.5vw,44px); line-height:1.03; letter-spacing:-.035em; font-weight:900;
+  margin:0 0 10px; text-wrap:balance}
+.sub{font-size:17px; color:var(--ink2); margin:0 0 20px; text-wrap:balance}
+
+.tres{display:grid; gap:10px; margin:0; padding:0; list-style:none}
+.tres li{display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:start;
+  background:var(--paper); border:1px solid var(--rule); border-radius:10px; padding:13px 15px}
+.tres .n{font-family:var(--mono); font-size:12px; font-weight:600; color:var(--accent);
+  border:1px solid var(--accent); border-radius:50%; width:24px; height:24px;
+  display:grid; place-items:center; margin-top:1px}
+.tres b{display:block; font-size:15.5px}
+.tres p{margin:2px 0 0; font-size:14px; color:var(--ink2)}
+
+/* progresso fixo: quantos itens já foram feitos */
+.prog{position:sticky; top:env(safe-area-inset-top,0px); z-index:9; background:var(--ground);
+  padding-top:10px; padding-bottom:9px; border-bottom:1px solid var(--rule); margin-top:22px}
+.prog .trilho{height:6px; border-radius:3px; background:var(--paper2); overflow:hidden}
+.prog .barra{height:100%; width:0; background:var(--accent); border-radius:3px; transition:width .25s ease}
+.prog .txt{font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink3); margin:7px 0 0; display:flex; justify-content:space-between; gap:12px}
+.prog .txt b{color:var(--ink2); font-weight:600; text-align:right}
+
+.parte{padding-top:30px; padding-bottom:6px}
+.parte-cab{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:6px}
+.onde{font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--accent); border:1px solid var(--accent);
+  border-radius:4px; padding:3px 7px}
+h2{font-size:24px; line-height:1.15; letter-spacing:-.026em; font-weight:800; margin:0; text-wrap:balance}
+h3{font-size:16px; letter-spacing:-.01em; font-weight:700; margin:22px 0 4px}
+.parte > p, .parte > .p{color:var(--ink2); margin:8px 0 0; font-size:15px}
+
+/* o item: círculo que marca feito + o texto + a etiqueta de quem faz */
+.item{display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:start;
+  background:var(--paper); border:1px solid var(--rule); border-radius:11px;
+  padding:14px 16px; margin:10px 0}
+.item.feito{background:var(--paper2)}
+.marca{flex:none; width:30px; height:30px; border-radius:50%; border:1.5px solid var(--rule2);
+  background:var(--ground); display:grid; place-items:center; margin-top:-2px; padding:0;
+  font-family:var(--mono); font-size:13px; font-weight:600; color:var(--ink3); cursor:pointer;
+  -webkit-tap-highlight-color:transparent; transition:background .15s,border-color .15s,color .15s}
+.marca:hover{border-color:var(--accent)}
+.item.feito .marca{background:var(--ok); border-color:var(--ok); color:var(--sobre-ok)}
+.corpo{min-width:0}
+.tit{font-weight:600; font-size:15.5px; margin:0; line-height:1.35}
+.item.feito .tit{color:var(--ink3); text-decoration:line-through; text-decoration-thickness:1px}
+.quem{display:inline-block; vertical-align:2px; margin-left:6px; font-family:var(--mono);
+  font-size:9.5px; font-weight:600; letter-spacing:.1em; text-transform:uppercase;
+  border-radius:3px; padding:2px 5px; text-decoration:none}
+.quem.voce{color:var(--meio); background:var(--meio-soft)}
+.quem.dev{color:var(--accent); background:var(--accent-soft)}
+.quem.juntos{color:var(--ink2); background:var(--paper2); border:1px solid var(--rule)}
+.det{font-size:14px; color:var(--ink2); margin:5px 0 0; line-height:1.55}
+.det + .det{margin-top:7px}
+.det b{color:var(--ink)}
+.item.feito .det{color:var(--ink3)}
+code{font-family:var(--mono); font-size:12.5px; background:var(--paper2);
+  border:1px solid var(--rule); border-radius:4px; padding:1px 5px; color:var(--ink);
+  overflow-wrap:anywhere}
+ul.det, ol.det{padding-left:19px}
+ul.det li, ol.det li{margin:3px 0}
+
+.val{display:flex; align-items:center; gap:8px; margin-top:9px; flex-wrap:wrap}
+.val small{font-size:12.5px; color:var(--ink3); flex-basis:100%}
+.copiar{font-family:var(--mono); font-size:12.5px; font-weight:500; color:var(--ink); text-align:left;
+  background:var(--ground); border:1px solid var(--rule2); border-radius:6px;
+  padding:10px 12px; min-height:44px; max-width:100%; display:inline-flex; align-items:center; gap:8px;
+  cursor:pointer; overflow-wrap:anywhere; -webkit-tap-highlight-color:transparent}
+.copiar:hover{border-color:var(--accent)}
+.copiar .ic{font-size:10.5px; letter-spacing:.06em; color:var(--ink3); flex:none}
+.copiar[data-ok="1"]{border-color:var(--ok)}
+.copiar[data-ok="1"] .ic{color:var(--ok)}
+pre.sql{margin:9px 0 0; background:var(--ground); border:1px solid var(--rule2); border-radius:7px;
+  padding:11px 13px; font-family:var(--mono); font-size:12px; line-height:1.55; color:var(--ink);
+  overflow-x:auto; white-space:pre}
+
+.aviso{border:1px solid var(--rule); border-left:3px solid var(--alerta); border-radius:9px;
+  padding:15px 17px; margin:16px 0; background:var(--alerta-soft)}
+.aviso.ok{border-left-color:var(--ok); background:var(--ok-soft)}
+.aviso.calma{border-left-color:var(--rule2); background:var(--paper)}
+.aviso .tt{font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--ink3); font-weight:600; margin:0 0 8px; display:block}
+.aviso p{margin:0 0 8px; font-size:14.5px; color:var(--ink2)}
+.aviso > :last-child{margin-bottom:0}
+.aviso b{color:var(--ink)}
+.aviso ul{margin:0; padding-left:19px; font-size:14.5px; color:var(--ink2)}
+.aviso li{margin:3px 0}
+
+.tabw{overflow-x:auto; margin:14px 0; border:1px solid var(--rule); border-radius:9px; background:var(--paper)}
+table{border-collapse:collapse; width:100%; min-width:520px; font-size:13.5px}
+th{text-align:left; font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--ink3); padding:10px 12px; background:var(--paper2);
+  border-bottom:1px solid var(--rule2)}
+td{padding:10px 12px; border-bottom:1px solid var(--rule); color:var(--ink2); vertical-align:top; line-height:1.45}
+tr:last-child td{border-bottom:0}
+td b{color:var(--ink)}
+td.num, th.num{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap}
+.tag{font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+  border-radius:3px; padding:2px 6px; white-space:nowrap}
+.tag.faz{color:var(--ok); background:var(--ok-soft)}
+.tag.tira{color:var(--alerta); background:var(--alerta-soft)}
+.tag.troca{color:var(--meio); background:var(--meio-soft)}
+
+.fontes{margin:8px 0 0; padding-left:19px; font-size:13.5px; color:var(--ink2)}
+.fontes li{margin:4px 0}
+a{color:var(--accent); text-underline-offset:2px}
+
+footer{padding-top:30px; padding-bottom:60px; margin-top:28px; border-top:1px solid var(--rule);
+  color:var(--ink3); font-size:13px; line-height:1.6}
+footer p{margin:0 0 7px}
+.zerar{background:none; border:1px solid var(--rule2); border-radius:6px; color:var(--ink3);
+  font-family:var(--mono); font-size:11.5px; padding:9px 12px; cursor:pointer; margin-top:6px}
+.zerar:hover{border-color:var(--alerta); color:var(--alerta)}
+
+@media (prefers-reduced-motion: reduce){ .prog .barra,.marca{transition:none} }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <g id="mk"><g transform="translate(16,0) skewX(-12)">
+    <rect x="14" y="24" width="7" height="52" rx="2" opacity=".34"/>
+    <rect x="29" y="24" width="13" height="52" rx="2.5" opacity=".64"/>
+    <rect x="50" y="24" width="26" height="52" rx="3.5"/>
+  </g></g>
+</defs></svg>
+
+<div class="wrap capa">
+  <div class="cab">
+    <svg viewBox="0 0 100 100" role="img" aria-label="Marca do Carro do Freela"><use href="#mk"/></svg>
+    <b>Carro do Freela</b>
+    <span>revisão 19/out · 2</span>
+  </div>
+  <h1>Fase 1 no ar, de verdade</h1>
+  <p class="sub">Hoje o protótipo inteiro mora no navegador de quem abre: a conta, a agenda e as mensagens não saem do aparelho, e ninguém do outro lado recebe nada. Para a Fase 1 virar produto faltam três peças.</p>
+  <ol class="tres">
+    <li><span class="n">1</span><div><b>Contas de verdade</b><p>Criar conta com e-mail e senha, entrar com o Google, confirmar o e-mail e recuperar a senha.</p></div></li>
+    <li><span class="n">2</span><div><b>Um banco de dados com as regras de quem vê o quê</b><p>A agenda, o perfil e as conversas guardados no servidor, e a tranca do Volante decidida lá, não no navegador.</p></div></li>
+    <li><span class="n">3</span><div><b>A cobrança do Volante</b><p>R$ 89 por mês, por Pix Automático ou cartão. Na Fase 1 é só isso: nenhum dinheiro de job passa pela plataforma.</p></div></li>
+  </ol>
+</div>
+
+<div class="wrap prog">
+  <div class="trilho"><div class="barra" id="barra"></div></div>
+  <p class="txt"><span id="quantos">0 de 0</span><b id="agora">Comece pelo urgente</b></p>
+</div>
+
+<div class="wrap">
+
+<div class="aviso">
+  <span class="tt">Urgente</span>
+  <p><b>O código-fonte está aberto no domínio.</b> O site publica a raiz do repositório, e a pasta <code>app/</code> vai junto: qualquer pessoa que digitar <code>carrodofreela.com.br/app/CLAUDE.md</code> lê o guia interno, o template, os testes e os documentos (PRD, dossiê, sócio técnico).</p>
+  <p>O conserto já está pronto nesta revisão: só sobe para o domínio o que o site serve, e qualquer endereço <code>/app/…</code> volta para a home. Ele entra no ar na próxima publicação. <b>Falta o seu “pode subir”.</b></p>
+</div>
+
+<div class="aviso calma">
+  <span class="tt">Como ler</span>
+  <p>A etiqueta de cada item diz de quem é: <span class="quem voce">Você</span> é conta, contrato ou decisão sua; <span class="quem dev">Dev</span> é código; <span class="quem juntos">Juntos</span> precisa dos dois. Toque no círculo para marcar como feito. A página lembra onde você parou neste aparelho.</p>
+</div>
+
+<!-- ================= 0 ================= -->
+<section class="parte" id="decisoes">
+  <div class="parte-cab"><span class="onde">Parte 0 · antes do código</span></div>
+  <h2>As decisões que são suas</h2>
+  <p>Cada uma muda o que o dev constrói. Ao lado, o que eu recomendo e por quê.</p>
+
+  <div class="item" data-k="d-google"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">1</button><div class="corpo">
+    <p class="tit">O Google serve só para entrar <span class="quem voce">Você</span></p>
+    <p class="det">Hoje, entrar com o Google faz a agenda dizer <b>“Google Agenda conectado · jobs viram evento”</b>. Isso não existe. Ligar a Agenda pede uma permissão que o Google classifica como sensível e só libera depois de revisar o app, com vídeo de demonstração, o que pode levar semanas.</p>
+    <p class="det"><b>Recomendo:</b> na Fase 1 o Google é só login (nome, e-mail e foto, que não passam por revisão). A sincronização com a Agenda vira uma peça própria, depois. O dev tira a frase da tela.</p>
+  </div></div>
+
+  <div class="item" data-k="d-teaser"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">2</button><div class="corpo">
+    <p class="tit">O que a home mostra para quem não tem conta <span class="quem voce">Você</span></p>
+    <p class="det">A busca do topo da home mostra quatro pessoas <b>com nome e foto, marcadas como livres</b> no dia escolhido, para qualquer visitante. Com os perfis fictícios de hoje isso é vitrine. Com gente de verdade, é entregar de graça exatamente o que o Volante vende: saber quem está livre.</p>
+    <p class="det"><b>Recomendo:</b> com gente real, a home mostra só a contagem por função (“12 operadores de câmera livres sábado”), sem nome. A alternativa é mostrar nome só de quem autorizar no cadastro.</p>
+  </div></div>
+
+  <div class="item" data-k="d-provedor"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">3</button><div class="corpo">
+    <p class="tit">Quem cobra o Volante <span class="quem voce">Você</span></p>
+    <p class="det"><b>Recomendo o Asaas</b>: é brasileiro, faz assinatura com Pix Automático e cartão, aceita conta de MEI, não tem mensalidade e manda o aviso de pagamento direto para o nosso servidor. As taxas estão na Parte 4.</p>
+  </div></div>
+
+  <div class="item" data-k="d-cnpj"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">4</button><div class="corpo">
+    <p class="tit">Em nome de quem a plataforma cobra <span class="quem voce">Você</span></p>
+    <p class="det">Cobrar assinatura pede uma conta no provedor e nota fiscal de serviço a cada mensalidade. Para a Fase 1, um <b>MEI</b> costuma resolver, porque só entra o dinheiro do Volante. A conversa com o parceiro de custódia, que define como o CNPJ definitivo nasce, é da Fase 2 e continua valendo como está no plano. Confirme o enquadramento com um contador.</p>
+  </div></div>
+
+  <div class="item" data-k="d-moderar"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">5</button><div class="corpo">
+    <p class="tit">Quem lê as denúncias, e em quanto tempo <span class="quem voce">Você</span></p>
+    <p class="det">A tela promete que <b>“quem lê e decide é uma pessoa”</b>. No começo essa pessoa é você. Defina um prazo de resposta (por exemplo, 24 horas) para ele entrar nos termos de uso.</p>
+  </div></div>
+
+  <div class="item" data-k="d-promessas"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">6</button><div class="corpo">
+    <p class="tit">Construir ou esconder cada promessa que pede servidor <span class="quem voce">Você</span></p>
+    <p class="det">Lembrete no WhatsApp, Sirene tomando a tela de quem está longe, link de convite sem conta, perfil com endereço próprio. A lista com a minha recomendação para cada uma está na <a href="#promessas">Parte 6</a>.</p>
+  </div></div>
+
+  <div class="item" data-k="d-teste"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">7</button><div class="corpo">
+    <p class="tit">Quem entra no teste fechado <span class="quem voce">Você</span></p>
+    <p class="det">Dez a vinte pessoas da praça, dos dois lados, antes de abrir. É onde se descobre se a agenda é mantida em dia, que é a métrica que segura o produto.</p>
+  </div></div>
+</section>
+
+<!-- ================= 1 ================= -->
+<section class="parte" id="contas">
+  <div class="parte-cab"><span class="onde">Parte 1 · contas e serviços</span></div>
+  <h2>O que precisa existir fora do código</h2>
+
+  <div class="item" data-k="c-supabase"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">1</button><div class="corpo">
+    <p class="tit">Supabase: plano Pro antes de abrir <span class="quem voce">Você</span></p>
+    <p class="det">O projeto que já existe (<code>projeto-novo-substituir</code>) serve para desenvolver no plano grátis. Para abrir ao público, o <b>Pro (US$ 25/mês)</b>: o grátis <b>pausa o projeto depois de uma semana sem uso</b> e não faz backup. O Pro faz backup diário, guardado por sete dias, e nunca pausa.</p>
+  </div></div>
+
+  <div class="item" data-k="c-vercel"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">2</button><div class="corpo">
+    <p class="tit">Vercel: plano Pro quando a cobrança ligar <span class="quem voce">Você</span></p>
+    <p class="det">O plano grátis da Vercel (Hobby) é <b>só para uso pessoal, não comercial</b>, e as regras dela citam “qualquer forma de pedir ou processar pagamento de visitantes”. Cobrar o Volante exige o <b>Pro, US$ 20/mês por pessoa</b> da equipe.</p>
+  </div></div>
+
+  <div class="item" data-k="c-google"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">3</button><div class="corpo">
+    <p class="tit">Google Cloud: um projeto com a tela de login <span class="quem voce">Você</span></p>
+    <p class="det">O passo a passo com os valores para copiar está na <a href="#login">Parte 2</a>. É grátis.</p>
+  </div></div>
+
+  <div class="item" data-k="c-asaas"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">4</button><div class="corpo">
+    <p class="tit">Conta no provedor de pagamento <span class="quem voce">Você</span></p>
+    <p class="det">Abrir a conta, enviar os documentos, e criar a <b>chave de API</b> e a do <b>ambiente de teste</b> (sandbox). Quem configura o aviso de pagamento (webhook) é o dev. Chave de API nunca vai em conversa, print ou repositório: ela entra direto no painel do Supabase, como segredo.</p>
+  </div></div>
+
+  <div class="item" data-k="c-email"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">5</button><div class="corpo">
+    <p class="tit">Um serviço de envio de e-mail <span class="quem voce">Você</span></p>
+    <p class="det">Confirmação de conta e “esqueci a senha” saem por e-mail. O envio que vem com o Supabase é <b>só para teste</b>: manda poucas mensagens por hora. Para abrir, um serviço próprio (Resend, Brevo ou Amazon SES, todos com faixa grátis que cobre o começo), enviando de <code>nao-responda@carrodofreela.com.br</code>. Isso pede três registros de DNS na GoDaddy, que o serviço mostra na hora.</p>
+  </div></div>
+
+  <div class="item" data-k="c-termos"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">6</button><div class="corpo">
+    <p class="tit">Termos de uso e política de privacidade no domínio <span class="quem juntos">Juntos</span></p>
+    <p class="det">O Google exige os dois links na tela de login, e a LGPD exige a política. Precisam morar em <code>carrodofreela.com.br/termos</code> e <code>/privacidade</code>. O rascunho sai daqui, com o que o produto faz de verdade: o telefone nunca aparece para ninguém, a agenda alheia só para o Volante, a denúncia lida por uma pessoa, ninguém sabe quem denunciou. <b>Um advogado revisa antes de publicar.</b></p>
+  </div></div>
+</section>
+
+<!-- ================= 2 ================= -->
+<section class="parte" id="login">
+  <div class="parte-cab"><span class="onde">Parte 2 · login e criação de conta</span></div>
+  <h2>Contas de verdade</h2>
+  <p>Hoje qualquer e-mail e senha “entram”, porque nada é guardado nem conferido. A tela já diz isso (“Nesta prévia, e-mail e senha não ficam guardados”). Na Fase 1 quem cuida da conta é o <b>Supabase Auth</b>, que já guarda senha com segurança, confirma e-mail e manda o link de troca de senha.</p>
+
+  <h3>Entrar com o Google</h3>
+  <div class="item" data-k="g-projeto"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">1</button><div class="corpo">
+    <p class="tit">Criar o projeto “Carro do Freela” <span class="quem voce">Você</span></p>
+    <p class="det">Em <code>console.cloud.google.com</code>, com a conta <code>carrodofreela@gmail.com</code>, crie um projeto novo com esse nome. Depois abra <b>Google Auth Platform</b> no menu.</p>
+  </div></div>
+
+  <div class="item" data-k="g-marca"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">2</button><div class="corpo">
+    <p class="tit">Preencher a marca do app (Branding) <span class="quem voce">Você</span></p>
+    <ul class="det">
+      <li>Nome do app: <b>Carro do Freela</b></li>
+      <li>E-mail de suporte: <code>carrodofreela@gmail.com</code></li>
+      <li>Logo: o <code>icone-512.png</code> do site. Com logo, o Google confere a marca antes de mostrá-la, o que costuma ser rápido.</li>
+      <li>Página inicial, privacidade e termos: os endereços abaixo.</li>
+      <li>Domínio autorizado: <code>carrodofreela.com.br</code></li>
+    </ul>
+    <div class="val">
+      <button class="copiar" type="button" data-c="https://carrodofreela.com.br">https://carrodofreela.com.br<span class="ic">COPIAR</span></button>
+      <button class="copiar" type="button" data-c="https://carrodofreela.com.br/privacidade">https://carrodofreela.com.br/privacidade<span class="ic">COPIAR</span></button>
+      <button class="copiar" type="button" data-c="https://carrodofreela.com.br/termos">https://carrodofreela.com.br/termos<span class="ic">COPIAR</span></button>
+    </div>
+  </div></div>
+
+  <div class="item" data-k="g-publico"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">3</button><div class="corpo">
+    <p class="tit">Público externo, e publicar <span class="quem voce">Você</span></p>
+    <p class="det">Em <b>Audience</b>, escolha <b>External</b>. Enquanto o app está em <b>Testing</b>, só entram as contas que você listar (até 100), o que serve para o teste fechado. Para abrir, aperte <b>Publish app</b>.</p>
+  </div></div>
+
+  <div class="item" data-k="g-escopos"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">4</button><div class="corpo">
+    <p class="tit">Pedir só nome, e-mail e foto <span class="quem voce">Você</span></p>
+    <p class="det">Em <b>Data access</b>, deixe só <code>openid</code>, <code>email</code> e <code>profile</code>. Esses três não são sensíveis e não passam pela revisão do Google. Não adicione a Agenda agora (decisão 1 da Parte 0).</p>
+  </div></div>
+
+  <div class="item" data-k="g-cliente"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">5</button><div class="corpo">
+    <p class="tit">Criar a credencial do site <span class="quem voce">Você</span></p>
+    <p class="det">Em <b>Clients → Create client</b>, tipo <b>Web application</b>. Em <b>Authorized JavaScript origins</b> vai o domínio; em <b>Authorized redirect URIs</b>, o endereço de retorno do Supabase:</p>
+    <div class="val">
+      <small>Origem autorizada</small>
+      <button class="copiar" type="button" data-c="https://carrodofreela.com.br">https://carrodofreela.com.br<span class="ic">COPIAR</span></button>
+      <small>Endereço de retorno</small>
+      <button class="copiar" type="button" data-c="https://projeto-novo-substituir.supabase.co/auth/v1/callback">https://projeto-novo-substituir.supabase.co/auth/v1/callback<span class="ic">COPIAR</span></button>
+    </div>
+  </div></div>
+
+  <div class="item" data-k="g-supa"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">6</button><div class="corpo">
+    <p class="tit">Levar a credencial para o Supabase <span class="quem voce">Você</span></p>
+    <p class="det">O Google mostra um <b>Client ID</b> e um <b>Client secret</b>. No Supabase, em <b>Authentication → Sign In / Providers → Google</b>, ligue e cole os dois. O secret é senha: não mande em conversa nem em print.</p>
+  </div></div>
+
+  <div class="item" data-k="g-urls"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">7</button><div class="corpo">
+    <p class="tit">Dizer ao Supabase para onde voltar <span class="quem voce">Você</span></p>
+    <p class="det">Em <b>Authentication → URL Configuration</b>: o <b>Site URL</b> é o domínio, e em <b>Redirect URLs</b> entra o domínio com tudo que vem depois dele (cobre a <code>/fase1</code>).</p>
+    <div class="val">
+      <small>Site URL</small>
+      <button class="copiar" type="button" data-c="https://carrodofreela.com.br">https://carrodofreela.com.br<span class="ic">COPIAR</span></button>
+      <small>Redirect URL</small>
+      <button class="copiar" type="button" data-c="https://carrodofreela.com.br/**">https://carrodofreela.com.br/**<span class="ic">COPIAR</span></button>
+    </div>
+  </div></div>
+
+  <h3>E-mail e senha</h3>
+  <div class="item" data-k="e-config"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">8</button><div class="corpo">
+    <p class="tit">Ligar a confirmação de e-mail e a proteção de cadastro <span class="quem juntos">Juntos</span></p>
+    <ul class="det">
+      <li><b>Confirm email</b> ligado: a conta só vale depois do link.</li>
+      <li>Senha de no mínimo 8 caracteres (a tela hoje aceita 6) e, no plano Pro, a checagem de <b>senha vazada</b>.</li>
+      <li>Um CAPTCHA invisível no cadastro (o Supabase aceita Cloudflare Turnstile), para robô não criar conta em massa.</li>
+      <li>Os e-mails de confirmação, troca de senha e troca de e-mail traduzidos, na voz da casa.</li>
+    </ul>
+  </div></div>
+
+  <div class="item" data-k="e-codigo"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">9</button><div class="corpo">
+    <p class="tit">Trocar a entrada simulada pela de verdade <span class="quem dev">Dev</span></p>
+    <ul class="det">
+      <li>A tela de entrar que já existe chama o Supabase: criar conta, entrar, entrar com o Google, esqueci a senha e sair. O cartão, a chave freela/contratante e o “Criar conta” ficam como estão.</li>
+      <li>“Esqueci a senha” passa a mandar o link de verdade, e a tela da prévia que diz “não há senha guardada” sai.</li>
+      <li>Ao criar a conta, o servidor cria a linha do perfil sozinho. <b>Uma conta, dois chapéus</b>: freela e contratante continuam na mesma pessoa, guardados no servidor.</li>
+      <li>A biblioteca do Supabase sobe como arquivo do próprio site. A política de segurança desta revisão só deixa rodar script do domínio, e CDN de fora fica bloqueada.</li>
+      <li>O brinde de P$ 200 não existe na Fase 1, e nesta revisão já saiu da tela.</li>
+    </ul>
+  </div></div>
+</section>
+
+<!-- ================= 3 ================= -->
+<section class="parte" id="banco">
+  <div class="parte-cab"><span class="onde">Parte 3 · o banco de dados</span></div>
+  <h2>Onde cada coisa passa a morar</h2>
+  <p>A regra que guia o desenho: <b>o que a pessoa declara mora numa linha dela</b>, e toda tabela tem regra de acesso ligada (RLS). Hoje a tranca do Volante é um valor no navegador que qualquer um muda pelo console. Na Fase 1 ela é uma pergunta ao servidor, que só aceita “pagou” vindo do provedor.</p>
+
+  <div class="tabw"><table>
+    <thead><tr><th>O que guarda</th><th>Quem lê</th><th>Quem escreve</th></tr></thead>
+    <tbody>
+      <tr><td><b>Perfil</b>: nome, praça, funções, equipamento, nichos, portfólio, foto</td><td>qualquer pessoa (é o portfólio)</td><td>o dono</td></tr>
+      <tr><td><b>Dados privados</b>: telefone, gênero, os aceites</td><td>só o dono</td><td>o dono</td></tr>
+      <tr><td><b>Produtora</b>: nome, tipo, cidade, logo, CNPJ</td><td>qualquer pessoa</td><td>o dono</td></tr>
+      <tr><td><b>Tabela de diária</b></td><td>o dono e quem tem conta</td><td>o dono</td></tr>
+      <tr><td><b>Agenda</b>: o dia fechado, negociando, manhã ou tarde, a hora</td><td>o dono; os outros só pelo Volante, por uma consulta do servidor</td><td>o dono</td></tr>
+      <tr><td><b>Assinatura</b> e <b>pagamentos</b></td><td>o dono</td><td>só o aviso do provedor</td></tr>
+      <tr><td><b>Propostas</b> e <b>chamadas</b> (passar o carro, Sirene)</td><td>as duas partes; quem recebe a chamada nunca vê a lista dos outros</td><td>quem manda; a resposta passa por uma função do servidor</td></tr>
+      <tr><td><b>Jobs</b></td><td>as duas partes</td><td>as duas partes</td></tr>
+      <tr><td><b>Conversas</b> e mensagens</td><td>quem está na conversa</td><td>quem está na conversa</td></tr>
+      <tr><td><b>Feed</b>: posts, comentários, curtidas, quem segue quem</td><td>quem tem conta (sem contador de seguidores)</td><td>o autor</td></tr>
+      <tr><td><b>Denúncias</b></td><td>a moderação; quem denunciou vê só a sua</td><td>quem tem conta (uma por post)</td></tr>
+      <tr><td><b>Brechó</b>: anúncios e ofertas</td><td>anúncio: qualquer pessoa; oferta: só as duas partes</td><td>o dono / as duas partes</td></tr>
+      <tr><td><b>Inventário</b></td><td>só o dono</td><td>só o dono</td></tr>
+      <tr><td><b>Avisos</b> (notificações)</td><td>o dono</td><td>o servidor</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="item" data-k="b-tabelas"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">1</button><div class="corpo">
+    <p class="tit">Criar as tabelas com as regras de acesso <span class="quem dev">Dev</span></p>
+    <p class="det">As da tabela acima, com limite de tamanho em todo campo de texto e número checado no banco (diária positiva, data válida). As tabelas do pré-lançamento (<code>passos</code>, <code>cadastros</code>, <code>leads</code>) ficam como estão.</p>
+  </div></div>
+
+  <div class="item" data-k="b-funcoes"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">2</button><div class="corpo">
+    <p class="tit">As funções do servidor que seguram as regras <span class="quem dev">Dev</span></p>
+    <ul class="det">
+      <li><b>Quem está livre</b> (praça, dia, funções): só responde para quem tem o Volante.</li>
+      <li><b>Censo</b> (praça): só contagens, aberto a todos. É o que a home e a vitrine trancada mostram.</li>
+      <li><b>Aceitar a chamada</b>: o primeiro que aceita leva, de forma atômica, e os outros recebem “vaga preenchida”.</li>
+      <li><b>Responder a proposta</b> (aceitar ou recusar com motivo).</li>
+      <li><b>Confirmar o convite</b> pelo link, se ele entrar na Fase 1.</li>
+    </ul>
+  </div></div>
+
+  <div class="item" data-k="b-arquivos"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">3</button><div class="corpo">
+    <p class="tit">Fotos e vídeos em arquivo, não dentro do banco <span class="quem dev">Dev</span></p>
+    <p class="det">Hoje toda imagem vira texto dentro do armazenamento do navegador, e o vídeo do feed some ao recarregar. Na Fase 1: pastas públicas para avatar, logo, portfólio, anúncios e posts, e uma <b>privada</b> para o inventário. Com limite de tamanho por arquivo.</p>
+  </div></div>
+
+  <div class="item" data-k="b-numeros"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">4</button><div class="corpo">
+    <p class="tit">Os números do perfil calculados pelo servidor <span class="quem dev">Dev</span></p>
+    <p class="det">Tempo de resposta, jobs feitos, “agenda em dia” e o selo de verificado hoje são sorteados para os perfis fictícios. Com gente real, saem do que aconteceu na plataforma. Enquanto não houver dado, o perfil mostra “ainda sem histórico”, nunca um número.</p>
+  </div></div>
+
+  <div class="item" data-k="b-migrar"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">5</button><div class="corpo">
+    <p class="tit">Tirar os dados de demonstração da versão de verdade <span class="quem dev">Dev</span></p>
+    <p class="det">Os 109 perfis fictícios, os jobs, as propostas, os posts e os anúncios semeados, e os eventos simulados (“X começou a seguir você”, a chamada que chega sozinha). Eles continuam no protótipo. Na versão de verdade a base nasce vazia, como você decidiu, e o selo Prévia sai.</p>
+  </div></div>
+</section>
+
+<!-- ================= 4 ================= -->
+<section class="parte" id="pagamento">
+  <div class="parte-cab"><span class="onde">Parte 4 · pagamento</span></div>
+  <h2>A cobrança do Volante</h2>
+  <p>Na Fase 1 a plataforma cobra uma coisa só: a assinatura do Volante, R$ 89 por mês. Custódia, sinal de 20%, taxa por job, carteira e pedágio são da Fase 2. Nesta revisão todas essas palavras saíram das telas da Fase 1, e o caixa do Volante ficou com Pix e cartão.</p>
+
+  <div class="aviso calma">
+    <span class="tt">Como o pagamento anda</span>
+    <ul>
+      <li>A pessoa aperta <b>Assinar</b> e paga na tela do provedor, por Pix Automático (autoriza uma vez e o débito mensal sai sozinho) ou cartão.</li>
+      <li>O provedor avisa o nosso servidor. O servidor confere que o aviso é dele, grava a assinatura e a tranca abre.</li>
+      <li><b>Cancelar fica na mesma tela de assinar</b>, como já é hoje. A tranca fecha no fim do mês já pago.</li>
+      <li>Pagamento recusado: o provedor tenta de novo, e a pessoa recebe um aviso antes de perder o acesso.</li>
+    </ul>
+  </div>
+
+  <div class="tabw"><table>
+    <thead><tr><th>Asaas, por cobrança</th><th class="num">Taxa</th><th class="num">Num Volante de R$ 89</th></tr></thead>
+    <tbody>
+      <tr><td><b>Pix</b></td><td class="num">R$ 1,99</td><td class="num">R$ 1,99</td></tr>
+      <tr><td><b>Cartão de crédito</b>, à vista</td><td class="num">R$ 0,49 + 2,99%</td><td class="num">R$ 3,15</td></tr>
+      <tr><td>Mensalidade da conta</td><td class="num">não tem</td><td class="num">—</td></tr>
+    </tbody>
+  </table></div>
+  <p class="p" style="font-size:13.5px;color:var(--ink3)">Taxas que constavam nas páginas do Asaas na pesquisa desta revisão. Elas mudam com promoção e volume: confira na hora de abrir a conta. O Mercado Pago também faz assinatura com Pix e cartão e é a segunda opção; as taxas dele precisam ser conferidas na página dele.</p>
+
+  <div class="item" data-k="p-sandbox"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">1</button><div class="corpo">
+    <p class="tit">Ligar o Assinar ao provedor, primeiro no ambiente de teste <span class="quem dev">Dev</span></p>
+    <p class="det">O Pix de mentira (“protótipo · nenhum pagamento real”) sai, e entra o checkout do provedor. Tudo roda no sandbox até o fluxo inteiro passar: assinar, renovar, recusar, cancelar.</p>
+  </div></div>
+
+  <div class="item" data-k="p-webhook"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">2</button><div class="corpo">
+    <p class="tit">O aviso de pagamento chega no servidor, e só ele abre a tranca <span class="quem dev">Dev</span></p>
+    <p class="det">Uma função do Supabase recebe o aviso do provedor, confere o token, ignora aviso repetido e grava a assinatura. <b>O navegador nunca decide que alguém pagou.</b></p>
+  </div></div>
+
+  <div class="item" data-k="p-nota"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">3</button><div class="corpo">
+    <p class="tit">Nota fiscal de cada mensalidade <span class="quem voce">Você</span></p>
+    <p class="det">Cada Volante pago é um serviço prestado e pede nota. Veja com o contador se o provedor emite junto da cobrança ou se ela sai pelo emissor nacional do MEI.</p>
+  </div></div>
+
+  <div class="item" data-k="p-teste"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">4</button><div class="corpo">
+    <p class="tit">Uma cobrança real sua, de ponta a ponta <span class="quem juntos">Juntos</span></p>
+    <p class="det">Antes de abrir: você assina com o seu cartão, confere que a tranca abriu, que a nota saiu e que o dinheiro caiu, e cancela. Só depois disso a cobrança vale para os outros.</p>
+  </div></div>
+</section>
+
+<!-- ================= 5 ================= -->
+<section class="parte" id="seguranca">
+  <div class="parte-cab"><span class="onde">Parte 5 · segurança</span></div>
+  <h2>O que já foi feito, e o que você confere</h2>
+
+  <div class="aviso ok">
+    <span class="tt">Feito nesta revisão, esperando publicar</span>
+    <ul>
+      <li>A pasta <code>app/</code> não sobe mais para o domínio, e <code>/app/…</code> volta para a home.</li>
+      <li>Uma política de segurança (CSP) calculada a cada publicação: só os dois scripts da página rodam, e o site só conversa com o Web3Forms e o Supabase. Script injetado não roda, e foi testado bloqueando.</li>
+      <li>O site não pode ser aberto dentro de outro site, e manda os cabeçalhos que um site sério manda.</li>
+      <li>Link, imagem, cor e nome que a pessoa escreve passam por filtro antes de aparecer na tela.</li>
+      <li>Anexo de job que poderia rodar código (página HTML, por exemplo) é baixado em vez de aberto.</li>
+      <li>Planilha baixada: célula que começa com <code>=</code> ou <code>+</code> não vira fórmula.</li>
+      <li>Seis coisas que a pessoa declarava e se perdiam ao recarregar agora ficam: o perfil da produtora, quem ela segue, as curtidas e os ajustes de Agenda e WhatsApp.</li>
+      <li>A Fase 1 sem nenhuma promessa de dinheiro: custódia, sinal, taxa, pedágio, brinde e Frota saíram das telas dela. Uma suíte nova confere isso nos dois lados.</li>
+    </ul>
+  </div>
+
+  <div class="item" data-k="s-rls"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">1</button><div class="corpo">
+    <p class="tit">Conferir as regras das tabelas do pré-lançamento <span class="quem voce">Você</span></p>
+    <p class="det">A chave pública do Supabase está no HTML, e isso é normal: ela só pode o que as regras das tabelas deixarem. O que precisa ser verdade é que <code>passos</code>, <code>cadastros</code> e <code>leads</code> <b>aceitam só inserir</b>, sem ler, alterar ou apagar. Não consegui conferir daqui, de propósito: ler o banco de produção é seu. No Supabase, em <b>SQL Editor</b>, rode:</p>
+    <pre class="sql" id="sql-rls">select c.relname as tabela, c.relrowsecurity as rls_ligada,
+       p.policyname, p.cmd, p.roles
+  from pg_class c
+  left join pg_policies p on p.tablename = c.relname
+ where c.relname in ('passos','cadastros','leads')
+ order by 1;</pre>
+    <div class="val"><button class="copiar" type="button" data-de="sql-rls">Copiar a consulta<span class="ic">COPIAR</span></button></div>
+    <p class="det">O certo: <code>rls_ligada</code> verdadeiro nas três, e cada política com <code>cmd</code> igual a <code>INSERT</code> e <code>roles</code> com <code>anon</code>. Se aparecer <code>SELECT</code>, <code>ALL</code> ou uma tabela sem política, me mande o resultado. O guia antigo dessas tabelas (<code>docs/registro-supabase.html</code>) se perdeu num reset; o SQL da <code>leads</code> está no README da landing.</p>
+  </div></div>
+
+  <div class="item" data-k="s-web3"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">2</button><div class="corpo">
+    <p class="tit">Web3Forms: limitar ao domínio, se o painel deixar <span class="quem voce">Você</span></p>
+    <p class="det">A chave do suporte também é pública por desenho. Veja no painel do Web3Forms se dá para aceitar envio só de <code>carrodofreela.com.br</code>. Se não der, a armadilha contra robô que já existe segura o grosso. A denúncia sai do Web3Forms na Fase 1 e vai para a tabela do banco, porque por e-mail o moderador não consegue achar o post denunciado.</p>
+  </div></div>
+
+  <div class="item" data-k="s-servidor"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">3</button><div class="corpo">
+    <p class="tit">O que só fecha com o servidor <span class="quem dev">Dev</span></p>
+    <ul class="det">
+      <li>Limite de envio por minuto em cadastro, proposta, mensagem e denúncia.</li>
+      <li>Toda tranca (Volante, quem pode ver o quê) conferida no servidor, nunca só escondida na tela.</li>
+      <li>O papel de moderador, com registro de quem decidiu o quê.</li>
+      <li>Backup diário (vem com o Pro) e um teste de restaurar antes de abrir.</li>
+    </ul>
+  </div></div>
+</section>
+
+<!-- ================= 6 ================= -->
+<section class="parte" id="promessas">
+  <div class="parte-cab"><span class="onde">Parte 6 · promessas da tela</span></div>
+  <h2>O que a tela promete e só o servidor cumpre</h2>
+  <p>Cada uma destas frases está na Fase 1 hoje. No protótipo elas valem porque o selo Prévia avisa. Na versão de verdade, cada uma é construída ou sai.</p>
+
+  <div class="tabw"><table>
+    <thead><tr><th>A promessa</th><th>O que precisa</th><th>Recomendo</th></tr></thead>
+    <tbody>
+      <tr><td>A recusa com motivo, a consulta e a contraproposta <b>chegam</b> a quem chamou</td><td>propostas no banco e avisos</td><td><span class="tag faz">construir</span> é o coração da fase</td></tr>
+      <tr><td>Passar o carro: <b>a primeira que aceitar leva</b>, os outros são avisados</td><td>a função atômica e avisos em tempo real</td><td><span class="tag faz">construir</span></td></tr>
+      <tr><td>A <b>Sirene toma a tela</b> de quem está na escuta</td><td>tempo real com o app aberto; notificação para quem instalou na tela de início (no iPhone só funciona assim)</td><td><span class="tag faz">construir</span> a versão simples</td></tr>
+      <tr><td>A denúncia é <b>lida por uma pessoa</b></td><td>a tabela de denúncias e a fila de moderação</td><td><span class="tag faz">construir</span> o feed não abre sem ela</td></tr>
+      <tr><td>Mensagens entre as pessoas</td><td>conversas no banco, em tempo real</td><td><span class="tag faz">construir</span></td></tr>
+      <tr><td>Perfil com <b>endereço próprio</b> para divulgar</td><td>uma página pública por perfil</td><td><span class="tag faz">construir</span> simples</td></tr>
+      <tr><td>“Fui chamado por fora”: <b>o link confirma sem criar conta</b></td><td>o convite com token e a página pública</td><td><span class="tag troca">depois</span> logo após o essencial</td></tr>
+      <tr><td><b>“Google Agenda conectado</b> · jobs viram evento”</td><td>a permissão sensível e a revisão do Google</td><td><span class="tag tira">tirar</span> da Fase 1</td></tr>
+      <tr><td>Lembrete da agenda <b>no WhatsApp</b> toda quinta</td><td>a API oficial do WhatsApp, modelos aprovados e consentimento</td><td><span class="tag tira">tirar</span> volta com o agente</td></tr>
+      <tr><td><b>“CNPJ verificado”</b> na produtora</td><td>hoje é uma caixa que a própria pessoa marca</td><td><span class="tag troca">trocar</span> por “CNPJ informado”</td></tr>
+      <tr><td>“Responde em N min”, “agenda em dia”, verificado</td><td>números calculados pelo servidor</td><td><span class="tag faz">construir</span> vazio até ter dado</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ================= 7 ================= -->
+<section class="parte" id="ordem">
+  <div class="parte-cab"><span class="onde">Parte 7 · a ordem</span></div>
+  <h2>Em que ordem fazer</h2>
+  <p>Cada passo depende do anterior. O pagamento vem depois do produto funcionando, porque não adianta cobrar por uma agenda que ninguém mantém.</p>
+
+  <div class="item" data-k="o-1"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">1</button><div class="corpo">
+    <p class="tit">Publicar esta revisão <span class="quem voce">Você</span></p>
+    <p class="det">Fecha a pasta <code>app/</code> no domínio e liga a política de segurança. Só falta o “pode subir”.</p>
+  </div></div>
+  <div class="item" data-k="o-2"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">2</button><div class="corpo">
+    <p class="tit">As decisões da Parte 0 e os termos <span class="quem juntos">Juntos</span></p>
+  </div></div>
+  <div class="item" data-k="o-3"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">3</button><div class="corpo">
+    <p class="tit">Contas: Google Cloud, e-mail de envio, provedor em teste <span class="quem voce">Você</span></p>
+    <p class="det">O Supabase continua no grátis enquanto se desenvolve.</p>
+  </div></div>
+  <div class="item" data-k="o-4"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">4</button><div class="corpo">
+    <p class="tit">Banco e login <span class="quem dev">Dev</span></p>
+  </div></div>
+  <div class="item" data-k="o-5"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">5</button><div class="corpo">
+    <p class="tit">Perfil, agenda, busca com a tranca no servidor, propostas, passar o carro e mensagens <span class="quem dev">Dev</span></p>
+  </div></div>
+  <div class="item" data-k="o-6"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">6</button><div class="corpo">
+    <p class="tit">Feed com denúncia, brechó, inventário e fotos em arquivo <span class="quem dev">Dev</span></p>
+  </div></div>
+  <div class="item" data-k="o-7"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">7</button><div class="corpo">
+    <p class="tit">A cobrança do Volante, do teste à produção <span class="quem dev">Dev</span></p>
+  </div></div>
+  <div class="item" data-k="o-8"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">8</button><div class="corpo">
+    <p class="tit">Teste fechado com dez a vinte pessoas da praça <span class="quem juntos">Juntos</span></p>
+    <p class="det">Com o Google em modo Testing, só entra quem você listar.</p>
+  </div></div>
+  <div class="item" data-k="o-9"><button class="marca" aria-pressed="false" aria-label="Marcar como feito">9</button><div class="corpo">
+    <p class="tit">Supabase e Vercel no Pro, e abrir <span class="quem voce">Você</span></p>
+  </div></div>
+</section>
+
+<!-- ================= 8 ================= -->
+<section class="parte" id="custos">
+  <div class="parte-cab"><span class="onde">Parte 8 · custo</span></div>
+  <h2>Quanto custa por mês, aberto</h2>
+  <div class="tabw"><table>
+    <thead><tr><th>O quê</th><th class="num">Por mês</th><th>Observação</th></tr></thead>
+    <tbody>
+      <tr><td><b>Supabase Pro</b></td><td class="num">US$ 25</td><td>grátis enquanto se desenvolve</td></tr>
+      <tr><td><b>Vercel Pro</b></td><td class="num">US$ 20</td><td>por pessoa da equipe; o grátis proíbe uso comercial</td></tr>
+      <tr><td>Login com o Google</td><td class="num">US$ 0</td><td></td></tr>
+      <tr><td>Envio de e-mail</td><td class="num">US$ 0</td><td>a faixa grátis cobre o começo</td></tr>
+      <tr><td>Provedor de pagamento</td><td class="num">só por cobrança</td><td>R$ 1,99 a R$ 3,15 por Volante</td></tr>
+      <tr><td>Domínio</td><td class="num">já pago</td><td>renovação anual na GoDaddy</td></tr>
+      <tr><td><b>Fixo</b></td><td class="num"><b>US$ 45</b></td><td>com o dólar a R$ 5,50, uns R$ 250: três assinaturas do Volante pagam</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="parte" id="fontes">
+  <div class="parte-cab"><span class="onde">Fontes</span></div>
+  <h2>De onde vieram os números</h2>
+  <ul class="fontes">
+    <li><a href="https://supabase.com/pricing" target="_blank" rel="noopener">Supabase — preços</a> (plano grátis pausa após 1 semana sem uso; Pro US$ 25 com backup diário)</li>
+    <li><a href="https://vercel.com/docs/limits/fair-use-guidelines" target="_blank" rel="noopener">Vercel — regras de uso</a> (Hobby só não comercial) e <a href="https://vercel.com/pricing" target="_blank" rel="noopener">preços</a> (Pro US$ 20 por pessoa)</li>
+    <li><a href="https://blog.asaas.com/taxas-asaas/" target="_blank" rel="noopener">Asaas — taxas</a> e <a href="https://central.ajuda.asaas.com/hc/pt-br/articles/31997100041371-Quais-s%C3%A3o-as-taxas-para-criar-cobran%C3%A7as-por-assinatura-recorrentes" target="_blank" rel="noopener">taxas de assinatura recorrente</a></li>
+    <li><a href="https://www.mercadopago.com.br/blog/recorrencia-pix-vs-cartao-custo" target="_blank" rel="noopener">Mercado Pago — recorrência por Pix e cartão</a></li>
+    <li><a href="https://developers.google.com/workspace/guides/configure-oauth-consent" target="_blank" rel="noopener">Google — configurar a tela de consentimento</a>, <a href="https://developers.google.com/identity/protocols/oauth2/production-readiness/policy-compliance" target="_blank" rel="noopener">o que o Google exige para publicar</a> e <a href="https://developers.google.com/identity/protocols/oauth2/policies" target="_blank" rel="noopener">políticas de OAuth</a></li>
+    <li><a href="https://supabase.com/docs/guides/auth/social-login/auth-google" target="_blank" rel="noopener">Supabase — login com o Google</a> e <a href="https://supabase.com/docs/guides/auth/auth-smtp" target="_blank" rel="noopener">e-mail próprio (SMTP)</a></li>
+  </ul>
+</section>
+
+<footer>
+  <p>Carro do Freela · revisão de segurança e bugs de 19/out · 2. Preços conferidos nas páginas oficiais em 19 de outubro de 2026; taxa de pagamento muda com promoção, confira na hora de contratar.</p>
+  <p>O que você marca como feito fica só neste aparelho.</p>
+  <button class="zerar" type="button" id="zerar">Desmarcar tudo</button>
+</footer>
+</div>
+
+<script>
+(function(){
+  var CHAVE="cdf-fase1-no-ar";
+  var feitos={};
+  try{ feitos=JSON.parse(localStorage.getItem(CHAVE)||"{}")||{} }catch(e){ feitos={} }
+  var itens=[].slice.call(document.querySelectorAll(".item[data-k]"));
+  function gravar(){ try{ localStorage.setItem(CHAVE,JSON.stringify(feitos)) }catch(e){} }
+  function pintar(){
+    var n=0, prox=null;
+    itens.forEach(function(it){
+      var k=it.getAttribute("data-k"), f=!!feitos[k], bt=it.querySelector(".marca");
+      it.classList.toggle("feito",f);
+      bt.setAttribute("aria-pressed",String(f));
+      bt.textContent=f?"✓":bt.getAttribute("data-n");
+      if(f) n++; else if(!prox) prox=it;
+    });
+    document.getElementById("barra").style.width=(itens.length?n/itens.length*100:0)+"%";
+    document.getElementById("quantos").textContent=n+" de "+itens.length;
+    var t=prox?prox.querySelector(".tit").firstChild.textContent.trim():"Tudo feito";
+    document.getElementById("agora").textContent=prox?"Próximo: "+t:t;
+  }
+  itens.forEach(function(it){
+    var bt=it.querySelector(".marca");
+    bt.setAttribute("data-n",bt.textContent);
+    bt.addEventListener("click",function(){
+      var k=it.getAttribute("data-k");
+      if(feitos[k]) delete feitos[k]; else feitos[k]=1;
+      gravar(); pintar();
+    });
+  });
+  document.getElementById("zerar").addEventListener("click",function(){ feitos={}; gravar(); pintar() });
+
+  function selecionar(el){
+    try{ var r=document.createRange(); r.selectNodeContents(el); var s=getSelection(); s.removeAllRanges(); s.addRange(r) }catch(e){}
+  }
+  [].forEach.call(document.querySelectorAll(".copiar"),function(b){
+    b.addEventListener("click",function(){
+      var alvo=b.getAttribute("data-de")?document.getElementById(b.getAttribute("data-de")):null;
+      var txt=alvo?alvo.textContent:b.getAttribute("data-c");
+      var ic=b.querySelector(".ic");
+      function ok(){ b.setAttribute("data-ok","1"); ic.textContent="COPIADO";
+        setTimeout(function(){ b.removeAttribute("data-ok"); ic.textContent="COPIAR" },1800) }
+      function falhou(){ selecionar(alvo||b.firstChild); ic.textContent="SELECIONADO" }
+      try{ navigator.clipboard.writeText(txt).then(ok,falhou) }catch(e){ falhou() }
+    });
+  });
+  pintar();
+})();
+</script>

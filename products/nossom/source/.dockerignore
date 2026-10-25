@@ -1,0 +1,6 @@
+**
+!Dockerfile
+!workers/
+!workers/restoration/
+!workers/restoration/handler.py
+!workers/restoration/README.md

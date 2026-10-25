@@ -1,0 +1,319 @@
+@import "tailwindcss";
+
+/*
+ * SOBEDESCE: Apple + ElevenLabs. Calma, preto e branco, pílulas, muito respiro.
+ * Violeta = envio (sobe), azul = download (desce). Nomes dos tokens são o contrato entre as telas:
+ * podem mudar de valor, não de nome.
+ */
+@theme {
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter Display", "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "SF Mono", ui-monospace, Menlo, "Roboto Mono", Consolas, monospace;
+
+  --color-bg: #fbfbfd;
+  --color-surface: #ffffff;
+  --color-surface-2: #f5f5f7;
+  --color-ink: #1d1d1f;
+  --color-ink-2: #6e6e73;
+  --color-ink-3: #8e8e93;
+  --color-line: rgba(60, 60, 67, 0.12);
+  --color-line-strong: rgba(60, 60, 67, 0.24);
+  --color-primary: #0b0b0c;
+  --color-primary-fg: #ffffff;
+  --color-up: #7c5cff;
+  --color-up-text: #5b3df0;
+  --color-down: #0a84ff;
+  --color-down-text: #0068d6;
+  --color-ok: #30d158;
+  --color-ok-text: #1d8a3d;
+  --color-warn: #ff9f0a;
+  --color-warn-text: #b25e00;
+  --color-err: #ff453a;
+  --color-err-text: #d70015;
+
+  --radius-card: 18px;
+  --ease-out-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Palco escuro da home (animações de transferência) e tons claros das cores de envio e download. */
+  --color-stage: #060608;
+  --color-stage-2: #111114;
+  --color-up-soft: #a995ff;
+  --color-down-soft: #6cb6ff;
+
+  --animate-rise: sd-rise 1s var(--ease-out-soft) both;
+  --animate-fade: sd-fade 1.2s var(--ease-out-soft) both;
+}
+
+/*
+ * Tema escuro das telas de conta (/entrar, /criar-conta, /conta, /admin, /dispositivo, senha): mesmos nomes de token,
+ * valores do modo escuro da Apple. Vale só com o celular ou o computador no escuro e só nas páginas marcadas com
+ * data-tema="conta" (src/app/(conta)/layout.tsx); a home, a política e os termos continuam claros. O tema claro não
+ * muda nada: tudo aqui está dentro do @media.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:has([data-tema="conta"]) {
+    color-scheme: dark;
+    --color-bg: #000000;
+    --color-surface: #1c1c1e;
+    --color-surface-2: #2c2c2e;
+    --color-ink: #f5f5f7;
+    --color-ink-2: #aeaeb2;
+    --color-ink-3: #8e8e93;
+    --color-line: rgba(235, 235, 245, 0.14);
+    --color-line-strong: rgba(235, 235, 245, 0.26);
+    --color-primary: #f5f5f7;
+    --color-primary-fg: #0b0b0c;
+    --color-up-text: #b4a3ff;
+    --color-down: #0a84ff;
+    --color-down-text: #64b0ff;
+    --color-ok-text: #4cd471;
+    --color-warn-text: #ffb340;
+    --color-err-text: #ff6961;
+  }
+}
+
+/*
+ * Área de toque de 44 px (o mínimo da Apple) sem mudar o desenho: um ::before invisível, centrado no elemento,
+ * cresce até 44×44. Botões pequenos (size "sm") e links de texto das telas de conta.
+ */
+@utility toque {
+  position: relative;
+  &::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    min-width: 44px;
+    min-height: 44px;
+    transform: translate(-50%, -50%);
+  }
+}
+
+/*
+ * Largura de página que se adapta à tela (desktop de 1280 a 2560+): margem lateral fluida e conteúdo até 2240 px.
+ * No celular a margem fica em 20 px, como antes. `largura-cheia`: de ponta a ponta (cabeçalhos), só com a margem.
+ */
+@utility largura {
+  width: 100%;
+  max-width: 2240px;
+  margin-inline: auto;
+  padding-inline: clamp(20px, 4vw, 96px);
+}
+@utility largura-cheia {
+  width: 100%;
+  padding-inline: clamp(20px, 3vw, 56px);
+}
+
+@keyframes sd-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Barras do cartão "Enviar arquivos" no Início da conta: sobem e descem devagar. */
+@keyframes sd-ini-barra {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(0.55);
+  }
+}
+
+@keyframes sd-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Barra que enche e recomeça (telefone da home). */
+@keyframes sd-fill {
+  0% {
+    width: var(--from, 0%);
+  }
+  82%,
+  100% {
+    width: 100%;
+  }
+}
+
+/* Linha tracejada que anda (conexões entre conta e aparelhos). */
+@keyframes sd-dash-x {
+  to {
+    background-position: 24px 0;
+  }
+}
+@keyframes sd-dash-y {
+  to {
+    background-position: 0 24px;
+  }
+}
+
+/* Bytes viajando do aparelho para o Google. */
+@keyframes sd-travel {
+  from {
+    left: 0%;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  88% {
+    opacity: 1;
+  }
+  to {
+    left: 100%;
+    opacity: 0;
+  }
+}
+
+/* Link sendo digitado (Referências): a largura cresce letra a letra; --n é o tamanho do texto em ch. */
+@keyframes sd-type {
+  from {
+    width: 0;
+  }
+  to {
+    width: var(--n);
+  }
+}
+
+/* Cartão que cai na coleção (Referências). */
+@keyframes sd-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-28px) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sd-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+/*
+ * Kit das telas (components/kit, docs/UI-KIT.md): o mesmo padrão do app do computador (Frames, Cartões, Início).
+ * Gradiente azul → violeta; entrada em cascata (--i); brilho que passa no destaque "vivo"; ondas do estado vazio.
+ * "Reduzir movimento" para tudo pela regra geral no fim do arquivo.
+ */
+@utility k-grad {
+  background-image: linear-gradient(135deg, var(--color-down) 0%, var(--color-up) 100%);
+}
+@utility k-entra {
+  animation: sd-k-entra 0.45s var(--ease-out-soft) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+@keyframes sd-k-entra {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes sd-k-varre {
+  60%,
+  100% {
+    transform: translateX(100%);
+  }
+}
+@keyframes sd-k-onda {
+  from {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
+@keyframes sd-k-pulsa {
+  70% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+}
+.k-vivo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.16) 50%, transparent 65%);
+  transform: translateX(-100%);
+  animation: sd-k-varre 3.2s var(--ease-out-soft) infinite;
+  pointer-events: none;
+}
+.k-barra-viva::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: translateX(-100%);
+  animation: sd-k-varre 1.6s linear infinite;
+}
+.k-onda::before,
+.k-onda::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 1.5px solid color-mix(in srgb, var(--color-down) 40%, transparent);
+  animation: sd-k-onda 2.8s var(--ease-out-soft) infinite;
+}
+.k-onda::after {
+  animation-delay: 1.4s;
+  border-color: color-mix(in srgb, var(--color-up) 40%, transparent);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  overflow-x: clip;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-down);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

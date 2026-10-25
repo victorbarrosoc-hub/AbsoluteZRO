@@ -1,0 +1,80 @@
+/**
+ * Contratos de eventos versionados (PRD §7.3). Envelope comum + payload mínimo por tipo e versão.
+ * O payload leva IDs e resumos, nunca mídia, áudio, URL assinada ou dado pessoal desnecessário.
+ */
+import { z } from 'zod'
+import { IsoDate, ProductId, Uuid } from './common'
+
+export const EventEnvelopeSchema = z.object({
+  event_id: Uuid,
+  event_type: z.string().regex(/^[a-z]+(\.[a-z_]+)+$/),
+  schema_version: z.number().int().positive(),
+  project_id: Uuid.nullable(),
+  organization_id: Uuid,
+  producer: z.string().regex(/^[a-z0-9-]+(:[a-z0-9_.-]+)?$/),
+  occurred_at: IsoDate,
+  correlation_id: Uuid,
+  causation_id: Uuid.nullable(),
+  idempotency_key: z.string().min(8).max(200),
+  payload: z.record(z.string(), z.unknown()),
+})
+export type EventEnvelope = z.infer<typeof EventEnvelopeSchema>
+
+const ManifestRef = z.object({
+  manifest_row_id: Uuid,
+  manifest_id: z.string(),
+  assets: z.number().int().nonnegative(),
+  status: z.enum(['valid', 'valid_with_warnings', 'invalid']),
+})
+
+/** Registro dos tipos conhecidos. Um tipo novo ou um payload novo = nova entrada (ou nova versão). */
+export const EVENT_PAYLOADS = {
+  'job.created': { 1: z.object({ product: z.literal('carro-do-freela'), external_job_id: z.string().max(200), title: z.string().max(160) }) },
+  'script.ready': { 1: z.object({ document_id: Uuid, version: z.number().int().positive(), title: z.string().max(200) }) },
+  'ingest.started': { 1: z.object({ source: z.literal('sobedesce'), operation_id: z.string() }) },
+  'ingest.completed': { 1: ManifestRef },
+  'ingest.failed': { 1: ManifestRef.extend({ reason: z.string().max(300) }) },
+  'media.manifest.ready': { 1: ManifestRef },
+  'media.sync.completed': { 1: z.object({ source: z.literal('synquei'), sync_map_ref: z.string().max(300) }) },
+  'edit.selects.ready': { 1: z.object({ source: z.literal('ai-edit'), selects_ref: z.string().max(300) }) },
+  'edit.timeline.ready': {
+    1: z.object({
+      source: z.enum(['ai-edit', 'synquei', 'manual']),
+      timeline_ref: z.string().max(300),
+      format: z.enum(['otio', 'fcpxml', 'xmeml', 'edl', 'aaf']),
+    }),
+  },
+  'audio.mix.ready': { 1: z.object({ source: z.literal('nossom'), mix_ref: z.string().max(300) }) },
+  'finishing.qc.completed': { 1: z.object({ source: z.literal('finishing'), qc_ref: z.string().max(300), passed: z.boolean() }) },
+  'delivery.ready': { 1: z.object({ source: z.literal('finishing'), package_ref: z.string().max(300) }) },
+} as const satisfies Record<string, Record<number, z.ZodType>>
+
+export type EventType = keyof typeof EVENT_PAYLOADS
+
+export function isKnownEventType(t: string): t is EventType {
+  return Object.prototype.hasOwnProperty.call(EVENT_PAYLOADS, t)
+}
+
+export function validateEventPayload(type: string, version: number, payload: unknown): { ok: true } | { ok: false; message: string } {
+  if (!isKnownEventType(type)) return { ok: false, message: `tipo de evento desconhecido: ${type}` }
+  const schema = (EVENT_PAYLOADS[type] as Record<number, z.ZodType>)[version]
+  if (!schema) return { ok: false, message: `versão ${version} não existe para ${type}` }
+  const r = schema.safeParse(payload)
+  return r.success ? { ok: true } : { ok: false, message: r.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ') }
+}
+
+/** Qual produto produz cada tipo (para o diagrama e para checar ciclos). */
+export const EVENT_PRODUCER: Record<EventType, z.infer<typeof ProductId> | 'hub'> = {
+  'job.created': 'carro-do-freela',
+  'script.ready': 'tpeasy',
+  'ingest.started': 'sobedesce',
+  'ingest.completed': 'sobedesce',
+  'ingest.failed': 'sobedesce',
+  'media.manifest.ready': 'sobedesce',
+  'media.sync.completed': 'synquei',
+  'edit.selects.ready': 'ai-edit',
+  'edit.timeline.ready': 'ai-edit',
+  'audio.mix.ready': 'nossom',
+  'finishing.qc.completed': 'finishing',
+  'delivery.ready': 'finishing',
+}

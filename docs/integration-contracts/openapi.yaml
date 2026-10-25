@@ -1,0 +1,140 @@
+openapi: 3.1.0
+info:
+  title: Absolute ZRO HUB API
+  version: 0.1.0
+  description: |
+    API do HUB. Autenticação por cookie de sessão `zro_session` (httpOnly). Mutações exigem Origin do próprio HUB.
+    Toda operação passa pela cadeia do PRD §5.2: identidade → organização ativa → papel → projeto → entitlement →
+    feature → quota → recurso externo. A organização é sempre a da sessão; nenhum id de organização do cliente vale
+    como autorização.
+    Erros: `{ "error": "<código>", "message": "<texto>" }` com 401 unauthenticated, 403 forbidden_role |
+    entitlement_required | feature_not_included | product_unavailable | quota_not_configured | origin_rejected,
+    404 project_not_found | not_found, 409 no_active_organization | conflict, 422 invalid_input, 429 quota_exceeded | rate_limited.
+servers:
+  - url: http://localhost:3000
+components:
+  securitySchemes:
+    session: { type: apiKey, in: cookie, name: zro_session }
+    providerSignature: { type: apiKey, in: header, name: zro-signature, description: 't=<unix>,v1=<hex HMAC-SHA256 de "t.corpo">' }
+  schemas:
+    Error:
+      type: object
+      required: [error, message]
+      properties: { error: { type: string }, message: { type: string }, details: { type: object } }
+    ProjectCreate: { $ref: './schemas/zro-project-create.v1.schema.json' }
+    MediaManifest: { $ref: './schemas/zro-media-manifest.v1.schema.json' }
+    OrganizationPlan: { $ref: './schemas/zro-organization-plan.v1.schema.json' }
+    CarroJob: { $ref: './schemas/carro-do-freela.job.v1.schema.json' }
+    TpeasyBackup: { $ref: './schemas/tpeasy.backup.v1.schema.json' }
+  responses:
+    Error: { description: Erro de domínio, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+security: [{ session: [] }]
+paths:
+  /api/health:
+    get: { security: [], summary: Saúde do HUB e do banco, responses: { '200': { description: ok }, '503': { description: banco indisponível } } }
+  /api/v1/auth/signup:
+    post:
+      {
+        security: [],
+        summary: Criar conta (define o cookie de sessão),
+        responses: { '201': { description: criada }, default: { $ref: '#/components/responses/Error' } },
+      }
+  /api/v1/auth/login:
+    post: { security: [], summary: Entrar, responses: { '200': { description: sessão criada }, default: { $ref: '#/components/responses/Error' } } }
+  /api/v1/auth/logout:
+    post: { summary: Sair (revoga a sessão), responses: { '200': { description: ok } } }
+  /api/v1/me:
+    get: { summary: Pessoa, organização ativa e organizações, responses: { '200': { description: ok }, default: { $ref: '#/components/responses/Error' } } }
+  /api/v1/organizations:
+    get: { summary: Minhas organizações, responses: { '200': { description: ok } } }
+    post: { summary: Criar organização (a pessoa vira dona), responses: { '201': { description: criada }, default: { $ref: '#/components/responses/Error' } } }
+  /api/v1/organizations/active:
+    post:
+      {
+        summary: Trocar organização ativa (vínculo conferido no servidor),
+        responses: { '200': { description: ok }, default: { $ref: '#/components/responses/Error' } },
+      }
+  /api/v1/projects:
+    get: { summary: Projetos da organização ativa, responses: { '200': { description: ok } } }
+    post:
+      summary: Criar projeto
+      requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/ProjectCreate' } } } }
+      responses: { '201': { description: criado }, default: { $ref: '#/components/responses/Error' } }
+  /api/v1/projects/{id}:
+    get:
+      summary: Projeto com etapas, documentos, manifests, execuções e eventos
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: ok }, '404': { $ref: '#/components/responses/Error' } }
+  /api/v1/projects/{id}/sobedesce/manifests:
+    post:
+      summary: Importar descarga do SOBEDESCE (entitlement sobedesce:manifest_import, quota sobedesce.manifest_imports)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [descargas, destinations]
+              properties:
+                descargas: { type: string, description: conteúdo do .sobedesce/descargas.jsonl }
+                descarga_id: { type: string }
+                destinations:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, label, reports]
+                    properties:
+                      id: { type: string, pattern: '^[a-z0-9][a-z0-9-]{0,62}$' }
+                      label: { type: string }
+                      reports: { type: array, items: { type: object, properties: { name: { type: string }, text: { type: string } } } }
+      responses: { '201': { description: importado }, '200': { description: já importado (idempotente) }, '403': { $ref: '#/components/responses/Error' } }
+  /api/v1/projects/{id}/synquei/organization-plan:
+    post:
+      summary: Prévia de organização do Synquei (dry-run, nada é movido)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      requestBody: { content: { application/json: { schema: { type: object, properties: { manifest_row_id: { type: string, format: uuid } } } } } }
+      responses:
+        '200':
+          {
+            description: prévia,
+            content: { application/json: { schema: { type: object, properties: { plan: { $ref: '#/components/schemas/OrganizationPlan' } } } } },
+          }
+        '403': { $ref: '#/components/responses/Error' }
+  /api/v1/projects/{id}/tpeasy/script:
+    get:
+      summary: Baixar o roteiro no formato de backup do TPeasy
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses:
+        {
+          '200': { description: backup, content: { application/json: { schema: { $ref: '#/components/schemas/TpeasyBackup' } } } },
+          '403': { $ref: '#/components/responses/Error' },
+        }
+    post:
+      summary: Importar roteiro de um backup do TPeasy como nova versão
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '201': { description: nova versão }, '403': { $ref: '#/components/responses/Error' } }
+  /api/v1/carro-do-freela/jobs:
+    post:
+      summary: Criar (ou devolver) o projeto de um job — contrato carro-do-freela.job/1
+      requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/CarroJob' } } } }
+      responses: { '201': { description: criado }, '200': { description: já existia }, '403': { $ref: '#/components/responses/Error' } }
+  /api/v1/entitlements:
+    get: { summary: Situação de cada ferramenta para a organização ativa, responses: { '200': { description: ok } } }
+  /api/v1/runs:
+    get: { summary: Execuções da fila, responses: { '200': { description: ok } } }
+  /api/v1/runs/{id}/reprocess:
+    post:
+      summary: Repetir execução com falha, em revisão ou bloqueada (cria uma nova; repetir de novo devolve a mesma)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '201': { description: nova execução }, '200': { description: já existia }, '409': { $ref: '#/components/responses/Error' } }
+  /api/v1/billing/webhooks/{provider}:
+    post:
+      security: [{ providerSignature: [] }]
+      summary: Evento de cobrança assinado (provedor habilitado em ZRO_BILLING_PROVIDERS)
+      parameters: [{ name: provider, in: path, required: true, schema: { type: string } }]
+      responses:
+        {
+          '200': { description: processed | duplicate | ignored | failed },
+          '400': { description: assinatura inválida },
+          '404': { description: provedor não habilitado },
+        }

@@ -1,0 +1,233 @@
+<title>Procura-se sócio técnico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;900&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --ground:#F5F2ED; --paper:#FFFFFF; --paper2:#EFEBE4;
+  --rule:#E0DAD1; --rule2:#CBC3B8;
+  --ink:#1B1815; --ink2:#544E47; --ink3:#615A52;
+  --accent:#0C627C; --accent-soft:rgba(12,98,124,.10);
+  --ok:#0F6230; --ok-soft:rgba(15,98,48,.10);
+  --meio:#6E4E05; --meio-soft:rgba(110,78,5,.11);
+  --nao:#615A52; --nao-soft:rgba(97,90,82,.10);
+  --alerta:#B41E66; --alerta-soft:rgba(180,30,102,.08);
+  --ciano-esc:#8FC3D2; --segurando:#725007;
+  --ui:"Schibsted Grotesk",system-ui,-apple-system,Helvetica,Arial,sans-serif;
+  --mono:"Spline Sans Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#121110; --paper:#1A1917; --paper2:#221F1D;
+    --rule:#2B2724; --rule2:#3A3531;
+    --ink:#EFEDE7; --ink2:#AEA79E; --ink3:#9A9188;
+    --accent:#17D1E8; --accent-soft:rgba(23,209,232,.10);
+    --ok:#4BAE72; --ok-soft:rgba(75,174,114,.12);
+    --meio:#C9963F; --meio-soft:rgba(201,150,63,.12);
+    --nao:#A29990; --nao-soft:rgba(162,153,144,.10);
+    --alerta:#E24B8E; --alerta-soft:rgba(226,75,142,.10);
+  --ciano-esc:#0B7C8B; --segurando:#F2C14E;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#121110; --paper:#1A1917; --paper2:#221F1D;
+  --rule:#2B2724; --rule2:#3A3531;
+  --ink:#EFEDE7; --ink2:#AEA79E; --ink3:#9A9188;
+  --accent:#17D1E8; --accent-soft:rgba(23,209,232,.10);
+  --ok:#4BAE72; --ok-soft:rgba(75,174,114,.12);
+  --meio:#C9963F; --meio-soft:rgba(201,150,63,.12);
+  --nao:#A29990; --nao-soft:rgba(162,153,144,.10);
+  --alerta:#E24B8E; --alerta-soft:rgba(226,75,142,.10);
+  --ciano-esc:#0B7C8B; --segurando:#F2C14E;
+}
+
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
+body{margin:0; background:var(--ground); color:var(--ink);
+  font-family:var(--ui); font-size:15.5px; line-height:1.6; -webkit-font-smoothing:antialiased}
+.folha{max-width:min(78ch,100%); margin:0 auto; padding:clamp(30px,7vw,54px) clamp(18px,5vw,40px) 60px}
+::selection{background:var(--accent-soft); color:var(--ink)}
+
+/* cabeçalho: a marca e o pedido, nada mais */
+.cab{display:flex; align-items:center; gap:10px; margin-bottom:26px}
+.cab svg{width:26px; height:26px; fill:var(--accent); flex:none}
+.cab b{font-weight:900; letter-spacing:-.03em; font-size:16px}
+h1{font-size:clamp(29px,6.4vw,42px); line-height:1.06; letter-spacing:-.035em; font-weight:900;
+  margin:0 0 10px; text-wrap:balance}
+.linha1{font-size:clamp(16.5px,3.4vw,19px); line-height:1.4; color:var(--ink2); margin:0 0 8px;
+  text-wrap:balance; font-weight:500}
+.gancho{font-family:var(--mono); font-size:11.5px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--ink3); margin:0 0 16px}
+h2{font-size:15px; font-weight:700; letter-spacing:.02em; margin:30px 0 10px; color:var(--ink);
+  padding-bottom:7px; border-bottom:1px solid var(--rule2)}
+p{margin:0 0 11px; color:var(--ink2)}
+strong,b{color:var(--ink); font-weight:600}
+a{color:var(--accent)}
+ul{margin:0 0 12px; padding-left:20px; color:var(--ink2)}
+li{margin-bottom:5px}
+li::marker{color:var(--ink3)}
+.nota{font-size:13px; line-height:1.55; color:var(--ink3)}
+
+/* o link do protótipo, em destaque — é o ativo */
+.prova{background:var(--paper); border:1px solid var(--rule2); border-left:3px solid var(--accent);
+  border-radius:3px; padding:16px 18px; margin:18px 0}
+.prova p{margin:0 0 5px}
+.prova .url{font-family:var(--mono); font-size:14px; font-weight:500; word-break:break-all}
+.prova .url a{text-decoration:none; border-bottom:1px solid var(--accent-soft)}
+
+/* as fases do que falta */
+.fases{margin:14px 0; padding:0; list-style:none; counter-reset:ff}
+.fases li{counter-increment:ff; position:relative; padding:0 0 14px 40px; margin:0;
+  border-left:1px solid var(--rule2); margin-left:11px}
+.fases li:last-child{border-left-color:transparent; padding-bottom:0}
+.fases li::before{content:counter(ff); position:absolute; left:-11px; top:-1px; width:22px; height:22px;
+  border-radius:50%; background:var(--paper); border:1px solid var(--rule2); color:var(--ink3);
+  font-family:var(--mono); font-size:11px; font-weight:600; display:grid; place-items:center}
+.fases b{display:block; color:var(--ink); font-size:14.5px; margin-bottom:1px}
+.fases span{font-size:13.5px; color:var(--ink2); line-height:1.5}
+
+/* a troca: o que trago, ofereço e peço */
+.troca{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; margin:16px 0}
+.troca > div{background:var(--paper); border:1px solid var(--rule); border-radius:9px; padding:15px 17px}
+.troca .eu{border-top:3px solid var(--accent)}
+.troca .voce{border-top:3px solid var(--ok)}
+.troca h3{font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--ink3); font-weight:600; margin:0 0 9px}
+.troca ul{margin:0; padding-left:17px; font-size:13.5px}
+.troca li{margin-bottom:5px}
+
+/* o estágio sem maquiagem */
+.cru{background:var(--alerta-soft); border:1px solid var(--rule); border-left:3px solid var(--alerta);
+  border-radius:9px; padding:16px 18px; margin:16px 0}
+.cru .tit{font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--ink3); font-weight:600; margin:0 0 9px; display:block}
+.cru ul{margin:0; padding-left:18px; font-size:14px}
+.cru > :last-child{margin-bottom:0}
+
+.contato{margin-top:30px; padding-top:18px; border-top:1px solid var(--rule2);
+  display:flex; flex-wrap:wrap; gap:6px 24px; align-items:baseline}
+.contato span{font-family:var(--mono); font-size:12.5px; color:var(--ink3)}
+.contato b{color:var(--ink2); font-weight:500}
+
+@media print{
+  :root,:root[data-theme="dark"],:root:not([data-theme="light"]){
+    --ground:#FFFFFF; --paper:#FFFFFF; --paper2:#F1EDE6; --rule:#DBD5CC; --rule2:#BFB7AC;
+    --ink:#16130F; --ink2:#4A443C; --ink3:#5C554D; --accent:#0A5266; --accent-soft:rgba(10,82,102,.08);
+    --ok:#0C5228; --alerta:#96154F; --alerta-soft:rgba(150,21,79,.06);
+  }
+  /* ⚠️ APERTADO PARA CABER EM DUAS FOLHAS, medido no gerador de PDF: com
+     9.4pt e os espaços da tela isto saía em TRÊS, e a terceira ficava com
+     duas linhas — o pior dos dois mundos. Se mexer no texto, rode
+     `node docs/gerar-pdf.js socio` e confira a contagem de folhas. */
+  html{font-size:8.6pt} body{background:#fff; line-height:1.42}
+  .folha{max-width:100%; padding:0}
+  .cab{margin-bottom:14px}
+  h1{font-size:18.5pt; margin-bottom:6px} .linha1{font-size:10pt; margin-bottom:4px}
+  .gancho{margin-bottom:10px}
+  h2{margin:12px 0 5px; font-size:10pt; padding-bottom:4px}
+  p{margin-bottom:7px}
+  ul{margin-bottom:8px} li{margin-bottom:2.5px}
+  .prova{padding:10px 12px; margin:11px 0}
+  .fases{margin:9px 0} .fases li{padding-bottom:8px}
+  .troca{margin:11px 0; gap:9px} .troca > div{padding:11px 13px}
+  .cru{padding:11px 13px; margin:11px 0}
+  .contato{margin-top:18px; padding-top:12px}
+  .fases li,.troca > div,.cru,.prova{break-inside:avoid}
+  p,li{orphans:2; widows:2}
+}
+@page{size:A4; margin:14mm 14mm}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <g id="mk"><g transform="translate(16,0) skewX(-12)">
+    <rect x="14" y="24" width="7" height="52" rx="2" opacity=".34"/>
+    <rect x="29" y="24" width="13" height="52" rx="2.5" opacity=".64"/>
+    <rect x="50" y="24" width="26" height="52" rx="3.5"/>
+  </g></g>
+</defs></svg>
+
+<div class="folha">
+
+<div class="cab">
+  <svg viewBox="0 0 100 100" role="img" aria-label="Marca do Carro do Freela"><use href="#mk"/></svg>
+  <b>Carro do Freela</b>
+</div>
+
+<p class="gancho">Procuro sócio técnico · Natal/RN</p>
+<h1>O produto está inteiro desenhado. Falta quem construa.</h1>
+<p class="linha1">Uma plataforma onde o audiovisual de Natal sabe quem está livre na data, fecha com contrato e recebe com garantia. Hoje isso vive num grupo de WhatsApp.</p>
+
+<h2>O que já existe — e dá pra abrir agora, no seu celular</h2>
+
+<div class="prova">
+  <p class="url"><a href="https://carrodofreela.com.br">carrodofreela.com.br</a></p>
+  <p class="nota">Protótipo navegável de verdade: entra, marca agenda, monta equipe, fecha job, publica no feed. Não é vídeo nem Figma.</p>
+</div>
+
+<ul>
+  <li><b>Toda tela, todo estado e toda regra de negócio já decidida</b> — mais de 20 telas, com os casos de erro e as telas vazias resolvidos.</li>
+  <li><b>43 suítes de teste automatizado</b> rodando sobre o protótipo.</li>
+  <li><b>Um PRD de 14 seções</b> com o modelo de receita, o recorte do MVP, o roadmap faseado, os riscos e as regras que não podem quebrar.</li>
+  <li><b>109 cadastros reais</b> de profissionais do audiovisual do RN, coletados com autorização — 73 em Natal.</li>
+</ul>
+
+<p class="nota"><b>Honestidade que economiza o seu tempo:</b> eu não sou desenvolvedor. O desenho, as decisões de produto e as regras são meus; o código do protótipo foi construído com IA, e ele é protótipo — não guarda nada, tudo vive na memória do navegador. O que ele vale é o que ele já resolveu: <b>você não vai passar seis meses adivinhando o que eu quis dizer.</b></p>
+
+<h2>O que falta construir — o backend, do zero</h2>
+
+<ol class="fases">
+  <li><b>Cadastro, agenda e busca</b><span>Login social e por telefone, perfil, agenda do freela, disponibilidade pública, busca por praça e data, montar equipe. Sem pagamento — é o que prova a tese e não depende de regulação nenhuma.</span></li>
+  <li><b>WhatsApp Business API</b><span>A chamada e o lembrete semanal. É o que mantém a agenda viva, e o único custo variável relevante do negócio.</span></li>
+  <li><b>Custódia dos jobs</b><span>Split de pagamento, subconta por usuário, retenção e liberação programada. Depende de CNPJ e parceiro aprovado. É onde a receita começa.</span></li>
+  <li><b>Brechó, carteira e assinatura</b><span>Reaproveita toda a canalização da fase 3.</span></li>
+</ol>
+
+<p><b>A stack está em aberto e a decisão é sua.</b> O estudo que eu fiz aponta Next.js na Vercel com Supabase (Postgres, autenticação, storage), e Asaas ou Iugu como parceiro de pagamento por causa do split com subconta. Se você preferir outro caminho, o argumento é seu — quem constrói escolhe a ferramenta.</p>
+
+<h2>A troca</h2>
+
+<div class="troca">
+  <div class="eu">
+    <h3>O que eu trago</h3>
+    <ul>
+      <li>O mercado: sou freela de audiovisual e vivo dentro dele</li>
+      <li>Os 109 cadastros e o acesso ao grupo onde a praça inteira está</li>
+      <li>O produto inteiro especificado e testado</li>
+      <li>Venda, comunidade e a operação da praça</li>
+    </ul>
+  </div>
+  <div class="voce">
+    <h3>O que eu peço</h3>
+    <ul>
+      <li>A construção do backend e a arquitetura</li>
+      <li>Dedicação de sócio, não de freelancer</li>
+      <li>Alguém que queira decidir junto, não receber tarefa</li>
+    </ul>
+  </div>
+</div>
+
+<p><b>Participação societária de 25% a 35%</b>, com <b>vesting de 4 anos e cliff de 1 ano</b> — a fatia se consolida com o tempo de casa, o que protege nós dois. O número exato é conversa, e ela é aberta.</p>
+
+<div class="cru">
+  <span class="tit">O estágio, sem maquiagem</span>
+  <ul>
+    <li><b>Zero usuário e zero receita.</b> Os 109 são uma lista de contatos, não uma base ativa.</li>
+    <li><b>Não existe CNPJ ainda</b> — e ele só nasce depois de conversar com os parceiros de pagamento, porque a exigência deles define como a empresa tem que ser aberta.</li>
+    <li><b>Não existe dinheiro em caixa.</b> Entrar aqui hoje é trabalhar por participação, não por salário.</li>
+    <li>A infraestrutura da primeira praça custa entre <b>R$ 550 e R$ 1.500 por mês</b>, e o plano grátis de Vercel e Supabase aguenta o começo.</li>
+    <li><b>O próximo passo não é código:</b> é rodar a plataforma na mão por seis semanas com os 109 e medir quantos mantêm a agenda em dia. Se isso não funcionar, nada mais funciona — e é melhor descobrir antes de você escrever uma linha.</li>
+  </ul>
+</div>
+
+<h2>Por que isso pode virar negócio</h2>
+<p>A receita nasce de transação — 6% sobre o job fechado com garantia — e não de mensalidade. <b>Uma praça madura não paga uma empresa: paga uma pessoa e a infraestrutura.</b> O negócio não está na primeira cidade, está em repetir a primeira cidade — audiovisual se contrata por proximidade, então densidade local vale mais que alcance nacional. Os números completos estão no PRD, e são cenário, não previsão.</p>
+
+<div class="contato">
+  <span><b>Victor Barroso</b> · produto e mercado</span>
+  <span><b>carrodofreela@gmail.com</b></span>
+  <span>Natal/RN</span>
+</div>
+
+</div>

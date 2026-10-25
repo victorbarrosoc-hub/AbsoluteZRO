@@ -1,0 +1,14 @@
+{
+  "_leia": "A impressão digital da lista FICTÍCIA aprovada. Se o sha256 abaixo não bater com o de src/crew.json, alguma coisa trocou o arquivo — e a publicação para. Ver 'O selo da lista fictícia' no CLAUDE.md.",
+  "_porque": "A lista REAL de 109 pessoas vivia só em src/crew.local.json, fora do git, e o container foi reciclado levando o diretório inteiro. Victor (13/set): 'não quero a lista original com os nomes da planilha, era só pra eu visualizar a plataforma com nomes reais. Pode deixar os fictícios e quando for lançar não vai ter nenhum nome inscrito, pq as pessoas vão começar a se cadastrar do zero.' O PRD já dizia o mesmo: os 109 são lista de CONVOCAÇÃO, não contas pré-criadas.",
+  "_o_que_ele_pega": "O cenário que derrubou a casa em 23/ago: um reset devolvendo outra lista por cima da fictícia. O selo pega isso sem precisar do dado real dentro do container — que era o furo do arranjo antigo, porque o único dado sem cópia era justamente o que a trava exigia.",
+  "_o_que_ele_nao_pega": "Nome real escrito à mão em OUTRO arquivo (guia, fixture, documentação). Disso cuida a varredura de src/, que roda sempre, e a varredura completa contra a lista real, que só existe se alguém um dia repuser o cofre.",
+  "_como_atualizar": "Trocar o seed de propósito (mais cadastros fictícios, outra praça) muda o sha256 e a trava reprova — é o comportamento certo. Rode `node src/selar-crew.js` para recalcular, CONFERINDO ANTES que o crew.json novo é mesmo fictício. Selar sem olhar é o mesmo que não ter selo.",
+
+  "sha256": "c68186fdbf4f42341e289ce5e773faf721c2329afcca613eeba3696616de5ffb",
+  "bytes": 61164,
+  "registros": 109,
+  "primeiro": "Paula Santos",
+  "ultimo": "Helena Falcão",
+  "selado_em": "2026-09-13"
+}

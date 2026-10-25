@@ -1,0 +1,55 @@
+# Validação atual e limites
+
+Snapshot conferido em **24/10/2026 UTC**, código de referência `500bb6478258632195a13b6ec36f7c87b5d85f49`. Mudanças posteriores deste handoff são documentais; confira o CI do HEAD para alterações futuras.
+
+## Evidências verificadas
+
+| Área               | Evidência                                                                                                                                                            | Limite                                                                       |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Pipeline final     | [Validate NOSSOM 40046043907](https://github.com/victorbarrosoc-hub/nossom/actions/runs/40046043907), `success`, no SHA acima                                        | Não valida credenciais/infra de produção                                     |
+| Checks do pipeline | Formatação, TypeScript, unitários, build, PostgreSQL isolado e E2E                                                                                                   | Serviços de conta/IA/GPU são simulados nos testes correspondentes            |
+| Testes Node        | 43 casos na revisão local                                                                                                                                            | Contratos/algoritmos; não audição perceptual                                 |
+| Browser            | A suíte contém 60 cenários; fixture privado opcional é pulado quando ausente                                                                                         | Chromium Linux; não homologação física Safari/iPhone                         |
+| Produção web       | SHA público conferido e homepage carregada em Chromium através do proxy do ambiente                                                                                  | Não é monitoramento contínuo de disponibilidade                              |
+| Motion real        | Em produção, pixels do canvas mudaram entre frames; cromo continuou visível; mobile sem overflow; reduzir movimento parou o canvas                                   | Não certifica FPS em todo hardware                                           |
+| Compartilhamento   | `/opengraph-image`, HTTP 200, PNG 1200 × 630                                                                                                                         | Prévia de rede social pode estar em cache                                    |
+| Ícone              | `/pwa/icon-512.png?v=4`, HTTP 200, PNG 512 × 512; demais tamanhos em testes                                                                                          | Ícone do binário instalado não troca apenas com deploy web                   |
+| Instaladores       | [Build 40043745664](https://github.com/victorbarrosoc-hub/nossom/actions/runs/40043745664), `success`; release pública `desktop-v0.2.2`                              | Prévias, não distribuição Apple/Microsoft assinada e homologada              |
+| Worker musical     | [Build 40037041426](https://github.com/victorbarrosoc-hub/nossom/actions/runs/40037041426), `success`, inclui checkpoint real e inferência sintética HTDemucs em CPU | Não comprova a imagem em uso no endpoint nem qualidade de música real na GPU |
+
+Os três assets 0.2.2 foram verificados por HEAD HTTPS sem login:
+
+- `NOSSOM-0.2.2-mac-arm64.dmg`: 120576823 bytes.
+- `NOSSOM-0.2.2-mac-x64.dmg`: 126672992 bytes.
+- `NOSSOM-0.2.2-win-x64.exe`: 112674320 bytes.
+
+A revisão ampla identificou expectativas antigas de texto/cor e o teste de abertura do login anterior ao fim da animação. Elas foram alinhadas à interface aprovada, preservando as verificações de autenticação, separação de contas, cota, conversa, contraste e pausa da animação. O CI final acima passou após esses ajustes.
+
+## Reproduzir
+
+```sh
+npm ci
+npm run format:check
+npm run typecheck
+npm test
+npm run build
+npx playwright install chromium
+npm run test:e2e
+# Requer Docker/PostgreSQL isolado:
+npm run test:quota
+```
+
+Não execute duas suítes simultaneamente nas portas 3000/55440. Para investigação, escolha os arquivos afetados; após passarem, só amplie/reexecute quando houver mudança ou preocupação ainda não resolvida. Não reduza uma garantia de autorização, cota, áudio ou qualidade de sinal para fazer um teste passar.
+
+`tests/fixtures/README.md` descreve as referências públicas/sintéticas. O teste com gravação privada depende das variáveis indicadas no próprio teste e deve continuar explicitamente pulado sem os arquivos. Não publique gravações privadas para habilitá-lo.
+
+## O que não foi comprovado por esta entrega
+
+- Notarização Apple, assinatura Windows e atualização real entre dois instaladores assinados.
+- Qualidade perceptual de separação de uma música real na GPU de produção.
+- Configuração atual, fatura, cold start ou desligamento efetivo do endpoint RunPod em cada momento.
+- Sincronização de projetos/arquivos entre dispositivos ou operação offline completa — não são funcionalidades implementadas.
+- Saldo de créditos Anthropic pela integração atual.
+- Equivalência de qualidade a motores proprietários ou certificação de entrega audiovisual.
+
+[Registros históricos de medição e validação](validation-history.md) permanecem para auditoria, mas contêm versões, cotas e hipóteses antigas. Não os use como checklist operacional atual. Consulte [handoff/OPERATIONS.md](handoff/OPERATIONS.md).

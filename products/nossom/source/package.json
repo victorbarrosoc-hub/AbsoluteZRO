@@ -1,0 +1,44 @@
+{
+  "name": "nossom",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --webpack --hostname 0.0.0.0",
+    "predev": "node scripts/prepare-audio.mjs",
+    "prebuild": "node scripts/prepare-audio.mjs",
+    "build": "next build --webpack",
+    "start": "next start --hostname 0.0.0.0",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "test:e2e": "playwright test",
+    "format": "prettier --write app components lib scripts tests *.ts *.json *.md docs",
+    "format:check": "prettier --check app components lib scripts tests *.ts *.json *.md docs",
+    "test:quota": "node scripts/test-quota.mjs"
+  },
+  "dependencies": {
+    "@elevenlabs/react": "^0.14.0",
+    "@ffmpeg/core": "^0.12.10",
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@lofcz/deepfilternet-web": "^0.1.0",
+    "@shiguredo/rnnoise-wasm": "^2025.1.5",
+    "idb": "^8.0.0",
+    "lucide-react": "^0.468.0",
+    "motion": "^12.0.0",
+    "next": "^16.2.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.58.0",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "prettier": "^3.9.10",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  },
+  "engines": {
+    "node": ">=22.9.0"
+  }
+}

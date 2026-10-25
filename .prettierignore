@@ -1,0 +1,9 @@
+products/*/source/
+node_modules/
+.next/
+package-lock.json
+PRD.md
+tests/fixtures/
+infra/migrations/
+products/*/SOURCE_MANIFEST.md
+docs/integration-contracts/schemas/

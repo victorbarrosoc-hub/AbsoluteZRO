@@ -1,0 +1,3656 @@
+[
+ {
+  "id": 1,
+  "nome": "Paula Santos",
+  "func": [
+   "Op. de câmera",
+   "Op. de drone",
+   "Editor",
+   "Editor realtime",
+   "Direção de fotografia",
+   "Fotógrafo",
+   "Direção",
+   "Assistente",
+   "Líder de equipe",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Op. de drone"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "BMPCC6KG2/Sony FX30",
+  "lentes": "18-35mm/17-70mm/70-200mm/50mm",
+  "gim": true,
+  "dro": true,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@paulasantos",
+  "obs": "",
+  "tags": [
+   "BMPCC6KG2",
+   "Sony FX30",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 2,
+  "nome": "Alan Moura",
+  "func": [
+   "Op. de câmera",
+   "Op. de drone",
+   "Direção",
+   "Op. de gimbal",
+   "Líder de equipe"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Op. de drone",
+   "Direção"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony FX30",
+  "lentes": "11-20 e 17-70",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@alanmoura",
+  "obs": "",
+  "tags": [
+   "Sony FX30",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 3,
+  "nome": "Alan Oliveira",
+  "func": [
+   "Op. de câmera",
+   "Fotógrafo",
+   "Op. de drone",
+   "Produtor",
+   "Líder de equipe",
+   "Storymaker",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Fotógrafo",
+   "Op. de drone"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony A7IV / BMPCC4K / iPhone 16 PM",
+  "lentes": "Sony: 17-28 / 28-75 MFT: 7,5mm/12-35 EF:18-35/100mm",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@alanoliveira",
+  "obs": "",
+  "tags": [
+   "Sony A7IV",
+   "BMPCC4K",
+   "iPhone 16 PM",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 4,
+  "nome": "Jonas Ferreira",
+  "func": [
+   "Op. de câmera",
+   "Op. de drone",
+   "Direção",
+   "Op. de gimbal",
+   "Produtor",
+   "Líder de equipe"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Op. de drone",
+   "Direção"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony FX30",
+  "lentes": "23mm",
+  "gim": true,
+  "dro": true,
+  "transporte": "MOTO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@jonasferreira",
+  "obs": "",
+  "tags": [
+   "Sony FX30",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 5,
+  "nome": "Vinícius Nunes",
+  "func": [
+   "Op. de câmera",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony A7 IV",
+  "lentes": "Tamron 35-150 | 17-28",
+  "gim": true,
+  "dro": false,
+  "transporte": "CARRO",
+  "nicho": [],
+  "port": "@viniciusnunes",
+  "obs": "",
+  "tags": [
+   "Sony A7 IV",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 6,
+  "nome": "Artur Vasconcelos",
+  "func": [
+   "Op. de câmera",
+   "Op. de drone",
+   "Op. de FPV",
+   "Op. de live",
+   "Editor",
+   "Editor realtime",
+   "Assistente",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Op. de drone",
+   "Op. de FPV"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony FX30",
+  "lentes": "7.5 | 17-70",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@arturvasconcelos",
+  "obs": "",
+  "tags": [
+   "Sony FX30",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 7,
+  "nome": "Vinícius Guedes",
+  "func": [
+   "Editor",
+   "Op. de drone",
+   "Editor realtime",
+   "Op. de câmera",
+   "Op. de gimbal",
+   "Motion / VFX"
+  ],
+  "principal": [
+   "Editor",
+   "Op. de drone"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony ZVE 10 II",
+  "lentes": "70:180mm | 20mm",
+  "gim": false,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@viniciusguedes",
+  "obs": "",
+  "tags": [
+   "Sony ZVE 10 II",
+   "Drone"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 8,
+  "nome": "Gustavo Correia",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Op. de drone",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor",
+   "Op. de drone"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony A6700",
+  "lentes": "17-70 | 30mm | 12mm",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [],
+  "port": "@gustavocorreia",
+  "obs": "",
+  "tags": [
+   "Sony A6700",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 9,
+  "nome": "Júlia Vasconcelos",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Fotógrafo",
+   "Op. de gimbal",
+   "Editor realtime"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor",
+   "Fotógrafo"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony A7 IV",
+  "lentes": "16MM | 85MM",
+  "gim": false,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "Sony A7 IV"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 10,
+  "nome": "Emanuel Machado",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Colorista"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "BMPCC4K",
+  "lentes": "Sigma 18-35mm",
+  "gim": false,
+  "dro": false,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@emanuelmachado",
+  "obs": "",
+  "tags": [
+   "BMPCC4K"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 11,
+  "nome": "Beatriz Marinho",
+  "func": [
+   "Op. de câmera",
+   "Motion / VFX",
+   "Assistente",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony FX30",
+  "lentes": "Tamron 17-70 | Viltrox 23mm | Meike 85mm 1.8",
+  "gim": true,
+  "dro": false,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "Sony FX30",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 12,
+  "nome": "Júlia Ferreira",
+  "func": [
+   "Editor",
+   "Fotógrafo",
+   "Op. de câmera",
+   "Op. de drone"
+  ],
+  "principal": [
+   "Editor",
+   "Fotógrafo",
+   "Op. de câmera"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony A7 IV",
+  "lentes": "Alugo",
+  "gim": false,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [],
+  "port": "@juliaferreira",
+  "obs": "",
+  "tags": [
+   "Sony A7 IV"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 13,
+  "nome": "Daniel Nunes",
+  "func": [
+   "Editor",
+   "Colorista"
+  ],
+  "principal": [
+   "Editor",
+   "Colorista"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony FX30",
+  "lentes": "SIGMA 17-40 1.8",
+  "gim": false,
+  "dro": false,
+  "transporte": "CARRO",
+  "nicho": [],
+  "port": "@danielnunes",
+  "obs": "",
+  "tags": [
+   "Sony FX30"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 14,
+  "nome": "Cauã Costa",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Fotógrafo",
+   "Op. de gimbal",
+   "Assistente"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor",
+   "Fotógrafo"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony A7IV",
+  "lentes": "Alugo",
+  "gim": false,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@cauacosta",
+  "obs": "",
+  "tags": [
+   "Sony A7IV"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 15,
+  "nome": "Heitor Nogueira",
+  "func": [
+   "Editor",
+   "Motion / VFX",
+   "Designer",
+   "Op. de câmera",
+   "Op. de gimbal",
+   "Op. de drone",
+   "Direção",
+   "Editor realtime",
+   "Op. de live"
+  ],
+  "principal": [
+   "Editor",
+   "Motion / VFX",
+   "Designer"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony A7C",
+  "lentes": "Alugo",
+  "gim": false,
+  "dro": false,
+  "transporte": "MOTO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@heitornogueira",
+  "obs": "",
+  "tags": [
+   "Sony A7C"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 16,
+  "nome": "Matheus Gomes",
+  "func": [
+   "Op. de câmera",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony ZV E10",
+  "lentes": "Tamron 17-70",
+  "gim": true,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "Sony ZV E10",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 17,
+  "nome": "Sérgio Rebouças",
+  "func": [
+   "Direção",
+   "Fotógrafo",
+   "Op. de drone",
+   "Editor",
+   "Gaffer",
+   "Op. de câmera",
+   "Op. de gimbal",
+   "Direção de fotografia",
+   "Assistente"
+  ],
+  "principal": [
+   "Direção",
+   "Fotógrafo",
+   "Op. de drone"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony ZV E10 / A6400",
+  "lentes": "10-18 | 16 | 30 | 50 | 85 | 18-135",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@sergioreboucas",
+  "obs": "",
+  "tags": [
+   "Sony ZV E10",
+   "A6400",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 18,
+  "nome": "Alan Freire",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Fotógrafo",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor",
+   "Fotógrafo"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony A7 III",
+  "lentes": "30mm | 28-70",
+  "gim": true,
+  "dro": false,
+  "transporte": "CARRO",
+  "nicho": [],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "Sony A7 III",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 19,
+  "nome": "Janaína Santos",
+  "func": [
+   "Op. de gimbal",
+   "Op. de drone"
+  ],
+  "principal": [
+   "Perfil incompleto"
+  ],
+  "cidade": "Não informado",
+  "extras": 0,
+  "cam": "Sony A6700",
+  "lentes": "Sony: 18-105 F4",
+  "gim": true,
+  "dro": true,
+  "transporte": "—",
+  "nicho": [],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "Sony A6700",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 20,
+  "nome": "Cauã Freire",
+  "func": [
+   "Op. de câmera",
+   "Op. de drone",
+   "Direção",
+   "Op. de gimbal",
+   "Op. de FPV",
+   "Editor",
+   "Editor realtime",
+   "Colorista",
+   "Direção de fotografia",
+   "Fotógrafo"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Op. de drone",
+   "Direção"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony A7IV / Sony ZVE1 / Mini 4 pro / Insta360 x5",
+  "lentes": "11-20mm / 16mm / 24mm / 50mm / 85mm / 35-150mm 17-40mm",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@cauafreire",
+  "obs": "",
+  "tags": [
+   "Sony A7IV",
+   "Sony ZVE1",
+   "Mini 4 pro",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 21,
+  "nome": "Diego Cavalcanti",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Direção",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor",
+   "Direção"
+  ],
+  "cidade": "Não informado",
+  "extras": 0,
+  "cam": "Sony FX30 / A6400",
+  "lentes": "7,5mm / 14mm / 33mm / 50mm / 85mm",
+  "gim": true,
+  "dro": false,
+  "transporte": "—",
+  "nicho": [],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "Sony FX30",
+   "A6400",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 22,
+  "nome": "André Machado",
+  "func": [
+   "Op. de câmera",
+   "Op. de drone",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Op. de drone"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony FX30",
+  "lentes": "17-70mm | 54mm",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@andremachado",
+  "obs": "",
+  "tags": [
+   "Sony FX30",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 23,
+  "nome": "Victor Barroso Coutinho",
+  "func": [
+   "Op. de câmera",
+   "Colorista",
+   "DIT",
+   "Editor",
+   "Assistente",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Colorista",
+   "DIT"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "BMPCC4K / Sony A7IV",
+  "lentes": "Sony: 17-28 / 28-75 BM: 7,5mm/12-35/18-35/100mm",
+  "gim": true,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@victorbarrosoc",
+  "obs": "",
+  "tags": [
+   "BMPCC4K",
+   "Sony A7IV",
+   "Gimbal"
+  ],
+  "me": true,
+  "incompleto": false
+ },
+ {
+  "id": 24,
+  "nome": "Bruno Marinho",
+  "func": [
+   "Op. de câmera",
+   "Editor realtime",
+   "Editor",
+   "Storymaker",
+   "Líder de equipe",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor realtime"
+  ],
+  "cidade": "Não informado",
+  "extras": 0,
+  "cam": "Sony ZVE10 ou alugo",
+  "lentes": "Tamron 17-70, Viltrox 23 (alugo caso necessario)",
+  "gim": true,
+  "dro": false,
+  "transporte": "—",
+  "nicho": [],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "Sony ZVE10 ou alugo",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 25,
+  "nome": "Tomás Ferreira",
+  "func": [
+   "Fotógrafo",
+   "Assistente"
+  ],
+  "principal": [
+   "Fotógrafo",
+   "Assistente"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Canon 6D",
+  "lentes": "Canon 70-200 2.8, 50mm Stm",
+  "gim": false,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@tomasferreira",
+  "obs": "",
+  "tags": [
+   "Canon 6D"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 26,
+  "nome": "Natália Saraiva",
+  "func": [
+   "Op. de câmera",
+   "Op. de drone",
+   "Op. de FPV"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Op. de drone",
+   "Op. de FPV"
+  ],
+  "cidade": "João Câmara/RN",
+  "extras": 0,
+  "cam": "Sony 6700",
+  "lentes": "17-70mm",
+  "gim": false,
+  "dro": true,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "Sony 6700",
+   "Drone"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 27,
+  "nome": "Natália Gomes",
+  "func": [
+   "Op. de câmera",
+   "Produtor",
+   "Direção",
+   "Editor",
+   "Storymaker"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Produtor"
+  ],
+  "cidade": "Patos/PB",
+  "extras": 0,
+  "cam": "Sony ZVE10",
+  "lentes": "Viltrox 13mm & Viltrox 23mm",
+  "gim": false,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@nataliagomes",
+  "obs": "",
+  "tags": [
+   "Sony ZVE10"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 28,
+  "nome": "Clara Rocha",
+  "func": [
+   "Op. de câmera",
+   "Fotógrafo",
+   "Op. de drone",
+   "Op. de FPV",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Fotógrafo",
+   "Op. de drone"
+  ],
+  "cidade": "Goianinha/RN",
+  "extras": 0,
+  "cam": "Sony ZVE10",
+  "lentes": "Tamron 17-70 - Viltrox 23mm",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@clararocha",
+  "obs": "",
+  "tags": [
+   "Sony ZVE10",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 29,
+  "nome": "Gustavo Dantas",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor"
+  ],
+  "cidade": "João Pessoa/PB",
+  "extras": 0,
+  "cam": "Sony A7SIII",
+  "lentes": "24-70mm / 10mm / 70-180 / 16mm / 35mm",
+  "gim": true,
+  "dro": false,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@gustavodantas",
+  "obs": "",
+  "tags": [
+   "Sony A7SIII",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 30,
+  "nome": "Tadeu Aquino",
+  "func": [
+   "Fotógrafo",
+   "Editor realtime",
+   "Assistente",
+   "Op. de câmera"
+  ],
+  "principal": [
+   "Fotógrafo",
+   "Editor realtime",
+   "Assistente"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony A6700",
+  "lentes": "Sony 18-105mm | 50mm / Sigma 16mm",
+  "gim": false,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@tadeuaquino",
+  "obs": "",
+  "tags": [
+   "Sony A6700"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 31,
+  "nome": "Elias Alves",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Fotógrafo",
+   "Storymaker",
+   "Op. de gimbal",
+   "Op. de drone"
+  ],
+  "principal": [
+   "Op. de câmera"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony ZVE10 e Canon SL3",
+  "lentes": "50mm/30mm/24mm/16mm/70-200mm",
+  "gim": true,
+  "dro": true,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@eliasalves",
+  "obs": "",
+  "tags": [
+   "Sony ZVE10 e Canon SL3",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 32,
+  "nome": "Larissa Galvão",
+  "func": [
+   "Direção",
+   "Direção de fotografia",
+   "Fotógrafo",
+   "Op. de gimbal",
+   "Op. de drone"
+  ],
+  "principal": [
+   "Direção",
+   "Direção de fotografia",
+   "Fotógrafo"
+  ],
+  "cidade": "Não informado",
+  "extras": 0,
+  "cam": "Sony Fx30/A7IV/BMPCC4k",
+  "lentes": "Sony 70-200/Tamron 17-70/ Tamron 35-50/Sigma 35mm/Sigma 16mm/ Blazar Anamorfica 33/50/85",
+  "gim": true,
+  "dro": true,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "Sony Fx30",
+   "A7IV",
+   "BMPCC4k",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 33,
+  "nome": "Rafael Machado",
+  "func": [
+   "Op. de câmera",
+   "Op. de drone",
+   "Op. de FPV",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Op. de drone",
+   "Op. de FPV"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony FX30 / GoPro 10 Naked FPV",
+  "lentes": "Sony 35mm 1.8 | Sony 85mm 1.8 | Sigma 16mm 1.4",
+  "gim": true,
+  "dro": true,
+  "transporte": "MOTO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@rafaelmachado",
+  "obs": "",
+  "tags": [
+   "Sony FX30",
+   "GoPro 10 Naked FPV",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 34,
+  "nome": "Sara Torres",
+  "func": [
+   "Fotógrafo",
+   "Editor"
+  ],
+  "principal": [
+   "Fotógrafo",
+   "Editor"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Canon T6",
+  "lentes": "Canon 50mm 1.8 / Canon 18:35",
+  "gim": false,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@saratorres",
+  "obs": "",
+  "tags": [
+   "Canon T6"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 35,
+  "nome": "Letícia Pinheiro",
+  "func": [
+   "Fotógrafo",
+   "Direção"
+  ],
+  "principal": [
+   "Fotógrafo"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Canon R6 II, 5D II",
+  "lentes": "Canon 16-35mm, 50mm, 35mm, 85mm",
+  "gim": false,
+  "dro": false,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@leticiapinheiro",
+  "obs": "",
+  "tags": [
+   "Canon R6 II",
+   "5D II"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 36,
+  "nome": "Rafael Alves",
+  "func": [
+   "Storymaker",
+   "Editor realtime",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Storymaker",
+   "Editor realtime"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "iPhone 16pro",
+  "lentes": "—",
+  "gim": true,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@rafaelalves",
+  "obs": "",
+  "tags": [
+   "iPhone 16pro",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 37,
+  "nome": "Artur Pinheiro",
+  "func": [
+   "Op. de câmera",
+   "Op. de gimbal",
+   "Op. de drone",
+   "Direção",
+   "Editor",
+   "Colorista",
+   "Assistente"
+  ],
+  "principal": [
+   "Op. de câmera"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 1,
+  "cam": "Sony a7IV, FX30, ZVE-10",
+  "lentes": "Tamron 17-70 2.8/70-180 2.8 | Sigma 16mm, 30mm | Fisheye 7.5mm 2.8",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@arturpinheiro",
+  "obs": "",
+  "tags": [
+   "Sony a7IV",
+   "FX30",
+   "ZVE-10",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 38,
+  "nome": "Hugo Amorim",
+  "func": [
+   "Op. de câmera",
+   "Op. de FPV",
+   "Direção",
+   "Op. de gimbal",
+   "Op. de drone",
+   "Editor",
+   "Editor realtime",
+   "Motion / VFX",
+   "Produtor",
+   "Líder de equipe"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Op. de FPV",
+   "Direção"
+  ],
+  "cidade": "Caraúbas/RN",
+  "extras": 0,
+  "cam": "02 Sony FX30 / 02 A6700",
+  "lentes": "17-40 1.8 / 17-70 2.8 / 70-180 2.8 / 70-180 2.8 / 11 1.8 / 23 1.4",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@hugoamorim",
+  "obs": "",
+  "tags": [
+   "02 Sony FX30",
+   "02 A6700",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 39,
+  "nome": "Renan Ferreira",
+  "func": [
+   "Op. de câmera",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony a6700 / Sony a6600",
+  "lentes": "18-50mm F2.8 / 23mm f1.4 / 85mm f1.8",
+  "gim": true,
+  "dro": false,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@renanferreira",
+  "obs": "",
+  "tags": [
+   "Sony a6700",
+   "Sony a6600",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 40,
+  "nome": "Laura Braga",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Fotógrafo",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor",
+   "Fotógrafo"
+  ],
+  "cidade": "Não informado",
+  "extras": 0,
+  "cam": "Sony A7III",
+  "lentes": "Tamron 28-75mm f2.8",
+  "gim": true,
+  "dro": false,
+  "transporte": "—",
+  "nicho": [],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "Sony A7III",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 41,
+  "nome": "Sérgio Vasconcelos",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Storymaker",
+   "Assistente"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "ZVE 10",
+  "lentes": "Viltrox 23mm",
+  "gim": false,
+  "dro": false,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@sergiovasconcelos",
+  "obs": "",
+  "tags": [
+   "ZVE 10"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 42,
+  "nome": "Hugo Leite",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Fotógrafo",
+   "Op. de gimbal",
+   "Motion / VFX"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor",
+   "Fotógrafo"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony ZVE10",
+  "lentes": "Viltrox 23mm , 50 mm",
+  "gim": true,
+  "dro": false,
+  "transporte": "MOTO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "Sony ZVE10",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 43,
+  "nome": "Murilo Peixoto",
+  "func": [
+   "Op. de live",
+   "Direção",
+   "Op. de câmera",
+   "Op. de gimbal",
+   "Gaffer",
+   "Produtor"
+  ],
+  "principal": [
+   "Op. de live",
+   "Direção"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 1,
+  "cam": "Sony FX30",
+  "lentes": "Tamron 17-70 2.8/70-180 2.8",
+  "gim": true,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [
+   "CORPORATIVO",
+   "PUBLICITÁRIO",
+   "EP/DVD/CLIPE",
+   "INSTITUCIONAL"
+  ],
+  "port": "@murilopeixoto",
+  "obs": "",
+  "tags": [
+   "Sony FX30",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 44,
+  "nome": "Leandro Correia",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Fotógrafo",
+   "Op. de drone",
+   "Direção",
+   "Storymaker",
+   "Assistente",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor",
+   "Fotógrafo"
+  ],
+  "cidade": "Caicó/RN",
+  "extras": 0,
+  "cam": "Sony ZVE10",
+  "lentes": "Tamrom 17-70 , Viltrox 23mm 1.4",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "PUBLICITÁRIO",
+   "IMOBILIÁRIO",
+   "FASHION/MODA",
+   "CORPORATIVO",
+   "INSTITUCIONAL"
+  ],
+  "port": "@leandrocorreia",
+  "obs": "",
+  "tags": [
+   "Sony ZVE10",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 45,
+  "nome": "Jonas Leite",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Assistente",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony ZVE10",
+  "lentes": "Viltrox 24mm",
+  "gim": true,
+  "dro": false,
+  "transporte": "MOTO",
+  "nicho": [
+   "IMOBILIÁRIO",
+   "CORPORATIVO",
+   "EP/DVD/CLIPE"
+  ],
+  "port": "@jonasleite",
+  "obs": "",
+  "tags": [
+   "Sony ZVE10",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 46,
+  "nome": "Letícia Galvão",
+  "func": [
+   "Op. de câmera",
+   "Op. de drone",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Op. de drone"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "02 Sony ZVE10",
+  "lentes": "Viltrox 23mm, 50mm",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@leticiagalvao",
+  "obs": "",
+  "tags": [
+   "02 Sony ZVE10",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 47,
+  "nome": "Fábio Vasconcelos",
+  "func": [
+   "Op. de câmera",
+   "Op. de drone",
+   "Direção",
+   "Op. de FPV",
+   "Motion / VFX",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Op. de drone",
+   "Direção"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 1,
+  "cam": "2 Sony FX30",
+  "lentes": "Tamron 17-70 F2.8 | Sigma 16mm F1.4 | Viltrox 56mm F1.4",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@fabiovasconcelos",
+  "obs": "",
+  "tags": [
+   "2 Sony FX30",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 48,
+  "nome": "Tomás Amorim",
+  "func": [
+   "Fotógrafo",
+   "Storymaker",
+   "Direção"
+  ],
+  "principal": [
+   "Fotógrafo",
+   "Storymaker"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony A7III",
+  "lentes": "Tamron 28-75mm f2.8 / Viltrox: 85mm 1.4, 20mm 2.8 / Sony 50mm 1.8",
+  "gim": false,
+  "dro": false,
+  "transporte": "CARRO",
+  "nicho": [
+   "CORPORATIVO",
+   "PUBLICITÁRIO",
+   "SHOWS(AFTERMOVIE)",
+   "INSTITUCIONAL"
+  ],
+  "port": "@tomasamorim",
+  "obs": "",
+  "tags": [
+   "Sony A7III"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 49,
+  "nome": "Sabrina Rocha",
+  "func": [
+   "Op. de câmera",
+   "Op. de drone",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Op. de drone"
+  ],
+  "cidade": "São Gonçalo do Amarante/RN",
+  "extras": 0,
+  "cam": "3 Canon SL3",
+  "lentes": "Canon 50mm / 50-250mm / 24mm / 18-135mm",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "SHOWS(AFTERMOVIE)"
+  ],
+  "port": "@sabrinarocha",
+  "obs": "",
+  "tags": [
+   "3 Canon SL3",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 50,
+  "nome": "Alan Leite",
+  "func": [
+   "Op. de câmera",
+   "Op. de gimbal",
+   "Op. de drone",
+   "Editor",
+   "Fotógrafo"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Op. de gimbal"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "A6500/ FX30",
+  "lentes": "SIGMA 16MM",
+  "gim": true,
+  "dro": true,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@alanleite",
+  "obs": "",
+  "tags": [
+   "A6500",
+   "FX30",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 51,
+  "nome": "Cauã Melo",
+  "func": [
+   "Op. de câmera",
+   "Fotógrafo",
+   "Editor",
+   "Editor realtime",
+   "Op. de drone",
+   "Motion / VFX"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Fotógrafo"
+  ],
+  "cidade": "Sousa/PB",
+  "extras": 2,
+  "cam": "Sony FX30 - Canon R8",
+  "lentes": "70-200RF / 15MM Sigma / 17-70mm Tamron / 17-40 Canon",
+  "gim": false,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "EP/DVD/CLIPE",
+   "SHOWS(AFTERMOVIE)",
+   "PUBLICITÁRIO"
+  ],
+  "port": "@cauamelo",
+  "obs": "",
+  "tags": [
+   "Sony FX30 - Canon R8",
+   "Drone"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 52,
+  "nome": "Diego Pereira",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Op. de drone",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony FX3",
+  "lentes": "Sigma 28-70mm F2.8",
+  "gim": true,
+  "dro": true,
+  "transporte": "UBER",
+  "nicho": [
+   "PUBLICITÁRIO",
+   "CORPORATIVO",
+   "SHOWS(AFTERMOVIE)",
+   "INSTITUCIONAL",
+   "FASHION/MODA",
+   "EP/DVD/CLIPE"
+  ],
+  "port": "@diegopereira",
+  "obs": "",
+  "tags": [
+   "Sony FX3",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 53,
+  "nome": "Felipe Fernandes",
+  "func": [
+   "Op. de câmera",
+   "Storymaker",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony ZVE10",
+  "lentes": "Sigma 16mm 1.4 / Sony 35mm 1.8",
+  "gim": true,
+  "dro": false,
+  "transporte": "CARRO",
+  "nicho": [
+   "INSTITUCIONAL"
+  ],
+  "port": "@felipefernandes",
+  "obs": "",
+  "tags": [
+   "Sony ZVE10",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 54,
+  "nome": "Camila Maia",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Editor realtime",
+   "Op. de drone"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "A6500",
+  "lentes": "Sigma 16mm / Sony 35mm",
+  "gim": false,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [
+   "PUBLICITÁRIO",
+   "INSTITUCIONAL",
+   "SHOWS(AFTERMOVIE)"
+  ],
+  "port": "@camilamaia",
+  "obs": "",
+  "tags": [
+   "A6500"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 55,
+  "nome": "Fernanda Cavalcanti",
+  "func": [
+   "Op. de câmera",
+   "Fotógrafo",
+   "Op. de drone",
+   "Direção",
+   "Editor",
+   "Direção de fotografia"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Fotógrafo"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "A6500 | FX30 | ZVE-10",
+  "lentes": "SIGMA 16mm | VILTROX 23mm",
+  "gim": false,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@fernandacavalcanti",
+  "obs": "",
+  "tags": [
+   "A6500",
+   "FX30",
+   "ZVE-10",
+   "Drone"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 56,
+  "nome": "Lucas Bezerra",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Fotógrafo",
+   "Op. de drone",
+   "Direção",
+   "Storymaker",
+   "Assistente",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor",
+   "Fotógrafo"
+  ],
+  "cidade": "Guamaré/RN",
+  "extras": 0,
+  "cam": "ZVE-10 / R7",
+  "lentes": "24/105 F4 / Sony 23m 1.4 / 50mm 1 4",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "CORPORATIVO"
+  ],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "ZVE-10",
+   "R7",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 57,
+  "nome": "Tadeu Medeiros",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Op. de gimbal",
+   "Direção",
+   "Direção de fotografia",
+   "Fotógrafo",
+   "Produtor",
+   "Assistente",
+   "Líder de equipe"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "ZVE-10",
+  "lentes": "15MM VILTROX / 35MM VILTROX",
+  "gim": false,
+  "dro": false,
+  "transporte": "MOTO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@tadeumedeiros",
+  "obs": "",
+  "tags": [
+   "ZVE-10"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 58,
+  "nome": "Isabela Pereira",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Direção",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "A6700/ZVE10",
+  "lentes": "17-70 2.8/ 23 1.4 / 50 1.8",
+  "gim": true,
+  "dro": false,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@isabelapereira",
+  "obs": "",
+  "tags": [
+   "A6700",
+   "ZVE10",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 59,
+  "nome": "Tomás Pinheiro",
+  "func": [
+   "Fotógrafo",
+   "Editor realtime",
+   "Op. de câmera",
+   "Op. de drone",
+   "Editor"
+  ],
+  "principal": [
+   "Fotógrafo",
+   "Editor realtime"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Canon 5d MIII | 60d",
+  "lentes": "10mm 2.8 Sigma |13mm manual Vivitar | 24mm 2.8 Canon | 50mm 1.8 Canon | 75-300 Canon | 70-200 2.8 Canon",
+  "gim": false,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "CORPORATIVO",
+   "PUBLICITÁRIO",
+   "EP/DVD/CLIPE",
+   "INSTITUCIONAL"
+  ],
+  "port": "@tomaspinheiro",
+  "obs": "",
+  "tags": [
+   "Canon 5d MIII",
+   "60d",
+   "Drone"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 60,
+  "nome": "Alice Aquino",
+  "func": [
+   "Op. de câmera",
+   "Op. de drone",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Op. de drone"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony FX30 / DJI Air 3s",
+  "lentes": "7.5mm Artisans F2.8, 16mm Sigma F1.4, 28-75mm e 70-180mm Tanrom F2.8",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "Sony FX30",
+   "DJI Air 3s",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 61,
+  "nome": "Daniel Medeiros",
+  "func": [
+   "Fotógrafo",
+   "Op. de câmera",
+   "Op. de gimbal",
+   "Op. de drone"
+  ],
+  "principal": [
+   "Fotógrafo",
+   "Op. de câmera"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony a7III | Osmo Pocket 2 | DJI Mini 2",
+  "lentes": "Sony FE 28mm f/2 - Sony FE 35mm f/1.4 Zeiss - Sony FE 85mm f/1.8",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "CORPORATIVO",
+   "SHOWS(AFTERMOVIE)",
+   "PUBLICITÁRIO",
+   "IMOBILIÁRIO"
+  ],
+  "port": "@danielmedeiros",
+  "obs": "",
+  "tags": [
+   "Sony a7III",
+   "Osmo Pocket 2",
+   "DJI Mini 2",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 62,
+  "nome": "Júlia Andrade",
+  "func": [
+   "Fotógrafo",
+   "Direção de fotografia",
+   "Op. de câmera",
+   "Direção",
+   "Líder de equipe",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Fotógrafo",
+   "Direção de fotografia",
+   "Op. de câmera"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Canon R8 (2 und.) | R50V",
+  "lentes": "Zoom: EF 16-35mm ƒ/2.8L III, EF 24-70mm ƒ/2.8L II, EF 70-200mm ƒ/2.8L IS III, EF 70-300mm ƒ/4-5.6 IS II Fixas: Laowa Argus 33mm ƒ/0.95 | Canon RF 35mm ƒ/1.8, EF 50mm ƒ/1.8, RF 50mm ƒ/1.8, RF 85mm ƒ/2 IS, RF 100mm ƒ/2.8L IS Macro",
+  "gim": true,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [
+   "CORPORATIVO",
+   "PUBLICITÁRIO",
+   "INSTITUCIONAL",
+   "IMOBILIÁRIO"
+  ],
+  "port": null,
+  "obs": "Luz Contínua: 2x ML100Bi, 2x LA300R, LA200D, LA200Bi (FULL Godox) | Sokani X15; Flashes: AD100 Pro (2 und.), AD200 Pro II (2 und.), AD400 Pro, Canon EL-5. Áudio: DJI Mic 3, DJI Mic 1, Rode NTG, Saramonic DK3-A, Zoom H1 XLR; Modificadores: 60x90cm (2.und), 30x120cm (2.und), 60cm, 80cm, 90cm, 105cm, 130cm (2 und.), 165cm - FULL Godox; Outros: Projetor Godox (Snoot óptico), Color Checker, Fotômetro, cabo Tethering, tripés diversos, filtros (ND, Promist, Polarizador), Baterias V-Mount,",
+  "tags": [
+   "Canon R8 (2 und.)",
+   "R50V",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 63,
+  "nome": "Laura Correia",
+  "func": [
+   "Fotógrafo",
+   "Op. de drone",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Fotógrafo"
+  ],
+  "cidade": "Santa Cruz/RN",
+  "extras": 1,
+  "cam": "zve10 / a6400 / osmo pocket 2 / A7iii",
+  "lentes": "24mm viltrox1.8 , 18-35 Sigma art 1.8, Sony 18-105 f4 e 56mm viltrox",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "CASAMENTOS e eventos"
+  ],
+  "port": "@lauracorreia",
+  "obs": "",
+  "tags": [
+   "zve10",
+   "a6400",
+   "osmo pocket 2",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 64,
+  "nome": "Caio Vasconcelos",
+  "func": [
+   "Fotógrafo"
+  ],
+  "principal": [
+   "Fotógrafo"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Canon R8",
+  "lentes": "85mm e 50mm f/1.8",
+  "gim": false,
+  "dro": false,
+  "transporte": "CARRO",
+  "nicho": [
+   "CASAMENTOS E EVENTOS"
+  ],
+  "port": "@caiovasconcelos",
+  "obs": "",
+  "tags": [
+   "Canon R8"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 65,
+  "nome": "Davi Medeiros",
+  "func": [
+   "Fotógrafo",
+   "Assistente",
+   "Direção",
+   "Editor"
+  ],
+  "principal": [
+   "Fotógrafo"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Canon 6D",
+  "lentes": "24 70mm SIGMA / 50mm Canon / 24mm Canon",
+  "gim": false,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@davimedeiros",
+  "obs": "",
+  "tags": [
+   "Canon 6D"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 66,
+  "nome": "Mariana Xavier",
+  "func": [
+   "Op. de câmera",
+   "Direção de fotografia",
+   "Fotógrafo",
+   "Colorista",
+   "Editor",
+   "Op. de gimbal",
+   "Assistente"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Direção de fotografia",
+   "Fotógrafo"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony FX30",
+  "lentes": "SIRUI Nightwalker 24mm e 35mm T1.2",
+  "gim": true,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@marianaxavier",
+  "obs": "",
+  "tags": [
+   "Sony FX30",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 67,
+  "nome": "Danilo Dantas",
+  "func": [
+   "Editor",
+   "Colorista",
+   "Editor realtime",
+   "Motion / VFX"
+  ],
+  "principal": [
+   "Editor",
+   "Colorista"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Não informado",
+  "lentes": "—",
+  "gim": false,
+  "dro": false,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@danilodantas",
+  "obs": "",
+  "tags": [],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 68,
+  "nome": "Sabrina Cavalcanti",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Motion / VFX",
+   "Op. de drone",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor",
+   "Motion / VFX"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony ZVE10",
+  "lentes": "Tamron 17-70 f/2.8",
+  "gim": true,
+  "dro": true,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@sabrinacavalcanti",
+  "obs": "",
+  "tags": [
+   "Sony ZVE10",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 69,
+  "nome": "Bruno Fonseca",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Líder de equipe",
+   "Op. de gimbal",
+   "Op. de drone",
+   "Direção"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor"
+  ],
+  "cidade": "Goiânia/GO",
+  "extras": 0,
+  "cam": "Sony A6600",
+  "lentes": "Viltrox 23 1.4 / Sony 50 1.8",
+  "gim": true,
+  "dro": false,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@brunofonseca",
+  "obs": "",
+  "tags": [
+   "Sony A6600",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 70,
+  "nome": "César Pereira",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Assistente",
+   "Direção",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony ZvE10",
+  "lentes": "Sony 50mm / Viltrox 35 / 16-50mm",
+  "gim": true,
+  "dro": false,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "Sony ZvE10",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 71,
+  "nome": "Nélson Alves",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Motion / VFX"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony ZvE10",
+  "lentes": "Viltrox 23 / Viltrox 9 / Tamron 70-300",
+  "gim": false,
+  "dro": false,
+  "transporte": "MOTO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@nelsonalves",
+  "obs": "",
+  "tags": [
+   "Sony ZvE10"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 72,
+  "nome": "Camila Sampaio",
+  "func": [
+   "Editor"
+  ],
+  "principal": [
+   "Perfil incompleto"
+  ],
+  "cidade": "Parnamirim/RN",
+  "extras": 0,
+  "cam": "MacBook Pro",
+  "lentes": "—",
+  "gim": false,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "MacBook Pro"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 73,
+  "nome": "Natália Macedo",
+  "func": [
+   "Direção de fotografia",
+   "Direção",
+   "Fotógrafo",
+   "Editor",
+   "Motion / VFX",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Direção de fotografia",
+   "Direção",
+   "Fotógrafo"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "BMP6K + Fluxo de IA (material híbrido)",
+  "lentes": "Rokinon EF 14mm 2.5 / Cannon EF 24-70mm 2.8",
+  "gim": true,
+  "dro": false,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@nataliamacedo",
+  "obs": "",
+  "tags": [
+   "BMP6K",
+   "Fluxo de IA (material híbrido)",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 74,
+  "nome": "Otávio Torres",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor"
+  ],
+  "cidade": "Recife/PE",
+  "extras": 0,
+  "cam": "Sony ZVE10",
+  "lentes": "Sony 18-105mm",
+  "gim": true,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@otaviotorres",
+  "obs": "",
+  "tags": [
+   "Sony ZVE10",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 75,
+  "nome": "Paula Lopes",
+  "func": [
+   "Op. de câmera",
+   "Op. de gimbal",
+   "Op. de drone",
+   "Fotógrafo"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Op. de gimbal",
+   "Op. de drone"
+  ],
+  "cidade": "Fortaleza/CE",
+  "extras": 0,
+  "cam": "Sony a7s",
+  "lentes": "Voltrox 25mm / 56mm",
+  "gim": true,
+  "dro": true,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@paulalopes",
+  "obs": "",
+  "tags": [
+   "Sony a7s",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 76,
+  "nome": "Sara Gomes",
+  "func": [
+   "Fotógrafo",
+   "Op. de drone",
+   "Op. de FPV",
+   "Direção de fotografia"
+  ],
+  "principal": [
+   "Fotógrafo",
+   "Op. de drone",
+   "Op. de FPV"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony a6700",
+  "lentes": "Tamron 17-70mm",
+  "gim": false,
+  "dro": true,
+  "transporte": "MOTO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@saragomes",
+  "obs": "",
+  "tags": [
+   "Sony a6700",
+   "Drone"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 77,
+  "nome": "Vânia Cavalcanti",
+  "func": [
+   "Op. de câmera",
+   "Storymaker"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Storymaker"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "iPhone 16 Pro MAX",
+  "lentes": "—",
+  "gim": false,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@vaniacavalcanti",
+  "obs": "",
+  "tags": [
+   "iPhone 16 Pro MAX"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 78,
+  "nome": "Rafael Cavalcanti",
+  "func": [
+   "Op. de drone",
+   "Op. de FPV"
+  ],
+  "principal": [
+   "Op. de drone"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Não informado",
+  "lentes": "—",
+  "gim": false,
+  "dro": true,
+  "transporte": "MOTO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@rafaelcavalcanti",
+  "obs": "",
+  "tags": [
+   "Drone"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 79,
+  "nome": "Mariana Freire",
+  "func": [
+   "Não informado"
+  ],
+  "principal": [
+   "Perfil incompleto"
+  ],
+  "cidade": "Não informado",
+  "extras": 0,
+  "cam": "Canon R6",
+  "lentes": "Canon - 50mm, 16-35mm, 70-200",
+  "gim": false,
+  "dro": false,
+  "transporte": "—",
+  "nicho": [],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "Canon R6"
+  ],
+  "me": false,
+  "incompleto": true
+ },
+ {
+  "id": 80,
+  "nome": "Laura Machado",
+  "func": [
+   "Op. de câmera",
+   "Direção",
+   "Op. de drone",
+   "Editor realtime",
+   "Op. de gimbal",
+   "Editor",
+   "Líder de equipe"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Direção",
+   "Op. de drone"
+  ],
+  "cidade": "Mossoró/RN",
+  "extras": 1,
+  "cam": "Sony FX30 + Sony ZVE10",
+  "lentes": "TAMRON 17-70mm, VILTROX 23mm, YOUNGNUO 11mm.",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "IMOBILIÁRIO",
+   "FASHION/MODA",
+   "INSTITUCIONAL",
+   "SHOWS(AFTERMOVIE)",
+   "PUBLICITÁRIO",
+   "CORPORATIVO"
+  ],
+  "port": "@lauramachado",
+  "obs": "",
+  "tags": [
+   "Sony FX30",
+   "Sony ZVE10",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 81,
+  "nome": "Yuri Albuquerque",
+  "func": [
+   "Editor",
+   "Motion / VFX",
+   "Colorista"
+  ],
+  "principal": [
+   "Editor"
+  ],
+  "cidade": "Não informado",
+  "extras": 0,
+  "cam": "Não informado",
+  "lentes": "—",
+  "gim": false,
+  "dro": false,
+  "transporte": "—",
+  "nicho": [],
+  "port": null,
+  "obs": "",
+  "tags": [],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 82,
+  "nome": "Larissa Freire",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Assistente"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor"
+  ],
+  "cidade": "Não informado",
+  "extras": 0,
+  "cam": "Sony ZVe10 + Sony A6300",
+  "lentes": "35mm / 23mm",
+  "gim": false,
+  "dro": false,
+  "transporte": "—",
+  "nicho": [
+   "SHOWS(AFTERMOVIE)"
+  ],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "Sony ZVe10",
+   "Sony A6300"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 83,
+  "nome": "Mariana Vieira",
+  "func": [
+   "Fotógrafo",
+   "Op. de câmera",
+   "Op. de drone"
+  ],
+  "principal": [
+   "Fotógrafo",
+   "Op. de câmera"
+  ],
+  "cidade": "RN · PB · PE · CE",
+  "extras": 0,
+  "cam": "Z5II + D610 + AD600 + AD100 + V860III + V850III + LED 25cm + acessórios",
+  "lentes": "14-24mm f/2.8 + 16-35mm f/4 + 24-70mm f/2.8 + 105mm f/2.8 macro",
+  "gim": false,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@marianavieira",
+  "obs": "",
+  "tags": [
+   "Z5II",
+   "D610",
+   "AD600",
+   "Drone"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 84,
+  "nome": "Paula Paiva",
+  "func": [
+   "Op. de câmera",
+   "Direção",
+   "Op. de drone",
+   "Editor realtime",
+   "Editor",
+   "Storymaker",
+   "Líder de equipe",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Direção",
+   "Op. de drone"
+  ],
+  "cidade": "Mossoró/RN",
+  "extras": 0,
+  "cam": "Sony zve10",
+  "lentes": "Sony 70-200mm f/2.8 + Sigma 16mm f/1.4",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "CORPORATIVO",
+   "PUBLICITÁRIO",
+   "SHOWS(AFTERMOVIE)",
+   "INSTITUCIONAL",
+   "IMOBILIÁRIO"
+  ],
+  "port": "@paulapaiva",
+  "obs": "",
+  "tags": [
+   "Sony zve10",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 85,
+  "nome": "Talita Lima",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Editor realtime"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor",
+   "Editor realtime"
+  ],
+  "cidade": "Caicó/RN",
+  "extras": 1,
+  "cam": "iPhone 15 PRO",
+  "lentes": "—",
+  "gim": false,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@talitalima",
+  "obs": "",
+  "tags": [
+   "iPhone 15 PRO"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 86,
+  "nome": "Fábio Xavier",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Direção de fotografia",
+   "Op. de gimbal",
+   "Op. de drone",
+   "Fotógrafo",
+   "Colorista",
+   "Op. de live",
+   "Storymaker",
+   "Produtor",
+   "Assistente",
+   "Direção",
+   "Líder de equipe"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor",
+   "Direção de fotografia"
+  ],
+  "cidade": "Não informado",
+  "extras": 0,
+  "cam": "Sony A7IV + BMPCC 6k + iPhone 16 Pro Max + DJI Mini 4 Pro + DJI Neo 1 e 2",
+  "lentes": "Kit Tamron 17-28, 28-75 e 70-180 f/2.8, 7Artisans 10mm fisheye f/2.8, Rokinon 16mm Cine T2.2",
+  "gim": true,
+  "dro": true,
+  "transporte": "—",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "Sony A7IV",
+   "BMPCC 6k",
+   "iPhone 16 Pro Max",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 87,
+  "nome": "Letícia Rebouças",
+  "func": [
+   "Op. de câmera",
+   "Op. de drone",
+   "Fotógrafo",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Op. de drone",
+   "Fotógrafo"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 1,
+  "cam": "Sony A6400 + Canon SL3 + Canon 7D",
+  "lentes": "SIGMA 30mm 1.4 E-MOUNT + 50mm 1.8 EF-S MOUNT + 75-300 3.5-5.6 EF-S",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@leticiareboucas",
+  "obs": "",
+  "tags": [
+   "Sony A6400",
+   "Canon SL3",
+   "Canon 7D",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 88,
+  "nome": "Mariana Mendes",
+  "func": [
+   "Op. de câmera",
+   "Editor"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor"
+  ],
+  "cidade": "Não informado",
+  "extras": 0,
+  "cam": "BMPCC4K",
+  "lentes": "Sigma 17-50mm / image 12mm",
+  "gim": false,
+  "dro": false,
+  "transporte": "—",
+  "nicho": [],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "BMPCC4K"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 89,
+  "nome": "Vânia Macedo",
+  "func": [
+   "Storymaker",
+   "Editor",
+   "Fotógrafo"
+  ],
+  "principal": [
+   "Storymaker"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 1,
+  "cam": "iPhone 13 PRO MAX 1T",
+  "lentes": "—",
+  "gim": false,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@vaniamacedo",
+  "obs": "",
+  "tags": [
+   "iPhone 13 PRO MAX 1T"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 90,
+  "nome": "Beatriz Duarte",
+  "func": [
+   "Op. de câmera",
+   "Fotógrafo",
+   "Colorista",
+   "Editor",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Fotógrafo",
+   "Colorista"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Canon R7",
+  "lentes": "SIGMA ART 18-35mm 1.8 / Canon 10-18mm",
+  "gim": false,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@beatrizduarte",
+  "obs": "",
+  "tags": [
+   "Canon R7"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 91,
+  "nome": "André Dantas",
+  "func": [
+   "Op. de câmera",
+   "Fotógrafo",
+   "Editor",
+   "Op. de gimbal",
+   "Direção",
+   "Motion / VFX",
+   "Assistente",
+   "Op. de live",
+   "Storymaker",
+   "Líder de equipe"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Fotógrafo",
+   "Editor"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "iPhone 16pro Max + Hollyland Lark + Lumix G9 + Gimbal Moza Aircross 2",
+  "lentes": "Lawoa 7,5mm + 25mm (Micro 4/3)",
+  "gim": true,
+  "dro": false,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@andredantas",
+  "obs": "",
+  "tags": [
+   "iPhone 16pro Max",
+   "Hollyland Lark",
+   "Lumix G9",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 92,
+  "nome": "Lucas Fernandes",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Op. de gimbal",
+   "Direção",
+   "Assistente",
+   "Op. de live",
+   "Fotógrafo",
+   "Storymaker"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "iPhone 13 + Hollyland Lark A1",
+  "lentes": "—",
+  "gim": true,
+  "dro": false,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "iPhone 13",
+   "Hollyland Lark A1",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 93,
+  "nome": "Júlia Rocha",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Op. de gimbal",
+   "Assistente",
+   "Storymaker"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony a6300",
+  "lentes": "Viltrox 23mm/1.4",
+  "gim": false,
+  "dro": false,
+  "transporte": "MOTO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "Sony a6300"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 94,
+  "nome": "Vinícius Pereira",
+  "func": [
+   "Não informado"
+  ],
+  "principal": [
+   "Perfil incompleto"
+  ],
+  "cidade": "Não informado",
+  "extras": 0,
+  "cam": "iPhone 16 PRO - Drone DJI MINI 3",
+  "lentes": "—",
+  "gim": false,
+  "dro": false,
+  "transporte": "—",
+  "nicho": [],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "iPhone 16 PRO - Drone DJI MINI 3"
+  ],
+  "me": false,
+  "incompleto": true
+ },
+ {
+  "id": 95,
+  "nome": "Tadeu Galvão",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Fotógrafo"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor",
+   "Fotógrafo"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony A6500",
+  "lentes": "Sigma 16mm 1.4 / Sigma 30mm 1.4",
+  "gim": false,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@tadeugalvao",
+  "obs": "",
+  "tags": [
+   "Sony A6500"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 96,
+  "nome": "Samuel Pereira",
+  "func": [
+   "Fotógrafo",
+   "Op. de câmera",
+   "Editor",
+   "Editor realtime",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Fotógrafo",
+   "Op. de câmera"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Canon SL3 - iPhone 13pro",
+  "lentes": "Canon 50mm 1.8 / Canon 18-55mm 3.0",
+  "gim": true,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@samuelpereira",
+  "obs": "",
+  "tags": [
+   "Canon SL3 - iPhone 13pro",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 97,
+  "nome": "Heitor Santos",
+  "func": [
+   "Fotógrafo",
+   "Op. de câmera",
+   "Direção",
+   "Op. de drone",
+   "Op. de gimbal",
+   "Storymaker",
+   "Editor"
+  ],
+  "principal": [
+   "Fotógrafo",
+   "Op. de câmera",
+   "Direção"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony A6300/ Sony Zve10",
+  "lentes": "11mm/17-70mm/35mm/85mm/16-50mm",
+  "gim": true,
+  "dro": true,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@heitorsantos",
+  "obs": "",
+  "tags": [
+   "Sony A6300",
+   "Sony Zve10",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 98,
+  "nome": "Cauã Santos",
+  "func": [
+   "Designer",
+   "Motion / VFX"
+  ],
+  "principal": [
+   "Designer",
+   "Motion / VFX"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "MacBook Pro M2 (Figma, Photoshop, After Effects)",
+  "lentes": "—",
+  "gim": false,
+  "dro": false,
+  "transporte": "—",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@cauasantos",
+  "tags": [
+   "MacBook Pro M2 (Figma",
+   "Photoshop",
+   "After Effects)"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 99,
+  "nome": "Natália Alves",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Motion / VFX"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor",
+   "Motion / VFX"
+  ],
+  "cidade": "Jardim de Piranhas/RN",
+  "extras": 0,
+  "cam": "iPhone 16 PRO",
+  "lentes": "—",
+  "gim": false,
+  "dro": false,
+  "transporte": "MOTO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@nataliaalves",
+  "obs": "",
+  "tags": [
+   "iPhone 16 PRO"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 100,
+  "nome": "Luana Santos",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Op. de gimbal",
+   "Op. de drone"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor"
+  ],
+  "cidade": "RN · PB · PE",
+  "extras": 0,
+  "cam": "Zve10 / Sony a6300",
+  "lentes": "23mm / 35mm / 16-50mm",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "EP/DVD/CLIPE"
+  ],
+  "port": "@luanasantos",
+  "obs": "",
+  "tags": [
+   "Zve10",
+   "Sony a6300",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 101,
+  "nome": "Thiago Tavares",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Op. de drone",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor"
+  ],
+  "cidade": "Não informado",
+  "extras": 0,
+  "cam": "Zve 10, Avata 2",
+  "lentes": "9mm 2.8, 23mm 1.4 e 17-70mm 2.8",
+  "gim": true,
+  "dro": true,
+  "transporte": "—",
+  "nicho": [],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "Zve 10",
+   "Avata 2",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 102,
+  "nome": "Fábio Costa",
+  "func": [
+   "Não informado"
+  ],
+  "principal": [
+   "Perfil incompleto"
+  ],
+  "cidade": "Não informado",
+  "extras": 0,
+  "cam": "Canon R50",
+  "lentes": "70-200mm 2.8 / 50mm 1.8",
+  "gim": false,
+  "dro": false,
+  "transporte": "—",
+  "nicho": [],
+  "port": null,
+  "obs": "",
+  "tags": [
+   "Canon R50"
+  ],
+  "me": false,
+  "incompleto": true
+ },
+ {
+  "id": 103,
+  "nome": "Leandro Medeiros",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Fotógrafo",
+   "Op. de drone",
+   "Op. de gimbal",
+   "Editor realtime",
+   "Designer",
+   "Storymaker"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor",
+   "Fotógrafo"
+  ],
+  "cidade": "Não informado",
+  "extras": 0,
+  "cam": "iPhone 14 PRO MAX/ DJI MINI 3/ CAMERA ( ALUGO )",
+  "lentes": "ALUGO",
+  "gim": false,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@leandromedeiros",
+  "obs": "",
+  "tags": [
+   "iPhone 14 PRO MAX",
+   "DJI MINI 3",
+   "CAMERA ( ALUGO )",
+   "Drone"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 104,
+  "nome": "Lucas Cavalcanti",
+  "func": [
+   "Fotógrafo",
+   "Op. de câmera",
+   "Direção de fotografia",
+   "Direção",
+   "Op. de gimbal",
+   "Op. de drone",
+   "Editor",
+   "Assistente"
+  ],
+  "principal": [
+   "Fotógrafo",
+   "Op. de câmera",
+   "Direção de fotografia"
+  ],
+  "cidade": "PB · RN",
+  "extras": 0,
+  "cam": "Canon R8 + DRONE MINI 3 + Canon 80D",
+  "lentes": "16- 35mm 2.8 / 50mm 1.4/ 70-200 2.8mm IS",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@lucascavalcanti",
+  "obs": "",
+  "tags": [
+   "Canon R8",
+   "DRONE MINI 3",
+   "Canon 80D",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 105,
+  "nome": "Márcio Nascimento",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Designer",
+   "Op. de drone",
+   "Storymaker",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor",
+   "Designer"
+  ],
+  "cidade": "Jardim de Piranhas/RN",
+  "extras": 2,
+  "cam": "Câmera ZV10 + Drone DJI MINI 3 pro + iPhone 16 pro + iPhone 17",
+  "lentes": "—",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@marcionascimento",
+  "obs": "",
+  "tags": [
+   "Câmera ZV10",
+   "Drone DJI MINI 3 pro",
+   "iPhone 16 pro",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 106,
+  "nome": "Amanda Xavier",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Designer",
+   "Fotógrafo",
+   "Assistente"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor",
+   "Designer"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Canon RP",
+  "lentes": "70-200mm 2.8 / Alugo",
+  "gim": false,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@amandaxavier",
+  "obs": "",
+  "tags": [
+   "Canon RP"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 107,
+  "nome": "Leandro Guedes",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Fotógrafo",
+   "Editor realtime",
+   "Op. de gimbal"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor",
+   "Fotógrafo"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony a6700",
+  "lentes": "17-70mm",
+  "gim": true,
+  "dro": false,
+  "transporte": "UBER",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@leandroguedes",
+  "obs": "",
+  "tags": [
+   "Sony a6700",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 108,
+  "nome": "Mariana Pereira",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Op. de drone",
+   "Op. de gimbal",
+   "Assistente",
+   "Designer"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor",
+   "Op. de drone"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony ZV-E10 | DJI Mini 3",
+  "lentes": "16-50mm F3.5 - 5.6 | 7.5mm F2.8 | 17-70mm F2.8",
+  "gim": false,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@marianapereira",
+  "obs": "",
+  "tags": [
+   "Sony ZV-E10",
+   "DJI Mini 3",
+   "Drone"
+  ],
+  "me": false,
+  "incompleto": false
+ },
+ {
+  "id": 109,
+  "nome": "Helena Falcão",
+  "func": [
+   "Op. de câmera",
+   "Editor",
+   "Op. de drone",
+   "Direção",
+   "Op. de gimbal",
+   "Op. de FPV",
+   "Direção de fotografia",
+   "Fotógrafo",
+   "Assistente"
+  ],
+  "principal": [
+   "Op. de câmera",
+   "Editor",
+   "Op. de drone"
+  ],
+  "cidade": "Natal/RN",
+  "extras": 0,
+  "cam": "Sony FX30 | a6700 | Avata 1 | DJI Air 2S | Insta x4 | iPhone 17 Pro MAX",
+  "lentes": "17-70mm 2.8 | 28-75mm 2.8 | 11mm 1.8 | 23mm 1.2 | 33mm 1.2 | 56mm 1.2 | 55-250mm 5.6",
+  "gim": true,
+  "dro": true,
+  "transporte": "CARRO",
+  "nicho": [
+   "Todos os nichos"
+  ],
+  "port": "@helenafalcao",
+  "obs": "",
+  "tags": [
+   "Sony FX30",
+   "a6700",
+   "Avata 1",
+   "Drone",
+   "Gimbal"
+  ],
+  "me": false,
+  "incompleto": false
+ }
+]

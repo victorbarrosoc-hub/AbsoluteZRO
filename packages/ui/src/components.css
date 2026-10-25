@@ -1,0 +1,578 @@
+/* Absolute ZRO — componentes base. Depende de tokens.css. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+  letter-spacing: -0.006em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Grão do preto fosco. Camada fixa, sem custo por frame e sem capturar cliques. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: var(--grain);
+  opacity: 0.045;
+  mix-blend-mode: overlay;
+}
+:root[data-theme='light'] body::before {
+  opacity: 0.03;
+  mix-blend-mode: multiply;
+}
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  color: var(--text-strong);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.028em;
+  line-height: 1.08;
+}
+
+h1 {
+  font-size: clamp(1.9rem, 1.3rem + 2vw, 2.75rem);
+  letter-spacing: -0.035em;
+}
+h2 {
+  font-size: 1.3rem;
+}
+h3 {
+  font-size: 1.04rem;
+  letter-spacing: -0.018em;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--accent-text);
+  text-decoration: none;
+  transition: color 0.2s var(--ease);
+}
+:where(p, dd, .zro-notice__body, .zro-empty__body) a:not([class]) {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+}
+a:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+code,
+.zro-mono {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--zro-blue) 45%, transparent);
+  color: #fff;
+}
+
+.zro-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.zro-skip {
+  position: absolute;
+  left: var(--space-4);
+  top: -48px;
+  z-index: 50;
+  padding: var(--space-2) var(--space-4);
+  background: var(--accent);
+  color: #fff;
+  border-radius: 999px;
+  transition: top 0.15s;
+}
+.zro-skip:focus {
+  top: var(--space-3);
+}
+
+/* Rótulo curto em cor, como nas páginas das ferramentas ("Sincronia de câmeras e áudio pelo som"). */
+.zro-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--accent-text);
+}
+.zro-eyebrow--quiet {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.zro-serif {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.zro-mute {
+  color: var(--text-mute);
+}
+.zro-faint {
+  color: var(--text-faint);
+  font-size: 0.86rem;
+}
+
+/* ───── botões (pílulas) ───── */
+
+.zro-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 42px;
+  padding: 0 20px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  color: var(--text-strong);
+  font: 600 0.92rem/1 var(--font-sans);
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 0.35s var(--spring),
+    background 0.2s var(--ease),
+    border-color 0.2s var(--ease),
+    box-shadow 0.3s var(--ease);
+  white-space: nowrap;
+}
+.zro-btn:hover {
+  text-decoration: none;
+  border-color: var(--text-faint);
+  background: var(--surface-3);
+}
+.zro-btn:active {
+  transform: scale(0.97);
+}
+.zro-btn svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.zro-btn--primary {
+  background: var(--text-strong);
+  color: var(--bg);
+  border-color: transparent;
+}
+.zro-btn--primary:hover {
+  background: var(--text-strong);
+  box-shadow: 0 8px 30px rgb(255 255 255 / 0.12);
+}
+:root[data-theme='light'] .zro-btn--primary:hover {
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.16);
+}
+.zro-btn--accent {
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
+}
+.zro-btn--accent:hover {
+  background: var(--accent);
+  box-shadow: var(--glow);
+}
+.zro-btn--ghost {
+  background: transparent;
+}
+.zro-btn--danger {
+  color: var(--danger-text);
+  background: transparent;
+}
+.zro-btn--small {
+  min-height: 34px;
+  padding: 0 14px;
+  font-size: 0.84rem;
+}
+.zro-btn--large {
+  min-height: 54px;
+  padding: 0 28px;
+  font-size: 1.02rem;
+}
+.zro-btn[disabled],
+.zro-btn[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* ───── formulários ───── */
+
+.zro-field {
+  display: grid;
+  gap: 6px;
+}
+.zro-field__label {
+  font-weight: 600;
+  font-size: 0.86rem;
+  color: var(--text-strong);
+}
+.zro-field__hint {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+.zro-field__error {
+  font-size: 0.82rem;
+  color: var(--danger-text);
+}
+.zro-input,
+.zro-select,
+.zro-textarea {
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text-strong);
+  font: inherit;
+  transition:
+    border-color 0.2s var(--ease),
+    box-shadow 0.2s var(--ease),
+    background 0.2s var(--ease);
+}
+.zro-input:hover,
+.zro-select:hover,
+.zro-textarea:hover {
+  border-color: var(--line-strong);
+}
+.zro-input:focus,
+.zro-select:focus,
+.zro-textarea:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
+  background: var(--surface);
+}
+.zro-textarea {
+  min-height: 140px;
+  resize: vertical;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+.zro-field--error .zro-input {
+  border-color: var(--zro-danger);
+}
+.zro-form {
+  display: grid;
+  gap: var(--space-4);
+}
+.zro-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: end;
+}
+.zro-form-row > * {
+  flex: 1 1 180px;
+}
+
+/* ───── cards e blocos ───── */
+
+.zro-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  padding: var(--space-5);
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+  transition:
+    border-color 0.3s var(--ease),
+    transform 0.45s var(--spring);
+}
+.zro-card--stage {
+  overflow: hidden;
+  background:
+    radial-gradient(70% 90% at 85% 0%, color-mix(in srgb, var(--zro-blue) 16%, transparent), transparent 60%),
+    radial-gradient(60% 80% at 10% 110%, color-mix(in srgb, var(--zro-lav) 10%, transparent), transparent 60%), var(--zro-ink);
+  border-color: rgb(255 255 255 / 0.09);
+}
+.zro-card--glass {
+  background: var(--glass-fill), color-mix(in srgb, var(--surface) 72%, transparent);
+  border-color: transparent;
+  box-shadow: var(--shadow-float);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+}
+.zro-card--glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--glass-rim);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  pointer-events: none;
+}
+.zro-card--attention {
+  border-color: color-mix(in srgb, var(--zro-warn) 45%, transparent);
+  background: radial-gradient(80% 120% at 100% 0%, color-mix(in srgb, var(--zro-warn) 8%, transparent), transparent 60%), var(--surface);
+}
+.zro-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.zro-card__title {
+  font-size: 1.08rem;
+}
+.zro-card__actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  font-size: 0.88rem;
+}
+
+.zro-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-3) 60%, transparent);
+  color: var(--text-mute);
+  white-space: nowrap;
+}
+.zro-pill::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.zro-pill--ok {
+  color: var(--ok-text);
+  background: color-mix(in srgb, var(--zro-ok) 12%, transparent);
+  border-color: color-mix(in srgb, var(--zro-ok) 28%, transparent);
+}
+.zro-pill--warn {
+  color: var(--warn-text);
+  background: color-mix(in srgb, var(--zro-warn) 12%, transparent);
+  border-color: color-mix(in srgb, var(--zro-warn) 28%, transparent);
+}
+.zro-pill--danger {
+  color: var(--danger-text);
+  background: color-mix(in srgb, var(--zro-danger) 12%, transparent);
+  border-color: color-mix(in srgb, var(--zro-danger) 28%, transparent);
+}
+.zro-pill--accent {
+  color: var(--accent-text);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+}
+.zro-pill--faint {
+  color: var(--text-faint);
+  background: transparent;
+  border-style: dashed;
+}
+
+.zro-notice {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  padding: var(--space-3) var(--space-4) var(--space-3) calc(var(--space-4) + 4px);
+  display: grid;
+  gap: 4px;
+  background: var(--surface-2);
+  position: relative;
+  overflow: hidden;
+}
+.zro-notice::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--line-strong);
+}
+.zro-notice--ok::before {
+  background: var(--zro-ok);
+}
+.zro-notice--warn::before {
+  background: var(--zro-warn);
+}
+.zro-notice--danger::before {
+  background: var(--zro-danger);
+}
+.zro-notice--accent::before {
+  background: var(--accent);
+}
+.zro-notice__title {
+  color: var(--text-strong);
+  font-size: 0.92rem;
+}
+.zro-notice__body {
+  color: var(--text-mute);
+  font-size: 0.88rem;
+}
+
+.zro-empty {
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-m);
+  padding: var(--space-6) var(--space-5);
+  text-align: center;
+  display: grid;
+  gap: var(--space-2);
+  justify-items: center;
+  background: color-mix(in srgb, var(--surface-2) 50%, transparent);
+}
+.zro-empty__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
+}
+.zro-empty__body {
+  color: var(--text-mute);
+  max-width: 46ch;
+  font-size: 0.9rem;
+}
+.zro-empty__action {
+  margin-top: var(--space-2);
+}
+
+.zro-stat {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.zro-stat__label {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+.zro-stat__value {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 2rem;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  color: var(--text-strong);
+  font-variant-numeric: tabular-nums;
+}
+.zro-stat__hint {
+  font-size: 0.78rem;
+  color: var(--text-mute);
+}
+
+.zro-mark {
+  border-radius: 22%;
+  display: inline-block;
+  flex: none;
+  object-fit: cover;
+}
+.zro-mark--initials {
+  display: inline-grid;
+  place-items: center;
+  background: linear-gradient(145deg, var(--zro-mist), var(--zro-graphite));
+  border: 1px solid var(--line-strong);
+  color: var(--zro-ash);
+  font: 700 0.72rem var(--font-display);
+  letter-spacing: 0.02em;
+}
+
+/* ───── tabelas ───── */
+
+.zro-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+}
+.zro-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+.zro-table th,
+.zro-table td {
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.zro-table th {
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  background: var(--surface-2);
+}
+.zro-table tbody tr {
+  transition: background 0.2s var(--ease);
+}
+.zro-table tbody tr:hover {
+  background: color-mix(in srgb, var(--surface-3) 40%, transparent);
+}
+.zro-table tr:last-child td {
+  border-bottom: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

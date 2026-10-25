@@ -1,0 +1,675 @@
+<title>Pré-cadastro · Carro do Freela</title>
+<style>
+/* ============================================================
+   LANDING DE PRÉ-CADASTRO — etapa 1 do plano de lançamento.
+
+   Mesmo sistema visual do produto (tokens de src/template.html).
+   Arquivo único, sem framework, sem requisição externa além do
+   POST opcional para o Supabase — configurado no bloco CONFIG do
+   script. Sem configuração, a página roda em modo demonstração e
+   DIZ isso, em vez de fingir que gravou.
+   ============================================================ */
+:root{
+  --grafite:#F5F2ED; --grafite2:#FFFFFF; --grafite3:#EBE7E0;
+  --ciano:#0C627C; --ciano-esc:#8FC3D2; --ciano-tint:rgba(12,98,124,.09);
+  --cal:#1B1815; --cal-fraco:#544E47; --cal-tenue:#6A635B;
+  --magenta:#B41E66; --magenta-tint:rgba(180,30,102,.08);
+  --livre:#0F6230; --livre-tint:rgba(15,98,48,.09);
+  --linha:#E4DFD7; --linha2:#D2CBC1;
+  --sombra:0 18px 46px -30px rgba(27,24,21,.45);
+  --display:"Schibsted Grotesk",system-ui,sans-serif;
+  --ui:"Schibsted Grotesk",system-ui,-apple-system,Helvetica,Arial,sans-serif;
+  --mono:"Spline Sans Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --grafite:#121110; --grafite2:#1A1917; --grafite3:#242220;
+    --ciano:#17D1E8; --ciano-esc:#0B7C8B; --ciano-tint:rgba(23,209,232,.12);
+    --cal:#F0EDE7; --cal-fraco:#B7B0A6; --cal-tenue:#948C82;
+    --magenta:#FF3D9A; --magenta-tint:rgba(255,61,154,.12);
+    --livre:#3DD17E; --livre-tint:rgba(61,209,126,.13);
+    --linha:#272522; --linha2:#33302C;
+    --sombra:0 18px 46px -30px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --grafite:#121110; --grafite2:#1A1917; --grafite3:#242220;
+  --ciano:#17D1E8; --ciano-esc:#0B7C8B; --ciano-tint:rgba(23,209,232,.12);
+  --cal:#F0EDE7; --cal-fraco:#B7B0A6; --cal-tenue:#948C82;
+  --magenta:#FF3D9A; --magenta-tint:rgba(255,61,154,.12);
+  --livre:#3DD17E; --livre-tint:rgba(61,209,126,.13);
+  --linha:#272522; --linha2:#33302C;
+  --sombra:0 18px 46px -30px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box}
+/* display:grid nas .campo/.aceite venceria o [hidden] do navegador */
+[hidden]{display:none!important}
+body{margin:0; background:var(--grafite); color:var(--cal);
+  font-family:var(--ui); font-size:16px; line-height:1.62; -webkit-font-smoothing:antialiased}
+body::after{content:""; position:fixed; inset:0; z-index:99; pointer-events:none;
+  opacity:.05; mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url%28%23n%29'/%3E%3C/svg%3E")}
+@media(prefers-reduced-motion:reduce){ body::after{display:none} }
+
+/* a coluna ocupa a tela inteira e o rodapé desce pro fim: sem isso o
+   conteúdo fica amontoado em cima e sobra um vazio embaixo no celular.
+   svh em vez de vh porque a barra do navegador móvel some e volta */
+.wrap{max-width:640px; margin:0 auto; padding:0 22px; display:flex; flex-direction:column}
+/* encher a tela vale no CELULAR, onde o conteúdo sempre passa da dobra e
+   o auto do rodapé não abre buraco nenhum. Numa janela alta (tablet, ou
+   telefone com "site para computador" ligado) o mesmo par abria uma tela
+   inteira de vazio entre o cartão e o rodapé. */
+@media(max-width:600px){ .wrap{min-height:100vh; min-height:100svh} }
+h1,h2{font-family:var(--display); font-weight:900; letter-spacing:-.032em; text-wrap:balance; margin:0}
+/* 9vw num iPhone de 390px dá 35px — antes o clamp travava em 30 */
+h1{font-size:clamp(34px,9vw,46px); line-height:1.05}
+h2{font-size:21px; letter-spacing:-.025em}
+p{margin:0}
+b,strong{font-weight:700; color:var(--cal)}
+a{color:var(--ciano); text-decoration:none; border-bottom:1px solid currentColor}
+:focus-visible{outline:2px solid var(--ciano); outline-offset:3px; border-radius:4px}
+::selection{background:var(--ciano-tint); color:var(--cal)}
+
+.rot{font-family:var(--ui); font-weight:700; font-size:11.5px;
+  letter-spacing:.075em; text-transform:uppercase; color:var(--cal-tenue)}
+.num{font-family:var(--mono); font-weight:500; font-variant-numeric:tabular-nums}
+
+/* capa */
+.capa{padding:clamp(26px,6vw,76px) 0 clamp(20px,4vw,40px)}
+.marca{display:flex; align-items:center; gap:11px; margin-bottom:clamp(18px,4vw,40px)}
+.marca span{font-family:var(--display); font-weight:900; font-size:16.5px; letter-spacing:-.03em}
+.capa h1{margin-bottom:13px}
+.capa .lead{font-size:clamp(17px,4.4vw,19px); line-height:1.58; color:var(--cal-fraco)}
+.prova{display:flex; flex-wrap:wrap; gap:6px 24px; margin-top:19px; padding-top:16px; border-top:1px solid var(--linha)}
+.prova div{display:grid; gap:2px}
+.prova b{font-family:var(--mono); font-weight:500; font-size:17px}
+/* no celular os três fatos viram uma linha só. A unidade some porque o
+   rótulo já diz o que o número é — "JÁ CADASTRADOS / 109". Solto, o
+   terceiro fato caía sozinho numa segunda linha e parecia sobra. */
+@media(max-width:600px){
+  .prova{display:grid; grid-template-columns:repeat(3,auto); justify-content:start;
+    align-items:end; gap:0 22px}
+  .prova .un{display:none}
+}
+
+/* modo demonstração */
+.demo{display:none; gap:12px; grid-template-columns:auto 1fr; align-items:start;
+  border:1px solid var(--linha2); background:var(--magenta-tint); border-radius:12px;
+  padding:13px 15px; margin-bottom:22px; font-size:13.5px; line-height:1.55; color:var(--cal-fraco)}
+.demo.on{display:grid}
+.demo i{font-style:normal; color:var(--magenta)}
+
+/* cartão do formulário */
+.cartao{border:1px solid var(--linha); background:var(--grafite2); border-radius:16px;
+  padding:clamp(22px,4vw,30px); box-shadow:var(--sombra)}
+.passo{display:none}
+.passo.on{display:block}
+
+/* celular pequeno e baixo (iPhone SE e afins). Aqui se aperta ESPAÇO,
+   não tipografia: encolher o texto num aparelho de 667px foi a primeira
+   tentativa e não fazia a segunda escolha caber de todo jeito — ficava
+   só a letra menor, que é exatamente o defeito que a leva inteira veio
+   corrigir. A segunda opção fica meio cortada na dobra de propósito:
+   card partido é o melhor convite a rolar que existe. */
+@media(max-width:520px) and (max-height:720px){
+  .capa{padding-top:16px; padding-bottom:16px}
+  .marca{margin-bottom:14px}
+  .prova{margin-top:14px; padding-top:12px; gap:0 18px}
+  .prova .rot{font-size:10px; letter-spacing:.06em}
+  .cartao{padding:19px}
+  .tri{padding:16px 17px}
+}
+
+/* trilhas */
+.trilhas{display:grid; gap:10px; margin-top:15px}
+.tri{display:grid; grid-template-columns:1fr auto; gap:4px 16px; align-items:center; text-align:left;
+  border:1px solid var(--linha2); background:var(--grafite); border-radius:13px; padding:19px 20px;
+  cursor:pointer; font-family:var(--ui); color:var(--cal);
+  transition:border-color .16s ease, transform .16s cubic-bezier(.22,1,.36,1)}
+.tri:hover{border-color:var(--cal-tenue); transform:translateY(-2px)}
+.tri b{display:block; font-family:var(--display); font-weight:700; font-size:18.5px; letter-spacing:-.02em}
+.tri span{display:block; font-size:14px; color:var(--cal-fraco); line-height:1.52; margin-top:4px}
+.tri em{font-style:normal; color:var(--cal-tenue); font-size:18px; grid-row:1/3}
+
+/* formulário */
+.volta{border:0; background:none; color:var(--cal-tenue); font-family:var(--ui); font-size:13.5px;
+  cursor:pointer; padding:0; margin-bottom:16px}
+.volta:hover{color:var(--cal)}
+.frm{display:grid; gap:15px}
+.campo{display:grid; gap:6px}
+.campo label{font-family:var(--ui); font-weight:700; font-size:11.5px;
+  letter-spacing:.075em; text-transform:uppercase; color:var(--cal-tenue)}
+.fld{width:100%; border:1px solid var(--linha2); background:var(--grafite); color:var(--cal);
+  border-radius:10px; padding:12px 13px; font-family:var(--ui); font-size:15.5px}
+.fld:focus{outline:2px solid var(--ciano); outline-offset:0; border-color:transparent}
+select.fld{appearance:auto}
+.f2{display:grid; grid-template-columns:1fr 1fr; gap:13px}
+@media(max-width:520px){ .f2{grid-template-columns:1fr} }
+.erro{display:none; font-size:13px; color:var(--magenta); margin-top:2px}
+.campo.mal .erro{display:block}
+.campo.mal .fld{border-color:var(--magenta)}
+
+/* consentimento */
+.aceites{display:grid; gap:11px; border-top:1px solid var(--linha); padding-top:16px; margin-top:4px}
+.aceite{display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:start; cursor:pointer}
+.aceite input{width:19px; height:19px; margin-top:2px; accent-color:var(--ciano); cursor:pointer}
+.aceite span{font-size:13.5px; line-height:1.6; color:var(--cal-fraco)}
+.aceite.mal span{color:var(--magenta)}
+
+.btn{border:0; border-radius:11px; padding:14px 22px; cursor:pointer;
+  font-family:var(--ui); font-weight:700; font-size:15.5px;
+  background:var(--ciano); color:var(--grafite); width:100%;
+  transition:transform .12s ease}
+.btn:active{transform:translateY(1px)}
+.btn.gh{background:none; border:1px solid var(--linha2); color:var(--cal)}
+.btn[disabled]{background:var(--grafite3); color:var(--cal-tenue); cursor:default}
+
+/* dias */
+.dias{display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin:16px 0 4px}
+@media(max-width:460px){ .dias{grid-template-columns:repeat(3,1fr)} }
+.dia{border:1px solid var(--linha2); background:var(--grafite); border-radius:10px;
+  padding:9px 4px 8px; cursor:pointer; text-align:center; font-family:var(--ui); color:var(--cal);
+  display:grid; gap:1px}
+.dia small{font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--cal-tenue)}
+.dia b{font-family:var(--mono); font-weight:500; font-size:16px}
+.dia[aria-pressed="true"]{border-color:var(--ciano); background:var(--ciano-tint)}
+.dia[aria-pressed="true"] small{color:var(--ciano)}
+
+/* sucesso */
+.ok-ico{width:52px; height:52px; border-radius:15px; display:grid; place-items:center;
+  background:var(--livre-tint); border:1px solid var(--livre); color:var(--livre);
+  font-size:22px; margin-bottom:18px}
+.zap{display:inline-flex; align-items:center; gap:9px; margin-top:20px;
+  border:1px solid var(--linha2); border-radius:11px; padding:12px 18px;
+  font-family:var(--ui); font-weight:700; font-size:14.5px; color:var(--cal);
+  text-decoration:none; border-bottom-width:1px}
+.zap:hover{border-color:var(--cal-tenue)}
+
+.rodape{margin-top:auto; padding:34px 0 40px; color:var(--cal-tenue); font-size:12.5px; line-height:1.65; text-align:center}
+
+/* ---------- o carro passando ----------
+   Portado do protótipo sem mudar a física: a pista fica sempre montada
+   e o carro descansa fora da tela, porque ligar `display` no frame da
+   partida custa o layout inteiro do SVG e engasga a arrancada. O X é
+   linear em `translate`; o solavanco anda por fora, em `transform` —
+   curva de easing entre quadros intermediários é o que fazia o carro
+   frear no meio da pista. */
+/* baixo na tela de propósito: o carro passa NA RUA, embaixo do cartão,
+   e nunca por cima do texto que a pessoa acabou de conquistar */
+#pista{position:fixed; left:0; right:0; bottom:0; height:104px; z-index:90;
+  pointer-events:none; overflow:hidden; visibility:hidden; contain:layout paint}
+#pista.on{visibility:visible}
+#pista .carro{position:absolute; left:0; top:50%; width:190px; margin-top:-42px;
+  translate:-230px; will-change:translate,transform}
+#pista.on .carro{animation:atravessa 1.45s linear forwards,
+  solavanco 1.45s cubic-bezier(.34,.05,.28,1) forwards}
+/* roda é SVG: não vai pro compositor, então só gira enquanto atravessa */
+#pista.on .carro .roda{transform-box:fill-box; transform-origin:center;
+  animation:gira .18s linear infinite}
+@keyframes atravessa{ from{translate:-230px} to{translate:calc(100vw + 60px)} }
+@keyframes solavanco{ 0%,100%{transform:translateY(0)} 46%{transform:translateY(-3px)} 52%{transform:translateY(2px)} }
+@keyframes gira{ to{transform:rotate(360deg)} }
+#pista .poeira{position:absolute; left:0; right:0; bottom:24px; height:1px;
+  background:linear-gradient(90deg,transparent,var(--ciano),transparent); opacity:0}
+#pista.on .poeira{animation:rastro 1.45s ease-out forwards}
+@keyframes rastro{0%{opacity:0;transform:scaleX(0);transform-origin:left}
+  30%{opacity:.5}100%{opacity:0;transform:scaleX(1);transform-origin:left}}
+/* no celular a tela é curta e o cartão ocupa quase tudo: o carro
+   encolhe e encosta no rodapé, para passar por baixo do texto */
+@media(max-width:600px){
+  #pista{height:70px}
+  #pista .carro{width:132px; margin-top:-29px}
+  #pista .poeira{bottom:14px}
+}
+
+/* o texto do sucesso entra depois que o carro passa */
+.passou-txt{animation:sobeTxt .5s cubic-bezier(.22,1,.36,1) both}
+@keyframes sobeTxt{from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none}}
+
+@media(prefers-reduced-motion:reduce){
+  #pista{display:none!important}
+  .passou-txt{animation:none}
+}
+</style>
+
+<div class="wrap">
+
+<header class="capa">
+  <div class="marca">
+    <svg width="25" height="25" viewBox="0 0 100 100" aria-hidden="true">
+      <g transform="translate(14,0) skewX(-12)" fill="currentColor">
+        <rect x="14" y="24" width="7" height="52" rx="2" opacity=".34"/>
+        <rect x="29" y="24" width="13" height="52" rx="2.5" opacity=".64"/>
+        <rect x="50" y="24" width="26" height="52" rx="3.5"/>
+      </g>
+    </svg>
+    <span>Carro do Freela</span>
+  </div>
+
+  <h1>A agenda do audiovisual de Natal está chegando.</h1>
+  <p class="lead">Quem está livre em cada data, por função e por praça — sem rodar 40 mensagens no WhatsApp. Deixe seu pré-cadastro e entre na primeira leva, antes da abertura pública.</p>
+
+  <div class="prova">
+    <div><span class="rot">Já cadastrados</span><b>109<span class="un"> profissionais</span></b></div>
+    <div><span class="rot">Funções<span class="un"> cobertas</span></span><b>19</b></div>
+    <div><span class="rot">Praça</span><b>Natal/RN</b></div>
+  </div>
+</header>
+
+<div class="demo" id="demo"><i>⚠︎</i><span><b>Página em modo demonstração.</b> O envio ainda não está ligado a um banco — nada que você digitar aqui será gravado. Para ativar, preencha o bloco CONFIG no código.</span></div>
+
+<main class="cartao">
+
+  <!-- passo 1: trilha -->
+  <section class="passo on" id="p-trilha" aria-label="Escolha seu lado">
+    <h2>Qual é o seu lado?</h2>
+    <div class="trilhas">
+      <button class="tri" data-tri="freela">
+        <b>Sou freela</b>
+        <span>Câmera, som, drone, edição, cor, foto — quero receber chamada de job e manter minha agenda num lugar só.</span>
+        <em>›</em>
+      </button>
+      <button class="tri" data-tri="contratante">
+        <b>Eu contrato equipe</b>
+        <span>Produtora, agência, marca ou quem monta o job — quero saber quem está livre antes de todo mundo.</span>
+        <em>›</em>
+      </button>
+    </div>
+  </section>
+
+  <!-- passo 2: formulário -->
+  <section class="passo" id="p-form" aria-label="Seus dados">
+    <button class="volta" id="volta1">‹ trocar de lado</button>
+    <h2 id="f-tit">Seus dados</h2>
+    <form class="frm" id="frm" style="margin-top:16px" novalidate>
+      <!-- honeypot: humano não vê, robô preenche -->
+      <input type="text" name="site" id="hp" tabindex="-1" autocomplete="off"
+             style="position:absolute;left:-9999px" aria-hidden="true">
+
+      <div class="campo" data-c="nome">
+        <label for="f-nome">Seu nome</label>
+        <input class="fld" id="f-nome" autocomplete="name" placeholder="nome e sobrenome">
+        <span class="erro">Precisa do nome.</span>
+      </div>
+
+      <div class="f2">
+        <div class="campo so-freela" data-c="funcao">
+          <label for="f-funcao">Função principal</label>
+          <select class="fld" id="f-funcao"></select>
+        </div>
+        <div class="campo so-contratante" data-c="tipo" hidden>
+          <label for="f-tipo">Tipo de negócio</label>
+          <select class="fld" id="f-tipo">
+            <option>Produtora</option><option>Agência</option><option>Marca</option>
+            <option>Veículo</option><option>Contrato por conta própria</option>
+          </select>
+        </div>
+        <div class="campo" data-c="praca">
+          <label for="f-praca">Sua praça</label>
+          <input class="fld" id="f-praca" list="pracas" placeholder="cidade/UF">
+          <datalist id="pracas">
+            <option>Natal/RN</option><option>Mossoró/RN</option><option>Caicó/RN</option>
+            <option>Parnamirim/RN</option><option>João Pessoa/PB</option>
+          </datalist>
+          <span class="erro">Qual cidade?</span>
+        </div>
+      </div>
+
+      <div class="f2">
+        <div class="campo" data-c="zap">
+          <label for="f-zap">WhatsApp</label>
+          <input class="fld" id="f-zap" type="tel" autocomplete="tel" placeholder="(84) 9 0000-0000">
+          <span class="erro">É por aqui que o convite chega.</span>
+        </div>
+        <div class="campo so-contratante" data-c="jobs" hidden>
+          <label for="f-jobs">Jobs por mês, em média</label>
+          <select class="fld" id="f-jobs">
+            <option>1 a 2</option><option>3 a 5</option><option>6 a 10</option><option>Mais de 10</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="aceites">
+        <label class="aceite" data-c="lgpd">
+          <input type="checkbox" id="a-lgpd">
+          <span><b>Autorizo o uso destes dados</b> para criar meu acesso no Carro do Freela e para me avisar do lançamento pelo WhatsApp. Nada é vendido nem repassado a terceiros, e você pode pedir a exclusão a qualquer momento respondendo qualquer mensagem nossa.</span>
+        </label>
+        <label class="aceite so-freela" data-c="pub">
+          <input type="checkbox" id="a-pub">
+          <span><b>Autorizo que meu nome, funções e cidade apareçam na plataforma</b> quando ela abrir, para quem contrata me encontrar. Telefone nunca aparece — quem quiser falar com você chama pela plataforma.</span>
+        </label>
+      </div>
+
+      <button class="btn" type="submit" id="enviar">Entrar na primeira leva</button>
+    </form>
+  </section>
+
+  <!-- passo 3: dias -->
+  <section class="passo" id="p-dias" aria-label="Seus próximos dias">
+    <h2>Última coisa — e é a mais importante</h2>
+    <p style="font-size:14.5px; color:var(--cal-fraco); line-height:1.65; margin-top:10px">
+      Marque os dias em que você está <b>livre para job</b> nos próximos 15.
+      É com isso que a plataforma abre viva: quem contrata já encontra gente
+      disponível no primeiro dia — e quem está disponível é encontrado.</p>
+    <div class="dias" id="dias"></div>
+    <p class="rot" id="d-conta" style="margin:10px 0 16px"></p>
+    <div style="display:grid; gap:10px">
+      <button class="btn" id="d-ok">Confirmar disponibilidade</button>
+      <button class="btn gh" id="d-pula">Deixar para depois</button>
+    </div>
+  </section>
+
+  <!-- passo 4: sucesso -->
+  <section class="passo" id="p-ok" aria-label="Pronto">
+    <div class="ok-ico">✓</div>
+    <h2 id="ok-tit">Você está na primeira leva.</h2>
+    <p style="font-size:15px; color:var(--cal-fraco); line-height:1.65; margin-top:12px" id="ok-txt">
+      O convite chega pelo seu WhatsApp antes da abertura pública. Até lá,
+      só uma coisa ajuda de verdade: chamar quem trabalha com você.</p>
+    <a class="zap" id="ok-zap" target="_blank" rel="noopener">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M21 11.5a8.4 8.4 0 0 1-8.4 8.4c-1.5 0-2.9-.4-4.1-1L3 20l1.2-5.3a8.3 8.3 0 0 1-.9-3.8A8.4 8.4 0 0 1 11.7 2.5a8.4 8.4 0 0 1 9.3 9z"/></svg>
+      Chamar um colega para a leva
+    </a>
+  </section>
+
+</main>
+
+<!-- a pista fica montada desde o carregamento; só a visibilidade liga -->
+<div id="pista" aria-hidden="true">
+  <div class="poeira"></div>
+  <svg class="carro" viewBox="0 0 210 92" fill="none">
+    <!-- rastro: as três barras da marca viram linhas de velocidade -->
+    <g fill="var(--ciano)" opacity=".9">
+      <rect x="2" y="40" width="16" height="4" rx="2" opacity=".28"/>
+      <rect x="7" y="50" width="26" height="4" rx="2" opacity=".5"/>
+      <rect x="0" y="60" width="20" height="4" rx="2" opacity=".34"/>
+    </g>
+    <!-- rack com case de equipamento -->
+    <rect x="86" y="18" width="52" height="9" rx="2" fill="var(--grafite3)" stroke="var(--linha2)"/>
+    <rect x="94" y="10" width="34" height="9" rx="2" fill="var(--ciano-esc)"/>
+    <!-- corpo -->
+    <path d="M44 66V52c0-4 3-7 7-7h11l14-16c2-2 4-3 7-3h33c3 0 5 1 7 3l13 16h18c5 0 9 4 9 9v12z"
+          fill="var(--ciano)"/>
+    <path d="M79 45l12-14c1-1 2-2 4-2h16v16z" fill="var(--grafite)" opacity=".55"/>
+    <path d="M115 45V29h14c2 0 3 1 4 2l11 14z" fill="var(--grafite)" opacity=".55"/>
+    <rect x="44" y="60" width="120" height="6" rx="3" fill="var(--grafite)" opacity=".28"/>
+    <circle class="roda" cx="72" cy="68" r="13" fill="var(--grafite2)" stroke="var(--cal-tenue)" stroke-width="3"/>
+    <circle class="roda" cx="140" cy="68" r="13" fill="var(--grafite2)" stroke="var(--cal-tenue)" stroke-width="3"/>
+    <circle cx="72" cy="68" r="3.4" fill="var(--ciano)"/>
+    <circle cx="140" cy="68" r="3.4" fill="var(--ciano)"/>
+    <rect x="160" y="49" width="7" height="5" rx="2" fill="var(--livre)"/>
+  </svg>
+</div>
+
+<footer class="rodape">
+  <p>Carro do Freela · Natal/RN · <a href="mailto:carrodofreela@gmail.com">carrodofreela@gmail.com</a></p>
+  <p style="margin-top:6px">Seus dados ficam guardados só para o lançamento. Pedir exclusão é responder qualquer mensagem nossa com “sair”.</p>
+</footer>
+
+</div>
+
+<script>
+/* ============================================================
+   CONFIG — ligar o envio de verdade:
+   1. crie o projeto no supabase.com (grátis);
+   2. rode o SQL do README (tabela `leads` + política de INSERT);
+   3. cole aqui a URL e a anon key do projeto.
+   Com os dois vazios, a página roda em modo demonstração e avisa.
+   ============================================================ */
+var CONFIG={
+  SUPABASE_URL:"https://projeto-novo-substituir.supabase.co",
+  SUPABASE_ANON_KEY:"SUBSTITUIR_PELA_CHAVE_ANON_DO_PROJETO_NOVO"
+};
+
+/* O carro passando fecha o cadastro. O som toca UMA vez, logo depois de
+   um clique deliberado da pessoa — é o único momento da página em que
+   isso se justifica. Para desligar, ponha false aqui. */
+var COM_SOM=true;
+
+/* as 19 funções reais do cadastro — mesma lista fechada do produto */
+var FUNCOES=["Assistente","Colorista","Designer","Direção","Direção de fotografia","DIT","Editor","Editor realtime","Fotógrafo","Gaffer","Líder de equipe","Motion / VFX","Op. de câmera","Op. de drone","Op. de FPV","Op. de gimbal","Op. de live","Produtor","Storymaker"];
+
+var $=function(id){return document.getElementById(id)};
+var TRILHA=null, DIAS=[], LEAD=null;
+var DEMO=!CONFIG.SUPABASE_URL||!CONFIG.SUPABASE_ANON_KEY;
+if(DEMO) $("demo").classList.add("on");
+
+$("f-funcao").innerHTML=FUNCOES.map(function(f){return '<option>'+f+'</option>'}).join("");
+
+function passo(id){
+  ["p-trilha","p-form","p-dias","p-ok"].forEach(function(p){
+    $(p).classList.toggle("on",p===id);
+  });
+  /* na primeira tela o cabeçalho É o argumento; depois dela ele só
+     empurra o formulário para baixo da dobra no celular */
+  if(id==="p-trilha"){ window.scrollTo({top:0,behavior:"smooth"}); return }
+  var cartao=document.querySelector(".cartao");
+  var y=cartao.getBoundingClientRect().top+window.scrollY-16;
+  window.scrollTo({top:Math.max(0,y),behavior:"smooth"});
+}
+
+/* trilha escolhida decide quais campos aparecem */
+document.querySelectorAll("[data-tri]").forEach(function(b){
+  b.onclick=function(){
+    TRILHA=b.dataset.tri;
+    document.querySelectorAll(".so-freela").forEach(function(e){e.hidden=TRILHA!=="freela"});
+    document.querySelectorAll(".so-contratante").forEach(function(e){e.hidden=TRILHA!=="contratante"});
+    $("f-tit").textContent=TRILHA==="freela"?"Seus dados de freela":"Seus dados de contratante";
+    passo("p-form");
+  };
+});
+$("volta1").onclick=function(){passo("p-trilha")};
+
+/* máscara leve do telefone: só dígitos, formata ao digitar */
+$("f-zap").addEventListener("input",function(){
+  var d=this.value.replace(/\D/g,"").slice(0,11);
+  var out=d;
+  if(d.length>2) out="("+d.slice(0,2)+") "+d.slice(2);
+  if(d.length>7) out="("+d.slice(0,2)+") "+d.slice(2,7)+"-"+d.slice(7);
+  this.value=out;
+});
+
+function mal(c,ruim){
+  var el=document.querySelector('[data-c="'+c+'"]');
+  if(el) el.classList.toggle("mal",!!ruim);
+  return !!ruim;
+}
+
+$("frm").addEventListener("submit",function(ev){
+  ev.preventDefault();
+  if($("hp").value) return;                      /* robô */
+  var nome=$("f-nome").value.trim();
+  var zap=$("f-zap").value.replace(/\D/g,"");
+  var praca=$("f-praca").value.trim();
+  var pend=false;
+  pend=mal("nome",!nome)||pend;
+  pend=mal("zap",zap.length<10)||pend;
+  pend=mal("praca",!praca)||pend;
+  pend=mal("lgpd",!$("a-lgpd").checked)||pend;
+  if(TRILHA==="freela") pend=mal("pub",!$("a-pub").checked)||pend;
+  if(pend) return;
+
+  LEAD={
+    lado:TRILHA, nome:nome, whatsapp:zap, praca:praca,
+    funcao:TRILHA==="freela"?$("f-funcao").value:null,
+    tipo_negocio:TRILHA==="contratante"?$("f-tipo").value:null,
+    jobs_mes:TRILHA==="contratante"?$("f-jobs").value:null,
+    aceite_contato:true,
+    aceite_publicacao:TRILHA==="freela"?$("a-pub").checked:null,
+    dias_livres:null
+  };
+  /* dia livre é coisa de quem É escalado: contratante não tem agenda
+     de disponibilidade para manter, então vai direto ao fim */
+  if(TRILHA==="contratante"){ enviar(false); return }
+  montarDias();
+  passo("p-dias");
+});
+
+/* os próximos 15 dias, gerados na hora — data real, nunca fixa */
+var MESES=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+var SEM=["dom","seg","ter","qua","qui","sex","sáb"];
+function montarDias(){
+  var el=$("dias"); el.innerHTML=""; DIAS=[];
+  var hoje=new Date();
+  for(var i=1;i<=15;i++){
+    var d=new Date(hoje); d.setDate(hoje.getDate()+i);
+    var iso=d.toISOString().slice(0,10);
+    var b=document.createElement("button");
+    b.type="button"; b.className="dia"; b.setAttribute("aria-pressed","false");
+    b.innerHTML='<small>'+SEM[d.getDay()]+'</small><b>'+d.getDate()+'</b><small>'+MESES[d.getMonth()]+'</small>';
+    (function(b,iso){
+      b.onclick=function(){
+        var on=b.getAttribute("aria-pressed")==="true";
+        b.setAttribute("aria-pressed",String(!on));
+        if(on) DIAS=DIAS.filter(function(x){return x!==iso}); else DIAS.push(iso);
+        contaDias();
+      };
+    })(b,iso);
+    el.appendChild(b);
+  }
+  contaDias();
+}
+function contaDias(){
+  $("d-conta").textContent=DIAS.length
+    ? DIAS.length+(DIAS.length===1?" dia livre marcado":" dias livres marcados")
+    : "nenhum dia marcado ainda";
+}
+
+function enviar(comDias){
+  if(comDias) LEAD.dias_livres=DIAS.slice().sort();
+  concluir();
+  if(DEMO) return;                              /* modo demonstração: não grava */
+  fetch(CONFIG.SUPABASE_URL+"/rest/v1/leads",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "apikey":CONFIG.SUPABASE_ANON_KEY,
+      "Authorization":"Bearer "+CONFIG.SUPABASE_ANON_KEY,
+      "Prefer":"return=minimal"
+    },
+    body:JSON.stringify(LEAD)
+  }).catch(function(){
+    /* o lead não pode se perder em silêncio: cai no localStorage e
+       aparece no console para recuperação manual */
+    try{
+      var fila=JSON.parse(localStorage.getItem("cdf-leads-fila")||"[]");
+      fila.push(LEAD); localStorage.setItem("cdf-leads-fila",JSON.stringify(fila));
+    }catch(e){}
+  });
+}
+$("d-ok").onclick=function(){enviar(true)};
+$("d-pula").onclick=function(){enviar(false)};
+
+/* ============================================================
+   O CARRO PASSANDO
+
+   Mesma física e mesmo som do protótipo — é a assinatura da casa, e o
+   nome do produto vem justamente disto. Aqui ele fecha o pré-cadastro:
+   a pessoa acabou de entrar na leva e vê o carro passar.
+
+   O som é sintetizado no Web Audio, sem arquivo nenhum: um MP3 de
+   buzina pesaria mais que a página inteira. O contexto só é criado
+   dentro do clique, que é o gesto que o navegador exige para tocar.
+   ============================================================ */
+var ac=null, master=null;
+function audio(){
+  if(ac) return ac;
+  var AC=window.AudioContext||window.webkitAudioContext;
+  if(!AC) return null;
+  ac=new AC();
+  master=ac.createGain(); master.gain.value=.14; master.connect(ac.destination);
+  return ac;
+}
+function ruido(dur){
+  var n=Math.max(1,Math.floor(ac.sampleRate*dur));
+  var b=ac.createBuffer(1,n,ac.sampleRate), d=b.getChannelData(0);
+  for(var i=0;i<n;i++) d[i]=Math.random()*2-1;
+  var src=ac.createBufferSource(); src.buffer=b; return src;
+}
+function buzina(t0){
+  /* dois tons em terça maior — é o que soa "buzina brasileira" */
+  [440,554].forEach(function(f0){
+    var o=ac.createOscillator(); o.type="sawtooth"; o.frequency.setValueAtTime(f0,t0);
+    var f=ac.createBiquadFilter(); f.type="lowpass"; f.frequency.value=2200; f.Q.value=.6;
+    o.connect(f);
+    var g=ac.createGain();
+    g.gain.setValueAtTime(0.0001,t0);
+    g.gain.exponentialRampToValueAtTime(.2,t0+.02);
+    g.gain.setValueAtTime(.2,t0+.22);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+.32);
+    f.connect(g); g.connect(master);
+    o.start(t0); o.stop(t0+.4);
+  });
+}
+function motor(t0){
+  /* rotação subindo, Doppler na passagem, panorâmica cruzando junto */
+  var pan=ac.createStereoPanner?ac.createStereoPanner():null;
+  var saida=pan||master; if(pan) pan.connect(master);
+  if(pan){ pan.pan.setValueAtTime(-.85,t0); pan.pan.linearRampToValueAtTime(.85,t0+1.35) }
+  var o=ac.createOscillator(); o.type="sawtooth";
+  o.frequency.setValueAtTime(58,t0);
+  o.frequency.exponentialRampToValueAtTime(190,t0+.62);   /* acelera */
+  o.frequency.exponentialRampToValueAtTime(150,t0+.78);   /* troca de marcha */
+  o.frequency.exponentialRampToValueAtTime(235,t0+1.0);
+  o.frequency.exponentialRampToValueAtTime(96,t0+1.42);   /* passou: Doppler cai */
+  var f=ac.createBiquadFilter(); f.type="lowpass";
+  f.frequency.setValueAtTime(420,t0); f.frequency.linearRampToValueAtTime(1500,t0+.9);
+  f.frequency.linearRampToValueAtTime(500,t0+1.42); f.Q.value=3;
+  o.connect(f);
+  var g=ac.createGain();
+  g.gain.setValueAtTime(0.0001,t0);
+  g.gain.exponentialRampToValueAtTime(.34,t0+.28);
+  g.gain.setValueAtTime(.34,t0+.95);
+  g.gain.exponentialRampToValueAtTime(0.0001,t0+1.45);
+  f.connect(g); g.connect(saida);
+  o.start(t0); o.stop(t0+1.5);
+  /* vento e pneu */
+  var r=ruido(1.5), rf=ac.createBiquadFilter();
+  rf.type="bandpass"; rf.Q.value=.7;
+  rf.frequency.setValueAtTime(600,t0); rf.frequency.linearRampToValueAtTime(2200,t0+.9);
+  rf.frequency.linearRampToValueAtTime(700,t0+1.42);
+  r.connect(rf);
+  var rg=ac.createGain();
+  rg.gain.setValueAtTime(0.0001,t0);
+  rg.gain.exponentialRampToValueAtTime(.1,t0+.4);
+  rg.gain.exponentialRampToValueAtTime(0.0001,t0+1.45);
+  rf.connect(rg); rg.connect(saida);
+  r.start(t0); r.stop(t0+1.5);
+  buzina(t0+.72);
+}
+function passarOCarro(){
+  var calmo=window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches;
+  if(COM_SOM && !calmo){
+    var a=audio();
+    if(a){
+      if(a.state==="suspended") a.resume();
+      try{ motor(a.currentTime+.05) }catch(e){}
+    }
+  }
+  var pista=$("pista");
+  if(!pista||calmo) return;
+  pista.classList.remove("on"); void pista.offsetWidth; pista.classList.add("on");
+  setTimeout(function(){ pista.classList.remove("on") },1550);
+}
+
+function concluir(){
+  var freela=LEAD.lado==="freela";
+  $("ok-tit").textContent=freela
+    ? "Você está na primeira leva."
+    : "Você entra antes de todo mundo.";
+  $("ok-txt").textContent=freela
+    ? "O convite chega pelo seu WhatsApp antes da abertura pública. Até lá, só uma coisa ajuda de verdade: chamar quem trabalha com você."
+    : "Quem contrata entra primeiro — a casa precisa estar cheia quando os freelas chegarem. O convite chega pelo seu WhatsApp.";
+  var msg=freela
+    ? "Fiz meu pré-cadastro no Carro do Freela — a agenda do audiovisual de Natal. Entra na primeira leva também: "
+    : "A gente vai conseguir ver quem está livre por data no Carro do Freela. Faz teu pré-cadastro: ";
+  $("ok-zap").href="https://wa.me/?text="+encodeURIComponent(msg+location.origin+location.pathname);
+  passo("p-ok");
+  /* o carro passa junto com a tela de sucesso: é o que a pessoa acabou
+     de entrar para ver acontecer de verdade daqui a algumas semanas */
+  $("p-ok").classList.remove("passou-txt"); void $("p-ok").offsetWidth;
+  $("p-ok").classList.add("passou-txt");
+  passarOCarro();
+}
+</script>

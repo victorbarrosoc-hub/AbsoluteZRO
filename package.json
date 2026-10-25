@@ -1,0 +1,41 @@
+{
+  "name": "absolute-zro-hub",
+  "private": true,
+  "description": "Absolute ZRO HUB: conta central, permissões por assinatura, Ciclo do O e integração entre as ferramentas.",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "npm run dev -w @zro/hub-web",
+    "build": "npm run build -w @zro/hub-web",
+    "worker": "npm run start -w @zro/worker",
+    "db:migrate": "tsx packages/db/src/cli.ts",
+    "db:seed:demo": "tsx scripts/seed-demo.ts",
+    "contracts:export": "tsx packages/media-contracts/src/export-schemas.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit && npm run typecheck -w @zro/hub-web",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "check:originals": "node scripts/check-originals.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@playwright/test": "1.63.0",
+    "@types/node": "^24.10.1",
+    "eslint": "^9.39.1",
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.6",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.4",
+    "vitest": "^4.1.12",
+    "@axe-core/playwright": "^4.11.0"
+  },
+  "packageManager": "npm@11.6.2"
+}
