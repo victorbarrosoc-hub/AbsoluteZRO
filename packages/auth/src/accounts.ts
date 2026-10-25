@@ -106,8 +106,11 @@ export async function verifyEmail(db: Database, token: string): Promise<boolean>
 /** Gera um novo link de confirmação (o anterior continua valendo até expirar). */
 export async function newVerifyToken(db: Database, userId: string): Promise<string> {
   const token = newToken('zv')
-  await db.asSystem('auth: novo link de confirmação', (tx) =>
-    tx`insert into zro.auth_tokens (user_id, purpose, token_hash, expires_at) values (${userId}, 'verify_email', ${hashToken(token)}, ${new Date(Date.now() + VERIFY_TTL_MS)})`)
+  await db.asSystem(
+    'auth: novo link de confirmação',
+    (tx) =>
+      tx`insert into zro.auth_tokens (user_id, purpose, token_hash, expires_at) values (${userId}, 'verify_email', ${hashToken(token)}, ${new Date(Date.now() + VERIFY_TTL_MS)})`,
+  )
   return token
 }
 

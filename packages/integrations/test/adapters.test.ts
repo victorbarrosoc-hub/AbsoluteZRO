@@ -2,7 +2,17 @@
 import { randomUUID } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import { CarroJobSchema, OrganizationPlanSchema, validateManifest } from '@zro/media-contracts'
-import { buildSobedesceManifest, parseChecksumReport, parseDescargas, planOrganization, projectInputFromJob, scriptFromTpeasyBackup, sobedesceAssetId, toTpeasyBackup, tpeasyBlocks } from '../src/index'
+import {
+  buildSobedesceManifest,
+  parseChecksumReport,
+  parseDescargas,
+  planOrganization,
+  projectInputFromJob,
+  scriptFromTpeasyBackup,
+  sobedesceAssetId,
+  toTpeasyBackup,
+  tpeasyBlocks,
+} from '../src/index'
 import { fixture } from '../../../tests/integration/helpers'
 
 const projectId = randomUUID()
@@ -56,7 +66,11 @@ describe('SOBEDESCE → manifest', () => {
 
   it('duas levas no mesmo minuto: só a última tem prova (comportamento real do SOBEDESCE)', () => {
     const entries = parseDescargas(fixture('sobedesce/descargas.jsonl')).entries
-    const m = buildSobedesceManifest({ projectId, entry: entries[1]!, destinations: [{ id: 'hd-principal', label: 'HD', reports: [{ name: 'r.xxh64', text: fixture('sobedesce/principal-leva1.xxh64') }] }] })
+    const m = buildSobedesceManifest({
+      projectId,
+      entry: entries[1]!,
+      destinations: [{ id: 'hd-principal', label: 'HD', reports: [{ name: 'r.xxh64', text: fixture('sobedesce/principal-leva1.xxh64') }] }],
+    })
     const byName = Object.fromEntries(m.assets.map((a) => [a.original_name, a.destinations[0]!.status]))
     expect(byName['C0003.MP4']).toBe('verified')
     expect(byName['C0001.MP4']).toBe('unverified')
@@ -90,7 +104,11 @@ describe('SOBEDESCE → manifest', () => {
   it('caminho perigoso é recusado pelo contrato', () => {
     const [entry] = parseDescargas(fixture('sobedesce/unica-descargas.jsonl')).entries
     expect(() => buildSobedesceManifest({ projectId, entry: { ...entry!, cartao: { ...entry!.cartao, pasta: '../fora' } }, destinations: [] })).toThrow()
-    const m = buildSobedesceManifest({ projectId, entry: { ...entry!, arquivos: [{ rel: '../../etc/passwd', size: 1 }, ...entry!.arquivos] }, destinations: [] })
+    const m = buildSobedesceManifest({
+      projectId,
+      entry: { ...entry!, arquivos: [{ rel: '../../etc/passwd', size: 1 }, ...entry!.arquivos] },
+      destinations: [],
+    })
     expect(m.assets.some((a) => a.relative_path.includes('..'))).toBe(false)
     expect(m.warnings.some((w) => w.includes('caminho inseguro'))).toBe(true)
   })

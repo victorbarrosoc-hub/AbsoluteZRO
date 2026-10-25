@@ -32,14 +32,23 @@ export async function peekQuota(tx: Queryable, orgId: string, metric: string, am
   const limit = await currentLimit(tx, orgId, metric, now)
   const [q] = await tx`select used from zro.quotas where org_id = ${orgId} and metric = ${metric} and period_start = ${start}`
   const used = q ? Number(q.used) : 0
-  if (limit === null) return { ok: false, code: 'quota_not_configured', used, limit, periodEnd: end, message: 'O limite desta operação ainda não foi configurado no plano.' }
+  if (limit === null)
+    return { ok: false, code: 'quota_not_configured', used, limit, periodEnd: end, message: 'O limite desta operação ainda não foi configurado no plano.' }
   if (used + amount > limit) return { ok: false, code: 'quota_exceeded', used, limit, periodEnd: end, message: 'O limite do plano para este mês foi atingido.' }
   return { ok: true, used, limit, periodEnd: end, duplicate: false }
 }
 
 export async function consumeQuota(
   tx: Queryable,
-  input: { orgId: string; metric: string; amount?: number; idempotencyKey: string; userId?: string | null; projectId?: string | null; workflowRunId?: string | null },
+  input: {
+    orgId: string
+    metric: string
+    amount?: number
+    idempotencyKey: string
+    userId?: string | null
+    projectId?: string | null
+    workflowRunId?: string | null
+  },
   now = new Date(),
 ): Promise<QuotaResult> {
   const amount = input.amount ?? 1
@@ -47,7 +56,8 @@ export async function consumeQuota(
   await tx`select pg_advisory_xact_lock(hashtextextended(${`quota:${input.orgId}:${input.metric}`}, 0))`
   const [dup] = await tx`select period_start from zro.usage_events where org_id = ${input.orgId} and idempotency_key = ${input.idempotencyKey}`
   if (dup) {
-    const [q] = await tx`select used, limit_value from zro.quotas where org_id = ${input.orgId} and metric = ${input.metric} and period_start = ${dup.period_start as Date}`
+    const [q] =
+      await tx`select used, limit_value from zro.quotas where org_id = ${input.orgId} and metric = ${input.metric} and period_start = ${dup.period_start as Date}`
     return { ok: true, used: Number(q?.used ?? 0), limit: Number(q?.limit_value ?? 0), periodEnd: end, duplicate: true }
   }
   const limit = await currentLimit(tx, input.orgId, input.metric, now)
@@ -57,7 +67,8 @@ export async function consumeQuota(
     on conflict (org_id, metric, period_start) do update set limit_value = excluded.limit_value, updated_at = now()
     returning used`
   const used = Number(q!.used)
-  if (limit === null) return { ok: false, code: 'quota_not_configured', used, limit, periodEnd: end, message: 'O limite desta operação ainda não foi configurado no plano.' }
+  if (limit === null)
+    return { ok: false, code: 'quota_not_configured', used, limit, periodEnd: end, message: 'O limite desta operação ainda não foi configurado no plano.' }
   if (used + amount > limit) return { ok: false, code: 'quota_exceeded', used, limit, periodEnd: end, message: 'O limite do plano para este mês foi atingido.' }
   await tx`
     insert into zro.usage_events (org_id, user_id, metric, amount, idempotency_key, project_id, workflow_run_id, period_start)

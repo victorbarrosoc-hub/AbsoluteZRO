@@ -1,7 +1,18 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { testDatabase } from '@zro/db/testing'
 import type { Database } from '@zro/db'
-import { authenticate, changePassword, hashPassword, requestPasswordReset, resetPassword, revokeSessionByToken, signIn, signUp, verifyEmail, verifyPassword } from '../src/index'
+import {
+  authenticate,
+  changePassword,
+  hashPassword,
+  requestPasswordReset,
+  resetPassword,
+  revokeSessionByToken,
+  signIn,
+  signUp,
+  verifyEmail,
+  verifyPassword,
+} from '../src/index'
 import { expectCode } from '../../../tests/integration/helpers'
 
 let db: Database

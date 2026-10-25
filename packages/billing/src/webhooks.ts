@@ -83,11 +83,13 @@ export async function applyBillingEvent(db: Database, provider: string, raw: unk
 
     const [org] = await tx`select id from zro.organizations where id = ${ev.data.org_id}`
     if (!org) return finish({ result: 'failed', reason: 'organização desconhecida' })
-    const [plan] = await tx`select id, grace_days from zro.plans where code = ${ev.data.plan_code} and version = ${ev.data.plan_version} and status in ('active', 'retired')`
+    const [plan] =
+      await tx`select id, grace_days from zro.plans where code = ${ev.data.plan_code} and version = ${ev.data.plan_version} and status in ('active', 'retired')`
     if (!plan) return finish({ result: 'failed', reason: 'plano desconhecido ou em rascunho' })
 
     const [cur] = await tx`select * from zro.subscriptions where provider = ${provider} and provider_subscription_id = ${ev.data.subscription_id} for update`
-    if (cur && cur.org_id !== ev.data.org_id) return finish({ result: 'failed', reason: 'assinatura pertence a outra organização', subscriptionId: cur.id as string })
+    if (cur && cur.org_id !== ev.data.org_id)
+      return finish({ result: 'failed', reason: 'assinatura pertence a outra organização', subscriptionId: cur.id as string })
     const occurred = new Date(ev.occurred_at)
     if (cur?.provider_updated_at && (cur.provider_updated_at as Date) > occurred) {
       return finish({ result: 'ignored', reason: 'evento mais antigo que o estado atual', subscriptionId: cur.id as string })

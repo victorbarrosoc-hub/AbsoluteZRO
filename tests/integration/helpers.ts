@@ -48,7 +48,9 @@ export async function givePlan(db: Database, orgId: string, code: string, period
 /** Limites explícitos por concessão administrativa (o catálogo neutro não traz limite). */
 export async function giveLimits(db: Database, orgId: string, productId: string, limits: Record<string, number>) {
   const adminId = await admin(db)
-  return db.asSystem('teste: limites', (tx) => grantEntitlement(tx, { userId: adminId, reason: 'limites de teste' }, { orgId, productId, features: null, limits, endsAt: null }))
+  return db.asSystem('teste: limites', (tx) =>
+    grantEntitlement(tx, { userId: adminId, reason: 'limites de teste' }, { orgId, productId, features: null, limits, endsAt: null }),
+  )
 }
 
 export async function expectCode(p: Promise<unknown>, code: string) {

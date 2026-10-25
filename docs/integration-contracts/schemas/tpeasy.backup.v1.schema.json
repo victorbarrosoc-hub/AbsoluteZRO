@@ -1,0 +1,75 @@
+{
+  "$id": "https://absolutezro.local/schemas/tpeasy.backup.v1.json",
+  "title": "Backup do TPeasy v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "app": {
+      "type": "string",
+      "const": "tpeasy"
+    },
+    "version": {
+      "type": "number",
+      "const": 1
+    },
+    "exportedAt": {
+      "type": "string"
+    },
+    "scripts": {
+      "maxItems": 5000,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "title": {
+            "default": "",
+            "type": "string",
+            "maxLength": 300
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 200000
+          },
+          "updated": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "pos": {
+            "type": "number"
+          },
+          "fav": {
+            "type": "boolean"
+          },
+          "target": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "deleted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "body"
+        ]
+      }
+    },
+    "prefs": {},
+    "sessions": {
+      "type": "array",
+      "items": {}
+    }
+  },
+  "required": [
+    "app",
+    "version",
+    "scripts"
+  ]
+}

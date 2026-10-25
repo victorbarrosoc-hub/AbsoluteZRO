@@ -29,10 +29,7 @@ export type Database = {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-export function createDatabase(
-  url: string,
-  options: { max?: number; prepare?: boolean; onSystem?: (reason: string) => void } = {},
-): Database {
+export function createDatabase(url: string, options: { max?: number; prepare?: boolean; onSystem?: (reason: string) => void } = {}): Database {
   const sql = postgres(url, {
     max: options.max ?? 10,
     // Pooler em modo transação (Supabase) não aceita prepared statements nomeados.
@@ -78,9 +75,7 @@ export function getDatabase(): Database {
 
 /** Erros do Postgres que o domínio trata (violação de unicidade, RLS, checagem). */
 export function pgErrorCode(err: unknown): string | null {
-  return typeof err === 'object' && err !== null && 'code' in err && typeof (err as { code: unknown }).code === 'string'
-    ? (err as { code: string }).code
-    : null
+  return typeof err === 'object' && err !== null && 'code' in err && typeof (err as { code: unknown }).code === 'string' ? (err as { code: string }).code : null
 }
 
 export const PG = {

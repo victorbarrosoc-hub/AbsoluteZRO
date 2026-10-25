@@ -38,10 +38,19 @@ export type OrganizationSummary = { id: string; name: string; slug: string; role
 
 export async function listMyOrganizations(db: Database, auth: Authenticated | null): Promise<OrganizationSummary[]> {
   const { userId } = requireUser(auth)
-  const rows = await db.asUser({ userId, orgId: auth!.session.activeOrgId }, (tx) => tx`
+  const rows = await db.asUser(
+    { userId, orgId: auth!.session.activeOrgId },
+    (tx) => tx`
     select o.id, o.name, o.slug, m.role from zro.memberships m join zro.organizations o on o.id = m.org_id
-    where m.user_id = ${userId} and m.status = 'active' and o.status = 'active' order by o.name`)
-  return rows.map((r) => ({ id: r.id as string, name: r.name as string, slug: r.slug as string, role: r.role as OrgRole, active: r.id === auth!.session.activeOrgId }))
+    where m.user_id = ${userId} and m.status = 'active' and o.status = 'active' order by o.name`,
+  )
+  return rows.map((r) => ({
+    id: r.id as string,
+    name: r.name as string,
+    slug: r.slug as string,
+    role: r.role as OrgRole,
+    active: r.id === auth!.session.activeOrgId,
+  }))
 }
 
 export async function switchOrganization(db: Database, auth: Authenticated | null, orgId: string): Promise<void> {
@@ -52,13 +61,19 @@ export async function switchOrganization(db: Database, auth: Authenticated | nul
 
 export async function listMembers(db: Database, auth: Authenticated | null) {
   const actor = await authorize(db, auth)
-  const members = await db.asUser({ userId: actor.userId, orgId: actor.orgId }, (tx) => tx`
+  const members = await db.asUser(
+    { userId: actor.userId, orgId: actor.orgId },
+    (tx) => tx`
     select u.id, u.email, u.display_name, m.role, m.created_at from zro.memberships m join zro.users u on u.id = m.user_id
-    where m.org_id = ${actor.orgId} and m.status = 'active' order by m.created_at`)
+    where m.org_id = ${actor.orgId} and m.status = 'active' order by m.created_at`,
+  )
   const invitations = ADMIN_ROLES.includes(actor.role)
-    ? await db.asUser({ userId: actor.userId, orgId: actor.orgId }, (tx) => tx`
+    ? await db.asUser(
+        { userId: actor.userId, orgId: actor.orgId },
+        (tx) => tx`
         select id, email, role, expires_at, created_at from zro.invitations
-        where org_id = ${actor.orgId} and accepted_at is null and revoked_at is null and expires_at > now() order by created_at desc`)
+        where org_id = ${actor.orgId} and accepted_at is null and revoked_at is null and expires_at > now() order by created_at desc`,
+      )
     : []
   return { actor, members, invitations }
 }
@@ -80,7 +95,14 @@ export async function inviteMember(
       insert into zro.invitations (org_id, email, role, token_hash, invited_by, expires_at)
       values (${actor.orgId}, ${email}, ${input.role}, ${hashToken(token)}, ${actor.userId}, ${new Date(Date.now() + INVITE_TTL_MS)})
       returning id`
-    await audit(tx, { orgId: actor.orgId, actorUserId: actor.userId, action: 'member.invited', targetType: 'invitation', targetId: inv!.id as string, metadata: { role: input.role } })
+    await audit(tx, {
+      orgId: actor.orgId,
+      actorUserId: actor.userId,
+      action: 'member.invited',
+      targetType: 'invitation',
+      targetId: inv!.id as string,
+      metadata: { role: input.role },
+    })
     return inv!.id as string
   })
   return { token, invitationId: id, email }
@@ -111,7 +133,14 @@ export async function acceptInvitation(db: Database, auth: Authenticated | null,
       on conflict (org_id, user_id) do update set status = 'active',
         role = case when zro.memberships.role = 'owner' then 'owner' else excluded.role end`
     await tx`update zro.invitations set accepted_at = now(), accepted_by = ${userId} where id = ${inv.id as string}`
-    await audit(tx, { orgId: inv.org_id as string, actorUserId: userId, action: 'member.joined', targetType: 'invitation', targetId: inv.id as string, metadata: { role: inv.role } })
+    await audit(tx, {
+      orgId: inv.org_id as string,
+      actorUserId: userId,
+      action: 'member.joined',
+      targetType: 'invitation',
+      targetId: inv.id as string,
+      metadata: { role: inv.role },
+    })
     return inv.org_id as string
   })
   await setActiveOrganization(db, auth!, orgId)
@@ -124,9 +153,17 @@ export async function changeMemberRole(db: Database, auth: Authenticated | null,
   if (role === 'owner' && actor.role !== 'owner') throw new DomainError('forbidden_role', 'Só o dono transfere a posse.')
   try {
     await db.asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
-      const r = await tx`update zro.memberships set role = ${role} where org_id = ${actor.orgId} and user_id = ${memberUserId} and status = 'active' returning user_id`
+      const r =
+        await tx`update zro.memberships set role = ${role} where org_id = ${actor.orgId} and user_id = ${memberUserId} and status = 'active' returning user_id`
       if (!r.length) throw new DomainError('forbidden_role', 'Você não pode mudar o papel desta pessoa.')
-      await audit(tx, { orgId: actor.orgId, actorUserId: actor.userId, action: 'member.role_changed', targetType: 'user', targetId: memberUserId, metadata: { role } })
+      await audit(tx, {
+        orgId: actor.orgId,
+        actorUserId: actor.userId,
+        action: 'member.role_changed',
+        targetType: 'user',
+        targetId: memberUserId,
+        metadata: { role },
+      })
     })
   } catch (e) {
     if (pgErrorCode(e) === PG.checkViolation) throw new DomainError('conflict', 'A organização precisa de pelo menos um dono.')
@@ -138,7 +175,8 @@ export async function removeMember(db: Database, auth: Authenticated | null, mem
   const actor = await authorize(db, auth, { roles: ADMIN_ROLES })
   try {
     await db.asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
-      const r = await tx`update zro.memberships set status = 'removed' where org_id = ${actor.orgId} and user_id = ${memberUserId} and status = 'active' returning user_id`
+      const r =
+        await tx`update zro.memberships set status = 'removed' where org_id = ${actor.orgId} and user_id = ${memberUserId} and status = 'active' returning user_id`
       if (!r.length) throw new DomainError('forbidden_role', 'Você não pode remover esta pessoa.')
       await audit(tx, { orgId: actor.orgId, actorUserId: actor.userId, action: 'member.removed', targetType: 'user', targetId: memberUserId })
     })

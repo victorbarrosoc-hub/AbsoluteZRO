@@ -1,0 +1,7 @@
+products/
+node_modules/
+.next/
+package-lock.json
+PRD.md
+tests/fixtures/
+infra/migrations/

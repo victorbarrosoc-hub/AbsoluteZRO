@@ -1,0 +1,77 @@
+/*
+ * Absolute ZRO — tokens da identidade oficial (zrofilmes.vercel.app/absolute, fornecida pelo titular).
+ * Base escura (void), azul do eclipse como único acento, tipografia Montserrat/Inter/Instrument Serif/Geist Mono.
+ * Tema claro "paper" disponível; os palcos (hero, Ciclo do O) continuam escuros nos dois temas.
+ */
+:root {
+  --zro-void: #050505;
+  --zro-ink: #0b0b0b;
+  --zro-graphite: #121212;
+  --zro-smoke: #1a1a1a;
+  --zro-mist: #232323;
+  --zro-mute: #858585;
+  --zro-ash: #a3a3a3;
+  --zro-light: #e6e6e6;
+  --zro-white: #ffffff;
+  --zro-blue: #2d7bff;
+  --zro-ice: #f5f7fa;
+  --zro-deep: #0b1f2d;
+  --zro-ok: #5fbf8a;
+  --zro-warn: #d9a441;
+  --zro-danger: #e5484d;
+  --zro-paper: #f2f2f0;
+  --zro-paper-ink: #0b0b0b;
+  --zro-paper-mute: #5c5c5c;
+
+  --font-brand: 'Montserrat Variable', 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-serif: 'Instrument Serif', ui-serif, Georgia, serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-s: 8px;
+  --radius-m: 14px;
+  --radius-l: 22px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 72px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --glow: 0 0 0 1px color-mix(in srgb, var(--zro-blue) 40%, transparent), 0 0 32px color-mix(in srgb, var(--zro-blue) 35%, transparent);
+
+  /* tema escuro (padrão) */
+  --bg: var(--zro-void);
+  --surface: var(--zro-ink);
+  --surface-2: var(--zro-graphite);
+  --surface-3: var(--zro-smoke);
+  --text: var(--zro-light);
+  --text-strong: var(--zro-white);
+  --text-mute: var(--zro-ash);
+  --text-faint: var(--zro-mute);
+  --line: rgb(255 255 255 / 0.08);
+  --line-strong: rgb(255 255 255 / 0.16);
+  --accent: var(--zro-blue);
+  --accent-text: #7fb0ff;
+  --focus: #7fb0ff;
+  color-scheme: dark;
+}
+
+:root[data-theme='paper'] {
+  --bg: var(--zro-paper);
+  --surface: #ffffff;
+  --surface-2: #f7f7f5;
+  --surface-3: #ececea;
+  --text: #1c1c1c;
+  --text-strong: var(--zro-paper-ink);
+  --text-mute: var(--zro-paper-mute);
+  --text-faint: #767676;
+  --line: rgb(11 11 11 / 0.1);
+  --line-strong: rgb(11 11 11 / 0.2);
+  --accent: #1f64e0;
+  --accent-text: #1a56c4;
+  --focus: #1a56c4;
+  color-scheme: light;
+}

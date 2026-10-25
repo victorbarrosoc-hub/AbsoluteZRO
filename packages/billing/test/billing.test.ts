@@ -3,7 +3,19 @@ import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Database } from '@zro/db'
 import { testDatabase } from '@zro/db/testing'
-import { applyBillingEvent, cancelManualSubscription, checkEntitlement, consumeQuota, createPlanVersion, productAccessFor, publishPlanVersion, recomputeEntitlements, signPayload, subscriptionWindow, verifySignature } from '../src/index'
+import {
+  applyBillingEvent,
+  cancelManualSubscription,
+  checkEntitlement,
+  consumeQuota,
+  createPlanVersion,
+  productAccessFor,
+  publishPlanVersion,
+  recomputeEntitlements,
+  signPayload,
+  subscriptionWindow,
+  verifySignature,
+} from '../src/index'
 import { admin, giveLimits, givePlan, newOrgWithOwner, planId } from '../../../tests/integration/helpers'
 
 let db: Database
@@ -15,11 +27,21 @@ afterAll(() => db.close())
 const check = (orgId: string, product: string, feature: string | null = null) => db.asSystem('t', (tx) => checkEntitlement(tx, orgId, product, feature))
 
 describe('janela da assinatura', () => {
-  const base = { id: 'x', current_period_start: new Date('2026-10-01'), current_period_end: new Date('2026-11-01'), cancel_at_period_end: false, canceled_at: null, grace_until: null, created_at: new Date('2026-10-01') }
+  const base = {
+    id: 'x',
+    current_period_start: new Date('2026-10-01'),
+    current_period_end: new Date('2026-11-01'),
+    cancel_at_period_end: false,
+    canceled_at: null,
+    grace_until: null,
+    created_at: new Date('2026-10-01'),
+  }
   it('ativa vai até o fim do período; past_due até a carência; cancelada no fim do período vale até lá', () => {
     expect(subscriptionWindow({ ...base, status: 'active' })?.until).toEqual(new Date('2026-11-01'))
     expect(subscriptionWindow({ ...base, status: 'past_due', grace_until: new Date('2026-11-04') })?.until).toEqual(new Date('2026-11-04'))
-    expect(subscriptionWindow({ ...base, status: 'canceled', cancel_at_period_end: true, canceled_at: new Date('2026-10-10') })?.until).toEqual(new Date('2026-11-01'))
+    expect(subscriptionWindow({ ...base, status: 'canceled', cancel_at_period_end: true, canceled_at: new Date('2026-10-10') })?.until).toEqual(
+      new Date('2026-11-01'),
+    )
     expect(subscriptionWindow({ ...base, status: 'canceled', canceled_at: new Date('2026-10-10') })).toBeNull()
     expect(subscriptionWindow({ ...base, status: 'incomplete' })).toBeNull()
   })
@@ -77,7 +99,23 @@ describe('casos de acesso (PRD §9.2)', () => {
   it('feature fora do plano é negada', async () => {
     const o = await newOrgWithOwner(db, 'feature')
     const adminId = await admin(db)
-    const { id } = await db.asSystem('t', (tx) => createPlanVersion(tx, { userId: adminId, reason: 't' }, { code: `so-export-${randomUUID().slice(0, 6)}`, name: 'Só exportar', kind: 'individual', priceCents: null, currency: null, billingInterval: null, trialDays: null, graceDays: 0, products: [{ productId: 'tpeasy', features: ['script_export'], limits: {} }] }))
+    const { id } = await db.asSystem('t', (tx) =>
+      createPlanVersion(
+        tx,
+        { userId: adminId, reason: 't' },
+        {
+          code: `so-export-${randomUUID().slice(0, 6)}`,
+          name: 'Só exportar',
+          kind: 'individual',
+          priceCents: null,
+          currency: null,
+          billingInterval: null,
+          trialDays: null,
+          graceDays: 0,
+          products: [{ productId: 'tpeasy', features: ['script_export'], limits: {} }],
+        },
+      ),
+    )
     await db.asSystem('t', (tx) => publishPlanVersion(tx, { userId: adminId, reason: 't' }, id))
     await db.asSystem('t', async (tx) => {
       await tx`insert into zro.subscriptions (org_id, plan_id, status, current_period_end, provider, provider_subscription_id) values (${o.orgId}, ${id}, 'active', now() + interval '1 day', 'manual', ${'m-' + randomUUID()})`
@@ -95,7 +133,16 @@ describe('webhook de cobrança', () => {
     type: 'subscription.updated',
     occurred_at: new Date().toISOString(),
     ...over,
-    data: { org_id: orgId, subscription_id: 'sub_1', plan_code: 'ciclo-do-o', plan_version: 1, status: 'active', current_period_start: new Date().toISOString(), current_period_end: new Date(Date.now() + 30 * 86_400_000).toISOString(), ...data },
+    data: {
+      org_id: orgId,
+      subscription_id: 'sub_1',
+      plan_code: 'ciclo-do-o',
+      plan_version: 1,
+      status: 'active',
+      current_period_start: new Date().toISOString(),
+      current_period_end: new Date(Date.now() + 30 * 86_400_000).toISOString(),
+      ...data,
+    },
   })
 
   it('assinatura HMAC confere, com tolerância de tempo', () => {
@@ -118,7 +165,11 @@ describe('webhook de cobrança', () => {
     const old = event(o.orgId, { occurred_at: new Date(Date.now() - 3_600_000).toISOString() }, { subscription_id: subId, status: 'canceled' })
     expect((await applyBillingEvent(db, 'manual', old)).result).toBe('ignored')
     expect((await check(o.orgId, 'nossom')).ok).toBe(true)
-    const del = event(o.orgId, { type: 'subscription.deleted', occurred_at: new Date(Date.now() + 1000).toISOString() }, { subscription_id: subId, status: 'canceled' })
+    const del = event(
+      o.orgId,
+      { type: 'subscription.deleted', occurred_at: new Date(Date.now() + 1000).toISOString() },
+      { subscription_id: subId, status: 'canceled' },
+    )
     expect((await applyBillingEvent(db, 'manual', del)).result).toBe('processed')
     expect((await check(o.orgId, 'nossom')).ok).toBe(false)
   })
@@ -128,7 +179,11 @@ describe('webhook de cobrança', () => {
     const subId = `sub_${randomUUID()}`
     await db.asSystem('t', (tx) => tx`update zro.plans set grace_days = 3 where code = 'individual-synquei' and version = 1`)
     const ended = new Date(Date.now() - 86_400_000).toISOString()
-    const r = await applyBillingEvent(db, 'manual', event(o.orgId, {}, { subscription_id: subId, plan_code: 'individual-synquei', status: 'past_due', current_period_end: ended }))
+    const r = await applyBillingEvent(
+      db,
+      'manual',
+      event(o.orgId, {}, { subscription_id: subId, plan_code: 'individual-synquei', status: 'past_due', current_period_end: ended }),
+    )
     expect(r.result).toBe('processed')
     expect((await check(o.orgId, 'synquei')).ok).toBe(true)
     await db.asSystem('t', async (tx) => {
@@ -198,9 +253,21 @@ describe('catálogo versionado', () => {
   it('nova versão começa em rascunho; publicar aposenta a anterior para novas vendas', async () => {
     const adminId = await admin(db)
     const code = `plano-${randomUUID().slice(0, 6)}`
-    const v1 = await db.asSystem('t', (tx) => createPlanVersion(tx, { userId: adminId, reason: 't' }, { code, name: 'X', kind: 'bundle', priceCents: null, currency: null, billingInterval: null, trialDays: null, graceDays: 0, products: [] }))
+    const v1 = await db.asSystem('t', (tx) =>
+      createPlanVersion(
+        tx,
+        { userId: adminId, reason: 't' },
+        { code, name: 'X', kind: 'bundle', priceCents: null, currency: null, billingInterval: null, trialDays: null, graceDays: 0, products: [] },
+      ),
+    )
     await db.asSystem('t', (tx) => publishPlanVersion(tx, { userId: adminId, reason: 't' }, v1.id))
-    const v2 = await db.asSystem('t', (tx) => createPlanVersion(tx, { userId: adminId, reason: 't' }, { code, name: 'X2', kind: 'bundle', priceCents: null, currency: null, billingInterval: null, trialDays: null, graceDays: 0, products: [] }))
+    const v2 = await db.asSystem('t', (tx) =>
+      createPlanVersion(
+        tx,
+        { userId: adminId, reason: 't' },
+        { code, name: 'X2', kind: 'bundle', priceCents: null, currency: null, billingInterval: null, trialDays: null, graceDays: 0, products: [] },
+      ),
+    )
     expect(v2.version).toBe(2)
     await db.asSystem('t', (tx) => publishPlanVersion(tx, { userId: adminId, reason: 't' }, v2.id))
     const rows = await db.sql`select version, status from zro.plans where code = ${code} order by version`

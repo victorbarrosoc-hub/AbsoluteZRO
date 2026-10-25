@@ -67,7 +67,7 @@ export async function authenticate(db: Database, token: string | null | undefine
     if (!r) return null
     const now = Date.now()
     let expiresAt = r.expires_at as Date
-    let activeOrgId = r.org_ok ? (r.active_org_id as string) : null
+    const activeOrgId = r.org_ok ? (r.active_org_id as string) : null
     if (now - (r.last_used_at as Date).getTime() > SLIDE_EVERY_MS || (r.active_org_id && !r.org_ok)) {
       expiresAt = new Date(Math.min(now + SESSION_IDLE_MS, (r.created_at as Date).getTime() + SESSION_MAX_MS))
       await tx`update zro.sessions set last_used_at = now(), expires_at = ${expiresAt}, active_org_id = ${activeOrgId} where id = ${r.id as string}`
@@ -103,8 +103,10 @@ export async function revokeSessionByToken(db: Database, token: string): Promise
 
 /** A pessoa encerra uma das próprias sessões (Perfil e segurança). */
 export async function revokeOwnSession(db: Database, userId: string, sessionId: string): Promise<boolean> {
-  const rows = await db.asSystem('auth: encerrar sessão', (tx) =>
-    tx`update zro.sessions set revoked_at = now() where id = ${sessionId} and user_id = ${userId} and revoked_at is null returning id`)
+  const rows = await db.asSystem(
+    'auth: encerrar sessão',
+    (tx) => tx`update zro.sessions set revoked_at = now() where id = ${sessionId} and user_id = ${userId} and revoked_at is null returning id`,
+  )
   return rows.length > 0
 }
 

@@ -13,7 +13,10 @@ export const MIGRATIONS_DIR = path.resolve(path.dirname(fileURLToPath(import.met
 export type MigrationResult = { applied: string[]; skipped: string[] }
 
 export async function migrate(sql: Sql, dir = MIGRATIONS_DIR): Promise<MigrationResult> {
-  const files = fs.readdirSync(dir).filter((f) => /^\d{4}_[a-z0-9_]+\.sql$/.test(f)).sort()
+  const files = fs
+    .readdirSync(dir)
+    .filter((f) => /^\d{4}_[a-z0-9_]+\.sql$/.test(f))
+    .sort()
   const result: MigrationResult = { applied: [], skipped: [] }
   await sql.unsafe(`create schema if not exists zro;
     create table if not exists zro.schema_migrations (

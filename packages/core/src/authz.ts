@@ -50,9 +50,12 @@ export async function authorize(db: Database, auth: Authenticated | null, need: 
   const orgId = a.session.activeOrgId
   if (!orgId) throw new DomainError('no_active_organization', 'Escolha ou crie uma organização para continuar.')
   // 3. vínculo e papel
-  const [m] = await db.asSystem('authz: vínculo', (tx) => tx`
+  const [m] = await db.asSystem(
+    'authz: vínculo',
+    (tx) => tx`
     select m.role, o.status as org_status from zro.memberships m join zro.organizations o on o.id = m.org_id
-    where m.org_id = ${orgId} and m.user_id = ${userId} and m.status = 'active'`)
+    where m.org_id = ${orgId} and m.user_id = ${userId} and m.status = 'active'`,
+  )
   if (!m) throw new DomainError('forbidden_role', 'Você não faz parte desta organização.')
   if (m.org_status !== 'active') throw new DomainError('organization_inactive', 'Esta organização está suspensa.')
   const role = m.role as OrgRole
@@ -60,8 +63,10 @@ export async function authorize(db: Database, auth: Authenticated | null, need: 
   // 4. acesso ao projeto (pelo RLS, com o papel restrito)
   if (need.project) {
     if (!UUID.test(need.project.id)) throw new DomainError('project_not_found', 'Projeto não encontrado.')
-    const [p] = await db.asUser({ userId, orgId }, (tx) =>
-      tx`select zro.can_view_project(${need.project!.id}) as view, zro.can_edit_project(${need.project!.id}) as edit`)
+    const [p] = await db.asUser(
+      { userId, orgId },
+      (tx) => tx`select zro.can_view_project(${need.project!.id}) as view, zro.can_edit_project(${need.project!.id}) as edit`,
+    )
     if (!p?.view) throw new DomainError('project_not_found', 'Projeto não encontrado.')
     if (need.project.access === 'edit' && !p.edit) throw new DomainError('project_read_only', 'Você pode ver este projeto, mas não alterar.')
   }

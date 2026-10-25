@@ -100,7 +100,10 @@ describe('RLS', () => {
   it('admin não rebaixa dono; dono não fica sozinho sem dono', async () => {
     const eva = await createUser(db, 'eva')
     await addMember(db, orgA, eva, 'admin')
-    const r = await db.asUser({ userId: eva, orgId: orgA }, (tx) => tx`update zro.memberships set role = 'viewer' where org_id = ${orgA} and user_id = ${ana} returning user_id`)
+    const r = await db.asUser(
+      { userId: eva, orgId: orgA },
+      (tx) => tx`update zro.memberships set role = 'viewer' where org_id = ${orgA} and user_id = ${ana} returning user_id`,
+    )
     expect(r).toHaveLength(0)
     const err = await db
       .asUser({ userId: ana, orgId: orgA }, (tx) => tx`update zro.memberships set role = 'admin' where org_id = ${orgA} and user_id = ${ana}`)
@@ -115,7 +118,10 @@ describe('RLS', () => {
   })
 
   it('catálogo é público e esconde rascunhos', async () => {
-    await db.asSystem('teste', (tx) => tx`insert into zro.plans (code, version, name, kind, status) values ('rascunho-x', 1, 'X', 'bundle', 'draft') on conflict do nothing`)
+    await db.asSystem(
+      'teste',
+      (tx) => tx`insert into zro.plans (code, version, name, kind, status) values ('rascunho-x', 1, 'X', 'bundle', 'draft') on conflict do nothing`,
+    )
     const rows = await db.asUser({ userId: caio, orgId: orgA }, (tx) => tx`select code from zro.plans`)
     const codes = rows.map((r) => r.code)
     expect(codes).toContain('ciclo-do-o')

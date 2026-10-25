@@ -67,17 +67,21 @@ export function backoffDelay(attempt: number, base = 5_000, cap = 15 * 60_000, r
 export async function runOnce(db: Database, opts: RunnerOptions): Promise<number> {
   const workerId = opts.workerId ?? `worker-${randomUUID().slice(0, 8)}`
   const log = opts.log ?? createLogger('worker')
-  const claimed = (await db.asSystem('worker: reservar execuções', (tx) => tx`
+  const claimed = (await db.asSystem(
+    'worker: reservar execuções',
+    (tx) => tx`
     update zro.workflow_runs r set status = 'running', locked_at = now(), locked_by = ${workerId}, attempts = r.attempts + 1
     where r.id in (
       select id from zro.workflow_runs where status = 'queued' and next_attempt_at <= now()
         and handler = any(${Object.keys(opts.handlers)}::text[])
       order by next_attempt_at limit ${opts.batchSize ?? 10} for update skip locked)
-    returning r.id, r.org_id, r.project_id, r.event_id, r.handler, r.product_id, r.attempts, r.max_attempts, r.created_by`)) as unknown as RunRow[]
+    returning r.id, r.org_id, r.project_id, r.event_id, r.handler, r.product_id, r.attempts, r.max_attempts, r.created_by`,
+  )) as unknown as RunRow[]
 
   for (const run of claimed) {
     const def = opts.handlers[run.handler]
-    const finish = (status: string, fields: { error?: string | null; result?: Record<string, unknown> | null; delayMs?: number } = {}) =>
+    const finish =
+      (status: string, fields: { error?: string | null; result?: Record<string, unknown> | null; delayMs?: number } = {}) =>
       async (tx: Tx) => {
         const r = await tx`
           update zro.workflow_runs set status = ${status}, last_error = ${fields.error ?? null},
@@ -89,8 +93,11 @@ export async function runOnce(db: Database, opts: RunnerOptions): Promise<number
       }
     try {
       if (!def) throw new PermanentError(`Handler desconhecido: ${run.handler}`)
-      const [event] = (await db.asSystem('worker: ler evento', (tx) => tx`
-        select id, event_type, schema_version, correlation_id, payload, producer from zro.workflow_events where id = ${run.event_id}`)) as unknown as EventRow[]
+      const [event] = (await db.asSystem(
+        'worker: ler evento',
+        (tx) => tx`
+        select id, event_type, schema_version, correlation_id, payload, producer from zro.workflow_events where id = ${run.event_id}`,
+      )) as unknown as EventRow[]
       if (!event) throw new PermanentError('Evento não encontrado.')
       // Revogação ou cancelamento interrompe execuções que ainda não começaram (PRD §5.2).
       if (def.productId) {
@@ -101,17 +108,21 @@ export async function runOnce(db: Database, opts: RunnerOptions): Promise<number
       await db.asSystem('worker: concluir execução', async (tx) => {
         if (!(await finish('succeeded', { result: outcome.result })(tx))) return
         for (const e of outcome.emit ?? []) {
-          await publishEvent(tx, {
-            orgId: run.org_id,
-            projectId: run.project_id,
-            type: e.type,
-            version: e.version,
-            producer: `hub:${def.name}`,
-            payload: e.payload,
-            idempotencyKey: e.idempotencyKey,
-            correlationId: event.correlation_id,
-            causationId: event.id,
-          }, opts.routes)
+          await publishEvent(
+            tx,
+            {
+              orgId: run.org_id,
+              projectId: run.project_id,
+              type: e.type,
+              version: e.version,
+              producer: `hub:${def.name}`,
+              payload: e.payload,
+              idempotencyKey: e.idempotencyKey,
+              correlationId: event.correlation_id,
+              causationId: event.id,
+            },
+            opts.routes,
+          )
         }
       })
       log.info('run.succeeded', { run: run.id, handler: run.handler })
@@ -139,7 +150,14 @@ export async function runOnce(db: Database, opts: RunnerOptions): Promise<number
             detail: { run_id: run.id, message },
           })
         }
-        await audit(tx, { orgId: run.org_id, actorKind: 'system', action: `run.${status}`, targetType: 'workflow_run', targetId: run.id, metadata: { handler: run.handler, attempt: run.attempts, error: message } })
+        await audit(tx, {
+          orgId: run.org_id,
+          actorKind: 'system',
+          action: `run.${status}`,
+          targetType: 'workflow_run',
+          targetId: run.id,
+          metadata: { handler: run.handler, attempt: run.attempts, error: message },
+        })
       })
       log.warn('run.not_succeeded', { run: run.id, handler: run.handler, status, attempt: run.attempts })
     }
@@ -151,9 +169,14 @@ export async function runOnce(db: Database, opts: RunnerOptions): Promise<number
  * Execuções presas em "running" além do prazo (worker caiu): idempotentes voltam para a fila;
  * as demais vão para revisão, nunca para nova tentativa automática.
  */
-export async function recoverStaleRuns(db: Database, handlers: Record<string, HandlerDef>, leaseMs = 10 * 60_000): Promise<{ requeued: number; review: number }> {
+export async function recoverStaleRuns(
+  db: Database,
+  handlers: Record<string, HandlerDef>,
+  leaseMs = 10 * 60_000,
+): Promise<{ requeued: number; review: number }> {
   return db.asSystem('worker: recuperar execuções presas', async (tx) => {
-    const stale = await tx`select id, handler, org_id from zro.workflow_runs where status = 'running' and locked_at < now() - make_interval(secs => ${leaseMs / 1000}::float8) for update skip locked`
+    const stale =
+      await tx`select id, handler, org_id from zro.workflow_runs where status = 'running' and locked_at < now() - make_interval(secs => ${leaseMs / 1000}::float8) for update skip locked`
     let requeued = 0
     let review = 0
     for (const s of stale) {
@@ -173,10 +196,18 @@ export async function recoverStaleRuns(db: Database, handlers: Record<string, Ha
 const REPROCESSABLE = ['failed', 'dead_letter', 'requires_review', 'blocked']
 
 /** Reprocessamento manual: nova execução ligada à anterior; clicar duas vezes não cria duas. */
-export async function reprocessRun(db: Database, auth: Authenticated | null, runId: string, handlers: Record<string, HandlerDef>): Promise<{ id: string; created: boolean }> {
+export async function reprocessRun(
+  db: Database,
+  auth: Authenticated | null,
+  runId: string,
+  handlers: Record<string, HandlerDef>,
+): Promise<{ id: string; created: boolean }> {
   const base = await authorize(db, auth, { roles: EDIT_ROLES })
-  const [run] = await db.asUser({ userId: base.userId, orgId: base.orgId }, (tx) => tx`
-    select id, event_id, handler, product_id, project_id, status, max_attempts from zro.workflow_runs where id = ${runId}`)
+  const [run] = await db.asUser(
+    { userId: base.userId, orgId: base.orgId },
+    (tx) => tx`
+    select id, event_id, handler, product_id, project_id, status, max_attempts from zro.workflow_runs where id = ${runId}`,
+  )
   if (!run) throw new DomainError('not_found', 'Execução não encontrada.')
   if (!REPROCESSABLE.includes(run.status as string)) throw new DomainError('conflict', 'Só execuções com falha, em revisão ou bloqueadas podem ser repetidas.')
   const def = handlers[run.handler as string]
@@ -195,18 +226,28 @@ export async function reprocessRun(db: Database, auth: Authenticated | null, run
       const [existing] = await tx`select id from zro.workflow_runs where reprocess_of = ${runId} and handler = ${run.handler as string}`
       return { id: existing!.id as string, created: false }
     }
-    await audit(tx, { orgId: actor.orgId, actorUserId: actor.userId, action: 'run.reprocess_requested', targetType: 'workflow_run', targetId: runId, metadata: { new_run: created.id } })
+    await audit(tx, {
+      orgId: actor.orgId,
+      actorUserId: actor.userId,
+      action: 'run.reprocess_requested',
+      targetType: 'workflow_run',
+      targetId: runId,
+      metadata: { new_run: created.id },
+    })
     return { id: created.id as string, created: true }
   })
 }
 
 export async function listRuns(db: Database, auth: Authenticated | null, filter: { status?: string } = {}) {
   const actor = await authorize(db, auth)
-  const rows = await db.asUser({ userId: actor.userId, orgId: actor.orgId }, (tx) => tx`
+  const rows = await db.asUser(
+    { userId: actor.userId, orgId: actor.orgId },
+    (tx) => tx`
     select r.id, r.handler, r.product_id, r.status, r.attempts, r.max_attempts, r.last_error, r.created_at, r.updated_at, r.reprocess_of,
            r.project_id, p.title as project_title, e.event_type
     from zro.workflow_runs r join zro.workflow_events e on e.id = r.event_id left join zro.projects p on p.id = r.project_id
     where r.org_id = ${actor.orgId} and (${filter.status ?? null}::text is null or r.status = ${filter.status ?? null})
-    order by r.created_at desc limit 200`)
+    order by r.created_at desc limit 200`,
+  )
   return { actor, runs: rows }
 }

@@ -1,0 +1,19 @@
+{
+  "$id": "https://absolutezro.local/schemas/event.ingest.started.v1.json",
+  "title": "Payload de ingest.started v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "source": {
+      "type": "string",
+      "const": "sobedesce"
+    },
+    "operation_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "source",
+    "operation_id"
+  ]
+}

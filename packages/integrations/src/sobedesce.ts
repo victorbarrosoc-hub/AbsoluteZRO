@@ -11,11 +11,7 @@
  * Sem relatório, o arquivo fica "unverified" (o SOBEDESCE listou, o HUB não tem prova da conferência).
  */
 import { createHash } from 'node:crypto'
-import {
-  MANIFEST_SCHEMA_VERSION,
-  type MediaAsset,
-  type ZroMediaManifest,
-} from '@zro/media-contracts'
+import { MANIFEST_SCHEMA_VERSION, type MediaAsset, type ZroMediaManifest } from '@zro/media-contracts'
 import { z } from 'zod'
 
 /** Mesmo limite do SOBEDESCE (RESUMO_MAX_ARQUIVOS): acima disso a linha vem truncada. */
@@ -107,12 +103,7 @@ function isSafeRelative(p: string): boolean {
   return !!p && !p.startsWith('/') && !/^[A-Za-z]:/.test(p) && !p.includes('\\') && !p.split('/').some((s) => s === '..' || s === '')
 }
 
-export function buildSobedesceManifest(input: {
-  projectId: string
-  entry: Descarga
-  destinations: DestinationInput[]
-  now?: Date
-}): ZroMediaManifest {
+export function buildSobedesceManifest(input: { projectId: string; entry: Descarga; destinations: DestinationInput[]; now?: Date }): ZroMediaManifest {
   const { entry } = input
   const now = input.now ?? new Date()
   const warnings: string[] = []
@@ -127,7 +118,8 @@ export function buildSobedesceManifest(input: {
     }
     return { dest: d, parsed }
   })
-  if (entry.arquivos.length >= SOBEDESCE_MAX_FILES) warnings.push(`O resumo do SOBEDESCE lista no máximo ${SOBEDESCE_MAX_FILES} arquivos; este cartão pode ter mais.`)
+  if (entry.arquivos.length >= SOBEDESCE_MAX_FILES)
+    warnings.push(`O resumo do SOBEDESCE lista no máximo ${SOBEDESCE_MAX_FILES} arquivos; este cartão pode ter mais.`)
   if (input.destinations.length && reports.every((r) => r.parsed.length === 0)) {
     warnings.push('Nenhum relatório de checksum foi enviado: as cópias aparecem como não conferidas.')
   }

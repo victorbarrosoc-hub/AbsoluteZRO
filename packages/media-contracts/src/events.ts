@@ -20,7 +20,12 @@ export const EventEnvelopeSchema = z.object({
 })
 export type EventEnvelope = z.infer<typeof EventEnvelopeSchema>
 
-const ManifestRef = z.object({ manifest_row_id: Uuid, manifest_id: z.string(), assets: z.number().int().nonnegative(), status: z.enum(['valid', 'valid_with_warnings', 'invalid']) })
+const ManifestRef = z.object({
+  manifest_row_id: Uuid,
+  manifest_id: z.string(),
+  assets: z.number().int().nonnegative(),
+  status: z.enum(['valid', 'valid_with_warnings', 'invalid']),
+})
 
 /** Registro dos tipos conhecidos. Um tipo novo ou um payload novo = nova entrada (ou nova versão). */
 export const EVENT_PAYLOADS = {
@@ -32,7 +37,13 @@ export const EVENT_PAYLOADS = {
   'media.manifest.ready': { 1: ManifestRef },
   'media.sync.completed': { 1: z.object({ source: z.literal('synquei'), sync_map_ref: z.string().max(300) }) },
   'edit.selects.ready': { 1: z.object({ source: z.literal('ai-edit'), selects_ref: z.string().max(300) }) },
-  'edit.timeline.ready': { 1: z.object({ source: z.enum(['ai-edit', 'synquei', 'manual']), timeline_ref: z.string().max(300), format: z.enum(['otio', 'fcpxml', 'xmeml', 'edl', 'aaf']) }) },
+  'edit.timeline.ready': {
+    1: z.object({
+      source: z.enum(['ai-edit', 'synquei', 'manual']),
+      timeline_ref: z.string().max(300),
+      format: z.enum(['otio', 'fcpxml', 'xmeml', 'edl', 'aaf']),
+    }),
+  },
   'audio.mix.ready': { 1: z.object({ source: z.literal('nossom'), mix_ref: z.string().max(300) }) },
   'finishing.qc.completed': { 1: z.object({ source: z.literal('finishing'), qc_ref: z.string().max(300), passed: z.boolean() }) },
   'delivery.ready': { 1: z.object({ source: z.literal('finishing'), package_ref: z.string().max(300) }) },

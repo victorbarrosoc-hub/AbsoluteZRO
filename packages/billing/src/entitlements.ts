@@ -126,8 +126,7 @@ export async function productAccessFor(tx: Queryable, orgId: string | null, now 
     integrationMode: r.integration_mode as string,
     externalUrl: (r.external_url as string) ?? null,
     provisionalName: r.provisional_name as boolean,
-    access:
-      r.stage === 'disabled' ? 'disabled' : r.stage === 'coming_soon' ? 'coming_soon' : r.source ? 'contracted' : 'available',
+    access: r.stage === 'disabled' ? 'disabled' : r.stage === 'coming_soon' ? 'coming_soon' : r.source ? 'contracted' : 'available',
     endsAt: (r.ends_at as Date) ?? null,
     source: (r.source as string) ?? null,
   }))

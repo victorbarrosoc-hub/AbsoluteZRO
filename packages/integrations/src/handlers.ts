@@ -13,14 +13,23 @@ export const synqueiOrganizationPlan: HandlerDef = {
   emits: [],
   async run({ db, run, event }) {
     const ref = event.payload as { manifest_row_id: string }
-    const [row] = await db.asSystem('handler: ler manifest', (tx) => tx`
-      select id, project_id, payload, status from zro.media_manifests where id = ${ref.manifest_row_id} and org_id = ${run.org_id}`)
+    const [row] = await db.asSystem(
+      'handler: ler manifest',
+      (tx) => tx`
+      select id, project_id, payload, status from zro.media_manifests where id = ${ref.manifest_row_id} and org_id = ${run.org_id}`,
+    )
     if (!row) throw new PermanentError('Manifest não encontrado.')
     const v = validateManifest(row.payload)
     if (v.status === 'invalid' || !v.manifest) throw new PermanentError('Manifest inválido: o Synquei não consome manifest com erros.')
     const plan = planOrganization(v.manifest)
     await db.asSystem('handler: quota e etapa', async (tx) => {
-      const q = await consumeQuota(tx, { orgId: run.org_id, metric: 'synquei.organization_plans', idempotencyKey: `run:${run.id}`, projectId: run.project_id, workflowRunId: run.id })
+      const q = await consumeQuota(tx, {
+        orgId: run.org_id,
+        metric: 'synquei.organization_plans',
+        idempotencyKey: `run:${run.id}`,
+        projectId: run.project_id,
+        workflowRunId: run.id,
+      })
       if (!q.ok) throw new BlockedError(q.message)
       await setStepState(tx, {
         projectId: row.project_id as string,
@@ -30,7 +39,14 @@ export const synqueiOrganizationPlan: HandlerDef = {
         source: 'hub:synquei.organization-plan',
         detail: { manifest_id: plan.manifest_id, assets: plan.preserved_asset_ids, bins: plan.bins.length, warnings: plan.warnings, run_id: run.id },
       })
-      await audit(tx, { orgId: run.org_id, actorKind: 'system', action: 'synquei.organization_plan_ready', targetType: 'project', targetId: row.project_id as string, metadata: { manifest: plan.manifest_id, assets: plan.preserved_asset_ids } })
+      await audit(tx, {
+        orgId: run.org_id,
+        actorKind: 'system',
+        action: 'synquei.organization_plan_ready',
+        targetType: 'project',
+        targetId: row.project_id as string,
+        metadata: { manifest: plan.manifest_id, assets: plan.preserved_asset_ids },
+      })
     })
     return { result: { plan } }
   },

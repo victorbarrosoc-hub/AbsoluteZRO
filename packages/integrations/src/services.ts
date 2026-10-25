@@ -49,7 +49,14 @@ export async function importSobedesceManifest(db: Database, auth: Authenticated 
 
   // Quota numa transação de sistema; a chave é a própria descarga, então reimportar não conta de novo.
   const q = await db.asSystem('sobedesce: quota de importação', (tx) =>
-    consumeQuota(tx, { orgId: actor.orgId, userId: actor.userId, metric: 'sobedesce.manifest_imports', idempotencyKey: `sobedesce-import:${input.projectId}:${manifest.manifest_id}`, projectId: input.projectId }))
+    consumeQuota(tx, {
+      orgId: actor.orgId,
+      userId: actor.userId,
+      metric: 'sobedesce.manifest_imports',
+      idempotencyKey: `sobedesce-import:${input.projectId}:${manifest.manifest_id}`,
+      projectId: input.projectId,
+    }),
+  )
   if (!q.ok) throw new DomainError(q.code, q.message)
 
   return db.asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
@@ -61,7 +68,14 @@ export async function importSobedesceManifest(db: Database, auth: Authenticated 
       returning id`
     if (!row) {
       const [old] = await tx`select id, status from zro.media_manifests where org_id = ${actor.orgId} and manifest_id = ${manifest.manifest_id}`
-      return { duplicate: true, manifestRowId: old?.id as string, status: old?.status as string, issues: validation.issues, summary: manifest.verification_summary, skipped: parsed.skipped }
+      return {
+        duplicate: true,
+        manifestRowId: old?.id as string,
+        status: old?.status as string,
+        issues: validation.issues,
+        summary: manifest.verification_summary,
+        skipped: parsed.skipped,
+      }
     }
     const manifestRowId = row.id as string
     for (const a of manifest.assets) {
@@ -72,7 +86,9 @@ export async function importSobedesceManifest(db: Database, auth: Authenticated 
         on conflict (project_id, asset_key) do nothing
         returning id`
       // Mesmo arquivo numa segunda leva: o ativo já existe e ganha só as localizações novas.
-      const assetId = (asset?.id as string) ?? ((await tx`select id from zro.project_assets where project_id = ${input.projectId} and asset_key = ${a.asset_id}`)[0]!.id as string)
+      const assetId =
+        (asset?.id as string) ??
+        ((await tx`select id from zro.project_assets where project_id = ${input.projectId} and asset_key = ${a.asset_id}`)[0]!.id as string)
       for (const d of a.destinations) {
         const [loc] = await tx`
           insert into zro.asset_locations (org_id, asset_id, uri, destination_label, status, verified_at, detail)
@@ -87,7 +103,8 @@ export async function importSobedesceManifest(db: Database, auth: Authenticated 
         }
       }
     }
-    const state = validation.status === 'invalid' ? 'failed' : manifest.verification_summary.backup_complete && validation.status === 'valid' ? 'done' : 'needs_review'
+    const state =
+      validation.status === 'invalid' ? 'failed' : manifest.verification_summary.backup_complete && validation.status === 'valid' ? 'done' : 'needs_review'
     await setStepState(tx, {
       projectId: input.projectId,
       orgId: actor.orgId,
@@ -100,14 +117,48 @@ export async function importSobedesceManifest(db: Database, auth: Authenticated 
     const common = { orgId: actor.orgId, projectId: input.projectId, producer: 'sobedesce', createdBy: actor.userId }
     const published = []
     if (validation.status === 'invalid') {
-      published.push(await publishEvent(tx, { ...common, type: 'ingest.failed', payload: { ...ref, reason: validation.issues.find((i) => i.level === 'error')?.message.slice(0, 300) ?? 'manifest inválido' }, idempotencyKey: `ingest.failed:${manifest.manifest_id}` }, ROUTES))
+      published.push(
+        await publishEvent(
+          tx,
+          {
+            ...common,
+            type: 'ingest.failed',
+            payload: { ...ref, reason: validation.issues.find((i) => i.level === 'error')?.message.slice(0, 300) ?? 'manifest inválido' },
+            idempotencyKey: `ingest.failed:${manifest.manifest_id}`,
+          },
+          ROUTES,
+        ),
+      )
     } else {
-      published.push(await publishEvent(tx, { ...common, type: 'ingest.completed', payload: ref, idempotencyKey: `ingest.completed:${manifest.manifest_id}` }, ROUTES))
+      published.push(
+        await publishEvent(tx, { ...common, type: 'ingest.completed', payload: ref, idempotencyKey: `ingest.completed:${manifest.manifest_id}` }, ROUTES),
+      )
       // Synquei só recebe manifest validado (PRD §7.2).
-      published.push(await publishEvent(tx, { ...common, type: 'media.manifest.ready', payload: ref, idempotencyKey: `media.manifest.ready:${manifest.manifest_id}` }, ROUTES))
+      published.push(
+        await publishEvent(
+          tx,
+          { ...common, type: 'media.manifest.ready', payload: ref, idempotencyKey: `media.manifest.ready:${manifest.manifest_id}` },
+          ROUTES,
+        ),
+      )
     }
-    await audit(tx, { orgId: actor.orgId, actorUserId: actor.userId, action: 'sobedesce.manifest_imported', targetType: 'project', targetId: input.projectId, metadata: { manifest: manifest.manifest_id, status: validation.status, assets: manifest.assets.length } })
-    return { duplicate: false, manifestRowId, status: validation.status, issues: validation.issues, summary: manifest.verification_summary, skipped: parsed.skipped, runs: published.flatMap((p) => p.runs) }
+    await audit(tx, {
+      orgId: actor.orgId,
+      actorUserId: actor.userId,
+      action: 'sobedesce.manifest_imported',
+      targetType: 'project',
+      targetId: input.projectId,
+      metadata: { manifest: manifest.manifest_id, status: validation.status, assets: manifest.assets.length },
+    })
+    return {
+      duplicate: false,
+      manifestRowId,
+      status: validation.status,
+      issues: validation.issues,
+      summary: manifest.verification_summary,
+      skipped: parsed.skipped,
+      runs: published.flatMap((p) => p.runs),
+    }
   })
 }
 
@@ -119,14 +170,25 @@ export async function previewOrganizationPlan(db: Database, auth: Authenticated 
     product: { id: 'synquei', feature: 'organization_plan' },
     quota: { metric: 'synquei.organization_plans' },
   })
-  const [row] = await db.asUser({ userId: actor.userId, orgId: actor.orgId }, (tx) => tx`
-    select payload from zro.media_manifests where id = ${input.manifestRowId} and project_id = ${input.projectId}`)
+  const [row] = await db.asUser(
+    { userId: actor.userId, orgId: actor.orgId },
+    (tx) => tx`
+    select payload from zro.media_manifests where id = ${input.manifestRowId} and project_id = ${input.projectId}`,
+  )
   if (!row) throw new DomainError('not_found', 'Manifest não encontrado neste projeto.')
   const v = validateManifest(row.payload)
-  if (v.status === 'invalid' || !v.manifest) throw new DomainError('invalid_input', 'O manifest tem erros; corrija na origem e importe de novo.', { issues: v.issues.slice(0, 20) })
+  if (v.status === 'invalid' || !v.manifest)
+    throw new DomainError('invalid_input', 'O manifest tem erros; corrija na origem e importe de novo.', { issues: v.issues.slice(0, 20) })
   const plan = planOrganization(v.manifest)
   const q = await db.asSystem('synquei: quota de prévia', (tx) =>
-    consumeQuota(tx, { orgId: actor.orgId, userId: actor.userId, metric: 'synquei.organization_plans', idempotencyKey: `synquei-preview:${input.manifestRowId}`, projectId: input.projectId }))
+    consumeQuota(tx, {
+      orgId: actor.orgId,
+      userId: actor.userId,
+      metric: 'synquei.organization_plans',
+      idempotencyKey: `synquei-preview:${input.manifestRowId}`,
+      projectId: input.projectId,
+    }),
+  )
   if (!q.ok) throw new DomainError(q.code, q.message)
   return { plan, issues: v.issues }
 }
@@ -135,14 +197,21 @@ export async function previewOrganizationPlan(db: Database, auth: Authenticated 
 
 export async function exportScriptToTpeasy(db: Database, auth: Authenticated | null, projectId: string) {
   const actor = await authorize(db, auth, { project: { id: projectId, access: 'view' }, product: { id: 'tpeasy', feature: 'script_export' } })
-  const [doc] = await db.asUser({ userId: actor.userId, orgId: actor.orgId }, (tx) => tx`
-    select title, body, created_at from zro.project_documents where project_id = ${projectId} and kind = 'script' order by version desc limit 1`)
+  const [doc] = await db.asUser(
+    { userId: actor.userId, orgId: actor.orgId },
+    (tx) => tx`
+    select title, body, created_at from zro.project_documents where project_id = ${projectId} and kind = 'script' order by version desc limit 1`,
+  )
   if (!doc) throw new DomainError('not_found', 'Este projeto ainda não tem roteiro.')
   return toTpeasyBackup({ projectId, title: doc.title as string, body: doc.body as string, updatedAt: doc.created_at as Date })
 }
 
 export async function importScriptFromTpeasy(db: Database, auth: Authenticated | null, input: { projectId: string; backup: unknown; scriptId?: string }) {
-  const actor = await authorize(db, auth, { roles: EDIT_ROLES, project: { id: input.projectId, access: 'edit' }, product: { id: 'tpeasy', feature: 'script_import' } })
+  const actor = await authorize(db, auth, {
+    roles: EDIT_ROLES,
+    project: { id: input.projectId, access: 'edit' },
+    product: { id: 'tpeasy', feature: 'script_import' },
+  })
   let script: { id: string; title: string; body: string }
   try {
     script = scriptFromTpeasyBackup(input.backup, input.scriptId)
@@ -150,10 +219,43 @@ export async function importScriptFromTpeasy(db: Database, auth: Authenticated |
     throw new DomainError('invalid_input', e instanceof Error ? e.message : 'Backup inválido.')
   }
   return db.asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
-    const doc = await addDocumentVersion(tx, actor, { projectId: input.projectId, kind: 'script', title: script.title, body: script.body, source: 'tpeasy', externalRef: script.id })
-    await setStepState(tx, { projectId: input.projectId, orgId: actor.orgId, stepKey: 'tpeasy', state: 'done', source: 'tpeasy backup v1', detail: { document_id: doc.id, version: doc.version } })
-    await publishEvent(tx, { orgId: actor.orgId, projectId: input.projectId, type: 'script.ready', producer: 'tpeasy', payload: { document_id: doc.id, version: doc.version, title: script.title.slice(0, 200) }, idempotencyKey: `script.ready:${doc.id}`, createdBy: actor.userId }, ROUTES)
-    await audit(tx, { orgId: actor.orgId, actorUserId: actor.userId, action: 'tpeasy.script_imported', targetType: 'project', targetId: input.projectId, metadata: { version: doc.version } })
+    const doc = await addDocumentVersion(tx, actor, {
+      projectId: input.projectId,
+      kind: 'script',
+      title: script.title,
+      body: script.body,
+      source: 'tpeasy',
+      externalRef: script.id,
+    })
+    await setStepState(tx, {
+      projectId: input.projectId,
+      orgId: actor.orgId,
+      stepKey: 'tpeasy',
+      state: 'done',
+      source: 'tpeasy backup v1',
+      detail: { document_id: doc.id, version: doc.version },
+    })
+    await publishEvent(
+      tx,
+      {
+        orgId: actor.orgId,
+        projectId: input.projectId,
+        type: 'script.ready',
+        producer: 'tpeasy',
+        payload: { document_id: doc.id, version: doc.version, title: script.title.slice(0, 200) },
+        idempotencyKey: `script.ready:${doc.id}`,
+        createdBy: actor.userId,
+      },
+      ROUTES,
+    )
+    await audit(tx, {
+      orgId: actor.orgId,
+      actorUserId: actor.userId,
+      action: 'tpeasy.script_imported',
+      targetType: 'project',
+      targetId: input.projectId,
+      metadata: { version: doc.version },
+    })
     return doc
   })
 }
@@ -163,18 +265,52 @@ export async function importScriptFromTpeasy(db: Database, auth: Authenticated |
 export async function importCarroJob(db: Database, auth: Authenticated | null, raw: unknown) {
   const actor = await authorize(db, auth, { roles: EDIT_ROLES, product: { id: 'carro-do-freela', feature: 'job_import' } })
   const parsed = CarroJobSchema.safeParse(raw)
-  if (!parsed.success) throw new DomainError('invalid_input', `Job fora do contrato carro-do-freela.job/1: ${parsed.error.issues[0]?.path.join('.')} ${parsed.error.issues[0]?.message}`)
+  if (!parsed.success)
+    throw new DomainError(
+      'invalid_input',
+      `Job fora do contrato carro-do-freela.job/1: ${parsed.error.issues[0]?.path.join('.')} ${parsed.error.issues[0]?.message}`,
+    )
   const job = parsed.data
-  const [existing] = await db.asUser({ userId: actor.userId, orgId: actor.orgId }, (tx) => tx`
-    select internal_id from zro.integration_links where org_id = ${actor.orgId} and product_id = 'carro-do-freela' and external_type = 'job' and external_id = ${job.job_id}`)
+  const [existing] = await db.asUser(
+    { userId: actor.userId, orgId: actor.orgId },
+    (tx) => tx`
+    select internal_id from zro.integration_links where org_id = ${actor.orgId} and product_id = 'carro-do-freela' and external_type = 'job' and external_id = ${job.job_id}`,
+  )
   if (existing) return { projectId: existing.internal_id as string, created: false }
   const projectId = await createProjectAs(db, actor, projectInputFromJob(job), { origin: 'carro-do-freela' })
   await db.asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
     await tx`insert into zro.integration_links (org_id, product_id, external_type, external_id, internal_type, internal_id, created_by)
              values (${actor.orgId}, 'carro-do-freela', 'job', ${job.job_id}, 'project', ${projectId}, ${actor.userId})`
-    if (job.briefing) await addDocumentVersion(tx, actor, { projectId, kind: 'brief', title: job.title, body: job.briefing, source: 'carro-do-freela', externalRef: job.job_id })
-    await setStepState(tx, { projectId, orgId: actor.orgId, stepKey: 'carro-do-freela', state: 'done', source: 'carro-do-freela.job/1', detail: { job_id: job.job_id } })
-    await publishEvent(tx, { orgId: actor.orgId, projectId, type: 'job.created', producer: 'carro-do-freela', payload: { product: 'carro-do-freela', external_job_id: job.job_id, title: job.title }, idempotencyKey: `job.created:${job.job_id}`, createdBy: actor.userId }, ROUTES)
+    if (job.briefing)
+      await addDocumentVersion(tx, actor, {
+        projectId,
+        kind: 'brief',
+        title: job.title,
+        body: job.briefing,
+        source: 'carro-do-freela',
+        externalRef: job.job_id,
+      })
+    await setStepState(tx, {
+      projectId,
+      orgId: actor.orgId,
+      stepKey: 'carro-do-freela',
+      state: 'done',
+      source: 'carro-do-freela.job/1',
+      detail: { job_id: job.job_id },
+    })
+    await publishEvent(
+      tx,
+      {
+        orgId: actor.orgId,
+        projectId,
+        type: 'job.created',
+        producer: 'carro-do-freela',
+        payload: { product: 'carro-do-freela', external_job_id: job.job_id, title: job.title },
+        idempotencyKey: `job.created:${job.job_id}`,
+        createdBy: actor.userId,
+      },
+      ROUTES,
+    )
   })
   return { projectId, created: true }
 }

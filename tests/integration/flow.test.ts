@@ -5,7 +5,17 @@ import type { Database } from '@zro/db'
 import { testDatabase } from '@zro/db/testing'
 import { createProject, findEventCycle, getProject, runOnce } from '@zro/core'
 import { createLogger } from '@zro/observability'
-import { exportScriptToTpeasy, HANDLER_EMITS, HANDLERS, importCarroJob, importScriptFromTpeasy, importSobedesceManifest, previewOrganizationPlan, ROUTES, toTpeasyBackup } from '@zro/integrations'
+import {
+  exportScriptToTpeasy,
+  HANDLER_EMITS,
+  HANDLERS,
+  importCarroJob,
+  importScriptFromTpeasy,
+  importSobedesceManifest,
+  previewOrganizationPlan,
+  ROUTES,
+  toTpeasyBackup,
+} from '@zro/integrations'
 import { expectCode, fixture, giveLimits, givePlan, newOrgWithOwner } from './helpers'
 
 let db: Database
@@ -32,7 +42,14 @@ describe('Ciclo do O ponta a ponta', () => {
     await giveLimits(db, o.orgId, 'synquei', { 'synquei.organization_plans': 10 })
 
     // 1. job do Carro do Freela vira projeto (e reenviar o mesmo job não duplica)
-    const job = { contract: 'carro-do-freela.job/1', job_id: 'job-777', title: 'Show de lançamento', production_type: 'show', briefing: 'Dois palcos, três câmeras.', crew_roles: [{ role: 'Câmera', count: 3 }] }
+    const job = {
+      contract: 'carro-do-freela.job/1',
+      job_id: 'job-777',
+      title: 'Show de lançamento',
+      production_type: 'show',
+      briefing: 'Dois palcos, três câmeras.',
+      crew_roles: [{ role: 'Câmera', count: 3 }],
+    }
     const { projectId, created } = await importCarroJob(db, o.auth, job)
     expect(created).toBe(true)
     expect(await importCarroJob(db, o.auth, job)).toEqual({ projectId, created: false })
@@ -67,7 +84,8 @@ describe('Ciclo do O ponta a ponta', () => {
     expect(p.events.map((e) => e.event_type).sort()).toEqual(['ingest.completed', 'job.created', 'media.manifest.ready', 'script.ready'])
 
     // 5. localizações e checksums gravados por destino
-    const locs = await db.sql`select l.status, count(*)::int as n from zro.asset_locations l join zro.project_assets a on a.id = l.asset_id where a.project_id = ${projectId} group by 1`
+    const locs =
+      await db.sql`select l.status, count(*)::int as n from zro.asset_locations l join zro.project_assets a on a.id = l.asset_id where a.project_id = ${projectId} group by 1`
     expect(locs).toEqual([{ status: 'verified', n: 6 }])
 
     // 6. prévia sob demanda conta uma vez por manifest
@@ -83,7 +101,11 @@ describe('Ciclo do O ponta a ponta', () => {
     await givePlan(db, o.orgId, 'individual-sobedesce')
     await giveLimits(db, o.orgId, 'sobedesce', { 'sobedesce.manifest_imports': 5 })
     const pid = await createProject(db, o.auth, { title: 'Só backup' })
-    const imp = await importSobedesceManifest(db, o.auth, { projectId: pid, descargas: fixture('sobedesce/unica-descargas.jsonl'), destinations: destinations() })
+    const imp = await importSobedesceManifest(db, o.auth, {
+      projectId: pid,
+      descargas: fixture('sobedesce/unica-descargas.jsonl'),
+      destinations: destinations(),
+    })
     expect(imp.runs).toEqual([expect.objectContaining({ status: 'blocked' })])
     const err = await expectCode(previewOrganizationPlan(db, o.auth, { projectId: pid, manifestRowId: imp.manifestRowId }), 'entitlement_required')
     expect(err.status).toBe(403)

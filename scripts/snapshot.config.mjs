@@ -20,9 +20,17 @@ export const PRODUTOS = {
     estrategia: '(d) link externo com identidade separada + (c) adaptador de contrato `job.created` no HUB',
     remover: [/^public\/(index|artifact|fase-\d+(-artifact)?)\.html$/],
     trocar: [
-      { de: /eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, para: 'SUBSTITUIR_PELA_CHAVE_ANON_DO_PROJETO_NOVO', motivo: 'chave anon do Supabase de produção do original' },
+      {
+        de: /eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g,
+        para: 'SUBSTITUIR_PELA_CHAVE_ANON_DO_PROJETO_NOVO',
+        motivo: 'chave anon do Supabase de produção do original',
+      },
       { de: /xakafeuvaerkqpkarrxt/g, para: 'projeto-novo-substituir', motivo: 'referência ao projeto Supabase de produção do original' },
-      { de: /ce5604dd-eeae-41a9-a61d-d1bd58302d85/g, para: 'SUBSTITUIR_PELA_CHAVE_WEB3FORMS_NOVA', motivo: 'chave Web3Forms do original (entrega no e-mail do original)' },
+      {
+        de: /ce5604dd-eeae-41a9-a61d-d1bd58302d85/g,
+        para: 'SUBSTITUIR_PELA_CHAVE_WEB3FORMS_NOVA',
+        motivo: 'chave Web3Forms do original (entrega no e-mail do original)',
+      },
     ],
     substituir: { 'src/publicar.js': PUBLICAR_DESATIVADO },
     motivoSubstituir: { 'src/publicar.js': 'script que dá push no repositório de produção do original; trocado por um aviso que encerra' },
@@ -49,7 +57,8 @@ export const PRODUTOS = {
     visibilidade: 'público',
     licenca: 'MIT (package.json); avisos de terceiros preservados nos arquivos copiados',
     stack: 'Electron 44 + Node (desktop, src/), Preact (public/), site Next.js 16 + Drizzle + Postgres/PGlite (web/)',
-    estrategia: '(c) adaptador do resumo `.sobedesce/descargas.jsonl` v1 + relatório `SOBEDESCE_copia_*.xxh64` → ZroMediaManifest; (d) app e conta originais seguem separados',
+    estrategia:
+      '(c) adaptador do resumo `.sobedesce/descargas.jsonl` v1 + relatório `SOBEDESCE_copia_*.xxh64` → ZroMediaManifest; (d) app e conta originais seguem separados',
     observacoes: [
       'O desktop roda local e não passa arquivos por servidor; o HUB só lê o resumo e os relatórios que o SOBEDESCE grava nos destinos.',
       'O site (web/) tem conta própria (scrypt, sessões com hash sha256, limite de tentativas). O HUB replica esse padrão em packages/auth, com banco novo.',

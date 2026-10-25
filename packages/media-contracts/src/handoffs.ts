@@ -15,9 +15,18 @@ export const CarroJobSchema = z.object({
   client_reference: z.string().max(200).optional(),
   briefing: z.string().max(20_000).optional(),
   city: z.string().max(120).optional(),
-  dates: z.array(z.object({ date: z.iso.date(), label: z.string().max(120).optional() })).max(60).default([]),
-  crew_roles: z.array(z.object({ role: z.string().max(80), count: z.number().int().positive().max(200) })).max(40).default([]),
-  references: z.array(z.url({ protocol: /^https$/ })).max(20).default([]),
+  dates: z
+    .array(z.object({ date: z.iso.date(), label: z.string().max(120).optional() }))
+    .max(60)
+    .default([]),
+  crew_roles: z
+    .array(z.object({ role: z.string().max(80), count: z.number().int().positive().max(200) }))
+    .max(40)
+    .default([]),
+  references: z
+    .array(z.url({ protocol: /^https$/ }))
+    .max(20)
+    .default([]),
   accepted_at: IsoDate.optional(),
 })
 export type CarroJob = z.infer<typeof CarroJobSchema>

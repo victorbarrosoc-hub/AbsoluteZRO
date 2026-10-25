@@ -30,7 +30,14 @@ const esperar = async (fn) => {
 }
 
 const discos = []
-const svc = new BackupService({ arquivo: path.join(tmp('zro-fx-estado-'), 'backup.json'), listar: async () => discos.map((d) => ({ ...d })), vigiaMs: 0, keepAwake: { setActive() {} }, avisar: () => {}, ejetar: async () => true })
+const svc = new BackupService({
+  arquivo: path.join(tmp('zro-fx-estado-'), 'backup.json'),
+  listar: async () => discos.map((d) => ({ ...d })),
+  vigiaMs: 0,
+  keepAwake: { setActive() {} },
+  avisar: () => {},
+  ejetar: async () => true,
+})
 await svc.init()
 const hdA = tmp('zro-fx-hd-principal-')
 const hdB = tmp('zro-fx-hd-backup-')
@@ -74,22 +81,39 @@ fs.rmSync(SAIDA, { recursive: true, force: true })
 fs.mkdirSync(SAIDA, { recursive: true })
 const resumo = fs.readFileSync(path.join(hdA, 'Projeto Exemplo', RESUMO_PASTA, RESUMO_ARQUIVO), 'utf8')
 fs.writeFileSync(path.join(SAIDA, 'descargas.jsonl'), resumo)
-const linhas = resumo.trim().split('\n').map((l) => JSON.parse(l))
+const linhas = resumo
+  .trim()
+  .split('\n')
+  .map((l) => JSON.parse(l))
 const pasta = linhas[0].cartao.pasta
-for (const [nome, hd] of [['principal', hdA], ['backup', hdB]]) {
+for (const [nome, hd] of [
+  ['principal', hdA],
+  ['backup', hdB],
+]) {
   const base = path.join(hd, 'Projeto Exemplo', ...pasta.split('/'))
-  const rel = fs.readdirSync(base).filter((n) => /^SOBEDESCE_copia_.*\.xxh64$/.test(n)).sort()
+  const rel = fs
+    .readdirSync(base)
+    .filter((n) => /^SOBEDESCE_copia_.*\.xxh64$/.test(n))
+    .sort()
   rel.forEach((r, i) => fs.copyFileSync(path.join(base, r), path.join(SAIDA, `${nome}-leva${i + 1}.xxh64`)))
 }
 const resumo2 = fs.readFileSync(path.join(hdC, 'Projeto Unico', RESUMO_PASTA, RESUMO_ARQUIVO), 'utf8')
 fs.writeFileSync(path.join(SAIDA, 'unica-descargas.jsonl'), resumo2)
 const pasta2 = JSON.parse(resumo2.trim().split('\n')[0]).cartao.pasta
-for (const [nome, hd] of [['principal', hdC], ['backup', hdD]]) {
+for (const [nome, hd] of [
+  ['principal', hdC],
+  ['backup', hdD],
+]) {
   const base = path.join(hd, 'Projeto Unico', ...pasta2.split('/'))
-  const rel = fs.readdirSync(base).filter((n) => /^SOBEDESCE_copia_.*\.xxh64$/.test(n)).sort()
+  const rel = fs
+    .readdirSync(base)
+    .filter((n) => /^SOBEDESCE_copia_.*\.xxh64$/.test(n))
+    .sort()
   rel.forEach((r) => fs.copyFileSync(path.join(base, r), path.join(SAIDA, `unica-${nome}.xxh64`)))
 }
-fs.writeFileSync(path.join(SAIDA, 'README.md'), `# Fixture SOBEDESCE (gerado)
+fs.writeFileSync(
+  path.join(SAIDA, 'README.md'),
+  `# Fixture SOBEDESCE (gerado)
 
 Gerado por \`scripts/fixtures/generate-sobedesce.mjs\` com o código real do SOBEDESCE (products/sobedesce, ver
 SOURCE_MANIFEST.md) em ${new Date().toISOString().slice(0, 10)}. Cartão Sony falso, dois destinos ("principal" e
@@ -99,6 +123,7 @@ SOURCE_MANIFEST.md) em ${new Date().toISOString().slice(0, 10)}. Cartão Sony fa
 - \`<destino>-levaN.xxh64\`: os relatórios de checksum gravados na pasta do cartão em cada destino. As duas levas
   rodam no mesmo minuto, então o relatório da 2ª grava por cima do da 1ª (carimbo do SOBEDESCE vai até o minuto).
 - \`unica-*\`: outro projeto com um cartão e uma leva só, conferido nos dois destinos.
-`)
+`,
+)
 console.log(`fixture: ${linhas.length} descargas, pasta ${pasta}, arquivos em ${SAIDA}`)
 for (const f of fs.readdirSync(SAIDA)) console.log(' -', f)

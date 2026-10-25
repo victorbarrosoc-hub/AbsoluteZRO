@@ -4,9 +4,26 @@ import type { Database } from '@zro/db'
 import { testDatabase } from '@zro/db/testing'
 import { createLogger } from '@zro/observability'
 import {
-  acceptInvitation, authorize, backoffDelay, changeMemberRole, createOrganization, createProject, findEventCycle, getProject,
-  inviteMember, listMyOrganizations, listProjects, publishEvent, recoverStaleRuns, removeMember, reprocessRun, runOnce, switchOrganization,
-  AmbiguousError, type HandlerDef, type RouteTable,
+  acceptInvitation,
+  authorize,
+  backoffDelay,
+  changeMemberRole,
+  createOrganization,
+  createProject,
+  findEventCycle,
+  getProject,
+  inviteMember,
+  listMyOrganizations,
+  listProjects,
+  publishEvent,
+  recoverStaleRuns,
+  removeMember,
+  reprocessRun,
+  runOnce,
+  switchOrganization,
+  AmbiguousError,
+  type HandlerDef,
+  type RouteTable,
 } from '../src/index'
 import { expectCode, givePlan, newOrgWithOwner, newUser, refresh } from '../../../tests/integration/helpers'
 
@@ -94,8 +111,13 @@ describe('projetos', () => {
     const { steps } = await getProject(db, o.auth, id)
     const by = Object.fromEntries(steps.map((s) => [s.stepKey, s.displayState]))
     expect(by).toEqual({
-      'carro-do-freela': 'blocked_subscription', tpeasy: 'blocked_subscription', sobedesce: 'not_started', synquei: 'blocked_subscription',
-      'ai-edit': 'unavailable', nossom: 'blocked_subscription', finishing: 'unavailable',
+      'carro-do-freela': 'blocked_subscription',
+      tpeasy: 'blocked_subscription',
+      sobedesce: 'not_started',
+      synquei: 'blocked_subscription',
+      'ai-edit': 'unavailable',
+      nossom: 'blocked_subscription',
+      finishing: 'unavailable',
     })
     await expectCode(createProject(db, o.auth, { title: '' }), 'invalid_input')
   })
@@ -103,9 +125,24 @@ describe('projetos', () => {
 
 describe('fila', () => {
   const routes: RouteTable = { 'job.created': [{ handler: 'teste.handler', productId: null, feature: null, maxAttempts: 2 }] }
-  const handlers = (fn: HandlerDef['run'], idempotent = true): Record<string, HandlerDef> => ({ 'teste.handler': { name: 'teste.handler', productId: null, feature: null, idempotent, emits: [], run: fn } })
+  const handlers = (fn: HandlerDef['run'], idempotent = true): Record<string, HandlerDef> => ({
+    'teste.handler': { name: 'teste.handler', productId: null, feature: null, idempotent, emits: [], run: fn },
+  })
   const pub = (orgId: string, key: string) =>
-    db.asSystem('t', (tx) => publishEvent(tx, { orgId, projectId: null, type: 'job.created', producer: 'carro-do-freela', payload: { product: 'carro-do-freela', external_job_id: key, title: 't' }, idempotencyKey: `teste:${key}` }, routes))
+    db.asSystem('t', (tx) =>
+      publishEvent(
+        tx,
+        {
+          orgId,
+          projectId: null,
+          type: 'job.created',
+          producer: 'carro-do-freela',
+          payload: { product: 'carro-do-freela', external_job_id: key, title: 't' },
+          idempotencyKey: `teste:${key}`,
+        },
+        routes,
+      ),
+    )
 
   it('evento idempotente; execução com sucesso', async () => {
     const o = await newOrgWithOwner(db, 'fila-ok')
@@ -151,8 +188,15 @@ describe('fila', () => {
   it('worker que caiu: idempotente volta para a fila, não idempotente vai para revisão', async () => {
     const o = await newOrgWithOwner(db, 'fila-presa')
     const e = await pub(o.orgId, 'd1')
-    await db.asSystem('t', (tx) => tx`update zro.workflow_runs set status = 'running', locked_at = now() - interval '1 hour', locked_by = 'morto' where id = ${e.runs[0]!.id}`)
-    const res = await recoverStaleRuns(db, handlers(async () => ({ result: {} }), false), 60_000)
+    await db.asSystem(
+      't',
+      (tx) => tx`update zro.workflow_runs set status = 'running', locked_at = now() - interval '1 hour', locked_by = 'morto' where id = ${e.runs[0]!.id}`,
+    )
+    const res = await recoverStaleRuns(
+      db,
+      handlers(async () => ({ result: {} }), false),
+      60_000,
+    )
     expect(res.review).toBeGreaterThanOrEqual(1)
     const [r] = await db.sql`select status from zro.workflow_runs where id = ${e.runs[0]!.id}`
     expect(r!.status).toBe('requires_review')
@@ -167,11 +211,20 @@ describe('fila', () => {
 
   it('detecta ciclo de eventos', () => {
     expect(findEventCycle({ 'job.created': [{ handler: 'h', productId: null, feature: null }] }, { h: ['script.ready'] })).toBeNull()
-    expect(findEventCycle({ 'job.created': [{ handler: 'h', productId: null, feature: null }], 'script.ready': [{ handler: 'g', productId: null, feature: null }] }, { h: ['script.ready'], g: ['job.created'] })).toEqual(['job.created', 'script.ready', 'job.created'])
+    expect(
+      findEventCycle(
+        { 'job.created': [{ handler: 'h', productId: null, feature: null }], 'script.ready': [{ handler: 'g', productId: null, feature: null }] },
+        { h: ['script.ready'], g: ['job.created'] },
+      ),
+    ).toEqual(['job.created', 'script.ready', 'job.created'])
   })
 
   it('evento fora do contrato é recusado', async () => {
     const o = await newOrgWithOwner(db, 'fila-contrato')
-    await expect(db.asSystem('t', (tx) => publishEvent(tx, { orgId: o.orgId, projectId: null, type: 'job.created', producer: 'x', payload: { nada: 1 }, idempotencyKey: 'teste:contrato' }, {}))).rejects.toMatchObject({ code: 'invalid_input' })
+    await expect(
+      db.asSystem('t', (tx) =>
+        publishEvent(tx, { orgId: o.orgId, projectId: null, type: 'job.created', producer: 'x', payload: { nada: 1 }, idempotencyKey: 'teste:contrato' }, {}),
+      ),
+    ).rejects.toMatchObject({ code: 'invalid_input' })
   })
 })

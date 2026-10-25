@@ -31,7 +31,10 @@ export const MediaAssetSchema = z.object({
   media: z
     .object({
       duration_ms: z.number().int().nonnegative().nullable(),
-      timecode_start: z.string().regex(/^\d{2}:\d{2}:\d{2}[:;]\d{2}$/).nullable(),
+      timecode_start: z
+        .string()
+        .regex(/^\d{2}:\d{2}:\d{2}[:;]\d{2}$/)
+        .nullable(),
       fps: z.number().positive().nullable(),
     })
     .partial()
@@ -113,7 +116,8 @@ export function validateManifest(input: unknown): ManifestValidation & { manifes
   for (const a of m.assets) {
     ids.set(a.asset_id, (ids.get(a.asset_id) ?? 0) + 1)
     const prev = paths.get(a.relative_path)
-    if (prev && prev !== a.asset_id) issues.push({ level: 'error', code: 'duplicate_path', message: `Dois ativos com o mesmo caminho: ${a.relative_path}`, asset_id: a.asset_id })
+    if (prev && prev !== a.asset_id)
+      issues.push({ level: 'error', code: 'duplicate_path', message: `Dois ativos com o mesmo caminho: ${a.relative_path}`, asset_id: a.asset_id })
     paths.set(a.relative_path, a.asset_id)
 
     const values = new Map<string, Set<string>>()
@@ -122,29 +126,72 @@ export function validateManifest(input: unknown): ManifestValidation & { manifes
       values.get(c.algorithm)!.add(c.value)
     }
     for (const [alg, set] of values) {
-      if (set.size > 1) issues.push({ level: 'error', code: 'checksum_mismatch', message: `${a.relative_path}: checksums ${alg} diferentes entre destinos.`, asset_id: a.asset_id })
+      if (set.size > 1)
+        issues.push({
+          level: 'error',
+          code: 'checksum_mismatch',
+          message: `${a.relative_path}: checksums ${alg} diferentes entre destinos.`,
+          asset_id: a.asset_id,
+        })
     }
     if (a.destinations.some((d) => d.status === 'verified' && !d.checksum)) {
-      issues.push({ level: 'error', code: 'verified_without_checksum', message: `${a.relative_path}: destino marcado como conferido sem checksum.`, asset_id: a.asset_id })
+      issues.push({
+        level: 'error',
+        code: 'verified_without_checksum',
+        message: `${a.relative_path}: destino marcado como conferido sem checksum.`,
+        asset_id: a.asset_id,
+      })
     }
     for (const d of a.destinations) {
-      if (d.status === 'mismatch') issues.push({ level: 'error', code: 'destination_mismatch', message: `${a.relative_path}: cópia diferente em ${d.destination_id}.`, asset_id: a.asset_id })
-      if (d.status === 'missing' || d.status === 'failed') issues.push({ level: 'error', code: `destination_${d.status}`, message: `${a.relative_path}: ${d.status === 'missing' ? 'ausente' : 'falhou'} em ${d.destination_id}.`, asset_id: a.asset_id })
+      if (d.status === 'mismatch')
+        issues.push({
+          level: 'error',
+          code: 'destination_mismatch',
+          message: `${a.relative_path}: cópia diferente em ${d.destination_id}.`,
+          asset_id: a.asset_id,
+        })
+      if (d.status === 'missing' || d.status === 'failed')
+        issues.push({
+          level: 'error',
+          code: `destination_${d.status}`,
+          message: `${a.relative_path}: ${d.status === 'missing' ? 'ausente' : 'falhou'} em ${d.destination_id}.`,
+          asset_id: a.asset_id,
+        })
     }
-    if (!a.destinations.length) issues.push({ level: 'warning', code: 'no_destination', message: `${a.relative_path}: nenhum destino informado.`, asset_id: a.asset_id })
+    if (!a.destinations.length)
+      issues.push({ level: 'warning', code: 'no_destination', message: `${a.relative_path}: nenhum destino informado.`, asset_id: a.asset_id })
     for (const w of a.warnings) issues.push({ level: 'warning', code: 'asset_warning', message: `${a.relative_path}: ${w}`, asset_id: a.asset_id })
   }
   for (const [id, n] of ids) if (n > 1) issues.push({ level: 'error', code: 'duplicate_asset_id', message: `asset_id repetido (${n}×): ${id}`, asset_id: id })
 
   const s = m.verification_summary
-  if (s.unverified_locations > 0) issues.push({ level: 'warning', code: 'unverified_locations', message: `${s.unverified_locations} cópia(s) sem checksum conferido. O backup não está comprovado nesses destinos.` })
+  if (s.unverified_locations > 0)
+    issues.push({
+      level: 'warning',
+      code: 'unverified_locations',
+      message: `${s.unverified_locations} cópia(s) sem checksum conferido. O backup não está comprovado nesses destinos.`,
+    })
   for (const op of m.copy_operations) {
-    if (op.result === 'missing_files') issues.push({ level: 'warning', code: 'source_reported_missing', message: 'A origem informou que faltaram arquivos nessa descarga. Confira no app de origem.' })
-    if (op.result === 'error') issues.push({ level: 'error', code: 'source_reported_error', message: `A descarga terminou com erro na origem${op.source_note ? `: ${op.source_note}` : '.'}` })
+    if (op.result === 'missing_files')
+      issues.push({
+        level: 'warning',
+        code: 'source_reported_missing',
+        message: 'A origem informou que faltaram arquivos nessa descarga. Confira no app de origem.',
+      })
+    if (op.result === 'error')
+      issues.push({
+        level: 'error',
+        code: 'source_reported_error',
+        message: `A descarga terminou com erro na origem${op.source_note ? `: ${op.source_note}` : '.'}`,
+      })
   }
   for (const w of m.warnings) issues.push({ level: 'warning', code: 'manifest_warning', message: w })
   if (s.backup_complete && (s.unverified_locations || s.missing_locations || s.mismatched_locations)) {
-    issues.push({ level: 'error', code: 'inconsistent_summary', message: 'Resumo diz backup completo, mas há destinos sem conferência, ausentes ou divergentes.' })
+    issues.push({
+      level: 'error',
+      code: 'inconsistent_summary',
+      message: 'Resumo diz backup completo, mas há destinos sem conferência, ausentes ou divergentes.',
+    })
   }
   const status = issues.some((i) => i.level === 'error') ? 'invalid' : issues.length ? 'valid_with_warnings' : 'valid'
   return { status, issues, manifest: m }

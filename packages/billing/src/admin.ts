@@ -18,7 +18,15 @@ export async function assignPlan(tx: Queryable, actor: Actor, input: { orgId: st
     values (${input.orgId}, ${input.planId}, 'active', now(), ${input.periodEnd}, 'manual', ${'manual-' + crypto.randomUUID()}, now())
     returning id`
   await recomputeEntitlements(tx, input.orgId)
-  await audit(tx, { orgId: input.orgId, actorUserId: actor.userId, actorKind: 'admin', action: 'billing.plan_assigned', targetType: 'subscription', targetId: sub!.id as string, metadata: { plan: `${plan.code}@${plan.version}`, until: input.periodEnd?.toISOString() ?? null, reason: actor.reason } })
+  await audit(tx, {
+    orgId: input.orgId,
+    actorUserId: actor.userId,
+    actorKind: 'admin',
+    action: 'billing.plan_assigned',
+    targetType: 'subscription',
+    targetId: sub!.id as string,
+    metadata: { plan: `${plan.code}@${plan.version}`, until: input.periodEnd?.toISOString() ?? null, reason: actor.reason },
+  })
   return sub!.id as string
 }
 
@@ -33,7 +41,15 @@ export async function cancelManualSubscription(tx: Queryable, actor: Actor, inpu
     await tx`update zro.subscriptions set status = 'canceled', cancel_at_period_end = false, canceled_at = now(), current_period_end = least(coalesce(current_period_end, now()), now()) where id = ${sub.id as string}`
   }
   await recomputeEntitlements(tx, sub.org_id as string)
-  await audit(tx, { orgId: sub.org_id as string, actorUserId: actor.userId, actorKind: 'admin', action: 'billing.subscription_canceled', targetType: 'subscription', targetId: sub.id as string, metadata: { atPeriodEnd: input.atPeriodEnd, reason: actor.reason } })
+  await audit(tx, {
+    orgId: sub.org_id as string,
+    actorUserId: actor.userId,
+    actorKind: 'admin',
+    action: 'billing.subscription_canceled',
+    targetType: 'subscription',
+    targetId: sub.id as string,
+    metadata: { atPeriodEnd: input.atPeriodEnd, reason: actor.reason },
+  })
 }
 
 export async function grantEntitlement(
@@ -49,14 +65,31 @@ export async function grantEntitlement(
     insert into zro.entitlements (org_id, product_id, features, limits, source, ends_at, reason, created_by)
     values (${input.orgId}, ${input.productId}, ${input.features}, ${tx.json(input.limits)}, 'admin_grant', ${input.endsAt}, ${actor.reason}, ${actor.userId})
     returning id`
-  await audit(tx, { orgId: input.orgId, actorUserId: actor.userId, actorKind: 'admin', action: 'billing.entitlement_granted', targetType: 'entitlement', targetId: row!.id as string, metadata: { product: input.productId, limits: input.limits, until: input.endsAt?.toISOString() ?? null, reason: actor.reason } })
+  await audit(tx, {
+    orgId: input.orgId,
+    actorUserId: actor.userId,
+    actorKind: 'admin',
+    action: 'billing.entitlement_granted',
+    targetType: 'entitlement',
+    targetId: row!.id as string,
+    metadata: { product: input.productId, limits: input.limits, until: input.endsAt?.toISOString() ?? null, reason: actor.reason },
+  })
   return row!.id as string
 }
 
 export async function revokeEntitlement(tx: Queryable, actor: Actor, entitlementId: string): Promise<void> {
-  const [row] = await tx`update zro.entitlements set status = 'revoked', reason = ${actor.reason} where id = ${entitlementId} and source = 'admin_grant' and status = 'active' returning org_id`
+  const [row] =
+    await tx`update zro.entitlements set status = 'revoked', reason = ${actor.reason} where id = ${entitlementId} and source = 'admin_grant' and status = 'active' returning org_id`
   if (!row) throw new DomainError('not_found', 'Concessão ativa não encontrada (assinaturas são revogadas pela assinatura).')
-  await audit(tx, { orgId: row.org_id as string, actorUserId: actor.userId, actorKind: 'admin', action: 'billing.entitlement_revoked', targetType: 'entitlement', targetId: entitlementId, metadata: { reason: actor.reason } })
+  await audit(tx, {
+    orgId: row.org_id as string,
+    actorUserId: actor.userId,
+    actorKind: 'admin',
+    action: 'billing.entitlement_revoked',
+    targetType: 'entitlement',
+    targetId: entitlementId,
+    metadata: { reason: actor.reason },
+  })
 }
 
 /**
@@ -88,7 +121,14 @@ export async function createPlanVersion(
   for (const p of input.products) {
     await tx`insert into zro.plan_products (plan_id, product_id, features, limits) values (${plan!.id as string}, ${p.productId}, ${p.features}, ${tx.json(p.limits)})`
   }
-  await audit(tx, { actorUserId: actor.userId, actorKind: 'admin', action: 'catalog.plan_version_created', targetType: 'plan', targetId: plan!.id as string, metadata: { code: input.code, version, reason: actor.reason } })
+  await audit(tx, {
+    actorUserId: actor.userId,
+    actorKind: 'admin',
+    action: 'catalog.plan_version_created',
+    targetType: 'plan',
+    targetId: plan!.id as string,
+    metadata: { code: input.code, version, reason: actor.reason },
+  })
   return { id: plan!.id as string, version }
 }
 
@@ -97,5 +137,12 @@ export async function publishPlanVersion(tx: Queryable, actor: Actor, planId: st
   const [plan] = await tx`update zro.plans set status = 'active' where id = ${planId} and status = 'draft' returning code, version`
   if (!plan) throw new DomainError('conflict', 'Só rascunhos podem ser publicados.')
   await tx`update zro.plans set status = 'retired' where code = ${plan.code as string} and version < ${plan.version as number} and status = 'active'`
-  await audit(tx, { actorUserId: actor.userId, actorKind: 'admin', action: 'catalog.plan_published', targetType: 'plan', targetId: planId, metadata: { code: plan.code, version: plan.version, reason: actor.reason } })
+  await audit(tx, {
+    actorUserId: actor.userId,
+    actorKind: 'admin',
+    action: 'catalog.plan_published',
+    targetType: 'plan',
+    targetId: planId,
+    metadata: { code: plan.code, version: plan.version, reason: actor.reason },
+  })
 }

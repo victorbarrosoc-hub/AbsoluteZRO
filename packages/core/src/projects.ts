@@ -27,7 +27,14 @@ export async function createProjectAs(db: Database, actor: Actor, raw: unknown, 
       insert into zro.project_steps (project_id, org_id, step_key, state, source)
       select ${id}, ${actor.orgId}, p.id, case when p.stage in ('active', 'beta') then 'not_started' else 'unavailable' end, 'hub'
       from zro.products p`
-    await audit(tx, { orgId: actor.orgId, actorUserId: actor.userId, action: 'project.created', targetType: 'project', targetId: id, metadata: { origin: opts.origin ?? 'hub' } })
+    await audit(tx, {
+      orgId: actor.orgId,
+      actorUserId: actor.userId,
+      action: 'project.created',
+      targetType: 'project',
+      targetId: id,
+      metadata: { origin: opts.origin ?? 'hub' },
+    })
     return id
   })
 }
@@ -58,7 +65,9 @@ export function displayStateFor(state: StepState, access: string): StepState {
 
 export async function listProjects(db: Database, auth: Authenticated | null, filter: { status?: string; q?: string } = {}) {
   const actor = await authorize(db, auth)
-  const rows = await db.asUser({ userId: actor.userId, orgId: actor.orgId }, (tx) => tx`
+  const rows = await db.asUser(
+    { userId: actor.userId, orgId: actor.orgId },
+    (tx) => tx`
     select p.id, p.title, p.type, p.status, p.client_reference, p.origin, p.visibility, p.created_at, p.updated_at,
       (select count(*)::int from zro.project_steps s where s.project_id = p.id and s.state = 'done') as steps_done,
       (select count(*)::int from zro.project_steps s where s.project_id = p.id and s.state in ('needs_review', 'failed')) as steps_attention
@@ -66,7 +75,8 @@ export async function listProjects(db: Database, auth: Authenticated | null, fil
     where p.org_id = ${actor.orgId}
       and (${filter.status ?? null}::text is null or p.status = ${filter.status ?? null})
       and (${filter.q ?? null}::text is null or p.title ilike ${'%' + (filter.q ?? '') + '%'})
-    order by p.updated_at desc limit 200`)
+    order by p.updated_at desc limit 200`,
+  )
   return { actor, projects: rows }
 }
 
@@ -109,12 +119,18 @@ export async function getProject(db: Database, auth: Authenticated | null, proje
              e.event_type, e.occurred_at
       from zro.workflow_runs r join zro.workflow_events e on e.id = r.event_id
       where r.project_id = ${projectId} order by r.created_at desc limit 30`
-    const events = await tx`select id, event_type, schema_version, producer, occurred_at, payload from zro.workflow_events where project_id = ${projectId} order by occurred_at desc limit 30`
+    const events =
+      await tx`select id, event_type, schema_version, producer, occurred_at, payload from zro.workflow_events where project_id = ${projectId} order by occurred_at desc limit 30`
     return { actor, project, steps, documents, manifests, runs, events, access }
   })
 }
 
-export async function updateProject(db: Database, auth: Authenticated | null, projectId: string, patch: { title?: string; status?: string; client_reference?: string | null }) {
+export async function updateProject(
+  db: Database,
+  auth: Authenticated | null,
+  projectId: string,
+  patch: { title?: string; status?: string; client_reference?: string | null },
+) {
   const actor = await authorize(db, auth, { project: { id: projectId, access: 'edit' } })
   if (patch.status && !['active', 'paused', 'delivered', 'archived'].includes(patch.status)) throw new DomainError('invalid_input', 'Status inválido.')
   if (patch.title !== undefined && (!patch.title.trim() || patch.title.length > 160)) throw new DomainError('invalid_input', 'Nome inválido.')
@@ -124,7 +140,14 @@ export async function updateProject(db: Database, auth: Authenticated | null, pr
       status = coalesce(${patch.status ?? null}, status),
       client_reference = case when ${patch.client_reference !== undefined} then ${patch.client_reference ?? null} else client_reference end
       where id = ${projectId}`
-    await audit(tx, { orgId: actor.orgId, actorUserId: actor.userId, action: 'project.updated', targetType: 'project', targetId: projectId, metadata: { fields: Object.keys(patch) } })
+    await audit(tx, {
+      orgId: actor.orgId,
+      actorUserId: actor.userId,
+      action: 'project.updated',
+      targetType: 'project',
+      targetId: projectId,
+      metadata: { fields: Object.keys(patch) },
+    })
   })
 }
 
@@ -145,21 +168,35 @@ export async function addDocumentVersion(
   return { id: row!.id as string, version }
 }
 
-export async function saveDocument(db: Database, auth: Authenticated | null, input: { projectId: string; kind: 'brief' | 'script'; title: string; body: string }) {
+export async function saveDocument(
+  db: Database,
+  auth: Authenticated | null,
+  input: { projectId: string; kind: 'brief' | 'script'; title: string; body: string },
+) {
   const actor = await authorize(db, auth, { project: { id: input.projectId, access: 'edit' } })
   return db.asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
     const doc = await addDocumentVersion(tx, actor, { ...input, source: 'hub' })
-    await audit(tx, { orgId: actor.orgId, actorUserId: actor.userId, action: `project.${input.kind}_saved`, targetType: 'project', targetId: input.projectId, metadata: { version: doc.version } })
+    await audit(tx, {
+      orgId: actor.orgId,
+      actorUserId: actor.userId,
+      action: `project.${input.kind}_saved`,
+      targetType: 'project',
+      targetId: input.projectId,
+      metadata: { version: doc.version },
+    })
     return doc
   })
 }
 
 export async function documentHistory(db: Database, auth: Authenticated | null, projectId: string, kind: 'brief' | 'script') {
   const actor = await authorize(db, auth, { project: { id: projectId, access: 'view' } })
-  return db.asUser({ userId: actor.userId, orgId: actor.orgId }, (tx) => tx`
+  return db.asUser(
+    { userId: actor.userId, orgId: actor.orgId },
+    (tx) => tx`
     select d.id, d.version, d.title, d.source, d.created_at, u.display_name as author
     from zro.project_documents d left join zro.users u on u.id = d.created_by
-    where d.project_id = ${projectId} and d.kind = ${kind} order by d.version desc`)
+    where d.project_id = ${projectId} and d.kind = ${kind} order by d.version desc`,
+  )
 }
 
 /** Etapa do projeto, gravada pelo sistema (adaptadores, worker) ou por quem edita o projeto. */

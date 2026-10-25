@@ -70,7 +70,10 @@ export async function publishEvent(tx: Queryable, input: PublishInput, routes: R
 export function findEventCycle(routes: RouteTable, emits: Record<string, EventType[]>): EventType[] | null {
   const graph = new Map<EventType, EventType[]>()
   for (const [type, targets] of Object.entries(routes) as [EventType, RouteTarget[]][]) {
-    graph.set(type, targets.flatMap((t) => emits[t.handler] ?? []))
+    graph.set(
+      type,
+      targets.flatMap((t) => emits[t.handler] ?? []),
+    )
   }
   const state = new Map<EventType, 'visiting' | 'done'>()
   const stack: EventType[] = []
