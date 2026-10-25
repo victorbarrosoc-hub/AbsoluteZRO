@@ -1,0 +1,14 @@
+{
+  "name": "finishing",
+  "version": "0.1.0",
+  "description": "Finishing (nome provisório): gestão de cor e entregas para o DaVinci Resolve. Protótipo da referência → LUT criativa.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "referencia": "node src/cli.js"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

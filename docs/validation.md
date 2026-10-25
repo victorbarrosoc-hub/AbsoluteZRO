@@ -244,3 +244,15 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   reavalia. Sintaxe dos módulos conferida como no CI.
 - Ajustes conferidos no Chromium (Playwright) com `/api/zro/eu` simulado: fora (Entrar + Criar conta), sem acesso
   (aviso + "Ver na Absolute ZRO") e liberado (só a conta).
+
+## Finishing: referência → LUT (25/10/2026)
+
+- `products/finishing`: `npm test` (12/12, `node --test`, sem dependências). Cenas sintéticas com semente fixa e um look
+  conhecido (S com preto levantado, sombras frias, altos quentes, −20% de saturação): referência igual ao material dá
+  LUT identidade (desvio < 1e-4); intensidade 0 não mexe; mesma cena chega a < 0,35 da distância original; quatro
+  duplas de cenas diferentes sempre aproximam (cada uma < 0,85, média < 0,65), saturação recuperada perto de 0,8; um
+  bloco vermelho de 40% do quadro não tinge os cinzas (< 0,012 em Oklab); eixo neutro monótono, sem saltos na grade;
+  material chapado não quebra; `.cube` e PNG (cinco filtros) gravam e leem de volta; linha de comando gera `.cube` e
+  prévia.
+- Limite medido: na dupla 12/13 (referência sem o conteúdo de cor do material) a cor piora; o tom ainda aproxima.
+- Não validado: frames reais de filme e de câmera, e a LUT dentro do Resolve.

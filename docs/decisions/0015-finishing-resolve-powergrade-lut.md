@@ -28,7 +28,14 @@ titular decidiu o primeiro recorte da plataforma de finalização e gestão de c
 - **Pacote de entrega por projeto:** PowerGrade (`.drx` + still), LUTs (`.cube`), instruções curtas (espaço de cor de
   entrada, onde instalar a LUT, ordem dos nós) e checksum de cada arquivo. Versão e aprovação ficam no HUB; o evento
   `delivery.ready` sai quando o pacote é aprovado.
-- **Sem grading criativo automático.** A plataforma não inventa look; só converte (técnico) e entrega (criativo).
+- **Sem look inventado.** A plataforma não cria look sozinha: converte (técnico), entrega (criativo do colorista) e
+  replica a referência que a pessoa escolhe, sempre com prévia antes e depois e intensidade ajustável.
+- **Referência → LUT criativa** (pedido do titular, 25/10/2026): a pessoa dá um frame de referência e um frame do
+  material; sai `.cube`. Algoritmo determinístico, sem IA: tom (piso, teto e contraste da referência, exposição do
+  material), cor por faixa de luz (alinhamento das nuvens de cor em Oklab, juntado numa reta de split-tone) e
+  saturação comparada por matiz. Protótipo e testes em `products/finishing/src/cor/referencia.js`. Copia cor e
+  contraste, não grão, lente ou luz; referência sem conteúdo em comum erra a cor (próximo passo: conta-gotas de
+  neutro/pele). A referência é privada e apagada depois do cálculo.
 
 **O que um pacote real mostrou (25/10/2026).** Pacote comercial de terceiros enviado pelo titular, estudado só fora do
 repositório (nenhum arquivo dele entra aqui):
