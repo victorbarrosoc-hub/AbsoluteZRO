@@ -410,7 +410,8 @@ create table if not exists zro.asset_locations (
   -- URI lógico (zro-dest://<destino>/<caminho>), nunca URL pública com segredo.
   uri text not null check (uri !~* '^https?://'),
   destination_label text not null,
-  status text not null check (status in ('planned', 'copied', 'verified', 'mismatch', 'missing', 'failed')),
+  -- verified = há checksum conferido deste destino; unverified = listado pela origem, sem prova de conferência.
+  status text not null check (status in ('unverified', 'verified', 'mismatch', 'missing', 'failed')),
   verified_at timestamptz,
   detail jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),

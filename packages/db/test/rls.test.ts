@@ -1,6 +1,7 @@
 // Isolamento entre organizações e papéis (PRD §5.2, §9.2 caso E, §14). Banco real, papel zro_app.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { testDatabase, type Database } from '../src/testing'
+import { testDatabase } from '../src/testing'
+import type { Database } from '../src/index'
 import { PG, pgErrorCode } from '../src/index'
 import { addMember, createOrg, createProject, createUser } from './helpers'
 
