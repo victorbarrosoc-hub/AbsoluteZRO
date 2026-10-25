@@ -154,6 +154,18 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - `tests/e2e/sso.spec.ts`: do app ao HUB, criar conta, criar organização, permitir, voltar com código, trocar por
   tokens, userinfo, reautorização silenciosa, descoberta, JWKS e retorno malicioso recusado; axe na tela de permissão.
 
+## Conta única (25/10/2026)
+
+- `tests/integration/accounts.test.ts` (9): plano grátis na organização nova com as cinco ferramentas e no
+  `zro_products`, idempotência, `zro_app` sem acesso à função; conta por app com contagem de entradas e RLS
+  (cada pessoa só lê as próprias, não grava); Google com PKCE, state, nonce, aud, iss, validade e e-mail
+  confirmado; conta nova sem senha, vínculo reaproveitado, mescla com conta confirmada mantendo a senha, conta
+  nunca confirmada perde senha e sessões, conta suspensa recusada sem vínculo.
+- `tests/e2e/sso.spec.ts`: "Criar conta" vindo de um app abre `/criar-conta`, passa por Boas-vindas já
+  preenchida e volta ao app com código, sem botão do Google quando não configurado; `app_accounts` registrado.
+- `tests/e2e/hub.spec.ts`: conta nova recebe as ferramentas do plano grátis; os testes de bloqueio tiram o plano.
+- Suite completa local: 92 testes Vitest e 14 e2e passando; lint, format e typecheck limpos.
+
 ## Virada das plataformas (25/10/2026)
 
 - Origem: o `main` de cada repositório antigo é exatamente o commit importado (2f6716e, f04e517, a5ac3f1, dfa91e3,

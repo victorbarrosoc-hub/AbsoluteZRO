@@ -54,6 +54,8 @@ export default async function Authorize({ searchParams }: { searchParams: Promis
     }
     redirect(`/entrar?next=${encodeURIComponent(here)}`)
   }
+  // O acesso às ferramentas vem do plano da organização: conta recém-criada passa por Boas-vindas e volta aqui.
+  if (!auth.session.activeOrgId && req.prompt !== 'none') redirect(`/boas-vindas?next=${encodeURIComponent(here)}`)
 
   // App da família (trusted): entra direto, como numa central de apps. O consentimento fica registrado e removível no Perfil.
   const direct = req.client.trusted && req.prompt !== 'consent'
