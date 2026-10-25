@@ -253,6 +253,24 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - Ajustes conferidos no Chromium (Playwright) com `/api/zro/eu` simulado: fora (Entrar + Criar conta), sem acesso
   (aviso + "Ver na Absolute ZRO") e liberado (só a conta).
 
+## Absolute ZRO para computador (25/10/2026)
+
+- `apps/hub-desktop`: `npm test` (node --test) 14/14: regras de navegação (HUB e `accounts.google.com` na janela; o
+  resto só sai por `https` no navegador; `file:`, `javascript:`, `smb:` e URL com usuário/senha recusados), deep link
+  `absolutezro://` só para rotas do HUB (sem `/api`, `/oauth`, `//outro-host`, `usuario@host`), permissões negadas por
+  padrão, aviso de versão (build 0 nunca avisa, "Depois" lembra o build), janela lembrada só se couber numa tela e
+  ícones válidos (`.icns` com 8 tamanhos até 1024, `.ico` 16–256, fundo do DMG 540×380 e @2x).
+- Empacotamento local: `npx electron-builder --linux dir` (Electron 44.5.1, fusíveis aplicados, `app.asar` só com
+  `desktop/`, `build/icon*.png` e `package.json`). Teste de fumaça do app empacotado com `xvfb-run … --smoke`:
+  `SMOKE OK` (tela "Sem conexão" pronta, ponte presente, sem Node na página, símbolo e Figtree carregados, fundo
+  `rgb(252, 251, 252)`, regras e deep link conferidos).
+- HUB: `tests/integration/hub-desktop-download.test.ts` com GitHub falso: com token redireciona para o endereço assinado
+  (`Accept: application/octet-stream`, sem seguir), sem token usa o link do Release, Release ausente volta para
+  `/baixar?hub=indisponivel` ("Em breve"), `?build=N` exato, `/baixar/hub/versao` só com `versao.json` válido e
+  `/baixar/hub/diag` sem mostrar o token. Raiz: lint, formato, tipos, Vitest 112/112, build e E2E 16/16.
+- Não validado aqui: `.dmg` e `.exe` (só geram em Mac e Windows do GitHub Actions, em push na `main`), a barra de
+  título do Mac numa máquina real e o download com o `GITHUB_TOKEN` de produção.
+
 ## Padrão Apple em todo o site e no HUB (25/10/2026)
 
 - `npx eslint . --ignore-pattern '.claude/**'`, `npm run format:check`, `npm run typecheck`, vitest (93/93 com

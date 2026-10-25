@@ -1,0 +1,94 @@
+# Empacotamento do Absolute ZRO para computador (npm run dist:mac / dist:win, ou .github/workflows/hub-desktop.yml).
+appId: com.absolutezro.hub
+productName: Absolute ZRO
+copyright: Copyright © 2026 Absolute ZRO
+artifactName: AbsoluteZRO-${version}-${os}-${arch}.${ext}
+
+directories:
+  output: dist
+  buildResources: build
+
+# O app só abre o HUB e as páginas locais (barra de título e "Sem conexão"). Sem dependências de produção.
+asar: true
+files:
+  - package.json
+  - desktop/**/*
+  - build/icon.png
+  - build/icon-windows.png
+  - '!**/*.map'
+  - '!**/*.md'
+
+# Link absolutezro://caminho abre a rota do HUB no app (Info.plist no Mac; no Windows o app registra ao abrir).
+protocols:
+  - name: Absolute ZRO
+    schemes: [absolutezro]
+
+# Fusíveis do Electron (os mesmos do Synquei): o executável não vira um Node com as permissões do app, NODE_OPTIONS e
+# --inspect não entram, e só o app.asar conferido pelo hash é carregado.
+electronFuses:
+  runAsNode: false
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+
+mac:
+  target:
+    - target: dmg
+      arch: [universal]
+  category: public.app-category.productivity
+  icon: build/icon.icns
+  darkModeSupport: true
+  minimumSystemVersion: '11.0'
+  # Sem certificado da Apple por enquanto: assinatura ad-hoc (na primeira vez o macOS pede "Abrir Mesmo Assim").
+  identity: '-'
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  notarize: false
+
+dmg:
+  title: Absolute ZRO
+  artifactName: AbsoluteZRO-${version}-mac-universal.${ext}
+  # 540×380 (e background@2x.png para Retina), gerado por scripts/fundo-dmg.mjs
+  background: build/background.png
+  iconSize: 96
+  window:
+    width: 540
+    height: 380
+  contents:
+    - x: 140
+      y: 214
+    - x: 400
+      y: 214
+      type: link
+      path: /Applications
+
+win:
+  target:
+    - target: nsis
+      arch: [x64, arm64]
+  icon: build/icon.ico
+
+nsis:
+  # Instalador com escolha de pasta, em português, para o usuário atual (sem senha de administrador).
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  allowElevation: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: Absolute ZRO
+  runAfterFinish: true
+  # a sessão (login) fica guardada mesmo se desinstalar e instalar de novo
+  deleteAppDataOnUninstall: false
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  uninstallDisplayName: Absolute ZRO
+  installerLanguages: [pt_BR]
+  language: '1046'
+  artifactName: AbsoluteZRO-${version}-windows-setup.${ext}
+
+linux:
+  target: [dir]
+  category: Office
+  icon: build/icon-linux.png

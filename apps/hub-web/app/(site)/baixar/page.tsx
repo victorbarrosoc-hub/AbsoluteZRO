@@ -2,16 +2,17 @@ import type { Metadata } from 'next'
 import { DownloadCatalog, DownloadsIntro } from '@/components/download-catalog'
 import { OsHint } from '@/components/os-hint'
 import { publicCatalog } from '@/lib/data/catalog'
+import { disponibilidade } from '@/lib/hub-desktop-release'
 
 export const metadata: Metadata = { title: 'Downloads' }
 export const dynamic = 'force-dynamic'
 
-export default async function Baixar() {
-  const { products } = await publicCatalog()
+export default async function Baixar({ searchParams }: { searchParams: Promise<{ hub?: string }> }) {
+  const [{ products }, hub, q] = await Promise.all([publicCatalog(), disponibilidade(), searchParams])
   return (
     <section className="section section--page dl-page" aria-label="Downloads">
       <OsHint />
-      <DownloadsIntro heading="h1" />
+      <DownloadsIntro heading="h1" hub={hub} aviso={q.hub === 'indisponivel'} />
       <DownloadCatalog
         products={products.map((p) => ({
           id: p.id as string,

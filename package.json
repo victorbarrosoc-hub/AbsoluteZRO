@@ -4,7 +4,8 @@
   "description": "Absolute ZRO HUB: conta central, permissões por assinatura, Ciclo do O e integração entre as ferramentas.",
   "type": "module",
   "workspaces": [
-    "apps/*",
+    "apps/hub-web",
+    "apps/worker",
     "packages/*"
   ],
   "engines": {

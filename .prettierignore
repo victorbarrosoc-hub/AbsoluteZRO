@@ -6,3 +6,4 @@ PRD.md
 tests/fixtures/
 infra/migrations/
 docs/integration-contracts/schemas/
+apps/hub-desktop/dist/

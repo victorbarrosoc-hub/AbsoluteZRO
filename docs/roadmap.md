@@ -31,7 +31,9 @@ Atualizado em 25/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ⬜ Carro do Freela no Supabase AbsoluteZRO (a lista de convite ainda está no projeto antigo; aguardando acesso).
 - ⬜ Arquivar os repositórios antigos (todos conferidos: o `main` de cada um é o commit importado).
 - ⬜ Domínio próprio `absolutezro.com` com subdomínio por app e sessão compartilhada (aguardando a compra).
-- ⬜ App Absolute ZRO para computador (instalar e atualizar todas as ferramentas num lugar só, como o Creative Cloud). Exige instaladores assinados e atualização automática em cada produto.
+- ✅ App Absolute ZRO para computador, primeira etapa (`apps/hub-desktop`, 25/10/2026): o HUB numa janela própria no Mac (.dmg universal) e no Windows (.exe com escolha de pasta), tema claro, tela "Sem conexão" local, menu em português, deep link `absolutezro://` e aviso de versão nova por `/baixar/hub/versao`. Instaladores no Release `hub-desktop` (workflow `hub-desktop.yml`), entregues por `/baixar/hub/{mac,windows}`.
+- ⬜ App para computador, próximas etapas: assinatura Apple/Microsoft e atualização automática assinada; depois instalar e atualizar as outras ferramentas num lugar só, como o Creative Cloud. Até lá: sem assinatura, sem troca automática (o app só avisa).
+- ⬜ `GITHUB_TOKEN` no projeto Vercel **absolutezro** e primeiro Release `hub-desktop` (push na `main` com mudança em `apps/hub-desktop/**`); até lá `/baixar` mostra "Em breve" ([downloads-privados](operations/downloads-privados.md)).
 - ✅ Conta central: cadastro, login, sair, sessões (lista e encerrar), confirmação de e-mail, nova senha, troca de senha.
 - ✅ Organizações, troca de organização ativa, convites (e-mail confirmado e igual), papéis, remoção, dono garantido.
 - ✅ RLS em todas as tabelas com testes de isolamento entre organizações.

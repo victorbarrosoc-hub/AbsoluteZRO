@@ -44,3 +44,21 @@ Os projetos Vercel **sobedesce**, **synquei** e **nossom** precisam de:
 Sem esse token, com os repositórios privados, os botões de download voltam para a página com "indisponível" e os
 apps de desktop não acham versão nova. O token nunca vai para o Git, issue, PR ou chat; só no painel da Vercel. Ao
 renovar (tokens finos expiram), trocar nos três projetos.
+
+## Absolute ZRO para computador (projeto Vercel absolutezro)
+
+O app do próprio HUB (`apps/hub-desktop`) publica no Release **`hub-desktop`** do AbsoluteZRO
+(`.github/workflows/hub-desktop.yml`: Mac e Windows só em push na `main` que mexe em `apps/hub-desktop/**`, em tag
+`hub-desktop-v*` ou pelo botão "Run workflow"). O HUB entrega por:
+
+| Rota                                     | O que faz                                                                       |
+| ---------------------------------------- | ------------------------------------------------------------------------------- |
+| `/baixar/hub/mac`, `/baixar/hub/windows` | 302 para o instalador (`?build=N` pede um build exato); sem Release, "Em breve" |
+| `/baixar/hub/versao`                     | `versao.json` do Release (build, versão, SHA-256); o app compara e avisa        |
+| `/baixar/hub/diag`                       | por que o download não sai, sem mostrar o token                                 |
+
+Código: `apps/hub-web/lib/hub-desktop-release.ts`. O projeto Vercel **absolutezro** precisa do mesmo `GITHUB_TOKEN`
+fino (Contents: Read-only, com acesso ao AbsoluteZRO), em Production e Preview, e de uma nova publicação depois de
+salvar. Conferir em `https://absolutezro.vercel.app/baixar/hub/diag`: `token: true`, `tipoToken: "fino"`,
+`motivo: null`. Opcionais: `HUB_DESKTOP_REPO` e `HUB_DESKTOP_TAG` (padrão `victorbarrosoc-hub/AbsoluteZRO` e
+`hub-desktop`).

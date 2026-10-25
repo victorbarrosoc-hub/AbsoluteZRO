@@ -6,6 +6,7 @@
 import type { ReactNode } from 'react'
 import { Pill, ProductMark } from '@zro/ui'
 import { DOWNLOADS, type DownloadOption, type Os } from '@/lib/downloads'
+import { HUB_DESKTOP_OPCOES, SEM_INSTALADOR, type Disponibilidade } from '@/lib/hub-desktop-release'
 import { productColor } from './app-tile'
 import { CopyButton } from './copy-button'
 import { Icon, type IconName } from './icons'
@@ -135,9 +136,10 @@ export function DownloadCatalog({ products, accessPill }: { products: CatalogPro
   )
 }
 
-/** Cabeçalho comum: o que existe hoje e o que ainda não (o app central de desktop). */
-export function DownloadsIntro({ heading }: { heading: 'h1' | 'h2' }) {
+/** Cabeçalho comum: o que existe hoje e o app Absolute ZRO para computador (Release "hub-desktop"). */
+export function DownloadsIntro({ heading, hub = SEM_INSTALADOR, aviso }: { heading: 'h1' | 'h2'; hub?: Disponibilidade; aviso?: boolean }) {
   const H = heading
+  const opcoes = HUB_DESKTOP_OPCOES.filter((o) => hub[o.os])
   return (
     <div className="dl-intro">
       <div className="greet">
@@ -149,11 +151,29 @@ export function DownloadsIntro({ heading }: { heading: 'h1' | 'h2' }) {
           Tudo num lugar só: escolha o app e o sistema. O instalador do seu computador aparece em destaque. Cada app abre com o próprio login.
         </p>
       </div>
-      <aside className="dl-central zro-card">
+      <aside id="absolute-zro" className="dl-central zro-card">
         <Icon name="download" size={22} />
         <div>
-          <strong>App Absolute ZRO para computador</strong>
-          <p>Em desenvolvimento: vai instalar e atualizar todas as ferramentas num lugar só. Por enquanto, cada uma baixa daqui, no site oficial dela.</p>
+          <strong>Absolute ZRO para computador{hub.versao ? ` · ${hub.versao}` : ''}</strong>
+          {opcoes.length ? (
+            <>
+              <p>O HUB numa janela própria, no Mac e no Windows. Continua logado e avisa quando sai versão nova.</p>
+              <p>
+                {opcoes.map((o) => (
+                  <a key={o.os} className="zro-btn zro-btn--small" href={`/baixar/hub/${o.os}`} title={o.detail}>
+                    <Icon name={OS_ICON[o.os]} size={16} />
+                    {o.label} ({o.format})
+                  </a>
+                ))}
+              </p>
+              <p>Sem assinatura da Apple e da Microsoft por enquanto: na primeira vez, Abrir (Mac) ou Executar assim mesmo (Windows).</p>
+            </>
+          ) : (
+            <p>
+              {aviso ? 'O instalador ainda não está no ar. ' : ''}Em breve para Mac e Windows. Enquanto isso, o HUB funciona no navegador e cada ferramenta
+              baixa daqui.
+            </p>
+          )}
         </div>
       </aside>
     </div>
