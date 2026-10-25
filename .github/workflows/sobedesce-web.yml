@@ -1,0 +1,59 @@
+# SOBEDESCE (products/sobedesce/web): lint, tipos e testes do site a cada mudança na pasta dele.
+# A publicação é da Vercel (projeto sobedesce, Root Directory products/sobedesce/web); aqui só conferimos.
+# Os testes do migrador com schema e da cópia do Neon rodam num Postgres de verdade (TEST_DATABASE_URL).
+name: SOBEDESCE · site
+
+on:
+  push:
+    branches: [main, 'claude/**']
+    paths:
+      - 'products/sobedesce/web/**'
+      - '.github/workflows/sobedesce-web.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'products/sobedesce/web/**'
+      - '.github/workflows/sobedesce-web.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sobedesce-web-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: products/sobedesce/web
+
+jobs:
+  conferir:
+    name: Lint, tipos e testes
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sobedesce_teste
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/sobedesce_teste
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: products/sobedesce/web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test

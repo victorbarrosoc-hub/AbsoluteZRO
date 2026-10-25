@@ -3,7 +3,7 @@
 //   SOBEDESCE-0.1.0-mac-universal.dmg  → SOBEDESCE-0.1.0-b160-mac-universal.dmg
 //   SOBEDESCE-0.1.0-windows-setup.exe  → SOBEDESCE-0.1.0-b160-windows-setup.exe
 //
-//   node scripts/nome-instalador.mjs mac dist       (build = GITHUB_RUN_NUMBER)
+//   node scripts/nome-instalador.mjs mac dist       (build = GITHUB_RUN_NUMBER + SOBEDESCE_BUILD_BASE)
 //
 // Cada build tem o seu arquivo: o build seguinte não troca o instalador que o versao.json ainda aponta, então o
 // SHA-256 conferido pelo app sempre bate com o arquivo entregue (web/src/lib/release.ts escolhe pelo nome).
@@ -11,6 +11,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { INSTALADORES } from './sha256.mjs'
+import { numeroDoBuild } from './numero-build.mjs'
 
 /** Nome com o build. Já tem build? Fica como está. */
 export function nomeComBuild(nome, build) {
@@ -34,7 +35,7 @@ export function renomear(plataforma, distDir, build) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [plataforma, distDir = 'dist'] = process.argv.slice(2)
   try {
-    console.log(`instalador → ${renomear(plataforma, distDir, Number.parseInt(process.env.GITHUB_RUN_NUMBER || '', 10))}`)
+    console.log(`instalador → ${renomear(plataforma, distDir, numeroDoBuild())}`)
   } catch (err) {
     console.error(`nome-instalador: ${err.message}`)
     process.exit(1)

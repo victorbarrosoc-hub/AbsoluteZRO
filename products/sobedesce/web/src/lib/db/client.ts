@@ -1,6 +1,7 @@
 /**
  * Conexão com o banco (endereço em ./config.ts).
- * Produção: Postgres do Neon (postgres.js). Computador: PGlite em ./data/pglite.
+ * Produção: Postgres do Supabase da Absolute ZRO (ou o Neon de antes da virada), por postgres.js.
+ * Computador: PGlite em ./data/pglite.
  * Este arquivo não importa "server-only" para poder ser usado pelos scripts.
  */
 import { mkdirSync } from "node:fs";
@@ -8,7 +9,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { drizzle as drizzlePglite } from "drizzle-orm/pglite";
 import { drizzle as drizzlePostgres, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { LOCAL_DATABASE_DIR, LOCAL_DATABASE_IN_MEMORY, databaseConfig } from "./config";
+import { LOCAL_DATABASE_DIR, LOCAL_DATABASE_IN_MEMORY, databaseConfig, databaseSchema, postgresUrl } from "./config";
 import * as schema from "./schema";
 
 export type DB = PostgresJsDatabase<typeof schema>;
@@ -34,28 +35,25 @@ function connect(): DB {
   return drizzlePostgres(sql, { schema, casing: "snake_case" });
 }
 
-/**
- * O postgres.js manda ao servidor, como configuração, todo parâmetro da URL que ele
- * não conhece. O Neon põe "channel_binding=require" na URL e o Postgres recusaria.
- */
-function postgresUrl(raw: string) {
-  try {
-    const u = new URL(raw);
-    u.searchParams.delete("channel_binding");
-    return u.toString();
-  } catch {
-    return raw;
-  }
-}
-
 export const db = globalForDb.sobedesceDb ?? connect();
 if (process.env.NODE_ENV !== "production") globalForDb.sobedesceDb = db;
 
-/** Aplica as migrações pendentes (pasta ./drizzle). */
+/**
+ * Aplica as migrações pendentes (pasta ./drizzle).
+ * Com SOBEDESCE_DATABASE_SCHEMA (só servidor Postgres, nunca PGlite): migrador próprio no schema (./migrador.ts),
+ * e confere se o papel do banco usa esse schema por padrão. Sem ela: o migrador do Drizzle, como antes.
+ */
 export async function runMigrations() {
+  const schemaDoApp = config.server && !config.local ? databaseSchema() : null;
   if (!config.server) {
     const { migrate } = await import("drizzle-orm/pglite/migrator");
     await migrate(db as never, { migrationsFolder: "./drizzle" });
+  } else if (schemaDoApp) {
+    const { migrarNoSchema, conferirSchemaPadrao } = await import("./migrador");
+    const sql = globalForDb.sobedesceSql!;
+    const aplicadas = await migrarNoSchema(sql, schemaDoApp, "./drizzle");
+    console.log(aplicadas.length ? `Migrações aplicadas no schema ${schemaDoApp}: ${aplicadas.join(", ")}` : `Schema ${schemaDoApp} em dia.`);
+    await conferirSchemaPadrao(sql, schemaDoApp);
   } else {
     const { migrate } = await import("drizzle-orm/postgres-js/migrator");
     await migrate(db, { migrationsFolder: "./drizzle" });

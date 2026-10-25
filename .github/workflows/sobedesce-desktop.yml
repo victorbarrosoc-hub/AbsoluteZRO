@@ -1,30 +1,51 @@
-# Gera o app de desktop num Mac e num Windows de verdade (na nuvem do GitHub).
-# Os instaladores ficam em "Releases" → "SOBEDESCE · versão de teste". Uma tag v* (ex.: v0.1.0) também publica um Release.
+# SOBEDESCE (products/sobedesce): gera o app de desktop num Mac e num Windows de verdade (na nuvem do GitHub).
+# Veio de products/sobedesce/.github/workflows/desktop.yml do repositório antigo (baixadordodrive), agora na raiz
+# (ADR 0013): roda dentro de products/sobedesce e só quando essa pasta muda (fora o site em web/, docs e textos .md).
+# Os instaladores ficam em "Releases" → "SOBEDESCE · versão de teste" (tag sobedesce-versao-de-teste). Uma tag
+# sobedesce-v* (ex.: sobedesce-v0.1.0) também publica um Release.
 # Em branches que não são a main, o app só é gerado quando a mensagem do commit tem [build] (e fica como artefato, fora do Release)
 # (o Mac na nuvem consome os minutos gratuitos do GitHub 10× mais rápido). Pull requests para a main também geram o app
-# e rodam o teste de fumaça (sem publicar nada), a não ser que só mexam no site, na documentação ou em textos .md.
-name: App de desktop
+# e rodam o teste de fumaça (sem publicar nada).
+name: SOBEDESCE · app de desktop
 
 on:
   push:
-    branches: [main, "claude/**"]
-    tags: ["v*"]
+    branches: [main, 'claude/**']
+    tags: ['sobedesce-v*']
+    paths:
+      - 'products/sobedesce/**'
+      - '!products/sobedesce/web/**'
+      - '!products/sobedesce/docs/**'
+      - '!**/*.md'
+      - '.github/workflows/sobedesce-desktop.yml'
   pull_request:
     branches: [main]
-    paths-ignore:
-      - "web/**"
-      - "docs/**"
-      - "**/*.md"
+    paths:
+      - 'products/sobedesce/**'
+      - '!products/sobedesce/web/**'
+      - '!products/sobedesce/docs/**'
+      - '!**/*.md'
+      - '.github/workflows/sobedesce-desktop.yml'
   workflow_dispatch:
+
+# A contagem de execuções recomeça do 1 neste repositório; o último build do repositório antigo foi o b379.
+# Build = GITHUB_RUN_NUMBER + 1000 (scripts/numero-build.mjs): o primeiro daqui é o b1001 e o aviso "Nova versão"
+# dos apps já instalados continua funcionando.
+env:
+  SOBEDESCE_BUILD_BASE: '1000'
+
+defaults:
+  run:
+    working-directory: products/sobedesce
 
 # Só leitura por padrão (revisão de segurança, A8). Escrita só nos jobs que publicam no Release (app, versao e release).
 # As actions de fora vão fixadas pelo SHA do commit, com a tag ao lado: uma tag movida não troca o código que roda aqui.
-# Passo a passo do lado do GitHub (main protegida, 2FA, quem roda workflows): docs/SEGURANCA-GITHUB.md.
+# Passo a passo do lado do GitHub (main protegida, 2FA, quem roda workflows): products/sobedesce/docs/SEGURANCA-GITHUB.md.
 permissions:
   contents: read
 
 concurrency:
-  group: desktop-${{ github.ref }}
+  group: sobedesce-desktop-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -33,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -43,15 +64,16 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: products/sobedesce/package-lock.json
       - run: npm ci
       - run: npm run test:fast
 
   app:
     name: App (${{ matrix.label }})
-    if: github.event_name != 'push' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || contains(github.event.head_commit.message, '[build]')
+    if: github.event_name != 'push' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/sobedesce-v') || contains(github.event.head_commit.message, '[build]')
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
-    # Escrita para subir os instaladores no Release "versao-de-teste" (só a main publica, pelos if dos passos).
+    # Escrita para subir os instaladores no Release "sobedesce-versao-de-teste" (só a main publica, pelos if dos passos).
     permissions:
       contents: write
     strategy:
@@ -62,18 +84,18 @@ jobs:
             label: Mac
             plataforma: mac
             build: npm run dist:mac
-            files: dist/*.dmg
+            files: products/sobedesce/dist/*.dmg
           - os: windows-latest
             label: Windows
             plataforma: windows
             build: npm run dist:win
-            files: dist/*.exe
+            files: products/sobedesce/dist/*.exe
     env:
-      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
       # Em pull request o electron-builder pula a assinatura; a do Mac aqui é ad-hoc (identity "-", sem certificado nem
       # segredo), então assina igual à main: sem ela o framework da Blackmagic dentro do app fica com a assinatura
       # quebrada, o macOS não carrega e o teste de fumaça do PR não testaria o app que sai de verdade.
-      CSC_FOR_PULL_REQUEST: "true"
+      CSC_FOR_PULL_REQUEST: 'true'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -83,6 +105,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: products/sobedesce/package-lock.json
       - run: npm ci
       # Identidade do build (src/build-info.json vai dentro do app): o aviso "Nova versão do SOBEDESCE" compara com ela.
       - run: node scripts/build-info.mjs
@@ -150,7 +173,7 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: sha256-${{ matrix.plataforma }}
-          path: sha256/
+          path: products/sobedesce/sha256/
           retention-days: 1
           if-no-files-found: error
       # Os instaladores vão para um Release de teste ("SOBEDESCE · versão de teste"): Releases não usam
@@ -159,14 +182,14 @@ jobs:
       - if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
-          tag_name: versao-de-teste
+          tag_name: sobedesce-versao-de-teste
           name: SOBEDESCE · versão de teste
           prerelease: true
           target_commitish: ${{ github.sha }}
           files: ${{ matrix.files }}
           fail_on_unmatched_files: true
           body: Instaladores gerados automaticamente a partir do último commit da main. Sem assinatura da Apple/Microsoft por enquanto (veja o README).
-      # Branches com [build] e tags v*: os instaladores ficam como artefato do Actions (por poucos dias); a tag
+      # Branches com [build] e tags sobedesce-v*: os instaladores ficam como artefato do Actions (por poucos dias); a tag
       # publica o próprio Release no job "release".
       - if: github.ref != 'refs/heads/main'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -195,26 +218,27 @@ jobs:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           pattern: sha256-*
-          path: sha256
+          path: products/sobedesce/sha256
           merge-multiple: true
       - run: node scripts/build-info.mjs versao.json --sha256 sha256
       - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
-          tag_name: versao-de-teste
+          tag_name: sobedesce-versao-de-teste
           name: SOBEDESCE · versão de teste
           prerelease: true
           target_commitish: ${{ github.sha }}
-          files: versao.json
+          files: products/sobedesce/versao.json
           fail_on_unmatched_files: true
           body: Instaladores gerados automaticamente a partir do último commit da main. Sem assinatura da Apple/Microsoft por enquanto (veja o README).
       # Instaladores de builds antigos saem do Release (ficam o atual e os dois anteriores; scripts/limpar-release.mjs).
-      - run: node scripts/limpar-release.mjs ${{ github.run_number }}
+      # Sem número: o script usa GITHUB_RUN_NUMBER + SOBEDESCE_BUILD_BASE, o mesmo build dos instaladores.
+      - run: node scripts/limpar-release.mjs
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
   release:
     name: Publicar release
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/sobedesce-v')
     needs: app
     runs-on: ubuntu-latest
     permissions:

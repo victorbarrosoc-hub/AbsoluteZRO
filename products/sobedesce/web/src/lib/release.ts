@@ -1,5 +1,5 @@
 /**
- * Release de teste do GitHub ("versao-de-teste"): os instaladores do app de desktop e o versao.json,
+ * Release de teste do GitHub ("sobedesce-versao-de-teste" no repositório AbsoluteZRO): os instaladores do app de desktop e o versao.json,
  * que o GitHub Actions sobe por último, depois dos dois instaladores (scripts/build-info.mjs na raiz do repositório).
  *
  * Usado por /baixar/[plataforma] (redireciona para o instalador) e /baixar/versao (o aviso de versão nova do app).
@@ -11,8 +11,16 @@
  * do arquivo. Repositório público: funciona sem token, pelo link normal do arquivo.
  */
 
-const REPO = "victorbarrosoc-hub/baixadordodrive";
-const TAG = "versao-de-teste";
+/**
+ * De onde vêm os instaladores, na ordem. O SOBEDESCE passou a morar no repositório AbsoluteZRO (ADR 0013 da raiz):
+ * o workflow da raiz publica no Release "sobedesce-versao-de-teste". Enquanto esse Release não existe (404), o site
+ * continua entregando o do repositório antigo (baixadordodrive, "versao-de-teste"). Os builds daqui começam no b1001
+ * (scripts/numero-build.mjs), então o primeiro build novo já aparece como mais novo que o último do antigo (b379).
+ */
+export const FONTES = [
+  { repo: "victorbarrosoc-hub/AbsoluteZRO", tag: "sobedesce-versao-de-teste" },
+  { repo: "victorbarrosoc-hub/baixadordodrive", tag: "versao-de-teste" },
+] as const;
 const CACHE_MS = 5 * 60_000;
 
 export type Asset = { id: number; name: string; url: string; browser_download_url: string };
@@ -61,7 +69,7 @@ function token(): string | undefined {
   return process.env.GITHUB_TOKEN || undefined;
 }
 
-let cacheAssets: { em: number; base: string; assets: Asset[] } | null = null;
+let cacheAssets: { em: number; base: string; fonte: string; assets: Asset[] } | null = null;
 let cacheVersao: { em: number; base: string; versao: Versao } | null = null;
 
 /** Esquece o que estava guardado (testes; e depois de uma falha, para a próxima tentativa ir ao GitHub). */
@@ -70,20 +78,33 @@ export function esquecerCache() {
   cacheVersao = null;
 }
 
-/** Arquivos do Release de teste (guardados por 5 min). */
+/** Arquivos do Release de teste (guardados por 5 min): o do AbsoluteZRO; sem ele (404), o do repositório antigo. */
 export async function assetsDoRelease(): Promise<Asset[]> {
   const base = apiBase();
   if (cacheAssets && cacheAssets.base === base && Date.now() - cacheAssets.em < CACHE_MS) return cacheAssets.assets;
   const t = token();
-  const res = await fetch(`${base}/repos/${REPO}/releases/tags/${TAG}`, {
-    headers: { accept: "application/vnd.github+json", ...(t ? { authorization: `Bearer ${t}` } : {}) },
-    cache: "no-store",
-    signal: AbortSignal.timeout(10_000),
-  });
-  if (!res.ok) throw new Error(`release ${res.status}`);
-  const j = (await res.json()) as { assets?: Asset[] };
-  cacheAssets = { em: Date.now(), base, assets: Array.isArray(j.assets) ? j.assets : [] };
-  return cacheAssets.assets;
+  for (const [i, { repo, tag }] of FONTES.entries()) {
+    const res = await fetch(`${base}/repos/${repo}/releases/tags/${tag}`, {
+      headers: { accept: "application/vnd.github+json", ...(t ? { authorization: `Bearer ${t}` } : {}) },
+      cache: "no-store",
+      signal: AbortSignal.timeout(10_000),
+    });
+    // Só "não existe" passa para a próxima fonte; qualquer outra falha é erro (não mistura releases por engano).
+    if (res.status === 404 && i < FONTES.length - 1) {
+      await res.body?.cancel().catch(() => {});
+      continue;
+    }
+    if (!res.ok) throw new Error(`release ${res.status}`);
+    const j = (await res.json()) as { assets?: Asset[] };
+    cacheAssets = { em: Date.now(), base, fonte: `${repo}@${tag}`, assets: Array.isArray(j.assets) ? j.assets : [] };
+    return cacheAssets.assets;
+  }
+  throw new Error("release 404");
+}
+
+/** De qual Release vieram os arquivos guardados (repo@tag), para o painel e os testes. null = nada guardado. */
+export function fonteDoRelease(): string | null {
+  return cacheAssets?.fonte ?? null;
 }
 
 /**

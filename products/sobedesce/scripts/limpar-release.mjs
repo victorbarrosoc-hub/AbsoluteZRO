@@ -1,14 +1,17 @@
 #!/usr/bin/env node
-// Limpa o Release de teste depois que o versao.json novo subiu (job "versao" do .github/workflows/desktop.yml):
+// Limpa o Release de teste depois que o versao.json novo subiu (job "versao" do .github/workflows/sobedesce-desktop.yml na raiz):
 // apaga os instaladores de builds antigos e os de nome antigo (sem "-bN-"). Fica o build atual e os dois anteriores,
 // para quem ainda está baixando um deles (o site guarda o versao.json por até 5 min, e a CDN mais 5).
 //
-//   GITHUB_TOKEN=... GITHUB_REPOSITORY=dono/repo node scripts/limpar-release.mjs <build atual>
+//   GITHUB_TOKEN=... GITHUB_REPOSITORY=dono/repo node scripts/limpar-release.mjs [build atual]
+// Sem o número, usa GITHUB_RUN_NUMBER + SOBEDESCE_BUILD_BASE (scripts/numero-build.mjs).
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { INSTALADORES } from './sha256.mjs'
+import { numeroDoBuild } from './numero-build.mjs'
 
-const TAG = 'versao-de-teste'
+// Só o Release de teste do AbsoluteZRO: o do repositório antigo (baixadordodrive, "versao-de-teste") não é mexido daqui.
+export const TAG = 'sobedesce-versao-de-teste'
 export const MANTER = 3
 
 const ehInstalador = nome => Object.values(INSTALADORES).some(m => m(nome))
@@ -28,7 +31,7 @@ export function paraApagar(assets, atual, manter = MANTER) {
 }
 
 async function main() {
-  const atual = Number.parseInt(process.argv[2] || process.env.GITHUB_RUN_NUMBER || '', 10)
+  const atual = process.argv[2] ? Number.parseInt(process.argv[2], 10) : numeroDoBuild()
   const token = process.env.GITHUB_TOKEN
   const repo = process.env.GITHUB_REPOSITORY
   if (!Number.isSafeInteger(atual) || atual <= 0 || !token || !repo) throw new Error('faltam o build atual, GITHUB_TOKEN ou GITHUB_REPOSITORY')
