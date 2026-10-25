@@ -14,6 +14,8 @@ export const EMISSOR_PADRAO = 'https://absolutezro.vercel.app'
 export const ESCOPOS = 'openid email profile org'
 export const SITE_OFICIAL = 'https://tpeasy.vercel.app'
 export const VOLTA_PADRAO = '/app/'
+/** Id do TPeasy na lista `zro_products` do HUB. Fora da lista: entra, mas a conta fica sem acesso ao app. */
+export const PRODUTO = 'tpeasy'
 
 export const COOKIE_IDA = 'tp_zro_ida'
 export const DURACAO_IDA_S = 600
@@ -183,7 +185,11 @@ export async function descobrir() {
 export const novoValor = () => randomBytes(32).toString('base64url')
 export const desafioDe = (verificador) => createHash('sha256').update(verificador).digest('base64url')
 
-export async function urlDeLogin({ state, nonce, desafio, origem }) {
+/** A organização ativa da pessoa liberou o TPeasy? Vem do admin da Absolute ZRO (`zro_products`). */
+export const temAcesso = (produtos) => Array.isArray(produtos) && produtos.includes(PRODUTO)
+
+/** `criar`: "Criar conta" — o HUB abre o cadastro (prompt=create) e volta para cá já logado. */
+export async function urlDeLogin({ state, nonce, desafio, origem, criar = false }) {
   const d = await descobrir()
   const u = new URL(d.authorization_endpoint)
   u.searchParams.set('response_type', 'code')
@@ -194,6 +200,7 @@ export async function urlDeLogin({ state, nonce, desafio, origem }) {
   u.searchParams.set('nonce', nonce)
   u.searchParams.set('code_challenge', desafio)
   u.searchParams.set('code_challenge_method', 'S256')
+  if (criar) u.searchParams.set('prompt', 'create')
   return u.toString()
 }
 

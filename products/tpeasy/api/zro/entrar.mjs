@@ -1,4 +1,5 @@
 // GET /api/zro/entrar?volta=/app/ — começa o "Entrar com Absolute ZRO". O HUB também abre o app por aqui.
+// Com ?criar=1 é o "Criar conta": o HUB abre o cadastro (prompt=create). O TPeasy não cria contas próprias.
 import {
   COOKIE_IDA,
   DURACAO_IDA_S,
@@ -24,6 +25,7 @@ export default async function entrar(req, res) {
   }
   const url = urlDoPedido(req)
   const volta = voltaSegura(url.searchParams.get('volta'))
+  const criar = url.searchParams.get('criar') === '1'
 
   // O HUB só volta para o endereço cadastrado: o cookie da ida precisa nascer nele.
   const origem = origemDoPedido(req)
@@ -35,7 +37,7 @@ export default async function entrar(req, res) {
   const verificador = novoValor()
   let destino
   try {
-    destino = await urlDeLogin({ state, nonce, desafio: desafioDe(verificador), origem })
+    destino = await urlDeLogin({ state, nonce, desafio: desafioDe(verificador), origem, criar })
   } catch {
     return redirecionar(res, 302, comAviso(volta, 'erro'))
   }

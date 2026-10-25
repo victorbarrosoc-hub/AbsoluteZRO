@@ -201,3 +201,11 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - Provedor de pagamento e de e-mail reais (não escolhidos).
 - Worker como processo contínuo por horas (validado via `runOnce`/`recoverStaleRuns` nos testes e no seed).
 - Carga e concorrência além do teste de quota em paralelo.
+
+## TPeasy: conta única Absolute ZRO (25/10/2026)
+
+- `products/tpeasy`: `node --test tests/*.test.mjs` (23/23) com a Absolute ZRO falsa: `?criar=1` manda `prompt=create`
+  e volta logado; `tpeasy` fora de `zro_products` entra com `acesso: false`; liberado dá `acesso: true`; nova entrada
+  reavalia. Sintaxe dos módulos conferida como no CI.
+- Ajustes conferidos no Chromium (Playwright) com `/api/zro/eu` simulado: fora (Entrar + Criar conta), sem acesso
+  (aviso + "Ver na Absolute ZRO") e liberado (só a conta).
