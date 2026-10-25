@@ -19,12 +19,16 @@ const manifests = Object.fromEntries(
 let fail = false
 for (const dir of process.argv.slice(2)) {
   const git = (...a) => execFileSync('git', ['-C', dir, ...a], { encoding: 'utf8' }).trim()
-  const remote = git('remote', 'get-url', 'origin').replace(/\/\/[^@/]+@/, '//').replace(/\.git$/, '')
+  const remote = git('remote', 'get-url', 'origin')
+    .replace(/\/\/[^@/]+@/, '//')
+    .replace(/\.git$/, '')
   const m = Object.entries(manifests).find(([r]) => remote.endsWith(r.replace(/^https?:\/\/[^/]+/, '')))?.[1]
   const head = git('rev-parse', 'HEAD')
   const status = git('status', '--porcelain')
   const ok = !status && (!m || m.commit === head)
   if (!ok) fail = true
-  console.log(`${ok ? 'OK ' : 'ERRO'} ${dir} · HEAD ${head.slice(0, 7)}${m ? ` (cópia: ${m.commit.slice(0, 7)})` : ''} · ${status ? 'há mudanças locais' : 'git status limpo'}`)
+  console.log(
+    `${ok ? 'OK ' : 'ERRO'} ${dir} · HEAD ${head.slice(0, 7)}${m ? ` (cópia: ${m.commit.slice(0, 7)})` : ''} · ${status ? 'há mudanças locais' : 'git status limpo'}`,
+  )
 }
 process.exit(fail ? 1 : 0)

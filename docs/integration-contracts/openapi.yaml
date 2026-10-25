@@ -33,7 +33,12 @@ paths:
   /api/health:
     get: { security: [], summary: Saúde do HUB e do banco, responses: { '200': { description: ok }, '503': { description: banco indisponível } } }
   /api/v1/auth/signup:
-    post: { security: [], summary: Criar conta (define o cookie de sessão), responses: { '201': { description: criada }, default: { $ref: '#/components/responses/Error' } } }
+    post:
+      {
+        security: [],
+        summary: Criar conta (define o cookie de sessão),
+        responses: { '201': { description: criada }, default: { $ref: '#/components/responses/Error' } },
+      }
   /api/v1/auth/login:
     post: { security: [], summary: Entrar, responses: { '200': { description: sessão criada }, default: { $ref: '#/components/responses/Error' } } }
   /api/v1/auth/logout:
@@ -44,7 +49,11 @@ paths:
     get: { summary: Minhas organizações, responses: { '200': { description: ok } } }
     post: { summary: Criar organização (a pessoa vira dona), responses: { '201': { description: criada }, default: { $ref: '#/components/responses/Error' } } }
   /api/v1/organizations/active:
-    post: { summary: Trocar organização ativa (vínculo conferido no servidor), responses: { '200': { description: ok }, default: { $ref: '#/components/responses/Error' } } }
+    post:
+      {
+        summary: Trocar organização ativa (vínculo conferido no servidor),
+        responses: { '200': { description: ok }, default: { $ref: '#/components/responses/Error' } },
+      }
   /api/v1/projects:
     get: { summary: Projetos da organização ativa, responses: { '200': { description: ok } } }
     post:
@@ -85,13 +94,21 @@ paths:
       parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
       requestBody: { content: { application/json: { schema: { type: object, properties: { manifest_row_id: { type: string, format: uuid } } } } } }
       responses:
-        '200': { description: prévia, content: { application/json: { schema: { type: object, properties: { plan: { $ref: '#/components/schemas/OrganizationPlan' } } } } } }
+        '200':
+          {
+            description: prévia,
+            content: { application/json: { schema: { type: object, properties: { plan: { $ref: '#/components/schemas/OrganizationPlan' } } } } },
+          }
         '403': { $ref: '#/components/responses/Error' }
   /api/v1/projects/{id}/tpeasy/script:
     get:
       summary: Baixar o roteiro no formato de backup do TPeasy
       parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
-      responses: { '200': { description: backup, content: { application/json: { schema: { $ref: '#/components/schemas/TpeasyBackup' } } } }, '403': { $ref: '#/components/responses/Error' } }
+      responses:
+        {
+          '200': { description: backup, content: { application/json: { schema: { $ref: '#/components/schemas/TpeasyBackup' } } } },
+          '403': { $ref: '#/components/responses/Error' },
+        }
     post:
       summary: Importar roteiro de um backup do TPeasy como nova versão
       parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
@@ -115,4 +132,9 @@ paths:
       security: [{ providerSignature: [] }]
       summary: Evento de cobrança assinado (provedor habilitado em ZRO_BILLING_PROVIDERS)
       parameters: [{ name: provider, in: path, required: true, schema: { type: string } }]
-      responses: { '200': { description: processed | duplicate | ignored | failed }, '400': { description: assinatura inválida }, '404': { description: provedor não habilitado } }
+      responses:
+        {
+          '200': { description: processed | duplicate | ignored | failed },
+          '400': { description: assinatura inválida },
+          '404': { description: provedor não habilitado },
+        }

@@ -34,7 +34,8 @@
     "tsx": "^4.20.6",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vitest": "^4.1.12"
+    "vitest": "^4.1.12",
+    "@axe-core/playwright": "^4.11.0"
   },
   "packageManager": "npm@11.6.2"
 }

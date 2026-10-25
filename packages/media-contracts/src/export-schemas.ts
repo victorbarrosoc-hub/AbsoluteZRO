@@ -16,7 +16,11 @@ import { TimelineRefSchema } from './timeline'
 export const OUT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../docs/integration-contracts/schemas')
 
 export function buildSchemas(): Record<string, unknown> {
-  const s = (schema: z.ZodType, id: string, title: string) => ({ $id: `https://absolutezro.local/schemas/${id}.json`, title, ...z.toJSONSchema(schema, { io: 'input', unrepresentable: 'any' }) })
+  const s = (schema: z.ZodType, id: string, title: string) => ({
+    $id: `https://absolutezro.local/schemas/${id}.json`,
+    title,
+    ...z.toJSONSchema(schema, { io: 'input', unrepresentable: 'any' }),
+  })
   const out: Record<string, unknown> = {
     'zro-project.v1': s(ZroProjectSchema, 'zro-project.v1', 'ZroProject v1'),
     'zro-project-create.v1': s(ProjectCreateSchema, 'zro-project-create.v1', 'Criar projeto v1'),
@@ -37,6 +41,7 @@ export function buildSchemas(): Record<string, unknown> {
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   fs.mkdirSync(OUT_DIR, { recursive: true })
-  for (const [name, schema] of Object.entries(buildSchemas())) fs.writeFileSync(path.join(OUT_DIR, `${name}.schema.json`), JSON.stringify(schema, null, 2) + '\n')
+  for (const [name, schema] of Object.entries(buildSchemas()))
+    fs.writeFileSync(path.join(OUT_DIR, `${name}.schema.json`), JSON.stringify(schema, null, 2) + '\n')
   console.log(`schemas em ${OUT_DIR}`)
 }

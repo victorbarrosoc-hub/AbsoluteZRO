@@ -1,0 +1,11 @@
+{
+  "preset": "casamento",
+  "version": 1,
+  "status": "rascunho",
+  "objectives": ["Contar o dia em ordem emocional, não só cronológica", "Valorizar votos e reações da família"],
+  "priorities": ["Áudio limpo dos votos", "Reações próximas", "Momentos de entrada e saída"],
+  "pacing": { "intro": "lento", "cerimonia": "respira", "festa": "rápido com cortes no tempo da música" },
+  "structure": ["Abertura com detalhes", "Preparação", "Cerimônia", "Votos", "Festa", "Fechamento"],
+  "target_duration": { "teaser_s": 60, "filme_min": 8 },
+  "review_criteria": ["Nenhum voto cortado no meio da frase", "Sem tomadas tremidas sem intenção", "Música sem pico de volume"]
+}

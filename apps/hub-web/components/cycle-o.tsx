@@ -38,11 +38,12 @@ export function CycleO({ steps, title, subtitle, labelledBy }: { steps: CycleSte
   const n = steps.length
   const span = 360 / n
   // O brilho do eclipse fica na última etapa concluída (ou na que está em andamento).
+  const interactive = steps.some((s) => s.href)
   const lit = [...steps].reverse().findIndex((s) => s.state === 'processing' || s.state === 'needs_review' || s.state === 'done')
   const litIndex = lit === -1 ? -1 : n - 1 - lit
   return (
     <div className="cycle">
-      <svg className="cycle__svg" viewBox="0 0 400 400" role="img" aria-labelledby={labelledBy}>
+      <svg className="cycle__svg" viewBox="0 0 400 400" role={interactive ? 'group' : 'img'} aria-labelledby={labelledBy}>
         <defs>
           <radialGradient id="cycle-flare" cx="50%" cy="50%" r="50%">
             <stop offset="0" stopColor="#ffffff" stopOpacity="1" />
@@ -79,8 +80,8 @@ export function CycleO({ steps, title, subtitle, labelledBy }: { steps: CycleSte
             </>
           )
           return s.href ? (
-            <a key={s.key} href={s.href} aria-label={label} className="cycle__link">
-              <title>{label}</title>
+            // O nome acessível do link é o próprio texto visível (nome + estado).
+            <a key={s.key} href={s.href} className="cycle__link">
               {body}
             </a>
           ) : (
