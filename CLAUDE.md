@@ -10,7 +10,7 @@ Leia antes de mudar qualquer coisa: [PRD.md](PRD.md) (referência principal), [A
   Nada de commit, push, PR, migration, deploy, `npm install`, mudança de env ou de autenticação neles. Copiar só com
   `scripts/snapshot-product.mjs` e registrar no `SOURCE_MANIFEST.md`. Rode `scripts/check-originals.mjs` ao terminar.
 - **Deploy só com autorização explícita do titular.** Em 25/10/2026 o titular autorizou o projeto Vercel `absolutezro`
-  (absolutezro.vercel.app) com banco Neon novo; a trava `git.deploymentEnabled: false` saiu. Qualquer outro projeto,
+  (absolutezro.vercel.app) com o projeto Supabase novo `AbsoluteZRO`; a trava `git.deploymentEnabled: false` saiu. Qualquer outro projeto,
   domínio, DNS, banco pago ou ação irreversível pede nova autorização.
 - Nunca reutilizar chaves, bancos, projetos Supabase ou secrets dos apps originais. O repositório é **público**:
   nada de `.env`, token, cookie, URL assinada, dado pessoal ou áudio privado. `node scripts/scan-secrets.mjs` antes

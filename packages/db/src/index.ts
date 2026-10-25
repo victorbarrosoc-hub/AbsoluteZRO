@@ -29,8 +29,29 @@ export type Database = {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]', ''])
+
+/**
+ * Integrações (Supabase/Neon pela Vercel) entregam URLs com parâmetros extras (`supa=`, `pgbouncer=`,
+ * `connection_limit=`). O driver repassaria cada um ao servidor como parâmetro de sessão, e o pooler recusa.
+ * Fica só `sslmode`; banco remoto sem `sslmode` passa a exigir TLS.
+ */
+export function normalizeDatabaseUrl(raw: string): string {
+  let url: URL
+  try {
+    url = new URL(raw)
+  } catch {
+    return raw
+  }
+  const sslmode = url.searchParams.get('sslmode')
+  for (const key of [...url.searchParams.keys()]) url.searchParams.delete(key)
+  if (sslmode) url.searchParams.set('sslmode', sslmode)
+  else if (!LOCAL_HOSTS.has(url.hostname)) url.searchParams.set('sslmode', 'require')
+  return url.toString()
+}
+
 export function createDatabase(url: string, options: { max?: number; prepare?: boolean; onSystem?: (reason: string) => void } = {}): Database {
-  const sql = postgres(url, {
+  const sql = postgres(normalizeDatabaseUrl(url), {
     max: options.max ?? 10,
     // Pooler em modo transação (Supabase) não aceita prepared statements nomeados.
     prepare: options.prepare ?? true,

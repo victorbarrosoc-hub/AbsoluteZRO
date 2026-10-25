@@ -8,7 +8,7 @@ Atualizado em 25/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ✅ Estratégia por produto e ADRs ([decisions](decisions)).
 - ✅ Prova de originais intocados (`scripts/check-originals.mjs`).
 - ✅ Arte oficial da marca (fornecida pelo titular).
-- 🟡 Deploy autorizado (Vercel `absolutezro` + Neon): código pronto; projeto e banco criados no painel pelo titular (o conector não tem permissão de criar projeto).
+- 🟡 Deploy autorizado (Vercel `absolutezro` + Supabase `AbsoluteZRO`): projeto Vercel configurado (raiz `apps/hub-web`); falta aplicar o SQL, ligar o banco e levar ao `main`.
 
 ## Fase 1 — Fundação
 
@@ -55,7 +55,7 @@ Atualizado em 25/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 
 ## Bloqueios e decisões do titular
 
-1. Importar o projeto `absolutezro` e criar o banco Neon no painel da Vercel ([checklist](operations/deployment-checklist.md)).
+1. Aplicar o SQL no Supabase e ligar o banco ao projeto `absolutezro` na Vercel ([checklist](operations/deployment-checklist.md)).
 2. Provedor de pagamento e política de preços/limites.
 3. Provedor de e-mail transacional.
 4. Domínio do HUB.

@@ -8,10 +8,10 @@ e a camada de projeto que liga Carro do Freela, TPeasy, SOBEDESCE, Synquei, NOSS
 - Arquitetura: [docs/architecture/overview.md](docs/architecture/overview.md) · Inventário das origens:
   [docs/architecture/source-inventory.md](docs/architecture/source-inventory.md) · Decisões: [docs/decisions](docs/decisions).
 - O que está pronto e o que falta: [docs/roadmap.md](docs/roadmap.md) · Evidências de teste: [docs/validation.md](docs/validation.md).
-- Deploy (aguarda autorização do titular): [docs/operations/deployment-checklist.md](docs/operations/deployment-checklist.md).
+- Deploy: [docs/operations/deployment-checklist.md](docs/operations/deployment-checklist.md).
 
-> **Deploy autorizado em 25/10/2026** para https://absolutezro.vercel.app (projeto Vercel `absolutezro`, banco Neon
-> novo). Passo a passo e primeira conta de administração em
+> **Deploy autorizado em 25/10/2026** para https://absolutezro.vercel.app (projeto Vercel `absolutezro`, projeto
+> Supabase novo `AbsoluteZRO`). Passo a passo e primeira conta de administração em
 > [docs/operations/deployment-checklist.md](docs/operations/deployment-checklist.md).
 
 ## O que existe
