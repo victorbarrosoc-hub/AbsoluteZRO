@@ -1,23 +1,11 @@
-import { test, expect } from './fixtures';
+import { test, expect, signInExisting } from './fixtures';
 import AxeBuilder from '@axe-core/playwright';
 
 test('account administration action belongs to the summary with clear separation on phone and desktop', async ({
   page,
 }) => {
   const credentials = { email: 'victorbarrosoc@gmail.com', password: 'test-only-password' };
-  const registered = await page.request.post('/api/account', {
-    headers: { Origin: 'http://localhost:3000' },
-    data: { action: 'register', name: 'Victor Barroso', ...credentials },
-  });
-  if (!registered.ok())
-    expect(
-      (
-        await page.request.post('/api/account', {
-          headers: { Origin: 'http://localhost:3000' },
-          data: { action: 'login', ...credentials },
-        })
-      ).status(),
-    ).toBe(200);
+  await signInExisting(page.request, { ...credentials, name: 'Victor Barroso' });
   for (const width of [360, 390, 1280, 1920]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/studio/conta');

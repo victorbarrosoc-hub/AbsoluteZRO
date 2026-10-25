@@ -3,7 +3,14 @@
  * Erros voltam como ?erro=<código>; os textos ficam em lib/zro-messages.ts.
  */
 import { createHash, timingSafeEqual } from 'node:crypto';
-import { currentAccount, encodeSession, sessionCookie, sessionFromProvider } from '../account';
+import {
+  accountToken,
+  currentAccount,
+  decodeSession,
+  encodeSession,
+  sessionCookie,
+  sessionFromProvider,
+} from '../account';
 import { allowRequest, cookieValue } from '../ai-access';
 import { zroConfigured, zroIssuer, zroRedirectUri, zroReturnPath } from './config';
 import { createAccountWithZro, linkedUser, linkZro, sessionForUser } from './accounts';
@@ -39,10 +46,16 @@ const secureCookie = (request: Request) =>
 const sameValue = (a: string | null, b: string) =>
   !!a && a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
 
-/** GET /api/zro/entrar?volta=/studio&modo=ligar → 302 para a Absolute ZRO. */
+/**
+ * GET /api/zro/entrar?volta=/studio&modo=ligar|criar → 302 para a Absolute ZRO.
+ * `modo=criar` é o único caminho de conta nova: pede ao HUB a tela de criar conta
+ * (`prompt=create`); a volta é a mesma do login (vínculo existente entra, senão cria).
+ */
 export async function startZro(request: Request): Promise<Response> {
   const url = new URL(request.url);
-  const mode: ZroMode = url.searchParams.get('modo') === 'ligar' ? 'link' : 'login';
+  const requested = url.searchParams.get('modo');
+  const mode: ZroMode = requested === 'ligar' ? 'link' : 'login';
+  const create = requested === 'criar';
   const next = zroReturnPath(url.searchParams.get('volta') ?? (mode === 'link' ? SETTINGS : null));
   if (!zroConfigured()) return redirect(request, errorPath(mode, next, 'zro_config'), 303);
   const ip = (request.headers.get('x-forwarded-for') || 'local').split(',')[0].trim();
@@ -65,6 +78,7 @@ export async function startZro(request: Request): Promise<Response> {
       nonce,
       challenge,
       redirectUri: zroRedirectUri(request),
+      ...(create ? { prompt: 'create' as const } : {}),
     });
   } catch {
     return redirect(request, errorPath(mode, next, 'zro_erro'), 303);
@@ -104,7 +118,15 @@ export async function finishZro(request: Request): Promise<Response> {
       if (!account || account.id !== saved.userId)
         return go(withParam('/entrar', 'next', SETTINGS));
       const linked = await linkZro(account.id, profile);
-      return linked.ok ? go(withParam(next, 'zro', 'ok')) : fail(linked.error);
+      if (!linked.ok) return fail(linked.error);
+      // Mesma sessão, agora com os produtos liberados na Absolute ZRO (podem bloquear o NOSSOM).
+      const current = decodeSession(accountToken(request));
+      return go(
+        withParam(next, 'zro', 'ok'),
+        current
+          ? [sessionCookie(encodeSession({ ...current, zroProducts: profile.products }))]
+          : [],
+      );
     }
     let userId = await linkedUser(profile);
     if (!userId) {
@@ -112,7 +134,11 @@ export async function finishZro(request: Request): Promise<Response> {
       if (!created.ok) return fail(created.error);
       userId = created.userId;
     }
-    const session = sessionFromProvider(await sessionForUser(userId));
+    // Os produtos liberados vêm do id_token; sem o NOSSOM na lista, a conta entra bloqueada.
+    const session = {
+      ...sessionFromProvider(await sessionForUser(userId)),
+      zroProducts: profile.products,
+    };
     // Uma sessão anterior neste navegador é trocada pela da conta ligada.
     return go(next, [sessionCookie(encodeSession(session))]);
   } catch {
