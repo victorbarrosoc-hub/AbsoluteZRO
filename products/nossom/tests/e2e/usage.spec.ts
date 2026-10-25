@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect, existingAccount } from './fixtures';
 test('free monthly allowance is visible and local EQ never consumes GPU minutes', async ({
   page,
 }) => {
@@ -34,23 +34,22 @@ test('free monthly allowance is visible and local EQ never consumes GPU minutes'
 test('verified administrator has no monthly minute limit and normal users cannot grant themselves admin', async ({
   page,
 }) => {
-  const res = await page.request.post('/api/account', {
+  // Campos de papel enviados pelo navegador são ignorados; o ADM vem do e-mail confirmado.
+  await existingAccount(page.request, {
+    email: 'victorbarrosoc@gmail.com',
+    password: 'test-only-password',
+    name: 'Administrador',
+  });
+  const login = await page.request.post('/api/account', {
     headers: { Origin: 'http://localhost:3000' },
     data: {
-      action: 'register',
-      name: 'Administrador',
+      action: 'login',
       email: 'victorbarrosoc@gmail.com',
       password: 'test-only-password',
       isAdmin: true,
     },
   });
-  if (!res.ok()) {
-    const login = await page.request.post('/api/account', {
-      headers: { Origin: 'http://localhost:3000' },
-      data: { action: 'login', email: 'victorbarrosoc@gmail.com', password: 'test-only-password' },
-    });
-    expect(login.status()).toBe(200);
-  }
+  expect(login.status()).toBe(200);
   await page.goto('/studio');
   await expect(page.locator('.workspace-label .account-plan')).toHaveText('ADM · Ilimitado');
   for (let i = 0; i < 12; i++)
@@ -66,17 +65,22 @@ test('verified administrator has no monthly minute limit and normal users cannot
   expect(quota.unlimited).toBe(true);
   expect(quota.used).toBe(0);
 });
-test('email confirmation cannot create an authenticated session', async ({ page }) => {
+test('an existing account still waiting for e-mail confirmation cannot sign in', async ({
+  page,
+}) => {
   await page.request.delete('/api/account', { headers: { Origin: 'http://localhost:3000' } });
+  await existingAccount(page.request, {
+    email: 'confirm.new@example.test',
+    password: 'test-password',
+    confirmed: false,
+  });
   await page.goto('/entrar');
   await expect(page.locator('.account-form-wrap')).toHaveCSS('opacity', '1');
   await page.locator('.account-form-wrap').hover();
-  await page.getByRole('button', { name: 'Criar conta', exact: true }).click();
-  await page.getByLabel('Nome', { exact: true }).fill('Confirmar conta');
   await page.getByLabel('E-mail', { exact: true }).fill('confirm.new@example.test');
   await page.getByLabel('Senha', { exact: true }).fill('test-password');
-  await page.getByRole('button', { name: 'Criar conta e entrar', exact: true }).click();
-  await expect(page.getByRole('status')).toContainText('Enviamos um link de confirmação');
+  await page.getByRole('button', { name: 'Entrar no estúdio', exact: true }).click();
+  await expect(page.locator('.account-error')).toContainText('Confirme seu e-mail para entrar');
   await page.goto('/studio');
   await expect(page).toHaveURL(/\/entrar\?next=/);
 });

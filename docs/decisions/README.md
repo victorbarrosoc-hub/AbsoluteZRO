@@ -17,3 +17,4 @@ Cada decisão é reversível salvo indicação. Formato: contexto, decisão, con
 | [0011](0011-linguagem-da-familia.md)   | Interface na linguagem das ferramentas da família (suíte)      | aceita                |
 | [0012](0012-login-unico-oidc.md)       | Login único: HUB como provedor OpenID Connect                  | aceita                |
 | [0013](0013-monorepo-como-fonte.md)    | Este repositório é a fonte de todas as plataformas             | aceita                |
+| [0014](0014-conta-unica-e-acesso.md)   | Conta única Absolute ZRO e acesso decidido no admin            | aceita                |

@@ -262,7 +262,22 @@ export function startFakes() {
       const user = users.get(id)!;
       return Response.json({
         access_token: 'access-' + id,
-        refresh_token: 'refresh-' + randomBytes(6).toString('hex'),
+        refresh_token: 'refresh-' + id + '-' + randomBytes(6).toString('hex'),
+        expires_in: 3600,
+        user,
+      });
+    }
+    if (
+      url.pathname === '/auth/v1/token' &&
+      url.searchParams.get('grant_type') === 'refresh_token'
+    ) {
+      // Renovação: o refresh "refresh-<id>-..." pertence à conta <id>.
+      const id = String(body.refresh_token || '').match(/^refresh-([a-f0-9-]{36})/)?.[1];
+      const user = id ? users.get(id) : undefined;
+      if (!user) return Response.json({ error_code: 'refresh_token_not_found' }, { status: 400 });
+      return Response.json({
+        access_token: 'access-' + user.id,
+        refresh_token: 'refresh-' + user.id + '-' + randomBytes(6).toString('hex'),
         expires_in: 3600,
         user,
       });

@@ -64,6 +64,8 @@ export async function authorizationUrl(o: {
   challenge: string;
   nonce: string;
   redirectUri: string;
+  /** 'create': o HUB abre direto a tela de criar conta (contas novas só nascem pela ZRO). */
+  prompt?: 'create';
 }) {
   const d = await discover();
   const url = new URL(d.authorization_endpoint);
@@ -75,6 +77,7 @@ export async function authorizationUrl(o: {
   url.searchParams.set('nonce', o.nonce);
   url.searchParams.set('code_challenge', o.challenge);
   url.searchParams.set('code_challenge_method', 'S256');
+  if (o.prompt) url.searchParams.set('prompt', o.prompt);
   return url.toString();
 }
 

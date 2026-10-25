@@ -46,8 +46,16 @@ export default async function Authorize({ searchParams }: { searchParams: Promis
   const here = `/oauth/authorize?${q.toString()}`
   if (!auth) {
     if (req.prompt === 'none') redirect(denyUrl(req).replace('error=access_denied', 'error=login_required'))
+    // "Criar conta" num app da família: a conta nasce aqui, na Absolute ZRO, e volta ao app já logada.
+    if (req.prompt === 'create') {
+      const back = new URLSearchParams(q)
+      back.delete('prompt')
+      redirect(`/criar-conta?next=${encodeURIComponent(`/oauth/authorize?${back.toString()}`)}`)
+    }
     redirect(`/entrar?next=${encodeURIComponent(here)}`)
   }
+  // O acesso às ferramentas vem do plano da organização: conta recém-criada passa por Boas-vindas e volta aqui.
+  if (!auth.session.activeOrgId && req.prompt !== 'none') redirect(`/boas-vindas?next=${encodeURIComponent(here)}`)
 
   // App da família (trusted): entra direto, como numa central de apps. O consentimento fica registrado e removível no Perfil.
   const direct = req.client.trusted && req.prompt !== 'consent'

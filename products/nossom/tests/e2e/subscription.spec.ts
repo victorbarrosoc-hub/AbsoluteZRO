@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect, signInExisting } from './fixtures';
 import AxeBuilder from '@axe-core/playwright';
 // Runs against the local Stripe double in scripts/test-server.mjs: Checkout, signed webhooks
 // and the customer portal. No real payment provider is contacted.
@@ -101,15 +101,7 @@ test('the administrator also reaches the plans, as customers see them, without l
   page,
 }) => {
   const credentials = { email: 'victorbarrosoc@gmail.com', password: 'test-only-password' };
-  const registered = await page.request.post('/api/account', {
-    headers: { Origin: 'http://localhost:3000' },
-    data: { action: 'register', name: 'Administrador', ...credentials },
-  });
-  if (!registered.ok())
-    await page.request.post('/api/account', {
-      headers: { Origin: 'http://localhost:3000' },
-      data: { action: 'login', ...credentials },
-    });
+  await signInExisting(page.request, { ...credentials, name: 'Administrador' });
   await page.goto('/studio/projetos');
   await page
     .getByRole('navigation', { name: 'Navegação do estúdio' })

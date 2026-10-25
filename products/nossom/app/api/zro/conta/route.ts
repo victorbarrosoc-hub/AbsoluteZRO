@@ -1,4 +1,10 @@
-import { currentAccount } from '@/lib/server/account';
+import {
+  accountToken,
+  currentAccount,
+  decodeSession,
+  encodeSession,
+  sessionCookie,
+} from '@/lib/server/account';
 import { allowRequest, privateHeaders, sameOrigin } from '@/lib/server/ai-access';
 import { zroConfigured } from '@/lib/server/zro/config';
 import { unlinkZro, zroLinkOf } from '@/lib/server/zro/accounts';
@@ -63,7 +69,14 @@ export async function DELETE(request: Request) {
         { error: zroMessage(result.error) },
         { status: 409, headers: privateHeaders },
       );
-    return Response.json({ unlinked: true }, { headers: privateHeaders });
+    // Sem vínculo, a conta volta a ser como antes da Absolute ZRO.
+    const headers = new Headers(privateHeaders);
+    const session = decodeSession(accountToken(request));
+    if (session?.zroProducts) {
+      const { zroProducts: _, ...rest } = session;
+      headers.append('Set-Cookie', sessionCookie(encodeSession(rest)));
+    }
+    return Response.json({ unlinked: true }, { headers });
   } catch {
     return Response.json(
       { error: 'Não deu para desligar agora. Tente de novo.' },

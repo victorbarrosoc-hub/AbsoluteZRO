@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Apple, Monitor, Download, ArrowLeft, Smartphone } from 'lucide-react';
 import { Brand } from '@/components/brand';
 import InstallApp from '@/components/install-app';
+import DownloadNotice from '@/components/download-notice';
 import { desktopInstallers } from '@/lib/desktop-releases';
 export const metadata = {
   title: 'Aplicativos NOSSOM',
@@ -17,8 +18,9 @@ function download(value: string | undefined) {
   }
 }
 // Instaladores publicados pelo Actions: a release nossom-v<versão> do AbsoluteZRO quando existe,
-// senão a prévia desktop-v0.2.2 do repositório antigo. Variáveis de ambiente têm prioridade.
-// Conferido de hora em hora.
+// senão a prévia desktop-v0.2.2 do repositório antigo. Os botões apontam para /baixar/<sistema>
+// (os repositórios são privados; a rota entrega o endereço assinado). Variáveis de ambiente têm
+// prioridade. A versão mostrada é conferida de hora em hora.
 export const revalidate = 3600;
 export default async function Apps() {
   const previews = await desktopInstallers();
@@ -62,6 +64,7 @@ export default async function Apps() {
       </Link>
       <h1>NOSSOM no seu dispositivo.</h1>
       <p>Escolha como abrir seu espaço. Sua conta e a IA são as mesmas em todas as versões.</p>
+      <DownloadNotice />
       <div className="apps-grid">
         {builds.map((build) => (
           <section key={build.title}>

@@ -4264,6 +4264,20 @@ html:not(.is-desktop) .so-desktop {
 .conta-quem small {
   overflow-wrap: anywhere;
 }
+/* sem conta: Entrar e Criar conta lado a lado; conta sem o Synquei liberado: aviso em âmbar */
+.conta-botoes,
+.conta-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+.conta-acoes {
+  justify-content: flex-end;
+  gap: 8px;
+}
+.conta-linha.sem-acesso small {
+  color: var(--warn-text);
+}
 .side-recolhida .sidebar-foot > .nav-item {
   margin: 0;
 }

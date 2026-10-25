@@ -99,7 +99,7 @@ O mesmo app, empacotado com Electron (`desktop/main.cjs`). Vantagens sobre o nav
 Distribuição (mesmo modelo do SOBEDESCE):
 
 1. `.github/workflows/synquei-desktop.yml` (na raiz do AbsoluteZRO) gera o `.dmg` (universal, Apple Silicon e Intel) num Mac e o `.exe` (x64 e ARM) num Windows do GitHub, roda o teste de fumaça do app empacotado (`--smoke`: monta o exemplo, sincroniza, exporta) e publica no Release **"Synquei · app de desktop"** (tag `synquei-app-desktop`), com o build no nome (número da execução + 1000, para ficar acima dos builds do repositório antigo, que iam até 25) e um `versao.json` com o SHA-256 de cada instalador.
-2. `api/baixar.js` (função da Vercel) atende `/baixar/mac`, `/baixar/windows` e `/baixar/versao` e manda direto para o arquivo do GitHub. Procura primeiro no Release `synquei-app-desktop` do AbsoluteZRO; enquanto ele não tiver instalador, usa o Release `app-desktop` do repositório antigo `victorbarrosoc-hub/synquei` (arquivado). `?build=N` acha o build em qualquer dos dois. Os dois repositórios são públicos: não precisa de token. Se algum virar privado, crie na Vercel a variável `GITHUB_TOKEN` (token fino, só leitura de *Contents*). `/baixar/diag` diz de onde está entregando.
+2. `api/baixar.js` (função da Vercel) atende `/baixar/mac`, `/baixar/windows` e `/baixar/versao` e manda direto para o arquivo do GitHub. Procura primeiro no Release `synquei-app-desktop` do AbsoluteZRO; enquanto ele não tiver instalador, usa o Release `app-desktop` do repositório antigo `victorbarrosoc-hub/synquei` (arquivado). `?build=N` acha o build em qualquer dos dois. Os dois repositórios são privados (25/10/2026): o projeto Vercel `synquei` precisa da variável `GITHUB_TOKEN` (token fino, só leitura de *Contents*, com acesso a AbsoluteZRO e synquei; ver `docs/operations/downloads-privados.md` na raiz). `/baixar/diag` diz de onde está entregando.
    Tags `synquei-v*` também disparam o build e a publicação.
 3. `instalar.sh` e `instalar.ps1`: instalação de uma linha, sem os avisos do macOS/Windows, conferindo o SHA-256:
    - Mac: `curl -fsSL https://synquei.vercel.app/instalar.sh | bash`
@@ -144,15 +144,17 @@ Testes: `tests/organizador.test.mjs` (resumo, linha pela metade, cancelado, segu
 
 ## Conta Absolute ZRO (opcional)
 
-O Synquei continua sem conta própria: tudo funciona sem entrar. No site, dá para **Entrar com Absolute ZRO** (login único, ADR 0012 do AbsoluteZRO) em Ajustes ou no cartão do plano; a pessoa aparece no cartão da barra lateral e em Ajustes (nome, e-mail, organização, Sair). A conta só identifica: não libera nem bloqueia recurso, e o plano continua o de `app/js/plano.js`. No app de desktop, offline ou aberto como arquivo, nada muda.
+O Synquei não tem conta própria: **a conta é a da Absolute ZRO**. O app, o site e o download continuam abertos, sem entrar. No site, Ajustes e o cartão do plano mostram **Entrar com Absolute ZRO** e **Criar conta**; "Criar conta" é o mesmo fluxo com `prompt=create` (o HUB abre o cadastro e volta ao Synquei já logado). Logada, a pessoa aparece no cartão da barra lateral e em Ajustes (nome, e-mail, organização, Sair). O plano continua o de `app/js/plano.js`. No app de desktop, offline ou aberto como arquivo, nada muda.
+
+**Direito de uso:** vem do admin da Absolute ZRO, em `zro_products` do id_token (gravado na sessão a cada login, reavaliado no login seguinte). Sem `synquei` na lista, a pessoa entra, mas a parte de conta mostra só "Sua conta Absolute ZRO ainda não tem acesso ao Synquei." com o botão **Ver na Absolute ZRO** (`/ferramentas` do HUB) e o Sair.
 
 Funções da Vercel (só Node, sem dependências; código comum em `api/_zro.js`, que a Vercel não publica como função):
 
 | Rota | O que faz |
 | --- | --- |
-| `GET /api/zro/entrar?volta=/app/%23/ajustes` | Cria state, nonce e PKCE S256, guarda num cookie assinado (`sq_zro`, 10 min, só em `/api/zro`) e manda para a Absolute ZRO. `volta` só aceita caminho deste site (padrão `/app/`). É o endereço de entrada que o HUB usa para abrir o app já logado. |
+| `GET /api/zro/entrar?volta=/app/%23/ajustes` | Cria state, nonce e PKCE S256, guarda num cookie assinado (`sq_zro`, 10 min, só em `/api/zro`) e manda para a Absolute ZRO. `volta` só aceita caminho deste site (padrão `/app/`). É o endereço de entrada que o HUB usa para abrir o app já logado. Com `&criar=1`, pede `prompt=create` (Criar conta). |
 | `GET /api/zro/callback` | Confere o state, troca o código com `client_secret_basic` + `code_verifier`, confere o id_token (ES256 pela JWKS, `iss`, `aud`, `exp`, `nonce`) e cria a sessão `sq_conta` (30 dias) com sub, nome, e-mail, organização e produtos. Nenhum token da Absolute ZRO vai para o navegador. Erros voltam como `?zro=expirou\|recusado\|erro\|config`. |
-| `GET /api/zro/eu` | 200 com a pessoa, 401 sem sessão, 503 se o login não estiver configurado. `no-store`. |
+| `GET /api/zro/eu` | 200 com a pessoa e `acesso` (Synquei em `zro_products`), 401 sem sessão (com os links `entrar` e `criar`), 503 se o login não estiver configurado. `no-store`. |
 | `POST /api/zro/sair` | Apaga `sq_conta` (a sessão na Absolute ZRO continua). |
 
 Cookies `HttpOnly; Secure; SameSite=Lax`, assinados com HMAC-SHA256; a chave de cada cookie sai de `ZRO_CLIENT_SECRET` por HKDF (trocar o segredo derruba as sessões). O retorno só vale em `https://synquei.vercel.app` e `localhost`/`127.0.0.1`; qualquer outro endereço (prévia da Vercel) é mandado para o site oficial antes de começar.
@@ -167,7 +169,7 @@ Variáveis na Vercel (projeto `synquei`, Production):
 
 No console da Absolute ZRO, o cliente `synquei-web` precisa do retorno `https://synquei.vercel.app/api/zro/callback` e o produto Synquei do endereço de entrada `https://synquei.vercel.app/api/zro/entrar`. Sem `ZRO_CLIENT_ID`/`ZRO_CLIENT_SECRET`, o botão não aparece e o app segue como antes.
 
-Testes: `tests/zro.test.mjs` com uma Absolute ZRO falsa local (`tests/zro-falso.mjs`, chave EC P-256 gerada no teste): fluxo completo, state, nonce, emissor e público errados, assinatura inválida, token vencido, cookies adulterados e volta para fora do site.
+Testes: `tests/zro.test.mjs` com uma Absolute ZRO falsa local (`tests/zro-falso.mjs`, chave EC P-256 gerada no teste): fluxo completo, criar conta (`prompt=create`), Synquei fora de `zro_products` (sem acesso) e liberado depois, state, nonce, emissor e público errados, assinatura inválida, token vencido, cookies adulterados e volta para fora do site. `tests/conta-ui.test.mjs`: o que a parte de conta do app mostra em cada caso.
 
 ## Rodar local
 
@@ -192,7 +194,7 @@ sw.js                           modo offline
 desktop/                        app de desktop (Electron)
 api/baixar.js                   /baixar/* na Vercel
 api/zro/, api/_zro.js           Entrar com Absolute ZRO (funções da Vercel)
-app/js/conta.js                 quem entrou (cartão do plano e Ajustes)
+app/js/conta.js                 quem entrou, criar conta e aviso sem acesso (cartão do plano e Ajustes)
 instalar.sh, instalar.ps1       instalação de uma linha
 tests/                          node --test
 ```

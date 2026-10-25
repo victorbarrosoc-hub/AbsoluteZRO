@@ -1,22 +1,43 @@
 // E2E no servidor de produção local (PRD §14): conta, organização, projeto, 403 por URL direta, CSRF, webhook.
 import { randomUUID } from 'node:crypto'
 import { expect, test, type Page } from '@playwright/test'
+import postgres from 'postgres'
 import { signPayload } from '@zro/billing'
+
+const DB = process.env.E2E_DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/zro_e2e_test'
 
 const email = () => `e2e-${randomUUID().slice(0, 8)}@teste.absolutezro.local`
 const PASS = 'senha-e2e-segura-1'
 
-async function signupAndOrg(page: Page, orgName = 'Produtora E2E') {
+/** Conta + organização. Organização nova entra no plano grátis (0007); `semPlano` tira esse plano para testar o bloqueio. */
+async function signupAndOrg(page: Page, orgName = 'Produtora E2E', opts: { semPlano?: boolean } = {}) {
+  const address = email()
   await page.goto('/criar-conta')
   await page.getByLabel('Nome').fill('Pessoa E2E')
-  await page.getByLabel('E-mail').fill(email())
+  await page.getByLabel('E-mail').fill(address)
   await page.getByLabel('Senha').fill(PASS)
   await page.getByRole('button', { name: 'Criar conta' }).click()
   await page.waitForURL('**/boas-vindas')
   await page.getByLabel('Nome').fill(orgName)
   await page.getByRole('button', { name: 'Criar e continuar' }).click()
   await page.waitForURL('**/inicio')
+  if (opts.semPlano) {
+    const sql = postgres(DB, { max: 1, onnotice: () => {} })
+    await sql`delete from zro.entitlements e using zro.subscriptions s, zro.memberships m, zro.users u
+              where e.source_id = s.id and s.provider = 'free' and s.org_id = m.org_id and m.user_id = u.id and u.email = ${address}`
+    await sql`delete from zro.subscriptions s using zro.memberships m, zro.users u
+              where s.provider = 'free' and s.org_id = m.org_id and m.user_id = u.id and u.email = ${address}`
+    await sql.end()
+  }
 }
+
+test('conta nova recebe as ferramentas do plano grátis', async ({ page }) => {
+  await signupAndOrg(page, 'Org grátis')
+  const ent = await (await page.request.get('/api/v1/entitlements')).json()
+  const access = (id: string) => ent.products.find((p: { productId: string }) => p.productId === id).access
+  for (const id of ['carro-do-freela', 'nossom', 'sobedesce', 'synquei', 'tpeasy']) expect(access(id)).toBe('contracted')
+  expect(access('ai-edit')).toBe('coming_soon')
+})
 
 test('área logada exige sessão', async ({ page }) => {
   await page.goto('/projetos')
@@ -24,7 +45,7 @@ test('área logada exige sessão', async ({ page }) => {
 })
 
 test('cadastro → organização → projeto com Ciclo do O e alternativa em lista', async ({ page }) => {
-  await signupAndOrg(page)
+  await signupAndOrg(page, 'Produtora E2E', { semPlano: true })
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Olá')
   await page.goto('/projetos/novo')
   await page.getByLabel('Nome', { exact: true }).fill('Casamento E2E')
@@ -39,7 +60,7 @@ test('cadastro → organização → projeto com Ciclo do O e alternativa em lis
 })
 
 test('API: sem assinatura recebe 403 por URL direta; sem sessão 401; outra origem 403', async ({ page, request }) => {
-  await signupAndOrg(page, 'Org sem plano')
+  await signupAndOrg(page, 'Org sem plano', { semPlano: true })
   const cookies = await page.context().cookies()
   const cookie = cookies.map((c) => `${c.name}=${c.value}`).join('; ')
   const origin = new URL(page.url()).origin
@@ -66,7 +87,7 @@ test('API: sem assinatura recebe 403 por URL direta; sem sessão 401; outra orig
 })
 
 test('webhook de cobrança: assinatura errada 400, provedor desconhecido 404, evento válido ativa e repetido não duplica', async ({ page, request }) => {
-  await signupAndOrg(page, 'Org webhook')
+  await signupAndOrg(page, 'Org webhook', { semPlano: true })
   const me = await (await page.request.get('/api/v1/me')).json()
   const orgId = me.active_organization_id as string
   const ev = {
