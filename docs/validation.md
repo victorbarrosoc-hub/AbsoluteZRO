@@ -282,3 +282,23 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   lateral na primeira versão).
 - HUB com `--p-finishing` novo e ícone `finishing.svg` no `ProductMark` (3 lugares na página inicial): segredos, lint,
   formatação, tipos, `npm test` (**103/103**), build e `npm run test:e2e` (**16/16**, com axe) verdes.
+
+## Revela: marca colorida, conta-gotas e publicação (25/10/2026)
+
+- Marca refeita a pedido do titular ("pegada das cores da Kodak, colorido"): o slide. Três símbolos comparados em 300,
+  96, 48, 32 e 20 px, em fundo escuro e claro; guia sem rolagem horizontal a 390 px.
+- `products/finishing`: `npm test` (**18/18**). Conta-gotas: o par leva a cor marcada a menos de 0,012 da referência;
+  na dupla 12/13 o erro de cor vai de 0,026 (sem pares) para 0,0135 com dois pares, abaixo do original (0,0162); com a
+  cor desligada os pares não agem. Na tela: marcar par sem abrir a escolha de arquivo, Esc cancela, Limpar volta.
+  O servidor do teste aplica os cabeçalhos do `vercel.json` e a tela roda sem erro de console com a CSP de produção.
+
+## Revela: marca colorida, conta-gotas e publicação (25/10/2026)
+
+- Marca refeita a pedido do titular ("pegada das cores da Kodak, colorido"): o slide. Três símbolos comparados em 300,
+  96, 48, 32 e 20 px, em fundo escuro e claro; guia sem rolagem horizontal a 390 px.
+- `products/finishing`: `npm test` (**18/18**). Conta-gotas: o par leva a cor marcada a menos de 0,012 da referência;
+  na dupla 12/13 o erro de cor vai de 0,026 (sem pares) para 0,0135 com dois pares, abaixo do original (0,0162); com a
+  cor desligada os pares não agem. Na tela: marcar par sem abrir a escolha de arquivo, Esc cancela, Limpar volta.
+  O servidor do teste aplica os cabeçalhos do `vercel.json` e a tela roda sem erro de console com a CSP de produção.
+- HUB com o amarelo e o vermelho novos em `--p-finishing`: segredos, lint, formatação, tipos, `npm test` (**103/103**),
+  build e `npm run test:e2e` (**16/16**) verdes.

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { aplicar, assar } from '../src/cor/cube.js'
-import { codigoParaOklab } from '../src/cor/oklab.js'
-import { criarLook, descrever, descreverSaturacao } from '../src/cor/referencia.js'
+import { codigoParaOklab, oklabParaCodigo } from '../src/cor/oklab.js'
+import { amostrar, criarLook, descrever, descreverSaturacao } from '../src/cor/referencia.js'
 import { aplicarEmImagem, cena, distanciaMedia, lookConhecido } from './apoio.js'
 
 const comLut = (img, look, tamanho = 33) => {
@@ -134,4 +134,39 @@ test('resumo em português por faixa de luz', () => {
   assert.match(frases[1], /^Sombras: .*mais frio/)
   assert.match(frases[5], /^Altos: .*mais quente/)
   assert.match(descreverSaturacao(criarLook(aplicarEmImagem(cena(9), lookConhecido), cena(9)).resumo), /^Saturação: \d+% menos$/)
+})
+
+test('conta-gotas: o par marcado leva a cor do material para a da referência', () => {
+  const mat = cena(12)
+  const ref = aplicarEmImagem(cena(13), lookConhecido)
+  const alvo = aplicarEmImagem(mat, lookConhecido)
+  // pares: um cinza e uma pele do material, com a cor que eles teriam no look (o que a pessoa marcaria)
+  const par = (c) => ({ mat: codigoParaOklab(...c), ref: codigoParaOklab(...lookConhecido(...c)) })
+  const pares = [par([0.5, 0.5, 0.5]), par([0.78, 0.6, 0.5])]
+  const sem = criarLook(ref, mat)
+  const com = criarLook(ref, mat, { pares })
+  assert.equal(com.resumo.pares, 2)
+  for (const p of pares) {
+    const [, a, b] = codigoParaOklab(...com.aplicar(...oklabParaCodigo(...p.mat)))
+    assert.ok(
+      Math.hypot(a - p.ref[1], b - p.ref[2]) < 0.012,
+      `par não chegou: (${a.toFixed(3)}, ${b.toFixed(3)}) vs (${p.ref[1].toFixed(3)}, ${p.ref[2].toFixed(3)})`,
+    )
+  }
+  // na dupla 12/13 (a que erra sem ajuda), a cor melhora com os pares
+  const corSem = distanciaMedia(comLut(mat, sem).img, alvo, { soCor: true })
+  const corCom = distanciaMedia(comLut(mat, com).img, alvo, { soCor: true })
+  const corAntes = distanciaMedia(mat, alvo, { soCor: true })
+  assert.ok(corCom < 0.75 * corSem, `com pares ${corCom}, sem ${corSem}`)
+  assert.ok(corCom < corAntes, `com pares ${corCom} não melhorou sobre o original ${corAntes}`)
+  // com a cor desligada, os pares não fazem nada
+  assert.equal(criarLook(ref, mat, { pares, cor: false }).resumo.pares, 0)
+})
+
+test('amostrar lê a cor média em volta do ponto', () => {
+  const img = { largura: 10, altura: 10, pixels: new Float32Array(300).fill(0.5) }
+  for (let i = 0; i < 150; i += 3) img.pixels[i] = 1 // metade de cima mais vermelha
+  const [, aCima] = amostrar(img, 0.5, 0, 1)
+  const [, aBaixo] = amostrar(img, 0.5, 1, 1)
+  assert.ok(aCima > aBaixo + 0.05)
 })

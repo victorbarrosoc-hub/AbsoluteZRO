@@ -10,7 +10,9 @@
 //      split-tone sombras → altos). O que só existe numa imagem (um vestido vermelho enorme) não tem par e não puxa.
 //   3. Saturação: comparada dentro do mesmo matiz (azul com azul, pele com pele), para que "ter mais céu" na
 //      referência não vire "mais saturação". Faixa ou matiz com pouco pixel puxa pouco (vai para "não mexer").
-//   4. Intensidade: 0 = não mexe, 1 = o estilo inteiro.
+//   4. Conta-gotas (opcional): pares "isto no meu frame é aquilo na referência" puxam a reta da cor para passar por
+//      eles. Resolve a referência sem nada em comum com o material.
+//   5. Intensidade: 0 = não mexe, 1 = o estilo inteiro.
 //
 // Copia cor e contraste, não o filme: grão, halation, lente, luz do set e direção de arte não cabem numa LUT.
 
@@ -27,6 +29,8 @@ const BUSCA = 15 // casas de 0,004: até ±0,06 de deslocamento em a e b
 const SETORES = 12
 const CROMA_MINIMO = 0.02
 const MAX_PIXELS = 80_000
+const MAX_PARES = 3
+const PESO_PAR = 50
 
 /**
  * Imagem: `{ largura, altura, pixels }`, com `pixels` em código Rec.709 0–1, RGB intercalado (Float32Array ou array).
@@ -279,9 +283,28 @@ function razaoSaturacao(ref, mat) {
 const limitar = (v, [lo, hi]) => Math.min(hi, Math.max(lo, v))
 
 /**
+ * Com dois pares ou mais, a saturação sai deles: a distância de cor entre duas coisas marcadas (pele e cinza, por
+ * exemplo) na referência, dividida pela distância entre as mesmas coisas no material. Não depende da dominante.
+ */
+function saturacaoDosPares(pares) {
+  const razoes = []
+  for (let i = 0; i < pares.length; i++)
+    for (let j = i + 1; j < pares.length; j++) {
+      const dm = Math.hypot(pares[i].mat[1] - pares[j].mat[1], pares[i].mat[2] - pares[j].mat[2])
+      const dr = Math.hypot(pares[i].ref[1] - pares[j].ref[1], pares[i].ref[2] - pares[j].ref[2])
+      if (dm > 0.02) razoes.push(dr / dm) // cores quase iguais não dizem nada sobre saturação
+    }
+  if (!razoes.length) return null
+  razoes.sort((x, y) => x - y)
+  return limitar(razoes[Math.floor(razoes.length / 2)], SATURACAO)
+}
+
+/**
  * Cria o look. Devolve `{ aplicar(r, g, b, intensidade?) → [r, g, b], resumo }`: a intensidade pode mudar a cada
  * chamada sem refazer a análise (a tela usa isso no controle deslizante).
- * `opcoes.intensidade` (0–1, padrão 1); `opcoes.tom` / `opcoes.cor` (padrão true) ligam só o contraste ou só a cor.
+ * `opcoes.intensidade` (0–1, padrão 1); `opcoes.tom` / `opcoes.cor` (padrão true) ligam só o contraste ou só a cor;
+ * `opcoes.pares` (até 3, do conta-gotas): `[{ ref: [L, a, b], mat: [L, a, b] }]` em Oklab, "esta cor do meu frame é
+ * aquela da referência". O par acerta a cor (a, b); a luz continua seguindo o tom.
  */
 export function criarLook(referencia, material, opcoes = {}) {
   const intensidade = limitar(opcoes.intensidade ?? 1, [0, 1])
@@ -292,10 +315,16 @@ export function criarLook(referencia, material, opcoes = {}) {
 
   const tom = usarTom ? curvaDeTom(mat.L, ref.L) : { f: (x) => x, xs: [], ys: [] }
   const Lmat = mat.L.map(tom.f)
-  const sat = usarCor ? razaoSaturacao(ref, mat) : 1
+  const marcados = usarCor ? (opcoes.pares ?? []).slice(0, MAX_PARES) : []
+  const sat = usarCor ? (saturacaoDosPares(marcados) ?? razaoSaturacao(ref, mat)) : 1
   const fr = separarFaixas(ref.L, ref.A, ref.B)
   const fm = separarFaixas(Lmat, mat.A, mat.B)
   const desloc = FAIXAS.map((_, k) => (usarCor ? alinhar(fr[k], fm[k], sat) : [0, 0]))
+  // pares de cor marcados pela pessoa (conta-gotas): "isto no meu frame é aquilo na referência"
+  const pares = marcados.map((p) => ({
+    x: tom.f(p.mat[0]),
+    d: [p.ref[1] - p.mat[1] * sat, p.ref[2] - p.mat[2] * sat],
+  }))
 
   // confiança: faixa rara em qualquer das imagens quase não mexe
   // deslocamento de cor ao longo da luz como uma reta (dominante geral + inclinação sombras → altos, o split-tone):
@@ -308,23 +337,27 @@ export function criarLook(referencia, material, opcoes = {}) {
     let sy = 0
     let sxx = 0
     let sxy = 0
-    FAIXAS.forEach((x, k) => {
-      const w = conf[k]
+    const somar = (x, y, w) => {
       sw += w
       sx += w * x
-      sy += w * d[k]
+      sy += w * y
       sxx += w * x * x
-      sxy += w * x * d[k]
-    })
+      sxy += w * x * y
+    }
+    FAIXAS.forEach((x, k) => somar(x, d[k], conf[k]))
+    // o par marcado vale muito mais que as faixas juntas: a reta passa por ele e as faixas só dão a inclinação
+    for (const p of pares) somar(p.x, p.d[canal], PESO_PAR)
     if (sw < 1e-6) return [0, 0]
     const den = sw * sxx - sx * sx
     const inclinacao = den > 1e-9 ? (sw * sxy - sx * sy) / den : 0
     return [(sy - inclinacao * sx) / sw, inclinacao]
   })
   const confGeral = conf.reduce((x, y) => x + y, 0) / FAIXAS.length
+  // perto de um par marcado a faixa confia no par, mesmo com pouco pixel
+  const confCor = FAIXAS.map((c, k) => Math.max(conf[k], ...pares.map((p) => pesoFaixa(p.x, c))))
   const faixas = FAIXAS.map((c, k) => ({
     L: c,
-    desloca: [conf[k] * (reta[0][0] + reta[0][1] * c), conf[k] * (reta[1][0] + reta[1][1] * c)],
+    desloca: [confCor[k] * (reta[0][0] + reta[0][1] * c), confCor[k] * (reta[1][0] + reta[1][1] * c)],
     saturacao: 1 + confGeral * (sat - 1),
     confianca: conf[k],
   }))
@@ -362,8 +395,30 @@ export function criarLook(referencia, material, opcoes = {}) {
       intensidade,
       tom: { preto: tom.f(0), cinza: tom.f(0.5), branco: tom.f(1), pontos: tom.xs.map((x, i) => [x, tom.ys[i]]) },
       faixas,
+      pares: pares.length,
     },
   }
+}
+
+/**
+ * Cor média (Oklab) de um ponto da imagem, num quadrado de `raio` pixels em volta: o que o conta-gotas lê. `x` e `y`
+ * de 0 a 1 (posição relativa), para valer em qualquer tamanho da imagem.
+ */
+export function amostrar(img, x, y, raio = 4) {
+  const cx = Math.round(limitar(x, [0, 1]) * (img.largura - 1))
+  const cy = Math.round(limitar(y, [0, 1]) * (img.altura - 1))
+  let n = 0
+  const soma = [0, 0, 0]
+  for (let yy = Math.max(0, cy - raio); yy <= Math.min(img.altura - 1, cy + raio); yy++)
+    for (let xx = Math.max(0, cx - raio); xx <= Math.min(img.largura - 1, cx + raio); xx++) {
+      const i = (yy * img.largura + xx) * 3
+      const o = codigoParaOklab(img.pixels[i], img.pixels[i + 1], img.pixels[i + 2])
+      soma[0] += o[0]
+      soma[1] += o[1]
+      soma[2] += o[2]
+      n++
+    }
+  return soma.map((v) => v / n)
 }
 
 /** Frase curta para cada faixa de luz ("Sombras: mais frio"). A saturação é uma só: `descreverSaturacao`. */

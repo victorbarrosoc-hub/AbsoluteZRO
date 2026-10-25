@@ -1,16 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 350">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="100 100 824 824">
   <title>Revela</title>
   <defs>
-    <linearGradient id="r" x1="0" y1="1" x2="1" y2="0">
-      <stop offset="0" stop-color="#C8321C"/>
-      <stop offset=".38" stop-color="#FF5A36"/>
-      <stop offset=".78" stop-color="#FFB547"/>
-      <stop offset="1" stop-color="#FFF1DC"/>
+    <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF9A1F"/>
+      <stop offset=".55" stop-color="#FF5A1F"/>
+      <stop offset="1" stop-color="#E52B1A"/>
     </linearGradient>
-    <clipPath id="q"><rect width="560" height="350" rx="44"/></clipPath>
+    <clipPath id="janela"><rect x="217" y="322" width="590" height="400" rx="40"/></clipPath>
   </defs>
-  <g clip-path="url(#q)">
-    <polygon points="334,0 560,0 560,350 226,350" fill="url(#r)"/>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="#FFB800"/>
+  <g clip-path="url(#janela)">
+    <rect x="217" y="322" width="590" height="400" fill="url(#ceu)"/>
+    <circle cx="512" cy="608" r="128" fill="#FFE07A"/>
+    <rect x="217" y="608" width="590" height="114" fill="#0E8F8C"/>
   </g>
-  <rect x="7" y="7" width="546" height="336" rx="38" fill="none" stroke="#F5F5F7" stroke-opacity=".35" stroke-width="14"/>
+  <circle cx="212" cy="212" r="28" fill="#E52B1A"/>
 </svg>

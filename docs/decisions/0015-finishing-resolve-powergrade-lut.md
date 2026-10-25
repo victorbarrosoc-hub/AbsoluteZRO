@@ -35,8 +35,8 @@ técnico continua `finishing`; migration 0009 troca o nome no catálogo):
   material; sai `.cube`. Algoritmo determinístico, sem IA: tom (piso, teto e contraste da referência, exposição do
   material), cor por faixa de luz (alinhamento das nuvens de cor em Oklab, juntado numa reta de split-tone) e
   saturação comparada por matiz. Protótipo e testes em `products/finishing/src/cor/referencia.js`. Copia cor e
-  contraste, não grão, lente ou luz; referência sem conteúdo em comum erra a cor (próximo passo: conta-gotas de
-  neutro/pele). A referência é privada e apagada depois do cálculo.
+  contraste, não grão, lente ou luz; referência sem conteúdo em comum erra a cor, e para isso há o conta-gotas
+  (até 3 pares "isto no meu frame é aquilo na referência"). Tudo roda no navegador: as imagens não são enviadas.
 
 **O que um pacote real mostrou (25/10/2026).** Pacote comercial de terceiros enviado pelo titular, estudado só fora do
 repositório (nenhum arquivo dele entra aqui):

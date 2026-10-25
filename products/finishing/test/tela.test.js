@@ -15,6 +15,10 @@ import { aplicarEmImagem, cena, lookConhecido } from './apoio.js'
 const { chromium } = createRequire(import.meta.url)('playwright')
 
 const RAIZ = fileURLToPath(new URL('..', import.meta.url))
+// os mesmos cabeçalhos de segurança do vercel.json: a tela tem que funcionar com a CSP que vai ao ar
+const CABECALHOS = Object.fromEntries(
+  JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8')).headers[0].headers.map((h) => [h.key, h.value]),
+)
 const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' }
 let servidor
 let endereco
@@ -28,7 +32,7 @@ before(async () => {
     if (!arquivo.startsWith(RAIZ)) return res.writeHead(403).end()
     try {
       const corpo = readFileSync(arquivo)
-      res.writeHead(200, { 'content-type': TIPOS[extname(arquivo)] ?? 'application/octet-stream' }).end(corpo)
+      res.writeHead(200, { ...CABECALHOS, 'content-type': TIPOS[extname(arquivo)] ?? 'application/octet-stream' }).end(corpo)
     } catch {
       res.writeHead(404).end()
     }
@@ -52,7 +56,9 @@ test('escolhe as duas imagens, compara, ajusta e baixa a LUT', async () => {
   const pagina = await navegador.newPage({ acceptDownloads: true })
   const erros = []
   pagina.on('pageerror', (e) => erros.push(e.message))
-  await pagina.goto(endereco)
+  pagina.on('console', (m) => m.type() === 'error' && erros.push(m.text()))
+  const resposta = await pagina.goto(endereco)
+  assert.match(resposta.headers()['content-security-policy'], /default-src 'self'/)
   await assert.doesNotReject(pagina.getByRole('heading', { name: 'Revela a cor que você quer.' }).waitFor())
   // marca: ícone do cabeçalho e favicon carregados
   await pagina.waitForFunction(() => document.querySelector('.marca img')?.complete)
@@ -135,5 +141,39 @@ test('celular: sem rolagem horizontal e controles com nome', async () => {
   for (const nome of ['Comparar antes e depois', 'Intensidade', 'Tamanho da LUT', 'Contraste', 'Cor']) {
     assert.equal(await pagina.getByLabel(nome, { exact: true }).count(), 1, `controle sem nome: ${nome}`)
   }
+  await pagina.close()
+})
+
+test('conta-gotas: marca um par, refaz o look e limpa', async () => {
+  const pagina = await navegador.newPage({ viewport: { width: 1280, height: 1000 } })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  await pagina.goto(endereco)
+  await pagina.setInputFiles('#arquivo-referencia', join(dir, 'filme.png'))
+  await pagina.setInputFiles('#arquivo-material', join(dir, 'meu-frame.png'))
+  await pagina.getByText('Pronto. Arraste sobre a imagem para comparar.').waitFor()
+
+  await pagina.getByRole('button', { name: 'Marcar par de cor' }).click()
+  await pagina.getByText('Clique num ponto da referência (lá em cima).').waitFor()
+  // clicar na referência não pode abrir a escolha de arquivo
+  let abriuArquivo = false
+  pagina.on('filechooser', () => (abriuArquivo = true))
+  await pagina.locator('#caixa-referencia img').click()
+  await pagina.getByText('Agora clique na mesma coisa no seu frame (na comparação).').waitFor()
+  await pagina.locator('#previa').click({ position: { x: 100, y: 100 } })
+  await pagina.getByText('Pronto, com 1 par de cor. Arraste sobre a imagem para comparar.').waitFor()
+  assert.equal(abriuArquivo, false)
+  assert.equal(await pagina.locator('#pares li').count(), 1)
+  assert.match(await pagina.locator('#pares li').innerText(), /Par 1: seu frame → referência/)
+
+  // Esc cancela no meio
+  await pagina.getByRole('button', { name: 'Marcar par de cor' }).click()
+  await pagina.keyboard.press('Escape')
+  await pagina.getByText('Conta-gotas cancelado.').waitFor()
+
+  await pagina.getByRole('button', { name: 'Limpar' }).click()
+  await pagina.getByText('Pronto. Arraste sobre a imagem para comparar.').waitFor()
+  assert.equal(await pagina.locator('#pares li').count(), 0)
+  assert.deepEqual(erros, [])
   await pagina.close()
 })

@@ -73,6 +73,16 @@
             </select>
           </div>
 
+          <div class="controle conta-gotas">
+            <strong>Conta-gotas</strong>
+            <p class="dica">Clique numa coisa na referência e na mesma coisa no seu frame: pele com pele, branco com branco. Até 3 pares.</p>
+            <ul id="pares" class="pares" aria-label="Pares de cor"></ul>
+            <div class="acoes">
+              <button id="marcar-par" class="botao-secundario" type="button">Marcar par de cor</button>
+              <button id="limpar-pares" class="botao-secundario" type="button" hidden>Limpar</button>
+            </div>
+          </div>
+
           <button id="baixar" class="botao" type="button">Baixar LUT (.cube)</button>
 
           <div class="leitura">
@@ -98,7 +108,7 @@
         </div>
         <div>
           <strong>Quando erra</strong>
-          <p>Se a referência não tem nada em comum com o seu frame (só céu contra uma cena sem céu), a cor sai torta.</p>
+          <p>Se a referência não tem nada em comum com o seu frame, a cor sai torta. Use o conta-gotas: pele com pele, branco com branco.</p>
         </div>
       </section>
     </main>

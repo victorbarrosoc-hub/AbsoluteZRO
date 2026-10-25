@@ -1,6 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 350">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="100 100 824 824">
   <title>Revela</title>
-  <clipPath id="q"><rect width="560" height="350" rx="44"/></clipPath>
-  <g clip-path="url(#q)"><polygon points="334,0 560,0 560,350 226,350" fill="currentColor"/></g>
-  <rect x="9" y="9" width="542" height="332" rx="36" fill="none" stroke="currentColor" stroke-width="18"/>
+  <defs>
+    <mask id="m">
+      <rect x="100" y="100" width="824" height="824" rx="186" fill="#fff"/>
+      <rect x="217" y="322" width="590" height="400" rx="40" fill="#000"/>
+      <circle cx="212" cy="212" r="28" fill="#000"/>
+    </mask>
+    <clipPath id="janela"><rect x="217" y="322" width="590" height="400" rx="40"/></clipPath>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="currentColor" mask="url(#m)"/>
+  <g clip-path="url(#janela)" fill="currentColor">
+    <circle cx="512" cy="608" r="128"/>
+    <rect x="217" y="622" width="590" height="100"/>
+  </g>
 </svg>

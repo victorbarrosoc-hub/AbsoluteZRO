@@ -4,7 +4,8 @@
 // LUT no tamanho escolhido para baixar.
 
 import { aplicar, assar, escreverCube } from '../src/cor/cube.js'
-import { analisar, criarLook, descrever, descreverSaturacao } from '../src/cor/referencia.js'
+import { oklabParaCodigo } from '../src/cor/oklab.js'
+import { amostrar, analisar, criarLook, descrever, descreverSaturacao } from '../src/cor/referencia.js'
 
 const LADO_ANALISE = 1600 // a análise amostra até 80 mil pixels; mais que isso só gasta memória
 const LADO_PREVIA = 1280
@@ -16,6 +17,8 @@ let analise = null // { ref, mat, nomeRef, previa: ImageData do material }
 let look = null
 let lutPrevia = null
 let camadas = null // { antes, depois } em canvas fora da tela
+let pares = [] // conta-gotas: [{ ref: [L, a, b], mat: [L, a, b] }]
+let pegando = null // null | { etapa: 'ref' | 'mat', ref?: [L, a, b] }
 
 function avisar(texto, erro = false) {
   estado.textContent = texto
@@ -97,9 +100,19 @@ const espera = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r
 async function calcular() {
   avisar('Lendo as duas imagens…')
   await espera()
-  const ref = analisar(paraPixels(desenhar(imagens.referencia.bm, LADO_ANALISE)))
-  const mat = analisar(paraPixels(desenhar(imagens.material.bm, LADO_ANALISE)))
-  analise = { ref, mat, nomeRef: imagens.referencia.arquivo.name, previa: desenhar(imagens.material.bm, LADO_PREVIA) }
+  const refImg = paraPixels(desenhar(imagens.referencia.bm, LADO_ANALISE))
+  const matImg = paraPixels(desenhar(imagens.material.bm, LADO_ANALISE))
+  analise = {
+    ref: analisar(refImg),
+    mat: analisar(matImg),
+    refImg,
+    matImg,
+    nomeRef: imagens.referencia.arquivo.name,
+    previa: desenhar(imagens.material.bm, LADO_PREVIA),
+  }
+  pares = [] // imagens novas: os pares antigos não valem mais
+  cancelarPegada()
+  mostrarPares()
   await refazerLook()
 }
 
@@ -107,11 +120,15 @@ async function refazerLook() {
   if (!analise) return
   avisar('Calculando o look…')
   await espera()
-  look = criarLook(analise.ref, analise.mat, { tom: $('usar-tom').checked, cor: $('usar-cor').checked })
+  look = criarLook(analise.ref, analise.mat, { tom: $('usar-tom').checked, cor: $('usar-cor').checked, pares })
   mostrarLeitura()
   refazerPrevia()
   $('resultado').hidden = false
-  avisar('Pronto. Arraste sobre a imagem para comparar.')
+  avisar(
+    pares.length
+      ? `Pronto, com ${pares.length} ${pares.length > 1 ? 'pares' : 'par'} de cor. Arraste sobre a imagem para comparar.`
+      : 'Pronto. Arraste sobre a imagem para comparar.',
+  )
 }
 
 function intensidade() {
@@ -153,7 +170,7 @@ function pintar() {
   const ctx = tela.getContext('2d')
   ctx.drawImage(camadas.depois, 0, 0)
   ctx.drawImage(camadas.antes, 0, 0, x, h, 0, 0, x, h)
-  ctx.fillStyle = '#fff1dc' // linha da revelação, a mesma do símbolo
+  ctx.fillStyle = '#fff4e0' // linha da comparação em papel, da paleta da marca
   ctx.fillRect(Math.max(0, x - 1), 0, 2, h)
 }
 
@@ -172,6 +189,112 @@ function mostrarLeitura() {
     }),
   )
 }
+
+// ─────────── conta-gotas ───────────
+
+const corCss = (lab) => {
+  const [r, g, b] = oklabParaCodigo(...lab).map((v) => Math.round(v * 255))
+  return `rgb(${r}, ${g}, ${b})`
+}
+
+function mostrarPares() {
+  const lista = $('pares')
+  lista.replaceChildren(
+    ...pares.map((p, i) => {
+      const li = document.createElement('li')
+      const amostra = (lab, nome) => {
+        const s = document.createElement('span')
+        s.className = 'amostra-cor'
+        s.style.background = corCss(lab)
+        s.title = nome
+        return s
+      }
+      const texto = document.createElement('span')
+      texto.textContent = `Par ${i + 1}: seu frame → referência`
+      const remover = document.createElement('button')
+      remover.type = 'button'
+      remover.textContent = 'remover'
+      remover.setAttribute('aria-label', `Remover par ${i + 1}`)
+      remover.addEventListener('click', () => {
+        pares.splice(i, 1)
+        mostrarPares()
+        refazerLook()
+      })
+      li.append(amostra(p.mat, 'Seu frame'), amostra(p.ref, 'Referência'), texto, remover)
+      return li
+    }),
+  )
+  $('limpar-pares').hidden = !pares.length
+  $('marcar-par').disabled = pares.length >= 3
+}
+
+function cancelarPegada() {
+  pegando = null
+  $('marcar-par').setAttribute('aria-pressed', 'false')
+  $('caixa-referencia').classList.remove('pegando')
+  document.querySelector('.palco').classList.remove('pegando')
+}
+
+/** Posição relativa (0–1) do clique dentro da imagem que aparece, descontando as faixas pretas do `contain`. */
+function posicaoNaImagem(el, e) {
+  const caixa = el.getBoundingClientRect()
+  const largura = el.naturalWidth ?? el.width
+  const altura = el.naturalHeight ?? el.height
+  const escala = Math.min(caixa.width / largura, caixa.height / altura)
+  const w = largura * escala
+  const h = altura * escala
+  const x = (e.clientX - caixa.left - (caixa.width - w) / 2) / w
+  const y = (e.clientY - caixa.top - (caixa.height - h) / 2) / h
+  return x < 0 || x > 1 || y < 0 || y > 1 ? null : [x, y]
+}
+
+$('marcar-par').addEventListener('click', () => {
+  if (pegando) {
+    cancelarPegada()
+    return avisar('Conta-gotas cancelado.')
+  }
+  pegando = { etapa: 'ref' }
+  $('marcar-par').setAttribute('aria-pressed', 'true')
+  $('caixa-referencia').classList.add('pegando')
+  avisar('Clique num ponto da referência (lá em cima).')
+  $('caixa-referencia').scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+})
+
+$('caixa-referencia')
+  .querySelector('img')
+  .addEventListener('click', (e) => {
+    if (pegando?.etapa !== 'ref') return
+    e.preventDefault() // a imagem fica dentro do rótulo do arquivo: não abrir a escolha de arquivo
+    const pos = posicaoNaImagem(e.currentTarget, e)
+    if (!pos) return
+    pegando = { etapa: 'mat', ref: amostrar(analise.refImg, ...pos) }
+    $('caixa-referencia').classList.remove('pegando')
+    document.querySelector('.palco').classList.add('pegando')
+    avisar('Agora clique na mesma coisa no seu frame (na comparação).')
+  })
+
+$('previa').addEventListener('click', (e) => {
+  if (pegando?.etapa !== 'mat') return
+  const caixa = e.currentTarget.getBoundingClientRect()
+  const pos = [(e.clientX - caixa.left) / caixa.width, (e.clientY - caixa.top) / caixa.height]
+  pares.push({ ref: pegando.ref, mat: amostrar(analise.matImg, ...pos) })
+  cancelarPegada()
+  mostrarPares()
+  refazerLook()
+})
+
+$('limpar-pares').addEventListener('click', () => {
+  pares = []
+  mostrarPares()
+  refazerLook()
+})
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && pegando) {
+    cancelarPegada()
+    avisar('Conta-gotas cancelado.')
+  }
+})
 
 // ─────────── controles ───────────
 

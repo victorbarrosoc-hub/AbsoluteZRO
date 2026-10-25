@@ -1,5 +1,5 @@
 /* Revela · linguagem da família Absolute ZRO (ADR 0011): preto fosco, grafite, pílulas, Inter em bold.
-   Marca (ADR 0016, guia em marca/index.html): luz de segurança e âmbar só em ícone, brilho e detalhe; texto neutro. */
+   Marca (ADR 0016, guia em marca/index.html): o slide em amarelo filme; cor em ícone, brilho e detalhe; texto neutro. */
 :root {
   --fundo: #0e0e10;
   --superficie: #17171a;
@@ -9,9 +9,10 @@
   --mudo: #aeaeb2;
   --fraco: #8e8e93;
   --destaque: #b9bac2;
-  --seguranca: #ff5a36;
-  --ambar: #ffb547;
-  --papel: #fff1dc;
+  --amarelo: #ffb800;
+  --vermelho: #e52b1a;
+  --mar: #0e8f8c;
+  --papel: #fff4e0;
   --azul: #2d7bff;
   --erro: #ff453a;
   --raio: 16px;
@@ -90,13 +91,13 @@ main {
   position: relative;
 }
 .abertura::before {
-  /* luz de segurança atrás do título: brilho, não cor de texto */
+  /* brilho amarelo de filme atrás do título: brilho, não cor de texto */
   content: '';
   position: absolute;
   inset: -80px auto auto -60px;
   width: min(520px, 100%); /* nunca passa da borda: sem rolagem lateral no celular */
   height: 320px;
-  background: radial-gradient(closest-side, rgba(255, 90, 54, 0.18), transparent);
+  background: radial-gradient(closest-side, rgba(255, 184, 0, 0.16), transparent);
   pointer-events: none;
   z-index: -1;
 }
@@ -133,7 +134,7 @@ main {
 }
 .entrada:hover,
 .entrada.soltando {
-  border-color: var(--ambar);
+  border-color: var(--amarelo);
 }
 .entrada:focus-within {
   outline: 2px solid var(--azul);
@@ -198,7 +199,7 @@ main {
   border-radius: var(--raio-g);
   overflow: hidden;
   border: 1px solid var(--linha);
-  box-shadow: 0 30px 80px -30px rgba(255, 90, 54, 0.35);
+  box-shadow: 0 30px 80px -30px rgba(255, 122, 26, 0.4);
 }
 .palco canvas {
   display: block;
@@ -262,7 +263,7 @@ main {
 }
 .controle input[type='range'] {
   width: 100%;
-  accent-color: var(--ambar);
+  accent-color: var(--amarelo);
 }
 .controle output {
   font-variant-numeric: tabular-nums;
@@ -311,6 +312,85 @@ select {
   opacity: 0.5;
   cursor: progress;
 }
+.conta-gotas {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+.conta-gotas .dica {
+  margin: 0;
+}
+.pares {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.pares:empty {
+  display: none;
+}
+.pares li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--mudo);
+}
+.amostra-cor {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1px solid var(--linha);
+}
+.pares button {
+  margin-left: auto;
+  background: none;
+  border: 0;
+  color: var(--mudo);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.acoes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.botao-secundario {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--linha);
+  background: var(--superficie-2);
+  color: var(--texto);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.botao-secundario[aria-pressed='true'] {
+  border-color: var(--amarelo);
+}
+.botao-secundario:focus-visible,
+.pares button:focus-visible {
+  outline: 2px solid var(--azul);
+  outline-offset: 2px;
+}
+/* modo conta-gotas: a imagem certa fica marcada e vira mira */
+.entrada.pegando,
+.palco.pegando {
+  outline: 3px solid var(--amarelo);
+  outline-offset: 3px;
+}
+.entrada.pegando img,
+.palco.pegando canvas {
+  cursor: crosshair;
+}
+.palco.pegando .divisao {
+  pointer-events: none;
+}
+
 .leitura p,
 .leitura ul {
   margin: 6px 0 0;

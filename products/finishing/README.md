@@ -19,9 +19,9 @@ Absolute ZRO vem do serviço de color grading e finalização da ZRO Filmes (zro
 
 ## Marca
 
-Guia em [`marca/index.html`](marca/index.html) ([ADR 0016](../../docs/decisions/0016-identidade-revela.md)): símbolo da
-sala escura (quadro cortado na diagonal, lado revelado em luz de segurança → âmbar → papel), ícone de app, versão de
-uma cor, cores e regras de uso.
+Guia em [`marca/index.html`](marca/index.html) ([ADR 0016](../../docs/decisions/0016-identidade-revela.md)): o slide
+(moldura em amarelo filme, pôr do sol laranja e verde-mar na janela, ponto vermelho de orientação), versões plana e
+de uma cor, cores, regras de uso e as alternativas estudadas (`marca/alternativas`).
 
 ## Tela
 
@@ -35,7 +35,8 @@ cd products/finishing
 npm run dev   # http://localhost:8080
 ```
 
-Publicar exige autorização do titular (projeto Vercel próprio com Root Directory `products/finishing`, site estático).
+Publicação: projeto Vercel `revela` (autorizado pelo titular em 25/10/2026), Root Directory `products/finishing`, site
+estático sem build (`vercel.json`), publica só quando a pasta muda.
 
 ## Protótipo: referência → LUT criativa
 
@@ -65,8 +66,10 @@ cenas diferentes sempre aproximam (média ~0,52), e a cor cai 60–80% quando as
 
 - Copia cor e contraste, não o filme: grão, halation, lente, luz e direção de arte não cabem numa LUT.
 - Exposição fica a do material.
-- Referência sem nada em comum com o material (só céu contra uma cena sem céu) erra a cor. Próximo passo: conta-gotas
-  para a pessoa marcar um ponto neutro ou pele na referência e no material.
+- Referência sem nada em comum com o material (só céu contra uma cena sem céu) erra a cor. Para isso existe o
+  **conta-gotas**: a pessoa marca até 3 pares "isto no meu frame é aquilo na referência" (pele com pele, branco com
+  branco). A reta da cor passa pelos pares; com dois ou mais, a saturação sai deles. Na dupla de teste que mais erra,
+  dois pares levam o erro de cor de 0,026 (sem pares) para 0,0135, abaixo do original (0,0162).
 - A referência é privada: usada para calcular e apagada; a LUT guarda só medidas, não a imagem.
 
 ## Ordem de entrega

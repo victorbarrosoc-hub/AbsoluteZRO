@@ -12,11 +12,13 @@
         --linha: #2c2c31;
         --texto: #f5f5f7;
         --mudo: #aeaeb2;
-        --seguranca: #ff5a36;
-        --ambar: #ffb547;
-        --papel: #fff1dc;
-        --revelador: #c8321c;
-        --gradiente: linear-gradient(45deg, var(--revelador), var(--seguranca) 38%, var(--ambar) 78%, var(--papel));
+        --amarelo: #ffb800;
+        --vermelho: #e52b1a;
+        --laranja: #ff7a1a;
+        --mar: #0e8f8c;
+        --sol: #ffe07a;
+        --papel: #fff4e0;
+        --gradiente: linear-gradient(180deg, #ff9a1f, #ff5a1f 55%, var(--vermelho));
         --fonte: 'Inter Variable', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
       }
       * {
@@ -55,7 +57,7 @@
         gap: 28px;
         padding: 96px 24px;
         border-radius: 32px;
-        background: radial-gradient(60% 70% at 60% 60%, rgba(255, 90, 54, 0.22), transparent 70%), var(--grafite);
+        background: radial-gradient(60% 70% at 55% 60%, rgba(255, 184, 0, 0.2), transparent 70%), var(--grafite);
         border: 1px solid var(--linha);
         overflow: hidden;
       }
@@ -132,7 +134,11 @@
         gap: 2px;
       }
       .cor code {
-        font: 13px ui-monospace, 'SF Mono', Menlo, monospace;
+        font:
+          13px ui-monospace,
+          'SF Mono',
+          Menlo,
+          monospace;
         color: var(--mudo);
       }
       .faixa {
@@ -176,7 +182,7 @@
         border-radius: 20px;
         border: 1px solid var(--linha);
         background: #1e1e22;
-        box-shadow: 0 20px 60px -20px rgba(255, 90, 54, 0.35);
+        box-shadow: 0 20px 60px -20px rgba(255, 184, 0, 0.35);
         min-width: 240px;
       }
       .tile img {
@@ -217,33 +223,42 @@
 
       <h2>Conceito</h2>
       <p>
-        A sala escura. Sob a luz de segurança, a imagem sai do escuro: um lado do quadro ainda latente, o outro já revelado.
-        É o antes e depois que a ferramenta mostra, e é o que um colorista faz.
+        O slide. Antes do digital, a cor de um filme se conferia projetando o diapositivo: a moldura com o amarelo das caixas de filme, a imagem revelada na
+        janela e o ponto vermelho no canto, que mostra ao projecionista o lado certo. Na janela, um pôr do sol em laranja e verde-mar, a dupla mais famosa do
+        color grading.
       </p>
 
       <h2>Símbolo</h2>
-      <p>Quadro de filme cortado na diagonal. O corte inclinado dá movimento; a linha clara é o instante da revelação.</p>
+      <p>A moldura é o próprio ícone. A janela é a imagem; o ponto vermelho fica sempre no canto de cima, à esquerda.</p>
       <div class="grade">
         <div class="cartao">
           <div class="vitrine"><img src="revela-icone.svg" width="150" height="150" alt="Ícone da Revela" /></div>
           <strong>Ícone de app</strong>
-          <small>Catálogo do HUB, favicon, instalador. Mesmo azulejo grafite da família.</small>
+          <small>Catálogo do HUB, favicon, instalador. Com sombra e brilho de papel cartão.</small>
         </div>
         <div class="cartao">
-          <div class="vitrine"><img src="revela-simbolo.svg" width="170" alt="Símbolo da Revela" style="color: #f5f5f7" /></div>
-          <strong>Símbolo solto</strong>
-          <small>Sobre fundo escuro, sem o azulejo. Mínimo: 24 px de largura.</small>
+          <div class="vitrine clara"><img src="revela-simbolo.svg" width="150" height="150" alt="Símbolo da Revela, versão plana" /></div>
+          <strong>Plano</strong>
+          <small>Impressão, tamanhos pequenos, documentos. Sem gradientes nem reflexo no mar.</small>
         </div>
         <div class="cartao">
           <div class="vitrine clara">
-            <svg viewBox="0 0 560 350" width="170" role="img" aria-label="Símbolo da Revela em uma cor">
-              <clipPath id="q"><rect width="560" height="350" rx="44" /></clipPath>
-              <g clip-path="url(#q)"><polygon points="334,0 560,0 560,350 226,350" fill="currentColor" /></g>
-              <rect x="9" y="9" width="542" height="332" rx="36" fill="none" stroke="currentColor" stroke-width="18" />
+            <svg viewBox="100 100 824 824" width="150" role="img" aria-label="Símbolo da Revela em uma cor">
+              <mask id="m">
+                <rect x="100" y="100" width="824" height="824" rx="186" fill="#fff" />
+                <rect x="217" y="322" width="590" height="400" rx="40" fill="#000" />
+                <circle cx="212" cy="212" r="28" fill="#000" />
+              </mask>
+              <clipPath id="j"><rect x="217" y="322" width="590" height="400" rx="40" /></clipPath>
+              <rect x="100" y="100" width="824" height="824" rx="186" fill="currentColor" mask="url(#m)" />
+              <g clip-path="url(#j)" fill="currentColor">
+                <circle cx="512" cy="608" r="128" />
+                <rect x="217" y="622" width="590" height="100" />
+              </g>
             </svg>
           </div>
           <strong>Uma cor</strong>
-          <small>Carimbo, gravação, documento impresso. Sempre numa cor só, preta ou branca.</small>
+          <small>Carimbo, gravação, bordado. Sempre numa cor só, preta ou branca.</small>
         </div>
       </div>
 
@@ -258,7 +273,7 @@
             </div>
           </div>
           <strong>No HUB</strong>
-          <small>Brilho âmbar só atrás do cartão; o texto continua neutro.</small>
+          <small>Brilho amarelo só atrás do cartão; o texto continua neutro.</small>
         </div>
         <div class="cartao">
           <div class="vitrine papel">
@@ -279,30 +294,38 @@
       </div>
 
       <h2>Cores</h2>
-      <p>Luz de segurança e âmbar vão em ícone, brilho e detalhe. Nunca em texto pequeno.</p>
+      <p>Colorida, no espírito das caixas de filme. Cor vai em ícone, brilho, ilustração e detalhe; texto pequeno fica neutro.</p>
       <div class="grade cores">
         <div class="cor">
-          <div class="amostra" style="background: var(--seguranca)"></div>
-          <div><strong>Luz de segurança</strong><code>#FF5A36 · --p-finishing</code></div>
+          <div class="amostra" style="background: var(--amarelo)"></div>
+          <div><strong>Amarelo filme</strong><code>#FFB800 · --p-finishing</code></div>
         </div>
         <div class="cor">
-          <div class="amostra" style="background: var(--ambar)"></div>
-          <div><strong>Âmbar</strong><code>#FFB547 · --p-finishing-2</code></div>
+          <div class="amostra" style="background: var(--vermelho)"></div>
+          <div><strong>Vermelho</strong><code>#E52B1A · --p-finishing-2</code></div>
+        </div>
+        <div class="cor">
+          <div class="amostra" style="background: var(--laranja)"></div>
+          <div><strong>Pôr do sol</strong><code>#FF7A1A</code></div>
+        </div>
+        <div class="cor">
+          <div class="amostra" style="background: var(--mar)"></div>
+          <div><strong>Verde-mar</strong><code>#0E8F8C</code></div>
+        </div>
+        <div class="cor">
+          <div class="amostra" style="background: var(--sol)"></div>
+          <div><strong>Sol</strong><code>#FFE07A</code></div>
         </div>
         <div class="cor">
           <div class="amostra" style="background: var(--papel)"></div>
-          <div><strong>Papel</strong><code>#FFF1DC</code></div>
-        </div>
-        <div class="cor">
-          <div class="amostra" style="background: var(--revelador)"></div>
-          <div><strong>Revelador</strong><code>#C8321C</code></div>
+          <div><strong>Papel</strong><code>#FFF4E0</code></div>
         </div>
         <div class="cor">
           <div class="amostra" style="background: var(--banho); border-bottom: 1px solid var(--linha)"></div>
           <div><strong>Banho</strong><code>#0E0E10 · preto fosco da família</code></div>
         </div>
       </div>
-      <div class="faixa" role="img" aria-label="Gradiente da revelação: revelador, luz de segurança, âmbar e papel"></div>
+      <div class="faixa" role="img" aria-label="Céu do slide: laranja, pôr do sol e vermelho"></div>
 
       <h2>Tipografia</h2>
       <div class="tipo">
@@ -317,19 +340,39 @@
           <strong>Fazer</strong>
           <ul>
             <li>Usar os arquivos de <code>products/finishing/marca</code>, sem redesenhar.</li>
-            <li>Deixar respiro em volta do símbolo de pelo menos a altura da linha clara.</li>
-            <li>Gradiente sempre na mesma direção: do revelador (baixo, esquerda) ao papel (alto, direita).</li>
+            <li>Deixar respiro em volta do ícone de pelo menos o tamanho do ponto vermelho, três vezes.</li>
+            <li>Ponto vermelho sempre no canto de cima, à esquerda.</li>
             <li>Botão principal branco em pílula, como na família.</li>
           </ul>
         </div>
         <div class="cartao">
           <strong>Não fazer</strong>
           <ul>
-            <li>Inverter o corte, trocar o lado revelado ou girar o quadro.</li>
-            <li>Usar vermelho e âmbar em texto pequeno ou em botões de ação.</li>
-            <li>Trocar a fonte do nome ou escrever REVELA em caixa alta.</li>
-            <li>Misturar com a cor de outro app (o magenta do Carro do Freela, o azul do Synquei).</li>
+            <li>Girar a moldura, trocar a cena da janela ou mudar o ponto de canto.</li>
+            <li>Usar amarelo ou vermelho em texto pequeno.</li>
+            <li>Escrever REVELA em caixa alta ou trocar a fonte do nome.</li>
+            <li>Usar nome, logotipo ou desenho de marcas de filme (Kodak, Fuji etc.): a inspiração é só de cor.</li>
           </ul>
+        </div>
+      </div>
+
+      <h2>Alternativas estudadas</h2>
+      <p>Guardadas em <code>marca/alternativas</code> caso o titular prefira outro caminho.</p>
+      <div class="grade">
+        <div class="cartao">
+          <div class="vitrine"><img src="alternativas/revela-perfurado.svg" width="130" height="130" alt="Alternativa: quadro de película perfurado" /></div>
+          <strong>Perfurado</strong>
+          <small>Quadro de película com perfurações, revelado na diagonal.</small>
+        </div>
+        <div class="cartao">
+          <div class="vitrine"><img src="alternativas/revela-emulsao.svg" width="130" height="130" alt="Alternativa: três camadas de emulsão" /></div>
+          <strong>Emulsão</strong>
+          <small>As três camadas de cor do filme se somando.</small>
+        </div>
+        <div class="cartao">
+          <div class="vitrine"><img src="alternativas/revela-sala-escura.svg" width="130" height="130" alt="Alternativa: sala escura" /></div>
+          <strong>Sala escura</strong>
+          <small>Primeira versão: quadro revelado sob a luz de segurança.</small>
         </div>
       </div>
     </main>
