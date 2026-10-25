@@ -18,7 +18,7 @@ Leia antes de mudar qualquer coisa: [PRD.md](PRD.md) (referência principal), [A
   nada de `.env`, token, cookie, URL assinada, dado pessoal ou áudio privado. `node scripts/scan-secrets.mjs` antes
   de commitar.
 - Não declarar SSO com os apps antigos: o login único vale para o HUB.
-- Não fingir integração, IA, grading, saldo ou progresso. AI Edit e Finishing estão em desenvolvimento.
+- Não fingir integração, IA, grading, saldo ou progresso. AI Edit e Revela (id técnico `finishing`) estão em desenvolvimento.
 
 ## Regras de implementação
 

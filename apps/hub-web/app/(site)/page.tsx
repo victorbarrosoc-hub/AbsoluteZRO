@@ -24,7 +24,7 @@ const TAGLINE: Record<string, string> = {
   synquei: 'Solta o cartão. Sai sincronizado.',
   'ai-edit': 'Decupagem e montagem assistida.',
   nossom: 'Seu som, em outra escala.',
-  finishing: 'Cor, versões e entrega.',
+  finishing: 'Revela a cor que você quer.',
 }
 
 const bars = (n: number, seed: number) =>

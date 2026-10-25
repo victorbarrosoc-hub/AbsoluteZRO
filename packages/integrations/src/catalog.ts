@@ -69,11 +69,11 @@ export const ADAPTERS: AdapterInfo[] = [
   },
   {
     productId: 'finishing',
-    strategy: 'Scaffold de produto futuro',
-    inputs: ['Timeline aprovada, mídia vinculada, perfis de destino'],
-    outputs: ['Master, versões, QC e pacotes de entrega'],
+    strategy: 'Revela: produto em construção em products/finishing (ADR 0015)',
+    inputs: ['Frame de referência e frame do material', 'Grade do colorista exportado do Resolve (PowerGrade)'],
+    outputs: ['LUT criativa (.cube)', 'Pacote de entrega com PowerGrade e LUTs'],
     hubCan: ['Contrato de eventos finishing.qc.completed e delivery.ready'],
-    notYet: ['Nenhum processamento: a ferramenta ainda não existe'],
+    notYet: ['Ainda não está no ar: existe o protótipo referência → LUT, sem tela e sem ligação com o HUB'],
     sourceManifest: null,
   },
 ]

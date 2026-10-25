@@ -21,7 +21,7 @@ export function assar(f, tamanho = 33) {
 }
 
 /** Texto do .cube. O título não pode ter aspas nem quebra de linha. */
-export function escreverCube(lut, titulo = 'Absolute ZRO') {
+export function escreverCube(lut, titulo = 'Revela') {
   const limpo = String(titulo).replace(/["\r\n]/g, ' ').slice(0, 120)
   const linhas = [`TITLE "${limpo}"`, `LUT_3D_SIZE ${lut.tamanho}`, 'DOMAIN_MIN 0.0 0.0 0.0', 'DOMAIN_MAX 1.0 1.0 1.0']
   const d = lut.dados

@@ -1,8 +1,8 @@
-# Finishing (nome provisório) — scaffold
+# Revela — finalização e cor para o DaVinci Resolve
 
-**Estado: não existe como ferramenta.** Contratos para a Fase 5 do PRD (§8 NOSSOM → Finishing, §13).
-A identidade oficial da Absolute ZRO vem do serviço de color grading e finalização da ZRO Filmes
-(zrofilmes.vercel.app/absolute); o nome do produto continua provisório até decisão do titular.
+**Estado: protótipo, ainda sem tela.** Fase 5 do PRD (§8 NOSSOM → Finishing, §13). Nome escolhido pelo titular em
+25/10/2026; o id técnico continua `finishing` (pasta, contratos de eventos e catálogo no banco). A identidade oficial da
+Absolute ZRO vem do serviço de color grading e finalização da ZRO Filmes (zrofilmes.vercel.app/absolute).
 
 ## Primeiro recorte ([ADR 0015](../../docs/decisions/0015-finishing-resolve-powergrade-lut.md))
 

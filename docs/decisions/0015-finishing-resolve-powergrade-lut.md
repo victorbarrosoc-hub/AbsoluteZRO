@@ -1,7 +1,8 @@
-# 0015 — Finishing começa só com DaVinci Resolve, entregando cor em PowerGrade e LUT
+# 0015 — Revela (ex-Finishing) começa só com DaVinci Resolve, entregando cor em PowerGrade e LUT
 
 **Contexto.** PRD §8 (NOSSOM → Finishing) e §13 (Fase 5) deixavam o editor-alvo em aberto (ADR 0006). Em 25/10/2026 o
-titular decidiu o primeiro recorte da plataforma de finalização e gestão de cor (nome ainda provisório):
+titular decidiu o primeiro recorte da plataforma de finalização e gestão de cor, e depois o nome: **Revela** (id
+técnico continua `finishing`; migration 0009 troca o nome no catálogo):
 
 - só **DaVinci Resolve** no começo;
 - a cor é entregue em **PowerGrade** (`.drx` + still) e **LUT** (`.cube`);

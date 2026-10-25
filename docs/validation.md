@@ -256,3 +256,10 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   prévia.
 - Limite medido: na dupla 12/13 (referência sem o conteúdo de cor do material) a cor piora; o tom ainda aproxima.
 - Não validado: frames reais de filme e de câmera, e a LUT dentro do Resolve.
+
+## Revela: nome no catálogo (25/10/2026)
+
+- Migration `0009_revela.sql`: `finishing` passa a se chamar **Revela** (`provisional_name = false`), com nova descrição;
+  só troca o que ainda estava como a 0003 deixou. Conferido no banco de teste depois das migrations.
+- `scan-secrets` (1650 arquivos), lint, formatação, tipos, `npm test` (**103/103** em 13 arquivos), build e
+  `npm run test:e2e` (**16/16**) verdes neste ambiente. `products/finishing`: `npm test` 12/12.

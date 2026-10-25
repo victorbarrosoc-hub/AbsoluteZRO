@@ -390,8 +390,8 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
         <StepAccess step={step('nossom')} />
       </Card>
 
-      <Card id="finalizacao" title="Finalização e entregas" eyebrow="Finishing · nome provisório">
-        <Notice title="Em desenvolvimento">Começa por QC, exportação por destino e media manager. Color grading assistido vem depois.</Notice>
+      <Card id="finalizacao" title="Finalização e entregas" eyebrow="Revela">
+        <Notice title="Em desenvolvimento">Começa pela cor no DaVinci Resolve: LUT a partir de uma referência e entrega em PowerGrade e LUT.</Notice>
       </Card>
 
       <Card id="atividades" title="Atividades e auditoria">

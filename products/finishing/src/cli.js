@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Protótipo: referência → LUT criativa.
+// Revela · protótipo: referência → LUT criativa.
 //
 //   node src/cli.js --referencia filme.png --material meu-frame.png --saida look.cube \
 //     [--tamanho 33|65] [--intensidade 0.8] [--previa previa.png]
@@ -34,7 +34,7 @@ const referencia = lerPng(readFileSync(a.referencia))
 const material = lerPng(readFileSync(a.material))
 const look = criarLook(referencia, material, { intensidade: Number(a.intensidade) })
 const lut = assar(look.aplicar, Number(a.tamanho))
-writeFileSync(a.saida, escreverCube(lut, `Ref ${basename(a.referencia)} - Absolute ZRO`))
+writeFileSync(a.saida, escreverCube(lut, `Ref ${basename(a.referencia)} - Revela`))
 
 const { tom } = look.resumo
 console.log(`LUT ${lut.tamanho}³ gravada em ${a.saida}`)
