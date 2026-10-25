@@ -1,6 +1,6 @@
 # Revela — finalização e cor para o DaVinci Resolve
 
-**Estado: protótipo, ainda sem tela.** Fase 5 do PRD (§8 NOSSOM → Finishing, §13). Nome escolhido pelo titular em
+**Estado: protótipo com tela, ainda fora do ar.** Fase 5 do PRD (§8 NOSSOM → Finishing, §13). Nome escolhido pelo titular em
 25/10/2026; o id técnico continua `finishing` (pasta, contratos de eventos e catálogo no banco). A identidade oficial da
 Absolute ZRO vem do serviço de color grading e finalização da ZRO Filmes (zrofilmes.vercel.app/absolute).
 
@@ -16,6 +16,20 @@ Absolute ZRO vem do serviço de color grading e finalização da ZRO Filmes (zro
 - **PowerGrade só pelo Resolve:** o `.drx` não é documentado, então quem cria e lê é a API de script do Resolve,
   rodando numa ponte local ao lado do Resolve aberto.
 - **Para usuários da plataforma** (editores e coloristas nos próprios projetos).
+
+## Tela
+
+`index.html` + `app/`: a pessoa escolhe (ou solta) a referência e o frame dela, compara antes e depois arrastando sobre
+a imagem, ajusta intensidade, liga só contraste ou só cor, escolhe 33 ou 65 pontos e baixa o `.cube`. **Tudo roda no
+navegador**: as imagens não são enviadas para lugar nenhum. Imagens lidas sem conversão de perfil de cor
+(`colorSpaceConversion: 'none'`), como o Resolve exportou.
+
+```sh
+cd products/finishing
+npm run dev   # http://localhost:8080
+```
+
+Publicar exige autorização do titular (projeto Vercel próprio com Root Directory `products/finishing`, site estático).
 
 ## Protótipo: referência → LUT criativa
 

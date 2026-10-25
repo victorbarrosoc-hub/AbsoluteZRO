@@ -11,7 +11,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { basename } from 'node:path'
 import { parseArgs } from 'node:util'
 import { aplicar, assar, escreverCube } from './cor/cube.js'
-import { criarLook, descrever } from './cor/referencia.js'
+import { criarLook, descrever, descreverSaturacao } from './cor/referencia.js'
 import { gravarPng, lerPng } from './imagem/png.js'
 
 const { values: a } = parseArgs({
@@ -26,7 +26,9 @@ const { values: a } = parseArgs({
 })
 
 if (!a.referencia || !a.material || !a.saida) {
-  console.error('Uso: node src/cli.js --referencia filme.png --material meu-frame.png --saida look.cube [--tamanho 33|65] [--intensidade 1] [--previa previa.png]')
+  console.error(
+    'Uso: node src/cli.js --referencia filme.png --material meu-frame.png --saida look.cube [--tamanho 33|65] [--intensidade 1] [--previa previa.png]',
+  )
   process.exit(2)
 }
 
@@ -39,6 +41,7 @@ writeFileSync(a.saida, escreverCube(lut, `Ref ${basename(a.referencia)} - Revela
 const { tom } = look.resumo
 console.log(`LUT ${lut.tamanho}³ gravada em ${a.saida}`)
 console.log(`Tom: preto ${tom.preto.toFixed(3)} · cinza médio ${tom.cinza.toFixed(3)} · branco ${tom.branco.toFixed(3)} (Oklab L)`)
+console.log(descreverSaturacao(look.resumo))
 for (const frase of descrever(look.resumo)) console.log(`  ${frase}`)
 
 if (a.previa) {

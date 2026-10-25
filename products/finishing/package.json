@@ -5,10 +5,14 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "npx -y http-server -p 8080 -c-1 .",
     "test": "node --test test/*.test.js",
     "referencia": "node src/cli.js"
   },
   "engines": {
     "node": ">=22"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
   }
 }

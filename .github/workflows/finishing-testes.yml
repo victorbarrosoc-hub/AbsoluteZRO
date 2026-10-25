@@ -1,6 +1,6 @@
-# Testes do Finishing (products/finishing): referência → LUT, .cube, PNG e linha de comando. Sem dependências: não
-# há npm ci. Roda só quando a pasta do Finishing (ou este arquivo) muda.
-name: Finishing · testes
+# Testes da Revela (products/finishing): referência → LUT, .cube, PNG, linha de comando e a tela no Chromium.
+# Roda só quando a pasta (ou este arquivo) muda.
+name: Revela · testes
 
 on:
   push:
@@ -37,4 +37,8 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: products/finishing/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
       - run: npm test

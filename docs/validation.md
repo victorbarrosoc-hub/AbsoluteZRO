@@ -263,3 +263,12 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   só troca o que ainda estava como a 0003 deixou. Conferido no banco de teste depois das migrations.
 - `scan-secrets` (1650 arquivos), lint, formatação, tipos, `npm test` (**103/103** em 13 arquivos), build e
   `npm run test:e2e` (**16/16**) verdes neste ambiente. `products/finishing`: `npm test` 12/12.
+
+## Revela: tela (25/10/2026)
+
+- `products/finishing`: `npm ci && npm test` (**15/15**), agora com a tela no Chromium (Playwright 1.63, servidor local
+  no próprio teste): escolhe referência e frame, prévia desenhada, 8 linhas de leitura (saturação + 7 faixas), divisão
+  em 0 e 100 iguais com intensidade 0 e diferentes com 100, `.cube` baixado em 33 e 65 pontos com título e nome certos,
+  "só cor" avisa contraste desligado, arquivo que não é imagem avisa, celular de 375 px sem rolagem horizontal e
+  controles com nome acessível. Sem erros de página.
+- Conferido em captura: escuro e claro no desktop, escuro no celular.

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Revela · LUT a partir de uma referência</title>
+    <meta name="description" content="Dê um frame de referência e um frame do seu material. Sai uma LUT para o DaVinci Resolve." />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="stylesheet" href="app/revela.css" />
+    <script type="module" src="app/revela.js"></script>
+  </head>
+  <body>
+    <header class="topo">
+      <span class="marca">Revela</span>
+      <span class="selo">Protótipo</span>
+      <span class="assinatura">An Absolute ZRO Company</span>
+    </header>
+
+    <main>
+      <section class="abertura">
+        <h1>Revela a cor que você quer.</h1>
+        <p>Dê um frame de referência e um frame do seu material. Sai uma LUT para o DaVinci Resolve.</p>
+      </section>
+
+      <section class="entradas" aria-label="Imagens">
+        <label class="entrada" id="caixa-referencia" for="arquivo-referencia">
+          <span class="passo">1</span>
+          <strong>Referência</strong>
+          <span class="dica">O estilo que você quer: um frame de filme, um still.</span>
+          <img alt="" hidden />
+          <span class="acao">Escolher imagem ou soltar aqui</span>
+          <input id="arquivo-referencia" type="file" accept="image/*" />
+        </label>
+        <label class="entrada" id="caixa-material" for="arquivo-material">
+          <span class="passo">2</span>
+          <strong>Seu frame</strong>
+          <span class="dica">Em Rec.709. No Resolve, exporte o still depois da conversão do LOG.</span>
+          <img alt="" hidden />
+          <span class="acao">Escolher imagem ou soltar aqui</span>
+          <input id="arquivo-material" type="file" accept="image/*" />
+        </label>
+      </section>
+
+      <p id="estado" class="estado" role="status" aria-live="polite"></p>
+
+      <section id="resultado" class="resultado" hidden aria-label="Resultado">
+        <div class="palco">
+          <canvas id="previa" aria-label="Seu frame antes e depois da LUT"></canvas>
+          <span class="rotulo rotulo-antes" aria-hidden="true">Antes</span>
+          <span class="rotulo rotulo-depois" aria-hidden="true">Depois</span>
+          <input id="divisao" class="divisao" type="range" min="0" max="100" value="50" aria-label="Comparar antes e depois" />
+        </div>
+
+        <div class="painel">
+          <div class="controle">
+            <label for="intensidade"><strong>Intensidade</strong></label>
+            <input id="intensidade" type="range" min="0" max="100" value="100" />
+            <output id="valor-intensidade" for="intensidade">100%</output>
+          </div>
+
+          <fieldset class="controle">
+            <legend><strong>Copiar</strong></legend>
+            <label><input id="usar-tom" type="checkbox" checked /> Contraste</label>
+            <label><input id="usar-cor" type="checkbox" checked /> Cor</label>
+          </fieldset>
+
+          <div class="controle">
+            <label for="tamanho"><strong>Tamanho da LUT</strong></label>
+            <select id="tamanho">
+              <option value="33">33 pontos · monitor e câmera</option>
+              <option value="65">65 pontos · grading</option>
+            </select>
+          </div>
+
+          <button id="baixar" class="botao" type="button">Baixar LUT (.cube)</button>
+
+          <div class="leitura">
+            <strong>O que a referência tem</strong>
+            <p id="tom"></p>
+            <ul id="faixas"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="notas" aria-label="Como funciona">
+        <div>
+          <strong>Suas imagens não saem daqui</strong>
+          <p>Tudo é calculado no seu navegador. Nada é enviado.</p>
+        </div>
+        <div>
+          <strong>No Resolve</strong>
+          <p>Aplique a LUT num nó depois da conversão para Rec.709.</p>
+        </div>
+        <div>
+          <strong>O que dá para copiar</strong>
+          <p>Cor e contraste. Grão, lente e luz do set não cabem numa LUT, e a exposição fica a do seu frame.</p>
+        </div>
+        <div>
+          <strong>Quando erra</strong>
+          <p>Se a referência não tem nada em comum com o seu frame (só céu contra uma cena sem céu), a cor sai torta.</p>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

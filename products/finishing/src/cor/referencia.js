@@ -76,9 +76,7 @@ export function curvaMonotona(xs, ys) {
     const t = (x - xs[i]) / h
     const t2 = t * t
     const t3 = t2 * t
-    return (
-      (2 * t3 - 3 * t2 + 1) * ys[i] + (t3 - 2 * t2 + t) * h * m[i] + (-2 * t3 + 3 * t2) * ys[i + 1] + (t3 - t2) * h * m[i + 1]
-    )
+    return (2 * t3 - 3 * t2 + 1) * ys[i] + (t3 - 2 * t2 + t) * h * m[i] + (-2 * t3 + 3 * t2) * ys[i + 1] + (t3 - t2) * h * m[i + 1]
   }
 }
 
@@ -281,7 +279,8 @@ function razaoSaturacao(ref, mat) {
 const limitar = (v, [lo, hi]) => Math.min(hi, Math.max(lo, v))
 
 /**
- * Cria o look. Devolve `{ aplicar(r, g, b) → [r, g, b], resumo }`.
+ * Cria o look. Devolve `{ aplicar(r, g, b, intensidade?) → [r, g, b], resumo }`: a intensidade pode mudar a cada
+ * chamada sem refazer a análise (a tela usa isso no controle deslizante).
  * `opcoes.intensidade` (0–1, padrão 1); `opcoes.tom` / `opcoes.cor` (padrão true) ligam só o contraste ou só a cor.
  */
 export function criarLook(referencia, material, opcoes = {}) {
@@ -343,19 +342,19 @@ export function criarLook(referencia, material, opcoes = {}) {
     return r.map((v) => v / w)
   }
 
-  function emOklab(L, a, b) {
+  function emOklab(L, a, b, t = intensidade) {
     const L2 = tom.f(L)
-    if (!usarCor) return [L + (L2 - L) * intensidade, a, b]
+    if (!usarCor) return [L + (L2 - L) * t, a, b]
     const [da, db, s] = naLuz(L2)
     const a2 = a * s + da
     const b2 = b * s + db
-    return [L + (L2 - L) * intensidade, a + (a2 - a) * intensidade, b + (b2 - b) * intensidade]
+    return [L + (L2 - L) * t, a + (a2 - a) * t, b + (b2 - b) * t]
   }
 
   return {
-    aplicar(r, g, b) {
+    aplicar(r, g, b, t = intensidade) {
       const [L, a, bb] = codigoParaOklab(r, g, b)
-      const o = emOklab(L, a, bb)
+      const o = emOklab(L, a, bb, limitar(t, [0, 1]))
       return oklabParaCodigo(o[0], o[1], o[2])
     },
     emOklab,
@@ -367,7 +366,7 @@ export function criarLook(referencia, material, opcoes = {}) {
   }
 }
 
-/** Frase curta para cada faixa ("Sombras: azul, menos saturação"). */
+/** Frase curta para cada faixa de luz ("Sombras: mais frio"). A saturação é uma só: `descreverSaturacao`. */
 export function descrever(resumo) {
   const nomes = ['Pretos', 'Sombras', 'Sombras altas', 'Médios', 'Médios altos', 'Altos', 'Brancos']
   return resumo.faixas.map((f, i) => {
@@ -377,8 +376,13 @@ export function descrever(resumo) {
       if (Math.abs(db) >= Math.abs(da)) partes.push(db > 0 ? 'mais quente' : 'mais frio')
       else partes.push(da > 0 ? 'para o magenta' : 'para o verde')
     }
-    if (f.saturacao >= 1.08) partes.push('mais saturação')
-    else if (f.saturacao <= 0.92) partes.push('menos saturação')
     return `${nomes[i]}: ${partes.length ? partes.join(', ') : 'sem mudança de cor'}`
   })
+}
+
+/** "Saturação: 16% menos" (vale para a imagem inteira). */
+export function descreverSaturacao(resumo) {
+  const s = resumo.faixas[0]?.saturacao ?? 1
+  const pct = Math.round(Math.abs(s - 1) * 100)
+  return pct < 3 ? 'Saturação: igual' : `Saturação: ${pct}% ${s > 1 ? 'mais' : 'menos'}`
 }

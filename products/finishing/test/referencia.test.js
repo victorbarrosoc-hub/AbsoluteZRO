@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { aplicar, assar } from '../src/cor/cube.js'
 import { codigoParaOklab } from '../src/cor/oklab.js'
-import { criarLook, descrever } from '../src/cor/referencia.js'
+import { criarLook, descrever, descreverSaturacao } from '../src/cor/referencia.js'
 import { aplicarEmImagem, cena, distanciaMedia, lookConhecido } from './apoio.js'
 
 const comLut = (img, look, tamanho = 33) => {
@@ -88,7 +88,7 @@ test('um objeto saturado grande na referência não tinge os neutros', () => {
   const ref = { largura: mat.largura, altura: mat.altura + extra, pixels: new Float32Array(mat.largura * (mat.altura + extra) * 3) }
   ref.pixels.set(mat.pixels)
   for (let i = mat.pixels.length; i < ref.pixels.length; i += 3) {
-    const luz = 0.25 + 0.6 * ((i / 3) % mat.largura) / mat.largura
+    const luz = 0.25 + (0.6 * ((i / 3) % mat.largura)) / mat.largura
     ref.pixels[i] = Math.min(1, luz * 1.4)
     ref.pixels[i + 1] = luz * 0.2
     ref.pixels[i + 2] = luz * 0.18
@@ -133,4 +133,5 @@ test('resumo em português por faixa de luz', () => {
   assert.equal(frases.length, 7)
   assert.match(frases[1], /^Sombras: .*mais frio/)
   assert.match(frases[5], /^Altos: .*mais quente/)
+  assert.match(descreverSaturacao(criarLook(aplicarEmImagem(cena(9), lookConhecido), cena(9)).resumo), /^Saturação: \d+% menos$/)
 })
