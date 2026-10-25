@@ -19,7 +19,7 @@ export const CONTA_BETO: ContaFalsa = { sub: "222", email: "beto@exemplo.com", n
 export async function prepararAmbiente() {
   const google = await iniciarGoogleFalso(CLIENTE);
   const resend = await iniciarResendFalso(CHAVE_RESEND);
-  for (const k of ["DATABASE_URL", "POSTGRES_URL", "VERCEL", "SOBEDESCE_LOCAL_DB_URL"]) delete process.env[k];
+  for (const k of ["SOBEDESCE_DATABASE_URL", "SOBEDESCE_DATABASE_SCHEMA", "SOBEDESCE_COPIAR_DE", "DATABASE_URL", "POSTGRES_URL", "VERCEL", "SOBEDESCE_LOCAL_DB_URL"]) delete process.env[k];
   Object.assign(process.env, {
     SOBEDESCE_PGLITE_DIR: "memory://",
     NEXT_PUBLIC_SITE_URL: SITE,

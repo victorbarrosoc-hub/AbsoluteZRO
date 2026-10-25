@@ -9,7 +9,7 @@
 //                                                Junta também o nome de cada instalador (arquivoMac/arquivoWindows):
 //                                                o site entrega exatamente esse arquivo (web/src/lib/release.ts)
 //
-// { build: GITHUB_RUN_NUMBER, commit: 7 primeiros caracteres de GITHUB_SHA, data: hora do commit (ISO) },
+// { build: GITHUB_RUN_NUMBER + SOBEDESCE_BUILD_BASE (scripts/numero-build.mjs), commit: 7 primeiros caracteres de GITHUB_SHA, data: hora do commit (ISO) },
 // mais { sha256Mac, sha256Windows } com --sha256 (o app e os instaladores de uma linha do site conferem o download).
 // A data vem do commit, não do relógio: os jobs do Mac, do Windows e do versao.json gravam exatamente o mesmo.
 // Sem GITHUB_RUN_NUMBER (na sua máquina) o build fica 0: versão de desenvolvimento, que nunca mostra o aviso.
@@ -17,6 +17,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+import { numeroDoBuild } from './numero-build.mjs'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const args = process.argv.slice(2)
@@ -24,7 +25,7 @@ const hashAt = args.indexOf('--sha256')
 const hashDir = hashAt >= 0 ? args.splice(hashAt, 2)[1] : null
 const out = path.resolve(args[0] || path.join(ROOT, 'src', 'build-info.json'))
 
-const build = Number.parseInt(process.env.GITHUB_RUN_NUMBER || '', 10)
+const build = numeroDoBuild()
 let sha = String(process.env.GITHUB_SHA || '')
 let data = ''
 try {

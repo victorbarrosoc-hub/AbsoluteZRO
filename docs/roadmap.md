@@ -18,6 +18,7 @@ Atualizado em 25/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ✅ Downloads no estilo de central de apps (`/baixar` público e `/downloads` no HUB): instaladores oficiais de SOBEDESCE, Synquei e NOSSOM (Mac e Windows), TPeasy no iPhone, Carro do Freela no navegador; destaque do sistema de quem visita e instalação sem aviso pelo Terminal.
 - ✅ Login único: o HUB é provedor OpenID Connect (código + PKCE, refresh com rotação, permissão por app, Apps com acesso no Perfil, cadastro de apps no console) — [ADR 0012](decisions/0012-login-unico-oidc.md).
 - ⬜ Apps originais com "Entrar com Absolute ZRO" (começa pelo SOBEDESCE; exige autorização para mexer em cada original).
+- 🟡 SOBEDESCE publicado deste repositório ([ADR 0013](decisions/0013-monorepo-como-fonte.md)): site na Vercel a partir de `products/sobedesce/web`, CI na raiz (`sobedesce-desktop.yml`, `sobedesce-web.yml`), Release `sobedesce-versao-de-teste` (builds a partir do b1001, com o release antigo como reserva no site) e cópia conferida do Neon para o schema `sobedesce` do Supabase pronta no `vercel-build`. Falta definir as variáveis na Vercel e fazer o deploy da virada.
 - ⬜ App Absolute ZRO para computador (instalar e atualizar todas as ferramentas num lugar só, como o Creative Cloud). Exige instaladores assinados e atualização automática em cada produto.
 - ✅ Conta central: cadastro, login, sair, sessões (lista e encerrar), confirmação de e-mail, nova senha, troca de senha.
 - ✅ Organizações, troca de organização ativa, convites (e-mail confirmado e igual), papéis, remoção, dono garantido.

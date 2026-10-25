@@ -13,6 +13,8 @@ let servidor: http.Server;
 let base = "";
 let arquivos: Arquivo[] = [];
 let releaseStatus = 200;
+/** O Release do AbsoluteZRO já existe? Sem ele (404), o site usa o do repositório antigo. */
+let novoExiste = false;
 const pedidos: { url: string; auth: string | undefined }[] = [];
 let versao: typeof import("../src/app/baixar/versao/route");
 let plataforma: typeof import("../src/app/baixar/[plataforma]/route");
@@ -26,7 +28,12 @@ before(async () => {
   servidor = http.createServer((req, res) => {
     const url = new URL(req.url ?? "/", "http://x");
     pedidos.push({ url: url.pathname, auth: req.headers.authorization });
-    if (url.pathname === "/repos/victorbarrosoc-hub/baixadordodrive/releases/tags/versao-de-teste") {
+    const novo = url.pathname === "/repos/victorbarrosoc-hub/AbsoluteZRO/releases/tags/sobedesce-versao-de-teste";
+    if (novo && !novoExiste) {
+      res.writeHead(404, { "content-type": "application/json" });
+      return res.end('{"message":"Not Found"}');
+    }
+    if (novo || url.pathname === "/repos/victorbarrosoc-hub/baixadordodrive/releases/tags/versao-de-teste") {
       res.writeHead(releaseStatus, { "content-type": "application/json" });
       return res.end(
         JSON.stringify({
@@ -82,6 +89,7 @@ beforeEach(() => {
   release.esquecerCache();
   delete process.env.GITHUB_TOKEN;
   releaseStatus = 200;
+  novoExiste = false;
   pedidos.length = 0;
   arquivos = [
     { nome: "SOBEDESCE-0.1.0-mac-universal.dmg", conteudo: "dmg" },
@@ -172,6 +180,36 @@ describe("/baixar/versao", () => {
     assert.equal((await pedirVersao()).res.status, 503);
     releaseStatus = 200;
     assert.equal((await pedirVersao()).res.status, 200);
+  });
+});
+
+describe("de qual Release", () => {
+  const NOVO = "/repos/victorbarrosoc-hub/AbsoluteZRO/releases/tags/sobedesce-versao-de-teste";
+  const ANTIGO = "/repos/victorbarrosoc-hub/baixadordodrive/releases/tags/versao-de-teste";
+
+  test("sem o Release do AbsoluteZRO (404): usa o do repositório antigo", async () => {
+    const { res } = await pedirVersao();
+    assert.equal(res.status, 200);
+    assert.deepEqual(
+      pedidos.filter((p) => p.url.includes("/releases/tags/")).map((p) => p.url),
+      [NOVO, ANTIGO],
+    );
+    assert.equal(release.fonteDoRelease(), "victorbarrosoc-hub/baixadordodrive@versao-de-teste");
+  });
+
+  test("com o Release do AbsoluteZRO: só ele, sem perguntar ao antigo", async () => {
+    novoExiste = true;
+    const { res } = await pedirVersao();
+    assert.equal(res.status, 200);
+    assert.ok(!pedidos.some((p) => p.url === ANTIGO));
+    assert.equal(release.fonteDoRelease(), "victorbarrosoc-hub/AbsoluteZRO@sobedesce-versao-de-teste");
+  });
+
+  test("Release novo com erro que não é 404: não cai no antigo (503)", async () => {
+    novoExiste = true;
+    releaseStatus = 502;
+    assert.equal((await pedirVersao()).res.status, 503);
+    assert.ok(!pedidos.some((p) => p.url === ANTIGO));
   });
 });
 

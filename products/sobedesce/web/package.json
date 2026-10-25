@@ -12,8 +12,9 @@
     "typecheck": "next typegen && tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/db-migrate.mts",
+    "db:copiar-do-neon": "tsx scripts/copiar-do-neon.mts",
     "test": "tsx --conditions=react-server --test \"tests/*.test.mts\"",
-    "vercel-build": "tsx scripts/db-migrate.mts && next build"
+    "vercel-build": "tsx scripts/db-migrate.mts && tsx scripts/copiar-do-neon.mts && next build"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",
