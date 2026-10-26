@@ -46,15 +46,15 @@ const S = {
 globalThis.__editor = S
 
 // ───────── conta: o AEON só abre com a conta Absolute ZRO (decisão do titular, 26/10/2026) ─────────
-// No navegador: sem sessão, com o login ainda desligado ou sem o AEON liberado na conta, vai para entrar.html, que diz
-// o que falta. O app de desktop ainda não tem login (precisa antes do primeiro Release).
-const conta = ponte.desktop ? null : await lerConta()
-if (!ponte.desktop && (conta.estado !== 'logado' || conta.acesso === false)) {
+// Sem sessão, com o login desligado ou sem o AEON liberado na conta, vai para entrar.html, que diz o que falta. No
+// navegador as rotas /api/zro/* são do site; no app de computador, do próprio app (desktop/conta.cjs).
+const conta = await lerConta()
+if (conta.estado !== 'logado' || conta.acesso === false) {
   location.replace(`../entrar.html?volta=${encodeURIComponent('/app/')}`)
   await new Promise(() => {})
 }
 document.documentElement.dataset.conta = 'ok'
-S.conta = conta?.pessoa || null
+S.conta = conta.pessoa || null
 
 // ───────── começo ─────────
 

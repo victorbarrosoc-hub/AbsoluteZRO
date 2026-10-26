@@ -2,7 +2,7 @@
 # protegeu o computador": o aviso (SmartScreen) vem da marca "veio da internet" que o navegador põe no arquivo baixado.
 # O PowerShell não põe (e o script ainda tira com Unblock-File, por garantia).
 #
-#   irm https://raw.githubusercontent.com/victorbarrosoc-hub/AbsoluteZRO/main/products/ai-edit/instalar.ps1 | iex
+#   irm https://aeon.absolutezro.com/instalar.ps1 | iex
 #
 # $nome é o mesmo de src/produto.js (um teste confere). Os arquivos vêm do Release do GitHub (tag ai-edit-app-desktop).
 # O que este script faz, nesta ordem:
@@ -39,7 +39,7 @@
     Write-Host "$nome · instalação pelo PowerShell" -ForegroundColor White
 
     if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
-      Falha 'Este instalador é para Windows.' 'No Mac, abra o Terminal e rode: curl -fsSL https://raw.githubusercontent.com/victorbarrosoc-hub/AbsoluteZRO/main/products/ai-edit/instalar.sh | bash'
+      Falha 'Este instalador é para Windows.' 'No Mac, abra o Terminal e rode: curl -fsSL https://aeon.absolutezro.com/instalar.sh | bash'
     }
 
     # 1. Versão mais nova, nome do instalador e SHA-256

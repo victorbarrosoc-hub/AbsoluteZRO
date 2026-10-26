@@ -4,7 +4,7 @@ import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs'
 
 const raiz = new URL('..', import.meta.url)
 const saida = new URL('publico/', raiz)
-const ITENS = ['index.html', 'entrar.html', 'site', 'marca', 'app', 'src', 'presets', 'vendor']
+const ITENS = ['index.html', 'entrar.html', 'instalar.sh', 'instalar.ps1', 'site', 'marca', 'app', 'src', 'presets', 'vendor']
 if (!existsSync(new URL('vendor/mediabunny.min.mjs', raiz))) throw new Error('vendor/ vazio: rode npm run vendor antes')
 rmSync(saida, { recursive: true, force: true })
 mkdirSync(saida)

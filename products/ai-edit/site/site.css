@@ -786,6 +786,66 @@ p {
   margin-top: -40px;
 }
 
+/* ───────── 6b · baixar ───────── */
+.baixar {
+  padding: 120px 24px 140px;
+  background: var(--fundo-2);
+}
+.sistemas {
+  margin: 60px auto 0;
+  max-width: 1000px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.sistema {
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+  border-radius: 28px;
+  padding: 32px;
+  display: grid;
+  gap: 8px;
+}
+.sistema-icone {
+  width: 34px;
+  height: 34px;
+  color: var(--forte);
+  margin-bottom: 14px;
+}
+.sistema h3 {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--forte);
+}
+.sistema p {
+  color: var(--apoio);
+}
+.comando {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 16px;
+  border-radius: 16px;
+  background: var(--fundo);
+  border: 1px solid var(--linha);
+}
+.comando code {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  font: 13px/1.4 ui-monospace, 'SF Mono', Menlo, monospace;
+  color: var(--forte);
+  scrollbar-width: none;
+}
+@media (max-width: 760px) {
+  .sistemas {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ───────── 7 · fim ───────── */
 .fim {
   text-align: center;

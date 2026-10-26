@@ -13,7 +13,7 @@ module.exports = {
   // o app é a mesma página de app/, servida de dentro do app.asar pelo protocolo próprio (desktop/main.cjs).
   // Sem dependências de produção: só o Electron e estes arquivos (vendor/ sai do npm run vendor).
   asar: true,
-  files: ['package.json', 'desktop/**/*', 'app/**/*', 'src/**/*', 'presets/**/*.json', 'vendor/**/*', 'build/icon.png', '!**/*.map', '!**/*.md'],
+  files: ['package.json', 'desktop/**/*', 'app/**/*', 'src/**/*', 'presets/**/*.json', 'vendor/**/*', 'build/icon.png', 'entrar.html', 'site/**/*', 'marca/*.svg', 'marca/*.png', 'marca/familia/**/*', 'marca/home/falesia.jpg', '!**/*.map', '!**/*.md'],
   // fusíveis: o executável não vira um Node com as permissões do app e só o app.asar conferido é carregado
   electronFuses: {
     runAsNode: false,

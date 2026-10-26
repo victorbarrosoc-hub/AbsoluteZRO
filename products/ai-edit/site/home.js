@@ -105,6 +105,18 @@ const rolar = () => nav.classList.toggle('rolou', scrollY > 8)
 addEventListener('scroll', rolar, { passive: true })
 rolar()
 
+// ───────── baixar: copiar o comando ─────────
+for (const b of $$('[data-copiar]'))
+  b.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText($(`#${b.dataset.copiar}`).textContent)
+      b.textContent = 'Copiado'
+      setTimeout(() => (b.textContent = 'Copiar'), 1800)
+    } catch {
+      getSelection().selectAllChildren($(`#${b.dataset.copiar}`))
+    }
+  })
+
 const olho = new IntersectionObserver(
   (es) => {
     for (const e of es)

@@ -1,5 +1,5 @@
 // Absolute ZRO falsa para os testes do "Entrar com Absolute ZRO": descoberta OIDC, /oauth/authorize (devolve o
-// código na hora, como app da família), /oauth/token (confere client_secret_basic, PKCE S256, redirect_uri e uso
+// código na hora, como app da família), /oauth/token (confere client_secret_basic, ou client_id de app público, PKCE S256, redirect_uri e uso
 // único) e JWKS. Assina o id_token com uma chave EC P-256 gerada aqui. `adulterar` gera tokens ruins de propósito.
 
 import { createHash, generateKeyPairSync, randomBytes, sign } from 'node:crypto'
@@ -64,7 +64,8 @@ export async function iniciarZroFalsa(cliente) {
       for await (const c of req) corpo += c
       const f = new URLSearchParams(corpo)
       const basic = Buffer.from(String(req.headers.authorization || '').replace(/^Basic /, ''), 'base64').toString()
-      if (basic !== `${cliente.clientId}:${cliente.clientSecret}`) return responder(res, 401, { error: 'invalid_client' })
+      // app público (o de computador): sem segredo, só client_id no corpo e PKCE
+      if (cliente.publico ? f.get('client_id') !== cliente.clientId || req.headers.authorization : basic !== `${cliente.clientId}:${cliente.clientSecret}`) return responder(res, 401, { error: 'invalid_client' })
       const c = codigos.get(f.get('code') || '')
       if (!c || c.usado) return responder(res, 400, { error: 'invalid_grant' })
       c.usado = true

@@ -3,7 +3,7 @@
 # verificar se o item está livre de malware": o app tem assinatura ad-hoc (custo zero, sem certificado da Apple,
 # decisão do titular de 26/10/2026) e o aviso vem da "quarentena" que o navegador põe no que baixa. O curl não põe.
 #
-#   curl -fsSL https://raw.githubusercontent.com/victorbarrosoc-hub/AbsoluteZRO/main/products/ai-edit/instalar.sh | bash
+#   curl -fsSL https://aeon.absolutezro.com/instalar.sh | bash
 #
 # NOME é o mesmo de src/produto.js (um teste confere). Os arquivos vêm do Release do GitHub (tag ai-edit-app-desktop),
 # sem site no meio: versao.json diz o build, o nome e o SHA-256 de cada instalador.
@@ -58,7 +58,7 @@ main() {
 
   printf '%s%s%s · instalação pelo Terminal\n' "$NEGRITO" "$NOME" "$FIM"
 
-  [ "$(uname -s)" = "Darwin" ] || erro "Este instalador é para Mac." "No Windows, abra o PowerShell e rode: irm https://raw.githubusercontent.com/victorbarrosoc-hub/AbsoluteZRO/main/products/ai-edit/instalar.ps1 | iex"
+  [ "$(uname -s)" = "Darwin" ] || erro "Este instalador é para Mac." "No Windows, abra o PowerShell e rode: irm https://aeon.absolutezro.com/instalar.ps1 | iex"
   for cmd in curl hdiutil ditto shasum xattr open; do
     command -v "$cmd" >/dev/null 2>&1 || erro "Falta o comando \"$cmd\" neste Mac."
   done

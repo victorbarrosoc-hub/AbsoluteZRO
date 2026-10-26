@@ -39,6 +39,7 @@
         <a href="#como-funciona">Como funciona</a>
         <a href="#recursos">Recursos</a>
         <a href="#ecossistema">Ecossistema</a>
+        <a href="#baixar">Baixar</a>
       </nav>
       <div class="nav-dir">
         <button class="nav-icone" id="tema" type="button" aria-label="Tema claro ou escuro" title="Tema claro ou escuro">
@@ -62,6 +63,7 @@
         <a href="#como-funciona">Como funciona</a>
         <a href="#recursos">Recursos</a>
         <a href="#ecossistema">Ecossistema</a>
+        <a href="#baixar">Baixar</a>
         <a href="app/">Abrir o AEON</a>
       </nav>
       <p class="menu-grupo">Sua conta</p>
@@ -178,6 +180,29 @@
         <ol class="caminho ao-rolar" id="caminho"></ol>
       </section>
 
+      <!-- 6b · Baixar: o app de computador, instalado pelo Terminal ou pelo PowerShell (como SOBEDESCE e Synquei) -->
+      <section class="baixar" id="baixar" aria-labelledby="baixar-titulo">
+        <div class="cabeca-sec ao-rolar">
+          <p class="olho">Baixar</p>
+          <h2 id="baixar-titulo" class="titulo"><span class="fino">No seu</span> <span class="forte">computador.</span></h2>
+          <p class="apoio">Cole no Terminal ou no PowerShell. Depois, entre com a sua conta Absolute ZRO.</p>
+        </div>
+        <div class="sistemas ao-rolar">
+          <div class="sistema">
+            <svg class="sistema-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.9-.9-3.1-.8-1.6 0-3.1.9-3.9 2.4-1.7 2.9-.4 7.2 1.2 9.6.8 1.2 1.7 2.4 3 2.4 1.2 0 1.6-.8 3.1-.8s1.8.8 3.1.8c1.3 0 2.1-1.2 2.9-2.3.9-1.3 1.3-2.6 1.3-2.7 0 0-2.7-1-2.7-4.2zM14.1 5.6c.6-.8 1.1-1.9 1-3-1 0-2.1.6-2.8 1.4-.6.7-1.1 1.8-1 2.9 1.1.1 2.1-.5 2.8-1.3z" fill="currentColor" /></svg>
+            <h3>Mac</h3>
+            <p>macOS 12 ou mais novo, Apple Silicon e Intel.</p>
+            <div class="comando"><code id="cmdMac">curl -fsSL https://aeon.absolutezro.com/instalar.sh | bash</code><button type="button" class="vidro pequeno" data-copiar="cmdMac">Copiar</button></div>
+          </div>
+          <div class="sistema">
+            <svg class="sistema-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.5l7.4-1v7.1H3zm0 13l7.4 1v-7H3zm8.3 1.1L21 21v-8.4h-9.7zm0-15.2v7.2H21V3z" fill="currentColor" /></svg>
+            <h3>Windows</h3>
+            <p>Windows 10 e 11, 64 bits.</p>
+            <div class="comando"><code id="cmdWin">irm https://aeon.absolutezro.com/instalar.ps1 | iex</code><button type="button" class="vidro pequeno" data-copiar="cmdWin">Copiar</button></div>
+          </div>
+        </div>
+      </section>
+
       <!-- 7 · fim -->
       <section class="fim" aria-labelledby="fim-titulo">
         <div class="fim-simbolo" aria-hidden="true" data-marca="simbolo"></div>
@@ -186,7 +211,7 @@
           <a class="vidro vidro--tinta grande" href="app/">Começar a criar</a>
           <a class="vidro grande" href="entrar.html?criar=1">Criar conta</a>
         </div>
-        <p class="nota">No Chrome ou no Edge, agora. App para Mac e Windows em breve.</p>
+        <p class="nota">No computador ou no navegador (Chrome ou Edge), com a sua conta Absolute ZRO.</p>
       </section>
     </main>
 

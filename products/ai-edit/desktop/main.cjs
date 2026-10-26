@@ -13,6 +13,7 @@ const fs = require('node:fs')
 const fsp = require('node:fs/promises')
 const { Readable } = require('node:stream')
 const { lerProjeto } = require('./sobedesce.cjs')
+const { criarConta } = require('./conta.cjs')
 const { PRODUTO } = require('../src/produto.js')
 const CABECALHOS = require('./cabecalhos.json')
 
@@ -123,9 +124,48 @@ async function modelo(req, u) {
   return new Response(paraPagina, { headers: cabecalhos({ ...tipo, ...passar }) })
 }
 
+// ───────── conta Absolute ZRO: as mesmas rotas do site, respondidas aqui (desktop/conta.cjs) ─────────
+let conta = null
+const contaApp = () =>
+  (conta ??= criarConta({
+    pasta: app.getPath('userData'),
+    abrirNavegador: (url) => shell.openExternal(url),
+    aoVoltar: () => {
+      if (win) {
+        if (win.isMinimized()) win.restore()
+        win.show()
+        win.focus()
+      }
+    },
+  }))
+const jsonResp = (status, corpo) => new Response(JSON.stringify(corpo), { status, headers: cabecalhos({ 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }) })
+const voltaSegura = (v) => (typeof v === 'string' && /^\/[^/\\]/.test(v) && v.length < 300 ? v : '/app/')
+
+async function rotaConta(req, u) {
+  // teste de fumaça e medição (janela escondida, o app fecha no fim): uma sessão de teste, sem rede
+  if (SMOKE || MEDIR) return u.pathname === '/api/zro/eu' ? jsonResp(200, { ok: true, pessoa: { nome: 'Teste', email: 'teste@absolutezro.com', produtos: ['ai-edit'] }, acesso: true }) : jsonResp(404, { ok: false })
+  if (u.pathname === '/api/zro/eu') {
+    const eu = contaApp().eu()
+    return eu ? jsonResp(200, eu) : jsonResp(401, { ok: false })
+  }
+  if (u.pathname === '/api/zro/sair' && req.method === 'POST') {
+    contaApp().sair()
+    return jsonResp(200, { ok: true })
+  }
+  if (u.pathname === '/api/zro/entrar') {
+    const volta = voltaSegura(u.searchParams.get('volta'))
+    const r = await contaApp().entrar({ criar: u.searchParams.get('criar') === '1' })
+    const destino = new URL(`${ESQUEMA}://app${volta}`)
+    if (r !== 'ok') destino.searchParams.set('zro', r)
+    return new Response(null, { status: 303, headers: { location: destino.toString(), 'cache-control': 'no-store' } })
+  }
+  return jsonResp(404, { ok: false })
+}
+
 function servir() {
   protocol.handle(ESQUEMA, async (req) => {
     const u = new URL(req.url)
+    if (u.pathname.startsWith('/api/zro/')) return rotaConta(req, u)
     if (u.pathname === '/__midia') return midia(req, u)
     if (u.pathname.startsWith('/__hf/')) return modelo(req, u)
     let rel = decodeURIComponent(u.pathname)

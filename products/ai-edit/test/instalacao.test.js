@@ -17,7 +17,7 @@ test('instaladores usam o nome e o Release do produto', () => {
   assert.match(ps, new RegExp(`^  \\$nome = '${PRODUTO.nome}'$`, 'm'))
   for (const t of [sh, ps]) {
     assert.ok(t.includes(`releases/download/${PRODUTO.release}`))
-    assert.ok(t.includes(`${PRODUTO.repositorio}/main/products/ai-edit/instalar`))
+    assert.ok(t.includes('https://aeon.absolutezro.com/instalar'), 'o comando aponta para o site do AEON')
   }
   execFileSync('sh', ['-n', new URL('../instalar.sh', import.meta.url).pathname])
 })
