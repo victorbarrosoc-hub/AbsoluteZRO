@@ -110,8 +110,8 @@ export const FORMAS = Object.freeze({
  * A estrela no palco (ícone, site, abertura), como na prancha: o miolo acende do centro, um brilho leve em volta e
  * pontas e fios que somem aos poucos. Devolve defs + desenho para entrar num <svg>; id separa os gradientes.
  */
-export function estrelaComBrilho({ cx, cy, r, forma = 'compacta', claro = false, id = 'aeon' }) {
-  const g = { cx, cy, r, ...FORMAS[forma] }
+export function estrelaComBrilho({ cx, cy, r, forma = 'compacta', claro = false, id = 'aeon', ...ajuste }) {
+  const g = { cx, cy, r, ...FORMAS[forma], ...ajuste }
   const H = r * g.largura
   const tinta = claro ? ['#000000', '#3a3a3f'] : ['#ffffff', '#c7c7cd']
   const fio = claro ? '#2c2c30' : '#e4e4e9'
@@ -177,7 +177,7 @@ export function assinatura({ cor = 'currentColor', frase = true } = {}) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 ${frase ? 350 : 300}" role="img" aria-label="${PRODUTO.nome} · ${PRODUTO.frase}">${sim}${nome}${f}</svg>`
 }
 
-/** Ícone do app (1024): a estrela de palco sobre grafite (ou papel), com um halo bem leve atrás do centro. */
+/** Ícone do app (1024): a estrela de palco sobre grafite (ou papel); as quatro pontas vão até a borda do quadrado. */
 export function icone({ claro = false } = {}) {
   const fundo = claro ? ['#ffffff', '#e9e9ee'] : ['#232327', '#08080a']
   const halo = claro ? '#000000' : '#ffffff'
@@ -188,7 +188,8 @@ export function icone({ claro = false } = {}) {
 <rect x="100" y="100" width="824" height="824" rx="190" fill="url(#${id}-fundo)"/>
 <rect x="100.5" y="100.5" width="823" height="823" rx="189.5" fill="none" stroke="${claro ? '#000' : '#fff'}" stroke-opacity="${claro ? 0.08 : 0.12}"/>
 <circle cx="512" cy="512" r="250" fill="url(#${id}-halo)"/>
-${estrelaComBrilho({ cx: 512, cy: 512, r: 340, claro, id })}
+<clipPath id="${id}-caixa"><rect x="100" y="100" width="824" height="824" rx="190"/></clipPath>
+<g clip-path="url(#${id}-caixa)">${estrelaComBrilho({ cx: 512, cy: 512, r: 412, largura: 1, claro, id })}</g>
 </svg>`
 }
 
