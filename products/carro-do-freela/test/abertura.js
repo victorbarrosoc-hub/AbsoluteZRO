@@ -245,7 +245,13 @@ const SONDA = () => {
     const p=await ctx.newPage();
     await p.goto(URL,{waitUntil:'domcontentloaded'});
     const m=await p.evaluate(()=>{ const sp=document.getElementById('splash'); if(!sp||sp.classList.contains('sai')) return null;
-      return {r:parseFloat(getComputedStyle(sp).getPropertyValue('--sp-r')), disco:sp.querySelector('.sp-cena').getBoundingClientRect().width/2} });
+      /* (26/out · 2) o raio do disco é o do DESENHO (offsetWidth), não o da
+         caixa na tela: o disco entra com scale(.88)→1 em .24s, e com o HTML
+         leve o domcontentloaded passou a cair no fim dessa entrada — a caixa
+         media 51,9995 e o halo (8 + 44 = 52, encostado na borda por desenho)
+         reprovava por meio milésimo de pixel. --sp-r também é medida do
+         desenho, sem escala: as duas réguas agora são a mesma */
+      return {r:parseFloat(getComputedStyle(sp).getPropertyValue('--sp-r')), disco:sp.querySelector('.sp-cena').offsetWidth/2} });
     t(m&&m.r+44<=m.disco,'o halo do íris começa escondido atrás do disco (raio '+(m?m.r:'-')+' + faixa 44 ≤ '+(m?m.disco:'-')+') — sem estourar num quadro só');
     await ctx.close();
   }
