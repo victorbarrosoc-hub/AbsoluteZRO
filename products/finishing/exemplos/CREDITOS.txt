@@ -1,0 +1,8 @@
+Imagens de exemplo da Revela (botão "Testar com um exemplo" e página inicial).
+Licença Unsplash (uso livre, sem atribuição obrigatória): https://unsplash.com/license
+Crédito mesmo assim:
+
+- referencia-rua-dourada.jpg  Loudge, https://unsplash.com/photos/VfIYjO8P_24
+- material-rua-dia.jpg        Charles L., https://unsplash.com/photos/5z8CIELxW1Y
+
+Redimensionadas para 1600×1000 (via picsum.photos, que serve as fotos do Unsplash).

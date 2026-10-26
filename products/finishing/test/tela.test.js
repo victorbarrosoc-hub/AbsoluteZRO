@@ -31,6 +31,8 @@ const TIPOS = {
   '.mov': 'video/quicktime',
   '.mp4': 'video/mp4',
 }
+// o navegador registra o 401 de /api/zro/eu (sem sessão) como erro de rede; não é falha da página
+const SEM_SESSAO = /status of 401/
 let servidor
 let endereco
 let navegador
@@ -39,6 +41,8 @@ let dir
 before(async () => {
   servidor = createServer((req, res) => {
     const caminho = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(/^(\.\.[/\\])+/, '')
+    // sem as funções da Vercel aqui: a conta responde como "sem sessão"
+    if (caminho === '/api/zro/eu') return res.writeHead(401, { 'content-type': 'application/json' }).end('{"ok":false}')
     const arquivo = join(RAIZ, caminho === '/' ? 'index.html' : caminho)
     if (!arquivo.startsWith(RAIZ)) return res.writeHead(403).end()
     try {
@@ -67,8 +71,8 @@ test('escolhe as duas imagens, compara, ajusta e baixa a LUT', async () => {
   const pagina = await navegador.newPage({ acceptDownloads: true })
   const erros = []
   pagina.on('pageerror', (e) => erros.push(e.message))
-  pagina.on('console', (m) => m.type() === 'error' && erros.push(m.text()))
-  const resposta = await pagina.goto(endereco)
+  pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
+  const resposta = await pagina.goto(endereco + 'lut.html')
   assert.match(resposta.headers()['content-security-policy'], /default-src 'self'/)
   await assert.doesNotReject(pagina.getByRole('heading', { name: 'Revela a cor que você quer.' }).waitFor())
   // marca: ícone do cabeçalho e favicon carregados
@@ -135,7 +139,7 @@ test('escolhe as duas imagens, compara, ajusta e baixa a LUT', async () => {
 
 test('fundo sempre preto fosco, mesmo com o sistema no tema claro', async () => {
   const pagina = await navegador.newPage({ colorScheme: 'light' })
-  await pagina.goto(endereco)
+  await pagina.goto(endereco + 'lut.html')
   const { fundo, texto } = await pagina.evaluate(() => ({
     fundo: getComputedStyle(document.body).backgroundColor,
     texto: getComputedStyle(document.body).color,
@@ -167,7 +171,7 @@ test('link compartilhado: tags de OG e imagem 1200×630', async () => {
 
 test('arquivo que não é imagem avisa sem quebrar', async () => {
   const pagina = await navegador.newPage()
-  await pagina.goto(endereco)
+  await pagina.goto(endereco + 'lut.html')
   await pagina.setInputFiles('#arquivo-referencia', join(dir, 'texto.txt'))
   await pagina.getByText('Esse arquivo não é uma imagem. Use PNG, JPEG ou WebP.').waitFor()
   await pagina.close()
@@ -175,7 +179,7 @@ test('arquivo que não é imagem avisa sem quebrar', async () => {
 
 test('celular: sem rolagem horizontal e controles com nome', async () => {
   const pagina = await navegador.newPage({ viewport: { width: 375, height: 800 } })
-  await pagina.goto(endereco)
+  await pagina.goto(endereco + 'lut.html')
   await pagina.setInputFiles('#arquivo-referencia', join(dir, 'filme.png'))
   await pagina.setInputFiles('#arquivo-material', join(dir, 'meu-frame.png'))
   await pagina.getByText('Pronto. Arraste sobre a imagem para comparar.').waitFor()
@@ -192,7 +196,7 @@ test('conta-gotas: marca um par, refaz o look e limpa', async () => {
   const pagina = await navegador.newPage({ viewport: { width: 1280, height: 1000 } })
   const erros = []
   pagina.on('pageerror', (e) => erros.push(e.message))
-  await pagina.goto(endereco)
+  await pagina.goto(endereco + 'lut.html')
   await pagina.setInputFiles('#arquivo-referencia', join(dir, 'filme.png'))
   await pagina.setInputFiles('#arquivo-material', join(dir, 'meu-frame.png'))
   await pagina.getByText('Pronto. Arraste sobre a imagem para comparar.').waitFor()
@@ -226,7 +230,7 @@ test('entrega: escolhe o destino, mostra fonte e baixa o script do Resolve', asy
   const pagina = await navegador.newPage({ acceptDownloads: true, viewport: { width: 1280, height: 1000 } })
   const erros = []
   pagina.on('pageerror', (e) => erros.push(e.message))
-  pagina.on('console', (m) => m.type() === 'error' && erros.push(m.text()))
+  pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
   await pagina.goto(endereco + 'entrega.html')
   await pagina.getByRole('heading', { name: 'Cada destino, do jeito certo.' }).waitFor()
   assert.equal(await pagina.locator('#destinos .cartao').count(), 8)
@@ -308,7 +312,7 @@ test('converter: ProRes 422 HQ vira MP4 H.264 marcado BT.709, no navegador', asy
   const pagina = await navegador.newPage({ acceptDownloads: true })
   const erros = []
   pagina.on('pageerror', (e) => erros.push(e.message))
-  pagina.on('console', (m) => m.type() === 'error' && erros.push(m.text()))
+  pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
   await pagina.goto(endereco + 'converter.html')
   assert.equal(await pagina.evaluate(() => crossOriginIsolated), true, 'sem isolamento: o ProRes decodifica mais devagar')
   await pagina.locator('#aparelho [data-codec=avc][data-ok=true]').waitFor()
@@ -352,5 +356,56 @@ test('converter: ProRes 422 HQ vira MP4 H.264 marcado BT.709, no navegador', asy
     'sem áudio na saída',
   )
   assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('página inicial: seções, conta e sem rolagem horizontal', async () => {
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 390, height: 844 },
+  ]) {
+    const pagina = await navegador.newPage({ viewport })
+    const erros = []
+    pagina.on('pageerror', (e) => erros.push(e.message))
+    pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
+    await pagina.goto(endereco)
+    await pagina.getByRole('heading', { level: 1 }).waitFor()
+    assert.match(await pagina.getByRole('heading', { level: 1 }).textContent(), /Revela a cor/)
+    for (const id of ['ferramentas', 'entrega', 'converter', 'familia']) assert.equal(await pagina.locator('#' + id).count(), 1, id)
+    // a faixa de destinos vem da mesma lista da Entrega
+    assert.ok((await pagina.locator('#faixa > *').count()) >= 4)
+    // sem sessão, o topo oferece "Entrar"
+    await pagina.locator('#conta.conta--pronta').waitFor()
+    assert.equal(await pagina.locator('#conta').getAttribute('href'), 'entrar.html')
+    await pagina.evaluate(() => scrollTo(0, document.body.scrollHeight))
+    const largura = await pagina.evaluate(() => document.documentElement.scrollWidth)
+    assert.ok(largura <= viewport.width, `rolagem horizontal: ${largura}px`)
+    const quebradas = await pagina.evaluate(() => [...document.images].filter((i) => i.complete && i.naturalWidth === 0).map((i) => i.src))
+    assert.deepEqual(quebradas, [])
+    assert.deepEqual(erros, [])
+    await pagina.close()
+  }
+})
+
+test('entrar: sem sessão mostra os botões; login desligado avisa', async () => {
+  const pagina = await navegador.newPage()
+  await pagina.goto(endereco + 'entrar.html?volta=/converter')
+  await pagina.getByRole('heading', { name: 'Entre na Revela.' }).waitFor()
+  const entrar = await pagina.getByRole('link', { name: 'Entrar com Absolute ZRO' }).getAttribute('href')
+  assert.match(entrar, /^\/api\/zro\/entrar\?volta=%2Fconverter/)
+  assert.match(await pagina.getByRole('link', { name: 'Criar conta' }).getAttribute('href'), /criar=1/)
+
+  await pagina.route('**/api/zro/eu', (r) => r.fulfill({ status: 503, contentType: 'application/json', body: '{"ok":false}' }))
+  await pagina.reload()
+  await pagina.getByRole('heading', { name: 'Entrar chega em breve.' }).waitFor()
+  assert.equal(await pagina.getByRole('heading', { name: 'Entre na Revela.' }).isVisible(), false)
+  await pagina.close()
+})
+
+test('testar com um exemplo: carrega as duas imagens e monta a prévia', async () => {
+  const pagina = await navegador.newPage()
+  await pagina.goto(endereco + 'lut.html')
+  await pagina.getByRole('button', { name: 'Testar com um exemplo' }).click()
+  await pagina.getByText('Pronto. Arraste sobre a imagem para comparar.').waitFor()
   await pagina.close()
 })

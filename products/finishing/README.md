@@ -24,9 +24,20 @@ o fundo preto, para o preto fosco). Guia em [`marca/index.html`](marca/index.htm
 perfurada em amarelo filme, com o quadro revelado na diagonal em roxo → vermelho → laranja → amarelo; versões plana e
 de uma cor, cores, regras de uso e as alternativas estudadas (`marca/alternativas`).
 
+## Página inicial e conta
+
+`index.html` (`app/home.*`): apresentação com motion (comparação antes/depois que se revela, telas reais em MacBook
+e iPhone que entram com a rolagem, faixa de destinos, família Absolute ZRO). Tudo em CSS, com "reduzir movimento".
+Imagens de exemplo: fotos do Unsplash em `exemplos/` (créditos em `exemplos/CREDITOS.txt`).
+
+Login único Absolute ZRO (ADR 0012/0014), no padrão do Synquei: `api/zro/{entrar,callback,eu,sair}.js` (funções Node
+da Vercel; `api/_zro.js` não vira rota). Cliente OIDC confidencial `revela-web`, PKCE S256, cookies `rv_zro`/`rv_conta`
+assinados. `entrar.html` mostra fora, dentro ou "chega em breve" (sem `ZRO_CLIENT_ID`/`ZRO_CLIENT_SECRET`, 503). As
+ferramentas seguem abertas sem conta: o topo mostra "Entrar" ou as iniciais.
+
 ## Tela
 
-`index.html` + `app/`: a pessoa escolhe (ou solta) a referência e o frame dela, compara antes e depois arrastando sobre
+`lut.html` + `app/`: a pessoa escolhe (ou solta) a referência e o frame dela, compara antes e depois arrastando sobre
 a imagem, ajusta intensidade, liga só contraste ou só cor, escolhe 33 ou 65 pontos e baixa o `.cube`. **Tudo roda no
 navegador**: as imagens não são enviadas para lugar nenhum. Imagens lidas sem conversão de perfil de cor
 (`colorSpaceConversion: 'none'`), como o Resolve exportou. **Fundo sempre preto fosco** (`#0E0E10` com grão neutro),

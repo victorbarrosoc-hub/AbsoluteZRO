@@ -3,6 +3,7 @@
 // Fluxo: duas imagens → análise (uma vez) → look → LUT 33³ para a prévia (refeita quando a intensidade muda) →
 // LUT no tamanho escolhido para baixar.
 
+import './conta.js'
 import { aplicar, assar, escreverCube } from '../src/cor/cube.js'
 import { oklabParaCodigo } from '../src/cor/oklab.js'
 import { amostrar, analisar, criarLook, descrever, descreverSaturacao } from '../src/cor/referencia.js'
@@ -96,6 +97,18 @@ for (const qual of ['referencia', 'material']) {
     receber(qual, e.dataTransfer.files[0])
   })
 }
+
+// Exemplo pronto (fotos do Unsplash em exemplos/): uma rua no pôr do sol como referência, outra de dia como frame.
+$('exemplo')?.addEventListener('click', async () => {
+  const pegar = async (url, nome) => new File([await (await fetch(url)).blob()], nome, { type: 'image/jpeg' })
+  try {
+    await receber('referencia', await pegar('exemplos/referencia-rua-dourada.jpg', 'rua-dourada.jpg'))
+    await receber('material', await pegar('exemplos/material-rua-dia.jpg', 'rua-de-dia.jpg'))
+    $('resultado').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' })
+  } catch {
+    avisar('Não deu para abrir o exemplo agora.', true)
+  }
+})
 
 // ─────────── cálculo ───────────
 

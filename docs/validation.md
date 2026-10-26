@@ -411,3 +411,13 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   barra, selo de pronto, ícone que respira ao arrastar.
 - `products/finishing`: `npm test` (**35/35**), testes de tela ajustados (fichas, miniatura não vazia, caixa
   compacta, grupos de rádio com nome). Desktop 1280 e celular 390 sem rolagem lateral e sem erro de console.
+
+## Revela: página inicial, login e conta Absolute ZRO (26/10/2026)
+
+- `index.html` virou a página inicial (motion em CSS, telas reais em MacBook/iPhone, fotos de exemplo do Unsplash);
+  a ferramenta de LUT foi para `lut.html`. "Testar com um exemplo" carrega as duas fotos e monta a prévia.
+- `entrar.html` + `api/zro/{entrar,callback,eu,sair}.js` no padrão do Synquei (PKCE S256, `client_secret_basic`,
+  cookies assinados, `zro_products` decide o acesso). `Cache-Control: no-store` em `/api/zro/*`.
+- `products/finishing`: `npm test` (**59/59**): 21 do login contra um provedor OIDC falso; tela com home (1440 e 390
+  sem rolagem lateral, sem imagem quebrada, sem erro de console), entrar (fora e desligado) e o exemplo.
+- Não validado: login real (falta o cliente `revela-web` no console e as variáveis no projeto Vercel `revela`).
