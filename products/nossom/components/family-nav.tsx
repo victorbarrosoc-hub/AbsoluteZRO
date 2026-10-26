@@ -5,7 +5,7 @@ const FAMILY = [
   {
     href: 'https://absolutezro.vercel.app',
     name: 'Absolute ZRO',
-    icon: '/absolute-zro-o-alpha.webp',
+    icon: '/familia/absolute-zro.png',
   },
   {
     href: 'https://carrodofreela.com.br',
