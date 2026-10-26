@@ -143,7 +143,7 @@ test('páginas públicas e mobile sem rolagem horizontal', async ({ page }) => {
   }
   await page.goto('/planos')
   await expect(page.getByText('Contratação online ainda fechada')).toBeVisible()
-  await expect(page.getByText('R$ 149,90 / mês').first()).toBeVisible()
+  await expect(page.getByText('R$ 149,90').first()).toBeVisible()
 })
 
 test('menu lateral recolhe, lembra a escolha e o celular usa uma barra só', async ({ page }) => {

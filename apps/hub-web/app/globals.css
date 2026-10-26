@@ -1570,50 +1570,6 @@
   margin-top: 8px;
 }
 
-/* Planos como a página de comparação da Apple: cartões limpos de vidro, preço fino, ação em vidro. */
-.plans {
-  display: grid;
-  gap: 14px;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
-}
-.plan-card {
-  position: relative;
-  display: grid;
-  gap: 14px;
-  align-content: start;
-  justify-items: start;
-  padding: 28px;
-  border-radius: 28px;
-  background: var(--glass-fill), var(--surface);
-  box-shadow: var(--shadow-float);
-}
-.plan-card--featured {
-  box-shadow:
-    var(--shadow-float),
-    inset 0 0 0 1.5px var(--text-strong);
-}
-.plan-card h2 {
-  font-size: 1.5rem;
-  font-weight: 800;
-}
-.plan-card .list-plain {
-  gap: 10px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-  width: 100%;
-  color: var(--text);
-}
-.plan-card .zro-btn {
-  margin-top: auto;
-}
-.plan-price {
-  font-family: var(--font-apple);
-  font-weight: 300;
-  font-size: 1.9rem;
-  letter-spacing: -0.03em;
-  color: var(--text-strong);
-}
-
 /* ───── autenticação ───── */
 
 .auth-wrap {
@@ -3659,4 +3615,219 @@ details.disclosure[open] > summary {
     opacity: 1;
     translate: 0 0;
   }
+}
+
+/* ───── Planos honestos (26/10/2026) ─────
+   Mensal/Anual é um par de rádios: o :has() troca os preços sem JavaScript. Cartões de vidro, preço fino, créditos
+   em destaque e as ferramentas como ícones. */
+.pricing {
+  gap: clamp(20px, 3vw, 32px);
+}
+.cycle {
+  justify-self: center;
+  display: inline-flex;
+  gap: 4px;
+  margin: 0;
+  padding: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--glass-fill), var(--surface);
+  box-shadow: var(--shadow-float);
+}
+.cycle label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-weight: 600;
+  color: var(--text-mute, #6e6e73);
+  cursor: pointer;
+  transition:
+    background 0.3s var(--ease),
+    color 0.3s var(--ease);
+}
+.cycle input:checked + label {
+  background: var(--text-strong);
+  color: var(--bg, #fff);
+}
+.cycle input:focus-visible + label {
+  outline: 2px solid var(--text-strong);
+  outline-offset: 2px;
+}
+.cycle__save {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgb(127 127 127 / 0.16);
+}
+.pricing:has(#ciclo-anual:checked) .when-month,
+.pricing:not(:has(#ciclo-anual:checked)) .when-year {
+  display: none;
+}
+
+.tiers {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
+  align-items: stretch;
+  width: 100%;
+}
+.tier {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 30px 28px 28px;
+  border-radius: 30px;
+  background: var(--glass-fill), var(--surface);
+  box-shadow: var(--shadow-float);
+  text-align: left;
+}
+.tier--featured {
+  box-shadow:
+    var(--shadow-float),
+    inset 0 0 0 1.5px var(--text-strong);
+}
+.tier__head h2 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
+}
+.tier__tag {
+  margin-top: 4px;
+  color: var(--text-mute, #6e6e73);
+}
+.tier__price {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--text-strong);
+}
+.tier__from {
+  width: 100%;
+  font-size: 0.8rem;
+  color: var(--text-mute, #6e6e73);
+}
+.tier__amount {
+  font-family: var(--font-apple);
+  font-weight: 300;
+  font-size: clamp(2.2rem, 4vw, 2.7rem);
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+.tier__per {
+  font-weight: 600;
+  color: var(--text-mute, #6e6e73);
+}
+.tier__sub {
+  min-height: 1.4em;
+  margin-top: -6px;
+  font-size: 0.9rem;
+  color: var(--text-mute, #6e6e73);
+}
+.tier__sub strong {
+  color: var(--text-strong);
+}
+.tier__credits {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgb(127 127 127 / 0.08);
+  cursor: help;
+}
+.tier__credits strong {
+  font-family: var(--font-apple);
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-strong);
+}
+.tier__credits span {
+  font-size: 0.85rem;
+  line-height: 1.25;
+  color: var(--text-mute, #6e6e73);
+}
+.tier__apps {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.tier__label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-mute, #6e6e73);
+}
+.tier__apps ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tier__apps li {
+  display: grid;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.1);
+}
+.tier__apps .zro-mark--initials {
+  background: linear-gradient(150deg, #3a3a3e, #0b0b0c);
+  border-color: rgb(255 255 255 / 0.08);
+  color: #fff;
+  border-radius: 22%;
+}
+@media (min-width: 700px) {
+  .tier__tag {
+    min-height: 2.6em;
+  }
+}
+.tier__note {
+  font-size: 0.85rem;
+  color: var(--text-mute, #6e6e73);
+}
+.tier__cta {
+  margin-top: auto;
+  justify-content: center;
+}
+
+.tier-free {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 22px 28px;
+  border-radius: 24px;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+.tier-free h2 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+.pricing__more {
+  max-width: 640px;
+  margin-inline: auto;
+  color: var(--text-mute, #6e6e73);
+  text-align: left;
+}
+.pricing__more summary {
+  cursor: pointer;
+  text-align: center;
+  font-weight: 600;
+}
+.pricing__more p {
+  margin-top: 10px;
 }
