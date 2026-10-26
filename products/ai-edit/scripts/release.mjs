@@ -43,10 +43,12 @@ export async function nomear(plataforma, dist, saida) {
 }
 
 export async function versao(pasta, out, agora = new Date()) {
-  const ler = async (p) => JSON.parse(await fs.readFile(path.join(pasta, `sha256-${p}.json`), 'utf8'))
+  // uma plataforma pode faltar (o build dela falhou): ela fica de fora e o instalador dela diz que ainda não há versão
+  const ler = async (p) => JSON.parse(await fs.readFile(path.join(pasta, `sha256-${p}.json`), 'utf8').catch(() => 'null'))
   const mac = await ler('mac')
   const win = await ler('windows')
-  const v = { build: build(), commit: (process.env.GITHUB_SHA || '').slice(0, 12), data: agora.toISOString(), mac: mac.arquivo, windows: win.arquivo, sha256Mac: mac.sha256, sha256Windows: win.sha256 }
+  if (!mac && !win) throw new Error('nenhum instalador no Release')
+  const v = { build: build(), commit: (process.env.GITHUB_SHA || '').slice(0, 12), data: agora.toISOString(), mac: mac?.arquivo ?? null, windows: win?.arquivo ?? null, sha256Mac: mac?.sha256 ?? null, sha256Windows: win?.sha256 ?? null }
   await fs.writeFile(out, JSON.stringify(v, null, 2) + '\n')
   return v
 }

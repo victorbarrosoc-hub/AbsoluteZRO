@@ -144,10 +144,11 @@ jobs:
           fail_on_unmatched_files: false
           body: Prévia do editor da Absolute ZRO (nome provisório). Sem assinatura da Apple/Microsoft (custo zero); instale pelo Terminal ou PowerShell (products/ai-edit/README.md).
 
-  # Depois dos DOIS instaladores no Release: o versao.json com o nome e o SHA-256 de cada um (os instaladores leem).
+  # Depois dos instaladores no Release: o versao.json com o nome e o SHA-256 de cada um (os instaladores leem). Roda
+  # mesmo se uma plataforma falhou: a que passou no teste de fumaça sai; a outra fica de fora até o próximo build.
   versao:
     name: Publicar versão
-    if: github.event_name == 'workflow_dispatch' && inputs.publicar
+    if: always() && github.event_name == 'workflow_dispatch' && inputs.publicar
     needs: app
     runs-on: ubuntu-latest
     timeout-minutes: 10
