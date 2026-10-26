@@ -680,3 +680,13 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   novo não duplica nem gasta cota, link adulterado é recusado e sem plano a resposta é 403.
 - Não validado: o botão **Comprovante** num envio real para o Drive e o registro pela tela do HUB em produção.
 - Site do SOBEDESCE: topo sem texto em degradê e sem brilho azul (Padrão Apple).
+
+## Revela em revela.absolutezro.com (26/10/2026)
+
+- A pedido do titular, o projeto Vercel `revela` ganhou o domínio `revela.absolutezro.com` (zona do absolutezro.com na
+  própria Vercel, HTTPS no ar). `revela-zro.vercel.app` redireciona (308) para o endereço novo pelo `vercel.json`.
+- Links trocados na Revela (canônico, OG, login `SITE`), no HUB, no Nossom, no TPEasy (cache v13) e no Carro do Freela.
+  Ficaram com o endereço antigo, que redireciona, os menus do Synquei (`app/`) e do SOBEDESCE (computador e web): mexer
+  neles dispara a publicação do app de computador, que o titular deixou para depois.
+- Login único: o cliente `revela-web` no console do HUB deve usar `https://revela.absolutezro.com/api/zro/callback`.
+- `products/finishing`: `npm test` 89/89; TPEasy 23/23; raiz: lint, formato e typecheck.

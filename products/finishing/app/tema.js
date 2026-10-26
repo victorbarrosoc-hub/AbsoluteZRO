@@ -20,7 +20,7 @@
   // a logo tem letras brancas (para o escuro) e grafite (para o claro); o filme colorido é o mesmo
   function trocarLogos(tema) {
     for (const img of document.querySelectorAll('img[src*="revela-logo"]'))
-      img.src = img.getAttribute('src').replace(/revela-logo(-grafite)?\.png/, tema === 'escuro' ? 'revela-logo.png' : 'revela-logo-grafite.png')
+      img.src = img.getAttribute('src').replace(/revela-logo(-claro)?\.png/, tema === 'escuro' ? 'revela-logo.png' : 'revela-logo-claro.png')
   }
   document.addEventListener('DOMContentLoaded', () => trocarLogos(raiz.dataset.tema === 'escuro' ? 'escuro' : 'claro'))
   aplicar(ler())
