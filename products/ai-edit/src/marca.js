@@ -123,9 +123,9 @@ export function estrelaComBrilho({ cx, cy, r, forma = 'compacta', claro = false,
 <filter id="${id}-brilho" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${n(r * 0.035)}"/></filter>
 </defs>
 <g mask="url(#${id}-mascara)">
-<path d="${estrelaPath(g)}" fill="${tinta[0]}" opacity="${claro ? 0.25 : 0.55}" filter="url(#${id}-brilho)"/>
-<path d="${fiosPath(g)}" fill="${fio}"/>
-<path d="${estrelaPath(g)}" fill="url(#${id}-miolo)"/>
+<path class="acende-miolo" d="${estrelaPath(g)}" fill="${tinta[0]}" opacity="${claro ? 0.25 : 0.55}" filter="url(#${id}-brilho)"/>
+<path class="acende-fios" d="${fiosPath(g)}" fill="${fio}"/>
+<path class="acende-miolo" d="${estrelaPath(g)}" fill="url(#${id}-miolo)"/>
 </g>`
 }
 

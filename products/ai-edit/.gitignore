@@ -3,3 +3,4 @@ dist/
 vendor/
 desktop/build-info.json
 test/tmp-midia/
+publico/
