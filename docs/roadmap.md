@@ -115,10 +115,24 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 ## Fase 4 — AI Edit · Fase 5 — Revela (Finishing)
 
 - 🟡 Scaffolds com contratos e formato de presets ([ai-edit](../products/ai-edit/README.md), [finishing](../products/finishing/README.md)).
-- ⬜ Implementação (AI Edit: decupagem/transcrição primeiro).
+- 🟡 Editor (nome provisório AI Edit), primeiro recorte (26/10/2026, [ADR 0020](decisions/0020-editor-desktop-custo-zero.md)):
+  app de desktop no molde do Synquei (Electron, assinatura ad-hoc, instalação pelo Terminal/PowerShell, Release
+  `ai-edit-app-desktop` publicado só pelo botão), custo zero. Importar (arquivo ou cartões conferidos do SOBEDESCE),
+  Whisper na máquina com tempo por palavra, cortes de silêncio/respiro e zoom propostos para aprovar, linha do tempo
+  magnética com desfazer, cores e etiquetas, legenda animada editável, exportação FCPXML/xmeml/OTIO/EDL/SRT com
+  `ZroTimelineRef` e render MP4 com zoom e legenda. Demo medida em [validation](validation.md). Falta: nome definitivo,
+  publicar o primeiro Release, conferir a ida e volta no Premiere/Final Cut/Resolve reais, medir num Mac e num PC com
+  placa de vídeo, login único e créditos (quando houver recurso pago), entrada do Synquei/NOSSOM/TPeasy.
+- 🟡 AEON (nome e marca do editor, 26/10/2026, [marca](marca/aeon.md)): estrela da Convergência e ΛEON em Montserrat
+  SemiBold; Seus universos (projetos salvos sozinhos), Inspector (volume, opacidade, escala, posição), Histórico,
+  marcadores e ímã na linha do tempo. Site em **aeon.absolutezro.com** (projeto Vercel `aeon`, autorizado pelo titular
+  em 26/10/2026) com o editor no navegador em `/app/`, telas reais do app e imagens do Higgsfield. **Só abre com a conta
+  Absolute ZRO** (decisão do titular): login único em `api/zro/*` (cliente `aeon-web`, mesmo padrão da Revela); falta
+  cadastrar o cliente no console e pôr `ZRO_CLIENT_ID`/`ZRO_CLIENT_SECRET` no projeto Vercel, e o login no app de desktop. Falta: merge na
+  `main` (o deploy de produção saiu da branch), primeiro Release do app de desktop.
 - ⬜ Revela, primeiro recorte: só DaVinci Resolve, cor entregue em PowerGrade e LUT, técnica gerada e criativa entregue ([ADR 0015](decisions/0015-finishing-resolve-powergrade-lut.md)). QC, exportação e media manager vêm depois.
 - ✅ Revela: identidade visual (película perfurada em amarelo filme, revelada em roxo → amarelo; escolha do titular; guia e alternativas em `products/finishing/marca`) aplicada na tela e no HUB — [ADR 0016](decisions/0016-identidade-revela.md).
-- 🟡 Revela: referência → LUT criativa com tela e conta-gotas de pares de cor (`products/finishing`, sem IA, roda no navegador sem enviar imagens, 18 testes com Chromium e a CSP de produção, CI próprio). Projeto Vercel `revela` autorizado pelo titular em 25/10/2026, em revela-zro.vercel.app (`revela.vercel.app` é de outro app), com OG próprio. Falta: LUTs técnicas por câmera, ponte com o Resolve e pacote de entrega.
+- 🟡 Revela: referência → LUT criativa com tela e conta-gotas de pares de cor (`products/finishing`, sem IA, roda no navegador sem enviar imagens, 18 testes com Chromium e a CSP de produção, CI próprio). Projeto Vercel `revela` autorizado pelo titular em 25/10/2026, em revela-zro.vercel.app, hoje revela.absolutezro.com (o endereço antigo redireciona; `revela.vercel.app` é de outro app), com OG próprio. Falta: LUTs técnicas por câmera, ponte com o Resolve e pacote de entrega.
 - 🟡 Revela: entrega por destino (8 presets com fonte e data, script do Resolve testado num Resolve simulado). Falta: teste no Resolve Studio real, presets de emissoras específicas e QC do arquivo renderizado.
 - 🟡 Revela no SOBEDESCE: "Converter com a Revela" no botão direito do Drive (computador) e no menu do vídeo do celular; converte o aparelho que tocou (computador: ffmpeg com hardware e MD5 conferido; celular: no navegador, lendo do Drive por pedaços). Arquivo ao lado do original, presets da Revela. Falta: Mac e Windows reais (VideoToolbox, NVENC), iPhone e Android reais e arquivo final acima de 1,5 GB no celular.
 - ✅ Revela: telas no padrão Apple com pouco texto (cartões visuais, Liquid Glass, motion com "reduzir movimento").
@@ -155,5 +169,5 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
    DNS da Vercel; falta o titular entrar no Workspace e mandar o código de verificação e a chave DKIM).
 4. ~~Domínio do HUB~~: `absolutezro.com` comprado e no ar (26/10/2026), `www` redireciona; falta o retorno do Google (`https://absolutezro.com/entrar/google/retorno`) no Google Cloud.
 5. Manter o AbsoluteZRO público (com cópias de TPeasy e Carro do Freela) ou torná-lo privado.
-6. Nome definitivo do AI Edit (Finishing virou Revela, editor-alvo Resolve: ADR 0015); LGPD, termos e retenção de mídia.
+6. ~~Nome do editor~~: AEON (26/10/2026); falta busca no INPI e autorização para publicar o primeiro Release; LGPD, termos e retenção de mídia.
 7. `GITHUB_TOKEN` (token fino, só leitura de Contents em AbsoluteZRO, baixadordodrive, synquei e nossom) nos projetos Vercel sobedesce, synquei e nossom: sem ele, com os repositórios privados, os downloads ficam indisponíveis ([downloads-privados](operations/downloads-privados.md)).

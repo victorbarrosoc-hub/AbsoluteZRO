@@ -449,7 +449,7 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 ## Central de apps (26/10/2026)
 
 - HUB: `tests/integration/desktop-apps.test.ts` (escolha do arquivo por versão e build, só com SHA-256; NOSSOM pelo
-  Release nossom-v* mais novo ou pelo repositório antigo; GitHub fora do ar não quebra o catálogo; download só de
+  Release nossom-v\* mais novo ou pelo repositório antigo; GitHub fora do ar não quebra o catálogo; download só de
   arquivo reconhecido, com token pelo endereço assinado). Conferido contra os Releases reais: SOBEDESCE 0.1.0 (b1005) e
   Synquei 1.0.0 (b1004) entram com SHA-256; NOSSOM fica de fora sem token (repositório antigo privado).
 - E2E: a página Downloads com a ponte do app simulada instala com progresso, abre, mostra Atualizar e esconde o
@@ -616,6 +616,22 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - Não feito, por depender de outros apps: entrega da Revela subindo pelo SOBEDESCE com MD5 e `delivery.ready` no HUB;
   desconto de `zro.ai_credits` (a Revela não usa GPU de servidor).
 
+## AEON: marca, Seus universos, Inspector, Histórico e site (26/10/2026)
+
+- `products/ai-edit`: `npm test` (unidade, exportadores com xmllint e JSON Schema, SOBEDESCE, instaladores) **27/27**;
+  telas no Chromium **4/4** (+1 que baixa o Whisper, pulada sem rede): caminho inteiro com Inspector (opacidade e
+  escala viram uma ação no desfazer e vão para o FCPXML), marcador (M) e Histórico (volta e avança), autosave em Seus
+  universos, reabrir e religar o vídeo pelo nome, projeto novo 9:16 a 25 qps e renomear. Smoke do Electron ok.
+- Marca: geometria em `src/marca.js` (hipérboles), conferida lado a lado com a prancha do titular; letras do nome em
+  contorno da Montserrat SemiBold (OFL) por `scripts/letras.py`.
+- Site: telas do app tiradas por `scripts/telas.mjs` (o app de verdade, com vídeos de demonstração gravados das imagens
+  do Higgsfield e transcrição trocada por roteiro fixo, porque a fala sintética não tem palavras). Conferido em escuro,
+  claro e 390 px de largura.
+- Não validado: o app no navegador em Safari e Firefox (precisa de WebCodecs; o site indica Chrome ou Edge).
+- Conta obrigatória: `test/zro.test.js` **21/21** (entrar, criar conta, volta, sessão sem token, recusas de state,
+  nonce, emissor, público e assinatura, login desligado → 503) e o teste de tela "só com conta" (sem sessão o editor vai
+  para `entrar.html?volta=/app/`; com sessão o menu mostra a pessoa).
+
 ## Página inicial de cinema (26/10/2026, estrutura escolhida pelo titular)
 
 - Topo: paisagem em preto e branco com o símbolo esculpido em metal sobre a rocha, gerada no Higgsfield (GPT Image
@@ -688,3 +704,13 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Capturas locais (claro e escuro) de `/planos` com 3 apps marcados, `/app/entrar`, `/app` com conta nova e quadros
   da abertura em 0,3 s, 0,9 s, 1,6 s e 2,4 s.
 - Não validado: a abertura e o painel dentro do app instalado (Mac e Windows) até sair o build 1.1.0.
+
+## Revela em revela.absolutezro.com (26/10/2026)
+
+- A pedido do titular, o projeto Vercel `revela` ganhou o domínio `revela.absolutezro.com` (zona do absolutezro.com na
+  própria Vercel, HTTPS no ar). `revela-zro.vercel.app` redireciona (308) para o endereço novo pelo `vercel.json`.
+- Links trocados na Revela (canônico, OG, login `SITE`), no HUB, no Nossom, no TPEasy (cache v13) e no Carro do Freela.
+  Ficaram com o endereço antigo, que redireciona, os menus do Synquei (`app/`) e do SOBEDESCE (computador e web): mexer
+  neles dispara a publicação do app de computador, que o titular deixou para depois.
+- Login único: o cliente `revela-web` no console do HUB deve usar `https://revela.absolutezro.com/api/zro/callback`.
+- `products/finishing`: `npm test` 89/89; TPEasy 23/23; raiz: lint, formato e typecheck.

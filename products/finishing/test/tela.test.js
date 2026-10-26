@@ -156,10 +156,10 @@ test('link compartilhado: tags de OG e imagem 1200×630', async () => {
   await pagina.goto(endereco)
   const meta = (seletor) => pagina.locator(seletor).getAttribute('content')
   const imagem = await meta('meta[property="og:image"]')
-  assert.match(imagem, /^https:\/\/revela-zro\.vercel\.app\/og\.jpg/)
+  assert.match(imagem, /^https:\/\/revela\.absolutezro\.com\/og\.jpg/)
   assert.equal(await meta('meta[name="twitter:card"]'), 'summary_large_image')
   assert.equal(await meta('meta[name="twitter:image"]'), imagem)
-  assert.equal(await meta('meta[property="og:url"]'), 'https://revela-zro.vercel.app/')
+  assert.equal(await meta('meta[property="og:url"]'), 'https://revela.absolutezro.com/')
   // a mesma imagem, servida daqui
   const tamanho = await pagina.evaluate(async () => {
     const img = new Image()
@@ -674,7 +674,7 @@ test('tema: claro por padrão, escuro no menu, lembrado e com a logo certa', asy
   await pagina.goto(endereco + 'lut.html')
   assert.equal(await pagina.evaluate(() => document.documentElement.dataset.tema ?? 'claro'), 'claro')
   assert.equal(await pagina.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(245, 245, 247)')
-  assert.match(await pagina.locator('.marca img').getAttribute('src'), /revela-logo-grafite\.png$/)
+  assert.match(await pagina.locator('.marca img').getAttribute('src'), /revela-logo-claro\.png$/)
   await pagina.getByRole('button', { name: 'Tema escuro' }).click({ force: true })
   assert.equal(await pagina.evaluate(() => document.documentElement.dataset.tema), 'escuro')
   assert.match(await pagina.locator('.marca img').getAttribute('src'), /revela-logo\.png$/)
