@@ -4573,3 +4573,19 @@ html:not(.is-desktop) .so-desktop {
     grid-column: 1 / -1;
   }
 }
+
+/* ───────────── família Absolute ZRO na barra lateral ───────────── */
+/* ícone de cada app com o próprio desenho; 22px ocupando o lugar dos 18px do ícone de linha, para os nomes alinharem */
+.familia-icone {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 0 -2px;
+  border-radius: 6px;
+  object-fit: contain;
+}
+/* recolhido: a lista cresce, então a barra rola em vez de cortar o rodapé */
+.side-recolhida .sidebar {
+  overflow-x: hidden;
+  overflow-y: auto;
+}

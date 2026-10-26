@@ -11553,6 +11553,41 @@ button.tree-twisty:hover {
 .nav-baixo + .sidebar-foot {
   margin-top: 10px;
 }
+/* A família Absolute ZRO (components/sidebar.js): ícone de cada app e o nome. Em janela baixa, só ela rola. */
+.nav-familia {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  margin-top: 14px;
+  scrollbar-width: none;
+}
+.nav-familia::-webkit-scrollbar {
+  display: none;
+}
+.nav-grupo {
+  margin: 0;
+  padding: 4px 10px 6px;
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.nav-familia .nav-item {
+  flex: none;
+  color: var(--text-2);
+}
+.nav-familia .nav-item:hover {
+  color: var(--text);
+}
+.nav-app {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border-radius: 5px;
+  object-fit: contain;
+}
 @media (prefers-reduced-motion: reduce) {
   .tela-entra,
   .nav-item.is-on::before {

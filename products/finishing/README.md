@@ -24,9 +24,46 @@ o fundo preto, para o preto fosco). Guia em [`marca/index.html`](marca/index.htm
 perfurada em amarelo filme, com o quadro revelado na diagonal em roxo → vermelho → laranja → amarelo; versões plana e
 de uma cor, cores, regras de uso e as alternativas estudadas (`marca/alternativas`).
 
+## Página inicial e conta
+
+`index.html` (`app/home.*`): apresentação com motion (comparação antes/depois que se revela, telas reais em MacBook
+e iPhone que entram com a rolagem, faixa de destinos, família Absolute ZRO). Tudo em CSS, com "reduzir movimento".
+Imagens de exemplo: frames da ZRO Filmes (os do site) em `exemplos/`; o "antes" é o mesmo frame em log simulado.
+
+Login único Absolute ZRO (ADR 0012/0014), no padrão do Synquei: `api/zro/{entrar,callback,eu,sair}.js` (funções Node
+da Vercel; `api/_zro.js` não vira rota). Cliente OIDC confidencial `revela-web`, PKCE S256, cookies `rv_zro`/`rv_conta`
+assinados. `entrar.html` mostra fora, dentro ou "chega em breve" (sem `ZRO_CLIENT_ID`/`ZRO_CLIENT_SECRET`, 503). As
+ferramentas seguem abertas sem conta: o topo mostra "Entrar" ou as iniciais.
+
+## Revela Look
+
+`src/cor/looks.js`: o look pronto da plataforma, uma emulação de película feita do zero (matemática própria, sem
+LUT ou DCTL de terceiros). Em Oklab: curva de filme (preto aberto, meio com contraste, altas que deitam), densidade
+(cor forte escurece), verde para oliva, azul para petróleo, pele junta, saturação menor nas altas, sombras frias e
+altas quentes. Na tela de LUT, o botão **Revela Look** entra no lugar da referência; sai `revela-look-33.cube` ou
+`-65.cube` (Rec.709 → Rec.709, depois da conversão do LOG). Contraste, Cor e Intensidade valem para ele também.
+
+## Navegação
+
+As ferramentas (LUT, CST, Entrega, Converter) ficam num dock embaixo, como as páginas do DaVinci Resolve: flutuante no
+computador, barra de abas de ponta a ponta no celular. O menu lateral (`app/menu.js`) traz início, ferramentas e a
+família Absolute ZRO: no computador é um trilho de ícones que abre e fecha (lembrado no navegador); no celular, uma
+gaveta com fundo e Esc.
+
+## CST (espaço de cor)
+
+`cst.html` + `src/cor/espacos.js`: o log da câmera para o espaço de saída, numa LUT de 33 ou 65 pontos. Curvas e
+gamuts que o DaVinci Resolve traz no CST, escritos a partir das fórmulas e primárias publicadas pelos fabricantes:
+Sony S-Log3/S-Log2 (S-Gamut3, S-Gamut3.Cine), ARRI LogC3/LogC4 (AWG3/AWG4), Canon Log/Log 2/Log 3 (Cinema Gamut),
+Panasonic V-Log, Blackmagic Film Gen 5, Fujifilm F-Log/F-Log2, Nikon N-Log, DJI D-Log, RED Log3G10, DaVinci
+Intermediate/Wide Gamut e ACEScct/AP1. Saídas: Rec.709, sRGB, Rec.2020, P3-D65, DaVinci Intermediate e ACEScct.
+Matrizes derivadas das primárias (Bradford quando o branco muda, como no ACES). "Suavizar altas" deita a luz acima
+do joelho em vez de cortar; cor fora do gamut perde saturação em vez de cortar canal. Convenção de nível: valor = código
+de 10 bits ÷ 1023 (o que a LUT recebe no Resolve).
+
 ## Tela
 
-`index.html` + `app/`: a pessoa escolhe (ou solta) a referência e o frame dela, compara antes e depois arrastando sobre
+`lut.html` + `app/`: a pessoa escolhe (ou solta) a referência e o frame dela, compara antes e depois arrastando sobre
 a imagem, ajusta intensidade, liga só contraste ou só cor, escolhe 33 ou 65 pontos e baixa o `.cube`. **Tudo roda no
 navegador**: as imagens não são enviadas para lugar nenhum. Imagens lidas sem conversão de perfil de cor
 (`colorSpaceConversion: 'none'`), como o Resolve exportou. **Fundo sempre preto fosco** (`#0E0E10` com grão neutro),

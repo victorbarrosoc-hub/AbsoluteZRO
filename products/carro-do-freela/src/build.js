@@ -128,7 +128,9 @@ const funcoes = [...new Set(crew.flatMap(c => c.func))]
   .filter(f => f !== 'Não informado')
   .sort((a, b) => a.localeCompare(b, 'pt'));
 
-const html = tpl
+/* o template também cita mídia por "midia:<nome>" (os ícones da família
+   Absolute ZRO no menu, 26/out): mesma regra, nome que falta reprova */
+const html = comMidia(tpl, 'template.html')
   .replace('/*__FONTS__*/', faces)
   .replace('/*__FRAMES__*/', frames)
   .replace('/*__BRECHO_FOTOS__*/{}', () => comMidia(brechoFotos, 'brecho-fotos.json'))
