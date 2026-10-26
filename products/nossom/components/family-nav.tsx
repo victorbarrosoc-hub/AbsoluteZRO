@@ -7,15 +7,15 @@ const FAMILY = [
     name: 'Absolute ZRO',
     icon: '/absolute-zro-o-alpha.webp',
   },
-  { href: 'https://revela-zro.vercel.app', name: 'Revela', icon: '/familia/revela.svg' },
-  { href: 'https://sobedesce.vercel.app', name: 'Sobedesce', icon: '/familia/sobedesce.svg' },
-  { href: 'https://synquei.vercel.app', name: 'Synquei', icon: '/familia/synquei.svg' },
-  { href: 'https://tpeasy.vercel.app', name: 'TPEasy', icon: '/familia/tpeasy.svg' },
   {
     href: 'https://carrodofreela.com.br',
     name: 'Carro do Freela',
     icon: '/familia/carro-do-freela.png',
   },
+  { href: 'https://revela-zro.vercel.app', name: 'Revela', icon: '/familia/revela.svg' },
+  { href: 'https://sobedesce.vercel.app', name: 'Sobedesce', icon: '/familia/sobedesce.svg' },
+  { href: 'https://synquei.vercel.app', name: 'Synquei', icon: '/familia/synquei.svg' },
+  { href: 'https://tpeasy.vercel.app', name: 'TPEasy', icon: '/familia/tpeasy.svg' },
 ] as const;
 
 export default function FamilyNav({ onOpen }: { onOpen?: () => void }) {

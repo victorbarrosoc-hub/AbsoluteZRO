@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
 const ler = (p) => fs.readFileSync(new URL(p, import.meta.url), 'utf8')
-const APPS = ['Absolute ZRO', 'Revela', 'Synquei', 'Nossom', 'TPEasy', 'Carro do Freela']
+const APPS = ['Absolute ZRO', 'Carro do Freela', 'Nossom', 'Revela', 'Synquei', 'TPEasy']
 
 function familia(src) {
   const bloco = src.slice(src.indexOf('const FAMILIA = ['), src.indexOf(']', src.indexOf('const FAMILIA = [')))

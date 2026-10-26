@@ -448,3 +448,14 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   monta o menu lateral nas quatro ferramentas: trilho 68 px ↔ 248 px no computador (lembrado), gaveta no celular.
 - `products/finishing`: `npm test` (**73/73**), com teste novo: dock no rodapé da tela, menu que abre e é lembrado
   entre páginas, item atual marcado, gaveta no celular que fecha com Esc, sem rolagem lateral em 375 px.
+
+## Família Absolute ZRO nos menus de todas as plataformas (26/10/2026)
+
+- A pedido do titular, o bloco "Absolute ZRO" (ícone e nome de cada app, levando ao app) entrou no menu de cada
+  plataforma: HUB (lateral e menu do celular), Revela, Sobedesce (lateral do computador e Ajustes do celular),
+  Synquei (lateral), Nossom (menu do estúdio e gaveta), TPEasy (Ajustes). Ordem alfabética em todas, sem o app atual
+  e sem o AI Edit (em desenvolvimento). Revela sem o selo "Protótipo".
+- Testes: Revela 73/73 (confere a ordem), Sobedesce `test:fast` 706/706 (familia.test.js confere a ordem), Synquei
+  63 (4 pulados sem luajit), TPEasy 23/23, Nossom typecheck, formato, 73/73 e o e2e da família (confere a ordem);
+  HUB lint, typecheck, 113 unitários, build e 16 e2e.
+- Não validado: cliques nos apps de computador (Electron) e em iPhone/Android reais.

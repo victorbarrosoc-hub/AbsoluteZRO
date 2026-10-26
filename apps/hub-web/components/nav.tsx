@@ -31,12 +31,12 @@ const GROUPS: { label: string; items: Item[] }[] = [
 
 // A família Absolute ZRO, como no menu da Revela. O HUB é o app atual, então fica de fora.
 const FAMILY = [
+  { productId: 'carro-do-freela', name: 'Carro do Freela', href: 'https://carrodofreela.com.br' },
+  { productId: 'nossom', name: 'Nossom', href: 'https://nossom-teal.vercel.app' },
   { productId: 'finishing', name: 'Revela', href: 'https://revela-zro.vercel.app' },
   { productId: 'sobedesce', name: 'Sobedesce', href: 'https://sobedesce.vercel.app' },
   { productId: 'synquei', name: 'Synquei', href: 'https://synquei.vercel.app' },
-  { productId: 'nossom', name: 'Nossom', href: 'https://nossom-teal.vercel.app' },
   { productId: 'tpeasy', name: 'TPEasy', href: 'https://tpeasy.vercel.app' },
-  { productId: 'carro-do-freela', name: 'Carro do Freela', href: 'https://carrodofreela.com.br' },
 ]
 
 export function Nav({ admin }: { admin: boolean }) {

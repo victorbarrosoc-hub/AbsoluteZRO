@@ -125,8 +125,8 @@ test('the studio menu lists the Absolute ZRO family with real icons, on desktop 
 }) => {
   await page.goto('/studio');
   const family = page.getByRole('navigation', { name: 'Absolute ZRO', exact: true });
-  const apps = ['Absolute ZRO', 'Revela', 'Sobedesce', 'Synquei', 'TPEasy', 'Carro do Freela'];
-  await expect(family.getByRole('link')).toHaveCount(apps.length);
+  const apps = ['Absolute ZRO', 'Carro do Freela', 'Revela', 'Sobedesce', 'Synquei', 'TPEasy'];
+  await expect(family.getByRole('link')).toHaveText(apps);
   for (const name of apps) {
     const link = family.getByRole('link', { name, exact: true });
     await expect(link).toBeVisible();
