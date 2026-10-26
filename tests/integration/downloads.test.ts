@@ -2,7 +2,15 @@
 import { describe, expect, it } from 'vitest'
 import { DOWNLOADS } from '../../apps/hub-web/lib/downloads'
 
-const OFFICIAL = new Set(['sobedesce.vercel.app', 'synquei.vercel.app', 'nossom-teal.vercel.app', 'tpeasy.vercel.app', 'carrodofreela.com.br'])
+const OFFICIAL = new Set([
+  'sobedesce.vercel.app',
+  'synquei.vercel.app',
+  'nossom-teal.vercel.app',
+  'tpeasy.vercel.app',
+  'carrodofreela.com.br',
+  'aeon.absolutezro.com',
+  'revela.absolutezro.com',
+])
 const CATALOG = ['carro-do-freela', 'tpeasy', 'sobedesce', 'synquei', 'ai-edit', 'nossom', 'finishing']
 
 describe('downloads', () => {

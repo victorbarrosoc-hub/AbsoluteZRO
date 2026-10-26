@@ -130,7 +130,7 @@ describe('conta única e direito de uso', () => {
       headers: { 'x-forwarded-host': 'revela-git-teste.vercel.app', 'x-forwarded-proto': 'https' },
     })
     assert.equal(r.status, 307)
-    assert.equal(r.headers.get('location'), 'https://revela-zro.vercel.app/api/zro/entrar?volta=%2Flut&criar=1')
+    assert.equal(r.headers.get('location'), 'https://revela.absolutezro.com/api/zro/entrar?volta=%2Flut&criar=1')
   })
 
   test('finishing fora de zro_products: entra, mas /eu diz sem acesso e aponta a Absolute ZRO', async () => {
@@ -240,6 +240,6 @@ describe('sessão', () => {
   test('endereço fora da lista: entrar manda para o site oficial antes de começar', async () => {
     const r = await pedir('/api/zro/entrar?volta=/lut', { headers: { 'x-forwarded-host': 'revela-git-teste.vercel.app', 'x-forwarded-proto': 'https' } })
     assert.equal(r.status, 307)
-    assert.equal(r.headers.get('location'), 'https://revela-zro.vercel.app/api/zro/entrar?volta=%2Flut')
+    assert.equal(r.headers.get('location'), 'https://revela.absolutezro.com/api/zro/entrar?volta=%2Flut')
   })
 })

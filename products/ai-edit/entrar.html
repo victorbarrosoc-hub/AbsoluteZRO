@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>AEON · Entrar</title>
+    <meta name="description" content="Entre no AEON com a sua conta Absolute ZRO." />
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#000000" />
+    <meta property="og:title" content="AEON · Time is yours." />
+    <meta property="og:image" content="https://aeon.absolutezro.com/marca/og.jpg" />
+    <link rel="icon" href="marca/aeon-favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="marca/apple-touch-icon.png" />
+    <link rel="preload" href="vendor/fontes/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <script src="site/tema.js"></script>
+    <link rel="stylesheet" href="site/site.css" />
+    <script type="module" src="site/entrar.js"></script>
+  </head>
+  <body class="pagina-entrar">
+    <div class="entrar-fundo" aria-hidden="true"><img src="marca/home/falesia.jpg" alt="" width="2400" height="1357" /></div>
+    <a class="entrar-marca" href="./" aria-label="AEON, página inicial" data-marca="nome"></a>
+
+    <main class="entrar">
+      <section id="fora" class="entrar-bloco" hidden>
+        <h1 class="titulo"><span class="fino">Entre no</span> <span class="forte">AEON.</span></h1>
+        <p class="apoio">Com a sua conta Absolute ZRO.</p>
+        <div class="acoes">
+          <a id="entrar" class="vidro vidro--tinta grande" href="/api/zro/entrar">Entrar com Absolute ZRO</a>
+          <a id="criar" class="vidro grande" href="/api/zro/entrar?criar=1">Criar conta</a>
+        </div>
+      </section>
+
+      <section id="dentro" class="entrar-bloco" hidden>
+        <span id="avatar" class="avatar" aria-hidden="true"></span>
+        <h1 id="ola" class="titulo"></h1>
+        <p id="quem" class="apoio"></p>
+        <p id="semAcesso" class="entrar-aviso" hidden>Sua conta ainda não tem o AEON. <a href="https://absolutezro.com/ferramentas">Ver na Absolute ZRO</a></p>
+        <div class="acoes">
+          <a id="abrir" class="vidro vidro--tinta grande" href="app/">Abrir o AEON</a>
+          <button id="sair" class="vidro grande" type="button">Sair</button>
+        </div>
+      </section>
+
+      <section id="desligado" class="entrar-bloco" hidden>
+        <h1 class="titulo"><span class="fino">Entrar</span> <span class="forte">chega em breve.</span></h1>
+        <p class="apoio">O AEON abre com a sua conta Absolute ZRO.</p>
+        <div class="acoes"><a class="vidro grande" href="https://absolutezro.com/criar-conta">Criar conta na Absolute ZRO</a></div>
+      </section>
+
+      <p id="aviso" class="entrar-aviso" role="status" aria-live="polite"></p>
+    </main>
+
+    <footer class="entrar-rodape"><img src="vendor/marca/absolute-zro-simbolo-branco.svg" alt="" width="16" height="16" /> Uma conta para toda a Absolute ZRO</footer>
+  </body>
+</html>

@@ -75,7 +75,7 @@ describe('Ciclo do O ponta a ponta', () => {
     expect(step('tpeasy').displayState).toBe('done')
     expect(step('sobedesce').displayState).toBe('done')
     expect(step('synquei').displayState).toBe('needs_review')
-    expect(step('ai-edit').displayState).toBe('unavailable')
+    expect(step('ai-edit').displayState).toBe('not_started')
     const run = p.runs.find((r) => r.handler === 'synquei.organization-plan')!
     expect(run.status).toBe('succeeded')
     const plan = (run.result as { plan: { assets: { asset_id: string }[]; moves: unknown[] } }).plan

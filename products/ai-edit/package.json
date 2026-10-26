@@ -1,0 +1,31 @@
+{
+  "name": "ai-edit",
+  "version": "0.1.0",
+  "description": "Editor de vídeo da Absolute ZRO (nome provisório): a IA propõe cortes, zoom e legenda; você aprova. App de desktop para Mac e Windows.",
+  "private": true,
+  "type": "module",
+  "main": "desktop/main.cjs",
+  "author": "Absolute ZRO",
+  "scripts": {
+    "dev": "npx -y http-server -p 8080 -c-1 .",
+    "test": "node --test test/*.test.js",
+    "vendor": "node scripts/vendor.mjs",
+    "desktop": "electron .",
+    "smoke": "electron . --smoke",
+    "dist:mac": "electron-builder --config electron-builder.config.cjs --mac --publish never",
+    "dist:win": "electron-builder --config electron-builder.config.cjs --win --publish never",
+    "dist:linux": "electron-builder --config electron-builder.config.cjs --linux dir --publish never",
+    "medir": "node scripts/medir.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@huggingface/transformers": "4.3.1",
+    "@mediabunny/prores": "1.62.1",
+    "electron": "44.5.1",
+    "electron-builder": "26.15.3",
+    "mediabunny": "1.62.1",
+    "playwright": "1.63.0"
+  }
+}
