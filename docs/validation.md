@@ -590,3 +590,12 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - `products/finishing`: `npm test` **79/79**. Teste novo: ProRes com cinza no código do S-Log3 vira MP4 H.264 com o
   cinza em ~124 (Y de 8 bits, o cinza 18% do Rec.709; sem o CST ficaria perto de 105) e marcado BT.709.
 - Não validado: arquivos reais de cada câmera e o desempenho em celulares.
+
+## AEON na página inicial (26/10/2026)
+
+- Migração 0012: a plataforma de edição vira **AEON** (id `ai-edit` mantido, estágio "em desenvolvimento"), com a linha
+  "Edição com IA: transcrição, cortes e timeline para o seu editor". Só troca o que ainda está como a 0003 deixou.
+- Ícone do AEON (de `products/ai-edit/marca/aeon-icone.svg`, branch `claude/ai-edit-primeiro-recorte`) em
+  `public/products/ai-edit.svg`, recortado até a placa (sem margem), no `ProductMark`: órbita, cartões, planos e HUB.
+- Cartão da home: "A IA propõe. Você aprova." Projeto: etapa "AEON" ainda não lançada. e2e procura "AEON".
+- `npm test` 140/140; e2e 20/20.

@@ -24,7 +24,7 @@ const TAGLINE: Record<string, string> = {
   tpeasy: 'Fale olhando para a câmera.',
   sobedesce: 'Cada cartão copiado e conferido.',
   synquei: 'Solta o cartão. Sai sincronizado.',
-  'ai-edit': 'Decupagem e montagem assistida.',
+  'ai-edit': 'A IA propõe. Você aprova.',
   nossom: 'Seu som, em outra escala.',
   finishing: 'Revela a cor que você quer.',
 }

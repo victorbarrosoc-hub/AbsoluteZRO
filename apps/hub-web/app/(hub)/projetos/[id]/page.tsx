@@ -375,9 +375,9 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
         )}
       </Card>
 
-      <Card id="edicao" title="Decupagem e edição" eyebrow="AI Edit · nome provisório">
+      <Card id="edicao" title="Decupagem e edição" eyebrow="AEON">
         <Notice title="Em desenvolvimento">
-          O AI Edit ainda não existe como ferramenta. O contrato de entrada (mídia sincronizada, briefing, roteiro) e de saída (<code>edit.selects.ready</code>,{' '}
+          O AEON ainda não está lançado. O contrato de entrada (mídia sincronizada, briefing, roteiro) e de saída (<code>edit.selects.ready</code>,{' '}
           <code>edit.timeline.ready</code>) já está definido. Nenhuma IA roda aqui.
         </Notice>
       </Card>

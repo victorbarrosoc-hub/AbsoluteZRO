@@ -56,7 +56,7 @@ test('cadastro → organização → projeto com Ciclo do O e alternativa em lis
   await expect(list.getByRole('listitem')).toHaveCount(7)
   // Sem plano: ferramentas lançadas aparecem bloqueadas por assinatura, futuras indisponíveis
   await expect(list.getByRole('listitem').filter({ hasText: 'Synquei' })).toContainText('Bloqueado por assinatura')
-  await expect(list.getByRole('listitem').filter({ hasText: 'AI Edit' })).toContainText('Indisponível')
+  await expect(list.getByRole('listitem').filter({ hasText: 'AEON' })).toContainText('Indisponível')
 })
 
 test('API: sem assinatura recebe 403 por URL direta; sem sessão 401; outra origem 403', async ({ page, request }) => {
