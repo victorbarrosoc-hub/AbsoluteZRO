@@ -5,8 +5,8 @@ Aprovada pelo titular em 26/10/2026 (prancha "Convergência"): **a estrela de qu
 - **Símbolo**: um miolo pequeno cujas quatro pontas afinam até virar fio (em cada quarto, a hipérbole
   (x + p)(y + q) = c que liga as pontas passando pela diagonal) e, por fora, um fio solto em cada quarto (hipérbole
   (x − gx)(y − gy) = c) que corre paralelo às pontas, separado do miolo por uma faixa vazia. Duas formas:
-  - *compacta* (ícone, favicon, barra do app): pontas quase iguais;
-  - *larga* (assinatura, palco): pontas horizontais longas e finas.
+  - _compacta_ (ícone, favicon, barra do app): pontas quase iguais;
+  - _larga_ (assinatura, palco): pontas horizontais longas e finas.
 - **Plano × palco**: a forma plana tem uma cor só (tamanhos pequenos, barra do app); a de palco (ícone, site,
   abertura) acende o miolo, tem um brilho leve e faz pontas e fios sumirem aos poucos.
 - **Nome**: ΛEON em **Montserrat SemiBold** (escolha do titular, 26/10/2026, entre Michroma, Syncopate, Krona One e

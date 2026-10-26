@@ -449,7 +449,7 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 ## Central de apps (26/10/2026)
 
 - HUB: `tests/integration/desktop-apps.test.ts` (escolha do arquivo por versão e build, só com SHA-256; NOSSOM pelo
-  Release nossom-v* mais novo ou pelo repositório antigo; GitHub fora do ar não quebra o catálogo; download só de
+  Release nossom-v\* mais novo ou pelo repositório antigo; GitHub fora do ar não quebra o catálogo; download só de
   arquivo reconhecido, com token pelo endereço assinado). Conferido contra os Releases reais: SOBEDESCE 0.1.0 (b1005) e
   Synquei 1.0.0 (b1004) entram com SHA-256; NOSSOM fica de fora sem token (repositório antigo privado).
 - E2E: a página Downloads com a ponte do app simulada instala com progresso, abre, mostra Atualizar e esconde o
