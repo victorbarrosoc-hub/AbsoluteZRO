@@ -14,6 +14,12 @@ import { Icon, type IconName } from './icons'
 
 export type CatalogProduct = { id: string; name: string; role: string; provisional?: boolean }
 
+/** Instalação do app Absolute ZRO pelo Terminal (public/instalar.sh e instalar.ps1). */
+const HUB_TERMINAL = {
+  mac: 'curl -fsSL https://absolutezro.com/instalar.sh | bash',
+  windows: 'irm https://absolutezro.com/instalar.ps1 | iex',
+}
+
 const OS_ICON: Record<Os, IconName> = { mac: 'laptop', windows: 'monitor', mobile: 'phone', web: 'globe' }
 
 const STATUS: Record<string, { label: string; tone: 'ok' | 'accent' | 'faint' | 'neutral' }> = {
@@ -204,7 +210,25 @@ export function DownloadsIntro({ heading, hub = SEM_INSTALADOR, aviso }: { headi
                   </a>
                 ))}
               </p>
-              <p>Sem assinatura da Apple e da Microsoft por enquanto: na primeira vez, Abrir (Mac) ou Executar assim mesmo (Windows).</p>
+              {/* Pelo Terminal, como no SOBEDESCE: confere o SHA-256 e instala sem o aviso de app não assinado. */}
+              {hub.mac && (
+                <div className="dl-cmd">
+                  <span>Mac, pelo Terminal (confere o arquivo e evita o aviso)</span>
+                  <div className="dl-cmd__row">
+                    <code>{HUB_TERMINAL.mac}</code>
+                    <CopyButton text={HUB_TERMINAL.mac} label="Copiar comando de instalação do Absolute ZRO para Mac" />
+                  </div>
+                </div>
+              )}
+              {hub.windows && (
+                <div className="dl-cmd">
+                  <span>Windows, pelo PowerShell</span>
+                  <div className="dl-cmd__row">
+                    <code>{HUB_TERMINAL.windows}</code>
+                    <CopyButton text={HUB_TERMINAL.windows} label="Copiar comando de instalação do Absolute ZRO para Windows" />
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <p>

@@ -45,6 +45,11 @@ const FUNDO = '#fcfbfc'
 const ALTURA_BARRA = MAC ? 38 : 0
 const HUB = regras.hubOrigin({ empacotado: app.isPackaged })
 const BUILD = lerBuildInfo(path.join(__dirname, 'build-info.json'))
+// O app abre no painel próprio (como o Creative Cloud), não na página inicial do site.
+const INICIO = HUB + '/app'
+// A abertura da marca fica pelo menos isso na tela (e até o painel carregar, no máximo ABERTURA_MAX).
+const ABERTURA_MIN = 2400
+const ABERTURA_MAX = 7000
 
 // O teste de fumaça usa uma pasta de dados descartável: não mexe na sessão de quem roda.
 if (SMOKE) app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'absolute-zro-smoke-')))
@@ -57,9 +62,10 @@ if (!SMOKE && !app.requestSingleInstanceLock()) {
 
 let win = null
 let view = null
+let capa = null
 let aviso = null
 let central = null
-let ultimaUrl = HUB + '/'
+let ultimaUrl = INICIO
 let deepLinkPendente = regras.deepLinkDosArgs(process.argv, HUB)
 let zoom = 0
 
@@ -84,6 +90,42 @@ function posicionarView() {
   const [w, h] = win.getContentSize()
   const topo = win.isFullScreen() && !MAC ? 0 : ALTURA_BARRA
   view.setBounds({ x: 0, y: topo, width: w, height: Math.max(0, h - topo) })
+  // a abertura cobre a janela inteira (a barra de título também); no Mac os três botões ficam por cima
+  if (capa) capa.setBounds({ x: 0, y: 0, width: w, height: h })
+}
+
+// Abertura da marca (paginas/abertura.html) por cima do painel enquanto ele carrega: o anel se desenha, a estrela
+// aparece inteira e recolhe, o nome entra. Sai com um fade quando o painel está pronto (mínimo ABERTURA_MIN).
+function abrirCapa() {
+  capa = new WebContentsView({ webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, javascript: false } })
+  capa.setBackgroundColor(FUNDO)
+  win.contentView.addChildView(capa)
+  posicionarView()
+  capa.webContents.loadFile(path.join(PAGINAS, 'abertura.html')).catch(() => {})
+  const inicio = Date.now()
+  let pronto = false
+  const tirar = () => {
+    if (!capa) return
+    const c = capa
+    capa = null
+    c.webContents
+      .insertCSS('body{opacity:0}')
+      .catch(() => {})
+      .finally(() =>
+        setTimeout(() => {
+          if (win && !win.isDestroyed()) win.contentView.removeChildView(c)
+          c.webContents.close()
+        }, 480),
+      )
+  }
+  const talvez = () => {
+    if (pronto) setTimeout(tirar, Math.max(0, ABERTURA_MIN - (Date.now() - inicio)))
+  }
+  view.webContents.once('did-finish-load', () => {
+    pronto = true
+    talvez()
+  })
+  setTimeout(tirar, ABERTURA_MAX)
 }
 
 function aplicarZoom(nivel) {
@@ -156,6 +198,7 @@ function criarJanela() {
   })
   view.setBackgroundColor(FUNDO)
   win.contentView.addChildView(view)
+  if (!SMOKE) abrirCapa()
   posicionarView()
   for (const ev of ['resize', 'enter-full-screen', 'leave-full-screen', 'maximize', 'unmaximize']) win.on(ev, posicionarView)
   for (const ev of ['focus', 'blur', 'enter-full-screen', 'leave-full-screen']) win.on(ev, estadoBarra)
@@ -170,6 +213,8 @@ function criarJanela() {
     if (salvo.telaCheia) win.setFullScreen(true)
   }
   view.webContents.once('dom-ready', mostrar)
+  // com a abertura, a janela aparece já com ela pintada
+  if (capa) capa.webContents.once('dom-ready', mostrar)
   setTimeout(mostrar, 2500)
 
   const wc = view.webContents
@@ -222,7 +267,7 @@ function criarJanela() {
   })
 
   if (SMOKE) mostrarSemConexao('rede')
-  else wc.loadURL(deepLinkPendente || HUB + '/').catch(() => {})
+  else wc.loadURL(deepLinkPendente || INICIO).catch(() => {})
   deepLinkPendente = null
   return win
 }
@@ -252,7 +297,7 @@ const daBarra = (e) => !!win && e.sender === win.webContents && e.senderFrame ==
 
 ipcMain.handle('zro:tentar-de-novo', (e) => {
   if (!daView(e)) return false
-  view.webContents.loadURL(regras.ehDoHub(ultimaUrl, HUB) ? ultimaUrl : HUB + '/').catch(() => {})
+  view.webContents.loadURL(regras.ehDoHub(ultimaUrl, HUB) ? ultimaUrl : INICIO).catch(() => {})
   return true
 })
 ipcMain.handle('zro:abrir-no-navegador', (e) => {
@@ -266,7 +311,7 @@ ipcMain.handle('barra:acao', (e, acao) => {
   if (acao === 'voltar' && wc.navigationHistory.canGoBack()) wc.navigationHistory.goBack()
   else if (acao === 'avancar' && wc.navigationHistory.canGoForward()) wc.navigationHistory.goForward()
   else if (acao === 'recarregar') recarregar(false)
-  else if (acao === 'inicio') wc.loadURL(HUB + '/').catch(() => {})
+  else if (acao === 'inicio') wc.loadURL(INICIO).catch(() => {})
   else if (acao === 'duplo-clique' && MAC) {
     const pref = systemPreferences.getUserDefault('AppleActionOnDoubleClick', 'string')
     if (pref === 'Minimize') win.minimize()
@@ -322,7 +367,7 @@ function recarregar(semCache) {
   if (!view) return
   const wc = view.webContents
   // na tela "Sem conexão", recarregar = tentar o HUB de novo
-  if (ehPaginaLocal(wc.getURL())) return wc.loadURL(regras.ehDoHub(ultimaUrl, HUB) ? ultimaUrl : HUB + '/').catch(() => {})
+  if (ehPaginaLocal(wc.getURL())) return wc.loadURL(regras.ehDoHub(ultimaUrl, HUB) ? ultimaUrl : INICIO).catch(() => {})
   if (semCache) wc.reloadIgnoringCache()
   else wc.reload()
 }
@@ -400,7 +445,7 @@ function menu() {
           click: () =>
             wc() &&
             wc()
-              .loadURL(HUB + '/')
+              .loadURL(INICIO)
               .catch(() => {}),
         },
         { label: 'Abrir no navegador', accelerator: 'CmdOrCtrl+Shift+O', click: () => abrirFora(ultimaUrl) },
@@ -459,7 +504,7 @@ function menu() {
       role: 'help',
       submenu: [
         { label: 'Absolute ZRO no navegador', click: () => abrirFora(HUB + '/') },
-        { label: 'Apps da Absolute ZRO', click: () => (view ? view.webContents.loadURL(HUB + '/downloads').catch(() => {}) : null) },
+        { label: 'Apps da Absolute ZRO', click: () => (view ? view.webContents.loadURL(INICIO).catch(() => {}) : null) },
         ...(MAC
           ? []
           : [{ type: 'separator' }, { label: 'Procurar nova versão…', click: () => procurarVersao() }, { label: 'Sobre o Absolute ZRO', click: sobre }]),

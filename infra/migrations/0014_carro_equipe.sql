@@ -1,4 +1,4 @@
--- Absolute ZRO HUB · 0013 · Carro do Freela → HUB: o job vira projeto e a equipe da escala vira a equipe do projeto.
+-- Absolute ZRO HUB · 0014 · Carro do Freela → HUB: o job vira projeto e a equipe da escala vira a equipe do projeto.
 -- 1. Escopo de API carro-do-freela.jobs: o site do Carro chama a API do HUB com o token da pessoa (Bearer), sem
 --    cookie do HUB. Só o cliente do produto recebe o escopo; organização e papel continuam saindo do banco.
 -- 2. Papel "guest" (convidado): entra na organização para os projetos em que foi escalado e vê só eles. Um freela

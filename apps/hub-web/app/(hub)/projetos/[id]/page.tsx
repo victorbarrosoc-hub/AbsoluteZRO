@@ -421,10 +421,11 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
       </Card>
 
       <Card id="edicao" title="Decupagem e edição" eyebrow="AEON">
-        <Notice title="Em desenvolvimento">
-          O AEON ainda não está lançado. O contrato de entrada (mídia sincronizada, briefing, roteiro) e de saída (<code>edit.selects.ready</code>,{' '}
-          <code>edit.timeline.ready</code>) já está definido. Nenhuma IA roda aqui.
-        </Notice>
+        <p className="zro-mute">
+          O AEON edita no próprio app: propõe cortes, zoom e legenda para você aprovar e entrega a timeline para o seu editor. O HUB não processa nada aqui; a
+          passagem segue os contratos <code>edit.selects.ready</code> e <code>edit.timeline.ready</code>.
+        </p>
+        <StepAccess step={step('ai-edit')} />
       </Card>
 
       <Card id="som" title="Som" eyebrow="NOSSOM">
@@ -436,7 +437,7 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
       </Card>
 
       <Card id="finalizacao" title="Finalização e entregas" eyebrow="Revela">
-        <Notice title="Em desenvolvimento">Começa pela cor no DaVinci Resolve: LUT a partir de uma referência e entrega em PowerGrade e LUT.</Notice>
+        <p className="zro-mute">A Revela cuida da cor no DaVinci Resolve: LUT a partir de uma referência e entregas por destino.</p>
         {entregas.length ? (
           <ul className="list-plain">
             {entregas.map((e) => (

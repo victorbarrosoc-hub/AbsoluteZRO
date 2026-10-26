@@ -35,7 +35,7 @@ const GROUPS: { label: string; items: Item[] }[] = [
 const FAMILY = [
   { productId: 'carro-do-freela', name: 'Carro do Freela', href: 'https://carrodofreela.com.br' },
   { productId: 'nossom', name: 'Nossom', href: 'https://nossom-teal.vercel.app' },
-  { productId: 'finishing', name: 'Revela', href: 'https://revela-zro.vercel.app' },
+  { productId: 'finishing', name: 'Revela', href: 'https://revela.absolutezro.com' },
   { productId: 'sobedesce', name: 'Sobedesce', href: 'https://sobedesce.vercel.app' },
   { productId: 'synquei', name: 'Synquei', href: 'https://synquei.vercel.app' },
   { productId: 'tpeasy', name: 'TPEasy', href: 'https://tpeasy.vercel.app' },

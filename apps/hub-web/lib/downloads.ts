@@ -97,8 +97,18 @@ export const DOWNLOADS: DownloadEntry[] = [
     note: 'Funciona no navegador, no computador e no celular.',
     options: [{ os: 'web', label: 'Navegador', detail: 'Computador ou celular', href: 'https://carrodofreela.com.br', format: 'Sem instalar' }],
   },
-  { productId: 'ai-edit', status: 'soon', options: [] },
-  { productId: 'finishing', status: 'soon', options: [] },
+  {
+    productId: 'ai-edit',
+    status: 'web',
+    note: 'Abre no navegador, com a conta Absolute ZRO.',
+    options: [{ os: 'web', label: 'Navegador', detail: 'Computador', href: 'https://aeon.absolutezro.com', format: 'Sem instalar' }],
+  },
+  {
+    productId: 'finishing',
+    status: 'web',
+    note: 'Abre no navegador, no computador e no celular.',
+    options: [{ os: 'web', label: 'Navegador', detail: 'Computador ou celular', href: 'https://revela.absolutezro.com', format: 'Sem instalar' }],
+  },
 ]
 
 export const downloadFor = (productId: string) => DOWNLOADS.find((d) => d.productId === productId)

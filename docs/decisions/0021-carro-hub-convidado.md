@@ -1,4 +1,4 @@
-# ADR 0020 — Carro do Freela → HUB: token de app e o papel "convidado"
+# ADR 0021 — Carro do Freela → HUB: token de app e o papel "convidado"
 
 Data: 26/10/2026 · Pedido do titular (job vira projeto; a equipe da escala vira a equipe do projeto)
 
@@ -11,7 +11,7 @@ domínio) não tinha como enviar. E a equipe escalada não tinha lugar no HUB se
 ## Decisão
 
 - **Token de app nas rotas do produto.** Escopo `carro-do-freela.jobs` (`PRODUCT_SCOPES` em `packages/auth/src/oidc.ts`),
-  dado só ao cliente do Carro (no cadastro e pela migration 0013). `route(handler, { bearer })` aceita
+  dado só ao cliente do Carro (no cadastro e pela migration 0014). `route(handler, { bearer })` aceita
   `Authorization: Bearer <at+jwt>`: confere assinatura, emissor, validade, escopo, app ativo e acesso não removido no
   Perfil (`authenticateAccessToken`). Pedido com Bearer pula a checagem de origem (não é credencial que o navegador
   manda sozinho). A organização é a do token e o papel sai do banco no `authorize()`; papel de plataforma nunca vem
@@ -30,5 +30,5 @@ domínio) não tinha como enviar. E a equipe escalada não tinha lugar no HUB se
 
 - Sem cadastro duplicado: o convite vai para a conta que já existe; aceitar exige entrar com ela.
 - O link do convite só vai por e-mail; sem provedor de e-mail, o convite fica pendente e aparece no projeto.
-- Antes de ligar em produção: aplicar a migration 0013 (o Carro recua sozinho para o login sem o escopo enquanto ela
+- Antes de ligar em produção: aplicar a migration 0014 (o Carro recua sozinho para o login sem o escopo enquanto ela
   não existir) e quem já entrou no Carro precisa entrar de novo para guardar o acesso.

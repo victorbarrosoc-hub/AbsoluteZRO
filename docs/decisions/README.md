@@ -21,4 +21,5 @@ Cada decisão é reversível salvo indicação. Formato: contexto, decisão, con
 | [0015](0015-finishing-resolve-powergrade-lut.md) | Revela (ex-Finishing): só Resolve, cor em PowerGrade e LUT     | aceita                |
 | [0016](0016-identidade-revela.md)                | Identidade visual da Revela                                    | aceita                |
 | [0019](0019-vendas-stripe.md)                    | Vendas pelo Stripe: avulso + Completo, teste de 7 dias         | aceita                |
-| [0020](0020-carro-hub-convidado.md)              | Carro → HUB: token de app e o papel convidado                  | aceita                |
+| [0020](0020-editor-desktop-custo-zero.md)        | Editor de vídeo: app de desktop, custo zero, IA na máquina     | aceita                |
+| [0021](0021-carro-hub-convidado.md)              | Carro → HUB: token de app e o papel convidado                  | aceita                |

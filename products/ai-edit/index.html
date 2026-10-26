@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>AEON · Time is yours.</title>
+    <meta name="description" content="AEON, o editor de vídeo da Absolute ZRO. A IA propõe cortes, zoom e legenda; você aprova. Leve para o Premiere, o Final Cut e o DaVinci, ou saia com o vídeo pronto." />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#000000" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="AEON" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:title" content="AEON · Time is yours." />
+    <meta property="og:description" content="O espaço entre os instantes. O editor de vídeo da Absolute ZRO: a IA propõe, você aprova." />
+    <meta property="og:image" content="https://aeon.absolutezro.com/marca/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="ΛEON · Time is yours." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="marca/aeon-favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="marca/apple-touch-icon.png" />
+    <link rel="preload" href="vendor/fontes/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <script src="site/tema.js"></script>
+    <link rel="stylesheet" href="site/site.css" />
+    <script type="module" src="site/home.js"></script>
+  </head>
+  <body>
+    <a class="pular" href="#produto">Pular para o conteúdo</a>
+
+    <header class="nav" id="nav">
+      <div class="nav-esq">
+        <button class="nav-icone" id="menuAbrir" type="button" aria-label="Abrir menu" aria-controls="menu" aria-expanded="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5h16M4 12h16M4 16.5h10" /></svg>
+        </button>
+        <a class="nav-marca" href="./" aria-label="AEON, página inicial"><span data-marca="simbolo"></span><span data-marca="nome"></span></a>
+      </div>
+      <nav class="nav-links" aria-label="Seções">
+        <a href="#produto">Produto</a>
+        <a href="#como-funciona">Como funciona</a>
+        <a href="#recursos">Recursos</a>
+        <a href="#ecossistema">Ecossistema</a>
+        <a href="#baixar">Baixar</a>
+      </nav>
+      <div class="nav-dir">
+        <button class="nav-icone" id="tema" type="button" aria-label="Tema claro ou escuro" title="Tema claro ou escuro">
+          <svg viewBox="0 0 24 24" aria-hidden="true" class="ic-sol"><circle cx="12" cy="12" r="4" /><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" /></svg>
+          <svg viewBox="0 0 24 24" aria-hidden="true" class="ic-lua"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" /></svg>
+        </button>
+        <a class="nav-entrar" href="entrar.html" data-conta>Entrar</a>
+        <a class="vidro vidro--tinta pequeno" href="app/">Começar a criar</a>
+      </div>
+    </header>
+
+    <!-- menu recolhível: seções, conta e a família Absolute ZRO -->
+    <div class="veu" id="veu" hidden></div>
+    <aside class="menu" id="menu" aria-label="Menu" inert>
+      <div class="menu-topo">
+        <span class="menu-marca" data-marca="nome"></span>
+        <button class="nav-icone" id="menuFechar" type="button" aria-label="Fechar menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" /></svg></button>
+      </div>
+      <nav class="menu-links" aria-label="Seções do menu">
+        <a href="#produto">Produto</a>
+        <a href="#como-funciona">Como funciona</a>
+        <a href="#recursos">Recursos</a>
+        <a href="#ecossistema">Ecossistema</a>
+        <a href="#baixar">Baixar</a>
+        <a href="app/">Abrir o AEON</a>
+      </nav>
+      <p class="menu-grupo">Sua conta</p>
+      <div class="menu-conta">
+        <a class="vidro vidro--tinta" href="entrar.html">Entrar</a>
+        <a class="vidro" href="entrar.html?criar=1">Criar conta</a>
+      </div>
+      <p class="menu-grupo">Absolute ZRO</p>
+      <ul class="menu-familia" id="menuFamilia"></ul>
+    </aside>
+
+    <main>
+      <!-- 1 · Time is yours: a estrela é a luz da cena (vídeo em loop, a foto enquanto carrega) -->
+      <section class="hero" aria-labelledby="hero-titulo">
+        <div class="hero-fundo" aria-hidden="true">
+          <img src="marca/home/falesia.jpg" alt="" width="2400" height="1357" fetchpriority="high" />
+          <video id="heroVideo" muted loop playsinline preload="auto" poster="marca/home/falesia.jpg" data-src="marca/home/falesia.mp4"></video>
+        </div>
+        <div class="hero-texto">
+          <h1 id="hero-titulo" class="hero-titulo"><span class="fino">Time is</span> <span class="forte">yours.</span></h1>
+          <p class="hero-sub">O espaço entre os instantes.</p>
+          <div class="acoes">
+            <a class="vidro vidro--tinta grande" href="app/">Começar a criar</a>
+            <a class="vidro grande" href="#como-funciona">Como funciona</a>
+          </div>
+        </div>
+        <a class="rolar" href="#produto" aria-label="Rolar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6" /></svg></a>
+      </section>
+
+      <!-- 1b · o espaço entre os instantes: a salina inteira, sem efeito -->
+      <section class="cena" aria-labelledby="cena-titulo">
+        <img src="marca/home/salina-estrela.jpg" alt="" width="2400" height="1357" loading="lazy" />
+        <h2 id="cena-titulo" class="cena-titulo ao-rolar"><span class="fino">O espaço</span> <span class="forte">entre os instantes.</span></h2>
+      </section>
+
+      <!-- 2 · Do registro à narrativa: a tela de verdade num MacBook -->
+      <section class="produto" id="produto" aria-labelledby="produto-titulo">
+        <div class="cabeca-sec ao-rolar">
+          <p class="olho">Produto</p>
+          <h2 id="produto-titulo" class="titulo"><span class="fino">Do registro</span> <span class="forte">à narrativa.</span></h2>
+          <p class="apoio">A IA propõe os cortes, o zoom e a legenda. Você aprova.</p>
+        </div>
+        <figure class="mac" id="mac">
+          <div class="mac-tela"><img src="marca/home/app-edicao.jpg" alt="A tela de Edição do AEON: o vídeo com legenda, o Inspector e a linha do tempo com clipes coloridos, etiquetas, forma de onda e marcador" width="1600" height="1000" loading="lazy" /></div>
+          <div class="mac-base" aria-hidden="true"></div>
+        </figure>
+      </section>
+
+      <!-- 3 · Importar → Construir → Exportar -->
+      <section class="fluxo" id="como-funciona" aria-labelledby="fluxo-titulo">
+        <div class="cabeca-sec ao-rolar">
+          <p class="olho">Como funciona</p>
+          <h2 id="fluxo-titulo" class="titulo"><span class="fino">Três passos.</span> <span class="forte">Você no comando.</span></h2>
+        </div>
+        <ol class="passos">
+          <li class="passo ao-rolar">
+            <img src="marca/home/app-midia.jpg" alt="Página Mídia: três vídeos importados, com miniatura, duração e formato" width="1600" height="1000" loading="lazy" />
+            <span class="passo-n" data-cor="azul">1</span>
+            <h3>Importar</h3>
+            <p>Do computador ou direto do SOBEDESCE.</p>
+          </li>
+          <li class="passo ao-rolar">
+            <img src="marca/home/app-revisar.jpg" alt="Página Revisar: silêncios, respiros e zooms propostos, cada um com aprovar e recusar" width="1600" height="1000" loading="lazy" />
+            <span class="passo-n" data-cor="laranja">2</span>
+            <h3>Construir</h3>
+            <p>Revise, aprove em lote, ajuste na linha.</p>
+          </li>
+          <li class="passo ao-rolar">
+            <img src="marca/home/app-entrega.jpg" alt="Página Entrega: Premiere Pro, Final Cut Pro, DaVinci Resolve e vídeo final" width="1600" height="1000" loading="lazy" />
+            <span class="passo-n" data-cor="verde">3</span>
+            <h3>Exportar</h3>
+            <p>Para o seu editor, ou o vídeo pronto.</p>
+          </li>
+        </ol>
+      </section>
+
+      <!-- 4 · Recursos: forma, pouco texto -->
+      <section class="recursos" id="recursos" aria-labelledby="recursos-titulo">
+        <div class="cabeca-sec ao-rolar">
+          <p class="olho">Recursos</p>
+          <h2 id="recursos-titulo" class="titulo"><span class="fino">Corta o tempo.</span> <span class="forte">Não o seu estilo.</span></h2>
+        </div>
+        <ul class="grade">
+          <li class="cartao largo ao-rolar">
+            <img src="marca/home/app-texto.jpg" alt="O texto falado ao lado do vídeo: clicar numa palavra leva até ela, dois cliques corrigem" width="1600" height="1000" loading="lazy" />
+            <div class="cartao-texto"><h3>Legenda que se edita como texto.</h3><p>Transcrição na sua máquina.</p></div>
+          </li>
+          <li class="cartao ao-rolar" data-cor="laranja"><span class="cartao-icone"><svg viewBox="0 0 24 24"><circle cx="6.5" cy="6.5" r="2.5" /><circle cx="6.5" cy="17.5" r="2.5" /><path d="M8.5 8l11 9.5M8.5 16l11-9.5" /></svg></span><h3>Silêncio e respiro</h3><p>Em lote, nunca no meio da palavra.</p></li>
+          <li class="cartao ao-rolar" data-cor="roxo"><span class="cartao-icone"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg></span><h3>Zoom na fala</h3><p>Punch-in nas frases de ênfase.</p></li>
+          <li class="cartao ao-rolar" data-cor="verde"><span class="cartao-icone"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="7" height="10" rx="2" /><rect x="11" y="7" width="10" height="10" rx="2" /></svg></span><h3>Cores e etiquetas</h3><p>A linha do tempo do seu jeito.</p></li>
+          <li class="cartao ao-rolar" data-cor="azul"><span class="cartao-icone"><svg viewBox="0 0 24 24"><path d="M12 15V3.5M7.5 8L12 3.5 16.5 8M4.5 13v4.5a2.5 2.5 0 0 0 2.5 2.5h10a2.5 2.5 0 0 0 2.5-2.5V13" /></svg></span><h3>Premiere, Final Cut, DaVinci</h3><p>Cores e marcadores vão junto.</p></li>
+          <li class="cartao ao-rolar" data-cor="menta"><span class="cartao-icone"><svg viewBox="0 0 24 24"><path d="M9 7L4.5 11.5 9 16M5 11.5h9.5a5 5 0 0 1 0 10H12" /></svg></span><h3>Salva sozinho</h3><p>Histórico de cada passo.</p></li>
+          <li class="cartao ao-rolar" data-cor="rosa"><span class="cartao-icone"><svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="9.5" rx="2.5" /><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" /></svg></span><h3>Fica com você</h3><p>Nada é enviado, movido ou apagado.</p></li>
+          <li class="cartao largo ao-rolar">
+            <img src="marca/home/app-edicao-claro.jpg" alt="A Edição do AEON no tema claro" width="1600" height="1000" loading="lazy" />
+            <div class="cartao-texto"><h3>Escuro para criar. Claro quando quiser.</h3><p>Um toque troca o tema.</p></div>
+          </li>
+        </ul>
+      </section>
+
+      <!-- 5 · o estúdio, inteiro -->
+      <section class="cena" aria-labelledby="estudio-titulo">
+        <img src="marca/home/estudio.jpg" alt="" width="2400" height="1357" loading="lazy" />
+        <h2 id="estudio-titulo" class="cena-titulo ao-rolar"><span class="fino">Edite</span> <span class="forte">além do tempo.</span></h2>
+      </section>
+
+      <!-- 6 · Ecossistema -->
+      <section class="ecossistema" id="ecossistema" aria-labelledby="eco-titulo">
+        <div class="cabeca-sec ao-rolar">
+          <p class="olho">Ecossistema</p>
+          <h2 id="eco-titulo" class="titulo"><span class="fino">Uma conta.</span> <span class="forte">Todo o caminho.</span></h2>
+          <p class="apoio">Do cartão de memória à entrega, os apps da Absolute ZRO se reconhecem.</p>
+        </div>
+        <ol class="caminho ao-rolar" id="caminho"></ol>
+      </section>
+
+      <!-- 6b · Baixar: o app de computador, instalado pelo Terminal ou pelo PowerShell (como SOBEDESCE e Synquei) -->
+      <section class="baixar" id="baixar" aria-labelledby="baixar-titulo">
+        <div class="cabeca-sec ao-rolar">
+          <p class="olho">Baixar</p>
+          <h2 id="baixar-titulo" class="titulo"><span class="fino">No seu</span> <span class="forte">computador.</span></h2>
+          <p class="apoio">Cole no Terminal ou no PowerShell. Depois, entre com a sua conta Absolute ZRO.</p>
+        </div>
+        <div class="sistemas ao-rolar">
+          <div class="sistema">
+            <svg class="sistema-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.9-.9-3.1-.8-1.6 0-3.1.9-3.9 2.4-1.7 2.9-.4 7.2 1.2 9.6.8 1.2 1.7 2.4 3 2.4 1.2 0 1.6-.8 3.1-.8s1.8.8 3.1.8c1.3 0 2.1-1.2 2.9-2.3.9-1.3 1.3-2.6 1.3-2.7 0 0-2.7-1-2.7-4.2zM14.1 5.6c.6-.8 1.1-1.9 1-3-1 0-2.1.6-2.8 1.4-.6.7-1.1 1.8-1 2.9 1.1.1 2.1-.5 2.8-1.3z" fill="currentColor" /></svg>
+            <h3>Mac</h3>
+            <p>macOS 12 ou mais novo, Apple Silicon e Intel.</p>
+            <div class="comando"><code id="cmdMac">curl -fsSL https://aeon.absolutezro.com/instalar.sh | bash</code><button type="button" class="vidro pequeno" data-copiar="cmdMac">Copiar</button></div>
+          </div>
+          <div class="sistema">
+            <svg class="sistema-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.5l7.4-1v7.1H3zm0 13l7.4 1v-7H3zm8.3 1.1L21 21v-8.4h-9.7zm0-15.2v7.2H21V3z" fill="currentColor" /></svg>
+            <h3>Windows</h3>
+            <p>Windows 10 e 11, 64 bits.</p>
+            <div class="comando"><code id="cmdWin">irm https://aeon.absolutezro.com/instalar.ps1 | iex</code><button type="button" class="vidro pequeno" data-copiar="cmdWin">Copiar</button></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7 · fim -->
+      <section class="fim" aria-labelledby="fim-titulo">
+        <div class="fim-simbolo" aria-hidden="true" data-marca="simbolo"></div>
+        <h2 id="fim-titulo" class="titulo"><span class="fino">O futuro começa</span> <span class="forte">do zero.</span></h2>
+        <div class="acoes">
+          <a class="vidro vidro--tinta grande" href="app/">Começar a criar</a>
+          <a class="vidro grande" href="entrar.html?criar=1">Criar conta</a>
+        </div>
+        <p class="nota">No computador ou no navegador (Chrome ou Edge), com a sua conta Absolute ZRO.</p>
+      </section>
+    </main>
+
+    <footer class="rodape">
+      <a class="rodape-zro" href="https://absolutezro.com"><img src="vendor/marca/absolute-zro-simbolo-branco.svg" alt="" width="20" height="20" data-zro /><span>Uma ferramenta Absolute ZRO</span></a>
+      <nav aria-label="Rodapé"><a href="app/">Abrir o AEON</a><a href="entrar.html">Entrar</a><a href="https://github.com/victorbarrosoc-hub/AbsoluteZRO/tree/main/products/ai-edit">Código</a></nav>
+      <p>© 2026 Absolute ZRO</p>
+    </footer>
+  </body>
+</html>
