@@ -29,7 +29,8 @@ const noMatiz = (h, centro, largura) => {
   return d >= largura ? 0 : 0.5 + 0.5 * Math.cos((Math.PI * d) / largura)
 }
 
-export const REVELA_LOOK = {
+// a primeira versão do motor (25/10/2026): base dos outros looks, que continuam iguais
+const BASE = {
   id: 'revela',
   nome: 'Revela Look',
   preto: 0.045, // L do preto: aberto, sem esmagar
@@ -46,13 +47,33 @@ export const REVELA_LOOK = {
 }
 
 /**
+ * Revela Look (26/10/2026): o mesmo motor, calibrado nos stills de produções do titular (Rec.709 → o grade de película
+ * que ele usa no Resolve, 3 cenas, fora do repositório). Erro médio de 6,2 para 2,8 (ΔE Oklab ×100) nessas cenas.
+ * São só os parâmetros abaixo: o look continua sendo este motor, não uma LUT copiada.
+ */
+export const REVELA_LOOK = {
+  ...BASE,
+  preto: 0.042,
+  branco: 0.961,
+  contraste: 7.9, // meio mais denso, como numa cópia
+  pivo: 0.387, // o meio-tom desce
+  densidade: 0.5, // cor saturada pesa bem mais
+  verde: { ...BASE.verde, gira: -23, croma: 0.52 }, // verde oliva e contido
+  azul: { ...BASE.azul, gira: -40, croma: 0.5 }, // azul vira petróleo/ciano, sem gritar
+  pele: { ...BASE.pele, junta: 0.8 }, // pele se junta forte no tom de pele
+  sombras: [-0.001, -0.0013], // sombra quase neutra
+  altas: [-0.0104, 0.0519], // altas douradas
+  saturacao: 1.12,
+}
+
+/**
  * Os looks da Revela: o mesmo motor de película, com outra curva, outra densidade e outra separação. Todos são feitos
  * aqui, do zero (nenhum vem de pack de terceiros). A ordem é a da grade na tela de LUT.
  */
 export const LOOKS = [
   REVELA_LOOK,
   {
-    ...REVELA_LOOK,
+    ...BASE,
     id: 'suave',
     nome: 'Suave',
     frases: ['Preto leitoso, pouco contraste.', 'Cor contida, separação leve.'],
@@ -65,7 +86,7 @@ export const LOOKS = [
     altas: [0.006, 0.016],
   },
   {
-    ...REVELA_LOOK,
+    ...BASE,
     id: 'petroleo',
     nome: 'Petróleo',
     frases: ['Mais contraste.', 'Sombras petróleo, altas laranja.'],
@@ -75,17 +96,17 @@ export const LOOKS = [
     altas: [0.02, 0.045], // alta laranja
   },
   {
-    ...REVELA_LOOK,
+    ...BASE,
     id: 'dourado',
     nome: 'Dourado',
     frases: ['Verde mais oliva.', 'Sombras e altas quentes.'],
-    verde: { ...REVELA_LOOK.verde, gira: -24, croma: 0.74 },
+    verde: { ...BASE.verde, gira: -24, croma: 0.74 },
     saturacao: 1.08,
     sombras: [0.012, 0.02], // sombra quente
     altas: [0.016, 0.05],
   },
   {
-    ...REVELA_LOOK,
+    ...BASE,
     id: 'pb',
     nome: 'P&B',
     frases: ['Preto e branco com a curva de filme.'],
