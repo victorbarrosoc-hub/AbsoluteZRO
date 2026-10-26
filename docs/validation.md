@@ -627,3 +627,14 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   fechamento. Saíram a órbita, o explorador, a linha do job à entrega, os números e os downloads repetidos.
 - Conferido em 1440×900 e 390×844, claro e escuro, sem rolagem horizontal nem erro no console. e2e 20/20 (o teste do
   login único falhou uma vez no axe por `document-title` antes do título carregar e passou ao repetir).
+
+## App Absolute ZRO para computador no ar (26/10/2026)
+
+- Pedido do titular: download público do app (central das ferramentas com a conta única), também pelo Terminal como no
+  SOBEDESCE. `HUB_DESKTOP_PUBLICO=1` em produção no projeto `absolutezro`; Release `hub-desktop` build 10 (1.0.0) com
+  `.dmg` e `.exe` e SHA-256 em `/baixar/hub/versao`.
+- `public/instalar.sh` (Mac) e `public/instalar.ps1` (Windows), derivados dos do SOBEDESCE: leem `/baixar/hub/versao`,
+  baixam `/baixar/hub/{mac,windows}`, conferem o SHA-256, fecham o app aberto, instalam ("Absolute ZRO.app" em
+  Aplicativos sem quarentena; NSIS em silêncio para o usuário) e abrem. `sh -n` ok. O cartão do app em `/baixar` mostra
+  os dois comandos com botão de copiar.
+- Não validado: a instalação real num Mac e num Windows (sem aparelho aqui).
