@@ -36,7 +36,7 @@ async function abrir(b,vp,lado){
 }
 
 (async()=>{
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
 
   /* ============ 1. a porta existe, nos dois lados e no celular ============ */
   let p=await abrir(b,{viewport:{width:1440,height:900}},'freela');

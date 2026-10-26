@@ -65,7 +65,7 @@ function montarSaida(semFuncoes) {
     srv.push(x); BASE.push('http://127.0.0.1:' + x.address().port + '/');
   }
   const [DOMINIO, SEM_FUNCOES] = BASE;
-  const b = await chromium.launch({ executablePath: process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+  const b = await require('./_navegador.js').abrir();
 
   const RITA = { sub: 'zro-42', email: 'rita@coletivo.com', nome: 'Rita Duarte', org: 'Coletivo Rita' };
   const abrir = async (url, opts = {}) => {

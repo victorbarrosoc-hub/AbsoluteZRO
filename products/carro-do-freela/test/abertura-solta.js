@@ -19,7 +19,7 @@ const {servir,URL}=require('./_servir.js');
 const ok=[],bad=[]; const t=(c,m)=>(c?ok:bad).push(m);
 
 (async()=>{
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
   const abrir=async(semente)=>{
     const ctx=await b.newContext({viewport:{width:1440,height:900}});
     const p=await ctx.newPage(); await servir(p);

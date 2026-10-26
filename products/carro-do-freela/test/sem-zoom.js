@@ -23,7 +23,7 @@ const ok=[],bad=[]; const t=(c,m)=>(c?ok:bad).push(m);
 const TELAS=['feed','propostas','jobs','brecho','planos','cofre','vagas','orcar'];
 
 (async()=>{
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
   const errs=[];
   const entrar=async(W,lado,stress)=>{
     const ctx=await b.newContext({viewport:{width:W,height:860},isMobile:true,hasTouch:true});

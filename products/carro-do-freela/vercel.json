@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "installCommand": "echo sem dependencias",
+  "installCommand": "npm ci --no-audit --no-fund",
   "buildCommand": "node src/vercel-build.js"
 }

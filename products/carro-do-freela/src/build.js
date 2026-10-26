@@ -70,26 +70,58 @@ let crew     = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/crew.json'), 'utf
    caber (vídeo da home a 1024px, fotos de cabeçalho com 20–39 KB).
    Agora cada arquivo de src/midia/ sai em public/m/ com o HASH no nome — o
    navegador guarda para sempre e nunca serve um velho —, e os JSON de
-   assets apontam para ele por "midia:<nome>". Toda mídia tem a versão leve
-   e a @hd; quem escolhe é a TELA (MIDIA_HD + qual() no template).
+   assets apontam para ele por "midia:<nome>".
    ⚠️ Continua sem requisição EXTERNA: m/ é do próprio domínio, ao lado da
-   página — e o artifact publica a pasta junto. */
+   página — e o artifact publica a pasta junto.
+
+   ⚠️ A ESCADA (26/out). Victor: "qualidade não pode cair, tem que subir".
+   Em vez de leve + @hd, cada mídia tem DEGRAUS de largura, e o vídeo também
+   tem codecs: src/midia/nome@<largura>.webp, nome@<largura>[.hevc|.av1].mp4
+   (gerados por src/midia-fonte/, dos originais). "midia:nome.webp" vira o
+   degrau padrão (o maior, em H.264 no vídeo) e MIDIA_VAR lista os outros; a
+   TELA escolhe (qual() no template): o menor degrau que cobre a largura dela
+   × a densidade, no melhor codec que o navegador toca. Um celular de 3x
+   (390 × 3 = 1170 px físicos) recebe o de 1280 — antes recebia o "leve". */
 const crypto = require('crypto');
+const hashDe = bytes => crypto.createHash('sha256').update(bytes).digest('hex').slice(0, 10);
 const DIR_MIDIA = path.join(ROOT, 'src/midia'), SAIDA_MIDIA = path.join(ROOT, 'public/m');
-const MIDIA = {}, MIDIA_HD = {};
+const argSaida = process.argv.find(a => a.startsWith('--saida='));
+/* ⚠️ O BUILD SÓ ESCREVE EM public/m, NUNCA APAGA (26/out). O nome de cada
+   arquivo é o hash do conteúdo, então nada se atropela — e apagar quebrava
+   o resto: o script do app e a folha são os MESMOS para a home e as seis
+   fases, e `build:fases` apagando a pasta a cada fase deixava a página de
+   antes apontando para um script que não existia mais. O que fica velho lá
+   não vai ao ar: o vercel-build sobe só o que as páginas citam. */
+fs.mkdirSync(SAIDA_MIDIA, { recursive: true });
+/* escreve em m/ com o hash no nome e devolve o caminho "m/…" */
+function paraM(nomeBase, ext, bytes) {
+  const nome = nomeBase + '.' + hashDe(bytes) + ext;
+  const alvo = path.join(SAIDA_MIDIA, nome);
+  if (!fs.existsSync(alvo)) fs.writeFileSync(alvo, bytes);
+  return 'm/' + nome;
+}
+const MIDIA = {}, MIDIA_VAR = {};
+const DEGRAU = /^(.*)@(\d+)(?:\.(hevc|av1))?(\.\w+)$/;
+const CODEC = { hevc: 'hvc1', av1: 'av01' };
 if (fs.existsSync(DIR_MIDIA)) {
-  fs.rmSync(SAIDA_MIDIA, { recursive: true, force: true });
-  fs.mkdirSync(SAIDA_MIDIA, { recursive: true });
+  const escadas = {};
   for (const f of fs.readdirSync(DIR_MIDIA).sort()) {
-    const bytes = fs.readFileSync(path.join(DIR_MIDIA, f)), ext = path.extname(f);
-    const hash = crypto.createHash('sha256').update(bytes).digest('hex').slice(0, 10);
-    const nome = f.slice(0, -ext.length) + '.' + hash + ext;
-    fs.writeFileSync(path.join(SAIDA_MIDIA, nome), bytes);
-    MIDIA[f] = 'm/' + nome;
+    const ext = path.extname(f);
+    MIDIA[f] = paraM(f.slice(0, -ext.length), ext, fs.readFileSync(path.join(DIR_MIDIA, f)));
+    const d = f.match(DEGRAU);
+    /* b = bytes: o artifact recusa arquivo acima de 16 MB, e lá a tela pula
+       o degrau que não cabe (só lá — ver ARTIFACT no template) */
+    if (d) (escadas[d[1] + d[4]] = escadas[d[1] + d[4]] || []).push({
+      u: MIDIA[f], w: +d[2], c: d[4] === '.mp4' ? (CODEC[d[3]] || 'avc1') : undefined,
+      b: fs.statSync(path.join(DIR_MIDIA, f)).size });
   }
-  for (const f in MIDIA) {
-    const m = f.match(/^(.*)@hd(\.\w+)$/);
-    if (m && MIDIA[m[1] + m[2]]) MIDIA_HD[MIDIA[m[1] + m[2]]] = MIDIA[f];
+  for (const nome in escadas) {
+    if (MIDIA[nome]) throw new Error('src/midia/' + nome + ' existe solto E em degraus — fica um dos dois');
+    const vs = escadas[nome].sort((a, b) => a.w - b.w || String(a.c).localeCompare(String(b.c)));
+    const padrao = vs.filter(v => !v.c || v.c === 'avc1').pop();
+    if (!padrao) throw new Error(nome + ': sem degrau em H.264 — é o de reserva, e o padrão');
+    MIDIA[nome] = padrao.u;
+    MIDIA_VAR[padrao.u] = vs;
   }
 }
 /* "midia:x.webp" → "m/x.<hash>.webp"; nome que não existe REPROVA o build —
@@ -98,12 +130,44 @@ const comMidia = (txt, de) => txt.replace(/"midia:([^"]+)"/g, (_, n) => {
   if (!MIDIA[n]) throw new Error(de + ': a mídia "' + n + '" não existe em src/midia/');
   return JSON.stringify(MIDIA[n]);
 });
+/* ⚠️ AS IMAGENS EMBUTIDAS SAEM TAMBÉM (26/out). Os rostos dos perfis de
+   demonstração (103) e os quadros de portfólio (4) ainda moravam em base64
+   dentro dos JSON de assets — ~570 KB que o navegador baixava a cada visita
+   e não conseguia guardar à parte. O build tira cada data: para um arquivo
+   em m/ (mesmos bytes, mesmo formato) e o JSON passa a apontar para ele. */
+const EXT_DATA = { 'image/webp': '.webp', 'image/jpeg': '.jpg', 'image/png': '.png' };
+function semBase64(txt, prefixo) {
+  const o = JSON.parse(txt);
+  const andar = (x, nome) => {
+    for (const k in x) {
+      const val = x[k], n = nome ? nome + '-' + k : k;
+      if (val && typeof val === 'object') andar(val, n);
+      else if (typeof val === 'string') {
+        const d = val.match(/^data:(image\/(?:webp|jpeg|png));base64,([A-Za-z0-9+/=]+)$/);
+        if (d) x[k] = paraM(prefixo + '-' + n, EXT_DATA[d[1]], Buffer.from(d[2], 'base64'));
+      }
+    }
+  };
+  andar(o, '');
+  return JSON.stringify(o);
+}
 
 // Peso 500 do display não é usado — fica de fora para economizar ~46 KB.
+/* ⚠️ AS FONTES SAEM DO CSS (26/out): eram ~280 KB de base64 dentro da folha.
+   Agora cada uma é um .woff2 em m/ (cache longo), citado pela folha — que
+   também mora em m/, então o url() é relativo a ela, sem "m/". As que a
+   home usa no primeiro quadro vão com <link rel=preload> (ver PRELOAD). */
+const PRELOAD = [];
 const faces = Object.values(fontes)
   .filter(f => !(f.fam === 'Schibsted Grotesk' && f.weight === '500'))
-  .map(f => `@font-face{font-family:"${f.fam}";font-style:normal;font-weight:${f.weight};`
-          + `font-display:swap;src:url(data:font/woff2;base64,${f.b64}) format("woff2")}`)
+  .map(f => {
+    /* as espessuras são a MESMA fonte variável (mesmos bytes): um arquivo
+       por família, baixado uma vez, e cada @font-face aponta para ele */
+    const arq = paraM('fonte-' + f.fam.toLowerCase().replace(/\s+/g, '-'), '.woff2', Buffer.from(f.b64, 'base64'));
+    if (f.fam === 'Schibsted Grotesk' && !PRELOAD.includes(arq)) PRELOAD.push(arq);
+    return `@font-face{font-family:"${f.fam}";font-style:normal;font-weight:${f.weight};`
+         + `font-display:swap;src:url(${arq.slice(2)}) format("woff2")}`;
+  })
   .join('\n');
 
 if (anon) {
@@ -132,17 +196,21 @@ const funcoes = [...new Set(crew.flatMap(c => c.func))]
    Absolute ZRO no menu, 26/out): mesma regra, nome que falta reprova */
 const html = comMidia(tpl, 'template.html')
   .replace('/*__FONTS__*/', faces)
-  .replace('/*__FRAMES__*/', frames)
+  .replace('/*__FRAMES__*/{}', () => semBase64(frames, 'quadro'))
   .replace('/*__BRECHO_FOTOS__*/{}', () => comMidia(brechoFotos, 'brecho-fotos.json'))
-  .replace('/*__FOTOS__*/{}', () => comMidia(fotos, 'fotos.json'))
+  .replace('/*__FOTOS__*/{}', () => semBase64(comMidia(fotos, 'fotos.json'), 'foto'))
   .replace('/*__HOME3D__*/{}', () => comMidia(home3d, 'home3d.json'))
   .replace('/*__LOGIN_VIDEO__*/{}', () => comMidia(loginVideo, 'login-video.json'))
   .replace('/*__HEROES__*/{}', () => comMidia(herois, 'heroes.json'))
   .replace('/*__HOME_VIDEO__*/{}', () => comMidia(homeVideo, 'home-video.json'))
-  .replace('/*__MIDIA_HD__*/{}', () => JSON.stringify(MIDIA_HD))
+  .replace('/*__MIDIA_VAR__*/{}', () => JSON.stringify(MIDIA_VAR))
   .replace('/*__CREW__*/', JSON.stringify(crew))
   .replace('/*__FUNCOES__*/', JSON.stringify(funcoes))
-  .replace('/*__FASE__*/0', String(fase))
+  /* ⚠️ A FASE VEM DA PÁGINA, NÃO DO SCRIPT (26/out): o script é UM arquivo
+     só para o app inteiro e as seis fases (antes cada fase levava uma cópia
+     dele, e public/ chegava a 70 MB). Cada página diz a sua fase numa
+     <meta name="cdf-fase"> e o script lê no arranque. */
+  .replace('/*__FASE__*/0', '+((document.querySelector(\'meta[name="cdf-fase"]\')||{}).content||0)')
   .replace('/*__WEB3FORMS_KEY__*/""', () => comoJS(deFora.web3forms))
   .replace('/*__SUPABASE_URL__*/""', () => comoJS(deFora.supabaseUrl))
   .replace('/*__SUPABASE_ANON_KEY__*/""', () => comoJS(deFora.supabaseKey));
@@ -235,26 +303,59 @@ const META = [
   '<link rel="manifest" href="/app.webmanifest">'
 ].join('\n');
 
-const corte = html.indexOf('</style>') + '</style>'.length;
-if (corte < 8) throw new Error('template sem bloco <style> — não achei onde partir o <head>');
-const pagina = '<!doctype html>\n<html lang="pt-BR">\n<head>\n' + META + '\n' +
-  html.slice(0, corte) + '\n</head>\n<body>\n' + html.slice(corte).trim() + '\n</body>\n</html>\n';
+/* ================= O HTML LEVE (26/out) =================
+   Victor: "deixar a plataforma leve sem perder qualidade". O HTML levava
+   tudo de uma vez — 2,6 MB: o script do app inteiro, o CSS, as fontes e as
+   imagens em base64 — e nada disso ficava guardado à parte: cada visita
+   baixava tudo de novo. Agora o HTML leva só a página; a folha de estilo e
+   o script saem para m/ com o hash no nome (cache longo, e as seis fases
+   usam os MESMOS dois arquivos), minificados pelo esbuild.
+   ⚠️ A ORDEM NÃO MUDA: a folha no <head> (bloqueia a pintura como o <style>
+   bloqueava) e o script no MESMO lugar do <script> embutido — fim do corpo,
+   sem defer —, então ele roda no mesmo ponto do parse de antes. O véu da
+   abertura é markup e aparece enquanto o script ainda chega. */
+const esbuild = require('esbuild');
+const iStyle = html.indexOf('<style>'), fStyle = html.indexOf('</style>');
+const iScript = html.lastIndexOf('<script>'), fScript = html.lastIndexOf('</script>');
+if (iStyle < 0 || fStyle < iStyle) throw new Error('template sem bloco <style>');
+if (iScript < fStyle || fScript < iScript) throw new Error('template sem o <script> do fim');
+const min = (codigo, loader) => esbuild.transformSync(codigo, { loader, minify: true, legalComments: 'none', charset: 'utf8' }).code;
+const CSS = paraM('app', '.css', Buffer.from(min(html.slice(iStyle + 7, fStyle), 'css')));
+const JS = paraM('app', '.js', Buffer.from(min(html.slice(iScript + 8, fScript), 'js')));
+const titulo = html.slice(0, iStyle).trim();
+const corpo = html.slice(fStyle + 8, iScript).trim();
+const metaFase = '<meta name="cdf-fase" content="' + fase + '">';
+const folha = '<link rel="stylesheet" href="' + CSS + '">';
+const script = '<script src="' + JS + '"></script>';
+/* ⚠️ O PÔSTER DA CARONA É O MAIOR QUADRO DA HOME (o LCP, medido): ele é
+   pedido JÁ no HTML, com prioridade alta, junto da folha — sem esperar o
+   script. O imagesrcset deixa o navegador escolher o degrau pela largura ×
+   densidade, a mesma conta do qual(), então o script acha o arquivo pronto. */
+const posterVar = MIDIA_VAR[MIDIA['home-poster.webp']] || [];
+const preloadPoster = posterVar.length ? '<link rel="preload" as="image" fetchpriority="high" imagesizes="100vw" imagesrcset="'
+  + posterVar.map(d => d.u + ' ' + d.w + 'w').join(', ') + '">' : '';
+const preload = PRELOAD.map(f => '<link rel="preload" href="' + f + '" as="font" type="font/woff2" crossorigin>').concat(preloadPoster ? [preloadPoster] : []).join('\n');
+const pagina = '<!doctype html>\n<html lang="pt-BR">\n<head>\n' + META + '\n' + metaFase + '\n' + titulo + '\n' +
+  preload + '\n' + folha + '\n</head>\n<body>\n' + corpo + '\n' + script + '\n</body>\n</html>\n';
+/* o artifact: o mesmo, sem <head> (o visualizador monta por fora) — e ele
+   publica a pasta m/ junto, então os dois arquivos vão com ele */
+const artifact = metaFase + '\n<meta name="cdf-artifact" content="1">\n' + titulo + '\n' + folha + '\n' + corpo + '\n' + script + '\n';
 
 /* --saida=<pasta> (25/out): escreve as duas saídas em outra pasta, sem tocar
    no public/ que a bateria lê — é o que a suíte `registro` usa para montar
    uma página com chaves de TESTE. A mídia continua indo para public/m/. */
-const argSaida = process.argv.find(a => a.startsWith('--saida='));
 const DIR_SAIDA = argSaida ? path.resolve(argSaida.slice(8)) : path.join(ROOT, 'public');
 fs.mkdirSync(DIR_SAIDA, { recursive: true });
 const base = path.join(DIR_SAIDA, fase ? 'fase-' + fase : 'index');
 fs.writeFileSync(base + '.html', pagina);
-fs.writeFileSync(fase ? base + '-artifact.html' : path.join(DIR_SAIDA, 'artifact.html'), html);
+fs.writeFileSync(fase ? base + '-artifact.html' : path.join(DIR_SAIDA, 'artifact.html'), artifact);
 
-const kb = (Buffer.byteLength(pagina) / 1024).toFixed(0);
+const kbDe = f => (fs.statSync(path.join(SAIDA_MIDIA, f.slice(2))).size / 1024).toFixed(0);
+const kb = (Buffer.byteLength(pagina) / 1024).toFixed(0) + ' KB + ' + JS + ' (' + kbDe(JS) + ' KB) + ' + CSS + ' (' + kbDe(CSS) + ' KB)';
 if (fase) {
-  console.log(`${base}.html — ${kb} KB · Fase ${fase}: ${FASE_NOME[fase]}`);
+  console.log(`${base}.html — ${kb} · Fase ${fase}: ${FASE_NOME[fase]}`);
   console.log(`${base}-artifact.html — o mesmo sem <head>, para publicar como artifact`);
 } else {
-  console.log(`public/index.html — ${kb} KB · ${crew.length} cadastros · ${funcoes.length} funções` + (anon ? ' · ANONIMIZADO' : ''));
+  console.log(`public/index.html — ${kb} · ${crew.length} cadastros · ${funcoes.length} funções` + (anon ? ' · ANONIMIZADO' : ''));
   console.log('public/artifact.html — mesma página sem <head>, para publicar como artifact');
 }

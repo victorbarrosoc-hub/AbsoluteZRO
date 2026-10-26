@@ -18,7 +18,7 @@ const ok=[],bad=[]; const t=(c,m)=>(c?ok:bad).push(m);
 const {servir,URL}=require('./_servir.js');
 
 (async()=>{
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
   const ctx=await b.newContext({viewport:{width:1280,height:1000},deviceScaleFactor:2});
   const p=await ctx.newPage();
   const errs=[]; p.on('pageerror',e=>errs.push('ERR: '+e.message));

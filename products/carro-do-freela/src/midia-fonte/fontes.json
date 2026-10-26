@@ -1,0 +1,25 @@
+{
+  "_leia": "De onde sai cada mídia gerada (26/out). Os ids são jobs do histórico do Higgsfield da conta do Victor: baixar o original de lá não custa crédito; gerar de novo custa e precisa do aval dele.",
+  "fotos": {
+    "heroi-aprender": "d0446ce9", "heroi-brecho": "399e697c", "heroi-coletivos": "eb801706", "heroi-feed": "0c558be9",
+    "heroi-guildas": "e2a07231", "heroi-jobs": "3a72a000", "heroi-pracas": "3fdefcb9", "heroi-vagas": "6f41bec6",
+    "capa-camera": "e22e38fe", "capa-drone": "d5fec782", "capa-edicao": "e244f538", "capa-foto": "8f42be0b",
+    "capa-luz": "93d32966", "capa-som": "83a4cf3d",
+    "brecho-acessorio": "50d3ea0c", "brecho-audio": "e606827e", "brecho-camera": "420c2bac", "brecho-computador": "4d87a660",
+    "brecho-drone": "f7a8effe", "brecho-estabilizador": "45936029", "brecho-lente": "ece22a58", "brecho-luz": "1a9f5d9a",
+    "brecho-tripe": "2cd7e90e"
+  },
+  "objetos": ["obj-agenda", "obj-aperto", "obj-bandeira", "obj-calc", "obj-camera", "obj-carro", "obj-chat", "obj-claquete",
+    "obj-cofre", "obj-cracha", "obj-envelope", "obj-escudo", "obj-fone", "obj-grupo", "obj-hero", "obj-livro", "obj-lupa",
+    "obj-mala", "obj-megafone", "obj-moeda", "obj-pin"],
+  "_objetos": "folhas 7acf4f85 (3x2), 3934ba1e e 6bf191cc (3x3), a04d2389 (o topo), ampliadas a 4K no upscaler em 18/out; a ampliação não está mais no histórico",
+  "quadros": {
+    "home-poster": ["master-laco.mkv", 0],
+    "home-parado": ["master-laco.mkv", 233],
+    "login-poster": ["master-login.mkv", 0]
+  },
+  "videos": {
+    "home-laco": {"master": "master-laco.mkv", "tomadas": {"4ac8c2b9": "o céu e o mergulho", "0d2d6f1f": "a perseguição", "9960dc01": "a porta do carona e a janela", "d972e161": "o banco do carona"}},
+    "login": {"master": "master-login.mkv", "tomadas": {"e8053433": "o carro na tela de entrar, quadros 1–120"}}
+  }
+}

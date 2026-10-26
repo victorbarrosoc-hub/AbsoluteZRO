@@ -40,8 +40,11 @@ const URL='file://'+ARQ;
 const {servir,URL:HTTP}=require('./_servir.js');
 
 (async()=>{
-  const fonte=fs.readFileSync(ARQ,'utf8');
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  /* (26/out) o script sai minificado, sem comentário: o que estas linhas
+     conferem é o FONTE (o porquê escrito e o registro de depósitos), então
+     leem o template */
+  const fonte=fs.readFileSync(path.resolve(__dirname,'..','src','template.html'),'utf8');
+  const b=await require('./_navegador.js').abrir();
   const ctx=await b.newContext({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
   const p=await ctx.newPage();
   const errs=[]; p.on('pageerror',e=>errs.push('ERR: '+e.message));
