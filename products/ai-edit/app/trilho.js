@@ -18,7 +18,7 @@ const svgUso = (id) => {
   return s
 }
 
-/** acoes: { universos(), abrir(), salvar() } — os mesmos atalhos do teclado */
+/** acoes: { conta (pessoa logada ou null), universos(), abrir(), salvar() } — os mesmos atalhos do teclado */
 export function montarTrilho(acoes) {
   const botao = document.getElementById('menuBotao')
   const item = ({ nome, icone, img, href, acao, dica }) => {
@@ -36,7 +36,9 @@ export function montarTrilho(acoes) {
     item({ nome: 'Abrir projeto', icone: 'abrir', acao: acoes.abrir, dica: 'Abrir projeto (⌘O)' }),
     item({ nome: 'Salvar cópia', icone: 'salvar', acao: acoes.salvar, dica: 'Salvar uma cópia do projeto em arquivo (⌘S)' }),
     el('p', { className: 'trilho-grupo', textContent: 'Conta' }),
-    item({ nome: 'Entrar', icone: 'conta', href: globalThis.aiEditDesktop ? CONTA.entrar : '../entrar.html?volta=%2Fapp%2F', dica: 'Entrar com a conta Absolute ZRO' }),
+    acoes.conta
+      ? item({ nome: acoes.conta.nome || acoes.conta.email, icone: 'conta', href: '../entrar.html', dica: `${[acoes.conta.nome, acoes.conta.email].filter(Boolean).join(' · ')} · conta e sair` })
+      : item({ nome: 'Entrar', icone: 'conta', href: CONTA.entrar, dica: 'Entrar com a conta Absolute ZRO' }),
     el('p', { className: 'trilho-grupo', textContent: 'Absolute ZRO' }),
     ...FAMILIA.map((f) => item({ nome: f.nome, img: iconeDe(f, '../'), href: f.href, dica: `${f.nome} · ${f.papel}` })),
   )

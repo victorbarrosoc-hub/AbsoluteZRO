@@ -1,6 +1,5 @@
-// A conta Absolute ZRO no topo do site (api/zro/eu, como na Revela). Logado: as iniciais, que levam à página de entrar
-// (onde dá para sair). Sem sessão ou com o login ainda não ligado: "Entrar", que abre entrar.html. Nada aqui bloqueia o
-// editor: ele abre sem conta e o material fica no computador.
+// A conta Absolute ZRO (api/zro/eu, como na Revela). No site: logado mostra as iniciais (levam a entrar.html, onde dá
+// para sair); fora, "Entrar". No editor (app/editor.js) é a trava: o AEON só abre com a conta.
 
 export async function lerConta() {
   try {

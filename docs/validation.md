@@ -577,3 +577,6 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   do Higgsfield e transcrição trocada por roteiro fixo, porque a fala sintética não tem palavras). Conferido em escuro,
   claro e 390 px de largura.
 - Não validado: o app no navegador em Safari e Firefox (precisa de WebCodecs; o site indica Chrome ou Edge).
+- Conta obrigatória: `test/zro.test.js` **21/21** (entrar, criar conta, volta, sessão sem token, recusas de state,
+  nonce, emissor, público e assinatura, login desligado → 503) e o teste de tela "só com conta" (sem sessão o editor vai
+  para `entrar.html?volta=/app/`; com sessão o menu mostra a pessoa).

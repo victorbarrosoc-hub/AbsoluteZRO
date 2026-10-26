@@ -28,8 +28,12 @@ after(async () => {
   if (dir) rmSync(dir, { recursive: true, force: true })
 })
 
-async function abrir(opts = {}) {
+// sessão da Absolute ZRO falsa: o AEON só abre com conta (api/zro/eu); sem ela vai para entrar.html
+const PESSOA = { ok: true, pessoa: { nome: 'Lia Produtora', email: 'lia@produtora.com', produtos: ['ai-edit'] }, acesso: true }
+
+async function abrir(opts = {}, { logado = true } = {}) {
   const pagina = await navegador.newPage({ viewport: { width: 1440, height: 900 }, acceptDownloads: true, ...opts })
+  await pagina.route('**/api/zro/eu', (r) => (logado ? r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(PESSOA) }) : r.fulfill({ status: 401, contentType: 'application/json', body: '{"ok":false}' })))
   const erros = []
   pagina.on('pageerror', (e) => erros.push(e.message))
   pagina.on('console', (m) => m.type() === 'error' && erros.push(m.text()))
@@ -39,9 +43,21 @@ async function abrir(opts = {}) {
   })
   const r = await pagina.goto(s.url + 'app/')
   assert.match(r.headers()['content-security-policy'], /default-src 'self'/)
-  await pagina.waitForFunction(() => document.documentElement.dataset.pronto === '1')
+  if (logado) await pagina.waitForFunction(() => document.documentElement.dataset.pronto === '1')
   return { pagina, erros }
 }
+
+test('só com conta: sem sessão o editor vai para entrar.html; com sessão mostra a pessoa no menu', async () => {
+  const { pagina } = await abrir({}, { logado: false })
+  await pagina.waitForURL(/entrar\.html\?volta=%2Fapp%2F/)
+  await pagina.locator('#fora:not([hidden])').waitFor()
+  assert.equal(await pagina.getAttribute('#entrar', 'href'), '/api/zro/entrar?volta=%2Fapp%2F')
+  assert.equal(await pagina.locator('text=sem conta').count(), 0)
+  await pagina.close()
+  const { pagina: dentro } = await abrir()
+  assert.equal(await dentro.locator('.trilho-item', { hasText: 'Lia Produtora' }).count(), 1)
+  await dentro.close()
+})
 
 test('autoteste: grava, lê, acha silêncio, corta, exporta e renderiza no navegador', async () => {
   const { pagina, erros } = await abrir()

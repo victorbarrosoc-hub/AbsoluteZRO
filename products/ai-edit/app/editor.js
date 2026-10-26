@@ -25,6 +25,7 @@ import * as ponte from './ponte.js'
 import { montarTrilho } from './trilho.js'
 import { DEPOIS, FAMILIA, iconeDe } from '../src/familia.js'
 import * as projetos from './projetos.js'
+import { lerConta } from '../site/conta.js'
 
 const $ = (id) => document.getElementById(id)
 const PAGINAS = ['midia', 'revisar', 'edicao', 'entrega']
@@ -44,13 +45,24 @@ const S = {
 }
 globalThis.__editor = S
 
+// ───────── conta: o AEON só abre com a conta Absolute ZRO (decisão do titular, 26/10/2026) ─────────
+// No navegador: sem sessão, com o login ainda desligado ou sem o AEON liberado na conta, vai para entrar.html, que diz
+// o que falta. O app de desktop ainda não tem login (precisa antes do primeiro Release).
+const conta = ponte.desktop ? null : await lerConta()
+if (!ponte.desktop && (conta.estado !== 'logado' || conta.acesso === false)) {
+  location.replace(`../entrar.html?volta=${encodeURIComponent('/app/')}`)
+  await new Promise(() => {})
+}
+document.documentElement.dataset.conta = 'ok'
+S.conta = conta?.pessoa || null
+
 // ───────── começo ─────────
 
 document.title = `${PRODUTO.nome} · Absolute ZRO`
 // a marca (src/marca.js): a estrela compacta e o ΛEON em traço, na cor do texto
 $('marcaProduto').innerHTML = `${simbolo({ titulo: false })}${wordmark()}`
 $('marcaProduto').title = `${PRODUTO.nome} · ${PRODUTO.frase}`
-montarTrilho({ universos: () => fecharProjeto(), abrir: () => $('arquivoProjeto').click(), salvar: () => salvarAgora() })
+montarTrilho({ conta: S.conta, universos: () => fecharProjeto(), abrir: () => $('arquivoProjeto').click(), salvar: () => salvarAgora() })
 // Entrega › depois do AEON: o próximo app do caminho (abre no navegador)
 $('depois').replaceChildren(
   ...DEPOIS.map((d) => {

@@ -1,5 +1,6 @@
 // AEON · Entrar. A conta é a da Absolute ZRO (api/zro/*, o mesmo login da Revela): três estados — fora (Entrar / Criar
-// conta), dentro (quem é, Abrir o AEON, Sair) e desligado (login ainda não ligado neste endereço: o editor segue aberto).
+// conta), dentro (quem é, Abrir o AEON, Sair) e desligado (login ainda não ligado neste endereço). Sem conta o AEON não
+// abre: o editor manda para cá.
 // `?volta=` diz para onde voltar; `?zro=` traz o resultado.
 import { wordmark } from '../src/marca.js'
 import { iniciais, lerConta } from './conta.js'
@@ -26,6 +27,9 @@ if (c.estado === 'logado') {
   $('avatar').textContent = iniciais(p)
   $('ola').textContent = `Olá, ${(p.nome || p.email || '').split(' ')[0]}.`
   $('quem').textContent = [p.email, p.organizacao?.nome].filter(Boolean).join(' · ')
+  const liberado = c.acesso !== false
+  $('semAcesso').hidden = liberado
+  $('abrir').hidden = !liberado
   $('dentro').hidden = false
 } else if (c.estado === 'fora') {
   $('fora').hidden = false

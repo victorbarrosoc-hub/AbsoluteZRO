@@ -1039,3 +1039,12 @@ p {
     transform: none;
   }
 }
+
+[hidden] {
+  display: none !important;
+}
+.entrar-aviso a {
+  color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

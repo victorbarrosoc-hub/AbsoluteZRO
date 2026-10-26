@@ -1972,3 +1972,8 @@ select {
   height: 30px;
   opacity: 0.35;
 }
+
+/* nada aparece antes de conferir a conta (sem conta, a página vai para entrar.html) */
+html:not([data-conta]) body {
+  visibility: hidden;
+}

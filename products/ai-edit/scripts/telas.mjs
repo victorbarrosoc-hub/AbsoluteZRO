@@ -15,6 +15,8 @@ const s = await servir()
 const nav = await chromium.launch()
 const pagina = await nav.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1600 / 1440 })
 pagina.on('pageerror', (e) => console.error('erro na página:', e.message))
+// o AEON só abre com conta: aqui uma sessão de demonstração (nome genérico)
+await pagina.route('**/api/zro/eu', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, pessoa: { nome: 'Sua conta', email: 'voce@absolutezro.com', produtos: ['ai-edit'] }, acesso: true }) }))
 await pagina.goto(s.url + 'app/')
 await pagina.waitForFunction(() => document.documentElement.dataset.pronto === '1')
 
