@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Revela · cor e entrega para o DaVinci Resolve</title>
     <meta name="description" content="A cor que você quer numa LUT, o preset certo para cada destino e a conversão no seu aparelho. Para o DaVinci Resolve." />
-    <meta name="color-scheme" content="dark" />
-    <meta name="theme-color" content="#0e0e10" />
+    <meta name="color-scheme" content="light" />
+    <script src="app/tema.js"></script>
+    <meta name="theme-color" content="#f5f5f7" />
     <link rel="canonical" href="https://revela-zro.vercel.app/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Revela" />
@@ -32,14 +33,16 @@
   </head>
   <body class="home">
     <header class="nav" id="nav">
-      <a class="marca" href="./" aria-label="Revela, página inicial"><img src="marca/revela-logo.png" alt="Revela" width="150" height="28" /></a>
+      <a class="marca" href="./" aria-label="Revela, página inicial"><img src="marca/revela-logo-grafite.png" alt="Revela" width="150" height="28" /></a>
       <nav class="nav-links" aria-label="Seções">
+        <a href="#looks">Looks</a>
         <a href="#ferramentas">Ferramentas</a>
         <a href="#entrega">Entrega</a>
         <a href="#converter">Converter</a>
         <a href="#familia">Família</a>
       </nav>
       <div class="nav-acoes">
+        <button class="nav-tema" id="tema" type="button" aria-label="Tema escuro" title="Tema escuro"></button>
         <a class="conta" id="conta" href="entrar.html">Entrar</a>
         <a class="vidro vidro--tinta nav-abrir" href="lut.html">Abrir a Revela</a>
       </div>
@@ -47,15 +50,12 @@
 
     <main>
       <section class="hero" aria-labelledby="hero-titulo">
-        <div class="hero-luz" aria-hidden="true"></div>
-        <p class="olho surge" style="--d: 0">Cor e entrega para o DaVinci Resolve</p>
         <h1 id="hero-titulo" class="surge" style="--d: 1">Revela a cor<br /><span class="fino">que você quer.</span></h1>
         <p class="hero-sub surge" style="--d: 2">Da referência à entrega, num lugar só.</p>
         <div class="hero-acoes surge" style="--d: 3">
-          <a class="vidro vidro--tinta grande-pilula" href="lut.html?exemplo=1">Testar agora</a>
+          <a class="vidro vidro--tinta grande-pilula" href="lut.html?exemplo=1" title="No navegador, sem instalar. Suas imagens não saem do aparelho.">Testar agora</a>
           <a class="vidro grande-pilula" href="entrar.html">Entrar</a>
         </div>
-        <p class="hero-nota surge" style="--d: 3">No navegador, sem instalar. Suas imagens não saem do aparelho.</p>
         <figure class="comparar surge" style="--d: 4" aria-label="O mesmo frame em log e com a cor final">
           <img class="antes" src="marca/home/hero-antes.jpg" alt="" width="1600" height="900" fetchpriority="high" />
           <img class="depois" src="marca/home/hero-depois.jpg" alt="" width="1600" height="900" />
@@ -66,7 +66,6 @@
           <input class="comparar-divisao" type="range" min="0" max="100" value="50" aria-label="Comparar log e cor final" />
         </figure>
         <div class="editores surge" style="--d: 5">
-          <p>Funciona no seu editor</p>
           <ul aria-label="Editores compatíveis">
             <li title="LUT .cube e script de entrega">DaVinci Resolve</li>
             <li title="LUT .cube">Premiere Pro</li>
@@ -78,8 +77,21 @@
         </div>
       </section>
 
+      <section class="sec sec-destaque" id="looks" aria-labelledby="looks-titulo">
+        <h2 id="looks-titulo" class="revela-ao-rolar">Um frame.<br /><span class="fino">Todos os looks.</span></h2>
+        <div class="looks-home revela-ao-rolar" role="list" aria-label="O mesmo frame em cada look da Revela">
+          <figure role="listitem"><img src="marca/home/look-revela.jpg" alt="Revela Look" title="Revela Look" width="640" height="360" loading="lazy" /></figure>
+          <figure role="listitem"><img src="marca/home/look-suave.jpg" alt="Suave" title="Suave" width="640" height="360" loading="lazy" /></figure>
+          <figure role="listitem"><img src="marca/home/look-petroleo.jpg" alt="Petróleo" title="Petróleo" width="640" height="360" loading="lazy" /></figure>
+          <figure role="listitem"><img src="marca/home/look-dourado.jpg" alt="Dourado" title="Dourado" width="640" height="360" loading="lazy" /></figure>
+          <figure role="listitem"><img src="marca/home/look-pb.jpg" alt="P&amp;B" title="P&amp;B" width="640" height="360" loading="lazy" /></figure>
+        </div>
+        <div class="hero-acoes revela-ao-rolar">
+          <a class="vidro vidro--tinta grande-pilula" href="lut.html">Testar no seu frame</a>
+        </div>
+      </section>
+
       <section class="sec" id="ferramentas" aria-labelledby="ferramentas-titulo">
-        <p class="olho revela-ao-rolar">Quatro ferramentas</p>
         <h2 id="ferramentas-titulo" class="revela-ao-rolar">Do frame ao arquivo final.</h2>
         <div class="trio">
           <a class="cartao-home revela-ao-rolar" style="--d: 0" href="lut.html"
@@ -97,7 +109,7 @@
               >
                 <path d="M12 3.5 19.5 8v8L12 20.5 4.5 16V8Z" />
                 <path d="M12 12 19.5 8M12 12v8.5M12 12 4.5 8" /></svg></span
-            ><b>LUT por referência</b><span>Um frame vira o look.</span></a
+            ><b>LUT por referência</b></a
           >
           <a class="cartao-home revela-ao-rolar" style="--d: 1" href="cst.html"
             ><span class="cartao-icone"
@@ -114,7 +126,7 @@
               >
                 <circle cx="9" cy="12" r="5.5" />
                 <circle cx="15" cy="12" r="5.5" /></svg></span
-            ><b>CST</b><span>Do log à tela.</span></a
+            ><b>CST</b></a
           >
           <a class="cartao-home revela-ao-rolar" style="--d: 2" href="entrega.html"
             ><span class="cartao-icone"
@@ -132,7 +144,7 @@
                 <path d="M5 12h12" />
                 <path d="m13 7 5 5-5 5" />
                 <path d="M5 5v14" /></svg></span
-            ><b>Entrega</b><span>O preset certo, no Resolve.</span></a
+            ><b>Entrega</b></a
           >
           <a class="cartao-home revela-ao-rolar" style="--d: 3" href="converter.html"
             ><span class="cartao-icone"
@@ -149,12 +161,19 @@
               >
                 <path d="M4 8h13l-3.5-3.5" />
                 <path d="M20 16H7l3.5 3.5" /></svg></span
-            ><b>Converter</b><span>Do ProRes ao destino.</span></a
+            ><b>Converter</b></a
           >
         </div>
         <figure class="mac revela-ao-rolar">
           <div class="mac-tela">
-            <img
+            <img class="so-claro"
+              src="marca/home/h-lut-claro.jpg"
+              alt="A tela de LUT da Revela: referência, frame e a comparação antes e depois"
+              width="1440"
+              height="900"
+              loading="lazy"
+            />
+            <img class="so-escuro"
               src="marca/home/h-lut.jpg"
               alt="A tela de LUT da Revela: referência, frame e a comparação antes e depois"
               width="1440"
@@ -167,12 +186,18 @@
       </section>
 
       <section class="sec sec-destaque" id="entrega" aria-labelledby="entrega-titulo">
-        <p class="olho revela-ao-rolar">Entrega</p>
         <h2 id="entrega-titulo" class="revela-ao-rolar">Cada destino,<br /><span class="fino">do jeito certo.</span></h2>
         <div class="destinos-faixa revela-ao-rolar" id="faixa" aria-hidden="true"></div>
         <figure class="mac revela-ao-rolar">
           <div class="mac-tela">
-            <img
+            <img class="so-claro"
+              src="marca/home/h-entrega-claro.jpg"
+              alt="Tela de Entrega da Revela com codec, bitrate, cor e áudio do YouTube"
+              width="1440"
+              height="900"
+              loading="lazy"
+            />
+            <img class="so-escuro"
               src="marca/home/h-entrega.jpg"
               alt="Tela de Entrega da Revela com codec, bitrate, cor e áudio do YouTube"
               width="1440"
@@ -187,7 +212,6 @@
       <section class="sec" id="converter" aria-labelledby="converter-titulo">
         <div class="lado-a-lado">
           <div class="lado-texto">
-            <p class="olho revela-ao-rolar">Converter</p>
             <h2 id="converter-titulo" class="revela-ao-rolar">No celular<br /><span class="fino">ou no computador.</span></h2>
             <p class="apoio revela-ao-rolar">O arquivo não sai do aparelho.</p>
             <a class="vidro revela-ao-rolar" href="converter.html">Converter agora</a>
@@ -195,7 +219,14 @@
           <div class="aparelhos revela-ao-rolar">
             <figure class="mac mac--menor">
               <div class="mac-tela">
-                <img
+                <img class="so-claro"
+                  src="marca/home/h-conv-claro.jpg"
+                  alt="Dois masters em ProRes convertidos para o YouTube no computador"
+                  width="1440"
+                  height="900"
+                  loading="lazy"
+                />
+            <img class="so-escuro"
                   src="marca/home/h-conv.jpg"
                   alt="Dois masters em ProRes convertidos para o YouTube no computador"
                   width="1440"
@@ -206,14 +237,13 @@
               <div class="mac-base" aria-hidden="true"></div>
             </figure>
             <figure class="iphone">
-              <img src="marca/home/h-conv-cel.jpg" alt="O conversor da Revela no celular" width="390" height="844" loading="lazy" />
+              <img class="so-claro" src="marca/home/h-conv-cel-claro.jpg" alt="O conversor da Revela no celular" width="390" height="844" loading="lazy" /><img class="so-escuro" src="marca/home/h-conv-cel.jpg" alt="O conversor da Revela no celular" width="390" height="844" loading="lazy" />
             </figure>
           </div>
         </div>
       </section>
 
       <section class="sec sec-destaque" id="familia" aria-labelledby="familia-titulo">
-        <p class="olho revela-ao-rolar">Família Absolute ZRO</p>
         <h2 id="familia-titulo" class="revela-ao-rolar">Uma conta.<br /><span class="fino">Todas as ferramentas.</span></h2>
         <div class="familia revela-ao-rolar">
           <span class="familia-app familia-app--revela"><img src="marca/revela-icone.svg" alt="" width="56" height="56" /><small>Revela</small></span>

@@ -1,6 +1,6 @@
 # Testes da Revela (products/finishing): referência → LUT, entrega, conversor (ProRes gerado pelo ffmpeg) e as telas
 # no Chromium.
-# Roda só quando a pasta (ou este arquivo) muda.
+# Roda quando a pasta (ou este arquivo) muda, e quando muda o relatório do Synquei que a CST por clipe lê.
 name: Revela · testes
 
 on:
@@ -8,10 +8,12 @@ on:
     branches: [main]
     paths:
       - 'products/finishing/**'
+      - 'products/synquei/app/js/export/others.js'
       - '.github/workflows/finishing-testes.yml'
   pull_request:
     paths:
       - 'products/finishing/**'
+      - 'products/synquei/app/js/export/others.js'
       - '.github/workflows/finishing-testes.yml'
   workflow_dispatch:
 

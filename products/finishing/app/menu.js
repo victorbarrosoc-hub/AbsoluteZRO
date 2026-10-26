@@ -61,6 +61,21 @@ const menu = el(
     ...FAMILIA.map(item),
   ),
 )
+// tema: claro é o padrão; o botão mostra para onde vai (lua no claro, sol no escuro)
+const botaoTema = el('button', { type: 'button', className: 'menu-item menu-tema' })
+function pintarTema() {
+  const escuro = window.revelaTema?.atual() === 'escuro'
+  const nome = escuro ? 'Tema claro' : 'Tema escuro'
+  botaoTema.replaceChildren(icone(escuro ? 'sol' : 'lua'), el('span', { className: 'menu-nome', textContent: nome }))
+  botaoTema.title = nome
+}
+botaoTema.addEventListener('click', () => {
+  window.revelaTema?.alternar()
+  pintarTema()
+})
+pintarTema()
+menu.append(el('div', { className: 'menu-pe' }, botaoTema))
+
 const fundo = el('div', { className: 'menu-fundo', hidden: true })
 const alternarTopo = el('button', { type: 'button', className: 'menu-botao menu-botao--topo', ariaLabel: 'Abrir menu' }, icone('menu'))
 alternarTopo.setAttribute('aria-controls', 'menu')
