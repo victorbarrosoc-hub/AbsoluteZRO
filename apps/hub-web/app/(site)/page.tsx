@@ -112,7 +112,7 @@ export default async function Landing() {
               {products.map((p, i) => (
                 <li
                   key={p.id as string}
-                  className={`zorbit__app${p.stage === 'coming_soon' ? ' zorbit__app--soon' : ''}`}
+                  className="zorbit__app"
                   style={{ '--a': `${(i * 360) / products.length - 90}deg`, '--i': i } as CSSProperties}
                   title={`${p.name as string} · ${p.role_in_flow as string}`}
                 >
@@ -129,7 +129,7 @@ export default async function Landing() {
               <span className="atitle__thin">{products.length} ferramentas.</span>
             </p>
             <p className="zorbit__cap zorbit__cap--2 atitle">
-              <span className="atitle__thin">Tudo</span> <span className="atitle__bold">conectado.</span>
+              <span className="atitle__thin">Um só</span> <span className="atitle__bold">ecossistema.</span>
             </p>
             <p className="zorbit__cap zorbit__cap--3 atitle">
               <span className="atitle__thin">Comece em</span> <span className="atitle__bold">qualquer ponto.</span>
