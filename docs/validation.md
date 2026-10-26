@@ -565,6 +565,23 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - `products/finishing`: `npm test` **78/78**.
 - Não validado: o .xmp aberto num Lightroom real (Classic e celular) e a semelhança dele com a LUT.
 
+## Página inicial: símbolo e órbita (26/10/2026)
+
+- `BrandSymbol` (anel em traço + centelha da `ZRO_SIMBOLO`) e `PointerTilt` (variáveis CSS, só mouse/caneta, nada
+  com "reduzir movimento"). Órbita com classes `zorbit` para não colidir com a órbita do Início do HUB.
+- Conferido em 1440×900 e 390×844, claro e escuro, e com "reduzir movimento" (forma flat parada, sem rolagem
+  horizontal).
+- `a11y.spec.ts` termina as animações de entrada (finitas, de tempo) antes do axe, que mede o contraste final;
+  as infinitas e as de rolagem ficam como estão.
+- `npm test` **140/140**; `npm run test:e2e` **20/20**.
+- Não validado: Safari e Firefox sem `animation-timeline` (caem na versão sem órbita animada, conferida só no
+  Chromium com reduzir movimento).
+- OG novo (escolha do titular): símbolo grande à esquerda, fundo branco chapado, apps sem placa nem borda
+  (`scripts/marca/og-claro.html` → `opengraph-image.jpg`/`twitter-image.jpg`). Ícone do app segue o atual (claro).
+- Ícone da SOBEDESCE na família sem a moldura (placa até a borda, sem margem nem sombra) no HUB, NOSSOM, Revela,
+  TPeasy, Synquei e Carro do Freela; caches `synquei-v13` e `tpeasy-v13`. Órbita da home mostra só o ícone de cada
+  app, sem placa de vidro em volta. `products/synquei` e `products/tpeasy`: `npm test` ok; e2e 20/20.
+
 ## Revela: CST no Converter (26/10/2026)
 
 - "Log da câmera" no Converter: cada quadro passa por uma LUT 3D do CST (65³, WebGL2) antes de codificar; o shader
@@ -573,6 +590,15 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - `products/finishing`: `npm test` **79/79**. Teste novo: ProRes com cinza no código do S-Log3 vira MP4 H.264 com o
   cinza em ~124 (Y de 8 bits, o cinza 18% do Rec.709; sem o CST ficaria perto de 105) e marcado BT.709.
 - Não validado: arquivos reais de cada câmera e o desempenho em celulares.
+
+## AEON na página inicial (26/10/2026)
+
+- Migração 0012: a plataforma de edição vira **AEON** (id `ai-edit` mantido, estágio "em desenvolvimento"), com a linha
+  "Edição com IA: transcrição, cortes e timeline para o seu editor". Só troca o que ainda está como a 0003 deixou.
+- Ícone do AEON (de `products/ai-edit/marca/aeon-icone.svg`, branch `claude/ai-edit-primeiro-recorte`) em
+  `public/products/ai-edit.svg`, recortado até a placa (sem margem), no `ProductMark`: órbita, cartões, planos e HUB.
+- Cartão da home: "A IA propõe. Você aprova." Projeto: etapa "AEON" ainda não lançada. e2e procura "AEON".
+- `npm test` 140/140; e2e 20/20.
 
 ## Revela: tema claro, looks lado a lado, exportar por editor e CST por clipe (26/10/2026)
 

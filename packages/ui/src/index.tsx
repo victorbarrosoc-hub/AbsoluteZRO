@@ -4,6 +4,7 @@
  */
 import type { ReactNode } from 'react'
 import { ZRO_SIMBOLO, ZRO_WORDMARK } from './marca'
+export { ZRO_SIMBOLO, ZRO_WORDMARK } from './marca'
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ')
 
@@ -118,6 +119,7 @@ export function ProductMark({ productId, name, size = 32 }: { productId: string;
     tpeasy: '/products/tpeasy.svg',
     'carro-do-freela': '/products/carro-do-freela.png',
     finishing: '/products/finishing.svg',
+    'ai-edit': '/products/ai-edit.svg',
   }
   const src = icons[productId]
   if (!src) {
