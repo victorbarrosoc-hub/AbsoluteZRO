@@ -115,7 +115,7 @@ let nMidia = 0;
 for (const f of fs.readdirSync(MDE)) { fs.copyFileSync(path.join(MDE, f), path.join(MPARA, f)); nMidia++ }
 for (const nome of alvos) {
   const txt = fs.readFileSync(path.join(STATIC, nome + '.html'), 'utf8');
-  const faltam = [...new Set(txt.match(/m\/[\w@.-]+\.(?:webp|mp4)/g) || [])].filter(r => !fs.existsSync(path.join(STATIC, r)));
+  const faltam = [...new Set(txt.match(/m\/[\w@.-]+\.(?:webp|mp4|svg)/g) || [])].filter(r => !fs.existsSync(path.join(STATIC, r)));
   if (faltam.length) nao(nome + '.html cita mídia que não existe: ' + faltam.slice(0, 3).join(', '));
 }
 if (!falhou) ok('mídia em m/ (' + nMidia + ' arquivos) — todo arquivo citado está lá');

@@ -5239,6 +5239,31 @@ html.app .mn-pe{padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
 }
 @media(prefers-reduced-motion:reduce){ html.lado-anda *{transition:none!important} }
 
+/* ---- a família Absolute ZRO (26/out), do menu do Revela ----
+   Ícone de 22px com canto de 6px e o nome ao lado; na lateral a linha tem a
+   altura de uma aba (34px), na gaveta a de um item (42px). Nada de cor de
+   seleção: é saída para outro app, não tela daqui. */
+.ladofam{display:none}
+.fam{display:flex;align-items:center;gap:10px;min-height:34px;padding:0 10px;border-radius:8px;
+  color:var(--cal);text-decoration:none;font:500 13.5px/1.2 var(--ui);white-space:nowrap;
+  transition:background-color .15s var(--ease-suave)}
+.fam:hover{background:var(--fill)}
+.fam img{width:22px;height:22px;flex:none;border-radius:6px;object-fit:contain}
+.fam span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.fam-t{display:block;padding:14px 10px 6px;font-size:11px;font-weight:650;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--cal-tenue);white-space:nowrap;overflow:hidden}
+/* rótulo próprio, não .mn-sec: as seções da gaveta são TELAS daqui (mapa.js
+   confere a ordem delas), e a família é saída */
+.mn-fam .fam-t{padding:16px 12px 6px}
+.mn-fam .fam{min-height:42px;padding:0 12px;gap:12px;border-radius:12px;font-size:14.5px}
+@media(min-width:821px){
+  .ladofam{display:grid;gap:1px;flex:none;margin-top:12px;padding-top:2px;border-top:1px solid var(--fino);position:relative;z-index:1}
+  .mn-fam{display:none}
+  html.lado-min .ladofam .fam-t{visibility:hidden;height:14px;padding:0}
+  html.lado-min .ladofam .fam{justify-content:center;gap:0;padding:0}
+  html.lado-min .ladofam .fam span{display:none}
+}
+
 /* ---- a barra do celular: o Menu levantado no centro ---- */
 .bt-lado{display:contents}
 @media(max-width:820px){
@@ -5875,6 +5900,22 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
       <button class="tab" data-tab="meu" data-modo="freela" title="Meu perfil">Perfil</button>
       <button class="tab" data-tab="minhaprod" data-modo="contratante" title="Meu perfil">Perfil</button>
       <button class="tab" data-tab="aprender" data-modo="ambos">Aprender</button>
+      <!-- ⚠️ A FAMÍLIA ABSOLUTE ZRO (26/out), pedido do titular: o bloco que
+           ele gostou no menu do Revela — ícone e nome de cada app, levando
+           até ele. NÃO é .tab nem .ladog de propósito: não abre tela daqui,
+           a pastilha não deve pousar nele e pintarGruposLado não o conhece.
+           O Carro do Freela fica de fora (é onde a pessoa está). Os ícones
+           moram em src/midia/familia-* (cada app publica sozinho); a mesma
+           lista está na gaveta (#g-fam), que é o menu do celular. -->
+      <div class="ladofam" role="group" aria-label="Absolute ZRO">
+        <span class="fam-t" aria-hidden="true">Absolute ZRO</span>
+        <a class="fam" href="https://absolutezro.vercel.app" rel="noopener" title="Absolute ZRO"><img src="midia:familia-absolute-zro.webp" alt="" width="22" height="22" decoding="async"><span>Absolute ZRO</span></a>
+        <a class="fam" href="https://nossom-teal.vercel.app" rel="noopener" title="Nossom"><img src="midia:familia-nossom.svg" alt="" width="22" height="22" decoding="async"><span>Nossom</span></a>
+        <a class="fam" href="https://revela-zro.vercel.app" rel="noopener" title="Revela"><img src="midia:familia-revela.svg" alt="" width="22" height="22" decoding="async"><span>Revela</span></a>
+        <a class="fam" href="https://sobedesce.vercel.app" rel="noopener" title="Sobedesce"><img src="midia:familia-sobedesce.svg" alt="" width="22" height="22" decoding="async"><span>Sobedesce</span></a>
+        <a class="fam" href="https://synquei.vercel.app" rel="noopener" title="Synquei"><img src="midia:familia-synquei.svg" alt="" width="22" height="22" decoding="async"><span>Synquei</span></a>
+        <a class="fam" href="https://tpeasy.vercel.app" rel="noopener" title="TPEasy"><img src="midia:familia-tpeasy.svg" alt="" width="22" height="22" decoding="async"><span>TPEasy</span></a>
+      </div>
       <!-- o pé da lateral (17/out · 6), da referência SOBEDESCE: lá ele mostra
            a velocidade agora; aqui, o que a pessoa quer saber de relance —
            a semana dela, ou quantos estão na escuta hoje. drawLadoPe(). -->
@@ -5957,6 +5998,16 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
     <div class="mn-g"><span class="mn-sec">Encontrar</span><div id="g-nav"></div></div>
     <div class="mn-g"><span class="mn-sec">Ferramentas</span><div id="g-ferr"></div></div>
     <div class="mn-g"><span class="mn-sec">A praça</span><div id="g-mercado"></div></div>
+    <!-- a família Absolute ZRO (26/out): no computador ela já está na
+         lateral, então aqui só aparece no celular — ver .ladofam -->
+    <div class="mn-g mn-fam" id="g-fam" role="group" aria-label="Absolute ZRO"><span class="fam-t" aria-hidden="true">Absolute ZRO</span>
+      <a class="fam" href="https://absolutezro.vercel.app" rel="noopener" title="Absolute ZRO"><img src="midia:familia-absolute-zro.webp" alt="" width="22" height="22" decoding="async"><span>Absolute ZRO</span></a>
+      <a class="fam" href="https://nossom-teal.vercel.app" rel="noopener" title="Nossom"><img src="midia:familia-nossom.svg" alt="" width="22" height="22" decoding="async"><span>Nossom</span></a>
+      <a class="fam" href="https://revela-zro.vercel.app" rel="noopener" title="Revela"><img src="midia:familia-revela.svg" alt="" width="22" height="22" decoding="async"><span>Revela</span></a>
+      <a class="fam" href="https://sobedesce.vercel.app" rel="noopener" title="Sobedesce"><img src="midia:familia-sobedesce.svg" alt="" width="22" height="22" decoding="async"><span>Sobedesce</span></a>
+      <a class="fam" href="https://synquei.vercel.app" rel="noopener" title="Synquei"><img src="midia:familia-synquei.svg" alt="" width="22" height="22" decoding="async"><span>Synquei</span></a>
+      <a class="fam" href="https://tpeasy.vercel.app" rel="noopener" title="TPEasy"><img src="midia:familia-tpeasy.svg" alt="" width="22" height="22" decoding="async"><span>TPEasy</span></a>
+    </div>
     <div class="mn-g mn-fim">
       <!-- recolhidos: leitura de uma vez na vida e ajuste de vez em quando.
            Abertos ou fechados, ficam como a pessoa deixou (cdf-menu-abertos). -->
@@ -26989,7 +27040,7 @@ const FBK_KEY=/*__WEB3FORMS_KEY__*/"";   /* Web3Forms → carrodofreela@gmail.co
    suporte: durante os testes a primeira pergunta de todo relato e "qual
    versao voce esta usando?", e sem ela nao da para saber se o defeito ja
    foi consertado ou se a pessoa esta com um arquivo velho no cache. */
-const VERSAO="25/out · 2";
+const VERSAO="26/out";
 /* ?diag na URL faz a linha de contexto do suporte mostrar as medidas do
    aparelho. Existe porque daqui não dá para inspecionar o Safari do
    Victor: em vez de adivinhar uma quarta vez, ele abre com ?diag, toca no

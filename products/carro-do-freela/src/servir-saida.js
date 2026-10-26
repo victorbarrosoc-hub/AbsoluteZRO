@@ -14,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.webp': 'image/webp', '.mp4': 'video/mp4', '.png': 'image/png',
-  '.jpg': 'image/jpeg', '.webmanifest': 'application/manifest+json', '.json': 'application/json' };
+  '.jpg': 'image/jpeg', '.webmanifest': 'application/manifest+json', '.json': 'application/json', '.svg': 'image/svg+xml' };
 
 function servirSaida(saida) {
   const cfg = JSON.parse(fs.readFileSync(path.join(saida, 'config.json'), 'utf8'));
