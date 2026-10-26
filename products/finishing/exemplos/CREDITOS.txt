@@ -1,9 +1,0 @@
-Imagens de exemplo da Revela (botão "Testar com um exemplo" e página inicial).
-Frames da ZRO Filmes, os mesmos publicados em zrofilmes.vercel.app/absolute, usados a pedido do titular (26/10/2026).
-Os frames já têm a cor final. O "antes" é o mesmo frame levado de volta a uma curva log (pretos levantados, brancos
-baixos, metade da saturação), para mostrar o caminho log → cor final.
-
-- referencia-cavalo.jpg            frame "cavalo", com a cor final (a referência)
-- material-vestido.jpg             frame "vestido" em log simulado (o material)
-- ../marca/home/hero-antes.jpg     frame "vinho" em log simulado
-- ../marca/home/hero-depois.jpg    frame "vinho" como foi entregue
