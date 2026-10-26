@@ -14,6 +14,7 @@ const { Atualizador, readBuildInfo, handoffCommand, isHandoffScript } = require(
 const { Organizador } = require('./organizador.cjs')
 const { Ponte, pastaTroca } = require('./davinci.cjs')
 const { Biblioteca } = require('./sfx-biblioteca.cjs')
+const { TIPOS: TIPOS_NOMES, lerLinkOrganizar, linkNoArgv } = require('./link-organizar.cjs')
 
 const SCHEME = 'synquei'
 const ROOT = path.join(__dirname, '..')
@@ -42,6 +43,18 @@ protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: 
 
 // Um app só: abrir de novo traz a janela que já existe para a frente.
 if (!SMOKE && !app.requestSingleInstanceLock()) app.quit()
+
+// "Abrir no Synquei" do SOBEDESCE: o sistema abre synquei://organizar?pasta=… com este app (desktop/link-organizar.cjs).
+// O link pode chegar antes de o Organizar estar pronto: fica guardado até lá.
+let linkPendente = SMOKE ? null : linkNoArgv(process.argv)
+if (!SMOKE) {
+  if (process.defaultApp && process.argv[1]) app.setAsDefaultProtocolClient(SCHEME, process.execPath, [path.resolve(process.argv[1])])
+  else app.setAsDefaultProtocolClient(SCHEME)
+  app.on('open-url', (event, link) => {
+    event.preventDefault()
+    receberLink(link)
+  })
+}
 
 let win = null
 let org = null
@@ -252,6 +265,39 @@ function iniciarOrganizar() {
   handle('davinci:enviar', (pedido) => ponte.enviar(pedido))
   org.start()
   ponte.start()
+  if (linkPendente) receberLink(linkPendente)
+}
+
+/** synquei://organizar: pergunta antes (o link pode vir de qualquer lugar) e põe a pasta no Organizar. */
+async function receberLink(link) {
+  if (!org || !app.isReady()) {
+    linkPendente = link
+    return
+  }
+  linkPendente = null
+  const pedido = lerLinkOrganizar(link)
+  if (!pedido) return
+  if (win) {
+    if (win.isMinimized()) win.restore()
+    win.focus()
+  }
+  const tipo = pedido.tipo ? TIPOS_NOMES[pedido.tipo] || pedido.tipo : null
+  const r = await dialog.showMessageBox(win || undefined, {
+    type: 'question',
+    message: `Organizar "${path.basename(pedido.pasta)}" no Synquei?`,
+    detail: [pedido.pasta, tipo ? `Tipo: ${tipo}` : 'O tipo de projeto você escolhe em seguida.', 'O Synquei não move nem renomeia nada: só lê os cartões conferidos pelo SOBEDESCE.'].join('\n\n'),
+    buttons: ['Organizar', 'Cancelar'],
+    defaultId: 0,
+    cancelId: 1,
+  })
+  if (r.response !== 0) return
+  try {
+    const p = await org.adicionar(pedido.pasta, { tipo: pedido.tipo })
+    if (pedido.tipo && !p.tipo) await org.vincular(p.id, { tipo: pedido.tipo })
+    enviar('synquei:org-abrir', { pastaId: p.id })
+  } catch (err) {
+    dialog.showMessageBox(win || undefined, { type: 'warning', message: 'Não deu para organizar essa pasta.', detail: String((err && err.message) || err) })
+  }
 }
 
 // ───────── atualização pelo próprio app (desktop/atualizador.cjs) ─────────
@@ -359,7 +405,9 @@ app.whenReady().then(() => {
   })
 })
 
-app.on('second-instance', () => {
+app.on('second-instance', (_e, argv) => {
+  const link = linkNoArgv(argv)
+  if (link) receberLink(link)
   if (win) {
     if (win.isMinimized()) win.restore()
     win.focus()

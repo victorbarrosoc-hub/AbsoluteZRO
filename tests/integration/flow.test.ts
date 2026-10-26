@@ -11,6 +11,7 @@ import {
   HANDLERS,
   importCarroJob,
   importScriptFromTpeasy,
+  importSobedesceDelivery,
   importSobedesceManifest,
   previewOrganizationPlan,
   ROUTES,
@@ -139,5 +140,33 @@ describe('Ciclo do O ponta a ponta', () => {
     const { steps, events } = await getProject(db, o.auth, pid)
     expect(steps.find((s) => s.stepKey === 'sobedesce')!.displayState).toBe('failed')
     expect(events.map((e) => e.event_type)).toEqual(['ingest.failed'])
+  })
+
+  it('entrega conferida do SOBEDESCE: delivery.ready v2 com o link da pasta, sem duplicar; sem plano, 403', async () => {
+    const o = await newOrgWithOwner(db, 'entrega')
+    await givePlan(db, o.orgId, 'individual-sobedesce')
+    await giveLimits(db, o.orgId, 'sobedesce', { 'sobedesce.manifest_imports': 5 })
+    const pid = await createProject(db, o.auth, { title: 'Entrega' })
+    const entrega = fixture('sobedesce/entrega.json')
+    const r = await importSobedesceDelivery(db, o.auth, { projectId: pid, entrega })
+    expect(r).toMatchObject({ duplicate: false, files: 3, folderUrl: 'https://drive.google.com/drive/folders/pastaTesteEntrega01' })
+    expect((await importSobedesceDelivery(db, o.auth, { projectId: pid, entrega })).duplicate).toBe(true)
+    const { events } = await getProject(db, o.auth, pid)
+    const ev = events.filter((e) => e.event_type === 'delivery.ready')
+    expect(ev).toHaveLength(1)
+    expect(ev[0]).toMatchObject({ schema_version: 2, producer: 'sobedesce', payload: { source: 'sobedesce', verified: true, checksum: 'md5', files: 3 } })
+    // registrar de novo não gasta cota
+    const [u] =
+      await db.sql`select coalesce(sum(amount), 0)::int as n from zro.usage_events where org_id = ${o.orgId} and metric = 'sobedesce.manifest_imports'`
+    expect(u!.n).toBe(1)
+
+    // comprovante adulterado (link de outro lugar) é recusado
+    const outro = JSON.parse(entrega)
+    outro.drive.link = 'https://exemplo.com/pasta'
+    await expectCode(importSobedesceDelivery(db, o.auth, { projectId: pid, entrega: JSON.stringify(outro) }), 'invalid_input')
+
+    const sem = await newOrgWithOwner(db, 'entrega-sem-plano')
+    const pid2 = await createProject(db, sem.auth, { title: 'Sem plano' })
+    expect((await expectCode(importSobedesceDelivery(db, sem.auth, { projectId: pid2, entrega }), 'entitlement_required')).status).toBe(403)
   })
 })
