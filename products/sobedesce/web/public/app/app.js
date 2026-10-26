@@ -21,6 +21,7 @@ import { MacJunkSheet } from './components/browser.js'
 import { BaixarSheet, LixeiraSheet } from './components/selecao.js'
 import { ItemMenuSheet } from './components/item-menu.js'
 import { ProxySheet } from './components/proxies.js'
+import { RevelaSheet } from './components/revela.js'
 import { CopySheet } from './components/copiar.js'
 import { FramesPostSheet } from './components/criar.js'
 import { P2pEnvioSheet, P2pReceberSheet } from './components/p2p.js'
@@ -46,6 +47,7 @@ const SHEETS = {
   lixeiraSelecao: LixeiraSheet,
   itemMenu: ItemMenuSheet,
   proxySelecao: ProxySheet,
+  revela: RevelaSheet,
   copiar: CopySheet,
   framesPost: FramesPostSheet,
   p2pEnvio: P2pEnvioSheet,

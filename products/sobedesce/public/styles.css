@@ -12094,3 +12094,101 @@ button.pn-cartao:hover .pn-seta {
     animation: none;
   }
 }
+
+/* ───── Converter com a Revela (components/revela.js): cartões, um número, um selo ───── */
+.rv-dialog .modal-icon {
+  background: none;
+  width: 36px;
+  height: 36px;
+}
+.rv-marca {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+}
+.rv-andamento {
+  display: grid;
+  gap: 12px;
+  padding: 8px 0 4px;
+}
+.rv-fase {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+}
+.rv-pct {
+  margin-left: auto;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.rv-pronto {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 10px 0 4px;
+  text-align: center;
+}
+.rv-ok {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--ok);
+  color: #fff;
+  animation: rv-pop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.rv-nome {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+}
+.rv-fichas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+.rv-fichas span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+.rv-avisos {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  color: var(--warn-text, #b25000);
+  font-size: 12.5px;
+  text-align: left;
+}
+.rv-avisos li {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+@keyframes rv-pop {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rv-ok {
+    animation: none;
+  }
+}

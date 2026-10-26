@@ -12,7 +12,7 @@
 //     página confirmar a chave (quem manda um link de fora não sabe a chave).
 //  3. Avisos (Web Push): "Pronto: 8 arquivos enviados do MacBook…" quando o computador termina; o toque abre
 //     /app/#computador (ou a folha, se o app já estiver aberto).
-const CACHE = 'sobedesce-app-v58'
+const CACHE = 'sobedesce-app-v59'
 const SCOPE = new URL('./', self.location).pathname // "/app/"
 const STREAM = SCOPE + 'stream/'
 const GOOGLE_API = 'https://www.googleapis.com/drive/v3'
@@ -57,6 +57,9 @@ const SHELL = [
   './lib/psd-ler.js',
   './lib/psd-worker.js',
   './lib/referencias.js',
+  './lib/revela.js',
+  './lib/revela/conversao/plano.js',
+  './lib/revela/entrega/destinos.js',
   './lib/state.js',
   './lib/stream.js',
   './lib/tamanho.js',
@@ -83,6 +86,7 @@ const SHELL = [
   './components/psd.js',
   './components/queue.js',
   './components/referencias.js',
+  './components/revela.js',
   './components/scrub.js',
   './components/selecao.js',
   './components/settings.js',
@@ -92,6 +96,7 @@ const SHELL = [
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',
   './icons/favicon.svg',
+  './icons/revela.svg',
 ]
 
 self.addEventListener('install', (event) => {

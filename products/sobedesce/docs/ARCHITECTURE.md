@@ -69,6 +69,9 @@ src/
   media/previa-fila.js   GeradorPrevias: fila depois do envio (Proxy/<nome>.mp4 + appProperties), vaga única de conversão
   media/previa-lote.js   "Gerar proxies da pasta" / "Gerar proxy": vídeos que já estão no Drive, achados no computador por nome + tamanho
   server/previas.js      rotas /api/previas* e o lote (SSE 'previas')
+  media/revela.js        "Converter com a Revela": leitura para o plano, linha de comando (bitrate, BT.709, AAC), conversão e envio ao lado do original
+  revela/                cópia de products/finishing (entrega/destinos.js e conversao/plano.js), conferida por test/revela.test.js
+  server/revela.js       rotas /api/revela* e os trabalhos (SSE 'revela')
   server/tamanho.js      rotas /api/drive/:acc/tamanho (tamanho das pastas: contas guardadas na sessão, fila de 2)
   server/copiar.js       rotas /api/copiar (copiar de um link do Drive para uma pasta da conta; google/copiar.js)
   local/fsbrowse.js      raízes (Início, Mesa, discos externos) e listagem de pastas
@@ -693,6 +696,16 @@ SSE `previas`. Na tela Drive: "Gerar proxies da pasta" (barra) e "Gerar proxy" (
 pedidos da conta SOBEDESCE e gera do mesmo jeito (docs/CONTAS.md §11). Selo "Proxy" na lista/grade (`useComProxy`:
 mesmo nome-base na pasta ou dentro da subpasta Proxy/Proxies listada, uma consulta por subpasta).
 
+"Converter com a Revela" (media/revela.js, botão direito num vídeo da tela Drive; pedido pelo celular:
+no celular, o próprio aparelho converte: web/public/app/lib/revela.js, docs/CONTAS.md §11): o vídeo vira a versão de entrega de um destino da
+Revela (YouTube, Vimeo, Reels, TikTok) e sobe NA MESMA PASTA como `<nome>-<destino>.mp4`, com
+`appProperties { sobedesce: 'revela', original, destino }`. Quem decide codec, bitrate, tamanho e áudio é a Revela
+(`src/revela/`, cópia de products/finishing com teste que confere). Usa o original que a fila conhece ou baixa do Drive,
+lê com `ffmpeg -i`, converte com o codificador de hardware (H.264, alvo da Revela, teto 1,5×, GOP de meio segundo,
+`scale` com matriz BT.709 e faixa de TV, tags 1-1-1, AAC 48 kHz) na vaga única da prévia leve, sobe e confere o MD5 que
+o Drive devolve. O original nunca muda. Trabalhos: SSE `revela` (fase `esperando`|`baixando`|`analisando`|
+`convertendo`|`enviando`|`conferindo`, `frac`), vários na fila, um convertendo por vez.
+
 Prévia (as três): vídeo com mais de 30 MB (qualquer codec) procura a cópia leve antes de tocar e toca ela, com
 **Proxy | Original** no canto (troca no mesmo ponto). Sem cópia, as regras de
 antes (proxy para o que não toca, aviso de vídeo pesado). Baixar baixa sempre o original. `appProperties` só é visível
@@ -949,6 +962,9 @@ Respostas JSON `{ ok: true, ... }` ou `{ ok: false, error: 'mensagem PT-BR' }` c
 | GET | `/api/previas/espaco` | | `{ livre }` (bytes livres onde os originais baixados ficam) |
 | POST | `/api/transfers/proxy` | `{ ids: string[], proxy: boolean }` | `{ count }` (proxy por arquivo; concluído + true = gerar agora) |
 | GET / DELETE | `/api/previas/lote/:jobId` | | como o das miniaturas |
+| GET | `/api/revela` | | `{ destinos: [{ id, nome, resumo, vertical }], pronto, motor }` |
+| POST | `/api/revela/converter` | `{ accountId, id, destino }` | `{ jobId }` (SSE `revela`; 400 destino desconhecido ou não é vídeo, 409 sem conversor) |
+| GET / DELETE | `/api/revela/converter/:jobId` | | o trabalho (`{ jobId, arquivo, destino, status, fase, frac, resultado, error? }`) / parar |
 | POST | `/api/compare` | `{ accountId, localPath, driveFolderId, mode }` | `{ jobId }` (progresso via SSE) |
 | GET | `/api/compare/:jobId` | | `{ status, progress, result?, error? }` |
 | POST | `/api/compare/:jobId/upload` | `{ statuses?: ['missing','different'], relDirs?: string[] }` | `{ batch, count, bytes }` |
