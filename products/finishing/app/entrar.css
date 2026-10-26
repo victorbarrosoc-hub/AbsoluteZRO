@@ -1,5 +1,4 @@
-/* Revela · página de entrada: o ícone, uma frase, duas ações. Luz de filme ao fundo, devagar; nada com "reduzir
-   movimento". */
+/* Revela · página de entrada: o ícone, uma frase, duas ações. Fundo liso: sem mancha de luz (padrão da família). */
 .pagina-entrar {
   min-height: 100svh;
   display: grid;
@@ -7,14 +6,7 @@
   overflow-x: hidden;
 }
 .entrar-luz {
-  position: fixed;
-  inset: -20%;
-  z-index: -1;
-  background:
-    radial-gradient(30% 35% at 35% 40%, rgb(139 63 232 / 0.28), transparent 70%), radial-gradient(30% 35% at 65% 45%, rgb(255 184 0 / 0.2), transparent 70%),
-    radial-gradient(25% 30% at 50% 70%, rgb(229 43 26 / 0.16), transparent 70%);
-  filter: blur(30px);
-  pointer-events: none;
+  display: none;
 }
 .entrar-voltar {
   justify-self: start;

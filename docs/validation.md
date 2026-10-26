@@ -599,3 +599,19 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   `public/products/ai-edit.svg`, recortado até a placa (sem margem), no `ProductMark`: órbita, cartões, planos e HUB.
 - Cartão da home: "A IA propõe. Você aprova." Projeto: etapa "AEON" ainda não lançada. e2e procura "AEON".
 - `npm test` 140/140; e2e 20/20.
+
+## Revela: tema claro, looks lado a lado, exportar por editor e CST por clipe (26/10/2026)
+
+- Tema claro por padrão em todas as telas (o escuro fica no menu e é lembrado), logo grafite no claro, Figtree nos
+  títulos (servida da própria Revela), sem manchas de luz na página inicial nem no login. Página inicial com menos
+  texto (sem sobretítulos e sem frases nos cartões), seção "Um frame. Todos os looks." e telas reais no tema escolhido.
+- Cinco looks (`LOOKS`): diferentes entre si, cinza sempre subindo em luz percebida, P&B sem cor. Grade de looks na tela
+  de LUT: só o frame já mostra todos; com referência, ela entra primeiro e dá para voltar.
+- Exportar: Premiere, Final Cut e CapCut recebem .cube de 33 com o editor no nome; .xmp de cada look é XML válido.
+- CST por clipe: o relatório do `toCsv` do Synquei vira câmeras com log sugerido; o script gerado roda num Resolve de
+  mentira (Python) e põe a LUT certa no nó 1 de cada clipe, deixando de fora clipe sem log ou fora do relatório.
+- `products/finishing`: `npm test` (ver o total no PR). CI da Revela também roda quando muda o relatório do Synquei.
+- Não validado: o script num DaVinci Resolve real (SetLUT no nó 1), os .cube no Premiere, Final Cut e CapCut reais, o
+  .xmp num Lightroom real.
+- Não feito, por depender de outros apps: entrega da Revela subindo pelo SOBEDESCE com MD5 e `delivery.ready` no HUB;
+  desconto de `zro.ai_credits` (a Revela não usa GPU de servidor).

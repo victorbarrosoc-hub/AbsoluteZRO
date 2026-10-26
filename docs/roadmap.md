@@ -106,6 +106,18 @@ Atualizado em 25/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - 🟡 Revela: Clonar LUT (antes e depois do mesmo frame) e preset .xmp para Lightroom (aproximado). Falta: conferir o .xmp num Lightroom real.
 - ✅ Família Absolute ZRO no menu de todas as plataformas, em ordem alfabética (HUB, Revela, Sobedesce, Synquei, Nossom, TPEasy; Carro do Freela em seguida).
 - ✅ Revela: dock de ferramentas embaixo (estilo DaVinci) e menu lateral recolhível (trilho no computador, gaveta no celular).
+- ✅ Revela: tema claro por padrão (escuro no menu), títulos em Figtree, página inicial sem manchas de luz, com menos
+  texto e telas reais no tema escolhido.
+- ✅ Revela: cinco looks próprios e a grade com todos no mesmo frame, lado a lado (tela de LUT e página inicial).
+- 🟡 Revela: exportar o look para Resolve, Premiere, Final Cut e CapCut (.cube no tamanho de cada um) e Lightroom
+  (.xmp aproximado, XML conferido). Falta: abrir os arquivos em cada editor real.
+- 🟡 Revela: CST por clipe a partir do relatório do Synquei (script do Resolve com as LUTs dentro, testado num Resolve
+  simulado). Falta: Resolve real; o Synquei não lê o perfil de log, só a câmera.
+- ⬜ Revela → SOBEDESCE → HUB (`delivery.ready`): falta porta de entrada no SOBEDESCE para receber a pasta de entrega
+  de outro app e rota no HUB para produto publicar evento (hoje só sessão de navegador e rotas específicas).
+- ⬜ Revela e créditos: a Revela não usa GPU de servidor (tudo roda no aparelho), então não há `zro.ai_credits` a
+  descontar. Quando houver, falta rota no HUB para produto debitar e a Revela guardar o token de acesso.
+- ⬜ Revela: compra única (Revela Look + LUTs CST) só depois de validar o Look no Resolve.
 
 ## Fase 6 — Escala
 
