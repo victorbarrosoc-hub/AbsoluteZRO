@@ -54,6 +54,8 @@ const abertos = new Map()
 let proxId = 1
 
 const cabecalhos = (extra) => ({ ...CABECALHOS, ...extra })
+// teste de fumaça: arquivos pedidos que não existem (vão para o relatório se falhar)
+const faltas = []
 
 /** <esquema>://app/__midia?c=<caminho>: o arquivo escolhido, com Range (o <video> e o Mediabunny pedem pedaços). */
 async function midia(req, u) {
@@ -175,7 +177,9 @@ function servir() {
     try {
       const body = await fsp.readFile(file)
       return new Response(body, { headers: cabecalhos({ 'content-type': MIME[path.extname(file).toLowerCase()] || 'application/octet-stream', 'cache-control': 'no-cache' }) })
-    } catch {
+    } catch (err) {
+      // no teste de fumaça, o que faltou aparece no log (o erro de import do navegador não diz qual arquivo)
+      if (SMOKE) faltas.push(`404 ${u.pathname} → ${file}: ${err && err.code}`)
       return new Response('Não encontrado', { status: 404 })
     }
   })
@@ -390,6 +394,7 @@ async function smoke() {
   try {
     await new Promise((r) => win.webContents.once('did-finish-load', r))
     log(`Electron ${process.versions.electron} · Chromium ${process.versions.chrome} · ${process.platform}-${process.arch}`)
+    win.webContents.on('console-message', (e) => log(`console: ${e.message || ''}`))
     const r = await rodar(`import('./autoteste.js').then((m) => m.autoteste())`)
     log(JSON.stringify(r))
     clearTimeout(relogio)
@@ -397,6 +402,7 @@ async function smoke() {
   } catch (err) {
     clearTimeout(relogio)
     log(`erro: ${err && err.message ? err.message : err}`)
+    for (const f of faltas) log(f)
     fim(false)
   }
 }
