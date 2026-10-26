@@ -216,6 +216,15 @@ O Google Drive toca vídeo pesado sem travar porque usa uma cópia leve que ele 
 - **Espaço no Drive:** cada cópia ocupa cerca de **2 a 5% do original** (≈ 40 MB por minuto de vídeo). Uma diária de 500 GB em ProRes vira uns 10–20 GB de prévias.
 - O ffmpeg vem dentro do app (GPL v3; licença e fontes em `Resources/ffmpeg-licencas`). Sem ele (rodando do código), o app usa o ffmpeg do sistema (`brew install ffmpeg`), a variável `SOBEDESCE_FFMPEG`, ou `node scripts/ffmpeg-baixar.mjs` para baixar o mesmo do instalador.
 
+### Converter com a Revela
+
+Botão direito num vídeo do Drive → **Converter com a Revela…** → escolha **YouTube**, **Vimeo**, **Reels** ou
+**TikTok** → **Converter**. O app converte com o chip de vídeo da máquina e sobe `<nome>-<destino>.mp4` **na mesma pasta**,
+com o MD5 conferido. Codec, bitrate, tamanho e áudio vêm dos presets da **Revela** (a ferramenta de finalização da
+Absolute ZRO): H.264 marcado BT.709, AAC 48 kHz. Pelo celular: no menu do vídeo, **Converter com a Revela**; o
+**próprio celular** converte (sem computador ligado) e envia o arquivo novo para a mesma pasta. Converte quem tocou no
+botão. Deixe a tela aberta; acima de ~1,5 GB de arquivo final, prefira o computador. O original nunca muda.
+
 ### Referências (vídeos e fotos que inspiram seus projetos)
 
 Uma biblioteca no estilo "Salvos" do Instagram, guardada no **seu Drive** em `SOBEDESCE Referências/<Coleção>/`. Precisa da conta SOBEDESCE.

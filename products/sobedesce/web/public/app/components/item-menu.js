@@ -157,6 +157,7 @@ export function ItemMenuSheet({ f, onAbrir, onSelecionar, dest, inicio, driveId,
             ${pasta ? html`<${Item} icon="disk" label="Calcular tamanho" onClick=${fechar(() => folderSizes.start({ id: t.id, driveId: driveId || f.driveId || null }, { refresh: true }))} />` : null}
             ${video ? html`<${Item} icon="film" label="Gerar proxy" sub="O computador gera a cópia leve" onClick=${() => openSheet('proxySelecao', { itens: [f], fora: 0 })} />` : null}
             ${video ? html`<${Item} icon="sparkle" label="Frames" onClick=${fechar(() => framesDoDrive(f))} />` : null}
+            ${video ? html`<${Item} icon="compare" label="Converter com a Revela" onClick=${() => openSheet('revela', { f, pasta: inicio })} />` : null}
           </ul>
           ${!pasta && caps.canTrash !== false
             ? html`<ul class="group menu rmenu-danger">

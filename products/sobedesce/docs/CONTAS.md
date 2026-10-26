@@ -321,6 +321,9 @@ das Referências (pegar de uma vez só, sinal de vida, preso volta para a fila).
 - **Celular** (`components/proxies.js`): na seleção da aba Drive, **Gerar proxy** (só vídeos, inclusive RAW de câmera;
   não as próprias cópias leves). A folha diz se há um computador ligado (pela notícia do "Acompanhar pelo celular"),
   pede e acompanha cada vídeo a cada 5 s enquanto está aberta: esperando, gerando, pronto ou o erro com **De novo**.
+  No menu de um vídeo, **Converter com a Revela** (`components/revela.js`) NÃO é pedido ao computador: o próprio
+  celular converte (`lib/revela.js`: lê do Drive por pedaços com o token, WebCodecs, ProRes em WASM, BT.709) e o
+  arquivo novo entra na fila de envios para a mesma pasta. Um botão só: converte o aparelho que tocou.
 
 ## 12. Entrar com Absolute ZRO (login único da família)
 

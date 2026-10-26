@@ -30,7 +30,9 @@ if (process.env.NODE_ENV !== "production") {
 }
 const appCsp = [
   "default-src 'self'",
-  "script-src 'self'",
+  // 'wasm-unsafe-eval' e worker-src blob:: o "Converter com a Revela" decodifica ProRes em WebAssembly, em workers
+  // criados pela própria biblioteca (lib/revela.js, vendor/mediabunny*). Nenhum script de fora entra por aqui.
+  "script-src 'self' 'wasm-unsafe-eval'",
   "style-src 'self'",
   `connect-src ${appConnect.join(" ")}`,
   `img-src ${appImg.join(" ")}`,
@@ -40,7 +42,7 @@ const appCsp = [
   "frame-src https://*.google.com https://*.googleusercontent.com",
   "font-src 'self'",
   "manifest-src 'self'",
-  "worker-src 'self'",
+  "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'none'",
   "form-action 'none'",
