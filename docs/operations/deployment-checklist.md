@@ -27,7 +27,10 @@ https://absolutezro.com, com o projeto Supabase **novo** `AbsoluteZRO` (nenhum b
 - `ZRO_IP_HASH_SECRET` (openssl rand -hex 32): sem ela, o IP não é guardado nem usado nos limites por IP.
 - Ambiente e origem saem da Vercel (`VERCEL_ENV`, `VERCEL_PROJECT_PRODUCTION_URL`); `ZRO_ENV`/`ZRO_APP_ORIGIN` só se
   quiser forçar.
-- Cobrança só quando houver provedor: `ZRO_BILLING_PROVIDERS` e `ZRO_BILLING_WEBHOOK_SECRET_<PROVEDOR>`.
+- Cobrança pelo Stripe (ADR 0019): `STRIPE_SECRET_KEY` e `STRIPE_WEBHOOK_SECRET` no projeto `absolutezro` (Production).
+  Webhook do Stripe em `https://absolutezro.com/api/v1/billing/webhooks/stripe` com `customer.subscription.created`,
+  `.updated` e `.deleted`; portal do cliente salvo uma vez no painel do Stripe. Depois, Administração → Vendas →
+  "Ligar vendas" com a data de corte do grátis antigo.
 
 ## 4. Produção
 

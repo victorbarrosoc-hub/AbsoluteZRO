@@ -67,7 +67,7 @@ export default async function Pessoas({ searchParams }: Props) {
 
       <Card title="Contas por app" eyebrow="Login único">
         {s.apps.length ? (
-          <div className="zro-table-wrap">
+          <div className="zro-table-wrap" tabIndex={0} role="region" aria-label="Tabela">
             <table className="zro-table">
               <thead>
                 <tr>

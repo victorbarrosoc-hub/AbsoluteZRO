@@ -61,7 +61,7 @@ test('admin vê pessoas, troca o plano, exporta CSV e a tela passa no axe', asyn
   await expect(row).toContainText('Org do admin')
   await expect(row).toContainText('Conta Absolute ZRO · grátis')
 
-  await row.getByLabel('Plano de Org do admin').selectOption({ label: 'Synquei (v1)' })
+  await row.getByLabel('Plano de Org do admin').selectOption({ label: 'Synquei · mensal (v2)' })
   await row.getByRole('button', { name: 'Salvar' }).click()
   await expect(row.getByText('Plano trocado.')).toBeVisible()
   await page.reload()

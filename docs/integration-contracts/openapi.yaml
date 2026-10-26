@@ -139,7 +139,7 @@ paths:
   /api/v1/billing/webhooks/{provider}:
     post:
       security: [{ providerSignature: [] }]
-      summary: Evento de cobrança assinado (provedor habilitado em ZRO_BILLING_PROVIDERS)
+      summary: Evento de cobrança assinado (stripe com Stripe-Signature e STRIPE_WEBHOOK_SECRET; outros em ZRO_BILLING_PROVIDERS)
       parameters: [{ name: provider, in: path, required: true, schema: { type: string } }]
       responses:
         {

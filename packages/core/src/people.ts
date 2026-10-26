@@ -237,10 +237,13 @@ export async function peopleSummary(tx: Queryable): Promise<PeopleSummary> {
 
 /** Planos que podem ser escolhidos na troca (ativos) e códigos para o filtro. */
 export async function planOptions(tx: Queryable) {
-  const rows = await tx`select id, code, version, name, kind, status from zro.plans where status <> 'draft' order by code, version desc`
+  const rows = await tx`select id, code, version, name, kind, status, billing_interval from zro.plans where status <> 'draft' order by code, version desc`
+  // Mensal e anual têm o mesmo nome: o período entra no rótulo.
+  const label = (p: (typeof rows)[number]) =>
+    `${p.name as string}${p.billing_interval === 'year' ? ' · anual' : p.billing_interval === 'month' ? ' · mensal' : ''}`
   const active = rows
     .filter((p) => p.status === 'active')
-    .map((p) => ({ id: p.id as string, code: p.code as string, version: p.version as number, name: p.name as string }))
+    .map((p) => ({ id: p.id as string, code: p.code as string, version: p.version as number, name: label(p) }))
   const codes = [...new Map(rows.map((p) => [p.code as string, p.name as string])).entries()].map(([code, name]) => ({ code, name }))
   return { active, codes }
 }
