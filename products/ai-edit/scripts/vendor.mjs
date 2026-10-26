@@ -41,7 +41,7 @@ COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER I
 OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 `
 
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop())) {
+if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split(/[\\/]/).pop())) {
   mkdirSync(destino('ort'), { recursive: true })
   copyFileSync(nm('mediabunny/dist/bundles/mediabunny.min.mjs'), destino('mediabunny.min.mjs'))
   writeFileSync(destino('mediabunny-prores.min.mjs'), prores())

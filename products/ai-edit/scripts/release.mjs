@@ -53,7 +53,7 @@ export async function versao(pasta, out, agora = new Date()) {
   return v
 }
 
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop())) {
+if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split(/[\\/]/).pop())) {
   const [cmd, ...a] = process.argv.slice(2)
   if (cmd === 'nomear') console.log(await nomear(a[0], a[1], a[2]))
   else if (cmd === 'versao') console.log(await versao(a[0], a[1]))

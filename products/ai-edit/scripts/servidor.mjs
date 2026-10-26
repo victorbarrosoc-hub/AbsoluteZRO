@@ -40,7 +40,7 @@ export function servir({ raiz = RAIZ, porta = 0, extra } = {}) {
   return new Promise((r) => s.listen(porta, '127.0.0.1', () => r({ servidor: s, url: `http://localhost:${s.address().port}/` })))
 }
 
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop())) {
+if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split(/[\\/]/).pop())) {
   const { url } = await servir({ porta: Number(process.argv[2]) || 8080 })
   console.log(`${url}app/`)
 }
