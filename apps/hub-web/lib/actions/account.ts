@@ -3,10 +3,20 @@ import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { confirmEmailChange, defaultSender, requestEmailChange } from '@zro/auth'
-import { cancelPlanRequest, removeAvatar, requestPlanChange, setAvatar, updateDisplayName, type PlanRequestKind } from '@zro/core'
+import {
+  billingPortalUrl,
+  cancelPlanRequest,
+  removeAvatar,
+  startCheckout,
+  requestPlanChange,
+  setAvatar,
+  updateDisplayName,
+  type PlanRequestKind,
+} from '@zro/core'
 import type { FormState } from '@/components/action-form'
 import { appOrigin, showDevLinks } from '../env'
 import { db, getAuth } from '../session'
+import { stripeConfig } from '../stripe'
 import { str, toFormError } from './helpers'
 
 const mail = defaultSender()
@@ -81,6 +91,31 @@ export async function planRequestAction(_: FormState, fd: FormData): Promise<For
   } catch (e) {
     return toFormError(e)
   }
+}
+
+/** Assinar: leva ao checkout do Stripe. Sem as chaves do Stripe no ambiente, a venda online fica fechada. */
+export async function checkoutAction(_: FormState, fd: FormData): Promise<FormState> {
+  const cfg = stripeConfig()
+  if (!cfg) return { error: 'Pagamento online ainda fechado.' }
+  let url: string
+  try {
+    url = await startCheckout(db(), await getAuth(), cfg, { planId: str(fd, 'planId'), origin: appOrigin })
+  } catch (e) {
+    return toFormError(e)
+  }
+  redirect(url)
+}
+
+export async function portalAction(_: FormState): Promise<FormState> {
+  const cfg = stripeConfig()
+  if (!cfg) return { error: 'Pagamento online ainda fechado.' }
+  let url: string
+  try {
+    url = await billingPortalUrl(db(), await getAuth(), cfg, appOrigin)
+  } catch (e) {
+    return toFormError(e)
+  }
+  redirect(url)
 }
 
 export async function cancelPlanRequestAction(fd: FormData) {

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { salesStatus } from '@zro/billing'
 import { requirePlatformAdmin } from '@zro/core'
 import { Card, Field, Notice, Pill } from '@zro/ui'
 import { ActionForm } from '@/components/action-form'
@@ -9,6 +10,7 @@ import {
   cancelSubscriptionAction,
   createPlanVersionAction,
   grantAction,
+  launchSalesAction,
   publishPlanAction,
   registerOAuthClientAction,
   resolvePlanRequestAction,
@@ -17,6 +19,7 @@ import {
 } from '@/lib/actions/admin'
 import { fmtDate, fmtDay, RUN_LABEL } from '@/lib/labels'
 import { db, getAuth } from '@/lib/session'
+import { stripeConfig } from '@/lib/stripe'
 
 export const metadata: Metadata = { title: 'Administração' }
 
@@ -42,6 +45,7 @@ export default async function Admin() {
                       (select count(*)::int from zro.app_accounts a where a.client_id = c.id) as accounts,
                       (select count(*)::int from zro.app_accounts a where a.client_id = c.id and a.first_login_at > now() - interval '30 days') as accounts_30d
                from zro.oauth_clients c order by c.created_at desc`,
+    sales: await salesStatus(tx),
     billing: await tx`select provider, provider_event_id, type, status, error, received_at from zro.billing_events order by received_at desc limit 50`,
     requests: await tx`
       select r.id, r.kind, r.created_at, o.name as org, o.id as org_id, u.display_name as who, u.email, p.name as plan
@@ -63,6 +67,29 @@ export default async function Admin() {
         </Link>
       </div>
       {!isAdmin && <Notice title="Suporte: somente leitura">Concessões e catálogo exigem papel admin.</Notice>}
+
+      <Card title="Vendas" eyebrow="Stripe" id="vendas">
+        {d.sales.launched ? (
+          <p>
+            Ligadas em {fmtDay(new Date(d.sales.at))}. Conta nova ganha {d.sales.trialDays} dias do Completo; o grátis antigo vale até{' '}
+            {fmtDay(new Date(d.sales.cutoff))}.
+          </p>
+        ) : !stripeConfig() ? (
+          <Notice title="Stripe sem chaves">Coloque STRIPE_SECRET_KEY e STRIPE_WEBHOOK_SECRET no projeto absolutezro da Vercel.</Notice>
+        ) : isAdmin ? (
+          <ActionForm action={launchSalesAction} submit="Ligar vendas" className="row">
+            <Field label="Grátis antigo vale até" htmlFor="vendas-corte">
+              <input className="zro-input" id="vendas-corte" type="date" name="cutoff" required />
+            </Field>
+            <Field label="Dias de teste" htmlFor="vendas-teste">
+              <input className="zro-input" id="vendas-teste" type="number" name="trialDays" min={0} max={30} defaultValue={7} required />
+            </Field>
+            <input className="zro-input" name="reason" placeholder="Motivo" required aria-label="Motivo" />
+          </ActionForm>
+        ) : (
+          <p className="zro-faint">Ainda desligadas.</p>
+        )}
+      </Card>
 
       <Card title="Pedidos de plano" eyebrow="Vindos da central da conta" id="pedidos">
         {d.requests.length ? (

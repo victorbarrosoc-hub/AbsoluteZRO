@@ -128,7 +128,8 @@ export async function planCenterData(auth: Authenticated) {
       ? await tx`
           select s.id, s.status, s.provider, s.current_period_end, s.cancel_at_period_end, s.grace_until, p.id as plan_id, p.code, p.name, p.kind
           from zro.subscriptions s join zro.plans p on p.id = s.plan_id
-          where s.org_id = ${actor.orgId} and s.status in ('active', 'trialing', 'past_due') order by s.created_at desc`
+          where s.org_id = ${actor.orgId} and s.status in ('active', 'trialing', 'past_due')
+            and (s.current_period_end is null or s.current_period_end > now() or s.grace_until > now()) order by s.created_at desc`
       : []
     const plans = await tx`
       select p.id, p.code, p.name, p.kind, p.description, p.price_cents, p.currency, p.billing_interval,

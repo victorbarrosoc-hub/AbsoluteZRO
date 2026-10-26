@@ -187,7 +187,7 @@ describe('resumo de acessos', () => {
     const mine = list.find((x) => x.id === o.orgId)!
     expect(mine.role).toBe('owner')
     expect(mine.active).toBe(true)
-    expect(mine.plans!.map((p) => p.name)).toContain('Ciclo do O')
+    expect(mine.plans!.map((p) => p.name)).toContain('Absolute ZRO Completo')
     expect(mine.products.some((p) => p.access === 'contracted')).toBe(true)
     const theirs = list.find((x) => x.id === outra.orgId)!
     expect(theirs.role).toBe('viewer')

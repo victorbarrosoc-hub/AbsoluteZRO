@@ -77,8 +77,11 @@ Atualizado em 25/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 ## Fase 3 — Monetização
 
 - ✅ Catálogo parametrizável, versões de plano, webhook neutro assinado/idempotente, carência, reconciliação.
-- ⛔ Provedor de pagamento, preços, teste grátis, periodicidade, assentos e limites.
-- ⬜ Checkout, portal de cobrança, upgrade/downgrade com prorrateio (depende do provedor).
+- ✅ Stripe ([ADR 0019](decisions/0019-vendas-stripe.md)): avulso R$ 19,90/mês ou R$ 199/ano, Completo R$ 49,90/mês ou
+  R$ 499/ano, teste de 7 dias do Completo para conta nova, contas atuais até uma data de corte. Checkout, portal e
+  webhook `customer.subscription.*`; "Ligar vendas" no console.
+- ⛔ Conta Stripe do titular e as chaves na Vercel; depois "Ligar vendas" com a data de corte.
+- ⬜ Assentos, limites por plano, troca de plano com prorrateio (hoje é assinatura nova + cancelar a antiga no portal).
 
 ## Fase 4 — AI Edit · Fase 5 — Revela (Finishing)
 
@@ -100,8 +103,9 @@ Atualizado em 25/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 ## Bloqueios e decisões do titular
 
 1. Aplicar o SQL no Supabase e ligar o banco ao projeto `absolutezro` na Vercel ([checklist](operations/deployment-checklist.md)).
-2. Provedor de pagamento e política de preços/limites.
-3. Provedor de e-mail transacional.
+2. ~~Provedor de pagamento e preços~~: Stripe e tabela da ADR 0019. Falta a conta Stripe com as chaves na Vercel.
+3. Provedor de e-mail transacional. Caixa oficial: Google Workspace `contato@absolutezro.com` (MX, SPF e DMARC já no
+   DNS da Vercel; falta o titular entrar no Workspace e mandar o código de verificação e a chave DKIM).
 4. ~~Domínio do HUB~~: `absolutezro.com` comprado e no ar (26/10/2026), `www` redireciona; falta o retorno do Google (`https://absolutezro.com/entrar/google/retorno`) no Google Cloud.
 5. Manter o AbsoluteZRO público (com cópias de TPeasy e Carro do Freela) ou torná-lo privado.
 6. Nome definitivo do AI Edit (Finishing virou Revela, editor-alvo Resolve: ADR 0015); LGPD, termos e retenção de mídia.

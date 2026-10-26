@@ -491,3 +491,15 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   **231/231**.
   Carro do Freela **83/87**: as 4 que falham (`fase1-sem-dinheiro`, `seguranca`, `tela-de-inicio`, `versoes`) falham
   igual na `main`, porque dependem das páginas geradas por `npm run build:fases`.
+
+## Vendas pelo Stripe (26/10/2026)
+
+- Migração 0011: preços (avulso R$ 19,90/mês ou R$ 199/ano; Completo R$ 49,90/mês ou R$ 499/ano), versões sem preço
+  aposentadas, conta grátis v3 sem ferramentas (rascunho até ligar as vendas) e `zro.platform_settings`.
+- `packages/billing/test/stripe.test.ts` (8 testes): tabela de preços; corpo no formato do Stripe; assinatura
+  `Stripe-Signature` (segredo errado, corpo alterado e evento velho recusados); tradução de `customer.subscription.*`
+  (unpaid → atraso, incomplete_expired → expirada, sem metadados do HUB → ignorado); checkout com preço e organização
+  nos metadados da assinatura; erro do Stripe vira mensagem curta; evento libera a ferramenta e repetido não duplica;
+  "Ligar vendas" numa transação desfeita (conta antiga até o corte, conta nova com grátis v3 + 7 dias do Completo,
+  repetir não move o corte, validações).
+- Não validado: checkout e portal reais (sem conta Stripe ainda).

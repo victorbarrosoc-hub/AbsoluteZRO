@@ -3,7 +3,7 @@
  * organizações. Tudo em nome da própria pessoa (zro_app + RLS); só o console atende pedidos de plano.
  */
 import { validateDisplayName, type Authenticated } from '@zro/auth'
-import { productAccessFor } from '@zro/billing'
+import { createCheckoutSession, createPortalSession, productAccessFor, type StripeConfig } from '@zro/billing'
 import { pgErrorCode, PG, type Database, type Queryable } from '@zro/db'
 import { audit, DomainError } from '@zro/observability'
 import { authorize, requireUser, type OrgRole, type UserActor } from './authz'
@@ -124,6 +124,67 @@ export async function requestPlanChange(db: Database, auth: Authenticated | null
     })
     return id
   })
+}
+
+/**
+ * Assinar pelo Stripe: confere papel, e-mail confirmado e plano à venda, e devolve o endereço do checkout.
+ * O acesso não muda aqui: só quando o webhook do Stripe confirma a assinatura.
+ */
+export async function startCheckout(
+  db: Database,
+  auth: Authenticated | null,
+  stripe: StripeConfig,
+  input: { planId: string; origin: string },
+): Promise<string> {
+  const actor = await authorize(db, auth, { roles: BILLING_ROLES, verifiedEmail: true })
+  if (!UUID.test(input.planId)) throw new DomainError('invalid_input', 'Escolha um plano.')
+  const { plan, customerId } = await db.asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
+    const [plan] = await tx`
+      select id, code, version, name, kind, price_cents, currency, billing_interval from zro.plans
+      where id = ${input.planId} and status = 'active'`
+    if (!plan || plan.kind === 'free' || plan.price_cents == null || !plan.currency || !plan.billing_interval) {
+      throw new DomainError('invalid_input', 'Escolha um plano disponível.')
+    }
+    const [same] = await tx`
+      select 1 from zro.subscriptions s join zro.plans p on p.id = s.plan_id
+      where s.org_id = ${actor.orgId} and s.provider = 'stripe' and p.code = ${plan.code as string} and s.status in ('active', 'trialing', 'past_due')`
+    if (same) throw new DomainError('conflict', 'Esta organização já assina este plano.')
+    const [c] = await tx`
+      select provider_customer_id from zro.subscriptions
+      where org_id = ${actor.orgId} and provider = 'stripe' and provider_customer_id is not null order by created_at desc limit 1`
+    await audit(tx, {
+      orgId: actor.orgId,
+      actorUserId: actor.userId,
+      action: 'billing.checkout_started',
+      targetType: 'plan',
+      targetId: plan.id as string,
+      metadata: { plan: `${plan.code as string}@${plan.version as number}` },
+    })
+    return { plan, customerId: (c?.provider_customer_id as string) ?? null }
+  })
+  const session = await createCheckoutSession(stripe, {
+    orgId: actor.orgId,
+    userId: actor.userId,
+    email: auth!.user.email,
+    customerId,
+    plan: plan as never,
+    successUrl: `${input.origin}/perfil/plano?assinatura=ok`,
+    cancelUrl: `${input.origin}/perfil/plano`,
+  })
+  return session.url
+}
+
+/** Portal do Stripe (cartão, notas, cancelamento) para quem cuida da cobrança e já tem cliente no Stripe. */
+export async function billingPortalUrl(db: Database, auth: Authenticated | null, stripe: StripeConfig, origin: string): Promise<string> {
+  const actor = await authorize(db, auth, { roles: BILLING_ROLES, verifiedEmail: true })
+  const [c] = await db.asUser(
+    { userId: actor.userId, orgId: actor.orgId },
+    (tx) => tx`
+      select provider_customer_id from zro.subscriptions
+      where org_id = ${actor.orgId} and provider = 'stripe' and provider_customer_id is not null order by created_at desc limit 1`,
+  )
+  if (!c) throw new DomainError('not_found', 'Esta organização ainda não tem assinatura paga.')
+  return (await createPortalSession(stripe, { customerId: c.provider_customer_id as string, returnUrl: `${origin}/perfil/plano` })).url
 }
 
 export async function cancelPlanRequest(db: Database, auth: Authenticated | null, requestId: string): Promise<void> {
