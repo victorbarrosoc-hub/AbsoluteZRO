@@ -7,12 +7,15 @@
   "scripts": {
     "dev": "npx -y http-server -p 8080 -c-1 .",
     "test": "node --test test/*.test.js",
-    "referencia": "node src/cli.js"
+    "referencia": "node src/cli.js",
+    "vendor": "node scripts/vendor.mjs"
   },
   "engines": {
     "node": ">=22"
   },
   "devDependencies": {
+    "@mediabunny/prores": "1.62.1",
+    "mediabunny": "1.62.1",
     "playwright": "1.63.0"
   }
 }

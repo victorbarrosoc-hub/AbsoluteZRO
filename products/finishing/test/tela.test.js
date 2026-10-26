@@ -1,5 +1,6 @@
 // Tela no Chromium de verdade: escolher as duas imagens, ver a prévia, mexer na intensidade, baixar a LUT.
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import { readFileSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { createRequire } from 'node:module'
@@ -19,7 +20,17 @@ const RAIZ = fileURLToPath(new URL('..', import.meta.url))
 const CABECALHOS = Object.fromEntries(
   JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8')).headers[0].headers.map((h) => [h.key, h.value]),
 )
-const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.png': 'image/png' }
+const TIPOS = {
+  '.html': 'text/html',
+  '.js': 'text/javascript',
+  '.css': 'text/css',
+  '.svg': 'image/svg+xml',
+  '.jpg': 'image/jpeg',
+  '.png': 'image/png',
+  '.mjs': 'text/javascript',
+  '.mov': 'video/quicktime',
+  '.mp4': 'video/mp4',
+}
 let servidor
 let endereco
 let navegador
@@ -107,8 +118,8 @@ test('escolhe as duas imagens, compara, ajusta e baixa a LUT', async () => {
   await pagina.locator('#intensidade').fill('80')
 
   for (const tamanho of ['33', '65']) {
-    await pagina.selectOption('#tamanho', tamanho)
-    const [baixado] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Baixar LUT (.cube)' }).click()])
+    await pagina.getByRole('radio', { name: tamanho }).check({ force: true })
+    const [baixado] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Baixar LUT' }).click()])
     assert.equal(baixado.suggestedFilename(), `revela-filme-${tamanho}.cube`)
     const texto = readFileSync(await baixado.path(), 'utf8')
     assert.match(texto, /^TITLE "Revela - filme - 80%"/)
@@ -116,8 +127,8 @@ test('escolhe as duas imagens, compara, ajusta e baixa a LUT', async () => {
   }
 
   // só a cor: a leitura diz que o contraste está desligado
-  await pagina.locator('#usar-tom').uncheck()
-  await pagina.getByText('Contraste desligado: a luz fica como está.').waitFor()
+  await pagina.locator('#usar-tom').uncheck({ force: true })
+  await pagina.getByText('Contraste desligado: a luz fica como está.').waitFor({ state: 'attached' })
   assert.deepEqual(erros, [])
   await pagina.close()
 })
@@ -170,9 +181,10 @@ test('celular: sem rolagem horizontal e controles com nome', async () => {
   await pagina.getByText('Pronto. Arraste sobre a imagem para comparar.').waitFor()
   const largura = await pagina.evaluate(() => document.documentElement.scrollWidth)
   assert.ok(largura <= 375, `rolagem horizontal: ${largura}px`)
-  for (const nome of ['Comparar antes e depois', 'Intensidade', 'Tamanho da LUT', 'Contraste', 'Cor']) {
+  for (const nome of ['Comparar antes e depois', 'Intensidade', 'Contraste', 'Cor']) {
     assert.equal(await pagina.getByLabel(nome, { exact: true }).count(), 1, `controle sem nome: ${nome}`)
   }
+  assert.equal(await pagina.getByRole('radiogroup', { name: 'Tamanho da LUT' }).getByRole('radio').count(), 2)
   await pagina.close()
 })
 
@@ -185,7 +197,7 @@ test('conta-gotas: marca um par, refaz o look e limpa', async () => {
   await pagina.setInputFiles('#arquivo-material', join(dir, 'meu-frame.png'))
   await pagina.getByText('Pronto. Arraste sobre a imagem para comparar.').waitFor()
 
-  await pagina.getByRole('button', { name: 'Marcar par de cor' }).click()
+  await pagina.getByRole('button', { name: 'Conta-gotas' }).click()
   await pagina.getByText('Clique num ponto da referência (lá em cima).').waitFor()
   // clicar na referência não pode abrir a escolha de arquivo
   let abriuArquivo = false
@@ -196,16 +208,149 @@ test('conta-gotas: marca um par, refaz o look e limpa', async () => {
   await pagina.getByText('Pronto, com 1 par de cor. Arraste sobre a imagem para comparar.').waitFor()
   assert.equal(abriuArquivo, false)
   assert.equal(await pagina.locator('#pares li').count(), 1)
-  assert.match(await pagina.locator('#pares li').innerText(), /Par 1: seu frame → referência/)
+  assert.equal(await pagina.locator('#pares li').getAttribute('aria-label'), 'Par 1: seu frame → referência')
 
   // Esc cancela no meio
-  await pagina.getByRole('button', { name: 'Marcar par de cor' }).click()
+  await pagina.getByRole('button', { name: 'Conta-gotas' }).click()
   await pagina.keyboard.press('Escape')
   await pagina.getByText('Conta-gotas cancelado.').waitFor()
 
   await pagina.getByRole('button', { name: 'Limpar' }).click()
   await pagina.getByText('Pronto. Arraste sobre a imagem para comparar.').waitFor()
   assert.equal(await pagina.locator('#pares li').count(), 0)
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('entrega: escolhe o destino, mostra fonte e baixa o script do Resolve', async () => {
+  const pagina = await navegador.newPage({ acceptDownloads: true, viewport: { width: 1280, height: 1000 } })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  pagina.on('console', (m) => m.type() === 'error' && erros.push(m.text()))
+  await pagina.goto(endereco + 'entrega.html')
+  await pagina.getByRole('heading', { name: 'Cada destino, do jeito certo.' }).waitFor()
+  assert.equal(await pagina.locator('#destinos .cartao').count(), 8)
+
+  // YouTube abre por padrão: bitrate oficial e selo
+  await pagina.getByRole('heading', { name: 'YouTube', exact: true }).waitFor()
+  assert.match(await pagina.locator('#detalhe').textContent(), /1080p: 8 Mbps \(24–30 fps\) · 12 Mbps \(48–60 fps\)/)
+  // à vista, só o essencial em blocos; a ficha inteira fica recolhida
+  assert.match(await pagina.locator('.specs').innerText(), /H\.264[\s\S]*8 Mbps[\s\S]*Rec\.709 SDR/)
+  assert.equal(await pagina.locator('#detalhe .cabeca .etiqueta').innerText(), 'Oficial')
+
+  // Reels: valor de mercado, vertical, e o endereço guarda o destino
+  await pagina.getByRole('button', { name: /Instagram Reels/ }).click()
+  assert.equal(await pagina.locator('#detalhe .cabeca .etiqueta').innerText(), 'Mercado')
+  assert.match(await pagina.locator('.specs').innerText(), /1080×1920/)
+  assert.ok(pagina.url().endsWith('#reels'))
+
+  const [baixado] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Baixar preset' }).click()])
+  assert.equal(baixado.suggestedFilename(), 'revela-entrega-reels.py')
+  const script = readFileSync(await baixado.path(), 'utf8')
+  assert.match(script, /NOME = "Revela · Instagram Reels e Stories"/)
+  assert.match(script, /SetCurrentRenderFormatAndCodec/)
+
+  // TV aberta: loudness da portaria
+  await pagina.getByRole('button', { name: /TV aberta/ }).click()
+  assert.match(await pagina.locator('#detalhe').textContent(), /-23 LKFS ±2/)
+  assert.match(await pagina.locator('.specs').innerText(), /-23 LKFS/)
+  assert.equal(await pagina.locator('#detalhe .cabeca .etiqueta').innerText(), 'Loudness oficial') // o resto é da emissora
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('entrega: link direto para um destino e celular sem rolagem lateral', async () => {
+  const pagina = await navegador.newPage({ viewport: { width: 375, height: 800 } })
+  await pagina.goto(endereco + 'entrega.html#master')
+  await pagina.getByRole('heading', { name: 'Master de arquivo' }).waitFor()
+  assert.equal(await pagina.getByRole('button', { name: /Master de arquivo/ }).getAttribute('aria-pressed'), 'true')
+  const largura = await pagina.evaluate(() => document.documentElement.scrollWidth)
+  assert.ok(largura <= 375, `rolagem horizontal: ${largura}px`)
+  // as duas ferramentas se ligam pelas abas
+  await pagina.getByRole('link', { name: 'LUT', exact: true }).click()
+  await pagina.getByRole('heading', { name: 'Revela a cor que você quer.' }).waitFor()
+  await pagina.close()
+})
+
+test('converter: ProRes 422 HQ vira MP4 H.264 marcado BT.709, no navegador', async () => {
+  // master de teste: ProRes 422 HQ 1280×720 24 fps, 2 s, com áudio PCM 24 bits, marcado BT.709
+  const master = join(dir, 'master.mov')
+  execFileSync('ffmpeg', [
+    '-loglevel',
+    'error',
+    '-y',
+    '-f',
+    'lavfi',
+    '-i',
+    'testsrc2=size=1280x720:rate=24',
+    '-f',
+    'lavfi',
+    '-i',
+    'sine=frequency=440:sample_rate=48000',
+    '-t',
+    '2',
+    '-c:v',
+    'prores_ks',
+    '-profile:v',
+    '3',
+    '-pix_fmt',
+    'yuv422p10le',
+    '-color_primaries',
+    'bt709',
+    '-color_trc',
+    'bt709',
+    '-colorspace',
+    'bt709',
+    '-c:a',
+    'pcm_s24le',
+    master,
+  ])
+  const pagina = await navegador.newPage({ acceptDownloads: true })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  pagina.on('console', (m) => m.type() === 'error' && erros.push(m.text()))
+  await pagina.goto(endereco + 'converter.html')
+  assert.equal(await pagina.evaluate(() => crossOriginIsolated), true, 'sem isolamento: o ProRes decodifica mais devagar')
+  await pagina.locator('#aparelho [data-codec=avc][data-ok=true]').waitFor()
+  assert.equal(await pagina.getByRole('radio', { name: /YouTube/ }).isChecked(), true)
+
+  await pagina.setInputFiles('#arquivos', master)
+  await pagina.locator('.item[data-estado=pronto]').waitFor()
+  assert.deepEqual(await pagina.locator('.item-info .ficha').allTextContents(), ['ProRes', '1280×720', '24 fps', '2 s', '1280×720 · ~1 MB'])
+  // miniatura com o primeiro quadro
+  assert.ok(
+    await pagina.evaluate(() =>
+      document
+        .querySelector('.miniatura canvas')
+        .getContext('2d')
+        .getImageData(0, 0, 224, 126)
+        .data.some((v, i) => i % 4 !== 3 && v > 20),
+    ),
+  )
+  assert.ok(await pagina.locator('#caixa-arquivos.compacta').count(), 'a caixa de soltar devia encolher')
+  await pagina.locator('#salvar-pasta').uncheck({ force: true }) // a escolha de pasta não existe no navegador de teste
+  await pagina.getByRole('button', { name: 'Converter' }).click()
+  const link = pagina.getByRole('link', { name: 'Baixar master-youtube.mp4' })
+  await link.waitFor({ timeout: 60_000 })
+  assert.match((await pagina.locator('.item-info .ficha').allTextContents()).join(' · '), /^H\.264 \+ (AAC|Opus) · BT\.709 · [\d,]+× tempo real · \d+ MB$/)
+
+  const [baixado] = await Promise.all([pagina.waitForEvent('download'), link.click()])
+  const saida = join(dir, 'saida.mp4')
+  await baixado.saveAs(saida)
+  const sonda = JSON.parse(
+    execFileSync(
+      'ffprobe',
+      ['-v', 'error', '-show_entries', 'stream=codec_type,codec_name,width,height,color_primaries,color_transfer,color_space', '-of', 'json', saida],
+      { encoding: 'utf8' },
+    ),
+  )
+  const video = sonda.streams.find((s) => s.codec_type === 'video')
+  assert.deepEqual([video.codec_name, video.width, video.height], ['h264', 1280, 720])
+  assert.deepEqual([video.color_primaries, video.color_transfer, video.color_space], ['bt709', 'bt709', 'bt709'])
+  assert.ok(
+    sonda.streams.some((s) => s.codec_type === 'audio'),
+    'sem áudio na saída',
+  )
   assert.deepEqual(erros, [])
   await pagina.close()
 })

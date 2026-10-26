@@ -6,6 +6,10 @@
 import { aplicar, assar, escreverCube } from '../src/cor/cube.js'
 import { oklabParaCodigo } from '../src/cor/oklab.js'
 import { amostrar, analisar, criarLook, descrever, descreverSaturacao } from '../src/cor/referencia.js'
+import { ICONES, escalonar, icones, svg } from './visual.js'
+
+icones()
+escalonar()
 
 const LADO_ANALISE = 1600 // a análise amostra até 80 mil pixels; mais que isso só gasta memória
 const LADO_PREVIA = 1280
@@ -209,18 +213,17 @@ function mostrarPares() {
         s.title = nome
         return s
       }
-      const texto = document.createElement('span')
-      texto.textContent = `Par ${i + 1}: seu frame → referência`
+      li.setAttribute('aria-label', `Par ${i + 1}: seu frame → referência`)
       const remover = document.createElement('button')
       remover.type = 'button'
-      remover.textContent = 'remover'
+      remover.append(svg(ICONES.x))
       remover.setAttribute('aria-label', `Remover par ${i + 1}`)
       remover.addEventListener('click', () => {
         pares.splice(i, 1)
         mostrarPares()
         refazerLook()
       })
-      li.append(amostra(p.mat, 'Seu frame'), amostra(p.ref, 'Referência'), texto, remover)
+      li.append(amostra(p.mat, 'Seu frame'), amostra(p.ref, 'Referência'), remover)
       return li
     }),
   )
@@ -312,7 +315,7 @@ $('baixar').addEventListener('click', async () => {
   if (!look) return
   const botao = $('baixar')
   botao.disabled = true
-  const tamanho = Number($('tamanho').value)
+  const tamanho = Number(document.querySelector('input[name=tamanho]:checked').value)
   avisar(`Gerando a LUT de ${tamanho} pontos…`)
   await espera()
   const t = intensidade()
@@ -332,5 +335,5 @@ $('baixar').addEventListener('click', async () => {
   a.remove()
   setTimeout(() => URL.revokeObjectURL(url), 10_000)
   botao.disabled = false
-  avisar(`LUT de ${tamanho} pontos baixada. No Resolve: botão direito no nó › LUT, ou copie para a pasta de LUTs.`)
+  avisar(`LUT de ${tamanho} pontos baixada. No Resolve: botão direito no nó › LUT.`)
 })

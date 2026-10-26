@@ -373,3 +373,41 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   de volta sobre o preto, difere da original em no máximo 0,5 nível (arredondamento).
 - Aplicada no cabeçalho da tela, no guia (capa e seção "Logo") e no OG do link (`og.jpg`, tags com `?v=2`).
   `products/finishing`: `npm test` (**20/20**), com a logo carregando no cabeçalho.
+
+## Revela: entrega por destino (25/10/2026)
+
+- Fontes conferidas em 25/10/2026: YouTube (codificação recomendada e HDR), Vimeo (compressão), Netflix Partner Help
+  (servicing em ProRes 422 HQ, Rec.709/BT.1886), Portaria MC 354/2012 (−23 LKFS ±2). Instagram e TikTok não publicam
+  especificação técnica: presets marcados como Mercado. API de render do Resolve conferida no README de script da v20.
+- `products/finishing`: `npm test` (**27/27**). Dados: todo preset tem fonte com link, tipo e data; bitrate pela
+  altura/cadência. Script: roda num Resolve simulado (Python) e escolhe H.264/H.265/ProRes 422 HQ pelo nome (sem
+  confundir com ProRes 422), bitrate de 2160p numa timeline 4K, 1080×1920 nos verticais, PCM 24 bits na TV, e relata
+  ajuste recusado. Tela: 8 destinos, selos Oficial/Mercado/"Loudness oficial", download do `.py`, link direto por
+  `#destino`, celular sem rolagem lateral, sem erro de console com a CSP de produção.
+- Não validado: o script no DaVinci Resolve Studio real (nomes de tags HDR como `ST2084` podem variar por versão; o
+  script avisa se o Resolve recusar).
+
+## Revela: conversor no navegador (25/10/2026)
+
+- `products/finishing`: `npm test` (**35/35**). Plano (puro): bitrate de 2160p a partir de master 4K, redução sem
+  ampliar, dimensões pares, 1080×1920 no vertical, avisos de HDR/primárias/cadência, sem áudio não pede codec;
+  `vendor/` igual aos pacotes instalados. Tela: ffmpeg gera ProRes 422 HQ 1280×720 com áudio PCM, a página confere
+  `crossOriginIsolated`, converte, baixa e o ffprobe lê H.264 1280×720 com `bt709` nas três tags e faixa de áudio.
+- Experimento fora do teste: ProRes 1080p de 4 s convertido em ~3 s no Chromium headless sem GPU (mais rápido que o
+  tempo real); diferença média de RGB entre o ProRes e a saída: 0,61 nível (sem a remarcação BT.709, a saída ia
+  como `smpte170m`).
+- Chromium no Linux não codifica AAC: a saída usa Opus e a tela avisa. CI do app ganhou o ffmpeg.
+- Celular (390 px) sem rolagem lateral. Não validado: Safari/iOS e Chrome/Android reais, codificador de hardware,
+  arquivos grandes no celular.
+
+## Revela: telas no padrão Apple, com pouco texto (26/10/2026)
+
+- A pedido do titular, as três telas da Revela perderam os blocos de explicação: título curto, uma linha de apoio,
+  cartões com o formato de cada destino (16:9, 9:16, TV, película), controles segmentados, botões em Liquid Glass
+  (ação principal em vidro claro sobre o preto fosco) e detalhes técnicos recolhidos (ficha, avisos, fontes).
+- Conversor: miniatura do primeiro quadro (com a cor BT.709 certa), fichas em vez de frases, barra com brilho
+  enquanto converte, selo de pronto; a caixa de soltar encolhe quando há arquivos.
+- Motion só em CSS e só com `prefers-reduced-motion: no-preference`: entrada escalonada, troca do detalhe, brilho da
+  barra, selo de pronto, ícone que respira ao arrastar.
+- `products/finishing`: `npm test` (**35/35**), testes de tela ajustados (fichas, miniatura não vazia, caixa
+  compacta, grupos de rádio com nome). Desktop 1280 e celular 390 sem rolagem lateral e sem erro de console.
