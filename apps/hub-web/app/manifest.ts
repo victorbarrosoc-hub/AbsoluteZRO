@@ -10,12 +10,15 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: '/inicio',
     scope: '/',
     display: 'standalone',
-    background_color: '#050505',
-    theme_color: '#050505',
+    // tema claro é o padrão da marca: a abertura do app instalado já nasce clara
+    background_color: '#fcfbfc',
+    theme_color: '#fcfbfc',
     icons: [
       { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
       { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
       { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
+    // atalho no ícone (Android e computador): direto para os apps
+    shortcuts: [{ name: 'Apps', short_name: 'Apps', url: '/downloads', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] }],
   }
 }

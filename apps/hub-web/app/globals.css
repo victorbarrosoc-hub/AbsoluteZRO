@@ -3068,4 +3068,103 @@ details.disclosure[open] > summary {
   .account-tile:hover {
     transform: none;
   }
+
+/* ───── Central de apps (dentro do app Absolute ZRO para computador) e download direto recolhido ───── */
+
+.app-actions {
+  display: grid;
+  gap: 6px;
+}
+.app-actions__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+}
+.app-actions__meta {
+  font-size: 0.82rem;
+}
+.app-actions__bar {
+  position: relative;
+  flex: 1 1 200px;
+  max-width: 360px;
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface-3);
+}
+.app-actions__bar > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: var(--text-strong);
+  transition: width 0.25s var(--ease);
+}
+.app-actions__pct {
+  font: 600 0.85rem var(--font-apple);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
+  min-width: 3.2em;
+}
+.app-actions__erro {
+  margin: 0;
+}
+.dl-direto > summary {
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-mute);
+}
+.dl-direto > summary::-webkit-details-marker {
+  display: none;
+}
+.dl-direto[open] > summary {
+  margin-bottom: 12px;
+}
+/* No app de computador quem instala é a central: some o instalador avulso, o "baixe o app" e a ajuda de Terminal. */
+.zro-desktop .dl-opts--instalador,
+.zro-desktop .dl-direto,
+.zro-desktop .dl-central,
+.zro-desktop .dl-help {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-actions__bar > span {
+    transition: none;
+  }
+}
+
+/* Celular: instalar o Absolute ZRO na tela de início (app da web) */
+.instalar-hub {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+}
+.instalar-hub img {
+  flex: none;
+  border-radius: 12px;
+  box-shadow: 0 6px 16px rgb(0 0 0 / 0.12);
+}
+.instalar-hub__texto {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9rem;
+  color: var(--text-mute);
+}
+.instalar-hub__texto strong {
+  color: var(--text-strong);
+  font-size: 1rem;
+}
+.instalar-hub__texto svg {
+  vertical-align: -2px;
+}
+
+/* No celular o "Absolute ZRO para computador" não serve: fica o cartão de tela de início (InstalarHub). */
+:root[data-os='mobile'] .dl-central {
+  display: none;
 }

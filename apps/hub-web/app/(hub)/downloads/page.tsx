@@ -3,6 +3,7 @@ import { productAccessFor } from '@zro/billing'
 import { authorize } from '@zro/core'
 import { Pill } from '@zro/ui'
 import { DownloadCatalog, DownloadsIntro } from '@/components/download-catalog'
+import { InstalarHub } from '@/components/instalar-hub'
 import { OsHint } from '@/components/os-hint'
 import { disponibilidade } from '@/lib/hub-desktop-release'
 import { db, requireOrgPage } from '@/lib/session'
@@ -21,9 +22,12 @@ export default async function Downloads() {
     <div className="page dl-page">
       <OsHint />
       <DownloadsIntro heading="h1" hub={hub} />
+      <InstalarHub />
       <DownloadCatalog
         products={access.map((a) => ({ id: a.productId, name: a.name, role: a.roleInFlow, provisional: a.provisionalName }))}
         accessPill={(id) => (byId.get(id)?.access === 'contracted' ? <Pill tone="ok">Contratada</Pill> : null)}
+        hubDisponivel={hub.mac || hub.windows}
+        liberado={(id) => byId.get(id)?.access === 'contracted'}
       />
     </div>
   )

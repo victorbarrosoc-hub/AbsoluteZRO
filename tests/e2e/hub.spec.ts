@@ -205,4 +205,74 @@ test('sua conta: nome, foto, pedido de upgrade e acessos', async ({ page }) => {
   await page.goto('/perfil/acessos')
   await expect(page.getByRole('heading', { name: 'Org conta' })).toBeVisible()
   await expect(page.locator('.access-org__apps li.is-on')).toHaveCount(5)
+
+test('central de apps: dentro do app de computador, instala com progresso, abre e atualiza', async ({ page }) => {
+  // Ponte falsa no lugar do preload do Electron (desktop/preload.cjs): mesma forma de window.zroDesktop.apps.
+  await page.addInitScript(() => {
+    const estado: Record<string, { instalado: { versao: string } | null; atualizar: boolean }> = {
+      synquei: { instalado: null, atualizar: false },
+      sobedesce: { instalado: { versao: '0.0.9' }, atualizar: true },
+      nossom: { instalado: null, atualizar: false },
+    }
+    const ouvintes: ((ev: unknown) => void)[] = []
+    const emitir = (ev: unknown) => ouvintes.forEach((f) => f(ev))
+    ;(window as unknown as { __abertos: string[] }).__abertos = []
+    ;(window as unknown as { zroDesktop: unknown }).zroDesktop = {
+      isDesktop: true,
+      plataforma: 'mac',
+      apps: {
+        versao: 1,
+        listar: async () => ({
+          ok: true,
+          dados: Object.entries(estado).map(([id, s]) => ({
+            id,
+            nome: id,
+            disponivel: { versao: '1.0.0', build: 2, tamanho: 104857600 },
+            instalado: s.instalado,
+            atualizar: s.atualizar,
+            ocupado: false,
+          })),
+        }),
+        instalar: async (id: string) => {
+          emitir({ id, fase: 'baixando', recebido: 52428800, total: 104857600 })
+          await new Promise((r) => setTimeout(r, 400))
+          emitir({ id, fase: 'instalando' })
+          await new Promise((r) => setTimeout(r, 200))
+          estado[id] = { instalado: { versao: '1.0.0' }, atualizar: false }
+          emitir({ id, fase: 'pronto' })
+          return { ok: true, dados: true }
+        },
+        abrir: async (id: string) => {
+          ;(window as unknown as { __abertos: string[] }).__abertos.push(id)
+          return { ok: true, dados: true }
+        },
+        remover: async () => ({ ok: true, dados: true }),
+        cancelar: async () => ({ ok: true }),
+        aoProgresso: (fn: (ev: unknown) => void) => {
+          ouvintes.push(fn)
+          return () => {}
+        },
+      },
+    }
+    addEventListener('DOMContentLoaded', () => document.documentElement.classList.add('zro-desktop'))
+  })
+  await signupAndOrg(page, 'Org central')
+  await page.goto('/downloads')
+  const synquei = page.locator('#app-synquei')
+  await synquei.getByRole('button', { name: 'Instalar' }).click()
+  await expect(synquei.getByRole('progressbar')).toBeVisible()
+  await expect(synquei.getByText('50%')).toBeVisible()
+  await expect(synquei.getByRole('button', { name: 'Abrir' })).toBeVisible()
+  await synquei.getByRole('button', { name: 'Abrir' }).click()
+  expect(await page.evaluate(() => (window as unknown as { __abertos: string[] }).__abertos)).toEqual(['synquei'])
+  // Instalado com versão antiga: Atualizar aparece. No app, o instalador avulso some.
+  await expect(page.locator('#app-sobedesce').getByRole('button', { name: 'Atualizar' })).toBeVisible()
+  await expect(page.locator('#app-sobedesce .dl-opts--instalador')).toBeHidden()
+})
+
+test('central de apps: no navegador não aparece nada da central', async ({ page }) => {
+  await signupAndOrg(page, 'Org navegador')
+  await page.goto('/downloads')
+  await expect(page.locator('.app-actions')).toHaveCount(0)
+  await expect(page.locator('#app-synquei .dl-opt[data-os="mac"]')).toBeVisible()
 })

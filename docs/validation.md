@@ -445,3 +445,19 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - OG e capturas do HUB nos aparelhos refeitos com a marca nova (demo local). Branding no Higgsfield: 6 imagens
   (GPT Image 2.5, 2K) e a animação (FLUX 3 Video, 5 s): a estrela nasce com as 4 pontas e recolhe até a forma flat.
 - Não validado: ícones no Dock/Menu Iniciar reais (sem Mac/Windows aqui) e no iPhone real.
+
+## Central de apps (26/10/2026)
+
+- HUB: `tests/integration/desktop-apps.test.ts` (escolha do arquivo por versão e build, só com SHA-256; NOSSOM pelo
+  Release nossom-v* mais novo ou pelo repositório antigo; GitHub fora do ar não quebra o catálogo; download só de
+  arquivo reconhecido, com token pelo endereço assinado). Conferido contra os Releases reais: SOBEDESCE 0.1.0 (b1005) e
+  Synquei 1.0.0 (b1004) entram com SHA-256; NOSSOM fica de fora sem token (repositório antigo privado).
+- E2E: a página Downloads com a ponte do app simulada instala com progresso, abre, mostra Atualizar e esconde o
+  instalador avulso; no navegador nada da central aparece.
+- App de computador: `test/central.test.mjs` (catálogo malicioso descartado, arquitetura do Mac, regra de atualização,
+  registro do Windows, download conferido e apagado quando não confere, instalação simulada no Mac em `/Applications` e
+  em `~/Applications`, NSIS com `/S /currentuser`, app aberto bloqueia atualizar). `npm test` e `npm run smoke`
+  (Electron real no Linux, com a ponte da central) ok.
+- Sites: Synquei `npm test`, SOBEDESCE `typecheck` e `npm test`, NOSSOM `typecheck` e `npm test` ok.
+- Não validado: instalação real num Mac e num Windows (sem os sistemas aqui), instalação da tela de início em iPhone e
+  Android reais.

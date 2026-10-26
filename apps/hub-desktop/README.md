@@ -2,7 +2,8 @@
 
 O HUB (https://absolutezro.vercel.app) numa janela própria, no Mac e no Windows. Abre pelo Dock ou pela barra de
 tarefas, continua logado, mostra uma tela "Sem conexão" local quando falta internet e avisa quando sai versão nova.
-Não instala nem atualiza as outras ferramentas (próxima etapa, ver `docs/roadmap.md`).
+É também a **central de apps** ([ADR 0018](../../docs/decisions/0018-central-de-apps.md)): instala, abre, atualiza e
+remove SOBEDESCE, Synquei e NOSSOM pela página Downloads do HUB.
 
 Fora dos workspaces da raiz: tem `package.json` e `package-lock.json` próprios (Electron não entra no `npm ci` do HUB).
 
@@ -17,16 +18,17 @@ npx electron-builder --linux dir   # empacota para conferir (o .dmg e o .exe sae
 
 ## Como é feito
 
-| Arquivo                | O que faz                                                                                       |
-| ---------------------- | ----------------------------------------------------------------------------------------------- |
-| `desktop/main.cjs`     | janela, menu em português, atalhos, sessão, deep link, aviso de versão e o `--smoke`            |
-| `desktop/regras.cjs`   | o que fica na janela, o que vai para o navegador, deep link e permissões (testado sem Electron) |
-| `desktop/janela.cjs`   | tamanho, posição e zoom lembrados (só se ainda couber numa tela)                                |
-| `desktop/versao.cjs`   | confere `<HUB>/baixar/hub/versao` 15 s depois de abrir e a cada 6 h                             |
-| `desktop/paginas/`     | barra de título do Mac e a tela "Sem conexão" (HTML local, CSP fechada, Figtree local)          |
-| `scripts/icons.mjs`    | gera `.icns`, `.ico` e PNGs a partir da arte oficial; chama `scripts/fundo-dmg.mjs`             |
-| `scripts/release.mjs`  | build-info, nome com build, SHA-256 e `versao.json` do Release                                  |
-| `electron-builder.yml` | DMG universal e NSIS (x64 e ARM), fusíveis, `absolutezro://`                                    |
+| Arquivo                | O que faz                                                                                          |
+| ---------------------- | -------------------------------------------------------------------------------------------------- |
+| `desktop/main.cjs`     | janela, menu em português, atalhos, sessão, deep link, aviso de versão e o `--smoke`               |
+| `desktop/regras.cjs`   | o que fica na janela, o que vai para o navegador, deep link e permissões (testado sem Electron)    |
+| `desktop/janela.cjs`   | tamanho, posição e zoom lembrados (só se ainda couber numa tela)                                   |
+| `desktop/versao.cjs`   | confere `<HUB>/baixar/hub/versao` 15 s depois de abrir e a cada 6 h                                |
+| `desktop/central.cjs`  | central de apps: catálogo do HUB, download conferido por SHA-256, instalar/abrir/atualizar/remover |
+| `desktop/paginas/`     | barra de título do Mac e a tela "Sem conexão" (HTML local, CSP fechada, Figtree local)             |
+| `scripts/icons.mjs`    | gera `.icns`, `.ico` e PNGs a partir da arte oficial; chama `scripts/fundo-dmg.mjs`                |
+| `scripts/release.mjs`  | build-info, nome com build, SHA-256 e `versao.json` do Release                                     |
+| `electron-builder.yml` | DMG universal e NSIS (x64 e ARM), fusíveis, `absolutezro://`                                       |
 
 - **Visual:** tema claro, o padrão da marca. A janela nasce com o papel `#fcfbfc` (sem flash), `hiddenInset` no Mac
   com barra própria (voltar, avançar, título, recarregar, início). A tela "Sem conexão" segue o site: símbolo pequeno,
@@ -74,3 +76,16 @@ Arquivos: `AbsoluteZRO-<versão>-mac-universal.dmg` e `AbsoluteZRO-<versão>-win
 
 Sem assinatura da Apple e da Microsoft por enquanto: na primeira vez, no Mac, botão direito › Abrir › Abrir; no
 Windows, Mais informações › Executar assim mesmo.
+
+## Central de apps
+
+- A página Downloads do HUB (dentro do app) chama `window.zroDesktop.apps` (preload): `listar`, `instalar(id)`,
+  `abrir(id)`, `remover(id)`, `cancelar(id)` e `aoProgresso`. Só a página do HUB fala com a central, e só passa o id.
+- O processo principal lê `<HUB>/api/v1/desktop/apps`, baixa por `<HUB>/baixar/app/<id>/<arquivo>`, confere tamanho e
+  SHA-256 e só então instala. Arquivo que não confere é apagado.
+- **Mac:** `hdiutil attach` (sem abrir janela), `ditto` do `.app` para `/Applications` (ou `~/Applications` se a conta
+  não puder escrever lá), troca atômica do app antigo, `xattr -dr com.apple.quarantine`, `hdiutil detach`.
+- **Windows:** o instalador NSIS com `/S /currentuser` (sem administrador). O que está instalado sai do registro de
+  desinstalação (HKCU e HKLM); remover usa o desinstalador com `/S`.
+- Registro do que a central instalou (versão e build): `central.json` na pasta de dados do app.
+- Testes: `test/central.test.mjs` (Mac e Windows simulados, download real em pasta temporária).
