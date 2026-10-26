@@ -29,6 +29,24 @@ function safe(fn, fallback = null) {
   }
 }
 
+// ───── Synquei ─────
+
+/**
+ * "Abrir no Synquei" (Backup Automático): o motor devolve o link synquei://organizar da pasta do projeto. No app, a
+ * ponte confere se o Synquei está instalado (senão abre a página de download); no navegador, o link vai direto.
+ */
+export async function abrirNoSynquei(id) {
+  const r = await attempt(api.post('/api/backup/synquei', { id }))
+  if (!r?.link) return false
+  if (bridge?.abrirSynquei) {
+    const ok = await bridge.abrirSynquei(r.link).catch(() => false)
+    if (!ok) toast('info', 'Abri a página de download. Depois de instalar, toque de novo em “Abrir no Synquei”.', { title: 'Instale o Synquei' })
+    return ok
+  }
+  window.location.href = r.link
+  return true
+}
+
 // ───── seletores ─────
 
 /** Uma pasta do computador. Nativo no desktop; o seletor próprio no navegador (ou se o nativo falhar). */

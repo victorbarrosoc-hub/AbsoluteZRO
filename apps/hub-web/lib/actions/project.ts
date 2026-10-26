@@ -2,7 +2,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createProject, reprocessRun, saveDocument, updateProject } from '@zro/core'
-import { HANDLERS, importCarroJob, importScriptFromTpeasy, importSobedesceManifest, previewOrganizationPlan } from '@zro/integrations'
+import { HANDLERS, importCarroJob, importScriptFromTpeasy, importSobedesceDelivery, importSobedesceManifest, previewOrganizationPlan } from '@zro/integrations'
 import { DomainError } from '@zro/observability'
 import type { FormState } from '@/components/action-form'
 import { drainQueueAfterResponse } from '../queue'
@@ -86,6 +86,20 @@ export async function importSobedesceAction(_: FormState, fd: FormData): Promise
       ok: `Importado: ${s.assets_total} arquivo(s), ${s.verified_locations} cópia(s) conferida(s), ${s.unverified_locations} sem conferência. ${s.backup_complete ? 'Backup comprovado em todos os destinos.' : 'Backup ainda não comprovado em todos os destinos.'}`,
       data: r.issues,
     }
+  } catch (e) {
+    return toFormError(e)
+  }
+}
+
+export async function importSobedesceDeliveryAction(_: FormState, fd: FormData): Promise<FormState> {
+  try {
+    const projectId = str(fd, 'projectId')
+    const entrega = (await fileText(fd, 'entregaFile'))[0]?.text ?? ''
+    if (!entrega.trim()) throw new DomainError('invalid_input', 'Envie o comprovante da entrega (.json) que o SOBEDESCE gerou.')
+    const r = await importSobedesceDelivery(db(), await getAuth(), { projectId, entrega })
+    revalidatePath(`/projetos/${projectId}`)
+    if (r.duplicate) return { ok: 'Essa entrega já estava registrada. Nada foi duplicado.' }
+    return { ok: `Entrega registrada: ${r.files} arquivo(s), todos com MD5 conferido.` }
   } catch (e) {
     return toFormError(e)
   }
