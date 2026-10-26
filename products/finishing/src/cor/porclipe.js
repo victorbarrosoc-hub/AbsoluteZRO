@@ -100,7 +100,7 @@ export function scriptPorClipe(grupos, saida) {
     for (const a of g.arquivos) clipes[a.toLowerCase()] = nome
   }
   const n = Object.keys(clipes).length
-  return `# Revela · CST por clipe (gerado em revela-zro.vercel.app a partir do relatório do Synquei).
+  return `# Revela · CST por clipe (gerado em revela.absolutezro.com a partir do relatório do Synquei).
 # No Resolve: abra a timeline com os clipes e rode em Workspace › Scripts (ou cole no Console, em Py3).
 # O que faz: grava as LUTs de CST da Revela em ~/Revela/LUT e põe a LUT certa no nó 1 de cada clipe da timeline cujo
 # arquivo está no relatório (${n} arquivo(s)). Não mexe em mídia nem em clipe que não está no relatório.

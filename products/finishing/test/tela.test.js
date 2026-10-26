@@ -156,10 +156,10 @@ test('link compartilhado: tags de OG e imagem 1200×630', async () => {
   await pagina.goto(endereco)
   const meta = (seletor) => pagina.locator(seletor).getAttribute('content')
   const imagem = await meta('meta[property="og:image"]')
-  assert.match(imagem, /^https:\/\/revela-zro\.vercel\.app\/og\.jpg/)
+  assert.match(imagem, /^https:\/\/revela\.absolutezro\.com\/og\.jpg/)
   assert.equal(await meta('meta[name="twitter:card"]'), 'summary_large_image')
   assert.equal(await meta('meta[name="twitter:image"]'), imagem)
-  assert.equal(await meta('meta[property="og:url"]'), 'https://revela-zro.vercel.app/')
+  assert.equal(await meta('meta[property="og:url"]'), 'https://revela.absolutezro.com/')
   // a mesma imagem, servida daqui
   const tamanho = await pagina.evaluate(async () => {
     const img = new Image()

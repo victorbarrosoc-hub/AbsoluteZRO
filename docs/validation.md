@@ -589,3 +589,13 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   .xmp num Lightroom real.
 - Não feito, por depender de outros apps: entrega da Revela subindo pelo SOBEDESCE com MD5 e `delivery.ready` no HUB;
   desconto de `zro.ai_credits` (a Revela não usa GPU de servidor).
+
+## Revela em revela.absolutezro.com (26/10/2026)
+
+- A pedido do titular, o projeto Vercel `revela` ganhou o domínio `revela.absolutezro.com` (zona do absolutezro.com na
+  própria Vercel, HTTPS no ar). `revela-zro.vercel.app` redireciona (308) para o endereço novo pelo `vercel.json`.
+- Links trocados na Revela (canônico, OG, login `SITE`), no HUB, no Nossom, no TPEasy (cache v13) e no Carro do Freela.
+  Ficaram com o endereço antigo, que redireciona, os menus do Synquei (`app/`) e do SOBEDESCE (computador e web): mexer
+  neles dispara a publicação do app de computador, que o titular deixou para depois.
+- Login único: o cliente `revela-web` no console do HUB deve usar `https://revela.absolutezro.com/api/zro/callback`.
+- `products/finishing`: `npm test` 89/89; TPEasy 23/23; raiz: lint, formato e typecheck.
