@@ -542,7 +542,7 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 
 ## Vendas pelo Stripe (26/10/2026)
 
-- Migração 0011: preços (avulso R$ 59,90/mês ou R$ 599/ano; Completo R$ 149,90 ou R$ 1.499; Pro R$ 299,90 ou
+- Migração 0011: preços (avulso R$ 59,90/mês ou R$ 449/ano; Completo R$ 149,90 ou R$ 1.499; Pro R$ 299,90 ou
   R$ 2.999), créditos de IA e GPU por plano (200, 600, 2.000; teste 50), versões sem preço aposentadas, conta grátis v3 sem ferramentas (rascunho até ligar as vendas) e `zro.platform_settings`.
 - `packages/billing/test/stripe.test.ts` (8 testes): tabela de preços e créditos; corpo no formato do Stripe; assinatura
   `Stripe-Signature` (segredo errado, corpo alterado e evento velho recusados); tradução de `customer.subscription.*`

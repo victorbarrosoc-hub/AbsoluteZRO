@@ -12,8 +12,8 @@ assinatura era só concessão manual pelo console, e toda conta nova ganhava as 
 - **Provedor:** Stripe. O HUB fala com a API por `fetch`, sem SDK. Chaves só no ambiente da Vercel
   (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`); sem elas a venda online fica fechada e vale o pedido à equipe.
 - **Oferta ("Premium enxuto", escolhida pelo titular por causa do custo de IA, GPU e hospedagem):** mensal ou anual,
-  anual = 10× o mensal, carência de 3 dias no atraso (migração 0011).
-  - Avulso (1 app): R$ 59,90/mês ou R$ 599/ano, 200 créditos de IA e GPU por mês.
+  anual do Completo e do Pro = 10× o mensal, carência de 3 dias no atraso (migração 0011).
+  - Avulso (1 app): R$ 59,90/mês ou R$ 449/ano (abaixo de 10× para ficar perto do mercado), 200 créditos de IA e GPU por mês.
   - Absolute ZRO Completo (código `ciclo-do-o`, todas as ferramentas lançadas): R$ 149,90/mês ou R$ 1.499/ano, 600 créditos.
   - Absolute ZRO Pro (`absolute-zro-pro`): R$ 299,90/mês ou R$ 2.999/ano, 2.000 créditos.
   - Uso comum é livre; só IA e processamento em GPU gastam créditos (métrica `zro.ai_credits`, cota mensal com

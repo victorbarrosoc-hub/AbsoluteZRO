@@ -44,7 +44,7 @@ const subEvent = (over: Record<string, unknown> = {}, meta: Record<string, strin
 })
 
 describe('preços à venda', () => {
-  it('avulso R$ 59,90/mês ou R$ 599/ano; Completo R$ 149,90 ou R$ 1.499; Pro R$ 299,90 ou R$ 2.999; créditos de IA por plano', async () => {
+  it('avulso R$ 59,90/mês ou R$ 449/ano; Completo R$ 149,90 ou R$ 1.499; Pro R$ 299,90 ou R$ 2.999; créditos de IA por plano', async () => {
     const rows = await db.sql`select code, price_cents, billing_interval from zro.plans where status = 'active' and kind <> 'free' order by code`
     const by = Object.fromEntries(rows.map((r) => [r.code as string, r]))
     expect(by['ciclo-do-o']).toMatchObject({ price_cents: 14990, billing_interval: 'month' })
@@ -53,7 +53,7 @@ describe('preços à venda', () => {
     expect(by['absolute-zro-pro-anual']).toMatchObject({ price_cents: 299900, billing_interval: 'year' })
     for (const app of ['carro-do-freela', 'tpeasy', 'sobedesce', 'synquei', 'nossom']) {
       expect(by[`individual-${app}`]).toMatchObject({ price_cents: 5990, billing_interval: 'month' })
-      expect(by[`individual-${app}-anual`]).toMatchObject({ price_cents: 59900, billing_interval: 'year' })
+      expect(by[`individual-${app}-anual`]).toMatchObject({ price_cents: 44900, billing_interval: 'year' })
     }
     const credits = await db.sql`
       select p.code, count(*)::int as n, min((pp.limits ->> 'zro.ai_credits')::int) as ai from zro.plan_products pp join zro.plans p on p.id = pp.plan_id

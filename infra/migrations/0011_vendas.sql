@@ -1,6 +1,6 @@
--- Vendas (decisão do titular em 26/10/2026): Stripe, mensal ou anual (anual = 10× o mensal), 7 dias de teste do
+-- Vendas (decisão do titular em 26/10/2026): Stripe, mensal ou anual (anual: avulso R$ 449, Completo e Pro 10× o mensal), 7 dias de teste do
 -- Completo para conta nova, contas atuais seguem liberadas até uma data de corte. Tabela "Premium enxuto":
---   Avulso (1 app) R$ 59,90/mês ou R$ 599/ano · Completo R$ 149,90/mês ou R$ 1.499/ano · Pro R$ 299,90/mês ou R$ 2.999/ano.
+--   Avulso (1 app) R$ 59,90/mês ou R$ 449/ano · Completo R$ 149,90/mês ou R$ 1.499/ano · Pro R$ 299,90/mês ou R$ 2.999/ano.
 -- Uso comum é livre; IA e GPU gastam créditos do mês (métrica zro.ai_credits): avulso 200, Completo 600, Pro 2.000,
 -- teste 50. Nada muda para ninguém até a administração ligar as vendas no console (launchSales).
 
@@ -10,15 +10,15 @@ insert into zro.plans (code, version, name, kind, status, price_cents, currency,
   ('absolute-zro-pro', 1, 'Absolute ZRO Pro', 'bundle', 'active', 29990, 'BRL', 'month', 0, 3, 'Todas as ferramentas, com mais créditos de IA e GPU.'),
   ('absolute-zro-pro-anual', 1, 'Absolute ZRO Pro', 'bundle', 'active', 299900, 'BRL', 'year', 0, 3, 'Todas as ferramentas, com mais créditos de IA e GPU, por um ano.'),
   ('individual-carro-do-freela', 2, 'Carro do Freela', 'individual', 'active', 5990, 'BRL', 'month', 0, 3, 'Somente Carro do Freela.'),
-  ('individual-carro-do-freela-anual', 1, 'Carro do Freela', 'individual', 'active', 59900, 'BRL', 'year', 0, 3, 'Somente Carro do Freela, por um ano.'),
+  ('individual-carro-do-freela-anual', 1, 'Carro do Freela', 'individual', 'active', 44900, 'BRL', 'year', 0, 3, 'Somente Carro do Freela, por um ano.'),
   ('individual-tpeasy', 2, 'TPeasy', 'individual', 'active', 5990, 'BRL', 'month', 0, 3, 'Somente TPeasy.'),
-  ('individual-tpeasy-anual', 1, 'TPeasy', 'individual', 'active', 59900, 'BRL', 'year', 0, 3, 'Somente TPeasy, por um ano.'),
+  ('individual-tpeasy-anual', 1, 'TPeasy', 'individual', 'active', 44900, 'BRL', 'year', 0, 3, 'Somente TPeasy, por um ano.'),
   ('individual-sobedesce', 2, 'SOBEDESCE', 'individual', 'active', 5990, 'BRL', 'month', 0, 3, 'Somente SOBEDESCE.'),
-  ('individual-sobedesce-anual', 1, 'SOBEDESCE', 'individual', 'active', 59900, 'BRL', 'year', 0, 3, 'Somente SOBEDESCE, por um ano.'),
+  ('individual-sobedesce-anual', 1, 'SOBEDESCE', 'individual', 'active', 44900, 'BRL', 'year', 0, 3, 'Somente SOBEDESCE, por um ano.'),
   ('individual-synquei', 2, 'Synquei', 'individual', 'active', 5990, 'BRL', 'month', 0, 3, 'Somente Synquei.'),
-  ('individual-synquei-anual', 1, 'Synquei', 'individual', 'active', 59900, 'BRL', 'year', 0, 3, 'Somente Synquei, por um ano.'),
+  ('individual-synquei-anual', 1, 'Synquei', 'individual', 'active', 44900, 'BRL', 'year', 0, 3, 'Somente Synquei, por um ano.'),
   ('individual-nossom', 2, 'NOSSOM', 'individual', 'active', 5990, 'BRL', 'month', 0, 3, 'Somente NOSSOM.'),
-  ('individual-nossom-anual', 1, 'NOSSOM', 'individual', 'active', 59900, 'BRL', 'year', 0, 3, 'Somente NOSSOM, por um ano.'),
+  ('individual-nossom-anual', 1, 'NOSSOM', 'individual', 'active', 44900, 'BRL', 'year', 0, 3, 'Somente NOSSOM, por um ano.'),
   -- Conta grátis depois das vendas: identidade, painel e catálogo, sem ferramentas. Entra no ar com launchSales.
   ('conta-absolute-zro', 3, 'Conta Absolute ZRO', 'free', 'draft', null, null, null, null, 0, 'Identidade, painel e catálogo.')
 on conflict (code, version) do nothing;
