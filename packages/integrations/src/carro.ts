@@ -1,7 +1,7 @@
 /**
- * Carro do Freela → projeto (contrato proposto `carro-do-freela.job/1`). O protótipo atual não emite jobs; este
- * contrato é o que um adaptador futuro (ou a pessoa, colando o JSON) entrega ao HUB. Sem nome, telefone ou contato
- * de freelas: só funções e quantidades.
+ * Carro do Freela → projeto (`carro-do-freela.job/1`). O site do Carro envia pelo painel do job (POST /api/zro/enviar →
+ * POST /api/v1/carro-do-freela/jobs, com o token da pessoa); o JSON também pode ser colado no HUB. O job em si não leva
+ * nome, telefone nem contato de freela, só funções e quantidades; a equipe vai à parte, em `carro-do-freela.crew/1`.
  */
 import type { CarroJob } from '@zro/media-contracts'
 

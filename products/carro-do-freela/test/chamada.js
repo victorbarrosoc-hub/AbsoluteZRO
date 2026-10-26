@@ -21,7 +21,7 @@ async function entrar(p){
 }
 
 (async()=>{
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
   const out={};
 
   /* ---------- A: simulação vence a corrida ---------- */

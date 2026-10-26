@@ -66,7 +66,8 @@ t(vj.buildCommand === 'node src/vercel-build.js' && !vj.headers && !vj.redirects
   t(/sem-nome-real\.js/.test(vb) && /nomes NÃO estão reduzidos/.test(vb) && /TEM TELEFONE/.test(vb), 'o build da Vercel herdou as travas do publicar (selo, anonimato, telefone)');
   t(/scriptsDoHtml/.test(vb) && /rotasVercel/.test(vb), 'e calcula a CSP do que acabou de gerar');
   const tpl = fs.readFileSync(path.join(RAIZ, 'src', 'template.html'), 'utf8');
-  const html = fs.readFileSync(path.join(PUB, 'index.html'), 'utf8');
+  /* (26/out) o build é o HTML MAIS o script e a folha em m/ — é lá que as chaves entram */
+  const html = require('./_fonte.js')(path.join(PUB, 'index.html'));
   t(!/eyJhbGciOi[A-Za-z0-9_-]{20,}\./.test(tpl + html), '⟶⟶ nenhuma chave JWT no template nem no build');
   t(!/__(WEB3FORMS_KEY|SUPABASE_URL|SUPABASE_ANON_KEY)__/.test(html), 'o build trocou os três marcadores de chave');
 }
@@ -90,7 +91,7 @@ t(vj.buildCommand === 'node src/vercel-build.js' && !vj.headers && !vj.redirects
      Se ele divergir do DOMParser num único script, o domínio bloquearia o
      app inteiro — então a conta é refeita aqui, script a script. */
   {
-    const leitor = await chromium.launch({ executablePath: process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+    const leitor = await require('./_navegador.js').abrir();
     const pg = await leitor.newPage();
     for (const n of ['index', 'fase-1']) {
       const h = fs.readFileSync(path.join(PUB, n + '.html'), 'utf8');
@@ -102,7 +103,7 @@ t(vj.buildCommand === 'node src/vercel-build.js' && !vj.headers && !vj.redirects
   }
 
   /* ============ 3b. a página servida com a CSP, nos caminhos que esbarram nela ============ */
-  const b = await chromium.launch({ executablePath: process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+  const b = await require('./_navegador.js').abrir();
   const BASE = 'http://cdf.seguranca/';
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } });
   const p = await ctx.newPage();
@@ -122,7 +123,11 @@ t(vj.buildCommand === 'node src/vercel-build.js' && !vj.headers && !vj.redirects
     const arq = path.join(PUB, rel);
     if (!fs.existsSync(arq) || fs.statSync(arq).isDirectory()) return r.fulfill({ status: 404, body: '' });
     r.fulfill({ status: 200, body: fs.readFileSync(arq), headers: {
-      'content-type': /\.html$/.test(arq) ? 'text/html; charset=utf-8' : /\.mp4$/.test(arq) ? 'video/mp4' : /\.webp$/.test(arq) ? 'image/webp' : 'application/octet-stream',
+      /* (26/out) script, folha e fontes em m/: tipo certo e nosniff, como a Vercel manda */
+      'content-type': /\.html$/.test(arq) ? 'text/html; charset=utf-8' : /\.mp4$/.test(arq) ? 'video/mp4' : /\.webp$/.test(arq) ? 'image/webp'
+        : /\.js$/.test(arq) ? 'text/javascript; charset=utf-8' : /\.css$/.test(arq) ? 'text/css; charset=utf-8' : /\.woff2$/.test(arq) ? 'font/woff2'
+        : /\.jpg$/.test(arq) ? 'image/jpeg' : /\.svg$/.test(arq) ? 'image/svg+xml' : 'application/octet-stream',
+      'x-content-type-options': 'nosniff',
       'content-security-policy': csp } });
   });
   await p.goto(BASE + 'index.html', { waitUntil: 'load' });

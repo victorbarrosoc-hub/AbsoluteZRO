@@ -39,7 +39,7 @@ const SAIDA = path.resolve(process.env.CARRO_SAIDA || path.join(RAIZ, '.vercel',
 const STATIC = path.join(SAIDA, 'static');
 const FASES = [1, 2, 3, 4, 5, 6];
 const ESTATICOS = ['apple-touch-icon.png', 'icone-192.png', 'icone-512.png', 'icone-maskable.png', 'app.webmanifest', 'og.jpg'];
-const FUNCOES = ['entrar', 'callback', 'eu', 'sair'];
+const FUNCOES = ['entrar', 'callback', 'eu', 'sair', 'enviar'];
 const RUNTIME = 'nodejs22.x';
 
 let falhou = false;
@@ -83,21 +83,35 @@ for (const f of FASES) {
 const VERSAO = (fs.readFileSync(path.join(RAIZ, 'src/template.html'), 'utf8').match(/const VERSAO="([^"]+)"/) || [, '?'])[1];
 const alvos = ['index'].concat(FASES.map(f => 'fase' + f));
 const scripts = [];
+/* (26/out) o script e a folha saíram do HTML para m/: o que se confere é a
+   página INTEIRA que o navegador recebe — o HTML mais os .js/.css que ele cita */
+const MDE = path.join(RAIZ, 'public/m'), MPARA = path.join(STATIC, 'm');
+/* todo arquivo de m/ tem o hash de 10 no nome (nome.<hash>.ext): é isso que
+   separa um caminho de verdade de "m/i.exec" no meio do código minificado */
+const citados = txt => [...new Set(txt.match(/m\/[\w@.-]+?\.[0-9a-f]{10}\.\w+/g) || [])];
+const daFolha = css => [...new Set([...css.matchAll(/url\(([\w@.-]+\.woff2)\)/g)].map(m => 'm/' + m[1]))];
+const inteira = html => html + citados(html).filter(r => /\.(js|css)$/.test(r) && fs.existsSync(path.join(MDE, r.slice(2))))
+  .map(r => '\n' + fs.readFileSync(path.join(MDE, r.slice(2)), 'utf8')).join('');
 for (const nome of alvos) {
-  const txt = fs.readFileSync(path.join(STATIC, nome + '.html'), 'utf8');
-  const fase = (txt.match(/const FASE=(\d)/) || [, '?'])[1];
+  const html = fs.readFileSync(path.join(STATIC, nome + '.html'), 'utf8');
+  const txt = inteira(html);
+  const fase = (html.match(/<meta name="cdf-fase" content="(\d)">/) || [, '?'])[1];
   const esperada = nome === 'index' ? '0' : nome.replace('fase', '');
-  const ver = (txt.match(/const VERSAO="([^"]+)"/) || [, '?'])[1];
+  const ver = (txt.match(/VERSAO="([^"]+)"/) || [, '?'])[1];
   const problemas = [];
   if (fase !== esperada) problemas.push('FASE=' + fase + ', esperava ' + esperada);
   if (ver !== VERSAO) problemas.push('versão ' + ver);
-  if (!/"nome":"[^"]+ [A-ZÀ-Ú]\."/.test(txt)) problemas.push('nomes NÃO estão reduzidos — build não é anônimo');
-  if (/whatsapp\.com\/send\?phone/.test(txt) || /"tel(efone)?":/.test(txt)) problemas.push('TEM TELEFONE dentro');
+  /* (26/out) o script sai minificado: a lista vira objeto JS, com a chave
+     SEM aspas (nome:"Ana S."), então as duas formas valem */
+  if (!/"?nome"?:"[^"]+ [A-ZÀ-Ú]\."/.test(txt)) problemas.push('nomes NÃO estão reduzidos — build não é anônimo');
+  /* e a chave `tel` existe no código do app ("pelo grupo", campo vazio de
+     formulário): o que reprova é ela com NÚMERO de telefone como valor */
+  if (/whatsapp\.com\/send\?phone/.test(txt) || /"?tel(efone)?"?:\s*"[\d\s()+.-]{8,}"/.test(txt)) problemas.push('TEM TELEFONE dentro');
   for (const tag of ['apple-touch-icon', 'apple-mobile-web-app-capable', 'apple-mobile-web-app-title', 'app.webmanifest'])
-    if (!txt.includes(tag)) problemas.push('sem ' + tag);
+    if (!html.includes(tag)) problemas.push('sem ' + tag);
   if (/__(WEB3FORMS_KEY|SUPABASE_URL|SUPABASE_ANON_KEY)__/.test(txt)) problemas.push('marcador de chave sobrou no HTML');
-  problemas.length ? nao(nome + '.html — ' + problemas.join(' · ')) : ok(nome + '.html — FASE=' + fase + ' · ' + ver + ' · anônimo · ' + Math.round(txt.length / 1024) + ' KB');
-  scripts.push(...SEG.scriptsDoHtml(txt));
+  problemas.length ? nao(nome + '.html — ' + problemas.join(' · ')) : ok(nome + '.html — FASE=' + fase + ' · ' + ver + ' · anônimo · ' + Math.round(html.length / 1024) + ' KB de HTML');
+  scripts.push(...SEG.scriptsDoHtml(html));
 }
 
 /* ícones, manifest e cartão do link: ARQUIVO na raiz (o iOS ignora data:) */
@@ -108,17 +122,22 @@ for (const f of ESTATICOS) {
 }
 if (!falhou) ok('ícones, manifest e cartão do link na raiz (' + ESTATICOS.length + ' arquivos)');
 
-/* a mídia inteira, e todo arquivo citado nos sete HTML tem de existir */
-const MDE = path.join(RAIZ, 'public/m'), MPARA = path.join(STATIC, 'm');
+/* a mídia: SÓ o que as sete páginas citam (no HTML, no script, na folha) — e
+   todo arquivo citado tem de existir. (26/out) Não é mais a pasta inteira: o
+   build com chaves de TESTE da suíte `registro` também escreve o script dele
+   em public/m, e esse não pode ir ao ar. */
 fs.mkdirSync(MPARA, { recursive: true });
-let nMidia = 0;
-for (const f of fs.readdirSync(MDE)) { fs.copyFileSync(path.join(MDE, f), path.join(MPARA, f)); nMidia++ }
+const sobe = new Set();
 for (const nome of alvos) {
-  const txt = fs.readFileSync(path.join(STATIC, nome + '.html'), 'utf8');
-  const faltam = [...new Set(txt.match(/m\/[\w@.-]+\.(?:webp|mp4|svg)/g) || [])].filter(r => !fs.existsSync(path.join(STATIC, r)));
+  const txt = inteira(fs.readFileSync(path.join(STATIC, nome + '.html'), 'utf8'));
+  const refs = citados(txt).concat(daFolha(txt));
+  const faltam = refs.filter(r => !fs.existsSync(path.join(MDE, r.slice(2))));
   if (faltam.length) nao(nome + '.html cita mídia que não existe: ' + faltam.slice(0, 3).join(', '));
+  refs.forEach(r => { if (!faltam.includes(r)) sobe.add(r.slice(2)) });
 }
-if (!falhou) ok('mídia em m/ (' + nMidia + ' arquivos) — todo arquivo citado está lá');
+let bytes = 0;
+for (const f of sobe) { fs.copyFileSync(path.join(MDE, f), path.join(MPARA, f)); bytes += fs.statSync(path.join(MPARA, f)).size }
+if (!falhou) ok('m/ com ' + sobe.size + ' arquivos (' + (bytes / 1048576).toFixed(1) + ' MB) — todo arquivo citado está lá, e só eles');
 
 /* ===================== 3. AS FUNÇÕES DO LOGIN ===================== */
 for (const n of FUNCOES) {

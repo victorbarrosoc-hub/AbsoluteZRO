@@ -115,23 +115,185 @@ template, e nome que falta reprova o build. SVG ganhou tipo em
 `test/_servir.js` e `src/servir-saida.js`, e entra na conferência de mídia
 citada do `vercel-build.js`.
 
+## 26/out · 2 — leve sem perder qualidade: o HTML que carrega só a página
+
+Pedido do Victor: *"deixar a plataforma leve sem perder qualidade de imagem"*
+— e a regra dele, que vale para as próximas levas: **a qualidade não pode cair,
+tem que subir; a leveza vem da arquitetura, nunca de comprimir mais**. Na
+dúvida entre peso e qualidade, qualidade, e pergunta para ele. (Ele aprovou o
+peso do vídeo abaixo e disse não a qualquer redução de qualidade.)
+
+### O que mudou no carregamento
+
+| | antes | agora |
+|---|---|---|
+| `index.html` | 2,6 MB (script, CSS, fontes e 108 imagens em base64 dentro) | **241 KB** só de página |
+| script | dentro do HTML, sem cache | `m/app.<hash>.js` (720 KB, esbuild), cache longo |
+| CSS | dentro do HTML | `m/app.<hash>.css` (309 KB), cache longo |
+| fontes | 280 KB de base64 no CSS | 2 `.woff2` (a Schibsted é variável: as espessuras são o MESMO arquivo) |
+| rostos (103) e quadros de portfólio (4) | base64 nos JSON | o build tira para `m/` (mesmos bytes) |
+| fases | uma cópia do app inteiro cada (`public/` com 70 MB) | as seis usam o MESMO script e a mesma folha; a fase vem de `<meta name="cdf-fase">` |
+
+Medido num servidor que comprime como a Vercel, celular em 4G simulado (1,6
+Mb/s, 150 ms) com CPU 4× mais lenta:
+
+| celular 4G | antes | agora |
+|---|---|---|
+| 1ª visita, baixado (sem vídeo) | 1,7 MB | 1,37 MB |
+| 1ª visita, LCP | 7,3 s | 4,1 s |
+| 2ª visita, baixado | 852 KB | 173 KB |
+| 2ª visita, LCP | 5,9 s | 1,6 s |
+
+- ⚠️ **A ORDEM NÃO MUDOU**: a folha no `<head>` bloqueia a pintura como o
+  `<style>` bloqueava, e o `<script src>` está no MESMO lugar do script
+  embutido (fim do corpo, sem defer) — roda no mesmo ponto do parse.
+- ⚠️ **O pôster da carona é o LCP**, e é pedido já no HTML: `<link
+  rel=preload as=image fetchpriority=high imagesrcset=…>`. O `imagesrcset`
+  escolhe o degrau pela mesma conta do `qual()`, então o script acha pronto.
+- ⚠️ **Imagem de tela escondida é `loading="lazy"`.** A primeira medida saiu
+  PIOR que o antes (LCP 9,7 s): com as fotos em resolução de verdade, a home
+  pedia no arranque as fotos de cabeçalho de TODAS as telas (montarHerois) e
+  elas brigavam com o pôster pela rede. Lazy em `<img>` dentro de seção
+  escondida só baixa quando a seção abre; os objetos 3D e as fotos do brechó
+  da home também, porque moram abaixo da primeira tela.
+- ⚠️ **O build NUNCA apaga `public/m`.** Os nomes são o hash do conteúdo;
+  apagar deixava a página anterior apontando para um script que não existia
+  mais (`build:fases` apagava a cada fase). O `vercel-build` sobe só o que as
+  páginas citam — inclusive para o script com chaves de TESTE da suíte
+  `registro` (que também escreve em `public/m`) nunca ir ao ar.
+- `npm ci` agora roda na Vercel (`vercel.json`): o esbuild é a única
+  dependência, e só de build.
+
+### A mídia: escada de larguras e codecs (`src/midia-fonte/`)
+
+Ver `src/midia-fonte/README.md`. Em resumo:
+- **Escada em vez de leve + `@hd`**: `nome@<largura>.webp`,
+  `nome@<largura>[.hevc|.av1].mp4`. `MIDIA_VAR` (do build) lista os degraus;
+  `qual()` escolhe UMA vez o menor que cobre a largura da janela × a
+  densidade, no melhor codec que o navegador toca (AV1 → HEVC → H.264).
+  ⚠️ O corte antigo de 1400 px mandava o "leve" para o iPhone (390 × 3 =
+  1170): o celular via a PIOR qualidade da casa. Agora recebe 1280.
+- **Fotos refeitas dos PNG sem perda** do Higgsfield (baixar do histórico não
+  custa crédito), WebP q95: a foto de cabeçalho de 2560 px tinha 64 KB, a de
+  2688 px tem 226 KB.
+- **Objetos 3D**: a ampliação a 4K não está mais no histórico, então o
+  degrau de cima é o `@hd` de antes, byte a byte. Igual no computador, melhor
+  no celular (antes ia o leve).
+- **Vídeos refeitos dos originais do Kling** (1912×1080, ~30 Mb/s). O script
+  da montagem de 18/out se perdeu com o scratchpad; a receita foi refeita
+  CASANDO cada quadro do vídeo no ar com o original (quadro, média de dois na
+  rampa de 2×, ou flash com branco a 50/90/45%), conferida a ~40 dB por
+  quadro. Tempo, cortes e ciclo iguais.
+- **Qualidade medida contra o master** (SSIM/PSNR, `qualidade.py` no
+  scratchpad): H.264 CRF 18 no computador e 20 no celular (o pedido dele),
+  HEVC e AV1 calibrados para empatar com menos bytes. A carona no celular foi
+  de SSIM 0,923 / 31 dB (1024, CRF 31) para ~0,984 / 41 dB (1280).
+
+| carona | AV1 | HEVC | H.264 |
+|---|---|---|---|
+| celular (1280) | 7,8 MB | 9,5 MB | 11,8 MB |
+| computador (1912) | 14,4 MB | 21,1 MB | 28,3 MB |
+
+- **O vídeo só é pedido com a cena na tela** (`naTela`, IntersectionObserver),
+  `preload="none"` e pôster sempre.
+- **Artifact**: arquivo acima de 16 MB não sobe; só lá
+  (`<meta name="cdf-artifact">`) o `qual()` pula o degrau que não cabe.
+
+### O que NÃO foi feito: dividir o script por tela (Etapa 2)
+
+Medido: na primeira tela roda **40% do script** (286 de 711 KB, cobertura do
+Chrome) — esse é o teto do ganho. Mas o app é um bloco só: 885 comandos no
+topo ligam todas as telas no arranque, e **838 dos 840 KB** são alcançáveis a
+partir dele (grafo de dependências com acorn). Separar exige reescrever a
+arquitetura, com risco alto de mudar comportamento. Victor aprovou deixar
+para um projeto próprio. Enquanto isso, o script tem cache longo: a segunda
+visita não baixa nada dele.
+
+### A bateria em paralelo (Etapa 3)
+
+`test/run.js` sobe UM Chromium (`launchServer`) e roda 3 suítes de cada vez
+(o quarto núcleo fica para o navegador); cada suíte se conecta por
+`test/_navegador.js` (contexto próprio, sem dividir armazenamento). **38 min
+→ ~15 min**, nenhuma suíte pulada. As que medem animação ou tempo de quadro
+rodam no fim, sozinhas (`SOZINHAS` no `run.js`).
+- ⚠️ **Quem falha em paralelo roda de novo, sozinha, e vale esse resultado.**
+  Medido: cada rodada em paralelo derrubava 3 a 6 suítes DIFERENTES, todas de
+  medida no meio de uma animação, e todas passavam sozinhas. Defeito de
+  verdade falha sozinho também; a lista de quem precisou sai no fim do
+  relatório — se ela crescer, olhe. `JUNTAS=1` volta ao modo em série.
+- ⚠️ **`--allow-file-access-from-files` é o que mantém as guardas de CSS de
+  pé.** Com o CSS em arquivo, o Chromium trata a folha como de outra origem
+  no `file://`, e as sete suítes que varrem regras engoliam o erro e liam
+  ZERO regra — verde à toa. A flag mora no `_navegador.js`; `colisao` e
+  `movimento` agora reprovam varredura vazia.
+- O `_servir.js` deixou de ser contado como suíte (era a "87ª", sem asserção).
+- Suíte que lê "o fonte do build" usa `test/_fonte.js` (HTML + o que ele
+  cita em `m/`); a que confere comentário do código lê o template (o script
+  sai minificado, sem comentário).
+
+## 26/out · 3 — o job vira projeto na Absolute ZRO, e o consentimento entra no cadastro
+
+Pedido do titular, por prioridade: (1) backend de jobs que manda `carro-do-freela.job/1` ao HUB — o job vira
+projeto e o briefing não se perde; (2) a equipe da escala vira a equipe do projeto, sem cadastro duplicado;
+(3) consentimento e origem dos dados antes de abrir ao público; (4) as suítes das fases sem `build:fases` à mão.
+**Regra que fica: nada de tráfego pago** enquanto agenda, reputação e pagamento forem simulados e o consentimento
+não estiver registrado no banco.
+
+### Job e equipe → HUB (`api/zro/enviar.js`, `test/api/zro.test.js`, `conta-zro` §10)
+
+- O login pede também `offline_access carro-do-freela.jobs`. ⚠️ **Se o HUB responder `invalid_scope`** (migration
+  0014 ainda não aplicada), o callback refaz o pedido com `basico=1`, sem esses escopos: o login nunca quebra por
+  causa do envio.
+- O refresh token (e o access token de 10 min) vai em `cdf_hub`, **cifrado** (AES-256-GCM, chave por HKDF com uso
+  próprio), httpOnly, só em `/api/zro`. ⚠️ Assinar não bastava: é token. O navegador nunca vê token (a suíte confere
+  `document.cookie`).
+- ⚠️ **O refresh RODA**: cada troca devolve um novo e o velho, reapresentado, derruba a família no HUB. Por isso o
+  envio é UMA rota (`/api/zro/enviar`) que faz job e equipe com UM token, reaproveita o access token enquanto vale,
+  devolve o cookie novo em TODA resposta depois da troca, e o botão trava enquanto envia (`zroEnviando`).
+- O servidor monta o contrato só com os campos aceitos (telefone e o resto do pedido ficam de fora) e a equipe só
+  com quem tem conta Absolute ZRO (`c.zro = {conta, email}`). ⚠️ **Gente da prévia não tem conta** e aparece como
+  "sem conta": convidar pessoa fictícia seria mentira.
+- `e.uid` é o id do job no HUB (`cdf-<uuid>`): o `e.id` é deste aparelho e repete entre aparelhos.
+- Na tela: bloco `.jzro` no fim das ações do job, **só para quem contrata, só no domínio** com conta liberada
+  (`zroPodeEnviar`). Antes: "Levar para a Absolute ZRO"; depois: "Abrir na Absolute ZRO" + "Atualizar equipe" (o job é criado uma vez; reenviar só leva a equipe), e uma linha
+  com quantos estão na equipe, convidados e sem conta.
+- No HUB: rota com Bearer (`route(..., { bearer })`), papel `guest` que só vê os projetos em que está, convite com
+  projeto e conta (`invitee_user_id`), seção Equipe no projeto. Ver `docs/roadmap.md`.
+
+### Consentimento e origem (`test/consentimento.js`)
+
+- "Mostrar meu perfil para quem contrata" no passo 1 do cadastro, **desmarcado** (caixa pré-marcada não é
+  consentimento). A dica (`title`) diz o que é mostrado e que o WhatsApp nunca aparece.
+- `registrarConsentimento()` no `concluirCadastro()`: grava `EU.origem = "autodeclarado"` e
+  `EU.consentimento = {mostrar, versao: TERMO_PERFIL_V, em}`; desmarcar grava a retirada com data. ⚠️ Mudou o
+  texto da caixa? **Suba `TERMO_PERFIL_V`**: o registro vale para o texto que a pessoa leu. ⚠️ Nada de `VERSAO="` no nome de constante nova: o `vercel-build` lê a versão da build por esse padrão e pegou a primeira que achou (por isso o nome não é `CONSENTIMENTO_VERSAO`).
+- ⚠️ O registro mora no aparelho, como o resto do cadastro, até a Fase 1 ter banco. O README diz isso e mantém o
+  portão de abrir ao público.
+
+### O arnês gera as fases (`test/run.js`, `DAS_FASES`)
+
+`versoes`, `fase1-sem-dinheiro`, `seguranca` e `tela-de-inicio` leem os sete builds. Quando alguma delas está na
+lista, o `run.js` gera os sete antes (~4 s); `CDF_SEM_BUILD=1` pula (para testar um build feito à mão, como o
+anônimo). O CI não tem mais o passo separado.
+
 ## Como o projeto é construído
 
 Um HTML sem framework, sem CDN, sem requisição externa — **mais a pasta
-`m/` de mídia, do próprio domínio, ao lado dele** (desde 18/out · 2). Fontes,
-rostos e ícones continuam em base64; vídeos e fotos geradas moram em
-arquivo, cada um em versão leve e `@hd`, porque embutidos eles tinham de ser
-encolhidos até ficar ruins no computador. Ver a seção de 18/out · 2.
+`m/` do próprio domínio, ao lado dele** (desde 18/out · 2). Desde 26/out · 2
+TUDO que não é a página mora lá, com o hash no nome: o script, a folha, as
+fontes, os rostos e a mídia gerada em escada de larguras. Ver a seção de
+26/out · 2.
 
 ```
 src/template.html   markup + estilos + toda a lógica  (é AQUI que se edita)
 src/crew.json       os 109 cadastros normalizados
-src/assets/         fontes e frames em base64; os JSON de mídia apontam "midia:<nome>"
-src/midia/          vídeos e fotos geradas, leve + @hd (50 + 50 arquivos)
+src/assets/         fontes, rostos e frames em base64 (o build tira para m/); os JSON de mídia apontam "midia:<nome>"
+src/midia/          vídeos e fotos geradas em degraus: nome@<largura>.webp, nome@<largura>[.hevc|.av1].mp4
+src/midia-fonte/    de onde cada mídia vem e como refazer (receita dos vídeos, scripts)
         ↓  node src/build.js
-public/index.html    documento completo → é o que vai para a WEB
+public/index.html    a página (241 KB) → é o que vai para a WEB
 public/artifact.html o mesmo sem <head> → é o que se PUBLICA como artifact
-public/m/            a mídia com o hash no nome (saída; fora do git)
+public/m/            script, folha, fontes e mídia com o hash no nome (saída; fora do git; o build nunca apaga)
 ```
 
 ⚠️ **São duas saídas, e confundi-las estraga a entrega.** O template começa

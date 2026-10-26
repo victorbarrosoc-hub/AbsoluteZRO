@@ -19,7 +19,7 @@ const entrarContratante=async p=>{
   await p.locator('#as-f').click(); await p.waitForTimeout(300);
 };
 (async()=>{
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
   const p=await b.newPage({viewport:{width:1280,height:1200},deviceScaleFactor:2});
   const errs=[]; p.on('pageerror',e=>errs.push('ERR: '+e.message));
   p.on('console',m=>m.type()==='error'&&errs.push(m.text()));

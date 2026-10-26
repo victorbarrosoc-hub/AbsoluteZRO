@@ -203,6 +203,8 @@ export const SAIDAS = [
   { id: 'p3d65', nome: 'P3-D65 · Gama 2.6', curva: 'gama26', gamut: 'p3d65' },
   { id: 'davinci', nome: 'DaVinci Intermediate / Wide Gamut', curva: 'davinci', gamut: 'dwg' },
   { id: 'acescct', nome: 'ACEScct / AP1', curva: 'acescct', gamut: 'ap1' },
+  // LUTs de película (negativo + cópia, como o FilmVision) esperam LogC3: a CST leva a câmera até lá, sem mapa de tom
+  { id: 'arri-logc3', nome: 'ARRI LogC3 / AWG3 · para LUT de película', curva: 'logc3', gamut: 'awg3' },
 ]
 
 // ─────────── matrizes ───────────

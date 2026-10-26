@@ -60,7 +60,7 @@ const achados = (p, sel) => p.evaluate(({ sel, re }) => {
 }, { sel, re: RE.source });
 
 (async () => {
-  const b = await chromium.launch({ executablePath: process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+  const b = await require('./_navegador.js').abrir();
 
   /* ============ Fase 1: o texto das telas, dos dois lados ============ */
   for (const lado of ['freela', 'contratante']) {

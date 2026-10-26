@@ -2,7 +2,7 @@ const { chromium } = require('playwright');
 const path=require('path');
 const URL='file://'+path.resolve(__dirname,'..','public','index.html');
 (async()=>{
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
   const out={};
 
   /* ---------- freela vê a produtora ---------- */

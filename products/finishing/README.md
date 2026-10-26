@@ -35,6 +35,17 @@ da Vercel; `api/_zro.js` não vira rota). Cliente OIDC confidencial `revela-web`
 assinados. `entrar.html` mostra fora, dentro ou "chega em breve" (sem `ZRO_CLIENT_ID`/`ZRO_CLIENT_SECRET`, 503). As
 ferramentas seguem abertas sem conta: o topo mostra "Entrar" ou as iniciais.
 
+## Clonar LUT
+
+O mesmo still com e sem a cor vira um `.cube` (`src/cor/clonar.js`): curva de tom do grade (monótona, igual nos três
+canais), matriz afim por cima e o resto numa grade 17³ que volta para curva + matriz onde o frame não tem cor. **Mais
+frames**: depois do primeiro par, a pessoa solta outros stills do mesmo grade (com e sem a cor, em qualquer ordem, até
+6 frames); cada um acha o par pelo enquadramento (`mesmoQuadro`) e a LUT que já existe diz qual é o "sem a cor"
+(`orientarPar`). Medido em stills reais do Resolve (S-Log3, 4 cenas, fora do repositório): numa cena que a LUT não
+viu, S-Log3 → Rec.709 (com as primárias do colorista) erra ΔE 0,7 com 3 frames (antes 1,5) e 1,2 com um (antes 2,6);
+um look de película fica em ΔE 5 com 3 frames e 6 com um (antes 7), porque o grade muda de plano para plano e grão e
+halação não cabem numa LUT.
+
 ## Revela Look
 
 `src/cor/looks.js`: o look pronto da plataforma, uma emulação de película feita do zero (matemática própria, sem

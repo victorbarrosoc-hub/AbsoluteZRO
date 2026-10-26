@@ -58,7 +58,7 @@ const estado=p=>p.evaluate(()=>{
 });
 
 (async()=>{
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
   const {ctx,p,errs}=await entrarPelaPorta(b,1440,900);
   t(await p.evaluate(()=>S.tab)==='cadastro','quem entra pela primeira vez cai no cadastro');
 

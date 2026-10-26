@@ -49,7 +49,7 @@ export default async function Equipe() {
                           <ActionForm action={changeRoleAction} submit="Mudar papel" variant="ghost" className="row" inlineSubmit>
                             <input type="hidden" name="userId" value={m.id as string} />
                             <select className="zro-select" name="role" defaultValue={m.role as string} aria-label="Novo papel">
-                              {(actor.role === 'owner' ? (['owner', ...ROLES] as string[]) : [...ROLES]).map((r) => (
+                              {[...(actor.role === 'owner' ? ['owner'] : []), ...ROLES, ...(m.role === 'guest' ? ['guest'] : [])].map((r) => (
                                 <option key={r} value={r}>
                                   {ROLE_LABEL[r]}
                                 </option>

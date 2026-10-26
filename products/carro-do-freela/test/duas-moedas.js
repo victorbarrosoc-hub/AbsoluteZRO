@@ -48,7 +48,7 @@ const entrar=async p=>{
 };
 
 (async()=>{
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
   const errs=[];
 
   /* ============ o aviso do brinde leva à explicação ============

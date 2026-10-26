@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { aplicar, assar } from '../src/cor/cube.js'
-import { clonarLut } from '../src/cor/clonar.js'
+import { clonarLut, mesmoQuadro, orientarPar } from '../src/cor/clonar.js'
 import { lerParaLightroom, presetLightroom } from '../src/cor/lightroom.js'
 import { criarRevelaLook } from '../src/cor/looks.js'
 import { aplicarEmImagem, cena, distanciaMedia, lookConhecido } from './apoio.js'
@@ -51,4 +51,44 @@ test('preset Lightroom: identidade fica zerada; o look vira curvas e HSL num .xm
   assert.match(xmp, /Revela &lt;Look&gt; &amp; cia/)
   // todo valor de HSL dentro do que o Lightroom aceita
   for (const [, v] of xmp.matchAll(/Adjustment\w+="(-?\d+)"/g)) assert.ok(Math.abs(Number(v)) <= 100)
+})
+
+// "log para tela" sintético: curva forte (o contraste que o grade põe num frame lavado) e um pouco de cor nas altas
+const deLog = (r, g, b) => {
+  const s = (v) => 1 / (1 + Math.exp(-9 * (v - 0.45)))
+  const n = (v) => (s(v) - s(0)) / (s(1) - s(0))
+  return [Math.min(1, n(r) * 1.03), n(g), n(b) * 0.95]
+}
+const lavar = (img) => aplicarEmImagem(img, (r, g, b) => [0.25 + r * 0.5, 0.25 + g * 0.5, 0.25 + b * 0.5])
+
+test('Clonar LUT: a curva do grade vale em outra cena, e mais frames do mesmo grade acertam melhor', () => {
+  const [a, b, c] = [11, 12, 13].map((s) => lavar(cena(s, 240, 135)))
+  const umFrame = clonarLut(a, aplicarEmImagem(a, deLog))
+  const doisFrames = clonarLut([a, b], [aplicarEmImagem(a, deLog), aplicarEmImagem(b, deLog)])
+  assert.equal(doisFrames.resumo.frames, 2)
+  const alvo = aplicarEmImagem(c, deLog)
+  const semNada = distanciaMedia(c, alvo)
+  const comUm = distanciaMedia(aplicarEmImagem(c, umFrame.aplicar), alvo)
+  const comDois = distanciaMedia(aplicarEmImagem(c, doisFrames.aplicar), alvo)
+  assert.ok(comUm < semNada * 0.15, `um frame: ${comUm} (sem nada: ${semNada})`)
+  assert.ok(comDois <= comUm * 1.02, `dois frames (${comDois}) deviam acertar pelo menos como um (${comUm})`)
+  assert.throws(() => clonarLut([a, b], [a]), /seu frame com a cor/)
+})
+
+test('Clonar LUT: o par novo se orienta sozinho e frame de outra cena é recusado', () => {
+  const a = lavar(cena(21, 240, 135))
+  const b = lavar(cena(22, 240, 135))
+  const lut = clonarLut(a, aplicarEmImagem(a, deLog))
+  const bCor = aplicarEmImagem(b, deLog)
+  for (const [x, y] of [
+    [b, bCor],
+    [bCor, b],
+  ]) {
+    const par = orientarPar(lut, x, y)
+    assert.equal(par.antes, b, 'o "sem a cor" devia ser o frame lavado')
+    assert.equal(par.depois, bCor)
+  }
+  assert.equal(orientarPar(lut, a, bCor), null)
+  assert.ok(mesmoQuadro(b, bCor))
+  assert.ok(!mesmoQuadro(a, bCor))
 })

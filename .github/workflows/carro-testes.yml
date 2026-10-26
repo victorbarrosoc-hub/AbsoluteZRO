@@ -37,6 +37,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      # desde 26/out o build minifica o script e a folha com o esbuild (a única
+      # dependência, só de build) — o mesmo `npm ci` que o vercel.json roda
+      - name: Dependências do build
+        run: npm ci --no-audit --no-fund
       - name: Login Absolute ZRO (OIDC falso, chave EC P-256)
         run: npm run test:api
       - name: Build do domínio, sem chaves (como um Preview sem variáveis)
@@ -56,14 +60,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Dependências do build (o esbuild; o Playwright continua global)
+        run: npm ci --no-audit --no-fund
       - name: Playwright e Chromium (o protótipo não tem node_modules de propósito)
         run: |
           npm install -g playwright@1.63.0
           npx -y playwright@1.63.0 install --with-deps chromium
           echo "NODE_PATH=$(npm root -g)" >> "$GITHUB_ENV"
           echo "CHROME=$(NODE_PATH=$(npm root -g) node -p "require('playwright').chromium.executablePath()")" >> "$GITHUB_ENV"
-      - name: Builds (completo e as seis fases)
-        run: npm run build:fases
+      # o arnês gera os sete builds (completo + seis fases) quando a lista tem
+      # uma suíte que lê os arquivos das fases (test/run.js, DAS_FASES)
       - name: Bateria
         run: npm test
       - name: A CSP do build do domínio, provada num Chromium

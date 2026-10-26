@@ -26,8 +26,8 @@ const PRE=()=>{ try{
 }catch(e){} };
 
 (async()=>{
-  const fonte=fs.readFileSync(ARQ,'utf8');
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const fonte=require('./_fonte.js')(ARQ);
+  const b=await require('./_navegador.js').abrir();
 
   /* ============ 1. todo som chamado existe na paleta ============ */
   const p=await b.newPage({viewport:{width:1280,height:1000},deviceScaleFactor:2});
@@ -77,6 +77,9 @@ const PRE=()=>{ try{
     return {usados:[...usados],definidos:[...definidos]};
   });
   const semKeyframes=nomes.usados.filter(n=>!nomes.definidos.includes(n));
+  /* (26/out) o CSS mora em arquivo próprio; folha que não se deixa ler
+     viria vazia e esta guarda passaria sem olhar nada */
+  t(nomes.definidos.length>10,'a folha de estilo foi lida: '+nomes.definidos.length+' @keyframes');
   t(nomes.usados.length>10,'a folha usa '+nomes.usados.length+' animações');
   t(semKeyframes.length===0,'e todas têm @keyframes de verdade'
     +(semKeyframes.length?' — faltam: '+semKeyframes.join(', '):''));

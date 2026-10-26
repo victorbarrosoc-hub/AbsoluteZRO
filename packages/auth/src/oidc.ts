@@ -21,9 +21,15 @@ import {
   type KeyObject,
 } from 'node:crypto'
 import type { Database, Queryable } from '@zro/db'
+import type { Authenticated } from './sessions'
 import { hashToken, newToken } from './tokens'
 
 export const OIDC_SCOPES = ['openid', 'email', 'profile', 'org', 'offline_access'] as const
+/**
+ * Escopos de API de um produto: o app chama a API do HUB em nome da pessoa (Bearer). Só entram no cadastro do
+ * cliente daquele produto, e a rota exige o escopo; organização e papel continuam vindo do banco (authorize).
+ */
+export const PRODUCT_SCOPES: Record<string, string[]> = { 'carro-do-freela': ['carro-do-freela.jobs'] }
 export const CODE_TTL_MS = 60_000
 export const ACCESS_TTL_S = 600
 export const ID_TTL_S = 600
@@ -255,10 +261,11 @@ export async function registerClient(
     throw new OAuthError('invalid_request', 'Para app de desktop, cadastre um retorno em http://127.0.0.1/caminho.')
   }
   const secret = input.kind === 'confidential' ? newToken('zk') : null
+  const scopes = [...OIDC_SCOPES, ...(input.productId ? (PRODUCT_SCOPES[input.productId] ?? []) : [])]
   await tx`
-    insert into zro.oauth_clients (id, name, product_id, kind, secret_hash, redirect_uris, allow_loopback, trusted, created_by)
+    insert into zro.oauth_clients (id, name, product_id, kind, secret_hash, redirect_uris, allow_loopback, trusted, scopes, created_by)
     values (${input.id}, ${input.name.trim()}, ${input.productId}, ${input.kind}, ${secret ? hashToken(secret) : null}, ${uris}, ${input.allowLoopback},
-            ${!!input.trusted}, ${input.createdBy})`
+            ${!!input.trusted}, ${scopes}, ${input.createdBy})`
   return { clientId: input.id, clientSecret: secret }
 }
 
@@ -564,6 +571,40 @@ export async function userInfo(db: Database, bearer: string | null, loadClaims: 
       Object.assign(out, { zro_org: c.org, zro_products: c.products })
     }
     return out
+  })
+}
+
+/**
+ * Rota da API chamada por um app da família com o access token da pessoa (Authorization: Bearer). Confere assinatura,
+ * emissor, validade e o escopo pedido; o app precisa seguir ativo e o acesso dele não pode ter sido removido no
+ * Perfil (o token de 10 min morre junto com o consentimento). Devolve a pessoa como numa sessão: a organização é a
+ * do token e o papel sai do banco no authorize(). Papel de plataforma nunca vem por token de app.
+ */
+export async function authenticateAccessToken(db: Database, authorization: string | null, requiredScope: string): Promise<Authenticated | null> {
+  const token = authorization?.startsWith('Bearer ') ? authorization.slice(7).trim() : null
+  const p = token ? verifyJwt(await loadSigner(db), token, { typ: 'at+jwt', issuer: issuerFromEnv() }) : null
+  if (!p || typeof p.sub !== 'string' || typeof p.client_id !== 'string') return null
+  if (
+    !String(p.scope ?? '')
+      .split(' ')
+      .includes(requiredScope)
+  )
+    return null
+  return db.asSystem('oidc: token de app', async (tx) => {
+    const client = await findActiveClient(tx, p.client_id as string)
+    if (!client || !client.scopes.includes(requiredScope)) return null
+    if (!(await hasConsent(tx, p.sub as string, client.id, [requiredScope]))) return null
+    const u = await userClaims(tx, p.sub as string)
+    if (!u) return null
+    return {
+      user: { id: u.id as string, email: u.email as string, displayName: u.display_name as string, emailVerified: !!u.email_verified_at, platformRole: null },
+      session: {
+        id: `oauth:${String(p.jti ?? '')}`,
+        activeOrgId: typeof p.zro_org === 'string' ? p.zro_org : null,
+        expiresAt: new Date((p.exp as number) * 1000),
+        createdAt: new Date(((p.iat as number) ?? 0) * 1000),
+      },
+    }
   })
 }
 
