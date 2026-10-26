@@ -714,3 +714,5 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   neles dispara a publicação do app de computador, que o titular deixou para depois.
 - Login único: o cliente `revela-web` no console do HUB deve usar `https://revela.absolutezro.com/api/zro/callback`.
 - `products/finishing`: `npm test` 89/89; TPEasy 23/23; raiz: lint, formato e typecheck.
+- Ícone do app (pedido do titular): placa branca chapada, sem sombra nem degradê, anel no centro e marca maior
+  (`scripts/marca/icones.py`, diâmetro 0,56). Gerado de novo para o HUB (`--instalar`) e para o app (`npm run icons`).
