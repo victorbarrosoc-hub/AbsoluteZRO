@@ -237,39 +237,3 @@ describe("formato (\"Baixar como…\" das Referências)", () => {
     assert.match((await corpo(de)).mensagem, /já foi convertido/);
   });
 });
-
-describe("revela (\"Converter com a Revela\")", () => {
-  test("pede um destino conhecido; sem ajustes ou destino desconhecido, recusa; só o destino fica", async () => {
-    const base = { contaGoogleId: "cg_victor", tipo: "revela", itens: [{ fileId: "master1", nome: "Master.mov" }] };
-    assert.equal((await pedir(victor, base)).status, 400, "sem ajustes");
-    assert.equal((await pedir(victor, { ...base, ajustes: { destino: "youtube-hdr" } })).status, 400, "HDR fica no Resolve");
-    assert.equal((await pedir(victor, { ...base, ajustes: { destino: "youtube" }, itens: Array.from({ length: 21 }, (_, i) => ({ fileId: `m${i}` })) })).status, 400);
-    const r = await pedir(victor, { ...base, ajustes: { destino: "youtube", extra: "fora" } });
-    assert.equal(r.status, 201);
-    const p = (await corpo(r)).pedidos[0];
-    assert.equal(p.tipo, "revela");
-    assert.deepEqual(p.ajustes, { destino: "youtube" });
-  });
-
-  test("o mesmo destino esperando não repete; outro destino é outro pedido; só o computador da Revela vê; conclui", async () => {
-    const base = { contaGoogleId: "cg_victor", tipo: "revela", itens: [{ fileId: "master1" }] };
-    assert.equal((await corpo(await pedir(victor, { ...base, ajustes: { destino: "youtube" } }))).novos, 0);
-    const reels = await corpo(await pedir(victor, { ...base, ajustes: { destino: "reels" } }));
-    assert.equal(reels.novos, 1);
-    const antigo = await corpo(await rLista.GET(pedido("/api/proxies/pedidos?status=pendente&fileIds=master1", { bearer: victor.mac })));
-    assert.equal(antigo.pedidos.length, 0, "o app antigo (sem tipo) não vê");
-    const daRevela = await corpo(await rLista.GET(pedido("/api/proxies/pedidos?status=pendente&tipo=revela", { bearer: victor.mac })));
-    assert.deepEqual(daRevela.pedidos.map((x: { ajustes: { destino: string } }) => x.ajustes.destino).sort(), ["reels", "youtube"]);
-    const id = reels.pedidos[0].id as string;
-    assert.equal((await pegar(victor.mac, id)).status, 200);
-    const erro = await corpo(await mudar(id, { status: "erro" }, { bearer: victor.mac }));
-    assert.equal(erro.pedido.erro, "Não deu para converter.");
-    assert.equal((await mudar(id, { status: "pendente" }, { cookie: victor })).status, 200);
-    assert.equal((await pegar(victor.mac, id)).status, 200);
-    const pronto = await corpo(await mudar(id, { status: "pronto", resultado: "Master-reels.mp4", proxyFileId: "rv123" }, { bearer: victor.mac }));
-    assert.equal(pronto.pedido.proxyFileId, "rv123");
-    const de = await mudar(id, { status: "pendente" }, { cookie: victor });
-    assert.equal(de.status, 409);
-    assert.match((await corpo(de)).mensagem, /já foi convertido/);
-  });
-});

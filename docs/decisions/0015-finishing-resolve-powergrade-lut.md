@@ -51,9 +51,10 @@ técnico continua `finishing`; migration 0009 troca o nome no catálogo):
   BT.709); HDR e conversão de cadência continuam no Resolve.
 
 - **"Converter com a Revela" no SOBEDESCE (pedido do titular, 26/10/2026):** botão direito num vídeo do Drive (ou
-  pedido pelo celular) gera a versão de um destino e sobe ao lado do original. A Revela decide (presets e plano
-  copiados para `products/sobedesce/src/revela/`, com teste que confere a cópia); o SOBEDESCE executa com o ffmpeg e o
-  codificador de hardware dele, baixando do Drive quando o original não está na máquina, e confere o MD5. É a primeira
+  o menu do vídeo no celular) gera a versão de um destino e sobe ao lado do original. Um botão só: converte o aparelho
+  que tocou. A Revela decide (presets e plano copiados para o SOBEDESCE, com teste que confere a cópia); no computador,
+  o ffmpeg com o codificador de hardware, baixando do Drive quando o original não está na máquina, com MD5 conferido;
+  no celular, o mesmo motor do conversor da Revela (Mediabunny/WebCodecs), lendo do Drive por pedaços. É a primeira
   ponte entre dois produtos da família sem passar pelo HUB: nenhum dado sai do Drive da pessoa.
 
 **O que um pacote real mostrou (25/10/2026).** Pacote comercial de terceiros enviado pelo titular, estudado só fora do

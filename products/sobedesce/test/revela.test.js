@@ -1,7 +1,7 @@
 // "Converter com a Revela" (src/media/revela.js, src/server/revela.js, src/engine/pedidos-revela.js): os presets são
 // os da Revela (cópia conferida), a leitura do ffmpeg vira o que o plano espera, a linha de comando leva bitrate, tags
 // BT.709 e AAC, e — com o ffmpeg de verdade e o Drive falso — um ProRes do Drive vira o MP4 do YouTube na mesma pasta,
-// com o MD5 conferido. Os pedidos do celular: um por vez, pronto/erro ao site, cancelado no celular para no meio.
+// com o MD5 conferido. O celular converte no próprio aparelho (test/revela-celular.test.js) com as mesmas cópias.
 import { test, describe, after } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
@@ -12,10 +12,9 @@ import { fileURLToPath } from 'node:url'
 import { argsRevela, converterComRevela, destinoRevela, origemDoProbe, DESTINOS_REVELA, REVELA_MARCA } from '../src/media/revela.js'
 import { planejar } from '../src/revela/conversao/plano.js'
 import { RevelaJobs, destinosParaTela } from '../src/server/revela.js'
-import { PedidosRevela } from '../src/engine/pedidos-revela.js'
 import { GeradorPrevias } from '../src/media/previa-fila.js'
 import { detectarMotor } from '../src/media/previa.js'
-import { HttpError, closeHttp } from '../src/net/http.js'
+import { closeHttp } from '../src/net/http.js'
 import { setupDrive, md5File } from './helpers.js'
 
 after(() => closeHttp())
@@ -63,18 +62,18 @@ describe('presets: cópia da Revela', () => {
       ['src/revela/conversao/plano.js', 'src/conversao/plano.js'],
       ['public/revela-icone.svg', 'marca/revela-icone.svg'],
       ['web/public/app/icons/revela.svg', 'marca/revela-icone.svg'],
+      ['web/public/app/lib/revela/entrega/destinos.js', 'src/entrega/destinos.js'],
+      ['web/public/app/lib/revela/conversao/plano.js', 'src/conversao/plano.js'],
+      ['web/public/app/vendor/mediabunny.min.mjs', 'vendor/mediabunny.min.mjs'],
+      ['web/public/app/vendor/mediabunny-prores.min.mjs', 'vendor/mediabunny-prores.min.mjs'],
+      ['web/public/app/vendor/LICENSE-mediabunny.txt', 'vendor/LICENSE-mediabunny.txt'],
     ]) {
       assert.ok((await ler(path.join(RAIZ, copia))).equals(await ler(path.join(FINISHING, original))), `${copia} diferente de products/finishing/${original}: copie de novo`)
     }
   })
 
-  test('o site e o celular conhecem os mesmos destinos do conversor', async () => {
-    const ids = DESTINOS_REVELA.map(d => d.id)
-    assert.deepEqual(ids, ['youtube', 'vimeo', 'reels', 'tiktok'])
-    const site = await fs.readFile(path.join(RAIZ, 'web/src/lib/revela.ts'), 'utf8')
-    assert.deepEqual(JSON.parse(/DESTINOS_REVELA = (\[[^\]]+\])/.exec(site)[1]), ids)
-    const celular = await fs.readFile(path.join(RAIZ, 'web/public/app/lib/proxies.js'), 'utf8')
-    assert.deepEqual([...celular.matchAll(/\{ id: '([\w-]+)', nome:/g)].map(m => m[1]), ids)
+  test('a tela do computador mostra os destinos do conversor, com o formato', () => {
+    assert.deepEqual(DESTINOS_REVELA.map(d => d.id), ['youtube', 'vimeo', 'reels', 'tiktok'])
     assert.deepEqual(destinosParaTela().map(d => [d.id, d.vertical]), [['youtube', false], ['vimeo', false], ['reels', true], ['tiktok', true]])
   })
 })
@@ -185,73 +184,5 @@ describe('trabalhos da tela (SSE e parar)', () => {
     await sleep(5)
     assert.equal(jobs.view(jobs.jobs.get(id2)).status, 'canceled')
     assert.notEqual(id, id2)
-  })
-})
-
-describe('pedidos da Revela pelo celular', () => {
-  function fakeCloud(pedidos, { ocupados = [], patch404 = false } = {}) {
-    const chamadas = []
-    return {
-      signedIn: true,
-      chamadas,
-      async request(method, p, { body } = {}) {
-        chamadas.push({ method, path: p, body })
-        if (method === 'GET') return { status: 200, data: { ok: true, pedidos } }
-        const id = decodeURIComponent(p.split('/')[4])
-        if (method === 'POST' && p.endsWith('/pegar')) {
-          if (ocupados.includes(id)) throw new HttpError(409, { body: { ok: false }, method, url: p })
-          return { status: 200, data: { ok: true } }
-        }
-        if (method === 'PATCH' && patch404 && body?.status === 'gerando') throw new HttpError(404, { body: { ok: false }, method, url: p })
-        return { status: 200, data: { ok: true } }
-      },
-    }
-  }
-  const manager = (motor = { ffmpeg: { path: '/x/ffmpeg' } }) => ({
-    records: new Map(),
-    driveFor: id => (assert.equal(id, 'nuvem:cg1'), { getItem: async fid => ({ id: fid, name: fid === 'doc' ? 'roteiro.pdf' : `${fid}.mov`, isFolder: false, parents: ['p'], size: 10 }) }),
-    previas: { motor: async () => motor },
-  })
-  const pedido = (id, fileId, destino = 'youtube') => ({ id, tipo: 'revela', fileId, contaGoogleId: 'cg1', nome: fileId, status: 'pendente', ajustes: { destino } })
-  const patches = cloud => cloud.chamadas.filter(c => c.method === 'PATCH').map(c => ({ id: c.path.split('/')[4], ...c.body }))
-
-  test('converte na ordem, pula o que outro pegou e conta pronto ou erro', async () => {
-    const cloud = fakeCloud([pedido('p4', 'doc'), pedido('p3', 'm3', 'hdr'), pedido('p2', 'm2'), pedido('p1', 'm1', 'reels')], { ocupados: ['p2'] })
-    const feitos = []
-    const converter = async ({ item, destino }) => (feitos.push([item.id, destino]), { fileId: `novo-${item.id}`, nome: `${item.id}-${destino}.mp4` })
-    const svc = new PedidosRevela({ cloud, manager: manager(), converter, log: () => {} })
-    assert.equal(await svc.consultar(), 3)
-    await svc.close()
-    assert.deepEqual(feitos, [['m1', 'reels']])
-    assert.deepEqual(patches(cloud), [
-      { id: 'p1', status: 'pronto', resultado: 'm1-reels.mp4', proxyFileId: 'novo-m1' },
-      { id: 'p3', status: 'erro', erro: 'Destino desconhecido. Atualize o SOBEDESCE do computador.' },
-      { id: 'p4', status: 'erro', erro: 'Esse arquivo não é um vídeo.' },
-    ])
-  })
-
-  test('sem ffmpeg não pega nada; cancelado no celular para no meio', async () => {
-    const semMotor = fakeCloud([pedido('p1', 'm1')])
-    const svc = new PedidosRevela({ cloud: semMotor, manager: manager({ via: null }), converter: async () => assert.fail('não devia converter'), log: () => {} })
-    assert.equal(await svc.consultar(), 0)
-    await svc.close()
-    assert.equal(semMotor.chamadas.filter(c => c.method === 'POST').length, 0)
-
-    const cloud = fakeCloud([pedido('p1', 'm1')], { patch404: true })
-    let parou = false
-    const converter = ({ signal }) =>
-      new Promise((_, reject) =>
-        signal.addEventListener('abort', () => {
-          parou = true
-          reject(Object.assign(new Error('parou'), { name: 'AbortError' }))
-        }),
-      )
-    const svc2 = new PedidosRevela({ cloud, manager: manager(), converter, vidaMs: 10, log: () => {} })
-    const vivo = setInterval(() => {}, 5) // o sinal de vida não segura o processo (unref): o teste segura
-    assert.equal(await svc2.consultar(), 0)
-    clearInterval(vivo)
-    await svc2.close()
-    assert.equal(parou, true)
-    assert.deepEqual(patches(cloud).filter(p => p.status !== 'gerando'), [], 'cancelado no celular: não conta nada')
   })
 })

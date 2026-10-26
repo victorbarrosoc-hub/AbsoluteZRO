@@ -1,98 +1,148 @@
-// Folha "Converter com a Revela" (menu de um vídeo da aba Drive): o celular escolhe o destino num cartão e pede; o
-// app SOBEDESCE do computador converte (src/media/revela.js) e o arquivo novo aparece ao lado do vídeo no Drive.
-// Pouco texto: o cartão diz o formato, a linha diz como está. Acompanha a cada 5 s com a folha aberta.
+// Folha "Converter com a Revela" (menu de um vídeo da aba Drive): escolhe o destino num cartão e o CELULAR converte
+// (lib/revela.js); o arquivo novo sobe na mesma pasta pela fila de envios. Um botão só: converte o aparelho que tocou.
+// Pouco texto: o cartão diz o formato, o número diz o andamento. A tela fica acesa enquanto converte.
 import { html, useEffect, useRef, useState } from '../vendor/preact-htm.js'
-import { DESTINOS_REVELA, pedirRevela, revelaPedidos, tentarDeNovo } from '../lib/proxies.js'
-import { closeSheet, getState, toast } from '../lib/state.js'
+import { DESTINOS_REVELA, LIMITE_MEMORIA, converterNoAparelho } from '../lib/revela.js'
+import { planejar, tamanhoLegivel } from '../lib/revela/conversao/plano.js'
+import { getToken, invalidate } from '../lib/auth.js'
+import { ENDPOINTS } from '../lib/config.js'
+import { engine } from '../lib/uploader.js'
+import { keepAwake } from '../lib/wakelock.js'
+import { closeSheet } from '../lib/state.js'
 import { Icon } from './icons.js'
 import { Button, SheetHead, cx } from './ui.js'
 
-const ACOMPANHAR_MS = 5000
-const ESTADO = { pendente: 'Na fila do computador', gerando: 'Convertendo…', pronto: 'Pronto no Drive', erro: 'Não deu' }
+const CURTO = { reels: 'Reels' }
+const FASE = { carregando: 'Preparando', lendo: 'Lendo do Drive', convertendo: 'Convertendo', enviando: 'Enviando' }
+const vertical = (d) => Boolean(d.video.altura && d.video.altura > d.video.largura)
 
-export function RevelaSheet({ f }) {
+/** Estimativa antes de começar, pelo que o Drive já sabe do vídeo (sem abrir o arquivo). */
+function estimativa(f, d) {
+  const m = f.videoMediaMetadata
+  if (!m?.width || !m?.height) return null
+  return planejar({ largura: m.width, altura: m.height, fps: 30, duracao: Number(m.durationMillis || 0) / 1000, temAudio: true, cor: null }, d).tamanhoEstimado
+}
+
+export function RevelaSheet({ f, pasta }) {
   const [destino, setDestino] = useState('youtube')
-  const [pedidos, setPedidos] = useState([])
-  const [pedindo, setPedindo] = useState(false)
+  const [fase, setFase] = useState(null) // null | carregando | lendo | convertendo | enviando | pronto | erro
+  const [frac, setFrac] = useState(null)
+  const [res, setRes] = useState(null) // { nome, codecs, avisos, size }
+  const [erro, setErro] = useState(null)
+  const ac = useRef(null)
   const vivo = useRef(true)
-  useEffect(() => () => (vivo.current = false), [])
+  useEffect(
+    () => () => {
+      vivo.current = false
+      ac.current?.abort()
+      keepAwake(false)
+    },
+    [],
+  )
 
-  // Os pedidos deste vídeo (um por destino, o mais novo), atualizados a cada 5 s com a tela à vista.
-  useEffect(() => {
-    const ac = new AbortController()
-    let t = 0
-    const tick = async () => {
-      if (document.visibilityState !== 'hidden') {
-        try {
-          const lista = await revelaPedidos(f.id, ac.signal)
-          if (!ac.signal.aborted) setPedidos(lista)
-        } catch {
-          // segue tentando
-        }
-      }
-      if (!ac.signal.aborted) t = setTimeout(tick, ACOMPANHAR_MS)
-    }
-    tick()
-    return () => {
-      ac.abort()
-      clearTimeout(t)
-    }
-  }, [f.id])
+  const destinoAtual = DESTINOS_REVELA.find((d) => d.id === destino)
+  const grande = (estimativa(f, destinoAtual) || 0) > LIMITE_MEMORIA
 
-  const porDestino = new Map()
-  for (const p of pedidos) if (!porDestino.has(p.ajustes?.destino)) porDestino.set(p.ajustes?.destino, p)
-
-  const pedir = async () => {
-    setPedindo(true)
+  const converter = async () => {
+    ac.current = new AbortController()
+    setErro(null)
+    setFrac(null)
+    setFase('carregando')
+    keepAwake(true)
     try {
-      const r = await pedirRevela(f, destino)
+      const r = await converterNoAparelho({
+        url: `${ENDPOINTS.api}/files/${encodeURIComponent(f.id)}?alt=media&supportsAllDrives=true`,
+        nome: f.name,
+        destino,
+        token: getToken,
+        invalidar: invalidate,
+        signal: ac.current.signal,
+        onFase: (fs, fr) => {
+          if (!vivo.current) return
+          setFase(fs)
+          setFrac(fr ?? null)
+        },
+      })
       if (!vivo.current) return
-      if (r.pedido) setPedidos((l) => [r.pedido, ...l.filter((p) => p.id !== r.pedido.id)])
+      // Sobe pela fila de envios de sempre (retomável), na pasta do vídeo.
+      const dest = pasta || { id: f.parents?.[0], name: 'a pasta do vídeo', driveId: f.driveId || null }
+      engine.addFiles([r.file], dest)
+      setRes({ nome: r.file.name, codecs: r.codecs, avisos: r.avisos, size: r.file.size, file: r.file })
+      setFase('enviando')
+      setFrac(0)
     } catch (err) {
-      toast(err?.message || 'Não deu para pedir agora.', { tone: 'error', ms: 4200 })
+      if (!vivo.current) return
+      if (err?.name === 'AbortError') {
+        setFase(null)
+        return
+      }
+      setErro(err?.message || 'Não deu para converter neste aparelho.')
+      setFase('erro')
     } finally {
-      if (vivo.current) setPedindo(false)
-    }
-  }
-  const deNovo = async (p) => {
-    try {
-      const novo = await tentarDeNovo(p.id)
-      setPedidos((l) => [novo, ...l.filter((x) => x.id !== novo.id)])
-    } catch (err) {
-      toast(err?.message || 'Não deu agora.', { tone: 'error' })
+      keepAwake(false)
     }
   }
 
-  const ligado = (getState().pc?.computadores || []).find((pc) => pc.online)
-  const atual = porDestino.get(destino)
-  const esperando = atual && (atual.status === 'pendente' || atual.status === 'gerando')
-  return html`<${SheetHead} title="Converter com a Revela" right=${html`<button type="button" class="link-btn is-strong" onClick=${closeSheet}>OK</button>`} />
+  // Envio: acompanha o item da fila até chegar no Drive.
+  useEffect(() => {
+    if (fase !== 'enviando' || !res?.file) return undefined
+    const olhar = () => {
+      const it = engine.items.find((x) => x.file === res.file)
+      if (!it) return
+      if (it.status === 'done') setFase('pronto')
+      else if (it.status === 'failed') {
+        setErro(it.error?.message || it.error || 'O envio parou. Veja na aba Enviar.')
+        setFase('erro')
+      } else setFrac(it.size ? it.offset / it.size : null)
+    }
+    olhar()
+    return engine.subscribe(olhar)
+  }, [fase, res?.file])
+
+  const rodando = fase && fase !== 'pronto' && fase !== 'erro'
+  let corpo
+  if (fase === 'pronto') {
+    corpo = html`<div class="rv-fim">
+      <span class="rv-ok"><${Icon} name="check" size=${26} /></span>
+      <b class="rv-arquivo" title=${res.nome}>${res.nome}</b>
+      <span class="rv-fichas"><span>${res.codecs}</span><span>BT.709</span><span>${tamanhoLegivel(res.size)}</span></span>
+      ${res.avisos?.length ? html`<ul class="rv-avisos">${res.avisos.map((a) => html`<li><${Icon} name="warning" size=${13} /> ${a}</li>`)}</ul>` : null}
+    </div>`
+  } else if (rodando) {
+    corpo = html`<div class="rv-andamento" role="status" aria-live="polite">
+      <div class="rv-fase"><span class="spinner"></span><b>${FASE[fase]}</b>${frac != null ? html`<span class="rv-pct">${Math.round(frac * 100)}%</span>` : null}</div>
+      <div class=${cx('rv-barra', frac == null && 'is-vivo')}><i style=${`width:${frac == null ? 100 : Math.round(frac * 100)}%`}></i></div>
+      <p class="rv-dica"><${Icon} name="phone" size=${15} /> Deixe esta tela aberta</p>
+    </div>`
+  } else {
+    corpo = html`<div class="rv-destinos" role="radiogroup" aria-label="Destino">
+        ${DESTINOS_REVELA.map(
+          (d) => html`<button type="button" role="radio" aria-checked=${destino === d.id ? 'true' : 'false'} class=${cx('rv-destino', destino === d.id && 'is-on')} onClick=${() => setDestino(d.id)}>
+            <${Icon} name=${vertical(d) ? 'phone' : 'monitor'} size=${24} />
+            <b>${CURTO[d.id] || d.nome}</b>
+            <small>${vertical(d) ? '9:16' : '16:9'}</small>
+          </button>`,
+        )}
+      </div>
+      ${fase === 'erro' ? html`<p class="rv-estado is-erro" role="alert"><${Icon} name="warning" size=${18} /><span>${erro}</span></p>` : null}
+      ${grande ? html`<p class="rv-estado is-aviso"><${Icon} name="warning" size=${18} /><span>Grande para o celular: pode faltar memória.</span></p>` : null}`
+  }
+
+  return html`<${SheetHead}
+      title="Converter com a Revela"
+      left=${rodando && fase !== 'enviando' ? html`<button type="button" class="link-btn" onClick=${() => ac.current?.abort()}>Parar</button>` : null}
+      right=${html`<button type="button" class="link-btn is-strong" onClick=${closeSheet}>${fase === 'pronto' ? 'OK' : 'Fechar'}</button>`}
+    />
     <div class="sheet-body rvsheet">
       <div class="rv-topo">
         <img src="./icons/revela.svg" alt="" width="40" height="40" />
         <b class="rv-arquivo" title=${f.name}>${f.name}</b>
       </div>
-      <div class="rv-destinos" role="radiogroup" aria-label="Destino">
-        ${DESTINOS_REVELA.map((d) => {
-          const p = porDestino.get(d.id)
-          return html`<button type="button" role="radio" aria-checked=${destino === d.id ? 'true' : 'false'} class=${cx('rv-destino', destino === d.id && 'is-on')} onClick=${() => setDestino(d.id)}>
-            <${Icon} name=${d.vertical ? 'phone' : 'monitor'} size=${24} />
-            <b>${d.nome}</b>
-            <small>${d.vertical ? '9:16' : '16:9'}</small>
-            ${p ? html`<span class=${cx('rv-marca-estado', `is-${p.status}`)} aria-label=${ESTADO[p.status]}>${p.status === 'pronto' ? html`<${Icon} name="check" size=${12} />` : p.status === 'erro' ? '!' : html`<span class="rv-ponto"></span>`}</span>` : null}
-          </button>`
-        })}
-      </div>
-      ${atual
-        ? html`<p class=${cx('rv-estado', `is-${atual.status}`)} role="status">
-            ${atual.status === 'gerando' ? html`<span class="spinner"></span>` : html`<${Icon} name=${atual.status === 'pronto' ? 'circle-check' : atual.status === 'erro' ? 'warning' : 'clock'} size=${18} />`}
-            <span>${atual.status === 'pronto' ? atual.resultado || ESTADO.pronto : atual.status === 'erro' ? atual.erro || ESTADO.erro : ESTADO[atual.status]}</span>
-            ${atual.status === 'erro' ? html`<button type="button" class="link-btn" onClick=${() => deNovo(atual)}>De novo</button>` : null}
-          </p>`
-        : html`<p class="rv-estado"><${Icon} name="laptop" size=${18} /><span>${ligado ? `${ligado.nome} converte` : 'Precisa do SOBEDESCE aberto num computador'}</span></p>`}
-      <${Button} variant="down" size="lg" class="btn-block" icon="compare" onClick=${pedir} disabled=${pedindo || esperando}>
-        ${pedindo ? 'Pedindo…' : esperando ? 'Já está na fila' : 'Converter'}
-      </${Button}>
+      ${corpo}
+      ${!rodando && fase !== 'pronto'
+        ? html`<${Button} variant="down" size="lg" class="btn-block" icon="compare" onClick=${converter}>${fase === 'erro' ? 'De novo' : 'Converter'}</${Button}>`
+        : null}
+      ${fase === 'enviando' ? html`<p class="rv-dica">Pode fechar: o envio continua na aba Enviar.</p>` : null}
     </div>`
 }
 RevelaSheet.label = 'Converter com a Revela'

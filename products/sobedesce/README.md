@@ -222,7 +222,8 @@ Botão direito num vídeo do Drive → **Converter com a Revela…** → escolha
 **TikTok** → **Converter**. O app converte com o chip de vídeo da máquina e sobe `<nome>-<destino>.mp4` **na mesma pasta**,
 com o MD5 conferido. Codec, bitrate, tamanho e áudio vêm dos presets da **Revela** (a ferramenta de finalização da
 Absolute ZRO): H.264 marcado BT.709, AAC 48 kHz. Pelo celular: no menu do vídeo, **Converter com a Revela**; o
-computador ligado faz. O original nunca muda.
+**próprio celular** converte (sem computador ligado) e envia o arquivo novo para a mesma pasta. Converte quem tocou no
+botão. Deixe a tela aberta; acima de ~1,5 GB de arquivo final, prefira o computador. O original nunca muda.
 
 ### Referências (vídeos e fotos que inspiram seus projetos)
 

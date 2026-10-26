@@ -6,7 +6,6 @@
 import { sql } from "drizzle-orm";
 import { bigint, boolean, date, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import type { StatusComputador } from "../acompanhar/formato";
-import type { DestinoRevela } from "../revela";
 
 /** Data e hora com fuso. `agora()`: obrigatória, padrão now(). */
 const quando = () => timestamp({ withTimezone: true, mode: "date" });
@@ -429,9 +428,8 @@ export type StatusPedidoProxy = "pendente" | "gerando" | "pronto" | "erro";
 /**
  * "proxy": a cópia leve e a tira de quadros. "frames": frames, takes e posts do vídeo final (docs/FRAMES.md).
  * "formato": a referência em outro formato, ao lado dela (MP3 320, WAV, MP4 720p…; docs/REFERENCIAS.md §7).
- * "revela": "Converter com a Revela", a versão de entrega de um destino (YouTube, Vimeo, Reels, TikTok) ao lado do vídeo.
  */
-export type TipoPedido = "proxy" | "frames" | "formato" | "revela";
+export type TipoPedido = "proxy" | "frames" | "formato";
 /** Ajustes de um pedido de Frames (o computador confere de novo antes de usar). */
 export type AjustesFrames = {
   frames: { quantidade: number; formato: "jpg" | "png" | "tiff" };
@@ -439,9 +437,7 @@ export type AjustesFrames = {
 };
 /** Ajustes de um pedido de formato. */
 export type AjustesFormato = { formato: FormatoReferencia };
-/** Ajustes de um pedido da Revela: o destino. */
-export type AjustesRevela = { destino: DestinoRevela };
-export type AjustesPedido = AjustesFrames | AjustesFormato | AjustesRevela;
+export type AjustesPedido = AjustesFrames | AjustesFormato;
 
 export const pedidosProxy = pgTable(
   "pedidos_proxy",

@@ -697,7 +697,7 @@ pedidos da conta SOBEDESCE e gera do mesmo jeito (docs/CONTAS.md §11). Selo "Pr
 mesmo nome-base na pasta ou dentro da subpasta Proxy/Proxies listada, uma consulta por subpasta).
 
 "Converter com a Revela" (media/revela.js, botão direito num vídeo da tela Drive; pedido pelo celular:
-`src/engine/pedidos-revela.js`, tipo `revela` em docs/CONTAS.md §11): o vídeo vira a versão de entrega de um destino da
+no celular, o próprio aparelho converte: web/public/app/lib/revela.js, docs/CONTAS.md §11): o vídeo vira a versão de entrega de um destino da
 Revela (YouTube, Vimeo, Reels, TikTok) e sobe NA MESMA PASTA como `<nome>-<destino>.mp4`, com
 `appProperties { sobedesce: 'revela', original, destino }`. Quem decide codec, bitrate, tamanho e áudio é a Revela
 (`src/revela/`, cópia de products/finishing com teste que confere). Usa o original que a fila conhece ou baixa do Drive,
