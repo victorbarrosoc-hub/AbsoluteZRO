@@ -9,7 +9,7 @@ import { checkEntitlement, peekQuota } from '@zro/billing'
 import type { Database } from '@zro/db'
 import { DomainError } from '@zro/observability'
 
-export type OrgRole = 'owner' | 'admin' | 'manager' | 'editor' | 'viewer' | 'billing'
+export type OrgRole = 'owner' | 'admin' | 'manager' | 'editor' | 'viewer' | 'billing' | 'guest'
 export const EDIT_ROLES: OrgRole[] = ['owner', 'admin', 'manager', 'editor']
 export const ADMIN_ROLES: OrgRole[] = ['owner', 'admin']
 

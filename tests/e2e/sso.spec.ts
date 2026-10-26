@@ -180,3 +180,80 @@ test('Criar conta num app: a conta nasce na Absolute ZRO e volta ao app já loga
   expect(acc?.logins).toBe(1)
   await sql.end()
 })
+
+test('Carro do Freela: o token do app (escopo carro-do-freela.jobs) cria o projeto do job pela API, sem cookie', async ({ page, request }) => {
+  const clientId = `e2e-c-${randomUUID().slice(0, 8)}`
+  const secret = `zk_${randomBytes(32).toString('base64url')}`
+  const sql = postgres(DB, { max: 1, onnotice: () => {} })
+  await sql`insert into zro.oauth_clients (id, name, product_id, kind, secret_hash, redirect_uris, trusted, scopes)
+            values (${clientId}, 'Carro do Freela (teste)', 'carro-do-freela', 'confidential', ${createHash('sha256').update(secret).digest('hex')}, ${[APP]}, true,
+                    ${['openid', 'email', 'profile', 'org', 'offline_access', 'carro-do-freela.jobs']})`
+  await sql.end()
+  let landed: URL | null = null
+  await page.route('https://app.e2e.teste/**', (route) => {
+    landed = new URL(route.request().url())
+    return route.fulfill({ status: 200, contentType: 'text/html', body: '<title>App</title><p>ok</p>' })
+  })
+  const verifier = randomBytes(32).toString('base64url')
+  const q = new URLSearchParams({
+    response_type: 'code',
+    client_id: clientId,
+    redirect_uri: APP,
+    scope: 'openid email profile org offline_access carro-do-freela.jobs',
+    state: 'estado-carro',
+    code_challenge: createHash('sha256').update(verifier).digest('base64url'),
+    code_challenge_method: 'S256',
+  })
+  await page.goto(`/oauth/authorize?${q}`)
+  await page.waitForURL('**/entrar?next=**')
+  await page.getByRole('link', { name: 'Criar conta' }).click()
+  await page.getByLabel('Nome').fill('Produtora do Carro')
+  await page.getByLabel('E-mail').fill(`carro-${randomUUID().slice(0, 8)}@teste.absolutezro.local`)
+  await page.getByLabel('Senha').fill('senha-e2e-segura-1')
+  await page.getByRole('button', { name: 'Criar conta' }).click()
+  await page.waitForURL('**/boas-vindas**')
+  await page.getByLabel('Nome').fill('Produtora Carro')
+  await page.getByRole('button', { name: 'Criar e continuar' }).click()
+  await expect.poll(() => landed?.searchParams.get('state')).toBe('estado-carro')
+
+  const tok = await request.post('/oauth/token', {
+    headers: { authorization: `Basic ${Buffer.from(`${clientId}:${secret}`).toString('base64')}`, 'content-type': 'application/x-www-form-urlencoded' },
+    data: new URLSearchParams({
+      grant_type: 'authorization_code',
+      code: landed!.searchParams.get('code')!,
+      redirect_uri: APP,
+      code_verifier: verifier,
+    }).toString(),
+  })
+  const t = await tok.json()
+  expect(t.scope).toContain('carro-do-freela.jobs')
+
+  const job = { contract: 'carro-do-freela.job/1', job_id: `cdf-${randomUUID()}`, title: 'Clipe — Selo Norte', briefing: 'Chamada: 13:30 na praia' }
+  const semToken = await request.post('/api/v1/carro-do-freela/jobs', { headers: { authorization: 'Bearer nada' }, data: job })
+  expect(semToken.status()).toBe(401)
+  // Bearer não passa pela checagem de origem (não é credencial que o navegador manda sozinho)
+  const criado = await request.post('/api/v1/carro-do-freela/jobs', {
+    headers: { authorization: `Bearer ${t.access_token}`, origin: 'https://outro.teste' },
+    data: job,
+  })
+  expect(criado.status()).toBe(201)
+  const { projectId } = await criado.json()
+  const de2 = await request.post('/api/v1/carro-do-freela/jobs', { headers: { authorization: `Bearer ${t.access_token}` }, data: job })
+  expect(de2.status()).toBe(200)
+  expect((await de2.json()).projectId).toBe(projectId)
+  // montar equipe convida por e-mail: exige o e-mail da conta confirmado
+  const equipe = await request.post('/api/v1/carro-do-freela/jobs/crew', {
+    headers: { authorization: `Bearer ${t.access_token}` },
+    data: {
+      contract: 'carro-do-freela.crew/1',
+      job_id: job.job_id,
+      members: [{ zro_user_id: randomUUID(), email: 'zeca@teste.absolutezro.local', function: 'Drone' }],
+    },
+  })
+  expect(equipe.status()).toBe(403)
+  expect((await equipe.json()).error).toBe('email_not_verified')
+  // o projeto existe para a pessoa, com o briefing
+  await page.goto(`/projetos/${projectId}`)
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('Clipe — Selo Norte')
+  await expect(page.locator('#equipe')).toContainText('Ninguém na equipe ainda.')
+})

@@ -7,7 +7,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
 import { EVENT_PAYLOADS, EventEnvelopeSchema } from './events'
-import { CarroJobSchema, TpeasyBackupSchema } from './handoffs'
+import { CarroCrewSchema, CarroJobSchema, TpeasyBackupSchema } from './handoffs'
 import { ZroMediaManifestSchema } from './manifest'
 import { OrganizationPlanSchema } from './organization'
 import { ProjectCreateSchema, ZroProjectSchema } from './project'
@@ -28,7 +28,8 @@ export function buildSchemas(): Record<string, unknown> {
     'zro-organization-plan.v1': s(OrganizationPlanSchema, 'zro-organization-plan.v1', 'Prévia de organização (Synquei) v1'),
     'zro-timeline-ref.v0': s(TimelineRefSchema, 'zro-timeline-ref.v0', 'Referência de timeline v0.1'),
     'zro-event-envelope.v1': s(EventEnvelopeSchema, 'zro-event-envelope.v1', 'Envelope de evento v1'),
-    'carro-do-freela.job.v1': s(CarroJobSchema, 'carro-do-freela.job.v1', 'Job do Carro do Freela (contrato proposto) v1'),
+    'carro-do-freela.job.v1': s(CarroJobSchema, 'carro-do-freela.job.v1', 'Job do Carro do Freela v1'),
+    'carro-do-freela.crew.v1': s(CarroCrewSchema, 'carro-do-freela.crew.v1', 'Equipe escalada num job do Carro do Freela v1'),
     'tpeasy.backup.v1': s(TpeasyBackupSchema, 'tpeasy.backup.v1', 'Backup do TPeasy v1'),
   }
   for (const [type, versions] of Object.entries(EVENT_PAYLOADS)) {
