@@ -1627,3 +1627,40 @@ details[open] summary::after {
     opacity: 0;
   }
 }
+
+/* Converter: log da câmera → Rec.709 */
+.campo-log {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px 0 12px;
+  min-height: 40px;
+  border-radius: 999px;
+  color: var(--mudo);
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 0 0 1px var(--linha);
+}
+.campo-log svg {
+  width: 16px;
+  height: 16px;
+}
+.campo-log select {
+  appearance: none;
+  max-width: 220px;
+  padding: 8px 10px 8px 2px;
+  border: 0;
+  color: var(--texto);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  background: transparent;
+  cursor: pointer;
+}
+.campo-log select:focus-visible {
+  outline: 2px solid var(--texto);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+.campo-log option {
+  color: #1d1d1f;
+}

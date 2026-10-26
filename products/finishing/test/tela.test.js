@@ -543,3 +543,64 @@ test('página inicial: arrastar a comparação e "Testar agora" abre o exemplo p
   assert.deepEqual(erros, [])
   await pagina.close()
 })
+
+test('converter com log: S-Log3 vira Rec.709 na GPU (cinza 18% no lugar certo) e sai marcado BT.709', async () => {
+  // "material em S-Log3": cinza liso no código do cinza 18% da Sony (~420 em 10 bits), ProRes marcado BT.709
+  const log = join(dir, 'slog3.mov')
+  execFileSync('ffmpeg', [
+    '-loglevel',
+    'error',
+    '-y',
+    '-f',
+    'lavfi',
+    '-i',
+    'color=c=0x686868:size=640x360:rate=24',
+    '-t',
+    '1',
+    '-c:v',
+    'prores_ks',
+    '-profile:v',
+    '3',
+    '-pix_fmt',
+    'yuv422p10le',
+    '-color_primaries',
+    'bt709',
+    '-color_trc',
+    'bt709',
+    '-colorspace',
+    'bt709',
+    log,
+  ])
+  const pagina = await navegador.newPage({ acceptDownloads: true })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  await pagina.goto(endereco + 'converter.html')
+  await pagina.locator('#aparelho [data-codec=avc][data-ok=true]').waitFor()
+  await pagina.getByLabel('Log da câmera').selectOption('sony-slog3-cine')
+  await pagina.setInputFiles('#arquivos', log)
+  await pagina.locator('.item[data-estado=pronto]').waitFor()
+  await pagina.locator('#salvar-pasta').uncheck({ force: true })
+  await pagina.getByRole('button', { name: 'Converter' }).click()
+  const link = pagina.getByRole('link', { name: 'Baixar slog3-youtube.mp4' })
+  await link.waitFor({ timeout: 60_000 })
+  const [baixado] = await Promise.all([pagina.waitForEvent('download'), link.click()])
+  const saida = join(dir, 'slog3-saida.mp4')
+  await baixado.saveAs(saida)
+  // luma do centro do primeiro quadro (8 bits, faixa de vídeo): S-Log3 cinza → Rec.709 cinza 18% ≈ 16 + 0,49 × 219 ≈ 124
+  const y = execFileSync('ffmpeg', ['-loglevel', 'error', '-i', saida, '-vf', 'crop=8:8,format=gray', '-frames:v', '1', '-f', 'rawvideo', '-'])
+  const media = y.reduce((s, v) => s + v, 0) / y.length
+  assert.ok(Math.abs(media - 124) <= 5, `luma do cinza: ${media} (sem o CST ficaria perto de 105)`)
+  const sonda = JSON.parse(
+    execFileSync(
+      'ffprobe',
+      ['-v', 'error', '-select_streams', 'v', '-show_entries', 'stream=color_primaries,color_transfer,color_space', '-of', 'json', saida],
+      {
+        encoding: 'utf8',
+      },
+    ),
+  )
+  const v = sonda.streams[0]
+  assert.deepEqual([v.color_primaries, v.color_transfer, v.color_space], ['bt709', 'bt709', 'bt709'])
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
