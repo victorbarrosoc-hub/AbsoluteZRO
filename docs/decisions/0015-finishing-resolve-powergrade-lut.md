@@ -50,6 +50,12 @@ técnico continua `finishing`; migration 0009 troca o nome no catálogo):
   que a pessoa escolhe, gravando arquivo novo, sem tocar no master. Só SDR 8 bits (H.264/HEVC em MP4, marcado
   BT.709); HDR e conversão de cadência continuam no Resolve.
 
+- **"Converter com a Revela" no SOBEDESCE (pedido do titular, 26/10/2026):** botão direito num vídeo do Drive (ou
+  pedido pelo celular) gera a versão de um destino e sobe ao lado do original. A Revela decide (presets e plano
+  copiados para `products/sobedesce/src/revela/`, com teste que confere a cópia); o SOBEDESCE executa com o ffmpeg e o
+  codificador de hardware dele, baixando do Drive quando o original não está na máquina, e confere o MD5. É a primeira
+  ponte entre dois produtos da família sem passar pelo HUB: nenhum dado sai do Drive da pessoa.
+
 **O que um pacote real mostrou (25/10/2026).** Pacote comercial de terceiros enviado pelo titular, estudado só fora do
 repositório (nenhum arquivo dele entra aqui):
 

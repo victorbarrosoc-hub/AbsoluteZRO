@@ -95,3 +95,28 @@ export async function formatoPedidos(fileId, signal) {
   const r = await api(`${API}?tipo=formato&fileIds=${encodeURIComponent(fileId)}`, { signal })
   return r.pedidos || []
 }
+
+// ───── "Converter com a Revela" pedido ao computador: mesma fila, tipo "revela" ─────
+
+/** Os destinos (os do conversor da Revela; o site confere de novo). */
+export const DESTINOS_REVELA = [
+  { id: 'youtube', nome: 'YouTube', vertical: false },
+  { id: 'vimeo', nome: 'Vimeo', vertical: false },
+  { id: 'reels', nome: 'Reels', vertical: true },
+  { id: 'tiktok', nome: 'TikTok', vertical: true },
+]
+
+/** Pede ao computador a versão de um destino da Revela, salva ao lado do vídeo no Drive. */
+export async function pedirRevela(file, destino) {
+  const conta = getState().drive?.id
+  if (!conta) throw new Error('Escolha um Drive primeiro.')
+  const body = { contaGoogleId: conta, tipo: 'revela', ajustes: { destino }, itens: [{ fileId: file.id, nome: file.name, tamanho: file.size != null ? Number(file.size) : undefined }] }
+  const r = await api(API, { method: 'POST', body })
+  return { pedido: (r.pedidos || [])[0] || null, novo: Number(r.novos) > 0 }
+}
+
+/** Os pedidos da Revela deste vídeo, do mais novo para o mais velho. */
+export async function revelaPedidos(fileId, signal) {
+  const r = await api(`${API}?tipo=revela&fileIds=${encodeURIComponent(fileId)}`, { signal })
+  return r.pedidos || []
+}

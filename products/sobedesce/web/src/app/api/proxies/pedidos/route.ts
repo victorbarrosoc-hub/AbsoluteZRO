@@ -1,16 +1,23 @@
-import type { AjustesFormato, AjustesFrames, AjustesPedido, StatusPedidoProxy, TipoPedido } from "@/lib/db/schema";
+import type { AjustesFormato, AjustesFrames, AjustesPedido, AjustesRevela, StatusPedidoProxy, TipoPedido } from "@/lib/db/schema";
 import { lerJson } from "@/lib/http";
 import { exigirProxies, falha, ID_DRIVE, MSG, ok } from "@/lib/proxies/api";
 import { contaDaPessoa, type ItemNovo, listarPedidos, MAX_POR_PEDIDO, pedirProxies, STATUS, TIPOS } from "@/lib/proxies/pedidos";
 import { ehFormato } from "@/lib/referencias/formatos";
+import { ehDestinoRevela } from "@/lib/revela";
 
-/** Frames e formatos: no máximo isto de uma vez (cada um é um trabalho pesado no computador). */
+/** Frames, formatos e Revela: no máximo isto de uma vez (cada um é um trabalho pesado no computador). */
 const MAX_FRAMES = 20;
 
 /** Ajustes de "Baixar como…": só um formato que o computador sabe fazer (o original já está no Drive). */
 function lerAjustesFormato(v: unknown): AjustesFormato | null {
   const f = (v as Record<string, unknown> | null)?.formato;
   return ehFormato(f) ? { formato: f } : null;
+}
+
+/** Ajustes de "Converter com a Revela": só um destino que o computador sabe gerar. */
+function lerAjustesRevela(v: unknown): AjustesRevela | null {
+  const d = (v as Record<string, unknown> | null)?.destino;
+  return ehDestinoRevela(d) ? { destino: d } : null;
 }
 
 /** Ajustes de Frames vindos do celular: só o que o computador sabe fazer, dentro dos limites dele. */
@@ -33,7 +40,7 @@ function lerAjustes(v: unknown): AjustesFrames | null {
 
 /**
  * Pedidos ao computador: `?status=pendente` (ou vários, separados por vírgula; `todos`), `?fileIds=a,b` e
- * `?tipo=proxy|frames|formato|todos` (sem tipo: proxy, que é o que os apps antigos do computador sabem fazer).
+ * `?tipo=proxy|frames|formato|revela|todos` (sem tipo: proxy, que é o que os apps antigos do computador sabem fazer).
  * Sem status: todos (o celular quer ver os prontos também).
  */
 export async function GET(req: Request) {
@@ -56,7 +63,8 @@ export async function GET(req: Request) {
 /**
  * `{ contaGoogleId, itens: [{ fileId, nome, tamanho? }], tipo?, ajustes? }`. O mesmo arquivo já esperando (do mesmo
  * tipo; nos de formato, do mesmo formato) não entra de novo. Frames precisa de `ajustes`; formato, de
- * `ajustes: { formato: "mp3-320" | "wav" | "m4a" | "mp4" | "mp4-1080" | "mp4-720" | "jpg" }`.
+ * `ajustes: { formato: "mp3-320" | "wav" | "m4a" | "mp4" | "mp4-1080" | "mp4-720" | "jpg" }`; revela, de
+ * `ajustes: { destino: "youtube" | "vimeo" | "reels" | "tiktok" }`.
  */
 export async function POST(req: Request) {
   const atual = await exigirProxies(req, { mutacao: true });
@@ -69,7 +77,8 @@ export async function POST(req: Request) {
   if (!TIPOS.includes(tipo)) return falha(400, "entrada", MSG.entrada);
   const max = tipo === "proxy" ? MAX_POR_PEDIDO : MAX_FRAMES;
   if (corpo.itens.length > max) return falha(400, "muitos", `Até ${max} vídeos por vez.`);
-  const ajustes: AjustesPedido | null = tipo === "frames" ? lerAjustes(corpo.ajustes) : tipo === "formato" ? lerAjustesFormato(corpo.ajustes) : null;
+  const ajustes: AjustesPedido | null =
+    tipo === "frames" ? lerAjustes(corpo.ajustes) : tipo === "formato" ? lerAjustesFormato(corpo.ajustes) : tipo === "revela" ? lerAjustesRevela(corpo.ajustes) : null;
   if (tipo !== "proxy" && !ajustes) return falha(400, "entrada", MSG.entrada);
   const itens: ItemNovo[] = [];
   for (const i of corpo.itens as unknown[]) {

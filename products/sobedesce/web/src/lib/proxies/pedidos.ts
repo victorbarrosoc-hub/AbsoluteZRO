@@ -2,7 +2,8 @@
  * Pedidos ao computador (docs/CONTAS.md §11): o celular marca vídeos e pede; o app do computador pega um por vez e
  * faz. Tipo "proxy": o proxy 720p e a tira de quadros (o hover scrub). Tipo "frames": frames, takes e posts do vídeo
  * final, numa pasta ao lado dele (docs/FRAMES.md). Tipo "formato": a referência em outro formato (MP3 320, WAV,
- * MP4 720p…), salva ao lado dela (docs/REFERENCIAS.md §7). Quem não diz o tipo fala de proxy (os apps antigos). Mesmo esquema da fila das Referências: pegar de
+ * MP4 720p…), salva ao lado dela (docs/REFERENCIAS.md §7). Tipo "revela": a versão de entrega de um destino da Revela
+ * (YouTube, Vimeo, Reels, TikTok), ao lado do vídeo. Quem não diz o tipo fala de proxy (os apps antigos). Mesmo esquema da fila das Referências: pegar de
  * uma vez só (dois computadores, só um leva), sinal de vida e "gerando" sem notícia por 30 min volta para a fila.
  */
 import { and, desc, eq, inArray, lt, or } from "drizzle-orm";
@@ -20,7 +21,7 @@ const GUARDAR_FEITOS_MS = 14 * 24 * 60 * 60_000;
 /** Por pedido do celular. */
 export const MAX_POR_PEDIDO = 200;
 
-export const TIPOS: TipoPedido[] = ["proxy", "frames", "formato"];
+export const TIPOS: TipoPedido[] = ["proxy", "frames", "formato", "revela"];
 
 export type PedidoProxy = {
   id: string;
@@ -107,8 +108,9 @@ export async function listarPedidos(
 
 export type ItemNovo = { fileId: string; nome: string; tamanho: number | null };
 
-/** Formato pedido (só nos pedidos de formato): dois formatos do mesmo arquivo são dois pedidos. */
-const formatoDe = (a: AjustesPedido | null | undefined) => (a && "formato" in a && typeof a.formato === "string" ? a.formato : null);
+/** Formato pedido (nos de formato) ou destino (nos da Revela): dois formatos do mesmo arquivo são dois pedidos. */
+const formatoDe = (a: AjustesPedido | null | undefined) =>
+  a && "formato" in a && typeof a.formato === "string" ? a.formato : a && "destino" in a && typeof a.destino === "string" ? a.destino : null;
 
 /**
  * Guarda os pedidos. O mesmo arquivo já esperando (pendente ou gerando) com o mesmo tipo (e, nos de formato, o mesmo
@@ -133,7 +135,7 @@ export async function pedirProxies(
         inArray(pedidos.status, ["pendente", "gerando"]),
       ),
     );
-  const existentes = tipo === "formato" ? encontrados.filter((l) => formatoDe(l.ajustes) === formatoDe(ajustes)) : encontrados;
+  const existentes = tipo === "formato" || tipo === "revela" ? encontrados.filter((l) => formatoDe(l.ajustes) === formatoDe(ajustes)) : encontrados;
   const porArquivo = new Map(existentes.map((l) => [l.fileId, l]));
   const novas: (typeof pedidos.$inferInsert)[] = [];
   const vistos = new Set<string>();
@@ -193,7 +195,7 @@ export async function mudarPedido(
         : { ok: false, status: 403, erro: "so_computador", mensagem: "Só o computador que está gerando muda este estado." };
     }
     if (atual.status === "pronto") {
-      const mensagem = atual.tipo === "frames" ? "Estes frames já foram feitos." : atual.tipo === "formato" ? "Este arquivo já foi convertido." : "Este proxy já foi gerado.";
+      const mensagem = atual.tipo === "frames" ? "Estes frames já foram feitos." : atual.tipo === "formato" || atual.tipo === "revela" ? "Este arquivo já foi convertido." : "Este proxy já foi gerado.";
       return { ok: false, status: 409, erro: "pronto", mensagem };
     }
     if (quem.via === "bearer" && atual.status === "gerando") return { ok: false, status: 409, erro: "ocupado", mensagem: "Outro computador pegou este pedido." };
@@ -201,7 +203,7 @@ export async function mudarPedido(
   const set: Partial<typeof pedidos.$inferInsert> = { status: m.status, atualizadoEm: new Date() };
   if (m.status === "pronto") Object.assign(set, { erro: null, resultado: (m.resultado ?? "").slice(0, 200) || null, proxyFileId: m.proxyFileId ?? null });
   if (m.status === "erro") {
-    const padrao = atual.tipo === "frames" ? "Não deu para fazer os frames." : atual.tipo === "formato" ? "Não deu para converter." : "Não deu para gerar o proxy.";
+    const padrao = atual.tipo === "frames" ? "Não deu para fazer os frames." : atual.tipo === "formato" || atual.tipo === "revela" ? "Não deu para converter." : "Não deu para gerar o proxy.";
     set.erro = (m.erro ?? "").slice(0, 500) || padrao;
   }
   if (m.status === "pendente") Object.assign(set, { dispositivoId: null, erro: null });

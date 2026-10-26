@@ -316,11 +316,15 @@ das Referências (pegar de uma vez só, sinal de vida, preso volta para a fila).
 - **Tipos** (`tipo`, migração `0008_pedidos_tipo`): `proxy` (padrão; o que os apps antigos pegam), `frames`
   (docs/FRAMES.md, `ajustes` dos frames e takes) e `formato` ("Baixar como…" das Referências, `ajustes: { formato }`
   com `mp4`, `mp4-1080`, `mp4-720`, `mp3-320`, `wav`, `m4a` ou `jpg`; até 20 por vez; o mesmo arquivo pode ter um
-  pedido esperando por formato; computador: `src/referencias/pedidos-formato.js`, docs/REFERENCIAS.md §7). `GET`
-  sem `tipo` lista só `proxy`; `?tipo=frames|formato|todos`.
+  pedido esperando por formato; computador: `src/referencias/pedidos-formato.js`, docs/REFERENCIAS.md §7) e `revela`
+  ("Converter com a Revela", `ajustes: { destino }` com `youtube`, `vimeo`, `reels` ou `tiktok`; até 20 por vez; um
+  pedido esperando por destino; computador: `src/engine/pedidos-revela.js`, o arquivo novo fica ao lado do vídeo).
+  Sem migração: `tipo` é texto. `GET` sem `tipo` lista só `proxy`; `?tipo=frames|formato|revela|todos`.
 - **Celular** (`components/proxies.js`): na seleção da aba Drive, **Gerar proxy** (só vídeos, inclusive RAW de câmera;
   não as próprias cópias leves). A folha diz se há um computador ligado (pela notícia do "Acompanhar pelo celular"),
   pede e acompanha cada vídeo a cada 5 s enquanto está aberta: esperando, gerando, pronto ou o erro com **De novo**.
+  No menu de um vídeo, **Converter com a Revela** (`components/revela.js`): quatro cartões de destino, o estado de cada
+  um e **Converter**.
 
 ## 12. Entrar com Absolute ZRO (login único da família)
 

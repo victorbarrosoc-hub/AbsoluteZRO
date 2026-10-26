@@ -411,3 +411,19 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   barra, selo de pronto, ícone que respira ao arrastar.
 - `products/finishing`: `npm test` (**35/35**), testes de tela ajustados (fichas, miniatura não vazia, caixa
   compacta, grupos de rádio com nome). Desktop 1280 e celular 390 sem rolagem lateral e sem erro de console.
+
+## Revela no SOBEDESCE: "Converter com a Revela" (26/10/2026)
+
+- `products/sobedesce`: `test/revela.test.js` (**9/9**): cópia dos presets e do plano igual à de `products/finishing`
+  (e o ícone oficial), mesmos destinos no site e no celular, leitura do `ffmpeg -i` (ProRes 4K, HDR com `pq`, celular
+  deitado), linha de comando (45 Mbit/s no 4K do YouTube, GOP de 12 a 23,98 fps, tags 1-1-1, AAC 384k, 1080×1920 no
+  Reels) e, com o ffmpeg de verdade e o Drive falso, um ProRes do Drive vira `<nome>-youtube.mp4` na mesma pasta, H.264
+  1280×720 `bt709` nas três tags com AAC 48 kHz, MD5 do Drive igual ao do arquivo e nenhum temporário para trás.
+  Trabalhos da tela (SSE, parar) e pedidos do celular (ordem, outro computador levou, destino desconhecido, não é
+  vídeo, sem ffmpeg, cancelado no celular).
+- Suíte do SOBEDESCE (`npm run test:fast`): ajustados o estado inicial (chave `revela`) e a versão do app do celular
+  (2.8.44, cache v59). Site (`web`): `tests/proxies.test.mts` **10/10** com os pedidos `revela`; `typecheck` e `eslint`
+  limpos. Sem migração (o `tipo` dos pedidos é texto).
+- Tela do computador conferida no Chromium com o app de verdade (Drive falso, ffmpeg do sistema): menu, janela com os
+  quatro cartões nos temas escuro e claro, andamento e pronto com o arquivo novo na pasta.
+- Não validado: Mac e Windows reais (VideoToolbox, NVENC), app do celular no aparelho.
