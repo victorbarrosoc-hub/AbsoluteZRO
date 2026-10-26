@@ -28,7 +28,7 @@ de uma cor, cores, regras de uso e as alternativas estudadas (`marca/alternativa
 
 `index.html` (`app/home.*`): apresentação com motion (comparação antes/depois que se revela, telas reais em MacBook
 e iPhone que entram com a rolagem, faixa de destinos, família Absolute ZRO). Tudo em CSS, com "reduzir movimento".
-Imagens de exemplo: frames da ZRO Filmes (os do site) em `exemplos/`; o "depois" da página inicial é saída real da Revela (créditos em `exemplos/CREDITOS.txt`).
+Imagens de exemplo: frames da ZRO Filmes (os do site) em `exemplos/`; o "antes" é o mesmo frame em log simulado (créditos em `exemplos/CREDITOS.txt`).
 
 Login único Absolute ZRO (ADR 0012/0014), no padrão do Synquei: `api/zro/{entrar,callback,eu,sair}.js` (funções Node
 da Vercel; `api/_zro.js` não vira rota). Cliente OIDC confidencial `revela-web`, PKCE S256, cookies `rv_zro`/`rv_conta`

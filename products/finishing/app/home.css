@@ -207,11 +207,11 @@
   height: auto;
 }
 
-/* hero: o mesmo frame antes e depois da LUT; a linha da comparação varre a imagem, como na ferramenta */
+/* hero: o mesmo frame em log e com a cor final, na proporção original (16:9); a linha da comparação varre a imagem, como na ferramenta */
 .comparar {
   position: relative;
   width: min(1180px, 100%);
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 16 / 9;
   margin: clamp(48px, 7vw, 80px) auto 0;
   border-radius: clamp(16px, 2.4vw, 28px);
   overflow: hidden;
@@ -256,31 +256,6 @@
 }
 .rotulo-home--depois {
   right: 16px;
-}
-.ref-mini {
-  position: absolute;
-  right: 16px;
-  bottom: 16px;
-  display: grid;
-  gap: 6px;
-  justify-items: end;
-  margin: 0;
-  color: #f5f5f7;
-  font-size: 12px;
-  font-weight: 600;
-}
-.ref-mini img {
-  width: clamp(96px, 14vw, 180px);
-  height: auto;
-  border-radius: 10px;
-  box-shadow:
-    0 0 0 2px rgb(255 255 255 / 0.85),
-    0 16px 40px rgb(0 0 0 / 0.6);
-}
-.ref-mini span {
-  padding: 2px 10px;
-  border-radius: 999px;
-  background: rgb(14 14 16 / 0.55);
 }
 
 /* ─────────── seções ─────────── */
