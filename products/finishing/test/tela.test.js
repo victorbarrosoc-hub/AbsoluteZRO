@@ -481,7 +481,7 @@ test('dock embaixo e menu recolhível: computador lembra, celular abre em gaveta
   assert.equal(await pagina.locator('#menu [aria-current="page"]').textContent(), 'CST')
   // família em ordem alfabética, como em todas as plataformas
   const familia = await pagina.locator('#menu .menu-item[href^="http"]').allTextContents()
-  assert.deepEqual(familia, ['Absolute ZRO', 'Carro do Freela', 'Nossom', 'Sobedesce', 'Synquei', 'TPEasy'])
+  assert.deepEqual(familia, ['Absolute ZRO', 'AEON', 'Carro do Freela', 'Nossom', 'Sobedesce', 'Synquei', 'TPEasy'])
   await contexto.close()
 
   const celular = await navegador.newPage({ viewport: { width: 375, height: 800 } })

@@ -1,0 +1,25 @@
+// Nome e marca do produto num lugar só: AEON, "Time is yours." (escolhidos pelo titular em 26/10/2026). Troque aqui
+// e o app, a janela, o instalador, o site e os textos mudam juntos. As cores ficam em app/editor.css (--produto e
+// --produto-2, que apontam para --p-ai-edit e --p-ai-edit-2 da Absolute ZRO) e a geometria da marca em src/marca.js.
+
+export const PRODUTO = Object.freeze({
+  /** id técnico no ecossistema (catálogo, contratos, eventos): não muda com o nome. */
+  id: 'ai-edit',
+  nome: 'AEON',
+  assinatura: 'by Absolute ZRO',
+  /** frase da marca (fica em inglês, como no material do titular) */
+  frase: 'Time is yours.',
+  /** o que o produto faz, em uma linha */
+  promessa: 'A IA propõe. Você aprova.',
+  /** protocolo interno do app de desktop (aeon://app/...) e prefixo de arquivos */
+  esquema: 'aeon',
+  arquivo: 'AEON',
+  appId: 'com.absolutezro.aeon',
+  /** extensão do projeto salvo */
+  extensao: '.aeon',
+  /** endereço do site quando o titular autorizar o projeto Vercel (até lá, só local) */
+  site: null,
+  repositorio: 'victorbarrosoc-hub/AbsoluteZRO',
+  /** Release do GitHub com os instaladores (ADR 0013: tag com o prefixo do app) */
+  release: 'ai-edit-app-desktop',
+})

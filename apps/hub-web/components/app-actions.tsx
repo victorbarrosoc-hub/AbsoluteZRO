@@ -54,7 +54,8 @@ function atualizarTodos(api: AppsApi) {
 
 const mb = (b: number) => (b > 0 ? `${Math.round(b / 1_048_576)} MB` : '')
 
-export function AppActions({ id, nome, liberado }: { id: string; nome: string; liberado: boolean }) {
+/** `web`: endereço do app no navegador, oferecido quando a ferramenta ainda não tem versão para este computador. */
+export function AppActions({ id, nome, liberado, web }: { id: string; nome: string; liberado: boolean; web?: string | null }) {
   const [api, setApi] = useState<AppsApi | null>(null)
   const [s, setS] = useState<Situacao | null>(null)
   const [prog, setProg] = useState<Progresso | null>(null)
@@ -129,7 +130,15 @@ export function AppActions({ id, nome, liberado }: { id: string; nome: string; l
       </>
     )
   else if (fase === 'instalando' || fase === 'removendo') corpo = <span className="zro-mute">{fase === 'instalando' ? 'Instalando…' : 'Removendo…'}</span>
-  else if (!s.disponivel && !s.instalado) corpo = <span className="zro-faint">Ainda sem versão para este computador.</span>
+  else if (!s.disponivel && !s.instalado)
+    corpo = web ? (
+      <a className="zro-btn zro-btn--primary zro-btn--small" href={web} target="_blank" rel="noopener noreferrer">
+        Abrir na web
+        <span className="zro-sr-only"> {nome} (abre no navegador)</span>
+      </a>
+    ) : (
+      <span className="zro-faint">Ainda sem versão para este computador.</span>
+    )
   else if (!liberado && !s.instalado)
     corpo = (
       <Link className="zro-btn zro-btn--small" href="/assinatura">

@@ -15,15 +15,15 @@ import shutil
 import sys
 
 import numpy as np
-from PIL import Image, ImageChops, ImageDraw, ImageFilter
+from PIL import Image, ImageChops, ImageDraw
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 RAIZ = os.path.abspath(os.path.join(AQUI, '../..'))
 SS = 4  # superamostragem
 
 TEMAS = {
-    # corpo (topo, base) e cor da marca
-    'claro': {'topo': (253, 253, 254), 'base': (235, 236, 240), 'marca': (29, 29, 31)},
+    # corpo (topo, base) e cor da marca. Claro: branco chapado, sem relevo (pedido do titular, 26/10/2026)
+    'claro': {'topo': (255, 255, 255), 'base': (255, 255, 255), 'marca': (29, 29, 31)},
     'escuro': {'topo': (30, 30, 33), 'base': (8, 8, 10), 'marca': (255, 255, 255)},
 }
 
@@ -46,7 +46,7 @@ def centelha(cx, cy, h, w):
     return [tuple(pt) for s in segs for pt in bezier(*s)]
 
 
-def marca(size, cor, diametro=0.5, traco=None, so_anel=None, deslocar=True):
+def marca(size, cor, diametro=0.5, traco=None, so_anel=None, deslocar=False):
     """Marca em RGBA transparente. `diametro`: diâmetro externo do anel em fração do quadro."""
     S = size * SS
     im = Image.new('RGBA', (S, S), (0, 0, 0, 0))
@@ -56,7 +56,7 @@ def marca(size, cor, diametro=0.5, traco=None, so_anel=None, deslocar=True):
     # proporção aprovada: traço = 0,29 do raio do eixo; abaixo de 64 px o traço engrossa
     t = traco if traco is not None else (0.26 if size >= 64 else 0.30 if size >= 32 else 0.36) * ro
     r = ro - t / 2
-    # centro óptico: o conjunto anel + centelha fica no meio do quadro
+    # o anel fica no centro do quadro (pedido do titular, 26/10/2026); `deslocar` centra o conjunto anel + centelha
     cx = S / 2 - (0 if so_anel or not deslocar else r * 0.69 * 0.45)
     cy = S / 2
     if not so_anel:
@@ -93,17 +93,12 @@ def arredondado(size, raio):
 
 
 def mac(tema):
-    """Grid da Apple: 824 dentro de 1024, sombra suave e contorno de luz de 10%."""
+    """Grid da Apple: 824 dentro de 1024, sem sombra (sem relevo), só um contorno fino para a placa não sumir."""
     S = 824
-    inner = placa(S, tema, 0.5)
+    inner = placa(S, tema, 0.56)
     mask = superelipse(S)
     inner.putalpha(mask)
     canvas = Image.new('RGBA', (1024, 1024), (0, 0, 0, 0))
-    shm = Image.new('L', (1024, 1024), 0)
-    shm.paste(mask, (100, 112))
-    sh = Image.new('RGBA', (1024, 1024), (0, 0, 0, 255))
-    sh.putalpha(shm.point(lambda v: int(v * 0.4)).filter(ImageFilter.GaussianBlur(22)))
-    canvas = Image.alpha_composite(canvas, sh)
     canvas.alpha_composite(inner, (100, 100))
     mo = Image.new('L', (1024, 1024), 0)
     mo.paste(mask, (100, 100))
@@ -115,7 +110,7 @@ def mac(tema):
 
 
 def windows(tema):
-    win = placa(1024, tema, 0.5)
+    win = placa(1024, tema, 0.56)
     win.putalpha(arredondado(1024, 0.2))
     return win
 
@@ -129,7 +124,7 @@ def pequeno(size, tema, raio=0.22):
 def gerar(tema):
     out = os.path.join(AQUI, 'out', tema)
     os.makedirs(out, exist_ok=True)
-    cheio = placa(1024, tema, 0.5)
+    cheio = placa(1024, tema, 0.56)
     cheio.convert('RGB').save(f'{out}/icon-1024.png')
     cheio.convert('RGB').resize((180, 180), Image.LANCZOS).save(f'{out}/apple-icon.png')
     for s in (192, 512):

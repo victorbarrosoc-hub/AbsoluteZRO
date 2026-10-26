@@ -60,6 +60,14 @@ export async function logoutAction() {
   redirect('/entrar')
 }
 
+/** Sair pelo painel do app de computador: volta para o login do próprio app. */
+export async function logoutAppAction() {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value
+  if (token) await revokeSessionByToken(db(), token)
+  await clearSessionCookie()
+  redirect('/app/entrar')
+}
+
 export async function forgotAction(_: FormState, fd: FormData): Promise<FormState> {
   try {
     const r = await requestPasswordReset(db(), str(fd, 'email'))

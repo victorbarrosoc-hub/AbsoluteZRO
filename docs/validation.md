@@ -449,7 +449,7 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 ## Central de apps (26/10/2026)
 
 - HUB: `tests/integration/desktop-apps.test.ts` (escolha do arquivo por versão e build, só com SHA-256; NOSSOM pelo
-  Release nossom-v* mais novo ou pelo repositório antigo; GitHub fora do ar não quebra o catálogo; download só de
+  Release nossom-v\* mais novo ou pelo repositório antigo; GitHub fora do ar não quebra o catálogo; download só de
   arquivo reconhecido, com token pelo endereço assinado). Conferido contra os Releases reais: SOBEDESCE 0.1.0 (b1005) e
   Synquei 1.0.0 (b1004) entram com SHA-256; NOSSOM fica de fora sem token (repositório antigo privado).
 - E2E: a página Downloads com a ponte do app simulada instala com progresso, abre, mostra Atualizar e esconde o
@@ -616,6 +616,22 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - Não feito, por depender de outros apps: entrega da Revela subindo pelo SOBEDESCE com MD5 e `delivery.ready` no HUB;
   desconto de `zro.ai_credits` (a Revela não usa GPU de servidor).
 
+## AEON: marca, Seus universos, Inspector, Histórico e site (26/10/2026)
+
+- `products/ai-edit`: `npm test` (unidade, exportadores com xmllint e JSON Schema, SOBEDESCE, instaladores) **27/27**;
+  telas no Chromium **4/4** (+1 que baixa o Whisper, pulada sem rede): caminho inteiro com Inspector (opacidade e
+  escala viram uma ação no desfazer e vão para o FCPXML), marcador (M) e Histórico (volta e avança), autosave em Seus
+  universos, reabrir e religar o vídeo pelo nome, projeto novo 9:16 a 25 qps e renomear. Smoke do Electron ok.
+- Marca: geometria em `src/marca.js` (hipérboles), conferida lado a lado com a prancha do titular; letras do nome em
+  contorno da Montserrat SemiBold (OFL) por `scripts/letras.py`.
+- Site: telas do app tiradas por `scripts/telas.mjs` (o app de verdade, com vídeos de demonstração gravados das imagens
+  do Higgsfield e transcrição trocada por roteiro fixo, porque a fala sintética não tem palavras). Conferido em escuro,
+  claro e 390 px de largura.
+- Não validado: o app no navegador em Safari e Firefox (precisa de WebCodecs; o site indica Chrome ou Edge).
+- Conta obrigatória: `test/zro.test.js` **21/21** (entrar, criar conta, volta, sessão sem token, recusas de state,
+  nonce, emissor, público e assinatura, login desligado → 503) e o teste de tela "só com conta" (sem sessão o editor vai
+  para `entrar.html?volta=/app/`; com sessão o menu mostra a pessoa).
+
 ## Página inicial de cinema (26/10/2026, estrutura escolhida pelo titular)
 
 - Topo: paisagem em preto e branco com o símbolo esculpido em metal sobre a rocha, gerada no Higgsfield (GPT Image
@@ -681,6 +697,14 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Não validado: o botão **Comprovante** num envio real para o Drive e o registro pela tela do HUB em produção.
 - Site do SOBEDESCE: topo sem texto em degradê e sem brilho azul (Padrão Apple).
 
+## App para computador: abertura, painel e login; AEON e Revela disponíveis; Avulso numa janela (26/10/2026)
+
+- `npm test` **143/143** (testes que esperavam AEON e Revela bloqueados agora conferem a liberação de 0013; o caso
+  "fora do catálogo" usa um id inexistente). `apps/hub-desktop` `npm test` 22/22. Lint, formatação, tipos e build ok.
+- Capturas locais (claro e escuro) de `/planos` com 3 apps marcados, `/app/entrar`, `/app` com conta nova e quadros
+  da abertura em 0,3 s, 0,9 s, 1,6 s e 2,4 s.
+- Não validado: a abertura e o painel dentro do app instalado (Mac e Windows) até sair o build 1.1.0.
+
 ## Revela em revela.absolutezro.com (26/10/2026)
 
 - A pedido do titular, o projeto Vercel `revela` ganhou o domínio `revela.absolutezro.com` (zona do absolutezro.com na
@@ -722,3 +746,19 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   em qualquer ordem e um sem par). `products/finishing`: `npm test` 94/94; raiz: lint e formato.
 - Não validado: a LUT clonada aplicada dentro do Resolve em material de vídeo; o Rec.709 do estudo inclui as primárias
   do colorista, então ele não mede a CST da Revela sozinha.
+
+- Ícone do app (pedido do titular): placa branca chapada, sem sombra nem degradê, anel no centro e marca maior
+  (`scripts/marca/icones.py`, diâmetro 0,56). Gerado de novo para o HUB (`--instalar`) e para o app (`npm run icons`).
+
+## App para computador 1.1.1: cliques voltam a funcionar no Mac (26/10/2026)
+
+- Causa: no Mac, a área de arrastar janela (`-webkit-app-region: drag`) da página da barra (`barra.css`, `.barra` com
+  `height: 100%`, isto é, a janela inteira por baixo do HUB) e da abertura (`abertura.css`, `body`) vale para a janela
+  toda e engole os cliques no painel. Os botões Voltar/Avançar/Início também ficavam no meio da janela, escondidos.
+- Correção: a barra arrasta só nos 38 px de cima (`ALTURA_BARRA`); a abertura não arrasta. `test/cliques.test.mjs`
+  (falha sem a correção, passa com ela); `apps/hub-desktop` `npm test` 25/25.
+- Conferido no Linux (Electron 44 em tela virtual, cliques e teclado reais pelo X): abertura, login em `/app/entrar`,
+  painel `/app` e clique em Planos na barra lateral. A barra renderizada tem 38 px com os botões dentro.
+- Painel no app: ferramenta sem versão para o computador (NOSSOM hoje) mostra **Abrir na web** em vez de ficar sem
+  botão. SOBEDESCE e Synquei têm instalador para Mac e Windows no catálogo (`/api/v1/desktop/apps`).
+- Não validado: o Mac de verdade (a área de arrastar só vale lá e no Windows); conferir no 1.1.1 instalado.
