@@ -1,6 +1,6 @@
 # Absolute ZRO para computador
 
-O HUB (https://absolutezro.vercel.app) numa janela própria, no Mac e no Windows. Abre pelo Dock ou pela barra de
+O HUB (https://absolutezro.com) numa janela própria, no Mac e no Windows. Abre pelo Dock ou pela barra de
 tarefas, continua logado, mostra uma tela "Sem conexão" local quando falta internet e avisa quando sai versão nova.
 É também a **central de apps** ([ADR 0018](../../docs/decisions/0018-central-de-apps.md)): instala, abre, atualiza e
 remove SOBEDESCE, Synquei e NOSSOM pela página Downloads do HUB.

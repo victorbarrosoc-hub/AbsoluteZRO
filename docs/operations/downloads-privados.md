@@ -59,6 +59,6 @@ O app do próprio HUB (`apps/hub-desktop`) publica no Release **`hub-desktop`** 
 
 Código: `apps/hub-web/lib/hub-desktop-release.ts`. O projeto Vercel **absolutezro** precisa do mesmo `GITHUB_TOKEN`
 fino (Contents: Read-only, com acesso ao AbsoluteZRO), em Production e Preview, e de uma nova publicação depois de
-salvar. Conferir em `https://absolutezro.vercel.app/baixar/hub/diag`: `token: true`, `tipoToken: "fino"`,
+salvar. Conferir em `https://absolutezro.com/baixar/hub/diag`: `token: true`, `tipoToken: "fino"`,
 `motivo: null`. Opcionais: `HUB_DESKTOP_REPO` e `HUB_DESKTOP_TAG` (padrão `victorbarrosoc-hub/AbsoluteZRO` e
 `hub-desktop`).

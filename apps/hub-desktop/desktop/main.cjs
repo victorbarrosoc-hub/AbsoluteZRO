@@ -1,4 +1,4 @@
-// Absolute ZRO · app para computador (Mac e Windows). Abre o HUB (https://absolutezro.vercel.app) numa janela própria,
+// Absolute ZRO · app para computador (Mac e Windows). Abre o HUB (https://absolutezro.com) numa janela própria,
 // com a sessão guardada (continua logado), menu em português, tela "Sem conexão" local e aviso de versão nova.
 //
 // Como a janela é montada: a BrowserWindow é a moldura. No Mac ela mostra a barra de título própria

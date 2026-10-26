@@ -165,7 +165,7 @@ Variáveis na Vercel (projeto `synquei`, Production):
 | --- | --- |
 | `ZRO_CLIENT_ID` | `synquei-web` |
 | `ZRO_CLIENT_SECRET` | o segredo do cliente `synquei-web` no console da Absolute ZRO (sensível) |
-| `ZRO_ISSUER` | opcional; padrão `https://absolutezro.vercel.app` |
+| `ZRO_ISSUER` | opcional; padrão `https://absolutezro.com` |
 
 No console da Absolute ZRO, o cliente `synquei-web` precisa do retorno `https://synquei.vercel.app/api/zro/callback` e o produto Synquei do endereço de entrada `https://synquei.vercel.app/api/zro/entrar`. Sem `ZRO_CLIENT_ID`/`ZRO_CLIENT_SECRET`, o botão não aparece e o app segue como antes.
 

@@ -1,7 +1,7 @@
 # Deploy — Vercel + Supabase
 
 **Autorizado pelo titular em 25/10/2026** para o projeto Vercel `absolutezro` (team Victorbarrosoc) em
-https://absolutezro.vercel.app, com o projeto Supabase **novo** `AbsoluteZRO` (nenhum banco de app original).
+https://absolutezro.com, com o projeto Supabase **novo** `AbsoluteZRO` (nenhum banco de app original).
 
 ## 1. Projeto na Vercel (feito)
 
@@ -31,7 +31,7 @@ https://absolutezro.vercel.app, com o projeto Supabase **novo** `AbsoluteZRO` (n
 
 ## 4. Produção
 
-`absolutezro.vercel.app` publica o branch `main`. Branches de trabalho viram prévias protegidas pelo login da Vercel.
+`absolutezro.com` publica o branch `main`. Branches de trabalho viram prévias protegidas pelo login da Vercel.
 Levar para produção = merge no `main`, com autorização do titular.
 
 ## 5. Primeira conta de administração

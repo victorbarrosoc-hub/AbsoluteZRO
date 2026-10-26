@@ -392,7 +392,7 @@ export default function Landing() {
                 mesma conta.
               </small>
             </div>
-            <a className="button primary" href="https://absolutezro.vercel.app/baixar#app-nossom">
+            <a className="button primary" href="https://absolutezro.com/baixar#app-nossom">
               Baixar o Absolute ZRO
             </a>
           </div>

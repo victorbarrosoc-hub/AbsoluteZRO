@@ -59,7 +59,7 @@ export function PlatformsSection() {
             <p className="text-[14px] text-ink-2">Um app só para instalar, abrir e atualizar o SOBEDESCE e as outras ferramentas, com a mesma conta.</p>
           </div>
           <a
-            href="https://absolutezro.vercel.app/baixar#app-sobedesce"
+            href="https://absolutezro.com/baixar#app-sobedesce"
             className={buttonClasses({ variant: 'primary', size: 'md', className: 'w-full sm:w-auto' })}
           >
             <Download aria-hidden="true" />

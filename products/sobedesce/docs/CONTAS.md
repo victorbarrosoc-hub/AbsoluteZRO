@@ -51,7 +51,7 @@ Mudou algo aqui? Avise as outras frentes.
 | `SOBEDESCE_PGLITE_DIR` | Só testes/local: onde fica o PGlite (padrão `./data/pglite`; `memory://` = em memória). |
 | `ZRO_CLIENT_ID` | "Entrar com Absolute ZRO" (§12): o client_id cadastrado no console da Absolute ZRO. Sem ele, o botão não aparece. |
 | `ZRO_CLIENT_SECRET` | Segredo do mesmo cliente (aparece uma vez no console da Absolute ZRO). |
-| `ZRO_ISSUER` | Opcional. Padrão `https://absolutezro.vercel.app`. Nos testes, a Absolute ZRO falsa (`web/tests/zro-falso.mts`). |
+| `ZRO_ISSUER` | Opcional. Padrão `https://absolutezro.com`. Nos testes, a Absolute ZRO falsa (`web/tests/zro-falso.mts`). |
 
 ### 2.1 Virada do Neon para o Supabase da Absolute ZRO
 

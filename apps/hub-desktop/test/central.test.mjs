@@ -11,7 +11,7 @@ import { createRequire } from 'node:module'
 const require = createRequire(import.meta.url)
 const { Central, validarCatalogo, arquivoPara, temAtualizacao, lerRegistro, caminhoDoComando, baixar } = require('../desktop/central.cjs')
 
-const HUB = 'https://absolutezro.vercel.app'
+const HUB = 'https://absolutezro.com'
 const conteudo = Buffer.from('instalador de teste '.repeat(500))
 const sha = createHash('sha256').update(conteudo).digest('hex')
 

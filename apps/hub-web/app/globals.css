@@ -3068,6 +3068,7 @@ details.disclosure[open] > summary {
   .account-tile:hover {
     transform: none;
   }
+}
 
 /* ───── Central de apps (dentro do app Absolute ZRO para computador) e download direto recolhido ───── */
 

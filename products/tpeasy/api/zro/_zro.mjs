@@ -10,7 +10,7 @@
  */
 import { createHash, createHmac, createPublicKey, hkdfSync, randomBytes, timingSafeEqual, verify } from 'node:crypto'
 
-export const EMISSOR_PADRAO = 'https://absolutezro.vercel.app'
+export const EMISSOR_PADRAO = 'https://absolutezro.com'
 export const ESCOPOS = 'openid email profile org'
 export const SITE_OFICIAL = 'https://tpeasy.vercel.app'
 export const VOLTA_PADRAO = '/app/'

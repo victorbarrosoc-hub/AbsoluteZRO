@@ -205,6 +205,7 @@ test('sua conta: nome, foto, pedido de upgrade e acessos', async ({ page }) => {
   await page.goto('/perfil/acessos')
   await expect(page.getByRole('heading', { name: 'Org conta' })).toBeVisible()
   await expect(page.locator('.access-org__apps li.is-on')).toHaveCount(5)
+})
 
 test('central de apps: dentro do app de computador, instala com progresso, abre e atualiza', async ({ page }) => {
   // Ponte falsa no lugar do preload do Electron (desktop/preload.cjs): mesma forma de window.zroDesktop.apps.
