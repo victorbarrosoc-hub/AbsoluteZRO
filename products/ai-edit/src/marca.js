@@ -1,9 +1,10 @@
 // Marca do AEON (aprovada pelo titular em 26/10/2026, prancha "Convergência"): a estrela de quatro pontas que afinam
-// até virar fio, com um fio solto em cada quarto, e o nome ΛEON em traço geométrico fino (o A sem barra). Geometria só aqui: o app,
+// até virar fio, com um fio solto em cada quarto, e o nome ΛEON em Montserrat SemiBold (o A sem barra). Geometria só aqui: o app,
 // o site e os ícones (scripts/marca.mjs) saem destas funções. Uma cor só na forma plana (currentColor); o brilho
 // prateado é só para o palco (site, abertura).
 
 import { PRODUTO } from './produto.js'
+import { LETRAS } from './letras.js'
 
 export const FONTE_MARCA = "'Figtree', -apple-system, 'SF Pro Display', system-ui, sans-serif"
 const n = (v) => Math.round(v * 100) / 100
@@ -143,38 +144,38 @@ export function simbolo({ cor = 'currentColor', forma = 'compacta', fios = true,
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} 100"${rotulo}>${corpo}</svg>`
 }
 
-// ───────── o nome: ΛEON em traço geométrico (altura da maiúscula 100) ─────────
+// ───────── o nome e a frase: Montserrat SemiBold em contorno (src/letras.js), tracking largo ─────────
 
-const TRACO = 6.5
-const LETRAS = {
-  Λ: { w: 86, d: (t) => `M0 100L43 ${t * 0.3}L86 100` },
-  E: { w: 60, d: (t) => `M${t / 2} 0V100M0 ${t / 2}H60M0 50H54M0 ${100 - t / 2}H60` },
-  O: { w: 104, d: (t) => `M52 ${-2 + t / 2}a${52 - t / 2} ${52 - t / 2} 0 1 0 0.01 0Z` },
-  N: { w: 82, d: (t) => `M${t / 2} 100V0L${82 - t / 2} 100V0` },
-}
-const ESPACO = 58
+const EM = 100 / 0.7 // 1 em da Montserrat em unidades de altura de maiúscula (maiúscula = 0,7 em)
 
-/** O nome (ΛEON) como SVG de traço; tracking largo como na prancha. */
-export function wordmark({ cor = 'currentColor', traco = TRACO } = {}) {
+/** Uma linha de texto em contornos: { d, largura } (as letras saem de src/letras.js). */
+function linhaDeTexto(texto, tracking) {
   let x = 0
   const ds = []
-  for (const l of ['Λ', 'E', 'O', 'N']) {
-    ds.push(`<path transform="translate(${x} 0)" d="${LETRAS[l].d(traco)}"/>`)
-    x += LETRAS[l].w + ESPACO
+  for (const ch of texto) {
+    const l = LETRAS[ch]
+    if (!l) throw new Error(`letra sem contorno: ${ch} (rode scripts/letras.py)`)
+    if (l.d) ds.push(`<path transform="translate(${n(x)} 0)" d="${l.d}"/>`)
+    x += l.w + tracking * EM
   }
-  const largura = x - ESPACO
-  const m = 6
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-m} ${-m} ${largura + 2 * m} ${100 + 2 * m}" role="img" aria-label="${PRODUTO.nome}"><title>${PRODUTO.nome}</title><g fill="none" stroke="${cor}" stroke-width="${traco}" stroke-linejoin="miter" stroke-miterlimit="8">${ds.join('')}</g></svg>`
+  return { d: ds.join(''), largura: x - tracking * EM }
 }
 
-/** Assinatura completa: estrela larga em cima, ΛEON e a frase embaixo. */
-export function assinatura({ cor = 'currentColor', frase = true } = {}) {
-  const sim = simbolo({ cor, forma: 'larga', titulo: false }).replace('<svg ', '<svg x="60" y="0" width="400" height="200" ')
-  const nome = wordmark({ cor }).replace('<svg ', '<svg x="110" y="230" width="300" height="60" ')
-  const f = frase
-    ? `<text x="260" y="336" text-anchor="middle" font-family="${FONTE_MARCA.replace(/"/g, "'")}" font-size="17" font-weight="400" letter-spacing="7" fill="${cor}" opacity="0.75">${PRODUTO.frase.toUpperCase()}</text>`
-    : ''
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 ${frase ? 350 : 300}" role="img" aria-label="${PRODUTO.nome} · ${PRODUTO.frase}">${sim}${nome}${f}</svg>`
+/** O nome (ΛEON) em Montserrat SemiBold, letras bem espaçadas como na prancha. */
+export function wordmark({ cor = 'currentColor' } = {}) {
+  const { d, largura } = linhaDeTexto('ΛEON', 0.32)
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-2 -2 ${n(largura + 4)} 104" role="img" aria-label="${PRODUTO.nome}"><title>${PRODUTO.nome}</title><g fill="${cor}">${d}</g></svg>`
+}
+
+/** Assinatura completa: estrela larga em cima, ΛEON e a frase embaixo. brilho = estrela de palco. */
+export function assinatura({ cor = 'currentColor', frase = true, brilho = false, claro = false } = {}) {
+  const sim = simbolo({ cor, forma: 'larga', titulo: false, brilho, claro }).replace('<svg ', '<svg x="60" y="0" width="400" height="200" ')
+  const nome = linhaDeTexto('ΛEON', 0.32)
+  const kn = 280 / nome.largura
+  const f = linhaDeTexto(PRODUTO.frase.toUpperCase(), 0.5)
+  const kf = 13 / 100
+  const fr = frase ? `<g fill="${cor}" opacity="0.7" transform="translate(${n(260 - (f.largura * kf) / 2)} 318) scale(${kf})">${f.d}</g>` : ''
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 ${frase ? 345 : 300}" role="img" aria-label="${PRODUTO.nome} · ${PRODUTO.frase}">${sim}<g fill="${cor}" transform="translate(${n(260 - 140)} 228) scale(${n(kn)})">${nome.d}</g>${fr}</svg>`
 }
 
 /** Ícone do app (1024): a estrela de palco sobre grafite (ou papel); as quatro pontas vão até a borda do quadrado. */

@@ -9,7 +9,9 @@ Aprovada pelo titular em 26/10/2026 (prancha "Convergência"): **a estrela de qu
   - *larga* (assinatura, palco): pontas horizontais longas e finas.
 - **Plano × palco**: a forma plana tem uma cor só (tamanhos pequenos, barra do app); a de palco (ícone, site,
   abertura) acende o miolo, tem um brilho leve e faz pontas e fios sumirem aos poucos.
-- **Nome**: ΛEON em traço geométrico fino (o A sem barra), tracking largo. Frase: **Time is yours.**
+- **Nome**: ΛEON em **Montserrat SemiBold** (escolha do titular, 26/10/2026, entre Michroma, Syncopate, Krona One e
+  Montserrat), letras bem espaçadas; a frase **Time is yours.** na mesma fonte. As letras viram contorno
+  (`scripts/letras.py` → `src/letras.js`); a fonte é SIL Open Font License 1.1 e não entra no repositório.
 - **Cor**: uma só na forma plana (grafite no claro, branco no escuro). Brilho prateado só no palco (site, abertura).
 - **Geometria só em** `products/ai-edit/src/marca.js`; `node products/ai-edit/scripts/marca.mjs` gera os SVG de
   `products/ai-edit/marca/` e o ícone do app (`build/icon.png`).
