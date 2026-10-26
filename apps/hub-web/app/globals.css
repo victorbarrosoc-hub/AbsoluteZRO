@@ -15,16 +15,10 @@
 .wordmark {
   display: inline-flex;
   align-items: center;
+  color: var(--text-strong);
 }
-/* Duas versões da marca: luz no escuro, tinta no claro. */
-.wordmark__ink {
-  display: none !important;
-}
-:root[data-theme='light'] .wordmark__glow {
-  display: none !important;
-}
-:root[data-theme='light'] .wordmark__ink {
-  display: block !important;
+.wordmark:hover {
+  text-decoration: none;
 }
 
 /* Seletor claro/escuro: pílula com polegar que desliza (mola). A posição vem do <html>, sem esperar o JS. */
@@ -91,7 +85,7 @@
     box-shadow 0.35s var(--ease),
     transform 0.5s var(--spring) !important;
 }
-.wordmark img {
+.wordmark svg {
   display: block;
   height: auto;
   max-width: 100%;
@@ -299,7 +293,7 @@
   min-width: 0;
   overflow: hidden;
 }
-.sidebar .wordmark img {
+.sidebar .wordmark svg {
   width: 150px;
 }
 .nav-toggle {
@@ -664,7 +658,7 @@
     display: block;
     min-width: 0;
   }
-  .topbar__brand .wordmark img {
+  .topbar__brand .wordmark svg {
     width: 132px;
   }
   .topbar__notice {
@@ -679,6 +673,9 @@
   }
   .mobile-nav summary::-webkit-details-marker {
     display: none;
+  }
+  .mobile-nav summary .wordmark svg {
+    width: 150px;
   }
   .mobile-nav__button {
     display: inline-grid;
@@ -763,9 +760,10 @@
   display: grid;
   place-items: center;
 }
-.orbit__core img {
-  width: 44px;
-  height: auto;
+.orbit__core .zro-symbol {
+  width: 52px;
+  height: 52px;
+  color: var(--text-strong);
 }
 .orbit__items {
   position: absolute;
@@ -998,7 +996,7 @@
   -webkit-mask-composite: xor;
   pointer-events: none;
 }
-.capsule .wordmark img {
+.capsule .wordmark svg {
   width: clamp(130px, 16vw, 170px);
 }
 .capsule__links {
@@ -1036,7 +1034,7 @@
   gap: var(--space-4);
   padding: var(--space-4) clamp(16px, 4vw, 48px);
 }
-.public-header .wordmark img {
+.public-header .wordmark svg {
   width: clamp(150px, 22vw, 200px);
 }
 .public-header nav {
@@ -1069,7 +1067,7 @@
 .public-footer__nav a {
   color: var(--text-mute);
 }
-.public-footer .wordmark img {
+.public-footer .wordmark svg {
   width: 140px;
 }
 .public-main {
@@ -1552,7 +1550,8 @@
 }
 .closing__mark {
   width: 40px;
-  height: auto;
+  height: 40px;
+  color: var(--text-strong);
 }
 .closing__ctas {
   display: flex;
@@ -1622,7 +1621,7 @@
   gap: 16px;
   padding: 24px clamp(16px, 4vw, 48px);
 }
-.auth-top .wordmark img {
+.auth-top .wordmark svg {
   width: 180px;
 }
 .auth-panel {
@@ -2210,6 +2209,9 @@ details.disclosure[open] > summary {
 .consent__marks img {
   filter: drop-shadow(0 6px 14px rgb(0 0 0 / 0.18));
 }
+.consent__marks .zro-symbol {
+  color: var(--text-strong);
+}
 .consent__ghost {
   display: grid;
   place-items: center;
@@ -2308,9 +2310,10 @@ details.disclosure[open] > summary {
   animation: rise 1s var(--spring) both;
 }
 .ahero__mark {
-  width: 48px;
-  height: auto;
+  width: 52px;
+  height: 52px;
   margin-bottom: 6px;
+  color: var(--text-strong);
 }
 .ahero__title {
   display: grid;

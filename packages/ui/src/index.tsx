@@ -3,6 +3,7 @@
  * Classes em packages/ui/src/components.css.
  */
 import type { ReactNode } from 'react'
+import { ZRO_SIMBOLO, ZRO_WORDMARK } from './marca'
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ')
 
@@ -136,3 +137,61 @@ export function ProductMark({ productId, name, size = 32 }: { productId: string;
 }
 
 export { cx }
+
+/**
+ * Marca flat Absolute ZRO (26/10/2026): uma cor só (herda `color`), serve em qualquer fundo e tamanho.
+ * A centelha de 4 pontas fica por trás do anel e só mostra as pontas horizontais. Em animação ela aparece inteira
+ * (manual: docs/marca/README.md). Abaixo de 20 px o símbolo vira só o anel.
+ */
+export function ZroSymbol({
+  size = 24,
+  title,
+  className,
+  animated = false,
+}: {
+  size?: number
+  title?: string
+  className?: string
+  /** Animação de marca: a centelha nasce com as 4 pontas e recolhe as verticais para trás do anel. */
+  animated?: boolean
+}) {
+  const ringOnly = size < 20
+  return (
+    <svg
+      className={cx('zro-symbol', animated && 'zro-symbol--anim', className)}
+      width={size}
+      height={size}
+      viewBox={ZRO_SIMBOLO.viewBox}
+      fill="currentColor"
+      role={title ? 'img' : undefined}
+      aria-label={title}
+      aria-hidden={title ? undefined : true}
+      focusable="false"
+    >
+      {!ringOnly && !animated && <path d={ZRO_SIMBOLO.centelha} />}
+      <path fillRule="evenodd" d={ZRO_SIMBOLO.anel} />
+      {animated && <path className="zro-symbol__spark" d={ZRO_SIMBOLO.centelha} />}
+    </svg>
+  )
+}
+
+export function ZroWordmark({ height = 22, title = 'Absolute ZRO', className }: { height?: number; title?: string; className?: string }) {
+  const [, , w, h] = ZRO_WORDMARK.viewBox.split(' ').map(Number)
+  return (
+    <svg
+      className={cx('zro-wordmark', className)}
+      height={height}
+      width={Math.round((height * w!) / h!)}
+      viewBox={ZRO_WORDMARK.viewBox}
+      fill="currentColor"
+      role={title ? 'img' : undefined}
+      aria-label={title || undefined}
+      aria-hidden={title ? undefined : true}
+      focusable="false"
+    >
+      <path d={ZRO_WORDMARK.letras} />
+      <path d={ZRO_WORDMARK.centelha} />
+      <path fillRule="evenodd" d={ZRO_WORDMARK.anel} />
+    </svg>
+  )
+}

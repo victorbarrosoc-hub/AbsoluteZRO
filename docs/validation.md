@@ -431,3 +431,17 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - Não validado: envio real do e-mail de troca (sem provedor de e-mail, a tela avisa e mostra o link só em
   desenvolvimento); fotos HEIC em iPhone real (o navegador pode não abrir; o servidor recusa o que não for JPG, PNG ou
   WebP).
+
+## Marca flat: anel com centelha (26/10/2026)
+
+- Letras do wordmark original vetorizadas (`scripts/marca/vetor`, potrace com ampliação 6×) e O redesenhado; SVG
+  mestres, `packages/ui/src/marca.ts` e ícones saem da mesma geometria. Conferido em tela: wordmark e símbolo em
+  claro e escuro, ampliados (retas limpas) e pequenos (16 px só o anel).
+- HUB: `lint`, `format:check`, `typecheck` ok; `npm test` **113/113**; `npm run build` ok; `npm run test:e2e`
+  **16/16** (axe WCAG A/AA claro e escuro com a marca em SVG). App de computador: `npm run icons` e `npm test`
+  **14/14**.
+- NOSSOM: `typecheck` ok, `npm test` **73/73**, E2E do botão "Entrar com Absolute ZRO" **2/2** (o teste confere o
+  símbolo em SVG). SOBEDESCE: `typecheck` ok, `npm test` **231/231**.
+- OG e capturas do HUB nos aparelhos refeitos com a marca nova (demo local). Branding no Higgsfield: 6 imagens
+  (GPT Image 2.5, 2K) e a animação (FLUX 3 Video, 5 s): a estrela nasce com as 4 pontas e recolhe até a forma flat.
+- Não validado: ícones no Dock/Menu Iniciar reais (sem Mac/Windows aqui) e no iPhone real.

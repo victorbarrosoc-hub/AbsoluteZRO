@@ -18,6 +18,7 @@ import {
 import { accountPlan, type Account } from '@/lib/accounts';
 import StudioLink from './studio-link';
 import UserAvatar, { avatarFromFile } from './user-avatar';
+import { ZroSymbol } from './zro-symbol';
 import { usageLabel, type AudioUsage } from '@/lib/usage';
 import { zroMessage } from '@/lib/zro-messages';
 type ZroStatus = {
@@ -300,8 +301,7 @@ export default function AccountSettings({
         {zro?.configured && (
           <section className="account-zro-card">
             <header className="settings-card-heading">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/absolute-zro-o-alpha.webp" alt="" width={21} height={21} />
+              <ZroSymbol size={21} />
               <h2>Absolute ZRO</h2>
             </header>
             {zro.link ? (
