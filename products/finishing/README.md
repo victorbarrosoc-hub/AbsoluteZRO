@@ -51,7 +51,11 @@ halação não cabem numa LUT.
 `src/cor/looks.js`: o look pronto da plataforma, uma emulação de película feita do zero (matemática própria, sem
 LUT ou DCTL de terceiros). Em Oklab: curva de filme (preto aberto, meio com contraste, altas que deitam), densidade
 (cor forte escurece), verde para oliva, azul para petróleo, pele junta, saturação menor nas altas, sombras frias e
-altas quentes. Na tela de LUT, o botão **Revela Look** entra no lugar da referência; sai `revela-look-33.cube` ou
+altas quentes. Desde 26/10/2026 os parâmetros dele são calibrados no grade de película que o titular usa nas
+produções (stills Rec.709 → look, 3 cenas, fora do repositório): meio mais denso e mais baixo, cor saturada mais
+pesada, verde oliva, azul contido, pele e altas douradas. Erro médio de 6,2 para 2,9 (ΔE Oklab ×100) nessas cenas;
+continua sendo o motor da Revela, não uma LUT copiada, e os giros de matiz ficam dentro do limite em que a cor não
+dobra. Os outros quatro looks seguem a base antiga. Na tela de LUT, o botão **Revela Look** entra no lugar da referência; sai `revela-look-33.cube` ou
 `-65.cube` (Rec.709 → Rec.709, depois da conversão do LOG). Contraste, Cor e Intensidade valem para ele também.
 
 ### Looks da Revela e a grade

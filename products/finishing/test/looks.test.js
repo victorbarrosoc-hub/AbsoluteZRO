@@ -32,7 +32,7 @@ test('Revela Look: curva de filme monótona, preto aberto e branco que deita', (
   assert.ok((curvaDeFilme(0.55) - curvaDeFilme(0.45)) / 0.1 > 1)
 })
 
-test('Revela Look: sombras frias, altas quentes, verde para oliva, pele no lugar', () => {
+test('Revela Look: sombras frias, altas douradas, verde para oliva, pele quente', () => {
   const look = criarRevelaLook()
   const sombra = codigoParaOklab(...look.aplicar(0.12, 0.12, 0.12))
   const alta = codigoParaOklab(...look.aplicar(0.85, 0.85, 0.85))
@@ -48,7 +48,11 @@ test('Revela Look: sombras frias, altas quentes, verde para oliva, pele no lugar
   const pele = [0.78, 0.58, 0.47]
   const p0 = codigoParaOklab(...pele)
   const p1 = codigoParaOklab(...look.aplicar(...pele))
-  assert.ok(Math.abs(matiz(p1) - matiz(p0)) < 8, 'pele mudou de matiz demais')
+  // calibrado no grade do titular: pele clara vai para o dourado (lá ela vai de ~47° para ~78°), sem virar verde
+  assert.ok(matiz(p1) >= matiz(p0) && matiz(p1) < 80, `pele foi para ${matiz(p1).toFixed(0)}°`)
+  // os outros looks continuam com a pele no lugar
+  const suave = criarRevelaLook({ look: 'suave' })
+  assert.ok(Math.abs(matiz(codigoParaOklab(...suave.aplicar(...pele))) - matiz(p0)) < 8, 'Suave mudou a pele')
 })
 
 test('Revela Look: só a curva ou só a cor', () => {

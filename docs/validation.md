@@ -777,3 +777,18 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Painel no app: ferramenta sem versão para o computador (NOSSOM hoje) mostra **Abrir na web** em vez de ficar sem
   botão. SOBEDESCE e Synquei têm instalador para Mac e Windows no catálogo (`/api/v1/desktop/apps`).
 - Não validado: o Mac de verdade (a área de arrastar só vale lá e no Windows); conferir no 1.1.1 instalado.
+
+## Revela Look calibrado no grade do titular (26/10/2026)
+
+- Pedido do titular: o Revela Look para usar nas produções dele, perto do grade de película que ele usa. Parâmetros do
+  motor (`src/cor/looks.js`) ajustados por Nelder-Mead nos pares Rec.709 → look de 3 cenas (fora do repositório; a
+  cena 1.19 ficou de fora porque o still do look é de outra sessão e de outro grade).
+- Erro médio (ΔE Oklab ×100): 7,3 sem nada, 6,2 com o look antigo, **2,9** com o novo. Validação cruzada (ajusta em 3,
+  mede na 4ª) com a primeira versão: 3,5 a 5,5 contra 3,9 a 7,6 do antigo.
+- Primeira versão recusada: o giro do azul passava do limite do motor (largura × 2/π) e o matiz dobrava entre azul e
+  roxo. A versão final limita os giros (verde −26°, azul −24°) e a junção da pele (0,45) e perde quase nada (2,82 → 2,86).
+- Pele clara vai para o dourado como no grade de referência (lá de ~47° para ~78° de matiz; no look novo ~62°); o
+  teste agora pede pele quente sem passar de 80°. Suave, Petróleo, Dourado e P&B usam a base antiga e não mudaram.
+- `marca/home/look-revela.jpg` refeita com o look novo (mesmo frame e tamanho das outras).
+- `products/finishing`: `npm test` 94/94.
+- Não validado: o `.cube` do look novo aplicado no Resolve em material de vídeo.

@@ -48,22 +48,23 @@ const BASE = {
 
 /**
  * Revela Look (26/10/2026): o mesmo motor, calibrado nos stills de produções do titular (Rec.709 → o grade de película
- * que ele usa no Resolve, 3 cenas, fora do repositório). Erro médio de 6,2 para 2,8 (ΔE Oklab ×100) nessas cenas.
+ * que ele usa no Resolve, 3 cenas, fora do repositório). Erro médio de 6,2 para 2,9 (ΔE Oklab ×100) nessas cenas.
  * São só os parâmetros abaixo: o look continua sendo este motor, não uma LUT copiada.
  */
 export const REVELA_LOOK = {
   ...BASE,
-  preto: 0.042,
-  branco: 0.961,
-  contraste: 7.9, // meio mais denso, como numa cópia
-  pivo: 0.387, // o meio-tom desce
-  densidade: 0.5, // cor saturada pesa bem mais
-  verde: { ...BASE.verde, gira: -23, croma: 0.52 }, // verde oliva e contido
-  azul: { ...BASE.azul, gira: -40, croma: 0.5 }, // azul vira petróleo/ciano, sem gritar
-  pele: { ...BASE.pele, junta: 0.8 }, // pele se junta forte no tom de pele
-  sombras: [-0.001, -0.0013], // sombra quase neutra
-  altas: [-0.0104, 0.0519], // altas douradas
-  saturacao: 1.12,
+  preto: 0.045,
+  branco: 0.958,
+  contraste: 8, // meio mais denso, como numa cópia
+  pivo: 0.391, // o meio-tom desce
+  densidade: 0.4, // cor saturada pesa bem mais
+  // giros dentro do limite do motor (largura × 2/π): o matiz nunca dobra sobre si mesmo
+  verde: { ...BASE.verde, gira: -26, croma: 0.56 }, // verde oliva e contido
+  azul: { ...BASE.azul, gira: -24, croma: 0.5 }, // azul puxa para petróleo, sem gritar
+  pele: { ...BASE.pele, junta: 0.45 }, // pele se junta em volta do tom de pele
+  sombras: [-0.002, -0.0007], // sombra quase neutra
+  altas: [-0.0173, 0.06], // altas douradas
+  saturacao: 1.13,
 }
 
 /**
