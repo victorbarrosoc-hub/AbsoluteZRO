@@ -51,11 +51,11 @@ export const ADAPTERS: AdapterInfo[] = [
   },
   {
     productId: 'ai-edit',
-    strategy: 'Scaffold de produto futuro',
-    inputs: ['Mídias, transcrições, brief, referências, presets de linguagem'],
-    outputs: ['Decupagem, selects, markers, timeline editável'],
+    strategy: 'App de desktop em prévia (products/ai-edit, ADR 0020), ainda não lançado',
+    inputs: ['Vídeo ou áudio do computador ou cartões conferidos do SOBEDESCE', 'Preset de linguagem versionado'],
+    outputs: ['Transcrição e legenda (SRT/VTT)', 'Cortes e zoom propostos para aprovar', 'Timeline FCPXML, xmeml, OTIO e EDL com ZroTimelineRef', 'Vídeo final'],
     hubCan: ['Contrato de eventos edit.selects.ready e edit.timeline.ready'],
-    notYet: ['Nenhum processamento: a ferramenta ainda não existe'],
+    notYet: ['Login único, créditos e o evento edit.timeline.ready publicado no HUB', 'Entrada do Synquei, do NOSSOM e do roteiro do TPeasy', 'Lançamento (nome definitivo e Release publicado pelo titular)'],
     sourceManifest: null,
   },
   {
