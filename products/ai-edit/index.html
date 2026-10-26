@@ -93,11 +93,6 @@
         <a class="rolar" href="#produto" aria-label="Rolar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6" /></svg></a>
       </section>
 
-      <!-- 1b · o espaço entre os instantes: a salina inteira, sem efeito -->
-      <section class="cena" aria-labelledby="cena-titulo">
-        <img src="marca/home/salina-estrela.jpg" alt="" width="2400" height="1357" loading="lazy" />
-        <h2 id="cena-titulo" class="cena-titulo ao-rolar"><span class="fino">O espaço</span> <span class="forte">entre os instantes.</span></h2>
-      </section>
 
       <!-- 2 · Do registro à narrativa: a tela de verdade num MacBook -->
       <section class="produto" id="produto" aria-labelledby="produto-titulo">
@@ -106,10 +101,19 @@
           <h2 id="produto-titulo" class="titulo"><span class="fino">Do registro</span> <span class="forte">à narrativa.</span></h2>
           <p class="apoio">Edição completa na linha do tempo. A IA ajuda quando você quiser.</p>
         </div>
-        <figure class="mac" id="mac">
+        <figure class="mac ao-rolar" id="mac">
           <div class="mac-tela"><img src="marca/home/app-edicao.jpg" alt="A tela de Edição do AEON: o vídeo com legenda, o Inspector e a linha do tempo com clipes coloridos, etiquetas, forma de onda e marcador" width="1600" height="1000" loading="lazy" /></div>
           <div class="mac-base" aria-hidden="true"></div>
         </figure>
+      </section>
+
+      <!-- 2b · números que contam ao aparecer (só fatos do produto) -->
+      <section class="numeros" aria-label="Em números">
+        <ul class="numeros-lista">
+          <li class="ao-rolar"><strong data-contar="3">3</strong><span>editores profissionais</span><small>Premiere, Final Cut e DaVinci</small></li>
+          <li class="ao-rolar"><strong data-contar="4">4</strong><span>formatos de timeline</span><small>FCPXML, XML, OTIO e EDL</small></li>
+          <li class="ao-rolar"><strong data-contar="0">0</strong><span>arquivos enviados</span><small>A mídia não sai do computador</small></li>
+        </ul>
       </section>
 
       <!-- 3 · Importar → Construir → Exportar -->
@@ -138,6 +142,43 @@
             <p>Para o seu editor, ou o vídeo pronto.</p>
           </li>
         </ol>
+      </section>
+
+      <!-- 3b · ao vivo: o que o AEON faz, em movimento (como as demonstrações do SOBEDESCE) -->
+      <section class="aovivo" aria-labelledby="aovivo-titulo">
+        <div class="cabeca-sec ao-rolar">
+          <p class="olho">Ao vivo</p>
+          <h2 id="aovivo-titulo" class="titulo"><span class="fino">Menos tempo cortando.</span> <span class="forte">Mais tempo criando.</span></h2>
+        </div>
+        <div class="demos">
+          <article class="demo demo--larga ao-rolar" data-demo="corte">
+            <div class="demo-palco demo-linha" aria-hidden="true">
+              <div class="trilha" id="trilhaDemo"></div>
+              <div class="cabeca-leitura"></div>
+            </div>
+            <div class="demo-texto"><h3>Silêncio fora, num toque.</h3><p>Os respiros somem e os clipes se juntam. Você aprova.</p></div>
+          </article>
+          <article class="demo ao-rolar" data-demo="legenda">
+            <div class="demo-palco demo-quadro" aria-hidden="true">
+              <img src="marca/home/criadora.jpg" alt="" width="1344" height="752" loading="lazy" />
+              <p class="legenda-demo" id="legendaDemo"></p>
+            </div>
+            <div class="demo-texto"><h3>Legenda palavra por palavra.</h3><p>Transcrita na sua máquina.</p></div>
+          </article>
+          <article class="demo ao-rolar" data-demo="zoom">
+            <div class="demo-palco demo-quadro demo-zoom" aria-hidden="true">
+              <img src="marca/home/camera.jpg" alt="" width="1344" height="752" loading="lazy" />
+              <span class="zoom-marca">Zoom</span>
+            </div>
+            <div class="demo-texto"><h3>Zoom onde a fala pede.</h3><p>Punch-in nas frases de ênfase.</p></div>
+          </article>
+        </div>
+      </section>
+
+      <!-- 3c · o espaço entre os instantes: a salina se dissolve no fundo, sem borda -->
+      <section class="cena" aria-labelledby="cena-titulo">
+        <img src="marca/home/salina-estrela.jpg" alt="" width="2400" height="1357" loading="lazy" />
+        <h2 id="cena-titulo" class="cena-titulo ao-rolar"><span class="fino">O espaço</span> <span class="forte">entre os instantes.</span></h2>
       </section>
 
       <!-- 4 · Recursos: forma, pouco texto -->
