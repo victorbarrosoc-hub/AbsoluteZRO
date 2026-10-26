@@ -6,6 +6,7 @@ import {
   buildSobedesceManifest,
   parseChecksumReport,
   parseDescargas,
+  parseEntrega,
   planOrganization,
   projectInputFromJob,
   scriptFromTpeasyBackup,
@@ -144,5 +145,28 @@ describe('TPeasy e Carro do Freela', () => {
     const p = projectInputFromJob(job)
     expect(p.brief).toMatchObject({ source: 'carro-do-freela', job_id: 'job-1', crew_roles: [{ role: 'Câmera', count: 2 }] })
     expect(CarroJobSchema.safeParse({ contract: 'carro-do-freela.job/1', job_id: 'j', title: 't', references: ['http://inseguro'] }).success).toBe(false)
+  })
+})
+
+describe('SOBEDESCE → entrega conferida', () => {
+  const base = () => JSON.parse(fixture('sobedesce/entrega.json'))
+  it('lê o comprovante gerado pelo código real', () => {
+    const r = parseEntrega(fixture('sobedesce/entrega.json'))
+    expect(r.ok && r.entrega.arquivos.map((a) => a.rel)).toEqual(['Filme X · Reels.mp4', 'Filme X · YouTube.mp4', 'Legendas/Filme X.srt'])
+  })
+  it('recusa caminho perigoso, MD5 fora do formato, arquivo repetido e link que não é o da pasta', () => {
+    const casos: [string, (e: ReturnType<typeof base>) => void][] = [
+      ['caminho', (e) => (e.arquivos[0].rel = '../fora.mp4')],
+      ['md5', (e) => (e.arquivos[0].md5 = 'abc')],
+      ['repetido', (e) => (e.arquivos[1].rel = e.arquivos[0].rel)],
+      ['link', (e) => (e.drive.link = 'https://drive.google.com/drive/folders/outra')],
+      ['vazio', (e) => (e.arquivos = [])],
+    ]
+    for (const [nome, mexer] of casos) {
+      const e = base()
+      mexer(e)
+      expect(parseEntrega(JSON.stringify(e)).ok, nome).toBe(false)
+    }
+    expect(parseEntrega('não é json').ok).toBe(false)
   })
 })

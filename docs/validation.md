@@ -615,3 +615,19 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 | Android (Chrome)                        | O mesmo do iPhone                                                                                                |
 
 Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
+
+## SOBEDESCE: entrega conferida → `delivery.ready` v2 (26/10/2026)
+
+- Contrato: `delivery.ready` v2 (`source` finishing ou sobedesce, arquivos, bytes, `checksum: md5`, `verified: true`,
+  `folder_url` só no formato de pasta do Drive); schema exportado em
+  `docs/integration-contracts/schemas/event.delivery.ready.v2.schema.json`. Rota nova
+  `POST /api/v1/projects/{id}/sobedesce/deliveries` documentada no OpenAPI.
+- SOBEDESCE `test/entrega.test.js`: comprovante só com o lote inteiro concluído e conferido (pulado igual no Drive
+  entra), um envio de uma pasta, link montado pelo id da pasta.
+- HUB `packages/integrations/test/adapters.test.ts`: lê o comprovante gerado pelo código real
+  (`tests/fixtures/sobedesce/entrega.json`, `scripts/fixtures/generate-sobedesce-entrega.mjs`) e recusa caminho
+  perigoso, MD5 fora do formato, arquivo repetido, lista vazia e link que não é o da pasta.
+- HUB `tests/integration/flow.test.ts`: registrar publica um `delivery.ready` v2 (`producer: sobedesce`), registrar de
+  novo não duplica nem gasta cota, link adulterado é recusado e sem plano a resposta é 403.
+- Não validado: o botão **Comprovante** num envio real para o Drive e o registro pela tela do HUB em produção.
+- Site do SOBEDESCE: topo sem texto em degradê e sem brilho azul (Padrão Apple).

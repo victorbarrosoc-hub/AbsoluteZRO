@@ -1,0 +1,31 @@
+{
+  "formato": "sobedesce.entrega/1",
+  "id": "ent-bTesteEntrega01",
+  "quando": "2026-10-26T12:00:00.000Z",
+  "pasta": "Filme X · Entregas",
+  "drive": {
+    "pastaId": "pastaTesteEntrega01",
+    "link": "https://drive.google.com/drive/folders/pastaTesteEntrega01"
+  },
+  "origem": "revela",
+  "arquivos": [
+    {
+      "rel": "Filme X · Reels.mp4",
+      "size": 11,
+      "md5": "33224517af8b6f012eb5abc1ab7ec6b4",
+      "fileId": "arquivoTeste02"
+    },
+    {
+      "rel": "Filme X · YouTube.mp4",
+      "size": 13,
+      "md5": "1c123e062ec7dcc54e79e9b06b60645d",
+      "fileId": "arquivoTeste01"
+    },
+    {
+      "rel": "Legendas/Filme X.srt",
+      "size": 35,
+      "md5": "3bf560da28caa37250279614024946f9",
+      "fileId": "arquivoTeste03"
+    }
+  ]
+}

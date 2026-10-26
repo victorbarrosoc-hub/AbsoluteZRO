@@ -71,9 +71,11 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - 🟡 SOBEDESCE · prova medida para página e anúncio: `products/sobedesce/scripts/prova-velocidade.mjs` mede o mesmo link
   no Chromium e no app (MD5 igual ou não vale) e o roteiro do vídeo 9:16 está em `products/sobedesce/docs/PROVA-VELOCIDADE.md`.
   ⬜ Rodar numa máquina real e gravar a tela (só então publicar número).
-- ⛔ SOBEDESCE · entrega conferida → `delivery.ready` no HUB: o HUB só aceita a sessão do navegador e o contrato diz
-  `source: finishing`. Falta decidir como um app fala com o HUB (token do login único com escopo próprio) antes de
-  subir a pasta da Revela e devolver o link.
+- ✅ SOBEDESCE · entrega conferida → HUB (26/10/2026): a pasta de entrega (a da Revela ou qualquer outra) sobe com o
+  MD5 de cada arquivo conferido e o lote ganha **Comprovante** (`sobedesce.entrega/1`); em Finalização e entregas, o
+  projeto registra o comprovante e publica `delivery.ready` v2 (`source: sobedesce`, link da pasta no Drive montado
+  pelo HUB, mesma permissão e cota da importação de descarga, sem duplicar). ⬜ Envio automático do app para o HUB:
+  pede o HUB aceitar o token do login único com escopo próprio (decisão de arquitetura, ADR nova).
 - ⬜ SOBEDESCE · "Converter com a Revela" em Mac, Windows, iPhone e Android reais (roteiro em validation.md).
 - ⛔ SOBEDESCE · build do app de desktop: o download do SDK da Blackmagic (`BRAW_SDK_CADASTRO`) devolve 400; rever o
   cadastro na Blackmagic (não é código).
