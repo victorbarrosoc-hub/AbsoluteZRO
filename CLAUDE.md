@@ -18,7 +18,7 @@ Leia antes de mudar qualquer coisa: [PRD.md](PRD.md) (referência principal), [A
   nada de `.env`, token, cookie, URL assinada, dado pessoal ou áudio privado. `node scripts/scan-secrets.mjs` antes
   de commitar.
 - Não declarar SSO com os apps antigos: o login único vale para o HUB.
-- Não fingir integração, IA, grading, saldo ou progresso. AI Edit e Revela (id técnico `finishing`) estão em desenvolvimento.
+- Não fingir integração, IA, grading, saldo ou progresso. AEON (id técnico `ai-edit`) e Revela (id técnico `finishing`) estão em desenvolvimento.
 
 ## Regras de implementação
 
@@ -54,7 +54,9 @@ de qualquer tela, pense em como a apple.com faria: visual, motion e elegância.
 - Frase da marca: **"O futuro começa do zero."** Título da página inicial e do OG.
 - **Tema claro é o padrão**; o escuro é escolha no seletor.
 - Credibilidade vem do **produto real**: telas de verdade do HUB e dos apps em aparelhos (MacBook, iPhone), não efeitos
-  de luz. O símbolo (o anel com a centelha) aparece pequeno, como assinatura; não é a peça principal.
+  de luz. Na página inicial o símbolo é o protagonista (pedido do titular, 26/10/2026: ele é a força da marca): grande
+  no topo, desenhando o anel e com a estrela recolhendo, e no centro da órbita das ferramentas. No HUB e nas demais
+  telas segue pequeno, como assinatura.
 - Títulos em **Figtree**, só em grafite (#1d1d1f) ou branco no escuro, contraste fino (Light) × pesado (ExtraBold).
   **Nada de texto azul ou em degradê.** Texto de apoio em cinza (#6e6e73).
 - Botões em **Liquid Glass**: pílula de vidro translúcido com brilho de borda (`.glass-btn`); a ação principal em vidro
