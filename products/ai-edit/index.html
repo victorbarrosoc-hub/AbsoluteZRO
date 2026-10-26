@@ -193,12 +193,22 @@
             <h3>Mac</h3>
             <p>macOS 12 ou mais novo, Apple Silicon e Intel.</p>
             <div class="comando"><code id="cmdMac">curl -fsSL https://aeon.absolutezro.com/instalar.sh | bash</code><button type="button" class="vidro pequeno" data-copiar="cmdMac">Copiar</button></div>
+            <details class="manual">
+              <summary>Prefere baixar o arquivo?</summary>
+              <p><a href="https://github.com/victorbarrosoc-hub/AbsoluteZRO/releases/download/ai-edit-app-desktop/AEON-mac-universal.dmg">Baixar o .dmg</a> e arraste o AEON para Aplicativos. Se o Mac disser que não pôde verificar o app, rode uma vez no Terminal:</p>
+              <div class="comando"><code id="cmdLiberar">xattr -cr /Applications/AEON.app &amp;&amp; open /Applications/AEON.app</code><button type="button" class="vidro pequeno" data-copiar="cmdLiberar">Copiar</button></div>
+              <p class="dica">Ou em Ajustes do Sistema → Privacidade e Segurança → Abrir Mesmo Assim.</p>
+            </details>
           </div>
           <div class="sistema">
             <svg class="sistema-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.5l7.4-1v7.1H3zm0 13l7.4 1v-7H3zm8.3 1.1L21 21v-8.4h-9.7zm0-15.2v7.2H21V3z" fill="currentColor" /></svg>
             <h3>Windows</h3>
             <p>Windows 10 e 11, 64 bits.</p>
             <div class="comando"><code id="cmdWin">irm https://aeon.absolutezro.com/instalar.ps1 | iex</code><button type="button" class="vidro pequeno" data-copiar="cmdWin">Copiar</button></div>
+            <details class="manual">
+              <summary>Prefere baixar o arquivo?</summary>
+              <p><a href="https://github.com/victorbarrosoc-hub/AbsoluteZRO/releases/download/ai-edit-app-desktop/AEON-windows-setup.exe">Baixar o instalador</a>. Se aparecer "O Windows protegeu o computador", clique em Mais informações → Executar assim mesmo.</p>
+            </details>
           </div>
         </div>
       </section>

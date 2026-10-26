@@ -795,15 +795,17 @@ p {
   margin: 60px auto 0;
   max-width: 1000px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
 }
 .sistema {
+  min-width: 0;
   background: var(--cartao);
   border: 1px solid var(--linha);
   border-radius: 28px;
   padding: 32px;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
 }
 .sistema-icone {
@@ -840,9 +842,39 @@ p {
   color: var(--forte);
   scrollbar-width: none;
 }
+.manual {
+  margin-top: 14px;
+  font-size: 14px;
+}
+.manual summary {
+  cursor: pointer;
+  color: var(--apoio);
+  width: fit-content;
+}
+.manual summary:hover {
+  color: var(--forte);
+}
+.manual p {
+  margin-top: 10px;
+}
+.manual a {
+  color: var(--forte);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.manual .comando {
+  margin-top: 10px;
+}
+.manual .dica {
+  font-size: 13px;
+}
 @media (max-width: 760px) {
   .sistemas {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sistema {
+    padding: 24px;
   }
 }
 
