@@ -27,6 +27,7 @@ import { registerDiscos } from './discos.js'
 import { registerLan } from './lan.js'
 import { registerCelular } from './celular.js'
 import { registerBackup } from './backup.js'
+import { EntregaError, comprovanteDeEntrega, pastaDoLote } from '../engine/entrega.js'
 
 const BODY_LIMIT = 1024 * 1024
 const BODY_HARD_LIMIT = 16 * BODY_LIMIT // além disso nem lê o resto: derruba a conexão
@@ -926,6 +927,32 @@ export function createApi(ctx) {
     }
     await ctx.manager[action](ids)
     return {}
+  })
+
+  // ── Entrega conferida (src/engine/entrega.js): o comprovante de um lote de envio de uma pasta, para registrar no
+  // projeto do HUB. Sai só com todos os arquivos concluídos e conferidos pelo MD5. O id é o do lote: gerar de novo dá o
+  // mesmo comprovante (o HUB não duplica).
+  route('POST', '/api/entregas/comprovante', async ({ body, signal }) => {
+    const batchId = typeof body.batchId === 'string' && /^[\w-]{1,100}$/.test(body.batchId) ? body.batchId : null
+    if (!batchId) throw new HttpProblem(400, 'Envio inválido.')
+    const recs = ctx.manager.snapshot().transfers.filter(r => r.batchId === batchId && r.type === 'upload')
+    if (!recs.length) throw new HttpProblem(404, 'Não achei esse envio. Ele pode ter sido limpo da lista.')
+    const pasta = pastaDoLote(recs)
+    if (!pasta) throw new HttpProblem(400, 'O comprovante é de uma pasta enviada inteira (um envio, uma pasta).')
+    // a pasta no Drive: o pai de um arquivo que está direto nela; senão, procurada pelo nome no destino do envio
+    const t = recs[0].target || {}
+    let pastaId = recs.find(r => r.target?.relDir === pasta && r.target?.parentId)?.target.parentId || null
+    if (!pastaId) {
+      const achada = await ctx.manager.driveFor(recs[0].accountId).findChild(t.rootId || 'root', pasta, { folder: true, signal, driveId: t.driveId || undefined })
+      pastaId = achada?.id || null
+    }
+    try {
+      const entrega = comprovanteDeEntrega({ records: recs, pastaId, id: `ent-${batchId}`, origem: body.revela === true ? 'revela' : null })
+      return { entrega, arquivo: `${pasta.replace(/[^\w .-]+/g, '_').slice(0, 80)} · entrega conferida.json` }
+    } catch (err) {
+      if (err instanceof EntregaError) throw new HttpProblem(err.status, err.message)
+      throw err
+    }
   })
 
   route('POST', '/api/transfers/clear', () => {

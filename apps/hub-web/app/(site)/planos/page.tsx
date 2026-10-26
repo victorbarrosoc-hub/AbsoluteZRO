@@ -59,7 +59,7 @@ export default async function Planos() {
               ) : (
                 <p className="zro-faint">Conta, painel, organização e catálogo.</p>
               )}
-              {featured && <p className="zro-faint">AI Edit e Revela entram no Completo assim que forem lançados.</p>}
+              {featured && <p className="zro-faint">AEON e Revela entram no Completo assim que forem lançados.</p>}
               <Link
                 className={`zro-btn${featured ? ' zro-btn--primary' : ''}`}
                 href={

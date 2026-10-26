@@ -565,6 +565,23 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - `products/finishing`: `npm test` **78/78**.
 - Não validado: o .xmp aberto num Lightroom real (Classic e celular) e a semelhança dele com a LUT.
 
+## Página inicial: símbolo e órbita (26/10/2026)
+
+- `BrandSymbol` (anel em traço + centelha da `ZRO_SIMBOLO`) e `PointerTilt` (variáveis CSS, só mouse/caneta, nada
+  com "reduzir movimento"). Órbita com classes `zorbit` para não colidir com a órbita do Início do HUB.
+- Conferido em 1440×900 e 390×844, claro e escuro, e com "reduzir movimento" (forma flat parada, sem rolagem
+  horizontal).
+- `a11y.spec.ts` termina as animações de entrada (finitas, de tempo) antes do axe, que mede o contraste final;
+  as infinitas e as de rolagem ficam como estão.
+- `npm test` **140/140**; `npm run test:e2e` **20/20**.
+- Não validado: Safari e Firefox sem `animation-timeline` (caem na versão sem órbita animada, conferida só no
+  Chromium com reduzir movimento).
+- OG novo (escolha do titular): símbolo grande à esquerda, fundo branco chapado, apps sem placa nem borda
+  (`scripts/marca/og-claro.html` → `opengraph-image.jpg`/`twitter-image.jpg`). Ícone do app segue o atual (claro).
+- Ícone da SOBEDESCE na família sem a moldura (placa até a borda, sem margem nem sombra) no HUB, NOSSOM, Revela,
+  TPeasy, Synquei e Carro do Freela; caches `synquei-v13` e `tpeasy-v13`. Órbita da home mostra só o ícone de cada
+  app, sem placa de vidro em volta. `products/synquei` e `products/tpeasy`: `npm test` ok; e2e 20/20.
+
 ## Revela: CST no Converter (26/10/2026)
 
 - "Log da câmera" no Converter: cada quadro passa por uma LUT 3D do CST (65³, WebGL2) antes de codificar; o shader
@@ -573,6 +590,15 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - `products/finishing`: `npm test` **79/79**. Teste novo: ProRes com cinza no código do S-Log3 vira MP4 H.264 com o
   cinza em ~124 (Y de 8 bits, o cinza 18% do Rec.709; sem o CST ficaria perto de 105) e marcado BT.709.
 - Não validado: arquivos reais de cada câmera e o desempenho em celulares.
+
+## AEON na página inicial (26/10/2026)
+
+- Migração 0012: a plataforma de edição vira **AEON** (id `ai-edit` mantido, estágio "em desenvolvimento"), com a linha
+  "Edição com IA: transcrição, cortes e timeline para o seu editor". Só troca o que ainda está como a 0003 deixou.
+- Ícone do AEON (de `products/ai-edit/marca/aeon-icone.svg`, branch `claude/ai-edit-primeiro-recorte`) em
+  `public/products/ai-edit.svg`, recortado até a placa (sem margem), no `ProductMark`: órbita, cartões, planos e HUB.
+- Cartão da home: "A IA propõe. Você aprova." Projeto: etapa "AEON" ainda não lançada. e2e procura "AEON".
+- `npm test` 140/140; e2e 20/20.
 
 ## Revela: tema claro, looks lado a lado, exportar por editor e CST por clipe (26/10/2026)
 
@@ -589,6 +615,48 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   .xmp num Lightroom real.
 - Não feito, por depender de outros apps: entrega da Revela subindo pelo SOBEDESCE com MD5 e `delivery.ready` no HUB;
   desconto de `zro.ai_credits` (a Revela não usa GPU de servidor).
+
+## SOBEDESCE: Abrir no Synquei, ficha de compatibilidade e prova medida (26/10/2026)
+
+- Abrir no Synquei: `products/sobedesce/test/synquei-ponte.test.js` (tipos iguais aos do Synquei, link só com pasta
+  absoluta e tipo conhecido, cartão Sony falso copiado de verdade → `tipo` no `descargas.jsonl` → link com a pasta do
+  projeto; sem cartão conferido, 409). Synquei: `tests/link-organizar.test.mjs` (link válido, recusa de pasta relativa,
+  outro host e outro esquema, link no argv do Windows) e `tests/organizador.test.mjs` (tipo do resumo vale até a pasta
+  ter um escolhido no Synquei; tipo desconhecido é ignorado).
+- Ficha de compatibilidade no topo da página inicial do site (Mac, Windows, iPhone e Android, Google Drive, cartões e
+  HDs): só o que o README e o `electron-builder.yml` dizem. `npm run lint` e `npm run typecheck` do site sem erro.
+- Prova medida: o script mede, não estima. Não rodou aqui (sem Drive real nem rede de casa): os seletores do botão de
+  download do Drive precisam ser conferidos na primeira medição; se falharem, o script aceita o tempo medido à mão e
+  registra isso no JSON.
+- Não validado: o protocolo `synquei://` num Mac e num Windows reais (registro pelo instalador, `open-url`, segundo
+  processo no Windows) e o aviso "Instale o Synquei" quando ele não está no computador.
+
+### Roteiro: "Converter com a Revela" em aparelhos reais (a fazer)
+
+| Aparelho                                | O que conferir                                                                                                   |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Mac (Apple Silicon e Intel)             | Converter um vídeo do Drive para cada destino; arquivo novo ao lado do original; MD5 conferido; original intacto |
+| Windows 10/11                           | O mesmo, com ffmpeg do pacote                                                                                    |
+| iPhone (Safari e app na tela de início) | Converter pelo celular; progresso, cancelar e erro com mensagem clara                                            |
+| Android (Chrome)                        | O mesmo do iPhone                                                                                                |
+
+Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
+
+## SOBEDESCE: entrega conferida → `delivery.ready` v2 (26/10/2026)
+
+- Contrato: `delivery.ready` v2 (`source` finishing ou sobedesce, arquivos, bytes, `checksum: md5`, `verified: true`,
+  `folder_url` só no formato de pasta do Drive); schema exportado em
+  `docs/integration-contracts/schemas/event.delivery.ready.v2.schema.json`. Rota nova
+  `POST /api/v1/projects/{id}/sobedesce/deliveries` documentada no OpenAPI.
+- SOBEDESCE `test/entrega.test.js`: comprovante só com o lote inteiro concluído e conferido (pulado igual no Drive
+  entra), um envio de uma pasta, link montado pelo id da pasta.
+- HUB `packages/integrations/test/adapters.test.ts`: lê o comprovante gerado pelo código real
+  (`tests/fixtures/sobedesce/entrega.json`, `scripts/fixtures/generate-sobedesce-entrega.mjs`) e recusa caminho
+  perigoso, MD5 fora do formato, arquivo repetido, lista vazia e link que não é o da pasta.
+- HUB `tests/integration/flow.test.ts`: registrar publica um `delivery.ready` v2 (`producer: sobedesce`), registrar de
+  novo não duplica nem gasta cota, link adulterado é recusado e sem plano a resposta é 403.
+- Não validado: o botão **Comprovante** num envio real para o Drive e o registro pela tela do HUB em produção.
+- Site do SOBEDESCE: topo sem texto em degradê e sem brilho azul (Padrão Apple).
 
 ## Revela em revela.absolutezro.com (26/10/2026)
 

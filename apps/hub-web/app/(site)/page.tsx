@@ -1,9 +1,11 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import type { CSSProperties } from 'react'
 import { Pill, ProductMark, ZroSymbol } from '@zro/ui'
 import { productColor } from '@/components/app-tile'
-import { CycleO } from '@/components/cycle-o'
+import { BrandSymbol } from '@/components/brand-symbol'
 import { MotionGate } from '@/components/motion-gate'
+import { PointerTilt } from '@/components/pointer-tilt'
 import { publicCatalog } from '@/lib/data/catalog'
 import { hasDesktopInstaller } from '@/lib/downloads'
 
@@ -22,7 +24,7 @@ const TAGLINE: Record<string, string> = {
   tpeasy: 'Fale olhando para a câmera.',
   sobedesce: 'Cada cartão copiado e conferido.',
   synquei: 'Solta o cartão. Sai sincronizado.',
-  'ai-edit': 'Decupagem e montagem assistida.',
+  'ai-edit': 'A IA propõe. Você aprova.',
   nossom: 'Seu som, em outra escala.',
   finishing: 'Revela a cor que você quer.',
 }
@@ -54,17 +56,29 @@ function Lane({ id, name, status, children, tone }: { id: string; name: string; 
 
 export default async function Landing() {
   const { products } = await publicCatalog()
+  // Cada palavra sobe na sua vez; o espaço fica fora do bloco para não sumir.
+  const words = (text: string, from: number) =>
+    text.split(' ').flatMap((w, i) => [
+      i > 0 ? ' ' : '',
+      <span key={w + i} className="shero__word" style={{ '--i': from + i } as CSSProperties}>
+        {w}
+      </span>,
+    ])
   return (
     <>
-      <section className="ahero" aria-labelledby="hero-title">
-        <div className="ahero__text">
-          <ZroSymbol className="ahero__mark" size={56} animated />
-          <h1 className="ahero__title" id="hero-title">
-            <span className="ahero__thin">O futuro começa</span>
-            <span className="ahero__bold">do zero.</span>
+      {/* O símbolo é a peça principal (pedido do titular, 26/10/2026): desenha-se, pisca a estrela e segue o ponteiro. */}
+      <section className="shero" aria-labelledby="hero-title">
+        <PointerTilt className="shero__stage" max={12}>
+          <span className="shero__halo" aria-hidden="true" />
+          <BrandSymbol className="shero__symbol" title="Absolute ZRO" />
+        </PointerTilt>
+        <div className="shero__text">
+          <h1 className="ahero__title shero__title" id="hero-title">
+            <span className="ahero__thin">{words('O futuro começa', 0)}</span>
+            <span className="ahero__bold">{words('do zero.', 3)}</span>
           </h1>
-          <p className="ahero__lead">Uma conta. Todas as ferramentas.</p>
-          <div className="ahero__ctas">
+          <p className="ahero__lead shero__lead">Uma conta. Todas as ferramentas.</p>
+          <div className="ahero__ctas shero__ctas">
             <Link className="glass-btn glass-btn--ink" href="/criar-conta">
               Criar conta
             </Link>
@@ -73,19 +87,55 @@ export default async function Landing() {
             </Link>
           </div>
         </div>
-        {/* O produto de verdade: telas reais do HUB, uma foto para cada tema. */}
+        <span className="shero__cue" aria-hidden="true" />
+      </section>
+
+      {/* O produto de verdade: telas reais do HUB, uma foto para cada tema. Entra crescendo com a rolagem. */}
+      <section className="showcase" aria-label="O HUB no MacBook e no iPhone">
         <figure className="ahero__product ahero__product--claro">
-          <img
-            src="/brand/produto-hub-claro.webp"
-            alt="O HUB da Absolute ZRO aberto num MacBook e num iPhone"
-            width={2400}
-            height={1500}
-            fetchPriority="high"
-          />
+          <img src="/brand/produto-hub-claro.webp" alt="O HUB da Absolute ZRO aberto num MacBook e num iPhone" width={2400} height={1500} />
         </figure>
         <figure className="ahero__product ahero__product--escuro">
           <img src="/brand/produto-hub-escuro.webp" alt="O HUB da Absolute ZRO aberto num MacBook e num iPhone" width={2400} height={1500} loading="lazy" />
         </figure>
+      </section>
+
+      {/* Ciclo do O: as ferramentas entram em órbita do anel enquanto a página rola. */}
+      <section className="zorbit" id="ciclo" aria-labelledby="ciclo-title">
+        <div className="zorbit__sticky">
+          <h2 id="ciclo-title" className="zro-sr-only">
+            Ciclo do O
+          </h2>
+          <div className="zorbit__ring" style={{ '--n': products.length } as CSSProperties}>
+            <ZroSymbol className="zorbit__symbol" size={240} />
+            <ul className="zorbit__apps" aria-label="Ferramentas do Ciclo do O">
+              {products.map((p, i) => (
+                <li
+                  key={p.id as string}
+                  className="zorbit__app"
+                  style={{ '--a': `${(i * 360) / products.length - 90}deg`, '--i': i } as CSSProperties}
+                  title={`${p.name as string} · ${p.role_in_flow as string}`}
+                >
+                  <span className="zorbit__chip">
+                    <ProductMark productId={p.id as string} name={p.name as string} size={58} />
+                  </span>
+                  <span className="zorbit__name">{p.name as string}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="zorbit__captions">
+            <p className="zorbit__cap zorbit__cap--1 atitle">
+              <span className="atitle__thin">{products.length} ferramentas.</span>
+            </p>
+            <p className="zorbit__cap zorbit__cap--2 atitle">
+              <span className="atitle__thin">Um só</span> <span className="atitle__bold">ecossistema.</span>
+            </p>
+            <p className="zorbit__cap zorbit__cap--3 atitle">
+              <span className="atitle__thin">Comece em</span> <span className="atitle__bold">qualquer ponto.</span>
+            </p>
+          </div>
+        </div>
       </section>
 
       <section className="aproject reveal" aria-labelledby="projeto-title">
@@ -143,41 +193,6 @@ export default async function Landing() {
         </MotionGate>
       </section>
 
-      <section className="logos reveal" aria-label="Ferramentas da família">
-        {products.map((p) => (
-          <span key={p.id as string} className="logos__item">
-            <ProductMark productId={p.id as string} name={p.name as string} size={30} />
-            {p.name as string}
-          </span>
-        ))}
-      </section>
-
-      <section className="section section--center reveal" id="ciclo" aria-labelledby="ciclo-title">
-        <div className="section__head section__head--wide">
-          <p className="zro-eyebrow">Ciclo do O</p>
-          <h2 id="ciclo-title" className="display-2 atitle">
-            <span className="atitle__thin">Comece em qualquer ponto</span>
-            <span className="atitle__bold">do círculo.</span>
-          </h2>
-          <p>A ordem é sugestão, não obrigação. Use uma ferramenta só ou o ciclo inteiro: o projeto guarda o que cada etapa entregou.</p>
-        </div>
-        <div className="zro-card zro-card--stage cycle-stage">
-          <CycleO
-            labelledBy="ciclo-title"
-            title="Ciclo do O"
-            subtitle="7 etapas, 1 projeto"
-            steps={products.map((p) => ({
-              key: p.id as string,
-              name: p.name as string,
-              role: p.role_in_flow as string,
-              state: p.stage === 'coming_soon' ? 'unavailable' : 'ready',
-              label: STAGE[p.stage as string]?.label,
-              note: `${p.role_in_flow}${p.stage === 'coming_soon' ? ' · em desenvolvimento' : ''}`,
-            }))}
-          />
-        </div>
-      </section>
-
       <section className="section section--center" id="ferramentas" aria-labelledby="ferr-title">
         <div className="section__head section__head--wide reveal">
           <p className="zro-eyebrow">Ferramentas</p>
@@ -187,7 +202,7 @@ export default async function Landing() {
           </h2>
           <p>Cada uma com a própria cara. Em desenvolvimento aparece como tal: nada de recurso de fachada.</p>
         </div>
-        <div className="tiles">
+        <PointerTilt className="tiles" selector=".tile" max={4}>
           {/* Primeiro o que já tem tela de verdade; em desenvolvimento fica junto, no fim. */}
           {[...products.filter((p) => SHOT[p.id as string]), ...products.filter((p) => !SHOT[p.id as string])].map((p) => {
             const id = p.id as string
@@ -232,7 +247,7 @@ export default async function Landing() {
               </article>
             )
           })}
-        </div>
+        </PointerTilt>
       </section>
 
       <section className="get-apps reveal" aria-labelledby="get-apps-title">
@@ -252,7 +267,7 @@ export default async function Landing() {
       </section>
 
       <section className="closing reveal" aria-labelledby="closing-title">
-        <ZroSymbol className="closing__mark" size={40} />
+        <BrandSymbol className="closing__mark bsym--scroll" />
         <h2 id="closing-title" className="display-2 atitle">
           <span className="atitle__thin">Seus dados, seus acessos.</span>
           <span className="atitle__bold">Nada além do contratado.</span>
