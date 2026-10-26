@@ -414,7 +414,7 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 
 ## Revela: página inicial, login e conta Absolute ZRO (26/10/2026)
 
-- `index.html` virou a página inicial (motion em CSS, telas reais em MacBook/iPhone, fotos de exemplo do Unsplash);
+- `index.html` virou a página inicial (motion em CSS, telas reais em MacBook/iPhone, frames da ZRO Filmes como exemplo, o "depois" gerado pela própria Revela);
   a ferramenta de LUT foi para `lut.html`. "Testar com um exemplo" carrega as duas fotos e monta a prévia.
 - `entrar.html` + `api/zro/{entrar,callback,eu,sair}.js` no padrão do Synquei (PKCE S256, `client_secret_basic`,
   cookies assinados, `zro_products` decide o acesso). `Cache-Control: no-store` em `/api/zro/*`.

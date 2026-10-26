@@ -98,12 +98,12 @@ for (const qual of ['referencia', 'material']) {
   })
 }
 
-// Exemplo pronto (fotos do Unsplash em exemplos/): uma rua no pôr do sol como referência, outra de dia como frame.
+// Exemplo pronto (frames da ZRO Filmes em exemplos/): o cavalo no pôr do sol como referência, o vestido achatado como frame.
 $('exemplo')?.addEventListener('click', async () => {
   const pegar = async (url, nome) => new File([await (await fetch(url)).blob()], nome, { type: 'image/jpeg' })
   try {
-    await receber('referencia', await pegar('exemplos/referencia-rua-dourada.jpg', 'rua-dourada.jpg'))
-    await receber('material', await pegar('exemplos/material-rua-dia.jpg', 'rua-de-dia.jpg'))
+    await receber('referencia', await pegar('exemplos/referencia-cavalo.jpg', 'referencia-cavalo.jpg'))
+    await receber('material', await pegar('exemplos/material-vestido.jpg', 'material-vestido.jpg'))
     $('resultado').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' })
   } catch {
     avisar('Não deu para abrir o exemplo agora.', true)
