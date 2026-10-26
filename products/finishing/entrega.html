@@ -31,47 +31,24 @@
   </head>
   <body>
     <header class="topo">
-      <span class="marca"><img src="marca/revela-logo.png" alt="Revela" width="150" height="28" /></span>
-      <span class="selo">Protótipo</span>
+      <a class="marca" href="./"><img src="marca/revela-logo.png" alt="Revela" width="150" height="28" /></a>
       <nav class="abas" aria-label="Ferramentas da Revela">
-        <a href="./">LUT por referência</a>
-        <a href="entrega.html" aria-current="page">Entrega</a>
-        <a href="converter.html">Converter</a>
+        <a href="./"><span class="aba-icone" data-icone="lut"></span>LUT</a>
+        <a href="entrega.html" aria-current="page"><span class="aba-icone" data-icone="entrega"></span>Entrega</a>
+        <a href="converter.html"><span class="aba-icone" data-icone="converter"></span>Converter</a>
       </nav>
-      <span class="assinatura">An Absolute ZRO Company</span>
+      <span class="selo">Protótipo</span>
     </header>
 
-    <main>
-      <section class="abertura">
+    <main class="tela">
+      <section class="abertura entra">
         <h1>Cada destino, do jeito certo.</h1>
-        <p>Escolha onde o material vai passar. Sai o codec, a cor e o áudio certos, e o preset pronto para o DaVinci Resolve.</p>
+        <p>Escolha onde vai passar. O preset sai pronto.</p>
       </section>
 
-      <section class="entrega">
-        <nav class="destinos" id="destinos" aria-label="Destinos"></nav>
-        <article class="detalhe" id="detalhe" aria-live="polite"></article>
-      </section>
-
+      <div class="cartoes cartoes--rolagem entra" id="destinos" role="group" aria-label="Destinos"></div>
+      <article class="detalhe entra" id="detalhe" aria-live="polite"></article>
       <p id="estado" class="estado" role="status" aria-live="polite"></p>
-
-      <section class="notas" aria-label="Como funciona">
-        <div>
-          <strong>No Resolve</strong>
-          <p>Abra o projeto, rode o script em Workspace › Scripts. Ele configura o Deliver e salva o preset com o nome do destino.</p>
-        </div>
-        <div>
-          <strong>Cor</strong>
-          <p>Grade em Rec.709 com gama 2,4 no monitor; o arquivo sai marcado BT.709 (1-1-1). HDR só se a timeline for HDR.</p>
-        </div>
-        <div>
-          <strong>Fontes</strong>
-          <p>Cada preset mostra de onde veio e quando foi conferido. Oficial é o que a plataforma publica; mercado é quando ela não publica.</p>
-        </div>
-        <div>
-          <strong>Plataformas mudam</strong>
-          <p>Requisitos mudam sem aviso. Em entrega importante, abra a fonte e confira antes do render.</p>
-        </div>
-      </section>
     </main>
   </body>
 </html>

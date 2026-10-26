@@ -1,7 +1,8 @@
 // Revela · entrega por destino: escolhe o destino, mostra codec/cor/áudio com fonte e data, baixa o script do Resolve.
 
-import { DESTINOS, GRUPOS, destino } from '../src/entrega/destinos.js'
+import { DESTINOS, destino } from '../src/entrega/destinos.js'
 import { gerarScript, nomeScript } from '../src/entrega/resolve.js'
+import { ICONES, NOME_CURTO, escalonar, glifo, icones, svg } from './visual.js'
 
 const $ = (id) => document.getElementById(id)
 const el = (tag, { dataset, ...props } = {}, ...filhos) => {
@@ -15,22 +16,18 @@ const data = (iso) => iso.split('-').reverse().join('/')
 const rotuloAltura = (h) => (h === 1920 ? '1080×1920' : h === 2160 ? '4K (2160p)' : `${h}p`)
 
 function listar() {
-  const nav = $('destinos')
-  for (const grupo of GRUPOS) {
-    const itens = DESTINOS.filter((d) => d.grupo === grupo)
-    if (!itens.length) continue
-    nav.append(
-      el('p', { className: 'grupo', textContent: grupo }),
-      ...itens.map((d) =>
-        el(
-          'button',
-          { type: 'button', className: 'destino', dataset: { id: d.id }, onclick: () => escolher(d.id) },
-          el('strong', { textContent: d.nome }),
-          el('small', { textContent: d.resumo }),
-        ),
+  $('destinos').replaceChildren(
+    ...DESTINOS.map((d) =>
+      el(
+        'button',
+        { type: 'button', className: 'cartao', dataset: { id: d.id }, title: d.resumo, onclick: () => escolher(d.id) },
+        svg(glifo(d)),
+        el('span', { textContent: NOME_CURTO[d.id] ?? d.nome }),
       ),
-    )
-  }
+    ),
+  )
+  // o nome inteiro para leitor de tela e para a busca por nome
+  for (const b of $('destinos').children) b.setAttribute('aria-label', destino(b.dataset.id).nome)
 }
 
 function linha(rotulo, valor) {
@@ -39,7 +36,10 @@ function linha(rotulo, valor) {
 
 function escolher(id) {
   const d = destino(id) ?? DESTINOS[0]
-  for (const b of document.querySelectorAll('.destino')) b.setAttribute('aria-pressed', String(b.dataset.id === d.id))
+  for (const b of document.querySelectorAll('#destinos .cartao')) {
+    b.setAttribute('aria-pressed', String(b.dataset.id === d.id))
+    if (b.dataset.id === d.id) b.scrollIntoView({ block: 'nearest', inline: 'nearest' }) // na fileira do celular
+  }
   if (location.hash.slice(1) !== d.id) history.replaceState(null, '', `#${d.id}`)
   const v = d.video
   const a = d.audio
@@ -57,63 +57,48 @@ function escolher(id) {
     : 'Sem limite: ProRes trabalha por qualidade, não por bitrate.'
   const oficial = d.fontes.some((f) => f.tipo === 'oficial')
   const selo = d.selo ?? { tipo: oficial ? 'oficial' : 'mercado', texto: oficial ? 'Oficial' : 'Mercado' }
-  $('detalhe').replaceChildren(
-    el('div', { className: 'cabeca' }, el('h2', { textContent: d.nome }), el('span', { className: `etiqueta ${selo.tipo}`, textContent: selo.texto })),
-    el('p', { className: 'resumo', textContent: d.resumo }),
-    el('h3', { textContent: 'Vídeo' }),
+  const ficha = el(
+    'div',
+    { className: 'mais' },
     el(
-      'dl',
+      'details',
       {},
-      linha('Contêiner', v.formato.toUpperCase()),
-      linha('Codec', [v.codec, v.perfil ? ` · ${v.perfil}` : ''].join('')),
-      linha('Cor e bits', `${v.subamostragem} · ${v.bits} bits`),
-      linha('Resolução', v.resolucao),
-      linha('Cadência', v.fps),
-      linha('Bitrate', bitrate),
-    ),
-    el('h3', { textContent: 'Cor' }),
-    el(
-      'dl',
-      {},
-      linha('Espaço', d.cor.nome),
-      linha('Primárias · transferência · matriz', `${d.cor.primarias} · ${d.cor.transferencia} · ${d.cor.matriz}`),
-      linha('Tag no arquivo (H.273)', d.cor.h273),
-      linha('No Resolve (Deliver)', `Color Space Tag ${d.cor.resolve.colorSpaceTag} · Gamma Tag ${d.cor.resolve.gammaTag}`),
-    ),
-    el('h3', { textContent: 'Áudio' }),
-    el(
-      'dl',
-      {},
-      linha('Codec', a.codec === 'lpcm' ? `PCM ${a.bits} bits` : `${a.codec.toUpperCase()} ${a.kbps} kbps`),
-      linha('Amostragem e canais', `${a.taxa / 1000} kHz · ${a.canais}`),
-      linha(
-        'Loudness',
-        a.loudness
-          ? `${a.loudness.alvo} ${a.loudness.unidade} ±${a.loudness.tolerancia}`
-          : 'Sem alvo publicado pela plataforma. Prática de mercado: picos abaixo de −1 dBTP.',
+      el('summary', { textContent: 'Ficha completa' }),
+      el(
+        'dl',
+        {},
+        linha('Contêiner', v.formato.toUpperCase()),
+        linha('Codec', [v.codec, v.perfil ? ` · ${v.perfil}` : ''].join('')),
+        linha('Cor e bits', `${v.subamostragem} · ${v.bits} bits`),
+        linha('Resolução', v.resolucao),
+        linha('Cadência', v.fps),
+        linha('Bitrate', bitrate),
+        linha('Espaço de cor', d.cor.nome),
+        linha('Primárias · transferência · matriz', `${d.cor.primarias} · ${d.cor.transferencia} · ${d.cor.matriz}`),
+        linha('Tag no arquivo (H.273)', d.cor.h273),
+        linha('No Resolve (Deliver)', `Color Space Tag ${d.cor.resolve.colorSpaceTag} · Gamma Tag ${d.cor.resolve.gammaTag}`),
+        linha('Áudio', `${audioNome(a)} · ${a.taxa / 1000} kHz · ${a.canais}`),
+        linha(
+          'Loudness',
+          a.loudness ? `${a.loudness.alvo} ${a.loudness.unidade} ±${a.loudness.tolerancia}` : 'Sem alvo publicado. Mercado: picos abaixo de −1 dBTP.',
+        ),
       ),
     ),
     d.avisos.length
       ? el(
-          'div',
-          { className: 'avisos' },
-          el('strong', { textContent: 'Antes de entregar' }),
+          'details',
+          {},
+          el('summary', { textContent: `Antes de entregar (${d.avisos.length})` }),
           el('ul', {}, ...d.avisos.map((t) => el('li', { textContent: t }))),
         )
       : null,
     el(
-      'div',
-      { className: 'acoes-entrega' },
-      el('button', { type: 'button', className: 'botao', textContent: 'Baixar script do Resolve (.py)', onclick: () => baixar(d) }),
-      el('button', { type: 'button', className: 'botao-secundario', textContent: 'Copiar resumo', onclick: () => copiar(d) }),
-    ),
-    el(
-      'div',
-      { className: 'fontes' },
-      el('strong', { textContent: 'Fontes' }),
+      'details',
+      {},
+      el('summary', { textContent: 'Fontes' }),
       el(
         'ul',
-        {},
+        { className: 'fontes' },
         ...d.fontes.map((f) =>
           el(
             'li',
@@ -121,13 +106,61 @@ function escolher(id) {
             el('span', { className: `etiqueta ${f.tipo}`, textContent: f.tipo === 'oficial' ? 'Oficial' : 'Mercado' }),
             ' ',
             el('a', { href: f.url, target: '_blank', rel: 'noopener noreferrer', textContent: f.titulo }),
-            el('small', { textContent: ` · conferido em ${data(f.verificadoEm)}` }),
+            el('small', { textContent: ` · ${data(f.verificadoEm)}` }),
           ),
         ),
       ),
     ),
   )
+  const [h1080, [p1080]] = v.bitrate ? (Object.entries(v.bitrate).find(([h]) => h === '1080') ?? Object.entries(v.bitrate)[0]) : [null, [null]]
+  const detalhe = $('detalhe')
+  detalhe.replaceChildren(
+    el(
+      'div',
+      { className: 'cabeca' },
+      svg(glifo(d)),
+      el('h2', { textContent: d.nome }),
+      el('span', { className: `etiqueta ${selo.tipo}`, textContent: selo.texto }),
+    ),
+    el(
+      'div',
+      { className: 'specs' },
+      spec('Codec', v.codec.replace(/^Apple /, ''), `${v.formato.toUpperCase()} · ${v.bits} bits`),
+      spec('Resolução', v.largura ? `${v.largura}×${v.altura}` : 'Da timeline', v.largura ? null : 'sem mudar'),
+      spec('Bitrate', p1080 ? mbps(p1080) : 'Por qualidade', p1080 ? rotuloAltura(Number(h1080)) : 'sem limite'),
+      spec('Cor', d.cor.nome, `tag ${d.cor.h273}`),
+      spec('Áudio', audioNome(a), `${a.taxa / 1000} kHz`),
+      spec('Loudness', a.loudness ? `${a.loudness.alvo} ${a.loudness.unidade}` : '—', a.loudness ? `±${a.loudness.tolerancia}` : 'pico −1 dBTP'),
+    ),
+    el(
+      'div',
+      { className: 'acoes-entrega' },
+      el(
+        'button',
+        { type: 'button', className: 'vidro vidro--tinta grande', title: 'Baixar preset do Resolve', onclick: () => baixar(d) },
+        svg(ICONES.baixar),
+        'Baixar preset',
+      ),
+      el('button', { type: 'button', className: 'vidro vidro--icone', title: 'Copiar resumo', onclick: () => copiar(d) }, svg(ICONES.copiar)),
+    ),
+    ficha,
+  )
+  detalhe.classList.remove('trocou')
+  void detalhe.offsetWidth // reinicia a animação da troca
+  detalhe.classList.add('trocou')
 }
+
+function spec(rotulo, valor, sub) {
+  return el(
+    'div',
+    { className: 'spec' },
+    el('span', { textContent: rotulo }),
+    el('strong', { textContent: valor }),
+    sub ? el('small', { textContent: sub }) : null,
+  )
+}
+
+const audioNome = (a) => (a.codec === 'lpcm' ? `PCM ${a.bits} bits` : `${a.codec.toUpperCase()} ${a.kbps}`)
 
 function baixar(d) {
   const url = URL.createObjectURL(new Blob([gerarScript(d)], { type: 'text/x-python' }))
@@ -136,7 +169,7 @@ function baixar(d) {
   link.click()
   link.remove()
   setTimeout(() => URL.revokeObjectURL(url), 10_000)
-  $('estado').textContent = `Script baixado. No Resolve: Workspace › Scripts, com o projeto aberto.`
+  $('estado').textContent = 'Baixado. No Resolve: Workspace › Scripts.'
 }
 
 async function copiar(d) {
@@ -163,5 +196,7 @@ async function copiar(d) {
   }
 }
 
+icones()
 listar()
 escolher(location.hash.slice(1))
+escalonar()

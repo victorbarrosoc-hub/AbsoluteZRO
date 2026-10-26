@@ -31,37 +31,35 @@
   </head>
   <body>
     <header class="topo">
-      <span class="marca"><img src="marca/revela-logo.png" alt="Revela" width="150" height="28" /></span>
-      <span class="selo">Protótipo</span>
+      <a class="marca" href="./"><img src="marca/revela-logo.png" alt="Revela" width="150" height="28" /></a>
       <nav class="abas" aria-label="Ferramentas da Revela">
-        <a href="./" aria-current="page">LUT por referência</a>
-        <a href="entrega.html">Entrega</a>
-        <a href="converter.html">Converter</a>
+        <a href="./" aria-current="page"><span class="aba-icone" data-icone="lut"></span>LUT</a>
+        <a href="entrega.html"><span class="aba-icone" data-icone="entrega"></span>Entrega</a>
+        <a href="converter.html"><span class="aba-icone" data-icone="converter"></span>Converter</a>
       </nav>
-      <span class="assinatura">An Absolute ZRO Company</span>
+      <span class="selo">Protótipo</span>
     </header>
 
-    <main>
-      <section class="abertura">
+    <main class="tela">
+      <section class="abertura entra">
         <h1>Revela a cor que você quer.</h1>
-        <p>Dê um frame de referência e um frame do seu material. Sai uma LUT para o DaVinci Resolve.</p>
+        <p>Referência entra, LUT sai.</p>
       </section>
 
-      <section class="entradas" aria-label="Imagens">
+      <section class="entradas entra" aria-label="Imagens">
         <label class="entrada" id="caixa-referencia" for="arquivo-referencia">
-          <span class="passo">1</span>
+          <span class="entrada-icone" data-icone="imagem"></span>
           <strong>Referência</strong>
-          <span class="dica">O estilo que você quer: um frame de filme, um still.</span>
           <img alt="" hidden />
-          <span class="acao">Escolher imagem ou soltar aqui</span>
+          <span class="acao">Escolher ou soltar</span>
           <input id="arquivo-referencia" type="file" accept="image/*" />
         </label>
         <label class="entrada" id="caixa-material" for="arquivo-material">
-          <span class="passo">2</span>
+          <span class="entrada-icone" data-icone="filme"></span>
           <strong>Seu frame</strong>
-          <span class="dica">Em Rec.709. No Resolve, exporte o still depois da conversão do LOG.</span>
+          <span class="ficha" title="Exporte o still do Resolve depois da conversão do LOG">Rec.709</span>
           <img alt="" hidden />
-          <span class="acao">Escolher imagem ou soltar aqui</span>
+          <span class="acao">Escolher ou soltar</span>
           <input id="arquivo-material" type="file" accept="image/*" />
         </label>
       </section>
@@ -78,63 +76,46 @@
 
         <div class="painel">
           <div class="controle">
-            <label for="intensidade"><strong>Intensidade</strong></label>
-            <input id="intensidade" type="range" min="0" max="100" value="100" />
+            <label for="intensidade">Intensidade</label>
             <output id="valor-intensidade" for="intensidade">100%</output>
+            <input id="intensidade" type="range" min="0" max="100" value="100" />
           </div>
 
-          <fieldset class="controle">
-            <legend><strong>Copiar</strong></legend>
-            <label><input id="usar-tom" type="checkbox" checked /> Contraste</label>
-            <label><input id="usar-cor" type="checkbox" checked /> Cor</label>
-          </fieldset>
-
-          <div class="controle">
-            <label for="tamanho"><strong>Tamanho da LUT</strong></label>
-            <select id="tamanho">
-              <option value="33">33 pontos · monitor e câmera</option>
-              <option value="65">65 pontos · grading</option>
-            </select>
+          <div class="pilulas" role="group" aria-label="Copiar">
+            <label class="pilula"><input id="usar-tom" type="checkbox" checked /> Contraste</label>
+            <label class="pilula"><input id="usar-cor" type="checkbox" checked /> Cor</label>
           </div>
 
-          <div class="controle conta-gotas">
-            <strong>Conta-gotas</strong>
-            <p class="dica">Clique numa coisa na referência e na mesma coisa no seu frame: pele com pele, branco com branco. Até 3 pares.</p>
+          <div class="segmentado" role="radiogroup" aria-label="Tamanho da LUT">
+            <label title="Monitor e câmera"><input type="radio" name="tamanho" value="33" checked /> 33 pontos</label>
+            <label title="Grading"><input type="radio" name="tamanho" value="65" /> 65 pontos</label>
+          </div>
+
+          <div class="conta-gotas">
+            <button
+              id="marcar-par"
+              class="vidro"
+              type="button"
+              aria-pressed="false"
+              title="Marque a mesma coisa nas duas imagens: pele com pele, branco com branco. Até 3 pares."
+            >
+              <span data-icone="gota"></span> Conta-gotas
+            </button>
             <ul id="pares" class="pares" aria-label="Pares de cor"></ul>
-            <div class="acoes">
-              <button id="marcar-par" class="botao-secundario" type="button">Marcar par de cor</button>
-              <button id="limpar-pares" class="botao-secundario" type="button" hidden>Limpar</button>
-            </div>
+            <button id="limpar-pares" class="vidro vidro--icone" type="button" hidden aria-label="Limpar"><span data-icone="x"></span></button>
           </div>
 
-          <button id="baixar" class="botao" type="button">Baixar LUT (.cube)</button>
+          <button id="baixar" class="vidro vidro--tinta grande" type="button"><span data-icone="baixar"></span> Baixar LUT</button>
 
-          <div class="leitura">
-            <strong>O que a referência tem</strong>
+          <details class="leitura">
+            <summary>Leitura da referência</summary>
             <p id="tom"></p>
             <ul id="faixas"></ul>
-          </div>
+          </details>
         </div>
       </section>
 
-      <section class="notas" aria-label="Como funciona">
-        <div>
-          <strong>Suas imagens não saem daqui</strong>
-          <p>Tudo é calculado no seu navegador. Nada é enviado.</p>
-        </div>
-        <div>
-          <strong>No Resolve</strong>
-          <p>Aplique a LUT num nó depois da conversão para Rec.709.</p>
-        </div>
-        <div>
-          <strong>O que dá para copiar</strong>
-          <p>Cor e contraste. Grão, lente e luz do set não cabem numa LUT, e a exposição fica a do seu frame.</p>
-        </div>
-        <div>
-          <strong>Quando erra</strong>
-          <p>Se a referência não tem nada em comum com o seu frame, a cor sai torta. Use o conta-gotas: pele com pele, branco com branco.</p>
-        </div>
-      </section>
+      <footer class="rodape entra"><span data-icone="cadeado"></span> Suas imagens não saem daqui</footer>
     </main>
   </body>
 </html>

@@ -31,69 +31,47 @@
   </head>
   <body>
     <header class="topo">
-      <span class="marca"><img src="marca/revela-logo.png" alt="Revela" width="150" height="28" /></span>
-      <span class="selo">Protótipo</span>
+      <a class="marca" href="./"><img src="marca/revela-logo.png" alt="Revela" width="150" height="28" /></a>
       <nav class="abas" aria-label="Ferramentas da Revela">
-        <a href="./">LUT por referência</a>
-        <a href="entrega.html">Entrega</a>
-        <a href="converter.html" aria-current="page">Converter</a>
+        <a href="./"><span class="aba-icone" data-icone="lut"></span>LUT</a>
+        <a href="entrega.html"><span class="aba-icone" data-icone="entrega"></span>Entrega</a>
+        <a href="converter.html" aria-current="page"><span class="aba-icone" data-icone="converter"></span>Converter</a>
       </nav>
-      <span class="assinatura">An Absolute ZRO Company</span>
+      <span class="selo">Protótipo</span>
     </header>
 
-    <main>
-      <section class="abertura">
+    <main class="tela tela--estreita">
+      <section class="abertura entra">
         <h1>Converta aqui mesmo.</h1>
-        <p>Do master em ProRes para cada destino, no celular ou no computador. O arquivo não sai do seu aparelho.</p>
+        <p>Do ProRes ao destino, no celular ou no computador.</p>
       </section>
 
-      <section class="conversor">
-        <label class="entrada" id="caixa-arquivos" for="arquivos">
-          <strong>Arquivos</strong>
-          <span class="dica">ProRes, H.264, HEVC, MOV, MP4. Pode escolher vários.</span>
-          <span class="acao">Escolher arquivos ou soltar aqui</span>
-          <input id="arquivos" type="file" accept="video/*,.mov,.mp4,.m4v,.mxf" multiple />
-        </label>
+      <label class="soltar entra" id="caixa-arquivos" for="arquivos">
+        <span class="soltar-icone" data-icone="soltar"></span>
+        <strong class="soltar-titulo">Solte seus vídeos</strong>
+        <span class="soltar-dica">ou toque para escolher</span>
+        <input id="arquivos" type="file" accept="video/*,.mov,.mp4,.m4v,.mxf" multiple />
+      </label>
 
-        <div class="painel">
-          <div class="controle">
-            <label for="destino"><strong>Destino</strong></label>
-            <select id="destino"></select>
-          </div>
-          <div class="controle">
-            <label for="resolucao"><strong>Resolução</strong></label>
-            <select id="resolucao"></select>
-          </div>
-          <label class="opcao" id="opcao-pasta" hidden
-            ><input id="salvar-pasta" type="checkbox" checked /> Salvar direto numa pasta (melhor para arquivos grandes)</label
+      <ol id="fila" class="fila" aria-label="Arquivos"></ol>
+
+      <section class="ajustes entra" aria-label="Ajustes">
+        <div class="cartoes cartoes--4" id="destinos" role="radiogroup" aria-label="Destino"></div>
+        <div class="linha-ajustes">
+          <div class="segmentado" id="resolucoes" role="radiogroup" aria-label="Resolução"></div>
+          <label class="chave" id="opcao-pasta" hidden title="Grava direto no disco: melhor para arquivos grandes"
+            ><input id="salvar-pasta" type="checkbox" role="switch" checked /><span class="chave-trilho"></span> Salvar numa pasta</label
           >
-          <button id="converter" class="botao" type="button" disabled>Converter</button>
-          <p id="aparelho" class="dica"></p>
         </div>
+        <button id="converter" class="vidro vidro--tinta grande" type="button" disabled><span data-icone="converter"></span> Converter</button>
       </section>
 
       <p id="estado" class="estado" role="status" aria-live="polite"></p>
 
-      <ol id="fila" class="fila" aria-label="Arquivos"></ol>
-
-      <section class="notas" aria-label="Como funciona">
-        <div>
-          <strong>Um master, várias entregas</strong>
-          <p>Exporte o master em ProRes no Resolve (preset Master de arquivo) e converta aqui cada versão. A timeline renderiza uma vez só.</p>
-        </div>
-        <div>
-          <strong>No seu aparelho</strong>
-          <p>A conversão roda no navegador, com o codificador de hardware do aparelho quando ele permite. Nada é enviado.</p>
-        </div>
-        <div>
-          <strong>Cor</strong>
-          <p>Sai marcado BT.709 (1-1-1), como pedem YouTube e Vimeo. HDR não é convertido aqui: faça a versão SDR no Resolve.</p>
-        </div>
-        <div>
-          <strong>Arquivos grandes</strong>
-          <p>No computador, salvar direto numa pasta evita encher a memória. No celular, prefira arquivos de até 1,5 GB de saída.</p>
-        </div>
-      </section>
+      <footer class="rodape entra">
+        <span data-icone="cadeado"></span> Nada sai do seu aparelho
+        <span id="aparelho" class="capacidades" aria-label="Codificadores deste aparelho"></span>
+      </footer>
     </main>
   </body>
 </html>

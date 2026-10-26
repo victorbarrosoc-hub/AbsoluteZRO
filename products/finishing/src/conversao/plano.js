@@ -35,14 +35,13 @@ export function planejar(origem, d, opcoes = {}) {
     const escala = Math.min(1, d.video.largura / curto)
     largura = par(largura * escala)
     altura = par(altura * escala)
-    if (origem.largura > origem.altura)
-      avisos.push('O arquivo é horizontal: no feed vertical ele aparece pequeno, com faixas. Para ocupar a tela, exporte em 9:16 no Resolve.')
+    if (origem.largura > origem.altura) avisos.push('Vídeo horizontal: no feed vertical sai com faixas. Para tela cheia, exporte 9:16 no Resolve.')
   } else if (opcoes.resolucao && opcoes.resolucao !== 'original') {
     const alvo = Number(opcoes.resolucao)
     if (alvo < altura) {
       largura = par((largura * alvo) / altura)
       altura = alvo
-    } else if (alvo > altura) avisos.push(`O arquivo tem ${altura}p; não amplio para ${alvo}p (só perderia qualidade e aumentaria o arquivo).`)
+    } else if (alvo > altura) avisos.push(`Tem ${altura}p: não amplio para ${alvo}p.`)
   }
   largura = par(largura)
   altura = par(altura)
@@ -53,11 +52,11 @@ export function planejar(origem, d, opcoes = {}) {
 
   const cor = origem.cor
   if (cor && (cor.transfer === 'pq' || cor.transfer === 'hlg')) {
-    avisos.push('O arquivo é HDR. Aqui ele sai marcado como SDR (Rec.709) sem conversão de tom: faça a versão SDR no Resolve.')
+    avisos.push('HDR sai como SDR sem conversão de tom. Faça o SDR no Resolve.')
   } else if (cor && cor.primaries && cor.primaries !== 'bt709') {
-    avisos.push(`O arquivo está em ${cor.primaries}, não em Rec.709. A conversão mantém os valores e marca como Rec.709: confira a cor.`)
+    avisos.push(`Cor em ${cor.primaries}, não Rec.709: confira depois.`)
   }
-  if (origem.fps > 60) avisos.push(`${origem.fps} fps: as plataformas reduzem para 60. Converta a cadência no Resolve se precisar.`)
+  if (origem.fps > 60) avisos.push(`${origem.fps} fps: as plataformas usam até 60.`)
 
   const bytes = Math.round(((kbps + (origem.temAudio ? audioKbps : 0)) * 1000 * (origem.duracao || 0)) / 8)
   return {

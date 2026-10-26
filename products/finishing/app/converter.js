@@ -4,8 +4,11 @@
 import * as MB from '../vendor/mediabunny.min.mjs'
 import { registerProresDecoder } from '../vendor/mediabunny-prores.min.mjs'
 import { DESTINOS_CONVERSAO, LIMITE_MEMORIA, RESOLUCOES, nomeSaida, planejar, tamanhoLegivel } from '../src/conversao/plano.js'
+import { ICONES, NOME_CURTO, escalonar, glifo, icones, svg } from './visual.js'
 
 registerProresDecoder()
+icones()
+escalonar()
 
 const $ = (id) => document.getElementById(id)
 const fila = []
@@ -13,6 +16,7 @@ let pasta = null // pasta escolhida para salvar direto no disco (computador)
 let rodando = false
 
 const NOMES_CODEC = { prores: 'ProRes', avc: 'H.264', hevc: 'HEVC', vp9: 'VP9', av1: 'AV1', vp8: 'VP8' }
+const NOMES_RESOLUCAO = { original: 'Original', 2160: '4K', 1080: '1080p', 720: '720p' }
 const duracaoLegivel = (s) => {
   if (s < 1) return 'menos de 1 s'
   const total = Math.round(s)
@@ -20,43 +24,78 @@ const duracaoLegivel = (s) => {
   const ss = total % 60
   return m ? `${m} min ${String(ss).padStart(2, '0')} s` : `${ss} s`
 }
+const nomeAudio = (c) => ({ aac: 'AAC', opus: 'Opus' })[c] ?? String(c).toUpperCase()
 const avisar = (t) => ($('estado').textContent = t)
+const no = (tag, props = {}, ...filhos) => {
+  const n = Object.assign(document.createElement(tag), props)
+  n.append(...filhos.filter((f) => f != null))
+  return n
+}
+const ficha = (texto, extra = '') => no('span', { className: `ficha ${extra}`.trim(), textContent: texto })
 
 // ─────────── opções ───────────
 
-for (const d of DESTINOS_CONVERSAO) $('destino').append(new Option(d.nome, d.id))
-for (const r of RESOLUCOES) $('resolucao').append(new Option(r.nome, String(r.id)))
-const destinoAtual = () => DESTINOS_CONVERSAO.find((d) => d.id === $('destino').value)
-const resolucaoAtual = () => ($('resolucao').value === 'original' ? 'original' : Number($('resolucao').value))
-$('destino').addEventListener('change', () => {
-  $('resolucao').disabled = Boolean(destinoAtual().video.altura) // vertical já tem tamanho
-  for (const item of fila) if (item.estado === 'pronto') mostrar(item)
+$('destinos').append(
+  ...DESTINOS_CONVERSAO.map((d, i) =>
+    no(
+      'label',
+      { className: 'cartao', title: d.nome },
+      no('input', { type: 'radio', name: 'destino', value: d.id, checked: i === 0 }),
+      svg(glifo(d)),
+      no('span', { textContent: NOME_CURTO[d.id] ?? d.nome }),
+    ),
+  ),
+)
+$('resolucoes').append(
+  ...RESOLUCOES.map((r, i) =>
+    no('label', { title: r.nome }, no('input', { type: 'radio', name: 'resolucao', value: String(r.id), checked: i === 0 }), NOMES_RESOLUCAO[r.id]),
+  ),
+)
+const marcado = (nome) => document.querySelector(`input[name=${nome}]:checked`).value
+const destinoAtual = () => DESTINOS_CONVERSAO.find((d) => d.id === marcado('destino'))
+const resolucaoAtual = () => (marcado('resolucao') === 'original' ? 'original' : Number(marcado('resolucao')))
+const atualizar = () => fila.forEach((i) => i.estado === 'pronto' && mostrar(i))
+$('destinos').addEventListener('change', () => {
+  // vertical já tem tamanho
+  $('resolucoes').setAttribute('aria-disabled', String(Boolean(destinoAtual().video.altura)))
+  atualizar()
 })
-$('resolucao').addEventListener('change', () => fila.forEach((i) => i.estado === 'pronto' && mostrar(i)))
+$('resolucoes').addEventListener('change', atualizar)
 if ('showDirectoryPicker' in window) $('opcao-pasta').hidden = false
 
 async function capacidades() {
-  const sim = (ok) => (ok ? 'sim' : 'não')
   const [avc, hevc, aac] = await Promise.all([MB.canEncodeVideo('avc'), MB.canEncodeVideo('hevc'), MB.canEncodeAudio('aac')])
-  $('aparelho').textContent =
-    `Neste aparelho: H.264 ${sim(avc)} · HEVC ${sim(hevc)} · AAC ${sim(aac)}${crossOriginIsolated ? ' · ProRes em várias linhas' : ''}.`
+  $('aparelho').replaceChildren(
+    ...[
+      ['avc', 'H.264', avc],
+      ['hevc', 'HEVC', hevc],
+      ['aac', 'AAC', aac],
+    ].map(([id, nome, ok]) => {
+      const f = ficha(nome)
+      Object.assign(f.dataset, { codec: id, ok: String(ok) })
+      f.title = `${nome}: ${ok ? 'este aparelho codifica' : 'este aparelho não codifica'}`
+      return f
+    }),
+  )
 }
 capacidades()
 
 // ─────────── fila ───────────
 
 async function adicionar(arquivos) {
+  if (arquivos.length) $('caixa-arquivos').classList.add('compacta')
+  $('caixa-arquivos').querySelector('.soltar-titulo').textContent = 'Adicionar vídeos'
   for (const arquivo of arquivos) {
     const item = { id: crypto.randomUUID(), arquivo, estado: 'lendo', info: null, avisos: [] }
     fila.push(item)
     desenhar(item)
     try {
-      item.info = await ler(arquivo)
+      item.info = await ler(arquivo, item)
       item.estado = item.info.decodifica ? 'pronto' : 'erro'
-      if (!item.info.decodifica) item.erro = `Este navegador não consegue ler ${NOMES_CODEC[item.info.codec] ?? item.info.codec}.`
+      if (!item.info.decodifica) item.erro = `Este navegador não lê ${NOMES_CODEC[item.info.codec] ?? item.info.codec}.`
     } catch (e) {
       item.estado = 'erro'
-      item.erro = 'Não deu para abrir este arquivo como vídeo.'
+      item.erro = 'Não abre como vídeo.'
       console.warn(e)
     }
     mostrar(item)
@@ -64,7 +103,25 @@ async function adicionar(arquivos) {
   $('converter').disabled = !fila.some((i) => i.estado === 'pronto')
 }
 
-async function ler(arquivo) {
+/** O decodificador de ProRes entrega quadros sem a cor; sem ela o navegador assume BT.601 (SD). */
+async function comCor(amostra, cor) {
+  if (amostra.colorSpace?.matrix) return amostra
+  const dados = new Uint8Array(amostra.allocationSize())
+  const layout = await amostra.copyTo(dados)
+  const nova = new MB.VideoSample(dados, {
+    format: amostra.format,
+    codedWidth: amostra.codedWidth,
+    codedHeight: amostra.codedHeight,
+    timestamp: amostra.timestamp,
+    duration: amostra.duration,
+    layout,
+    colorSpace: cor,
+  })
+  amostra.close()
+  return nova
+}
+
+async function ler(arquivo, item) {
   const input = new MB.Input({ source: new MB.BlobSource(arquivo), formats: MB.ALL_FORMATS })
   const video = await input.getPrimaryVideoTrack()
   if (!video) throw new Error('sem vídeo')
@@ -77,6 +134,7 @@ async function ler(arquivo) {
     video.computePacketStats(120),
     video.canDecode(),
   ])
+  if (decodifica) await miniatura(video, duracao, cor, item).catch((e) => console.warn('miniatura', e))
   input.dispose?.()
   return {
     codec: video.codec,
@@ -91,15 +149,41 @@ async function ler(arquivo) {
   }
 }
 
+/** Um quadro do começo do vídeo, com a cor certa, na miniatura do item. */
+async function miniatura(video, duracao, cor, item) {
+  const inicio = await video.getFirstTimestamp()
+  const amostra = await new MB.VideoSampleSink(video).getSample(inicio + Math.min(1, duracao * 0.1))
+  if (!amostra) return
+  const certa = await comCor(amostra, cor?.matrix ? cor : { primaries: 'bt709', transfer: 'bt709', matrix: 'bt709', fullRange: false })
+  const tela = $(`item-${item.id}`)?.querySelector('canvas')
+  if (tela) {
+    tela.width = 224
+    tela.height = 126
+    certa.drawWithFit(tela.getContext('2d'), { fit: 'contain' })
+  }
+  certa.close()
+}
+
 function desenhar(item) {
-  const li = document.createElement('li')
-  li.className = 'item'
-  li.id = `item-${item.id}`
-  li.innerHTML = `<div class="item-topo"><strong class="item-nome"></strong><span class="item-estado"></span></div>
-    <p class="item-info"></p><ul class="item-avisos"></ul>
-    <div class="barra" hidden><div class="barra-cheia"></div></div>
-    <div class="item-acoes"></div>`
-  li.querySelector('.item-nome').textContent = item.arquivo.name
+  const li = no(
+    'li',
+    { className: 'item', id: `item-${item.id}` },
+    no('div', { className: 'miniatura' }, no('canvas', { width: 224, height: 126 }), no('span', { className: 'selo-ok' }, svg(ICONES.ok))),
+    no(
+      'div',
+      { className: 'item-corpo' },
+      no(
+        'div',
+        { className: 'item-topo' },
+        no('strong', { className: 'item-nome', textContent: item.arquivo.name, title: item.arquivo.name }),
+        no('span', { className: 'item-estado' }),
+      ),
+      no('div', { className: 'fichas item-info' }),
+      no('ul', { className: 'item-avisos' }),
+      no('div', { className: 'barra', hidden: true }, no('div', { className: 'barra-cheia' })),
+    ),
+    no('div', { className: 'item-acoes' }),
+  )
   $('fila').append(li)
   mostrar(item)
 }
@@ -107,55 +191,46 @@ function desenhar(item) {
 function mostrar(item) {
   const li = $(`item-${item.id}`)
   if (!li) return
-  const estados = { lendo: 'Lendo…', pronto: 'Pronto para converter', convertendo: 'Convertendo…', feito: 'Pronto', erro: 'Erro', cancelado: 'Cancelado' }
+  const estados = { lendo: 'Lendo…', pronto: 'Na fila', convertendo: 'Começando…', feito: 'Pronto', erro: 'Erro', cancelado: 'Cancelado' }
   li.dataset.estado = item.estado
   li.querySelector('.item-estado').textContent = estados[item.estado]
   const info = item.info
-  const partes = info
-    ? [
-        NOMES_CODEC[info.codec] ?? info.codec,
-        `${info.largura}×${info.altura}`,
-        `${info.fps.toLocaleString('pt-BR')} fps`,
-        duracaoLegivel(info.duracao),
-        info.cor?.primaries ? `cor ${info.cor.primaries}` : 'cor sem marcação',
-        info.temAudio ? `áudio ${info.audio}` : 'sem áudio',
-      ]
-    : []
-  let plano = null
-  if (info && item.estado === 'pronto') {
-    plano = planejar(info, destinoAtual(), { resolucao: resolucaoAtual() })
-    partes.push(`→ ${plano.video.largura}×${plano.video.altura} · ~${tamanhoLegivel(plano.tamanhoEstimado)}`)
-    item.avisos = [...plano.avisos]
-    if (!(pasta || $('salvar-pasta').checked) && plano.tamanhoEstimado > LIMITE_MEMORIA)
-      item.avisos.push('Arquivo grande para montar na memória do aparelho. No computador, salve direto numa pasta.')
+  const fichas = []
+  if (item.erro) fichas.push(no('p', { className: 'item-erro', textContent: item.erro }))
+  else if (info) {
+    fichas.push(
+      ficha(NOMES_CODEC[info.codec] ?? info.codec),
+      ficha(`${info.largura}×${info.altura}`),
+      ficha(`${info.fps.toLocaleString('pt-BR')} fps`),
+      ficha(duracaoLegivel(info.duracao)),
+    )
+    if (!info.temAudio) fichas.push(ficha('sem áudio'))
   }
-  li.querySelector('.item-info').textContent = item.erro ?? partes.join(' · ')
-  li.querySelector('.item-avisos').replaceChildren(
-    ...item.avisos.map((t) => {
-      const a = document.createElement('li')
-      a.textContent = t
-      return a
-    }),
-  )
+  if (info && item.estado === 'pronto') {
+    const plano = planejar(info, destinoAtual(), { resolucao: resolucaoAtual() })
+    const saida = ficha(`${plano.video.largura}×${plano.video.altura} · ~${tamanhoLegivel(plano.tamanhoEstimado)}`, 'ficha--saida')
+    saida.prepend(svg(ICONES.converter))
+    saida.title = 'Saída'
+    fichas.push(saida)
+    item.avisos = [...plano.avisos]
+    if (!(pasta || $('salvar-pasta').checked) && plano.tamanhoEstimado > LIMITE_MEMORIA) item.avisos.push('Grande para a memória: salve numa pasta.')
+  }
+  if (item.estado === 'feito' && item.resumo) fichas.splice(0, fichas.length, ...item.resumo.map((t) => ficha(t)))
+  li.querySelector('.item-info').replaceChildren(...fichas)
+  li.querySelector('.item-avisos').replaceChildren(...item.avisos.map((t) => no('li', {}, svg(ICONES.aviso), no('span', { textContent: t }))))
+  if (item.estado !== 'convertendo') li.querySelector('.barra').hidden = true
+
   const acoes = li.querySelector('.item-acoes')
   acoes.replaceChildren()
   if (item.estado === 'convertendo') {
-    const b = Object.assign(document.createElement('button'), { type: 'button', className: 'botao-secundario', textContent: 'Cancelar' })
+    const b = no('button', { type: 'button', className: 'vidro vidro--icone', title: 'Cancelar' }, svg(ICONES.x))
     b.onclick = () => item.conversao?.cancel()
     acoes.append(b)
   }
   if (item.estado === 'feito' && item.url) {
-    const a = Object.assign(document.createElement('a'), {
-      className: 'botao',
-      href: item.url,
-      download: item.nomeSaida,
-      textContent: `Baixar ${item.nomeSaida}`,
-    })
+    const a = no('a', { className: 'vidro vidro--tinta', href: item.url, download: item.nomeSaida, title: item.nomeSaida }, svg(ICONES.baixar), 'Baixar')
+    a.setAttribute('aria-label', `Baixar ${item.nomeSaida}`)
     acoes.append(a)
-  }
-  if (item.estado === 'feito' && item.resumo) {
-    const p = Object.assign(document.createElement('p'), { className: 'dica', textContent: item.resumo })
-    acoes.append(p)
   }
 }
 
@@ -166,9 +241,7 @@ function progresso(item, valor, inicio) {
   barra.querySelector('.barra-cheia').style.width = `${Math.round(valor * 100)}%`
   const gasto = (performance.now() - inicio) / 1000
   const resta = valor > 0.02 ? (gasto / valor) * (1 - valor) : null
-  const quadros = valor * item.info.duracao * item.info.fps
-  li.querySelector('.item-estado').textContent =
-    `${Math.round(valor * 100)}% · ${Math.round(quadros / Math.max(gasto, 0.1))} fps${resta != null ? ` · falta ${duracaoLegivel(resta)}` : ''}`
+  li.querySelector('.item-estado').textContent = `${Math.round(valor * 100)}%${resta != null ? ` · falta ${duracaoLegivel(resta)}` : ''}`
 }
 
 // ─────────── conversão ───────────
@@ -186,8 +259,8 @@ async function converter(item) {
   if (!vcodec) throw new Error('Este aparelho não codifica H.264 nem HEVC neste tamanho.')
   const acodec = plano.audio ? await MB.getFirstEncodableAudioCodec(plano.audio.codecs) : null
   if (plano.audio && acodec !== plano.audio.codecs[0])
-    item.avisos.push(`Este navegador não codifica ${plano.audio.codecs[0].toUpperCase()}: o áudio sai em ${String(acodec).toUpperCase()}.`)
-  if (vcodec !== plano.video.codec) item.avisos.push(`Este aparelho não codifica ${NOMES_CODEC[plano.video.codec]}: sai em ${NOMES_CODEC[vcodec]}.`)
+    item.avisos.push(`Áudio em ${nomeAudio(acodec)}: este navegador não gera ${nomeAudio(plano.audio.codecs[0])}.`)
+  if (vcodec !== plano.video.codec) item.avisos.push(`Vídeo em ${NOMES_CODEC[vcodec]}: este aparelho não gera ${NOMES_CODEC[plano.video.codec]}.`)
 
   let target
   let gravavel = null
@@ -213,23 +286,7 @@ async function converter(item) {
       quality: new MB.Quality({ bitrate: plano.video.bitrate }),
       forceTranscode: true,
       hardwareAcceleration: 'no-preference', // o navegador usa o hardware quando existe; exigir hardware falha onde não há
-      // o decodificador de ProRes entrega quadros sem a cor; sem ela o navegador assume BT.601 (SD)
-      process: async (amostra) => {
-        if (amostra.colorSpace?.matrix) return amostra
-        const dados = new Uint8Array(amostra.allocationSize())
-        const layout = await amostra.copyTo(dados)
-        const nova = new MB.VideoSample(dados, {
-          format: amostra.format,
-          codedWidth: amostra.codedWidth,
-          codedHeight: amostra.codedHeight,
-          timestamp: amostra.timestamp,
-          duration: amostra.duration,
-          layout,
-          colorSpace: corOrigem,
-        })
-        amostra.close()
-        return nova
-      },
+      process: (amostra) => comCor(amostra, corOrigem),
     },
     audio: acodec
       ? { codec: acodec, quality: new MB.Quality({ bitrate: plano.audio.bitrate }), sampleRate: plano.audio.taxa, forceTranscode: true }
@@ -248,7 +305,12 @@ async function converter(item) {
     item.url = URL.createObjectURL(blob)
     item.bytes = blob.size
   } else item.bytes = null
-  item.resumo = `${NOMES_CODEC[vcodec]}${acodec ? ' + ' + acodec.toUpperCase() : ''} · BT.709 · ${duracaoLegivel(segundos)} (${(item.info.duracao / segundos).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}× o tempo real)${item.bytes ? ' · ' + tamanhoLegivel(item.bytes) : ' · salvo na pasta'}`
+  item.resumo = [
+    `${NOMES_CODEC[vcodec]}${acodec ? ' + ' + nomeAudio(acodec) : ''}`,
+    'BT.709',
+    `${(item.info.duracao / segundos).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}× tempo real`,
+    item.bytes ? tamanhoLegivel(item.bytes) : 'salvo na pasta',
+  ]
   item.estado = 'feito'
   mostrar(item)
 }
@@ -273,7 +335,7 @@ $('converter').addEventListener('click', async () => {
   }
   rodando = false
   $('converter').disabled = !fila.some((i) => i.estado === 'pronto')
-  avisar(fila.some((i) => i.estado === 'feito') ? 'Conversão terminada.' : '')
+  avisar('')
 })
 
 const caixa = $('caixa-arquivos')

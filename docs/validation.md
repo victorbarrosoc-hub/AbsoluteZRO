@@ -399,3 +399,15 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - Chromium no Linux não codifica AAC: a saída usa Opus e a tela avisa. CI do app ganhou o ffmpeg.
 - Celular (390 px) sem rolagem lateral. Não validado: Safari/iOS e Chrome/Android reais, codificador de hardware,
   arquivos grandes no celular.
+
+## Revela: telas no padrão Apple, com pouco texto (26/10/2026)
+
+- A pedido do titular, as três telas da Revela perderam os blocos de explicação: título curto, uma linha de apoio,
+  cartões com o formato de cada destino (16:9, 9:16, TV, película), controles segmentados, botões em Liquid Glass
+  (ação principal em vidro claro sobre o preto fosco) e detalhes técnicos recolhidos (ficha, avisos, fontes).
+- Conversor: miniatura do primeiro quadro (com a cor BT.709 certa), fichas em vez de frases, barra com brilho
+  enquanto converte, selo de pronto; a caixa de soltar encolhe quando há arquivos.
+- Motion só em CSS e só com `prefers-reduced-motion: no-preference`: entrada escalonada, troca do detalhe, brilho da
+  barra, selo de pronto, ícone que respira ao arrastar.
+- `products/finishing`: `npm test` (**35/35**), testes de tela ajustados (fichas, miniatura não vazia, caixa
+  compacta, grupos de rádio com nome). Desktop 1280 e celular 390 sem rolagem lateral e sem erro de console.

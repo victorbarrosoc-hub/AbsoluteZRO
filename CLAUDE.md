@@ -53,6 +53,9 @@ de qualquer tela, pense em como a apple.com faria: visual, motion e elegância.
   **Nada de texto azul ou em degradê.** Texto de apoio em cinza (#6e6e73).
 - Botões em **Liquid Glass**: pílula de vidro translúcido com brilho de borda (`.glass-btn`); a ação principal em vidro
   escuro (`.glass-btn--ink`). Nada de botão azul chapado.
+- **Pouco texto** (pedido do titular, 26/10/2026): título curto e no máximo uma linha de apoio. O resto vira forma
+  (ícone, cartão, ficha, estado visual) ou fica recolhido (detalhes, dica no `title`). Texto demais e a pessoa não sabe
+  para onde olhar.
 - Uma ideia por tela, uma ação principal e uma secundária. Muito respiro. Motion só com propósito (o produto entra com a
   rolagem), sempre respeitando "reduzir movimento".
 - Comportamento de ecossistema: uma conta (como o Apple ID), os apps se reconhecem, nada de cadastro duplicado.
