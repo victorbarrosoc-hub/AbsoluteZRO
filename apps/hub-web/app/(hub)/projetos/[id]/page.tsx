@@ -15,6 +15,7 @@ export const metadata: Metadata = { title: 'Projeto' }
 
 const SECTIONS = [
   ['visao', 'Visão geral'],
+  ['equipe', 'Equipe'],
   ['roteiro', 'Briefing e roteiro'],
   ['midias', 'Mídias e backups'],
   ['organizacao', 'Organização e sync'],
@@ -62,7 +63,7 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
     if (isDomainError(e) && e.code === 'project_not_found') notFound()
     throw e
   }
-  const { project, steps, documents, manifests, runs, events } = data
+  const { project, steps, documents, manifests, runs, events, team, invites } = data
   const canEdit = !!project.can_edit
   const step = (k: string) => steps.find((s) => s.stepKey === k)!
   const brief = documents.find((d) => d.kind === 'brief')
@@ -139,7 +140,7 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
                   <dd>{fmtDate(s.lastSyncedAt)}</dd>
                 </dl>
                 {a && <p className="zro-faint">No HUB: {a.hubCan[0]}</p>}
-                <StepAccess step={s} />
+                {data.actor.role !== 'guest' && <StepAccess step={s} />}
               </div>
             )
           })}
@@ -168,6 +169,35 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
               </div>
             </ActionForm>
           </details>
+        )}
+      </Card>
+
+      <Card id="equipe" title="Equipe" eyebrow="Quem está neste projeto">
+        {team.length || invites.length ? (
+          <ul className="list-rows">
+            {team.map((m) => (
+              <li key={m.user_id as string} className="list-rows__item row--between">
+                <span>
+                  <strong>{m.display_name as string}</strong>
+                  {m.function ? <span className="zro-faint"> · {m.function as string}</span> : null}
+                </span>
+                <Pill>{m.role === 'editor' ? 'Edição' : 'Leitura'}</Pill>
+              </li>
+            ))}
+            {invites.map((i) => (
+              <li key={i.id as string} className="list-rows__item row--between">
+                <span>
+                  {i.email as string}
+                  {i.project_function ? <span className="zro-faint"> · {i.project_function as string}</span> : null}
+                </span>
+                <Pill tone="faint" title={`Vale até ${fmtDate(i.expires_at as Date)}`}>
+                  Convite enviado
+                </Pill>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <EmptyState title="Ninguém na equipe ainda.">Quem for escalado no Carro do Freela aparece aqui.</EmptyState>
         )}
       </Card>
 

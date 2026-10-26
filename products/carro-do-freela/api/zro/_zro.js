@@ -27,13 +27,25 @@
  * ativa) e o Carro guarda a lista na sessão, relida a cada novo login. Sem
  * "carro-do-freela" na lista a pessoa entra, mas o /eu diz `liberado:false`
  * e a tela fica no aviso curto, com a porta para a Absolute ZRO.
+ *
+ * JOB → PROJETO (26/out · 3): o login também pede `offline_access` e
+ * `carro-do-freela.jobs`, e o refresh token fica num cookie httpOnly
+ * CIFRADO (AES-256-GCM, chave própria por HKDF), só em /api/zro. É com ele
+ * que POST /api/zro/enviar leva o job (carro-do-freela.job/1) e a equipe
+ * escalada (carro-do-freela.crew/1) para a organização no HUB, em nome da
+ * pessoa: o HUB confere papel e plano no banco. O token nunca vai ao
+ * navegador. Se o HUB ainda não conhece o escopo (invalid_scope), o login
+ * refaz o pedido sem ele e tudo segue como antes, só sem o envio.
  */
 const crypto = require('crypto');
 
 const EMISSOR_PADRAO = 'https://absolutezro.com';
-const ESCOPOS = 'openid email profile org';
+const ESCOPOS_BASE = 'openid email profile org';
+const ESCOPO_JOBS = 'carro-do-freela.jobs';
+const ESCOPOS = ESCOPOS_BASE + ' offline_access ' + ESCOPO_JOBS;
 const COOKIE_IDA = 'cdf_zro';
 const COOKIE_SESSAO = 'cdf_sessao';
+const COOKIE_HUB = 'cdf_hub';
 const IDA_S = 10 * 60;
 const SESSAO_S = 30 * 24 * 60 * 60;
 /** o id deste app em zro_products */
@@ -112,6 +124,29 @@ function abrir(valor, segredo, uso, agora = Date.now()) {
   }
   if (!d || typeof d !== 'object' || typeof d.exp !== 'number' || d.exp * 1000 < agora) return null;
   return d;
+}
+/* o cookie do HUB guarda TOKEN: assinar não basta, ele vai cifrado */
+function cifrar(dados, segredo) {
+  const iv = crypto.randomBytes(12);
+  const c = crypto.createCipheriv('aes-256-gcm', chave(segredo, 'cifra:hub'), iv);
+  const corpo = Buffer.concat([c.update(JSON.stringify(dados), 'utf8'), c.final()]);
+  return [iv, corpo, c.getAuthTag()].map(b => b.toString('base64url')).join('.');
+}
+function decifrar(valor, segredo, agora = Date.now()) {
+  if (typeof valor !== 'string' || valor.length > 4096) return null;
+  const partes = valor.split('.');
+  if (partes.length !== 3) return null;
+  try {
+    const [iv, corpo, tag] = partes.map(x => Buffer.from(x, 'base64url'));
+    if (iv.length !== 12 || tag.length !== 16) return null;
+    const d = crypto.createDecipheriv('aes-256-gcm', chave(segredo, 'cifra:hub'), iv);
+    d.setAuthTag(tag);
+    const dados = JSON.parse(Buffer.concat([d.update(corpo), d.final()]).toString('utf8'));
+    if (!dados || typeof dados.exp !== 'number' || dados.exp * 1000 < agora) return null;
+    return dados;
+  } catch (e) {
+    return null;
+  }
 }
 function lerCookie(req, nome) {
   const linha = String(req.headers.cookie || '');
@@ -234,16 +269,28 @@ async function conferirIdToken(cfg, idToken, nonce, agora = Date.now()) {
   };
 }
 
-async function trocarCodigo(cfg, code, verificador, nonce, retorno) {
+const basicDe = cfg => 'Basic ' + Buffer.from(encodeURIComponent(cfg.clientId) + ':' + encodeURIComponent(cfg.clientSecret)).toString('base64');
+async function pedirToken(cfg, form) {
   const d = await descobrir(cfg);
-  const basic = Buffer.from(encodeURIComponent(cfg.clientId) + ':' + encodeURIComponent(cfg.clientSecret)).toString('base64');
-  const { status, corpo } = await buscarJson(d.token_endpoint, {
+  return buscarJson(d.token_endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded', Authorization: 'Basic ' + basic, Accept: 'application/json' },
-    body: new URLSearchParams({ grant_type: 'authorization_code', code, code_verifier: verificador, redirect_uri: retorno }).toString(),
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', Authorization: basicDe(cfg), Accept: 'application/json' },
+    body: new URLSearchParams(form).toString(),
   });
+}
+/** o que vai no cookie do HUB: só se o HUB deu o escopo de jobs E o refresh token */
+function acessoHub(corpo, sub) {
+  const escopos = String((corpo && corpo.scope) || '').split(' ');
+  if (!escopos.includes(ESCOPO_JOBS) || typeof corpo.refresh_token !== 'string' || typeof corpo.access_token !== 'string') return null;
+  const agora = Math.floor(Date.now() / 1000);
+  return { sub, rt: corpo.refresh_token, at: corpo.access_token, atExp: agora + Math.min(Number(corpo.expires_in) || 0, 3600), exp: agora + SESSAO_S };
+}
+
+async function trocarCodigo(cfg, code, verificador, nonce, retorno) {
+  const { status, corpo } = await pedirToken(cfg, { grant_type: 'authorization_code', code, code_verifier: verificador, redirect_uri: retorno });
   if (status !== 200 || !corpo || typeof corpo.id_token !== 'string') throw new Error('recusado: ' + ((corpo && corpo.error) || status));
-  return conferirIdToken(cfg, corpo.id_token, nonce);
+  const quem = await conferirIdToken(cfg, corpo.id_token, nonce);
+  return { quem, hub: acessoHub(corpo, quem.sub) };
 }
 
 const novoValor = () => crypto.randomBytes(32).toString('base64url');
@@ -265,6 +312,8 @@ async function entrar(req, res) {
   const volta = voltaSegura(url.searchParams.get('volta'));
   /* "Criar conta" no Carro = criar a conta Absolute ZRO, lá no HUB */
   const criar = url.searchParams.get('criar') === '1';
+  /* o HUB recusou o escopo de jobs (ainda não o conhece): entra sem ele */
+  const basico = url.searchParams.get('basico') === '1';
   if (!cfg.ligado) return ir(res, 303, comMarca(volta, 'indisponivel'));
   const state = novoValor(), nonce = novoValor(), verificador = novoValor();
   const desafio = crypto.createHash('sha256').update(verificador).digest('base64url');
@@ -278,14 +327,14 @@ async function entrar(req, res) {
   u.searchParams.set('response_type', 'code');
   u.searchParams.set('client_id', cfg.clientId);
   u.searchParams.set('redirect_uri', origem + '/api/zro/callback');
-  u.searchParams.set('scope', ESCOPOS);
+  u.searchParams.set('scope', basico ? ESCOPOS_BASE : ESCOPOS);
   u.searchParams.set('state', state);
   u.searchParams.set('nonce', nonce);
   u.searchParams.set('code_challenge', desafio);
   u.searchParams.set('code_challenge_method', 'S256');
   if (criar) u.searchParams.set('prompt', 'create');
   const exp = Math.floor(Date.now() / 1000) + IDA_S;
-  const ida = selar({ state, nonce, verificador, volta, origem, exp }, cfg.clientSecret, COOKIE_IDA);
+  const ida = selar({ state, nonce, verificador, volta, origem, basico, criar, exp }, cfg.clientSecret, COOKIE_IDA);
   return ir(res, 302, u.toString(), [cookie(COOKIE_IDA, ida, { path: '/api/zro', maxAge: IDA_S, seguro: seguro(origem) })]);
 }
 
@@ -308,18 +357,23 @@ async function callback(req, res) {
   const iss = url.searchParams.get('iss');
   if (iss !== null && iss !== cfg.issuer) return falhar('erro');
   const erro = url.searchParams.get('error');
+  if (erro === 'invalid_scope' && !ida.basico)
+    return ir(res, 303, '/api/zro/entrar?basico=1&volta=' + encodeURIComponent(volta) + (ida.criar ? '&criar=1' : ''), [limpar]);
   if (erro) return falhar(erro === 'access_denied' ? 'recusado' : 'erro');
   const code = url.searchParams.get('code');
   if (!code) return falhar('erro');
-  let quem;
+  let quem, hub;
   try {
-    quem = await trocarCodigo(cfg, code, ida.verificador, ida.nonce, origem + '/api/zro/callback');
+    ({ quem, hub } = await trocarCodigo(cfg, code, ida.verificador, ida.nonce, origem + '/api/zro/callback'));
   } catch (e) {
     return falhar('erro');
   }
   const exp = Math.floor(Date.now() / 1000) + SESSAO_S;
   const sessao = selar({ sub: quem.sub, nome: quem.nome, email: quem.email, org: quem.organizacao, produtos: quem.produtos, exp }, cfg.clientSecret, COOKIE_SESSAO);
-  return ir(res, 303, comMarca(volta, 'entrou'), [limpar, cookie(COOKIE_SESSAO, sessao, { path: '/', maxAge: SESSAO_S, seguro: seguro(origem) })]);
+  const cookieHub = hub
+    ? cookie(COOKIE_HUB, cifrar(hub, cfg.clientSecret), { path: '/api/zro', maxAge: SESSAO_S, seguro: seguro(origem) })
+    : cookie(COOKIE_HUB, '', { path: '/api/zro', maxAge: 0, seguro: seguro(origem) });
+  return ir(res, 303, comMarca(volta, 'entrou'), [limpar, cookie(COOKIE_SESSAO, sessao, { path: '/', maxAge: SESSAO_S, seguro: seguro(origem) }), cookieHub]);
 }
 
 /** GET /api/zro/eu — quem está na sessão, ou 401 */
@@ -333,6 +387,7 @@ function eu(req, res) {
      onde o direito de uso é lido — nunca "liberado" nem "bloqueado" no chute */
   if (!Array.isArray(s.produtos)) return json(res, 401, { erro: 'sem_sessao' });
   const produtos = s.produtos.filter(p => typeof p === 'string');
+  const h = decifrar(lerCookie(req, COOKIE_HUB), cfg.clientSecret);
   return json(res, 200, {
     sub: s.sub,
     nome: s.nome || null,
@@ -340,19 +395,161 @@ function eu(req, res) {
     organizacao: s.org || null,
     produtos,
     liberado: produtos.includes(PRODUTO),
+    /* dá para levar job e equipe ao HUB a partir daqui */
+    hub: !!(h && h.sub === s.sub),
   });
 }
 
 /** POST /api/zro/sair — apaga a sessão deste site (não a do HUB) */
-function sair(req, res) {
+async function sair(req, res) {
   if (req.method !== 'POST') return json(res, 405, { erro: 'metodo' }, { Allow: 'POST' });
   const origem = origemDe(req);
   if (!origem) return json(res, 400, { erro: 'origem' });
   /* pedido de outro site não derruba a sessão de ninguém */
   const de = req.headers.origin;
   if (de && de !== origem) return json(res, 403, { erro: 'origem' });
-  res.writeHead(204, { 'Cache-Control': 'no-store', 'Set-Cookie': [cookie(COOKIE_SESSAO, '', { path: '/', maxAge: 0, seguro: seguro(origem) })] });
+  /* o refresh token do HUB morre junto: revoga lá (sem esperar resposta boa) e apaga aqui */
+  const cfg = config();
+  const h = cfg.ligado ? decifrar(lerCookie(req, COOKIE_HUB), cfg.clientSecret) : null;
+  if (h)
+    try {
+      const d = await descobrir(cfg);
+      if (d.revocation_endpoint)
+        await buscarJson(d.revocation_endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded', Authorization: basicDe(cfg) },
+          body: new URLSearchParams({ token: h.rt, token_type_hint: 'refresh_token' }).toString(),
+        });
+    } catch (e) {}
+  res.writeHead(204, {
+    'Cache-Control': 'no-store',
+    'Set-Cookie': [
+      cookie(COOKIE_SESSAO, '', { path: '/', maxAge: 0, seguro: seguro(origem) }),
+      cookie(COOKIE_HUB, '', { path: '/api/zro', maxAge: 0, seguro: seguro(origem) }),
+    ],
+  });
   res.end();
+}
+
+/* ---------------- job e equipe → projeto no HUB ---------------- */
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const DATA = /^\d{4}-\d{2}-\d{2}$/;
+const corte = (v, n) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, n) : undefined);
+
+/** monta o carro-do-freela.job/1 só com o que o contrato aceita; o resto do pedido é ignorado */
+function montarJob(j) {
+  if (!j || typeof j !== 'object') return null;
+  const job_id = corte(j.id, 200), title = corte(j.titulo, 160);
+  if (!job_id || !/^[A-Za-z0-9._:-]+$/.test(job_id) || !title) return null;
+  const datas = (Array.isArray(j.datas) ? j.datas : [])
+    .filter(d => d && DATA.test(d.data))
+    .slice(0, 60)
+    .map(d => Object.assign({ date: d.data }, corte(d.rotulo, 120) ? { label: corte(d.rotulo, 120) } : {}));
+  const funcoes = (Array.isArray(j.funcoes) ? j.funcoes : [])
+    .filter(f => f && corte(f.funcao, 80) && Number.isInteger(f.quantas) && f.quantas > 0 && f.quantas <= 200)
+    .slice(0, 40)
+    .map(f => ({ role: corte(f.funcao, 80), count: f.quantas }));
+  const refs = (Array.isArray(j.referencias) ? j.referencias : []).filter(u => typeof u === 'string' && /^https:\/\/[^\s]{3,1990}$/.test(u)).slice(0, 20);
+  const job = { contract: 'carro-do-freela.job/1', job_id, title, dates: datas, crew_roles: funcoes, references: refs };
+  for (const [k, de, n] of [['production_type', 'tipo', 60], ['client_reference', 'cliente', 200], ['briefing', 'briefing', 20000], ['city', 'cidade', 120]])
+    if (corte(j[de], n)) job[k] = corte(j[de], n);
+  return job;
+}
+/** a equipe que tem conta na Absolute ZRO; quem não tem fica de fora (sem conta, não há convite possível) */
+function montarEquipe(jobId, lista) {
+  const membros = (Array.isArray(lista) ? lista : [])
+    .filter(m => m && UUID.test(m.conta) && typeof m.email === 'string' && /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/.test(m.email) && corte(m.funcao, 80))
+    .slice(0, 200)
+    .map(m => ({ zro_user_id: m.conta.toLowerCase(), email: m.email.trim().toLowerCase(), function: corte(m.funcao, 80), project_role: m.papel === 'editor' ? 'editor' : 'viewer' }));
+  return membros.length ? { contract: 'carro-do-freela.crew/1', job_id: jobId, members: membros } : null;
+}
+
+async function lerCorpo(req, max) {
+  let n = 0;
+  const partes = [];
+  for await (const c of req) {
+    n += c.length;
+    if (n > max) throw new Error('grande');
+    partes.push(c);
+  }
+  return JSON.parse(Buffer.concat(partes).toString('utf8'));
+}
+
+/** access token do HUB: o guardado, se ainda vale; senão troca o refresh (que roda: o novo substitui o velho) */
+async function tokenDoHub(cfg, h) {
+  const agora = Math.floor(Date.now() / 1000);
+  if (h.at && h.atExp - 60 > agora) return { at: h.at, novo: null };
+  const { status, corpo } = await pedirToken(cfg, { grant_type: 'refresh_token', refresh_token: h.rt });
+  if (status !== 200 || !corpo) return { at: null, novo: null, recusado: status === 400 || status === 401 };
+  const novo = acessoHub(corpo, h.sub);
+  return { at: novo ? novo.at : null, novo, recusado: !novo };
+}
+
+async function postarNoHub(cfg, at, caminho, corpo) {
+  return buscarJson(cfg.issuer + caminho, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + at, Accept: 'application/json' },
+    body: JSON.stringify(corpo),
+  });
+}
+
+/**
+ * POST /api/zro/enviar — { job, equipe } do navegador vira projeto no HUB.
+ * Só da própria origem, com sessão liberada e o cookie do HUB da MESMA conta.
+ * Responde { projeto: { id, link, criado }, equipe } ou um erro curto:
+ * reconectar (falta o acesso ou ele caiu), papel/plano (o HUB recusou), hub.
+ */
+async function enviar(req, res) {
+  if (req.method !== 'POST') return json(res, 405, { erro: 'metodo' }, { Allow: 'POST' });
+  const cfg = config();
+  if (!cfg.ligado) return json(res, 503, { erro: 'desligado' });
+  const origem = origemDe(req);
+  if (!origem || req.headers.origin !== origem) return json(res, 403, { erro: 'origem' });
+  if (!/^application\/json\b/.test(String(req.headers['content-type'] || ''))) return json(res, 415, { erro: 'formato' });
+  const s = abrir(lerCookie(req, COOKIE_SESSAO), cfg.clientSecret, COOKIE_SESSAO);
+  if (!s || typeof s.sub !== 'string' || !Array.isArray(s.produtos)) return json(res, 401, { erro: 'sem_sessao' });
+  if (!s.produtos.includes(PRODUTO)) return json(res, 403, { erro: 'plano' });
+  const h = decifrar(lerCookie(req, COOKIE_HUB), cfg.clientSecret);
+  const apagar = cookie(COOKIE_HUB, '', { path: '/api/zro', maxAge: 0, seguro: seguro(origem) });
+  if (!h || h.sub !== s.sub) return json(res, 401, { erro: 'reconectar' }, h ? { 'Set-Cookie': [apagar] } : {});
+  let pedido;
+  try {
+    pedido = await lerCorpo(req, 64 * 1024);
+  } catch (e) {
+    return json(res, 400, { erro: 'pedido' });
+  }
+  const job = montarJob(pedido && pedido.job);
+  if (!job) return json(res, 400, { erro: 'pedido' });
+  const equipe = montarEquipe(job.job_id, pedido.equipe);
+
+  const t = await tokenDoHub(cfg, h);
+  if (!t.at) return json(res, t.recusado ? 401 : 502, { erro: t.recusado ? 'reconectar' : 'hub' }, t.recusado ? { 'Set-Cookie': [apagar] } : {});
+  /* a partir daqui o refresh já rodou: o cookie novo vai em TODA resposta */
+  const extra = t.novo ? { 'Set-Cookie': [cookie(COOKIE_HUB, cifrar(t.novo, cfg.clientSecret), { path: '/api/zro', maxAge: SESSAO_S, seguro: seguro(origem) })] } : {};
+  const recusa = r => {
+    const c = String((r.corpo && r.corpo.error) || '');
+    if (r.status === 401) return 'reconectar';
+    if (/^(entitlement_required|feature_not_included|product_unavailable)$/.test(c)) return 'plano';
+    return { forbidden_role: 'papel', email_not_verified: 'email', no_active_organization: 'organizacao' }[c] || 'hub';
+  };
+
+  const rj = await postarNoHub(cfg, t.at, '/api/v1/carro-do-freela/jobs', job);
+  if ((rj.status !== 200 && rj.status !== 201) || !rj.corpo || !UUID.test(String(rj.corpo.projectId)))
+    return json(res, [401, 403, 409].includes(rj.status) ? rj.status : 502, { erro: recusa(rj) }, extra);
+  const id = rj.corpo.projectId;
+  const saida = { projeto: { id, link: cfg.issuer + '/projetos/' + id, criado: rj.status === 201 }, equipe: null };
+  if (equipe) {
+    const re = await postarNoHub(cfg, t.at, '/api/v1/carro-do-freela/jobs/crew', equipe);
+    saida.equipe =
+      re.status === 200 && re.corpo && Array.isArray(re.corpo.members)
+        ? {
+            membros: re.corpo.members.map(m => ({ conta: m.zro_user_id, funcao: m.function, estado: m.status })),
+            emailEnviado: re.corpo.emailDelivery === true,
+          }
+        : { erro: recusa(re) };
+  }
+  return json(res, 200, saida, extra);
 }
 
 /* cada função responde 500 curto em vez de derrubar o processo */
@@ -370,6 +567,7 @@ module.exports = {
   callback: protegido(callback),
   eu: protegido(eu),
   sair: protegido(sair),
+  enviar: protegido(enviar),
   /* para os testes */
-  _interno: { abrir, selar, voltaSegura, origemDe, conferirIdToken, config, esquecer: () => (cache = { descoberta: null, chaves: null }), COOKIE_IDA, COOKIE_SESSAO, ORIGENS, PRODUTO },
+  _interno: { abrir, selar, cifrar, decifrar, montarJob, montarEquipe, COOKIE_HUB, voltaSegura, origemDe, conferirIdToken, config, esquecer: () => (cache = { descoberta: null, chaves: null }), COOKIE_IDA, COOKIE_SESSAO, ORIGENS, PRODUTO },
 };

@@ -50,6 +50,22 @@ if (!lista.length) {
 }
 fs.mkdirSync(path.join(DIR, 'saida'), { recursive: true });
 
+/* ⚠️ QUATRO SUÍTES LEEM OS SETE BUILDS, NÃO O FONTE (26/out · 3). `versoes`,
+   `fase1-sem-dinheiro`, `seguranca` e `tela-de-inicio` abrem public/fase-N.html,
+   e `npm run build` só escreve o index: com as fases de outro dia no disco
+   elas reprovavam (ou, pior, passavam contra arquivo velho). Quando alguma
+   delas está na lista, o arnês gera os sete builds antes — os mesmos do
+   `npm run build:fases`, ~4 s. CDF_SEM_BUILD=1 pula (para testar um build
+   feito à mão, como o anônimo). */
+const DAS_FASES = ['fase1-sem-dinheiro', 'seguranca', 'tela-de-inicio', 'versoes'];
+if (process.env.CDF_SEM_BUILD !== '1' && lista.some(f => DAS_FASES.includes(f.replace(/\.js$/, '')))) {
+  const t0 = Date.now();
+  for (const f of [0, 1, 2, 3, 4, 5, 6])
+    require('child_process').execFileSync(process.execPath, [path.join(DIR, '..', 'src', 'build.js')].concat(f ? ['--fase=' + f] : []),
+      { cwd: path.join(DIR, '..'), stdio: ['ignore', 'ignore', 'inherit'], env: ENV });
+  console.log('\nos sete builds (completo + seis fases) gerados em ' + ((Date.now() - t0) / 1000).toFixed(1) + 's');
+}
+
 const roda = f => new Promise(res => {
   const t0 = Date.now();
   execFile(process.execPath, [path.join(DIR, f)], { timeout: 240000, maxBuffer: 32 * 1024 * 1024, env: ENV },

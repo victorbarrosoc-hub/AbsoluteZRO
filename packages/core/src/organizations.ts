@@ -5,7 +5,7 @@ import { pgErrorCode, PG, type Database } from '@zro/db'
 import { audit, DomainError } from '@zro/observability'
 import { ADMIN_ROLES, authorize, requireUser, type OrgRole } from './authz'
 
-const INVITE_TTL_MS = 7 * 24 * 3_600_000
+export const INVITE_TTL_MS = 7 * 24 * 3_600_000
 
 export function slugify(name: string): string {
   const base = name
@@ -123,15 +123,26 @@ export async function acceptInvitation(db: Database, auth: Authenticated | null,
   if (!TOKEN_FORMAT.invite.test(token)) throw new DomainError('not_found', 'Convite inválido ou vencido.')
   const orgId = await db.asSystem('org: aceitar convite', async (tx) => {
     const [inv] = await tx`
-      select i.id, i.org_id, i.email, i.role from zro.invitations i join zro.organizations o on o.id = i.org_id
+      select i.id, i.org_id, i.email, i.role, i.project_id, i.project_role, i.project_function, i.invitee_user_id, i.invited_by
+      from zro.invitations i join zro.organizations o on o.id = i.org_id
       where i.token_hash = ${hashToken(token)} and i.accepted_at is null and i.revoked_at is null and i.expires_at > now() and o.status = 'active'
       for update of i`
     if (!inv) throw new DomainError('not_found', 'Convite inválido ou vencido.')
     if (inv.email !== auth!.user.email) throw new DomainError('forbidden_role', 'Este convite foi enviado para outro e-mail.')
+    if (inv.invitee_user_id && inv.invitee_user_id !== userId) throw new DomainError('forbidden_role', 'Este convite foi enviado para outra conta.')
+    // Convite de convidado nunca rebaixa quem já é da organização: só entra no projeto.
     await tx`
       insert into zro.memberships (org_id, user_id, role) values (${inv.org_id as string}, ${userId}, ${inv.role as string})
       on conflict (org_id, user_id) do update set status = 'active',
-        role = case when zro.memberships.role = 'owner' then 'owner' else excluded.role end`
+        role = case when zro.memberships.role = 'owner' then 'owner'
+                    when excluded.role = 'guest' and zro.memberships.status = 'active' then zro.memberships.role
+                    else excluded.role end`
+    if (inv.project_id)
+      await tx`
+        insert into zro.project_members (project_id, user_id, role, function, added_by)
+        select p.id, ${userId}, ${inv.project_role as string}, ${(inv.project_function as string) ?? null}, ${inv.invited_by as string} from zro.projects p
+        where p.id = ${inv.project_id as string} and p.org_id = ${inv.org_id as string}
+        on conflict (project_id, user_id) do update set role = excluded.role, function = coalesce(excluded.function, zro.project_members.function)`
     await tx`update zro.invitations set accepted_at = now(), accepted_by = ${userId} where id = ${inv.id as string}`
     await audit(tx, {
       orgId: inv.org_id as string,
@@ -139,7 +150,7 @@ export async function acceptInvitation(db: Database, auth: Authenticated | null,
       action: 'member.joined',
       targetType: 'invitation',
       targetId: inv.id as string,
-      metadata: { role: inv.role },
+      metadata: { role: inv.role, ...(inv.project_id ? { project_id: inv.project_id } : {}) },
     })
     return inv.org_id as string
   })

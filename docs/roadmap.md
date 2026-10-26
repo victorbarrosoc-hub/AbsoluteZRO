@@ -66,12 +66,20 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ✅ SOBEDESCE → HUB: resumo `descargas.jsonl` v1 + relatórios xxHash64, prova por destino, divergência explícita.
 - ✅ HUB → Synquei: validação do manifest e prévia de organização (dry-run, IDs preservados) pela fila.
 - ✅ TPeasy ↔ HUB pelo backup JSON do próprio app.
-- ✅ Carro do Freela → HUB pelo contrato proposto `carro-do-freela.job/1`.
+- ✅ Carro do Freela → HUB (26/10/2026): o site do Carro leva o job (`carro-do-freela.job/1`, com o briefing inteiro)
+  e a equipe escalada (`carro-do-freela.crew/1`) para a organização no HUB, com o token da pessoa (escopo
+  `carro-do-freela.jobs`, Bearer nas rotas `/api/v1/carro-do-freela/jobs` e `/jobs/crew`). Quem já é da organização
+  entra na equipe do projeto; conta de fora recebe convite de **convidado** (papel `guest`, migration 0012) que só
+  abre aquele projeto, só a mesma conta aceita e nunca rebaixa ninguém. O projeto mostra a seção Equipe.
 - ✅ Eventos versionados, outbox, fila com retry/backoff, dead-letter, revisão, reprocessamento; fluxo ponta a ponta
   testado com fixtures gerados pelo código real do SOBEDESCE.
 - 🟡 NOSSOM: link e contrato `edit.timeline.ready`; passagem automática ⬜ (precisa de mudança no NOSSOM, com autorização).
 - ⬜ Synquei lendo o plano do HUB (hoje o Synquei lê o `descargas.jsonl` direto; integrar exige mudança no original).
-- ⬜ Carro do Freela emitindo jobs (o protótipo não tem backend de jobs).
+- 🟡 Carro do Freela emitindo jobs: o envio existe e é real; os jobs e a escala do protótipo ainda moram no aparelho
+  (sem banco do Carro), e a gente da prévia não tem conta Absolute ZRO (aparece como "sem conta").
+- ⛔ Tráfego pago do Carro do Freela (regra do titular): só depois de agenda, reputação e pagamento reais e do
+  consentimento registrado no banco. O cadastro já pede e grava o consentimento (versão, data, origem
+  "autodeclarado"), por enquanto no aparelho.
 - ⬜ SSO Fase 2 (HUB como provedor OIDC para as cópias) e Fase 3 (federado com originais, exige autorização).
 - ⬜ Testes de ida e volta de timeline com o editor-alvo (⛔ escolher editor).
 

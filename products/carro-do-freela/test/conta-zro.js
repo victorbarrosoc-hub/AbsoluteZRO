@@ -24,6 +24,12 @@
  *   8. sem "carro-do-freela" em zro_products a pessoa entra, mas só vê o
  *      aviso curto e a porta para a Absolute ZRO; com o produto, entra;
  *   9. conta antiga deste aparelho (sem vínculo ZRO) continua entrando.
+ *
+ * JOB → PROJETO (26/out · 3):
+ *  10. quem contrata leva o job à Absolute ZRO pelo painel do job: o HUB
+ *      recebe o job/1 com o briefing inteiro e a equipe que TEM conta; quem
+ *      não tem aparece como "sem conta", e o botão vira "Abrir". Fora do
+ *      domínio o bloco não existe.
  */
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path'), os = require('os');
@@ -42,7 +48,7 @@ function montarSaida(semFuncoes) {
   fs.cpSync(path.join(RAIZ, 'public', 'm'), path.join(saida, 'static', 'm'), { recursive: true });
   for (const f of ['apple-touch-icon.png', 'icone-192.png', 'icone-512.png', 'icone-maskable.png', 'app.webmanifest', 'og.jpg'])
     fs.copyFileSync(path.join(RAIZ, 'public', f), path.join(saida, 'static', f));
-  if (!semFuncoes) for (const n of ['entrar', 'callback', 'eu', 'sair']) {
+  if (!semFuncoes) for (const n of ['entrar', 'callback', 'eu', 'sair', 'enviar']) {
     const dir = path.join(saida, 'functions', 'api', 'zro', n + '.func');
     fs.mkdirSync(path.join(dir, 'api', 'zro'), { recursive: true });
     for (const f of [n + '.js', '_zro.js']) fs.copyFileSync(path.join(RAIZ, 'api', 'zro', f), path.join(dir, 'api', 'zro', f));
@@ -102,6 +108,7 @@ function montarSaida(semFuncoes) {
     t(r.existe && r.escondido && !r.visivel, '⟶⟶ aberto do disco, o botão da Absolute ZRO não aparece');
     t(r.form && r.google && !r.bloq, 'e a prévia segue como era: formulário e Google à vista');
     t(pedidos.length === 0, 'e o app nem pergunta por /api/zro (' + pedidos.length + ' pedidos)');
+    t(await p.evaluate(() => !zroPodeEnviar()), 'nem oferece levar job à Absolute ZRO');
     t(erros.length === 0, 'console limpo no file:// ' + erros.slice(0, 2).join(' · '));
     await ctx.close();
   }
@@ -233,6 +240,48 @@ function montarSaida(semFuncoes) {
     await p.fill('#lg-email', 'antiga@exemplo.com'); await p.fill('#lg-senha', 'segredo1');
     await p.locator('#lg-ok').click(); await p.waitForTimeout(900);
     t((await tela(p)) !== 'entrar', 'e ela entra como sempre entrou (' + (await tela(p)) + ')');
+    t(erros.length === 0, 'sem erro: ' + erros.slice(0, 2).join(' · '));
+    await ctx.close();
+  }
+
+  /* ============ 10. o job vira projeto na Absolute ZRO ============ */
+  {
+    zro.estado.proximo = { pessoa: Object.assign({}, RITA, { sub: 'zro-45' }), negar: false, adulterar: null };
+    const { ctx, p, erros } = await abrir(DOMINIO, { aceita401: true });
+    await telaEntrar(p);
+    await p.locator('[data-lgtipo="contratante"]').click();
+    await Promise.all([p.waitForURL(/\/$/, { timeout: 15000 }).catch(() => {}), p.locator('#lg-zro').click()]);
+    await p.waitForFunction(() => typeof ZRO_CONTA !== 'undefined' && ZRO_CONTA && MODO === 'contratante', null, { timeout: 15000 }).catch(() => {});
+    await p.waitForTimeout(1200);
+    t(await p.evaluate(() => ZRO_CONTA.hub === true), '⟶⟶ o login guardou o acesso para levar jobs (sem token no navegador)');
+    t(await p.evaluate(() => !/zt_|at_/.test(document.cookie)), 'nenhum token legível pelo script da página');
+    /* uma pessoa da escala com conta Absolute ZRO (as da prévia não têm) */
+    const job = await p.evaluate(() => {
+      show('jobs'); const e = meusJobs()[0]; jobAberto = e.id;
+      const x = e.equipe.find(y => y.quem !== EU.id), c = CREW.find(y => y.id === x.quem);
+      c.zro = { conta: '5a9c2e7b-1d3f-4a6b-8c0e-9f2d4b6a8c13', email: 'zeca@exemplo.com' };
+      drawJobs();
+      return { nome: e.nome, func: x.func, outros: e.equipe.filter(y => y.quem !== EU.id).length };
+    });
+    await p.waitForTimeout(300);
+    const antes = await p.evaluate(() => { const b = document.querySelector('#jb-det [data-zroenv]'), n = document.querySelector('#jb-det .jzro + .note');
+      return { bt: b && b.textContent, nota: n && n.textContent, abrir: !!document.querySelector('#jb-det .jzro a') } });
+    t(antes.bt === 'Levar para a Absolute ZRO' && !antes.abrir, '⟶⟶ no painel do job: "Levar para a Absolute ZRO" (' + antes.bt + ')');
+    t(new RegExp((job.outros - 1) + ' sem conta Absolute ZRO').test(antes.nota || ''), 'e diz quantos da escala não têm conta (' + antes.nota + ')');
+    await p.locator('#jb-det [data-zroenv]').click();
+    await p.waitForFunction(() => !!document.querySelector('#jb-det .jzro a'), null, { timeout: 15000 }).catch(() => {});
+    const enviado = [...zro.estado.jobs.values()].pop();
+    t(enviado && enviado.job.title === job.nome && /Chamada: /.test(enviado.job.briefing) && /Horário: /.test(enviado.job.briefing),
+      '⟶⟶ o HUB recebeu o job com o briefing inteiro (horário, chamada, local)');
+    t(enviado && /^cdf-/.test(enviado.job.job_id) && enviado.job.dates.length === 1, 'com id próprio do job e a data');
+    const eq = zro.estado.equipes.pop();
+    t(eq && eq.members.length === 1 && eq.members[0].zro_user_id === '5a9c2e7b-1d3f-4a6b-8c0e-9f2d4b6a8c13' && eq.members[0].function === job.func,
+      '⟶⟶ só quem tem conta vai na equipe, com a função da escala');
+    const depois = await p.evaluate(() => { const a = document.querySelector('#jb-det .jzro a'), n = document.querySelector('#jb-det .jzro + .note');
+      return { href: a && a.href, bt: document.querySelector('#jb-det [data-zroenv]').textContent, nota: n && n.textContent } });
+    t(depois.href === zro.url + '/projetos/' + enviado.projectId && depois.bt === 'Atualizar na Absolute ZRO', '⟶⟶ depois: "Abrir na Absolute ZRO" leva ao projeto');
+    t(/1 na equipe/.test(depois.nota || ''), 'e o resumo da equipe (' + depois.nota + ')');
+    t(await p.evaluate(() => { const m = MODO; MODO = 'freela'; const h = detJob(ESCALAS[0]); MODO = m; return !h.includes('data-zroenv') }), 'do lado do freela o bloco não existe');
     t(erros.length === 0, 'sem erro: ' + erros.slice(0, 2).join(' · '));
     await ctx.close();
   }

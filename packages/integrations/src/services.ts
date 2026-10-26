@@ -2,11 +2,11 @@
  * Operações de produto expostas pela API do HUB. Toda função passa pela cadeia de autorização completa
  * (@zro/core authorize) antes de tocar em dados: chamada direta sem entitlement recebe 403.
  */
-import type { Authenticated } from '@zro/auth'
+import { hashToken, newToken, normalizeEmail, type Authenticated } from '@zro/auth'
 import { consumeQuota } from '@zro/billing'
-import { addDocumentVersion, authorize, createProjectAs, EDIT_ROLES, publishEvent, setStepState } from '@zro/core'
+import { addDocumentVersion, authorize, createProjectAs, EDIT_ROLES, INVITE_TTL_MS, publishEvent, setStepState } from '@zro/core'
 import type { Database } from '@zro/db'
-import { CarroJobSchema, validateManifest, type ZroMediaManifest } from '@zro/media-contracts'
+import { CarroCrewSchema, CarroJobSchema, validateManifest, type ZroMediaManifest } from '@zro/media-contracts'
 import { audit, DomainError } from '@zro/observability'
 import { projectInputFromJob } from './carro'
 import { ROUTES } from './handlers'
@@ -313,4 +313,73 @@ export async function importCarroJob(db: Database, auth: Authenticated | null, r
     )
   })
   return { projectId, created: true }
+}
+
+export type CrewStatus = 'na_equipe' | 'convidado' | 'convite_pendente'
+
+/**
+ * Equipe da escala → equipe do projeto (carro-do-freela.crew/1). Quem já é da organização entra direto no projeto;
+ * conta da Absolute ZRO de fora recebe convite de convidado (guest), que só abre aquele projeto e só pode ser aceito
+ * pela mesma conta. Ninguém ganha cadastro novo nem papel maior do que tinha. Os tokens de convite voltam só para
+ * quem envia o e-mail (a rota), nunca na resposta ao app.
+ */
+export async function syncCarroCrew(db: Database, auth: Authenticated | null, raw: unknown) {
+  const actor = await authorize(db, auth, {
+    roles: ['owner', 'admin', 'manager'],
+    verifiedEmail: true,
+    product: { id: 'carro-do-freela', feature: 'job_import' },
+  })
+  const parsed = CarroCrewSchema.safeParse(raw)
+  if (!parsed.success)
+    throw new DomainError(
+      'invalid_input',
+      `Equipe fora do contrato carro-do-freela.crew/1: ${parsed.error.issues[0]?.path.join('.')} ${parsed.error.issues[0]?.message}`,
+    )
+  const crew = parsed.data
+  const seen = new Set<string>()
+  const people = crew.members.filter((m) => !seen.has(m.zro_user_id) && !!seen.add(m.zro_user_id))
+  return db.asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
+    const [link] = await tx`
+      select l.internal_id, p.title from zro.integration_links l join zro.projects p on p.id = l.internal_id
+      where l.org_id = ${actor.orgId} and l.product_id = 'carro-do-freela' and l.external_type = 'job' and l.external_id = ${crew.job_id}`
+    if (!link) throw new DomainError('not_found', 'Envie o job antes da equipe.')
+    const projectId = link.internal_id as string
+    const members: { zro_user_id: string; function: string; status: CrewStatus }[] = []
+    const invites: { email: string; token: string }[] = []
+    for (const m of people) {
+      const [member] = await tx`select 1 from zro.memberships where org_id = ${actor.orgId} and user_id = ${m.zro_user_id} and status = 'active'`
+      if (member) {
+        await tx`insert into zro.project_members (project_id, user_id, role, function, added_by)
+                 values (${projectId}, ${m.zro_user_id}, ${m.project_role}, ${m.function}, ${actor.userId})
+                 on conflict (project_id, user_id) do nothing`
+        members.push({ zro_user_id: m.zro_user_id, function: m.function, status: 'na_equipe' })
+        continue
+      }
+      const [pending] = await tx`
+        select 1 from zro.invitations where org_id = ${actor.orgId} and project_id = ${projectId} and invitee_user_id = ${m.zro_user_id}
+          and accepted_at is null and revoked_at is null and expires_at > now()`
+      if (pending) {
+        members.push({ zro_user_id: m.zro_user_id, function: m.function, status: 'convite_pendente' })
+        continue
+      }
+      const email = normalizeEmail(m.email)
+      const token = newToken('zi')
+      const [inv] = await tx`
+        insert into zro.invitations (org_id, email, role, token_hash, invited_by, expires_at, project_id, project_role, project_function, invitee_user_id)
+        values (${actor.orgId}, ${email}, 'guest', ${hashToken(token)}, ${actor.userId}, ${new Date(Date.now() + INVITE_TTL_MS)},
+                ${projectId}, ${m.project_role}, ${m.function}, ${m.zro_user_id})
+        returning id`
+      await audit(tx, {
+        orgId: actor.orgId,
+        actorUserId: actor.userId,
+        action: 'member.invited',
+        targetType: 'invitation',
+        targetId: inv!.id as string,
+        metadata: { role: 'guest', project_id: projectId, source: 'carro-do-freela' },
+      })
+      invites.push({ email, token })
+      members.push({ zro_user_id: m.zro_user_id, function: m.function, status: 'convidado' })
+    }
+    return { projectId, projectTitle: link.title as string, members, invites }
+  })
 }

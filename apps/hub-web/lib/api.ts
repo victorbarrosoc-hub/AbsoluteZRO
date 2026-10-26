@@ -1,5 +1,5 @@
 import 'server-only'
-import { authenticate, originAllowed, SESSION_COOKIE, type Authenticated } from '@zro/auth'
+import { authenticate, authenticateAccessToken, originAllowed, SESSION_COOKIE, type Authenticated } from '@zro/auth'
 import { getDatabase, type Database } from '@zro/db'
 import { createLogger, DomainError, isDomainError } from '@zro/observability'
 import { allowedOrigins } from './env'
@@ -30,15 +30,24 @@ export function errorResponse(err: unknown) {
 /**
  * Envolve uma rota da API: sessão pelo cookie, checagem de origem em mutações (CSRF) e erros de domínio com o
  * status certo. A autorização de verdade fica nos serviços (authorize), nunca aqui.
+ * `bearer`: a rota também aceita o access token de um app da família com este escopo. Token não é credencial que o
+ * navegador manda sozinho, então pedido com Bearer não passa pela checagem de origem; token inválido é 401, sem
+ * cair para o cookie.
  */
-export function route<P = Record<string, string>>(handler: (ctx: ApiContext, params: P) => Promise<Response | unknown>, opts: { mutation?: boolean } = {}) {
+export function route<P = Record<string, string>>(
+  handler: (ctx: ApiContext, params: P) => Promise<Response | unknown>,
+  opts: { mutation?: boolean; bearer?: string } = {},
+) {
   return async (req: Request, context: { params: Promise<P> }) => {
     try {
-      if (opts.mutation && !originAllowed(req.headers, req.url, allowedOrigins)) {
+      const authorization = req.headers.get('authorization')
+      const viaToken = !!opts.bearer && !!authorization?.startsWith('Bearer ')
+      if (opts.mutation && !viaToken && !originAllowed(req.headers, req.url, allowedOrigins)) {
         throw new DomainError('origin_rejected', 'Pedido de outra origem recusado.')
       }
       const db = getDatabase()
-      const auth = await authenticate(db, readCookie(req, SESSION_COOKIE))
+      const auth = viaToken ? await authenticateAccessToken(db, authorization, opts.bearer!) : await authenticate(db, readCookie(req, SESSION_COOKIE))
+      if (viaToken && !auth) throw new DomainError('unauthenticated', 'Token inválido, vencido ou sem permissão para esta ação.')
       const out = await handler({ db, auth, req }, await context.params)
       return out instanceof Response ? out : json(out)
     } catch (err) {

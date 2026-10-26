@@ -4,6 +4,12 @@
  * /oauth/token (confere client_secret_basic, PKCE S256, redirect_uri e uso
  * único) e JWKS. Assina o id_token com uma chave EC P-256 de verdade, gerada
  * a cada teste. `proximo.adulterar` gera respostas ruins de propósito.
+ *
+ * Desde 26/out · 3 também: o refresh token (com rotação: reapresentar um já
+ * trocado derruba a família, como o HUB), /oauth/revoke e as duas rotas do
+ * Carro na API (job/1 e crew/1) exigindo Bearer com o escopo de jobs.
+ * `semEscopoJobs` faz o authorize recusar o escopo (HUB antigo);
+ * `recusaJob`/`recusaEquipe` devolvem o erro de domínio pedido.
  */
 const crypto = require('crypto');
 const http = require('http');
@@ -12,7 +18,40 @@ async function iniciarZroFalsa(cliente) {
   const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', { namedCurve: 'P-256' });
   const jwk = Object.assign(publicKey.export({ format: 'jwk' }), { kid: 'chave-teste', alg: 'ES256', use: 'sig' });
   const codigos = new Map();
-  const estado = { proximo: { pessoa: null, negar: false, adulterar: null }, trocas: 0, ultimoAuthorize: null };
+  const refresh = new Map();
+  const acessos = new Map();
+  const estado = {
+    proximo: { pessoa: null, negar: false, adulterar: null },
+    trocas: 0,
+    ultimoAuthorize: null,
+    semEscopoJobs: false,
+    recusaJob: null,
+    recusaEquipe: null,
+    jobs: new Map(),
+    equipes: [],
+    renovacoes: 0,
+    revogados: 0,
+    atTtl: 600,
+  };
+  const emitir = (pessoa, escopo) => {
+    const at = 'at_' + crypto.randomBytes(12).toString('hex');
+    acessos.set(at, { pessoa, escopo, exp: Date.now() + estado.atTtl * 1000 });
+    const out = { access_token: at, token_type: 'Bearer', expires_in: estado.atTtl, scope: escopo };
+    if (escopo.split(' ').includes('offline_access')) {
+      out.refresh_token = 'zt_' + crypto.randomBytes(12).toString('hex');
+      refresh.set(out.refresh_token, { pessoa, escopo, usado: false });
+    }
+    return out;
+  };
+  const lerJson = async req => {
+    let t = '';
+    for await (const c of req) t += c;
+    return JSON.parse(t);
+  };
+  const portador = req => {
+    const a = acessos.get(String(req.headers.authorization || '').replace(/^Bearer /, ''));
+    return a && a.exp > Date.now() && a.escopo.split(' ').includes('carro-do-freela.jobs') ? a : null;
+  };
   let base = '';
 
   const jwt = (dados, assinarErrado) => {
@@ -29,7 +68,13 @@ async function iniciarZroFalsa(cliente) {
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, base);
     if (url.pathname === '/.well-known/openid-configuration')
-      return responder(res, 200, { issuer: base, authorization_endpoint: base + '/oauth/authorize', token_endpoint: base + '/oauth/token', jwks_uri: base + '/oauth/jwks' });
+      return responder(res, 200, {
+        issuer: base,
+        authorization_endpoint: base + '/oauth/authorize',
+        token_endpoint: base + '/oauth/token',
+        jwks_uri: base + '/oauth/jwks',
+        revocation_endpoint: base + '/oauth/revoke',
+      });
     if (url.pathname === '/oauth/jwks') return responder(res, 200, { keys: [jwk] });
     if (url.pathname === '/oauth/authorize') {
       const q = url.searchParams;
@@ -38,11 +83,13 @@ async function iniciarZroFalsa(cliente) {
       volta.searchParams.set('state', q.get('state'));
       if (q.get('client_id') !== cliente.clientId || q.get('code_challenge_method') !== 'S256' || !q.get('nonce') || q.get('response_type') !== 'code') {
         volta.searchParams.set('error', 'invalid_request');
+      } else if (estado.semEscopoJobs && (q.get('scope') || '').includes('carro-do-freela.jobs')) {
+        volta.searchParams.set('error', 'invalid_scope');
       } else if (estado.proximo.negar || !estado.proximo.pessoa) {
         volta.searchParams.set('error', 'access_denied');
       } else {
         const code = 'zc_' + crypto.randomBytes(16).toString('hex');
-        codigos.set(code, { desafio: q.get('code_challenge'), redirectUri: q.get('redirect_uri'), pessoa: estado.proximo.pessoa, nonce: q.get('nonce'), usado: false });
+        codigos.set(code, { desafio: q.get('code_challenge'), redirectUri: q.get('redirect_uri'), pessoa: estado.proximo.pessoa, nonce: q.get('nonce'), escopo: q.get('scope') || '', usado: false });
         volta.searchParams.set('code', code);
         volta.searchParams.set('iss', estado.proximo.adulterar === 'iss-param' ? 'https://outro.exemplo' : base);
       }
@@ -55,6 +102,17 @@ async function iniciarZroFalsa(cliente) {
       const f = new URLSearchParams(corpo);
       const basic = Buffer.from(String(req.headers.authorization || '').replace(/^Basic /, ''), 'base64').toString();
       if (basic !== cliente.clientId + ':' + cliente.clientSecret) return responder(res, 401, { error: 'invalid_client' });
+      if (f.get('grant_type') === 'refresh_token') {
+        const r = refresh.get(f.get('refresh_token') || '');
+        if (!r) return responder(res, 400, { error: 'invalid_grant' });
+        if (r.usado) {
+          for (const x of refresh.values()) if (x.pessoa === r.pessoa) x.usado = true;
+          return responder(res, 400, { error: 'invalid_grant' });
+        }
+        r.usado = true;
+        estado.renovacoes++;
+        return responder(res, 200, emitir(r.pessoa, r.escopo));
+      }
       const c = codigos.get(f.get('code') || '');
       if (!c || c.usado) return responder(res, 400, { error: 'invalid_grant' });
       c.usado = true;
@@ -81,7 +139,39 @@ async function iniciarZroFalsa(cliente) {
         },
         ad === 'assinatura',
       );
-      return responder(res, 200, { access_token: 'at', token_type: 'Bearer', expires_in: 600, id_token: id, scope: 'openid email profile org' });
+      return responder(res, 200, Object.assign(emitir(c.pessoa, c.escopo), { id_token: id }));
+    }
+    if (url.pathname === '/oauth/revoke' && req.method === 'POST') {
+      let corpo = '';
+      for await (const c of req) corpo += c;
+      const r = refresh.get(new URLSearchParams(corpo).get('token') || '');
+      if (r) for (const x of refresh.values()) if (x.pessoa === r.pessoa) x.usado = true;
+      estado.revogados++;
+      return responder(res, 200, {});
+    }
+    if (url.pathname === '/api/v1/carro-do-freela/jobs' && req.method === 'POST') {
+      if (!portador(req)) return responder(res, 401, { error: 'unauthenticated' });
+      if (estado.recusaJob) return responder(res, 403, { error: estado.recusaJob });
+      const job = await lerJson(req);
+      if (job.contract !== 'carro-do-freela.job/1') return responder(res, 422, { error: 'invalid_input' });
+      const ja = estado.jobs.get(job.job_id);
+      if (ja) return responder(res, 200, { projectId: ja.projectId, created: false });
+      const projectId = crypto.randomUUID();
+      estado.jobs.set(job.job_id, { projectId, job });
+      return responder(res, 201, { projectId, created: true });
+    }
+    if (url.pathname === '/api/v1/carro-do-freela/jobs/crew' && req.method === 'POST') {
+      if (!portador(req)) return responder(res, 401, { error: 'unauthenticated' });
+      if (estado.recusaEquipe) return responder(res, 403, { error: estado.recusaEquipe });
+      const eq = await lerJson(req);
+      const j = estado.jobs.get(eq.job_id);
+      if (!j) return responder(res, 404, { error: 'not_found' });
+      estado.equipes.push(eq);
+      return responder(res, 200, {
+        projectId: j.projectId,
+        members: eq.members.map((m, i) => ({ zro_user_id: m.zro_user_id, function: m.function, status: i === 0 ? 'na_equipe' : 'convidado' })),
+        emailDelivery: true,
+      });
     }
     responder(res, 404, { error: 'not_found' });
   });
