@@ -1,5 +1,5 @@
 // Ponte mínima entre a página e o sistema (app/ponte.js usa): caminho do arquivo escolhido, a pasta do SOBEDESCE,
-// onde gravar a exportação e o vídeo, salvar o projeto. Nada mais do Node chega à página.
+// onde gravar a exportação e o vídeo, salvar o projeto, a atualização do app. Nada mais do Node chega à página.
 
 const { contextBridge, webUtils, ipcRenderer } = require('electron')
 
@@ -23,6 +23,13 @@ contextBridge.exposeInMainWorld('aiEditDesktop', {
   arquivo: { abrir: chamar('arquivo:abrir'), escrever: chamar('arquivo:escrever'), fechar: chamar('arquivo:fechar') },
   salvarProjeto: chamar('projeto:salvar'),
   mostrarNaPasta: chamar('mostrar'),
+  atualizacao: {
+    estado: chamar('atualizacao:estado'),
+    reiniciar: chamar('atualizacao:reiniciar'),
+    aoMudar(fn) {
+      ipcRenderer.on('atualizacao', (_e, st) => fn(st))
+    },
+  },
   projetos: { listar: chamar('projetos:listar'), gravar: chamar('projetos:gravar'), ler: chamar('projetos:ler'), apagar: chamar('projetos:apagar') },
 })
 

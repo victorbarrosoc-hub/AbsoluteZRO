@@ -1199,6 +1199,28 @@ ir('midia', false)
 desenharTudo()
 document.documentElement.dataset.pronto = '1'
 
+// ───────── atualização do app de computador (desktop/atualizacao.cjs) ─────────
+// A versão nova baixa sozinha; quando está pronta aparece "Reiniciar para atualizar". Sem clicar, troca ao fechar.
+const ATUALIZACAO = globalThis.aiEditDesktop?.atualizacao
+let erroAvisado = null
+function mostrarAtualizacao(st) {
+  const b = $('atualizarApp')
+  b.hidden = st?.fase !== 'pronto' && st?.fase !== 'reiniciando'
+  b.disabled = st?.fase === 'reiniciando'
+  b.textContent = st?.fase === 'reiniciando' ? 'Reiniciando…' : 'Reiniciar para atualizar'
+  b.title = st?.build ? `A versão ${st.build} já foi baixada e conferida. Se preferir, ela entra quando você fechar o app.` : ''
+  if (st?.fase === 'erro' && st.erro && st.erro !== erroAvisado) aviso((erroAvisado = st.erro))
+}
+if (ATUALIZACAO) {
+  ATUALIZACAO.aoMudar(mostrarAtualizacao)
+  ATUALIZACAO.estado().then(mostrarAtualizacao, () => {})
+  $('atualizarApp').onclick = async () => {
+    clearTimeout(gravarTimer)
+    await autosalvar() // o projeto aberto fica guardado antes de fechar
+    if (!(await ATUALIZACAO.reiniciar())) aviso('Não deu para reiniciar agora. A versão nova entra quando você fechar o app.')
+  }
+}
+
 // ───────── aviso ─────────
 
 let avisoTimer = null

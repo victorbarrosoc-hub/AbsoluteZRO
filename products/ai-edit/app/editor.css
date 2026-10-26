@@ -2075,3 +2075,12 @@ select {
 html:not([data-conta]) body {
   visibility: hidden;
 }
+
+/* ───────── atualização do app ───────── */
+.atualizar-app {
+  min-height: 32px;
+  height: 32px;
+  padding: 0 14px;
+  font-size: 13px;
+  animation: surgir 0.45s var(--mola) both;
+}

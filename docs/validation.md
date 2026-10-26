@@ -647,6 +647,18 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   nonce, emissor, público e assinatura, login desligado → 503) e o teste de tela "só com conta" (sem sessão o editor vai
   para `entrar.html?volta=/app/`; com sessão o menu mostra a pessoa).
 
+## AEON: tirar mídia, selecionar várias e atualização sozinha (26/10/2026)
+
+- Tirar mídia: `test/nucleo.test.js` (some a mídia, os clipes, a transcrição, as propostas e as correções; uma ou
+  várias; desfazer devolve) e a tela "projeto novo" (× no cartão, Selecionar → marcar duas → Tirar do projeto → ⌘Z).
+- Atualização sozinha: `test/atualizacao.test.js` **8/8** com o sistema falso (baixa e prepara no Mac e no Windows,
+  SHA-256 diferente não instala, mesma versão não baixa, desligada fora de Aplicativos/sem permissão/em
+  desenvolvimento, script da troca com e sem reabrir, marca de falha trava a mesma versão). Smoke do Electron ok.
+- Instalador do Terminal conferido de ponta a ponta com os comandos do Mac simulados no Linux (build 8 baixado,
+  SHA-256 conferido, `AEON.app` em Aplicativos). Site: download direto com o passo da quarentena, 390 px sem rolagem
+  lateral.
+- Não validado: a troca de verdade num Mac e num Windows (só dá para ver do build 9 para o 10).
+
 ## Página inicial de cinema (26/10/2026, estrutura escolhida pelo titular)
 
 - Topo: paisagem em preto e branco com o símbolo esculpido em metal sobre a rocha, gerada no Higgsfield (GPT Image
