@@ -16,7 +16,7 @@ Três abas, como no iOS:
 | --- | --- |
 | **Roteiros** | Lista com ícones coloridos, filtros (Roteiros, Recentes, Favoritos), busca e botão de novo roteiro |
 | **Teleprompter** | Perfis por TP, prévia ao vivo da área, botões Área e Ler, tamanho, velocidade, espelho e todos os ajustes |
-| **Ajustes** | Conta e sincronização, nome, sons, backup e instalação |
+| **Ajustes** | Conta e sincronização, nome, sons, backup, instalação e a família Absolute ZRO (ícone e nome de cada app) |
 
 Visual claro com modo escuro automático; o TP é sempre escuro.
 

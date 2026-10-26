@@ -834,6 +834,37 @@ html.scrolled .topbar-title {
   height: 15px;
   color: var(--text-3);
 }
+
+/* família Absolute ZRO (Ajustes): ícone e nome de cada app, como no menu do Revela */
+.familia {
+  display: grid;
+}
+.familia-label {
+  padding-top: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.row.fam {
+  min-height: 44px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  gap: 14px;
+}
+.fam img {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  object-fit: contain;
+  flex: none;
+}
+.fam span {
+  flex: 1;
+}
+.row.fam + .row.fam::before {
+  left: 52px;
+}
 .keys {
   display: grid;
   gap: 10px;

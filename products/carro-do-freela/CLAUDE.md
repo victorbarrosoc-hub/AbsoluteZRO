@@ -98,6 +98,23 @@ arquivado. Três consequências que valem para toda leva daqui em diante:
 
 Tudo — envs, Root Directory, fluxo — em `ORIGEM.md`.
 
+## 26/out — a família Absolute ZRO no menu
+
+Pedido do titular, do bloco que ele gostou no menu do Revela: ícone + nome de
+cada app da família, levando ao app, em ordem alfabética (pedido do titular,
+26/out): Absolute ZRO, Nossom, Revela, Sobedesce, Synquei, TPEasy — igual na
+lateral e na gaveta. O Carro do Freela fica de fora (é onde a pessoa
+está); o AI Edit também (em desenvolvimento). No computador o bloco mora no
+pé da lateral (`.ladofam`, vira só ícone com a lateral recolhida); no
+celular, na gaveta (`#g-fam`, escondido no computador para não repetir).
+Não são `.tab` nem `.gitem`: não abrem tela daqui, e as suítes contam essas
+classes. Os ícones são cópias em `src/midia/familia-*` (cada app publica
+sozinho; nada de buscar no domínio de outro), citados no template por
+`"midia:<nome>"` — o `build.js` agora resolve esse marcador também no
+template, e nome que falta reprova o build. SVG ganhou tipo em
+`test/_servir.js` e `src/servir-saida.js`, e entra na conferência de mídia
+citada do `vercel-build.js`.
+
 ## Como o projeto é construído
 
 Um HTML sem framework, sem CDN, sem requisição externa — **mais a pasta

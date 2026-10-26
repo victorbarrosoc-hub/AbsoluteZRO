@@ -120,3 +120,48 @@ test('the installation action is hidden when opened as an iOS home-screen app', 
     page.getByRole('button', { name: 'Adicionar à Tela de Início', exact: true }),
   ).toHaveCount(0);
 });
+test('the studio menu lists the Absolute ZRO family with real icons, on desktop and phone', async ({
+  page,
+}) => {
+  await page.goto('/studio');
+  const family = page.getByRole('navigation', { name: 'Absolute ZRO', exact: true });
+  const apps = ['Absolute ZRO', 'Carro do Freela', 'Revela', 'Sobedesce', 'Synquei', 'TPEasy'];
+  await expect(family.getByRole('link')).toHaveText(apps);
+  for (const name of apps) {
+    const link = family.getByRole('link', { name, exact: true });
+    await expect(link).toBeVisible();
+    await expect(link).toHaveAttribute('href', /^https:\/\//);
+    await expect(link).toHaveAttribute('target', '_blank');
+  }
+  await expect(family.getByRole('link', { name: 'NOSSOM' })).toHaveCount(0);
+  await expect
+    .poll(() =>
+      family
+        .locator('img')
+        .evaluateAll((images) =>
+          images.every((image) => (image as HTMLImageElement).naturalWidth > 0),
+        ),
+    )
+    .toBe(true);
+  await mkdir('artifacts', { recursive: true });
+  await page
+    .locator('#studio-navigation')
+    .screenshot({ path: 'artifacts/estudio-familia-desktop.png' });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Abrir navegação', exact: true }).click();
+  await family.getByRole('link', { name: 'Carro do Freela', exact: true }).scrollIntoViewIfNeeded();
+  await expect(family.getByRole('link', { name: 'Carro do Freela', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const { default: AxeBuilder } = await import('@axe-core/playwright');
+  expect(
+    (
+      await new AxeBuilder({ page })
+        .include('.family-nav')
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+        .analyze()
+    ).violations,
+  ).toEqual([]);
+  await page
+    .locator('#studio-navigation')
+    .screenshot({ path: 'artifacts/estudio-familia-mobile.png' });
+});

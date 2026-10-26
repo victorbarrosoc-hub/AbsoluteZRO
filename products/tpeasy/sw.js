@@ -1,5 +1,5 @@
 // TPeasy: funciona sem internet no set. Busca a versão nova quando há rede e cai na cópia guardada quando não há.
-const CACHE = "tpeasy-v10";
+const CACHE = "tpeasy-v12";
 const FILES = [
   "/",
   "/site.css",
@@ -25,6 +25,12 @@ const FILES = [
   "/icons/apple-touch-icon.png",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
+  "/icons/familia/absolute-zro.webp",
+  "/icons/familia/revela.svg",
+  "/icons/familia/sobedesce.svg",
+  "/icons/familia/synquei.svg",
+  "/icons/familia/nossom.svg",
+  "/icons/familia/carro-do-freela.png",
 ];
 
 self.addEventListener("install", (e) => {
