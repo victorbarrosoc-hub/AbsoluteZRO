@@ -36,7 +36,7 @@ export function montarTrilho(acoes) {
     item({ nome: 'Abrir projeto', icone: 'abrir', acao: acoes.abrir, dica: 'Abrir projeto (⌘O)' }),
     item({ nome: 'Salvar cópia', icone: 'salvar', acao: acoes.salvar, dica: 'Salvar uma cópia do projeto em arquivo (⌘S)' }),
     el('p', { className: 'trilho-grupo', textContent: 'Conta' }),
-    item({ nome: 'Entrar', icone: 'conta', href: CONTA.entrar, dica: 'Entrar com a conta Absolute ZRO' }),
+    item({ nome: 'Entrar', icone: 'conta', href: globalThis.aiEditDesktop ? CONTA.entrar : '../entrar.html?volta=%2Fapp%2F', dica: 'Entrar com a conta Absolute ZRO' }),
     el('p', { className: 'trilho-grupo', textContent: 'Absolute ZRO' }),
     ...FAMILIA.map((f) => item({ nome: f.nome, img: iconeDe(f, '../'), href: f.href, dica: `${f.nome} · ${f.papel}` })),
   )

@@ -42,6 +42,15 @@
           "value": "public, max-age=86400"
         }
       ]
+    },
+    {
+      "source": "/api/zro/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
     }
   ]
 }

@@ -1,10 +1,11 @@
 // O site do AEON: a marca sai do mesmo código do app (src/marca.js), o menu recolhível e o caminho do ecossistema saem
-// da mesma lista da família (src/familia.js). Motion só com propósito (a cena acende do escuro, o MacBook se endireita com a
-// rolagem, a salina se abre como um trecho da linha do tempo, o estúdio recua) e nada disso com "reduzir movimento".
+// da mesma lista da família (src/familia.js). Motion só com propósito (a cena acende do escuro, as seções entram com um fade curto na
+// rolagem: nada fica preso na tela) e nada disso com "reduzir movimento".
 // A estrela da abertura está dentro da cena (imagem e vídeo do Higgsfield), não desenhada por cima.
 
 import { simbolo, wordmark } from '../src/marca.js'
 import { FAMILIA, iconeDe } from '../src/familia.js'
+import { mostrarConta } from './conta.js'
 
 const $ = (s, r = document) => r.querySelector(s)
 const $$ = (s, r = document) => [...r.querySelectorAll(s)]
@@ -34,6 +35,8 @@ function tema(t) {
 }
 $('#tema').addEventListener('click', () => tema(claro() ? 'dark' : 'light'))
 tema(document.documentElement.dataset.theme)
+
+mostrarConta()
 
 // ───────── menu recolhível ─────────
 const menu = $('#menu')
@@ -96,37 +99,10 @@ $('#caminho').replaceChildren(
   }),
 )
 
-// ───────── rolagem: barra de vidro, hero e MacBook ─────────
+// ───────── rolagem: só a barra vira vidro; as seções entram com um fade curto ─────────
 const nav = $('#nav')
-const hero = $('.hero')
-const mac = $('#mac')
-const faixa = $('#faixa')
-const pausa = $('#pausa')
-const QPS = 24
-const tc = (q) => [Math.floor(q / (3600 * QPS)), Math.floor(q / (60 * QPS)) % 60, Math.floor(q / QPS) % 60, q % QPS].map((n) => String(n).padStart(2, '0')).join(':')
-/** progresso 0→1 de uma seção alta com palco fixo (sticky) */
-const progresso = (sec) => {
-  const r = sec.getBoundingClientRect()
-  return Math.min(1, Math.max(0, -r.top / (r.height - innerHeight)))
-}
-let pedido = false
-function rolar() {
-  pedido = false
-  nav.classList.toggle('rolou', scrollY > 8)
-  if (reduzir.matches) return
-  const h = hero.offsetHeight
-  hero.style.setProperty('--p', String(Math.min(1, Math.max(0, scrollY / h))))
-  const r = mac.getBoundingClientRect()
-  const p = Math.min(1, Math.max(0, (innerHeight - r.top) / (innerHeight * 0.75)))
-  mac.style.setProperty('--p', p.toFixed(3))
-  const pf = progresso(faixa)
-  faixa.style.setProperty('--p', pf.toFixed(3))
-  // o trecho que se abre tem entrada e saída de verdade: a saída anda com a rolagem
-  $('#faixaIn').textContent = tc(12 * QPS + 8)
-  $('#faixaOut').textContent = tc(12 * QPS + 8 + Math.round(pf * 9 * QPS))
-  pausa.style.setProperty('--p', progresso(pausa).toFixed(3))
-}
-addEventListener('scroll', () => pedido || ((pedido = true), requestAnimationFrame(rolar)), { passive: true })
+const rolar = () => nav.classList.toggle('rolou', scrollY > 8)
+addEventListener('scroll', rolar, { passive: true })
 rolar()
 
 const olho = new IntersectionObserver(
