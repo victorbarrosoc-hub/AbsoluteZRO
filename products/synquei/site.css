@@ -2447,3 +2447,42 @@ html.js .reveal.in {
     align-items: flex-start;
   }
 }
+
+/* Central de apps da Absolute ZRO (26/10/2026): o jeito recomendado de instalar; o download direto fica logo abaixo. */
+.zro-central {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 24px;
+  margin: 40px 0 18px;
+}
+.zro-central-mark {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  color: var(--ink);
+}
+.zro-central > div {
+  flex: 1;
+  min-width: 0;
+}
+.zro-central h3 {
+  margin: 0 0 4px;
+}
+.zro-central p {
+  margin: 0;
+  color: var(--ink-2);
+}
+.zro-central-ou {
+  margin: 0 0 12px;
+  color: var(--ink-2);
+  font-size: 0.92rem;
+}
+@media (max-width: 640px) {
+  .zro-central {
+    flex-wrap: wrap;
+  }
+  .zro-central .btn {
+    width: 100%;
+  }
+}

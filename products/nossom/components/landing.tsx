@@ -22,6 +22,7 @@ import {
 import CinematicRibbon from './cinematic-ribbon';
 import SignalField from './signal-field';
 import { Brand } from './brand';
+import { ZroSymbol } from './zro-symbol';
 import DemoPlayer from './demo-player';
 import PlanCards from './plan-cards';
 import InstallApp from './install-app';
@@ -381,6 +382,21 @@ export default function Landing() {
         <section className="home-downloads ns-wrap" id="baixar" aria-labelledby="baixar-title">
           <h2 id="baixar-title">Leve o NOSSOM com você.</h2>
           <p>No computador ou no celular, com a mesma conta.</p>
+          {/* Central de apps da Absolute ZRO: o jeito recomendado de instalar; o download direto continua abaixo. */}
+          <div className="lg zro-central">
+            <ZroSymbol size={40} />
+            <div>
+              <strong>Instale pelo Absolute ZRO</strong>
+              <small>
+                Um app só para instalar, abrir e atualizar o NOSSOM e as outras ferramentas, com a
+                mesma conta.
+              </small>
+            </div>
+            <a className="button primary" href="https://absolutezro.vercel.app/baixar#app-nossom">
+              Baixar o Absolute ZRO
+            </a>
+          </div>
+          <p className="zro-central-ou">Ou baixe só o NOSSOM:</p>
           <div className="home-downloads-grid">
             <Link href="/apps" className="lg home-download">
               <Laptop size={26} />

@@ -118,6 +118,10 @@ paths:
       summary: Criar (ou devolver) o projeto de um job — contrato carro-do-freela.job/1
       requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/CarroJob' } } } }
       responses: { '201': { description: criado }, '200': { description: já existia }, '403': { $ref: '#/components/responses/Error' } }
+  /api/v1/desktop/apps:
+    get:
+      summary: Catálogo da central de apps do computador (ferramentas, versões, arquivos por sistema e SHA-256). Público.
+      responses: { '200': { description: ok } }
   /api/v1/entitlements:
     get: { summary: Situação de cada ferramenta para a organização ativa, responses: { '200': { description: ok } } }
   /api/v1/runs:
