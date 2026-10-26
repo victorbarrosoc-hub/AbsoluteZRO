@@ -35,6 +35,8 @@ contextBridge.exposeInMainWorld('synqueiDesktop', {
     abrir: (pastaId) => ipcRenderer.invoke('org:abrir', pastaId),
     onCartao: (cb) => ouvir('synquei:org-cartao', cb),
     onEstado: (cb) => ouvir('synquei:org-estado', cb),
+    // "Abrir no Synquei" do SOBEDESCE: a pasta entrou no Organizar (a página vai para lá)
+    onAbrir: (cb) => ouvir('synquei:org-abrir', cb),
   },
   // análise da montagem (SFX · Beta): a biblioteca de sons do usuário
   sfx: {

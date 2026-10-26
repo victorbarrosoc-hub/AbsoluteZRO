@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Download, Smartphone } from "lucide-react";
 import { buttonClasses } from "@/components/ui/button";
 import { DOWNLOAD_MAC, DOWNLOAD_WINDOWS, ROTAS } from "@/lib/site";
+import { CompatStrip } from "./compat-strip";
 import { HeroStage } from "./hero-stage";
 
 /**
@@ -16,15 +17,10 @@ export function Hero() {
 
   return (
     <section aria-labelledby="hero-titulo" className="relative pt-14 pb-10 sm:pt-20 sm:pb-16 lg:py-0">
-      {/* Brilho suave atrás do título. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 -top-14 -z-10 h-[740px] bg-[radial-gradient(60%_50%_at_30%_0%,rgba(10,132,255,0.10),transparent_70%),radial-gradient(55%_45%_at_75%_5%,rgba(124,92,255,0.12),transparent_70%)]"
-      />
       <div className="lg:largura lg:grid lg:min-h-[calc(100svh-3.5rem)] lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-center lg:gap-[clamp(40px,4vw,96px)] lg:py-[clamp(40px,5svh,80px)] 2xl:min-h-[calc(100svh-4rem)]">
         <div className="mx-auto max-w-5xl px-5 text-center sm:px-8 lg:mx-0 lg:max-w-none lg:px-0 lg:text-left">
           <p className="mx-auto max-w-[22rem] animate-rise text-[15px] font-semibold text-balance text-ink-2 sm:max-w-none sm:text-[17px] lg:mx-0 2xl:text-[20px]">
-            <span className="bg-gradient-to-r from-down-text to-up-text bg-clip-text text-transparent">Brutos de câmera, cartões inteiros, projetos de edição</span>
+            Brutos de câmera, cartões inteiros, projetos de edição
           </p>
           <h1
             id="hero-titulo"
@@ -65,6 +61,9 @@ export function Hero() {
               Criar conta
               <ArrowRight aria-hidden="true" />
             </Link>
+          </div>
+          <div className="animate-rise [animation-delay:300ms]">
+            <CompatStrip />
           </div>
         </div>
 

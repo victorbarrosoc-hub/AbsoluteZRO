@@ -10,6 +10,7 @@ import { bridge, openExternal, revealLabel } from '../lib/desktop.js'
 import { copyDriveLink } from './link-share.js'
 import { FileDrop } from './drop.js'
 import { confirmDialog } from '../lib/modals.js'
+import { toast } from '../lib/toasts.js'
 import { Icon } from './icons.js'
 import { Button, FileIcon, IconButton, Pill } from './common.js'
 import { BotaoGrande, Destaque, GraficoVelocidade, Pagina, Passo, Pilulas, Resumo, Stats, Vazio } from './kit.js'
@@ -188,6 +189,17 @@ function batchSubline(type, by) {
   return parts.join(' · ')
 }
 
+/** Entrega conferida: o comprovante (sobedesce.entrega/1) que a pessoa registra no projeto do HUB. */
+async function baixarComprovante(batchId) {
+  const r = await attempt(api.post('/api/entregas/comprovante', { batchId }))
+  if (!r?.entrega) return
+  const url = URL.createObjectURL(new Blob([JSON.stringify(r.entrega, null, 2) + '\n'], { type: 'application/json' }))
+  const a = Object.assign(document.createElement('a'), { href: url, download: r.arquivo })
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 10_000)
+  toast('success', 'Registre o comprovante no projeto, em Finalização e entregas.', { title: 'Comprovante pronto' })
+}
+
 function BatchGroup({ group, rows, expanded, onToggle, limit, onMore, platform }) {
   const { batch, items, sum } = group
   const type = batch.type || items[0]?.type || 'download'
@@ -243,6 +255,9 @@ function BatchGroup({ group, rows, expanded, onToggle, limit, onMore, platform }
         ? html`<div class="batch-share">
             ${finished && check?.total && pasta.id !== 'root'
               ? html`<${Button} size="sm" icon="link" title=${`Copiar o link de “${pasta.name}” para mandar`} onClick=${() => copyDriveLink({ accountId: pasta.accountId, id: pasta.id, name: pasta.name, isFolder: true })} aria-label="Copiar link da pasta">Copiar link<span class="batch-share-long"> da pasta</span></${Button}>`
+              : null}
+            ${finished && check?.total && check.checked === items.length && pasta.id !== 'root'
+              ? html`<${Button} size="sm" variant="ghost" icon="shield" title="Comprovante da entrega (MD5 de cada arquivo e o link da pasta) para registrar no projeto da Absolute ZRO" onClick=${() => baixarComprovante(batch.id)}>Comprovante</${Button}>`
               : null}
             <${Button} size="sm" variant="ghost" icon="external" aria-label="Abrir no Drive" title=${`Abrir “${pasta.name}” no Google Drive`} onClick=${() => openExternal(pasta.id === 'root' ? 'https://drive.google.com/drive/my-drive' : driveFolderUrl(pasta.id))}>Abrir no Drive</${Button}>
           </div>`

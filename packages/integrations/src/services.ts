@@ -10,9 +10,78 @@ import { CarroJobSchema, validateManifest, type ZroMediaManifest } from '@zro/me
 import { audit, DomainError } from '@zro/observability'
 import { projectInputFromJob } from './carro'
 import { ROUTES } from './handlers'
-import { buildSobedesceManifest, parseDescargas, type DestinationInput } from './sobedesce'
+import { buildSobedesceManifest, linkDaPasta, parseDescargas, parseEntrega, type DestinationInput } from './sobedesce'
 import { planOrganization } from './synquei'
 import { scriptFromTpeasyBackup, toTpeasyBackup } from './tpeasy'
+
+// ───────────── SOBEDESCE: entrega conferida → delivery.ready ─────────────
+
+/**
+ * Registra a entrega que o SOBEDESCE subiu para o Drive com o MD5 de cada arquivo conferido (comprovante
+ * sobedesce.entrega/1). O HUB não recebe a mídia: confere o comprovante e publica delivery.ready v2 com o link da pasta.
+ * Mesma permissão e cota da importação de descarga (é um comprovante de checksum do SOBEDESCE); a chave é o id do
+ * comprovante, então registrar de novo não conta nem duplica.
+ */
+export async function importSobedesceDelivery(db: Database, auth: Authenticated | null, input: { projectId: string; entrega: string }) {
+  const actor = await authorize(db, auth, {
+    roles: EDIT_ROLES,
+    project: { id: input.projectId, access: 'edit' },
+    product: { id: 'sobedesce', feature: 'manifest_import' },
+    quota: { metric: 'sobedesce.manifest_imports' },
+  })
+  if (input.entrega.length > 20_000_000) throw new DomainError('invalid_input', 'Comprovante grande demais (máximo 20 MB).')
+  const lido = parseEntrega(input.entrega)
+  if (!lido.ok) throw new DomainError('invalid_input', lido.reason)
+  const e = lido.entrega
+  const bytes = e.arquivos.reduce((s, a) => s + a.size, 0)
+
+  const q = await db.asSystem('sobedesce: quota da entrega', (tx) =>
+    consumeQuota(tx, {
+      orgId: actor.orgId,
+      userId: actor.userId,
+      metric: 'sobedesce.manifest_imports',
+      idempotencyKey: `sobedesce-entrega:${input.projectId}:${e.id}`,
+      projectId: input.projectId,
+    }),
+  )
+  if (!q.ok) throw new DomainError(q.code, q.message)
+
+  return db.asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
+    const ev = await publishEvent(
+      tx,
+      {
+        orgId: actor.orgId,
+        projectId: input.projectId,
+        producer: 'sobedesce',
+        createdBy: actor.userId,
+        type: 'delivery.ready',
+        version: 2,
+        payload: {
+          source: 'sobedesce',
+          package_ref: `sobedesce.entrega:${e.id}`,
+          files: e.arquivos.length,
+          bytes,
+          checksum: 'md5',
+          verified: true,
+          folder_url: linkDaPasta(e.drive.pastaId),
+        },
+        idempotencyKey: `delivery.ready:sobedesce:${input.projectId}:${e.id}`,
+      },
+      ROUTES,
+    )
+    if (!ev.duplicate) {
+      await audit(tx, {
+        orgId: actor.orgId,
+        actorUserId: actor.userId,
+        action: 'sobedesce.delivery_registered',
+        targetType: 'project',
+        targetId: input.projectId,
+        metadata: { entrega: e.id, files: e.arquivos.length, bytes, origem: e.origem ?? null },
+      })
+    }
+    return { duplicate: ev.duplicate, eventId: ev.eventId, files: e.arquivos.length, bytes, folderUrl: linkDaPasta(e.drive.pastaId), pasta: e.pasta }
+  })
+}
 
 // ───────────── SOBEDESCE: importar resumo de cartão ─────────────
 
