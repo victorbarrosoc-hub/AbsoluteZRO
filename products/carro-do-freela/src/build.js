@@ -327,7 +327,14 @@ const corpo = html.slice(fStyle + 8, iScript).trim();
 const metaFase = '<meta name="cdf-fase" content="' + fase + '">';
 const folha = '<link rel="stylesheet" href="' + CSS + '">';
 const script = '<script src="' + JS + '"></script>';
-const preload = PRELOAD.map(f => '<link rel="preload" href="' + f + '" as="font" type="font/woff2" crossorigin>').join('\n');
+/* ⚠️ O PÔSTER DA CARONA É O MAIOR QUADRO DA HOME (o LCP, medido): ele é
+   pedido JÁ no HTML, com prioridade alta, junto da folha — sem esperar o
+   script. O imagesrcset deixa o navegador escolher o degrau pela largura ×
+   densidade, a mesma conta do qual(), então o script acha o arquivo pronto. */
+const posterVar = MIDIA_VAR[MIDIA['home-poster.webp']] || [];
+const preloadPoster = posterVar.length ? '<link rel="preload" as="image" fetchpriority="high" imagesizes="100vw" imagesrcset="'
+  + posterVar.map(d => d.u + ' ' + d.w + 'w').join(', ') + '">' : '';
+const preload = PRELOAD.map(f => '<link rel="preload" href="' + f + '" as="font" type="font/woff2" crossorigin>').concat(preloadPoster ? [preloadPoster] : []).join('\n');
 const pagina = '<!doctype html>\n<html lang="pt-BR">\n<head>\n' + META + '\n' + metaFase + '\n' + titulo + '\n' +
   preload + '\n' + folha + '\n</head>\n<body>\n' + corpo + '\n' + script + '\n</body>\n</html>\n';
 /* o artifact: o mesmo, sem <head> (o visualizador monta por fora) — e ele

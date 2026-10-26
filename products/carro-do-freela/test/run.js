@@ -84,7 +84,8 @@ const roda = f => new Promise(res => {
 });
 
 (async () => {
-  const JUNTAS = Math.max(1, +(process.env.JUNTAS || Math.min(4, require('os').cpus().length)));
+  /* 3 de cada vez numa máquina de 4 núcleos: o quarto fica para o Chromium */
+  const JUNTAS = Math.max(1, +(process.env.JUNTAS || Math.max(1, Math.min(3, require('os').cpus().length - 1))));
   const t0 = Date.now();
   console.log(`\nrodando ${lista.length} suíte(s) contra public/index.html` + (JUNTAS > 1 ? ` — ${JUNTAS} de cada vez, num Chromium só` : '') + '\n');
   let servidor = null;
@@ -94,15 +95,25 @@ const roda = f => new Promise(res => {
     servidor = await chromium.launchServer({ executablePath: nav.CHROME, args: nav.ARGS });
     ENV.CDF_NAVEGADOR = servidor.wsEndpoint();
   }
-  const r = [];
+  const r = [], deNovo = [];
   const fila = lista.filter(f => JUNTAS === 1 || !SOZINHAS.includes(f.replace(/\.js$/, '')));
   const depois = lista.filter(f => !fila.includes(f));
   await Promise.all(Array.from({ length: JUNTAS }, async () => {
-    while (fila.length) r.push(await roda(fila.shift()));
+    while (fila.length) { const f = fila.shift(); if (await roda(f)) r.push(true); else deNovo.push(f) }
   }));
   if (depois.length) console.log('\n  sozinhas, sem disputar a CPU:');
   for (const f of depois) r.push(await roda(f));
+  /* ⚠️ QUEM FALHOU EM PARALELO RODA DE NOVO, SOZINHA, E VALE ESTE RESULTADO.
+     Medido em 26/out: a cada rodada em paralelo caíam 3 a 6 suítes
+     DIFERENTES, todas de animação ou medida no meio do movimento, e todas
+     passavam sozinhas. Defeito de verdade falha sozinho também — então nada
+     some: a lista de quem precisou sai no fim, para alguém olhar se crescer. */
+  if (deNovo.length) {
+    console.log('\n  de novo, sozinhas (falharam em paralelo):');
+    for (const f of deNovo) r.push(await roda(f));
+  }
   if (servidor) await servidor.close();
+  if (deNovo.length) console.log('\n  precisaram rodar sozinhas: ' + deNovo.map(f => f.replace(/\.js$/, '')).join(', '));
   const maus = r.filter(x => !x).length;
   const min = ((Date.now() - t0) / 60000).toFixed(1);
   console.log(`\n${r.length - maus} de ${r.length} passaram em ${min} min` + (maus ? ` — ${maus} falharam` : '') + '\n');

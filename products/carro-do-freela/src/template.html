@@ -24935,7 +24935,9 @@ function ligarVideoHome(){
 function pintarArte3D(){
   ligarVideoHome();
   document.querySelectorAll("#v-home img[data-obj]").forEach(im=>{
-    const o=HOME3D[im.dataset.obj]; if(o&&!im.getAttribute("src")){ im.width=o.w; im.height=o.h; im.src=o.src }
+    /* (26/out) lazy: os objetos moram nos blocos abaixo da primeira tela —
+       o pôster da carona (o maior quadro da home) chega primeiro */
+    const o=HOME3D[im.dataset.obj]; if(o&&!im.getAttribute("src")){ im.width=o.w; im.height=o.h; im.loading="lazy"; im.src=o.src }
   });
   /* a banda da praça: a foto do coletivo e as miniaturas das fotos novas
      (17/out · 15); sem elas, as capas de ofício de antes (sem rosto, sem marca) */
@@ -25005,7 +25007,7 @@ function drawBento(){
       return '<div class="vsm vsm-'+st+'"><span>'+(i===0?"hoje":DIAS[d.getDay()])+'</span><b>'+pad(d.getDate())+'</b><i></i></div>';
     }).join("")+'</div><div class="vsm-leg"><span>livre</span><span class="s">segurando</span><span class="o">ocupado</span></div>';
   document.querySelectorAll("#hb-brecho img[data-cat]").forEach(im=>{
-    const u=FOTO_CAT[im.dataset.cat]; if(u&&!im.src) im.src=u;
+    const u=FOTO_CAT[im.dataset.cat]; if(u&&!im.src){ im.loading="lazy"; im.src=u }
   });
 }
 /* cada bloco anima UMA vez, quando entra na tela; sem observador ou com
@@ -25747,12 +25749,14 @@ const fotoDoTopo=nome=>HERO_ARTE[nome]||(nome==="passar"&&LOGIN_VIDEO&&LOGIN_VID
         ic.appendChild(cv);
       } else if(fo){
         const ph=document.createElement("img");
-        ph.className="pg-foto"; ph.alt=""; ph.decoding="async"; ph.src=fo;
+        /* (26/out) lazy: a tela está escondida no arranque — a foto só é
+           pedida quando ela abre, e não disputa a rede com a home */
+        ph.className="pg-foto"; ph.alt=""; ph.decoding="async"; ph.loading="lazy"; ph.src=fo;
         ic.appendChild(ph); hero.classList.add("cine-foto");
       } else {
         const im=document.createElement("img");
         im.className="pg-obj"; im.alt=""; im.setAttribute("aria-hidden","true");
-        im.decoding="async"; im.width=o.w; im.height=o.h; im.src=o.src;
+        im.decoding="async"; im.loading="lazy"; im.width=o.w; im.height=o.h; im.src=o.src;
         ic.appendChild(im);
       }
       hero.insertBefore(ic,tx); hero.classList.add("tem-obj");
@@ -25766,7 +25770,7 @@ const fotoDoTopo=nome=>HERO_ARTE[nome]||(nome==="passar"&&LOGIN_VIDEO&&LOGIN_VID
   if(bh&&fone&&!bh.querySelector(".pg-obj")){
     const im=document.createElement("img");
     im.className="pg-obj"; im.alt=""; im.setAttribute("aria-hidden","true");
-    im.decoding="async"; im.width=fone.w; im.height=fone.h; im.src=fone.src;
+    im.decoding="async"; im.loading="lazy"; im.width=fone.w; im.height=fone.h; im.src=fone.src;
     const ic=document.createElement("span"); ic.className="pg-ico"; ic.setAttribute("aria-hidden","true");
     ic.appendChild(im); bh.insertBefore(ic,bh.firstElementChild); bh.classList.add("pg-busca");
   }

@@ -202,6 +202,21 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   (mesmas rotas, chaves e CSP) antes da produção.
 - Login único nas cinco: `/api/zro/entrar` de cada domínio leva ao HUB; apps marcados como da família.
 
+## Carro do Freela: leve sem perder qualidade (26/10/2026)
+
+- Bateria (`npm run build:fases && npm run build && node test/run.js`, Chromium 1243): **86/86** em 20 min no arnês
+  paralelo (antes 38 min em série). `sem-zoom` falhou em paralelo e passou sozinha (regra do `run.js`). O "87º" da
+  contagem antiga era o `_servir.js`, ajudante sem asserção. `npm run test:api` 21/21. `node src/vercel-build.js`
+  aprovado: 7 páginas anônimas, FASE e VERSAO conferidas no HTML + script, m/ só com o que as páginas citam (279
+  arquivos, 138 MB), CSP com 1 script embutido. `scripts/scan-secrets.mjs` limpo.
+- Peso e LCP (servidor com brotli e cache longo em `m/`; celular 390@3x em 4G simulado 1,6 Mb/s/150 ms e CPU 4×):
+  1ª visita 1,7 MB → 1,37 MB e LCP 7,3 → 4,1 s; 2ª visita 852 → 173 KB e LCP 5,9 → 1,6 s. Computador: LCP 808 → 548 ms.
+- Qualidade (SSIM/PSNR contra o master sem perda remontado do Kling): carona no celular 0,923/31 dB → ~0,984/41 dB;
+  receita da montagem conferida a ~40 dB por quadro contra o vídeo antigo. Capturas lado a lado (home e login com
+  vídeo, praça, brechó e fechamento, em 1440@2x e 390@3x) entregues ao titular; o "pode subir" é dele.
+- Não feito: dividir o script por tela (40% do script roda na primeira tela, mas 838 de 840 KB são alcançáveis do
+  arranque); fica para projeto próprio, com o aval do titular.
+
 ## Carro do Freela: conta única (25/10/2026)
 
 - `npm run test:api` (HUB falso, chave EC P-256): `criar=1` → `prompt=create` (e só ele); `zro_products` sem
