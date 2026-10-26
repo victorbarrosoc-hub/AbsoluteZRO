@@ -755,3 +755,54 @@ test('CST por clipe: o relatório do Synquei vira a lista de câmeras e um scrip
   assert.deepEqual(erros, [])
   await pagina.close()
 })
+
+test('abas do dock trocam só o painel: sem recarregar, menu parado, marca desliza e o painel guarda o que estava', async () => {
+  const pagina = await navegador.newPage({ acceptDownloads: true, viewport: { width: 1280, height: 900 } })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  await pagina.goto(endereco + 'lut.html')
+  await pagina.getByRole('heading', { name: 'Revela a cor que você quer.' }).waitFor()
+  await pagina.setInputFiles('#arquivo-material', join(dir, 'meu-frame.png'))
+  await pagina.getByText('Pronto. Arraste sobre a imagem para comparar.').waitFor()
+  // marcas que um recarregamento apagaria
+  await pagina.evaluate(() => {
+    window.semRecarregar = true
+    document.getElementById('menu').dataset.mesmo = '1'
+  })
+  const dock = pagina.getByRole('navigation', { name: 'Ferramentas da Revela' })
+  const marca = pagina.locator('.abas-marca')
+  const xAntes = (await marca.boundingBox()).x
+
+  await dock.getByRole('link', { name: 'CST' }).click()
+  await pagina.waitForURL(/cst\.html$/)
+  await pagina.getByRole('heading', { name: 'Da câmera à tela.' }).waitFor()
+  assert.equal(await pagina.title(), 'Revela · Espaço de cor')
+  assert.equal(await pagina.evaluate(() => window.semRecarregar), true, 'a página recarregou')
+  assert.equal(await pagina.locator('#menu').getAttribute('data-mesmo'), '1', 'o menu foi refeito')
+  assert.equal(await pagina.locator('main').count(), 1)
+  assert.equal(await dock.locator('[aria-current="page"]').textContent(), 'CST')
+  assert.equal(await pagina.locator('#menu [aria-current="page"]').textContent(), 'CST')
+  await pagina.waitForFunction((x) => document.querySelector('.abas-marca').getBoundingClientRect().x > x + 20, xAntes)
+  // a ferramenta do painel novo funciona
+  await pagina.getByLabel('Câmera').selectOption('arri-logc4')
+  const [baixado] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Baixar LUT' }).click()])
+  assert.match(baixado.suggestedFilename(), /^revela-cst-arri-logc4-para-/)
+
+  // voltar: o LUT segue com o frame e os looks
+  await pagina.goBack()
+  await pagina.waitForURL(/lut\.html$/)
+  await pagina.getByRole('heading', { name: 'Revela a cor que você quer.' }).waitFor()
+  assert.ok(await pagina.getByText('Pronto. Arraste sobre a imagem para comparar.').isVisible(), 'o painel do LUT perdeu o frame')
+  assert.equal(await pagina.locator('#looks .look').count(), 5)
+  assert.equal(await dock.locator('[aria-current="page"]').textContent(), 'LUT')
+  // e ir de novo para o CST não roda o módulo outra vez (a câmera escolhida continua)
+  await dock.getByRole('link', { name: 'CST' }).click()
+  await pagina.getByRole('heading', { name: 'Da câmera à tela.' }).waitFor()
+  assert.equal(await pagina.getByLabel('Câmera').inputValue(), 'arri-logc4')
+  // início não é aba: vai pelo link
+  await pagina.locator('#menu').getByRole('link', { name: 'Início' }).click()
+  await pagina.waitForURL(/\/$/)
+  assert.equal(await pagina.evaluate(() => window.semRecarregar), undefined)
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})

@@ -6,7 +6,9 @@ import { DESTINOS, destino } from '../src/entrega/destinos.js'
 import { gerarScript, nomeScript } from '../src/entrega/resolve.js'
 import { ICONES, NOME_CURTO, escalonar, glifo, icones, svg } from './visual.js'
 
-const $ = (id) => document.getElementById(id)
+// o painel desta ferramenta: as abas trocam de painel sem recarregar (app/navegar.js), então tudo é procurado aqui dentro
+const raiz = document.querySelector('main')
+const $ = (id) => raiz.querySelector(`#${id}`)
 const el = (tag, { dataset, ...props } = {}, ...filhos) => {
   const n = Object.assign(document.createElement(tag), props)
   if (dataset) Object.assign(n.dataset, dataset) // dataset é só leitura no elemento: preenche por dentro
@@ -38,7 +40,7 @@ function linha(rotulo, valor) {
 
 function escolher(id) {
   const d = destino(id) ?? DESTINOS[0]
-  for (const b of document.querySelectorAll('#destinos .cartao')) {
+  for (const b of raiz.querySelectorAll('#destinos .cartao')) {
     b.setAttribute('aria-pressed', String(b.dataset.id === d.id))
     if (b.dataset.id === d.id) b.scrollIntoView({ block: 'nearest', inline: 'nearest' }) // na fileira do celular
   }

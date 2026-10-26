@@ -11,7 +11,9 @@ import { escalonar, icones } from './visual.js'
 icones()
 escalonar()
 
-const $ = (id) => document.getElementById(id)
+// o painel desta ferramenta: as abas trocam de painel sem recarregar (app/navegar.js), então tudo é procurado aqui dentro
+const raiz = document.querySelector('main')
+const $ = (id) => raiz.querySelector(`#${id}`)
 const LADO_PREVIA = 1280
 
 for (const [id, lista, padrao] of [
@@ -114,7 +116,7 @@ $('divisao').addEventListener('input', pintar)
 $('baixar').addEventListener('click', async () => {
   const botao = $('baixar')
   botao.disabled = true
-  const tamanho = Number(document.querySelector('input[name=tamanho]:checked').value)
+  const tamanho = Number(raiz.querySelector('input[name=tamanho]:checked').value)
   avisar(`Gerando a LUT de ${tamanho} pontos…`)
   await new Promise((r) => requestAnimationFrame(() => setTimeout(r)))
   const cst = atual()

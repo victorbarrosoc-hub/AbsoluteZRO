@@ -4,6 +4,7 @@
 // Computador: trilho de ícones que abre e fecha (lembrado neste navegador). Celular: gaveta que entra pela esquerda,
 // com fundo, Esc para fechar e o foco voltando ao botão.
 
+import { paginaDe } from './navegar.js'
 import { ICONES, svg } from './visual.js'
 
 const CHAVE = 'revela-menu'
@@ -119,6 +120,15 @@ function abrirGaveta(abrir) {
   gavetaAberta = abrir
   document.body.style.overflow = abrir ? 'hidden' : ''
   aplicar()
+
+// troca de aba sem recarregar (navegar.js): o menu fica, só a marca do item muda; no celular a gaveta fecha
+addEventListener('revela:pagina', (e) => {
+  for (const a of menu.querySelectorAll('.menu-item[href]')) {
+    if (paginaDe(a.href) === e.detail) a.setAttribute('aria-current', 'page')
+    else a.removeAttribute('aria-current')
+  }
+  if (gavetaAberta) abrirGaveta(false)
+})
   if (abrir) menu.querySelector('[aria-current], .menu-item')?.focus()
   else alternarTopo.focus()
 }
@@ -127,6 +137,15 @@ alternarRail.addEventListener('click', () => {
   if (LARGO.matches) {
     gravar(!ler())
     aplicar()
+
+// troca de aba sem recarregar (navegar.js): o menu fica, só a marca do item muda; no celular a gaveta fecha
+addEventListener('revela:pagina', (e) => {
+  for (const a of menu.querySelectorAll('.menu-item[href]')) {
+    if (paginaDe(a.href) === e.detail) a.setAttribute('aria-current', 'page')
+    else a.removeAttribute('aria-current')
+  }
+  if (gavetaAberta) abrirGaveta(false)
+})
   } else abrirGaveta(false)
 })
 alternarTopo.addEventListener('click', () => abrirGaveta(!gavetaAberta))
@@ -137,5 +156,23 @@ document.addEventListener('keydown', (e) => {
 LARGO.addEventListener('change', () => {
   if (gavetaAberta) abrirGaveta(false)
   else aplicar()
+
+// troca de aba sem recarregar (navegar.js): o menu fica, só a marca do item muda; no celular a gaveta fecha
+addEventListener('revela:pagina', (e) => {
+  for (const a of menu.querySelectorAll('.menu-item[href]')) {
+    if (paginaDe(a.href) === e.detail) a.setAttribute('aria-current', 'page')
+    else a.removeAttribute('aria-current')
+  }
+  if (gavetaAberta) abrirGaveta(false)
+})
 })
 aplicar()
+
+// troca de aba sem recarregar (navegar.js): o menu fica, só a marca do item muda; no celular a gaveta fecha
+addEventListener('revela:pagina', (e) => {
+  for (const a of menu.querySelectorAll('.menu-item[href]')) {
+    if (paginaDe(a.href) === e.detail) a.setAttribute('aria-current', 'page')
+    else a.removeAttribute('aria-current')
+  }
+  if (gavetaAberta) abrirGaveta(false)
+})

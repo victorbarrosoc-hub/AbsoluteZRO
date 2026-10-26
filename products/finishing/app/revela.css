@@ -1482,12 +1482,36 @@ details[open] summary::after {
 .abas a[aria-current='page'] .aba-icone {
   color: #ffd166;
 }
+/* marca da aba ativa: uma peça só, que desliza de aba em aba (app/navegar.js) */
+.abas-marca {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgb(var(--t) / 0.14), rgb(var(--t) / 0.04));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    0 0 0 1px rgb(var(--t) / 0.08);
+  pointer-events: none;
+}
+.abas.com-marca a {
+  position: relative;
+}
+.abas.com-marca a[aria-current='page'] {
+  background: none;
+  box-shadow: none;
+}
 .tela {
   padding-bottom: calc(140px + env(safe-area-inset-bottom));
 }
 @media (prefers-reduced-motion: no-preference) {
   .abas {
     animation: dock-sobe 0.7s var(--mola) both 0.15s;
+  }
+  .abas.marca-viva .abas-marca {
+    transition:
+      transform 0.45s var(--mola),
+      width 0.45s var(--mola);
   }
   .abas a {
     transition:

@@ -19,7 +19,9 @@ escalonar()
 const LADO_ANALISE = 1600 // a análise amostra até 80 mil pixels; mais que isso só gasta memória
 const LADO_PREVIA = 1280
 
-const $ = (id) => document.getElementById(id)
+// o painel desta ferramenta: as abas trocam de painel sem recarregar (app/navegar.js), então tudo é procurado aqui dentro
+const raiz = document.querySelector('main')
+const $ = (id) => raiz.querySelector(`#${id}`)
 const estado = $('estado')
 const imagens = { referencia: null, material: null }
 let analise = null // { ref, mat, nomeRef, previa: ImageData do material }
@@ -245,7 +247,7 @@ async function refazerLook() {
   await espera()
   const usar = { tom: $('usar-tom').checked, cor: $('usar-cor').checked }
   look = analise.clone ?? (preset ? criarRevelaLook({ ...usar, look: preset }) : criarLook(analise.ref, analise.mat, { ...usar, pares }))
-  document.querySelector('.rotulo-depois').textContent = preset ? look.nome : 'Depois'
+  raiz.querySelector('.rotulo-depois').textContent = preset ? look.nome : 'Depois'
   for (const b of $('looks').querySelectorAll('[data-look]'))
     b.setAttribute('aria-checked', String(b.dataset.look === (preset ?? (analise.clone ? '' : 'ref'))))
   mostrarPares()
@@ -440,7 +442,7 @@ function cancelarPegada() {
   pegando = null
   $('marcar-par').setAttribute('aria-pressed', 'false')
   $('caixa-referencia').classList.remove('pegando')
-  document.querySelector('.palco').classList.remove('pegando')
+  raiz.querySelector('.palco').classList.remove('pegando')
 }
 
 /** Posição relativa (0–1) do clique dentro da imagem que aparece, descontando as faixas pretas do `contain`. */
@@ -477,7 +479,7 @@ $('caixa-referencia')
     if (!pos) return
     pegando = { etapa: 'mat', ref: amostrar(analise.refImg, ...pos) }
     $('caixa-referencia').classList.remove('pegando')
-    document.querySelector('.palco').classList.add('pegando')
+    raiz.querySelector('.palco').classList.add('pegando')
     avisar('Agora clique na mesma coisa no seu frame (na comparação).')
   })
 
@@ -549,7 +551,7 @@ $('baixar').addEventListener('click', async () => {
   const botao = $('baixar')
   botao.disabled = true
   const editor = $('editor').value
-  const tamanho = EDITORES[editor].tamanho ?? Number(document.querySelector('input[name=tamanho]:checked').value)
+  const tamanho = EDITORES[editor].tamanho ?? Number(raiz.querySelector('input[name=tamanho]:checked').value)
   avisar(`Gerando a LUT de ${tamanho} pontos…`)
   await espera()
   const t = intensidade()
