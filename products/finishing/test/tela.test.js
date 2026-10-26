@@ -481,7 +481,7 @@ test('dock embaixo e menu recolhível: computador lembra, celular abre em gaveta
   assert.equal(await pagina.locator('#menu [aria-current="page"]').textContent(), 'CST')
   // família em ordem alfabética, como em todas as plataformas
   const familia = await pagina.locator('#menu .menu-item[href^="http"]').allTextContents()
-  assert.deepEqual(familia, ['Absolute ZRO', 'Carro do Freela', 'Nossom', 'Sobedesce', 'Synquei', 'TPEasy'])
+  assert.deepEqual(familia, ['Absolute ZRO', 'AEON', 'Carro do Freela', 'Nossom', 'Sobedesce', 'Synquei', 'TPEasy'])
   await contexto.close()
 
   const celular = await navegador.newPage({ viewport: { width: 375, height: 800 } })
@@ -508,7 +508,9 @@ test('Clonar LUT e preset Lightroom: o mesmo frame com e sem a cor vira .cube e 
   await pagina.setInputFiles('#arquivo-referencia', join(dir, 'filme.png'))
   await pagina.setInputFiles('#arquivo-material', join(dir, 'antes.png'))
   await pagina.getByText('Pronto. Arraste sobre a imagem para comparar.').waitFor()
-  assert.equal(await pagina.getByRole('button', { name: 'Conta-gotas' }).isDisabled(), true)
+  // no clone o conta-gotas sai e entra "Mais frames"
+  assert.equal(await pagina.locator('#marcar-par').isHidden(), true)
+  assert.equal(await pagina.locator('#n-frames').textContent(), '1')
   const [cube] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Baixar LUT' }).click()])
   assert.equal(cube.suggestedFilename(), 'revela-clone-33.cube')
   const [xmp] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Preset Lightroom' }).click()])
@@ -752,6 +754,85 @@ test('CST por clipe: o relatório do Synquei vira a lista de câmeras e um scrip
   // sem log em nenhuma câmera, não há o que gerar
   await pagina.getByRole('combobox', { name: 'Log de FX30' }).selectOption('')
   assert.equal(await pagina.getByRole('button', { name: 'Script do Resolve' }).isDisabled(), true)
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('abas do dock trocam só o painel: sem recarregar, menu parado, marca desliza e o painel guarda o que estava', async () => {
+  const pagina = await navegador.newPage({ acceptDownloads: true, viewport: { width: 1280, height: 900 } })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  await pagina.goto(endereco + 'lut.html')
+  await pagina.getByRole('heading', { name: 'Revela a cor que você quer.' }).waitFor()
+  await pagina.setInputFiles('#arquivo-material', join(dir, 'meu-frame.png'))
+  await pagina.getByText('Pronto. Arraste sobre a imagem para comparar.').waitFor()
+  // marcas que um recarregamento apagaria
+  await pagina.evaluate(() => {
+    window.semRecarregar = true
+    document.getElementById('menu').dataset.mesmo = '1'
+  })
+  const dock = pagina.getByRole('navigation', { name: 'Ferramentas da Revela' })
+  const marca = pagina.locator('.abas-marca')
+  const xAntes = (await marca.boundingBox()).x
+
+  await dock.getByRole('link', { name: 'CST' }).click()
+  await pagina.waitForURL(/cst\.html$/)
+  await pagina.getByRole('heading', { name: 'Da câmera à tela.' }).waitFor()
+  assert.equal(await pagina.title(), 'Revela · Espaço de cor')
+  assert.equal(await pagina.evaluate(() => window.semRecarregar), true, 'a página recarregou')
+  assert.equal(await pagina.locator('#menu').getAttribute('data-mesmo'), '1', 'o menu foi refeito')
+  assert.equal(await pagina.locator('main').count(), 1)
+  assert.equal(await dock.locator('[aria-current="page"]').textContent(), 'CST')
+  assert.equal(await pagina.locator('#menu [aria-current="page"]').textContent(), 'CST')
+  await pagina.waitForFunction((x) => document.querySelector('.abas-marca').getBoundingClientRect().x > x + 20, xAntes)
+  // a ferramenta do painel novo funciona
+  await pagina.getByLabel('Câmera').selectOption('arri-logc4')
+  const [baixado] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Baixar LUT' }).click()])
+  assert.match(baixado.suggestedFilename(), /^revela-cst-arri-logc4-para-/)
+
+  // voltar: o LUT segue com o frame e os looks
+  await pagina.goBack()
+  await pagina.waitForURL(/lut\.html$/)
+  await pagina.getByRole('heading', { name: 'Revela a cor que você quer.' }).waitFor()
+  assert.ok(await pagina.getByText('Pronto. Arraste sobre a imagem para comparar.').isVisible(), 'o painel do LUT perdeu o frame')
+  assert.equal(await pagina.locator('#looks .look').count(), 5)
+  assert.equal(await dock.locator('[aria-current="page"]').textContent(), 'LUT')
+  // e ir de novo para o CST não roda o módulo outra vez (a câmera escolhida continua)
+  await dock.getByRole('link', { name: 'CST' }).click()
+  await pagina.getByRole('heading', { name: 'Da câmera à tela.' }).waitFor()
+  assert.equal(await pagina.getByLabel('Câmera').inputValue(), 'arri-logc4')
+  // início não é aba: vai pelo link
+  await pagina.locator('#menu').getByRole('link', { name: 'Início' }).click()
+  await pagina.waitForURL(/\/$/)
+  assert.equal(await pagina.evaluate(() => window.semRecarregar), undefined)
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('Clonar LUT com mais frames: os stills chegam em qualquer ordem, acham o par e entram na LUT', async () => {
+  writeFileSync(join(dir, 'outra-sem.png'), gravarPng(cena(31, 320, 180)))
+  writeFileSync(join(dir, 'outra-com.png'), gravarPng(aplicarEmImagem(cena(31, 320, 180), lookConhecido)))
+  writeFileSync(join(dir, 'sozinha.png'), gravarPng(cena(32, 320, 180)))
+  const pagina = await navegador.newPage()
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  await pagina.goto(endereco + 'lut.html')
+  await pagina.locator('#usar-clone').click()
+  assert.equal(await pagina.locator('#mais-frames').isHidden(), true, 'só aparece depois do primeiro par')
+  await pagina.setInputFiles('#arquivo-referencia', join(dir, 'filme.png'))
+  await pagina.setInputFiles('#arquivo-material', join(dir, 'antes.png'))
+  await pagina.getByText('Pronto. Arraste sobre a imagem para comparar.').waitFor()
+  assert.ok(await pagina.locator('#mais-frames').isVisible())
+  // "com a cor" antes do "sem a cor", e uma imagem sem par
+  await pagina.setInputFiles('#arquivo-mais', [join(dir, 'outra-com.png'), join(dir, 'sozinha.png'), join(dir, 'outra-sem.png')])
+  await pagina.getByText('Uma imagem ficou sem o par').waitFor()
+  assert.equal(await pagina.locator('#n-frames').textContent(), '2')
+  assert.equal(await pagina.locator('#tom').textContent(), 'Feita de 2 frames do mesmo grade, com e sem a cor.')
+  // desligar o clone esquece os frames a mais
+  await pagina.locator('#usar-clone').click()
+  await pagina.locator('#usar-clone').click()
+  await pagina.getByText('Pronto. Arraste sobre a imagem para comparar.').waitFor()
+  assert.equal(await pagina.locator('#n-frames').textContent(), '1')
   assert.deepEqual(erros, [])
   await pagina.close()
 })

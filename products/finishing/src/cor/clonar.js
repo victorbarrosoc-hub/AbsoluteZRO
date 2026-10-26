@@ -2,12 +2,17 @@
 // diz exatamente para onde aquela cor foi: não há o que adivinhar, só preencher as cores que o frame não tem.
 //
 // Como:
-//   1. uma matriz afim (3×4) por mínimos quadrados: o "jeito geral" da correção (balanço, contraste, saturação);
-//   2. o que a matriz não explica (curvas, matizes que mudaram de lugar) vai para uma grade 17³ por espalhamento
-//      trilinear, depois borrada para chegar às cores vizinhas;
-//   3. onde a grade não tem amostra, o resultado volta suave para a matriz (regularização), em vez de inventar.
+//   1. uma curva de tom (a mesma nos três canais, monótona): o contraste do grade, que uma matriz sozinha não segue;
+//   2. uma matriz afim (3×4) por mínimos quadrados sobre a curva: o "jeito geral" da cor (balanço, saturação);
+//   3. o que sobra (matizes que mudaram de lugar) vai para uma grade 17³ por espalhamento trilinear, depois borrada
+//      para chegar às cores vizinhas;
+//   4. onde a grade não tem amostra, o resultado volta suave para curva + matriz (regularização), em vez de inventar.
 //
-// Entrada: `{ largura, altura, pixels }` com o mesmo tamanho, código 0–1 (o still exportado do editor).
+// Medido em stills reais do Resolve (S-Log3 → Rec.709 e S-Log3 → look de película, 4 cenas): a curva corta o erro
+// pela metade numa cena que a LUT não viu, e cada frame a mais do mesmo grade ajuda a acertar as outras cenas.
+//
+// Entrada: `{ largura, altura, pixels }` com o mesmo tamanho, código 0–1 (o still exportado do editor), ou listas
+// de imagens: vários frames do mesmo grade, cada "antes" com o seu "depois".
 
 const G = 17
 const MAX_AMOSTRAS = 80_000
@@ -61,6 +66,59 @@ function ajustarAfim(amostras) {
 
 const aplicarAfim = (M, r, g, b) => M.map((l) => l[0] * r + l[1] * g + l[2] * b + l[3])
 
+const FAIXAS = 32
+const MIN_POR_FAIXA = 30
+
+/**
+ * Curva de tom do grade: média de entrada → média de saída em faixas, monótona (as faixas que descem viram uma só,
+ * pela média ponderada) e esticada em reta até 0 e 1 onde o frame não tem luz. Devolve `curva(v)` para um canal.
+ */
+function ajustarCurva(amostras) {
+  const sx = new Float64Array(FAIXAS)
+  const sy = new Float64Array(FAIXAS)
+  const sn = new Float64Array(FAIXAS)
+  for (const [r, g, b, R, Gv, B] of amostras) {
+    const x = (r + g + b) / 3
+    const k = Math.min(FAIXAS - 1, Math.floor(x * FAIXAS))
+    sx[k] += x
+    sy[k] += (R + Gv + B) / 3
+    sn[k]++
+  }
+  // blocos {x, y, n}; junta vizinhos que descem até a curva só subir
+  const blocos = []
+  for (let k = 0; k < FAIXAS; k++) {
+    if (sn[k] < MIN_POR_FAIXA) continue
+    blocos.push({ x: sx[k], y: sy[k], n: sn[k] })
+    while (blocos.length > 1 && blocos.at(-1).y / blocos.at(-1).n < blocos.at(-2).y / blocos.at(-2).n) {
+      const b = blocos.pop()
+      const a = blocos.at(-1)
+      a.x += b.x
+      a.y += b.y
+      a.n += b.n
+    }
+  }
+  const xs = blocos.map((b) => b.x / b.n)
+  const ys = blocos.map((b) => b.y / b.n)
+  if (xs.length < 2) return (v) => v
+  // pontas em reta, pela inclinação do primeiro e do último trecho
+  const inclinacao = (i, j) => Math.max(0, (ys[j] - ys[i]) / Math.max(1e-6, xs[j] - xs[i]))
+  const n = xs.length
+  const baixo = ys[0] - inclinacao(0, 1) * xs[0]
+  const alto = ys[n - 1] + inclinacao(n - 2, n - 1) * (1 - xs[n - 1])
+  xs.unshift(0)
+  ys.unshift(baixo)
+  xs.push(1)
+  ys.push(alto)
+  return (v) => {
+    if (v <= 0) return ys[0]
+    if (v >= 1) return ys.at(-1)
+    let i = 1
+    while (xs[i] < v) i++
+    const t = (v - xs[i - 1]) / Math.max(1e-9, xs[i] - xs[i - 1])
+    return ys[i - 1] + (ys[i] - ys[i - 1]) * t
+  }
+}
+
 function borrar(grade, canais) {
   // caixa 3×3×3 separável, uma passada por eixo
   const idx = (r, g, b) => (b * G + g) * G + r
@@ -92,22 +150,34 @@ function borrar(grade, canais) {
  * Devolve `{ aplicar(r, g, b, intensidade?) → [r, g, b], resumo: { amostras, cobertura, erro } }`.
  */
 export function clonarLut(antes, depois, opcoes = {}) {
-  if (antes.largura !== depois.largura || antes.altura !== depois.altura) throw new Error('As duas imagens precisam ter o mesmo tamanho')
+  const listaAntes = [antes].flat()
+  const listaDepois = [depois].flat()
+  if (!listaAntes.length || listaAntes.length !== listaDepois.length) throw new Error('Cada frame sem a cor precisa do seu frame com a cor')
+  listaAntes.forEach((a, i) => {
+    if (a.largura !== listaDepois[i].largura || a.altura !== listaDepois[i].altura) throw new Error('As duas imagens precisam ter o mesmo tamanho')
+  })
   const intensidade = opcoes.intensidade ?? 1
-  const total = antes.largura * antes.altura
+  const total = listaAntes.reduce((s, a) => s + a.largura * a.altura, 0)
   const passo = Math.max(1, Math.floor(total / MAX_AMOSTRAS))
+  // amostra: [r, g, b] de antes, [R, G, B] de depois
   const amostras = []
-  for (let i = 0; i < total; i += passo) {
-    const k = i * 3
-    amostras.push([antes.pixels[k], antes.pixels[k + 1], antes.pixels[k + 2], depois.pixels[k], depois.pixels[k + 1], depois.pixels[k + 2]])
-  }
-  const M = ajustarAfim(amostras)
+  listaAntes.forEach((a, j) => {
+    const d = listaDepois[j]
+    for (let i = 0; i < a.largura * a.altura; i += passo) {
+      const k = i * 3
+      amostras.push([a.pixels[k], a.pixels[k + 1], a.pixels[k + 2], d.pixels[k], d.pixels[k + 1], d.pixels[k + 2]])
+    }
+  })
+  const curva = ajustarCurva(amostras)
+  const base = (r, g, b) => [curva(r), curva(g), curva(b)]
+  const M = ajustarAfim(amostras.map(([r, g, b, R, Gv, B]) => [...base(r, g, b), R, Gv, B]))
+  const geral = (r, g, b) => aplicarAfim(M, ...base(r, g, b))
 
   // resíduo (depois − afim) espalhado na grade com pesos trilineares
   const soma = new Float32Array(G * G * G * 3)
   const peso = new Float32Array(G * G * G)
   for (const [r, g, b, R, Gv, B] of amostras) {
-    const a = aplicarAfim(M, r, g, b)
+    const a = geral(r, g, b)
     const res = [R - a[0], Gv - a[1], B - a[2]]
     const x = r * (G - 1)
     const y = g * (G - 1)
@@ -164,7 +234,7 @@ export function clonarLut(antes, depois, opcoes = {}) {
   }
 
   function aplicar(r, g, b, t = intensidade) {
-    const a = aplicarAfim(M, r, g, b)
+    const a = geral(r, g, b)
     const e = residuoEm(r, g, b)
     return [0, 1, 2].map((c) => {
       const alvo = limitar(a[c] + e[c])
@@ -182,5 +252,60 @@ export function clonarLut(antes, depois, opcoes = {}) {
   }
   erro /= conferir.length || 1
 
-  return { preset: 'clone', aplicar, resumo: { amostras: nAmostras, cobertura: cobertos / peso.length, erro, matriz: M } }
+  return { preset: 'clone', aplicar, resumo: { amostras: nAmostras, frames: listaAntes.length, cobertura: cobertos / peso.length, erro, matriz: M } }
+}
+
+/** Luminância de uma imagem numa grade pequena (o bastante para comparar enquadramentos). */
+function lumaPequena(img, lado = 48) {
+  const out = new Float32Array(lado * lado)
+  for (let y = 0; y < lado; y++)
+    for (let x = 0; x < lado; x++) {
+      const k = (Math.floor(((y + 0.5) / lado) * img.altura) * img.largura + Math.floor(((x + 0.5) / lado) * img.largura)) * 3
+      out[y * lado + x] = 0.2126 * img.pixels[k] + 0.7152 * img.pixels[k + 1] + 0.0722 * img.pixels[k + 2]
+    }
+  return out
+}
+
+/**
+ * Os dois são o mesmo frame (com cores diferentes)? Correlação da luz numa grade pequena: o grade muda o nível, não
+ * onde fica o claro e o escuro. Quadros diferentes ficam bem abaixo.
+ */
+export function mesmoQuadro(a, b) {
+  const x = lumaPequena(a)
+  const y = lumaPequena(b)
+  const n = x.length
+  let mx = 0
+  let my = 0
+  for (let i = 0; i < n; i++) {
+    mx += x[i] / n
+    my += y[i] / n
+  }
+  let sxy = 0
+  let sxx = 0
+  let syy = 0
+  for (let i = 0; i < n; i++) {
+    sxy += (x[i] - mx) * (y[i] - my)
+    sxx += (x[i] - mx) ** 2
+    syy += (y[i] - my) ** 2
+  }
+  return sxy / Math.sqrt(sxx * syy + 1e-12) > 0.85
+}
+
+/**
+ * Um par novo chega sem dizer qual é qual: a LUT que já existe decide. Aplicada no "sem a cor" ela chega perto do
+ * "com a cor"; no sentido errado, não. Devolve `{ antes, depois }`, ou null quando os dois não são o mesmo frame.
+ */
+export function orientarPar(lut, a, b) {
+  if (a.largura !== b.largura || a.altura !== b.altura || !mesmoQuadro(a, b)) return null
+  const erro = (de, para) => {
+    let s = 0
+    let n = 0
+    for (let i = 0; i < de.pixels.length; i += 3 * 37) {
+      const o = lut.aplicar(de.pixels[i], de.pixels[i + 1], de.pixels[i + 2], 1)
+      s += Math.abs(o[0] - para.pixels[i]) + Math.abs(o[1] - para.pixels[i + 1]) + Math.abs(o[2] - para.pixels[i + 2])
+      n += 3
+    }
+    return s / n
+  }
+  return erro(a, b) <= erro(b, a) ? { antes: a, depois: b } : { antes: b, depois: a }
 }

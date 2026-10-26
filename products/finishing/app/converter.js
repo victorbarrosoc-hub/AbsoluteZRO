@@ -15,7 +15,9 @@ registerProresDecoder()
 icones()
 escalonar()
 
-const $ = (id) => document.getElementById(id)
+// o painel desta ferramenta: as abas trocam de painel sem recarregar (app/navegar.js), então tudo é procurado aqui dentro
+const raiz = document.querySelector('main')
+const $ = (id) => raiz.querySelector(`#${id}`)
 const fila = []
 let pasta = null // pasta escolhida para salvar direto no disco (computador)
 let rodando = false
@@ -58,7 +60,7 @@ $('resolucoes').append(
 )
 // Arquivo em log: o CST da Revela leva ao Rec.709 no caminho (mesmas curvas da tela de CST)
 $('cst').append(...ENTRADAS.map((e) => no('option', { value: e.id, textContent: e.nome })))
-const marcado = (nome) => document.querySelector(`input[name=${nome}]:checked`).value
+const marcado = (nome) => raiz.querySelector(`input[name=${nome}]:checked`).value
 const destinoAtual = () => DESTINOS_CONVERSAO.find((d) => d.id === marcado('destino'))
 const resolucaoAtual = () => (marcado('resolucao') === 'original' ? 'original' : Number(marcado('resolucao')))
 const atualizar = () => fila.forEach((i) => i.estado === 'pronto' && mostrar(i))

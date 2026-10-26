@@ -83,3 +83,14 @@ test('CST: suavizar altas deita o branco sem cortar; sem suavizar corta', () => 
   verde.forEach((c) => assert.ok(c >= 0 && c <= 1))
   assert.ok(ENTRADAS.length >= 15 && SAIDAS.length >= 5)
 })
+
+test('saída LogC3 para LUT de película: S-Log3 → LogC3 leva o cinza 18% ao 18% do LogC3 e não corta as altas', () => {
+  const cst = criarCst('sony-slog3-cine', 'arri-logc3')
+  const cinza = CURVAS.slog3.deLinear(0.18)
+  cst.aplicar(cinza, cinza, cinza).forEach((v) => assert.ok(Math.abs(v - CURVAS.logc3.deLinear(0.18)) < 1e-4, `cinza foi para ${v}`))
+  // 4 stops acima do cinza continua acima de 1 em linear: no LogC3 vira código abaixo de 1, sem cortar
+  const alto = CURVAS.slog3.deLinear(0.18 * 16)
+  const [r] = cst.aplicar(alto, alto, alto)
+  assert.ok(r > CURVAS.logc3.deLinear(1) && r < 1, `alta: ${r}`)
+  assert.ok(SAIDAS.some((s) => s.id === 'arri-logc3'))
+})

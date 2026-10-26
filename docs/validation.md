@@ -714,6 +714,39 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   neles dispara a publicação do app de computador, que o titular deixou para depois.
 - Login único: o cliente `revela-web` no console do HUB deve usar `https://revela.absolutezro.com/api/zro/callback`.
 - `products/finishing`: `npm test` 89/89; TPEasy 23/23; raiz: lint, formato e typecheck.
+
+## Revela: abas sem recarregar e login cadastrado (26/10/2026)
+
+- Bug relatado pelo titular: tocar numa aba do dock recarregava a página inteira (menu, logo, dock). Agora
+  `app/navegar.js` busca o painel da aba uma vez, troca só o `<main>`, roda o módulo dele uma vez e atualiza título,
+  canônico e histórico (voltar/avançar funcionam). O painel de antes fica guardado com o que estava (frame, looks,
+  conversão em andamento). Cada módulo procura os elementos no próprio `<main>` (`raiz`), então os painéis não se
+  misturam. Início, conta e links externos seguem pelo link. A marca da aba ativa é uma peça só que desliza de aba em
+  aba (sem deslizar com "reduzir movimento"). Sem `fetch`/`history` ou com erro, vai pelo link como antes.
+- Teste novo no Chromium: LUT → CST sem recarregar (marca na `window` e no menu continuam), marca desliza, CST baixa o
+  `.cube`, voltar devolve o LUT com o frame e os 5 looks, e o CST guarda a câmera escolhida.
+- Login: cliente `revela-web` (confidencial, confiável, produto `finishing`) e auditoria `oauth_client.created` no
+  banco `AbsoluteZRO`; `sso_start_url` = `https://revela.absolutezro.com/api/zro/entrar`; `ZRO_CLIENT_ID` na Vercel.
+  O segredo não está no repositório: o titular cola `ZRO_CLIENT_SECRET` na Vercel. Login de ponta a ponta ainda não
+  testado.
+- `products/finishing`: `npm test` 90/90; raiz: lint e formato.
+
+## Revela: estudo com stills reais e Clonar com mais frames (26/10/2026)
+
+- Material do titular (fora do repositório): 4 cenas em S-Log3 / S-Gamut3.Cine, o Rec.709 e o look de película de
+  cada uma, e os PowerGrades (`.drx`). O `.drx` mostra o caminho: CST S-Log3 → LogC3 (EI 800) / AWG3, negativo e cópia
+  em LUT, utilitários, grão, halação e um DCTL; a versão Rec.709 troca a CST para Rec.709 e mantém as primárias.
+- Clonar LUT, medido nessas cenas (ΔE Oklab ×100, numa cena que a LUT não viu): log → Rec.709 1,52 → **0,69** com 3
+  frames e 2,61 → **1,17** com um; log → look 7,17 → **6,18** com um e 5,07 com 3. O look não cabe numa LUT só
+  (mesmo com as 4 cenas, 2 a 4 de erro): muda de plano para plano e tem grão e halação. A orientação automática acertou
+  24 de 24 pares e o "mesmo quadro" separou as 16 combinações de cena.
+- Tela: "Mais frames" no lugar do conta-gotas no clone, contagem de frames e aviso para imagem sem par.
+- CST: saída "ARRI LogC3 / AWG3 · para LUT de película" (log para log, sem mapa de tom), como no node tree estudado.
+- Testes: unidade (curva vale em outra cena, 2 frames ≥ 1, orientação, outra cena recusada, LogC3) e Chromium (stills
+  em qualquer ordem e um sem par). `products/finishing`: `npm test` 94/94; raiz: lint e formato.
+- Não validado: a LUT clonada aplicada dentro do Resolve em material de vídeo; o Rec.709 do estudo inclui as primárias
+  do colorista, então ele não mede a CST da Revela sozinha.
+
 - Ícone do app (pedido do titular): placa branca chapada, sem sombra nem degradê, anel no centro e marca maior
   (`scripts/marca/icones.py`, diâmetro 0,56). Gerado de novo para o HUB (`--instalar`) e para o app (`npm run icons`).
 

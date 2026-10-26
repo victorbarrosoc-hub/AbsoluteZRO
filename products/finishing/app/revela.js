@@ -7,7 +7,7 @@ import './conta.js'
 import './menu.js'
 import { aplicar, assar, escreverCube } from '../src/cor/cube.js'
 import { oklabParaCodigo } from '../src/cor/oklab.js'
-import { clonarLut } from '../src/cor/clonar.js'
+import { clonarLut, orientarPar } from '../src/cor/clonar.js'
 import { presetLightroom } from '../src/cor/lightroom.js'
 import { LOOKS, criarRevelaLook } from '../src/cor/looks.js'
 import { amostrar, analisar, criarLook, descrever, descreverSaturacao } from '../src/cor/referencia.js'
@@ -19,7 +19,9 @@ escalonar()
 const LADO_ANALISE = 1600 // a análise amostra até 80 mil pixels; mais que isso só gasta memória
 const LADO_PREVIA = 1280
 
-const $ = (id) => document.getElementById(id)
+// o painel desta ferramenta: as abas trocam de painel sem recarregar (app/navegar.js), então tudo é procurado aqui dentro
+const raiz = document.querySelector('main')
+const $ = (id) => raiz.querySelector(`#${id}`)
 const estado = $('estado')
 const imagens = { referencia: null, material: null }
 let analise = null // { ref, mat, nomeRef, previa: ImageData do material }
@@ -31,6 +33,9 @@ let pegando = null // null | { etapa: 'ref' | 'mat', ref?: [L, a, b] }
 let preset = null // id do look da Revela (src/cor/looks.js) quando ele está no lugar da referência
 let refPropria = null // a referência que a pessoa trouxe, guardada para voltar a ela pela grade de looks
 let lookRefPropria = null // o look dessa referência sobre o frame atual (para a miniatura da grade)
+let extras = [] // Clonar LUT com mais frames do mesmo grade: [{ antes, depois }] (o par das caixas fica fora)
+const MAX_FRAMES = 6
+const LADO_EXTRA = 800 // os frames a mais entram na mesma conta de amostras: não precisam do tamanho cheio
 let clone = false // Clonar LUT: a caixa da esquerda é o frame COM a cor, a da direita o mesmo frame SEM (src/cor/clonar.js)
 
 function avisar(texto, erro = false) {
@@ -91,6 +96,7 @@ async function receber(qual, arquivo) {
       if (!clone) refPropria = imagens.referencia
     }
     lookRefPropria = null
+    extras = []
     const img = caixa.querySelector('img')
     if (img.src) URL.revokeObjectURL(img.src)
     img.src = URL.createObjectURL(arquivo)
@@ -135,6 +141,9 @@ function usarPreset(id) {
 // Clonar LUT: as duas caixas viram "com a cor" e "sem a cor" do mesmo frame. A LUT sai do pixel a pixel.
 function usarClone(ligar) {
   clone = ligar
+  extras = []
+  $('mais-frames').hidden = !ligar
+  $('marcar-par').hidden = ligar
   $('usar-clone').setAttribute('aria-pressed', String(ligar))
   $('caixa-referencia').querySelector('strong').textContent = ligar ? 'Com a cor' : 'Referência'
   $('caixa-material').querySelector('strong').textContent = ligar ? 'Sem a cor' : 'Seu frame'
@@ -155,6 +164,39 @@ $('usar-clone').addEventListener('click', async () => {
   usarClone(ligar)
   if (imagens.referencia && imagens.material) await calcular()
   else avisar(ligar ? 'O mesmo frame duas vezes: com a cor e sem a cor.' : 'Escolha a referência e o seu frame.')
+})
+
+// Mais frames: a pessoa solta os stills (com e sem a cor, em qualquer ordem). Cada um acha o seu par pelo
+// enquadramento, e a LUT que já existe diz qual dos dois é o "sem a cor" (src/cor/clonar.js).
+$('arquivo-mais').addEventListener('change', async (e) => {
+  const arquivos = [...e.target.files].filter((f) => f.type.startsWith('image/'))
+  e.target.value = ''
+  if (!analise?.clone || !arquivos.length) return
+  avisar('Lendo os frames…')
+  await espera()
+  let soltos = 0
+  try {
+    const bitmaps = await Promise.all(arquivos.map((f) => bitmap(f)))
+    const usados = new Set()
+    for (let i = 0; i < bitmaps.length; i++) {
+      if (usados.has(i) || extras.length + 1 >= MAX_FRAMES) continue
+      const a = paraPixels(desenhar(bitmaps[i], LADO_EXTRA))
+      let par = null
+      for (let j = i + 1; j < bitmaps.length && !par; j++) {
+        if (usados.has(j) || Math.abs(bitmaps[i].width / bitmaps[i].height - bitmaps[j].width / bitmaps[j].height) > 0.02) continue
+        const b = paraPixels(desenharEm(bitmaps[j], a.largura, a.altura))
+        par = orientarPar(analise.clone, a, b)
+        if (par) usados.add(j)
+      }
+      usados.add(i)
+      if (par) extras.push(par)
+      else soltos++
+    }
+  } catch {
+    return avisar('Não deu para abrir essas imagens neste navegador. Tente exportar em PNG.', true)
+  }
+  await calcular()
+  if (soltos) avisar(`${soltos === 1 ? 'Uma imagem ficou' : `${soltos} imagens ficaram`} sem o par (o mesmo frame com e sem a cor).`, true)
 })
 
 /** Põe um look da Revela no lugar da referência (a referência da pessoa fica guardada para a grade). */
@@ -217,7 +259,17 @@ async function calcular() {
     if (Math.abs(a.width / a.height - d.width / d.height) > 0.02) return avisar('As duas imagens precisam ser o mesmo frame, no mesmo enquadramento.', true)
     // o "com a cor" é desenhado exatamente no tamanho do "sem a cor": pixel com pixel
     const depois = paraPixels(desenharEm(d, matImg.largura, matImg.altura))
-    analise = { clone: clonarLut(matImg, depois), matImg, nomeRef: 'clone', previa: desenhar(a, LADO_PREVIA) }
+    const lista = [{ antes: matImg, depois }, ...extras]
+    analise = {
+      clone: clonarLut(
+        lista.map((p) => p.antes),
+        lista.map((p) => p.depois),
+      ),
+      matImg,
+      nomeRef: 'clone',
+      previa: desenhar(a, LADO_PREVIA),
+    }
+    $('n-frames').textContent = String(lista.length)
     pares = []
     cancelarPegada()
     $('looks').hidden = true
@@ -245,7 +297,7 @@ async function refazerLook() {
   await espera()
   const usar = { tom: $('usar-tom').checked, cor: $('usar-cor').checked }
   look = analise.clone ?? (preset ? criarRevelaLook({ ...usar, look: preset }) : criarLook(analise.ref, analise.mat, { ...usar, pares }))
-  document.querySelector('.rotulo-depois').textContent = preset ? look.nome : 'Depois'
+  raiz.querySelector('.rotulo-depois').textContent = preset ? look.nome : 'Depois'
   for (const b of $('looks').querySelectorAll('[data-look]'))
     b.setAttribute('aria-checked', String(b.dataset.look === (preset ?? (analise.clone ? '' : 'ref'))))
   mostrarPares()
@@ -373,8 +425,8 @@ function pintar() {
 
 function mostrarLeitura() {
   if (look.preset === 'clone') {
-    const { erro } = look.resumo
-    $('tom').textContent = 'Feita do mesmo frame, com e sem a cor.'
+    const { erro, frames } = look.resumo
+    $('tom').textContent = frames > 1 ? `Feita de ${frames} frames do mesmo grade, com e sem a cor.` : 'Feita do mesmo frame, com e sem a cor.'
     $('faixas').replaceChildren(
       ...[`No próprio frame, a LUT fica a ${(erro * 100).toFixed(1)}% do original com a cor.`, 'Cores que o frame não tem seguem a correção geral.'].map(
         (frase) => Object.assign(document.createElement('li'), { textContent: frase }),
@@ -440,7 +492,7 @@ function cancelarPegada() {
   pegando = null
   $('marcar-par').setAttribute('aria-pressed', 'false')
   $('caixa-referencia').classList.remove('pegando')
-  document.querySelector('.palco').classList.remove('pegando')
+  raiz.querySelector('.palco').classList.remove('pegando')
 }
 
 /** Posição relativa (0–1) do clique dentro da imagem que aparece, descontando as faixas pretas do `contain`. */
@@ -477,7 +529,7 @@ $('caixa-referencia')
     if (!pos) return
     pegando = { etapa: 'mat', ref: amostrar(analise.refImg, ...pos) }
     $('caixa-referencia').classList.remove('pegando')
-    document.querySelector('.palco').classList.add('pegando')
+    raiz.querySelector('.palco').classList.add('pegando')
     avisar('Agora clique na mesma coisa no seu frame (na comparação).')
   })
 
@@ -549,7 +601,7 @@ $('baixar').addEventListener('click', async () => {
   const botao = $('baixar')
   botao.disabled = true
   const editor = $('editor').value
-  const tamanho = EDITORES[editor].tamanho ?? Number(document.querySelector('input[name=tamanho]:checked').value)
+  const tamanho = EDITORES[editor].tamanho ?? Number(raiz.querySelector('input[name=tamanho]:checked').value)
   avisar(`Gerando a LUT de ${tamanho} pontos…`)
   await espera()
   const t = intensidade()
