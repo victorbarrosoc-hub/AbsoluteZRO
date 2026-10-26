@@ -1,10 +1,14 @@
-import Image from "next/image";
 import { buttonClasses } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 
-/** O "O" da Absolute ZRO (arte oficial da marca, sem redesenho). */
+/** Símbolo da Absolute ZRO, versão flat oficial (26/10/2026): uma cor só, herda a cor do texto. */
 export function LogoZro({ className }: { className?: string }) {
-  return <Image src="/absolute-zro-o.webp" alt="" aria-hidden width={20} height={18} unoptimized className={cn("rounded-[4px] bg-black p-[1px]", className)} />;
+  return (
+    <svg className={cn("size-5 shrink-0", className)} viewBox="0 0 100 100" fill="currentColor" aria-hidden="true" focusable="false">
+      <path d="M74.00 40.02C75.00 47.51 77.33 49.00 94.82 50.00C77.33 51.00 75.00 52.49 74.00 59.98C73.00 52.49 70.67 51.00 53.18 50.00C70.67 49.00 73.00 47.51 74.00 40.02Z" />
+      <path fillRule="evenodd" d="M9.70 50.00a34.30 34.30 0 1 0 68.60 0a34.30 34.30 0 1 0 -68.60 0ZM18.30 50.00a25.70 25.70 0 1 0 51.40 0a25.70 25.70 0 1 0 -51.40 0Z" />
+    </svg>
+  );
 }
 
 /**

@@ -584,3 +584,29 @@ code,
     scroll-behavior: auto !important;
   }
 }
+
+/* Marca animada: a centelha nasce inteira (4 pontas) e recolhe as verticais para trás do anel, ficando na forma
+   flat. Só com movimento liberado; com "reduzir movimento" a marca já aparece flat. */
+@media (prefers-reduced-motion: no-preference) {
+  .zro-symbol--anim .zro-symbol__spark {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: zro-spark 1.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s both;
+  }
+}
+@keyframes zro-spark {
+  0% {
+    transform: scale(0.2, 0.2);
+    opacity: 0;
+  }
+  35% {
+    transform: scale(1.15, 2.9);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(1.05, 2.6);
+  }
+  100% {
+    transform: scale(1, 1);
+  }
+}

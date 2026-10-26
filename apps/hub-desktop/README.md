@@ -57,9 +57,9 @@ novo a partir de `build/icon-source-*`. PNG precisa ser RGBA de 8 bits, 1024×10
 arquivos; faça commit de `build/`.
 
 O fundo do DMG (`build/background.png` e `@2x`) é o papel claro com o wordmark oficial
-(`build/marca-fonte.png`, PNG de `apps/hub-web/public/brand/absolute-zro-wordmark-ink.webp`) e uma seta do app para
-Aplicativos. Para trocar o wordmark, gere o PNG de novo (ex.: `python3 -c "from PIL import Image;
-Image.open('…/absolute-zro-wordmark-ink.webp').convert('RGBA').save('build/marca-fonte.png')"`) e rode `npm run icons`.
+(`build/marca-fonte.png`, PNG de `apps/hub-web/public/brand/absolute-zro-grafite.svg`, a marca flat) e uma seta do app para
+Aplicativos. Para trocar o wordmark, renderize o SVG de novo como PNG RGBA (ex.: no Chromium, com fundo transparente)
+em `build/marca-fonte.png` e rode `npm run icons`.
 
 ## Publicar
 
