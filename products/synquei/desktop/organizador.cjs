@@ -17,6 +17,7 @@ const fsp = require('node:fs/promises')
 const path = require('node:path')
 const crypto = require('node:crypto')
 const { EventEmitter } = require('node:events')
+const { TIPOS } = require('./link-organizar.cjs')
 
 const RESUMO = path.join('.sobedesce', 'descargas.jsonl')
 const PASTAS_DE_TRABALHO = ['Assets', 'Exports', path.join('Synquei', 'Sequências')]
@@ -274,6 +275,8 @@ class Organizador extends EventEmitter {
         continue
       }
       if (!d || d.v !== 1 || !d.cartao || !d.cartao.pasta || d.resultado === 'cancelado') continue
+      // o tipo de projeto escolhido no SOBEDESCE vale enquanto a pasta não tiver um (o daqui sempre ganha)
+      if (!p.tipo && typeof d.tipo === 'string' && Object.hasOwn(TIPOS, d.tipo)) p.tipo = d.tipo
       const id = String(d.id || `${d.cartao.pasta}|${d.quando}`)
       if (p.cartoes[id]) continue
       const base = path.join(p.raiz, ...d.cartao.pasta.split('/'))

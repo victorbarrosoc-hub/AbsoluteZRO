@@ -10,6 +10,14 @@ const useTheme = (context: BrowserContext, theme: string, baseURL?: string) =>
 async function check(page: Page, path: string) {
   await page.goto(path)
   await page.waitForLoadState('networkidle')
+  // O axe mede o contraste do estado final: entradas animadas (palavras do título que surgem do desfoque) terminam
+  // antes da análise. Animações infinitas e as ligadas à rolagem ficam como estão.
+  await page.evaluate(() => {
+    for (const a of document.getAnimations()) {
+      const end = a.effect?.getComputedTiming().endTime
+      if (a.timeline instanceof DocumentTimeline && typeof end === 'number' && Number.isFinite(end)) a.finish()
+    }
+  })
   const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
   const summary = r.violations.map((v) => `${v.id} (${v.impact}): ${v.nodes.length} · ${v.nodes[0]?.target.join(' ')}`)
   expect(summary, `${path}\n${summary.join('\n')}`).toEqual([])

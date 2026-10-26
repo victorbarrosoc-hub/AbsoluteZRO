@@ -86,7 +86,7 @@ Trocar `ZRO_CLIENT_SECRET` derruba as sessões abertas (os cookies deixam de con
 - `GET /api/zro/entrar?volta=/caminho[&criar=1]`: gera state, nonce e verificador PKCE, guarda os três num cookie `cdf_zro`
   assinado (HMAC, 10 min, httpOnly, Secure, SameSite=Lax, só em `/api/zro`) e leva ao HUB com
   `code_challenge_method=S256` e escopos `openid email profile org offline_access carro-do-freela.jobs`. Se o HUB
-  responder `invalid_scope` (ainda sem a migration 0012), o callback refaz o pedido com `basico=1`, só com
+  responder `invalid_scope` (ainda sem a migration 0013), o callback refaz o pedido com `basico=1`, só com
   `openid email profile org`, e o login segue sem o envio de jobs. `volta` só aceita caminho do próprio site. Com
   `criar=1` (o "Criar conta" da tela) o HUB recebe `prompt=create` e cria a conta Absolute ZRO.
 - `GET /api/zro/callback`: confere state (e o `iss` da resposta), troca o código com `client_secret_basic` + verificador,
@@ -105,7 +105,7 @@ Trocar `ZRO_CLIENT_SECRET` derruba as sessões abertas (os cookies deixam de con
   access token guardado ou troca o refresh (que roda: o novo volta no cookie em toda resposta) e chama
   `POST /api/v1/carro-do-freela/jobs` e `/jobs/crew` do HUB com Bearer. Responde `{projeto: {id, link, criado},
   equipe}` ou `{erro}`: `reconectar` (401, apaga o cookie), `plano`, `papel`, `email`, `organizacao`, `hub`.
-  ⚠️ **Antes de ligar em produção**: a migration 0012 do HUB precisa estar aplicada (ela dá o escopo ao cliente
+  ⚠️ **Antes de ligar em produção**: a migration 0013 do HUB precisa estar aplicada (ela dá o escopo ao cliente
   `carrodofreela-web`) e quem já entrou precisa entrar de novo para o login guardar o acesso.
 - Só respondem nos três domínios acima e em `localhost`/`127.0.0.1`; outro Host recebe 400.
 - Na tela: "Continuar com Absolute ZRO" nasce escondido e só aparece quando `/api/zro/eu` responde 200 ou 401 num site

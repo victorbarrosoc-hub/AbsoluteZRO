@@ -242,7 +242,7 @@ não estiver registrado no banco.
 ### Job e equipe → HUB (`api/zro/enviar.js`, `test/api/zro.test.js`, `conta-zro` §10)
 
 - O login pede também `offline_access carro-do-freela.jobs`. ⚠️ **Se o HUB responder `invalid_scope`** (migration
-  0012 ainda não aplicada), o callback refaz o pedido com `basico=1`, sem esses escopos: o login nunca quebra por
+  0013 ainda não aplicada), o callback refaz o pedido com `basico=1`, sem esses escopos: o login nunca quebra por
   causa do envio.
 - O refresh token (e o access token de 10 min) vai em `cdf_hub`, **cifrado** (AES-256-GCM, chave por HKDF com uso
   próprio), httpOnly, só em `/api/zro`. ⚠️ Assinar não bastava: é token. O navegador nunca vê token (a suíte confere

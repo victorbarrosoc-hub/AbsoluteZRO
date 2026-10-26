@@ -95,6 +95,19 @@ paths:
                       label: { type: string }
                       reports: { type: array, items: { type: object, properties: { name: { type: string }, text: { type: string } } } }
       responses: { '201': { description: importado }, '200': { description: já importado (idempotente) }, '403': { $ref: '#/components/responses/Error' } }
+  /api/v1/projects/{id}/sobedesce/deliveries:
+    post:
+      summary: Registrar entrega conferida pelo SOBEDESCE e publicar delivery.ready v2 (entitlement sobedesce:manifest_import, quota sobedesce.manifest_imports)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [entrega]
+              properties:
+                entrega: { type: string, description: 'conteúdo do comprovante sobedesce.entrega/1 (JSON com a pasta do Drive e o MD5 de cada arquivo)' }
+      responses: { '201': { description: registrada }, '200': { description: já registrada (idempotente) }, '403': { $ref: '#/components/responses/Error' } }
   /api/v1/projects/{id}/synquei/organization-plan:
     post:
       summary: Prévia de organização do Synquei (dry-run, nada é movido)
