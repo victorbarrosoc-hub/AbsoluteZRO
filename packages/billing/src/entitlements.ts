@@ -48,8 +48,8 @@ export async function recomputeEntitlements(tx: Queryable, orgId: string, now = 
   await tx`update zro.entitlements set status = 'revoked', reason = coalesce(reason, 'recalculado')
            where org_id = ${orgId} and source = 'subscription' and status = 'active'`
   const subs = (await tx`
-    select id, status, current_period_start, current_period_end, cancel_at_period_end, canceled_at, grace_until, created_at, plan_id
-    from zro.subscriptions where org_id = ${orgId}`) as unknown as (SubscriptionRow & { plan_id: string })[]
+    select id, status, current_period_start, current_period_end, cancel_at_period_end, canceled_at, grace_until, created_at, plan_id, provider
+    from zro.subscriptions where org_id = ${orgId}`) as unknown as (SubscriptionRow & { plan_id: string; provider: string })[]
   let created = 0
   for (const sub of subs) {
     const w = subscriptionWindow(sub)
@@ -57,7 +57,13 @@ export async function recomputeEntitlements(tx: Queryable, orgId: string, now = 
     // Ferramentas em desenvolvimento ficam de fora mesmo que algum plano as liste (PRD §4.3).
     const rows = await tx`
       insert into zro.entitlements (org_id, product_id, features, limits, source, source_id, starts_at, ends_at)
-      select ${orgId}, pp.product_id, pp.features, pp.limits, 'subscription', ${sub.id}, ${w.from}, ${w.until}
+      select ${orgId}, pp.product_id, pp.features,
+             -- Teste de conta nova: as ferramentas do plano com os créditos de IA e GPU do teste (migração 0011).
+             case when ${sub.provider === 'trial'} and pp.limits ? 'zro.ai_credits'
+               then pp.limits || jsonb_build_object('zro.ai_credits',
+                 coalesce((select (s.value ->> 'ai_credits')::int from zro.platform_settings s where s.key = 'signup_trial'), 50))
+               else pp.limits end,
+             'subscription', ${sub.id}, ${w.from}, ${w.until}
       from zro.plan_products pp join zro.products p on p.id = pp.product_id
       where pp.plan_id = ${sub.plan_id} and p.stage in ('active', 'beta')
       returning id`

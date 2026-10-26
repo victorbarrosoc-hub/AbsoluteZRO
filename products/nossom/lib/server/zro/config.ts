@@ -6,7 +6,7 @@
 import { accountConfigured } from '../account';
 import { requestOrigin } from '../ai-access';
 
-export const ZRO_ISSUER_DEFAULT = 'https://absolutezro.vercel.app';
+export const ZRO_ISSUER_DEFAULT = 'https://absolutezro.com';
 export const ZRO_SCOPES = 'openid email profile org';
 
 export function zroIssuer() {

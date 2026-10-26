@@ -13,7 +13,7 @@
 
 import { createHash, createHmac, createPublicKey, hkdfSync, randomBytes, timingSafeEqual, verify } from 'node:crypto'
 
-export const EMISSOR_PADRAO = 'https://absolutezro.vercel.app'
+export const EMISSOR_PADRAO = 'https://absolutezro.com'
 export const ESCOPOS = 'openid email profile org'
 export const SITE = 'https://revela-zro.vercel.app'
 export const COOKIE_IDA = 'rv_zro'
@@ -22,7 +22,7 @@ export const IDA_S = 600
 export const CONTA_S = 30 * 24 * 3600
 export const VOLTA_PADRAO = '/lut'
 export const PRODUTO = 'finishing'
-export const FERRAMENTAS = 'https://absolutezro.vercel.app/ferramentas'
+export const FERRAMENTAS = 'https://absolutezro.com/ferramentas'
 const CACHE_MS = 10 * 60_000
 
 export const emissor = () => (process.env.ZRO_ISSUER || '').trim().replace(/\/+$/, '') || EMISSOR_PADRAO

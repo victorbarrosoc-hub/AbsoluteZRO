@@ -45,7 +45,7 @@ test('aviso: confere /baixar/hub/versao, avisa uma vez por build e respeita "Dep
   const abertos = []
   let escolha = 'depois'
   const a = new AvisoDeVersao({
-    hub: 'https://absolutezro.vercel.app',
+    hub: 'https://absolutezro.com',
     plataforma: 'mac',
     build: 10,
     pasta,
@@ -57,13 +57,13 @@ test('aviso: confere /baixar/hub/versao, avisa uma vez por build e respeita "Dep
     abrir: (u) => abertos.push(u),
   })
   assert.equal((await a.conferir()).estado, 'nova')
-  assert.equal(pedidos[0], 'https://absolutezro.vercel.app/baixar/hub/versao')
-  assert.equal(avisos[0].baixarUrl, 'https://absolutezro.vercel.app/baixar/hub/mac')
+  assert.equal(pedidos[0], 'https://absolutezro.com/baixar/hub/versao')
+  assert.equal(avisos[0].baixarUrl, 'https://absolutezro.com/baixar/hub/mac')
   assert.equal((await a.conferir()).estado, 'adiada', '"Depois" vale para este build')
   assert.equal(avisos.length, 1)
   escolha = 'baixar'
   assert.equal((await a.conferir({ manual: true })).estado, 'nova', 'pelo menu avisa de novo')
-  assert.deepEqual(abertos, ['https://absolutezro.vercel.app/baixar/hub/mac'])
+  assert.deepEqual(abertos, ['https://absolutezro.com/baixar/hub/mac'])
 })
 
 test('aviso: em dia, sem resposta, desenvolvimento e Windows', async () => {

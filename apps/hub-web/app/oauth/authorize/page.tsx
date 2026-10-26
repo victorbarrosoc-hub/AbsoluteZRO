@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { denyUrl, grantConsent, hasConsent, issueCode, parseAuthorizeRequest } from '@zro/auth'
 import { listMyOrganizations } from '@zro/core'
-import { Notice, ProductMark } from '@zro/ui'
+import { Notice, ProductMark, ZroSymbol } from '@zro/ui'
 import { Icon } from '@/components/icons'
 import { approveAppAction } from '@/lib/actions/oidc'
 import '@/lib/oidc'
@@ -87,7 +87,7 @@ export default async function Authorize({ searchParams }: { searchParams: Promis
         <span className="consent__link">
           <Icon name="swap" size={18} />
         </span>
-        <img src="/brand/absolute-zro-o-alpha.webp" alt="" width={56} height={50} />
+        <ZroSymbol size={56} title="Absolute ZRO" />
       </div>
       <div className="stack">
         <h1>Entrar no {req.client.name}</h1>

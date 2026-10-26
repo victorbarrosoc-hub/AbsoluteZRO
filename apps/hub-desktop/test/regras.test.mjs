@@ -4,7 +4,7 @@ import { test } from 'node:test'
 
 const require = createRequire(import.meta.url)
 const r = require('../desktop/regras.cjs')
-const HUB = 'https://absolutezro.vercel.app'
+const HUB = 'https://absolutezro.com'
 
 test('endereço do HUB: oficial no app instalado; ZRO_HUB_URL só em desenvolvimento', () => {
   assert.equal(r.hubOrigin({ empacotado: true, env: { ZRO_HUB_URL: 'https://outro.example.com' } }), HUB)
@@ -29,16 +29,16 @@ test('navegação: só o HUB e o login do Google ficam na janela', () => {
     'https://carrodofreela.com.br',
     'https://github.com/victorbarrosoc-hub',
     // parecidos com o HUB, mas não são ele
-    'https://absolutezro.vercel.app.evil.com/',
-    'https://evil-absolutezro.vercel.app/',
-    'https://absolutezro.vercel.app:8443/',
+    'https://absolutezro.com.evil.com/',
+    'https://evil-absolutezro.com/',
+    'https://absolutezro.com:8443/',
     'https://accounts.google.com.evil.com/',
     'https://mail.google.com/',
   ]) {
     assert.equal(r.destino(url, HUB), 'fora', url)
   }
   for (const url of [
-    'http://absolutezro.vercel.app/',
+    'http://absolutezro.com/',
     'http://accounts.google.com/',
     'file:///etc/passwd',
     'javascript:alert(1)',
@@ -50,7 +50,7 @@ test('navegação: só o HUB e o login do Google ficam na janela', () => {
   ]) {
     assert.equal(r.destino(url, HUB), 'nada', url)
   }
-  assert.equal(r.destino(`https://user:senha@absolutezro.vercel.app/`, HUB), 'nada')
+  assert.equal(r.destino(`https://user:senha@absolutezro.com/`, HUB), 'nada')
   assert.equal(r.ehLoginGoogle('https://accounts.google.com:444/'), false)
 })
 
@@ -70,14 +70,14 @@ test('deep link absolutezro:// abre só rotas do HUB', () => {
   assert.equal(r.deepLink('absolutezro://a/../../baixar', HUB), `${HUB}/baixar`)
   // nunca sai do HUB
   for (const ruim of [
-    'absolutezro://evil.com@absolutezro.vercel.app/',
+    'absolutezro://evil.com@absolutezro.com/',
     'absolutezro://user@evil.com',
     'absolutezro:////evil.com/x',
     'absolutezro:\\\\evil.com\\x',
     'absolutezro://api/v1/auth/logout',
     'absolutezro://oauth/authorize?client_id=x',
     'absolutezro://.well-known/openid-configuration',
-    'https://absolutezro.vercel.app/inicio',
+    'https://absolutezro.com/inicio',
     'outro://inicio',
     'absolutezro://' + 'a'.repeat(3000),
   ]) {

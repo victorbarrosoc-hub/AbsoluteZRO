@@ -30,7 +30,7 @@
  */
 const crypto = require('crypto');
 
-const EMISSOR_PADRAO = 'https://absolutezro.vercel.app';
+const EMISSOR_PADRAO = 'https://absolutezro.com';
 const ESCOPOS = 'openid email profile org';
 const COOKIE_IDA = 'cdf_zro';
 const COOKIE_SESSAO = 'cdf_sessao';

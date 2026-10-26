@@ -23,6 +23,7 @@ export type ErrorCode =
   | 'rate_limited'
   | 'origin_rejected'
   | 'invalid_signature'
+  | 'upstream_unavailable'
 
 const STATUS: Record<ErrorCode, number> = {
   unauthenticated: 401,
@@ -45,6 +46,7 @@ const STATUS: Record<ErrorCode, number> = {
   rate_limited: 429,
   origin_rejected: 403,
   invalid_signature: 400,
+  upstream_unavailable: 503,
 }
 
 export class DomainError extends Error {

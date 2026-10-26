@@ -25,7 +25,7 @@ const FILES = [
   "/icons/apple-touch-icon.png",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
-  "/icons/familia/absolute-zro.png",
+  "/icons/familia/absolute-zro.webp",
   "/icons/familia/revela.svg",
   "/icons/familia/sobedesce.svg",
   "/icons/familia/synquei.svg",

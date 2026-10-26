@@ -1,7 +1,7 @@
 import 'server-only'
 import type { Authenticated } from '@zro/auth'
 import { productAccessFor, quotaPeriod } from '@zro/billing'
-import { ADMIN_ROLES, authorize } from '@zro/core'
+import { ADMIN_ROLES, authorize, BILLING_ROLES } from '@zro/core'
 import { db } from '../session'
 
 /** Início: projetos recentes, pendências reais, uso do plano e ferramentas. */
@@ -116,4 +116,46 @@ export async function connectedAppsData(auth: Authenticated) {
     left join zro.app_accounts a on a.user_id = c.user_id and a.client_id = c.client_id
     where c.user_id = ${auth.user.id} and c.revoked_at is null order by c.granted_at desc`,
   )
+}
+
+/** Sua conta › Plano: plano da organização ativa, planos para upgrade e pedidos abertos. */
+export async function planCenterData(auth: Authenticated) {
+  const actor = await authorize(db(), auth)
+  const canManage = BILLING_ROLES.includes(actor.role)
+  return db().asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
+    const [org] = await tx`select name from zro.organizations where id = ${actor.orgId}`
+    const subscriptions = canManage
+      ? await tx`
+          select s.id, s.status, s.provider, s.current_period_end, s.cancel_at_period_end, s.grace_until, p.id as plan_id, p.code, p.name, p.kind
+          from zro.subscriptions s join zro.plans p on p.id = s.plan_id
+          where s.org_id = ${actor.orgId} and s.status in ('active', 'trialing', 'past_due')
+            and (s.current_period_end is null or s.current_period_end > now() or s.grace_until > now()) order by s.created_at desc`
+      : []
+    const plans = await tx`
+      select p.id, p.code, p.name, p.kind, p.description, p.price_cents, p.currency, p.billing_interval,
+             (select count(*)::int from zro.plan_products pp where pp.plan_id = p.id) as products,
+             (select max((pp.limits ->> 'zro.ai_credits')::int) from zro.plan_products pp where pp.plan_id = p.id) as ai_credits
+      from zro.plans p where p.status = 'active' and p.kind <> 'free'
+      order by case p.kind when 'bundle' then 0 else 1 end, p.name`
+    const requests = canManage
+      ? await tx`
+          select r.id, r.kind, r.created_at, p.name as plan from zro.plan_requests r left join zro.plans p on p.id = r.plan_id
+          where r.org_id = ${actor.orgId} and r.status = 'open' order by r.created_at desc`
+      : []
+    return { actor, canManage, org: org!, subscriptions, plans, requests }
+  })
+}
+
+/** Sua conta › visão geral: números que resumem as outras seções. */
+export async function accountSummary(auth: Authenticated) {
+  return db().asUser({ userId: auth.user.id, orgId: auth.session.activeOrgId }, async (tx) => {
+    const [r] = await tx`
+      select (select count(*)::int from zro.sessions where user_id = ${auth.user.id} and revoked_at is null and expires_at > now()) as sessions,
+             (select count(*)::int from zro.oauth_consents where user_id = ${auth.user.id} and revoked_at is null) as apps,
+             (select count(*)::int from zro.memberships m join zro.organizations o on o.id = m.org_id
+               where m.user_id = ${auth.user.id} and m.status = 'active' and o.status = 'active') as orgs,
+             (select count(*)::int from zro.entitlements e where e.org_id = ${auth.session.activeOrgId} and e.status = 'active'
+               and (e.ends_at is null or e.ends_at > now())) as tools`
+    return r! as { sessions: number; apps: number; orgs: number; tools: number }
+  })
 }

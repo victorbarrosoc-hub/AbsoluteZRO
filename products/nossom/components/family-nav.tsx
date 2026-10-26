@@ -3,9 +3,9 @@
 // interromper gravação nem tratamento em andamento; no app de Mac/Windows abre no navegador.
 const FAMILY = [
   {
-    href: 'https://absolutezro.vercel.app',
+    href: 'https://absolutezro.com',
     name: 'Absolute ZRO',
-    icon: '/familia/absolute-zro.png',
+    icon: '/familia/absolute-zro.webp',
   },
   {
     href: 'https://carrodofreela.com.br',

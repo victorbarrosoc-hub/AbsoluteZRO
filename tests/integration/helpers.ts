@@ -38,8 +38,11 @@ export async function newOrgWithOwner(db: Database, label = 'org', opts: { freeP
   return { ...u, orgId: org.id, auth: await refresh(db, u.token) }
 }
 
-export async function planId(db: Database, code: string, version = 1): Promise<string> {
-  const [p] = await db.sql`select id from zro.plans where code = ${code} and version = ${version}`
+/** Sem versão: a versão ativa mais nova (a que está à venda). */
+export async function planId(db: Database, code: string, version?: number): Promise<string> {
+  const [p] = version
+    ? await db.sql`select id from zro.plans where code = ${code} and version = ${version}`
+    : await db.sql`select id from zro.plans where code = ${code} order by (status = 'active') desc, version desc limit 1`
   return p!.id as string
 }
 

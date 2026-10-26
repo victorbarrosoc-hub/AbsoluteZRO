@@ -21,7 +21,7 @@ const FERRAMENTAS = [
   { href: 'converter.html', nome: 'Converter', icone: 'converter', pagina: 'converter' },
 ]
 const FAMILIA = [
-  { href: 'https://absolutezro.vercel.app', nome: 'Absolute ZRO', img: 'marca/familia/absolute-zro-o.webp' },
+  { href: 'https://absolutezro.com', nome: 'Absolute ZRO', img: 'marca/familia/absolute-zro-o.webp' },
   { href: 'https://carrodofreela.com.br', nome: 'Carro do Freela', img: 'marca/familia/carro-do-freela.png' },
   { href: 'https://nossom-teal.vercel.app', nome: 'Nossom', img: 'marca/familia/nossom.svg' },
   { href: 'https://sobedesce.vercel.app', nome: 'Sobedesce', img: 'marca/familia/sobedesce.svg' },

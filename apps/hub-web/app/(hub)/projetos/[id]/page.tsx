@@ -245,7 +245,7 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
           cada destino. Só conta como conferido o que tem checksum no relatório.
         </p>
         {manifests.length ? (
-          <div className="zro-table-wrap">
+          <div className="zro-table-wrap" tabIndex={0} role="region" aria-label="Tabela">
             <table className="zro-table">
               <thead>
                 <tr>
@@ -396,7 +396,7 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
 
       <Card id="atividades" title="Atividades e auditoria">
         {runs.length ? (
-          <div className="zro-table-wrap">
+          <div className="zro-table-wrap" tabIndex={0} role="region" aria-label="Tabela">
             <table className="zro-table">
               <thead>
                 <tr>

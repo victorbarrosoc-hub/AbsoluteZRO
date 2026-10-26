@@ -10,7 +10,7 @@ const CORE = [
   '/icons/icon-192.png',
   '/app/',
   '/app/app.css',
-  '/app/familia/absolute-zro.png',
+  '/app/familia/absolute-zro.webp',
   '/app/familia/carro-do-freela.png',
   '/app/familia/nossom.svg',
   '/app/familia/revela.svg',

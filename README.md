@@ -10,7 +10,7 @@ e a camada de projeto que liga Carro do Freela, TPeasy, SOBEDESCE, Synquei, NOSS
 - O que está pronto e o que falta: [docs/roadmap.md](docs/roadmap.md) · Evidências de teste: [docs/validation.md](docs/validation.md).
 - Deploy: [docs/operations/deployment-checklist.md](docs/operations/deployment-checklist.md).
 
-> **Deploy autorizado em 25/10/2026** para https://absolutezro.vercel.app (projeto Vercel `absolutezro`, projeto
+> **Deploy autorizado em 25/10/2026** para https://absolutezro.com (projeto Vercel `absolutezro`, projeto
 > Supabase novo `AbsoluteZRO`). Passo a passo e primeira conta de administração em
 > [docs/operations/deployment-checklist.md](docs/operations/deployment-checklist.md).
 

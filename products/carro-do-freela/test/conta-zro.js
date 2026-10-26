@@ -207,7 +207,7 @@ function montarSaida(semFuncoes) {
     const tl = await tela(p);
     t(r.liberado === false, '⟶⟶ zro_products sem "carro-do-freela": a conta entra marcada como sem acesso');
     t(tl === 'entrar' && r.bloq && /ainda não tem acesso ao Carro do Freela/.test(r.texto), '⟶⟶ a tela é o aviso curto (' + tl + ')');
-    t(r.href === 'https://absolutezro.vercel.app/ferramentas' && /Ver na Absolute ZRO/.test(r.texto), 'com a porta "Ver na Absolute ZRO"');
+    t(r.href === 'https://absolutezro.com/ferramentas' && /Ver na Absolute ZRO/.test(r.texto), 'com a porta "Ver na Absolute ZRO"');
     t(!r.form && !r.zro, 'e nenhuma outra porta à vista');
     t(r.entrou === null, 'as funções da conta não abriram (a porta do app não foi marcada)');
     await p.evaluate(() => { LG_TIPO = 'freela'; entrarNaConta('Carro do Freela', false) });

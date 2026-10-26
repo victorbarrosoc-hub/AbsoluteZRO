@@ -5,8 +5,9 @@
  */
 import type { ReactNode } from 'react'
 import { Pill, ProductMark } from '@zro/ui'
-import { DOWNLOADS, type DownloadOption, type Os } from '@/lib/downloads'
+import { DOWNLOADS, hasDesktopInstaller, type DownloadOption, type Os } from '@/lib/downloads'
 import { HUB_DESKTOP_OPCOES, SEM_INSTALADOR, type Disponibilidade } from '@/lib/hub-desktop-release'
+import { AppActions } from './app-actions'
 import { productColor } from './app-tile'
 import { CopyButton } from './copy-button'
 import { Icon, type IconName } from './icons'
@@ -45,7 +46,19 @@ function Option({ o, name }: { o: DownloadOption; name: string }) {
   )
 }
 
-export function DownloadCatalog({ products, accessPill }: { products: CatalogProduct[]; accessPill?: (productId: string) => ReactNode }) {
+export function DownloadCatalog({
+  products,
+  accessPill,
+  hubDisponivel = false,
+  liberado,
+}: {
+  products: CatalogProduct[]
+  accessPill?: (productId: string) => ReactNode
+  /** Com o Absolute ZRO para computador no ar, o instalador avulso de cada ferramenta fica recolhido (reserva). */
+  hubDisponivel?: boolean
+  /** Ferramentas que a organização pode instalar pela central (dentro do app). Sem isso, nenhuma ação aparece. */
+  liberado?: (productId: string) => boolean
+}) {
   const byId = new Map(products.map((p) => [p.id, p]))
   return (
     <div className="dl-list">
@@ -75,12 +88,39 @@ export function DownloadCatalog({ products, accessPill }: { products: CatalogPro
               </div>
             </header>
             {d.note && <p className="dl-app__note">{d.note}</p>}
+            {liberado && hasDesktopInstaller(d.productId) && <AppActions id={d.productId} nome={p.name} liberado={liberado(d.productId)} />}
             {d.options.length > 0 ? (
-              <div className="dl-opts">
-                {d.options.map((o) => (
-                  <Option key={o.href} o={o} name={p.name} />
-                ))}
-              </div>
+              (() => {
+                const instaladores = d.options.filter((o) => o.os === 'mac' || o.os === 'windows')
+                const outras = d.options.filter((o) => o.os !== 'mac' && o.os !== 'windows')
+                const direto = (
+                  <div className="dl-opts dl-opts--instalador">
+                    {instaladores.map((o) => (
+                      <Option key={o.href} o={o} name={p.name} />
+                    ))}
+                  </div>
+                )
+                return (
+                  <>
+                    {outras.length > 0 && (
+                      <div className="dl-opts">
+                        {outras.map((o) => (
+                          <Option key={o.href} o={o} name={p.name} />
+                        ))}
+                      </div>
+                    )}
+                    {instaladores.length > 0 &&
+                      (hubDisponivel ? (
+                        <details className="dl-direto">
+                          <summary>Baixar só o {p.name}, sem o Absolute ZRO</summary>
+                          {direto}
+                        </details>
+                      ) : (
+                        direto
+                      ))}
+                  </>
+                )
+              })()
             ) : (
               <p className="zro-faint">Entra aqui quando for lançado. Nada para instalar ainda.</p>
             )}
@@ -147,9 +187,7 @@ export function DownloadsIntro({ heading, hub = SEM_INSTALADOR, aviso }: { headi
         <H className="display-2 atitle atitle--inline">
           <span className="atitle__thin">Instale</span> <span className="atitle__bold">as ferramentas.</span>
         </H>
-        <p className="zro-mute">
-          Tudo num lugar só: escolha o app e o sistema. O instalador do seu computador aparece em destaque. Cada app abre com o próprio login.
-        </p>
+        <p className="zro-mute">Tudo num lugar só, com a mesma conta.</p>
       </div>
       <aside id="absolute-zro" className="dl-central zro-card">
         <Icon name="download" size={22} />
@@ -157,7 +195,7 @@ export function DownloadsIntro({ heading, hub = SEM_INSTALADOR, aviso }: { headi
           <strong>Absolute ZRO para computador{hub.versao ? ` · ${hub.versao}` : ''}</strong>
           {opcoes.length ? (
             <>
-              <p>O HUB numa janela própria, no Mac e no Windows. Continua logado e avisa quando sai versão nova.</p>
+              <p>Instale uma vez e baixe, abra e atualize todas as ferramentas por ele, com a mesma conta.</p>
               <p>
                 {opcoes.map((o) => (
                   <a key={o.os} className="zro-btn zro-btn--small" href={`/baixar/hub/${o.os}`} title={o.detail}>

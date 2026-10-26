@@ -1,5 +1,5 @@
-// Ponte mínima para a página do HUB e para a tela "Sem conexão": diz que é o app de desktop (o HUB pode esconder o
-// banner "baixe o app", por exemplo) e oferece "Tentar de novo". Nada do Node chega à página.
+// Ponte mínima para a página do HUB e para a tela "Sem conexão": diz que é o app de desktop, oferece "Tentar de novo"
+// e a central de apps (window.zroDesktop.apps). Nada do Node chega à página.
 
 const { contextBridge, ipcRenderer } = require('electron')
 
@@ -12,6 +12,24 @@ contextBridge.exposeInMainWorld('zroDesktop', {
   tentarDeNovo: () => ipcRenderer.invoke('zro:tentar-de-novo'),
   /** Abre o endereço que falhou no navegador padrão (tela "Sem conexão"). */
   abrirNoNavegador: () => ipcRenderer.invoke('zro:abrir-no-navegador'),
+  /**
+   * Central de apps: instala, abre, atualiza e remove as ferramentas. Só funciona na página do HUB; recebe só o id da
+   * ferramenta (o que baixar vem do catálogo, conferido no processo principal). Respostas: { ok, dados?, erro? }.
+   */
+  apps: {
+    versao: 1,
+    listar: () => ipcRenderer.invoke('central:listar'),
+    instalar: (id) => ipcRenderer.invoke('central:instalar', String(id)),
+    abrir: (id) => ipcRenderer.invoke('central:abrir', String(id)),
+    remover: (id) => ipcRenderer.invoke('central:remover', String(id)),
+    cancelar: (id) => ipcRenderer.invoke('central:cancelar', String(id)),
+    /** Progresso: { id, fase: baixando|instalando|pronto|erro|removendo|removido, recebido?, total?, mensagem? }. */
+    aoProgresso: (fn) => {
+      const ouvinte = (_e, ev) => fn(ev)
+      ipcRenderer.on('central:progresso', ouvinte)
+      return () => ipcRenderer.removeListener('central:progresso', ouvinte)
+    },
+  },
 })
 
 addEventListener('DOMContentLoaded', () => {

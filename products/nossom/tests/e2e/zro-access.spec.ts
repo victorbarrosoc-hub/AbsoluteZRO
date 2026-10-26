@@ -18,7 +18,7 @@ test('the NOSSOM opens only when the Absolute ZRO admin released it for the orga
   ).toBeVisible();
   await expect(
     page.getByRole('link', { name: 'Ver na Absolute ZRO', exact: true }),
-  ).toHaveAttribute('href', 'https://absolutezro.vercel.app/ferramentas');
+  ).toHaveAttribute('href', 'https://absolutezro.com/ferramentas');
   await expect(page.locator('.studio-header')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   // As funções da conta são recusadas no servidor, não só escondidas.
