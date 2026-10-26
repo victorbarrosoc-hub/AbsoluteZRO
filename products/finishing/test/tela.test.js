@@ -674,7 +674,7 @@ test('tema: claro por padrão, escuro no menu, lembrado e com a logo certa', asy
   await pagina.goto(endereco + 'lut.html')
   assert.equal(await pagina.evaluate(() => document.documentElement.dataset.tema ?? 'claro'), 'claro')
   assert.equal(await pagina.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(245, 245, 247)')
-  assert.match(await pagina.locator('.marca img').getAttribute('src'), /revela-logo-grafite\.png$/)
+  assert.match(await pagina.locator('.marca img').getAttribute('src'), /revela-logo-claro\.png$/)
   await pagina.getByRole('button', { name: 'Tema escuro' }).click({ force: true })
   assert.equal(await pagina.evaluate(() => document.documentElement.dataset.tema), 'escuro')
   assert.match(await pagina.locator('.marca img').getAttribute('src'), /revela-logo\.png$/)
