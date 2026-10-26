@@ -9,7 +9,7 @@ import { h, icon, toast } from './util.js'
 /** 'sem' (sem login neste lugar) · 'anonimo' (dá para entrar) · 'logado'. `acesso`: o Synquei está liberado na conta. */
 export const C = { estado: 'sem', pessoa: null, acesso: false }
 
-export const FERRAMENTAS = 'https://absolutezro.vercel.app/ferramentas'
+export const FERRAMENTAS = 'https://absolutezro.com/ferramentas'
 const SEM_ACESSO = 'Sua conta Absolute ZRO ainda não tem acesso ao Synquei.'
 
 const AVISOS = {

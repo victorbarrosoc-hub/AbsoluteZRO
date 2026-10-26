@@ -4,7 +4,7 @@
  */
 import { origemDoSite } from "@/lib/site";
 
-export const EMISSOR_PADRAO = "https://absolutezro.vercel.app";
+export const EMISSOR_PADRAO = "https://absolutezro.com";
 export const ESCOPOS_ZRO = "openid email profile org";
 
 export function emissor(): string {

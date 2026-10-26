@@ -21,7 +21,7 @@ const FERRAMENTAS = [
   { href: 'converter.html', nome: 'Converter', icone: 'converter', pagina: 'converter' },
 ]
 const FAMILIA = [
-  { href: 'https://absolutezro.vercel.app', nome: 'Absolute ZRO', img: 'marca/familia/absolute-zro-o.webp' },
+  { href: 'https://absolutezro.com', nome: 'Absolute ZRO', img: 'marca/familia/absolute-zro-o.webp' },
   { href: 'https://carrodofreela.com.br', nome: 'Carro do Freela', img: 'marca/familia/carro-do-freela.png' },
   { href: 'https://nossom-teal.vercel.app', nome: 'Nossom', img: 'marca/familia/nossom.svg' },
   { href: 'https://sobedesce.vercel.app', nome: 'Sobedesce', img: 'marca/familia/sobedesce.svg' },
@@ -61,6 +61,21 @@ const menu = el(
     ...FAMILIA.map(item),
   ),
 )
+// tema: claro é o padrão; o botão mostra para onde vai (lua no claro, sol no escuro)
+const botaoTema = el('button', { type: 'button', className: 'menu-item menu-tema' })
+function pintarTema() {
+  const escuro = window.revelaTema?.atual() === 'escuro'
+  const nome = escuro ? 'Tema claro' : 'Tema escuro'
+  botaoTema.replaceChildren(icone(escuro ? 'sol' : 'lua'), el('span', { className: 'menu-nome', textContent: nome }))
+  botaoTema.title = nome
+}
+botaoTema.addEventListener('click', () => {
+  window.revelaTema?.alternar()
+  pintarTema()
+})
+pintarTema()
+menu.append(el('div', { className: 'menu-pe' }, botaoTema))
+
 const fundo = el('div', { className: 'menu-fundo', hidden: true })
 const alternarTopo = el('button', { type: 'button', className: 'menu-botao menu-botao--topo', ariaLabel: 'Abrir menu' }, icone('menu'))
 alternarTopo.setAttribute('aria-controls', 'menu')

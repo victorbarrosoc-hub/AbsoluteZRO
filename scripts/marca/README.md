@@ -1,30 +1,22 @@
-# Marca: OG e ícones
+# Marca: geometria, ícones e OG
 
-Arte de base gerada no Higgsfield (25/10/2026) a partir do símbolo e das fotos oficiais em
-`apps/hub-web/public/brand`. O anel é o mesmo símbolo do wordmark, só que redesenhado em 2048 px.
+Manual de uso: [docs/marca/README.md](../../docs/marca/README.md). Marca flat aprovada em 26/10/2026
+([ADR 0017](../../docs/decisions/0017-marca-flat-centelha.md)): anel com a centelha de 4 pontas por trás do traço.
 
-- `anel-fonte.png`: o anel em alta, base de todos os ícones.
-- `og-fundo.jpg`: fundo do OG (eclipse sobre o horizonte).
-- `icones.py`: gera `out/` com o ícone do iPhone/Safari (180), PWA (192, 512, maskable), favicon, Mac (grid da
-  Apple, 824 em 1024 com sombra) e Windows (`icon.ico` com 16–256, traço reforçado até 48 px).
-  `python3 scripts/marca/icones.py` (precisa de Pillow e numpy).
-- `og.html`: o OG em 1200×630. Abra no Chromium/Playwright e capture 1200×630.
+- `vetor/vetorizar.py`: vetoriza as letras do wordmark original (`vetor/wordmark-original.png`) e monta o anel com a
+  centelha. Gera os SVG mestres em `apps/hub-web/public/brand/absolute-zro*.svg` e `packages/ui/src/marca.ts`
+  (`ZroWordmark`, `ZroSymbol`). `pip install potracer pillow numpy && python3 scripts/marca/vetor/vetorizar.py`.
+- `icones.py`: desenha a marca a partir da mesma geometria e gera `out/claro` e `out/escuro` (iPhone/Safari 180, PWA
+  192/512/maskable, favicon com placa escura, Mac no grid da Apple, Windows `icon.ico` com traço reforçado; abaixo de
+  24 px só o anel). `python3 scripts/marca/icones.py --instalar` copia para o HUB; o app de computador lê `out/claro`
+  com `cd apps/hub-desktop && npm run icons -- ../../scripts/marca/out/claro`.
+- `og-claro.html` (padrão) e `og-escuro.html`: OG 1200×630. Abra no Chromium/Playwright e capture
+  `apps/hub-web/app/opengraph-image.jpg` (o `twitter-image.jpg` é a mesma imagem).
+- `produto-hub-claro.png` e `produto-hub-og.png`: o HUB real num MacBook e num iPhone, base do OG.
 
-Onde cada arquivo vai: `apps/hub-web/app/{apple-icon.png,icon.png,favicon.ico,opengraph-image.jpg,twitter-image.jpg}`,
-`apps/hub-web/public/icons/*` (manifest) e `apps/hub-web/public/brand/app-icon-*.png` (apps de desktop).
-
-## Versão clara (padrão desde 25/10/2026)
-
-- `anel-claro-fonte.png`: anel em azul profundo → ciano sobre papel claro. `icones.py` gera `out/claro/` (ícones do
-  site, do iPhone e dos apps de desktop). Os escuros continuam em `out/` e em `public/brand/*-escuro-*`.
-- `produto-hub-claro.png`: o HUB real (capturas do `/inicio`) num MacBook e num iPhone, fotos de aparelhos geradas no
-  Higgsfield com tela verde e trocadas pelas capturas. Base do OG (`og-claro.html`) e da abertura do site.
-- `og-escuro.html` fica como alternativa para o tema escuro.
-
-## Telas dos apps (Padrão Apple, 25/10/2026)
+## Telas dos apps (Padrão Apple)
 
 - `aparelhos/aparelhos-{claro,escuro}-verde.png`: MacBook + iPhone de frente com tela verde (Higgsfield).
 - `aparelhos/compor.py modelo.png tela-mac.png tela-iphone.png saida.png`: troca o verde pelas capturas.
-- `aparelhos/produtos.py <pasta>`: gera `public/brand/produto-<app>-{claro,escuro}.webp` (1600 px) e
-  `produto-hub-*.webp` (2400 px) a partir de capturas reais públicas (SOBEDESCE, Synquei `/app/`, NOSSOM, TPeasy, Carro
-  do Freela) e do `/inicio` do HUB. Telas de login foram evitadas; app sem tema escuro usa a mesma captura nos dois.
+- `aparelhos/produtos.py <pasta> [app…]`: gera `public/brand/produto-<app>-{claro,escuro}.webp` a partir de capturas
+  reais (1440×916 e 390×860 @2x, claro e escuro). Só alguns apps: `produtos.py <pasta> hub`.

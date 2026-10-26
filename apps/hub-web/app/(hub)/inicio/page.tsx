@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Card, EmptyState, Notice, Pill, ProductMark, Stat } from '@zro/ui'
+import { Card, EmptyState, Notice, Pill, ProductMark, Stat, ZroSymbol } from '@zro/ui'
 import { AppTile, productColor } from '@/components/app-tile'
 import { Icon, type IconName } from '@/components/icons'
 import { MotionGate } from '@/components/motion-gate'
@@ -43,7 +43,7 @@ export default async function Inicio() {
 
       {!auth.user.emailVerified && (
         <Notice tone="warn" title="Confirme seu e-mail">
-          Sem confirmar, você não aceita convites nem convida pessoas. <Link href="/perfil">Reenviar link</Link>
+          Sem confirmar, você não aceita convites nem convida pessoas. <Link href="/perfil/seguranca">Reenviar link</Link>
         </Notice>
       )}
 
@@ -51,7 +51,7 @@ export default async function Inicio() {
         <MotionGate className="orbit" as="div">
           <div className="orbit__ring" aria-hidden="true" />
           <div className="orbit__core" aria-hidden="true">
-            <img src="/brand/absolute-zro-o-alpha.webp" alt="" width={64} height={58} />
+            <ZroSymbol size={64} animated />
           </div>
           <ul className="orbit__items" aria-label="Ferramentas do Ciclo do O">
             {orbit.map((p, i) => (

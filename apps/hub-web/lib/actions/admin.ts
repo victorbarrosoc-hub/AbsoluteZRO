@@ -1,12 +1,13 @@
 'use server'
 import { revalidatePath } from 'next/cache'
-import { assignPlan, cancelManualSubscription, createPlanVersion, grantEntitlement, publishPlanVersion, revokeEntitlement } from '@zro/billing'
+import { assignPlan, cancelManualSubscription, createPlanVersion, grantEntitlement, launchSales, publishPlanVersion, revokeEntitlement } from '@zro/billing'
 import { OAuthError, registerClient } from '@zro/auth'
-import { requirePlatformAdmin } from '@zro/core'
+import { requirePlatformAdmin, resolvePlanRequest } from '@zro/core'
 import { pgErrorCode, PG } from '@zro/db'
 import { DomainError } from '@zro/observability'
 import type { FormState } from '@/components/action-form'
 import { db, getAuth } from '../session'
+import { stripeConfig } from '../stripe'
 import { str, toFormError } from './helpers'
 
 async function adminActor(fd: FormData) {
@@ -183,6 +184,33 @@ export async function setOAuthClientStatusAction(_: FormState, fd: FormData): Pr
     })
     revalidatePath('/admin')
     return { ok: status === 'active' ? 'App reativado.' : 'App desativado e sessões dele encerradas.' }
+  } catch (e) {
+    return toFormError(e)
+  }
+}
+
+export async function resolvePlanRequestAction(_: FormState, fd: FormData): Promise<FormState> {
+  try {
+    const actor = await adminActor(fd)
+    await db().asSystem('admin: atender pedido de plano', (tx) => resolvePlanRequest(tx, actor, str(fd, 'requestId')))
+    revalidatePath('/admin')
+    return { ok: 'Pedido marcado como atendido.' }
+  } catch (e) {
+    return toFormError(e)
+  }
+}
+
+/** Ligar as vendas: teste do Completo para conta nova e data de corte do grátis antigo (só admin, com motivo). */
+export async function launchSalesAction(_: FormState, fd: FormData): Promise<FormState> {
+  try {
+    const actor = await adminActor(fd)
+    if (!stripeConfig()) throw new DomainError('conflict', 'Coloque STRIPE_SECRET_KEY e STRIPE_WEBHOOK_SECRET na Vercel antes.')
+    const cutoff = new Date(`${str(fd, 'cutoff')}T23:59:59-03:00`)
+    if (Number.isNaN(cutoff.getTime())) throw new DomainError('invalid_input', 'Escolha a data de corte.')
+    const trialDays = Number(str(fd, 'trialDays') || '7')
+    const r = await db().asSystem('admin: ligar vendas', (tx) => launchSales(tx, actor, { cutoff, trialDays }))
+    revalidatePath('/admin')
+    return { ok: `Vendas ligadas. ${r.grandfathered} organizações seguem liberadas até a data de corte.` }
   } catch (e) {
     return toFormError(e)
   }

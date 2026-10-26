@@ -5,6 +5,9 @@ import './conta.js'
 import './menu.js'
 import * as MB from '../vendor/mediabunny.min.mjs'
 import { registerProresDecoder } from '../vendor/mediabunny-prores.min.mjs'
+import { assar } from '../src/cor/cube.js'
+import { ENTRADAS, criarCst } from '../src/cor/espacos.js'
+import { criarAplicadorLut } from './lut-gpu.js'
 import { DESTINOS_CONVERSAO, LIMITE_MEMORIA, RESOLUCOES, nomeSaida, planejar, tamanhoLegivel } from '../src/conversao/plano.js'
 import { ICONES, NOME_CURTO, escalonar, glifo, icones, svg } from './visual.js'
 
@@ -53,6 +56,8 @@ $('resolucoes').append(
     no('label', { title: r.nome }, no('input', { type: 'radio', name: 'resolucao', value: String(r.id), checked: i === 0 }), NOMES_RESOLUCAO[r.id]),
   ),
 )
+// Arquivo em log: o CST da Revela leva ao Rec.709 no caminho (mesmas curvas da tela de CST)
+$('cst').append(...ENTRADAS.map((e) => no('option', { value: e.id, textContent: e.nome })))
 const marcado = (nome) => document.querySelector(`input[name=${nome}]:checked`).value
 const destinoAtual = () => DESTINOS_CONVERSAO.find((d) => d.id === marcado('destino'))
 const resolucaoAtual = () => (marcado('resolucao') === 'original' ? 'original' : Number(marcado('resolucao')))
@@ -275,6 +280,29 @@ async function converter(item) {
   const input = new MB.Input({ source: new MB.BlobSource(item.arquivo), formats: MB.ALL_FORMATS })
   const output = new MB.Output({ format: new MB.Mp4OutputFormat({ fastStart: pasta ? false : 'in-memory' }), target })
   const corOrigem = item.info.cor?.matrix ? item.info.cor : plano.cor
+  const cstId = $('cst').value
+  const gpu = cstId ? criarAplicadorLut(assar(criarCst(cstId, 'rec709').aplicar, 65)) : null
+  if (cstId) item.avisos.push(`Log ${ENTRADAS.find((e) => e.id === cstId).nome} → Rec.709.`)
+  // com o CST, cada quadro passa pela LUT na GPU e volta como RGBA marcado BT.709
+  const processar = async (amostra) => {
+    const certa = await comCor(amostra, corOrigem)
+    if (!gpu) return certa
+    const quadro = certa.toVideoFrame()
+    const largura = certa.displayWidth
+    const altura = certa.displayHeight
+    const rgba = gpu.aplicar(quadro, largura, altura, !corOrigem.fullRange)
+    quadro.close()
+    const nova = new MB.VideoSample(rgba, {
+      format: 'RGBA',
+      codedWidth: largura,
+      codedHeight: altura,
+      timestamp: certa.timestamp,
+      duration: certa.duration,
+      colorSpace: { primaries: 'bt709', transfer: 'bt709', matrix: 'rgb', fullRange: true },
+    })
+    certa.close()
+    return nova
+  }
 
   const conversao = await MB.Conversion.init({
     input,
@@ -288,7 +316,7 @@ async function converter(item) {
       quality: new MB.Quality({ bitrate: plano.video.bitrate }),
       forceTranscode: true,
       hardwareAcceleration: 'no-preference', // o navegador usa o hardware quando existe; exigir hardware falha onde não há
-      process: (amostra) => comCor(amostra, corOrigem),
+      process: processar,
     },
     audio: acodec
       ? { codec: acodec, quality: new MB.Quality({ bitrate: plano.audio.bitrate }), sampleRate: plano.audio.taxa, forceTranscode: true }

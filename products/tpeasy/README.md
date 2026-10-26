@@ -52,7 +52,7 @@ aparelho**: entrar mostra quem você é, mas não liga sincronização.
 - Variáveis (Production; marque o segredo como sensível):
   - `ZRO_CLIENT_ID` = `tpeasy-web`
   - `ZRO_CLIENT_SECRET` = segredo do cliente `tpeasy-web` no console do HUB
-  - `ZRO_ISSUER` (opcional) = `https://absolutezro.vercel.app`
+  - `ZRO_ISSUER` (opcional) = `https://absolutezro.com`
 - No HUB, o cliente `tpeasy-web` tem retorno `https://tpeasy.vercel.app/api/zro/callback` e endereço de entrada
   `https://tpeasy.vercel.app/api/zro/entrar`.
 

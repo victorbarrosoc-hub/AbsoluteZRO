@@ -130,7 +130,7 @@ export default async function Pessoa({ params }: { params: Promise<{ id: string 
 
       <Card title="O que pode usar agora" eyebrow="Acessos vigentes das organizações">
         {entitlements.length ? (
-          <div className="zro-table-wrap">
+          <div className="zro-table-wrap" tabIndex={0} role="region" aria-label="Tabela">
             <table className="zro-table">
               <thead>
                 <tr>

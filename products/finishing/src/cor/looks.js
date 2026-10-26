@@ -42,7 +42,60 @@ export const REVELA_LOOK = {
   pele: { centro: 60, largura: 28, junta: 0.35, croma: 1.0 },
   sombras: [-0.008, -0.016], // petróleo
   altas: [0.005, 0.018], // âmbar
+  saturacao: 1, // croma geral (0 = preto e branco)
 }
+
+/**
+ * Os looks da Revela: o mesmo motor de película, com outra curva, outra densidade e outra separação. Todos são feitos
+ * aqui, do zero (nenhum vem de pack de terceiros). A ordem é a da grade na tela de LUT.
+ */
+export const LOOKS = [
+  REVELA_LOOK,
+  {
+    ...REVELA_LOOK,
+    id: 'suave',
+    nome: 'Suave',
+    frases: ['Preto leitoso, pouco contraste.', 'Cor contida, separação leve.'],
+    preto: 0.12, // preto leitoso, de cópia lavada
+    branco: 0.93,
+    contraste: 3,
+    densidade: 0.08,
+    saturacao: 0.7,
+    sombras: [0.002, -0.012],
+    altas: [0.006, 0.016],
+  },
+  {
+    ...REVELA_LOOK,
+    id: 'petroleo',
+    nome: 'Petróleo',
+    frases: ['Mais contraste.', 'Sombras petróleo, altas laranja.'],
+    contraste: 6.4,
+    saturacao: 1.1,
+    sombras: [-0.026, -0.04], // sombra fria mais funda
+    altas: [0.02, 0.045], // alta laranja
+  },
+  {
+    ...REVELA_LOOK,
+    id: 'dourado',
+    nome: 'Dourado',
+    frases: ['Verde mais oliva.', 'Sombras e altas quentes.'],
+    verde: { ...REVELA_LOOK.verde, gira: -24, croma: 0.74 },
+    saturacao: 1.08,
+    sombras: [0.012, 0.02], // sombra quente
+    altas: [0.016, 0.05],
+  },
+  {
+    ...REVELA_LOOK,
+    id: 'pb',
+    nome: 'P&B',
+    frases: ['Preto e branco com a curva de filme.'],
+    contraste: 6.2,
+    densidade: 0,
+    saturacao: 0,
+    sombras: [0, 0],
+    altas: [0, 0],
+  },
+]
 
 /** Curva de filme em L (0–1): S logístico misturado com a reta, preto e branco deslocados. Monótona. */
 export function curvaDeFilme(L, p = REVELA_LOOK) {
@@ -53,11 +106,11 @@ export function curvaDeFilme(L, p = REVELA_LOOK) {
 }
 
 /**
- * Revela Look. `opcoes.tom` / `opcoes.cor` (padrão true) ligam só a curva ou só a cor, como na tela;
- * `opcoes.intensidade` (0–1, padrão 1).
+ * Um look da Revela (`opcoes.look`: id de `LOOKS`, padrão o Revela Look). `opcoes.tom` / `opcoes.cor` (padrão true)
+ * ligam só a curva ou só a cor, como na tela; `opcoes.intensidade` (0–1, padrão 1).
  */
 export function criarRevelaLook(opcoes = {}) {
-  const p = REVELA_LOOK
+  const p = LOOKS.find((l) => l.id === opcoes.look) ?? REVELA_LOOK
   const intensidade = limitar(opcoes.intensidade ?? 1, [0, 1])
   const usarTom = opcoes.tom ?? true
   const usarCor = opcoes.cor ?? true
@@ -77,7 +130,7 @@ export function criarRevelaLook(opcoes = {}) {
         C *= 1 + verde * (p.verde.croma - 1) + azul * (p.azul.croma - 1)
       }
       // saturação por luz: meio cheio, altas e sombras mais contidas
-      C *= 1.1 - 0.4 * suave(0.72, 1, L2) - 0.15 * (1 - suave(0.04, 0.22, L2))
+      C *= p.saturacao * (1.1 - 0.4 * suave(0.72, 1, L2) - 0.15 * (1 - suave(0.04, 0.22, L2)))
       L2 -= p.densidade * C * suave(0.1, 0.5, L2)
       a2 = C * Math.cos(h * GRAU)
       b2 = C * Math.sin(h * GRAU)
@@ -91,6 +144,7 @@ export function criarRevelaLook(opcoes = {}) {
 
   return {
     preset: p.id,
+    nome: p.nome,
     aplicar(r, g, b, t = intensidade) {
       const [L, a, bb] = codigoParaOklab(r, g, b)
       const o = emOklab(L, a, bb, limitar(t, [0, 1]))
@@ -100,7 +154,7 @@ export function criarRevelaLook(opcoes = {}) {
     resumo: {
       intensidade,
       tom: usarTom ? { preto: curvaDeFilme(0, p), cinza: curvaDeFilme(0.5, p), branco: curvaDeFilme(1, p) } : { preto: 0, cinza: 0.5, branco: 1 },
-      frases: [
+      frases: p.frases ?? [
         'Curva de filme: preto aberto, meio com contraste, altas que deitam.',
         'Densidade: cor forte fica mais escura, como no filme.',
         'Verde puxa para oliva, azul para petróleo, pele se junta.',

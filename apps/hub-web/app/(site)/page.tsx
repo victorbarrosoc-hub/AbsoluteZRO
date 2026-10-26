@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import { Pill, ProductMark } from '@zro/ui'
+import { Pill, ProductMark, ZroSymbol } from '@zro/ui'
 import { productColor } from '@/components/app-tile'
 import { CycleO } from '@/components/cycle-o'
 import { MotionGate } from '@/components/motion-gate'
@@ -58,7 +58,7 @@ export default async function Landing() {
     <>
       <section className="ahero" aria-labelledby="hero-title">
         <div className="ahero__text">
-          <img className="ahero__mark" src="/brand/absolute-zro-o-alpha.webp" alt="" width={56} height={50} />
+          <ZroSymbol className="ahero__mark" size={56} animated />
           <h1 className="ahero__title" id="hero-title">
             <span className="ahero__thin">O futuro começa</span>
             <span className="ahero__bold">do zero.</span>
@@ -252,7 +252,7 @@ export default async function Landing() {
       </section>
 
       <section className="closing reveal" aria-labelledby="closing-title">
-        <img className="closing__mark" src="/brand/absolute-zro-o-alpha.webp" alt="" width={40} height={36} loading="lazy" />
+        <ZroSymbol className="closing__mark" size={40} />
         <h2 id="closing-title" className="display-2 atitle">
           <span className="atitle__thin">Seus dados, seus acessos.</span>
           <span className="atitle__bold">Nada além do contratado.</span>

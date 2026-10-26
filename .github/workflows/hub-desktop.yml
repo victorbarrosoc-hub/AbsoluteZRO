@@ -131,7 +131,7 @@ jobs:
             apps/hub-desktop/dist/AbsoluteZRO-*-windows-setup.exe
             apps/hub-desktop/dist/AbsoluteZRO-sha256-*.json
           fail_on_unmatched_files: false
-          body: Instaladores gerados a partir da main. Sem assinatura da Apple/Microsoft por enquanto e sem atualização automática; o app avisa quando há versão nova. Baixe em absolutezro.vercel.app/baixar.
+          body: Instaladores gerados a partir da main. Sem assinatura da Apple/Microsoft por enquanto e sem atualização automática; o app avisa quando há versão nova. Baixe em absolutezro.com/baixar.
 
   # Depois dos DOIS instaladores no Release: o versao.json com o SHA-256 de cada um (o HUB serve em /baixar/hub/versao).
   versao:
@@ -157,7 +157,7 @@ jobs:
           target_commitish: ${{ github.sha }}
           files: apps/hub-desktop/versao.json
           fail_on_unmatched_files: true
-          body: Instaladores gerados a partir da main. Sem assinatura da Apple/Microsoft por enquanto e sem atualização automática; o app avisa quando há versão nova. Baixe em absolutezro.vercel.app/baixar.
+          body: Instaladores gerados a partir da main. Sem assinatura da Apple/Microsoft por enquanto e sem atualização automática; o app avisa quando há versão nova. Baixe em absolutezro.com/baixar.
       - run: node scripts/release.mjs limpar
         env:
           GITHUB_TOKEN: ${{ github.token }}

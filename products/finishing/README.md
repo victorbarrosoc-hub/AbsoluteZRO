@@ -43,6 +43,27 @@ LUT ou DCTL de terceiros). Em Oklab: curva de filme (preto aberto, meio com cont
 altas quentes. Na tela de LUT, o botão **Revela Look** entra no lugar da referência; sai `revela-look-33.cube` ou
 `-65.cube` (Rec.709 → Rec.709, depois da conversão do LOG). Contraste, Cor e Intensidade valem para ele também.
 
+### Looks da Revela e a grade
+
+Cinco looks do mesmo motor (`LOOKS` em `src/cor/looks.js`), todos feitos aqui: **Revela Look**, **Suave** (preto
+leitoso, pouco contraste), **Petróleo** (sombras frias fundas, altas laranja), **Dourado** (quente, verde oliva) e
+**P&B**. Na tela de LUT, assim que entra o seu frame, a grade embaixo do palco mostra o frame em todos os looks, lado a
+lado e sem texto (o nome fica no `title` e no rótulo do palco). Só o frame já basta: ele entra com o Revela Look. Se a
+pessoa trouxe uma referência, ela é a primeira da grade ("Sua referência") e dá para voltar a ela.
+
+### Exportar para outro editor
+
+"Para" escolhe o editor: Resolve (33 ou 65), Premiere Pro, Final Cut Pro e CapCut (33, o tamanho que todos abrem). O
+nome do arquivo leva o editor (`revela-look-33-premiere.cube`) e o aviso diz onde importar. Lightroom continua no botão
+**Preset Lightroom** (.xmp aproximado: curvas e HSL); o teste confere o XML de cada look (curvas de 0 a 255 subindo,
+HSL dentro de ±100, P&B com saturação −100 em todas as faixas).
+
+## Tema
+
+Claro por padrão, como a família; o escuro é escolha no menu (lua/sol), lembrado em `localStorage` (`revela-tema`,
+`app/tema.js` no `<head>`, sem piscar). Em volta da imagem, o palco continua preto nos dois temas. Títulos em Figtree,
+servida da própria Revela (`fontes/`, OFL), porque a CSP só aceita `'self'`.
+
 ## Navegação
 
 As ferramentas (LUT, CST, Entrega, Converter) ficam num dock embaixo, como as páginas do DaVinci Resolve: flutuante no
@@ -60,6 +81,16 @@ Intermediate/Wide Gamut e ACEScct/AP1. Saídas: Rec.709, sRGB, Rec.2020, P3-D65,
 Matrizes derivadas das primárias (Bradford quando o branco muda, como no ACES). "Suavizar altas" deita a luz acima
 do joelho em vez de cortar; cor fora do gamut perde saturação em vez de cortar canal. Convenção de nível: valor = código
 de 10 bits ÷ 1023 (o que a LUT recebe no Resolve).
+
+### CST por clipe, a partir do Synquei
+
+Na tela de CST, **Por clipe, do Synquei**: o relatório que o Synquei já exporta (.csv com `arquivo` e `aparelho`) vira
+a lista de câmeras, com o log sugerido pelo nome (FX30 → S-Log3/S-Gamut3.Cine, GH6 → V-Log; celular e GoPro ficam sem
+log). A pessoa confirma e baixa **Script do Resolve** (`revela-cst-por-clipe.py`, `src/cor/porclipe.js`): as LUTs
+vão dentro, comprimidas; o script grava em `~/Revela/LUT` e põe a LUT certa no nó 1 de cada clipe da timeline aberta,
+casando pelo nome do arquivo. Clipe fora do relatório ou sem log fica como estava. O Synquei não sabe o perfil de log
+ligado na câmera, só a câmera: por isso a sugestão é ponto de partida. O teste usa o `toCsv` do próprio Synquei e roda
+o script num Resolve de mentira em Python.
 
 ## Tela
 
@@ -116,6 +147,12 @@ Bibliotecas em `vendor/` (copiadas por `npm run vendor`, teste confere a cópia)
 "Converter com a Revela" (botão direito num vídeo do Drive, ou pelo celular) usa os mesmos destinos e o mesmo plano
 daqui: `src/entrega/destinos.js` e `src/conversao/plano.js` são copiados para `products/sobedesce/src/revela/` e um
 teste de lá confere a cópia. Mudou um destino aqui, copie para lá.
+
+### Converter com log
+
+No Converter, "Log da câmera" aplica o CST da Revela (mesmas curvas da tela de CST) em cada quadro, na GPU
+(`app/lut-gpu.js`: LUT 65³ numa textura 3D de meia precisão, filtro trilinear do hardware). O shader desfaz a faixa de
+vídeo (16–235) antes da curva, porque as curvas log são definidas sobre o código cheio. Sai em Rec.709 marcado BT.709.
 
 ## Protótipo: referência → LUT criativa
 

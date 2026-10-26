@@ -30,7 +30,7 @@ const NAV_BAIXO = [
 // Os outros apps da Absolute ZRO, cada um com o próprio ícone (cópias em public/familia/). Abrem no navegador do
 // sistema: no Electron pela ponte, no navegador numa aba nova; a janela do app nunca sai do SOBEDESCE.
 const FAMILIA = [
-  { href: 'https://absolutezro.vercel.app', nome: 'Absolute ZRO', img: '/familia/absolute-zro.png' },
+  { href: 'https://absolutezro.com', nome: 'Absolute ZRO', img: '/familia/absolute-zro.png' },
   { href: 'https://carrodofreela.com.br', nome: 'Carro do Freela', img: '/familia/carro-do-freela.png' },
   { href: 'https://nossom-teal.vercel.app', nome: 'Nossom', img: '/familia/nossom.svg' },
   { href: 'https://revela-zro.vercel.app', nome: 'Revela', img: '/familia/revela.svg' },

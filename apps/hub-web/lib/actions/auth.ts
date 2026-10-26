@@ -115,7 +115,7 @@ export async function revokeSessionAction(fd: FormData) {
   const auth = await getAuth()
   if (!auth) redirect('/entrar')
   await revokeOwnSession(db(), auth.user.id, str(fd, 'sessionId'))
-  redirect('/perfil')
+  redirect('/perfil/seguranca')
 }
 
 export async function themeAction(fd: FormData) {

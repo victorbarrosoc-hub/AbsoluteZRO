@@ -5,6 +5,7 @@ import { useEffect, useId, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { ArrowRight, LoaderCircle, ShieldCheck, UserRound, Eye, EyeOff } from 'lucide-react';
 import { Brand } from './brand';
+import { ZroSymbol } from './zro-symbol';
 import AIMotion from './ai-motion';
 export function AccountForm({
   next,
@@ -130,8 +131,7 @@ export function AccountForm({
                 className="button primary account-zro-button"
                 href={'/api/zro/entrar?volta=' + encodeURIComponent(next)}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/absolute-zro-o-alpha.webp" alt="" width={20} height={20} />
+                <ZroSymbol size={20} />
                 Entrar com Absolute ZRO
               </a>
               <span className="account-zro-divider">ou com e-mail e senha</span>
@@ -151,8 +151,7 @@ export function AccountForm({
                 </p>
               )}
               <a className="button primary account-zro-create-button" href={createHref}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/absolute-zro-o-alpha.webp" alt="" width={20} height={20} />
+                <ZroSymbol size={20} />
                 Criar conta com a Absolute ZRO
               </a>
             </motion.div>

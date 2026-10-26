@@ -1,7 +1,7 @@
 // Fundo da janela do .dmg (540×380, e 1080×760 para tela Retina), no tema claro da marca: papel #fcfbfc com uma luz
 // muito leve, o wordmark oficial em grafite no alto e uma seta fina do ícone do app para a pasta Aplicativos
 // (posições em electron-builder.yml › dmg.contents). Origem do wordmark: build/marca-fonte.png, a versão PNG de
-// apps/hub-web/public/brand/absolute-zro-wordmark-ink.webp. Roda junto do `npm run icons`.
+// apps/hub-web/public/brand/absolute-zro-grafite.svg (marca flat). Roda junto do `npm run icons`.
 
 import fs from 'node:fs'
 import path from 'node:path'

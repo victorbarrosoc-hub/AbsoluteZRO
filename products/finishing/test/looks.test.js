@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { aplicar, assar, escreverCube, lerCube } from '../src/cor/cube.js'
-import { criarRevelaLook, curvaDeFilme } from '../src/cor/looks.js'
+import { LOOKS, criarRevelaLook, curvaDeFilme } from '../src/cor/looks.js'
 import { codigoParaOklab } from '../src/cor/oklab.js'
 
 const matiz = ([, a, b]) => (Math.atan2(b, a) * 180) / Math.PI
@@ -73,4 +73,45 @@ test('Revela Look: vira .cube válido e a LUT segue o look', () => {
     const b = look.aplicar(...c)
     a.forEach((v, i) => assert.ok(Math.abs(v - b[i]) < 0.01))
   }
+})
+
+test('looks da Revela: cinco, com ids e nomes únicos, cada um diferente dos outros', () => {
+  assert.equal(LOOKS.length, 5)
+  assert.equal(new Set(LOOKS.map((l) => l.id)).size, 5)
+  assert.equal(new Set(LOOKS.map((l) => l.nome)).size, 5)
+  const amostras = [
+    [0.12, 0.12, 0.12],
+    [0.5, 0.45, 0.4],
+    [0.85, 0.85, 0.85],
+    [0.2, 0.55, 0.3],
+    [0.25, 0.35, 0.65],
+  ]
+  const saida = (id) => amostras.flatMap((c) => criarRevelaLook({ look: id }).aplicar(...c))
+  for (const a of LOOKS)
+    for (const b of LOOKS) {
+      if (a.id >= b.id) continue
+      const d = saida(a.id).reduce((s, v, i) => s + Math.abs(v - saida(b.id)[i]), 0) / (amostras.length * 3)
+      assert.ok(d > 0.01, `${a.nome} e ${b.nome} estão iguais demais (${d.toFixed(4)})`)
+    }
+})
+
+test('looks da Revela: cinza continua subindo, P&B sem cor, id desconhecido cai no Revela Look', () => {
+  for (const l of LOOKS) {
+    const look = criarRevelaLook({ look: l.id })
+    let antes = -1
+    for (let i = 0; i <= 20; i++) {
+      const [L] = codigoParaOklab(...look.aplicar(i / 20, i / 20, i / 20))
+      assert.ok(L > antes, `${l.nome}: cinza desce em ${i}`)
+      antes = L
+    }
+  }
+  const pb = criarRevelaLook({ look: 'pb' })
+  for (const c of [
+    [0.8, 0.2, 0.1],
+    [0.1, 0.6, 0.3],
+    [0.2, 0.3, 0.9],
+  ])
+    assert.ok(croma(codigoParaOklab(...pb.aplicar(...c))) < 0.004, `P&B com cor em ${c}`)
+  assert.deepEqual(criarRevelaLook({ look: 'nao-existe' }).aplicar(0.4, 0.5, 0.6), criarRevelaLook().aplicar(0.4, 0.5, 0.6))
+  assert.equal(criarRevelaLook({ look: 'petroleo' }).nome, 'Petróleo')
 })
