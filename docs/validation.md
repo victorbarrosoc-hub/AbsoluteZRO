@@ -478,3 +478,16 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - Tela do computador conferida no Chromium com o app de verdade: menu, janela com os quatro cartões nos temas escuro e
   claro, andamento e pronto com o arquivo novo na pasta.
 - Não validado: Mac e Windows reais (VideoToolbox, NVENC); iPhone e Android reais (velocidade, memória, Safari).
+
+## Domínio absolutezro.com e junção dos PRs 34 a 37 (26/10/2026)
+
+- HUB em `https://absolutezro.com` (`/api/health` ok, emissor OIDC no domínio novo, `www` → 308). `ZRO_ISSUER` no domínio
+  novo nos projetos Vercel de Synquei, SOBEDESCE, NOSSOM, TPeasy e Carro do Freela; "Entrar com Absolute ZRO" de cada um
+  leva ao `/oauth/authorize` do domínio novo e daí à tela de entrar. Endereços fixos `absolutezro.vercel.app` trocados.
+- Deploys: o passo de ignorar build compara com o último deploy (`VERCEL_GIT_PREVIOUS_SHA`), não com `HEAD^`; saiu o
+  `ignoreCommand` do `vercel.json` do Carro do Freela e do Revela, que sobrescrevia o do projeto.
+- Junção: raiz `lint`, `format:check`, `typecheck` ok, `npm test` **131/131**, `build` ok, `test:e2e` **20/20**. App de
+  computador **22/22**. Synquei **63/63**. NOSSOM `typecheck` ok e testes sem falha. SOBEDESCE **715/715** e web
+  **231/231**.
+  Carro do Freela **83/87**: as 4 que falham (`fase1-sem-dinheiro`, `seguranca`, `tela-de-inicio`, `versoes`) falham
+  igual na `main`, porque dependem das páginas geradas por `npm run build:fases`.
