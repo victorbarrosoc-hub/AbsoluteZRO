@@ -65,6 +65,9 @@
         ><button id="usar-look" class="vidro" type="button" aria-pressed="false" title="Look de película da Revela, pronto: não precisa de referência">
           <span data-icone="brilho"></span> Revela Look
         </button>
+        <button id="usar-clone" class="vidro" type="button" aria-pressed="false" title="O mesmo frame com e sem a cor vira uma LUT">
+          <span data-icone="copiar"></span> Clonar LUT
+        </button>
       </div>
 
       <p id="estado" class="estado" role="status" aria-live="polite"></p>
@@ -109,6 +112,14 @@
           </div>
 
           <button id="baixar" class="vidro vidro--tinta grande" type="button"><span data-icone="baixar"></span> Baixar LUT</button>
+          <button
+            id="baixar-xmp"
+            class="vidro"
+            type="button"
+            title="Para fotos. Aproximado: o Lightroom não aplica LUT em preset; curvas e HSL chegam perto do look"
+          >
+            <span data-icone="imagem"></span> Preset Lightroom
+          </button>
 
           <details class="leitura">
             <summary id="titulo-leitura">Leitura da referência</summary>

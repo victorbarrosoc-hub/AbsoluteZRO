@@ -59,6 +59,8 @@ before(async () => {
   writeFileSync(join(dir, 'filme.png'), gravarPng(aplicarEmImagem(cena(21, 320, 180), lookConhecido)))
   writeFileSync(join(dir, 'meu-frame.png'), gravarPng(cena(22, 320, 180)))
   writeFileSync(join(dir, 'texto.txt'), 'não é imagem')
+  // o mesmo frame sem a cor, para o Clonar LUT (o filme.png é ele com o look)
+  writeFileSync(join(dir, 'antes.png'), gravarPng(cena(21, 320, 180)))
 })
 
 after(async () => {
@@ -493,4 +495,36 @@ test('dock embaixo e menu recolhível: computador lembra, celular abre em gaveta
   assert.ok(largura <= 375, `rolagem horizontal: ${largura}px`)
   assert.deepEqual(erros, [])
   await celular.close()
+})
+
+test('Clonar LUT e preset Lightroom: o mesmo frame com e sem a cor vira .cube e .xmp', async () => {
+  const pagina = await navegador.newPage({ acceptDownloads: true })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  await pagina.goto(endereco + 'lut.html')
+  await pagina.locator('#usar-clone').click()
+  assert.equal(await pagina.locator('#usar-clone').getAttribute('aria-pressed'), 'true')
+  assert.equal(await pagina.locator('#caixa-referencia strong').textContent(), 'Com a cor')
+  await pagina.setInputFiles('#arquivo-referencia', join(dir, 'filme.png'))
+  await pagina.setInputFiles('#arquivo-material', join(dir, 'antes.png'))
+  await pagina.getByText('Pronto. Arraste sobre a imagem para comparar.').waitFor()
+  assert.equal(await pagina.getByRole('button', { name: 'Conta-gotas' }).isDisabled(), true)
+  const [cube] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Baixar LUT' }).click()])
+  assert.equal(cube.suggestedFilename(), 'revela-clone-33.cube')
+  const [xmp] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Preset Lightroom' }).click()])
+  assert.equal(xmp.suggestedFilename(), 'revela-clone.xmp')
+  const texto = readFileSync(await xmp.path(), 'utf8')
+  assert.match(texto, /<rdf:li xml:lang="x-default">Revela clone<\/rdf:li>/)
+  assert.match(texto, /<crs:ToneCurvePV2012Blue>/)
+  // o clone, aplicado no "sem a cor", chega perto do "com a cor"
+  const perto = await pagina.evaluate(() => {
+    const c = document.getElementById('previa')
+    const d = document.getElementById('divisao')
+    d.value = '0'
+    d.dispatchEvent(new Event('input'))
+    return c.width > 0
+  })
+  assert.ok(perto)
+  assert.deepEqual(erros, [])
+  await pagina.close()
 })

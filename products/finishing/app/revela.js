@@ -7,6 +7,8 @@ import './conta.js'
 import './menu.js'
 import { aplicar, assar, escreverCube } from '../src/cor/cube.js'
 import { oklabParaCodigo } from '../src/cor/oklab.js'
+import { clonarLut } from '../src/cor/clonar.js'
+import { presetLightroom } from '../src/cor/lightroom.js'
 import { criarRevelaLook } from '../src/cor/looks.js'
 import { amostrar, analisar, criarLook, descrever, descreverSaturacao } from '../src/cor/referencia.js'
 import { ICONES, escalonar, icones, svg } from './visual.js'
@@ -27,6 +29,7 @@ let camadas = null // { antes, depois } em canvas fora da tela
 let pares = [] // conta-gotas: [{ ref: [L, a, b], mat: [L, a, b] }]
 let pegando = null // null | { etapa: 'ref' | 'mat', ref?: [L, a, b] }
 let preset = null // 'revela' quando a referência é o Revela Look (src/cor/looks.js)
+let clone = false // Clonar LUT: a caixa da esquerda é o frame COM a cor, a da direita o mesmo frame SEM (src/cor/clonar.js)
 
 function avisar(texto, erro = false) {
   estado.textContent = texto
@@ -52,6 +55,15 @@ function desenhar(bm, lado) {
   const ctx = c.getContext('2d', { willReadFrequently: true })
   ctx.drawImage(bm, 0, 0, c.width, c.height)
   return ctx.getImageData(0, 0, c.width, c.height)
+}
+
+function desenharEm(bm, largura, altura) {
+  const c = document.createElement('canvas')
+  c.width = largura
+  c.height = altura
+  const ctx = c.getContext('2d', { willReadFrequently: true })
+  ctx.drawImage(bm, 0, 0, largura, altura)
+  return ctx.getImageData(0, 0, largura, altura)
 }
 
 function paraPixels(dados) {
@@ -106,9 +118,35 @@ for (const qual of ['referencia', 'material']) {
 // look por referência.
 function usarPreset(id) {
   preset = id
+  if (id) usarClone(false)
   $('usar-look').setAttribute('aria-pressed', String(Boolean(id)))
-  $('titulo-leitura').textContent = id ? 'Leitura do look' : 'Leitura da referência'
+  $('titulo-leitura').textContent = id ? 'Leitura do look' : clone ? 'Leitura do clone' : 'Leitura da referência'
 }
+
+// Clonar LUT: as duas caixas viram "com a cor" e "sem a cor" do mesmo frame. A LUT sai do pixel a pixel.
+function usarClone(ligar) {
+  clone = ligar
+  $('usar-clone').setAttribute('aria-pressed', String(ligar))
+  $('caixa-referencia').querySelector('strong').textContent = ligar ? 'Com a cor' : 'Referência'
+  $('caixa-material').querySelector('strong').textContent = ligar ? 'Sem a cor' : 'Seu frame'
+  $('titulo-leitura').textContent = ligar ? 'Leitura do clone' : preset ? 'Leitura do look' : 'Leitura da referência'
+}
+
+$('usar-clone').addEventListener('click', async () => {
+  const ligar = !clone
+  if (ligar && preset) {
+    // o Revela Look não é imagem: a caixa da esquerda volta a esperar o frame com a cor
+    usarPreset(null)
+    imagens.referencia = null
+    const img = $('caixa-referencia').querySelector('img')
+    img.hidden = true
+    img.removeAttribute('src')
+    $('caixa-referencia').querySelector('.acao').textContent = 'Escolher ou soltar'
+  }
+  usarClone(ligar)
+  if (imagens.referencia && imagens.material) await calcular()
+  else avisar(ligar ? 'O mesmo frame duas vezes: com a cor e sem a cor.' : 'Escolha a referência e o seu frame.')
+})
 
 $('usar-look').addEventListener('click', async () => {
   usarPreset('revela')
@@ -143,8 +181,19 @@ const espera = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r
 async function calcular() {
   avisar('Lendo as duas imagens…')
   await espera()
-  const refImg = preset ? null : paraPixels(desenhar(imagens.referencia.bm, LADO_ANALISE))
   const matImg = paraPixels(desenhar(imagens.material.bm, LADO_ANALISE))
+  if (clone) {
+    const a = imagens.material.bm
+    const d = imagens.referencia.bm
+    if (Math.abs(a.width / a.height - d.width / d.height) > 0.02) return avisar('As duas imagens precisam ser o mesmo frame, no mesmo enquadramento.', true)
+    // o "com a cor" é desenhado exatamente no tamanho do "sem a cor": pixel com pixel
+    const depois = paraPixels(desenharEm(d, matImg.largura, matImg.altura))
+    analise = { clone: clonarLut(matImg, depois), matImg, nomeRef: 'clone', previa: desenhar(a, LADO_PREVIA) }
+    pares = []
+    cancelarPegada()
+    return refazerLook()
+  }
+  const refImg = preset ? null : paraPixels(desenhar(imagens.referencia.bm, LADO_ANALISE))
   analise = {
     ref: preset ? null : analisar(refImg),
     mat: preset ? null : analisar(matImg),
@@ -164,7 +213,7 @@ async function refazerLook() {
   avisar('Calculando o look…')
   await espera()
   const usar = { tom: $('usar-tom').checked, cor: $('usar-cor').checked }
-  look = preset ? criarRevelaLook(usar) : criarLook(analise.ref, analise.mat, { ...usar, pares })
+  look = analise.clone ?? (preset ? criarRevelaLook(usar) : criarLook(analise.ref, analise.mat, { ...usar, pares }))
   mostrarPares()
   mostrarLeitura()
   refazerPrevia()
@@ -220,6 +269,16 @@ function pintar() {
 }
 
 function mostrarLeitura() {
+  if (look.preset === 'clone') {
+    const { erro } = look.resumo
+    $('tom').textContent = 'Feita do mesmo frame, com e sem a cor.'
+    $('faixas').replaceChildren(
+      ...[`No próprio frame, a LUT fica a ${(erro * 100).toFixed(1)}% do original com a cor.`, 'Cores que o frame não tem seguem a correção geral.'].map(
+        (frase) => Object.assign(document.createElement('li'), { textContent: frase }),
+      ),
+    )
+    return
+  }
   const { tom } = look.resumo
   const pct = (v) => `${Math.round(v * 100)}%`
   $('tom').textContent = $('usar-tom').checked
@@ -271,7 +330,7 @@ function mostrarPares() {
   )
   $('limpar-pares').hidden = !pares.length
   // o conta-gotas compara com uma referência: no Revela Look não há o que marcar
-  $('marcar-par').disabled = Boolean(preset) || pares.length >= 3
+  $('marcar-par').disabled = Boolean(preset) || clone || pares.length >= 3
 }
 
 function cancelarPegada() {
@@ -363,21 +422,45 @@ $('baixar').addEventListener('click', async () => {
   await espera()
   const t = intensidade()
   const lut = assar((r, g, b) => look.aplicar(r, g, b, t), tamanho)
-  const base = preset
-    ? 'look'
-    : analise.nomeRef
-        .replace(/\.[^.]+$/, '')
-        .replace(/[^\p{L}\p{N}_-]+/gu, '-')
-        .slice(0, 60) || 'referencia'
+  const base = nomeBase()
   const texto = escreverCube(lut, preset ? `Revela Look - ${Math.round(t * 100)}%` : `Revela - ${base} - ${Math.round(t * 100)}%`)
+  baixarTexto(texto, `revela-${base}-${tamanho}.cube`)
+  botao.disabled = false
+  avisar(`LUT de ${tamanho} pontos baixada. No Resolve: botão direito no nó › LUT.`)
+})
+
+/** Nome do arquivo e do look, a partir do modo e da referência. */
+function nomeBase() {
+  if (preset) return 'look'
+  if (clone) return 'clone'
+  return (
+    analise.nomeRef
+      .replace(/\.[^.]+$/, '')
+      .replace(/[^\p{L}\p{N}_-]+/gu, '-')
+      .slice(0, 60) || 'referencia'
+  )
+}
+
+function baixarTexto(texto, nome) {
   const url = URL.createObjectURL(new Blob([texto], { type: 'text/plain' }))
   const a = document.createElement('a')
   a.href = url
-  a.download = `revela-${base}-${tamanho}.cube`
+  a.download = nome
   document.body.append(a)
   a.click()
   a.remove()
   setTimeout(() => URL.revokeObjectURL(url), 10_000)
-  botao.disabled = false
-  avisar(`LUT de ${tamanho} pontos baixada. No Resolve: botão direito no nó › LUT.`)
+}
+
+// Preset para Lightroom: curvas e HSL que chegam perto do look (o Lightroom não aplica LUT em preset)
+$('baixar-xmp').addEventListener('click', () => {
+  if (!look) return
+  const t = intensidade()
+  const base = nomeBase()
+  const nome = preset ? 'Revela Look' : clone ? 'Revela clone' : `Revela ${base}`
+  baixarTexto(
+    presetLightroom((r, g, b) => look.aplicar(r, g, b, t), nome),
+    `revela-${base}.xmp`,
+  )
+  avisar('Preset baixado. No Lightroom: Predefinições › + › Importar.')
 })
