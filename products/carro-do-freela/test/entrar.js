@@ -224,6 +224,12 @@ const ok=[],bad=[]; const t=(c,m)=>(c?ok:bad).push(m);
         /* o campo continua no mesmo lugar, alcançável pelo ponto do meio */
         alcance:(()=>{ const e=em.getBoundingClientRect(); const x=document.elementFromPoint(e.left+e.width/2,e.top+e.height/2); return x===em||em.parentElement.contains(x) })() } });
     await p.mouse.move(24,H-24,{steps:4}); await p.waitForTimeout(900);
+    /* (26/out · 3) a transição do vidro pode não ter acabado aos 900 ms numa
+       máquina lenta (o CI reprovou com a pílula a meio caminho). Espera o
+       estado assentar, com teto: a régua abaixo continua a mesma. */
+    await p.waitForFunction(()=>{ const cx=document.getElementById('lg-cx'), ab=cx&&cx.querySelector('.lgn-abre'),
+        em=document.getElementById('lg-email');
+      return !!ab&&+getComputedStyle(ab).opacity>.95&&+getComputedStyle(em.parentElement).opacity<.05 },null,{timeout:4000}).catch(()=>{});
     const a=await est();
     t(a.compacto&&a.fundo<a.cx.h*.5,W+'×'+H+': ⟶⟶ com o cursor longe o vidro encolhe ('+Math.round(a.fundo)+' de '+Math.round(a.cx.h)+'px)');
     t(a.pilula>.95&&a.campo<.05,'e mostra a pílula "Entrar" no lugar da chave, com os campos escondidos');
