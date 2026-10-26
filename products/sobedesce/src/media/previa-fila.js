@@ -377,6 +377,19 @@ export class GeradorPrevias {
     }
   }
 
+  /**
+   * Roda `fn` na vaga única de conversão (o "Converter com a Revela" usa a mesma: uma conversão por vez no app).
+   * Desistir na espera não fura a fila.
+   */
+  emVaga(fn, signal) {
+    return this.#slot(fn, signal)
+  }
+
+  /** Sobe um arquivo gerado aqui por outra ferramenta (o convertido da Revela). Mesmas regras do proxy. */
+  subirArquivo(drive, opts) {
+    return this.#subir(drive, opts)
+  }
+
   /** Sobe um arquivo gerado aqui (proxy, tira de quadros) com o UploadTask de sempre. Devolve o id no Drive. */
   async #subir(drive, { localPath, name, parentId, driveId = null, replaceFileId = null, appProperties, signal, onFrac }) {
     const st = await fsp.stat(localPath)

@@ -18,6 +18,7 @@ import { qrSvg, shortcutSteps } from '../mobile/qr.js'
 import { gerarMiniaturasLote, resumoLote } from '../media/raw-thumb-lote.js'
 import { referenciasRoutes } from './referencias.js'
 import { registerPrevias } from './previas.js'
+import { registerRevela } from './revela.js'
 import { registerTamanho } from './tamanho.js'
 import { registerCopiar } from './copiar.js'
 import { registerFrames } from './frames.js'
@@ -452,6 +453,8 @@ export function createApi(ctx) {
       referencias: ctx.referencias?.status() ?? null,
       // "Gerar prévias": o lote atual (ou o último).
       previas: previas.view(),
+      // "Converter com a Revela": os trabalhos em andamento e os últimos que terminaram.
+      revela: revela.view(),
       // "Copiar de um link": a cópia atual (ou a última).
       copia: copias.view(),
       // Frames: o trabalho atual (ou o último).
@@ -500,6 +503,9 @@ export function createApi(ctx) {
 
   // Prévia leve (src/server/previas.js): /api/previas, /api/previas/pular e o lote /api/previas/lote.
   const previas = registerPrevias({ route, ctx, account, HttpProblem, toProblem })
+
+  // "Converter com a Revela" (src/server/revela.js): /api/revela e /api/revela/converter.
+  const revela = registerRevela({ route, ctx, account, HttpProblem })
 
   // Tamanho das pastas (src/server/tamanho.js): /api/drive/:acc/tamanho.
   const tamanhos = registerTamanho({ route, ctx, account, HttpProblem, toProblem })
@@ -1144,6 +1150,7 @@ export function createApi(ctx) {
       jobs.close()
       thumbJobs.close()
       previas.close()
+      revela.close()
       tamanhos.close()
       copias.close()
       frames.close()

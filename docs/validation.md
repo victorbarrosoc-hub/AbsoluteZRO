@@ -461,3 +461,20 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - Sites: Synquei `npm test`, SOBEDESCE `typecheck` e `npm test`, NOSSOM `typecheck` e `npm test` ok.
 - Não validado: instalação real num Mac e num Windows (sem os sistemas aqui), instalação da tela de início em iPhone e
   Android reais.
+
+## Revela no SOBEDESCE: "Converter com a Revela" (26/10/2026)
+
+- Um botão só (pedido do titular): converte o aparelho que tocou. Computador: ffmpeg do app. Celular: o próprio
+  aparelho, no navegador; o pedido ao computador que existia antes deste ajuste saiu (site sem mudança).
+- `products/sobedesce`: `test/revela.test.js` (**7/7**): cópias de products/finishing iguais (presets, plano, ícone e,
+  no celular, plano e Mediabunny), leitura do `ffmpeg -i` (ProRes 4K, HDR com `pq`, celular deitado), linha de
+  comando (45 Mbit/s no 4K do YouTube, GOP de 12 a 23,98 fps, tags 1-1-1, AAC 384k, 1080×1920 no Reels) e, com o ffmpeg
+  de verdade e o Drive falso, um ProRes do Drive vira `<nome>-youtube.mp4` na mesma pasta, H.264 1280×720 `bt709` nas
+  três tags com AAC 48 kHz, MD5 do Drive igual e nenhum temporário para trás. Trabalhos da tela (SSE, parar).
+- `test/revela-celular.test.js` (**1/1**, Chromium): o motor do app do celular, com a CSP de produção do `/app/`, lê um
+  ProRes de um "Drive" que só responde com token e por pedaços, troca o token recusado (401) e devolve H.264 1280×720
+  `bt709` com áudio. A CSP do `/app/` ganhou `'wasm-unsafe-eval'` e `worker-src blob:` (o teste mostrou o bloqueio).
+- Suíte do SOBEDESCE (`npm run test:fast`): estado inicial com a chave `revela`, app do celular 2.8.44 (cache v59).
+- Tela do computador conferida no Chromium com o app de verdade: menu, janela com os quatro cartões nos temas escuro e
+  claro, andamento e pronto com o arquivo novo na pasta.
+- Não validado: Mac e Windows reais (VideoToolbox, NVENC); iPhone e Android reais (velocidade, memória, Safari).
