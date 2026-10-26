@@ -99,9 +99,19 @@ export const DOWNLOADS: DownloadEntry[] = [
   },
   {
     productId: 'ai-edit',
-    status: 'web',
-    note: 'Abre no navegador, com a conta Absolute ZRO.',
-    options: [{ os: 'web', label: 'Navegador', detail: 'Computador', href: 'https://aeon.absolutezro.com', format: 'Sem instalar' }],
+    status: 'test',
+    note: 'Com a conta Absolute ZRO. O app de computador se atualiza sozinho.',
+    options: [
+      { os: 'mac', label: 'Mac', detail: 'Apple Silicon e Intel', href: 'https://aeon.absolutezro.com/baixar/mac', format: 'Instalador .dmg' },
+      { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11', href: 'https://aeon.absolutezro.com/baixar/windows', format: 'Instalador .exe' },
+      { os: 'web', label: 'Navegador', detail: 'Chrome ou Edge', href: 'https://aeon.absolutezro.com/app/', format: 'Sem instalar' },
+    ],
+    terminal: { mac: 'curl -fsSL https://aeon.absolutezro.com/instalar.sh | bash', windows: 'irm https://aeon.absolutezro.com/instalar.ps1 | iex' },
+    firstOpen: {
+      mac: 'Baixou o .dmg pelo navegador? Rode uma vez no Terminal: xattr -cr /Applications/AEON.app',
+      windows: 'Se o Windows avisar: Mais informações › Executar assim mesmo.',
+    },
+    moreUrl: 'https://aeon.absolutezro.com/#baixar',
   },
   {
     productId: 'finishing',

@@ -658,6 +658,10 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   SHA-256 conferido, `AEON.app` em Aplicativos). Site: download direto com o passo da quarentena, 390 px sem rolagem
   lateral.
 - Não validado: a troca de verdade num Mac e num Windows (só dá para ver do build 9 para o 10).
+- Posicionamento (titular, 26/10/2026): o AEON é editor completo e a IA é ajuda opcional. Textos do site, do app, do
+  HUB (linha do catálogo, página do projeto, migration 0014 para descrição e papel no fluxo) e regras do produto
+  (`products/ai-edit/CLAUDE.md`). Downloads do HUB: AEON com Mac, Windows e navegador; `/baixar/mac` e
+  `/baixar/windows` do site redirecionam para o Release (regra de "instalador pela rota /baixar do site" conferida).
 
 ## Página inicial de cinema (26/10/2026, estrutura escolhida pelo titular)
 

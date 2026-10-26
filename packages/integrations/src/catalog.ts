@@ -54,8 +54,9 @@ export const ADAPTERS: AdapterInfo[] = [
     strategy: 'AEON: site aeon.absolutezro.com e app de computador (products/ai-edit, ADR 0020), só com a conta Absolute ZRO',
     inputs: ['Vídeo ou áudio do computador ou cartões conferidos do SOBEDESCE', 'Preset de linguagem versionado'],
     outputs: [
+      'Edição completa na linha do tempo (cortar, aparar, mover, ajustes)',
       'Transcrição e legenda (SRT/VTT)',
-      'Cortes e zoom propostos para aprovar',
+      'Cortes e zoom sugeridos pela IA, só com aprovação',
       'Timeline FCPXML, xmeml, OTIO e EDL com ZroTimelineRef',
       'Vídeo final',
     ],

@@ -1,7 +1,7 @@
 {
   "name": "ai-edit",
   "version": "0.1.0",
-  "description": "Editor de vídeo da Absolute ZRO (nome provisório): a IA propõe cortes, zoom e legenda; você aprova. App de desktop para Mac e Windows.",
+  "description": "AEON, o editor de vídeo da Absolute ZRO: edição completa na linha do tempo, com IA opcional para cortes, zoom e legenda. App de desktop para Mac e Windows e no navegador.",
   "private": true,
   "type": "module",
   "main": "desktop/main.cjs",

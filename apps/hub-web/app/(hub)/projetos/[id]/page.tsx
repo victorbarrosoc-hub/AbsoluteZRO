@@ -392,8 +392,9 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
 
       <Card id="edicao" title="Decupagem e edição" eyebrow="AEON">
         <p className="zro-mute">
-          O AEON edita no próprio app: propõe cortes, zoom e legenda para você aprovar e entrega a timeline para o seu editor. O HUB não processa nada aqui; a
-          passagem segue os contratos <code>edit.selects.ready</code> e <code>edit.timeline.ready</code>.
+          O AEON é o editor completo: você monta e corta na linha do tempo, com a IA sugerindo cortes, zoom e legenda quando quiser, e entrega o vídeo ou a
+          timeline para o seu editor. O HUB não processa nada aqui; a passagem segue os contratos <code>edit.selects.ready</code> e{' '}
+          <code>edit.timeline.ready</code>.
         </p>
         <StepAccess step={step('ai-edit')} />
       </Card>
