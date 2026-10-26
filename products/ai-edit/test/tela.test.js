@@ -230,6 +230,18 @@ test('projeto novo: nome, formato vertical e quadros; renomear pela barra', asyn
   await pagina.keyboard.press('Enter')
   assert.equal(await pagina.evaluate(() => globalThis.__editor.h.atual.nome), 'Reels de novembro')
   await pagina.locator('#salvo[data-estado="ok"]').waitFor()
+
+  // tirar a mídia do projeto (o arquivo fica) e desfazer
+  await pagina.setInputFiles('#arquivo', join(dir, 'fala.mp4'))
+  await pagina.locator('.cartao-midia').waitFor()
+  await pagina.locator('.cartao-midia').hover()
+  await pagina.getByRole('button', { name: 'Tirar fala.mp4 do projeto' }).click()
+  await pagina.getByRole('heading', { name: /Solte o vídeo/ }).waitFor()
+  assert.equal(await pagina.evaluate(() => globalThis.__editor.h.atual.linha.clipes.length), 0)
+  assert.match(await pagina.locator('#aviso').innerText(), /continua no computador/)
+  await pagina.keyboard.press('Control+z')
+  await pagina.locator('.cartao-midia').waitFor()
+  assert.equal(await pagina.evaluate(() => globalThis.__editor.h.atual.midias.length), 1)
   assert.deepEqual(erros, [])
   await pagina.close()
 })

@@ -6,7 +6,7 @@ import { PRODUTO } from '../src/produto.js'
 import { simbolo, wordmark } from '../src/marca.js'
 import { Historico, dividir, remover, mover, aparar, linhaInicial, etiquetar, ajustar, ajustesDe, AJUSTES_PADRAO } from '../src/linha.js'
 import { COR_PROPOSTA, corDaMidia } from '../src/cores.js'
-import { adicionarMarcador, removerMarcador, aprovar, recusar, comPropostas, comTranscricao, editarPalavra, midiaPorId, novoProjeto, numeros, palavrasNaLinha, salvar, abrir, textoDa, zoomsAprovados } from '../src/projeto.js'
+import { adicionarMarcador, removerMarcador, removerMidia, aprovar, recusar, comPropostas, comTranscricao, editarPalavra, midiaPorId, novoProjeto, numeros, palavrasNaLinha, salvar, abrir, textoDa, zoomsAprovados } from '../src/projeto.js'
 import { proporCortes, proporZooms, resumo } from '../src/propostas.js'
 import { prepararPreset } from '../src/preset.js'
 import { envelope } from '../src/analise/silencio.js'
@@ -355,12 +355,25 @@ function desenharMidia() {
       corpo.querySelector('strong').title = m.caminho || m.nome
       corpo.querySelector('.fichas').append(...fichas.map((f) => Object.assign(document.createElement('span'), { className: 'ficha', textContent: f })))
       if (tr) li.classList.add('analisada')
-      li.append(corpo)
+      const tirar = document.createElement('button')
+      tirar.type = 'button'
+      tirar.className = 'tirar-midia'
+      tirar.title = 'Tirar do projeto (o arquivo continua no computador)'
+      tirar.setAttribute('aria-label', `Tirar ${m.nome} do projeto`)
+      tirar.innerHTML = '<svg><use href="#i-x"/></svg>'
+      tirar.onclick = () => tirarMidia(m)
+      li.append(corpo, tirar)
       return li
     }),
   )
   const falta = p.midias.some((m) => m.temAudio && !p.transcricoes[m.id])
   $('analisar').textContent = falta ? 'Analisar' : 'Analisar de novo'
+}
+
+// Tirar do projeto: só o projeto muda (o arquivo fica onde está) e o Desfazer devolve.
+function tirarMidia(m) {
+  fazer(removerMidia(P(), m.id), 'tirar mídia')
+  aviso(`${m.nome} saiu do projeto. O arquivo continua no computador.`)
 }
 
 // modelo de transcrição: Rápido ou Preciso

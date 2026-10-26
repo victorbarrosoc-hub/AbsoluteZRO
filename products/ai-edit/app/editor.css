@@ -574,11 +574,52 @@ svg {
   gap: 16px;
 }
 .cartao-midia {
+  position: relative;
   border-radius: var(--raio);
   background: var(--surface);
   border: 1px solid var(--line);
   overflow: hidden;
   animation: surgir 0.45s var(--mola) both;
+}
+.tirar-midia {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  backdrop-filter: blur(12px) saturate(1.4);
+  box-shadow: var(--pill-rim);
+  color: var(--text-strong);
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.9);
+  transition:
+    opacity 0.2s,
+    transform 0.25s var(--mola);
+}
+.tirar-midia svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.cartao-midia:hover .tirar-midia,
+.tirar-midia:focus-visible {
+  opacity: 1;
+  transform: none;
+}
+@media (hover: none) {
+  .tirar-midia {
+    opacity: 1;
+    transform: none;
+  }
 }
 .cartao-mini {
   aspect-ratio: 16 / 9;
