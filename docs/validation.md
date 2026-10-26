@@ -716,3 +716,16 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - `products/finishing`: `npm test` 89/89; TPEasy 23/23; raiz: lint, formato e typecheck.
 - Ícone do app (pedido do titular): placa branca chapada, sem sombra nem degradê, anel no centro e marca maior
   (`scripts/marca/icones.py`, diâmetro 0,56). Gerado de novo para o HUB (`--instalar`) e para o app (`npm run icons`).
+
+## App para computador 1.1.1: cliques voltam a funcionar no Mac (26/10/2026)
+
+- Causa: no Mac, a área de arrastar janela (`-webkit-app-region: drag`) da página da barra (`barra.css`, `.barra` com
+  `height: 100%`, isto é, a janela inteira por baixo do HUB) e da abertura (`abertura.css`, `body`) vale para a janela
+  toda e engole os cliques no painel. Os botões Voltar/Avançar/Início também ficavam no meio da janela, escondidos.
+- Correção: a barra arrasta só nos 38 px de cima (`ALTURA_BARRA`); a abertura não arrasta. `test/cliques.test.mjs`
+  (falha sem a correção, passa com ela); `apps/hub-desktop` `npm test` 25/25.
+- Conferido no Linux (Electron 44 em tela virtual, cliques e teclado reais pelo X): abertura, login em `/app/entrar`,
+  painel `/app` e clique em Planos na barra lateral. A barra renderizada tem 38 px com os botões dentro.
+- Painel no app: ferramenta sem versão para o computador (NOSSOM hoje) mostra **Abrir na web** em vez de ficar sem
+  botão. SOBEDESCE e Synquei têm instalador para Mac e Windows no catálogo (`/api/v1/desktop/apps`).
+- Não validado: o Mac de verdade (a área de arrastar só vale lá e no Windows); conferir no 1.1.1 instalado.

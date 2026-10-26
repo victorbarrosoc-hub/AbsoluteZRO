@@ -107,7 +107,7 @@ export default async function Painel() {
                   <p>{LINHA[a.productId] ?? a.roleInFlow}</p>
                 </div>
                 <div className="pcard__acoes">
-                  {instalavel && <AppActions id={a.productId} nome={a.name} liberado={a.access === 'contracted'} />}
+                  {instalavel && <AppActions id={a.productId} nome={a.name} liberado={a.access === 'contracted'} web={abrir} />}
                   {/* no navegador (sem a central) e para os apps da web: abrir o app, já com a conta quando há login único */}
                   {abrir && (
                     <a

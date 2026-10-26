@@ -21,7 +21,9 @@ body {
 
 .barra {
   position: relative;
-  height: 100%;
+  /* só a faixa da barra (ALTURA_BARRA no main.cjs). Esta página ocupa a janela inteira por baixo do HUB e, no Mac, a
+     área de arrastar vale para a janela toda: com height 100% ela engolia os cliques no painel. */
+  height: 38px;
   display: flex;
   align-items: center;
   gap: 6px;

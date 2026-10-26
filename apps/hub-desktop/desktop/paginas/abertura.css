@@ -19,7 +19,8 @@ body {
   user-select: none;
   -webkit-user-select: none;
   cursor: default;
-  -webkit-app-region: drag;
+  /* sem -webkit-app-region: drag. A área de arrastar fica na janela mesmo depois que a abertura sai e engole os
+     cliques no painel. */
   transition: opacity 0.45s ease;
 }
 body.sair {
