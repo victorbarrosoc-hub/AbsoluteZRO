@@ -3,7 +3,7 @@
 // movimento", tudo já aparece no lugar.
 import './conta.js'
 import { DESTINOS } from '../src/entrega/destinos.js'
-import { NOME_CURTO, glifo, svg } from './visual.js'
+import { ICONES, NOME_CURTO, glifo, svg } from './visual.js'
 
 document.documentElement.classList.add('js')
 const calmo = matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -53,3 +53,18 @@ const nav = document.getElementById('nav')
 const marcar = () => nav.classList.toggle('rolou', scrollY > 8)
 addEventListener('scroll', marcar, { passive: true })
 marcar()
+
+// Tema: claro é o padrão; o botão mostra para onde vai (lua no claro, sol no escuro)
+const botaoTema = document.getElementById('tema')
+function pintarTema() {
+  const escuro = window.revelaTema?.atual() === 'escuro'
+  const nome = escuro ? 'Tema claro' : 'Tema escuro'
+  botaoTema.replaceChildren(svg(ICONES[escuro ? 'sol' : 'lua']))
+  botaoTema.setAttribute('aria-label', nome)
+  botaoTema.title = nome
+}
+botaoTema?.addEventListener('click', () => {
+  window.revelaTema?.alternar()
+  pintarTema()
+})
+if (botaoTema) pintarTema()

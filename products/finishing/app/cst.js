@@ -5,6 +5,7 @@ import './conta.js'
 import './menu.js'
 import { aplicar, assar, escreverCube } from '../src/cor/cube.js'
 import { ENTRADAS, SAIDAS, criarCst } from '../src/cor/espacos.js'
+import { lerRelatorioSynquei, scriptPorClipe } from '../src/cor/porclipe.js'
 import { escalonar, icones } from './visual.js'
 
 icones()
@@ -128,4 +129,106 @@ $('baixar').addEventListener('click', async () => {
   setTimeout(() => URL.revokeObjectURL(url), 10_000)
   botao.disabled = false
   avisar(`LUT de ${tamanho} pontos baixada. No Resolve: primeiro nó, botão direito › LUT.`)
+})
+
+// ─────────── por clipe, a partir do relatório do Synquei ───────────
+// O relatório diz a câmera de cada arquivo; a pessoa confirma o log de cada câmera; sai um script do Resolve que põe
+// a LUT de CST no nó 1 de cada clipe (src/cor/porclipe.js).
+
+let aparelhos = []
+
+function baixarArquivo(texto, nome) {
+  const url = URL.createObjectURL(new Blob([texto], { type: 'text/plain' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = nome
+  document.body.append(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 10_000)
+}
+
+function mostrarCameras() {
+  $('lista-cameras').replaceChildren(
+    ...aparelhos.map((ap, i) => {
+      const li = document.createElement('li')
+      const nome = Object.assign(document.createElement('span'), { className: 'camera-nome', textContent: ap.nome })
+      const qtd = Object.assign(document.createElement('span'), { className: 'ficha', textContent: String(ap.arquivos.length) })
+      qtd.title = `${ap.arquivos.length} clipe(s)`
+      const sel = document.createElement('select')
+      sel.setAttribute('aria-label', `Log de ${ap.nome}`)
+      sel.append(
+        Object.assign(document.createElement('option'), { value: '', textContent: 'Sem log' }),
+        ...ENTRADAS.map((e) => Object.assign(document.createElement('option'), { value: e.id, textContent: e.nome })),
+      )
+      sel.value = ap.entrada
+      sel.addEventListener('change', () => {
+        aparelhos[i].entrada = sel.value
+        $('baixar-script').disabled = !aparelhos.some((a) => a.entrada)
+      })
+      li.append(nome, qtd, sel)
+      return li
+    }),
+  )
+  $('cameras').hidden = false
+  $('baixar-script').disabled = !aparelhos.some((a) => a.entrada)
+}
+
+async function receberRelatorio(arquivo) {
+  if (!arquivo) return
+  try {
+    const { aparelhos: lidos } = lerRelatorioSynquei(await arquivo.text())
+    if (!lidos.length) return avisar('O relatório não tem clipes de vídeo.', true)
+    aparelhos = lidos.map((a) => ({ ...a, entrada: a.sugestao }))
+  } catch (e) {
+    return avisar(e.message, true)
+  }
+  $('caixa-relatorio').querySelector('.soltar-titulo').textContent = arquivo.name
+  mostrarCameras()
+  const sem = aparelhos.filter((a) => !a.entrada).length
+  avisar(sem ? `Confira o log de cada câmera. ${sem} sem log escolhido.` : 'Confira o log de cada câmera.')
+}
+
+$('relatorio').addEventListener('change', () => receberRelatorio($('relatorio').files[0]))
+const caixaRel = $('caixa-relatorio')
+caixaRel.addEventListener('dragover', (e) => {
+  e.preventDefault()
+  caixaRel.classList.add('soltando')
+})
+caixaRel.addEventListener('dragleave', () => caixaRel.classList.remove('soltando'))
+caixaRel.addEventListener('drop', (e) => {
+  e.preventDefault()
+  caixaRel.classList.remove('soltando')
+  receberRelatorio(e.dataTransfer.files[0])
+})
+
+/** .cube comprimido (deflate/zlib) em base64, para ir dentro do script. */
+async function comprimir(texto) {
+  const fluxo = new Blob([texto]).stream().pipeThrough(new CompressionStream('deflate'))
+  const bytes = new Uint8Array(await new Response(fluxo).arrayBuffer())
+  let bin = ''
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+  return btoa(bin)
+}
+
+$('baixar-script').addEventListener('click', async () => {
+  const botao = $('baixar-script')
+  botao.disabled = true
+  avisar('Gerando as LUTs de cada câmera…')
+  await new Promise((r) => requestAnimationFrame(() => setTimeout(r)))
+  const saida = SAIDAS.find((s) => s.id === $('saida').value)
+  const tom = $('deitar').checked ? 'suave' : 'nenhum'
+  const grupos = []
+  const feitas = new Map()
+  for (const ap of aparelhos.filter((a) => a.entrada)) {
+    if (!feitas.has(ap.entrada)) {
+      const cst = criarCst(ap.entrada, saida.id, { tom })
+      feitas.set(ap.entrada, await comprimir(escreverCube(assar(cst.aplicar, 33), `Revela CST - ${cst.de.nome} para ${cst.para.nome}`)))
+    }
+    grupos.push({ entrada: ap.entrada, arquivos: ap.arquivos, lut: feitas.get(ap.entrada) })
+  }
+  baixarArquivo(scriptPorClipe(grupos, saida.nome), 'revela-cst-por-clipe.py')
+  botao.disabled = false
+  const n = grupos.reduce((s, g) => s + g.arquivos.length, 0)
+  avisar(`Script baixado: CST em ${n} clipe(s). No Resolve: Workspace › Scripts.`)
 })

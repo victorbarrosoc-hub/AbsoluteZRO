@@ -139,15 +139,15 @@ test('escolhe as duas imagens, compara, ajusta e baixa a LUT', async () => {
   await pagina.close()
 })
 
-test('fundo sempre preto fosco, mesmo com o sistema no tema claro', async () => {
-  const pagina = await navegador.newPage({ colorScheme: 'light' })
+test('tema claro por padrão, mesmo com o sistema no escuro (o escuro é escolha no seletor)', async () => {
+  const pagina = await navegador.newPage({ colorScheme: 'dark' })
   await pagina.goto(endereco + 'lut.html')
   const { fundo, texto } = await pagina.evaluate(() => ({
     fundo: getComputedStyle(document.body).backgroundColor,
     texto: getComputedStyle(document.body).color,
   }))
-  assert.equal(fundo, 'rgb(14, 14, 16)')
-  assert.equal(texto, 'rgb(245, 245, 247)')
+  assert.equal(fundo, 'rgb(245, 245, 247)')
+  assert.equal(texto, 'rgb(29, 29, 31)')
   await pagina.close()
 })
 
@@ -601,6 +601,157 @@ test('converter com log: S-Log3 vira Rec.709 na GPU (cinza 18% no lugar certo) e
   )
   const v = sonda.streams[0]
   assert.deepEqual([v.color_primaries, v.color_transfer, v.color_space], ['bt709', 'bt709', 'bt709'])
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('grade de looks: só o frame já mostra todos os looks; trocar de look muda o palco e o nome do arquivo', async () => {
+  const pagina = await navegador.newPage({ acceptDownloads: true })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
+  await pagina.goto(endereco + 'lut.html')
+  await pagina.setInputFiles('#arquivo-material', join(dir, 'meu-frame.png'))
+  await pagina.getByText('Pronto. Arraste sobre a imagem para comparar.').waitFor()
+  const looks = pagina.locator('#looks .look')
+  assert.deepEqual(await looks.evaluateAll((n) => n.map((b) => b.dataset.look)), ['revela', 'suave', 'petroleo', 'dourado', 'pb'])
+  // sem texto na grade: o nome fica no title e no rótulo
+  assert.equal((await pagina.locator('#looks').innerText()).trim(), '')
+  assert.equal(await pagina.locator('#looks [aria-checked=true]').getAttribute('data-look'), 'revela')
+  // cada miniatura é diferente das outras
+  const miniaturas = await looks.evaluateAll((n) => n.map((b) => Array.from(b.querySelector('canvas').getContext('2d').getImageData(0, 0, 40, 20).data)))
+  for (let i = 1; i < miniaturas.length; i++) assert.notDeepEqual(miniaturas[i], miniaturas[0])
+
+  await pagina.getByRole('radio', { name: 'P&B' }).click()
+  await pagina.locator('.rotulo-depois', { hasText: 'P&B' }).waitFor()
+  assert.equal(await pagina.locator('#looks [aria-checked=true]').getAttribute('data-look'), 'pb')
+  const [baixado] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Baixar LUT' }).click()])
+  assert.equal(baixado.suggestedFilename(), 'revela-pb-33.cube')
+  assert.match(readFileSync(await baixado.path(), 'utf8'), /^TITLE "P&B - 100%"/)
+
+  // com a referência da pessoa, ela entra primeiro na grade e dá para voltar a ela
+  await pagina.setInputFiles('#arquivo-referencia', join(dir, 'filme.png'))
+  await pagina.locator('#looks [data-look=ref]').waitFor()
+  assert.equal(await looks.first().getAttribute('data-look'), 'ref')
+  await pagina.getByRole('radio', { name: 'Dourado' }).click()
+  await pagina.locator('.rotulo-depois', { hasText: 'Dourado' }).waitFor()
+  await pagina.getByRole('radio', { name: 'Sua referência' }).click()
+  await pagina.locator('.rotulo-depois', { hasText: 'Depois' }).waitFor()
+  assert.equal(await pagina.locator('#looks [aria-checked=true]').getAttribute('data-look'), 'ref')
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('exportar para outro editor: Premiere e CapCut recebem .cube de 33, o tamanho só aparece no Resolve', async () => {
+  const pagina = await navegador.newPage({ acceptDownloads: true })
+  await pagina.goto(endereco + 'lut.html')
+  await pagina.setInputFiles('#arquivo-material', join(dir, 'meu-frame.png'))
+  await pagina.getByText('Pronto. Arraste sobre a imagem para comparar.').waitFor()
+  await pagina.getByRole('radio', { name: '65' }).check({ force: true })
+  for (const [editor, dica] of [
+    ['premiere', /Lumetri/],
+    ['capcut', /CapCut/],
+    ['fcp', /Final Cut/],
+  ]) {
+    await pagina.selectOption('#editor', editor)
+    assert.equal(await pagina.locator('#tamanhos').isHidden(), true)
+    const [baixado] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Baixar LUT' }).click()])
+    assert.equal(baixado.suggestedFilename(), `revela-look-33-${editor}.cube`)
+    assert.equal(lerCube(readFileSync(await baixado.path(), 'utf8')).tamanho, 33)
+    await pagina.locator('#estado', { hasText: dica }).waitFor()
+  }
+  await pagina.selectOption('#editor', 'resolve')
+  assert.equal(await pagina.locator('#tamanhos').isVisible(), true)
+  // a escolha fica lembrada
+  await pagina.selectOption('#editor', 'capcut')
+  await pagina.reload()
+  assert.equal(await pagina.locator('#editor').inputValue(), 'capcut')
+  await pagina.close()
+})
+
+test('tema: claro por padrão, escuro no menu, lembrado e com a logo certa', async () => {
+  const pagina = await navegador.newPage()
+  await pagina.goto(endereco + 'lut.html')
+  assert.equal(await pagina.evaluate(() => document.documentElement.dataset.tema ?? 'claro'), 'claro')
+  assert.equal(await pagina.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(245, 245, 247)')
+  assert.match(await pagina.locator('.marca img').getAttribute('src'), /revela-logo-grafite\.png$/)
+  await pagina.getByRole('button', { name: 'Tema escuro' }).click({ force: true })
+  assert.equal(await pagina.evaluate(() => document.documentElement.dataset.tema), 'escuro')
+  assert.match(await pagina.locator('.marca img').getAttribute('src'), /revela-logo\.png$/)
+  await pagina.goto(endereco + 'index.html')
+  assert.equal(await pagina.evaluate(() => document.documentElement.dataset.tema), 'escuro')
+  assert.equal(await pagina.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(14, 14, 16)')
+  await pagina.locator('#tema').click()
+  assert.equal(await pagina.evaluate(() => document.documentElement.dataset.tema ?? 'claro'), 'claro')
+  // títulos em Figtree, servida pela própria Revela (a CSP só aceita 'self')
+  await pagina.evaluate(() => document.fonts.ready)
+  assert.ok(await pagina.evaluate(() => document.fonts.check('800 40px "Figtree Variable"')))
+  await pagina.close()
+})
+
+test('preset Lightroom de cada look: XML válido, curvas de 0 a 255 subindo e HSL dentro do que o Lightroom aceita', async () => {
+  const pagina = await navegador.newPage()
+  await pagina.goto(endereco + 'lut.html')
+  const resultados = await pagina.evaluate(async () => {
+    const { LOOKS, criarRevelaLook } = await import('/src/cor/looks.js')
+    const { presetLightroom } = await import('/src/cor/lightroom.js')
+    return LOOKS.map((l) => {
+      const xml = new DOMParser().parseFromString(presetLightroom(criarRevelaLook({ look: l.id }).aplicar, l.nome), 'application/xml')
+      const erro = xml.querySelector('parsererror')?.textContent ?? null
+      const desc = xml.getElementsByTagNameNS('http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'Description')[0]
+      const curvas = ['Red', 'Green', 'Blue'].map((c) =>
+        [...xml.getElementsByTagNameNS('http://ns.adobe.com/camera-raw-settings/1.0/', `ToneCurvePV2012${c}`)[0].getElementsByTagName('rdf:li')].map((li) =>
+          li.textContent.split(',').map(Number),
+        ),
+      )
+      const hsl = [...desc.attributes].filter((a) => /Adjustment/.test(a.name)).map((a) => Number(a.value))
+      const nome = xml.getElementsByTagNameNS('http://ns.adobe.com/camera-raw-settings/1.0/', 'Name')[0].textContent.trim()
+      return { id: l.id, nome, erro, curvas, hsl, versao: desc.getAttribute('crs:ProcessVersion'), uuid: desc.getAttribute('crs:UUID') }
+    })
+  })
+  for (const r of resultados) {
+    assert.equal(r.erro, null, `${r.id}: XML inválido`)
+    assert.equal(r.versao, '11.0')
+    assert.match(r.uuid, /^[0-9A-F]{32}$/)
+    assert.equal(r.hsl.length, 24)
+    for (const v of r.hsl) assert.ok(Number.isInteger(v) && Math.abs(v) <= 100, `${r.id}: HSL fora (${v})`)
+    for (const pontos of r.curvas) {
+      assert.deepEqual([pontos[0][0], pontos.at(-1)[0]], [0, 255])
+      for (let i = 1; i < pontos.length; i++) assert.ok(pontos[i][0] > pontos[i - 1][0] && pontos[i][1] >= pontos[i - 1][1], `${r.id}: curva desce`)
+    }
+  }
+  // o P&B vira saturação -100 em todas as faixas
+  const pb = resultados.find((r) => r.id === 'pb')
+  assert.ok(pb.hsl.filter((_, i) => i % 3 === 1).every((v) => v === -100))
+  await pagina.close()
+})
+
+test('CST por clipe: o relatório do Synquei vira a lista de câmeras e um script do Resolve', async () => {
+  const pagina = await navegador.newPage({ acceptDownloads: true })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  await pagina.goto(endereco + 'cst.html')
+  const csv = join(dir, 'relatorio.csv')
+  writeFileSync(
+    csv,
+    '﻿arquivo,caminho,aparelho,tipo,inicio_s,duracao,metodo,confianca,deriva_ppm,timecode_origem,codec_video,resolucao,fps,codec_audio,sessao\r\n' +
+      'C0001.MP4,A/C0001.MP4,FX30,video,,0:12,Sem sincronia,,,,h264,3840x2160,23.976,aac,\r\n' +
+      'ZOOM0001.WAV,B/ZOOM0001.WAV,Zoom H6,audio,,0:30,Sem sincronia,,,,,,,pcm,\r\n' +
+      'IMG_0001.MOV,C/IMG_0001.MOV,iPhone,video,,0:05,Sem sincronia,,,,hevc,1920x1080,30,,\r\n',
+  )
+  await pagina.setInputFiles('#relatorio', csv)
+  await pagina.locator('#lista-cameras li').nth(1).waitFor()
+  assert.equal(await pagina.getByRole('combobox', { name: 'Log de FX30' }).inputValue(), 'sony-slog3-cine')
+  assert.equal(await pagina.getByRole('combobox', { name: 'Log de iPhone' }).inputValue(), '')
+  const [baixado] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Script do Resolve' }).click()])
+  assert.equal(baixado.suggestedFilename(), 'revela-cst-por-clipe.py')
+  const script = readFileSync(await baixado.path(), 'utf8')
+  assert.match(script, /"c0001\.mp4": "Revela CST Sony/)
+  assert.doesNotMatch(script, /img_0001/)
+  await pagina.locator('#estado', { hasText: 'CST em 1 clipe(s)' }).waitFor()
+  // sem log em nenhuma câmera, não há o que gerar
+  await pagina.getByRole('combobox', { name: 'Log de FX30' }).selectOption('')
+  assert.equal(await pagina.getByRole('button', { name: 'Script do Resolve' }).isDisabled(), true)
   assert.deepEqual(erros, [])
   await pagina.close()
 })
