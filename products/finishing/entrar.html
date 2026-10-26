@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Revela · Entrar</title>
+    <meta name="description" content="Entre na Revela com a sua conta Absolute ZRO." />
+    <meta name="robots" content="noindex" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0e0e10" />
+    <link rel="canonical" href="https://revela-zro.vercel.app/entrar" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Revela" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:url" content="https://revela-zro.vercel.app/" />
+    <meta property="og:title" content="Revela · a cor que você quer, numa LUT" />
+    <meta property="og:description" content="Dê um frame de referência e um frame do seu material. Sai uma LUT para o DaVinci Resolve." />
+    <meta property="og:image" content="https://revela-zro.vercel.app/og.jpg?v=2" />
+    <meta property="og:image:secure_url" content="https://revela-zro.vercel.app/og.jpg?v=2" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Revela: revela a cor que você quer. Um frame de referência vira uma LUT para o DaVinci Resolve." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Revela · a cor que você quer, numa LUT" />
+    <meta name="twitter:description" content="Dê um frame de referência e um frame do seu material. Sai uma LUT para o DaVinci Resolve." />
+    <meta name="twitter:image" content="https://revela-zro.vercel.app/og.jpg?v=2" />
+    <meta name="twitter:image:alt" content="Revela: revela a cor que você quer. Um frame de referência vira uma LUT para o DaVinci Resolve." />
+    <link rel="icon" href="marca/revela-icone.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="app/revela.css" />
+    <link rel="stylesheet" href="app/entrar.css" />
+    <script type="module" src="app/entrar.js"></script>
+  </head>
+  <body class="pagina-entrar">
+    <div class="entrar-luz" aria-hidden="true"></div>
+    <a class="entrar-voltar" href="./" aria-label="Voltar para a página inicial da Revela"><img src="marca/revela-logo.png" alt="Revela" width="150" height="28" /></a>
+
+    <main class="entrar">
+      <img class="entrar-icone surge" style="--d: 0" src="marca/revela-icone.svg" alt="" width="88" height="88" />
+
+      <section id="fora" class="entrar-bloco" hidden>
+        <h1 class="surge" style="--d: 1">Entre na Revela.</h1>
+        <p class="surge" style="--d: 2">Com a sua conta Absolute ZRO.</p>
+        <div class="entrar-acoes surge" style="--d: 3">
+          <a id="entrar" class="vidro vidro--tinta grande" href="/api/zro/entrar">Entrar com Absolute ZRO</a>
+          <a id="criar" class="vidro grande" href="/api/zro/entrar?criar=1">Criar conta</a>
+        </div>
+      </section>
+
+      <section id="dentro" class="entrar-bloco" hidden>
+        <span id="avatar" class="avatar surge" style="--d: 1" aria-hidden="true"></span>
+        <h1 id="ola" class="surge" style="--d: 1"></h1>
+        <p id="quem" class="surge" style="--d: 2"></p>
+        <p id="sem-acesso" class="entrar-aviso" hidden>Sua conta ainda não tem a Revela liberada. As ferramentas seguem abertas.</p>
+        <div class="entrar-acoes surge" style="--d: 3">
+          <a class="vidro vidro--tinta grande" href="lut.html">Abrir a Revela</a>
+          <button id="sair" class="vidro grande" type="button">Sair</button>
+        </div>
+      </section>
+
+      <section id="desligado" class="entrar-bloco" hidden>
+        <h1 class="surge" style="--d: 1">Entrar chega em breve.</h1>
+        <p class="surge" style="--d: 2">As ferramentas já estão abertas, sem conta.</p>
+        <div class="entrar-acoes surge" style="--d: 3"><a class="vidro vidro--tinta grande" href="lut.html">Abrir a Revela</a></div>
+      </section>
+
+      <p id="aviso" class="entrar-aviso" role="status" aria-live="polite"></p>
+
+      <div class="familia-mini surge" style="--d: 5" aria-label="Uma conta para toda a família Absolute ZRO">
+        <span>Uma conta para</span>
+        <img src="marca/familia/sobedesce.svg" alt="SOBEDESCE" width="28" height="28" />
+        <img src="marca/familia/synquei.svg" alt="Synquei" width="28" height="28" />
+        <img src="marca/familia/nossom.svg" alt="NOSSOM" width="28" height="28" />
+        <img src="marca/familia/tpeasy.svg" alt="TPeasy" width="28" height="28" />
+        <img src="marca/familia/carro-do-freela.png" alt="Carro do Freela" width="28" height="28" />
+      </div>
+    </main>
+
+    <footer class="entrar-rodape"><img src="marca/familia/absolute-zro-o.webp" alt="" width="14" height="14" /> An Absolute ZRO Company</footer>
+  </body>
+</html>

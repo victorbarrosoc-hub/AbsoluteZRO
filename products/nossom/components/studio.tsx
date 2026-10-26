@@ -25,6 +25,7 @@ import { voicePresets } from '@/lib/voice-presets';
 import { effectPresets, type EffectId } from '@/lib/effects';
 import { toolGroups } from '@/lib/workflow';
 import InstallApp from './install-app';
+import FamilyNav from './family-nav';
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowUpRight,
@@ -1215,6 +1216,7 @@ export default function Studio({ account }: { account: Account }) {
             </button>
           )}
         </nav>
+        <FamilyNav onOpen={() => setSidebar(false)} />
         <div className="sidebar-bottom">
           <InstallApp onOpen={() => setSidebar(false)} />
           <Link

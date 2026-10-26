@@ -2346,3 +2346,62 @@
     display: none;
   }
 }
+/* Família Absolute ZRO: ícone de cada app + nome, abaixo da navegação do estúdio. */
+.studio-sidebar nav.family-nav {
+  gap: 2px;
+  margin-top: 22px;
+}
+.family-nav-title {
+  padding: 0 11px 6px;
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.family-nav > a {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 40px;
+  padding: 0 9px;
+  border-radius: 8px;
+  color: var(--text-2);
+  font-size: 14px;
+  white-space: nowrap;
+  text-decoration: none;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.family-nav > a:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.family-nav > a:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: -2px;
+}
+.family-nav img {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  object-fit: contain;
+}
+.family-nav > a > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 680px) {
+  .family-nav > a {
+    min-height: 46px;
+    font-size: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .family-nav > a {
+    transition: none;
+  }
+}

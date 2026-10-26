@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { ProductMark } from '@zro/ui'
 import { Icon, type IconName } from './icons'
 
 type Item = { href: string; label: string; icon: IconName }
@@ -28,6 +29,16 @@ const GROUPS: { label: string; items: Item[] }[] = [
   },
 ]
 
+// A família Absolute ZRO, como no menu da Revela. O HUB é o app atual, então fica de fora.
+const FAMILY = [
+  { productId: 'carro-do-freela', name: 'Carro do Freela', href: 'https://carrodofreela.com.br' },
+  { productId: 'nossom', name: 'Nossom', href: 'https://nossom-teal.vercel.app' },
+  { productId: 'finishing', name: 'Revela', href: 'https://revela-zro.vercel.app' },
+  { productId: 'sobedesce', name: 'Sobedesce', href: 'https://sobedesce.vercel.app' },
+  { productId: 'synquei', name: 'Synquei', href: 'https://synquei.vercel.app' },
+  { productId: 'tpeasy', name: 'TPEasy', href: 'https://tpeasy.vercel.app' },
+]
+
 export function Nav({ admin }: { admin: boolean }) {
   const path = usePathname()
   const groups = admin ? [...GROUPS, { label: 'Plataforma', items: [{ href: '/admin', label: 'Administração', icon: 'shield' as const }] }] : GROUPS
@@ -44,6 +55,15 @@ export function Nav({ admin }: { admin: boolean }) {
           ))}
         </div>
       ))}
+      <div className="nav__group nav__family">
+        <p className="nav__label">Absolute ZRO</p>
+        {FAMILY.map((app) => (
+          <a key={app.productId} href={app.href} rel="noopener" title={app.name}>
+            <ProductMark productId={app.productId} name={app.name} size={22} />
+            {app.name}
+          </a>
+        ))}
+      </div>
     </nav>
   )
 }
