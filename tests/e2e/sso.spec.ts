@@ -132,7 +132,7 @@ test('app da família (trusted): entra direto, sem a tela Permitir, e o acesso f
   await expect.poll(() => landed?.searchParams.get('state')).toBe('estado-familia')
   expect(landed!.searchParams.get('code')).toMatch(/^zc_/)
 
-  await page.goto('/perfil')
+  await page.goto('/perfil/acessos')
   await expect(page.locator('#apps').getByText('NOSSOM (teste)').first()).toBeVisible()
 })
 

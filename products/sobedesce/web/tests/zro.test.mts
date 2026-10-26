@@ -200,7 +200,7 @@ describe("direito de uso (zro_products)", () => {
     const corpo = await eu.json();
     assert.equal(corpo.erro, "sem_acesso_zro");
     assert.match(corpo.mensagem, /Sua conta Absolute ZRO ainda não tem acesso ao SOBEDESCE\./);
-    assert.match(corpo.mensagem, /absolutezro\.vercel\.app\/ferramentas/);
+    assert.match(corpo.mensagem, /absolutezro\.com\/ferramentas/);
     assert.equal((await rotaDrives.GET(pedido("/api/drive/contas", { cookies: { sd_sessao: token } }))).status, 403);
 
     // O admin da Absolute ZRO libera; "Já liberaram? Atualizar" religa e traz a lista nova.

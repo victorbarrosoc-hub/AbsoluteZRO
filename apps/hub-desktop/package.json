@@ -6,7 +6,7 @@
   "private": true,
   "main": "desktop/main.cjs",
   "author": "Absolute ZRO",
-  "homepage": "https://absolutezro.vercel.app",
+  "homepage": "https://absolutezro.com",
   "repository": {
     "type": "git",
     "url": "https://github.com/victorbarrosoc-hub/AbsoluteZRO.git",

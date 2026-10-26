@@ -1,4 +1,4 @@
-// Absolute ZRO · app para computador (Mac e Windows). Abre o HUB (https://absolutezro.vercel.app) numa janela própria,
+// Absolute ZRO · app para computador (Mac e Windows). Abre o HUB (https://absolutezro.com) numa janela própria,
 // com a sessão guardada (continua logado), menu em português, tela "Sem conexão" local e aviso de versão nova.
 //
 // Como a janela é montada: a BrowserWindow é a moldura. No Mac ela mostra a barra de título própria
@@ -9,13 +9,30 @@
 // `--smoke` (CI, depois do build): abre a janela com a tela "Sem conexão" local (sem rede), confere a ponte e as
 // regras e escreve "SMOKE OK" (também em ZRO_SMOKE_SAIDA, se definido).
 
-const { app, BrowserWindow, WebContentsView, Menu, shell, session, ipcMain, dialog, screen, nativeTheme, clipboard, systemPreferences } = require('electron')
+const {
+  app,
+  BrowserWindow,
+  WebContentsView,
+  Menu,
+  shell,
+  session,
+  ipcMain,
+  dialog,
+  screen,
+  nativeTheme,
+  clipboard,
+  systemPreferences,
+  net,
+} = require('electron')
 const path = require('node:path')
 const fs = require('node:fs')
 const os = require('node:os')
 const regras = require('./regras.cjs')
 const janela = require('./janela.cjs')
 const { AvisoDeVersao, lerBuildInfo } = require('./versao.cjs')
+const { Central } = require('./central.cjs')
+const { execFile } = require('node:child_process')
+const { promisify } = require('node:util')
 
 const SMOKE = process.argv.includes('--smoke')
 const SMOKE_SAIDA = process.env.ZRO_SMOKE_SAIDA || null
@@ -41,6 +58,7 @@ if (!SMOKE && !app.requestSingleInstanceLock()) {
 let win = null
 let view = null
 let aviso = null
+let central = null
 let ultimaUrl = HUB + '/'
 let deepLinkPendente = regras.deepLinkDosArgs(process.argv, HUB)
 let zoom = 0
@@ -258,6 +276,48 @@ ipcMain.handle('barra:acao', (e, acao) => {
   return true
 })
 
+// ───────── central de apps (instalar, abrir, atualizar e remover as ferramentas) ─────────
+// Só a página do HUB fala com a central, e só passa o id da ferramenta: o que baixar e onde instalar vêm do catálogo.
+const daPaginaDoHub = (e) => daView(e) && regras.ehDoHub(e.senderFrame.url, HUB)
+const idValido = (id) => typeof id === 'string' && /^[a-z0-9-]{2,40}$/.test(id)
+
+function iniciarCentral() {
+  const exec = promisify(execFile)
+  central = new Central({
+    hub: HUB,
+    plataforma: PLATAFORMA,
+    arch: process.arch,
+    home: os.homedir(),
+    temp: app.getPath('temp'),
+    registro: path.join(app.getPath('userData'), 'central.json'),
+    fetch: (url, opts) => net.fetch(url, opts),
+    permitirHttp: !app.isPackaged,
+    fs,
+    exec: (cmd, args, opts = {}) => exec(cmd, args, { maxBuffer: 8 * 1024 * 1024, ...opts }),
+    abrirCaminho: (p) => shell.openPath(p),
+    lixeira: (p) => shell.trashItem(p),
+    avisar: (ev) => {
+      if (view && !view.webContents.isDestroyed() && regras.ehDoHub(view.webContents.getURL(), HUB)) view.webContents.send('central:progresso', ev)
+    },
+  })
+}
+
+const responder = async (fn) => {
+  try {
+    return { ok: true, dados: await fn() }
+  } catch (err) {
+    return { ok: false, erro: err && err.codigo ? err.message : 'Algo deu errado. Tente de novo.' }
+  }
+}
+ipcMain.handle('central:listar', (e) => (daPaginaDoHub(e) && central ? responder(() => central.listar()) : { ok: false, erro: 'indisponível' }))
+for (const acao of ['instalar', 'abrir', 'remover']) {
+  ipcMain.handle(`central:${acao}`, (e, id) => {
+    if (!daPaginaDoHub(e) || !central || !idValido(id)) return { ok: false, erro: 'indisponível' }
+    return responder(() => central[acao](id))
+  })
+}
+ipcMain.handle('central:cancelar', (e, id) => (daPaginaDoHub(e) && central && idValido(id) ? { ok: central.cancelar(id) } : { ok: false }))
+
 function recarregar(semCache) {
   if (!view) return
   const wc = view.webContents
@@ -399,7 +459,7 @@ function menu() {
       role: 'help',
       submenu: [
         { label: 'Absolute ZRO no navegador', click: () => abrirFora(HUB + '/') },
-        { label: 'Baixar as ferramentas', click: () => (view ? view.webContents.loadURL(HUB + '/baixar').catch(() => {}) : null) },
+        { label: 'Apps da Absolute ZRO', click: () => (view ? view.webContents.loadURL(HUB + '/downloads').catch(() => {}) : null) },
         ...(MAC
           ? []
           : [{ type: 'separator' }, { label: 'Procurar nova versão…', click: () => procurarVersao() }, { label: 'Sobre o Absolute ZRO', click: sobre }]),
@@ -453,7 +513,7 @@ async function smoke() {
     log(`Electron ${process.versions.electron} · Chromium ${process.versions.chrome} · ${process.platform}-${process.arch} · build ${BUILD.build}`)
     const r = await wc.executeJavaScript(`(async () => (await document.fonts.ready, {
       pronto: !!(window.__zroOffline && window.__zroOffline.pronto),
-      ponte: !!(window.zroDesktop && window.zroDesktop.isDesktop),
+      ponte: !!(window.zroDesktop && window.zroDesktop.isDesktop && window.zroDesktop.apps && typeof window.zroDesktop.apps.instalar === 'function'),
       semNode: typeof require === 'undefined' && typeof process === 'undefined',
       titulo: document.title,
       simbolo: (() => { const i = document.querySelector('img.simbolo'); return !!(i && i.complete && i.naturalWidth > 0) })(),
@@ -525,6 +585,7 @@ app.whenReady().then(() => {
   })
   protegerSessao()
   menu()
+  iniciarCentral()
   criarJanela()
   if (SMOKE) return smoke()
   aviso = new AvisoDeVersao({

@@ -10,7 +10,7 @@
 export const PRODUTO_ZRO = "sobedesce";
 
 /** Onde a pessoa vê (e pede) as ferramentas liberadas para a conta dela. */
-export const FERRAMENTAS_ZRO = "https://absolutezro.vercel.app/ferramentas";
+export const FERRAMENTAS_ZRO = "https://absolutezro.com/ferramentas";
 
 export const MENSAGEM_SEM_ACESSO = "Sua conta Absolute ZRO ainda não tem acesso ao SOBEDESCE.";
 

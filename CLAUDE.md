@@ -12,7 +12,7 @@ Leia antes de mudar qualquer coisa: [PRD.md](PRD.md) (referência principal), [A
   tpeasy, carrodofreela-app) só recebem a importação final (`scripts/import-product.mjs`) e depois são arquivados;
   nada de trabalho novo neles. Banco: um schema e um papel por app no Supabase `AbsoluteZRO`, nunca dentro de `zro`.
 - **Deploy só com autorização explícita do titular.** Em 25/10/2026 o titular autorizou o projeto Vercel `absolutezro`
-  (absolutezro.vercel.app) com o projeto Supabase novo `AbsoluteZRO`; a trava `git.deploymentEnabled: false` saiu. Qualquer outro projeto,
+  (absolutezro.vercel.app, hoje no domínio absolutezro.com) com o projeto Supabase novo `AbsoluteZRO`; a trava `git.deploymentEnabled: false` saiu. Qualquer outro projeto,
   domínio, DNS, banco pago ou ação irreversível pede nova autorização.
 - Nunca reutilizar chaves, bancos, projetos Supabase ou secrets dos apps originais. O repositório é **público**:
   nada de `.env`, token, cookie, URL assinada, dado pessoal ou áudio privado. `node scripts/scan-secrets.mjs` antes
@@ -39,8 +39,14 @@ Leia antes de mudar qualquer coisa: [PRD.md](PRD.md) (referência principal), [A
 ## Interface
 
 Português, textos curtos, tom humano. Identidade oficial em `packages/ui/src/tokens.css` e
-`apps/hub-web/public/brand` (fonte: zrofilmes.vercel.app/absolute). Não inventar logo; produtos mantêm os próprios
-ícones. Respeitar reduzir movimento; nada de animação por frame no React.
+`apps/hub-web/public/brand`; manual em [docs/marca/README.md](docs/marca/README.md). Não inventar logo; produtos mantêm
+os próprios ícones.
+
+**Marca flat** (aprovada pelo titular, 26/10/2026, ADR 0017): o O é um anel com a centelha de 4 pontas por trás do
+traço (só as pontas horizontais aparecem), uma cor só (grafite no claro, branco no escuro). Use `ZroWordmark` e
+`ZroSymbol` de `@zro/ui` ou os SVG `absolute-zro*.svg`; nunca o antigo feixe de luz. **Em animação a estrela aparece
+inteira** (4 pontas) e recolhe até a forma flat (`<ZroSymbol animated />`). Geometria só em
+`scripts/marca/vetor/vetorizar.py`. Respeitar reduzir movimento; nada de animação por frame no React.
 
 **Padrão Apple** (pedido do titular, 25/10/2026): a Absolute ZRO se comporta como produto e ecossistema Apple. Antes
 de qualquer tela, pense em como a apple.com faria: visual, motion e elegância.
@@ -48,7 +54,7 @@ de qualquer tela, pense em como a apple.com faria: visual, motion e elegância.
 - Frase da marca: **"O futuro começa do zero."** Título da página inicial e do OG.
 - **Tema claro é o padrão**; o escuro é escolha no seletor.
 - Credibilidade vem do **produto real**: telas de verdade do HUB e dos apps em aparelhos (MacBook, iPhone), não efeitos
-  de luz. O símbolo (o anel) aparece pequeno, como assinatura; não é a peça principal.
+  de luz. O símbolo (o anel com a centelha) aparece pequeno, como assinatura; não é a peça principal.
 - Títulos em **Figtree**, só em grafite (#1d1d1f) ou branco no escuro, contraste fino (Light) × pesado (ExtraBold).
   **Nada de texto azul ou em degradê.** Texto de apoio em cinza (#6e6e73).
 - Botões em **Liquid Glass**: pílula de vidro translúcido com brilho de borda (`.glass-btn`); a ação principal em vidro

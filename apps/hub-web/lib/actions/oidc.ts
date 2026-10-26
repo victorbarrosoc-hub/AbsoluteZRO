@@ -28,5 +28,5 @@ export async function revokeAppAction(fd: FormData) {
   const auth = await getAuth()
   if (!auth) redirect('/entrar')
   await revokeAppAccess(db(), auth.user.id, String(fd.get('clientId') ?? ''))
-  redirect('/perfil#apps')
+  redirect('/perfil/acessos#apps')
 }

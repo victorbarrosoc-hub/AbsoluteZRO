@@ -2,7 +2,7 @@
 import { revalidatePath } from 'next/cache'
 import { assignPlan, cancelManualSubscription, createPlanVersion, grantEntitlement, publishPlanVersion, revokeEntitlement } from '@zro/billing'
 import { OAuthError, registerClient } from '@zro/auth'
-import { requirePlatformAdmin } from '@zro/core'
+import { requirePlatformAdmin, resolvePlanRequest } from '@zro/core'
 import { pgErrorCode, PG } from '@zro/db'
 import { DomainError } from '@zro/observability'
 import type { FormState } from '@/components/action-form'
@@ -183,6 +183,17 @@ export async function setOAuthClientStatusAction(_: FormState, fd: FormData): Pr
     })
     revalidatePath('/admin')
     return { ok: status === 'active' ? 'App reativado.' : 'App desativado e sessões dele encerradas.' }
+  } catch (e) {
+    return toFormError(e)
+  }
+}
+
+export async function resolvePlanRequestAction(_: FormState, fd: FormData): Promise<FormState> {
+  try {
+    const actor = await adminActor(fd)
+    await db().asSystem('admin: atender pedido de plano', (tx) => resolvePlanRequest(tx, actor, str(fd, 'requestId')))
+    revalidatePath('/admin')
+    return { ok: 'Pedido marcado como atendido.' }
   } catch (e) {
     return toFormError(e)
   }

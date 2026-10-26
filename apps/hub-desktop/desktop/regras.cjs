@@ -1,10 +1,10 @@
 // Regras de confiança do app de desktop, sem importar o Electron (os testes em test/ usam node --test).
 //
-// A janela mostra só o HUB (https://absolutezro.vercel.app) e, para "Entrar com o Google", a página de login do
+// A janela mostra só o HUB (https://absolutezro.com) e, para "Entrar com o Google", a página de login do
 // Google. Todo o resto (os apps SOBEDESCE, NOSSOM, Synquei, TPeasy, Carro do Freela, documentação, GitHub) abre no
 // navegador padrão, e só se for https. O link absolutezro://caminho abre uma rota do HUB e nada além disso.
 
-const HUB_PADRAO = 'https://absolutezro.vercel.app'
+const HUB_PADRAO = 'https://absolutezro.com'
 const ESQUEMA = 'absolutezro'
 
 // Login do Google: só a página de contas, em https. Os redirecionamentos internos do Google (accounts.youtube.com,
@@ -76,7 +76,7 @@ function destino(url, origin) {
 }
 
 /**
- * absolutezro://projetos/123?aba=x → https://absolutezro.vercel.app/projetos/123?aba=x
+ * absolutezro://projetos/123?aba=x → https://absolutezro.com/projetos/123?aba=x
  * Aceita também absolutezro:///projetos e absolutezro:projetos. Devolve null para o que não for rota do HUB.
  */
 function deepLink(url, origin) {

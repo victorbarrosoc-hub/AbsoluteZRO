@@ -7,7 +7,7 @@ test('the Absolute ZRO button keeps the return path and explains a failed trip',
   const button = page.getByRole('link', { name: 'Entrar com Absolute ZRO' });
   await expect(button).toBeVisible();
   await expect(button).toHaveAttribute('href', '/api/zro/entrar?volta=%2Fstudio%2Fia');
-  await expect(button.locator('img')).toHaveAttribute('src', '/absolute-zro-o-alpha.webp');
+  await expect(button.locator('svg path')).toHaveCount(2); // símbolo flat: centelha + anel
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   // Sem a Absolute ZRO no ar, a pessoa volta para a tela de entrar com um aviso curto.
   await button.click();

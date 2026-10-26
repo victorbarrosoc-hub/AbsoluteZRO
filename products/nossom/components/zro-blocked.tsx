@@ -5,7 +5,7 @@ import { LockKeyhole, LoaderCircle } from 'lucide-react';
 import { Brand } from './brand';
 
 /** Página das ferramentas na Absolute ZRO, onde o admin da organização libera o NOSSOM. */
-export const ZRO_TOOLS_URL = 'https://absolutezro.vercel.app/ferramentas';
+export const ZRO_TOOLS_URL = 'https://absolutezro.com/ferramentas';
 
 /**
  * Conta Absolute ZRO sem o NOSSOM liberado: entra, mas o estúdio fica fechado. Nada do que está

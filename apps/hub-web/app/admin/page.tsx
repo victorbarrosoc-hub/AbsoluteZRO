@@ -11,6 +11,7 @@ import {
   grantAction,
   publishPlanAction,
   registerOAuthClientAction,
+  resolvePlanRequestAction,
   revokeGrantAction,
   setOAuthClientStatusAction,
 } from '@/lib/actions/admin'
@@ -42,6 +43,10 @@ export default async function Admin() {
                       (select count(*)::int from zro.app_accounts a where a.client_id = c.id and a.first_login_at > now() - interval '30 days') as accounts_30d
                from zro.oauth_clients c order by c.created_at desc`,
     billing: await tx`select provider, provider_event_id, type, status, error, received_at from zro.billing_events order by received_at desc limit 50`,
+    requests: await tx`
+      select r.id, r.kind, r.created_at, o.name as org, o.id as org_id, u.display_name as who, u.email, p.name as plan
+      from zro.plan_requests r join zro.organizations o on o.id = r.org_id join zro.users u on u.id = r.requested_by
+      left join zro.plans p on p.id = r.plan_id where r.status = 'open' order by r.created_at limit 100`,
     stuck:
       await tx`select r.id, r.handler, r.status, r.last_error, r.updated_at, o.name as org from zro.workflow_runs r join zro.organizations o on o.id = r.org_id where r.status in ('dead_letter', 'requires_review', 'failed') order by r.updated_at desc limit 50`,
   }))
@@ -58,6 +63,29 @@ export default async function Admin() {
         </Link>
       </div>
       {!isAdmin && <Notice title="Suporte: somente leitura">Concessões e catálogo exigem papel admin.</Notice>}
+
+      <Card title="Pedidos de plano" eyebrow="Vindos da central da conta" id="pedidos">
+        {d.requests.length ? (
+          <ul className="list-plain">
+            {d.requests.map((r) => (
+              <li key={r.id as string} className="stack">
+                <span>
+                  <strong>{r.org as string}</strong> · {r.kind === 'renew' ? 'renovar' : `upgrade para ${r.plan as string}`} · {r.who as string} (
+                  {r.email as string}) · {fmtDate(r.created_at as Date)}
+                </span>
+                {isAdmin && (
+                  <ActionForm action={resolvePlanRequestAction} submit="Marcar como atendido" variant="ghost" className="row" inlineSubmit>
+                    <input type="hidden" name="requestId" value={r.id as string} />
+                    <input className="zro-input" name="reason" placeholder="Motivo" required aria-label="Motivo" />
+                  </ActionForm>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="zro-faint">Nenhum pedido aberto.</p>
+        )}
+      </Card>
 
       <Card title="Organizações">
         <div className="zro-table-wrap">

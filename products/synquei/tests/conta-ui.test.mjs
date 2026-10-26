@@ -34,7 +34,7 @@ test('Synquei fora de zro_products: aviso curto e Ver na Absolute ZRO', () => {
   assert.equal(C.acesso, false)
   const card = cartaoConta()
   assert.match(card, /Sua conta Absolute ZRO ainda não tem acesso ao Synquei\./)
-  assert.ok(card.includes('href="https://absolutezro.vercel.app/ferramentas"'))
+  assert.ok(card.includes('href="https://absolutezro.com/ferramentas"'))
   assert.match(card, />Ver na Absolute ZRO</)
   assert.match(card, /data-act="conta-sair"/, 'dá para sair e trocar de conta')
   assert.ok(!card.includes('Produtora Lia'), 'a parte de conta fica bloqueada')

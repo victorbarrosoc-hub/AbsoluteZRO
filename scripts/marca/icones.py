@@ -1,172 +1,180 @@
-from PIL import Image, ImageFilter, ImageDraw, ImageChops
-import numpy as np, os
-AQUI=os.path.dirname(os.path.abspath(__file__))
-src=Image.open(os.path.join(AQUI,'anel-fonte.png')).convert('RGB')
-CX,CY,D=991,963,1167
-DX=0.012
+"""
+Ícones da Absolute ZRO com a marca flat (26/10/2026): anel com a centelha de 4 pontas por trás do traço, uma cor só.
 
-def ring_square(frac, size):
-    full=D/frac; cx=CX+DX*full; cy=CY
-    pad=Image.new('RGB',(4096,4096),(0,0,0)); pad.paste(src,(1024,1024))
-    b=(int(cx-full/2)+1024,int(cy-full/2)+1024,int(cx+full/2)+1024,int(cy+full/2)+1024)
-    return pad.crop(b).resize((size,size),Image.LANCZOS)
+Desenha a marca direto da geometria (a mesma de `vetor/vetorizar.py`), em 4× e reduzida, sem depender de arte em PNG.
+Abaixo de 24 px fica só o anel, com traço reforçado; de 24 a 48 px o traço engrossa para não sumir.
 
-def body(size, top, bottom):
-    t=np.linspace(0,1,size)[:,None,None]
-    return np.broadcast_to(np.array(top)*(1-t)+np.array(bottom)*t,(size,size,3)).copy()
+    python3 scripts/marca/icones.py             # gera out/claro e out/escuro
+    python3 scripts/marca/icones.py --instalar  # e copia para o HUB (app/, public/icons, public/brand)
+    cd apps/hub-desktop && npm run icons -- ../../scripts/marca/out/claro   # app de computador
 
-def compose(frac, size, top=(18,21,30), bottom=(3,3,6)):
-    bg=body(size,top,bottom)
-    y,x=(np.mgrid[0:size,0:size]+0.5)/size
-    cx=0.5-DX; r=np.sqrt((x-cx)**2+(y-0.5)**2); R=frac/2
-    # eclipse: disco interno mais escuro; halo azul frio por fora do aro
-    inside=np.clip((R-r)/0.02,0,1)
-    bg=bg*(1-0.75*inside[...,None])
-    halo=np.exp(-((r-R)/0.09)**2)*(r>R*0.98)
-    bg=bg+np.array([20,55,140])[None,None,:]*0.55*halo[...,None]
-    ring=np.asarray(ring_square(frac,size)).astype(np.float32)
-    out=255-(255-np.clip(bg,0,255))*(255-ring)/255
-    return Image.fromarray(np.clip(out,0,255).astype(np.uint8))
+Precisa de Pillow e numpy.
+"""
+import os
+import shutil
+import sys
 
-def superellipse(size,n=5.0,ss=4):
-    S=size*ss; y,x=np.mgrid[0:S,0:S]; u=np.abs((x+0.5)/S*2-1); v=np.abs((y+0.5)/S*2-1)
-    return Image.fromarray(((u**n+v**n)<=1).astype(np.uint8)*255).resize((size,size),Image.LANCZOS)
+import numpy as np
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
-def small(size, rounded=0.22, squircle=False):
-    """16–48 px: anel desenhado com traço proporcionalmente mais grosso para não sumir."""
-    S=512; im=compose(0.70,S).convert('RGBA'); d=ImageDraw.Draw(im)
-    R=S*0.35; cx=S*(0.5-DX); cy=S/2; w=max(S/size*1.1,10)
-    for k,(col,ww) in enumerate((((40,110,255,120),w*2.6),((120,180,255,255),w),((235,245,255,255),w*0.45))):
-        g=Image.new('RGBA',(S,S),(0,0,0,0)); ImageDraw.Draw(g).ellipse((cx-R,cy-R,cx+R,cy+R),outline=col,width=int(ww))
-        if k==0: g=g.filter(ImageFilter.GaussianBlur(ww/2))
-        im=Image.alpha_composite(im,g)
-    f=Image.new('RGBA',(S,S),(0,0,0,0)); fx=cx+R; ImageDraw.Draw(f).ellipse((fx-w*1.8,cy-w*1.8,fx+w*1.8,cy+w*1.8),fill=(255,255,255,255))
-    im=Image.alpha_composite(im,f.filter(ImageFilter.GaussianBlur(w*0.6)))
-    if squircle: m=superellipse(S)
-    else:
-        m=Image.new('L',(S*4,S*4),0); ImageDraw.Draw(m).rounded_rectangle((0,0,S*4-1,S*4-1),radius=int(S*4*rounded),fill=255); m=m.resize((S,S),Image.LANCZOS)
-    im.putalpha(m)
-    return im.resize((size,size),Image.LANCZOS)
+AQUI = os.path.dirname(os.path.abspath(__file__))
+RAIZ = os.path.abspath(os.path.join(AQUI, '../..'))
+SS = 4  # superamostragem
 
-if __name__=='__main__':
-    import os; os.chdir(AQUI); os.makedirs('out',exist_ok=True)
-    fb=compose(0.60,1024,(10,12,18),(2,2,4)); fb.save('out/icon-1024.png')
-    fb.resize((180,180),Image.LANCZOS).save('out/apple-icon.png')
-    for s in (192,512): fb.resize((s,s),Image.LANCZOS).save(f'out/icon-{s}.png')
-    compose(0.48,1024,(10,12,18),(2,2,4)).resize((512,512),Image.LANCZOS).save('out/icon-maskable-512.png')
-    # macOS (grid da Apple: 824 dentro de 1024, sombra suave, contorno de luz 10%)
-    S=824; inner=compose(0.66,S).convert('RGBA'); mask=superellipse(S); inner.putalpha(mask)
-    canvas=Image.new('RGBA',(1024,1024),(0,0,0,0))
-    shm=Image.new('L',(1024,1024),0); shm.paste(mask,(100,112))
-    sh=Image.new('RGBA',(1024,1024),(0,0,0,255)); sh.putalpha(shm.point(lambda v:int(v*0.5)).filter(ImageFilter.GaussianBlur(22)))
-    canvas=Image.alpha_composite(canvas,sh); canvas.alpha_composite(inner,(100,100))
-    mo=Image.new('L',(1024,1024),0); mo.paste(mask,(100,100)); mi=Image.new('L',(1024,1024),0); mi.paste(superellipse(S-4),(102,102))
-    e=ImageChops.subtract(mo,mi).point(lambda v:int(v*0.10))
-    canvas=Image.alpha_composite(canvas,Image.merge('RGBA',(*Image.new('RGB',(1024,1024),(255,255,255)).split(),e)))
-    canvas.save('out/mac-icon-1024.png')
-    # Windows
-    W=1024; win=compose(0.64,W).convert('RGBA')
-    rm=Image.new('L',(W*4,W*4),0); ImageDraw.Draw(rm).rounded_rectangle((0,0,W*4-1,W*4-1),radius=int(W*4*0.2),fill=255)
-    win.putalpha(rm.resize((W,W),Image.LANCZOS)); win.save('out/win-icon-1024.png')
-    sizes=[16,24,32,48,64,128,256]
-    imgs=[small(s) if s<=48 else win.resize((s,s),Image.LANCZOS) for s in sizes]
-    imgs[-1].save('out/icon.ico',sizes=[(s,s) for s in sizes],append_images=imgs[:-1])
-    # favicon
-    fav=[small(s,rounded=0.24) for s in (16,32,48)]
-    fav[2].save('out/favicon.ico',sizes=[(16,16),(32,32),(48,48)],append_images=fav[:2])
-    small(64,rounded=0.24).save('out/favicon-64.png')
-    print('ok')
+TEMAS = {
+    # corpo (topo, base) e cor da marca
+    'claro': {'topo': (253, 253, 254), 'base': (235, 236, 240), 'marca': (29, 29, 31)},
+    'escuro': {'topo': (30, 30, 33), 'base': (8, 8, 10), 'marca': (255, 255, 255)},
+}
 
 
-# ───── Versão clara (tema padrão do site desde 25/10/2026) ─────
-src_claro = Image.open(os.path.join(AQUI, 'anel-claro-fonte.png')).convert('RGB')
-CXc, CYc, Dc = 1000, 980, 1146
-BG_CLARO = (247, 248, 251)
+def bezier(p0, p1, p2, p3, n=40):
+    t = np.linspace(0, 1, n)[:, None]
+    return ((1 - t) ** 3) * p0 + 3 * ((1 - t) ** 2) * t * p1 + 3 * (1 - t) * t**2 * p2 + t**3 * p3
 
 
-def ring_claro(frac, size):
-    full = Dc / frac
-    cx = CXc + DX * full
-    pad = Image.new('RGB', (4096, 4096), BG_CLARO)
-    pad.paste(src_claro, (1024, 1024))
-    b = (int(cx - full / 2) + 1024, int(CYc - full / 2) + 1024, int(cx + full / 2) + 1024, int(CYc + full / 2) + 1024)
-    return pad.crop(b).resize((size, size), Image.LANCZOS)
+def centelha(cx, cy, h, w):
+    """Mesmas curvas do SVG (desenho aprovado: meia-altura 12, meia-largura 25)."""
+    a, b = h / 12, w / 25
+    P = lambda x, y: np.array([cx + x * b, cy + y * a])
+    segs = [
+        (P(0, -12), P(1.2, -3), P(4, -1.2), P(25, 0)),
+        (P(25, 0), P(4, 1.2), P(1.2, 3), P(0, 12)),
+        (P(0, 12), P(-1.2, 3), P(-4, 1.2), P(-25, 0)),
+        (P(-25, 0), P(-4, -1.2), P(-1.2, -3), P(0, -12)),
+    ]
+    return [tuple(pt) for s in segs for pt in bezier(*s)]
 
 
-def compose_claro(frac, size, top=(253, 253, 254), bottom=(232, 236, 243)):
-    """Anel sobre papel claro: multiplica o anel (fundo quase branco) pelo degradê do corpo."""
-    bg = body(size, top, bottom) / 255.0
-    ring = np.asarray(ring_claro(frac, size)).astype(np.float32) / 255.0
-    ring = np.clip(ring / (np.array(BG_CLARO) / 255.0), 0, 1)  # fundo do anel vira branco puro
-    return Image.fromarray(np.clip(bg * ring * 255, 0, 255).astype(np.uint8))
-
-
-def small_claro(size, rounded=0.22, squircle=False):
-    S = 512
-    im = compose_claro(0.70, S).convert('RGBA')
-    R = S * 0.35
-    cx = S * (0.5 - DX)
+def marca(size, cor, diametro=0.5, traco=None, so_anel=None, deslocar=True):
+    """Marca em RGBA transparente. `diametro`: diâmetro externo do anel em fração do quadro."""
+    S = size * SS
+    im = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    so_anel = size < 24 if so_anel is None else so_anel
+    ro = S * diametro / 2
+    # proporção aprovada: traço = 0,29 do raio do eixo; abaixo de 64 px o traço engrossa
+    t = traco if traco is not None else (0.26 if size >= 64 else 0.30 if size >= 32 else 0.36) * ro
+    r = ro - t / 2
+    # centro óptico: o conjunto anel + centelha fica no meio do quadro
+    cx = S / 2 - (0 if so_anel or not deslocar else r * 0.69 * 0.45)
     cy = S / 2
-    w = max(S / size * 1.1, 10)
-    for k, (col, ww) in enumerate((((40, 110, 255, 90), w * 2.6), ((10, 90, 255, 255), w), ((90, 170, 255, 255), w * 0.45))):
-        g = Image.new('RGBA', (S, S), (0, 0, 0, 0))
-        ImageDraw.Draw(g).ellipse((cx - R, cy - R, cx + R, cy + R), outline=col, width=int(ww))
-        if k == 0:
-            g = g.filter(ImageFilter.GaussianBlur(ww / 2))
-        im = Image.alpha_composite(im, g)
-    f = Image.new('RGBA', (S, S), (0, 0, 0, 0))
-    fx = cx + R
-    ImageDraw.Draw(f).ellipse((fx - w * 1.8, cy - w * 1.8, fx + w * 1.8, cy + w * 1.8), fill=(150, 210, 255, 255))
-    im = Image.alpha_composite(im, f.filter(ImageFilter.GaussianBlur(w * 0.6)))
-    if squircle:
-        m = superellipse(S)
-    else:
-        m = Image.new('L', (S * 4, S * 4), 0)
-        ImageDraw.Draw(m).rounded_rectangle((0, 0, S * 4 - 1, S * 4 - 1), radius=int(S * 4 * rounded), fill=255)
-        m = m.resize((S, S), Image.LANCZOS)
-    im.putalpha(m)
+    if not so_anel:
+        d.polygon(centelha(cx + r, cy, r * 0.333, r * 0.694), fill=cor)
+    d.ellipse((cx - ro, cy - ro, cx + ro, cy + ro), outline=cor, width=int(round(t)))
     return im.resize((size, size), Image.LANCZOS)
 
 
-def gerar_claro():
-    os.makedirs('out/claro', exist_ok=True)
-    fb = compose_claro(0.60, 1024)
-    fb.save('out/claro/icon-1024.png')
-    fb.resize((180, 180), Image.LANCZOS).save('out/claro/apple-icon.png')
-    for s in (192, 512):
-        fb.resize((s, s), Image.LANCZOS).save(f'out/claro/icon-{s}.png')
-    compose_claro(0.48, 1024).resize((512, 512), Image.LANCZOS).save('out/claro/icon-maskable-512.png')
+def corpo(size, tema):
+    T = TEMAS[tema]
+    t = np.linspace(0, 1, size)[:, None, None]
+    arr = np.array(T['topo']) * (1 - t) + np.array(T['base']) * t
+    return Image.fromarray(np.broadcast_to(arr, (size, size, 3)).astype(np.uint8)).convert('RGBA')
+
+
+def placa(size, tema, diametro=0.5, **kw):
+    im = corpo(size, tema)
+    im.alpha_composite(marca(size, TEMAS[tema]['marca'] + (255,), diametro, **kw))
+    return im
+
+
+def superelipse(size, n=5.0):
+    S = size * SS
+    y, x = np.mgrid[0:S, 0:S]
+    u = np.abs((x + 0.5) / S * 2 - 1)
+    v = np.abs((y + 0.5) / S * 2 - 1)
+    return Image.fromarray(((u**n + v**n) <= 1).astype(np.uint8) * 255).resize((size, size), Image.LANCZOS)
+
+
+def arredondado(size, raio):
+    m = Image.new('L', (size * SS, size * SS), 0)
+    ImageDraw.Draw(m).rounded_rectangle((0, 0, size * SS - 1, size * SS - 1), radius=int(size * SS * raio), fill=255)
+    return m.resize((size, size), Image.LANCZOS)
+
+
+def mac(tema):
+    """Grid da Apple: 824 dentro de 1024, sombra suave e contorno de luz de 10%."""
     S = 824
-    inner = compose_claro(0.66, S).convert('RGBA')
-    mask = superellipse(S)
+    inner = placa(S, tema, 0.5)
+    mask = superelipse(S)
     inner.putalpha(mask)
     canvas = Image.new('RGBA', (1024, 1024), (0, 0, 0, 0))
     shm = Image.new('L', (1024, 1024), 0)
     shm.paste(mask, (100, 112))
     sh = Image.new('RGBA', (1024, 1024), (0, 0, 0, 255))
-    sh.putalpha(shm.point(lambda v: int(v * 0.32)).filter(ImageFilter.GaussianBlur(22)))
+    sh.putalpha(shm.point(lambda v: int(v * 0.4)).filter(ImageFilter.GaussianBlur(22)))
     canvas = Image.alpha_composite(canvas, sh)
     canvas.alpha_composite(inner, (100, 100))
     mo = Image.new('L', (1024, 1024), 0)
     mo.paste(mask, (100, 100))
     mi = Image.new('L', (1024, 1024), 0)
-    mi.paste(superellipse(S - 4), (102, 102))
-    e = ImageChops.subtract(mo, mi).point(lambda v: int(v * 0.10))
-    canvas = Image.alpha_composite(canvas, Image.merge('RGBA', (*Image.new('RGB', (1024, 1024), (0, 0, 0)).split(), e)))
-    canvas.save('out/claro/mac-icon-1024.png')
-    W = 1024
-    win = compose_claro(0.64, W).convert('RGBA')
-    rm = Image.new('L', (W * 4, W * 4), 0)
-    ImageDraw.Draw(rm).rounded_rectangle((0, 0, W * 4 - 1, W * 4 - 1), radius=int(W * 4 * 0.2), fill=255)
-    win.putalpha(rm.resize((W, W), Image.LANCZOS))
-    win.save('out/claro/win-icon-1024.png')
-    sizes = [16, 24, 32, 48, 64, 128, 256]
-    imgs = [small_claro(s) if s <= 48 else win.resize((s, s), Image.LANCZOS) for s in sizes]
-    imgs[-1].save('out/claro/icon.ico', sizes=[(s, s) for s in sizes], append_images=imgs[:-1])
-    fav = [small_claro(s, rounded=0.24) for s in (16, 32, 48)]
-    fav[2].save('out/claro/favicon.ico', sizes=[(16, 16), (32, 32), (48, 48)], append_images=fav[:2])
+    mi.paste(superelipse(S - 4), (102, 102))
+    borda = ImageChops.subtract(mo, mi).point(lambda v: int(v * (0.10 if tema == 'escuro' else 0.06)))
+    luz = (255, 255, 255) if tema == 'escuro' else (0, 0, 0)
+    return Image.alpha_composite(canvas, Image.merge('RGBA', (*Image.new('RGB', (1024, 1024), luz).split(), borda)))
+
+
+def windows(tema):
+    win = placa(1024, tema, 0.5)
+    win.putalpha(arredondado(1024, 0.2))
+    return win
+
+
+def pequeno(size, tema, raio=0.22):
+    im = placa(size, tema, 0.62 if size < 24 else 0.58)
+    im.putalpha(arredondado(size, raio))
+    return im
+
+
+def gerar(tema):
+    out = os.path.join(AQUI, 'out', tema)
+    os.makedirs(out, exist_ok=True)
+    cheio = placa(1024, tema, 0.5)
+    cheio.convert('RGB').save(f'{out}/icon-1024.png')
+    cheio.convert('RGB').resize((180, 180), Image.LANCZOS).save(f'{out}/apple-icon.png')
+    for s in (192, 512):
+        cheio.convert('RGB').resize((s, s), Image.LANCZOS).save(f'{out}/icon-{s}.png')
+    placa(1024, tema, 0.38).convert('RGB').resize((512, 512), Image.LANCZOS).save(f'{out}/icon-maskable-512.png')
+    mac(tema).save(f'{out}/mac-icon-1024.png')
+    win = windows(tema)
+    win.save(f'{out}/win-icon-1024.png')
+    tamanhos = [16, 24, 32, 48, 64, 128, 256]
+    imgs = [pequeno(s, tema, 0.2) if s <= 48 else win.resize((s, s), Image.LANCZOS) for s in tamanhos]
+    imgs[-1].save(f'{out}/icon.ico', sizes=[(s, s) for s in tamanhos], append_images=imgs[:-1])
+    fav = [pequeno(s, tema, 0.24) for s in (16, 32, 48)]
+    fav[2].save(f'{out}/favicon.ico', sizes=[(16, 16), (32, 32), (48, 48)], append_images=fav[:2])
+    pequeno(64, tema, 0.24).save(f'{out}/favicon-64.png')
+    return out
+
+
+def instalar(claro, escuro):
+    web = os.path.join(RAIZ, 'apps/hub-web')
+    copias = [
+        (f'{claro}/icon-1024.png', 'app/icon.png', 512),
+        (f'{claro}/apple-icon.png', 'app/apple-icon.png', None),
+        # favicon: placa escura com a marca branca, legível na aba clara e na escura
+        (f'{escuro}/favicon.ico', 'app/favicon.ico', None),
+        (f'{claro}/icon-192.png', 'public/icons/icon-192.png', None),
+        (f'{claro}/icon-512.png', 'public/icons/icon-512.png', None),
+        (f'{claro}/icon-maskable-512.png', 'public/icons/icon-maskable-512.png', None),
+        (f'{claro}/icon-1024.png', 'public/brand/app-icon-1024.png', None),
+        (f'{escuro}/icon-1024.png', 'public/brand/app-icon-escuro-1024.png', None),
+        (f'{claro}/mac-icon-1024.png', 'public/brand/app-icon-mac-1024.png', None),
+        (f'{escuro}/mac-icon-1024.png', 'public/brand/app-icon-mac-escuro-1024.png', None),
+        (f'{claro}/win-icon-1024.png', 'public/brand/app-icon-windows-1024.png', None),
+        (f'{escuro}/win-icon-1024.png', 'public/brand/app-icon-windows-escuro-1024.png', None),
+    ]
+    for src, dst, size in copias:
+        dst = os.path.join(web, dst)
+        if size:
+            Image.open(src).resize((size, size), Image.LANCZOS).save(dst)
+        else:
+            shutil.copyfile(src, dst)
+        print('→', os.path.relpath(dst, RAIZ))
 
 
 if __name__ == '__main__':
-    gerar_claro()
-    print('claro ok')
+    claro, escuro = gerar('claro'), gerar('escuro')
+    if '--instalar' in sys.argv:
+        instalar(claro, escuro)
+    print('ok')

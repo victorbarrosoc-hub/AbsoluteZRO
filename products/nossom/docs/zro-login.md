@@ -44,7 +44,7 @@ Teste com PostgreSQL real em `tests/quota-postgres.integration.ts` (`npm run tes
 | --------------------------- | ----------------------------------------------------------- |
 | `ZRO_CLIENT_ID`             | `nossom-web`                                                |
 | `ZRO_CLIENT_SECRET`         | segredo do cliente no console da Absolute ZRO (sensível)    |
-| `ZRO_ISSUER`                | opcional; padrão `https://absolutezro.vercel.app`           |
+| `ZRO_ISSUER`                | opcional; padrão `https://absolutezro.com`                  |
 | `SUPABASE_SERVICE_ROLE_KEY` | já existente; necessária para criar contas e vínculos       |
 | `NOSSOM_AUTH_SECRET`        | já existente; também protege o cookie da ida à Absolute ZRO |
 

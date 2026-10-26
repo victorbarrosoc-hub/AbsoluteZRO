@@ -14,7 +14,7 @@ import { AceitarOutros } from './p2p.js'
 
 // Os outros apps da Absolute ZRO, cada um com o próprio ícone (cópias em icons/familia/). Abrem fora do app.
 const FAMILIA = [
-  { href: 'https://absolutezro.vercel.app', nome: 'Absolute ZRO', img: 'icons/familia/absolute-zro.png' },
+  { href: 'https://absolutezro.com', nome: 'Absolute ZRO', img: 'icons/familia/absolute-zro.png' },
   { href: 'https://carrodofreela.com.br', nome: 'Carro do Freela', img: 'icons/familia/carro-do-freela.png' },
   { href: 'https://nossom-teal.vercel.app', nome: 'Nossom', img: 'icons/familia/nossom.svg' },
   { href: 'https://revela-zro.vercel.app', nome: 'Revela', img: 'icons/familia/revela.svg' },

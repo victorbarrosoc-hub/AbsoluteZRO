@@ -145,3 +145,135 @@ test('páginas públicas e mobile sem rolagem horizontal', async ({ page }) => {
   await expect(page.getByText('Contratação online ainda fechada')).toBeVisible()
   await expect(page.getByText('Preço a definir').first()).toBeVisible()
 })
+
+test('menu lateral recolhe, lembra a escolha e o celular usa uma barra só', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await signupAndOrg(page, 'Org menu')
+  const shell = page.locator('.shell')
+  await expect(shell).toHaveAttribute('data-nav', 'auto')
+  await expect(page.locator('.sidebar .nav__text').first()).toBeVisible()
+  await page.getByRole('button', { name: 'Recolher menu' }).click()
+  await expect(shell).toHaveAttribute('data-nav', 'rail')
+  await expect(page.locator('.sidebar .nav__text').first()).toBeHidden()
+  await expect(page.locator('.sidebar').getByRole('link', { name: 'Meus projetos' })).toBeVisible()
+  await page.reload()
+  await expect(shell).toHaveAttribute('data-nav', 'rail')
+
+  // No celular o menu recolhido não vale: a folha mostra os nomes e fecha ao navegar.
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(page.locator('.sidebar')).toBeHidden()
+  await page.locator('.mobile-nav summary').click()
+  await expect(page.locator('.mobile-nav__body .nav__text').first()).toBeVisible()
+  await page.locator('.mobile-nav__body').getByRole('link', { name: 'Meus projetos' }).click()
+  await page.waitForURL('**/projetos')
+  await expect(page.locator('.mobile-nav__body')).toBeHidden()
+
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.getByRole('button', { name: 'Abrir menu' }).click()
+  await expect(shell).toHaveAttribute('data-nav', 'full')
+})
+
+test('sua conta: nome, foto, pedido de upgrade e acessos', async ({ page }) => {
+  await signupAndOrg(page, 'Org conta')
+  await page.goto('/perfil')
+  await expect(page.getByRole('heading', { level: 1, name: 'Visão geral' })).toBeVisible()
+  await page.getByLabel('Nome').fill('Pessoa Renomeada')
+  await page.getByRole('button', { name: 'Salvar' }).click()
+  await expect(page.getByText('Nome salvo.')).toBeVisible()
+
+  // PNG 1×1: o navegador reduz para WebP 256 px e envia sozinho.
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64')
+  await page.locator('input[name="photo"]').setInputFiles({ name: 'eu.png', mimeType: 'image/png', buffer: png })
+  await expect(page.getByText('Foto atualizada.')).toBeVisible()
+  await page.reload()
+  const src = await page.locator('.me__top img').getAttribute('src')
+  expect(src).toMatch(/\/api\/v1\/users\/[0-9a-f-]{36}\/avatar\?v=\d+$/)
+  const img = await page.request.get(src!)
+  expect(img.status()).toBe(200)
+  expect(img.headers()['content-type']).toBe('image/webp')
+
+  // Pedir plano exige e-mail confirmado.
+  const sql = postgres(DB, { max: 1, onnotice: () => {} })
+  await sql`update zro.users set email_verified_at = now() where display_name = 'Pessoa Renomeada' and email_verified_at is null`
+  await sql.end()
+  await page.getByRole('navigation', { name: 'Sua conta' }).getByRole('link', { name: 'Plano' }).click()
+  await page.waitForURL('**/perfil/plano')
+  await page.getByRole('button', { name: 'Pedir este plano' }).first().click()
+  await expect(page.getByText('Pedido enviado', { exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Pedidos abertos' })).toBeVisible()
+
+  await page.goto('/perfil/acessos')
+  await expect(page.getByRole('heading', { name: 'Org conta' })).toBeVisible()
+  await expect(page.locator('.access-org__apps li.is-on')).toHaveCount(5)
+})
+
+test('central de apps: dentro do app de computador, instala com progresso, abre e atualiza', async ({ page }) => {
+  // Ponte falsa no lugar do preload do Electron (desktop/preload.cjs): mesma forma de window.zroDesktop.apps.
+  await page.addInitScript(() => {
+    const estado: Record<string, { instalado: { versao: string } | null; atualizar: boolean }> = {
+      synquei: { instalado: null, atualizar: false },
+      sobedesce: { instalado: { versao: '0.0.9' }, atualizar: true },
+      nossom: { instalado: null, atualizar: false },
+    }
+    const ouvintes: ((ev: unknown) => void)[] = []
+    const emitir = (ev: unknown) => ouvintes.forEach((f) => f(ev))
+    ;(window as unknown as { __abertos: string[] }).__abertos = []
+    ;(window as unknown as { zroDesktop: unknown }).zroDesktop = {
+      isDesktop: true,
+      plataforma: 'mac',
+      apps: {
+        versao: 1,
+        listar: async () => ({
+          ok: true,
+          dados: Object.entries(estado).map(([id, s]) => ({
+            id,
+            nome: id,
+            disponivel: { versao: '1.0.0', build: 2, tamanho: 104857600 },
+            instalado: s.instalado,
+            atualizar: s.atualizar,
+            ocupado: false,
+          })),
+        }),
+        instalar: async (id: string) => {
+          emitir({ id, fase: 'baixando', recebido: 52428800, total: 104857600 })
+          await new Promise((r) => setTimeout(r, 400))
+          emitir({ id, fase: 'instalando' })
+          await new Promise((r) => setTimeout(r, 200))
+          estado[id] = { instalado: { versao: '1.0.0' }, atualizar: false }
+          emitir({ id, fase: 'pronto' })
+          return { ok: true, dados: true }
+        },
+        abrir: async (id: string) => {
+          ;(window as unknown as { __abertos: string[] }).__abertos.push(id)
+          return { ok: true, dados: true }
+        },
+        remover: async () => ({ ok: true, dados: true }),
+        cancelar: async () => ({ ok: true }),
+        aoProgresso: (fn: (ev: unknown) => void) => {
+          ouvintes.push(fn)
+          return () => {}
+        },
+      },
+    }
+    addEventListener('DOMContentLoaded', () => document.documentElement.classList.add('zro-desktop'))
+  })
+  await signupAndOrg(page, 'Org central')
+  await page.goto('/downloads')
+  const synquei = page.locator('#app-synquei')
+  await synquei.getByRole('button', { name: 'Instalar' }).click()
+  await expect(synquei.getByRole('progressbar')).toBeVisible()
+  await expect(synquei.getByText('50%')).toBeVisible()
+  await expect(synquei.getByRole('button', { name: 'Abrir' })).toBeVisible()
+  await synquei.getByRole('button', { name: 'Abrir' }).click()
+  expect(await page.evaluate(() => (window as unknown as { __abertos: string[] }).__abertos)).toEqual(['synquei'])
+  // Instalado com versão antiga: Atualizar aparece. No app, o instalador avulso some.
+  await expect(page.locator('#app-sobedesce').getByRole('button', { name: 'Atualizar' })).toBeVisible()
+  await expect(page.locator('#app-sobedesce .dl-opts--instalador')).toBeHidden()
+})
+
+test('central de apps: no navegador não aparece nada da central', async ({ page }) => {
+  await signupAndOrg(page, 'Org navegador')
+  await page.goto('/downloads')
+  await expect(page.locator('.app-actions')).toHaveCount(0)
+  await expect(page.locator('#app-synquei .dl-opt[data-os="mac"]')).toBeVisible()
+})

@@ -132,7 +132,7 @@ describe('conta única e direito de uso', () => {
     const j = await (await pedir('/api/zro/eu', { cookies: { sq_conta: r.conta } })).json()
     assert.equal(j.ok, true)
     assert.equal(j.acesso, false)
-    assert.equal(j.ferramentas, 'https://absolutezro.vercel.app/ferramentas')
+    assert.equal(j.ferramentas, 'https://absolutezro.com/ferramentas')
     assert.deepEqual(j.pessoa.produtos, ['sobedesce'])
   })
 

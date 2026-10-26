@@ -2,6 +2,7 @@
 # tema claro e escuro) num MacBook + iPhone de tela verde. Uso: python3 produtos.py <pasta-das-capturas>
 # Nomes esperados na pasta: hub-{mac,iph}-{light,dark}.png, sobedesce-..., synquei-app-..., nossom-..., tpeasy-home-mac-light.png,
 # tpeasy-doc-iph-..., carro-mac-..., carro-iph-light.png. O verde vira cinza fora das telas (despill).
+# Só alguns apps: python3 produtos.py <pasta> hub
 import os, subprocess, sys
 import numpy as np
 from PIL import Image
@@ -9,6 +10,7 @@ from scipy import ndimage
 A=os.path.dirname(os.path.abspath(__file__))
 OUT=os.path.join(A,'..','..','..','apps','hub-web','public','brand')
 CAP=sys.argv[1]
+SO=set(sys.argv[2:])  # opcional: só estes apps (ex.: hub)
 TMP=os.path.join(CAP,'comp'); os.makedirs(TMP,exist_ok=True)
 M={
  'hub':lambda s:(f'{CAP}/hub-mac-{s}.png',f'{CAP}/hub-iph-{s}.png'),
@@ -24,6 +26,7 @@ for tema,s in [('claro','light'),('escuro','dark')]:
   lab,n=ndimage.label(g); sz=ndimage.sum(g,lab,range(1,n+1)); keep=np.argsort(sz)[::-1][:2]+1
   screen=ndimage.binary_erosion(np.isin(lab,keep),iterations=6)
   for app,f in M.items():
+    if SO and app not in SO: continue
     mac,iph=f(s); tmp=f'{TMP}/{app}-{tema}.png'
     subprocess.run(['python3',f'{A}/compor.py',f'{A}/aparelhos-{tema}-verde.png',mac,iph,tmp],check=True,capture_output=True)
     a=np.asarray(Image.open(tmp).convert('RGB')).astype(int)

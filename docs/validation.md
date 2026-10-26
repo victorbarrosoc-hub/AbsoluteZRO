@@ -412,6 +412,56 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - `products/finishing`: `npm test` (**35/35**), testes de tela ajustados (fichas, miniatura não vazia, caixa
   compacta, grupos de rádio com nome). Desktop 1280 e celular 390 sem rolagem lateral e sem erro de console.
 
+## HUB: menu recolhível, tela inteira e central da conta (26/10/2026)
+
+- Pedido do titular: menu lateral recolhível, melhor uso da tela de cada aparelho e uma central de administração da
+  conta (senha, e-mail, foto, plano, acessos).
+- Raiz: `npm run lint`, `format:check`, `typecheck` ok; `npm test` **125/125** em 15 arquivos (novo
+  `account-center.test.ts`, 12 testes: troca de e-mail só depois de confirmada pelo endereço novo, senha atual
+  exigida, e-mail de outra conta recusado, links de nova senha antigos derrubados, conta só Google sem troca; nome pelo
+  `zro_app`; foto pelo tipo real dos bytes, até 300 KB, visível só a quem divide organização, RLS contra escrita em
+  nome de outra pessoa; pedidos de plano só por dono/administração/financeiro, um aberto por plano, editor e outra
+  organização não veem nem criam, a pessoa não marca o próprio pedido como atendido, renovação exige plano pago; resumo
+  de acessos com plano só para a cobrança). `npm run build` ok (72 rotas). `npm run test:e2e` **18/18** (novos: menu
+  recolhe, lembra no recarregar e não vale no celular, que usa uma barra só e fecha a folha ao navegar; conta com nome,
+  foto reduzida para WebP no navegador e servida em `/api/v1/users/{id}/avatar`, pedido de upgrade e acessos; axe
+  WCAG 2.1 A/AA nas quatro seções da conta, claro e escuro). `scan-secrets`: nada em 1774 arquivos.
+- Conferido em screenshot: 1440 px aberto e recolhido, as quatro seções da conta, e 390 px com a faixa de seções e a
+  folha do menu.
+- Não validado: envio real do e-mail de troca (sem provedor de e-mail, a tela avisa e mostra o link só em
+  desenvolvimento); fotos HEIC em iPhone real (o navegador pode não abrir; o servidor recusa o que não for JPG, PNG ou
+  WebP).
+
+## Marca flat: anel com centelha (26/10/2026)
+
+- Letras do wordmark original vetorizadas (`scripts/marca/vetor`, potrace com ampliação 6×) e O redesenhado; SVG
+  mestres, `packages/ui/src/marca.ts` e ícones saem da mesma geometria. Conferido em tela: wordmark e símbolo em
+  claro e escuro, ampliados (retas limpas) e pequenos (16 px só o anel).
+- HUB: `lint`, `format:check`, `typecheck` ok; `npm test` **113/113**; `npm run build` ok; `npm run test:e2e`
+  **16/16** (axe WCAG A/AA claro e escuro com a marca em SVG). App de computador: `npm run icons` e `npm test`
+  **14/14**.
+- NOSSOM: `typecheck` ok, `npm test` **73/73**, E2E do botão "Entrar com Absolute ZRO" **2/2** (o teste confere o
+  símbolo em SVG). SOBEDESCE: `typecheck` ok, `npm test` **231/231**.
+- OG e capturas do HUB nos aparelhos refeitos com a marca nova (demo local). Branding no Higgsfield: 6 imagens
+  (GPT Image 2.5, 2K) e a animação (FLUX 3 Video, 5 s): a estrela nasce com as 4 pontas e recolhe até a forma flat.
+- Não validado: ícones no Dock/Menu Iniciar reais (sem Mac/Windows aqui) e no iPhone real.
+
+## Central de apps (26/10/2026)
+
+- HUB: `tests/integration/desktop-apps.test.ts` (escolha do arquivo por versão e build, só com SHA-256; NOSSOM pelo
+  Release nossom-v* mais novo ou pelo repositório antigo; GitHub fora do ar não quebra o catálogo; download só de
+  arquivo reconhecido, com token pelo endereço assinado). Conferido contra os Releases reais: SOBEDESCE 0.1.0 (b1005) e
+  Synquei 1.0.0 (b1004) entram com SHA-256; NOSSOM fica de fora sem token (repositório antigo privado).
+- E2E: a página Downloads com a ponte do app simulada instala com progresso, abre, mostra Atualizar e esconde o
+  instalador avulso; no navegador nada da central aparece.
+- App de computador: `test/central.test.mjs` (catálogo malicioso descartado, arquitetura do Mac, regra de atualização,
+  registro do Windows, download conferido e apagado quando não confere, instalação simulada no Mac em `/Applications` e
+  em `~/Applications`, NSIS com `/S /currentuser`, app aberto bloqueia atualizar). `npm test` e `npm run smoke`
+  (Electron real no Linux, com a ponte da central) ok.
+- Sites: Synquei `npm test`, SOBEDESCE `typecheck` e `npm test`, NOSSOM `typecheck` e `npm test` ok.
+- Não validado: instalação real num Mac e num Windows (sem os sistemas aqui), instalação da tela de início em iPhone e
+  Android reais.
+
 ## Revela: página inicial, login e conta Absolute ZRO (26/10/2026)
 
 - `index.html` virou a página inicial (motion em CSS, telas reais em MacBook/iPhone, frames da ZRO Filmes como exemplo (o "antes" é o frame em log simulado));
@@ -476,6 +526,19 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - Tela do computador conferida no Chromium com o app de verdade: menu, janela com os quatro cartões nos temas escuro e
   claro, andamento e pronto com o arquivo novo na pasta.
 - Não validado: Mac e Windows reais (VideoToolbox, NVENC); iPhone e Android reais (velocidade, memória, Safari).
+
+## Domínio absolutezro.com e junção dos PRs 34 a 37 (26/10/2026)
+
+- HUB em `https://absolutezro.com` (`/api/health` ok, emissor OIDC no domínio novo, `www` → 308). `ZRO_ISSUER` no domínio
+  novo nos projetos Vercel de Synquei, SOBEDESCE, NOSSOM, TPeasy e Carro do Freela; "Entrar com Absolute ZRO" de cada um
+  leva ao `/oauth/authorize` do domínio novo e daí à tela de entrar. Endereços fixos `absolutezro.vercel.app` trocados.
+- Deploys: o passo de ignorar build compara com o último deploy (`VERCEL_GIT_PREVIOUS_SHA`), não com `HEAD^`; saiu o
+  `ignoreCommand` do `vercel.json` do Carro do Freela e do Revela, que sobrescrevia o do projeto.
+- Junção: raiz `lint`, `format:check`, `typecheck` ok, `npm test` **131/131**, `build` ok, `test:e2e` **20/20**. App de
+  computador **22/22**. Synquei **63/63**. NOSSOM `typecheck` ok e testes sem falha. SOBEDESCE **715/715** e web
+  **231/231**.
+  Carro do Freela **83/87**: as 4 que falham (`fase1-sem-dinheiro`, `seguranca`, `tela-de-inicio`, `versoes`) falham
+  igual na `main`, porque dependem das páginas geradas por `npm run build:fases`.
 
 ## Revela: Clonar LUT, preset Lightroom e página inicial (26/10/2026)
 

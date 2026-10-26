@@ -51,6 +51,20 @@ test('área logada e projeto sem violações WCAG A/AA (claro e escuro)', async 
   const projeto = new URL(page.url()).pathname
   for (const theme of THEMES) {
     await useTheme(context, theme, baseURL)
-    for (const p of ['/inicio', '/projetos', projeto, '/ciclo', '/ferramentas', '/downloads', '/equipe', '/assinatura', '/perfil']) await check(page, p)
+    for (const p of [
+      '/inicio',
+      '/projetos',
+      projeto,
+      '/ciclo',
+      '/ferramentas',
+      '/downloads',
+      '/equipe',
+      '/assinatura',
+      '/perfil',
+      '/perfil/seguranca',
+      '/perfil/plano',
+      '/perfil/acessos',
+    ])
+      await check(page, p)
   }
 })
