@@ -705,6 +705,32 @@ input[type='range'] {
   align-items: center;
   gap: 8px;
 }
+#mais-frames[hidden],
+#marcar-par[hidden] {
+  display: none;
+}
+#mais-frames {
+  position: relative;
+  cursor: pointer;
+}
+#mais-frames input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+#mais-frames:focus-within {
+  outline: 2px solid var(--amarelo);
+  outline-offset: 2px;
+}
+.contagem {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgb(var(--t) / 0.08);
+  font-size: 12px;
+  text-align: center;
+}
 .pares {
   list-style: none;
   margin: 0;

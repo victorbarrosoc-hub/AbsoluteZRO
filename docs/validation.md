@@ -706,3 +706,19 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   O segredo não está no repositório: o titular cola `ZRO_CLIENT_SECRET` na Vercel. Login de ponta a ponta ainda não
   testado.
 - `products/finishing`: `npm test` 90/90; raiz: lint e formato.
+
+## Revela: estudo com stills reais e Clonar com mais frames (26/10/2026)
+
+- Material do titular (fora do repositório): 4 cenas em S-Log3 / S-Gamut3.Cine, o Rec.709 e o look de película de
+  cada uma, e os PowerGrades (`.drx`). O `.drx` mostra o caminho: CST S-Log3 → LogC3 (EI 800) / AWG3, negativo e cópia
+  em LUT, utilitários, grão, halação e um DCTL; a versão Rec.709 troca a CST para Rec.709 e mantém as primárias.
+- Clonar LUT, medido nessas cenas (ΔE Oklab ×100, numa cena que a LUT não viu): log → Rec.709 1,52 → **0,69** com 3
+  frames e 2,61 → **1,17** com um; log → look 7,17 → **6,18** com um e 5,07 com 3. O look não cabe numa LUT só
+  (mesmo com as 4 cenas, 2 a 4 de erro): muda de plano para plano e tem grão e halação. A orientação automática acertou
+  24 de 24 pares e o "mesmo quadro" separou as 16 combinações de cena.
+- Tela: "Mais frames" no lugar do conta-gotas no clone, contagem de frames e aviso para imagem sem par.
+- CST: saída "ARRI LogC3 / AWG3 · para LUT de película" (log para log, sem mapa de tom), como no node tree estudado.
+- Testes: unidade (curva vale em outra cena, 2 frames ≥ 1, orientação, outra cena recusada, LogC3) e Chromium (stills
+  em qualquer ordem e um sem par). `products/finishing`: `npm test` 94/94; raiz: lint e formato.
+- Não validado: a LUT clonada aplicada dentro do Resolve em material de vídeo; o Rec.709 do estudo inclui as primárias
+  do colorista, então ele não mede a CST da Revela sozinha.
