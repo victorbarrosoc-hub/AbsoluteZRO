@@ -8,3 +8,5 @@ SOURCE_MANIFEST.md) em 2026-10-25. Cartão Sony falso, dois destinos ("principal
 - `<destino>-levaN.xxh64`: os relatórios de checksum gravados na pasta do cartão em cada destino. As duas levas
   rodam no mesmo minuto, então o relatório da 2ª grava por cima do da 1ª (carimbo do SOBEDESCE vai até o minuto).
 - `unica-*`: outro projeto com um cartão e uma leva só, conferido nos dois destinos.
+- `entrega.json`: comprovante de entrega conferida (`sobedesce.entrega/1`), gerado por
+  `scripts/fixtures/generate-sobedesce-entrega.mjs` com `products/sobedesce/src/engine/entrega.js` (lote fictício).

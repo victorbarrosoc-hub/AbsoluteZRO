@@ -29,6 +29,11 @@ electronFuses:
   enableEmbeddedAsarIntegrityValidation: true
   onlyLoadAppFromAsar: true
 
+# "Abrir no Synquei" do SOBEDESCE: synquei://organizar?pasta=… abre este app (desktop/link-organizar.cjs).
+protocols:
+  - name: Synquei
+    schemes: [synquei]
+
 mac:
   target:
     - target: dmg

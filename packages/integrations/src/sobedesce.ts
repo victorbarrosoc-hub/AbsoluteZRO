@@ -227,3 +227,48 @@ export function buildSobedesceManifest(input: { projectId: string; entry: Descar
     warnings,
   }
 }
+
+// ───────────── Entrega conferida (comprovante sobedesce.entrega/1) ─────────────
+//
+// Fonte real: products/sobedesce/src/engine/entrega.js. Depois que uma pasta sobe para o Drive com o MD5 de cada arquivo
+// conferido (o MD5 que o Drive devolve = o do arquivo no computador), o app gera este JSON. O HUB não recebe a mídia:
+// lê o comprovante e publica delivery.ready v2 com o link da pasta.
+
+const Md5 = z.string().regex(/^[0-9a-f]{32}$/)
+export const EntregaSchema = z.object({
+  formato: z.literal('sobedesce.entrega/1'),
+  id: z.string().regex(/^[\w-]{6,100}$/),
+  quando: z.string().min(1).max(40),
+  pasta: z.string().min(1).max(300),
+  drive: z.object({
+    pastaId: z.string().regex(/^[\w-]{6,200}$/),
+    link: z.string().max(300),
+  }),
+  origem: z.enum(['revela']).nullable().optional(),
+  arquivos: z
+    .array(z.object({ rel: z.string().min(1).max(1024), size: z.number().int().nonnegative(), md5: Md5, fileId: z.string().max(200) }))
+    .min(1)
+    .max(SOBEDESCE_MAX_FILES),
+})
+export type Entrega = z.infer<typeof EntregaSchema>
+
+/** Link da pasta: só o formato do Drive, montado pelo id (o HUB nunca guarda URL assinada nem de outro domínio). */
+export const linkDaPasta = (pastaId: string) => `https://drive.google.com/drive/folders/${pastaId}`
+
+/** Lê o comprovante. Caminho perigoso, MD5 fora do formato ou link de outro lugar = erro com motivo. */
+export function parseEntrega(text: string): { ok: true; entrega: Entrega } | { ok: false; reason: string } {
+  let json: unknown
+  try {
+    json = JSON.parse(text)
+  } catch {
+    return { ok: false, reason: 'O comprovante não é um JSON válido.' }
+  }
+  const r = EntregaSchema.safeParse(json)
+  if (!r.success) return { ok: false, reason: `Comprovante fora do formato: ${r.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}` }
+  const e = r.data
+  if (e.drive.link !== linkDaPasta(e.drive.pastaId)) return { ok: false, reason: 'O link não é o da pasta do Drive do comprovante.' }
+  const ruim = e.arquivos.find((a) => !isSafeRelative(a.rel) || a.rel.split('/').includes('.'))
+  if (ruim) return { ok: false, reason: `Caminho inválido: ${ruim.rel}` }
+  if (new Set(e.arquivos.map((a) => a.rel)).size !== e.arquivos.length) return { ok: false, reason: 'O comprovante repete arquivos.' }
+  return { ok: true, entrega: e }
+}

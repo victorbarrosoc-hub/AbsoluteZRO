@@ -7,8 +7,16 @@ import { isDomainError } from '@zro/observability'
 import { Card, EmptyState, Field, Notice, Pill, ProductMark } from '@zro/ui'
 import { ActionForm } from '@/components/action-form'
 import { CycleO } from '@/components/cycle-o'
-import { importSobedesceAction, importTpeasyAction, previewPlanAction, reprocessAction, saveDocumentAction, updateProjectAction } from '@/lib/actions/project'
-import { fmtDate, MANIFEST_LABEL, MANIFEST_TONE, PROJECT_STATUS_LABEL, RUN_LABEL, RUN_TONE, STEP_LABEL, STEP_TONE } from '@/lib/labels'
+import {
+  importSobedesceAction,
+  importSobedesceDeliveryAction,
+  importTpeasyAction,
+  previewPlanAction,
+  reprocessAction,
+  saveDocumentAction,
+  updateProjectAction,
+} from '@/lib/actions/project'
+import { fmtBytes, fmtDate, MANIFEST_LABEL, MANIFEST_TONE, PROJECT_STATUS_LABEL, RUN_LABEL, RUN_TONE, STEP_LABEL, STEP_TONE } from '@/lib/labels'
 import { db, requireOrgPage } from '@/lib/session'
 
 export const metadata: Metadata = { title: 'Projeto' }
@@ -63,6 +71,13 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
     throw e
   }
   const { project, steps, documents, manifests, runs, events } = data
+  // Entregas conferidas pelo SOBEDESCE (delivery.ready v2): o link é sempre o da pasta do Drive montado pelo HUB.
+  const entregas = events
+    .filter((e) => e.event_type === 'delivery.ready' && Number(e.schema_version) === 2)
+    .map((e) => {
+      const p = e.payload as { files: number; bytes: number; folder_url: string }
+      return { id: e.id as string, files: p.files, bytes: p.bytes, link: p.folder_url, quando: e.occurred_at as Date }
+    })
   const canEdit = !!project.can_edit
   const step = (k: string) => steps.find((s) => s.stepKey === k)!
   const brief = documents.find((d) => d.kind === 'brief')
@@ -375,9 +390,9 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
         )}
       </Card>
 
-      <Card id="edicao" title="Decupagem e edição" eyebrow="AI Edit · nome provisório">
+      <Card id="edicao" title="Decupagem e edição" eyebrow="AEON">
         <Notice title="Em desenvolvimento">
-          O AI Edit ainda não existe como ferramenta. O contrato de entrada (mídia sincronizada, briefing, roteiro) e de saída (<code>edit.selects.ready</code>,{' '}
+          O AEON ainda não está lançado. O contrato de entrada (mídia sincronizada, briefing, roteiro) e de saída (<code>edit.selects.ready</code>,{' '}
           <code>edit.timeline.ready</code>) já está definido. Nenhuma IA roda aqui.
         </Notice>
       </Card>
@@ -392,6 +407,34 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
 
       <Card id="finalizacao" title="Finalização e entregas" eyebrow="Revela">
         <Notice title="Em desenvolvimento">Começa pela cor no DaVinci Resolve: LUT a partir de uma referência e entrega em PowerGrade e LUT.</Notice>
+        {entregas.length ? (
+          <ul className="list-plain">
+            {entregas.map((e) => (
+              <li key={e.id} className="row row--between">
+                <span>
+                  <Pill tone="ok">MD5 conferido</Pill> {e.files} arquivo(s) · {fmtBytes(e.bytes)}
+                </span>
+                <span className="row">
+                  <span className="zro-faint">{fmtDate(e.quando)}</span>
+                  <a className="zro-btn zro-btn--small zro-btn--ghost" href={e.link} target="_blank" rel="noopener noreferrer">
+                    Abrir no Drive
+                  </a>
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {canEdit && step('sobedesce').access === 'contracted' ? (
+          <details className="disclosure">
+            <summary>Registrar entrega do SOBEDESCE</summary>
+            <ActionForm action={importSobedesceDeliveryAction} submit="Registrar entrega">
+              <input type="hidden" name="projectId" value={id} />
+              <Field label="Comprovante (.json)" htmlFor="ent-file" hint="O SOBEDESCE gera depois que a pasta sobe com o MD5 de cada arquivo conferido.">
+                <input className="zro-input" id="ent-file" name="entregaFile" type="file" accept="application/json,.json" required />
+              </Field>
+            </ActionForm>
+          </details>
+        ) : null}
       </Card>
 
       <Card id="atividades" title="Atividades e auditoria">

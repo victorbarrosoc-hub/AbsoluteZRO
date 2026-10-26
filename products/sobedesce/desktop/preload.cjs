@@ -21,4 +21,6 @@ contextBridge.exposeInMainWorld('sobedesce', {
   abrirAjustesRede: qual => ipcRenderer.invoke('sobedesce:abrir-ajustes-rede', qual === 'firewall' ? 'firewall' : 'rede-local'),
   // Referências: abre o navegador de referências (janela própria; desktop/navegador.js).
   abrirNavegador: url => ipcRenderer.invoke('sobedesce:abrir-navegador', url || null),
+  // Backup Automático → "Abrir no Synquei": o link synquei://organizar (false = o Synquei não está instalado).
+  abrirSynquei: link => ipcRenderer.invoke('sobedesce:abrir-synquei', String(link || '')),
 })
