@@ -39,7 +39,7 @@ const ok=[],bad=[]; const t=(c,m)=>(c?ok:bad).push(m);
 const URL='file://'+path.resolve(__dirname,'..','public','index.html');
 
 (async()=>{
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
   const p=await b.newPage({viewport:{width:1440,height:1200},deviceScaleFactor:2});
   const errs=[]; p.on('pageerror',e=>errs.push('ERR: '+e.message));
   p.on('console',m=>{ if(m.type()!=='error') return;

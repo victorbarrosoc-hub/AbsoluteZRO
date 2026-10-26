@@ -44,7 +44,7 @@ const os=require('os');
 const {servir,URL}=require('./_servir.js');
 
 (async()=>{
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
   const ctx=await b.newContext({viewport:{width:1440,height:1100},deviceScaleFactor:2,acceptDownloads:true});
   const p=await ctx.newPage();
   const errs=[]; p.on('pageerror',e=>errs.push('ERR: '+e.message));

@@ -16,7 +16,7 @@ const ok=[],bad=[]; const t=(c,m)=>(c?ok:bad).push(m);
 const URL='file://'+path.resolve(__dirname,'..','public','index.html');
 
 (async()=>{
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
   const errs=[];
   const entrar=async larg=>{
     const ctx=await b.newContext({viewport:{width:larg,height:900},isMobile:larg<=820});

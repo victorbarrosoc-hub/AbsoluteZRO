@@ -28,7 +28,7 @@ const PRE=pg=>pg.addInitScript(()=>{ try{
 const arq=f=>path.resolve(__dirname,'..','public',f?('fase-'+f+'.html'):'index.html');
 
 (async()=>{
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
 
   /* ============ os seis arquivos existem ============ */
   const faltando=[1,2,3,4,5,6].filter(f=>!fs.existsSync(arq(f)));

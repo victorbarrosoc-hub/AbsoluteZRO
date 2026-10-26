@@ -24,7 +24,7 @@ const abrir=async p=>{ await p.locator('#menu-bt:visible, #bt-menu:visible').fir
   await p.waitForTimeout(420); };
 
 (async()=>{
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
   const p=await b.newPage({viewport:{width:1280,height:1000},deviceScaleFactor:2});
   const errs=[]; p.on('pageerror',e=>errs.push('ERR: '+e.message));
   p.on('console',m=>{ if(m.type()!=='error') return;

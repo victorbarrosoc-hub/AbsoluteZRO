@@ -102,7 +102,7 @@ const SONDA = () => {
   t(faltando.length===0,'e ele existe nas '+saidas.length+' saídas, com todas as seções fechadas'
     +(faltando.length?' — falha em '+faltando.join(', '):''));
 
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
   const abrir=async(reduz)=>{
     const ctx=await b.newContext({viewport:{width:390,height:844},isMobile:true,
       reducedMotion:reduz?'reduce':'no-preference'});

@@ -21,7 +21,9 @@ const NOMES = (process.argv[3] ? process.argv[3].split(',') : ['index', 'fase1',
   .filter(n => fs.existsSync(path.join(PASTA, n + '.html')));
 const BASE = 'http://cdf.blindar/';
 const TIPO = { '.html': 'text/html; charset=utf-8', '.webp': 'image/webp', '.mp4': 'video/mp4', '.png': 'image/png',
-  '.jpg': 'image/jpeg', '.webmanifest': 'application/manifest+json' };
+  '.jpg': 'image/jpeg', '.webmanifest': 'application/manifest+json',
+  /* (26/out) o script, a folha e as fontes também moram em m/ */
+  '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
 
 (async () => {
   const b = await chromium.launch({ executablePath: process.env.CHROME || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });

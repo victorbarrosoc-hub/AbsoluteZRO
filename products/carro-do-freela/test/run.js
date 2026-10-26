@@ -4,9 +4,18 @@
  *
  *   node test/run.js              todas
  *   node test/run.js busca take   só essas
+ *   JUNTAS=1 node test/run.js     uma de cada vez, como era até 25/out
  *
  * Precisa do Playwright e de um Chromium. Se o binário não estiver no
  * caminho padrão deste ambiente, passe CHROME=/caminho/do/chrome.
+ *
+ * ⚠️ EM PARALELO, NUM NAVEGADOR SÓ (26/out). A bateria levava ~45 minutos
+ * porque cada uma das 86 suítes subia o próprio Chromium e esperava a
+ * anterior acabar. Agora o arnês sobe UM Chromium (launchServer) e cada
+ * suíte se conecta a ele (test/_navegador.js) — cada uma no próprio
+ * contexto, sem dividir armazenamento — e roda JUNTAS suítes de cada vez.
+ * Nenhuma suíte foi pulada nem mudou de régua: as que medem tempo de quadro
+ * (a abertura) ou som rodam no fim, SOZINHAS, sem ninguém disputando a CPU.
  */
 const { execFile } = require('child_process');
 const fs = require('fs'), path = require('path');
@@ -19,9 +28,16 @@ const DIR = __dirname;
 const GLOBAL = '/opt/node22/lib/node_modules';
 const ENV = { ...process.env };
 if (!ENV.NODE_PATH && fs.existsSync(GLOBAL)) ENV.NODE_PATH = GLOBAL;
+/* o "_" no começo do nome é ajudante (_servir, _navegador, _fonte), não suíte */
 const todas = fs.readdirSync(DIR)
-  .filter(f => f.endsWith('.js') && f !== 'run.js')
+  .filter(f => f.endsWith('.js') && f !== 'run.js' && !f.startsWith('_'))
   .sort();
+/* as que medem tempo de verdade (quadro a quadro da abertura, som, o vídeo
+   tocando) — com a CPU dividida elas mediriam a máquina, não o produto */
+const SOZINHAS = ['abertura', 'abertura-solta', 'som', 'movimento', 'home-clara', 'entrar',
+  /* medidas de animação no meio do caminho (o carro da estrada, a gaveta
+     entrando, o contador do cofre subindo): em paralelo leram quadro atrasado */
+  'cofre', 'mapa', 'menu-recolhivel', 'planos', 'take', 'tempo-real'];
 const pedidas = process.argv.slice(2);
 const lista = pedidas.length
   ? todas.filter(f => pedidas.some(p => f.startsWith(p.replace(/\.js$/, ''))))
@@ -68,10 +84,27 @@ const roda = f => new Promise(res => {
 });
 
 (async () => {
-  console.log(`\nrodando ${lista.length} suíte(s) contra public/index.html\n`);
+  const JUNTAS = Math.max(1, +(process.env.JUNTAS || Math.min(4, require('os').cpus().length)));
+  const t0 = Date.now();
+  console.log(`\nrodando ${lista.length} suíte(s) contra public/index.html` + (JUNTAS > 1 ? ` — ${JUNTAS} de cada vez, num Chromium só` : '') + '\n');
+  let servidor = null;
+  if (JUNTAS > 1) {
+    const { chromium } = require(require.resolve('playwright', { paths: [DIR].concat((ENV.NODE_PATH || '').split(':')) }));
+    const nav = require('./_navegador.js');
+    servidor = await chromium.launchServer({ executablePath: nav.CHROME, args: nav.ARGS });
+    ENV.CDF_NAVEGADOR = servidor.wsEndpoint();
+  }
   const r = [];
-  for (const f of lista) r.push(await roda(f));   // em série: cada uma sobe um Chromium
+  const fila = lista.filter(f => JUNTAS === 1 || !SOZINHAS.includes(f.replace(/\.js$/, '')));
+  const depois = lista.filter(f => !fila.includes(f));
+  await Promise.all(Array.from({ length: JUNTAS }, async () => {
+    while (fila.length) r.push(await roda(fila.shift()));
+  }));
+  if (depois.length) console.log('\n  sozinhas, sem disputar a CPU:');
+  for (const f of depois) r.push(await roda(f));
+  if (servidor) await servidor.close();
   const maus = r.filter(x => !x).length;
-  console.log(`\n${r.length - maus} de ${r.length} passaram` + (maus ? ` — ${maus} falharam` : '') + '\n');
+  const min = ((Date.now() - t0) / 60000).toFixed(1);
+  console.log(`\n${r.length - maus} de ${r.length} passaram em ${min} min` + (maus ? ` — ${maus} falharam` : '') + '\n');
   process.exit(maus ? 1 : 0);
 })();

@@ -41,7 +41,7 @@ const PRE=pg=>pg.addInitScript(()=>{ try{
 });
 
 (async()=>{
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
   const errs=[];
   const abrir=async(W,H,mob)=>{
     const ctx=await b.newContext({viewport:{width:W,height:H},isMobile:!!mob});
@@ -58,7 +58,7 @@ const PRE=pg=>pg.addInitScript(()=>{ try{
       const nome=li.querySelector('b').textContent;
       const c=CREW.find(x=>titulo(x.nome)===nome);
       return {nome, achou:!!c, livre:!!c&&status(c,hjDia)==='livre', func:c?c.func:[],
-        rosto:/data:image\//.test(li.querySelector('.av').style.backgroundImage),
+        rosto:/(?:data:image\/|\/m\/foto-rostos-\d+\.\w+\.webp)/.test(li.querySelector('.av').style.backgroundImage),   /* (26/out) rosto em arquivo de m/ */
         st:li.querySelector('.st').textContent.trim()};
     });
     const esperado=CREW.filter(c=>!c.me&&c.foto&&!(c.principal||[]).includes('Perfil incompleto')&&status(c,hjDia)==='livre'
@@ -231,10 +231,11 @@ const PRE=pg=>pg.addInitScript(()=>{ try{
           tinta:getComputedStyle(pri).backgroundColor,
           acao:getComputedStyle(document.documentElement).getPropertyValue('--ciano').trim(),
           hl:(document.querySelector('#hh-t .hl')||{}).textContent,
-          objs:objs.length, objsOk:objs.every(i=>/\/m\/obj-[a-z]+(@hd)?\.\w+\.webp$/.test(i.src)&&i.naturalWidth>0),
+          objs:objs.length, /* (26/out) a escada de larguras: obj-x@<largura>.<hash>.webp */
+          objsOk:objs.every(i=>/\/m\/obj-[a-z]+(@\d+)?\.\w+\.webp$/.test(i.src)&&i.naturalWidth>0),
           blocosComObj:[...home.querySelectorAll('#h-rec .bn-t')].filter(x=>x.offsetParent&&x.id!=='h-moeda').every(b=>b.querySelector('img.bn-obj')),
           prova:v('hp-prova').innerText, hoje,
-          rostosProva:[...document.querySelectorAll('#hp-prova .avs i')].filter(i=>/data:image\//.test(i.style.backgroundImage)).length,
+          rostosProva:[...document.querySelectorAll('#hp-prova .avs i')].filter(i=>/(?:data:image\/|\/m\/foto-rostos-\d+\.\w+\.webp)/.test(i.style.backgroundImage)).length,
           mentira:(txt.match(/★|☆|\d,\d\s*\(\d+\)|mil profissionais|mais escolhido|profissionais verificados|sem mensalidade/gi)||[]),
           praca:[...document.querySelectorAll('#h-praca .pc-it b')].map(b=>b.textContent),
           guildaFase:(document.querySelector('#h-praca .pc-it b')&&[...document.querySelectorAll('#h-praca li')].find(li=>/Guildas/.test(li.textContent)).dataset.fase),

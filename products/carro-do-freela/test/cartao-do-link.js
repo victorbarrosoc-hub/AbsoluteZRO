@@ -18,7 +18,7 @@ const ARQ=path.join(RAIZ,'public','index.html');
 
 (async()=>{
   const html=fs.readFileSync(ARQ,'utf8');
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
   const p=await b.newPage({viewport:{width:400,height:400}});
   await p.setContent(html.slice(0,html.indexOf('</head>')+7)+'<body></body>');
 
