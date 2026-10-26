@@ -225,7 +225,8 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   `consentimento` **11/11** (caixa desmarcada, sem marcar não registra, marcar grava versão e data, retirada
   registrada, sobrevive ao recarregar, ninguém fictício "autorizou"). As quatro suítes das fases passaram com
   `public/fase-*.html` apagados: o `run.js` gera os sete builds.
-- BATERIA_CARRO
+- Carro, bateria completa (`npm test`, Chromium 1243): **87/87** em 20,5 min; `sem-zoom` falhou em paralelo e
+  passou sozinha (regra do `run.js`, igual à rodada anterior). `node src/vercel-build.js` aprovado (build 26/out · 3).
 - `node scripts/scan-secrets.mjs` limpo.
 
 ## Carro do Freela: leve sem perder qualidade (26/10/2026)

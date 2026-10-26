@@ -279,7 +279,7 @@ function montarSaida(semFuncoes) {
       '⟶⟶ só quem tem conta vai na equipe, com a função da escala');
     const depois = await p.evaluate(() => { const a = document.querySelector('#jb-det .jzro a'), n = document.querySelector('#jb-det .jzro + .note');
       return { href: a && a.href, bt: document.querySelector('#jb-det [data-zroenv]').textContent, nota: n && n.textContent } });
-    t(depois.href === zro.url + '/projetos/' + enviado.projectId && depois.bt === 'Atualizar na Absolute ZRO', '⟶⟶ depois: "Abrir na Absolute ZRO" leva ao projeto');
+    t(depois.href === zro.url + '/projetos/' + enviado.projectId && depois.bt === 'Atualizar equipe', '⟶⟶ depois: "Abrir na Absolute ZRO" leva ao projeto');
     t(/1 na equipe/.test(depois.nota || ''), 'e o resumo da equipe (' + depois.nota + ')');
     t(await p.evaluate(() => { const m = MODO; MODO = 'freela'; const h = detJob(ESCALAS[0]); MODO = m; return !h.includes('data-zroenv') }), 'do lado do freela o bloco não existe');
     t(erros.length === 0, 'sem erro: ' + erros.slice(0, 2).join(' · '));

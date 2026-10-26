@@ -255,7 +255,7 @@ não estiver registrado no banco.
   "sem conta": convidar pessoa fictícia seria mentira.
 - `e.uid` é o id do job no HUB (`cdf-<uuid>`): o `e.id` é deste aparelho e repete entre aparelhos.
 - Na tela: bloco `.jzro` no fim das ações do job, **só para quem contrata, só no domínio** com conta liberada
-  (`zroPodeEnviar`). Antes: "Levar para a Absolute ZRO"; depois: "Abrir na Absolute ZRO" + "Atualizar", e uma linha
+  (`zroPodeEnviar`). Antes: "Levar para a Absolute ZRO"; depois: "Abrir na Absolute ZRO" + "Atualizar equipe" (o job é criado uma vez; reenviar só leva a equipe), e uma linha
   com quantos estão na equipe, convidados e sem conta.
 - No HUB: rota com Bearer (`route(..., { bearer })`), papel `guest` que só vê os projetos em que está, convite com
   projeto e conta (`invitee_user_id`), seção Equipe no projeto. Ver `docs/roadmap.md`.
@@ -265,8 +265,8 @@ não estiver registrado no banco.
 - "Mostrar meu perfil para quem contrata" no passo 1 do cadastro, **desmarcado** (caixa pré-marcada não é
   consentimento). A dica (`title`) diz o que é mostrado e que o WhatsApp nunca aparece.
 - `registrarConsentimento()` no `concluirCadastro()`: grava `EU.origem = "autodeclarado"` e
-  `EU.consentimento = {mostrar, versao: CONSENTIMENTO_VERSAO, em}`; desmarcar grava a retirada com data. ⚠️ Mudou o
-  texto da caixa? **Suba `CONSENTIMENTO_VERSAO`**: o registro vale para o texto que a pessoa leu.
+  `EU.consentimento = {mostrar, versao: TERMO_PERFIL_V, em}`; desmarcar grava a retirada com data. ⚠️ Mudou o
+  texto da caixa? **Suba `TERMO_PERFIL_V`**: o registro vale para o texto que a pessoa leu. ⚠️ Nada de `VERSAO="` no nome de constante nova: o `vercel-build` lê a versão da build por esse padrão e pegou a primeira que achou (por isso o nome não é `CONSENTIMENTO_VERSAO`).
 - ⚠️ O registro mora no aparelho, como o resto do cadastro, até a Fase 1 ter banco. O README diz isso e mantém o
   portão de abrir ao público.
 

@@ -16898,13 +16898,13 @@ v("ovl-guia").addEventListener("click",ev=>{ if(ev.target===v("ovl-guia")) fecha
    ⚠️ Hoje o registro mora no perfil, NESTE aparelho, como o resto do
    cadastro: vai para o banco junto com o perfil quando a Fase 1 tiver
    servidor. Até lá não há divulgação para o público (README). */
-const CONSENTIMENTO_VERSAO="2026-10-26";
+const TERMO_PERFIL_V="2026-10-26";
 function registrarConsentimento(mostrar){
   const antes=EU.consentimento;
   EU.origem="autodeclarado";
-  if(mostrar&&!(antes&&antes.mostrar&&antes.versao===CONSENTIMENTO_VERSAO))
-    EU.consentimento={mostrar:true,versao:CONSENTIMENTO_VERSAO,em:new Date().toISOString()};
-  else if(!mostrar) EU.consentimento=antes&&antes.mostrar?{mostrar:false,versao:CONSENTIMENTO_VERSAO,em:new Date().toISOString()}:null;
+  if(mostrar&&!(antes&&antes.mostrar&&antes.versao===TERMO_PERFIL_V))
+    EU.consentimento={mostrar:true,versao:TERMO_PERFIL_V,em:new Date().toISOString()};
+  else if(!mostrar) EU.consentimento=antes&&antes.mostrar?{mostrar:false,versao:TERMO_PERFIL_V,em:new Date().toISOString()}:null;
   usoGravar();
 }
 const perfilAutorizado=c=>!!(c&&c.consentimento&&c.consentimento.mostrar);
@@ -20032,7 +20032,7 @@ function blocoZroJob(e){
   if(q.sem) resumo.push(q.sem+" sem conta Absolute ZRO");
   return '<div class="jzro">'+
     (z&&z.link?'<a class="btn gh" href="'+esc(z.link)+'" target="_blank" rel="noopener">Abrir na Absolute ZRO</a>':'')+
-    '<button class="btn gh" data-zroenv="'+e.id+'">'+(z?"Atualizar na Absolute ZRO":"Levar para a Absolute ZRO")+'</button>'+
+    '<button class="btn gh" data-zroenv="'+e.id+'">'+(z?"Atualizar equipe":"Levar para a Absolute ZRO")+'</button>'+
     '</div>'+(resumo.length?'<p class="note" style="margin-top:9px">'+esc(resumo.join(" · "))+'</p>':'');
 }
 function isoLocal(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0") }
@@ -20071,7 +20071,7 @@ function enviarZro(e,bt){
         e.zro={id:j.projeto.id, link:j.projeto.link, equipe:j.equipe&&Array.isArray(j.equipe.membros)?j.equipe.membros:(e.zro&&e.zro.equipe)||null};
         usoGravar&&usoGravar();
         som("claquete");
-        avisar({t:j.projeto.criado?"Projeto criado na Absolute ZRO":"Projeto atualizado na Absolute ZRO",
+        avisar({t:j.projeto.criado?"Projeto criado na Absolute ZRO":"Equipe atualizada na Absolute ZRO",
           sub:j.equipe&&j.equipe.erro?ZRO_ENV_ERRO[j.equipe.erro==="papel"?"papel":"hub"]:e.nome,
           tipo:"bom", icone:"✓", fazer:()=>window.open(j.projeto.link,"_blank","noopener")});
       } else if(j.erro==="reconectar"||s===401){ ZRO_CONTA.hub=false; return voltar() }
@@ -27204,7 +27204,7 @@ const FBK_KEY=/*__WEB3FORMS_KEY__*/"";   /* Web3Forms → carrodofreela@gmail.co
    suporte: durante os testes a primeira pergunta de todo relato e "qual
    versao voce esta usando?", e sem ela nao da para saber se o defeito ja
    foi consertado ou se a pessoa esta com um arquivo velho no cache. */
-const VERSAO="26/out · 2";
+const VERSAO="26/out · 3";
 /* ?diag na URL faz a linha de contexto do suporte mostrar as medidas do
    aparelho. Existe porque daqui não dá para inspecionar o Safari do
    Victor: em vez de adivinhar uma quarta vez, ele abre com ?diag, toca no
