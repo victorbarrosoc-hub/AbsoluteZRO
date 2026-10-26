@@ -15,7 +15,7 @@ const AVISOS = {
 
 $('entrar').href = `/api/zro/entrar?volta=${encodeURIComponent(volta)}`
 $('criar').href = `/api/zro/entrar?volta=${encodeURIComponent(volta)}&criar=1`
-if (q.get('criar') === '1') $('criar').classList.add('vidro--tinta'), $('entrar').classList.remove('vidro--tinta')
+if (q.get('criar') === '1') ($('criar').classList.add('vidro--tinta'), $('entrar').classList.remove('vidro--tinta'))
 if (AVISOS[q.get('zro')]) $('aviso').textContent = AVISOS[q.get('zro')]
 
 const c = await lerConta()

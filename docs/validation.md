@@ -421,3 +421,12 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - `products/finishing`: `npm test` (**59/59**): 21 do login contra um provedor OIDC falso; tela com home (1440 e 390
   sem rolagem lateral, sem imagem quebrada, sem erro de console), entrar (fora e desligado) e o exemplo.
 - Não validado: login real (falta o cliente `revela-web` no console e as variáveis no projeto Vercel `revela`).
+
+## Revela Look (26/10/2026)
+
+- `src/cor/looks.js`: look de película com matemática própria (o FVPro+ do titular, pacote pago de terceiro, não
+  entrou no repositório). Botão "Revela Look" na tela de LUT, no lugar da referência; conta-gotas desligado nele.
+- `products/finishing`: `npm test` (**65/65**): 5 testes do look (intensidade 0 não mexe, curva monótona com preto
+  aberto e branco que deita, sombras frias e altas quentes, verde para oliva com pele no lugar, só curva / só cor,
+  .cube fiel ao look) e 1 de tela (sem referência, baixa `revela-look-33.cube`, referência nova volta ao normal).
+- Não validado: comparação lado a lado com o FVPro+ no Resolve.

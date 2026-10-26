@@ -26,7 +26,12 @@ export async function iniciarZroFalsa(cliente) {
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, base)
     if (url.pathname === '/.well-known/openid-configuration') {
-      return responder(res, 200, { issuer: base, authorization_endpoint: `${base}/oauth/authorize`, token_endpoint: `${base}/oauth/token`, jwks_uri: `${base}/oauth/jwks` })
+      return responder(res, 200, {
+        issuer: base,
+        authorization_endpoint: `${base}/oauth/authorize`,
+        token_endpoint: `${base}/oauth/token`,
+        jwks_uri: `${base}/oauth/jwks`,
+      })
     }
     if (url.pathname === '/oauth/jwks') return responder(res, 200, { keys: [jwk] })
     if (url.pathname === '/oauth/authorize') {
@@ -35,7 +40,13 @@ export async function iniciarZroFalsa(cliente) {
       estado.prompt = q.get('prompt')
       const volta = new URL(q.get('redirect_uri'))
       volta.searchParams.set('state', q.get('state'))
-      if (q.get('client_id') !== cliente.clientId || q.get('code_challenge_method') !== 'S256' || !q.get('code_challenge') || !q.get('nonce') || q.get('scope') !== 'openid email profile org') {
+      if (
+        q.get('client_id') !== cliente.clientId ||
+        q.get('code_challenge_method') !== 'S256' ||
+        !q.get('code_challenge') ||
+        !q.get('nonce') ||
+        q.get('scope') !== 'openid email profile org'
+      ) {
         volta.searchParams.set('error', 'invalid_request')
       } else if (estado.negar || !estado.pessoa) {
         volta.searchParams.set('error', 'access_denied')

@@ -6,6 +6,7 @@
 import './conta.js'
 import { aplicar, assar, escreverCube } from '../src/cor/cube.js'
 import { oklabParaCodigo } from '../src/cor/oklab.js'
+import { criarRevelaLook } from '../src/cor/looks.js'
 import { amostrar, analisar, criarLook, descrever, descreverSaturacao } from '../src/cor/referencia.js'
 import { ICONES, escalonar, icones, svg } from './visual.js'
 
@@ -24,6 +25,7 @@ let lutPrevia = null
 let camadas = null // { antes, depois } em canvas fora da tela
 let pares = [] // conta-gotas: [{ ref: [L, a, b], mat: [L, a, b] }]
 let pegando = null // null | { etapa: 'ref' | 'mat', ref?: [L, a, b] }
+let preset = null // 'revela' quando a referência é o Revela Look (src/cor/looks.js)
 
 function avisar(texto, erro = false) {
   estado.textContent = texto
@@ -69,6 +71,7 @@ async function receber(qual, arquivo) {
   try {
     const bm = await bitmap(arquivo)
     imagens[qual] = { arquivo, bm }
+    if (qual === 'referencia') usarPreset(null)
     const img = caixa.querySelector('img')
     if (img.src) URL.revokeObjectURL(img.src)
     img.src = URL.createObjectURL(arquivo)
@@ -98,6 +101,28 @@ for (const qual of ['referencia', 'material']) {
   })
 }
 
+// Revela Look: o look de película da plataforma entra no lugar da referência. Uma imagem nova na referência volta ao
+// look por referência.
+function usarPreset(id) {
+  preset = id
+  $('usar-look').setAttribute('aria-pressed', String(Boolean(id)))
+  $('titulo-leitura').textContent = id ? 'Leitura do look' : 'Leitura da referência'
+}
+
+$('usar-look').addEventListener('click', async () => {
+  usarPreset('revela')
+  imagens.referencia = { arquivo: { name: 'Revela Look' }, preset: 'revela' }
+  const caixa = $('caixa-referencia')
+  const img = caixa.querySelector('img')
+  if (img.src.startsWith('blob:')) URL.revokeObjectURL(img.src)
+  img.src = 'exemplos/revela-look.jpg'
+  img.alt = 'Revela Look'
+  img.hidden = false
+  caixa.querySelector('.acao').textContent = 'Revela Look · trocar'
+  if (imagens.material) await calcular()
+  else avisar('Agora o seu frame.')
+})
+
 // Exemplo pronto (frames da ZRO Filmes em exemplos/): o cavalo no pôr do sol como referência, o vestido achatado como frame.
 $('exemplo')?.addEventListener('click', async () => {
   const pegar = async (url, nome) => new File([await (await fetch(url)).blob()], nome, { type: 'image/jpeg' })
@@ -117,11 +142,11 @@ const espera = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r
 async function calcular() {
   avisar('Lendo as duas imagens…')
   await espera()
-  const refImg = paraPixels(desenhar(imagens.referencia.bm, LADO_ANALISE))
+  const refImg = preset ? null : paraPixels(desenhar(imagens.referencia.bm, LADO_ANALISE))
   const matImg = paraPixels(desenhar(imagens.material.bm, LADO_ANALISE))
   analise = {
-    ref: analisar(refImg),
-    mat: analisar(matImg),
+    ref: preset ? null : analisar(refImg),
+    mat: preset ? null : analisar(matImg),
     refImg,
     matImg,
     nomeRef: imagens.referencia.arquivo.name,
@@ -137,7 +162,9 @@ async function refazerLook() {
   if (!analise) return
   avisar('Calculando o look…')
   await espera()
-  look = criarLook(analise.ref, analise.mat, { tom: $('usar-tom').checked, cor: $('usar-cor').checked, pares })
+  const usar = { tom: $('usar-tom').checked, cor: $('usar-cor').checked }
+  look = preset ? criarRevelaLook(usar) : criarLook(analise.ref, analise.mat, { ...usar, pares })
+  mostrarPares()
   mostrarLeitura()
   refazerPrevia()
   $('resultado').hidden = false
@@ -198,8 +225,9 @@ function mostrarLeitura() {
     ? `Preto em ${pct(tom.preto)}, cinza médio em ${pct(tom.cinza)}, branco em ${pct(tom.branco)} (luz percebida).`
     : 'Contraste desligado: a luz fica como está.'
   const lista = $('faixas')
+  const frases = look.preset ? look.resumo.frases : [descreverSaturacao(look.resumo), ...descrever(look.resumo)]
   lista.replaceChildren(
-    ...($('usar-cor').checked ? [descreverSaturacao(look.resumo), ...descrever(look.resumo)] : ['Cor desligada: as cores ficam como estão.']).map((frase) => {
+    ...($('usar-cor').checked ? frases : ['Cor desligada: as cores ficam como estão.']).map((frase) => {
       const li = document.createElement('li')
       li.textContent = frase
       return li
@@ -241,7 +269,8 @@ function mostrarPares() {
     }),
   )
   $('limpar-pares').hidden = !pares.length
-  $('marcar-par').disabled = pares.length >= 3
+  // o conta-gotas compara com uma referência: no Revela Look não há o que marcar
+  $('marcar-par').disabled = Boolean(preset) || pares.length >= 3
 }
 
 function cancelarPegada() {
@@ -333,12 +362,13 @@ $('baixar').addEventListener('click', async () => {
   await espera()
   const t = intensidade()
   const lut = assar((r, g, b) => look.aplicar(r, g, b, t), tamanho)
-  const base =
-    analise.nomeRef
-      .replace(/\.[^.]+$/, '')
-      .replace(/[^\p{L}\p{N}_-]+/gu, '-')
-      .slice(0, 60) || 'referencia'
-  const texto = escreverCube(lut, `Revela - ${base} - ${Math.round(t * 100)}%`)
+  const base = preset
+    ? 'look'
+    : analise.nomeRef
+        .replace(/\.[^.]+$/, '')
+        .replace(/[^\p{L}\p{N}_-]+/gu, '-')
+        .slice(0, 60) || 'referencia'
+  const texto = escreverCube(lut, preset ? `Revela Look - ${Math.round(t * 100)}%` : `Revela - ${base} - ${Math.round(t * 100)}%`)
   const url = URL.createObjectURL(new Blob([texto], { type: 'text/plain' }))
   const a = document.createElement('a')
   a.href = url

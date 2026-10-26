@@ -35,6 +35,14 @@ da Vercel; `api/_zro.js` não vira rota). Cliente OIDC confidencial `revela-web`
 assinados. `entrar.html` mostra fora, dentro ou "chega em breve" (sem `ZRO_CLIENT_ID`/`ZRO_CLIENT_SECRET`, 503). As
 ferramentas seguem abertas sem conta: o topo mostra "Entrar" ou as iniciais.
 
+## Revela Look
+
+`src/cor/looks.js`: o look pronto da plataforma, uma emulação de película feita do zero (matemática própria, sem
+LUT ou DCTL de terceiros). Em Oklab: curva de filme (preto aberto, meio com contraste, altas que deitam), densidade
+(cor forte escurece), verde para oliva, azul para petróleo, pele junta, saturação menor nas altas, sombras frias e
+altas quentes. Na tela de LUT, o botão **Revela Look** entra no lugar da referência; sai `revela-look-33.cube` ou
+`-65.cube` (Rec.709 → Rec.709, depois da conversão do LOG). Contraste, Cor e Intensidade valem para ele também.
+
 ## Tela
 
 `lut.html` + `app/`: a pessoa escolhe (ou solta) a referência e o frame dela, compara antes e depois arrastando sobre

@@ -1276,11 +1276,15 @@ details[open] summary::after {
   font-size: 13px;
   letter-spacing: 0.02em;
   background: linear-gradient(135deg, var(--roxo), var(--vermelho) 55%, var(--amarelo));
-  box-shadow: 0 0 0 2px rgb(14 14 16), 0 0 0 3px rgb(255 255 255 / 0.18);
+  box-shadow:
+    0 0 0 2px rgb(14 14 16),
+    0 0 0 3px rgb(255 255 255 / 0.18);
 }
 
 .exemplo {
   display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   justify-content: center;
   margin-top: 16px;
 }

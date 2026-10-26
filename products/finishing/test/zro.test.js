@@ -86,7 +86,12 @@ describe('entrar', () => {
     const j = await eu.json()
     assert.equal(j.acesso, true, 'finishing está em zro_products')
     assert.equal(zro.estado.prompt, null, 'entrar não pede cadastro')
-    assert.deepEqual(j.pessoa, { nome: 'Lia Produtora', email: 'lia@produtora.com', organizacao: { nome: 'Produtora Lia', papel: 'owner' }, produtos: ['finishing', 'sobedesce'] })
+    assert.deepEqual(j.pessoa, {
+      nome: 'Lia Produtora',
+      email: 'lia@produtora.com',
+      organizacao: { nome: 'Produtora Lia', papel: 'owner' },
+      produtos: ['finishing', 'sobedesce'],
+    })
     const bruto = Buffer.from(r.conta.split('.')[0], 'base64url').toString()
     assert.ok(!/id_token|access_token|"at"/.test(bruto), 'nenhum token da Absolute ZRO no cookie')
   })
@@ -121,7 +126,9 @@ describe('conta única e direito de uso', () => {
   })
 
   test('criar conta fora do endereço oficial leva o criar=1 junto', async () => {
-    const r = await pedir('/api/zro/entrar?volta=/lut&criar=1', { headers: { 'x-forwarded-host': 'revela-git-teste.vercel.app', 'x-forwarded-proto': 'https' } })
+    const r = await pedir('/api/zro/entrar?volta=/lut&criar=1', {
+      headers: { 'x-forwarded-host': 'revela-git-teste.vercel.app', 'x-forwarded-proto': 'https' },
+    })
     assert.equal(r.status, 307)
     assert.equal(r.headers.get('location'), 'https://revela-zro.vercel.app/api/zro/entrar?volta=%2Flut&criar=1')
   })

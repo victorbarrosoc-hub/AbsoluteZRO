@@ -65,7 +65,13 @@
         </label>
       </section>
 
-      <div class="exemplo entra"><button id="exemplo" class="vidro" type="button" title="Dois frames da ZRO Filmes: o cavalo no pôr do sol e o vestido sem cor"><span data-icone="imagem"></span> Testar com um exemplo</button></div>
+      <div class="exemplo entra">
+        <button id="exemplo" class="vidro" type="button" title="Dois frames da ZRO Filmes: o cavalo no pôr do sol e o vestido sem cor">
+          <span data-icone="imagem"></span> Testar com um exemplo</button
+        ><button id="usar-look" class="vidro" type="button" aria-pressed="false" title="Look de película da Revela, pronto: não precisa de referência">
+          <span data-icone="brilho"></span> Revela Look
+        </button>
+      </div>
 
       <p id="estado" class="estado" role="status" aria-live="polite"></p>
 
@@ -111,7 +117,7 @@
           <button id="baixar" class="vidro vidro--tinta grande" type="button"><span data-icone="baixar"></span> Baixar LUT</button>
 
           <details class="leitura">
-            <summary>Leitura da referência</summary>
+            <summary id="titulo-leitura">Leitura da referência</summary>
             <p id="tom"></p>
             <ul id="faixas"></ul>
           </details>

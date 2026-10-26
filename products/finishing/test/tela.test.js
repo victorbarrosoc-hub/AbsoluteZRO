@@ -409,3 +409,27 @@ test('testar com um exemplo: carrega as duas imagens e monta a prévia', async (
   await pagina.getByText('Pronto. Arraste sobre a imagem para comparar.').waitFor()
   await pagina.close()
 })
+
+test('Revela Look: sem referência, compara e baixa o .cube do look', async () => {
+  const pagina = await navegador.newPage({ acceptDownloads: true })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  await pagina.goto(endereco + 'lut.html')
+  await pagina.getByRole('button', { name: 'Revela Look' }).click()
+  await pagina.getByText('Agora o seu frame.').waitFor()
+  assert.equal(await pagina.locator('#usar-look').getAttribute('aria-pressed'), 'true')
+  await pagina.setInputFiles('#arquivo-material', join(dir, 'meu-frame.png'))
+  await pagina.getByText('Pronto. Arraste sobre a imagem para comparar.').waitFor()
+  assert.equal(await pagina.getByRole('button', { name: 'Conta-gotas' }).isDisabled(), true)
+  assert.equal(await pagina.locator('#titulo-leitura').textContent(), 'Leitura do look')
+  const [baixado] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Baixar LUT' }).click()])
+  assert.equal(baixado.suggestedFilename(), 'revela-look-33.cube')
+  assert.match(readFileSync(await baixado.path(), 'utf8'), /^TITLE "Revela Look - 100%"/)
+  // referência nova volta ao look por referência
+  await pagina.setInputFiles('#arquivo-referencia', join(dir, 'filme.png'))
+  await pagina.getByText('Pronto. Arraste sobre a imagem para comparar.').waitFor()
+  assert.equal(await pagina.locator('#usar-look').getAttribute('aria-pressed'), 'false')
+  assert.equal(await pagina.getByRole('button', { name: 'Conta-gotas' }).isDisabled(), false)
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
