@@ -267,9 +267,9 @@
 }
 .trio {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
-  max-width: 1040px;
+  max-width: 1180px;
   margin: 56px auto 0;
 }
 .cartao-home {
@@ -556,5 +556,98 @@
   .rodape-home nav {
     margin: 0;
     width: 100%;
+  }
+}
+
+/* ─────────── topo: nota, comparação arrastável e editores ─────────── */
+
+.hero-nota {
+  margin: 14px 0 0;
+  color: var(--fraco, #8e8e93);
+  font-size: 13px;
+}
+.comparar-divisao {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: ew-resize;
+  touch-action: pan-y;
+}
+.comparar-divisao:focus-visible + .arraste,
+.comparar:focus-within {
+  outline: 2px solid #f5f5f7;
+  outline-offset: 4px;
+}
+.comparar.manual .depois {
+  animation: none;
+  clip-path: inset(0 0 0 var(--corte, 50%));
+}
+.comparar.manual .linha {
+  animation: none;
+  left: var(--corte, 50%);
+}
+.arraste {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  z-index: 2;
+  padding: 4px 12px;
+  border-radius: 999px;
+  color: #f5f5f7;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgb(14 14 16 / 0.6);
+  backdrop-filter: blur(10px);
+  transform: translateX(-50%);
+  pointer-events: none;
+  transition: opacity 0.4s;
+}
+.comparar.manual .arraste {
+  opacity: 0;
+}
+.editores {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  margin-top: 28px;
+}
+.editores p {
+  margin: 0;
+  color: var(--fraco, #8e8e93);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.editores ul {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.editores li {
+  padding: 7px 14px;
+  border-radius: 999px;
+  color: var(--mudo, #a1a1a6);
+  font-size: 13px;
+  font-weight: 600;
+  background: rgb(255 255 255 / 0.05);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+@media (max-width: 900px) {
+  .trio {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .trio {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

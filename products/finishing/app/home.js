@@ -41,6 +41,14 @@ const ver = new IntersectionObserver(
 )
 document.querySelectorAll('.revela-ao-rolar').forEach((n) => ver.observe(n))
 
+// Comparação do topo: arrastar (ou setas do teclado) assume o controle e para a varredura automática
+const comparar = document.querySelector('.comparar')
+const divisao = comparar?.querySelector('.comparar-divisao')
+divisao?.addEventListener('input', () => {
+  comparar.classList.add('manual')
+  comparar.style.setProperty('--corte', `${divisao.value}%`)
+})
+
 const nav = document.getElementById('nav')
 const marcar = () => nav.classList.toggle('rolou', scrollY > 8)
 addEventListener('scroll', marcar, { passive: true })
