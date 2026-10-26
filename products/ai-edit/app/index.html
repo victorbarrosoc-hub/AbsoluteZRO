@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Editor · Absolute ZRO</title>
+    <title>AEON · Absolute ZRO</title>
     <meta name="color-scheme" content="dark light" />
     <link rel="icon" href="icone.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="../vendor/zro-tokens.css" />
@@ -13,7 +13,6 @@
   <body>
     <svg width="0" height="0" style="position: absolute" aria-hidden="true">
       <defs>
-        <symbol id="i-produto" viewBox="0 0 24 24"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" fill="var(--produto-2)" /><rect x="6" y="7" width="7" height="2.4" rx="1.2" fill="var(--produto)" /><rect x="9" y="10.8" width="9" height="2.4" rx="1.2" fill="var(--produto)" /><rect x="6" y="14.6" width="5" height="2.4" rx="1.2" fill="var(--produto)" /></symbol>
         <symbol id="i-midia" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M10 9.5v5l4.5-2.5z" fill="currentColor" stroke="none" /></symbol>
         <symbol id="i-revisar" viewBox="0 0 24 24"><path d="M4 7l2 2 3.5-3.5M4 15l2 2 3.5-3.5M13 7.5h7M13 15.5h7" /></symbol>
         <symbol id="i-edicao" viewBox="0 0 24 24"><rect x="3" y="5" width="8" height="4" rx="1.2" /><rect x="12" y="5" width="9" height="4" rx="1.2" /><rect x="3" y="12" width="12" height="3" rx="1" /><path d="M16.5 3v18" /></symbol>
@@ -32,14 +31,19 @@
         <symbol id="i-cartao" viewBox="0 0 24 24"><path d="M7 3h7.5L19 7.5V19a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM9 3v4M12 3v4M15 3.5V7" /></symbol>
         <symbol id="i-zoom" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></symbol>
         <symbol id="i-corte" viewBox="0 0 24 24"><circle cx="6.5" cy="6.5" r="2.5" /><circle cx="6.5" cy="17.5" r="2.5" /><path d="M8.5 8l11 9.5M8.5 16l11-9.5" /></symbol>
+        <symbol id="i-menu" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="3.5" /><path d="M9.5 4.5v15" /></symbol>
+        <symbol id="i-abrir" viewBox="0 0 24 24"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H10l2 2.5h5.5A2.5 2.5 0 0 1 20 10v1M4 7.5v10A1.5 1.5 0 0 0 5.5 19h12.3a1.5 1.5 0 0 0 1.45-1.12L21 12H7.2a1.5 1.5 0 0 0-1.45 1.12L4 19" /></symbol>
+        <symbol id="i-salvar" viewBox="0 0 24 24"><path d="M5 4.5h11l3 3V18a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 18zM8 4.5v5h7v-5M8 19.5v-5h8v5" /></symbol>
+        <symbol id="i-conta" viewBox="0 0 24 24"><circle cx="12" cy="9" r="3.5" /><path d="M5 19.5a7 7 0 0 1 14 0" /></symbol>
+        <symbol id="i-fora" viewBox="0 0 24 24"><path d="M14 4.5h4.5A1.5 1.5 0 0 1 20 6v12a1.5 1.5 0 0 1-1.5 1.5H14M10 8l-4 4 4 4M6 12h10" /></symbol>
         <symbol id="i-legenda" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M7 14.5h4M13 14.5h4M7 11h10" /></symbol>
       </defs>
     </svg>
 
     <header class="barra">
       <div class="barra-produto">
-        <svg class="icone-produto" aria-hidden="true"><use href="#i-produto" /></svg>
-        <span id="nomeProduto"></span>
+        <button class="icone-btn" id="menuBotao" title="Menu (⌘\)" aria-label="Abrir menu" aria-controls="trilho" aria-expanded="false"><svg><use href="#i-menu" /></svg></button>
+        <span class="marca-produto" id="marcaProduto"></span>
       </div>
       <div class="barra-projeto" id="nomeProjeto"></div>
       <div class="barra-acoes">
@@ -152,6 +156,7 @@
             <button class="glass-btn" id="renderCancelar">Cancelar</button>
           </div>
           <p class="apoio" id="entregaFim" hidden></p>
+          <div class="depois" id="depois" aria-label="Depois do AEON"></div>
         </div>
       </section>
     </main>

@@ -1,4 +1,4 @@
-# Editor da Absolute ZRO · instalador para Windows pelo PowerShell, no molde do Synquei. Sem o aviso "O Windows
+# AEON (by Absolute ZRO) · instalador para Windows pelo PowerShell, no molde do Synquei. Sem o aviso "O Windows
 # protegeu o computador": o aviso (SmartScreen) vem da marca "veio da internet" que o navegador põe no arquivo baixado.
 # O PowerShell não põe (e o script ainda tira com Unblock-File, por garantia).
 #
@@ -19,7 +19,7 @@
     [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
   } catch {}
 
-  $nome = 'AI Edit'
+  $nome = 'AEON'
   $release = if ($env:AIEDIT_RELEASE) { $env:AIEDIT_RELEASE.TrimEnd('/') } else { 'https://github.com/victorbarrosoc-hub/AbsoluteZRO/releases/download/ai-edit-app-desktop' }
   $tmp = $null
 
@@ -59,7 +59,7 @@
     $sha = $sha.ToLowerInvariant()
     Nota "build $build"
 
-    $tmp = Join-Path ([IO.Path]::GetTempPath()) ('aiedit-' + [Guid]::NewGuid().ToString('N'))
+    $tmp = Join-Path ([IO.Path]::GetTempPath()) ('aeon-' + [Guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $tmp | Out-Null
     $setup = Join-Path $tmp 'instalador.exe'
 

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Editor da Absolute ZRO · instalador para Mac pelo Terminal, no molde do Synquei. Sem o aviso "A Apple não pôde
+# AEON (by Absolute ZRO) · instalador para Mac pelo Terminal, no molde do Synquei. Sem o aviso "A Apple não pôde
 # verificar se o item está livre de malware": o app tem assinatura ad-hoc (custo zero, sem certificado da Apple,
 # decisão do titular de 26/10/2026) e o aviso vem da "quarentena" que o navegador põe no que baixa. O curl não põe.
 #
@@ -18,7 +18,7 @@
 main() {
   set -eu
 
-  NOME="AI Edit"
+  NOME="AEON"
   RELEASE="${AIEDIT_RELEASE:-https://github.com/victorbarrosoc-hub/AbsoluteZRO/releases/download/ai-edit-app-desktop}"
   DEST="/Applications/$NOME.app"
   NOVO="/Applications/.$NOME-instalando.app"
@@ -76,7 +76,7 @@ main() {
   fi
   nota "build $BUILD"
 
-  TMP="$(mktemp -d "${TMPDIR:-/tmp}/aiedit.XXXXXX")"
+  TMP="$(mktemp -d "${TMPDIR:-/tmp}/aeon.XXXXXX")"
   DMG="$TMP/instalador.dmg"
   MNT="$TMP/montagem"
 

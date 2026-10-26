@@ -21,6 +21,9 @@ import { Player } from './player.js'
 import { LinhaUI } from './linha-ui.js'
 import { renderizar, codecsDaMaquina } from './render.js'
 import * as ponte from './ponte.js'
+import { montarTrilho } from './trilho.js'
+import { simbolo, wordmark } from '../src/marca.js'
+import { DEPOIS, FAMILIA, iconeDe } from '../src/familia.js'
 
 const $ = (id) => document.getElementById(id)
 const PAGINAS = ['midia', 'revisar', 'edicao', 'entrega']
@@ -43,7 +46,20 @@ globalThis.__editor = S
 // ───────── começo ─────────
 
 document.title = `${PRODUTO.nome} · Absolute ZRO`
-$('nomeProduto').textContent = PRODUTO.nome
+$('marcaProduto').innerHTML = `<span class="marca-simbolo">${simbolo({ id: 'corte-barra' })}</span><span class="marca-nome">${wordmark()}</span>`
+$('marcaProduto').title = `${PRODUTO.nome} · ${PRODUTO.frase}`
+montarTrilho({ abrir: () => $('arquivoProjeto').click(), salvar: () => salvarAgora() })
+// Entrega › depois do AEON: o próximo app do caminho (abre no navegador)
+$('depois').replaceChildren(
+  ...DEPOIS.map((d) => {
+    const f = FAMILIA.find((x) => x.id === d.id)
+    const a = Object.assign(document.createElement('a'), { className: 'depois-item', href: d.href, target: '_blank', rel: 'noopener' })
+    a.innerHTML = `<img src="${iconeDe(f, '../')}" alt="" width="34" height="34" /><span><strong></strong><span class="apoio"></span></span>`
+    a.querySelector('strong').textContent = d.titulo
+    a.querySelector('.apoio').textContent = d.texto
+    return a
+  }),
+)
 tema(lerTema())
 $('tema').onclick = () => tema(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark')
 if (ponte.desktop) $('abrirSobedesce').hidden = false

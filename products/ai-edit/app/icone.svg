@@ -1,20 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <!-- Ícone PROVISÓRIO do editor (o nome e a marca ainda serão decididos pelo titular): três faixas de linha do tempo
-       nas cores do produto (--p-ai-edit prata e --p-ai-edit-2 grafite). Não é logo: troque junto com o nome. -->
-  <defs>
-    <linearGradient id="f" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#2a2a2f" />
-      <stop offset="1" stop-color="#151518" />
-    </linearGradient>
-    <linearGradient id="p" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ececf0" />
-      <stop offset="1" stop-color="#d4d5db" />
-    </linearGradient>
-  </defs>
-  <rect x="100" y="100" width="824" height="824" rx="190" fill="url(#f)" />
-  <rect x="100.5" y="100.5" width="823" height="823" rx="189.5" fill="none" stroke="#6a6b73" stroke-opacity=".55" />
-  <rect x="250" y="330" width="330" height="92" rx="46" fill="url(#p)" />
-  <rect x="380" y="466" width="400" height="92" rx="46" fill="url(#p)" />
-  <rect x="250" y="602" width="230" height="92" rx="46" fill="url(#p)" />
-  <rect x="640" y="300" width="18" height="424" rx="9" fill="#6a6b73" />
+<defs>
+<linearGradient id="fundo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#26262b"/><stop offset="1" stop-color="#0b0b0d"/></linearGradient>
+<linearGradient id="metal" x1="0.1" y1="0.05" x2="0.9" y2="0.95"><stop offset="0" stop-color="#ffffff"/><stop offset="0.2" stop-color="#a3a4ac"/><stop offset="0.42" stop-color="#f6f6f8"/><stop offset="0.6" stop-color="#55565e"/><stop offset="0.8" stop-color="#dcdde2"/><stop offset="1" stop-color="#6a6b73"/></linearGradient>
+<radialGradient id="luz" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ffffff" stop-opacity="1"/><stop offset="0.18" stop-color="#ffffff" stop-opacity="0.55"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
+<filter id="sombra" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="16"/></filter>
+<mask id="corte" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024"><rect width="1024" height="1024" fill="#fff"/><g transform="translate(150 150) scale(7.24)"><rect x="-3.2" y="-30" width="6.4" height="60" fill="#000" transform="translate(73.5 26.5) rotate(25)"/></g></mask>
+</defs>
+<rect x="100" y="100" width="824" height="824" rx="190" fill="url(#fundo)"/>
+<rect x="100.5" y="100.5" width="823" height="823" rx="189.5" fill="none" stroke="#ffffff" stroke-opacity="0.12"/>
+<g mask="url(#corte)">
+<circle cx="512" cy="530" r="253" fill="none" stroke="#000" stroke-opacity="0.65" stroke-width="72" filter="url(#sombra)"/>
+<circle cx="512" cy="512" r="253" fill="none" stroke="url(#metal)" stroke-width="72"/>
+<circle cx="506" cy="506" r="283" fill="none" stroke="#ffffff" stroke-opacity="0.32" stroke-width="3"/>
+</g>
+<ellipse cx="682" cy="342" rx="150" ry="150" fill="url(#luz)" opacity="0.9"/>
 </svg>

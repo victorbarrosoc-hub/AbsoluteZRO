@@ -138,10 +138,148 @@ svg {
   letter-spacing: -0.01em;
   color: var(--text-strong);
 }
-.icone-produto {
+.marca-produto {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-strong);
+}
+.marca-simbolo svg {
+  width: 22px;
+  height: 22px;
+  stroke: none;
+  display: block;
+}
+.marca-nome svg {
+  width: 62px;
+  height: 13px;
+  stroke: none;
+  display: block;
+}
+.marca-simbolo svg circle,
+.marca-nome svg g {
+  stroke: currentColor;
+}
+
+/* ───────── menu recolhível (trilho) ───────── */
+.trilho {
+  position: fixed;
+  top: var(--barra-h);
+  bottom: 0;
+  left: 0;
+  width: var(--trilho);
+  padding: 12px 10px calc(var(--dock-h) + 20px);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden auto;
+  background: var(--chrome-bg);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  border-right: 1px solid var(--line);
+  z-index: 15;
+  transition: width 0.5s var(--mola);
+}
+.trilho-grupo {
+  margin: 14px 10px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.trilho-item {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 40px;
+  padding: 0 9px;
+  border-radius: 12px;
+  color: var(--text-mute);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.trilho-item:hover {
+  background: var(--hover);
+  color: var(--text-strong);
+}
+.trilho-icone {
   width: 26px;
   height: 26px;
-  stroke: none;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.trilho-icone img {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+}
+.trilho-nome {
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.25s ease, transform 0.4s var(--mola);
+}
+.trilho-aberto .trilho-grupo,
+.trilho-aberto .trilho-nome {
+  opacity: 1;
+  transform: none;
+}
+:root {
+  --trilho: 62px;
+}
+:root.trilho-aberto {
+  --trilho: 232px;
+}
+.paginas {
+  left: var(--trilho) !important;
+  transition: left 0.5s var(--mola);
+}
+:root[data-theme='light'] .trilho-icone img[src*='absolute-zro-simbolo-branco'] {
+  filter: invert(1);
+}
+
+/* ───────── entrega: depois do AEON ───────── */
+.depois {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  width: 100%;
+  margin-top: 6px;
+}
+.depois-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  text-decoration: none;
+  color: inherit;
+  text-align: left;
+  border: 1px solid var(--line);
+  transition: background 0.2s ease, transform 0.35s var(--mola);
+}
+.depois-item:hover {
+  background: var(--hover);
+  transform: translateY(-1px);
+}
+.depois-item img {
+  border-radius: 9px;
+}
+.depois-item strong {
+  display: block;
+  color: var(--text-strong);
+  font-size: 14.5px;
 }
 .barra-projeto {
   color: var(--text-mute);
@@ -284,7 +422,7 @@ svg {
 /* ───────── páginas (deslizam como as do DaVinci) ───────── */
 .paginas {
   position: fixed;
-  inset: var(--barra-h) 0 var(--dock-h) 0;
+  inset: var(--barra-h) 0 var(--dock-h) var(--trilho);
   overflow: hidden;
 }
 .pagina {
@@ -317,7 +455,8 @@ svg {
 /* ───────── dock ───────── */
 .dock {
   position: fixed;
-  left: 50%;
+  left: calc(50% + var(--trilho) / 2);
+  transition: left 0.5s var(--mola);
   bottom: 14px;
   transform: translateX(-50%);
   display: flex;
