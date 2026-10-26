@@ -77,8 +77,8 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   pelo HUB, mesma permissão e cota da importação de descarga, sem duplicar). ⬜ Envio automático do app para o HUB:
   pede o HUB aceitar o token do login único com escopo próprio (decisão de arquitetura, ADR nova).
 - ⬜ SOBEDESCE · "Converter com a Revela" em Mac, Windows, iPhone e Android reais (roteiro em validation.md).
-- ⛔ SOBEDESCE · build do app de desktop: o download do SDK da Blackmagic (`BRAW_SDK_CADASTRO`) devolve 400; rever o
-  cadastro na Blackmagic (não é código).
+- ✅ SOBEDESCE · build do app de desktop de volta (26/10/2026): o download do SDK da Blackmagic devolvia 400 com o
+  cadastro antigo; com o segredo `BRAW_SDK_CADASTRO` refeito, Mac e Windows passam (SDK, empacotamento e teste de fumaça).
 - ✅ TPeasy ↔ HUB pelo backup JSON do próprio app.
 - ✅ Carro do Freela → HUB pelo contrato proposto `carro-do-freela.job/1`.
 - ✅ Eventos versionados, outbox, fila com retry/backoff, dead-letter, revisão, reprocessamento; fluxo ponta a ponta
