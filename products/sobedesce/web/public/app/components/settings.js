@@ -12,6 +12,31 @@ import { Barra, Linha, Linhas, Opcoes, Passo } from './kit.js'
 import { Avatar } from './main.js'
 import { AceitarOutros } from './p2p.js'
 
+// Os outros apps da Absolute ZRO, cada um com o próprio ícone (cópias em icons/familia/). Abrem fora do app.
+const FAMILIA = [
+  { href: 'https://absolutezro.vercel.app', nome: 'Absolute ZRO', img: 'icons/familia/absolute-zro.png' },
+  { href: 'https://revela-zro.vercel.app', nome: 'Revela', img: 'icons/familia/revela.svg' },
+  { href: 'https://synquei.vercel.app', nome: 'Synquei', img: 'icons/familia/synquei.svg' },
+  { href: 'https://nossom-teal.vercel.app', nome: 'Nossom', img: 'icons/familia/nossom.svg' },
+  { href: 'https://tpeasy.vercel.app', nome: 'TPEasy', img: 'icons/familia/tpeasy.svg' },
+  { href: 'https://carrodofreela.com.br', nome: 'Carro do Freela', img: 'icons/familia/carro-do-freela.png' },
+]
+
+function Familia() {
+  return html`<section class="k-familia k-entra" style="--i:5" aria-label="Absolute ZRO">
+    <p class="list-label">Absolute ZRO</p>
+    <div class="k-linhas">
+      ${FAMILIA.map(
+        (f) => html`<a class="k-linha is-botao" href=${f.href} target="_blank" rel="noopener noreferrer">
+          <img class="k-familia-ic" src=${f.img} alt="" width="30" height="30" />
+          <span class="k-linha-txt"><b>${f.nome}</b></span>
+          <span class="k-linha-ctl"><${Icon} name="external" size=${15} class="k-seta" /></span>
+        </a>`,
+      )}
+    </div>
+  </section>`
+}
+
 function Storage({ quota }) {
   if (!quota) return null
   const usage = Number(quota.usage) || 0
@@ -100,6 +125,8 @@ export function SettingsSheet() {
               </a>
             </${Linhas}>
           </${Passo}>`}
+
+      <${Familia} />
 
       <p class="foot">
         SOBEDESCE Celular ${VERSION}${DEV ? ' · modo de teste' : LAN ? ' · pelo Wi-Fi' : ''}<br />${LAN

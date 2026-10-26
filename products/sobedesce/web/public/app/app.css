@@ -8581,6 +8581,23 @@ button.k-item:active:not(:disabled) {
   display: grid;
   gap: 12px;
 }
+/* A família Absolute ZRO em Ajustes (components/settings.js): ícone de cada app e o nome. */
+.k-familia .list-label {
+  margin: 10px 14px 8px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+}
+.k-familia .k-linha {
+  min-height: 50px;
+}
+.k-familia-ic {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 8px;
+  object-fit: contain;
+}
 .k-espaco {
   display: grid;
   gap: 8px;

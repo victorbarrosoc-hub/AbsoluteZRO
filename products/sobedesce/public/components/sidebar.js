@@ -1,4 +1,5 @@
-// Barra lateral translúcida: marca, navegação (com contador ao vivo), aviso de versão nova, medidores ↓/↑ e a conta.
+// Barra lateral translúcida: marca, navegação (com contador ao vivo), a família Absolute ZRO, aviso de versão nova,
+// medidores ↓/↑ e a conta.
 import { html, useMemo, useRef, useState } from '/vendor/preact-htm.js'
 import { useStore, activeCount, setActiveAccount } from '../lib/store.js'
 import { navigate } from '../lib/router.js'
@@ -9,6 +10,7 @@ import { Avatar } from './common.js'
 import { LevelMeter } from './meter.js'
 import { useAbout } from './drive-data.js'
 import { UpdateCard } from './versao.js'
+import { openExternal } from '../lib/desktop.js'
 
 // O que se usa todo dia em cima; Dispositivos e Ajustes embaixo. Frames e Cartões com item próprio (não ficam escondidos).
 const NAV = [
@@ -24,6 +26,39 @@ const NAV_BAIXO = [
   { id: 'computadores', label: 'Dispositivos', icon: 'laptop' },
   { id: 'ajustes', label: 'Ajustes', icon: 'sliders' },
 ]
+
+// Os outros apps da Absolute ZRO, cada um com o próprio ícone (cópias em public/familia/). Abrem no navegador do
+// sistema: no Electron pela ponte, no navegador numa aba nova; a janela do app nunca sai do SOBEDESCE.
+const FAMILIA = [
+  { href: 'https://absolutezro.vercel.app', nome: 'Absolute ZRO', img: '/familia/absolute-zro.png' },
+  { href: 'https://revela-zro.vercel.app', nome: 'Revela', img: '/familia/revela.svg' },
+  { href: 'https://synquei.vercel.app', nome: 'Synquei', img: '/familia/synquei.svg' },
+  { href: 'https://nossom-teal.vercel.app', nome: 'Nossom', img: '/familia/nossom.svg' },
+  { href: 'https://tpeasy.vercel.app', nome: 'TPEasy', img: '/familia/tpeasy.svg' },
+  { href: 'https://carrodofreela.com.br', nome: 'Carro do Freela', img: '/familia/carro-do-freela.png' },
+]
+
+function Familia() {
+  return html`<nav class="nav nav-familia" aria-label="Absolute ZRO">
+    <p class="nav-grupo">Absolute ZRO</p>
+    ${FAMILIA.map(
+      (f) => html`<a
+        href=${f.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="nav-item"
+        title=${f.nome}
+        onClick=${(e) => {
+          e.preventDefault()
+          openExternal(f.href)
+        }}
+      >
+        <img class="nav-app" src=${f.img} alt="" width="20" height="20" draggable="false" />
+        <span>${f.nome}</span>
+      </a>`,
+    )}
+  </nav>`
+}
 
 function NavBadge() {
   const transfers = useStore((s) => s.transfers)
@@ -142,6 +177,7 @@ export function Sidebar({ current }) {
     <nav class="nav" aria-label="Principal">
       ${NAV.map((n) => html`<${NavItem} n=${n} current=${current} />`)}
     </nav>
+    <${Familia} />
     <nav class="nav nav-baixo" aria-label="Dispositivos e ajustes">
       ${NAV_BAIXO.map((n) => html`<${NavItem} n=${n} current=${current} />`)}
     </nav>
