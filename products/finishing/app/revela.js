@@ -174,7 +174,7 @@ $('exemplo')?.addEventListener('click', async () => {
   }
 })
 
-// Vindo do "Testar grátis agora" da página inicial: o exemplo já abre carregado
+// Vindo do "Testar agora" da página inicial: o exemplo já abre carregado
 if (new URLSearchParams(location.search).has('exemplo')) $('exemplo')?.click()
 
 // ─────────── cálculo ───────────

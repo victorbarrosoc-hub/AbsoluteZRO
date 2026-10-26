@@ -476,3 +476,15 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - Tela do computador conferida no Chromium com o app de verdade: menu, janela com os quatro cartões nos temas escuro e
   claro, andamento e pronto com o arquivo novo na pasta.
 - Não validado: Mac e Windows reais (VideoToolbox, NVENC); iPhone e Android reais (velocidade, memória, Safari).
+
+## Revela: Clonar LUT, preset Lightroom e página inicial (26/10/2026)
+
+- `src/cor/clonar.js`: o mesmo frame com e sem a cor vira LUT. Matriz afim por mínimos quadrados + resíduo numa grade
+  17³ (espalhamento trilinear, borrado e regularizado para a matriz onde não há amostra). Numa cena diferente, a LUT
+  clonada chega a 0,0095 do look verdadeiro (sem nada: 0,079).
+- `src/cor/lightroom.js`: preset .xmp com curvas por canal e HSL das oito faixas. É aproximado (o Lightroom não aplica
+  LUT 3D em preset) e a tela diz isso no botão.
+- Página inicial: "Testar agora" abre a LUT com o exemplo carregado; comparação Log/Final arrastável; faixa "Funciona
+  no seu editor"; cartão do CST. Sem "grátis" no texto (PRD §9.1: não assumir preço nem teste grátis).
+- `products/finishing`: `npm test` **78/78**.
+- Não validado: o .xmp aberto num Lightroom real (Classic e celular) e a semelhança dele com a LUT.

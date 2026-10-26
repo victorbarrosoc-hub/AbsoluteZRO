@@ -529,7 +529,7 @@ test('Clonar LUT e preset Lightroom: o mesmo frame com e sem a cor vira .cube e 
   await pagina.close()
 })
 
-test('página inicial: arrastar a comparação e "Testar grátis agora" abre o exemplo pronto', async () => {
+test('página inicial: arrastar a comparação e "Testar agora" abre o exemplo pronto', async () => {
   const pagina = await navegador.newPage({ viewport: { width: 1280, height: 900 } })
   const erros = []
   pagina.on('pageerror', (e) => erros.push(e.message))
@@ -537,7 +537,7 @@ test('página inicial: arrastar a comparação e "Testar grátis agora" abre o e
   await pagina.getByRole('slider', { name: 'Comparar log e cor final' }).fill('25')
   assert.equal(await pagina.locator('.comparar').evaluate((n) => [n.classList.contains('manual'), n.style.getPropertyValue('--corte')].join()), 'true,25%')
   assert.equal(await pagina.getByRole('list', { name: 'Editores compatíveis' }).getByRole('listitem').count(), 6)
-  await pagina.getByRole('link', { name: 'Testar grátis agora' }).click()
+  await pagina.getByRole('link', { name: 'Testar agora' }).click()
   await pagina.waitForURL(/lut\.html\?exemplo=1$/)
   await pagina.getByText('Pronto. Arraste sobre a imagem para comparar.').waitFor()
   assert.deepEqual(erros, [])
