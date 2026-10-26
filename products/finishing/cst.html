@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Revela · Espaço de cor</title>
+    <meta
+      name="description"
+      content="Troque o espaço de cor da câmera para a tela: S-Log3, LogC, Canon Log, V-Log, BRAW e outros para Rec.709. Sai uma LUT para o DaVinci Resolve."
+    />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0e0e10" />
+    <link rel="canonical" href="https://revela-zro.vercel.app/cst" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Revela" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:url" content="https://revela-zro.vercel.app/" />
+    <meta property="og:title" content="Revela · a cor que você quer, numa LUT" />
+    <meta property="og:description" content="Dê um frame de referência e um frame do seu material. Sai uma LUT para o DaVinci Resolve." />
+    <meta property="og:image" content="https://revela-zro.vercel.app/og.jpg?v=2" />
+    <meta property="og:image:secure_url" content="https://revela-zro.vercel.app/og.jpg?v=2" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Revela: revela a cor que você quer. Um frame de referência vira uma LUT para o DaVinci Resolve." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Revela · a cor que você quer, numa LUT" />
+    <meta name="twitter:description" content="Dê um frame de referência e um frame do seu material. Sai uma LUT para o DaVinci Resolve." />
+    <meta name="twitter:image" content="https://revela-zro.vercel.app/og.jpg?v=2" />
+    <meta name="twitter:image:alt" content="Revela: revela a cor que você quer. Um frame de referência vira uma LUT para o DaVinci Resolve." />
+    <link rel="icon" href="marca/revela-icone.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="app/revela.css" />
+    <script type="module" src="app/cst.js"></script>
+  </head>
+  <body>
+    <header class="topo">
+      <a class="marca" href="./" aria-label="Revela, página inicial"><img src="marca/revela-logo.png" alt="Revela" width="150" height="28" /></a>
+      <nav class="abas" aria-label="Ferramentas da Revela">
+        <a href="lut.html"><span class="aba-icone" data-icone="lut"></span>LUT</a>
+        <a href="cst.html" aria-current="page"><span class="aba-icone" data-icone="cst"></span>CST</a>
+        <a href="entrega.html"><span class="aba-icone" data-icone="entrega"></span>Entrega</a>
+        <a href="converter.html"><span class="aba-icone" data-icone="converter"></span>Converter</a>
+      </nav>
+      <span class="selo">Protótipo</span>
+      <a class="conta" id="conta" href="entrar.html">Entrar</a>
+    </header>
+
+    <main class="tela tela--estreita">
+      <section class="abertura entra">
+        <h1>Da câmera à tela.</h1>
+        <p>O log da sua câmera, no espaço de cor certo.</p>
+      </section>
+
+      <section class="cst-par entra" aria-label="Espaços de cor">
+        <label class="cst-campo"
+          ><span class="cst-rotulo"><span data-icone="filme"></span> Câmera</span
+          ><select id="entrada"></select
+        ></label>
+        <span class="cst-seta" data-icone="entrega" aria-hidden="true"></span>
+        <label class="cst-campo"
+          ><span class="cst-rotulo"><span data-icone="tela"></span> Saída</span
+          ><select id="saida"></select
+        ></label>
+      </section>
+
+      <label class="soltar compacta entra" id="caixa-frame" for="frame">
+        <span class="soltar-icone" data-icone="imagem"></span>
+        <strong class="soltar-titulo">Ver num frame</strong>
+        <span class="soltar-dica">still em log, opcional</span>
+        <input id="frame" type="file" accept="image/*" />
+      </label>
+
+      <section id="previa-cst" class="resultado resultado--unico" hidden aria-label="Prévia">
+        <div class="palco">
+          <canvas id="previa" aria-label="O frame antes e depois do CST"></canvas>
+          <span class="rotulo rotulo-antes" aria-hidden="true">Log</span>
+          <span class="rotulo rotulo-depois" aria-hidden="true">Saída</span>
+          <input id="divisao" class="divisao" type="range" min="0" max="100" value="50" aria-label="Comparar antes e depois" />
+        </div>
+      </section>
+
+      <section class="ajustes entra" aria-label="Ajustes">
+        <div class="linha-ajustes">
+          <div class="segmentado" role="radiogroup" aria-label="Tamanho da LUT">
+            <label title="Monitor e câmera"><input type="radio" name="tamanho" value="33" /> 33 pontos</label>
+            <label title="Grading"><input type="radio" name="tamanho" value="65" checked /> 65 pontos</label>
+          </div>
+          <label class="chave" title="Acima do branco da tela, a luz deita suave em vez de cortar"
+            ><input id="deitar" type="checkbox" role="switch" checked /><span class="chave-trilho"></span> Suavizar altas</label
+          >
+        </div>
+        <button id="baixar" class="vidro vidro--tinta grande" type="button"><span data-icone="baixar"></span> Baixar LUT</button>
+      </section>
+
+      <p id="estado" class="estado" role="status" aria-live="polite"></p>
+
+      <footer class="rodape entra"><span data-icone="cadeado"></span> Seus frames não saem daqui</footer>
+    </main>
+  </body>
+</html>

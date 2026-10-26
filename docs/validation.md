@@ -430,3 +430,14 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   aberto e branco que deita, sombras frias e altas quentes, verde para oliva com pele no lugar, só curva / só cor,
   .cube fiel ao look) e 1 de tela (sem referência, baixa `revela-look-33.cube`, referência nova volta ao normal).
 - Não validado: comparação lado a lado com o FVPro+ no Resolve.
+
+## Revela CST (26/10/2026)
+
+- `src/cor/espacos.js`: curvas log e gamuts das câmeras do CST do Resolve, a partir das fórmulas publicadas pelos
+  fabricantes. `cst.html`: câmera → saída, prévia num still, .cube 33/65, "Suavizar altas". Aba CST nas quatro telas.
+- `products/finishing`: `npm test` (**72/72**): cinza 18% de cada log no valor publicado (S-Log3 420, S-Log2 347,
+  LogC3 0,391, LogC4 0,2784, V-Log 433, Canon Log 3 34,3% IRE, Log3G10 1/3…), ida e volta de todas as curvas, matrizes
+  Rec.709→XYZ, S-Gamut3.Cine→709 e AP1→709 iguais às de referência, branco que continua branco, cinza neutro na
+  saída para as 17 câmeras, identidade, log→log sem corte, altas suaves; tela no computador e no celular (375 px sem
+  rolagem lateral), baixa `revela-cst-arri-logc4-para-rec709-65.cube`.
+- Não validado: comparação no Resolve com o CST dele (nível de dados de cada formato) e em material real de cada câmera.

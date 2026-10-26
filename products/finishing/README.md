@@ -43,6 +43,17 @@ LUT ou DCTL de terceiros). Em Oklab: curva de filme (preto aberto, meio com cont
 altas quentes. Na tela de LUT, o botão **Revela Look** entra no lugar da referência; sai `revela-look-33.cube` ou
 `-65.cube` (Rec.709 → Rec.709, depois da conversão do LOG). Contraste, Cor e Intensidade valem para ele também.
 
+## CST (espaço de cor)
+
+`cst.html` + `src/cor/espacos.js`: o log da câmera para o espaço de saída, numa LUT de 33 ou 65 pontos. Curvas e
+gamuts que o DaVinci Resolve traz no CST, escritos a partir das fórmulas e primárias publicadas pelos fabricantes:
+Sony S-Log3/S-Log2 (S-Gamut3, S-Gamut3.Cine), ARRI LogC3/LogC4 (AWG3/AWG4), Canon Log/Log 2/Log 3 (Cinema Gamut),
+Panasonic V-Log, Blackmagic Film Gen 5, Fujifilm F-Log/F-Log2, Nikon N-Log, DJI D-Log, RED Log3G10, DaVinci
+Intermediate/Wide Gamut e ACEScct/AP1. Saídas: Rec.709, sRGB, Rec.2020, P3-D65, DaVinci Intermediate e ACEScct.
+Matrizes derivadas das primárias (Bradford quando o branco muda, como no ACES). "Suavizar altas" deita a luz acima
+do joelho em vez de cortar; cor fora do gamut perde saturação em vez de cortar canal. Convenção de nível: valor = código
+de 10 bits ÷ 1023 (o que a LUT recebe no Resolve).
+
 ## Tela
 
 `lut.html` + `app/`: a pessoa escolhe (ou solta) a referência e o frame dela, compara antes e depois arrastando sobre

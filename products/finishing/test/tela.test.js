@@ -433,3 +433,29 @@ test('Revela Look: sem referência, compara e baixa o .cube do look', async () =
   assert.deepEqual(erros, [])
   await pagina.close()
 })
+
+test('CST: escolhe câmera e saída, vê num frame e baixa o .cube', async () => {
+  for (const viewport of [
+    { width: 1280, height: 900 },
+    { width: 375, height: 800 },
+  ]) {
+    const pagina = await navegador.newPage({ acceptDownloads: true, viewport })
+    const erros = []
+    pagina.on('pageerror', (e) => erros.push(e.message))
+    await pagina.goto(endereco + 'cst.html')
+    await pagina.getByRole('heading', { name: 'Da câmera à tela.' }).waitFor()
+    await pagina.getByLabel('Câmera').selectOption('arri-logc4')
+    await pagina.getByLabel('Saída').selectOption('rec709')
+    await pagina.setInputFiles('#frame', join(dir, 'meu-frame.png'))
+    await pagina.getByText('Arraste sobre a imagem para comparar.').waitFor()
+    const largura = await pagina.evaluate(() => document.documentElement.scrollWidth)
+    assert.ok(largura <= viewport.width, `rolagem horizontal: ${largura}px`)
+    const [baixado] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Baixar LUT' }).click()])
+    assert.equal(baixado.suggestedFilename(), 'revela-cst-arri-logc4-para-rec709-65.cube')
+    const texto = readFileSync(await baixado.path(), 'utf8')
+    assert.match(texto, /^TITLE "Revela CST - ARRI · LogC4 \/ Wide Gamut 4 para Rec.709/)
+    assert.equal(lerCube(texto).tamanho, 65)
+    assert.deepEqual(erros, [])
+    await pagina.close()
+  }
+})
