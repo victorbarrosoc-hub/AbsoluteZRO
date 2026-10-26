@@ -1,8 +1,9 @@
 // O site do AEON: a marca sai do mesmo código do app (src/marca.js), o menu recolhível e o caminho do ecossistema saem
-// da mesma lista da família (src/familia.js). Motion só com propósito (a estrela acende, o MacBook se endireita com a
-// rolagem, as seções entram) e nada disso com "reduzir movimento".
+// da mesma lista da família (src/familia.js). Motion só com propósito (a cena acende do escuro, o MacBook se endireita com a
+// rolagem, a salina se abre como um trecho da linha do tempo, o estúdio recua) e nada disso com "reduzir movimento".
+// A estrela da abertura está dentro da cena (imagem e vídeo do Higgsfield), não desenhada por cima.
 
-import { simbolo, wordmark, estrelaComBrilho, FORMAS } from '../src/marca.js'
+import { simbolo, wordmark } from '../src/marca.js'
 import { FAMILIA, iconeDe } from '../src/familia.js'
 
 const $ = (s, r = document) => r.querySelector(s)
@@ -13,17 +14,15 @@ const reduzir = matchMedia('(prefers-reduced-motion: reduce)')
 for (const n of $$('[data-marca="simbolo"]')) n.innerHTML = simbolo({ titulo: false })
 for (const n of $$('[data-marca="nome"]')) n.innerHTML = wordmark()
 const claro = () => document.documentElement.dataset.theme === 'light'
-function estrelas() {
-  // a estrela de palco (larga, acesa); a do fim acompanha o tema
-  const r = 100
-  const H = r * FORMAS.larga.largura
-  const vb = `${-H * 1.05} ${-r * 1.08} ${H * 2.1} ${r * 2.16}`
-  $$('[data-marca="estrela"]').forEach((n, i) => {
-    const naHero = n.classList.contains('hero-estrela')
-    n.innerHTML = `<svg viewBox="${vb}" xmlns="http://www.w3.org/2000/svg">${estrelaComBrilho({ cx: 0, cy: 0, r, forma: 'larga', claro: !naHero && claro(), id: `estrela${i}` })}</svg>`
-  })
+
+// ───────── abertura: o vídeo da cena entra quando já está tocando (a foto segura até lá) ─────────
+const video = $('#heroVideo')
+const economia = navigator.connection?.saveData
+if (video && !reduzir.matches && !economia) {
+  video.src = video.dataset.src
+  video.addEventListener('playing', () => video.classList.add('tocando'), { once: true })
+  video.play().catch(() => {})
 }
-estrelas()
 
 // ───────── tema ─────────
 function tema(t) {
@@ -32,7 +31,6 @@ function tema(t) {
     localStorage.setItem('zro-tema', t)
   } catch {}
   for (const img of $$('[data-zro]')) img.src = `vendor/marca/absolute-zro-simbolo-${t === 'dark' ? 'branco' : 'grafite'}.svg`
-  estrelas()
 }
 $('#tema').addEventListener('click', () => tema(claro() ? 'dark' : 'light'))
 tema(document.documentElement.dataset.theme)
@@ -102,6 +100,15 @@ $('#caminho').replaceChildren(
 const nav = $('#nav')
 const hero = $('.hero')
 const mac = $('#mac')
+const faixa = $('#faixa')
+const pausa = $('#pausa')
+const QPS = 24
+const tc = (q) => [Math.floor(q / (3600 * QPS)), Math.floor(q / (60 * QPS)) % 60, Math.floor(q / QPS) % 60, q % QPS].map((n) => String(n).padStart(2, '0')).join(':')
+/** progresso 0→1 de uma seção alta com palco fixo (sticky) */
+const progresso = (sec) => {
+  const r = sec.getBoundingClientRect()
+  return Math.min(1, Math.max(0, -r.top / (r.height - innerHeight)))
+}
 let pedido = false
 function rolar() {
   pedido = false
@@ -112,6 +119,12 @@ function rolar() {
   const r = mac.getBoundingClientRect()
   const p = Math.min(1, Math.max(0, (innerHeight - r.top) / (innerHeight * 0.75)))
   mac.style.setProperty('--p', p.toFixed(3))
+  const pf = progresso(faixa)
+  faixa.style.setProperty('--p', pf.toFixed(3))
+  // o trecho que se abre tem entrada e saída de verdade: a saída anda com a rolagem
+  $('#faixaIn').textContent = tc(12 * QPS + 8)
+  $('#faixaOut').textContent = tc(12 * QPS + 8 + Math.round(pf * 9 * QPS))
+  pausa.style.setProperty('--p', progresso(pausa).toFixed(3))
 }
 addEventListener('scroll', () => pedido || ((pedido = true), requestAnimationFrame(rolar)), { passive: true })
 rolar()

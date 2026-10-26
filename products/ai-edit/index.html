@@ -74,10 +74,12 @@
     </aside>
 
     <main>
-      <!-- 1 · Time is yours: a estrela acende sobre a salina -->
+      <!-- 1 · Time is yours: a estrela é a luz da cena (vídeo em loop, a foto enquanto carrega) -->
       <section class="hero" aria-labelledby="hero-titulo">
-        <div class="hero-fundo" aria-hidden="true"><img src="marca/home/salina.jpg" alt="" width="1344" height="752" fetchpriority="high" /></div>
-        <div class="hero-estrela" aria-hidden="true" data-marca="estrela"></div>
+        <div class="hero-fundo" aria-hidden="true">
+          <img src="marca/home/falesia.jpg" alt="" width="2400" height="1357" fetchpriority="high" />
+          <video id="heroVideo" muted loop playsinline preload="auto" poster="marca/home/falesia.jpg" data-src="marca/home/falesia.mp4"></video>
+        </div>
         <div class="hero-texto">
           <h1 id="hero-titulo" class="hero-titulo"><span class="fino">Time is</span> <span class="forte">yours.</span></h1>
           <p class="hero-sub">O espaço entre os instantes.</p>
@@ -87,6 +89,15 @@
           </div>
         </div>
         <a class="rolar" href="#produto" aria-label="Rolar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6" /></svg></a>
+      </section>
+
+      <!-- 1b · o espaço entre os instantes: a salina se abre como um trecho da linha do tempo -->
+      <section class="faixa" id="faixa" aria-labelledby="faixa-titulo">
+        <div class="faixa-palco">
+          <figure class="faixa-imagem"><img src="marca/home/salina-estrela.jpg" alt="" width="2400" height="1357" loading="lazy" /></figure>
+          <p class="faixa-tempo" aria-hidden="true"><span id="faixaIn">00:00:00:00</span><span id="faixaOut">00:00:00:00</span></p>
+          <h2 id="faixa-titulo" class="faixa-titulo"><span class="fino">O espaço</span> <span class="forte">entre os instantes.</span></h2>
+        </div>
       </section>
 
       <!-- 2 · Do registro à narrativa: a tela de verdade num MacBook -->
@@ -154,10 +165,12 @@
         </ul>
       </section>
 
-      <!-- 5 · pausa -->
-      <section class="pausa" aria-label="Edite além do tempo">
-        <img src="marca/home/camera.jpg" alt="" width="1344" height="752" loading="lazy" />
-        <p class="pausa-frase ao-rolar"><span class="fino">Edite</span> <span class="forte">além do tempo.</span></p>
+      <!-- 5 · pausa: o estúdio, a imagem recua com a rolagem -->
+      <section class="pausa" id="pausa" aria-label="Edite além do tempo">
+        <div class="pausa-palco">
+          <img src="marca/home/estudio.jpg" alt="" width="2400" height="1357" loading="lazy" />
+          <p class="pausa-frase"><span class="fino">Edite</span> <span class="forte">além do tempo.</span></p>
+        </div>
       </section>
 
       <!-- 6 · Ecossistema -->
@@ -172,7 +185,7 @@
 
       <!-- 7 · fim -->
       <section class="fim" aria-labelledby="fim-titulo">
-        <div class="fim-estrela" aria-hidden="true" data-marca="estrela"></div>
+        <div class="fim-simbolo" aria-hidden="true" data-marca="simbolo"></div>
         <h2 id="fim-titulo" class="titulo"><span class="fino">O futuro começa</span> <span class="forte">do zero.</span></h2>
         <div class="acoes">
           <a class="vidro vidro--tinta grande" href="app/">Começar a criar</a>

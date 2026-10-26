@@ -438,36 +438,29 @@ p {
   inset: 0;
   z-index: -1;
 }
-.hero-fundo img {
+.hero-fundo img,
+.hero-fundo video {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 62%;
-  transform: scale(calc(1.06 + var(--p, 0) * 0.08));
-  filter: brightness(0.92);
+  object-position: center 40%;
+  transform: scale(calc(1.02 + var(--p, 0) * 0.1));
+}
+.hero-fundo video {
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+.hero-fundo video.tocando {
+  opacity: 1;
 }
 .hero-fundo::after {
   content: '';
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgb(0 0 0 / 0.55) 0%, rgb(0 0 0 / 0) 30%, rgb(0 0 0 / 0) 55%, rgb(0 0 0 / 0.85) 100%);
-}
-.hero-estrela {
-  position: absolute;
-  left: 50%;
-  top: 32%;
-  width: min(940px, 120vw);
-  translate: -50% -50%;
-  color: #fff;
-  pointer-events: none;
-  opacity: calc(1 - var(--p, 0) * 1.4);
-}
-.hero-estrela svg {
-  width: 100%;
-  height: auto;
-  display: block;
-  overflow: visible;
+    linear-gradient(180deg, rgb(0 0 0 / 0.5) 0%, rgb(0 0 0 / 0) 25%, rgb(0 0 0 / 0) 50%, rgb(0 0 0 / 0.88) 100%);
 }
 .hero-texto {
   text-align: center;
@@ -520,43 +513,31 @@ p {
   }
 }
 
-/* a estrela acende: o miolo cresce do centro e os fios chegam depois (Convergência) */
-.js .hero-estrela .acende-miolo {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: miolo 1.8s var(--mola) 0.2s both;
+/* abertura: a cena acende do escuro (a luz é a da própria estrela) e o texto chega depois */
+.js .hero-fundo {
+  animation: acender 2.8s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
-.js .hero-estrela .acende-fios {
-  transform-box: view-box;
-  transform-origin: center;
-  animation: fios 2.2s var(--mola) 0.7s both;
-}
-.js .hero-texto > * {
-  animation: surgir 1.1s var(--mola) both;
-}
-.js .hero-texto > :nth-child(1) {
-  animation-delay: 0.9s;
-}
-.js .hero-texto > :nth-child(2) {
-  animation-delay: 1.1s;
-}
-.js .hero-texto > :nth-child(3) {
-  animation-delay: 1.3s;
-}
-@keyframes miolo {
+@keyframes acender {
   from {
-    transform: scale(0.05, 0.05);
     opacity: 0;
+    filter: brightness(0.1) blur(10px);
+    transform: scale(1.14);
   }
-  35% {
+  45% {
     opacity: 1;
   }
 }
-@keyframes fios {
-  from {
-    transform: scale(0.55);
-    opacity: 0;
-  }
+.js .hero-texto > * {
+  animation: surgir 1.2s var(--mola) both;
+}
+.js .hero-texto > :nth-child(1) {
+  animation-delay: 1.4s;
+}
+.js .hero-texto > :nth-child(2) {
+  animation-delay: 1.7s;
+}
+.js .hero-texto > :nth-child(3) {
+  animation-delay: 1.95s;
 }
 @keyframes surgir {
   from {
@@ -723,39 +704,101 @@ p {
   stroke-linejoin: round;
 }
 
-/* ───────── 5 · pausa ───────── */
+/* ───────── 5 · pausa: o estúdio recua com a rolagem ───────── */
 .pausa {
-  position: relative;
-  height: min(86vh, 820px);
+  height: 200vh;
+  background: #000;
+}
+.pausa-palco {
+  position: sticky;
+  top: 0;
+  height: 100vh;
   overflow: hidden;
   display: grid;
   place-items: center;
-  background: #000;
 }
-.pausa img {
+.pausa-palco img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.85;
+  transform: scale(calc(1.35 - var(--p, 0) * 0.35));
+  filter: brightness(calc(0.55 + var(--p, 0) * 0.45));
 }
-.pausa::after {
+.pausa-palco::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgb(0 0 0 / 0.75), rgb(0 0 0 / 0.1) 60%);
+  background: linear-gradient(0deg, rgb(0 0 0 / 0.75), rgb(0 0 0 / 0) 45%);
 }
 .pausa-frase {
-  position: relative;
+  position: absolute;
   z-index: 1;
-  justify-self: start;
-  margin-left: 8vw;
+  left: 0;
+  right: 0;
+  bottom: 12vh;
+  text-align: center;
   font-size: clamp(44px, 7vw, 104px);
   line-height: 1;
   letter-spacing: -0.04em;
   color: #fff;
-  max-width: 8ch;
+  opacity: clamp(0, calc((var(--p, 0) - 0.35) * 3), 1);
+  transform: translateY(calc((1 - var(--p, 0)) * 60px));
+}
+
+/* ───────── 1b · faixa: a salina se abre como um trecho da linha do tempo ───────── */
+.faixa {
+  height: 260vh;
+  background: #000;
+  color: #fff;
+}
+.faixa-palco {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+.faixa-imagem {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  clip-path: inset(calc((1 - var(--p, 0)) * 46%) calc((1 - var(--p, 0)) * 8%) round calc((1 - var(--p, 0)) * 14px));
+}
+.faixa-imagem img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(calc(1.25 - var(--p, 0) * 0.25));
+}
+.faixa-tempo {
+  position: absolute;
+  left: calc((1 - var(--p, 0)) * 8%);
+  right: calc((1 - var(--p, 0)) * 8%);
+  top: 50%;
+  translate: 0 -50%;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 12px;
+  font: 500 13px/1 ui-monospace, 'SF Mono', Menlo, monospace;
+  letter-spacing: 0.08em;
+  color: rgb(255 255 255 / 0.85);
+  margin-top: calc((1 - var(--p, 0)) * -9vh);
+  opacity: calc(1 - var(--p, 0) * 2.2);
+}
+.faixa-titulo {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14vh;
+  text-align: center;
+  padding: 0 24px;
+  font-size: clamp(40px, 6.4vw, 92px);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  opacity: clamp(0, calc((var(--p, 0) - 0.55) * 3.5), 1);
+  transform: translateY(calc((1 - var(--p, 0)) * 50px));
+  text-shadow: 0 2px 40px rgb(0 0 0 / 0.5);
 }
 
 /* ───────── 6 · ecossistema ───────── */
@@ -823,14 +866,15 @@ p {
   background: var(--fundo-2);
   overflow: hidden;
 }
-.fim-estrela {
-  width: min(640px, 110vw);
-  margin: 0 auto 30px;
+.fim-simbolo {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 34px;
   color: var(--forte);
 }
-.fim-estrela svg {
+.fim-simbolo svg {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
 }
 
@@ -907,9 +951,6 @@ p {
   .nav-entrar {
     display: none;
   }
-  .hero-estrela {
-    top: 30%;
-  }
   .caminho .seta {
     display: none;
   }
@@ -931,7 +972,18 @@ p {
     transform: none;
   }
   .mac-tela,
-  .hero-fundo img {
+  .hero-fundo img,
+  .faixa-imagem img,
+  .pausa-palco img {
     transform: none;
+  }
+  .faixa,
+  .pausa {
+    --p: 1;
+    height: auto;
+  }
+  .faixa-palco,
+  .pausa-palco {
+    position: relative;
   }
 }
