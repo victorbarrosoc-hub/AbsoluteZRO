@@ -22,7 +22,7 @@ const ARQ=path.resolve(__dirname,'..','public','index.html');
 const URL='http://cdf.test/';
 /* (18/out · 2) a mídia mora em public/m/, ao lado da página: sem servir a
    pasta, toda suíte em http veria imagem quebrada e vídeo mudo */
-const TIPOS={'.webp':'image/webp','.mp4':'video/mp4','.png':'image/png','.jpg':'image/jpeg'};
+const TIPOS={'.webp':'image/webp','.mp4':'video/mp4','.png':'image/png','.jpg':'image/jpeg','.svg':'image/svg+xml'};
 const servir=pg=>pg.route('**/*',r=>{
   const u=r.request().url();
   if(u===URL||u.startsWith(URL+'?'))

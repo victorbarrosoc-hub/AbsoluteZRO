@@ -412,6 +412,54 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - `products/finishing`: `npm test` (**35/35**), testes de tela ajustados (fichas, miniatura não vazia, caixa
   compacta, grupos de rádio com nome). Desktop 1280 e celular 390 sem rolagem lateral e sem erro de console.
 
+## Revela: página inicial, login e conta Absolute ZRO (26/10/2026)
+
+- `index.html` virou a página inicial (motion em CSS, telas reais em MacBook/iPhone, frames da ZRO Filmes como exemplo (o "antes" é o frame em log simulado));
+  a ferramenta de LUT foi para `lut.html`. "Testar com um exemplo" carrega as duas fotos e monta a prévia.
+- `entrar.html` + `api/zro/{entrar,callback,eu,sair}.js` no padrão do Synquei (PKCE S256, `client_secret_basic`,
+  cookies assinados, `zro_products` decide o acesso). `Cache-Control: no-store` em `/api/zro/*`.
+- `products/finishing`: `npm test` (**59/59**): 21 do login contra um provedor OIDC falso; tela com home (1440 e 390
+  sem rolagem lateral, sem imagem quebrada, sem erro de console), entrar (fora e desligado) e o exemplo.
+- Não validado: login real (falta o cliente `revela-web` no console e as variáveis no projeto Vercel `revela`).
+
+## Revela Look (26/10/2026)
+
+- `src/cor/looks.js`: look de película com matemática própria (o FVPro+ do titular, pacote pago de terceiro, não
+  entrou no repositório). Botão "Revela Look" na tela de LUT, no lugar da referência; conta-gotas desligado nele.
+- `products/finishing`: `npm test` (**65/65**): 5 testes do look (intensidade 0 não mexe, curva monótona com preto
+  aberto e branco que deita, sombras frias e altas quentes, verde para oliva com pele no lugar, só curva / só cor,
+  .cube fiel ao look) e 1 de tela (sem referência, baixa `revela-look-33.cube`, referência nova volta ao normal).
+- Não validado: comparação lado a lado com o FVPro+ no Resolve.
+
+## Revela CST (26/10/2026)
+
+- `src/cor/espacos.js`: curvas log e gamuts das câmeras do CST do Resolve, a partir das fórmulas publicadas pelos
+  fabricantes. `cst.html`: câmera → saída, prévia num still, .cube 33/65, "Suavizar altas". Aba CST nas quatro telas.
+- `products/finishing`: `npm test` (**72/72**): cinza 18% de cada log no valor publicado (S-Log3 420, S-Log2 347,
+  LogC3 0,391, LogC4 0,2784, V-Log 433, Canon Log 3 34,3% IRE, Log3G10 1/3…), ida e volta de todas as curvas, matrizes
+  Rec.709→XYZ, S-Gamut3.Cine→709 e AP1→709 iguais às de referência, branco que continua branco, cinza neutro na
+  saída para as 17 câmeras, identidade, log→log sem corte, altas suaves; tela no computador e no celular (375 px sem
+  rolagem lateral), baixa `revela-cst-arri-logc4-para-rec709-65.cube`.
+- Não validado: comparação no Resolve com o CST dele (nível de dados de cada formato) e em material real de cada câmera.
+
+## Revela: dock embaixo e menu recolhível (26/10/2026)
+
+- As abas saíram do cabeçalho (o desfoque dele prendia o `position: fixed`) e viraram um dock embaixo; `app/menu.js`
+  monta o menu lateral nas quatro ferramentas: trilho 68 px ↔ 248 px no computador (lembrado), gaveta no celular.
+- `products/finishing`: `npm test` (**73/73**), com teste novo: dock no rodapé da tela, menu que abre e é lembrado
+  entre páginas, item atual marcado, gaveta no celular que fecha com Esc, sem rolagem lateral em 375 px.
+
+## Família Absolute ZRO nos menus de todas as plataformas (26/10/2026)
+
+- A pedido do titular, o bloco "Absolute ZRO" (ícone e nome de cada app, levando ao app) entrou no menu de cada
+  plataforma: HUB (lateral e menu do celular), Revela, Sobedesce (lateral do computador e Ajustes do celular),
+  Synquei (lateral), Nossom (menu do estúdio e gaveta), TPEasy (Ajustes). Ordem alfabética em todas, sem o app atual
+  e sem o AI Edit (em desenvolvimento). Revela sem o selo "Protótipo".
+- Testes: Revela 73/73 (confere a ordem), Sobedesce `test:fast` 706/706 (familia.test.js confere a ordem), Synquei
+  63 (4 pulados sem luajit), TPEasy 23/23, Nossom typecheck, formato, 73/73 e o e2e da família (confere a ordem);
+  HUB lint, typecheck, 113 unitários, build e 16 e2e.
+- Não validado: cliques nos apps de computador (Electron) e em iPhone/Android reais.
+
 ## Revela no SOBEDESCE: "Converter com a Revela" (26/10/2026)
 
 - Um botão só (pedido do titular): converte o aparelho que tocou. Computador: ffmpeg do app. Celular: o próprio
@@ -428,3 +476,15 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - Tela do computador conferida no Chromium com o app de verdade: menu, janela com os quatro cartões nos temas escuro e
   claro, andamento e pronto com o arquivo novo na pasta.
 - Não validado: Mac e Windows reais (VideoToolbox, NVENC); iPhone e Android reais (velocidade, memória, Safari).
+
+## Revela: Clonar LUT, preset Lightroom e página inicial (26/10/2026)
+
+- `src/cor/clonar.js`: o mesmo frame com e sem a cor vira LUT. Matriz afim por mínimos quadrados + resíduo numa grade
+  17³ (espalhamento trilinear, borrado e regularizado para a matriz onde não há amostra). Numa cena diferente, a LUT
+  clonada chega a 0,0095 do look verdadeiro (sem nada: 0,079).
+- `src/cor/lightroom.js`: preset .xmp com curvas por canal e HSL das oito faixas. É aproximado (o Lightroom não aplica
+  LUT 3D em preset) e a tela diz isso no botão.
+- Página inicial: "Testar agora" abre a LUT com o exemplo carregado; comparação Log/Final arrastável; faixa "Funciona
+  no seu editor"; cartão do CST. Sem "grátis" no texto (PRD §9.1: não assumir preço nem teste grátis).
+- `products/finishing`: `npm test` **78/78**.
+- Não validado: o .xmp aberto num Lightroom real (Classic e celular) e a semelhança dele com a LUT.

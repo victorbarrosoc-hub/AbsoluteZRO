@@ -344,6 +344,13 @@
 .nav a[aria-current='page'] svg {
   color: var(--text-strong);
 }
+.nav__family a {
+  min-height: 40px;
+}
+.nav__family .zro-mark {
+  border-radius: 6px;
+  object-fit: contain;
+}
 .sidebar__foot {
   margin-top: auto;
   display: grid;

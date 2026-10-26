@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Revela · LUT a partir de uma referência</title>
+    <meta name="description" content="Dê um frame de referência e um frame do seu material. Sai uma LUT para o DaVinci Resolve." />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0e0e10" />
+    <link rel="canonical" href="https://revela-zro.vercel.app/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Revela" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:url" content="https://revela-zro.vercel.app/" />
+    <meta property="og:title" content="Revela · a cor que você quer, numa LUT" />
+    <meta property="og:description" content="Dê um frame de referência e um frame do seu material. Sai uma LUT para o DaVinci Resolve." />
+    <meta property="og:image" content="https://revela-zro.vercel.app/og.jpg?v=2" />
+    <meta property="og:image:secure_url" content="https://revela-zro.vercel.app/og.jpg?v=2" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Revela: revela a cor que você quer. Um frame de referência vira uma LUT para o DaVinci Resolve." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Revela · a cor que você quer, numa LUT" />
+    <meta name="twitter:description" content="Dê um frame de referência e um frame do seu material. Sai uma LUT para o DaVinci Resolve." />
+    <meta name="twitter:image" content="https://revela-zro.vercel.app/og.jpg?v=2" />
+    <meta name="twitter:image:alt" content="Revela: revela a cor que você quer. Um frame de referência vira uma LUT para o DaVinci Resolve." />
+    <link rel="icon" href="marca/revela-icone.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="app/revela.css" />
+    <script type="module" src="app/revela.js"></script>
+  </head>
+  <body>
+    <header class="topo">
+      <a class="marca" href="./" aria-label="Revela, página inicial"><img src="marca/revela-logo.png" alt="Revela" width="150" height="28" /></a>
+      <a class="conta" id="conta" href="entrar.html">Entrar</a>
+    </header>
+
+    <main class="tela">
+      <section class="abertura entra">
+        <h1>Revela a cor que você quer.</h1>
+        <p>Referência entra, LUT sai.</p>
+      </section>
+
+      <section class="entradas entra" aria-label="Imagens">
+        <label class="entrada" id="caixa-referencia" for="arquivo-referencia">
+          <span class="entrada-icone" data-icone="imagem"></span>
+          <strong>Referência</strong>
+          <img alt="" hidden />
+          <span class="acao">Escolher ou soltar</span>
+          <input id="arquivo-referencia" type="file" accept="image/*" />
+        </label>
+        <label class="entrada" id="caixa-material" for="arquivo-material">
+          <span class="entrada-icone" data-icone="filme"></span>
+          <strong>Seu frame</strong>
+          <span class="ficha" title="Exporte o still do Resolve depois da conversão do LOG">Rec.709</span>
+          <img alt="" hidden />
+          <span class="acao">Escolher ou soltar</span>
+          <input id="arquivo-material" type="file" accept="image/*" />
+        </label>
+      </section>
+
+      <div class="exemplo entra">
+        <button id="exemplo" class="vidro" type="button" title="Dois frames da ZRO Filmes: o cavalo no pôr do sol e o vestido sem cor">
+          <span data-icone="imagem"></span> Testar com um exemplo</button
+        ><button id="usar-look" class="vidro" type="button" aria-pressed="false" title="Look de película da Revela, pronto: não precisa de referência">
+          <span data-icone="brilho"></span> Revela Look
+        </button>
+        <button id="usar-clone" class="vidro" type="button" aria-pressed="false" title="O mesmo frame com e sem a cor vira uma LUT">
+          <span data-icone="copiar"></span> Clonar LUT
+        </button>
+      </div>
+
+      <p id="estado" class="estado" role="status" aria-live="polite"></p>
+
+      <section id="resultado" class="resultado" hidden aria-label="Resultado">
+        <div class="palco">
+          <canvas id="previa" aria-label="Seu frame antes e depois da LUT"></canvas>
+          <span class="rotulo rotulo-antes" aria-hidden="true">Antes</span>
+          <span class="rotulo rotulo-depois" aria-hidden="true">Depois</span>
+          <input id="divisao" class="divisao" type="range" min="0" max="100" value="50" aria-label="Comparar antes e depois" />
+        </div>
+
+        <div class="painel">
+          <div class="controle">
+            <label for="intensidade">Intensidade</label>
+            <output id="valor-intensidade" for="intensidade">100%</output>
+            <input id="intensidade" type="range" min="0" max="100" value="100" />
+          </div>
+
+          <div class="pilulas" role="group" aria-label="Copiar">
+            <label class="pilula"><input id="usar-tom" type="checkbox" checked /> Contraste</label>
+            <label class="pilula"><input id="usar-cor" type="checkbox" checked /> Cor</label>
+          </div>
+
+          <div class="segmentado" role="radiogroup" aria-label="Tamanho da LUT">
+            <label title="Monitor e câmera"><input type="radio" name="tamanho" value="33" checked /> 33 pontos</label>
+            <label title="Grading"><input type="radio" name="tamanho" value="65" /> 65 pontos</label>
+          </div>
+
+          <div class="conta-gotas">
+            <button
+              id="marcar-par"
+              class="vidro"
+              type="button"
+              aria-pressed="false"
+              title="Marque a mesma coisa nas duas imagens: pele com pele, branco com branco. Até 3 pares."
+            >
+              <span data-icone="gota"></span> Conta-gotas
+            </button>
+            <ul id="pares" class="pares" aria-label="Pares de cor"></ul>
+            <button id="limpar-pares" class="vidro vidro--icone" type="button" hidden aria-label="Limpar"><span data-icone="x"></span></button>
+          </div>
+
+          <button id="baixar" class="vidro vidro--tinta grande" type="button"><span data-icone="baixar"></span> Baixar LUT</button>
+          <button
+            id="baixar-xmp"
+            class="vidro"
+            type="button"
+            title="Para fotos. Aproximado: o Lightroom não aplica LUT em preset; curvas e HSL chegam perto do look"
+          >
+            <span data-icone="imagem"></span> Preset Lightroom
+          </button>
+
+          <details class="leitura">
+            <summary id="titulo-leitura">Leitura da referência</summary>
+            <p id="tom"></p>
+            <ul id="faixas"></ul>
+          </details>
+        </div>
+      </section>
+
+      <footer class="rodape entra"><span data-icone="cadeado"></span> Suas imagens não saem daqui</footer>
+    </main>
+    <nav class="abas" aria-label="Ferramentas da Revela">
+      <a href="lut.html" aria-current="page"><span class="aba-icone" data-icone="lut"></span>LUT</a>
+      <a href="cst.html"><span class="aba-icone" data-icone="cst"></span>CST</a>
+      <a href="entrega.html"><span class="aba-icone" data-icone="entrega"></span>Entrega</a>
+      <a href="converter.html"><span class="aba-icone" data-icone="converter"></span>Converter</a>
+    </nav>
+  </body>
+</html>
