@@ -729,3 +729,9 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Painel no app: ferramenta sem versão para o computador (NOSSOM hoje) mostra **Abrir na web** em vez de ficar sem
   botão. SOBEDESCE e Synquei têm instalador para Mac e Windows no catálogo (`/api/v1/desktop/apps`).
 - Não validado: o Mac de verdade (a área de arrastar só vale lá e no Windows); conferir no 1.1.1 instalado.
+
+## Página inicial: faixa das ferramentas (26/10/2026)
+
+- Cartões verticais (ícone em cima, nome numa linha, apoio em até duas linhas reservadas): os sete com a mesma altura
+  e sem nome quebrado. Abaixo de 1100 px, quatro por linha com a segunda centralizada. Capturas em 1440 (claro e
+  escuro), 1000 e 390 px; `npm run test:e2e` verde.
