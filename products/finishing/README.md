@@ -111,6 +111,12 @@ navegador**. O arquivo não sai do aparelho.
 Bibliotecas em `vendor/` (copiadas por `npm run vendor`, teste confere a cópia): Mediabunny e
 `@mediabunny/prores` 1.62.1, MPL-2.0 (mediabunny.dev), sem alteração além do caminho de import.
 
+## No SOBEDESCE
+
+"Converter com a Revela" (botão direito num vídeo do Drive, ou pelo celular) usa os mesmos destinos e o mesmo plano
+daqui: `src/entrega/destinos.js` e `src/conversao/plano.js` são copiados para `products/sobedesce/src/revela/` e um
+teste de lá confere a cópia. Mudou um destino aqui, copie para lá.
+
 ## Protótipo: referência → LUT criativa
 
 A pessoa dá um frame de referência (o estilo que quer) e um frame do material dela; sai uma LUT `.cube` que leva o

@@ -57,6 +57,9 @@ const SHELL = [
   './lib/psd-ler.js',
   './lib/psd-worker.js',
   './lib/referencias.js',
+  './lib/revela.js',
+  './lib/revela/conversao/plano.js',
+  './lib/revela/entrega/destinos.js',
   './lib/state.js',
   './lib/stream.js',
   './lib/tamanho.js',
@@ -83,6 +86,7 @@ const SHELL = [
   './components/psd.js',
   './components/queue.js',
   './components/referencias.js',
+  './components/revela.js',
   './components/scrub.js',
   './components/selecao.js',
   './components/settings.js',
@@ -98,6 +102,7 @@ const SHELL = [
   './icons/familia/nossom.svg',
   './icons/familia/tpeasy.svg',
   './icons/familia/carro-do-freela.png',
+  './icons/revela.svg',
 ]
 
 self.addEventListener('install', (event) => {
