@@ -3179,21 +3179,21 @@ details.disclosure[open] > summary {
   display: none;
 }
 
-/* ───── Página inicial: o símbolo como peça principal (pedido do titular, 26/10/2026) ─────
-   O anel se desenha a partir da centelha, a estrela aparece inteira e recolhe (ADR 0017), um brilho de vidro corre
-   pelo traço e o símbolo segue o ponteiro. Depois, as ferramentas entram em órbita do anel com a rolagem.
-   Tudo em CSS (PointerTilt só escreve variáveis); "reduzir movimento" deixa a forma flat parada e a órbita pronta. */
+/* ───── Página inicial (26/10/2026, pedido do titular: o símbolo é a força da marca, cara de plataforma grande) ─────
+   Topo: o anel se desenha e a estrela recolhe (ADR 0017), o símbolo segue o ponteiro. Órbita: as ferramentas giram em
+   volta do O sem parar (uma rotação só no anel; cada ícone gira ao contrário e fica de pé). Explorador: escolha o ícone
+   e veja a ferramenta. Fluxo: a linha do job à entrega se desenha com a rolagem. Tudo em CSS; com "reduzir movimento"
+   fica tudo parado e pronto. */
 .shero {
   --sh-ink: #1d1d1f;
-  grid-template-columns: minmax(0, 1fr);
   --sh-ink-2: #6e6e73;
   --sh-halo: rgb(255 255 255 / 0.95);
-  --sh-glint: rgb(255 255 255 / 0.42);
   position: relative;
   margin-inline: calc(50% - 50vw);
   margin-top: -76px;
   padding: clamp(108px, 13vh, 150px) max(20px, env(safe-area-inset-right, 0px)) clamp(28px, 5vh, 56px) max(20px, env(safe-area-inset-left, 0px));
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   justify-items: center;
   text-align: center;
   gap: clamp(18px, 3vh, 32px);
@@ -3203,8 +3203,7 @@ details.disclosure[open] > summary {
 :root[data-theme='dark'] .shero {
   --sh-ink: #f5f5f7;
   --sh-ink-2: #a1a1a6;
-  --sh-halo: rgb(255 255 255 / 0.11);
-  --sh-glint: rgb(0 0 0 / 0.3);
+  --sh-halo: rgb(255 255 255 / 0.1);
 }
 .shero__stage {
   position: relative;
@@ -3216,9 +3215,9 @@ details.disclosure[open] > summary {
 }
 .shero__halo {
   position: absolute;
-  inset: -22%;
+  inset: -30%;
   border-radius: 50%;
-  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), var(--sh-halo), transparent 62%);
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), var(--sh-halo), transparent 60%);
   pointer-events: none;
 }
 .shero__symbol {
@@ -3247,15 +3246,32 @@ details.disclosure[open] > summary {
 .shero__lead {
   color: var(--sh-ink-2);
 }
-.shero__cue {
-  width: 1px;
-  height: 44px;
-  margin-top: 8px;
-  background: linear-gradient(var(--sh-ink-2), transparent);
-  opacity: 0.6;
+/* A família logo abaixo das ações: os ícones chegam um a um. */
+.shero__apps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(8px, 2vw, 12px);
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.shero__apps a {
+  display: block;
+  border-radius: 23%;
+  transition: translate 0.4s var(--spring);
+}
+.shero__apps a:hover {
+  translate: 0 -4px;
+}
+.shero__apps .zro-mark {
+  display: block;
+  width: clamp(34px, 9vw, 44px) !important;
+  height: clamp(34px, 9vw, 44px) !important;
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.14);
 }
 
-/* Símbolo grande (BrandSymbol): anel em traço, brilho e centelha. */
+/* Símbolo grande (BrandSymbol): anel em traço e centelha. */
 .bsym {
   display: block;
   overflow: visible;
@@ -3265,60 +3281,61 @@ details.disclosure[open] > summary {
   stroke: currentColor;
   stroke-width: 8.6;
 }
-.bsym__glint {
-  fill: none;
-  stroke: var(--sh-glint, rgb(255 255 255 / 0.42));
-  stroke-width: 2.6;
-  stroke-linecap: round;
-  stroke-dasharray: 0 100;
-  opacity: 0;
-}
 .bsym__spark {
   fill: currentColor;
   transform-box: fill-box;
   transform-origin: center;
 }
 
-.showcase {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  justify-items: center;
-  padding: 0 20px;
+/* Ícone de iniciais (ferramenta ainda sem ícone): escuro e aceso, como os outros. */
+.home-mark .zro-mark--initials {
+  background: linear-gradient(150deg, #3a3a3e, #0b0b0c);
+  border-color: rgb(255 255 255 / 0.08);
+  color: #fff;
 }
 
-/* Ciclo do O em órbita */
+/* ── Órbita ── */
 .zorbit {
-  position: relative;
-  padding: clamp(56px, 9vh, 112px) 20px;
-}
-.zorbit__sticky {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   justify-items: center;
-  align-content: center;
-  gap: clamp(24px, 4vh, 48px);
+  gap: clamp(20px, 4vh, 40px);
+  padding: clamp(64px, 10vh, 120px) 20px;
+  text-align: center;
+  overflow: clip;
 }
 .zorbit__ring {
-  --r: clamp(108px, min(25vmin, 30vw), 230px);
+  --r: clamp(128px, min(30vmin, 34vw), 250px);
+  --chip: clamp(48px, 7vmin, 64px);
   position: relative;
-  width: min(100%, calc(var(--r) * 2 + 104px));
+  width: calc(var(--r) * 2 + var(--chip) + 24px);
+  max-width: 100%;
   aspect-ratio: 1;
   display: grid;
   place-items: center;
 }
-/* O anel do símbolo fica em x=44 de 100: desloca 6% para o centro da órbita. */
+/* Trilho fino do anel por onde os ícones passam. */
+.zorbit__ring::before {
+  content: '';
+  position: absolute;
+  width: calc(var(--r) * 2);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px dashed var(--line-strong);
+  opacity: 0.7;
+}
 .zorbit__symbol {
-  width: calc(var(--r) * 0.92);
+  width: calc(var(--r) * 0.86);
   height: auto;
   translate: 6% 0;
   color: var(--text-strong);
 }
 .zorbit__apps {
-  list-style: none;
-  margin: 0;
-  padding: 0;
   position: absolute;
   inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 .zorbit__app {
   position: absolute;
@@ -3331,84 +3348,339 @@ details.disclosure[open] > summary {
 .zorbit__chip {
   position: absolute;
   translate: -50% -50%;
-  display: grid;
-  width: 58px;
-  height: 58px;
+  display: block;
+  width: var(--chip);
+  height: var(--chip);
+  border-radius: 23%;
+  transition: scale 0.35s var(--spring);
 }
-/* O ícone do app sozinho, na forma dele: sem placa nem borda em volta (pedido do titular, 26/10/2026). */
-/* !important: o ProductMark de iniciais traz largura fixa no style; aqui o tamanho é o do chip. */
+.zorbit__chip:hover,
+.zorbit__chip:focus-visible {
+  scale: 1.14;
+}
+.zorbit__chip:focus-visible {
+  outline: 2px solid var(--text-strong);
+  outline-offset: 4px;
+}
+/* !important: o ProductMark traz largura fixa no style; aqui vale o tamanho do chip. */
 .zorbit__chip .zro-mark {
+  display: block;
   width: 100% !important;
   height: 100% !important;
-  border-radius: 23%;
   box-shadow: 0 12px 26px rgb(0 0 0 / 0.16);
 }
-/* Ferramenta ainda sem ícone (iniciais): na órbita aparece acesa, como um ícone de app de verdade. */
-.zorbit__chip .zro-mark--initials {
-  background: linear-gradient(150deg, #3a3a3e, #0b0b0c);
-  border-color: rgb(255 255 255 / 0.08);
-  color: #fff;
-  border-radius: 23%;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.18),
-    0 12px 26px rgb(0 0 0 / 0.16);
-}
-.zorbit__name {
-  position: absolute;
-  top: 40px;
-  translate: -50% 0;
-  white-space: nowrap;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-mute);
-}
-@media (max-width: 720px) {
-  .zorbit__chip {
-    width: 46px;
-    height: 46px;
-  }
-  .zorbit__name {
-    display: none;
-  }
-}
-.zorbit__captions {
-  display: grid;
-  justify-items: center;
-  text-align: center;
-  gap: 6px;
-}
-.zorbit__cap {
-  margin: 0;
-  font-family: var(--font-apple);
-  font-size: clamp(1.9rem, 1rem + 3.2vw, 3.6rem);
-  line-height: 1.05;
-  letter-spacing: -0.035em;
-  color: var(--text-strong);
+.zorbit__hint {
+  color: var(--text-faint);
+  font-size: 0.95rem;
 }
 
-/* Cartões das ferramentas: inclinação e brilho sob o ponteiro (PointerTilt). */
-.tiles .tile {
-  transform: perspective(1400px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
-  transition: transform 0.8s var(--spring);
+/* ── Explorador ── */
+.explorer {
+  width: min(100%, 1180px);
+  margin-inline: auto;
+  display: grid;
+  gap: clamp(20px, 3vw, 32px);
+  scroll-margin-top: 90px;
 }
-.tiles .tile[data-tilt='on'] {
-  transition-duration: 0.15s;
+.explorer__tabs {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: clamp(8px, 1.6vw, 18px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
-.tiles .tile::after {
+.explorer__tab {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 10px 8px;
+  border: 0;
+  border-radius: 18px;
+  background: none;
+  color: var(--text-faint);
+  font: 600 0.8rem var(--font-display);
+  cursor: pointer;
+  transition:
+    color 0.25s var(--ease),
+    background 0.25s var(--ease);
+}
+.explorer__tab .zro-mark {
+  display: block;
+  width: clamp(44px, 6vw, 60px) !important;
+  height: clamp(44px, 6vw, 60px) !important;
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.12);
+  opacity: 0.55;
+  scale: 0.92;
+  transition:
+    opacity 0.3s var(--ease),
+    scale 0.4s var(--spring);
+}
+.explorer__tab:hover .zro-mark {
+  opacity: 0.85;
+}
+.explorer__tab[aria-selected='true'] {
+  color: var(--text-strong);
+}
+.explorer__tab[aria-selected='true'] .zro-mark {
+  opacity: 1;
+  scale: 1.06;
+}
+.explorer__tab:focus-visible {
+  outline: 2px solid var(--text-strong);
+  outline-offset: 2px;
+}
+.explorer__panel {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: clamp(20px, 4vw, 56px);
+  padding: clamp(24px, 4.5vw, 56px);
+  border-radius: 36px;
+  background: var(--glass-fill), var(--surface);
+  box-shadow: var(--shadow-float);
+  overflow: hidden;
+  isolation: isolate;
+}
+/* A cor da ferramenta acende o fundo, bem de leve. */
+.explorer__panel::before {
   content: '';
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background: radial-gradient(520px circle at var(--mx, 50%) var(--my, 50%), rgb(255 255 255 / 0.22), transparent 45%);
-  opacity: 0;
-  transition: opacity 0.4s var(--ease);
+  inset: -20%;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 85% 30%, color-mix(in srgb, var(--p) 22%, transparent), transparent 55%),
+    radial-gradient(circle at 10% 90%, color-mix(in srgb, var(--p2) 14%, transparent), transparent 50%);
 }
-.tiles .tile[data-tilt='on']::after {
-  opacity: 1;
+.explorer__text {
+  display: grid;
+  gap: 14px;
+  justify-items: start;
+  text-align: left;
 }
-:root[data-theme='dark'] .tiles .tile::after {
-  background: radial-gradient(520px circle at var(--mx, 50%) var(--my, 50%), rgb(255 255 255 / 0.08), transparent 45%);
+.explorer__name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+.explorer__name .zro-mark {
+  box-shadow: 0 6px 16px rgb(0 0 0 / 0.14);
+}
+.explorer__title {
+  font-size: clamp(2rem, 4.4vw, 3.4rem);
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+  color: var(--text-strong);
+  text-wrap: balance;
+}
+.explorer__role {
+  color: var(--text-faint);
+  font-size: 1.05rem;
+}
+.explorer__features {
+  display: grid;
+  gap: 10px;
+  margin: 6px 0 4px;
+  padding: 0;
+  list-style: none;
+}
+.explorer__features li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+}
+.explorer__features li::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-strong);
+}
+.explorer__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.explorer__stage {
+  display: grid;
+  place-items: center;
+  min-height: clamp(220px, 32vw, 420px);
+}
+.explorer__shot {
+  width: 100%;
+  height: auto;
+}
+/* A captura tem fundo próprio (branco no claro, preto no escuro): some no painel e fica só o aparelho. A mistura vai
+   no figure, que é quem anima (a animação isola o grupo). */
+.explorer__figure {
+  margin: 0;
+  mix-blend-mode: multiply;
+  -webkit-mask-image: radial-gradient(ellipse 72% 70% at 50% 50%, #000 62%, transparent 100%);
+  mask-image: radial-gradient(ellipse 72% 70% at 50% 50%, #000 62%, transparent 100%);
+}
+:root[data-theme='dark'] .explorer__figure {
+  mix-blend-mode: normal;
+}
+.explorer__shot--escuro,
+:root[data-theme='dark'] .explorer__shot--claro {
+  display: none;
+}
+:root[data-theme='dark'] .explorer__shot--escuro {
+  display: block;
+}
+/* Sem tela pronta: o ícone grande, aceso no palco. */
+.explorer__hero-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.explorer__hero-mark::before {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--p) 30%, transparent), transparent 62%);
+}
+.explorer__hero-mark .zro-mark {
+  position: relative;
+  width: clamp(140px, 18vw, 220px) !important;
+  height: clamp(140px, 18vw, 220px) !important;
+  box-shadow: 0 30px 60px rgb(0 0 0 / 0.28);
+}
+@media (max-width: 820px) {
+  .explorer__panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .explorer__stage {
+    order: -1;
+    min-height: 0;
+  }
+}
+
+/* ── Fluxo: do job à entrega ── */
+.flow {
+  width: min(100%, 1180px);
+  margin-inline: auto;
+  display: grid;
+  gap: clamp(28px, 4vw, 48px);
+}
+.flow__track {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* A linha atrás dos ícones; com a rolagem ela se desenha da esquerda para a direita. */
+.flow__track::before {
+  content: '';
+  position: absolute;
+  left: calc(50% / var(--n));
+  right: calc(50% / var(--n));
+  top: 30px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--text-strong);
+  transform-origin: left;
+}
+.flow__step {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+}
+.flow__step a {
+  display: block;
+  border-radius: 23%;
+}
+.flow__step .zro-mark {
+  display: block;
+  width: 60px !important;
+  height: 60px !important;
+  box-shadow:
+    0 0 0 6px var(--bg),
+    0 12px 26px rgb(0 0 0 / 0.16);
+}
+.flow__verb {
+  font-weight: 800;
+  color: var(--text-strong);
+  letter-spacing: -0.01em;
+}
+.flow__name {
+  font-size: 0.85rem;
+  color: var(--text-faint);
+}
+@media (max-width: 760px) {
+  .flow__track {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    padding-left: 4px;
+  }
+  .flow__track::before {
+    left: 33px;
+    right: auto;
+    top: 30px;
+    bottom: 30px;
+    width: 2px;
+    height: auto;
+    transform-origin: top;
+  }
+  .flow__step {
+    grid-template-columns: auto 1fr;
+    justify-items: start;
+    align-items: center;
+    column-gap: 16px;
+    row-gap: 0;
+    text-align: left;
+  }
+  .flow__step a {
+    grid-row: span 2;
+  }
+}
+
+/* ── Números ── */
+.facts {
+  width: min(100%, 1180px);
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 14px;
+}
+.fact {
+  display: grid;
+  gap: 6px;
+  padding: 28px;
+  border-radius: 28px;
+  background: var(--glass-fill), var(--surface);
+  box-shadow: var(--shadow-float);
+}
+.fact__n {
+  font-size: clamp(2.6rem, 5vw, 3.8rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--text-strong);
+}
+.fact__l {
+  color: var(--text-faint);
+}
+
+.showcase {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: 20px;
+  padding: 0 20px;
 }
 
 .closing__mark.bsym {
@@ -3427,11 +3699,6 @@ details.disclosure[open] > summary {
       zro-spark 1.6s var(--ease) 0.1s both,
       bsym-twinkle 7s ease-in-out 4.5s infinite;
   }
-  .shero .bsym__glint {
-    opacity: 1;
-    stroke-dasharray: 9 91;
-    animation: bsym-glint 5.5s linear 2.3s infinite both;
-  }
   .shero__halo {
     animation: shero-halo 6s ease-in-out infinite alternate;
   }
@@ -3443,11 +3710,44 @@ details.disclosure[open] > summary {
   .shero__ctas {
     animation: rise 1s var(--spring) 1.45s both;
   }
-  .shero__cue {
-    animation: shero-cue 2.6s ease-in-out 2.2s infinite both;
+  .shero__apps li {
+    animation: shero-app 0.7s var(--spring) both;
+    animation-delay: calc(1.7s + var(--i) * 70ms);
   }
-  .zorbit__app {
-    transition: transform 0.6s var(--spring);
+  /* A órbita gira sem parar; cada ícone gira ao contrário e fica de pé. Para no ponteiro. */
+  .zorbit__apps {
+    animation: orbit-spin 60s linear infinite;
+  }
+  .zorbit__chip {
+    animation: orbit-spin 60s linear infinite reverse;
+  }
+  .zorbit__ring:hover .zorbit__apps,
+  .zorbit__ring:hover .zorbit__chip,
+  .zorbit__ring:focus-within .zorbit__apps,
+  .zorbit__ring:focus-within .zorbit__chip {
+    animation-play-state: paused;
+  }
+  .zorbit__symbol {
+    animation: orbit-breathe 6s ease-in-out infinite alternate;
+  }
+  /* Troca de ferramenta no explorador: texto e palco entram juntos. */
+  .explorer__text > * {
+    animation: rise 0.6s var(--spring) both;
+  }
+  .explorer__text > :nth-child(2) {
+    animation-delay: 40ms;
+  }
+  .explorer__text > :nth-child(3) {
+    animation-delay: 80ms;
+  }
+  .explorer__text > :nth-child(4) {
+    animation-delay: 120ms;
+  }
+  .explorer__text > :nth-child(5) {
+    animation-delay: 160ms;
+  }
+  .explorer__stage > * {
+    animation: explorer-in 0.8s var(--spring) both;
   }
 }
 @keyframes bsym-draw {
@@ -3456,14 +3756,6 @@ details.disclosure[open] > summary {
   }
   to {
     stroke-dashoffset: 0;
-  }
-}
-@keyframes bsym-glint {
-  from {
-    stroke-dashoffset: 0;
-  }
-  to {
-    stroke-dashoffset: -100;
   }
 }
 /* De tempos em tempos a estrela mostra as 4 pontas e recolhe de novo. */
@@ -3497,27 +3789,36 @@ details.disclosure[open] > summary {
     filter: blur(10px);
   }
 }
-@keyframes shero-cue {
-  0% {
-    transform-origin: top;
-    scale: 1 0;
+@keyframes shero-app {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+    scale: 0.8;
   }
-  45% {
-    transform-origin: top;
-    scale: 1 1;
+}
+@keyframes orbit-spin {
+  to {
+    rotate: 360deg;
   }
-  55% {
-    transform-origin: bottom;
-    scale: 1 1;
+}
+@keyframes orbit-breathe {
+  from {
+    scale: 0.97;
   }
-  100% {
-    transform-origin: bottom;
-    scale: 1 0;
+  to {
+    scale: 1.03;
+  }
+}
+@keyframes explorer-in {
+  from {
+    opacity: 0;
+    translate: 24px 0;
+    scale: 0.96;
   }
 }
 
-/* Com a rolagem (onde o navegador suporta): o símbolo do topo recua, a órbita se monta presa na tela, o símbolo do
-   fim se desenha. Sem suporte, tudo aparece pronto e as legendas da órbita ficam uma embaixo da outra. */
+/* Com a rolagem (onde o navegador suporta): o símbolo do topo recua, a linha do fluxo se desenha e os passos
+   entram, o símbolo do fim se desenha. Sem suporte, tudo aparece pronto. */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
     .shero__stage {
@@ -3525,61 +3826,23 @@ details.disclosure[open] > summary {
       animation-timeline: view();
       animation-range: exit 0% exit 100%;
     }
-    .zorbit {
-      height: 320vh;
-      padding-block: 0;
-      view-timeline-name: --zorbit;
+    .flow__track {
+      view-timeline-name: --flow;
     }
-    .zorbit__sticky {
-      position: sticky;
-      top: 0;
-      height: 100vh;
-      height: 100svh;
+    .flow__track::before {
+      animation: flow-line linear both;
+      animation-timeline: --flow;
+      animation-range: entry 40% cover 55%;
     }
-    .zorbit__symbol {
-      animation: orbit-symbol linear both;
-      animation-timeline: --zorbit;
-      animation-range: contain 0% contain 55%;
+    .flow__step {
+      animation: flow-step linear both;
+      animation-timeline: --flow;
+      animation-range: entry calc(30% + var(--i) * 6%) cover calc(35% + var(--i) * 4%);
     }
-    .zorbit__app {
-      animation: orbit-in linear both;
-      animation-timeline: --zorbit;
-    }
-    .zorbit__app:nth-child(1) {
-      animation-range: contain 4% contain 30%;
-    }
-    .zorbit__app:nth-child(2) {
-      animation-range: contain 8% contain 34%;
-    }
-    .zorbit__app:nth-child(3) {
-      animation-range: contain 12% contain 38%;
-    }
-    .zorbit__app:nth-child(4) {
-      animation-range: contain 16% contain 42%;
-    }
-    .zorbit__app:nth-child(5) {
-      animation-range: contain 20% contain 46%;
-    }
-    .zorbit__app:nth-child(6) {
-      animation-range: contain 24% contain 50%;
-    }
-    .zorbit__app:nth-child(n + 7) {
-      animation-range: contain 28% contain 54%;
-    }
-    .zorbit__cap {
-      grid-area: 1 / 1;
-      animation: orbit-cap linear both;
-      animation-timeline: --zorbit;
-    }
-    .zorbit__cap--1 {
-      animation-range: contain 0% contain 32%;
-    }
-    .zorbit__cap--2 {
-      animation-range: contain 34% contain 66%;
-    }
-    .zorbit__cap--3 {
-      animation-name: orbit-cap-last;
-      animation-range: contain 68% contain 92%;
+    .fact {
+      animation: rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 30%;
     }
     .bsym--scroll .bsym__ring {
       stroke-dasharray: 100;
@@ -3598,54 +3861,24 @@ details.disclosure[open] > summary {
   to {
     translate: 0 14vh;
     scale: 0.72;
-    opacity: 0.15;
+    opacity: 0;
   }
 }
-@keyframes orbit-symbol {
+@keyframes flow-line {
   from {
-    scale: 0.55;
-    rotate: -120deg;
-    opacity: 0.4;
-  }
-  to {
-    scale: 1;
-    rotate: 0deg;
-    opacity: 1;
+    scale: 0 1;
   }
 }
-@keyframes orbit-in {
+@media (max-width: 760px) {
+  @keyframes flow-line {
+    from {
+      scale: 1 0;
+    }
+  }
+}
+@keyframes flow-step {
   from {
-    transform: rotate(var(--a)) translateX(0) rotate(calc(-1 * var(--a))) scale(0.2);
     opacity: 0;
-  }
-  to {
-    transform: rotate(var(--a)) translateX(var(--r)) rotate(calc(-1 * var(--a)));
-    opacity: 1;
-  }
-}
-@keyframes orbit-cap {
-  0% {
-    opacity: 0;
-    translate: 0 24px;
-  }
-  22%,
-  78% {
-    opacity: 1;
-    translate: 0 0;
-  }
-  100% {
-    opacity: 0;
-    translate: 0 -24px;
-  }
-}
-@keyframes orbit-cap-last {
-  0% {
-    opacity: 0;
-    translate: 0 24px;
-  }
-  40%,
-  100% {
-    opacity: 1;
-    translate: 0 0;
+    translate: 0 18px;
   }
 }

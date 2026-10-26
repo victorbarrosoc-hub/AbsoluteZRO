@@ -615,3 +615,16 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   .xmp num Lightroom real.
 - Não feito, por depender de outros apps: entrega da Revela subindo pelo SOBEDESCE com MD5 e `delivery.ready` no HUB;
   desconto de `zro.ai_credits` (a Revela não usa GPU de servidor).
+
+## Página inicial: órbita viva, explorador e fluxo (26/10/2026)
+
+- Pedido do titular: home mais completa e com cara de plataforma grande. Saiu o brilho que girava no símbolo do topo
+  (passava atrás da estrela), a órbita presa à rolagem, o exemplo de projeto com "Próxima etapa" e os cartões com
+  MacBook + iPhone repetidos.
+- Entrou: fileira dos 7 ícones no topo; órbita que gira sem parar (pausa no ponteiro, cada ícone abre a ferramenta);
+  explorador com abas (`components/app-explorer.tsx`: setas do teclado, `#app-<id>`, tela real ou ícone aceso no
+  palco, link para o site oficial e para baixar); linha "Do job à entrega" que se desenha com a rolagem; painel do HUB;
+  números (1 conta, 7 ferramentas, 4 lugares, 0 arquivos originais apagados pelo HUB).
+- AEON e Revela apontam para aeon.absolutezro.com e revela.absolutezro.com (no ar, 200) enquanto o catálogo não tem o
+  endereço. Nada de selo "em desenvolvimento" na home; o catálogo e o HUB seguem com o estágio real.
+- Conferido em 1440×900 e 390×844, claro e escuro, sem rolagem horizontal nem erro no console. e2e 20/20.
