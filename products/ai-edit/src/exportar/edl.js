@@ -26,7 +26,11 @@ export function paraEdl(p) {
     linhas.push(`* FROM CLIP NAME: ${ascii(m.nome)}`)
     if (s.escala !== 1) linhas.push(`* ZOOM: ${Math.round(s.escala * 100)}%`)
     if (s.etiqueta) linhas.push(`* ETIQUETA: ${ascii(s.etiqueta)}`)
+    if (s.ajustes.volume !== 0) linhas.push(`* VOLUME: ${s.ajustes.volume} DB`)
+    if (s.ajustes.opacidade !== 1) linhas.push(`* OPACIDADE: ${Math.round(s.ajustes.opacidade * 100)}%`)
+    if (s.ajustes.escala !== 1 || s.ajustes.x || s.ajustes.y) linhas.push(`* ESCALA: ${Math.round(s.ajustes.escala * 100)}% POSICAO: ${Math.round(s.ajustes.x * 100)}% ${Math.round(s.ajustes.y * 100)}%`)
     linhas.push('')
   })
+  for (const k of p.marcadores || []) linhas.push(`* MARCADOR ${tc(k.q)}: ${ascii(k.nome || 'Marcador')}`)
   return linhas.join('\r\n')
 }

@@ -22,8 +22,8 @@ export async function entradaDe(arquivo) {
 
 export const urlDoCaminho = (caminho) => `${location.origin}/__midia?c=${encodeURIComponent(caminho)}`
 
-/** URL que o <video> toca. */
-export const urlTocavel = (e) => e.url || e.blob
+/** URL que o <video> toca; null quando a mídia ainda não foi escolhida de novo (projeto reaberto no navegador) */
+export const urlTocavel = (e) => (e ? e.url || e.blob : null)
 
 /** Entrada a partir de um caminho (SOBEDESCE, projeto reaberto no desktop). */
 export async function entradaDoCaminho(caminho, nome) {

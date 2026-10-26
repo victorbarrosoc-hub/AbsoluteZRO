@@ -147,12 +147,43 @@ export function etiquetar(linha, ids, { cor, etiqueta } = {}) {
   return mudou ? { ...linha, clipes } : linha
 }
 
+/** Ajustes de um clipe e os valores sem ajuste (Inspector). volume em dB; opacidade 0–1; escala 1 = cabe no quadro;
+ * x e y em fração do quadro (0 = centro, 0,5 = meio quadro para a direita/baixo). */
+export const AJUSTES_PADRAO = Object.freeze({ volume: 0, opacidade: 1, escala: 1, x: 0, y: 0 })
+const LIMITES = { volume: [-60, 12], opacidade: [0, 1], escala: [0.1, 5], x: [-1, 1], y: [-1, 1] }
+export const ajustesDe = (c) => ({ ...AJUSTES_PADRAO, ...(c.ajustes || {}) })
+
+/** Muda os ajustes de clipes (só as chaves dadas; valor padrão some do clipe). */
+export function ajustar(linha, ids, props) {
+  const alvo = new Set(Array.isArray(ids) ? ids : [ids])
+  let mudou = false
+  const clipes = linha.clipes.map((c) => {
+    if (!alvo.has(c.id)) return c
+    const aj = { ...(c.ajustes || {}) }
+    for (const [k, v] of Object.entries(props)) {
+      if (!(k in AJUSTES_PADRAO) || typeof v !== 'number' || !Number.isFinite(v)) continue
+      const [a, b] = LIMITES[k]
+      const n = Math.round(Math.min(b, Math.max(a, v)) * 1000) / 1000
+      if (n === AJUSTES_PADRAO[k]) delete aj[k]
+      else aj[k] = n
+    }
+    const igual = JSON.stringify(aj) === JSON.stringify(c.ajustes || {})
+    if (igual) return c
+    mudou = true
+    const novo = { ...c }
+    if (Object.keys(aj).length) novo.ajustes = aj
+    else delete novo.ajustes
+    return novo
+  })
+  return mudou ? { ...linha, clipes } : linha
+}
+
 /** Junta clipes vizinhos que continuam a mesma mídia sem salto (depois de desfazer um corte, por exemplo). */
 export function juntarContinuos(linha) {
   const clipes = []
   for (const c of linha.clipes) {
     const ant = clipes[clipes.length - 1]
-    if (ant && ant.midia === c.midia && ant.fim === c.ini && ant.cor === c.cor && ant.etiqueta === c.etiqueta) clipes[clipes.length - 1] = { ...ant, fim: c.fim }
+    if (ant && ant.midia === c.midia && ant.fim === c.ini && ant.cor === c.cor && ant.etiqueta === c.etiqueta && JSON.stringify(ant.ajustes || {}) === JSON.stringify(c.ajustes || {})) clipes[clipes.length - 1] = { ...ant, fim: c.fim }
     else clipes.push(c)
   }
   return clipes.length === linha.clipes.length ? linha : { ...linha, clipes }

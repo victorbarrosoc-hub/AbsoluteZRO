@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+<defs><linearGradient id="aeon-claro-fundo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e9e9ee"/></linearGradient>
+<radialGradient id="aeon-claro-halo"><stop offset="0" stop-color="#000000" stop-opacity="0.06"/><stop offset="1" stop-color="#000000" stop-opacity="0"/></radialGradient></defs>
+<rect x="100" y="100" width="824" height="824" rx="190" fill="url(#aeon-claro-fundo)"/>
+<rect x="100.5" y="100.5" width="823" height="823" rx="189.5" fill="none" stroke="#000" stroke-opacity="0.08"/>
+<circle cx="512" cy="512" r="250" fill="url(#aeon-claro-halo)"/>
+<path fill="#1d1d1f" d="M512 212C512 461 563 512 764 512C563 512 512 563 512 812C512 563 461 512 260 512C461 512 512 461 512 212Z"/>
+</svg>

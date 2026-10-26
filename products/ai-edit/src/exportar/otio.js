@@ -20,7 +20,7 @@ export function paraOtio(p) {
       effects: [],
       markers: [],
       enabled: true,
-      metadata: { zro: { ...(tipo === 'Video' && s.escala !== 1 ? { zoom: { escala: s.escala, foco: s.foco } } : {}), ...(s.cor ? { cor: s.cor } : {}), ...(s.etiqueta ? { etiqueta: s.etiqueta } : {}) } },
+      metadata: { zro: { ...(tipo === 'Video' && s.escala !== 1 ? { zoom: { escala: s.escala, foco: s.foco } } : {}), ...(s.cor ? { cor: s.cor } : {}), ...(s.etiqueta ? { etiqueta: s.etiqueta } : {}), ...(JSON.stringify(s.ajustes) !== '{"volume":0,"opacidade":1,"escala":1,"x":0,"y":0}' ? { ajustes: s.ajustes } : {}) } },
     }
   }
   const segs = segmentos(p)
@@ -30,7 +30,10 @@ export function paraOtio(p) {
     kind: tipo,
     children: segs.filter((s) => p.midias.find((m) => m.id === s.midia)?.[tipo === 'Video' ? 'temVideo' : 'temAudio']).map((s) => clipe(s, tipo)),
     effects: [],
-    markers: [],
+    markers:
+      tipo === 'Video'
+        ? (p.marcadores || []).map((k) => ({ OTIO_SCHEMA: 'Marker.2', name: k.nome || 'Marcador', marked_range: range(k.q, 0, rate), color: 'PURPLE', comment: '', metadata: {} }))
+        : [],
     enabled: true,
     metadata: {},
   })

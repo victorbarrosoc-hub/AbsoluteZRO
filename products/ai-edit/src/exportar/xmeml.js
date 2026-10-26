@@ -4,7 +4,8 @@
 
 import { duracao } from '../linha.js'
 import { fpsNominal } from '../tempo.js'
-import { caminhoDa, esc, pathUrl, segmentos } from './comum.js'
+import { caminhoDa, esc, pathUrl, segmentos, transformacao } from './comum.js'
+import { ganho } from '../quadro.js'
 import { corPorId } from '../cores.js'
 
 export function paraXmeml(p) {
@@ -23,13 +24,24 @@ export function paraXmeml(p) {
     if (m.temAudio) media.push(`${ind}    <audio>\n${ind}      <samplecharacteristics>\n${ind}        <depth>16</depth>\n${ind}        <samplerate>${m.taxa || 48000}</samplerate>\n${ind}      </samplecharacteristics>\n${ind}      <channelcount>${m.canais || 2}</channelcount>\n${ind}    </audio>`)
     return [`${ind}<file id="${id}">`, `${ind}  <name>${esc(m.nome)}</name>`, `${ind}  <pathurl>${esc(pathUrl(caminhoDa(m)))}</pathurl>`, rate(ind + '  '), `${ind}  <duration>${m.quadros}</duration>`, `${ind}  <media>`, ...media, `${ind}  </media>`, `${ind}</file>`].join('\n')
   }
+  const efeito = (ind, nome, id, cat, tipo, midia, params) =>
+    `\n${ind}<filter>\n${ind}  <effect>\n${ind}    <name>${nome}</name>\n${ind}    <effectid>${id}</effectid>\n${ind}    <effectcategory>${cat}</effectcategory>\n${ind}    <effecttype>${tipo}</effecttype>\n${ind}    <mediatype>${midia}</mediatype>${params.map((x) => `\n${ind}    ${x.replace(/\n/g, `\n${ind}    `)}`).join('')}\n${ind}  </effect>\n${ind}</filter>`
+  // escala e centro (ajustes do clipe + zoom) no Basic Motion; centro em frações da metade do quadro; opacidade à parte
   const movimento = (s, ind) => {
-    if (s.escala === 1) return ''
-    // centro do Basic Motion: deslocamento do centro da imagem, em frações da metade do quadro
-    const h = ((0.5 - s.foco.x) * (s.escala - 1) * 2).toFixed(4)
-    const v = ((0.5 - s.foco.y) * (s.escala - 1) * 2).toFixed(4)
-    return `\n${ind}<filter>\n${ind}  <effect>\n${ind}    <name>Basic Motion</name>\n${ind}    <effectid>basic</effectid>\n${ind}    <effectcategory>motion</effectcategory>\n${ind}    <effecttype>motion</effecttype>\n${ind}    <mediatype>video</mediatype>\n${ind}    <parameter authoringApp="PremierePro">\n${ind}      <parameterid>scale</parameterid>\n${ind}      <name>Scale</name>\n${ind}      <valuemin>0</valuemin>\n${ind}      <valuemax>1000</valuemax>\n${ind}      <value>${Math.round(s.escala * 1000) / 10}</value>\n${ind}    </parameter>\n${ind}    <parameter authoringApp="PremierePro">\n${ind}      <parameterid>center</parameterid>\n${ind}      <name>Center</name>\n${ind}      <value>\n${ind}        <horiz>${h}</horiz>\n${ind}        <vert>${v}</vert>\n${ind}      </value>\n${ind}    </parameter>\n${ind}  </effect>\n${ind}</filter>`
+    const tr = transformacao(p, s)
+    let out = ''
+    if (Math.abs(tr.escala - 1) > 1e-4 || Math.abs(tr.cx) > 0.01 || Math.abs(tr.cy) > 0.01)
+      out += efeito(ind, 'Basic Motion', 'basic', 'motion', 'motion', 'video', [
+        `<parameter authoringApp="PremierePro">\n  <parameterid>scale</parameterid>\n  <name>Scale</name>\n  <valuemin>0</valuemin>\n  <valuemax>1000</valuemax>\n  <value>${Math.round(tr.escala * 1000) / 10}</value>\n</parameter>`,
+        `<parameter authoringApp="PremierePro">\n  <parameterid>center</parameterid>\n  <name>Center</name>\n  <value>\n    <horiz>${(tr.cx / (p.largura / 2)).toFixed(4)}</horiz>\n    <vert>${(tr.cy / (p.altura / 2)).toFixed(4)}</vert>\n  </value>\n</parameter>`,
+      ])
+    if (s.ajustes.opacidade !== 1)
+      out += efeito(ind, 'Opacity', 'opacity', 'motion', 'motion', 'video', [`<parameter authoringApp="PremierePro">\n  <parameterid>opacity</parameterid>\n  <name>opacity</name>\n  <valuemin>0</valuemin>\n  <valuemax>100</valuemax>\n  <value>${Math.round(s.ajustes.opacidade * 1000) / 10}</value>\n</parameter>`])
+    return out
   }
+  // volume no efeito Níveis de áudio (ganho linear)
+  const niveis = (s, ind) =>
+    s.ajustes.volume === 0 ? '' : efeito(ind, 'Audio Levels', 'audiolevels', 'audiolevels', 'audiolevels', 'audio', [`<parameter authoringApp="PremierePro">\n  <parameterid>level</parameterid>\n  <name>Level</name>\n  <valuemin>0.00001</valuemin>\n  <valuemax>31.6228</valuemax>\n  <value>${Math.round(ganho(s.ajustes.volume) * 10000) / 10000}</value>\n</parameter>`])
   const item = (s, k, tipo, faixa, ind) => {
     const m = p.midias.find((x) => x.id === s.midia)
     const id = `clipitem-${tipo}${faixa}-${k + 1}`
@@ -47,7 +59,7 @@ ${ind}  <start>${s.linha}</start>
 ${ind}  <end>${s.linha + s.fim - s.ini}</end>
 ${ind}  <in>${s.ini}</in>
 ${ind}  <out>${s.fim}</out>
-${fileXml(m, ind + '  ')}${s.cor ? `\n${ind}  <labels>\n${ind}    <label2>${corPorId(s.cor)?.premiere || 'Iris'}</label2>\n${ind}  </labels>` : ''}${s.etiqueta ? `\n${ind}  <comments>\n${ind}    <mastercomment1>${esc(s.etiqueta)}</mastercomment1>\n${ind}  </comments>` : ''}${tipo === 'a' ? `\n${ind}  <sourcetrack>\n${ind}    <mediatype>audio</mediatype>\n${ind}    <trackindex>${faixa}</trackindex>\n${ind}  </sourcetrack>` : movimento(s, ind + '  ')}${links}
+${fileXml(m, ind + '  ')}${s.cor ? `\n${ind}  <labels>\n${ind}    <label2>${corPorId(s.cor)?.premiere || 'Iris'}</label2>\n${ind}  </labels>` : ''}${s.etiqueta ? `\n${ind}  <comments>\n${ind}    <mastercomment1>${esc(s.etiqueta)}</mastercomment1>\n${ind}  </comments>` : ''}${tipo === 'a' ? `\n${ind}  <sourcetrack>\n${ind}    <mediatype>audio</mediatype>\n${ind}    <trackindex>${faixa}</trackindex>\n${ind}  </sourcetrack>${niveis(s, ind + '  ')}` : movimento(s, ind + '  ')}${links}
 ${ind}</clipitem>`
   }
   const comVideo = segs.map((s, k) => ({ s, k })).filter(({ s }) => p.midias.find((m) => m.id === s.midia)?.temVideo)
@@ -79,6 +91,7 @@ ${v1}
 ${a}
       </audio>
     </media>
+${(p.marcadores || []).map((k) => `    <marker>\n      <name>${esc(k.nome || 'Marcador')}</name>\n      <comment></comment>\n      <in>${k.q}</in>\n      <out>-1</out>\n    </marker>`).join('\n')}
     <timecode>
 ${rate('      ')}
       <string>00:00:00:00</string>

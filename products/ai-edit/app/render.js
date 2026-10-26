@@ -1,11 +1,11 @@
-// Vídeo final: decodifica cada trecho da linha, aplica o zoom (recorte) e desenha a legenda no mesmo canvas da prévia,
+// Vídeo final: decodifica cada trecho da linha, aplica os ajustes do clipe e o zoom e desenha a legenda no mesmo canvas da prévia,
 // e grava H.264 com o som (AAC quando o sistema tem codificador, como no Mac e no Windows; senão Opus) com WebCodecs.
 // O som de cada corte ganha 4 ms de rampa nas pontas: sem estalo na emenda.
 
 import { MB, abrirInput } from './midia.js'
 import { segmentos } from '../src/exportar/comum.js'
 import { paraSegundos, fpsNumero } from '../src/tempo.js'
-import { recorte } from '../src/quadro.js'
+import { ganho, posicionar } from '../src/quadro.js'
 import { desenhar } from '../src/legenda.js'
 
 const RAMPA_S = 0.004
@@ -80,12 +80,11 @@ export async function renderizar(p, { entradas, destino, blocos = [], legenda = 
         ctx.fillRect(0, 0, L, A)
         if (r?.canvas) {
           const c = r.canvas
-          const rc = recorte(c.width, c.height, { escala: s.escala, foco: s.foco })
-          // cabe no quadro de saída mantendo a proporção (sobra vira faixa preta, como na prévia)
-          const k2 = Math.min(L / c.width, A / c.height)
-          const w = c.width * k2
-          const h = c.height * k2
-          ctx.drawImage(c, rc.sx, rc.sy, rc.sl, rc.sa, (L - w) / 2, (A - h) / 2, w, h)
+          // ajustes do clipe (escala, posição) e depois o zoom do momento: a mesma conta da prévia (src/quadro.js)
+          const ret = posicionar(L, A, c.width, c.height, s.ajustes, { escala: s.escala, foco: s.foco })
+          ctx.globalAlpha = s.ajustes.opacidade
+          ctx.drawImage(c, ret.x, ret.y, ret.w, ret.h)
+          ctx.globalAlpha = 1
         }
         const t = quadroSaida / fps
         if (blocos.length && legenda.ligada !== false) desenhar(ctx, blocos, t, L, A, legenda)
@@ -102,7 +101,7 @@ export async function renderizar(p, { entradas, destino, blocos = [], legenda = 
       // som: o trecho exato, colado no anterior, com rampa nas pontas
       if (fonteAudio) {
         const dur = n / fps
-        const buf = await somDoTrecho(o, iniS, dur, taxaSaida)
+        const buf = await somDoTrecho(o, iniS, dur, taxaSaida, ganho(s.ajustes.volume))
         await fonteAudio.add(buf)
         tAudio += dur
       }
@@ -120,7 +119,7 @@ export async function renderizar(p, { entradas, destino, blocos = [], legenda = 
 }
 
 /** O som exato de [ini, ini+dur) da mídia, em estéreo na taxa de saída, com rampa nas pontas (silêncio se não há som). */
-async function somDoTrecho(o, ini, dur, taxaSaida) {
+async function somDoTrecho(o, ini, dur, taxaSaida, g = 1) {
   const taxa = o.audio?.sampleRate || taxaSaida
   const amostras = Math.max(1, Math.round(dur * taxa))
   let buf = new AudioBuffer({ length: amostras, numberOfChannels: 2, sampleRate: taxa })
@@ -136,6 +135,7 @@ async function somDoTrecho(o, ini, dur, taxaSaida) {
     const r = Math.min(Math.floor(amostras / 2), Math.round(RAMPA_S * taxa))
     for (let c = 0; c < 2; c++) {
       const d = buf.getChannelData(c)
+      if (g !== 1) for (let i = 0; i < amostras; i++) d[i] = Math.max(-1, Math.min(1, d[i] * g))
       for (let i = 0; i < r; i++) {
         d[i] *= i / r
         d[amostras - 1 - i] *= i / r

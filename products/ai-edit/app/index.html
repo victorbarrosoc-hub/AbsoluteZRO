@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AEON · Absolute ZRO</title>
     <meta name="color-scheme" content="dark light" />
-    <link rel="icon" href="icone.svg" type="image/svg+xml" />
+    <link rel="icon" href="../marca/aeon-favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="../vendor/zro-tokens.css" />
     <link rel="stylesheet" href="editor.css" />
     <script type="module" src="editor.js"></script>
@@ -36,6 +36,9 @@
         <symbol id="i-salvar" viewBox="0 0 24 24"><path d="M5 4.5h11l3 3V18a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 18zM8 4.5v5h7v-5M8 19.5v-5h8v5" /></symbol>
         <symbol id="i-conta" viewBox="0 0 24 24"><circle cx="12" cy="9" r="3.5" /><path d="M5 19.5a7 7 0 0 1 14 0" /></symbol>
         <symbol id="i-fora" viewBox="0 0 24 24"><path d="M14 4.5h4.5A1.5 1.5 0 0 1 20 6v12a1.5 1.5 0 0 1-1.5 1.5H14M10 8l-4 4 4 4M6 12h10" /></symbol>
+        <symbol id="i-marcador" viewBox="0 0 24 24"><path d="M7 3.5h10v11l-5 5-5-5z" /></symbol>
+        <symbol id="i-universos" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="2" /><rect x="13.5" y="3.5" width="7" height="7" rx="2" /><rect x="3.5" y="13.5" width="7" height="7" rx="2" /><rect x="13.5" y="13.5" width="7" height="7" rx="2" /></symbol>
+        <symbol id="i-mais" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
         <symbol id="i-legenda" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M7 14.5h4M13 14.5h4M7 11h10" /></symbol>
       </defs>
     </svg>
@@ -45,11 +48,12 @@
         <button class="icone-btn" id="menuBotao" title="Menu (⌘\)" aria-label="Abrir menu" aria-controls="trilho" aria-expanded="false"><svg><use href="#i-menu" /></svg></button>
         <span class="marca-produto" id="marcaProduto"></span>
       </div>
-      <div class="barra-projeto" id="nomeProjeto"></div>
+      <div class="barra-projeto"><span id="nomeProjeto" title="Clique para renomear"></span><span class="salvo" id="salvo" role="status" aria-live="polite"></span></div>
       <div class="barra-acoes">
         <button class="icone-btn" id="desfazer" title="Desfazer (⌘Z)" aria-label="Desfazer" disabled><svg><use href="#i-desfazer" /></svg></button>
         <button class="icone-btn" id="refazer" title="Refazer (⇧⌘Z)" aria-label="Refazer" disabled><svg><use href="#i-refazer" /></svg></button>
         <button class="icone-btn" id="tema" title="Tema claro ou escuro" aria-label="Tema"><svg><use href="#i-sol" /></svg></button>
+        <button class="glass-btn glass-btn--ink barra-exportar" id="barraExportar" hidden>Exportar</button>
         <img class="assinatura" src="../vendor/marca/absolute-zro-simbolo-branco.svg" alt="Absolute ZRO" title="Absolute ZRO" />
       </div>
     </header>
@@ -65,6 +69,14 @@
             <button class="glass-btn" id="abrirSobedesce" hidden><svg><use href="#i-cartao" /></svg> Abrir do SOBEDESCE</button>
           </div>
           <button class="link" id="abrirProjetoBtn">Abrir projeto</button>
+        </div>
+
+        <div class="universos" id="universos" hidden>
+          <div class="universos-topo">
+            <h2 class="titulo-p">Seus universos</h2>
+            <button class="glass-btn" id="novoProjeto"><svg><use href="#i-mais" /></svg> Novo projeto</button>
+          </div>
+          <ul class="cartoes-projeto" id="listaProjetos"></ul>
         </div>
 
         <div class="midia-cheia" id="midiaCheia" hidden>
@@ -120,17 +132,26 @@
         <div class="edicao">
           <div class="edicao-topo">
             <div class="vaga-palco" data-vaga="edicao"></div>
-            <aside class="painel painel-texto">
-              <div class="painel-cabeca">
-                <h2 class="titulo-p">Legenda</h2>
-                <label class="chave" title="Mostrar a legenda no vídeo"><input type="checkbox" id="legendaLigada" checked /><span></span></label>
-                <select id="estiloLegenda" aria-label="Estilo da legenda">
-                  <option value="destaque">Destaque</option>
-                  <option value="pop">Pop</option>
-                  <option value="limpa">Limpa</option>
-                </select>
+            <aside class="painel painel-lateral">
+              <div class="abas" role="tablist" aria-label="Painel" id="abasPainel">
+                <button role="tab" data-aba="inspector" aria-selected="true">Inspector</button>
+                <button role="tab" data-aba="texto" aria-selected="false">Texto</button>
+                <button role="tab" data-aba="historico" aria-selected="false">Histórico</button>
               </div>
-              <div class="texto" id="texto" title="Clique numa palavra para ir até ela; dois cliques para corrigir."></div>
+              <section class="aba" data-aba="inspector" id="inspector" aria-label="Inspector"></section>
+              <section class="aba" data-aba="texto" hidden aria-label="Texto">
+                <div class="painel-cabeca">
+                  <h2 class="titulo-p">Legenda</h2>
+                  <label class="chave" title="Mostrar a legenda no vídeo"><input type="checkbox" id="legendaLigada" checked /><span></span></label>
+                  <select id="estiloLegenda" aria-label="Estilo da legenda">
+                    <option value="destaque">Destaque</option>
+                    <option value="pop">Pop</option>
+                    <option value="limpa">Limpa</option>
+                  </select>
+                </div>
+                <div class="texto" id="texto" title="Clique numa palavra para ir até ela; dois cliques para corrigir."></div>
+              </section>
+              <section class="aba" data-aba="historico" hidden aria-label="Histórico"><ol class="historico" id="historico"></ol></section>
             </aside>
           </div>
           <div class="linha" id="linha"></div>
@@ -189,8 +210,35 @@
       </div>
     </dialog>
 
+    <dialog class="folha" id="folhaNovo">
+      <form method="dialog" id="formNovo">
+        <h2 class="titulo-p">Novo projeto</h2>
+        <label class="campo"><span>Nome</span><input type="text" id="novoNome" maxlength="80" placeholder="Sem nome" autocomplete="off" /></label>
+        <div class="formatos" role="radiogroup" aria-label="Formato" id="novoFormato">
+          <label class="formato"><input type="radio" name="formato" value="1920x1080" checked /><i style="--ar: 16/9"></i><span>16:9</span></label>
+          <label class="formato"><input type="radio" name="formato" value="1080x1920" /><i style="--ar: 9/16"></i><span>9:16</span></label>
+          <label class="formato"><input type="radio" name="formato" value="1080x1080" /><i style="--ar: 1/1"></i><span>1:1</span></label>
+          <label class="formato"><input type="radio" name="formato" value="1080x1350" /><i style="--ar: 4/5"></i><span>4:5</span></label>
+        </div>
+        <label class="campo"><span>Quadros por segundo</span>
+          <select id="novoFps">
+            <option value="23.976">23,976</option>
+            <option value="24">24</option>
+            <option value="25">25</option>
+            <option value="29.97">29,97</option>
+            <option value="30" selected>30</option>
+            <option value="60">60</option>
+          </select>
+        </label>
+        <div class="acoes">
+          <button class="glass-btn" value="cancelar" formnovalidate>Cancelar</button>
+          <button class="glass-btn glass-btn--ink" value="criar" id="novoCriar">Criar</button>
+        </div>
+      </form>
+    </dialog>
+
     <div class="aviso" id="aviso" role="status" aria-live="polite"></div>
     <input type="file" id="arquivo" accept="video/*,audio/*,.mov,.mxf,.mkv" multiple hidden />
-    <input type="file" id="arquivoProjeto" accept=".zroedit,application/json" hidden />
+    <input type="file" id="arquivoProjeto" accept=".aeon,.zroedit,application/json" hidden />
   </body>
 </html>

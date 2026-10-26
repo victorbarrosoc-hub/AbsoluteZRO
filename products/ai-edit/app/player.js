@@ -1,10 +1,11 @@
 // Prévia da linha do tempo: dois <video> que se revezam (enquanto um toca, o outro já espera parado no começo do
-// próximo clipe), então o corte troca na hora, sem esperar a busca. Zoom pelo transform (placa de vídeo) e legenda num
-// canvas por cima, com as mesmas contas do render (src/quadro.js e src/legenda.js).
+// próximo clipe), então o corte troca na hora, sem esperar a busca. Zoom e ajustes do clipe (escala, posição,
+// opacidade) pelo transform e pela opacidade do elemento (placa de vídeo), volume por um ganho do Web Audio, legenda num
+// canvas por cima: as mesmas contas do render (src/quadro.js e src/legenda.js).
 
-import { posicoes, tamanho } from '../src/linha.js'
+import { ajustesDe, posicoes, tamanho } from '../src/linha.js'
 import { paraSegundos, paraQuadros, fpsNumero } from '../src/tempo.js'
-import { transformCss, zoomEm } from '../src/quadro.js'
+import { ganho, transformCssClipe, zoomEm } from '../src/quadro.js'
 import { desenhar } from '../src/legenda.js'
 
 export class Player {
@@ -83,6 +84,15 @@ export class Player {
 
   #posicionar(v, seg, t) {
     const url = this.urlDe(seg.midia)
+    if (!url) {
+      // mídia sem arquivo ainda: tela vazia até a pessoa escolher o vídeo de novo
+      if (v.dataset.url) {
+        v.removeAttribute('src')
+        v.load()
+        delete v.dataset.url
+      }
+      return
+    }
     if (v.dataset.url !== url) {
       v.src = url
       v.dataset.url = url
@@ -115,8 +125,25 @@ export class Player {
     this.#avisar()
   }
 
+  /** Ganho por elemento (Web Audio): permite volume acima de 0 dB. Criado no primeiro toque (gesto da pessoa). */
+  #audio() {
+    if (this.ganhos || typeof AudioContext === 'undefined') return
+    try {
+      this.ctxAudio = new AudioContext()
+      this.ganhos = this.videos.map((v) => {
+        const g = this.ctxAudio.createGain()
+        this.ctxAudio.createMediaElementSource(v).connect(g).connect(this.ctxAudio.destination)
+        return g
+      })
+    } catch {
+      this.ganhos = null
+    }
+  }
+
   async tocar() {
     if (!this.segs.length) return
+    this.#audio()
+    this.ctxAudio?.resume?.()
     if (this.t >= this.duracao - 0.05) this.irPara(0)
     this.tocando = true
     this.fim = null
@@ -184,12 +211,21 @@ export class Player {
     const v = this.videos[this.ativo]
     const q = paraQuadros(seg.fonteIni + (this.t - seg.linhaIni), p.fps)
     const z = zoomEm(this.zooms, seg.midia, q)
-    const css = transformCss(p.largura, p.altura, z)
-    const chave = `${this.ativo}|${css}`
+    const aj = ajustesDe(seg.clipe)
+    const css = transformCssClipe(p.largura, p.altura, v.videoWidth || p.largura, v.videoHeight || p.altura, aj, z)
+    const chave = `${this.ativo}|${css}|${aj.opacidade}|${aj.volume}`
     if (chave === this.ultimoZoom) return
     this.ultimoZoom = chave
+    const outro = this.videos[1 - this.ativo]
     v.style.transform = css === 'none' ? '' : css
-    this.videos[1 - this.ativo].style.transform = ''
+    v.style.opacity = String(aj.opacidade)
+    outro.style.transform = ''
+    outro.style.opacity = '0'
+    const g = ganho(aj.volume)
+    if (this.ganhos) {
+      this.ganhos[this.ativo].gain.value = g
+      this.ganhos[1 - this.ativo].gain.value = 0
+    } else v.volume = Math.min(1, g)
   }
 
   #legenda() {

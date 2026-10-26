@@ -14,9 +14,9 @@ export const VERSAO = 1
  * midias: [{ id, nome, caminho?, duracao (s), fps?, largura?, altura?, temVideo, temAudio }]. O fps e o tamanho da
  * linha vêm da primeira mídia com vídeo (30 quadros e 1920×1080 sem vídeo nenhum).
  */
-export function novoProjeto({ id, nome, midias, preset }) {
+export function novoProjeto({ id, nome, midias = [], preset, fps: fpsPedido, largura, altura }) {
   const video = midias.find((m) => m.temVideo && m.fps)
-  const fps = fpsDe(video ? video.fps : 30)
+  const fps = fpsDe(fpsPedido || (video ? video.fps : 30))
   const ms = midias.map((m, i) => ({ cor: corDaMidia(i), ...m, quadros: paraQuadros(m.duracao, fps) }))
   return {
     formato: `${PRODUTO.id}/projeto`,
@@ -24,8 +24,9 @@ export function novoProjeto({ id, nome, midias, preset }) {
     id: id || cryptoId(),
     nome: nome || ms[0]?.nome?.replace(/\.[^.]+$/, '') || 'Projeto',
     fps,
-    largura: video?.largura || 1920,
-    altura: video?.altura || 1080,
+    largura: largura || video?.largura || 1920,
+    altura: altura || video?.altura || 1080,
+    marcadores: [],
     midias: ms,
     transcricoes: {},
     propostas: [],
@@ -113,6 +114,16 @@ export function restaurarTrecho(linha, midia, { ini, fim }) {
   return null
 }
 
+/** Marcador na linha do tempo (quadro da linha), com nome opcional. */
+export function adicionarMarcador(p, q, nome = '') {
+  const qq = Math.max(0, Math.round(q))
+  const ms = p.marcadores || []
+  if (ms.some((m) => m.q === qq)) return p
+  const id = `k${Date.now().toString(36)}${ms.length}`
+  return { ...p, marcadores: [...ms, { id, q: qq, nome: String(nome).slice(0, 60) }].sort((a, b) => a.q - b.q) }
+}
+export const removerMarcador = (p, id) => ({ ...p, marcadores: (p.marcadores || []).filter((m) => m.id !== id) })
+
 /** Zooms aprovados de uma mídia, em quadros de origem. */
 export function zoomsAprovados(p) {
   return p.propostas.filter((x) => x.tipo === 'zoom' && x.estado === 'aprovada').map((x) => ({ ...x, qIni: paraQuadros(x.ini, p.fps), qFim: paraQuadros(x.fim, p.fps) }))
@@ -175,5 +186,5 @@ export function abrir(texto) {
   if (!p || p.formato !== `${PRODUTO.id}/projeto`) throw new Error('Este arquivo não é um projeto do editor.')
   if (p.versao > VERSAO) throw new Error('Projeto de uma versão mais nova do app. Atualize o app.')
   if (!p.fps?.n || !p.fps?.d || !Array.isArray(p.midias) || !Array.isArray(p.linha?.clipes)) throw new Error('Projeto incompleto.')
-  return p
+  return { marcadores: [], ...p }
 }

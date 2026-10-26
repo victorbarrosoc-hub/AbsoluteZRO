@@ -18,7 +18,7 @@ const svgUso = (id) => {
   return s
 }
 
-/** acoes: { abrir(), salvar() } — os mesmos atalhos do teclado */
+/** acoes: { universos(), abrir(), salvar() } — os mesmos atalhos do teclado */
 export function montarTrilho(acoes) {
   const botao = document.getElementById('menuBotao')
   const item = ({ nome, icone, img, href, acao, dica }) => {
@@ -32,8 +32,9 @@ export function montarTrilho(acoes) {
     'aside',
     { id: 'trilho', className: 'trilho', ariaLabel: 'Menu' },
     el('p', { className: 'trilho-grupo', textContent: 'Projeto' }),
+    item({ nome: 'Seus universos', icone: 'universos', acao: acoes.universos, dica: 'Seus projetos' }),
     item({ nome: 'Abrir projeto', icone: 'abrir', acao: acoes.abrir, dica: 'Abrir projeto (⌘O)' }),
-    item({ nome: 'Salvar projeto', icone: 'salvar', acao: acoes.salvar, dica: 'Salvar projeto (⌘S)' }),
+    item({ nome: 'Salvar cópia', icone: 'salvar', acao: acoes.salvar, dica: 'Salvar uma cópia do projeto em arquivo (⌘S)' }),
     el('p', { className: 'trilho-grupo', textContent: 'Conta' }),
     item({ nome: 'Entrar', icone: 'conta', href: CONTA.entrar, dica: 'Entrar com a conta Absolute ZRO' }),
     el('p', { className: 'trilho-grupo', textContent: 'Absolute ZRO' }),

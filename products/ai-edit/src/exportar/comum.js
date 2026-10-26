@@ -3,8 +3,9 @@
 
 import { zoomsAprovados } from '../projeto.js'
 import { zoomEm } from '../quadro.js'
-import { tamanho } from '../linha.js'
+import { ajustesDe, tamanho } from '../linha.js'
 import { corDoClipe } from '../cores.js'
+import { posicionar } from '../quadro.js'
 
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c])
 
@@ -52,9 +53,25 @@ export function segmentos(p) {
     const pts = [...cortes].sort((a, b) => a - b)
     for (let i = 0; i < pts.length - 1; i++) {
       const z = zoomEm(zooms, c.midia, pts[i])
-      out.push({ clipe: c.id, midia: c.midia, ini: pts[i], fim: pts[i + 1], linha: t + (pts[i] - c.ini), escala: z.escala, foco: z.foco, cor: corDoClipe(p, c), etiqueta: c.etiqueta || null })
+      out.push({ clipe: c.id, midia: c.midia, ini: pts[i], fim: pts[i + 1], linha: t + (pts[i] - c.ini), escala: z.escala, foco: z.foco, cor: corDoClipe(p, c), etiqueta: c.etiqueta || null, ajustes: ajustesDe(c) })
     }
     t += tamanho(c)
   }
   return out
 }
+
+/**
+ * Escala total e deslocamento do centro (px da saída, y para baixo) de um segmento: ajustes do clipe + zoom, pela
+ * mesma conta da prévia e do render. Escala 1 = a mídia cabe no quadro.
+ */
+export function transformacao(p, s) {
+  const m = p.midias.find((x) => x.id === s.midia) || {}
+  const cw = m.largura || p.largura
+  const ch = m.altura || p.altura
+  const base = posicionar(p.largura, p.altura, cw, ch)
+  const r = posicionar(p.largura, p.altura, cw, ch, s.ajustes, { escala: s.escala, foco: s.foco })
+  return { escala: r.w / base.w, cx: r.x + r.w / 2 - p.largura / 2, cy: r.y + r.h / 2 - p.altura / 2 }
+}
+
+/** Marcadores que caem dentro de um segmento: [{ nome, q (quadro de origem) }]. */
+export const marcadoresDe = (p, s) => (p.marcadores || []).filter((k) => k.q >= s.linha && k.q < s.linha + (s.fim - s.ini)).map((k) => ({ nome: k.nome || 'Marcador', q: s.ini + (k.q - s.linha) }))

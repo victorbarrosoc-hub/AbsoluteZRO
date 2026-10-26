@@ -141,24 +141,17 @@ svg {
 .marca-produto {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
   color: var(--text-strong);
+  margin-left: 4px;
 }
-.marca-simbolo svg {
-  width: 22px;
-  height: 22px;
-  stroke: none;
-  display: block;
+.marca-produto svg:first-child {
+  width: 18px;
+  height: 18px;
 }
-.marca-nome svg {
-  width: 62px;
-  height: 13px;
-  stroke: none;
-  display: block;
-}
-.marca-simbolo svg circle,
-.marca-nome svg g {
-  stroke: currentColor;
+.marca-produto svg:last-child {
+  height: 12px;
+  width: auto;
 }
 
 /* ───────── menu recolhível (trilho) ───────── */
@@ -1529,4 +1522,453 @@ select {
     transition: none !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ───────── barra: projeto, autosave, exportar ───────── */
+.barra-projeto {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#nomeProjeto {
+  color: var(--text-strong);
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 8px;
+  cursor: text;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#nomeProjeto:hover {
+  background: var(--hover);
+}
+#nomeProjeto[contenteditable='plaintext-only'],
+#nomeProjeto[contenteditable='true'] {
+  outline: 1.5px solid var(--produto);
+  background: var(--surface);
+}
+.salvo {
+  font-size: 12px;
+  color: var(--text-faint);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.salvo:empty {
+  display: none;
+}
+.salvo::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cor-verde);
+}
+.salvo[data-estado='andando']::before {
+  background: var(--cor-amarelo);
+  animation: pulsar 1s ease-in-out infinite alternate;
+}
+.salvo[data-estado='erro']::before {
+  background: var(--cor-rosa);
+}
+@keyframes pulsar {
+  to {
+    opacity: 0.3;
+  }
+}
+.barra-exportar {
+  padding: 6px 16px;
+  font-size: 13px;
+  margin-left: 6px;
+}
+
+/* ───────── Seus universos ───────── */
+.pagina:has(.universos:not([hidden])) .vazio {
+  min-height: auto;
+  padding: 72px 24px 28px;
+}
+.universos {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 8px 28px 120px;
+  display: grid;
+  gap: 18px;
+}
+.universos-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.universos.sem-projetos .cartoes-projeto::before {
+  content: 'Seus projetos aparecem aqui, guardados sozinhos.';
+  color: var(--text-faint);
+  font-size: 14px;
+}
+.cartoes-projeto {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+.cartao-projeto {
+  position: relative;
+  border-radius: var(--raio);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  animation: surgir 0.45s var(--mola) both;
+  transition:
+    transform 0.35s var(--mola),
+    box-shadow 0.35s var(--mola);
+}
+.cartao-projeto:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-float);
+}
+.cartao-projeto[data-estado='revisar'] { --c: var(--cor-pagina-revisar); }
+.cartao-projeto[data-estado='editando'] { --c: var(--cor-pagina-edicao); }
+.cartao-abrir {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: grid;
+}
+.cartao-abrir .cartao-mini {
+  border-top: 3px solid var(--c, transparent);
+}
+.cartao-mini img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cartao-apagar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  opacity: 0;
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  transition: opacity 0.2s ease;
+}
+.cartao-projeto:hover .cartao-apagar,
+.cartao-apagar:focus-visible {
+  opacity: 1;
+}
+
+/* novo projeto */
+.folha form {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+}
+#folhaNovo {
+  width: min(460px, calc(100vw - 32px));
+}
+.campo {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-mute);
+  font-weight: 600;
+}
+.campo input[type='text'] {
+  font: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-strong);
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-2);
+}
+.campo input[type='text']:focus {
+  outline: 2px solid var(--produto);
+  outline-offset: 1px;
+}
+.campo select {
+  justify-self: start;
+  color: var(--text-strong);
+}
+.formatos {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.formato {
+  display: grid;
+  justify-items: center;
+  align-content: end;
+  gap: 8px;
+  padding: 14px 6px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-mute);
+  cursor: pointer;
+  height: 104px;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+.formato input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.formato i {
+  display: block;
+  height: 46px;
+  max-width: 70px;
+  aspect-ratio: var(--ar);
+  border-radius: 6px;
+  border: 1.5px solid currentColor;
+  opacity: 0.6;
+}
+.formato:has(input:checked) {
+  background: var(--active);
+  border-color: var(--line-strong);
+  color: var(--text-strong);
+}
+.formato:has(input:checked) i {
+  opacity: 1;
+}
+.formato:has(input:focus-visible) {
+  outline: 2px solid var(--produto);
+}
+
+/* ───────── painel lateral: abas, Inspector, Histórico ───────── */
+.painel-lateral {
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: stretch;
+}
+.painel-lateral .aba {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+.painel-lateral .aba[data-aba='texto'] {
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: stretch;
+}
+.painel-lateral .aba[hidden] {
+  display: none;
+}
+.abas {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--pill-fill);
+  box-shadow: var(--pill-rim);
+}
+.abas button {
+  flex: 1;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 6px 8px;
+  border-radius: 999px;
+  color: var(--text-mute);
+  font: inherit;
+  font-weight: 600;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition:
+    background 0.3s var(--mola),
+    color 0.2s;
+}
+.abas button[aria-selected='true'] {
+  background: var(--active);
+  color: var(--text-strong);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+.insp-vazio {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 26px 4px 4px;
+  text-align: center;
+}
+.insp-vazio > svg {
+  width: 30px;
+  height: 30px;
+  color: var(--text-faint);
+}
+.insp-vazio[hidden],
+.insp-clipe[hidden] {
+  display: none;
+}
+.insp-projeto {
+  width: 100%;
+  margin: 14px 0 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 14px;
+  font-size: 13px;
+  text-align: left;
+}
+.insp-projeto dt {
+  color: var(--text-faint);
+}
+.insp-projeto dd {
+  margin: 0;
+  color: var(--text-strong);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.insp-clipe {
+  display: grid;
+  gap: 16px;
+}
+.insp-cabeca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.insp-cor {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  background: var(--c, var(--produto-2));
+}
+.insp-nome {
+  display: grid;
+  min-width: 0;
+}
+.insp-nome strong {
+  color: var(--text-strong);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.insp-nome .apoio {
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+.insp-controles {
+  display: grid;
+  gap: 14px;
+}
+.insp-controle {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+  font-size: 13px;
+}
+.insp-controle[hidden] {
+  display: none;
+}
+.insp-rotulo {
+  color: var(--text-mute);
+  font-weight: 600;
+}
+.insp-controle output {
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+.insp-controle.mudado output {
+  color: var(--text-strong);
+}
+.insp-controle input {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+#inspRedefinir {
+  justify-self: start;
+}
+.historico {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.historico button {
+  width: 100%;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--text-mute);
+  padding: 7px 10px 7px 26px;
+  border-radius: 10px;
+  cursor: pointer;
+  position: relative;
+}
+.historico button::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.5;
+}
+.historico button:hover {
+  background: var(--hover);
+}
+.historico button[aria-current] {
+  background: var(--active);
+  color: var(--text-strong);
+}
+.historico button[aria-current]::before {
+  background: var(--cor-pagina-edicao);
+  opacity: 1;
+}
+.historico button.futuro {
+  opacity: 0.45;
+}
+
+/* marcadores na régua */
+.trilha-marcas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 26px;
+  pointer-events: none;
+  z-index: 4;
+}
+.marcador {
+  position: absolute;
+  top: 2px;
+  width: 12px;
+  height: 14px;
+  margin-left: -6px;
+  padding: 0;
+  border: 0;
+  background: var(--cor-amarelo);
+  clip-path: polygon(0 0, 100% 0, 100% 62%, 50% 100%, 0 62%);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.marcador:hover {
+  filter: brightness(1.15);
+}
+.cartao-abrir .cartao-mini > svg {
+  width: 30px;
+  height: 30px;
+  opacity: 0.35;
 }

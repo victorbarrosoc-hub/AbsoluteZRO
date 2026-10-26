@@ -3,9 +3,10 @@
 // entra na edição sem a pessoa aprovar.
 
 import { PRODUTO } from '../src/produto.js'
-import { Historico, dividir, remover, mover, aparar, linhaInicial, etiquetar } from '../src/linha.js'
+import { simbolo, wordmark } from '../src/marca.js'
+import { Historico, dividir, remover, mover, aparar, linhaInicial, etiquetar, ajustar, ajustesDe, AJUSTES_PADRAO } from '../src/linha.js'
 import { COR_PROPOSTA, corDaMidia } from '../src/cores.js'
-import { aprovar, recusar, comPropostas, comTranscricao, editarPalavra, midiaPorId, novoProjeto, numeros, palavrasNaLinha, salvar, abrir, textoDa, zoomsAprovados } from '../src/projeto.js'
+import { adicionarMarcador, removerMarcador, aprovar, recusar, comPropostas, comTranscricao, editarPalavra, midiaPorId, novoProjeto, numeros, palavrasNaLinha, salvar, abrir, textoDa, zoomsAprovados } from '../src/projeto.js'
 import { proporCortes, proporZooms, resumo } from '../src/propostas.js'
 import { prepararPreset } from '../src/preset.js'
 import { envelope } from '../src/analise/silencio.js'
@@ -22,8 +23,8 @@ import { LinhaUI } from './linha-ui.js'
 import { renderizar, codecsDaMaquina } from './render.js'
 import * as ponte from './ponte.js'
 import { montarTrilho } from './trilho.js'
-import { simbolo, wordmark } from '../src/marca.js'
 import { DEPOIS, FAMILIA, iconeDe } from '../src/familia.js'
+import * as projetos from './projetos.js'
 
 const $ = (id) => document.getElementById(id)
 const PAGINAS = ['midia', 'revisar', 'edicao', 'entrega']
@@ -46,9 +47,10 @@ globalThis.__editor = S
 // ───────── começo ─────────
 
 document.title = `${PRODUTO.nome} · Absolute ZRO`
-$('marcaProduto').innerHTML = `<span class="marca-simbolo">${simbolo({ id: 'corte-barra' })}</span><span class="marca-nome">${wordmark()}</span>`
+// a marca (src/marca.js): a estrela compacta e o ΛEON em traço, na cor do texto
+$('marcaProduto').innerHTML = `${simbolo({ titulo: false })}${wordmark()}`
 $('marcaProduto').title = `${PRODUTO.nome} · ${PRODUTO.frase}`
-montarTrilho({ abrir: () => $('arquivoProjeto').click(), salvar: () => salvarAgora() })
+montarTrilho({ universos: () => fecharProjeto(), abrir: () => $('arquivoProjeto').click(), salvar: () => salvarAgora() })
 // Entrega › depois do AEON: o próximo app do caminho (abre no navegador)
 $('depois').replaceChildren(
   ...DEPOIS.map((d) => {
@@ -70,7 +72,7 @@ const player = new Player($('tela'), (id) => ponte.urlTocavel(S.entradas.get(id)
 const linha = new LinhaUI($('linha'), {
   aoBuscar: (t) => player.irPara(t),
   aoAcao: acaoLinha,
-  aoSelecionar: () => {},
+  aoSelecionar: () => desenharInspector(),
 })
 player.aoMudar(() => {
   linha.tempo(player.t)
@@ -120,7 +122,9 @@ function ir(pagina, animar = true) {
   if (vaga && $('palco').parentElement !== vaga) vaga.append($('palco'))
   if (pagina !== 'revisar' && pagina !== 'edicao') player.pausar()
   if (pagina === 'edicao') requestAnimationFrame(() => desenharLinha())
+  $('barraExportar').hidden = !P()?.midias.length || pagina === 'entrega'
 }
+$('barraExportar').onclick = () => ir('entrega')
 
 // ───────── projeto e desfazer ─────────
 
@@ -130,13 +134,54 @@ function P() {
 
 function fazer(novo, rotulo) {
   if (!S.h || !S.h.fazer(novo, rotulo)) return
-  S.salvo = false
+  mudou()
   desenharTudo()
+}
+
+// ───────── autosave: cada mudança grava sozinha (Seus universos), sem diálogo ─────────
+
+let gravarTimer = null
+function mudou() {
+  S.salvo = false
+  estadoSalvo('Salvando…')
+  clearTimeout(gravarTimer)
+  gravarTimer = setTimeout(autosalvar, 900)
+}
+async function autosalvar() {
+  const p = P()
+  if (!p) return
+  try {
+    await projetos.gravar(salvar(p), projetos.resumoDe(p, { miniatura: miniaturaDoProjeto(p) }))
+    if (P() === p) {
+      S.salvo = true
+      estadoSalvo('Salvo')
+    }
+  } catch (err) {
+    console.error(err)
+    estadoSalvo('Não salvou')
+  }
+}
+S.autosalvar = autosalvar
+function estadoSalvo(t) {
+  $('salvo').textContent = t
+  $('salvo').dataset.estado = t === 'Salvo' ? 'ok' : t === 'Não salvou' ? 'erro' : 'andando'
+}
+/** miniatura pequena (JPEG) da primeira mídia com imagem, para o cartão do projeto */
+function miniaturaDoProjeto(p) {
+  const m = p.midias.find((x) => S.miniaturas.get(x.id))
+  const c = m && S.miniaturas.get(m.id)
+  if (!c) return S.miniaturaGuardada || null
+  const w = 320
+  const h = Math.round((w * c.height) / c.width) || 180
+  const t = Object.assign(document.createElement('canvas'), { width: w, height: h })
+  t.getContext('2d').drawImage(c, 0, 0, w, h)
+  return t.toDataURL('image/jpeg', 0.72)
 }
 
 function desfazer() {
   const r = S.h?.desfazer()
   if (r != null) {
+    mudou()
     aviso(`Desfeito: ${r || 'ação'}`)
     desenharTudo()
   }
@@ -144,6 +189,7 @@ function desfazer() {
 function refazer() {
   const r = S.h?.refazer()
   if (r != null) {
+    mudou()
     aviso(`Refeito: ${r || 'ação'}`)
     desenharTudo()
   }
@@ -163,15 +209,25 @@ function desenharTudo() {
   $('desfazer').title = S.h?.podeDesfazer ? `Desfazer ${S.h.proximoDesfazer} (⌘Z)` : 'Desfazer (⌘Z)'
   $('refazer').title = S.h?.podeRefazer ? `Refazer ${S.h.proximoRefazer} (⇧⌘Z)` : 'Refazer (⇧⌘Z)'
   document.body.classList.toggle('com-projeto', Boolean(p))
+  $('barraExportar').hidden = !p?.midias.length || S.pagina === 'entrega'
   desenharMidia()
-  if (!p) return
+  desenharHistorico()
+  if (!p) {
+    $('salvo').textContent = ''
+    return
+  }
   const blocos = blocosDaLegenda(p)
-  player.carregar(p, { blocos, zooms: zoomsAprovados(p), legenda: { ligada: p.legenda.ligada, estilo: p.legenda.estilo, posicaoY: S.preset.legenda.posicao_y } })
+  player.carregar(p, opcoesPlayer(p, blocos))
   $('legendaLigada').checked = p.legenda.ligada
   $('estiloLegenda').value = p.legenda.estilo
   desenharPropostas()
   desenharTexto()
+  desenharInspector()
   if (S.pagina === 'edicao') desenharLinha(blocos)
+}
+
+function opcoesPlayer(p, blocos = blocosDaLegenda(p)) {
+  return { blocos, zooms: zoomsAprovados(p), legenda: { ligada: p.legenda.ligada, estilo: p.legenda.estilo, posicaoY: S.preset.legenda.posicao_y } }
 }
 
 function desenharLinha(blocos) {
@@ -212,6 +268,15 @@ document.addEventListener('drop', async (e) => {
 async function adicionar(entradas) {
   const novas = []
   for (const e of entradas) {
+    // projeto reaberto no navegador: o arquivo de mesmo nome volta para a mídia que já estava no projeto
+    const volta = P()?.midias.find((m) => !S.entradas.has(m.id) && m.nome === e.nome)
+    if (volta) {
+      S.entradas.set(volta.id, e)
+      miniatura(e)
+        .then((c) => c && (S.miniaturas.set(volta.id, c), desenharMidia()))
+        .catch(() => {})
+      continue
+    }
     try {
       const info = await lerInfo(e)
       if (info.temVideo && info.decodificaVideo === false && !info.temAudio) throw new Error('formato de vídeo que este computador não decodifica')
@@ -230,24 +295,33 @@ async function adicionar(entradas) {
       aviso(`${e.nome}: não abre (${err.message}).`)
     }
   }
-  if (!novas.length) return
+  if (!novas.length) return desenharTudo()
   if (!P()) {
     S.h = new Historico(novoProjeto({ midias: novas, preset: S.preset }))
+    S.miniaturaGuardada = null
+  } else if (!P().midias.length) {
+    // projeto novo (vazio): fica com o formato escolhido, ganha as mídias e o nome da primeira se não tinha
+    const p = P()
+    const ms = novas.map((m, i) => ({ cor: corDaMidia(i), ...m, quadros: paraQuadros(m.duracao, p.fps) }))
+    fazer({ ...p, nome: p.semNome ? ms[0].nome.replace(/\.[^.]+$/, '') : p.nome, semNome: undefined, midias: ms, linha: linhaInicial(ms) }, 'adicionar mídia')
   } else {
     const p = P()
     const fps = p.fps
     const ms = novas.map((m, i) => ({ cor: corDaMidia(p.midias.length + i), ...m, quadros: paraQuadros(m.duracao, fps) }))
     fazer({ ...p, midias: [...p.midias, ...ms], linha: { ...p.linha, clipes: [...p.linha.clipes, ...linhaInicial(ms).clipes] } }, 'adicionar mídia')
   }
-  S.salvo = false
+  mudou()
   desenharTudo()
 }
 
 function desenharMidia() {
   const p = P()
-  $('midiaVazia').hidden = Boolean(p)
-  $('midiaCheia').hidden = !p
-  if (!p) return
+  const cheia = Boolean(p?.midias.length)
+  $('midiaVazia').hidden = cheia
+  $('midiaCheia').hidden = !cheia
+  $('universos').hidden = Boolean(p)
+  if (!p) desenharUniversos()
+  if (!cheia) return
   const ul = $('listaMidia')
   ul.replaceChildren(
     ...p.midias.map((m) => {
@@ -557,7 +631,12 @@ function acaoLinha(tipo, ...a) {
     const novo = { ...p, linha: dividir(p.linha, q) }
     if (novo.linha === p.linha) return aviso('Já tem um corte aqui.')
     fazer(novo, 'dividir')
-  } else if (tipo === 'remover') fazer({ ...p, linha: remover(p.linha, a[0]) }, 'apagar clipe')
+  } else if (tipo === 'marcar') {
+    const novo = adicionarMarcador(p, paraQuadros(player.t, p.fps))
+    if (novo === p) return aviso('Já tem um marcador aqui.')
+    fazer(novo, 'marcador')
+  } else if (tipo === 'desmarcar') fazer(removerMarcador(p, a[0]), 'apagar marcador')
+  else if (tipo === 'remover') fazer({ ...p, linha: remover(p.linha, a[0]) }, 'apagar clipe')
   else if (tipo === 'mover') fazer({ ...p, linha: mover(p.linha, a[0], a[1]) }, 'mover clipe')
   else if (tipo === 'etiquetar') fazer({ ...p, linha: etiquetar(p.linha, a[0], a[1]) }, a[1].cor !== undefined ? 'cor do clipe' : 'etiqueta')
   else if (tipo === 'aparar') {
@@ -642,6 +721,130 @@ $('texto').ondblclick = (e) => {
   }
 }
 
+// ───────── painel: abas, Inspector e Histórico ─────────
+
+$('abasPainel').onclick = (e) => {
+  const b = e.target.closest('[data-aba]')
+  if (b) aba(b.dataset.aba)
+}
+function aba(nome) {
+  for (const b of $('abasPainel').children) b.setAttribute('aria-selected', String(b.dataset.aba === nome))
+  for (const sec of document.querySelectorAll('.painel-lateral .aba')) sec.hidden = sec.dataset.aba !== nome
+}
+
+// controles do Inspector: valor na tela ↔ valor no clipe
+const CONTROLES = [
+  { k: 'volume', nome: 'Volume', min: -60, max: 12, passo: 0.5, tela: (v) => v, clipe: (v) => v, rotulo: (v) => `${v > 0 ? '+' : ''}${String(v).replace('.', ',')} dB` },
+  { k: 'opacidade', nome: 'Opacidade', min: 0, max: 100, passo: 1, tela: (v) => Math.round(v * 100), clipe: (v) => v / 100, rotulo: (v) => `${v}%` },
+  { k: 'escala', nome: 'Escala', min: 10, max: 300, passo: 1, tela: (v) => Math.round(v * 100), clipe: (v) => v / 100, rotulo: (v) => `${v}%` },
+  { k: 'x', nome: 'Posição X', min: -100, max: 100, passo: 1, tela: (v) => Math.round(v * 100), clipe: (v) => v / 100, rotulo: (v) => `${v}` },
+  { k: 'y', nome: 'Posição Y', min: -100, max: 100, passo: 1, tela: (v) => Math.round(v * 100), clipe: (v) => v / 100, rotulo: (v) => `${v}` },
+]
+
+function montarInspector() {
+  const sec = $('inspector')
+  sec.innerHTML = `<div class="insp-vazio"><svg><use href="#i-edicao"/></svg><span class="apoio">Escolha um clipe na linha.</span><dl class="insp-projeto"></dl></div><div class="insp-clipe" hidden><div class="insp-cabeca"><span class="insp-cor"></span><span class="insp-nome"><strong></strong><span class="apoio"></span></span></div><div class="insp-controles"></div><button class="link" id="inspRedefinir">Redefinir</button></div>`
+  const caixa = sec.querySelector('.insp-controles')
+  for (const c of CONTROLES) {
+    const l = document.createElement('label')
+    l.className = 'insp-controle'
+    l.innerHTML = `<span class="insp-rotulo"></span><output></output><input type="range" class="deslizar" />`
+    l.querySelector('.insp-rotulo').textContent = c.nome
+    const i = l.querySelector('input')
+    Object.assign(i, { min: c.min, max: c.max, step: c.passo, ariaLabel: c.nome })
+    i.dataset.k = c.k
+    // arrastar: prévia ao vivo (sem entrar no desfazer); soltar: grava uma ação só
+    i.oninput = () => {
+      l.querySelector('output').textContent = c.rotulo(Number(i.value))
+      const p = P()
+      if (p && linha.sel) player.carregar({ ...p, linha: ajustar(p.linha, linha.sel, { [c.k]: c.clipe(Number(i.value)) }) }, opcoesPlayer(p))
+    }
+    i.onchange = () => {
+      const p = P()
+      if (p && linha.sel) fazer({ ...p, linha: ajustar(p.linha, linha.sel, { [c.k]: c.clipe(Number(i.value)) }) }, c.nome.toLowerCase())
+    }
+    i.ondblclick = () => {
+      const p = P()
+      if (p && linha.sel) fazer({ ...p, linha: ajustar(p.linha, linha.sel, { [c.k]: AJUSTES_PADRAO[c.k] }) }, c.nome.toLowerCase())
+    }
+    caixa.append(l)
+  }
+  $('inspRedefinir').onclick = () => {
+    const p = P()
+    if (p && linha.sel) fazer({ ...p, linha: ajustar(p.linha, linha.sel, AJUSTES_PADRAO) }, 'redefinir ajustes')
+  }
+}
+montarInspector()
+
+function desenharInspector() {
+  const p = P()
+  const sec = $('inspector')
+  const c = p && linha.sel ? p.linha.clipes.find((x) => x.id === linha.sel) : null
+  sec.querySelector('.insp-vazio').hidden = Boolean(c)
+  sec.querySelector('.insp-clipe').hidden = !c
+  if (!c) {
+    const dl = sec.querySelector('.insp-projeto')
+    dl.replaceChildren()
+    if (!p) return
+    const n = numeros(p)
+    for (const [k, v] of [
+      ['Formato', `${p.largura}×${p.altura}`],
+      ['Quadros', `${String(Math.round((p.fps.n / p.fps.d) * 1000) / 1000).replace('.', ',')} por segundo`],
+      ['Duração', relogio(n.final)],
+      ['Clipes', String(p.linha.clipes.length)],
+      ['Marcadores', String((p.marcadores || []).length)],
+    ])
+      dl.append(Object.assign(document.createElement('dt'), { textContent: k }), Object.assign(document.createElement('dd'), { textContent: v }))
+    return
+  }
+  const m = midiaPorId(p, c.midia)
+  const cor = c.cor || m?.cor
+  const bola = sec.querySelector('.insp-cor')
+  if (cor) bola.dataset.cor = cor
+  else delete bola.dataset.cor
+  sec.querySelector('.insp-nome strong').textContent = c.etiqueta || m?.nome || 'Clipe'
+  sec.querySelector('.insp-nome .apoio').textContent = `${relogio(paraSegundos(c.ini, p.fps))}–${relogio(paraSegundos(c.fim, p.fps))}${c.etiqueta ? ` · ${m?.nome}` : ''}`
+  const aj = ajustesDe(c)
+  for (const ctl of CONTROLES) {
+    const i = sec.querySelector(`input[data-k="${ctl.k}"]`)
+    const semVideo = ctl.k !== 'volume' && !m?.temVideo
+    i.closest('label').hidden = semVideo || (ctl.k === 'volume' && !m?.temAudio)
+    if (document.activeElement !== i) i.value = String(ctl.tela(aj[ctl.k]))
+    i.closest('label').querySelector('output').textContent = ctl.rotulo(Number(i.value))
+    i.closest('label').classList.toggle('mudado', aj[ctl.k] !== AJUSTES_PADRAO[ctl.k])
+  }
+  $('inspRedefinir').hidden = !c.ajustes
+}
+
+/** Histórico: cada ação com nome; clicar volta (ou avança) até aquele ponto. */
+function desenharHistorico() {
+  const ol = $('historico')
+  const h = S.h
+  if (!h) return ol.replaceChildren()
+  const itens = [{ rotulo: 'Projeto aberto' }, ...h.passado.map((x) => ({ rotulo: x.rotulo })), ...[...h.futuro].reverse().map((x) => ({ rotulo: x.rotulo, futuro: true }))]
+  const atual = h.passado.length
+  ol.replaceChildren(
+    ...itens.map((x, k) => {
+      const li = document.createElement('li')
+      const b = Object.assign(document.createElement('button'), { textContent: x.rotulo ? x.rotulo[0].toUpperCase() + x.rotulo.slice(1) : 'Ação' })
+      if (k === atual) b.setAttribute('aria-current', 'step')
+      if (x.futuro) b.classList.add('futuro')
+      b.onclick = () => irNoHistorico(k)
+      li.append(b)
+      return li
+    }),
+  )
+  ol.querySelector('[aria-current]')?.scrollIntoView({ block: 'nearest' })
+}
+function irNoHistorico(k) {
+  const h = S.h
+  if (!h || k === h.passado.length) return
+  while (h.passado.length > k && h.desfazer() != null);
+  while (h.passado.length < k && h.refazer() != null);
+  mudou()
+  desenharTudo()
+}
+
 // ───────── teclado ─────────
 
 addEventListener('keydown', (e) => {
@@ -673,6 +876,7 @@ addEventListener('keydown', (e) => {
     if (e.key === 'ArrowRight') player.irPara(player.t + passo)
     else if (e.key === 'ArrowLeft') player.irPara(player.t - passo)
     else if (e.key.toLowerCase() === 'b') acaoLinha('dividir')
+    else if (e.key.toLowerCase() === 'm') acaoLinha('marcar')
     else if ((e.key === 'Backspace' || e.key === 'Delete') && linha.sel) acaoLinha('remover', linha.sel)
     else return
     e.preventDefault()
@@ -694,11 +898,11 @@ addEventListener('keydown', (e) => {
 async function salvarAgora() {
   const p = P()
   if (!p) return
+  // o autosave já guarda; ⌘S grava agora e oferece uma cópia em arquivo (para levar a outro computador)
+  clearTimeout(gravarTimer)
+  await autosalvar()
   const nome = await ponte.salvarProjeto(salvar(p), `${nomeArquivo(p.nome)}${PRODUTO.extensao}`)
-  if (nome) {
-    S.salvo = true
-    aviso('Projeto salvo.')
-  }
+  if (nome) aviso('Cópia do projeto salva.')
 }
 
 $('abrirProjetoBtn').onclick = () => $('arquivoProjeto').click()
@@ -709,7 +913,7 @@ $('arquivoProjeto').onchange = async () => {
 }
 
 /** Abre um .zroedit. No desktop a mídia é achada pelo caminho; no navegador, pede os arquivos (pelo nome). */
-async function abrirProjetoDe(texto) {
+async function abrirProjetoDe(texto, { miniatura: mini = null } = {}) {
   let p
   try {
     p = abrir(texto)
@@ -726,13 +930,108 @@ async function abrirProjetoDe(texto) {
   }
   S.h = new Historico(p)
   S.salvo = true
+  S.miniaturaGuardada = mini
+  autosalvar()
   if (faltam.length) aviso(`Escolha de novo: ${faltam.map((m) => m.nome).join(', ')}.`)
   desenharTudo()
   ir(p.propostas.length ? 'revisar' : 'midia')
 }
 
+// ───────── Seus universos: os projetos guardados, novo projeto, fechar ─────────
+
+async function desenharUniversos() {
+  const lista = await projetos.listar().catch(() => [])
+  if (P()) return
+  const ul = $('listaProjetos')
+  $('universos').classList.toggle('sem-projetos', !lista.length)
+  ul.replaceChildren(
+    ...lista.map((r) => {
+      const li = document.createElement('li')
+      li.className = 'cartao-projeto'
+      li.dataset.estado = r.estado
+      li.innerHTML = `<button class="cartao-abrir"><span class="cartao-mini"></span><span class="cartao-corpo"><strong></strong><span class="fichas"></span></span></button><button class="icone-btn cartao-apagar" title="Tirar da lista" aria-label="Tirar da lista"><svg><use href="#i-lixo"/></svg></button>`
+      const mini = li.querySelector('.cartao-mini')
+      if (r.miniatura) mini.append(Object.assign(document.createElement('img'), { src: r.miniatura, alt: '' }))
+      else mini.innerHTML = simbolo({ titulo: false })
+      li.querySelector('strong').textContent = r.nome
+      const ESTADO = { revisar: 'Para revisar', editando: 'Em edição', novo: 'Vazio' }
+      li.querySelector('.fichas').append(
+        ...[projetos.quando(r.atualizado), r.formato, r.duracao ? relogio(r.duracao) : null, ESTADO[r.estado]].filter(Boolean).map((t) => Object.assign(document.createElement('span'), { className: 'ficha', textContent: t })),
+      )
+      li.querySelector('.cartao-abrir').onclick = async () => {
+        const texto = await projetos.ler(r.id)
+        if (texto) abrirProjetoDe(texto, { miniatura: r.miniatura })
+        else aviso('Este projeto não abre mais.')
+      }
+      li.querySelector('.cartao-apagar').onclick = async () => {
+        if (!confirm(`Tirar "${r.nome}" da lista? Os vídeos não são tocados.`)) return
+        await projetos.apagar(r.id)
+        desenharUniversos()
+      }
+      return li
+    }),
+  )
+}
+
+/** Volta para Seus universos (o projeto já está gravado pelo autosave). */
+async function fecharProjeto() {
+  if (!P()) return ir('midia')
+  clearTimeout(gravarTimer)
+  if (!S.salvo) await autosalvar()
+  player.pausar()
+  S.h = null
+  S.entradas.clear()
+  S.dbs.clear()
+  S.miniaturas.clear()
+  S.selProposta = null
+  ir('midia')
+  desenharTudo()
+}
+S.fecharProjeto = fecharProjeto
+
+$('novoProjeto').onclick = () => {
+  $('formNovo').reset()
+  $('folhaNovo').showModal()
+  $('novoNome').focus()
+}
+$('folhaNovo').onclose = () => {
+  if ($('folhaNovo').returnValue !== 'criar') return
+  const [largura, altura] = $('formNovo').formato.value.split('x').map(Number)
+  const nome = $('novoNome').value.trim()
+  S.h = new Historico({ ...novoProjeto({ nome: nome || 'Sem nome', preset: S.preset, fps: Number($('novoFps').value), largura, altura }), ...(nome ? {} : { semNome: true }) })
+  S.miniaturaGuardada = null
+  mudou()
+  desenharTudo()
+}
+
+// renomear: clique no nome do projeto na barra
+$('nomeProjeto').onclick = () => {
+  const s = $('nomeProjeto')
+  if (!P() || s.isContentEditable) return
+  s.contentEditable = 'plaintext-only'
+  s.focus()
+  getSelection().selectAllChildren(s)
+  const fim = (gravar) => {
+    s.contentEditable = 'false'
+    s.onblur = s.onkeydown = null
+    const nome = s.textContent.trim().slice(0, 80)
+    if (gravar && nome && nome !== P().nome) fazer({ ...P(), nome, semNome: undefined }, 'renomear')
+    else s.textContent = P().nome
+  }
+  s.onblur = () => fim(true)
+  s.onkeydown = (ev) => {
+    if (ev.key === 'Enter') {
+      ev.preventDefault()
+      s.blur()
+    } else if (ev.key === 'Escape') fim(false)
+  }
+}
+
 addEventListener('beforeunload', (e) => {
-  if (P() && !S.salvo) e.preventDefault()
+  if (P() && !S.salvo) {
+    autosalvar()
+    e.preventDefault()
+  }
 })
 
 // ───────── entrega ─────────

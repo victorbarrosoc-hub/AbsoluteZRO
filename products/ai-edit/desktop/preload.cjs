@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld('aiEditDesktop', {
   arquivo: { abrir: chamar('arquivo:abrir'), escrever: chamar('arquivo:escrever'), fechar: chamar('arquivo:fechar') },
   salvarProjeto: chamar('projeto:salvar'),
   mostrarNaPasta: chamar('mostrar'),
+  projetos: { listar: chamar('projetos:listar'), gravar: chamar('projetos:gravar'), ler: chamar('projetos:ler'), apagar: chamar('projetos:apagar') },
 })
 
 addEventListener('DOMContentLoaded', () => {

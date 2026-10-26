@@ -3,7 +3,7 @@
 
 import { duracao } from '../linha.js'
 import { racional } from '../tempo.js'
-import { caminhoDa, esc, fileUrl, segmentos } from './comum.js'
+import { caminhoDa, esc, fileUrl, marcadoresDe, segmentos, transformacao } from './comum.js'
 import { PRODUTO } from '../produto.js'
 
 export function paraFcpxml(p) {
@@ -21,13 +21,20 @@ export function paraFcpxml(p) {
   const clipes = segmentos(p)
     .map((s) => {
       const attrs = `ref="${ref.get(s.midia)}" offset="${racional(s.linha, f)}" name="${esc(nome.get(s.midia))}" start="${racional(s.ini, f)}" duration="${racional(s.fim - s.ini, f)}" tcFormat="NDF"`
+      const filhos = []
+      // escala e posição (ajustes do clipe + zoom); posição do FCPXML em % da altura do quadro, a partir do centro, y para cima
+      const tr = transformacao(p, s)
+      if (Math.abs(tr.escala - 1) > 1e-4 || Math.abs(tr.cx) > 0.01 || Math.abs(tr.cy) > 0.01) {
+        const e = Math.round(tr.escala * 10000) / 10000
+        filhos.push(`<adjust-transform position="${((tr.cx / p.altura) * 100).toFixed(3)} ${((-tr.cy / p.altura) * 100).toFixed(3)}" scale="${e} ${e}"/>`)
+      }
+      if (s.ajustes.opacidade !== 1) filhos.push(`<adjust-blend amount="${s.ajustes.opacidade}"/>`)
+      if (s.ajustes.volume !== 0) filhos.push(`<adjust-volume amount="${s.ajustes.volume}dB"/>`)
+      for (const k of marcadoresDe(p, s)) filhos.push(`<marker start="${racional(k.q, f)}" duration="${racional(1, f)}" value="${esc(k.nome)}"/>`)
       // etiqueta vira palavra-chave do clipe (o Final Cut não tem cor de clipe)
-      const chave = s.etiqueta ? `\n              <keyword start="${racional(s.ini, f)}" duration="${racional(s.fim - s.ini, f)}" value="${esc(s.etiqueta)}"/>` : ''
-      if (s.escala === 1) return chave ? `            <asset-clip ${attrs}>${chave}\n            </asset-clip>` : `            <asset-clip ${attrs}/>`
-      // posição do FCPXML: em porcentagem da altura do quadro, a partir do centro (y para cima)
-      const px = ((0.5 - s.foco.x) * (s.escala - 1) * 100 * p.largura) / p.altura
-      const py = (s.foco.y - 0.5) * (s.escala - 1) * 100
-      return `            <asset-clip ${attrs}>\n              <adjust-transform position="${px.toFixed(3)} ${py.toFixed(3)}" scale="${s.escala} ${s.escala}"/>${chave}\n            </asset-clip>`
+      if (s.etiqueta) filhos.push(`<keyword start="${racional(s.ini, f)}" duration="${racional(s.fim - s.ini, f)}" value="${esc(s.etiqueta)}"/>`)
+      if (!filhos.length) return `            <asset-clip ${attrs}/>`
+      return `            <asset-clip ${attrs}>\n${filhos.map((x) => `              ${x}`).join('\n')}\n            </asset-clip>`
     })
     .join('\n')
   const total = racional(duracao(p.linha), f)

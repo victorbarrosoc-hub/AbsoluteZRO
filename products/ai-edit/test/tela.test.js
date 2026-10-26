@@ -1,6 +1,7 @@
 // Telas no Chromium de verdade, com os mesmos cabeçalhos do app de desktop (CSP, isolamento entre origens):
 // autoteste (gravar → ler → silêncio → cortes → exportar → render), o caminho inteiro de quem usa (importar →
-// analisar → revisar e desfazer → editar com cor e etiqueta → corrigir palavra → exportar e renderizar) e o Whisper
+// analisar → revisar e desfazer → editar com cor, etiqueta, Inspector, marcador e Histórico → corrigir palavra →
+// exportar e renderizar → autosave em Seus universos → reabrir), o projeto novo com formato e o Whisper
 // de verdade carregando no navegador. A transcrição do caminho de uso é falsa (um worker trocado pela rota), para o
 // teste não depender de fala gravada; a de verdade tem o teste próprio no fim (precisa de internet uma vez).
 import assert from 'node:assert/strict'
@@ -67,6 +68,8 @@ test('caminho de uso: importar, analisar, revisar, editar com cor e etiqueta, ex
   await pagina.route('**/app/transcricao-worker.js', (rota) =>
     rota.fulfill({
       contentType: 'text/javascript',
+      // a página é isolada (COEP): o worker trocado precisa dos mesmos cabeçalhos, senão o Chrome não o carrega
+      headers: { 'Cross-Origin-Embedder-Policy': 'require-corp', 'Cross-Origin-Resource-Policy': 'same-origin' },
       body: `self.onmessage = ({ data }) => { self.postMessage({ tipo: 'dispositivo', dispositivo: 'wasm' }); self.postMessage({ tipo: 'parcial', feito: 1, total: 2, palavras: [] }); self.postMessage({ tipo: 'pronto', palavras: ${JSON.stringify(falsas)}, dispositivo: 'wasm', segundos: 0.1, carregou: 0 }) }`,
     }),
   )
@@ -111,13 +114,40 @@ test('caminho de uso: importar, analisar, revisar, editar com cor e etiqueta, ex
   assert.equal(await pagina.locator('.linha-conteudo.filtrando').count(), 1)
   // dividir no ponto (B) e desfazer
   const caixa = await pagina.locator('.clipe').first().boundingBox()
-  await pagina.mouse.click(caixa.x + caixa.width / 2, caixa.y - 30)
+  await pagina.mouse.click(caixa.x + caixa.width / 2, caixa.y - 10)
   await pagina.keyboard.press('b')
   assert.equal(await pagina.locator('.clipe').count(), clipes + 1)
   await pagina.keyboard.press('Control+z')
   assert.equal(await pagina.locator('.clipe').count(), clipes)
 
-  // corrigir uma palavra da legenda (dois cliques, Enter)
+  // Inspector: opacidade e escala do clipe selecionado (prévia ao vivo, uma ação no desfazer)
+  await pagina.locator('.clipe').nth(1).click()
+  await pagina.locator('.insp-clipe:not([hidden])').waitFor()
+  await pagina.locator('#inspector input[data-k="opacidade"]').fill('50')
+  await pagina.locator('#inspector input[data-k="escala"]').fill('120')
+  const aj = await pagina.evaluate(() => globalThis.__editor.h.atual.linha.clipes.find((c) => c.ajustes)?.ajustes)
+  assert.deepEqual(aj, { opacidade: 0.5, escala: 1.2 })
+  assert.equal(await pagina.locator('.insp-controle.mudado').count(), 2)
+
+  // marcador no ponto (M) e na régua
+  await pagina.mouse.click(caixa.x + 12, caixa.y - 10)
+  await pagina.keyboard.press('m')
+  await pagina.locator('.marcador').waitFor()
+
+  // Histórico: volta um passo (o marcador some) e avança de novo
+  await pagina.click('#abasPainel [data-aba="historico"]')
+  const passos = pagina.locator('#historico button')
+  const total = await passos.count()
+  assert.ok(total >= 8, `passos: ${total}`)
+  assert.equal(await passos.last().getAttribute('aria-current'), 'step')
+  await passos.nth(total - 2).click()
+  assert.equal(await pagina.locator('.marcador').count(), 0)
+  assert.equal(await pagina.locator('#historico button.futuro').count(), 1)
+  await pagina.locator('#historico button').last().click()
+  await pagina.locator('.marcador').waitFor()
+
+  // corrigir uma palavra da legenda (aba Texto; dois cliques, Enter)
+  await pagina.click('#abasPainel [data-aba="texto"]')
   const palavra = pagina.locator('.palavra', { hasText: 'Bom' })
   await palavra.dblclick()
   await pagina.keyboard.type('Boa')
@@ -137,12 +167,53 @@ test('caminho de uso: importar, analisar, revisar, editar com cor e etiqueta, ex
   const zip = readFileSync(await downloads.find((d) => d.suggestedFilename() === 'fala.zip').path())
   const texto = zip.toString('latin1')
   for (const f of ['fala.xml', 'fala.fcpxml', 'fala.edl', 'fala.srt', 'zro-timeline-ref.json']) assert.ok(texto.includes(f), f)
-  assert.ok(texto.includes('Boa dia!'), 'a correção vai para o SRT')
+  const srt = texto.slice(texto.indexOf('fala.srt'), texto.indexOf('Tchau.'))
+  assert.match(srt, /\nBoa( dia!)?\r?\n/, 'a correção vai para o SRT')
+  assert.doesNotMatch(srt, /Bom/)
   assert.ok(texto.includes('<label2>Mango</label2>'), 'a cor laranja vai como rótulo do Premiere')
+  assert.ok(texto.includes('<adjust-blend amount="0.5"'), 'a opacidade vai para o Final Cut')
+  assert.ok(texto.includes('<marker '), 'o marcador vai para o Final Cut')
+
+  // autosave: Salvo na barra; Seus universos lista o projeto; reabrir pede o vídeo de novo (navegador) e religa pelo nome
+  await pagina.locator('#salvo[data-estado="ok"]').waitFor()
+  await pagina.locator('#menuBotao').click()
+  await pagina.locator('.trilho-item', { hasText: 'Seus universos' }).click()
+  await pagina.locator('.cartao-projeto', { hasText: 'fala' }).waitFor()
+  assert.ok(await pagina.locator('.cartao-projeto img').count(), 'o cartão tem miniatura')
+  await pagina.locator('.cartao-projeto .cartao-abrir').click()
+  await pagina.locator('#nomeProjeto', { hasText: 'fala' }).waitFor()
+  assert.equal(await pagina.evaluate(() => globalThis.__editor.h.atual.marcadores.length), 1)
+  await pagina.click('.dock [data-ir="midia"]')
+  await pagina.setInputFiles('#arquivo', join(dir, 'fala.mp4'))
+  await pagina.waitForFunction(() => globalThis.__editor.entradas.size === 1)
+  assert.equal(await pagina.locator('.cartao-midia').count(), 1, 'o mesmo arquivo religa, não duplica')
 
   // tema claro no seletor
   await pagina.click('#tema')
   assert.equal(await pagina.evaluate(() => document.documentElement.dataset.theme), 'light')
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('projeto novo: nome, formato vertical e quadros; renomear pela barra', async () => {
+  const { pagina, erros } = await abrir()
+  await pagina.click('#novoProjeto')
+  await pagina.fill('#novoNome', 'Reels de outubro')
+  await pagina.locator('.formato', { hasText: '9:16' }).click()
+  await pagina.selectOption('#novoFps', '25')
+  await pagina.click('#novoCriar')
+  await pagina.locator('#nomeProjeto', { hasText: 'Reels de outubro' }).waitFor()
+  const p = await pagina.evaluate(() => globalThis.__editor.h.atual)
+  assert.equal(p.largura, 1080)
+  assert.equal(p.altura, 1920)
+  assert.deepEqual(p.fps, { n: 25, d: 1 })
+  await pagina.getByRole('heading', { name: /Solte o vídeo/ }).waitFor()
+  assert.equal(await pagina.locator('#universos').isHidden(), true)
+  await pagina.click('#nomeProjeto')
+  await pagina.keyboard.type('Reels de novembro')
+  await pagina.keyboard.press('Enter')
+  assert.equal(await pagina.evaluate(() => globalThis.__editor.h.atual.nome), 'Reels de novembro')
+  await pagina.locator('#salvo[data-estado="ok"]').waitFor()
   assert.deepEqual(erros, [])
   await pagina.close()
 })

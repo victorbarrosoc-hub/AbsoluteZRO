@@ -285,6 +285,50 @@ function ipc() {
     return path.basename(r.filePath)
   })
   handle('mostrar', (caminho) => (pastasDeSaida.has(caminho) ? shell.openPath(caminho) : null))
+  // Seus universos: autosave dos projetos na pasta de dados do app (<id>.aeon + <id>.json com o resumo do cartão)
+  const pastaProjetos = () => path.join(app.getPath('userData'), 'projetos')
+  const idSeguro = (id) => {
+    if (typeof id !== 'string' || !/^[0-9a-f-]{8,64}$/i.test(id)) throw new Error('id de projeto inválido')
+    return id
+  }
+  handle('projetos:listar', async () => {
+    const dir = pastaProjetos()
+    let nomes = []
+    try {
+      nomes = (await fsp.readdir(dir)).filter((n) => n.endsWith('.json'))
+    } catch {}
+    const out = []
+    for (const n of nomes) {
+      try {
+        out.push(JSON.parse(await fsp.readFile(path.join(dir, n), 'utf8')))
+      } catch {}
+    }
+    return out.sort((a, b) => String(b.atualizado).localeCompare(String(a.atualizado)))
+  })
+  handle('projetos:gravar', async (id, texto, resumo) => {
+    const dir = pastaProjetos()
+    await fsp.mkdir(dir, { recursive: true })
+    const base = path.join(dir, idSeguro(id))
+    // grava ao lado e troca: um app fechado no meio não deixa o projeto pela metade
+    await fsp.writeFile(base + '.aeon.tmp', String(texto))
+    await fsp.rename(base + '.aeon.tmp', base + '.aeon')
+    await fsp.writeFile(base + '.json.tmp', JSON.stringify(resumo))
+    await fsp.rename(base + '.json.tmp', base + '.json')
+    return true
+  })
+  handle('projetos:ler', async (id) => {
+    try {
+      return await fsp.readFile(path.join(pastaProjetos(), idSeguro(id) + '.aeon'), 'utf8')
+    } catch {
+      return null
+    }
+  })
+  handle('projetos:apagar', async (id) => {
+    const base = path.join(pastaProjetos(), idSeguro(id))
+    await fsp.rm(base + '.aeon', { force: true })
+    await fsp.rm(base + '.json', { force: true })
+    return true
+  })
 }
 
 // ───────── teste de fumaça ─────────

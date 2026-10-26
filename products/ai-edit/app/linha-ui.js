@@ -1,6 +1,7 @@
 // Linha do tempo na tela: régua, clipes (V1), forma de onda (A1), legenda e zoom. Arrastar move o clipe (os outros
 // abrem espaço com mola), as bordas aparam, ⌘/Ctrl + roda (ou pinça) aproxima em volta do ponteiro. Régua e forma de
 // onda são canvases do tamanho da janela, redesenhados na rolagem: a linha pode ter horas sem passar do limite de canvas.
+// Ímã: buscar na régua e aparar grudam nas bordas dos clipes, nos marcadores e no ponto (Alt solta o ímã).
 
 import { posicoes, tamanho } from '../src/linha.js'
 import { paraSegundos, relogio } from '../src/tempo.js'
@@ -11,6 +12,7 @@ const MIN_ESCALA = 1
 const MAX_ESCALA = 600
 const el = (tag, cls, attrs = {}) => Object.assign(document.createElement(tag), cls ? { className: cls } : {}, attrs)
 const reduzir = () => matchMedia('(prefers-reduced-motion: reduce)').matches
+const IMA_PX = 8
 
 export class LinhaUI {
   constructor(raiz, { aoBuscar, aoAcao, aoSelecionar }) {
@@ -27,6 +29,7 @@ export class LinhaUI {
     const barra = el('div', 'linha-barra')
     this.btDividir = el('button', 'icone-btn', { title: 'Dividir no ponto (B)', ariaLabel: 'Dividir', innerHTML: '<svg><use href="#i-lamina"/></svg>' })
     this.btApagar = el('button', 'icone-btn', { title: 'Apagar o clipe (⌫)', ariaLabel: 'Apagar', innerHTML: '<svg><use href="#i-lixo"/></svg>', disabled: true })
+    this.btMarcar = el('button', 'icone-btn', { title: 'Marcador no ponto (M)', ariaLabel: 'Marcador', innerHTML: '<svg><use href="#i-marcador"/></svg>' })
     this.zoom = el('input', 'deslizar', { type: 'range', min: '0', max: '1000', value: '300', ariaLabel: 'Aproximar a linha do tempo', title: 'Aproximar (⌘ + roda)' })
     this.info = el('span', 'apoio linha-info')
     // cor e etiqueta do clipe selecionado (aparecem só com seleção)
@@ -49,9 +52,10 @@ export class LinhaUI {
     this.paleta.append(this.campoEtiqueta)
     this.filtro = el('div', 'filtro-etiquetas', { role: 'group', ariaLabel: 'Filtrar por etiqueta' })
     this.filtroAtivo = null
-    barra.append(this.btDividir, this.btApagar, this.paleta, el('span', 'espaco'), this.filtro, this.info, this.zoom)
+    barra.append(this.btDividir, this.btApagar, this.btMarcar, this.paleta, el('span', 'espaco'), this.filtro, this.info, this.zoom)
     this.btDividir.onclick = () => this.aoAcao('dividir')
     this.btApagar.onclick = () => this.sel && this.aoAcao('remover', this.sel)
+    this.btMarcar.onclick = () => this.aoAcao('marcar')
     this.zoom.oninput = () => this.#aproximar(this.#escalaDoDeslize(Number(this.zoom.value)), this.rolagem.clientWidth / 2)
 
     this.rolagem = el('div', 'linha-rolagem')
@@ -62,8 +66,9 @@ export class LinhaUI {
     this.trilhaL = el('div', 'trilha trilha-l')
     this.trilhaZ = el('div', 'trilha trilha-z')
     this.cabeca = el('div', 'cabeca')
+    this.marcas = el('div', 'trilha-marcas')
     const fundoA = el('div', 'trilha trilha-a')
-    this.conteudo.append(this.regua, this.trilhaV, fundoA, this.onda, this.trilhaL, this.trilhaZ, this.cabeca)
+    this.conteudo.append(this.regua, this.trilhaV, fundoA, this.onda, this.trilhaL, this.trilhaZ, this.marcas, this.cabeca)
     this.rolagem.append(this.conteudo)
     raiz.append(barra, this.rolagem)
 
@@ -82,10 +87,17 @@ export class LinhaUI {
       },
       { passive: false },
     )
+    this.marcas.addEventListener('dblclick', (e) => {
+      const m = e.target.closest('.marcador')
+      if (m) this.aoAcao('desmarcar', m.dataset.id)
+    })
     // clicar na régua ou num espaço vazio: vai até ali
     this.conteudo.addEventListener('pointerdown', (e) => {
       if (e.target.closest('.clipe')) return
-      const buscar = (ev) => this.aoBuscar(Math.max(0, this.#xParaT(ev.clientX)))
+      const buscar = (ev) => {
+        const t = Math.max(0, this.#xParaT(ev.clientX))
+        this.aoBuscar(ev.altKey ? t : this.#imantar(t, false))
+      }
       buscar(e)
       const mover = (ev) => buscar(ev)
       const soltar = () => {
@@ -95,6 +107,28 @@ export class LinhaUI {
       addEventListener('pointermove', mover)
       addEventListener('pointerup', soltar)
     })
+  }
+
+  /** pontos do ímã, em segundos da linha: bordas dos clipes, marcadores e (se pedir) o ponto */
+  #pontos(comPonto) {
+    if (!this.dados) return []
+    const { p } = this.dados
+    const ts = [0]
+    for (const { clipe, inicio } of posicoes(p.linha)) ts.push(paraSegundos(inicio + tamanho(clipe), p.fps))
+    for (const m of p.marcadores || []) ts.push(paraSegundos(m.q, p.fps))
+    if (comPonto) ts.push(this.t)
+    return ts
+  }
+  #imantar(t, comPonto) {
+    let melhor = t
+    let dist = IMA_PX / this.escala
+    for (const x of this.#pontos(comPonto)) {
+      if (Math.abs(x - t) < dist) {
+        dist = Math.abs(x - t)
+        melhor = x
+      }
+    }
+    return melhor
   }
 
   #escalaDoDeslize(v) {
@@ -244,6 +278,14 @@ export class LinhaUI {
         marcas.push(d)
       }
     this.trilhaZ.replaceChildren(...marcas)
+    this.marcas.replaceChildren(
+      ...(p.marcadores || []).map((m) => {
+        const d = el('button', 'marcador', { title: `${m.nome || 'Marcador'} · ${relogio(paraSegundos(m.q, p.fps))} (dois cliques apagam)`, ariaLabel: m.nome || 'Marcador' })
+        d.dataset.id = m.id
+        d.style.left = `${paraSegundos(m.q, p.fps) * e}px`
+        return d
+      }),
+    )
     this.tempo(this.t)
     this.#desenharCanvases()
   }
@@ -338,7 +380,15 @@ export class LinhaUI {
           // aparar: a mudança em quadros, limitada pela mídia e por 1 quadro de clipe
           const c = clipes[i0]
           const q = Math.round((dx / this.escala) * fps)
-          delta = borda.classList.contains('borda-ini') ? Math.max(-c.ini, Math.min(c.fim - c.ini - 1, q)) : Math.max(-(c.fim - c.ini - 1), Math.min(midia.quadros - c.fim, q))
+          const ini = borda.classList.contains('borda-ini')
+          const limitar = (v) => (ini ? Math.max(-c.ini, Math.min(c.fim - c.ini - 1, v)) : Math.max(-(c.fim - c.ini - 1), Math.min(midia.quadros - c.fim, v)))
+          delta = limitar(q)
+          // ímã: a borda que anda na tela é a do fim do clipe (aparar empurra os seguintes)
+          if (!ev.altKey) {
+            const fim = (esquerda0 + largura0) / this.escala + ((ini ? -delta : delta) / fps)
+            const alvoT = this.#imantar(fim, true)
+            if (alvoT !== fim) delta = limitar(delta + Math.round((alvoT - fim) * fps) * (ini ? -1 : 1))
+          }
           const px = (delta / fps) * this.escala
           if (borda.classList.contains('borda-ini')) d.style.width = `${largura0 - px}px`
           else d.style.width = `${largura0 + px}px`
