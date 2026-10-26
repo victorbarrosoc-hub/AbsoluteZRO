@@ -1,6 +1,8 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
+import { navAction } from '@/lib/actions/account'
 import { Icon, type IconName } from './icons'
 
 type Item = { href: string; label: string; icon: IconName }
@@ -23,7 +25,7 @@ const GROUPS: { label: string; items: Item[] }[] = [
     items: [
       { href: '/equipe', label: 'Equipe', icon: 'team' },
       { href: '/assinatura', label: 'Assinatura e consumo', icon: 'card' },
-      { href: '/perfil', label: 'Perfil e segurança', icon: 'user' },
+      { href: '/perfil', label: 'Sua conta', icon: 'user' },
     ],
   },
 ]
@@ -37,9 +39,9 @@ export function Nav({ admin }: { admin: boolean }) {
         <div key={g.label} className="nav__group">
           <p className="nav__label">{g.label}</p>
           {g.items.map((i) => (
-            <Link key={i.href} href={i.href} aria-current={path === i.href || path.startsWith(i.href + '/') ? 'page' : undefined}>
+            <Link key={i.href} href={i.href} title={i.label} aria-current={path === i.href || path.startsWith(i.href + '/') ? 'page' : undefined}>
               <Icon name={i.icon} />
-              {i.label}
+              <span className="nav__text">{i.label}</span>
             </Link>
           ))}
         </div>
@@ -51,4 +53,75 @@ export function Nav({ admin }: { admin: boolean }) {
 export function BackPath() {
   const path = usePathname()
   return <input type="hidden" name="back" value={path} />
+}
+
+export type NavMode = 'auto' | 'rail' | 'full'
+
+/** Em telas médias (até 1200 px) o modo automático já começa recolhido. */
+const RAIL_AUTO = '(min-width: 901px) and (max-width: 1200px)'
+
+/**
+ * Recolhe ou abre o menu lateral. Troca na hora (atributo no .shell + cookie) e lembra a escolha.
+ * Atalho: ⌘ + \ (Ctrl + \ no Windows). Sem JavaScript, o formulário grava pelo servidor.
+ */
+export function NavToggle({ initial }: { initial: NavMode }) {
+  const [rail, setRail] = useState(initial === 'rail')
+
+  useEffect(() => {
+    const shell = document.querySelector<HTMLElement>('.shell')
+    if (shell?.dataset.nav === 'auto') setRail(window.matchMedia(RAIL_AUTO).matches)
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === '\\' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault()
+        toggle()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  function toggle(e?: MouseEvent) {
+    e?.preventDefault()
+    const shell = document.querySelector<HTMLElement>('.shell')
+    if (!shell) return
+    const isRail = shell.dataset.nav === 'rail' || (shell.dataset.nav === 'auto' && window.matchMedia(RAIL_AUTO).matches)
+    const next = isRail ? 'full' : 'rail'
+    shell.dataset.nav = next
+    document.cookie = `zro_nav=${next}; path=/; max-age=31536000; samesite=lax`
+    setRail(next === 'rail')
+  }
+
+  const label = rail ? 'Abrir menu' : 'Recolher menu'
+  return (
+    <form action={navAction} className="nav-toggle">
+      <BackPath />
+      <button
+        type="submit"
+        name="nav"
+        value={rail ? 'full' : 'rail'}
+        className="icon-btn"
+        aria-label={label}
+        aria-expanded={!rail}
+        title={`${label} (⌘ \\)`}
+        onClick={toggle}
+      >
+        <Icon name="sidebar" />
+      </button>
+    </form>
+  )
+}
+
+/** Menu do celular: fecha sozinho quando a página muda. */
+export function MobileMenu({ children, summary }: { children: ReactNode; summary: ReactNode }) {
+  const ref = useRef<HTMLDetailsElement>(null)
+  const path = usePathname()
+  useEffect(() => {
+    if (ref.current) ref.current.open = false
+  }, [path])
+  return (
+    <details className="mobile-nav" ref={ref}>
+      <summary>{summary}</summary>
+      <div className="mobile-nav__body">{children}</div>
+    </details>
+  )
 }

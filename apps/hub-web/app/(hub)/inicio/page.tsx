@@ -43,7 +43,7 @@ export default async function Inicio() {
 
       {!auth.user.emailVerified && (
         <Notice tone="warn" title="Confirme seu e-mail">
-          Sem confirmar, você não aceita convites nem convida pessoas. <Link href="/perfil">Reenviar link</Link>
+          Sem confirmar, você não aceita convites nem convida pessoas. <Link href="/perfil/seguranca">Reenviar link</Link>
         </Notice>
       )}
 

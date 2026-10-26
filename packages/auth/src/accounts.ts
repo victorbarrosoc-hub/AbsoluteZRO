@@ -150,6 +150,74 @@ export async function resetPassword(db: Database, token: string, newPassword: st
   })
 }
 
+/** A conta tem senha? (Quem só entra pelo Google não tem até criar uma pelo "Esqueci a senha".) */
+export async function hasPassword(db: Database, userId: string): Promise<boolean> {
+  const [row] = await db.asSystem('auth: conta tem senha', (tx) => tx`select 1 from zro.auth_credentials where user_id = ${userId}`)
+  return Boolean(row)
+}
+
+/**
+ * Pede a troca de e-mail: confere a senha e devolve um link de uso único para o servidor mandar ao endereço NOVO.
+ * Nada muda até a confirmação; o e-mail atual continua valendo.
+ */
+export async function requestEmailChange(db: Database, userId: string, password: string, rawEmail: string): Promise<{ email: string; token: string }> {
+  const email = normalizeEmail(rawEmail)
+  const problem = validateEmail(email)
+  if (problem) throw new DomainError('invalid_input', problem)
+  const key = `email-change:${userId}`
+  const [row] = await db.asSystem('auth: trocar e-mail (limite e credencial)', async (tx) => {
+    if (!(await withinLimit(tx, key, RULES.emailChange))) throw new DomainError('rate_limited', LIMIT_MESSAGE)
+    return tx`select u.email, c.password_hash from zro.users u left join zro.auth_credentials c on c.user_id = u.id where u.id = ${userId}`
+  })
+  if (!row) throw new DomainError('unauthenticated', 'Entre na sua conta.')
+  if (!row.password_hash) throw new DomainError('invalid_input', 'Sua conta entra pelo Google. Crie uma senha em "Esqueci a senha" antes de trocar o e-mail.')
+  if (!(await verifyPassword(password, row.password_hash as string))) {
+    await db.asSystem('auth: trocar e-mail recusado', (tx) => registerAttempt(tx, key))
+    throw new DomainError('unauthenticated', 'Senha incorreta.')
+  }
+  if (email === row.email) throw new DomainError('invalid_input', 'Esse já é o seu e-mail.')
+  return db.asSystem('auth: pedir troca de e-mail', async (tx) => {
+    await registerAttempt(tx, key)
+    const [taken] = await tx`select 1 from zro.users where email = ${email}`
+    if (taken) throw new DomainError('conflict', 'Esse e-mail já está em outra conta.')
+    const token = newToken('zm')
+    await tx`insert into zro.auth_tokens (user_id, purpose, token_hash, expires_at, new_email)
+             values (${userId}, 'change_email', ${hashToken(token)}, ${new Date(Date.now() + VERIFY_TTL_MS)}, ${email})`
+    await audit(tx, { actorUserId: userId, action: 'account.email_change_requested', targetType: 'user', targetId: userId })
+    return { email, token }
+  })
+}
+
+/**
+ * Confirma a troca pelo link mandado ao endereço novo. O e-mail novo já nasce confirmado, os links de nova senha
+ * pendentes (mandados ao endereço antigo) deixam de valer e as outras trocas pedidas são descartadas.
+ * Devolve o endereço antigo, para o aviso de segurança.
+ */
+export async function confirmEmailChange(db: Database, token: string): Promise<{ userId: string; oldEmail: string; email: string } | null> {
+  if (!TOKEN_FORMAT.changeEmail.test(token)) return null
+  return db.asSystem('auth: confirmar troca de e-mail', async (tx) => {
+    const [t] = await tx`
+      update zro.auth_tokens set used_at = now()
+      where token_hash = ${hashToken(token)} and purpose = 'change_email' and used_at is null and expires_at > now()
+      returning user_id, new_email`
+    if (!t) return null
+    const userId = t.user_id as string
+    const email = t.new_email as string
+    const [u] = await tx`select email from zro.users where id = ${userId} and status = 'active' for update`
+    if (!u) return null
+    try {
+      await tx.savepoint((sp) => sp`update zro.users set email = ${email}, email_verified_at = now() where id = ${userId}`)
+    } catch (e) {
+      if (pgErrorCode(e) === PG.uniqueViolation)
+        throw new DomainError('conflict', 'Esse e-mail passou a ser de outra conta. Peça a troca de novo com outro endereço.')
+      throw e
+    }
+    await tx`update zro.auth_tokens set used_at = now() where user_id = ${userId} and used_at is null and purpose in ('reset_password', 'change_email')`
+    await audit(tx, { actorUserId: userId, action: 'account.email_changed', targetType: 'user', targetId: userId })
+    return { userId, oldEmail: u.email as string, email }
+  })
+}
+
 export async function changePassword(db: Database, userId: string, sessionId: string, current: string, next: string): Promise<void> {
   const problem = validatePassword(next)
   if (problem) throw new DomainError('invalid_input', problem)

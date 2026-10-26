@@ -45,6 +45,11 @@ paths:
     post: { summary: Sair (revoga a sessão), responses: { '200': { description: ok } } }
   /api/v1/me:
     get: { summary: Pessoa, organização ativa e organizações, responses: { '200': { description: ok }, default: { $ref: '#/components/responses/Error' } } }
+  /api/v1/users/{id}/avatar:
+    get:
+      summary: Foto do perfil (a própria ou de quem está na organização ativa; muda de endereço com ?v=)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: imagem (webp, jpeg ou png) }, '404': { $ref: '#/components/responses/Error' } }
   /api/v1/organizations:
     get: { summary: Minhas organizações, responses: { '200': { description: ok } } }
     post: { summary: Criar organização (a pessoa vira dona), responses: { '201': { description: criada }, default: { $ref: '#/components/responses/Error' } } }

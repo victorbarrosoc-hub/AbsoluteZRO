@@ -411,3 +411,23 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   barra, selo de pronto, ícone que respira ao arrastar.
 - `products/finishing`: `npm test` (**35/35**), testes de tela ajustados (fichas, miniatura não vazia, caixa
   compacta, grupos de rádio com nome). Desktop 1280 e celular 390 sem rolagem lateral e sem erro de console.
+
+## HUB: menu recolhível, tela inteira e central da conta (26/10/2026)
+
+- Pedido do titular: menu lateral recolhível, melhor uso da tela de cada aparelho e uma central de administração da
+  conta (senha, e-mail, foto, plano, acessos).
+- Raiz: `npm run lint`, `format:check`, `typecheck` ok; `npm test` **125/125** em 15 arquivos (novo
+  `account-center.test.ts`, 12 testes: troca de e-mail só depois de confirmada pelo endereço novo, senha atual
+  exigida, e-mail de outra conta recusado, links de nova senha antigos derrubados, conta só Google sem troca; nome pelo
+  `zro_app`; foto pelo tipo real dos bytes, até 300 KB, visível só a quem divide organização, RLS contra escrita em
+  nome de outra pessoa; pedidos de plano só por dono/administração/financeiro, um aberto por plano, editor e outra
+  organização não veem nem criam, a pessoa não marca o próprio pedido como atendido, renovação exige plano pago; resumo
+  de acessos com plano só para a cobrança). `npm run build` ok (72 rotas). `npm run test:e2e` **18/18** (novos: menu
+  recolhe, lembra no recarregar e não vale no celular, que usa uma barra só e fecha a folha ao navegar; conta com nome,
+  foto reduzida para WebP no navegador e servida em `/api/v1/users/{id}/avatar`, pedido de upgrade e acessos; axe
+  WCAG 2.1 A/AA nas quatro seções da conta, claro e escuro). `scan-secrets`: nada em 1774 arquivos.
+- Conferido em screenshot: 1440 px aberto e recolhido, as quatro seções da conta, e 390 px com a faixa de seções e a
+  folha do menu.
+- Não validado: envio real do e-mail de troca (sem provedor de e-mail, a tela avisa e mostra o link só em
+  desenvolvimento); fotos HEIC em iPhone real (o navegador pode não abrir; o servidor recusa o que não for JPG, PNG ou
+  WebP).
