@@ -15,7 +15,7 @@ import { createHash, createHmac, createPublicKey, hkdfSync, randomBytes, timingS
 
 export const EMISSOR_PADRAO = 'https://absolutezro.com'
 export const ESCOPOS = 'openid email profile org'
-export const SITE = 'https://revela-zro.vercel.app'
+export const SITE = 'https://revela.absolutezro.com'
 export const COOKIE_IDA = 'rv_zro'
 export const COOKIE_CONTA = 'rv_conta'
 export const IDA_S = 600
@@ -41,7 +41,7 @@ export function origemPermitida(req) {
     .split(',')[0]
     .trim()
     .toLowerCase()
-  if (host === 'revela-zro.vercel.app') return SITE
+  if (host === 'revela.absolutezro.com') return SITE
   if (/^(localhost|127\.0\.0\.1)(:\d{1,5})?$/.test(host)) return `http://${host}`
   return SITE
 }

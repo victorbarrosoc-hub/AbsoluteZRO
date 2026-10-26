@@ -44,5 +44,18 @@
         }
       ]
     }
+  ],
+  "redirects": [
+    {
+      "source": "/:caminho*",
+      "has": [
+        {
+          "type": "host",
+          "value": "revela-zro.vercel.app"
+        }
+      ],
+      "destination": "https://revela.absolutezro.com/:caminho*",
+      "permanent": true
+    }
   ]
 }
