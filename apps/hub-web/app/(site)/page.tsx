@@ -117,7 +117,7 @@ export default async function Landing() {
                   title={`${p.name as string} · ${p.role_in_flow as string}`}
                 >
                   <span className="zorbit__chip">
-                    <ProductMark productId={p.id as string} name={p.name as string} size={44} />
+                    <ProductMark productId={p.id as string} name={p.name as string} size={58} />
                   </span>
                   <span className="zorbit__name">{p.name as string}</span>
                 </li>
