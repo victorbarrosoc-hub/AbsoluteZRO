@@ -564,3 +564,16 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   no seu editor"; cartão do CST. Sem "grátis" no texto (PRD §9.1: não assumir preço nem teste grátis).
 - `products/finishing`: `npm test` **78/78**.
 - Não validado: o .xmp aberto num Lightroom real (Classic e celular) e a semelhança dele com a LUT.
+
+## AEON: marca, Seus universos, Inspector, Histórico e site (26/10/2026)
+
+- `products/ai-edit`: `npm test` (unidade, exportadores com xmllint e JSON Schema, SOBEDESCE, instaladores) **27/27**;
+  telas no Chromium **4/4** (+1 que baixa o Whisper, pulada sem rede): caminho inteiro com Inspector (opacidade e
+  escala viram uma ação no desfazer e vão para o FCPXML), marcador (M) e Histórico (volta e avança), autosave em Seus
+  universos, reabrir e religar o vídeo pelo nome, projeto novo 9:16 a 25 qps e renomear. Smoke do Electron ok.
+- Marca: geometria em `src/marca.js` (hipérboles), conferida lado a lado com a prancha do titular; letras do nome em
+  contorno da Montserrat SemiBold (OFL) por `scripts/letras.py`.
+- Site: telas do app tiradas por `scripts/telas.mjs` (o app de verdade, com vídeos de demonstração gravados das imagens
+  do Higgsfield e transcrição trocada por roteiro fixo, porque a fala sintética não tem palavras). Conferido em escuro,
+  claro e 390 px de largura.
+- Não validado: o app no navegador em Safari e Firefox (precisa de WebCodecs; o site indica Chrome ou Edge).
