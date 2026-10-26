@@ -564,3 +564,15 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   no seu editor"; cartão do CST. Sem "grátis" no texto (PRD §9.1: não assumir preço nem teste grátis).
 - `products/finishing`: `npm test` **78/78**.
 - Não validado: o .xmp aberto num Lightroom real (Classic e celular) e a semelhança dele com a LUT.
+
+## Página inicial: símbolo e órbita (26/10/2026)
+
+- `BrandSymbol` (anel em traço + centelha da `ZRO_SIMBOLO`) e `PointerTilt` (variáveis CSS, só mouse/caneta, nada
+  com "reduzir movimento"). Órbita com classes `zorbit` para não colidir com a órbita do Início do HUB.
+- Conferido em 1440×900 e 390×844, claro e escuro, e com "reduzir movimento" (forma flat parada, sem rolagem
+  horizontal).
+- `a11y.spec.ts` termina as animações de entrada (finitas, de tempo) antes do axe, que mede o contraste final;
+  as infinitas e as de rolagem ficam como estão.
+- `npm test` **140/140**; `npm run test:e2e` **20/20**.
+- Não validado: Safari e Firefox sem `animation-timeline` (caem na versão sem órbita animada, conferida só no
+  Chromium com reduzir movimento).
