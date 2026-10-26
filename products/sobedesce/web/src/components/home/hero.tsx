@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, Download, Smartphone } from "lucide-react";
 import { buttonClasses } from "@/components/ui/button";
 import { DOWNLOAD_MAC, DOWNLOAD_WINDOWS, ROTAS } from "@/lib/site";
+import { CompatStrip } from "./compat-strip";
 import { HeroStage } from "./hero-stage";
 
 /**
@@ -65,6 +66,9 @@ export function Hero() {
               Criar conta
               <ArrowRight aria-hidden="true" />
             </Link>
+          </div>
+          <div className="animate-rise [animation-delay:300ms]">
+            <CompatStrip />
           </div>
         </div>
 

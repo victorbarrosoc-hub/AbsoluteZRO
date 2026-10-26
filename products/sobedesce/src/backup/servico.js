@@ -14,6 +14,7 @@ import { DiscosService } from '../discos/servico.js'
 import { nomeDePasta } from '../discos/planejar.js'
 import { listarVolumes, ejetar as ejetarVolume } from './volumes.js'
 import { lerCamera } from './camera.js'
+import { TIPOS_SYNQUEI, linkSynquei, tipoSynquei } from './synquei.js'
 
 const VIGIA_MS = 3000
 const HISTORICO_MAX = 500
@@ -106,6 +107,8 @@ function normalizarProjeto(p) {
     nome: String(p.nome || 'Projeto'),
     destinos: Array.isArray(p.destinos) ? p.destinos.filter((d) => typeof d === 'string') : [],
     ejetar: p.ejetar === true,
+    // Tipo de projeto no Synquei (videoclipe, casamento…): vai no descargas.jsonl e no "Abrir no Synquei".
+    tipo: tipoSynquei(p.tipo),
     criadoEm: p.criadoEm || new Date().toISOString(),
     diarias: Array.isArray(p.diarias) && p.diarias.length ? p.diarias : [{ n: 1, nome: 'Diária 01', criadaEm: new Date().toISOString() }],
     diaria: Number(p.diaria) || 1,
@@ -220,6 +223,7 @@ export class BackupService {
         id: p.id,
         nome: p.nome,
         ejetar: p.ejetar,
+        tipo: p.tipo,
         destinos: p.destinos.map((c) => {
           const agora = this.destinosAgora.find((x) => x.caminho === c)
           return { caminho: c, nome: path.basename(c) || c, conectado: agora ? agora.conectado : null, livre: agora?.livre ?? null, total: agora?.total ?? null }
@@ -267,6 +271,7 @@ export class BackupService {
           }
         : null,
       ultimo: this.ultimo,
+      tiposSynquei: TIPOS_SYNQUEI,
     }
   }
 
@@ -291,11 +296,11 @@ export class BackupService {
 
   // ───── projetos ─────
 
-  async criarProjeto({ nome, destinos, ejetar = false, ligar = true } = {}) {
+  async criarProjeto({ nome, destinos, ejetar = false, ligar = true, tipo = null } = {}) {
     if (this.job) throw new BackupError(409, 'Espere a descarga de agora terminar.')
     const n = nomeDePasta(nome)
     if (!n) throw new BackupError(400, 'Dê um nome ao projeto.')
-    const p = normalizarProjeto({ id: novoId('prj'), nome: n, destinos: validarDestinos(destinos), ejetar: ejetar === true })
+    const p = normalizarProjeto({ id: novoId('prj'), nome: n, destinos: validarDestinos(destinos), ejetar: ejetar === true, tipo })
     this.dados.projetos.unshift(p)
     this.dados.atual = p.id
     // Quem cria o projeto quer espetar o cartão em seguida: já liga (a tela mostra a chave para desligar).
@@ -307,7 +312,7 @@ export class BackupService {
     return this.view()
   }
 
-  async editarProjeto(id, { nome, destinos, ejetar } = {}) {
+  async editarProjeto(id, { nome, destinos, ejetar, tipo } = {}) {
     const p = this.dados.projetos.find((x) => x.id === id)
     if (!p) throw new BackupError(404, 'Projeto não encontrado.')
     if (this.job && this.dados.atual === id && (nome !== undefined || destinos !== undefined)) throw new BackupError(409, 'Espere a descarga de agora terminar para mudar o nome ou os destinos.')
@@ -321,6 +326,7 @@ export class BackupService {
       this.#reiniciarVistos()
     }
     if (ejetar !== undefined) p.ejetar = ejetar === true
+    if (tipo !== undefined) p.tipo = tipoSynquei(tipo)
     await this.#salvar()
     this.#mudou(true)
     return this.view()
@@ -903,6 +909,7 @@ export class BackupService {
         quando: entrada.quando,
         data: entrada.data,
         projeto: p.nome,
+        ...(p.tipo ? { tipo: p.tipo } : {}),
         diaria: { n: diaria.n, nome: diaria.nome },
         dono: { id: dono.id, nome: dono.nome || '', camera: dono.camera || '', pasta: pastaDono(dono) },
         cartao: { n, nome: entrada.cartao, volId: entrada.volId, pasta: [diaria.nome, 'Cenas', pastaDono(dono), pasta].join('/') },
@@ -920,6 +927,23 @@ export class BackupService {
         console.error('[backup] não consegui gravar o resumo do cartão em', dir, err?.message || err)
       }
     }
+  }
+
+  /**
+   * "Abrir no Synquei": a pasta do projeto no primeiro destino que já tem o resumo (descargas.jsonl) e o link que o
+   * Synquei abre. Sem descarga gravada ainda, não há o que organizar.
+   */
+  async paraSynquei(id = this.dados.atual) {
+    const p = this.dados.projetos.find((x) => x.id === id)
+    if (!p) throw new BackupError(404, 'Projeto não encontrado.')
+    const projeto = nomeDePasta(p.nome) || 'Projeto'
+    for (const d of p.destinos) {
+      const pasta = path.join(d, projeto)
+      try {
+        if ((await fsp.stat(path.join(pasta, RESUMO_PASTA, RESUMO_ARQUIVO))).isFile()) return { pasta, tipo: p.tipo, link: linkSynquei(pasta, p.tipo) }
+      } catch {}
+    }
+    throw new BackupError(409, 'Nenhum cartão deste projeto foi conferido ainda (ou o destino está desconectado).')
   }
 
   async close() {

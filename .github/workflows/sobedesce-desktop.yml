@@ -26,6 +26,8 @@ on:
       - '!products/sobedesce/docs/**'
       - '!**/*.md'
       - '.github/workflows/sobedesce-desktop.yml'
+      # os tipos de projeto do "Abrir no Synquei" têm de bater com os do Synquei (test/synquei-ponte.test.js)
+      - 'products/synquei/app/js/tipos.js'
   workflow_dispatch:
 
 # A contagem de execuções recomeça do 1 neste repositório; o último build do repositório antigo foi o b379.

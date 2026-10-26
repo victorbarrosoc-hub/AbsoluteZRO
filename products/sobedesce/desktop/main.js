@@ -10,6 +10,7 @@ import { responderCofre } from './cofre.js'
 import { AVISO_COOKIES, marcarAvisado, migrarCookies, precisaAvisar } from './cookies-cifrados.js'
 import { abrirNavegador, cookiesPara, fecharNavegador, registrarCanais } from './navegador.js'
 import { handoffCommand, isHandoffScript } from '../src/updater.js'
+import { SYNQUEI_BAIXAR } from '../src/backup/synquei.js'
 import { ligarZoom } from './zoom.js'
 
 const here = import.meta.dirname
@@ -416,6 +417,18 @@ ipcMain.on('sobedesce:notify', (event, { title, body } = {}) => {
 
 ipcMain.handle('sobedesce:open-external', (event, url) => {
   if (trustedSender(event, engineUrl)) openExternal(url)
+})
+
+// "Abrir no Synquei" (src/backup/synquei.js): só o link synquei://organizar. Sem o Synquei instalado, abre a página
+// de download dele e devolve false (a tela avisa).
+ipcMain.handle('sobedesce:abrir-synquei', async (event, link) => {
+  if (!trustedSender(event, engineUrl) || typeof link !== 'string' || !link.startsWith('synquei://organizar?')) return false
+  if (!app.getApplicationNameForProtocol('synquei://')) {
+    openExternal(SYNQUEI_BAIXAR)
+    return false
+  }
+  await shell.openExternal(link)
+  return true
 })
 
 // Só estes endereços fixos (openExternal só abre http/https): Rede Local e Firewall nos Ajustes do Sistema.

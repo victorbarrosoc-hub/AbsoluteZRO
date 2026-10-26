@@ -130,3 +130,12 @@ o `vol` no Windows em português e o ejetar.
   livre ou menos de 2 cartões: fica em laranja. O espaço é lido a cada varredura (3 s).
 - **Já passou:** o total do projeto (GB, cartões e arquivos, somando todas as diárias) e o da diária atual. O total do
   projeto fica guardado no `backup-automatico.json` (projetos antigos somam pelo histórico).
+
+## Abrir no Synquei
+
+- **Tipo no Synquei** (opcional, no projeto): videoclipe, casamento, show… (os mesmos de `products/synquei/app/js/tipos.js`;
+  `test/synquei-ponte.test.js` confere). Vai em cada linha do `descargas.jsonl` (`tipo`) e no link.
+- Com o cartão OK, o painel mostra **Abrir no Synquei**. O motor (`POST /api/backup/synquei`) acha a pasta do projeto no
+  primeiro destino que já tem o `descargas.jsonl` e monta `synquei://organizar?pasta=…&tipo=…` (`src/backup/synquei.js`).
+- No app, a ponte (`sobedesce:abrir-synquei`) confere se o Synquei está instalado; sem ele, abre a página de download.
+- O Synquei pergunta antes de adicionar a pasta e não move nem renomeia nada (`products/synquei/desktop/link-organizar.cjs`).

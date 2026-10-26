@@ -498,6 +498,8 @@ loadIndex()
 render()
 iniciarAtualizacao()
 iniciarOrganizar().catch((err) => console.error('organizar:', err))
+// "Abrir no Synquei" do SOBEDESCE: a pasta acabou de entrar no Organizar
+globalThis.synqueiDesktop?.organizar?.onAbrir?.(() => go('organizar', true))
 // Organizar: a tela redesenha quando chega cartão ou muda o DaVinci; a barra lateral mostra a fila
 document.addEventListener('synquei:organizar-mudou', () => (S.route === 'organizar' ? render() : chrome()))
 document.addEventListener('synquei:montagem-mudou', () => S.route === 'sfx' && render())

@@ -589,3 +589,29 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   .xmp num Lightroom real.
 - Não feito, por depender de outros apps: entrega da Revela subindo pelo SOBEDESCE com MD5 e `delivery.ready` no HUB;
   desconto de `zro.ai_credits` (a Revela não usa GPU de servidor).
+
+## SOBEDESCE: Abrir no Synquei, ficha de compatibilidade e prova medida (26/10/2026)
+
+- Abrir no Synquei: `products/sobedesce/test/synquei-ponte.test.js` (tipos iguais aos do Synquei, link só com pasta
+  absoluta e tipo conhecido, cartão Sony falso copiado de verdade → `tipo` no `descargas.jsonl` → link com a pasta do
+  projeto; sem cartão conferido, 409). Synquei: `tests/link-organizar.test.mjs` (link válido, recusa de pasta relativa,
+  outro host e outro esquema, link no argv do Windows) e `tests/organizador.test.mjs` (tipo do resumo vale até a pasta
+  ter um escolhido no Synquei; tipo desconhecido é ignorado).
+- Ficha de compatibilidade no topo da página inicial do site (Mac, Windows, iPhone e Android, Google Drive, cartões e
+  HDs): só o que o README e o `electron-builder.yml` dizem. `npm run lint` e `npm run typecheck` do site sem erro.
+- Prova medida: o script mede, não estima. Não rodou aqui (sem Drive real nem rede de casa): os seletores do botão de
+  download do Drive precisam ser conferidos na primeira medição; se falharem, o script aceita o tempo medido à mão e
+  registra isso no JSON.
+- Não validado: o protocolo `synquei://` num Mac e num Windows reais (registro pelo instalador, `open-url`, segundo
+  processo no Windows) e o aviso "Instale o Synquei" quando ele não está no computador.
+
+### Roteiro: "Converter com a Revela" em aparelhos reais (a fazer)
+
+| Aparelho                                | O que conferir                                                                                                   |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Mac (Apple Silicon e Intel)             | Converter um vídeo do Drive para cada destino; arquivo novo ao lado do original; MD5 conferido; original intacto |
+| Windows 10/11                           | O mesmo, com ffmpeg do pacote                                                                                    |
+| iPhone (Safari e app na tela de início) | Converter pelo celular; progresso, cancelar e erro com mensagem clara                                            |
+| Android (Chrome)                        | O mesmo do iPhone                                                                                                |
+
+Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
