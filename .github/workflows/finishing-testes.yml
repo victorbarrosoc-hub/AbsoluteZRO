@@ -30,7 +30,7 @@ jobs:
   testes:
     name: Testes
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -40,7 +40,9 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: products/finishing/package-lock.json
-      - run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+      # só o ffmpeg e o que ele exige (sem drivers de vídeo e reconhecimento de voz recomendados): o espelho do apt às
+      # vezes fica lento e a lista completa (~94 MB) estourava o tempo do job
+      - run: sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends -o Acquire::Retries=3 ffmpeg
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm test

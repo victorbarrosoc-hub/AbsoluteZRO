@@ -564,3 +564,12 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   no seu editor"; cartão do CST. Sem "grátis" no texto (PRD §9.1: não assumir preço nem teste grátis).
 - `products/finishing`: `npm test` **78/78**.
 - Não validado: o .xmp aberto num Lightroom real (Classic e celular) e a semelhança dele com a LUT.
+
+## Revela: CST no Converter (26/10/2026)
+
+- "Log da câmera" no Converter: cada quadro passa por uma LUT 3D do CST (65³, WebGL2) antes de codificar; o shader
+  desfaz a faixa de vídeo antes da curva. Produção conferida depois do merge do #38 (exemplo, Revela Look, CST e
+  Converter abrindo sem erro em revela-zro.vercel.app).
+- `products/finishing`: `npm test` **79/79**. Teste novo: ProRes com cinza no código do S-Log3 vira MP4 H.264 com o
+  cinza em ~124 (Y de 8 bits, o cinza 18% do Rec.709; sem o CST ficaria perto de 105) e marcado BT.709.
+- Não validado: arquivos reais de cada câmera e o desempenho em celulares.
