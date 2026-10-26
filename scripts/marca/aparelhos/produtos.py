@@ -1,7 +1,7 @@
 # Mockups dos apps para o site (Padrão Apple, 25/10/2026): capturas reais (Playwright, 1440x916 e 390x860 @2x,
 # tema claro e escuro) num MacBook + iPhone de tela verde. Uso: python3 produtos.py <pasta-das-capturas>
 # Nomes esperados na pasta: hub-{mac,iph}-{light,dark}.png, sobedesce-..., synquei-app-..., nossom-..., tpeasy-home-mac-light.png,
-# tpeasy-doc-iph-..., carro-mac-..., carro-iph-light.png. O verde vira cinza fora das telas (despill).
+# tpeasy-doc-iph-..., carro-mac-..., carro-iph-light.png, aeon-..., revela-.... O verde vira cinza fora das telas (despill).
 # Só alguns apps: python3 produtos.py <pasta> hub
 import os, subprocess, sys
 import numpy as np
@@ -19,6 +19,9 @@ M={
  'nossom':lambda s:(f'{CAP}/nossom-mac-{s}.png',f'{CAP}/nossom-iph-{s}.png'),
  'tpeasy':lambda s:(CAP+'/tpeasy-home-mac-light.png',f'{CAP}/tpeasy-doc-iph-{s}.png'),
  'carro-do-freela':lambda s:(f'{CAP}/carro-mac-{s}.png',CAP+'/carro-iph-light.png'),
+ # AEON e Revela: o site no ar (aeon-/revela-{mac,iph}-{light,dark}.png), 26/10/2026
+ 'ai-edit':lambda s:(f'{CAP}/aeon-mac-{s}.png',f'{CAP}/aeon-iph-{s}.png'),
+ 'finishing':lambda s:(f'{CAP}/revela-mac-{s}.png',f'{CAP}/revela-iph-{s}.png'),
 }
 for tema,s in [('claro','light'),('escuro','dark')]:
   t=np.asarray(Image.open(f'{A}/aparelhos-{tema}-verde.png').convert('RGB')).astype(int)

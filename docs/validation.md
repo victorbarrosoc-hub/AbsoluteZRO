@@ -810,3 +810,13 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Cartões verticais (ícone em cima, nome numa linha, apoio em até duas linhas reservadas): os sete com a mesma altura
   e sem nome quebrado. Abaixo de 1100 px, quatro por linha com a segunda centralizada. Capturas em 1440 (claro e
   escuro), 1000 e 390 px; `npm run test:e2e` verde.
+
+## Página inicial com dados do ecossistema (26/10/2026)
+
+- Novas seções: **Em números** (contam ao aparecer; ferramentas, eventos e formatos vêm do catálogo e de
+  `@zro/media-contracts`, nada digitado à mão), **Conheça de perto** (abas com a tela real de cada app num MacBook e
+  iPhone, três fatos e o site; passa sozinha e pausa com mouse, foco ou fora da tela), **Do job à entrega** (o fluxo
+  com os eventos reais que cada app manda para o HUB) e **Um app no computador** (o painel do app e o HUB no iPhone).
+- Imagens novas: `produto-hub-*` (painel `/app` e `/inicio` de hoje), `produto-ai-edit-*` e `produto-finishing-*` (os
+  sites no ar), por `scripts/marca/aparelhos/produtos.py`.
+- Capturas em 1440 (claro e escuro) e 390 px; `npm run test:e2e` 21/21 (axe incluso).
