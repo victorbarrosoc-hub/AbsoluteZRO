@@ -133,7 +133,8 @@ export async function planCenterData(auth: Authenticated) {
       : []
     const plans = await tx`
       select p.id, p.code, p.name, p.kind, p.description, p.price_cents, p.currency, p.billing_interval,
-             (select count(*)::int from zro.plan_products pp where pp.plan_id = p.id) as products
+             (select count(*)::int from zro.plan_products pp where pp.plan_id = p.id) as products,
+             (select max((pp.limits ->> 'zro.ai_credits')::int) from zro.plan_products pp where pp.plan_id = p.id) as ai_credits
       from zro.plans p where p.status = 'active' and p.kind <> 'free'
       order by case p.kind when 'bundle' then 0 else 1 end, p.name`
     const requests = canManage

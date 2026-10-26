@@ -39,7 +39,7 @@ export default async function Admin() {
     grants:
       await tx`select e.id, e.product_id, e.limits, e.ends_at, e.reason, o.name as org from zro.entitlements e join zro.organizations o on o.id = e.org_id where e.source = 'admin_grant' and e.status = 'active' order by e.created_at desc limit 100`,
     plans:
-      await tx`select p.id, p.code, p.version, p.name, p.kind, p.status, p.grace_days, p.price_cents, (select json_agg(json_build_object('product', pp.product_id, 'limits', pp.limits)) from zro.plan_products pp where pp.plan_id = p.id) as products from zro.plans p order by p.code, p.version`,
+      await tx`select p.id, p.code, p.version, p.name, p.kind, p.status, p.grace_days, p.price_cents, p.billing_interval, (select json_agg(json_build_object('product', pp.product_id, 'limits', pp.limits)) from zro.plan_products pp where pp.plan_id = p.id) as products from zro.plans p order by p.code, p.version`,
     products: await tx`select id, name, stage from zro.products order by step_order`,
     clients: await tx`select c.id, c.name, c.product_id, c.kind, c.redirect_uris, c.allow_loopback, c.trusted, c.status, c.created_at,
                       (select count(*)::int from zro.app_accounts a where a.client_id = c.id) as accounts,
@@ -115,7 +115,7 @@ export default async function Admin() {
       </Card>
 
       <Card title="Organizações">
-        <div className="zro-table-wrap">
+        <div className="zro-table-wrap" tabIndex={0} role="region" aria-label="Tabela">
           <table className="zro-table">
             <thead>
               <tr>
@@ -160,7 +160,8 @@ export default async function Admin() {
                 <select className="zro-select" id="ap-plan" name="planId" required>
                   {activePlans.map((p) => (
                     <option key={p.id as string} value={p.id as string}>
-                      {p.name as string} (v{String(p.version)})
+                      {p.name as string}
+                      {p.billing_interval === 'year' ? ' · anual' : p.billing_interval === 'month' ? ' · mensal' : ''} (v{String(p.version)})
                     </option>
                   ))}
                 </select>
@@ -253,7 +254,7 @@ export default async function Admin() {
       </div>
 
       <Card title="Catálogo de planos" eyebrow="Versionado: plano publicado não muda">
-        <div className="zro-table-wrap">
+        <div className="zro-table-wrap" tabIndex={0} role="region" aria-label="Tabela">
           <table className="zro-table">
             <thead>
               <tr>
@@ -382,7 +383,7 @@ export default async function Admin() {
           segredo, só PKCE; marque o retorno em 127.0.0.1).
         </p>
         {d.clients.length ? (
-          <div className="zro-table-wrap">
+          <div className="zro-table-wrap" tabIndex={0} role="region" aria-label="Tabela">
             <table className="zro-table">
               <thead>
                 <tr>

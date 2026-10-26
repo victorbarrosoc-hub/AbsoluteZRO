@@ -110,8 +110,9 @@ export default async function Plano({ searchParams }: { searchParams: Promise<{ 
                     <h3>{p.name as string}</h3>
                     <p className="plan-option__price">{priceLabel(p as never)}</p>
                     {monthly && yearly && <p className="zro-faint">ou {priceLabel(yearly as never)}</p>}
-                    <p className="zro-faint">
+                    <p className="zro-faint" title="Uso comum é livre. Só IA e processamento em GPU gastam créditos.">
                       {String(p.products)} {p.products === 1 ? 'ferramenta' : 'ferramentas'}
+                      {p.ai_credits ? ` · ${Number(p.ai_credits).toLocaleString('pt-BR')} créditos de IA/mês` : ''}
                     </p>
                     {online ? (
                       <div className="row">

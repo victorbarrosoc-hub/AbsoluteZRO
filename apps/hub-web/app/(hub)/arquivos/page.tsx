@@ -31,7 +31,7 @@ export default async function Arquivos() {
         </Card>
       </div>
       {manifests.length ? (
-        <div className="zro-table-wrap">
+        <div className="zro-table-wrap" tabIndex={0} role="region" aria-label="Tabela">
           <table className="zro-table">
             <thead>
               <tr>

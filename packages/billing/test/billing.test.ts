@@ -223,7 +223,8 @@ describe('quotas', () => {
   it('sem limite configurado a operação medida é bloqueada', async () => {
     const o = await newOrgWithOwner(db, 'quota-0')
     await givePlan(db, o.orgId, 'individual-synquei')
-    const r = await db.asSystem('t', (tx) => consumeQuota(tx, { orgId: o.orgId, metric: 'synquei.organization_plans', idempotencyKey: 'k1' }))
+    // Métrica que nenhum plano configura: bloqueada, nunca "ilimitada" por omissão.
+    const r = await db.asSystem('t', (tx) => consumeQuota(tx, { orgId: o.orgId, metric: 'synquei.metrica_sem_limite', idempotencyKey: 'k1' }))
     expect(r).toMatchObject({ ok: false, code: 'quota_not_configured' })
   })
 

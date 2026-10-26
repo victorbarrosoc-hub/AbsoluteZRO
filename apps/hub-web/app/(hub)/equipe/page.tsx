@@ -21,7 +21,7 @@ export default async function Equipe() {
         <p>Quem participa desta organização e o que cada papel pode fazer. O acesso às ferramentas segue o plano da organização.</p>
       </div>
       <Card title="Pessoas">
-        <div className="zro-table-wrap">
+        <div className="zro-table-wrap" tabIndex={0} role="region" aria-label="Tabela">
           <table className="zro-table">
             <thead>
               <tr>

@@ -8,6 +8,7 @@ import {
   checkEntitlement,
   createCheckoutSession,
   launchSales,
+  recomputeEntitlements,
   salesStatus,
   stripeEventToBillingEvent,
   stripeForm,
@@ -43,15 +44,26 @@ const subEvent = (over: Record<string, unknown> = {}, meta: Record<string, strin
 })
 
 describe('preços à venda', () => {
-  it('avulso R$ 19,90/mês ou R$ 199/ano; Completo R$ 49,90/mês ou R$ 499/ano; versões sem preço saem da vitrine', async () => {
+  it('avulso R$ 59,90/mês ou R$ 599/ano; Completo R$ 149,90 ou R$ 1.499; Pro R$ 299,90 ou R$ 2.999; créditos de IA por plano', async () => {
     const rows = await db.sql`select code, price_cents, billing_interval from zro.plans where status = 'active' and kind <> 'free' order by code`
     const by = Object.fromEntries(rows.map((r) => [r.code as string, r]))
-    expect(by['ciclo-do-o']).toMatchObject({ price_cents: 4990, billing_interval: 'month' })
-    expect(by['ciclo-do-o-anual']).toMatchObject({ price_cents: 49900, billing_interval: 'year' })
+    expect(by['ciclo-do-o']).toMatchObject({ price_cents: 14990, billing_interval: 'month' })
+    expect(by['ciclo-do-o-anual']).toMatchObject({ price_cents: 149900, billing_interval: 'year' })
+    expect(by['absolute-zro-pro']).toMatchObject({ price_cents: 29990, billing_interval: 'month' })
+    expect(by['absolute-zro-pro-anual']).toMatchObject({ price_cents: 299900, billing_interval: 'year' })
     for (const app of ['carro-do-freela', 'tpeasy', 'sobedesce', 'synquei', 'nossom']) {
-      expect(by[`individual-${app}`]).toMatchObject({ price_cents: 1990, billing_interval: 'month' })
-      expect(by[`individual-${app}-anual`]).toMatchObject({ price_cents: 19900, billing_interval: 'year' })
+      expect(by[`individual-${app}`]).toMatchObject({ price_cents: 5990, billing_interval: 'month' })
+      expect(by[`individual-${app}-anual`]).toMatchObject({ price_cents: 59900, billing_interval: 'year' })
     }
+    const credits = await db.sql`
+      select p.code, count(*)::int as n, min((pp.limits ->> 'zro.ai_credits')::int) as ai from zro.plan_products pp join zro.plans p on p.id = pp.plan_id
+      where p.status = 'active' and p.code in ('individual-nossom', 'ciclo-do-o', 'absolute-zro-pro', 'absolute-zro-pro-anual') group by p.code order by p.code`
+    expect(credits.map((r) => `${r.code}:${r.n}:${r.ai}`)).toEqual([
+      'absolute-zro-pro:5:2000',
+      'absolute-zro-pro-anual:5:2000',
+      'ciclo-do-o:5:600',
+      'individual-nossom:1:200',
+    ])
     const [anual] = await db.sql`select count(*)::int as n from zro.plan_products pp join zro.plans p on p.id = pp.plan_id where p.code = 'ciclo-do-o-anual'`
     expect(anual!.n).toBe(5)
   })
@@ -188,6 +200,14 @@ describe('ligar vendas', () => {
       for (const p of ['carro-do-freela', 'tpeasy', 'sobedesce', 'synquei', 'nossom']) {
         expect((await checkEntitlement(tx, org!.id as string, p, null)).ok, p).toBe(true)
       }
+      // O teste tem poucos créditos de IA, inclusive depois de recalcular os acessos.
+      const ai = async () =>
+        Number(
+          (await tx`select max((limits ->> 'zro.ai_credits')::int) as n from zro.entitlements where org_id = ${org!.id as string} and status = 'active'`)[0]!.n,
+        )
+      expect(await ai()).toBe(50)
+      await recomputeEntitlements(tx, org!.id as string)
+      expect(await ai()).toBe(50)
       // Chamar de novo não move a data de corte.
       await launchSales(tx, { userId: adminId, reason: 'ajuste' }, { cutoff: new Date(Date.now() + 90 * 86_400_000), trialDays: 14 })
       const [again] = await tx`select s.current_period_end from zro.subscriptions s where s.org_id = ${antiga.orgId} and s.provider = 'free'`

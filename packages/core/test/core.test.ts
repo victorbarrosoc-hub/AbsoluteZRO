@@ -64,7 +64,7 @@ describe('autorização', () => {
   it('quota sem limite configurado bloqueia antes de executar', async () => {
     const o = await newOrgWithOwner(db, 'quota')
     await givePlan(db, o.orgId, 'individual-synquei')
-    await expectCode(authorize(db, o.auth, { product: { id: 'synquei' }, quota: { metric: 'synquei.organization_plans' } }), 'quota_not_configured')
+    await expectCode(authorize(db, o.auth, { product: { id: 'synquei' }, quota: { metric: 'synquei.metrica_sem_limite' } }), 'quota_not_configured')
   })
 })
 

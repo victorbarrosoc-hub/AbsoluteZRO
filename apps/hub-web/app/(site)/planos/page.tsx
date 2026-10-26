@@ -45,6 +45,11 @@ export default async function Planos() {
               <p className="plan-price">{priceLabel(p as never)}</p>
               {yearly[p.code as string] && <p className="zro-faint">ou {priceLabel(yearly[p.code as string] as never)}</p>}
               <p className="zro-mute">{p.description as string}</p>
+              {p.ai_credits ? (
+                <p className="zro-faint" title="Uso comum é livre. Só IA e processamento em GPU gastam créditos.">
+                  {Number(p.ai_credits).toLocaleString('pt-BR')} créditos de IA e GPU por mês
+                </p>
+              ) : null}
               {included.length > 0 ? (
                 <ul className="list-plain">
                   {included.map((n) => (

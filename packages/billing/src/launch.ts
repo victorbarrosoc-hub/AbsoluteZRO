@@ -20,7 +20,7 @@ export async function salesStatus(tx: Queryable): Promise<SalesStatus> {
 export async function launchSales(
   tx: Queryable,
   actor: { userId: string; reason: string },
-  input: { cutoff: Date; trialDays: number; trialPlanCode?: string },
+  input: { cutoff: Date; trialDays: number; trialPlanCode?: string; trialAiCredits?: number },
   now = new Date(),
 ): Promise<{ grandfathered: number }> {
   if (!actor.reason.trim()) throw new DomainError('invalid_input', 'Informe o motivo (fica na auditoria).')
@@ -35,7 +35,7 @@ export async function launchSales(
   if (!free) throw new DomainError('conflict', 'Conta grátis sem ferramentas não encontrada (migração 0011).')
 
   const already = await salesStatus(tx)
-  await tx`insert into zro.platform_settings (key, value, updated_by) values ('signup_trial', ${tx.json({ days: input.trialDays, plan_code: trialPlan })}, ${actor.userId})
+  await tx`insert into zro.platform_settings (key, value, updated_by) values ('signup_trial', ${tx.json({ days: input.trialDays, plan_code: trialPlan, ai_credits: input.trialAiCredits ?? 50 })}, ${actor.userId})
            on conflict (key) do update set value = excluded.value, updated_by = excluded.updated_by, updated_at = now()`
 
   let orgs: string[] = []
