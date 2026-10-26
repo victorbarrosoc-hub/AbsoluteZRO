@@ -26,6 +26,7 @@ const FAMILIA = [
   { href: 'https://synquei.vercel.app', nome: 'Synquei', img: 'marca/familia/synquei.svg' },
   { href: 'https://nossom-teal.vercel.app', nome: 'Nossom', img: 'marca/familia/nossom.svg' },
   { href: 'https://tpeasy.vercel.app', nome: 'TPEasy', img: 'marca/familia/tpeasy.svg' },
+  { href: 'https://carrodofreela.com.br', nome: 'Carro do Freela', img: 'marca/familia/carro-do-freela.png' },
 ]
 
 const el = (tag, props = {}, ...filhos) => {

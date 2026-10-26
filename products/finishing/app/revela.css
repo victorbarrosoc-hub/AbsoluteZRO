@@ -1360,7 +1360,7 @@ details[open] summary::after {
 
 /* ─────────── dock de ferramentas (embaixo, como as páginas do DaVinci) ─────────── */
 
-.selo {
+.topo .conta {
   margin-left: auto;
 }
 .abas {
