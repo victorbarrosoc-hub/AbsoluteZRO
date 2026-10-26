@@ -1,6 +1,7 @@
 // Revela · entrega por destino: escolhe o destino, mostra codec/cor/áudio com fonte e data, baixa o script do Resolve.
 
 import './conta.js'
+import './menu.js'
 import { DESTINOS, destino } from '../src/entrega/destinos.js'
 import { gerarScript, nomeScript } from '../src/entrega/resolve.js'
 import { ICONES, NOME_CURTO, escalonar, glifo, icones, svg } from './visual.js'

@@ -2,6 +2,7 @@
 // src/cor/espacos.js; aqui é só a escolha, a prévia num frame (opcional) e o .cube.
 
 import './conta.js'
+import './menu.js'
 import { aplicar, assar, escreverCube } from '../src/cor/cube.js'
 import { ENTRADAS, SAIDAS, criarCst } from '../src/cor/espacos.js'
 import { escalonar, icones } from './visual.js'

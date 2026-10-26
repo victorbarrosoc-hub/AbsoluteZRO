@@ -4,6 +4,7 @@
 // LUT no tamanho escolhido para baixar.
 
 import './conta.js'
+import './menu.js'
 import { aplicar, assar, escreverCube } from '../src/cor/cube.js'
 import { oklabParaCodigo } from '../src/cor/oklab.js'
 import { criarRevelaLook } from '../src/cor/looks.js'

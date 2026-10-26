@@ -441,3 +441,10 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   saída para as 17 câmeras, identidade, log→log sem corte, altas suaves; tela no computador e no celular (375 px sem
   rolagem lateral), baixa `revela-cst-arri-logc4-para-rec709-65.cube`.
 - Não validado: comparação no Resolve com o CST dele (nível de dados de cada formato) e em material real de cada câmera.
+
+## Revela: dock embaixo e menu recolhível (26/10/2026)
+
+- As abas saíram do cabeçalho (o desfoque dele prendia o `position: fixed`) e viraram um dock embaixo; `app/menu.js`
+  monta o menu lateral nas quatro ferramentas: trilho 68 px ↔ 248 px no computador (lembrado), gaveta no celular.
+- `products/finishing`: `npm test` (**73/73**), com teste novo: dock no rodapé da tela, menu que abre e é lembrado
+  entre páginas, item atual marcado, gaveta no celular que fecha com Esc, sem rolagem lateral em 375 px.

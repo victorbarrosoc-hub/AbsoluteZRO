@@ -43,6 +43,13 @@ LUT ou DCTL de terceiros). Em Oklab: curva de filme (preto aberto, meio com cont
 altas quentes. Na tela de LUT, o botão **Revela Look** entra no lugar da referência; sai `revela-look-33.cube` ou
 `-65.cube` (Rec.709 → Rec.709, depois da conversão do LOG). Contraste, Cor e Intensidade valem para ele também.
 
+## Navegação
+
+As ferramentas (LUT, CST, Entrega, Converter) ficam num dock embaixo, como as páginas do DaVinci Resolve: flutuante no
+computador, barra de abas de ponta a ponta no celular. O menu lateral (`app/menu.js`) traz início, ferramentas e a
+família Absolute ZRO: no computador é um trilho de ícones que abre e fecha (lembrado no navegador); no celular, uma
+gaveta com fundo e Esc.
+
 ## CST (espaço de cor)
 
 `cst.html` + `src/cor/espacos.js`: o log da câmera para o espaço de saída, numa LUT de 33 ou 65 pontos. Curvas e

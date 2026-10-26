@@ -2,6 +2,7 @@
 // WASM), converte com WebCodecs (hardware quando o aparelho deixa) e grava MP4 marcado BT.709. Nada sai do aparelho.
 
 import './conta.js'
+import './menu.js'
 import * as MB from '../vendor/mediabunny.min.mjs'
 import { registerProresDecoder } from '../vendor/mediabunny-prores.min.mjs'
 import { DESTINOS_CONVERSAO, LIMITE_MEMORIA, RESOLUCOES, nomeSaida, planejar, tamanhoLegivel } from '../src/conversao/plano.js'
