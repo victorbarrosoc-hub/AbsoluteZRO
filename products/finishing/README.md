@@ -117,6 +117,12 @@ Bibliotecas em `vendor/` (copiadas por `npm run vendor`, teste confere a cópia)
 daqui: `src/entrega/destinos.js` e `src/conversao/plano.js` são copiados para `products/sobedesce/src/revela/` e um
 teste de lá confere a cópia. Mudou um destino aqui, copie para lá.
 
+### Converter com log
+
+No Converter, "Log da câmera" aplica o CST da Revela (mesmas curvas da tela de CST) em cada quadro, na GPU
+(`app/lut-gpu.js`: LUT 65³ numa textura 3D de meia precisão, filtro trilinear do hardware). O shader desfaz a faixa de
+vídeo (16–235) antes da curva, porque as curvas log são definidas sobre o código cheio. Sai em Rec.709 marcado BT.709.
+
 ## Protótipo: referência → LUT criativa
 
 A pessoa dá um frame de referência (o estilo que quer) e um frame do material dela; sai uma LUT `.cube` que leva o
