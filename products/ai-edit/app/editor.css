@@ -621,6 +621,63 @@ svg {
     transform: none;
   }
 }
+.cartao-midia.selecionavel {
+  cursor: pointer;
+  user-select: none;
+  transition:
+    transform 0.25s var(--mola),
+    box-shadow 0.2s;
+}
+.cartao-midia.selecionavel:active {
+  transform: scale(0.98);
+}
+.cartao-midia.marcada {
+  box-shadow:
+    inset 0 3px 0 var(--c, transparent),
+    0 0 0 3px var(--text-strong);
+}
+.cartao-midia.selecionavel:focus-visible {
+  outline: 2px solid var(--text-strong);
+  outline-offset: 3px;
+}
+.check-midia {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: rgba(0, 0, 0, 0.28);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  color: transparent;
+  transition:
+    background 0.2s,
+    transform 0.25s var(--mola);
+}
+.check-midia svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.marcada .check-midia {
+  background: var(--text-strong);
+  border-color: var(--text-strong);
+  color: var(--surface);
+  transform: scale(1.06);
+}
+.contagem-sel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-mute);
+  font-variant-numeric: tabular-nums;
+}
 .cartao-mini {
   aspect-ratio: 16 / 9;
   background: var(--surface-2);

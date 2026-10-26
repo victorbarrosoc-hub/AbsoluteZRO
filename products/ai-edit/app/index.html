@@ -87,8 +87,11 @@
                 <button role="radio" data-valor="rapido" aria-checked="true">Rápido</button>
                 <button role="radio" data-valor="preciso" aria-checked="false">Preciso</button>
               </div>
+              <button class="glass-btn" id="selecionarMidia">Selecionar</button>
               <button class="glass-btn" id="maisMidia">Adicionar</button>
               <button class="glass-btn glass-btn--ink" id="analisar">Analisar</button>
+              <span class="contagem-sel" id="contaSel" aria-live="polite" hidden></span>
+              <button class="glass-btn glass-btn--ink" id="tirarSel" hidden disabled>Tirar do projeto</button>
             </div>
           </div>
           <ul class="cartoes-midia" id="listaMidia"></ul>

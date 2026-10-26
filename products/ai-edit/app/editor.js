@@ -37,6 +37,7 @@ const S = {
   miniaturas: new Map(),
   preset: null,
   pagina: 'midia',
+  selecao: null, // Set de mídias marcadas no modo Selecionar (null = fora do modo)
   filtro: 'tudo',
   selProposta: null,
   modelo: 'rapido',
@@ -120,6 +121,7 @@ function ir(pagina, animar = true) {
   const de = PAGINAS.indexOf(S.pagina)
   const para = PAGINAS.indexOf(pagina)
   S.pagina = pagina
+  if (pagina !== 'midia') S.selecao = null
   document.body.dataset.pagina = pagina
   for (const sec of document.querySelectorAll('.pagina')) {
     const i = PAGINAS.indexOf(sec.dataset.pagina)
@@ -355,6 +357,22 @@ function desenharMidia() {
       corpo.querySelector('strong').title = m.caminho || m.nome
       corpo.querySelector('.fichas').append(...fichas.map((f) => Object.assign(document.createElement('span'), { className: 'ficha', textContent: f })))
       if (tr) li.classList.add('analisada')
+      if (S.selecao) {
+        const marcada = S.selecao.has(m.id)
+        li.classList.add('selecionavel')
+        li.classList.toggle('marcada', marcada)
+        li.tabIndex = 0
+        li.setAttribute('role', 'checkbox')
+        li.setAttribute('aria-checked', String(marcada))
+        li.setAttribute('aria-label', m.nome)
+        li.onclick = () => marcarMidia(m.id)
+        li.onkeydown = (ev) => (ev.key === ' ' || ev.key === 'Enter') && (ev.preventDefault(), marcarMidia(m.id))
+        const check = document.createElement('span')
+        check.className = 'check-midia'
+        check.innerHTML = '<svg><use href="#i-ok"/></svg>'
+        li.append(corpo, check)
+        return li
+      }
       const tirar = document.createElement('button')
       tirar.type = 'button'
       tirar.className = 'tirar-midia'
@@ -368,12 +386,40 @@ function desenharMidia() {
   )
   const falta = p.midias.some((m) => m.temAudio && !p.transcricoes[m.id])
   $('analisar').textContent = falta ? 'Analisar' : 'Analisar de novo'
+  const sel = S.selecao
+  for (const id of ['modelo', 'maisMidia', 'analisar']) $(id).hidden = Boolean(sel)
+  $('contaSel').hidden = $('tirarSel').hidden = !sel
+  $('selecionarMidia').textContent = sel ? 'Cancelar' : 'Selecionar'
+  if (sel) {
+    $('contaSel').textContent = sel.size ? `${sel.size} ${sel.size === 1 ? 'marcada' : 'marcadas'}` : 'Toque nas mídias'
+    $('tirarSel').disabled = !sel.size
+  }
 }
 
 // Tirar do projeto: só o projeto muda (o arquivo fica onde está) e o Desfazer devolve.
 function tirarMidia(m) {
   fazer(removerMidia(P(), m.id), 'tirar mídia')
   aviso(`${m.nome} saiu do projeto. O arquivo continua no computador.`)
+}
+
+// Selecionar várias (como no Fotos): marca os cartões e tira todas num passo só do Desfazer.
+function modoSelecao(ligado) {
+  S.selecao = ligado ? new Set() : null
+  desenharMidia()
+}
+function marcarMidia(id) {
+  if (!S.selecao) return
+  if (S.selecao.has(id)) S.selecao.delete(id)
+  else S.selecao.add(id)
+  desenharMidia()
+}
+$('selecionarMidia').onclick = () => modoSelecao(!S.selecao)
+$('tirarSel').onclick = () => {
+  const ids = [...(S.selecao || [])]
+  if (!ids.length) return
+  S.selecao = null
+  fazer(removerMidia(P(), ids), ids.length === 1 ? 'tirar mídia' : `tirar ${ids.length} mídias`)
+  aviso(`${ids.length === 1 ? 'Uma mídia saiu' : `${ids.length} mídias saíram`} do projeto. Os arquivos continuam no computador.`)
 }
 
 // modelo de transcrição: Rápido ou Preciso
@@ -887,6 +933,15 @@ addEventListener('keydown', (e) => {
   if (mod && e.key.toLowerCase() === 'o') {
     e.preventDefault()
     return $('arquivoProjeto').click()
+  }
+  if (S.selecao && S.pagina === 'midia' && !digitando) {
+    if (mod && e.key.toLowerCase() === 'a') {
+      e.preventDefault()
+      S.selecao = new Set(P().midias.map((m) => m.id))
+      return desenharMidia()
+    }
+    if (e.key === 'Escape') return modoSelecao(false)
+    if ((e.key === 'Backspace' || e.key === 'Delete') && S.selecao.size) return $('tirarSel').click()
   }
   if (mod && /^[1-4]$/.test(e.key)) {
     e.preventDefault()

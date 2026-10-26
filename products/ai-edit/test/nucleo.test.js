@@ -270,6 +270,8 @@ test('tirar mídia do projeto leva junto clipes, transcrição, propostas e corr
   assert.deepEqual(q.propostas.map((x) => x.id), ['y'])
   assert.equal(q.legenda.textos.a, undefined)
   assert.equal(removerMidia(q, 'nao-existe'), q)
+  assert.deepEqual(removerMidia(p, ['a', 'b']).midias, [])
+  assert.deepEqual(removerMidia(p, ['a', 'b']).linha.clipes, [])
   h.desfazer()
   assert.deepEqual(h.atual.midias.map((m) => m.id), ['a', 'b'])
 })

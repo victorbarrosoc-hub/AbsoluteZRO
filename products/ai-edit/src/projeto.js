@@ -48,18 +48,19 @@ function cryptoId() {
 export const midiaPorId = (p, id) => p.midias.find((m) => m.id === id)
 
 /**
- * Tira uma mídia do projeto: some a mídia, os clipes dela na linha, a transcrição, as propostas e as correções da
+ * Tira uma ou várias mídias do projeto (um passo só no Desfazer): some a mídia, os clipes dela na linha, a transcrição, as propostas e as correções da
  * legenda. O arquivo no computador não é tocado (o app nunca apaga mídia) e o Desfazer traz tudo de volta.
  */
-export function removerMidia(p, id) {
-  if (!midiaPorId(p, id)) return p
-  const sem = (o) => Object.fromEntries(Object.entries(o || {}).filter(([k]) => k !== id))
+export function removerMidia(p, ids) {
+  const fora = new Set(Array.isArray(ids) ? ids : [ids])
+  if (!p.midias.some((m) => fora.has(m.id))) return p
+  const sem = (o) => Object.fromEntries(Object.entries(o || {}).filter(([k]) => !fora.has(k)))
   return {
     ...p,
-    midias: p.midias.filter((m) => m.id !== id),
-    linha: { ...p.linha, clipes: p.linha.clipes.filter((c) => c.midia !== id) },
+    midias: p.midias.filter((m) => !fora.has(m.id)),
+    linha: { ...p.linha, clipes: p.linha.clipes.filter((c) => !fora.has(c.midia)) },
     transcricoes: sem(p.transcricoes),
-    propostas: p.propostas.filter((x) => x.midia !== id),
+    propostas: p.propostas.filter((x) => !fora.has(x.midia)),
     legenda: { ...p.legenda, textos: sem(p.legenda.textos) },
   }
 }
