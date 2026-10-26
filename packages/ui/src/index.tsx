@@ -4,6 +4,7 @@
  */
 import type { ReactNode } from 'react'
 import { ZRO_SIMBOLO, ZRO_WORDMARK } from './marca'
+export { ZRO_SIMBOLO, ZRO_WORDMARK } from './marca'
 
 const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(' ')
 
