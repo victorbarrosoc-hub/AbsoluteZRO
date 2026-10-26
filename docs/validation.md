@@ -680,3 +680,11 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   novo não duplica nem gasta cota, link adulterado é recusado e sem plano a resposta é 403.
 - Não validado: o botão **Comprovante** num envio real para o Drive e o registro pela tela do HUB em produção.
 - Site do SOBEDESCE: topo sem texto em degradê e sem brilho azul (Padrão Apple).
+
+## App para computador: abertura, painel e login; AEON e Revela disponíveis; Avulso numa janela (26/10/2026)
+
+- `npm test` **143/143** (testes que esperavam AEON e Revela bloqueados agora conferem a liberação de 0013; o caso
+  "fora do catálogo" usa um id inexistente). `apps/hub-desktop` `npm test` 22/22. Lint, formatação, tipos e build ok.
+- Capturas locais (claro e escuro) de `/planos` com 3 apps marcados, `/app/entrar`, `/app` com conta nova e quadros
+  da abertura em 0,3 s, 0,9 s, 1,6 s e 2,4 s.
+- Não validado: a abertura e o painel dentro do app instalado (Mac e Windows) até sair o build 1.1.0.

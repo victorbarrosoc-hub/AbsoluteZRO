@@ -1,0 +1,138 @@
+/* Abertura do app (paginas/abertura.html): papel claro do site, símbolo grande em grafite e o nome por baixo.
+   Fonte não é usada (o nome é vetor). Com "reduzir movimento" aparece parada e some do mesmo jeito. */
+:root {
+  --papel: #fcfbfc;
+  --grafite: #1d1d1f;
+  color-scheme: light;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+body {
+  background: var(--papel);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+  -webkit-app-region: drag;
+  transition: opacity 0.45s ease;
+}
+body.sair {
+  opacity: 0;
+}
+.palco {
+  position: relative;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 34px;
+}
+.brilho {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 70vmin;
+  height: 70vmin;
+  translate: -50% -58%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 255 255 / 1), rgb(255 255 255 / 0) 62%);
+  pointer-events: none;
+}
+.simbolo {
+  position: relative;
+  width: clamp(120px, 24vmin, 220px);
+  height: auto;
+  overflow: visible;
+  translate: 6% 0;
+}
+.anel {
+  fill: none;
+  stroke: var(--grafite);
+  stroke-width: 8.6;
+}
+.centelha {
+  fill: var(--grafite);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.nome {
+  position: relative;
+  width: clamp(180px, 30vmin, 300px);
+  height: auto;
+  fill: var(--grafite);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .anel {
+    stroke-dasharray: 100;
+    animation: desenhar 1.15s cubic-bezier(0.65, 0, 0.35, 1) 0.15s both;
+  }
+  .centelha {
+    animation: centelha 1.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.45s both;
+  }
+  .brilho {
+    animation: brilho 2.4s ease-out 0.4s both;
+  }
+  .simbolo {
+    animation: assentar 2.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .nome {
+    animation: nome 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 1.35s both;
+  }
+}
+@keyframes desenhar {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+/* A estrela nasce inteira (4 pontas) e recolhe até ficar só com as horizontais, por trás do traço. */
+@keyframes centelha {
+  0% {
+    transform: scale(0.2, 0.2);
+    opacity: 0;
+  }
+  35% {
+    transform: scale(1.18, 3);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(1.06, 2.6);
+  }
+  100% {
+    transform: scale(1, 1);
+  }
+}
+@keyframes brilho {
+  0% {
+    opacity: 0;
+    scale: 0.6;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.55;
+    scale: 1.1;
+  }
+}
+@keyframes assentar {
+  from {
+    scale: 0.9;
+  }
+}
+@keyframes nome {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+    filter: blur(6px);
+  }
+}

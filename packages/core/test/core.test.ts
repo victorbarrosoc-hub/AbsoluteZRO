@@ -48,7 +48,7 @@ describe('autorização', () => {
     await expectCode(authorize(db, o.auth, { project: { id: '00000000-0000-0000-0000-000000000000', access: 'view' } }), 'project_not_found')
     const err = await expectCode(authorize(db, o.auth, { product: { id: 'synquei', feature: 'organization_plan' } }), 'entitlement_required')
     expect(err.status).toBe(403)
-    await expectCode(authorize(db, o.auth, { product: { id: 'ai-edit' } }), 'product_unavailable')
+    await expectCode(authorize(db, o.auth, { product: { id: 'ferramenta-inexistente' } }), 'product_unavailable')
   })
 
   it('organização no cliente não vale: só a da sessão, conferida no banco', async () => {
@@ -115,9 +115,9 @@ describe('projetos', () => {
       tpeasy: 'blocked_subscription',
       sobedesce: 'not_started',
       synquei: 'blocked_subscription',
-      'ai-edit': 'unavailable',
+      'ai-edit': 'blocked_subscription',
       nossom: 'blocked_subscription',
-      finishing: 'unavailable',
+      finishing: 'blocked_subscription',
     })
     await expectCode(createProject(db, o.auth, { title: '' }), 'invalid_input')
   })

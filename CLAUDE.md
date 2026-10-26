@@ -18,7 +18,7 @@ Leia antes de mudar qualquer coisa: [PRD.md](PRD.md) (referência principal), [A
   nada de `.env`, token, cookie, URL assinada, dado pessoal ou áudio privado. `node scripts/scan-secrets.mjs` antes
   de commitar.
 - Não declarar SSO com os apps antigos: o login único vale para o HUB.
-- Não fingir integração, IA, grading, saldo ou progresso. AEON (id técnico `ai-edit`) e Revela (id técnico `finishing`) estão em desenvolvimento.
+- Não fingir integração, IA, grading, saldo ou progresso. AEON (id técnico `ai-edit`) e Revela (id técnico `finishing`) estão disponíveis desde 26/10/2026 (decisão do titular, migração 0013); o HUB não processa edição nem cor.
 
 ## Regras de implementação
 

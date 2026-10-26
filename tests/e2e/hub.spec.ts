@@ -35,8 +35,7 @@ test('conta nova recebe as ferramentas do plano grátis', async ({ page }) => {
   await signupAndOrg(page, 'Org grátis')
   const ent = await (await page.request.get('/api/v1/entitlements')).json()
   const access = (id: string) => ent.products.find((p: { productId: string }) => p.productId === id).access
-  for (const id of ['carro-do-freela', 'nossom', 'sobedesce', 'synquei', 'tpeasy']) expect(access(id)).toBe('contracted')
-  expect(access('ai-edit')).toBe('coming_soon')
+  for (const id of ['carro-do-freela', 'nossom', 'sobedesce', 'synquei', 'tpeasy', 'ai-edit', 'finishing']) expect(access(id)).toBe('contracted')
 })
 
 test('área logada exige sessão', async ({ page }) => {
@@ -56,7 +55,7 @@ test('cadastro → organização → projeto com Ciclo do O e alternativa em lis
   await expect(list.getByRole('listitem')).toHaveCount(7)
   // Sem plano: ferramentas lançadas aparecem bloqueadas por assinatura, futuras indisponíveis
   await expect(list.getByRole('listitem').filter({ hasText: 'Synquei' })).toContainText('Bloqueado por assinatura')
-  await expect(list.getByRole('listitem').filter({ hasText: 'AEON' })).toContainText('Indisponível')
+  await expect(list.getByRole('listitem').filter({ hasText: 'AEON' })).toContainText('Bloqueado por assinatura')
 })
 
 test('API: sem assinatura recebe 403 por URL direta; sem sessão 401; outra origem 403', async ({ page, request }) => {
@@ -142,8 +141,12 @@ test('páginas públicas e mobile sem rolagem horizontal', async ({ page }) => {
     expect(overflow, path).toBeLessThanOrEqual(0)
   }
   await page.goto('/planos')
-  await expect(page.getByText('Contratação online ainda fechada')).toBeVisible()
-  await expect(page.getByText('R$ 149,90 / mês').first()).toBeVisible()
+  await expect(page.getByText('Por enquanto, tudo liberado.')).toBeVisible()
+  await expect(page.getByText('R$ 149,90').first()).toBeVisible()
+  // Avulso numa janela só: marcar dois apps soma o valor e o botão vira "Baixar 2 apps"
+  await page.getByRole('button', { name: 'AEON' }).click()
+  await page.getByRole('button', { name: 'Revela' }).click()
+  await expect(page.getByRole('link', { name: 'Baixar 2 apps' })).toBeVisible()
 })
 
 test('menu lateral recolhe, lembra a escolha e o celular usa uma barra só', async ({ page }) => {
@@ -204,7 +207,7 @@ test('sua conta: nome, foto, pedido de upgrade e acessos', async ({ page }) => {
 
   await page.goto('/perfil/acessos')
   await expect(page.getByRole('heading', { name: 'Org conta' })).toBeVisible()
-  await expect(page.locator('.access-org__apps li.is-on')).toHaveCount(5)
+  await expect(page.locator('.access-org__apps li.is-on')).toHaveCount(7)
 })
 
 test('central de apps: dentro do app de computador, instala com progresso, abre e atualiza', async ({ page }) => {

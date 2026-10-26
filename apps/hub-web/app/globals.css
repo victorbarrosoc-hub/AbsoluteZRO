@@ -1570,50 +1570,6 @@
   margin-top: 8px;
 }
 
-/* Planos como a página de comparação da Apple: cartões limpos de vidro, preço fino, ação em vidro. */
-.plans {
-  display: grid;
-  gap: 14px;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
-}
-.plan-card {
-  position: relative;
-  display: grid;
-  gap: 14px;
-  align-content: start;
-  justify-items: start;
-  padding: 28px;
-  border-radius: 28px;
-  background: var(--glass-fill), var(--surface);
-  box-shadow: var(--shadow-float);
-}
-.plan-card--featured {
-  box-shadow:
-    var(--shadow-float),
-    inset 0 0 0 1.5px var(--text-strong);
-}
-.plan-card h2 {
-  font-size: 1.5rem;
-  font-weight: 800;
-}
-.plan-card .list-plain {
-  gap: 10px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-  width: 100%;
-  color: var(--text);
-}
-.plan-card .zro-btn {
-  margin-top: auto;
-}
-.plan-price {
-  font-family: var(--font-apple);
-  font-weight: 300;
-  font-size: 1.9rem;
-  letter-spacing: -0.03em;
-  color: var(--text-strong);
-}
-
 /* ───── autenticação ───── */
 
 .auth-wrap {
@@ -3617,5 +3573,709 @@ a.pstrip__card:hover {
 @keyframes phero-parallax {
   to {
     translate: 0 18%;
+  }
+}
+
+/* ───── Painel do app para computador (/app) e login do app (/app/entrar) ─────
+   No espírito do Creative Cloud: barra lateral com a conta e as ferramentas em cartões grandes, cada um aceso com a
+   cor da própria marca. Tudo entra em cascata ao abrir (a abertura da marca fica no app, paginas/abertura.html). */
+.painel-raiz {
+  min-height: 100svh;
+  background: var(--bg);
+  color: var(--text);
+}
+.painel {
+  min-height: 100svh;
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+}
+.painel__lado {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 26px 18px 18px;
+  border-right: 1px solid var(--line);
+  background: var(--glass-fill), var(--surface);
+}
+.painel__marca {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px;
+  color: var(--text-strong);
+}
+.painel__nav {
+  display: grid;
+  gap: 4px;
+}
+.painel__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s var(--ease);
+}
+.painel__item span {
+  width: 18px;
+  text-align: center;
+  color: var(--text-faint);
+}
+.painel__item:hover {
+  background: rgb(127 127 127 / 0.1);
+  text-decoration: none;
+}
+.painel__item--ativo {
+  background: var(--text-strong);
+  color: var(--bg);
+}
+.painel__item--ativo span {
+  color: inherit;
+}
+.painel__item--ativo:hover {
+  background: var(--text-strong);
+}
+.painel__conta {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgb(127 127 127 / 0.08);
+}
+.painel__quem {
+  display: grid;
+  min-width: 0;
+  font-size: 0.82rem;
+  line-height: 1.25;
+}
+.painel__quem strong {
+  color: var(--text-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.painel__quem span {
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.painel__sair {
+  border: 0;
+  background: none;
+  color: var(--text-faint);
+  font: 600 0.8rem var(--font-display);
+  cursor: pointer;
+}
+.painel__sair:hover {
+  color: var(--text-strong);
+}
+.painel__corpo {
+  padding: clamp(28px, 4vw, 56px);
+  display: grid;
+  align-content: start;
+  gap: 28px;
+}
+.painel__topo {
+  display: grid;
+  gap: 14px;
+}
+.painel__titulo {
+  font-size: clamp(2.2rem, 4vw, 3.2rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-weight: 300;
+  color: var(--text-strong);
+}
+.painel__titulo strong {
+  font-weight: 800;
+}
+.painel-resumo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  margin: 0;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: rgb(127 127 127 / 0.08);
+  color: var(--text);
+}
+.painel-resumo strong {
+  color: var(--text-strong);
+}
+.painel__apps {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pcard {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  gap: 18px 16px;
+  padding: 22px;
+  border-radius: 24px;
+  background: var(--glass-fill), var(--surface);
+  box-shadow: var(--shadow-float);
+  overflow: hidden;
+  isolation: isolate;
+  transition:
+    translate 0.4s var(--spring),
+    box-shadow 0.3s var(--ease);
+}
+.pcard:hover {
+  translate: 0 -3px;
+}
+/* luz da cor da marca, no canto, que acende no ponteiro */
+.pcard__luz {
+  position: absolute;
+  inset: -40% -40% auto auto;
+  width: 80%;
+  aspect-ratio: 1;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--p) 26%, transparent), transparent);
+  opacity: 0.55;
+  transition: opacity 0.35s var(--ease);
+}
+.pcard:hover .pcard__luz {
+  opacity: 1;
+}
+.pcard .zro-mark {
+  box-shadow: 0 10px 22px rgb(0 0 0 / 0.16);
+}
+.pcard .zro-mark--initials {
+  background: linear-gradient(150deg, #3a3a3e, #0b0b0c);
+  border-color: rgb(255 255 255 / 0.08);
+  color: #fff;
+}
+.pcard__texto {
+  align-self: center;
+}
+.pcard__texto h2 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text-strong);
+}
+.pcard__texto p {
+  margin-top: 2px;
+  color: var(--text-faint);
+  font-size: 0.9rem;
+}
+.pcard__acoes {
+  grid-column: 1 / -1;
+  align-self: end;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.pcard__acoes .app-actions {
+  margin: 0;
+}
+/* dentro do app, quem abre e atualiza é a central; o link da web fica só para os apps sem instalador */
+.zro-desktop .pcard__web {
+  display: none;
+}
+@media (max-width: 820px) {
+  .painel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .painel__lado {
+    position: static;
+    height: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .painel__nav {
+    grid-auto-flow: column;
+    overflow-x: auto;
+  }
+}
+
+/* Login do app: o símbolo à esquerda, o cartão à direita. */
+.plogin {
+  min-height: 100svh;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  align-items: center;
+  gap: clamp(24px, 5vw, 80px);
+  padding: clamp(24px, 5vw, 72px);
+  overflow: hidden;
+}
+.plogin__marca {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 22px;
+  color: var(--text-strong);
+}
+.plogin__halo {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  width: min(70vmin, 620px);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 255 255 / 0.95), transparent 62%);
+  pointer-events: none;
+}
+:root[data-theme='dark'] .plogin__halo {
+  background: radial-gradient(circle, rgb(255 255 255 / 0.08), transparent 62%);
+}
+.plogin__simbolo {
+  position: relative;
+  width: clamp(140px, 22vw, 260px);
+  height: auto;
+  translate: 6% 0;
+  color: var(--text-strong);
+  filter: drop-shadow(0 20px 40px rgb(0 0 0 / 0.14));
+}
+.plogin__nome {
+  position: relative;
+  color: var(--text-strong);
+}
+.plogin__frase {
+  position: relative;
+  color: var(--text-faint);
+}
+.plogin__cartao {
+  width: min(100%, 420px);
+  display: grid;
+  gap: 16px;
+  padding: clamp(24px, 3vw, 36px);
+  border-radius: 28px;
+  background: var(--glass-fill), var(--surface);
+  box-shadow: var(--shadow-float);
+}
+.plogin__titulo {
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-weight: 300;
+  color: var(--text-strong);
+}
+.plogin__titulo strong {
+  font-weight: 800;
+}
+.plogin__apoio {
+  margin-top: -8px;
+  color: var(--text-faint);
+}
+.plogin__links {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.9rem;
+}
+.plogin .zro-input {
+  transition:
+    box-shadow 0.25s var(--ease),
+    border-color 0.25s var(--ease);
+}
+.plogin .zro-input:focus {
+  box-shadow: 0 0 0 4px rgb(127 127 127 / 0.16);
+}
+@media (max-width: 860px) {
+  .plogin {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+  }
+  .plogin__simbolo {
+    width: 120px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .painel__lado {
+    animation: painel-lado 0.7s var(--spring) both;
+  }
+  .painel__topo {
+    animation: rise 0.8s var(--spring) 0.1s both;
+  }
+  .pcard {
+    animation: rise 0.7s var(--spring) both;
+    animation-delay: calc(0.2s + var(--i, 0) * 60ms);
+  }
+  .plogin__simbolo .bsym__ring {
+    stroke-dasharray: 100;
+    animation: bsym-draw 1.4s var(--ease) 0.2s both;
+  }
+  .plogin__simbolo .bsym__spark {
+    animation: zro-spark 1.6s var(--ease) 0.4s both;
+  }
+  .plogin__halo {
+    animation: phero-fade 1.6s var(--ease) 0.3s both;
+  }
+  .plogin__nome,
+  .plogin__frase {
+    animation: rise 0.9s var(--spring) 1.2s both;
+  }
+  .plogin__cartao {
+    animation: plogin-cartao 0.9s var(--spring) 0.5s both;
+  }
+  .plogin .zro-field__error {
+    animation: plogin-erro 0.45s ease both;
+  }
+}
+@keyframes painel-lado {
+  from {
+    opacity: 0;
+    translate: -24px 0;
+  }
+}
+@keyframes plogin-cartao {
+  from {
+    opacity: 0;
+    translate: 0 28px;
+    scale: 0.97;
+    filter: blur(6px);
+  }
+}
+@keyframes plogin-erro {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  20%,
+  60% {
+    translate: -6px 0;
+  }
+  40%,
+  80% {
+    translate: 6px 0;
+  }
+}
+/* ───── Planos honestos (26/10/2026) ─────
+   Mensal/Anual é um par de rádios: o :has() troca os preços sem JavaScript. Cartões de vidro, preço fino, créditos
+   em destaque e as ferramentas como ícones. */
+.pricing {
+  gap: clamp(20px, 3vw, 32px);
+}
+.cycle {
+  justify-self: center;
+  display: inline-flex;
+  gap: 4px;
+  margin: 0;
+  padding: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--glass-fill), var(--surface);
+  box-shadow: var(--shadow-float);
+}
+.cycle label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-weight: 600;
+  color: var(--text-mute, #6e6e73);
+  cursor: pointer;
+  transition:
+    background 0.3s var(--ease),
+    color 0.3s var(--ease);
+}
+.cycle input:checked + label {
+  background: var(--text-strong);
+  color: var(--bg, #fff);
+}
+.cycle input:focus-visible + label {
+  outline: 2px solid var(--text-strong);
+  outline-offset: 2px;
+}
+.cycle__save {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgb(127 127 127 / 0.16);
+}
+.pricing:has(#ciclo-anual:checked) .when-month,
+.pricing:not(:has(#ciclo-anual:checked)) .when-year {
+  display: none;
+}
+
+.tiers {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
+  align-items: stretch;
+  width: 100%;
+}
+.tier {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 30px 28px 28px;
+  border-radius: 30px;
+  background: var(--glass-fill), var(--surface);
+  box-shadow: var(--shadow-float);
+  text-align: left;
+}
+.tier--featured {
+  box-shadow:
+    var(--shadow-float),
+    inset 0 0 0 1.5px var(--text-strong);
+}
+.tier__head h2 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
+}
+.tier__tag {
+  margin-top: 4px;
+  color: var(--text-mute, #6e6e73);
+}
+.tier__price {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--text-strong);
+}
+.tier__from {
+  width: 100%;
+  font-size: 0.8rem;
+  color: var(--text-mute, #6e6e73);
+}
+.tier__amount {
+  font-family: var(--font-apple);
+  font-weight: 300;
+  font-size: clamp(2.2rem, 4vw, 2.7rem);
+  letter-spacing: -0.035em;
+  line-height: 1;
+}
+.tier__per {
+  font-weight: 600;
+  color: var(--text-mute, #6e6e73);
+}
+.tier__sub {
+  min-height: 1.4em;
+  margin-top: -6px;
+  font-size: 0.9rem;
+  color: var(--text-mute, #6e6e73);
+}
+.tier__sub strong {
+  color: var(--text-strong);
+}
+.tier__credits {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgb(127 127 127 / 0.08);
+  cursor: help;
+}
+.tier__credits strong {
+  font-family: var(--font-apple);
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-strong);
+}
+.tier__credits span {
+  font-size: 0.85rem;
+  line-height: 1.25;
+  color: var(--text-mute, #6e6e73);
+}
+.tier__apps {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.tier__label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-mute, #6e6e73);
+}
+.tier__apps ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tier__apps li {
+  display: grid;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.1);
+}
+.tier__apps .zro-mark--initials {
+  background: linear-gradient(150deg, #3a3a3e, #0b0b0c);
+  border-color: rgb(255 255 255 / 0.08);
+  color: #fff;
+  border-radius: 22%;
+}
+@media (min-width: 700px) {
+  .tier__tag {
+    min-height: 2.6em;
+  }
+}
+.tier__note {
+  font-size: 0.85rem;
+  color: var(--text-mute, #6e6e73);
+}
+.tier__cta {
+  margin-top: auto;
+  justify-content: center;
+}
+
+.tier-free {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 22px 28px;
+  border-radius: 24px;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+.tier-free h2 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+.pricing__more {
+  max-width: 640px;
+  margin-inline: auto;
+  color: var(--text-mute, #6e6e73);
+  text-align: left;
+}
+.pricing__more summary {
+  cursor: pointer;
+  text-align: center;
+  font-weight: 600;
+}
+.pricing__more p {
+  margin-top: 10px;
+}
+
+/* Avulso numa janela só: os apps viram botões de marcar e o valor soma (components/avulso-seletor.tsx). */
+.pricing__livre {
+  max-width: 640px;
+  margin-inline: auto;
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: rgb(127 127 127 / 0.1);
+  color: var(--text);
+  text-align: center;
+}
+.pricing__livre strong {
+  color: var(--text-strong);
+}
+.avulso__lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.avulso__app {
+  position: relative;
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 10px 4px 8px;
+  border: 1.5px solid transparent;
+  border-radius: 16px;
+  background: rgb(127 127 127 / 0.06);
+  color: var(--text-faint);
+  font: 600 0.72rem/1.2 var(--font-display);
+  cursor: pointer;
+  transition:
+    border-color 0.25s var(--ease),
+    background 0.25s var(--ease),
+    color 0.25s var(--ease),
+    scale 0.3s var(--spring);
+}
+.avulso__app:hover {
+  background: rgb(127 127 127 / 0.12);
+}
+.avulso__app:active {
+  scale: 0.96;
+}
+.avulso__app .zro-mark {
+  box-shadow: 0 6px 14px rgb(0 0 0 / 0.14);
+}
+.avulso__app[aria-pressed='true'] {
+  border-color: var(--text-strong);
+  background: color-mix(in srgb, var(--p) 12%, var(--surface));
+  color: var(--text-strong);
+}
+.avulso__app:focus-visible {
+  outline: 2px solid var(--text-strong);
+  outline-offset: 2px;
+}
+.avulso__check {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text-strong);
+  opacity: 0;
+  scale: 0.4;
+  transition:
+    opacity 0.2s var(--ease),
+    scale 0.35s var(--spring);
+}
+.avulso__check::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 5px;
+  width: 7px;
+  height: 4px;
+  border: solid var(--bg);
+  border-width: 0 0 2px 2px;
+  rotate: -45deg;
+}
+.avulso__app[aria-pressed='true'] .avulso__check {
+  opacity: 1;
+  scale: 1;
+}
+.avulso__dica {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgb(127 127 127 / 0.08);
+}
+.tier__cta.is-off {
+  opacity: 0.45;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tier__amount {
+    transition: opacity 0.2s var(--ease);
   }
 }

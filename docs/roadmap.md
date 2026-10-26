@@ -57,6 +57,13 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   ativa, pedido de renovação ou upgrade que a equipe atende no console) e Acessos (organizações, papel, planos e
   ferramentas liberadas, apps em que a pessoa entrou). Migration 0010 (`user_avatars`, `plan_requests`,
   `auth_tokens.new_email`). ⛔ Renovar e fazer upgrade com pagamento de verdade dependem do provedor de pagamento.
+- ✅ App para computador como painel (26/10/2026, pedido do titular): abre com a animação da marca (o anel se
+  desenha e a estrela inteira recolhe, `desktop/paginas/abertura.html`) e cai no painel `/app`, no espírito do
+  Creative Cloud: barra lateral com a conta, cartões das ferramentas com Instalar/Abrir/Atualizar e "Atualizar tudo".
+  Login próprio animado em `/app/entrar`. Versão 1.1.0.
+- ✅ AEON e Revela disponíveis (migration 0013, decisão do titular): entram no Completo, no Pro e no grátis de hoje.
+- ✅ Planos: o Avulso vira uma janela só, em que se marcam um ou mais apps e o valor soma. Com as vendas fechadas,
+  tudo liberado e os botões levam a baixar; com as vendas, a assinar.
 - ✅ Menu lateral recolhível (botão e ⌘/Ctrl + \\, lembra a escolha; recolhe sozinho entre 901 e 1200 px), conteúdo
   até 1680 px centralizado e uma barra só no celular, com o menu em folha que fecha ao navegar.
 - ✅ Organizações, troca de organização ativa, convites (e-mail confirmado e igual), papéis, remoção, dono garantido.
