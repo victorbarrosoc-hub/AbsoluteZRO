@@ -9,7 +9,7 @@ import { mensagemDeErro } from "@/components/conta/mensagens";
 import { Moldura } from "@/components/conta/moldura";
 import { buttonClasses } from "@/components/ui/button";
 import { usuarioAtual } from "@/lib/auth/atual";
-import { voltaSegura } from "@/lib/auth/volta";
+import { destinoDeEntrada, voltaSegura } from "@/lib/auth/volta";
 import { FormEntrar } from "./form";
 
 export const metadata: Metadata = { title: "Entrar" };
@@ -20,7 +20,7 @@ export default async function Entrar({ searchParams }: Props) {
   const q = await searchParams;
   const volta = voltaSegura(q.volta);
   const atual = await usuarioAtual();
-  if (atual?.via === "cookie") redirect(volta);
+  if (atual?.via === "cookie") redirect(destinoDeEntrada(volta));
 
   const erro = typeof q.erro === "string" ? q.erro : undefined;
   const comVolta = (caminho: string) => (volta === "/conta" ? caminho : `${caminho}?volta=${encodeURIComponent(volta)}`);

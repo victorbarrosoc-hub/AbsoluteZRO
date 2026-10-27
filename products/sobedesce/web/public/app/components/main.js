@@ -14,8 +14,7 @@ import { BatchCards, FileName, QueueRow, SequenceBar } from './queue.js'
 import { InstallHint } from './install-hint.js'
 import { isIOS } from '../lib/platform.js'
 import { ComputerCard } from './computador.js'
-import { Atalhos, Espaco, Recentes } from './inicio.js'
-import { PainelZ } from './z.js'
+import { Atalhos, Espaco, Recentes, Saudacao } from './inicio.js'
 import { P2pAndamentoCompacto } from './p2p.js'
 
 export function Avatar({ user, size = 32 }) {
@@ -334,11 +333,10 @@ export function MainScreen() {
 
   const waiting = issue === 'rede'
   const reconnect = issue === 'reconectar'
-  // No Início, a Z é o painel inicial (pedido do titular, 27/10/2026): cumprimenta e conversa; o resto segue abaixo.
   return html`<div class=${cx('screen', 'main', waiting && 'has-tap-pill')}>
     <${Header} user=${user} sum=${sum} items=${items} waiting=${waiting} awake=${awake} />
     <main class=${cx('main-body', compact && 'is-compact', inicio && 'is-inicio')}>
-      ${inicio ? html`<${PainelZ} />` : null}
+      ${inicio ? html`<${Saudacao} user=${user} />` : null}
       ${LAN ? null : html`<${ComputerCard} />`}
       ${!LAN && compact ? html`<${P2pAndamentoCompacto} />` : null}
       ${compact

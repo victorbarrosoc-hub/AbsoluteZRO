@@ -14,6 +14,8 @@ import { openExternal } from '../lib/desktop.js'
 
 // O que se usa todo dia em cima; Dispositivos e Ajustes embaixo. Frames e Cartões com item próprio (não ficam escondidos).
 const NAV = [
+  // a Z, a IA da Absolute ZRO: o primeiro item e a tela de entrada (pedido do titular, 27/10/2026)
+  { id: 'z', label: 'Z', icon: 'z', title: 'A Z, a IA da Absolute ZRO' },
   { id: 'painel', label: 'Início', icon: 'home' },
   { id: 'transferencias', label: 'Transferências', icon: 'transfers' },
   { id: 'drive', label: 'Drive', icon: 'cloud' },
@@ -163,7 +165,7 @@ function AccountChip() {
 
 function NavItem({ n, current }) {
   const on = current === n.id || n.tambem?.includes(current)
-  return html`<a href=${`#/${n.id}`} class=${cx('nav-item', on && 'is-on')} aria-current=${on ? 'page' : undefined}>
+  return html`<a href=${`#/${n.id}`} class=${cx('nav-item', on && 'is-on')} aria-current=${on ? 'page' : undefined} title=${n.title}>
     <${Icon} name=${n.icon} size=${17} />
     <span>${n.label}</span>
     ${n.id === 'transferencias' ? html`<${NavBadge} />` : null}
@@ -173,7 +175,7 @@ function NavItem({ n, current }) {
 
 export function Sidebar({ current }) {
   return html`<aside class="sidebar">
-    <div class="sidebar-brand"><a href="#/painel" aria-label="SOBEDESCE — início"><${Wordmark} size=${22} /></a></div>
+    <div class="sidebar-brand"><a href="#/z" aria-label="SOBEDESCE — início"><${Wordmark} size=${22} /></a></div>
     <nav class="nav" aria-label="Principal">
       ${NAV.map((n) => html`<${NavItem} n=${n} current=${current} />`)}
     </nav>

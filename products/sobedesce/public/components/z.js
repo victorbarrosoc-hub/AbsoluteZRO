@@ -1,4 +1,5 @@
-// A Z, a IA da Absolute ZRO, no Início do app de computador (27/10/2026). O painel <zro-ia> (servido pela Absolute
+// A Z, a IA da Absolute ZRO, na aba própria do app de computador (pedido do titular, 27/10/2026: "uma aba só pra Z em
+// todas as plataformas"). É o primeiro item do menu e a tela de entrada (lib/router.js, rota padrão "z"). O painel <zro-ia> (servido pela Absolute
 // ZRO) fala com /api/ia/* deste motor, que repassa ao site com o Bearer deste computador (CloudAuth.ia); o site
 // acrescenta o token da Absolute ZRO da conta. Nenhum token chega à interface.
 // Sem conta neste computador: "Entrar na conta SOBEDESCE" (o fluxo de código de sempre). Conta sem o token da Z:
@@ -64,8 +65,9 @@ export function PainelZ({ nome }) {
     return () => window.removeEventListener('focus', tentar)
   }, [semLogin])
 
-  const reconectar = () => openExternal(`${siteUrl()}/api/zro/entrar?modo=vincular&volta=%2Fconta`)
+  const reconectar = () => openExternal(`${siteUrl()}/api/zro/entrar?modo=vincular&volta=%2Fz`)
   return html`<section class="pn-z" aria-label="Z, a IA da Absolute ZRO">
+    <h1 class="pn-z-oculto">Z</h1>
     <div class="pn-z-painel" ref=${caixa}></div>
     ${semLogin
       ? html`<div class="pn-z-acao">
@@ -75,4 +77,10 @@ export function PainelZ({ nome }) {
         </div>`
       : null}
   </section>`
+}
+
+/** A tela da aba Z: a Z ocupa a janela. Sem animação de entrada com transform (prenderia a gaveta de Conversas). */
+export function ZScreen() {
+  const nome = useStore((s) => (s.cloud?.usuario?.nome || '').trim().split(/\s+/)[0])
+  return html`<div class="page page-z"><${PainelZ} nome=${nome} /></div>`
 }

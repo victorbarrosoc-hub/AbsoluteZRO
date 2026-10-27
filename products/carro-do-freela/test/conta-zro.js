@@ -31,12 +31,15 @@
  *      não tem aparece como "sem conta", e o botão vira "Abrir". Fora do
  *      domínio o bloco não existe.
  *
- * A Z, A IA DO ECOSSISTEMA (27/out · 4):
- *  11. com conta liberada, a Z é o painel inicial (topo do Feed): o
- *      <zro-ia> conversa por /api/zro/ia (função de verdade → HUB falso),
- *      a resposta chega em streaming e nenhum token aparece na página. Sem
- *      o acesso da Z, aparece "Reconectar com Absolute ZRO". Fora do
- *      domínio o painel não existe e nada é pedido à absolutezro.com.
+ * A Z, A IA DO ECOSSISTEMA (27/out · 4; aba própria desde 27/out · 5):
+ *  11. no domínio a Z tem aba própria, a primeira e a tela de entrada (o
+ *      botão em destaque à esquerda do topo no celular, o primeiro item da
+ *      lateral no computador): quem entra cai nela, e o Feed volta a ser só
+ *      o Feed. Com conta liberada o <zro-ia> conversa por /api/zro/ia
+ *      (função de verdade → HUB falso), a resposta chega em streaming e
+ *      nenhum token aparece na página. Sem o acesso da Z, aparece
+ *      "Reconectar com Absolute ZRO", dentro da aba. Fora do domínio a aba
+ *      não aparece e nada é pedido à absolutezro.com.
  *      O script do painel vem do próprio repositório (apps/hub-web), por
  *      rota do Playwright: a suíte não sai para a internet.
  */
@@ -121,7 +124,7 @@ function montarSaida(semFuncoes) {
   /* ============ 1. fora do domínio, nada muda ============ */
   {
     const { ctx, p, erros, pedidos, deFora } = await abrir('file://' + path.join(RAIZ, 'public', 'index.html'));
-    t(await p.evaluate(() => { const z = document.getElementById('z-painel'); return z.hidden && getComputedStyle(z).display === 'none' && !document.querySelector('zro-ia') }), '⟶⟶ aberto do disco, o painel da Z não existe (nem caixa vazia)');
+    t(await p.evaluate(() => { const z = document.getElementById('v-z'); return z.hidden && !z.offsetParent && !document.querySelector('zro-ia') && document.getElementById('tab-z').hidden && document.getElementById('z-top').hidden }), '⟶⟶ aberto do disco, a aba da Z não aparece (nem o painel, nem os botões)');
     t(deFora.length === 0, 'e nada é pedido à absolutezro.com (' + deFora.join(', ') + ')');
     await telaEntrar(p);
     const r = await botao(p);
@@ -306,20 +309,29 @@ function montarSaida(semFuncoes) {
     await ctx.close();
   }
 
-  /* ============ 11. a Z, a IA da Absolute ZRO, no painel inicial ============ */
+  /* ============ 11. a Z, a IA da Absolute ZRO, na aba própria ============ */
   {
     zro.estado.proximo = { pessoa: Object.assign({}, RITA, { sub: 'zro-46' }), negar: false, adulterar: null };
     const { ctx, p, erros, deFora } = await abrir(DOMINIO, { aceita401: true });
     await telaEntrar(p);
     await Promise.all([p.waitForURL(/\/$/, { timeout: 15000 }).catch(() => {}), p.locator('#lg-zro').click()]);
     await p.waitForFunction(() => typeof ZRO_CONTA !== 'undefined' && ZRO_CONTA && MODO, null, { timeout: 15000 }).catch(() => {});
-    await p.evaluate(() => show('feed'));
+    /* conta nova passa pelo cadastro; terminado, a primeira tela é a Z */
+    await p.evaluate(() => { if (S.tab === 'cadastro') concluirCadastro() });
     await p.waitForFunction(() => { const z = document.querySelector('zro-ia'); return z && z.shadowRoot && /Rita/.test(z.shadowRoot.textContent) }, null, { timeout: 15000 }).catch(() => {});
-    const z = await p.evaluate(() => { const el = document.querySelector('zro-ia'), painel = document.getElementById('z-painel'), secao = document.getElementById('v-feed');
-      return { existe: !!el, visivel: !painel.hidden && !!painel.offsetParent, primeiro: secao.firstElementChild === painel && !secao.querySelector('.wrap').contains(painel), api: el && el.getAttribute('api'),
+    const z = await p.evaluate(() => { const el = document.querySelector('zro-ia'), aba = document.getElementById('v-z'), topo = document.getElementById('z-top');
+      const primeiro = [...document.querySelector('.top .wrap').children].find(e => e.offsetParent);
+      return { existe: !!el, tela: S.tab, dentro: !!el && aba.contains(el) && !aba.hidden && !!aba.offsetParent, topo: !topo.hidden && !!topo.offsetParent && primeiro === topo,
+        atual: topo.getAttribute('aria-current'), lateral: document.querySelector('.top .tabs .tab').id === 'tab-z' && !document.getElementById('tab-z').hidden,
+        feedLimpo: !document.getElementById('v-feed').querySelector('zro-ia, #z-painel'), api: el && el.getAttribute('api'),
         tema: el && el.getAttribute('tema'), texto: el && el.shadowRoot ? el.shadowRoot.textContent : '', sug: el ? JSON.parse(el.getAttribute('sugestoes')) : [],
-        acao: !document.getElementById('z-acao').hidden } });
-    t(z.existe && z.visivel && z.primeiro, '⟶⟶ com conta liberada, a Z é a primeira coisa do Feed (o painel inicial), fora da .wrap que anima');
+        alto: el ? el.getBoundingClientRect().height : 0, acao: !document.getElementById('z-acao').hidden, sem: !document.getElementById('z-sem').hidden } });
+    t(z.existe && z.tela === 'z' && z.dentro, '⟶⟶ quem entra cai na aba da Z, e o painel mora nela (' + z.tela + ')');
+    t(z.topo && z.atual === 'true', 'no celular a Z é o primeiro botão do topo, em destaque, aceso na aba dela');
+    t(z.lateral, 'e no computador é o primeiro item da lateral, antes de Planos');
+    t(z.feedLimpo, 'o Feed volta a ser só o Feed');
+    t(z.alto >= 380, 'a Z ocupa a tela da aba (' + Math.round(z.alto) + 'px)');
+    t(!z.sem, 'com a conta liberada, sem o "Entrar" da aba');
     t(z.api === '/api/zro/ia', 'e fala com o servidor do Carro, não com o HUB direto (' + z.api + ')');
     t(/Rita/.test(z.texto) && !z.acao, 'cumprimenta pelo nome que veio do HUB, sem pedir login (' + z.texto.slice(0, 60).trim() + ')');
     t(z.sug.length >= 3 && z.sug.length <= 4, 'com 3 a 4 sugestões do Carro (' + z.sug.join(' · ') + ')');
@@ -346,15 +358,16 @@ function montarSaida(semFuncoes) {
     await telaEntrar(p);
     await Promise.all([p.waitForURL(/\/$/, { timeout: 15000 }).catch(() => {}), p.locator('#lg-zro').click()]);
     await p.waitForFunction(() => typeof ZRO_CONTA !== 'undefined' && ZRO_CONTA && MODO, null, { timeout: 15000 }).catch(() => {});
-    await p.evaluate(() => show('feed'));
+    await p.evaluate(() => { if (S.tab === 'cadastro') concluirCadastro() });
     await p.waitForFunction(() => !document.getElementById('z-acao').hidden, null, { timeout: 15000 }).catch(() => {});
-    const r = await p.evaluate(() => ({ acao: !document.getElementById('z-acao').hidden, texto: document.getElementById('z-reconectar').textContent }));
-    t(r.acao && r.texto === 'Reconectar com Absolute ZRO', '⟶⟶ sem o acesso da Z: "Reconectar com Absolute ZRO" (' + r.texto + ')');
+    const r = await p.evaluate(() => ({ acao: !document.getElementById('z-acao').hidden, texto: document.getElementById('z-reconectar').textContent, tela: S.tab,
+      dentro: document.getElementById('v-z').contains(document.getElementById('z-reconectar')) }));
+    t(r.acao && r.texto === 'Reconectar com Absolute ZRO' && r.tela === 'z' && r.dentro, '⟶⟶ sem o acesso da Z: "Reconectar com Absolute ZRO", dentro da aba dela (' + r.texto + ')');
     zro.estado.semEscopoIa = false;
     await Promise.all([p.waitForURL(/\/$/, { timeout: 15000 }).catch(() => {}), p.locator('#z-reconectar').click()]);
     await p.waitForFunction(() => { const z = document.querySelector('zro-ia'); return z && z.shadowRoot && /Rita/.test(z.shadowRoot.textContent) }, null, { timeout: 15000 }).catch(() => {});
-    await p.evaluate(() => show('feed'));
-    t(await p.evaluate(() => { const z = document.querySelector('zro-ia'); return !!z && /Rita/.test(z.shadowRoot.textContent) && document.getElementById('z-acao').hidden }), 'reconectou pelo HUB e a Z abre de novo');
+    await p.evaluate(() => { if (S.tab === 'cadastro') concluirCadastro() });
+    t(await p.evaluate(() => { const z = document.querySelector('zro-ia'); return !!z && /Rita/.test(z.shadowRoot.textContent) && document.getElementById('z-acao').hidden && S.tab === 'z' }), 'reconectou pelo HUB e a Z abre de novo, na aba dela');
     await ctx.close();
   }
 

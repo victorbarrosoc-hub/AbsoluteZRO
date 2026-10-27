@@ -5,7 +5,7 @@
 import { createHash } from "node:crypto";
 import { COOKIE_APARELHO, conferirAparelho, opcoesCookieAparelho } from "@/lib/auth/aparelho";
 import { autenticar, COOKIE_SESSAO, criarSessao, opcoesCookieSessao } from "@/lib/auth/sessao";
-import { voltaSegura } from "@/lib/auth/volta";
+import { destinoDeEntrada, voltaSegura } from "@/lib/auth/volta";
 import { depoisDaResposta, type Depois } from "@/lib/depois";
 import { chaveConfigurada } from "@/lib/google/cripto";
 import { comParametro } from "@/lib/google/rotas";
@@ -136,6 +136,6 @@ export async function callback(req: Request, depois: Depois = depoisDaResposta):
     cookies.push(serializarCookie(COOKIE_APARELHO, aparelho, { maxAge: a.maxAge, path: a.path, secure: a.secure }));
   }
   const celular = /iPhone|iPad|iPod|Android|Mobile/i.test(req.headers.get("user-agent") ?? "");
-  const destino = volta === "/conta" && celular ? "/app/" : criou ? comParametro(volta, "zro", "ok") : volta;
+  const destino = volta === "/conta" && celular ? "/app/" : criou ? comParametro(volta, "zro", "ok") : destinoDeEntrada(volta);
   return ir(destino, cookies);
 }

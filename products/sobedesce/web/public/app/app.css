@@ -9001,17 +9001,72 @@ select.input {
   }
 }
 
-/* A Z, a IA da Absolute ZRO, no topo do Início (components/z.js). O painel tem altura própria; o botão de reconectar
-   só aparece sem token da Z. */
+/* A Z, a IA da Absolute ZRO, na aba própria (components/z.js): a primeira aba e a tela de entrada. O painel ocupa a
+   tela entre o topo seguro e a barra de abas; o botão de reconectar só aparece sem token da Z. */
+.z-tela {
+  padding: calc(var(--safe-t) + 14px) calc(var(--gutter) + var(--safe-r)) calc(var(--safe-b) + 64px) calc(var(--gutter) + var(--safe-l));
+}
 .ini-z {
   display: grid;
   gap: 10px;
-  margin: 0 0 6px;
 }
 .ini-z-painel {
-  min-height: 400px;
-  --zro-ia-altura: 400px;
+  --zro-ia-altura: max(420px, calc(100dvh - var(--safe-t) - var(--safe-b) - 96px));
+  min-height: var(--zro-ia-altura);
 }
 .ini-z-entrar {
   justify-self: center;
+}
+.z-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.z-entrar {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 18px;
+  min-height: calc(100dvh - var(--safe-t) - var(--safe-b) - 120px);
+  text-align: center;
+}
+.z-entrar-anel {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 999px;
+  color: var(--text);
+  background: var(--fill-2);
+}
+.z-entrar-t {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.tab-z.is-on {
+  color: var(--text);
+}
+/* seis abas (com Referências): no celular estreito o rótulo encolhe em vez de cortar */
+.tabbar .tab-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 400px) {
+  .tabbar.n-6 .tab {
+    font-size: 10px;
+    letter-spacing: -0.01em;
+  }
+}
+@media (max-width: 345px) {
+  .tabbar.n-6 .tab {
+    font-size: 9px;
+  }
 }

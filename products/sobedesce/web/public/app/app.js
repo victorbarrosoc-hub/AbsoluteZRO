@@ -140,7 +140,8 @@ function openComputer() {
 
 function App() {
   const status = useApp((s) => s.auth.status)
-  const view = LAN ? html`<${MainScreen} />` : status === 'signedIn' ? html`<${Tabs} />` : html`<${AccountScreen} />`
+  // A Z tem aba própria e aparece sempre (com o estado de login dela): só a abertura da conta fica sem abas.
+  const view = LAN ? html`<${MainScreen} />` : status === 'loading' ? html`<${AccountScreen} />` : html`<${Tabs} pronto=${status === 'signedIn'} />`
   return html`${view}<${SheetHost} registry=${SHEETS} /><${Toasts} />`
 }
 

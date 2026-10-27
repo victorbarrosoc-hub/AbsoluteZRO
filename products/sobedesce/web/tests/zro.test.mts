@@ -127,9 +127,14 @@ describe("token adulterado ou fora de ordem", () => {
     assert.equal(zro.estado.trocas, antes, "o código nem foi usado");
   });
 
+  test("sem volta pedida, quem entra cai na aba da Z", async () => {
+    const r = await fluxo({ pessoa: PRODUTORA });
+    assert.equal(r.destino, "/z");
+  });
+
   test("volta externo é ignorado", async () => {
     const r = await fluxo({ pessoa: PRODUTORA, volta: "https://evil.com/roubar" });
-    assert.equal(r.destino, "/conta");
+    assert.equal(r.destino, "/z", "volta padrão: a aba da Z, a tela de entrada");
   });
 
   test("volta sem o cookie da ida: pede para tentar de novo", async () => {
