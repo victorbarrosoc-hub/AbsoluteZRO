@@ -10,6 +10,7 @@ import { PlatformScript } from "@/components/home/platform";
 import { PlatformsSection } from "@/components/home/platforms-section";
 import { StatsStrip } from "@/components/home/stats-strip";
 import { SynqueiSection } from "@/components/home/synquei-section";
+import { ZSection } from "@/components/home/z-section";
 import { SiteFooter } from "@/components/site/footer";
 import { SiteHeader } from "@/components/site/header";
 import { SITE_DESCRICAO } from "@/lib/site";
@@ -35,6 +36,7 @@ export default function Home() {
           <AparelhosSection />
           <NovidadesSection />
           <SynqueiSection />
+          <ZSection />
           <PlatformsSection />
           <ClosingSection />
         </main>
