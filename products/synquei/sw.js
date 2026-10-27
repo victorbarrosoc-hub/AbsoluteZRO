@@ -1,7 +1,7 @@
 // Modo offline do Synquei: guarda o site e o app na primeira visita. HTML, site.css e site.js vêm da rede quando dá
 // (para pegar versões novas); o resto vem do cache e é atualizado em segundo plano. /api/ (inclusive a Z, /api/zro/ia) e
 // /baixar/ vão sempre direto à rede; o painel da Z (absolutezro.com) é de outra origem e também não passa por aqui.
-const CACHE = 'synquei-v20'
+const CACHE = 'synquei-v21'
 const CORE = [
   '/',
   '/site.css',

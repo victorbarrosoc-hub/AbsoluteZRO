@@ -710,9 +710,23 @@ describe('a Z (repasse /api/zro/ia)', () => {
     assert.match(z, /setAttribute\("api", "\/api\/zro\/ia"\)/)
     assert.ok(!/\.token\s*=/.test(z))
     const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
-    assert.match(sw, /tpeasy-v17/)
+    assert.match(sw, /tpeasy-v18/)
     assert.match(sw, /url\.pathname\.startsWith\("\/api\/"\)/)
     const v = JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'))
     assert.ok(v.rewrites.some((r) => r.source === '/api/zro/ia/:caminho*' && r.destination === '/api/zro/ia?c=:caminho*'))
+  })
+
+  test('a Z tem aba própria: a primeira, e a tela de entrada; Roteiros volta a ser como era', async () => {
+    const { readFileSync } = await import('node:fs')
+    const html = readFileSync(new URL('../app/index.html', import.meta.url), 'utf8')
+    const ui = readFileSync(new URL('../app/js/ui.js', import.meta.url), 'utf8')
+    const main = readFileSync(new URL('../app/js/main.js', import.meta.url), 'utf8')
+    const abas = /<nav class="tabbar"[^>]*>([\s\S]*?)<\/nav>/.exec(html)[1]
+    assert.match(abas.trim(), /^<button class="tab" data-go="z">/)
+    assert.match(ui, /TABS = \["z", "roteiros", "tp", "ajustes"\]/)
+    assert.match(main, /fromHash\) \? fromHash : "z"/)
+    const roteiros = /data-tab="roteiros"[\s\S]*?<\/section>\s*<!--/.exec(html)[0]
+    assert.ok(!/zPainel/.test(roteiros), 'a Z não fica empilhada em Roteiros')
+    assert.match(/data-tab="z"[\s\S]*?<\/section>/.exec(html)[0], /id="zPainel"/)
   })
 })

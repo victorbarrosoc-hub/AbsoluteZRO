@@ -1101,7 +1101,7 @@ a.btn {
   bottom: 0;
   z-index: 20;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   height: calc(var(--tabbar-h) + var(--safe-b));
   padding: 0 var(--safe-r) var(--safe-b) var(--safe-l);
   background: var(--tab-glass);
@@ -2453,18 +2453,59 @@ html.kb-open .editor-bar {
   }
 }
 
-/* ───────────── a Z no topo de Roteiros (app/js/z.js) ───────────── */
-.z-painel {
-  --zro-ia-altura: min(520px, 64vh);
-  --zro-ia-fundo-gaveta: var(--bg);
-  margin: 4px 0 8px;
+/* ───────────── a aba da Z (app/js/z.js): a Z ocupa a tela toda ───────────── */
+.view-z {
+  padding-top: calc(var(--safe-t) + 16px);
+  padding-bottom: calc(var(--tabbar-h) + var(--safe-b) + 12px);
 }
-.z-painel[hidden],
+.z-painel {
+  --z-livre: calc(100dvh - var(--safe-t) - 16px - var(--tabbar-h) - var(--safe-b) - 12px);
+  --zro-ia-altura: var(--z-livre);
+  --zro-ia-fundo-gaveta: var(--bg);
+  max-width: 760px;
+  margin: 0 auto;
+}
+/* com o botão de entrar embaixo, a Z encolhe o que ele ocupa: a tela não rola */
+.z-painel:has(.z-entrar:not([hidden])) {
+  --zro-ia-altura: calc(var(--z-livre) - 62px);
+}
 .z-entrar[hidden] {
   display: none;
 }
 .z-entrar {
   display: flex;
   justify-content: center;
-  margin-top: 4px;
+  margin-top: 8px;
+}
+/* sem a Z aqui (offline, sem as funções da conta) */
+.z-fora {
+  min-height: var(--z-livre);
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+}
+.z-fora-anel {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 12px;
+  border: 1.5px solid var(--text-3);
+  border-radius: 50%;
+  opacity: 0.6;
+}
+.z-fora h2 {
+  font-size: 28px;
+  font-weight: 300;
+  letter-spacing: -0.03em;
+}
+.z-fora p {
+  color: var(--text-2);
+}
+.z-fora-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
 }

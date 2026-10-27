@@ -23,13 +23,13 @@ import sfxMontagem from './views/sfx.js'
 import { iniciarOrganizar, O as ORG } from './organizar.js'
 import { cartaoPlano, abrirPlanos } from './plano.js'
 import { iniciarConta } from './conta.js'
-import { iniciarZ } from './z.js'
+import { iniciarZ, telaZ } from './z.js'
 import { pendencias, numeroBalao, rotuloBalao } from './pendencias.js'
 
-const VIEWS = { inicio, projetos, midia, sincronizar, linha, exportar, formatos, ajustes, organizar, sfx: sfxMontagem }
-const ORDER = ['inicio', 'midia', 'sincronizar', 'linha', 'exportar']
+const VIEWS = { z: telaZ, inicio, projetos, midia, sincronizar, linha, exportar, formatos, ajustes, organizar, sfx: sfxMontagem }
+const ORDER = ['z', 'inicio', 'midia', 'sincronizar', 'linha', 'exportar']
 // ordem da barra lateral: decide se a tela entra pela direita ou pela esquerda
-const SEQ = ['inicio', 'midia', 'sincronizar', 'linha', 'exportar', 'projetos', 'organizar', 'sfx', 'formatos', 'ajustes']
+const SEQ = ['z', 'inicio', 'midia', 'sincronizar', 'linha', 'exportar', 'projetos', 'organizar', 'sfx', 'formatos', 'ajustes']
 const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 
 export function go(route, force) {
@@ -50,7 +50,8 @@ function routeFromHash() {
     }
     return 'inicio'
   }
-  return VIEWS[r] ? r : 'inicio'
+  // a Z é a primeira aba e a tela de entrada
+  return VIEWS[r] ? r : 'z'
 }
 
 let lastRoute = null
@@ -80,9 +81,10 @@ function render() {
     countUp(root)
   } else scrollTo(0, keepScroll)
   lastRoute = route
-  // a Z fica fora da tela que redesenha (a conversa não se perde): aparece só no Início
+  // a Z fica fora da tela que redesenha (a conversa não se perde): aparece só na aba dela
   const z = $('#zPainel')
-  if (z) z.hidden = route !== 'inicio' || !z.querySelector('zro-ia')
+  if (z) z.hidden = route !== 'z'
+  document.documentElement.classList.toggle('na-z', route === 'z')
   hideTip()
   chrome()
 }
@@ -440,7 +442,8 @@ addEventListener('drop', async (e) => {
 
 // atalhos
 addEventListener('keydown', (e) => {
-  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)
+  // o campo da Z fica dentro do <zro-ia> (shadow DOM): digitar nele não troca de aba
+  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || !!e.target.closest?.('zro-ia')
   const mod = e.metaKey || e.ctrlKey
   if (mod && !e.shiftKey && e.key.toLowerCase() === 'n') {
     e.preventDefault()
@@ -474,7 +477,7 @@ addEventListener('keydown', (e) => {
   if (typing || mod) return
   const v = VIEWS[S.route]
   if (v.keys && v.keys(e)) return e.preventDefault()
-  if (/^[1-5]$/.test(e.key)) go(ORDER[+e.key - 1])
+  if (/^[1-6]$/.test(e.key)) go(ORDER[+e.key - 1])
 })
 
 // ───────── início ─────────
@@ -517,7 +520,7 @@ if (kbdNovo) kbdNovo.textContent = /Mac|iPhone|iPad/.test(navigator.platform || 
 // no app de desktop a marca leva ao início (não ao site)
 if (window.synqueiDesktop) {
   const b = $('.brand')
-  if (b) b.setAttribute('href', '#/inicio')
+  if (b) b.setAttribute('href', '#/z')
 }
 // o menu volta como estava (recolhido ou aberto) e o cartão do plano entra na barra
 {
@@ -546,13 +549,8 @@ document.addEventListener('synquei:conta-mudou', () => {
   if (pc) pc.innerHTML = cartaoPlano()
   if (S.route === 'ajustes') render()
 })
-// a Z entra no topo do Início depois de saber da conta (app/js/z.js)
-iniciarConta()
-  .then(iniciarZ)
-  .then(() => {
-    const z = $('#zPainel')
-    if (z) z.hidden = S.route !== 'inicio' || !z.querySelector('zro-ia')
-  })
+// a Z entra na aba dela depois de saber da conta (app/js/z.js)
+iniciarConta().then(iniciarZ)
 
 if ('serviceWorker' in navigator && !window.synqueiDesktop && location.protocol === 'https:') {
   navigator.serviceWorker.register('/sw.js').catch(() => {})

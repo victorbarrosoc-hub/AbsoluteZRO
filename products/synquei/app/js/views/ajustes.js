@@ -80,7 +80,7 @@ export default {
         <div class="set-row"><div><b>Parar a sincronização</b></div><span><span class="kbd">⌘</span> <span class="kbd">.</span></span></div>
         <div class="set-row"><div><b>Exportar tudo</b></div><span><span class="kbd">⌘</span> <span class="kbd">E</span></span></div>
         <div class="set-row"><div><b>Empurrar clipe um quadro</b><small>Na linha do tempo. Com Option/Alt, 1 ms.</small></div><span><span class="kbd">←</span> <span class="kbd">→</span></span></div>
-        <div class="set-row"><div><b>Trocar de aba</b><small>Início, Mídia, Sincronizar, Linha do tempo, Exportar.</small></div><span><span class="kbd">1</span> … <span class="kbd">5</span></span></div>
+        <div class="set-row"><div><b>Trocar de aba</b><small>Z, Início, Mídia, Sincronizar, Linha do tempo, Exportar.</small></div><span><span class="kbd">1</span> … <span class="kbd">6</span></span></div>
       </div></section>
       ${temAtualizador() ? versaoApp() : ''}
       ${window.synqueiDesktop ? '' : `<section class="card"><header class="card-head"><h2>App de desktop</h2></header><div class="card-pad">

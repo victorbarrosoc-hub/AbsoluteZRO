@@ -1217,6 +1217,24 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   `product_id = synquei` e `zro.ia` (cadastrado pelo console; clientes com produto ganham `zro.ia` no cadastro e pela
   migração 0016). O texto interno do painel ("Pergunte ao Z…") vem do `<zro-ia>` do HUB.
 
+## A Z numa aba só dela no Synquei e no TPeasy (27/10/2026)
+
+- Pedido do titular: a Z ganha aba própria, a primeira e a tela de entrada. Synquei (site/PWA e computador): item **Z**
+  (anel fino) no topo da barra lateral e na barra de abas do celular (6 colunas); rota `#/z`, padrão para endereço vazio
+  ou desconhecido. O `#zPainel` continua fora de `#view` (a conversa não se perde ao trocar de aba) e só aparece em
+  `#/z`, ocupando a altura da janela. Atalhos: teclas 1–6 (Z, Início, Mídia, Sincronizar, Linha, Exportar) e o menu Ir
+  do computador renumerado (⌘1 Z … ⌘6 Exportar, ⌘7 Projetos, ⌘8 Organizar); digitar no campo da Z não troca de aba. A
+  lista da barra lateral rola em janela baixa. TPeasy: aba **Z** antes de Roteiros (4 colunas); o app abre na Z (um
+  link com `#roteiros`, `#tp` ou `#ajustes` ainda abre a aba dele).
+- O Início do Synquei voltou a ser o de antes (com "Bom dia"); Roteiros do TPeasy também, sem a Z em cima. Balões de
+  pendência inalterados. Sem conta e "Entrar de novo" ficam dentro da aba; offline ou sem as funções da conta, a aba diz
+  "A Z precisa de internet." com Tentar de novo e o caminho para Início/Roteiros. "Conversar com a Z" das homes leva a
+  `/app/#/z` e `/app/#z`.
+- Service worker `synquei-v21` e `tpeasy-v18`. Testes: Synquei `npm test` sem falhas (novo caso da aba no
+  `tests/zro-ia.test.mjs`); TPeasy `node --test tests/*.test.mjs` 50/50 (novo caso da aba); smoke do Electron confere
+  que o app abre na Z. Telas no Playwright com a conta e a Z simuladas: 1440 e 390, claro e escuro, sem conta, e o
+  Início/Roteiros de volta.
+
 ## A Z no painel inicial do AEON e da Revela (27/10/2026)
 
 - AEON: aba **Z** primeira no dock e página inicial do app (`app/z.js`), no site, no celular e no app de computador;

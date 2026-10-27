@@ -1,6 +1,5 @@
 // Ponto de partida do app: monta as telas, liga as abas e registra o modo offline.
 import { $, $$ } from "./util.js";
-import { ui } from "./data.js";
 import { go, TABS, enableSheetDrag, toast } from "./ui.js";
 import { mountSettingsForms, syncSettingsUI } from "./settings.js";
 import { renderAll, newFrom, startCalib } from "./views.js";
@@ -43,12 +42,13 @@ addEventListener(
 
 renderAll();
 const fromHash = location.hash.slice(1);
-go(TABS.includes(fromHash) ? fromHash : TABS.includes(ui.lastTab) ? ui.lastTab : "roteiros", { instant: true });
+// quem abre o app cai na Z (um link com #roteiros, #tp ou #ajustes ainda abre a aba dele)
+go(TABS.includes(fromHash) ? fromHash : "z", { instant: true });
 document.documentElement.classList.add("ready");
 handleRedirect();
 const aviso = avisoDaVolta();
 if (aviso) toast(aviso, 3200);
-// a Z entra no topo de Roteiros depois de saber da conta
+// a Z entra na aba dela depois de saber da conta
 verificarZro().then(iniciarZ);
 
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {

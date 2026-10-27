@@ -1,5 +1,5 @@
 // TPeasy: funciona sem internet no set. Busca a versão nova quando há rede e cai na cópia guardada quando não há.
-const CACHE = "tpeasy-v17";
+const CACHE = "tpeasy-v18";
 const FILES = [
   "/",
   "/site.css",

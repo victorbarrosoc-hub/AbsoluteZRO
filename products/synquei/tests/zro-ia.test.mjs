@@ -178,13 +178,25 @@ describe('painel do app', () => {
     assert.ok(!/\.token\s*=/.test(z), 'a página não recebe token')
     assert.match(html, /id="zPainel"/)
   })
+  test('a Z tem aba própria: a primeira, e a tela de entrada', () => {
+    const main = readFileSync(new URL('../app/js/main.js', import.meta.url), 'utf8')
+    const css = readFileSync(new URL('../app/app.css', import.meta.url), 'utf8')
+    const abas = /<nav class="tabbar"[^>]*>([\s\S]*?)<\/nav>/.exec(html)[1]
+    assert.match(abas.trim(), /^<a href="#\/z" data-r="z">/)
+    assert.match(html, /aria-label="Principal">\s*<a class="nav-item" href="#\/z" data-r="z"/)
+    assert.match(main, /const ORDER = \['z', 'inicio'/)
+    assert.match(main, /return VIEWS\[r\] \? r : 'z'/)
+    assert.match(main, /z\.hidden = route !== 'z'/)
+    // o Início volta a ser como era: sem a Z em cima e com o "Bom dia"
+    assert.ok(!/tem-z/.test(css + main + z))
+  })
   test('três ou quatro sugestões, sobre o Synquei', async () => {
     const { SUGESTOES } = await import('../app/js/z.js').catch(() => ({ SUGESTOES: JSON.parse(/SUGESTOES = (\[.*\])/.exec(z)[1].replace(/'/g, '"')) }))
     assert.ok(SUGESTOES.length >= 3 && SUGESTOES.length <= 4)
   })
   test('o service worker não guarda a Z', () => {
     const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
-    assert.match(sw, /synquei-v20/)
+    assert.match(sw, /synquei-v21/)
     assert.match(sw, /startsWith\('\/api\/'\)/)
     assert.match(sw, /u\.origin !== location\.origin/)
   })

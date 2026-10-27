@@ -789,7 +789,7 @@ button {
     right: 0;
     bottom: 0;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
     background: var(--glass);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
@@ -2150,6 +2150,14 @@ button {
 /* ───────────── barra lateral: pílula, grupos e atividade ───────────── */
 .nav-wrap {
   position: relative;
+  /* janela baixa: a lista rola e o rodapé (conta, plano, Ajustes) continua à vista */
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.nav-wrap::-webkit-scrollbar {
+  display: none;
 }
 .nav-wrap .nav {
   position: relative;
@@ -4658,16 +4666,23 @@ html:not(.is-desktop) .so-desktop {
   overflow-y: auto;
 }
 
-/* ───────────── a Z no topo do Início (app/js/z.js) ───────────── */
+/* ───────────── a aba da Z (app/js/z.js): a Z ocupa a tela toda ───────────── */
 .z-painel {
+  --z-pad: clamp(20px, 2.4vw, 40px);
   max-width: 1680px;
   margin: 0 auto;
-  padding: clamp(20px, 2.4vw, 40px) var(--page-x) 0;
+  padding: var(--z-pad) var(--page-x);
   font-family: var(--display);
-  --zro-ia-altura: min(560px, 62vh);
+  --zro-ia-altura: calc(100dvh - 2 * var(--z-pad));
   --zro-ia-fundo-gaveta: var(--bg);
+  /* o brilho do campo da Z passa um pouco da borda: não abre rolagem */
+  overflow: clip;
 }
 .z-painel[hidden] {
+  display: none;
+}
+/* na aba da Z, #view fica vazia e não ocupa espaço */
+.na-z #view {
   display: none;
 }
 .z-entrar {
@@ -4678,15 +4693,54 @@ html:not(.is-desktop) .so-desktop {
 .z-entrar[hidden] {
   display: none;
 }
-/* com a Z no topo, a saudação é dela: o Início não repete o "Bom dia" */
-.tem-z .pn-ola h1 {
-  display: none;
+/* com o botão de entrar embaixo, a Z encolhe o que ele ocupa: a tela não rola */
+.z-painel:has(.z-entrar:not([hidden])) {
+  --zro-ia-altura: calc(100dvh - 2 * var(--z-pad) - 52px);
 }
-.tem-z .page-painel {
-  padding-top: 18px;
+/* sem a Z neste lugar (offline, aberto de arquivo) */
+.z-fora {
+  min-height: calc(100dvh - 2 * var(--z-pad));
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
 }
-@media (max-width: 700px) {
+.z-fora-anel {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 10px;
+  border: 1.5px solid var(--text-3);
+  border-radius: 50%;
+  opacity: 0.6;
+}
+.z-fora h2 {
+  font-size: clamp(26px, 3vw, 34px);
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+.z-fora p {
+  color: var(--text-2);
+}
+.z-fora-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+@media (max-width: 860px) {
   .z-painel {
-    --zro-ia-altura: min(500px, 70vh);
+    --z-pad: 16px;
+    --z-tab: calc(66px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--z-pad) + var(--z-tab));
+    --zro-ia-altura: calc(100dvh - 2 * var(--z-pad) - var(--z-tab));
+  }
+  .z-painel:has(.z-entrar:not([hidden])) {
+    --zro-ia-altura: calc(100dvh - 2 * var(--z-pad) - var(--z-tab) - 52px);
+  }
+  .z-fora {
+    min-height: calc(100dvh - 2 * var(--z-pad) - var(--z-tab));
   }
 }

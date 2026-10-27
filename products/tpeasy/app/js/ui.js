@@ -15,13 +15,14 @@ export function toast(msg, ms = 1500) {
 }
 
 // ───────────── abas ─────────────
-export const TABS = ["roteiros", "tp", "ajustes"];
+// a Z é a primeira aba e a tela de entrada do app
+export const TABS = ["z", "roteiros", "tp", "ajustes"];
 let current = null;
 const scrollPos = {};
 export const currentTab = () => current;
 
 export function go(tab, { instant = false } = {}) {
-  if (!TABS.includes(tab)) tab = "roteiros";
+  if (!TABS.includes(tab)) tab = "z";
   if (pageOpen()) closePage();
   if (tab === current) {
     scrollTo({ top: 0, behavior: reducedMotion() ? "auto" : "smooth" });

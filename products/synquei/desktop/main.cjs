@@ -231,14 +231,15 @@ function menu() {
     {
       label: 'Ir',
       submenu: [
-        { label: 'Início', accelerator: 'CmdOrCtrl+1', click: tab('inicio') },
-        { label: 'Mídia', accelerator: 'CmdOrCtrl+2', click: tab('midia') },
-        { label: 'Sincronizar', accelerator: 'CmdOrCtrl+3', click: tab('sincronizar') },
-        { label: 'Linha do tempo', accelerator: 'CmdOrCtrl+4', click: tab('linha') },
-        { label: 'Exportar', accelerator: 'CmdOrCtrl+5', click: tab('exportar') },
+        { label: 'Z', accelerator: 'CmdOrCtrl+1', click: tab('z') },
+        { label: 'Início', accelerator: 'CmdOrCtrl+2', click: tab('inicio') },
+        { label: 'Mídia', accelerator: 'CmdOrCtrl+3', click: tab('midia') },
+        { label: 'Sincronizar', accelerator: 'CmdOrCtrl+4', click: tab('sincronizar') },
+        { label: 'Linha do tempo', accelerator: 'CmdOrCtrl+5', click: tab('linha') },
+        { label: 'Exportar', accelerator: 'CmdOrCtrl+6', click: tab('exportar') },
         { type: 'separator' },
-        { label: 'Projetos', accelerator: 'CmdOrCtrl+6', click: tab('projetos') },
-        { label: 'Organizar (SOBEDESCE › DaVinci)', accelerator: 'CmdOrCtrl+7', click: tab('organizar') },
+        { label: 'Projetos', accelerator: 'CmdOrCtrl+7', click: tab('projetos') },
+        { label: 'Organizar (SOBEDESCE › DaVinci)', accelerator: 'CmdOrCtrl+8', click: tab('organizar') },
         { type: 'separator' },
         { label: 'Formatos', click: tab('formatos') },
         { label: 'Ajustes', accelerator: 'CmdOrCtrl+,', click: tab('ajustes') },
@@ -431,6 +432,8 @@ async function smoke() {
       await wait(() => window.__synquei, 15000)
       const aac = typeof AudioDecoder !== 'undefined' && (await AudioDecoder.isConfigSupported({ codec: 'mp4a.40.2', sampleRate: 48000, numberOfChannels: 2 })).supported
       const desk = !!(window.synqueiDesktop && window.synqueiDesktop.isDesktop)
+      // o app abre na aba da Z
+      const naZ = window.__synquei.S.route === 'z' && !document.getElementById('zPainel').hidden
       location.hash = '#/exemplo'
       await wait(() => { const s = window.__synquei.S; return s.project && s.project.clips.length === 6 && !s.probe.active }, 60000)
       const st = await (await import('/app/js/store.js')).runSync()
@@ -439,12 +442,12 @@ async function smoke() {
       // conta Absolute ZRO: no app de desktop a barra lateral oferece entrar (o fumaça responde sem sessão)
       await wait(() => document.querySelector('#planoCard [data-entrar]'), 10000)
       const conta = /Entrar com Absolute ZRO/.test(document.getElementById('planoCard').textContent)
-      return { aac, desk, conta, total: st.total, audio: st.audio, unsynced: st.unsynced, zip: zip.length }
+      return { aac, desk, conta, naZ, total: st.total, audio: st.audio, unsynced: st.unsynced, zip: zip.length }
     })()`)
-    log(`desktop: ${r.desk} · AAC no navegador do app: ${r.aac} · conta Absolute ZRO: ${r.conta}`)
+    log(`desktop: ${r.desk} · abre na Z: ${r.naZ} · AAC no navegador do app: ${r.aac} · conta Absolute ZRO: ${r.conta}`)
     log(`exemplo: ${r.audio}/${r.total} sincronizados pelo som, ${r.unsynced} de fora, zip com ${r.zip} bytes`)
     clearTimeout(timer)
-    done(r.desk && r.conta && r.total === 6 && r.audio === 6 && r.unsynced === 0 && r.zip > 1000)
+    done(r.desk && r.naZ && r.conta && r.total === 6 && r.audio === 6 && r.unsynced === 0 && r.zip > 1000)
   } catch (err) {
     clearTimeout(timer)
     log(`erro: ${err && err.message ? err.message : err}`)
