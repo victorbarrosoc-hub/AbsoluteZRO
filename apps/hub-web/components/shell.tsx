@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import type { Authenticated } from '@zro/auth'
-import type { OrganizationSummary } from '@zro/core'
+import type { OrganizationSummary, Pendencias } from '@zro/core'
 import { Pill } from '@zro/ui'
 import { logoutAction } from '@/lib/actions/auth'
 import { switchOrgAction } from '@/lib/actions/org'
@@ -45,6 +45,7 @@ export function Shell({
   orgs,
   nav,
   avatar,
+  pendencias = {},
   children,
 }: {
   auth: Authenticated
@@ -52,6 +53,8 @@ export function Shell({
   nav: NavMode
   /** Versão da foto do perfil (null = sem foto). */
   avatar: number | null
+  /** Quantas ações esperam a pessoa em cada seção (o balão do menu). */
+  pendencias?: Pendencias
   children: ReactNode
 }) {
   const admin = auth.user.platformRole === 'admin' || auth.user.platformRole === 'support'
@@ -70,7 +73,7 @@ export function Shell({
           <Icon name="plus" />
           <span className="nav__text">Novo projeto</span>
         </Link>
-        <Nav admin={admin} />
+        <Nav admin={admin} pendencias={pendencias} />
         <div className="sidebar__foot">
           <OrgSwitch orgs={orgs} id="org-switch" />
           <div className="me">
@@ -101,7 +104,7 @@ export function Shell({
                 <Icon name="plus" />
                 Novo projeto
               </Link>
-              <Nav admin={admin} />
+              <Nav admin={admin} pendencias={pendencias} />
               <OrgSwitch orgs={orgs} id="org-switch-mobile" />
               <form action={logoutAction}>
                 <button className="zro-btn zro-btn--ghost zro-btn--small" type="submit">
