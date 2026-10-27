@@ -50,7 +50,7 @@ test('landing, responsive navigation, functional demonstration and assistant', a
   await page.route('**/api/ai/status', (r) =>
     r.fulfill({ json: { configured: false, authorized: true } }),
   );
-  await page.goto('/studio');
+  await page.goto('/studio/inicio');
   await page.getByLabel('Descreva seu objetivo').fill('Reduzir ruído de uma entrevista');
   await page.getByRole('button', { name: 'Encontrar tratamento' }).click();
   await expect(page.getByRole('button', { name: 'Revisar tratamento' })).toBeVisible();
@@ -201,7 +201,7 @@ test('landing and studio expose accessible names and sufficient text contrast', 
   page,
 }) => {
   const { default: AxeBuilder } = await import('@axe-core/playwright');
-  for (const path of ['/', '/studio']) {
+  for (const path of ['/', '/studio/inicio']) {
     await page.goto(path);
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.evaluate(async () => {
@@ -272,7 +272,7 @@ test('microphone recording can be imported, enhanced and leveled', async ({ page
 test('studio themes persist, responsive layouts fit and reduced motion pauses demonstrations', async ({
   page,
 }) => {
-  await page.goto('/studio');
+  await page.goto('/studio/inicio');
   await page.getByLabel('Tema do estúdio').selectOption('dark');
   await expect(page.locator('.studio-shell')).toHaveAttribute('data-theme', 'dark');
   await page.reload();
@@ -282,7 +282,8 @@ test('studio themes persist, responsive layouts fit and reduced motion pauses de
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.getByLabel('Tema do estúdio').selectOption(theme);
     // Audit settled colors, after the existing 200 ms theme transition.
-    await expect(page.locator('.studio-sidebar nav > button').nth(1)).toHaveCSS(
+    // nth(2): Meus projetos (Z e Início vêm antes).
+    await expect(page.locator('.studio-sidebar nav > button').nth(2)).toHaveCSS(
       'color',
       theme === 'light' ? 'rgb(101, 101, 107)' : 'rgb(176, 190, 208)',
     );

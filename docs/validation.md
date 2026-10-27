@@ -219,6 +219,16 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - Não validado: conta Absolute ZRO real, o `nossom-web` aceitando `offline_access zro.ia` em produção, o app de
   computador instalado (carrega o mesmo `/studio`, sem mudança no binário) e Safari/iPhone físicos.
 
+## A Z em aba própria no NOSSOM (27/10/2026)
+
+- `/studio/z`: primeira aba (anel fino, "Z") na lateral e na barra do celular; `/studio` redireciona para ela (site,
+  PWA e app de computador, com a busca junto). Tela toda, sem rodapé nem faixa de minutos. O Início foi para
+  `/studio/inicio` e voltou ao de antes (assistente + envio de áudio). "Conectar com Absolute ZRO" volta para a Z;
+  "Conversar com a Z" da home leva a `/studio/z`. Sem o login Absolute ZRO configurado, a aba some e `/studio` é o Início.
+- `npm test` 83/83, `typecheck`, `format:check`, `build` ok. E2E completo: 79 (3 falhas na primeira rodada: disco cheio
+  na máquina e dois testes ainda em `/studio`; corrigidos e repassados). `scan-secrets` limpo. Fotos 1440 e 390 px fora
+  do repositório. Não validado: conta real e app instalado.
+
 ## Balão de pendências: AEON, Revela e NOSSOM (27/10/2026)
 
 - Regras puras com teste (estado → número e dica por aba): AEON `src/pendencias.js` (`test/nucleo.test.js`), Revela

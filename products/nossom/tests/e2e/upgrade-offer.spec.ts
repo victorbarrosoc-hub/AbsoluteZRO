@@ -30,7 +30,7 @@ test('running low offers the next plan once per stage, closes without fuss and n
   page,
 }) => {
   await minutesLeft(page, 270);
-  await page.goto('/studio');
+  await page.goto('/studio/inicio');
   await expect(page.locator('.weekly-usage')).toContainText('4,5 de 5 min');
   await expect(page.getByRole('dialog')).toHaveCount(0);
   // The last two minutes of a small allowance.

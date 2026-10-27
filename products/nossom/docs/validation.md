@@ -48,6 +48,12 @@ A revisão ampla identificou expectativas antigas de texto/cor e o teste de aber
   saída; `tests/e2e/zro-ia.spec.ts` cobre a tela, o "Conectar com Absolute ZRO" e o caminho até a API falsa do HUB
   (`scripts/test-server.mjs`, `/zro/api/v1/ia`). Sem conta Absolute ZRO real nesta validação.
 
+## 27/10/2026 · A Z em aba própria
+
+- `/studio/z` é a primeira aba e a entrada de `/studio` (redirecionamento no servidor, com a busca). O Início mora em
+  `/studio/inicio`, sem a Z. `tests/e2e/zro-ia.spec.ts` cobre a aba, a entrada, a tela toda, o Início sem a Z e o aviso
+  quando o painel não carrega; contagens da navegação em `install-navigation.spec.ts` (6 na lateral, 5 no celular).
+
 ## Reproduzir
 
 ```sh

@@ -37,7 +37,7 @@ guest(
         .violations,
     ).toEqual([]);
     await dialog.getByRole('button', { name: 'Entrar no estúdio', exact: true }).click();
-    await expect(page).toHaveURL(/\/studio$/);
+    await expect(page).toHaveURL(/\/studio\/z$/);
     await expect(
       page.getByRole('button', { name: 'Abrir menu da conta', exact: true }),
     ).toBeVisible();
@@ -73,7 +73,7 @@ guest(
 test('account menu shows the actual profile and balance, navigates and logs out on mobile', async ({
   page,
 }) => {
-  await page.goto('/studio');
+  await page.goto('/studio/inicio');
   const trigger = page.getByRole('button', { name: 'Abrir menu da conta', exact: true });
   await trigger.click();
   const dialog = page.getByRole('dialog', { name: 'Sua conta', exact: true });

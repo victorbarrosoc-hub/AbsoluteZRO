@@ -1,11 +1,12 @@
 import { test, expect } from './fixtures';
 import { mkdir, writeFile } from 'node:fs/promises';
-test('compact navigation exposes five destinations and switches tools without losing the project', async ({
+test('compact navigation exposes six destinations, the Z first, and switches tools without losing the project', async ({
   page,
 }) => {
   await page.goto('/studio/automatico');
   const navigation = page.getByRole('navigation', { name: 'Navegação do estúdio', exact: true });
-  await expect(navigation.getByRole('button')).toHaveCount(5);
+  await expect(navigation.getByRole('button')).toHaveCount(6);
+  await expect(navigation.getByRole('button').first()).toHaveText('Z');
   await expect(navigation.getByRole('button', { name: 'Estúdio', exact: true })).toBeVisible();
   await expect(navigation.getByRole('button', { name: 'Meu plano', exact: true })).toBeVisible();
   await expect(navigation.getByText('FERRAMENTAS', { exact: true })).toHaveCount(0);
@@ -30,7 +31,7 @@ test('compact navigation exposes five destinations and switches tools without lo
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(
     page.getByRole('navigation', { name: 'Navegação rápida', exact: true }).getByRole('button'),
-  ).toHaveCount(4);
+  ).toHaveCount(5);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await mkdir('artifacts', { recursive: true });
   await page.screenshot({ path: 'artifacts/estudio-navegacao-mobile.png', fullPage: true });
@@ -123,7 +124,7 @@ test('the installation action is hidden when opened as an iOS home-screen app', 
 test('the studio menu lists the Absolute ZRO family with real icons, on desktop and phone', async ({
   page,
 }) => {
-  await page.goto('/studio');
+  await page.goto('/studio/inicio');
   const family = page.getByRole('navigation', { name: 'Absolute ZRO', exact: true });
   const apps = ['Absolute ZRO', 'Carro do Freela', 'Revela', 'Sobedesce', 'Synquei', 'TPEasy'];
   await expect(family.getByRole('link')).toHaveText(apps);

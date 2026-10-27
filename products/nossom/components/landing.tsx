@@ -475,7 +475,7 @@ export default function Landing({ zroIa = false }: { zroIa?: boolean }) {
               </ul>
               <div className="home-z-acoes">
                 {zroIa && (
-                  <Link className="button primary" href="/studio">
+                  <Link className="button primary" href="/studio/z">
                     Conversar com a Z <ArrowRight size={15} />
                   </Link>
                 )}

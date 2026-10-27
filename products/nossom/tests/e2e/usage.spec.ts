@@ -2,7 +2,7 @@ import { test, expect, existingAccount } from './fixtures';
 test('free monthly allowance is visible and local EQ never consumes GPU minutes', async ({
   page,
 }) => {
-  await page.goto('/studio');
+  await page.goto('/studio/inicio');
   await expect(
     page.locator('.weekly-usage').getByText('5 de 5 min disponíveis neste mês', { exact: true }),
   ).toBeVisible();
@@ -50,7 +50,7 @@ test('verified administrator has no monthly minute limit and normal users cannot
     },
   });
   expect(login.status()).toBe(200);
-  await page.goto('/studio');
+  await page.goto('/studio/inicio');
   await expect(page.locator('.workspace-label .account-plan')).toHaveText('ADM · Ilimitado');
   for (let i = 0; i < 12; i++)
     expect(
@@ -81,6 +81,6 @@ test('an existing account still waiting for e-mail confirmation cannot sign in',
   await page.getByLabel('Senha', { exact: true }).fill('test-password');
   await page.getByRole('button', { name: 'Entrar no estúdio', exact: true }).click();
   await expect(page.locator('.account-error')).toContainText('Confirme seu e-mail para entrar');
-  await page.goto('/studio');
+  await page.goto('/studio/inicio');
   await expect(page).toHaveURL(/\/entrar\?next=/);
 });

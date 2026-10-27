@@ -39,6 +39,7 @@ import {
   AudioLines,
   Folder,
   House,
+  Circle,
   Sparkles,
   SlidersHorizontal,
   Layers,
@@ -257,21 +258,23 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
     }
   }
   const [view, setView] = useState<
-      'home' | 'projects' | 'editor' | 'tool' | 'ai' | 'account' | 'plans' | 'admin'
+      'z' | 'home' | 'projects' | 'editor' | 'tool' | 'ai' | 'account' | 'plans' | 'admin'
     >(
-      pathname === '/studio/admin'
-        ? 'admin'
-        : pathname === '/studio/planos'
-          ? 'plans'
-          : pathname === '/studio/conta'
-            ? 'account'
-            : pathname === '/studio/ia'
-              ? 'ai'
-              : pathname === '/studio/projetos'
-                ? 'projects'
-                : routeTool
-                  ? 'tool'
-                  : 'home',
+      pathname === '/studio/z' || (pathname === '/studio' && zroIa)
+        ? 'z'
+        : pathname === '/studio/admin'
+          ? 'admin'
+          : pathname === '/studio/planos'
+            ? 'plans'
+            : pathname === '/studio/conta'
+              ? 'account'
+              : pathname === '/studio/ia'
+                ? 'ai'
+                : pathname === '/studio/projetos'
+                  ? 'projects'
+                  : routeTool
+                    ? 'tool'
+                    : 'home',
     ),
     [projects, setProjects] = useState<ProjectSummary[]>([]),
     [project, setProject] = useState<Project | null>(null),
@@ -479,6 +482,10 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
   useEffect(() => {
     let current = true;
     setSidebar(false);
+    if (pathname === '/studio/z' || (pathname === '/studio' && zroIa)) {
+      setView('z');
+      return;
+    }
     if (pathname === '/studio/admin') {
       setView('admin');
       return;
@@ -521,7 +528,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
     return () => {
       current = false;
     };
-  }, [pathname, requestedProjectId, account.id]);
+  }, [pathname, requestedProjectId, account.id, zroIa]);
   // Offer the next plan when the month's minutes run low or out: once per stage and month,
   // never during processing or over another dialog, and always when a job is refused for minutes.
   useEffect(() => {
@@ -544,6 +551,8 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
   useEffect(() => {
     const names: Record<string, string> = {
       '/studio': 'Seu estúdio',
+      '/studio/inicio': 'Seu estúdio',
+      '/studio/z': 'Z',
       '/studio/conta': 'Minha conta',
       '/studio/planos': 'Meu plano',
       '/studio/projetos': 'Meus projetos',
@@ -667,7 +676,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
       setError('Não foi possível abrir esse projeto.');
     }
   }
-  function navigate(next: 'home' | 'projects' | 'editor') {
+  function navigate(next: 'z' | 'home' | 'projects' | 'editor') {
     setSidebar(false);
     if (busy || recording) return;
     setSidebar(false);
@@ -675,8 +684,10 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
       next === 'projects'
         ? '/studio/projetos'
         : next === 'home'
-          ? '/studio'
-          : toolPath(operation, project?.id),
+          ? '/studio/inicio'
+          : next === 'z'
+            ? '/studio/z'
+            : toolPath(operation, project?.id),
     );
   }
   function chooseTool(next: Operation) {
@@ -1085,7 +1096,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
   );
   return (
     <div
-      className={`studio-shell ${collapsed ? 'nav-collapsed' : ''} ${routeTool ? `tool-editor tool-${routeTool}` : ''}`}
+      className={`studio-shell ${collapsed ? 'nav-collapsed' : ''} ${routeTool ? `tool-editor tool-${routeTool}` : ''} ${view === 'z' ? 'view-z' : ''}`}
       data-theme={theme}
     >
       <a className="skip-link" href="#studio-main">
@@ -1172,6 +1183,11 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
           <Plus size={17} /> Novo projeto
         </button>
         <nav aria-label="Navegação do estúdio">
+          {zroIa && (
+            <button className={view === 'z' ? 'active' : ''} onClick={() => navigate('z')}>
+              <Circle size={18} strokeWidth={1.5} /> Z
+            </button>
+          )}
           <button
             className={view === 'home' || view === 'ai' ? 'active' : ''}
             onClick={() => navigate('home')}
@@ -1296,17 +1312,19 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
               </select>
             ) : (
               <strong>
-                {view === 'ai'
-                  ? 'Assistente'
-                  : view === 'projects'
-                    ? 'Meus projetos'
-                    : view === 'admin'
-                      ? 'Administração'
-                      : view === 'account'
-                        ? 'Minha conta'
-                        : view === 'plans'
-                          ? 'Meu plano'
-                          : 'Assistente'}
+                {view === 'z'
+                  ? 'Z'
+                  : view === 'ai'
+                    ? 'Assistente'
+                    : view === 'projects'
+                      ? 'Meus projetos'
+                      : view === 'admin'
+                        ? 'Administração'
+                        : view === 'account'
+                          ? 'Minha conta'
+                          : view === 'plans'
+                            ? 'Meu plano'
+                            : 'Assistente'}
               </strong>
             )}
           </div>
@@ -1585,11 +1603,10 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
               </div>
             </>
           )}
-          {/* A Z, a IA da Absolute ZRO, abre o Início; o assistente do NOSSOM e o envio de áudio seguem logo abaixo. */}
-          {view === 'home' && zroIa && <ZroIaPanel theme={theme} />}
+          {/* A Z, a IA da Absolute ZRO, tem a aba própria e ocupa a tela toda. */}
+          {view === 'z' && zroIa && <ZroIaPanel theme={theme} />}
           {(view === 'home' || view === 'ai') && (
             <AssistantHome
-              belowZ={view === 'home' && zroIa}
               onOpen={() => setAssistant(true)}
               onUpload={() => fileInput.current?.click()}
               onDrop={(file) => {
@@ -2832,6 +2849,12 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
         </div>
       )}
       <nav className="studio-tabs" aria-label="Navegação rápida" inert={mobile && sidebar}>
+        {zroIa && (
+          <button className={view === 'z' ? 'active' : ''} onClick={() => navigate('z')}>
+            <Circle size={19} strokeWidth={1.5} />
+            <span>Z</span>
+          </button>
+        )}
         <button
           className={view === 'home' || view === 'ai' ? 'active' : ''}
           onClick={() => navigate('home')}
