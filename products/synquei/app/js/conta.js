@@ -3,6 +3,8 @@
 // Conta única: quem não tem conta cria na Absolute ZRO ("Criar conta" = /api/zro/entrar?criar=1, prompt=create).
 // O direito de uso vem do admin da Absolute ZRO (zro_products): sem o Synquei liberado, a parte de conta mostra o aviso
 // e o caminho para a Absolute ZRO. O app em si (local, sem login) continua aberto; os planos seguem em plano.js.
+// Perfil único: nome, e-mail e foto são da conta Absolute ZRO (o /eu relê a cada abertura). O Synquei só mostra; para
+// mudar, "Editar na conta Absolute ZRO" abre o Perfil da Absolute ZRO fora do app.
 
 import { h, icon, toast } from './util.js'
 
@@ -10,6 +12,7 @@ import { h, icon, toast } from './util.js'
 export const C = { estado: 'sem', pessoa: null, acesso: false }
 
 export const FERRAMENTAS = 'https://absolutezro.com/ferramentas'
+export const PERFIL_ZRO = 'https://absolutezro.com/perfil'
 const SEM_ACESSO = 'Sua conta Absolute ZRO ainda não tem acesso ao Synquei.'
 
 const AVISOS = {
@@ -41,6 +44,14 @@ export async function iniciarConta() {
     const a = e.target.closest('a[data-entrar]')
     if (a) a.href = linkEntrar(a.dataset.entrar === 'criar')
   })
+  // foto da conta que não carrega (sem rede, foto trocada há pouco): some e ficam as iniciais
+  document.addEventListener(
+    'error',
+    (e) => {
+      if (e.target instanceof HTMLImageElement && e.target.parentElement?.classList.contains('conta-av')) e.target.remove()
+    },
+    true,
+  )
   // volta do login: mostra o recado e tira o ?zro= do endereço
   const q = new URLSearchParams(location.search)
   const aviso = q.get('zro')
@@ -81,6 +92,22 @@ const iniciais = (p) =>
     .map((s) => s[0].toUpperCase())
     .join('')
 
+/** Só endereço https vira <img>; o resto cai nas iniciais. */
+const fotoSegura = (u) => (typeof u === 'string' && /^https:\/\/[^\s"'<>]+$/.test(u) ? u : null)
+/** Onde editar nome, e-mail e foto: o zro_conta que veio do login (sempre https), ou o Perfil da Absolute ZRO. */
+export const linkConta = (p) => (p && typeof p.conta === 'string' && /^https:\/\/[^\s"'<>]+$/.test(p.conta) ? p.conta : PERFIL_ZRO)
+
+/** Avatar da conta: a foto da Absolute ZRO; sem foto (ou se ela não carregar), as iniciais. */
+export function avatar(p) {
+  const ini = h(iniciais(p))
+  const f = fotoSegura(p.foto)
+  if (!f) return `<span class="conta-av" aria-hidden="true">${ini}</span>`
+  return `<span class="conta-av com-foto" aria-hidden="true">${ini}<img src="${h(f)}" alt="" referrerpolicy="no-referrer" decoding="async"/></span>`
+}
+
+const editarNaConta = (p) =>
+  `<div class="set-row"><div><b>Nome, e-mail e foto</b><small>Os mesmos em todos os apps da Absolute ZRO.</small></div><a class="btn btn-secondary btn-sm" href="${h(linkConta(p))}" target="_blank" rel="noopener">${icon('link')}Editar na conta Absolute ZRO</a></div>`
+
 const botoesEntrar = (cls) =>
   `<a class="${cls}" data-entrar href="${h(linkEntrar())}">${icon('user')}Entrar com Absolute ZRO</a><a class="${cls} conta-criar" data-entrar="criar" href="${h(linkEntrar(true))}">${icon('plus')}Criar conta</a>`
 
@@ -89,7 +116,7 @@ export function linhaConta() {
   if (C.estado === 'logado') {
     const p = C.pessoa
     const sub = C.acesso ? (p.organizacao ? p.organizacao.nome : p.email) : 'Sem acesso ao Synquei'
-    return `<a class="conta-linha${C.acesso ? '' : ' sem-acesso'}" href="#/ajustes" title="${C.acesso ? 'Sua conta Absolute ZRO' : h(SEM_ACESSO)}"><span class="conta-av" aria-hidden="true">${h(iniciais(p))}</span><span class="conta-txt"><b>${h(p.nome || p.email)}</b><small>${h(sub)}</small></span></a>`
+    return `<a class="conta-linha${C.acesso ? '' : ' sem-acesso'}" href="#/ajustes" title="${C.acesso ? 'Sua conta Absolute ZRO' : h(SEM_ACESSO)}">${avatar(p)}<span class="conta-txt"><b>${h(p.nome || p.email)}</b><small>${h(sub)}</small></span></a>`
   }
   if (C.estado === 'anonimo') return `<div class="conta-botoes">${botoesEntrar('conta-entrar')}</div>`
   return ''
@@ -99,15 +126,17 @@ export function linhaConta() {
 export function cartaoConta() {
   if (C.estado === 'logado') {
     const p = C.pessoa
-    const quem = `<div class="set-row"><div class="conta-quem"><span class="conta-av" aria-hidden="true">${h(iniciais(p))}</span><span><b>${h(p.nome || p.email)}</b><small>${h(p.email || '')}</small></span></div><button class="btn btn-secondary btn-sm" data-act="conta-sair">Sair</button></div>`
+    const quem = `<div class="set-row"><div class="conta-quem">${avatar(p)}<span><b>${h(p.nome || p.email)}</b><small>${h(p.email || '')}</small></span></div><button class="btn btn-secondary btn-sm" data-act="conta-sair">Sair</button></div>`
     if (!C.acesso) {
       return `<section class="card conta-bloqueio"><header class="card-head"><h2>Conta</h2><span class="plano-chip">Absolute ZRO</span></header><div class="card-pad">
       ${quem}
+      ${editarNaConta(p)}
       <div class="set-row"><div><b>${h(SEM_ACESSO)}</b><small>Peça ao admin da sua organização para liberar o Synquei.</small></div><a class="btn btn-primary btn-sm" href="${FERRAMENTAS}" target="_blank" rel="noopener">Ver na Absolute ZRO</a></div>
     </div></section>`
     }
     return `<section class="card"><header class="card-head"><h2>Conta</h2><span class="plano-chip">Absolute ZRO</span></header><div class="card-pad">
       ${quem}
+      ${editarNaConta(p)}
       <div class="set-row"><div><b>Organização</b><small>${p.organizacao ? h(p.organizacao.nome) : 'Nenhuma ainda.'}</small></div></div>
       <div class="set-row"><div><b>O que a conta faz</b><small>Identifica você com a mesma conta da Absolute ZRO. Seus arquivos continuam só no seu computador.</small></div></div>
     </div></section>`

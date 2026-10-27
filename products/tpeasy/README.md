@@ -16,7 +16,7 @@ Três abas, como no iOS:
 | --- | --- |
 | **Roteiros** | Lista com ícones coloridos, filtros (Roteiros, Recentes, Favoritos), busca e botão de novo roteiro |
 | **Teleprompter** | Perfis por TP, prévia ao vivo da área, botões Área e Ler, tamanho, velocidade, espelho e todos os ajustes |
-| **Ajustes** | Conta e sincronização, nome, sons, backup, instalação e a família Absolute ZRO (ícone e nome de cada app) |
+| **Ajustes** | Conta (foto e nome da conta Absolute ZRO) e sincronização, nome (só sem conta), sons, backup, instalação e a família Absolute ZRO (ícone e nome de cada app) |
 
 Visual claro com modo escuro automático; o TP é sempre escuro.
 
@@ -34,11 +34,16 @@ aparelho**: entrar mostra quem você é, mas não liga sincronização.
     HttpOnly, Secure, SameSite=Lax, só em `/api/zro`) e manda para o HUB. O botão **Abrir** do HUB usa este endereço.
     Com `&criar=1` é o **Criar conta**: o HUB abre o cadastro (`prompt=create`) e volta já logado.
   - `callback` (GET): confere o state, troca o código com `client_secret_basic`, confere o id_token ES256 pela JWKS
-    (iss, aud, exp, nonce) e grava o cookie `tp_zro` (30 dias, assinado) com sub, nome, e-mail, organização e produtos.
-    Nenhum token do HUB chega ao navegador.
+    (iss, aud, exp, nonce) e grava o cookie `tp_zro` (30 dias, assinado) com sub, nome, e-mail, foto, `zro_conta`,
+    organização e produtos. O access token e o refresh token (`offline_access`) vão **cifrados** (AES-256-GCM) em
+    `tp_zro_hub`, só em `/api/zro`. O navegador nunca lê token.
   - `eu` (GET): JSON com a pessoa e `acesso` (`tpeasy` está em `zro_products`), `401` sem sessão, `503` sem
     configuração. Sempre `no-store`.
-  - `sair` (POST, só do próprio site): apaga `tp_zro`. A conta no HUB continua aberta.
+    A cada abertura (no máximo uma vez por minuto) relê o perfil em `/oauth/userinfo` (troca o refresh token, que roda,
+    quando o access token venceu) e regrava os dois cookies. HUB fora do ar: vale a última cópia. Acesso removido no
+    Perfil da Absolute ZRO: a sessão acaba.
+  - `sair` (POST, só do próprio site): revoga o refresh token no HUB e apaga `tp_zro` e `tp_zro_hub`. A conta no HUB
+    continua aberta.
 - As chaves dos cookies saem de `ZRO_CLIENT_SECRET` por HKDF (uma por finalidade).
 - Só aceita `tpeasy.vercel.app` e `localhost`/`127.0.0.1`; outro endereço (prévia da Vercel) vai para o site oficial
   antes de começar. `volta` só aceita caminho deste site; o resto vira `/app/`.
@@ -62,6 +67,11 @@ logado.
 **Testes:** `node --test tests/*.test.mjs` (Absolute ZRO falsa local, chave P-256 gerada no teste). Rodam no CI em
 `.github/workflows/tpeasy.yml` quando `products/tpeasy/**` muda.
 
+**Perfil único** (`docs/integration-contracts/perfil-unico.md` na raiz). Nome, e-mail e foto são os da conta Absolute
+ZRO: Ajustes mostra a foto (sem foto, a inicial) e o nome da conta, e o botão **Editar na conta Absolute ZRO** abre
+`zro_conta` fora do app (no app instalado, no Safari). Quem entrou com a Absolute ZRO não tem o "Nome" próprio do
+TPeasy; sem conta, ele continua lá. Perfis de TP, roteiros, sons e backup continuam sendo do TPeasy.
+
 **Conta única.** Conta nova nasce só na Absolute ZRO: em Ajustes ficam **Entrar com Absolute ZRO** e **Criar conta**.
 O direito de uso vem do admin da Absolute ZRO: se a organização ativa não liberou o `tpeasy`, a pessoa entra, mas a
 conta mostra "Sua conta Absolute ZRO ainda não tem acesso ao TPeasy." com o botão **Ver na Absolute ZRO**
@@ -82,5 +92,5 @@ HUB). Para ligar:
 
 ```sh
 python3 -m http.server 8080   # abra http://localhost:8080/app/ (sem as funções de /api)
-node --test tests/*.test.mjs  # testes do login
+node --test tests/*.test.mjs  # testes do login e do perfil único
 ```

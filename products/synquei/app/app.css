@@ -4231,6 +4231,23 @@ html:not(.is-desktop) .so-desktop {
   font-weight: 700;
   letter-spacing: 0.02em;
 }
+/* foto da conta Absolute ZRO por cima das iniciais (se não carregar, conta.js tira a imagem e ficam as iniciais) */
+.conta-av.com-foto {
+  position: relative;
+  overflow: hidden;
+}
+.conta-av img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.conta-quem .conta-av {
+  width: 40px;
+  height: 40px;
+  font-size: 14px;
+}
 .conta-entrar {
   display: inline-flex;
   align-items: center;

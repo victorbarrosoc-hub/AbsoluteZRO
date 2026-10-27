@@ -1,7 +1,10 @@
 // "Entrar com Absolute ZRO". A sessão fica num cookie que o app não lê; aqui só perguntamos "quem sou eu".
 // Sem as funções /api/zro (offline, file://, servidor estático), nada muda: o estado fica "?" e a tela é a de antes.
 // Nada aqui toca nos roteiros: eles continuam salvos só neste aparelho.
+// Perfil único: nome, e-mail e foto são os da conta Absolute ZRO (o /api/zro/eu relê a cada abertura). O TPeasy só
+// mostra; para mudar, "Editar na conta Absolute ZRO" abre o Perfil da Absolute ZRO fora do app.
 import { emit } from "./data.js";
+import { esc } from "./util.js";
 
 export const zro = { estado: "?", pessoa: null }; // "?" = não sei, "fora", "dentro"
 const temServidor = location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1";
@@ -29,6 +32,25 @@ export const linkEntrar = (volta = "/app/#ajustes") => `/api/zro/entrar?volta=${
 export const linkCriarConta = (volta = "/app/#ajustes") => `${linkEntrar(volta)}&criar=1`;
 // Onde o admin libera o TPeasy para a organização.
 export const HUB_FERRAMENTAS = "https://absolutezro.com/ferramentas";
+export const PERFIL_ZRO = "https://absolutezro.com/perfil";
+const httpsSeguro = (u) => typeof u === "string" && /^https:\/\/[^\s"'<>]+$/.test(u);
+/** Onde editar nome, e-mail e foto: o zro_conta que veio do login, ou o Perfil da Absolute ZRO. */
+export const linkConta = (p) => (p && httpsSeguro(p.conta) ? p.conta : PERFIL_ZRO);
+/** Avatar da conta: a foto da Absolute ZRO por cima da inicial (se a foto não carregar, a inicial fica). */
+export function avatarHtml(p) {
+  const ini = esc((p.nome || p.email || "?").charAt(0).toUpperCase());
+  if (!httpsSeguro(p.foto)) return `<span class="avatar is-on">${ini}</span>`;
+  return `<span class="avatar is-on com-foto">${ini}<img src="${esc(p.foto)}" alt="" referrerpolicy="no-referrer" decoding="async" /></span>`;
+}
+// foto que não carrega (sem rede, foto trocada há pouco): some e fica a inicial
+if (typeof document !== "undefined")
+  document.addEventListener(
+    "error",
+    (e) => {
+      if (e.target instanceof HTMLImageElement && e.target.parentElement?.classList.contains("avatar")) e.target.remove();
+    },
+    true,
+  );
 // Quem entrou pela Absolute ZRO só usa a conta no TPeasy se a organização liberou o app.
 export const semAcesso = () => zro.estado === "dentro" && !!zro.pessoa && zro.pessoa.acesso === false;
 

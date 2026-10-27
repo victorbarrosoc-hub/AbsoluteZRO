@@ -1039,3 +1039,17 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   Contrato para as plataformas: `docs/integration-contracts/perfil-unico.md`.
 - `tests/integration/oidc.test.ts` › "perfil único (0015)": nome e foto vêm do login, foto nova muda o endereço e o
   antigo some. `npm test` 154/154.
+
+## Perfil único no Synquei e no TPeasy (27/10/2026)
+
+- O login pede também `offline_access`; o refresh e o access token ficam **cifrados** (AES-256-GCM) num cookie só de
+  `/api/zro` (`sq_hub`, `tp_zro_hub`). A cada abertura (no máximo uma vez por minuto) o `/api/zro/eu` relê nome,
+  e-mail, foto, organização e produtos em `/oauth/userinfo` (troca o refresh token, que roda, quando o access venceu).
+  HUB fora do ar: vale a última cópia. Acesso removido no Perfil: a sessão acaba. Sair revoga o refresh token.
+- Telas: foto da conta no avatar (sem foto, as iniciais) e **Editar na conta Absolute ZRO** (`zro_conta`, aba nova).
+  No TPeasy, o "Nome" próprio some para quem entrou com a Absolute ZRO. Nenhum dos dois tem CSP; nada a liberar.
+- Synquei: `tests/zro.test.mjs` › "perfil único" (9) e `tests/conta-ui.test.mjs` (2 novos); `npm test` 82 ok, 0 falha.
+  TPeasy: `tests/zro.test.mjs` › "perfil único" (8) e `tests/conta-ui.test.mjs` (4); `node --test tests/*.test.mjs`
+  35/35. A Absolute ZRO falsa de cada um ganhou refresh que roda, `userinfo`, `revoke`, `picture` e `updated_at`.
+- Não validado: contra o HUB de verdade (precisa de deploy e das variáveis já cadastradas). Sessões abertas antes
+  disto seguem com a cópia do login até a próxima entrada.

@@ -5,25 +5,31 @@
 // Cookies (HttpOnly, Secure, SameSite=Lax), assinados com HMAC-SHA256. A chave sai de ZRO_CLIENT_SECRET por HKDF,
 // uma por cookie (contexto "cookie:<nome>"): trocar o segredo derruba as sessões.
 //   sq_zro    ida para a Absolute ZRO: state, nonce, verificador PKCE e volta. Só em /api/zro, 10 minutos.
-//   sq_conta  sessão do app: quem é (sub, nome, e-mail, organização, produtos). 30 dias. Nenhum token da Absolute ZRO.
+//   sq_conta  sessão do app: quem é (sub, nome, e-mail, foto, organização, produtos). 30 dias. Nenhum token aqui.
+//   sq_hub    refresh token e access token da Absolute ZRO, CIFRADOS (AES-256-GCM), só em /api/zro, 30 dias. Servem
+//             para o /api/zro/eu reler o perfil em /oauth/userinfo (perfil único: mudou na conta, muda aqui).
 //
 // Conta única: o Synquei não cria conta própria. "Criar conta" é o mesmo fluxo com prompt=create (o HUB abre o
 // cadastro e volta já logado). O direito de uso vem de zro_products (gravado na sessão a cada login): sem "synquei"
 // lá, a pessoa entra, mas a parte de conta mostra o aviso e o caminho para a Absolute ZRO.
 
-import { createHash, createHmac, createPublicKey, hkdfSync, randomBytes, timingSafeEqual, verify } from 'node:crypto'
+import { createCipheriv, createDecipheriv, createHash, createHmac, createPublicKey, hkdfSync, randomBytes, timingSafeEqual, verify } from 'node:crypto'
 
 export const EMISSOR_PADRAO = 'https://absolutezro.com'
-export const ESCOPOS = 'openid email profile org'
+// offline_access: o refresh token deixa o app reler o perfil (nome, e-mail, foto) a cada abertura
+export const ESCOPOS = 'openid email profile org offline_access'
 export const SITE = 'https://synquei.vercel.app'
 export const COOKIE_IDA = 'sq_zro'
 export const COOKIE_CONTA = 'sq_conta'
+export const COOKIE_HUB = 'sq_hub'
 export const IDA_S = 600
 export const CONTA_S = 30 * 24 * 3600
 export const VOLTA_PADRAO = '/app/'
 export const PRODUTO = 'synquei'
 export const FERRAMENTAS = 'https://absolutezro.com/ferramentas'
 const CACHE_MS = 10 * 60_000
+/** O /eu pergunta à Absolute ZRO no máximo uma vez por minuto (recarregar a página não martela o HUB). */
+export const REVER_S = 60
 
 export const emissor = () => (process.env.ZRO_ISSUER || '').trim().replace(/\/+$/, '') || EMISSOR_PADRAO
 export const clientId = () => (process.env.ZRO_CLIENT_ID || '').trim()
@@ -112,6 +118,32 @@ export function lerCookie(req, nome) {
     if (i > 0 && parte.slice(0, i).trim() === nome) return decodeURIComponent(parte.slice(i + 1).trim())
   }
   return undefined
+}
+
+// ───────── cofre: tokens cifrados ─────────
+// Assinar não basta para token: o corpo do cookie seria legível. AES-256-GCM com chave própria (HKDF "cofre:<nome>").
+
+const chaveCofre = (nome) => Buffer.from(hkdfSync('sha256', Buffer.from(segredo(), 'utf8'), Buffer.from('synquei-zro', 'utf8'), Buffer.from(`cofre:${nome}`, 'utf8'), 32))
+
+export function cifrar(nome, dados) {
+  const iv = randomBytes(12)
+  const c = createCipheriv('aes-256-gcm', chaveCofre(nome), iv)
+  const corpo = Buffer.concat([c.update(JSON.stringify(dados), 'utf8'), c.final()])
+  return Buffer.concat([iv, c.getAuthTag(), corpo]).toString('base64url')
+}
+
+export function decifrar(nome, valor) {
+  if (!configurado() || typeof valor !== 'string' || !valor || valor.length > 4096) return null
+  try {
+    const b = Buffer.from(valor, 'base64url')
+    if (b.length < 29) return null
+    const d = createDecipheriv('aes-256-gcm', chaveCofre(nome), b.subarray(0, 12))
+    d.setAuthTag(b.subarray(12, 28))
+    const dados = JSON.parse(Buffer.concat([d.update(b.subarray(28)), d.final()]).toString('utf8'))
+    return dados && typeof dados === 'object' ? dados : null
+  } catch {
+    return null
+  }
 }
 
 export const cookie = (nome, valor, { maxAge, path }) => `${nome}=${valor}; Path=${path}; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Lax`
@@ -207,28 +239,115 @@ export async function conferirIdToken(idToken, nonce, agora = Date.now()) {
   if (typeof dados.iat === 'number' && dados.iat > s + 300) throw new ZroErro('data futura')
   if (typeof nonce !== 'string' || !nonce || dados.nonce !== nonce) throw new ZroErro('nonce')
   if (typeof dados.sub !== 'string' || !dados.sub || typeof dados.email !== 'string') throw new ZroErro('sem sub ou e-mail')
+  return perfilDeClaims(dados)
+}
+
+/** Endereço que só vale se for da Absolute ZRO configurada (a foto vai num <img>, a conta num link). */
+function daConta(v, caminho) {
+  if (typeof v !== 'string' || v.length > 300 || /[\s"'<>\\]/.test(v)) return null
+  return v.startsWith(`${emissor()}${caminho}`) ? v : null
+}
+
+/**
+ * Perfil único: claims do id_token ou do /oauth/userinfo → a cópia que o Synquei guarda. Nome, e-mail e foto são da
+ * conta Absolute ZRO (o Synquei não edita); `conta` é onde editar. Sem `picture`, sem foto (o app mostra as iniciais).
+ */
+export function perfilDeClaims(dados) {
   const org = dados.zro_org && typeof dados.zro_org === 'object' && typeof dados.zro_org.name === 'string' ? dados.zro_org : null
   return {
-    sub: dados.sub.slice(0, 200),
+    sub: String(dados.sub).slice(0, 200),
     nome: typeof dados.name === 'string' && dados.name.trim() ? dados.name.trim().slice(0, 120) : null,
-    email: dados.email.trim().toLowerCase().slice(0, 254),
+    email: typeof dados.email === 'string' ? dados.email.trim().toLowerCase().slice(0, 254) : null,
     emailVerificado: dados.email_verified === true,
+    foto: daConta(dados.picture, '/api/v1/foto/'),
+    conta: daConta(dados.zro_conta, '/') || `${emissor()}/perfil`,
+    atualizado: Number.isFinite(dados.updated_at) ? Math.floor(dados.updated_at) : null,
     organizacao: org ? { id: String(org.id || '').slice(0, 100), nome: org.name.slice(0, 120), papel: typeof org.role === 'string' ? org.role.slice(0, 40) : null } : null,
     produtos: Array.isArray(dados.zro_products) ? dados.zro_products.filter((p) => typeof p === 'string').slice(0, 30).map((p) => p.slice(0, 60)) : [],
   }
 }
 
-/** Troca o código (client_secret_basic + PKCE) e confere o id_token. */
+/** O que a sessão (sq_conta) guarda da pessoa: só a cópia dos claims, com a hora da última leitura (`lido`). */
+export const sessaoDe = (p, agora = Date.now()) => ({ sub: p.sub, nome: p.nome, email: p.email, foto: p.foto, conta: p.conta, org: p.organizacao, produtos: p.produtos, lido: Math.floor(agora / 1000) })
+
+/** Tokens que vão para o cofre: access token (10 min) e refresh token (roda a cada troca). */
+function tokensDe(corpo, agora = Date.now()) {
+  if (!corpo || typeof corpo.access_token !== 'string') return null
+  const atExp = Math.floor(agora / 1000) + Math.min(Math.max(Number(corpo.expires_in) || 0, 0), 3600)
+  return { at: corpo.access_token, atExp, rt: typeof corpo.refresh_token === 'string' ? corpo.refresh_token : null }
+}
+
+const basicAuth = () => `Basic ${Buffer.from(`${encodeURIComponent(clientId())}:${encodeURIComponent(segredo())}`).toString('base64')}`
+
+/** Troca o código (client_secret_basic + PKCE), confere o id_token e devolve a pessoa e os tokens (para o cofre). */
 export async function trocarCodigo(code, verificador, nonce, redirectUri) {
   const d = await descobrir()
-  const basic = Buffer.from(`${encodeURIComponent(clientId())}:${encodeURIComponent(segredo())}`).toString('base64')
   const { status, corpo } = await buscarJson(d.token_endpoint, {
     method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json', authorization: `Basic ${basic}` },
+    headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json', authorization: basicAuth() },
     body: new URLSearchParams({ grant_type: 'authorization_code', code, code_verifier: verificador, redirect_uri: redirectUri }).toString(),
   })
   if (status !== 200 || !corpo || typeof corpo.id_token !== 'string') throw new ZroErro('troca recusada')
-  return conferirIdToken(corpo.id_token, nonce)
+  return { pessoa: await conferirIdToken(corpo.id_token, nonce), tokens: tokensDe(corpo) }
+}
+
+/** A Absolute ZRO recusou o refresh (acesso removido no Perfil, conta inativa, token vencido): a sessão acaba. */
+export class ZroRevogado extends ZroErro {}
+
+async function renovar(rt) {
+  if (typeof rt !== 'string' || !rt) throw new ZroRevogado('sem refresh token')
+  const d = await descobrir()
+  const { status, corpo } = await buscarJson(d.token_endpoint, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json', authorization: basicAuth() },
+    body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: rt }).toString(),
+  })
+  if (status === 400 && corpo && corpo.error === 'invalid_grant') throw new ZroRevogado('refresh recusado')
+  const t = status === 200 ? tokensDe(corpo) : null
+  if (!t) throw new ZroErro('refresh')
+  return { ...t, rt: t.rt || rt }
+}
+
+/**
+ * Perfil único: relê nome, e-mail, foto, organização e produtos em /oauth/userinfo. Usa o access token guardado
+ * enquanto vale; vencido (ou recusado), troca o refresh token, que RODA (o novo substitui o velho no cofre).
+ * Devolve { pessoa, tokens }. ZroRevogado: a Absolute ZRO não aceita mais esta sessão. ZroErro: rede ou HUB fora.
+ */
+export async function lerPerfil(sub, tokens, agora = Date.now()) {
+  const d = await descobrir()
+  const userinfo = d.userinfo_endpoint || `${emissor()}/oauth/userinfo`
+  let t = tokens && typeof tokens === 'object' ? tokens : {}
+  let renovou = false
+  if (typeof t.at !== 'string' || !(t.atExp > Math.floor(agora / 1000) + 30)) {
+    t = await renovar(t.rt)
+    renovou = true
+  }
+  const perguntar = (at) => buscarJson(userinfo, { headers: { accept: 'application/json', authorization: `Bearer ${at}` } })
+  let r = await perguntar(t.at)
+  if (r.status === 401 && !renovou) {
+    t = await renovar(t.rt)
+    r = await perguntar(t.at)
+  }
+  if (r.status === 401) throw new ZroRevogado('userinfo recusou')
+  if (r.status !== 200 || !r.corpo || typeof r.corpo.sub !== 'string') throw new ZroErro('userinfo')
+  if (r.corpo.sub !== sub) throw new ZroRevogado('outra pessoa')
+  return { pessoa: perfilDeClaims(r.corpo), tokens: t }
+}
+
+/** Sair: o refresh token morre também na Absolute ZRO (sem esperar resposta boa). */
+export async function revogar(rt) {
+  if (typeof rt !== 'string' || !rt) return
+  try {
+    const d = await descobrir()
+    if (!d.revocation_endpoint) return
+    await buscarJson(d.revocation_endpoint, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', authorization: basicAuth() },
+      body: new URLSearchParams({ token: rt, token_type_hint: 'refresh_token' }).toString(),
+    })
+  } catch {
+    // a sessão daqui sai de qualquer jeito
+  }
 }
 
 /** Só para testes: esquece descoberta e chaves guardadas. */
