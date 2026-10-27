@@ -335,7 +335,7 @@ export function PainelIa({
             </button>
           )}
         </form>
-        <UsoCreditos ligada={ligada} creditos={creditos} aviso={aviso ?? (emConversa ? 'Outro assunto: nova conversa' : null)} />
+        <UsoCreditos ligada={ligada} creditos={creditos} aviso={aviso} />
       </div>
 
       {/* gaveta das conversas, separadas por plataforma */}
