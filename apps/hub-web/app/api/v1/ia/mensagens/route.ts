@@ -25,8 +25,8 @@ const post = route(
           ctrl.enqueue(enc.encode(JSON.stringify(e) + '\n'))
         enviar({ tipo: 'conversa', id: turno.conversa.id, titulo: turno.conversa.titulo })
         try {
-          const texto = await responder(db, turno, enviar, req.signal)
-          const r = await concluirTurno(db, turno, texto)
+          const { texto, uso } = await responder(db, turno, enviar, req.signal)
+          const r = await concluirTurno(db, turno, texto, uso)
           enviar({ tipo: 'fim', mensagem: r.mensagemId, creditos: r.creditos })
         } catch (err) {
           log.error('ia.resposta', { error: err })

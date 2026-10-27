@@ -129,7 +129,9 @@ export async function iniciarTurno(db: Database, auth: Authenticated | null, raw
 }
 
 /** Guarda a resposta e gasta o crédito (idempotente pela pergunta: a mesma pergunta nunca conta duas vezes). */
-export async function concluirTurno(db: Database, turno: Turno, resposta: string): Promise<{ mensagemId: string; creditos: number }> {
+export type IaUso = { modelo: string; entrada: number; saida: number; cache: number }
+
+export async function concluirTurno(db: Database, turno: Turno, resposta: string, uso: IaUso | null = null): Promise<{ mensagemId: string; creditos: number }> {
   const texto = resposta.trim().slice(0, 40000)
   if (!texto) throw new DomainError('upstream_unavailable', 'A IA não respondeu. Tente de novo.')
   const { actor } = turno
@@ -146,8 +148,9 @@ export async function concluirTurno(db: Database, turno: Turno, resposta: string
   const creditos = q.ok && !q.duplicate ? IA_CREDITOS_POR_RESPOSTA : 0
   return db.asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
     const [m] = await tx`
-      insert into zro.ia_mensagens (conversa_id, user_id, papel, texto, creditos)
-      values (${turno.conversa.id}, ${actor.userId}, 'assistant', ${texto}, ${creditos}) returning id`
+      insert into zro.ia_mensagens (conversa_id, user_id, papel, texto, creditos, modelo, tokens_entrada, tokens_saida, tokens_cache)
+      values (${turno.conversa.id}, ${actor.userId}, 'assistant', ${texto}, ${creditos}, ${uso?.modelo ?? null},
+              ${uso?.entrada ?? 0}, ${uso?.saida ?? 0}, ${uso?.cache ?? 0}) returning id`
     await tx`update zro.ia_conversas set updated_at = now() where id = ${turno.conversa.id}`
     return { mensagemId: m!.id as string, creditos }
   })
@@ -229,4 +232,19 @@ export async function projetoParaIa(tx: Queryable, orgId: string, busca: string)
     select m.source_app as origem, m.status, (select count(*)::int from zro.project_assets a where a.manifest_row_id = m.id) as arquivos, m.created_at as quando
     from zro.media_manifests m where m.project_id = ${p.id as string} order by m.created_at desc limit 5`
   return { projeto: p, etapas, documentos, execucoes, equipe, entregas: arquivos }
+}
+
+/**
+ * Preço público por milhão de tokens (US$), para o console estimar o gasto da IA. A conta oficial é a fatura do
+ * provedor; aqui é a soma dos tokens que ele informou em cada resposta. Modelo fora da tabela usa o preço do Opus.
+ */
+export const IA_PRECOS: Record<string, { entrada: number; saida: number; cache: number }> = {
+  'claude-opus-5-5': { entrada: 4, saida: 20, cache: 0.2 },
+  'claude-sonnet-5-5': { entrada: 2, saida: 10, cache: 0.2 },
+  'claude-haiku-5-5': { entrada: 0.1, saida: 0.5, cache: 0.01 },
+}
+
+export function custoIaUsd(modelo: string | null, t: { entrada: number; saida: number; cache: number }): number {
+  const p = (modelo && IA_PRECOS[modelo]) || IA_PRECOS['claude-opus-5-5']!
+  return (t.entrada * p.entrada + t.saida * p.saida + t.cache * p.cache) / 1_000_000
 }

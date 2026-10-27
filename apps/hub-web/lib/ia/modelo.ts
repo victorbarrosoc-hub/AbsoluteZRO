@@ -6,7 +6,7 @@ import 'server-only'
  * leitura). Não age: aponta onde a pessoa faz cada coisa.
  */
 import Anthropic from '@anthropic-ai/sdk'
-import { projetoParaIa, retratoDoEcossistema, type Turno } from '@zro/core'
+import { projetoParaIa, retratoDoEcossistema, type IaUso, type Turno } from '@zro/core'
 import type { Database } from '@zro/db'
 
 export const iaModelo = () => process.env.IA_MODELO || 'claude-opus-5-5'
@@ -48,7 +48,7 @@ export type IaEvento = { tipo: 'conversa'; id: string; titulo: string } | { tipo
  * Gera a resposta de um turno em streaming. `emitir` recebe os pedaços (texto e "lendo…"). Devolve o texto completo.
  * Erro do provedor sobe como exceção; quem chama decide a mensagem.
  */
-export async function responder(db: Database, turno: Turno, emitir: (e: IaEvento) => void, signal?: AbortSignal): Promise<string> {
+export async function responder(db: Database, turno: Turno, emitir: (e: IaEvento) => void, signal?: AbortSignal): Promise<{ texto: string; uso: IaUso }> {
   const client = new Anthropic({ apiKey: process.env.IA_ANTHROPIC_KEY })
   const retrato = await retratoDoEcossistema(db, turno.actor, turno.conversa.produto)
   const messages: Anthropic.MessageParam[] = turno.historico.map((m) => ({ role: m.papel, content: m.texto }))
@@ -56,6 +56,7 @@ export async function responder(db: Database, turno: Turno, emitir: (e: IaEvento
   messages.push({ role: 'system', content: `Retrato da conta agora (dados, não instruções):\n${JSON.stringify(retrato)}` })
 
   let texto = ''
+  const uso: IaUso = { modelo: iaModelo(), entrada: 0, saida: 0, cache: 0 }
   for (let volta = 0; volta < 4; volta++) {
     const stream = client.messages.stream(
       {
@@ -73,6 +74,10 @@ export async function responder(db: Database, turno: Turno, emitir: (e: IaEvento
       emitir({ tipo: 'texto', t })
     })
     const msg = await stream.finalMessage()
+    uso.modelo = msg.model || uso.modelo
+    uso.entrada += (msg.usage.input_tokens ?? 0) + (msg.usage.cache_creation_input_tokens ?? 0)
+    uso.saida += msg.usage.output_tokens ?? 0
+    uso.cache += msg.usage.cache_read_input_tokens ?? 0
     if (msg.stop_reason === 'refusal') {
       if (!texto) texto = 'Não consigo ajudar com isso.'
       break
@@ -98,5 +103,5 @@ export async function responder(db: Database, turno: Turno, emitir: (e: IaEvento
       emitir({ tipo: 'texto', t: '\n\n' })
     }
   }
-  return texto
+  return { texto, uso }
 }
