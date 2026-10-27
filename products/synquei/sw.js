@@ -1,6 +1,6 @@
 // Modo offline do Synquei: guarda o site e o app na primeira visita. HTML, site.css e site.js vêm da rede quando dá
 // (para pegar versões novas); o resto vem do cache e é atualizado em segundo plano. /api/ e /baixar/ vão sempre direto à rede.
-const CACHE = 'synquei-v18'
+const CACHE = 'synquei-v19'
 const CORE = [
   '/',
   '/site.css',
@@ -8,6 +8,8 @@ const CORE = [
   '/formatos/',
   '/icons/favicon.svg',
   '/icons/icon-192.png',
+  '/icons/z/anel.webp',
+  '/icons/z/estrela.webp',
   '/app/',
   '/app/app.css',
   '/app/familia/absolute-zro.webp',
