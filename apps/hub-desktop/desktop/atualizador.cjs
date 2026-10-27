@@ -14,7 +14,7 @@
 // Sem Electron aqui: baixar, rodar comandos, conferir permissão e entregar o script são injetáveis (os testes trocam
 // por funções falsas).
 
-const crypto = require('node:crypto')
+const { createHash } = require('node:crypto')
 const fs = require('node:fs')
 const fsp = require('node:fs/promises')
 const os = require('node:os')
@@ -29,6 +29,7 @@ const PARADO_MS = 60_000
 const PROGRESSO_MS = 250
 const SHA256 = /^[0-9a-f]{64}$/
 const PLATAFORMAS = { darwin: 'mac', win32: 'windows' }
+const BOM = String.fromCharCode(0xfeff)
 const NOME_APP = 'Absolute ZRO'
 
 /** Erro que desliga o Atualizar desta versão (o aviso volta para o Baixar). */
@@ -169,7 +170,7 @@ function rodar(cmd, args) {
 
 /** Baixa `url` para `arquivo`, calculando o SHA-256 no caminho. Devolve o SHA-256 em hexadecimal. */
 async function baixarPara(url, arquivo, { fetch = globalThis.fetch, aoProgresso = () => {}, paradoMs = PARADO_MS, maxBytes = MAX_BYTES } = {}) {
-  const ac = new AbortController()
+  const ac = new globalThis.AbortController()
   const parou = () => ac.abort(new Error('o download parou de andar'))
   let relogio = setTimeout(parou, paradoMs)
   const cutucar = () => {
@@ -186,7 +187,7 @@ async function baixarPara(url, arquivo, { fetch = globalThis.fetch, aoProgresso 
     if (!res.ok || !res.body) throw new Error(`o site respondeu ${res.status}`)
     const total = Number(res.headers.get('content-length')) || 0
     if (total > maxBytes) throw new Error('o instalador é grande demais')
-    const hash = crypto.createHash('sha256')
+    const hash = createHash('sha256')
     let recebido = 0
     aoProgresso(0, total)
     for await (const pedaco of res.body) {
@@ -294,7 +295,7 @@ class Atualizador extends EventEmitter {
       // sem disco: a marca fica e é lida de novo, sem mal
     }
     try {
-      const m = JSON.parse(bruto.replace(/^﻿/, ''))
+      const m = JSON.parse(bruto.replace(BOM, ''))
       const build = Number(m && m.build)
       this.bloqueado = Number.isSafeInteger(build) && build > 0 ? build : 0
       this.falhaAnterior = typeof (m && m.motivo) === 'string' ? m.motivo.slice(0, 200) : 'algo deu errado.'
@@ -462,7 +463,7 @@ class Atualizador extends EventEmitter {
     const script = path.join(tmp, 'trocar.ps1')
     const marca = path.join(this.pasta || tmp, MARCA)
     // BOM: o PowerShell 5 lê o script como UTF-8 (acentos nos caminhos e nas mensagens).
-    await fsp.writeFile(script, '﻿' + scriptWin({ pid: this.appPid, setup: arquivo, exe: this.appExe, marca, tmp, build }), { mode: 0o700 })
+    await fsp.writeFile(script, BOM + scriptWin({ pid: this.appPid, setup: arquivo, exe: this.appExe, marca, tmp, build }), { mode: 0o700 })
     return script
   }
 }
