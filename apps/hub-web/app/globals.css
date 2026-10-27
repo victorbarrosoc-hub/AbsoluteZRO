@@ -5182,3 +5182,8 @@ a.pstrip__card:focus-visible .pstrip__go {
     animation: none;
   }
 }
+.account-unico {
+  margin: -6px 0 0;
+  font-size: 0.86rem;
+  color: var(--text-faint);
+}

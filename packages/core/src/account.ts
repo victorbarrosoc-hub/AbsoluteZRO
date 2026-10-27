@@ -76,6 +76,20 @@ export async function readAvatar(db: Database, auth: Authenticated | null, userI
   return r ? { type: r.content_type as string, data: r.data as Buffer, updatedAt: r.updated_at as Date } : null
 }
 
+/**
+ * Foto pelo endereço público do perfil único (claim picture, 0015). Sem sessão: o endereço é impossível de adivinhar e
+ * muda a cada foto nova. Foto trocada, endereço inválido ou conta inativa: null.
+ */
+export async function publicAvatar(db: Database, publicId: string): Promise<{ type: string; data: Buffer } | null> {
+  if (!UUID.test(publicId)) return null
+  const [r] = await db.asSystem(
+    'perfil: foto pública',
+    (tx) => tx`select a.content_type, a.data from zro.user_avatars a join zro.users u on u.id = a.user_id
+               where a.public_id = ${publicId} and u.status = 'active'`,
+  )
+  return r ? { type: r.content_type as string, data: r.data as Buffer } : null
+}
+
 /** Versão da foto (para o endereço mudar quando ela muda). null = sem foto. */
 export async function avatarVersion(db: Database, auth: Authenticated | null): Promise<number | null> {
   const { userId } = requireUser(auth)

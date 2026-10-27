@@ -1031,3 +1031,11 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   na página (o Chromium não emula `display-mode`). `npm run test:e2e` 21/21. Não validado: num iPhone de verdade.
 - Ícone do iPhone (`app/apple-icon.png`): placa grafite com o anel branco (`icones.py`, tema escuro). O ícone de Tela
   de Início não tem versão escura e o branco ficava "gravado" no modo Escuro do iPhone. Computador segue branco.
+
+## Perfil único: a conta Absolute ZRO vale para todas as plataformas (27/10/2026)
+
+- HUB: o login único passa a entregar `picture` (foto num endereço público que muda a cada foto nova,
+  `/api/v1/foto/<uuid>`), `updated_at` e `zro_conta` no escopo `profile`. Migration 0015 (aplicada no banco novo).
+  Contrato para as plataformas: `docs/integration-contracts/perfil-unico.md`.
+- `tests/integration/oidc.test.ts` › "perfil único (0015)": nome e foto vêm do login, foto nova muda o endereço e o
+  antigo some. `npm test` 154/154.

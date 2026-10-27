@@ -261,3 +261,45 @@ describe('isolamento', () => {
     })
   })
 })
+
+describe('perfil único (0015)', () => {
+  // PNG 1×1 válido (o setAvatar confere o formato pelos primeiros bytes)
+  const png = (cor: number) =>
+    Buffer.from(`iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk${cor ? 'YPhfDwAChwGA' : 'AAIAAAUAAen'}60eEAAAAASUVORK5CYII=`, 'base64')
+
+  it('nome, foto e updated_at vêm do login único; foto nova muda o endereço e o antigo some', async () => {
+    const { publicAvatar, setAvatar, updateDisplayName } = await import('@zro/core')
+    const foto = (id: string) => publicAvatar(db, id)
+    const u = await newUser(db, 'perfil')
+    const c = await newClient()
+    const { verifier, challenge } = pkce()
+    const code = await login(c.clientId, u.userId, null, challenge)
+    const basic = `Basic ${Buffer.from(`${c.clientId}:${c.clientSecret}`).toString('base64')}`
+    const t = await exchangeToken(
+      db,
+      parseTokenRequest(form({ grant_type: 'authorization_code', code, redirect_uri: 'https://app.teste/callback', code_verifier: verifier }), basic),
+      loadOidcClaims,
+    )
+    const bearer = `Bearer ${t.access_token}`
+    const antes = await userInfo(db, bearer, loadOidcClaims)
+    expect(antes).toMatchObject({ name: 'perfil', zro_conta: `${ISS}/perfil` })
+    expect(antes.picture).toBeUndefined()
+
+    await setAvatar(db, u.auth, png(1))
+    await updateDisplayName(db, u.auth, 'Victor Barroso')
+    const depois = await userInfo(db, bearer, loadOidcClaims)
+    expect(depois.name).toBe('Victor Barroso')
+    expect(depois.picture).toMatch(new RegExp(`^${ISS}/api/v1/foto/[0-9a-f-]{36}$`))
+    expect(depois.updated_at as number).toBeGreaterThanOrEqual(antes.updated_at as number)
+    const id1 = (depois.picture as string).split('/').pop()!
+    expect((await foto(id1))?.type).toBe('image/png')
+
+    await setAvatar(db, u.auth, png(0))
+    const nova = await userInfo(db, bearer, loadOidcClaims)
+    const id2 = (nova.picture as string).split('/').pop()!
+    expect(id2).not.toBe(id1)
+    expect(await foto(id1)).toBeNull()
+    expect(await foto(id2)).not.toBeNull()
+    expect(await foto('nao-e-uuid')).toBeNull()
+  })
+})

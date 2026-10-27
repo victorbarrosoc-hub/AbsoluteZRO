@@ -49,6 +49,10 @@ export default async function Perfil() {
           </form>
         ) : null}
       </div>
+      {/* perfil único (0015): os apps leem nome, foto e e-mail daqui; cada um guarda só os dados próprios */}
+      <p className="account-unico" title="Os apps leem nome, foto e e-mail desta conta ao abrir. Cada um guarda só os dados próprios dele.">
+        Nome, foto e e-mail valem para todas as ferramentas da Absolute ZRO.
+      </p>
       <div className="account-tiles">
         <Tile
           href="/perfil/seguranca"

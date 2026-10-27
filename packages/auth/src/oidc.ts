@@ -161,7 +161,7 @@ export function discovery(issuer: string) {
     scopes_supported: [...OIDC_SCOPES],
     token_endpoint_auth_methods_supported: ['client_secret_basic', 'client_secret_post', 'none'],
     code_challenge_methods_supported: ['S256'],
-    claims_supported: ['sub', 'email', 'email_verified', 'name', 'zro_org', 'zro_products', 'auth_time', 'nonce'],
+    claims_supported: ['sub', 'email', 'email_verified', 'name', 'picture', 'updated_at', 'zro_conta', 'zro_org', 'zro_products', 'auth_time', 'nonce'],
     prompt_values_supported: ['none', 'consent', 'create'],
   }
 }
@@ -426,8 +426,26 @@ export type TokenResponse = {
 }
 
 async function userClaims(tx: Queryable, userId: string) {
-  const [u] = await tx`select id, email, display_name, email_verified_at from zro.users where id = ${userId} and status = 'active'`
+  // perfil único: a foto (endereço público que muda a cada foto nova) e a data da última mudança do perfil
+  const [u] = await tx`
+    select u.id, u.email, u.display_name, u.email_verified_at, a.public_id as foto,
+           greatest(u.updated_at, coalesce(a.updated_at, u.updated_at)) as perfil_em
+    from zro.users u left join zro.user_avatars a on a.user_id = u.id
+    where u.id = ${userId} and u.status = 'active'`
   return u
+}
+
+/**
+ * Claims do escopo profile (perfil único, 0015): nome, foto (sem foto, sem claim: o app mostra as iniciais),
+ * updated_at (o app compara e atualiza a cópia dele) e zro_conta, onde a pessoa edita nome, foto e e-mail.
+ */
+export function profileClaims(iss: string, u: Record<string, unknown>) {
+  return {
+    name: u.display_name,
+    ...(u.foto ? { picture: `${iss}/api/v1/foto/${u.foto as string}` } : {}),
+    updated_at: Math.floor(new Date(u.perfil_em as string | Date).getTime() / 1000),
+    zro_conta: `${iss}/perfil`,
+  }
 }
 
 async function buildTokens(
@@ -467,7 +485,7 @@ async function buildTokens(
     auth_time: Math.floor(g.authTime.getTime() / 1000),
     ...(g.nonce ? { nonce: g.nonce } : {}),
     ...(g.scopes.includes('email') ? { email: u.email, email_verified: !!u.email_verified_at } : {}),
-    ...(g.scopes.includes('profile') ? { name: u.display_name } : {}),
+    ...(g.scopes.includes('profile') ? profileClaims(iss, u) : {}),
     ...(g.scopes.includes('org') ? { zro_org: claims.org, zro_products: claims.products } : {}),
   })
   const out: TokenResponse = { access_token, token_type: 'Bearer', expires_in: ACCESS_TTL_S, id_token, scope: g.scopes.join(' ') }
@@ -565,7 +583,7 @@ export async function userInfo(db: Database, bearer: string | null, loadClaims: 
     if (!u) throw new OAuthError('invalid_token', 'Conta inativa.')
     const out: Record<string, unknown> = { sub: u.id }
     if (scopes.includes('email')) Object.assign(out, { email: u.email, email_verified: !!u.email_verified_at })
-    if (scopes.includes('profile')) out.name = u.display_name
+    if (scopes.includes('profile')) Object.assign(out, profileClaims(issuerFromEnv(), u))
     if (scopes.includes('org')) {
       const c = await loadClaims(tx, u.id as string, (p.zro_org as string) ?? null)
       Object.assign(out, { zro_org: c.org, zro_products: c.products })
