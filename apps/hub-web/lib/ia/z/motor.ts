@@ -23,12 +23,21 @@ const limita = (x: number) => Math.min(1, Math.max(0, x))
 
 export const reduzMovimento = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
 
-/** Um laço só para todos os Z e ventos da página; o navegador já pausa o requestAnimationFrame em aba oculta. */
+/**
+ * Um laço só para todos os Z e ventos da página, em 23,976 quadros por segundo como no cinema (pedido do titular): o
+ * movimento é calculado pelo relógio, então só a cadência muda, e o aparelho trabalha menos. O navegador já pausa o
+ * requestAnimationFrame em aba oculta.
+ */
 type Animado = { quadro(agora: number): void }
+export const QUADRO_MS = 1000 / 23.976
 const vivos = new Set<Animado>()
 let pedido = 0
+let ultimo = 0
 function laco(agora: number) {
-  for (const a of vivos) a.quadro(agora)
+  if (agora - ultimo >= QUADRO_MS - 1) {
+    ultimo = agora - ((agora - ultimo) % QUADRO_MS)
+    for (const a of vivos) a.quadro(agora)
+  }
   pedido = vivos.size ? requestAnimationFrame(laco) : 0
 }
 export function animar(a: Animado) {

@@ -121,10 +121,34 @@ const velocidade = (p) => (p < 0.5 ? 12 * p * p : 12 * (1 - p) * (1 - p)) / 3
 const limita = (x) => Math.min(1, Math.max(0, x))
 const reduz = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 const vivos = new Set()
+// 23,976 quadros por segundo, como no cinema: o movimento segue o relógio, só a cadência muda
+const QUADRO_MS = 1000 / 23.976
 let pedido = 0
+let ultimo = 0
 const laco = (agora) => {
-  for (const a of vivos) a.quadro(agora)
+  if (agora - ultimo >= QUADRO_MS - 1) {
+    ultimo = agora - ((agora - ultimo) % QUADRO_MS)
+    for (const a of vivos) a.quadro(agora)
+  }
   pedido = vivos.size ? requestAnimationFrame(laco) : 0
+}
+const FAIXAS = 6
+/** Um fio em poucas faixas de transparência (um caminho por faixa). */
+const fio = (ctx, pts, cor, alfa, largura) => {
+  const n = pts.length
+  if (n < 2) return
+  for (let f = 0; f < FAIXAS; f++) {
+    const i0 = Math.floor(((n - 1) * f) / FAIXAS),
+      i1 = Math.floor(((n - 1) * (f + 1)) / FAIXAS)
+    if (i1 <= i0) continue
+    const k = (f + 1) / FAIXAS
+    ctx.strokeStyle = `rgba(${cor},${(alfa * k * k).toFixed(3)})`
+    ctx.lineWidth = largura * (0.35 + 0.65 * k)
+    ctx.beginPath()
+    ctx.moveTo(pts[i0].x, pts[i0].y)
+    for (let i = i0 + 1; i <= i1; i++) ctx.lineTo(pts[i].x, pts[i].y)
+    ctx.stroke()
+  }
 }
 const animar = (a) => {
   vivos.add(a)
@@ -265,8 +289,6 @@ class MotorAr {
       escuro = this.escuro(),
       cor = escuro ? '255,255,255' : '58,64,78'
     ctx.lineCap = 'round'
-    ctx.shadowBlur = escuro ? 6 : 0
-    ctx.shadowColor = 'rgba(255,255,255,.35)'
     if (R > 24) {
       const a = Math.atan2(m.ey - m.cy, m.ex - m.cx),
         ult = this.trilha[this.trilha.length - 1]
@@ -276,16 +298,19 @@ class MotorAr {
         [1.24, 1],
         [0.76, 0.6],
       ])
-        for (let i = 1; i < this.trilha.length; i++) {
-          const k = 1 - (agora - this.trilha[i].t) / 1100,
-            a0 = this.trilha[i - 1].a,
-            a1 = this.trilha[i].a
-          if (Math.abs(a1 - a0) > 1) continue
+        for (let f = 0; f < FAIXAS; f++) {
+          const k = 1 - (f + 0.5) / FAIXAS
           ctx.strokeStyle = `rgba(${cor},${(0.9 * peso * k * k).toFixed(3)})`
           ctx.lineWidth = (0.6 + 3 * k * k) * peso
           ctx.beginPath()
-          ctx.moveTo(cx + Math.cos(a0) * R * raio, cy + Math.sin(a0) * R * raio)
-          ctx.lineTo(cx + Math.cos(a1) * R * raio, cy + Math.sin(a1) * R * raio)
+          for (let i = 1; i < this.trilha.length; i++) {
+            if (Math.min(FAIXAS - 1, Math.floor(((agora - this.trilha[i].t) / 1100) * FAIXAS)) !== f) continue
+            const a0 = this.trilha[i - 1].a,
+              a1 = this.trilha[i].a
+            if (Math.abs(a1 - a0) > 1) continue
+            ctx.moveTo(cx + Math.cos(a0) * R * raio, cy + Math.sin(a0) * R * raio)
+            ctx.lineTo(cx + Math.cos(a1) * R * raio, cy + Math.sin(a1) * R * raio)
+          }
           ctx.stroke()
         }
     }
@@ -308,16 +333,7 @@ class MotorAr {
       if (c.pts.length > 34) c.pts.shift()
       if (c.r < R * 1.12) Object.assign(c, nascer(true))
       const alfa = 0.42 * this.forca * limita((c.r - R * 1.12) / (base * 0.9)) * Math.min(1, c.vida / 0.8)
-      if (this.forca > 0.01)
-        for (let i = 1; i < c.pts.length; i++) {
-          const k = i / (c.pts.length - 1)
-          ctx.strokeStyle = `rgba(${cor},${(alfa * k * k).toFixed(3)})`
-          ctx.lineWidth = 1.2 * (0.35 + 0.65 * k)
-          ctx.beginPath()
-          ctx.moveTo(c.pts[i - 1].x, c.pts[i - 1].y)
-          ctx.lineTo(c.pts[i].x, c.pts[i].y)
-          ctx.stroke()
-        }
+      if (this.forca > 0.01) fio(ctx, c.pts, cor, alfa, 1.2)
     }
   }
 }
