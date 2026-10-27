@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   // A imagem vem de app/opengraph-image.jpg e app/twitter-image.jpg (arte em scripts/marca).
   openGraph: { type: 'website', locale: 'pt_BR', siteName: 'Absolute ZRO', title: 'Absolute ZRO', description },
   twitter: { card: 'summary_large_image', title: 'Absolute ZRO', description },
-  appleWebApp: { capable: true, title: 'Absolute ZRO', statusBarStyle: 'black' },
+  appleWebApp: { capable: true, title: 'Absolute ZRO', statusBarStyle: 'default' },
   formatDetection: { telephone: false },
 }
 

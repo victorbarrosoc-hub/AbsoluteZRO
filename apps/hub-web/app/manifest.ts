@@ -7,7 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: 'Absolute ZRO',
     description: 'Uma conta para todas as ferramentas da Absolute ZRO.',
     lang: 'pt-BR',
-    start_url: '/inicio',
+    // abre no painel do app (o mesmo do app de computador), com a abertura da marca
+    start_url: '/app',
     scope: '/',
     display: 'standalone',
     // tema claro é o padrão da marca: a abertura do app instalado já nasce clara
@@ -18,7 +19,7 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
       { src: '/icons/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
-    // atalho no ícone (Android e computador): direto para os apps
-    shortcuts: [{ name: 'Apps', short_name: 'Apps', url: '/downloads', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] }],
+    // atalho no ícone (Android e computador): direto para os projetos
+    shortcuts: [{ name: 'Projetos', short_name: 'Projetos', url: '/inicio', icons: [{ src: '/icons/icon-192.png', sizes: '192x192' }] }],
   }
 }

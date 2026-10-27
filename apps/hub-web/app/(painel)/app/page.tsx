@@ -87,6 +87,16 @@ export default async function Painel() {
       </aside>
 
       <section className="painel__corpo" id="apps" aria-labelledby="painel-titulo">
+        {/* só no celular: a marca no topo e a conta no avatar (a barra lateral vira a barra de abas) */}
+        <div className="painel__movel">
+          <span className="painel__movel-marca">
+            <ZroSymbol size={24} />
+            <ZroWordmark height={12} title="Absolute ZRO" />
+          </span>
+          <Link href="/perfil" className="painel__movel-conta" aria-label="Sua conta">
+            <Avatar userId={auth.user.id} name={nome} version={avatar} size={32} />
+          </Link>
+        </div>
         <header className="painel__topo">
           <h1 id="painel-titulo" className="painel__titulo">
             <span>Olá,</span> <strong>{primeiro}.</strong>
@@ -116,7 +126,7 @@ export default async function Painel() {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      {instalavel ? 'Abrir na web' : 'Abrir'}
+                      Abrir{instalavel && <span className="pcard__na-web"> na web</span>}
                       <span className="zro-sr-only"> {a.name} (abre em nova aba)</span>
                     </a>
                   )}

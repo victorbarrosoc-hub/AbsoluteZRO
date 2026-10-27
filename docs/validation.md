@@ -935,3 +935,14 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   de novo e Depois. `npm test` 76/76; `xvfb-run -a npx electron . --smoke` SMOKE OK.
 - Não conferido: a troca num Mac e num Windows de verdade (precisa de um Release publicado com build maior que o do
   app instalado; publicar é decisão do titular).
+
+## OG com a paisagem da home e o app no celular igual ao do computador (27/10/2026)
+
+- OG (`scripts/marca/og-paisagem.html` → `app/opengraph-image.jpg` e `twitter-image.jpg`): a paisagem do topo da
+  página inicial com "O futuro começa do zero.".
+- App da Tela de Início (Safari › Compartilhar › Adicionar à Tela de Início): abre no painel `/app` (manifest), com a
+  abertura da marca (`components/abertura-app.tsx`, só em `display-mode: standalone`, uma vez por sessão) e o login
+  do app. No celular a barra lateral vira barra de abas (Apps, Projetos, Planos, Conta), a conta fica no avatar do
+  topo e as ferramentas numa lista compacta com "Abrir". No Safari sem instalar, o topo ensina a pôr na Tela de Início.
+- Conferido no Chromium com o iPhone 14 emulado (claro e escuro); a abertura, aplicando as regras do modo standalone
+  na página (o Chromium não emula `display-mode`). `npm run test:e2e` 21/21. Não validado: num iPhone de verdade.

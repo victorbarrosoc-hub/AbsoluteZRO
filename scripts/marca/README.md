@@ -10,7 +10,9 @@ Manual de uso: [docs/marca/README.md](../../docs/marca/README.md). Marca flat ap
   192/512/maskable, favicon com placa escura, Mac no grid da Apple, Windows `icon.ico` com traço reforçado; abaixo de
   24 px só o anel). `python3 scripts/marca/icones.py --instalar` copia para o HUB; o app de computador lê `out/claro`
   com `cd apps/hub-desktop && npm run icons -- ../../scripts/marca/out/claro`.
-- `og-claro.html` (padrão: símbolo grande à esquerda, fundo branco chapado, apps sem placa) e `og-escuro.html`: OG 1200×630. Abra no Chromium/Playwright e capture
+- `og-paisagem.html` (padrão desde 27/10/2026): a paisagem do topo da página inicial com a frase da marca; capture
+  1200×630 para `apps/hub-web/app/opengraph-image.jpg` e `twitter-image.jpg`.
+- `og-claro.html` (anterior) (padrão: símbolo grande à esquerda, fundo branco chapado, apps sem placa) e `og-escuro.html`: OG 1200×630. Abra no Chromium/Playwright e capture
   `apps/hub-web/app/opengraph-image.jpg` (o `twitter-image.jpg` é a mesma imagem).
 - `produto-hub-claro.png` e `produto-hub-og.png`: o HUB real num MacBook e num iPhone, base do OG.
 
