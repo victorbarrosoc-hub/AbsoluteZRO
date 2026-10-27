@@ -8,7 +8,9 @@ export default function AssistantHome({
   disabled,
   context,
   onPlan,
+  belowZ = false,
 }: {
+  belowZ?: boolean;
   onOpen?: () => void;
   onUpload: () => void;
   onDrop: (file: File) => void;
@@ -19,7 +21,7 @@ export default function AssistantHome({
 }) {
   return (
     <section
-      className="assistant-home assistant-start"
+      className={'assistant-home assistant-start' + (belowZ ? ' assistant-below-z' : '')}
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
         e.preventDefault();
@@ -29,6 +31,7 @@ export default function AssistantHome({
     >
       <Assistant
         embedded
+        belowZ={belowZ}
         onUpload={onUpload}
         fileName={fileName}
         disabled={disabled}

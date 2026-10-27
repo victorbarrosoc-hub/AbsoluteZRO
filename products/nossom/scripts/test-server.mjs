@@ -88,6 +88,35 @@ const server = createServer(async (req, res) => {
     res.end('{}');
     return;
   }
+  // API da IA da Absolute ZRO (a Z), só o necessário para o painel do Início: aceita o token de teste
+  // `zat_e2e` (o mesmo que os testes guardam no cookie cifrado da Z) e responde em NDJSON como o HUB.
+  if (url.pathname.startsWith('/zro/api/v1/ia/')) {
+    const path = url.pathname.slice('/zro/api/v1/ia'.length);
+    const reply = (data, status = 200) => {
+      res.writeHead(status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(data));
+    };
+    if (req.headers.authorization !== 'Bearer zat_e2e')
+      return reply({ error: 'unauthenticated', message: 'Token inválido.' }, 401);
+    if (path === '/estado' && req.method === 'GET')
+      return reply({
+        ligada: true,
+        nome: 'Teste',
+        creditos: { usados: 3, limite: 200, renova_em: '2026-11-27T03:00:00.000Z' },
+      });
+    if (path === '/conversas' && req.method === 'GET') return reply({ conversas: [] });
+    if (path === '/mensagens' && req.method === 'POST') {
+      res.writeHead(200, { 'Content-Type': 'application/x-ndjson; charset=utf-8' });
+      for (const e of [
+        { tipo: 'conversa', id: '00000000-0000-4000-8000-000000000001', titulo: 'Fala limpa' },
+        { tipo: 'texto', t: 'Comece pela Limpeza no estúdio e confira antes de salvar.' },
+        { tipo: 'fim', mensagem: '00000000-0000-4000-8000-000000000002', creditos: 1 },
+      ])
+        res.write(JSON.stringify(e) + '\n');
+      return res.end();
+    }
+    return reply({ error: 'not_found' }, 404);
+  }
   if (url.pathname.startsWith('/stripe/')) {
     const form = new URLSearchParams(Buffer.concat(chunks).toString());
     const json = (data, status = 200) => {

@@ -14,7 +14,14 @@ import {
 import { allowRequest, cookieValue } from '../ai-access';
 import { zroConfigured, zroIssuer, zroRedirectUri, zroReturnPath } from './config';
 import { createAccountWithZro, linkedUser, linkZro, sessionForUser } from './accounts';
-import { authorizationUrl, exchangeCode, randomValue, type ZroProfile } from './oidc';
+import { iaCookieFor } from './ia';
+import {
+  authorizationUrl,
+  exchangeCodeWithTokens,
+  randomValue,
+  type ZroProfile,
+  type ZroTokens,
+} from './oidc';
 import { openZroState, sealZroState, ZRO_COOKIE, zroStateCookie, type ZroMode } from './state';
 
 const SETTINGS = '/studio/conta';
@@ -105,9 +112,14 @@ export async function finishZro(request: Request): Promise<Response> {
   const code = url.searchParams.get('code');
   if (!code || code.length > 2000) return fail('zro_erro');
 
-  let profile: ZroProfile;
+  let profile: ZroProfile, tokens: ZroTokens | null;
   try {
-    profile = await exchangeCode(code, saved.verifier, saved.nonce, zroRedirectUri(request));
+    ({ profile, tokens } = await exchangeCodeWithTokens(
+      code,
+      saved.verifier,
+      saved.nonce,
+      zroRedirectUri(request),
+    ));
   } catch {
     return fail('zro_erro');
   }
@@ -121,12 +133,13 @@ export async function finishZro(request: Request): Promise<Response> {
       if (!linked.ok) return fail(linked.error);
       // Mesma sessão, agora com os produtos liberados na Absolute ZRO (podem bloquear o NOSSOM).
       const current = decodeSession(accountToken(request));
-      return go(
-        withParam(next, 'zro', 'ok'),
-        current
+      // O token da Z (escopo zro.ia) fica guardado para esta conta: "Conectar" no painel passa por aqui.
+      return go(withParam(next, 'zro', 'ok'), [
+        ...(current
           ? [sessionCookie(encodeSession({ ...current, zroProducts: profile.products }))]
-          : [],
-      );
+          : []),
+        ...iaCookieFor(request, account.id, tokens),
+      ]);
     }
     let userId = await linkedUser(profile);
     if (!userId) {
@@ -140,7 +153,10 @@ export async function finishZro(request: Request): Promise<Response> {
       zroProducts: profile.products,
     };
     // Uma sessão anterior neste navegador é trocada pela da conta ligada.
-    return go(next, [sessionCookie(encodeSession(session))]);
+    return go(next, [
+      sessionCookie(encodeSession(session)),
+      ...iaCookieFor(request, userId, tokens),
+    ]);
   } catch {
     return fail('zro_erro');
   }

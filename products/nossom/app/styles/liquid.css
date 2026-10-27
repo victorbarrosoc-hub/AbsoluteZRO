@@ -1126,6 +1126,11 @@
   font-size: 13.5px;
   font-weight: 600;
 }
+.chrome-site .home-z-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
 .chrome-site .z-fichas svg {
   color: #a9bdd2;
 }

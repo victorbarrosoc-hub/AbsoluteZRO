@@ -13,6 +13,7 @@ import { toolPath, routeOperation } from '@/lib/studio-routes';
 import { activateVersion, activeIndex, previousIndex, nextIndex } from '@/lib/history';
 import { EqualizerControls, BroadcastControls } from './preset-controls';
 import AssistantHome from './assistant-home';
+import ZroIaPanel from './zro-ia-panel';
 import AIMotion from './ai-motion';
 import UserAvatar from './user-avatar';
 import AdminDashboard from './admin-dashboard';
@@ -167,7 +168,7 @@ function RangeControl({
     </label>
   );
 }
-export default function Studio({ account }: { account: Account }) {
+export default function Studio({ account, zroIa = false }: { account: Account; zroIa?: boolean }) {
   const pathname = usePathname(),
     searchParams = useSearchParams();
   const requestedProjectId = searchParams.get('project');
@@ -1584,8 +1585,11 @@ export default function Studio({ account }: { account: Account }) {
               </div>
             </>
           )}
+          {/* A Z, a IA da Absolute ZRO, abre o Início; o assistente do NOSSOM e o envio de áudio seguem logo abaixo. */}
+          {view === 'home' && zroIa && <ZroIaPanel theme={theme} />}
           {(view === 'home' || view === 'ai') && (
             <AssistantHome
+              belowZ={view === 'home' && zroIa}
               onOpen={() => setAssistant(true)}
               onUpload={() => fileInput.current?.click()}
               onDrop={(file) => {

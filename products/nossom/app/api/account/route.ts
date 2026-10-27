@@ -1,3 +1,4 @@
+import { forgetIaTokens } from '@/lib/server/zro/ia';
 import {
   accountConfigured,
   accountFromUser,
@@ -132,10 +133,11 @@ export async function DELETE(request: Request) {
     } catch {
       /* Local logout still succeeds when the provider is unavailable. */
     }
-  return Response.json(
-    { signedOut: true },
-    { headers: { ...privateHeaders, 'Set-Cookie': sessionCookie(null) } },
-  );
+  // A Z sai junto: o token da Absolute ZRO guardado para ela é apagado e revogado.
+  const headers = new Headers({ ...privateHeaders });
+  headers.append('Set-Cookie', sessionCookie(null));
+  headers.append('Set-Cookie', await forgetIaTokens(request));
+  return Response.json({ signedOut: true }, { headers });
 }
 
 export async function PATCH(request: Request) {
