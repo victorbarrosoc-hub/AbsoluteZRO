@@ -1118,6 +1118,7 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   JavaScript, cadastro/SSO pelos passos, axe em `/entrar` e `/criar-conta` nos dois temas). Telas conferidas em claro e
   escuro, 1280 e 390. Não validado: gerenciador de senhas real (Chrome/1Password/iCloud) e Safari antigo sem
   `@media (scripting)`.
+
 ## Balões de pendência no Synquei, TPeasy e Carro do Freela (27/10/2026)
 
 - Mesmo desenho do SOBEDESCE e do HUB: pílula com número em negrito tabular, 99+ acima de 99, `aria-label`
