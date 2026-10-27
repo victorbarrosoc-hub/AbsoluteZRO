@@ -4714,13 +4714,12 @@ a.pstrip__card:focus-visible .pstrip__go {
   padding: 0;
   list-style: none;
 }
-.pfluxo__detalhe code {
+.pfluxo__detalhe li {
   display: inline-block;
-  padding: 6px 12px;
+  padding: 7px 14px;
   border-radius: 999px;
   border: 1px solid var(--line-strong);
-  font-family: var(--font-mono, ui-monospace, monospace);
-  font-size: 0.8rem;
+  font-size: 0.88rem;
   color: var(--text-strong);
 }
 @media (max-width: 700px) {

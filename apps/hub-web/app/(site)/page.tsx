@@ -46,6 +46,20 @@ const ETAPA: Record<string, string> = {
   finishing: 'Cor e entrega',
 }
 
+/** O que cada evento quer dizer, em português de gente (o nome técnico fica na dica). */
+const EVENTO: Record<string, string> = {
+  'job.created': 'Job e equipe definidos',
+  'script.ready': 'Roteiro pronto',
+  'ingest.completed': 'Cópia conferida',
+  'media.manifest.ready': 'Lista das mídias',
+  'media.sync.completed': 'Áudio e vídeo sincronizados',
+  'edit.selects.ready': 'Melhores takes separados',
+  'edit.timeline.ready': 'Linha do tempo pronta',
+  'audio.mix.ready': 'Som tratado e mixado',
+  'finishing.qc.completed': 'Cor e qualidade conferidas',
+  'delivery.ready': 'Entrega pronta',
+}
+
 /** Eventos de bastidor que não entram no fluxo da página (começo e falha da cópia). */
 const SO_BASTIDOR = new Set(['ingest.started', 'ingest.failed'])
 
@@ -89,7 +103,9 @@ export default async function Landing() {
     id: p.id as string,
     nome: p.name as string,
     etapa: ETAPA[p.id as string] ?? (p.role_in_flow as string),
-    eventos: eventos.filter((e) => EVENT_PRODUCER[e as keyof typeof EVENT_PRODUCER] === p.id && !SO_BASTIDOR.has(e)),
+    eventos: eventos
+      .filter((e) => EVENT_PRODUCER[e as keyof typeof EVENT_PRODUCER] === p.id && !SO_BASTIDOR.has(e))
+      .map((e) => ({ id: e, nome: EVENTO[e] ?? e })),
     cor: productColor(p.id as string),
   }))
   return (
