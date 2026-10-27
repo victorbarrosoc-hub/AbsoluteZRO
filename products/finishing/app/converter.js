@@ -8,10 +8,17 @@ import { registerProresDecoder } from '../vendor/mediabunny-prores.min.mjs'
 import { assar } from '../src/cor/cube.js'
 import { ENTRADAS, criarCst } from '../src/cor/espacos.js'
 import { criarAplicadorLut } from './lut-gpu.js'
+import { criarEscalaGpu } from './escala-gpu.js'
 import { DESTINOS_CONVERSAO, LIMITE_MEMORIA, RESOLUCOES, nomeSaida, planejar, tamanhoLegivel } from '../src/conversao/plano.js'
 import { ICONES, NOME_CURTO, escalonar, glifo, icones, svg } from './visual.js'
 
 registerProresDecoder()
+// reduzir o quadro na placa de vídeo (app/escala-gpu.js); para comparar, ?escala=canvas fica no caminho do Mediabunny
+// e ?escala=gpu usa a placa mesmo quando o WebGL é de software (testes)
+const escala = new URLSearchParams(location.search).get('escala')
+let escalouNaGpu = false
+if (escala !== 'canvas')
+  MB.registerVideoSampleTransformer(criarEscalaGpu(MB.VideoSample, { aoUsar: () => (escalouNaGpu = true), forcar: escala === 'gpu' }))
 icones()
 escalonar()
 
@@ -328,6 +335,7 @@ async function converter(item) {
   item.conversao = conversao
   mostrar(item)
   const inicio = performance.now()
+  escalouNaGpu = false
   conversao.onProgress = (v) => progresso(item, v, inicio)
   await conversao.execute()
 
@@ -344,6 +352,7 @@ async function converter(item) {
     item.bytes ? tamanhoLegivel(item.bytes) : 'salvo na pasta',
   ]
   item.estado = 'feito'
+  $(`item-${item.id}`).dataset.escala = escalouNaGpu ? 'gpu' : 'nenhuma'
   mostrar(item)
 }
 
