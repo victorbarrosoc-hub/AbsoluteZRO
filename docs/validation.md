@@ -908,3 +908,30 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Telas de conta (`(auth)/layout.tsx`): a paisagem da marca no fundo, com véu e zoom lento (parado com "reduzir
   movimento"); frase oficial "O futuro começa do zero."; o login cita todas as ferramentas.
 - `npm run test:e2e` 21/21. Capturas de `/entrar` (claro, escuro, 390 px) e `/ciclo`.
+
+## AEON: site sem corte seco, fecho inteiro e "Atualizar" no app (27/10/2026)
+
+- Site (`products/ai-edit/index.html`, `site/site.css`, `site/home.js`): a abertura escurece até o preto e a salina vira
+  uma passagem sem texto que nasce do preto e volta para ele (máscara em cima e embaixo), no lugar das duas fotos
+  coladas num corte seco. Saiu "O espaço entre os instantes." (subtítulo da abertura, título da salina e o
+  `og:description`, que agora diz o que o AEON faz). O fecho usa a estrela de palco (`simbolo({ brilho, margem })`,
+  pontas e fios somem aos poucos, com respiro) e segue o tema; antes os fios terminavam num corte reto e pareciam
+  cortados. De quebra: os cartões de Baixar não alargam mais a página no celular (`minmax(0, 1fr)`; o botão Copiar
+  ficava fora da tela) e o menu fechado não mancha mais a borda esquerda no tema claro (sombra fora da vista).
+  Conferido no Chromium em 1440 e 390 px, escuro e claro, com "reduzir movimento".
+- App de desktop (`desktop/atualizador.cjs`, `desktop/main.cjs`, `desktop/preload.cjs`, `app/atualizacao.js`), no
+  molde do SOBEDESCE: só no app empacotado com build do CI (`desktop/build-info.json`; build 0 não pergunta nada),
+  confere o `versao.json` do Release `ai-edit-app-desktop` (o mesmo do `instalar.sh`) 10 s depois de abrir e a cada 4 h.
+  Build maior = pílula "Versão nova · Atualizar" na barra. Atualizar baixa o instalador do Release com progresso
+  medido (barra fina que só avança), confere o SHA-256, prepara a troca (Mac: `hdiutil` + `ditto` ao lado + `xattr -cr`;
+  Windows: NSIS `/S`), grava o projeto aberto (recusa com exportação andando), entrega o script e fecha; o script
+  espera o app sair, troca e abre de novo. Falhou: o antigo volta, fica `atualizacao-falhou.json` e a próxima
+  abertura oferece o Baixar (site `/#baixar`). Fora de Aplicativos, sem permissão ou sem SHA-256: só o Baixar.
+- `test/atualizador.test.js` (17): Release igual ao do instalador, desenvolvimento sem rede, download com progresso,
+  incompleto e parado, fluxo do Mac com peças falsas, SHA-256 diferente (nada trocado, temporários apagados), sem
+  hash, sem permissão, AppTranslocation, `/Volumes`, marca de troca que falhou, entrega recusada, Windows (BOM,
+  `/S`), progresso limitado e o script do Mac rodando de verdade (troca e abre; se falhar, volta o antigo e grava a
+  marca). `test/tela.test.js` › "versão nova": a pílula com uma ponte falsa, Baixando 42%, barra sem voltar, Tentar
+  de novo e Depois. `npm test` 76/76; `xvfb-run -a npx electron . --smoke` SMOKE OK.
+- Não conferido: a troca num Mac e num Windows de verdade (precisa de um Release publicado com build maior que o do
+  app instalado; publicar é decisão do titular).

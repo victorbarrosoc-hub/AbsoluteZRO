@@ -12,8 +12,10 @@ const path = require('node:path')
 const fs = require('node:fs')
 const fsp = require('node:fs/promises')
 const { Readable } = require('node:stream')
+const { spawn } = require('node:child_process')
 const { lerProjeto } = require('./sobedesce.cjs')
 const { criarConta } = require('./conta.cjs')
+const { Atualizador, comandoDaTroca, ehScriptDaTroca, lerBuildInfo } = require('./atualizador.cjs')
 const { PRODUTO } = require('../src/produto.js')
 const CABECALHOS = require('./cabecalhos.json')
 
@@ -328,6 +330,13 @@ function ipc() {
     await fsp.writeFile(r.filePath, String(texto))
     return path.basename(r.filePath)
   })
+  handle('atualizacao:estado', () => atualizador.estado())
+  handle('atualizacao:atualizar', () => {
+    atualizador.atualizar() // volta logo: o andamento chega pelo evento 'atualizacao'
+    return atualizador.estado()
+  })
+  handle('atualizacao:depois', () => atualizador.depois())
+  handle('atualizacao:baixar', () => shell.openExternal(atualizador.estado().baixarUrl))
   handle('mostrar', (caminho) => (pastasDeSaida.has(caminho) ? shell.openPath(caminho) : null))
   // Seus universos: autosave dos projetos na pasta de dados do app (<id>.aeon + <id>.json com o resumo do cartão)
   const pastaProjetos = () => path.join(app.getPath('userData'), 'projetos')
@@ -373,6 +382,55 @@ function ipc() {
     await fsp.rm(base + '.json', { force: true })
     return true
   })
+}
+
+// ───────── atualizar pelo próprio app (desktop/atualizador.cjs): só no app empacotado, com build do CI ─────────
+let atualizador = null
+
+/**
+ * O atualizador baixou, conferiu e preparou a versão nova e gravou o script da troca. Antes de fechar, a página grava o
+ * projeto aberto (e diz se há exportação andando); depois o script roda solto (espera o app fechar, troca e abre de
+ * novo) e o app fecha. Lança se não der: o aviso mostra o motivo e nada foi trocado.
+ */
+async function entregarTroca({ script }) {
+  const cmd = ehScriptDaTroca(script) ? comandoDaTroca(process.platform, script) : null
+  if (!cmd) throw new Error('script de troca inválido')
+  const pronto = await Promise.resolve(rodar(`globalThis.aeonAntesDeAtualizar ? globalThis.aeonAntesDeAtualizar() : { ok: true }`)).catch(() => ({ ok: true }))
+  if (pronto && pronto.ok === false) throw new Error(pronto.motivo || 'Não consegui salvar o projeto aberto. Nada foi trocado.')
+  await new Promise((ok, falha) => {
+    let filho
+    try {
+      filho = spawn(cmd.cmd, cmd.args, { detached: true, stdio: 'ignore', windowsHide: true })
+    } catch (err) {
+      return falha(err)
+    }
+    filho.once('error', falha)
+    // só fecha depois que o script de fato começou (senão o app fecharia sem ninguém para abrir de novo)
+    filho.once('spawn', () => {
+      filho.unref()
+      ok()
+    })
+  })
+  setImmediate(() => app.quit())
+}
+
+function ligarAtualizador() {
+  const empacotado = app.isPackaged && !SMOKE && !MEDIR
+  atualizador = new Atualizador({
+    plataforma: process.platform,
+    exe: empacotado ? process.execPath : '',
+    pid: empacotado ? process.pid : 0,
+    pastaDados: app.getPath('userData'),
+    build: empacotado ? lerBuildInfo().build : 0,
+    // net.fetch: a rede do Chromium (proxy do sistema, como o navegador)
+    fetch: (url, op) => net.fetch(url, op),
+    entregar: entregarTroca,
+    log: (...a) => console.log(...a),
+  })
+  atualizador.on('mudou', (st) => {
+    if (win && !win.isDestroyed()) win.webContents.send('atualizacao', st)
+  })
+  atualizador.iniciar()
 }
 
 // ───────── teste de fumaça ─────────
@@ -431,6 +489,7 @@ app.whenReady().then(() => {
   servir()
   // nada de câmera, microfone ou localização: o app só lê os arquivos que você escolhe
   session.defaultSession.setPermissionRequestHandler((_wc, perm, cb) => cb(perm === 'clipboard-sanitized-write'))
+  ligarAtualizador()
   ipc()
   menu()
   criarJanela()

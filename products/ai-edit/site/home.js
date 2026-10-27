@@ -15,6 +15,10 @@ const reduzir = matchMedia('(prefers-reduced-motion: reduce)')
 for (const n of $$('[data-marca="simbolo"]')) n.innerHTML = simbolo({ titulo: false })
 for (const n of $$('[data-marca="nome"]')) n.innerHTML = wordmark()
 const claro = () => document.documentElement.dataset.theme === 'light'
+// o fecho: a estrela de palco (pontas e fios somem aos poucos, em vez de terminar num corte seco), com respiro em volta
+// para o brilho não encostar na borda; segue o tema (tinta escura no claro)
+const fimSimbolo = $('[data-marca="palco"]')
+const pintarFim = () => fimSimbolo && (fimSimbolo.innerHTML = simbolo({ titulo: false, brilho: true, claro: claro(), margem: 8 }))
 
 // ───────── abertura: o vídeo da cena entra quando já está tocando (a foto segura até lá) ─────────
 const video = $('#heroVideo')
@@ -32,6 +36,7 @@ function tema(t) {
     localStorage.setItem('zro-tema', t)
   } catch {}
   for (const img of $$('[data-zro]')) img.src = `vendor/marca/absolute-zro-simbolo-${t === 'dark' ? 'branco' : 'grafite'}.svg`
+  pintarFim()
 }
 $('#tema').addEventListener('click', () => tema(claro() ? 'dark' : 'light'))
 tema(document.documentElement.dataset.theme)

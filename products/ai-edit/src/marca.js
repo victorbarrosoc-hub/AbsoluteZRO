@@ -131,9 +131,10 @@ export function estrelaComBrilho({ cx, cy, r, forma = 'compacta', claro = false,
 
 /**
  * O símbolo sozinho (viewBox 0 0 100 100 na compacta; 200×100 na larga). Plano (uma cor) por padrão; brilho = a versão
- * de palco. Sem os fios fica só o miolo (favicon).
+ * de palco. Sem os fios fica só o miolo (favicon). margem = respiro em volta, em unidades do viewBox (o brilho e as
+ * pontas não encostam na borda do <svg>; 0 = o desenho de sempre).
  */
-export function simbolo({ cor = 'currentColor', forma = 'compacta', fios = true, titulo = true, brilho = false, claro = false } = {}) {
+export function simbolo({ cor = 'currentColor', forma = 'compacta', fios = true, titulo = true, brilho = false, claro = false, margem = 0 } = {}) {
   const larga = forma === 'larga'
   const w = larga ? 200 : 100
   const g = { cx: w / 2, cy: larga ? 51 : 50, r: larga ? 47 : 47, ...FORMAS[forma] }
@@ -141,7 +142,9 @@ export function simbolo({ cor = 'currentColor', forma = 'compacta', fios = true,
   const corpo = brilho
     ? estrelaComBrilho({ ...g, forma, claro, id: `aeon-${forma}-${claro ? 'claro' : 'escuro'}` })
     : `<g fill="${cor}"><path d="${estrelaPath(g)}"/>${fios ? `<path opacity="0.9" d="${fiosPath(g)}"/>` : ''}</g>`
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} 100"${rotulo}>${corpo}</svg>`
+  const m = Math.max(0, Number(margem) || 0)
+  const caixa = m ? `${-m} ${-m} ${w + 2 * m} ${100 + 2 * m}` : `0 0 ${w} 100`
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${caixa}"${rotulo}>${corpo}</svg>`
 }
 
 // ───────── o nome e a frase: Montserrat SemiBold em contorno (src/letras.js), tracking largo ─────────

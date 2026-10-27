@@ -51,6 +51,13 @@
       </div>
       <div class="barra-projeto"><span id="nomeProjeto" title="Clique para renomear"></span><span class="salvo" id="salvo" role="status" aria-live="polite"></span></div>
       <div class="barra-acoes">
+        <!-- versão nova (só no app de desktop instalado): app/atualizacao.js -->
+        <div class="atualizacao" id="atualizacao" role="status" aria-live="polite" hidden>
+          <span class="atualizacao-texto"></span>
+          <span class="atualizacao-barra" role="progressbar" aria-label="Progresso da atualização" aria-valuemin="0" aria-valuemax="100" hidden><span></span></span>
+          <button class="glass-btn glass-btn--ink atualizacao-botao" type="button" hidden></button>
+          <button class="atualizacao-depois" type="button" title="Depois" aria-label="Depois" hidden><svg><use href="#i-x" /></svg></button>
+        </div>
         <button class="icone-btn" id="desfazer" title="Desfazer (⌘Z)" aria-label="Desfazer" disabled><svg><use href="#i-desfazer" /></svg></button>
         <button class="icone-btn" id="refazer" title="Refazer (⇧⌘Z)" aria-label="Refazer" disabled><svg><use href="#i-refazer" /></svg></button>
         <button class="icone-btn" id="tema" title="Tema claro ou escuro" aria-label="Tema"><svg><use href="#i-sol" /></svg></button>

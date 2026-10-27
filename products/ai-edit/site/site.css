@@ -342,7 +342,8 @@ p {
   -webkit-backdrop-filter: blur(30px) saturate(1.8);
   backdrop-filter: blur(30px) saturate(1.8);
   box-shadow: 0 30px 80px rgb(0 0 0 / 0.45);
-  transform: translateX(calc(-100% - 20px));
+  /* fechado, fica longe o bastante para a sombra (80px de desfoque) não manchar a borda esquerda no tema claro */
+  transform: translateX(calc(-100% - 110px));
   transition: transform 0.55s var(--mola);
 }
 .menu-aberto .menu {
@@ -460,7 +461,7 @@ p {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgb(0 0 0 / 0.5) 0%, rgb(0 0 0 / 0) 25%, rgb(0 0 0 / 0) 50%, rgb(0 0 0 / 0.88) 100%);
+    linear-gradient(180deg, rgb(0 0 0 / 0.5) 0%, rgb(0 0 0 / 0) 25%, rgb(0 0 0 / 0) 48%, rgb(0 0 0 / 0.42) 68%, rgb(0 0 0 / 0.82) 86%, #000 100%);
 }
 .hero-texto {
   text-align: center;
@@ -473,11 +474,8 @@ p {
   letter-spacing: -0.045em;
   color: #fff;
 }
-.hero-sub {
-  margin-top: 18px;
-  font-size: clamp(19px, 2vw, 26px);
-  font-weight: 400;
-  color: rgb(245 245 247 / 0.78);
+.hero .acoes {
+  margin-top: 40px;
 }
 .hero .vidro:not(.vidro--tinta) {
   color: #fff;
@@ -714,6 +712,18 @@ p {
   background: linear-gradient(0deg, rgb(0 0 0 / 0.8), rgb(0 0 0 / 0));
   pointer-events: none;
 }
+/* passagem entre a abertura e o produto: a abertura termina no preto e a salina nasce e volta para ele (máscara), em
+   vez de duas fotos coladas num corte seco. O preto é o mesmo nos dois temas (a abertura é sempre escura). */
+.cena--passagem {
+  padding-bottom: clamp(16px, 4vw, 64px);
+}
+.cena--passagem img {
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 22%, #000 72%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 22%, #000 72%, transparent 100%);
+}
+.cena--passagem::after {
+  display: none;
+}
 .cena-titulo {
   position: absolute;
   z-index: 1;
@@ -795,15 +805,18 @@ p {
   margin: 60px auto 0;
   max-width: 1000px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, …): o comando (sem quebra de linha) rola dentro do cartão em vez de alargar a página no celular */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
 }
 .sistema {
+  min-width: 0;
   background: var(--cartao);
   border: 1px solid var(--linha);
   border-radius: 28px;
   padding: 32px;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
 }
 .sistema-icone {
@@ -842,7 +855,7 @@ p {
 }
 @media (max-width: 760px) {
   .sistemas {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -854,9 +867,9 @@ p {
   overflow: hidden;
 }
 .fim-simbolo {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 34px;
+  width: clamp(96px, 9vw, 128px);
+  aspect-ratio: 1;
+  margin: 0 auto 26px;
   color: var(--forte);
 }
 .fim-simbolo svg {

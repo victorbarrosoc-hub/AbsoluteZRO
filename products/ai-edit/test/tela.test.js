@@ -307,6 +307,54 @@ test('reduzir movimento: páginas trocam sem deslize', async () => {
   await pagina.close()
 })
 
+test('versão nova (app de desktop): a pílula da barra, Atualizar e o andamento; no navegador não aparece', async () => {
+  const { pagina: web } = await abrir()
+  assert.equal(await web.isHidden('#atualizacao'), true, 'no navegador não há atualizador')
+  await web.close()
+
+  const pagina = await navegador.newPage({ viewport: { width: 1440, height: 900 } })
+  await pagina.route('**/api/zro/eu', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(PESSOA) }))
+  // a ponte do desktop (desktop/preload.cjs › atualizacao) com um atualizador falso: só o pedaço da atualização
+  await pagina.addInitScript(() => {
+    const ouvintes = []
+    let st = { nova: true, podeAtualizar: true, ultima: { build: 42 }, fase: null, recebido: 0, total: 0, erro: null }
+    const mudar = (p) => {
+      st = { ...st, ...p }
+      for (const f of ouvintes) f(st)
+    }
+    globalThis.__atualizacao = { mudar, pedidos: [] }
+    globalThis.aiEditDesktop = {
+      atualizacao: {
+        estado: async () => st,
+        atualizar: async () => (globalThis.__atualizacao.pedidos.push('atualizar'), mudar({ fase: 'baixando', total: 100 * 1048576 }), st),
+        depois: async () => (mudar({ nova: false }), st),
+        baixar: async () => globalThis.__atualizacao.pedidos.push('baixar'),
+        aoMudar: (f) => ouvintes.push(f),
+      },
+    }
+  })
+  await pagina.goto(s.url + 'app/')
+  await pagina.waitForFunction(() => document.documentElement.dataset.pronto === '1')
+  await pagina.locator('#atualizacao:not([hidden])').waitFor()
+  assert.equal(await pagina.textContent('.atualizacao-texto'), 'Versão nova')
+  assert.equal(await pagina.textContent('.atualizacao-botao'), 'Atualizar')
+  await pagina.click('.atualizacao-botao')
+  await pagina.evaluate(() => globalThis.__atualizacao.mudar({ recebido: 42 * 1048576 }))
+  assert.equal(await pagina.textContent('.atualizacao-texto'), 'Baixando 42%')
+  assert.equal(await pagina.isHidden('.atualizacao-botao'), true)
+  assert.equal(await pagina.getAttribute('.atualizacao-barra', 'aria-valuenow'), '42')
+  // a barra não volta para trás (nada de salto)
+  await pagina.evaluate(() => globalThis.__atualizacao.mudar({ recebido: 10 * 1048576 }))
+  assert.equal(await pagina.getAttribute('.atualizacao-barra', 'aria-valuenow'), '42')
+  if (process.env.AIEDIT_TELAS) await pagina.screenshot({ path: process.env.AIEDIT_TELAS + '/app-atualizando.png', clip: { x: 0, y: 0, width: 1440, height: 120 } })
+  await pagina.evaluate(() => globalThis.__atualizacao.mudar({ fase: 'erro', erro: 'O download não terminou.', recebido: 0 }))
+  assert.equal(await pagina.textContent('.atualizacao-botao'), 'Tentar de novo')
+  await pagina.click('.atualizacao-depois')
+  assert.equal(await pagina.isHidden('#atualizacao'), true)
+  assert.deepEqual(await pagina.evaluate(() => globalThis.__atualizacao.pedidos), ['atualizar'])
+  await pagina.close()
+})
+
 test('Whisper de verdade carrega no navegador e transcreve (modelo Rápido, precisa de internet uma vez)', { skip: process.env.AIEDIT_SEM_REDE === '1' }, async () => {
   const { pagina } = await abrir()
   const r = await pagina.evaluate(async () => {

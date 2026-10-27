@@ -2175,3 +2175,90 @@ select {
 html:not([data-conta]) body {
   visibility: hidden;
 }
+
+/* ───────── versão nova (app de desktop): uma pílula discreta na barra, o andamento numa barra fina que só avança ───────── */
+.atualizacao {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 4px 0 12px;
+  margin-right: 6px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--pill-fill, var(--surface-2));
+  font-size: 12.5px;
+  color: var(--text);
+  white-space: nowrap;
+  animation: atualizacao-entra 0.5s var(--mola) both;
+}
+.atualizacao[data-fase='baixando'],
+.atualizacao[data-fase='conferindo'],
+.atualizacao[data-fase='preparando'],
+.atualizacao[data-fase='reiniciando'] {
+  padding-right: 12px;
+}
+.atualizacao-texto {
+  font-variant-numeric: tabular-nums;
+  min-width: 7.5ch;
+}
+.atualizacao-barra {
+  position: relative;
+  width: 72px;
+  height: 3px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--line-strong, var(--line));
+}
+.atualizacao-barra > span {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--text-strong);
+  transform-origin: left center;
+  transform: scaleX(0);
+  transition: transform 0.25s linear;
+}
+.atualizacao-botao.glass-btn {
+  min-height: 24px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+.atualizacao-depois {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+.atualizacao-depois:hover {
+  background: var(--hover);
+  color: var(--text-strong);
+}
+.atualizacao-depois svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+@keyframes atualizacao-entra {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .atualizacao {
+    animation: none;
+  }
+  .atualizacao-barra > span {
+    transition: none;
+  }
+}

@@ -26,6 +26,7 @@ import { montarTrilho } from './trilho.js'
 import { DEPOIS, FAMILIA, iconeDe } from '../src/familia.js'
 import * as projetos from './projetos.js'
 import { lerConta } from '../site/conta.js'
+import { montarAtualizacao } from './atualizacao.js'
 
 const $ = (id) => document.getElementById(id)
 const PAGINAS = ['midia', 'revisar', 'edicao', 'entrega']
@@ -1059,8 +1060,20 @@ $('nomeProjeto').onclick = () => {
   }
 }
 
+// "Atualizar" (app de desktop): antes de o app fechar para trocar de versão, grava o projeto aberto agora; com
+// exportação andando, não fecha (desktop/main.cjs › entregarTroca pergunta aqui)
+globalThis.aeonAntesDeAtualizar = async () => {
+  if (renderAtual) return { ok: false, motivo: 'Termine a exportação antes de atualizar. Nada foi trocado.' }
+  clearTimeout(gravarTimer)
+  if (P()) await autosalvar()
+  if (P() && !S.salvo) return { ok: false, motivo: 'Não consegui salvar o projeto aberto. Nada foi trocado.' }
+  S.saindo = true
+  return { ok: true }
+}
+montarAtualizacao(globalThis.aiEditDesktop?.atualizacao)
+
 addEventListener('beforeunload', (e) => {
-  if (P() && !S.salvo) {
+  if (P() && !S.salvo && !S.saindo) {
     autosalvar()
     e.preventDefault()
   }
