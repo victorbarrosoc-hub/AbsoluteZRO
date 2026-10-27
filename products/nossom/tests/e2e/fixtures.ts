@@ -65,6 +65,8 @@ export async function signInExisting(
 
 export const test = base.extend({
   page: async ({ page }, use) => {
+    // O painel da Z vem de absolutezro.com; a suíte não depende da rede (zro-ia.spec.ts testa o painel).
+    await page.route('https://absolutezro.com/**', (route) => route.abort());
     await signInExisting(page.request, {
       email: 'test.' + crypto.randomUUID() + '@example.test',
       password: 'valid-test-password',

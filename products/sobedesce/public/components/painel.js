@@ -12,6 +12,7 @@ import { openExternal } from '../lib/desktop.js'
 import { pastaInicial } from '../lib/destinos.js'
 import { Icon } from './icons.js'
 import { FileIcon } from './common.js'
+import { PainelZ } from './z.js'
 import { useAbout } from './drive-data.js'
 
 const FINISHED = new Set(['completed', 'skipped', 'canceled'])
@@ -272,9 +273,12 @@ export function PainelScreen() {
   const hora = new Date().getHours()
   const saudacao = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite'
 
+  // A Z é o painel inicial (pedido do titular, 27/10/2026): ela cumprimenta e conversa. O título fica para leitor de
+  // tela; a linha do que está andando e o resto do Início seguem abaixo.
   return html`<div class="page page-painel">
+    <${PainelZ} nome=${nome} />
     <header class="pn-ola" style="--i:0">
-      <h1>${saudacao}${nome ? `, ${nome}` : ''}</h1>
+      <h1 class="pn-ola-oculto">${saudacao}${nome ? `, ${nome}` : ''}</h1>
       <p class="page-lead">${andando.length ? `${plural(andando.length, 'envio', 'envios')} em andamento. A gente cuida do resto.` : 'Seus arquivos organizados e seguros no Drive.'}</p>
     </header>
     <${Resumo} andando=${andando} conta=${conta} computadores=${cloud?.conectado ? computadores : []} />

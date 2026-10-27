@@ -2452,3 +2452,19 @@ html.kb-open .editor-bar {
     color: #c9b6ff;
   }
 }
+
+/* ───────────── a Z no topo de Roteiros (app/js/z.js) ───────────── */
+.z-painel {
+  --zro-ia-altura: min(520px, 64vh);
+  --zro-ia-fundo-gaveta: var(--bg);
+  margin: 4px 0 8px;
+}
+.z-painel[hidden],
+.z-entrar[hidden] {
+  display: none;
+}
+.z-entrar {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}

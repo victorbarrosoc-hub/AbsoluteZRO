@@ -39,7 +39,7 @@ const SAIDA = path.resolve(process.env.CARRO_SAIDA || path.join(RAIZ, '.vercel',
 const STATIC = path.join(SAIDA, 'static');
 const FASES = [1, 2, 3, 4, 5, 6];
 const ESTATICOS = ['apple-touch-icon.png', 'icone-192.png', 'icone-512.png', 'icone-maskable.png', 'app.webmanifest', 'og.jpg'];
-const FUNCOES = ['entrar', 'callback', 'eu', 'sair', 'enviar'];
+const FUNCOES = ['entrar', 'callback', 'eu', 'sair', 'enviar', 'ia'];
 const RUNTIME = 'nodejs22.x';
 
 let falhou = false;
@@ -145,7 +145,9 @@ for (const n of FUNCOES) {
   fs.mkdirSync(path.join(dir, 'api', 'zro'), { recursive: true });
   for (const f of [n + '.js', '_zro.js']) fs.copyFileSync(path.join(RAIZ, 'api', 'zro', f), path.join(dir, 'api', 'zro', f));
   fs.writeFileSync(path.join(dir, '.vc-config.json'), JSON.stringify({
-    runtime: RUNTIME, handler: 'api/zro/' + n + '.js', launcherType: 'Nodejs', shouldAddHelpers: false, maxDuration: 20
+    runtime: RUNTIME, handler: 'api/zro/' + n + '.js', launcherType: 'Nodejs', shouldAddHelpers: false,
+    /* a Z responde em streaming (NDJSON) e pode pensar por um tempo */
+    ...(n === 'ia' ? { maxDuration: 120, supportsResponseStreaming: true } : { maxDuration: 20 })
   }, null, 2) + '\n');
 }
 ok('funções /api/zro/' + FUNCOES.join(', /api/zro/') + ' (' + RUNTIME + ')');

@@ -1018,3 +1018,141 @@
     justify-content: center;
   }
 }
+
+/* Z, a IA do ecossistema Absolute ZRO (27/10/2026): anel e estrela cromados em public/z, estrela às 3 horas. */
+.chrome-site .home-z {
+  padding-block: 56px 20px;
+}
+.chrome-site .home-z-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: clamp(28px, 6vw, 72px);
+  max-width: 980px;
+  margin: 0 auto;
+  padding: clamp(28px, 5vw, 56px);
+  border-radius: 32px;
+}
+.chrome-site .z-simbolo {
+  position: relative;
+  width: clamp(116px, 15vw, 176px);
+  aspect-ratio: 1;
+  margin-right: 13%;
+}
+.chrome-site .z-simbolo img {
+  position: absolute;
+  display: block;
+  user-select: none;
+  pointer-events: none;
+}
+.chrome-site .z-anel {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+/* centro do tubo a 41,83% do lado a partir do meio; a estrela tem 43% do lado do anel */
+.chrome-site .z-estrela {
+  width: 43%;
+  height: 43%;
+  left: 70.33%;
+  top: 28.5%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .chrome-site .z-estrela {
+    animation: z-brilho 4.8s ease-in-out infinite alternate;
+  }
+}
+@keyframes z-brilho {
+  from {
+    transform: scale(0.86);
+    opacity: 0.82;
+  }
+  to {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+.chrome-site .home-z-copy {
+  display: grid;
+  justify-items: start;
+}
+.chrome-site .z-selo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 14%);
+  color: #b9c9da;
+  font-size: 13px;
+  font-weight: 600;
+}
+.chrome-site .z-selo i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #5ab4ff;
+  box-shadow: 0 0 10px rgb(90 180 255 / 70%);
+}
+.chrome-site .home-z h2 {
+  margin: 0;
+  font-size: clamp(28px, 3.4vw, 44px);
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+  font-weight: 650;
+}
+.chrome-site .home-z-copy > p:not(.z-selo) {
+  margin: 12px 0 0;
+  color: #b9c9da;
+}
+.chrome-site .z-fichas {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 22px 0 24px;
+  padding: 0;
+}
+.chrome-site .z-fichas li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  background: rgb(220 236 255 / 7%);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 10%);
+  color: #f4f9ff;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.chrome-site .home-z-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.chrome-site .z-fichas svg {
+  color: #a9bdd2;
+}
+@media (max-width: 680px) {
+  .chrome-site .home-z-card {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+  .chrome-site .z-simbolo {
+    width: 112px;
+    margin: 0 15% 0 0;
+  }
+  .chrome-site .home-z-copy {
+    justify-items: center;
+  }
+  .chrome-site .z-fichas {
+    justify-content: center;
+    gap: 6px;
+  }
+  .chrome-site .z-fichas li {
+    padding: 7px 11px;
+    font-size: 12.5px;
+  }
+}

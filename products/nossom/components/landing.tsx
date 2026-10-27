@@ -18,6 +18,10 @@ import {
   X,
   Plus,
   Minus,
+  UserRound,
+  MessageSquare,
+  CircleCheck,
+  Sparkle,
 } from 'lucide-react';
 import CinematicRibbon from './cinematic-ribbon';
 import SignalField from './signal-field';
@@ -174,7 +178,7 @@ const faqs = [
     'Sim. O original é preservado e os tratamentos criam versões. Compare antes e depois, desfaça, refaça ou retome uma versão anterior. Os efeitos também podem ser removidos. Exporte seus projetos antes de limpar os dados do navegador.',
   ],
 ];
-export default function Landing() {
+export default function Landing({ zroIa = false }: { zroIa?: boolean }) {
   const [menu, setMenu] = useState(false),
     [faq, setFaq] = useState<number | null>(null),
     [hover, setHover] = useState<string | null>(null),
@@ -419,6 +423,66 @@ export default function Landing() {
               <strong>iPhone e Android</strong>
               <small>Direto na Tela de Início</small>
               <InstallApp label="Instalar" />
+            </div>
+          </div>
+        </section>
+        {/* Z, a IA do ecossistema Absolute ZRO. Com o login Absolute ZRO configurado, ela abre o Início do estúdio
+            (repasse em /api/zro/ia); sem ele, a seção continua dizendo que está chegando. */}
+        <section className="home-z ns-wrap" id="z" aria-labelledby="z-title">
+          <div className="lg home-z-card">
+            <div className="z-simbolo" aria-hidden="true">
+              <img
+                className="z-anel"
+                src="/z/anel.webp"
+                alt=""
+                width={560}
+                height={560}
+                loading="lazy"
+              />
+              <img
+                className="z-estrela"
+                src="/z/estrela.webp"
+                alt=""
+                width={400}
+                height={400}
+                loading="lazy"
+              />
+            </div>
+            <div className="home-z-copy">
+              <p className="z-selo">
+                <i aria-hidden="true" />
+                {zroIa ? 'Já no NOSSOM' : 'Chegando ao NOSSOM'}
+              </p>
+              <h2 id="z-title">Z. Uma IA para todo o ecossistema.</h2>
+              <p>
+                {zroIa
+                  ? 'Ela abre o seu estúdio: pergunte sobre seu áudio e siga para a edição.'
+                  : 'Vai entender seus projetos de áudio e ajudar a seguir para a edição.'}
+              </p>
+              <ul className="z-fichas" aria-label="Como a Z funciona">
+                <li title="A mesma conta Absolute ZRO que você já usa.">
+                  <UserRound size={16} aria-hidden="true" /> Mesma conta
+                </li>
+                <li title="Guardadas por plataforma e reunidas em absolutezro.com/ia.">
+                  <MessageSquare size={16} aria-hidden="true" /> Conversas reunidas
+                </li>
+                <li title="Nenhuma ação sem você conferir.">
+                  <CircleCheck size={16} aria-hidden="true" /> Você confere antes
+                </li>
+                <li title="Usa os créditos de IA do seu plano.">
+                  <Sparkle size={16} aria-hidden="true" /> 1 crédito por resposta
+                </li>
+              </ul>
+              <div className="home-z-acoes">
+                {zroIa && (
+                  <Link className="button primary" href="/studio">
+                    Conversar com a Z <ArrowRight size={15} />
+                  </Link>
+                )}
+                <a className="button secondary" href="https://absolutezro.com/ia" rel="noopener">
+                  Conhecer a Z <ArrowUpRight size={15} />
+                </a>
+              </div>
             </div>
           </div>
         </section>

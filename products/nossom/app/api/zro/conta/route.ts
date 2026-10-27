@@ -6,6 +6,7 @@ import {
   sessionCookie,
 } from '@/lib/server/account';
 import { allowRequest, privateHeaders, sameOrigin } from '@/lib/server/ai-access';
+import { forgetIaTokens } from '@/lib/server/zro/ia';
 import { zroConfigured } from '@/lib/server/zro/config';
 import { unlinkZro, zroLinkOf } from '@/lib/server/zro/accounts';
 import { zroMessage } from '@/lib/zro-messages';
@@ -71,6 +72,7 @@ export async function DELETE(request: Request) {
       );
     // Sem vínculo, a conta volta a ser como antes da Absolute ZRO.
     const headers = new Headers(privateHeaders);
+    headers.append('Set-Cookie', await forgetIaTokens(request));
     const session = decodeSession(accountToken(request));
     if (session?.zroProducts) {
       const { zroProducts: _, ...rest } = session;

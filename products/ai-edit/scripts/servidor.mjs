@@ -9,10 +9,16 @@ import { fileURLToPath } from 'node:url'
 
 const RAIZ = fileURLToPath(new URL('..', import.meta.url))
 export const CABECALHOS = JSON.parse(readFileSync(new URL('../desktop/cabecalhos.json', import.meta.url), 'utf8'))
-const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2', '.wasm': 'application/wasm', '.mp4': 'video/mp4', '.mov': 'video/quicktime', '.webm': 'video/webm', '.wav': 'audio/wav', '.mp3': 'audio/mpeg' }
+/** Os do site em produção (vercel.json, aeon.absolutezro.com): a mesma CSP com a Z de absolutezro.com. */
+export const CABECALHOS_SITE = Object.fromEntries(
+  JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'))
+    .headers.find((h) => h.source === '/(.*)')
+    .headers.map((h) => [h.key, h.value]),
+)
+const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.woff2': 'font/woff2', '.wasm': 'application/wasm', '.mp4': 'video/mp4', '.mov': 'video/quicktime', '.webm': 'video/webm', '.wav': 'audio/wav', '.mp3': 'audio/mpeg' }
 
-/** extra(req, res) → true se tratou o pedido (os testes usam para respostas falsas). */
-export function servir({ raiz = RAIZ, porta = 0, extra } = {}) {
+/** extra(req, res) → true se tratou o pedido (os testes usam para respostas falsas). cabecalhos: os do app (padrão) ou CABECALHOS_SITE. */
+export function servir({ raiz = RAIZ, porta = 0, extra, cabecalhos = CABECALHOS } = {}) {
   const s = createServer((req, res) => {
     if (extra && extra(req, res)) return
     const rel = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(/^(\.\.[/\\])+/, '')
@@ -25,7 +31,7 @@ export function servir({ raiz = RAIZ, porta = 0, extra } = {}) {
     } catch {
       return res.writeHead(404).end()
     }
-    const base = { ...CABECALHOS, 'content-type': TIPOS[extname(arq)] || 'application/octet-stream', 'accept-ranges': 'bytes', 'cache-control': 'no-cache' }
+    const base = { ...cabecalhos, 'content-type': TIPOS[extname(arq)] || 'application/octet-stream', 'accept-ranges': 'bytes', 'cache-control': 'no-cache' }
     const m = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '')
     if (!m) {
       res.writeHead(200, { ...base, 'content-length': st.size })

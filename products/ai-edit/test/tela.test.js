@@ -10,7 +10,8 @@ import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { after, before, test } from 'node:test'
-import { servir } from '../scripts/servidor.mjs'
+import { CABECALHOS_SITE, servir } from '../scripts/servidor.mjs'
+import { simularZ } from './z-falso.js'
 
 const { chromium } = createRequire(import.meta.url)('playwright')
 let s
@@ -18,7 +19,8 @@ let navegador
 let dir
 
 before(async () => {
-  s = await servir()
+  // a CSP de produção (vercel.json): a do app de desktop é a mesma, sem a Z de absolutezro.com (lá ela vem de vendor/)
+  s = await servir({ cabecalhos: CABECALHOS_SITE })
   navegador = await chromium.launch()
   dir = mkdtempSync(join(tmpdir(), 'aiedit-tela-'))
 })
@@ -31,8 +33,9 @@ after(async () => {
 // sessão da Absolute ZRO falsa: o AEON só abre com conta (api/zro/eu); sem ela vai para entrar.html
 const PESSOA = { ok: true, pessoa: { nome: 'Lia Produtora', email: 'lia@produtora.com', produtos: ['ai-edit'] }, acesso: true }
 
-async function abrir(opts = {}, { logado = true } = {}) {
+async function abrir(opts = {}, { logado = true, inicio = false, z = {} } = {}) {
   const pagina = await navegador.newPage({ viewport: { width: 1440, height: 900 }, acceptDownloads: true, ...opts })
+  const pedidosZ = await simularZ(pagina, z)
   await pagina.route('**/api/zro/eu', (r) => (logado ? r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(PESSOA) }) : r.fulfill({ status: 401, contentType: 'application/json', body: '{"ok":false}' })))
   const erros = []
   pagina.on('pageerror', (e) => erros.push(e.message))
@@ -44,7 +47,9 @@ async function abrir(opts = {}, { logado = true } = {}) {
   const r = await pagina.goto(s.url + 'app/')
   assert.match(r.headers()['content-security-policy'], /default-src 'self'/)
   if (logado) await pagina.waitForFunction(() => document.documentElement.dataset.pronto === '1')
-  return { pagina, erros }
+  // o painel inicial é a Z; os testes do editor começam na Mídia, como quem toca nela no dock
+  if (logado && !inicio) await pagina.click('.dock [data-ir="midia"]')
+  return { pagina, erros, pedidosZ }
 }
 
 test('só com conta: sem sessão o editor vai para entrar.html; com sessão mostra a pessoa no menu', async () => {
@@ -57,6 +62,39 @@ test('só com conta: sem sessão o editor vai para entrar.html; com sessão most
   const { pagina: dentro } = await abrir()
   assert.equal(await dentro.locator('.trilho-item', { hasText: 'Lia Produtora' }).count(), 1)
   await dentro.close()
+})
+
+test('painel inicial: a Z abre primeiro, conversa pelo repasse e o editor segue a um toque', async () => {
+  const { pagina, erros, pedidosZ } = await abrir({}, { inicio: true })
+  assert.notEqual(await pagina.getAttribute('.dock [data-ir="inicio"]', 'aria-current'), null)
+  const z = pagina.locator('#zPainel zro-ia')
+  await z.waitFor()
+  assert.equal(await z.getAttribute('api'), '/api/zro/ia')
+  assert.equal(await z.getAttribute('tema'), 'escuro', 'acompanha o tema do app')
+  await pagina.locator('zro-ia h1', { hasText: 'Lia' }).waitFor()
+  assert.equal(await pagina.locator('zro-ia .sug button').count(), 4)
+  await pagina.locator('zro-ia textarea').fill('Como corto silêncios?')
+  await pagina.keyboard.press('Enter')
+  await pagina.locator('zro-ia .msg', { hasText: 'posso te ajudar com isso.' }).waitFor()
+  const envio = pedidosZ.find((p) => p.caminho === '/mensagens')
+  assert.deepEqual(JSON.parse(envio.corpo), { conversa: null, texto: 'Como corto silêncios?' })
+  assert.ok(pedidosZ.every((p) => p.autorizacao === null), 'a página nunca manda token: o repasse põe')
+  await pagina.click('#tema')
+  assert.equal(await z.getAttribute('tema'), 'claro')
+  await pagina.click('#tema')
+  await pagina.click('.dock [data-ir="midia"]')
+  await pagina.locator('#escolher').waitFor()
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('painel inicial sem o escopo da Z: oferece entrar de novo (que já pede zro.ia)', async () => {
+  const { pagina } = await abrir({}, { inicio: true, z: { logado: false } })
+  const entrar = pagina.locator('#zPainel .z-aviso a')
+  await entrar.waitFor()
+  assert.equal(await entrar.getAttribute('href'), '/api/zro/entrar?volta=%2Fapp%2F')
+  assert.match(await pagina.locator('#zPainel .z-aviso p').textContent(), /a Z/)
+  await pagina.close()
 })
 
 test('autoteste: grava, lê, acha silêncio, corta, exporta e renderiza no navegador', async () => {
@@ -284,6 +322,7 @@ const FOTO_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADU
 test('perfil único: foto e nome da conta Absolute ZRO no menu; editar leva à conta; sem foto, iniciais', async () => {
   const foto = 'https://absolutezro.com/api/v1/foto/b8a4a3c2-0f4e-4d55-9a51-1f3f0c6a2b10'
   const pagina = await navegador.newPage({ viewport: { width: 1440, height: 900 } })
+  await simularZ(pagina)
   const erros = []
   pagina.on('pageerror', (e) => erros.push(e.message))
   pagina.on('console', (m) => m.type() === 'error' && erros.push(m.text()))
@@ -413,6 +452,7 @@ test('versão nova (app de desktop): a pílula da barra, Atualizar e o andamento
   await web.close()
 
   const pagina = await navegador.newPage({ viewport: { width: 1440, height: 900 } })
+  await simularZ(pagina)
   await pagina.route('**/api/zro/eu', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(PESSOA) }))
   // a ponte do desktop (desktop/preload.cjs › atualizacao) com um atualizador falso: só o pedaço da atualização
   await pagina.addInitScript(() => {
@@ -469,5 +509,17 @@ test('Whisper de verdade carrega no navegador e transcreve (modelo Rápido, prec
   })
   assert.equal(r.tipo, 'pronto', r.mensagem)
   assert.ok(Array.isArray(r.palavras))
+  await pagina.close()
+})
+
+test('página inicial: a seção da Z diz que ela já está no AEON e leva ao painel', async () => {
+  const pagina = await navegador.newPage()
+  await pagina.route('**/api/zro/eu', (r) => r.fulfill({ status: 401, contentType: 'application/json', body: '{"ok":false}' }))
+  await pagina.goto(s.url)
+  const sec = pagina.locator('#z')
+  assert.match(await sec.innerText(), /Agora no AEON/)
+  assert.equal(await sec.getByRole('link', { name: 'Conversar com a Z' }).getAttribute('href'), 'app/')
+  assert.equal(await sec.getByRole('link', { name: 'Conhecer a Z' }).getAttribute('href'), 'https://absolutezro.com/ia')
+  assert.doesNotMatch(await sec.innerText(), /Chegando|o Z\b/)
   await pagina.close()
 })

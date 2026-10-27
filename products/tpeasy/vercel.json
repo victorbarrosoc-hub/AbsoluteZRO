@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/zro/ia/:caminho*",
+      "destination": "/api/zro/ia?c=:caminho*"
+    }
+  ]
+}

@@ -55,7 +55,8 @@ test('mobile homepage keeps demo, plans and FAQ in a shorter page', async ({ pag
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Ouvir demonstração', exact: true })).toBeVisible();
-  expect(await page.locator('main > section').count()).toBe(6);
+  // Seis seções do NOSSOM e a da Z, a IA da Absolute ZRO.
+  expect(await page.locator('main > section').count()).toBe(7);
   await page.locator('.ns-faq').scrollIntoViewIfNeeded();
   await page.getByRole('button', { name: 'Meu áudio é enviado à IA?' }).click();
   await expect(page.locator('#faq-2')).toBeVisible();

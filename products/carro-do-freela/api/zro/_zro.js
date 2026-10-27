@@ -36,13 +36,22 @@
  * pessoa: o HUB confere papel e plano no banco. O token nunca vai ao
  * navegador. Se o HUB ainda não conhece o escopo (invalid_scope), o login
  * refaz o pedido sem ele e tudo segue como antes, só sem o envio.
+ *
+ * A Z, A IA DO ECOSSISTEMA (27/out · 4): o login pede também `zro.ia`, e
+ * GET/POST/DELETE /api/zro/ia/<caminho> repassa o painel <zro-ia> para
+ * https://absolutezro.com/api/v1/ia/<caminho> com o MESMO acesso do cookie
+ * `cdf_hub` (um token só, e o refresh roda igual ao do envio). Só os
+ * caminhos do painel passam; a resposta das mensagens (NDJSON) vai pedaço a
+ * pedaço, sem buffer. Sem o escopo, sem o cookie ou com o acesso recusado:
+ * 401 `reconectar`, que o painel transforma em "Reconectar com Absolute ZRO".
  */
 const crypto = require('crypto');
 
 const EMISSOR_PADRAO = 'https://absolutezro.com';
 const ESCOPOS_BASE = 'openid email profile org';
 const ESCOPO_JOBS = 'carro-do-freela.jobs';
-const ESCOPOS = ESCOPOS_BASE + ' offline_access ' + ESCOPO_JOBS;
+const ESCOPO_IA = 'zro.ia';
+const ESCOPOS = ESCOPOS_BASE + ' offline_access ' + ESCOPO_JOBS + ' ' + ESCOPO_IA;
 const COOKIE_IDA = 'cdf_zro';
 const COOKIE_SESSAO = 'cdf_sessao';
 const COOKIE_HUB = 'cdf_hub';
@@ -278,12 +287,14 @@ async function pedirToken(cfg, form) {
     body: new URLSearchParams(form).toString(),
   });
 }
-/** o que vai no cookie do HUB: só se o HUB deu o escopo de jobs E o refresh token */
+/** o que vai no cookie do HUB: só se o HUB deu o escopo de jobs ou o da Z, E o refresh token.
+ *  `jobs` e `ia` dizem para que o acesso serve (cookie de antes da Z não tem `ia`: reconectar). */
 function acessoHub(corpo, sub) {
   const escopos = String((corpo && corpo.scope) || '').split(' ');
-  if (!escopos.includes(ESCOPO_JOBS) || typeof corpo.refresh_token !== 'string' || typeof corpo.access_token !== 'string') return null;
+  const jobs = escopos.includes(ESCOPO_JOBS), ia = escopos.includes(ESCOPO_IA);
+  if ((!jobs && !ia) || typeof corpo.refresh_token !== 'string' || typeof corpo.access_token !== 'string') return null;
   const agora = Math.floor(Date.now() / 1000);
-  return { sub, rt: corpo.refresh_token, at: corpo.access_token, atExp: agora + Math.min(Number(corpo.expires_in) || 0, 3600), exp: agora + SESSAO_S };
+  return { sub, rt: corpo.refresh_token, at: corpo.access_token, atExp: agora + Math.min(Number(corpo.expires_in) || 0, 3600), exp: agora + SESSAO_S, jobs, ia };
 }
 
 async function trocarCodigo(cfg, code, verificador, nonce, retorno) {
@@ -396,7 +407,9 @@ function eu(req, res) {
     produtos,
     liberado: produtos.includes(PRODUTO),
     /* dá para levar job e equipe ao HUB a partir daqui */
-    hub: !!(h && h.sub === s.sub),
+    hub: !!(h && h.sub === s.sub && h.jobs !== false),
+    /* a Z (IA da Absolute ZRO) tem acesso: sem isso o painel pede para reconectar */
+    ia: !!(h && h.sub === s.sub && h.ia === true),
   });
 }
 
@@ -512,7 +525,7 @@ async function enviar(req, res) {
   if (!s.produtos.includes(PRODUTO)) return json(res, 403, { erro: 'plano' });
   const h = decifrar(lerCookie(req, COOKIE_HUB), cfg.clientSecret);
   const apagar = cookie(COOKIE_HUB, '', { path: '/api/zro', maxAge: 0, seguro: seguro(origem) });
-  if (!h || h.sub !== s.sub) return json(res, 401, { erro: 'reconectar' }, h ? { 'Set-Cookie': [apagar] } : {});
+  if (!h || h.sub !== s.sub || h.jobs === false) return json(res, 401, { erro: 'reconectar' }, h && h.sub !== s.sub ? { 'Set-Cookie': [apagar] } : {});
   let pedido;
   try {
     pedido = await lerCorpo(req, 64 * 1024);
@@ -552,6 +565,93 @@ async function enviar(req, res) {
   return json(res, 200, saida, extra);
 }
 
+/* ---------------- a Z, a IA da Absolute ZRO (27/out · 4) ---------------- */
+
+const ID_CONVERSA = /^[A-Za-z0-9_-]{1,80}$/;
+/** o caminho do painel que pode passar com este método; qualquer outro é 404 */
+function caminhoIa(bruto, metodo) {
+  const partes = String(bruto || '').split('/');
+  const [a, b] = partes;
+  if (partes.length > 2) return null;
+  if (partes.length === 1 && a === 'estado' && metodo === 'GET') return 'estado';
+  if (partes.length === 1 && a === 'conversas' && metodo === 'GET') return 'conversas';
+  if (partes.length === 2 && a === 'conversas' && ID_CONVERSA.test(b) && (metodo === 'GET' || metodo === 'DELETE')) return 'conversas/' + b;
+  if (partes.length === 1 && a === 'mensagens' && metodo === 'POST') return 'mensagens';
+  return null;
+}
+/** o caminho vem de /api/zro/ia/<caminho> (a rota manda para esta função com ?caminho=, e qualquer um dos dois serve) */
+function caminhoDoPedido(req) {
+  const u = new URL(req.url, 'http://local');
+  const q = u.searchParams.get('caminho');
+  if (q !== null) return q;
+  const m = /^\/api\/zro\/ia\/(.+)$/.exec(u.pathname);
+  return m ? m[1] : '';
+}
+
+/**
+ * GET/POST/DELETE /api/zro/ia/<caminho> — o painel <zro-ia> fala com a API
+ * da IA do HUB pelo servidor do Carro, que acrescenta o Bearer da sessão.
+ */
+async function ia(req, res) {
+  const caminho = caminhoIa(caminhoDoPedido(req), req.method);
+  if (!caminho) return json(res, 404, { erro: 'nao_encontrado' });
+  const cfg = config();
+  if (!cfg.ligado) return json(res, 503, { erro: 'desligado' });
+  const origem = origemDe(req);
+  if (!origem) return json(res, 403, { erro: 'origem' });
+  /* GET de outro site não lê nada (sem CORS); o que muda exige a própria origem */
+  if (req.method !== 'GET' && req.headers.origin !== origem) return json(res, 403, { erro: 'origem' });
+  const s = abrir(lerCookie(req, COOKIE_SESSAO), cfg.clientSecret, COOKIE_SESSAO);
+  if (!s || typeof s.sub !== 'string' || !Array.isArray(s.produtos)) return json(res, 401, { erro: 'sem_sessao' });
+  if (!s.produtos.includes(PRODUTO)) return json(res, 403, { erro: 'plano' });
+  const h = decifrar(lerCookie(req, COOKIE_HUB), cfg.clientSecret);
+  const apagar = cookie(COOKIE_HUB, '', { path: '/api/zro', maxAge: 0, seguro: seguro(origem) });
+  if (!h || h.sub !== s.sub || h.ia !== true) return json(res, 401, { erro: 'reconectar' }, h && h.sub !== s.sub ? { 'Set-Cookie': [apagar] } : {});
+  let corpo;
+  if (req.method === 'POST') {
+    if (!/^application\/json\b/.test(String(req.headers['content-type'] || ''))) return json(res, 415, { erro: 'formato' });
+    try {
+      corpo = JSON.stringify(await lerCorpo(req, 64 * 1024));
+    } catch (e) {
+      return json(res, 400, { erro: 'pedido' });
+    }
+  }
+  const t = await tokenDoHub(cfg, h);
+  if (!t.at) return json(res, t.recusado ? 401 : 502, { erro: t.recusado ? 'reconectar' : 'hub' }, t.recusado ? { 'Set-Cookie': [apagar] } : {});
+  /* o refresh rodou: o cookie novo vai nesta resposta, seja ela qual for */
+  const novo = t.novo ? [cookie(COOKIE_HUB, cifrar(t.novo, cfg.clientSecret), { path: '/api/zro', maxAge: SESSAO_S, seguro: seguro(origem) })] : null;
+  const ac = new AbortController();
+  res.on('close', () => { if (!res.writableFinished) ac.abort() });
+  let r;
+  try {
+    r = await fetch(cfg.issuer + '/api/v1/ia/' + caminho, {
+      method: req.method,
+      headers: Object.assign({ Authorization: 'Bearer ' + t.at, Accept: 'application/json, application/x-ndjson' }, corpo !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      body: corpo,
+      cache: 'no-store',
+      redirect: 'error',
+      signal: ac.signal,
+    });
+  } catch (e) {
+    return json(res, 502, { erro: 'hub' }, novo ? { 'Set-Cookie': novo } : {});
+  }
+  /* o HUB recusou o token (acesso removido, escopo faltando): pede para entrar de novo */
+  if (r.status === 401) {
+    try { await r.body.cancel() } catch (e) {}
+    return json(res, 401, { erro: 'reconectar' }, { 'Set-Cookie': [apagar] });
+  }
+  const h2 = { 'Content-Type': r.headers.get('content-type') || 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no' };
+  if (novo) h2['Set-Cookie'] = novo;
+  res.writeHead(r.status, h2);
+  if (!r.body) return res.end();
+  try {
+    for await (const pedaco of r.body) res.write(pedaco);
+  } catch (e) {
+    return res.destroy();
+  }
+  res.end();
+}
+
 /* cada função responde 500 curto em vez de derrubar o processo */
 const protegido = fn => async (req, res) => {
   try {
@@ -568,6 +668,7 @@ module.exports = {
   eu: protegido(eu),
   sair: protegido(sair),
   enviar: protegido(enviar),
+  ia: protegido(ia),
   /* para os testes */
-  _interno: { abrir, selar, cifrar, decifrar, montarJob, montarEquipe, COOKIE_HUB, voltaSegura, origemDe, conferirIdToken, config, esquecer: () => (cache = { descoberta: null, chaves: null }), COOKIE_IDA, COOKIE_SESSAO, ORIGENS, PRODUTO },
+  _interno: { caminhoIa, abrir, selar, cifrar, decifrar, montarJob, montarEquipe, COOKIE_HUB, voltaSegura, origemDe, conferirIdToken, config, esquecer: () => (cache = { descoberta: null, chaves: null }), COOKIE_IDA, COOKIE_SESSAO, ORIGENS, PRODUTO },
 };

@@ -3,7 +3,7 @@
  * (o client_id da SOBEDESCE), validade e nonce. Nada da Absolute ZRO é aceito sem essa conferência.
  */
 import { createPublicKey, randomBytes, verify, type JsonWebKey } from "node:crypto";
-import { credenciaisZro, emissor, ESCOPOS_ZRO, retornoZro } from "./config";
+import { credenciaisZro, emissor, ESCOPO_IA, ESCOPOS_ZRO, ESCOPOS_ZRO_IA, retornoZro } from "./config";
 
 export class ZroError extends Error {
   constructor(readonly codigo: "rede" | "recusado" | "token_invalido", detalhe: string) {
@@ -41,14 +41,17 @@ export function novoValor(): string {
   return randomBytes(32).toString("base64url");
 }
 
-/** `criar`: a pessoa veio de "Criar conta"; `prompt=create` pede à Absolute ZRO para abrir direto a tela de criar conta. */
-export async function urlDeLogin(o: { state: string; desafio: string; nonce: string; origem?: string | null; criar?: boolean }): Promise<string> {
+/**
+ * `criar`: a pessoa veio de "Criar conta"; `prompt=create` pede à Absolute ZRO para abrir direto a tela de criar conta.
+ * `basico`: sem os escopos da Z (a Absolute ZRO recusou `zro.ia` com invalid_scope).
+ */
+export async function urlDeLogin(o: { state: string; desafio: string; nonce: string; origem?: string | null; criar?: boolean; basico?: boolean }): Promise<string> {
   const d = await descobrir();
   const u = new URL(d.authorization_endpoint);
   u.searchParams.set("response_type", "code");
   u.searchParams.set("client_id", credenciaisZro().clientId);
   u.searchParams.set("redirect_uri", retornoZro(o.origem));
-  u.searchParams.set("scope", ESCOPOS_ZRO);
+  u.searchParams.set("scope", o.basico ? ESCOPOS_ZRO : ESCOPOS_ZRO_IA);
   u.searchParams.set("state", o.state);
   u.searchParams.set("nonce", o.nonce);
   u.searchParams.set("code_challenge", o.desafio);
@@ -119,18 +122,44 @@ export async function conferirIdToken(idToken: string, nonce: string, agora = Da
   };
 }
 
-/** Troca o código (client_secret_basic + PKCE) e confere o id_token. */
-export async function trocarCodigoZro(code: string, verificador: string, nonce: string, origem?: string | null): Promise<PerfilZro> {
+/** Tokens da Z (escopo zro.ia): o access token de 10 minutos e o refresh token, que roda a cada troca. */
+export type TokensIa = { at: string; atExp: number; rt: string };
+
+/** Só quando a Absolute ZRO deu `zro.ia` E o refresh token; senão a Z fica sem token (a tela pede para reconectar). */
+export function tokensIaDe(corpo: Record<string, unknown> | null, agora = Date.now()): TokensIa | null {
+  if (!corpo || typeof corpo.access_token !== "string" || typeof corpo.refresh_token !== "string") return null;
+  if (!String(corpo.scope ?? "").split(" ").includes(ESCOPO_IA)) return null;
+  const vida = Math.min(Math.max(Number(corpo.expires_in) || 0, 0), 3600);
+  return { at: corpo.access_token, rt: corpo.refresh_token, atExp: Math.floor(agora / 1000) + vida };
+}
+
+async function pedirToken(form: Record<string, string>) {
   const d = await descobrir();
   const { clientId, clientSecret } = credenciaisZro();
   const basic = Buffer.from(`${encodeURIComponent(clientId)}:${encodeURIComponent(clientSecret)}`).toString("base64");
-  const { status, corpo } = await buscarJson(d.token_endpoint, {
+  return buscarJson(d.token_endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded", Authorization: `Basic ${basic}` },
-    body: new URLSearchParams({ grant_type: "authorization_code", code, code_verifier: verificador, redirect_uri: retornoZro(origem) }).toString(),
+    body: new URLSearchParams(form).toString(),
   });
+}
+
+/** Troca o código (client_secret_basic + PKCE) e confere o id_token. `ia`: os tokens da Z, quando vieram. */
+export async function trocarCodigoZro(code: string, verificador: string, nonce: string, origem?: string | null): Promise<{ perfil: PerfilZro; ia: TokensIa | null }> {
+  const { status, corpo } = await pedirToken({ grant_type: "authorization_code", code, code_verifier: verificador, redirect_uri: retornoZro(origem) });
   if (status !== 200 || typeof corpo?.id_token !== "string") throw new ZroError("recusado", String(corpo?.error ?? status));
-  return conferirIdToken(corpo.id_token, nonce);
+  return { perfil: await conferirIdToken(corpo.id_token, nonce), ia: tokensIaDe(corpo) };
+}
+
+/**
+ * Troca o refresh token da Z por tokens novos (o velho deixa de valer: reapresentado, derruba a família na Absolute
+ * ZRO). `recusado`: a Absolute ZRO não aceita mais (400/401), a pessoa precisa entrar de novo.
+ */
+export async function renovarTokensIa(rt: string): Promise<{ ia: TokensIa | null; recusado: boolean }> {
+  const { status, corpo } = await pedirToken({ grant_type: "refresh_token", refresh_token: rt });
+  if (status !== 200) return { ia: null, recusado: status === 400 || status === 401 };
+  const ia = tokensIaDe(corpo);
+  return { ia, recusado: !ia };
 }
 
 /** Só para testes: esquece descoberta e chaves guardadas. */

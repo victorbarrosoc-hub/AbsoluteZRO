@@ -202,6 +202,23 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   (mesmas rotas, chaves e CSP) antes da produção.
 - Login único nas cinco: `/api/zro/entrar` de cada domínio leva ao HUB; apps marcados como da família.
 
+## A Z no Início do NOSSOM (27/10/2026)
+
+- `products/nossom`: `npm test` **83/83** (5 novos em `tests/zro.test.ts`: cookie da Z cifrado, HttpOnly e preso a
+  `/api/zro/ia`; repasse encaminha o Bearer e passa o NDJSON sem vazar token; recusa sem sessão, sem token, com token
+  de outra conta, cookie adulterado, outra origem e caminho fora da API sem chamar a Absolute ZRO; renovação única
+  pelo refresh que gira; token sem `zro.ia` não é guardado; sair apaga e revoga). `typecheck`, `format:check` e
+  `npm run build` ok.
+- E2E (`npx playwright test`): **75 passaram, 4 falharam, 1 pulado**; as falhas são as 3 de gravação pelo microfone
+  (o Chromium daqui não dá o microfone) e a contagem de seções da home, que já quebrava desde a seção da Z (6 → 7,
+  corrigida e conferida depois). `tests/e2e/zro-ia.spec.ts` (4) passa: Z no topo, "Conectar com Absolute ZRO" sem
+  token, assistente NOSSOM logo abaixo, tema do estúdio no painel, repasse até a API falsa do HUB, token fora da
+  página, painel fora do ar não quebra o Início.
+- Fotos com o `zro-ia.js` de verdade (servido localmente) e a API do HUB falsa, 1440 e 390 px, claro e escuro, sem
+  rolagem horizontal; conferidas a olho, fora do repositório. `node scripts/scan-secrets.mjs` limpo.
+- Não validado: conta Absolute ZRO real, o `nossom-web` aceitando `offline_access zro.ia` em produção, o app de
+  computador instalado (carrega o mesmo `/studio`, sem mudança no binário) e Safari/iPhone físicos.
+
 ## Balão de pendências: AEON, Revela e NOSSOM (27/10/2026)
 
 - Regras puras com teste (estado → número e dica por aba): AEON `src/pendencias.js` (`test/nucleo.test.js`), Revela
@@ -1154,3 +1171,86 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   `/entrar` claro e escuro e `<zro-ia>` servido de outra origem sobre o azul do NOSSOM, sem erro de página.
 - Não validado: migrações 0016/0017 no banco de produção e a IA com a chave real (só com a API falsa local); não
   publicado em produção.
+
+## O Z nas páginas iniciais das plataformas (27/10/2026)
+
+- Seção curta na home de AEON, Carro do Freela, Revela, NOSSOM, SOBEDESCE, Synquei e TPeasy: anel e estrela do Z
+  (cópias locais de `apps/hub-web/public/ia/z/`, porque absolutezro.com/ia/z ainda responde 404 e AEON e Revela usam
+  COEP `require-corp`), selo "Chegando ao <app>", uma linha do que ele vai fazer ali, quatro fichas (mesma conta,
+  conversas reunidas, você confere antes, 1 crédito por resposta) e **Conhecer o Z** para absolutezro.com/ia. Não diz
+  que o Z já funciona dentro do app. A estrela respira só em CSS e para com "reduzir movimento".
+- Synquei e TPeasy: cache do service worker v18 e v15, com as duas imagens. Carro do Freela: VERSAO `27/out · 2`.
+- Testes: AEON `npm test` 87/87; Revela 109/109; Synquei 89 ok, 0 falhas (4 pulados); TPeasy 35/35; NOSSOM
+  format:check, typecheck, `npm test` 76/76, build e e2e da home (liquid-site, homepage-demo, design-review,
+  install-navigation) 15/15; SOBEDESCE web lint, typecheck, `npm test` 231/231 e build; Carro do Freela 87 de 87
+  suítes (4 de novo sozinhas, como o arnês prevê) e `test:api` 27/27; `node scripts/scan-secrets.mjs` sem segredos.
+- Telas conferidas no Playwright (Chromium), computador 1440 e celular 390, claro e escuro onde há, sem rolagem
+  lateral. Não validado: o link absolutezro.com/ia no ar (depende do deploy do HUB).
+
+## A Z no painel inicial do Synquei e do TPeasy (27/10/2026)
+
+- Synquei (site/PWA e app de computador) e TPeasy (site/PWA; não tem app de computador): o `<zro-ia>` de
+  `absolutezro.com/ia/v1/zro-ia.js` é a primeira coisa do Início (Synquei) e de Roteiros (TPeasy), com apoio e quatro
+  sugestões do contexto. O resto da tela continua logo abaixo; no Synquei a Z fica fora da tela que redesenha, então a
+  conversa não se perde, e aparece só no Início. Tema: Synquei segue Ajustes › Tema (`data-theme`), TPeasy o aparelho.
+- Como o token chega à Z: nunca pela página. `api/zro/ia.js` (Synquei) e `api/zro/ia.mjs` (TPeasy) leem o cofre
+  cifrado da sessão (`sq_hub`/`tp_zro_hub`, só em `/api/zro`), renovam o access token se venceu e encaminham para
+  `/api/v1/ia/*` com `Authorization: Bearer`, repassando o NDJSON em pedaços. Só `estado`, `conversas`,
+  `conversas/<id>` e `mensagens`; POST/DELETE de outra origem é recusado. `vercel.json` reescreve
+  `/api/zro/ia/:caminho*` para `?c=` (TPeasy ganhou `vercel.json` só com isso). No computador, `desktop/conta.cjs`
+  (`repassarIa`) faz o mesmo no processo principal; a renovação do refresh token entra numa fila, para o perfil e a Z
+  não gastarem o mesmo token (a Absolute ZRO derrubaria a família). No site a Z só monta depois do `/api/zro/eu`.
+- `zro.ia` entra no scope pedido (web e desktop). Sem sessão, ou login de antes da Z (401 mesmo depois de renovar): o
+  repasse responde 401 com `reconectar`, a Z dispara `zro-ia:sem-login` e o app mostra "Entrar com Absolute ZRO" ou
+  "Entrar de novo para usar a Z" (no computador, pelo login no navegador do sistema).
+- Service worker: `synquei-v20` e `tpeasy-v17` com `app/js/z.js`; `/api/` e outras origens não passam pelo cache.
+  Nenhum dos dois tem CSP: nada a liberar.
+- Homes: "Já no Synquei"/"Já no TPeasy", **Conversar com a Z** (para o painel) e **Conhecer a Z**; texto no feminino.
+- Testes: Synquei `npm test` sem falhas (novos: `tests/zro-ia.test.mjs` com 13 casos e dois em
+  `tests/conta-desktop.test.mjs`: Bearer encaminhado sem cookie do site, 401 sem sessão, token fora da resposta e do
+  disco, NDJSON em pedaços, renovação, sem `zro.ia`, caminhos e origem recusados, perfil e Z ao mesmo tempo); TPeasy
+  `node --test tests/*.test.mjs` 49/49 (8 novos); `xvfb-run -a electron --no-sandbox . --smoke` SMOKE OK; e
+  `node scripts/scan-secrets.mjs` sem segredos.
+- Telas no Playwright com a API simulada (`page.route`): 1440 e 390, claro e escuro, sem conta, "entrar de novo" e uma
+  conversa; no Electron, o Início carregou o script real de absolutezro.com e pediu para entrar (sem conta).
+- Não validado: conversa de verdade com conta real (site e computador) e se o cliente `synquei-desktop` no banco tem
+  `product_id = synquei` e `zro.ia` (cadastrado pelo console; clientes com produto ganham `zro.ia` no cadastro e pela
+  migração 0016). O texto interno do painel ("Pergunte ao Z…") vem do `<zro-ia>` do HUB.
+
+## A Z no painel inicial do AEON e da Revela (27/10/2026)
+
+- AEON: aba **Z** primeira no dock e página inicial do app (`app/z.js`), no site, no celular e no app de computador;
+  o editor segue a um toque (⌘1 Z, ⌘2–5 Mídia a Entrega). Site: `<zro-ia>` de absolutezro.com (CSP `script-src` com
+  absolutezro.com); app de computador: cópia em `vendor/ia` (`npm run vendor`), sem código de fora na janela com a
+  ponte. Revela: `inicio.html` com a Z, aba Z no dock, item no menu, `start_url` `/inicio` e "Abrir a Revela" no painel.
+- Token: a página fala só com `/api/zro/ia/*`. Site: repasse da Vercel (`api/_ia.js`, mesmo arquivo nos dois) com o
+  access token do cookie cifrado, renovado pelo refresh token quando vence; resposta NDJSON passada aos poucos; só os
+  caminhos e métodos do contrato; mudança só da própria origem e com JSON; sem sessão ou refresh recusado = 401 (o
+  painel mostra "Entrar de novo"/"Entrar com Absolute ZRO"). Desktop: `desktop/main.cjs › repassarIa` com o token de
+  `conta.cjs › tokenDeAcesso` (só no processo principal; um refresh por vez). O login pede `zro.ia`; se a Absolute ZRO
+  devolver `invalid_scope`, entra de novo sem ele (web e desktop) e a Z fica em 401.
+- Home: seção da Z como "Agora no AEON"/"Agora na Revela", com **Conversar com a Z** (painel) e **Conhecer a Z**.
+- Testes: AEON `npm test` 102/102 (repasse em `test/ia.test.js`: Bearer, sem cookie para fora, NDJSON em pedaços,
+  renovação, 401 sem sessão/token adulterado/sem escopo, outra origem, caminho e método fora do contrato, sem token na
+  resposta, volta sem `zro.ia`; `conta-desktop`: token só no processo, refresh único, escopo recusado; telas com a CSP de
+  produção e a Z simulada); `xvfb-run -a npx electron . --smoke` SMOKE OK. Revela `npm test` 124/124 (o mesmo repasse,
+  painel com a CSP de produção, celular sem conta, seção da home). `node scripts/scan-secrets.mjs` sem segredos.
+- Telas no Playwright (computador 1440 e celular 390, claro e escuro, conversa, gaveta Conversas, sem escopo).
+- Não validado: produção (nada publicado), conta e IA reais, streaming pela Vercel, o repasse do app de computador
+  contra a Absolute ZRO de verdade (só o smoke, que responde 401 à Z) e se `aeon-web`/`aeon-desktop` têm `product_id`
+  (a 0016 só dá `zro.ia` a clientes com produto). Os textos dentro do `<zro-ia>` ("Pergunte ao Z…") vêm do HUB.
+
+## A Z como painel inicial: SOBEDESCE e Carro do Freela (27/10/2026)
+
+- SOBEDESCE: login pede `offline_access zro.ia` (sem o escopo, `invalid_scope` refaz o pedido sem ele); os tokens ficam
+  cifrados na conta (`contas_zro.ia`, migração 0014) e `/api/zro/ia/*` repassa com o Bearer, renovando com a linha
+  travada. Painel no topo de `/conta`, do Início do `/app/` (cache v62, 2.8.47) e do Início do app de computador
+  (motor: `/api/ia/*` → site com o Bearer do dispositivo). CSP: script da absolutezro.com no `/app/` e no motor.
+- Carro do Freela: login pede `zro.ia`; `/api/zro/ia/*` (função `ia`, streaming) usa o mesmo `cdf_hub`. Painel no topo
+  do Feed (fora da `.wrap` que anima), só no domínio com conta liberada. CSP: script e imagens da absolutezro.com.
+  VERSAO `27/out · 4`. Home dos dois: "Agora no <app>", **Conversar com a Z** e **Conhecer a Z**.
+- Testes: SOBEDESCE web lint, typecheck, `npm test` (novo `zro-ia.test.mts`: Bearer encaminhado, streaming, sem sessão,
+  origem, renovação sem derrubar a família, reconectar) e build; motor `test:fast` (novo `ia-z.test.js`). Carro
+  `test:api` 33/33 (6 novos da Z), `conta-zro` com a seção 11 (painel, conversa, reconectar) e `node test/run.js` 88 de 88 (doca e sem-zoom de novo sozinhas).
+- Telas (Playwright, 1440 e 390, claro e escuro, API simulada pela Absolute ZRO falsa, script do painel servido do
+  repositório). Não validado: com conta e chave reais, e o app de computador dentro do Electron.

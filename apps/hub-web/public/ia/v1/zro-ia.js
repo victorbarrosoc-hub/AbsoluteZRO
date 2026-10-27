@@ -53,7 +53,7 @@ h1 strong{font-weight:800}
 @media (prefers-reduced-motion:no-preference){
 .msg{animation:entra .35s var(--ease) both}
 .sug li{animation:entra .5s var(--ease) both;animation-delay:calc(.2s + var(--i)*.06s)}
-.gav-painel{transition:translate .38s var(--ease)}.veu{transition:opacity .3s var(--ease)}}
+.gav-painel{transition:translate .38s var(--ease),visibility 0s .38s,box-shadow .38s}.gav[data-on] .gav-painel{transition:translate .38s var(--ease),visibility 0s,box-shadow .38s}.veu{transition:opacity .3s var(--ease)}}
 @keyframes entra{from{opacity:0;translate:0 6px}}
 .conversa{display:flex;flex-direction:column;gap:18px;padding:16px 2px 8px}
 .msg{max-width:100%;overflow-wrap:anywhere;line-height:1.55}
@@ -84,9 +84,10 @@ textarea::placeholder{color:var(--faint)}
 @media (prefers-reduced-motion:reduce){.trilho i{transition:none}}
 .gav{position:fixed;inset:0;z-index:2147483000;pointer-events:none}.gav[data-on]{pointer-events:auto}
 .veu{position:absolute;inset:0;border:0;background:rgb(0 0 0/.28);opacity:0}.gav[data-on] .veu{opacity:1}
-.gav-painel{position:absolute;top:0;bottom:0;left:0;width:min(88vw,360px);display:flex;flex-direction:column;gap:10px;padding:max(18px,env(safe-area-inset-top)) 14px 18px;overflow-y:auto;background:var(--zro-ia-fundo-gaveta,#f5f5f7);border-right:1px solid var(--line);box-shadow:24px 0 60px rgb(0 0 0/.16);translate:-102% 0}
+.gav-painel{position:absolute;top:0;bottom:0;left:0;width:min(88vw,360px);display:flex;flex-direction:column;gap:10px;padding:max(18px,env(safe-area-inset-top)) 14px 18px;overflow-y:auto;background:var(--zro-ia-fundo-gaveta,#f5f5f7);border-right:1px solid var(--line);translate:-102% 0;visibility:hidden}
 :host([data-escuro]) .gav-painel{background:var(--zro-ia-fundo-gaveta,#141416)}
-.gav[data-on] .gav-painel{translate:0 0}
+/* fechada, a gaveta some de vez (sem a sombra vazando na borda) */
+.gav[data-on] .gav-painel{translate:0 0;visibility:visible;box-shadow:24px 0 60px rgb(0 0 0/.16)}
 .gav-topo{display:flex;justify-content:space-between;align-items:center;padding:4px 4px 0}
 .gav-titulo{font-size:.74rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
 .x{width:32px;height:32px;border:0;border-radius:50%;background:transparent;color:var(--mute);cursor:pointer}.x:hover{background:var(--surf3)}

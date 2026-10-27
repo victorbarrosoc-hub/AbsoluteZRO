@@ -301,6 +301,30 @@ body {
   outline-offset: 2px;
 }
 
+/* O Z na home (components/home/z-section.tsx): a estrela sobre o tubo do anel, às 3 horas. O centro do tubo fica a
+   41,83% do lado a partir do meio e a estrela tem 43% do lado do anel. Respira devagar; "reduzir movimento" desliga. */
+.z-estrela {
+  width: 43%;
+  height: 43%;
+  left: 70.33%;
+  top: 28.5%;
+}
+@keyframes z-brilho {
+  from {
+    transform: scale(0.86);
+    opacity: 0.82;
+  }
+  to {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .z-estrela {
+    animation: z-brilho 4.8s ease-in-out infinite alternate;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   html {
     scroll-behavior: smooth;

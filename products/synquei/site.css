@@ -2486,3 +2486,152 @@ html.js .reveal.in {
     width: 100%;
   }
 }
+
+/* ═════════ Z, a IA do ecossistema (anel e estrela em /icons/z) ═════════ */
+.z-caixa {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: clamp(28px, 6vw, 72px);
+}
+@media (min-width: 640px) {
+  .z-caixa {
+    padding: clamp(36px, 5vw, 60px);
+  }
+}
+.z-simbolo {
+  position: relative;
+  width: clamp(120px, 15vw, 180px);
+  aspect-ratio: 1;
+  margin-right: 13%;
+}
+.z-simbolo img {
+  position: absolute;
+  display: block;
+  user-select: none;
+  pointer-events: none;
+}
+.z-anel {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+/* estrela sobre o tubo, às 3 horas: centro a 41,83% do lado a partir do meio, 43% do lado */
+.z-estrela {
+  width: 43%;
+  height: 43%;
+  left: 70.33%;
+  top: 28.5%;
+  animation: z-brilho 4.8s ease-in-out infinite alternate;
+}
+@keyframes z-brilho {
+  from {
+    transform: scale(0.86);
+    opacity: 0.82;
+  }
+  to {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .z-estrela {
+    animation: none;
+  }
+}
+.z-texto {
+  display: grid;
+  justify-items: start;
+}
+.z-selo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.z-selo i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--blue);
+}
+.z-texto h2 {
+  font-size: clamp(28px, 3.6vw, 44px);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  font-weight: 600;
+}
+.z-texto > p:not(.z-selo) {
+  margin-top: 12px;
+  color: var(--ink-2);
+  font-size: clamp(16px, 1.4vw, 19px);
+}
+.z-fichas {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 24px 0 26px;
+  padding: 0;
+}
+.z-fichas li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.z-fichas svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+@media (max-width: 720px) {
+  .z-caixa {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+  .z-simbolo {
+    width: 116px;
+    margin: 0 15% 0 0;
+  }
+  .z-texto {
+    justify-items: center;
+  }
+  .z-fichas {
+    justify-content: center;
+    gap: 6px;
+  }
+  .z-fichas li {
+    padding: 7px 11px;
+    font-size: 12.5px;
+  }
+}
+
+/* a Z já está no app: conversar (principal) e conhecer (secundária) */
+.z-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+@media (max-width: 720px) {
+  .z-botoes {
+    justify-content: center;
+  }
+}

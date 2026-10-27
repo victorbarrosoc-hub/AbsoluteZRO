@@ -77,6 +77,10 @@
   ],
   "rewrites": [
     {
+      "source": "/api/zro/ia/:caminho*",
+      "destination": "/api/zro/ia?c=:caminho*"
+    },
+    {
       "source": "/baixar/versao",
       "destination": "/api/baixar?p=versao"
     },

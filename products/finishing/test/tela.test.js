@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url'
 import { lerCube } from '../src/cor/cube.js'
 import { gravarPng } from '../src/imagem/png.js'
 import { aplicarEmImagem, cena, lookConhecido } from './apoio.js'
+import { simularZ } from './z-falso.js'
 
 // require (e não import) para achar o Playwright também pelo NODE_PATH do ambiente
 const { chromium } = createRequire(import.meta.url)('playwright')
@@ -31,6 +32,7 @@ const TIPOS = {
   '.mov': 'video/quicktime',
   '.mp4': 'video/mp4',
   '.webmanifest': 'application/manifest+json',
+  '.webp': 'image/webp',
 }
 // o navegador registra o 401 de /api/zro/eu (sem sessão) como erro de rede; não é falha da página
 const SEM_SESSAO = /status of 401/
@@ -906,7 +908,7 @@ test('abas do dock trocam só o painel: sem recarregar, menu parado, marca desli
 test('app na Tela de Início: manifesto, ícones e o passo a passo do Compartilhar no iPhone', async () => {
   const manifesto = JSON.parse(readFileSync(join(RAIZ, 'manifest.webmanifest'), 'utf8'))
   assert.equal(manifesto.display, 'standalone')
-  assert.equal(manifesto.start_url, '/lut')
+  assert.equal(manifesto.start_url, '/inicio', 'o app instalado abre no painel da Z')
   for (const i of manifesto.icons.filter((i) => i.type === 'image/png')) {
     const png = readFileSync(join(RAIZ, i.src))
     const [w, h] = [png.readUInt32BE(16), png.readUInt32BE(20)]
@@ -1049,4 +1051,63 @@ test('meu look: o clone vira um look com nome, aparece na grade em outro frame, 
   assert.equal(await outra.locator('#looks .look').count(), 5)
   assert.deepEqual(erros, [])
   await contexto.close()
+})
+
+test('painel inicial: a Z com a CSP de produção, conversa pelo repasse e as ferramentas a um toque no dock', async () => {
+  const pagina = await navegador.newPage({ viewport: { width: 1440, height: 900 } })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
+  const pedidos = await simularZ(pagina)
+  const r = await pagina.goto(endereco + 'inicio.html')
+  assert.match(r.headers()['content-security-policy'], /script-src 'self' 'wasm-unsafe-eval' https:\/\/absolutezro\.com;/)
+  assert.match(r.headers()['cross-origin-embedder-policy'], /require-corp/)
+  const z = pagina.locator('#zPainel zro-ia')
+  await z.waitFor()
+  assert.equal(await z.getAttribute('api'), '/api/zro/ia')
+  assert.equal(await z.getAttribute('tema'), 'claro')
+  await pagina.locator('zro-ia h1', { hasText: 'Lia' }).waitFor()
+  assert.equal(await pagina.locator('zro-ia .sug button').count(), 4)
+  await pagina.locator('zro-ia .sug button').first().click()
+  await pagina.locator('zro-ia .msg', { hasText: 'posso te ajudar com isso.' }).waitFor()
+  assert.equal(JSON.parse(pedidos.find((p) => p.caminho === '/mensagens').corpo).texto, 'Qual LUT uso para S-Log3?')
+  assert.ok(pedidos.every((p) => p.autorizacao === null), 'a página nunca manda token: o repasse põe')
+  // tema: o painel acompanha
+  await pagina.evaluate(() => window.revelaTema.alternar())
+  assert.equal(await z.getAttribute('tema'), 'escuro')
+  await pagina.evaluate(() => window.revelaTema.alternar())
+  // a aba Z é a primeira do dock e as ferramentas seguem a um toque, sem recarregar
+  const dock = pagina.getByRole('navigation', { name: 'Ferramentas da Revela' })
+  assert.equal(await dock.locator('a').first().textContent(), 'Z')
+  await dock.getByRole('link', { name: 'LUT' }).click()
+  await pagina.getByRole('heading', { name: 'Revela a cor que você quer.' }).waitFor()
+  await dock.getByRole('link', { name: 'Z', exact: true }).click()
+  await pagina.waitForURL(/inicio\.html$/)
+  await pagina.locator('#zPainel zro-ia').waitFor({ state: 'attached' })
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('painel inicial sem conta ou sem o escopo da Z: Entrar com Absolute ZRO (no celular também)', async () => {
+  const pagina = await navegador.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+  await simularZ(pagina, { logado: false })
+  await pagina.goto(endereco + 'inicio.html')
+  const entrar = pagina.locator('#zPainel .z-aviso a')
+  await entrar.waitFor()
+  assert.equal(await entrar.getAttribute('href'), '/api/zro/entrar?volta=%2Finicio.html')
+  assert.match(await pagina.locator('#zPainel .z-aviso p').textContent(), /a Z/)
+  const largura = await pagina.evaluate(() => document.documentElement.scrollWidth)
+  assert.ok(largura <= 390, `sem rolagem para o lado (${largura}px)`)
+  await pagina.close()
+})
+
+test('página inicial: a seção da Z diz que ela já está na Revela e leva ao painel', async () => {
+  const pagina = await navegador.newPage()
+  await pagina.goto(endereco)
+  const sec = pagina.locator('#z')
+  assert.match(await sec.innerText(), /Agora na Revela/)
+  assert.equal(await sec.getByRole('link', { name: 'Conversar com a Z' }).getAttribute('href'), 'inicio.html')
+  assert.equal(await sec.getByRole('link', { name: 'Conhecer a Z' }).getAttribute('href'), 'https://absolutezro.com/ia')
+  assert.doesNotMatch(await sec.innerText(), /Chegando|o Z\b/)
+  await pagina.close()
 })

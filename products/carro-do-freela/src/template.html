@@ -4402,6 +4402,44 @@ body.abriu .hp-arte img{animation:hparte 1.1s .1s cubic-bezier(.2,.7,.3,1) both,
 .pc-it small{display:block;font-size:12.5px;color:var(--cal-fraco);margin-top:2px;line-height:1.4}
 .pc-it svg{color:var(--cal-tenue)}
 
+/* ---- a Z, a IA do ecossistema (27/out): anel e estrela em src/midia. O centro do
+   tubo fica a 41,83% do lado a partir do meio; a estrela tem 43% do lado do anel ---- */
+#h-z .z-caixa{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:clamp(28px,6vw,72px);
+  max-width:980px;margin:0 auto;padding:clamp(28px,5vw,56px);border-radius:30px;background:var(--grafite2);border:1px solid var(--linha)}
+.z-simbolo{position:relative;width:clamp(116px,15vw,176px);aspect-ratio:1;margin-right:13%}
+.z-simbolo img{position:absolute;display:block;pointer-events:none;-webkit-user-select:none;user-select:none}
+.z-anel{inset:0;width:100%;height:100%}
+.z-estrela{width:43%;height:43%;left:70.33%;top:28.5%}
+@media(prefers-reduced-motion:no-preference){.z-estrela{animation:z-brilho 4.8s ease-in-out infinite alternate}}
+@keyframes z-brilho{from{transform:scale(.86);opacity:.82}to{transform:scale(1.06);opacity:1}}
+.z-tx{display:grid;justify-items:start;min-width:0}
+.z-selo{display:inline-flex;align-items:center;gap:8px;margin:0 0 16px;padding:6px 12px;border-radius:999px;
+  border:1px solid var(--linha);color:var(--cal-fraco);font-size:13px;font-weight:700}
+.z-selo i{width:7px;height:7px;border-radius:50%;background:var(--marca)}
+#h-z h2{font-family:var(--display);font-weight:900;font-size:clamp(28px,3.4vw,44px);line-height:1.04;letter-spacing:-.045em;margin:0;text-wrap:balance}
+.z-tx>p:not(.z-selo){margin:12px 0 0;font-size:clamp(16px,1.6vw,18px);color:var(--cal-fraco);line-height:1.5}
+.z-fichas{list-style:none;display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 24px;padding:0}
+.z-fichas li{display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:999px;background:var(--grafite3);
+  color:var(--cal);font-size:13.5px;font-weight:700}
+.z-fichas svg{color:var(--cal-fraco);flex:none}
+#h-z .z-ir{width:auto;margin:0;padding:13px 22px;border-radius:14px;text-decoration:none}
+.z-acoes{display:flex;flex-wrap:wrap;gap:10px}
+@media (max-width:720px){
+  #h-z .z-caixa{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center;padding:32px 20px}
+  .z-simbolo{width:112px;margin:0 15% 0 0}
+  .z-tx{justify-items:center}
+  .z-fichas{justify-content:center;gap:6px}
+  .z-fichas li{padding:7px 11px;font-size:12.5px}
+  .z-acoes{justify-content:center}
+}
+
+/* ---- a Z no topo do Feed (27/out · 4): o painel <zro-ia> desenha sozinho,
+   no shadow root dele; aqui só o lugar, a altura e o botão de reconectar ---- */
+.zpainel{display:grid;gap:12px;max-width:680px;margin:0 auto;padding:42px 22px 0}
+.zp-caixa{min-height:420px;--zro-ia-altura:420px}
+.zp-acao{display:flex;justify-content:center}
+@media (max-width:720px){ .zp-caixa{min-height:380px;--zro-ia-altura:380px} }
+
 /* ---- planos da home: cartões brancos, o recomendado de ciano da marca ---- */
 #h-planos .plsep span{font-weight:700}
 #h-planos .plano{background:var(--grafite2);border:1px solid var(--linha);border-radius:26px;box-shadow:var(--sombra-card);padding:28px 26px}
@@ -6758,6 +6796,31 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
     </div>
   </div>
 
+  <!-- a Z, a IA do ecossistema Absolute ZRO. Desde 27/out · 4 ela é o painel
+       inicial do app (o topo do Feed, com conta Absolute ZRO): a seção diz que
+       está no Carro do Freela e o botão leva a entrar. Anel e estrela são
+       cópias em src/midia (z-anel, z-estrela), como os ícones da família; a
+       estrela fica sobre o tubo, às 3 horas. -->
+  <div class="sec rvsec hsec" id="h-z">
+    <div class="wrap">
+      <div class="z-caixa">
+        <div class="z-simbolo" aria-hidden="true"><img class="z-anel" src="midia:z-anel.webp" alt="" width="560" height="560" loading="lazy" decoding="async"><img class="z-estrela" src="midia:z-estrela.webp" alt="" width="400" height="400" loading="lazy" decoding="async"></div>
+        <div class="z-tx">
+          <p class="z-selo"><i aria-hidden="true"></i>Agora no Carro do Freela</p>
+          <h2>Z. Uma IA para todo o ecossistema.</h2>
+          <p>Responde sobre seus jobs, a agenda e a equipe, logo na abertura do app.</p>
+          <ul class="z-fichas" aria-label="Como a Z funciona">
+            <li title="A mesma conta Absolute ZRO que você já usa."><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Mesma conta</li>
+            <li title="Guardadas por plataforma e reunidas em absolutezro.com/ia."><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5.5h14v10H10l-5 4z"/></svg>Conversas reunidas</li>
+            <li title="Nenhuma ação sem você conferir."><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.2l2.4 2.4 4.6-4.9"/></svg>Você confere antes</li>
+            <li title="Usa os créditos de IA do seu plano."><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l1.8 6.2L20 12l-6.2 1.8L12 20l-1.8-6.2L4 12l6.2-1.8z"/></svg>1 crédito por resposta</li>
+          </ul>
+          <div class="z-acoes"><button class="btn entrar-cta z-ir" data-lg="freela">Conversar com a Z</button><a class="btn gh z-ir" href="https://absolutezro.com/ia" rel="noopener">Conhecer a Z</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- o fechamento é a faixa ciano da C, com o carro 3D chegando -->
   <div class="fim2">
     <div class="wrap">
@@ -8044,6 +8107,17 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
 </section>
 
 <section id="v-feed" data-area="turma" hidden>
+  <!-- A Z, a IA da Absolute ZRO, é o painel inicial (27/out · 4, pedido do
+         titular). Só existe no domínio, com conta Absolute ZRO liberada: o
+         <zro-ia> nasce por script (zroMontarZ) e fala com /api/zro/ia, que
+         acrescenta o token no servidor. Fora do domínio fica escondido.
+         ⚠️ FORA da .wrap de propósito: show() anima a primeira .wrap com
+         transform, e transform no ancestral prende a gaveta de Conversas
+         do painel (position:fixed) à caixa. -->
+    <div class="zpainel" id="z-painel" hidden aria-label="Z, a IA da Absolute ZRO" role="region">
+      <div class="zp-caixa" id="z-caixa"></div>
+      <div class="zp-acao" id="z-acao" hidden><button type="button" class="btn gh sm" id="z-reconectar">Reconectar com Absolute ZRO</button></div>
+    </div>
   <div class="wrap" style="padding:42px 22px 72px;max-width:680px">
     <span class="lab">A praça</span>
     <h1>Feed</h1>
@@ -27293,7 +27367,7 @@ const FBK_KEY=/*__WEB3FORMS_KEY__*/"";   /* Web3Forms → carrodofreela@gmail.co
    suporte: durante os testes a primeira pergunta de todo relato e "qual
    versao voce esta usando?", e sem ela nao da para saber se o defeito ja
    foi consertado ou se a pessoa esta com um arquivo velho no cache. */
-const VERSAO="27/out · 2";
+const VERSAO="27/out · 4";
 /* ?diag na URL faz a linha de contexto do suporte mostrar as medidas do
    aparelho. Existe porque daqui não dá para inspecionar o Safari do
    Victor: em vez de adivinhar uma quarta vez, ele abre com ?diag, toca no
@@ -27879,6 +27953,38 @@ v("lg-zro").onclick=()=>{
   location.href="/api/zro/entrar?volta="+encodeURIComponent(volta)+(criar?"&criar=1":"");
 };
 v("lg-bloq-sair").onclick=()=>{ zroSair(); pintarLogin() };
+/* A Z, A IA DO ECOSSISTEMA (27/out · 4) — o painel inicial do app logado.
+   ⚠️ SÓ NO DOMÍNIO, com conta Absolute ZRO liberada (zroPodeEnviar): o
+   script vem de absolutezro.com e a conversa passa por /api/zro/ia, que
+   põe o token no servidor. O navegador nunca vê token. Sem o acesso da Z
+   (login de antes, HUB sem o escopo, acesso removido), o painel avisa com
+   `zro-ia:sem-login` e aparece "Reconectar com Absolute ZRO".
+   ⚠️ O elemento nasce por DOM e recebe ATRIBUTOS: `api`, `sugestoes` e
+   `tema` são getters/métodos dele. O tema acompanha o do app (app-light). */
+const Z_SCRIPT="https://absolutezro.com/ia/v1/zro-ia.js";
+/* só o que a Z faz: conversa e lê o retrato da conta (projetos, equipe,
+   pendências); ela não age sozinha */
+const Z_SUGESTOES=["Meus projetos de agora","O que está pendente","Quem está na equipe de um job","Quanto usei este mês"];
+const zTema=()=>document.documentElement.classList.contains("app-light")?"claro":"escuro";
+function zroMontarZ(){
+  const caixa=v("z-caixa"), painel=v("z-painel");
+  if(!caixa||!painel||!zroPodeEnviar()||caixa.firstChild) return;
+  const el=document.createElement("zro-ia");
+  el.setAttribute("api","/api/zro/ia");
+  el.setAttribute("apoio","Pergunte sobre seus jobs, a agenda e a equipe.");
+  el.setAttribute("sugestoes",JSON.stringify(Z_SUGESTOES));
+  el.setAttribute("tema",zTema());
+  const nome=(ZRO_CONTA.nome||"").trim().split(/\s+/)[0];
+  if(nome) el.setAttribute("nome",nome);
+  el.addEventListener("zro-ia:sem-login",()=>{ v("z-acao").hidden=false });
+  new MutationObserver(()=>el.setAttribute("tema",zTema())).observe(document.documentElement,{attributes:true,attributeFilter:["class"]});
+  caixa.appendChild(el);
+  painel.hidden=false;
+  if(!document.querySelector('script[src="'+Z_SCRIPT+'"]')){
+    const s=document.createElement("script"); s.type="module"; s.src=Z_SCRIPT; document.head.appendChild(s);
+  }
+}
+v("z-reconectar").onclick=()=>{ location.href="/api/zro/entrar?volta="+encodeURIComponent(location.pathname) };
 (function(){
   if(!zroLigavel()) return;
   let marca=null, lado=null, conta=null;
@@ -27903,6 +28009,7 @@ v("lg-bloq-sair").onclick=()=>{ zroSair(); pintarLogin() };
         ZRO_PRONTO=true;
       } else ZRO_PRONTO=!!r.ligado;
       pintarZro();
+      zroMontarZ();
       if(lado==="contratante"||lado==="freela"){ LG_TIPO=lado; pintarLogin() }
       if(marca==="entrou"&&ZRO_CONTA) zroEntrar(conta==="criar");
       else if(zroBloqueado()&&!v("v-entrar").hidden) pintarLogin();

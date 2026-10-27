@@ -9,7 +9,7 @@
 import { createHash, generateKeyPairSync, randomBytes, sign } from 'node:crypto'
 import http from 'node:http'
 
-export const ESCOPOS_ESPERADOS = 'openid email profile org offline_access'
+export const ESCOPOS_ESPERADOS = 'openid email profile org offline_access zro.ia'
 
 export async function iniciarZroFalsa(cliente) {
   const { privateKey, publicKey } = generateKeyPairSync('ec', { namedCurve: 'P-256' })
@@ -19,7 +19,7 @@ export async function iniciarZroFalsa(cliente) {
   const refreshes = new Map() // refresh token → { sub, familia, usado }
   const familiasMortas = new Set()
   const contas = new Map() // sub → pessoa (a conta na Absolute ZRO)
-  const estado = { pessoa: null, negar: false, adulterar: null, trocas: 0, renovacoes: 0, userinfos: 0, revogados: 0, prompt: null, atTtl: 600, fora: false }
+  const estado = { semIa: false, iaPedidos: [], iaPausa: null, pessoa: null, negar: false, adulterar: null, trocas: 0, renovacoes: 0, userinfos: 0, revogados: 0, prompt: null, atTtl: 600, fora: false }
   let base = ''
 
   const jwt = (dados, assinarErrado = false) => {
@@ -151,6 +151,29 @@ export async function iniciarZroFalsa(cliente) {
         estado.revogados++
       }
       return responder(res, 200, {})
+    }
+    // A Z (/api/v1/ia/*): só com Bearer de um access token válido. `semIa`: o token não tem zro.ia (login de antes da
+    // Z), e a Absolute ZRO responde 401 como a de verdade. /mensagens responde NDJSON em dois pedaços; `iaPausa` (uma
+    // promessa) segura o segundo, para o teste ver que o primeiro chegou antes.
+    if (url.pathname.startsWith('/api/v1/ia/')) {
+      const auth = String(req.headers.authorization || '')
+      let corpo = ''
+      for await (const c of req) corpo += c
+      estado.iaPedidos.push({ metodo: req.method, caminho: url.pathname.slice('/api/v1/ia/'.length), auth, corpo, cookie: req.headers.cookie || null })
+      const a = acessos.get(auth.replace(/^Bearer /, ''))
+      if (!a || a.exp < Date.now() || estado.semIa) return responder(res, 401, { error: 'unauthorized', message: 'Entre de novo.' })
+      const caminho = url.pathname.slice('/api/v1/ia/'.length)
+      if (caminho === 'estado') return responder(res, 200, { ligada: true, nome: contas.get(a.sub)?.nome?.split(' ')[0] || null, produto: 'synquei', creditos: { usados: 2, limite: 100, renova_em: '2026-11-01T00:00:00.000Z' } })
+      if (caminho === 'conversas') return responder(res, 200, { conversas: [] })
+      if (caminho === 'mensagens' && req.method === 'POST') {
+        res.writeHead(200, { 'content-type': 'application/x-ndjson; charset=utf-8' })
+        res.write(JSON.stringify({ tipo: 'conversa', id: 'c-1' }) + '\n' + JSON.stringify({ tipo: 'texto', t: 'Olá, ' }) + '\n')
+        if (estado.iaPausa) await estado.iaPausa
+        res.end(JSON.stringify({ tipo: 'texto', t: 'tudo certo.' }) + '\n' + JSON.stringify({ tipo: 'fim', creditos: 1 }) + '\n')
+        return
+      }
+      if (/^conversas\/[\w-]+$/.test(caminho)) return responder(res, 200, req.method === 'DELETE' ? { ok: true } : { mensagens: [] })
+      return responder(res, 404, { error: 'not_found' })
     }
     responder(res, 404, { error: 'not_found' })
   })

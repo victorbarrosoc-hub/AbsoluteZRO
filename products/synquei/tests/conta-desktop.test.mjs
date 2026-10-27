@@ -156,6 +156,83 @@ test('recusas: state trocado, pessoa negou, nonce adulterado; criar conta pede p
   novo.sair()
 })
 
+test('a Z no desktop: repasse com o token desta sessão, NDJSON em pedaços, novo login sem zro.ia, e sem sessão nada sai', async () => {
+  Object.assign(zro.estado, { pessoa: LIA, semIa: false, iaPedidos: [], iaPausa: null })
+  const dir = mkdtempSync(join(tmpdir(), 'synquei-z-'))
+  const c = criarConta({ pasta: dir, abrirNavegador: navegador(false), cofre: COFRE })
+  const pedido = (metodo = 'GET', corpo) => new Request('http://app.invalid/api/zro/ia/x', { method: metodo, ...(corpo ? { body: corpo, headers: { 'content-type': 'application/json' } } : {}) })
+  try {
+    // sem sessão: 401 com reconectar e nada chega à Absolute ZRO
+    let r = await c.repassarIa(pedido(), 'estado')
+    assert.equal(r.status, 401)
+    assert.equal((await r.json()).reconectar, true)
+    assert.equal(zro.estado.iaPedidos.length, 0)
+
+    assert.equal(await c.entrar(), 'ok')
+    r = await c.repassarIa(pedido(), 'estado')
+    assert.equal(r.status, 200)
+    const texto = await r.text()
+    const at = zro.estado.iaPedidos.at(-1).auth.slice(7)
+    assert.match(at, /^at_/)
+    assert.ok(!texto.includes(at))
+    assert.ok(!readFileSync(join(dir, 'conta.json'), 'utf8').includes(at), 'o access token não vai para o disco')
+
+    // caminho ou método fora da Z
+    assert.equal((await c.repassarIa(pedido(), '../oauth/token')).status, 404)
+    assert.equal((await c.repassarIa(pedido('DELETE'), 'estado')).status, 405)
+
+    // NDJSON em pedaços: o primeiro chega antes do fim
+    let soltar
+    zro.estado.iaPausa = new Promise((ok) => (soltar = ok))
+    r = await c.repassarIa(pedido('POST', '{"texto":"Oi, Z"}'), 'mensagens')
+    const leitor = r.body.getReader()
+    const { value } = await leitor.read()
+    assert.match(new TextDecoder().decode(value), /"conversa"/)
+    soltar()
+    let resto = ''
+    for (;;) {
+      const p = await leitor.read()
+      if (p.done) break
+      resto += new TextDecoder().decode(p.value)
+    }
+    assert.match(resto, /"fim"/)
+    zro.estado.iaPausa = null
+
+    // token vencido: renova e segue
+    zro.vencer()
+    assert.equal((await c.repassarIa(pedido(), 'conversas')).status, 200)
+
+    // login de antes da Z (sem zro.ia): 401 com reconectar
+    zro.estado.semIa = true
+    r = await c.repassarIa(pedido(), 'estado')
+    assert.equal(r.status, 401)
+    assert.equal((await r.json()).reconectar, true)
+  } finally {
+    zro.estado.semIa = false
+    c.sair()
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test('perfil e Z ao mesmo tempo não gastam o mesmo refresh token duas vezes', async () => {
+  Object.assign(zro.estado, { pessoa: LIA, semIa: false, iaPausa: null })
+  const dir = mkdtempSync(join(tmpdir(), 'synquei-z-'))
+  const c = criarConta({ pasta: dir, abrirNavegador: navegador(false), cofre: COFRE })
+  try {
+    assert.equal(await c.entrar(), 'ok')
+    zro.vencer()
+    const [perfil, z] = await Promise.all([c.atualizar(), c.repassarIa(new Request('http://app.invalid/api/zro/ia/estado'), 'estado')])
+    assert.equal(perfil, 'ok')
+    assert.equal(z.status, 200)
+    // a família de tokens continua viva: a próxima renovação funciona
+    zro.vencer()
+    assert.equal(await c.atualizar(), 'ok')
+  } finally {
+    c.sair()
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
 test('a tela de conta do site liga no desktop quando a ponte tem a conta', async () => {
   const ouvintes = {}
   const eventos = []

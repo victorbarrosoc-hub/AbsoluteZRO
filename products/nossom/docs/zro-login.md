@@ -31,6 +31,29 @@ O cartão **Absolute ZRO** (`/studio/conta`) mostra a ligação. **Ligar** passa
 quando a conta foi criada pela Absolute ZRO, porque ela é o único jeito de entrar. Nessas contas os cartões de e-mail
 e senha ficam ocultos (não há senha atual para confirmar).
 
+## A Z no Início (27/10/2026)
+
+A Z, a IA da Absolute ZRO, abre o Início do estúdio (`/studio`: site, celular/PWA e o app de computador, que carrega
+o mesmo endereço). O painel é o `<zro-ia>` publicado em `https://absolutezro.com/ia/v1/zro-ia.js`
+(`components/zro-ia-panel.tsx`); o assistente do NOSSOM e o envio de áudio seguem logo abaixo, e `/studio/ia` continua
+só com o assistente.
+
+- **Escopo:** a ida à Absolute ZRO pede `openid email profile org offline_access zro.ia`.
+- **Token:** o callback guarda access e refresh token no cookie `nossom-zro-ia` (AES-256-GCM com chave derivada de
+  `NOSSOM_AUTH_SECRET`, `HttpOnly`, `SameSite=Lax`, `Path=/api/zro/ia`, 30 dias), preso à conta NOSSOM que entrou.
+  Sem `zro.ia` no token, o cookie é apagado. Sair (`DELETE /api/account`) e desligar a Absolute ZRO apagam o cookie;
+  sair também revoga o refresh token.
+- **Repasse:** `/api/zro/ia/{estado,conversas,conversas/:id,mensagens}` (`lib/server/zro/ia.ts`) confere a sessão
+  NOSSOM, a mesma origem em POST/DELETE e a conta dona do token; renova o access token pelo refresh (uma renovação por
+  vez, sem reuso) e encaminha para `<ZRO_ISSUER>/api/v1/ia/*` com `Authorization: Bearer`. A resposta NDJSON passa em
+  streaming. Nenhum token vai para o navegador, para log ou para a resposta.
+- **Sem token** (entrou com senha, sessão anterior a esta versão, token sem `zro.ia`, revogado): 401, o painel
+  dispara `zro-ia:sem-login` e aparece **Conectar com Absolute ZRO** (`/api/zro/entrar?modo=ligar&volta=/studio`).
+- **CSP:** `script-src` e `img-src` liberam `https://absolutezro.com` (o repasse é da mesma origem, `connect-src` não
+  muda). Se o script não carregar, o Início fica como antes.
+- **Home pública:** com o login Absolute ZRO configurado no build, a seção da Z diz "Já no NOSSOM" e leva ao estúdio;
+  sem ele, continua "Chegando ao NOSSOM".
+
 ## Banco
 
 Migração `supabase/migrations/202610250002_zro_links.sql`: tabela `nossom_private.zro_links` (RLS ligada, sem acesso

@@ -425,6 +425,116 @@
   gap: 6px;
 }
 
+/* ─────────── a Z, a IA do ecossistema (anel e estrela em marca/z) ─────────── */
+
+.z-sec {
+  text-align: center;
+}
+.z-simbolo {
+  position: relative;
+  width: clamp(112px, 13vw, 160px);
+  aspect-ratio: 1;
+  margin: 0 auto 32px;
+  left: -6%;
+}
+.z-simbolo img {
+  position: absolute;
+  display: block;
+  user-select: none;
+  pointer-events: none;
+}
+.z-anel {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+/* estrela sobre o tubo, às 3 horas: centro a 41,83% do lado a partir do meio, 43% do lado */
+.z-estrela {
+  width: 43%;
+  height: 43%;
+  left: 70.33%;
+  top: 28.5%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .z-estrela {
+    animation: z-brilho 4.8s ease-in-out infinite alternate;
+  }
+}
+@keyframes z-brilho {
+  from {
+    transform: scale(0.86);
+    opacity: 0.82;
+  }
+  to {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+.z-selo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 20px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  color: var(--mudo);
+  font-size: 13px;
+  font-weight: 600;
+  background: rgb(var(--t) / 0.06);
+}
+.z-selo i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--amarelo);
+}
+.z-selo--pronta i {
+  background: var(--verde);
+}
+.home .z-titulo {
+  font-size: clamp(34px, 5vw, 64px);
+}
+.z-fichas {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 640px;
+  margin: 28px auto 0;
+  padding: 0;
+}
+.z-fichas li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  background: var(--superficie);
+  box-shadow: inset 0 0 0 1px var(--linha);
+  color: var(--texto);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.z-fichas svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: var(--mudo);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+@media (max-width: 560px) {
+  .z-fichas {
+    gap: 6px;
+  }
+  .z-fichas li {
+    padding: 7px 11px;
+    font-size: 12.5px;
+  }
+}
+
 /* ─────────── motion ─────────── */
 
 @media (prefers-reduced-motion: no-preference) {
