@@ -1,4 +1,5 @@
 import 'server-only'
+import { headers } from 'next/headers'
 import { isDomainError } from '@zro/observability'
 import { createLogger } from '@zro/observability'
 import type { FormState } from '@/components/action-form'
@@ -17,3 +18,10 @@ export const str = (fd: FormData, k: string) => String(fd.get(k) ?? '').trim()
 
 /** Volta só para caminho do próprio HUB (nunca //host nem /\\host, que o navegador trata como outro site). */
 export const safeNext = (n: string | null | undefined): string | null => (n && n.startsWith('/') && !n.startsWith('//') && !n.includes('\\') ? n : null)
+
+/**
+ * A página está sendo desenhada como resposta de uma Server Action (o Next redesenha a rota depois de mexer em
+ * cookie)? As telas de entrar usam isso para não redirecionar quem acabou de entrar: a conversa mostra "pronto" e
+ * abre o destino sozinha.
+ */
+export const respondendoAcao = async () => (await headers()).has('next-action')

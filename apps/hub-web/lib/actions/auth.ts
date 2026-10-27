@@ -39,8 +39,11 @@ export async function signupAction(_: FormState, fd: FormData): Promise<FormStat
     return toFormError(e)
   }
   const next = safeNext(str(fd, 'next'))
-  if (ok) redirect(next ? `/boas-vindas?next=${encodeURIComponent(next)}` : '/boas-vindas')
-  return null
+  if (!ok) return null
+  const to = next ? `/boas-vindas?next=${encodeURIComponent(next)}` : '/boas-vindas'
+  // Na conversa (com JavaScript) o cliente mostra "pronto" e abre o destino; sem JavaScript, redireciona aqui.
+  if (str(fd, 'conversa') === '1') return { ok: 'pronto', data: { to } }
+  redirect(to)
 }
 
 export async function loginAction(_: FormState, fd: FormData): Promise<FormState> {
@@ -50,7 +53,9 @@ export async function loginAction(_: FormState, fd: FormData): Promise<FormState
   } catch (e) {
     return toFormError(e)
   }
-  redirect(safeNext(str(fd, 'next')) ?? '/inicio')
+  const to = safeNext(str(fd, 'next')) ?? '/inicio'
+  if (str(fd, 'conversa') === '1') return { ok: 'pronto', data: { to } }
+  redirect(to)
 }
 
 export async function logoutAction() {

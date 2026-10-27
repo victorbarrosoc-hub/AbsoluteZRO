@@ -2,6 +2,7 @@
 import { randomUUID } from 'node:crypto'
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type BrowserContext, type Page } from '@playwright/test'
+import { criarConta } from './conversa'
 
 const THEMES = ['dark', 'light'] as const
 const useTheme = (context: BrowserContext, theme: string, baseURL?: string) =>
@@ -43,10 +44,7 @@ test('seletor de tema troca na hora e guarda a escolha', async ({ page, context,
 
 test('área logada e projeto sem violações WCAG A/AA (claro e escuro)', async ({ page, context, baseURL }) => {
   await page.goto('/criar-conta')
-  await page.getByLabel('Nome').fill('Pessoa A11y')
-  await page.getByLabel('E-mail').fill(`a11y-${randomUUID().slice(0, 8)}@teste.absolutezro.local`)
-  await page.getByLabel('Senha').fill('senha-e2e-segura-1')
-  await page.getByRole('button', { name: 'Criar conta' }).click()
+  await criarConta(page, { nome: 'Pessoa A11y', email: `a11y-${randomUUID().slice(0, 8)}@teste.absolutezro.local`, senha: 'senha-e2e-segura-1' })
   await page.waitForURL('**/boas-vindas')
   await check(page, '/boas-vindas')
   await page.getByLabel('Nome').fill('Org A11y')

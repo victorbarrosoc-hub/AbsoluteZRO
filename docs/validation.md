@@ -1078,10 +1078,10 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Menu do celular: o fundo do painel aberto passou a ser sólido (o vidro aninhado vazava o conteúdo no Safari).
 - Validado: lint, format, typecheck, `npm test` 154/154, `npm run test:e2e` 21/21, telas claro/escuro/celular com
   dados de teste. Não validado: com consumo real em produção.
+
 ## Synquei de computador: conta Absolute ZRO (27/10/2026)
 
-- `products/synquei/desktop/conta.cjs` (porta do AEON): cliente público `synquei-desktop`, login de app nativo (RFC
-  8252) no navegador do sistema com volta para `http://127.0.0.1:<porta>/callback`, PKCE S256, state, nonce e o
+- `products/synquei/desktop/conta.cjs` (porta do AEON): cliente público `synquei-desktop`, login de app nativo (RFC 8252) no navegador do sistema com volta para `http://127.0.0.1:<porta>/callback`, PKCE S256, state, nonce e o
   `id_token` conferido pela JWKS. O protocolo do app (`desktop/main.cjs`) responde `/api/zro/eu`, `/entrar` e `/sair`
   no mesmo formato do site, então `app/js/conta.js` é o mesmo nos dois (no desktop liga quando a ponte tem `conta`).
 - Perfil único: cada `/api/zro/eu` relê nome, foto, organização e `zro_products` no `/oauth/userinfo` (3 s, senão vale a
@@ -1091,3 +1091,19 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   `npm test` sem falhas; `xvfb-run -a npx electron . --smoke` SMOKE OK, agora conferindo "Entrar com Absolute ZRO" na
   barra lateral. Telas conferidas no Electron (logado com iniciais e sem sessão).
 - Não validado: login contra o absolutezro.com de verdade e o cofre do sistema num Mac ou Windows de verdade.
+
+## Entrar e criar conta como conversa (27/10/2026)
+
+- `components/conversa-conta.tsx`: `/entrar` (e-mail → senha), `/criar-conta` (e-mail → nome → senha) e `/app/entrar`
+  (mesma conversa, volta para `/app`). O orbe é o `ZroSymbol` com `data-estado` (absolute-zro, ouvindo, conferindo,
+  pronto) e rótulo em pílula `aria-live`; no fim, ✓ em traço fino, "Conectado." e barra fina antes de abrir o destino.
+  Animação mínima (respiração em CSS) até o titular aprovar a definitiva; "reduzir movimento" deixa tudo parado.
+- A conversa só avança no cliente; nenhum e-mail é consultado antes do envio. `loginAction`/`signupAction` seguem
+  redirecionando; com o campo `conversa=1` (só com JavaScript) devolvem o destino para o cliente mostrar "pronto". As
+  páginas não redirecionam quem acabou de entrar quando estão respondendo à própria Server Action (`respondendoAcao`).
+- Sem JavaScript todos os campos aparecem e o form posta direto; com JavaScript os passos fora da vez ficam no form
+  (gerenciador de senhas: `email`, `name`, `current-password`, `new-password`), escondidos e `inert`.
+- Validado: lint, format, typecheck, `npm test`, build, `npm run test:e2e` (conversa de entrar com erro e foco, sem
+  JavaScript, cadastro/SSO pelos passos, axe em `/entrar` e `/criar-conta` nos dois temas). Telas conferidas em claro e
+  escuro, 1280 e 390. Não validado: gerenciador de senhas real (Chrome/1Password/iCloud) e Safari antigo sem
+  `@media (scripting)`.

@@ -4,6 +4,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 import postgres from 'postgres'
+import { criarConta } from './conversa'
 
 const DB = process.env.E2E_DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/zro_e2e_test'
 const APP = 'https://app.e2e.teste/callback'
@@ -39,10 +40,7 @@ test('Entrar com Absolute ZRO: cadastro, permissão, código e tokens', async ({
   await page.waitForURL('**/entrar?next=**')
   await page.getByRole('link', { name: 'Criar conta' }).click()
   const email = `sso-${randomUUID().slice(0, 8)}@teste.absolutezro.local`
-  await page.getByLabel('Nome').fill('Pessoa SSO')
-  await page.getByLabel('E-mail').fill(email)
-  await page.getByLabel('Senha').fill('senha-e2e-segura-1')
-  await page.getByRole('button', { name: 'Criar conta' }).click()
+  await criarConta(page, { nome: 'Pessoa SSO', email: email, senha: 'senha-e2e-segura-1' })
   await page.waitForURL('**/boas-vindas**')
   await page.getByLabel('Nome').fill('Produtora SSO')
   await page.getByRole('button', { name: 'Criar e continuar' }).click()
@@ -120,10 +118,7 @@ test('app da família (trusted): entra direto, sem a tela Permitir, e o acesso f
   await page.goto(`/oauth/authorize?${q}`)
   await page.waitForURL('**/entrar?next=**')
   await page.getByRole('link', { name: 'Criar conta' }).click()
-  await page.getByLabel('Nome').fill('Pessoa Família')
-  await page.getByLabel('E-mail').fill(`fam-${randomUUID().slice(0, 8)}@teste.absolutezro.local`)
-  await page.getByLabel('Senha').fill('senha-e2e-segura-1')
-  await page.getByRole('button', { name: 'Criar conta' }).click()
+  await criarConta(page, { nome: 'Pessoa Família', email: `fam-${randomUUID().slice(0, 8)}@teste.absolutezro.local`, senha: 'senha-e2e-segura-1' })
   await page.waitForURL('**/boas-vindas**')
   await page.getByLabel('Nome').fill('Produtora Família')
   await page.getByRole('button', { name: 'Criar e continuar' }).click()
@@ -131,6 +126,7 @@ test('app da família (trusted): entra direto, sem a tela Permitir, e o acesso f
   // Sem "Permitir e continuar": o HUB devolve direto ao app.
   await expect.poll(() => landed?.searchParams.get('state')).toBe('estado-familia')
   expect(landed!.searchParams.get('code')).toMatch(/^zc_/)
+  await page.waitForURL('https://app.e2e.teste/**')
 
   await page.goto('/perfil/acessos')
   await expect(page.locator('#apps').getByText('NOSSOM (teste)').first()).toBeVisible()
@@ -165,10 +161,7 @@ test('Criar conta num app: a conta nasce na Absolute ZRO e volta ao app já loga
   await expect(page.getByRole('link', { name: 'Continuar com o Google' })).toHaveCount(0)
 
   const email = `criar-${randomUUID().slice(0, 8)}@teste.absolutezro.local`
-  await page.getByLabel('Nome').fill('Pessoa do App')
-  await page.getByLabel('E-mail').fill(email)
-  await page.getByLabel('Senha').fill('senha-e2e-segura-1')
-  await page.getByRole('button', { name: 'Criar conta' }).click()
+  await criarConta(page, { nome: 'Pessoa do App', email: email, senha: 'senha-e2e-segura-1' })
   await page.waitForURL('**/boas-vindas**')
   await expect(page.getByLabel('Nome')).toHaveValue('Pessoa do App')
   await page.getByRole('button', { name: 'Criar e continuar' }).click()
@@ -207,10 +200,7 @@ test('Carro do Freela: o token do app (escopo carro-do-freela.jobs) cria o proje
   await page.goto(`/oauth/authorize?${q}`)
   await page.waitForURL('**/entrar?next=**')
   await page.getByRole('link', { name: 'Criar conta' }).click()
-  await page.getByLabel('Nome').fill('Produtora do Carro')
-  await page.getByLabel('E-mail').fill(`carro-${randomUUID().slice(0, 8)}@teste.absolutezro.local`)
-  await page.getByLabel('Senha').fill('senha-e2e-segura-1')
-  await page.getByRole('button', { name: 'Criar conta' }).click()
+  await criarConta(page, { nome: 'Produtora do Carro', email: `carro-${randomUUID().slice(0, 8)}@teste.absolutezro.local`, senha: 'senha-e2e-segura-1' })
   await page.waitForURL('**/boas-vindas**')
   await page.getByLabel('Nome').fill('Produtora Carro')
   await page.getByRole('button', { name: 'Criar e continuar' }).click()

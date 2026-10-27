@@ -3855,98 +3855,13 @@ a.pstrip__card:focus-visible .pstrip__go {
   }
 }
 
-/* Login do app: o símbolo à esquerda, o cartão à direita. */
+/* Login do app (/app/entrar): a mesma conversa do /entrar, centrada na tela cheia. */
 .plogin {
   min-height: 100svh;
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-  align-items: center;
-  gap: clamp(24px, 5vw, 80px);
-  padding: clamp(24px, 5vw, 72px);
+  place-items: center;
+  padding: clamp(24px, 5vw, 72px) 16px;
   overflow: hidden;
-}
-.plogin__marca {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  gap: 22px;
-  color: var(--text-strong);
-}
-.plogin__halo {
-  position: absolute;
-  top: 38%;
-  left: 50%;
-  width: min(70vmin, 620px);
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgb(255 255 255 / 0.95), transparent 62%);
-  pointer-events: none;
-}
-:root[data-theme='dark'] .plogin__halo {
-  background: radial-gradient(circle, rgb(255 255 255 / 0.08), transparent 62%);
-}
-.plogin__simbolo {
-  position: relative;
-  width: clamp(140px, 22vw, 260px);
-  height: auto;
-  translate: 6% 0;
-  color: var(--text-strong);
-  filter: drop-shadow(0 20px 40px rgb(0 0 0 / 0.14));
-}
-.plogin__nome {
-  position: relative;
-  color: var(--text-strong);
-}
-.plogin__frase {
-  position: relative;
-  color: var(--text-faint);
-}
-.plogin__cartao {
-  width: min(100%, 420px);
-  display: grid;
-  gap: 16px;
-  padding: clamp(24px, 3vw, 36px);
-  border-radius: 28px;
-  background: var(--glass-fill), var(--surface);
-  box-shadow: var(--shadow-float);
-}
-.plogin__titulo {
-  font-size: clamp(1.8rem, 3vw, 2.4rem);
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-  font-weight: 300;
-  color: var(--text-strong);
-}
-.plogin__titulo strong {
-  font-weight: 800;
-}
-.plogin__apoio {
-  margin-top: -8px;
-  color: var(--text-faint);
-}
-.plogin__links {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 0.9rem;
-}
-.plogin .zro-input {
-  transition:
-    box-shadow 0.25s var(--ease),
-    border-color 0.25s var(--ease);
-}
-.plogin .zro-input:focus {
-  box-shadow: 0 0 0 4px rgb(127 127 127 / 0.16);
-}
-@media (max-width: 860px) {
-  .plogin {
-    grid-template-columns: minmax(0, 1fr);
-    justify-items: center;
-  }
-  .plogin__simbolo {
-    width: 120px;
-  }
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -3960,26 +3875,6 @@ a.pstrip__card:focus-visible .pstrip__go {
     animation: rise 0.7s var(--spring) both;
     animation-delay: calc(0.2s + var(--i, 0) * 60ms);
   }
-  .plogin__simbolo .bsym__ring {
-    stroke-dasharray: 100;
-    animation: bsym-draw 1.4s var(--ease) 0.2s both;
-  }
-  .plogin__simbolo .bsym__spark {
-    animation: zro-spark 1.6s var(--ease) 0.4s both;
-  }
-  .plogin__halo {
-    animation: phero-fade 1.6s var(--ease) 0.3s both;
-  }
-  .plogin__nome,
-  .plogin__frase {
-    animation: rise 0.9s var(--spring) 1.2s both;
-  }
-  .plogin__cartao {
-    animation: plogin-cartao 0.9s var(--spring) 0.5s both;
-  }
-  .plogin .zro-field__error {
-    animation: plogin-erro 0.45s ease both;
-  }
 }
 @keyframes painel-lado {
   from {
@@ -3987,15 +3882,7 @@ a.pstrip__card:focus-visible .pstrip__go {
     translate: -24px 0;
   }
 }
-@keyframes plogin-cartao {
-  from {
-    opacity: 0;
-    translate: 0 28px;
-    scale: 0.97;
-    filter: blur(6px);
-  }
-}
-@keyframes plogin-erro {
+@keyframes conversa-erro {
   0%,
   100% {
     translate: 0 0;
@@ -5125,7 +5012,7 @@ a.pstrip__card:focus-visible .pstrip__go {
   .pcard:hover {
     translate: none;
   }
-  /* login do app no celular: o símbolo menor no topo e o cartão embaixo, na tela toda */
+  /* login do app no celular: a conversa na tela toda */
   .plogin {
     min-height: 100dvh;
     align-content: center;
@@ -6142,5 +6029,423 @@ a.pstrip__card:focus-visible .pstrip__go {
   }
   .painel__corpo--ia .ia__base {
     bottom: calc(68px + env(safe-area-inset-bottom));
+
+/* ───── Conversa de conta (entrar, criar conta, login do app; components/conversa-conta.tsx, 27/10/2026) ─────
+   Uma pergunta por vez. O orbe é o símbolo da marca com o estado em data-estado (absolute-zro, ouvindo, conferindo,
+   pronto) e um ✓ em traço fino no fim. Só CSS; "reduzir movimento" deixa tudo parado e as trocas instantâneas. */
+.auth-box:has(> .conversa) {
+  width: min(420px, 100%);
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.auth-box:has(> .conversa)::before {
+  display: none;
+}
+.conversa {
+  width: min(420px, 100%);
+  display: grid;
+  justify-items: center;
+  gap: 30px;
+  text-align: center;
+  font-family: var(--font-apple);
+  color: var(--text-strong);
+}
+
+/* orbe: o símbolo da marca; só uma respiração suave por enquanto (a animação definitiva espera o titular) */
+.orbe-wrap {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  transition:
+    scale 0.5s var(--spring),
+    margin 0.5s var(--spring);
+}
+.conversa:focus-within .orbe-wrap {
+  scale: 0.9;
+}
+.conversa-orbe {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  color: var(--text-strong);
+}
+.conversa-orbe__simbolo {
+  display: block;
+  width: 88px;
+  height: 88px;
+  animation: conversa-orbe-respira 4s ease-in-out infinite;
+}
+.conversa-orbe[data-estado='ouvindo'] .conversa-orbe__simbolo,
+.conversa-orbe[data-estado='conferindo'] .conversa-orbe__simbolo {
+  animation-duration: 2.4s;
+}
+.conversa-orbe[data-estado='pronto'] .conversa-orbe__simbolo {
+  animation: none;
+}
+@keyframes conversa-orbe-respira {
+  50% {
+    scale: 1.035;
+    opacity: 0.82;
+  }
+}
+/* ✓ em traço fino abaixo do símbolo, desenhado no "pronto" */
+.conversa-orbe__check {
+  position: absolute;
+  top: 100%;
+  margin-top: 4px;
+  opacity: 0;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition:
+    opacity 0.3s ease,
+    stroke-dashoffset 0.6s var(--ease) 0.15s;
+}
+.conversa-orbe[data-estado='pronto'] .conversa-orbe__check {
+  position: static;
+  opacity: 1;
+  stroke-dashoffset: 0;
+}
+.orbe__rotulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  margin: 0;
+  padding: 0 13px 0 11px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text-mute);
+  background: var(--pill-fill);
+  box-shadow: var(--pill-rim, 0 0 0 1px var(--line));
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+.orbe__luz {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.6;
+}
+.orbe-wrap:has([data-estado='ouvindo']) .orbe__luz,
+.orbe-wrap:has([data-estado='conferindo']) .orbe__luz {
+  opacity: 1;
+  animation: orbe-luz 1s ease-in-out infinite;
+}
+.orbe-wrap:has([data-estado='pronto']) .orbe__rotulo {
+  color: var(--text-strong);
+}
+.orbe-wrap:has([data-estado='pronto']) .orbe__luz {
+  opacity: 1;
+}
+@keyframes orbe-luz {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* passos */
+.conversa__passos {
+  position: relative;
+  width: 100%;
+  display: grid;
+  gap: 36px;
+}
+.conversa__passo {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+/* com JavaScript, só o passo da vez aparece; os outros seguem no form (gerenciador de senhas), escondidos e inertes */
+@media (scripting: enabled) {
+  .conversa__passo[data-ativo='false'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+.conversa[data-js] .conversa__passo[data-ativo='false'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.conversa[data-js] .conversa__passo[data-ativo='true'] {
+  animation: conversa-entra 0.55s var(--spring) both;
+}
+@keyframes conversa-entra {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+    filter: blur(4px);
+  }
+}
+.conversa__apoio {
+  margin: 0;
+  min-height: 1.5em;
+  color: var(--text-faint);
+  font-size: 1.02rem;
+}
+.conversa__titulo {
+  margin: -4px 0 6px;
+  font-family: var(--font-apple);
+  font-size: clamp(1.9rem, 5.4vw, 2.5rem);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  color: var(--text-strong);
+}
+.conversa__titulo label {
+  cursor: default;
+}
+.conversa__campo {
+  position: relative;
+  width: 100%;
+}
+.conversa__campo input {
+  width: 100%;
+  height: 60px;
+  padding: 0 64px 0 24px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 1.08rem;
+  color: var(--text-strong);
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.7),
+    0 0 0 1px var(--line-strong),
+    0 12px 32px rgb(0 0 0 / 0.07);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  transition: box-shadow 0.25s var(--ease);
+}
+.conversa__campo input::placeholder {
+  color: var(--text-faint);
+  opacity: 0.7;
+}
+.conversa__campo input:focus {
+  outline: none;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.7),
+    0 0 0 1.5px var(--text-strong),
+    0 0 0 6px rgb(127 127 127 / 0.14),
+    0 12px 32px rgb(0 0 0 / 0.08);
+}
+.conversa__campo input[aria-invalid='true'] {
+  box-shadow:
+    0 0 0 1.5px var(--danger-text),
+    0 12px 32px rgb(0 0 0 / 0.07);
+}
+:root[data-theme='dark'] .conversa__campo input {
+  background: rgb(255 255 255 / 0.07);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 0 0 1px var(--line-strong),
+    0 12px 32px rgb(0 0 0 / 0.35);
+}
+:root[data-theme='dark'] .conversa__campo input:focus {
+  box-shadow:
+    0 0 0 1.5px var(--text-strong),
+    0 0 0 6px rgb(255 255 255 / 0.1),
+    0 12px 32px rgb(0 0 0 / 0.35);
+}
+.conversa__enviar {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  translate: 0 -50%;
+  border: 0;
+  border-radius: 50%;
+  color: var(--btn-main-ink);
+  background: var(--btn-main-sheen), var(--btn-main-fill);
+  box-shadow: var(--btn-main-shadow);
+  cursor: pointer;
+  transition:
+    scale 0.25s var(--spring),
+    opacity 0.2s ease;
+}
+.conversa__enviar:hover {
+  scale: 1.06;
+}
+.conversa__enviar:active {
+  scale: 0.94;
+}
+.conversa__enviar:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+.conversa__enviar:disabled {
+  opacity: 0.45;
+  cursor: progress;
+}
+.conversa__erro {
+  margin: 0;
+  color: var(--danger-text);
+  font-size: 0.94rem;
+  font-weight: 500;
+  animation: conversa-erro 0.45s ease both;
+}
+.conversa__quem {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.94rem;
+  color: var(--text-mute);
+  background: var(--pill-fill);
+  box-shadow: var(--pill-rim, 0 0 0 1px var(--line));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.conversa__quem:hover {
+  color: var(--text-strong);
+}
+.conversa__quem:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.conversa__link {
+  color: var(--text-mute);
+  font-size: 0.94rem;
+  text-decoration: none;
+}
+.conversa__link:hover {
+  color: var(--text-strong);
+  text-decoration: underline;
+}
+
+/* Google e o outro caminho (entrar ou criar conta) */
+.conversa__fora {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+}
+.google-pilula {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 24px;
+  border-radius: 999px;
+  font-family: var(--font-apple);
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1d1d1f;
+  text-decoration: none;
+  background: #fff;
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.1),
+    0 8px 22px rgb(0 0 0 / 0.07);
+  transition:
+    scale 0.25s var(--spring),
+    box-shadow 0.25s ease;
+}
+.google-pilula:hover {
+  scale: 1.015;
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.14),
+    0 12px 28px rgb(0 0 0 / 0.1);
+}
+.google-pilula:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+:root[data-theme='dark'] .google-pilula {
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.4);
+}
+.conversa__rodape {
+  margin: 0;
+  color: var(--text-mute);
+  font-size: 0.95rem;
+}
+.conversa__rodape a {
+  color: var(--text-strong);
+  font-weight: 600;
+  text-decoration: none;
+}
+.conversa__rodape a:hover {
+  text-decoration: underline;
+}
+
+/* pronto: "Conectado." e a barra fina enquanto o destino abre */
+.conversa__fim {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  animation: conversa-entra 0.55s var(--spring) 0.25s both;
+}
+.conversa__barra {
+  position: relative;
+  width: 180px;
+  height: 3px;
+  margin-top: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--line-strong);
+}
+.conversa__barra::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--text-strong);
+  transform-origin: left;
+  animation: conversa-barra 1.3s var(--ease) both;
+}
+@keyframes conversa-barra {
+  from {
+    scale: 0 1;
+  }
+}
+
+@media (max-width: 600px) {
+  .conversa {
+    gap: 26px;
+  }
+  /* campo em foco: o orbe sobe e encolhe para dar espaço ao teclado */
+  .conversa:focus-within .orbe-wrap {
+    scale: 0.72;
+    margin-block: -16px -10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .orbe-wrap,
+  .conversa-orbe__simbolo,
+  .conversa-orbe__check,
+  .orbe__luz,
+  .conversa__passo,
+  .conversa__erro,
+  .conversa__fim,
+  .conversa__barra::after,
+  .conversa__enviar,
+  .google-pilula {
+    animation: none !important;
+    transition: none !important;
   }
 }
