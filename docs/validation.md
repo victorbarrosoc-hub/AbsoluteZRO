@@ -202,6 +202,23 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   (mesmas rotas, chaves e CSP) antes da produção.
 - Login único nas cinco: `/api/zro/entrar` de cada domínio leva ao HUB; apps marcados como da família.
 
+## A Z no Início do NOSSOM (27/10/2026)
+
+- `products/nossom`: `npm test` **83/83** (5 novos em `tests/zro.test.ts`: cookie da Z cifrado, HttpOnly e preso a
+  `/api/zro/ia`; repasse encaminha o Bearer e passa o NDJSON sem vazar token; recusa sem sessão, sem token, com token
+  de outra conta, cookie adulterado, outra origem e caminho fora da API sem chamar a Absolute ZRO; renovação única
+  pelo refresh que gira; token sem `zro.ia` não é guardado; sair apaga e revoga). `typecheck`, `format:check` e
+  `npm run build` ok.
+- E2E (`npx playwright test`): **75 passaram, 4 falharam, 1 pulado**; as falhas são as 3 de gravação pelo microfone
+  (o Chromium daqui não dá o microfone) e a contagem de seções da home, que já quebrava desde a seção da Z (6 → 7,
+  corrigida e conferida depois). `tests/e2e/zro-ia.spec.ts` (4) passa: Z no topo, "Conectar com Absolute ZRO" sem
+  token, assistente NOSSOM logo abaixo, tema do estúdio no painel, repasse até a API falsa do HUB, token fora da
+  página, painel fora do ar não quebra o Início.
+- Fotos com o `zro-ia.js` de verdade (servido localmente) e a API do HUB falsa, 1440 e 390 px, claro e escuro, sem
+  rolagem horizontal; conferidas a olho, fora do repositório. `node scripts/scan-secrets.mjs` limpo.
+- Não validado: conta Absolute ZRO real, o `nossom-web` aceitando `offline_access zro.ia` em produção, o app de
+  computador instalado (carrega o mesmo `/studio`, sem mudança no binário) e Safari/iPhone físicos.
+
 ## Balão de pendências: AEON, Revela e NOSSOM (27/10/2026)
 
 - Regras puras com teste (estado → número e dica por aba): AEON `src/pendencias.js` (`test/nucleo.test.js`), Revela
@@ -1154,6 +1171,7 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   `/entrar` claro e escuro e `<zro-ia>` servido de outra origem sobre o azul do NOSSOM, sem erro de página.
 - Não validado: migrações 0016/0017 no banco de produção e a IA com a chave real (só com a API falsa local); não
   publicado em produção.
+
 ## O Z nas páginas iniciais das plataformas (27/10/2026)
 
 - Seção curta na home de AEON, Carro do Freela, Revela, NOSSOM, SOBEDESCE, Synquei e TPeasy: anel e estrela do Z

@@ -40,5 +40,7 @@ export const config = {
     // Renova a sessão antes de ligar a Absolute ZRO; o callback não passa por aqui.
     '/api/zro/entrar',
     '/api/zro/conta',
+    // Painel da Z: a sessão NOSSOM renovada antes do repasse.
+    '/api/zro/ia/:path*',
   ],
 };

@@ -3,6 +3,7 @@ import ZroBlocked from '@/components/zro-blocked';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { ACCOUNT_COOKIE, accountFromToken } from '@/lib/server/account';
+import { zroConfigured } from '@/lib/server/zro/config';
 export default async function StudioLayout({ children }: { children: React.ReactNode }) {
   const account = accountFromToken((await cookies()).get(ACCOUNT_COOKIE)?.value);
   if (!account) redirect('/entrar');
@@ -10,7 +11,7 @@ export default async function StudioLayout({ children }: { children: React.React
   if (account.zroBlocked) return <ZroBlocked email={account.email} />;
   return (
     <>
-      <Studio key={account.id} account={account} />
+      <Studio key={account.id} account={account} zroIa={zroConfigured()} />
       {children}
     </>
   );

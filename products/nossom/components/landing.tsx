@@ -178,7 +178,7 @@ const faqs = [
     'Sim. O original é preservado e os tratamentos criam versões. Compare antes e depois, desfaça, refaça ou retome uma versão anterior. Os efeitos também podem ser removidos. Exporte seus projetos antes de limpar os dados do navegador.',
   ],
 ];
-export default function Landing() {
+export default function Landing({ zroIa = false }: { zroIa?: boolean }) {
   const [menu, setMenu] = useState(false),
     [faq, setFaq] = useState<number | null>(null),
     [hover, setHover] = useState<string | null>(null),
@@ -426,7 +426,8 @@ export default function Landing() {
             </div>
           </div>
         </section>
-        {/* Z, a IA do ecossistema Absolute ZRO. Ainda não está dentro do NOSSOM: a seção diz que está chegando. */}
+        {/* Z, a IA do ecossistema Absolute ZRO. Com o login Absolute ZRO configurado, ela abre o Início do estúdio
+            (repasse em /api/zro/ia); sem ele, a seção continua dizendo que está chegando. */}
         <section className="home-z ns-wrap" id="z" aria-labelledby="z-title">
           <div className="lg home-z-card">
             <div className="z-simbolo" aria-hidden="true">
@@ -450,11 +451,15 @@ export default function Landing() {
             <div className="home-z-copy">
               <p className="z-selo">
                 <i aria-hidden="true" />
-                Chegando ao NOSSOM
+                {zroIa ? 'Já no NOSSOM' : 'Chegando ao NOSSOM'}
               </p>
               <h2 id="z-title">Z. Uma IA para todo o ecossistema.</h2>
-              <p>Vai entender seus projetos de áudio e ajudar a seguir para a edição.</p>
-              <ul className="z-fichas" aria-label="Como o Z funciona">
+              <p>
+                {zroIa
+                  ? 'Ela abre o seu estúdio: pergunte sobre seu áudio e siga para a edição.'
+                  : 'Vai entender seus projetos de áudio e ajudar a seguir para a edição.'}
+              </p>
+              <ul className="z-fichas" aria-label="Como a Z funciona">
                 <li title="A mesma conta Absolute ZRO que você já usa.">
                   <UserRound size={16} aria-hidden="true" /> Mesma conta
                 </li>
@@ -468,9 +473,16 @@ export default function Landing() {
                   <Sparkle size={16} aria-hidden="true" /> 1 crédito por resposta
                 </li>
               </ul>
-              <a className="button secondary" href="https://absolutezro.com/ia" rel="noopener">
-                Conhecer o Z <ArrowUpRight size={15} />
-              </a>
+              <div className="home-z-acoes">
+                {zroIa && (
+                  <Link className="button primary" href="/studio">
+                    Conversar com a Z <ArrowRight size={15} />
+                  </Link>
+                )}
+                <a className="button secondary" href="https://absolutezro.com/ia" rel="noopener">
+                  Conhecer a Z <ArrowUpRight size={15} />
+                </a>
+              </div>
             </div>
           </div>
         </section>

@@ -8,7 +8,13 @@ import assert from 'node:assert/strict';
 import { GET as start } from '../app/api/zro/entrar/route';
 import { GET as callback } from '../app/api/zro/callback/route';
 import { GET as linkStatus, DELETE as unlink } from '../app/api/zro/conta/route';
-import { GET as accountStatus } from '../app/api/account/route';
+import { GET as accountStatus, DELETE as signOut } from '../app/api/account/route';
+import {
+  GET as iaGet,
+  POST as iaPost,
+  DELETE as iaDelete,
+} from '../app/api/zro/ia/[...caminho]/route';
+import { iaTarget, openIaTokens, sealIaTokens } from '../lib/server/zro/ia';
 import {
   accountFromToken,
   currentAccount,
@@ -113,7 +119,10 @@ async function flow(
   assert.equal(authorize.origin, ISSUER);
   assert.equal(authorize.searchParams.get('code_challenge_method'), 'S256');
   assert.equal(authorize.searchParams.get('redirect_uri'), SITE + '/api/zro/callback');
-  assert.equal(authorize.searchParams.get('scope'), 'openid email profile org');
+  assert.equal(
+    authorize.searchParams.get('scope'),
+    'openid email profile org offline_access zro.ia',
+  );
   assert.ok(authorize.searchParams.get('nonce'));
   const header = go.headers.getSetCookie()[0];
   assert.match(header, /^nossom-zro=v1\./);
@@ -137,6 +146,8 @@ async function flow(
     res,
     location: destination.pathname + destination.search,
     session: session ? decodeSession(decodeURIComponent(session)) : null,
+    ia: cookieOf(res, 'nossom-zro-ia'),
+    iaHeader: res.headers.getSetCookie().find((c) => c.startsWith('nossom-zro-ia=')),
   };
 }
 
@@ -363,4 +374,177 @@ test('an older account without a ZRO link is never blocked', async () => {
   assert.ok(refreshed && refreshed !== 'unavailable');
   assert.equal(refreshed.account.zroBlocked, undefined);
   assert.equal(decodeSession(refreshed.token)?.zroProducts, undefined);
+});
+
+// ——— A Z (IA da Absolute ZRO) no Início: repasse /api/zro/ia → <emissor>/api/v1/ia com o token da conta ———
+
+type Flow = Awaited<ReturnType<typeof flow>>;
+const iaCall = (
+  r: Flow,
+  path: string,
+  o: { method?: string; ia?: string | null; origin?: string; body?: string; session?: string } = {},
+) => {
+  const method = o.method ?? 'GET';
+  const parts = path.split('/').filter(Boolean);
+  const cookie = [
+    o.session ?? cookieFor(r.session!),
+    ...(o.ia === null ? [] : ['nossom-zro-ia=' + (o.ia ?? r.ia)]),
+  ].join('; ');
+  const request = new Request(SITE + '/api/zro/ia/' + path, {
+    method,
+    headers: { cookie, ...(o.origin ? { origin: o.origin } : {}) },
+    ...(o.body ? { body: o.body } : {}),
+  });
+  const handler = method === 'POST' ? iaPost : method === 'DELETE' ? iaDelete : iaGet;
+  return handler(request, { params: Promise.resolve({ caminho: parts }) });
+};
+const leaks = (res: Response, text: string) =>
+  /zat_|zrt_/.test(text) ||
+  [...res.headers.entries()].some(([k, v]) => k !== 'set-cookie' && /zat_|zrt_/.test(v)) ||
+  res.headers.getSetCookie().some((c) => /zat_|zrt_/.test(c));
+
+test('signing in keeps the Z token only in an encrypted HttpOnly cookie scoped to the proxy', async () => {
+  const r = await flow();
+  assert.ok(r.ia);
+  assert.match(r.iaHeader!, /HttpOnly/);
+  assert.match(r.iaHeader!, /Secure/);
+  assert.match(r.iaHeader!, /SameSite=Lax/);
+  assert.match(r.iaHeader!, /Path=\/api\/zro\/ia;/);
+  assert.doesNotMatch(r.iaHeader!, /zat_|zrt_/, 'o token não aparece em claro no cookie');
+  const saved = openIaTokens(r.ia);
+  assert.equal(saved?.user, r.session?.account.id);
+  assert.match(saved!.access, /^zat_/);
+  assert.match(saved!.scope, /\bzro\.ia\b/);
+  // Ligar em Minha conta também guarda o token, para a conta de quem está logado.
+  const owner = fakes.addUser('dono@example.test', 'Dono');
+  const linked = await flow({
+    person: { ...LIA, sub: 'zro-222', email: 'dono@example.test' },
+    query: '?modo=ligar&volta=%2Fstudio',
+    session: sessionFor(owner),
+  });
+  assert.equal(linked.location, '/studio?zro=ok');
+  assert.equal(openIaTokens(linked.ia)?.user, owner.id);
+});
+
+test('the proxy forwards the Bearer token, streams the answer and never leaks the token', async () => {
+  const r = await flow();
+  const estado = await iaCall(r, 'estado');
+  assert.equal(estado.status, 200);
+  const text = await estado.text();
+  assert.deepEqual(JSON.parse(text), { ligada: true, nome: 'Lia', creditos: null });
+  assert.equal(estado.headers.get('cache-control'), 'no-store');
+  assert.equal(leaks(estado, text), false);
+  const call = fakes.state.ia.at(-1)!;
+  assert.equal(call.path, '/estado');
+  assert.equal(call.auth, 'Bearer ' + openIaTokens(r.ia)!.access);
+
+  const answer = await iaCall(r, 'mensagens', {
+    method: 'POST',
+    origin: SITE,
+    body: JSON.stringify({ conversa: null, texto: 'Como limpo minha fala?' }),
+  });
+  assert.equal(answer.status, 200);
+  assert.match(answer.headers.get('content-type')!, /ndjson/);
+  const lines = (await answer.text())
+    .trim()
+    .split('\n')
+    .map((l) => JSON.parse(l));
+  assert.deepEqual(
+    lines.map((l) => l.tipo),
+    ['conversa', 'texto', 'fim'],
+  );
+  assert.equal(fakes.state.ia.at(-1)!.body, '{"conversa":null,"texto":"Como limpo minha fala?"}');
+
+  assert.equal((await iaCall(r, 'conversas/c1', { method: 'DELETE', origin: SITE })).status, 200);
+  assert.equal(fakes.state.ia.at(-1)!.path, '/conversas/c1');
+});
+
+test('the proxy refuses without a NOSSOM session, without the Z token or with another account token', async () => {
+  const r = await flow();
+  const before = fakes.state.ia.length;
+  // Sem sessão NOSSOM.
+  const anonymous = await iaGet(
+    new Request(SITE + '/api/zro/ia/estado', { headers: { cookie: 'nossom-zro-ia=' + r.ia } }),
+    { params: Promise.resolve({ caminho: ['estado'] }) },
+  );
+  assert.equal(anonymous.status, 401);
+  // Sessão sem o token da Z (entrou com senha, ou antes desta versão).
+  const noToken = await iaCall(r, 'estado', { ia: null });
+  assert.equal(noToken.status, 401);
+  assert.equal((await noToken.json()).error, 'zro_ia_login');
+  // Token guardado para outra conta (troca de conta no mesmo navegador): nunca é usado e é apagado.
+  const other = fakes.addUser('outra@example.test');
+  const foreign = await iaCall(r, 'estado', { session: sessionFor(other) });
+  assert.equal(foreign.status, 401);
+  assert.equal(cookieOf(foreign, 'nossom-zro-ia'), '');
+  // Cookie adulterado.
+  assert.equal((await iaCall(r, 'estado', { ia: r.ia!.slice(0, -4) + 'AAAA' })).status, 401);
+  // Mudança de outra origem, caminho fora da API e método errado.
+  assert.equal(
+    (await iaCall(r, 'mensagens', { method: 'POST', origin: 'https://evil.example', body: '{}' }))
+      .status,
+    403,
+  );
+  assert.equal((await iaCall(r, 'admin')).status, 404);
+  assert.equal((await iaCall(r, 'estado', { method: 'DELETE', origin: SITE })).status, 404);
+  assert.equal(iaTarget(['conversas', '../admin'], 'GET'), null);
+  assert.equal(fakes.state.ia.length, before, 'nada disso chegou à Absolute ZRO');
+});
+
+test('an expiring token is renewed once with the rotating refresh token; a refused one asks to connect again', async () => {
+  fakes.state.accessLife = 30; // menos que a margem de 60 s: todo pedido renova
+  const r = await flow();
+  const first = await iaCall(r, 'estado');
+  assert.equal(first.status, 200);
+  assert.equal(fakes.state.refreshes, 1);
+  const rotated = cookieOf(first, 'nossom-zro-ia')!;
+  assert.ok(rotated && rotated !== r.ia);
+  assert.equal(fakes.state.ia.at(-1)!.auth, 'Bearer ' + openIaTokens(rotated)!.access);
+  assert.notEqual(openIaTokens(rotated)!.refresh, openIaTokens(r.ia)!.refresh);
+  // Um pedido simultâneo com o cookie antigo reaproveita a mesma renovação: o refresh não é reusado
+  // (reuso derrubaria a sessão inteira na Absolute ZRO).
+  const parallel = await iaCall(r, 'estado');
+  assert.equal(parallel.status, 200);
+  assert.equal(fakes.state.refreshes, 1);
+  // Refresh recusado (revogado na Absolute ZRO): o cookie sai e o painel pede para conectar.
+  const expiring = await flow();
+  fakes.revokeAll();
+  const reused = await iaCall(expiring, 'estado');
+  assert.equal(reused.status, 401);
+  assert.equal(cookieOf(reused, 'nossom-zro-ia'), '');
+  // Acesso removido na Absolute ZRO: o token é recusado lá e aqui vira "conectar de novo".
+  fakes.state.accessLife = 600;
+  const again = await flow();
+  fakes.revokeAll();
+  const refused = await iaCall(again, 'estado');
+  assert.equal(refused.status, 401);
+  assert.equal((await refused.json()).error, 'zro_ia_login');
+  assert.equal(cookieOf(refused, 'nossom-zro-ia'), '');
+});
+
+test('a token without the zro.ia scope is not kept; signing out forgets and revokes the Z token', async () => {
+  fakes.state.scope = 'openid email profile org offline_access';
+  const old = await flow();
+  assert.equal(old.ia, '', 'sem zro.ia o cookie da Z é apagado');
+  assert.equal((await iaCall(old, 'estado', { ia: null })).status, 401);
+  // Um cookie antigo, de antes do escopo, também é recusado sem ir à Absolute ZRO.
+  const legacy = sealIaTokens(old.session!.account.id, {
+    access: 'zat_legacy',
+    refresh: null,
+    expires: Date.now() + 600000,
+    scope: 'openid email',
+  });
+  assert.equal((await iaCall(old, 'estado', { ia: legacy })).status, 401);
+
+  fakes.state.scope = 'openid email profile org offline_access zro.ia';
+  const r = await flow();
+  const out = await signOut(
+    new Request(SITE + '/api/account', {
+      method: 'DELETE',
+      headers: { origin: SITE, cookie: cookieFor(r.session!) + '; nossom-zro-ia=' + r.ia },
+    }),
+  );
+  assert.equal(out.status, 200);
+  assert.equal(cookieOf(out, 'nossom-zro-ia'), '');
+  assert.deepEqual(fakes.state.revoked, [openIaTokens(r.ia)!.refresh]);
 });

@@ -24,9 +24,12 @@ export default function Assistant({
   onUpload,
   fileName,
   disabled = false,
+  belowZ = false,
 }: {
   onClose?: () => void;
   embedded?: boolean;
+  /** No Início, abaixo da Z (que tem o título da página): vira seção, sem h1 próprio. */
+  belowZ?: boolean;
   onUpload?: () => void;
   fileName?: string;
   disabled?: boolean;
@@ -34,7 +37,7 @@ export default function Assistant({
   context?: Record<string, number | null>;
 }) {
   const id = useId();
-  const Title = embedded ? 'h1' : 'h2';
+  const Title = embedded && !belowZ ? 'h1' : 'h2';
   const [cloud, setCloud] = useState(false),
     [authenticated, setAuthenticated] = useState(false),
     [loading, setLoading] = useState(true),

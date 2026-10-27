@@ -41,6 +41,13 @@ A revisão ampla identificou expectativas antigas de texto/cor e o teste de aber
 - `tests/zro.test.ts`: `prompt=create` só em "criar"; produto fora da lista → bloqueio; liberado → acesso; renovação relê o vínculo; conta antiga sem vínculo segue igual. `tests/account.test.ts`: login sem cadastro.
 - `tests/e2e/zro-access.spec.ts` (Supabase falso com `nossom_zro_link`): tela de bloqueio, APIs 401, página pública aberta, liberação na próxima entrada; conta antiga sem vínculo entra normalmente. `tests/e2e/zro-login.spec.ts`: criar conta vai para a Absolute ZRO e o formulário de cadastro sumiu.
 
+## 27/10/2026 · A Z no Início
+
+- A Z (IA da Absolute ZRO) no topo de `/studio`, repasse `/api/zro/ia` com o token `zro.ia` só no servidor (detalhes em
+  [zro-login.md](zro-login.md#a-z-no-início-27102026)). `tests/zro.test.ts` cobre cookie, repasse, recusas, renovação e
+  saída; `tests/e2e/zro-ia.spec.ts` cobre a tela, o "Conectar com Absolute ZRO" e o caminho até a API falsa do HUB
+  (`scripts/test-server.mjs`, `/zro/api/v1/ia`). Sem conta Absolute ZRO real nesta validação.
+
 ## Reproduzir
 
 ```sh

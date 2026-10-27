@@ -7,7 +7,9 @@ import { accountConfigured } from '../account';
 import { requestOrigin } from '../ai-access';
 
 export const ZRO_ISSUER_DEFAULT = 'https://absolutezro.com';
-export const ZRO_SCOPES = 'openid email profile org';
+/** `offline_access` mantém a conversa com a Z depois dos 10 minutos do access token; `zro.ia` abre a API da IA. */
+export const ZRO_IA_SCOPE = 'zro.ia';
+export const ZRO_SCOPES = 'openid email profile org offline_access ' + ZRO_IA_SCOPE;
 
 export function zroIssuer() {
   return (process.env.ZRO_ISSUER?.trim() || ZRO_ISSUER_DEFAULT).replace(/\/$/, '');
