@@ -4657,3 +4657,36 @@ html:not(.is-desktop) .so-desktop {
   overflow-x: hidden;
   overflow-y: auto;
 }
+
+/* ───────────── a Z no topo do Início (app/js/z.js) ───────────── */
+.z-painel {
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: clamp(20px, 2.4vw, 40px) var(--page-x) 0;
+  font-family: var(--display);
+  --zro-ia-altura: min(560px, 62vh);
+  --zro-ia-fundo-gaveta: var(--bg);
+}
+.z-painel[hidden] {
+  display: none;
+}
+.z-entrar {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+.z-entrar[hidden] {
+  display: none;
+}
+/* com a Z no topo, a saudação é dela: o Início não repete o "Bom dia" */
+.tem-z .pn-ola h1 {
+  display: none;
+}
+.tem-z .page-painel {
+  padding-top: 18px;
+}
+@media (max-width: 700px) {
+  .z-painel {
+    --zro-ia-altura: min(500px, 70vh);
+  }
+}

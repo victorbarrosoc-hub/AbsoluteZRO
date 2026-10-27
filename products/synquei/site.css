@@ -2623,3 +2623,15 @@ html.js .reveal.in {
     font-size: 12.5px;
   }
 }
+
+/* a Z já está no app: conversar (principal) e conhecer (secundária) */
+.z-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+@media (max-width: 720px) {
+  .z-botoes {
+    justify-content: center;
+  }
+}

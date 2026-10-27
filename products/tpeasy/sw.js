@@ -1,5 +1,5 @@
 // TPeasy: funciona sem internet no set. Busca a versão nova quando há rede e cai na cópia guardada quando não há.
-const CACHE = "tpeasy-v16";
+const CACHE = "tpeasy-v17";
 const FILES = [
   "/",
   "/site.css",
@@ -19,6 +19,7 @@ const FILES = [
   "/app/js/views.js",
   "/app/js/link.js",
   "/app/js/zro.js",
+  "/app/js/z.js",
   "/app/js/pendencias.js",
   "/app/js/remote.js",
   "/app/remote.html",
@@ -51,7 +52,8 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   const url = new URL(req.url);
-  // /api (conta) nunca passa pelo cache: sempre direto na rede.
+  // /api (conta e a Z, /api/zro/ia) nunca passa pelo cache: sempre direto na rede. O painel da Z vem de
+  // absolutezro.com (outra origem) e também não passa por aqui.
   if (req.method !== "GET" || url.origin !== location.origin || url.pathname.startsWith("/api/")) return;
   e.respondWith(
     caches.open(CACHE).then(async (cache) => {

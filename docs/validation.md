@@ -1168,3 +1168,33 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   suítes (4 de novo sozinhas, como o arnês prevê) e `test:api` 27/27; `node scripts/scan-secrets.mjs` sem segredos.
 - Telas conferidas no Playwright (Chromium), computador 1440 e celular 390, claro e escuro onde há, sem rolagem
   lateral. Não validado: o link absolutezro.com/ia no ar (depende do deploy do HUB).
+
+## A Z no painel inicial do Synquei e do TPeasy (27/10/2026)
+
+- Synquei (site/PWA e app de computador) e TPeasy (site/PWA; não tem app de computador): o `<zro-ia>` de
+  `absolutezro.com/ia/v1/zro-ia.js` é a primeira coisa do Início (Synquei) e de Roteiros (TPeasy), com apoio e quatro
+  sugestões do contexto. O resto da tela continua logo abaixo; no Synquei a Z fica fora da tela que redesenha, então a
+  conversa não se perde, e aparece só no Início. Tema: Synquei segue Ajustes › Tema (`data-theme`), TPeasy o aparelho.
+- Como o token chega à Z: nunca pela página. `api/zro/ia.js` (Synquei) e `api/zro/ia.mjs` (TPeasy) leem o cofre
+  cifrado da sessão (`sq_hub`/`tp_zro_hub`, só em `/api/zro`), renovam o access token se venceu e encaminham para
+  `/api/v1/ia/*` com `Authorization: Bearer`, repassando o NDJSON em pedaços. Só `estado`, `conversas`,
+  `conversas/<id>` e `mensagens`; POST/DELETE de outra origem é recusado. `vercel.json` reescreve
+  `/api/zro/ia/:caminho*` para `?c=` (TPeasy ganhou `vercel.json` só com isso). No computador, `desktop/conta.cjs`
+  (`repassarIa`) faz o mesmo no processo principal; a renovação do refresh token entra numa fila, para o perfil e a Z
+  não gastarem o mesmo token (a Absolute ZRO derrubaria a família). No site a Z só monta depois do `/api/zro/eu`.
+- `zro.ia` entra no scope pedido (web e desktop). Sem sessão, ou login de antes da Z (401 mesmo depois de renovar): o
+  repasse responde 401 com `reconectar`, a Z dispara `zro-ia:sem-login` e o app mostra "Entrar com Absolute ZRO" ou
+  "Entrar de novo para usar a Z" (no computador, pelo login no navegador do sistema).
+- Service worker: `synquei-v20` e `tpeasy-v17` com `app/js/z.js`; `/api/` e outras origens não passam pelo cache.
+  Nenhum dos dois tem CSP: nada a liberar.
+- Homes: "Já no Synquei"/"Já no TPeasy", **Conversar com a Z** (para o painel) e **Conhecer a Z**; texto no feminino.
+- Testes: Synquei `npm test` sem falhas (novos: `tests/zro-ia.test.mjs` com 13 casos e dois em
+  `tests/conta-desktop.test.mjs`: Bearer encaminhado sem cookie do site, 401 sem sessão, token fora da resposta e do
+  disco, NDJSON em pedaços, renovação, sem `zro.ia`, caminhos e origem recusados, perfil e Z ao mesmo tempo); TPeasy
+  `node --test tests/*.test.mjs` 49/49 (8 novos); `xvfb-run -a electron --no-sandbox . --smoke` SMOKE OK; e
+  `node scripts/scan-secrets.mjs` sem segredos.
+- Telas no Playwright com a API simulada (`page.route`): 1440 e 390, claro e escuro, sem conta, "entrar de novo" e uma
+  conversa; no Electron, o Início carregou o script real de absolutezro.com e pediu para entrar (sem conta).
+- Não validado: conversa de verdade com conta real (site e computador) e se o cliente `synquei-desktop` no banco tem
+  `product_id = synquei` e `zro.ia` (cadastrado pelo console; clientes com produto ganham `zro.ia` no cadastro e pela
+  migração 0016). O texto interno do painel ("Pergunte ao Z…") vem do `<zro-ia>` do HUB.

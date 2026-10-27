@@ -10,7 +10,7 @@ import http from 'node:http'
 import { after, afterEach, before, beforeEach, describe, mock, test } from 'node:test'
 
 const CLIENTE = { clientId: 'tpeasy-web', clientSecret: 'zk_segredo_so_de_teste' }
-const ESCOPOS = 'openid email profile org offline_access'
+const ESCOPOS = 'openid email profile org offline_access zro.ia'
 const LIA = { sub: 'zro-111', email: 'Lia@Produtora.com', nome: 'Lia Produtora', org: 'Produtora Lia', produtos: ['tpeasy', 'sobedesce'] }
 
 // ───────────── Absolute ZRO falsa ─────────────
@@ -29,6 +29,9 @@ function iniciarZroFalsa() {
     server: null,
     contas: new Map(), // sub → a conta na Absolute ZRO (o teste muda nome, e-mail e foto aqui)
     atTtl: 600,
+    semIa: false,
+    iaPedidos: [],
+    iaPausa: null,
     fora: false,
     renovacoes: 0,
     userinfos: 0,
@@ -164,6 +167,26 @@ function iniciarZroFalsa() {
       }
       return responder(res, 200, {})
     }
+    // A Z (/api/v1/ia/*): só com Bearer válido. `semIa`: token sem zro.ia (login de antes da Z) → 401, como o HUB.
+    // /mensagens responde NDJSON em dois pedaços; `iaPausa` segura o segundo.
+    if (url.pathname.startsWith('/api/v1/ia/')) {
+      const auth = String(req.headers.authorization ?? '')
+      let corpo = ''
+      for await (const c of req) corpo += c
+      const caminho = url.pathname.slice('/api/v1/ia/'.length)
+      zro.iaPedidos.push({ metodo: req.method, caminho, auth, corpo, cookie: req.headers.cookie ?? null })
+      const a = acessos.get(auth.replace(/^Bearer /, ''))
+      if (!a || a.exp < Date.now() || zro.semIa) return responder(res, 401, { error: 'unauthorized' })
+      if (caminho === 'estado') return responder(res, 200, { ligada: true, nome: 'Lia', produto: 'tpeasy', creditos: { usados: 0, limite: 100, renova_em: '2026-11-01T00:00:00.000Z' } })
+      if (caminho === 'conversas') return responder(res, 200, { conversas: [] })
+      if (caminho === 'mensagens' && req.method === 'POST') {
+        res.writeHead(200, { 'content-type': 'application/x-ndjson; charset=utf-8' })
+        res.write(`${JSON.stringify({ tipo: 'conversa', id: 'c-1' })}\n${JSON.stringify({ tipo: 'texto', t: 'Olá, ' })}\n`)
+        if (zro.iaPausa) await zro.iaPausa
+        return res.end(`${JSON.stringify({ tipo: 'texto', t: 'tudo certo.' })}\n${JSON.stringify({ tipo: 'fim', creditos: 1 })}\n`)
+      }
+      return responder(res, 404, { error: 'not_found' })
+    }
     responder(res, 404, { error: 'not_found' })
   })
   return new Promise((ok) =>
@@ -182,9 +205,10 @@ let lib
 
 async function iniciarApp() {
   const rotas = {}
-  for (const nome of ['entrar', 'callback', 'eu', 'sair']) rotas[`/api/zro/${nome}`] = (await import(`../api/zro/${nome}.mjs`)).default
+  for (const nome of ['entrar', 'callback', 'eu', 'sair', 'ia']) rotas[`/api/zro/${nome}`] = (await import(`../api/zro/${nome}.mjs`)).default
   const server = http.createServer(async (req, res) => {
-    const rota = rotas[new URL(req.url, 'http://x').pathname]
+    const caminho = new URL(req.url, 'http://x').pathname
+    const rota = rotas[caminho] || (caminho.startsWith('/api/zro/ia/') ? rotas['/api/zro/ia'] : null)
     if (!rota) {
       res.statusCode = 404
       return res.end()
@@ -590,5 +614,105 @@ describe('perfil único (nome, e-mail e foto da conta Absolute ZRO)', () => {
     assert.equal(res.status, 200)
     assert.equal(zro.revogados, 1)
     assert.equal(valorCookie(res, 'tp_zro_hub'), '')
+  })
+})
+
+describe('a Z (repasse /api/zro/ia)', () => {
+  beforeEach(() => Object.assign(zro, { atTtl: 600, fora: false, semIa: false, iaPedidos: [], iaPausa: null }))
+  const sessao = async () => {
+    const f = await fluxo()
+    return `tp_zro=${encodeURIComponent(f.sessao)}; tp_zro_hub=${encodeURIComponent(f.hub)}`
+  }
+
+  test('o login pede a Z (zro.ia)', async () => {
+    const ida = await ir('/api/zro/entrar')
+    assert.ok(new URL(ida.headers.get('location')).searchParams.get('scope').split(' ').includes('zro.ia'))
+  })
+
+  test('sem sessão: 401 com reconectar, e nada chega ao HUB', async () => {
+    const r = await ir('/api/zro/ia/estado')
+    assert.equal(r.status, 401)
+    assert.equal((await r.json()).reconectar, true)
+    assert.equal(zro.iaPedidos.length, 0)
+  })
+
+  test('encaminha com o Bearer da sessão, sem cookie do app, e o token não volta para a página', async () => {
+    const cookie = await sessao()
+    const r = await ir('/api/zro/ia/estado', { cookie })
+    assert.equal(r.status, 200)
+    assert.equal(r.headers.get('cache-control'), 'no-store')
+    const texto = await r.text()
+    assert.equal(JSON.parse(texto).produto, 'tpeasy')
+    const p = zro.iaPedidos.at(-1)
+    assert.match(p.auth, /^Bearer at_[0-9a-f]{32}$/)
+    assert.equal(p.cookie, null)
+    assert.ok(!texto.includes(p.auth.slice(7)))
+    assert.equal((await ir('/api/zro/ia?c=conversas', { cookie })).status, 200, 'a reescrita da Vercel (?c=) também serve')
+  })
+
+  test('/mensagens: o NDJSON chega em pedaços, sem esperar o fim', async () => {
+    const cookie = await sessao()
+    let soltar
+    zro.iaPausa = new Promise((ok) => (soltar = ok))
+    const r = await fetch(`${APP}/api/zro/ia/mensagens`, { method: 'POST', headers: { cookie, origin: APP, 'content-type': 'application/json' }, body: JSON.stringify({ conversa: null, texto: 'Oi, Z' }) })
+    assert.equal(r.status, 200)
+    const leitor = r.body.getReader()
+    const dec = new TextDecoder()
+    let primeiro = ''
+    while (!primeiro.includes('Olá')) {
+      const { value, done } = await leitor.read()
+      assert.ok(!done)
+      primeiro += dec.decode(value, { stream: true })
+    }
+    assert.ok(!primeiro.includes('"fim"'))
+    soltar()
+    let resto = ''
+    for (;;) {
+      const { value, done } = await leitor.read()
+      if (done) break
+      resto += dec.decode(value, { stream: true })
+    }
+    assert.match(resto, /"fim"/)
+    assert.equal(JSON.parse(zro.iaPedidos.at(-1).corpo).texto, 'Oi, Z')
+  })
+
+  test('outra origem e outros caminhos não passam', async () => {
+    const cookie = await sessao()
+    const r = await fetch(`${APP}/api/zro/ia/mensagens`, { method: 'POST', headers: { cookie, origin: 'https://malicioso.exemplo' }, body: '{}' })
+    assert.equal(r.status, 403)
+    for (const c of ['admin', 'conversas/a%2Fb', '']) assert.equal((await ir(`/api/zro/ia/${c}`, { cookie })).status, 404, c)
+    assert.equal((await ir('/api/zro/ia/estado', { cookie, method: 'DELETE' })).status, 405)
+    assert.equal(zro.iaPedidos.length, 0)
+  })
+
+  test('token vencido: renova e grava o cofre novo (HttpOnly)', async () => {
+    zro.atTtl = 10
+    const cookie = await sessao()
+    const antes = zro.renovacoes
+    const r = await ir('/api/zro/ia/estado', { cookie })
+    assert.equal(r.status, 200)
+    assert.equal(zro.renovacoes, antes + 1)
+    assert.match(setCookies(r).find((c) => c.startsWith('tp_zro_hub=')), /HttpOnly/)
+  })
+
+  test('login de antes da Z (sem zro.ia): 401 com reconectar', async () => {
+    const cookie = await sessao()
+    zro.semIa = true
+    const r = await ir('/api/zro/ia/estado', { cookie })
+    assert.equal(r.status, 401)
+    assert.equal((await r.json()).reconectar, true)
+  })
+
+  test('o painel usa o script oficial e o repasse do app; o service worker não guarda a Z', async () => {
+    const { readFileSync } = await import('node:fs')
+    const z = readFileSync(new URL('../app/js/z.js', import.meta.url), 'utf8')
+    assert.match(z, /https:\/\/absolutezro\.com\/ia\/v1\/zro-ia\.js/)
+    assert.match(z, /setAttribute\("api", "\/api\/zro\/ia"\)/)
+    assert.ok(!/\.token\s*=/.test(z))
+    const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
+    assert.match(sw, /tpeasy-v17/)
+    assert.match(sw, /url\.pathname\.startsWith\("\/api\/"\)/)
+    const v = JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'))
+    assert.ok(v.rewrites.some((r) => r.source === '/api/zro/ia/:caminho*' && r.destination === '/api/zro/ia?c=:caminho*'))
   })
 })

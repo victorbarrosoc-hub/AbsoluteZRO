@@ -23,6 +23,7 @@ import sfxMontagem from './views/sfx.js'
 import { iniciarOrganizar, O as ORG } from './organizar.js'
 import { cartaoPlano, abrirPlanos } from './plano.js'
 import { iniciarConta } from './conta.js'
+import { iniciarZ } from './z.js'
 import { pendencias, numeroBalao, rotuloBalao } from './pendencias.js'
 
 const VIEWS = { inicio, projetos, midia, sincronizar, linha, exportar, formatos, ajustes, organizar, sfx: sfxMontagem }
@@ -79,6 +80,9 @@ function render() {
     countUp(root)
   } else scrollTo(0, keepScroll)
   lastRoute = route
+  // a Z fica fora da tela que redesenha (a conversa não se perde): aparece só no Início
+  const z = $('#zPainel')
+  if (z) z.hidden = route !== 'inicio' || !z.querySelector('zro-ia')
   hideTip()
   chrome()
 }
@@ -542,7 +546,13 @@ document.addEventListener('synquei:conta-mudou', () => {
   if (pc) pc.innerHTML = cartaoPlano()
   if (S.route === 'ajustes') render()
 })
+// a Z entra no topo do Início depois de saber da conta (app/js/z.js)
 iniciarConta()
+  .then(iniciarZ)
+  .then(() => {
+    const z = $('#zPainel')
+    if (z) z.hidden = S.route !== 'inicio' || !z.querySelector('zro-ia')
+  })
 
 if ('serviceWorker' in navigator && !window.synqueiDesktop && location.protocol === 'https:') {
   navigator.serviceWorker.register('/sw.js').catch(() => {})
