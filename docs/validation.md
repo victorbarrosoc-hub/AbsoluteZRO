@@ -848,6 +848,21 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   grade com 6 looks → baixar `revela-zro-filmes-33.cube` → apagar). `products/finishing`: `npm test` 96/96.
 - Não validado: o `.cube` do look novo e de um "meu look" no Resolve, em vídeo.
 
+## Revela como app no iPhone (27/10/2026)
+
+- Pedido do titular: a experiência do computador no celular, a partir do Compartilhar do Safari. O iOS não deixa site
+  virar destino do Compartilhar; o caminho é **Adicionar à Tela de Início**, que fica no mesmo menu.
+- `manifest.webmanifest` (standalone, abre em `/lut`, atalhos das quatro ferramentas), `apple-touch-icon` 180 e ícones
+  192/512 (`scripts/icones-app.mjs`), metas de app do iOS e barra de status translúcida em todas as páginas; o topo, o
+  menu, o início e o entrar respeitam a área da hora e da bateria. `theme-color` segue o tema (era escuro no claro).
+- Menu: "Instalar o app" (folha com Compartilhar → Adicionar à Tela de Início no iPhone; pedido do Chrome no resto).
+- Bug do menu: o ouvinte de troca de aba estava colado 4 vezes, três delas dentro das funções do botão do menu
+  (cada abrir/recolher registrava mais um). Agora um só.
+- Testes no Chromium: manifesto e tamanhos reais dos PNG, metas nas seis páginas, folha de instalar com o
+  user-agent do iPhone, item escondido no computador, menu aberto e recolhido 4 vezes seguindo a aba.
+  `products/finishing`: `npm test` 100/100.
+- Não validado: num iPhone de verdade (ícone, barra de status, login pela conta Absolute ZRO dentro do app instalado).
+
 ## Revela no celular: .cube, tela do Converter, login e conversão (27/10/2026)
 
 - `.cube` baixava como `.cube.txt` no iPhone: o Safari põe `.txt` em arquivo `text/plain`. Downloads de `.cube` e

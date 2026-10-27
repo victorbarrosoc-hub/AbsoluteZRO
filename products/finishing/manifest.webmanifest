@@ -1,0 +1,27 @@
+{
+  "id": "/lut",
+  "name": "Revela",
+  "short_name": "Revela",
+  "description": "LUT, CST, entrega e conversão de vídeo, no aparelho.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "/lut",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5f5f7",
+  "theme_color": "#f5f5f7",
+  "categories": ["photo", "productivity", "utilities"],
+  "icons": [
+    { "src": "/marca/app/revela-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/marca/app/revela-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/marca/app/revela-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/marca/revela-icone.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "LUT", "url": "/lut", "icons": [{ "src": "/marca/app/revela-192.png", "sizes": "192x192" }] },
+    { "name": "CST", "url": "/cst", "icons": [{ "src": "/marca/app/revela-192.png", "sizes": "192x192" }] },
+    { "name": "Entrega", "url": "/entrega", "icons": [{ "src": "/marca/app/revela-192.png", "sizes": "192x192" }] },
+    { "name": "Converter", "url": "/converter", "icons": [{ "src": "/marca/app/revela-192.png", "sizes": "192x192" }] }
+  ]
+}

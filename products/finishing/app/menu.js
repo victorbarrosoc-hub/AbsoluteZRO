@@ -76,7 +76,52 @@ botaoTema.addEventListener('click', () => {
   pintarTema()
 })
 pintarTema()
-menu.append(el('div', { className: 'menu-pe' }, botaoTema))
+// instalar: o app da Revela no iPhone vem do Compartilhar do Safari (Adicionar à Tela de Início); no Chrome, do pedido
+// do próprio navegador. Já instalado (aberto da Tela de Início), o item some.
+const instalado = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true
+const ehIphone = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+const botaoInstalar = el('button', { type: 'button', className: 'menu-item menu-instalar', title: 'Instalar o app', hidden: true })
+botaoInstalar.append(icone('instalar'), el('span', { className: 'menu-nome', textContent: 'Instalar o app' }))
+let pedido = null
+addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault()
+  pedido = e
+  botaoInstalar.hidden = instalado
+})
+addEventListener('appinstalled', () => (botaoInstalar.hidden = true))
+if (ehIphone && !instalado) botaoInstalar.hidden = false
+
+function folhaInstalar() {
+  const passo = (n, ...filhos) => el('li', {}, el('span', { className: 'instalar-n', textContent: n }), ...filhos)
+  const fechar = el('button', { type: 'button', className: 'vidro vidro--tinta', textContent: 'Entendi' })
+  const folha = el(
+    'dialog',
+    { className: 'instalar', ariaLabel: 'Instalar a Revela' },
+    el('img', { src: 'marca/app/revela-192.png', alt: '', width: 64, height: 64, className: 'instalar-icone' }),
+    el('h2', { textContent: 'Revela na Tela de Início' }),
+    el(
+      'ol',
+      {},
+      passo('1', 'Toque em ', el('span', { className: 'instalar-chip' }, svg(ICONES.compartilhar), 'Compartilhar')),
+      passo('2', el('span', { className: 'instalar-chip' }, svg(ICONES.instalar), 'Adicionar à Tela de Início')),
+    ),
+    fechar,
+  )
+  fechar.addEventListener('click', () => folha.close())
+  folha.addEventListener('close', () => folha.remove())
+  folha.addEventListener('click', (e) => e.target === folha && folha.close())
+  document.body.append(folha)
+  folha.showModal()
+}
+botaoInstalar.addEventListener('click', async () => {
+  if (pedido) {
+    pedido.prompt()
+    await pedido.userChoice.catch(() => null)
+    pedido = null
+    botaoInstalar.hidden = true
+  } else folhaInstalar()
+})
+menu.append(el('div', { className: 'menu-pe' }, botaoInstalar, botaoTema))
 
 const fundo = el('div', { className: 'menu-fundo', hidden: true })
 const alternarTopo = el('button', { type: 'button', className: 'menu-botao menu-botao--topo', ariaLabel: 'Abrir menu' }, icone('menu'))
@@ -122,14 +167,6 @@ function abrirGaveta(abrir) {
   document.body.style.overflow = abrir ? 'hidden' : ''
   aplicar()
 
-// troca de aba sem recarregar (navegar.js): o menu fica, só a marca do item muda; no celular a gaveta fecha
-addEventListener('revela:pagina', (e) => {
-  for (const a of menu.querySelectorAll('.menu-item[href]')) {
-    if (paginaDe(a.href) === e.detail) a.setAttribute('aria-current', 'page')
-    else a.removeAttribute('aria-current')
-  }
-  if (gavetaAberta) abrirGaveta(false)
-})
   if (abrir) menu.querySelector('[aria-current], .menu-item')?.focus()
   else alternarTopo.focus()
 }
@@ -139,14 +176,6 @@ alternarRail.addEventListener('click', () => {
     gravar(!ler())
     aplicar()
 
-// troca de aba sem recarregar (navegar.js): o menu fica, só a marca do item muda; no celular a gaveta fecha
-addEventListener('revela:pagina', (e) => {
-  for (const a of menu.querySelectorAll('.menu-item[href]')) {
-    if (paginaDe(a.href) === e.detail) a.setAttribute('aria-current', 'page')
-    else a.removeAttribute('aria-current')
-  }
-  if (gavetaAberta) abrirGaveta(false)
-})
   } else abrirGaveta(false)
 })
 alternarTopo.addEventListener('click', () => abrirGaveta(!gavetaAberta))
@@ -158,14 +187,6 @@ LARGO.addEventListener('change', () => {
   if (gavetaAberta) abrirGaveta(false)
   else aplicar()
 
-// troca de aba sem recarregar (navegar.js): o menu fica, só a marca do item muda; no celular a gaveta fecha
-addEventListener('revela:pagina', (e) => {
-  for (const a of menu.querySelectorAll('.menu-item[href]')) {
-    if (paginaDe(a.href) === e.detail) a.setAttribute('aria-current', 'page')
-    else a.removeAttribute('aria-current')
-  }
-  if (gavetaAberta) abrirGaveta(false)
-})
 })
 aplicar()
 
