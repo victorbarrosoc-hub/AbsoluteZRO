@@ -2860,6 +2860,11 @@ body.sem-rodape{padding-bottom:0}
 .bg{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;
   background:var(--magenta);color:var(--grafite);font-family:var(--mono);font-size:9.5px;line-height:1;font-weight:700}
 .tab .bg{margin-left:7px;vertical-align:1px}
+/* balão (27/out): número tabular e uma entrada curta, como no SOBEDESCE e
+   no HUB; quem desligou movimento recebe o balão parado */
+.bg{font-variant-numeric:tabular-nums;animation:balao .32s cubic-bezier(.32,.72,0,1) both}
+@keyframes balao{from{opacity:0;transform:scale(.6)}}
+@media(prefers-reduced-motion:reduce){ .bg{animation:none} }
 .tab[aria-current="true"] .bg{background:var(--grafite);color:var(--ciano)}
 .prop{background:var(--grafite2);border:1px solid var(--linha);border-radius:12px;padding:20px;margin-bottom:14px}
 .prop.novo{border-color:var(--novo-borda);background:var(--novo-fundo)}
@@ -10616,6 +10621,7 @@ function pintarGaveta(){
     bt.onclick=()=>{ abrirSanfMN(sf,bt.getAttribute("aria-expanded")!=="true",true); som("leve") };
   });
   pintarBadgeMsg();   /* só agora: o contador nasce junto com a lista acima */
+  pintarBaloes();     /* e os balões, pelo mesmo motivo */
 }
 function abrirGaveta(){ pintarGaveta(); v("gaveta").classList.add("on"); v("velo").classList.add("on");
   v("gaveta").setAttribute("aria-hidden","false"); v("menu-bt").setAttribute("aria-expanded","true");
@@ -14617,9 +14623,96 @@ const ROTP={novo:"Esperando você",aceita:"Aceita",recusada:"Recusada",perdida:"
    faz desconfiar de uma tela. */
 const esperaJobs=()=>MODO==="freela"?PROPOSTAS.filter(x=>x.status==="novo").length:0;
 const esperandoVoce=()=>esperaJobs()+equipRecebidas().length;
-function drawBadge(){
-  const n=esperandoVoce();
-  [v("bg-top"),v("bg-bot")].forEach(el=>{el.hidden=!n;el.textContent=n});
+function drawBadge(){ pintarBaloes() }
+
+/* ============ OS BALÕES (27/out) ============
+   Pedido do titular para o ecossistema Absolute ZRO: aba com alguma coisa
+   esperando uma ação da pessoa mostra a quantidade num balão, como o
+   SOBEDESCE e o HUB. A régua é a do "esperando você" lá de cima: só conta o
+   que a PRÓPRIA tela já pede com botão. Nada de número de fachada.
+
+     Propostas  consulta de job "Esperando você" (freela) + proposta de valor
+                num anúncio meu do brechó (`equipRecebidas`) — a mesma conta
+                do número grande da aba, que já existia;
+     Jobs       contrato que falta EU assinar ("Assinar"), entrega que quem
+                contrata precisa conferir ("Recebi, liberar") e job liberado
+                sem a minha avaliação ("Avaliar") — tudo de `linhaContrato`,
+                e só a partir da Fase 2, que é quando o contrato existe;
+     Brechó     pedido de aluguel numa peça minha ("Topar" / "Recusar").
+
+   Feed, Agenda, Equipe, Vagas, Aprender e o resto não têm nada que dependa
+   da pessoa: não ganham balão. A Guilda já tem o ponto de conversa não lida
+   (`#bg-gui`), que continua como está.
+
+   ⚠️ `contarPendencias` É PURA: recebe o estado e devolve {aba:{n,t}}. A
+   suíte `baloes` chama com estado montado à mão; `pendenciasAbas` é quem lê
+   as variáveis da página. */
+function contarPendencias(e){
+  e=e||{};
+  const out={}, pl2=(n,um,v2)=>n+" "+(n===1?um:v2);
+  const nJ=e.jobsNovos||0, nE=e.equipRecebidas||0;
+  if(nJ+nE) out.propostas={n:nJ+nE,t:[nJ?pl2(nJ,"consulta de job esperando você","consultas de job esperando você"):"",
+    nE?pl2(nE,"oferta no brechó esperando você","ofertas no brechó esperando você"):""].filter(Boolean).join(" · ")};
+  let ass=0,conf=0,aval=0;
+  for(const x of e.vagas||[]){
+    if(x.fase==="contrato"&&!x.jaAssinei) ass++;
+    else if(x.fase==="conferir"&&e.prod) conf++;
+    else if(x.fase==="liberado"&&!x.avaliado) aval++;
+  }
+  if(ass+conf+aval) out.jobs={n:ass+conf+aval,t:[ass?pl2(ass,"contrato para assinar","contratos para assinar"):"",
+    conf?pl2(conf,"entrega para conferir","entregas para conferir"):"",
+    aval?pl2(aval,"avaliação para fazer","avaliações para fazer"):""].filter(Boolean).join(" · ")};
+  const nP=e.pedidosAluguel||0;
+  if(nP) out.brecho={n:nP,t:pl2(nP,"pedido de aluguel esperando você","pedidos de aluguel esperando você")};
+  return out;
+}
+const numeroBalao=n=>n>99?"99+":String(n);
+const rotuloBalao=n=>n+" "+(n===1?"pendência":"pendências");
+/* cada parte num try: na abertura o script ainda não chegou em ESCALAS,
+   AVALIACOES e PEDIDOS (let/const mais abaixo), e um balão que estoura não
+   pode levar a barra junto */
+function pendenciasAbas(){
+  const prod=MODO==="contratante", est={prod};
+  try{ est.jobsNovos=esperaJobs(); est.equipRecebidas=equipRecebidas().length }catch(e){}
+  try{
+    est.vagas=faseTem(2)?meusJobs().flatMap(j=>(prod?j.equipe:j.equipe.filter(x=>x.quem===EU.id)).map(x=>({
+      fase:faseVaga(x), jaAssinei:!!(prod?x.assProd:x.assFreela),
+      avaliado:jaAvaliei(j.off,prod?x.quem:"prod",prod?"prod":"freela")}))):[];
+  }catch(e){}
+  try{ est.pedidosAluguel=PEDIDOS.length }catch(e){}
+  return contarPendencias(est);
+}
+/* onde mora o balão de cada aba: a lateral (e a doca), a barra de baixo e a
+   gaveta. Propostas já tinha os dela (#bg-top, #bg-bot); as outras ganham um
+   `.bg[data-balao]` na primeira vez que precisam. */
+function hostsBalao(t){
+  return [...document.querySelectorAll('.tabs .tab[data-tab="'+t+'"], .bottombar .bt[data-tab="'+t+'"], '+
+    '#gaveta .gitem[data-ir="'+t+'"], #gaveta [data-sanf="'+t+'"] > .mn-abre')];
+}
+function pintarBaloes(){
+  let P={};
+  try{ P=pendenciasAbas() }catch(e){}
+  ["propostas","jobs","brecho"].forEach(t=>{
+    const pd=P[t], n=pd?numeroBalao(pd.n):"";
+    hostsBalao(t).forEach(h=>{
+      let b=h.querySelector(".bg[data-balao], #bg-top, #bg-bot");
+      /* a gaveta de Propostas tem o contador de CONVERSA (#g-msg-bg): ele
+         fica como está, e o balão não entra por cima dele */
+      if(!b&&h.querySelector("#g-msg-bg")) return;
+      if(!b){
+        if(!pd) return;
+        b=document.createElement("span"); b.className="bg"; b.dataset.balao=t; b.hidden=true;
+        const chev=h.querySelector(".mn-chev"); chev?h.insertBefore(b,chev):h.appendChild(b);
+      }
+      if(b.textContent!==n) b.textContent=n;
+      b.hidden=!pd;
+      if(pd) b.setAttribute("aria-label",rotuloBalao(pd.n)); else b.removeAttribute("aria-label");
+      if(!("titOrig" in h.dataset)) h.dataset.titOrig=h.getAttribute("title")||"";
+      const orig=h.dataset.titOrig;
+      if(pd) h.title=(orig?orig+" · ":"")+pd.t;
+      else if(orig) h.title=orig; else h.removeAttribute("title");
+    });
+  });
 }
 function cardProposta(pr){
   const d=new Date(pr.data+"T00:00:00");
@@ -20088,6 +20181,7 @@ zonaDrop(v("ovl-doc"),fs=>{ if(!v("dc-arq").hidden) porDocArquivo(fs[0]) });
 v("dc-ok").onclick=salvarDoc;
 
 function drawJobs(){
+  pintarBaloes();   /* assinar, conferir e avaliar mudam por aqui */
   const list=meusJobs(), prod=MODO==="contratante";
   v("jb-rot").textContent=prod?"O dia da equipe":"O dia do job";
   v("jb-tit").textContent=prod?"Jobs da sua agenda":"Meus jobs";
@@ -20900,6 +20994,7 @@ function pedidoChegou(pd,sim){
     sub:pl(pd.dias,"dia")+" · "+brl(pd.valor)+(pd.job?" · "+pd.job:""),
     tipo:"chama",icone:"◈",som:"chegou",ir:"brecho",dur:9000,sim:!!sim});
   if(BPANEL==="inv") drawInventario();
+  pintarBaloes();
 }
 function simularPedido(sim){
   const meus=invItens().filter(x=>x.locacao&&statusInv(x)==="guardado");
@@ -20929,11 +21024,11 @@ function aceitarPedido(id){
   avisar({t:"Combinado com "+titulo((c||{}).nome||""),
     sub:pd.t+" · agora vale formalizar em contrato antes de entregar",
     tipo:"bom",icone:"✓"});
-  drawInventario(); drawCatalogoAluguel();
+  drawInventario(); drawCatalogoAluguel(); pintarBaloes();
 }
 function recusarPedido(id){
   PEDIDOS=PEDIDOS.filter(x=>x.id!==id);
-  som("nao"); drawInventario();
+  som("nao"); drawInventario(); pintarBaloes();
 }
 
 /* semeia do que a conta já declarou — nada inventado */
@@ -27198,7 +27293,7 @@ const FBK_KEY=/*__WEB3FORMS_KEY__*/"";   /* Web3Forms → carrodofreela@gmail.co
    suporte: durante os testes a primeira pergunta de todo relato e "qual
    versao voce esta usando?", e sem ela nao da para saber se o defeito ja
    foi consertado ou se a pessoa esta com um arquivo velho no cache. */
-const VERSAO="27/out · 1";
+const VERSAO="27/out · 2";
 /* ?diag na URL faz a linha de contexto do suporte mostrar as medidas do
    aparelho. Existe porque daqui não dá para inspecionar o Safari do
    Victor: em vez de adivinhar uma quarta vez, ele abre com ?diag, toca no
@@ -27370,6 +27465,7 @@ function ligarTituloTopo(){
   _titObs.observe(h);
 }
 function drawLadoPe(){
+  try{ pintarBaloes() }catch(e){}
   try{ pintarGruposLado() }catch(e){}
   try{ pintarTipoPlano() }catch(e){}
   try{ ligarTituloTopo() }catch(e){}

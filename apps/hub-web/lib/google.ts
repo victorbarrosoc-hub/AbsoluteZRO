@@ -10,6 +10,15 @@ export function googleConfig(): GoogleConfig | null {
   return { clientId, clientSecret, redirectUri: `${appOrigin.replace(/\/$/, '')}/entrar/google/retorno` }
 }
 
+/** Mensagens do `?erro=` que a volta do Google (e a conta suspensa) deixa nas telas de entrar. */
+const GOOGLE_ERROS: Record<string, string> = {
+  google: 'Não deu para entrar com o Google. Tente de novo.',
+  google_cancelado: 'Entrada com o Google cancelada.',
+  google_email: 'Seu e-mail no Google ainda não está confirmado.',
+  suspensa: 'Esta conta está suspensa. Fale com o suporte.',
+}
+export const googleErro = (codigo: string | undefined): string | undefined => (codigo ? (GOOGLE_ERROS[codigo] ?? GOOGLE_ERROS.google) : undefined)
+
 export const GOOGLE_COOKIE = 'zro_google'
 export const googleCookieOptions = { httpOnly: true, secure: isProduction, sameSite: 'lax' as const, path: '/entrar/google', maxAge: 600 }
 

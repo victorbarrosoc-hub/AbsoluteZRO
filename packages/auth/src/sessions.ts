@@ -29,6 +29,8 @@ export type CurrentSession = {
   expiresAt: Date
   /** Hora do login (auth_time do login único). */
   createdAt: Date
+  /** Só no pedido com o token de um app da família: qual app (e de qual produto) chamou. */
+  app?: { clientId: string; productId: string | null }
 }
 
 export type Authenticated = { user: SessionUser; session: CurrentSession }

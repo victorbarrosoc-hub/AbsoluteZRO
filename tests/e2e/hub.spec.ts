@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { expect, test, type Page } from '@playwright/test'
 import postgres from 'postgres'
 import { signPayload } from '@zro/billing'
+import { criarConta, entrar, esperarConversa } from './conversa'
 
 const DB = process.env.E2E_DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/zro_e2e_test'
 
@@ -13,10 +14,7 @@ const PASS = 'senha-e2e-segura-1'
 async function signupAndOrg(page: Page, orgName = 'Produtora E2E', opts: { semPlano?: boolean } = {}) {
   const address = email()
   await page.goto('/criar-conta')
-  await page.getByLabel('Nome').fill('Pessoa E2E')
-  await page.getByLabel('E-mail').fill(address)
-  await page.getByLabel('Senha').fill(PASS)
-  await page.getByRole('button', { name: 'Criar conta' }).click()
+  await criarConta(page, { nome: 'Pessoa E2E', email: address, senha: PASS })
   await page.waitForURL('**/boas-vindas')
   await page.getByLabel('Nome').fill(orgName)
   await page.getByRole('button', { name: 'Criar e continuar' }).click()
@@ -29,6 +27,7 @@ async function signupAndOrg(page: Page, orgName = 'Produtora E2E', opts: { semPl
               where s.provider = 'free' and s.org_id = m.org_id and m.user_id = u.id and u.email = ${address}`
     await sql.end()
   }
+  return address
 }
 
 test('conta nova recebe as ferramentas do plano grátis', async ({ page }) => {
@@ -41,6 +40,51 @@ test('conta nova recebe as ferramentas do plano grátis', async ({ page }) => {
 test('área logada exige sessão', async ({ page }) => {
   await page.goto('/projetos')
   await expect(page).toHaveURL(/\/entrar$/)
+})
+
+test('entrar é uma conversa: e-mail, senha errada volta a ouvir, senha certa abre o destino', async ({ page }) => {
+  const address = await signupAndOrg(page, 'Org conversa')
+  await page.context().clearCookies()
+
+  await page.goto('/entrar?next=%2Fperfil')
+  await esperarConversa(page)
+  // Uma pergunta por vez: a senha só aparece depois do e-mail, e nada é consultado antes do envio final.
+  await expect(page.locator('.conversa__passo[data-ativo="true"] input')).toHaveAttribute('autocomplete', 'email')
+  await expect(page.locator('.conversa__passo:has(#password)')).toHaveAttribute('inert', '')
+  await page.getByRole('button', { name: 'Continuar' }).click()
+  await expect(page.locator('.conversa__erro')).toHaveText('Digite seu e-mail.')
+  await page.getByLabel('Qual é o seu e-mail?').fill(address)
+  await page.getByRole('button', { name: 'Continuar' }).click()
+  await expect(page.getByLabel('Sua senha')).toBeFocused()
+  await expect(page.getByRole('button', { name: `${address}. Trocar e-mail` })).toBeVisible()
+  await page.getByLabel('Sua senha').fill('senha-errada-123')
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click()
+  await expect(page.locator('.conversa__erro')).toHaveText('E-mail ou senha incorretos.')
+  await expect(page.locator('.conversa-orbe')).toHaveAttribute('data-estado', 'ouvindo')
+  await expect(page.getByLabel('Sua senha')).toBeFocused()
+  await page.getByLabel('Sua senha').fill(PASS)
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Conectado.' })).toBeVisible()
+  await page.waitForURL('**/perfil')
+
+  // De novo, pelo caminho mais curto
+  await page.context().clearCookies()
+  await page.goto('/entrar')
+  await entrar(page, address, PASS)
+  await page.waitForURL('**/inicio')
+})
+
+test('entrar sem JavaScript: todos os campos aparecem e o form posta direto', async ({ browser, baseURL }) => {
+  const ctx = await browser.newContext({ javaScriptEnabled: false, baseURL })
+  const page = await ctx.newPage()
+  await page.goto('/criar-conta')
+  await page.getByLabel('Qual é o seu e-mail?').fill(email())
+  await page.getByLabel('Como podemos te chamar?').fill('Pessoa Sem JS')
+  await page.getByLabel('Crie uma senha').fill(PASS)
+  // Enter envia o form inteiro (sem JavaScript a checagem de estabilidade do clique não roda bem no Playwright)
+  await page.getByLabel('Crie uma senha').press('Enter')
+  await page.waitForURL('**/boas-vindas')
+  await ctx.close()
 })
 
 test('cadastro → organização → projeto com Ciclo do O e alternativa em lista', async ({ page }) => {

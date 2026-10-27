@@ -1146,6 +1146,41 @@ html.has-prompter .tabbar {
     transform: scale(0.88);
   }
 }
+/* balão: o que espera uma ação da pessoa nesta aba (app/js/pendencias.js), no desenho do SOBEDESCE e do HUB.
+   Na barra de abas ele senta no canto do ícone, como no iOS. */
+.tab {
+  position: relative;
+}
+.balao {
+  position: absolute;
+  top: 5px;
+  left: calc(50% + 6px);
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--surface);
+  box-shadow: 0 0 0 2px var(--tab-glass);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-grid;
+  place-items: center;
+  font-variant-numeric: tabular-nums;
+  animation: balao-entra 0.32s var(--spring) both;
+}
+@keyframes balao-entra {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .balao {
+    animation: none;
+  }
+}
 
 /* ───────────── editor ───────────── */
 .page {

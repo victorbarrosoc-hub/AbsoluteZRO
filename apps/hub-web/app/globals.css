@@ -3855,98 +3855,13 @@ a.pstrip__card:focus-visible .pstrip__go {
   }
 }
 
-/* Login do app: o símbolo à esquerda, o cartão à direita. */
+/* Login do app (/app/entrar): a mesma conversa do /entrar, centrada na tela cheia. */
 .plogin {
   min-height: 100svh;
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-  align-items: center;
-  gap: clamp(24px, 5vw, 80px);
-  padding: clamp(24px, 5vw, 72px);
+  place-items: center;
+  padding: clamp(24px, 5vw, 72px) 16px;
   overflow: hidden;
-}
-.plogin__marca {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  gap: 22px;
-  color: var(--text-strong);
-}
-.plogin__halo {
-  position: absolute;
-  top: 38%;
-  left: 50%;
-  width: min(70vmin, 620px);
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgb(255 255 255 / 0.95), transparent 62%);
-  pointer-events: none;
-}
-:root[data-theme='dark'] .plogin__halo {
-  background: radial-gradient(circle, rgb(255 255 255 / 0.08), transparent 62%);
-}
-.plogin__simbolo {
-  position: relative;
-  width: clamp(140px, 22vw, 260px);
-  height: auto;
-  translate: 6% 0;
-  color: var(--text-strong);
-  filter: drop-shadow(0 20px 40px rgb(0 0 0 / 0.14));
-}
-.plogin__nome {
-  position: relative;
-  color: var(--text-strong);
-}
-.plogin__frase {
-  position: relative;
-  color: var(--text-faint);
-}
-.plogin__cartao {
-  width: min(100%, 420px);
-  display: grid;
-  gap: 16px;
-  padding: clamp(24px, 3vw, 36px);
-  border-radius: 28px;
-  background: var(--glass-fill), var(--surface);
-  box-shadow: var(--shadow-float);
-}
-.plogin__titulo {
-  font-size: clamp(1.8rem, 3vw, 2.4rem);
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-  font-weight: 300;
-  color: var(--text-strong);
-}
-.plogin__titulo strong {
-  font-weight: 800;
-}
-.plogin__apoio {
-  margin-top: -8px;
-  color: var(--text-faint);
-}
-.plogin__links {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 0.9rem;
-}
-.plogin .zro-input {
-  transition:
-    box-shadow 0.25s var(--ease),
-    border-color 0.25s var(--ease);
-}
-.plogin .zro-input:focus {
-  box-shadow: 0 0 0 4px rgb(127 127 127 / 0.16);
-}
-@media (max-width: 860px) {
-  .plogin {
-    grid-template-columns: minmax(0, 1fr);
-    justify-items: center;
-  }
-  .plogin__simbolo {
-    width: 120px;
-  }
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -3960,26 +3875,6 @@ a.pstrip__card:focus-visible .pstrip__go {
     animation: rise 0.7s var(--spring) both;
     animation-delay: calc(0.2s + var(--i, 0) * 60ms);
   }
-  .plogin__simbolo .bsym__ring {
-    stroke-dasharray: 100;
-    animation: bsym-draw 1.4s var(--ease) 0.2s both;
-  }
-  .plogin__simbolo .bsym__spark {
-    animation: zro-spark 1.6s var(--ease) 0.4s both;
-  }
-  .plogin__halo {
-    animation: phero-fade 1.6s var(--ease) 0.3s both;
-  }
-  .plogin__nome,
-  .plogin__frase {
-    animation: rise 0.9s var(--spring) 1.2s both;
-  }
-  .plogin__cartao {
-    animation: plogin-cartao 0.9s var(--spring) 0.5s both;
-  }
-  .plogin .zro-field__error {
-    animation: plogin-erro 0.45s ease both;
-  }
 }
 @keyframes painel-lado {
   from {
@@ -3987,15 +3882,7 @@ a.pstrip__card:focus-visible .pstrip__go {
     translate: -24px 0;
   }
 }
-@keyframes plogin-cartao {
-  from {
-    opacity: 0;
-    translate: 0 28px;
-    scale: 0.97;
-    filter: blur(6px);
-  }
-}
-@keyframes plogin-erro {
+@keyframes conversa-erro {
   0%,
   100% {
     translate: 0 0;
@@ -4741,6 +4628,43 @@ a.pstrip__card:focus-visible .pstrip__go {
   }
 }
 
+/* ── O Z: o símbolo no centro, as ferramentas em volta e o ar dele (rastro e correntes) por trás ── */
+.pz {
+  --raio: min(38vw, 230px);
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(100%, 560px);
+  aspect-ratio: 1;
+  margin: clamp(8px, 2vw, 20px) auto 0;
+}
+.pz__z {
+  --z-tam: clamp(130px, 30vw, 200px) !important;
+}
+.pz__orbita {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pz__orbita li {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  transform: rotate(calc(360deg / var(--n) * var(--i) - 90deg)) translateX(var(--raio)) rotate(calc(-360deg / var(--n) * var(--i) + 90deg));
+}
+:root[data-theme='light'] .pz__orbita .zro-mark {
+  box-shadow: var(--shadow-float);
+}
+@media (max-width: 700px) {
+  .pz__orbita .zro-mark {
+    width: 34px !important;
+    height: 34px !important;
+  }
+}
+
 /* ── App para computador ── */
 .papp__aparelhos {
   margin-top: clamp(8px, 2vw, 24px);
@@ -5031,7 +4955,7 @@ a.pstrip__card:focus-visible .pstrip__go {
   }
   .painel__nav {
     width: 100%;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     grid-auto-flow: row;
     gap: 0;
     overflow: visible;
@@ -5125,7 +5049,7 @@ a.pstrip__card:focus-visible .pstrip__go {
   .pcard:hover {
     translate: none;
   }
-  /* login do app no celular: o símbolo menor no topo e o cartão embaixo, na tela toda */
+  /* login do app no celular: a conversa na tela toda */
   .plogin {
     min-height: 100dvh;
     align-content: center;
@@ -5528,5 +5452,1138 @@ a.pstrip__card:focus-visible .pstrip__go {
   .uso-barras i::after,
   .uso-dias i {
     animation: none;
+  }
+}
+
+/* ───────────── IA do ecossistema (painel da IA, 27/10/2026) ───────────── */
+.ia {
+  position: relative;
+  min-height: calc(100svh - 150px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  width: min(100%, 760px);
+  margin-inline: auto;
+}
+.page--ia {
+  display: block;
+}
+.painel__corpo--ia {
+  padding-bottom: 12px;
+}
+.painel__corpo--ia .ia {
+  min-height: calc(100svh - clamp(28px, 4vw, 56px) - 12px);
+}
+.ia__barra {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ia-pilula {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition:
+    background 0.2s var(--ease),
+    border-color 0.2s var(--ease);
+}
+.ia-pilula:hover {
+  border-color: var(--line-strong);
+}
+.ia-pilula__n {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text-mute);
+  font-size: 0.74rem;
+  text-align: center;
+}
+.ia__corpo {
+  display: grid;
+  min-height: 0;
+}
+
+/* início: o orbe, a saudação e uma linha de apoio */
+.ia-inicio {
+  align-self: center;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: clamp(16px, 6vh, 64px) 0 8px;
+  text-align: center;
+}
+.ia-inicio__estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text-faint);
+  font-size: 0.74rem;
+}
+.ia-inicio__estado i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.ia-inicio__titulo {
+  margin-top: 8px;
+  font-family: var(--font-display, inherit);
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  font-weight: 300;
+  color: var(--text-strong);
+}
+.ia-inicio__titulo strong {
+  font-weight: 800;
+}
+.ia-inicio__apoio {
+  color: var(--text-faint);
+  font-size: 1.05rem;
+}
+
+/* o Z (components/ia/simbolo-z.tsx): anel e estrela cromados movidos por lib/ia/z/motor.ts. A luz do brilho é branca
+   e somada no escuro; prata fria no claro, onde luz branca sumiria. */
+.z-cena {
+  --z-gl: 255 255 255;
+  --z-mb: plus-lighter;
+  --z-hk: 1;
+  display: inline-grid;
+  place-items: center;
+  width: var(--z-tam, 112px);
+  height: var(--z-tam, 112px);
+  perspective: 1100px;
+  flex: none;
+}
+:root[data-theme='light'] .z-cena {
+  --z-gl: 118 128 146;
+  --z-mb: multiply;
+  --z-hk: 0.55;
+}
+.z {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  will-change: transform;
+}
+.z img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+}
+.z__anel {
+  position: absolute;
+  inset: 0;
+}
+.z__porta {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+}
+.z__estrela {
+  position: absolute;
+  width: var(--z-est, 0px);
+  height: var(--z-est, 0px);
+  left: calc(var(--z-est, 0px) / -2);
+  top: calc(var(--z-est, 0px) / -2);
+}
+.z__estrela img {
+  position: relative;
+  filter: drop-shadow(0 0 calc(var(--z-est, 0px) * 0.05) rgb(var(--z-gl) / calc(var(--z-o, 0.3) * 0.9)));
+}
+.z__reflexo {
+  position: absolute;
+  inset: 0;
+  -webkit-mask: url(/ia/z/estrela.webp) center / contain no-repeat;
+  mask: url(/ia/z/estrela.webp) center / contain no-repeat;
+  background: linear-gradient(var(--z-luz, 135deg), transparent 38%, rgb(255 255 255) 50%, transparent 62%);
+  background-size: 250% 250%;
+  background-position: var(--z-bp, 50%) 50%;
+  mix-blend-mode: screen;
+  opacity: 0.25;
+}
+.z__halo {
+  position: absolute;
+  inset: -55%;
+  opacity: calc(var(--z-o, 0.3) * var(--z-hk));
+  background: radial-gradient(closest-side, rgb(var(--z-gl) / 0.5), rgb(var(--z-gl) / 0.16) 45%, transparent 75%);
+}
+.z__raios {
+  position: absolute;
+  inset: -38%;
+  opacity: var(--z-ra, 0);
+  filter: blur(0.5px);
+  mix-blend-mode: var(--z-mb);
+  background:
+    linear-gradient(90deg, transparent, rgb(var(--z-gl) / 0.95) 50%, transparent) center / 100% 2px no-repeat,
+    linear-gradient(0deg, transparent, rgb(var(--z-gl) / 0.8) 50%, transparent) center / 2px 72% no-repeat;
+}
+.z-cena[data-desligada] {
+  opacity: 0.4;
+  filter: grayscale(1);
+}
+/* o ar: rastro e correntes num canvas atrás do palco, que some nas bordas */
+.z-palco {
+  position: relative;
+  isolation: isolate;
+}
+.z-palco__ar {
+  position: absolute;
+  inset: -48px 0;
+  width: 100%;
+  height: calc(100% + 96px);
+  z-index: -1;
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent);
+  mask-image: radial-gradient(closest-side, #000 55%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .z-palco__ar {
+    display: none;
+  }
+}
+
+/* conversa */
+.ia-conversa {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px 2px 8px;
+}
+.ia-msg {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  line-height: 1.55;
+}
+.ia-msg--eu {
+  align-self: flex-end;
+  max-width: min(80%, 560px);
+  padding: 10px 16px;
+  border-radius: 20px 20px 6px 20px;
+  background: var(--surface-3);
+  color: var(--text-strong);
+  white-space: pre-wrap;
+}
+.ia-msg--ia {
+  color: var(--text);
+}
+.ia-msg--erro {
+  color: var(--text-mute);
+}
+.ia-texto {
+  display: grid;
+  gap: 10px;
+}
+.ia-texto ul,
+.ia-texto ol {
+  display: grid;
+  gap: 4px;
+  padding-left: 1.3em;
+}
+.ia-texto strong {
+  color: var(--text-strong);
+  font-weight: 650;
+}
+.ia-texto__titulo {
+  font-weight: 700;
+  color: var(--text-strong);
+}
+.ia-pensando {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-faint);
+  font-size: 0.92rem;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ia-msg {
+    animation: ia-entra 0.35s var(--ease) both;
+  }
+}
+@keyframes ia-entra {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+
+/* base: sugestões, campo e rodapé */
+.ia__base {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  gap: 10px;
+  padding: 10px 0 max(6px, env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--bg) 70%, transparent);
+}
+.ia-sugestoes {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 0 4px;
+  scrollbar-width: none;
+  list-style: none;
+  justify-content: safe center;
+}
+.ia-sugestoes::-webkit-scrollbar {
+  display: none;
+}
+.ia-sugestoes button {
+  white-space: nowrap;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-mute);
+  font: inherit;
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition:
+    color 0.2s var(--ease),
+    border-color 0.2s var(--ease),
+    translate 0.2s var(--ease);
+}
+.ia-sugestoes button:hover {
+  color: var(--text-strong);
+  border-color: var(--line-strong);
+  translate: 0 -1px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ia-sugestoes li {
+    animation: ia-entra 0.5s var(--ease) both;
+    animation-delay: calc(0.2s + var(--i) * 0.06s);
+  }
+}
+.ia-campo {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 8px 8px 8px 20px;
+  border: 1px solid var(--line-strong);
+  border-radius: 28px;
+  background: var(--surface);
+  box-shadow: 0 12px 34px rgb(0 0 0 / 0.07);
+  transition:
+    box-shadow 0.25s var(--ease),
+    border-color 0.25s var(--ease);
+}
+.ia-campo:focus-within {
+  border-color: var(--text-faint);
+  box-shadow:
+    0 0 0 4px rgb(127 127 127 / 0.12),
+    0 12px 34px rgb(0 0 0 / 0.08);
+}
+.ia-campo[data-desligado] {
+  opacity: 0.7;
+}
+.ia-campo textarea {
+  flex: 1;
+  min-height: 40px;
+  max-height: 200px;
+  padding: 9px 0;
+  border: 0;
+  outline: 0;
+  resize: none;
+  background: transparent;
+  color: var(--text-strong);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.4;
+  field-sizing: content;
+}
+.ia-campo textarea::placeholder {
+  color: var(--text-faint);
+}
+.ia-campo__enviar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.22), rgb(255 255 255 / 0) 50%), rgb(29 29 31 / 0.92);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.35),
+    0 6px 16px rgb(0 0 0 / 0.18);
+  cursor: pointer;
+  transition:
+    opacity 0.2s var(--ease),
+    scale 0.2s var(--ease);
+}
+.ia-campo__enviar:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.ia-campo__enviar:not(:disabled):active {
+  scale: 0.94;
+}
+:root[data-theme='dark'] .ia-campo__enviar {
+  background: rgb(245 245 247 / 0.94);
+  color: #1d1d1f;
+}
+.ia-campo__parar {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: currentColor;
+}
+.ia-rodape__ponto {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+.ia-rodape__ponto[data-ligada] {
+  background: var(--text-strong);
+}
+
+/* uso dos créditos do Z, abaixo do campo: linha curta e um trilho fino que enche com o uso */
+.ia-uso {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  width: min(100%, 360px);
+  margin-inline: auto;
+}
+.ia-uso__linha {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--text-faint);
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.ia-uso__z {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-strong);
+  font-weight: 700;
+}
+.ia-uso__trilho {
+  width: 100%;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+.ia-uso__trilho i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--text-strong);
+  transform-origin: left;
+  transition: transform 0.8s var(--ease);
+}
+.ia-uso[data-alerta] .ia-uso__trilho i {
+  background: var(--warn-text);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ia-uso__trilho i {
+    transition: none;
+  }
+}
+
+/* gaveta das conversas, por plataforma */
+.ia-gaveta {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+.ia-gaveta[data-aberta] {
+  pointer-events: auto;
+}
+.ia-gaveta__veu {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgb(0 0 0 / 0.28);
+  opacity: 0;
+  transition: opacity 0.3s var(--ease);
+}
+.ia-gaveta[data-aberta] .ia-gaveta__veu {
+  opacity: 1;
+}
+.ia-gaveta__painel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: min(88vw, 360px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: max(18px, env(safe-area-inset-top)) 14px 18px;
+  overflow-y: auto;
+  background: var(--bg);
+  border-right: 1px solid var(--line);
+  box-shadow: 24px 0 60px rgb(0 0 0 / 0.16);
+  translate: -102% 0;
+  transition: translate 0.38s var(--ease);
+}
+.ia-gaveta[data-aberta] .ia-gaveta__painel {
+  translate: 0 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ia-gaveta__painel,
+  .ia-gaveta__veu {
+    transition: none;
+  }
+}
+.ia-gaveta__topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 4px 0;
+}
+.ia-gaveta__titulo {
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.ia-gaveta__fechar {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-mute);
+  cursor: pointer;
+}
+.ia-gaveta__fechar:hover {
+  background: var(--surface-3);
+}
+.ia-gaveta__nova {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text-strong);
+  font: inherit;
+  cursor: pointer;
+}
+.ia-gaveta__vazio {
+  padding: 18px 6px;
+  color: var(--text-faint);
+  font-size: 0.9rem;
+}
+.ia-grupo {
+  border-radius: 14px;
+}
+.ia-grupo summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 8px;
+  border-radius: 12px;
+  color: var(--text-strong);
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  list-style: none;
+}
+.ia-grupo summary::-webkit-details-marker {
+  display: none;
+}
+.ia-grupo summary:hover {
+  background: var(--surface-2);
+}
+.ia-grupo__n {
+  margin-left: auto;
+  color: var(--text-faint);
+  font-weight: 400;
+  font-size: 0.8rem;
+}
+.ia-grupo__seta {
+  color: var(--text-faint);
+  transition: rotate 0.25s var(--ease);
+}
+.ia-grupo[open] .ia-grupo__seta {
+  rotate: 90deg;
+}
+.ia-grupo ul {
+  display: grid;
+  gap: 2px;
+  padding: 2px 0 8px 18px;
+  list-style: none;
+}
+.ia-grupo li {
+  display: flex;
+  align-items: center;
+  border-radius: 10px;
+}
+.ia-grupo li:hover,
+.ia-grupo li[data-ativa] {
+  background: var(--surface-2);
+}
+.ia-grupo__abrir {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 9px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.88rem;
+  text-align: left;
+  cursor: pointer;
+}
+.ia-grupo__abrir span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ia-grupo__abrir time {
+  flex: none;
+  color: var(--text-faint);
+  font-size: 0.74rem;
+}
+.ia-grupo__apagar {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  margin-right: 4px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-faint);
+  font-size: 0.72rem;
+  cursor: pointer;
+  opacity: 0;
+}
+.ia-grupo li:hover .ia-grupo__apagar,
+.ia-grupo__apagar:focus-visible {
+  opacity: 1;
+}
+@media (hover: none) {
+  .ia-grupo__apagar {
+    opacity: 1;
+  }
+}
+@media (min-width: 821px) {
+  .ia-sugestoes {
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+}
+@media (max-width: 820px) {
+  .ia {
+    min-height: calc(100svh - 190px);
+  }
+  .ia-sugestoes {
+    justify-content: flex-start;
+    margin-inline: -16px;
+    padding-inline: 16px;
+  }
+}
+/* no app do celular, o campo fica logo acima da barra de abas */
+@media (max-width: 760px) {
+  .painel__corpo--ia {
+    padding-bottom: 0;
+  }
+  .painel__corpo--ia .ia {
+    min-height: calc(100svh - 76px - 64px - env(safe-area-inset-bottom) - env(safe-area-inset-top));
+  }
+  .painel__corpo--ia .ia__base {
+    bottom: calc(68px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ───── Conversa de conta (entrar, criar conta, login do app; components/conversa-conta.tsx, 27/10/2026) ─────
+   Uma pergunta por vez. O orbe é o símbolo da marca com o estado em data-estado (absolute-zro, ouvindo, conferindo,
+   pronto) e um ✓ em traço fino no fim. Só CSS; "reduzir movimento" deixa tudo parado e as trocas instantâneas. */
+.auth-box:has(> .conversa) {
+  width: min(420px, 100%);
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.auth-box:has(> .conversa)::before {
+  display: none;
+}
+.conversa {
+  width: min(420px, 100%);
+  display: grid;
+  justify-items: center;
+  gap: 30px;
+  text-align: center;
+  font-family: var(--font-apple);
+  color: var(--text-strong);
+}
+
+/* orbe: o símbolo da marca; só uma respiração suave por enquanto (a animação definitiva espera o titular) */
+.orbe-wrap {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  transition:
+    scale 0.5s var(--spring),
+    margin 0.5s var(--spring);
+}
+.conversa:focus-within .orbe-wrap {
+  scale: 0.9;
+}
+.conversa-orbe {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  color: var(--text-strong);
+}
+.conversa-orbe__palco {
+  display: grid;
+  place-items: center;
+}
+/* o ar do Z no login: um campo maior que o orbe, centrado nele, que some nas bordas */
+.conversa-orbe__palco .z-palco__ar {
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  width: min(100vw, 560px);
+  height: 420px;
+  translate: -50% -50%;
+}
+/* ✓ em traço fino abaixo do símbolo, desenhado no "pronto" */
+.conversa-orbe__check {
+  position: absolute;
+  top: 100%;
+  margin-top: 4px;
+  opacity: 0;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition:
+    opacity 0.3s ease,
+    stroke-dashoffset 0.6s var(--ease) 0.15s;
+}
+.conversa-orbe[data-estado='pronto'] .conversa-orbe__check {
+  position: static;
+  opacity: 1;
+  stroke-dashoffset: 0;
+}
+.orbe__rotulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  margin: 0;
+  padding: 0 13px 0 11px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text-mute);
+  background: var(--pill-fill);
+  box-shadow: var(--pill-rim, 0 0 0 1px var(--line));
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+.orbe__luz {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.6;
+}
+.orbe-wrap:has([data-estado='ouvindo']) .orbe__luz,
+.orbe-wrap:has([data-estado='conferindo']) .orbe__luz {
+  opacity: 1;
+  animation: orbe-luz 1s ease-in-out infinite;
+}
+.orbe-wrap:has([data-estado='pronto']) .orbe__rotulo {
+  color: var(--text-strong);
+}
+.orbe-wrap:has([data-estado='pronto']) .orbe__luz {
+  opacity: 1;
+}
+@keyframes orbe-luz {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* passos */
+.conversa__passos {
+  position: relative;
+  width: 100%;
+  display: grid;
+  gap: 36px;
+}
+.conversa__passo {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+/* com JavaScript, só o passo da vez aparece; os outros seguem no form (gerenciador de senhas), escondidos e inertes */
+@media (scripting: enabled) {
+  .conversa__passo[data-ativo='false'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+.conversa[data-js] .conversa__passo[data-ativo='false'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.conversa[data-js] .conversa__passo[data-ativo='true'] {
+  animation: conversa-entra 0.55s var(--spring) both;
+}
+@keyframes conversa-entra {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+    filter: blur(4px);
+  }
+}
+.conversa__apoio {
+  margin: 0;
+  min-height: 1.5em;
+  color: var(--text-faint);
+  font-size: 1.02rem;
+}
+.conversa__titulo {
+  margin: -4px 0 6px;
+  font-family: var(--font-apple);
+  font-size: clamp(1.9rem, 5.4vw, 2.5rem);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  color: var(--text-strong);
+}
+.conversa__titulo label {
+  cursor: default;
+}
+.conversa__campo {
+  position: relative;
+  width: 100%;
+}
+.conversa__campo input {
+  width: 100%;
+  height: 60px;
+  padding: 0 64px 0 24px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 1.08rem;
+  color: var(--text-strong);
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.7),
+    0 0 0 1px var(--line-strong),
+    0 12px 32px rgb(0 0 0 / 0.07);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  transition: box-shadow 0.25s var(--ease);
+}
+.conversa__campo input::placeholder {
+  color: var(--text-faint);
+  opacity: 0.7;
+}
+.conversa__campo input:focus {
+  outline: none;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.7),
+    0 0 0 1.5px var(--text-strong),
+    0 0 0 6px rgb(127 127 127 / 0.14),
+    0 12px 32px rgb(0 0 0 / 0.08);
+}
+.conversa__campo input[aria-invalid='true'] {
+  box-shadow:
+    0 0 0 1.5px var(--danger-text),
+    0 12px 32px rgb(0 0 0 / 0.07);
+}
+:root[data-theme='dark'] .conversa__campo input {
+  background: rgb(255 255 255 / 0.07);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    0 0 0 1px var(--line-strong),
+    0 12px 32px rgb(0 0 0 / 0.35);
+}
+:root[data-theme='dark'] .conversa__campo input:focus {
+  box-shadow:
+    0 0 0 1.5px var(--text-strong),
+    0 0 0 6px rgb(255 255 255 / 0.1),
+    0 12px 32px rgb(0 0 0 / 0.35);
+}
+.conversa__enviar {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  translate: 0 -50%;
+  border: 0;
+  border-radius: 50%;
+  color: var(--btn-main-ink);
+  background: var(--btn-main-sheen), var(--btn-main-fill);
+  box-shadow: var(--btn-main-shadow);
+  cursor: pointer;
+  transition:
+    scale 0.25s var(--spring),
+    opacity 0.2s ease;
+}
+.conversa__enviar:hover {
+  scale: 1.06;
+}
+.conversa__enviar:active {
+  scale: 0.94;
+}
+.conversa__enviar:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+.conversa__enviar:disabled {
+  opacity: 0.45;
+  cursor: progress;
+}
+.conversa__erro {
+  margin: 0;
+  color: var(--danger-text);
+  font-size: 0.94rem;
+  font-weight: 500;
+  animation: conversa-erro 0.45s ease both;
+}
+.conversa__quem {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.94rem;
+  color: var(--text-mute);
+  background: var(--pill-fill);
+  box-shadow: var(--pill-rim, 0 0 0 1px var(--line));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.conversa__quem:hover {
+  color: var(--text-strong);
+}
+.conversa__quem:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.conversa__link {
+  color: var(--text-mute);
+  font-size: 0.94rem;
+  text-decoration: none;
+}
+.conversa__link:hover {
+  color: var(--text-strong);
+  text-decoration: underline;
+}
+
+/* Google e o outro caminho (entrar ou criar conta) */
+.conversa__fora {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+}
+.google-pilula {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 24px;
+  border-radius: 999px;
+  font-family: var(--font-apple);
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1d1d1f;
+  text-decoration: none;
+  background: #fff;
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.1),
+    0 8px 22px rgb(0 0 0 / 0.07);
+  transition:
+    scale 0.25s var(--spring),
+    box-shadow 0.25s ease;
+}
+.google-pilula:hover {
+  scale: 1.015;
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.14),
+    0 12px 28px rgb(0 0 0 / 0.1);
+}
+.google-pilula:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+:root[data-theme='dark'] .google-pilula {
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.4);
+}
+.conversa__rodape {
+  margin: 0;
+  color: var(--text-mute);
+  font-size: 0.95rem;
+}
+.conversa__rodape a {
+  color: var(--text-strong);
+  font-weight: 600;
+  text-decoration: none;
+}
+.conversa__rodape a:hover {
+  text-decoration: underline;
+}
+
+/* pronto: "Conectado." e a barra fina enquanto o destino abre */
+.conversa__fim {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  animation: conversa-entra 0.55s var(--spring) 0.25s both;
+}
+.conversa__barra {
+  position: relative;
+  width: 180px;
+  height: 3px;
+  margin-top: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--line-strong);
+}
+.conversa__barra::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--text-strong);
+  transform-origin: left;
+  animation: conversa-barra 1.3s var(--ease) both;
+}
+@keyframes conversa-barra {
+  from {
+    scale: 0 1;
+  }
+}
+
+@media (max-width: 600px) {
+  .conversa {
+    gap: 26px;
+  }
+  /* campo em foco: o orbe sobe e encolhe para dar espaço ao teclado */
+  .conversa:focus-within .orbe-wrap {
+    scale: 0.72;
+    margin-block: -16px -10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .orbe-wrap,
+  .conversa-orbe__check,
+  .orbe__luz,
+  .conversa__passo,
+  .conversa__erro,
+  .conversa__fim,
+  .conversa__barra::after,
+  .conversa__enviar,
+  .google-pilula {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ───── Balão de pendências no menu (o número de ações que esperam a pessoa, como no SOBEDESCE; 27/10/2026) ───── */
+.nav__balao {
+  margin-left: auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--text-strong);
+  color: var(--bg);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nav__balao {
+    animation: balao-chega 0.45s var(--ease) both;
+  }
+}
+@keyframes balao-chega {
+  from {
+    scale: 0.4;
+    opacity: 0;
+  }
+}
+/* menu recolhido: o balão vira um ponto com número no canto do ícone */
+.shell[data-nav='rail'] .sidebar .nav__balao {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 0.6rem;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+@media (min-width: 901px) and (max-width: 1200px) {
+  .shell[data-nav='auto'] .sidebar .nav__balao {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    font-size: 0.6rem;
+    box-shadow: 0 0 0 2px var(--surface);
   }
 }

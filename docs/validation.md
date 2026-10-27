@@ -202,6 +202,17 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   (mesmas rotas, chaves e CSP) antes da produção.
 - Login único nas cinco: `/api/zro/entrar` de cada domínio leva ao HUB; apps marcados como da família.
 
+## Balão de pendências: AEON, Revela e NOSSOM (27/10/2026)
+
+- Regras puras com teste (estado → número e dica por aba): AEON `src/pendencias.js` (`test/nucleo.test.js`), Revela
+  `src/pendencias.js` (`test/pendencias.test.js`), NOSSOM `lib/studio-pending.ts` (`tests/studio-pending.test.ts`).
+- AEON `npm test` **88/88** (a tela confere o balão de Revisar subindo e descendo ao aprovar/desfazer e o de Mídia ao
+  reabrir e religar); `xvfb-run -a npx electron . --smoke` ok. Revela `npm test` **112/112** (Converter: na fila →
+  pronto para baixar → some ao baixar; CST: some ao escolher o log). NOSSOM `npm test` **78/78**, `typecheck` e
+  `format:check` ok, `npm run build` ok; e2e `cloud-restoration`, `studio` e `install-navigation`: 16/17, a que falhou é a
+  gravação pelo microfone (o Chromium deste ambiente não dá o microfone; não toca no balão).
+- Fotos (Playwright, claro e escuro, 1440 px e 390 px) conferidas a olho; ficaram fora do repositório.
+
 ## Carro do Freela: sem selo no topo e símbolo flat no login (27/10/2026)
 
 - Carro, bateria completa (`npm test`, Chromium 1243): **87/87** em 20,5 min; `sem-zoom` falhou em paralelo e passou
@@ -1078,10 +1089,10 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Menu do celular: o fundo do painel aberto passou a ser sólido (o vidro aninhado vazava o conteúdo no Safari).
 - Validado: lint, format, typecheck, `npm test` 154/154, `npm run test:e2e` 21/21, telas claro/escuro/celular com
   dados de teste. Não validado: com consumo real em produção.
+
 ## Synquei de computador: conta Absolute ZRO (27/10/2026)
 
-- `products/synquei/desktop/conta.cjs` (porta do AEON): cliente público `synquei-desktop`, login de app nativo (RFC
-  8252) no navegador do sistema com volta para `http://127.0.0.1:<porta>/callback`, PKCE S256, state, nonce e o
+- `products/synquei/desktop/conta.cjs` (porta do AEON): cliente público `synquei-desktop`, login de app nativo (RFC 8252) no navegador do sistema com volta para `http://127.0.0.1:<porta>/callback`, PKCE S256, state, nonce e o
   `id_token` conferido pela JWKS. O protocolo do app (`desktop/main.cjs`) responde `/api/zro/eu`, `/entrar` e `/sair`
   no mesmo formato do site, então `app/js/conta.js` é o mesmo nos dois (no desktop liga quando a ponte tem `conta`).
 - Perfil único: cada `/api/zro/eu` relê nome, foto, organização e `zro_products` no `/oauth/userinfo` (3 s, senão vale a
@@ -1091,3 +1102,55 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   `npm test` sem falhas; `xvfb-run -a npx electron . --smoke` SMOKE OK, agora conferindo "Entrar com Absolute ZRO" na
   barra lateral. Telas conferidas no Electron (logado com iniciais e sem sessão).
 - Não validado: login contra o absolutezro.com de verdade e o cofre do sistema num Mac ou Windows de verdade.
+
+## Entrar e criar conta como conversa (27/10/2026)
+
+- `components/conversa-conta.tsx`: `/entrar` (e-mail → senha), `/criar-conta` (e-mail → nome → senha) e `/app/entrar`
+  (mesma conversa, volta para `/app`). O orbe é o Z (ver "IA do ecossistema: o Z") com `data-estado` (absolute-zro,
+  ouvindo, conferindo, pronto) e rótulo em pílula `aria-live`; no fim, ✓ em traço fino, "Conectado." e barra fina antes
+  de abrir o destino. "Reduzir movimento" deixa tudo parado.
+- A conversa só avança no cliente; nenhum e-mail é consultado antes do envio. `loginAction`/`signupAction` seguem
+  redirecionando; com o campo `conversa=1` (só com JavaScript) devolvem o destino para o cliente mostrar "pronto". As
+  páginas não redirecionam quem acabou de entrar quando estão respondendo à própria Server Action (`respondendoAcao`).
+- Sem JavaScript todos os campos aparecem e o form posta direto; com JavaScript os passos fora da vez ficam no form
+  (gerenciador de senhas: `email`, `name`, `current-password`, `new-password`), escondidos e `inert`.
+- Validado: lint, format, typecheck, `npm test`, build, `npm run test:e2e` (conversa de entrar com erro e foco, sem
+  JavaScript, cadastro/SSO pelos passos, axe em `/entrar` e `/criar-conta` nos dois temas). Telas conferidas em claro e
+  escuro, 1280 e 390. Não validado: gerenciador de senhas real (Chrome/1Password/iCloud) e Safari antigo sem
+  `@media (scripting)`.
+
+## Balões de pendência no Synquei, TPeasy e Carro do Freela (27/10/2026)
+
+- Mesmo desenho do SOBEDESCE e do HUB: pílula com número em negrito tabular, 99+ acima de 99, `aria-label`
+  "N pendências", o que espera no `title` do item, entrada curta só em CSS (parada com reduzir movimento) e ponto com
+  número no canto do ícone no menu recolhido e na barra do celular. Atualiza junto com o estado de cada app.
+- Regras puras: `products/synquei/app/js/pendencias.js`, `products/tpeasy/app/js/pendencias.js` e
+  `contarPendencias` em `products/carro-do-freela/src/template.html`. Synquei e TPeasy subiram o cache do service
+  worker (v18 e v15); Carro subiu a `VERSAO` (27/out · 2).
+- Testes: Synquei `npm test` sem falhas (+10 em `tests/pendencias.test.mjs`), TPeasy `node --test tests/*.test.mjs`
+  41/41 (+6), Carro `node test/run.js` 88/88 (suíte nova `baloes`, 24 asserções: conta pura, ao vivo na lateral,
+  recolhida, celular e gaveta). `node scripts/scan-secrets.mjs` sem segredos. Telas claro/escuro, computador e
+  celular conferidas no Playwright.
+- Não validado: o Synquei de computador no Electron (a barra é a mesma do site; balões de Organizar e Ajustes
+  conferidos simulando o estado do desktop no navegador) e a falha de sincronização na nuvem do TPeasy (nuvem
+  desligada no app).
+
+## IA do ecossistema: o Z (27/10/2026)
+
+- Uma IA para todas as plataformas (o "Z"): conversas guardadas por plataforma (`zro.ia_conversas`/`zro.ia_mensagens`,
+  migrações 0016 e 0017, RLS por pessoa), 1 crédito `zro.ai_credits` por resposta (`concluirTurno`, chave
+  `ia:<pergunta>`), API `/api/v1/ia` (estado, conversas, mensagens em NDJSON; CORS para quem chega com Bearer e escopo
+  `zro.ia`), painel no HUB (`/ia` e `/app`) com a gaveta "Conversas" agrupada por plataforma e `<zro-ia>`
+  (`public/ia/v1/zro-ia.js`) para as plataformas. Testes: `tests/integration/ia.test.ts` e `pendencias.test.ts`.
+- Visual aprovado pelo titular em 27/10/2026: anel e estrela cromados em peças separadas (`public/ia/z/*.webp`, recorte
+  alfa, servem em qualquer fundo) movidos por código (`apps/hub-web/lib/ia/z/motor.ts`): volta de 3,2 s, 0,75 de giro
+  por volta, ritmo suave, horário, pausa de 1 s; estrela sempre por cima e centrada no tubo; anel girando devagar no
+  próprio eixo (loop a cada 4 ciclos); conjunto flutuando; brilho e halo crescem com o giro e os raios longos só no
+  auge. Em volta, o ar (`lib/ia/z/ar.ts`): rastro que contorna o anel e correntes em espiral, leves em repouso e mais
+  fortes ouvindo, pensando e respondendo. Um laço de quadros só, fora do React; pausa fora da tela e em aba oculta;
+  "reduzir movimento" para tudo. A mesma conta está copiada em `zro-ia.js` (as plataformas não importam o HUB).
+- `/ia/*` responde com `Access-Control-Allow-Origin: *` (script módulo e máscara CSS de outra origem precisam de CORS).
+- Conferido no Playwright: `/ia` claro, escuro e celular (início, pensando com o Z pequeno na barra, resposta),
+  `/entrar` claro e escuro e `<zro-ia>` servido de outra origem sobre o azul do NOSSOM, sem erro de página.
+- Não validado: migrações 0016/0017 no banco de produção e a IA com a chave real (só com a API falsa local); não
+  publicado em produção.

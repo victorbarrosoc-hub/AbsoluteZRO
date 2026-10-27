@@ -6,6 +6,7 @@ import { openPrompter, openCalib, prompterOpen } from "./prompter.js";
 import { syncSettingsUI, setPref } from "./settings.js";
 import * as Sync from "./sync.js";
 import * as Zro from "./zro.js";
+import { pendencias, numeroBalao, rotuloBalao } from "./pendencias.js";
 
 const VERSION = "2.2";
 const wpm = () => D.S().wpm;
@@ -298,6 +299,25 @@ export function renderAccount() {
   $("#soundsSwitch").setAttribute("aria-checked", String(!!D.ui.sounds));
   $("#installState").textContent = isStandalone() ? "Instalado" : "";
   $("#appVersion").textContent = `versão ${VERSION}`;
+  renderBaloes();
+}
+// Balões da barra de abas (app/js/pendencias.js): redesenham junto com a conta (zro, auth, sync)
+export function renderBaloes() {
+  const pend = pendencias({ zro: Zro.zro, nuvem: Sync.cloudEnabled, usuario: Sync.currentUser(), sync: Sync.syncState });
+  for (const b of $$("[data-balao]")) {
+    const p = pend[b.dataset.balao];
+    const tab = b.closest(".tab");
+    const n = p ? numeroBalao(p.n) : "";
+    if (b.textContent !== n) b.textContent = n;
+    b.hidden = !p;
+    if (p) {
+      b.setAttribute("aria-label", rotuloBalao(p.n));
+      tab.title = p.t;
+    } else {
+      b.removeAttribute("aria-label");
+      tab.removeAttribute("title");
+    }
+  }
 }
 $("#accountCard").addEventListener("submit", async (e) => {
   e.preventDefault();

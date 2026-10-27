@@ -249,6 +249,13 @@ test('pending audio from another browser can be recovered and resumed without su
     .first()
     .setInputFiles({ name: 'outro.wav', mimeType: 'audio/wav', buffer: source });
   await expect(page.getByText('Resultado pronto', { exact: true })).toBeVisible();
+  // balão de Meus projetos: o resultado pronto espera a pessoa salvar
+  const projectsItem = page
+    .getByRole('navigation', { name: 'Navegação do estúdio' })
+    .getByRole('button', { name: /Meus projetos/ });
+  await expect(projectsItem.locator('.nav-badge')).toHaveText('1');
+  await expect(projectsItem.getByRole('img', { name: '1 pendência' })).toBeVisible();
+  await expect(projectsItem).toHaveAttribute('title', /pronto para salvar/);
   await page.getByRole('button', { name: 'Recuperar áudio deste pedido' }).click();
   await expect(
     page.getByRole('button', { name: 'Retomar restauração', exact: true }),
@@ -259,6 +266,8 @@ test('pending audio from another browser can be recovered and resumed without su
   });
   expect(newSubmissions).toBe(0);
   expect(released).toBe(true);
+  // salvo e liberado: nada mais espera, o balão sai
+  await expect(projectsItem.locator('.nav-badge')).toHaveCount(0);
 });
 
 test('selection can be drawn on the wave, adjusted by keyboard and cleared on desktop and touch', async ({

@@ -27,6 +27,7 @@ import { DEPOIS, FAMILIA, iconeDe } from '../src/familia.js'
 import * as projetos from './projetos.js'
 import { lerConta, ondeEditar } from '../site/conta.js'
 import { montarAtualizacao } from './atualizacao.js'
+import { pendencias, rotuloBalao } from '../src/pendencias.js'
 
 const $ = (id) => document.getElementById(id)
 const PAGINAS = ['midia', 'revisar', 'edicao', 'entrega']
@@ -159,6 +160,31 @@ function marcarTrilho() {
 }
 $('barraExportar').onclick = () => ir('entrega')
 
+/**
+ * O balão de cada página do dock (src/pendencias.js): quantas coisas esperam a pessoa (mídia para escolher de novo,
+ * proposta para decidir). Redesenha junto com o projeto, então muda na hora em que ela aprova, recusa ou religa.
+ */
+function desenharBaloes() {
+  const pend = pendencias(P(), { temArquivo: (id) => S.entradas.has(id) })
+  for (const b of document.querySelectorAll('.dock button')) {
+    const { n, dica } = pend[b.dataset.ir] || { n: 0, dica: '' }
+    let balao = b.querySelector('.balao')
+    if (!n) {
+      balao?.remove()
+      b.removeAttribute('title')
+      continue
+    }
+    if (!balao) {
+      balao = Object.assign(document.createElement('span'), { className: 'balao' })
+      balao.setAttribute('role', 'img')
+      b.append(balao)
+    }
+    balao.textContent = rotuloBalao(n)
+    balao.setAttribute('aria-label', `${n} ${n === 1 ? 'pendência' : 'pendências'}`)
+    b.title = dica
+  }
+}
+
 // ───────── projeto e desfazer ─────────
 
 function P() {
@@ -243,6 +269,7 @@ function desenharTudo() {
   $('refazer').title = S.h?.podeRefazer ? `Refazer ${S.h.proximoRefazer} (⇧⌘Z)` : 'Refazer (⇧⌘Z)'
   document.body.classList.toggle('com-projeto', Boolean(p))
   marcarTrilho()
+  desenharBaloes()
   $('barraExportar').hidden = !p?.midias.length || S.pagina === 'entrega'
   desenharMidia()
   desenharHistorico()

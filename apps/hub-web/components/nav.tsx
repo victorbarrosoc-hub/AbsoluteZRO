@@ -13,6 +13,7 @@ const GROUPS: { label: string; items: Item[] }[] = [
     label: 'Trabalho',
     items: [
       { href: '/inicio', label: 'Início', icon: 'home' },
+      { href: '/ia', label: 'IA', icon: 'sparkle' },
       { href: '/projetos', label: 'Meus projetos', icon: 'projects' },
       { href: '/ciclo', label: 'Ciclo do O', icon: 'cycle' },
       { href: '/ferramentas', label: 'Ferramentas', icon: 'apps' },
@@ -41,7 +42,7 @@ const FAMILY = [
   { productId: 'tpeasy', name: 'TPEasy', href: 'https://tpeasy.vercel.app' },
 ]
 
-export function Nav({ admin }: { admin: boolean }) {
+export function Nav({ admin, pendencias = {} }: { admin: boolean; pendencias?: Record<string, number> }) {
   const path = usePathname()
   const groups = admin ? [...GROUPS, { label: 'Plataforma', items: [{ href: '/admin', label: 'Administração', icon: 'shield' as const }] }] : GROUPS
   return (
@@ -49,12 +50,21 @@ export function Nav({ admin }: { admin: boolean }) {
       {groups.map((g) => (
         <div key={g.label} className="nav__group">
           <p className="nav__label">{g.label}</p>
-          {g.items.map((i) => (
-            <Link key={i.href} href={i.href} title={i.label} aria-current={path === i.href || path.startsWith(i.href + '/') ? 'page' : undefined}>
-              <Icon name={i.icon} />
-              <span className="nav__text">{i.label}</span>
-            </Link>
-          ))}
+          {g.items.map((i) => {
+            const n = pendencias[i.href] ?? 0
+            return (
+              <Link
+                key={i.href}
+                href={i.href}
+                title={n ? `${i.label} · ${n} ${n === 1 ? 'espera' : 'esperam'} você` : i.label}
+                aria-current={path === i.href || path.startsWith(i.href + '/') ? 'page' : undefined}
+              >
+                <Icon name={i.icon} />
+                <span className="nav__text">{i.label}</span>
+                {n > 0 && <Balao n={n} />}
+              </Link>
+            )
+          })}
         </div>
       ))}
       <div className="nav__group nav__family">
@@ -67,6 +77,15 @@ export function Nav({ admin }: { admin: boolean }) {
         ))}
       </div>
     </nav>
+  )
+}
+
+/** O balão com o número de ações que esperam a pessoa numa seção (como no SOBEDESCE). */
+export function Balao({ n }: { n: number }) {
+  return (
+    <span className="nav__balao" aria-label={`${n} ${n === 1 ? 'pendência' : 'pendências'}`}>
+      {n > 99 ? '99+' : n}
+    </span>
   )
 }
 

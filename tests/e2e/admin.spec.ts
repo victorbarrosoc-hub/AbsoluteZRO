@@ -3,16 +3,14 @@ import { randomUUID } from 'node:crypto'
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 import postgres from 'postgres'
+import { criarConta } from './conversa'
 
 const DB = process.env.E2E_DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/zro_e2e_test'
 
 async function signupAndOrg(page: Page, name: string, org: string) {
   const address = `adm-${randomUUID().slice(0, 8)}@teste.absolutezro.local`
   await page.goto('/criar-conta')
-  await page.getByLabel('Nome').fill(name)
-  await page.getByLabel('E-mail').fill(address)
-  await page.getByLabel('Senha').fill('senha-e2e-segura-1')
-  await page.getByRole('button', { name: 'Criar conta' }).click()
+  await criarConta(page, { nome: name, email: address, senha: 'senha-e2e-segura-1' })
   await page.waitForURL('**/boas-vindas')
   await page.getByLabel('Nome').fill(org)
   await page.getByRole('button', { name: 'Criar e continuar' }).click()

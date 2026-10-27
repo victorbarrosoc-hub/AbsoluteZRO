@@ -335,13 +335,22 @@ test('converter: ProRes 422 HQ vira MP4 H.264 marcado BT.709, no navegador', asy
     ),
   )
   assert.ok(await pagina.locator('#caixa-arquivos.compacta').count(), 'a caixa de soltar devia encolher')
+  // balão da aba: o vídeo lido espera o botão Converter (no dock e no menu)
+  const balao = pagina.locator('.abas a[href^="converter"] .balao')
+  assert.equal(await balao.innerText(), '1')
+  assert.equal(await balao.getAttribute('aria-label'), '1 pendência')
+  assert.match(await pagina.getAttribute('.abas a[href^="converter"]', 'title'), /1 vídeo esperando Converter/)
+  assert.equal(await pagina.locator('.menu-item[href^="converter"] .balao').innerText(), '1')
   await pagina.locator('#salvar-pasta').uncheck({ force: true }) // a escolha de pasta não existe no navegador de teste
   await pagina.getByRole('button', { name: 'Converter' }).click()
   const link = pagina.getByRole('link', { name: 'Baixar master-youtube.mp4' })
   await link.waitFor({ timeout: 60_000 })
+  // pronto na memória: espera o Baixar
+  assert.match(await pagina.getAttribute('.abas a[href^="converter"]', 'title'), /1 vídeo pronto para baixar/)
   assert.match((await pagina.locator('.item-info .ficha').allTextContents()).join(' · '), /^H\.264 \+ (AAC|Opus) · BT\.709 · [\d,]+× tempo real · \d+ MB$/)
 
   const [baixado] = await Promise.all([pagina.waitForEvent('download'), link.click()])
+  await balao.waitFor({ state: 'detached' })
   const saida = join(dir, 'saida.mp4')
   await baixado.saveAs(saida)
   const sonda = JSON.parse(
@@ -824,6 +833,12 @@ test('CST por clipe: o relatório do Synquei vira a lista de câmeras e um scrip
   await pagina.locator('#lista-cameras li').nth(1).waitFor()
   assert.equal(await pagina.getByRole('combobox', { name: 'Log de FX30' }).inputValue(), 'sony-slog3-cine')
   assert.equal(await pagina.getByRole('combobox', { name: 'Log de iPhone' }).inputValue(), '')
+  // balão da aba CST: o iPhone ficou sem log e ninguém conferiu; escolher (até "Sem log") resolve
+  const balao = pagina.locator('.abas a[href^="cst"] .balao')
+  assert.equal(await balao.innerText(), '1')
+  assert.match(await pagina.getAttribute('.abas a[href^="cst"]', 'title'), /1 câmera sem log escolhido/)
+  await pagina.getByRole('combobox', { name: 'Log de iPhone' }).selectOption('')
+  await balao.waitFor({ state: 'detached' })
   const [baixado] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Script do Resolve' }).click()])
   assert.equal(baixado.suggestedFilename(), 'revela-cst-por-clipe.py')
   const script = readFileSync(await baixado.path(), 'utf8')

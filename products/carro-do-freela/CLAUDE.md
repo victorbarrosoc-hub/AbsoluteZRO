@@ -120,6 +120,16 @@ template, e nome que falta reprova o build. SVG ganhou tipo em
 `test/_servir.js` e `src/servir-saida.js`, e entra na conferência de mídia
 citada do `vercel-build.js`.
 
+## 27/out · 2 — os balões: o que espera a pessoa em cada aba (`test/baloes.js`)
+
+Pedido do titular para o ecossistema (o SOBEDESCE e o HUB já tinham). `contarPendencias(estado)` é PURA e decide;
+`pendenciasAbas()` lê as variáveis; `pintarBaloes()` desenha na lateral, na doca/barra de baixo e na gaveta. Só conta
+o que a tela já pede com botão: **Propostas** = o "esperando você" de sempre (consulta de job + oferta no brechó);
+**Jobs** = contrato que falta EU assinar, entrega que quem contrata precisa conferir, job liberado sem a minha
+avaliação (de `linhaContrato`, só com `faseTem(2)`); **Brechó** = pedido de aluguel numa peça minha. O resto não
+ganha balão. ⚠️ `#g-msg-bg` (conversa não lida na gaveta de Propostas) e `#bg-gui` continuam como estavam. ⚠️ O
+`title` original do item (`Meus jobs`) é guardado em `data-tit-orig` e volta quando o balão apaga.
+
 ## 26/out · 2 — leve sem perder qualidade: o HTML que carrega só a página
 
 Pedido do Victor: *"deixar a plataforma leve sem perder qualidade de imagem"*

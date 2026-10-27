@@ -106,15 +106,25 @@ test('caminho de uso: importar, analisar, revisar, editar com cor e etiqueta, ex
   assert.equal(await pagina.locator('.proposta[data-cor="laranja"]').count() >= 2, true, 'silêncios em laranja')
   assert.ok((await pagina.locator('.proposta[data-cor="roxo"]').count()) >= 1, 'zoom (frase com "!") em roxo')
 
-  // aprovar um, desfazer, aprovar todos
+  // balão do dock: Revisar mostra quantas propostas esperam decisão (e só Revisar)
+  const balao = pagina.locator('.dock [data-ir="revisar"] .balao')
+  assert.equal(await balao.innerText(), String(n))
+  assert.equal(await balao.getAttribute('aria-label'), `${n} pendências`)
+  assert.match(await pagina.getAttribute('.dock [data-ir="revisar"]', 'title'), /propostas para aprovar ou recusar/)
+  assert.equal(await pagina.locator('.dock .balao').count(), 1)
+
+  // aprovar um, desfazer, aprovar todos (o balão acompanha ao vivo)
   const primeira = pagina.locator('.proposta').first()
   const id = await primeira.getAttribute('data-id')
   await primeira.locator('[data-acao="aprovar"]').click()
   await pagina.locator(`.proposta[data-id="${id}"].proposta-aprovada`).waitFor()
+  assert.equal(await balao.innerText(), String(n - 1))
   await pagina.keyboard.press('Control+z')
   await pagina.locator(`.proposta[data-id="${id}"].proposta-pendente`).waitFor()
+  assert.equal(await balao.innerText(), String(n))
   await pagina.click('#aprovarTodos')
   assert.equal(await pagina.locator('.proposta-pendente').count(), 0)
+  assert.equal(await pagina.locator('.dock .balao').count(), 0)
 
   // Edição: clipes depois dos cortes, cor e etiqueta, filtro, dividir e desfazer
   await pagina.click('.dock [data-ir="edicao"]')
@@ -200,9 +210,14 @@ test('caminho de uso: importar, analisar, revisar, editar com cor e etiqueta, ex
   await pagina.locator('.cartao-projeto .cartao-abrir').click()
   await pagina.locator('#nomeProjeto', { hasText: 'fala' }).waitFor()
   assert.equal(await pagina.evaluate(() => globalThis.__editor.h.atual.marcadores.length), 1)
+  // reaberto no navegador, a mídia fica sem o arquivo: o balão de Mídia pede para escolher de novo
+  const balaoMidia = pagina.locator('.dock [data-ir="midia"] .balao')
+  assert.equal(await balaoMidia.innerText(), '1')
+  assert.match(await pagina.getAttribute('.dock [data-ir="midia"]', 'title'), /1 mídia sem o arquivo/)
   await pagina.click('.dock [data-ir="midia"]')
   await pagina.setInputFiles('#arquivo', join(dir, 'fala.mp4'))
   await pagina.waitForFunction(() => globalThis.__editor.entradas.size === 1)
+  await balaoMidia.waitFor({ state: 'detached' })
   assert.equal(await pagina.locator('.cartao-midia').count(), 1, 'o mesmo arquivo religa, não duplica')
 
   // tema claro no seletor

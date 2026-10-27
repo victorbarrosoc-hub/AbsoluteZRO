@@ -1,5 +1,5 @@
 // TPeasy: funciona sem internet no set. Busca a versão nova quando há rede e cai na cópia guardada quando não há.
-const CACHE = "tpeasy-v14";
+const CACHE = "tpeasy-v15";
 const FILES = [
   "/",
   "/site.css",
@@ -19,6 +19,7 @@ const FILES = [
   "/app/js/views.js",
   "/app/js/link.js",
   "/app/js/zro.js",
+  "/app/js/pendencias.js",
   "/app/js/remote.js",
   "/app/remote.html",
   "/icons/favicon.svg",

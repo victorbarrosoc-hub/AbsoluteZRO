@@ -58,6 +58,54 @@ paths:
       security: []
       parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
       responses: { '200': { description: imagem (webp, jpeg ou png), em cache para sempre }, '404': { description: foto trocada ou conta inativa } }
+  /api/v1/ia/estado:
+    get:
+      summary: IA do ecossistema · se está ligada, primeiro nome, plataforma (do token) e créditos do mês (zro.ai_credits)
+      security: [{ session: [] }, { appToken: [] }]
+      responses:
+        { '200': { description: '{ ligada, nome, produto, creditos: { usados, limite, renova_em } }' }, default: { $ref: '#/components/responses/Error' } }
+  /api/v1/ia/conversas:
+    get:
+      summary: Conversas da pessoa com a IA. Com o token de um app (escopo zro.ia), só as daquele app; pelo HUB, todas ou ?produto=<id>|hub
+      security: [{ session: [] }, { appToken: [] }]
+      parameters: [{ name: produto, in: query, required: false, schema: { type: string } }]
+      responses:
+        {
+          '200': { description: '{ conversas: [{ id, titulo, produto, produtoNome, atualizada, criada }] }' },
+          default: { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/ia/conversas/{id}:
+    get:
+      summary: Uma conversa com as mensagens (só de quem conversou)
+      security: [{ session: [] }, { appToken: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: '{ conversa, mensagens: [{ id, papel, texto, criada }] }' }, '404': { $ref: '#/components/responses/Error' } }
+    delete:
+      summary: Apaga a conversa
+      security: [{ session: [] }, { appToken: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '204': { description: apagada }, '404': { $ref: '#/components/responses/Error' } }
+  /api/v1/ia/mensagens:
+    post:
+      summary: Pergunta à IA do ecossistema. Resposta em streaming NDJSON (conversa, lendo, texto, fim | erro). Gasta 1 crédito zro.ai_credits por resposta
+      security: [{ session: [] }, { appToken: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [texto]
+              properties:
+                {
+                  conversa: { type: string, format: uuid, description: 'continua uma conversa; sem ele, começa outra' },
+                  texto: { type: string, maxLength: 8000 },
+                }
+      responses:
+        '200': { description: 'application/x-ndjson: uma linha JSON por evento' }
+        '403': { description: quota_not_configured (plano sem créditos de IA) }
+        '429': { description: quota_exceeded (créditos do mês acabaram) }
+        '503': { description: upstream_unavailable (IA ainda não ligada) }
+        default: { $ref: '#/components/responses/Error' }
   /api/v1/organizations:
     get: { summary: Minhas organizações, responses: { '200': { description: ok } } }
     post: { summary: Criar organização (a pessoa vira dona), responses: { '201': { description: criada }, default: { $ref: '#/components/responses/Error' } } }

@@ -17,6 +17,7 @@ const SHARED: Record<string, string> = {
   org: 'A organização ativa, seu papel nela e as ferramentas contratadas',
   offline_access: 'Continuar conectado sem pedir login de novo (dá para remover no Perfil)',
   'carro-do-freela.jobs': 'Levar seus jobs e a equipe escalada para os projetos da organização',
+  'zro.ia': 'Conversar com a IA da Absolute ZRO (usa os créditos de IA do seu plano)',
 }
 
 function toQuery(sp: Record<string, string | string[] | undefined>) {

@@ -8,6 +8,7 @@ import { Aparece } from '@/components/home/aparece'
 import { Conheca } from '@/components/home/conheca'
 import { Fluxo } from '@/components/home/fluxo'
 import { Numeros } from '@/components/home/numeros'
+import { PalcoZ, Z } from '@/components/ia/simbolo-z'
 import { publicCatalog } from '@/lib/data/catalog'
 import { hasDesktopInstaller } from '@/lib/downloads'
 
@@ -218,6 +219,40 @@ export default async function Landing() {
           <p>Cada etapa avisa o HUB. A próxima começa de onde a outra parou.</p>
         </div>
         <Fluxo etapas={etapas} />
+      </section>
+
+      {/* O Z, a IA do ecossistema: o símbolo no centro e as ferramentas em volta, ligadas pelo ar dele. */}
+      <section className="section section--center pz-sec" aria-labelledby="z-title">
+        <div className="section__head section__head--wide reveal">
+          <h2 id="z-title" className="display-2 atitle">
+            <span className="atitle__thin">Conheça o Z.</span>
+            <span className="atitle__bold">A ponte entre tudo.</span>
+          </h2>
+          <p>Uma IA para o ecossistema inteiro. Lê o que acontece nas ferramentas e ajuda você a seguir para a próxima.</p>
+        </div>
+        <PalcoZ cena="ouvindo" className="pz">
+          <Z movimento="pensando" tamanho={200} vento className="pz__z" />
+          <ul className="pz__orbita" aria-label="Ferramentas que o Z conhece">
+            {ativos.map((p, i) => (
+              <li key={p.id as string} style={{ '--i': i, '--n': ativos.length } as CSSProperties} title={p.name as string}>
+                <ProductMark productId={p.id as string} name={p.name as string} size={44} />
+              </li>
+            ))}
+          </ul>
+        </PalcoZ>
+        <ul className="papp__chips reveal" aria-label="Como o Z funciona">
+          <li>Uma conta só</li>
+          <li>Conversas de todas as plataformas</li>
+          <li>Você confere antes de agir</li>
+        </ul>
+        <div className="papp__ctas reveal">
+          <Link className="glass-btn glass-btn--ink" href="/ia">
+            Conversar com o Z
+          </Link>
+          <Link className="glass-btn" href="/planos">
+            Créditos nos planos
+          </Link>
+        </div>
       </section>
 
       {/* O app para computador: o painel de verdade num MacBook e o HUB no iPhone. */}
