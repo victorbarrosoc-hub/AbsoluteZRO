@@ -874,3 +874,15 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Conferido no Electron 44 em tela virtual (Playwright `_electron`, conta falsa em `conta.json`): Novo projeto, diálogo
   de salvar, volta à lista, Revela e Conta Absolute ZRO no navegador do sistema, Sair apaga `conta.json` e vai para
   entrar.html. `--smoke` OK.
+
+## Absolute ZRO para computador 1.2.0: "Atualizar" com um clique (27/10/2026)
+
+- Como no SOBEDESCE: o aviso de versão nova tem **Atualizar**. O app baixa o instalador de `/baixar/hub/<sistema>?build=N`,
+  confere o SHA-256 publicado em `/baixar/hub/versao`, prepara a troca (Mac: `hdiutil` + `ditto` ao lado do app +
+  `xattr -cr`; Windows: NSIS `/S`), fecha e abre já na versão nova (`desktop/atualizador.cjs`). Progresso na barra do
+  ícone (Dock/barra de tarefas), sem diálogo piscando. Se não dá para trocar (aberto do disco de instalação, sem
+  permissão, troca anterior que falhou), o botão vira **Baixar**.
+- `test/atualizador.test.mjs` (Mac e Windows com comandos falsos, SHA-256 que não bate, build novo no meio, marca de
+  falha) e o aviso entregando o build certo: `npm test` 35/35; `--smoke` ok no Electron 44 (Linux).
+- Quem está na 1.1.1 atualiza para a 1.2.0 pelo comando do Terminal uma última vez; dali em diante, pelo botão.
+- Não validado: a troca num Mac e num Windows de verdade.

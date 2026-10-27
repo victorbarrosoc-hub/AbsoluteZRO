@@ -22,11 +22,13 @@ test('comparação de versão e build', () => {
   assert.equal(temNova(6, { build: 6 }), false)
   assert.equal(temNova(0, { build: 99 }), false, 'build de desenvolvimento nunca avisa')
   assert.equal(temNova(5, null), false)
-  assert.deepEqual(lerRemoto({ ok: true, build: 12, versao: '1.0.1' }), { build: 12, versao: '1.0.1' })
+  assert.deepEqual(lerRemoto({ ok: true, build: 12, versao: '1.0.1' }), { build: 12, versao: '1.0.1', sha256Mac: null, sha256Windows: null })
+  assert.equal(lerRemoto({ build: 12, sha256Mac: 'A'.repeat(64) }).sha256Mac, 'a'.repeat(64))
+  assert.equal(lerRemoto({ build: 12, sha256Mac: 'nao-e-hash' }).sha256Mac, null)
   assert.equal(lerRemoto({ ok: false, build: 12 }), null)
   assert.equal(lerRemoto({ build: '12abc' }), null)
   assert.equal(lerRemoto({ build: -1 }), null)
-  assert.deepEqual(lerRemoto({ build: 3, versao: '<script>' }), { build: 3, versao: null })
+  assert.deepEqual(lerRemoto({ build: 3, versao: '<script>' }), { build: 3, versao: null, sha256Mac: null, sha256Windows: null })
 })
 
 test('build-info: ausente ou inválido = 0', () => {
@@ -100,4 +102,21 @@ test('janela: lembra tamanho e posição só se ainda couber numa tela', () => {
   assert.deepEqual(janela.ler(d), { width: 1000, height: 700 })
   fs.writeFileSync(path.join(d, janela.ARQUIVO), '{quebrado')
   assert.equal(janela.ler(d), null)
+})
+
+test('aviso: "Atualizar" entrega ao atualizador o build, o endereço com ?build= e o SHA-256 da plataforma', async () => {
+  const pedidos = []
+  const a = new AvisoDeVersao({
+    hub: 'https://h.example',
+    plataforma: 'mac',
+    build: 10,
+    pasta: tmp(),
+    fetch: resposta({ ok: true, build: 12, versao: '1.2.0', sha256Mac: 'b'.repeat(64), sha256Windows: 'c'.repeat(64) }),
+    avisar: async () => 'atualizar',
+    abrir: () => assert.fail('não abre o navegador'),
+    atualizar: (n) => pedidos.push(n),
+  })
+  const r = await a.conferir()
+  assert.equal(r.escolha, 'atualizar')
+  assert.deepEqual(pedidos, [{ build: 12, versao: '1.2.0', url: 'https://h.example/baixar/hub/mac?build=12', sha256: 'b'.repeat(64) }])
 })
