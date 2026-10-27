@@ -1216,6 +1216,7 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Não validado: conversa de verdade com conta real (site e computador) e se o cliente `synquei-desktop` no banco tem
   `product_id = synquei` e `zro.ia` (cadastrado pelo console; clientes com produto ganham `zro.ia` no cadastro e pela
   migração 0016). O texto interno do painel ("Pergunte ao Z…") vem do `<zro-ia>` do HUB.
+
 ## A Z no painel inicial do AEON e da Revela (27/10/2026)
 
 - AEON: aba **Z** primeira no dock e página inicial do app (`app/z.js`), no site, no celular e no app de computador;
@@ -1238,6 +1239,7 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Não validado: produção (nada publicado), conta e IA reais, streaming pela Vercel, o repasse do app de computador
   contra a Absolute ZRO de verdade (só o smoke, que responde 401 à Z) e se `aeon-web`/`aeon-desktop` têm `product_id`
   (a 0016 só dá `zro.ia` a clientes com produto). Os textos dentro do `<zro-ia>` ("Pergunte ao Z…") vêm do HUB.
+
 ## A Z como painel inicial: SOBEDESCE e Carro do Freela (27/10/2026)
 
 - SOBEDESCE: login pede `offline_access zro.ia` (sem o escopo, `invalid_scope` refaz o pedido sem ele); os tokens ficam
