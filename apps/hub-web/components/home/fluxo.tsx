@@ -1,13 +1,13 @@
 'use client'
 /**
- * O fluxo entre as ferramentas, da equipe à entrega: a linha acende até a etapa ativa e, embaixo, os eventos que ela
- * manda para o HUB (os contratos de @zro/media-contracts). Avança sozinho pelo fim de uma animação CSS; clicar numa
+ * O fluxo entre as ferramentas, da equipe à entrega: a linha acende até a etapa ativa e, embaixo, o que ela avisa ao HUB
+ * (cada aviso é um contrato de @zro/media-contracts; o nome técnico fica na dica). Avança sozinho pelo fim de uma animação CSS; clicar numa
  * etapa vai direto a ela. Fora da tela ou com "reduzir movimento", para.
  */
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { ProductMark } from '@zro/ui'
 
-export type Etapa = { id: string; nome: string; etapa: string; eventos: string[]; cor: CSSProperties }
+export type Etapa = { id: string; nome: string; etapa: string; eventos: { id: string; nome: string }[]; cor: CSSProperties }
 
 export function Fluxo({ etapas }: { etapas: Etapa[] }) {
   const [ativo, setAtivo] = useState(0)
@@ -47,10 +47,10 @@ export function Fluxo({ etapas }: { etapas: Etapa[] }) {
         <h3>
           <span>{atual.etapa}</span> {atual.nome}
         </h3>
-        <ul aria-label={`Eventos que ${atual.nome} manda para o HUB`}>
+        <ul aria-label={`O que ${atual.nome} avisa ao HUB`}>
           {atual.eventos.map((ev) => (
-            <li key={ev}>
-              <code>{ev}</code>
+            <li key={ev.id} title={ev.id}>
+              {ev.nome}
             </li>
           ))}
         </ul>
