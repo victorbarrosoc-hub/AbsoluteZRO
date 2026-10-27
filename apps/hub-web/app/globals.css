@@ -4655,7 +4655,7 @@ a.pstrip__card:focus-visible .pstrip__go {
   translate: -50% -50%;
   transform: rotate(calc(360deg / var(--n) * var(--i) - 90deg)) translateX(var(--raio)) rotate(calc(-360deg / var(--n) * var(--i) + 90deg));
 }
-.pz__orbita .zro-mark {
+:root[data-theme='light'] .pz__orbita .zro-mark {
   box-shadow: var(--shadow-float);
 }
 @media (max-width: 700px) {
