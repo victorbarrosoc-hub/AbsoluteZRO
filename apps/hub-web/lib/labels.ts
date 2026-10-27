@@ -53,6 +53,7 @@ export const ROLE_LABEL: Record<string, string> = {
   editor: 'Edição',
   viewer: 'Leitura',
   billing: 'Financeiro',
+  guest: 'Convidado',
 }
 
 export const ACCESS_LABEL: Record<string, string> = {

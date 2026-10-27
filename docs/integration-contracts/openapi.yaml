@@ -15,6 +15,7 @@ servers:
 components:
   securitySchemes:
     session: { type: apiKey, in: cookie, name: zro_session }
+    appToken: { type: http, scheme: bearer, bearerFormat: JWT, description: 'Access token do login único (at+jwt) de um app da família, com o escopo da rota.' }
     providerSignature: { type: apiKey, in: header, name: zro-signature, description: 't=<unix>,v1=<hex HMAC-SHA256 de "t.corpo">' }
   schemas:
     Error:
@@ -25,6 +26,7 @@ components:
     MediaManifest: { $ref: './schemas/zro-media-manifest.v1.schema.json' }
     OrganizationPlan: { $ref: './schemas/zro-organization-plan.v1.schema.json' }
     CarroJob: { $ref: './schemas/carro-do-freela.job.v1.schema.json' }
+    CarroCrew: { $ref: './schemas/carro-do-freela.crew.v1.schema.json' }
     TpeasyBackup: { $ref: './schemas/tpeasy.backup.v1.schema.json' }
   responses:
     Error: { description: Erro de domínio, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
@@ -133,9 +135,28 @@ paths:
       responses: { '201': { description: nova versão }, '403': { $ref: '#/components/responses/Error' } }
   /api/v1/carro-do-freela/jobs:
     post:
+      security: [{ session: [] }, { appToken: [carro-do-freela.jobs] }]
       summary: Criar (ou devolver) o projeto de um job — contrato carro-do-freela.job/1
       requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/CarroJob' } } } }
-      responses: { '201': { description: criado }, '200': { description: já existia }, '403': { $ref: '#/components/responses/Error' } }
+      responses:
+        {
+          '201': { description: criado },
+          '200': { description: já existia },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/carro-do-freela/jobs/crew:
+    post:
+      security: [{ session: [] }, { appToken: [carro-do-freela.jobs] }]
+      summary: Equipe escalada vira equipe do projeto do job (carro-do-freela.crew/1); quem é de fora recebe convite de convidado por e-mail
+      requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/CarroCrew' } } } }
+      responses:
+        {
+          '200': { description: 'projectId, members[{zro_user_id, function, status: na_equipe | convidado | convite_pendente}], emailDelivery' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+        }
   /api/v1/desktop/apps:
     get:
       summary: Catálogo da central de apps do computador (ferramentas, versões, arquivos por sistema e SHA-256). Público.

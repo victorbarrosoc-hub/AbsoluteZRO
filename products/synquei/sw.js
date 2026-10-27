@@ -1,6 +1,6 @@
-// Modo offline do Synquei: guarda o site e o app na primeira visita. HTML vem da rede quando dá (para pegar
-// versões novas); o resto vem do cache e é atualizado em segundo plano. /api/ e /baixar/ vão sempre direto à rede.
-const CACHE = 'synquei-v13'
+// Modo offline do Synquei: guarda o site e o app na primeira visita. HTML, site.css e site.js vêm da rede quando dá
+// (para pegar versões novas); o resto vem do cache e é atualizado em segundo plano. /api/ e /baixar/ vão sempre direto à rede.
+const CACHE = 'synquei-v14'
 const CORE = [
   '/',
   '/site.css',
@@ -90,7 +90,9 @@ self.addEventListener('fetch', (e) => {
   // funções (login, /api/zro/eu com dados da pessoa) e downloads nunca passam pelo cache
   if (u.pathname.startsWith('/api/') || u.pathname.startsWith('/baixar/')) return
   const html = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html')
-  if (html) {
+  // o CSS e o JS do site andam junto com o HTML: vêm da rede também, senão uma página nova pega o estilo velho
+  const doSite = u.pathname === '/site.css' || u.pathname === '/site.js'
+  if (html || doSite) {
     e.respondWith(
       fetch(req)
         .then((res) => {

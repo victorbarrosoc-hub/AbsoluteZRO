@@ -524,6 +524,7 @@ html.app .homenav{padding-top:env(safe-area-inset-top,0px)}
 .cjr b{display:block;font-size:14px;color:var(--segurando);margin-bottom:5px}
 .cjr p{margin:0;font-size:13.5px;color:var(--cal-fraco);line-height:1.6}
 .jacoes{display:flex;gap:9px;flex-wrap:wrap;margin-top:20px;padding-top:18px;border-top:1px solid var(--linha)}
+.jzro{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
 .edbox{border:1px solid var(--ciano-esc);background:var(--ciano-tint);border-radius:12px;padding:16px 17px;margin-top:18px}
 .edl{display:grid;grid-template-columns:34px 1fr auto auto;gap:11px;align-items:center;padding:8px 0;
   border-bottom:1px solid var(--linha)}
@@ -7825,6 +7826,10 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
             <div class="frow"><span class="lab">Portfólio</span><input class="fld" id="cd-port" placeholder="@seuinstagram ou link"></div>
           </div>
           <p class="note" style="margin-top:0">Seu telefone <strong style="color:var(--cal)">não aparece para ninguém</strong>. Ele serve para a chamada chegar no seu WhatsApp — quem contrata fala com você por dentro da plataforma.</p>
+          <!-- ⚠️ CONSENTIMENTO (26/out · 3): nasce DESMARCADO e é a pessoa que
+               marca — caixa pré-marcada não é consentimento. Ver
+               registrarConsentimento(). -->
+          <label class="tog" style="margin-top:14px" title="Quem contrata vê nome, praça, funções, equipamento, tabela e portfólio. O WhatsApp nunca aparece. Dá para mudar quando quiser, aqui no cadastro."><input type="checkbox" id="cd-consente"> Mostrar meu perfil para quem contrata</label>
           <div class="cdnav">
             <button class="btn" data-ir="2">Continuar</button>
             <!-- ⚠️ ESTE BOTÃO MUDOU DE SIGNIFICADO QUANDO A PORTA MUDOU. Ele
@@ -16413,6 +16418,7 @@ function drawCadPasso(){
 function abrirCadastro(volta){
   S.voltaDe=volta||"meu";
   cadTodo=false;   /* cada entrada recomeça pela régua do lado por onde veio */
+  if(v("cd-consente")) v("cd-consente").checked=perfilAutorizado(EU);
   const pv=v("cd-primeira"); if(pv) pv.hidden=(S.voltaDe!=="entrar")||perfilPronto();
   /* ⚠️ NO CAMINHO CURTO A PENDÊNCIA SÓ CONTA ATÉ A ETAPA 2. Sem este
      filtro, quem entra com nome e função preenchidos cairia direto na
@@ -16883,7 +16889,27 @@ v("ovl-guia").addEventListener("click",ev=>{ if(ev.target===v("ovl-guia")) fecha
 /* ⚠️ DOIS BOTÕES, UMA SAÍDA. `cd-fim` fecha as seis etapas; `cd-fim2`
    fecha as duas do caminho curto. Duplicar o corpo aqui seria garantir que
    um dos dois esquece de contar o passo ou de mandar para a tela certa. */
+/* ============ CONSENTIMENTO E ORIGEM DO DADO (26/out · 3) ============
+   Antes de abrir para o público, cada perfil de gente real precisa de
+   duas coisas registradas: DE ONDE veio o dado (a própria pessoa declarou
+   — "autodeclarado"; os cadastros da prévia são "ficticio") e SE ela
+   autorizou mostrar o perfil a quem contrata, com a versão do texto que
+   leu e a data. Sem marcar, o perfil fica só com ela.
+   ⚠️ Hoje o registro mora no perfil, NESTE aparelho, como o resto do
+   cadastro: vai para o banco junto com o perfil quando a Fase 1 tiver
+   servidor. Até lá não há divulgação para o público (README). */
+const TERMO_PERFIL_V="2026-10-26";
+function registrarConsentimento(mostrar){
+  const antes=EU.consentimento;
+  EU.origem="autodeclarado";
+  if(mostrar&&!(antes&&antes.mostrar&&antes.versao===TERMO_PERFIL_V))
+    EU.consentimento={mostrar:true,versao:TERMO_PERFIL_V,em:new Date().toISOString()};
+  else if(!mostrar) EU.consentimento=antes&&antes.mostrar?{mostrar:false,versao:TERMO_PERFIL_V,em:new Date().toISOString()}:null;
+  usoGravar();
+}
+const perfilAutorizado=c=>!!(c&&c.consentimento&&c.consentimento.mostrar);
 function concluirCadastro(){
+  registrarConsentimento(!!(v("cd-consente")&&v("cd-consente").checked));
   EU.cadReceber=true; recalcular(); nuvemPasso("cadastro");
   /* ⚠️ Vindo de "entrar", o fim do cadastro cai no FEED — a mesma primeira
      tela de quem já tem perfil. Antes caía em Praças, que é tela de
@@ -19131,6 +19157,7 @@ function ligarAcoesJob(el,e){
     som(j.lider?"claquete":"toque"); drawJobs();
   });
   el.querySelectorAll("[data-lsjob]").forEach(b=>b.onclick=()=>abrirLista(+b.dataset.lsjob));
+  el.querySelectorAll("[data-zroenv]").forEach(b=>b.onclick=()=>enviarZro(ESCALAS.find(x=>x.id===+b.dataset.zroenv),b));
   el.querySelectorAll("[data-odjob]").forEach(b=>b.onclick=()=>abrirOrdemDia(+b.dataset.odjob));
   el.querySelectorAll("[data-dcgjob]").forEach(b=>b.onclick=()=>abrirDescarga(+b.dataset.dcgjob));
   el.querySelectorAll("[data-odpdf]").forEach(b=>b.onclick=()=>{
@@ -19962,7 +19989,95 @@ function acoesJob(e,prod){
       (prod?"Editar escala":"Editar job")+'</button>':'')+
     (prod?'<button class="btn gh" data-rep="'+e.id+'">Repetir escala</button>':'')+
     '<button class="btn gh" data-canc="'+e.id+'">'+(prod?"Cancelar job":"Sair deste job")+'</button>'+
-    '</div><p class="note" style="margin-top:9px">'+esc(aviso)+'</p>';
+    '</div><p class="note" style="margin-top:9px">'+esc(aviso)+'</p>'+
+    (prod?blocoZroJob(e):'');
+}
+
+/* ============ o job vira projeto na Absolute ZRO (26/out · 3) ============
+   Quem contrata leva o job para a organização dele no HUB: título, data,
+   funções e o briefing inteiro (com horário, chamada, local e referências)
+   viram um projeto, e quem está escalado e TEM conta Absolute ZRO entra na
+   equipe do projeto — quem já é da organização direto, quem não é por
+   convite que só abre aquele projeto. O servidor (/api/zro/enviar) fala com
+   o HUB com o token da pessoa; o navegador nunca vê token.
+
+   ⚠️ SÓ NO DOMÍNIO, com conta Absolute ZRO liberada. No file://, no
+   artifact e nas suítes o bloco não existe (zroLigavel), como o botão de
+   entrar. ⚠️ Gente da prévia não tem conta: ela aparece como "sem conta",
+   nunca como convidada — convite para pessoa fictícia seria mentira.
+   ⚠️ e.uid é o id do job no HUB (o e.id é só deste aparelho e repete). */
+const ZRO_ENV_ERRO={
+  plano:"O Carro do Freela não está no plano da sua organização.",
+  papel:"Seu papel na organização não cria projetos.",
+  email:"Confirme seu e-mail na Absolute ZRO.",
+  organizacao:"Escolha uma organização na Absolute ZRO.",
+  hub:"A Absolute ZRO não respondeu. Tente de novo."
+};
+function zroPodeEnviar(){ return zroLigavel()&&!!ZRO_CONTA&&ZRO_CONTA.liberado===true }
+function contaZroDe(x){
+  const c=CREW.find(y=>y.id===x.quem);
+  return c&&c.zro&&typeof c.zro.conta==="string"&&typeof c.zro.email==="string"?c.zro:null;
+}
+function equipeZro(e){
+  const fora=e.equipe.filter(x=>x.quem!==EU.id);
+  return {com:fora.filter(contaZroDe), sem:fora.filter(x=>!contaZroDe(x)).length};
+}
+function blocoZroJob(e){
+  if(!zroPodeEnviar()) return "";
+  const z=e.zro, q=equipeZro(e), n=z&&z.equipe?z.equipe:null;
+  const resumo=[];
+  if(n){ const est=k=>n.filter(m=>m.estado===k).length;
+    if(est("na_equipe")) resumo.push(est("na_equipe")+" na equipe");
+    if(est("convidado")+est("convite_pendente")) resumo.push(pl(est("convidado")+est("convite_pendente"),"convidado","convidados")) }
+  if(q.sem) resumo.push(q.sem+" sem conta Absolute ZRO");
+  return '<div class="jzro">'+
+    (z&&z.link?'<a class="btn gh" href="'+esc(z.link)+'" target="_blank" rel="noopener">Abrir na Absolute ZRO</a>':'')+
+    '<button class="btn gh" data-zroenv="'+e.id+'">'+(z?"Atualizar equipe":"Levar para a Absolute ZRO")+'</button>'+
+    '</div>'+(resumo.length?'<p class="note" style="margin-top:9px">'+esc(resumo.join(" · "))+'</p>':'');
+}
+function isoLocal(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0") }
+function pedidoZro(e){
+  if(!e.uid) e.uid=(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));
+  const refs=(e.refs||[]).map(r=>Array.isArray(r)?r:[r,""]);
+  const linhas=[e.brief||""];
+  linhas.push("", "Horário: "+e.ini+" às "+e.fim);
+  if(e.chamada) linhas.push("Chamada: "+e.chamada);
+  if(e.local) linhas.push("Local: "+e.local);
+  if(refs.length) linhas.push("", "Referências:", ...refs.map(r=>"- "+[r[0],r[1]].filter(Boolean).join(" — ")));
+  const funcoes={};
+  e.equipe.forEach(x=>{ funcoes[x.func]=(funcoes[x.func]||0)+1 });
+  return {
+    job:{ id:"cdf-"+e.uid, titulo:e.nome, tipo:e.tipo||"", cliente:e.cliente||"",
+      cidade:String(e.local||"").split(" — ")[0], briefing:linhas.join("\n").trim(),
+      datas:[{data:isoLocal(dataEsc(e)), rotulo:e.ini+" às "+e.fim}],
+      funcoes:Object.entries(funcoes).map(([f,q])=>({funcao:f,quantas:q})),
+      referencias:refs.flat().filter(u=>/^https:\/\/\S+$/.test(u||"")) },
+    equipe:equipeZro(e).com.map(x=>{ const z=contaZroDe(x); return {conta:z.conta,email:z.email,funcao:x.func,papel:"viewer"} })
+  };
+}
+let zroEnviando=false;
+function enviarZro(e,bt){
+  if(!e||zroEnviando||!zroPodeEnviar()) return;
+  const voltar=()=>{ location.href="/api/zro/entrar?volta="+encodeURIComponent(location.pathname) };
+  if(!ZRO_CONTA.hub) return voltar();
+  zroEnviando=true; if(bt){ bt.disabled=true; bt.textContent="Levando…" }
+  fetch("/api/zro/enviar",{method:"POST",credentials:"same-origin",cache:"no-store",
+      headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify(pedidoZro(e))})
+    .then(r=>r.json().catch(()=>({})).then(j=>({s:r.status,j})))
+    .catch(()=>({s:0,j:{}}))
+    .then(({s,j})=>{
+      zroEnviando=false;
+      if(s===200&&j.projeto&&j.projeto.id){
+        e.zro={id:j.projeto.id, link:j.projeto.link, equipe:j.equipe&&Array.isArray(j.equipe.membros)?j.equipe.membros:(e.zro&&e.zro.equipe)||null};
+        usoGravar&&usoGravar();
+        som("claquete");
+        avisar({t:j.projeto.criado?"Projeto criado na Absolute ZRO":"Equipe atualizada na Absolute ZRO",
+          sub:j.equipe&&j.equipe.erro?ZRO_ENV_ERRO[j.equipe.erro==="papel"?"papel":"hub"]:e.nome,
+          tipo:"bom", icone:"✓", fazer:()=>window.open(j.projeto.link,"_blank","noopener")});
+      } else if(j.erro==="reconectar"||s===401){ ZRO_CONTA.hub=false; return voltar() }
+      else avisar({t:"Não deu para levar o job", sub:ZRO_ENV_ERRO[j.erro]||ZRO_ENV_ERRO.hub, tipo:"chama", icone:"⚠"});
+      drawJobs();
+    });
 }
 
 v("rf-x").onclick=()=>{v("ovl-ref").hidden=true};
@@ -27089,7 +27204,7 @@ const FBK_KEY=/*__WEB3FORMS_KEY__*/"";   /* Web3Forms → carrodofreela@gmail.co
    suporte: durante os testes a primeira pergunta de todo relato e "qual
    versao voce esta usando?", e sem ela nao da para saber se o defeito ja
    foi consertado ou se a pessoa esta com um arquivo velho no cache. */
-const VERSAO="26/out · 2";
+const VERSAO="26/out · 3";
 /* ?diag na URL faz a linha de contexto do suporte mostrar as medidas do
    aparelho. Existe porque daqui não dá para inspecionar o Safari do
    Victor: em vez de adivinhar uma quarta vez, ele abre com ?diag, toca no
@@ -27692,7 +27807,9 @@ v("lg-bloq-sair").onclick=()=>{ zroSair(); pintarLogin() };
         ZRO_CONTA={sub:j.sub,nome:typeof j.nome==="string"?j.nome:"",email:typeof j.email==="string"?j.email:"",
           organizacao:typeof j.organizacao==="string"?j.organizacao:"",
           /* o direito de uso vem do admin da Absolute ZRO, a cada login */
-          liberado:j.liberado===true};
+          liberado:j.liberado===true,
+          /* dá para levar jobs ao HUB (o login guardou o acesso) */
+          hub:j.hub===true};
         ZRO_PRONTO=true;
       } else ZRO_PRONTO=!!r.ligado;
       pintarZro();

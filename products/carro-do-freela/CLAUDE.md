@@ -231,6 +231,51 @@ rodam no fim, sozinhas (`SOZINHAS` no `run.js`).
   cita em `m/`); a que confere comentário do código lê o template (o script
   sai minificado, sem comentário).
 
+## 26/out · 3 — o job vira projeto na Absolute ZRO, e o consentimento entra no cadastro
+
+Pedido do titular, por prioridade: (1) backend de jobs que manda `carro-do-freela.job/1` ao HUB — o job vira
+projeto e o briefing não se perde; (2) a equipe da escala vira a equipe do projeto, sem cadastro duplicado;
+(3) consentimento e origem dos dados antes de abrir ao público; (4) as suítes das fases sem `build:fases` à mão.
+**Regra que fica: nada de tráfego pago** enquanto agenda, reputação e pagamento forem simulados e o consentimento
+não estiver registrado no banco.
+
+### Job e equipe → HUB (`api/zro/enviar.js`, `test/api/zro.test.js`, `conta-zro` §10)
+
+- O login pede também `offline_access carro-do-freela.jobs`. ⚠️ **Se o HUB responder `invalid_scope`** (migration
+  0014 ainda não aplicada), o callback refaz o pedido com `basico=1`, sem esses escopos: o login nunca quebra por
+  causa do envio.
+- O refresh token (e o access token de 10 min) vai em `cdf_hub`, **cifrado** (AES-256-GCM, chave por HKDF com uso
+  próprio), httpOnly, só em `/api/zro`. ⚠️ Assinar não bastava: é token. O navegador nunca vê token (a suíte confere
+  `document.cookie`).
+- ⚠️ **O refresh RODA**: cada troca devolve um novo e o velho, reapresentado, derruba a família no HUB. Por isso o
+  envio é UMA rota (`/api/zro/enviar`) que faz job e equipe com UM token, reaproveita o access token enquanto vale,
+  devolve o cookie novo em TODA resposta depois da troca, e o botão trava enquanto envia (`zroEnviando`).
+- O servidor monta o contrato só com os campos aceitos (telefone e o resto do pedido ficam de fora) e a equipe só
+  com quem tem conta Absolute ZRO (`c.zro = {conta, email}`). ⚠️ **Gente da prévia não tem conta** e aparece como
+  "sem conta": convidar pessoa fictícia seria mentira.
+- `e.uid` é o id do job no HUB (`cdf-<uuid>`): o `e.id` é deste aparelho e repete entre aparelhos.
+- Na tela: bloco `.jzro` no fim das ações do job, **só para quem contrata, só no domínio** com conta liberada
+  (`zroPodeEnviar`). Antes: "Levar para a Absolute ZRO"; depois: "Abrir na Absolute ZRO" + "Atualizar equipe" (o job é criado uma vez; reenviar só leva a equipe), e uma linha
+  com quantos estão na equipe, convidados e sem conta.
+- No HUB: rota com Bearer (`route(..., { bearer })`), papel `guest` que só vê os projetos em que está, convite com
+  projeto e conta (`invitee_user_id`), seção Equipe no projeto. Ver `docs/roadmap.md`.
+
+### Consentimento e origem (`test/consentimento.js`)
+
+- "Mostrar meu perfil para quem contrata" no passo 1 do cadastro, **desmarcado** (caixa pré-marcada não é
+  consentimento). A dica (`title`) diz o que é mostrado e que o WhatsApp nunca aparece.
+- `registrarConsentimento()` no `concluirCadastro()`: grava `EU.origem = "autodeclarado"` e
+  `EU.consentimento = {mostrar, versao: TERMO_PERFIL_V, em}`; desmarcar grava a retirada com data. ⚠️ Mudou o
+  texto da caixa? **Suba `TERMO_PERFIL_V`**: o registro vale para o texto que a pessoa leu. ⚠️ Nada de `VERSAO="` no nome de constante nova: o `vercel-build` lê a versão da build por esse padrão e pegou a primeira que achou (por isso o nome não é `CONSENTIMENTO_VERSAO`).
+- ⚠️ O registro mora no aparelho, como o resto do cadastro, até a Fase 1 ter banco. O README diz isso e mantém o
+  portão de abrir ao público.
+
+### O arnês gera as fases (`test/run.js`, `DAS_FASES`)
+
+`versoes`, `fase1-sem-dinheiro`, `seguranca` e `tela-de-inicio` leem os sete builds. Quando alguma delas está na
+lista, o `run.js` gera os sete antes (~4 s); `CDF_SEM_BUILD=1` pula (para testar um build feito à mão, como o
+anônimo). O CI não tem mais o passo separado.
+
 ## Como o projeto é construído
 
 Um HTML sem framework, sem CDN, sem requisição externa — **mais a pasta

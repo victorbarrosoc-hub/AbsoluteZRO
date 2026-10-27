@@ -202,6 +202,33 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   (mesmas rotas, chaves e CSP) antes da produção.
 - Login único nas cinco: `/api/zro/entrar` de cada domínio leva ao HUB; apps marcados como da família.
 
+## Carro do Freela → HUB: job, equipe e consentimento (26/10/2026)
+
+- HUB, raiz: `npm run lint`, `format:check`, `typecheck` limpos; `npm test` (Postgres 16 local) **150/150**, com
+  `tests/integration/carro-hub.test.ts` (10): escopo só no cliente do Carro; token vira a pessoa na organização do
+  login e o job vira projeto com o briefing; token sem escopo, adulterado, de app removido no Perfil ou desativado é
+  recusado; quem saiu da organização perde o acesso mesmo com token válido; equipe pede o job antes, membro entra
+  direto, conta de fora recebe convite, reenviar não duplica; convite só a mesma conta aceita e abre só aquele
+  projeto; **isolamento do convidado** (não vê membros, plano, vínculos, eventos da organização nem nomes de quem
+  não está com ele num projeto; não importa job nem monta equipe; vê as etapas no estado real, sem "contratar");
+  convite de convidado não rebaixa quem já é da organização; edição importa job mas não monta equipe.
+- `npm run build` ok; `npm run test:e2e` **21/21**, com o novo `sso.spec.ts` "Carro do Freela": token do app cria o
+  projeto pela API real sem cookie e com outra Origin (201, depois 200 com o mesmo id), Bearer inválido 401, equipe
+  sem e-mail confirmado 403 `email_not_verified`, e a página do projeto com a seção Equipe.
+- `npm run contracts:export` (novo `carro-do-freela.crew.v1.schema.json`); rota nova documentada no OpenAPI.
+- Carro: `npm run test:api` **27/27** (HUB falso com refresh em rotação, revogação e as duas rotas): cookie `cdf_hub`
+  cifrado e httpOnly em `/api/zro`; HUB sem o escopo → login refeito sem ele; envio monta só os campos do contrato
+  (telefone fica de fora) e a equipe com conta; token vencido renova e o refresh velho derruba o acesso; portas
+  fechadas (origem, método, tipo, sessão, conta trocada, plano, pedido ruim, recusa do HUB); sair revoga no HUB.
+- Carro, navegador: `conta-zro` **54/54** (§10: botão no painel do job, HUB recebe o briefing inteiro, só quem tem
+  conta vai na equipe, "Abrir na Absolute ZRO" depois, nada no lado do freela nem fora do domínio);
+  `consentimento` **11/11** (caixa desmarcada, sem marcar não registra, marcar grava versão e data, retirada
+  registrada, sobrevive ao recarregar, ninguém fictício "autorizou"). As quatro suítes das fases passaram com
+  `public/fase-*.html` apagados: o `run.js` gera os sete builds.
+- Carro, bateria completa (`npm test`, Chromium 1243): **87/87** em 20,5 min; `sem-zoom` falhou em paralelo e
+  passou sozinha (regra do `run.js`, igual à rodada anterior). `node src/vercel-build.js` aprovado (build 26/out · 3).
+- `node scripts/scan-secrets.mjs` limpo.
+
 ## Carro do Freela: leve sem perder qualidade (26/10/2026)
 
 - Bateria (`npm run build:fases && npm run build && node test/run.js`, Chromium 1243): **86/86** em 20 min no arnês
@@ -796,3 +823,19 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   dourado, branco neutro, sombra neutra; Petróleo segue com sombra fria) e Chromium (clone → salvar → outra visita →
   grade com 6 looks → baixar `revela-zro-filmes-33.cube` → apagar). `products/finishing`: `npm test` 96/96.
 - Não validado: o `.cube` do look novo e de um "meu look" no Resolve, em vídeo.
+
+## Página inicial: faixa das ferramentas (26/10/2026)
+
+- Cartões verticais (ícone em cima, nome numa linha, apoio em até duas linhas reservadas): os sete com a mesma altura
+  e sem nome quebrado. Abaixo de 1100 px, quatro por linha com a segunda centralizada. Capturas em 1440 (claro e
+  escuro), 1000 e 390 px; `npm run test:e2e` verde.
+
+## Página inicial com dados do ecossistema (26/10/2026)
+
+- Novas seções: **Em números** (contam ao aparecer; ferramentas, eventos e formatos vêm do catálogo e de
+  `@zro/media-contracts`, nada digitado à mão), **Conheça de perto** (abas com a tela real de cada app num MacBook e
+  iPhone, três fatos e o site; passa sozinha e pausa com mouse, foco ou fora da tela), **Do job à entrega** (o fluxo
+  com os eventos reais que cada app manda para o HUB) e **Um app no computador** (o painel do app e o HUB no iPhone).
+- Imagens novas: `produto-hub-*` (painel `/app` e `/inicio` de hoje), `produto-ai-edit-*` e `produto-finishing-*` (os
+  sites no ar), por `scripts/marca/aparelhos/produtos.py`.
+- Capturas em 1440 (claro e escuro) e 390 px; `npm run test:e2e` 21/21 (axe incluso).

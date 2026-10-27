@@ -39,7 +39,7 @@ const SAIDA = path.resolve(process.env.CARRO_SAIDA || path.join(RAIZ, '.vercel',
 const STATIC = path.join(SAIDA, 'static');
 const FASES = [1, 2, 3, 4, 5, 6];
 const ESTATICOS = ['apple-touch-icon.png', 'icone-192.png', 'icone-512.png', 'icone-maskable.png', 'app.webmanifest', 'og.jpg'];
-const FUNCOES = ['entrar', 'callback', 'eu', 'sair'];
+const FUNCOES = ['entrar', 'callback', 'eu', 'sair', 'enviar'];
 const RUNTIME = 'nodejs22.x';
 
 let falhou = false;

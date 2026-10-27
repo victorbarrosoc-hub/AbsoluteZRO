@@ -20,37 +20,45 @@ e como conferir estão em [ORIGEM.md](ORIGEM.md).
 
 ---
 
-## ⚠️ Antes de tornar o link público — leia
+## ⚠️ Antes de abrir para o público — leia
 
-Este protótipo contém **dados profissionais reais de 109 pessoas**, informados por
-elas próprias num cadastro de freelas (nome, cidade, função, equipamento, portfólio).
-Telefones **não** estão incluídos.
+**Hoje não há dado real de pessoas aqui.** Os 109 cadastros da prévia são **fictícios** desde 13/set (`src/crew.json`,
+selado por `src/crew.selo.json`; a suíte `sem-nome-real` reprova se o seed mudar). Telefone nunca entra no seed. O selo
+**Prévia**, ao lado da marca, diz que pessoas, agendas e números são ilustrativos.
 
-Estas coisas são **simuladas** e aparecem atribuídas a pessoas reais:
+São **simulados**: a agenda (quem está livre), a reputação de operação, o pagamento (sinal, custódia, take) e as
+integrações com Google Agenda e WhatsApp.
 
-- a **agenda** (quem está livre em cada data)
-- a **reputação de operação** (agenda em dia, tempo de resposta, jobs concluídos)
-- o **pagamento garantido** (quem aceita, quem exige, valores em custódia)
-- as **integrações** (Google Agenda, WhatsApp)
+**Regra do titular: nada de tráfego pago** enquanto agenda, reputação e pagamento forem simulados e faltar o
+consentimento registrado de quem tiver dado real. O portão para abrir ao público:
 
-Há um aviso visível no topo da busca, mas um aviso não substitui consentimento.
-**Antes de divulgar o link amplamente**, escolha um caminho:
+| | Estado |
+| --- | --- |
+| Origem do dado | Perfil criado pela pessoa sai marcado `origem: "autodeclarado"`; a prévia é fictícia |
+| Consentimento | No cadastro, "Mostrar meu perfil para quem contrata" nasce **desmarcado**; marcar grava versão do texto e data, desmarcar grava a retirada (suíte `consentimento`) |
+| Onde o registro mora | **No aparelho**, junto com o perfil. Vai para o banco quando a Fase 1 tiver servidor ([docs/fase1-no-ar.html](docs/fase1-no-ar.html)) |
+| Agenda, reputação, pagamento | Simulados |
 
-1. **Avisar o grupo** e obter o de acordo de quem está listado; ou
-2. **Publicar a versão anonimizada** — nomes viram "Ana S." e o portfólio sai:
-   ```bash
-   npm run build:anon
-   ```
+O build do domínio (`src/vercel-build.js`) envia `X-Robots-Tag: noindex, nofollow`: reduz a exposição, mas **não**
+torna o link privado. Se um dia entrar lista real de convocação, o caminho é o de sempre: o de acordo de quem está nela,
+ou `npm run build:anon` (nome reduzido, sem portfólio).
 
-O build do domínio (`src/vercel-build.js`) já envia `X-Robots-Tag: noindex, nofollow`, então o site não é
-indexado por buscadores. Isso reduz a exposição, mas **não** torna o link privado.
+## Job e equipe na Absolute ZRO (26/out · 3)
+
+Quem contrata e entrou com a conta Absolute ZRO leva o job para a organização dele no HUB, pelo painel do job
+("Levar para a Absolute ZRO"). Vai o contrato `carro-do-freela.job/1` (título, tipo, cliente, data, funções e o
+briefing inteiro, com horário, chamada, local e referências) e, para quem da escala tem conta Absolute ZRO, o
+`carro-do-freela.crew/1`: quem já é da organização entra na equipe do projeto; quem não é recebe convite de
+**convidado**, que só abre aquele projeto e só pode ser aceito pela mesma conta. Gente da prévia não tem conta e
+aparece como "sem conta". O servidor (`api/zro/enviar.js`) fala com o HUB com o token da pessoa, guardado cifrado num
+cookie httpOnly; o navegador nunca vê token. Detalhes em [ORIGEM.md](ORIGEM.md).
 
 ---
 
 ## Testar
 
 ```bash
-npm test                       # as 28 suítes
+npm test                       # todas as suítes (gera os sete builds quando precisa)
 node test/run.js busca take    # só essas
 ```
 
