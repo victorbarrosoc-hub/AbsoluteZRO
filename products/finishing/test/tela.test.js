@@ -30,6 +30,7 @@ const TIPOS = {
   '.mjs': 'text/javascript',
   '.mov': 'video/quicktime',
   '.mp4': 'video/mp4',
+  '.webmanifest': 'application/manifest+json',
 }
 // o navegador registra o 401 de /api/zro/eu (sem sessão) como erro de rede; não é falha da página
 const SEM_SESSAO = /status of 401/
@@ -848,6 +849,65 @@ test('abas do dock trocam só o painel: sem recarregar, menu parado, marca desli
   await pagina.waitForURL(/\/$/)
   assert.equal(await pagina.evaluate(() => window.semRecarregar), undefined)
   assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('app na Tela de Início: manifesto, ícones e o passo a passo do Compartilhar no iPhone', async () => {
+  const manifesto = JSON.parse(readFileSync(join(RAIZ, 'manifest.webmanifest'), 'utf8'))
+  assert.equal(manifesto.display, 'standalone')
+  assert.equal(manifesto.start_url, '/lut')
+  for (const i of manifesto.icons.filter((i) => i.type === 'image/png')) {
+    const png = readFileSync(join(RAIZ, i.src))
+    const [w, h] = [png.readUInt32BE(16), png.readUInt32BE(20)]
+    assert.equal(`${w}x${h}`, i.sizes, i.src)
+  }
+  // o iPhone usa o apple-touch-icon (180, sem transparência) e não o manifesto
+  const toque = readFileSync(join(RAIZ, 'marca/app/apple-touch-icon.png'))
+  assert.deepEqual([toque.readUInt32BE(16), toque.readUInt32BE(20), toque[25]], [180, 180, 2], 'PNG 180×180 RGB')
+  for (const f of ['index.html', 'lut.html', 'cst.html', 'entrega.html', 'converter.html', 'entrar.html']) {
+    const html = readFileSync(join(RAIZ, f), 'utf8')
+    for (const marca of ['rel="manifest"', 'rel="apple-touch-icon"', 'apple-mobile-web-app-title" content="Revela"', 'black-translucent'])
+      assert.ok(html.includes(marca), `${f}: ${marca}`)
+  }
+
+  // Safari do iPhone, fora do app: "Instalar o app" no menu abre os dois toques do Compartilhar
+  const contexto = await navegador.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    userAgent:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1',
+  })
+  const pagina = await contexto.newPage()
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  await pagina.goto(endereco + 'lut.html')
+  await pagina.getByRole('button', { name: 'Abrir menu' }).click()
+  await pagina.locator('#menu').getByRole('button', { name: 'Instalar o app' }).click()
+  const folha = pagina.getByRole('dialog', { name: 'Instalar a Revela' })
+  await folha.waitFor()
+  assert.match(await folha.innerText(), /Compartilhar[\s\S]*Adicionar à Tela de Início/)
+  await folha.getByRole('button', { name: 'Entendi' }).click()
+  await folha.waitFor({ state: 'detached' })
+  assert.deepEqual(erros, [])
+  await contexto.close()
+
+  // no computador (sem pedido de instalação do navegador) o item não aparece
+  const computador = await navegador.newPage()
+  await computador.goto(endereco + 'lut.html')
+  assert.equal(await computador.locator('#menu .menu-instalar').isVisible(), false)
+  await computador.close()
+})
+
+test('menu do computador: abrir e recolher várias vezes não duplica nada e segue a aba', async () => {
+  const pagina = await navegador.newPage({ viewport: { width: 1280, height: 900 } })
+  await pagina.goto(endereco + 'lut.html')
+  const botao = pagina.locator('#menu .menu-topo .menu-botao')
+  for (let i = 0; i < 4; i++) await botao.click()
+  const dock = pagina.getByRole('navigation', { name: 'Ferramentas da Revela' })
+  await dock.getByRole('link', { name: 'Converter' }).click()
+  await pagina.getByRole('heading', { name: 'Converta aqui mesmo.' }).waitFor()
+  assert.deepEqual(await pagina.locator('#menu [aria-current="page"]').allTextContents(), ['Converter'])
   await pagina.close()
 })
 

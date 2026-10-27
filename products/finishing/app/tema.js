@@ -14,6 +14,8 @@
     if (tema === 'escuro') raiz.dataset.tema = 'escuro'
     else delete raiz.dataset.tema
     document.querySelector('meta[name="color-scheme"]')?.setAttribute('content', tema === 'escuro' ? 'dark' : 'light')
+    // a barra do navegador e a de status do app instalado acompanham o fundo
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', tema === 'escuro' ? '#0e0e10' : '#f5f5f7')
     trocarLogos(tema)
     document.dispatchEvent(new CustomEvent('revela:tema', { detail: tema }))
   }

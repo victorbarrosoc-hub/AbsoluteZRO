@@ -91,6 +91,19 @@ Claro por padrão, como a família; o escuro é escolha no menu (lua/sol), lembr
 `app/tema.js` no `<head>`, sem piscar). Em volta da imagem, o palco continua preto nos dois temas. Títulos em Figtree,
 servida da própria Revela (`fontes/`, OFL), porque a CSP só aceita `'self'`.
 
+## App no celular
+
+A Revela instala como app pelo Safari: **Compartilhar → Adicionar à Tela de Início** (no Android e no computador, o
+"Instalar" do Chrome). Abre sem a barra do navegador, com o mesmo menu, dock e ferramentas do computador.
+
+- `manifest.webmanifest` (abre em `/lut`, atalhos para CST, Entrega e Converter) e ícones em `marca/app/`, feitos
+  por `node scripts/icones-app.mjs` a partir de `marca/revela-icone.svg` (sem canto arredondado: o sistema recorta).
+- Barra de status translúcida: o topo de vidro desce até a hora e a bateria (`env(safe-area-inset-top)`).
+- "Instalar o app" no menu: no iPhone fora do app mostra os dois toques do Compartilhar; no Chrome chama o pedido do
+  próprio navegador; já instalado, some.
+- O site não aparece como destino no Compartilhar de outros apps (o iOS não deixa site receber arquivo); escolher o
+  vídeo ou a imagem segue pelo seletor de arquivos.
+
 ## Navegação
 
 As ferramentas (LUT, CST, Entrega, Converter) ficam num dock embaixo, como as páginas do DaVinci Resolve: flutuante no

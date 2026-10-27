@@ -1724,7 +1724,8 @@ details[open] summary::after {
   padding: 8px 14px 16px;
   border-top: 1px solid var(--linha);
 }
-.menu-tema {
+.menu-tema,
+.menu-instalar {
   width: 100%;
   border: 0;
   background: none;
@@ -1918,5 +1919,114 @@ details[open] summary::after {
   }
   .lista-cameras select {
     grid-column: 1 / -1;
+  }
+}
+
+/* ─────────── app na Tela de Início (manifest.webmanifest) ─────────── */
+
+/* barra de status translúcida no iPhone: o topo de vidro desce até a hora e a bateria, sem texto por baixo delas */
+.topo {
+  padding-top: calc(12px + env(safe-area-inset-top));
+}
+.menu {
+  padding-top: env(safe-area-inset-top);
+}
+@media (max-width: 640px) {
+  .topo {
+    padding-top: calc(10px + env(safe-area-inset-top));
+  }
+}
+.menu-instalar[hidden] {
+  display: none;
+}
+/* aberto como app: sem o "puxar e recarregar" da página e sem destaque cinza no toque */
+@media (display-mode: standalone) {
+  html {
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* folha "Revela na Tela de Início": como uma folha do iOS, com os dois toques do Safari */
+.instalar {
+  width: min(92vw, 360px);
+  padding: 28px 24px 22px;
+  border: 0;
+  border-radius: var(--raio-g);
+  color: var(--texto);
+  background: var(--superficie);
+  box-shadow:
+    0 0 0 1px var(--linha),
+    0 40px 80px -24px rgb(0 0 0 / 0.6);
+  text-align: center;
+}
+.instalar::backdrop {
+  background: rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.instalar-icone {
+  width: 64px;
+  height: 64px;
+  border-radius: 15px;
+}
+.instalar h2 {
+  margin: 14px 0 18px;
+  font-size: 20px;
+}
+.instalar ol {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 22px;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+  color: var(--mudo);
+  font-size: 15px;
+}
+.instalar li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.instalar-n {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: var(--texto);
+  background: rgb(var(--t) / 0.08);
+  font-size: 13px;
+  font-weight: 700;
+}
+.instalar-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 10px;
+  color: var(--texto);
+  background: rgb(var(--t) / 0.06);
+  font-weight: 600;
+}
+.instalar-chip svg {
+  width: 18px;
+  height: 18px;
+}
+.instalar .vidro {
+  width: 100%;
+  justify-content: center;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .instalar[open] {
+    animation: folha-sobe 0.45s var(--mola) both;
+  }
+}
+@keyframes folha-sobe {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
   }
 }

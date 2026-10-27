@@ -10,7 +10,7 @@
 }
 .entrar-voltar {
   justify-self: start;
-  padding: 20px clamp(16px, 4vw, 40px);
+  padding: calc(20px + env(safe-area-inset-top)) clamp(16px, 4vw, 40px) 20px;
 }
 .entrar-voltar img {
   display: block;
