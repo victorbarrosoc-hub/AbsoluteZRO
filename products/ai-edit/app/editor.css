@@ -709,6 +709,42 @@ svg {
 .dock button[data-ir='edicao'][aria-current] svg { color: var(--cor-pagina-edicao); }
 .dock button[data-ir='entrega'][aria-current] svg { color: var(--cor-pagina-entrega); }
 
+/* balão de pendências (src/pendencias.js), o mesmo desenho do SOBEDESCE e do HUB: pílula com o número em negrito
+   tabular, na cor do texto invertida, no canto do ícone (o dock é uma barra de ícones, como a do celular) */
+.dock button {
+  position: relative;
+}
+.dock .balao {
+  position: absolute;
+  top: 3px;
+  left: calc(50% + 5px);
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--text-strong);
+  color: var(--bg);
+  box-shadow: 0 0 0 2px var(--surface);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  animation: balao-entra 0.45s var(--mola) both;
+}
+@keyframes balao-entra {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dock .balao {
+    animation: none;
+  }
+}
+
 /* ───────── mídia ───────── */
 .vazio {
   min-height: 100%;

@@ -202,6 +202,17 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   (mesmas rotas, chaves e CSP) antes da produção.
 - Login único nas cinco: `/api/zro/entrar` de cada domínio leva ao HUB; apps marcados como da família.
 
+## Balão de pendências: AEON, Revela e NOSSOM (27/10/2026)
+
+- Regras puras com teste (estado → número e dica por aba): AEON `src/pendencias.js` (`test/nucleo.test.js`), Revela
+  `src/pendencias.js` (`test/pendencias.test.js`), NOSSOM `lib/studio-pending.ts` (`tests/studio-pending.test.ts`).
+- AEON `npm test` **88/88** (a tela confere o balão de Revisar subindo e descendo ao aprovar/desfazer e o de Mídia ao
+  reabrir e religar); `xvfb-run -a npx electron . --smoke` ok. Revela `npm test` **112/112** (Converter: na fila →
+  pronto para baixar → some ao baixar; CST: some ao escolher o log). NOSSOM `npm test` **78/78**, `typecheck` e
+  `format:check` ok, `npm run build` ok; e2e `cloud-restoration`, `studio` e `install-navigation`: 16/17, a que falhou é a
+  gravação pelo microfone (o Chromium deste ambiente não dá o microfone; não toca no balão).
+- Fotos (Playwright, claro e escuro, 1440 px e 390 px) conferidas a olho; ficaram fora do repositório.
+
 ## Carro do Freela: sem selo no topo e símbolo flat no login (27/10/2026)
 
 - Carro, bateria completa (`npm test`, Chromium 1243): **87/87** em 20,5 min; `sem-zoom` falhou em paralelo e passou

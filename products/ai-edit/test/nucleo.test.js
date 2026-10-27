@@ -10,6 +10,7 @@ import { abrir, aprovar, editarPalavra, comPropostas, comTranscricao, novoProjet
 import { agrupar, blocoEm, srt, vtt } from '../src/legenda.js'
 import { recorte, transformCss, zoomEm } from '../src/quadro.js'
 import { readFileSync } from 'node:fs'
+import { pendencias, rotuloBalao } from '../src/pendencias.js'
 import { fala, PRESET } from './apoio.js'
 
 test('fps racional, quadros, timecode e tempo do FCPXML', () => {
@@ -274,4 +275,28 @@ test('tirar mídia do projeto leva junto clipes, transcrição, propostas e corr
   assert.deepEqual(removerMidia(p, ['a', 'b']).linha.clipes, [])
   h.desfazer()
   assert.deepEqual(h.atual.midias.map((m) => m.id), ['a', 'b'])
+})
+
+test('balões do dock: mídia sem arquivo e propostas pendentes; o resto não espera a pessoa', () => {
+  const vazio = pendencias(null)
+  assert.deepEqual(Object.values(vazio).map((x) => x.n), [0, 0, 0, 0])
+  const projeto = {
+    midias: [{ id: 'a' }, { id: 'b' }, { id: 'c' }],
+    propostas: [
+      { id: '1', tipo: 'silencio', ini: 0, fim: 1, estado: 'pendente' },
+      { id: '2', tipo: 'zoom', ini: 2, fim: 3, estado: 'pendente' },
+      { id: '3', tipo: 'respiro', ini: 4, fim: 5, estado: 'aprovada' },
+      { id: '4', tipo: 'silencio', ini: 6, fim: 7, estado: 'recusada' },
+    ],
+  }
+  const p = pendencias(projeto, { temArquivo: (id) => id === 'a' })
+  assert.deepEqual(p.midia, { n: 2, dica: '2 mídias sem o arquivo: escolha de novo' })
+  assert.deepEqual(p.revisar, { n: 2, dica: '2 propostas para aprovar ou recusar' })
+  assert.equal(p.edicao.n + p.entrega.n, 0)
+  const tudoCerto = pendencias({ ...projeto, propostas: projeto.propostas.map((x) => ({ ...x, estado: 'aprovada' })) })
+  assert.equal(tudoCerto.midia.n + tudoCerto.revisar.n, 0)
+  assert.equal(pendencias({ midias: [{ id: 'a' }], propostas: [] }, { temArquivo: () => false }).midia.dica, '1 mídia sem o arquivo: escolha de novo')
+  assert.equal(rotuloBalao(7), '7')
+  assert.equal(rotuloBalao(99), '99')
+  assert.equal(rotuloBalao(100), '99+')
 })

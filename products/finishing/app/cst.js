@@ -7,6 +7,8 @@ import { aplicar, assar, escreverCube } from '../src/cor/cube.js'
 import { ENTRADAS, SAIDAS, criarCst } from '../src/cor/espacos.js'
 import { lerRelatorioSynquei, scriptPorClipe } from '../src/cor/porclipe.js'
 import { escalonar, icones } from './visual.js'
+import { avisarPendencias } from './baloes.js'
+import { pendenciasCst } from '../src/pendencias.js'
 
 icones()
 escalonar()
@@ -166,6 +168,8 @@ function mostrarCameras() {
       sel.value = ap.entrada
       sel.addEventListener('change', () => {
         aparelhos[i].entrada = sel.value
+        aparelhos[i].decidido = true // até "Sem log", escolhido pela pessoa, é decisão
+        contar()
         $('baixar-script').disabled = !aparelhos.some((a) => a.entrada)
       })
       li.append(nome, qtd, sel)
@@ -174,7 +178,11 @@ function mostrarCameras() {
   )
   $('cameras').hidden = false
   $('baixar-script').disabled = !aparelhos.some((a) => a.entrada)
+  contar()
 }
+
+/** O balão da aba CST: câmeras do relatório sem log escolhido que a pessoa ainda não conferiu (src/pendencias.js). */
+const contar = () => avisarPendencias('cst', pendenciasCst(aparelhos))
 
 async function receberRelatorio(arquivo) {
   if (!arquivo) return

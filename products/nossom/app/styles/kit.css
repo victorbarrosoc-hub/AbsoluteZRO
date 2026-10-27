@@ -1997,3 +1997,54 @@
     font-size: 14px;
   }
 }
+
+/* Balão de pendências (components/nav-badge.tsx), o mesmo desenho do SOBEDESCE e do HUB: pílula com o número em
+   negrito tabular, na cor do texto invertida. Na barra lateral fica à direita do item; na barra do celular e no botão
+   do menu recolhido, no canto do ícone. */
+.nav-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  margin-left: auto;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  pointer-events: none;
+}
+.nav-badge--corner {
+  position: absolute;
+  top: 2px;
+  left: calc(50% + 3px);
+  min-width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0 5px;
+  box-shadow: 0 0 0 2px var(--bg);
+}
+.studio-tabs > button,
+.desktop-nav-toggle {
+  position: relative;
+}
+.desktop-nav-toggle .nav-badge--corner {
+  top: -3px;
+  left: auto;
+  right: -5px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nav-badge {
+    animation: nav-badge-in 0.45s cubic-bezier(0.32, 0.72, 0, 1) both;
+  }
+}
+@keyframes nav-badge-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}

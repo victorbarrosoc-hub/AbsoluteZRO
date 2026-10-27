@@ -26,6 +26,8 @@ import { effectPresets, type EffectId } from '@/lib/effects';
 import { toolGroups } from '@/lib/workflow';
 import InstallApp from './install-app';
 import FamilyNav from './family-nav';
+import NavBadge from './nav-badge';
+import { studioPending } from '@/lib/studio-pending';
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowUpRight,
@@ -428,6 +430,9 @@ export default function Studio({ account }: { account: Account }) {
     void refreshCloud();
     const focus = () => {
       void refreshUsage();
+      // o balão de Meus projetos acompanha o pedido de restauração (pronto para salvar enquanto a pessoa estava
+      // fora); durante um envio ou acompanhamento em andamento, quem atualiza o pedido é o próprio fluxo
+      if (!cloudAbort.current) void refreshCloud();
     };
     window.addEventListener('focus', focus);
     return () => window.removeEventListener('focus', focus);
@@ -437,6 +442,7 @@ export default function Studio({ account }: { account: Account }) {
       setCollapsed(localStorage.getItem('nossom-sidebar-collapsed') === 'true');
     } catch {}
   }, []);
+  const pending = studioPending(pendingJob);
   function toggleNavigation() {
     const next = !collapsed;
     setCollapsed(next);
@@ -1174,8 +1180,14 @@ export default function Studio({ account }: { account: Account }) {
           <button
             className={view === 'projects' ? 'active' : ''}
             onClick={() => navigate('projects')}
+            title={pending.projects.title || undefined}
           >
-            <Folder size={18} /> Meus projetos <small>{projects.length}</small>
+            <Folder size={18} /> Meus projetos
+            {pending.projects.count ? (
+              <NavBadge count={pending.projects.count} />
+            ) : (
+              <small>{projects.length}</small>
+            )}
           </button>
           <button
             className={routeTool ? 'active' : ''}
@@ -1256,8 +1268,10 @@ export default function Studio({ account }: { account: Account }) {
               aria-expanded={!collapsed}
               aria-controls="studio-navigation"
               onClick={toggleNavigation}
+              title={collapsed && pending.projects.title ? pending.projects.title : undefined}
             >
               <Menu size={18} />
+              {collapsed && <NavBadge count={pending.projects.count} corner />}
             </button>
             <span>Meu espaço</span>
             <ChevronRight size={12} />
@@ -2824,9 +2838,11 @@ export default function Studio({ account }: { account: Account }) {
         <button
           className={view === 'projects' ? 'active' : ''}
           onClick={() => navigate('projects')}
+          title={pending.projects.title || undefined}
         >
           <Folder size={19} />
           <span>Projetos</span>
+          <NavBadge count={pending.projects.count} corner />
         </button>
         <button
           className={routeTool ? 'active' : ''}

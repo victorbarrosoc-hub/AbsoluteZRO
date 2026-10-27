@@ -11,6 +11,8 @@ import { criarAplicadorLut } from './lut-gpu.js'
 import { criarEscalaGpu } from './escala-gpu.js'
 import { DESTINOS_CONVERSAO, LIMITE_MEMORIA, RESOLUCOES, nomeSaida, planejar, tamanhoLegivel } from '../src/conversao/plano.js'
 import { ICONES, NOME_CURTO, escalonar, glifo, icones, svg } from './visual.js'
+import { avisarPendencias } from './baloes.js'
+import { pendenciasConverter } from '../src/pendencias.js'
 
 registerProresDecoder()
 // reduzir o quadro na placa de vídeo (app/escala-gpu.js); para comparar, ?escala=canvas fica no caminho do Mediabunny
@@ -246,9 +248,18 @@ function mostrar(item) {
   if (item.estado === 'feito' && item.url) {
     const a = no('a', { className: 'vidro vidro--tinta', href: item.url, download: item.nomeSaida, title: item.nomeSaida }, svg(ICONES.baixar), 'Baixar')
     a.setAttribute('aria-label', `Baixar ${item.nomeSaida}`)
+    // baixou: o vídeo deixa de esperar a pessoa (o balão da aba desconta)
+    a.addEventListener('click', () => {
+      item.baixado = true
+      contar()
+    })
     acoes.append(a)
   }
+  contar()
 }
+
+/** O balão da aba Converter: vídeos esperando o botão Converter e prontos para baixar (src/pendencias.js). */
+const contar = () => avisarPendencias('converter', pendenciasConverter(fila, { rodando }))
 
 function progresso(item, valor, inicio) {
   const li = $(`item-${item.id}`)
@@ -359,6 +370,7 @@ async function converter(item) {
 $('converter').addEventListener('click', async () => {
   if (rodando) return
   rodando = true
+  contar()
   $('converter').disabled = true
   try {
     if ($('salvar-pasta').checked && 'showDirectoryPicker' in window && !pasta) pasta = await window.showDirectoryPicker({ mode: 'readwrite' })
@@ -375,6 +387,7 @@ $('converter').addEventListener('click', async () => {
     }
   }
   rodando = false
+  contar()
   $('converter').disabled = !fila.some((i) => i.estado === 'pronto')
   avisar('')
 })

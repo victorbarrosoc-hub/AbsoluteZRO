@@ -130,6 +130,10 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 
 ## Fase 4 — AI Edit · Fase 5 — Revela (Finishing)
 
+- ✅ Balão de pendências na navegação (27/10/2026), no desenho do SOBEDESCE/HUB: AEON (Mídia sem arquivo, propostas
+  para decidir), Revela (CST sem log conferido, Converter na fila ou pronto para baixar) e NOSSOM (pedido de
+  restauração que espera a pessoa, em Meus projetos). Só estado real; regras em `src/pendencias.js` e
+  `lib/studio-pending.ts`.
 - 🟡 Scaffolds com contratos e formato de presets ([ai-edit](../products/ai-edit/README.md), [finishing](../products/finishing/README.md)).
 - 🟡 Editor (nome provisório AI Edit), primeiro recorte (26/10/2026, [ADR 0020](decisions/0020-editor-desktop-custo-zero.md)):
   app de desktop no molde do Synquei (Electron, assinatura ad-hoc, instalação pelo Terminal/PowerShell, Release
