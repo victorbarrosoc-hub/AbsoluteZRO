@@ -2030,3 +2030,72 @@ details[open] summary::after {
     transform: translateY(24px) scale(0.98);
   }
 }
+
+/* ─────────── abertura do app (app/abertura.js) ─────────── */
+
+/* antes do primeiro quadro: a tela já nasce coberta, sem o app piscar por baixo */
+html.abrindo::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--fundo);
+}
+.abertura-app {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: var(--fundo);
+  animation: abertura-sai 0.5s cubic-bezier(0.4, 0, 0.2, 1) 1.45s both;
+}
+.abertura-icone {
+  width: 128px;
+  height: 128px;
+  filter: drop-shadow(0 24px 40px rgb(0 0 0 / 0.28));
+  animation:
+    abertura-entra 0.7s var(--mola) both,
+    abertura-cresce 0.5s cubic-bezier(0.4, 0, 0.2, 1) 1.45s both;
+}
+.abertura-icone svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* o quadro se revela: a cor entra varrendo da direita com o fio de luz na frente */
+.abertura-revela {
+  animation: abertura-revela 0.75s cubic-bezier(0.65, 0, 0.35, 1) 0.45s both;
+}
+.abertura-pula,
+.abertura-pula .abertura-icone {
+  animation-delay: 0s;
+  animation-duration: 0.25s;
+}
+@keyframes abertura-entra {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+}
+@keyframes abertura-revela {
+  from {
+    transform: translateX(340px);
+  }
+}
+@keyframes abertura-cresce {
+  to {
+    transform: scale(1.12);
+  }
+}
+@keyframes abertura-sai {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .abertura-app {
+    display: none;
+  }
+}

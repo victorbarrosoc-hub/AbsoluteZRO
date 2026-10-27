@@ -848,6 +848,18 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   grade com 6 looks → baixar `revela-zro-filmes-33.cube` → apagar). `products/finishing`: `npm test` 96/96.
 - Não validado: o `.cube` do look novo e de um "meu look" no Resolve, em vídeo.
 
+## Revela: abertura do app (27/10/2026)
+
+- Pedido do titular: animação ao abrir o app. `app/abertura.js` (script do `<head>` nas quatro ferramentas) cobre a tela
+  antes do primeiro quadro; o ícone entra com mola, o "revelado" varre o quadro da película da direita com o fio de
+  luz na frente e a tela some com o ícone crescendo. Só CSS, sem animação por quadro; toque pula; some sozinha em 4 s
+  no pior caso.
+- Só no app aberto do ícone (`display-mode: standalone`), uma vez por abertura (`sessionStorage`), nunca com reduzir
+  movimento. `?abertura=1` força no navegador.
+- Conferido em quadros a 0,25 / 0,7 / 0,95 / 1,3 / 1,7 / 2,3 s (Chromium, 390 px). Teste: sem abertura no navegador
+  comum; com `?abertura=1` aparece, sai sozinha e a página fica utilizável. `npm test` 101/101.
+- Não validado: num iPhone de verdade.
+
 ## Revela como app no iPhone (27/10/2026)
 
 - Pedido do titular: a experiência do computador no celular, a partir do Compartilhar do Safari. O iOS não deixa site
