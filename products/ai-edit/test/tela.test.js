@@ -234,6 +234,71 @@ test('projeto novo: nome, formato vertical e quadros; renomear pela barra', asyn
   await pagina.close()
 })
 
+test('menu: cada item faz algo de verdade (projetos, conta, sair, apps da família)', async () => {
+  const { pagina, erros } = await abrir()
+  await pagina.locator('#menuBotao').click()
+  const item = (acao) => pagina.locator(`#trilho [data-acao="${acao}"]`)
+
+  // sem projeto: Seus universos é onde a pessoa está; Salvar cópia avisa em vez de calar
+  assert.equal(await item('universos').getAttribute('aria-current'), 'page')
+  assert.equal(await item('salvar').isDisabled(), true)
+  await pagina.keyboard.press('Control+s')
+  await pagina.locator('#aviso.visivel', { hasText: 'Abra ou crie um projeto' }).waitFor()
+
+  // Abrir projeto… abre o seletor de arquivo de projeto
+  const [seletor] = await Promise.all([pagina.waitForEvent('filechooser'), item('abrir').click()])
+  assert.equal(await seletor.element().getAttribute('id'), 'arquivoProjeto')
+
+  // Novo projeto pelo menu → projeto aberto, Salvar cópia liga e baixa o arquivo
+  await item('novo').click()
+  await pagina.fill('#novoNome', 'Do menu')
+  await pagina.click('#novoCriar')
+  await pagina.locator('#nomeProjeto', { hasText: 'Do menu' }).waitFor()
+  assert.equal(await item('universos').getAttribute('aria-current'), null)
+  assert.equal(await item('salvar').isDisabled(), false)
+  const [baixado] = await Promise.all([pagina.waitForEvent('download'), item('salvar').click()])
+  assert.match(baixado.suggestedFilename(), /^Do menu\./)
+
+  // Seus universos fecha o projeto e mostra a lista com ele
+  await item('universos').click()
+  await pagina.locator('.cartao-projeto', { hasText: 'Do menu' }).waitFor()
+  assert.equal(await item('universos').getAttribute('aria-current'), 'page')
+
+  // links de fora só https com target=_blank: no app de computador o Electron só entrega esses ao navegador
+  // (desktop/main.cjs › setWindowOpenHandler); um link interno com target=_blank morria em silêncio (era a conta)
+  const fora = await pagina.$$eval('#trilho a[target="_blank"], .trilho-pop a[target="_blank"]', (as) => as.map((a) => a.href))
+  assert.ok(fora.length >= 8, `links de fora: ${fora.length}`)
+  for (const h of fora) assert.match(h, /^https:\/\//, h)
+
+  // apps da família: uma linha no menu, a grade abre ao lado e cada app abre em aba nova
+  assert.equal(await pagina.locator('#trilho .trilho-item').count(), 6, 'projeto (4) + apps + conta')
+  await item('apps').click()
+  await pagina.locator('#trilhoApps:popover-open').waitFor()
+  assert.equal(await pagina.locator('#trilhoApps .familia-app').count(), 7)
+  await pagina.context().route('https://sobedesce.vercel.app/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: 'ok' }))
+  const [aba] = await Promise.all([pagina.context().waitForEvent('page'), pagina.locator('#trilhoApps .familia-app', { hasText: 'SOBEDESCE' }).click()])
+  assert.match(aba.url(), /^https:\/\/sobedesce\.vercel\.app/)
+  await aba.close()
+  assert.equal(await pagina.locator('#trilhoApps:popover-open').count(), 0, 'a grade fecha depois de abrir um app')
+
+  // conta: cartão com quem é; o menu leva à conta e sai de verdade (POST /api/zro/sair → entrar.html)
+  await item('conta').click()
+  await pagina.locator('#trilhoConta:popover-open', { hasText: 'lia@produtora.com' }).waitFor()
+  assert.equal(await pagina.locator('#trilhoConta a', { hasText: 'Conta Absolute ZRO' }).getAttribute('href'), 'https://absolutezro.com/perfil')
+  let saiu = false
+  await pagina.route('**/api/zro/sair', (r) => {
+    saiu = r.request().method() === 'POST'
+    r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' })
+  })
+  await pagina.unroute('**/api/zro/eu')
+  await pagina.route('**/api/zro/eu', (r) => r.fulfill({ status: 401, contentType: 'application/json', body: '{"ok":false}' }))
+  await pagina.locator('#trilhoConta [data-acao="sair"]').click()
+  await pagina.waitForURL(/entrar\.html/)
+  assert.equal(saiu, true)
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
 test('reduzir movimento: páginas trocam sem deslize', async () => {
   const { pagina } = await abrir({ reducedMotion: 'reduce' })
   await pagina.click('.dock [data-ir="entrega"]')

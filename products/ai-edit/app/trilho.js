@@ -1,8 +1,13 @@
-// Menu recolhível do app, como nas outras plataformas da Absolute ZRO: projeto (abrir, salvar), conta e a família
-// Absolute ZRO. Recolhido é um trilho de ícones; aberto mostra os nomes. A escolha fica lembrada (⌘/Ctrl + \ alterna).
-// As páginas do editor ficam no dock de baixo (estilo DaVinci).
+// Menu recolhível do app, no molde do SOBEDESCE e do Synquei: em cima o que é do AEON (projetos: ver, criar, abrir,
+// salvar cópia), embaixo a família Absolute ZRO numa linha só (abre a grade de apps) e a conta num cartão (quem é,
+// conta na Absolute ZRO, sair). As etapas do editor ficam no dock de baixo (estilo DaVinci), não repetidas aqui.
+// Recolhido é um trilho de ícones; aberto mostra os nomes. A escolha fica lembrada (⌘/Ctrl + \ alterna).
+//
+// Links de fora só com https e target=_blank: no navegador abrem aba nova; no app de computador o Electron entrega ao
+// navegador do sistema (desktop/main.cjs › setWindowOpenHandler, que recusa qualquer outro endereço).
 
-import { FAMILIA, CONTA, iconeDe } from '../src/familia.js'
+import { FAMILIA, iconeDe } from '../src/familia.js'
+import { iniciais } from '../site/conta.js'
 
 const CHAVE = 'aeon-menu'
 const el = (tag, props = {}, ...filhos) => {
@@ -17,32 +22,101 @@ const svgUso = (id) => {
   s.append(u)
   return s
 }
+const externo = (href, props = {}, ...filhos) => el('a', { href, target: '_blank', rel: 'noopener', ...props }, ...filhos)
 
-/** acoes: { conta (pessoa logada ou null), universos(), abrir(), salvar() } — os mesmos atalhos do teclado */
+/**
+ * acoes: { conta (pessoa logada ou null), universos(), novo(), abrir(), salvar(), sair() } — os mesmos atalhos do
+ * teclado. Devolve { atualizar({ projeto, naLista }) } para o editor marcar onde a pessoa está e o que dá para fazer.
+ */
 export function montarTrilho(acoes) {
   const botao = document.getElementById('menuBotao')
-  const item = ({ nome, icone, img, href, acao, dica }) => {
-    const n = href ? el('a', { className: 'trilho-item', href, target: '_blank', rel: 'noopener' }) : el('button', { className: 'trilho-item', type: 'button' })
-    n.title = dica || nome
-    n.append(el('span', { className: 'trilho-icone' }, img ? el('img', { src: img, alt: '', width: 22, height: 22 }) : svgUso(icone)), el('span', { className: 'trilho-nome', textContent: nome }))
-    if (acao) n.addEventListener('click', acao)
+  const item = ({ nome, icone, acao, dica, chave }) => {
+    const n = el('button', { className: 'trilho-item', type: 'button', title: dica || nome })
+    n.dataset.acao = chave
+    n.append(el('span', { className: 'trilho-icone' }, svgUso(icone)), el('span', { className: 'trilho-nome', textContent: nome }))
+    n.addEventListener('click', () => !n.disabled && acao())
     return n
   }
+  const universos = item({ chave: 'universos', nome: 'Seus universos', icone: 'universos', acao: acoes.universos, dica: 'Seus projetos' })
+  const salvar = item({ chave: 'salvar', nome: 'Salvar cópia', icone: 'salvar', acao: acoes.salvar, dica: 'Salvar uma cópia do projeto em arquivo (⌘S)' })
+
+  // ── família: uma linha só; a grade com os apps abre ao lado (popover: Esc e clique fora fecham) ──
+  const apps = el('div', { id: 'trilhoApps', className: 'trilho-pop trilho-pop--apps', popover: 'auto', role: 'menu', ariaLabel: 'Apps Absolute ZRO' })
+  apps.append(
+    el('p', { className: 'trilho-pop-titulo', textContent: 'Absolute ZRO' }),
+    el(
+      'div',
+      { className: 'familia-grade' },
+      ...FAMILIA.map((f) =>
+        externo(f.href, { className: 'familia-app', role: 'menuitem', title: `${f.nome} · ${f.papel}` }, el('img', { src: iconeDe(f, '../'), alt: '', width: 40, height: 40 }), el('span', { textContent: f.nome })),
+      ),
+    ),
+  )
+  const appsBotao = item({ chave: 'apps', nome: 'Apps Absolute ZRO', icone: 'apps', acao: () => {}, dica: 'Os outros apps da Absolute ZRO' })
+  appsBotao.setAttribute('popovertarget', 'trilhoApps')
+  appsBotao.setAttribute('aria-haspopup', 'menu')
+
+  // ── conta: cartão com as iniciais; o menu diz quem é e leva à conta ou sai ──
+  const p = acoes.conta
+  let contaBotao
+  let contaMenu = null
+  if (p) {
+    const quem = [p.nome, p.email].filter(Boolean).join(' · ')
+    contaBotao = el('button', { className: 'trilho-item trilho-conta', type: 'button', title: `${quem} · conta e sair` })
+    contaBotao.dataset.acao = 'conta'
+    contaBotao.setAttribute('popovertarget', 'trilhoConta')
+    contaBotao.setAttribute('aria-haspopup', 'menu')
+    contaBotao.append(
+      el('span', { className: 'trilho-icone' }, el('span', { className: 'avatar', textContent: iniciais(p), ariaHidden: 'true' })),
+      el('span', { className: 'trilho-nome trilho-conta-texto' }, el('strong', { textContent: p.nome || p.email.split('@')[0] }), el('small', { textContent: p.email || '' })),
+    )
+    const sair = el('button', { className: 'trilho-pop-item', type: 'button', role: 'menuitem', textContent: 'Sair' })
+    sair.dataset.acao = 'sair'
+    sair.addEventListener('click', () => acoes.sair())
+    contaMenu = el(
+      'div',
+      { id: 'trilhoConta', className: 'trilho-pop trilho-pop--conta', popover: 'auto', role: 'menu', ariaLabel: 'Conta' },
+      el('div', { className: 'trilho-pop-cabeca' }, el('span', { className: 'avatar avatar--grande', textContent: iniciais(p), ariaHidden: 'true' }), el('span', {}, el('strong', { textContent: p.nome || p.email }), el('small', { textContent: [p.email, p.organizacao?.nome].filter(Boolean).join(' · ') }))),
+      externo('https://absolutezro.com/perfil', { className: 'trilho-pop-item', role: 'menuitem', textContent: 'Conta Absolute ZRO', title: 'Abre no navegador' }),
+      sair,
+    )
+  } else {
+    contaBotao = el('a', { className: 'trilho-item trilho-conta', href: '../entrar.html', title: 'Entrar com a conta Absolute ZRO' })
+    contaBotao.append(el('span', { className: 'trilho-icone' }, svgUso('conta')), el('span', { className: 'trilho-nome', textContent: 'Entrar' }))
+  }
+
   const trilho = el(
     'aside',
     { id: 'trilho', className: 'trilho', ariaLabel: 'Menu' },
-    el('p', { className: 'trilho-grupo', textContent: 'Projeto' }),
-    item({ nome: 'Seus universos', icone: 'universos', acao: acoes.universos, dica: 'Seus projetos' }),
-    item({ nome: 'Abrir projeto', icone: 'abrir', acao: acoes.abrir, dica: 'Abrir projeto (⌘O)' }),
-    item({ nome: 'Salvar cópia', icone: 'salvar', acao: acoes.salvar, dica: 'Salvar uma cópia do projeto em arquivo (⌘S)' }),
-    el('p', { className: 'trilho-grupo', textContent: 'Conta' }),
-    acoes.conta
-      ? item({ nome: acoes.conta.nome || acoes.conta.email, icone: 'conta', href: '../entrar.html', dica: `${[acoes.conta.nome, acoes.conta.email].filter(Boolean).join(' · ')} · conta e sair` })
-      : item({ nome: 'Entrar', icone: 'conta', href: CONTA.entrar, dica: 'Entrar com a conta Absolute ZRO' }),
-    el('p', { className: 'trilho-grupo', textContent: 'Absolute ZRO' }),
-    ...FAMILIA.map((f) => item({ nome: f.nome, img: iconeDe(f, '../'), href: f.href, dica: `${f.nome} · ${f.papel}` })),
+    el(
+      'nav',
+      { className: 'trilho-nav', ariaLabel: 'Projeto' },
+      el('p', { className: 'trilho-grupo', textContent: 'Projeto' }),
+      universos,
+      item({ chave: 'novo', nome: 'Novo projeto', icone: 'mais', acao: acoes.novo, dica: 'Novo projeto: nome, formato e quadros' }),
+      item({ chave: 'abrir', nome: 'Abrir projeto…', icone: 'abrir', acao: acoes.abrir, dica: 'Abrir um arquivo de projeto (⌘O)' }),
+      salvar,
+    ),
+    el('div', { className: 'trilho-pe' }, appsBotao, contaBotao),
   )
-  document.body.append(trilho)
+  document.body.append(trilho, apps, ...(contaMenu ? [contaMenu] : []))
+
+  // o popover abre colado ao trilho, na altura do botão (recolhido ou aberto)
+  for (const [pop, dono] of [
+    [apps, appsBotao],
+    [contaMenu, contaBotao],
+  ]) {
+    if (!pop) continue
+    pop.addEventListener('beforetoggle', (e) => {
+      dono.setAttribute('aria-expanded', String(e.newState === 'open'))
+      if (e.newState !== 'open') return
+      const r = dono.getBoundingClientRect()
+      pop.style.left = `${Math.round(trilho.getBoundingClientRect().right + 8)}px`
+      pop.style.bottom = `${Math.max(12, Math.round(innerHeight - r.bottom))}px`
+    })
+    // abriu um app: fecha a grade (a janela do AEON fica onde estava)
+    pop.addEventListener('click', (e) => e.target.closest('a') && pop.hidePopover())
+  }
 
   const ler = () => {
     try {
@@ -71,4 +145,14 @@ export function montarTrilho(acoes) {
     }
   })
   aplicar(ler())
+
+  return {
+    /** projeto: há um aberto (Salvar cópia só com ele). naLista: a pessoa está em Seus universos. */
+    atualizar({ projeto, naLista }) {
+      universos.toggleAttribute('aria-current', naLista)
+      if (naLista) universos.setAttribute('aria-current', 'page')
+      salvar.disabled = !projeto
+      salvar.title = projeto ? 'Salvar uma cópia do projeto em arquivo (⌘S)' : 'Abra ou crie um projeto para salvar uma cópia'
+    },
+  }
 }

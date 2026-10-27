@@ -858,3 +858,19 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - HUB: `npm test` 153/153; `npm run test:e2e` 21/21.
 - Fotos dos aparelhos (`produto-*.webp`) sem fundo chapado (`scripts/marca/aparelhos/transparente.py`, máscara do
   molde): sem o retângulo preto atrás do notebook no tema escuro nem o branco no claro. Conferido em 1440 px.
+
+## AEON: menu lateral que funciona (27/10/2026)
+
+- Causa: a conta era `<a href="../entrar.html" target="_blank">` (`app/trilho.js`); no app de computador o
+  `setWindowOpenHandler` (`desktop/main.cjs`) só entrega `http(s)` ao navegador e recusa o resto, então o clique morria; no
+  navegador abria outra aba do entrar. "Seus universos" não fazia nada na própria lista (sem estado de selecionado) e
+  "Salvar cópia" sem projeto voltava calado (`salvarAgora`).
+- Agora: Projeto (Seus universos com `aria-current`, Novo projeto, Abrir projeto…, Salvar cópia desligado sem projeto
+  e ⌘S avisando); embaixo "Apps Absolute ZRO" (uma linha; grade com os sete apps em popover) e o cartão da conta (menu
+  com Conta Absolute ZRO e Sair por `POST /api/zro/sair`). Etapas seguem no dock.
+- `test/tela.test.js` › "menu: cada item faz algo de verdade" (falha no código antigo): seletor de arquivo, projeto
+  novo pelo menu, download da cópia, volta à lista, aba nova do SOBEDESCE, sair indo para entrar.html, e todo link de
+  fora do menu em `https` (o caso que o Electron recusava). `npm test` 57/57 (1 pulado: Whisper, sem rede).
+- Conferido no Electron 44 em tela virtual (Playwright `_electron`, conta falsa em `conta.json`): Novo projeto, diálogo
+  de salvar, volta à lista, Revela e Conta Absolute ZRO no navegador do sistema, Sair apaga `conta.json` e vai para
+  entrar.html. `--smoke` OK.

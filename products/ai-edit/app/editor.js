@@ -62,7 +62,18 @@ document.title = `${PRODUTO.nome} · Absolute ZRO`
 // a marca (src/marca.js): a estrela compacta e o ΛEON em traço, na cor do texto
 $('marcaProduto').innerHTML = `${simbolo({ titulo: false })}${wordmark()}`
 $('marcaProduto').title = `${PRODUTO.nome} · ${PRODUTO.frase}`
-montarTrilho({ conta: S.conta, universos: () => fecharProjeto(), abrir: () => $('arquivoProjeto').click(), salvar: () => salvarAgora() })
+// menu: cada item faz o mesmo que o atalho ou o botão da tela (Seus universos fecha o projeto aberto e mostra a lista)
+S.trilho = montarTrilho({
+  conta: S.conta,
+  universos: () => fecharProjeto(),
+  novo: () => novoProjetoFolha(),
+  abrir: () => $('arquivoProjeto').click(),
+  salvar: () => salvarAgora(),
+  sair: async () => {
+    await fetch('/api/zro/sair', { method: 'POST', credentials: 'same-origin' }).catch(() => {})
+    location.replace(`../entrar.html?volta=${encodeURIComponent('/app/')}`)
+  },
+})
 // Entrega › depois do AEON: o próximo app do caminho (abre no navegador)
 $('depois').replaceChildren(
   ...DEPOIS.map((d) => {
@@ -135,6 +146,11 @@ function ir(pagina, animar = true) {
   if (pagina !== 'revisar' && pagina !== 'edicao') player.pausar()
   if (pagina === 'edicao') requestAnimationFrame(() => desenharLinha())
   $('barraExportar').hidden = !P()?.midias.length || pagina === 'entrega'
+  marcarTrilho()
+}
+/** O menu sabe onde a pessoa está (Seus universos) e se há projeto para salvar. */
+function marcarTrilho() {
+  S.trilho?.atualizar({ projeto: Boolean(P()), naLista: !P() && S.pagina === 'midia' })
 }
 $('barraExportar').onclick = () => ir('entrega')
 
@@ -221,6 +237,7 @@ function desenharTudo() {
   $('desfazer').title = S.h?.podeDesfazer ? `Desfazer ${S.h.proximoDesfazer} (⌘Z)` : 'Desfazer (⌘Z)'
   $('refazer').title = S.h?.podeRefazer ? `Refazer ${S.h.proximoRefazer} (⇧⌘Z)` : 'Refazer (⇧⌘Z)'
   document.body.classList.toggle('com-projeto', Boolean(p))
+  marcarTrilho()
   $('barraExportar').hidden = !p?.midias.length || S.pagina === 'entrega'
   desenharMidia()
   desenharHistorico()
@@ -909,7 +926,7 @@ addEventListener('keydown', (e) => {
 
 async function salvarAgora() {
   const p = P()
-  if (!p) return
+  if (!p) return aviso('Abra ou crie um projeto para salvar uma cópia.')
   // o autosave já guarda; ⌘S grava agora e oferece uma cópia em arquivo (para levar a outro computador)
   clearTimeout(gravarTimer)
   await autosalvar()
@@ -1001,11 +1018,14 @@ async function fecharProjeto() {
 }
 S.fecharProjeto = fecharProjeto
 
-$('novoProjeto').onclick = () => {
+/** Novo projeto (botão de Seus universos e o menu): com um projeto aberto, ele é guardado e fechado antes. */
+async function novoProjetoFolha() {
+  if (P()) await fecharProjeto()
   $('formNovo').reset()
   $('folhaNovo').showModal()
   $('novoNome').focus()
 }
+$('novoProjeto').onclick = () => novoProjetoFolha()
 $('folhaNovo').onclose = () => {
   if ($('folhaNovo').returnValue !== 'criar') return
   const [largura, altura] = $('formNovo').formato.value.split('x').map(Number)

@@ -154,14 +154,16 @@ svg {
   width: auto;
 }
 
-/* ───────── menu recolhível (trilho) ───────── */
+/* ───────── menu recolhível (trilho) ─────────
+   Em cima o que é do AEON (projetos); embaixo, como no SOBEDESCE e no Synquei, os apps da família numa linha e a conta
+   num cartão. Recolhido: só ícones. Os menus (apps e conta) abrem ao lado, na camada de cima (popover). */
 .trilho {
   position: fixed;
   top: var(--barra-h);
   bottom: 0;
   left: 0;
   width: var(--trilho);
-  padding: 12px 10px calc(var(--dock-h) + 20px);
+  padding: 12px 10px 14px;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -173,8 +175,13 @@ svg {
   z-index: 15;
   transition: width 0.5s var(--mola);
 }
+.trilho-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
 .trilho-grupo {
-  margin: 14px 10px 4px;
+  margin: 6px 10px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -191,20 +198,36 @@ svg {
   display: flex;
   align-items: center;
   gap: 12px;
-  height: 40px;
+  width: 100%;
+  min-height: 40px;
   padding: 0 9px;
   border-radius: 12px;
   color: var(--text-mute);
   text-decoration: none;
+  font: inherit;
   font-size: 14px;
   font-weight: 600;
+  text-align: left;
   white-space: nowrap;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 .trilho-item:hover {
   background: var(--hover);
   color: var(--text-strong);
+}
+.trilho-item[aria-current],
+.trilho-item[aria-expanded='true'] {
+  background: var(--active);
+  color: var(--text-strong);
+}
+.trilho-item:disabled {
+  opacity: 0.38;
+  cursor: default;
+  background: transparent;
+  color: var(--text-mute);
 }
 .trilho-icone {
   width: 26px;
@@ -213,20 +236,65 @@ svg {
   place-items: center;
   flex: none;
 }
-.trilho-icone img {
-  width: 24px;
-  height: 24px;
-  border-radius: 7px;
-}
 .trilho-nome {
+  min-width: 0;
   opacity: 0;
   transform: translateX(-6px);
-  transition: opacity 0.25s ease, transform 0.4s var(--mola);
+  transition:
+    opacity 0.25s ease,
+    transform 0.4s var(--mola);
 }
 .trilho-aberto .trilho-grupo,
 .trilho-aberto .trilho-nome {
   opacity: 1;
   transform: none;
+}
+/* rodapé: apps da família e a conta, sempre no fim do trilho */
+.trilho-pe {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.trilho-conta {
+  min-height: 48px;
+}
+.trilho-conta-texto {
+  display: grid;
+  line-height: 1.25;
+}
+.trilho-conta-texto strong {
+  color: var(--text-strong);
+  font-size: 13.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trilho-conta-texto small {
+  color: var(--text-faint);
+  font-size: 11.5px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trilho .avatar,
+.trilho-pop .avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  background: var(--text-strong);
+  color: var(--bg);
+}
+.trilho-pop .avatar--grande {
+  width: 40px;
+  height: 40px;
+  font-size: 15px;
 }
 :root {
   --trilho: 62px;
@@ -238,8 +306,138 @@ svg {
   left: var(--trilho) !important;
   transition: left 0.5s var(--mola);
 }
-:root[data-theme='light'] .trilho-icone img[src*='absolute-zro-simbolo-branco'] {
+
+/* menus do trilho (popover): vidro, colados ao trilho na altura do botão */
+.trilho-pop {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 10px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  box-shadow: var(--shadow-float);
+  color: var(--text);
+  opacity: 0;
+  transform: translateX(-6px) scale(0.98);
+  transform-origin: left bottom;
+  transition:
+    opacity 0.2s ease,
+    transform 0.35s var(--mola),
+    overlay 0.35s allow-discrete,
+    display 0.35s allow-discrete;
+}
+.trilho-pop:popover-open {
+  opacity: 1;
+  transform: none;
+}
+@starting-style {
+  .trilho-pop:popover-open {
+    opacity: 0;
+    transform: translateX(-6px) scale(0.98);
+  }
+}
+.trilho-pop-titulo {
+  margin: 4px 8px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.familia-grade {
+  display: grid;
+  grid-template-columns: repeat(3, 92px);
+  gap: 4px;
+}
+.familia-app {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 12px 4px 10px;
+  border-radius: 14px;
+  color: var(--text-mute);
+  text-decoration: none;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: center;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+.familia-app:hover,
+.familia-app:focus-visible {
+  background: var(--hover);
+  color: var(--text-strong);
+}
+.familia-app img {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  object-fit: contain;
+}
+.trilho-pop--conta {
+  width: 260px;
+}
+.trilho-pop--conta:popover-open {
+  display: grid;
+  gap: 2px;
+}
+.trilho-pop-cabeca {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
+.trilho-pop-cabeca > span:last-child {
+  display: grid;
+  min-width: 0;
+  line-height: 1.3;
+}
+.trilho-pop-cabeca strong {
+  color: var(--text-strong);
+  font-size: 14px;
+}
+.trilho-pop-cabeca small {
+  color: var(--text-faint);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.trilho-pop-item {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  display: block;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 10px;
+  color: var(--text-strong);
+  text-decoration: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.trilho-pop-item:hover,
+.trilho-pop-item:focus-visible {
+  background: var(--hover);
+}
+:root[data-theme='light'] .familia-app img[src*='absolute-zro-simbolo-branco'] {
   filter: invert(1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .trilho-pop,
+  .trilho-pop:popover-open {
+    transition: none;
+    transform: none;
+  }
 }
 
 /* ───────── entrega: depois do AEON ───────── */
