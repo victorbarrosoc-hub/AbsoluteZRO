@@ -56,6 +56,7 @@ const menu = el(
   el(
     'nav',
     { className: 'menu-corpo', ariaLabel: 'Revela e Absolute ZRO' },
+    item({ href: 'inicio.html', nome: 'Z', icone: 'z', pagina: 'inicio' }),
     item({ href: './', nome: 'Início', icone: 'casa', pagina: 'index' }),
     el('p', { className: 'menu-grupo', textContent: 'Ferramentas' }),
     ...FERRAMENTAS.map(item),

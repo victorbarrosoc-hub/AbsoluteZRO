@@ -6,7 +6,7 @@
 // Cada módulo procura os elementos dentro do próprio <main> (ver `raiz` em revela.js, cst.js…), então os painéis
 // guardados fora da página não se misturam. Sem fetch, sem history ou com erro: vai pelo link, como sempre.
 
-const PAGINAS = ['lut', 'cst', 'entrega', 'converter']
+const PAGINAS = ['inicio', 'lut', 'cst', 'entrega', 'converter']
 
 /** Endereço → nome da ferramenta, ou null quando não é uma das abas (início, conta, outro site). */
 export function paginaDe(href) {
