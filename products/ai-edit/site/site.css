@@ -1415,6 +1415,149 @@ p {
   color: rgb(255 255 255 / 0.55);
 }
 
+/* ───────── 6a · o Z, a IA do ecossistema (anel e estrela em marca/z) ───────── */
+.z-sec {
+  padding: 40px 24px 140px;
+}
+.z-caixa {
+  max-width: 1040px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: clamp(32px, 6vw, 80px);
+  padding: clamp(32px, 5vw, 64px);
+  border-radius: 36px;
+  background: var(--cartao);
+  border: 1px solid var(--linha);
+}
+.z-simbolo {
+  position: relative;
+  width: clamp(120px, 16vw, 200px);
+  aspect-ratio: 1;
+  margin-right: 13%;
+}
+.z-simbolo img {
+  position: absolute;
+  display: block;
+  user-select: none;
+  pointer-events: none;
+}
+.z-anel {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+/* estrela sobre o tubo, às 3 horas: centro a 41,83% do lado a partir do meio, 43% do lado */
+.z-estrela {
+  width: 43%;
+  height: 43%;
+  left: 70.33%;
+  top: 28.5%;
+  animation: z-brilho 4.8s ease-in-out infinite alternate;
+}
+/* a estrela respira devagar, sem sair do eixo (só CSS; "reduzir movimento" desliga) */
+@keyframes z-brilho {
+  from {
+    transform: scale(0.86);
+    opacity: 0.82;
+  }
+  to {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+.z-texto {
+  display: grid;
+  justify-items: start;
+  gap: 0;
+}
+.z-selo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--linha);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--apoio);
+  margin-bottom: 18px;
+}
+.z-selo i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--cor-laranja);
+}
+.z-titulo {
+  font-size: clamp(30px, 3.8vw, 48px);
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+  color: var(--forte);
+}
+.z-texto .apoio {
+  margin-top: 12px;
+  font-size: clamp(16px, 1.4vw, 19px);
+}
+.z-fichas {
+  list-style: none;
+  margin: 26px 0 28px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.z-fichas li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  background: var(--vidro);
+  border: 1px solid var(--linha);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--texto);
+}
+.z-fichas svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: var(--apoio);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+@media (max-width: 720px) {
+  .z-sec {
+    padding: 20px 16px 100px;
+  }
+  .z-caixa {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+    padding: 36px 22px;
+    border-radius: 28px;
+    gap: 28px;
+  }
+  .z-simbolo {
+    width: 120px;
+    margin: 0 15% 0 0;
+  }
+  .z-texto {
+    justify-items: center;
+  }
+  .z-fichas {
+    justify-content: center;
+    gap: 6px;
+  }
+  .z-fichas li {
+    padding: 7px 11px;
+    font-size: 12.5px;
+  }
+}
+
 /* ───────── reduzir movimento ───────── */
 @media (prefers-reduced-motion: reduce) {
   html {

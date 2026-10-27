@@ -8495,3 +8495,11 @@ Pedido do Victor, com print do celular:
 - **O botão "Continuar com Absolute ZRO" usava o feixe de luz antigo** (`zro-simbolo.webp`, apagado). Agora é o
   símbolo flat da raiz (ADR 0017): SVG embutido, uma cor só (`currentColor`, a do texto do botão), geometria copiada
   de `packages/ui/src/marca.ts`. As outras plataformas já usavam o flat ou não têm ícone no botão.
+
+## 27/out · 3 — o Z na home, dizendo que está chegando
+
+Pedido do titular: a home apresenta o **Z**, a IA do ecossistema Absolute ZRO (`#h-z`, antes do fechamento ciano).
+O painel do Z **ainda não está dentro do Carro do Freela**, então a seção diz "Chegando ao Carro do Freela" e leva a
+`absolutezro.com/ia`; não afirme que já funciona aqui. Anel e estrela cromados são cópias em `src/midia/z-anel.webp` e
+`z-estrela.webp` (citados por `"midia:..."`, como os ícones da família); a estrela fica sobre o tubo, às 3 horas, e
+respira devagar só em CSS (desliga com "reduzir movimento"). VERSAO `27/out · 3`.

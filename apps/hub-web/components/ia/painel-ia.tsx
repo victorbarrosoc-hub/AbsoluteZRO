@@ -18,7 +18,8 @@ type Creditos = { usados: number; limite: number | null; renova_em: string } | n
 const QUANDO = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' })
 const HORA = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
-const DIA = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' })
+// o ciclo vira à 0h UTC do dia 1º: a data da renovação é a do ciclo, não a do fuso de quem lê (senão vira "31 de out.")
+const DIA = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short', timeZone: 'UTC' })
 
 /**
  * Abaixo do campo: o Z, o que resta de créditos de IA no mês e um trilho fino que enche conforme o uso (fica em tom de
