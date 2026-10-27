@@ -1,7 +1,7 @@
 // Revela · página de entrada. A conta é a da Absolute ZRO (api/zro/*, ADR 0012 e 0014): aqui só três estados —
 // fora (Entrar / Criar conta), dentro (quem é, Abrir a Revela, Sair) e desligado (login ainda não configurado neste
 // endereço: as ferramentas seguem abertas). `?volta=` diz para onde voltar depois; `?zro=` traz o resultado.
-import { iniciais, lerConta } from './conta.js'
+import { lerConta, ondeEditar, preencherAvatar } from './conta.js'
 
 const $ = (id) => document.getElementById(id)
 const q = new URLSearchParams(location.search)
@@ -21,7 +21,9 @@ if (AVISOS[q.get('zro')]) $('aviso').textContent = AVISOS[q.get('zro')]
 const c = await lerConta()
 if (c.estado === 'logado') {
   const p = c.pessoa || {}
-  $('avatar').textContent = iniciais(p)
+  // perfil único: a foto e o nome da conta Absolute ZRO; editar é lá, fora da Revela
+  preencherAvatar($('avatar'), p)
+  $('editar-conta').href = ondeEditar(c)
   $('ola').textContent = `Olá, ${(p.nome || p.email || '').split(' ')[0]}.`
   $('quem').textContent = [p.email, p.organizacao?.nome].filter(Boolean).join(' · ')
   $('sem-acesso').hidden = c.acesso !== false

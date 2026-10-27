@@ -57,7 +57,7 @@ async function fluxo({ pessoa = LIA, volta, criar = false, adulterar = null, neg
   assert.equal(u.origin, zro.url)
   assert.equal(u.searchParams.get('code_challenge_method'), 'S256')
   assert.equal(u.searchParams.get('redirect_uri'), `${SITE}/api/zro/callback`)
-  assert.equal(u.searchParams.get('scope'), 'openid email profile org')
+  assert.equal(u.searchParams.get('scope'), 'openid email profile org offline_access')
   assert.ok(u.searchParams.get('nonce'))
   const setCookie = ida.headers.getSetCookie()[0]
   for (const a of ['HttpOnly', 'Secure', 'SameSite=Lax', 'Path=/api/zro', 'Max-Age=600']) assert.ok(setCookie.includes(a), `cookie da ida com ${a}`)
@@ -70,7 +70,7 @@ async function fluxo({ pessoa = LIA, volta, criar = false, adulterar = null, neg
   assert.equal(res.status, 303)
   const c = cookiesDe(res)
   assert.equal(c.get('rv_zro'), '', 'o cookie da ida é apagado na volta')
-  return { res, destino: res.headers.get('location'), conta: c.get('rv_conta') }
+  return { res, destino: res.headers.get('location'), conta: c.get('rv_conta'), tokens: c.get('rv_tokens') }
 }
 
 describe('entrar', () => {
@@ -89,9 +89,11 @@ describe('entrar', () => {
     assert.deepEqual(j.pessoa, {
       nome: 'Lia Produtora',
       email: 'lia@produtora.com',
+      foto: null,
       organizacao: { nome: 'Produtora Lia', papel: 'owner' },
       produtos: ['finishing', 'sobedesce'],
     })
+    assert.equal(j.conta, `${zro.url}/perfil`, 'onde editar: a conta Absolute ZRO')
     const bruto = Buffer.from(r.conta.split('.')[0], 'base64url').toString()
     assert.ok(!/id_token|access_token|"at"/.test(bruto), 'nenhum token da Absolute ZRO no cookie')
   })
@@ -241,5 +243,100 @@ describe('sessão', () => {
     const r = await pedir('/api/zro/entrar?volta=/lut', { headers: { 'x-forwarded-host': 'revela-git-teste.vercel.app', 'x-forwarded-proto': 'https' } })
     assert.equal(r.status, 307)
     assert.equal(r.headers.get('location'), 'https://revela.absolutezro.com/api/zro/entrar?volta=%2Flut')
+  })
+})
+
+describe('perfil único: a conta Absolute ZRO é o perfil', () => {
+  const FOTO = 'b8a4a3c2-0f4e-4d55-9a51-1f3f0c6a2b10'
+  const eu = async (r) => {
+    const res = await pedir('/api/zro/eu', { cookies: { rv_conta: r.conta, rv_tokens: r.tokens } })
+    assert.equal(res.status, 200)
+    const c = cookiesDe(res)
+    // o navegador guarda a cópia nova (e os tokens que valem agora) para a próxima abertura
+    if (c.get('rv_conta')) r.conta = c.get('rv_conta')
+    if (c.has('rv_tokens')) r.tokens = c.get('rv_tokens')
+    return { j: await res.json(), cookies: c }
+  }
+
+  test('o login traz a foto e onde editar; os tokens vão cifrados e só para /api/zro', async () => {
+    const r = await fluxo({ pessoa: { ...LIA, foto: FOTO } })
+    const cab = r.res.headers.getSetCookie().find((c) => c.startsWith('rv_tokens='))
+    for (const a of ['HttpOnly', 'Secure', 'SameSite=Lax', 'Path=/api/zro']) assert.ok(cab.includes(a), `tokens com ${a}`)
+    assert.ok(!/at_|rt_/.test(Buffer.from(r.tokens.split('.')[1], 'base64url').toString('latin1')), 'tokens cifrados')
+    assert.ok(!/at_|rt_/.test(Buffer.from(r.conta.split('.')[0], 'base64url').toString()), 'nenhum token na sessão')
+    const { j } = await eu(r)
+    assert.equal(j.pessoa.foto, `${zro.url}/api/v1/foto/${FOTO}`)
+    assert.equal(j.conta, `${zro.url}/perfil`)
+  })
+
+  test('mudou na conta, muda no app na próxima abertura (userinfo, sem novo login)', async () => {
+    const r = await fluxo({ pessoa: { ...LIA, foto: FOTO } })
+    const trocas = zro.estado.trocas
+    const leituras = zro.estado.leituras
+    zro.estado.pessoa = { ...LIA, nome: 'Lia Martins', email: 'lia@martins.com', foto: 'c0ffee00-1111-4222-8333-444455556666', atualizado: 1_800_000_000 }
+    const { j } = await eu(r)
+    assert.equal(zro.estado.leituras, leituras + 1, 'leu o /oauth/userinfo')
+    assert.equal(zro.estado.trocas, trocas, 'sem novo login')
+    assert.equal(j.pessoa.nome, 'Lia Martins')
+    assert.equal(j.pessoa.email, 'lia@martins.com')
+    assert.equal(j.pessoa.foto, `${zro.url}/api/v1/foto/c0ffee00-1111-4222-8333-444455556666`)
+    // a cópia nova fica na sessão: vale mesmo sem a Absolute ZRO responder depois
+    const soCopia = await (await pedir('/api/zro/eu', { cookies: { rv_conta: r.conta } })).json()
+    assert.equal(soCopia.pessoa.nome, 'Lia Martins')
+    // tirou a foto: volta às iniciais
+    zro.estado.pessoa = { ...LIA, foto: null }
+    assert.equal((await eu(r)).j.pessoa.foto, null)
+    // resposta de outra pessoa não troca a cópia
+    zro.estado.pessoa = { ...LIA, sub: 'outra-pessoa', nome: 'Outra' }
+    const copia = r.conta
+    assert.equal((await eu(r)).j.pessoa.nome, 'Lia Produtora')
+    assert.equal(r.conta, copia)
+  })
+
+  test('access token vencido: renova pelo refresh token (que gira) e relê', async () => {
+    const r = await fluxo({ pessoa: { ...LIA } })
+    zro.vencer()
+    zro.estado.pessoa = { ...LIA, nome: 'Lia Renovada' }
+    const antes = zro.estado.renovacoes
+    const tokensAntes = r.tokens
+    const { j } = await eu(r)
+    assert.equal(zro.estado.renovacoes, antes + 1)
+    assert.equal(j.pessoa.nome, 'Lia Renovada')
+    assert.notEqual(r.tokens, tokensAntes, 'refresh token novo gravado')
+    // a próxima abertura usa o access token novo, sem renovar de novo
+    await eu(r)
+    assert.equal(zro.estado.renovacoes, antes + 1)
+  })
+
+  test('acesso removido no Perfil: esquece os tokens, a sessão segue com a cópia', async () => {
+    const r = await fluxo({ pessoa: { ...LIA } })
+    zro.vencer()
+    zro.estado.recusarRenovacao = true
+    try {
+      const { j, cookies } = await eu(r)
+      assert.equal(j.pessoa.nome, 'Lia Produtora')
+      assert.equal(cookies.get('rv_tokens'), '', 'tokens apagados')
+    } finally {
+      zro.estado.recusarRenovacao = false
+    }
+  })
+
+  test('foto de fora da Absolute ZRO não entra (fica nas iniciais)', async () => {
+    const r = await fluxo({ pessoa: { ...LIA, foto: FOTO }, adulterar: 'foto-fora' })
+    assert.equal((await (await pedir('/api/zro/eu', { cookies: { rv_conta: r.conta } })).json()).pessoa.foto, null)
+  })
+
+  test('tokens adulterados não valem; sair revoga o refresh token e apaga os dois cookies', async () => {
+    const r = await fluxo({ pessoa: { ...LIA } })
+    const [iv, corpo, tag] = r.tokens.split('.')
+    const mexido = `${iv}.${corpo.slice(0, -2)}${corpo.endsWith('AA') ? 'BB' : 'AA'}.${tag}`
+    const leituras = zro.estado.leituras
+    const res = await pedir('/api/zro/eu', { cookies: { rv_conta: r.conta, rv_tokens: mexido } })
+    assert.equal(res.status, 200)
+    assert.equal(zro.estado.leituras, leituras, 'sem tokens válidos, não relê')
+    const s = await pedir('/api/zro/sair', { method: 'POST', headers: { origin: SITE }, cookies: { rv_conta: r.conta, rv_tokens: r.tokens } })
+    assert.equal(s.status, 200)
+    assert.match(zro.estado.revogados.at(-1) || '', /^rt_/)
+    assert.ok(s.headers.getSetCookie().some((c) => /^rv_tokens=; Path=\/api\/zro; Max-Age=0/.test(c)))
   })
 })

@@ -7,7 +7,7 @@
 // navegador do sistema (desktop/main.cjs › setWindowOpenHandler, que recusa qualquer outro endereço).
 
 import { FAMILIA, iconeDe } from '../src/familia.js'
-import { iniciais } from '../site/conta.js'
+import { CONTA_PADRAO, preencherAvatar } from '../site/conta.js'
 
 const CHAVE = 'aeon-menu'
 const el = (tag, props = {}, ...filhos) => {
@@ -25,8 +25,8 @@ const svgUso = (id) => {
 const externo = (href, props = {}, ...filhos) => el('a', { href, target: '_blank', rel: 'noopener', ...props }, ...filhos)
 
 /**
- * acoes: { conta (pessoa logada ou null), universos(), novo(), abrir(), salvar(), sair() } — os mesmos atalhos do
- * teclado. Devolve { atualizar({ projeto, naLista }) } para o editor marcar onde a pessoa está e o que dá para fazer.
+ * acoes: { conta (pessoa logada ou null), editarConta (zro_conta), universos(), novo(), abrir(), salvar(), sair() } —
+ * os mesmos atalhos do teclado. Perfil único: foto e nome são os da conta Absolute ZRO e se editam lá, não aqui. Devolve { atualizar({ projeto, naLista }) } para o editor marcar onde a pessoa está e o que dá para fazer.
  */
 export function montarTrilho(acoes) {
   const botao = document.getElementById('menuBotao')
@@ -56,7 +56,7 @@ export function montarTrilho(acoes) {
   appsBotao.setAttribute('popovertarget', 'trilhoApps')
   appsBotao.setAttribute('aria-haspopup', 'menu')
 
-  // ── conta: cartão com as iniciais; o menu diz quem é e leva à conta ou sai ──
+  // ── conta: cartão com a foto da conta (ou as iniciais); o menu diz quem é e leva à conta Absolute ZRO ou sai ──
   const p = acoes.conta
   let contaBotao
   let contaMenu = null
@@ -67,7 +67,7 @@ export function montarTrilho(acoes) {
     contaBotao.setAttribute('popovertarget', 'trilhoConta')
     contaBotao.setAttribute('aria-haspopup', 'menu')
     contaBotao.append(
-      el('span', { className: 'trilho-icone' }, el('span', { className: 'avatar', textContent: iniciais(p), ariaHidden: 'true' })),
+      el('span', { className: 'trilho-icone' }, preencherAvatar(el('span', { className: 'avatar', ariaHidden: 'true' }), p)),
       el('span', { className: 'trilho-nome trilho-conta-texto' }, el('strong', { textContent: p.nome || p.email.split('@')[0] }), el('small', { textContent: p.email || '' })),
     )
     const sair = el('button', { className: 'trilho-pop-item', type: 'button', role: 'menuitem', textContent: 'Sair' })
@@ -76,8 +76,8 @@ export function montarTrilho(acoes) {
     contaMenu = el(
       'div',
       { id: 'trilhoConta', className: 'trilho-pop trilho-pop--conta', popover: 'auto', role: 'menu', ariaLabel: 'Conta' },
-      el('div', { className: 'trilho-pop-cabeca' }, el('span', { className: 'avatar avatar--grande', textContent: iniciais(p), ariaHidden: 'true' }), el('span', {}, el('strong', { textContent: p.nome || p.email }), el('small', { textContent: [p.email, p.organizacao?.nome].filter(Boolean).join(' · ') }))),
-      externo('https://absolutezro.com/perfil', { className: 'trilho-pop-item', role: 'menuitem', textContent: 'Conta Absolute ZRO', title: 'Abre no navegador' }),
+      el('div', { className: 'trilho-pop-cabeca' }, preencherAvatar(el('span', { className: 'avatar avatar--grande', ariaHidden: 'true' }), p), el('span', {}, el('strong', { textContent: p.nome || p.email }), el('small', { textContent: [p.email, p.organizacao?.nome].filter(Boolean).join(' · ') }))),
+      externo(acoes.editarConta || CONTA_PADRAO, { className: 'trilho-pop-item', role: 'menuitem', textContent: 'Editar na conta Absolute ZRO', title: 'Nome, foto e e-mail são os mesmos em todos os apps. Abre no navegador.' }),
       sair,
     )
   } else {

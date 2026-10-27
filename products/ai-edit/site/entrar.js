@@ -3,7 +3,7 @@
 // abre: o editor manda para cá.
 // `?volta=` diz para onde voltar; `?zro=` traz o resultado.
 import { wordmark } from '../src/marca.js'
-import { iniciais, lerConta } from './conta.js'
+import { lerConta, ondeEditar, preencherAvatar } from './conta.js'
 
 const $ = (id) => document.getElementById(id)
 for (const n of document.querySelectorAll('[data-marca="nome"]')) n.innerHTML = wordmark()
@@ -24,7 +24,9 @@ if (AVISOS[q.get('zro')]) $('aviso').textContent = AVISOS[q.get('zro')]
 const c = await lerConta()
 if (c.estado === 'logado') {
   const p = c.pessoa || {}
-  $('avatar').textContent = iniciais(p)
+  // perfil único: a foto e o nome da conta Absolute ZRO; editar é lá, fora do app
+  preencherAvatar($('avatar'), p)
+  $('editarConta').href = ondeEditar(c)
   $('ola').textContent = `Olá, ${(p.nome || p.email || '').split(' ')[0]}.`
   $('quem').textContent = [p.email, p.organizacao?.nome].filter(Boolean).join(' · ')
   const liberado = c.acesso !== false

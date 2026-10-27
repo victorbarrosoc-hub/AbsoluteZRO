@@ -1053,3 +1053,17 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   35/35. A Absolute ZRO falsa de cada um ganhou refresh que roda, `userinfo`, `revoke`, `picture` e `updated_at`.
 - Não validado: contra o HUB de verdade (precisa de deploy e das variáveis já cadastradas). Sessões abertas antes
   disto seguem com a cópia do login até a próxima entrada.
+- AEON e Revela (`products/ai-edit`, `products/finishing`): o login pede também `offline_access`. A sessão
+  (`ae_conta`/`rv_conta`) guarda a cópia do perfil (nome, e-mail, foto, onde editar); os tokens vão num cookie
+  cifrado (AES-256-GCM) só de `/api/zro`. Cada `/api/zro/eu` relê o perfil no `/oauth/userinfo` (renova o access
+  token pelo refresh token se venceu; prazo de 3 s, senão vale a cópia). Refresh recusado: esquece os tokens e fica a
+  cópia. Sair revoga o refresh token.
+- AEON de computador (`desktop/conta.cjs`): relê o perfil a cada abertura; o refresh token só vai ao disco cifrado
+  pelo cofre do sistema (`safeStorage`: Keychain/DPAPI). Sem cofre (Linux sem chaveiro), fica só na memória.
+- Telas: a foto da conta no cartão e no menu da conta do AEON, no topo e na entrada da Revela e do site do AEON (sem
+  foto ou foto que não carrega: iniciais). "Editar na conta Absolute ZRO" aponta para `zro_conta` e abre fora do app.
+  CSP com `img-src https://absolutezro.com` (`vercel.json` dos dois e `desktop/cabecalhos.json`).
+- Testes: AEON `npm test` 87/87 (login web e de computador contra a Absolute ZRO falsa com `picture`, `updated_at`,
+  `userinfo`, refresh que gira e revogação; tela com a foto sob a CSP real); Revela `npm test` 109/109 com o mesmo teste de
+  login e a tela da foto; `xvfb-run -a npx electron . --smoke` SMOKE OK. Não validado: contra o absolutezro.com de
+  verdade e o cofre do sistema num Mac ou Windows de verdade.

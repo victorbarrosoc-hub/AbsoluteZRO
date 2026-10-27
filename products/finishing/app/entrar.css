@@ -82,6 +82,15 @@
   color: var(--fraco);
   font-size: 13px;
 }
+.entrar-editar {
+  margin-top: 18px;
+  color: var(--fraco);
+  font-size: 14px;
+  text-decoration: none;
+}
+.entrar-editar:hover {
+  color: var(--texto);
+}
 .familia-mini img {
   width: 28px;
   height: 28px;

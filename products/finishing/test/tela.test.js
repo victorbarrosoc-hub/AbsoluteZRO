@@ -390,6 +390,42 @@ test('página inicial: seções, conta e sem rolagem horizontal', async () => {
   }
 })
 
+test('perfil único: a foto da conta Absolute ZRO no topo e na entrada; editar leva à conta; sem foto, iniciais', async () => {
+  // 1×1 PNG servido como a Absolute ZRO serve (Cross-Origin-Resource-Policy: cross-origin: a Revela isola origens)
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64')
+  const foto = 'https://absolutezro.com/api/v1/foto/b8a4a3c2-0f4e-4d55-9a51-1f3f0c6a2b10'
+  let pessoa = { nome: 'Lia Martins', email: 'lia@produtora.com', foto, organizacao: null, produtos: ['finishing'] }
+  const pagina = await navegador.newPage()
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  pagina.on('console', (m) => m.type() === 'error' && erros.push(m.text()))
+  await pagina.route('**/api/zro/eu', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, acesso: true, conta: 'https://absolutezro.com/perfil?de=revela', pessoa }) }))
+  await pagina.route('https://absolutezro.com/api/v1/foto/**', (r) => r.fulfill({ status: 200, contentType: 'image/png', headers: { 'cross-origin-resource-policy': 'cross-origin' }, body: png }))
+  await pagina.goto(endereco)
+  // a CSP da Revela deixa a foto da conta carregar (img-src https://absolutezro.com)
+  await pagina.locator('#conta.conta--logado.avatar--foto img').waitFor()
+  assert.equal(await pagina.locator('#conta img').getAttribute('src'), foto)
+  assert.equal(await pagina.locator('#conta img').evaluate((i) => i.naturalWidth), 1)
+  assert.match(await pagina.locator('#conta').getAttribute('title'), /Lia Martins/)
+
+  await pagina.goto(endereco + 'entrar.html')
+  await pagina.locator('#avatar.avatar--foto img').waitFor()
+  assert.equal(await pagina.getByRole('heading', { name: 'Olá, Lia.' }).count(), 1)
+  const editar = pagina.getByRole('link', { name: 'Editar na conta Absolute ZRO' })
+  assert.equal(await editar.getAttribute('href'), 'https://absolutezro.com/perfil?de=revela')
+  assert.equal(await editar.getAttribute('target'), '_blank')
+  // a Revela não edita nome, foto nem e-mail
+  assert.equal(await pagina.locator('#dentro input').count(), 0)
+
+  pessoa = { ...pessoa, foto: null }
+  await pagina.goto(endereco)
+  await pagina.locator('#conta.conta--logado').waitFor()
+  assert.equal(await pagina.locator('#conta').innerText(), 'LM')
+  assert.equal(await pagina.locator('#conta img').count(), 0)
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
 test('entrar: sem sessão mostra os botões; login desligado avisa', async () => {
   const pagina = await navegador.newPage()
   await pagina.goto(endereco + 'entrar.html?volta=/converter')

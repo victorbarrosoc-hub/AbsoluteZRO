@@ -25,7 +25,7 @@ import * as ponte from './ponte.js'
 import { montarTrilho } from './trilho.js'
 import { DEPOIS, FAMILIA, iconeDe } from '../src/familia.js'
 import * as projetos from './projetos.js'
-import { lerConta } from '../site/conta.js'
+import { lerConta, ondeEditar } from '../site/conta.js'
 import { montarAtualizacao } from './atualizacao.js'
 
 const $ = (id) => document.getElementById(id)
@@ -67,6 +67,8 @@ $('marcaProduto').title = `${PRODUTO.nome} · ${PRODUTO.frase}`
 // menu: cada item faz o mesmo que o atalho ou o botão da tela (Seus universos fecha o projeto aberto e mostra a lista)
 S.trilho = montarTrilho({
   conta: S.conta,
+  // perfil único: nome, foto e e-mail se editam na conta Absolute ZRO (zro_conta), fora do app
+  editarConta: ondeEditar(conta),
   universos: () => fecharProjeto(),
   novo: () => novoProjetoFolha(),
   abrir: () => $('arquivoProjeto').click(),

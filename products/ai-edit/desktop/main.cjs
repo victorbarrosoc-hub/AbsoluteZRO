@@ -7,7 +7,7 @@
 // `--smoke` (CI, depois do build): abre o app, faz um vídeo de teste, analisa o som, aprova, exporta para os editores
 // e renderiza; escreve "SMOKE OK" ou "SMOKE FALHOU".
 
-const { app, BrowserWindow, Menu, protocol, shell, session, dialog, ipcMain, net } = require('electron')
+const { app, BrowserWindow, Menu, protocol, shell, session, dialog, ipcMain, net, safeStorage } = require('electron')
 const path = require('node:path')
 const fs = require('node:fs')
 const fsp = require('node:fs/promises')
@@ -130,10 +130,22 @@ async function modelo(req, u) {
 
 // ───────── conta Absolute ZRO: as mesmas rotas do site, respondidas aqui (desktop/conta.cjs) ─────────
 let conta = null
+// o refresh token da conta (para reler o perfil a cada abertura) só vai para o disco cifrado pelo sistema: Keychain no
+// Mac, DPAPI no Windows. No Linux sem chaveiro (basic_text) não há cofre de verdade: fica só na memória.
+function cofreDoSistema() {
+  try {
+    if (!safeStorage.isEncryptionAvailable()) return null
+    if (process.platform === 'linux' && safeStorage.getSelectedStorageBackend?.() === 'basic_text') return null
+    return { cifrar: (t) => safeStorage.encryptString(t).toString('base64'), decifrar: (b) => safeStorage.decryptString(Buffer.from(b, 'base64')) }
+  } catch {
+    return null
+  }
+}
 const contaApp = () =>
   (conta ??= criarConta({
     pasta: app.getPath('userData'),
     abrirNavegador: (url) => shell.openExternal(url),
+    cofre: cofreDoSistema(),
     aoVoltar: () => {
       if (win) {
         if (win.isMinimized()) win.restore()
@@ -149,6 +161,8 @@ async function rotaConta(req, u) {
   // teste de fumaça e medição (janela escondida, o app fecha no fim): uma sessão de teste, sem rede
   if (SMOKE || MEDIR) return u.pathname === '/api/zro/eu' ? jsonResp(200, { ok: true, pessoa: { nome: 'Teste', email: 'teste@absolutezro.com', produtos: ['ai-edit'] }, acesso: true }) : jsonResp(404, { ok: false })
   if (u.pathname === '/api/zro/eu') {
+    // perfil único: relê nome, e-mail e foto na Absolute ZRO a cada abertura (sem resposta em 3 s, vale a cópia)
+    if (contaApp().ler()) await contaApp().atualizar()
     const eu = contaApp().eu()
     return eu ? jsonResp(200, eu) : jsonResp(401, { ok: false })
   }

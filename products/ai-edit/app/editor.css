@@ -296,6 +296,17 @@ svg {
   height: 40px;
   font-size: 15px;
 }
+/* perfil único: a foto da conta Absolute ZRO no lugar das iniciais (site/conta.js › preencherAvatar) */
+.avatar--foto {
+  overflow: hidden;
+}
+.avatar--foto img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
 :root {
   --trilho: 62px;
 }

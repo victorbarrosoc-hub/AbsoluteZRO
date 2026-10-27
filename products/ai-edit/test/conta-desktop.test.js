@@ -51,6 +51,67 @@ test('entra pelo navegador, guarda só quem é e sai', async () => {
   assert.equal(c.eu(), null)
 })
 
+// cofre de teste no lugar do safeStorage do sistema: o que vai para o disco não é o token em claro
+const COFRE = { cifrar: (t) => `cofre:${Buffer.from(t).toString('base64').split('').reverse().join('')}`, decifrar: (c) => Buffer.from(c.slice(6).split('').reverse().join(''), 'base64').toString() }
+
+test('perfil único: a foto da conta vem no login e a próxima abertura relê nome e foto (userinfo + refresh)', async () => {
+  zro.estado.pessoa = { ...LIA, foto: 'b8a4a3c2-0f4e-4d55-9a51-1f3f0c6a2b10' }
+  const c = criarConta({ pasta, abrirNavegador: navegador(false), cofre: COFRE })
+  assert.equal(await c.entrar(), 'ok')
+  assert.equal(c.eu().pessoa.foto, `${zro.url}/api/v1/foto/b8a4a3c2-0f4e-4d55-9a51-1f3f0c6a2b10`)
+  assert.equal(c.eu().conta, `${zro.url}/perfil`, 'onde editar: a conta Absolute ZRO')
+  const bruto = readFileSync(join(pasta, 'conta.json'), 'utf8')
+  assert.ok(!/rt_|at_/.test(bruto), 'refresh token só cifrado; access token nunca no disco')
+  assert.match(bruto, /"rt":"cofre:/)
+  const exp = JSON.parse(bruto).exp
+
+  // mudou na conta: a mesma abertura do app relê pelo access token ainda válido
+  zro.estado.pessoa = { ...LIA, nome: 'Lia Martins', foto: 'c0ffee00-1111-4222-8333-444455556666' }
+  assert.equal(await c.atualizar(), 'ok')
+  assert.equal(c.eu().pessoa.nome, 'Lia Martins')
+  assert.equal(c.eu().pessoa.foto, `${zro.url}/api/v1/foto/c0ffee00-1111-4222-8333-444455556666`)
+
+  // app fechado e aberto de novo (outro processo, sem tokens na memória), access token vencido: renova e relê
+  zro.vencer()
+  zro.estado.pessoa = { ...LIA, nome: 'Lia M.', foto: null }
+  const renovacoes = zro.estado.renovacoes
+  const depois = criarConta({ pasta, abrirNavegador: navegador(false), cofre: COFRE })
+  assert.equal(depois.eu().pessoa.nome, 'Lia Martins', 'antes de reler, a cópia')
+  assert.equal(await depois.atualizar(), 'ok')
+  assert.equal(zro.estado.renovacoes, renovacoes + 1)
+  assert.equal(depois.eu().pessoa.nome, 'Lia M.')
+  assert.equal(depois.eu().pessoa.foto, null, 'sem foto: iniciais')
+  assert.equal(JSON.parse(readFileSync(join(pasta, 'conta.json'), 'utf8')).exp, exp, 'reler não estica a sessão')
+
+  // acesso removido no Perfil: esquece o token e fica com a cópia
+  zro.vencer()
+  zro.estado.recusarRenovacao = true
+  const outra = criarConta({ pasta, abrirNavegador: navegador(false), cofre: COFRE })
+  assert.equal(await outra.atualizar(), 'recusado')
+  zro.estado.recusarRenovacao = false
+  assert.equal(outra.eu().pessoa.nome, 'Lia M.')
+  assert.ok(!/"rt"/.test(readFileSync(join(pasta, 'conta.json'), 'utf8')))
+  assert.equal(await outra.atualizar(), 'sem-token')
+  outra.sair()
+  assert.equal(outra.eu(), null)
+})
+
+test('sem cofre do sistema: o refresh token fica só na memória; sair revoga', async () => {
+  zro.estado.pessoa = LIA
+  const c = criarConta({ pasta, abrirNavegador: navegador(false) })
+  assert.equal(await c.entrar(), 'ok')
+  assert.ok(!/"rt"/.test(readFileSync(join(pasta, 'conta.json'), 'utf8')))
+  zro.vencer()
+  zro.estado.pessoa = { ...LIA, nome: 'Lia Nova' }
+  assert.equal(await c.atualizar(), 'ok', 'na mesma abertura, renova pela memória')
+  assert.equal(c.eu().pessoa.nome, 'Lia Nova')
+  assert.equal(await criarConta({ pasta, abrirNavegador: navegador(false) }).atualizar(), 'sem-token', 'outra abertura: fica a cópia')
+  const n = zro.estado.revogados.length
+  c.sair()
+  for (let i = 0; i < 50 && zro.estado.revogados.length === n; i++) await new Promise((r) => setTimeout(r, 10))
+  assert.match(zro.estado.revogados.at(-1) || '', /^rt_/)
+})
+
 test('conta sem o AEON: entra, mas acesso falso', async () => {
   zro.estado.pessoa = { ...LIA, produtos: ['sobedesce'] }
   const c = criarConta({ pasta, abrirNavegador: navegador(false) })

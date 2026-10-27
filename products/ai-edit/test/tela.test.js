@@ -262,6 +262,63 @@ test('projeto novo: nome, formato vertical e quadros; renomear pela barra', asyn
   await pagina.close()
 })
 
+// 1×1 PNG: a "foto" da conta servida como a Absolute ZRO serve (Cross-Origin-Resource-Policy: cross-origin, por causa
+// do isolamento entre origens do app)
+const FOTO_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64')
+
+test('perfil único: foto e nome da conta Absolute ZRO no menu; editar leva à conta; sem foto, iniciais', async () => {
+  const foto = 'https://absolutezro.com/api/v1/foto/b8a4a3c2-0f4e-4d55-9a51-1f3f0c6a2b10'
+  const pagina = await navegador.newPage({ viewport: { width: 1440, height: 900 } })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  pagina.on('console', (m) => m.type() === 'error' && erros.push(m.text()))
+  let pessoa = { ...PESSOA, conta: 'https://absolutezro.com/perfil?de=aeon', pessoa: { ...PESSOA.pessoa, nome: 'Lia Martins', foto } }
+  await pagina.route('**/api/zro/eu', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(pessoa) }))
+  await pagina.route('https://absolutezro.com/api/v1/foto/**', (r) => r.fulfill({ status: 200, contentType: 'image/png', headers: { 'cross-origin-resource-policy': 'cross-origin' }, body: FOTO_PNG }))
+  await pagina.goto(s.url + 'app/')
+  await pagina.waitForFunction(() => document.documentElement.dataset.pronto === '1')
+  // a CSP do app deixa a foto da conta carregar (img-src https://absolutezro.com)
+  await pagina.locator('#trilho .trilho-conta .avatar--foto img').waitFor()
+  assert.equal(await pagina.locator('#trilho .trilho-conta img').getAttribute('src'), foto)
+  assert.equal(await pagina.locator('#trilho .trilho-conta img').evaluate((i) => i.naturalWidth), 1)
+  assert.equal(await pagina.locator('.trilho-item', { hasText: 'Lia Martins' }).count(), 1)
+  await pagina.locator('#menuBotao').click()
+  await pagina.locator('#trilho [data-acao="conta"]').click()
+  await pagina.locator('#trilhoConta:popover-open .avatar--foto img').waitFor()
+  const editar = pagina.locator('#trilhoConta a', { hasText: 'Editar na conta Absolute ZRO' })
+  assert.equal(await editar.getAttribute('href'), 'https://absolutezro.com/perfil?de=aeon', 'zro_conta')
+  assert.equal(await editar.getAttribute('target'), '_blank', 'abre fora do app (no desktop, o navegador)')
+  // o app não edita nome, foto nem e-mail: nada de campo para isso
+  assert.equal(await pagina.locator('#trilhoConta input, #trilho input').count(), 0)
+
+  // sem foto na conta (ou foto que não carrega): as iniciais
+  pessoa = { ...PESSOA, pessoa: { ...PESSOA.pessoa, foto: null } }
+  await pagina.reload()
+  await pagina.waitForFunction(() => document.documentElement.dataset.pronto === '1')
+  assert.equal(await pagina.locator('#trilho .trilho-conta .avatar').innerText(), 'LP')
+  assert.equal(await pagina.locator('#trilho .trilho-conta img').count(), 0)
+  assert.deepEqual(erros, [])
+  // foto trocada e o endereço velho já responde 404 (o navegador registra o 404; a tela fica nas iniciais)
+  await pagina.unroute('https://absolutezro.com/api/v1/foto/**')
+  await pagina.route('https://absolutezro.com/api/v1/foto/**', (r) => r.fulfill({ status: 404, headers: { 'cross-origin-resource-policy': 'cross-origin' }, body: '' }))
+  pessoa = { ...PESSOA, pessoa: { ...PESSOA.pessoa, foto: `${foto}-velha` } }
+  await pagina.reload()
+  await pagina.waitForFunction(() => document.documentElement.dataset.pronto === '1')
+  assert.equal(await pagina.locator('#trilho .trilho-conta .avatar').innerText(), 'LP')
+  assert.equal(await pagina.locator('#trilho .trilho-conta img').count(), 0)
+  await pagina.close()
+
+  // entrar.html (logado): a mesma foto e o mesmo caminho para editar
+  const entrar = await navegador.newPage()
+  pessoa = { ...PESSOA, conta: 'https://absolutezro.com/perfil', pessoa: { ...PESSOA.pessoa, foto } }
+  await entrar.route('**/api/zro/eu', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(pessoa) }))
+  await entrar.route('https://absolutezro.com/api/v1/foto/**', (r) => r.fulfill({ status: 200, contentType: 'image/png', headers: { 'cross-origin-resource-policy': 'cross-origin' }, body: FOTO_PNG }))
+  await entrar.goto(s.url + 'entrar.html')
+  await entrar.locator('#avatar.avatar--foto img').waitFor()
+  assert.equal(await entrar.getByRole('link', { name: 'Editar na conta Absolute ZRO' }).getAttribute('href'), 'https://absolutezro.com/perfil')
+  await entrar.close()
+})
+
 test('menu: cada item faz algo de verdade (projetos, conta, sair, apps da família)', async () => {
   const { pagina, erros } = await abrir()
   await pagina.locator('#menuBotao').click()
@@ -312,7 +369,7 @@ test('menu: cada item faz algo de verdade (projetos, conta, sair, apps da famíl
   // conta: cartão com quem é; o menu leva à conta e sai de verdade (POST /api/zro/sair → entrar.html)
   await item('conta').click()
   await pagina.locator('#trilhoConta:popover-open', { hasText: 'lia@produtora.com' }).waitFor()
-  assert.equal(await pagina.locator('#trilhoConta a', { hasText: 'Conta Absolute ZRO' }).getAttribute('href'), 'https://absolutezro.com/perfil')
+  assert.equal(await pagina.locator('#trilhoConta a', { hasText: 'Editar na conta Absolute ZRO' }).getAttribute('href'), 'https://absolutezro.com/perfil')
   let saiu = false
   await pagina.route('**/api/zro/sair', (r) => {
     saiu = r.request().method() === 'POST'
