@@ -146,7 +146,9 @@ def instalar(claro, escuro):
     web = os.path.join(RAIZ, 'apps/hub-web')
     copias = [
         (f'{claro}/icon-1024.png', 'app/icon.png', 512),
-        (f'{claro}/apple-icon.png', 'app/apple-icon.png', None),
+        # iPhone: placa grafite com o anel branco. O ícone da Tela de Início não tem versão escura; o branco ficava
+        # "gravado" quando o iPhone escurece os ícones (pedido do titular, 27/10/2026). O app de computador segue branco.
+        (f'{escuro}/apple-icon.png', 'app/apple-icon.png', None),
         # favicon: placa escura com a marca branca, legível na aba clara e na escura
         (f'{escuro}/favicon.ico', 'app/favicon.ico', None),
         (f'{claro}/icon-192.png', 'public/icons/icon-192.png', None),

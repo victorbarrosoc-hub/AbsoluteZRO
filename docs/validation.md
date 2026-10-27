@@ -980,3 +980,5 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   topo e as ferramentas numa lista compacta com "Abrir". No Safari sem instalar, o topo ensina a pôr na Tela de Início.
 - Conferido no Chromium com o iPhone 14 emulado (claro e escuro); a abertura, aplicando as regras do modo standalone
   na página (o Chromium não emula `display-mode`). `npm run test:e2e` 21/21. Não validado: num iPhone de verdade.
+- Ícone do iPhone (`app/apple-icon.png`): placa grafite com o anel branco (`icones.py`, tema escuro). O ícone de Tela
+  de Início não tem versão escura e o branco ficava "gravado" no modo Escuro do iPhone. Computador segue branco.
