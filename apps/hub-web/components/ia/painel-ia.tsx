@@ -1,13 +1,13 @@
 'use client'
 /**
- * O painel da IA do ecossistema, a mesma em todas as plataformas: saudação com o orbe, sugestões, o campo de conversa e
+ * O painel da IA do ecossistema, a mesma em todas as plataformas: saudação com o Z (anel e estrela, com o ar em volta), sugestões, o campo de conversa e
  * "Conversas" (uma gaveta com as conversas de cada plataforma, cada grupo recolhível). No HUB aparecem todas; o app de
  * cada plataforma mostra as dele. Fala com /api/v1/ia (streaming NDJSON). Sem IA ligada ou sem crédito, diz isso.
  */
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent } from 'react'
 import { ProductMark, ZroSymbol } from '@zro/ui'
 import { Icon } from '../icons'
-import { Orbe, type OrbeEstado } from './orbe'
+import { PalcoZ, Z, type CenaZ } from './simbolo-z'
 import { TextoIa } from './texto-ia'
 
 export type IaPlataforma = { id: string; nome: string; cor: CSSProperties }
@@ -178,8 +178,10 @@ export function PainelIa({
     }
   }
 
-  const estado: OrbeEstado = !ligada ? 'desligada' : pensando ? 'pensando' : foco || texto ? 'ouvindo' : 'pronta'
   const emConversa = mensagens.length > 0
+  const respondendo = pensando && !!mensagens[mensagens.length - 1]?.texto
+  const cena: CenaZ = !ligada ? 'desligada' : pensando ? (respondendo ? 'respondendo' : 'pensando') : foco || texto ? 'ouvindo' : 'calma'
+  const movimento = cena === 'pensando' ? 'pensando' : cena === 'respondendo' ? 'pronta' : 'parada'
 
   // grupos da gaveta: HUB primeiro, depois cada plataforma na ordem do ciclo
   const grupos = [
@@ -190,13 +192,14 @@ export function PainelIa({
     .filter((g) => g.itens.length > 0)
 
   return (
-    <div className="ia" data-conversa={emConversa ? 'sim' : undefined}>
-      <div className="ia__barra">
+    <PalcoZ cena={cena} className="ia">
+      <div className="ia__barra" data-conversa={emConversa ? 'sim' : undefined}>
         <button type="button" className="ia-pilula" onClick={() => setGaveta(true)} aria-expanded={gaveta} aria-controls="ia-gaveta">
           <Icon name="script" size={15} />
           Conversas
           {conversas.length > 0 && <span className="ia-pilula__n">{conversas.length}</span>}
         </button>
+        {emConversa && <Z movimento={movimento} tamanho={40} vento className="ia__assinatura" />}
         {emConversa && (
           <button type="button" className="ia-pilula" onClick={novaConversa}>
             <Icon name="plus" size={15} />
@@ -208,7 +211,7 @@ export function PainelIa({
       <div className="ia__corpo">
         {!emConversa ? (
           <div className="ia-inicio">
-            <Orbe estado={estado} />
+            <Z movimento={movimento} tamanho={128} vento desligada={!ligada} />
             <p className="ia-inicio__estado" aria-live="polite">
               <i /> {ligada ? (foco || texto ? 'ouvindo' : 'IA da Absolute ZRO') : 'ainda não ligada'}
             </p>
@@ -230,7 +233,7 @@ export function PainelIa({
                     <TextoIa texto={m.texto} />
                   ) : (
                     <span className="ia-pensando">
-                      <Orbe estado="pensando" tamanho={22} />
+                      <Z movimento="pensando" tamanho={26} />
                       {lendo ?? 'Pensando…'}
                     </span>
                   )}
@@ -265,7 +268,7 @@ export function PainelIa({
             value={texto}
             maxLength={8000}
             placeholder={
-              !ligada ? 'A IA ainda não foi ligada' : semCredito ? 'Os créditos de IA deste mês acabaram' : emConversa ? 'Continue…' : 'Pergunte ou peça algo…'
+              !ligada ? 'A IA ainda não foi ligada' : semCredito ? 'Os créditos de IA deste mês acabaram' : emConversa ? 'Continue…' : 'Pergunte ao Z…'
             }
             disabled={!podeEscrever}
             onChange={(e) => setTexto(e.target.value)}
@@ -343,6 +346,6 @@ export function PainelIa({
           ))}
         </aside>
       </div>
-    </div>
+    </PalcoZ>
   )
 }

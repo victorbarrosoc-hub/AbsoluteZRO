@@ -1106,9 +1106,9 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 ## Entrar e criar conta como conversa (27/10/2026)
 
 - `components/conversa-conta.tsx`: `/entrar` (e-mail → senha), `/criar-conta` (e-mail → nome → senha) e `/app/entrar`
-  (mesma conversa, volta para `/app`). O orbe é o `ZroSymbol` com `data-estado` (absolute-zro, ouvindo, conferindo,
-  pronto) e rótulo em pílula `aria-live`; no fim, ✓ em traço fino, "Conectado." e barra fina antes de abrir o destino.
-  Animação mínima (respiração em CSS) até o titular aprovar a definitiva; "reduzir movimento" deixa tudo parado.
+  (mesma conversa, volta para `/app`). O orbe é o Z (ver "IA do ecossistema: o Z") com `data-estado` (absolute-zro,
+  ouvindo, conferindo, pronto) e rótulo em pílula `aria-live`; no fim, ✓ em traço fino, "Conectado." e barra fina antes
+  de abrir o destino. "Reduzir movimento" deixa tudo parado.
 - A conversa só avança no cliente; nenhum e-mail é consultado antes do envio. `loginAction`/`signupAction` seguem
   redirecionando; com o campo `conversa=1` (só com JavaScript) devolvem o destino para o cliente mostrar "pronto". As
   páginas não redirecionam quem acabou de entrar quando estão respondendo à própria Server Action (`respondendoAcao`).
@@ -1133,3 +1133,23 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Não validado: o Synquei de computador no Electron (a barra é a mesma do site; balões de Organizar e Ajustes
   conferidos simulando o estado do desktop no navegador) e a falha de sincronização na nuvem do TPeasy (nuvem
   desligada no app).
+
+## IA do ecossistema: o Z (27/10/2026)
+
+- Uma IA para todas as plataformas (o "Z"): conversas guardadas por plataforma (`zro.ia_conversas`/`zro.ia_mensagens`,
+  migrações 0016 e 0017, RLS por pessoa), 1 crédito `zro.ai_credits` por resposta (`concluirTurno`, chave
+  `ia:<pergunta>`), API `/api/v1/ia` (estado, conversas, mensagens em NDJSON; CORS para quem chega com Bearer e escopo
+  `zro.ia`), painel no HUB (`/ia` e `/app`) com a gaveta "Conversas" agrupada por plataforma e `<zro-ia>`
+  (`public/ia/v1/zro-ia.js`) para as plataformas. Testes: `tests/integration/ia.test.ts` e `pendencias.test.ts`.
+- Visual aprovado pelo titular em 27/10/2026: anel e estrela cromados em peças separadas (`public/ia/z/*.webp`, recorte
+  alfa, servem em qualquer fundo) movidos por código (`apps/hub-web/lib/ia/z/motor.ts`): volta de 3,2 s, 0,75 de giro
+  por volta, ritmo suave, horário, pausa de 1 s; estrela sempre por cima e centrada no tubo; anel girando devagar no
+  próprio eixo (loop a cada 4 ciclos); conjunto flutuando; brilho e halo crescem com o giro e os raios longos só no
+  auge. Em volta, o ar (`lib/ia/z/ar.ts`): rastro que contorna o anel e correntes em espiral, leves em repouso e mais
+  fortes ouvindo, pensando e respondendo. Um laço de quadros só, fora do React; pausa fora da tela e em aba oculta;
+  "reduzir movimento" para tudo. A mesma conta está copiada em `zro-ia.js` (as plataformas não importam o HUB).
+- `/ia/*` responde com `Access-Control-Allow-Origin: *` (script módulo e máscara CSS de outra origem precisam de CORS).
+- Conferido no Playwright: `/ia` claro, escuro e celular (início, pensando com o Z pequeno na barra, resposta),
+  `/entrar` claro e escuro e `<zro-ia>` servido de outra origem sobre o azul do NOSSOM, sem erro de página.
+- Não validado: migrações 0016/0017 no banco de produção e a IA com a chave real (só com a API falsa local); não
+  publicado em produção.

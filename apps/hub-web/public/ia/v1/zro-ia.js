@@ -1,7 +1,7 @@
-/* global HTMLElement, customElements, CustomEvent, TextDecoder, AbortController, requestAnimationFrame, cancelAnimationFrame, matchMedia, fetch, addEventListener, removeEventListener */
+/* global HTMLElement, ResizeObserver, document, performance, devicePixelRatio, customElements, CustomEvent, TextDecoder, AbortController, requestAnimationFrame, cancelAnimationFrame, matchMedia, fetch, addEventListener, removeEventListener */
 /*
  * <zro-ia> · a IA da Absolute ZRO dentro de qualquer plataforma do ecossistema (27/10/2026).
- * A mesma IA e o mesmo painel em todas: saudação com o orbe, sugestões, o campo de conversa e "Conversas" (as desta
+ * A mesma IA e o mesmo painel em todas: saudação com o Z (anel e estrela cromados, com o rastro e as correntes em volta), sugestões, o campo de conversa e "Conversas" (as desta
  * plataforma; o app Absolute ZRO mostra as de todas). Fala com a API da IA do HUB (/api/v1/ia), direto com o token do
  * login único (escopo zro.ia) ou por um repasse do próprio app (que acrescenta o token no servidor).
  *
@@ -13,8 +13,10 @@
  * Atributos: api (base da API, sem barra no fim), apoio (linha abaixo da saudação), sugestoes (JSON), tema
  * (claro|escuro|auto, padrão auto), nome (primeiro nome; sem ele, vem da conta).
  * Eventos: zro-ia:sem-login (401: o app pede login), zro-ia:resposta (detail: { conversa, creditos }).
- * Sem dependências, sem cookies de terceiros, só CSS no movimento e respeita "reduzir movimento".
+ * Sem dependências, sem cookies de terceiros e respeita "reduzir movimento". O Z é movido por um laço de quadros (a
+ * mesma conta de apps/hub-web/lib/ia/z/motor.ts e ar.ts: mudou lá, mude aqui); as imagens vêm de ../z/ ao lado deste arquivo.
  */
+const MIDIA = new URL('../z/', import.meta.url).href
 const CSS = `
 :host{--ink:#1d1d1f;--mute:#6e6e73;--faint:#8e8e93;--line:rgb(0 0 0/.09);--line2:rgb(0 0 0/.16);--surf:#fff;--surf2:#f5f5f7;--surf3:#ececf0;--bg:transparent;--send:#1d1d1f;--sendInk:#fff;--ease:cubic-bezier(.2,.8,.2,1);display:block;position:relative;color:var(--ink);font:inherit;font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased;container-type:inline-size}
 :host([data-escuro]){--ink:#f5f5f7;--mute:#aeaeb2;--faint:#8e8e93;--line:rgb(255 255 255/.1);--line2:rgb(255 255 255/.2);--surf:rgb(255 255 255/.06);--surf2:rgb(255 255 255/.08);--surf3:rgb(255 255 255/.12);--send:#f5f5f7;--sendInk:#1d1d1f}
@@ -32,31 +34,33 @@ button,textarea{font:inherit;color:inherit}
 h1{margin-top:8px;font-size:clamp(1.9rem,6cqi,2.9rem);line-height:1.05;letter-spacing:-.035em;font-weight:300}
 h1 strong{font-weight:800}
 .apoio{color:var(--faint);font-size:1.02rem}
-.orbe{--tam:104px;position:relative;display:inline-grid;width:var(--tam);height:var(--tam)}
-.orbe::before{content:'';position:absolute;inset:-30%;border-radius:50%;background:radial-gradient(circle,rgb(127 127 140/.16),transparent 62%);opacity:0;transition:opacity .5s var(--ease)}
-.anel{position:absolute;inset:0}
-.anel i{--r:calc(var(--tam)*.36);position:absolute;top:50%;left:50%;width:calc(var(--tam)*.11);height:calc(var(--tam)*.11);margin:calc(var(--tam)*-.055);border-radius:50%;background:currentColor;transform:rotate(calc(var(--k)*45deg)) translateX(var(--r));opacity:calc(.35 + var(--k)*.08);transition:opacity .4s var(--ease),transform .6s var(--ease)}
-.orbe[data-e=ouvindo]::before,.orbe[data-e=pensando]::before{opacity:1}
-.orbe[data-e=ouvindo] .anel i{--r:calc(var(--tam)*.4);opacity:.95}
-.orbe[data-e=pensando] .anel i{--r:calc(var(--tam)*.3)}
-.orbe[data-e=desligada]{opacity:.35}
+.zs{--z-gl:118 128 146;--z-mb:multiply;--z-hk:.55;display:inline-grid;place-items:center;width:var(--z-tam,112px);height:var(--z-tam,112px);perspective:1100px;flex:none}
+:host([data-escuro]) .zs{--z-gl:255 255 255;--z-mb:plus-lighter;--z-hk:1}
+.zs[data-off]{opacity:.4;filter:grayscale(1)}
+.z{position:relative;width:100%;aspect-ratio:1;will-change:transform}
+.z img{display:block;width:100%;height:100%;user-select:none}
+.z-anel{position:absolute;inset:0}
+.z-porta{position:absolute;top:50%;left:50%;width:0;height:0}
+.z-est{position:absolute;width:var(--z-est,0px);height:var(--z-est,0px);left:calc(var(--z-est,0px)/-2);top:calc(var(--z-est,0px)/-2)}
+.z-est img{position:relative;filter:drop-shadow(0 0 calc(var(--z-est,0px)*.05) rgb(var(--z-gl)/calc(var(--z-o,.3)*.9)))}
+.z-ref{position:absolute;inset:0;-webkit-mask:url(${MIDIA}estrela.webp) center/contain no-repeat;mask:url(${MIDIA}estrela.webp) center/contain no-repeat;background:linear-gradient(var(--z-luz,135deg),transparent 38%,#fff 50%,transparent 62%);background-size:250% 250%;background-position:var(--z-bp,50%) 50%;mix-blend-mode:screen;opacity:.25}
+.z-halo{position:absolute;inset:-55%;opacity:calc(var(--z-o,.3)*var(--z-hk));background:radial-gradient(closest-side,rgb(var(--z-gl)/.5),rgb(var(--z-gl)/.16) 45%,transparent 75%)}
+.z-raios{position:absolute;inset:-38%;opacity:var(--z-ra,0);filter:blur(.5px);mix-blend-mode:var(--z-mb);background:linear-gradient(90deg,transparent,rgb(var(--z-gl)/.95) 50%,transparent) center/100% 2px no-repeat,linear-gradient(0deg,transparent,rgb(var(--z-gl)/.8) 50%,transparent) center/2px 72% no-repeat}
+.ar{position:absolute;top:-48px;left:0;width:100%;height:calc(100% + 96px);pointer-events:none;-webkit-mask-image:radial-gradient(closest-side,#000 55%,transparent);mask-image:radial-gradient(closest-side,#000 55%,transparent)}
+.raiz{position:relative}
+.barra .zs{align-self:center}
+@media (prefers-reduced-motion:reduce){.ar{display:none}}
 @media (prefers-reduced-motion:no-preference){
-.orbe[data-e=pronta] .anel{animation:gira 14s linear infinite}
-.orbe[data-e=pronta] .anel i{animation:respira 3.2s var(--ease) infinite;animation-delay:calc(var(--k)*.4s)}
-.orbe[data-e=ouvindo] .anel{animation:gira 6s linear infinite}
-.orbe[data-e=pensando] .anel{animation:gira 1.4s cubic-bezier(.5,.1,.5,.9) infinite}
-.orbe[data-e=pensando] .anel i{animation:pulsa .9s ease-in-out infinite;animation-delay:calc(var(--k)*.11s)}
 .msg{animation:entra .35s var(--ease) both}
 .sug li{animation:entra .5s var(--ease) both;animation-delay:calc(.2s + var(--i)*.06s)}
 .gav-painel{transition:translate .38s var(--ease)}.veu{transition:opacity .3s var(--ease)}}
-@keyframes gira{to{rotate:360deg}}@keyframes respira{50%{scale:.6}}@keyframes pulsa{50%{scale:1.45;opacity:1}}@keyframes entra{from{opacity:0;translate:0 6px}}
+@keyframes entra{from{opacity:0;translate:0 6px}}
 .conversa{display:flex;flex-direction:column;gap:18px;padding:16px 2px 8px}
 .msg{max-width:100%;overflow-wrap:anywhere;line-height:1.55}
 .eu{align-self:flex-end;max-width:min(80%,560px);padding:10px 16px;border-radius:20px 20px 6px 20px;background:var(--surf3);white-space:pre-wrap}
 .erro{color:var(--mute)}
 .texto{display:grid;gap:10px}.texto ul,.texto ol{display:grid;gap:4px;padding-left:1.3em}.texto strong{font-weight:650}
 .pensando{display:inline-flex;align-items:center;gap:10px;color:var(--faint);font-size:.92rem}
-.pensando .orbe{--tam:22px}
 .base{position:sticky;bottom:0;display:grid;gap:10px;padding:10px 0 4px}
 .sug{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;padding:0;list-style:none}
 .sug button{padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:var(--surf);color:var(--mute);font-size:.86rem;cursor:pointer;transition:color .2s,border-color .2s,translate .2s}
@@ -101,8 +105,216 @@ const MAIS =
   '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
-const orbe = (e, tam) =>
-  `<span class="orbe" data-e="${e}"${tam ? ` style="--tam:${tam}px"` : ''} aria-hidden="true"><span class="anel">${Array.from({ length: 8 }, (_, k) => `<i style="--k:${k}"></i>`).join('')}</span></span>`
+
+/* ---------- o Z: anel e estrela movidos aqui (números aprovados pelo titular em 27/10/2026) ---------- */
+const RAIO_Z = 0.4183
+const ESTRELA_Z = (0.5 * RAIO_Z * 2) / 0.978
+const MOV_Z = { volta: 3.2, giros: 0.75, pausa: 1, sentido: 1 }
+const suave = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
+const velocidade = (p) => (p < 0.5 ? 12 * p * p : 12 * (1 - p) * (1 - p)) / 3
+const limita = (x) => Math.min(1, Math.max(0, x))
+const reduz = () => matchMedia('(prefers-reduced-motion: reduce)').matches
+const vivos = new Set()
+let pedido = 0
+const laco = (agora) => {
+  for (const a of vivos) a.quadro(agora)
+  pedido = vivos.size ? requestAnimationFrame(laco) : 0
+}
+const animar = (a) => {
+  vivos.add(a)
+  if (!pedido) pedido = requestAnimationFrame(laco)
+}
+
+class MotorZ {
+  constructor() {
+    this.cena = document.createElement('span')
+    this.cena.className = 'zs'
+    this.cena.setAttribute('aria-hidden', 'true')
+    this.cena.innerHTML = `<span class="z"><img class="z-anel" src="${MIDIA}anel.webp" alt="" draggable="false"><span class="z-porta"><span class="z-est"><span class="z-halo"></span><img src="${MIDIA}estrela.webp" alt="" draggable="false"><span class="z-ref"></span><span class="z-raios"></span></span></span></span>`
+    const q = (c) => this.cena.querySelector(c)
+    Object.assign(this, { raiz: q('.z'), anel: q('.z-anel'), porta: q('.z-porta'), estrela: q('.z-est'), reflexo: q('.z-ref') })
+    this.mov = 'parada'
+    this.inicio = this.zero = performance.now()
+    this.base = { giro: 0, anel: 0 }
+    this.ult = { total: 0, anel: 0 }
+  }
+  ligar() {
+    animar(this)
+  }
+  desligar() {
+    vivos.delete(this)
+  }
+  tamanho(px) {
+    this.cena.style.setProperty('--z-tam', `${px}px`)
+  }
+  mover(m) {
+    if (m === this.mov) return
+    this.base = { giro: this.ult.total % 360, anel: this.ult.anel % 360 }
+    this.mov = m
+    this.inicio = performance.now()
+  }
+  medidas() {
+    const a = this.raiz.getBoundingClientRect(),
+      e = this.porta.getBoundingClientRect()
+    return { cx: a.left + a.width / 2, cy: a.top + a.height / 2, raio: RAIO_Z * this.raiz.clientWidth, ex: e.left, ey: e.top }
+  }
+  quadro(agora) {
+    if (!this.cena.isConnected) return
+    if (reduz()) return this.pose(0, 0, 0)
+    const t = (agora - this.zero) / 1000
+    const y = Math.sin(t * 0.9) * 1.6 + Math.sin(t * 0.37) * 0.8
+    this.raiz.style.transform = `translateY(${y}%) rotateX(${Math.sin(t * 0.55) * 4.5}deg) rotateY(${Math.cos(t * 0.42) * 6}deg) scale(${1 + Math.sin(t * 0.7) * 0.008})`
+    const d = (agora - this.inicio) / 1000
+    const { volta, giros, pausa, sentido } = MOV_Z
+    if (this.mov === 'pensando') {
+      const ciclo = volta + pausa,
+        n = Math.floor(d / ciclo),
+        c = d - n * ciclo,
+        p = c < volta ? suave(c / volta) : 1
+      this.pose(sentido * 360 * (n + p), sentido * 360 * giros * (n + p), c < volta ? c / volta : 1)
+      this.giraAnel(sentido * 90 * (n + 0.55 * (c / ciclo) + 0.45 * p))
+    } else if (this.mov === 'parada') {
+      const n = Math.floor(d / 6),
+        c = d - n * 6,
+        p = c < 2.4 ? suave(c / 2.4) : 1
+      this.pose(0, sentido * 90 * (n + p), c < 2.4 ? c / 2.4 : 1)
+      this.giraAnel(sentido * 45 * (n + 0.7 * (c / 6) + 0.3 * p))
+    } else {
+      const l = Math.min(1, d / volta),
+        q = suave(l)
+      this.pose(sentido * 360 * q, sentido * 360 * giros * q, l)
+      this.giraAnel(sentido * 90 * q)
+    }
+  }
+  pose(orbita, giro, p) {
+    const total = orbita + giro + this.base.giro,
+      v = velocidade(limita(p)),
+      w = this.raiz.clientWidth,
+      a = (orbita * Math.PI) / 180
+    this.ult.total = total
+    this.raiz.style.setProperty('--z-est', `${ESTRELA_Z * w}px`)
+    this.porta.style.transform = `translate(${Math.cos(a) * RAIO_Z * w}px, ${Math.sin(a) * RAIO_Z * w}px)`
+    this.estrela.style.transform = `rotate(${total}deg)`
+    this.reflexo.style.setProperty('--z-luz', `${135 - total}deg`)
+    this.reflexo.style.setProperty('--z-bp', `${120 - 140 * p}%`)
+    this.reflexo.style.opacity = (0.25 + 0.75 * v).toFixed(3)
+    this.estrela.style.setProperty('--z-o', (0.3 + 0.7 * v).toFixed(3))
+    this.estrela.style.setProperty('--z-ra', Math.pow(limita((v - 0.35) / 0.65), 1.5).toFixed(3))
+  }
+  giraAnel(g) {
+    const a = g + this.base.anel
+    this.ult.anel = a
+    this.anel.style.transform = `rotate(${a.toFixed(3)}deg)`
+  }
+}
+
+/** O ar: rastro da estrela contornando o anel e correntes em espiral que se fecham no Z. */
+const FORCA_AR = { calma: 0.22, ouvindo: 0.5, pensando: 1, respondendo: 0.6, pronta: 0.3, desligada: 0 }
+class MotorAr {
+  constructor(canvas, escuro) {
+    Object.assign(this, {
+      canvas,
+      escuro,
+      ctx: canvas.getContext('2d'),
+      alvo: null,
+      cena: 'calma',
+      forca: 0,
+      trilha: [],
+      fios: [],
+      antes: performance.now(),
+      w: 0,
+      h: 0,
+    })
+    this.obs = new ResizeObserver(() => this.medir())
+    this.obs.observe(canvas)
+  }
+  medir() {
+    const d = Math.min(2, devicePixelRatio || 1)
+    this.w = this.canvas.clientWidth
+    this.h = this.canvas.clientHeight
+    this.canvas.width = Math.round(this.w * d)
+    this.canvas.height = Math.round(this.h * d)
+    this.ctx?.setTransform(d, 0, 0, d, 0, 0)
+  }
+  mirar(z) {
+    if (z === this.alvo) return
+    this.alvo = z
+    this.trilha = []
+    this.fios = []
+  }
+  quadro(agora) {
+    const ctx = this.ctx,
+      dt = Math.min(0.05, (agora - this.antes) / 1000)
+    this.antes = agora
+    if (!ctx || !this.canvas.isConnected) return
+    ctx.clearRect(0, 0, this.w, this.h)
+    const z = this.alvo
+    if (!z || reduz() || !z.cena.isConnected || document.hidden) return
+    const caixa = this.canvas.getBoundingClientRect(),
+      m = z.medidas(),
+      R = m.raio
+    if (!R) return
+    const cx = m.cx - caixa.left,
+      cy = m.cy - caixa.top,
+      escuro = this.escuro(),
+      cor = escuro ? '255,255,255' : '58,64,78'
+    ctx.lineCap = 'round'
+    ctx.shadowBlur = escuro ? 6 : 0
+    ctx.shadowColor = 'rgba(255,255,255,.35)'
+    if (R > 24) {
+      const a = Math.atan2(m.ey - m.cy, m.ex - m.cx),
+        ult = this.trilha[this.trilha.length - 1]
+      if (!ult || Math.abs(a - ult.a) > 0.004) this.trilha.push({ a, t: agora })
+      this.trilha = this.trilha.filter((q) => agora - q.t < 1100)
+      for (const [raio, peso] of [
+        [1.24, 1],
+        [0.76, 0.6],
+      ])
+        for (let i = 1; i < this.trilha.length; i++) {
+          const k = 1 - (agora - this.trilha[i].t) / 1100,
+            a0 = this.trilha[i - 1].a,
+            a1 = this.trilha[i].a
+          if (Math.abs(a1 - a0) > 1) continue
+          ctx.strokeStyle = `rgba(${cor},${(0.9 * peso * k * k).toFixed(3)})`
+          ctx.lineWidth = (0.6 + 3 * k * k) * peso
+          ctx.beginPath()
+          ctx.moveTo(cx + Math.cos(a0) * R * raio, cy + Math.sin(a0) * R * raio)
+          ctx.lineTo(cx + Math.cos(a1) * R * raio, cy + Math.sin(a1) * R * raio)
+          ctx.stroke()
+        }
+    }
+    this.forca += (FORCA_AR[this.cena] - this.forca) * Math.min(1, dt * 1.8)
+    const max = Math.hypot(this.w, this.h) * 0.62,
+      base = Math.max(R, 40)
+    const nascer = (longe) => ({
+      a: Math.random() * Math.PI * 2,
+      r: longe ? max * (0.75 + Math.random() * 0.25) : R * 1.4 + Math.random() * Math.max(0, max - R * 1.4),
+      pts: [],
+      vida: 0,
+      ritmo: 0.7 + Math.random() * 0.6,
+    })
+    while (this.fios.length < 46) this.fios.push(nascer(false))
+    for (const c of this.fios) {
+      c.a += (0.18 + 0.95 * this.forca) * c.ritmo * Math.sqrt((base * 1.8) / Math.max(c.r, 1)) * dt
+      c.r -= (10 + 70 * this.forca) * c.ritmo * dt
+      c.vida += dt
+      c.pts.push({ x: cx + Math.cos(c.a) * c.r, y: cy + Math.sin(c.a) * c.r })
+      if (c.pts.length > 34) c.pts.shift()
+      if (c.r < R * 1.12) Object.assign(c, nascer(true))
+      const alfa = 0.42 * this.forca * limita((c.r - R * 1.12) / (base * 0.9)) * Math.min(1, c.vida / 0.8)
+      if (this.forca > 0.01)
+        for (let i = 1; i < c.pts.length; i++) {
+          const k = i / (c.pts.length - 1)
+          ctx.strokeStyle = `rgba(${cor},${(alfa * k * k).toFixed(3)})`
+          ctx.lineWidth = 1.2 * (0.35 + 0.65 * k)
+          ctx.beginPath()
+          ctx.moveTo(c.pts[i - 1].x, c.pts[i - 1].y)
+          ctx.lineTo(c.pts[i].x, c.pts[i].y)
+          ctx.stroke()
+        }
+    }
+  }
+}
 
 /** Resposta da IA em blocos simples (parágrafo, lista, **negrito**), sempre escapada. */
 function texto(t) {
@@ -176,13 +388,49 @@ class ZroIa extends HTMLElement {
   }
 
   connectedCallback() {
-    this.root.innerHTML = `<style>${CSS}</style><div class="raiz"></div>`
+    this.root.innerHTML = `<style>${CSS}</style><canvas class="ar" aria-hidden="true"></canvas><div class="raiz"></div>`
     this.$ = this.root.querySelector('.raiz')
+    // o Z grande e o pequeno do "pensando" vivem fora do render: são recolocados no lugar a cada desenho, sem perder o giro
+    this.z = new MotorZ()
+    this.zp = new MotorZ()
+    this.zp.tamanho(26)
+    this.zp.mover('pensando')
+    this.ar = new MotorAr(this.root.querySelector('.ar'), () => this.hasAttribute('data-escuro'))
+    for (const a of [this.z, this.zp, this.ar]) animar(a)
     this.tema()
     this.mq = matchMedia('(prefers-color-scheme: dark)')
     this.mq.addEventListener?.('change', () => this.tema())
     this.render()
     this.carregar()
+  }
+
+  disconnectedCallback() {
+    for (const a of [this.z, this.zp, this.ar]) vivos.delete(a)
+    this.ar?.obs.disconnect()
+    this.ctrl?.abort()
+  }
+
+  /** Cena do Z: o que ele faz agora (comanda o movimento e a força das correntes). */
+  cena() {
+    const s = this.s
+    if (!s.ligada || s.semLogin) return 'desligada'
+    if (s.pensando) return s.msgs[s.msgs.length - 1]?.texto ? 'respondendo' : 'pensando'
+    return s.foco ? 'ouvindo' : 'calma'
+  }
+
+  /** Coloca o Z no estado e no lugar certos (no início, grande; em conversa, pequeno na barra). */
+  posicionarZ() {
+    const c = this.cena()
+    this.z.mover(c === 'pensando' ? 'pensando' : c === 'respondendo' ? 'pronta' : 'parada')
+    this.z.cena.toggleAttribute('data-off', c === 'desligada')
+    this.ar.cena = c
+    const lugar = this.$.querySelector('.lugar-z')
+    if (lugar) {
+      this.z.tamanho(lugar.dataset.tam)
+      lugar.replaceWith(this.z.cena)
+    }
+    this.ar.mirar(lugar ? this.z : null)
+    this.$.querySelector('.lugar-zp')?.replaceWith(this.zp.cena)
   }
 
   static get observedAttributes() {
@@ -249,7 +497,6 @@ class ZroIa extends HTMLElement {
   render() {
     const s = this.s
     const em = s.msgs.length > 0
-    const estado = !s.ligada || s.semLogin ? 'desligada' : s.pensando ? 'pensando' : s.foco ? 'ouvindo' : 'pronta'
     const c = s.creditos
     const sem = c && (c.limite === null || c.usados >= c.limite)
     const ph = s.semLogin
@@ -260,19 +507,20 @@ class ZroIa extends HTMLElement {
           ? 'Os créditos de IA deste mês acabaram'
           : em
             ? 'Continue…'
-            : 'Pergunte ou peça algo…'
+            : 'Pergunte ao Z…'
     const valor = this.$.querySelector('textarea')?.value ?? ''
     const focado = this.root.activeElement?.tagName === 'TEXTAREA'
     this.$.innerHTML = `
       <div class="barra">
         <button type="button" class="pilula" data-a="gaveta" aria-expanded="${s.gaveta}">${LISTA} Conversas${s.conversas.length ? ` <b>${s.conversas.length}</b>` : ''}</button>
+        ${em ? '<span class="lugar-z" data-tam="40"></span>' : ''}
         ${em ? `<button type="button" class="pilula" data-a="nova">${MAIS} Nova conversa</button>` : ''}
       </div>
       <div class="corpo">${
         em
-          ? `<div class="conversa" aria-live="polite">${s.msgs.map((m) => (m.papel === 'user' ? `<p class="msg eu">${esc(m.texto)}</p>` : `<div class="msg${m.erro ? ' erro' : ''}">${m.texto ? texto(m.texto) : `<span class="pensando">${orbe('pensando', 22)}${esc(s.lendo || 'Pensando…')}</span>`}</div>`)).join('')}<div class="fim"></div></div>`
+          ? `<div class="conversa" aria-live="polite">${s.msgs.map((m) => (m.papel === 'user' ? `<p class="msg eu">${esc(m.texto)}</p>` : `<div class="msg${m.erro ? ' erro' : ''}">${m.texto ? texto(m.texto) : `<span class="pensando"><span class="lugar-zp"></span>${esc(s.lendo || 'Pensando…')}</span>`}</div>`)).join('')}<div class="fim"></div></div>`
           : `
-        <div class="inicio">${orbe(estado)}
+        <div class="inicio"><span class="lugar-z" data-tam="120"></span>
           <p class="estado" aria-live="polite"><i></i> ${s.semLogin ? 'sem conta' : !s.ligada ? 'ainda não ligada' : s.foco ? 'ouvindo' : 'IA da Absolute ZRO'}</p>
           <h1>${esc(saudacao())}${s.nome ? `, <strong>${esc(s.nome)}.</strong>` : '.'}</h1>
           <p class="apoio">${esc(s.ligada ? this.getAttribute('apoio') || 'O que você precisa hoje?' : 'A IA do ecossistema chega em breve, a mesma em todas as plataformas.')}</p>
@@ -296,6 +544,7 @@ class ZroIa extends HTMLElement {
           <p class="conta">Todas as conversas, de todas as plataformas: <a href="https://absolutezro.com/ia" target="_blank" rel="noopener">app Absolute ZRO</a></p>
         </aside>
       </div>`
+    this.posicionarZ()
     this.ligar()
     const ta = this.$.querySelector('textarea')
     if (focado && ta && !ta.disabled) {
@@ -360,12 +609,11 @@ class ZroIa extends HTMLElement {
     }
   }
 
-  /** Só troca o estado do orbe (sem redesenhar, para não tirar o foco do campo). */
+  /** Só troca o estado do Z (sem redesenhar, para não tirar o foco do campo). */
   orbeEstado() {
-    const o = this.$.querySelector('.inicio .orbe')
     const p = this.$.querySelector('.inicio .estado')
-    if (!o || !this.s.ligada || this.s.semLogin) return
-    o.dataset.e = this.s.foco ? 'ouvindo' : 'pronta'
+    if (!this.s.ligada || this.s.semLogin) return
+    this.ar.cena = this.cena()
     if (p) p.innerHTML = `<i></i> ${this.s.foco ? 'ouvindo' : 'IA da Absolute ZRO'}`
   }
 

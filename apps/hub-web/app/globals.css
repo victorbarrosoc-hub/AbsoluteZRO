@@ -5519,92 +5519,107 @@ a.pstrip__card:focus-visible .pstrip__go {
   font-size: 1.05rem;
 }
 
-/* o orbe: o O da marca em pontos */
-.ia-orbe {
-  --tam: 112px;
-  position: relative;
+/* o Z (components/ia/simbolo-z.tsx): anel e estrela cromados movidos por lib/ia/z/motor.ts. A luz do brilho é branca
+   e somada no escuro; prata fria no claro, onde luz branca sumiria. */
+.z-cena {
+  --z-gl: 255 255 255;
+  --z-mb: plus-lighter;
+  --z-hk: 1;
   display: inline-grid;
   place-items: center;
-  width: var(--tam);
-  height: var(--tam);
-  color: var(--text-strong);
+  width: var(--z-tam, 112px);
+  height: var(--z-tam, 112px);
+  perspective: 1100px;
+  flex: none;
 }
-.ia-orbe::before {
-  content: '';
-  position: absolute;
-  inset: -30%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgb(127 127 140 / 0.16), transparent 62%);
-  opacity: 0;
-  transition: opacity 0.5s var(--ease);
+:root[data-theme='light'] .z-cena {
+  --z-gl: 118 128 146;
+  --z-mb: multiply;
+  --z-hk: 0.55;
 }
-.ia-orbe__anel {
+.z {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  will-change: transform;
+}
+.z img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+}
+.z__anel {
   position: absolute;
   inset: 0;
 }
-.ia-orbe__anel i {
-  --r: calc(var(--tam) * 0.36);
+.z__porta {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: calc(var(--tam) * 0.11);
-  height: calc(var(--tam) * 0.11);
-  margin: calc(var(--tam) * -0.055);
-  border-radius: 50%;
-  background: currentColor;
-  transform: rotate(calc(var(--k) * 45deg)) translateX(var(--r));
-  opacity: calc(0.35 + var(--k) * 0.08);
-  transition:
-    opacity 0.4s var(--ease),
-    transform 0.6s var(--ease);
+  width: 0;
+  height: 0;
 }
-.ia-orbe[data-estado='ouvindo']::before,
-.ia-orbe[data-estado='pensando']::before {
-  opacity: 1;
+.z__estrela {
+  position: absolute;
+  width: var(--z-est, 0px);
+  height: var(--z-est, 0px);
+  left: calc(var(--z-est, 0px) / -2);
+  top: calc(var(--z-est, 0px) / -2);
 }
-.ia-orbe[data-estado='ouvindo'] .ia-orbe__anel i {
-  --r: calc(var(--tam) * 0.4);
-  opacity: 0.95;
+.z__estrela img {
+  position: relative;
+  filter: drop-shadow(0 0 calc(var(--z-est, 0px) * 0.05) rgb(var(--z-gl) / calc(var(--z-o, 0.3) * 0.9)));
 }
-.ia-orbe[data-estado='pensando'] .ia-orbe__anel i {
-  --r: calc(var(--tam) * 0.3);
+.z__reflexo {
+  position: absolute;
+  inset: 0;
+  -webkit-mask: url(/ia/z/estrela.webp) center / contain no-repeat;
+  mask: url(/ia/z/estrela.webp) center / contain no-repeat;
+  background: linear-gradient(var(--z-luz, 135deg), transparent 38%, rgb(255 255 255) 50%, transparent 62%);
+  background-size: 250% 250%;
+  background-position: var(--z-bp, 50%) 50%;
+  mix-blend-mode: screen;
+  opacity: 0.25;
 }
-.ia-orbe[data-estado='desligada'] {
-  opacity: 0.35;
+.z__halo {
+  position: absolute;
+  inset: -55%;
+  opacity: calc(var(--z-o, 0.3) * var(--z-hk));
+  background: radial-gradient(closest-side, rgb(var(--z-gl) / 0.5), rgb(var(--z-gl) / 0.16) 45%, transparent 75%);
 }
-@media (prefers-reduced-motion: no-preference) {
-  .ia-orbe[data-estado='pronta'] .ia-orbe__anel {
-    animation: ia-gira 14s linear infinite;
-  }
-  .ia-orbe[data-estado='pronta'] .ia-orbe__anel i {
-    animation: ia-respira 3.2s var(--ease) infinite;
-    animation-delay: calc(var(--k) * 0.4s);
-  }
-  .ia-orbe[data-estado='ouvindo'] .ia-orbe__anel {
-    animation: ia-gira 6s linear infinite;
-  }
-  .ia-orbe[data-estado='pensando'] .ia-orbe__anel {
-    animation: ia-gira 1.4s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
-  }
-  .ia-orbe[data-estado='pensando'] .ia-orbe__anel i {
-    animation: ia-pulsa 0.9s ease-in-out infinite;
-    animation-delay: calc(var(--k) * 0.11s);
-  }
+.z__raios {
+  position: absolute;
+  inset: -38%;
+  opacity: var(--z-ra, 0);
+  filter: blur(0.5px);
+  mix-blend-mode: var(--z-mb);
+  background:
+    linear-gradient(90deg, transparent, rgb(var(--z-gl) / 0.95) 50%, transparent) center / 100% 2px no-repeat,
+    linear-gradient(0deg, transparent, rgb(var(--z-gl) / 0.8) 50%, transparent) center / 2px 72% no-repeat;
 }
-@keyframes ia-gira {
-  to {
-    rotate: 360deg;
-  }
+.z-cena[data-desligada] {
+  opacity: 0.4;
+  filter: grayscale(1);
 }
-@keyframes ia-respira {
-  50% {
-    scale: 0.6;
-  }
+/* o ar: rastro e correntes num canvas atrás do palco, que some nas bordas */
+.z-palco {
+  position: relative;
+  isolation: isolate;
 }
-@keyframes ia-pulsa {
-  50% {
-    scale: 1.45;
-    opacity: 1;
+.z-palco__ar {
+  position: absolute;
+  inset: -48px 0;
+  width: 100%;
+  height: calc(100% + 96px);
+  z-index: -1;
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent);
+  mask-image: radial-gradient(closest-side, #000 55%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .z-palco__ar {
+    display: none;
   }
 }
 
@@ -6074,24 +6089,18 @@ a.pstrip__card:focus-visible .pstrip__go {
   justify-items: center;
   color: var(--text-strong);
 }
-.conversa-orbe__simbolo {
-  display: block;
-  width: 88px;
-  height: 88px;
-  animation: conversa-orbe-respira 4s ease-in-out infinite;
+.conversa-orbe__palco {
+  display: grid;
+  place-items: center;
 }
-.conversa-orbe[data-estado='ouvindo'] .conversa-orbe__simbolo,
-.conversa-orbe[data-estado='conferindo'] .conversa-orbe__simbolo {
-  animation-duration: 2.4s;
-}
-.conversa-orbe[data-estado='pronto'] .conversa-orbe__simbolo {
-  animation: none;
-}
-@keyframes conversa-orbe-respira {
-  50% {
-    scale: 1.035;
-    opacity: 0.82;
-  }
+/* o ar do Z no login: um campo maior que o orbe, centrado nele, que some nas bordas */
+.conversa-orbe__palco .z-palco__ar {
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  width: min(100vw, 560px);
+  height: 420px;
+  translate: -50% -50%;
 }
 /* ✓ em traço fino abaixo do símbolo, desenhado no "pronto" */
 .conversa-orbe__check {
@@ -6438,7 +6447,6 @@ a.pstrip__card:focus-visible .pstrip__go {
 }
 @media (prefers-reduced-motion: reduce) {
   .orbe-wrap,
-  .conversa-orbe__simbolo,
   .conversa-orbe__check,
   .orbe__luz,
   .conversa__passo,

@@ -3,16 +3,18 @@
  * Entrar e criar conta como uma conversa: uma pergunta por vez, com o símbolo da marca (o orbe) ouvindo,
  * conferindo e com um ✓ em traço fino no fim. A conversa só avança no cliente; quem valida é a Server Action no último passo
  * (nada de consultar antes se um e-mail tem conta). Sem JavaScript, todos os campos aparecem e o form posta direto.
- * Animação só em CSS (globals.css, "Conversa de conta"); "reduzir movimento" deixa tudo parado.
+ * Animação em CSS (globals.css, "Conversa de conta") e o Z (components/ia/simbolo-z.tsx); "reduzir movimento" deixa tudo parado.
  */
 import { startTransition, useActionState, useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from 'react'
-import { ZroSymbol } from '@zro/ui'
 import type { FormState } from './action-form'
+import { PalcoZ, Z, type CenaZ, type MovimentoZ } from './ia/simbolo-z'
 
 type Passo = 'email' | 'nome' | 'senha'
 type Estado = 'absolute-zro' | 'ouvindo' | 'conferindo' | 'pronto'
 
 const ROTULO: Record<Estado, string> = { 'absolute-zro': 'Absolute ZRO', ouvindo: 'ouvindo', conferindo: 'conferindo', pronto: 'pronto' }
+const MOVIMENTO: Record<Estado, MovimentoZ> = { 'absolute-zro': 'parada', ouvindo: 'parada', conferindo: 'pensando', pronto: 'pronta' }
+const CENA: Record<Estado, CenaZ> = { 'absolute-zro': 'calma', ouvindo: 'ouvindo', conferindo: 'pensando', pronto: 'pronta' }
 const semAssinatura = () => () => {}
 
 export function ConversaConta({
@@ -223,15 +225,17 @@ export function ConversaConta({
 }
 
 /**
- * O orbe é o símbolo da marca (ZroSymbol) com o estado em `data-estado`; no fim, um ✓ em traço fino se desenha
- * abaixo dele. Animação mínima (só respiração) até o titular aprovar a definitiva. O rótulo em pílula é a voz do
- * orbe (aria-live).
+ * O orbe é o Z (anel e estrela, com o rastro e as correntes em volta), com o estado em `data-estado`: parado na pose
+ * da logo, pensando enquanto confere, uma volta e assenta no fim, quando um ✓ em traço fino se desenha abaixo dele.
+ * O rótulo em pílula é a voz do orbe (aria-live).
  */
 function Orbe({ estado }: { estado: Estado }) {
   return (
     <div className="orbe-wrap">
       <div className="conversa-orbe" data-estado={estado} aria-hidden="true">
-        <ZroSymbol size={88} className="conversa-orbe__simbolo" />
+        <PalcoZ cena={CENA[estado]} className="conversa-orbe__palco">
+          <Z movimento={MOVIMENTO[estado]} tamanho={104} vento />
+        </PalcoZ>
         <svg className="conversa-orbe__check" width="26" height="26" viewBox="0 0 24 24">
           <path d="M5 12.5l4.5 4.5L19 7.5" pathLength={1} fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
         </svg>

@@ -20,6 +20,15 @@ const config: NextConfig = {
     return [
       { source: '/:path*', headers: security },
       { source: '/api/:path*', headers: [{ key: 'Cache-Control', value: 'no-store' }] },
+      // o painel da IA (<zro-ia>) e as imagens do Z são carregados pelas plataformas, de outra origem: script módulo e
+      // máscara CSS só funcionam com CORS. Arquivos públicos e estáticos, sem credencial.
+      {
+        source: '/ia/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Cross-Origin-Resource-Policy', value: 'cross-origin' },
+        ],
+      },
     ]
   },
 }
