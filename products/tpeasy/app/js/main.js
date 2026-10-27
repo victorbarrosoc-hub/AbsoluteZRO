@@ -6,6 +6,7 @@ import { mountSettingsForms, syncSettingsUI } from "./settings.js";
 import { renderAll, newFrom, startCalib } from "./views.js";
 import { handleRedirect } from "./sync.js";
 import { verificarZro, avisoDaVolta } from "./zro.js";
+import { iniciarZ } from "./z.js";
 
 document.querySelector('meta[name="theme-color"]').content = matchMedia("(prefers-color-scheme: dark)").matches ? "#000000" : "#f5f5f7";
 mountSettingsForms();
@@ -47,7 +48,8 @@ document.documentElement.classList.add("ready");
 handleRedirect();
 const aviso = avisoDaVolta();
 if (aviso) toast(aviso, 3200);
-verificarZro();
+// a Z entra no topo de Roteiros depois de saber da conta
+verificarZro().then(iniciarZ);
 
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
   navigator.serviceWorker.register("/sw.js").catch(() => {});

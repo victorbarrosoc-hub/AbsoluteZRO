@@ -17,7 +17,8 @@ import { createCipheriv, createDecipheriv, createHash, createHmac, createPublicK
 
 export const EMISSOR_PADRAO = 'https://absolutezro.com'
 // offline_access: o refresh token deixa o app reler o perfil (nome, e-mail, foto) a cada abertura
-export const ESCOPOS = 'openid email profile org offline_access'
+// zro.ia: a Z (a IA do ecossistema) conversa com a pessoa no painel inicial, pelo repasse /api/zro/ia
+export const ESCOPOS = 'openid email profile org offline_access zro.ia'
 export const SITE = 'https://synquei.vercel.app'
 export const COOKIE_IDA = 'sq_zro'
 export const COOKIE_CONTA = 'sq_conta'
@@ -332,6 +333,16 @@ export async function lerPerfil(sub, tokens, agora = Date.now()) {
   if (r.status !== 200 || !r.corpo || typeof r.corpo.sub !== 'string') throw new ZroErro('userinfo')
   if (r.corpo.sub !== sub) throw new ZroRevogado('outra pessoa')
   return { pessoa: perfilDeClaims(r.corpo), tokens: t }
+}
+
+/**
+ * Access token para a Z (/api/zro/ia): o guardado enquanto vale; vencido (ou `forcar`, depois de um 401), troca o
+ * refresh token, que RODA. Devolve { tokens, renovou }. ZroRevogado: a Absolute ZRO não aceita mais esta sessão.
+ */
+export async function tokenValido(tokens, { forcar = false, agora = Date.now() } = {}) {
+  const t = tokens && typeof tokens === 'object' ? tokens : {}
+  if (!forcar && typeof t.at === 'string' && t.atExp > Math.floor(agora / 1000) + 30) return { tokens: t, renovou: false }
+  return { tokens: await renovar(t.rt), renovou: true }
 }
 
 /** Sair: o refresh token morre também na Absolute ZRO (sem esperar resposta boa). */

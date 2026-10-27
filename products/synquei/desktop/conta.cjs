@@ -21,11 +21,20 @@ const path = require('node:path')
 const EMISSOR = (process.env.ZRO_ISSUER || 'https://absolutezro.com').replace(/\/+$/, '')
 const CLIENTE = 'synquei-desktop'
 const PRODUTO = 'synquei'
-const ESCOPOS = 'openid email profile org offline_access'
+// zro.ia: a Z (a IA do ecossistema) no painel inicial, pelo repasse /api/zro/ia (o token fica neste processo)
+const ESCOPOS = 'openid email profile org offline_access zro.ia'
 const CONTA_S = 30 * 24 * 3600
 const ESPERA_MS = 10 * 60 * 1000
 // reler o perfil não pode prender a abertura do app: sem resposta nesse prazo, vale a cópia
 const PERFIL_MS = 3_000
+
+const ROTAS_IA = [
+  [/^estado$/, ['GET']],
+  [/^conversas$/, ['GET']],
+  [/^conversas\/[A-Za-z0-9-]{1,64}$/, ['GET', 'DELETE']],
+  [/^mensagens$/, ['POST']],
+]
+const SEM_LOGIN_IA = 'Entre com a conta Absolute ZRO para conversar com a Z.'
 
 const valor = () => randomBytes(32).toString('base64url')
 const desafio = (v) => createHash('sha256').update(v).digest('base64url')
@@ -115,6 +124,14 @@ function criarConta({ pasta, abrirNavegador, aoVoltar = () => {}, cofre = null }
   let relendo = null
   // tokens desta abertura do app (o access token nunca vai para o disco)
   let mem = null
+  // o refresh token RODA: duas trocas ao mesmo tempo (o perfil e a Z) usariam o mesmo token e a Absolute ZRO derrubaria
+  // a família inteira. Quem renova entra nesta fila, um de cada vez.
+  let fila = Promise.resolve()
+  const naFila = (fn) => {
+    const vez = fila.then(fn, fn)
+    fila = vez.catch(() => {})
+    return vez
+  }
 
   function lerArquivo() {
     try {
@@ -188,7 +205,7 @@ function criarConta({ pasta, abrirNavegador, aoVoltar = () => {}, cofre = null }
    */
   function atualizar() {
     if (relendo) return relendo
-    relendo = (async () => {
+    relendo = naFila(async () => {
       const c = lerArquivo()
       if (!c) return 'sem-token'
       const rt = rtGuardado(c)
@@ -225,10 +242,83 @@ function criarConta({ pasta, abrirNavegador, aoVoltar = () => {}, cofre = null }
       }
       gravar(p, { exp: c.exp, rt: mem?.rt || rt })
       return 'ok'
-    })()
+    })
       .catch(() => 'erro')
       .finally(() => (relendo = null))
     return relendo
+  }
+
+  /**
+   * Access token para a Z: o da memória enquanto vale; senão (ou `forcar`, depois de um 401) troca o refresh token, que
+   * roda (o novo vai cifrado para o disco). null: sem sessão ou a Absolute ZRO recusou.
+   */
+  function tokenIa(opcoes) {
+    return naFila(() => tokenIaAgora(opcoes))
+  }
+  async function tokenIaAgora({ forcar = false } = {}) {
+    const c = lerArquivo()
+    if (!c) return null
+    if (!forcar && mem?.at && mem.atExp > agoraS() + 30) return mem.at
+    const rt = rtGuardado(c)
+    if (!rt) return null
+    const d = await descobrir()
+    const { status, corpo } = await buscarJson(
+      d.token_endpoint,
+      { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' }, body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: rt, client_id: CLIENTE }).toString() },
+      PERFIL_MS * 3,
+    )
+    if (status === 400 || status === 401) {
+      mem = null
+      gravar(c.pessoa, { exp: c.exp })
+      return null
+    }
+    const novos = status === 200 ? tokensDe(corpo) : null
+    if (!novos) throw new Error('refresh')
+    mem = { ...novos, rt: novos.rt || rt }
+    gravar(c.pessoa, { exp: c.exp, rt: mem.rt })
+    return mem.at
+  }
+
+  /**
+   * /api/zro/ia/<caminho> do app: o mesmo repasse do site (api/zro/ia.js). Encaminha para a API da Z com o token desta
+   * sessão e devolve a resposta como veio (o NDJSON de /mensagens segue em pedaços). O token não sai deste processo.
+   */
+  async function repassarIa(req, caminho) {
+    const resp = (status, corpo) => new Response(JSON.stringify(corpo), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } })
+    const rota = ROTAS_IA.find(([re]) => re.test(caminho))
+    if (!rota) return resp(404, { message: 'Caminho desconhecido.' })
+    if (!rota[1].includes(req.method)) return resp(405, { message: 'Método não aceito.' })
+    const corpo = req.method === 'POST' ? await req.arrayBuffer() : undefined
+    if (corpo && corpo.byteLength > 64 * 1024) return resp(413, { message: 'Mensagem grande demais.' })
+    const pedir = (at) =>
+      fetch(`${EMISSOR}/api/v1/ia/${caminho}`, {
+        method: req.method,
+        headers: { authorization: `Bearer ${at}`, accept: req.headers.get('accept') || 'application/json', ...(corpo ? { 'content-type': 'application/json' } : {}) },
+        body: corpo,
+        signal: req.signal,
+        redirect: 'manual',
+      })
+    let r
+    try {
+      const atAntes = mem?.at && mem.atExp > agoraS() + 30
+      let at = await tokenIa()
+      if (!at) return resp(401, { message: SEM_LOGIN_IA, reconectar: true })
+      r = await pedir(at)
+      if (r.status === 401 && atAntes) {
+        await r.body?.cancel().catch(() => {})
+        at = await tokenIa({ forcar: true })
+        if (!at) return resp(401, { message: SEM_LOGIN_IA, reconectar: true })
+        r = await pedir(at)
+      }
+    } catch {
+      return resp(502, { message: 'A Z não respondeu agora. Tente de novo.' })
+    }
+    // login de antes da Z (token sem zro.ia): entrar de novo já pede a Z
+    if (r.status === 401) {
+      await r.body?.cancel().catch(() => {})
+      return resp(401, { message: SEM_LOGIN_IA, reconectar: true })
+    }
+    return new Response(r.body, { status: r.status, headers: { 'content-type': r.headers.get('content-type') || 'application/json; charset=utf-8', 'cache-control': 'no-store' } })
   }
 
   /** Login completo. Devolve 'ok', 'recusado', 'expirou' ou 'erro' (os mesmos avisos do site). */
@@ -285,7 +375,7 @@ function criarConta({ pasta, abrirNavegador, aoVoltar = () => {}, cofre = null }
     return emAndamento
   }
 
-  return { eu, entrar, sair, atualizar, ler, gravar }
+  return { eu, entrar, sair, atualizar, ler, gravar, tokenIa, repassarIa }
 }
 
 module.exports = { criarConta, CLIENTE, EMISSOR, PRODUTO }
