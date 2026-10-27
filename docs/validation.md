@@ -1154,3 +1154,17 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   `/entrar` claro e escuro e `<zro-ia>` servido de outra origem sobre o azul do NOSSOM, sem erro de página.
 - Não validado: migrações 0016/0017 no banco de produção e a IA com a chave real (só com a API falsa local); não
   publicado em produção.
+## O Z nas páginas iniciais das plataformas (27/10/2026)
+
+- Seção curta na home de AEON, Carro do Freela, Revela, NOSSOM, SOBEDESCE, Synquei e TPeasy: anel e estrela do Z
+  (cópias locais de `apps/hub-web/public/ia/z/`, porque absolutezro.com/ia/z ainda responde 404 e AEON e Revela usam
+  COEP `require-corp`), selo "Chegando ao <app>", uma linha do que ele vai fazer ali, quatro fichas (mesma conta,
+  conversas reunidas, você confere antes, 1 crédito por resposta) e **Conhecer o Z** para absolutezro.com/ia. Não diz
+  que o Z já funciona dentro do app. A estrela respira só em CSS e para com "reduzir movimento".
+- Synquei e TPeasy: cache do service worker v18 e v15, com as duas imagens. Carro do Freela: VERSAO `27/out · 2`.
+- Testes: AEON `npm test` 87/87; Revela 109/109; Synquei 89 ok, 0 falhas (4 pulados); TPeasy 35/35; NOSSOM
+  format:check, typecheck, `npm test` 76/76, build e e2e da home (liquid-site, homepage-demo, design-review,
+  install-navigation) 15/15; SOBEDESCE web lint, typecheck, `npm test` 231/231 e build; Carro do Freela 87 de 87
+  suítes (4 de novo sozinhas, como o arnês prevê) e `test:api` 27/27; `node scripts/scan-secrets.mjs` sem segredos.
+- Telas conferidas no Playwright (Chromium), computador 1440 e celular 390, claro e escuro onde há, sem rolagem
+  lateral. Não validado: o link absolutezro.com/ia no ar (depende do deploy do HUB).
