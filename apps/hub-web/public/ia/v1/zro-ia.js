@@ -346,7 +346,7 @@ function uso(ligada, c) {
   const txt = !ligada
     ? 'desligado'
     : lim != null
-      ? `${n(Math.max(0, lim - c.usados))} de ${n(lim)} créditos · renova ${DIA.format(new Date(c.renova_em))}`
+      ? `${n(Math.max(0, lim - c.usados))} de ${n(lim)} créditos · renova ${RENOVA.format(new Date(c.renova_em))}`
       : 'Você confere antes de qualquer ação'
   const trilho =
     ligada && lim
@@ -401,6 +401,8 @@ function saudacao() {
 }
 const HORA = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' })
 const DIA = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' })
+// o ciclo vira à 0h UTC do dia 1º: a renovação mostra a data do ciclo, não a do fuso de quem lê
+const RENOVA = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short', timeZone: 'UTC' })
 const quando = (iso) => {
   const d = new Date(iso)
   return new Date().toDateString() === d.toDateString() ? HORA.format(d) : DIA.format(d)
