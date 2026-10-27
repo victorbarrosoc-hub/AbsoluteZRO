@@ -848,6 +848,22 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   grade com 6 looks → baixar `revela-zro-filmes-33.cube` → apagar). `products/finishing`: `npm test` 96/96.
 - Não validado: o `.cube` do look novo e de um "meu look" no Resolve, em vídeo.
 
+## Revela: abertura de película e transições no celular (27/10/2026)
+
+- Vídeo do titular no iPhone: a abertura do ícone não agradou ("mais a ver com película"); trocar de aba deixava o
+  painel novo borrado; pela gaveta a página e o dock pulavam.
+- Abertura nova (`app/abertura.js` + CSS): sala escura com luz vermelha de segurança tremendo, tira de película em
+  diagonal entrando como no projetor, sete quadros latentes revelando em sequência (cada um um recorte da luz da
+  marca; o do meio é o quadro do ícone), vazamento de luz laranja atravessando, grão de filme, nome em branco e a
+  sala acendendo para a ferramenta. Quadros conferidos com a animação parada a 0,1 / 0,45 / 0,8 / 1,1 / 1,35 / 1,7 /
+  2,1 / 2,5 / 2,8 s.
+- Troca de aba: o painel novo reentrava com a entrada lenta com desfoque (`.entra`, 0,8 s) a cada troca. Agora a
+  entrada lenta fica para a primeira visita; a troca é um deslize curto (0,32 s) para o lado da aba.
+- Página mais larga que a tela na Entrega (o deslize e a fileira de destinos passavam de 390 para 401–408 px): no
+  iPhone isso alarga a tela inteira e tira o dock do lugar. `html, body { overflow-x: clip }`.
+- Teste novo: pela gaveta até a Entrega em 390 px, a página fica em 390 e a entrada lenta não roda. `npm test` 102/102.
+- Não validado: num iPhone de verdade.
+
 ## Revela: abertura do app (27/10/2026)
 
 - Pedido do titular: animação ao abrir o app. `app/abertura.js` (script do `<head>` nas quatro ferramentas) cobre a tela
