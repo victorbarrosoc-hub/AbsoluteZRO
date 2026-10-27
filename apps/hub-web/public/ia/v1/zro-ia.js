@@ -543,12 +543,12 @@ class ZroIa extends HTMLElement {
     const ph = s.semLogin
       ? 'Entre com a conta Absolute ZRO para conversar'
       : !s.ligada
-        ? 'O Z ainda não foi ligado'
+        ? 'A Z ainda não foi ligada'
         : sem
           ? 'Os créditos de IA deste mês acabaram'
           : em
             ? 'Continue…'
-            : 'Pergunte ao Z…'
+            : 'Pergunte à Z…'
     const valor = this.$.querySelector('textarea')?.value ?? ''
     const focado = this.root.activeElement?.tagName === 'TEXTAREA'
     this.$.innerHTML = `
@@ -564,13 +564,13 @@ class ZroIa extends HTMLElement {
         <div class="inicio"><span class="lugar-z" data-tam="120"></span>
           <p class="estado" aria-live="polite"><i></i> ${s.semLogin ? 'sem conta' : !s.ligada ? 'ainda não ligada' : s.foco ? 'ouvindo' : 'Z · IA da Absolute ZRO'}</p>
           <h1>${esc(saudacao())}${s.nome ? `, <strong>${esc(s.nome)}.</strong>` : '.'}</h1>
-          <p class="apoio">${esc(s.ligada ? this.getAttribute('apoio') || 'O que você precisa hoje?' : 'O Z, a IA do ecossistema, chega em breve, o mesmo em todas as plataformas.')}</p>
+          <p class="apoio">${esc(s.ligada ? this.getAttribute('apoio') || 'O que você precisa hoje?' : 'A Z, a IA do ecossistema, chega em breve, a mesma em todas as plataformas.')}</p>
         </div>`
       }</div>
       <div class="base">
         ${!em && this.pode && this.sugestoes.length ? `<ul class="sug" aria-label="Sugestões">${this.sugestoes.map((t, i) => `<li style="--i:${i}"><button type="button" data-sug="${esc(t)}">${esc(t)}</button></li>`).join('')}</ul>` : ''}
         <form class="campo"${this.pode ? '' : ' data-off'}>
-          <label class="sr" for="t">Mensagem para o Z</label>
+          <label class="sr" for="t">Mensagem para a Z</label>
           <textarea id="t" rows="1" maxlength="8000" placeholder="${esc(ph)}"${this.pode ? '' : ' disabled'}>${esc(valor)}</textarea>
           ${s.pensando ? '<button type="button" class="enviar" data-a="parar" aria-label="Parar a resposta"><span class="parar"></span></button>' : `<button type="submit" class="enviar" aria-label="Enviar"${valor.trim() && this.pode ? '' : ' disabled'}>${SETA}</button>`}
         </form>
@@ -702,7 +702,7 @@ class ZroIa extends HTMLElement {
       })
       if (!r.ok || !r.body) {
         const e = await r.json().catch(() => null)
-        resp.texto = e?.message || 'O Z não respondeu. Tente de novo.'
+        resp.texto = e?.message || 'A Z não respondeu. Tente de novo.'
         resp.erro = true
         return
       }
@@ -738,7 +738,7 @@ class ZroIa extends HTMLElement {
       }
     } catch (e) {
       if (e?.name !== 'AbortError' && !resp.texto) {
-        resp.texto = 'Sem conexão com o Z agora.'
+        resp.texto = 'Sem conexão com a Z agora.'
         resp.erro = true
       }
     } finally {

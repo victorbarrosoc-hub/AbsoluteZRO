@@ -225,14 +225,14 @@ export default async function Landing() {
       <section className="section section--center pz-sec" aria-labelledby="z-title">
         <div className="section__head section__head--wide reveal">
           <h2 id="z-title" className="display-2 atitle">
-            <span className="atitle__thin">Conheça o Z.</span>
+            <span className="atitle__thin">Conheça a Z.</span>
             <span className="atitle__bold">A ponte entre tudo.</span>
           </h2>
           <p>Uma IA para o ecossistema inteiro. Lê o que acontece nas ferramentas e ajuda você a seguir para a próxima.</p>
         </div>
         <PalcoZ cena="ouvindo" className="pz">
           <Z movimento="pensando" tamanho={200} vento className="pz__z" />
-          <ul className="pz__orbita" aria-label="Ferramentas que o Z conhece">
+          <ul className="pz__orbita" aria-label="Ferramentas que a Z conhece">
             {ativos.map((p, i) => (
               <li key={p.id as string} style={{ '--i': i, '--n': ativos.length } as CSSProperties} title={p.name as string}>
                 <ProductMark productId={p.id as string} name={p.name as string} size={44} />
@@ -240,14 +240,14 @@ export default async function Landing() {
             ))}
           </ul>
         </PalcoZ>
-        <ul className="papp__chips reveal" aria-label="Como o Z funciona">
+        <ul className="papp__chips reveal" aria-label="Como a Z funciona">
           <li>Uma conta só</li>
           <li>Conversas de todas as plataformas</li>
           <li>Você confere antes de agir</li>
         </ul>
         <div className="papp__ctas reveal">
           <Link className="glass-btn glass-btn--ink" href="/ia">
-            Conversar com o Z
+            Conversar com a Z
           </Link>
           <Link className="glass-btn" href="/planos">
             Créditos nos planos

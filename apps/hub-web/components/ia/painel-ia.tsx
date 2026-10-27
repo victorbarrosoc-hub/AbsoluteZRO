@@ -177,7 +177,7 @@ export function PainelIa({
       })
       if (!r.ok || !r.body) {
         const e = (await r.json().catch(() => null)) as { message?: string } | null
-        escrever(() => e?.message ?? 'O Z não respondeu. Tente de novo.', true)
+        escrever(() => e?.message ?? 'A Z não respondeu. Tente de novo.', true)
         return
       }
       const leitor = r.body.getReader()
@@ -208,7 +208,7 @@ export function PainelIa({
         }
       }
     } catch (e) {
-      if ((e as Error).name !== 'AbortError') escrever((s) => s || 'Sem conexão com o Z agora.', true)
+      if ((e as Error).name !== 'AbortError') escrever((s) => s || 'Sem conexão com a Z agora.', true)
     } finally {
       setPensando(false)
       setLendo(null)
@@ -268,7 +268,7 @@ export function PainelIa({
             <h1 className="ia-inicio__titulo">
               <span>{saudacao},</span> <strong>{nome}.</strong>
             </h1>
-            <p className="ia-inicio__apoio">{ligada ? apoio : 'O Z, a IA do ecossistema, chega em breve, o mesmo em todas as plataformas.'}</p>
+            <p className="ia-inicio__apoio">{ligada ? apoio : 'A Z, a IA do ecossistema, chega em breve, a mesma em todas as plataformas.'}</p>
           </div>
         ) : (
           <div className="ia-conversa" aria-live="polite">
@@ -309,7 +309,7 @@ export function PainelIa({
         )}
         <form className="ia-campo" onSubmit={onSubmit} data-desligado={podeEscrever ? undefined : 'sim'}>
           <label htmlFor="ia-texto" className="zro-sr-only">
-            Mensagem para o Z
+            Mensagem para a Z
           </label>
           <textarea
             id="ia-texto"
@@ -318,7 +318,7 @@ export function PainelIa({
             value={texto}
             maxLength={8000}
             placeholder={
-              !ligada ? 'O Z ainda não foi ligado' : semCredito ? 'Os créditos de IA deste mês acabaram' : emConversa ? 'Continue…' : 'Pergunte ao Z…'
+              !ligada ? 'A Z ainda não foi ligada' : semCredito ? 'Os créditos de IA deste mês acabaram' : emConversa ? 'Continue…' : 'Pergunte à Z…'
             }
             disabled={!podeEscrever}
             onChange={(e) => setTexto(e.target.value)}
