@@ -6029,6 +6029,8 @@ a.pstrip__card:focus-visible .pstrip__go {
   }
   .painel__corpo--ia .ia__base {
     bottom: calc(68px + env(safe-area-inset-bottom));
+  }
+}
 
 /* ───── Conversa de conta (entrar, criar conta, login do app; components/conversa-conta.tsx, 27/10/2026) ─────
    Uma pergunta por vez. O orbe é o símbolo da marca com o estado em data-estado (absolute-zro, ouvindo, conferindo,
