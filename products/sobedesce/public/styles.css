@@ -11638,6 +11638,31 @@ button.tree-twisty:hover {
   margin: 0;
 }
 
+/* a Z, a IA da Absolute ZRO, no topo do Início (components/z.js) */
+.pn-z {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 28px;
+  /* sem a entrada em cascata do Início: animação de transform aqui prende a gaveta de Conversas (fixed) à caixa */
+  animation: none !important;
+}
+.pn-z-painel {
+  min-height: 480px;
+  --zro-ia-altura: 480px;
+}
+.pn-z-acao {
+  display: flex;
+  justify-content: center;
+}
+.pn-ola-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 /* cartões de resumo */
 .pn-cartoes {
   display: grid;

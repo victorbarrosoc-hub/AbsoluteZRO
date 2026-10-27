@@ -7,6 +7,7 @@ import { Cabecalho } from "./cabecalho";
  * `larga`: a conta e o admin, que se espalham pela tela no desktop (até 2240 px, em colunas nas próprias páginas).
  * Padrão do kit (components/kit): título e conteúdo entram em cascata; nas estreitas, o ícone em gradiente em cima e o
  * formulário num cartão (`icone` troca o desenho; sem ele, as barras da marca).
+ * `tituloOculto`: o título fica só para leitores de tela (na conta, quem cumprimenta é o painel da Z).
  */
 export function Moldura({
   titulo,
@@ -15,6 +16,7 @@ export function Moldura({
   estreita = false,
   larga = false,
   icone,
+  tituloOculto = false,
   children,
 }: {
   titulo: React.ReactNode;
@@ -23,6 +25,7 @@ export function Moldura({
   estreita?: boolean;
   larga?: boolean;
   icone?: React.ReactNode;
+  tituloOculto?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -35,7 +38,7 @@ export function Moldura({
           estreita ? "max-w-[420px]" : larga ? null : "max-w-[680px]",
         )}
       >
-        <div className={cn("k-entra grid gap-3", estreita ? "mb-8 justify-items-center text-center" : "mb-10 sm:mb-12", larga && "xl:mb-14")}>
+        <div className={cn("k-entra grid gap-3", tituloOculto && "sr-only", estreita ? "mb-8 justify-items-center text-center" : "mb-10 sm:mb-12", larga && "xl:mb-14")}>
           {estreita ? (
             <span aria-hidden className="k-grad mb-2 grid size-14 place-items-center rounded-[18px] text-white shadow-[0_12px_28px_-12px_var(--color-up)] [&_svg]:size-6">
               {icone ?? (

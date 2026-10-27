@@ -317,6 +317,20 @@ export class CloudAuth extends EventEmitter {
     }
   }
 
+  /**
+   * A Z, a IA da Absolute ZRO (27/10/2026): repassa um pedido do painel ao site (/api/zro/ia/<caminho>) com o Bearer
+   * deste computador; o site acrescenta o token da Absolute ZRO da conta. Devolve o Response do fetch (corpo em
+   * streaming, para o NDJSON das respostas) ou null quando este computador não entrou na conta. O token não sai daqui.
+   */
+  async ia(method, caminho, { body, signal } = {}) {
+    await this.#ready()
+    const s = this.session
+    if (!s) return null
+    const headers = { accept: 'application/json, application/x-ndjson', authorization: `Bearer ${s.token}`, 'x-sobedesce-build': String(this.build) }
+    if (body !== undefined) headers['content-type'] = 'application/json'
+    return fetch(`${this.baseUrl}/api/zro/ia/${caminho}`, { method, headers, body, signal, redirect: 'error', cache: 'no-store' })
+  }
+
   /** 401 numa chamada com o token do dispositivo: a sessão foi revogada no site (ou venceu). */
   #isRevoked(err, token) {
     return err instanceof HttpError && err.status === 401 && token && this.session?.token === token

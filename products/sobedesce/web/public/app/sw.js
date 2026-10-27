@@ -12,7 +12,7 @@
 //     página confirmar a chave (quem manda um link de fora não sabe a chave).
 //  3. Avisos (Web Push): "Pronto: 8 arquivos enviados do MacBook…" quando o computador termina; o toque abre
 //     /app/#computador (ou a folha, se o app já estiver aberto).
-const CACHE = 'sobedesce-app-v61'
+const CACHE = 'sobedesce-app-v62'
 const SCOPE = new URL('./', self.location).pathname // "/app/"
 const STREAM = SCOPE + 'stream/'
 const GOOGLE_API = 'https://www.googleapis.com/drive/v3'
@@ -93,6 +93,7 @@ const SHELL = [
   './components/tabs.js',
   './components/thumb.js',
   './components/ui.js',
+  './components/z.js',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',
   './icons/favicon.svg',
