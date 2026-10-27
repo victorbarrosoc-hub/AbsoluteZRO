@@ -674,6 +674,24 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   nonce, emissor, público e assinatura, login desligado → 503) e o teste de tela "só com conta" (sem sessão o editor vai
   para `entrar.html?volta=/app/`; com sessão o menu mostra a pessoa).
 
+## AEON: tirar mídia, selecionar várias, editor completo e homepage nova (26–27/10/2026)
+
+- Tirar mídia: `test/nucleo.test.js` (some a mídia, os clipes, a transcrição, as propostas e as correções; uma ou
+  várias; desfazer devolve) e a tela "projeto novo" (× no cartão, Selecionar → marcar duas → Tirar do projeto → ⌘Z).
+- Atualização pelo app: fica a da main (`desktop/atualizador.cjs`, "Versão nova · Atualizar"); uma segunda versão
+  feita em paralelo (atualização ao fechar o app) saiu para não ter dois atualizadores.
+- Instalador do Terminal conferido de ponta a ponta com os comandos do Mac simulados no Linux (build 8 baixado,
+  SHA-256 conferido, `AEON.app` em Aplicativos). No Mac de verdade parou em `NOME?: unbound variable`: o bash 3.2 lê o
+  "…" colado em `$NOME` como parte do nome. Variável colada em caractere não ASCII vai entre chaves e
+  `test/instalacao.test.js` confere o arquivo inteiro. Não validado: o bash 3.2 rodando aqui.
+- Site: download direto com o passo da quarentena, 390 px sem rolagem lateral. Homepage: topo na tela toda no
+  computador, cenas que se dissolvem no fundo, MacBook que abre, números que contam e três demonstrações ao vivo
+  (rodam só na tela; paradas com "reduzir movimento"); conferida em 1440×900 (claro e escuro) e 390×844.
+- Posicionamento (titular, 26/10/2026): o AEON é editor completo e a IA é ajuda opcional. Textos do site, do app, do
+  HUB (linha do catálogo, página do projeto, migration 0014 para descrição e papel no fluxo) e regras do produto
+  (`products/ai-edit/CLAUDE.md`). Downloads do HUB: AEON com Mac, Windows e navegador; `/baixar/mac` e
+  `/baixar/windows` do site redirecionam para o Release (regra de "instalador pela rota /baixar do site" conferida).
+
 ## Página inicial de cinema (26/10/2026, estrutura escolhida pelo titular)
 
 - Topo: paisagem em preto e branco com o símbolo esculpido em metal sobre a rocha, gerada no Higgsfield (GPT Image

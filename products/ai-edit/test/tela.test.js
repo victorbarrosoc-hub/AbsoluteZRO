@@ -78,6 +78,7 @@ test('caminho de uso: importar, analisar, revisar, editar com cor e etiqueta, ex
     return { bytes: [...new Uint8Array(await v.arquivo.arrayBuffer())], palavras: v.palavras }
   })
   writeFileSync(join(dir, 'fala.mp4'), Buffer.from(bytes))
+  writeFileSync(join(dir, 'fala-2.mp4'), Buffer.from(bytes))
   // transcrição falsa: devolve as "palavras" do vídeo de teste (a de verdade tem teste próprio)
   const nomes = ['Bom', 'dia!', 'Tchau.']
   const falsas = palavras.map((w, i) => ({ texto: nomes[i] || 'palavra', ini: w.ini + 0.05, fim: w.fim - 0.05 }))
@@ -230,6 +231,33 @@ test('projeto novo: nome, formato vertical e quadros; renomear pela barra', asyn
   await pagina.keyboard.press('Enter')
   assert.equal(await pagina.evaluate(() => globalThis.__editor.h.atual.nome), 'Reels de novembro')
   await pagina.locator('#salvo[data-estado="ok"]').waitFor()
+
+  // tirar a mídia do projeto (o arquivo fica) e desfazer
+  await pagina.setInputFiles('#arquivo', join(dir, 'fala.mp4'))
+  await pagina.locator('.cartao-midia').waitFor()
+  await pagina.locator('.cartao-midia').hover()
+  await pagina.getByRole('button', { name: 'Tirar fala.mp4 do projeto' }).click()
+  await pagina.getByRole('heading', { name: /Solte o vídeo/ }).waitFor()
+  assert.equal(await pagina.evaluate(() => globalThis.__editor.h.atual.linha.clipes.length), 0)
+  assert.match(await pagina.locator('#aviso').innerText(), /continua no computador/)
+  await pagina.keyboard.press('Control+z')
+  await pagina.locator('.cartao-midia').waitFor()
+  assert.equal(await pagina.evaluate(() => globalThis.__editor.h.atual.midias.length), 1)
+
+  // selecionar várias: duas mídias marcadas saem num passo só e o desfazer devolve as duas
+  await pagina.setInputFiles('#arquivo', join(dir, 'fala-2.mp4'))
+  await pagina.waitForFunction(() => globalThis.__editor.h.atual.midias.length === 2)
+  await pagina.click('#selecionarMidia')
+  assert.equal(await pagina.locator('#tirarSel').isDisabled(), true)
+  await pagina.getByRole('checkbox', { name: 'fala.mp4' }).click()
+  await pagina.getByRole('checkbox', { name: 'fala-2.mp4' }).click()
+  assert.equal(await pagina.locator('#contaSel').innerText(), '2 marcadas')
+  await pagina.click('#tirarSel')
+  await pagina.getByRole('heading', { name: /Solte o vídeo/ }).waitFor()
+  assert.equal(await pagina.evaluate(() => globalThis.__editor.h.atual.midias.length), 0)
+  await pagina.keyboard.press('Control+z')
+  await pagina.waitForFunction(() => globalThis.__editor.h.atual.midias.length === 2)
+  assert.equal(await pagina.locator('#selecionarMidia').innerText(), 'Selecionar')
   assert.deepEqual(erros, [])
   await pagina.close()
 })

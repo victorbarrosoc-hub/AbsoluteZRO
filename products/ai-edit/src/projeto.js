@@ -47,6 +47,24 @@ function cryptoId() {
 
 export const midiaPorId = (p, id) => p.midias.find((m) => m.id === id)
 
+/**
+ * Tira uma ou várias mídias do projeto (um passo só no Desfazer): some a mídia, os clipes dela na linha, a transcrição, as propostas e as correções da
+ * legenda. O arquivo no computador não é tocado (o app nunca apaga mídia) e o Desfazer traz tudo de volta.
+ */
+export function removerMidia(p, ids) {
+  const fora = new Set(Array.isArray(ids) ? ids : [ids])
+  if (!p.midias.some((m) => fora.has(m.id))) return p
+  const sem = (o) => Object.fromEntries(Object.entries(o || {}).filter(([k]) => !fora.has(k)))
+  return {
+    ...p,
+    midias: p.midias.filter((m) => !fora.has(m.id)),
+    linha: { ...p.linha, clipes: p.linha.clipes.filter((c) => !fora.has(c.midia)) },
+    transcricoes: sem(p.transcricoes),
+    propostas: p.propostas.filter((x) => !fora.has(x.midia)),
+    legenda: { ...p.legenda, textos: sem(p.legenda.textos) },
+  }
+}
+
 /** Guarda a transcrição de uma mídia (substitui a anterior e as propostas que dependiam dela continuam). */
 export function comTranscricao(p, midia, transcricao) {
   return { ...p, transcricoes: { ...p.transcricoes, [midia]: transcricao } }
