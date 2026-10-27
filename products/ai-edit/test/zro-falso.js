@@ -15,8 +15,9 @@ export async function iniciarZroFalsa(cliente) {
   const jwk = { ...publicKey.export({ format: 'jwk' }), kid: 'chave-teste', alg: 'ES256', use: 'sig' }
   const codigos = new Map()
   const acessos = new Map()
+  const escoposDe = new Map()
   const renovaveis = new Map()
-  const estado = { pessoa: null, negar: false, adulterar: null, trocas: 0, prompt: null, escopo: null, expiraEm: 600, renovacoes: 0, leituras: 0, revogados: [], recusarRenovacao: false }
+  const estado = { pessoa: null, negar: false, adulterar: null, trocas: 0, prompt: null, escopo: null, expiraEm: 600, renovacoes: 0, leituras: 0, revogados: [], recusarRenovacao: false, ia: [] }
   let base = ''
 
   const jwt = (dados, assinarErrado = false) => {
@@ -40,11 +41,12 @@ export async function iniciarZroFalsa(cliente) {
     zro_org: p.org ? { id: 'org-1', name: p.org, role: 'owner' } : null,
     zro_products: p.produtos || [],
   })
-  const tokens = (sub) => {
+  const tokens = (sub, escopos = []) => {
     const at = `at_${randomBytes(16).toString('hex')}`
     const rt = `rt_${randomBytes(16).toString('hex')}`
     acessos.set(at, sub)
-    renovaveis.set(rt, { sub, usado: false })
+    escoposDe.set(at, escopos)
+    renovaveis.set(rt, { sub, usado: false, escopos })
     return { access_token: at, token_type: 'Bearer', expires_in: estado.expiraEm, refresh_token: rt }
   }
   const cliente_ok = (req, f) => {
@@ -52,6 +54,8 @@ export async function iniciarZroFalsa(cliente) {
     // app público (o de computador): sem segredo, só client_id no corpo
     return cliente.publico ? f.get('client_id') === cliente.clientId && !req.headers.authorization : basic === `${cliente.clientId}:${cliente.clientSecret}`
   }
+  // o cliente só recebe o escopo da Z se tiver pedido (como no HUB: zro.ia está na lista dos apps da família)
+  const escopos_ok = (e) => e.filter((x) => x !== 'zro.ia' || estado.semEscopoIa !== true)
   const corpoDe = async (req) => {
     let corpo = ''
     for await (const c of req) corpo += c
@@ -81,6 +85,9 @@ export async function iniciarZroFalsa(cliente) {
       const escopos = (q.get('scope') || '').split(' ')
       if (q.get('client_id') !== cliente.clientId || q.get('code_challenge_method') !== 'S256' || !q.get('code_challenge') || !q.get('nonce') || !escopos.includes('openid')) {
         volta.searchParams.set('error', 'invalid_request')
+      } else if (estado.recusarEscopoIa && escopos.includes('zro.ia')) {
+        // cliente sem zro.ia na lista (o HUB devolve invalid_scope)
+        volta.searchParams.set('error', 'invalid_scope')
       } else if (estado.negar || !estado.pessoa) {
         volta.searchParams.set('error', 'access_denied')
       } else {
@@ -100,7 +107,7 @@ export async function iniciarZroFalsa(cliente) {
         if (!r || r.usado || estado.recusarRenovacao) return responder(res, 400, { error: 'invalid_grant' })
         r.usado = true
         estado.renovacoes++
-        return responder(res, 200, { ...tokens(r.sub), scope: 'openid email profile org offline_access' })
+        return responder(res, 200, { ...tokens(r.sub, r.escopos), scope: r.escopos.join(' ') })
       }
       const c = codigos.get(f.get('code') || '')
       if (!c || c.usado) return responder(res, 400, { error: 'invalid_grant' })
@@ -125,7 +132,7 @@ export async function iniciarZroFalsa(cliente) {
         },
         ad === 'assinatura',
       )
-      const t = tokens(c.pessoa.sub)
+      const t = tokens(c.pessoa.sub, escopos_ok(c.escopos))
       // sem offline_access, sem refresh token (como no HUB)
       if (!c.escopos.includes('offline_access')) delete t.refresh_token
       return responder(res, 200, { ...t, id_token: id, scope: c.escopos.join(' ') })
@@ -144,6 +151,29 @@ export async function iniciarZroFalsa(cliente) {
       if (r) r.usado = true
       estado.revogados.push(f.get('token'))
       return responder(res, 200, {})
+    }
+    // a API da Z (/api/v1/ia): Bearer com o escopo zro.ia, como no HUB (sem ele, 401). Guarda o que chegou.
+    if (url.pathname.startsWith('/api/v1/ia/')) {
+      const at = String(req.headers.authorization || '').replace(/^Bearer /, '')
+      let corpo = ''
+      for await (const c of req) corpo += c
+      estado.ia.push({ metodo: req.method, caminho: url.pathname.slice('/api/v1/ia'.length), autorizacao: req.headers.authorization || null, cookie: req.headers.cookie || null, corpo })
+      const sub = acessos.get(at)
+      if (!sub || !(escoposDe.get(at) || []).includes('zro.ia')) return responder(res, 401, { error: 'unauthenticated', message: 'Token inválido, vencido ou sem permissão para esta ação.' })
+      const caminho = url.pathname.slice('/api/v1/ia'.length)
+      if (caminho === '/estado') return responder(res, 200, { ligada: true, nome: (estado.pessoa?.nome || '').split(' ')[0], produto: null, creditos: { usados: 3, limite: 100, renova_em: '2026-11-27T00:00:00.000Z' } })
+      if (caminho === '/conversas') return responder(res, 200, { conversas: [] })
+      if (caminho === '/mensagens' && req.method === 'POST') {
+        res.writeHead(200, { 'content-type': 'application/x-ndjson; charset=utf-8' })
+        res.write(JSON.stringify({ tipo: 'conversa', id: 'c-1' }) + '\n')
+        await new Promise((ok) => setTimeout(ok, 120))
+        res.write(JSON.stringify({ tipo: 'texto', t: 'Oi, ' }) + '\n')
+        await new Promise((ok) => setTimeout(ok, 120))
+        res.write(JSON.stringify({ tipo: 'texto', t: 'aqui é a Z.' }) + '\n')
+        return res.end(JSON.stringify({ tipo: 'fim', creditos: 1 }) + '\n')
+      }
+      if (/^\/conversas\/[\w-]+$/.test(caminho)) return responder(res, req.method === 'DELETE' ? 200 : 404, req.method === 'DELETE' ? { ok: true } : { message: 'Conversa não encontrada.' })
+      return responder(res, 404, { error: 'not_found' })
     }
     responder(res, 404, { error: 'not_found' })
   })

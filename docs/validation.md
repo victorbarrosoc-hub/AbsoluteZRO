@@ -1216,3 +1216,25 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Não validado: conversa de verdade com conta real (site e computador) e se o cliente `synquei-desktop` no banco tem
   `product_id = synquei` e `zro.ia` (cadastrado pelo console; clientes com produto ganham `zro.ia` no cadastro e pela
   migração 0016). O texto interno do painel ("Pergunte ao Z…") vem do `<zro-ia>` do HUB.
+## A Z no painel inicial do AEON e da Revela (27/10/2026)
+
+- AEON: aba **Z** primeira no dock e página inicial do app (`app/z.js`), no site, no celular e no app de computador;
+  o editor segue a um toque (⌘1 Z, ⌘2–5 Mídia a Entrega). Site: `<zro-ia>` de absolutezro.com (CSP `script-src` com
+  absolutezro.com); app de computador: cópia em `vendor/ia` (`npm run vendor`), sem código de fora na janela com a
+  ponte. Revela: `inicio.html` com a Z, aba Z no dock, item no menu, `start_url` `/inicio` e "Abrir a Revela" no painel.
+- Token: a página fala só com `/api/zro/ia/*`. Site: repasse da Vercel (`api/_ia.js`, mesmo arquivo nos dois) com o
+  access token do cookie cifrado, renovado pelo refresh token quando vence; resposta NDJSON passada aos poucos; só os
+  caminhos e métodos do contrato; mudança só da própria origem e com JSON; sem sessão ou refresh recusado = 401 (o
+  painel mostra "Entrar de novo"/"Entrar com Absolute ZRO"). Desktop: `desktop/main.cjs › repassarIa` com o token de
+  `conta.cjs › tokenDeAcesso` (só no processo principal; um refresh por vez). O login pede `zro.ia`; se a Absolute ZRO
+  devolver `invalid_scope`, entra de novo sem ele (web e desktop) e a Z fica em 401.
+- Home: seção da Z como "Agora no AEON"/"Agora na Revela", com **Conversar com a Z** (painel) e **Conhecer a Z**.
+- Testes: AEON `npm test` 102/102 (repasse em `test/ia.test.js`: Bearer, sem cookie para fora, NDJSON em pedaços,
+  renovação, 401 sem sessão/token adulterado/sem escopo, outra origem, caminho e método fora do contrato, sem token na
+  resposta, volta sem `zro.ia`; `conta-desktop`: token só no processo, refresh único, escopo recusado; telas com a CSP de
+  produção e a Z simulada); `xvfb-run -a npx electron . --smoke` SMOKE OK. Revela `npm test` 124/124 (o mesmo repasse,
+  painel com a CSP de produção, celular sem conta, seção da home). `node scripts/scan-secrets.mjs` sem segredos.
+- Telas no Playwright (computador 1440 e celular 390, claro e escuro, conversa, gaveta Conversas, sem escopo).
+- Não validado: produção (nada publicado), conta e IA reais, streaming pela Vercel, o repasse do app de computador
+  contra a Absolute ZRO de verdade (só o smoke, que responde 401 à Z) e se `aeon-web`/`aeon-desktop` têm `product_id`
+  (a 0016 só dá `zro.ia` a clientes com produto). Os textos dentro do `<zro-ia>` ("Pergunte ao Z…") vêm do HUB.

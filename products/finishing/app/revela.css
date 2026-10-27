@@ -2328,3 +2328,63 @@ html.abrindo::before {
     transform: scale(0.4);
   }
 }
+
+/* ─────────── painel inicial: a Z, a IA do ecossistema (app/inicio.js) ─────────── */
+.tela--z {
+  max-width: 860px;
+  padding-top: 8px;
+}
+.z-painel {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+}
+.z-painel zro-ia {
+  width: 100%;
+  font-family: var(--fonte);
+  /* o topo e o dock ficam fora: o campo de conversa encosta acima do dock */
+  --zro-ia-altura: calc(100dvh - 210px - env(safe-area-inset-bottom));
+  --zro-ia-fundo-gaveta: var(--fundo);
+}
+.z-painel[data-z='sem-login'] zro-ia {
+  --zro-ia-altura: calc(100dvh - 320px - env(safe-area-inset-bottom));
+}
+.z-aviso {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  color: var(--mudo);
+  font-size: 15px;
+  text-align: center;
+}
+.z-aviso p {
+  margin: 0;
+}
+.z-aviso[hidden],
+.z-aviso a[hidden] {
+  display: none;
+}
+/* a gaveta de conversas da Z é position: fixed: nada acima dela pode ficar com transform ou filter depois de entrar
+   (senão ela passa a se prender ao painel, e não à tela). Entrada só com opacidade; a troca de aba não fica presa. */
+@media (prefers-reduced-motion: no-preference) {
+  .z-painel {
+    animation: z-surge 0.6s ease both;
+  }
+  main.tela--z.painel-troca {
+    animation-fill-mode: backwards;
+  }
+}
+@keyframes z-surge {
+  from {
+    opacity: 0;
+  }
+}
+/* e o painel sobe acima do topo, do menu recolhido e do dock, para o véu da gaveta cobrir a tela inteira. Só a Z
+   recebe toque: o resto da caixa do painel (o espaço sob o dock) deixa passar. Com o menu aberto, o menu fica por cima. */
+html:not(.menu-aberto):not(.menu-gaveta) main.tela--z {
+  z-index: 45;
+  pointer-events: none;
+}
+.tela--z .z-painel {
+  pointer-events: auto;
+}

@@ -5,7 +5,7 @@
   "description": "LUT, CST, entrega e conversão de vídeo, no aparelho.",
   "lang": "pt-BR",
   "dir": "ltr",
-  "start_url": "/lut",
+  "start_url": "/inicio",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
@@ -19,6 +19,7 @@
     { "src": "/marca/revela-icone.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ],
   "shortcuts": [
+    { "name": "Z", "url": "/inicio", "icons": [{ "src": "/marca/app/revela-192.png", "sizes": "192x192" }] },
     { "name": "LUT", "url": "/lut", "icons": [{ "src": "/marca/app/revela-192.png", "sizes": "192x192" }] },
     { "name": "CST", "url": "/cst", "icons": [{ "src": "/marca/app/revela-192.png", "sizes": "192x192" }] },
     { "name": "Entrega", "url": "/entrega", "icons": [{ "src": "/marca/app/revela-192.png", "sizes": "192x192" }] },

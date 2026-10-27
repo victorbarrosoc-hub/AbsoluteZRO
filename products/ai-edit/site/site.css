@@ -1415,7 +1415,7 @@ p {
   color: rgb(255 255 255 / 0.55);
 }
 
-/* ───────── 6a · o Z, a IA do ecossistema (anel e estrela em marca/z) ───────── */
+/* ───────── 6a · a Z, a IA do ecossistema (anel e estrela em marca/z) ───────── */
 .z-sec {
   padding: 40px 24px 140px;
 }
@@ -1490,6 +1490,14 @@ p {
   border-radius: 50%;
   background: var(--cor-laranja);
 }
+.z-selo--pronta i {
+  background: var(--cor-verde);
+}
+.z-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
 .z-titulo {
   font-size: clamp(30px, 3.8vw, 48px);
   line-height: 1.06;
@@ -1547,6 +1555,9 @@ p {
   }
   .z-texto {
     justify-items: center;
+  }
+  .z-acoes {
+    justify-content: center;
   }
   .z-fichas {
     justify-content: center;
