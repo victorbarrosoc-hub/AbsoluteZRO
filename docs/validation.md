@@ -1154,6 +1154,7 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   `/entrar` claro e escuro e `<zro-ia>` servido de outra origem sobre o azul do NOSSOM, sem erro de página.
 - Não validado: migrações 0016/0017 no banco de produção e a IA com a chave real (só com a API falsa local); não
   publicado em produção.
+
 ## O Z nas páginas iniciais das plataformas (27/10/2026)
 
 - Seção curta na home de AEON, Carro do Freela, Revela, NOSSOM, SOBEDESCE, Synquei e TPeasy: anel e estrela do Z
@@ -1168,3 +1169,18 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   suítes (4 de novo sozinhas, como o arnês prevê) e `test:api` 27/27; `node scripts/scan-secrets.mjs` sem segredos.
 - Telas conferidas no Playwright (Chromium), computador 1440 e celular 390, claro e escuro onde há, sem rolagem
   lateral. Não validado: o link absolutezro.com/ia no ar (depende do deploy do HUB).
+
+## A Z como painel inicial: SOBEDESCE e Carro do Freela (27/10/2026)
+
+- SOBEDESCE: login pede `offline_access zro.ia` (sem o escopo, `invalid_scope` refaz o pedido sem ele); os tokens ficam
+  cifrados na conta (`contas_zro.ia`, migração 0014) e `/api/zro/ia/*` repassa com o Bearer, renovando com a linha
+  travada. Painel no topo de `/conta`, do Início do `/app/` (cache v62, 2.8.47) e do Início do app de computador
+  (motor: `/api/ia/*` → site com o Bearer do dispositivo). CSP: script da absolutezro.com no `/app/` e no motor.
+- Carro do Freela: login pede `zro.ia`; `/api/zro/ia/*` (função `ia`, streaming) usa o mesmo `cdf_hub`. Painel no topo
+  do Feed (fora da `.wrap` que anima), só no domínio com conta liberada. CSP: script e imagens da absolutezro.com.
+  VERSAO `27/out · 4`. Home dos dois: "Agora no <app>", **Conversar com a Z** e **Conhecer a Z**.
+- Testes: SOBEDESCE web lint, typecheck, `npm test` (novo `zro-ia.test.mts`: Bearer encaminhado, streaming, sem sessão,
+  origem, renovação sem derrubar a família, reconectar) e build; motor `test:fast` (novo `ia-z.test.js`). Carro
+  `test:api` 33/33 (6 novos da Z), `conta-zro` com a seção 11 (painel, conversa, reconectar) e `node test/run.js` 88 de 88 (doca e sem-zoom de novo sozinhas).
+- Telas (Playwright, 1440 e 390, claro e escuro, API simulada pela Absolute ZRO falsa, script do painel servido do
+  repositório). Não validado: com conta e chave reais, e o app de computador dentro do Electron.
