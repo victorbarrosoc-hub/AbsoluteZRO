@@ -1905,33 +1905,56 @@ details.disclosure[open] > summary {
 }
 .dl-intro {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr);
   gap: var(--space-5);
-  align-items: end;
 }
+/* O app Absolute ZRO para computador: ícone, uma linha e os dois botões; o Terminal fica recolhido. */
 .dl-central {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  padding: 20px;
-  border-radius: var(--radius-l);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 18px 24px;
+  padding: clamp(18px, 3vw, 28px);
+  border-radius: var(--radius-xl);
   background: var(--glass-fill), var(--surface);
-  border-color: var(--line);
   box-shadow: var(--shadow-float);
 }
-.dl-central > svg {
-  flex: none;
-  color: var(--text-strong);
-  margin-top: 2px;
+.dl-central__icone {
+  width: clamp(64px, 8vw, 88px);
+  height: auto;
 }
-.dl-central strong {
+.dl-central__texto {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.dl-central h2 {
+  margin: 0;
+  font: 800 clamp(1.2rem, 2vw, 1.5rem) var(--font-apple);
+  letter-spacing: -0.02em;
   color: var(--text-strong);
-  font: 700 1rem var(--font-apple);
+}
+.dl-central h2 span {
+  font-weight: 400;
+  color: var(--text-faint);
 }
 .dl-central p {
+  margin: 0;
   color: var(--text-mute);
-  font-size: 0.86rem;
-  margin-top: 4px;
+  font-size: 0.92rem;
+}
+.dl-central__botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+.dl-central__fmt {
+  font-weight: 400;
+  opacity: 0.7;
+}
+.dl-central__terminal {
+  grid-column: 1 / -1;
+  min-width: 0;
 }
 .dl-list {
   display: grid;
@@ -3576,7 +3599,7 @@ a.pstrip__card:focus-visible .pstrip__go {
   }
 }
 
-/* Com a rolagem: a foto do topo desce devagar (parallax) e o símbolo do fim se desenha. */
+/* Com a rolagem: a foto do topo desce devagar (parallax). */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
     .phero__scene {
@@ -3590,17 +3613,6 @@ a.pstrip__card:focus-visible .pstrip__go {
       animation-range:
         normal,
         exit 0% exit 100%;
-    }
-    .bsym--scroll .bsym__ring {
-      stroke-dasharray: 100;
-      animation: bsym-draw linear both;
-      animation-timeline: view();
-      animation-range: entry 20% cover 50%;
-    }
-    .bsym--scroll .bsym__spark {
-      animation: zro-spark linear both;
-      animation-timeline: view();
-      animation-range: entry 10% cover 55%;
     }
   }
 }
@@ -4781,4 +4793,158 @@ a.pstrip__card:focus-visible .pstrip__go {
   .pfluxo__detalhe {
     animation: none;
   }
+}
+
+/* Símbolo do fim: desenha o anel e recolhe a estrela quando aparece (components/home/aparece.tsx), uma vez, sempre até
+   o fim. Antes andava com a rolagem e ficava travado no meio quando a página acabava antes. */
+.closing__aparece {
+  display: grid;
+  justify-items: center;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .bsym--aparece .bsym__ring {
+    stroke-dasharray: 100;
+    animation: bsym-draw 1.6s var(--ease) 0.1s both;
+  }
+  .bsym--aparece .bsym__spark {
+    animation: zro-spark 1.8s var(--ease) 0.35s both;
+  }
+  [data-espera] .bsym--aparece .bsym__ring,
+  [data-espera] .bsym--aparece .bsym__spark {
+    animation-play-state: paused;
+  }
+}
+
+/* ───── Downloads: só os ícones; o toque abre a parte de download do app (27/10/2026, pedido do titular) ───── */
+.dl-picker {
+  display: grid;
+  gap: var(--space-4);
+}
+.dl-picker__icones {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.dl-picker__app {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 18px 8px 14px;
+  border: 0;
+  border-radius: 22px;
+  background: none;
+  font: 600 0.86rem var(--font-sans);
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    background 0.3s var(--ease),
+    translate 0.4s var(--spring);
+}
+.dl-picker__app .zro-mark {
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.16);
+  transition: scale 0.4s var(--spring);
+}
+.dl-picker__app:hover {
+  background: var(--glass-fill), var(--surface);
+}
+.dl-picker__app:hover .zro-mark {
+  scale: 1.05;
+}
+.dl-picker__app[aria-expanded='true'] {
+  background: var(--glass-fill), var(--surface);
+  box-shadow:
+    var(--shadow-float),
+    inset 0 0 0 1.5px color-mix(in srgb, var(--p) 60%, transparent);
+  color: var(--text-strong);
+}
+.dl-picker__app:focus-visible {
+  outline: 2px solid var(--text-strong);
+  outline-offset: 2px;
+}
+/* O painel abre com a altura animada (grid 0fr → 1fr), sem medir nada no JavaScript. */
+.dl-painel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.5s var(--ease);
+  scroll-margin-top: 90px;
+}
+.dl-painel[data-aberto] {
+  grid-template-rows: 1fr;
+}
+.dl-painel__dobra {
+  min-height: 0;
+  overflow: hidden;
+}
+.dl-painel__app {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  gap: 16px;
+  margin: 2px;
+  padding: clamp(18px, 3vw, 28px);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  animation: dl-painel-entra 0.5s var(--spring) both;
+}
+@keyframes dl-painel-entra {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+}
+.dl-painel__topo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.dl-painel__fim {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+.dl-painel__fim .glass-btn {
+  margin-top: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dl-painel {
+    transition: none;
+  }
+  .dl-painel__app {
+    animation: none;
+  }
+}
+@media (max-width: 560px) {
+  .dl-picker__icones {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .dl-picker__app {
+    padding: 12px 2px 10px;
+    font-size: 0.7rem;
+  }
+  .dl-picker__app .zro-mark {
+    width: 52px !important;
+    height: 52px !important;
+  }
+  .dl-central {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.dl-painel__opcoes {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+}
+.dl-painel__opcoes > .dl-opts--instalador {
+  display: contents;
+}
+/* no app de computador quem instala é a central (AppActions): o instalador avulso some */
+.zro-desktop .dl-painel__opcoes > .dl-opts--instalador {
+  display: none;
 }

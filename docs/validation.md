@@ -820,3 +820,20 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Imagens novas: `produto-hub-*` (painel `/app` e `/inicio` de hoje), `produto-ai-edit-*` e `produto-finishing-*` (os
   sites no ar), por `scripts/marca/aparelhos/produtos.py`.
 - Capturas em 1440 (claro e escuro) e 390 px; `npm run test:e2e` 21/21 (axe incluso).
+
+## Downloads por ícones, NOSSOM no Mac e símbolo do fim da home (27/10/2026)
+
+- `/baixar` e `/downloads`: só os ícones; o toque abre a parte de download do app (Mac, Windows, celular ou
+  navegador, Terminal e primeira abertura) e o **Conheça mais** (página da plataforma, `site` em `lib/downloads.ts`).
+  `#app-<id>` no endereço abre o app certo (links dos sites de cada ferramenta). O cartão do Absolute ZRO para
+  computador não estoura mais: botões numa linha e o Terminal recolhido.
+- Links conferidos com download real (GET com Range até o arquivo): SOBEDESCE 0.1.0 b1025, Synquei 1.0.0 b1027,
+  Absolute ZRO 1.1.1 b13 (Mac e Windows); NOSSOM 0.2.2 (Mac Apple Silicon, Intel e Windows) depois do workflow
+  `nossom-desktop.yml` corrigido (o passo de validação rodava antes do checkout) e disparado como prévia.
+- NOSSOM no Mac: `xattr` em app já em Aplicativos falha no macOS novo sem Gerenciamento de Apps. Novo
+  `products/nossom/public/instalar.sh` (curl, sem quarentena; escolhe Apple Silicon ou Intel; `hdiutil verify`; refaz
+  a assinatura local se não conferir). `tests/instalar-mac.test.ts` 3/3; `npm test` do NOSSOM 76/76. Não validado
+  num Mac de verdade.
+- Símbolo do fim da página inicial: animava com a rolagem e ficava travado no meio quando a página acabava antes;
+  agora desenha uma vez quando aparece (`components/home/aparece.tsx`).
+- HUB: `npm test` 153/153; `npm run test:e2e` 21/21.

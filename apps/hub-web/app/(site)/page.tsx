@@ -4,6 +4,7 @@ import { EVENT_PAYLOADS, EVENT_PRODUCER } from '@zro/media-contracts'
 import { ProductMark } from '@zro/ui'
 import { productColor } from '@/components/app-tile'
 import { BrandSymbol } from '@/components/brand-symbol'
+import { Aparece } from '@/components/home/aparece'
 import { Conheca } from '@/components/home/conheca'
 import { Fluxo } from '@/components/home/fluxo'
 import { Numeros } from '@/components/home/numeros'
@@ -265,7 +266,9 @@ export default async function Landing() {
       </section>
 
       <section className="closing reveal" aria-labelledby="closing-title">
-        <BrandSymbol className="closing__mark bsym--scroll" />
+        <Aparece className="closing__aparece">
+          <BrandSymbol className="closing__mark bsym--aparece" />
+        </Aparece>
         <h2 id="closing-title" className="display-2 atitle">
           <span className="atitle__thin">Seus dados, seus acessos.</span>
           <span className="atitle__bold">Nada além do contratado.</span>

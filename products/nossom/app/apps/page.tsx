@@ -116,16 +116,16 @@ export default async function Apps() {
             versão mais recente disponível acima. Seus projetos não precisam ser apagados.
           </p>
           <p>
-            Se a prévia continuar bloqueada, confirme que o arquivo veio desta página e que o NOSSOM
-            está em Aplicativos. Abra o Terminal e execute:
+            Se continuar bloqueado, instale pelo Terminal. O arquivo baixado pelo Terminal não fica
+            em quarentena, então o Mac abre o NOSSOM sem o aviso:
           </p>
           <pre>
-            <code>xattr -dr com.apple.quarantine /Applications/NOSSOM.app</code>
+            <code>curl -fsSL https://nossom-teal.vercel.app/instalar.sh | bash</code>
           </pre>
           <p>
-            Esse comando remove o bloqueio de download apenas do NOSSOM. Depois, tente abrir
-            novamente. Se o Terminal disser que o arquivo não existe, confira se o aplicativo foi
-            movido para Aplicativos. Você também pode continuar pelo navegador abaixo.
+            Ele escolhe a versão do seu Mac (Apple Silicon ou Intel), coloca o NOSSOM em Aplicativos
+            e abre. Para atualizar, rode o mesmo comando. Você também pode continuar pelo navegador
+            abaixo.
           </p>
         </details>
       </section>
