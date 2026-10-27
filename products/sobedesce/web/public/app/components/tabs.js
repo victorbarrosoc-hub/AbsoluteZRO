@@ -1,7 +1,10 @@
-// Abas do app (embaixo, como no iOS): Início (o botão de enviar, atalhos e a fila; violeta), Drive (azul), Aparelhos (no
+// Abas do app (embaixo, como no iOS): Z (a IA da Absolute ZRO, a primeira e a tela de entrada; pedido do titular,
+// 27/10/2026), Início (o botão de enviar, atalhos e a fila; violeta), Drive (azul), Aparelhos (no
 // meio e em destaque: mandar e receber pelo Wi-Fi), Referências (para quem tem o recurso) e Criar (Frames e as outras
 // ferramentas do computador, adaptadas ao celular).
 // No modo Wi-Fi não há abas: lá o celular não tem token do Google.
+// A aba Z aparece sempre, com o estado de login dela; sem Drive pronto (`pronto` falso), as outras abas mostram a tela
+// da conta (entrar, conectar, escolher ou reconectar o Drive).
 import { html, useRef } from '../vendor/preact-htm.js'
 import { setTab, useApp } from '../lib/state.js'
 import { engine, summarize } from '../lib/uploader.js'
@@ -13,6 +16,8 @@ import { RefsScreen } from './referencias.js'
 import { CriarScreen } from './criar.js'
 import { AparelhosScreen } from './aparelhos.js'
 import { useP2pAviso } from './p2p.js'
+import { AccountScreen } from './account.js'
+import { ZScreen } from './z.js'
 import { Calculadora } from './calculadora.js'
 
 function TabBar({ tab, refsOn }) {
@@ -20,7 +25,11 @@ function TabBar({ tab, refsOn }) {
   const sum = summarize(engine.items)
   const busy = sum.pending > 0
   const aviso = useP2pAviso()
-  return html`<nav class="tabbar" aria-label="Seções">
+  return html`<nav class=${cx('tabbar', refsOn && 'n-6')} aria-label="Seções">
+    <button type="button" class=${cx('tab', 'tab-z', tab === 'z' && 'is-on')} aria-current=${tab === 'z' ? 'page' : undefined} onClick=${() => setTab('z')} title="A Z, a IA da Absolute ZRO">
+      <span class="tab-icon"><${Icon} name="z" size=${24} strokeWidth=${tab === 'z' ? 1.9 : 1.6} /></span>
+      <span class="tab-label">Z</span>
+    </button>
     <button type="button" class=${cx('tab', 'tab-up', tab === 'send' && 'is-on')} aria-current=${tab === 'send' ? 'page' : undefined} onClick=${() => setTab('send')}>
       <span class="tab-icon">
         <${Icon} name="home" size=${24} strokeWidth=${tab === 'send' ? 2 : 1.7} />
@@ -53,12 +62,19 @@ function TabBar({ tab, refsOn }) {
 }
 
 /** As telas ficam montadas (Drive e Referências só depois da primeira visita): trocar de aba não perde nada. */
-export function Tabs() {
+export function Tabs({ pronto = true }) {
   const { saved, refsOn } = useApp((s) => ({ saved: s.tab, refsOn: Boolean(s.recursos?.referencias) }))
   const tab = saved === 'refs' && !refsOn ? 'send' : saved
   const seen = useRef({})
   seen.current[tab] = true
+  if (!pronto)
+    return html`<div class="tabs">
+      <div class="tab-pane" hidden=${tab !== 'z'}><${ZScreen} /></div>
+      <div class="tab-pane" hidden=${tab === 'z'}><${AccountScreen} /></div>
+      <${TabBar} tab=${tab} refsOn=${refsOn} />
+    </div>`
   return html`<div class="tabs">
+    <div class="tab-pane" hidden=${tab !== 'z'}><${ZScreen} /></div>
     <div class="tab-pane" hidden=${tab !== 'send'}><${MainScreen} /></div>
     ${seen.current.drive ? html`<div class="tab-pane" hidden=${tab !== 'drive'}><${DriveScreen} active=${tab === 'drive'} /></div>` : null}
     ${seen.current.ap ? html`<div class="tab-pane" hidden=${tab !== 'ap'}><${AparelhosScreen} active=${tab === 'ap'} /></div>` : null}

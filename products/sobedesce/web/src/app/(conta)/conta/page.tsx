@@ -10,8 +10,8 @@ import { exigirUsuario } from "@/lib/auth/atual";
 import { listarDispositivos } from "@/lib/auth/sessao";
 import { NoComputador } from "@/components/conta/no-computador";
 import { InicioConta } from "@/components/conta/inicio";
-import { PainelZ } from "@/components/conta/painel-z";
 import { MenuConta } from "@/components/conta/menu";
+import { AbasConta } from "@/components/conta/abas";
 import { contaComSenha } from "@/lib/auth/contas";
 import { linksLigados } from "@/lib/auth/encerrar";
 import { ehAdmin } from "@/lib/admin";
@@ -56,7 +56,7 @@ export default async function Conta({ searchParams }: Props) {
   const drivesOk = contas.filter((c) => c.estado === "ok").length;
 
   return (
-    <Moldura larga tituloOculto titulo={`Olá, ${primeiroNome}`} acao={<MenuConta admin={admin} sair={false} />}>
+    <Moldura larga abas={<AbasConta atual="conta" />} titulo={`Olá, ${primeiroNome}`} acao={<MenuConta admin={admin} sair={false} />}>
       {q.aviso === "nao-fui-eu" ? (
         // "Não fui eu" dos e-mails de aviso: o passo a passo para tirar da conta quem não devia estar nela.
         <Aviso tom="erro" className="mb-10">
@@ -129,9 +129,6 @@ export default async function Conta({ searchParams }: Props) {
           </p>
         </Aviso>
       ) : null}
-
-      {/* A Z, a IA da Absolute ZRO, é o painel inicial (pedido do titular, 27/10/2026); o Início vem logo abaixo. */}
-      <PainelZ nome={primeiroNome} />
 
       <InicioConta
         drivesOk={drivesOk}

@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
       // Telas de conta e API não interessam a buscadores.
-      disallow: ["/api/", "/conta", "/dispositivo"],
+      disallow: ["/api/", "/conta", "/z", "/dispositivo"],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
   };

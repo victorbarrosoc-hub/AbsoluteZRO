@@ -13,8 +13,9 @@ const FICHAS = [
 ] as const;
 
 /**
- * A Z, a IA do ecossistema Absolute ZRO. Desde 27/10/2026 ela é o painel inicial da conta (components/conta/painel-z.tsx,
- * repasse em lib/zro/ia.ts): a seção diz que está no SOBEDESCE e leva à conta; "Conhecer a Z" fica como segunda ação.
+ * A Z, a IA do ecossistema Absolute ZRO. Desde 27/10/2026 ela tem aba própria, a primeira da área logada (/z,
+ * components/conta/painel-z.tsx, repasse em lib/zro/ia.ts): a seção diz que está no SOBEDESCE e leva à aba;
+ * "Conhecer a Z" fica como segunda ação.
  * Anel e estrela em public/z; a estrela fica sobre o tubo, às 3 horas (globals.css, .z-estrela).
  */
 export function ZSection() {
@@ -35,7 +36,7 @@ export function ZSection() {
               Z. Uma IA para todo o ecossistema.
             </h2>
             <p className="mt-3 text-[17px] leading-[1.5] text-pretty text-ink-2 sm:text-[19px]">
-              Tira dúvidas sobre descargas e entregas, logo na abertura da sua conta.
+              Tira dúvidas sobre descargas e entregas, numa aba só dela.
             </p>
             <ul className="mt-6 mb-7 flex flex-wrap justify-center gap-1.5 sm:justify-start sm:gap-2" aria-label="Como a Z funciona">
               {FICHAS.map(({ icon: Icone, texto, dica }) => (
@@ -46,7 +47,7 @@ export function ZSection() {
               ))}
             </ul>
             <div className="flex flex-wrap justify-center gap-3 sm:justify-start">
-              <Link href="/conta" className={buttonClasses({ variant: "primary", size: "md" })}>
+              <Link href="/z" className={buttonClasses({ variant: "primary", size: "md" })}>
                 Conversar com a Z
                 <ArrowRight aria-hidden="true" />
               </Link>

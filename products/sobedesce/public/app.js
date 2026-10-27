@@ -9,6 +9,7 @@ import { Button, Spinner } from './components/common.js'
 import { Sidebar } from './components/sidebar.js'
 import { TransfersScreen } from './components/transfers.js'
 import { PainelScreen } from './components/painel.js'
+import { ZScreen } from './components/z.js'
 import { DriveScreen } from './components/drive.js'
 import { ReferenciasScreen } from './components/referencias.js'
 import { FramesScreen } from './components/frames.js'
@@ -22,7 +23,7 @@ import { Toasts } from './components/toasts.js'
 import { OAuthWaitDialog } from './components/oauth-wait.js'
 import { abertura } from './lib/abertura.js'
 
-const TITLES = { painel: 'Início', transferencias: 'Transferências', drive: 'Drive', referencias: 'Referências', frames: 'Frames', comparar: 'Comparar', computadores: 'Dispositivos', cartoes: 'Cartões', ajustes: 'Ajustes', inicio: 'Primeiros passos' }
+const TITLES = { z: 'Z', painel: 'Início', transferencias: 'Transferências', drive: 'Drive', referencias: 'Referências', frames: 'Frames', comparar: 'Comparar', computadores: 'Dispositivos', cartoes: 'Cartões', ajustes: 'Ajustes', inicio: 'Primeiros passos' }
 
 function Splash({ error }) {
   return html`<div class="splash">
@@ -64,13 +65,17 @@ function Shell({ route }) {
     case 'transferencias':
       screen = html`<${TransfersScreen} />`
       break
+    case 'z':
+      screen = html`<${ZScreen} />`
+      break
     default:
       screen = html`<${PainelScreen} />`
   }
   // A tela nova entra com um movimento curto (a chave muda com a tela, não com a subpasta do Drive).
+  // A Z entra sem o movimento: transform num ancestral prende a gaveta de Conversas (position: fixed) à caixa.
   return html`<div class="shell">
     <${Sidebar} current=${route.name} />
-    <main class="main" id="main"><div class="tela-entra" key=${route.name}>${screen}</div></main>
+    <main class="main" id="main"><div class=${route.name === 'z' ? null : 'tela-entra'} key=${route.name}>${screen}</div></main>
   </div>`
 }
 
@@ -95,7 +100,7 @@ function App() {
     // Já tem Drive e alguém abriu #/inicio sem querer trocar a chave nem conectar um Drive local → Transferências.
     // Logo depois de entrar na conta, a tela fica para mostrar o "Pronto" (o botão Começar segue).
     const sub = route.parts[1]
-    if (!needsSetup && route.name === 'inicio' && sub !== 'chave' && sub !== 'local' && !justSignedIn && !keepWelcome.current) navigate('painel', { replace: true })
+    if (!needsSetup && route.name === 'inicio' && sub !== 'chave' && sub !== 'local' && !justSignedIn && !keepWelcome.current) navigate('z', { replace: true })
     if (needsSetup && route.name !== 'inicio') navigate('inicio', { replace: true })
   }, [status, needsSetup, route.name, route.parts[1], justSignedIn])
 

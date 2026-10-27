@@ -14,7 +14,7 @@ import { entrarComSenha, trocarNome, trocarSenha } from "@/lib/auth/contas";
 import { dentroDoLimite, MENSAGEM_LIMITE, REGRAS, registrarTentativa } from "@/lib/auth/limite";
 import { COOKIE_SESSAO, revogarDispositivo, revogarPorToken, revogarSessaoDe } from "@/lib/auth/sessao";
 import { pedirPrimeiraSenha, pedirRedefinicao, redefinirSenha } from "@/lib/auth/redefinir";
-import { voltaSegura } from "@/lib/auth/volta";
+import { destinoDeEntrada, voltaSegura } from "@/lib/auth/volta";
 import { depoisDaResposta } from "@/lib/depois";
 import { aprovar, buscarPedido, cancelar, lugarLegivel, normalizarCodigo } from "@/lib/dispositivo";
 import { avisarComputadorConectado } from "@/lib/email/avisos";
@@ -45,7 +45,7 @@ export async function acaoEntrar(_: EstadoForm, fd: FormData): Promise<EstadoFor
   if (!r.ok) return { erro: r.mensagem, valores: { email: texto(fd, "email") } };
   await gravarCookieSessao(r.token);
   await marcarAparelho(r.usuario.id, { via: "senha", avisar: true });
-  redirect(voltaSegura(texto(fd, "volta")));
+  redirect(destinoDeEntrada(voltaSegura(texto(fd, "volta"))));
 }
 
 /**

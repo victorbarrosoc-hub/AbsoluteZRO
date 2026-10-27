@@ -1,4 +1,13 @@
 /**
+ * Aba da Z, a IA da Absolute ZRO: a tela de entrada da área logada (pedido do titular, 27/10/2026). Quem só entrou,
+ * sem pedir outra página (volta padrão, "/conta"), cai nela; quem pediu uma página volta para ela.
+ */
+export const INICIO = "/z";
+export function destinoDeEntrada(volta: string): string {
+  return volta === "/conta" ? INICIO : volta;
+}
+
+/**
  * Parâmetro `volta` (para onde ir depois de entrar). Só caminho interno:
  * começa com "/", não com "//" nem "/\", sem esquema, sem quebra de linha.
  */

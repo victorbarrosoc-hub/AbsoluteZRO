@@ -4,7 +4,7 @@
  */
 import { COOKIE_APARELHO, conferirAparelho, opcoesCookieAparelho } from "@/lib/auth/aparelho";
 import { autenticar, COOKIE_SESSAO, criarSessao, opcoesCookieSessao } from "@/lib/auth/sessao";
-import { voltaSegura } from "@/lib/auth/volta";
+import { destinoDeEntrada, voltaSegura } from "@/lib/auth/volta";
 import { depoisDaResposta, type Depois } from "@/lib/depois";
 import { lerCookie, lugarDe, origemDoPedido, redirecionar, serializarCookie } from "@/lib/http";
 import { cookieSeguro } from "@/lib/site";
@@ -126,6 +126,6 @@ export async function callback(req: Request, depois: Depois = depoisDaResposta):
   }
   // No celular, quem só entrou (sem pedir outra página) vai direto para o envio.
   const celular = /iPhone|iPad|iPod|Android|Mobile/i.test(req.headers.get("user-agent") ?? "");
-  const destino = volta === "/conta" && celular ? "/app/" : volta;
+  const destino = volta === "/conta" && celular ? "/app/" : destinoDeEntrada(volta);
   return ir(destino, cookies);
 }
