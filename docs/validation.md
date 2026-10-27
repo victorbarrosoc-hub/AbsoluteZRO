@@ -1299,3 +1299,20 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   identidade e colisao sozinhas, todas verdes.
 - Telas (Playwright, 1440 e 390, claro e escuro, Absolute ZRO falsa, script do painel servido do repositório; 320 no
   celular do SOBEDESCE e 360 no Carro sem rolagem lateral). Não validado: com conta e chave reais, e dentro do Electron.
+
+## A Z no Google Drive, pelo SOBEDESCE (27/10/2026)
+
+- HUB: ferramentas `buscar_no_drive`, `listar_pasta_do_drive`, `procurar_versao_no_drive` (só leem) e
+  `pedir_ao_computador` (só com `confirmado_pela_pessoa` e um "sim" claro conferido no HUB, `confirmacaoClara`).
+  Pedido ao SOBEDESCE com `assinarPedidoDeApp` (JWT `zro-pedido+jwt`, 60 s, `jti`, `zro_pedido` = ação). Painel mostra
+  "Procurando no seu Drive…" (`rotulo` no evento `lendo`).
+- SOBEDESCE: `/api/zro/drive/{buscar,pasta,versao,computador}` conferem o JWT pela JWKS (cache), `iss`, `aud`, vida,
+  ação e uso único; conta pelo `contas_zro`; limite de 30 por pessoa em 10 min. O pedido ao computador é o mesmo
+  "Baixar como…" do celular (`pedidos_proxy` tipo `formato`).
+- Testes: raiz `npm test` 173/173 (novo `ia-drive.test.ts`: JWT na JWKS, aud, vida e typ; ferramenta contra
+  SOBEDESCE falso; confirmação), lint, format, typecheck e build ok. SOBEDESCE web: lint, typecheck, `npm test`
+  262/262 (novo `zro-drive.test.mts`: JWT ausente, vencido, de outro público, emissor, assinatura, ação ou
+  reapresentado; sem vínculo, sem Drive, sem acesso; `q` escapada; só metadados; pasta por nome, id e ordem; versão
+  pronta; pedido ao computador com e sem computador; limite) e build ok. `scan-secrets` limpo.
+- Não validado: Drive e conta reais (busca `fullText` e `webContentLink` do Google de verdade), o computador real
+  convertendo um arquivo fora de coleção, e `npm run test:e2e` (nenhum E2E cobre a Z).

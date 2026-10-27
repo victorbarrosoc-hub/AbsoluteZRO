@@ -147,6 +147,22 @@ export function verifyJwt(s: Signer, token: string, expect: { typ: string; issue
   }
 }
 
+/**
+ * Pedido servidor-a-servidor do HUB a um app da família, em nome de uma pessoa (a Z buscando no Drive pelo SOBEDESCE).
+ * Sem segredo compartilhado: JWT ES256 com a chave do login único (o app confere pelo /oauth/jwks), typ próprio (um
+ * id_token ou access token nunca passa por pedido), `aud` = client_id do app, `sub` = a pessoa, vida de 60 s, `jti`
+ * de uso único e `zro_pedido` = a ação (o app recusa pedido de outra ação).
+ */
+export const PEDIDO_TYP = 'zro-pedido+jwt'
+export const PEDIDO_TTL_S = 60
+
+export async function assinarPedidoDeApp(db: Database, p: { sub: string; aud: string; acao: string }, agora = Date.now()): Promise<string> {
+  if (!p.sub || !p.aud || !p.acao) throw new Error('Pedido de app sem sub, aud ou ação.')
+  const s = await loadSigner(db)
+  const iat = Math.floor(agora / 1000)
+  return signJwt(s, { iss: issuerFromEnv(), sub: p.sub, aud: p.aud, iat, exp: iat + PEDIDO_TTL_S, jti: randomUUID(), zro_pedido: p.acao }, PEDIDO_TYP)
+}
+
 export function discovery(issuer: string) {
   return {
     issuer,

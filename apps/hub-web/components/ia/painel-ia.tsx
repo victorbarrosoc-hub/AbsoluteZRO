@@ -192,11 +192,20 @@ export function PainelIa({
           const linha = resto.slice(0, n).trim()
           resto = resto.slice(n + 1)
           if (!linha) continue
-          const ev = JSON.parse(linha) as { tipo: string; id?: string; titulo?: string; t?: string; o_que?: string; mensagem?: string; creditos?: number }
+          const ev = JSON.parse(linha) as {
+            tipo: string
+            id?: string
+            titulo?: string
+            t?: string
+            o_que?: string
+            rotulo?: string
+            mensagem?: string
+            creditos?: number
+          }
           if (ev.tipo === 'conversa' && ev.id) {
             setAtiva(ev.id)
           } else if (ev.tipo === 'lendo') {
-            setLendo(`Lendo ${ev.o_que ?? 'seus dados'}…`)
+            setLendo(ev.rotulo ?? `Lendo ${ev.o_que ?? 'seus dados'}…`)
           } else if (ev.tipo === 'texto' && ev.t) {
             setLendo(null)
             escrever((s) => s + ev.t)

@@ -724,7 +724,7 @@ class ZroIa extends HTMLElement {
           const ev = JSON.parse(linha)
           if (ev.tipo === 'conversa') this.s.ativa = ev.id
           else if (ev.tipo === 'lendo') {
-            this.s.lendo = `Lendo ${ev.o_que || 'seus dados'}…`
+            this.s.lendo = typeof ev.rotulo === 'string' && ev.rotulo ? ev.rotulo.slice(0, 80) : `Lendo ${ev.o_que || 'seus dados'}…`
             pintar()
           } else if (ev.tipo === 'texto') {
             this.s.lendo = null
