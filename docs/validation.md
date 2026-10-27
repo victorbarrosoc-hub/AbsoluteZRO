@@ -202,6 +202,12 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   (mesmas rotas, chaves e CSP) antes da produção.
 - Login único nas cinco: `/api/zro/entrar` de cada domínio leva ao HUB; apps marcados como da família.
 
+## Carro do Freela: sem selo no topo e símbolo flat no login (27/10/2026)
+
+- Carro, bateria completa (`npm test`, Chromium 1243): **87/87** em 20,5 min; `sem-zoom` falhou em paralelo e passou
+  sozinha (regra do `run.js`). Conferido em tela a 390 px: barra de cima sem o selo "Prévia", "Prévia" no pé da home e
+  o "Continuar com Absolute ZRO" com o símbolo flat (SVG, cor do texto). `scripts/scan-secrets.mjs` limpo.
+
 ## Carro do Freela → HUB: job, equipe e consentimento (26/10/2026)
 
 - HUB, raiz: `npm run lint`, `format:check`, `typecheck` limpos; `npm test` (Postgres 16 local) **150/150**, com

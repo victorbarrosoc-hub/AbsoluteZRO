@@ -327,8 +327,8 @@ const PRE=pg=>pg.addInitScript(()=>{ try{
     /* (17/out · 5) A PRÉVIA SE DECLARA NUM LUGAR SÓ. Victor: "tira as mensagens
      de protótipo". O banner desta tela saiu; quem diz o que é ilustrativo é o
      selo "Prévia" ao lado da marca — e é ele que esta asserção cobra. */
-    t(await p.locator('#h-jogo .hp-nota').count()===0&&await p.locator('.homenav [data-previa]').isVisible(),
-      '⟶⟶ o cartão não repete aviso — a prévia está dita no selo da barra');
+    t(await p.locator('#h-jogo .hp-nota').count()===0&&await p.locator('#v-home .fim-prev').count()===1,
+      '⟶⟶ o cartão não repete aviso — a prévia está dita no pé da home');
     const dentro=await p.locator('#h-jogo').textContent();
     t(!/R\$|\(\d{2}\)|@/.test(dentro),'sem diária, telefone ou perfil de rede na prévia — isso fica do lado de dentro');
 

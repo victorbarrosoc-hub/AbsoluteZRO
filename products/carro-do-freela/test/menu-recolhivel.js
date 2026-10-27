@@ -36,7 +36,7 @@ const ok=[],bad=[]; const t=(c,m)=>(c?ok:bad).push(m);
     const tog=document.getElementById('lado-tog').getBoundingClientRect();
     const quem=document.elementFromPoint(tog.right-4,tog.top+tog.height/2);
     const at=nav.querySelector('.tab[aria-current="true"]:not([hidden])'), ind=nav.querySelector('.tabind');
-    const seal=document.querySelector('.top .selo-prev').getBoundingClientRect();
+    const seal=document.querySelector('.top .brand').getBoundingClientRect(); /* o selo Prévia saiu do topo (27/out): a marca é o vizinho */
     const menu=document.getElementById('menu-bt').getBoundingClientRect();
     return {min:document.documentElement.classList.contains('lado-min'),
       lado:getComputedStyle(document.documentElement).getPropertyValue('--lado').trim(),

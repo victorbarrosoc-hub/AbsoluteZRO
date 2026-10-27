@@ -195,8 +195,8 @@ const SONDA = () => {
   /* ⚠️ ESTE CONTEXTO É UMA PRIMEIRA VISITA DE VERDADE — sem `cdf-pv` no
      armazenamento, que é como a pessoa abre o site. Desde 17/out · 5 nada
      abre sozinho por cima da home: a prévia se declara no selo. */
-  t(await a.p.locator('#ovl-pv').isHidden()&&await a.p.locator('.homenav [data-previa]').isVisible(),
-    'depois do véu, nenhum aviso abre sozinho — a prévia está dita no selo ao lado da marca');
+  t(await a.p.locator('#ovl-pv').isHidden()&&!await a.p.locator('.homenav [data-previa]').count()&&await a.p.locator('#v-home .fim-prev').count()===1,
+    'depois do véu, nenhum aviso abre sozinho — a prévia está dita no pé da home (o selo saiu do topo em 27/out)');
   await a.p.locator('.homenav .entrar-cta').click();
   await a.p.waitForTimeout(250);
   t(await a.p.locator('#v-entrar').isVisible(),

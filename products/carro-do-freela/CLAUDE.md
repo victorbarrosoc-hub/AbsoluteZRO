@@ -59,6 +59,11 @@ mudou de significado — hoje ela descreve um lugar que está vazio de propósit
    legal) e o que sobe no convite de lançamento (é dado pessoal). Tirar o
    selo também seria apresentar gente fictícia como real num domínio
    público — isso não se faz sem conversar.
+   **27/out, pedido do Victor:** o selo saiu da **barra de cima** (home e
+   topo do app). A prévia continua se declarando, e abrindo o mesmo resumo,
+   em três lugares: o **"Prévia" no pé da home** (`.fim-prev`), a etiqueta
+   no topo do **menu** (`.mn-tag`) e o "prévia" do **rodapé do app**. As
+   suítes cobram esses lugares e cobram que a barra de cima fique sem selo.
 
 Se for gerar imagem, texto de exemplo ou número: **derive dos dados ou deixe
 claro que é demonstração** (desde 17/out · 5, "deixar claro" é o selo
@@ -8470,3 +8475,13 @@ Próximos passos que ele conhece e ainda não priorizou:
 - Screenshot do Playwright é a forma de conferir o resultado. Asserção que passa
   não garante que a tela está certa: o botão de remover já ficou como caixa
   branca do browser com todos os testes verdes.
+
+## 27/out · 1 — sem selo na barra de cima, e o símbolo novo no "Continuar com Absolute ZRO"
+
+Pedido do Victor, com print do celular:
+- **"Tira o botão de prévia de cima do site."** Os dois `.selo-prev` (home e topo do app) saíram, com o CSS deles.
+  Sem selo, a home não dizia em lugar nenhum que é prévia (o `#rodape` some na home), então o pé da home ganhou um
+  "Prévia" discreto ao lado de Como funciona · Recursos · Planos (`.fim-prev`, mesmo `data-previa`). Ver a regra nº 6.
+- **O botão "Continuar com Absolute ZRO" usava o feixe de luz antigo** (`zro-simbolo.webp`, apagado). Agora é o
+  símbolo flat da raiz (ADR 0017): SVG embutido, uma cor só (`currentColor`, a do texto do botão), geometria copiada
+  de `packages/ui/src/marca.ts`. As outras plataformas já usavam o flat ou não têm ícone no botão.

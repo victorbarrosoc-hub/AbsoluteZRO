@@ -60,7 +60,7 @@ const PRE=pg=>pg.addInitScript(()=>{ try{
         prem, det:PLANO_DET.premium,
         cortados:prem.filter(x=>/Recibo e contrato|apareceu em busca|Clube de desconto/i.test(x)),
         nasceu:(document.querySelector('.hnasceu')||{}).textContent||'',
-        selo:!!document.querySelector('.homenav [data-previa]'),
+        selo:!!document.querySelector('#v-home .fim-prev')&&!document.querySelector('.homenav [data-previa]'),
         resumo:(document.getElementById('pv-bem')||{}).textContent||''};
     });
     t(!r.reais,'⟶⟶ nenhum texto diz que os cadastros são reais — a lista é fictícia desde 13/set');
