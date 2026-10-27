@@ -165,6 +165,10 @@ navegador**. O arquivo não sai do aparelho.
 - No computador, "Salvar direto numa pasta" grava em pedaços no disco (File System Access). Sem isso, o arquivo é
   montado na memória: no celular, até ~1,5 GB de saída (a tela avisa acima disso).
 - HDR, primárias diferentes de Rec.709 e mais de 60 fps geram aviso: essas versões saem do Resolve.
+- Redução na placa de vídeo (`app/escala-gpu.js`): quando a saída é menor que o arquivo (4K → 720p), o quadro sobe
+  como textura WebGL2, a placa faz os mipmaps e desenha no tamanho final, com a rotação do celular. Só com GPU de
+  verdade: em WebGL de software (SwiftShader, llvmpipe) o canvas 2D do Mediabunny é mais rápido e fica ele. Para
+  comparar: `converter.html?escala=canvas` (caminho antigo) e `?escala=gpu` (força a placa).
 
 Bibliotecas em `vendor/` (copiadas por `npm run vendor`, teste confere a cópia): Mediabunny e
 `@mediabunny/prores` 1.62.1, MPL-2.0 (mediabunny.dev), sem alteração além do caminho de import.

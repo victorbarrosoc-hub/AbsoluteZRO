@@ -6,7 +6,7 @@ import { aparar, dividir, duracao, fonteParaLinha, Historico, juntarContinuos, l
 import { envelope, niveis, silencios } from '../src/analise/silencio.js'
 import { foraDasPalavras, frases, proporCortes, proporZooms, resumo } from '../src/propostas.js'
 import { prepararPreset } from '../src/preset.js'
-import { abrir, aprovar, editarPalavra, comPropostas, comTranscricao, novoProjeto, numeros, palavrasNaLinha, recusar, salvar } from '../src/projeto.js'
+import { abrir, aprovar, editarPalavra, comPropostas, comTranscricao, novoProjeto, numeros, removerMidia, palavrasNaLinha, recusar, salvar } from '../src/projeto.js'
 import { agrupar, blocoEm, srt, vtt } from '../src/legenda.js'
 import { recorte, transformCss, zoomEm } from '../src/quadro.js'
 import { readFileSync } from 'node:fs'
@@ -251,4 +251,27 @@ test('cores e etiquetas: etiquetar clipes, listar para o filtro e manter ao divi
   const p = { midias: [{ id: 'm1', cor: 'azul' }] }
   assert.equal(corDoClipe(p, l.clipes[0]), 'azul')
   assert.equal(corDoClipe(p, l.clipes[1]), 'verde')
+})
+
+test('tirar mídia do projeto leva junto clipes, transcrição, propostas e correções; desfazer volta', () => {
+  const a = { id: 'a', nome: 'a.mov', duracao: 4, fps: 30, largura: 1920, altura: 1080, temVideo: true, temAudio: true }
+  const b = { id: 'b', nome: 'b.mov', duracao: 2, fps: 30, largura: 1920, altura: 1080, temVideo: true, temAudio: true }
+  let p = novoProjeto({ midias: [a, b] })
+  p = comTranscricao(p, 'a', { palavras: [{ texto: 'oi', ini: 0, fim: 0.5 }] })
+  p = comPropostas(p, [{ id: 'x', tipo: 'silencio', midia: 'a', ini: 1, fim: 2, estado: 'pendente' }, { id: 'y', tipo: 'silencio', midia: 'b', ini: 0.5, fim: 1, estado: 'pendente' }], ['silencio'])
+  p = editarPalavra(p, 'a', 0, 'olá')
+  const h = new Historico(p)
+  h.fazer(removerMidia(p, 'a'), 'tirar mídia')
+  const q = h.atual
+  assert.deepEqual(q.midias.map((m) => m.id), ['b'])
+  assert.ok(q.linha.clipes.every((c) => c.midia === 'b'))
+  assert.equal(duracao(q.linha), paraQuadros(2, q.fps))
+  assert.equal(q.transcricoes.a, undefined)
+  assert.deepEqual(q.propostas.map((x) => x.id), ['y'])
+  assert.equal(q.legenda.textos.a, undefined)
+  assert.equal(removerMidia(q, 'nao-existe'), q)
+  assert.deepEqual(removerMidia(p, ['a', 'b']).midias, [])
+  assert.deepEqual(removerMidia(p, ['a', 'b']).linha.clipes, [])
+  h.desfazer()
+  assert.deepEqual(h.atual.midias.map((m) => m.id), ['a', 'b'])
 })

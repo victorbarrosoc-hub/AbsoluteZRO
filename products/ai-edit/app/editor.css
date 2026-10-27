@@ -772,11 +772,109 @@ svg {
   gap: 16px;
 }
 .cartao-midia {
+  position: relative;
   border-radius: var(--raio);
   background: var(--surface);
   border: 1px solid var(--line);
   overflow: hidden;
   animation: surgir 0.45s var(--mola) both;
+}
+.tirar-midia {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  backdrop-filter: blur(12px) saturate(1.4);
+  box-shadow: var(--pill-rim);
+  color: var(--text-strong);
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.9);
+  transition:
+    opacity 0.2s,
+    transform 0.25s var(--mola);
+}
+.tirar-midia svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.cartao-midia:hover .tirar-midia,
+.tirar-midia:focus-visible {
+  opacity: 1;
+  transform: none;
+}
+@media (hover: none) {
+  .tirar-midia {
+    opacity: 1;
+    transform: none;
+  }
+}
+.cartao-midia.selecionavel {
+  cursor: pointer;
+  user-select: none;
+  transition:
+    transform 0.25s var(--mola),
+    box-shadow 0.2s;
+}
+.cartao-midia.selecionavel:active {
+  transform: scale(0.98);
+}
+.cartao-midia.marcada {
+  box-shadow:
+    inset 0 3px 0 var(--c, transparent),
+    0 0 0 3px var(--text-strong);
+}
+.cartao-midia.selecionavel:focus-visible {
+  outline: 2px solid var(--text-strong);
+  outline-offset: 3px;
+}
+.check-midia {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: rgba(0, 0, 0, 0.28);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  color: transparent;
+  transition:
+    background 0.2s,
+    transform 0.25s var(--mola);
+}
+.check-midia svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.marcada .check-midia {
+  background: var(--text-strong);
+  border-color: var(--text-strong);
+  color: var(--surface);
+  transform: scale(1.06);
+}
+.contagem-sel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-mute);
+  font-variant-numeric: tabular-nums;
 }
 .cartao-mini {
   aspect-ratio: 16 / 9;

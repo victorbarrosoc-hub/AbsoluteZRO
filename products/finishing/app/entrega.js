@@ -167,7 +167,7 @@ function spec(rotulo, valor, sub) {
 const audioNome = (a) => (a.codec === 'lpcm' ? `PCM ${a.bits} bits` : `${a.codec.toUpperCase()} ${a.kbps}`)
 
 function baixar(d) {
-  const url = URL.createObjectURL(new Blob([gerarScript(d)], { type: 'text/x-python' }))
+  const url = URL.createObjectURL(new Blob([gerarScript(d)], { type: 'application/octet-stream' }))
   const link = el('a', { href: url, download: nomeScript(d) })
   document.body.append(link)
   link.click()

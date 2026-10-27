@@ -674,6 +674,24 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   nonce, emissor, público e assinatura, login desligado → 503) e o teste de tela "só com conta" (sem sessão o editor vai
   para `entrar.html?volta=/app/`; com sessão o menu mostra a pessoa).
 
+## AEON: tirar mídia, selecionar várias, editor completo e homepage nova (26–27/10/2026)
+
+- Tirar mídia: `test/nucleo.test.js` (some a mídia, os clipes, a transcrição, as propostas e as correções; uma ou
+  várias; desfazer devolve) e a tela "projeto novo" (× no cartão, Selecionar → marcar duas → Tirar do projeto → ⌘Z).
+- Atualização pelo app: fica a da main (`desktop/atualizador.cjs`, "Versão nova · Atualizar"); uma segunda versão
+  feita em paralelo (atualização ao fechar o app) saiu para não ter dois atualizadores.
+- Instalador do Terminal conferido de ponta a ponta com os comandos do Mac simulados no Linux (build 8 baixado,
+  SHA-256 conferido, `AEON.app` em Aplicativos). No Mac de verdade parou em `NOME?: unbound variable`: o bash 3.2 lê o
+  "…" colado em `$NOME` como parte do nome. Variável colada em caractere não ASCII vai entre chaves e
+  `test/instalacao.test.js` confere o arquivo inteiro. Não validado: o bash 3.2 rodando aqui.
+- Site: download direto com o passo da quarentena, 390 px sem rolagem lateral. Homepage: topo na tela toda no
+  computador, cenas que se dissolvem no fundo, MacBook que abre, números que contam e três demonstrações ao vivo
+  (rodam só na tela; paradas com "reduzir movimento"); conferida em 1440×900 (claro e escuro) e 390×844.
+- Posicionamento (titular, 26/10/2026): o AEON é editor completo e a IA é ajuda opcional. Textos do site, do app, do
+  HUB (linha do catálogo, página do projeto, migration 0014 para descrição e papel no fluxo) e regras do produto
+  (`products/ai-edit/CLAUDE.md`). Downloads do HUB: AEON com Mac, Windows e navegador; `/baixar/mac` e
+  `/baixar/windows` do site redirecionam para o Release (regra de "instalador pela rota /baixar do site" conferida).
+
 ## Página inicial de cinema (26/10/2026, estrutura escolhida pelo titular)
 
 - Topo: paisagem em preto e branco com o símbolo esculpido em metal sobre a rocha, gerada no Higgsfield (GPT Image
@@ -823,6 +841,22 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   dourado, branco neutro, sombra neutra; Petróleo segue com sombra fria) e Chromium (clone → salvar → outra visita →
   grade com 6 looks → baixar `revela-zro-filmes-33.cube` → apagar). `products/finishing`: `npm test` 96/96.
 - Não validado: o `.cube` do look novo e de um "meu look" no Resolve, em vídeo.
+
+## Revela no celular: .cube, tela do Converter, login e conversão (27/10/2026)
+
+- `.cube` baixava como `.cube.txt` no iPhone: o Safari põe `.txt` em arquivo `text/plain`. Downloads de `.cube` e
+  `.py` agora saem como `application/octet-stream` (teste confere que nenhum download usa `text/*`).
+- Converter no celular: um nome de arquivo comprido alargava a grade da fila (trilha `auto` cresce até o texto
+  inteiro), a página passava de 390 para 604 px, cortava à esquerda e a marca do dock caía entre duas abas. Fila e
+  corpo do item com `minmax(0, 1fr)`; a marca também segue o dock por `ResizeObserver`.
+- Login: a fileira "Uma conta para" ganhou AEON e Absolute ZRO.
+- Velocidade: no caminho antigo o Mediabunny reduz 4K → 720p num canvas 2D, que no Safari tende a copiar o quadro
+  para a CPU. Novo `app/escala-gpu.js` reduz em WebGL2 (mipmaps, rotação do celular, contain/fill) quando há GPU de
+  verdade. No contêiner de teste (SwiftShader, sem GPU) o caminho novo é ~5× mais lento que o canvas (30 s × 6,5 s
+  num 4K de 4 s), por isso só liga com placa de vídeo real. Teste no Chromium: vídeo 1080p girado 90° convertido para
+  720p pela GPU e pelo canvas dá o mesmo quadro (diferença média 0,66 em 255; com a rotação trocada, 116).
+  `products/finishing`: `npm test` 98/98.
+- Não medido: tempo de conversão num iPhone real (aqui não há aparelho).
 
 ## Página inicial: faixa das ferramentas (26/10/2026)
 

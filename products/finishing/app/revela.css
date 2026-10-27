@@ -1065,12 +1065,15 @@ details[open] summary::after {
   margin: 12px 0 0;
   padding: 0;
   display: grid;
+  /* minmax(0, …): o nome comprido de um arquivo não alarga a página no celular */
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
 }
 .fila:empty {
   display: none;
 }
 .item {
+  min-width: 0;
   display: grid;
   grid-template-columns: 112px minmax(0, 1fr) auto;
   gap: 14px;
@@ -1114,6 +1117,7 @@ details[open] summary::after {
 }
 .item-corpo {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
   min-width: 0;
 }

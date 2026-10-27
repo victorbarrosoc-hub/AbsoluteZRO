@@ -1,7 +1,7 @@
 # Editor da Absolute ZRO (nome provisório "AI Edit")
 
-**Estado: prévia funcional, ainda não lançada.** App de desktop para Mac e Windows, no molde do Synquei. **A IA propõe,
-você aprova.** Fase 4 do PRD (§8 Synquei → AI Edit, §13); decisões no
+**Estado: prévia funcional, ainda não lançada.** App de desktop para Mac e Windows, no molde do Synquei. **Editor completo: a pessoa monta o
+projeto do começo ao fim; a IA ajuda quando ela quiser.** Fase 4 do PRD (§8 Synquei → AI Edit, §13); decisões no
 [ADR 0020](../../docs/decisions/0020-editor-desktop-custo-zero.md) (desktop, custo zero, IA na máquina).
 
 O nome vive só em [`src/produto.js`](src/produto.js) e as cores em `app/editor.css` (`--produto`, `--cor-*`): o

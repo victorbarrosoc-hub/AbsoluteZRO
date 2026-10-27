@@ -121,7 +121,7 @@ $('baixar').addEventListener('click', async () => {
   await new Promise((r) => requestAnimationFrame(() => setTimeout(r)))
   const cst = atual()
   const texto = escreverCube(assar(cst.aplicar, tamanho), `Revela CST - ${cst.de.nome} para ${cst.para.nome}`)
-  const url = URL.createObjectURL(new Blob([texto], { type: 'text/plain' }))
+  const url = URL.createObjectURL(new Blob([texto], { type: 'application/octet-stream' }))
   const a = document.createElement('a')
   a.href = url
   a.download = `revela-cst-${$('entrada').value}-para-${$('saida').value}-${tamanho}.cube`
@@ -140,7 +140,7 @@ $('baixar').addEventListener('click', async () => {
 let aparelhos = []
 
 function baixarArquivo(texto, nome) {
-  const url = URL.createObjectURL(new Blob([texto], { type: 'text/plain' }))
+  const url = URL.createObjectURL(new Blob([texto], { type: 'application/octet-stream' }))
   const a = document.createElement('a')
   a.href = url
   a.download = nome

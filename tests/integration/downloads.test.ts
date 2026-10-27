@@ -26,7 +26,8 @@ describe('downloads', () => {
         expect(OFFICIAL.has(u.hostname), o.href).toBe(true)
         expect(u.hostname, o.href).not.toMatch(/github(usercontent)?\.com$/)
       }
-      for (const cmd of Object.values(d.terminal ?? {})) expect(cmd).toMatch(/https:\/\/(sobedesce|synquei|nossom-teal)\.vercel\.app\/instalar\.(sh|ps1)/)
+      for (const cmd of Object.values(d.terminal ?? {}))
+        expect(cmd).toMatch(/https:\/\/((sobedesce|synquei|nossom-teal)\.vercel\.app|aeon\.absolutezro\.com)\/instalar\.(sh|ps1)/)
     }
   })
 

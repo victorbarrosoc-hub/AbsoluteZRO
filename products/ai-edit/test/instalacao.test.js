@@ -54,3 +54,10 @@ test('electron-builder tira nome, id e arquivos do produto', async () => {
   assert.equal(c.mac.identity, '-', 'custo zero: assinatura ad-hoc')
   for (const p of ['app/**/*', 'src/**/*', 'vendor/**/*', 'desktop/**/*', 'presets/**/*.json']) assert.ok(c.files.includes(p), p)
 })
+
+test('instalar.sh roda no bash 3.2 do Mac: variável colada em acento ou "…" vai entre chaves', () => {
+  // o bash 3.2 lê o primeiro byte do "…" como parte do nome: "$NOME…" virava a variável "NOME?" (unbound variable)
+  const sh = readFileSync(new URL('../instalar.sh', import.meta.url), 'utf8')
+  const ruins = sh.split('\n').filter((l) => /\$[A-Za-z_][A-Za-z0-9_]*[^\x00-\x7F]/.test(l))
+  assert.deepEqual(ruins, [])
+})

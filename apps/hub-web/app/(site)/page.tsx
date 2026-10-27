@@ -19,7 +19,7 @@ const LINE: Record<string, string> = {
   tpeasy: 'Teleprompter',
   sobedesce: 'Cópia e backup conferidos',
   synquei: 'Organização e sincronia',
-  'ai-edit': 'Edição com IA',
+  'ai-edit': 'Edição de vídeo',
   nossom: 'Tratamento de som',
   finishing: 'Cor e entrega',
 }

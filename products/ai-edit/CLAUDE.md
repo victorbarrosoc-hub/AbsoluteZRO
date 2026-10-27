@@ -6,8 +6,11 @@ Leia antes: as regras da raiz ([../../CLAUDE.md](../../CLAUDE.md)), este README 
 ## O que é
 
 Editor de vídeo de desktop (Mac e Windows) no molde do Synquei: a página de `app/` dentro do Electron, servida por um
-protocolo próprio. **A IA propõe, você aprova**: o Whisper transcreve na máquina da pessoa; cortes de silêncio e respiro e
-zoom na fala saem de regras do preset versionado (`presets/`); nada entra na edição sem aprovação.
+protocolo próprio. **Editor completo** (titular, 26/10/2026): a pessoa edita um projeto do começo ao fim sem IA nenhuma
+(importar, montar, cortar, aparar, mover, ajustar, legendar, exportar), e usa as outras ferramentas do ecossistema na
+mesma conta (SOBEDESCE para descarregar, Synquei, Revela, NOSSOM). **A IA é ajuda opcional**: o Whisper transcreve na
+máquina da pessoa; cortes de silêncio e respiro e zoom na fala saem de regras do preset versionado (`presets/`) e só
+entram na edição com aprovação. Nunca apresente o AEON como "só de IA".
 
 ## Proibições
 

@@ -9,8 +9,8 @@ export const PRODUTO = Object.freeze({
   assinatura: 'by Absolute ZRO',
   /** frase da marca (fica em inglês, como no material do titular) */
   frase: 'Time is yours.',
-  /** o que o produto faz, em uma linha */
-  promessa: 'A IA propõe. Você aprova.',
+  /** o que o produto faz, em uma linha: editor completo; a IA é ajuda opcional (titular, 26/10/2026) */
+  promessa: 'Edite do começo ao fim. A IA ajuda quando você quiser.',
   /** protocolo interno do app de desktop (aeon://app/...) e prefixo de arquivos */
   esquema: 'aeon',
   arquivo: 'AEON',
