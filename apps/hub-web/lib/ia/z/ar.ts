@@ -13,6 +13,8 @@ export type CenaZ = 'calma' | 'ouvindo' | 'pensando' | 'respondendo' | 'pronta' 
 const FORCA: Record<CenaZ, number> = { calma: 0.22, ouvindo: 0.5, pensando: 1, respondendo: 0.6, pronta: 0.3, desligada: 0 }
 const VIDA_RASTRO = 1100
 const FIOS = 46
+/** Faixas de transparência do rastro e dos fios: cada faixa é um caminho só. */
+const FAIXAS = 6
 
 type Ponto = { x: number; y: number }
 type Corrente = { a: number; r: number; pts: Ponto[]; vida: number; ritmo: number }
@@ -91,8 +93,6 @@ export class ArZ {
     const escuro = estilo.colorScheme.includes('dark') || luz(estilo.color) > 0.5
     const cor = escuro ? '255,255,255' : '58,64,78'
     ctx.lineCap = 'round'
-    ctx.shadowBlur = escuro ? 6 : 0
-    ctx.shadowColor = 'rgba(255,255,255,.35)'
 
     // rastro: o anel cobre o caminho da estrela, então o traço corre por fora e por dentro do tubo (Z grande só)
     if (R > 24) {
@@ -100,20 +100,25 @@ export class ArZ {
       const ult = this.trilha[this.trilha.length - 1]
       if (!ult || Math.abs(a - ult.a) > 0.004) this.trilha.push({ a, t: agora })
       this.trilha = this.trilha.filter((q) => agora - q.t < VIDA_RASTRO)
+      // o traço em 6 faixas de idade, um caminho por faixa (poucos desenhos por quadro)
       for (const [raio, peso] of [
         [1.24, 1],
         [0.76, 0.6],
       ] as const)
-        for (let i = 1; i < this.trilha.length; i++) {
-          const k = 1 - (agora - this.trilha[i]!.t) / VIDA_RASTRO,
-            a0 = this.trilha[i - 1]!.a,
-            a1 = this.trilha[i]!.a
-          if (Math.abs(a1 - a0) > 1) continue
+        for (let f = 0; f < FAIXAS; f++) {
+          const k = 1 - (f + 0.5) / FAIXAS
           ctx.strokeStyle = `rgba(${cor},${(0.9 * peso * k * k).toFixed(3)})`
           ctx.lineWidth = (0.6 + 3 * k * k) * peso
           ctx.beginPath()
-          ctx.moveTo(cx + Math.cos(a0) * R * raio, cy + Math.sin(a0) * R * raio)
-          ctx.lineTo(cx + Math.cos(a1) * R * raio, cy + Math.sin(a1) * R * raio)
+          for (let i = 1; i < this.trilha.length; i++) {
+            const idade = (agora - this.trilha[i]!.t) / VIDA_RASTRO
+            if (Math.min(FAIXAS - 1, Math.floor(idade * FAIXAS)) !== f) continue
+            const a0 = this.trilha[i - 1]!.a,
+              a1 = this.trilha[i]!.a
+            if (Math.abs(a1 - a0) > 1) continue
+            ctx.moveTo(cx + Math.cos(a0) * R * raio, cy + Math.sin(a0) * R * raio)
+            ctx.lineTo(cx + Math.cos(a1) * R * raio, cy + Math.sin(a1) * R * raio)
+          }
           ctx.stroke()
         }
     }
@@ -152,15 +157,20 @@ function luz(css: string) {
   return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
 }
 
-/** Um fio a partir do histórico de pontos: fino e transparente na cauda, mais firme na cabeça. */
+/** Um fio a partir do histórico de pontos: fino e transparente na cauda, mais firme na cabeça, em poucas faixas. */
 function fio(ctx: CanvasRenderingContext2D, pts: Ponto[], cor: string, alfa: number, largura: number) {
-  for (let i = 1; i < pts.length; i++) {
-    const k = i / (pts.length - 1)
+  const n = pts.length
+  if (n < 2) return
+  for (let f = 0; f < FAIXAS; f++) {
+    const i0 = Math.floor(((n - 1) * f) / FAIXAS),
+      i1 = Math.floor(((n - 1) * (f + 1)) / FAIXAS)
+    if (i1 <= i0) continue
+    const k = (f + 1) / FAIXAS
     ctx.strokeStyle = `rgba(${cor},${(alfa * k * k).toFixed(3)})`
     ctx.lineWidth = largura * (0.35 + 0.65 * k)
     ctx.beginPath()
-    ctx.moveTo(pts[i - 1]!.x, pts[i - 1]!.y)
-    ctx.lineTo(pts[i]!.x, pts[i]!.y)
+    ctx.moveTo(pts[i0]!.x, pts[i0]!.y)
+    for (let i = i0 + 1; i <= i1; i++) ctx.lineTo(pts[i]!.x, pts[i]!.y)
     ctx.stroke()
   }
 }
