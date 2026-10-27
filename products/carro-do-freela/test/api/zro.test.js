@@ -35,6 +35,7 @@ before(async () => {
     '/api/zro/callback': require(path.join(RAIZ, 'api', 'zro', 'callback.js')),
     '/api/zro/eu': require(path.join(RAIZ, 'api', 'zro', 'eu.js')),
     '/api/zro/sair': require(path.join(RAIZ, 'api', 'zro', 'sair.js')),
+    '/api/zro/enviar': require(path.join(RAIZ, 'api', 'zro', 'enviar.js')),
   };
   app = http.createServer((req, res) => {
     const fn = rotas[new URL(req.url, 'http://x').pathname];
@@ -99,7 +100,7 @@ test('a ida para o HUB: código + PKCE S256, escopos, nonce e retorno do própri
   assert.equal(destino.pathname, '/oauth/authorize');
   assert.equal(q.get('response_type'), 'code');
   assert.equal(q.get('client_id'), 'carrodofreela-web');
-  assert.equal(q.get('scope'), 'openid email profile org');
+  assert.equal(q.get('scope'), 'openid email profile org offline_access carro-do-freela.jobs');
   assert.equal(q.get('code_challenge_method'), 'S256');
   assert.match(q.get('code_challenge'), /^[A-Za-z0-9_-]{43}$/);
   assert.ok(q.get('nonce') && q.get('state') && q.get('nonce') !== q.get('state'));
@@ -150,7 +151,7 @@ test('entra: sessão de 30 dias, volta marcada, /eu diz quem é e sair apaga', a
   assert.match(linha, /Max-Age=2592000/);
   assert.equal(zro.estado.trocas > 0, true);
 
-  const eu = await pedir('/api/zro/eu', { cookie: 'cdf_sessao=' + encodeURIComponent(sessao) });
+  const eu = await pedir('/api/zro/eu', { cookie: 'cdf_sessao=' + encodeURIComponent(sessao) + '; cdf_hub=' + encodeURIComponent(cookies.get('cdf_hub')) });
   assert.equal(eu.status, 200);
   assert.equal(eu.headers.get('cache-control'), 'no-store');
   assert.deepEqual(await eu.json(), {
@@ -160,6 +161,7 @@ test('entra: sessão de 30 dias, volta marcada, /eu diz quem é e sair apaga', a
     organizacao: 'Produtora Lia',
     produtos: ['carro-do-freela'],
     liberado: true,
+    hub: true,
   });
 
   const sair = await pedir('/api/zro/sair', { method: 'POST', cookie: 'cdf_sessao=' + encodeURIComponent(sessao), headers: { origin: SITE } });
@@ -361,4 +363,204 @@ test('as rotas do domínio (config.json): CSP, cleanUrls, /app fechado e as fun�
   } finally {
     fs.rmSync(saida, { recursive: true, force: true });
   }
+});
+
+/* ============ job e equipe → projeto na Absolute ZRO (26/out · 3) ============ */
+
+const SALA = '0e7d3c1a-4b2f-4c8e-9a1d-2f6b8c0d4e11';
+const ZECA = '5a9c2e7b-1d3f-4a6b-8c0e-9f2d4b6a8c13';
+const pedidoJob = (extra = {}) =>
+  Object.assign(
+    {
+      job: {
+        id: 'cdf-1a2b3c',
+        titulo: 'Institucional Cooperativa',
+        tipo: 'Institucional',
+        cliente: 'Cooperativa Potiguar',
+        cidade: 'Natal',
+        briefing: 'Três blocos: depoimentos, assembleia e fábrica.\nChamada: 07:00 no estacionamento',
+        datas: [{ data: '2026-11-03', rotulo: '07:30 às 18:00' }, { data: 'amanhã' }],
+        funcoes: [{ funcao: 'Op. de câmera', quantas: 2 }, { funcao: 'Editor', quantas: 0 }],
+        referencias: ['https://exemplo.com/board', 'http://inseguro.exemplo', 'board no Pinterest'],
+        telefone: '(84) 99999-0000',
+      },
+      equipe: [
+        { conta: SALA, email: 'Sala@Exemplo.com', funcao: 'Op. de câmera', papel: 'editor', telefone: '84999990000' },
+        { conta: ZECA, email: 'zeca@exemplo.com', funcao: 'Drone' },
+        { conta: null, email: 'sem-conta@exemplo.com', funcao: 'Assistente' },
+      ],
+    },
+    extra,
+  );
+const enviarJob = (cookies, corpo, headers = {}) =>
+  fetch(SITE + '/api/zro/enviar', {
+    method: 'POST',
+    redirect: 'manual',
+    headers: Object.assign(
+      { 'content-type': 'application/json', origin: SITE, cookie: [...cookies].filter(([, v]) => v).map(([k, v]) => k + '=' + encodeURIComponent(v)).join('; ') },
+      headers,
+    ),
+    body: typeof corpo === 'string' ? corpo : JSON.stringify(corpo),
+  });
+const sessaoCom = cookies => new Map([['cdf_sessao', cookies.get('cdf_sessao')], ['cdf_hub', cookies.get('cdf_hub')]]);
+
+test('o login guarda o acesso ao HUB cifrado, httpOnly e só em /api/zro', async () => {
+  const { res, cookies } = await fluxo();
+  const linha = res.headers.getSetCookie().find(c => c.startsWith('cdf_hub='));
+  assert.match(linha, /HttpOnly/);
+  assert.match(linha, /SameSite=Lax/);
+  assert.match(linha, /Path=\/api\/zro/);
+  const valor = cookies.get('cdf_hub');
+  assert.ok(valor && !/zt_|at_/.test(valor) && !/zt_|at_/.test(Buffer.from(valor.split('.')[1], 'base64url').toString('latin1')), 'nada de token legível no cookie');
+  const d = Z._interno.decifrar(valor, CLIENTE.clientSecret);
+  assert.equal(d.sub, LIA.sub);
+  assert.match(d.rt, /^zt_/);
+  assert.equal(Z._interno.decifrar(valor, 'outro-segredo'), null, 'outra chave não abre');
+  const mexido = valor.slice(0, -3) + (valor.endsWith('A') ? 'BBB' : 'AAA');
+  assert.equal(Z._interno.decifrar(mexido, CLIENTE.clientSecret), null, 'cookie adulterado não abre');
+});
+
+test('HUB que ainda não conhece o escopo de jobs: o login refaz o pedido sem ele e entra igual', async () => {
+  zro.estado.semEscopoJobs = true;
+  try {
+    const { local, res } = await fluxo({ volta: '/fase1' });
+    assert.equal(res.status, 303);
+    assert.match(local, /^\/api\/zro\/entrar\?basico=1&volta=%2Ffase1$/);
+    const ida = await pedir(local);
+    const destino = new URL(ida.headers.get('location'));
+    assert.equal(destino.searchParams.get('scope'), 'openid email profile org');
+    const z = await fetch(destino, { redirect: 'manual' });
+    const volta = new URL(z.headers.get('location'));
+    const fim = await pedir(volta.pathname + volta.search, { cookie: 'cdf_zro=' + encodeURIComponent(cookiesDe(ida).get('cdf_zro')) });
+    assert.equal(fim.headers.get('location'), '/fase1?zro=entrou');
+    const c = cookiesDe(fim);
+    assert.ok(c.get('cdf_sessao'));
+    assert.equal(c.get('cdf_hub'), '', 'sem o escopo, nada de acesso guardado');
+    const eu = await (await pedir('/api/zro/eu', { cookie: 'cdf_sessao=' + encodeURIComponent(c.get('cdf_sessao')) })).json();
+    assert.equal(eu.hub, false);
+  } finally {
+    zro.estado.semEscopoJobs = false;
+  }
+});
+
+test('enviar: o job vira projeto e a equipe com conta vai junto, só com o que o contrato aceita', async () => {
+  const { cookies } = await fluxo();
+  const r = await enviarJob(sessaoCom(cookies), pedidoJob());
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get('cache-control'), 'no-store');
+  const out = await r.json();
+  assert.match(out.projeto.id, /^[0-9a-f-]{36}$/);
+  assert.equal(out.projeto.link, zro.url + '/projetos/' + out.projeto.id);
+  assert.equal(out.projeto.criado, true);
+  assert.deepEqual(out.equipe, {
+    membros: [
+      { conta: SALA, funcao: 'Op. de câmera', estado: 'na_equipe' },
+      { conta: ZECA, funcao: 'Drone', estado: 'convidado' },
+    ],
+    emailEnviado: true,
+  });
+  const job = zro.estado.jobs.get('cdf-1a2b3c').job;
+  assert.deepEqual(Object.keys(job).sort(), ['briefing', 'city', 'client_reference', 'contract', 'crew_roles', 'dates', 'job_id', 'production_type', 'references', 'title']);
+  assert.equal(job.contract, 'carro-do-freela.job/1');
+  assert.match(job.briefing, /Chamada: 07:00/);
+  assert.deepEqual(job.dates, [{ date: '2026-11-03', label: '07:30 às 18:00' }]);
+  assert.deepEqual(job.crew_roles, [{ role: 'Op. de câmera', count: 2 }]);
+  assert.deepEqual(job.references, ['https://exemplo.com/board']);
+  assert.ok(!JSON.stringify(job).includes('99999'), 'telefone não sai do Carro');
+  const eq = zro.estado.equipes.at(-1);
+  assert.equal(eq.contract, 'carro-do-freela.crew/1');
+  assert.deepEqual(eq.members, [
+    { zro_user_id: SALA, email: 'sala@exemplo.com', function: 'Op. de câmera', project_role: 'editor' },
+    { zro_user_id: ZECA, email: 'zeca@exemplo.com', function: 'Drone', project_role: 'viewer' },
+  ]);
+  /* de novo: o mesmo projeto, e com o token ainda valendo não há troca de refresh */
+  const antes = zro.estado.renovacoes;
+  const de2 = await (await enviarJob(sessaoCom(cookies), pedidoJob({ equipe: [] }))).json();
+  assert.equal(de2.projeto.id, out.projeto.id);
+  assert.equal(de2.projeto.criado, false);
+  assert.equal(de2.equipe, null);
+  assert.equal(zro.estado.renovacoes, antes);
+});
+
+test('enviar com o token vencido: renova, grava o refresh novo, e o velho derruba o acesso', async () => {
+  zro.estado.atTtl = 30;
+  try {
+    const { cookies } = await fluxo();
+    const velho = sessaoCom(cookies);
+    const antes = zro.estado.renovacoes;
+    const r = await enviarJob(velho, pedidoJob());
+    assert.equal(r.status, 200);
+    assert.equal(zro.estado.renovacoes, antes + 1);
+    const novo = cookiesDe(r).get('cdf_hub');
+    assert.ok(novo && novo !== velho.get('cdf_hub'));
+    assert.equal((await enviarJob(new Map([['cdf_sessao', velho.get('cdf_sessao')], ['cdf_hub', novo]]), pedidoJob())).status, 200);
+    /* reapresentar o refresh já trocado: o HUB derruba a família e o Carro pede para entrar de novo */
+    const r3 = await enviarJob(velho, pedidoJob());
+    assert.equal(r3.status, 401);
+    assert.equal((await r3.json()).erro, 'reconectar');
+    assert.equal(cookiesDe(r3).get('cdf_hub'), '');
+  } finally {
+    zro.estado.atTtl = 600;
+  }
+});
+
+test('enviar: portas fechadas (origem, método, sessão, acesso de outra conta, plano, pedido ruim, recusa do HUB)', async () => {
+  const { cookies } = await fluxo();
+  const ok = sessaoCom(cookies);
+  assert.equal((await enviarJob(ok, pedidoJob(), { origin: 'https://evil.exemplo' })).status, 403);
+  assert.equal((await fetch(SITE + '/api/zro/enviar', { method: 'POST', headers: { 'content-type': 'application/json', cookie: 'x=1' }, body: '{}' })).status, 403, 'sem Origin');
+  assert.equal((await pedir('/api/zro/enviar')).status, 405);
+  assert.equal((await enviarJob(ok, pedidoJob(), { 'content-type': 'text/plain' })).status, 415);
+  assert.equal((await enviarJob(new Map([['cdf_hub', ok.get('cdf_hub')]]), pedidoJob())).status, 401, 'sem sessão');
+  const r = await enviarJob(new Map([['cdf_sessao', ok.get('cdf_sessao')]]), pedidoJob());
+  assert.equal(r.status, 401);
+  assert.equal((await r.json()).erro, 'reconectar', 'sessão de antes do envio: entra de novo');
+  const outra = await fluxo({ pessoa: Object.assign({}, LIA, { sub: 'zro-222' }) });
+  assert.equal((await enviarJob(new Map([['cdf_sessao', ok.get('cdf_sessao')], ['cdf_hub', outra.cookies.get('cdf_hub')]]), pedidoJob())).status, 401, 'acesso de outra conta');
+  const sem = await fluxo({ pessoa: Object.assign({}, LIA, { produtos: ['nossom'] }) });
+  const rp = await enviarJob(sessaoCom(sem.cookies), pedidoJob());
+  assert.equal(rp.status, 403);
+  assert.equal((await rp.json()).erro, 'plano');
+  assert.equal((await enviarJob(ok, '{nada')).status, 400);
+  assert.equal((await enviarJob(ok, { job: { id: 'a b', titulo: 'x' } })).status, 400, 'id fora do formato');
+  assert.equal((await enviarJob(ok, { job: { id: 'cdf-x' } })).status, 400, 'sem título');
+  assert.equal((await enviarJob(ok, 'x'.repeat(70 * 1024))).status, 400, 'grande demais');
+  zro.estado.recusaJob = 'entitlement_required';
+  try {
+    const rj = await enviarJob(ok, pedidoJob());
+    assert.equal(rj.status, 403);
+    assert.equal((await rj.json()).erro, 'plano');
+  } finally {
+    zro.estado.recusaJob = null;
+  }
+  zro.estado.recusaJob = 'forbidden_role';
+  try {
+    assert.equal((await (await enviarJob(ok, pedidoJob())).json()).erro, 'papel');
+  } finally {
+    zro.estado.recusaJob = null;
+  }
+  zro.estado.recusaEquipe = 'forbidden_role';
+  try {
+    const re = await enviarJob(ok, pedidoJob());
+    assert.equal(re.status, 200, 'o projeto sai mesmo quando a equipe é recusada');
+    assert.deepEqual((await re.json()).equipe, { erro: 'papel' });
+  } finally {
+    zro.estado.recusaEquipe = null;
+  }
+});
+
+test('sair revoga o acesso no HUB e apaga o cookie dele', async () => {
+  zro.estado.atTtl = 30; /* o token de acesso guardado já não vale: o envio teria de usar o refresh */
+  const { cookies } = await fluxo();
+  zro.estado.atTtl = 600;
+  const antes = zro.estado.revogados;
+  const sair = await pedir('/api/zro/sair', {
+    method: 'POST',
+    cookie: 'cdf_sessao=' + encodeURIComponent(cookies.get('cdf_sessao')) + '; cdf_hub=' + encodeURIComponent(cookies.get('cdf_hub')),
+    headers: { origin: SITE },
+  });
+  assert.equal(sair.status, 204);
+  assert.equal(zro.estado.revogados, antes + 1);
+  assert.equal(cookiesDe(sair).get('cdf_hub'), '');
+  assert.equal((await enviarJob(sessaoCom(cookies), pedidoJob())).status, 401, 'o refresh revogado não serve mais');
 });

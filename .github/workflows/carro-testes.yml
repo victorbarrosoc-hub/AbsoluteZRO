@@ -68,8 +68,8 @@ jobs:
           npx -y playwright@1.63.0 install --with-deps chromium
           echo "NODE_PATH=$(npm root -g)" >> "$GITHUB_ENV"
           echo "CHROME=$(NODE_PATH=$(npm root -g) node -p "require('playwright').chromium.executablePath()")" >> "$GITHUB_ENV"
-      - name: Builds (completo e as seis fases)
-        run: npm run build:fases
+      # o arnês gera os sete builds (completo + seis fases) quando a lista tem
+      # uma suíte que lê os arquivos das fases (test/run.js, DAS_FASES)
       - name: Bateria
         run: npm test
       - name: A CSP do build do domínio, provada num Chromium

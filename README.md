@@ -27,7 +27,7 @@ e a camada de projeto que liga Carro do Freela, TPeasy, SOBEDESCE, Synquei, NOSS
 
 Integrações reais hoje: **SOBEDESCE → HUB** (resumo `descargas.jsonl` v1 + relatórios `SOBEDESCE_copia_*.xxh64`),
 **HUB → Synquei** (prévia de organização, sem mover arquivos), **TPeasy ↔ HUB** (backup JSON do próprio TPeasy) e
-**Carro do Freela → HUB** (contrato proposto `carro-do-freela.job/1`). Login único vale **para o HUB**; os apps
+**Carro do Freela → HUB** (`carro-do-freela.job/1` e `carro-do-freela.crew/1`, enviados pelo site do Carro com o token da pessoa). Login único vale **para o HUB**; os apps
 originais continuam com login próprio (SSO federado é Fase 3 e exige mudar cada original, com autorização).
 
 ## Rodar local

@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import { productAccessFor } from '@zro/billing'
 import { authorize } from '@zro/core'
-import { Pill } from '@zro/ui'
-import { DownloadCatalog, DownloadsIntro } from '@/components/download-catalog'
+import { appsParaBaixar, DownloadsIntro } from '@/components/download-catalog'
+import { DownloadPicker } from '@/components/download-picker'
 import { InstalarHub } from '@/components/instalar-hub'
 import { OsHint } from '@/components/os-hint'
 import { disponibilidade } from '@/lib/hub-desktop-release'
@@ -23,11 +23,11 @@ export default async function Downloads() {
       <OsHint />
       <DownloadsIntro heading="h1" hub={hub} />
       <InstalarHub />
-      <DownloadCatalog
-        products={access.map((a) => ({ id: a.productId, name: a.name, role: a.roleInFlow, provisional: a.provisionalName }))}
-        accessPill={(id) => (byId.get(id)?.access === 'contracted' ? <Pill tone="ok">Contratada</Pill> : null)}
-        hubDisponivel={hub.mac || hub.windows}
-        liberado={(id) => byId.get(id)?.access === 'contracted'}
+      <DownloadPicker
+        apps={appsParaBaixar(
+          access.map((a) => ({ id: a.productId, name: a.name, role: a.roleInFlow })),
+          (id) => ({ contratada: byId.get(id)?.access === 'contracted', liberado: byId.get(id)?.access === 'contracted' }),
+        )}
       />
     </div>
   )

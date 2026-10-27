@@ -1,5 +1,5 @@
 // Ponte mínima entre a página e o sistema (app/ponte.js usa): caminho do arquivo escolhido, a pasta do SOBEDESCE,
-// onde gravar a exportação e o vídeo, salvar o projeto, a atualização do app. Nada mais do Node chega à página.
+// onde gravar a exportação e o vídeo, salvar o projeto, o aviso de versão nova. Nada mais do Node chega à página.
 
 const { contextBridge, webUtils, ipcRenderer } = require('electron')
 
@@ -23,14 +23,19 @@ contextBridge.exposeInMainWorld('aiEditDesktop', {
   arquivo: { abrir: chamar('arquivo:abrir'), escrever: chamar('arquivo:escrever'), fechar: chamar('arquivo:fechar') },
   salvarProjeto: chamar('projeto:salvar'),
   mostrarNaPasta: chamar('mostrar'),
+  projetos: { listar: chamar('projetos:listar'), gravar: chamar('projetos:gravar'), ler: chamar('projetos:ler'), apagar: chamar('projetos:apagar') },
+  // versão nova (desktop/atualizador.cjs): o estado, "Atualizar", "Depois", "Baixar" e as mudanças (progresso)
   atualizacao: {
     estado: chamar('atualizacao:estado'),
-    reiniciar: chamar('atualizacao:reiniciar'),
+    atualizar: chamar('atualizacao:atualizar'),
+    depois: chamar('atualizacao:depois'),
+    baixar: chamar('atualizacao:baixar'),
     aoMudar(fn) {
-      ipcRenderer.on('atualizacao', (_e, st) => fn(st))
+      const f = (_e, st) => fn(st)
+      ipcRenderer.on('atualizacao', f)
+      return () => ipcRenderer.off('atualizacao', f)
     },
   },
-  projetos: { listar: chamar('projetos:listar'), gravar: chamar('projetos:gravar'), ler: chamar('projetos:ler'), apagar: chamar('projetos:apagar') },
 })
 
 addEventListener('DOMContentLoaded', () => {

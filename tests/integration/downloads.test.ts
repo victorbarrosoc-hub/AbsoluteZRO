@@ -27,7 +27,7 @@ describe('downloads', () => {
         expect(u.hostname, o.href).not.toMatch(/github(usercontent)?\.com$/)
       }
       for (const cmd of Object.values(d.terminal ?? {}))
-        expect(cmd).toMatch(/https:\/\/((sobedesce|synquei)\.vercel\.app|aeon\.absolutezro\.com)\/instalar\.(sh|ps1)/)
+        expect(cmd).toMatch(/https:\/\/((sobedesce|synquei|nossom-teal)\.vercel\.app|aeon\.absolutezro\.com)\/instalar\.(sh|ps1)/)
     }
   })
 

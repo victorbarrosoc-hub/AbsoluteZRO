@@ -261,7 +261,7 @@ test('central de apps: dentro do app de computador, instala com progresso, abre 
     addEventListener('DOMContentLoaded', () => document.documentElement.classList.add('zro-desktop'))
   })
   await signupAndOrg(page, 'Org central')
-  await page.goto('/downloads')
+  await page.goto('/downloads#app-synquei')
   const synquei = page.locator('#app-synquei')
   await synquei.getByRole('button', { name: 'Instalar' }).click()
   await expect(synquei.getByRole('progressbar')).toBeVisible()
@@ -270,13 +270,18 @@ test('central de apps: dentro do app de computador, instala com progresso, abre 
   await synquei.getByRole('button', { name: 'Abrir' }).click()
   expect(await page.evaluate(() => (window as unknown as { __abertos: string[] }).__abertos)).toEqual(['synquei'])
   // Instalado com versão antiga: Atualizar aparece. No app, o instalador avulso some.
+  await page.getByRole('button', { name: 'SOBEDESCE' }).click()
   await expect(page.locator('#app-sobedesce').getByRole('button', { name: 'Atualizar' })).toBeVisible()
-  await expect(page.locator('#app-sobedesce .dl-opts--instalador')).toBeHidden()
+  await expect(page.locator('#app-sobedesce .dl-opt[data-os="mac"]')).toBeHidden()
+  await expect(page.locator('#app-sobedesce .dl-opt[data-os="windows"]')).toBeHidden()
 })
 
 test('central de apps: no navegador não aparece nada da central', async ({ page }) => {
   await signupAndOrg(page, 'Org navegador')
   await page.goto('/downloads')
+  // só os ícones; o toque abre a parte de download do app, com o "Conheça mais"
+  await page.getByRole('button', { name: 'Synquei' }).click()
+  await expect(page.getByRole('link', { name: /Conheça mais/ })).toHaveAttribute('href', 'https://synquei.vercel.app')
   await expect(page.locator('.app-actions')).toHaveCount(0)
   await expect(page.locator('#app-synquei .dl-opt[data-os="mac"]')).toBeVisible()
 })

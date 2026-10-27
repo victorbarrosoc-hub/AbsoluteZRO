@@ -88,7 +88,11 @@ export async function getProject(db: Database, auth: Authenticated | null, proje
     if (!project) throw new DomainError('project_not_found', 'Projeto não encontrado.')
     const access = await productAccessFor(tx, actor.orgId)
     const stepRows = await tx`select * from zro.project_steps where project_id = ${projectId}`
-    const steps: StepView[] = access.map((a) => {
+    // O convidado não enxerga o plano da organização (RLS): para ele, ferramenta lançada conta como contratada, e a etapa
+    // mostra o estado real em vez de "contratar".
+    const guest = actor.role === 'guest'
+    const steps: StepView[] = access.map((x) => {
+      const a = guest && x.access === 'available' ? { ...x, access: 'contracted' as typeof x.access } : x
       const s = stepRows.find((r) => r.step_key === a.productId)
       const state = ((s?.state as StepState) ?? (a.access === 'coming_soon' ? 'unavailable' : 'not_started')) as StepState
       return {
@@ -121,7 +125,14 @@ export async function getProject(db: Database, auth: Authenticated | null, proje
       where r.project_id = ${projectId} order by r.created_at desc limit 30`
     const events =
       await tx`select id, event_type, schema_version, producer, occurred_at, payload from zro.workflow_events where project_id = ${projectId} order by occurred_at desc limit 30`
-    return { actor, project, steps, documents, manifests, runs, events, access }
+    // Equipe do projeto (a da escala do Carro entra aqui) e convites ainda abertos (o RLS só mostra a quem convida).
+    const team = await tx`
+      select pm.user_id, pm.role, pm.function, u.display_name from zro.project_members pm join zro.users u on u.id = pm.user_id
+      where pm.project_id = ${projectId} order by pm.created_at`
+    const invites = await tx`
+      select id, email, project_role, project_function, expires_at from zro.invitations
+      where project_id = ${projectId} and accepted_at is null and revoked_at is null and expires_at > now() order by created_at`
+    return { actor, project, steps, documents, manifests, runs, events, access, team, invites }
   })
 }
 

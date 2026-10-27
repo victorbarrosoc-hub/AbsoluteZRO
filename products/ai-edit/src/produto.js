@@ -17,8 +17,8 @@ export const PRODUTO = Object.freeze({
   appId: 'com.absolutezro.aeon',
   /** extensão do projeto salvo */
   extensao: '.aeon',
-  /** endereço do site quando o titular autorizar o projeto Vercel (até lá, só local) */
-  site: null,
+  /** o site (projeto Vercel autorizado pelo titular): página de instalação em /#baixar */
+  site: 'https://aeon.absolutezro.com',
   repositorio: 'victorbarrosoc-hub/AbsoluteZRO',
   /** Release do GitHub com os instaladores (ADR 0013: tag com o prefixo do app) */
   release: 'ai-edit-app-desktop',

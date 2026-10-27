@@ -63,6 +63,7 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   Creative Cloud: barra lateral com a conta, cartões das ferramentas com Instalar/Abrir/Atualizar e "Atualizar tudo".
   Login próprio animado em `/app/entrar`. Versão 1.1.0.
 - ✅ AEON e Revela disponíveis (migration 0013, decisão do titular): entram no Completo, no Pro e no grátis de hoje.
+- ✅ Página inicial com o ecossistema em números, destaques por app, fluxo de eventos e o app para computador.
 - ✅ Planos: o Avulso vira uma janela só, em que se marcam um ou mais apps e o valor soma. Com as vendas fechadas,
   tudo liberado e os botões levam a baixar; com as vendas, a assinar.
 - ✅ Menu lateral recolhível (botão e ⌘/Ctrl + \\, lembra a escolha; recolhe sozinho entre 901 e 1200 px), conteúdo
@@ -94,12 +95,20 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ✅ SOBEDESCE · build do app de desktop de volta (26/10/2026): o download do SDK da Blackmagic devolvia 400 com o
   cadastro antigo; com o segredo `BRAW_SDK_CADASTRO` refeito, Mac e Windows passam (SDK, empacotamento e teste de fumaça).
 - ✅ TPeasy ↔ HUB pelo backup JSON do próprio app.
-- ✅ Carro do Freela → HUB pelo contrato proposto `carro-do-freela.job/1`.
+- ✅ Carro do Freela → HUB (26/10/2026): o site do Carro leva o job (`carro-do-freela.job/1`, com o briefing inteiro)
+  e a equipe escalada (`carro-do-freela.crew/1`) para a organização no HUB, com o token da pessoa (escopo
+  `carro-do-freela.jobs`, Bearer nas rotas `/api/v1/carro-do-freela/jobs` e `/jobs/crew`). Quem já é da organização
+  entra na equipe do projeto; conta de fora recebe convite de **convidado** (papel `guest`, migration 0014) que só
+  abre aquele projeto, só a mesma conta aceita e nunca rebaixa ninguém. O projeto mostra a seção Equipe.
 - ✅ Eventos versionados, outbox, fila com retry/backoff, dead-letter, revisão, reprocessamento; fluxo ponta a ponta
   testado com fixtures gerados pelo código real do SOBEDESCE.
 - 🟡 NOSSOM: link e contrato `edit.timeline.ready`; passagem automática ⬜ (precisa de mudança no NOSSOM, com autorização).
 - ⬜ Synquei lendo o plano do HUB (hoje o Synquei lê o `descargas.jsonl` direto; integrar exige mudança no original).
-- ⬜ Carro do Freela emitindo jobs (o protótipo não tem backend de jobs).
+- 🟡 Carro do Freela emitindo jobs: o envio existe e é real; os jobs e a escala do protótipo ainda moram no aparelho
+  (sem banco do Carro), e a gente da prévia não tem conta Absolute ZRO (aparece como "sem conta").
+- ⛔ Tráfego pago do Carro do Freela (regra do titular): só depois de agenda, reputação e pagamento reais e do
+  consentimento registrado no banco. O cadastro já pede e grava o consentimento (versão, data, origem
+  "autodeclarado"), por enquanto no aparelho.
 - ⬜ SSO Fase 2 (HUB como provedor OIDC para as cópias) e Fase 3 (federado com originais, exige autorização).
 - ⬜ Testes de ida e volta de timeline com o editor-alvo (⛔ escolher editor).
 
@@ -130,9 +139,16 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   em 26/10/2026) com o editor no navegador em `/app/`, telas reais do app e imagens do Higgsfield. **Só abre com a conta
   Absolute ZRO** (decisão do titular): login único em `api/zro/*` (cliente `aeon-web`, mesmo padrão da Revela); falta
   cadastrar o cliente no console e pôr `ZRO_CLIENT_ID`/`ZRO_CLIENT_SECRET` no projeto Vercel, e o login no app de desktop. Primeiro
-  Release do app no ar (build 8, 26/10/2026). Depois: tirar mídia do projeto (uma ou várias, com desfazer) e
-  **atualização sozinha** no app de computador (baixa e confere em segundo plano, "Reiniciar para atualizar" ou troca
-  ao fechar). Quem tem o build 8 instala uma vez pelo comando; dali em diante atualiza sozinho.
+  Release do app no ar (build 8, 26/10/2026). Depois: tirar mídia do projeto (uma ou várias, com desfazer), AEON como
+  editor completo (a IA é ajuda opcional) e homepage com motion no estilo do SOBEDESCE.
+- ✅ AEON, menu lateral (27/10/2026): cada item faz algo de verdade (Seus universos com estado, Novo projeto, Abrir,
+  Salvar cópia só com projeto), conta num cartão com menu (Conta Absolute ZRO, Sair) e a família numa linha só
+  ("Apps Absolute ZRO" abre a grade). A conta no app de computador não abria (link interno em aba nova, que o Electron
+  recusa).
+- ✅ AEON, atualizar pelo app (27/10/2026): "Versão nova · Atualizar" na barra; baixa do Release, confere o SHA-256,
+  fecha e abre já atualizado (Mac e Windows, no molde do SOBEDESCE). Site: sem corte seco entre as fotos (as cenas se
+  dissolvem no fundo), a salina sem texto e o fecho com a estrela inteira. Falta conferir a troca num Mac e num
+  Windows de verdade com o próximo Release.
 - ⬜ Revela, primeiro recorte: só DaVinci Resolve, cor entregue em PowerGrade e LUT, técnica gerada e criativa entregue ([ADR 0015](decisions/0015-finishing-resolve-powergrade-lut.md)). QC, exportação e media manager vêm depois.
 - ✅ Revela: identidade visual (película perfurada em amarelo filme, revelada em roxo → amarelo; escolha do titular; guia e alternativas em `products/finishing/marca`) aplicada na tela e no HUB — [ADR 0016](decisions/0016-identidade-revela.md).
 - 🟡 Revela: referência → LUT criativa com tela e conta-gotas de pares de cor (`products/finishing`, sem IA, roda no navegador sem enviar imagens, 18 testes com Chromium e a CSP de produção, CI próprio). Projeto Vercel `revela` autorizado pelo titular em 25/10/2026, em revela-zro.vercel.app, hoje revela.absolutezro.com (o endereço antigo redireciona; `revela.vercel.app` é de outro app), com OG próprio. Falta: LUTs técnicas por câmera, ponte com o Resolve e pacote de entrega.
@@ -141,6 +157,7 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ✅ Revela: telas no padrão Apple com pouco texto (cartões visuais, Liquid Glass, motion com "reduzir movimento").
 - 🟡 Revela: conversor no navegador, celular e computador (master ProRes → YouTube, Vimeo, Reels, TikTok em H.264/HEVC marcado BT.709; arquivo não sai do aparelho). Falta: teste em iPhone/Android reais, arquivos acima de 1,5 GB no celular e conversão de HDR.
 - 🟡 Revela: página inicial com motion, página de login e login único Absolute ZRO (`api/zro/*`, cliente `revela-web`). Cliente `revela-web` cadastrado (26/10/2026, retorno `https://revela.absolutezro.com/api/zro/callback`), `sso_start_url` do `finishing` e `ZRO_CLIENT_ID` na Vercel. Falta: o titular colar `ZRO_CLIENT_SECRET` na Vercel (produção) e publicar de novo.
+- ✅ Revela Look com a luz e a temperatura do grade de produção do titular (ΔE 6,2 → 2,9; meio-tom claro e dourado, branco neutro) e **Meus looks**: o clone salvo com nome, só no navegador, na grade de looks e no `.cube`.
 - ✅ Revela: Clonar LUT com curva de tom e **Mais frames** (até 6 stills do mesmo grade, par e orientação automáticos); CST com saída LogC3 / AWG3 para LUT de película. Estudo com stills reais do titular (S-Log3, Rec.709 e look de película).
 - ✅ Revela: abas do dock trocam só o painel central (`app/navegar.js`), sem recarregar menu, topo nem dock; a marca da aba desliza e cada painel guarda o que estava.
 - 🟡 Revela Look: look de película próprio como preset da tela de LUT (`src/cor/looks.js`, .cube 33/65). Falta: comparar no Resolve com o FVPro+ do titular e ajustar.

@@ -26,6 +26,7 @@ import { montarTrilho } from './trilho.js'
 import { DEPOIS, FAMILIA, iconeDe } from '../src/familia.js'
 import * as projetos from './projetos.js'
 import { lerConta } from '../site/conta.js'
+import { montarAtualizacao } from './atualizacao.js'
 
 const $ = (id) => document.getElementById(id)
 const PAGINAS = ['midia', 'revisar', 'edicao', 'entrega']
@@ -63,7 +64,18 @@ document.title = `${PRODUTO.nome} · Absolute ZRO`
 // a marca (src/marca.js): a estrela compacta e o ΛEON em traço, na cor do texto
 $('marcaProduto').innerHTML = `${simbolo({ titulo: false })}${wordmark()}`
 $('marcaProduto').title = `${PRODUTO.nome} · ${PRODUTO.frase}`
-montarTrilho({ conta: S.conta, universos: () => fecharProjeto(), abrir: () => $('arquivoProjeto').click(), salvar: () => salvarAgora() })
+// menu: cada item faz o mesmo que o atalho ou o botão da tela (Seus universos fecha o projeto aberto e mostra a lista)
+S.trilho = montarTrilho({
+  conta: S.conta,
+  universos: () => fecharProjeto(),
+  novo: () => novoProjetoFolha(),
+  abrir: () => $('arquivoProjeto').click(),
+  salvar: () => salvarAgora(),
+  sair: async () => {
+    await fetch('/api/zro/sair', { method: 'POST', credentials: 'same-origin' }).catch(() => {})
+    location.replace(`../entrar.html?volta=${encodeURIComponent('/app/')}`)
+  },
+})
 // Entrega › depois do AEON: o próximo app do caminho (abre no navegador)
 $('depois').replaceChildren(
   ...DEPOIS.map((d) => {
@@ -137,6 +149,11 @@ function ir(pagina, animar = true) {
   if (pagina !== 'revisar' && pagina !== 'edicao') player.pausar()
   if (pagina === 'edicao') requestAnimationFrame(() => desenharLinha())
   $('barraExportar').hidden = !P()?.midias.length || pagina === 'entrega'
+  marcarTrilho()
+}
+/** O menu sabe onde a pessoa está (Seus universos) e se há projeto para salvar. */
+function marcarTrilho() {
+  S.trilho?.atualizar({ projeto: Boolean(P()), naLista: !P() && S.pagina === 'midia' })
 }
 $('barraExportar').onclick = () => ir('entrega')
 
@@ -223,6 +240,7 @@ function desenharTudo() {
   $('desfazer').title = S.h?.podeDesfazer ? `Desfazer ${S.h.proximoDesfazer} (⌘Z)` : 'Desfazer (⌘Z)'
   $('refazer').title = S.h?.podeRefazer ? `Refazer ${S.h.proximoRefazer} (⇧⌘Z)` : 'Refazer (⇧⌘Z)'
   document.body.classList.toggle('com-projeto', Boolean(p))
+  marcarTrilho()
   $('barraExportar').hidden = !p?.midias.length || S.pagina === 'entrega'
   desenharMidia()
   desenharHistorico()
@@ -977,7 +995,7 @@ addEventListener('keydown', (e) => {
 
 async function salvarAgora() {
   const p = P()
-  if (!p) return
+  if (!p) return aviso('Abra ou crie um projeto para salvar uma cópia.')
   // o autosave já guarda; ⌘S grava agora e oferece uma cópia em arquivo (para levar a outro computador)
   clearTimeout(gravarTimer)
   await autosalvar()
@@ -1069,11 +1087,14 @@ async function fecharProjeto() {
 }
 S.fecharProjeto = fecharProjeto
 
-$('novoProjeto').onclick = () => {
+/** Novo projeto (botão de Seus universos e o menu): com um projeto aberto, ele é guardado e fechado antes. */
+async function novoProjetoFolha() {
+  if (P()) await fecharProjeto()
   $('formNovo').reset()
   $('folhaNovo').showModal()
   $('novoNome').focus()
 }
+$('novoProjeto').onclick = () => novoProjetoFolha()
 $('folhaNovo').onclose = () => {
   if ($('folhaNovo').returnValue !== 'criar') return
   const [largura, altura] = $('formNovo').formato.value.split('x').map(Number)
@@ -1107,8 +1128,20 @@ $('nomeProjeto').onclick = () => {
   }
 }
 
+// "Atualizar" (app de desktop): antes de o app fechar para trocar de versão, grava o projeto aberto agora; com
+// exportação andando, não fecha (desktop/main.cjs › entregarTroca pergunta aqui)
+globalThis.aeonAntesDeAtualizar = async () => {
+  if (renderAtual) return { ok: false, motivo: 'Termine a exportação antes de atualizar. Nada foi trocado.' }
+  clearTimeout(gravarTimer)
+  if (P()) await autosalvar()
+  if (P() && !S.salvo) return { ok: false, motivo: 'Não consegui salvar o projeto aberto. Nada foi trocado.' }
+  S.saindo = true
+  return { ok: true }
+}
+montarAtualizacao(globalThis.aiEditDesktop?.atualizacao)
+
 addEventListener('beforeunload', (e) => {
-  if (P() && !S.salvo) {
+  if (P() && !S.salvo && !S.saindo) {
     autosalvar()
     e.preventDefault()
   }
@@ -1198,28 +1231,6 @@ S.exportar = exportar
 ir('midia', false)
 desenharTudo()
 document.documentElement.dataset.pronto = '1'
-
-// ───────── atualização do app de computador (desktop/atualizacao.cjs) ─────────
-// A versão nova baixa sozinha; quando está pronta aparece "Reiniciar para atualizar". Sem clicar, troca ao fechar.
-const ATUALIZACAO = globalThis.aiEditDesktop?.atualizacao
-let erroAvisado = null
-function mostrarAtualizacao(st) {
-  const b = $('atualizarApp')
-  b.hidden = st?.fase !== 'pronto' && st?.fase !== 'reiniciando'
-  b.disabled = st?.fase === 'reiniciando'
-  b.textContent = st?.fase === 'reiniciando' ? 'Reiniciando…' : 'Reiniciar para atualizar'
-  b.title = st?.build ? `A versão ${st.build} já foi baixada e conferida. Se preferir, ela entra quando você fechar o app.` : ''
-  if (st?.fase === 'erro' && st.erro && st.erro !== erroAvisado) aviso((erroAvisado = st.erro))
-}
-if (ATUALIZACAO) {
-  ATUALIZACAO.aoMudar(mostrarAtualizacao)
-  ATUALIZACAO.estado().then(mostrarAtualizacao, () => {})
-  $('atualizarApp').onclick = async () => {
-    clearTimeout(gravarTimer)
-    await autosalvar() // o projeto aberto fica guardado antes de fechar
-    if (!(await ATUALIZACAO.reiniciar())) aviso('Não deu para reiniciar agora. A versão nova entra quando você fechar o app.')
-  }
-}
 
 // ───────── aviso ─────────
 

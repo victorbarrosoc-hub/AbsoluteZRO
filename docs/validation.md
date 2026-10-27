@@ -202,6 +202,33 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   (mesmas rotas, chaves e CSP) antes da produção.
 - Login único nas cinco: `/api/zro/entrar` de cada domínio leva ao HUB; apps marcados como da família.
 
+## Carro do Freela → HUB: job, equipe e consentimento (26/10/2026)
+
+- HUB, raiz: `npm run lint`, `format:check`, `typecheck` limpos; `npm test` (Postgres 16 local) **150/150**, com
+  `tests/integration/carro-hub.test.ts` (10): escopo só no cliente do Carro; token vira a pessoa na organização do
+  login e o job vira projeto com o briefing; token sem escopo, adulterado, de app removido no Perfil ou desativado é
+  recusado; quem saiu da organização perde o acesso mesmo com token válido; equipe pede o job antes, membro entra
+  direto, conta de fora recebe convite, reenviar não duplica; convite só a mesma conta aceita e abre só aquele
+  projeto; **isolamento do convidado** (não vê membros, plano, vínculos, eventos da organização nem nomes de quem
+  não está com ele num projeto; não importa job nem monta equipe; vê as etapas no estado real, sem "contratar");
+  convite de convidado não rebaixa quem já é da organização; edição importa job mas não monta equipe.
+- `npm run build` ok; `npm run test:e2e` **21/21**, com o novo `sso.spec.ts` "Carro do Freela": token do app cria o
+  projeto pela API real sem cookie e com outra Origin (201, depois 200 com o mesmo id), Bearer inválido 401, equipe
+  sem e-mail confirmado 403 `email_not_verified`, e a página do projeto com a seção Equipe.
+- `npm run contracts:export` (novo `carro-do-freela.crew.v1.schema.json`); rota nova documentada no OpenAPI.
+- Carro: `npm run test:api` **27/27** (HUB falso com refresh em rotação, revogação e as duas rotas): cookie `cdf_hub`
+  cifrado e httpOnly em `/api/zro`; HUB sem o escopo → login refeito sem ele; envio monta só os campos do contrato
+  (telefone fica de fora) e a equipe com conta; token vencido renova e o refresh velho derruba o acesso; portas
+  fechadas (origem, método, tipo, sessão, conta trocada, plano, pedido ruim, recusa do HUB); sair revoga no HUB.
+- Carro, navegador: `conta-zro` **54/54** (§10: botão no painel do job, HUB recebe o briefing inteiro, só quem tem
+  conta vai na equipe, "Abrir na Absolute ZRO" depois, nada no lado do freela nem fora do domínio);
+  `consentimento` **11/11** (caixa desmarcada, sem marcar não registra, marcar grava versão e data, retirada
+  registrada, sobrevive ao recarregar, ninguém fictício "autorizou"). As quatro suítes das fases passaram com
+  `public/fase-*.html` apagados: o `run.js` gera os sete builds.
+- Carro, bateria completa (`npm test`, Chromium 1243): **87/87** em 20,5 min; `sem-zoom` falhou em paralelo e
+  passou sozinha (regra do `run.js`, igual à rodada anterior). `node src/vercel-build.js` aprovado (build 26/out · 3).
+- `node scripts/scan-secrets.mjs` limpo.
+
 ## Carro do Freela: leve sem perder qualidade (26/10/2026)
 
 - Bateria (`npm run build:fases && npm run build && node test/run.js`, Chromium 1243): **86/86** em 20 min no arnês
@@ -647,17 +674,19 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   nonce, emissor, público e assinatura, login desligado → 503) e o teste de tela "só com conta" (sem sessão o editor vai
   para `entrar.html?volta=/app/`; com sessão o menu mostra a pessoa).
 
-## AEON: tirar mídia, selecionar várias e atualização sozinha (26/10/2026)
+## AEON: tirar mídia, selecionar várias, editor completo e homepage nova (26–27/10/2026)
 
 - Tirar mídia: `test/nucleo.test.js` (some a mídia, os clipes, a transcrição, as propostas e as correções; uma ou
   várias; desfazer devolve) e a tela "projeto novo" (× no cartão, Selecionar → marcar duas → Tirar do projeto → ⌘Z).
-- Atualização sozinha: `test/atualizacao.test.js` **8/8** com o sistema falso (baixa e prepara no Mac e no Windows,
-  SHA-256 diferente não instala, mesma versão não baixa, desligada fora de Aplicativos/sem permissão/em
-  desenvolvimento, script da troca com e sem reabrir, marca de falha trava a mesma versão). Smoke do Electron ok.
+- Atualização pelo app: fica a da main (`desktop/atualizador.cjs`, "Versão nova · Atualizar"); uma segunda versão
+  feita em paralelo (atualização ao fechar o app) saiu para não ter dois atualizadores.
 - Instalador do Terminal conferido de ponta a ponta com os comandos do Mac simulados no Linux (build 8 baixado,
-  SHA-256 conferido, `AEON.app` em Aplicativos). Site: download direto com o passo da quarentena, 390 px sem rolagem
-  lateral.
-- Não validado: a troca de verdade num Mac e num Windows (só dá para ver do build 9 para o 10).
+  SHA-256 conferido, `AEON.app` em Aplicativos). No Mac de verdade parou em `NOME?: unbound variable`: o bash 3.2 lê o
+  "…" colado em `$NOME` como parte do nome. Variável colada em caractere não ASCII vai entre chaves e
+  `test/instalacao.test.js` confere o arquivo inteiro. Não validado: o bash 3.2 rodando aqui.
+- Site: download direto com o passo da quarentena, 390 px sem rolagem lateral. Homepage: topo na tela toda no
+  computador, cenas que se dissolvem no fundo, MacBook que abre, números que contam e três demonstrações ao vivo
+  (rodam só na tela; paradas com "reduzir movimento"); conferida em 1440×900 (claro e escuro) e 390×844.
 - Posicionamento (titular, 26/10/2026): o AEON é editor completo e a IA é ajuda opcional. Textos do site, do app, do
   HUB (linha do catálogo, página do projeto, migration 0014 para descrição e papel no fluxo) e regras do produto
   (`products/ai-edit/CLAUDE.md`). Downloads do HUB: AEON com Mac, Windows e navegador; `/baixar/mac` e
@@ -793,3 +822,134 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Painel no app: ferramenta sem versão para o computador (NOSSOM hoje) mostra **Abrir na web** em vez de ficar sem
   botão. SOBEDESCE e Synquei têm instalador para Mac e Windows no catálogo (`/api/v1/desktop/apps`).
 - Não validado: o Mac de verdade (a área de arrastar só vale lá e no Windows); conferir no 1.1.1 instalado.
+
+## Revela Look com a luz do grade do titular e Meus looks (26–27/10/2026)
+
+- Primeira tentativa recusada pelo titular ("não tá bonito nem perto"): o ajuste automático dos 15 parâmetros baixou o
+  erro médio (6,2 → 2,9) amarelando as altas e o branco. A comparação mostrada ainda aplicava o look num frame que já
+  tinha o grade dele (grade em dobro). Não foi para a main.
+- Leitura por faixa de luz (Rec.709 → grade dele, 3 cenas): o grade sobe o meio-tom (L 41 → 46, 58 → 69, 75 → 83)
+  com preto e branco no lugar, esquenta meios e altas (b +2 a +3) e deixa a sombra neutra. O motor ganhou `gama`
+  (curva do meio sem mexer nas pontas) e `meios` (tom no meio-tom que some antes do branco), opcionais.
+- Versão final: base antiga + gama 1,2, contraste 7, pivô 0,28, densidade 0,25, saturação 0,95, sombra neutra, meios
+  dourados e branco quase neutro; matizes da base. Erro médio 6,21 → **2,92**; comparação visual nas 3 cenas perto do
+  grade (o 1.19 é de outro grade). `marca/home/look-revela.jpg` refeita.
+- **Meus looks** (`src/cor/meuslooks.js`): o clone vira LUT 33³ em 16 bits com nome, até 8, em `localStorage`; aparece
+  na grade de looks em qualquer frame, baixa `.cube` com o nome e apaga. Para o grade exato do titular sem publicar o
+  look de um pacote pago no site.
+- Testes: unidade (ida e volta do look salvo, intensidade, nome, registro corrompido; Revela Look com meio claro e
+  dourado, branco neutro, sombra neutra; Petróleo segue com sombra fria) e Chromium (clone → salvar → outra visita →
+  grade com 6 looks → baixar `revela-zro-filmes-33.cube` → apagar). `products/finishing`: `npm test` 96/96.
+- Não validado: o `.cube` do look novo e de um "meu look" no Resolve, em vídeo.
+
+## Página inicial: faixa das ferramentas (26/10/2026)
+
+- Cartões verticais (ícone em cima, nome numa linha, apoio em até duas linhas reservadas): os sete com a mesma altura
+  e sem nome quebrado. Abaixo de 1100 px, quatro por linha com a segunda centralizada. Capturas em 1440 (claro e
+  escuro), 1000 e 390 px; `npm run test:e2e` verde.
+
+## Página inicial com dados do ecossistema (26/10/2026)
+
+- Novas seções: **Em números** (contam ao aparecer; ferramentas, eventos e formatos vêm do catálogo e de
+  `@zro/media-contracts`, nada digitado à mão), **Conheça de perto** (abas com a tela real de cada app num MacBook e
+  iPhone, três fatos e o site; passa sozinha e pausa com mouse, foco ou fora da tela), **Do job à entrega** (o fluxo
+  com os eventos reais que cada app manda para o HUB) e **Um app no computador** (o painel do app e o HUB no iPhone).
+- Imagens novas: `produto-hub-*` (painel `/app` e `/inicio` de hoje), `produto-ai-edit-*` e `produto-finishing-*` (os
+  sites no ar), por `scripts/marca/aparelhos/produtos.py`.
+- Capturas em 1440 (claro e escuro) e 390 px; `npm run test:e2e` 21/21 (axe incluso).
+
+## Downloads por ícones, NOSSOM no Mac e símbolo do fim da home (27/10/2026)
+
+- `/baixar` e `/downloads`: só os ícones; o toque abre a parte de download do app (Mac, Windows, celular ou
+  navegador, Terminal e primeira abertura) e o **Conheça mais** (página da plataforma, `site` em `lib/downloads.ts`).
+  `#app-<id>` no endereço abre o app certo (links dos sites de cada ferramenta). O cartão do Absolute ZRO para
+  computador não estoura mais: botões numa linha e o Terminal recolhido.
+- Links conferidos com download real (GET com Range até o arquivo): SOBEDESCE 0.1.0 b1025, Synquei 1.0.0 b1027,
+  Absolute ZRO 1.1.1 b13 (Mac e Windows); NOSSOM 0.2.2 (Mac Apple Silicon, Intel e Windows) depois do workflow
+  `nossom-desktop.yml` corrigido (o passo de validação rodava antes do checkout) e disparado como prévia.
+- NOSSOM no Mac: `xattr` em app já em Aplicativos falha no macOS novo sem Gerenciamento de Apps. Novo
+  `products/nossom/public/instalar.sh` (curl, sem quarentena; escolhe Apple Silicon ou Intel; `hdiutil verify`; refaz
+  a assinatura local se não conferir). `tests/instalar-mac.test.ts` 3/3; `npm test` do NOSSOM 76/76. Não validado
+  num Mac de verdade.
+- Símbolo do fim da página inicial: animava com a rolagem e ficava travado no meio quando a página acabava antes;
+  agora desenha uma vez quando aparece (`components/home/aparece.tsx`).
+- HUB: `npm test` 153/153; `npm run test:e2e` 21/21.
+- Fotos dos aparelhos (`produto-*.webp`) sem fundo chapado (`scripts/marca/aparelhos/transparente.py`, máscara do
+  molde): sem o retângulo preto atrás do notebook no tema escuro nem o branco no claro. Conferido em 1440 px.
+
+## AEON: menu lateral que funciona (27/10/2026)
+
+- Causa: a conta era `<a href="../entrar.html" target="_blank">` (`app/trilho.js`); no app de computador o
+  `setWindowOpenHandler` (`desktop/main.cjs`) só entrega `http(s)` ao navegador e recusa o resto, então o clique morria; no
+  navegador abria outra aba do entrar. "Seus universos" não fazia nada na própria lista (sem estado de selecionado) e
+  "Salvar cópia" sem projeto voltava calado (`salvarAgora`).
+- Agora: Projeto (Seus universos com `aria-current`, Novo projeto, Abrir projeto…, Salvar cópia desligado sem projeto
+  e ⌘S avisando); embaixo "Apps Absolute ZRO" (uma linha; grade com os sete apps em popover) e o cartão da conta (menu
+  com Conta Absolute ZRO e Sair por `POST /api/zro/sair`). Etapas seguem no dock.
+- `test/tela.test.js` › "menu: cada item faz algo de verdade" (falha no código antigo): seletor de arquivo, projeto
+  novo pelo menu, download da cópia, volta à lista, aba nova do SOBEDESCE, sair indo para entrar.html, e todo link de
+  fora do menu em `https` (o caso que o Electron recusava). `npm test` 57/57 (1 pulado: Whisper, sem rede).
+- Conferido no Electron 44 em tela virtual (Playwright `_electron`, conta falsa em `conta.json`): Novo projeto, diálogo
+  de salvar, volta à lista, Revela e Conta Absolute ZRO no navegador do sistema, Sair apaga `conta.json` e vai para
+  entrar.html. `--smoke` OK.
+
+## Absolute ZRO para computador 1.2.0: "Atualizar" com um clique (27/10/2026)
+
+- Como no SOBEDESCE: o aviso de versão nova tem **Atualizar**. O app baixa o instalador de `/baixar/hub/<sistema>?build=N`,
+  confere o SHA-256 publicado em `/baixar/hub/versao`, prepara a troca (Mac: `hdiutil` + `ditto` ao lado do app +
+  `xattr -cr`; Windows: NSIS `/S`), fecha e abre já na versão nova (`desktop/atualizador.cjs`). Progresso na barra do
+  ícone (Dock/barra de tarefas), sem diálogo piscando. Se não dá para trocar (aberto do disco de instalação, sem
+  permissão, troca anterior que falhou), o botão vira **Baixar**.
+- `test/atualizador.test.mjs` (Mac e Windows com comandos falsos, SHA-256 que não bate, build novo no meio, marca de
+  falha) e o aviso entregando o build certo: `npm test` 35/35; `--smoke` ok no Electron 44 (Linux).
+- Quem está na 1.1.1 atualiza para a 1.2.0 pelo comando do Terminal uma última vez; dali em diante, pelo botão.
+- Não validado: a troca num Mac e num Windows de verdade.
+
+## Synquei: aviso de download que não pisca (27/10/2026)
+
+- Causa: `desenhar()` em `products/synquei/app/js/atualizacao.js` trocava o `innerHTML` do cartão a cada evento de
+  progresso (até 4 por segundo, `desktop/atualizador.cjs`); o `.atu` nascia de novo e a entrada `rise` (`app.css`)
+  recomeçava do transparente, então o aviso piscava. A barra também nunca deslizava (nascia já na largura nova).
+- Agora `aplicarCartao()` compara a forma do cartão sem os números: se só o progresso mudou (baixando, conferindo,
+  preparando), troca no lugar o texto, a largura e o `aria-valuenow`; o cartão só é refeito quando muda de verdade
+  (pronto, erro, Depois). Ajustes não se redesenha mais a cada pedaço baixado. Reduzir movimento segue pela regra
+  global. `sw.js` foi para `synquei-v15`.
+- `tests/aviso-atualizacao.test.mjs` (3 casos): 40 eventos de progresso com uma troca de HTML só, conferindo/preparando
+  no mesmo cartão, barra indeterminada sem tamanho. `npm test` em `products/synquei`: 71 ok, 4 pulados, 0 falhas.
+- Chromium (Playwright) com o app servido e o atualizador falso, 46 eventos: antes 46 cartões recriados, 46 entradas
+  reiniciadas e opacidade ~0,3 60 ms depois de cada evento; depois 0, 0 e opacidade 1.
+
+## Ciclo do O sem a pílula atrás e login com a paisagem da marca (27/10/2026)
+
+- `/ciclo`: o seletor Mensal/Anual de Planos usava a classe `.cycle`, a mesma do Ciclo do O, e desenhava uma pílula
+  enorme atrás do anel. Virou `.cobranca`.
+- Telas de conta (`(auth)/layout.tsx`): a paisagem da marca no fundo, com véu e zoom lento (parado com "reduzir
+  movimento"); frase oficial "O futuro começa do zero."; o login cita todas as ferramentas.
+- `npm run test:e2e` 21/21. Capturas de `/entrar` (claro, escuro, 390 px) e `/ciclo`.
+
+## AEON: site sem corte seco, fecho inteiro e "Atualizar" no app (27/10/2026)
+
+- Site (`products/ai-edit/index.html`, `site/site.css`, `site/home.js`): a abertura escurece até o preto e a salina vira
+  uma passagem sem texto que nasce do preto e volta para ele (máscara em cima e embaixo), no lugar das duas fotos
+  coladas num corte seco. Saiu "O espaço entre os instantes." (subtítulo da abertura, título da salina e o
+  `og:description`, que agora diz o que o AEON faz). O fecho usa a estrela de palco (`simbolo({ brilho, margem })`,
+  pontas e fios somem aos poucos, com respiro) e segue o tema; antes os fios terminavam num corte reto e pareciam
+  cortados. De quebra: os cartões de Baixar não alargam mais a página no celular (`minmax(0, 1fr)`; o botão Copiar
+  ficava fora da tela) e o menu fechado não mancha mais a borda esquerda no tema claro (sombra fora da vista).
+  Conferido no Chromium em 1440 e 390 px, escuro e claro, com "reduzir movimento".
+- App de desktop (`desktop/atualizador.cjs`, `desktop/main.cjs`, `desktop/preload.cjs`, `app/atualizacao.js`), no
+  molde do SOBEDESCE: só no app empacotado com build do CI (`desktop/build-info.json`; build 0 não pergunta nada),
+  confere o `versao.json` do Release `ai-edit-app-desktop` (o mesmo do `instalar.sh`) 10 s depois de abrir e a cada 4 h.
+  Build maior = pílula "Versão nova · Atualizar" na barra. Atualizar baixa o instalador do Release com progresso
+  medido (barra fina que só avança), confere o SHA-256, prepara a troca (Mac: `hdiutil` + `ditto` ao lado + `xattr -cr`;
+  Windows: NSIS `/S`), grava o projeto aberto (recusa com exportação andando), entrega o script e fecha; o script
+  espera o app sair, troca e abre de novo. Falhou: o antigo volta, fica `atualizacao-falhou.json` e a próxima
+  abertura oferece o Baixar (site `/#baixar`). Fora de Aplicativos, sem permissão ou sem SHA-256: só o Baixar.
+- `test/atualizador.test.js` (17): Release igual ao do instalador, desenvolvimento sem rede, download com progresso,
+  incompleto e parado, fluxo do Mac com peças falsas, SHA-256 diferente (nada trocado, temporários apagados), sem
+  hash, sem permissão, AppTranslocation, `/Volumes`, marca de troca que falhou, entrega recusada, Windows (BOM,
+  `/S`), progresso limitado e o script do Mac rodando de verdade (troca e abre; se falhar, volta o antigo e grava a
+  marca). `test/tela.test.js` › "versão nova": a pílula com uma ponte falsa, Baixando 42%, barra sem voltar, Tentar
+  de novo e Depois. `npm test` 76/76; `xvfb-run -a npx electron . --smoke` SMOKE OK.
+- Não conferido: a troca num Mac e num Windows de verdade (precisa de um Release publicado com build maior que o do
+  app instalado; publicar é decisão do titular).

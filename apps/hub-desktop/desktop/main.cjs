@@ -30,6 +30,8 @@ const os = require('node:os')
 const regras = require('./regras.cjs')
 const janela = require('./janela.cjs')
 const { AvisoDeVersao, lerBuildInfo } = require('./versao.cjs')
+const { Atualizador, comandoDaTroca, ehScriptDaTroca } = require('./atualizador.cjs')
+const { spawn } = require('node:child_process')
 const { Central } = require('./central.cjs')
 const { execFile } = require('node:child_process')
 const { promisify } = require('node:util')
@@ -64,6 +66,7 @@ let win = null
 let view = null
 let capa = null
 let aviso = null
+let atualizador = null
 let central = null
 let ultimaUrl = INICIO
 let deepLinkPendente = regras.deepLinkDosArgs(process.argv, HUB)
@@ -372,17 +375,70 @@ function recarregar(semCache) {
   else wc.reload()
 }
 
-// ───────── aviso de versão nova ─────────
+// ───────── aviso de versão nova e "Atualizar" (baixa, confere, fecha e abre já atualizado) ─────────
 async function avisar(nova) {
+  const podeTrocar = !!atualizador && atualizador.podeInstalar(nova.build)
+  const versao = nova.versao ? `A versão ${nova.versao} (build ${nova.build})` : `O build ${nova.build}`
   const { response } = await dialog.showMessageBox(win && !win.isDestroyed() ? win : undefined, {
     type: 'info',
-    buttons: ['Baixar', 'Depois'],
+    buttons: [podeTrocar ? 'Atualizar' : 'Baixar', 'Depois'],
     defaultId: 0,
     cancelId: 1,
     message: 'Nova versão do Absolute ZRO',
-    detail: `${nova.versao ? `A versão ${nova.versao} (build ${nova.build})` : `O build ${nova.build}`} já está no site. Baixe e instale por cima desta: seu login e suas preferências continuam.`,
+    detail: podeTrocar
+      ? `${versao} está pronta. O app baixa, fecha e abre de novo já atualizado. Seu login e suas preferências continuam.`
+      : `${versao} já está no site. ${atualizador && atualizador.motivo ? `${atualizador.motivo} ` : ''}Baixe e instale por cima desta: seu login e suas preferências continuam.`,
   })
-  return response === 0 ? 'baixar' : 'depois'
+  if (response !== 0) return 'depois'
+  return podeTrocar ? 'atualizar' : 'baixar'
+}
+
+// Progresso sem piscar: a barra no ícone do Dock/barra de tarefas e o título da janela mudam no lugar, no máximo a
+// cada 250 ms (o atualizador já segura o ritmo). Nada de diálogo abrindo e fechando.
+function mostrarAtualizacao(st) {
+  if (!win || win.isDestroyed()) return
+  if (st.fase === 'baixando') {
+    const frac = st.total ? Math.min(1, st.recebido / st.total) : 2 // 2 = indeterminado
+    win.setProgressBar(frac)
+    win.setTitle(st.total ? `Atualizando o Absolute ZRO · ${Math.round(frac * 100)}%` : 'Atualizando o Absolute ZRO…')
+  } else if (st.fase === 'conferindo' || st.fase === 'preparando' || st.fase === 'reiniciando') {
+    win.setProgressBar(2)
+    win.setTitle(st.fase === 'reiniciando' ? 'Reabrindo o Absolute ZRO…' : 'Preparando a atualização…')
+  } else {
+    win.setProgressBar(-1)
+    estadoBarra()
+  }
+}
+
+async function atualizar(nova) {
+  if (!atualizador) return
+  try {
+    const st = await atualizador.instalar({ ...nova, recheck: () => aviso.remoto() })
+    if (st.fase === 'erro') {
+      const { response } = await dialog.showMessageBox(win && !win.isDestroyed() ? win : undefined, {
+        type: 'warning',
+        buttons: ['Baixar pelo site', 'Fechar'],
+        defaultId: 0,
+        cancelId: 1,
+        message: 'Não deu para atualizar agora',
+        detail: st.erro || 'Algo deu errado ao atualizar.',
+      })
+      if (response === 0) abrirFora(aviso.baixarUrl)
+    }
+  } catch (e) {
+    console.log('[atualizar]', e && e.message)
+    abrirFora(aviso.baixarUrl)
+  }
+}
+
+// Entrega a troca: roda o script preparado, solto do app, e fecha. O script espera o app sair, troca e abre de novo.
+function entregarTroca({ script }) {
+  if (!ehScriptDaTroca(script)) throw new Error('script de troca fora do lugar')
+  const c = comandoDaTroca(process.platform, script)
+  if (!c) throw new Error('sistema sem troca')
+  const filho = spawn(c.cmd, c.args, { detached: true, stdio: 'ignore', windowsHide: true })
+  filho.unref()
+  setTimeout(() => app.quit(), 300)
 }
 
 async function procurarVersao() {
@@ -633,6 +689,28 @@ app.whenReady().then(() => {
   iniciarCentral()
   criarJanela()
   if (SMOKE) return smoke()
+  if (app.isPackaged && !SMOKE) {
+    atualizador = new Atualizador({
+      appExe: app.getPath('exe'),
+      appPid: process.pid,
+      pasta: app.getPath('userData'),
+      entregar: entregarTroca,
+      log: (...a) => console.log(...a),
+    })
+    atualizador.on('mudou', mostrarAtualizacao)
+    // a troca anterior falhou: avisa uma vez e, desta vez, o botão é "Baixar"
+    if (atualizador.falhaAnterior)
+      setTimeout(() => {
+        dialog
+          .showMessageBox(win && !win.isDestroyed() ? win : undefined, {
+            type: 'warning',
+            buttons: ['OK'],
+            message: 'A última atualização não terminou',
+            detail: `${atualizador.falhaAnterior} O app continua na versão de antes. Na próxima versão nova, use Baixar.`,
+          })
+          .catch(() => {})
+      }, 4000)
+  }
   aviso = new AvisoDeVersao({
     hub: HUB,
     plataforma: PLATAFORMA,
@@ -640,6 +718,7 @@ app.whenReady().then(() => {
     pasta: app.getPath('userData'),
     avisar,
     abrir: abrirFora,
+    atualizar,
     log: (...a) => console.log(...a),
   })
   aviso.start()

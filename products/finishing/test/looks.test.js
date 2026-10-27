@@ -32,23 +32,32 @@ test('Revela Look: curva de filme monótona, preto aberto e branco que deita', (
   assert.ok((curvaDeFilme(0.55) - curvaDeFilme(0.45)) / 0.1 > 1)
 })
 
-test('Revela Look: sombras frias, altas quentes, verde para oliva, pele no lugar', () => {
+test('Revela Look: meio-tom claro e dourado, branco quase neutro, sombra neutra, verde para oliva, pele quente', () => {
   const look = criarRevelaLook()
   const sombra = codigoParaOklab(...look.aplicar(0.12, 0.12, 0.12))
-  const alta = codigoParaOklab(...look.aplicar(0.85, 0.85, 0.85))
-  assert.ok(sombra[2] < 0, 'sombra devia puxar para o azul')
-  assert.ok(alta[2] > 0, 'alta devia puxar para o amarelo')
+  const meio = codigoParaOklab(...look.aplicar(0.5, 0.5, 0.5))
+  const branco = codigoParaOklab(...look.aplicar(1, 1, 1))
+  assert.ok(Math.abs(sombra[2]) < 0.01 && Math.abs(sombra[1]) < 0.01, 'sombra devia ficar neutra')
+  assert.ok(meio[2] > 0.015, 'meio-tom devia ficar dourado')
+  assert.ok(meio[0] > codigoParaOklab(0.5, 0.5, 0.5)[0] + 0.05, 'meio-tom devia subir')
+  assert.ok(Math.hypot(branco[1], branco[2]) < 0.015, 'branco devia ficar quase neutro')
 
   const verde = [0.25, 0.55, 0.2]
   const v0 = codigoParaOklab(...verde)
   const v1 = codigoParaOklab(...look.aplicar(...verde))
   assert.ok(matiz(v1) < matiz(v0) - 5, 'verde devia girar para o amarelo')
-  assert.ok(croma(v1) < croma(v0), 'verde devia perder um pouco de croma')
+  // o meio-tom mais claro abre um pouco a cor do verde; ele não pode gritar
+  assert.ok(croma(v1) < croma(v0) * 1.1, 'verde ganhou croma demais')
 
   const pele = [0.78, 0.58, 0.47]
   const p0 = codigoParaOklab(...pele)
   const p1 = codigoParaOklab(...look.aplicar(...pele))
-  assert.ok(Math.abs(matiz(p1) - matiz(p0)) < 8, 'pele mudou de matiz demais')
+  // pele vai para o dourado, como no grade de produção estudado, sem virar verde
+  assert.ok(matiz(p1) >= matiz(p0) && matiz(p1) < 80, `pele foi para ${matiz(p1).toFixed(0)}°`)
+  // os outros looks continuam na base: pele no lugar e sombra fria no Petróleo
+  const suave = criarRevelaLook({ look: 'suave' })
+  assert.ok(Math.abs(matiz(codigoParaOklab(...suave.aplicar(...pele))) - matiz(p0)) < 8, 'Suave mudou a pele')
+  assert.ok(codigoParaOklab(...criarRevelaLook({ look: 'petroleo' }).aplicar(0.12, 0.12, 0.12))[2] < 0, 'Petróleo perdeu a sombra fria')
 })
 
 test('Revela Look: só a curva ou só a cor', () => {

@@ -342,7 +342,8 @@ p {
   -webkit-backdrop-filter: blur(30px) saturate(1.8);
   backdrop-filter: blur(30px) saturate(1.8);
   box-shadow: 0 30px 80px rgb(0 0 0 / 0.45);
-  transform: translateX(calc(-100% - 20px));
+  /* fechado, fica longe o bastante para a sombra (80px de desfoque) não manchar a borda esquerda no tema claro */
+  transform: translateX(calc(-100% - 110px));
   transition: transform 0.55s var(--mola);
 }
 .menu-aberto .menu {
@@ -473,11 +474,8 @@ p {
   letter-spacing: -0.045em;
   color: #fff;
 }
-.hero-sub {
-  margin-top: 18px;
-  font-size: clamp(19px, 2vw, 26px);
-  font-weight: 400;
-  color: rgb(245 245 247 / 0.78);
+.hero .acoes {
+  margin-top: 40px;
 }
 .hero .vidro:not(.vidro--tinta) {
   color: #fff;
@@ -1156,9 +1154,9 @@ p {
   overflow: hidden;
 }
 .fim-simbolo {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 34px;
+  width: clamp(96px, 9vw, 128px);
+  aspect-ratio: 1;
+  margin: 0 auto 26px;
   color: var(--forte);
 }
 .fim-simbolo svg {

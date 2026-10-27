@@ -1,8 +1,15 @@
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
+import { EVENT_PAYLOADS, EVENT_PRODUCER } from '@zro/media-contracts'
 import { ProductMark } from '@zro/ui'
+import { productColor } from '@/components/app-tile'
 import { BrandSymbol } from '@/components/brand-symbol'
+import { Aparece } from '@/components/home/aparece'
+import { Conheca } from '@/components/home/conheca'
+import { Fluxo } from '@/components/home/fluxo'
+import { Numeros } from '@/components/home/numeros'
 import { publicCatalog } from '@/lib/data/catalog'
+import { hasDesktopInstaller } from '@/lib/downloads'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,6 +23,31 @@ const LINE: Record<string, string> = {
   nossom: 'Tratamento de som',
   finishing: 'Cor e entrega',
 }
+
+/** Três fatos por ferramenta, tirados do que cada uma faz hoje (README de cada produto em products/). */
+const FATOS: Record<string, string[]> = {
+  'carro-do-freela': ['Agenda de freelas por praça', 'Disponibilidade pública que sai da agenda', 'Escala da equipe sem adivinhar'],
+  tpeasy: ['Teleprompter no Safari do iPhone', 'Rola com a sua voz', 'Funciona sem internet'],
+  sobedesce: ['Até 32 conexões por arquivo', 'MD5 conferido em cada arquivo', 'Pausa e continua de onde parou'],
+  synquei: ['Sincroniza câmeras e gravadores pelo som', 'Exporta para Premiere, Resolve, Final Cut e Avid', 'Nada sai do seu computador'],
+  'ai-edit': ['Transcrição na sua máquina', 'Cortes e zoom propostos para você aprovar', 'Linha do tempo para o seu editor'],
+  nossom: ['Estúdio de áudio para criadores', 'Instala pelo navegador', 'App para Mac e Windows'],
+  finishing: ['LUT criativa a partir de uma referência', 'LOG para Rec.709 por câmera', 'PowerGrade para o DaVinci Resolve'],
+}
+
+/** O nome da etapa no fluxo, na ordem do catálogo. */
+const ETAPA: Record<string, string> = {
+  'carro-do-freela': 'Equipe',
+  tpeasy: 'Roteiro',
+  sobedesce: 'Cópia',
+  synquei: 'Sincronia',
+  'ai-edit': 'Edição',
+  nossom: 'Som',
+  finishing: 'Cor e entrega',
+}
+
+/** Eventos de bastidor que não entram no fluxo da página (começo e falha da cópia). */
+const SO_BASTIDOR = new Set(['ingest.started', 'ingest.failed'])
 
 /** Site oficial quando o catálogo ainda não tem o endereço (Revela e AEON já estão no ar nos subdomínios). */
 const SITE: Record<string, string> = {
@@ -33,6 +65,33 @@ export default async function Landing() {
         {w}
       </span>,
     ])
+  const ativos = products.filter((p) => p.stage === 'active' || p.stage === 'beta')
+  const siteDe = (p: (typeof products)[number]) => (p.external_url as string | null) || SITE[p.id as string] || null
+  const eventos = Object.keys(EVENT_PAYLOADS)
+  const formatos = EVENT_PAYLOADS['edit.timeline.ready'][1].shape.format.options.length
+  const noComputador = ativos.filter((p) => hasDesktopInstaller(p.id as string)).length
+  const numeros = [
+    { valor: ativos.length, rotulo: 'ferramentas' },
+    { valor: 1, rotulo: 'conta para tudo' },
+    { valor: eventos.length, rotulo: 'eventos ligam as etapas', dica: 'Contratos versionados em @zro/media-contracts' },
+    { valor: formatos, rotulo: 'formatos de linha do tempo', dica: 'OTIO, FCPXML, xmeml, EDL e AAF' },
+    { valor: noComputador, rotulo: 'apps para Mac e Windows' },
+  ]
+  const destaques = ativos.map((p) => ({
+    id: p.id as string,
+    nome: p.name as string,
+    linha: LINE[p.id as string] ?? (p.role_in_flow as string),
+    fatos: FATOS[p.id as string] ?? [],
+    site: siteDe(p),
+    cor: productColor(p.id as string),
+  }))
+  const etapas = ativos.map((p) => ({
+    id: p.id as string,
+    nome: p.name as string,
+    etapa: ETAPA[p.id as string] ?? (p.role_in_flow as string),
+    eventos: eventos.filter((e) => EVENT_PRODUCER[e as keyof typeof EVENT_PRODUCER] === p.id && !SO_BASTIDOR.has(e)),
+    cor: productColor(p.id as string),
+  }))
   return (
     <>
       {/* Topo de cinema: a paisagem em preto e branco com o símbolo esculpido em metal sobre a rocha (Higgsfield, fiel à marca). */}
@@ -113,6 +172,81 @@ export default async function Landing() {
         </p>
       </section>
 
+      {/* O ecossistema em números, todos tirados do catálogo e dos contratos (nada digitado à mão). */}
+      <section className="pnum" aria-labelledby="numeros-title">
+        <h2 id="numeros-title" className="display-2 atitle reveal">
+          <span className="atitle__thin">Um ecossistema.</span>
+          <span className="atitle__bold">Em números.</span>
+        </h2>
+        <Numeros itens={numeros} />
+      </section>
+
+      {/* Uma ferramenta por vez, de perto, como os destaques da apple.com. */}
+      <section className="section section--center pconheca-sec" aria-labelledby="conheca-title">
+        <div className="section__head section__head--wide reveal">
+          <h2 id="conheca-title" className="display-2 atitle">
+            <span className="atitle__thin">{ativos.length} ferramentas.</span>
+            <span className="atitle__bold">Conheça de perto.</span>
+          </h2>
+        </div>
+        <Conheca itens={destaques} />
+      </section>
+
+      {/* Como uma etapa passa para a outra: os eventos reais que cada app manda para o HUB. */}
+      <section className="section section--center pfluxo-sec" aria-labelledby="fluxo-title">
+        <div className="section__head section__head--wide reveal">
+          <h2 id="fluxo-title" className="display-2 atitle">
+            <span className="atitle__thin">Do job</span>
+            <span className="atitle__bold">à entrega.</span>
+          </h2>
+          <p>Cada etapa avisa o HUB. A próxima começa de onde a outra parou.</p>
+        </div>
+        <Fluxo etapas={etapas} />
+      </section>
+
+      {/* O app para computador: o painel de verdade num MacBook e o HUB no iPhone. */}
+      <section className="section section--center papp" aria-labelledby="app-title">
+        <div className="section__head section__head--wide reveal">
+          <h2 id="app-title" className="display-2 atitle">
+            <span className="atitle__thin">Um app no computador.</span>
+            <span className="atitle__bold">Todas as ferramentas.</span>
+          </h2>
+        </div>
+        <div className="showcase papp__aparelhos">
+          <figure className="ahero__product ahero__product--claro">
+            <img
+              src="/brand/produto-hub-claro.webp"
+              alt="O app Absolute ZRO aberto num MacBook, com as ferramentas, e o HUB num iPhone"
+              width={2400}
+              height={1500}
+              loading="lazy"
+            />
+          </figure>
+          <figure className="ahero__product ahero__product--escuro">
+            <img
+              src="/brand/produto-hub-escuro.webp"
+              alt="O app Absolute ZRO aberto num MacBook, com as ferramentas, e o HUB num iPhone"
+              width={2400}
+              height={1500}
+              loading="lazy"
+            />
+          </figure>
+        </div>
+        <ul className="papp__chips reveal" aria-label="O que o app faz">
+          <li>Instala, abre e atualiza</li>
+          <li>Uma conta só</li>
+          <li>Mac e Windows</li>
+        </ul>
+        <div className="papp__ctas reveal">
+          <Link className="glass-btn glass-btn--ink" href="/baixar#absolute-zro">
+            Baixar o app
+          </Link>
+          <Link className="glass-btn" href="/app">
+            Abrir no navegador
+          </Link>
+        </div>
+      </section>
+
       {/* O plano que abre tudo. */}
       <section className="pcycle reveal" aria-labelledby="ciclo-title">
         <div className="pcycle__text">
@@ -131,26 +265,10 @@ export default async function Landing() {
         </Link>
       </section>
 
-      {/* O painel de verdade: telas reais do HUB. */}
-      <section className="section section--center" aria-labelledby="hub-title">
-        <div className="section__head section__head--wide reveal">
-          <h2 id="hub-title" className="display-2 atitle">
-            <span className="atitle__thin">Tudo num painel.</span>
-            <span className="atitle__bold">No computador e no celular.</span>
-          </h2>
-        </div>
-        <div className="showcase">
-          <figure className="ahero__product ahero__product--claro">
-            <img src="/brand/produto-hub-claro.webp" alt="O HUB da Absolute ZRO aberto num MacBook e num iPhone" width={2400} height={1500} loading="lazy" />
-          </figure>
-          <figure className="ahero__product ahero__product--escuro">
-            <img src="/brand/produto-hub-escuro.webp" alt="O HUB da Absolute ZRO aberto num MacBook e num iPhone" width={2400} height={1500} loading="lazy" />
-          </figure>
-        </div>
-      </section>
-
       <section className="closing reveal" aria-labelledby="closing-title">
-        <BrandSymbol className="closing__mark bsym--scroll" />
+        <Aparece className="closing__aparece">
+          <BrandSymbol className="closing__mark bsym--aparece" />
+        </Aparece>
         <h2 id="closing-title" className="display-2 atitle">
           <span className="atitle__thin">Seus dados, seus acessos.</span>
           <span className="atitle__bold">Nada além do contratado.</span>

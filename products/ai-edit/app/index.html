@@ -39,6 +39,7 @@
         <symbol id="i-marcador" viewBox="0 0 24 24"><path d="M7 3.5h10v11l-5 5-5-5z" /></symbol>
         <symbol id="i-universos" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="2" /><rect x="13.5" y="3.5" width="7" height="7" rx="2" /><rect x="3.5" y="13.5" width="7" height="7" rx="2" /><rect x="13.5" y="13.5" width="7" height="7" rx="2" /></symbol>
         <symbol id="i-mais" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+        <symbol id="i-apps" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2" /><circle cx="12" cy="6" r="2" /><circle cx="18" cy="6" r="2" /><circle cx="6" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="18" cy="12" r="2" /><circle cx="6" cy="18" r="2" /><circle cx="12" cy="18" r="2" /><circle cx="18" cy="18" r="2" /></symbol>
         <symbol id="i-legenda" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M7 14.5h4M13 14.5h4M7 11h10" /></symbol>
       </defs>
     </svg>
@@ -50,7 +51,13 @@
       </div>
       <div class="barra-projeto"><span id="nomeProjeto" title="Clique para renomear"></span><span class="salvo" id="salvo" role="status" aria-live="polite"></span></div>
       <div class="barra-acoes">
-        <button class="glass-btn glass-btn--ink atualizar-app" id="atualizarApp" hidden>Reiniciar para atualizar</button>
+        <!-- versão nova (só no app de desktop instalado): app/atualizacao.js -->
+        <div class="atualizacao" id="atualizacao" role="status" aria-live="polite" hidden>
+          <span class="atualizacao-texto"></span>
+          <span class="atualizacao-barra" role="progressbar" aria-label="Progresso da atualização" aria-valuemin="0" aria-valuemax="100" hidden><span></span></span>
+          <button class="glass-btn glass-btn--ink atualizacao-botao" type="button" hidden></button>
+          <button class="atualizacao-depois" type="button" title="Depois" aria-label="Depois" hidden><svg><use href="#i-x" /></svg></button>
+        </div>
         <button class="icone-btn" id="desfazer" title="Desfazer (⌘Z)" aria-label="Desfazer" disabled><svg><use href="#i-desfazer" /></svg></button>
         <button class="icone-btn" id="refazer" title="Refazer (⇧⌘Z)" aria-label="Refazer" disabled><svg><use href="#i-refazer" /></svg></button>
         <button class="icone-btn" id="tema" title="Tema claro ou escuro" aria-label="Tema"><svg><use href="#i-sol" /></svg></button>

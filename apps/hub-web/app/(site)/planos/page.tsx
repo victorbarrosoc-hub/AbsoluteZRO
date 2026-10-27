@@ -69,12 +69,12 @@ export default async function Planos() {
 
       {(avulsoMes || pacotes.length > 0) && (
         <>
-          <fieldset className="cycle">
+          <fieldset className="cobranca">
             <legend className="zro-sr-only">Cobrança</legend>
             <input className="zro-sr-only" type="radio" name="ciclo" id="ciclo-mensal" defaultChecked />
             <label htmlFor="ciclo-mensal">Mensal</label>
             <input className="zro-sr-only" type="radio" name="ciclo" id="ciclo-anual" />
-            <label htmlFor="ciclo-anual">Anual{melhor > 0 && <span className="cycle__save">até −{melhor}%</span>}</label>
+            <label htmlFor="ciclo-anual">Anual{melhor > 0 && <span className="cobranca__save">até −{melhor}%</span>}</label>
           </fieldset>
 
           <div className="tiers">

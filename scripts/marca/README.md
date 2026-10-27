@@ -20,3 +20,5 @@ Manual de uso: [docs/marca/README.md](../../docs/marca/README.md). Marca flat ap
 - `aparelhos/compor.py modelo.png tela-mac.png tela-iphone.png saida.png`: troca o verde pelas capturas.
 - `aparelhos/produtos.py <pasta> [app…]`: gera `public/brand/produto-<app>-{claro,escuro}.webp` a partir de capturas
   reais (1440×916 e 390×860 @2x, claro e escuro). Só alguns apps: `produtos.py <pasta> hub`.
+- `aparelhos/transparente.py`: depois do `produtos.py`, tira o fundo chapado das fotos (máscara do molde: aparelhos
+  opacos, sombra e reflexo meio transparentes), para não aparecer retângulo atrás do notebook em nenhum fundo.

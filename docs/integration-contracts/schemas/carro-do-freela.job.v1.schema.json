@@ -1,6 +1,6 @@
 {
   "$id": "https://absolutezro.local/schemas/carro-do-freela.job.v1.json",
-  "title": "Job do Carro do Freela (contrato proposto) v1",
+  "title": "Job do Carro do Freela v1",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
