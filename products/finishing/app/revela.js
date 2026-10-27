@@ -10,6 +10,7 @@ import { oklabParaCodigo } from '../src/cor/oklab.js'
 import { clonarLut, orientarPar } from '../src/cor/clonar.js'
 import { presetLightroom } from '../src/cor/lightroom.js'
 import { LOOKS, criarRevelaLook } from '../src/cor/looks.js'
+import { MAX_LOOKS, PREFIXO, empacotar, lookSalvo } from '../src/cor/meuslooks.js'
 import { amostrar, analisar, criarLook, descrever, descreverSaturacao } from '../src/cor/referencia.js'
 import { ICONES, escalonar, icones, svg } from './visual.js'
 
@@ -30,6 +31,32 @@ let lutPrevia = null
 let camadas = null // { antes, depois } em canvas fora da tela
 let pares = [] // conta-gotas: [{ ref: [L, a, b], mat: [L, a, b] }]
 let pegando = null // null | { etapa: 'ref' | 'mat', ref?: [L, a, b] }
+// Meus looks (src/cor/meuslooks.js): clones salvos com nome, só neste navegador
+const CHAVE_MEUS = 'revela-meus-looks'
+function lerMeus() {
+  try {
+    const lista = JSON.parse(localStorage.getItem(CHAVE_MEUS) ?? '[]')
+    return Array.isArray(lista) ? lista.filter((l) => l?.id?.startsWith(PREFIXO) && l.dados) : []
+  } catch {
+    return []
+  }
+}
+function gravarMeus(lista) {
+  try {
+    localStorage.setItem(CHAVE_MEUS, JSON.stringify(lista))
+    return true
+  } catch {
+    return false // janela privada ou sem espaço
+  }
+}
+const ehMeu = (id) => typeof id === 'string' && id.startsWith(PREFIXO)
+/** O look (da Revela ou meu) pelo id, já pronto para aplicar. */
+function lookPorId(id, usar = {}) {
+  if (!ehMeu(id)) return criarRevelaLook({ ...usar, look: id })
+  const salvo = lerMeus().find((l) => l.id === id)
+  return salvo ? lookSalvo(salvo) : criarRevelaLook({ ...usar, look: 'revela' })
+}
+
 let preset = null // id do look da Revela (src/cor/looks.js) quando ele está no lugar da referência
 let refPropria = null // a referência que a pessoa trouxe, guardada para voltar a ela pela grade de looks
 let lookRefPropria = null // o look dessa referência sobre o frame atual (para a miniatura da grade)
@@ -201,7 +228,8 @@ $('arquivo-mais').addEventListener('change', async (e) => {
 
 /** Põe um look da Revela no lugar da referência (a referência da pessoa fica guardada para a grade). */
 async function escolherLook(id) {
-  const dados = LOOKS.find((l) => l.id === id)
+  const dados = LOOKS.find((l) => l.id === id) ?? lerMeus().find((l) => l.id === id)
+  if (!dados) return
   usarPreset(id)
   imagens.referencia = { arquivo: { name: dados.nome }, preset: id }
   const caixa = $('caixa-referencia')
@@ -229,6 +257,26 @@ async function voltarParaReferencia() {
 }
 
 $('usar-look').addEventListener('click', () => escolherLook('revela'))
+
+// Salvar o clone como "meu look": a LUT inteira (intensidade 100%) entra na lista deste navegador
+$('salvar-look').addEventListener('submit', (e) => {
+  e.preventDefault()
+  if (!analise?.clone) return
+  const lista = lerMeus()
+  if (lista.length >= MAX_LOOKS) return avisar(`Já são ${MAX_LOOKS} looks salvos. Apague um para salvar outro.`, true)
+  const novo = empacotar((r, g, b) => analise.clone.aplicar(r, g, b, 1), $('nome-look').value)
+  if (!gravarMeus([...lista, novo])) return avisar('Este navegador não deixou salvar (janela privada ou sem espaço).', true)
+  $('nome-look').value = ''
+  avisar(`"${novo.nome}" salvo. Ele aparece na grade de looks, em qualquer frame.`)
+})
+
+$('apagar-look').addEventListener('click', async () => {
+  if (!ehMeu(preset)) return
+  const nome = look.nome
+  gravarMeus(lerMeus().filter((l) => l.id !== preset))
+  await escolherLook('revela')
+  avisar(`"${nome}" apagado.`)
+})
 
 // Exemplo pronto (frames da ZRO Filmes em exemplos/): o cavalo no pôr do sol como referência, o vestido achatado como frame.
 $('exemplo')?.addEventListener('click', async () => {
@@ -296,8 +344,10 @@ async function refazerLook() {
   avisar('Calculando o look…')
   await espera()
   const usar = { tom: $('usar-tom').checked, cor: $('usar-cor').checked }
-  look = analise.clone ?? (preset ? criarRevelaLook({ ...usar, look: preset }) : criarLook(analise.ref, analise.mat, { ...usar, pares }))
+  look = analise.clone ?? (preset ? lookPorId(preset, usar) : criarLook(analise.ref, analise.mat, { ...usar, pares }))
   raiz.querySelector('.rotulo-depois').textContent = preset ? look.nome : 'Depois'
+  $('salvar-look').hidden = !analise.clone
+  $('apagar-look').hidden = !ehMeu(preset)
   for (const b of $('looks').querySelectorAll('[data-look]'))
     b.setAttribute('aria-checked', String(b.dataset.look === (preset ?? (analise.clone ? '' : 'ref'))))
   mostrarPares()
@@ -367,6 +417,14 @@ function desenharLooks() {
   const botoes = LOOKS.map((l) =>
     botaoLook(l.id, l.nome, pintarMini(base, criarRevelaLook({ look: l.id }).aplicar), () => escolherLook(l.id)),
   )
+  // os meus looks vêm depois dos da Revela, com o nome que a pessoa deu
+  for (const salvo of lerMeus()) {
+    try {
+      botoes.push(botaoLook(salvo.id, salvo.nome, pintarMini(base, lookSalvo(salvo).aplicar), () => escolherLook(salvo.id)))
+    } catch {
+      // registro corrompido: fica de fora da grade
+    }
+  }
   // a referência da pessoa entra primeiro: é a LUT que nasce do frame dela
   if (refPropria && imagens.material) {
     if (!lookRefPropria) {
@@ -615,6 +673,7 @@ $('baixar').addEventListener('click', async () => {
 
 /** Nome do arquivo e do look, a partir do modo e da referência. */
 function nomeBase() {
+  if (ehMeu(preset)) return look.nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w-]+/g, '-').toLowerCase() || 'meu-look'
   if (preset) return preset === 'revela' ? 'look' : preset
   if (clone) return 'clone'
   return (
