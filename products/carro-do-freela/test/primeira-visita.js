@@ -32,8 +32,11 @@ const URL='file://'+path.resolve(__dirname,'..','public','index.html');
   await p.waitForTimeout(500);
 
   t(await p.locator('#ovl-pv').isHidden(),'⟶⟶ quem abre o link NÃO recebe aviso por cima da home');
-  const selo=p.locator('.homenav [data-previa]');
-  t(await selo.isVisible()&&/Prévia/.test(await selo.textContent()),'⟶⟶ o selo "Prévia" está à vista, junto da marca');
+  /* (27/out) o selo saiu da barra de cima a pedido do Victor; a prévia segue dita no rodapé e no menu */
+  t(!await p.locator('.homenav [data-previa]').count(),'o selo "Prévia" não ocupa mais a barra de cima');
+  const selo=p.locator('#v-home .fim-prev');
+  await selo.scrollIntoViewIfNeeded();
+  t(await selo.isVisible()&&/Prévia/.test(await selo.textContent()),'⟶⟶ o "Prévia" do pé da home está lá');
   await selo.click(); await p.waitForTimeout(300);
   t(await p.locator('#ovl-pv').isVisible(),'tocar no selo abre o resumo da prévia');
   t(await p.locator('#pv-bem').isVisible(),'no estado de "sobre a prévia"');
@@ -68,8 +71,8 @@ const URL='file://'+path.resolve(__dirname,'..','public','index.html');
   await p.locator('#pv-ok').click(); await p.waitForTimeout(350);
   t(await p.locator('#ovl-pv').isHidden(),'"Entendi" fecha');
   await p.reload({waitUntil:'networkidle'}); await p.waitForTimeout(500);
-  t(await p.locator('#ovl-pv').isHidden()&&await p.locator('.homenav [data-previa]').isVisible(),
-    'recarregando, nada abre sozinho — e o selo continua lá');
+  t(await p.locator('#ovl-pv').isHidden()&&await p.locator('#v-home .fim-prev').count()===1,
+    'recarregando, nada abre sozinho — e o "Prévia" do pé da home continua lá');
 
   /* ============ o outro estado: apagar tudo ============ */
   await p.locator('.homenav .entrar-cta').click(); await p.waitForTimeout(240);

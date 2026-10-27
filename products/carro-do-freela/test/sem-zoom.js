@@ -63,8 +63,8 @@ const TELAS=['feed','propostas','jobs','brecho','planos','cofre','vagas','orcar'
     t(m.moedas,W+'px · '+lado+': as DUAS moedas continuam na barra (pedido de 20/ago)');
     t(m.cortado.length===0&&m.marca,W+'px · '+lado+': nada da barra fica cortado e a marca aparece inteira'+(m.cortado.length?' — '+m.cortado.join(','):''));
     if(W===390&&lado==='freela'){
-      t(!await p.locator('.top #modo-tog').isVisible()&&!await p.locator('.top .selo-prev').isVisible(),
-        'o que saiu da barra é o que já mora no menu: a chave de lado e o selo Prévia');
+      t(!await p.locator('.top #modo-tog').isVisible()&&!await p.locator('.top [data-previa]').count(),
+        'o que saiu da barra é o que já mora no menu: a chave de lado (e o selo Prévia saiu do topo em 27/out)');
       await p.locator('#bt-menu').click(); await p.waitForTimeout(550);
       t(await p.locator('#gaveta [data-previa]').isVisible(),'o selo Prévia abre a gaveta');
       t(await p.locator('#g-ladoseg').isVisible()&&
@@ -102,8 +102,8 @@ const TELAS=['feed','propostas','jobs','brecho','planos','cofre','vagas','orcar'
     const {ctx,p}=await entrar(600,'freela',false);
     await p.evaluate(()=>{show('feed');scrollTo(0,0)}); await p.waitForTimeout(250);
     const m=await mede(p,600);
-    t(await p.locator('.top #modo-tog').isVisible()&&await p.locator('.top .selo-prev').isVisible()&&m.iw===600&&m.cortado.length===0,
-      'a 600px a barra tem lugar: o selo e a chave voltam para ela, e tudo cabe');
+    t(await p.locator('.top #modo-tog').isVisible()&&m.iw===600&&m.cortado.length===0,
+      'a 600px a barra tem lugar: a chave volta para ela, e tudo cabe');
     await ctx.close();
   }
 
