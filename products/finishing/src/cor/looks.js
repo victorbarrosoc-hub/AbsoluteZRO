@@ -47,24 +47,24 @@ const BASE = {
 }
 
 /**
- * Revela Look (26/10/2026): o mesmo motor, calibrado nos stills de produções do titular (Rec.709 → o grade de película
- * que ele usa no Resolve, 3 cenas, fora do repositório). Erro médio de 6,2 para 2,9 (ΔE Oklab ×100) nessas cenas.
- * São só os parâmetros abaixo: o look continua sendo este motor, não uma LUT copiada.
+ * Revela Look (26/10/2026): a base de película com a luz e a temperatura de um grade de produção, lidas nos stills do
+ * titular (Rec.709 → o grade dele, fora do repositório): meio-tom bem mais claro com preto e branco no lugar, sombra
+ * neutra, meio-tom dourado com o branco quase neutro, cor um pouco mais contida. Os matizes (verde, azul, pele) são os da base: o ajuste é
+ * só de luz e temperatura, e o look continua sendo este motor, não uma LUT copiada. Erro médio nessas cenas: 6,2 → 3,3
+ * (ΔE Oklab ×100). Para o grade exato de alguém, o caminho é Clonar LUT + "Salvar como meu look".
  */
 export const REVELA_LOOK = {
   ...BASE,
-  preto: 0.045,
-  branco: 0.958,
-  contraste: 8, // meio mais denso, como numa cópia
-  pivo: 0.391, // o meio-tom desce
-  densidade: 0.4, // cor saturada pesa bem mais
-  // giros dentro do limite do motor (largura × 2/π): o matiz nunca dobra sobre si mesmo
-  verde: { ...BASE.verde, gira: -26, croma: 0.56 }, // verde oliva e contido
-  azul: { ...BASE.azul, gira: -24, croma: 0.5 }, // azul puxa para petróleo, sem gritar
-  pele: { ...BASE.pele, junta: 0.45 }, // pele se junta em volta do tom de pele
-  sombras: [-0.002, -0.0007], // sombra quase neutra
-  altas: [-0.0173, 0.06], // altas douradas
-  saturacao: 1.13,
+  gama: 1.2,
+  contraste: 7,
+  pivo: 0.28, // com o gama, o meio-tom sobe e as pontas ficam
+  preto: 0.05,
+  branco: 0.97,
+  densidade: 0.25,
+  sombras: [0.001, 0.0024], // sombra neutra
+  meios: [-0.01, 0.026], // meio-tom dourado (pele, madeira)
+  altas: [-0.003, 0.008], // branco quase neutro
+  saturacao: 0.95,
 }
 
 /**
@@ -121,9 +121,11 @@ export const LOOKS = [
 
 /** Curva de filme em L (0–1): S logístico misturado com a reta, preto e branco deslocados. Monótona. */
 export function curvaDeFilme(L, p = REVELA_LOOK) {
+  // gama (padrão 1): abre ou fecha o meio-tom sem mexer no preto e no branco
+  const Lg = limitar(L, [0, 1]) ** (p.gama ?? 1)
   const g = (x) => 1 / (1 + Math.exp(-p.contraste * (x - p.pivo)))
-  const s = (g(L) - g(0)) / (g(1) - g(0))
-  const x = 0.6 * s + 0.4 * limitar(L, [0, 1])
+  const s = (g(Lg) - g(0)) / (g(1) - g(0))
+  const x = 0.6 * s + 0.4 * Lg
   return p.preto + (p.branco - p.preto) * x
 }
 
@@ -158,8 +160,11 @@ export function criarRevelaLook(opcoes = {}) {
       b2 = C * Math.sin(h * GRAU)
       const sombra = 1 - suave(0.12, 0.5, L2)
       const alta = suave(0.55, 0.95, L2)
-      a2 += sombra * p.sombras[0] + alta * p.altas[0]
-      b2 += sombra * p.sombras[1] + alta * p.altas[1]
+      // meios (opcional): tom no meio-tom que some antes do branco, para esquentar a pele sem amarelar o branco
+      const meio = suave(0.3, 0.6, L2) * (1 - suave(0.82, 1, L2))
+      const [ma, mb] = p.meios ?? [0, 0]
+      a2 += sombra * p.sombras[0] + alta * p.altas[0] + meio * ma
+      b2 += sombra * p.sombras[1] + alta * p.altas[1] + meio * mb
     }
     return [L + (L2 - L) * t, a + (a2 - a) * t, b + (b2 - b) * t]
   }

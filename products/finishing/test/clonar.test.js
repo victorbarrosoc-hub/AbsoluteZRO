@@ -38,10 +38,13 @@ test('preset Lightroom: identidade fica zerada; o look vira curvas e HSL num .xm
 
   const look = criarRevelaLook()
   const { curvas, hsl } = lerParaLightroom(look.aplicar)
-  // sombras frias e altas quentes do Revela Look aparecem nas curvas por canal
-  assert.ok(curvas[2][1][1] > curvas[0][1][1], 'sombra devia ter mais azul que vermelho')
-  assert.ok(curvas[0][9][1] > curvas[2][9][1], 'alta devia ter mais vermelho que azul')
+  // o meio-tom dourado do Revela Look aparece nas curvas por canal
+  assert.ok(curvas[0][5][1] > curvas[2][5][1], 'meio devia ter mais vermelho que azul')
   assert.ok(hsl.Green.matiz < 0, 'verde devia girar para o amarelo')
+  // sombras frias e altas quentes do Petróleo
+  const petroleo = lerParaLightroom(criarRevelaLook({ look: 'petroleo' }).aplicar).curvas
+  assert.ok(petroleo[2][1][1] > petroleo[0][1][1], 'sombra devia ter mais azul que vermelho')
+  assert.ok(petroleo[0][9][1] > petroleo[2][9][1], 'alta devia ter mais vermelho que azul')
 
   const xmp = presetLightroom(look.aplicar, 'Revela <Look> & cia')
   assert.match(xmp, /^<x:xmpmeta xmlns:x="adobe:ns:meta\/"/)

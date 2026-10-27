@@ -778,17 +778,21 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   botão. SOBEDESCE e Synquei têm instalador para Mac e Windows no catálogo (`/api/v1/desktop/apps`).
 - Não validado: o Mac de verdade (a área de arrastar só vale lá e no Windows); conferir no 1.1.1 instalado.
 
-## Revela Look calibrado no grade do titular (26/10/2026)
+## Revela Look com a luz do grade do titular e Meus looks (26–27/10/2026)
 
-- Pedido do titular: o Revela Look para usar nas produções dele, perto do grade de película que ele usa. Parâmetros do
-  motor (`src/cor/looks.js`) ajustados por Nelder-Mead nos pares Rec.709 → look de 3 cenas (fora do repositório; a
-  cena 1.19 ficou de fora porque o still do look é de outra sessão e de outro grade).
-- Erro médio (ΔE Oklab ×100): 7,3 sem nada, 6,2 com o look antigo, **2,9** com o novo. Validação cruzada (ajusta em 3,
-  mede na 4ª) com a primeira versão: 3,5 a 5,5 contra 3,9 a 7,6 do antigo.
-- Primeira versão recusada: o giro do azul passava do limite do motor (largura × 2/π) e o matiz dobrava entre azul e
-  roxo. A versão final limita os giros (verde −26°, azul −24°) e a junção da pele (0,45) e perde quase nada (2,82 → 2,86).
-- Pele clara vai para o dourado como no grade de referência (lá de ~47° para ~78° de matiz; no look novo ~62°); o
-  teste agora pede pele quente sem passar de 80°. Suave, Petróleo, Dourado e P&B usam a base antiga e não mudaram.
-- `marca/home/look-revela.jpg` refeita com o look novo (mesmo frame e tamanho das outras).
-- `products/finishing`: `npm test` 94/94.
-- Não validado: o `.cube` do look novo aplicado no Resolve em material de vídeo.
+- Primeira tentativa recusada pelo titular ("não tá bonito nem perto"): o ajuste automático dos 15 parâmetros baixou o
+  erro médio (6,2 → 2,9) amarelando as altas e o branco. A comparação mostrada ainda aplicava o look num frame que já
+  tinha o grade dele (grade em dobro). Não foi para a main.
+- Leitura por faixa de luz (Rec.709 → grade dele, 3 cenas): o grade sobe o meio-tom (L 41 → 46, 58 → 69, 75 → 83)
+  com preto e branco no lugar, esquenta meios e altas (b +2 a +3) e deixa a sombra neutra. O motor ganhou `gama`
+  (curva do meio sem mexer nas pontas) e `meios` (tom no meio-tom que some antes do branco), opcionais.
+- Versão final: base antiga + gama 1,2, contraste 7, pivô 0,28, densidade 0,25, saturação 0,95, sombra neutra, meios
+  dourados e branco quase neutro; matizes da base. Erro médio 6,21 → **2,92**; comparação visual nas 3 cenas perto do
+  grade (o 1.19 é de outro grade). `marca/home/look-revela.jpg` refeita.
+- **Meus looks** (`src/cor/meuslooks.js`): o clone vira LUT 33³ em 16 bits com nome, até 8, em `localStorage`; aparece
+  na grade de looks em qualquer frame, baixa `.cube` com o nome e apaga. Para o grade exato do titular sem publicar o
+  look de um pacote pago no site.
+- Testes: unidade (ida e volta do look salvo, intensidade, nome, registro corrompido; Revela Look com meio claro e
+  dourado, branco neutro, sombra neutra; Petróleo segue com sombra fria) e Chromium (clone → salvar → outra visita →
+  grade com 6 looks → baixar `revela-zro-filmes-33.cube` → apagar). `products/finishing`: `npm test` 96/96.
+- Não validado: o `.cube` do look novo e de um "meu look" no Resolve, em vídeo.

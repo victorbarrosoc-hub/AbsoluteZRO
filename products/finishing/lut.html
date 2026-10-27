@@ -128,7 +128,13 @@
             <button id="limpar-pares" class="vidro vidro--icone" type="button" hidden aria-label="Limpar"><span data-icone="x"></span></button>
           </div>
 
+          <form id="salvar-look" class="salvar-look" hidden title="Fica só neste navegador. Depois ele aparece na grade de looks, em qualquer frame">
+            <input id="nome-look" type="text" maxlength="40" placeholder="Nome do look" aria-label="Nome do look" autocomplete="off" />
+            <button class="vidro" type="submit"><span data-icone="brilho"></span> Salvar como meu look</button>
+          </form>
+
           <button id="baixar" class="vidro vidro--tinta grande" type="button"><span data-icone="baixar"></span> Baixar LUT</button>
+          <button id="apagar-look" class="vidro" type="button" hidden><span data-icone="x"></span> Apagar este look</button>
           <button
             id="baixar-xmp"
             class="vidro"
