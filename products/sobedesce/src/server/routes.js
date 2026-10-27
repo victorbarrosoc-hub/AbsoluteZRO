@@ -592,6 +592,38 @@ export function createApi(ctx) {
     }
   }, { raw: true })
 
+  // ── a Z, a IA da Absolute ZRO (public/components/z.js): o painel fala com /api/ia/* e o motor repassa ao site com o
+  //    Bearer deste computador (CloudAuth.ia). A resposta (NDJSON nas mensagens) passa pedaço a pedaço, sem buffer.
+  const ia = (caminho) => async ({ req, res, params, body, signal }) => {
+    const alvo = typeof caminho === 'function' ? caminho(params) : caminho
+    let r
+    try {
+      r = ctx.auth.cloud ? await ctx.auth.cloud.ia(req.method, alvo, { body: req.method === 'POST' ? JSON.stringify(body) : undefined, signal }) : null
+    } catch {
+      if (signal.aborted) return res.destroy()
+      return sendJSON(res, 502, { erro: 'rede', mensagem: 'Sem conexão com a conta SOBEDESCE agora.' })
+    }
+    if (!r) return sendJSON(res, 401, { erro: 'sem_conta', mensagem: 'Entre na conta SOBEDESCE para conversar com a Z.' })
+    res.writeHead(r.status, baseHeaders({ 'content-type': r.headers.get('content-type') || 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-accel-buffering': 'no' }))
+    if (!r.body) return res.end()
+    try {
+      for await (const pedaco of r.body) res.write(pedaco)
+    } catch {
+      return res.destroy()
+    }
+    res.end()
+  }
+  const ID_CONVERSA = /^[A-Za-z0-9_-]{1,80}$/
+  const conversa = (params) => {
+    if (!ID_CONVERSA.test(params.id)) throw new HttpProblem(404, 'Conversa não encontrada.')
+    return `conversas/${params.id}`
+  }
+  route('GET', '/api/ia/estado', ia('estado'), { raw: true })
+  route('GET', '/api/ia/conversas', ia('conversas'), { raw: true })
+  route('GET', '/api/ia/conversas/:id', ia(conversa), { raw: true })
+  route('DELETE', '/api/ia/conversas/:id', ia(conversa), { raw: true, corpo: false })
+  route('POST', '/api/ia/mensagens', ia('mensagens'), { raw: true })
+
   // ── conta SOBEDESCE (fluxo de dispositivo; docs/CONTAS.md §7)
   const cloud = () => {
     if (!ctx.auth.cloud) throw new HttpProblem(404, 'A conta SOBEDESCE não está disponível nesta versão.')

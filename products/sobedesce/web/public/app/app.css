@@ -9000,3 +9000,18 @@ select.input {
     animation: none;
   }
 }
+
+/* A Z, a IA da Absolute ZRO, no topo do Início (components/z.js). O painel tem altura própria; o botão de reconectar
+   só aparece sem token da Z. */
+.ini-z {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 6px;
+}
+.ini-z-painel {
+  min-height: 400px;
+  --zro-ia-altura: 400px;
+}
+.ini-z-entrar {
+  justify-self: center;
+}

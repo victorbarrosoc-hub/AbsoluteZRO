@@ -9,7 +9,7 @@ export const DURACAO_ZRO_S = 600;
 const CONTEXTO = "cookie:sd_zro";
 
 export type ModoZro = "entrar" | "vincular";
-export type EstadoZro = { state: string; verificador: string; nonce: string; modo: ModoZro; usuarioId: string | null; volta: string; expira: number };
+export type EstadoZro = { state: string; verificador: string; nonce: string; modo: ModoZro; usuarioId: string | null; volta: string; basico?: boolean; expira: number };
 
 export function selarEstadoZro(e: Omit<EstadoZro, "expira">): string {
   return selarCookie(JSON.stringify({ ...e, expira: Date.now() + DURACAO_ZRO_S * 1000 }), CONTEXTO);

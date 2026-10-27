@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element -- anel e estrela com recorte alfa, posicionados à mão (sem otimização) */
-import { ArrowUpRight, CircleCheck, MessageSquare, Sparkle, UserRound } from "lucide-react";
+import { ArrowRight, ArrowUpRight, CircleCheck, MessageSquare, Sparkle, UserRound } from "lucide-react";
+import Link from "next/link";
 import { buttonClasses } from "@/components/ui/button";
 import { Reveal } from "./motion";
 import { Container } from "./section";
@@ -12,8 +13,9 @@ const FICHAS = [
 ] as const;
 
 /**
- * O Z, a IA do ecossistema Absolute ZRO. Ainda não está dentro do SOBEDESCE: a seção diz que está chegando e leva a
- * absolutezro.com/ia. Anel e estrela em public/z; a estrela fica sobre o tubo, às 3 horas (globals.css, .z-estrela).
+ * A Z, a IA do ecossistema Absolute ZRO. Desde 27/10/2026 ela é o painel inicial da conta (components/conta/painel-z.tsx,
+ * repasse em lib/zro/ia.ts): a seção diz que está no SOBEDESCE e leva à conta; "Conhecer a Z" fica como segunda ação.
+ * Anel e estrela em public/z; a estrela fica sobre o tubo, às 3 horas (globals.css, .z-estrela).
  */
 export function ZSection() {
   return (
@@ -27,15 +29,15 @@ export function ZSection() {
           <div className="grid justify-items-center sm:justify-items-start">
             <p className="mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-semibold text-ink-2 ring-1 ring-line">
               <i className="size-[7px] rounded-full bg-up" aria-hidden="true" />
-              Chegando ao SOBEDESCE
+              Agora no SOBEDESCE
             </p>
             <h2 id="z-titulo" className="font-display text-[30px] leading-[1.08] font-semibold tracking-[-0.03em] text-balance text-ink sm:text-[44px]">
               Z. Uma IA para todo o ecossistema.
             </h2>
             <p className="mt-3 text-[17px] leading-[1.5] text-pretty text-ink-2 sm:text-[19px]">
-              Vai acompanhar cada descarga conferida e ajudar a seguir para a sincronia e a edição.
+              Tira dúvidas sobre descargas e entregas, logo na abertura da sua conta.
             </p>
-            <ul className="mt-6 mb-7 flex flex-wrap justify-center gap-1.5 sm:justify-start sm:gap-2" aria-label="Como o Z funciona">
+            <ul className="mt-6 mb-7 flex flex-wrap justify-center gap-1.5 sm:justify-start sm:gap-2" aria-label="Como a Z funciona">
               {FICHAS.map(({ icon: Icone, texto, dica }) => (
                 <li key={texto} title={dica} className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1.5 text-[12.5px] font-semibold text-ink sm:px-3 sm:text-[13.5px]">
                   <Icone className="size-4 text-ink-2" aria-hidden="true" />
@@ -43,10 +45,16 @@ export function ZSection() {
                 </li>
               ))}
             </ul>
-            <a href="https://absolutezro.com/ia" rel="noopener" className={buttonClasses({ variant: "secondary", size: "md" })}>
-              Conhecer o Z
-              <ArrowUpRight aria-hidden="true" />
-            </a>
+            <div className="flex flex-wrap justify-center gap-3 sm:justify-start">
+              <Link href="/conta" className={buttonClasses({ variant: "primary", size: "md" })}>
+                Conversar com a Z
+                <ArrowRight aria-hidden="true" />
+              </Link>
+              <a href="https://absolutezro.com/ia" rel="noopener" className={buttonClasses({ variant: "secondary", size: "md" })}>
+                Conhecer a Z
+                <ArrowUpRight aria-hidden="true" />
+              </a>
+            </div>
           </div>
         </Reveal>
       </Container>

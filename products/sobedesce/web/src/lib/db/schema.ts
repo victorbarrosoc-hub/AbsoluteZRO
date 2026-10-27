@@ -482,6 +482,8 @@ export const contasZro = pgTable("contas_zro", {
   /** Produtos contratados pela organização ativa no último login (zro_products), separados por espaço. */
   produtos: text().notNull().default(""),
   organizacao: text(),
+  /** Tokens da Z (escopo zro.ia: refresh, access e validade), cifrados com SOBEDESCE_KEY (lib/zro/ia.ts). Null = sem a Z. */
+  ia: text(),
   criadoEm: agora(),
   ultimoLoginEm: quando(),
 });

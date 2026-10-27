@@ -30,6 +30,15 @@
  *      recebe o job/1 com o briefing inteiro e a equipe que TEM conta; quem
  *      não tem aparece como "sem conta", e o botão vira "Abrir". Fora do
  *      domínio o bloco não existe.
+ *
+ * A Z, A IA DO ECOSSISTEMA (27/out · 4):
+ *  11. com conta liberada, a Z é o painel inicial (topo do Feed): o
+ *      <zro-ia> conversa por /api/zro/ia (função de verdade → HUB falso),
+ *      a resposta chega em streaming e nenhum token aparece na página. Sem
+ *      o acesso da Z, aparece "Reconectar com Absolute ZRO". Fora do
+ *      domínio o painel não existe e nada é pedido à absolutezro.com.
+ *      O script do painel vem do próprio repositório (apps/hub-web), por
+ *      rota do Playwright: a suíte não sai para a internet.
  */
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path'), os = require('os');
@@ -37,6 +46,7 @@ const { iniciarZroFalsa } = require('./api/zro-falso.js');
 const ok = [], bad = []; const t = (c, m) => (c ? ok : bad).push(m);
 const RAIZ = path.resolve(__dirname, '..');
 const CLIENTE = { clientId: 'carrodofreela-web', clientSecret: 'segredo-da-suite-conta-zro' };
+const HUB_PUBLIC = path.resolve(RAIZ, '..', '..', 'apps', 'hub-web', 'public');
 
 /* o domínio em miniatura: o build interno + as funções + as rotas do build */
 function montarSaida(semFuncoes) {
@@ -48,7 +58,7 @@ function montarSaida(semFuncoes) {
   fs.cpSync(path.join(RAIZ, 'public', 'm'), path.join(saida, 'static', 'm'), { recursive: true });
   for (const f of ['apple-touch-icon.png', 'icone-192.png', 'icone-512.png', 'icone-maskable.png', 'app.webmanifest', 'og.jpg'])
     fs.copyFileSync(path.join(RAIZ, 'public', f), path.join(saida, 'static', f));
-  if (!semFuncoes) for (const n of ['entrar', 'callback', 'eu', 'sair', 'enviar']) {
+  if (!semFuncoes) for (const n of ['entrar', 'callback', 'eu', 'sair', 'enviar', 'ia']) {
     const dir = path.join(saida, 'functions', 'api', 'zro', n + '.func');
     fs.mkdirSync(path.join(dir, 'api', 'zro'), { recursive: true });
     for (const f of [n + '.js', '_zro.js']) fs.copyFileSync(path.join(RAIZ, 'api', 'zro', f), path.join(dir, 'api', 'zro', f));
@@ -76,8 +86,16 @@ function montarSaida(semFuncoes) {
   const RITA = { sub: 'zro-42', email: 'rita@coletivo.com', nome: 'Rita Duarte', org: 'Coletivo Rita' };
   const abrir = async (url, opts = {}) => {
     const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const erros = [], pedidos = [], deFora = [];
+    /* o painel da Z vem da absolutezro.com: aqui, do próprio repositório */
+    await ctx.route('https://absolutezro.com/**', rt => {
+      const u = new URL(rt.request().url()); deFora.push(u.pathname);
+      const f = path.join(HUB_PUBLIC, decodeURIComponent(u.pathname));
+      if (f.startsWith(HUB_PUBLIC) && fs.existsSync(f) && fs.statSync(f).isFile())
+        return rt.fulfill({ body: fs.readFileSync(f), contentType: f.endsWith('.js') ? 'text/javascript; charset=utf-8' : f.endsWith('.webp') ? 'image/webp' : 'application/octet-stream', headers: { 'access-control-allow-origin': '*' } });
+      return rt.fulfill({ status: 404, body: '' });
+    });
     const p = await ctx.newPage();
-    const erros = [], pedidos = [];
     p.on('pageerror', e => erros.push(e.message));
     /* o 401 do /eu sem sessão é a resposta CERTA do contrato, e o favicon.ico
        nunca existiu no domínio (o Chromium pede sozinho); o resto reprova */
@@ -89,7 +107,7 @@ function montarSaida(semFuncoes) {
     await p.goto(url, { waitUntil: 'load' });
     await p.waitForFunction(() => !document.getElementById('splash'), null, { timeout: 20000 }).catch(() => {});
     await p.waitForTimeout(400);
-    return { ctx, p, erros, pedidos };
+    return { ctx, p, erros, pedidos, deFora };
   };
   const telaEntrar = async p => { await p.locator('.homenav .entrar-cta').click(); await p.waitForTimeout(900) };
   const botao = p => p.evaluate(() => { const e = document.getElementById('lg-zro'), f = document.getElementById('lg-form'),
@@ -102,7 +120,9 @@ function montarSaida(semFuncoes) {
 
   /* ============ 1. fora do domínio, nada muda ============ */
   {
-    const { ctx, p, erros, pedidos } = await abrir('file://' + path.join(RAIZ, 'public', 'index.html'));
+    const { ctx, p, erros, pedidos, deFora } = await abrir('file://' + path.join(RAIZ, 'public', 'index.html'));
+    t(await p.evaluate(() => { const z = document.getElementById('z-painel'); return z.hidden && getComputedStyle(z).display === 'none' && !document.querySelector('zro-ia') }), '⟶⟶ aberto do disco, o painel da Z não existe (nem caixa vazia)');
+    t(deFora.length === 0, 'e nada é pedido à absolutezro.com (' + deFora.join(', ') + ')');
     await telaEntrar(p);
     const r = await botao(p);
     t(r.existe && r.escondido && !r.visivel, '⟶⟶ aberto do disco, o botão da Absolute ZRO não aparece');
@@ -283,6 +303,58 @@ function montarSaida(semFuncoes) {
     t(/1 na equipe/.test(depois.nota || ''), 'e o resumo da equipe (' + depois.nota + ')');
     t(await p.evaluate(() => { const m = MODO; MODO = 'freela'; const h = detJob(ESCALAS[0]); MODO = m; return !h.includes('data-zroenv') }), 'do lado do freela o bloco não existe');
     t(erros.length === 0, 'sem erro: ' + erros.slice(0, 2).join(' · '));
+    await ctx.close();
+  }
+
+  /* ============ 11. a Z, a IA da Absolute ZRO, no painel inicial ============ */
+  {
+    zro.estado.proximo = { pessoa: Object.assign({}, RITA, { sub: 'zro-46' }), negar: false, adulterar: null };
+    const { ctx, p, erros, deFora } = await abrir(DOMINIO, { aceita401: true });
+    await telaEntrar(p);
+    await Promise.all([p.waitForURL(/\/$/, { timeout: 15000 }).catch(() => {}), p.locator('#lg-zro').click()]);
+    await p.waitForFunction(() => typeof ZRO_CONTA !== 'undefined' && ZRO_CONTA && MODO, null, { timeout: 15000 }).catch(() => {});
+    await p.evaluate(() => show('feed'));
+    await p.waitForFunction(() => { const z = document.querySelector('zro-ia'); return z && z.shadowRoot && /Rita/.test(z.shadowRoot.textContent) }, null, { timeout: 15000 }).catch(() => {});
+    const z = await p.evaluate(() => { const el = document.querySelector('zro-ia'), painel = document.getElementById('z-painel'), secao = document.getElementById('v-feed');
+      return { existe: !!el, visivel: !painel.hidden && !!painel.offsetParent, primeiro: secao.firstElementChild === painel && !secao.querySelector('.wrap').contains(painel), api: el && el.getAttribute('api'),
+        tema: el && el.getAttribute('tema'), texto: el && el.shadowRoot ? el.shadowRoot.textContent : '', sug: el ? JSON.parse(el.getAttribute('sugestoes')) : [],
+        acao: !document.getElementById('z-acao').hidden } });
+    t(z.existe && z.visivel && z.primeiro, '⟶⟶ com conta liberada, a Z é a primeira coisa do Feed (o painel inicial), fora da .wrap que anima');
+    t(z.api === '/api/zro/ia', 'e fala com o servidor do Carro, não com o HUB direto (' + z.api + ')');
+    t(/Rita/.test(z.texto) && !z.acao, 'cumprimenta pelo nome que veio do HUB, sem pedir login (' + z.texto.slice(0, 60).trim() + ')');
+    t(z.sug.length >= 3 && z.sug.length <= 4, 'com 3 a 4 sugestões do Carro (' + z.sug.join(' · ') + ')');
+    t(z.tema === (await p.evaluate(() => document.documentElement.classList.contains('app-light') ? 'claro' : 'escuro')), 'no tema do app (' + z.tema + ')');
+    await p.evaluate(() => aplicarTema('light'));
+    await p.waitForTimeout(100);
+    t(await p.evaluate(() => document.querySelector('zro-ia').getAttribute('tema')) === 'claro', 'e troca junto quando o app troca de tema');
+    /* conversa: a sugestão vai, a resposta volta pelo repasse */
+    await p.evaluate(() => document.querySelector('zro-ia').shadowRoot.querySelector('.sug button').click());
+    await p.waitForFunction(() => /Olá\./.test(document.querySelector('zro-ia').shadowRoot.textContent), null, { timeout: 15000 }).catch(() => {});
+    const pedido = zro.estado.pedidosIa.filter(x => x.caminho === 'mensagens').pop();
+    t(await p.evaluate(() => /Olá\./.test(document.querySelector('zro-ia').shadowRoot.textContent)), '⟶⟶ a pergunta foi e a resposta da Z chegou pelo /api/zro/ia');
+    t(pedido && /^Bearer at_/.test(pedido.autorizacao), 'o HUB recebeu o Bearer da sessão, posto pelo servidor');
+    t(await p.evaluate(() => !/zt_|at_/.test(document.cookie + document.documentElement.outerHTML)), 'nenhum token na página nem nos cookies que o script lê');
+    t(deFora.includes('/ia/v1/zro-ia.js'), 'o painel é o <zro-ia> da Absolute ZRO');
+    t(erros.length === 0, 'sem erro: ' + erros.slice(0, 2).join(' · '));
+    await ctx.close();
+  }
+  {
+    /* HUB que ainda não conhece zro.ia: entra sem ele, e a Z pede para reconectar */
+    zro.estado.semEscopoIa = true;
+    zro.estado.proximo = { pessoa: Object.assign({}, RITA, { sub: 'zro-47' }), negar: false, adulterar: null };
+    const { ctx, p } = await abrir(DOMINIO, { aceita401: true });
+    await telaEntrar(p);
+    await Promise.all([p.waitForURL(/\/$/, { timeout: 15000 }).catch(() => {}), p.locator('#lg-zro').click()]);
+    await p.waitForFunction(() => typeof ZRO_CONTA !== 'undefined' && ZRO_CONTA && MODO, null, { timeout: 15000 }).catch(() => {});
+    await p.evaluate(() => show('feed'));
+    await p.waitForFunction(() => !document.getElementById('z-acao').hidden, null, { timeout: 15000 }).catch(() => {});
+    const r = await p.evaluate(() => ({ acao: !document.getElementById('z-acao').hidden, texto: document.getElementById('z-reconectar').textContent }));
+    t(r.acao && r.texto === 'Reconectar com Absolute ZRO', '⟶⟶ sem o acesso da Z: "Reconectar com Absolute ZRO" (' + r.texto + ')');
+    zro.estado.semEscopoIa = false;
+    await Promise.all([p.waitForURL(/\/$/, { timeout: 15000 }).catch(() => {}), p.locator('#z-reconectar').click()]);
+    await p.waitForFunction(() => { const z = document.querySelector('zro-ia'); return z && z.shadowRoot && /Rita/.test(z.shadowRoot.textContent) }, null, { timeout: 15000 }).catch(() => {});
+    await p.evaluate(() => show('feed'));
+    t(await p.evaluate(() => { const z = document.querySelector('zro-ia'); return !!z && /Rita/.test(z.shadowRoot.textContent) && document.getElementById('z-acao').hidden }), 'reconectou pelo HUB e a Z abre de novo');
     await ctx.close();
   }
 

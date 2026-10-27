@@ -37,10 +37,12 @@ const TYPES = {
   '.txt': 'text/plain; charset=utf-8',
 }
 
-// A interface não tem script inline; estilos inline (atributo style) e fotos de perfil do Google, sim.
+// A interface não tem script inline; estilos inline (atributo style) e fotos de perfil do Google, sim. O único script de
+// fora é o painel da Z (absolutezro.com/ia/v1/zro-ia.js).
 export const APP_CSP = [
   "default-src 'self'",
-  "script-src 'self'",
+  // A Z (IA da Absolute ZRO, components/z.js): o script do painel vem de absolutezro.com; a conversa passa por /api/ia.
+  "script-src 'self' https://absolutezro.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https:",
   "font-src 'self' data:",
@@ -257,7 +259,10 @@ export async function startServer({ port = DEFAULT_PORT, host = '127.0.0.1', pub
         const imagemDoFrames = method === 'POST' && /^\/api\/frames\/frm_[\w-]+\/post$/.test(url.pathname) && /^image\/(png|jpeg)$/i.test(String(req.headers['content-type'] || '').split(';')[0].trim())
         // Celular pelo Wi-Fi: a janela oculta grava os pedaços que chegam do celular crus (mesmo motivo: tipo não simples).
         const pedacoDoCelular = method === 'PUT' && /^\/api\/celular\/receber\/[\w-]+\/\d+$/.test(url.pathname) && String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase() === 'application/octet-stream'
-        if (!imagemDoFrames && !pedacoDoCelular && !isJsonType(req.headers['content-type'])) return sendJSON(res, 415, { ok: false, error: 'Requisição recusada: falta Content-Type: application/json.' })
+        // Apagar uma conversa da Z: o painel (<zro-ia>) manda DELETE sem corpo. DELETE de outro site exige preflight de
+        // CORS, que este servidor não responde, e a origem continua conferida logo abaixo.
+        const apagarConversaDaZ = method === 'DELETE' && /^\/api\/ia\/conversas\/[\w-]+$/.test(url.pathname)
+        if (!imagemDoFrames && !pedacoDoCelular && !apagarConversaDaZ && !isJsonType(req.headers['content-type'])) return sendJSON(res, 415, { ok: false, error: 'Requisição recusada: falta Content-Type: application/json.' })
         const origin = req.headers.origin
         if (origin && !origins().has(String(origin).toLowerCase())) return sendJSON(res, 403, { ok: false, error: 'Origem não permitida.' })
       }

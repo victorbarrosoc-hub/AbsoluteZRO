@@ -1,0 +1,1 @@
+ALTER TABLE "contas_zro" ADD COLUMN "ia" text;

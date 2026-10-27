@@ -80,14 +80,19 @@ async function scriptsDe(pagina, html) {
     .querySelectorAll('script:not([src])')].map(s => s.textContent), html);
 }
 
+/* A Z, a IA da Absolute ZRO (27/out · 4): o painel <zro-ia> é um script do
+   HUB e desenha o Z com imagens de lá. A conversa passa por /api/zro/ia
+   (mesma origem), então o connect-src não ganha nada. */
+const ZRO = 'https://absolutezro.com';
+
 /** a política, com o hash de cada script embutido dos arquivos que sobem */
 function politica(scripts, connect = CONNECT) {
   const hashes = [...new Set(scripts.map(sha))].map(h => "'sha256-" + h + "'");
   return [
     "default-src 'self'",
-    "script-src 'self' " + hashes.join(' '),
+    "script-src 'self' " + ZRO + ' ' + hashes.join(' '),
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob:",
+    "img-src 'self' data: blob: " + ZRO,
     "media-src 'self' data: blob:",
     "font-src 'self' data:",
     "connect-src 'self' " + connect.join(' '),
@@ -172,6 +177,8 @@ function rotasVercel(csp, paginas) {
     { src: '^/app/(.*)$', status: 307, headers: { Location: '/' } },
     { src: '^/README(?:\\.md)?/?$', status: 307, headers: { Location: '/' } },
     { src: '^/index(?:\\.html)?/?$', status: 308, headers: { Location: '/' } },
+    /* a Z: /api/zro/ia/<caminho> vai para a função ia, que confere o caminho */
+    { src: '^/api/zro/ia/(.+)$', dest: '/api/zro/ia?caminho=$1' },
     { src: '^/(' + limpas.join('|') + ')\\.html/?$', status: 308, headers: { Location: '/$1' } },
     { src: '^/$', dest: '/index.html' },
     { src: '^/(' + limpas.join('|') + ')/?$', dest: '/$1.html' },
@@ -179,4 +186,4 @@ function rotasVercel(csp, paginas) {
   ];
 }
 
-module.exports = { CONNECT, FIXOS, GERAIS, chavesDeFora, conexoes, politica, rotasVercel, scriptsDe, scriptsDoHtml, sha };
+module.exports = { ZRO, CONNECT, FIXOS, GERAIS, chavesDeFora, conexoes, politica, rotasVercel, scriptsDe, scriptsDoHtml, sha };

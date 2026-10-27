@@ -8503,3 +8503,18 @@ O painel do Z **ainda não está dentro do Carro do Freela**, então a seção d
 `absolutezro.com/ia`; não afirme que já funciona aqui. Anel e estrela cromados são cópias em `src/midia/z-anel.webp` e
 `z-estrela.webp` (citados por `"midia:..."`, como os ícones da família); a estrela fica sobre o tubo, às 3 horas, e
 respira devagar só em CSS (desliga com "reduzir movimento"). VERSAO `27/out · 3`.
+
+## 27/out · 4 — a Z é o painel inicial (topo do Feed)
+
+Pedido do titular: "a IA precisa estar no painel inicial de todas as plataformas". A Z (feminino, decisão do titular) é
+o `<zro-ia>` da Absolute ZRO no topo do **Feed**, que é a primeira tela de quem entra.
+- **Só no domínio, com conta Absolute ZRO liberada** (`zroMontarZ()`, chamado quando `/api/zro/eu` responde). No
+  `file://`, no artifact e nas suítes o `#z-painel` fica escondido e nada é pedido à absolutezro.com.
+- O elemento nasce por DOM com atributos (`api`, `sugestoes` e `tema` são getters/métodos dele). Tema acompanha
+  `app-light`. ⚠️ `#z-painel` mora **fora da `.wrap`**: o `show()` anima a primeira `.wrap` com transform, e transform
+  no ancestral prende a gaveta de Conversas (`position:fixed`) à caixa.
+- Servidor: o login pede também `zro.ia`; `/api/zro/ia/<caminho>` (função `ia`, rota do build com `?caminho=`,
+  streaming) repassa ao HUB com o MESMO acesso do `cdf_hub`, que agora guarda `jobs` e `ia`. Cookie de antes da Z,
+  HUB sem o escopo ou acesso recusado: 401 `reconectar` → botão "Reconectar com Absolute ZRO".
+- CSP: script e imagens da absolutezro.com; a conversa passa pela mesma origem. A home diz "Agora no Carro do Freela".
+- Suítes: `conta-zro` §11 (o script do painel vem de `apps/hub-web/public` por rota) e `test:api`. VERSAO `27/out · 4`.

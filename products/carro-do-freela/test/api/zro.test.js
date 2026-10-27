@@ -36,9 +36,11 @@ before(async () => {
     '/api/zro/eu': require(path.join(RAIZ, 'api', 'zro', 'eu.js')),
     '/api/zro/sair': require(path.join(RAIZ, 'api', 'zro', 'sair.js')),
     '/api/zro/enviar': require(path.join(RAIZ, 'api', 'zro', 'enviar.js')),
+    '/api/zro/ia': require(path.join(RAIZ, 'api', 'zro', 'ia.js')),
   };
   app = http.createServer((req, res) => {
-    const fn = rotas[new URL(req.url, 'http://x').pathname];
+    const p = new URL(req.url, 'http://x').pathname;
+    const fn = rotas[p.startsWith('/api/zro/ia/') ? '/api/zro/ia' : p];
     if (fn) return fn(req, res);
     res.writeHead(404);
     res.end();
@@ -100,7 +102,7 @@ test('a ida para o HUB: código + PKCE S256, escopos, nonce e retorno do própri
   assert.equal(destino.pathname, '/oauth/authorize');
   assert.equal(q.get('response_type'), 'code');
   assert.equal(q.get('client_id'), 'carrodofreela-web');
-  assert.equal(q.get('scope'), 'openid email profile org offline_access carro-do-freela.jobs');
+  assert.equal(q.get('scope'), 'openid email profile org offline_access carro-do-freela.jobs zro.ia');
   assert.equal(q.get('code_challenge_method'), 'S256');
   assert.match(q.get('code_challenge'), /^[A-Za-z0-9_-]{43}$/);
   assert.ok(q.get('nonce') && q.get('state') && q.get('nonce') !== q.get('state'));
@@ -161,7 +163,7 @@ test('entra: sessão de 30 dias, volta marcada, /eu diz quem é e sair apaga', a
     organizacao: 'Produtora Lia',
     produtos: ['carro-do-freela'],
     liberado: true,
-    hub: true,
+    hub: true, ia: true,
   });
 
   const sair = await pedir('/api/zro/sair', { method: 'POST', cookie: 'cdf_sessao=' + encodeURIComponent(sessao), headers: { origin: SITE } });
@@ -321,7 +323,7 @@ test('as rotas do domínio (config.json): CSP, cleanUrls, /app fechado e as fun�
     fs.mkdirSync(path.join(saida, 'static', 'm'), { recursive: true });
     for (const p of paginas) fs.writeFileSync(path.join(saida, 'static', p + '.html'), '<!doctype html><title>' + p + '</title><script>window.p="' + p + '"</script>');
     fs.writeFileSync(path.join(saida, 'static', 'm', 'x.1234567890.webp'), 'w');
-    for (const n of ['entrar', 'callback', 'eu', 'sair']) {
+    for (const n of ['entrar', 'callback', 'eu', 'sair', 'ia']) {
       const dir = path.join(saida, 'functions', 'api', 'zro', n + '.func');
       fs.mkdirSync(path.join(dir, 'api', 'zro'), { recursive: true });
       for (const f of [n + '.js', '_zro.js']) fs.copyFileSync(path.join(RAIZ, 'api', 'zro', f), path.join(dir, 'api', 'zro', f));
@@ -339,7 +341,6 @@ test('as rotas do domínio (config.json): CSP, cleanUrls, /app fechado e as fun�
       assert.equal(home.status, 200);
       assert.match(await home.text(), /window\.p="index"/);
       assert.equal(home.headers.get('content-security-policy'), csp);
-      assert.match(csp, /script-src 'self' 'sha256-/);
       assert.equal(home.headers.get('x-robots-tag'), 'noindex, nofollow');
       assert.equal(home.headers.get('x-frame-options'), 'DENY');
       assert.equal(home.headers.get('referrer-policy'), 'no-referrer');
@@ -353,6 +354,13 @@ test('as rotas do domínio (config.json): CSP, cleanUrls, /app fechado e as fun�
       }
       assert.equal((await get('/CLAUDE.md')).status, 404);
       assert.match((await get('/m/x.1234567890.webp')).headers.get('cache-control'), /immutable/);
+      /* a Z: /api/zro/ia/<caminho> chega à função ia (sem sessão, 401; caminho fora da lista, 404) */
+      assert.equal((await get('/api/zro/ia/estado')).status, 401);
+      assert.equal((await get('/api/zro/ia/../eu')).status, 401);
+      assert.equal((await get('/api/zro/ia/carro-do-freela/jobs')).status, 404);
+      assert.match(csp, /script-src 'self' https:\/\/absolutezro\.com 'sha256-/);
+      assert.match(csp, /img-src 'self' data: blob: https:\/\/absolutezro\.com/);
+      assert.doesNotMatch(csp, /connect-src[^;]*absolutezro/);
       const eu = await get('/api/zro/eu');
       assert.equal(eu.status, 401);
       assert.equal(eu.headers.get('cache-control'), 'no-store');
@@ -563,4 +571,115 @@ test('sair revoga o acesso no HUB e apaga o cookie dele', async () => {
   assert.equal(zro.estado.revogados, antes + 1);
   assert.equal(cookiesDe(sair).get('cdf_hub'), '');
   assert.equal((await enviarJob(sessaoCom(cookies), pedidoJob())).status, 401, 'o refresh revogado não serve mais');
+});
+
+/* ============ a Z, a IA da Absolute ZRO (27/out · 4) ============ */
+
+const cookieDe = cookies => [...cookies].filter(([, v]) => v).map(([k, v]) => k + '=' + encodeURIComponent(v)).join('; ');
+const ia = (caminho, cookies, o = {}) =>
+  fetch(SITE + '/api/zro/ia/' + caminho, {
+    method: o.method || (o.corpo !== undefined ? 'POST' : 'GET'),
+    redirect: 'manual',
+    headers: Object.assign({ cookie: cookieDe(cookies) }, o.corpo !== undefined ? { 'content-type': 'application/json' } : {}, o.method || o.corpo !== undefined ? { origin: SITE } : {}, o.headers || {}),
+    body: o.corpo !== undefined ? JSON.stringify(o.corpo) : undefined,
+  });
+
+test('a Z: o repasse leva o Bearer da sessão ao HUB e nunca devolve token', async () => {
+  const { cookies } = await fluxo({ pessoa: Object.assign({}, LIA, { produtos: ['carro-do-freela'] }) });
+  const eu = await (await pedir('/api/zro/eu', { cookie: cookieDe(cookies) })).json();
+  assert.equal(eu.ia, true);
+  zro.estado.pedidosIa.length = 0;
+  const r = await ia('estado', cookies);
+  assert.equal(r.status, 200);
+  const txt = await r.text();
+  assert.equal(JSON.parse(txt).nome, 'Lia');
+  assert.doesNotMatch(txt, /at_|zt_/);
+  assert.match(zro.estado.pedidosIa[0].autorizacao, /^Bearer at_/);
+  assert.equal(r.headers.get('cache-control'), 'no-store');
+  assert.equal(r.headers.getSetCookie().length, 0, 'token ainda vale: nada de cookie novo');
+  assert.equal((await ia('conversas/c1', cookies, { method: 'DELETE' })).status, 204);
+});
+
+test('a Z: mensagens em NDJSON, repassadas em streaming', async () => {
+  const { cookies } = await fluxo({ pessoa: Object.assign({}, LIA, { produtos: ['carro-do-freela'] }) });
+  const r = await ia('mensagens', cookies, { corpo: { texto: 'quem está no job?' } });
+  assert.equal(r.status, 200);
+  assert.match(r.headers.get('content-type'), /ndjson/);
+  const leitor = r.body.getReader();
+  const primeiro = new TextDecoder().decode((await leitor.read()).value);
+  assert.match(primeiro, /"tipo":"conversa"/);
+  assert.doesNotMatch(primeiro, /"tipo":"fim"/, 'não esperou o fim para mandar');
+  let resto = '';
+  for (let p = await leitor.read(); !p.done; p = await leitor.read()) resto += new TextDecoder().decode(p.value);
+  assert.match(resto, /"tipo":"fim"/);
+  assert.equal(zro.estado.pedidosIa.at(-1).corpo, JSON.stringify({ texto: 'quem está no job?' }));
+});
+
+test('a Z: token vencido renova uma vez e o cookie novo vai na resposta', async () => {
+  zro.estado.atTtl = 0;
+  const { cookies } = await fluxo({ pessoa: Object.assign({}, LIA, { produtos: ['carro-do-freela'] }) });
+  zro.estado.atTtl = 600;
+  const antes = zro.estado.renovacoes;
+  const r = await ia('conversas', cookies);
+  assert.equal(r.status, 200);
+  assert.equal(zro.estado.renovacoes, antes + 1);
+  const novo = cookiesDe(r).get('cdf_hub');
+  assert.ok(novo && novo !== cookies.get('cdf_hub'));
+  assert.doesNotMatch(novo, /at_|zt_/);
+});
+
+test('a Z: portas fechadas (sem sessão, outra origem, caminho fora, sem o escopo, plano)', async () => {
+  const antes = zro.estado.pedidosIa.length;
+  assert.equal((await ia('estado', new Map())).status, 401, 'sem sessão');
+  const { cookies } = await fluxo({ pessoa: Object.assign({}, LIA, { produtos: ['carro-do-freela'] }) });
+  assert.equal((await ia('mensagens', cookies, { corpo: { texto: 'oi' }, headers: { origin: 'https://evil.example' } })).status, 403, 'outra origem');
+  assert.equal((await ia('estado', cookies, { method: 'DELETE' })).status, 404, 'método fora');
+  assert.equal((await ia('conversas/a/b', cookies)).status, 404, 'caminho fora');
+  assert.equal(zro.estado.pedidosIa.length, antes, 'nada disso chegou ao HUB');
+  /* plano sem o Carro */
+  const sem = await fluxo({ pessoa: Object.assign({}, LIA, { produtos: [] }) });
+  assert.equal((await ia('estado', sem.cookies)).status, 403);
+  /* HUB que não conhece zro.ia: entra sem ele, e a Z pede para reconectar */
+  zro.estado.semEscopoIa = true;
+  try {
+    const { local } = await fluxo({ pessoa: Object.assign({}, LIA, { produtos: ['carro-do-freela'] }), volta: '/' });
+    assert.match(local, /^\/api\/zro\/entrar\?basico=1/);
+  } finally {
+    zro.estado.semEscopoIa = false;
+  }
+});
+
+test('a Z: acesso recusado no HUB vira 401 reconectar e apaga o cookie do HUB', async () => {
+  const { cookies } = await fluxo({ pessoa: Object.assign({}, LIA, { produtos: ['carro-do-freela'] }) });
+  /* sair revoga a família no HUB; o cookie velho, reapresentado, já não vale */
+  const h = Z._interno.decifrar(cookies.get('cdf_hub'), CLIENTE.clientSecret);
+  zro.estado.atTtl = 0;
+  const vencido = Object.assign({}, h, { atExp: 0 });
+  const c2 = new Map(cookies);
+  c2.set('cdf_hub', Z._interno.cifrar(vencido, CLIENTE.clientSecret));
+  await fetch(zro.url + '/oauth/revoke', {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded', authorization: 'Basic ' + Buffer.from(CLIENTE.clientId + ':' + CLIENTE.clientSecret).toString('base64') },
+    body: new URLSearchParams({ token: h.rt }),
+  });
+  zro.estado.atTtl = 600;
+  const r = await ia('estado', c2);
+  assert.equal(r.status, 401);
+  assert.equal((await r.json()).erro, 'reconectar');
+  assert.equal(cookiesDe(r).get('cdf_hub'), '');
+});
+
+test('a Z: cookie do HUB de antes da Z (sem ia) pede para reconectar, e o envio de jobs segue', async () => {
+  const { cookies } = await fluxo({ pessoa: Object.assign({}, LIA, { produtos: ['carro-do-freela'] }) });
+  const h = Z._interno.decifrar(cookies.get('cdf_hub'), CLIENTE.clientSecret);
+  delete h.ia;
+  delete h.jobs;
+  const c2 = new Map(cookies);
+  c2.set('cdf_hub', Z._interno.cifrar(h, CLIENTE.clientSecret));
+  const r = await ia('estado', c2);
+  assert.equal(r.status, 401);
+  assert.equal((await r.json()).erro, 'reconectar');
+  const eu = await (await pedir('/api/zro/eu', { cookie: cookieDe(c2) })).json();
+  assert.equal(eu.hub, true);
+  assert.equal(eu.ia, false);
 });

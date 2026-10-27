@@ -79,8 +79,10 @@ t(vj.buildCommand === 'node src/vercel-build.js' && !vj.headers && !vj.redirects
   catch (e) { prova = { erro: String(e.stdout || e.message) } }
   t(prova && !prova.erro, 'a CSP foi calculada (' + (prova && prova.erro || 'ok') + ')');
   const csp = prova && prova.csp || '';
-  t(/script-src 'self'( 'sha256-[A-Za-z0-9+/=]+')+;/.test(csp) && !/script-src[^;]*unsafe-(inline|eval)/.test(csp),
-    '⟶⟶ script só com hash: nada de unsafe-inline nem unsafe-eval no script-src');
+  /* (27/out · 4) a única origem de fora é a do painel da Z (absolutezro.com/ia/v1/zro-ia.js) */
+  t(/script-src 'self' https:\/\/absolutezro\.com( 'sha256-[A-Za-z0-9+/=]+')+;/.test(csp) && !/script-src[^;]*unsafe-(inline|eval)/.test(csp),
+    '⟶⟶ script só com hash (e o painel da Z): nada de unsafe-inline nem unsafe-eval no script-src');
+  t(!/connect-src[^;]*absolutezro/.test(csp), 'a conversa com a Z passa pelo próprio site: connect-src sem a absolutezro.com');
   t(/frame-ancestors 'none'/.test(csp) && /object-src 'none'/.test(csp) && /base-uri 'none'/.test(csp), 'sem moldura alheia, sem plugin, sem <base> injetado');
   t(SEG.CONNECT.every(o => csp.includes(o)) && csp.includes("connect-src 'self' https://api.web3forms.com " + SUPA + ';'),
     'o app só fala com o suporte e com o convite — origem nova é bloqueada');

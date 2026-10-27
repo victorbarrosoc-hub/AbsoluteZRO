@@ -10,6 +10,11 @@
  * Carro na API (job/1 e crew/1) exigindo Bearer com o escopo de jobs.
  * `semEscopoJobs` faz o authorize recusar o escopo (HUB antigo);
  * `recusaJob`/`recusaEquipe` devolvem o erro de domínio pedido.
+ *
+ * Desde 27/out · 4: a API da IA (/api/v1/ia/*) exigindo Bearer com `zro.ia`,
+ * com /mensagens em NDJSON de verdade (a primeira linha sai antes do fim).
+ * `semEscopoIa` faz o authorize recusar o escopo da Z; `pedidosIa` guarda o
+ * que chegou (método, caminho, Authorization e corpo).
  */
 const crypto = require('crypto');
 const http = require('http');
@@ -32,6 +37,8 @@ async function iniciarZroFalsa(cliente) {
     renovacoes: 0,
     revogados: 0,
     atTtl: 600,
+    semEscopoIa: false,
+    pedidosIa: [],
   };
   const emitir = (pessoa, escopo) => {
     const at = 'at_' + crypto.randomBytes(12).toString('hex');
@@ -83,7 +90,7 @@ async function iniciarZroFalsa(cliente) {
       volta.searchParams.set('state', q.get('state'));
       if (q.get('client_id') !== cliente.clientId || q.get('code_challenge_method') !== 'S256' || !q.get('nonce') || q.get('response_type') !== 'code') {
         volta.searchParams.set('error', 'invalid_request');
-      } else if (estado.semEscopoJobs && (q.get('scope') || '').includes('carro-do-freela.jobs')) {
+      } else if ((estado.semEscopoJobs && (q.get('scope') || '').includes('carro-do-freela.jobs')) || (estado.semEscopoIa && (q.get('scope') || '').split(' ').includes('zro.ia'))) {
         volta.searchParams.set('error', 'invalid_scope');
       } else if (estado.proximo.negar || !estado.proximo.pessoa) {
         volta.searchParams.set('error', 'access_denied');
@@ -172,6 +179,25 @@ async function iniciarZroFalsa(cliente) {
         members: eq.members.map((m, i) => ({ zro_user_id: m.zro_user_id, function: m.function, status: i === 0 ? 'na_equipe' : 'convidado' })),
         emailDelivery: true,
       });
+    }
+    if (url.pathname.startsWith('/api/v1/ia/')) {
+      let corpo = '';
+      for await (const c of req) corpo += c;
+      const caminho = url.pathname.slice('/api/v1/ia/'.length);
+      estado.pedidosIa.push({ metodo: req.method, caminho, autorizacao: req.headers.authorization || null, corpo });
+      const a = acessos.get(String(req.headers.authorization || '').replace(/^Bearer /, ''));
+      if (!a || a.exp <= Date.now() || !a.escopo.split(' ').includes('zro.ia')) return responder(res, 401, { error: 'unauthenticated' });
+      if (req.method === 'GET' && caminho === 'estado') return responder(res, 200, { ligada: true, nome: a.pessoa.nome.split(' ')[0], produto: 'carro-do-freela', creditos: { usados: 1, limite: 100, renova_em: '2026-11-01T00:00:00.000Z' } });
+      if (req.method === 'GET' && caminho === 'conversas') return responder(res, 200, { conversas: [] });
+      if (req.method === 'DELETE' && caminho.startsWith('conversas/')) { res.writeHead(204); return res.end() }
+      if (req.method === 'POST' && caminho === 'mensagens') {
+        res.writeHead(200, { 'content-type': 'application/x-ndjson; charset=utf-8' });
+        res.write(JSON.stringify({ tipo: 'conversa', id: 'c1', titulo: 'Teste' }) + '\n');
+        await new Promise(ok => setTimeout(ok, 80));
+        res.write(JSON.stringify({ tipo: 'texto', t: 'Olá.' }) + '\n');
+        return res.end(JSON.stringify({ tipo: 'fim', mensagem: 'm1', creditos: 1 }) + '\n');
+      }
+      return responder(res, 404, { error: 'not_found' });
     }
     responder(res, 404, { error: 'not_found' });
   });

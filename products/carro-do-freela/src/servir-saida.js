@@ -39,7 +39,7 @@ function servirSaida(saida) {
     const extra = {};
     for (const r of cfg.routes) {
       if (r.handle === 'filesystem') {
-        const fn = funcoes[caminho];
+        const fn = funcoes[caminho.split('?')[0]];
         if (fn) {
           const escrever = res.writeHead.bind(res);
           res.writeHead = (status, h) => escrever(status, Object.assign({}, extra, h || {}));
