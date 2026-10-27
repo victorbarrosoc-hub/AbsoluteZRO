@@ -16,7 +16,7 @@ const log = createLogger('ia')
  */
 const post = route(
   async ({ db, auth, req }) => {
-    if (!iaLigada()) throw new DomainError('upstream_unavailable', 'A IA da Absolute ZRO ainda não foi ligada.')
+    if (!iaLigada()) throw new DomainError('upstream_unavailable', 'O Z, a IA da Absolute ZRO, ainda não foi ligado.')
     const turno = await iniciarTurno(db, auth, await readJson(req, 64_000))
     const enc = new TextEncoder()
     const corpo = new ReadableStream<Uint8Array>({
@@ -30,7 +30,7 @@ const post = route(
           enviar({ tipo: 'fim', mensagem: r.mensagemId, creditos: r.creditos })
         } catch (err) {
           log.error('ia.resposta', { error: err })
-          enviar({ tipo: 'erro', mensagem: 'A IA não conseguiu responder agora. Tente de novo em instantes.' })
+          enviar({ tipo: 'erro', mensagem: 'O Z não conseguiu responder agora. Tente de novo em instantes.' })
         } finally {
           ctrl.close()
         }

@@ -4628,6 +4628,43 @@ a.pstrip__card:focus-visible .pstrip__go {
   }
 }
 
+/* ── O Z: o símbolo no centro, as ferramentas em volta e o ar dele (rastro e correntes) por trás ── */
+.pz {
+  --raio: min(38vw, 230px);
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(100%, 560px);
+  aspect-ratio: 1;
+  margin: clamp(8px, 2vw, 20px) auto 0;
+}
+.pz__z {
+  --z-tam: clamp(130px, 30vw, 200px) !important;
+}
+.pz__orbita {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pz__orbita li {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  transform: rotate(calc(360deg / var(--n) * var(--i) - 90deg)) translateX(var(--raio)) rotate(calc(-360deg / var(--n) * var(--i) + 90deg));
+}
+.pz__orbita .zro-mark {
+  box-shadow: var(--shadow-float);
+}
+@media (max-width: 700px) {
+  .pz__orbita .zro-mark {
+    width: 34px !important;
+    height: 34px !important;
+  }
+}
+
 /* ── App para computador ── */
 .papp__aparelhos {
   margin-top: clamp(8px, 2vw, 24px);
@@ -5809,16 +5846,6 @@ a.pstrip__card:focus-visible .pstrip__go {
   border-radius: 3px;
   background: currentColor;
 }
-.ia-rodape {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  color: var(--text-faint);
-  font-size: 0.76rem;
-  text-align: center;
-}
 .ia-rodape__ponto {
   width: 6px;
   height: 6px;
@@ -5827,6 +5854,56 @@ a.pstrip__card:focus-visible .pstrip__go {
 }
 .ia-rodape__ponto[data-ligada] {
   background: var(--text-strong);
+}
+
+/* uso dos créditos do Z, abaixo do campo: linha curta e um trilho fino que enche com o uso */
+.ia-uso {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  width: min(100%, 360px);
+  margin-inline: auto;
+}
+.ia-uso__linha {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--text-faint);
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.ia-uso__z {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-strong);
+  font-weight: 700;
+}
+.ia-uso__trilho {
+  width: 100%;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+.ia-uso__trilho i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--text-strong);
+  transform-origin: left;
+  transition: transform 0.8s var(--ease);
+}
+.ia-uso[data-alerta] .ia-uso__trilho i {
+  background: var(--warn-text);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ia-uso__trilho i {
+    transition: none;
+  }
 }
 
 /* gaveta das conversas, por plataforma */

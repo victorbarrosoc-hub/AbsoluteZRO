@@ -76,6 +76,12 @@ textarea::placeholder{color:var(--faint)}
 .parar{width:12px;height:12px;border-radius:3px;background:currentColor}
 .rodape{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:6px;color:var(--faint);font-size:.76rem;text-align:center}
 .rodape i{width:6px;height:6px;border-radius:50%;background:var(--faint)}.rodape i[data-on]{background:var(--ink)}
+.rodape{font-variant-numeric:tabular-nums}.rodape b{display:inline-flex;align-items:center;gap:6px;color:var(--ink);font-weight:700}
+.uso{display:grid;justify-items:center;gap:7px;width:min(100%,360px);margin-inline:auto}
+.trilho{width:100%;height:3px;border-radius:999px;background:var(--line);overflow:hidden}
+.trilho i{display:block;height:100%;border-radius:inherit;background:var(--ink);transform-origin:left;transition:transform .8s var(--ease)}
+.uso[data-alerta] .trilho i{background:#c9850a}
+@media (prefers-reduced-motion:reduce){.trilho i{transition:none}}
 .gav{position:fixed;inset:0;z-index:2147483000;pointer-events:none}.gav[data-on]{pointer-events:auto}
 .veu{position:absolute;inset:0;border:0;background:rgb(0 0 0/.28);opacity:0}.gav[data-on] .veu{opacity:1}
 .gav-painel{position:absolute;top:0;bottom:0;left:0;width:min(88vw,360px);display:flex;flex-direction:column;gap:10px;padding:max(18px,env(safe-area-inset-top)) 14px 18px;overflow-y:auto;background:var(--zro-ia-fundo-gaveta,#f5f5f7);border-right:1px solid var(--line);box-shadow:24px 0 60px rgb(0 0 0/.16);translate:-102% 0}
@@ -316,6 +322,23 @@ class MotorAr {
   }
 }
 
+/** Abaixo do campo: o Z, o que resta de créditos no mês e um trilho fino que enche com o uso (alerta a partir de 80%). */
+function uso(ligada, c) {
+  const lim = c && c.limite != null ? c.limite : null
+  const fr = lim ? Math.min(1, c.usados / lim) : 0
+  const n = (x) => x.toLocaleString('pt-BR')
+  const txt = !ligada
+    ? 'desligado'
+    : lim != null
+      ? `${n(Math.max(0, lim - c.usados))} de ${n(lim)} créditos · renova ${DIA.format(new Date(c.renova_em))}`
+      : 'Você confere antes de qualquer ação'
+  const trilho =
+    ligada && lim
+      ? `<div class="trilho" role="meter" aria-label="Créditos de IA usados no mês" aria-valuemin="0" aria-valuemax="${lim}" aria-valuenow="${Math.min(c.usados, lim)}" aria-valuetext="${n(c.usados)} de ${n(lim)} usados"><i style="transform:scaleX(${fr})"></i></div>`
+      : ''
+  return `<div class="uso"${lim && fr >= 0.8 ? ' data-alerta' : ''}><p class="rodape"><b><i${ligada ? ' data-on' : ''}></i>Z</b><span>·</span>${txt}</p>${trilho}</div>`
+}
+
 /** Resposta da IA em blocos simples (parágrafo, lista, **negrito**), sempre escapada. */
 function texto(t) {
   const out = []
@@ -502,7 +525,7 @@ class ZroIa extends HTMLElement {
     const ph = s.semLogin
       ? 'Entre com a conta Absolute ZRO para conversar'
       : !s.ligada
-        ? 'A IA ainda não foi ligada'
+        ? 'O Z ainda não foi ligado'
         : sem
           ? 'Os créditos de IA deste mês acabaram'
           : em
@@ -521,19 +544,19 @@ class ZroIa extends HTMLElement {
           ? `<div class="conversa" aria-live="polite">${s.msgs.map((m) => (m.papel === 'user' ? `<p class="msg eu">${esc(m.texto)}</p>` : `<div class="msg${m.erro ? ' erro' : ''}">${m.texto ? texto(m.texto) : `<span class="pensando"><span class="lugar-zp"></span>${esc(s.lendo || 'Pensando…')}</span>`}</div>`)).join('')}<div class="fim"></div></div>`
           : `
         <div class="inicio"><span class="lugar-z" data-tam="120"></span>
-          <p class="estado" aria-live="polite"><i></i> ${s.semLogin ? 'sem conta' : !s.ligada ? 'ainda não ligada' : s.foco ? 'ouvindo' : 'IA da Absolute ZRO'}</p>
+          <p class="estado" aria-live="polite"><i></i> ${s.semLogin ? 'sem conta' : !s.ligada ? 'ainda não ligada' : s.foco ? 'ouvindo' : 'Z · IA da Absolute ZRO'}</p>
           <h1>${esc(saudacao())}${s.nome ? `, <strong>${esc(s.nome)}.</strong>` : '.'}</h1>
-          <p class="apoio">${esc(s.ligada ? this.getAttribute('apoio') || 'O que você precisa hoje?' : 'A IA do ecossistema chega em breve, a mesma em todas as plataformas.')}</p>
+          <p class="apoio">${esc(s.ligada ? this.getAttribute('apoio') || 'O que você precisa hoje?' : 'O Z, a IA do ecossistema, chega em breve, o mesmo em todas as plataformas.')}</p>
         </div>`
       }</div>
       <div class="base">
         ${!em && this.pode && this.sugestoes.length ? `<ul class="sug" aria-label="Sugestões">${this.sugestoes.map((t, i) => `<li style="--i:${i}"><button type="button" data-sug="${esc(t)}">${esc(t)}</button></li>`).join('')}</ul>` : ''}
         <form class="campo"${this.pode ? '' : ' data-off'}>
-          <label class="sr" for="t">Mensagem para a IA</label>
+          <label class="sr" for="t">Mensagem para o Z</label>
           <textarea id="t" rows="1" maxlength="8000" placeholder="${esc(ph)}"${this.pode ? '' : ' disabled'}>${esc(valor)}</textarea>
           ${s.pensando ? '<button type="button" class="enviar" data-a="parar" aria-label="Parar a resposta"><span class="parar"></span></button>' : `<button type="submit" class="enviar" aria-label="Enviar"${valor.trim() && this.pode ? '' : ' disabled'}>${SETA}</button>`}
         </form>
-        <p class="rodape"><i${s.ligada ? ' data-on' : ''}></i>${s.ligada ? 'IA da Absolute ZRO' : 'IA desligada'}<span>·</span>${c && c.limite != null ? `${Math.max(0, c.limite - c.usados).toLocaleString('pt-BR')} créditos de IA no mês` : 'Você confere antes de qualquer ação'}</p>
+        ${uso(s.ligada && !s.semLogin, c)}
       </div>
       <div class="gav"${s.gaveta ? ' data-on' : ''} aria-hidden="${!s.gaveta}">
         <button type="button" class="veu" data-a="fechar" tabindex="-1" aria-label="Fechar conversas"></button>
@@ -614,7 +637,7 @@ class ZroIa extends HTMLElement {
     const p = this.$.querySelector('.inicio .estado')
     if (!this.s.ligada || this.s.semLogin) return
     this.ar.cena = this.cena()
-    if (p) p.innerHTML = `<i></i> ${this.s.foco ? 'ouvindo' : 'IA da Absolute ZRO'}`
+    if (p) p.innerHTML = `<i></i> ${this.s.foco ? 'ouvindo' : 'Z · IA da Absolute ZRO'}`
   }
 
   async abrir(id) {
@@ -661,7 +684,7 @@ class ZroIa extends HTMLElement {
       })
       if (!r.ok || !r.body) {
         const e = await r.json().catch(() => null)
-        resp.texto = e?.message || 'A IA não respondeu. Tente de novo.'
+        resp.texto = e?.message || 'O Z não respondeu. Tente de novo.'
         resp.erro = true
         return
       }
@@ -697,7 +720,7 @@ class ZroIa extends HTMLElement {
       }
     } catch (e) {
       if (e?.name !== 'AbortError' && !resp.texto) {
-        resp.texto = 'Sem conexão com a IA agora.'
+        resp.texto = 'Sem conexão com o Z agora.'
         resp.erro = true
       }
     } finally {

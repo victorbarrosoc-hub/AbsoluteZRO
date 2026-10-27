@@ -18,6 +18,55 @@ type Creditos = { usados: number; limite: number | null; renova_em: string } | n
 const QUANDO = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' })
 const HORA = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
+const DIA = new Intl.DateTimeFormat('pt-BR', { day: 'numeric', month: 'short' })
+
+/**
+ * Abaixo do campo: o Z, o que resta de créditos de IA no mês e um trilho fino que enche conforme o uso (fica em tom de
+ * alerta a partir de 80%). Sem limite configurado, sem trilho: a IA fica bloqueada e o painel já diz isso.
+ */
+function UsoCreditos({ ligada, creditos, aviso }: { ligada: boolean; creditos: Creditos; aviso: string | null }) {
+  const limite = creditos?.limite ?? null
+  const usados = creditos?.usados ?? 0
+  const resta = limite == null ? 0 : Math.max(0, limite - usados)
+  const fracao = limite ? Math.min(1, usados / limite) : 0
+  return (
+    <div className="ia-uso" data-alerta={limite && fracao >= 0.8 ? 'sim' : undefined}>
+      <p className="ia-uso__linha">
+        <span className="ia-uso__z">
+          <span className="ia-rodape__ponto" data-ligada={ligada ? 'sim' : undefined} aria-hidden="true" />Z
+        </span>
+        <span aria-hidden="true">·</span>
+        <span>
+          {!ligada
+            ? 'desligado'
+            : limite != null
+              ? `${resta.toLocaleString('pt-BR')} de ${limite.toLocaleString('pt-BR')} créditos · renova ${DIA.format(new Date(creditos!.renova_em))}`
+              : 'Você confere antes de qualquer ação'}
+        </span>
+        {aviso && (
+          <>
+            <span aria-hidden="true">·</span>
+            <span>{aviso}</span>
+          </>
+        )}
+      </p>
+      {ligada && limite != null && limite > 0 && (
+        <div
+          className="ia-uso__trilho"
+          role="meter"
+          aria-label="Créditos de IA usados no mês"
+          aria-valuemin={0}
+          aria-valuemax={limite}
+          aria-valuenow={Math.min(usados, limite)}
+          aria-valuetext={`${usados.toLocaleString('pt-BR')} de ${limite.toLocaleString('pt-BR')} usados`}
+        >
+          <i style={{ transform: `scaleX(${fracao})` }} />
+        </div>
+      )}
+    </div>
+  )
+}
+
 function quando(iso: string) {
   const d = new Date(iso)
   return new Date().toDateString() === d.toDateString() ? HORA.format(d) : QUANDO.format(d)
@@ -127,7 +176,7 @@ export function PainelIa({
       })
       if (!r.ok || !r.body) {
         const e = (await r.json().catch(() => null)) as { message?: string } | null
-        escrever(() => e?.message ?? 'A IA não respondeu. Tente de novo.', true)
+        escrever(() => e?.message ?? 'O Z não respondeu. Tente de novo.', true)
         return
       }
       const leitor = r.body.getReader()
@@ -158,7 +207,7 @@ export function PainelIa({
         }
       }
     } catch (e) {
-      if ((e as Error).name !== 'AbortError') escrever((s) => s || 'Sem conexão com a IA agora.', true)
+      if ((e as Error).name !== 'AbortError') escrever((s) => s || 'Sem conexão com o Z agora.', true)
     } finally {
       setPensando(false)
       setLendo(null)
@@ -213,12 +262,12 @@ export function PainelIa({
           <div className="ia-inicio">
             <Z movimento={movimento} tamanho={128} vento desligada={!ligada} />
             <p className="ia-inicio__estado" aria-live="polite">
-              <i /> {ligada ? (foco || texto ? 'ouvindo' : 'IA da Absolute ZRO') : 'ainda não ligada'}
+              <i /> {ligada ? (foco || texto ? 'ouvindo' : 'Z · IA da Absolute ZRO') : 'ainda não ligada'}
             </p>
             <h1 className="ia-inicio__titulo">
               <span>{saudacao},</span> <strong>{nome}.</strong>
             </h1>
-            <p className="ia-inicio__apoio">{ligada ? apoio : 'A IA do ecossistema chega em breve, a mesma em todas as plataformas.'}</p>
+            <p className="ia-inicio__apoio">{ligada ? apoio : 'O Z, a IA do ecossistema, chega em breve, o mesmo em todas as plataformas.'}</p>
           </div>
         ) : (
           <div className="ia-conversa" aria-live="polite">
@@ -259,7 +308,7 @@ export function PainelIa({
         )}
         <form className="ia-campo" onSubmit={onSubmit} data-desligado={podeEscrever ? undefined : 'sim'}>
           <label htmlFor="ia-texto" className="zro-sr-only">
-            Mensagem para a IA
+            Mensagem para o Z
           </label>
           <textarea
             id="ia-texto"
@@ -268,7 +317,7 @@ export function PainelIa({
             value={texto}
             maxLength={8000}
             placeholder={
-              !ligada ? 'A IA ainda não foi ligada' : semCredito ? 'Os créditos de IA deste mês acabaram' : emConversa ? 'Continue…' : 'Pergunte ao Z…'
+              !ligada ? 'O Z ainda não foi ligado' : semCredito ? 'Os créditos de IA deste mês acabaram' : emConversa ? 'Continue…' : 'Pergunte ao Z…'
             }
             disabled={!podeEscrever}
             onChange={(e) => setTexto(e.target.value)}
@@ -286,17 +335,7 @@ export function PainelIa({
             </button>
           )}
         </form>
-        <p className="ia-rodape">
-          <span className="ia-rodape__ponto" data-ligada={ligada ? 'sim' : undefined} aria-hidden="true" />
-          {ligada ? 'IA ligada' : 'IA desligada'}
-          <span aria-hidden="true">·</span>
-          {aviso ??
-            (creditos?.limite != null
-              ? `${Math.max(0, creditos.limite - creditos.usados).toLocaleString('pt-BR')} créditos de IA no mês`
-              : emConversa
-                ? 'Outro assunto: nova conversa'
-                : 'Você confere antes de qualquer ação')}
-        </p>
+        <UsoCreditos ligada={ligada} creditos={creditos} aviso={aviso ?? (emConversa ? 'Outro assunto: nova conversa' : null)} />
       </div>
 
       {/* gaveta das conversas, separadas por plataforma */}
