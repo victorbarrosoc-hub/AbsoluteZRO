@@ -236,3 +236,8 @@ Pedido do dono do produto: depois de salvar, baixar a referência em outros tipo
   `/api/proxies/pedidos` (docs/CONTAS.md §11); o app do computador (mesma conta, aberto, com ffmpeg) converte e salva
   ao lado do original na coleção, e o celular salva no aparelho por lá. O estado do pedido (esperando, convertendo,
   pronto, erro com Tentar de novo) aparece no mesmo bloco. Sem o computador ligado, o pedido espera.
+- **A Z** (27/10/2026): pedindo "em MP4 720p" (ou outro formato) para um arquivo do Drive, a Z procura antes a versão
+  pronta (`/api/zro/drive/versao`) e, só depois do "sim" da pessoa, cria este mesmo pedido `tipo: "formato"` por
+  `/api/zro/drive/computador` (servidor a servidor, assinado pelo HUB; contrato em
+  `docs/integration-contracts/sobedesce-drive.md` na raiz). Vale para qualquer vídeo do Drive com pasta, não só
+  referência; o convertido fica ao lado do original.

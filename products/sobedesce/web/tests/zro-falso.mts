@@ -44,9 +44,9 @@ export async function iniciarZroFalsa(cliente: { clientId: string; clientSecret:
   };
   let base = "";
 
-  const jwt = (dados: Record<string, unknown>, assinarErrado = false) => {
+  const jwt = (dados: Record<string, unknown>, assinarErrado = false, typ = "JWT") => {
     const b = (o: unknown) => Buffer.from(JSON.stringify(o)).toString("base64url");
-    const cab = `${b({ alg: "ES256", typ: "JWT", kid: jwk.kid })}.${b(dados)}`;
+    const cab = `${b({ alg: "ES256", typ, kid: jwk.kid })}.${b(dados)}`;
     const chave = assinarErrado ? generateKeyPairSync("ec", { namedCurve: "P-256" }).privateKey : privateKey;
     return `${cab}.${sign("sha256", Buffer.from(cab), { key: chave, dsaEncoding: "ieee-p1363" }).toString("base64url")}`;
   };
@@ -167,6 +167,15 @@ export async function iniciarZroFalsa(cliente: { clientId: string; clientSecret:
     url: base,
     ...estado,
     estado,
+    /**
+     * Pedido do HUB para a Z (zro-pedido+jwt), como `assinarPedidoDeApp` do HUB. `mudar` troca campos do padrão
+     * (aud, exp, iss...) e `typ`/`assinarErrado` geram pedidos ruins de propósito.
+     */
+    pedido(o: { sub: string; aud: string; acao: string; mudar?: Record<string, unknown>; typ?: string; assinarErrado?: boolean }) {
+      const agora = Math.floor(Date.now() / 1000);
+      const dados = { iss: base, sub: o.sub, aud: o.aud, iat: agora, exp: agora + 60, jti: randomBytes(12).toString("base64url"), zro_pedido: o.acao, ...o.mudar };
+      return jwt(dados, o.assinarErrado ?? false, o.typ ?? "zro-pedido+jwt");
+    },
     fechar: () => new Promise<void>((ok) => server.close(() => ok())),
   };
 }

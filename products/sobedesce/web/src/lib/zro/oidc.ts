@@ -69,7 +69,8 @@ export type PerfilZro = {
   produtos: string[];
 };
 
-async function chavePublica(kid: string): Promise<JsonWebKey | null> {
+/** Chave pública da Absolute ZRO pelo `kid` (JWKS com cache de 10 min; chave desconhecida busca de novo). */
+export async function chavePublica(kid: string): Promise<JsonWebKey | null> {
   const procurar = () => chaves?.valor.find((k) => k.kid === kid) ?? null;
   if (chaves && chaves.expira > Date.now() && procurar()) return procurar();
   // Chave desconhecida: busca de novo (a Absolute ZRO pode ter trocado a chave).
