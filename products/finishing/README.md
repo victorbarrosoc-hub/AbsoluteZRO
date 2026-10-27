@@ -35,6 +35,11 @@ da Vercel; `api/_zro.js` não vira rota). Cliente OIDC confidencial `revela-web`
 assinados. `entrar.html` mostra fora, dentro ou "chega em breve" (sem `ZRO_CLIENT_ID`/`ZRO_CLIENT_SECRET`, 503). As
 ferramentas seguem abertas sem conta: o topo mostra "Entrar" ou as iniciais.
 
+Produção (27/10/2026): cliente `revela-web` cadastrado no banco `AbsoluteZRO` (retorno
+`https://revela.absolutezro.com/api/zro/callback`), `sso_start_url` do produto `finishing`, e `ZRO_CLIENT_ID` e
+`ZRO_CLIENT_SECRET` (sensível) só em Production na Vercel. Mudar uma variável pede deploy novo, e o projeto só publica
+quando esta pasta muda desde o último deploy: um "Redeploy" do mesmo commit é cancelado pelo Ignored Build Step.
+
 ## Meus looks
 
 Depois de um clone, **Salvar como meu look** guarda a LUT (33³, 16 bits, `src/cor/meuslooks.js`) com um nome, até 8,
