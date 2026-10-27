@@ -1,10 +1,13 @@
 import 'server-only'
-import { authenticate, authenticateAccessToken, originAllowed, SESSION_COOKIE, type Authenticated } from '@zro/auth'
+import { authenticate, authenticateAccessToken, originAllowed, SESSION_COOKIE, setIssuer, type Authenticated } from '@zro/auth'
 import { getDatabase, type Database } from '@zro/db'
 import { createLogger, DomainError, isDomainError } from '@zro/observability'
-import { allowedOrigins } from './env'
+import { allowedOrigins, appOrigin } from './env'
 
 const log = createLogger('api')
+// O emissor que confere o token Bearer tem de ser o mesmo que o assina em /oauth/token (lib/oidc.ts). Sem isto, as rotas
+// da API usavam ZRO_APP_ORIGIN (vazio em produção, que vive do domínio da Vercel) e recusavam todo token de app.
+setIssuer(appOrigin)
 
 export type ApiContext = { db: Database; auth: Authenticated | null; req: Request }
 
