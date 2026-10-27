@@ -48,7 +48,30 @@ export async function subscriptionData(auth: Authenticated) {
     const { start, end } = quotaPeriod()
     const quotas = await tx`select metric, used, limit_value from zro.quotas where org_id = ${actor.orgId} and period_start = ${start} order by metric`
     const access = await productAccessFor(tx, actor.orgId)
-    return { actor, canSeeBilling, subscriptions, entitlements, quotas, period: { start, end }, access }
+    // Medidores: toda métrica com limite nas ferramentas liberadas aparece, mesmo sem uso ainda (0 de N).
+    const limites = new Map<string, number>()
+    for (const e of entitlements)
+      for (const [k, v] of Object.entries((e.limits as Record<string, unknown>) ?? {})) {
+        const n = Number(v)
+        if (Number.isFinite(n)) limites.set(k, Math.max(limites.get(k) ?? 0, n))
+      }
+    const usado = new Map(quotas.map((q) => [q.metric as string, Number(q.used)]))
+    // o limite gravado na cota do mês (no primeiro uso) vale quando a ferramenta já não traz o limite
+    const limiteDaCota = new Map(quotas.filter((q) => q.limit_value != null).map((q) => [q.metric as string, Number(q.limit_value)]))
+    const metricas = [...new Set([...limites.keys(), ...usado.keys()])].sort().map((metric) => ({
+      metric,
+      used: usado.get(metric) ?? 0,
+      limit: limites.get(metric) ?? limiteDaCota.get(metric) ?? null,
+    }))
+    // Uso por dia no mês (todas as métricas) e as últimas operações medidas, de quem e quando.
+    const diario = await tx`
+      select (date_trunc('day', created_at at time zone 'UTC'))::date as dia, metric, sum(amount)::float8 as total
+      from zro.usage_events where org_id = ${actor.orgId} and period_start = ${start} group by 1, 2 order by 1`
+    const recentes = await tx`
+      select ev.metric, ev.amount::float8 as amount, ev.created_at, u.display_name
+      from zro.usage_events ev left join zro.users u on u.id = ev.user_id
+      where ev.org_id = ${actor.orgId} order by ev.created_at desc limit 8`
+    return { actor, canSeeBilling, subscriptions, entitlements, quotas, period: { start, end }, access, metricas, diario, recentes }
   })
 }
 

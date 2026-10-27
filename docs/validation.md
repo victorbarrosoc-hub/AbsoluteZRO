@@ -1067,3 +1067,14 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   `userinfo`, refresh que gira e revogação; tela com a foto sob a CSP real); Revela `npm test` 109/109 com o mesmo teste de
   login e a tela da foto; `xvfb-run -a npx electron . --smoke` SMOKE OK. Não validado: contra o absolutezro.com de
   verdade e o cofre do sistema num Mac ou Windows de verdade.
+
+## Assinatura e consumo, menu do celular (27/10/2026)
+
+- `/assinatura` refeita: anel animado com os créditos de IA e GPU que restam (verde, âmbar acima de 75%, vermelho
+  acima de 90%), contagem "Renova em…" até o fim do mês (UTC, atualiza a cada 30 s), cartão do plano com a contagem
+  até `current_period_end`, barras das outras cotas, gráfico de uso por dia (toque ou passe o mouse) e últimos usos.
+  Tudo vem do banco (`quota_usage`, limites dos planos, eventos de uso); nada é estimado. Não existe limite por sessão
+  na plataforma: só o mês e o plano. Motion respeita "reduzir movimento".
+- Menu do celular: o fundo do painel aberto passou a ser sólido (o vidro aninhado vazava o conteúdo no Safari).
+- Validado: lint, format, typecheck, `npm test` 154/154, `npm run test:e2e` 21/21, telas claro/escuro/celular com
+  dados de teste. Não validado: com consumo real em produção.
