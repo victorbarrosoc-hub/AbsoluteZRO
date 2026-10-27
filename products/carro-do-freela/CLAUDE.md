@@ -8518,3 +8518,22 @@ o `<zro-ia>` da Absolute ZRO no topo do **Feed**, que é a primeira tela de quem
   HUB sem o escopo ou acesso recusado: 401 `reconectar` → botão "Reconectar com Absolute ZRO".
 - CSP: script e imagens da absolutezro.com; a conversa passa pela mesma origem. A home diz "Agora no Carro do Freela".
 - Suítes: `conta-zro` §11 (o script do painel vem de `apps/hub-web/public` por rota) e `test:api`. VERSAO `27/out · 4`.
+
+## 27/out · 5 — a Z ganha aba própria, a primeira e a tela de entrada
+
+Pedido do titular: "quero que seja uma aba só pra Z em todas as plataformas". O painel saiu do topo do Feed (o Feed
+voltou a ser como era) e mora em `#v-z`, sem `.wrap` e sem a animação de entrada (`show` pula a `z`: transform no
+ancestral prende a gaveta de Conversas).
+- **Onde fica o botão.** No computador, `#tab-z` é o primeiro item da lateral, antes de Planos (ícone do anel em
+  `ICO_MP.z`). ⚠️ **Na barra de baixo NÃO coube**: são 3 + Menu + 3, e o Menu só fica no centro com as metades
+  iguais. Um quarto item à esquerda deixava cada um com ~40px a 390 (36px a 360): "Propostas" não cabe e o toque fica
+  abaixo de 44px; um item em cada metade não existe para equilibrar. Então a Z é o **botão em destaque à esquerda do
+  topo** no celular (`#z-top`, `.ztop`, pílula com o anel, ciano quando aberta), antes da marca.
+- **Só no domínio** (`zAbaLigada()` = `zroLigavel() && ZRO_PRONTO`), pintado por `pintarAbaZ()` quando `/api/zro/eu`
+  responde. Sem `data-modo` de propósito: `aplicarModo` reescreve o hidden de quem tem. Fora do domínio (file://,
+  artifact, suítes) os dois botões ficam escondidos e o Feed segue sendo a primeira tela — a bateria não muda.
+- **Tela de entrada:** quem entra (`entrarNaConta`), quem termina o cadastro e quem abre o app já dentro cai na `z`.
+- **Estados dentro da aba:** conta liberada → `<zro-ia>`; sem conta Absolute ZRO → "Entrar com Absolute ZRO"
+  (`#z-sem`); sem o acesso da Z → "Reconectar com Absolute ZRO" (`#z-acao`).
+- Suítes: `conta-zro` §1 (fora do domínio a aba não aparece) e §11 (cai na Z, botão do topo aceso, primeiro da
+  lateral, Feed limpo, reconectar dentro da aba). VERSAO `27/out · 5`.

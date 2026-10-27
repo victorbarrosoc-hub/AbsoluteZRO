@@ -1254,3 +1254,20 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   `test:api` 33/33 (6 novos da Z), `conta-zro` com a seção 11 (painel, conversa, reconectar) e `node test/run.js` 88 de 88 (doca e sem-zoom de novo sozinhas).
 - Telas (Playwright, 1440 e 390, claro e escuro, API simulada pela Absolute ZRO falsa, script do painel servido do
   repositório). Não validado: com conta e chave reais, e o app de computador dentro do Electron.
+
+## A Z com aba própria: SOBEDESCE e Carro do Freela (27/10/2026)
+
+- SOBEDESCE: aba **Z** primeiro e tela de entrada em todo lugar. Site: `/z` com as abas Z · Conta (controle segmentado);
+  quem entra sem pedir página cai em `/z` (`destinoDeEntrada`; conta nova segue em `/conta?zro=ok`, celular em `/app/`);
+  sem login, "Entrar com Absolute ZRO" dentro da aba; `/conta` voltou com o "Olá". App do celular: aba Z antes de Início,
+  sempre (sem conta: "Entrar"; sem Drive: as outras abas mostram a tela da conta); cache v63, 2.8.48. App de computador:
+  rota `#/z` padrão e primeiro item do menu; Início voltou com a saudação. Home: "Conversar com a Z" leva a `/z`.
+- Carro do Freela: `#v-z`, só no domínio; primeiro item da lateral e, no celular, botão em destaque à esquerda do topo
+  (a barra de baixo não comporta: 4 itens de um lado ficariam com ~40px a 390). Quem entra, termina o cadastro ou abre
+  o app já dentro cai na Z; "Entrar" e "Reconectar" dentro da aba. Feed voltou a ser só o Feed. VERSAO `27/out · 5`.
+- Testes: SOBEDESCE web lint, typecheck, `npm test` 244/244 (novo: entrar sem volta cai em `/z`), build; motor
+  `test:fast` 726/726. Carro `test:api` 33/33, `node test/run.js` 88 de 88 (sem-zoom de novo sozinha, verde) e, depois
+  do ícone final, conta-zro (74), home-clara, menu-recolhivel, mapa, baloes, doca, versoes, sem-zoom, seguranca,
+  identidade e colisao sozinhas, todas verdes.
+- Telas (Playwright, 1440 e 390, claro e escuro, Absolute ZRO falsa, script do painel servido do repositório; 320 no
+  celular do SOBEDESCE e 360 no Carro sem rolagem lateral). Não validado: com conta e chave reais, e dentro do Electron.
