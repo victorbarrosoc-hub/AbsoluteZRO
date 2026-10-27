@@ -900,3 +900,11 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   no mesmo cartão, barra indeterminada sem tamanho. `npm test` em `products/synquei`: 71 ok, 4 pulados, 0 falhas.
 - Chromium (Playwright) com o app servido e o atualizador falso, 46 eventos: antes 46 cartões recriados, 46 entradas
   reiniciadas e opacidade ~0,3 60 ms depois de cada evento; depois 0, 0 e opacidade 1.
+
+## Ciclo do O sem a pílula atrás e login com a paisagem da marca (27/10/2026)
+
+- `/ciclo`: o seletor Mensal/Anual de Planos usava a classe `.cycle`, a mesma do Ciclo do O, e desenhava uma pílula
+  enorme atrás do anel. Virou `.cobranca`.
+- Telas de conta (`(auth)/layout.tsx`): a paisagem da marca no fundo, com véu e zoom lento (parado com "reduzir
+  movimento"); frase oficial "O futuro começa do zero."; o login cita todas as ferramentas.
+- `npm run test:e2e` 21/21. Capturas de `/entrar` (claro, escuro, 390 px) e `/ciclo`.

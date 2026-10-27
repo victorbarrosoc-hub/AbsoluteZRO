@@ -43,7 +43,7 @@ export default async function Entrar({ searchParams }: { searchParams: Promise<{
         <Link href="/esqueci-a-senha">Esqueci a senha</Link>
         <Link href={next ? `/criar-conta?next=${encodeURIComponent(next)}` : '/criar-conta'}>Criar conta</Link>
       </div>
-      <p className="zro-faint">A mesma conta entra no SOBEDESCE, NOSSOM, Synquei, TPeasy e Carro do Freela.</p>
+      <p className="zro-faint">A mesma conta entra em todas as ferramentas da Absolute ZRO.</p>
     </>
   )
 }
