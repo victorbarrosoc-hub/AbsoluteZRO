@@ -97,7 +97,12 @@ function iniciar() {
     antes.url = location.href
     antes.rolagem = scrollY
 
+    // troca curta, deslizando para o lado da aba nova; a entrada lenta (.entra) fica só para a primeira visita da página
+    novo.main.classList.remove('painel-troca')
+    novo.main.style.setProperty('--lado', PAGINAS.indexOf(p) > PAGINAS.indexOf(atual) ? '1' : '-1')
     antes.main.replaceWith(novo.main)
+    void novo.main.offsetWidth // reinicia a animação quando o painel volta
+    novo.main.classList.add('painel-troca')
     atual = p
     document.title = novo.titulo
     const canon = document.querySelector('link[rel=canonical]')
