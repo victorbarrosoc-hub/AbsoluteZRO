@@ -5940,12 +5940,22 @@ a.pstrip__card:focus-visible .pstrip__go {
   overflow-y: auto;
   background: var(--bg);
   border-right: 1px solid var(--line);
-  box-shadow: 24px 0 60px rgb(0 0 0 / 0.16);
   translate: -102% 0;
-  transition: translate 0.38s var(--ease);
+  visibility: hidden;
+  transition:
+    translate 0.38s var(--ease),
+    visibility 0s 0.38s,
+    box-shadow 0.38s;
 }
+/* fechada, a gaveta some de vez (sem a sombra vazando na borda) */
 .ia-gaveta[data-aberta] .ia-gaveta__painel {
   translate: 0 0;
+  visibility: visible;
+  box-shadow: 24px 0 60px rgb(0 0 0 / 0.16);
+  transition:
+    translate 0.38s var(--ease),
+    visibility 0s,
+    box-shadow 0.38s;
 }
 @media (prefers-reduced-motion: reduce) {
   .ia-gaveta__painel,
