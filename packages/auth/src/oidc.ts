@@ -30,6 +30,8 @@ export const OIDC_SCOPES = ['openid', 'email', 'profile', 'org', 'offline_access
  * cliente daquele produto, e a rota exige o escopo; organização e papel continuam vindo do banco (authorize).
  */
 export const PRODUCT_SCOPES: Record<string, string[]> = { 'carro-do-freela': ['carro-do-freela.jobs'] }
+/** Escopos de todo app da família (cliente com produto): a IA do ecossistema (0016). */
+export const FAMILY_SCOPES = ['zro.ia'] as const
 export const CODE_TTL_MS = 60_000
 export const ACCESS_TTL_S = 600
 export const ID_TTL_S = 600
@@ -261,7 +263,7 @@ export async function registerClient(
     throw new OAuthError('invalid_request', 'Para app de desktop, cadastre um retorno em http://127.0.0.1/caminho.')
   }
   const secret = input.kind === 'confidential' ? newToken('zk') : null
-  const scopes = [...OIDC_SCOPES, ...(input.productId ? (PRODUCT_SCOPES[input.productId] ?? []) : [])]
+  const scopes = [...OIDC_SCOPES, ...(input.productId ? [...FAMILY_SCOPES, ...(PRODUCT_SCOPES[input.productId] ?? [])] : [])]
   await tx`
     insert into zro.oauth_clients (id, name, product_id, kind, secret_hash, redirect_uris, allow_loopback, trusted, scopes, created_by)
     values (${input.id}, ${input.name.trim()}, ${input.productId}, ${input.kind}, ${secret ? hashToken(secret) : null}, ${uris}, ${input.allowLoopback},
@@ -621,6 +623,7 @@ export async function authenticateAccessToken(db: Database, authorization: strin
         activeOrgId: typeof p.zro_org === 'string' ? p.zro_org : null,
         expiresAt: new Date((p.exp as number) * 1000),
         createdAt: new Date(((p.iat as number) ?? 0) * 1000),
+        app: { clientId: client.id, productId: client.productId },
       },
     }
   })
