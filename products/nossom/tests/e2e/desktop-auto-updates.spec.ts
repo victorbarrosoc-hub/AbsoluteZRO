@@ -88,7 +88,7 @@ test('signed native updates install automatically without a download click after
       },
     };
   });
-  await page.goto('/studio');
+  await page.goto('/studio/inicio');
   await page.clock.install();
   await page.evaluate(() => (window as any).__nativeDownloaded());
   await expect(

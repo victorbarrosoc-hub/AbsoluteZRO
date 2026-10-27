@@ -1,7 +1,7 @@
 'use client';
 /**
- * A Z, a IA da Absolute ZRO, no topo do Início do estúdio (site, celular/PWA e app de computador, que abre o mesmo
- * /studio). O painel é o `<zro-ia>` publicado pela Absolute ZRO; ele fala com /api/zro/ia, o repasse do servidor que
+ * A Z, a IA da Absolute ZRO, na aba própria do estúdio (/studio/z, a primeira da navegação e a entrada de /studio no
+ * site, no celular/PWA e no app de computador, que abre o mesmo endereço). Ocupa a tela toda. O painel é o `<zro-ia>` publicado pela Absolute ZRO; ele fala com /api/zro/ia, o repasse do servidor que
  * acrescenta o token da conta (nada de token no navegador). Sem a conta Absolute ZRO conectada (ou com um token antigo,
  * sem o escopo da IA), o painel avisa e aqui aparece "Conectar com Absolute ZRO".
  */
@@ -16,7 +16,7 @@ const SUGESTOES = [
   'Volume certo para podcast',
   'Quantos créditos de IA tenho?',
 ];
-const CONECTAR = '/api/zro/entrar?modo=ligar&volta=%2Fstudio';
+const CONECTAR = '/api/zro/entrar?modo=ligar&volta=%2Fstudio%2Fz';
 
 type ZroIaElement = HTMLElement & { token?: unknown };
 declare module 'react' {
@@ -64,10 +64,23 @@ export default function ZroIaPanel({ theme }: { theme: 'system' | 'light' | 'dar
     };
   }, [falhou]);
 
-  // Sem o painel publicado (rede fora, bloqueio), o Início segue como antes.
-  if (falhou) return null;
+  // Sem o painel publicado (rede fora, bloqueio): avisa aqui mesmo, sem fingir conversa.
+  if (falhou)
+    return (
+      <section className="zro-ia-tela zro-ia-falhou" aria-label="Z, a IA da Absolute ZRO">
+        <ZroSymbol size={40} />
+        <p role="status">A Z não carregou agora.</p>
+        <button className="button" onClick={() => location.reload()}>
+          Tentar de novo
+        </button>
+      </section>
+    );
   return (
-    <section className="zro-ia-home" aria-label="Z, a IA da Absolute ZRO">
+    <section
+      className="zro-ia-tela"
+      aria-label="Z, a IA da Absolute ZRO"
+      data-z={semLogin ? 'sem-login' : undefined}
+    >
       <zro-ia
         ref={ref}
         api="/api/zro/ia"

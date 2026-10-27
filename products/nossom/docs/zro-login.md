@@ -33,10 +33,10 @@ e senha ficam ocultos (não há senha atual para confirmar).
 
 ## A Z no Início (27/10/2026)
 
-A Z, a IA da Absolute ZRO, abre o Início do estúdio (`/studio`: site, celular/PWA e o app de computador, que carrega
-o mesmo endereço). O painel é o `<zro-ia>` publicado em `https://absolutezro.com/ia/v1/zro-ia.js`
-(`components/zro-ia-panel.tsx`); o assistente do NOSSOM e o envio de áudio seguem logo abaixo, e `/studio/ia` continua
-só com o assistente.
+A Z, a IA da Absolute ZRO, tem aba própria no estúdio: `/studio/z`, a primeira da navegação e a entrada de `/studio`
+(site, celular/PWA e o app de computador, que carrega o mesmo endereço), ocupando a tela toda. O painel é o `<zro-ia>`
+publicado em `https://absolutezro.com/ia/v1/zro-ia.js` (`components/zro-ia-panel.tsx`). O Início (`/studio/inicio`)
+segue só com o assistente do NOSSOM e o envio de áudio.
 
 - **Escopo:** a ida à Absolute ZRO pede `openid email profile org offline_access zro.ia`.
 - **Token:** o callback guarda access e refresh token no cookie `nossom-zro-ia` (AES-256-GCM com chave derivada de
@@ -48,10 +48,10 @@ só com o assistente.
   vez, sem reuso) e encaminha para `<ZRO_ISSUER>/api/v1/ia/*` com `Authorization: Bearer`. A resposta NDJSON passa em
   streaming. Nenhum token vai para o navegador, para log ou para a resposta.
 - **Sem token** (entrou com senha, sessão anterior a esta versão, token sem `zro.ia`, revogado): 401, o painel
-  dispara `zro-ia:sem-login` e aparece **Conectar com Absolute ZRO** (`/api/zro/entrar?modo=ligar&volta=/studio`).
+  dispara `zro-ia:sem-login` e aparece **Conectar com Absolute ZRO** (`/api/zro/entrar?modo=ligar&volta=/studio/z`).
 - **CSP:** `script-src` e `img-src` liberam `https://absolutezro.com` (o repasse é da mesma origem, `connect-src` não
-  muda). Se o script não carregar, o Início fica como antes.
-- **Home pública:** com o login Absolute ZRO configurado no build, a seção da Z diz "Já no NOSSOM" e leva ao estúdio;
+  muda). Se o script não carregar, a aba da Z avisa e oferece tentar de novo.
+- **Home pública:** com o login Absolute ZRO configurado no build, a seção da Z diz "Já no NOSSOM" e leva à aba da Z;
   sem ele, continua "Chegando ao NOSSOM".
 
 ## Banco

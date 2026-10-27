@@ -82,7 +82,7 @@ test('vocals uses the music model, saves a stereo version, and never runs speech
     }
     return r.fulfill({ status: 400 });
   });
-  await page.goto('/studio');
+  await page.goto('/studio/inicio');
   await page.getByRole('button', { name: 'Isolar voz da música', exact: true }).click();
   await expect(page).toHaveURL(/\/studio\/isolar-voz$/);
   await page

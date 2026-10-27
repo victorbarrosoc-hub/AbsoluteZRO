@@ -22,7 +22,7 @@ test('home is the assistant, attaches an audio file, sends measurements and open
       },
     });
   });
-  await page.goto('/studio');
+  await page.goto('/studio/inicio');
   await expect(page.getByRole('heading', { name: 'Seu áudio, melhor.' })).toBeVisible();
   await page
     .getByLabel('Importar arquivo de áudio', { exact: true })
@@ -30,7 +30,7 @@ test('home is the assistant, attaches an audio file, sends measurements and open
   await expect(page.getByText('synthetic-speech.wav', { exact: true })).toBeVisible({
     timeout: 90000,
   });
-  await expect(page).toHaveURL(/\/studio$/);
+  await expect(page).toHaveURL(/\/studio\/inicio$/);
   await page.getByLabel('Descreva seu objetivo').fill('Trate meu áudio');
   await page.getByRole('button', { name: 'Encontrar tratamento', exact: true }).click();
   await expect(page.getByText('Vamos tratar a gravação.', { exact: true })).toBeVisible();
@@ -41,7 +41,7 @@ test('home is the assistant, attaches an audio file, sends measurements and open
 });
 test('mobile sidebar always closes and install dialog is centered outside it', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/studio');
+  await page.goto('/studio/inicio');
   const toggle = page.getByRole('button', { name: 'Abrir navegação', exact: true });
   await toggle.click();
   await page.getByRole('button', { name: 'Fechar navegação', exact: true }).click();
@@ -120,7 +120,7 @@ test('account settings save the profile, require current password and preserve a
 test('readable controls fit mobile and desktop; desktop navigation collapses and download options have no dead links', async ({
   page,
 }) => {
-  await page.goto('/studio');
+  await page.goto('/studio/inicio');
   await page.getByRole('button', { name: 'Recolher navegação', exact: true }).click();
   await expect(page.locator('.studio-shell')).toHaveClass(/nav-collapsed/);
   await page.reload();
