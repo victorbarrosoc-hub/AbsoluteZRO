@@ -886,3 +886,17 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   falha) e o aviso entregando o build certo: `npm test` 35/35; `--smoke` ok no Electron 44 (Linux).
 - Quem está na 1.1.1 atualiza para a 1.2.0 pelo comando do Terminal uma última vez; dali em diante, pelo botão.
 - Não validado: a troca num Mac e num Windows de verdade.
+
+## Synquei: aviso de download que não pisca (27/10/2026)
+
+- Causa: `desenhar()` em `products/synquei/app/js/atualizacao.js` trocava o `innerHTML` do cartão a cada evento de
+  progresso (até 4 por segundo, `desktop/atualizador.cjs`); o `.atu` nascia de novo e a entrada `rise` (`app.css`)
+  recomeçava do transparente, então o aviso piscava. A barra também nunca deslizava (nascia já na largura nova).
+- Agora `aplicarCartao()` compara a forma do cartão sem os números: se só o progresso mudou (baixando, conferindo,
+  preparando), troca no lugar o texto, a largura e o `aria-valuenow`; o cartão só é refeito quando muda de verdade
+  (pronto, erro, Depois). Ajustes não se redesenha mais a cada pedaço baixado. Reduzir movimento segue pela regra
+  global. `sw.js` foi para `synquei-v15`.
+- `tests/aviso-atualizacao.test.mjs` (3 casos): 40 eventos de progresso com uma troca de HTML só, conferindo/preparando
+  no mesmo cartão, barra indeterminada sem tamanho. `npm test` em `products/synquei`: 71 ok, 4 pulados, 0 falhas.
+- Chromium (Playwright) com o app servido e o atualizador falso, 46 eventos: antes 46 cartões recriados, 46 entradas
+  reiniciadas e opacidade ~0,3 60 ms depois de cada evento; depois 0, 0 e opacidade 1.
