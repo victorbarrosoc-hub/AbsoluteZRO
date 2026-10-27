@@ -899,6 +899,21 @@ test('app na Tela de Início: manifesto, ícones e o passo a passo do Compartilh
   await computador.close()
 })
 
+test('abertura do app: o quadro se revela e a tela abre sozinha; no navegador comum não aparece', async () => {
+  const pagina = await navegador.newPage({ viewport: { width: 390, height: 844 } })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  await pagina.goto(endereco + 'lut.html')
+  assert.equal(await pagina.locator('.abertura-app').count(), 0, 'abertura fora do app instalado')
+  await pagina.goto(endereco + 'lut.html?abertura=1')
+  await pagina.locator('.abertura-app .abertura-revela').waitFor({ state: 'attached' })
+  await pagina.locator('.abertura-app').waitFor({ state: 'detached', timeout: 5000 })
+  await pagina.getByRole('heading', { name: 'Revela a cor que você quer.' }).waitFor()
+  assert.equal(await pagina.evaluate(() => document.documentElement.classList.contains('abrindo')), false)
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
 test('menu do computador: abrir e recolher várias vezes não duplica nada e segue a aba', async () => {
   const pagina = await navegador.newPage({ viewport: { width: 1280, height: 900 } })
   await pagina.goto(endereco + 'lut.html')

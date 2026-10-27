@@ -101,6 +101,9 @@ A Revela instala como app pelo Safari: **Compartilhar → Adicionar à Tela de I
 - Barra de status translúcida: o topo de vidro desce até a hora e a bateria (`env(safe-area-inset-top)`).
 - "Instalar o app" no menu: no iPhone fora do app mostra os dois toques do Compartilhar; no Chrome chama o pedido do
   próprio navegador; já instalado, some.
+- Abertura (`app/abertura.js`): aberto pelo ícone, o ícone entra, o quadro da película se revela em cor e a tela abre
+  para a ferramenta (~2 s, toque pula). Uma vez por abertura, nunca no navegador comum nem com "reduzir movimento".
+  `?abertura=1` mostra no navegador, para ver antes de instalar.
 - O site não aparece como destino no Compartilhar de outros apps (o iOS não deixa site receber arquivo); escolher o
   vídeo ou a imagem segue pelo seletor de arquivos.
 
