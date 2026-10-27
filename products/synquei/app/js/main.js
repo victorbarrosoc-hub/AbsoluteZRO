@@ -505,7 +505,7 @@ document.addEventListener('synquei:organizar-mudou', () => (S.route === 'organiz
 document.addEventListener('synquei:montagem-mudou', () => S.route === 'sfx' && render())
 // Ajustes mostra a versão e o estado da atualização: redesenha quando muda
 document.addEventListener('synquei:atualizacao-mudou', () => S.route === 'ajustes' && render())
-// Conta Absolute ZRO (só no site): o cartão do plano e Ajustes mostram quem entrou
+// Conta Absolute ZRO (site e desktop): o cartão do plano e Ajustes mostram quem entrou
 document.addEventListener('synquei:conta-mudou', () => {
   const pc = $('#planoCard')
   if (pc) pc.innerHTML = cartaoPlano()

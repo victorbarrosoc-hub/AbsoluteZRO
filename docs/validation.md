@@ -1078,3 +1078,16 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Menu do celular: o fundo do painel aberto passou a ser sólido (o vidro aninhado vazava o conteúdo no Safari).
 - Validado: lint, format, typecheck, `npm test` 154/154, `npm run test:e2e` 21/21, telas claro/escuro/celular com
   dados de teste. Não validado: com consumo real em produção.
+## Synquei de computador: conta Absolute ZRO (27/10/2026)
+
+- `products/synquei/desktop/conta.cjs` (porta do AEON): cliente público `synquei-desktop`, login de app nativo (RFC
+  8252) no navegador do sistema com volta para `http://127.0.0.1:<porta>/callback`, PKCE S256, state, nonce e o
+  `id_token` conferido pela JWKS. O protocolo do app (`desktop/main.cjs`) responde `/api/zro/eu`, `/entrar` e `/sair`
+  no mesmo formato do site, então `app/js/conta.js` é o mesmo nos dois (no desktop liga quando a ponte tem `conta`).
+- Perfil único: cada `/api/zro/eu` relê nome, foto, organização e `zro_products` no `/oauth/userinfo` (3 s, senão vale a
+  cópia). O refresh token só vai ao disco cifrado pelo `safeStorage`; access token só na memória; sair revoga.
+  `zro_products` só decide o aviso "sem acesso"; o plano continua Grátis para todos, como no site.
+- Testes: `tests/conta-desktop.test.mjs` (7) contra a Absolute ZRO falsa, que ganhou cliente público e `vencer()`;
+  `npm test` sem falhas; `xvfb-run -a npx electron . --smoke` SMOKE OK, agora conferindo "Entrar com Absolute ZRO" na
+  barra lateral. Telas conferidas no Electron (logado com iniciais e sem sessão).
+- Não validado: login contra o absolutezro.com de verdade e o cofre do sistema num Mac ou Windows de verdade.

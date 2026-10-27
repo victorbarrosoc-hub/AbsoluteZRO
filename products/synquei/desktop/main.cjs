@@ -4,7 +4,7 @@
 //
 // `--smoke` (CI, depois do build): abre o app, monta o projeto de exemplo, sincroniza, exporta e escreve "SMOKE OK".
 
-const { app, BrowserWindow, Menu, protocol, shell, session, dialog, ipcMain } = require('electron')
+const { app, BrowserWindow, Menu, protocol, shell, session, dialog, ipcMain, safeStorage } = require('electron')
 const path = require('node:path')
 const fs = require('node:fs')
 const fsp = require('node:fs/promises')
@@ -15,6 +15,9 @@ const { Organizador } = require('./organizador.cjs')
 const { Ponte, pastaTroca } = require('./davinci.cjs')
 const { Biblioteca } = require('./sfx-biblioteca.cjs')
 const { TIPOS: TIPOS_NOMES, lerLinkOrganizar, linkNoArgv } = require('./link-organizar.cjs')
+// o emissor da conta só muda fora do app empacotado (testes com a Absolute ZRO falsa)
+if (app.isPackaged) delete process.env.ZRO_ISSUER
+const { criarConta } = require('./conta.cjs')
 
 const SCHEME = 'synquei'
 const ROOT = path.join(__dirname, '..')
@@ -88,9 +91,64 @@ async function midia(req, u) {
   return new Response(Readable.toWeb(fs.createReadStream(abs, { start: a, end: b })), { status: 206, headers: { ...base, 'content-length': String(b - a + 1), 'content-range': `bytes ${a}-${b}/${st.size}` } })
 }
 
+// ───────── conta Absolute ZRO: as mesmas rotas do site (api/zro/*), respondidas aqui (desktop/conta.cjs) ─────────
+let conta = null
+// o refresh token da conta (para reler o perfil a cada abertura) só vai para o disco cifrado pelo sistema: Keychain no
+// Mac, DPAPI no Windows. No Linux sem chaveiro (basic_text) não há cofre de verdade: fica só na memória.
+function cofreDoSistema() {
+  try {
+    if (!safeStorage.isEncryptionAvailable()) return null
+    if (process.platform === 'linux' && safeStorage.getSelectedStorageBackend?.() === 'basic_text') return null
+    return { cifrar: (t) => safeStorage.encryptString(t).toString('base64'), decifrar: (b) => safeStorage.decryptString(Buffer.from(b, 'base64')) }
+  } catch {
+    return null
+  }
+}
+const contaApp = () =>
+  (conta ??= criarConta({
+    pasta: app.getPath('userData'),
+    // o login acontece no navegador da pessoa (onde ela já pode estar logada na Absolute ZRO)
+    abrirNavegador: (url) => shell.openExternal(url),
+    cofre: cofreDoSistema(),
+    aoVoltar: () => {
+      if (win && !win.isDestroyed()) {
+        if (win.isMinimized()) win.restore()
+        win.show()
+        win.focus()
+      }
+    },
+  }))
+const jsonResp = (status, corpo) => new Response(JSON.stringify(corpo), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } })
+const voltaSegura = (v) => (typeof v === 'string' && /^\/[^/\\]/.test(v) && v.length < 300 ? v : '/app/index.html')
+
+async function rotaConta(req, u) {
+  // teste de fumaça: sem rede e sem sessão (aparece "Entrar com Absolute ZRO")
+  if (SMOKE) return u.pathname === '/api/zro/eu' ? jsonResp(401, { ok: false, configurado: true }) : jsonResp(404, { ok: false })
+  if (u.pathname === '/api/zro/eu') {
+    // perfil único: relê nome, e-mail, foto e produtos na Absolute ZRO a cada leitura (sem resposta em 3 s, vale a cópia)
+    if (contaApp().ler()) await contaApp().atualizar()
+    const eu = contaApp().eu()
+    return eu ? jsonResp(200, eu) : jsonResp(401, { ok: false, configurado: true })
+  }
+  if (u.pathname === '/api/zro/sair' && req.method === 'POST') {
+    contaApp().sair()
+    return jsonResp(200, { ok: true })
+  }
+  if (u.pathname === '/api/zro/entrar') {
+    const volta = voltaSegura(u.searchParams.get('volta'))
+    const r = await contaApp().entrar({ criar: u.searchParams.get('criar') === '1' })
+    // a mesma volta do site (?zro=<resultado>): a página mostra o recado e tira o ?zro= do endereço
+    const destino = new URL(`${SCHEME}://app${volta}`)
+    destino.searchParams.set('zro', r)
+    return new Response(null, { status: 303, headers: { location: destino.toString(), 'cache-control': 'no-store' } })
+  }
+  return jsonResp(404, { ok: false })
+}
+
 function serve() {
   protocol.handle(SCHEME, async (req) => {
     const u = new URL(req.url)
+    if (u.pathname.startsWith('/api/zro/')) return rotaConta(req, u)
     if (u.pathname === '/__midia') return midia(req, u)
     let rel = decodeURIComponent(u.pathname)
     if (rel.endsWith('/')) rel += 'index.html'
@@ -376,12 +434,15 @@ async function smoke() {
       const st = await (await import('/app/js/store.js')).runSync()
       const { zipAll } = await import('/app/js/export/index.js')
       const zip = zipAll(window.__synquei.S.project)
-      return { aac, desk, total: st.total, audio: st.audio, unsynced: st.unsynced, zip: zip.length }
+      // conta Absolute ZRO: no app de desktop a barra lateral oferece entrar (o fumaça responde sem sessão)
+      await wait(() => document.querySelector('#planoCard [data-entrar]'), 10000)
+      const conta = /Entrar com Absolute ZRO/.test(document.getElementById('planoCard').textContent)
+      return { aac, desk, conta, total: st.total, audio: st.audio, unsynced: st.unsynced, zip: zip.length }
     })()`)
-    log(`desktop: ${r.desk} · AAC no navegador do app: ${r.aac}`)
+    log(`desktop: ${r.desk} · AAC no navegador do app: ${r.aac} · conta Absolute ZRO: ${r.conta}`)
     log(`exemplo: ${r.audio}/${r.total} sincronizados pelo som, ${r.unsynced} de fora, zip com ${r.zip} bytes`)
     clearTimeout(timer)
-    done(r.desk && r.total === 6 && r.audio === 6 && r.unsynced === 0 && r.zip > 1000)
+    done(r.desk && r.conta && r.total === 6 && r.audio === 6 && r.unsynced === 0 && r.zip > 1000)
   } catch (err) {
     clearTimeout(timer)
     log(`erro: ${err && err.message ? err.message : err}`)

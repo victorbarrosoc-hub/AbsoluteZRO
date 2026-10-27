@@ -1,7 +1,7 @@
 // Absolute ZRO falsa para os testes do "Entrar com Absolute ZRO": descoberta OIDC, /oauth/authorize (devolve o
-// código na hora, como app da família), /oauth/token (código: confere client_secret_basic, PKCE S256, redirect_uri e
-// uso único; refresh: roda o token e derruba a família no reuso), /oauth/userinfo, /oauth/revoke e JWKS. Assina o
-// id_token com uma chave EC P-256 gerada aqui. `adulterar` gera tokens ruins de propósito.
+// código na hora, como app da família), /oauth/token (código: confere client_secret_basic, ou só o client_id no
+// cliente público do desktop; PKCE S256, redirect_uri e uso único; refresh: roda o token e derruba a família no reuso),
+// /oauth/userinfo, /oauth/revoke e JWKS. Assina o id_token com uma chave EC P-256 gerada aqui. `adulterar` gera tokens ruins de propósito.
 //
 // Perfil único: `contas` (por sub) é a conta na Absolute ZRO. O teste muda nome, e-mail ou foto ali e o /userinfo
 // devolve o novo, como o HUB de verdade (picture = <emissor>/api/v1/foto/<uuid>, ausente sem foto).
@@ -50,7 +50,10 @@ export async function iniciarZroFalsa(cliente) {
     for await (const c of req) corpo += c
     return new URLSearchParams(corpo)
   }
-  const clienteOk = (req) => Buffer.from(String(req.headers.authorization || '').replace(/^Basic /, ''), 'base64').toString() === `${cliente.clientId}:${cliente.clientSecret}`
+  // cliente público (app de desktop, `publico: true`): sem segredo, só o client_id no formulário (RFC 8252)
+  const clienteOk = (req, f) =>
+    cliente.publico ? !req.headers.authorization && f.get('client_id') === cliente.clientId : clienteSecreto(req)
+  const clienteSecreto = (req) => Buffer.from(String(req.headers.authorization || '').replace(/^Basic /, ''), 'base64').toString() === `${cliente.clientId}:${cliente.clientSecret}`
 
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, base)
@@ -88,7 +91,7 @@ export async function iniciarZroFalsa(cliente) {
     }
     if (url.pathname === '/oauth/token' && req.method === 'POST') {
       const f = await lerForm(req)
-      if (!clienteOk(req)) return responder(res, 401, { error: 'invalid_client' })
+      if (!clienteOk(req, f)) return responder(res, 401, { error: 'invalid_client' })
       if (f.get('grant_type') === 'refresh_token') {
         const r = refreshes.get(f.get('refresh_token') || '')
         if (!r || familiasMortas.has(r.familia)) return responder(res, 400, { error: 'invalid_grant' })
@@ -141,7 +144,7 @@ export async function iniciarZroFalsa(cliente) {
     }
     if (url.pathname === '/oauth/revoke' && req.method === 'POST') {
       const f = await lerForm(req)
-      if (!clienteOk(req)) return responder(res, 401, { error: 'invalid_client' })
+      if (!clienteOk(req, f)) return responder(res, 401, { error: 'invalid_client' })
       const r = refreshes.get(f.get('token') || '')
       if (r) {
         familiasMortas.add(r.familia)
@@ -158,5 +161,9 @@ export async function iniciarZroFalsa(cliente) {
     for (const r of refreshes.values()) if (r.sub === sub) familiasMortas.add(r.familia)
     for (const [k, a] of acessos) if (a.sub === sub) acessos.delete(k)
   }
-  return { url: base, estado, contas, removerAcesso, fechar: () => new Promise((ok) => server.close(() => ok())) }
+  /** Os access tokens emitidos até aqui vencem (o próximo /userinfo pede renovação pelo refresh token). */
+  const vencer = () => {
+    for (const a of acessos.values()) a.exp = 0
+  }
+  return { url: base, estado, contas, removerAcesso, vencer, fechar: () => new Promise((ok) => server.close(() => ok())) }
 }

@@ -1,5 +1,5 @@
 // Ponte mínima entre o app e o sistema: o caminho completo de um arquivo escolhido ou arrastado (para as exportações),
-// a plataforma (para o visual da janela), o aviso de versão nova (desktop/atualizador.cjs) e o Organizar
+// a plataforma (para o visual da janela), se o app tem a conta Absolute ZRO, o aviso de versão nova (desktop/atualizador.cjs) e o Organizar
 // (desktop/organizador.cjs e davinci.cjs). Nada mais do Node chega à página.
 
 const { contextBridge, webUtils, ipcRenderer } = require('electron')
@@ -13,6 +13,8 @@ const ouvir = (canal, cb) => {
 contextBridge.exposeInMainWorld('synqueiDesktop', {
   isDesktop: true,
   platform: process.platform,
+  // conta Absolute ZRO: o app responde /api/zro/* (desktop/conta.cjs), e a página mostra a mesma conta do site
+  conta: true,
   pathFor(file) {
     try {
       return webUtils.getPathForFile(file) || null

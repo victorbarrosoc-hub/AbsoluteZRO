@@ -47,7 +47,7 @@ export default {
     const t = theme()
     const d = defaults()
     const som = soundPrefs()
-    return `<div class="page tela"><header class="page-head"><div><h1>Ajustes</h1><p class="page-lead">Valem para este navegador.</p></div></header>
+    return `<div class="page tela"><header class="page-head"><div><h1>Ajustes</h1><p class="page-lead">Valem para este ${window.synqueiDesktop ? 'computador' : 'navegador'}.</p></div></header>
     <div class="settings stagger">
       ${cartaoConta()}
       <section class="card"><header class="card-head"><h2>Plano</h2><span class="plano-chip">${h(planoAtual().nome)}</span></header><div class="card-pad">
