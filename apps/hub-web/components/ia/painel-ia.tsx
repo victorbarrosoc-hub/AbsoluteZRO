@@ -317,9 +317,7 @@ export function PainelIa({
             rows={1}
             value={texto}
             maxLength={8000}
-            placeholder={
-              !ligada ? 'A Z ainda não foi ligada' : semCredito ? 'Os créditos de IA deste mês acabaram' : emConversa ? 'Continue…' : 'Pergunte à Z…'
-            }
+            placeholder={!ligada ? 'A Z ainda não foi ligada' : semCredito ? 'Créditos do mês acabaram' : emConversa ? 'Continue…' : 'Pergunte à Z…'}
             disabled={!podeEscrever}
             onChange={(e) => setTexto(e.target.value)}
             onKeyDown={onKey}

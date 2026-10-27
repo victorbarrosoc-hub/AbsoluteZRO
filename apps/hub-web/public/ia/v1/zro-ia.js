@@ -70,6 +70,8 @@ h1 strong{font-weight:800}
 .campo:focus-within{border-color:var(--faint);box-shadow:0 0 0 4px rgb(127 127 127/.12),0 12px 34px rgb(0 0 0/.08)}
 .campo[data-off]{opacity:.7}
 textarea{flex:1;min-height:40px;max-height:200px;padding:9px 0;border:0;outline:0;resize:none;background:transparent;font-size:1rem;line-height:1.4;field-sizing:content}
+/* o aviso no campo cabe numa linha só: se faltar espaço, termina em reticências em vez de quebrar e cortar */
+textarea::placeholder{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 textarea::placeholder{color:var(--faint)}
 .enviar{flex:none;display:grid;place-items:center;width:40px;height:40px;border:0;border-radius:50%;background:var(--send);color:var(--sendInk);box-shadow:inset 0 1px 0 rgb(255 255 255/.35),0 6px 16px rgb(0 0 0/.18);cursor:pointer;transition:opacity .2s,scale .2s}
 .enviar:disabled{opacity:.3;cursor:default}.enviar:not(:disabled):active{scale:.94}
@@ -542,11 +544,11 @@ class ZroIa extends HTMLElement {
     const c = s.creditos
     const sem = c && (c.limite === null || c.usados >= c.limite)
     const ph = s.semLogin
-      ? 'Entre com a conta Absolute ZRO para conversar'
+      ? 'Entre para conversar com a Z'
       : !s.ligada
         ? 'A Z ainda não foi ligada'
         : sem
-          ? 'Os créditos de IA deste mês acabaram'
+          ? 'Créditos do mês acabaram'
           : em
             ? 'Continue…'
             : 'Pergunte à Z…'

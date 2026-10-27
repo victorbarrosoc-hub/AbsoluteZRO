@@ -5809,6 +5809,9 @@ a.pstrip__card:focus-visible .pstrip__go {
   field-sizing: content;
 }
 .ia-campo textarea::placeholder {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: var(--text-faint);
 }
 .ia-campo__enviar {
