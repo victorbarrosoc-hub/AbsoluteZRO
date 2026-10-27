@@ -856,3 +856,5 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Símbolo do fim da página inicial: animava com a rolagem e ficava travado no meio quando a página acabava antes;
   agora desenha uma vez quando aparece (`components/home/aparece.tsx`).
 - HUB: `npm test` 153/153; `npm run test:e2e` 21/21.
+- Fotos dos aparelhos (`produto-*.webp`) sem fundo chapado (`scripts/marca/aparelhos/transparente.py`, máscara do
+  molde): sem o retângulo preto atrás do notebook no tema escuro nem o branco no claro. Conferido em 1440 px.

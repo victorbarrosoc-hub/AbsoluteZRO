@@ -4507,15 +4507,11 @@ a.pstrip__card:focus-visible .pstrip__go {
 .pconheca__tela img {
   width: 100%;
   height: auto;
-  /* o fundo da foto some no cartão: no claro o branco multiplica, no escuro o preto clareia; bordas dissolvem */
-  mix-blend-mode: multiply;
+  /* as fotos já vêm sem fundo (scripts/marca/aparelhos/transparente.py); só as bordas dissolvem */
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent), linear-gradient(180deg, transparent, #000 6%, #000 88%, transparent);
   -webkit-mask-composite: source-in;
   mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent), linear-gradient(180deg, transparent, #000 6%, #000 88%, transparent);
   mask-composite: intersect;
-}
-:root[data-theme='dark'] .pconheca__tela img {
-  mix-blend-mode: lighten;
 }
 .pconheca__tela .ahero__product--escuro,
 :root[data-theme='dark'] .pconheca__tela .ahero__product--claro {
