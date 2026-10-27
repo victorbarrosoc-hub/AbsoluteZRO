@@ -396,6 +396,9 @@ test('entrar: sem sessão mostra os botões; login desligado avisa', async () =>
   const entrar = await pagina.getByRole('link', { name: 'Entrar com Absolute ZRO' }).getAttribute('href')
   assert.match(entrar, /^\/api\/zro\/entrar\?volta=%2Fconverter/)
   assert.match(await pagina.getByRole('link', { name: 'Criar conta' }).getAttribute('href'), /criar=1/)
+  // a conta vale para a família inteira, AEON e a própria Absolute ZRO inclusive
+  const familia = await pagina.locator('.familia-mini img').evaluateAll((n) => n.map((i) => i.alt))
+  for (const nome of ['AEON', 'Absolute ZRO']) assert.ok(familia.includes(nome), nome)
 
   await pagina.route('**/api/zro/eu', (r) => r.fulfill({ status: 503, contentType: 'application/json', body: '{"ok":false}' }))
   await pagina.reload()
@@ -605,6 +608,45 @@ test('converter com log: S-Log3 vira Rec.709 na GPU (cinza 18% no lugar certo) e
   assert.deepEqual([v.color_primaries, v.color_transfer, v.color_space], ['bt709', 'bt709', 'bt709'])
   assert.deepEqual(erros, [])
   await pagina.close()
+})
+
+test('converter no celular: nome comprido não alarga a página e o vídeo em pé reduz na GPU igual ao canvas', async () => {
+  // 1080p deitado com a rotação de celular (90°): sai em pé, 720 de altura
+  const deitado = join(dir, 'deitado.mp4')
+  const nome = 'C0042_Clipe_Com_Nome_Bem_Comprido_De_Camera_Em_Pe_4K_Final.mp4'
+  const empe = join(dir, nome)
+  execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc2=size=1920x1080:rate=24', '-t', '1', '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', deitado])
+  execFileSync('ffmpeg', ['-loglevel', 'error', '-y', '-display_rotation', '90', '-i', deitado, '-c', 'copy', empe])
+  const converter = async (escala) => {
+    const pagina = await navegador.newPage({ acceptDownloads: true, viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+    const erros = []
+    pagina.on('pageerror', (e) => erros.push(e.message))
+    await pagina.goto(endereco + `converter.html?escala=${escala}`)
+    await pagina.locator('#aparelho [data-codec=avc][data-ok=true]').waitFor()
+    await pagina.setInputFiles('#arquivos', empe)
+    await pagina.locator('.item[data-estado=pronto]').waitFor()
+    await pagina.getByRole('radio', { name: '720p' }).check({ force: true })
+    assert.equal(await pagina.evaluate(() => document.documentElement.scrollWidth), 390, 'a página alargou com o nome do arquivo')
+    await pagina.locator('#salvar-pasta').uncheck({ force: true })
+    await pagina.getByRole('button', { name: 'Converter' }).click()
+    const link = pagina.getByRole('link', { name: /^Baixar / })
+    await link.waitFor({ timeout: 60_000 })
+    assert.equal(await pagina.locator('.item').getAttribute('data-escala'), escala === 'gpu' ? 'gpu' : 'nenhuma')
+    assert.equal(await pagina.evaluate(() => document.documentElement.scrollWidth), 390)
+    const [baixado] = await Promise.all([pagina.waitForEvent('download'), link.click()])
+    const saida = join(dir, `em-pe-${escala}.mp4`)
+    await baixado.saveAs(saida)
+    assert.deepEqual(erros, [])
+    await pagina.close()
+    const { streams } = JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-select_streams', 'v', '-show_entries', 'stream=width,height', '-of', 'json', saida], { encoding: 'utf8' }))
+    assert.deepEqual([streams[0].width, streams[0].height], [406, 720])
+    // primeiro quadro em 36×64 cinza, para comparar os dois caminhos (girado errado, a diferença dispara)
+    return execFileSync('ffmpeg', ['-loglevel', 'error', '-i', saida, '-vf', 'scale=36:64,format=gray', '-frames:v', '1', '-f', 'rawvideo', '-'])
+  }
+  const gpu = await converter('gpu')
+  const canvas = await converter('canvas')
+  const diferenca = gpu.reduce((s, v, i) => s + Math.abs(v - canvas[i]), 0) / gpu.length
+  assert.ok(diferenca < 4, `GPU e canvas diferem demais: ${diferenca}`)
 })
 
 test('grade de looks: só o frame já mostra todos os looks; trocar de look muda o palco e o nome do arquivo', async () => {

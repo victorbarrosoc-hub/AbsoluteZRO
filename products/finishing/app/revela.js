@@ -685,7 +685,7 @@ function nomeBase() {
 }
 
 function baixarTexto(texto, nome) {
-  const url = URL.createObjectURL(new Blob([texto], { type: 'text/plain' }))
+  const url = URL.createObjectURL(new Blob([texto], { type: 'application/octet-stream' }))
   const a = document.createElement('a')
   a.href = url
   a.download = nome

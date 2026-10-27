@@ -124,3 +124,10 @@ test('linha de comando: referência + material → .cube e prévia', () => {
     rmSync(dir, { recursive: true, force: true })
   }
 })
+
+test('downloads de .cube e .py saem como arquivo, não texto (no iPhone, text/plain vira ".cube.txt")', () => {
+  for (const f of ['revela.js', 'cst.js', 'entrega.js']) {
+    const fonte = readFileSync(new URL(`../app/${f}`, import.meta.url), 'utf8')
+    assert.doesNotMatch(fonte, /new Blob\([^)]*type: 'text\//, f)
+  }
+})

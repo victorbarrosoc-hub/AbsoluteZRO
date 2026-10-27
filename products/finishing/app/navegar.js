@@ -54,6 +54,8 @@ function iniciar() {
   // a primeira posição entra sem deslizar; depois, toda troca desliza
   requestAnimationFrame(() => dock.classList.add('marca-viva'))
   addEventListener('resize', moverMarca)
+  // o dock muda de tamanho sem "resize" da janela (rolagem do iPhone, fonte que chegou, página que alargou): segue junto
+  if ('ResizeObserver' in window) new ResizeObserver(() => moverMarca()).observe(dock)
   document.fonts?.ready.then(moverMarca)
 
   async function buscar(p) {

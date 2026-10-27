@@ -824,6 +824,22 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   grade com 6 looks → baixar `revela-zro-filmes-33.cube` → apagar). `products/finishing`: `npm test` 96/96.
 - Não validado: o `.cube` do look novo e de um "meu look" no Resolve, em vídeo.
 
+## Revela no celular: .cube, tela do Converter, login e conversão (27/10/2026)
+
+- `.cube` baixava como `.cube.txt` no iPhone: o Safari põe `.txt` em arquivo `text/plain`. Downloads de `.cube` e
+  `.py` agora saem como `application/octet-stream` (teste confere que nenhum download usa `text/*`).
+- Converter no celular: um nome de arquivo comprido alargava a grade da fila (trilha `auto` cresce até o texto
+  inteiro), a página passava de 390 para 604 px, cortava à esquerda e a marca do dock caía entre duas abas. Fila e
+  corpo do item com `minmax(0, 1fr)`; a marca também segue o dock por `ResizeObserver`.
+- Login: a fileira "Uma conta para" ganhou AEON e Absolute ZRO.
+- Velocidade: no caminho antigo o Mediabunny reduz 4K → 720p num canvas 2D, que no Safari tende a copiar o quadro
+  para a CPU. Novo `app/escala-gpu.js` reduz em WebGL2 (mipmaps, rotação do celular, contain/fill) quando há GPU de
+  verdade. No contêiner de teste (SwiftShader, sem GPU) o caminho novo é ~5× mais lento que o canvas (30 s × 6,5 s
+  num 4K de 4 s), por isso só liga com placa de vídeo real. Teste no Chromium: vídeo 1080p girado 90° convertido para
+  720p pela GPU e pelo canvas dá o mesmo quadro (diferença média 0,66 em 255; com a rotação trocada, 116).
+  `products/finishing`: `npm test` 98/98.
+- Não medido: tempo de conversão num iPhone real (aqui não há aparelho).
+
 ## Página inicial: faixa das ferramentas (26/10/2026)
 
 - Cartões verticais (ícone em cima, nome numa linha, apoio em até duas linhas reservadas): os sete com a mesma altura
