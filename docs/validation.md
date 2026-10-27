@@ -1118,3 +1118,18 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   JavaScript, cadastro/SSO pelos passos, axe em `/entrar` e `/criar-conta` nos dois temas). Telas conferidas em claro e
   escuro, 1280 e 390. Não validado: gerenciador de senhas real (Chrome/1Password/iCloud) e Safari antigo sem
   `@media (scripting)`.
+## Balões de pendência no Synquei, TPeasy e Carro do Freela (27/10/2026)
+
+- Mesmo desenho do SOBEDESCE e do HUB: pílula com número em negrito tabular, 99+ acima de 99, `aria-label`
+  "N pendências", o que espera no `title` do item, entrada curta só em CSS (parada com reduzir movimento) e ponto com
+  número no canto do ícone no menu recolhido e na barra do celular. Atualiza junto com o estado de cada app.
+- Regras puras: `products/synquei/app/js/pendencias.js`, `products/tpeasy/app/js/pendencias.js` e
+  `contarPendencias` em `products/carro-do-freela/src/template.html`. Synquei e TPeasy subiram o cache do service
+  worker (v18 e v15); Carro subiu a `VERSAO` (27/out · 2).
+- Testes: Synquei `npm test` sem falhas (+10 em `tests/pendencias.test.mjs`), TPeasy `node --test tests/*.test.mjs`
+  41/41 (+6), Carro `node test/run.js` 88/88 (suíte nova `baloes`, 24 asserções: conta pura, ao vivo na lateral,
+  recolhida, celular e gaveta). `node scripts/scan-secrets.mjs` sem segredos. Telas claro/escuro, computador e
+  celular conferidas no Playwright.
+- Não validado: o Synquei de computador no Electron (a barra é a mesma do site; balões de Organizar e Ajustes
+  conferidos simulando o estado do desktop no navegador) e a falha de sincronização na nuvem do TPeasy (nuvem
+  desligada no app).

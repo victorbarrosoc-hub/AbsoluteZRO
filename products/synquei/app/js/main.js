@@ -1,9 +1,9 @@
 // Synquei — app. Módulos ES sem build: rotas por hash, uma tela por aba, eventos delegados.
 
-import { S, on, changed, loadIndex, addEntries, runSync, save, createProject, applyType, closeProject, stopSync } from './store.js'
+import { S, on, changed, loadIndex, addEntries, runSync, save, createProject, applyType, closeProject, stopSync, hasMedia } from './store.js'
 import { escolherTipo } from './tipo-picker.js'
 import { tipoDe } from './tipos.js'
-import { iniciarAtualizacao, acoesAtualizacao } from './atualizacao.js'
+import { iniciarAtualizacao, acoesAtualizacao, estadoAtualizacao } from './atualizacao.js'
 import { entriesFromDrop, entriesFromInput } from './media/scan.js'
 import { $, $$, h, icon, toast, plural, download, uiDark, modal } from './util.js'
 import { sfx } from './sfx.js'
@@ -23,6 +23,7 @@ import sfxMontagem from './views/sfx.js'
 import { iniciarOrganizar, O as ORG } from './organizar.js'
 import { cartaoPlano, abrirPlanos } from './plano.js'
 import { iniciarConta } from './conta.js'
+import { pendencias, numeroBalao, rotuloBalao } from './pendencias.js'
 
 const VIEWS = { inicio, projetos, midia, sincronizar, linha, exportar, formatos, ajustes, organizar, sfx: sfxMontagem }
 const ORDER = ['inicio', 'midia', 'sincronizar', 'linha', 'exportar']
@@ -124,12 +125,41 @@ function chrome() {
     sb.textContent = S.sync.running ? '…' : p && p.result ? '✓' : ''
     sb.className = `badge ${S.sync.running ? 'is-live' : 'is-ok'}`
   }
+  baloes()
   const card = $('#projCard')
   if (card) {
     const html = p
       ? `<div class="proj-card"><a class="proj-card-link" href="#/inicio"><span class="eyebrow">Projeto aberto</span><b>${h(p.name)}</b><span class="sub">${plural(p.clips.length, 'clipe', 'clipes')}${p.result ? ` · ${p.result.stats.total - p.result.stats.unsynced} na linha` : ''}</span><span class="dots">${p.devices.map((d) => `<i class="dot" style="--c:${devColor(d, uiDark())}" title="${h(d.label)}"></i>`).join('')}</span></a><button class="proj-fechar" data-act="fechar" title="Fechar este projeto (ele continua em Projetos)">${icon('close')}Fechar projeto</button></div>`
       : ''
     if (card.innerHTML !== html) card.innerHTML = html
+  }
+}
+
+/**
+ * Balões: o que espera uma ação da pessoa em cada aba (app/js/pendencias.js). O balão toma o lugar do contador de
+ * estado da mesma aba; o item ganha a explicação no title (no menu recolhido, na dica junto do nome).
+ */
+function baloes() {
+  const pend = pendencias({ project: S.project, probe: S.probe, sync: S.sync, temMidia: hasMedia, org: ORG.ativo ? ORG : null, atualizacao: estadoAtualizacao() })
+  for (const b of $$('[data-balao]')) {
+    const r = b.dataset.balao
+    const p = pend[r]
+    const item = b.closest('a')
+    const n = p ? numeroBalao(p.n) : ''
+    if (b.textContent !== n) b.textContent = n
+    b.hidden = !p
+    if (p) b.setAttribute('aria-label', rotuloBalao(p.n))
+    else b.removeAttribute('aria-label')
+    const st = item && $('.badge', item)
+    if (st && p) st.hidden = true
+    if (!item) continue
+    if (p) item.title = p.t
+    else item.removeAttribute('title')
+    if (item.closest('.sidebar') && recolhido()) {
+      const nome = ($('span', item) || item).textContent.trim()
+      item.dataset.tip = p ? `${nome} · ${p.t}` : nome
+      item.removeAttribute('title')
+    }
   }
 }
 
@@ -151,6 +181,7 @@ function aplicarMenu(fechar, salvar = true) {
     else delete a.dataset.tip
   }
   activity()
+  baloes()
   if (salvar) {
     try {
       localStorage.setItem(MENU, fechar ? 'recolhido' : 'aberto')
@@ -504,7 +535,7 @@ globalThis.synqueiDesktop?.organizar?.onAbrir?.(() => go('organizar', true))
 document.addEventListener('synquei:organizar-mudou', () => (S.route === 'organizar' ? render() : chrome()))
 document.addEventListener('synquei:montagem-mudou', () => S.route === 'sfx' && render())
 // Ajustes mostra a versão e o estado da atualização: redesenha quando muda
-document.addEventListener('synquei:atualizacao-mudou', () => S.route === 'ajustes' && render())
+document.addEventListener('synquei:atualizacao-mudou', () => (S.route === 'ajustes' ? render() : baloes()))
 // Conta Absolute ZRO (site e desktop): o cartão do plano e Ajustes mostram quem entrou
 document.addEventListener('synquei:conta-mudou', () => {
   const pc = $('#planoCard')
