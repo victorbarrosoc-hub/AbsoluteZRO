@@ -20,7 +20,8 @@
 import { createCipheriv, createDecipheriv, createHash, createHmac, createPublicKey, hkdfSync, randomBytes, timingSafeEqual, verify } from 'node:crypto'
 
 export const EMISSOR_PADRAO = 'https://absolutezro.com'
-export const ESCOPOS = 'openid email profile org offline_access'
+// zro.ia: o token também fala com a Z (a IA do ecossistema, /api/v1/ia), pelo repasse em api/zro/ia/*
+export const ESCOPOS = 'openid email profile org offline_access zro.ia'
 export const SITE = 'https://aeon.absolutezro.com'
 export const COOKIE_IDA = 'ae_zro'
 export const COOKIE_CONTA = 'ae_conta'
@@ -321,7 +322,19 @@ export async function relerPerfil(sub, tokens) {
     const p = await ler(tokens.at)
     if (p) return { pessoa: p, tokens }
   }
-  if (!tokens.rt) throw new ZroErro('recusado')
+  const t = await renovarTokens(tokens)
+  const p = await ler(t.at)
+  if (!p) throw new ZroErro('recusado')
+  return { pessoa: p, tokens: t }
+}
+
+/**
+ * Access token novo pelo refresh token (que gira a cada uso). Recusado (acesso removido no Perfil, token já usado ou
+ * vencido): ZroErro('recusado'); rede ou resposta estranha: ZroErro('renovar').
+ */
+export async function renovarTokens(tokens) {
+  if (!tokens?.rt) throw new ZroErro('recusado')
+  const d = await descobrir()
   const { status, corpo } = await buscarJson(
     d.token_endpoint,
     {
@@ -334,10 +347,7 @@ export async function relerPerfil(sub, tokens) {
   if (status === 400 || status === 401) throw new ZroErro('recusado')
   const novos = status === 200 ? tokensDe(corpo) : null
   if (!novos) throw new ZroErro('renovar')
-  const t = { ...novos, rt: novos.rt || tokens.rt }
-  const p = await ler(t.at)
-  if (!p) throw new ZroErro('recusado')
-  return { pessoa: p, tokens: t }
+  return { ...novos, rt: novos.rt || tokens.rt }
 }
 
 /** Sair: o refresh token deixa de valer na Absolute ZRO (melhor esforço, RFC 7009). */

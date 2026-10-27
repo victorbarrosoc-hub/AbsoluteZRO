@@ -2,7 +2,7 @@
 // pacote, então tudo funciona sem internet depois que o modelo de transcrição foi baixado uma vez):
 //   Mediabunny (MPL-2.0): ler, decodificar e gravar vídeo e áudio com WebCodecs, mais o decodificador de ProRes;
 //   Transformers.js (Apache-2.0) e o ONNX Runtime Web (MIT) que ele usa: o Whisper rodando na máquina (WebGPU ou CPU);
-//   da Absolute ZRO: tokens (packages/ui), a fonte Figtree (OFL) e o símbolo flat.
+//   da Absolute ZRO: tokens (packages/ui), a fonte Figtree (OFL), o símbolo flat e o <zro-ia> (a Z).
 // vendor/ não vai para o git (o .wasm do ONNX tem ~27 MB): rode depois do npm ci, como o CI faz.
 
 import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -62,5 +62,11 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split(/[\\/]/).p
   copyFileSync(repo('packages/ui/src/tokens.css'), destino('zro-tokens.css'))
   for (const f of ['figtree-latin-wght-normal.woff2', 'figtree-latin-ext-wght-normal.woff2']) copyFileSync(repo(`apps/hub-desktop/desktop/paginas/fontes/${f}`), destino(`fontes/${f}`))
   for (const f of ['absolute-zro-simbolo-branco.svg', 'absolute-zro-simbolo-grafite.svg']) copyFileSync(repo(`apps/hub-web/public/brand/${f}`), destino(`marca/${f}`))
+  // a Z (a IA do ecossistema): o mesmo <zro-ia> do HUB, para o app de computador (app/z.js). O site usa o de
+  // absolutezro.com; a janela do app, que tem a ponte com o sistema, não roda código de fora.
+  mkdirSync(destino('ia/v1'), { recursive: true })
+  mkdirSync(destino('ia/z'), { recursive: true })
+  copyFileSync(repo('apps/hub-web/public/ia/v1/zro-ia.js'), destino('ia/v1/zro-ia.js'))
+  for (const f of ['anel.webp', 'estrela.webp']) copyFileSync(repo(`apps/hub-web/public/ia/z/${f}`), destino(`ia/z/${f}`))
   console.log('vendor/ atualizado')
 }

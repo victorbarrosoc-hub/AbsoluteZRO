@@ -12,7 +12,8 @@
 // fica só na memória enquanto o app está aberto. O access token nunca vai para o disco.
 //
 // A página é a mesma do site (entrar.html + app/editor.js), e as rotas também: o protocolo do app responde
-// /api/zro/eu, /api/zro/entrar e /api/zro/sair daqui (desktop/main.cjs).
+// /api/zro/eu, /api/zro/entrar e /api/zro/sair daqui (desktop/main.cjs). A Z (/api/zro/ia/*) também: o access token
+// fica neste processo e a página nunca o vê (`tokenDeAcesso`).
 
 const { createHash, createPublicKey, randomBytes, timingSafeEqual, verify } = require('node:crypto')
 const http = require('node:http')
@@ -22,7 +23,8 @@ const path = require('node:path')
 const EMISSOR = (process.env.ZRO_ISSUER || 'https://absolutezro.com').replace(/\/+$/, '')
 const CLIENTE = 'aeon-desktop'
 const PRODUTO = 'ai-edit'
-const ESCOPOS = 'openid email profile org offline_access'
+// zro.ia: o mesmo token fala com a Z (a IA do ecossistema), só pelo processo principal (desktop/main.cjs › repassarIa)
+const ESCOPOS = 'openid email profile org offline_access zro.ia'
 const CONTA_S = 30 * 24 * 3600
 const ESPERA_MS = 10 * 60 * 1000
 // reler o perfil não pode prender a abertura do app: sem resposta nesse prazo, vale a cópia
@@ -114,6 +116,7 @@ function criarConta({ pasta, abrirNavegador, aoVoltar = () => {}, cofre = null }
   const arquivo = path.join(pasta, 'conta.json')
   let emAndamento = null
   let relendo = null
+  let renovando = null
   // tokens desta abertura do app (o access token nunca vai para o disco)
   let mem = null
 
@@ -206,23 +209,15 @@ function criarConta({ pasta, abrirNavegador, aoVoltar = () => {}, cofre = null }
       let p = mem?.at && mem.atExp > agoraS() + 30 ? await lerPerfil(mem.at) : null
       if (!p) {
         if (!rt) return 'sem-token'
-        const { status, corpo } = await buscarJson(
-          d.token_endpoint,
-          { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' }, body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: rt, client_id: CLIENTE }).toString() },
-          PERFIL_MS,
-        )
+        const r = await renovar()
+        if (r !== 'ok') return r
+        p = await lerPerfil(mem.at)
         // refresh recusado (acesso removido no Perfil, token já usado ou vencido): esquece o token, fica a cópia
-        const esquecer = () => {
+        if (!p) {
           mem = null
           gravar(c.pessoa, { exp: c.exp })
           return 'recusado'
         }
-        if (status === 400 || status === 401) return esquecer()
-        const novos = status === 200 ? tokensDe(corpo) : null
-        if (!novos) return 'erro'
-        mem = { ...novos, rt: novos.rt || rt }
-        p = await lerPerfil(mem.at)
-        if (!p) return esquecer()
       }
       gravar(p, { exp: c.exp, rt: mem?.rt || rt })
       return 'ok'
@@ -232,61 +227,121 @@ function criarConta({ pasta, abrirNavegador, aoVoltar = () => {}, cofre = null }
     return relendo
   }
 
+  /**
+   * Access token novo pelo refresh token (que gira a cada uso). Um pedido por vez: reler o perfil e a Z ao mesmo tempo
+   * não podem gastar o mesmo refresh token duas vezes (a Absolute ZRO derrubaria a família inteira).
+   * 'ok' (mem tem o token novo), 'sem-token', 'recusado' (esquece o token, fica a cópia) ou 'erro' (rede).
+   */
+  function renovar() {
+    if (renovando) return renovando
+    renovando = (async () => {
+      const c = lerArquivo()
+      if (!c) return 'sem-token'
+      const rt = rtGuardado(c)
+      if (!rt) return 'sem-token'
+      const d = await descobrir()
+      const { status, corpo } = await buscarJson(
+        d.token_endpoint,
+        { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' }, body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: rt, client_id: CLIENTE }).toString() },
+        PERFIL_MS,
+      )
+      if (status === 400 || status === 401) {
+        mem = null
+        gravar(c.pessoa, { exp: c.exp })
+        return 'recusado'
+      }
+      const novos = status === 200 ? tokensDe(corpo) : null
+      if (!novos) return 'erro'
+      mem = { ...novos, rt: novos.rt || rt }
+      // o refresh token novo vai para o disco (cifrado pelo cofre) na hora: o antigo já não vale
+      gravar(c.pessoa, { exp: c.exp, rt: mem.rt })
+      return 'ok'
+    })()
+      .catch(() => 'erro')
+      .finally(() => (renovando = null))
+    return renovando
+  }
+
+  /**
+   * O access token de agora, para a Z (desktop/main.cjs repassa /api/zro/ia/* com ele). Só fica neste processo:
+   * nunca vai para a página, para o disco ou para o log. Sem sessão ou com o acesso removido: null (a página pede
+   * entrar de novo). Rede fora: lança (a página mostra que a Z está sem conexão).
+   */
+  async function tokenDeAcesso() {
+    if (!lerArquivo()) return null
+    if (mem?.at && mem.atExp > agoraS() + 30) return mem.at
+    const r = await renovar()
+    if (r === 'erro') throw new Error('sem conexão')
+    return r === 'ok' ? mem.at : null
+  }
+
+  /** A Absolute ZRO recusou o token antes da validade (acesso removido): a próxima chamada renova. */
+  function esquecerAcesso() {
+    if (mem) mem = { ...mem, at: null, atExp: 0 }
+  }
+
   /** Login completo. Devolve 'ok', 'recusado', 'expirou' ou 'erro' (os mesmos avisos do site). */
   function entrar({ criar = false } = {}) {
     if (emAndamento) return emAndamento
-    emAndamento = (async () => {
-      const d = await descobrir()
-      const state = valor()
-      const nonce = valor()
-      const verificador = valor()
-      const servidor = http.createServer()
-      await new Promise((ok, falha) => servidor.listen(0, '127.0.0.1', ok).on('error', falha))
-      const retorno = `http://127.0.0.1:${servidor.address().port}/callback`
-      try {
-        const volta = new Promise((ok) => {
-          const prazo = setTimeout(() => ok({ erro: 'expirou' }), ESPERA_MS)
-          servidor.on('request', (req, res) => {
-            const u = new URL(req.url, retorno)
-            if (u.pathname !== '/callback') return res.writeHead(404).end()
-            clearTimeout(prazo)
-            const q = u.searchParams
-            const fim = (resultado, titulo, texto) => {
-              res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' }).end(PAGINA(titulo, texto))
-              ok(resultado)
-            }
-            if (!igual(q.get('state'), state)) return fim({ erro: 'expirou' }, 'A entrada expirou.', 'Volte ao AEON e tente de novo.')
-            if (q.get('error')) return fim({ erro: q.get('error') === 'access_denied' ? 'recusado' : 'erro' }, 'Não entrou.', 'Volte ao AEON quando quiser.')
-            if (q.has('iss') && q.get('iss') !== EMISSOR) return fim({ erro: 'erro' }, 'Não entrou.', 'Volte ao AEON e tente de novo.')
-            fim({ code: q.get('code') }, 'Pronto.', 'Pode voltar ao AEON.')
-          })
-        })
-        const a = new URL(d.authorization_endpoint)
-        a.search = new URLSearchParams({ response_type: 'code', client_id: CLIENTE, redirect_uri: retorno, scope: ESCOPOS, state, nonce, code_challenge: desafio(verificador), code_challenge_method: 'S256', ...(criar ? { prompt: 'create' } : {}) }).toString()
-        await abrirNavegador(a.toString())
-        const r = await volta
-        if (r.erro || !r.code) return r.erro || 'erro'
-        const { status, corpo } = await buscarJson(d.token_endpoint, {
-          method: 'POST',
-          headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
-          body: new URLSearchParams({ grant_type: 'authorization_code', code: r.code, code_verifier: verificador, redirect_uri: retorno, client_id: CLIENTE }).toString(),
-        })
-        if (status !== 200 || typeof corpo?.id_token !== 'string') return 'erro'
-        const pessoa = await conferir(corpo.id_token, nonce, d.jwks_uri)
-        mem = tokensDe(corpo)
-        gravar(pessoa, { rt: mem?.rt })
-        return 'ok'
-      } finally {
-        servidor.close()
-        aoVoltar()
-      }
-    })()
+    // cliente ainda sem o escopo da Z na Absolute ZRO (invalid_scope): o login não quebra por causa dela, entra sem ele
+    emAndamento = tentar({ criar, semIa: false })
+      .then((r) => (r === 'escopo' ? tentar({ criar, semIa: true }) : r))
+      .then((r) => (r === 'escopo' ? 'erro' : r))
       .catch(() => 'erro')
       .finally(() => (emAndamento = null))
     return emAndamento
   }
 
-  return { eu, entrar, sair, atualizar, ler, gravar }
+  /** Uma ida e volta pelo navegador. 'escopo': a Absolute ZRO recusou o zro.ia (entrar() tenta sem ele). */
+  async function tentar({ criar, semIa }) {
+    const d = await descobrir()
+    const state = valor()
+    const nonce = valor()
+    const verificador = valor()
+    const servidor = http.createServer()
+    await new Promise((ok, falha) => servidor.listen(0, '127.0.0.1', ok).on('error', falha))
+    const retorno = `http://127.0.0.1:${servidor.address().port}/callback`
+    try {
+      const volta = new Promise((ok) => {
+        const prazo = setTimeout(() => ok({ erro: 'expirou' }), ESPERA_MS)
+        servidor.on('request', (req, res) => {
+          const u = new URL(req.url, retorno)
+          if (u.pathname !== '/callback') return res.writeHead(404).end()
+          clearTimeout(prazo)
+          const q = u.searchParams
+          const fim = (resultado, titulo, texto) => {
+            res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' }).end(PAGINA(titulo, texto))
+            ok(resultado)
+          }
+          if (!igual(q.get('state'), state)) return fim({ erro: 'expirou' }, 'A entrada expirou.', 'Volte ao AEON e tente de novo.')
+          if (q.get('error') === 'invalid_scope' && !semIa) return fim({ erro: 'escopo' }, 'Quase lá.', 'Volte ao AEON.')
+          if (q.get('error')) return fim({ erro: q.get('error') === 'access_denied' ? 'recusado' : 'erro' }, 'Não entrou.', 'Volte ao AEON quando quiser.')
+          if (q.has('iss') && q.get('iss') !== EMISSOR) return fim({ erro: 'erro' }, 'Não entrou.', 'Volte ao AEON e tente de novo.')
+          fim({ code: q.get('code') }, 'Pronto.', 'Pode voltar ao AEON.')
+        })
+      })
+      const a = new URL(d.authorization_endpoint)
+      a.search = new URLSearchParams({ response_type: 'code', client_id: CLIENTE, redirect_uri: retorno, scope: semIa ? ESCOPOS.replace(/ ?zro\.ia/, '') : ESCOPOS, state, nonce, code_challenge: desafio(verificador), code_challenge_method: 'S256', ...(criar ? { prompt: 'create' } : {}) }).toString()
+      await abrirNavegador(a.toString())
+      const r = await volta
+      if (r.erro || !r.code) return r.erro || 'erro'
+      const { status, corpo } = await buscarJson(d.token_endpoint, {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
+        body: new URLSearchParams({ grant_type: 'authorization_code', code: r.code, code_verifier: verificador, redirect_uri: retorno, client_id: CLIENTE }).toString(),
+      })
+      if (status !== 200 || typeof corpo?.id_token !== 'string') return 'erro'
+      const pessoa = await conferir(corpo.id_token, nonce, d.jwks_uri)
+      mem = tokensDe(corpo)
+      gravar(pessoa, { rt: mem?.rt })
+      return 'ok'
+    } finally {
+      servidor.close()
+      aoVoltar()
+    }
+  }
+
+  return { eu, entrar, sair, atualizar, ler, gravar, tokenDeAcesso, esquecerAcesso }
 }
 
 module.exports = { criarConta, CLIENTE, EMISSOR }

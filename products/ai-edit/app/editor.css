@@ -654,6 +654,54 @@ svg {
   transition: none;
 }
 
+/* ───────── início: a Z, a IA do ecossistema (app/z.js), protagonista da primeira página ───────── */
+.z-painel {
+  min-height: 100%;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 16px;
+  padding: 12px 24px 24px;
+}
+.z-painel zro-ia {
+  width: 100%;
+  font-family: var(--fonte);
+  --zro-ia-altura: calc(100dvh - var(--barra-h) - var(--dock-h) - 72px);
+  /* a gaveta de Conversas: opaca, no fundo do app (escuro é o ambiente de trabalho) */
+  --zro-ia-fundo-gaveta: #141416;
+}
+/* sem sessão com a Z: o campo encolhe para o "Entrar de novo" caber acima do dock */
+.z-painel[data-z='sem-login'] zro-ia {
+  --zro-ia-altura: calc(100dvh - var(--barra-h) - var(--dock-h) - 170px);
+}
+:root[data-theme='light'] .z-painel zro-ia {
+  --zro-ia-fundo-gaveta: #f5f5f7;
+}
+.z-aviso {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  color: var(--text-mute);
+  font-size: 14px;
+  text-align: center;
+}
+.z-aviso[hidden],
+.z-aviso a[hidden] {
+  display: none;
+}
+.z-aviso a {
+  text-decoration: none;
+}
+.dock button[data-ir='inicio'][aria-current] svg { color: var(--text-strong); }
+/* a gaveta de Conversas da Z é position: fixed: na página atual nada de will-change (que prenderia a gaveta à página),
+   e as páginas sobem acima da barra, do trilho e do dock (a caixa delas não encosta neles) para o véu cobrir a tela */
+.pagina[data-pagina='inicio'][data-lado='atual'] {
+  will-change: auto;
+}
+body[data-pagina='inicio'] .paginas {
+  z-index: 25;
+}
+
 /* ───────── dock ───────── */
 .dock {
   position: fixed;
@@ -2405,5 +2453,21 @@ html:not([data-conta]) body {
   }
   .atualizacao-barra > span {
     transition: none;
+  }
+}
+
+/* celular: o dock com as cinco páginas cabe na largura */
+@media (max-width: 640px) {
+  .dock {
+    gap: 2px;
+    padding: 5px;
+    bottom: max(10px, env(safe-area-inset-bottom));
+  }
+  .dock button {
+    width: 56px;
+    font-size: 10.5px;
+  }
+  .z-painel {
+    padding: 4px 14px 16px;
   }
 }

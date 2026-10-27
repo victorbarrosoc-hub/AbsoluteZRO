@@ -1,4 +1,4 @@
-// O editor: quatro páginas (Mídia, Revisar, Edição, Entrega) em volta de um projeto imutável com desfazer. A IA (o
+// O editor: o Início com a Z (a IA do ecossistema, app/z.js) e quatro páginas (Mídia, Revisar, Edição, Entrega) em volta de um projeto imutável com desfazer. A IA (o
 // Whisper, na máquina) transcreve; as propostas de corte e zoom saem de regras do preset versionado (presets/); nada
 // entra na edição sem a pessoa aprovar.
 
@@ -28,9 +28,10 @@ import * as projetos from './projetos.js'
 import { lerConta, ondeEditar } from '../site/conta.js'
 import { montarAtualizacao } from './atualizacao.js'
 import { pendencias, rotuloBalao } from '../src/pendencias.js'
+import { montarZ } from './z.js'
 
 const $ = (id) => document.getElementById(id)
-const PAGINAS = ['midia', 'revisar', 'edicao', 'entrega']
+const PAGINAS = ['inicio', 'midia', 'revisar', 'edicao', 'entrega']
 
 const S = {
   h: null, // Historico do projeto
@@ -38,7 +39,7 @@ const S = {
   dbs: new Map(), // midia → envelope de energia (para propostas e forma de onda)
   miniaturas: new Map(),
   preset: null,
-  pagina: 'midia',
+  pagina: 'inicio',
   selecao: null, // Set de mídias marcadas no modo Selecionar (null = fora do modo)
   filtro: 'tudo',
   selProposta: null,
@@ -327,6 +328,8 @@ document.addEventListener('drop', async (e) => {
 
 /** Lê as informações e põe as mídias no projeto (cria o projeto na primeira vez). */
 async function adicionar(entradas) {
+  // vídeo escolhido pelo menu (Arquivo › Adicionar) com a Z aberta: o projeto aparece na Mídia
+  if (S.pagina === 'inicio') ir('midia')
   const novas = []
   for (const e of entradas) {
     // projeto reaberto no navegador: o arquivo de mesmo nome volta para a mídia que já estava no projeto
@@ -990,7 +993,7 @@ addEventListener('keydown', (e) => {
     if (e.key === 'Escape') return modoSelecao(false)
     if ((e.key === 'Backspace' || e.key === 'Delete') && S.selecao.size) return $('tirarSel').click()
   }
-  if (mod && /^[1-4]$/.test(e.key)) {
+  if (mod && /^[1-5]$/.test(e.key)) {
     e.preventDefault()
     return ir(PAGINAS[Number(e.key) - 1])
   }
@@ -1132,6 +1135,7 @@ $('folhaNovo').onclose = () => {
   S.miniaturaGuardada = null
   mudou()
   desenharTudo()
+  if (S.pagina === 'inicio') ir('midia')
 }
 
 // renomear: clique no nome do projeto na barra
@@ -1257,9 +1261,11 @@ async function exportar({ marcados } = {}) {
 }
 S.exportar = exportar
 
-ir('midia', false)
+// o painel inicial é a Z (pedido do titular, 27/10/2026); o editor está a um toque no dock
+ir('inicio', false)
 desenharTudo()
 document.documentElement.dataset.pronto = '1'
+montarZ($('zPainel'))
 
 // ───────── aviso ─────────
 

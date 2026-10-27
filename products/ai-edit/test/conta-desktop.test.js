@@ -133,3 +133,43 @@ test('recusas: state trocado, pessoa negou, nonce adulterado', async () => {
   zro.estado.adulterar = null
   assert.equal(c.eu(), null, 'nada foi guardado')
 })
+
+test('a Z no app: o login pede zro.ia e o access token fica só no processo (renova quando vence, um refresh por vez)', async () => {
+  zro.estado.pessoa = LIA
+  const c = criarConta({ pasta, abrirNavegador: navegador(false), cofre: COFRE })
+  assert.equal(await c.entrar(), 'ok')
+  assert.ok(zro.estado.escopo.split(' ').includes('zro.ia'))
+  const at = await c.tokenDeAcesso()
+  assert.match(at, /^at_/)
+  assert.ok(!readFileSync(join(pasta, 'conta.json'), 'utf8').includes(at), 'o access token não vai para o disco')
+  // venceu (10 min): duas chamadas juntas gastam um refresh token só
+  const antes = zro.estado.renovacoes
+  c.esquecerAcesso()
+  const [a, b] = await Promise.all([c.tokenDeAcesso(), c.tokenDeAcesso()])
+  assert.equal(zro.estado.renovacoes, antes + 1)
+  assert.equal(a, b)
+  assert.notEqual(a, at)
+  // acesso removido no Perfil: sem token (a página pede entrar de novo)
+  zro.estado.recusarRenovacao = true
+  c.esquecerAcesso()
+  assert.equal(await c.tokenDeAcesso(), null)
+  zro.estado.recusarRenovacao = false
+  c.sair()
+  assert.equal(await c.tokenDeAcesso(), null)
+})
+
+test('cliente sem o escopo da Z (invalid_scope): entra de novo sem ele, sem quebrar o login', async () => {
+  zro.estado.pessoa = LIA
+  zro.estado.recusarEscopoIa = true
+  try {
+    let idas = 0
+    const ir = navegador(false)
+    const c = criarConta({ pasta, abrirNavegador: (u) => (idas++, ir(u)) })
+    assert.equal(await c.entrar(), 'ok')
+    assert.equal(idas, 2)
+    assert.equal(zro.estado.escopo, 'openid email profile org offline_access')
+    c.sair()
+  } finally {
+    zro.estado.recusarEscopoIa = false
+  }
+})

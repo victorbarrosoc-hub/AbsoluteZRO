@@ -14,7 +14,7 @@ const fsp = require('node:fs/promises')
 const { Readable } = require('node:stream')
 const { spawn } = require('node:child_process')
 const { lerProjeto } = require('./sobedesce.cjs')
-const { criarConta } = require('./conta.cjs')
+const { criarConta, EMISSOR } = require('./conta.cjs')
 const { Atualizador, comandoDaTroca, ehScriptDaTroca, lerBuildInfo } = require('./atualizador.cjs')
 const { PRODUTO } = require('../src/produto.js')
 const CABECALHOS = require('./cabecalhos.json')
@@ -157,8 +157,50 @@ const contaApp = () =>
 const jsonResp = (status, corpo) => new Response(JSON.stringify(corpo), { status, headers: cabecalhos({ 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }) })
 const voltaSegura = (v) => (typeof v === 'string' && /^\/[^/\\]/.test(v) && v.length < 300 ? v : '/app/')
 
+// A Z (a IA do ecossistema) no app: /api/zro/ia/<caminho> → <Absolute ZRO>/api/v1/ia/<caminho> com o access token,
+// que fica neste processo (desktop/conta.cjs › tokenDeAcesso). A página fala com o próprio app, como no site fala com
+// o repasse da Vercel (api/_ia.js); a resposta (NDJSON) passa aos poucos. Só os caminhos e métodos do contrato.
+const ROTAS_IA = [
+  [/^\/estado$/, ['GET']],
+  [/^\/conversas$/, ['GET']],
+  [/^\/conversas\/[\w-]{1,64}$/, ['GET', 'DELETE']],
+  [/^\/mensagens$/, ['POST']],
+]
+async function repassarIa(req, u) {
+  const caminho = u.pathname.slice('/api/zro/ia'.length)
+  const rota = ROTAS_IA.find(([re]) => re.test(caminho))
+  if (!rota) return jsonResp(404, { ok: false })
+  if (!rota[1].includes(req.method)) return jsonResp(405, { ok: false })
+  let token
+  try {
+    token = await contaApp().tokenDeAcesso()
+  } catch {
+    return jsonResp(502, { ok: false, message: 'Sem conexão com a Z agora.' })
+  }
+  if (!token) return jsonResp(401, { ok: false, message: 'Entre de novo para conversar com a Z.' })
+  const corpo = req.method === 'POST' ? await req.text() : undefined
+  if (corpo !== undefined && corpo.length > 64 * 1024) return jsonResp(413, { ok: false, message: 'Mensagem grande demais.' })
+  let r
+  try {
+    // net.fetch: a rede do Chromium (proxy do sistema, como o navegador). A página parou a resposta: req.signal aborta.
+    r = await net.fetch(`${EMISSOR}/api/v1/ia${caminho}`, {
+      method: req.method,
+      headers: { authorization: `Bearer ${token}`, accept: 'application/x-ndjson, application/json', ...(corpo !== undefined ? { 'content-type': 'application/json' } : {}) },
+      body: corpo,
+      signal: req.signal,
+      redirect: 'manual',
+    })
+  } catch {
+    return jsonResp(502, { ok: false, message: 'Sem conexão com a Z agora.' })
+  }
+  if (r.status === 401) contaApp().esquecerAcesso()
+  return new Response(r.body, { status: r.status, headers: cabecalhos({ 'content-type': r.headers.get('content-type') || 'application/json; charset=utf-8', 'cache-control': 'no-store' }) })
+}
+
 async function rotaConta(req, u) {
-  // teste de fumaça e medição (janela escondida, o app fecha no fim): uma sessão de teste, sem rede
+  // teste de fumaça e medição (janela escondida, o app fecha no fim): uma sessão de teste, sem rede (nem a Z)
+  if ((SMOKE || MEDIR) && u.pathname.startsWith('/api/zro/ia/')) return jsonResp(401, { ok: false })
+  if (u.pathname.startsWith('/api/zro/ia/')) return repassarIa(req, u)
   if (SMOKE || MEDIR) return u.pathname === '/api/zro/eu' ? jsonResp(200, { ok: true, pessoa: { nome: 'Teste', email: 'teste@absolutezro.com', produtos: ['ai-edit'] }, acesso: true }) : jsonResp(404, { ok: false })
   if (u.pathname === '/api/zro/eu') {
     // perfil único: relê nome, e-mail e foto na Absolute ZRO a cada abertura (sem resposta em 3 s, vale a cópia)
@@ -252,7 +294,7 @@ function menu() {
       ],
     },
     { label: 'Editar', submenu: [{ label: 'Desfazer', accelerator: 'CmdOrCtrl+Z', click: tecla('z') }, { label: 'Refazer', accelerator: 'Shift+CmdOrCtrl+Z', click: tecla('z', ', shiftKey: true') }, { type: 'separator' }, { role: 'cut', label: 'Recortar' }, { role: 'copy', label: 'Copiar' }, { role: 'paste', label: 'Colar' }, { role: 'selectAll', label: 'Selecionar tudo' }] },
-    { label: 'Ir', submenu: [{ label: 'Mídia', accelerator: 'CmdOrCtrl+1', click: ir(1) }, { label: 'Revisar', accelerator: 'CmdOrCtrl+2', click: ir(2) }, { label: 'Edição', accelerator: 'CmdOrCtrl+3', click: ir(3) }, { label: 'Entrega', accelerator: 'CmdOrCtrl+4', click: ir(4) }] },
+    { label: 'Ir', submenu: [{ label: 'Z', accelerator: 'CmdOrCtrl+1', click: ir(1) }, { label: 'Mídia', accelerator: 'CmdOrCtrl+2', click: ir(2) }, { label: 'Revisar', accelerator: 'CmdOrCtrl+3', click: ir(3) }, { label: 'Edição', accelerator: 'CmdOrCtrl+4', click: ir(4) }, { label: 'Entrega', accelerator: 'CmdOrCtrl+5', click: ir(5) }] },
     { label: 'Visualizar', submenu: [{ role: 'reload', label: 'Recarregar' }, { role: 'toggleDevTools', label: 'Ferramentas de desenvolvedor' }, { type: 'separator' }, { role: 'resetZoom', label: 'Tamanho real' }, { role: 'zoomIn', label: 'Aumentar' }, { role: 'zoomOut', label: 'Diminuir' }, { type: 'separator' }, { role: 'togglefullscreen', label: 'Tela cheia' }] },
     { label: 'Janela', role: 'window', submenu: [{ role: 'minimize', label: 'Minimizar' }, { role: 'zoom', label: 'Zoom' }, ...(mac ? [{ role: 'front', label: 'Trazer tudo para a frente' }] : [])] },
     { label: 'Ajuda', role: 'help', submenu: [{ label: 'Absolute ZRO', click: () => shell.openExternal('https://absolutezro.com') }] },
