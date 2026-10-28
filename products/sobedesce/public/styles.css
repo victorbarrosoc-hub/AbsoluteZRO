@@ -1233,6 +1233,61 @@ textarea {
   animation: pulse 1.2s ease-in-out infinite;
 }
 
+/* Aviso de versão nova: uma pílula na barra (acima dos medidores) que abre o cartão num balão ao lado. */
+.update-pilula {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--down) 26%, var(--hairline));
+  background: color-mix(in srgb, var(--down) 7%, var(--surface));
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  animation: update-in 0.35s var(--ease);
+  transition: background-color 0.15s;
+}
+.update-pilula:hover,
+.update-pilula.is-open {
+  background: color-mix(in srgb, var(--down) 13%, var(--surface));
+}
+.update-pilula .icon {
+  margin-left: auto;
+  flex: none;
+  color: var(--text-3);
+}
+.update-pilula-txt {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.update-ponto {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--down);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--down) 22%, transparent);
+}
+.update-pilula.is-erro .update-ponto {
+  background: var(--warn);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--warn) 22%, transparent);
+}
+.update-balao {
+  width: 280px;
+  animation: pop 0.16s var(--ease);
+}
+.update-balao .update-card {
+  background: var(--menu-bg);
+  box-shadow: var(--shadow-lg);
+  animation: none;
+}
 /* Aviso de versão nova (acima dos medidores). Discreto: some com "Depois", não cobre nada. */
 .update-card {
   padding: 11px 12px 12px;
@@ -11588,33 +11643,54 @@ button.tree-twisty:hover {
 .nav-baixo + .sidebar-foot {
   margin-top: 10px;
 }
-/* A família Absolute ZRO (components/sidebar.js): ícone de cada app e o nome. Em janela baixa, só ela rola. */
+/* A família Absolute ZRO (components/sidebar.js): uma linha com ícone de grade; a lista abre num balão. */
 .nav-familia {
-  flex: 0 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  margin-top: 14px;
-  scrollbar-width: none;
+  position: relative;
+  margin-top: 10px;
 }
-.nav-familia::-webkit-scrollbar {
-  display: none;
+.nav-familia-botao {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-2);
+  cursor: pointer;
+  text-align: left;
 }
-.nav-grupo {
-  margin: 0;
-  padding: 4px 10px 6px;
-  color: var(--text-3);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+.nav-familia-botao:hover,
+.nav-familia-botao.is-open {
+  color: var(--text);
+}
+.nav-familia-botao.is-open {
+  background: var(--fill-2);
+}
+.nav-familia-txt {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-.nav-familia .nav-item {
+.nav-familia-seta {
+  margin-left: auto;
   flex: none;
-  color: var(--text-2);
 }
-.nav-familia .nav-item:hover {
-  color: var(--text);
+/* Balão ao lado da barra (components/balao.js): posição fixa, nunca cortado pela barra. */
+.menu.balao,
+.balao {
+  position: fixed;
+  z-index: 70;
+  transform-origin: left center;
+}
+.menu.familia-balao {
+  bottom: auto;
+  width: 232px;
+  background: var(--menu-bg);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.familia-balao .menu-item .icon:last-child {
+  color: var(--text-3);
 }
 .nav-app {
   width: 20px;
@@ -11625,8 +11701,74 @@ button.tree-twisty:hover {
 }
 @media (prefers-reduced-motion: reduce) {
   .tela-entra,
-  .nav-item.is-on::before {
+  .nav-item.is-on::before,
+  .update-pilula,
+  .update-balao,
+  .menu.balao {
     animation: none;
+  }
+}
+/* Janela baixa (Windows com 125%: 1366×768 vira 614 px; 1280×720 vira 576 px): itens mais baixos e os medidores
+   numa faixa só, para a navegação inteira e a conta caberem sem rolagem. Abaixo de 540 px a barra inteira rola. */
+@media (max-height: 700px) {
+  .sidebar {
+    padding-top: 12px;
+    padding-bottom: 10px;
+  }
+  .sidebar-brand {
+    padding-bottom: 12px;
+  }
+  .nav-item {
+    height: 30px;
+  }
+  .nav-familia {
+    margin-top: 6px;
+  }
+  .nav-baixo {
+    padding-top: 6px;
+  }
+  .nav-baixo + .sidebar-foot {
+    margin-top: 8px;
+  }
+  .sidebar-foot {
+    gap: 6px;
+  }
+  .update-pilula {
+    height: 30px;
+  }
+  .meters {
+    flex-flow: row wrap;
+    gap: 0 10px;
+    padding: 5px 10px;
+  }
+  .meters .level {
+    flex: 1;
+    min-width: 0;
+    grid-template-columns: 12px auto;
+    height: 20px;
+  }
+  .meters .level-leds {
+    display: none;
+  }
+  .meters .level-num {
+    min-width: 0;
+    text-align: left;
+  }
+  .meters .conn-lost {
+    width: 100%;
+    padding-bottom: 2px;
+  }
+  .account-chip {
+    padding: 4px 8px;
+  }
+}
+@media (max-height: 540px) {
+  .sidebar {
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .sidebar::-webkit-scrollbar {
+    display: none;
   }
 }
 
