@@ -365,6 +365,25 @@ Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   para "com o cliente", gráfico em grafite e pêssego; Hoje com a saudação da hora; página inicial com a cápsula e
   capturas refeitas da demonstração. Todo texto AA sobre o pior ponto da luz (e2e `visual.spec.ts`). Só visual: nada de
   dado ou comportamento mudou.
+- ✅ Maestro, **o negócio por dentro** (estudo MakersHub §4, itens 1, 2, 3, 6 e 7 aprovados pelo titular, 28/10/2026;
+  migrations `0014`–`0018`): **funil leve** nos Pedidos (quadro por etapa ou lista; Novo, Em conversa, Orçamento
+  enviado, Negociando, Ganho só com orçamento aprovado e Perdido com motivo, amarrados ao status por gatilho; valor
+  estimado, próximo contato e "contato feito" com histórico, também para clientes/leads) e **Retornar hoje** no Hoje
+  com "Feito", "Amanhã" e "+1 semana"; Hoje no desenho C1 (agenda, vencendo, com o cliente, caixa da semana com dados
+  reais e meta do mês). **Números do negócio** (Financeiro → Números, só admin e gestão também no banco): meta do mês
+  com o ritmo esperado, faturado, recebido, ticket médio, conversão, taxa de ganho, motivos de perda, margem por
+  projeto e por cliente, receita por nicho, seis meses; mês, trimestre ou ano. **Importar planilha** (Ajustes, admin e
+  gestão): clientes, projetos, freelas e equipamentos de CSV, colunas pelos cabeçalhos em português, prévia linha a
+  linha sem gravar, confirmação com o sha256 do mesmo arquivo, reimportação idempotente, relatório; modelos para
+  baixar. **Agenda no celular** (.ics por endereço secreto, só o hash no banco, trocar e desligar; diárias, escala,
+  prazos, aprovações e retornos, só o que a pessoa vê; passos para iPhone, Google e Outlook). **Acesso por cliente**
+  (Ajustes → Pessoas: equipe e leitura restritas a alguns clientes, regra no banco em toda tabela ligada a cliente e
+  nas funções do Quadro e da revisão). Resumo do dia para a Z **pronto e desligado** (`POST /api/zro/maestro/resumo`,
+  pedido assinado como o Drive da Z; a ferramenta no HUB espera a decisão do item 5). Mapa em
+  [maestro-z.md](integration-contracts/maestro-z.md). Demonstração com o funil inteiro, retornos, contatos e metas.
+- ⬜ Maestro, do mesmo estudo e à espera do titular: contrato por modelo (item 4) e a Z com os números do Maestro (item
+  5: ligar a ferramenta no HUB, cota e plano); sincronia de duas vias com o Google Agenda (OAuth); eventos
+  `maestro.pedido.ganho`, `maestro.orcamento.aceito` e `maestro.projeto.criado` no HUB (desenho no mapa).
 - ⬜ Maestro v2, depois: kits e modelos de projeto, etiquetas QR e manutenções do inventário, PDF gerado no servidor
   (hoje é a impressão do navegador), white-label no app inteiro (plano e preço pelo titular), retenção configurável dos
   pedidos, ligar o inventário do Carro do Freela quando ele tiver banco (endpoint assinado no Maestro e a rota sai de

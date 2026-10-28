@@ -15,6 +15,38 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Maestro: funil, Números, importar planilha, agenda .ics e acesso por cliente (28/10/2026)
+
+- `products/maestro`: `lint`, `format:check`, `typecheck` ok; `npm test` **289/289** (Postgres 16 local, migrations
+  0000–0018). Novos: `funil.test.mts` (regras puras; Ganho barrado sem orçamento aprovado na tela e no banco, Perdido
+  exige motivo e vira recusado, reabrir limpa, leitura não move, gerar orçamento e aprovar o orçamento andam sozinhos,
+  Ganho é final; retornos de pedido e cliente, "contato feito" com histórico e Novo → Em conversa, reagendar; duas
+  organizações), `numeros.test.mts` (taxa, ticket, margem, período, meta e ritmo; números de um mês conhecido batendo
+  com o banco; meta só admin e gestão; equipe e outra organização sem dinheiro), `importar.test.mts` (separador, aspas,
+  BOM, CRLF, Windows-1252, limites de 1 MB, 2.000 linhas, 40 colunas e célula; mapa pelos cabeçalhos; datas, valores,
+  WhatsApp e erros por linha; prévia não grava; confirmar, reimportar igual, atualizar só o que mudou; sha256 trocado
+  recusado; equipe e leitura não importam; projetos pelo nome do cliente; freelas com `zro_sub`; equipamentos com e
+  sem patrimônio; duas organizações; as planilhas de exemplo sem erro), `agenda-ics.test.mts` (RFC 5545: CRLF, dobra
+  em 75 octetos em UTF-8, escape, dia inteiro com fim exclusivo, TZID e VTIMEZONE, DTSTAMP; só o hash no banco; trocar
+  e desligar; acesso por cliente no feed; Maestro fechado no último login ou pessoa desativada = morto; cada um só o
+  próprio endereço), `acesso-cliente.test.mts` (pessoa restrita vê exatamente a linha do cliente dela em 21 tabelas,
+  restrita a nenhum não vê nada ligado a cliente, admin e gestão nunca restritos, só gestão muda, não grava fora nem
+  por `card_*` e `versao_criar`), `negocio-rls.test.mts` (as seis tabelas novas com RLS e duas organizações),
+  `resumo-z.test.mts` (pedido assinado: typ, assinatura, ação, `aud`, vida e uso único; equipe restrita sem dinheiro;
+  sem acesso = 404). `hoje.test.mts` e `demo.test.mts` cobrem as listas do dia, o caixa da semana e a demonstração do
+  funil. `npm run build` ok.
+- `npm run test:e2e` **51/51 + 1 pulado**. Novo `e2e/negocio.spec.ts` (computador e iPhone): funil (Ganho travado, Em conversa,
+  próximo contato hoje → Retornar hoje no Hoje → "Amanhã" tira da lista; Perdido com motivo), importar (prévia com
+  erro por linha e nada gravado, importar, reimportar igual), agenda (o endereço serve `text/calendar`, baixar o .ics,
+  desligar dá 404) e acesso por cliente (a gestão restringe em Pessoas; a pessoa restrita não vê o outro cliente nem o
+  projeto dele, e a ficha dele dá "não existe"). `visual.spec.ts` com Pedidos, Números, Pessoas, Agenda e Importar nas
+  quatro horas e no escuro; `produtora.spec.ts` com o quadro do funil e Números; `inicio.spec.ts` com os itens novos.
+- Capturas (claro a 1440 px, claro no iPhone, escuro a 1440 px) de Hoje, Pedidos, ficha do pedido, Números, Importar,
+  Agenda no celular e Pessoas conferidas à mão.
+- **Não está no ar / não validado**: a Z lendo o Maestro (rota pronta, o HUB não chama; item 5); eventos no HUB
+  (desenhados em `docs/integration-contracts/maestro-z.md`); sincronia com o Google Agenda; o .ics num iPhone ou Google
+  Agenda de verdade (validado pelo formato e pelo download).
+
 ## Maestro v2: marca, pedido público, aceite, Hoje e kit do freela (28/10/2026)
 
 - `products/maestro`: `lint`, `format:check`, `typecheck` ok; `npm test` **234/234** (Postgres 16 local, migrations

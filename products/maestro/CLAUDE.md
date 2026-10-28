@@ -97,9 +97,40 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   aceite da antiga. O aceite vale uma vez: cliente (se não há), projeto `MAE-` pendente de ligar ao HUB, parcelas a
   receber e o termo (nome, hora, sha256) no orçamento. Rotas `POST /api/publico/{pedido,orcamento/aceitar,orcamento/ajuste}`
   com Origin conferido; CSP de `/p` e `/o` em `next.config.ts`.
-- **Hoje** (`/app/hoje`, `src/lib/hoje.ts`): só contagens da organização (agenda do dia, cards no prazo, peças com o
-  cliente, pedidos novos, orçamentos aguardando, a receber e a pagar da semana, caixa); dinheiro só admin e gestão (o
-  RLS esconde de qualquer jeito). Primeiro item de Produção e na barra do celular.
+- **Hoje** (`/app/hoje`, `src/lib/hoje.ts`, desenho C1): agenda do dia, "Vencendo", "Com o cliente", **Retornar hoje**
+  (com "Feito", "Amanhã" e "+1 sem.") e o caixa da semana (baixas de segunda a domingo), mais as contagens (cards no
+  prazo, peças com o cliente, pedidos novos, orçamentos aguardando, a receber e a pagar, caixa, meta do mês); dinheiro
+  só admin e gestão (o RLS esconde de qualquer jeito). Primeiro item de Produção e na barra do celular.
+- **O negócio por dentro** (estudo MakersHub §4, itens 1, 2, 3, 6 e 7; `drizzle/0014`–`0018`; mapa das ligações em
+  `docs/integration-contracts/maestro-z.md`):
+  - **Funil** (`0014`, `src/lib/funil`): `pedidos.etapa` (novo, conversa, orcamento, negociando, ganho, perdido) e o
+    `status` antigo andam juntos pelo gatilho `maestro.pedido_etapa` (quem muda a etapa manda; senão o status): Ganho
+    só com o orçamento do pedido aprovado e é final; Perdido exige `motivo_perda` (check) e vira `recusado`; gerar
+    orçamento leva a "Orçamento enviado"; aprovar o orçamento (link ou equipe, gatilho `orcamento_ganha_pedido`) ganha.
+    Próximo contato + nota em pedidos e clientes; `maestro.contatos` guarda o "contato feito". Regras puras em
+    `regras.ts`; telas em `/app/pedidos` (quadro ou lista, `?ver=lista`) e nas fichas.
+  - **Números** (`0015`, `src/lib/numeros`, `/app/financeiro/numeros`): `maestro.metas` (uma por mês, só admin e
+    gestão, também na leitura); fórmulas puras em `formulas.ts` (faturado = entradas por vencimento; recebido = baixas;
+    ticket = orçamentos aprovados; conversão = pedidos com orçamento aprovado; taxa de ganho = ganhos ÷ fechados no
+    período; margem por projeto e cliente pelos lançamentos ligados). Só dados reais: sem base, "—".
+  - **Importar planilha** (`0016`, `src/lib/importar`, `/app/ajustes/importar`, admin e gestão): `csv.ts` puro (leitor,
+    mapa pelos cabeçalhos em português, conferência por linha, limites 1 MB/2.000 linhas/40 colunas, modelos em
+    `/api/importar/modelo/<tipo>`); `servidor.ts` faz a prévia só lendo e a confirmação numa transação, conferindo o
+    sha256 do mesmo texto (quebras de linha normalizadas antes) e deixando `maestro.importacoes` (relatório, sem o
+    arquivo, só inclusão). Casa por e-mail, código, patrimônio, série ou nome; célula vazia não apaga. Freelas aceitam
+    `zro_sub` (conta Absolute ZRO); equipamentos entram como da produtora. Exemplos em `docs/demonstracao/*.csv`.
+  - **Agenda no celular** (`0017`, `src/lib/agenda/{ics,feed,rotas}.ts`): `maestro.agenda_assinaturas` (um endereço
+    ativo por pessoa, só o sha256, cada um vê o próprio); `GET /api/agenda/<token>.ics` passa pela porta
+    `maestro.agenda_feed_dono` (pessoa ativa e último login com acesso, o mesmo `temAcesso`) e lê como a pessoa;
+    `GET /api/agenda/minha` baixa com a sessão. RFC 5545 com `TZID=America/Sao_Paulo`. Sem sincronia com o Google.
+  - **Acesso por cliente** (`0018`, `src/lib/pessoas.ts`, Ajustes → Pessoas): `acesso_restrito` + `acesso_clientes`
+    para `equipe` e `leitura` (admin e gestão nunca); políticas RESTRITIVAS `<tabela>_cliente` (helpers
+    `maestro.cliente_visivel`, `projeto_visivel`, `card_visivel`…) em toda tabela ligada a cliente, e os gatilhos
+    `cards_guarda_cliente`/`*_guarda_cliente` barram as funções security definer. Tabela nova ligada a cliente precisa
+    da política `_cliente` e de entrar em `tests/acesso-cliente.test.mts`.
+  - **Z** (pronto e desligado): `POST /api/zro/maestro/resumo` (`src/lib/zro/{pedido,resumo-da-z}.ts`) com o pedido
+    assinado `zro-pedido+jwt` do HUB (ação `maestro.resumo`), lido como a pessoa, com fonte e hora. O HUB não chama
+    ainda (item 5 do estudo, decisão do titular).
 - **Kit do freela** (`drizzle/0013`, `src/lib/freelas/{kit,equipamentos}.ts`): `freela_equipamentos` (origem `maestro`
   ou `carro-do-freela`) e `escala_equipamentos`; o aluguel (diária × dias) soma ao mesmo "a pagar" da escala (gatilho
   `escala_sincronizar` refeito na 0013). Itens do Carro do Freela são só leitura (gatilho barra `maestro_app`). A
@@ -149,10 +180,14 @@ do orçamento (`orcamento.test.mts`), deslocamento e ANP (`deslocamento.test.mts
 escala (`financeiro.test.mts`), freelas, pagamento cifrado, reservas sem conflito e documentos (`operacao.test.mts`),
 duas organizações em toda tabela da produtora (`produtora-rls.test.mts`), logo, cor e marca com duas organizações
 (`marca.test.mts`), pedido público, link e aceite idempotente (`pedidos.test.mts`), contagens do Hoje (`hoje.test.mts`),
-kit do freela, aluguel na escala e sincronização desligada (`freela-equipamentos.test.mts`). E2E: `npm run build && npm run test:e2e`
+kit do freela, aluguel na escala e sincronização desligada (`freela-equipamentos.test.mts`), funil e retornos
+(`funil.test.mts`), números (`numeros.test.mts`), importar planilha (`importar.test.mts`), agenda .ics
+(`agenda-ics.test.mts`), acesso por cliente em toda tabela ligada a cliente (`acesso-cliente.test.mts`), as tabelas
+novas com duas organizações (`negocio-rls.test.mts`) e o resumo para a Z (`resumo-z.test.mts`). E2E: `npm run build && npm run test:e2e`
 (Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir movimento, navegação, a aprovação
 inteira (`aprovacao.spec.ts`, mp4 local e YouTube/Vimeo falsos em `e2e/falsos`) e a produtora com a demonstração
 (`produtora.spec.ts`, organização própria criada em `e2e/preparar.ts`) e o ciclo comercial (`comercial.spec.ts`: pedido
 público → Pedidos → gerar orçamento → link → aceite → projeto → Hoje, organização própria) e o visual
-(`visual.spec.ts`: contraste AA em cada hora e no escuro, luz parada com reduzir movimento). Unitário da hora em
+(`visual.spec.ts`: contraste AA em cada hora e no escuro, luz parada com reduzir movimento) e o negócio
+(`negocio.spec.ts`: funil com Retornar hoje, importar, .ics e acesso por cliente, organização própria). Unitário da hora em
 `hora.test.mts`.
