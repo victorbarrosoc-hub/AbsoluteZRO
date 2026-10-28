@@ -5,9 +5,22 @@ import http from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { assinarPedidoDeApp, jwks, PEDIDO_TTL_S, PEDIDO_TYP, setIssuer, verifyJwt, loadSigner } from '@zro/auth'
-import { confirmacaoClara, driveParaIa, linkDoSobedesce, tamanhoLegivel, tipoLegivel, type DriveConfig } from '@zro/core'
+import {
+  acaoExata,
+  confirmacaoClara,
+  driveParaIa,
+  horaDoRelato,
+  IA_ACAO_COMPUTADOR,
+  linkDoSobedesce,
+  pedirAoComputadorAuditado,
+  tamanhoLegivel,
+  tipoLegivel,
+  transferenciasParaIa,
+  type DriveConfig,
+} from '@zro/core'
 import type { Database } from '@zro/db'
 import { testDatabase } from '@zro/db/testing'
+import { newOrgWithOwner } from './helpers'
 
 let db: Database
 const ISS = 'https://hub.teste.absolutezro.local'
@@ -243,6 +256,9 @@ describe('ferramenta da Z contra o SOBEDESCE falso', () => {
     expect(sem.versao_pronta).toBeNull()
     expect(sem.original.resolucao).toBe('3840×2160')
     expect(sem.dica).toMatch(/pergunte/)
+    // A ação exata vem pronta para a Z mostrar antes do "sim": formato, onde salva e que o original fica.
+    expect(sem.acao_exata).toBe(acaoExata('a.mov', 'mp4-720'))
+    expect(sem.acao_exata).toMatch(/"a \(MP4 720p\)".*original fica como está/)
     expect(pedidos.filter((p) => p.caminho === '/api/zro/drive/computador')).toHaveLength(0)
   })
 
@@ -261,6 +277,7 @@ describe('ferramenta da Z contra o SOBEDESCE falso', () => {
     const r = JSON.parse((await driveParaIa(db, 'p', { tipo: 'computador', arquivoId: 'v1', formato: 'mp4-720' }, cfg)).texto)
     expect(r).toMatchObject({ pedido_feito: true, formato: 'MP4 720p', acompanhar: 'https://sobedesce.com/app/#referencias' })
     expect(r.quando).toMatch(/espera/)
+    expect(r.cancelar).toMatch(/#referencias/)
     expect(pedidos.at(-1)!.claims!.zro_pedido).toBe('drive.computador')
     respostas.set('/api/zro/drive/computador', { status: 409, corpo: { erro: 'sem_computador' } })
     const s = await driveParaIa(db, 'p', { tipo: 'computador', arquivoId: 'v1', formato: 'mp4-720' }, cfg)
@@ -305,5 +322,139 @@ describe('confirmação para pedir ao computador', () => {
       ]),
     ).toBe(false)
     expect(confirmacaoClara([{ papel: 'user', texto: 'sim' }])).toBe(false)
+  })
+})
+
+describe('confirmação mostra a ação exata', () => {
+  it('com o formato, a oferta precisa nomear o formato que vai ser pedido', () => {
+    const sim = { papel: 'user' as const, texto: 'sim' }
+    const oferta720 = { papel: 'assistant' as const, texto: 'Quer que eu peça ao seu computador para converter em MP4 720p?' }
+    expect(confirmacaoClara([oferta720, sim], 'mp4-720')).toBe(true)
+    expect(confirmacaoClara([oferta720, sim], 'wav')).toBe(false)
+    expect(confirmacaoClara([{ papel: 'assistant', texto: 'Quer que eu peça ao seu computador?' }, sim], 'mp4-720')).toBe(false)
+  })
+})
+
+describe('ver_transferencias (Fase 1: só leitura)', () => {
+  const agora = Date.parse('2026-10-28T17:05:00Z') // 14:05 em Brasília
+  const relato = (min: number) => new Date(agora - min * 60_000).toISOString()
+  const comp = (o: Record<string, unknown> = {}) => ({
+    nome: 'MacBook de Ana',
+    plataforma: 'mac',
+    ligado: true,
+    fechado: false,
+    relatado_em: relato(3),
+    estado: 'baixando',
+    rodada: { ativas: 3, concluidas: 1, falhas: 1, total: 8, bytes_feitos: 6e9, bytes_total: 18e9 },
+    conferencias: { em_andamento: 1, conferidas: 1, divergentes: 0, informado: true },
+    estimativa: { velocidade_bps: 19e6, faltam_s: 900 },
+    lotes: [],
+    em_andamento: [],
+    terminados: { ok: 1, falhas: 1, falhas_recentes: [] },
+    ...o,
+  })
+
+  it('pede com a ação transferencias.ler e cita fonte e hora do relato', async () => {
+    respostas.set('/api/zro/transferencias', {
+      status: 200,
+      corpo: { fonte: 'SOBEDESCE', lido_em: new Date().toISOString(), computadores: [comp({ relatado_em: new Date(Date.now() - 60_000).toISOString() })] },
+    })
+    const r = await driveParaIa(db, 'pessoa-1', { tipo: 'transferencias' }, cfg)
+    expect(r.erro).toBe(false)
+    expect(pedidos.at(-1)!.claims).toMatchObject({ sub: 'pessoa-1', zro_pedido: 'transferencias.ler' })
+    expect(pedidos.at(-1)!.corpo).toEqual({})
+    const j = JSON.parse(r.texto)
+    expect(j.computadores[0].fonte).toBe('SOBEDESCE · MacBook de Ana')
+    expect(j.computadores[0].citar_como).toMatch(/^segundo o SOBEDESCE, às \d\d:\d\d$/)
+  })
+
+  it('fato separado de estimativa; relato velho ou computador fechado vem com aviso', () => {
+    const j = JSON.parse(transferenciasParaIa({ computadores: [comp(), comp({ nome: 'PC', relatado_em: relato(45), ligado: false })] }, agora))
+    const [mac, pc] = j.computadores
+    expect(mac.citar_como).toBe('segundo o SOBEDESCE, às 14:02')
+    expect(mac.relato_ha_min).toBe(3)
+    expect(mac.aviso).toBeUndefined()
+    expect(mac.fatos).toMatchObject({ estado: 'baixando', rodada: { concluidas: 1, falhas: 1 }, conferencias: { conferidas: 1 } })
+    expect(mac.fatos.estimativa).toBeUndefined()
+    expect(mac.estimativa).toMatchObject({ faltam_s: 900 })
+    expect(mac.estimativa.nota).toMatch(/estimativa/)
+    expect(pc.citar_como).toBe('segundo o SOBEDESCE, às 13:20')
+    expect(pc.aviso).toMatch(/pode ter mudado/)
+    expect(horaDoRelato('2026-10-27T17:02:00Z', agora)).toBe('27/10 às 14:02')
+  })
+
+  it('sem dados não inventa: diz que não sabe', async () => {
+    respostas.set('/api/zro/transferencias', { status: 200, corpo: { fonte: 'SOBEDESCE', computadores: [] } })
+    const r = await driveParaIa(db, 'pessoa-1', { tipo: 'transferencias' }, cfg)
+    const j = JSON.parse(r.texto)
+    expect(j.sem_dados).toBe(true)
+    expect(j.computadores).toBeUndefined()
+    expect(j.dica).toMatch(/não sabe/)
+    expect(j.dica).toMatch(/Não invente/)
+    // Sem estimativa no relato, nada de prazo inventado.
+    const semEta = JSON.parse(transferenciasParaIa({ computadores: [comp({ estimativa: { velocidade_bps: 0, faltam_s: null } })] }, agora))
+    expect(semEta.computadores[0].estimativa.faltam_s).toBeUndefined()
+  })
+
+  it('SOBEDESCE fora do ar ou recusando: erro, sem estado inventado', async () => {
+    respostas.set('/api/zro/transferencias', { status: 404, corpo: { erro: 'sem_vinculo' } })
+    const r = await driveParaIa(db, 'pessoa-1', { tipo: 'transferencias' }, cfg)
+    expect(r.erro).toBe(true)
+    expect(r.codigo).toBe('sem_vinculo')
+    const fora = await driveParaIa(db, 'pessoa-1', { tipo: 'transferencias' }, { ...cfg, base: 'http://127.0.0.1:1' })
+    expect(fora.erro).toBe(true)
+    expect(fora.texto).toMatch(/Não invente/)
+  })
+})
+
+describe('pedir_ao_computador fica na auditoria', () => {
+  const oferta = { papel: 'assistant' as const, texto: 'Quer que eu peça ao seu computador para converter "Cena secreta.mov" em MP4 720p?' }
+  const sim = { papel: 'user' as const, texto: 'sim' }
+  const logs = (userId: string) =>
+    db.sql`select action, actor_kind, target_type, target_id, metadata from zro.audit_logs where actor_user_id = ${userId} and action = ${IA_ACAO_COMPUTADOR} order by created_at`
+
+  it('registra recusa sem confirmação, pedido feito, repetido e falha; sem conteúdo privado', async () => {
+    const o = await newOrgWithOwner(db, 'ia-auditoria')
+    const turno = (historico: { papel: 'user' | 'assistant'; texto: string }[]) => ({ actor: { userId: o.userId, orgId: o.orgId }, historico })
+    const antes = pedidos.length
+
+    const recusa = await pedirAoComputadorAuditado(db, turno([oferta, sim]), { arquivoId: 'v1', formato: 'mp4-720', confirmado: false }, cfg)
+    expect(recusa.erro).toBe(true)
+    expect(recusa.texto).toMatch(/Nada foi pedido/)
+    // Sim a outra oferta (sem o formato): também não pede.
+    await pedirAoComputadorAuditado(
+      db,
+      turno([{ papel: 'assistant', texto: 'Peço ao computador?' }, sim]),
+      { arquivoId: 'v1', formato: 'mp4-720', confirmado: true },
+      cfg,
+    )
+    expect(pedidos.length).toBe(antes)
+
+    respostas.set('/api/zro/drive/computador', {
+      status: 201,
+      corpo: { pedido: { id: 'pp-1', status: 'pendente', novo: true }, original: { nome: 'Cena secreta.mov' }, computadores: [] },
+    })
+    const ok = await pedirAoComputadorAuditado(db, turno([oferta, sim]), { arquivoId: 'v1', formato: 'mp4-720', confirmado: true }, cfg)
+    expect(ok.erro).toBe(false)
+    expect(pedidos.at(-1)!.claims!.zro_pedido).toBe('drive.computador')
+    respostas.set('/api/zro/drive/computador', {
+      status: 200,
+      corpo: { pedido: { id: 'pp-1', status: 'pendente', novo: false }, original: { nome: 'Cena secreta.mov' }, computadores: [] },
+    })
+    await pedirAoComputadorAuditado(db, turno([oferta, sim]), { arquivoId: 'v1', formato: 'mp4-720', confirmado: true }, cfg)
+    respostas.set('/api/zro/drive/computador', { status: 409, corpo: { erro: 'sem_computador' } })
+    await pedirAoComputadorAuditado(db, turno([oferta, sim]), { arquivoId: 'v1', formato: 'mp4-720', confirmado: true }, cfg)
+
+    const linhas = await logs(o.userId)
+    expect(linhas.map((l) => [l.metadata.resultado, l.metadata.erro, l.target_id])).toEqual([
+      ['recusado', 'sem_confirmacao', null],
+      ['recusado', 'sem_confirmacao', null],
+      ['pedido', null, 'pp-1'],
+      ['ja_estava_na_fila', null, 'pp-1'],
+      ['falhou', 'sem_computador', null],
+    ])
+    for (const l of linhas)
+      expect(l).toMatchObject({ actor_kind: 'user', target_type: 'sobedesce_pedido', metadata: { formato: 'mp4-720', produto: 'sobedesce' } })
+    expect(JSON.stringify(linhas)).not.toMatch(/Cena secreta|v1|sim/)
   })
 })

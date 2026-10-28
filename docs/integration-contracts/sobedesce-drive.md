@@ -8,15 +8,15 @@ SOBEDESCE, servidor a servidor, em nome da pessoa. Desde 27/10/2026.
 Sem segredo compartilhado. O HUB assina um JWT com a chave do login único (`assinarPedidoDeApp`, `packages/auth`) e o
 SOBEDESCE confere pela JWKS da Absolute ZRO (`/oauth/jwks`, cache de 10 min; `web/src/lib/zro/pedido.ts`).
 
-| Campo        | Valor                                                                                                                   |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------- |
-| cabeçalho    | `alg: ES256`, `typ: zro-pedido+jwt` (id_token e access token não servem), `kid` da JWKS                                 |
-| `iss`        | o emissor da Absolute ZRO (`ZRO_ISSUER` no SOBEDESCE, padrão `https://absolutezro.com`)                                 |
-| `aud`        | o client_id do SOBEDESCE (`ZRO_CLIENT_ID`; no HUB `ZRO_SOBEDESCE_CLIENT_ID`, padrão `sobedesce-web`)                    |
-| `sub`        | id da pessoa na Absolute ZRO; a conta é achada por `contas_zro.zro_sub`                                                 |
-| `iat`, `exp` | vida de 60 s (o SOBEDESCE recusa mais que isso; folga de relógio de 30 s)                                               |
-| `jti`        | uso único (reapresentado é recusado)                                                                                    |
-| `zro_pedido` | a ação: `drive.buscar`, `drive.pasta`, `drive.versao` ou `drive.computador` (pedido de uma ação não vale em outra rota) |
+| Campo        | Valor                                                                                                                                         |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| cabeçalho    | `alg: ES256`, `typ: zro-pedido+jwt` (id_token e access token não servem), `kid` da JWKS                                                       |
+| `iss`        | o emissor da Absolute ZRO (`ZRO_ISSUER` no SOBEDESCE, padrão `https://absolutezro.com`)                                                       |
+| `aud`        | o client_id do SOBEDESCE (`ZRO_CLIENT_ID`; no HUB `ZRO_SOBEDESCE_CLIENT_ID`, padrão `sobedesce-web`)                                          |
+| `sub`        | id da pessoa na Absolute ZRO; a conta é achada por `contas_zro.zro_sub`                                                                       |
+| `iat`, `exp` | vida de 60 s (o SOBEDESCE recusa mais que isso; folga de relógio de 30 s)                                                                     |
+| `jti`        | uso único (reapresentado é recusado)                                                                                                          |
+| `zro_pedido` | a ação: `drive.buscar`, `drive.pasta`, `drive.versao`, `drive.computador` ou `transferencias.ler` (pedido de uma ação não vale em outra rota) |
 
 Enviado como `Authorization: Bearer <jwt>`, `Content-Type: application/json`. Base no HUB: `ZRO_SOBEDESCE_URL`
 (padrão `https://sobedesce.com`).
@@ -29,6 +29,7 @@ Enviado como `Authorization: Bearer <jwt>`, `Content-Type: application/json`. Ba
 | `/api/zro/drive/pasta`      | `{ pasta: nome ou id, ordem?: mais_antigo \| mais_recente \| nome }` | `{ pasta, ordem, arquivos (até 25), mais }` · `{ escolher: Pasta[] }` · `{ nao_achou: true }`      |
 | `/api/zro/drive/versao`     | `{ arquivoId, formato }`                                             | `{ original, versoes: Arquivo[], o_proprio, converte, computadores }` (só lê)                      |
 | `/api/zro/drive/computador` | `{ arquivoId, formato }`                                             | `201`/`200 { pedido: { id, status, novo }, original, formato, computadores, destino, acompanhar }` |
+| `/api/zro/transferencias`   | `{}`                                                                 | `{ fonte: "SOBEDESCE", lido_em, computadores: Transferencias[] }` (só lê; desde 28/10/2026)        |
 
 `Arquivo = { id, nome, tipo (mimeType), pasta, criado, modificado, tamanho, video: { largura, altura, duracao_s } |
 null, imagem: { largura, altura } | null, icone, abrir_no_sobedesce, baixar_pelo_sobedesce }`. `Pasta = { id, nome,
@@ -53,6 +54,33 @@ false` com `orderBy` `createdTime` / `createdTime desc` / `folder,name`.
 computador pega, converte e sobe o convertido ao lado do original (`products/sobedesce/docs/REFERENCIAS.md` §7). O HUB
 só chama depois do "sim" da pessoa: o modelo manda `confirmado_pela_pessoa: true` e o HUB confere que a mensagem
 anterior é a oferta da Z e a última da pessoa é uma confirmação clara (`confirmacaoClara`, `packages/core`).
+
+## Transferências (`transferencias.ler`, Fase 1 da Z)
+
+Só leitura. A fonte é o mesmo retrato que o celular lê (`web/src/lib/acompanhar/status.ts`: o último andamento que cada
+computador mandou, guardado por até 7 dias; `web/src/lib/zro/transferencias-da-z.ts`). Nada novo é guardado nem pedido
+ao computador. `Transferencias = { nome, plataforma, ligado, fechado, relatado_em, estado, rodada: { ativas, concluidas,
+falhas, total, bytes_feitos, bytes_total }, conferencias: { em_andamento, conferidas, divergentes, informado },
+estimativa: { velocidade_bps, faltam_s }, lotes[], em_andamento[] (até 10), terminados: { ok, falhas, falhas_recentes[]
+(até 10) } }`. Nunca sai caminho local (só o nome da última pasta; mensagem de erro com caminho vira "…"), token nem
+id de sessão. Sem computador com notícia: `computadores: []`.
+
+No HUB, a ferramenta `ver_transferencias` (`transferenciasParaIa`, `packages/core/src/ia-drive.ts`) entrega à Z, por
+computador, `fonte` ("SOBEDESCE · <computador>"), `citar_como` ("segundo o SOBEDESCE, às 14:02", horário de Brasília),
+os `fatos` separados da `estimativa` (velocidade e tempo restante) e um `aviso` quando o relato tem mais de 10 min ou o
+computador está fechado. Lista vazia vira `sem_dados` ("diga que não sabe"). Preparos do Synquei ainda não têm fonte: a
+Z diz que não tem acesso.
+
+## Pedido ao computador: ação exata, auditoria e cancelamento
+
+- **Ação exata antes do "sim":** sem versão pronta, `drive.versao` vira para a Z uma `acao_exata` (arquivo, formato,
+  onde salva, "o original fica como está"); `confirmacaoClara(historico, formato)` só aceita o "sim" se a oferta
+  anterior da Z nomear o computador e o formato pedido.
+- **Auditoria:** `pedirAoComputadorAuditado` grava em `zro.audit_logs` (`db.asUser`) a ação `ia.computador.pedido`, quem
+  pediu, `metadata: { produto, formato, resultado: recusado | pedido | ja_estava_na_fila | falhou, erro }` e o id do
+  pedido no SOBEDESCE como alvo. Nunca nome de arquivo, id do Drive ou texto da conversa.
+- **Cancelar:** enquanto o computador não terminar, a pessoa remove o pedido em `<site>/app/#referencias` (o mesmo
+  `DELETE /api/proxies/pedidos/{id}` do celular); a Z passa esse caminho. A Z não cancela sozinha (nenhuma ação nova).
 
 ## Erros (`{ erro, mensagem }`)
 
