@@ -4,7 +4,7 @@
  * colunas; no celular uma coluna por vez, com as abas das colunas, e o card se move por "Mover para…". Filtro por
  * cliente e responsável, busca, ficha lateral e o próximo passo de cada coluna (porte do Maestro antigo).
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { COLUNAS, FILTRO_VAZIO, ordemEntre, ordenarColuna, passaFiltro, proximoPasso, type CardQ, type ColunaKey, type Filtro } from "@/lib/quadro/metodo";
 import type { Referencias } from "@/lib/quadro/servidor";
 import { Icone } from "@/components/icones";
@@ -12,7 +12,14 @@ import { Ficha } from "./ficha";
 import { AvatarPessoa, ChipPrazo, ChipPrioridade, MoverPara } from "./pecas";
 import { useQuadro, type Inicial } from "./estado";
 
-type Props = Inicial & { cardInicial?: string | null; clienteInicial?: string | null; novoInicial?: boolean; projetoInicial?: string | null };
+type Props = Inicial & {
+  cardInicial?: string | null;
+  clienteInicial?: string | null;
+  novoInicial?: boolean;
+  projetoInicial?: string | null;
+  /** Pauta vazia: o botão "Carregar demonstração" (só administração e gestão), ao lado de "Novo card". */
+  demonstracao?: ReactNode;
+};
 type Alvo = { col: ColunaKey; antes: string | null };
 type FichaAberta = { id: string; focar?: string | null } | { novo: { coluna: ColunaKey; cliente?: string; projeto?: string } };
 
@@ -148,10 +155,15 @@ export function Quadro(props: Props) {
           </span>
           <h2>A pauta está limpa</h2>
           <p>{podeEscrever ? "Crie o primeiro card. Ele nasce na Pauta." : "Quando a equipe criar cards, eles aparecem aqui."}</p>
-          {podeEscrever ? (
-            <button type="button" className="glass-btn glass-btn--ink" onClick={() => setFicha({ novo: { coluna: "pauta" } })}>
-              <Icone nome="mais" size={18} /> Novo card
-            </button>
+          {podeEscrever || props.demonstracao ? (
+            <div className="acoes acoes--centro vazio__acoes">
+              {podeEscrever ? (
+                <button type="button" className="glass-btn glass-btn--ink" onClick={() => setFicha({ novo: { coluna: "pauta" } })}>
+                  <Icone nome="mais" size={18} /> Novo card
+                </button>
+              ) : null}
+              {props.demonstracao}
+            </div>
           ) : null}
         </section>
       ) : (

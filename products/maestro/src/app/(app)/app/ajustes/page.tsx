@@ -1,9 +1,11 @@
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
-import { NOME_DO_PAPEL } from "@/lib/papeis";
+import { temDemonstracao } from "@/lib/demo/demonstracao";
+import { NOME_DO_PAPEL, podeRemover } from "@/lib/papeis";
 import { emissor } from "@/lib/zro/config";
 import { Icone } from "@/components/icones";
 import { Avatar, BotaoSair } from "@/components/shell";
 import { SeletorDeTema } from "@/components/tema";
+import { CarregarDemonstracao, RemoverDemonstracao } from "@/components/demonstracao";
 
 export const metadata = { title: "Ajustes" };
 
@@ -13,6 +15,7 @@ export const metadata = { title: "Ajustes" };
  */
 export default async function Ajustes() {
   const s = await exigirAcessoNaPagina("/app/ajustes");
+  const demo = podeRemover(s.papel) ? await temDemonstracao({ sub: s.sub, orgId: s.orgId }) : false;
   return (
     <div className="pagina">
       <header className="pagina__cabeca">
@@ -52,6 +55,19 @@ export default async function Ajustes() {
             </dd>
           </dl>
         </section>
+        {podeRemover(s.papel) ? (
+          <section className="ficha" id="demonstracao" aria-label="Demonstração">
+            <div>
+              <strong className="ficha__titulo">Demonstração</strong>
+              <p className="sutil">
+                {demo
+                  ? "Os dados de exemplo estão no Quadro, em Clientes e em Projetos."
+                  : "Uma produtora de exemplo com 10 clientes, para ver o Maestro em ação."}
+              </p>
+            </div>
+            <div className="acoes">{demo ? <RemoverDemonstracao /> : <CarregarDemonstracao className="glass-btn glass-btn--sm" />}</div>
+          </section>
+        ) : null}
       </div>
     </div>
   );

@@ -1849,3 +1849,32 @@ h3 {
     margin-top: 8px;
   }
 }
+
+/* ───────────── Demonstração ───────────── */
+
+.selo--demo {
+  text-decoration: none;
+}
+.selo--demo:hover {
+  color: var(--text);
+}
+.vazio .vazio__acoes {
+  margin-top: 10px;
+}
+.vazio .vazio__acoes .glass-btn {
+  margin-top: 0;
+}
+.demo-form {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+}
+.ficha__titulo {
+  display: block;
+  font-family: var(--font-apple);
+  font-size: 1.1rem;
+  color: var(--text-strong);
+}
+.ficha p.sutil {
+  margin: 4px 0 0;
+}
