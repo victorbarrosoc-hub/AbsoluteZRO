@@ -103,6 +103,11 @@ export async function resetAction(_: FormState, fd: FormData): Promise<FormState
   } catch (e) {
     return toFormError(e)
   }
+  // Quem redefiniu entra de novo com a senha nova: a sessão que já estava aberta neste aparelho (de qualquer conta) é
+  // encerrada, para /entrar não pular direto para o painel de outra pessoa.
+  const token = (await cookies()).get(SESSION_COOKIE)?.value
+  if (token) await revokeSessionByToken(db(), token)
+  await clearSessionCookie()
   redirect('/entrar?senha=nova')
 }
 
