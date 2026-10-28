@@ -10,6 +10,7 @@ import { EVENT_PAYLOADS, EventEnvelopeSchema } from './events'
 import { CarroCrewSchema, CarroJobSchema, TpeasyBackupSchema } from './handoffs'
 import { ZroMediaManifestSchema } from './manifest'
 import { OrganizationPlanSchema } from './organization'
+import { DriveDownloadSchema, PreparoSchema } from './preparo'
 import { ProjectCreateSchema, ZroProjectSchema } from './project'
 import { TimelineRefSchema } from './timeline'
 
@@ -31,6 +32,12 @@ export function buildSchemas(): Record<string, unknown> {
     'carro-do-freela.job.v1': s(CarroJobSchema, 'carro-do-freela.job.v1', 'Job do Carro do Freela v1'),
     'carro-do-freela.crew.v1': s(CarroCrewSchema, 'carro-do-freela.crew.v1', 'Equipe escalada num job do Carro do Freela v1'),
     'tpeasy.backup.v1': s(TpeasyBackupSchema, 'tpeasy.backup.v1', 'Backup do TPeasy v1'),
+    'sobedesce.descarga-drive.v2': s(
+      DriveDownloadSchema,
+      'sobedesce.descarga-drive.v2',
+      'Download do Drive conferido (SOBEDESCE, linha v2 do descargas.jsonl)',
+    ),
+    'synquei.preparo.v1': s(PreparoSchema, 'synquei.preparo.v1', 'Recibo de preparo do Synquei v1'),
   }
   for (const [type, versions] of Object.entries(EVENT_PAYLOADS)) {
     for (const [v, schema] of Object.entries(versions as Record<string, z.ZodType>)) {
