@@ -2,6 +2,7 @@ import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import Link from "next/link";
 import { demonstracaoCompleta, temDemonstracao } from "@/lib/demo/demonstracao";
 import { NOME_DO_PAPEL, podeRemover } from "@/lib/papeis";
+import { meuAlcance } from "@/lib/pessoas";
 import { emissor } from "@/lib/zro/config";
 import { Icone } from "@/components/icones";
 import { Avatar, BotaoSair } from "@/components/shell";
@@ -19,6 +20,7 @@ export default async function Ajustes() {
   const ctx = { sub: s.sub, orgId: s.orgId };
   const demo = podeRemover(s.papel) ? await temDemonstracao(ctx) : false;
   const completa = demo ? await demonstracaoCompleta(ctx) : false;
+  const alcance = await meuAlcance(ctx);
   return (
     <div className="pagina">
       <header className="pagina__cabeca">
@@ -52,11 +54,38 @@ export default async function Ajustes() {
               {NOME_DO_PAPEL[s.papel]}
               {s.hubRole ? <span className="sutil"> · {s.hubRole} na Absolute ZRO</span> : null}
             </dd>
+            {alcance.restrito ? (
+              <>
+                <dt>Clientes</dt>
+                <dd>
+                  Só {alcance.clientes === 1 ? "1 cliente" : `${alcance.clientes} clientes`} <span className="sutil">· a gestão escolhe</span>
+                </dd>
+              </>
+            ) : null}
             <dt>Tema</dt>
             <dd>
               <SeletorDeTema />
             </dd>
           </dl>
+        </section>
+        <section className="ficha" aria-label="Equipe e agenda">
+          <div>
+            <strong className="ficha__titulo">Equipe e agenda</strong>
+            <p className="sutil">Quem vê o quê, e a sua agenda no celular.</p>
+          </div>
+          <nav className="atalhos" aria-label="Equipe e agenda">
+            <Link className="atalho" href="/app/ajustes/pessoas">
+              <Icone nome="pessoas" size={18} /> Pessoas e acesso <Icone nome="seta" size={15} />
+            </Link>
+            <Link className="atalho" href="/app/ajustes/agenda">
+              <Icone nome="agenda" size={18} /> Agenda no celular <Icone nome="seta" size={15} />
+            </Link>
+            {podeRemover(s.papel) ? (
+              <Link className="atalho" href="/app/ajustes/importar">
+                <Icone nome="importar" size={18} /> Importar planilha <Icone nome="seta" size={15} />
+              </Link>
+            ) : null}
+          </nav>
         </section>
         <section className="ficha" aria-label="Produtora">
           <div>

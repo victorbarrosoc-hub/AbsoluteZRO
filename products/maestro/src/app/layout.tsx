@@ -12,6 +12,7 @@ import "./publico.css";
 import "./aurora.css";
 import "./negocio.css";
 import "./numeros.css";
+import "./equipe.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
