@@ -116,7 +116,7 @@ export async function resendVerifyAction(): Promise<FormState> {
   if (!auth) return { error: 'Entre na sua conta.' }
   if (auth.user.emailVerified) return { ok: 'Seu e-mail já está confirmado.' }
   const token = await newVerifyToken(db(), auth.user.id)
-  const { devLink, enviado } = await sendVerify(auth.user.email, token, { nome: auth.user.displayName, boasVindas: false })
+  const { devLink, enviado } = await sendVerify(auth.user.email, token, { nome: auth.user.displayName, boasVindas: true })
   if (!mail.deliveryAvailable) return { error: 'O envio de e-mail ainda não está ligado nesta instalação.' }
   if (!enviado) return { error: 'Não conseguimos enviar agora. Tente de novo em instantes.' }
   return { ok: 'Enviamos um novo link de confirmação.', devLink }
