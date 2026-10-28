@@ -6,7 +6,8 @@
 import { zroEnv } from '@zro/observability'
 
 /** `text` é sempre obrigatório (leitores sem HTML e filtros de spam); `html` é a versão desenhada. */
-export type OutgoingEmail = { to: string; subject: string; text: string; html?: string }
+export type InlineImage = { arquivo: string; cid: string; base64: string }
+export type OutgoingEmail = { to: string; subject: string; text: string; html?: string; imagens?: InlineImage[] }
 export type EmailSender = { deliveryAvailable: boolean; send(email: OutgoingEmail): Promise<void> }
 
 export function devConsoleSender(log: (line: string) => void = (l) => console.info(l)): EmailSender {
@@ -39,7 +40,15 @@ export function resendSender(apiKey: string, fetcher: typeof fetch = fetch): Ema
       const r = await fetcher('https://api.resend.com/emails', {
         method: 'POST',
         headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
-        body: JSON.stringify({ from: REMETENTE, reply_to: RESPONDER_PARA, to: [e.to], subject: e.subject, text: e.text, ...(e.html ? { html: e.html } : {}) }),
+        body: JSON.stringify({
+          from: REMETENTE,
+          reply_to: RESPONDER_PARA,
+          to: [e.to],
+          subject: e.subject,
+          text: e.text,
+          ...(e.html ? { html: e.html } : {}),
+          ...(e.imagens?.length ? { attachments: e.imagens.map((i) => ({ filename: i.arquivo, content: i.base64, content_id: i.cid })) } : {}),
+        }),
       })
       if (!r.ok) throw new Error(`Resend recusou o envio (${r.status}).`)
     },

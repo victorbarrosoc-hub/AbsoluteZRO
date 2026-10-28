@@ -5,6 +5,7 @@
  * Outlook e Mail do iPhone), imagens em PNG servidas pelo próprio site e sempre uma versão em texto.
  */
 import type { OutgoingEmail } from '@zro/auth'
+import { IMAGENS_EMAIL } from './imagens'
 
 const ORIGEM = 'https://absolutezro.com'
 const FONTE = "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Figtree', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
@@ -61,12 +62,12 @@ function html(c: Corpo): string {
   <tr><td align="center" style="padding:48px 16px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
       <tr><td style="padding:0 8px 28px 8px;">
-        <a href="${ORIGEM}" style="text-decoration:none;"><img class="zl-neutro" src="${ORIGEM}/brand/email/absolute-zro-cinza.png" width="151" height="14" alt="Absolute ZRO" style="display:block;border:0;width:151px;height:auto;"><img class="zl-claro" src="${ORIGEM}/brand/email/absolute-zro-grafite.png" width="151" height="14" alt="" style="display:none;border:0;width:151px;height:auto;"><img class="zl-escuro" src="${ORIGEM}/brand/email/absolute-zro-branco.png" width="151" height="14" alt="" style="display:none;border:0;width:151px;height:auto;"></a>
+        <a href="${ORIGEM}" style="text-decoration:none;"><img class="zl-neutro" src="cid:absolute-zro-cinza" width="151" height="14" alt="Absolute ZRO" style="display:block;border:0;width:151px;height:auto;"><img class="zl-claro" src="cid:absolute-zro-grafite" width="151" height="14" alt="" style="display:none;border:0;width:151px;height:auto;"><img class="zl-escuro" src="cid:absolute-zro-branco" width="151" height="14" alt="" style="display:none;border:0;width:151px;height:auto;"></a>
       </td></tr>
       <tr><td class="z-cartao" style="background:#ffffff;border-radius:28px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
           <tr><td style="padding:48px 48px 0 48px;">
-            <img class="zl-neutro" src="${ORIGEM}/brand/email/absolute-zro-simbolo-cinza.png" width="40" height="40" alt="" style="display:block;border:0;width:40px;height:auto;"><img class="zl-claro" src="${ORIGEM}/brand/email/absolute-zro-simbolo-grafite.png" width="40" height="40" alt="" style="display:none;border:0;width:40px;height:auto;"><img class="zl-escuro" src="${ORIGEM}/brand/email/absolute-zro-simbolo-branco.png" width="40" height="40" alt="" style="display:none;border:0;width:40px;height:auto;">
+            <img class="zl-neutro" src="cid:absolute-zro-simbolo-cinza" width="40" height="40" alt="" style="display:block;border:0;width:40px;height:auto;"><img class="zl-claro" src="cid:absolute-zro-simbolo-grafite" width="40" height="40" alt="" style="display:none;border:0;width:40px;height:auto;"><img class="zl-escuro" src="cid:absolute-zro-simbolo-branco" width="40" height="40" alt="" style="display:none;border:0;width:40px;height:auto;">
           </td></tr>
           <tr><td style="padding:28px 48px 0 48px;font-family:${FONTE};">
             <h1 class="z-titulo" style="margin:0;font-size:36px;line-height:1.12;letter-spacing:-.02em;color:${GRAFITE};font-weight:300;">${esc(c.fino)} <strong style="font-weight:800;">${esc(c.forte)}</strong></h1>
@@ -114,7 +115,7 @@ function texto(c: Corpo): string {
 const primeiroNome = (nome?: string | null) => nome?.trim().split(/\s+/)[0] || ''
 
 function montar(to: string, subject: string, c: Corpo): OutgoingEmail {
-  return { to, subject, text: texto(c), html: html(c) }
+  return { to, subject, text: texto(c), html: html(c), imagens: IMAGENS_EMAIL }
 }
 
 /** Conta nova: boas-vindas + confirmar e-mail. No reenvio, só a confirmação. */
