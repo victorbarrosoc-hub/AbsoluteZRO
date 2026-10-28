@@ -20,7 +20,10 @@ import { zroLinkReady, zroLinkSummary, type ZroLinkSummary } from './zro/account
 import { zroManageUrl } from './zro/config';
 export { ZRO_PRODUCT };
 export const ACCOUNT_COOKIE = 'nossom-account';
+// Admin do NOSSOM (não é acesso ao produto, que vem do gate do HUB). O endereço novo vale junto com o antigo até a
+// troca de e-mail da conta do titular (28/10/2026).
 export const ADMIN_EMAIL = 'victorbarrosoc@gmail.com';
+const ADMIN_EMAILS = new Set([ADMIN_EMAIL, 'victor@absolutezro.com']);
 const lifetime = 7 * 24 * 60 * 60 * 1000;
 export type AuthUser = {
   id: string;
@@ -144,7 +147,7 @@ export function accountFromUser(user: AuthUser): Account {
     username: email,
     email,
     kind: 'supabase',
-    isAdmin: email === ADMIN_EMAIL && !!user.email_confirmed_at,
+    isAdmin: ADMIN_EMAILS.has(email ?? '') && !!user.email_confirmed_at,
     ...(typeof user.user_metadata?.avatar_version === 'number' &&
     Number.isSafeInteger(user.user_metadata.avatar_version) &&
     (user.user_metadata?.avatar_version as number) > 0
