@@ -36,6 +36,67 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 - `node scripts/scan-secrets.mjs`: nenhum segredo. Nada publicado, nenhum instalador gerado, nenhum banco remoto tocado.
   Não rodados aqui: `npm run build` e `npm run test:e2e` da raiz.
 
+## SOBEDESCE → Synquei: "Preparar no Synquei" depois do download do Drive (28/10/2026)
+
+Rodado neste ambiente (Linux, Node 22, Postgres 16 local, banco próprio `zro_sdsq_test`), como root (por isso os
+testes de permissão de arquivo pulam: root lê tudo). Nada publicado, nenhum instalador gerado, nenhum banco remoto.
+
+| Onde            | Comando                                                     | Resultado                                                                             |
+| --------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| SOBEDESCE motor | `npm run test:fast`                                         | **745/749** ok, 4 pulados (já pulavam + permissão como root), 0 falhas                |
+| SOBEDESCE site  | `cd web && npm run lint && npm run typecheck && npm test`   | lint e tipos ok; **263/263**                                                          |
+| Synquei         | `npm test`                                                  | **133/138** ok, 5 pulados (4 sem LuaJIT, já pulavam; 1 permissão como root), 0 falhas |
+| Raiz            | `npm run lint && npm run format:check && npm run typecheck` | ok                                                                                    |
+| Raiz            | `TEST_DATABASE_URL=…/zro_sdsq_test npm test`                | **220/220** em 27 arquivos                                                            |
+| Raiz            | `node scripts/scan-secrets.mjs`                             | nenhum segredo                                                                        |
+
+Coberto por teste automático (seção 6 do plano):
+
+- **Concluída:** `products/sobedesce/test/preparo-synquei.test.js` baixa uma pasta de verdade pelo mock do Drive e
+  confere a linha v2 (MD5 de cada arquivo, id da pasta, `op` = lote) e o link com `op`.
+- **Interrompida / em andamento:** lote com arquivo baixando, pausado, com falha ou com MD5 diferente não grava
+  manifesto nem mostra o botão; arquivo `.sobedesce-part` não entra no Synquei.
+- **Ausentes, movidos, alterados:** `products/synquei/tests/preparo-drive.test.mjs` (apagado → ausente; tamanho
+  diferente ou baixando de novo → alterado; mesmo nome e tamanho em outro lugar → movido; dois candidatos → ausente) e
+  o recibo diz cada um; "preparado" com pendência no disco vira "com pendências".
+- **Permissões:** pasta sem leitura recusa com explicação; sem permissão de gravar, o SOBEDESCE não oferece o botão
+  (os dois pulam como root; rodar como usuário comum).
+- **Vários formatos:** resumo da página com MP4, MOV, WAV, BWF, MXF, texto e arquivo quebrado (organizados,
+  sincronizados, ignorados, sincronia ambígua para revisar).
+- **Repetição sem duplicar:** o mesmo `op` já preparado só grava um recibo `repetido`; a mesma pasta continua uma só;
+  linha nova do mesmo `op` reprocessa como uma operação; o SOBEDESCE não regrava a mesma linha.
+- **Retomada:** outro Organizador (app reaberto) devolve a operação pendente; recibo atrasado depois do "não
+  confirmou" ainda vale.
+- **Synquei fechado/indisponível:** sem recibo em 45 s, o lote diz "O Synquei não confirmou · Atualizar o Synquei";
+  ponte sem Synquei abre a central (`absolutezro://baixar`) ou absolutezro.com/baixar; link estranho não abre nada.
+- **Manifesto inválido/adulterado:** campo a mais, `..`, caminho absoluto, letra de unidade, `\`, NUL, segmento vazio,
+  `.sobedesce-part`, contagem/estado/bytes mentindo, repetido, 50.001 arquivos — recusados nos três leitores
+  (SOBEDESCE, Synquei, `packages/integrations`); recibo adulterado, de outro `op` ou pela metade fica de fora.
+- **Disco desconectado (simulado):** pasta renomeada some sem quebrar nem marcar pronto e volta a andar; no SOBEDESCE,
+  "Preparar" recusa com "a pasta baixada não está mais lá" e o lote mostra "Pasta inacessível".
+- **Caracteres especiais:** acentos, espaço, `#`, `&`, `%`, emoji no link; arquivo em NFD no disco com manifesto em NFC.
+- **Volume:** validação de 50.000 arquivos < 3 s; 80 arquivos esparsos de 4 GB (~320 GB declarados) conferidos sem ler
+  os bytes.
+- **Regressões:** cartões v1 e Drive v2 no mesmo `descargas.jsonl`; toda a bateria anterior dos três lados passa.
+
+Roteiro manual (precisa de computadores e discos reais; não feito aqui):
+
+1. **Mac (Apple Silicon) e Windows 11**, builds locais de SOBEDESCE e Synquei (`npm run desktop` em cada um):
+   baixar uma pasta do Drive com subpastas, acentos e um Doc Google; ao fim, o lote mostra "Preparar no Synquei" com
+   "N de M conferidos (MD5) · 1 sem conferência"; tocar abre o Synquei, que pergunta "Preparar …?"; confirmar e ver
+   o lote passar por "Aguardando" → "Preparando" → "Preparado"/"Preparado · N pendências".
+2. **Synquei fechado:** repetir com o Synquei fechado (o sistema abre e o pedido fica pendente até o Organizar subir).
+   **Não instalado:** com a central Absolute ZRO instalada, abre a página Downloads dela; sem a central, o navegador
+   em absolutezro.com/baixar. **Synquei antigo:** em 45 s o lote diz "O Synquei não confirmou".
+3. **HD externo USB:** baixar para o HD, desplugar no meio da preparação (o Synquei mostra erro sem marcar pronto;
+   o SOBEDESCE mostra "Pasta inacessível"), plugar de novo e "Preparar no Synquei" outra vez (nada duplica).
+   No macOS, conferir o pedido de acesso a Volumes Removíveis (TCC) nos dois apps.
+4. **300+ GB reais** (câmeras RAW/BRAW e áudio): tempo da conferência no Synquei, memória dos dois apps, tamanho da
+   linha v2 e do `organizador.json`, e se a sincronia aguenta a quantidade.
+5. **Repetir** o mesmo "Preparar" depois de pronto: um recibo `repetido`, nenhum projeto, clipe ou importação no
+   DaVinci a mais. Apagar um arquivo e repetir: volta como pendência.
+6. **Windows:** caminho longo (> 260), nomes reservados e unidade de rede; **macOS:** pasta com nome em NFD.
+
 ## Maestro: Etapa 1, Quadro + Clientes + Projetos (28/10/2026)
 
 - `products/maestro`: `lint`, `format:check`, `typecheck` ok; `npm test` **66/66** (Postgres 16 local, bancos

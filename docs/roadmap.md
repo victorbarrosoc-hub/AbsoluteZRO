@@ -1,6 +1,6 @@
 # Roadmap — o que foi entregue e o que falta
 
-Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
 ## Fase 0 — Auditoria
 
@@ -113,6 +113,17 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 
 - ✅ SOBEDESCE → HUB: resumo `descargas.jsonl` v1 + relatórios xxHash64, prova por destino, divergência explícita.
 - ✅ HUB → Synquei: validação do manifest e prévia de organização (dry-run, IDs preservados) pela fila.
+- 🟡 SOBEDESCE → Synquei depois do download do Drive (28/10/2026, plano SD→SQ, etapas 1–4 e 6): lote de download de
+  uma pasta concluído sem arquivo diferente grava a linha `v: 2` no `.sobedesce/descargas.jsonl` da pasta baixada
+  (`op`, origem do Drive sem credencial, arquivos com tamanho, id do Drive e MD5 quando conferido, `project_id`
+  opcional) e mostra **Preparar no Synquei** (`synquei://organizar?…&op=`); sem o Synquei, a central Absolute ZRO
+  (`absolutezro://baixar`) ou absolutezro.com/baixar. O Synquei confere o manifesto à risca e cada arquivo no disco
+  (ausentes, movidos, alterados, `.sobedesce-part`), monta um projeto por operação (repetir não duplica), marca
+  sincronia ambígua para revisar e grava o recibo `synquei.preparo/1` em `Synquei/preparos.jsonl`, que o lote do
+  SOBEDESCE mostra (aguardando, preparando, preparado, pendências; 45 s sem recibo = "atualize o Synquei"). Contrato
+  em `packages/media-contracts` + parser em `packages/integrations`. O cartão também passou a dizer "Preparar no
+  Synquei". ⬜ Roteiro manual (Mac e Windows reais, HD externo, 300+ GB) em validation.md; ⬜ distribuir os dois
+  desktops (autorização do titular); ⬜ HUB importar a v2 e o recibo (etapa 5) e o vínculo do `project_id` em degraus.
 - ✅ SOBEDESCE → Synquei na mão da pessoa (26/10/2026): cartão OK no Backup Automático mostra **Abrir no Synquei**,
   que abre o Synquei (`synquei://organizar`) com a pasta do projeto e o tipo escolhido no projeto; o Synquei pergunta
   antes e o tipo também vai no `descargas.jsonl`. ⬜ Testar com os dois apps instalados (Mac e Windows) depois do
@@ -141,7 +152,8 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ✅ Eventos versionados, outbox, fila com retry/backoff, dead-letter, revisão, reprocessamento; fluxo ponta a ponta
   testado com fixtures gerados pelo código real do SOBEDESCE.
 - 🟡 NOSSOM: link e contrato `edit.timeline.ready`; passagem automática ⬜ (precisa de mudança no NOSSOM, com autorização).
-- ⬜ Synquei lendo o plano do HUB (hoje o Synquei lê o `descargas.jsonl` direto; integrar exige mudança no original).
+- ⬜ HUB recebendo o recibo do Synquei (`synquei.preparo/1`, parser pronto em `parsePreparos`) no projeto; o Synquei
+  segue lendo o manifesto local e o `OrganizationPlan` do HUB fica como prévia.
 - 🟡 Carro do Freela emitindo jobs: o envio existe e é real; os jobs e a escala do protótipo ainda moram no aparelho
   (sem banco do Carro), e a gente da prévia não tem conta Absolute ZRO (aparece como "sem conta").
 - ⛔ Tráfego pago do Carro do Freela (regra do titular): só depois de agenda, reputação e pagamento reais e do
