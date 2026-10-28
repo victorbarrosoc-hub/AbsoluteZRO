@@ -8,8 +8,13 @@ info:
     feature → quota → recurso externo. A organização é sempre a da sessão; nenhum id de organização do cliente vale
     como autorização.
     Erros: `{ "error": "<código>", "message": "<texto>" }` com 401 unauthenticated, 403 forbidden_role |
-    entitlement_required | feature_not_included | product_unavailable | quota_not_configured | origin_rejected,
+    entitlement_required | feature_not_included | product_unavailable | product_closed | quota_not_configured | origin_rejected,
     404 project_not_found | not_found, 409 no_active_organization | conflict, 422 invalid_input, 429 quota_exceeded | rate_limited.
+    Gate de lançamento (ADR 0023): produto fechado ao público só abre para contas listadas em `zro.product_release_access`,
+    no canal do pedido (sessão do HUB = web, token de app = api). Fora disso toda rota com produto responde 403
+    `product_closed` ("Este app ainda está em desenvolvimento.", `details.closed = true`, `details.upgrade = false`),
+    inclusive as rotas do Carro do Freela e a Z chamada de dentro de um app. Token Bearer de cliente de produto fechado
+    para conta fora da lista é 401 unauthenticated.
 servers:
   - url: http://localhost:3000
 components:
@@ -243,21 +248,30 @@ paths:
   /oauth/authorize:
     get:
       summary: Início do login (código + PKCE S256 obrigatório). Pede login e permissão; volta ao app com code, state e iss
-      responses: { '307': { description: volta ao redirect_uri cadastrado }, '200': { description: tela de permissão ou de erro } }
+      description: |
+        Cliente de produto fechado (ADR 0023) para conta fora da lista: nenhum código. A pessoa vê a página "Em
+        desenvolvimento" (200, com "Voltar ao HUB") e fica registrado `release.denied`; com `prompt=none` o app recebe
+        `error=access_denied` e `error_description=Este app ainda está em desenvolvimento.`.
+      responses: { '307': { description: volta ao redirect_uri cadastrado }, '200': { description: 'tela de permissão, "Em desenvolvimento" ou de erro' } }
   /oauth/token:
     post:
       summary: Troca code (com code_verifier) ou refresh_token por tokens. Apps confidenciais usam client_secret_basic/post
+      description: |
+        Tokens levam `zro_release` (`{ "<product_id>": "released" | "allowed" | "closed" }`: aberto ao público, fechado
+        mas esta conta está na lista, fechado sem acesso) e, com o escopo org, `zro_org` e `zro_products` (só produtos
+        contratados e abertos para a pessoa). Produto fechado para a conta: `invalid_grant` com
+        `error_description=Este app ainda está em desenvolvimento.`, no code e no refresh.
       requestBody: { content: { application/x-www-form-urlencoded: { schema: { type: object } } } }
       responses:
         {
           '200': { description: access_token (JWT at+jwt, 10 min), id_token, refresh_token rotativo },
-          '400': { description: invalid_request | invalid_grant | unsupported_grant_type },
+          '400': { description: invalid_request | invalid_grant (inclusive produto fechado) | unsupported_grant_type },
           '401': { description: invalid_client },
         }
   /oauth/userinfo:
     get:
-      summary: Dados da pessoa (sub, email, name, zro_org, zro_products) pelo access token Bearer
-      responses: { '200': { description: claims }, '401': { description: invalid_token } }
+      summary: Dados da pessoa (sub, email, name, zro_org, zro_products, zro_release) pelo access token Bearer
+      responses: { '200': { description: claims }, '401': { description: 'invalid_token (token inválido, app desativado ou produto fechado para a conta)' } }
   /oauth/jwks:
     get:
       summary: Chaves públicas (ES256) para conferir tokens

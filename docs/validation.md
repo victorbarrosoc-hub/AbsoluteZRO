@@ -1371,3 +1371,48 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   arquivo de 2,1 GB pede a confirmação; sem acesso mostra o aviso e fica na raiz; Doc do Google avisa que não baixa;
   o `#` some em todos. Não validado: Drive e conta reais; iPhone de verdade (o app instalado recebendo o link com
   ele aberto).
+
+## Gate de lançamento no HUB — Etapa B do PRD de acesso (28/10/2026)
+
+- Decisão do proprietário aplicada ([ADR 0023](decisions/0023-gate-de-lancamento.md), migration
+  `0018_release_gate.sql`): SOBEDESCE, Synquei e TPeasy `released` em todos os canais; NOSSOM, AEON (`ai-edit`),
+  Revela (`finishing`) e Carro do Freela `development` sem canal; sem linha = fechado (o `maestro` nasce fechado).
+  Única conta autorizada nos quatro = a do proprietário, inserida só em produção ([checklist 5a](operations/deployment-checklist.md));
+  a migration traz apenas o exemplo comentado.
+- Núcleo: `zro.product_release`, `zro.product_release_access`, `zro.release_allows(produto, pessoa, canal)` (RLS:
+  estado legível por `zro_app`, lista só do sistema; auditoria por trigger, só-inclusão); `@zro/billing` `release.ts`
+  (`releaseState` com cache de 30 s, `releaseAllows` por pedido, `releaseClaimsFor`, operações do console);
+  `checkEntitlement(..., { who })` → `product_closed` antes do plano; `productAccessFor` → `access: 'closed'` +
+  `release: { state, open, allowed, channels }` (pessoa da transação `asUser` ou passada; canal padrão web);
+  `authorize()` com o canal do pedido (token de app = api, sessão = web) e `need.release`; erro
+  `product_closed` 403 com `details.closed = true` e `upgrade = false`.
+- Login único: `issueCode`, troca de código, refresh (`invalid_grant` "Este app ainda está em desenvolvimento."),
+  `userinfo` e `authenticateAccessToken` (401) conferem `zro.release_allows` a cada pedido; claim `zro_release` em
+  id_token, access token e `userinfo`; `zro_products` só com produtos contratados e abertos para a pessoa.
+  `/oauth/authorize` de cliente fechado: página "Em desenvolvimento" (200) + auditoria `release.denied`
+  (cliente e canal, nada privado); `prompt=none` → `access_denied`. `npm run db:release:revoke` (prévia por padrão,
+  `--apply` com motivo e auditoria) para as sessões de antes do gate — **não rodado em produção**.
+- HUB: componente `EmDesenvolvimento` (`/em-desenvolvimento/<produto>`: 200 fechado, 404 inexistente, lançado → `/inicio`),
+  catálogo público com `release: { state, canais }`, a Z nega 403 de dentro de app fechado e o guia dela só cita as
+  plataformas abertas para a pessoa (`retrato.ferramentas` com `acesso !== 'closed'`), `estadoDaIa` marca
+  `emDesenvolvimento`; console Administração › Lançamento (estado e canais com motivo; acesso interno por pessoa
+  escolhida na lista, tipo, canais, validade; revogar também encerra as sessões da pessoa nos apps do produto;
+  auditoria). Etapas de projeto: produto fechado sem histórico = `unavailable`; o que já aconteceu continua visível.
+- Testes (Postgres local, bancos próprios `zro_gate_test` e `zro_gate_e2e_test`): lint 0, `format:check` ok,
+  `typecheck` ok (pacotes e hub-web), `npm test` **197/197 em 24 arquivos** (novo `release-gate.test.ts`, 12 casos:
+  seed e regra do banco, anônimo, RLS, conta grátis, assinante do SOBEDESCE com Completo, usuário de outro produto,
+  admin da plataforma sem linha, tester por canal com validade e revogação, Carro só para a conta listada — outro
+  admin, assinante e colega da mesma organização negados —, cross-tenant, console com cache e auditoria, validação da
+  concessão, `db:release:revoke` prévia e `--apply`; casos novos em `oidc.test.ts` (access_denied, zro_release,
+  refresh/userinfo/Bearer revogados), `ia-token.test.ts`, `ia.test.ts`, `carro-hub.test.ts`; regressão de
+  `flow.test.ts`, `ia.test.ts`, `accounts.test.ts`, `core.test.ts` ajustada ao estado real dos produtos), `npm run build` ok,
+  `scan-secrets` limpo (2289 arquivos), `npm run test:e2e` **24/24** (caso novo no `sso.spec.ts`: cliente trusted do
+  NOSSOM → "Em desenvolvimento" sem código e sem violação axe WCAG A/AA, `prompt=none` → `access_denied`, auditoria
+  `release.denied` só com cliente e canal, `/em-desenvolvimento/nossom` 200, inexistente 404, lançado → `/inicio`, conta
+  listada volta ao app com código; `hub.spec.ts` ajustado ao estado real: AEON indisponível, NOSSOM `closed`, 3 apps com
+  acesso no plano grátis; o cliente de teste do fluxo trusted virou Synquei e o do Carro lista a conta nova como
+  proprietária). Tela "Em desenvolvimento" conferida em captura local (claro e escuro, 390 px e 1280 px): símbolo
+  pequeno, ícone do app, título Light × ExtraBold, uma linha, botão de vidro escuro.
+- Não validado: produção (nada publicado; a conta do proprietário e o `revoke --apply` dependem de autorização);
+  interface do HUB e sites dos produtos lendo `release`/`zro_release` (outros agentes); `maestro` (migration 0019 de
+  outro agente) só por construção (sem linha = fechado).

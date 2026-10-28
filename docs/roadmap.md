@@ -209,6 +209,25 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ⬜ Observabilidade em produção (drain de logs, métricas da fila, alertas), backups e retenção definidos.
 - ⬜ Hardening: CSP com nonce, limites de taxa na API, rotação de segredos de webhook, testes de carga.
 
+## Lançamento progressivo — Etapa B do PRD de acesso (28/10/2026)
+
+- ✅ **Gate de lançamento no HUB** ([ADR 0023](decisions/0023-gate-de-lancamento.md), migration 0018): fonte única
+  `zro.product_release` + `zro.product_release_access` + `zro.release_allows(produto, pessoa, canal)`; SOBEDESCE,
+  Synquei e TPeasy lançados em todos os canais; NOSSOM, AEON, Revela e Carro do Freela fechados (sem linha = fechado,
+  então `maestro` nasce fechado). `checkEntitlement`/`productAccessFor`/`authorize` aplicam o gate em nome da pessoa
+  e do canal (`product_closed` 403, `access: 'closed'`, `release` por produto); login único não emite código, não
+  renova nem aceita token de cliente de produto fechado para conta fora da lista, e os tokens levam `zro_release`;
+  a Z chamada de dentro de um app fechado recebe 403 e o guia dela só cita as plataformas abertas; página "Em
+  desenvolvimento" (`/em-desenvolvimento/<produto>`, dentro do `/oauth/authorize` e a versão estática em
+  `docs/integration-contracts/em-desenvolvimento.html`); console Administração › Lançamento (estado, canais, acesso
+  interno por conta escolhida na lista, auditoria); `npm run db:release:revoke` (prévia por padrão) para as sessões
+  de antes do gate. Catálogo público devolve `release: { state, canais }` por produto.
+- ⬜ Interface do HUB lendo `release` (homepage, `/planos`, `/baixar`, `/downloads`, desktop, nav, painel da Z) e as
+  pastas dos quatro produtos fechados (`RELEASE=closed`, telas, `/api/zro/*` com 403, instaladores e Releases) —
+  outros agentes, no mesmo branch.
+- ⛔ Em produção, só com autorização: inserir a conta do proprietário em `product_release_access` e rodar o
+  `db:release:revoke --apply` ([checklist 5a](operations/deployment-checklist.md)).
+
 ## Bloqueios e decisões do titular
 
 1. Aplicar o SQL no Supabase e ligar o banco ao projeto `absolutezro` na Vercel ([checklist](operations/deployment-checklist.md)).
