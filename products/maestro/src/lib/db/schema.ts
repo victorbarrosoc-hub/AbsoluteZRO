@@ -319,6 +319,9 @@ export const approvals = maestro.table(
     userAgent: text(),
     consentAt: quando(),
     idempotencyKey: text().notNull().unique(),
+    /** Versão decidida e a volta (0005). */
+    versaoId: uuid(),
+    volta: integer(),
     createdAt: agora(),
   },
   (t) => [index("approvals_card_idx").on(t.orgId, t.cardId)],
@@ -396,4 +399,54 @@ export const listaEspera = maestro.table(
     createdAt: agora(),
   },
   (t) => [uniqueIndex("lista_espera_email_uq").on(t.email)],
+);
+
+/** Versão de uma peça (0005): um link cadastrado pela equipe. Escrita só por maestro.versao_criar/versao_apagar. */
+export const versoes = maestro.table(
+  "versoes",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    orgId: uuid().notNull(),
+    cardId: text().notNull(),
+    n: integer().notNull(),
+    titulo: text(),
+    fonte: text().$type<"drive" | "youtube" | "vimeo" | "dropbox" | "mp4" | "hls" | "link">().notNull(),
+    url: text().notNull(),
+    driveFileId: text(),
+    driveResourceKey: text(),
+    duracaoMs: integer(),
+    largura: integer(),
+    altura: integer(),
+    miniaturaUrl: text(),
+    compartilhamento: jsonb().$type<Record<string, unknown>>(),
+    criadoPor: uuid(),
+    criadoEm: agora(),
+    apagadoEm: quando(),
+  },
+  (t) => [uniqueIndex("versoes_card_n_uq").on(t.orgId, t.cardId, t.n)],
+);
+
+/** Comentário numa versão (0005): tempo, intervalo e pino; o texto não muda. Escrita só por função. */
+export const comentarios = maestro.table(
+  "comentarios",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    orgId: uuid().notNull(),
+    versaoId: uuid().notNull(),
+    cardId: text().notNull(),
+    paiId: uuid(),
+    autorTipo: text().$type<"equipe" | "cliente">().notNull(),
+    autorSub: uuid(),
+    linkId: uuid(),
+    autorNome: text(),
+    tMs: integer(),
+    tFimMs: integer(),
+    tempoDigitado: boolean().notNull().default(false),
+    resolvidoEm: quando(),
+    resolvidoPor: uuid(),
+    texto: text().notNull(),
+    criadoEm: agora(),
+    idemKey: text().notNull(),
+  },
+  (t) => [index("comentarios_versao_idx").on(t.orgId, t.versaoId, t.criadoEm)],
 );

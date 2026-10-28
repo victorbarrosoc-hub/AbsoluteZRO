@@ -20,6 +20,7 @@ export const metadata: Metadata = {
 
 /** O que já roda hoje (Fase 1 do plano v2). Cada item só entra aqui quando a tela existe no app. */
 const JA: { icone: NomeIcone; nome: string; linha: string }[] = [
+  { icone: "aprovacoes", nome: "Aprovação do cliente", linha: "Um link por lote. O cliente comenta no tempo do vídeo e aprova sem conta." },
   { icone: "clientes", nome: "Clientes", linha: "Quem você atende, com projetos e cards em aberto." },
   { icone: "projetos", nome: "Projetos", linha: "Código, prazo e os cards do cliente juntos." },
   { icone: "z", nome: "Z", linha: "A IA da Absolute ZRO em toda tela." },
@@ -27,7 +28,6 @@ const JA: { icone: NomeIcone; nome: string; linha: string }[] = [
 
 /** O que vem aí, com o selo "Em breve". Só troca de estado quando a fase dele entrar no ar. */
 const CHEGANDO: { icone: NomeIcone; nome: string }[] = [
-  { icone: "aprovacoes", nome: "Aprovação do cliente" },
   { icone: "orcamento", nome: "Orçamentos" },
   { icone: "dinheiro", nome: "Financeiro" },
 ];
@@ -85,7 +85,7 @@ export default async function Inicio() {
             <span className="ihero__fino">{palavras("A produtora", 0)}</span> <strong>{palavras("inteira", 2)}</strong>{" "}
             <span className="ihero__fino">{palavras("num lugar só.", 3)}</span>
           </h1>
-          <p className="apoio ihero__apoio">Pauta, clientes e projetos da sua equipe, com a sua conta Absolute ZRO.</p>
+          <p className="apoio ihero__apoio">Pauta, aprovação do cliente e projetos da sua equipe, com a sua conta Absolute ZRO.</p>
           <div className="acoes acoes--centro ihero__acoes">
             {dentro ? null : (
               <a className="glass-btn glass-btn--ink" href="#acesso">
@@ -124,19 +124,27 @@ export default async function Inicio() {
             </h2>
           </div>
           <div className="ija">
+            <article className="icartao icartao--tela icartao--largo revela">
+              <div className="icartao__texto">
+                <Icone nome="aprovacoes" size={22} />
+                <h3>{JA[0].nome}</h3>
+                <p>{JA[0].linha}</p>
+              </div>
+              <IPhone tela={{ nome: "aprovacao", alt: "A tela de aprovação do cliente no iPhone, com a versão nova e os comentários no tempo" }} />
+            </article>
             <article className="icartao icartao--tela revela">
               <div className="icartao__texto">
                 <Icone nome="clientes" size={22} />
-                <h3>{JA[0].nome}</h3>
-                <p>{JA[0].linha}</p>
+                <h3>{JA[1].nome}</h3>
+                <p>{JA[1].linha}</p>
               </div>
               <IPhone tela={{ nome: "clientes", alt: "Clientes no iPhone" }} />
             </article>
             <article className="icartao icartao--tela revela">
               <div className="icartao__texto">
                 <Icone nome="projetos" size={22} />
-                <h3>{JA[1].nome}</h3>
-                <p>{JA[1].linha}</p>
+                <h3>{JA[2].nome}</h3>
+                <p>{JA[2].linha}</p>
               </div>
               <IPhone tela={{ nome: "projetos", alt: "Projetos no iPhone" }} />
             </article>
@@ -145,8 +153,8 @@ export default async function Inicio() {
                 <Icone nome="z" size={40} />
               </span>
               <div className="icartao__texto">
-                <h3>{JA[2].nome}</h3>
-                <p>{JA[2].linha}</p>
+                <h3>{JA[3].nome}</h3>
+                <p>{JA[3].linha}</p>
               </div>
             </article>
           </div>

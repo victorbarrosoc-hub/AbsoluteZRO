@@ -24,9 +24,46 @@ export type NomeIcone =
   | "editar"
   | "bandeira"
   | "orcamento"
-  | "dinheiro";
+  | "dinheiro"
+  | "alvo"
+  | "tocar"
+  | "pausa"
+  | "quadroAnterior"
+  | "quadroProximo"
+  | "balao"
+  | "copiar"
+  | "link"
+  | "cadeado"
+  | "check"
+  | "baixar";
 
 const CAMINHOS: Record<NomeIcone, React.ReactNode> = {
+  alvo: (
+    <>
+      <circle cx="12" cy="12" r="7" />
+      <circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none" />
+    </>
+  ),
+  tocar: <path d="M8 5.5v13l10-6.5-10-6.5Z" fill="currentColor" />,
+  pausa: <path d="M8 5.5v13M16 5.5v13" strokeWidth={2.6} />,
+  quadroAnterior: <path d="M18 6v12l-8-6 8-6ZM6 6v12" />,
+  quadroProximo: <path d="M6 6v12l8-6-8-6ZM18 6v12" />,
+  balao: <path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8l-4 3.5V17H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" />,
+  copiar: (
+    <>
+      <rect x="8.5" y="8.5" width="11" height="11" rx="2.5" />
+      <path d="M15.5 8.5V6.5A2 2 0 0 0 13.5 4.5h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2" />
+    </>
+  ),
+  link: <path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1" />,
+  cadeado: (
+    <>
+      <rect x="5" y="10.5" width="14" height="9.5" rx="2.5" />
+      <path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" />
+    </>
+  ),
+  check: <path d="m5 12.5 4.5 4.5L19 7.5" />,
+  baixar: <path d="M12 4v11M7 10.5l5 5 5-5M5 19.5h14" />,
   z: <path d="M12 3c.6 4.2 2.3 5.9 9 6.3-6.7.4-8.4 2.1-9 6.3-.6-4.2-2.3-5.9-9-6.3 6.7-.4 8.4-2.1 9-6.3Z" fill="currentColor" stroke="none" />,
   quadro: (
     <>
