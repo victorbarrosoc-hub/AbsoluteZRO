@@ -5,7 +5,7 @@ import { BotaoZro, LogoZro } from "@/components/conta/zro";
 import { mensagemDeErro } from "@/components/conta/mensagens";
 import { Moldura } from "@/components/conta/moldura";
 import { Linha, Linhas, Passo } from "@/components/kit/kit";
-import { Cloud, KeyRound, Laptop, LockKeyhole, Trash2, UserRound } from "lucide-react";
+import { Cloud, Laptop, LockKeyhole, Trash2, UserRound } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth/atual";
 import { listarDispositivos } from "@/lib/auth/sessao";
 import { NoComputador } from "@/components/conta/no-computador";
@@ -25,7 +25,7 @@ import { contaZroDe } from "@/lib/zro/contas";
 import { NOME_PLATAFORMA, tempoRelativo } from "@/lib/tempo";
 import { Computadores } from "./computadores";
 import { Drives } from "./drives";
-import { FormDesligarZro, FormGoogleDeEntrar, FormNome, FormPrimeiraSenha, FormSenha } from "./forms";
+import { FormDesligarZro, FormNome, FormPrimeiraSenha, FormSenha } from "./forms";
 import { ApagarConta } from "./apagar";
 import { BotaoSair } from "./sair";
 import { SemAcessoZro } from "../sem-acesso";
@@ -82,11 +82,7 @@ export default async function Conta({ searchParams }: Props) {
               )}
             </li>
             <li>
-              Confira o{" "}
-              <a href="#entrar-google" className="font-medium underline underline-offset-2">
-                Google de entrar
-              </a>{" "}
-              e os{" "}
+              Confira os{" "}
               <a href="#computadores" className="font-medium underline underline-offset-2">
                 computadores
               </a>
@@ -166,24 +162,11 @@ export default async function Conta({ searchParams }: Props) {
             </p>
           </Passo>
 
-          {contas.length || entrar ? (
-            <Passo
-              id="entrar-google"
-              icone={<KeyRound />}
-              tom="up"
-              i={2}
-              titulo="Entrar com Google"
-              frase="Só um Google abre a sua conta. Os outros Drives conectados servem para enviar e baixar, não para entrar."
-            >
-              <FormGoogleDeEntrar contas={contas} entrar={entrar} temSenha={temSenha} />
-            </Passo>
-          ) : null}
-
           <Passo
             id="computadores"
             icone={<Laptop />}
             tom="ok"
-            i={3}
+            i={2}
             titulo="Computadores"
             frase="O app SOBEDESCE do computador entra na sua conta e usa os mesmos Drives."
             acao={dispositivos.length ? <span className="text-[13px] font-medium text-ink-3 tabular-nums">{dispositivos.length}</span> : null}
