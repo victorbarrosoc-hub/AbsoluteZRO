@@ -1,11 +1,15 @@
 // A conta Absolute ZRO (api/zro/eu, como na Revela). No site: logado mostra as iniciais (levam a entrar.html, onde dá
-// para sair); fora, "Entrar". No editor (app/editor.js) é a trava: o AEON só abre com a conta.
+// para sair); fora, "Entrar"; fechado (403: o AEON está em desenvolvimento e o HUB não liberou esta conta), a página
+// "Em desenvolvimento". No editor (app/editor.js) é a trava: o AEON só abre com a conta liberada.
+
+export const PAGINA_FECHADO = 'em-desenvolvimento.html'
 
 export async function lerConta() {
   try {
     const r = await fetch('/api/zro/eu', { headers: { accept: 'application/json' }, credentials: 'same-origin', cache: 'no-store' })
     if (r.status === 200) return { estado: 'logado', ...(await r.json()) }
     if (r.status === 401) return { estado: 'fora' }
+    if (r.status === 403) return { estado: 'fechado' }
     return { estado: 'desligado' }
   } catch {
     return { estado: 'desligado' }

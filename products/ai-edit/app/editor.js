@@ -25,7 +25,7 @@ import * as ponte from './ponte.js'
 import { montarTrilho } from './trilho.js'
 import { DEPOIS, FAMILIA, iconeDe } from '../src/familia.js'
 import * as projetos from './projetos.js'
-import { lerConta, ondeEditar } from '../site/conta.js'
+import { lerConta, ondeEditar, PAGINA_FECHADO } from '../site/conta.js'
 import { montarAtualizacao } from './atualizacao.js'
 import { pendencias, rotuloBalao } from '../src/pendencias.js'
 import { montarZ } from './z.js'
@@ -52,7 +52,13 @@ globalThis.__editor = S
 // ───────── conta: o AEON só abre com a conta Absolute ZRO (decisão do titular, 26/10/2026) ─────────
 // Sem sessão, com o login desligado ou sem o AEON liberado na conta, vai para entrar.html, que diz o que falta. No
 // navegador as rotas /api/zro/* são do site; no app de computador, do próprio app (desktop/conta.cjs).
+// Fechado ao público (api/_release.js): conta que o HUB não liberou recebe 403 e vai para "Em desenvolvimento" (no
+// site a função api/app.js nem entrega o editor; aqui é a segunda trava, para a sessão que fechou com a página aberta).
 const conta = await lerConta()
+if (conta.estado === 'fechado') {
+  location.replace(`../${PAGINA_FECHADO}`)
+  await new Promise(() => {})
+}
 if (conta.estado !== 'logado' || conta.acesso === false) {
   location.replace(`../entrar.html?volta=${encodeURIComponent('/app/')}`)
   await new Promise(() => {})

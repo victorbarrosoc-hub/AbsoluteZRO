@@ -1,6 +1,7 @@
 # Editor da Absolute ZRO (nome provisório "AI Edit")
 
-**Estado: prévia funcional, ainda não lançada.** App de desktop para Mac e Windows, no molde do Synquei. **Editor completo: a pessoa monta o
+**Estado: em desenvolvimento, fechado ao público (28/10/2026; ver [Fechado ao público](#fechado-ao-público-28102026-etapa-b-do-prd)).**
+App de desktop para Mac e Windows, no molde do Synquei. **Editor completo: a pessoa monta o
 projeto do começo ao fim; a IA ajuda quando ela quiser.** Fase 4 do PRD (§8 Synquei → AI Edit, §13); decisões no
 [ADR 0020](../../docs/decisions/0020-editor-desktop-custo-zero.md) (desktop, custo zero, IA na máquina).
 
@@ -32,10 +33,41 @@ parâmetros no preset versionado [`presets/fala.v1.json`](presets/fala.v1.json) 
 
 <!-- preenchido com a medição desta entrega; ver docs/validation.md -->
 
-## Instalar (sem certificado: custo zero)
+## Fechado ao público (28/10/2026, Etapa B do PRD)
+
+Decisão do titular (PRD §5 e §6): só a página institucional fica no ar. O que muda, e onde:
+
+- **Site**: `index.html` sem "Começar a criar", "Baixar", "Abrir" nem comando de instalação; "Conhecer o projeto" é
+  âncora na própria página; a seção da Z volta a "Chegando ao AEON". `em-desenvolvimento.html` é a página de recusa
+  (HTTP 200, sem dado interno): símbolo da Absolute ZRO, a marca, "Em desenvolvimento.", uma linha e "Voltar ao HUB".
+- **Editor no navegador**: `app/`, `src/` (menos os quatro módulos da marca) e `presets/` saem do estático
+  (`scripts/publicar-site.mjs` → `publico/`). O `vercel.json` reescreve `/app/*`, `/src/*` e `/presets/*` para a função
+  `api/app.js`, que leva esses arquivos no pacote (`includeFiles`) e só os entrega à conta liberada; para o resto, HTML
+  vira a página "Em desenvolvimento" (200) e qualquer outro arquivo é 403. Caminho fora dessas pastas é 404.
+- **APIs**: `/api/zro/eu` e `/api/zro/ia/*` respondem **403** para sessão que o HUB não liberou (sem sessão continua
+  401); `callback` não cria sessão para conta fora da lista e leva à página.
+- **Downloads e instaladores**: `/baixar/*` volta à home (`/#em-desenvolvimento`), nada aponta para o GitHub;
+  `instalar.sh` e `instalar.ps1` publicados só dizem que o AEON está em desenvolvimento (`curl … | bash` sai com 1,
+  nada é baixado). Os instaladores de verdade continuam no repositório para quando abrir. Pôr o Release
+  `ai-edit-app-desktop` em rascunho é ação do titular no GitHub.
+- **App de computador**: o binário não muda. Ele só abre com a conta e é o HUB quem nega `aeon-desktop` a quem não
+  está na lista; o atualizador lê o `versao.json` do Release do GitHub e, com o Release em rascunho, não acha versão
+  e não avisa nada. Cópias já instaladas não podem ser apagadas das máquinas alheias (PRD §6.3).
+
+**Quem entra**: a conta que o HUB marca como `allowed` na claim `zro_release` (`{ "ai-edit": "allowed" }`) do
+id_token e do `/oauth/userinfo`. A claim entra na sessão (`release`) a cada login e a cada releitura do perfil; sessão
+antiga (sem a claim), `closed`, refresh ou userinfo recusados pelo HUB = fechado até entrar de novo. Nunca por e-mail.
+
+**Deny-by-default local**: `api/_release.js` lê `RELEASE` (`closed` sem variável) e vale mesmo com o HUB fora do ar.
+Abrir ao público pede os dois lados: o HUB marca o produto como lançado e o projeto Vercel `aeon` ganha
+`RELEASE=released` (build e runtime) com deploy novo; aí `publicar-site.mjs` volta a publicar o editor e os
+instaladores. Localmente: `RELEASE=released node scripts/publicar-site.mjs`.
+
+## Instalar (quando abrir; sem certificado: custo zero)
 
 Os instaladores ficam no Release `ai-edit-app-desktop` do GitHub, publicado só pelo botão do workflow
-(`.github/workflows/ai-edit-desktop.yml`, "publicar"), com autorização do titular.
+(`.github/workflows/ai-edit-desktop.yml`, "publicar"), com autorização do titular. Enquanto fechado, os comandos
+abaixo só mostram o recado "em desenvolvimento".
 
 ```sh
 # Mac (Terminal): sem o aviso da Apple, confere o SHA-256
@@ -53,8 +85,8 @@ irm https://raw.githubusercontent.com/victorbarrosoc-hub/AbsoluteZRO/main/produc
 cd products/ai-edit
 npm ci && npm run vendor          # vendor/: Mediabunny, Transformers.js, ONNX Runtime, tokens e fonte da Absolute ZRO
 npm run desktop                   # o app (Electron)
-node scripts/servidor.mjs         # ou no navegador: http://localhost:8080/app/
-npm test                          # unidade, exportadores, SOBEDESCE, instaladores e telas no Chromium
+node scripts/servidor.mjs         # ou no navegador: http://localhost:8080/app/ (serve a pasta inteira, sem o gate)
+npm test                          # unidade, exportadores, SOBEDESCE, instaladores, gate de lançamento e telas no Chromium
 npm run smoke                     # teste de fumaça do app (o CI roda no app empacotado)
 npx electron . --medir=<vídeo> [--modelo=preciso]   # demo medida no app de verdade
 ```

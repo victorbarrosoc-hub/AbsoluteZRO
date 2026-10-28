@@ -1054,96 +1054,28 @@ p {
   margin-top: -40px;
 }
 
-/* ───────── 6b · baixar ───────── */
-.baixar {
+/* ───────── 6b · em desenvolvimento (no lugar do Baixar enquanto o AEON está fechado ao público) ───────── */
+.fechado-sec {
   padding: 120px 24px 140px;
   background: var(--fundo-2);
 }
-.sistemas {
-  margin: 60px auto 0;
-  max-width: 1000px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
-}
-.sistema {
-  min-width: 0;
-  background: var(--cartao);
-  border: 1px solid var(--linha);
-  border-radius: 28px;
-  padding: 32px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 8px;
-}
-.sistema-icone {
-  width: 34px;
-  height: 34px;
-  color: var(--forte);
-  margin-bottom: 14px;
-}
-.sistema h3 {
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  color: var(--forte);
-}
-.sistema p {
-  color: var(--apoio);
-}
-.comando {
-  margin-top: 18px;
-  display: flex;
+.fechado-sec .selo {
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 8px 8px 16px;
-  border-radius: 16px;
-  background: var(--fundo);
+  gap: 8px;
+  margin: 26px auto 0;
+  padding: 7px 14px;
+  border-radius: 999px;
   border: 1px solid var(--linha);
-}
-.comando code {
-  flex: 1;
-  min-width: 0;
-  overflow-x: auto;
-  white-space: nowrap;
-  font: 13px/1.4 ui-monospace, 'SF Mono', Menlo, monospace;
-  color: var(--forte);
-  scrollbar-width: none;
-}
-.manual {
-  margin-top: 14px;
-  font-size: 14px;
-}
-.manual summary {
-  cursor: pointer;
   color: var(--apoio);
-  width: fit-content;
-}
-.manual summary:hover {
-  color: var(--forte);
-}
-.manual p {
-  margin-top: 10px;
-}
-.manual a {
-  color: var(--forte);
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.manual .comando {
-  margin-top: 10px;
-}
-.manual .dica {
   font-size: 13px;
+  font-weight: 600;
 }
-@media (max-width: 760px) {
-  .sistemas {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .sistema {
-    padding: 24px;
-  }
+.fechado-sec .selo i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--cor-laranja);
 }
 
 /* ───────── 7 · fim ───────── */

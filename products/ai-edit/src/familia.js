@@ -6,14 +6,14 @@ export const FAMILIA = [
   { id: 'sobedesce', nome: 'SOBEDESCE', href: 'https://sobedesce.vercel.app', icone: 'sobedesce.svg', papel: 'Descarga e subida conferidas' },
   { id: 'synquei', nome: 'Synquei', href: 'https://synquei.vercel.app', icone: 'synquei.svg', papel: 'Câmeras sincronizadas pelo som' },
   { id: 'nossom', nome: 'NOSSOM', href: 'https://nossom-teal.vercel.app', icone: 'nossom.svg', papel: 'Voz limpa, mix e master' },
-  { id: 'finishing', nome: 'Revela', href: 'https://revela-zro.vercel.app', icone: 'revela.svg', papel: 'Cor, LUT e entrega' },
+  { id: 'finishing', nome: 'Revela', href: 'https://revela.absolutezro.com', icone: 'revela.svg', papel: 'Cor, LUT e entrega' },
   { id: 'tpeasy', nome: 'TPeasy', href: 'https://tpeasy.vercel.app', icone: 'tpeasy.svg', papel: 'Teleprompter com o roteiro' },
   { id: 'carro-do-freela', nome: 'Carro do Freela', href: 'https://carrodofreela.com.br', icone: 'carro-do-freela.png', papel: 'Escala de freelas' },
 ]
 
 /** Depois do AEON: os próximos passos que abrem o app certo (Entrega). */
 export const DEPOIS = [
-  { id: 'finishing', titulo: 'Cor na Revela', texto: 'LUT do seu frame de referência.', href: 'https://revela-zro.vercel.app/lut.html' },
+  { id: 'finishing', titulo: 'Cor na Revela', texto: 'LUT do seu frame de referência.', href: 'https://revela.absolutezro.com/lut' },
   { id: 'nossom', titulo: 'Som no NOSSOM', texto: 'Voz limpa, mix e master.', href: 'https://nossom-teal.vercel.app' },
   { id: 'sobedesce', titulo: 'Entregar com o SOBEDESCE', texto: 'Sobe conferido, com MD5.', href: 'https://sobedesce.vercel.app' },
 ]

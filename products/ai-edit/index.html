@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>AEON · Time is yours.</title>
-    <meta name="description" content="AEON, o editor de vídeo da Absolute ZRO. Monte, corte, legende e entregue do começo ao fim, com a IA ajudando nos cortes, no zoom e na legenda quando você quiser. Junto com SOBEDESCE, Synquei, Revela e NOSSOM, na mesma conta." />
+    <meta name="description" content="AEON, o editor de vídeo da Absolute ZRO, em desenvolvimento. Monte, corte, legende e entregue do começo ao fim, com a IA ajudando nos cortes, no zoom e na legenda quando você quiser. Junto com SOBEDESCE, Synquei, Revela e NOSSOM, na mesma conta." />
     <meta name="color-scheme" content="dark light" />
     <meta name="theme-color" content="#000000" />
     <meta property="og:type" content="website" />
@@ -39,7 +39,6 @@
         <a href="#como-funciona">Como funciona</a>
         <a href="#recursos">Recursos</a>
         <a href="#ecossistema">Ecossistema</a>
-        <a href="#baixar">Baixar</a>
       </nav>
       <div class="nav-dir">
         <button class="nav-icone" id="tema" type="button" aria-label="Tema claro ou escuro" title="Tema claro ou escuro">
@@ -47,7 +46,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true" class="ic-lua"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" /></svg>
         </button>
         <a class="nav-entrar" href="entrar.html" data-conta>Entrar</a>
-        <a class="vidro vidro--tinta pequeno" href="app/">Começar a criar</a>
+        <a class="vidro vidro--tinta pequeno" href="#produto">Conhecer o projeto</a>
       </div>
     </header>
 
@@ -63,13 +62,11 @@
         <a href="#como-funciona">Como funciona</a>
         <a href="#recursos">Recursos</a>
         <a href="#ecossistema">Ecossistema</a>
-        <a href="#baixar">Baixar</a>
-        <a href="app/">Abrir o AEON</a>
+        <a href="#em-desenvolvimento">Em desenvolvimento</a>
       </nav>
       <p class="menu-grupo">Sua conta</p>
       <div class="menu-conta">
         <a class="vidro vidro--tinta" href="entrar.html">Entrar</a>
-        <a class="vidro" href="entrar.html?criar=1">Criar conta</a>
       </div>
       <p class="menu-grupo">Absolute ZRO</p>
       <ul class="menu-familia" id="menuFamilia"></ul>
@@ -85,7 +82,7 @@
         <div class="hero-texto">
           <h1 id="hero-titulo" class="hero-titulo"><span class="fino">Time is</span> <span class="forte">yours.</span></h1>
           <div class="acoes">
-            <a class="vidro vidro--tinta grande" href="app/">Começar a criar</a>
+            <a class="vidro vidro--tinta grande" href="#produto">Conhecer o projeto</a>
             <a class="vidro grande" href="#como-funciona">Como funciona</a>
           </div>
         </div>
@@ -219,55 +216,32 @@
         <ol class="caminho ao-rolar" id="caminho"></ol>
       </section>
 
-      <!-- 6a · a Z, a IA do ecossistema, no painel inicial do app (app/z.js): o botão leva direto a ela. -->
+      <!-- 6a · a Z, a IA do ecossistema: chega junto com o AEON (fechado ao público, só a apresentação). -->
       <section class="z-sec" id="z" aria-labelledby="z-titulo">
         <div class="z-caixa ao-rolar">
           <div class="z-simbolo" aria-hidden="true"><img class="z-anel" src="marca/z/anel.webp" alt="" width="560" height="560" loading="lazy" /><img class="z-estrela" src="marca/z/estrela.webp" alt="" width="400" height="400" loading="lazy" /></div>
           <div class="z-texto">
-            <p class="z-selo z-selo--pronta"><i aria-hidden="true"></i>Agora no AEON</p>
+            <p class="z-selo"><i aria-hidden="true"></i>Chegando ao AEON</p>
             <h2 id="z-titulo" class="z-titulo"><span class="fino">Z.</span> <span class="forte">Uma IA para todo o ecossistema.</span></h2>
-            <p class="apoio">No painel inicial do app. Ela conversa e lê sua conta; a edição é sua.</p>
+            <p class="apoio">No painel inicial do app, quando ele abrir. Ela conversa e lê sua conta; a edição é sua.</p>
             <ul class="z-fichas" aria-label="Como a Z funciona">
               <li title="A mesma conta Absolute ZRO que você já usa."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>Mesma conta</li>
               <li title="Guardadas por plataforma e reunidas em absolutezro.com/ia."><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.5h14v10H10l-5 4z" /></svg>Conversas reunidas</li>
               <li title="Nenhuma ação sem você conferir."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M8.5 12.2l2.4 2.4 4.6-4.9" /></svg>Você confere antes</li>
               <li title="Usa os créditos de IA do seu plano."><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l1.8 6.2L20 12l-6.2 1.8L12 20l-1.8-6.2L4 12l6.2-1.8z" /></svg>1 crédito por resposta</li>
             </ul>
-            <div class="z-acoes"><a class="vidro vidro--tinta" href="app/">Conversar com a Z</a><a class="vidro" href="https://absolutezro.com/ia" rel="noopener">Conhecer a Z</a></div>
+            <div class="z-acoes"><a class="vidro" href="https://absolutezro.com/ia" rel="noopener">Conhecer a Z</a></div>
           </div>
         </div>
       </section>
 
-      <!-- 6b · Baixar: o app de computador, instalado pelo Terminal ou pelo PowerShell (como SOBEDESCE e Synquei) -->
-      <section class="baixar" id="baixar" aria-labelledby="baixar-titulo">
+      <!-- 6b · Em desenvolvimento: o app de computador (Mac e Windows) chega quando o AEON abrir; nada para instalar agora -->
+      <section class="fechado-sec" id="em-desenvolvimento" aria-labelledby="fechado-titulo">
         <div class="cabeca-sec ao-rolar">
-          <p class="olho">Baixar</p>
-          <h2 id="baixar-titulo" class="titulo"><span class="fino">No seu</span> <span class="forte">computador.</span></h2>
-          <p class="apoio">Cole no Terminal ou no PowerShell. Depois, entre com a sua conta Absolute ZRO.</p>
-        </div>
-        <div class="sistemas ao-rolar">
-          <div class="sistema">
-            <svg class="sistema-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M16.4 12.6c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9-.7 0-1.9-.9-3.1-.8-1.6 0-3.1.9-3.9 2.4-1.7 2.9-.4 7.2 1.2 9.6.8 1.2 1.7 2.4 3 2.4 1.2 0 1.6-.8 3.1-.8s1.8.8 3.1.8c1.3 0 2.1-1.2 2.9-2.3.9-1.3 1.3-2.6 1.3-2.7 0 0-2.7-1-2.7-4.2zM14.1 5.6c.6-.8 1.1-1.9 1-3-1 0-2.1.6-2.8 1.4-.6.7-1.1 1.8-1 2.9 1.1.1 2.1-.5 2.8-1.3z" fill="currentColor" /></svg>
-            <h3>Mac</h3>
-            <p>macOS 12 ou mais novo, Apple Silicon e Intel.</p>
-            <div class="comando"><code id="cmdMac">curl -fsSL https://aeon.absolutezro.com/instalar.sh | bash</code><button type="button" class="vidro pequeno" data-copiar="cmdMac">Copiar</button></div>
-            <details class="manual">
-              <summary>Prefere baixar o arquivo?</summary>
-              <p><a href="baixar/mac">Baixar o .dmg</a> e arraste o AEON para Aplicativos. Se o Mac disser que não pôde verificar o app, rode uma vez no Terminal:</p>
-              <div class="comando"><code id="cmdLiberar">xattr -cr /Applications/AEON.app &amp;&amp; open /Applications/AEON.app</code><button type="button" class="vidro pequeno" data-copiar="cmdLiberar">Copiar</button></div>
-              <p class="dica">Ou em Ajustes do Sistema → Privacidade e Segurança → Abrir Mesmo Assim.</p>
-            </details>
-          </div>
-          <div class="sistema">
-            <svg class="sistema-icone" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.5l7.4-1v7.1H3zm0 13l7.4 1v-7H3zm8.3 1.1L21 21v-8.4h-9.7zm0-15.2v7.2H21V3z" fill="currentColor" /></svg>
-            <h3>Windows</h3>
-            <p>Windows 10 e 11, 64 bits.</p>
-            <div class="comando"><code id="cmdWin">irm https://aeon.absolutezro.com/instalar.ps1 | iex</code><button type="button" class="vidro pequeno" data-copiar="cmdWin">Copiar</button></div>
-            <details class="manual">
-              <summary>Prefere baixar o arquivo?</summary>
-              <p><a href="baixar/windows">Baixar o instalador</a>. Se aparecer "O Windows protegeu o computador", clique em Mais informações → Executar assim mesmo.</p>
-            </details>
-          </div>
+          <p class="olho">Em desenvolvimento</p>
+          <h2 id="fechado-titulo" class="titulo"><span class="fino">Chegando ao seu</span> <span class="forte">computador.</span></h2>
+          <p class="apoio">Mac e Windows, com a sua conta Absolute ZRO.</p>
+          <p class="selo"><i aria-hidden="true"></i>Ainda sem download</p>
         </div>
       </section>
 
@@ -276,16 +250,16 @@
         <div class="fim-simbolo" aria-hidden="true" data-marca="palco"></div>
         <h2 id="fim-titulo" class="titulo"><span class="fino">O futuro começa</span> <span class="forte">do zero.</span></h2>
         <div class="acoes">
-          <a class="vidro vidro--tinta grande" href="app/">Começar a criar</a>
-          <a class="vidro grande" href="entrar.html?criar=1">Criar conta</a>
+          <a class="vidro vidro--tinta grande" href="#produto">Conhecer o projeto</a>
+          <a class="vidro grande" href="https://absolutezro.com/inicio">Voltar ao HUB</a>
         </div>
-        <p class="nota">No computador ou no navegador (Chrome ou Edge), com a sua conta Absolute ZRO.</p>
+        <p class="nota">Em desenvolvimento. Chega com a sua conta Absolute ZRO.</p>
       </section>
     </main>
 
     <footer class="rodape">
       <a class="rodape-zro" href="https://absolutezro.com"><img src="vendor/marca/absolute-zro-simbolo-branco.svg" alt="" width="20" height="20" data-zro /><span>Uma ferramenta Absolute ZRO</span></a>
-      <nav aria-label="Rodapé"><a href="app/">Abrir o AEON</a><a href="entrar.html">Entrar</a><a href="https://github.com/victorbarrosoc-hub/AbsoluteZRO/tree/main/products/ai-edit">Código</a></nav>
+      <nav aria-label="Rodapé"><a href="entrar.html">Entrar</a><a href="https://github.com/victorbarrosoc-hub/AbsoluteZRO/tree/main/products/ai-edit">Código</a></nav>
       <p>© 2026 Absolute ZRO</p>
     </footer>
   </body>

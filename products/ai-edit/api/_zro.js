@@ -16,9 +16,14 @@
 // Conta única: o AEON não cria conta própria. "Criar conta" é o mesmo fluxo com prompt=create (o HUB abre o
 // cadastro e volta já logado). O direito de uso vem de zro_products (gravado na sessão a cada login): sem "ai-edit"
 // lá, a pessoa entra, mas a parte de conta mostra o aviso e o caminho para a Absolute ZRO.
+//
+// Fechado ao público (api/_release.js): a claim zro_release do HUB diz se esta conta pode usar o AEON enquanto ele está
+// em desenvolvimento; ela entra na sessão (`release`) a cada login e a cada releitura do perfil.
 
 import { createCipheriv, createDecipheriv, createHash, createHmac, createPublicKey, hkdfSync, randomBytes, timingSafeEqual, verify } from 'node:crypto'
+import { estadoDaClaim, PRODUTO } from './_release.js'
 
+export { PRODUTO }
 export const EMISSOR_PADRAO = 'https://absolutezro.com'
 // zro.ia: o token também fala com a Z (a IA do ecossistema, /api/v1/ia), pelo repasse em api/zro/ia/*
 export const ESCOPOS = 'openid email profile org offline_access zro.ia'
@@ -29,7 +34,6 @@ export const COOKIE_TOKENS = 'ae_tokens'
 export const IDA_S = 600
 export const CONTA_S = 30 * 24 * 3600
 export const VOLTA_PADRAO = '/app/'
-export const PRODUTO = 'ai-edit'
 export const FERRAMENTAS = 'https://absolutezro.com/ferramentas'
 const CACHE_MS = 10 * 60_000
 // reler o perfil não pode prender a abertura do app: sem resposta nesse prazo, vale a cópia da sessão
@@ -274,11 +278,13 @@ export function pessoaDosClaims(dados) {
     conta: enderecoDaZro(dados.zro_conta, '/') || `${emissor()}/perfil`,
     organizacao: org ? { id: String(org.id || '').slice(0, 100), nome: org.name.slice(0, 120), papel: typeof org.role === 'string' ? org.role.slice(0, 40) : null } : null,
     produtos: Array.isArray(dados.zro_products) ? dados.zro_products.filter((p) => typeof p === 'string').slice(0, 30).map((p) => p.slice(0, 60)) : [],
+    // o gate de lançamento do HUB para este produto (api/_release.js): 'allowed', 'released', 'closed' ou null
+    release: estadoDaClaim(dados.zro_release),
   }
 }
 
 /** O que vai para a sessão do app (cookie assinado): a cópia do perfil, sem token. */
-export const sessaoDe = (p) => ({ sub: p.sub, nome: p.nome, email: p.email, foto: p.foto, atualizado: p.atualizado, conta: p.conta, org: p.organizacao, produtos: p.produtos })
+export const sessaoDe = (p) => ({ sub: p.sub, nome: p.nome, email: p.email, foto: p.foto, atualizado: p.atualizado, conta: p.conta, org: p.organizacao, produtos: p.produtos, release: p.release ?? null })
 
 const tokensDe = (corpo) =>
   typeof corpo?.access_token === 'string' && corpo.access_token.length < 2048
