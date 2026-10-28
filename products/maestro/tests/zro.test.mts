@@ -222,6 +222,34 @@ describe("sem acesso", () => {
   });
 });
 
+describe("gate de lançamento (zro_release)", () => {
+  test("closed ou sem a claim: sem acesso mesmo com o produto; o /eu relê e segue a claim nova", async () => {
+    const fechada: PessoaZro = {
+      sub: UUID(),
+      email: "teo@gate.exemplo",
+      nome: "Teo",
+      org: { id: UUID(), name: "Agência do Gate", role: "owner" },
+      produtos: ["maestro"],
+      release: { maestro: "closed" },
+    };
+    const r = await fluxo({ pessoa: fechada, volta: "/app/quadro" });
+    assert.equal(r.destino, "/sem-acesso");
+    assert.equal((await (await eu(r.sessao)).json()).acesso, false);
+    // Liberado só para esta conta enquanto fechado: entra na próxima releitura.
+    zro.contas.set(fechada.sub, { ...fechada, release: { maestro: "allowed" } });
+    await envelhecerPerfil(r.sessao!);
+    assert.equal((await (await eu(r.sessao)).json()).acesso, true);
+    // HUB sem a claim: fechado (deny-by-default).
+    zro.contas.set(fechada.sub, { ...fechada, release: null });
+    await envelhecerPerfil(r.sessao!);
+    assert.equal((await (await eu(r.sessao)).json()).acesso, false);
+    // Aberto ao público (teste aberto): volta.
+    zro.contas.set(fechada.sub, { ...fechada, release: { maestro: "released" } });
+    await envelhecerPerfil(r.sessao!);
+    assert.equal((await (await eu(r.sessao)).json()).acesso, true);
+  });
+});
+
 describe("perfil único e renovação", () => {
   test("nome e e-mail mudados na conta Absolute ZRO aparecem no /eu; dentro de um minuto não relê", async () => {
     const r = await fluxo();

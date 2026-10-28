@@ -237,8 +237,13 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ⬜ Etapa 2: aprovação do cliente (`/aprovar/<token>`, um passo, pinos, conferência, idempotência), peças no Drive
   via SOBEDESCE (proposta em [maestro-project.md](integration-contracts/maestro-project.md)), `wa.me`.
 - ⬜ Etapa 3: `maestro.project/1`, vínculo automático ao criar, chips de status, ferramentas da Z, balões.
-- ⛔ Projeto Vercel `maestro`, domínio `maestro.absolutezro.com`, cliente OIDC `maestro-web` e migrações em produção:
-  autorização do titular.
+- ✅ Aberto em teste a todos com a fundação (decisão do titular, 28/10/2026): migration `0020_maestro_aberto.sql`
+  (`stage = 'beta'`, `public_beta` com web/api/sso, no grátis vigente, no Completo e no Pro, contas atuais ganham pela
+  assinatura vigente; sem avulso). `temAcesso()` exige `zro_release.maestro` released/allowed **e** `maestro` em
+  `zro_products` (claim guardada na sessão, `drizzle/0001`). Cliente `maestro-web` por `npm run db:client:maestro`
+  (segredo só por variável). `vercel.json` sem a trava.
+- 🟡 Produção: projeto Vercel `maestro`, domínio, variáveis, papel/schema no Supabase e cliente OIDC
+  ([deployment-checklist §5b](operations/deployment-checklist.md)), a fazer pelo titular.
 
 ## Fase 6 — Escala
 

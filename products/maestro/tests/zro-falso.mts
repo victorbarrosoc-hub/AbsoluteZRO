@@ -19,7 +19,8 @@ export type PessoaZro = {
   foto?: string | null;
   org?: OrgFalsa | null;
   produtos?: string[];
-  release?: Record<string, string>;
+  /** null = um HUB que não manda a claim. */
+  release?: Record<string, string> | null;
 };
 type Codigo = { desafio: string; redirectUri: string; pessoa: PessoaZro; nonce: string; usado: boolean; escopo: string };
 export type PedidoIa = { metodo: string; caminho: string; autorizacao: string | null; corpo: string };
@@ -83,7 +84,8 @@ export async function iniciarZroFalsa(cliente: { clientId: string; clientSecret:
     zro_conta: `${base}/perfil`,
     zro_org: p.org === undefined ? null : p.org,
     zro_products: p.produtos ?? [],
-    ...(p.release ? { zro_release: p.release } : {}),
+    // Como o HUB de verdade: zro_release vai sempre. Padrão: o Maestro em teste aberto (migration 0020 do HUB).
+    zro_release: p.release === undefined ? { maestro: "released" } : p.release,
   });
 
   const responder = (res: http.ServerResponse, status: number, corpo: unknown) => {

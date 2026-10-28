@@ -1,8 +1,9 @@
 # Maestro — regras para Claude Code
 
 Plataforma nova do ecossistema Absolute ZRO (ADR 0022): pauta (Quadro), aprovação do cliente e projetos para agências
-e produtoras. Mora em `products/maestro`, publica no projeto Vercel próprio (Root Directory = esta pasta; **projeto,
-domínio `maestro.absolutezro.com` e cliente OIDC `maestro-web` só com autorização do titular**) e usa o schema
+e produtoras. Mora em `products/maestro`, publica no projeto Vercel próprio (Root Directory = esta pasta; projeto, domínio
+`maestro.absolutezro.com` e cliente OIDC `maestro-web` autorizados pelo titular em 28/10/2026, passos em
+`docs/operations/deployment-checklist.md` §5b) e usa o schema
 `maestro` do Supabase `AbsoluteZRO`, com papel próprio. As regras do `CLAUDE.md` da raiz valem aqui; este arquivo só
 acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
 
@@ -23,8 +24,9 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
 
 ## Como funciona
 
-- **Acesso**: `temAcesso()` em `src/lib/auth/acesso.ts` é o ÚNICO ponto de decisão (hoje: `maestro` em `zro_products`;
-  a claim `zro_release` do gate de lançamento entra ali). Páginas usam `exigirAcessoNaPagina()` (cada página chama,
+- **Acesso**: `temAcesso()` em `src/lib/auth/acesso.ts` é o ÚNICO ponto de decisão: `zro_release.maestro` released
+  ou allowed (sem a claim = fechado) **e** `maestro` em `zro_products`. As duas claims ficam na sessão e são relidas
+  no `/eu`. Desde 28/10/2026 o Maestro está em teste aberto a todos (migration `0020` do HUB). Páginas usam `exigirAcessoNaPagina()` (cada página chama,
   além do layout: no Next 16 os dois renderizam em paralelo) e rotas de dados usam `exigirAcesso()`. Sem sessão 401,
   sem acesso 403; nunca só a tela.
 - **Login único**: `api/zro/{entrar,callback,eu,sair}` (PKCE S256, `state`/`nonce` selados, `id_token` conferido pela

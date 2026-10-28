@@ -107,7 +107,14 @@ export async function callback(req: Request): Promise<Response> {
   // Entrar = entrar na organização da Absolute ZRO. Sem organização, não há onde entrar.
   const entrada = await entrarNaOrganizacao(perfil);
   if (!entrada) return falhar("zro_sem_org");
-  const sessao = await criarSessao({ orgId: entrada.orgId, sub: perfil.sub, produtos: perfil.produtos, tokens, userAgent: req.headers.get("user-agent") });
+  const sessao = await criarSessao({
+    orgId: entrada.orgId,
+    sub: perfil.sub,
+    produtos: perfil.produtos,
+    release: perfil.release,
+    tokens,
+    userAgent: req.headers.get("user-agent"),
+  });
   const cookies = [serializarCookie(COOKIE_SESSAO, sessao.token, opcoesCookieSessao(seguro))];
   // A sessão existe mesmo sem acesso: a tela "sem acesso" mostra quem é e oferece Sair.
   if (!temAcesso(perfil)) return ir(ROTAS.semAcesso, cookies);
@@ -164,7 +171,7 @@ async function relerPerfil(s: Sessao): Promise<Sessao | "revogado" | null> {
   const p: PerfilZro = perfil;
   if (p.sub !== s.sub) return "revogado";
   await aplicarPerfilNaSessao(s, p);
-  return { ...s, nome: p.nome, email: p.email, foto: p.foto, produtos: p.produtos, perfilLidoEm: new Date() };
+  return { ...s, nome: p.nome, email: p.email, foto: p.foto, produtos: p.produtos, release: p.release, perfilLidoEm: new Date() };
 }
 
 /** GET /api/zro/eu: quem está logado, com `acesso` (o Maestro em zro_products) relido na Absolute ZRO. */

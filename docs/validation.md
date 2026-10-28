@@ -15,6 +15,17 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Maestro aberto em teste (28/10/2026)
+
+- Raiz: `lint`, `format:check`, `typecheck` ok; `npm test` **202/202** (banco próprio `zro_maestro_open_test`): release
+  do Maestro (`public_beta`, web/api/sso sim, desktop/download não), planos (grátis, Completo e Pro com 8 apps; sem
+  avulso), 0020 reaplicada dá o entitlement uma vez só, `maestro-web` por script (só sha256, escopos `zro.ia` e
+  `maestro.projects`, idempotente). `build` ok; e2e `hub.spec.ts` **14/14** (órbita com o Maestro, Ciclo do O
+  bloqueado por assinatura, `/planos` sem avulso do Maestro, 4 apps em Acessos).
+- `products/maestro`: `lint`, `typecheck`, `format:check` ok, `npm test` **49/49** (claim `zro_release`: closed,
+  allowed, ausente e released, relida no `/eu`), `build` ok, `db:migrate` aplica `0000` e `0001` e é idempotente.
+- Não validado: produção (projeto Vercel, domínio, cliente OIDC real, migrations no Supabase).
+
 ## AEON e Revela fechados ao público (28/10/2026)
 
 - `products/ai-edit`: `npm test` 122/122 (novo `test/fechado.test.js`: anônimo, conta `closed`, conta `allowed`, sessão

@@ -83,6 +83,49 @@ nem no código: entra em produção nesta publicação, uma vez, de um dos dois 
    "Em desenvolvimento", a conta do proprietário nos quatro, e a auditoria com as linhas. Abrir um produto ao público
    depois = mudar o estado nessa tela (vale em até 30 s, sem redeploy); nunca por migration.
 
+## 5b. Maestro em teste aberto (decisão do titular, 28/10/2026)
+
+A migration `0020_maestro_aberto.sql` do HUB (aplicada pelo build do `absolutezro`) abre o Maestro: `beta`,
+`public_beta` com web/api/sso, no grátis, no Completo e no Pro, e o entitlement para as contas atuais. O resto, nesta
+ordem:
+
+1. **Papel e schema no Supabase `AbsoluteZRO`** (SQL Editor, uma vez; senha forte gerada na hora, nunca no repositório):
+
+   ```sql
+   create role maestro with login password '<senha forte>';
+   create role maestro_app nologin;
+   grant maestro_app to maestro with admin option;
+   create schema if not exists maestro authorization maestro;
+   ```
+
+   O `maestro` é dono do schema e roda as migrações; `maestro_app` (sem login, sem BYPASSRLS) é o papel que o servidor
+   assume em toda operação de usuário. Nada dentro de `zro`.
+
+2. **Cliente OIDC `maestro-web`** (confidencial, da família, retorno `https://maestro.absolutezro.com/api/zro/callback`,
+   escopos base + `zro.ia` + `maestro.projects`). O segredo é gerado na máquina de quem publica e entra só por variável;
+   o banco guarda o sha256. Com a `DATABASE_URL` sem pooler do HUB:
+
+   ```sh
+   export OAUTH_CLIENT_SECRET="$(openssl rand -base64 48)"   # guarde para o passo 3
+   npm run db:client:maestro                 # prévia: confere e não grava
+   npm run db:client:maestro -- --apply      # grava e registra na auditoria
+   ```
+
+   Rodar de novo troca o segredo (e derruba o anterior). Alternativa: Administração › Login único no console (o HUB gera
+   o segredo, mostra uma vez; marcar "da família", produto Maestro).
+
+3. **Projeto Vercel `maestro`**: Root Directory `products/maestro`, Node 22, framework e build pelo `vercel.json`
+   (`npm run vercel-build` = migrações do schema `maestro` + `next build`; com a migração falhando, não publica).
+   Ignored Build Step igual aos outros produtos: `git diff --quiet "$VERCEL_GIT_PREVIOUS_SHA" HEAD -- .` (só builda
+   quando a pasta muda). Domínio `maestro.absolutezro.com`. Variáveis (Production; as sensíveis marcadas como tal):
+   - `MAESTRO_DATABASE_URL` (sensível): Transaction pooler (porta 6543) com o usuário `maestro.<ref do projeto>` e a
+     senha do passo 1.
+   - `MAESTRO_KEY` (sensível): `openssl rand -base64 32`.
+   - `ZRO_CLIENT_ID` = `maestro-web`; `ZRO_CLIENT_SECRET` (sensível) = o `OAUTH_CLIENT_SECRET` do passo 2.
+   - `ZRO_ISSUER` = `https://absolutezro.com`; `NEXT_PUBLIC_SITE_URL` = `https://maestro.absolutezro.com`.
+4. Conferir: o HUB mostra o Maestro com o selo Beta e "Abrir" leva ao login único; uma conta grátis entra e chega ao
+   app; `/admin/lancamento` mostra o Maestro em "Beta público" com web, API e login único.
+
 ## 6. Fila
 
 Sem worker contínuo, o HUB processa a fila logo depois de cada importação ou "Repetir" (`apps/hub-web/lib/queue.ts`).

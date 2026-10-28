@@ -5,8 +5,8 @@ para tudo, o projeto canônico no HUB, as peças no Google Drive da organizaçã
 
 **Etapa 0 (fundação, 28/10/2026):** shell com a identidade, login único Absolute ZRO, sessão própria, schema
 `maestro` com RLS por organização, repasse da Z. O Quadro, os clientes, os projetos e a aprovação do cliente chegam
-nas etapas 1 a 3 (`docs/roadmap.md` na raiz). O Maestro nasce fechado: só entra quem tem `maestro` em
-`zro_products` (concessão pelo console da Absolute ZRO) e, quando o gate de lançamento existir, quem ele liberar.
+nas etapas 1 a 3 (`docs/roadmap.md` na raiz). Em teste aberto desde 28/10/2026: entra quem tem `zro_release.maestro`
+released/allowed e `maestro` em `zro_products` (plano grátis, Completo, Pro ou concessão do console).
 
 ## Rodar
 
