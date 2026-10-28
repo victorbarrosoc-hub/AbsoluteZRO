@@ -32,6 +32,8 @@ export type Sessao = {
   papel: Papel;
   /** zro_products do último login ou releitura: o que temAcesso() confere. */
   produtos: string[];
+  /** zro_release do último login ou releitura (gate de lançamento). null = sessão sem a claim (fechado). */
+  release: Record<string, string> | null;
   expiraEm: Date;
   perfilLidoEm: Date | null;
   temTokens: boolean;
@@ -45,6 +47,7 @@ export async function criarSessao(o: {
   orgId: string;
   sub: string;
   produtos: string[];
+  release: Record<string, string> | null;
   tokens: TokensZro | null;
   userAgent?: string | null;
 }): Promise<{ token: string; id: string }> {
@@ -57,6 +60,7 @@ export async function criarSessao(o: {
         zroSub: o.sub,
         tokenHash: hashToken(token),
         produtos: o.produtos,
+        zroRelease: o.release,
         userAgent: o.userAgent?.slice(0, 300) ?? null,
         expiresAt: new Date(Date.now() + DURACAO_MS),
         perfilLidoEm: new Date(),
@@ -83,6 +87,7 @@ export async function autenticar(cookie: string | undefined, agora = new Date())
         orgId: sessions.orgId,
         sub: sessions.zroSub,
         produtos: sessions.produtos,
+        release: sessions.zroRelease,
         expiraEm: sessions.expiresAt,
         ultimoUso: sessions.lastUsedAt,
         perfilLidoEm: sessions.perfilLidoEm,
@@ -119,6 +124,7 @@ export async function autenticar(cookie: string | undefined, agora = new Date())
       hubRole: l.hubRole,
       papel: l.papel,
       produtos: l.produtos,
+      release: l.release ?? null,
       expiraEm: l.expiraEm,
       perfilLidoEm: l.perfilLidoEm,
       temTokens: !!l.tokens,
@@ -171,7 +177,7 @@ export async function comTokensDaSessao<T>(
   });
 }
 
-/** Releitura do perfil (userinfo): atualiza pessoa, organização e produtos; marca a hora na sessão. */
+/** Releitura do perfil (userinfo): atualiza pessoa, organização, produtos e zro_release; marca a hora na sessão. */
 export async function aplicarPerfilNaSessao(s: Sessao, perfil: PerfilZro, agora = new Date()): Promise<void> {
   await getBanco().asSystem("sessão: perfil", async (tx) => {
     await tx
@@ -181,7 +187,7 @@ export async function aplicarPerfilNaSessao(s: Sessao, perfil: PerfilZro, agora 
     if (perfil.org && perfil.org.id === s.zroOrgId) {
       await tx.update(organizations).set({ name: perfil.org.name, zroProducts: perfil.produtos }).where(eq(organizations.id, s.orgId));
     }
-    await tx.update(sessions).set({ produtos: perfil.produtos, perfilLidoEm: agora }).where(eq(sessions.id, s.id));
+    await tx.update(sessions).set({ produtos: perfil.produtos, zroRelease: perfil.release, perfilLidoEm: agora }).where(eq(sessions.id, s.id));
   });
 }
 

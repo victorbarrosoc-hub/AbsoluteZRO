@@ -68,6 +68,8 @@ export const sessions = maestro.table(
       .array()
       .notNull()
       .default(sql`'{}'::text[]`),
+    /** Claim zro_release do login ou da última releitura (gate de lançamento; temAcesso() confere). */
+    zroRelease: jsonb().$type<Record<string, string>>(),
     /** { at, atExp, rt } da Absolute ZRO, cifrados (lib/auth/cripto.ts), para o userinfo e o repasse da Z. */
     zroTokensEnc: text(),
     userAgent: text(),
