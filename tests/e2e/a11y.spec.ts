@@ -43,6 +43,8 @@ test('seletor de tema troca na hora e guarda a escolha', async ({ page, context,
 })
 
 test('área logada e projeto sem violações WCAG A/AA (claro e escuro)', async ({ page, context, baseURL }) => {
+  // Cria a conta e varre várias telas nos dois temas: passa de 60 s em máquina carregada.
+  test.setTimeout(120_000)
   await page.goto('/criar-conta')
   await criarConta(page, { nome: 'Pessoa A11y', email: `a11y-${randomUUID().slice(0, 8)}@teste.absolutezro.local`, senha: 'senha-e2e-segura-1' })
   await page.waitForURL('**/boas-vindas')
