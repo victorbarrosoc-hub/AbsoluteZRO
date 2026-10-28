@@ -84,7 +84,7 @@ export async function iniciarZroFalsa(cliente: { clientId: string; clientSecret:
     zro_conta: `${base}/perfil`,
     zro_org: p.org === undefined ? null : p.org,
     zro_products: p.produtos ?? [],
-    // Como o HUB de verdade: zro_release vai sempre. Padrão: o Maestro em teste aberto (migration 0020 do HUB).
+    // Como o HUB de verdade: zro_release vai sempre. Padrão: o Maestro em teste aberto (migration 0021 do HUB).
     zro_release: p.release === undefined ? { maestro: "released" } : p.release,
   });
 
