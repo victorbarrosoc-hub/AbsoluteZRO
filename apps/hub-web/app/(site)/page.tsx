@@ -36,6 +36,7 @@ const FATOS: Record<string, string[]> = {
   'ai-edit': ['Transcrição na sua máquina', 'Cortes e zoom propostos para você aprovar', 'Linha do tempo para o seu editor'],
   nossom: ['Estúdio de áudio para criadores', 'Instala pelo navegador', 'App para Mac e Windows'],
   finishing: ['LUT criativa a partir de uma referência', 'LOG para Rec.709 por câmera', 'PowerGrade para o DaVinci Resolve'],
+  maestro: ['Entra com a sua conta Absolute ZRO', 'Papéis vindos da sua organização', 'A Z em toda tela'],
 }
 
 /** O nome da etapa no fluxo, na ordem do catálogo. */

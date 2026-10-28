@@ -321,6 +321,38 @@ export async function registerClient(
   return { clientId: input.id, clientSecret: secret }
 }
 
+/**
+ * Cadastro (ou recadastro) de um app confidencial da família com um segredo que a operação gerou fora do HUB
+ * (scripts/oauth-client.ts): o segredo chega por variável de ambiente e o banco guarda só o sha256, como no console.
+ * Mesmos escopos do console (base + zro.ia + os do produto). Idempotente: rodar de novo troca segredo e endereços.
+ */
+export async function upsertConfidentialClient(
+  tx: Queryable,
+  input: { id: string; name: string; productId: string; redirectUris: string[]; secret: string; trusted: boolean; reason: string },
+): Promise<{ clientId: string; created: boolean; scopes: string[] }> {
+  const uris = [...new Set(input.redirectUris.map((u) => u.trim()).filter(Boolean))]
+  if (!/^[a-z0-9][a-z0-9-]{2,62}$/.test(input.id)) throw new OAuthError('invalid_request', 'Identificador: letras minúsculas, números e hífen (3 a 63).')
+  if (!uris.length || uris.length > 20) throw new OAuthError('invalid_request', 'Informe de 1 a 20 endereços de retorno.')
+  const bad = uris.find((u) => !validRedirectUri(u) || !u.startsWith('https://'))
+  if (bad) throw new OAuthError('invalid_request', `Endereço de retorno inválido: ${bad}. App confidencial usa https.`)
+  if (input.secret.length < 32) throw new OAuthError('invalid_request', 'Segredo curto: use pelo menos 32 caracteres (openssl rand -base64 48).')
+  const [product] = await tx`select id from zro.products where id = ${input.productId}`
+  if (!product) throw new OAuthError('invalid_request', `Produto desconhecido: ${input.productId}.`)
+  const scopes = [...OIDC_SCOPES, ...FAMILY_SCOPES, ...(PRODUCT_SCOPES[input.productId] ?? [])]
+  const [r] = await tx`
+    insert into zro.oauth_clients (id, name, product_id, kind, secret_hash, redirect_uris, allow_loopback, trusted, scopes, status)
+    values (${input.id}, ${input.name.trim()}, ${input.productId}, 'confidential', ${hashToken(input.secret)}, ${uris}, false, ${input.trusted}, ${scopes}, 'active')
+    on conflict (id) do update set name = excluded.name, product_id = excluded.product_id, kind = 'confidential',
+      secret_hash = excluded.secret_hash, redirect_uris = excluded.redirect_uris, allow_loopback = false,
+      trusted = excluded.trusted, scopes = excluded.scopes, status = 'active'
+    returning (xmax = 0) as created`
+  const created = !!r?.created
+  await tx`insert into zro.audit_logs (actor_kind, action, target_type, target_id, metadata)
+           values ('system', ${created ? 'oauth_client.created' : 'oauth_client.updated'}, 'oauth_client', ${input.id},
+                   ${tx.json({ reason: input.reason, product_id: input.productId, redirect_uris: uris, trusted: input.trusted })})`
+  return { clientId: input.id, created, scopes }
+}
+
 function secretMatches(client: OAuthClient, secret: string | null): boolean {
   if (!client.secretHash || !secret) return false
   const a = Buffer.from(hashToken(secret), 'hex')

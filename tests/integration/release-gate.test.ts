@@ -1,6 +1,7 @@
 // Gate de lançamento (ADR 0023, migration 0018) pelas contas do PRD §11: anônimo, conta grátis, assinante do SOBEDESCE,
 // usuário de outro produto, admin da plataforma sem linha, tester com linha, outro admin, sessão antiga e cross-tenant.
 // Regra: fechado é fechado para todo mundo que não está na lista, mesmo com plano Completo ou papel de admin.
+import { readFileSync } from 'node:fs'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { Authenticated } from '@zro/auth'
 import {
@@ -29,6 +30,8 @@ afterAll(() => db.close())
 
 const LANCADOS = ['sobedesce', 'synquei', 'tpeasy']
 const FECHADOS = ['nossom', 'ai-edit', 'finishing', 'carro-do-freela']
+/** Teste aberto a todos (0020, decisão do titular de 28/10/2026): web, api e sso; sem desktop nem download. */
+const ABERTOS_EM_TESTE = ['maestro']
 const sys = <T>(fn: (tx: Tx) => Promise<T>) => db.asSystem('teste', fn)
 
 /** A mesma pessoa chamando pelo token de um app da família (canal api). */
@@ -52,6 +55,35 @@ describe('seed e regra do banco', () => {
       expect(s[id]?.open, id).toBe(false)
       expect(Object.values(s[id]!.channels).some(Boolean), id).toBe(false)
     }
+  })
+
+  it('Maestro em teste aberto (0020): public_beta com web, api e sso; desktop e download fechados', async () => {
+    const s = await sys((tx) => releaseState(tx, { fresh: true }))
+    expect(s.maestro).toMatchObject({ state: 'public_beta', open: true, channels: { web: true, desktop: false, api: true, download: false, sso: true } })
+    for (const ch of ['web', 'api', 'sso'] as const) expect(await sys((tx) => releaseAllows(tx, 'maestro', null, ch)), ch).toBe(true)
+    for (const ch of ['desktop', 'download'] as const) expect(await sys((tx) => releaseAllows(tx, 'maestro', null, ch)), ch).toBe(false)
+    const [p] = await db.sql`select stage, external_url, sso_start_url from zro.products where id = 'maestro'`
+    expect(p).toEqual({ stage: 'beta', external_url: 'https://maestro.absolutezro.com', sso_start_url: 'https://maestro.absolutezro.com/api/zro/entrar' })
+    // no grátis vigente, no Completo e no Pro (mensal e anual); nunca num avulso
+    const planos = await db.sql`select p.code from zro.plan_products pp join zro.plans p on p.id = pp.plan_id
+      where pp.product_id = 'maestro' and p.status = 'active' order by p.code`
+    expect(planos.map((r) => r.code)).toEqual(['absolute-zro-pro', 'absolute-zro-pro-anual', 'ciclo-do-o', 'ciclo-do-o-anual', 'conta-absolute-zro'])
+  })
+
+  it('0020 dá o Maestro às contas que já existiam pela assinatura vigente, uma vez só', async () => {
+    const o = await newOrgWithOwner(db, 'gate-maestro-0020', { freePlan: true })
+    // Organização de antes da 0020: sem o entitlement do Maestro.
+    await db.sql`delete from zro.entitlements where org_id = ${o.orgId} and product_id = 'maestro'`
+    const sqlDaMigration = readFileSync(new URL('../../infra/migrations/0020_maestro_aberto.sql', import.meta.url), 'utf8')
+    const conta = async () => {
+      const [r] = await db.sql`select count(*)::int as n from zro.entitlements where org_id = ${o.orgId} and product_id = 'maestro' and status = 'active'`
+      return r!.n as number
+    }
+    await db.sql.unsafe(sqlDaMigration)
+    expect(await conta()).toBe(1)
+    await db.sql.unsafe(sqlDaMigration)
+    expect(await conta()).toBe(1)
+    resetReleaseCache()
   })
 
   it('anônimo: entra no lançado, nunca no fechado; produto sem linha ou desconhecido é fechado', async () => {
@@ -128,8 +160,9 @@ describe('contas do PRD §11', () => {
     const auth = { ...o.auth, user: { ...o.auth.user, platformRole: 'admin' as const } }
     for (const id of FECHADOS) await expectCode(authorize(db, auth, { product: { id } }), 'product_closed')
     const claims = await sys((tx) => loadOidcClaims(tx, o.userId, o.orgId))
-    expect(claims.products.sort()).toEqual([...LANCADOS].sort())
+    expect(claims.products.sort()).toEqual([...LANCADOS, ...ABERTOS_EM_TESTE].sort())
     for (const id of FECHADOS) expect(claims.release[id], id).toBe('closed')
+    for (const id of ABERTOS_EM_TESTE) expect(claims.release[id], id).toBe('released')
   })
 
   it('tester com linha entra no canal listado, não nos outros; vencido ou revogado volta a fechado', async () => {

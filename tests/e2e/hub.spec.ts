@@ -102,6 +102,8 @@ test('cadastro → organização → projeto com Ciclo do O e alternativa em lis
   // Sem plano: ferramentas lançadas aparecem bloqueadas por assinatura; as fechadas por lançamento (ADR 0023), indisponíveis
   await expect(list.getByRole('listitem').filter({ hasText: 'Synquei' })).toContainText('Bloqueado por assinatura')
   await expect(list.getByRole('listitem').filter({ hasText: 'AEON' })).toContainText('Indisponível')
+  // O Maestro está em teste aberto (0020): aberto ao público, mas só vem no plano.
+  await expect(list.getByRole('listitem').filter({ hasText: 'Maestro' })).toContainText('Bloqueado por assinatura')
 })
 
 test('API: sem assinatura recebe 403 por URL direta; sem sessão 401; outra origem 403', async ({ page, request }) => {
@@ -197,6 +199,9 @@ test('páginas públicas e mobile sem rolagem horizontal', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'Baixar 2 apps' })).toBeVisible()
   // Gate de lançamento (ADR 0023): produto fechado não aparece como incluído
   await expect(page.getByRole('button', { name: 'AEON' })).toHaveCount(0)
+  // O Maestro (teste aberto, 0020) vem nos pacotes, mas ainda não tem avulso
+  await expect(page.getByRole('button', { name: 'Maestro' })).toHaveCount(0)
+  await expect(page.locator('.tier__apps li[title="Maestro"]').first()).toBeAttached()
   await expect(page.locator('.tier__apps li[title="NOSSOM"], .tier__apps li[title="AEON"]')).toHaveCount(0)
 })
 
@@ -211,6 +216,9 @@ test('gate de lançamento: anônimo não vê CTA, link nem instalador de produto
   // a órbita da Z só tem lançados
   await expect(page.locator('.pz__orbita li[title="NOSSOM"], .pz__orbita li[title="AEON"]')).toHaveCount(0)
   await expect(page.locator('.pz__orbita li[title="Synquei"]')).toHaveCount(1)
+  // o Maestro em teste aberto (0020) entra na órbita e na faixa, com link para o site dele
+  await expect(page.locator('.pz__orbita li[title="Maestro"]')).toHaveCount(1)
+  expect(hrefs.filter((h) => h.startsWith('https://maestro.absolutezro.com')).length).toBeGreaterThan(0)
 
   await page.goto('/baixar')
   await page.getByRole('button', { name: 'NOSSOM' }).click()
@@ -284,8 +292,9 @@ test('sua conta: nome, foto, pedido de upgrade e acessos', async ({ page }) => {
 
   await page.goto('/perfil/acessos')
   await expect(page.getByRole('heading', { name: 'Org conta' })).toBeVisible()
-  // Plano grátis lista as sete, mas só as três lançadas contam como acesso (gate de lançamento, ADR 0023).
-  await expect(page.locator('.access-org__apps li.is-on')).toHaveCount(3)
+  // Plano grátis lista as oito, mas só as abertas contam como acesso (gate de lançamento, ADR 0023): as três lançadas
+  // e o Maestro em teste aberto (0020).
+  await expect(page.locator('.access-org__apps li.is-on')).toHaveCount(4)
 })
 
 test('central de apps: dentro do app de computador, instala com progresso, abre e atualiza', async ({ page }) => {

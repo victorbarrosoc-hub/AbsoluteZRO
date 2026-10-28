@@ -14,6 +14,7 @@ import {
   registerClient,
   revokeAppAccess,
   setIssuer,
+  upsertConfidentialClient,
   userInfo,
   validRedirectUri,
   verifyJwt,
@@ -100,6 +101,29 @@ describe('cadastro e retorno', () => {
     expect(bad).toMatchObject({ ok: false, redirect: false })
     const noPkce = await db.asSystem('t', (tx) => parseAuthorizeRequest(tx, authorizeQuery(c.clientId, challenge, { code_challenge_method: 'plain' })))
     expect(noPkce.ok === false && noPkce.redirect && noPkce.to).toContain('error=invalid_request')
+  })
+
+  it('cadastro por script (maestro-web): só o sha256 do segredo, escopos da família e do produto, idempotente', async () => {
+    const id = rid('maestro-web')
+    const base = { id, name: 'Maestro', productId: 'maestro', redirectUris: ['https://maestro.teste/api/zro/callback'], trusted: true, reason: 'teste' }
+    const s1 = randomBytes(36).toString('base64url')
+    const r1 = await db.asSystem('t', (tx) => upsertConfidentialClient(tx, { ...base, secret: s1 }))
+    expect(r1).toMatchObject({ clientId: id, created: true })
+    const sha = (v: string) => createHash('sha256').update(v, 'utf8').digest('hex')
+    const [row] = await db.sql`select kind, product_id, secret_hash, scopes, trusted, status from zro.oauth_clients where id = ${id}`
+    expect(row).toMatchObject({ kind: 'confidential', product_id: 'maestro', secret_hash: sha(s1), trusted: true, status: 'active' })
+    expect(row!.scopes).toEqual(['openid', 'email', 'profile', 'org', 'offline_access', 'zro.ia', 'maestro.projects'])
+    const s2 = randomBytes(36).toString('base64url')
+    const r2 = await db.asSystem('t', (tx) => upsertConfidentialClient(tx, { ...base, secret: s2 }))
+    expect(r2.created).toBe(false)
+    const [row2] = await db.sql`select secret_hash from zro.oauth_clients where id = ${id}`
+    expect(row2!.secret_hash).toBe(sha(s2))
+    const audit = await db.sql`select action from zro.audit_logs where target_type = 'oauth_client' and target_id = ${id} order by created_at`
+    expect(audit.map((a) => a.action)).toEqual(['oauth_client.created', 'oauth_client.updated'])
+    await expect(db.asSystem('t', (tx) => upsertConfidentialClient(tx, { ...base, secret: 'curto' }))).rejects.toBeInstanceOf(OAuthError)
+    await expect(
+      db.asSystem('t', (tx) => upsertConfidentialClient(tx, { ...base, secret: s1, redirectUris: ['http://maestro.teste/cb'] })),
+    ).rejects.toBeInstanceOf(OAuthError)
   })
 })
 

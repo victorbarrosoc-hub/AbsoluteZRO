@@ -87,7 +87,7 @@ export default async function Planos() {
                   <p className="tier__tag">Só os apps que você escolher.</p>
                 </header>
                 <AvulsoSeletor
-                  apps={disponiveis.map((id) => ({ id, name: nomeDe(id), color: productColor(id) }))}
+                  apps={disponiveis.filter((id) => id in singlePrice).map((id) => ({ id, name: nomeDe(id), color: productColor(id) }))}
                   mes={avulsoMes}
                   ano={avulsoAno}
                   completoMes={completo?.price_cents ?? null}
@@ -102,7 +102,9 @@ export default async function Planos() {
               const mes = p.price_cents as number
               const ano = yearOf(p.code)
               const apps = p.products.map((x) => x.product_id).filter((id) => lancados.has(id))
-              const soma = apps.reduce((s, id) => s + (singlePrice[id] ?? avulsoMes ?? 0), 0)
+              // Só soma o que existe avulso (o Maestro, em teste aberto, ainda não tem plano avulso).
+              const avulsos = apps.filter((id) => id in singlePrice)
+              const soma = avulsos.reduce((s, id) => s + singlePrice[id]!, 0)
               const destaque = p.code === 'ciclo-do-o'
               const nome = p.name.replace(/^Absolute ZRO\s+/, '')
               return (
@@ -156,9 +158,9 @@ export default async function Planos() {
                     </ul>
                   </div>
 
-                  {apps.length > 1 && soma > mes && (
+                  {avulsos.length > 1 && soma > mes && (
                     <p className="tier__note">
-                      Os {apps.length} avulsos somariam {brl(soma)}/mês.
+                      Os {avulsos.length} avulsos somariam {brl(soma)}/mês.
                     </p>
                   )}
 

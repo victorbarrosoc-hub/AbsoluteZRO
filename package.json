@@ -18,6 +18,7 @@
     "db:migrate": "tsx packages/db/src/cli.ts",
     "db:seed:demo": "tsx scripts/seed-demo.ts",
     "db:release:revoke": "tsx scripts/release-revoke.ts",
+    "db:client:maestro": "tsx scripts/oauth-client.ts --id maestro-web --name Maestro --product maestro --redirect https://maestro.absolutezro.com/api/zro/callback --trusted",
     "contracts:export": "tsx packages/media-contracts/src/export-schemas.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit && npm run typecheck -w @zro/hub-web",
     "lint": "eslint .",

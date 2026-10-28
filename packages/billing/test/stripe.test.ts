@@ -59,13 +59,13 @@ describe('preços à venda', () => {
       select p.code, count(*)::int as n, min((pp.limits ->> 'zro.ai_credits')::int) as ai from zro.plan_products pp join zro.plans p on p.id = pp.plan_id
       where p.status = 'active' and p.code in ('individual-nossom', 'ciclo-do-o', 'absolute-zro-pro', 'absolute-zro-pro-anual') group by p.code order by p.code`
     expect(credits.map((r) => `${r.code}:${r.n}:${r.ai}`)).toEqual([
-      'absolute-zro-pro:7:2000',
-      'absolute-zro-pro-anual:7:2000',
-      'ciclo-do-o:7:600',
+      'absolute-zro-pro:8:2000',
+      'absolute-zro-pro-anual:8:2000',
+      'ciclo-do-o:8:600',
       'individual-nossom:1:200',
     ])
     const [anual] = await db.sql`select count(*)::int as n from zro.plan_products pp join zro.plans p on p.id = pp.plan_id where p.code = 'ciclo-do-o-anual'`
-    expect(anual!.n).toBe(7)
+    expect(anual!.n).toBe(8)
   })
 })
 
