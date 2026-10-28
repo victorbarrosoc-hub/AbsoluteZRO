@@ -15,6 +15,32 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Maestro aberto em teste (28/10/2026)
+
+- Raiz: `lint`, `format:check`, `typecheck` ok; `npm test` **202/202** (banco próprio `zro_maestro_open_test`): release
+  do Maestro (`public_beta`, web/api/sso sim, desktop/download não), planos (grátis, Completo e Pro com 8 apps; sem
+  avulso), 0022 reaplicada dá o entitlement uma vez só, `maestro-web` por script (só sha256, escopos `zro.ia` e
+  `maestro.projects`, idempotente). `build` ok; e2e `hub.spec.ts` **14/14** (órbita com o Maestro, Ciclo do O
+  bloqueado por assinatura, `/planos` sem avulso do Maestro, 4 apps em Acessos).
+- `products/maestro`: `lint`, `typecheck`, `format:check` ok, `npm test` **49/49** (claim `zro_release`: closed,
+  allowed, ausente e released, relida no `/eu`), `build` ok, `db:migrate` aplica `0000` e `0001` e é idempotente.
+- Não validado: produção (projeto Vercel, domínio, cliente OIDC real, migrations no Supabase).
+
+## Excluir a conta (28/10/2026)
+
+- `tests/integration/excluir-conta.test.ts` (12): exclusão feliz (anonimiza, todas as sessões caem, organização só dela
+  `closed` com assinatura e acessos encerrados, auditoria sem e-mail nem nome, conta e organização não voltam); e-mail
+  liberado para recadastro; conta só do Google confirma com o e-mail e o Google depois cria conta nova; refresh token e
+  userinfo do login único recusados; bloqueio por organização com membros (e saída quando há outro dono); membro sai
+  sem encerrar a equipe; bloqueio por assinatura paga (liberado com cancelamento no fim do período); admin de
+  plataforma; sem sessão e token de app recusados; limite de tentativas; isolamento (zro_app não muda e-mail nem
+  status, a equipe deixa de ver a conta excluída); e-mail de confirmação só com links da marca e do contato.
+- E2E `hub.spec.ts` "excluir a conta…": senha errada, confirmação, `/conta-excluida`, sem cookie, `/inicio` → `/entrar`
+  e o mesmo e-mail cria conta nova. `a11y.spec.ts` passa por `/perfil/excluir` e `/conta-excluida` (claro e escuro).
+- `npm run lint`, `format:check`, `typecheck`, `npm test` (214/214 em 27 arquivos), `npm run build` e
+  `npm run test:e2e` ok neste ambiente (Postgres local, banco próprio). Telas 1440 e 390 (claro) conferidas.
+- Não validado: migração 0023 no banco de produção e o envio real do e-mail.
+
 ## AEON e Revela fechados ao público (28/10/2026)
 
 - `products/ai-edit`: `npm test` 122/122 (novo `test/fechado.test.js`: anônimo, conta `closed`, conta `allowed`, sessão

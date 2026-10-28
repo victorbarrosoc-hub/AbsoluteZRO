@@ -6,6 +6,8 @@ import { confirmEmailChange, defaultSender, requestEmailChange } from '@zro/auth
 import {
   billingPortalUrl,
   cancelPlanRequest,
+  conferirExclusao,
+  excluirConta,
   removeAvatar,
   startCheckout,
   requestPlanChange,
@@ -13,14 +15,16 @@ import {
   updateDisplayName,
   type PlanRequestKind,
 } from '@zro/core'
+import { createLogger } from '@zro/observability'
 import type { FormState } from '@/components/action-form'
 import { appOrigin, showDevLinks } from '../env'
-import { db, getAuth } from '../session'
+import { clearSessionCookie, db, getAuth } from '../session'
 import { stripeConfig } from '../stripe'
-import { emailEmailMudou, emailNovoEmail } from '../email/modelos'
+import { emailContaExcluida, emailEmailMudou, emailNovoEmail } from '../email/modelos'
 import { str, toFormError } from './helpers'
 
 const mail = defaultSender()
+const log = createLogger('conta')
 
 export async function updateNameAction(_: FormState, fd: FormData): Promise<FormState> {
   try {
@@ -122,4 +126,32 @@ export async function navAction(fd: FormData) {
   ;(await cookies()).set('zro_nav', mode, { path: '/', sameSite: 'lax', maxAge: 60 * 60 * 24 * 365 })
   const back = str(fd, 'back')
   redirect(back.startsWith('/') && !back.startsWith('//') ? back : '/inicio')
+}
+
+/** Excluir a conta, etapa 1: confere a senha (ou o e-mail) e os bloqueios. Nada é excluído aqui. */
+export async function conferirExclusaoAction(_: FormState, fd: FormData): Promise<FormState> {
+  try {
+    await conferirExclusao(db(), await getAuth(), String(fd.get('confirmacao') ?? ''))
+    return { ok: 'confirmar' }
+  } catch (e) {
+    return toFormError(e)
+  }
+}
+
+/** Excluir a conta, etapa 2: exclui (conferindo tudo de novo), avisa por e-mail, tira o cookie e mostra o fim. */
+export async function excluirContaAction(_: FormState, fd: FormData): Promise<FormState> {
+  let feito: { email: string; nome: string }
+  try {
+    feito = await excluirConta(db(), await getAuth(), String(fd.get('confirmacao') ?? ''))
+  } catch (e) {
+    return toFormError(e)
+  }
+  // A conta já foi excluída: falha no envio do aviso não volta atrás, só fica no log (sem o endereço).
+  try {
+    await mail.send(emailContaExcluida(feito.email, feito.nome))
+  } catch (e) {
+    log.error('conta.excluida_email', { error: e })
+  }
+  await clearSessionCookie()
+  redirect('/conta-excluida')
 }

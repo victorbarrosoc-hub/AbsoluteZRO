@@ -181,6 +181,8 @@ export const AUDIT_LABEL: Record<string, string> = {
   'billing.entitlement_revoked': 'Concessão revogada',
   'user.suspended': 'Conta suspensa',
   'user.reactivated': 'Conta reativada',
+  'account.deleted': 'Excluiu a própria conta',
+  'organization.closed': 'Organização encerrada',
   'admin.people_exported': 'Exportou a lista de pessoas',
   'project.created': 'Projeto criado',
   'project.updated': 'Projeto alterado',

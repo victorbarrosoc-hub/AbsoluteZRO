@@ -2906,6 +2906,79 @@ details.disclosure[open] > summary {
   transform: rotate(45deg);
 }
 
+/* Excluir a conta: uma linha discreta no fim de Segurança e uma tela própria em duas etapas. Sem vermelho chapado. */
+.excluir-zona {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-5);
+  padding: var(--space-5) 4px 0;
+  border-top: 1px solid var(--line);
+}
+.excluir-zona__texto {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.excluir-zona__texto p {
+  margin: 0;
+}
+.excluir-zona__titulo {
+  font: 600 1rem var(--font-display);
+  letter-spacing: -0.01em;
+  color: var(--text-strong);
+}
+.excluir-cartao {
+  max-width: 560px;
+  padding: clamp(22px, 3vw, 36px);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.excluir {
+  display: grid;
+  gap: var(--space-4);
+}
+.excluir > p {
+  margin: 0;
+}
+.excluir__titulo {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 1.2rem + 0.6vw, 1.75rem);
+  font-weight: 300;
+  letter-spacing: -0.025em;
+  color: var(--text-strong);
+}
+.excluir__titulo strong {
+  font-weight: 800;
+}
+.excluir__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.excluir--confirmar {
+  animation: excluir-entra 0.35s var(--ease) both;
+}
+@keyframes excluir-entra {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .excluir--confirmar {
+    animation: none;
+  }
+}
+.excluir-detalhe {
+  max-width: 560px;
+}
+.excluir-detalhe ul {
+  margin: 0;
+}
+
 .avatar--xl {
   width: 112px;
   height: 112px;

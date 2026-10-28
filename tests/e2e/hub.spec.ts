@@ -296,6 +296,29 @@ test('sua conta: nome, foto, pedido de upgrade e acessos', async ({ page }) => {
   await expect(page.locator('.access-org__apps li.is-on')).toHaveCount(3)
 })
 
+test('excluir a conta: senha, confirmação, sai da sessão e o e-mail volta a ficar livre', async ({ page }) => {
+  const address = await signupAndOrg(page, 'Org excluir')
+  await page.goto('/perfil/seguranca')
+  await page.getByRole('link', { name: 'Excluir…' }).click()
+  await page.waitForURL('**/perfil/excluir')
+  await page.getByLabel('Senha atual').fill('senha-errada-123')
+  await page.getByRole('button', { name: 'Continuar' }).click()
+  await expect(page.locator('.zro-field__error')).toHaveText('Senha incorreta.')
+  await page.getByLabel('Senha atual').fill(PASS)
+  await page.getByRole('button', { name: 'Continuar' }).click()
+  await expect(page.getByRole('heading', { name: 'Excluir a conta de vez?' })).toBeVisible()
+  await page.getByRole('button', { name: 'Excluir conta' }).click()
+  await page.waitForURL('**/conta-excluida')
+  await expect(page.getByRole('heading', { level: 1, name: 'Conta excluída.' })).toBeVisible()
+  expect((await page.context().cookies()).find((c) => c.name === 'zro_session')).toBeUndefined()
+  await page.goto('/inicio')
+  await expect(page).toHaveURL(/\/entrar$/)
+  // O mesmo e-mail cria uma conta nova.
+  await page.goto('/criar-conta')
+  await criarConta(page, { nome: 'Pessoa de volta', email: address, senha: PASS })
+  await page.waitForURL('**/boas-vindas')
+})
+
 test('central de apps: dentro do app de computador, instala com progresso, abre e atualiza', async ({ page }) => {
   // Ponte falsa no lugar do preload do Electron (desktop/preload.cjs): mesma forma de window.zroDesktop.apps.
   await page.addInitScript(() => {

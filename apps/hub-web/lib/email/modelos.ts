@@ -171,6 +171,19 @@ export function emailEmailMudou(to: string, novo: string): OutgoingEmail {
   })
 }
 
+/** Confirmação da exclusão da conta. Nada a clicar além do contato: a conta já não existe. */
+export function emailContaExcluida(to: string, nome?: string | null): OutgoingEmail {
+  const n = primeiroNome(nome)
+  return montar(to, 'Sua conta foi excluída', {
+    previa: 'Sua conta Absolute ZRO e o acesso a todas as ferramentas foram encerrados.',
+    fino: n ? `${n}, sua conta foi` : 'Sua conta foi',
+    forte: 'excluída.',
+    apoio: 'A conta Absolute ZRO deste e-mail foi excluída, e com ela o acesso a todas as ferramentas. Se não foi você, fale com a gente.',
+    botao: { texto: 'Falar com a Absolute ZRO', link: 'mailto:contato@absolutezro.com' },
+    nota: 'Se quiser voltar um dia, é só criar uma conta nova com este e-mail.',
+  })
+}
+
 export function emailConvite(to: string, link: string): OutgoingEmail {
   return montar(to, 'Você foi convidado para uma equipe', {
     previa: 'Aceite o convite para entrar na equipe na Absolute ZRO.',
