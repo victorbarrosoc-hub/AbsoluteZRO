@@ -22,7 +22,14 @@ export async function estadoDaIa(auth: Authenticated) {
     db().asSystem('ia: créditos', (tx) => peekQuota(tx, actor.orgId, IA_METRICA, 0)),
     db().asUser({ userId: actor.userId, orgId: actor.orgId }, (tx) => productAccessFor(tx, actor.orgId)),
   ])
-  const plataformas: IaPlataforma[] = access.map((a) => ({ id: a.productId, nome: a.name, cor: productColor(a.productId) }))
+  // Plataforma fechada por lançamento (ADR 0023) vai marcada: o painel mostra "Em desenvolvimento" em vez de abrir.
+  const plataformas: (IaPlataforma & { estado: string; emDesenvolvimento: boolean })[] = access.map((a) => ({
+    id: a.productId,
+    nome: a.name,
+    cor: productColor(a.productId),
+    estado: a.release.state,
+    emDesenvolvimento: a.access === 'closed',
+  }))
   return {
     nome: auth.user.displayName.split(/\s+/)[0] || auth.user.displayName,
     saudacao: saudacao(),

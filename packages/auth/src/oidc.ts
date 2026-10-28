@@ -6,6 +6,9 @@
  * - Access token: JWT ES256 de 10 min (typ at+jwt), aud = client_id. Os apps conferem pelo JWKS.
  * - Refresh token: opaco, 30 dias, com rotação; reapresentar um já trocado revoga a família (RFC 9700 §4.14).
  * - Organização e produtos contratados vêm do banco no momento da emissão (loader injetado), nunca do cliente.
+ * - Gate de lançamento (ADR 0023): cliente de produto fechado só recebe código, refresh, userinfo ou Bearer se a pessoa
+ *   está em zro.product_release_access (zro.release_allows, canal sso/api). Fora disso, nada é emitido e o token antigo
+ *   deixa de valer; o app mostra "Em desenvolvimento".
  * Chave: ZRO_OIDC_SIGNING_KEY (PEM, EC P-256) ou, sem ela, a guardada em zro.oidc_keys (gerada no primeiro uso).
  */
 import {
@@ -37,6 +40,8 @@ export const ACCESS_TTL_S = 600
 export const ID_TTL_S = 600
 export const REFRESH_TTL_MS = 30 * 24 * 3_600_000
 export const FAMILY_MAX_MS = 90 * 24 * 3_600_000
+/** Texto único para "produto fechado" em todas as respostas do login único (o app pode mostrar como está). */
+export const RELEASE_CLOSED_DESCRIPTION = 'Este app ainda está em desenvolvimento.'
 
 export class OAuthError extends Error {
   constructor(
@@ -179,7 +184,20 @@ export function discovery(issuer: string) {
     scopes_supported: [...OIDC_SCOPES],
     token_endpoint_auth_methods_supported: ['client_secret_basic', 'client_secret_post', 'none'],
     code_challenge_methods_supported: ['S256'],
-    claims_supported: ['sub', 'email', 'email_verified', 'name', 'picture', 'updated_at', 'zro_conta', 'zro_org', 'zro_products', 'auth_time', 'nonce'],
+    claims_supported: [
+      'sub',
+      'email',
+      'email_verified',
+      'name',
+      'picture',
+      'updated_at',
+      'zro_conta',
+      'zro_org',
+      'zro_products',
+      'zro_release',
+      'auth_time',
+      'nonce',
+    ],
     prompt_values_supported: ['none', 'consent', 'create'],
   }
 }
@@ -254,6 +272,22 @@ export async function findActiveClient(tx: Queryable, clientId: string): Promise
   if (!/^[a-z0-9][a-z0-9-]{2,62}$/.test(clientId)) return null
   const [r] = await tx`select * from zro.oauth_clients where id = ${clientId} and status = 'active'`
   return r ? rowToClient(r) : null
+}
+
+/**
+ * Gate de lançamento do cliente (ADR 0023): true quando o app é de um produto fechado para esta pessoa no canal.
+ * Lê a regra do banco a cada pedido (zro.release_allows, migration 0018): revogação vale na hora, sem cache. Cliente
+ * sem produto (um app genérico) não tem gate. Cliente de desktop segue a mesma regra, pelo product_id.
+ */
+export async function productClosedFor(
+  tx: Queryable,
+  client: Pick<OAuthClient, 'productId'>,
+  userId: string,
+  channel: 'sso' | 'api' = 'sso',
+): Promise<boolean> {
+  if (!client.productId) return false
+  const [r] = await tx`select zro.release_allows(${client.productId}, ${userId}::uuid, ${channel}) as ok`
+  return !r?.ok
 }
 
 /** Cadastro pelo console. O segredo aparece uma vez; o banco guarda só o sha256. */
@@ -353,8 +387,9 @@ export async function grantConsent(tx: Queryable, userId: string, clientId: stri
     on conflict (user_id, client_id) do update set scopes = excluded.scopes, granted_at = now(), revoked_at = null`
 }
 
-/** Emite o código e devolve a URL de retorno ao app. */
+/** Emite o código e devolve a URL de retorno ao app. Produto fechado para a pessoa: nada é emitido (access_denied). */
 export async function issueCode(tx: Queryable, req: AuthorizeRequest, who: { userId: string; orgId: string | null; authTime: Date }): Promise<string> {
+  if (await productClosedFor(tx, req.client, who.userId, 'sso')) throw new OAuthError('access_denied', RELEASE_CLOSED_DESCRIPTION, 403)
   const code = newToken('zc')
   // A conta da pessoa neste app (0006): nasce no primeiro acesso e marca o último.
   await tx`
@@ -371,10 +406,10 @@ export async function issueCode(tx: Queryable, req: AuthorizeRequest, who: { use
   return u.toString()
 }
 
-export function denyUrl(req: AuthorizeRequest): string {
+export function denyUrl(req: AuthorizeRequest, description = 'A pessoa não autorizou.'): string {
   const u = new URL(req.redirectUri)
   u.searchParams.set('error', 'access_denied')
-  u.searchParams.set('error_description', 'A pessoa não autorizou.')
+  u.searchParams.set('error_description', description)
   u.searchParams.set('state', req.state)
   return u.toString()
 }
@@ -390,7 +425,15 @@ export function issuerFromEnv(): string {
 
 // ───────────── token ─────────────
 
-export type OrgClaims = { org: { id: string; name: string; role: string } | null; products: string[] }
+/** released = aberto ao público; allowed = fechado, mas esta conta está na lista; closed = fechado e sem acesso. */
+export type ReleaseClaimValue = 'released' | 'allowed' | 'closed'
+export type OrgClaims = {
+  org: { id: string; name: string; role: string } | null
+  /** Produtos contratados e abertos para a pessoa (gate aplicado). */
+  products: string[]
+  /** Claim zro_release: um valor por produto do catálogo. */
+  release: Record<string, ReleaseClaimValue>
+}
 export type ClaimsLoader = (tx: Queryable, userId: string, orgId: string | null) => Promise<OrgClaims>
 
 type TokenRequest = {
@@ -478,7 +521,9 @@ async function buildTokens(
   if (!u) throw new OAuthError('invalid_grant', 'Conta inativa.')
   const iss = issuerFromEnv()
   const now = Math.floor(Date.now() / 1000)
-  const claims = g.scopes.includes('org') ? await loadClaims(tx, g.userId, g.orgId) : { org: null, products: [] }
+  // zro_release vai sempre (é da pessoa, não da organização); zro_org e zro_products só com o escopo org.
+  const comOrg = g.scopes.includes('org')
+  const claims = await loadClaims(tx, g.userId, comOrg ? g.orgId : null)
   const access_token = signJwt(
     s,
     {
@@ -490,7 +535,8 @@ async function buildTokens(
       iat: now,
       exp: now + ACCESS_TTL_S,
       jti: randomUUID(),
-      ...(g.scopes.includes('org') ? { zro_org: claims.org?.id ?? null, zro_products: claims.products } : {}),
+      ...(comOrg ? { zro_org: claims.org?.id ?? null, zro_products: claims.products } : {}),
+      zro_release: claims.release,
     },
     'at+jwt',
   )
@@ -504,7 +550,8 @@ async function buildTokens(
     ...(g.nonce ? { nonce: g.nonce } : {}),
     ...(g.scopes.includes('email') ? { email: u.email, email_verified: !!u.email_verified_at } : {}),
     ...(g.scopes.includes('profile') ? profileClaims(iss, u) : {}),
-    ...(g.scopes.includes('org') ? { zro_org: claims.org, zro_products: claims.products } : {}),
+    ...(comOrg ? { zro_org: claims.org, zro_products: claims.products } : {}),
+    zro_release: claims.release,
   })
   const out: TokenResponse = { access_token, token_type: 'Bearer', expires_in: ACCESS_TTL_S, id_token, scope: g.scopes.join(' ') }
   if (g.scopes.includes('offline_access')) {
@@ -546,6 +593,8 @@ export async function exchangeToken(db: Database, t: TokenRequest, loadClaims: C
       if ((c.expires_at as Date).getTime() < Date.now()) return new OAuthError('invalid_grant', 'Código expirado.')
       if (c.redirect_uri !== t.redirectUri) return new OAuthError('invalid_grant', 'redirect_uri diferente do pedido.')
       if (s256(t.codeVerifier) !== c.code_challenge) return new OAuthError('invalid_grant', 'PKCE não confere.')
+      // Gate de lançamento conferido de novo na troca (o acesso pode ter sido revogado entre o código e a troca).
+      if (await productClosedFor(tx, client, c.user_id as string, 'sso')) return new OAuthError('invalid_grant', RELEASE_CLOSED_DESCRIPTION)
       return buildTokens(
         s,
         tx,
@@ -571,6 +620,9 @@ export async function exchangeToken(db: Database, t: TokenRequest, loadClaims: C
     if ((r.expires_at as Date).getTime() < Date.now()) return new OAuthError('invalid_grant', 'Refresh token expirado.')
     const [consent] = await tx`select 1 from zro.oauth_consents where user_id = ${r.user_id as string} and client_id = ${client.id} and revoked_at is null`
     if (!consent) return new OAuthError('invalid_grant', 'Acesso do app foi removido.')
+    // Produto fechado para a pessoa: não renova (sessão antiga de antes do gate morre aqui). O token não é gasto:
+    // se a conta entrar na lista depois, o app volta sem novo login.
+    if (await productClosedFor(tx, client, r.user_id as string, 'sso')) return new OAuthError('invalid_grant', RELEASE_CLOSED_DESCRIPTION)
     await tx`update zro.oauth_refresh_tokens set used_at = now() where id = ${r.id as string}`
     // A organização é conferida de novo: se a pessoa saiu dela, o token segue sem organização.
     const [m] = r.org_id
@@ -597,15 +649,19 @@ export async function userInfo(db: Database, bearer: string | null, loadClaims: 
   if (!p) throw new OAuthError('invalid_token', 'Token inválido ou expirado.')
   const scopes = String(p.scope ?? '').split(' ')
   return db.asSystem('oidc: userinfo', async (tx) => {
+    const client = typeof p.client_id === 'string' ? await findActiveClient(tx, p.client_id) : null
+    if (!client) throw new OAuthError('invalid_token', 'App desconhecido ou desativado.')
+    // Produto fechado para a pessoa: 401, mesmo com token assinado e dentro da validade.
+    if (await productClosedFor(tx, client, p.sub as string, 'sso')) throw new OAuthError('invalid_token', RELEASE_CLOSED_DESCRIPTION)
     const u = await userClaims(tx, p.sub as string)
     if (!u) throw new OAuthError('invalid_token', 'Conta inativa.')
     const out: Record<string, unknown> = { sub: u.id }
     if (scopes.includes('email')) Object.assign(out, { email: u.email, email_verified: !!u.email_verified_at })
     if (scopes.includes('profile')) Object.assign(out, profileClaims(issuerFromEnv(), u))
-    if (scopes.includes('org')) {
-      const c = await loadClaims(tx, u.id as string, (p.zro_org as string) ?? null)
-      Object.assign(out, { zro_org: c.org, zro_products: c.products })
-    }
+    const comOrg = scopes.includes('org')
+    const c = await loadClaims(tx, u.id as string, comOrg ? ((p.zro_org as string) ?? null) : null)
+    if (comOrg) Object.assign(out, { zro_org: c.org, zro_products: c.products })
+    out.zro_release = c.release
     return out
   })
 }
@@ -630,6 +686,8 @@ export async function authenticateAccessToken(db: Database, authorization: strin
     const client = await findActiveClient(tx, p.client_id as string)
     if (!client || !client.scopes.includes(requiredScope)) return null
     if (!(await hasConsent(tx, p.sub as string, client.id, [requiredScope]))) return null
+    // Produto fechado para a pessoa (canal api): o token não vale, mesmo assinado e dentro da validade.
+    if (await productClosedFor(tx, client, p.sub as string, 'api')) return null
     const u = await userClaims(tx, p.sub as string)
     if (!u) return null
     return {

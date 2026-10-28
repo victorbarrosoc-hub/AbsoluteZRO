@@ -10,7 +10,7 @@ import { consumeQuota, productAccessFor, quotaPeriod } from '@zro/billing'
 import type { Database, Queryable } from '@zro/db'
 import { DomainError } from '@zro/observability'
 import { z } from 'zod'
-import { authorize, type Actor } from './authz'
+import { authorize, channelOf, type Actor, type Need } from './authz'
 
 export const IA_METRICA = 'zro.ai_credits'
 export const IA_CREDITOS_POR_RESPOSTA = 1
@@ -35,9 +35,18 @@ export function produtoDaChamada(auth: Authenticated | null): string | null {
   return auth?.session.app?.productId ?? null
 }
 
+/**
+ * Chamada vinda de um app da família passa pelo gate de lançamento do produto dele (ADR 0023): app fechado para a
+ * pessoa → 403 product_closed, mesmo com token válido. Pela sessão do HUB não há produto: a Z do HUB segue aberta.
+ */
+function gateDoApp(auth: Authenticated | null): Pick<Need, 'release'> {
+  const produto = produtoDaChamada(auth)
+  return produto ? { release: { productId: produto, channel: 'api' } } : {}
+}
+
 /** Conversas da pessoa. `produto`: undefined = todas; null = só as do HUB; texto = só as daquela plataforma. */
 export async function listarConversas(db: Database, auth: Authenticated | null, filtro: { produto?: string | null } = {}) {
-  const actor = await authorize(db, auth)
+  const actor = await authorize(db, auth, gateDoApp(auth))
   const todas = filtro.produto === undefined
   const p = filtro.produto ?? null
   const rows = await db.asUser(
@@ -54,7 +63,7 @@ export async function listarConversas(db: Database, auth: Authenticated | null, 
 
 export async function abrirConversa(db: Database, auth: Authenticated | null, id: string) {
   if (!UUID.test(id)) throw new DomainError('not_found', 'Conversa não encontrada.')
-  const actor = await authorize(db, auth)
+  const actor = await authorize(db, auth, gateDoApp(auth))
   return db.asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
     const [c] = await tx`
       select c.id, c.titulo, c.product_id, c.created_at, c.updated_at, pr.name as produto_nome
@@ -70,7 +79,7 @@ export async function abrirConversa(db: Database, auth: Authenticated | null, id
 
 export async function apagarConversa(db: Database, auth: Authenticated | null, id: string): Promise<void> {
   if (!UUID.test(id)) throw new DomainError('not_found', 'Conversa não encontrada.')
-  const actor = await authorize(db, auth)
+  const actor = await authorize(db, auth, gateDoApp(auth))
   const r = await db.asUser({ userId: actor.userId, orgId: actor.orgId }, (tx) => tx`delete from zro.ia_conversas where id = ${id} returning id`)
   if (!r.length) throw new DomainError('not_found', 'Conversa não encontrada.')
 }
@@ -96,7 +105,7 @@ export async function iniciarTurno(db: Database, auth: Authenticated | null, raw
   const parsed = PerguntaSchema.safeParse(raw)
   if (!parsed.success) throw new DomainError('invalid_input', parsed.error.issues[0]?.message ?? 'Pedido inválido.')
   const { texto } = parsed.data
-  const actor = await authorize(db, auth, { quota: { metric: IA_METRICA, amount: IA_CREDITOS_POR_RESPOSTA } })
+  const actor = await authorize(db, auth, { ...gateDoApp(auth), quota: { metric: IA_METRICA, amount: IA_CREDITOS_POR_RESPOSTA } })
   const produto = produtoDaChamada(auth)
   return db.asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
     let c: Record<string, unknown> | undefined
@@ -168,7 +177,13 @@ function tituloDe(texto: string): string {
 export async function retratoDoEcossistema(db: Database, actor: Actor, produto: string | null) {
   return db.asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
     const [org] = await tx`select name from zro.organizations where id = ${actor.orgId}`
-    const ferramentas = (await productAccessFor(tx, actor.orgId)).map((a) => ({ id: a.productId, nome: a.name, papel: a.roleInFlow, acesso: a.access }))
+    // Gate de lançamento pelo canal da chamada (dentro de um app = api): o que está fechado para a pessoa vem como "closed".
+    const ferramentas = (await productAccessFor(tx, actor.orgId, { channel: channelOf(actor.auth) })).map((a) => ({
+      id: a.productId,
+      nome: a.name,
+      papel: a.roleInFlow,
+      acesso: a.access,
+    }))
     const projetos = await tx`
       select p.id, p.title as titulo, p.status, p.type as tipo, p.updated_at as atualizado,
         (select count(*)::int from zro.project_steps s where s.project_id = p.id and s.state = 'done') as etapas_feitas,

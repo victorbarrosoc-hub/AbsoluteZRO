@@ -24,3 +24,4 @@ Cada decisão é reversível salvo indicação. Formato: contexto, decisão, con
 | [0020](0020-editor-desktop-custo-zero.md)        | Editor de vídeo: app de desktop, custo zero, IA na máquina     | aceita                |
 | [0021](0021-carro-hub-convidado.md)              | Carro → HUB: token de app e o papel convidado                  | aceita                |
 | [0022](0022-maestro-no-monorepo.md)              | Maestro nasce no monorepo e se integra pelo projeto canônico   | aceita                |
+| [0023](0023-gate-de-lancamento.md)               | Gate de lançamento: fechado é fechado, por conta e por canal   | aceita                |

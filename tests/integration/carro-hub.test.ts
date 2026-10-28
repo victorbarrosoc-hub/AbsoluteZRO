@@ -19,7 +19,7 @@ import { acceptInvitation, createProject, getProject, listProjects, loadOidcClai
 import type { Database } from '@zro/db'
 import { testDatabase } from '@zro/db/testing'
 import { importCarroJob, syncCarroCrew } from '@zro/integrations'
-import { admin, expectCode, givePlan, newOrgWithOwner, newUser, refresh } from './helpers'
+import { admin, allowRelease, expectCode, givePlan, newOrgWithOwner, newUser, refresh } from './helpers'
 
 let db: Database
 const ISS = 'https://hub.teste.absolutezro.local'
@@ -55,8 +55,12 @@ async function carroClient(productId = 'carro-do-freela') {
   )
 }
 
-/** Login no app (código + PKCE) e troca por tokens, como o servidor do Carro faz. */
+/**
+ * Login no app (código + PKCE) e troca por tokens, como o servidor do Carro faz. O Carro é fechado (gate de lançamento,
+ * ADR 0023): só a conta proprietária listada entra; aqui a conta que faz login assume esse papel.
+ */
 async function appToken(c: { clientId: string; clientSecret: string | null }, userId: string, orgId: string, scope: string) {
+  await allowRelease(db, 'carro-do-freela', userId, { kind: 'owner' })
   const verifier = randomBytes(32).toString('base64url')
   const challenge = createHash('sha256').update(verifier).digest('base64url')
   const q = new URLSearchParams({
@@ -148,6 +152,7 @@ describe('equipe da escala → equipe do projeto', () => {
   async function cena(label: string) {
     const o = await newOrgWithOwner(db, label)
     await givePlan(db, o.orgId, 'individual-carro-do-freela')
+    await allowRelease(db, 'carro-do-freela', o.userId, { kind: 'owner' })
     const membro = await newUser(db, `${label}-membro`)
     await addMember(o.orgId, membro.userId, 'editor')
     const freela = await newUser(db, `${label}-freela`)
@@ -246,6 +251,7 @@ describe('equipe da escala → equipe do projeto', () => {
 
   it('edição importa o job, mas só dono, administração e gestão montam a equipe', async () => {
     const { o, membro, freela } = await cena('papel')
+    await allowRelease(db, 'carro-do-freela', membro.userId, { kind: 'internal' })
     await db.asSystem('teste', (tx) => tx`update zro.sessions set active_org_id = ${o.orgId} where user_id = ${membro.userId}`)
     const ed: Authenticated = await refresh(db, membro.token)
     expect(ed.session.activeOrgId).toBe(o.orgId)
@@ -261,5 +267,46 @@ describe('equipe da escala → equipe do projeto', () => {
       syncCarroCrew(db, o.auth, { contract: 'carro-do-freela.crew/1', job_id: 'job-ct', members: [{ zro_user_id: 'x', email: 'a@b.co', function: 'Drone' }] }),
       'invalid_input',
     )
+  })
+})
+
+describe('gate de lançamento do Carro (adendo do PRD, ADR 0023)', () => {
+  it('conta fora da lista: o HUB não emite código para o cliente do Carro e a API nega 403 product_closed, mesmo para admin da plataforma com plano', async () => {
+    const o = await newOrgWithOwner(db, 'carro-fora')
+    await givePlan(db, o.orgId, 'individual-carro-do-freela')
+    await db.sql`update zro.users set platform_role = 'admin' where id = ${o.userId}`
+    const c = await carroClient()
+    const q = new URLSearchParams({
+      response_type: 'code',
+      client_id: c.clientId,
+      redirect_uri: 'https://carro.teste/cb',
+      scope: `openid org ${SCOPE}`,
+      state: 'st',
+      code_challenge: createHash('sha256').update(randomBytes(32).toString('base64url')).digest('base64url'),
+      code_challenge_method: 'S256',
+    })
+    await expect(
+      db.asSystem('teste', async (tx) => {
+        const p = await parseAuthorizeRequest(tx, q)
+        if (!p.ok) throw new Error('pedido recusado')
+        await grantConsent(tx, o.userId, c.clientId, p.req.scopes)
+        return issueCode(tx, p.req as AuthorizeRequest, { userId: o.userId, orgId: o.orgId, authTime: new Date() })
+      }),
+    ).rejects.toMatchObject({ error: 'access_denied', description: 'Este app ainda está em desenvolvimento.' })
+    const err = await expectCode(importCarroJob(db, o.auth, job('job-fora')), 'product_closed')
+    expect(err.status).toBe(403)
+    await expectCode(syncCarroCrew(db, o.auth, { contract: 'carro-do-freela.crew/1', job_id: 'job-fora', members: [] }), 'product_closed')
+  })
+
+  it('sessão antiga: o token emitido enquanto a conta estava na lista deixa de valer quando ela sai', async () => {
+    const o = await newOrgWithOwner(db, 'carro-saiu-da-lista')
+    await givePlan(db, o.orgId, 'individual-carro-do-freela')
+    const c = await carroClient()
+    const at = await appToken(c, o.userId, o.orgId, `openid org ${SCOPE}`)
+    expect(await authenticateAccessToken(db, `Bearer ${at}`, SCOPE)).not.toBeNull()
+    expect((await importCarroJob(db, o.auth, job('job-ainda-na-lista'))).created).toBe(true)
+    await db.sql`update zro.product_release_access set revoked_at = now() where product_id = 'carro-do-freela' and user_id = ${o.userId}`
+    expect(await authenticateAccessToken(db, `Bearer ${at}`, SCOPE)).toBeNull()
+    await expectCode(importCarroJob(db, o.auth, job('job-fora-da-lista')), 'product_closed')
   })
 })

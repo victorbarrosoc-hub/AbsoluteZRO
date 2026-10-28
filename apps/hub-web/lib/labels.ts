@@ -60,6 +60,8 @@ export const ACCESS_LABEL: Record<string, string> = {
   contracted: 'Contratada',
   available: 'Disponível para contratar',
   coming_soon: 'Em desenvolvimento',
+  // Fechado por lançamento para a pessoa (ADR 0023): o mesmo rótulo, sem "contrate".
+  closed: 'Em desenvolvimento',
   disabled: 'Desativada',
 }
 

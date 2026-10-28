@@ -1,7 +1,8 @@
 /**
  * O que cada plataforma do ecossistema faz, para a Z responder com a ferramenta certa (e não mandar a pessoa para um
  * arquivo no Drive quando a plataforma já resolve). Só o que existe e está publicado: quando uma plataforma ganha ou
- * perde um recurso, atualize aqui. Chave = id do produto em zro.products.
+ * perde um recurso, atualize aqui. Chave = id do produto em zro.products. O guia que vai para a Z é filtrado em tempo
+ * de execução pelo gate de lançamento (ADR 0023): plataforma fechada para a pessoa não entra, mas a entrada fica aqui.
  */
 export const PLATAFORMAS: Record<string, { nome: string; faz: string[] }> = {
   finishing: {
@@ -53,9 +54,22 @@ export const PLATAFORMAS: Record<string, { nome: string; faz: string[] }> = {
   },
 }
 
-/** Bloco de texto fixo para o sistema da Z (fica no cache: não muda por turno). */
-export function guiaDasPlataformas() {
-  return Object.entries(PLATAFORMAS)
+/** Só as plataformas pedidas (as abertas para a pessoa), na ordem do guia. Sem lista = todas. */
+function entradas(ids?: Iterable<string>) {
+  const todas = Object.entries(PLATAFORMAS)
+  if (!ids) return todas
+  const quer = new Set(ids)
+  return todas.filter(([id]) => quer.has(id))
+}
+
+/** Bloco de texto para o sistema da Z (fica no cache: só muda quando uma plataforma abre ou fecha). */
+export function guiaDasPlataformas(ids?: Iterable<string>) {
+  return entradas(ids)
     .map(([id, p]) => `- ${p.nome} [${id}]:\n${p.faz.map((f) => `  • ${f}`).join('\n')}`)
     .join('\n')
+}
+
+/** Nomes curtos das plataformas (para a Z se apresentar só com as que estão no ar). */
+export function nomesDasPlataformas(ids?: Iterable<string>) {
+  return entradas(ids).map(([, p]) => p.nome.replace(/\s*\(.*\)$/, ''))
 }

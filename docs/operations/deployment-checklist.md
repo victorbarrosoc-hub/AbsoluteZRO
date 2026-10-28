@@ -49,6 +49,40 @@ where email = 'seu-email@exemplo.com';
 
 O console fica em `/admin` (limites dos planos, concessões, fila parada, eventos de cobrança).
 
+## 5a. Gate de lançamento (ADR 0023) — só com autorização do proprietário
+
+A migration `0018_release_gate.sql` deixa NOSSOM, AEON (`ai-edit`), Revela (`finishing`) e Carro do Freela fechados
+para todo mundo. A conta do proprietário (a única autorizada nos quatro, adendo do Carro) **não** está na migration
+nem no código: entra em produção nesta publicação, uma vez, de um dos dois jeitos, e fica na auditoria.
+
+1. Achar o `zro.users.id` da conta (o e-mail não serve de chave): `/admin/pessoas` › a própria pessoa (a URL é
+   `/admin/pessoas/<uuid>`), ou `GET /api/v1/me` logado (`user.id`), ou no SQL Editor:
+   `select id, email, platform_role from zro.users where platform_role = 'admin'` — deve haver uma linha com o e-mail do
+   proprietário; mais de uma, ele aponta qual.
+2. Conceder: Administração › **Lançamento › Acesso interno** (escolher a pessoa na lista, produto, tipo "Proprietário",
+   todos os canais, sem validade, motivo), um produto por vez; ou no SQL Editor, trocando `<uuid>`:
+
+   ```sql
+   insert into zro.product_release_access (product_id, user_id, kind, reason, granted_by)
+   select x.product_id, u.id, 'owner', 'conta do proprietário (adendo do PRD, 27/10/2026)', u.id
+   from zro.users u cross join (values ('carro-do-freela'), ('nossom'), ('ai-edit'), ('finishing')) as x (product_id)
+   where u.id = '<uuid>'
+   on conflict (product_id, user_id) do nothing;
+   ```
+
+3. Sessões emitidas antes do gate (refresh tokens de 30 dias e consentimentos dos clientes `nossom-web`, `aeon-web`,
+   `aeon-desktop`, `revela-web`, `carrodofreela-web` para quem não está na lista): o HUB já não renova nem aceita, mas
+   deixar o banco igual à regra é um comando, primeiro em prévia e só depois para valer, com a `DATABASE_URL` sem pooler:
+
+   ```sh
+   npm run db:release:revoke -- --reason "gate de lançamento (ADR 0023)"            # prévia: só conta, não muda nada
+   npm run db:release:revoke -- --reason "gate de lançamento (ADR 0023)" --apply    # executa e grava a auditoria
+   ```
+
+4. Conferir em `/admin/lancamento`: os três lançados em "Lançado" com todos os canais, os quatro fechados em
+   "Em desenvolvimento", a conta do proprietário nos quatro, e a auditoria com as linhas. Abrir um produto ao público
+   depois = mudar o estado nessa tela (vale em até 30 s, sem redeploy); nunca por migration.
+
 ## 6. Fila
 
 Sem worker contínuo, o HUB processa a fila logo depois de cada importação ou "Repetir" (`apps/hub-web/lib/queue.ts`).

@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Em desenvolvimento · Absolute ZRO</title>
+    <!--
+      Referência da página "Em desenvolvimento" (ADR 0023) para os sites dos produtos fechados copiarem tal qual.
+      Mesmo desenho do HUB (apps/hub-web/components/em-desenvolvimento.tsx): símbolo pequeno como assinatura, o ícone do
+      app no centro, "Em desenvolvimento." em Figtree Light × ExtraBold, uma linha de apoio e um botão só, em vidro escuro.
+      Claro é o padrão; escuro segue o sistema (prefers-color-scheme) ou data-theme="dark" no <html>.
+      Troque só o ícone (data-produto, src e alt) e o nome. Nada de dado interno, nem "Tenho interesse".
+      HTTP 200 para a página; 403 (ou 404) para API e arquivos do app.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;600;800&display=swap" />
+    <style>
+      :root {
+        --bg: #fbfbfd;
+        --card: rgb(255 255 255 / 0.72);
+        --line: rgb(0 0 0 / 0.08);
+        --ink: #1d1d1f;
+        --mute: #6e6e73;
+        --btn-fill: rgb(29 29 31 / 0.92);
+        --btn-ink: #fff;
+        --shadow: 0 18px 48px rgb(0 0 0 / 0.1);
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --bg: #0e0e10;
+          --card: rgb(255 255 255 / 0.06);
+          --line: rgb(255 255 255 / 0.12);
+          --ink: #f5f5f7;
+          --mute: #aeaeb2;
+          --btn-fill: rgb(245 245 247 / 0.94);
+          --btn-ink: #1d1d1f;
+          --shadow: 0 18px 48px rgb(0 0 0 / 0.5);
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme='dark'] {
+        --bg: #0e0e10;
+        --card: rgb(255 255 255 / 0.06);
+        --line: rgb(255 255 255 / 0.12);
+        --ink: #f5f5f7;
+        --mute: #aeaeb2;
+        --btn-fill: rgb(245 245 247 / 0.94);
+        --btn-ink: #1d1d1f;
+        --shadow: 0 18px 48px rgb(0 0 0 / 0.5);
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+      }
+      body {
+        display: grid;
+        place-items: center;
+        padding: 24px 16px;
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          'Figtree',
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      .emdev {
+        display: grid;
+        justify-items: center;
+        text-align: center;
+        gap: 16px;
+        width: min(100%, 420px);
+        padding: 36px 28px 32px;
+        border-radius: 28px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+        -webkit-backdrop-filter: blur(18px) saturate(160%);
+        backdrop-filter: blur(18px) saturate(160%);
+      }
+      .emdev__marca {
+        width: 26px;
+        height: 26px;
+        color: var(--ink);
+        opacity: 0.85;
+      }
+      .emdev__app {
+        display: grid;
+        justify-items: center;
+        gap: 10px;
+        margin-top: 8px;
+      }
+      .emdev__icone {
+        width: 76px;
+        height: 76px;
+        border-radius: 22%;
+        object-fit: cover;
+        filter: drop-shadow(0 10px 24px rgb(0 0 0 / 0.18));
+      }
+      .emdev__nome {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--mute);
+      }
+      .emdev__titulo {
+        display: grid;
+        justify-items: center;
+        margin: 4px 0 0;
+        font-size: clamp(1.9rem, 7vw, 2.5rem);
+        line-height: 1.05;
+        letter-spacing: -0.025em;
+        color: var(--ink);
+      }
+      .emdev__titulo .fino {
+        font-weight: 300;
+      }
+      .emdev__titulo .forte {
+        font-weight: 800;
+      }
+      .emdev__apoio {
+        margin: 0;
+        max-width: 32ch;
+        color: var(--mute);
+        line-height: 1.45;
+      }
+      .glass-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        margin-top: 8px;
+        padding: 0 26px;
+        border-radius: 999px;
+        font-size: 1.02rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: var(--btn-ink);
+        text-decoration: none;
+        background: linear-gradient(180deg, rgb(255 255 255 / 0.22), rgb(255 255 255 / 0) 50%), var(--btn-fill);
+        box-shadow:
+          inset 0 1px 0 rgb(255 255 255 / 0.35),
+          inset 0 -1px 0 rgb(0 0 0 / 0.4),
+          0 0 0 1px rgb(0 0 0 / 0.5),
+          0 10px 28px rgb(0 0 0 / 0.22);
+        transition:
+          transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+          box-shadow 0.25s ease;
+      }
+      .glass-btn:hover {
+        transform: translateY(-1px) scale(1.02);
+      }
+      .glass-btn:active {
+        transform: scale(0.98);
+      }
+      .glass-btn:focus-visible {
+        outline: 2px solid var(--ink);
+        outline-offset: 3px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .glass-btn {
+          transition: none;
+        }
+        .glass-btn:hover,
+        .glass-btn:active {
+          transform: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="emdev" data-produto="nossom">
+      <!-- Símbolo Absolute ZRO flat (anel com a centelha por trás): uma cor só, herda a cor do texto. -->
+      <svg class="emdev__marca" viewBox="0 0 100 100" fill="currentColor" role="img" aria-label="Absolute ZRO">
+        <path
+          d="M74.00 40.02C75.00 47.51 77.33 49.00 94.82 50.00C77.33 51.00 75.00 52.49 74.00 59.98C73.00 52.49 70.67 51.00 53.18 50.00C70.67 49.00 73.00 47.51 74.00 40.02Z"
+        />
+        <path
+          fill-rule="evenodd"
+          d="M9.70 50.00a34.30 34.30 0 1 0 68.60 0a34.30 34.30 0 1 0 -68.60 0ZM18.30 50.00a25.70 25.70 0 1 0 51.40 0a25.70 25.70 0 1 0 -51.40 0Z"
+        />
+      </svg>
+      <div class="emdev__app">
+        <!-- Ícone do próprio produto (cada app mantém o seu). -->
+        <img class="emdev__icone" src="/marca/icone.png" alt="" width="76" height="76" />
+        <p class="emdev__nome">NOSSOM</p>
+      </div>
+      <h1 class="emdev__titulo"><span class="fino">Em </span><span class="forte">desenvolvimento.</span></h1>
+      <p class="emdev__apoio">Ainda não está aberto ao público. Quando abrir, você fica sabendo pelo HUB.</p>
+      <a class="glass-btn" href="https://absolutezro.com/inicio">Voltar ao HUB</a>
+    </main>
+  </body>
+</html>

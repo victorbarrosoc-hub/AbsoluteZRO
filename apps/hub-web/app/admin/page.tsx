@@ -62,9 +62,14 @@ export default async function Admin() {
           <h1>Administração</h1>
           <p>Planos, concessões e saúde da fila. Toda ação pede um motivo e fica na auditoria.</p>
         </div>
-        <Link className="zro-btn zro-btn--primary" href="/admin/pessoas">
-          Pessoas
-        </Link>
+        <div className="row">
+          <Link className="zro-btn zro-btn--ghost" href="/admin/lancamento">
+            Lançamento
+          </Link>
+          <Link className="zro-btn zro-btn--primary" href="/admin/pessoas">
+            Pessoas
+          </Link>
+        </div>
       </div>
       {!isAdmin && <Notice title="Suporte: somente leitura">Concessões e catálogo exigem papel admin.</Notice>}
 

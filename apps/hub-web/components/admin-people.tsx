@@ -184,6 +184,13 @@ export const AUDIT_LABEL: Record<string, string> = {
   'admin.people_exported': 'Exportou a lista de pessoas',
   'project.created': 'Projeto criado',
   'project.updated': 'Projeto alterado',
+  'release.denied': 'Tentou entrar num app em desenvolvimento',
+  'release.state_set': 'Definiu o estado de lançamento de um app',
+  'release.state_changed': 'Mudou o estado de lançamento de um app',
+  'release.access_granted': 'Concedeu acesso interno a um app fechado',
+  'release.access_changed': 'Renovou um acesso interno',
+  'release.access_revoked': 'Revogou um acesso interno',
+  'release.tokens_revoked': 'Encerrou sessões de um app fechado',
 }
 
 export const ORIGIN_LABEL: Record<string, string> = {

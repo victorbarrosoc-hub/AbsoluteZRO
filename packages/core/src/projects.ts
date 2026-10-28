@@ -59,6 +59,8 @@ export type StepView = {
 /** Ferramenta lançada e não contratada aparece como "bloqueado por assinatura", sem esconder o histórico. */
 export function displayStateFor(state: StepState, access: string): StepState {
   if (access === 'coming_soon' || access === 'disabled') return 'unavailable'
+  // Fechado por lançamento (ADR 0023): nada de "contrate" nem de começar; o que já aconteceu (histórico) continua visível.
+  if (access === 'closed' && (state === 'not_started' || state === 'ready' || state === 'waiting_material')) return 'unavailable'
   if (access === 'available' && (state === 'not_started' || state === 'ready' || state === 'waiting_material')) return 'blocked_subscription'
   return state
 }
@@ -94,7 +96,7 @@ export async function getProject(db: Database, auth: Authenticated | null, proje
     const steps: StepView[] = access.map((x) => {
       const a = guest && x.access === 'available' ? { ...x, access: 'contracted' as typeof x.access } : x
       const s = stepRows.find((r) => r.step_key === a.productId)
-      const state = ((s?.state as StepState) ?? (a.access === 'coming_soon' ? 'unavailable' : 'not_started')) as StepState
+      const state = ((s?.state as StepState) ?? (a.access === 'coming_soon' || a.access === 'closed' ? 'unavailable' : 'not_started')) as StepState
       return {
         stepKey: a.productId,
         name: a.name,

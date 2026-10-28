@@ -4,7 +4,7 @@ import type { Authenticated } from '@zro/auth'
 import { abrirConversa, apagarConversa, concluirTurno, iniciarTurno, listarConversas, retratoDoEcossistema } from '@zro/core'
 import type { Database } from '@zro/db'
 import { testDatabase } from '@zro/db/testing'
-import { expectCode, giveLimits, newOrgWithOwner, newUser, refresh } from './helpers'
+import { allowRelease, expectCode, giveLimits, newOrgWithOwner, newUser, refresh } from './helpers'
 
 let db: Database
 beforeAll(() => {
@@ -50,17 +50,34 @@ describe('IA do ecossistema', () => {
 
   it('a plataforma vem do token do app, nunca do corpo; o HUB lista todas e filtra por plataforma', async () => {
     const o = await comCreditos('ia-plataformas')
-    const a = await iniciarTurno(db, viaApp(o.auth, 'nossom'), { texto: 'Limpar minha fala' })
-    const b = await iniciarTurno(db, viaApp(o.auth, 'synquei'), { texto: 'Organizar a pasta', produto: 'nossom' })
+    const a = await iniciarTurno(db, viaApp(o.auth, 'sobedesce'), { texto: 'Subir a pasta do casamento' })
+    const b = await iniciarTurno(db, viaApp(o.auth, 'synquei'), { texto: 'Organizar a pasta', produto: 'sobedesce' })
     const c = await iniciarTurno(db, o.auth, { texto: 'Resumo da semana' })
-    expect(a.conversa.produto).toBe('nossom')
+    expect(a.conversa.produto).toBe('sobedesce')
     expect(b.conversa.produto).toBe('synquei')
     expect(c.conversa.produto).toBeNull()
 
     expect((await listarConversas(db, o.auth)).map((x) => x.id).sort()).toEqual([a, b, c].map((x) => x.conversa.id).sort())
-    expect((await listarConversas(db, o.auth, { produto: 'nossom' })).map((x) => x.id)).toEqual([a.conversa.id])
+    expect((await listarConversas(db, o.auth, { produto: 'sobedesce' })).map((x) => x.id)).toEqual([a.conversa.id])
     expect((await listarConversas(db, o.auth, { produto: null })).map((x) => x.id)).toEqual([c.conversa.id])
     expect((await listarConversas(db, o.auth, { produto: 'synquei' }))[0]!.produtoNome).toBe('Synquei')
+  })
+
+  it('app fechado por lançamento (ADR 0023): a Z nega product_closed, mesmo com crédito; conta listada no canal api entra', async () => {
+    const o = await comCreditos('ia-fechado')
+    const nossom = viaApp(o.auth, 'nossom')
+    await expectCode(iniciarTurno(db, nossom, { texto: 'Limpar minha fala' }), 'product_closed')
+    await expectCode(listarConversas(db, nossom), 'product_closed')
+    await expectCode(abrirConversa(db, nossom, '00000000-0000-4000-8000-000000000000'), 'product_closed')
+    await expectCode(apagarConversa(db, nossom, '00000000-0000-4000-8000-000000000000'), 'product_closed')
+    await allowRelease(db, 'nossom', o.userId, { channels: ['api'] })
+    const t = await iniciarTurno(db, nossom, { texto: 'Limpar minha fala' })
+    expect(t.conversa.produto).toBe('nossom')
+    expect((await listarConversas(db, nossom, { produto: 'nossom' })).map((x) => x.id)).toEqual([t.conversa.id])
+    // o retrato que a Z lê marca o que está fechado para a pessoa no canal da chamada (api): o NOSSOM abre (sem plano = disponível)
+    const retrato = await retratoDoEcossistema(db, t.actor, 'nossom')
+    const acesso = Object.fromEntries(retrato.ferramentas.map((f) => [f.id, f.acesso]))
+    expect(acesso).toMatchObject({ nossom: 'available', tpeasy: 'contracted', 'ai-edit': 'closed', finishing: 'closed', 'carro-do-freela': 'closed' })
   })
 
   it('conversa é pessoal: nem o dono da organização lê a de outra pessoa (RLS)', async () => {
