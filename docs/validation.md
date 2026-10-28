@@ -1054,6 +1054,27 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   de salvar, volta à lista, Revela e Conta Absolute ZRO no navegador do sistema, Sair apaga `conta.json` e vai para
   entrar.html. `--smoke` OK.
 
+## Absolute ZRO para computador 1.3.0: o instalador do ecossistema em segundo plano (28/10/2026)
+
+- Pedido do titular: um programa que roda como o SOBEDESCE e traz as atualizações dos apps. Bandeja/barra de menus
+  com o símbolo flat (template no Mac), fechar a janela não encerra, abre com o computador (ligado na primeira vez,
+  escondido), agenda que confere o catálogo do HUB 20 s depois de abrir e a cada 4 h e instala SOBEDESCE/Synquei com o
+  app fechado ("atualiza ao fechar" e "Reiniciar e atualizar" com ele aberto), notificações curtas, tela de
+  boas-vindas para escolher os apps. O catálogo agora é lido com os cookies do login (antes ia sem sessão), então o
+  gate de lançamento vale por pessoa. As telas locais trocaram o antigo símbolo de feixe de luz (`simbolo.webp`) pelo
+  símbolo flat oficial (`simbolo.svg`).
+- `apps/hub-desktop`: `npm test` **60/60** (novos: `agenda.test.mjs` com relógio falso, `bandeja.test.mjs`,
+  `inicio-sistema.test.mjs` e casos da central para baixar em segundo plano, reaproveitar o arquivo conferido,
+  gerenciável e fechar sem forçar). `xvfb-run -a npx electron . --smoke --no-sandbox`: **SMOKE OK** (sem conexão,
+  regras, bandeja 16×16, boas-vindas). Rodou 30 s em modo de desenvolvimento sem erro.
+- `products/sobedesce`: `npm run test:fast` **735/735** (3 pulados de sempre), com 2 novos em `test/version.test.js`
+  (instalado pela central não pergunta ao site nem baixa; arquivo da central vale até 14 dias).
+- `products/synquei`: `npm test` **118/118**, com 2 novos em `tests/atualizador.test.mjs`.
+- Raiz: `lint`, `format:check` e `typecheck` ok; `npm test` **205/205** (página Downloads: `Reiniciar e atualizar` e
+  "Atualiza ao fechar" com o app 1.3, sem mudar nada para versões antigas).
+- Não validado: build do Actions e Release (pedem autorização do titular); Mac e Windows de verdade (ícone na barra de
+  menus, item de login e início escondido, notificações, `quit app`/`taskkill` com SOBEDESCE e Synquei abertos).
+
 ## Absolute ZRO para computador 1.2.0: "Atualizar" com um clique (27/10/2026)
 
 - Como no SOBEDESCE: o aviso de versão nova tem **Atualizar**. O app baixa o instalador de `/baixar/hub/<sistema>?build=N`,

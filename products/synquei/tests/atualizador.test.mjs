@@ -147,3 +147,41 @@ test('scripts gerados escapam caminhos com aspas', () => {
   const ps = winScript({ pid: 1, setup: "C:\\it's\\s.exe", exe: 'C:\\x.exe', marca: 'C:\\m', tmp: 'C:\\t', build: 3 })
   assert.match(ps, /\$setup = 'C:\\it''s\\s.exe'/)
 })
+
+test('instalado pela central do Absolute ZRO: não pergunta ao site, não baixa sozinho e recusa Atualizar', async () => {
+  let central = false
+  let perguntas = 0
+  const { a } = montar({
+    gerenciado: () => central,
+    fetchJSON: async () => (perguntas++, { build: 7, data: '2026-10-22T10:00:00Z', sha256Mac: SHA, sha256Windows: SHA }),
+  })
+  central = true
+  const st = await a.check()
+  assert.equal(perguntas, 0)
+  assert.equal(st.gerenciado, true)
+  assert.equal(st.nova, false)
+  assert.equal(st.fase, null, 'nada baixado')
+  await assert.rejects(a.aplicarAgora(), /Absolute ZRO/)
+  // a central saiu (ou deixou de cuidar): volta a se atualizar sozinho
+  central = false
+  await a.check()
+  assert.equal(perguntas, 1)
+  assert.equal(a.status().gerenciado, false)
+  a.stop()
+})
+
+test('arquivo da central: vale com o app na lista e a central viva há menos de 14 dias', () => {
+  const { arquivoDaCentral, eGerenciado, lerGerenciado } = require('../desktop/gerenciado.cjs')
+  assert.equal(arquivoDaCentral('/Users/v/Library/Application Support'), join('/Users/v/Library/Application Support', 'Absolute ZRO', 'apps-gerenciados.json'))
+  const agora = Date.parse('2026-10-28T12:00:00Z')
+  const json = { versao: 1, visto: '2026-10-27T12:00:00.000Z', apps: { synquei: { desde: '2026-10-20T00:00:00.000Z' } } }
+  assert.equal(eGerenciado(json, 'synquei', agora), true)
+  assert.equal(eGerenciado(json, 'sobedesce', agora), false)
+  assert.equal(eGerenciado(json, 'synquei', agora + 15 * 86_400_000), false)
+  const tmp = mkdtempSync(join(tmpdir(), 'synquei-central-'))
+  const arquivo = join(tmp, 'apps-gerenciados.json')
+  writeFileSync(arquivo, JSON.stringify({ ...json, visto: new Date().toISOString() }))
+  assert.equal(lerGerenciado(arquivo), true)
+  assert.equal(lerGerenciado(join(tmp, 'nao-existe.json')), false)
+  assert.equal(lerGerenciado(''), false)
+})

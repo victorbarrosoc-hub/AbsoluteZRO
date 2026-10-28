@@ -65,6 +65,13 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   atualiza e remove SOBEDESCE, Synquei e NOSSOM (catálogo `GET /api/v1/desktop/apps` a partir dos Releases, SHA-256
   conferido, sem administrador). Sites das ferramentas com "Instale pelo Absolute ZRO" primeiro e o download direto
   como reserva; no celular, o Absolute ZRO instala na tela de início (Android com um toque, iPhone com guia).
+- 🟡 Instalador do ecossistema em segundo plano (28/10/2026, pedido do titular; adendo do [ADR 0018](decisions/0018-central-de-apps.md)):
+  Absolute ZRO para computador 1.3.0 com o símbolo na barra de menus/bandeja, abre com o computador (escondido),
+  confere o catálogo do HUB a cada 4 h e atualiza SOBEDESCE e Synquei sozinho (instala com o app fechado; aberto,
+  "atualiza ao fechar" e "Reiniciar e atualizar"), tela de boas-vindas para escolher os apps. SOBEDESCE e Synquei
+  instalados pela central desligam o atualizador próprio (`apps-gerenciados.json`). Falta: build no Actions e Release
+  `hub-desktop` (autorização do titular) e conferir num Mac e num Windows de verdade (barra de menus, login item,
+  notificações, troca do app aberto).
 - ⬜ App para computador, próximas etapas: certificados Apple/Microsoft (decisão do titular: depois) para assinar a
   central e atualizar ela mesma sozinha; NOSSOM no catálogo (Release `nossom-v…` no AbsoluteZRO ou `GITHUB_TOKEN` no
   projeto `absolutezro`); ~~abrir o download público~~ (`HUB_DESKTOP_PUBLICO=1` ligado em 26/10/2026, com instalação pelo Terminal).

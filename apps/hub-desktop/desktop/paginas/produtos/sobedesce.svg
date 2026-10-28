@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#232327"/>
+      <stop offset="1" stop-color="#0C0C0E"/>
+    </linearGradient>
+    <linearGradient id="up" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#B9A8FF"/>
+      <stop offset="1" stop-color="#7C5CFF"/>
+    </linearGradient>
+    <linearGradient id="down" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3D9CFF"/>
+      <stop offset="1" stop-color="#7CC0FF"/>
+    </linearGradient>
+  </defs>
+  <!-- Placa até a borda (ícone de família): sem margem nem sombra, quem mostra recorta os cantos. -->
+  <rect width="1024" height="1024" rx="232" fill="url(#bg)"/>
+  <rect x="311" y="194" width="154" height="505" rx="77" fill="url(#up)"/>
+  <rect x="559" y="326" width="154" height="505" rx="77" fill="url(#down)"/>
+</svg>

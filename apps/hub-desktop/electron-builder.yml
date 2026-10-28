@@ -15,6 +15,8 @@ files:
   - desktop/**/*
   - build/icon.png
   - build/icon-windows.png
+  # símbolo da barra de menus (Mac, template) e da bandeja (Windows/Linux), gerado por scripts/bandeja.mjs
+  - build/bandeja/*.png
   - '!**/*.map'
   - '!**/*.md'
 

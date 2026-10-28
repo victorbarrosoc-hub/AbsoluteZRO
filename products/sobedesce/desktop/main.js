@@ -10,6 +10,7 @@ import { responderCofre } from './cofre.js'
 import { AVISO_COOKIES, marcarAvisado, migrarCookies, precisaAvisar } from './cookies-cifrados.js'
 import { abrirNavegador, cookiesPara, fecharNavegador, registrarCanais } from './navegador.js'
 import { handoffCommand, isHandoffScript } from '../src/updater.js'
+import { arquivoDaCentral } from '../src/gerenciado.js'
 import { SYNQUEI_BAIXAR } from '../src/backup/synquei.js'
 import { ligarZoom } from './zoom.js'
 
@@ -74,6 +75,8 @@ function startEngine() {
         UV_THREADPOOL_SIZE: process.env.UV_THREADPOOL_SIZE || '16',
         SOBEDESCE_APP_EXE: app.isPackaged ? process.execPath : '',
         SOBEDESCE_APP_PID: app.isPackaged ? String(process.pid) : '',
+        // instalado pela central do Absolute ZRO: quem atualiza é ela (src/gerenciado.js, ADR 0018)
+        SOBEDESCE_CENTRAL_ARQUIVO: app.isPackaged ? arquivoDaCentral(app.getPath('appData')) : '',
       },
     })
     engine.stdout?.pipe(log)

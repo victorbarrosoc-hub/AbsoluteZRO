@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; img-src 'self'; style-src 'self'; font-src 'self'; script-src 'self'; base-uri 'none'; form-action 'none'"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>Seus apps · Absolute ZRO</title>
+    <link rel="stylesheet" href="boas-vindas.css" />
+  </head>
+  <body>
+    <main class="tela" aria-labelledby="titulo">
+      <img class="simbolo" src="simbolo.svg" alt="" width="44" height="44" />
+      <h1 id="titulo"><span class="fino">Seus</span> apps.</h1>
+      <p class="texto">Escolha o que instalar agora. Tudo opcional.</p>
+      <ul id="lista" class="lista" aria-label="Apps para este computador"></ul>
+      <label class="opcao" title="Mantém seus apps em dia, em segundo plano.">
+        <span>Abrir com o computador</span>
+        <input id="sistema" type="checkbox" role="switch" checked />
+      </label>
+      <div class="acoes">
+        <button id="depois" class="vidro" type="button">Agora não</button>
+        <button id="instalar" class="vidro vidro--tinta" type="button" disabled>Instalar</button>
+      </div>
+      <p id="estado" class="estado" role="status" aria-live="polite"></p>
+    </main>
+    <script src="boas-vindas.js"></script>
+  </body>
+</html>

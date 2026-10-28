@@ -12,6 +12,9 @@
 //     instalador (Windows) e abre o app de novo. Se a troca falhar, o app antigo volta e fica uma marca na pasta de
 //     dados (atualizacao-falhou.json): na próxima abertura o aviso mostra o motivo e oferece o Baixar de sempre.
 //
+// Instalado pela central do Absolute ZRO (`gerenciado`, desktop/gerenciado.cjs): quem atualiza é a central. O app não
+// pergunta ao site, não baixa nada sozinho e não mostra aviso (status.gerenciado = true). Conferido a cada vez.
+//
 // Nada aqui importa o Electron: o processo principal (desktop/main.cjs) passa os caminhos e o "handoff". Os testes
 // trocam o download, os comandos e o site por funções falsas.
 
@@ -264,8 +267,10 @@ class Atualizador extends EventEmitter {
     retryBaseMs = 2 * 60_000,
     retryMaxMs = 30 * 60_000,
     progressMs = PROGRESS_MS,
+    gerenciado = () => false,
   } = {}) {
     super()
+    this.gerenciado = typeof gerenciado === 'function' ? gerenciado : () => !!gerenciado
     this.platform = platform
     this.plataforma = PLATAFORMAS[platform] || null
     this.appExe = String(appExe || '')
@@ -410,7 +415,25 @@ class Atualizador extends EventEmitter {
       verificando: this.verificando,
       verificadaEm: this.verificadaEm,
       baixarUrl: this.plataforma ? `${this.site}/baixar/${this.plataforma}` : `${this.site}/#baixar`,
+      gerenciado: this.#gerenciadoAgora(),
     }
+  }
+
+  #gerenciadoAgora() {
+    try {
+      return !!this.gerenciado()
+    } catch {
+      return false
+    }
+  }
+
+  /** A central do Absolute ZRO cuida das atualizações? Esquece a versão conhecida (o aviso some). */
+  #daCentral() {
+    if (!this.#gerenciadoAgora()) return false
+    this.ultima = null
+    clearTimeout(this.retryTimer)
+    this.retryTimer = null
+    return true
   }
 
   #emit() {
@@ -457,6 +480,7 @@ class Atualizador extends EventEmitter {
   /** Pergunta ao site agora. Nunca lança. */
   async check() {
     if (!this.enabled) return this.status()
+    if (this.#daCentral()) return this.#emit()
     if (this.inflight) return this.inflight
     this.inflight = (async () => {
       this.#set({ verificando: true })
@@ -484,7 +508,7 @@ class Atualizador extends EventEmitter {
 
   /** Build novo e não dispensado: baixa, confere e prepara já, em segundo plano. */
   #baixarSozinho(forcar = false) {
-    if (this.stopped) return
+    if (this.stopped || this.#daCentral()) return
     const st = this.status()
     if (!st.podeAtualizar || !st.nova) return
     const build = this.ultima.build
@@ -527,6 +551,7 @@ class Atualizador extends EventEmitter {
 
   /** "Atualizar agora": troca se estiver pronto; senão baixa e troca no fim. */
   async aplicarAgora() {
+    if (this.#daCentral()) throw new Error('O Absolute ZRO cuida das atualizações deste app.')
     if (this.pronto && this.ultima && this.pronto.build >= this.ultima.build) return this.#trocar()
     const st = this.status()
     if (!st.podeAtualizar) throw new Error(this.motivo || 'Esta versão não dá para instalar pelo app. Use Baixar.')
