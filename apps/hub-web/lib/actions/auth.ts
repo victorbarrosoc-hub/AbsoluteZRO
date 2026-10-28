@@ -17,15 +17,16 @@ import {
 import type { FormState } from '@/components/action-form'
 import { appOrigin, showDevLinks } from '../env'
 import { clearSessionCookie, db, getAuth, requestMeta, setSessionCookie } from '../session'
+import { emailConfirmacao, emailNovaSenha } from '../email/modelos'
 import { safeNext, str, toFormError } from './helpers'
 
 const mail = defaultSender()
 
-async function sendVerify(email: string, token: string): Promise<{ devLink?: string; enviado: boolean }> {
+async function sendVerify(email: string, token: string, opts: { nome?: string | null; boasVindas: boolean }): Promise<{ devLink?: string; enviado: boolean }> {
   const link = `${appOrigin}/confirmar-email?token=${encodeURIComponent(token)}`
   // A conta já existe: falha no envio não pode parecer falha no cadastro (a pessoa reenvia pela conta).
   const enviado = await mail
-    .send({ to: email, subject: 'Confirme seu e-mail na Absolute ZRO', text: `Para confirmar, abra: ${link}` })
+    .send(emailConfirmacao(email, link, opts))
     .then(() => true)
     .catch((e) => {
       console.error('[e-mail] confirmação não enviada:', e instanceof Error ? e.message : e)
@@ -40,7 +41,7 @@ export async function signupAction(_: FormState, fd: FormData): Promise<FormStat
     const email = str(fd, 'email')
     const r = await signUp(db(), { email, password: String(fd.get('password') ?? ''), displayName: str(fd, 'name') }, await requestMeta())
     await setSessionCookie(r.session.token)
-    await sendVerify(email, r.verifyToken)
+    await sendVerify(email, r.verifyToken, { nome: str(fd, 'name'), boasVindas: true })
     ok = true
   } catch (e) {
     return toFormError(e)
@@ -86,7 +87,7 @@ export async function forgotAction(_: FormState, fd: FormData): Promise<FormStat
     let devLink: string | undefined
     if (r) {
       const link = `${appOrigin}/redefinir-senha?token=${encodeURIComponent(r.token)}`
-      await mail.send({ to: r.email, subject: 'Nova senha na Absolute ZRO', text: `Para criar uma nova senha, abra (vale 1 hora): ${link}` })
+      await mail.send(emailNovaSenha(r.email, link))
       if (showDevLinks) devLink = link
     }
     if (!mail.deliveryAvailable) return { error: 'O envio de e-mail ainda não está ligado nesta instalação. Fale com o suporte.' }
@@ -115,7 +116,7 @@ export async function resendVerifyAction(): Promise<FormState> {
   if (!auth) return { error: 'Entre na sua conta.' }
   if (auth.user.emailVerified) return { ok: 'Seu e-mail já está confirmado.' }
   const token = await newVerifyToken(db(), auth.user.id)
-  const { devLink, enviado } = await sendVerify(auth.user.email, token)
+  const { devLink, enviado } = await sendVerify(auth.user.email, token, { nome: auth.user.displayName, boasVindas: false })
   if (!mail.deliveryAvailable) return { error: 'O envio de e-mail ainda não está ligado nesta instalação.' }
   if (!enviado) return { error: 'Não conseguimos enviar agora. Tente de novo em instantes.' }
   return { ok: 'Enviamos um novo link de confirmação.', devLink }

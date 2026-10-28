@@ -14,6 +14,7 @@ import {
 import type { FormState } from '@/components/action-form'
 import { appOrigin, showDevLinks } from '../env'
 import { db, getAuth } from '../session'
+import { emailConvite } from '../email/modelos'
 import { safeNext, str, toFormError } from './helpers'
 
 const mail = defaultSender()
@@ -38,7 +39,7 @@ export async function inviteAction(_: FormState, fd: FormData): Promise<FormStat
   try {
     const r = await inviteMember(db(), await getAuth(), { email: str(fd, 'email'), role: str(fd, 'role') as Exclude<OrgRole, 'owner'> })
     const link = `${appOrigin}/convite?token=${encodeURIComponent(r.token)}`
-    await mail.send({ to: r.email, subject: 'Convite para uma equipe na Absolute ZRO', text: `Você foi convidado. Para aceitar (vale 7 dias): ${link}` })
+    await mail.send(emailConvite(r.email, link))
     return {
       ok: mail.deliveryAvailable
         ? `Convite enviado para ${r.email}.`

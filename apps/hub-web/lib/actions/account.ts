@@ -17,6 +17,7 @@ import type { FormState } from '@/components/action-form'
 import { appOrigin, showDevLinks } from '../env'
 import { db, getAuth } from '../session'
 import { stripeConfig } from '../stripe'
+import { emailEmailMudou, emailNovoEmail } from '../email/modelos'
 import { str, toFormError } from './helpers'
 
 const mail = defaultSender()
@@ -55,11 +56,7 @@ export async function requestEmailChangeAction(_: FormState, fd: FormData): Prom
   try {
     const r = await requestEmailChange(db(), auth.user.id, String(fd.get('password') ?? ''), str(fd, 'email'))
     const link = `${appOrigin}/trocar-email?token=${encodeURIComponent(r.token)}`
-    await mail.send({
-      to: r.email,
-      subject: 'Confirme seu novo e-mail na Absolute ZRO',
-      text: `Para usar este e-mail na sua conta, abra (vale 48 horas): ${link}`,
-    })
+    await mail.send(emailNovoEmail(r.email, link))
     if (!mail.deliveryAvailable) return { error: 'O envio de e-mail ainda não está ligado nesta instalação.', devLink: showDevLinks ? link : undefined }
     return { ok: `Enviamos um link para ${r.email}. O e-mail atual vale até você confirmar.`, devLink: showDevLinks ? link : undefined }
   } catch (e) {
@@ -71,11 +68,7 @@ export async function confirmEmailChangeAction(_: FormState, fd: FormData): Prom
   try {
     const r = await confirmEmailChange(db(), str(fd, 'token'))
     if (!r) return { error: 'Link inválido, já usado ou vencido.' }
-    await mail.send({
-      to: r.oldEmail,
-      subject: 'O e-mail da sua conta Absolute ZRO mudou',
-      text: `A sua conta agora entra com ${r.email}. Se não foi você, fale com o suporte: contato@absolutezro.com`,
-    })
+    await mail.send(emailEmailMudou(r.oldEmail, r.email))
     return { ok: `Pronto. Sua conta agora usa ${r.email}.` }
   } catch (e) {
     return toFormError(e)

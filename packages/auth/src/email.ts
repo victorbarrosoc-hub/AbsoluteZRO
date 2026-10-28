@@ -5,7 +5,8 @@
  */
 import { zroEnv } from '@zro/observability'
 
-export type OutgoingEmail = { to: string; subject: string; text: string }
+/** `text` é sempre obrigatório (leitores sem HTML e filtros de spam); `html` é a versão desenhada. */
+export type OutgoingEmail = { to: string; subject: string; text: string; html?: string }
 export type EmailSender = { deliveryAvailable: boolean; send(email: OutgoingEmail): Promise<void> }
 
 export function devConsoleSender(log: (line: string) => void = (l) => console.info(l)): EmailSender {
@@ -38,7 +39,7 @@ export function resendSender(apiKey: string, fetcher: typeof fetch = fetch): Ema
       const r = await fetcher('https://api.resend.com/emails', {
         method: 'POST',
         headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
-        body: JSON.stringify({ from: REMETENTE, reply_to: RESPONDER_PARA, to: [e.to], subject: e.subject, text: e.text }),
+        body: JSON.stringify({ from: REMETENTE, reply_to: RESPONDER_PARA, to: [e.to], subject: e.subject, text: e.text, ...(e.html ? { html: e.html } : {}) }),
       })
       if (!r.ok) throw new Error(`Resend recusou o envio (${r.status}).`)
     },
