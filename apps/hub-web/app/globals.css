@@ -5687,6 +5687,24 @@ a.pstrip__card:focus-visible .pstrip__go {
 .ia-msg--erro {
   color: var(--text-mute);
 }
+.ia-texto__botao {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  margin: 4px 6px 0 0;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-strong);
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-decoration: none;
+  vertical-align: middle;
+}
+.ia-texto__botao:hover {
+  border-color: var(--text-strong);
+}
 .ia-texto {
   display: grid;
   gap: 10px;

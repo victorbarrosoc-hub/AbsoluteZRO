@@ -1,4 +1,4 @@
-/* global HTMLElement, ResizeObserver, document, performance, devicePixelRatio, customElements, CustomEvent, TextDecoder, AbortController, requestAnimationFrame, cancelAnimationFrame, matchMedia, fetch, addEventListener, removeEventListener */
+/* global HTMLElement, location, ResizeObserver, document, performance, devicePixelRatio, customElements, CustomEvent, TextDecoder, AbortController, requestAnimationFrame, cancelAnimationFrame, matchMedia, fetch, addEventListener, removeEventListener */
 /*
  * <zro-ia> · a IA da Absolute ZRO dentro de qualquer plataforma do ecossistema (27/10/2026).
  * A mesma IA e o mesmo painel em todas: saudação com o Z (anel e estrela cromados, com o rastro e as correntes em volta), sugestões, o campo de conversa e "Conversas" (as desta
@@ -59,7 +59,7 @@ h1 strong{font-weight:800}
 .msg{max-width:100%;overflow-wrap:anywhere;line-height:1.55}
 .eu{align-self:flex-end;max-width:min(80%,560px);padding:10px 16px;border-radius:20px 20px 6px 20px;background:var(--surf3);white-space:pre-wrap}
 .erro{color:var(--mute)}
-.texto{display:grid;gap:10px}.texto ul,.texto ol{display:grid;gap:4px;padding-left:1.3em}.texto strong{font-weight:650}
+.texto{display:grid;gap:10px}.texto a.zbtn{display:inline-flex;align-items:center;min-height:30px;margin:4px 6px 0 0;padding:0 12px;border:1px solid var(--line2);border-radius:999px;background:var(--surf);color:var(--ink);font-size:.84rem;font-weight:600;text-decoration:none;vertical-align:middle}.texto a.zbtn:hover{border-color:var(--ink)}.texto ul,.texto ol{display:grid;gap:4px;padding-left:1.3em}.texto strong{font-weight:650}
 .pensando{display:inline-flex;align-items:center;gap:10px;color:var(--faint);font-size:.92rem}
 .base{position:sticky;bottom:0;display:grid;gap:10px;padding:10px 0 4px}
 .sug{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;padding:0;list-style:none}
@@ -363,7 +363,14 @@ function texto(t) {
   const out = []
   let lista = null
   let par = []
-  const inl = (s) => esc(s).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+  // links viram botões (nada de endereço cru): só https; o que é deste site abre aqui, o resto em outra aba
+  const botao = (href, rotulo) =>
+    `<a class="zbtn" href="${href}"${href.startsWith(location.origin) ? '' : ' target="_blank" rel="noopener noreferrer"'}>${rotulo}</a>`
+  const inl = (s) =>
+    esc(s.replace(/\s*·\s*(?=\[)/g, ' '))
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/\[([^\]]+)\]\((https:\/\/[^\s)]+)\)/g, (_, r, u) => botao(u, r))
+      .replace(/(^|[\s(])(https:\/\/[^\s<)]+)/g, (_, a, u) => `${a}${botao(u, 'Abrir')}`)
   const fp = () => {
     if (par.length) out.push(`<p>${inl(par.join(' '))}</p>`)
     par = []

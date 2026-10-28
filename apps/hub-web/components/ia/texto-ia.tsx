@@ -1,7 +1,7 @@
 import { Fragment, type ReactNode } from 'react'
 
 /**
- * A resposta da IA em blocos simples: parágrafos, listas (- ou 1.) e **negrito**. Monta elementos React (nada de HTML
+ * A resposta da IA em blocos simples: parágrafos, listas (- ou 1.), **negrito** e links como botões. Monta elementos React (nada de HTML
  * vindo do modelo).
  */
 export function TextoIa({ texto }: { texto: string }) {
@@ -54,10 +54,38 @@ export function TextoIa({ texto }: { texto: string }) {
   return <div className="ia-texto">{blocos}</div>
 }
 
+// Links viram botões (pedido do titular, 27/10/2026: nada de endereço cru na tela). Só https; o que é do próprio site
+// abre aqui, o resto em outra aba. Endereço solto no texto vira um botão "Abrir".
+const PEDACO = /(\*\*[^*]+\*\*|\[[^\]]+\]\(https:\/\/[^\s)]+\)|https:\/\/[^\s)]+)/g
+
+function Botao({ href, children }: { href: string; children: ReactNode }) {
+  const aqui = typeof location !== 'undefined' && href.startsWith(location.origin)
+  return (
+    <a className="ia-texto__botao" href={href} {...(aqui ? {} : { target: '_blank', rel: 'noopener noreferrer' })}>
+      {children}
+    </a>
+  )
+}
+
 function inline(t: string): ReactNode {
   return t
-    .split(/(\*\*[^*]+\*\*)/g)
-    .map((parte, i) =>
-      parte.startsWith('**') && parte.endsWith('**') && parte.length > 4 ? <strong key={i}>{parte.slice(2, -2)}</strong> : <Fragment key={i}>{parte}</Fragment>,
-    )
+    .replace(/\s*·\s*(?=\[)/g, ' ')
+    .split(PEDACO)
+    .map((parte, i) => {
+      if (parte.startsWith('**') && parte.endsWith('**') && parte.length > 4) return <strong key={i}>{parte.slice(2, -2)}</strong>
+      const link = /^\[([^\]]+)\]\((https:\/\/[^\s)]+)\)$/.exec(parte)
+      if (link)
+        return (
+          <Botao key={i} href={link[2]!}>
+            {link[1]}
+          </Botao>
+        )
+      if (/^https:\/\/\S+$/.test(parte))
+        return (
+          <Botao key={i} href={parte}>
+            Abrir
+          </Botao>
+        )
+      return <Fragment key={i}>{parte}</Fragment>
+    })
 }
