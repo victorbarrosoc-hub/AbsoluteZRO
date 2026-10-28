@@ -322,7 +322,7 @@ function Bloqueio({ motivo, status }) {
     </${Vazio}>`
   return html`<${Vazio}
     icone="bookmark"
-    titulo="Entre na conta SOBEDESCE"
+    titulo="Entre com a conta Absolute ZRO"
     acoes=${html`<${Button} variant="primary" icon="cloud" onClick=${() => navigate('ajustes')}>Entrar na conta</${Button}>`}
   >
     As coleções de referências ficam no Drive da sua conta SOBEDESCE.

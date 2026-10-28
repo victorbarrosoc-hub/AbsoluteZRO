@@ -158,7 +158,7 @@ function App() {
         class=${cx('btn btn-primary nav-save', !salvavel && 'is-off')}
         disabled=${!salvavel || bloqueado}
         onClick=${abrirSalvar}
-        title=${bloqueado ? 'Entre na conta SOBEDESCE no app para salvar referências.' : salvavel ? 'Salvar este vídeo/post numa coleção do seu Drive' : 'Abra um vídeo ou post para salvar'}
+        title=${bloqueado ? 'Entre com a conta Absolute ZRO no app para salvar referências.' : salvavel ? 'Salvar este vídeo/post numa coleção do seu Drive' : 'Abra um vídeo ou post para salvar'}
       >
         <${Icon} name="bookmark" size=${16} /><span>Salvar referência</span>
       </button>
@@ -171,7 +171,7 @@ function App() {
             <${IconButton} icon="x" label="Fechar" onClick=${() => setAlvo(null)} />
           </div>
           ${bloqueado
-            ? html`<p class="nav-panel-msg">${ref.motivo === 'plano' ? 'As Referências fazem parte do plano Produtora.' : 'Entre na conta SOBEDESCE no app para salvar referências.'}</p>`
+            ? html`<p class="nav-panel-msg">${ref.motivo === 'plano' ? 'As Referências fazem parte do plano Produtora.' : 'Entre com a conta Absolute ZRO no app para salvar referências.'}</p>`
             : html`<${SalvarReferencia}
                 key=${alvo.chave || alvo.url || alvo.imagemUrl}
                 alvo=${alvo}

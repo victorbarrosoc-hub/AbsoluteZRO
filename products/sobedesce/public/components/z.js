@@ -73,7 +73,7 @@ export function PainelZ({ nome }) {
       ? html`<div class="pn-z-acao">
           ${conectado
             ? html`<button type="button" class="btn btn-secondary" onClick=${reconectar}>Reconectar com Absolute ZRO</button>`
-            : html`<button type="button" class="btn btn-secondary" onClick=${() => cloudLogin()}>Entrar na conta SOBEDESCE</button>`}
+            : html`<button type="button" class="btn btn-secondary" onClick=${() => cloudLogin()}>Entrar com Absolute ZRO</button>`}
         </div>`
       : null}
   </section>`

@@ -196,8 +196,14 @@ describe('painel do app', () => {
   })
   test('o service worker não guarda a Z', () => {
     const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
-    assert.match(sw, /synquei-v21/)
+    assert.match(sw, /synquei-v22/)
     assert.match(sw, /startsWith\('\/api\/'\)/)
     assert.match(sw, /u\.origin !== location\.origin/)
+  })
+  test('a família só lista plataformas abertas (NOSSOM, AEON, Revela, Carro do Freela e Maestro estão fechados)', () => {
+    const fam = /<nav class="nav nav-familia"[\s\S]*?<\/nav>/.exec(html)[0]
+    const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
+    assert.doesNotMatch(fam + sw, /nossom|aeon|revela|carrodofreela|carro-do-freela|maestro/i)
+    for (const nome of ['Absolute ZRO', 'Sobedesce', 'TPEasy']) assert.ok(fam.includes(`<span>${nome}</span>`), nome)
   })
 })
