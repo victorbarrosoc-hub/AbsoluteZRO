@@ -18,7 +18,7 @@ export default async function Inicio() {
         <h1 className="atitle atitle--xl">
           Em <strong>desenvolvimento.</strong>
         </h1>
-        <p className="apoio">Pauta, aprovação do cliente e projetos para agências e produtoras. Uma plataforma Absolute ZRO.</p>
+        <p className="apoio">A gestão da sua produtora num lugar só: CRM, financeiro, controle de pauta e aprovação do cliente. Uma plataforma Absolute ZRO.</p>
         <div className="acoes acoes--centro">
           {dentro ? (
             <a className="glass-btn glass-btn--ink" href={ROTAS.app}>

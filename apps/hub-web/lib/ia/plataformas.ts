@@ -49,7 +49,7 @@ export const PLATAFORMAS: Record<string, { nome: string; faz: string[] }> = {
   maestro: {
     nome: 'Maestro',
     faz: [
-      'Em desenvolvimento, ainda fechado (nada no ar): gestão de conteúdo para agências e produtoras, com o Quadro de pautas em 8 colunas, aprovação do cliente por link sem conta e projetos ligados ao projeto da Absolute ZRO. Não ofereça como disponível.',
+      'Em desenvolvimento, ainda fechado (nada no ar): a gestão da produtora num lugar só: CRM e cadastro de clientes, financeiro, controle de pauta (Quadro em 8 colunas) e aprovação do cliente por link sem conta, com projetos ligados ao projeto da Absolute ZRO. Não ofereça como disponível.',
     ],
   },
 }

@@ -24,7 +24,7 @@ const LINE: Record<string, string> = {
   'ai-edit': 'Edição de vídeo',
   nossom: 'Tratamento de som',
   finishing: 'Cor e entrega',
-  maestro: 'Pauta e aprovação',
+  maestro: 'Gestão da produtora',
 }
 
 /** Três fatos por ferramenta, tirados do que cada uma faz hoje (README de cada produto em products/). */
