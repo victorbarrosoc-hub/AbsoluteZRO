@@ -1,6 +1,7 @@
-// Revela · página de entrada. A conta é a da Absolute ZRO (api/zro/*, ADR 0012 e 0014): aqui só três estados —
-// fora (Entrar / Criar conta), dentro (quem é, Abrir a Revela, Sair) e desligado (login ainda não configurado neste
-// endereço: as ferramentas seguem abertas). `?volta=` diz para onde voltar depois; `?zro=` traz o resultado.
+// Revela · página de entrada. A conta é a da Absolute ZRO (api/zro/*, ADR 0012 e 0014): quatro estados — fora
+// (Entrar / Criar conta), dentro (quem é, Abrir a Revela, Sair), fechado (entrou, mas o HUB não liberou esta conta
+// enquanto a Revela está em desenvolvimento: Voltar ao HUB, Sair) e desligado (login ainda não configurado neste
+// endereço). `?volta=` diz para onde voltar depois; `?zro=` traz o resultado.
 import { lerConta, ondeEditar, preencherAvatar } from './conta.js'
 
 const $ = (id) => document.getElementById(id)
@@ -27,14 +28,18 @@ if (c.estado === 'logado') {
   $('ola').textContent = `Olá, ${(p.nome || p.email || '').split(' ')[0]}.`
   $('quem').textContent = [p.email, p.organizacao?.nome].filter(Boolean).join(' · ')
   $('sem-acesso').hidden = c.acesso !== false
+  $('abrir').hidden = c.acesso === false
   $('dentro').hidden = false
 } else if (c.estado === 'fora') {
   $('fora').hidden = false
+} else if (c.estado === 'fechado') {
+  $('fechado').hidden = false
 } else {
   $('desligado').hidden = false
 }
 
-$('sair').addEventListener('click', async () => {
-  await fetch('/api/zro/sair', { method: 'POST', credentials: 'same-origin' }).catch(() => {})
-  location.replace('entrar.html')
-})
+for (const b of document.querySelectorAll('[data-sair]'))
+  b.addEventListener('click', async () => {
+    await fetch('/api/zro/sair', { method: 'POST', credentials: 'same-origin' }).catch(() => {})
+    location.replace('entrar.html')
+  })

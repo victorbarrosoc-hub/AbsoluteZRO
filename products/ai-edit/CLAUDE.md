@@ -25,6 +25,10 @@ entram na edição com aprovação. Nunca apresente o AEON como "só de IA".
 - **Mídia**: o app só lê o que a pessoa escolheu (ou o projeto do SOBEDESCE que ela abriu) e nunca move, renomeia ou apaga.
   Grava só onde ela mandou (diálogos de salvar).
 - **Publicar o app** (Release `ai-edit-app-desktop`) só pelo botão do workflow, com autorização do titular.
+- **Fechado ao público** (titular, 28/10/2026; PRD §5–§6): `api/_release.js` com `RELEASE=closed` por padrão. O editor
+  no navegador, os instaladores e as APIs (`/api/zro/eu`, `/api/zro/ia/*`) só para a conta `allowed` na claim
+  `zro_release` do HUB; o resto vê `em-desenvolvimento.html` (200) ou 403. Não abrir sem o titular, e abrir pede os
+  dois lados (HUB e `RELEASE=released` no projeto Vercel). Nada de link para Release do GitHub no site.
 - Repositório público: nada de chave, token, áudio ou vídeo de pessoa real. `node scripts/scan-secrets.mjs` na raiz.
 
 ## Implementação

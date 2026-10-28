@@ -512,14 +512,92 @@ test('Whisper de verdade carrega no navegador e transcreve (modelo Rápido, prec
   await pagina.close()
 })
 
-test('página inicial: a seção da Z diz que ela já está no AEON e leva ao painel', async () => {
+test('página inicial fechada ao público: a Z "Chegando ao AEON", Conhecer o projeto é âncora e nada leva ao editor', async () => {
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 390, height: 844 },
+  ]) {
+    const pagina = await navegador.newPage({ viewport })
+    const erros = []
+    pagina.on('pageerror', (e) => erros.push(e.message))
+    // o 401 de /api/zro/eu (visitante sem conta) é esperado: o navegador o anota no console
+    pagina.on('console', (m) => m.type() === 'error' && !/status of 401/.test(m.text()) && erros.push(m.text()))
+    await pagina.route('**/api/zro/eu', (r) => r.fulfill({ status: 401, contentType: 'application/json', body: '{"ok":false}' }))
+    await pagina.goto(s.url)
+    const sec = pagina.locator('#z')
+    assert.match(await sec.innerText(), /Chegando ao AEON/)
+    assert.equal(await sec.getByRole('link', { name: 'Conversar com a Z' }).count(), 0)
+    assert.equal(await sec.getByRole('link', { name: 'Conhecer a Z' }).getAttribute('href'), 'https://absolutezro.com/ia')
+    // nenhum link do site leva ao editor, ao download ou ao instalador
+    const hrefs = await pagina.$$eval('a[href]', (as) => as.map((a) => a.getAttribute('href')))
+    assert.deepEqual(
+      hrefs.filter((h) => /^app\/|\/app\/|baixar|instalar/.test(h)),
+      [],
+    )
+    assert.ok(hrefs.includes('#produto'), 'Conhecer o projeto é âncora')
+    // no celular a barra esconde o atalho; no HTML são três (barra, abertura e fim), todos âncora
+    assert.deepEqual(await pagina.$$eval('a', (as) => as.filter((a) => a.textContent.trim() === 'Conhecer o projeto').map((a) => a.getAttribute('href'))), ['#produto', '#produto', '#produto'])
+    // a seção entra com a rolagem (ao-rolar): o texto existe antes de aparecer
+    assert.match(await pagina.locator('#em-desenvolvimento').textContent(), /Em desenvolvimento[\s\S]*Ainda sem download/)
+    assert.equal(await pagina.locator('.fim').getByRole('link', { name: 'Voltar ao HUB' }).getAttribute('href'), 'https://absolutezro.com/inicio')
+    // o caminho do ecossistema aponta para a apresentação, não para o editor
+    assert.equal(await pagina.locator('#caminho a.eu').getAttribute('href'), '#produto')
+    await pagina.evaluate(() => scrollTo(0, document.body.scrollHeight))
+    const largura = await pagina.evaluate(() => document.documentElement.scrollWidth)
+    assert.ok(largura <= viewport.width, `rolagem horizontal: ${largura}px`)
+    assert.deepEqual(erros, [])
+    await pagina.close()
+  }
+})
+
+test('em-desenvolvimento.html: símbolo, marca do AEON, título, uma linha e Voltar ao HUB, nos dois temas e no celular', async () => {
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 390, height: 844 },
+  ]) {
+    const pagina = await navegador.newPage({ viewport })
+    const erros = []
+    pagina.on('pageerror', (e) => erros.push(e.message))
+    pagina.on('console', (m) => m.type() === 'error' && erros.push(m.text()))
+    const r = await pagina.goto(s.url + 'em-desenvolvimento.html')
+    assert.equal(r.status(), 200)
+    assert.match(r.headers()['content-security-policy'], /default-src 'self'/)
+    await pagina.locator('.fechado-produto [data-marca="nome"] svg').waitFor()
+    assert.equal(await pagina.locator('.fechado-zro svg').count(), 1)
+    assert.equal(await pagina.getByRole('heading', { level: 1 }).innerText(), 'Em desenvolvimento.')
+    assert.equal(await pagina.locator('.fechado p').count(), 1)
+    const botao = pagina.getByRole('link', { name: 'Voltar ao HUB' })
+    assert.equal(await botao.getAttribute('href'), 'https://absolutezro.com/inicio')
+    assert.ok(await botao.evaluate((b) => b.classList.contains('glass-btn--ink')))
+    // Figtree fino × pesado, só na cor do texto (nada azul, nada em degradê)
+    await pagina.evaluate(() => document.fonts.ready)
+    assert.ok(await pagina.evaluate(() => document.fonts.check('300 40px Figtree') && document.fonts.check('800 40px Figtree')))
+    const pesos = await pagina.evaluate(() => [getComputedStyle(document.querySelector('.fechado .fino')).fontWeight, getComputedStyle(document.querySelector('.fechado .forte')).fontWeight])
+    assert.deepEqual(pesos, ['300', '800'])
+    // o escuro é o ambiente do AEON (site/tema.js); o claro vem da escolha guardada
+    assert.equal(await pagina.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(0, 0, 0)')
+    await pagina.evaluate(() => localStorage.setItem('zro-tema', 'light'))
+    await pagina.reload()
+    assert.equal(await pagina.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(245, 245, 247)')
+    assert.equal(await pagina.evaluate(() => getComputedStyle(document.querySelector('h1')).color), 'rgb(29, 29, 31)')
+    await pagina.evaluate(() => localStorage.removeItem('zro-tema'))
+    const largura = await pagina.evaluate(() => document.documentElement.scrollWidth)
+    assert.ok(largura <= viewport.width, `rolagem horizontal: ${largura}px`)
+    assert.deepEqual(erros, [])
+    await pagina.close()
+  }
+})
+
+test('entrar.html com a conta fechada pelo HUB (403): "Em desenvolvimento", Voltar ao HUB e Sair; o editor não abre', async () => {
   const pagina = await navegador.newPage()
-  await pagina.route('**/api/zro/eu', (r) => r.fulfill({ status: 401, contentType: 'application/json', body: '{"ok":false}' }))
-  await pagina.goto(s.url)
-  const sec = pagina.locator('#z')
-  assert.match(await sec.innerText(), /Agora no AEON/)
-  assert.equal(await sec.getByRole('link', { name: 'Conversar com a Z' }).getAttribute('href'), 'app/')
-  assert.equal(await sec.getByRole('link', { name: 'Conhecer a Z' }).getAttribute('href'), 'https://absolutezro.com/ia')
-  assert.doesNotMatch(await sec.innerText(), /Chegando|o Z\b/)
+  await pagina.route('**/api/zro/eu', (r) => r.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ ok: false, fechado: true, hub: 'https://absolutezro.com/inicio', pagina: '/em-desenvolvimento.html' }) }))
+  await pagina.goto(s.url + 'entrar.html')
+  await pagina.locator('#fechado:not([hidden])').waitFor()
+  assert.equal(await pagina.locator('#fechado').getByRole('link', { name: 'Voltar ao HUB' }).getAttribute('href'), 'https://absolutezro.com/inicio')
+  assert.equal(await pagina.locator('#dentro').isHidden(), true)
+  assert.equal(await pagina.locator('#fora').isHidden(), true)
+  // o editor servido (como no app de computador ou no dev) manda para a página, sem montar nada
+  await pagina.goto(s.url + 'app/')
+  await pagina.waitForURL(/em-desenvolvimento\.html$/)
   await pagina.close()
 })

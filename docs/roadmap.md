@@ -172,6 +172,16 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   fecha e abre já atualizado (Mac e Windows, no molde do SOBEDESCE). Site: sem corte seco entre as fotos (as cenas se
   dissolvem no fundo), a salina sem texto e o fecho com a estrela inteira. Falta conferir a troca num Mac e num
   Windows de verdade com o próximo Release.
+- 🟡 AEON e Revela fechados ao público (28/10/2026, Etapa B do PRD §5–§6, decisão do titular): os sites só apresentam
+  ("Conhecer o projeto" é âncora, Z "Chegando", sem Baixar/Abrir/Testar); o editor do AEON (`app/`, `src/`,
+  `presets/`) e as ferramentas da Revela (`inicio`, `lut`, `cst`, `entrega`, `converter`, `app/`, `src/`,
+  `exemplos/`) saem do estático (`scripts/publicar-site.mjs` → `publico/`) e só saem pela função `api/app.js` para a
+  conta que o HUB marca `allowed` na claim `zro_release`; `/api/zro/eu` e `/api/zro/ia/*` 403 para o resto; página
+  "Em desenvolvimento" (200) nos dois; `/baixar/*` do AEON volta à home e `instalar.sh`/`.ps1` só dão o recado;
+  manifesto da Revela sem atalhos. `RELEASE=closed` local (`api/_release.js`), deny-by-default mesmo com o HUB fora.
+  Falta: o HUB emitir `zro_release` e negar código/refresh/userinfo aos clientes fechados (contrato simulado em
+  `test/zro-falso.js`), o Release `ai-edit-app-desktop` em rascunho (titular, no GitHub) e publicar os projetos
+  `aeon` e `revela` depois do HUB.
 - ⬜ Revela, primeiro recorte: só DaVinci Resolve, cor entregue em PowerGrade e LUT, técnica gerada e criativa entregue ([ADR 0015](decisions/0015-finishing-resolve-powergrade-lut.md)). QC, exportação e media manager vêm depois.
 - ✅ Revela: identidade visual (película perfurada em amarelo filme, revelada em roxo → amarelo; escolha do titular; guia e alternativas em `products/finishing/marca`) aplicada na tela e no HUB — [ADR 0016](decisions/0016-identidade-revela.md).
 - 🟡 Revela: referência → LUT criativa com tela e conta-gotas de pares de cor (`products/finishing`, sem IA, roda no navegador sem enviar imagens, 18 testes com Chromium e a CSP de produção, CI próprio). Projeto Vercel `revela` autorizado pelo titular em 25/10/2026, em revela-zro.vercel.app, hoje revela.absolutezro.com (o endereço antigo redireciona; `revela.vercel.app` é de outro app), com OG próprio. Falta: LUTs técnicas por câmera, ponte com o Resolve e pacote de entrega.
@@ -261,3 +271,6 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 5. Manter o AbsoluteZRO público (com cópias de TPeasy e Carro do Freela) ou torná-lo privado.
 6. ~~Nome do editor~~: AEON (26/10/2026); falta busca no INPI e autorização para publicar o primeiro Release; LGPD, termos e retenção de mídia.
 7. `GITHUB_TOKEN` (token fino, só leitura de Contents em AbsoluteZRO, baixadordodrive, synquei e nossom) nos projetos Vercel sobedesce, synquei e nossom: sem ele, com os repositórios privados, os downloads ficam indisponíveis ([downloads-privados](operations/downloads-privados.md)).
+8. Produtos fechados (AEON, Revela): pôr o Release `ai-edit-app-desktop` em rascunho no GitHub; publicar os projetos
+   Vercel `aeon` e `revela` só depois de o HUB negar a emissão aos clientes fechados; quando for abrir, mudar os dois
+   lados (HUB e `RELEASE=released` nos projetos).

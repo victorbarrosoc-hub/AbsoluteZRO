@@ -1,13 +1,15 @@
 // Revela · a conta Absolute ZRO no topo das páginas (api/zro/eu). Logado: a foto da conta (sem foto, as iniciais),
 // que leva à página da conta. Perfil único: nome, foto e e-mail são os da conta Absolute ZRO e se editam lá.
-// Sem sessão: "Entrar". Login não ligado neste endereço (503) ou sem as funções (site local): o lugar some e as
-// ferramentas seguem abertas, como sempre. Nada aqui bloqueia o uso: as imagens e vídeos continuam no aparelho.
+// Sem sessão: "Entrar". Fechado (403: a Revela está em desenvolvimento e o HUB não liberou esta conta): fica o
+// "Entrar", que leva à entrada, onde a pessoa vê "Em desenvolvimento" e pode sair. Login não ligado neste endereço
+// (503) ou sem as funções (site local): o lugar some. Quem barra as ferramentas é o servidor (api/app.js), não isto.
 
 export async function lerConta() {
   try {
     const r = await fetch('/api/zro/eu', { headers: { accept: 'application/json' }, credentials: 'same-origin', cache: 'no-store' })
     if (r.status === 200) return { estado: 'logado', ...(await r.json()) }
     if (r.status === 401) return { estado: 'fora' }
+    if (r.status === 403) return { estado: 'fechado' }
     return { estado: 'desligado' }
   } catch {
     return { estado: 'desligado' }

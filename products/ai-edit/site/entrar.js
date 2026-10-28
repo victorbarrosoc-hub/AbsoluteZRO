@@ -1,6 +1,7 @@
-// AEON · Entrar. A conta é a da Absolute ZRO (api/zro/*, o mesmo login da Revela): três estados — fora (Entrar / Criar
-// conta), dentro (quem é, Abrir o AEON, Sair) e desligado (login ainda não ligado neste endereço). Sem conta o AEON não
-// abre: o editor manda para cá.
+// AEON · Entrar. A conta é a da Absolute ZRO (api/zro/*, o mesmo login da Revela): quatro estados — fora (Entrar /
+// Criar conta), dentro (quem é, Abrir o AEON, Sair), fechado (entrou, mas o HUB não liberou esta conta enquanto o AEON
+// está em desenvolvimento: Voltar ao HUB, Sair) e desligado (login ainda não ligado neste endereço). Sem conta o AEON
+// não abre: o editor manda para cá.
 // `?volta=` diz para onde voltar; `?zro=` traz o resultado.
 import { wordmark } from '../src/marca.js'
 import { lerConta, ondeEditar, preencherAvatar } from './conta.js'
@@ -35,11 +36,14 @@ if (c.estado === 'logado') {
   $('dentro').hidden = false
 } else if (c.estado === 'fora') {
   $('fora').hidden = false
+} else if (c.estado === 'fechado') {
+  $('fechado').hidden = false
 } else {
   $('desligado').hidden = false
 }
 
-$('sair').addEventListener('click', async () => {
-  await fetch('/api/zro/sair', { method: 'POST', credentials: 'same-origin' }).catch(() => {})
-  location.replace('entrar.html')
-})
+for (const b of document.querySelectorAll('[data-sair]'))
+  b.addEventListener('click', async () => {
+    await fetch('/api/zro/sair', { method: 'POST', credentials: 'same-origin' }).catch(() => {})
+    location.replace('entrar.html')
+  })

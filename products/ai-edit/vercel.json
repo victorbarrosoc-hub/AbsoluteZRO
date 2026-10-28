@@ -4,6 +4,11 @@
   "installCommand": "npm ci --ignore-scripts",
   "buildCommand": "npm run vendor && node scripts/publicar-site.mjs",
   "outputDirectory": "publico",
+  "functions": {
+    "api/app.js": {
+      "includeFiles": "{app/**,src/**,presets/**,em-desenvolvimento.html}"
+    }
+  },
   "headers": [
     {
       "source": "/(.*)",
@@ -44,7 +49,7 @@
       ]
     },
     {
-      "source": "/api/zro/(.*)",
+      "source": "/api/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -79,15 +84,15 @@
       ]
     }
   ],
+  "rewrites": [
+    { "source": "/app/:caminho*", "destination": "/api/app?caminho=app/:caminho*" },
+    { "source": "/src/:caminho*", "destination": "/api/app?caminho=src/:caminho*" },
+    { "source": "/presets/:caminho*", "destination": "/api/app?caminho=presets/:caminho*" }
+  ],
   "redirects": [
     {
-      "source": "/baixar/mac",
-      "destination": "https://github.com/victorbarrosoc-hub/AbsoluteZRO/releases/download/ai-edit-app-desktop/AEON-mac-universal.dmg",
-      "permanent": false
-    },
-    {
-      "source": "/baixar/windows",
-      "destination": "https://github.com/victorbarrosoc-hub/AbsoluteZRO/releases/download/ai-edit-app-desktop/AEON-windows-setup.exe",
+      "source": "/baixar/:resto*",
+      "destination": "/#em-desenvolvimento",
       "permanent": false
     }
   ]

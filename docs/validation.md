@@ -15,6 +15,17 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## AEON e Revela fechados ao público (28/10/2026)
+
+- `products/ai-edit`: `npm test` 122/122 (novo `test/fechado.test.js`: anônimo, conta `closed`, conta `allowed`, sessão
+  antiga sem a claim, liberação tirada no HUB, `RELEASE=released`; `publicar-site.mjs` fechado sem `app/`, `src/` do
+  editor e `presets/`; `instalar.sh`/`.ps1` só com o recado; `/baixar/*` → home).
+- `products/finishing`: `npm test` 146/146 (ferramentas `inicio`, `lut`, `cst`, `entrega`, `converter` só pela função
+  `api/app.js` com conta `allowed`; manifesto sem atalhos; CSP de produção).
+- Telas Playwright 1440 e 390 das homes e da página "Em desenvolvimento" conferidas (claro e escuro).
+- Não validado: o HUB emitindo `zro_release` (contrato simulado em `test/zro-falso.js`), deploy na Vercel e o
+  atualizador do desktop com o Release em rascunho.
+
 ## Originais
 
 ```

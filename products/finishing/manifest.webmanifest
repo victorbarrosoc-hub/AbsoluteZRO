@@ -1,11 +1,11 @@
 {
-  "id": "/lut",
+  "id": "/",
   "name": "Revela",
   "short_name": "Revela",
-  "description": "LUT, CST, entrega e conversão de vídeo, no aparelho.",
+  "description": "Cor e entrega para o DaVinci Resolve. Em desenvolvimento.",
   "lang": "pt-BR",
   "dir": "ltr",
-  "start_url": "/inicio",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
@@ -17,12 +17,5 @@
     { "src": "/marca/app/revela-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "/marca/app/revela-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
     { "src": "/marca/revela-icone.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
-  ],
-  "shortcuts": [
-    { "name": "Z", "url": "/inicio", "icons": [{ "src": "/marca/app/revela-192.png", "sizes": "192x192" }] },
-    { "name": "LUT", "url": "/lut", "icons": [{ "src": "/marca/app/revela-192.png", "sizes": "192x192" }] },
-    { "name": "CST", "url": "/cst", "icons": [{ "src": "/marca/app/revela-192.png", "sizes": "192x192" }] },
-    { "name": "Entrega", "url": "/entrega", "icons": [{ "src": "/marca/app/revela-192.png", "sizes": "192x192" }] },
-    { "name": "Converter", "url": "/converter", "icons": [{ "src": "/marca/app/revela-192.png", "sizes": "192x192" }] }
   ]
 }

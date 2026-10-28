@@ -1,15 +1,18 @@
 // Repasse da Z (api/zro/ia/*) contra uma Absolute ZRO falsa: leva o access token da sessão no Authorization, passa a
 // resposta NDJSON aos poucos, renova o token vencido, recusa sem sessão, de outra origem, caminho fora do contrato e
-// token sem o escopo zro.ia, e nunca devolve o token à página. As funções rodam num servidor http de verdade.
+// token sem o escopo zro.ia, e nunca devolve o token à página. Fechado ao público: sessão que o HUB não liberou
+// recebe 403 antes de qualquer pedido. As funções rodam num servidor http de verdade.
 
 import { after, before, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import http from 'node:http'
 import { iniciarZroFalsa } from './zro-falso.js'
+import { selar } from '../api/_zro.js'
 
 const PREFIXO = 'ae'
+const PRODUTO = 'ai-edit'
 const CLIENTE = { clientId: 'aeon-web', clientSecret: 'segredo-de-teste-do-aeon-ia' }
-const LIA = { sub: 'zro-311', email: 'lia@produtora.com', nome: 'Lia Produtora', org: 'Produtora Lia', produtos: ['ai-edit'] }
+const LIA = { sub: 'zro-311', email: 'lia@produtora.com', nome: 'Lia Produtora', org: 'Produtora Lia', produtos: [PRODUTO], release: { [PRODUTO]: 'allowed' } }
 const ROTAS = { estado: 'ia/estado.js', conversas: 'ia/conversas/index.js', conversa: 'ia/conversas/[id].js', mensagens: 'ia/mensagens.js' }
 let zro, app, SITE
 const f = {}
@@ -125,6 +128,21 @@ describe('repasse da Z', () => {
     const mexido = `${iv}.${corpo.slice(0, -2)}${corpo.endsWith('AA') ? 'BB' : 'AA'}.${tag}`
     assert.equal((await pedir('/api/zro/ia/estado', { cookies: { ...cookies, [`${PREFIXO}_tokens`]: mexido } })).status, 401)
     assert.equal(zro.estado.ia.length, n)
+  })
+
+  test('fechado ao público: sessão que o HUB não liberou (closed ou de antes do gate) recebe 403 sem falar com a Absolute ZRO', async () => {
+    const cookies = await entrar()
+    const n = zro.estado.ia.length
+    const sessao = (extra) => selar(`${PREFIXO}_conta`, { sub: LIA.sub, nome: LIA.nome, email: LIA.email, produtos: [PRODUTO], ...extra }, 3600)
+    for (const extra of [{}, { release: 'closed' }, { release: 'released' }]) {
+      const c = { ...cookies, [`${PREFIXO}_conta`]: sessao(extra) }
+      const r = await pedir('/api/zro/ia/estado', { cookies: c })
+      assert.equal(r.status, 403, JSON.stringify(extra))
+      assert.equal((await r.json()).message, 'Em desenvolvimento.')
+      assert.equal((await pedir('/api/zro/ia/mensagens', { method: 'POST', cookies: c, headers: { 'content-type': 'application/json', origin: SITE }, body: '{"texto":"x"}' })).status, 403)
+    }
+    assert.equal(zro.estado.ia.length, n, 'nada saiu para a Absolute ZRO')
+    assert.equal((await pedir('/api/zro/ia/estado', { cookies: { ...cookies, [`${PREFIXO}_conta`]: sessao({ release: 'allowed' }) } })).status, 200)
   })
 
   test('login antigo sem zro.ia: a Absolute ZRO diz 401 e o repasse passa adiante', async () => {

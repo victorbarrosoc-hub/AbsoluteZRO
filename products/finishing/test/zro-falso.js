@@ -4,8 +4,11 @@
 // agora: mudar `estado.pessoa` é a pessoa mudar o nome ou a foto na conta), /oauth/revoke e JWKS. Assina o id_token
 // com uma chave EC P-256 gerada aqui. `adulterar` gera tokens ruins de propósito.
 //
-// Pessoa: { sub, email, nome, org, produtos, foto, atualizado }. `foto` é o id da foto: o claim picture vira
-// <emissor>/api/v1/foto/<foto> (sem foto, sem claim, como no HUB).
+// Pessoa: { sub, email, nome, org, produtos, foto, atualizado, release }. `foto` é o id da foto: o claim picture vira
+// <emissor>/api/v1/foto/<foto> (sem foto, sem claim, como no HUB). `release` é a claim zro_release do gate de
+// lançamento ({ '<produto>': 'released' | 'closed' | 'allowed' }); sem ela, a claim não sai (HUB de antes do gate).
+// `estado.gate = '<produto>'` liga o gate do HUB de verdade para esse produto: conta sem 'allowed' não recebe código
+// (access_denied), o refresh devolve invalid_grant e o userinfo e a API da Z respondem 401.
 
 import { createHash, generateKeyPairSync, randomBytes, sign } from 'node:crypto'
 import http from 'node:http'
@@ -17,8 +20,10 @@ export async function iniciarZroFalsa(cliente) {
   const acessos = new Map()
   const escoposDe = new Map()
   const renovaveis = new Map()
-  const estado = { pessoa: null, negar: false, adulterar: null, trocas: 0, prompt: null, escopo: null, expiraEm: 600, renovacoes: 0, leituras: 0, revogados: [], recusarRenovacao: false, ia: [] }
+  const estado = { pessoa: null, negar: false, adulterar: null, trocas: 0, prompt: null, escopo: null, expiraEm: 600, renovacoes: 0, leituras: 0, revogados: [], recusarRenovacao: false, ia: [], gate: null }
   let base = ''
+  /** O gate do HUB barra esta pessoa? (produto fechado e a conta fora da lista) */
+  const barrada = () => !!estado.gate && estado.pessoa?.release?.[estado.gate] !== 'allowed'
 
   const jwt = (dados, assinarErrado = false) => {
     const b = (o) => Buffer.from(JSON.stringify(o)).toString('base64url')
@@ -40,6 +45,7 @@ export async function iniciarZroFalsa(cliente) {
     zro_conta: `${base}/perfil`,
     zro_org: p.org ? { id: 'org-1', name: p.org, role: 'owner' } : null,
     zro_products: p.produtos || [],
+    ...(p.release ? { zro_release: p.release } : {}),
   })
   const tokens = (sub, escopos = []) => {
     const at = `at_${randomBytes(16).toString('hex')}`
@@ -88,7 +94,8 @@ export async function iniciarZroFalsa(cliente) {
       } else if (estado.recusarEscopoIa && escopos.includes('zro.ia')) {
         // cliente sem zro.ia na lista (o HUB devolve invalid_scope)
         volta.searchParams.set('error', 'invalid_scope')
-      } else if (estado.negar || !estado.pessoa) {
+      } else if (estado.negar || !estado.pessoa || barrada()) {
+        // o HUB de verdade mostra "Em desenvolvimento" em vez de voltar; com prompt=none volta access_denied
         volta.searchParams.set('error', 'access_denied')
       } else {
         const code = `zc_${randomBytes(16).toString('hex')}`
@@ -104,7 +111,7 @@ export async function iniciarZroFalsa(cliente) {
       if (!cliente_ok(req, f)) return responder(res, 401, { error: 'invalid_client' })
       if (f.get('grant_type') === 'refresh_token') {
         const r = renovaveis.get(f.get('refresh_token') || '')
-        if (!r || r.usado || estado.recusarRenovacao) return responder(res, 400, { error: 'invalid_grant' })
+        if (!r || r.usado || estado.recusarRenovacao || barrada()) return responder(res, 400, { error: 'invalid_grant' })
         r.usado = true
         estado.renovacoes++
         return responder(res, 200, { ...tokens(r.sub, r.escopos), scope: r.escopos.join(' ') })
@@ -140,7 +147,7 @@ export async function iniciarZroFalsa(cliente) {
     if (url.pathname === '/oauth/userinfo') {
       const at = String(req.headers.authorization || '').replace(/^Bearer /, '')
       const sub = acessos.get(at)
-      if (!sub || !estado.pessoa || estado.pessoa.sub !== sub) return responder(res, 401, { error: 'invalid_token' })
+      if (!sub || !estado.pessoa || estado.pessoa.sub !== sub || barrada()) return responder(res, 401, { error: 'invalid_token' })
       estado.leituras++
       return responder(res, 200, { sub, ...claims(estado.pessoa) })
     }
@@ -159,7 +166,7 @@ export async function iniciarZroFalsa(cliente) {
       for await (const c of req) corpo += c
       estado.ia.push({ metodo: req.method, caminho: url.pathname.slice('/api/v1/ia'.length), autorizacao: req.headers.authorization || null, cookie: req.headers.cookie || null, corpo })
       const sub = acessos.get(at)
-      if (!sub || !(escoposDe.get(at) || []).includes('zro.ia')) return responder(res, 401, { error: 'unauthenticated', message: 'Token inválido, vencido ou sem permissão para esta ação.' })
+      if (!sub || !(escoposDe.get(at) || []).includes('zro.ia') || barrada()) return responder(res, 401, { error: 'unauthenticated', message: 'Token inválido, vencido ou sem permissão para esta ação.' })
       const caminho = url.pathname.slice('/api/v1/ia'.length)
       if (caminho === '/estado') return responder(res, 200, { ligada: true, nome: (estado.pessoa?.nome || '').split(' ')[0], produto: null, creditos: { usados: 3, limite: 100, renova_em: '2026-11-27T00:00:00.000Z' } })
       if (caminho === '/conversas') return responder(res, 200, { conversas: [] })

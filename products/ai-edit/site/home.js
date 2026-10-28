@@ -88,7 +88,8 @@ $('#caminho').replaceChildren(
     const f = FAMILIA.find((x) => x.id === c.id)
     const a = document.createElement('a')
     if (c.id === 'aeon') {
-      a.href = 'app/'
+      // fechado ao público: o AEON do caminho aponta para a própria apresentação, não para o editor
+      a.href = '#produto'
       a.className = 'eu'
       a.innerHTML = `<img src="marca/aeon-icone.svg" alt="" width="64" height="64"/><strong>AEON</strong><span></span>`
     } else {
@@ -109,18 +110,6 @@ const nav = $('#nav')
 const rolar = () => nav.classList.toggle('rolou', scrollY > 8)
 addEventListener('scroll', rolar, { passive: true })
 rolar()
-
-// ───────── baixar: copiar o comando ─────────
-for (const b of $$('[data-copiar]'))
-  b.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText($(`#${b.dataset.copiar}`).textContent)
-      b.textContent = 'Copiado'
-      setTimeout(() => (b.textContent = 'Copiar'), 1800)
-    } catch {
-      getSelection().selectAllChildren($(`#${b.dataset.copiar}`))
-    }
-  })
 
 const olho = new IntersectionObserver(
   (es) => {

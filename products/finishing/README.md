@@ -1,6 +1,7 @@
 # Revela — finalização e cor para o DaVinci Resolve
 
-**Estado: protótipo com tela, ainda fora do ar.** Fase 5 do PRD (§8 NOSSOM → Finishing, §13). Nome escolhido pelo titular em
+**Estado: em desenvolvimento, fechada ao público (28/10/2026; ver [Fechada ao público](#fechada-ao-público-28102026-etapa-b-do-prd)).**
+Fase 5 do PRD (§8 NOSSOM → Finishing, §13). Nome escolhido pelo titular em
 25/10/2026; o id técnico continua `finishing` (pasta, contratos de eventos e catálogo no banco). A identidade oficial da
 Absolute ZRO vem do serviço de color grading e finalização da ZRO Filmes (zrofilmes.vercel.app/absolute).
 
@@ -32,8 +33,42 @@ Imagens de exemplo: frames da ZRO Filmes (os do site) em `exemplos/`; o "antes" 
 
 Login único Absolute ZRO (ADR 0012/0014), no padrão do Synquei: `api/zro/{entrar,callback,eu,sair}.js` (funções Node
 da Vercel; `api/_zro.js` não vira rota). Cliente OIDC confidencial `revela-web`, PKCE S256, cookies `rv_zro`/`rv_conta`
-assinados. `entrar.html` mostra fora, dentro ou "chega em breve" (sem `ZRO_CLIENT_ID`/`ZRO_CLIENT_SECRET`, 503). As
-ferramentas seguem abertas sem conta: o topo mostra "Entrar" ou as iniciais.
+assinados. `entrar.html` mostra fora, dentro, fechado (a conta entrou, mas o HUB não a liberou) ou "chega em breve"
+(sem `ZRO_CLIENT_ID`/`ZRO_CLIENT_SECRET`, 503). O topo mostra "Entrar" ou as iniciais. Desde 28/10/2026 as
+ferramentas só abrem para a conta liberada (seção abaixo).
+
+## Fechada ao público (28/10/2026, Etapa B do PRD)
+
+Decisão do titular (PRD §5 e §6): só a página institucional fica no ar. O que muda, e onde:
+
+- **Site**: `index.html` só apresenta (looks, ferramentas como cartões sem link, telas, família); "Conhecer o
+  projeto" é âncora na própria página; sem "Testar agora", "Abrir a Revela" ou "Converter agora"; a seção da Z volta
+  a "Chegando à Revela"; o fecho é "Em desenvolvimento." com "Voltar ao HUB". `em-desenvolvimento.html` é a página de
+  recusa (HTTP 200, sem dado interno): símbolo da Absolute ZRO, a logo, "Em desenvolvimento.", uma linha e o botão.
+  `manifest.webmanifest` abre em `/` e não tem mais atalhos.
+- **Ferramentas**: `inicio`, `lut`, `cst`, `entrega` e `converter` (com `app/`, `src/` e `exemplos/`) saem do
+  estático: o build passa a ser `scripts/publicar-site.mjs` → `publico/` (`outputDirectory`), que leva só o
+  institucional e o pouco de `app/` que ele usa (tema, folhas, conta, ícones, entrada). O `vercel.json` reescreve
+  `/lut`, `/cst`, `/entrega`, `/converter`, `/inicio`, `/app/*`, `/src/*` e `/exemplos/*` para a função `api/app.js`,
+  que leva esses arquivos no pacote (`includeFiles`) e só os entrega à conta liberada: para o resto, HTML vira a
+  página "Em desenvolvimento" (200) e qualquer outro arquivo é 403 (caminho fora da lista, 404). É a opção mais simples
+  e segura para um site estático: nenhum arquivo de ferramenta existe no CDN, e a decisão é do servidor (cookie
+  assinado), não de um redirecionamento. `vendor/` (só o Mediabunny) e `marca/` continuam estáticos.
+- **APIs**: `/api/zro/eu` e `/api/zro/ia/*` respondem **403** para sessão que o HUB não liberou (sem sessão continua
+  401); `callback` não cria sessão para conta fora da lista e leva à página.
+- O redirecionamento do domínio antigo (`revela-zro.vercel.app` → `revela.absolutezro.com`) continua.
+
+**Quem entra**: a conta que o HUB marca como `allowed` na claim `zro_release` (`{ "finishing": "allowed" }`) do
+id_token e do `/oauth/userinfo`. A claim entra na sessão (`release`) a cada login e a cada releitura do perfil; sessão
+antiga (sem a claim), `closed`, refresh ou userinfo recusados pelo HUB = fechado até entrar de novo. Nunca por e-mail.
+Com a sessão liberada, "Abrir a Revela" em `entrar.html` leva a `/lut` e as abas do dock funcionam como antes (cada
+página vem da função, com os mesmos cabeçalhos do `vercel.json`).
+
+**Deny-by-default local**: `api/_release.js` lê `RELEASE` (`closed` sem variável) e vale mesmo com o HUB fora do ar.
+Abrir ao público pede os dois lados: o HUB marca o produto como lançado e o projeto Vercel `revela` ganha
+`RELEASE=released` (build e runtime) com deploy novo; aí `publicar-site.mjs` volta a publicar as ferramentas.
+Localmente, `npm run dev` serve a pasta inteira (sem o gate) e `RELEASE=released node scripts/publicar-site.mjs`
+monta o site aberto.
 
 Produção (27/10/2026): cliente `revela-web` cadastrado no banco `AbsoluteZRO` (retorno
 `https://revela.absolutezro.com/api/zro/callback`), `sso_start_url` do produto `finishing`, e `ZRO_CLIENT_ID` e
@@ -96,8 +131,9 @@ servida da própria Revela (`fontes/`, OFL), porque a CSP só aceita `'self'`.
 A Revela instala como app pelo Safari: **Compartilhar → Adicionar à Tela de Início** (no Android e no computador, o
 "Instalar" do Chrome). Abre sem a barra do navegador, com o mesmo menu, dock e ferramentas do computador.
 
-- `manifest.webmanifest` (abre em `/lut`, atalhos para CST, Entrega e Converter) e ícones em `marca/app/`, feitos
-  por `node scripts/icones-app.mjs` a partir de `marca/revela-icone.svg` (sem canto arredondado: o sistema recorta).
+- `manifest.webmanifest` (enquanto fechada: abre em `/` e sem atalhos; aberta, voltará a abrir em `/inicio` com
+  atalhos para as ferramentas) e ícones em `marca/app/`, feitos por `node scripts/icones-app.mjs` a partir de
+  `marca/revela-icone.svg` (sem canto arredondado: o sistema recorta).
 - Barra de status translúcida: o topo de vidro desce até a hora e a bateria (`env(safe-area-inset-top)`).
 - "Instalar o app" no menu: no iPhone fora do app mostra os dois toques do Compartilhar; no Chrome chama o pedido do
   próprio navegador; já instalado, some.
@@ -150,9 +186,10 @@ npm run dev   # http://localhost:8080
 ```
 
 Publicação: projeto Vercel `revela` (autorizado pelo titular em 25/10/2026) em **revela.absolutezro.com**
-(`revela.vercel.app` é de outro app), Root Directory `products/finishing`, site estático sem build (`vercel.json`),
-publica só quando a pasta muda. OG do link: `og.jpg` (1200×630), gerado de `marca/og.html` (cubo de cor isométrico
-em `marca/og-cubo.svg`): abra no Chromium e capture 1200×630.
+(`revela.vercel.app` é de outro app), Root Directory `products/finishing`, site estático montado por
+`scripts/publicar-site.mjs` em `publico/` (`vercel.json`; fechada ao público, só o institucional), publica só quando
+a pasta muda. OG do link: `og.jpg` (1200×630), gerado de `marca/og.html` (cubo de cor isométrico em
+`marca/og-cubo.svg`): abra no Chromium e capture 1200×630.
 
 ## Entrega por destino
 
