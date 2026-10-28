@@ -14,7 +14,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
           <Wordmark />
           <nav aria-label="Principal" className="capsule__links">
             <Link href="/#ciclo">Ciclo do O</Link>
-            <Link href="/#ferramentas">Ferramentas</Link>
+            <Link href="/#ecossistema">Ferramentas</Link>
             <Link href="/baixar">Downloads</Link>
             <Link href="/planos">Planos</Link>
           </nav>
@@ -44,7 +44,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
         <Wordmark height={18} />
         <nav aria-label="Rodapé" className="public-footer__nav">
           <Link href="/#ciclo">Ciclo do O</Link>
-          <Link href="/#ferramentas">Ferramentas</Link>
+          <Link href="/#ecossistema">Ferramentas</Link>
           <Link href="/baixar">Downloads</Link>
           <Link href="/planos">Planos</Link>
           <Link href="/entrar">Entrar</Link>

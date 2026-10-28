@@ -102,6 +102,7 @@ export function DownloadPicker({ apps }: { apps: PickerApp[] }) {
             >
               <ProductMark productId={a.productId} name={a.name} size={72} />
               <span>{a.name}</span>
+              {a.status === 'soon' && <span className="selo-dev">Em desenvolvimento</span>}
             </button>
           </li>
         ))}

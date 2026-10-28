@@ -16,7 +16,7 @@ function greeting(now = new Date()) {
 }
 
 const QUICK: { href: string; title: string; hint: string; icon: IconName; color: string }[] = [
-  { href: '/projetos/novo', title: 'Novo projeto', hint: 'Do zero ou de um job', icon: 'plus', color: 'var(--zro-blue)' },
+  { href: '/projetos/novo', title: 'Novo projeto', hint: 'Comece do zero', icon: 'plus', color: 'var(--zro-blue)' },
   { href: '/projetos', title: 'Importar descarga', hint: 'Resumo do SOBEDESCE', icon: 'upload', color: 'var(--p-sobedesce)' },
   { href: '/ciclo', title: 'Ciclo do O', hint: 'Onde cada projeto está', icon: 'cycle', color: 'var(--p-synquei-2)' },
   { href: '/equipe', title: 'Convidar equipe', hint: 'Papéis por pessoa', icon: 'team', color: 'var(--p-carro-do-freela)' },
@@ -31,6 +31,9 @@ export default async function Inicio() {
   const peso = (a: (typeof d.access)[number]) => (a.access === 'contracted' ? 0 : a.access === 'closed' ? 2 : 1)
   const apps = [...d.access].sort((a, b) => peso(a) - peso(b) || a.stepOrder - b.stepOrder)
   const orbit = d.access.filter((a) => a.access !== 'closed').sort((a, b) => a.stepOrder - b.stepOrder)
+  // "De um job" só quando o Carro do Freela está aberto para a pessoa (gate de lançamento); fechado, nada de prometer.
+  const comJob = orbit.some((a) => a.productId === 'carro-do-freela')
+  const atalhos = QUICK.map((q) => (q.href === '/projetos/novo' && comJob ? { ...q, hint: 'Do zero ou de um job' } : q))
   return (
     <div className="page">
       <header className="greet">
@@ -104,7 +107,7 @@ export default async function Inicio() {
       </section>
 
       <nav className="quick" aria-label="Atalhos">
-        {QUICK.map((q) => (
+        {atalhos.map((q) => (
           <Link key={q.title} href={q.href} className="quick__tile" style={{ ['--c' as string]: q.color }}>
             <span className="quick__icon">
               <Icon name={q.icon} />
@@ -157,7 +160,7 @@ export default async function Inicio() {
                 </Link>
               }
             >
-              Crie do zero ou a partir de um job do Carro do Freela.
+              {comJob ? 'Crie do zero ou a partir de um job do Carro do Freela.' : 'Crie o primeiro e ligue as etapas.'}
             </EmptyState>
           )}
         </Card>

@@ -8,8 +8,20 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { ProductMark } from '@zro/ui'
 
-/** `emDesenvolvimento`: fechado ao público (ADR 0023); a ficha mostra o selo e nenhum link. */
-export type Destaque = { id: string; nome: string; linha: string; fatos: string[]; site: string | null; cor: CSSProperties; emDesenvolvimento?: boolean }
+/**
+ * `emDesenvolvimento`: fechado ao público (ADR 0023); a ficha mostra o selo e nenhum link. `tela: false`: ainda sem a
+ * foto nos aparelhos, mostra o ícone grande no lugar.
+ */
+export type Destaque = {
+  id: string
+  nome: string
+  linha: string
+  fatos: string[]
+  site: string | null
+  cor: CSSProperties
+  emDesenvolvimento?: boolean
+  tela?: boolean
+}
 
 export function Conheca({ itens }: { itens: Destaque[] }) {
   const [ativo, setAtivo] = useState(0)
@@ -59,9 +71,15 @@ export function Conheca({ itens }: { itens: Destaque[] }) {
       <div className="pconheca__palco" id="pconheca-painel" role="tabpanel" aria-labelledby={`aba-${atual.id}`}>
         <div className="pconheca__telas" aria-hidden="true">
           {itens.map((it, i) => (
-            <span key={it.id} className="pconheca__tela" data-on={i === ativo ? 'sim' : undefined}>
-              <img className="ahero__product--claro" src={`/brand/produto-${it.id}-claro.webp`} alt="" width={1600} height={971} loading="lazy" />
-              <img className="ahero__product--escuro" src={`/brand/produto-${it.id}-escuro.webp`} alt="" width={1600} height={971} loading="lazy" />
+            <span key={it.id} className={`pconheca__tela${it.tela === false ? ' pconheca__tela--icone' : ''}`} data-on={i === ativo ? 'sim' : undefined}>
+              {it.tela === false ? (
+                <ProductMark productId={it.id} name={it.nome} size={160} />
+              ) : (
+                <>
+                  <img className="ahero__product--claro" src={`/brand/produto-${it.id}-claro.webp`} alt="" width={1600} height={971} loading="lazy" />
+                  <img className="ahero__product--escuro" src={`/brand/produto-${it.id}-escuro.webp`} alt="" width={1600} height={971} loading="lazy" />
+                </>
+              )}
             </span>
           ))}
         </div>

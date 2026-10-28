@@ -37,6 +37,9 @@ test('conta nova recebe as ferramentas do plano grátis', async ({ page }) => {
   // Os lançados vêm contratados pelo plano grátis; os fechados por lançamento (ADR 0023) aparecem como closed, nunca contratados.
   for (const id of ['sobedesce', 'synquei', 'tpeasy']) expect(access(id), id).toBe('contracted')
   for (const id of ['carro-do-freela', 'nossom', 'ai-edit', 'finishing']) expect(access(id), id).toBe('closed')
+  // Com o Carro do Freela fechado, o Início não promete projeto "de um job".
+  await expect(page.locator('.quick')).toContainText('Comece do zero')
+  await expect(page.locator('main')).not.toContainText('de um job')
 })
 
 test('área logada exige sessão', async ({ page }) => {
@@ -219,8 +222,13 @@ test('gate de lançamento: anônimo não vê CTA, link nem instalador de produto
   // o Maestro em teste aberto (0022) entra na órbita e na faixa, com link para o site dele
   await expect(page.locator('.pz__orbita li[title="Maestro"]')).toHaveCount(1)
   expect(hrefs.filter((h) => h.startsWith('https://maestro.absolutezro.com')).length).toBeGreaterThan(0)
+  // o fluxo começa no roteiro (o job é do Carro do Freela, fechado) e só mostra etapas lançadas
+  await expect(page.locator('#fluxo-title')).toHaveText(/Do roteiro\s*à entrega\./)
+  await expect(page.locator('main')).not.toContainText(/do job/i)
 
   await page.goto('/baixar')
+  await expect(page.getByRole('button', { name: 'NOSSOM' }).locator('.selo-dev')).toHaveText('Em desenvolvimento')
+  await expect(page.getByRole('button', { name: 'Synquei' }).locator('.selo-dev')).toHaveCount(0)
   await page.getByRole('button', { name: 'NOSSOM' }).click()
   const painel = page.locator('#dl-painel')
   await expect(painel.getByText('Em desenvolvimento')).toBeVisible()
