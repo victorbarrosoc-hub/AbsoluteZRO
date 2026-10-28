@@ -50,3 +50,37 @@ export function zroReturnPath(value: unknown) {
     return '/studio';
   return value;
 }
+
+/**
+ * Perfil único: nome, foto e e-mail se editam na conta Absolute ZRO (claim `zro_conta`), nunca no
+ * NOSSOM. Só vale endereço https do próprio emissor; sem ele, o Perfil da Absolute ZRO.
+ */
+export const ZRO_PROFILE_DEFAULT = ZRO_ISSUER_DEFAULT + '/perfil';
+function fromIssuer(value: unknown, path: RegExp): string | null {
+  if (typeof value !== 'string' || value.length > 512) return null;
+  try {
+    const url = new URL(value),
+      issuer = new URL(zroIssuer());
+    return url.protocol === 'https:' &&
+      url.origin === issuer.origin &&
+      !url.username &&
+      !url.password &&
+      !url.search &&
+      path.test(url.pathname)
+      ? url.href
+      : null;
+  } catch {
+    return null;
+  }
+}
+export function zroManageUrl(claim?: unknown) {
+  return (
+    fromIssuer(claim, /^\/perfil(?:\/[a-z-]*)?$/) ??
+    fromIssuer(zroIssuer() + '/perfil', /^\/perfil$/) ??
+    ZRO_PROFILE_DEFAULT
+  );
+}
+/** Foto da conta (claim `picture`): só o endereço público de fotos do emissor (/api/v1/foto/…). */
+export function zroPictureUrl(claim: unknown) {
+  return fromIssuer(claim, /^\/api\/v1\/foto\/[A-Za-z0-9_-]{8,128}$/);
+}

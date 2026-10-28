@@ -54,6 +54,20 @@ A revisão ampla identificou expectativas antigas de texto/cor e o teste de aber
   `/studio/inicio`, sem a Z. `tests/e2e/zro-ia.spec.ts` cobre a aba, a entrada, a tela toda, o Início sem a Z e o aviso
   quando o painel não carrega; contagens da navegação em `install-navigation.spec.ts` (6 na lateral, 5 no celular).
 
+## 28/10/2026 · Conta no padrão Absolute ZRO
+
+- Menu "Sua conta": foto da conta Absolute ZRO (claim `picture`, só `https` do emissor em `/api/v1/foto/…`), nome,
+  e-mail · organização, selo "Conta Absolute ZRO" e "Editar na conta Absolute ZRO" (claim `zro_conta`, ou
+  absolutezro.com/perfil; abre fora do app). Sem vínculo, "Ligar conta Absolute ZRO" (só com o cliente ZRO
+  configurado). A identidade fica na sessão cifrada; a renovação relê e-mail e organização no vínculo; desligar apaga.
+  "ADM · Ilimitado" só com `unlimited` do servidor.
+- `tests/zro.test.ts` 24/24 (identidade no login, renovação, foto/endereço de outro emissor ou http recusados,
+  convite sem vínculo, desligar limpa); `npm test` 85/85; typecheck, format:check e build ok;
+  `tests/e2e/account-menu.spec.ts` (menu ligado em 1440 e 390, axe, sem rolagem lateral). Suíte E2E: 77 ok, 1
+  pulado e 3 que gravam do microfone falham neste ambiente ("Não foi possível acessar o microfone"), fora da conta.
+- Não validado: a foto de uma conta real vinda do HUB em produção (a tela com foto foi conferida com a foto servida
+  por rota falsa no Playwright).
+
 ## Reproduzir
 
 ```sh

@@ -8,7 +8,8 @@ import {
 } from 'node:crypto';
 import type { Account } from '../accounts';
 import { supabase, supabaseConfig, SupabaseError } from './supabase';
-import { zroProductsOf } from './zro/accounts';
+import { zroLinkReady, zroLinkSummary } from './zro/accounts';
+import { zroManageUrl } from './zro/config';
 export const ACCOUNT_COOKIE = 'nossom-account';
 export const ADMIN_EMAIL = 'victorbarrosoc@gmail.com';
 const lifetime = 7 * 24 * 60 * 60 * 1000;
@@ -36,16 +37,66 @@ type Session = {
    * Ausente = conta sem vínculo ZRO, que segue como sempre.
    */
   zroProducts?: string[];
+  /** Quem é na Absolute ZRO (perfil único): e-mail, organização, foto e onde editar. */
+  zro?: ZroIdentity;
 };
+type ZroIdentity = {
+  email: string;
+  organization: string | null;
+  picture?: string;
+  manage?: string;
+};
+/** Identidade da Absolute ZRO guardada na sessão, a partir do id_token já conferido. */
+export function zroIdentity(p: {
+  email: string;
+  organization: string | null;
+  picture: string | null;
+  manage: string;
+}): ZroIdentity {
+  return {
+    email: p.email,
+    organization: p.organization,
+    ...(p.picture ? { picture: p.picture } : {}),
+    manage: p.manage,
+  };
+}
+const validIdentity = (z: unknown) =>
+  !!z &&
+  typeof z === 'object' &&
+  typeof (z as ZroIdentity).email === 'string' &&
+  ((z as ZroIdentity).organization === null ||
+    typeof (z as ZroIdentity).organization === 'string') &&
+  ['undefined', 'string'].includes(typeof (z as ZroIdentity).picture) &&
+  ['undefined', 'string'].includes(typeof (z as ZroIdentity).manage);
 /** Id do NOSSOM na lista `zro_products` da Absolute ZRO. */
 export const ZRO_PRODUCT = 'nossom';
 /** Conta ligada à Absolute ZRO cuja organização ainda não tem o NOSSOM liberado. */
 export function zroBlocked(session: Pick<Session, 'zroProducts'>) {
   return Array.isArray(session.zroProducts) && !session.zroProducts.includes(ZRO_PRODUCT);
 }
+/**
+ * Conta para a tela: `zroBlocked` sem o NOSSOM liberado; `zro` (perfil único) quando ligada à
+ * Absolute ZRO; `zroInvite` quando dá para ligar e ainda não ligou.
+ */
 function withAccess(session: Session, account = session.account): Account {
-  const { zroBlocked: _, ...plain } = account;
-  return zroBlocked(session) ? { ...plain, zroBlocked: true } : plain;
+  const { zroBlocked: _, zro: _zro, zroInvite: _invite, ...plain } = account;
+  const z = session.zro;
+  return {
+    ...plain,
+    ...(zroBlocked(session) ? { zroBlocked: true as const } : {}),
+    ...(Array.isArray(session.zroProducts)
+      ? {
+          zro: {
+            ...(z?.email ? { email: z.email } : {}),
+            ...(z?.organization ? { organization: z.organization } : {}),
+            ...(z?.picture ? { picture: z.picture } : {}),
+            manage: z?.manage || zroManageUrl(),
+          },
+        }
+      : zroLinkReady()
+        ? { zroInvite: true as const }
+        : {}),
+  };
 }
 export function sessionSecret() {
   return process.env.NOSSOM_AUTH_SECRET || process.env.NOSSOM_AI_ACCESS_CODE || '';
@@ -127,7 +178,8 @@ export function decodeSession(token: string | undefined): Session | null {
       typeof session.expires !== 'number' ||
       (session.zroProducts !== undefined &&
         (!Array.isArray(session.zroProducts) ||
-          !session.zroProducts.every((p) => typeof p === 'string')))
+          !session.zroProducts.every((p) => typeof p === 'string'))) ||
+      (session.zro !== undefined && !validIdentity(session.zro))
     )
       return null;
     return session;
@@ -221,13 +273,28 @@ export async function refreshAccount(
     });
     // A cada renovação, relê os produtos liberados guardados no vínculo com a Absolute ZRO.
     // Se não der para ler agora, fica com o que já estava na sessão.
-    let zroProducts = session.zroProducts;
+    let zroProducts = session.zroProducts,
+      zro = session.zro;
     try {
-      zroProducts = (await zroProductsOf(data.user.id)) ?? undefined;
+      const link = await zroLinkSummary(data.user.id);
+      zroProducts = link?.products;
+      // A foto e o "onde editar" vêm do último login pela Absolute ZRO; e-mail e organização, do vínculo.
+      zro = link
+        ? {
+            ...session.zro,
+            email: link.email,
+            organization: link.organization,
+            manage: session.zro?.manage || zroManageUrl(),
+          }
+        : undefined;
     } catch {
       /* mantém o valor anterior */
     }
-    const refreshed = { ...sessionFromProvider(data, session.sid), zroProducts };
+    const refreshed: Session = {
+      ...sessionFromProvider(data, session.sid),
+      ...(zroProducts ? { zroProducts } : {}),
+      ...(zroProducts && zro ? { zro } : {}),
+    };
     return { account: withAccess(refreshed), token: encodeSession(refreshed) };
   } catch (error) {
     return sessionRejected(error) ? null : 'unavailable';
@@ -255,15 +322,20 @@ export async function authenticate(email: unknown, password: unknown) {
     // Resolve trusted identity through GoTrue, never through a client-supplied role/profile.
     data.user = await supabase<AuthUser>('/auth/v1/user', { token: data.access_token });
     // Conta ligada à Absolute ZRO: guarda os produtos liberados na sessão. Sem vínculo, nada muda.
-    let zroProducts: string[] | null;
+    let link: Awaited<ReturnType<typeof zroLinkSummary>>;
     try {
-      zroProducts = await zroProductsOf(data.user.id);
+      link = await zroLinkSummary(data.user.id);
     } catch {
       throw new Error('O acesso está temporariamente indisponível. Tente de novo.');
     }
-    const session = {
+    const session: Session = {
       ...sessionFromProvider(data),
-      ...(zroProducts ? { zroProducts } : {}),
+      ...(link
+        ? {
+            zroProducts: link.products,
+            zro: { email: link.email, organization: link.organization, manage: zroManageUrl() },
+          }
+        : {}),
     };
     return { account: withAccess(session), token: encodeSession(session) };
   } catch (error) {
