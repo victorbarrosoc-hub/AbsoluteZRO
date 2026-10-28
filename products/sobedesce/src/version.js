@@ -12,6 +12,9 @@
 //    prepara em segundo plano; o aviso mostra o progresso e, no fim, "Atualizar agora". Falhou por rede ou porque a
 //    versão ainda estava subindo? Tenta de novo sozinho (2, 4, 8… até 30 min). O download pede o instalador daquele
 //    build (/baixar/<plataforma>?build=N), o mesmo do SHA-256 conferido.
+//  - Instalado pela central do Absolute ZRO (`gerenciado`, src/gerenciado.js): quem atualiza é a central. O app não
+//    pergunta ao site, não baixa nada sozinho e não mostra aviso (status.gerenciado = true). Conferido a cada vez, então
+//    vale também se a central passar a cuidar do app com ele aberto.
 import fs from 'node:fs'
 import { EventEmitter } from 'node:events'
 import { cloudUrl } from './config.js'
@@ -67,8 +70,9 @@ export class VersionChecker extends EventEmitter {
    *   fetchJSON?: (url: string, opts: { signal: AbortSignal }) => Promise<any>, firstDelayMs?: number,
    *   everyMs?: number, timeoutMs?: number, log?: Function, updater?: import('./updater.js').Updater | null }} opts
    */
-  constructor({ settings, buildInfo, baseUrl, platform = process.platform, fetchJSON, firstDelayMs = FIRST_DELAY_MS, everyMs = EVERY_MS, timeoutMs = TIMEOUT_MS, log = () => {}, updater = null, autoBaixar = true, retryBaseMs = RETRY_BASE_MS, retryMaxMs = RETRY_MAX_MS } = {}) {
+  constructor({ settings, buildInfo, baseUrl, platform = process.platform, fetchJSON, firstDelayMs = FIRST_DELAY_MS, everyMs = EVERY_MS, timeoutMs = TIMEOUT_MS, log = () => {}, updater = null, autoBaixar = true, retryBaseMs = RETRY_BASE_MS, retryMaxMs = RETRY_MAX_MS, gerenciado = () => false } = {}) {
     super()
+    this.gerenciado = typeof gerenciado === 'function' ? gerenciado : () => !!gerenciado
     this.settings = settings
     this.atual = cleanInfo(buildInfo) || readBuildInfo()
     this.baseUrl = String(baseUrl || cloudUrl()).replace(/\/+$/, '')
@@ -132,6 +136,7 @@ export class VersionChecker extends EventEmitter {
   /** Pergunta ao site agora. Nunca lança: falha vira `falhou: true` e fica o que já se sabia. */
   check() {
     if (!this.enabled) return Promise.resolve(this.status())
+    if (this.#daCentral()) return Promise.resolve(this.#emit())
     if (this.inflight) return this.inflight
     this.inflight = this.#run()
     this.#emit() // verificando: true
@@ -173,7 +178,7 @@ export class VersionChecker extends EventEmitter {
    */
   #baixarSozinho(forcar = false) {
     const up = this.updater
-    if (!up || !this.autoBaixar || this.stopped) return
+    if (!up || !this.autoBaixar || this.stopped || this.#daCentral()) return
     const st = this.status()
     if (!st.podeAtualizar || !st.nova) return
     const build = this.ultima.build
@@ -221,7 +226,28 @@ export class VersionChecker extends EventEmitter {
    * troca assim que o download em andamento acabar). Volta logo; o progresso chega pelo 'status'.
    * Lança Error com `status` (409) se não der: aí a interface oferece o Baixar.
    */
+  /** A central do Absolute ZRO cuida das atualizações? Esquece a versão conhecida (o aviso some). */
+  #daCentral() {
+    let sim = false
+    try {
+      sim = !!this.gerenciado()
+    } catch {
+      sim = false
+    }
+    if (sim) {
+      this.ultima = null
+      clearTimeout(this.retryTimer)
+      this.retryTimer = null
+    }
+    return sim
+  }
+
+  #recusarSeDaCentral() {
+    if (this.#daCentral()) throw Object.assign(new Error('O Absolute ZRO cuida das atualizações deste app.'), { status: 409 })
+  }
+
   async update() {
+    this.#recusarSeDaCentral()
     const up = this.updater
     // A conferência pode ter até 1 h: pergunta de novo antes de baixar (a não ser que já esteja baixando ou pronto).
     if (up && !up.ocupado && !(this.ultima && up.prontoPara(this.ultima.build))) {
@@ -244,6 +270,7 @@ export class VersionChecker extends EventEmitter {
 
   /** "Tentar de novo" depois de um erro: baixa de novo em segundo plano (sem trocar no fim). */
   async baixar() {
+    this.#recusarSeDaCentral()
     if (!this.updater) throw Object.assign(new Error('Este app não se atualiza sozinho. Use Baixar.'), { status: 409 })
     if (!this.updater.ocupado) await this.check()
     if (!this.status().podeAtualizar) throw Object.assign(new Error('Não há versão nova para baixar pelo app. Use Baixar.'), { status: 409 })
@@ -272,7 +299,16 @@ export class VersionChecker extends EventEmitter {
       verificadaEm: this.verificadaEm,
       falhou: this.falhou,
       podeAtualizar,
+      gerenciado: this.#gerenciadoAgora(),
       atualizacao: up && (up.fase || up.ocupado) ? up.status() : null,
+    }
+  }
+
+  #gerenciadoAgora() {
+    try {
+      return !!this.gerenciado()
+    } catch {
+      return false
     }
   }
 

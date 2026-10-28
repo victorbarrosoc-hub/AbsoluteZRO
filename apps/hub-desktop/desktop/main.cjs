@@ -1,6 +1,11 @@
 // Absolute ZRO · app para computador (Mac e Windows). Abre o HUB (https://absolutezro.com) numa janela própria,
 // com a sessão guardada (continua logado), menu em português, tela "Sem conexão" local e aviso de versão nova.
 //
+// É também o instalador e gerenciador do ecossistema (ADR 0018 e adendo de 28/10/2026): fica em segundo plano, com o
+// símbolo na barra de menus (Mac) ou na bandeja (Windows); fechar a janela não encerra. Abre com o computador
+// (escondido), confere o catálogo do HUB e mantém os apps instalados em dia (agenda.cjs), e na primeira abertura
+// pergunta quais apps instalar (paginas/boas-vindas.html).
+//
 // Como a janela é montada: a BrowserWindow é a moldura. No Mac ela mostra a barra de título própria
 // (paginas/barra.html, com os três botões do sistema integrados); no Windows a moldura é a do sistema. O HUB roda numa
 // WebContentsView por cima, na partição persist:absolutezro, sem Node, com sandbox e isolamento de contexto.
@@ -22,7 +27,9 @@ const {
   nativeTheme,
   clipboard,
   systemPreferences,
-  net,
+  Tray,
+  Notification,
+  nativeImage,
 } = require('electron')
 const path = require('node:path')
 const fs = require('node:fs')
@@ -33,6 +40,10 @@ const { AvisoDeVersao, lerBuildInfo } = require('./versao.cjs')
 const { Atualizador, comandoDaTroca, ehScriptDaTroca } = require('./atualizador.cjs')
 const { spawn } = require('node:child_process')
 const { Central } = require('./central.cjs')
+const { AgendaDeApps } = require('./agenda.cjs')
+const bandeja = require('./bandeja.cjs')
+const inicio = require('./inicio-sistema.cjs')
+const gerenciados = require('./gerenciados.cjs')
 const { execFile } = require('node:child_process')
 const { promisify } = require('node:util')
 
@@ -68,6 +79,11 @@ let capa = null
 let aviso = null
 let atualizador = null
 let central = null
+let agenda = null
+let tray = null
+let boas = null
+let saindo = false
+let primeiraJanela = true
 let ultimaUrl = INICIO
 let deepLinkPendente = regras.deepLinkDosArgs(process.argv, HUB)
 let zoom = 0
@@ -186,6 +202,8 @@ function criarJanela() {
     },
   })
   win.on('page-title-updated', (e) => e.preventDefault())
+  // Mac: com a janela aberta o app aparece no Dock; fechada, fica só na barra de menus
+  if (MAC && !SMOKE && app.dock) app.dock.show().catch(() => {})
 
   view = new WebContentsView({
     webPreferences: {
@@ -201,7 +219,9 @@ function criarJanela() {
   })
   view.setBackgroundColor(FUNDO)
   win.contentView.addChildView(view)
-  if (!SMOKE) abrirCapa()
+  if (!SMOKE && primeiraJanela) abrirCapa()
+  const comCapa = !!capa
+  primeiraJanela = false
   posicionarView()
   for (const ev of ['resize', 'enter-full-screen', 'leave-full-screen', 'maximize', 'unmaximize']) win.on(ev, posicionarView)
   for (const ev of ['focus', 'blur', 'enter-full-screen', 'leave-full-screen']) win.on(ev, estadoBarra)
@@ -263,7 +283,10 @@ function criarJanela() {
   for (const ev of ['page-title-updated', 'did-start-loading', 'did-stop-loading']) wc.on(ev, estadoBarra)
 
   if (MAC) win.loadFile(path.join(PAGINAS, 'barra.html')).catch(() => {})
-  win.on('close', salvarJanela)
+  win.on('close', () => {
+    salvarJanela()
+    avisarQueFicaNaBandeja()
+  })
   win.on('closed', () => {
     win = null
     view = null
@@ -272,6 +295,9 @@ function criarJanela() {
   if (SMOKE) mostrarSemConexao('rede')
   else wc.loadURL(deepLinkPendente || INICIO).catch(() => {})
   deepLinkPendente = null
+  // primeira abertura: depois da abertura da marca, pergunta quais apps instalar
+  if (!SMOKE && comCapa && !inicio.lerPreferencias(fs, app.getPath('userData')).boasVindas)
+    wc.once('did-finish-load', () => setTimeout(() => mostrarBoasVindas().catch(() => {}), ABERTURA_MIN + 900))
   return win
 }
 
@@ -338,7 +364,8 @@ function iniciarCentral() {
     home: os.homedir(),
     temp: app.getPath('temp'),
     registro: path.join(app.getPath('userData'), 'central.json'),
-    fetch: (url, opts) => net.fetch(url, opts),
+    // com os cookies do login (partição do HUB): o catálogo respeita o que está liberado para a pessoa (ADR 0023)
+    fetch: (url, opts = {}) => session.fromPartition(PARTICAO).fetch(url, { credentials: 'include', ...opts }),
     permitirHttp: !app.isPackaged,
     fs,
     exec: (cmd, args, opts = {}) => exec(cmd, args, { maxBuffer: 8 * 1024 * 1024, ...opts }),
@@ -346,8 +373,16 @@ function iniciarCentral() {
     lixeira: (p) => shell.trashItem(p),
     avisar: (ev) => {
       if (view && !view.webContents.isDestroyed() && regras.ehDoHub(view.webContents.getURL(), HUB)) view.webContents.send('central:progresso', ev)
+      if (boas && !boas.isDestroyed()) boas.webContents.send('boas:progresso', ev)
     },
   })
+  agenda = new AgendaDeApps({
+    central,
+    notificar: ({ titulo, corpo }) => notificar(titulo, corpo),
+    marcarGerenciados: (ids) => gerenciados.gravar(fs, app.getPath('userData'), ids),
+    log: (...a) => console.log(...a),
+  })
+  agenda.on('mudou', atualizarBandeja)
 }
 
 const responder = async (fn) => {
@@ -357,11 +392,38 @@ const responder = async (fn) => {
     return { ok: false, erro: err && err.codigo ? err.message : 'Algo deu errado. Tente de novo.' }
   }
 }
-ipcMain.handle('central:listar', (e) => (daPaginaDoHub(e) && central ? responder(() => central.listar()) : { ok: false, erro: 'indisponível' }))
-for (const acao of ['instalar', 'abrir', 'remover']) {
+ipcMain.handle('central:listar', (e) =>
+  daPaginaDoHub(e) && central
+    ? responder(async () => (await central.listar()).map((s) => ({ ...s, atualizacao: agenda ? agenda.situacao(s.id) : null })))
+    : { ok: false, erro: 'indisponível' },
+)
+// Atualizar com a ferramenta aberta: baixa e confere já e instala quando ela fechar ("atualiza ao fechar").
+async function instalarPelaPagina(id) {
+  if (agenda && (await central.aberto(id).catch(() => false))) {
+    const sit = await agenda.atualizarAoFechar(id)
+    if (sit) {
+      central.avisar(id, 'agendado', { versao: sit.versao })
+      return 'ao-fechar'
+    }
+  }
+  const ok = await central.instalar(id)
+  if (agenda) agenda.relistar()
+  return ok
+}
+const acoesDaPagina = {
+  instalar: instalarPelaPagina,
+  abrir: (id) => central.abrir(id),
+  remover: async (id) => {
+    const ok = await central.remover(id)
+    if (agenda) agenda.relistar()
+    return ok
+  },
+  'reiniciar-e-atualizar': (id) => (agenda ? agenda.reiniciarEAtualizar(id) : false),
+}
+for (const [acao, fn] of Object.entries(acoesDaPagina)) {
   ipcMain.handle(`central:${acao}`, (e, id) => {
     if (!daPaginaDoHub(e) || !central || !idValido(id)) return { ok: false, erro: 'indisponível' }
-    return responder(() => central[acao](id))
+    return responder(() => fn(id))
   })
 }
 ipcMain.handle('central:cancelar', (e, id) => (daPaginaDoHub(e) && central && idValido(id) ? { ok: central.cancelar(id) } : { ok: false }))
@@ -375,8 +437,235 @@ function recarregar(semCache) {
   else wc.reload()
 }
 
+// ───────── segundo plano: bandeja, notificações, abrir com o computador e boas-vindas ─────────
+const notificacoes = new Set()
+/** Notificação nativa curta; o clique abre a janela (ou faz `aoClicar`). */
+function notificar(titulo, corpo, aoClicar) {
+  if (SMOKE || !Notification.isSupported()) return
+  const n = new Notification({ title: String(titulo), body: String(corpo || ''), silent: true })
+  notificacoes.add(n) // sem a referência, a notificação pode sumir antes do clique
+  const soltar = () => notificacoes.delete(n)
+  n.on('click', () => {
+    soltar()
+    if (aoClicar) aoClicar()
+    else focar()
+  })
+  n.on('close', soltar)
+  n.show()
+}
+
+const prefs = () => inicio.lerPreferencias(fs, app.getPath('userData'))
+const gravarPrefs = (mudancas) => inicio.gravarPreferencias(fs, app.getPath('userData'), mudancas)
+const podeAbrirComSistema = () => inicio.suportado({ plataforma: PLATAFORMA, empacotado: app.isPackaged })
+
+/** O que o sistema diz agora sobre abrir com o computador (null quando não dá para saber). */
+function abrirComSistemaNoSistema() {
+  try {
+    if (PLATAFORMA === 'windows') {
+      const r = app.getLoginItemSettings({ path: process.execPath, args: [inicio.ESCONDIDO] })
+      return typeof r.executableWillLaunchAtLogin === 'boolean' ? r.executableWillLaunchAtLogin : !!r.openAtLogin
+    }
+    if (PLATAFORMA === 'mac') return !!app.getLoginItemSettings().openAtLogin
+  } catch {
+    // sem resposta do sistema
+  }
+  return null
+}
+
+function definirAbrirComSistema(ligado) {
+  gravarPrefs({ abrirComSistema: !!ligado })
+  if (podeAbrirComSistema()) {
+    try {
+      app.setLoginItemSettings(inicio.opcoesDeLogin({ plataforma: PLATAFORMA, ligado, exe: process.execPath }))
+    } catch (e) {
+      console.log('[abrir com o computador]', e && e.message)
+    }
+  }
+  atualizarBandeja()
+  menu()
+}
+
+/** Ao abrir: a primeira execução liga e registra; depois segue o que a pessoa escolheu (inclusive nos Ajustes). */
+function prepararAbrirComSistema() {
+  if (!podeAbrirComSistema()) return
+  const e = inicio.estadoNaAbertura({ prefs: prefs(), sistema: abrirComSistemaNoSistema() })
+  if (e.registrar) definirAbrirComSistema(e.ligado)
+  else if (e.gravar) gravarPrefs({ abrirComSistema: e.ligado })
+}
+
+const ligadoComSistema = () => (podeAbrirComSistema() ? inicio.abrirComSistema(prefs()) : null)
+
+function iconeDaBandeja(barraClara) {
+  const i = bandeja.iconeDaBandeja({ plataforma: PLATAFORMA, barraClara })
+  const img = nativeImage.createFromPath(path.join(__dirname, '..', 'build', 'bandeja', i.arquivo))
+  if (i.template) img.setTemplateImage(true)
+  return img
+}
+
+function criarBandeja() {
+  tray = new Tray(iconeDaBandeja(false))
+  tray.setToolTip('Absolute ZRO')
+  // Windows: o clique abre a janela e o botão direito mostra o menu. Mac e Linux: o clique mostra o menu.
+  if (PLATAFORMA === 'windows') {
+    tray.on('click', () => focar())
+    execFile(
+      'reg',
+      ['query', 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize', '/v', 'SystemUsesLightTheme'],
+      { windowsHide: true },
+      (err, saida) => {
+        if (!err && tray && !tray.isDestroyed() && bandeja.barraClaraDoWindows(saida)) tray.setImage(iconeDaBandeja(true))
+      },
+    )
+  }
+  atualizarBandeja()
+}
+
+const acoesDaBandeja = {
+  abrir: () => focar(),
+  'abrir-app': (id) => central && central.abrir(id).catch((e) => notificar('Não deu para abrir', e && e.message)),
+  procurar: () => procurarTudo(),
+  'reiniciar-e-atualizar': (id) => agenda && agenda.reiniciarEAtualizar(id),
+  'atualizar-tudo': () => agenda && agenda.atualizarTudo(),
+  'abrir-com-sistema': () => definirAbrirComSistema(!inicio.abrirComSistema(prefs())),
+  sair: () => app.quit(),
+}
+
+function atualizarBandeja() {
+  if (!tray || tray.isDestroyed()) return
+  const estado = agenda ? agenda.estado() : { apps: [], pendentes: [], procurando: false }
+  const itens = bandeja.modeloDoMenu({ ...estado, abrirComSistema: ligadoComSistema() }).map((i) =>
+    i.tipo === 'separador'
+      ? { type: 'separator' }
+      : {
+          type: i.tipo === 'checkbox' ? 'checkbox' : 'normal',
+          label: i.rotulo,
+          enabled: i.ativo !== false,
+          checked: i.tipo === 'checkbox' ? i.marcado : undefined,
+          click: () => {
+            const r = acoesDaBandeja[i.acao] && acoesDaBandeja[i.acao](i.id)
+            if (r && typeof r.catch === 'function') r.catch(() => {})
+          },
+        },
+  )
+  tray.setContextMenu(Menu.buildFromTemplate(itens))
+  tray.setToolTip(bandeja.dica(estado))
+}
+
+/** Windows: na primeira vez que a janela fecha, avisa que o app continua na bandeja (no Mac, a barra de menus mostra). */
+function avisarQueFicaNaBandeja() {
+  if (saindo || SMOKE || PLATAFORMA !== 'windows' || !tray) return
+  if (prefs().avisouBandeja) return
+  gravarPrefs({ avisouBandeja: true })
+  notificar('O Absolute ZRO continua aqui', 'Ele mantém seus apps em dia. Para sair, use a bandeja.')
+}
+
+/** Procurar atualizações (bandeja e menu): o próprio app e os apps instalados, de uma vez. */
+async function procurarTudo() {
+  const [r] = await Promise.all([aviso ? aviso.conferir({ manual: true }) : { estado: 'desenvolvimento' }, agenda ? agenda.conferir() : null])
+  if (r.estado === 'nova' || r.estado === 'avisando') return // o aviso do próprio app já apareceu
+  if (r.estado === 'sem-resposta') return notificar('Não deu para conferir agora', 'O site do Absolute ZRO não respondeu. Tente daqui a pouco.')
+  // cada app com versão nova já avisou por notificação e aparece na bandeja
+  if (agenda && agenda.estado().pendentes.length) return
+  notificar(
+    'Tudo em dia',
+    r.estado === 'em-dia' ? `Absolute ZRO ${app.getVersion()} e seus apps estão na versão mais nova.` : 'Seus apps estão na versão mais nova.',
+  )
+}
+
+// ───────── boas-vindas (primeira abertura): quais apps instalar ─────────
+const daBoas = (e) => !!boas && !boas.isDestroyed() && e.sender === boas.webContents && ehPaginaLocal(e.senderFrame.url)
+let listaBoas = []
+// teste de fumaça: a tela abre com uma lista de exemplo, sem rede
+const LISTA_SMOKE = [{ id: 'sobedesce', nome: 'SOBEDESCE', disponivel: { versao: '1.0.0', build: 1, tamanho: 120 * 1048576 }, instalado: null }]
+
+async function mostrarBoasVindas() {
+  if (boas || !win || win.isDestroyed()) return null
+  let lista = []
+  try {
+    lista = SMOKE ? LISTA_SMOKE : (await central.listar()).filter((s) => s.disponivel || s.instalado)
+  } catch {
+    return null // sem catálogo agora: pergunta na próxima abertura
+  }
+  // nada para instalar neste computador (ou nada liberado para a pessoa): pergunta numa próxima abertura
+  if (!lista.some((s) => s.disponivel && !s.instalado)) return null
+  listaBoas = lista
+  boas = new BrowserWindow({
+    parent: win,
+    modal: true,
+    width: 460,
+    height: 600,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    show: false,
+    title: 'Seus apps',
+    backgroundColor: FUNDO,
+    autoHideMenuBar: true,
+    icon: MAC ? undefined : path.join(__dirname, '..', 'build', 'icon-windows.png'),
+    webPreferences: {
+      preload: path.join(__dirname, 'preload-boas-vindas.cjs'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      spellcheck: false,
+    },
+  })
+  boas.once('ready-to-show', () => boas && !SMOKE && boas.show())
+  boas.on('closed', () => {
+    boas = null
+  })
+  await boas.loadFile(path.join(PAGINAS, 'boas-vindas.html'))
+  return boas
+}
+
+function guardarEscolhaDoSistema(abrirComSistema) {
+  gravarPrefs({ boasVindas: true })
+  if (podeAbrirComSistema() && !!abrirComSistema !== inicio.abrirComSistema(prefs())) definirAbrirComSistema(!!abrirComSistema)
+}
+
+ipcMain.handle('boas:dados', (e) => {
+  if (!daBoas(e)) return null
+  const apps = listaBoas.map((s) => ({
+    id: s.id,
+    nome: s.nome,
+    versao: s.disponivel ? s.disponivel.versao : null,
+    tamanho: s.disponivel ? s.disponivel.tamanho : 0,
+    instalado: !!s.instalado,
+  }))
+  return { apps, abrirComSistema: ligadoComSistema() }
+})
+ipcMain.handle('boas:instalar', async (e, ids, abrirComSistema) => {
+  if (!daBoas(e) || !Array.isArray(ids)) return { ok: false }
+  guardarEscolhaDoSistema(abrirComSistema)
+  let ok = true
+  for (const id of ids.filter((x) => idValido(x) && listaBoas.some((s) => s.id === x && s.disponivel && !s.instalado))) {
+    try {
+      await central.instalar(id)
+    } catch {
+      ok = false
+    }
+  }
+  if (agenda) agenda.relistar()
+  return ok ? { ok: true } : { ok: false, erro: 'Alguns apps não instalaram. Tente de novo pela página Downloads.' }
+})
+ipcMain.handle('boas:fechar', (e, abrirComSistema) => {
+  if (!daBoas(e)) return false
+  guardarEscolhaDoSistema(abrirComSistema)
+  boas.close()
+  return true
+})
+
 // ───────── aviso de versão nova e "Atualizar" (baixa, confere, fecha e abre já atualizado) ─────────
 async function avisar(nova) {
+  // só na bandeja (aberto com o computador): uma notificação no lugar do diálogo; o clique pergunta de novo
+  if (!win || win.isDestroyed()) {
+    notificar('Nova versão do Absolute ZRO', 'Clique para atualizar.', () => {
+      focar()
+      procurarVersao().catch(() => {})
+    })
+    return 'mais-tarde'
+  }
   const podeTrocar = !!atualizador && atualizador.podeInstalar(nova.build)
   const versao = nova.versao ? `A versão ${nova.versao} (build ${nova.build})` : `O build ${nova.build}`
   const { response } = await dialog.showMessageBox(win && !win.isDestroyed() ? win : undefined, {
@@ -464,6 +753,12 @@ function sobre() {
 }
 
 // ───────── menu ─────────
+function itemAbrirComSistema() {
+  const ligado = ligadoComSistema()
+  if (ligado === null) return []
+  return [{ label: 'Abrir com o computador', type: 'checkbox', checked: ligado, click: () => definirAbrirComSistema(!ligado) }]
+}
+
 function menu() {
   const wc = () => view && view.webContents
   const zoomItem = (label, accelerator, delta, extra = {}) => ({
@@ -479,7 +774,8 @@ function menu() {
             label: 'Absolute ZRO',
             submenu: [
               { label: 'Sobre o Absolute ZRO', click: sobre },
-              { label: 'Procurar nova versão…', click: () => procurarVersao() },
+              { label: 'Procurar atualizações…', click: () => procurarTudo() },
+              ...itemAbrirComSistema(),
               { type: 'separator' },
               { role: 'services', label: 'Serviços' },
               { type: 'separator' },
@@ -563,7 +859,12 @@ function menu() {
         { label: 'Apps da Absolute ZRO', click: () => (view ? view.webContents.loadURL(INICIO).catch(() => {}) : null) },
         ...(MAC
           ? []
-          : [{ type: 'separator' }, { label: 'Procurar nova versão…', click: () => procurarVersao() }, { label: 'Sobre o Absolute ZRO', click: sobre }]),
+          : [
+              { type: 'separator' },
+              { label: 'Procurar atualizações…', click: () => procurarTudo() },
+              ...itemAbrirComSistema(),
+              { label: 'Sobre o Absolute ZRO', click: sobre },
+            ]),
       ],
     },
   ]
@@ -640,6 +941,32 @@ async function smoke() {
       barraOk = await win.webContents.executeJavaScript(`!!(window.zroBarra && document.getElementById('voltar'))`)
       log(`barra de título: ${barraOk ? 'ok' : 'FALHOU'}`)
     }
+    // bandeja: o ícone existe e o menu monta (sem rede)
+    const icone = iconeDaBandeja(false)
+    const itens = bandeja.modeloDoMenu({
+      apps: [{ id: 'sobedesce', nome: 'SOBEDESCE' }],
+      pendentes: [{ id: 'sobedesce', nome: 'SOBEDESCE', fase: 'ao-fechar' }],
+    })
+    const bandejaOk = !icone.isEmpty() && itens.some((i) => i.acao === 'reiniciar-e-atualizar') && !!tray && !tray.isDestroyed()
+    log(`bandeja: ${bandejaOk ? 'ok' : 'FALHOU'} (${icone.getSize().width}×${icone.getSize().height})`)
+    // boas-vindas: a tela abre, a ponte responde e os apps aparecem
+    const b = await mostrarBoasVindas()
+    const bv = b
+      ? await b.webContents.executeJavaScript(
+          `new Promise((ok) => { const t = setInterval(() => { if (window.__zroBoasVindas) { clearInterval(t); ok({ apps: window.__zroBoasVindas.apps, cartoes: document.querySelectorAll('.cartao').length, semNode: typeof require === 'undefined' }) } }, 50) })`,
+        )
+      : null
+    const boasOk = !!bv && bv.apps === 1 && bv.cartoes === 1 && bv.semNode
+    log(`boas-vindas: ${boasOk ? 'ok' : 'FALHOU'}`)
+    // ZRO_SMOKE_CAPTURA_BOAS=arquivo.png: salva a tela de boas-vindas (para conferir o visual)
+    if (b && process.env.ZRO_SMOKE_CAPTURA_BOAS) {
+      win.show()
+      b.show()
+      await new Promise((ok) => setTimeout(ok, 900))
+      fs.writeFileSync(process.env.ZRO_SMOKE_CAPTURA_BOAS, (await b.webContents.capturePage()).toPNG())
+      log(`captura: ${process.env.ZRO_SMOKE_CAPTURA_BOAS}`)
+    }
+    if (b && !b.isDestroyed()) b.destroy()
     const fundoOk = r.fundo === 'rgb(252, 251, 252)'
     // ZRO_SMOKE_CAPTURA=arquivo.png: mostra a janela e salva a tela "Sem conexão" (para conferir o visual)
     if (process.env.ZRO_SMOKE_CAPTURA) {
@@ -649,7 +976,7 @@ async function smoke() {
       log(`captura: ${process.env.ZRO_SMOKE_CAPTURA}`)
     }
     clearTimeout(timer)
-    fim(r.pronto && r.ponte && r.semNode && r.simbolo && r.fonte && fundoOk && regrasOk && barraOk)
+    fim(r.pronto && r.ponte && r.semNode && r.simbolo && r.fonte && fundoOk && regrasOk && barraOk && bandejaOk && boasOk)
   } catch (err) {
     clearTimeout(timer)
     log(`erro: ${err && err.message ? err.message : err}`)
@@ -667,7 +994,8 @@ app.on('open-url', (e, url) => {
 app.on('second-instance', (_e, argv) => {
   const alvo = regras.deepLinkDosArgs(argv, HUB)
   if (alvo) abrirDeepLink(alvo.replace(HUB + '/', `${regras.ESQUEMA}://`))
-  else focar()
+  // aberto de novo pelo sistema (--escondido) com o app já no ar: não mostra nada
+  else if (!argv.includes(inicio.ESCONDIDO)) focar()
 })
 
 app.whenReady().then(() => {
@@ -685,10 +1013,33 @@ app.whenReady().then(() => {
     copyright: '© 2026 Absolute ZRO',
   })
   protegerSessao()
+  if (!SMOKE) prepararAbrirComSistema()
   menu()
   iniciarCentral()
-  criarJanela()
+  criarBandeja()
+  // aberto pelo sistema ao ligar o computador: começa só com o ícone (um link absolutezro:// abre a janela)
+  const escondido =
+    !SMOKE &&
+    !deepLinkPendente &&
+    inicio.iniciarEscondido({
+      argv: process.argv,
+      plataforma: PLATAFORMA,
+      abertoNoLogin:
+        MAC &&
+        (() => {
+          try {
+            return app.getLoginItemSettings().wasOpenedAtLogin
+          } catch {
+            return false
+          }
+        })(),
+    })
+  if (escondido) {
+    primeiraJanela = false // ao abrir pela bandeja, sem a abertura da marca
+    if (MAC && app.dock) app.dock.hide()
+  } else criarJanela()
   if (SMOKE) return smoke()
+  agenda.iniciar()
   if (app.isPackaged && !SMOKE) {
     atualizador = new Atualizador({
       appExe: app.getPath('exe'),
@@ -728,12 +1079,16 @@ app.whenReady().then(() => {
 })
 
 app.on('before-quit', () => {
+  saindo = true
   if (aviso) aviso.stop()
+  if (agenda) agenda.parar()
   salvarJanela()
 })
 
+// Fechar a última janela não encerra: o app fica na barra de menus/bandeja cuidando dos apps (Sair encerra).
 app.on('window-all-closed', () => {
-  if (!MAC || SMOKE) app.quit()
+  if (SMOKE || !tray || tray.isDestroyed()) return app.quit()
+  if (MAC && app.dock) app.dock.hide()
 })
 
 process.on('uncaughtException', (err) => {

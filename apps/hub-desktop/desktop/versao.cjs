@@ -62,7 +62,7 @@ function compararVersao(a, b) {
 class AvisoDeVersao {
   /**
    * @param {{ hub: string, plataforma: 'mac'|'windows'|'linux', build: number, pasta: string,
-   *           fetch?: typeof fetch, avisar: (nova: {build:number, versao:string|null, baixarUrl:string}) => Promise<'atualizar'|'baixar'|'depois'>,
+   *           fetch?: typeof fetch, avisar: (nova: {build:number, versao:string|null, baixarUrl:string}) => Promise<'atualizar'|'baixar'|'depois'|'mais-tarde'>,
    *           abrir: (url: string) => void, atualizar?: (nova: {build:number, versao:string|null, url:string, sha256:string|null}) => void,
    *           log?: (...a: unknown[]) => void }} o
    */
@@ -142,7 +142,8 @@ class AvisoDeVersao {
     }
     if (escolha === 'atualizar' && this.o.atualizar) this.o.atualizar(this.paraInstalar(remoto))
     else if (escolha === 'baixar') this.o.abrir(this.baixarUrl)
-    else this.lembrarDepois(remoto.build)
+    // 'mais-tarde': o app está só na bandeja e avisou por notificação; não conta como "Depois" (avisa de novo)
+    else if (escolha !== 'mais-tarde') this.lembrarDepois(remoto.build)
     return { estado: 'nova', remoto, escolha }
   }
 

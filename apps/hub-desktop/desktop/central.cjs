@@ -8,7 +8,10 @@
 //   ~/Applications; no Windows roda o instalador NSIS em silêncio, para o usuário atual.
 // - Sem certificado (decisão do titular, por enquanto): o arquivo vem pelo próprio app (sem a marca de "baixado da
 //   internet"), então o Mac e o Windows não mostram o aviso de app não identificado. A garantia é o SHA-256.
-// - Atualizar ou remover com a ferramenta aberta: pede para fechar antes, nunca mata o processo.
+// - Atualizar ou remover com a ferramenta aberta: pede para fechar antes, nunca mata o processo. "Reiniciar e
+//   atualizar" (agenda.cjs) só pede para a ferramenta sair, do jeito educado (como o ⌘Q ou o X da janela).
+// - Atualização em segundo plano (agenda.cjs): `prebaixar` baixa e confere sem avisar a página; `instalar` reaproveita
+//   o arquivo já conferido (confere o SHA-256 de novo antes de usar).
 
 const path = require('node:path')
 const { createHash } = require('node:crypto')
@@ -213,7 +216,7 @@ class Central {
         if (!e) continue
         const icone = e.DisplayIcon ? e.DisplayIcon.replace(/,\d+$/, '').replace(/^"|"$/g, '') : null
         const exe = e.InstallLocation ? path.win32.join(e.InstallLocation, app.windows.exe) : icone
-        return { caminho: exe, versao: e.DisplayVersion || null, desinstalador: caminhoDoComando(e.UninstallString) }
+        return { caminho: exe, versao: e.DisplayVersion || null, desinstalador: caminhoDoComando(e.UninstallString), escopo: raiz }
       }
     }
     return null
@@ -232,6 +235,49 @@ class Central {
     }
   }
 
+  /**
+   * A central pode atualizar sozinha esta instalação? Mac: o app está numa pasta em que a conta escreve (fora do disco
+   * de instalação e da "translocação" do macOS). Windows: instalado para o usuário atual (HKCU); o NSIS com
+   * /currentuser não troca uma instalação feita para todos os usuários.
+   */
+  gerenciavel(instalado) {
+    if (!instalado || !instalado.caminho) return false
+    if (this.d.plataforma === 'windows') return instalado.escopo === 'HKCU'
+    if (this.d.plataforma !== 'mac') return false
+    const c = instalado.caminho
+    if (c.startsWith('/Volumes/') || c.includes('/AppTranslocation/')) return false
+    try {
+      this.d.fs.accessSync(path.dirname(c), this.d.fs.constants.W_OK)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  /** A ferramenta está aberta agora? (false se não está instalada) */
+  async aberto(id) {
+    if (!this.catalogo) await this.carregarCatalogo()
+    const app = this.app(id)
+    const instalado = await this.detectar(app).catch(() => null)
+    return !!instalado && (await this.emUso(app, instalado))
+  }
+
+  /**
+   * Pede para a ferramenta sair, do jeito educado: Mac, "quit app" (como o ⌘Q: o app pode perguntar antes de fechar);
+   * Windows, taskkill sem /F (manda fechar a janela). Nunca força.
+   */
+  async fechar(id) {
+    if (!this.catalogo) await this.carregarCatalogo()
+    const app = this.app(id)
+    if (this.d.plataforma === 'mac' && app.mac) {
+      // o nome passou pelo BUNDLE (só letras, números, espaço, ponto, _ e -): não fecha aspas no AppleScript
+      await this.d.exec('osascript', ['-e', `quit app "${app.mac.bundle.slice(0, -4)}"`], { timeout: 30_000 }).catch(() => {})
+    } else if (this.d.plataforma === 'windows' && app.windows) {
+      await this.d.exec('taskkill', ['/IM', app.windows.exe], { timeout: 30_000, windowsHide: true }).catch(() => {})
+    }
+    return true
+  }
+
   /** Situação de cada ferramenta neste computador. */
   async listar() {
     if (!this.catalogo) await this.carregarCatalogo()
@@ -246,6 +292,7 @@ class Central {
         disponivel: disponivel ? { versao: disponivel.versao, build: disponivel.build, tamanho: disponivel.tamanho } : null,
         instalado: instalado ? { versao: instalado.versao } : null,
         atualizar: temAtualizacao(instalado, registros[app.id], disponivel),
+        gerenciavel: this.gerenciavel(instalado),
         ocupado: this.emAndamento.has(app.id),
       })
     }
@@ -254,6 +301,78 @@ class Central {
 
   avisar(id, fase, extra = {}) {
     if (this.d.avisar) this.d.avisar({ id, fase, ...extra })
+  }
+
+  /** O arquivo já baixado ainda confere com o catálogo? (tamanho e SHA-256 lidos de novo do disco) */
+  async jaConferido(destino, arquivo) {
+    const fsx = this.d.fs
+    try {
+      const st = await fsx.promises.stat(destino)
+      if (arquivo.tamanho && st.size !== arquivo.tamanho) return false
+      const hash = createHash('sha256')
+      await new Promise((ok, falha) => {
+        const s = fsx.createReadStream(destino)
+        s.on('data', (p) => hash.update(p))
+        s.on('end', ok)
+        s.on('error', falha)
+      })
+      return hash.digest('hex') === arquivo.sha256
+    } catch {
+      return false
+    }
+  }
+
+  /** Baixa (ou reaproveita) o instalador conferido. `progresso`: avisa a página (false no segundo plano). */
+  async garantirArquivo(app, arquivo, controle, progresso) {
+    const id = app.id
+    const pasta = path.join(this.d.temp, 'absolute-zro-central', id)
+    const destino = path.join(pasta, arquivo.arquivo)
+    if (await this.jaConferido(destino, arquivo)) return destino
+    // versões antigas baixadas antes ficam para trás: só o arquivo atual fica na pasta
+    await this.d.fs.promises.rm(pasta, { recursive: true, force: true }).catch(() => {})
+    if (progresso) this.avisar(id, 'baixando', { recebido: 0, total: arquivo.tamanho })
+    let ultimo = 0
+    await baixar({
+      url: `${this.d.hub}/baixar/app/${id}/${encodeURIComponent(arquivo.arquivo)}`,
+      destino,
+      sha256: arquivo.sha256,
+      tamanho: arquivo.tamanho,
+      signal: controle.signal,
+      deps: this.d,
+      onProgresso: progresso
+        ? (recebido, total) => {
+            const agora = Date.now()
+            if (agora - ultimo > 250 || recebido === total) {
+              ultimo = agora
+              this.avisar(id, 'baixando', { recebido, total })
+            }
+          }
+        : null,
+    })
+    return destino
+  }
+
+  /**
+   * Segundo plano: baixa e confere a versão nova sem instalar e sem avisar a página (a agenda instala quando a
+   * ferramenta estiver fechada). Devolve { versao, build }.
+   */
+  async prebaixar(id) {
+    if (!this.catalogo) await this.carregarCatalogo()
+    const app = this.app(id)
+    const arquivo = arquivoPara(app, this.d.plataforma, this.d.arch)
+    if (!arquivo) throw new ErroCentral('sistema', `O ${app.nome} ainda não tem instalador para este computador.`)
+    if (this.emAndamento.has(id)) throw new ErroCentral('ocupado', 'Já estou cuidando dessa ferramenta.')
+    const controle = new globalThis.AbortController()
+    this.emAndamento.set(id, controle)
+    try {
+      await this.garantirArquivo(app, arquivo, controle, false)
+      return { versao: arquivo.versao, build: arquivo.build }
+    } catch (e) {
+      if (e instanceof ErroCentral) throw e
+      throw new ErroCentral('download', controle.signal.aborted ? 'Download cancelado.' : 'Não deu para baixar agora. Tente de novo.')
+    } finally {
+      this.emAndamento.delete(id)
+    }
   }
 
   /** Instala ou atualiza. Uma operação por ferramenta de cada vez. */
@@ -268,24 +387,7 @@ class Central {
     try {
       const antes = await this.detectar(app).catch(() => null)
       if (antes && (await this.emUso(app, antes))) throw new ErroCentral('aberto', `Feche o ${app.nome} para atualizar.`)
-      const destino = path.join(this.d.temp, 'absolute-zro-central', id, arquivo.arquivo)
-      this.avisar(id, 'baixando', { recebido: 0, total: arquivo.tamanho })
-      let ultimo = 0
-      await baixar({
-        url: `${this.d.hub}/baixar/app/${id}/${encodeURIComponent(arquivo.arquivo)}`,
-        destino,
-        sha256: arquivo.sha256,
-        tamanho: arquivo.tamanho,
-        signal: controle.signal,
-        deps: this.d,
-        onProgresso: (recebido, total) => {
-          const agora = Date.now()
-          if (agora - ultimo > 250 || recebido === total) {
-            ultimo = agora
-            this.avisar(id, 'baixando', { recebido, total })
-          }
-        },
-      })
+      const destino = await this.garantirArquivo(app, arquivo, controle, true)
       this.avisar(id, 'instalando')
       if (this.d.plataforma === 'mac') await this.instalarMac(app, destino)
       else await this.instalarWindows(destino)

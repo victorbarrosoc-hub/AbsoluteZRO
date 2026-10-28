@@ -11,6 +11,7 @@ const fsp = require('node:fs/promises')
 const { spawn } = require('node:child_process')
 const { Readable } = require('node:stream')
 const { Atualizador, readBuildInfo, handoffCommand, isHandoffScript } = require('./atualizador.cjs')
+const { arquivoDaCentral, lerGerenciado } = require('./gerenciado.cjs')
 const { Organizador } = require('./organizador.cjs')
 const { Ponte, pastaTroca } = require('./davinci.cjs')
 const { Biblioteca } = require('./sfx-biblioteca.cjs')
@@ -394,6 +395,8 @@ function iniciarAtualizador() {
     stateDir: app.getPath('userData'),
     buildInfo: readBuildInfo(path.join(__dirname, 'build-info.json')),
     handoff: runUpdateHandoff,
+    // instalado pela central do Absolute ZRO: quem atualiza é ela (desktop/gerenciado.cjs, ADR 0018)
+    gerenciado: app.isPackaged ? () => lerGerenciado(arquivoDaCentral(app.getPath('appData'))) : () => false,
     log: (...a) => console.log('[atualização]', ...a),
   })
   atu.on('change', (st) => {

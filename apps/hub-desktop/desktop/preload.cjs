@@ -17,13 +17,16 @@ contextBridge.exposeInMainWorld('zroDesktop', {
    * ferramenta (o que baixar vem do catálogo, conferido no processo principal). Respostas: { ok, dados?, erro? }.
    */
   apps: {
-    versao: 1,
+    // 2: listar traz `atualizacao` ({ fase: 'ao-fechar'|…, versao }) e há reiniciarEAtualizar; instalar com a
+    // ferramenta aberta devolve 'ao-fechar' (instala quando ela fechar)
+    versao: 2,
     listar: () => ipcRenderer.invoke('central:listar'),
     instalar: (id) => ipcRenderer.invoke('central:instalar', String(id)),
+    reiniciarEAtualizar: (id) => ipcRenderer.invoke('central:reiniciar-e-atualizar', String(id)),
     abrir: (id) => ipcRenderer.invoke('central:abrir', String(id)),
     remover: (id) => ipcRenderer.invoke('central:remover', String(id)),
     cancelar: (id) => ipcRenderer.invoke('central:cancelar', String(id)),
-    /** Progresso: { id, fase: baixando|instalando|pronto|erro|removendo|removido, recebido?, total?, mensagem? }. */
+    /** Progresso: { id, fase: baixando|instalando|pronto|erro|removendo|removido|agendado, recebido?, total?, mensagem? }. */
     aoProgresso: (fn) => {
       const ouvinte = (_e, ev) => fn(ev)
       ipcRenderer.on('central:progresso', ouvinte)

@@ -230,3 +230,61 @@ test('ferramenta fora do catálogo ou sem instalador para o sistema: erro claro'
   await assert.rejects(central.instalar('nossom'), /ainda não tem instalador para este computador/)
   await assert.rejects(central.instalar('outra'), /não encontrada/)
 })
+
+test('segundo plano: prebaixar confere sem avisar a página; instalar depois reaproveita o arquivo conferido', async () => {
+  const { central, chamadas, avisos } = ambiente({ plataforma: 'mac' })
+  const downloads = () => chamadas.filter((c) => c[0] === 'fetch' && c[1].includes('/baixar/app/')).length
+  assert.deepEqual(await central.prebaixar('synquei'), { versao: '1.2.0', build: 40 })
+  assert.equal(downloads(), 1)
+  assert.deepEqual(avisos, [], 'o download em segundo plano não mexe na página')
+  await central.prebaixar('synquei')
+  assert.equal(downloads(), 1, 'arquivo já conferido não baixa de novo')
+  await central.instalar('synquei')
+  assert.equal(downloads(), 1, 'instalar usa o arquivo já baixado')
+  assert.deepEqual(
+    avisos.map((a) => a.fase),
+    ['instalando', 'pronto'],
+  )
+})
+
+test('segundo plano: arquivo baixado que foi mexido no disco é baixado de novo', async () => {
+  const { central, chamadas, raiz } = ambiente({ plataforma: 'mac' })
+  await central.prebaixar('synquei')
+  const arquivo = path.join(raiz, 'tmp', 'absolute-zro-central', 'synquei', 'Synquei-1.2.0-b40-mac-universal.dmg')
+  const bytes = fs.readFileSync(arquivo)
+  bytes[0] ^= 1
+  fs.writeFileSync(arquivo, bytes)
+  await central.instalar('synquei')
+  assert.equal(chamadas.filter((c) => c[0] === 'fetch' && c[1].includes('/baixar/app/')).length, 2)
+})
+
+test('gerenciável: Mac em pasta gravável; Windows só instalação do usuário (HKCU)', async () => {
+  const mac = ambiente({ plataforma: 'mac' })
+  await mac.central.instalar('synquei')
+  const s = (await mac.central.listar()).find((x) => x.id === 'synquei')
+  assert.equal(s.gerenciavel, true)
+  assert.equal(mac.central.gerenciavel({ caminho: '/Volumes/Synquei/Synquei.app' }), false)
+  assert.equal(mac.central.gerenciavel({ caminho: '/private/var/folders/x/AppTranslocation/y/Synquei.app' }), false)
+  assert.equal(mac.central.gerenciavel(null), false)
+  const win = ambiente({ plataforma: 'windows' })
+  assert.equal(win.central.gerenciavel({ caminho: 'C:\\x\\Synquei.exe', escopo: 'HKCU' }), true)
+  assert.equal(win.central.gerenciavel({ caminho: 'C:\\x\\Synquei.exe', escopo: 'HKLM' }), false)
+})
+
+test('aberto e fechar: pede para sair do jeito educado (sem forçar)', async () => {
+  const mac = ambiente({ plataforma: 'mac', execRespostas: { pgrep: '123' } })
+  await mac.central.carregarCatalogo()
+  assert.equal(await mac.central.aberto('synquei'), false, 'não instalado = não está aberto')
+  await mac.central.fechar('synquei')
+  assert.deepEqual(
+    mac.chamadas.find((c) => c[0] === 'osascript'),
+    ['osascript', '-e', 'quit app "Synquei"'],
+  )
+  const reg = ['HKEY_CURRENT_USER\\Software\\x', '    DisplayName    REG_SZ    Synquei 1.1.0', '    InstallLocation    REG_SZ    C:\\P\\synquei'].join('\r\n')
+  const win = ambiente({ plataforma: 'windows', execRespostas: { reg, tasklist: '"Synquei.exe","1","Console"' } })
+  assert.equal(await win.central.aberto('synquei'), true)
+  await win.central.fechar('synquei')
+  const kill = win.chamadas.find((c) => c[0] === 'taskkill')
+  assert.deepEqual(kill, ['taskkill', '/IM', 'Synquei.exe'])
+  assert.equal(kill.includes('/F'), false)
+})

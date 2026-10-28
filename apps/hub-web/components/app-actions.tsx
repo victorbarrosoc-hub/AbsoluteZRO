@@ -15,10 +15,12 @@ type Situacao = {
   instalado: { versao: string | null } | null
   atualizar: boolean
   ocupado: boolean
+  /** App 1.3+: atualização preparada em segundo plano ('ao-fechar' = instala quando a ferramenta fechar). */
+  atualizacao?: { fase: string; versao: string } | null
 }
 type Progresso = {
   id: string
-  fase: 'baixando' | 'instalando' | 'pronto' | 'erro' | 'removendo' | 'removido'
+  fase: 'baixando' | 'instalando' | 'pronto' | 'erro' | 'removendo' | 'removido' | 'agendado'
   recebido?: number
   total?: number
   mensagem?: string
@@ -27,7 +29,9 @@ type Resposta<T> = { ok: boolean; dados?: T; erro?: string }
 type AppsApi = {
   versao: number
   listar: () => Promise<Resposta<Situacao[]>>
-  instalar: (id: string) => Promise<Resposta<boolean>>
+  instalar: (id: string) => Promise<Resposta<boolean | 'ao-fechar'>>
+  /** App 1.3+: pede para a ferramenta sair, instala e abre de novo. */
+  reiniciarEAtualizar?: (id: string) => Promise<Resposta<boolean>>
   abrir: (id: string) => Promise<Resposta<boolean>>
   remover: (id: string) => Promise<Resposta<boolean>>
   cancelar: (id: string) => Promise<{ ok: boolean }>
@@ -80,7 +84,7 @@ export function AppActions({ id, nome, liberado, web }: { id: string; nome: stri
       if (ev.id !== id) return
       setProg(ev)
       if (ev.fase === 'erro') setErro(ev.mensagem ?? 'Algo deu errado.')
-      if (ev.fase === 'pronto' || ev.fase === 'removido') {
+      if (ev.fase === 'pronto' || ev.fase === 'removido' || ev.fase === 'agendado') {
         setProg(null)
         atualizarTodos(a)
       }
@@ -94,11 +98,14 @@ export function AppActions({ id, nome, liberado, web }: { id: string; nome: stri
 
   if (!api) return null
 
-  async function agir(acao: 'instalar' | 'abrir' | 'remover') {
+  async function agir(acao: 'instalar' | 'abrir' | 'remover' | 'reiniciarEAtualizar') {
     if (!api) return
     if (acao === 'remover' && !window.confirm(`Remover o ${nome} deste computador? Seus arquivos de trabalho não são apagados.`)) return
     setErro(null)
-    const r = await api[acao](id)
+    const fn = api[acao]
+    if (!fn) return
+    const r = await fn(id)
+    if (acao === 'reiniciarEAtualizar') atualizarTodos(api)
     if (!r.ok) {
       setErro(r.erro ?? 'Algo deu errado.')
       setProg(null)
@@ -151,16 +158,30 @@ export function AppActions({ id, nome, liberado, web }: { id: string; nome: stri
         <button type="button" className="zro-btn zro-btn--primary zro-btn--small" onClick={() => agir('abrir')}>
           Abrir
         </button>
-        {s.atualizar && liberado && (
-          <button type="button" className="zro-btn zro-btn--small" onClick={() => agir('instalar')} title={`Versão ${s.disponivel?.versao}`}>
-            <Icon name="download" size={14} />
-            Atualizar
+        {s.atualizar && liberado && s.atualizacao?.fase === 'ao-fechar' && api.reiniciarEAtualizar ? (
+          <button
+            type="button"
+            className="zro-btn zro-btn--small"
+            onClick={() => agir('reiniciarEAtualizar')}
+            title={`Versão ${s.atualizacao.versao} pronta: atualiza quando o ${nome} fechar`}
+          >
+            Reiniciar e atualizar
           </button>
+        ) : (
+          s.atualizar &&
+          liberado && (
+            <button type="button" className="zro-btn zro-btn--small" onClick={() => agir('instalar')} title={`Versão ${s.disponivel?.versao}`}>
+              <Icon name="download" size={14} />
+              Atualizar
+            </button>
+          )
         )}
         <button type="button" className="zro-btn zro-btn--ghost zro-btn--small" onClick={() => agir('remover')}>
           Remover
         </button>
-        <span className="zro-faint app-actions__meta">{s.instalado.versao ? `v${s.instalado.versao}` : 'Instalado'}</span>
+        <span className="zro-faint app-actions__meta">
+          {s.atualizacao?.fase === 'ao-fechar' ? 'Atualiza ao fechar' : s.instalado.versao ? `v${s.instalado.versao}` : 'Instalado'}
+        </span>
       </>
     )
   else

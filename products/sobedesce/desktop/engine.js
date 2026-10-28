@@ -2,6 +2,7 @@
 // Assim um pico de trabalho do motor nunca trava a interface, e um travamento do motor não derruba a janela.
 import { startApp } from '../src/index.js'
 import { guardaPorMensagens } from '../src/util/segredos.js'
+import { lerGerenciado } from '../src/gerenciado.js'
 
 const parent = process.parentPort
 
@@ -68,7 +69,10 @@ try {
   const appExe = process.env.SOBEDESCE_APP_EXE || ''
   const appPid = Number(process.env.SOBEDESCE_APP_PID) || 0
   const updaterOptions = appExe && appPid ? { appExe, appPid, handoff: ({ script }) => parent.postMessage({ type: 'update-handoff', script }) } : {}
-  app = await startApp({ open: false, desktop: true, quiet: true, segredos: guarda, updaterOptions })
+  // Instalado pela central do Absolute ZRO: ela atualiza o app (src/gerenciado.js); o aviso próprio fica quieto.
+  const arquivoCentral = process.env.SOBEDESCE_CENTRAL_ARQUIVO || ''
+  const versionOptions = arquivoCentral ? { gerenciado: () => lerGerenciado(arquivoCentral) } : {}
+  app = await startApp({ open: false, desktop: true, quiet: true, segredos: guarda, updaterOptions, versionOptions })
   app.referencias?.setCookieProvider(pedirCookies)
   console.log(`[motor] pronto em ${app.url} · dados em ${app.paths.root}`)
   parent.postMessage({ type: 'ready', url: app.url, port: app.port })
