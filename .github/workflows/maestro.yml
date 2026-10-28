@@ -1,0 +1,60 @@
+# Maestro (products/maestro): lint, tipos, testes e build a cada mudança na pasta dele.
+# A publicação é da Vercel (projeto próprio, Root Directory products/maestro, só com autorização do titular); aqui só conferimos.
+# Os testes de RLS, OIDC e repasse da Z rodam num Postgres de verdade (TEST_DATABASE_URL) com uma Absolute ZRO falsa.
+name: Maestro
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'products/maestro/**'
+      - '.github/workflows/maestro.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'products/maestro/**'
+      - '.github/workflows/maestro.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: maestro-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: products/maestro
+
+jobs:
+  conferir:
+    name: Lint, tipos, testes e build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: products/maestro/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build

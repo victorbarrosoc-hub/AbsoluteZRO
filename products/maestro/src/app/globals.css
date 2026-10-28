@@ -1,0 +1,704 @@
+/*
+ * Maestro: identidade Absolute ZRO (packages/ui/src/tokens.css, Padrão Apple do CLAUDE.md), com a cor do produto só
+ * no símbolo (latão). Tema claro é o padrão; o escuro é escolha no seletor (data-theme no <html>). Títulos em Figtree,
+ * texto só em grafite/branco e cinza de apoio: nada de texto azul ou em degradê. Botões em Liquid Glass.
+ */
+:root {
+  --zro-void: #0e0e10;
+  --zro-ink: #131316;
+  --zro-graphite: #17171a;
+  --zro-smoke: #1e1e22;
+  --zro-mist: #2c2c31;
+  --zro-mute: #8e8e93;
+  --zro-ash: #aeaeb2;
+  --zro-light: #f5f5f7;
+  --zro-paper-ink: #111114;
+
+  /* o latão da pauta: só no símbolo do Maestro (nunca em texto) */
+  --p-maestro: #ffc857;
+  --p-maestro-2: #b8872b;
+
+  --font-apple: "Figtree Variable", "Inter Variable", system-ui, sans-serif;
+  --font-sans: "Inter Variable", ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", sans-serif;
+
+  --radius-s: 10px;
+  --radius-m: 16px;
+  --radius-l: 24px;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --spring: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* tema claro (padrão) */
+  --bg: #f4f4f6;
+  --surface: #ffffff;
+  --surface-2: #f7f7f9;
+  --surface-3: #e9e9ee;
+  --text: #1d1d1f;
+  --text-strong: var(--zro-paper-ink);
+  --text-mute: #55555b;
+  --text-faint: #6e6e73;
+  --line: rgb(60 60 67 / 0.12);
+  --line-strong: rgb(60 60 67 / 0.24);
+  --focus: #1d1d1f;
+  --pill-fill: linear-gradient(180deg, rgb(255 255 255 / 0.85), rgb(255 255 255 / 0.55));
+  --pill-rim: inset 0 1px 0 rgb(255 255 255 / 1), 0 0 0 1px rgb(0 0 0 / 0.08);
+  --chrome-bg: rgb(246 246 248 / 0.82);
+  --hover: rgb(0 0 0 / 0.04);
+  --active: rgb(0 0 0 / 0.065);
+  --lift: 0 20px 50px rgb(0 0 0 / 0.1);
+  --shadow-float: 0 1px 0 rgb(255 255 255 / 0.9) inset, 0 1px 2px rgb(0 0 0 / 0.04), 0 18px 48px rgb(0 0 0 / 0.08);
+  --ok-text: #1d7a37;
+  --warn-text: #9a5300;
+  --danger-text: #c4261d;
+  --gb-fill: rgb(255 255 255 / 0.55);
+  --gb-ink: #1d1d1f;
+  --gb-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.5), rgb(255 255 255 / 0) 55%);
+  --gb-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), inset 0 -1px 0 rgb(0 0 0 / 0.06), 0 0 0 1px rgb(0 0 0 / 0.08), 0 8px 24px rgb(0 0 0 / 0.08);
+  --gb-shadow-hover: inset 0 1px 0 rgb(255 255 255 / 0.95), inset 0 -1px 0 rgb(0 0 0 / 0.06), 0 0 0 1px rgb(0 0 0 / 0.1), 0 12px 30px rgb(0 0 0 / 0.12);
+  --gbi-fill: rgb(29 29 31 / 0.92);
+  --gbi-ink: #ffffff;
+  --gbi-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.22), rgb(255 255 255 / 0) 50%);
+  --gbi-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35), inset 0 -1px 0 rgb(0 0 0 / 0.4), 0 0 0 1px rgb(0 0 0 / 0.5), 0 10px 28px rgb(0 0 0 / 0.22);
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: var(--zro-void);
+  --surface: var(--zro-smoke);
+  --surface-2: var(--zro-graphite);
+  --surface-3: var(--zro-mist);
+  --text: #e5e5ea;
+  --text-strong: var(--zro-light);
+  --text-mute: var(--zro-ash);
+  --text-faint: var(--zro-mute);
+  --line: rgb(235 235 245 / 0.1);
+  --line-strong: rgb(235 235 245 / 0.2);
+  --focus: #f5f5f7;
+  --pill-fill: linear-gradient(180deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.04));
+  --pill-rim: inset 0 1px 0 rgb(255 255 255 / 0.12), 0 0 0 1px rgb(255 255 255 / 0.12);
+  --chrome-bg: color-mix(in srgb, var(--zro-ink) 92%, transparent);
+  --hover: rgb(255 255 255 / 0.05);
+  --active: rgb(255 255 255 / 0.08);
+  --lift: 0 20px 50px rgb(0 0 0 / 0.35);
+  --shadow-float: 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 24px 60px rgb(0 0 0 / 0.5);
+  --ok-text: #30d158;
+  --warn-text: #ffb340;
+  --danger-text: #ff453a;
+  --gb-fill: rgb(255 255 255 / 0.1);
+  --gb-ink: #f5f5f7;
+  --gb-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0) 55%);
+  --gb-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28), 0 0 0 1px rgb(255 255 255 / 0.14), 0 10px 28px rgb(0 0 0 / 0.4);
+  --gb-shadow-hover: inset 0 1px 0 rgb(255 255 255 / 0.32), 0 0 0 1px rgb(255 255 255 / 0.2), 0 12px 32px rgb(0 0 0 / 0.45);
+  --gbi-fill: rgb(245 245 247 / 0.94);
+  --gbi-ink: #1d1d1f;
+  --gbi-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.6), rgb(255 255 255 / 0) 50%);
+  --gbi-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), inset 0 -1px 0 rgb(0 0 0 / 0.12), 0 0 0 1px rgb(255 255 255 / 0.3), 0 6px 18px rgb(0 0 0 / 0.4);
+  color-scheme: dark;
+}
+
+/* ───────────── base ───────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+  background: var(--bg);
+}
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+html.theme-switching * {
+  transition:
+    background-color 0.3s var(--ease),
+    color 0.3s var(--ease),
+    border-color 0.3s var(--ease) !important;
+}
+a {
+  color: inherit;
+}
+button {
+  font: inherit;
+  color: inherit;
+}
+h1,
+h2,
+h3 {
+  font-family: var(--font-apple);
+  color: var(--text-strong);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.pular {
+  position: absolute;
+  left: 16px;
+  top: -48px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: var(--pill-rim);
+  z-index: 100;
+}
+.pular:focus {
+  top: 12px;
+}
+
+/* ───────────── Liquid Glass (apps/hub-web/app/globals.css) ───────────── */
+
+.glass-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 26px;
+  border: 0;
+  border-radius: 999px;
+  font-family: var(--font-apple);
+  font-size: 1.02rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--gb-ink);
+  text-decoration: none;
+  cursor: pointer;
+  background: var(--gb-sheen), var(--gb-fill);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+  box-shadow: var(--gb-shadow);
+  transition:
+    transform 0.25s var(--spring),
+    box-shadow 0.25s ease;
+}
+.glass-btn:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: var(--gb-shadow-hover);
+}
+.glass-btn:active {
+  transform: scale(0.98);
+}
+.glass-btn--ink {
+  --gb-fill: var(--gbi-fill);
+  --gb-ink: var(--gbi-ink);
+  --gb-sheen: var(--gbi-sheen);
+  --gb-shadow: var(--gbi-shadow);
+  --gb-shadow-hover: var(--gbi-shadow);
+}
+.glass-btn--sm {
+  min-height: 38px;
+  padding: 0 16px;
+  font-size: 0.92rem;
+}
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.acoes--centro {
+  justify-content: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .glass-btn,
+  html.theme-switching * {
+    transition: none !important;
+  }
+  .glass-btn:hover {
+    transform: none;
+  }
+}
+
+/* ───────────── textos ───────────── */
+
+/* Título no contraste da casa: a ideia em Light, o que importa em ExtraBold. */
+.atitle {
+  font-family: var(--font-apple);
+  font-size: clamp(2rem, 4.4vw, 2.8rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-weight: 300;
+  color: var(--text-strong);
+  margin: 0;
+}
+.atitle strong {
+  font-weight: 800;
+}
+.atitle--xl {
+  font-size: clamp(2.4rem, 6vw, 4rem);
+}
+.apoio {
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 1.05rem;
+  max-width: 44ch;
+}
+.sutil {
+  color: var(--text-faint);
+  font-size: 0.9rem;
+}
+.erro {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line);
+  color: var(--danger-text);
+  font-size: 0.95rem;
+}
+
+/* ───────────── telas inteiras (abertura, entrar, sem acesso) ───────────── */
+
+.abertura {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  padding: 24px 16px;
+}
+.abertura__miolo {
+  align-self: center;
+  justify-self: center;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 18px;
+  width: min(640px, 100%);
+}
+.abertura__miolo .apoio {
+  text-align: center;
+}
+.abertura__simbolo {
+  width: clamp(160px, 36vw, 260px);
+  height: auto;
+  margin-bottom: 8px;
+}
+.abertura__nome {
+  font-family: var(--font-apple);
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-strong);
+}
+.abertura__rodape {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 0 8px;
+  color: var(--text-faint);
+  font-size: 0.86rem;
+}
+.abertura__rodape a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: var(--text-mute);
+}
+.abertura__ferramentas {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* ───────────── shell do app ───────────── */
+
+.shell {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+.topo {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  background: var(--chrome-bg);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+  border-bottom: 1px solid var(--line);
+}
+.topo__marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text-strong);
+  font-family: var(--font-apple);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.86rem;
+}
+.topo__marca svg {
+  width: 44px;
+  height: auto;
+}
+.topo__fim {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.assinatura {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-mute);
+  text-decoration: none;
+  font-size: 0.8rem;
+}
+.assinatura svg {
+  width: 20px;
+  height: 20px;
+}
+.conta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 4px 4px 10px;
+  border-radius: 999px;
+  background: var(--pill-fill);
+  box-shadow: var(--pill-rim);
+  font-size: 0.86rem;
+  color: var(--text);
+  text-decoration: none;
+}
+.conta__nome {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface-3);
+  color: var(--text-strong);
+  font-family: var(--font-apple);
+  font-weight: 700;
+  font-size: 0.8rem;
+  overflow: hidden;
+}
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.avatar--grande {
+  width: 56px;
+  height: 56px;
+  font-size: 1.2rem;
+}
+
+.nav {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--pill-fill);
+  box-shadow: var(--pill-rim);
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.nav::-webkit-scrollbar {
+  display: none;
+}
+.nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  text-decoration: none;
+  color: var(--text-mute);
+  font-family: var(--font-apple);
+  font-weight: 600;
+  font-size: 0.92rem;
+  white-space: nowrap;
+  transition:
+    background 0.2s var(--ease),
+    color 0.2s var(--ease);
+}
+.nav a:hover {
+  background: var(--hover);
+  color: var(--text-strong);
+}
+.nav a[aria-current="page"] {
+  background: var(--surface);
+  color: var(--text-strong);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.06),
+    0 0 0 1px var(--line);
+}
+.nav a svg {
+  width: 16px;
+  height: 16px;
+}
+.nav a[data-aba="z"] {
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.conteudo {
+  width: min(1240px, 100% - 32px);
+  margin: 0 auto;
+  padding: 28px 0 72px;
+}
+.pagina {
+  display: grid;
+  gap: 24px;
+}
+.pagina__cabeca {
+  display: grid;
+  gap: 6px;
+}
+
+/* seletor claro/escuro */
+.tema {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--pill-fill);
+  box-shadow: var(--pill-rim);
+}
+.tema button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 30px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-mute);
+  cursor: pointer;
+}
+.tema button[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--text-strong);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+}
+.tema svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* ───────────── estados vazios ───────────── */
+
+.vazio {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 72px 24px;
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+.vazio__icone {
+  width: 60px;
+  height: 60px;
+  display: grid;
+  place-items: center;
+  border-radius: 20px;
+  background: var(--surface-2);
+  color: var(--text-mute);
+  margin-bottom: 6px;
+}
+.vazio__icone svg {
+  width: 26px;
+  height: 26px;
+}
+.vazio h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+.vazio p {
+  margin: 0;
+  color: var(--text-faint);
+  max-width: 40ch;
+}
+.vazio .glass-btn {
+  margin-top: 10px;
+}
+
+/* ───────────── Quadro: as 8 colunas do método ───────────── */
+
+.quadro {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(140px, 1fr);
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  scrollbar-width: thin;
+}
+.coluna {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 14px 12px;
+  min-height: 360px;
+  border-radius: 20px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.coluna__topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.coluna h2 {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.coluna__n {
+  font-size: 0.78rem;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+.coluna__desc {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--text-faint);
+}
+.coluna__vago {
+  margin-top: 6px;
+  height: 64px;
+  border-radius: 14px;
+  border: 1px dashed var(--line-strong);
+}
+
+/* ───────────── Z ───────────── */
+
+.z-tela {
+  display: grid;
+  gap: 16px;
+  min-height: 60dvh;
+}
+.z-tela zro-ia {
+  --zro-ia-altura: min(70dvh, 640px);
+  display: block;
+}
+.z-aviso {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  text-align: center;
+  padding: 24px;
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+.z-aviso p {
+  margin: 0;
+  color: var(--text-mute);
+}
+
+/* ───────────── Ajustes ───────────── */
+
+.ficha {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+.ficha__pessoa {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ficha__pessoa strong {
+  display: block;
+  font-family: var(--font-apple);
+  font-size: 1.1rem;
+  color: var(--text-strong);
+}
+.ficha dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 20px;
+  margin: 0;
+  font-size: 0.95rem;
+}
+.ficha dt {
+  color: var(--text-faint);
+}
+.ficha dd {
+  margin: 0;
+  color: var(--text);
+}
+.fichas {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  align-items: start;
+}
+
+/* ───────────── celular ───────────── */
+
+@media (max-width: 760px) {
+  .topo {
+    flex-wrap: wrap;
+    row-gap: 10px;
+    padding: 10px 16px;
+  }
+  .topo__fim {
+    margin-left: auto;
+  }
+  .conta:not(.conta--inteira) .conta__nome {
+    display: none;
+  }
+  .nav {
+    order: 3;
+    width: 100%;
+  }
+  .conteudo {
+    width: calc(100% - 32px);
+    padding: 20px 0 56px;
+  }
+  .quadro {
+    grid-auto-columns: minmax(240px, 80vw);
+  }
+  .ficha dl {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  .ficha dt {
+    margin-top: 8px;
+  }
+}
