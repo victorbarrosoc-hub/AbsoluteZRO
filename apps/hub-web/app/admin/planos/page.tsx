@@ -160,7 +160,7 @@ export default async function Planos() {
         </ul>
       </section>
 
-      <Fold title="Dado à mão" meta={`${d.subs.length + d.grants.length}`} >
+      <Fold title="Dado à mão" meta={`${d.subs.length + d.grants.length}`}>
         <h3 className="adm-sub">Assinaturas</h3>
         {d.subs.length ? (
           <ul className="adm-rows">
