@@ -2055,6 +2055,33 @@ body.sem-rodape{padding-bottom:0}
 .lgn-bloq p{margin:10px 0 18px;font-size:15px;line-height:1.45;color:var(--cal-fraco)}
 .lgn-bloq a.lgn-ok{text-decoration:none}
 .lgn-bloq .lgn-troca{margin-top:14px}
+/* ===== EM DESENVOLVIMENTO (28/out): a página do portão do lançamento.
+   O mesmo desenho das outras plataformas (padrão Apple): o símbolo da
+   Absolute ZRO pequeno, a marca do Carro, o título em Figtree Light ×
+   ExtraBold, uma linha de apoio e o botão de vidro escuro "Voltar ao HUB".
+   Título e botões só em grafite (#1d1d1f) ou branco; o apoio em cinza. ===== */
+.fc{--fc-ink:#fff;--fc-apoio:#a1a1a6;min-height:calc(100svh / var(--zoom,1));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:48px 24px 64px;text-align:center}
+:root.app-light .fc{--fc-ink:#1d1d1f;--fc-apoio:#6e6e73}
+.fc-zro{display:flex;color:var(--fc-ink);opacity:.85;margin-bottom:6px}
+.fc-marca{display:flex;align-items:center;gap:10px;color:var(--fc-ink)}
+.fc-marca b{font-family:var(--display);font-weight:900;font-size:20px;letter-spacing:-.03em}
+.fc-tit{font-family:"Figtree",var(--display),system-ui,sans-serif;font-size:clamp(40px,7vw,76px);line-height:1.02;letter-spacing:-.035em;margin:12px 0 0;color:var(--fc-ink);text-wrap:balance}
+.fc-fino{font-weight:300}
+.fc-forte{font-weight:800}
+.fc-sub{margin:0;max-width:36ch;font-size:clamp(16px,1.4vw,19px);line-height:1.45;color:var(--fc-apoio)}
+.fc-acoes{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:16px}
+.fc-troca{margin:0;font-size:14px;color:var(--fc-apoio)}
+/* Liquid Glass: a pílula de vidro da Absolute ZRO; a ação principal em vidro escuro (--ink) */
+.glass-btn{--gb-fill:rgba(255,255,255,.1);--gb-ink:#f5f5f7;position:relative;display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:48px;padding:0 26px;border:0;border-radius:999px;font-family:"Figtree",var(--ui),system-ui,sans-serif;font-size:16.5px;font-weight:600;letter-spacing:-.01em;color:var(--gb-ink);text-decoration:none;cursor:pointer;
+  background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,0) 55%),var(--gb-fill);
+  -webkit-backdrop-filter:blur(18px) saturate(180%);backdrop-filter:blur(18px) saturate(180%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 0 0 1px rgba(255,255,255,.14),0 10px 28px rgba(0,0,0,.4);
+  transition:transform .25s var(--mola,ease),box-shadow .25s ease}
+.glass-btn:hover{transform:translateY(-1px) scale(1.02)}
+.glass-btn:active{transform:scale(.98)}
+.glass-btn--ink{--gb-fill:rgba(245,245,247,.94);--gb-ink:#1d1d1f;background:linear-gradient(180deg,rgba(255,255,255,.6),rgba(255,255,255,0) 50%),var(--gb-fill);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(0,0,0,.25),0 10px 28px rgba(0,0,0,.35)}
+:root.app-light .glass-btn{--gb-fill:rgba(255,255,255,.55);--gb-ink:#1d1d1f;background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,0) 55%),var(--gb-fill);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -1px 0 rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.08)}
+:root.app-light .glass-btn--ink{--gb-fill:rgba(29,29,31,.92);--gb-ink:#fff;background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0) 50%),var(--gb-fill);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -1px 0 rgba(0,0,0,.4),0 0 0 1px rgba(0,0,0,.5),0 10px 28px rgba(0,0,0,.22)}
 /* símbolo flat da Absolute ZRO (ADR 0017 da raiz): uma cor só, a do texto do botão;
    geometria de scripts/marca/vetor (27/out: saiu o feixe de luz antigo) */
 .lgzro .ic svg{display:block}
@@ -6827,17 +6854,19 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
     </div>
   </div>
 
-  <!-- a Z, a IA do ecossistema Absolute ZRO. Desde 27/out · 4 ela é o painel
-       inicial do app (o topo do Feed, com conta Absolute ZRO): a seção diz que
-       está no Carro do Freela e o botão leva a entrar. Anel e estrela são
-       cópias em src/midia (z-anel, z-estrela), como os ícones da família; a
-       estrela fica sobre o tubo, às 3 horas. -->
+  <!-- a Z, a IA do ecossistema Absolute ZRO. Desde 27/out · 5 ela tem aba
+       própria no app (só com sessão liberada). ⚠️ (28/out) O Carro está
+       FECHADO (adendo do PRD): a seção diz "Chegando" e NÃO tem porta — nada
+       de "Conversar com a Z" na home pública; fica só "Conhecer a Z", que é
+       apresentação. Anel e estrela são cópias em src/midia (z-anel,
+       z-estrela), como os ícones da família; a estrela fica sobre o tubo,
+       às 3 horas. -->
   <div class="sec rvsec hsec" id="h-z">
     <div class="wrap">
       <div class="z-caixa">
         <div class="z-simbolo" aria-hidden="true"><img class="z-anel" src="midia:z-anel.webp" alt="" width="560" height="560" loading="lazy" decoding="async"><img class="z-estrela" src="midia:z-estrela.webp" alt="" width="400" height="400" loading="lazy" decoding="async"></div>
         <div class="z-tx">
-          <p class="z-selo"><i aria-hidden="true"></i>Agora no Carro do Freela</p>
+          <p class="z-selo"><i aria-hidden="true"></i>Chegando ao Carro do Freela</p>
           <h2>Z. Uma IA para todo o ecossistema.</h2>
           <p>Responde sobre seus jobs, a agenda e a equipe, logo na abertura do app.</p>
           <ul class="z-fichas" aria-label="Como a Z funciona">
@@ -6846,7 +6875,7 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
             <li title="Nenhuma ação sem você conferir."><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.2l2.4 2.4 4.6-4.9"/></svg>Você confere antes</li>
             <li title="Usa os créditos de IA do seu plano."><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l1.8 6.2L20 12l-6.2 1.8L12 20l-1.8-6.2L4 12l6.2-1.8z"/></svg>1 crédito por resposta</li>
           </ul>
-          <div class="z-acoes"><button class="btn entrar-cta z-ir" data-lg="freela">Conversar com a Z</button><a class="btn gh z-ir" href="https://absolutezro.com/ia" rel="noopener">Conhecer a Z</a></div>
+          <div class="z-acoes"><a class="btn gh z-ir" href="https://absolutezro.com/ia" rel="noopener">Conhecer a Z</a></div>
         </div>
       </div>
     </div>
@@ -6968,6 +6997,32 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
         <p class="lgn-troca"><button type="button" class="lgn-link" id="lg-bloq-sair">Sair desta conta</button></p>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- ================= EM DESENVOLVIMENTO (28/out) =================
+     ⚠️ O PORTÃO DO LANÇAMENTO (adendo do PRD: acesso exclusivo do
+     proprietário). Enquanto o Carro não for lançado, no domínio só entra a
+     conta que a Absolute ZRO lista — hoje, a do proprietário. Tudo o mais
+     cai aqui: a tela de entrar, o cadastro, o Feed, a Z, cada tela de dentro
+     e os builds por fase (/fase1…). É a página "Em desenvolvimento" de toda
+     a família (símbolo pequeno, título curto, uma linha, "Voltar ao HUB"),
+     com a única porta que existe: "Entrar com Absolute ZRO", que o HUB só
+     abre para quem está na lista. Fora do domínio (file://, artifact,
+     suítes) a prévia segue como era: a página só vale quando o build do
+     domínio marca cdf-release=closed ou /api/zro/eu diz release:"closed".
+     Nada de dado interno aqui: a página é a mesma para todo mundo. -->
+<section id="v-fechado" hidden>
+  <div class="fc">
+    <span class="fc-zro" aria-label="Absolute ZRO"><svg viewBox="0 0 100 100" width="26" height="26" fill="currentColor" aria-hidden="true" focusable="false"><path d="M74.00 40.02C75.00 47.51 77.33 49.00 94.82 50.00C77.33 51.00 75.00 52.49 74.00 59.98C73.00 52.49 70.67 51.00 53.18 50.00C70.67 49.00 73.00 47.51 74.00 40.02Z"/><path fill-rule="evenodd" d="M9.70 50.00a34.30 34.30 0 1 0 68.60 0a34.30 34.30 0 1 0 -68.60 0ZM18.30 50.00a25.70 25.70 0 1 0 51.40 0a25.70 25.70 0 1 0 -51.40 0Z"/></svg></span>
+    <span class="fc-marca"><svg viewBox="0 0 100 100" width="40" height="40" fill="var(--marca)" aria-hidden="true"><use href="#mk"/></svg><b>Carro do Freela</b></span>
+    <h1 class="fc-tit"><span class="fc-fino">Em</span> <span class="fc-forte">desenvolvimento.</span></h1>
+    <p class="fc-sub" id="fc-sub">Estamos construindo o Carro do Freela. Em breve, na Absolute ZRO.</p>
+    <div class="fc-acoes">
+      <a class="glass-btn glass-btn--ink" id="fc-hub" href="https://absolutezro.com/inicio" rel="noopener">Voltar ao HUB</a>
+      <button type="button" class="glass-btn" id="fc-entrar" hidden>Entrar com Absolute ZRO</button>
+    </div>
+    <p class="fc-troca" id="fc-troca" hidden><button type="button" class="lgn-link" id="fc-sair">Sair desta conta</button></p>
   </div>
 </section>
 
@@ -9480,6 +9535,21 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
    e o build troca o marcador abaixo pela leitura dessa meta. */
 const FASE=/*__FASE__*/0;
 const faseTem=n=>!FASE||FASE>=n;
+/* ⚠️ O PORTÃO DO LANÇAMENTO (28/out, adendo do PRD: acesso exclusivo do
+   proprietário). No domínio o build marca <meta name="cdf-release"
+   content="closed"> e a tela nasce FECHADA desde o primeiro quadro: a home
+   de / fica como vitrine sem porta e todo o resto é "Em desenvolvimento".
+   Só o que /api/zro/eu responder abre — e só para a conta que o HUB lista
+   (liberado:true); o servidor também pode dizer release:"closed", e isso
+   fecha, mas nada que venha pela rede ABRE o que o build fechou. Lido aqui,
+   antes de qualquer show(): fora do domínio (file://, artifact) e nos
+   builds sem a meta (as suítes) nada muda — a prévia é a de sempre. */
+const RELEASE_PAGINA=((document.querySelector('meta[name="cdf-release"]')||{}).content||"").trim();
+const NA_WEB=/^https?:$/.test(location.protocol)&&(()=>{ try{ return window.top===window.self }catch(e){ return false } })();
+let ZRO_FECHADO=NA_WEB&&RELEASE_PAGINA==="closed", ZRO_LIBERADO=false;
+const zroFechado=()=>ZRO_FECHADO&&!ZRO_LIBERADO;
+/* a tela que o portão segurou (abre se a conta puder) e por que a página mostra "sem acesso" */
+let FC_VOLTA=null, FC_MOTIVO=null;
 /* ================= NENHUM ERRO PRENDE A ABERTURA (18/out · 3) =================
    Victor, no Safari do computador: "travado o site" — a logo parada, para
    sempre. A janela anônima abria. A diferença entre as duas é o que a
@@ -11434,8 +11504,13 @@ function marcarVisto(t){
   VISTOS.add(t);
   try{localStorage.setItem(VISTO_KEY,JSON.stringify([...VISTOS]))}catch(e){}
 }
-const views={salao:v("v-salao"),guildas:v("v-guildas"),jobs:v("v-jobs"),ajuda:v("v-ajuda"),home:v("v-home"),entrar:v("v-entrar"),cadastro:v("v-cadastro"),brecho:v("v-brecho"),anuncio:v("v-anuncio"),produtora:v("v-produtora"),minhaprod:v("v-minhaprod"),propostas:v("v-propostas"),feed:v("v-feed"),z:v("v-z"),pracas:v("v-pracas"),buscar:v("v-buscar"),perfil:v("v-perfil"),equipe:v("v-equipe"),passar:v("v-passar"),agenda:v("v-agenda"),meu:v("v-meu"),aprender:v("v-aprender"),planos:v("v-planos"),orcar:v("v-orcar"),cofre:v("v-cofre"),achar:v("v-achar"),malas:v("v-malas"),vagas:v("v-vagas")};
+const views={salao:v("v-salao"),guildas:v("v-guildas"),jobs:v("v-jobs"),ajuda:v("v-ajuda"),home:v("v-home"),entrar:v("v-entrar"),fechado:v("v-fechado"),cadastro:v("v-cadastro"),brecho:v("v-brecho"),anuncio:v("v-anuncio"),produtora:v("v-produtora"),minhaprod:v("v-minhaprod"),propostas:v("v-propostas"),feed:v("v-feed"),z:v("v-z"),pracas:v("v-pracas"),buscar:v("v-buscar"),perfil:v("v-perfil"),equipe:v("v-equipe"),passar:v("v-passar"),agenda:v("v-agenda"),meu:v("v-meu"),aprender:v("v-aprender"),planos:v("v-planos"),orcar:v("v-orcar"),cofre:v("v-cofre"),achar:v("v-achar"),malas:v("v-malas"),vagas:v("v-vagas")};
 function show(t){
+  /* ⚠️ O PORTÃO (28/out): fechado, só a home de / existe. O resto — a tela de
+     entrar, o cadastro, cada tela de dentro, e a home dos builds por fase
+     (/fase1…) — é "Em desenvolvimento". A tela pedida fica guardada: se o
+     /api/zro/eu disser que esta conta pode, ela abre. */
+  if(zroFechado()&&t!=="fechado"&&(t!=="home"||FASE)){ FC_VOLTA=t; t="fechado" }
   /* quem assinou tem os dois chapéus: entrar nas telas de contratar
      assume o chapéu certo sozinho. O toggle no topo mostra a troca —
      ninguém fica sem saber de que lado está. */
@@ -11447,7 +11522,7 @@ function show(t){
   usoMarcar();
   /* a tela de entrar ocupa a janela inteira: rodapé embaixo dela é
      rolagem garantida numa tela que não deveria rolar */
-  document.body.classList.toggle("sem-rodape",t==="entrar");
+  document.body.classList.toggle("sem-rodape",t==="entrar"||t==="fechado");
   /* a home não tem barra de abas embaixo: a folga de 74px que o corpo
      reserva para ela era só papel em branco no fim da página */
   document.body.classList.toggle("na-home",t==="home");
@@ -11463,7 +11538,7 @@ function show(t){
     const alvo=views[t].querySelector(".wrap")||views[t];
     alvo.classList.remove("entra"); void alvo.offsetWidth; alvo.classList.add("entra");
   }
-  const fora=(t==="entrar"||t==="home"||(t==="cadastro"&&S.voltaDe==="entrar"));
+  const fora=(t==="entrar"||t==="home"||t==="fechado"||(t==="cadastro"&&S.voltaDe==="entrar"));
   v("topbar").hidden=fora;
   document.body.classList.toggle("com-lateral",!fora);
   v("homenav").hidden=(t!=="home");
@@ -11495,6 +11570,8 @@ function show(t){
   if(t==="minhaprod") pintarProd();
   if(t==="feed") drawFeed();
   if(t==="z") pintarZ();
+  /* fechado: a página "Em desenvolvimento" e a home sem porta se repintam ao abrir */
+  if(t==="fechado"||(t==="home"&&zroFechado())) pintarFechado();
   if(t==="equipe") drawEquipe();   /* favoritar na busca precisa chegar no Meu time */
   /* ⚠️ ATÉ AQUI QUEM DESENHAVA A BUSCA ERA `irPraca`, e só ele. Enquanto a
      única porta era escolher a praça, isso bastava; com a entrada direta na
@@ -11520,12 +11597,20 @@ document.querySelectorAll(".tab,.bt,.ztop").forEach(b=>b.onclick=()=>show(b.data
 /* o botão que já diz o lado ("Quero contratar" / "Sou freela") abre o
    login na aba certa — a pessoa não escolhe a mesma coisa duas vezes */
 document.querySelectorAll(".entrar-cta").forEach(b=>b.onclick=()=>{
+  /* fechado (28/out): a home não tem porta — "Conhecer o projeto" rola até
+     Como funciona, e o "Entrar" do topo mostra a página "Em desenvolvimento" */
+  if(zroFechado()){
+    const alvo=b.dataset.ir&&document.querySelector(b.dataset.ir);
+    if(alvo) alvo.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"});
+    else show("fechado");
+    return;
+  }
   if(b.dataset.lg) LG_TIPO=b.dataset.lg;
   LG_MODO="entrar"; lgAviso(""); pintarLogin();
   show("entrar");
 });
-/* "Criar conta" abre a mesma porta, já no modo de criar */
-v("hn-criar").onclick=()=>{ LG_MODO="criar"; lgAviso(""); pintarLogin(); show("entrar") };
+/* "Criar conta" abre a mesma porta, já no modo de criar (fechado: não há conta a criar) */
+v("hn-criar").onclick=()=>{ if(zroFechado()) return show("fechado"); LG_MODO="criar"; lgAviso(""); pintarLogin(); show("entrar") };
 document.querySelectorAll(".brand-home").forEach(b=>b.onclick=()=>{ som("leve"); show("home"); scrollTo(0,0) });
 v("lg-back").onclick=()=>show("home");
 /* ============================================================
@@ -13127,6 +13212,10 @@ function partirDoLogin(){
   setTimeout(()=>o.remove(),900);
 }
 function entrarNaConta(prov,criar){
+  /* ⚠️ O PORTÃO (28/out): fechado, NENHUMA porta abre a conta — nem a da
+     Absolute ZRO sem a liberação, nem a antiga deste aparelho, nem o
+     cadastro. A página "Em desenvolvimento" diz o que há. */
+  if(zroFechado()){ show("fechado"); return }
   /* ⚠️ DIREITO DE USO (25/out · 2): com sessão Absolute ZRO, quem decide é o
      admin dela. Sem "carro-do-freela" em zro_products, nenhuma porta abre a
      conta — nem a da conta Absolute ZRO, nem a antiga deste aparelho. */
@@ -26534,7 +26623,7 @@ if(HAVIA_USO){
 
   /* Onde a página abre. `entrar` e `cadastro` ficam de fora de propósito:
      são passagem, e voltar nelas parece que o progresso se perdeu. */
-  const PASSAGEM=["entrar","cadastro"];
+  const PASSAGEM=["entrar","cadastro","fechado"];
   if(S.tab&&views[S.tab]&&!PASSAGEM.includes(S.tab)) show(S.tab);
   }catch(e){
     ERROS_BOOT.push("uso: "+((e&&e.message)||e));
@@ -27413,7 +27502,7 @@ const FBK_KEY=/*__WEB3FORMS_KEY__*/"";   /* Web3Forms → carrodofreela@gmail.co
    suporte: durante os testes a primeira pergunta de todo relato e "qual
    versao voce esta usando?", e sem ela nao da para saber se o defeito ja
    foi consertado ou se a pessoa esta com um arquivo velho no cache. */
-const VERSAO="27/out · 5";
+const VERSAO="28/out · 1";
 /* ?diag na URL faz a linha de contexto do suporte mostrar as medidas do
    aparelho. Existe porque daqui não dá para inspecionar o Safari do
    Victor: em vez de adivinhar uma quarta vez, ele abre com ?diag, toca no
@@ -27936,6 +28025,7 @@ var ZRO_CONTA=null, ZRO_PRONTO=false;
 const ZRO_MSG={
   erro:"Não deu para entrar com a Absolute ZRO agora. Tente de novo.",
   recusado:"O acesso não foi liberado na Absolute ZRO.",
+  fechado:"O Carro do Freela ainda não foi liberado para a sua conta.",
   expirou:"A entrada demorou demais. Tente de novo.",
   indisponivel:"Entrar com a Absolute ZRO ainda não está ligado aqui."
 };
@@ -27999,6 +28089,41 @@ v("lg-zro").onclick=()=>{
   location.href="/api/zro/entrar?volta="+encodeURIComponent(volta)+(criar?"&criar=1":"");
 };
 v("lg-bloq-sair").onclick=()=>{ zroSair(); pintarLogin() };
+/* ======================= EM DESENVOLVIMENTO (28/out) =======================
+   O portão do lançamento na TELA. Fechado (build do domínio com
+   cdf-release=closed, ou /api/zro/eu dizendo release:"closed") e sem a conta
+   liberada: a home de / fica como vitrine sem porta — "Conhecer o projeto"
+   no lugar das chamadas, sem "Criar conta", planos "Em desenvolvimento" —, e
+   qualquer outra tela (entrar, cadastro, Feed, Z, Propostas…, e a home dos
+   builds por fase) é a página "Em desenvolvimento", com a única porta que
+   existe: "Entrar com Absolute ZRO", que o HUB só abre para a conta da
+   lista. Com sessão sem direito de uso (plano), a página diz isso e deixa
+   sair. Fora do domínio nada disto roda: zroFechado() é falso. */
+function pintarFechado(){
+  const on=zroFechado();
+  document.documentElement.classList.toggle("fechado",on);
+  if(!on) return;
+  const conta=!!ZRO_CONTA;
+  v("fc-sub").textContent=(conta||FC_MOTIVO==="conta")
+    ?"Sua conta Absolute ZRO ainda não tem acesso ao Carro do Freela."
+    :"Estamos construindo o Carro do Freela. Em breve, na Absolute ZRO.";
+  v("fc-entrar").hidden=!(ZRO_PRONTO&&!conta);
+  v("fc-troca").hidden=!conta;
+  /* a home pública: nenhuma porta funcional */
+  v("hn-criar").hidden=true;
+  document.querySelectorAll("#v-home .hcta").forEach(c=>c.querySelectorAll(".entrar-cta").forEach((b,i)=>{
+    if(i){ b.hidden=true; return }
+    b.removeAttribute("data-lg"); b.dataset.ir="#h-como";
+    const tx=[...b.childNodes].find(n=>n.nodeType===3);
+    if(tx) tx.nodeValue="Conhecer o projeto"; else b.prepend("Conhecer o projeto");
+  }));
+  const hv=v("hj-ver"); if(hv) hv.hidden=true;
+  document.querySelectorAll("#v-home .pc-cta").forEach(b=>{ b.hidden=true });
+  document.querySelectorAll("#v-home .pc-it").forEach(b=>{ b.disabled=true });
+  document.querySelectorAll("#h-planos .entrar-cta").forEach(b=>{ b.textContent="Em desenvolvimento"; b.disabled=true });
+}
+v("fc-entrar").onclick=()=>{ location.href="/api/zro/entrar?volta="+encodeURIComponent(location.pathname) };
+v("fc-sair").onclick=()=>{ zroSair(); ZRO_LIBERADO=false; FC_MOTIVO=null; pintarFechado() };
 /* A Z, A IA DO ECOSSISTEMA (27/out · 4) — o painel inicial do app logado.
    ⚠️ SÓ NO DOMÍNIO, com conta Absolute ZRO liberada (zroPodeEnviar): o
    script vem de absolutezro.com e a conversa passa por /api/zro/ia, que
@@ -28014,7 +28139,8 @@ const Z_SUGESTOES=["Meus projetos de agora","O que está pendente","Quem está n
 const zTema=()=>document.documentElement.classList.contains("app-light")?"claro":"escuro";
 /* a aba existe no domínio (as funções respondem); a conversa, só com conta
    Absolute ZRO liberada. Sem ela, a aba mostra o "Entrar". */
-function zAbaLigada(){ return zroLigavel()&&ZRO_PRONTO }
+/* fechado (28/out), a aba só existe com a sessão liberada */
+function zAbaLigada(){ return zroLigavel()&&ZRO_PRONTO&&!zroFechado() }
 function pintarAbaZ(){
   const on=zAbaLigada();
   ["tab-z","z-top"].forEach(id=>{ const e=v(id); if(e) e.hidden=!on });
@@ -28057,27 +28183,43 @@ v("z-entrar").onclick=()=>{ if(zroBloqueado()) return zroMostrarBloqueio(); loca
       history.replaceState(history.state,"",u.pathname+u.search+u.hash) }
   }catch(e){}
   fetch("/api/zro/eu",{credentials:"same-origin",cache:"no-store",headers:{Accept:"application/json"}})
-    .then(r=>r.status===200?r.json().then(j=>({j:j})):{ligado:r.status===401})
-    .catch(()=>({}))
+    .then(r=>r.json().catch(()=>null).then(j=>({status:r.status,j:j})))
+    .catch(()=>({status:0,j:null}))
     .then(r=>{
       const j=r.j;
-      if(j&&typeof j.sub==="string"&&j.sub){
+      /* o servidor diz se este deploy está fechado; fechado nunca se abre por
+         aqui — só o build abre, e só com a conta liberada se entra */
+      if(j&&j.release==="closed") ZRO_FECHADO=true;
+      if(r.status===200&&j&&typeof j.sub==="string"&&j.sub){
         ZRO_CONTA={sub:j.sub,nome:typeof j.nome==="string"?j.nome:"",email:typeof j.email==="string"?j.email:"",
           organizacao:typeof j.organizacao==="string"?j.organizacao:"",
-          /* o direito de uso vem do admin da Absolute ZRO, a cada login */
+          /* o direito de uso vem do admin da Absolute ZRO, RELIDO a cada abertura */
           liberado:j.liberado===true,
           /* dá para levar jobs ao HUB (o login guardou o acesso) */
           hub:j.hub===true};
         ZRO_PRONTO=true;
-      } else ZRO_PRONTO=!!r.ligado;
+      } else {
+        /* 401 = sem sessão; 403 = a sessão foi descartada: o Carro está fechado para esta conta */
+        ZRO_PRONTO=r.status===401||r.status===403;
+        if(r.status===403&&j&&j.erro==="fechado"&&!marca) marca="fechado";
+      }
+      ZRO_LIBERADO=!!(ZRO_CONTA&&ZRO_CONTA.liberado);
       pintarZro();
       pintarAbaZ();
+      pintarFechado();
+      /* a conta pode: a tela que o portão segurou abre agora */
+      if(ZRO_LIBERADO&&S.tab==="fechado") show(FC_VOLTA&&FC_VOLTA!=="fechado"?FC_VOLTA:(zAbaLigada()?"z":"home"));
       /* quem abre o app já dentro cai na Z (a tela de entrada) */
       if(!marca&&zAbaLigada()&&!v("topbar").hidden&&S.tab!=="z") show("z");
       if(lado==="contratante"||lado==="freela"){ LG_TIPO=lado; pintarLogin() }
       if(marca==="entrou"&&ZRO_CONTA) zroEntrar(conta==="criar");
+      /* a volta com aviso: fechado, é a página "Em desenvolvimento" (recusado e
+         fechado dizem que foi esta conta); aberto, o aviso na tela de entrar */
+      else if(marca&&ZRO_MSG[marca]){
+        if(zroFechado()){ FC_MOTIVO=(marca==="fechado"||marca==="recusado")?"conta":null; pintarFechado(); show("fechado") }
+        else { LG_MODO="entrar"; pintarLogin(); show("entrar"); lgAviso(ZRO_MSG[marca]) }
+      }
       else if(zroBloqueado()&&!v("v-entrar").hidden) pintarLogin();
-      else if(marca&&ZRO_MSG[marca]){ LG_MODO="entrar"; pintarLogin(); show("entrar"); lgAviso(ZRO_MSG[marca]) }
     })
     .catch(()=>{});
 })();

@@ -8,6 +8,15 @@
  * endereço não cadastrado. E as rotas do domínio (config.json da Build
  * Output API) servindo as funções, a CSP e o /app/ fechado.
  *
+ * Desde 28/out, O PORTÃO DO LANÇAMENTO (adendo do PRD: acesso exclusivo do
+ * proprietário), no fim do arquivo: a sessão só nasce com `zro_release`
+ * "allowed" (ou "released" dos dois lados); /eu, /enviar e /ia RELEEM a
+ * claim no HUB a cada pedido (nunca o cookie de 30 dias); acesso removido,
+ * sessão antiga e HUB fora do ar negam; e as personas do PRD §11 — anônimo,
+ * conta comum, assinante, admin de equipe, outro admin, beta tester, sessão
+ * antiga — NEGADAS, só a conta da lista PERMITIDA. A LIA das suítes é essa
+ * conta (sem `acesso` o HUB falso diz "allowed").
+ *
  * ⚠️ Fica em test/api/, FORA da lista do `test/run.js`: aquelas são as
  * suítes de navegador; esta é de servidor e não abre Chromium.
  */
@@ -62,6 +71,7 @@ const cookiesDe = res => {
   }
   return m;
 };
+const cookieDe = cookies => [...cookies].filter(([, v]) => v).map(([k, v]) => k + '=' + encodeURIComponent(v)).join('; ');
 const pedir = (caminho, o = {}) =>
   fetch(SITE + caminho, {
     method: o.method || 'GET',
@@ -121,12 +131,12 @@ test('criar conta = criar a conta Absolute ZRO: prompt=create no HUB, e volta j�
   assert.equal(new URL(r.headers.get('location')).searchParams.get('prompt'), null);
 });
 
-test('direito de uso: sem "carro-do-freela" em zro_products entra, mas /eu diz liberado:false', async () => {
+test('direito de uso: conta na lista (allowed) sem "carro-do-freela" em zro_products entra, mas /eu diz liberado:false', async () => {
   for (const [produtos, liberado] of [[['nossom', 'synquei'], false], [[], false], [['carro-do-freela', 'nossom'], true]]) {
     const { cookies } = await fluxo({ pessoa: Object.assign({}, LIA, { produtos }) });
     const sessao = cookies.get('cdf_sessao');
-    assert.ok(sessao, 'a sessão abre mesmo sem acesso: a pessoa entra e vê o aviso');
-    const eu = await (await pedir('/api/zro/eu', { cookie: 'cdf_sessao=' + encodeURIComponent(sessao) })).json();
+    assert.ok(sessao, 'a sessão abre mesmo sem o plano: a pessoa entra e vê o aviso');
+    const eu = await (await pedir('/api/zro/eu', { cookie: cookieDe(cookies) })).json();
     assert.deepEqual(eu.produtos, produtos);
     assert.equal(eu.liberado, liberado, JSON.stringify(produtos));
   }
@@ -164,6 +174,7 @@ test('entra: sessão de 30 dias, volta marcada, /eu diz quem é e sair apaga', a
     produtos: ['carro-do-freela'],
     liberado: true,
     hub: true, ia: true,
+    release: 'closed',
   });
 
   const sair = await pedir('/api/zro/sair', { method: 'POST', cookie: 'cdf_sessao=' + encodeURIComponent(sessao), headers: { origin: SITE } });
@@ -436,16 +447,19 @@ test('HUB que ainda não conhece o escopo de jobs: o login refaz o pedido sem el
     assert.match(local, /^\/api\/zro\/entrar\?basico=1&volta=%2Ffase1$/);
     const ida = await pedir(local);
     const destino = new URL(ida.headers.get('location'));
-    assert.equal(destino.searchParams.get('scope'), 'openid email profile org');
+    /* o refresh fica no pedido básico: é com ele que a claim é relida (28/out) */
+    assert.equal(destino.searchParams.get('scope'), 'openid email profile org offline_access');
     const z = await fetch(destino, { redirect: 'manual' });
     const volta = new URL(z.headers.get('location'));
     const fim = await pedir(volta.pathname + volta.search, { cookie: 'cdf_zro=' + encodeURIComponent(cookiesDe(ida).get('cdf_zro')) });
     assert.equal(fim.headers.get('location'), '/fase1?zro=entrou');
     const c = cookiesDe(fim);
     assert.ok(c.get('cdf_sessao'));
-    assert.equal(c.get('cdf_hub'), '', 'sem o escopo, nada de acesso guardado');
-    const eu = await (await pedir('/api/zro/eu', { cookie: 'cdf_sessao=' + encodeURIComponent(c.get('cdf_sessao')) })).json();
-    assert.equal(eu.hub, false);
+    assert.ok(c.get('cdf_hub'), 'o acesso fica guardado mesmo sem os escopos: a claim é relida com ele');
+    const eu = await (await pedir('/api/zro/eu', { cookie: cookieDe(c) })).json();
+    assert.equal(eu.liberado, true);
+    assert.equal(eu.hub, false, 'sem o escopo de jobs, nada de envio');
+    assert.equal(eu.ia, false);
   } finally {
     zro.estado.semEscopoJobs = false;
   }
@@ -525,7 +539,8 @@ test('enviar: portas fechadas (origem, método, sessão, acesso de outra conta, 
   assert.equal((await r.json()).erro, 'reconectar', 'sessão de antes do envio: entra de novo');
   const outra = await fluxo({ pessoa: Object.assign({}, LIA, { sub: 'zro-222' }) });
   assert.equal((await enviarJob(new Map([['cdf_sessao', ok.get('cdf_sessao')], ['cdf_hub', outra.cookies.get('cdf_hub')]]), pedidoJob())).status, 401, 'acesso de outra conta');
-  const sem = await fluxo({ pessoa: Object.assign({}, LIA, { produtos: ['nossom'] }) });
+  /* outra conta sem o plano (o HUB falso guarda a conta por sub: mudar a Lia mudaria o `ok` também) */
+  const sem = await fluxo({ pessoa: Object.assign({}, LIA, { sub: 'zro-333', produtos: ['nossom'] }) });
   const rp = await enviarJob(sessaoCom(sem.cookies), pedidoJob());
   assert.equal(rp.status, 403);
   assert.equal((await rp.json()).erro, 'plano');
@@ -575,7 +590,6 @@ test('sair revoga o acesso no HUB e apaga o cookie dele', async () => {
 
 /* ============ a Z, a IA da Absolute ZRO (27/out · 4) ============ */
 
-const cookieDe = cookies => [...cookies].filter(([, v]) => v).map(([k, v]) => k + '=' + encodeURIComponent(v)).join('; ');
 const ia = (caminho, cookies, o = {}) =>
   fetch(SITE + '/api/zro/ia/' + caminho, {
     method: o.method || (o.corpo !== undefined ? 'POST' : 'GET'),
@@ -636,8 +650,8 @@ test('a Z: portas fechadas (sem sessão, outra origem, caminho fora, sem o escop
   assert.equal((await ia('estado', cookies, { method: 'DELETE' })).status, 404, 'método fora');
   assert.equal((await ia('conversas/a/b', cookies)).status, 404, 'caminho fora');
   assert.equal(zro.estado.pedidosIa.length, antes, 'nada disso chegou ao HUB');
-  /* plano sem o Carro */
-  const sem = await fluxo({ pessoa: Object.assign({}, LIA, { produtos: [] }) });
+  /* plano sem o Carro (outra conta: o HUB falso guarda a conta por sub) */
+  const sem = await fluxo({ pessoa: Object.assign({}, LIA, { sub: 'zro-333', produtos: [] }) });
   assert.equal((await ia('estado', sem.cookies)).status, 403);
   /* HUB que não conhece zro.ia: entra sem ele, e a Z pede para reconectar */
   zro.estado.semEscopoIa = true;
@@ -682,4 +696,212 @@ test('a Z: cookie do HUB de antes da Z (sem ia) pede para reconectar, e o envio 
   const eu = await (await pedir('/api/zro/eu', { cookie: cookieDe(c2) })).json();
   assert.equal(eu.hub, true);
   assert.equal(eu.ia, false);
+});
+
+/* ============ o portão do lançamento (28/out) — só a conta do proprietário ============ */
+
+const DONO = { sub: 'zro-dono', email: 'dono@exemplo.com', nome: 'Dono da Casa', org: 'Absolute ZRO', acesso: 'allowed' };
+/* o HUB falso guarda a conta por sub: subs próprios para cada persona, para uma não mudar a outra */
+const PERSONAS = [
+  ['conta comum (grátis)', { sub: 'zro-p1', email: 'comum@exemplo.com', nome: 'Conta Comum', org: null, acesso: 'closed', produtos: [] }],
+  ['assinante do SOBEDESCE', { sub: 'zro-p2', email: 'assinante@exemplo.com', nome: 'Assinante', org: 'Produtora X', acesso: 'closed', produtos: ['sobedesce', 'synquei'] }],
+  ['admin de equipe (dono da organização)', { sub: 'zro-p3', email: 'admin.equipe@exemplo.com', nome: 'Admin de Equipe', org: 'Produtora Y', acesso: 'closed', produtos: ['sobedesce'] }],
+  ['outro admin da plataforma (platform_role não é lista)', { sub: 'zro-p4', email: 'outro.admin@exemplo.com', nome: 'Outro Admin', org: 'Absolute ZRO', acesso: 'closed', produtos: ['sobedesce', 'synquei', 'tpeasy'] }],
+  ['beta tester de outro produto', { sub: 'zro-p5', email: 'tester@exemplo.com', nome: 'Beta Tester', org: null, acesso: 'closed', produtos: ['nossom'] }],
+  ['plano com o Carro, mas fora da lista (HUB sem filtrar zro_products)', { sub: 'zro-p6', email: 'plano@exemplo.com', nome: 'Com Plano', org: 'Produtora Z', acesso: 'closed', semFiltro: true, produtos: ['carro-do-freela'] }],
+];
+const semSessao = (cookies, nome) => assert.ok(!cookies.get('cdf_sessao') && !cookies.get('cdf_hub'), 'nenhum cookie de sessão fica (' + nome + '): ' + JSON.stringify([...cookies]));
+
+test('o portão: o HUB não emite código para quem está fora (access_denied), e nenhuma sessão nasce', async () => {
+  for (const [nome, pessoa] of PERSONAS) {
+    const { local, cookies } = await fluxo({ pessoa });
+    assert.equal(local, '/?zro=recusado', nome);
+    semSessao(cookies, nome);
+  }
+});
+
+test('o portão: HUB antigo que emite token para qualquer um — a trava deste lado segura, e volta ?zro=fechado', async () => {
+  zro.estado.hubAntigo = true;
+  try {
+    for (const [nome, pessoa] of PERSONAS) {
+      const { res, local, cookies } = await fluxo({ pessoa, volta: '/fase1' });
+      assert.equal(res.status, 303, nome);
+      assert.equal(local, '/fase1?zro=fechado', nome);
+      semSessao(cookies, nome);
+      assert.equal(cookies.get('cdf_zro'), '', 'o cookie da ida é apagado (' + nome + ')');
+    }
+    /* sem a claim (HUB de antes do portão): fechado, sempre */
+    const sem = await fluxo({ pessoa: Object.assign({}, DONO, { sub: 'zro-p7', acesso: undefined, semRelease: true }) });
+    assert.equal(sem.local, '/?zro=fechado', 'sem zro_release = closed');
+    semSessao(sem.cookies, 'sem claim');
+    /* "released" no HUB com este deploy fechado: os dois lados têm de abrir */
+    const rel = await fluxo({ pessoa: Object.assign({}, DONO, { sub: 'zro-p8', acesso: 'released' }) });
+    assert.equal(rel.local, '/?zro=fechado', 'released só no HUB não abre');
+    semSessao(rel.cookies, 'released só no HUB');
+  } finally {
+    zro.estado.hubAntigo = false;
+  }
+  assert.equal(Z._interno.liberacaoDe({}), 'closed');
+  assert.equal(Z._interno.liberacaoDe({ zro_release: { 'carro-do-freela': 'allowed' } }), 'allowed');
+  assert.equal(Z._interno.liberacaoDe({ zro_release: { 'carro-do-freela': 'aberto' } }), 'closed', 'valor desconhecido = closed');
+  assert.equal(Z._interno.liberacaoDe({ zro_release: { nossom: 'allowed' } }), 'closed', 'a lista de outro produto não vale');
+});
+
+test('o portão: a conta da lista (allowed) entra, /eu diz liberado, e o envio e a Z funcionam', async () => {
+  const { local, cookies } = await fluxo({ pessoa: DONO });
+  assert.equal(local, '/?zro=entrou');
+  assert.ok(cookies.get('cdf_sessao') && cookies.get('cdf_hub'));
+  const r = await pedir('/api/zro/eu', { cookie: cookieDe(cookies) });
+  assert.equal(r.status, 200);
+  const eu = await r.json();
+  assert.equal(eu.sub, 'zro-dono');
+  assert.equal(eu.liberado, true);
+  assert.equal(eu.release, 'closed', 'o deploy continua fechado para todo o resto');
+  assert.equal((await enviarJob(sessaoCom(cookies), pedidoJob({ job: { id: 'cdf-dono', titulo: 'Job do dono' } }))).status, 200);
+  assert.equal((await ia('estado', cookies)).status, 200);
+});
+
+test('o portão: /eu relê a claim no HUB a cada pedido — o cookie de 30 dias não decide nada', async () => {
+  const { cookies } = await fluxo({ pessoa: Object.assign({}, DONO, { sub: 'zro-relido' }) });
+  const antes = zro.estado.userinfos;
+  assert.equal((await pedir('/api/zro/eu', { cookie: cookieDe(cookies) })).status, 200);
+  assert.equal((await pedir('/api/zro/eu', { cookie: cookieDe(cookies) })).status, 200);
+  assert.equal(zro.estado.userinfos, antes + 2, 'dois pedidos, duas releituras');
+  /* o cookie de sessão sozinho (o de 30 dias, assinado e válido) não vale: não há como reler */
+  const so = await pedir('/api/zro/eu', { cookie: 'cdf_sessao=' + encodeURIComponent(cookies.get('cdf_sessao')) });
+  assert.equal(so.status, 401);
+  assert.equal((await so.json()).erro, 'sem_sessao');
+  assert.equal(cookiesDe(so).get('cdf_sessao'), '', 'e a sessão é descartada');
+  /* o acesso ao HUB de OUTRA conta com esta sessão também não */
+  const outra = await fluxo({ pessoa: Object.assign({}, DONO, { sub: 'zro-relido-2' }) });
+  const mistura = await pedir('/api/zro/eu', { cookie: 'cdf_sessao=' + encodeURIComponent(cookies.get('cdf_sessao')) + '; cdf_hub=' + encodeURIComponent(outra.cookies.get('cdf_hub')) });
+  assert.equal(mistura.status, 401);
+});
+
+test('o portão: acesso removido depois do login (sessão antiga) — /eu 401, /enviar e /ia 401, e os cookies vão embora', async () => {
+  const pessoa = Object.assign({}, DONO, { sub: 'zro-antiga' });
+  const { cookies } = await fluxo({ pessoa });
+  assert.equal((await pedir('/api/zro/eu', { cookie: cookieDe(cookies) })).status, 200);
+  /* a conta sai da lista no HUB (o cookie daqui continua assinado e dentro dos 30 dias) */
+  zro.estado.contas.get('zro-antiga').acesso = 'closed';
+  const eu = await pedir('/api/zro/eu', { cookie: cookieDe(cookies) });
+  assert.equal(eu.status, 401);
+  assert.equal((await eu.json()).erro, 'sem_sessao');
+  const apagados = cookiesDe(eu);
+  assert.equal(apagados.get('cdf_sessao'), '');
+  assert.equal(apagados.get('cdf_hub'), '');
+  assert.ok(eu.headers.getSetCookie().every(c => /Max-Age=0/.test(c)));
+  const env = await enviarJob(sessaoCom(cookies), pedidoJob());
+  assert.equal(env.status, 401);
+  assert.equal((await env.json()).erro, 'reconectar');
+  assert.equal(cookiesDe(env).get('cdf_sessao'), '', 'o envio também descarta a sessão');
+  const z = await ia('estado', cookies);
+  assert.equal(z.status, 401);
+  assert.equal((await z.json()).erro, 'reconectar');
+  /* e com o token de acesso vencido, o refresh também é recusado pelo HUB (invalid_grant) */
+  const h = Z._interno.decifrar(cookies.get('cdf_hub'), CLIENTE.clientSecret);
+  const c2 = new Map(cookies);
+  c2.set('cdf_hub', Z._interno.cifrar(Object.assign({}, h, { atExp: 0 }), CLIENTE.clientSecret));
+  assert.equal((await pedir('/api/zro/eu', { cookie: cookieDe(c2) })).status, 401);
+});
+
+test('o portão: HUB antigo que ainda responde userinfo com a claim fechada — 403 fechado em /eu, /enviar e /ia, sessão descartada', async () => {
+  const pessoa = Object.assign({}, DONO, { sub: 'zro-fechou' });
+  const { cookies } = await fluxo({ pessoa });
+  zro.estado.hubAntigo = true;
+  try {
+    zro.estado.contas.get('zro-fechou').acesso = 'closed';
+    const eu = await pedir('/api/zro/eu', { cookie: cookieDe(cookies) });
+    assert.equal(eu.status, 403);
+    assert.deepEqual(await eu.json(), { erro: 'fechado', release: 'closed' });
+    assert.equal(cookiesDe(eu).get('cdf_sessao'), '');
+    assert.equal(cookiesDe(eu).get('cdf_hub'), '');
+    const antes = zro.estado.jobs.size;
+    const env = await enviarJob(sessaoCom(cookies), pedidoJob({ job: { id: 'cdf-fechou', titulo: 'Não passa' } }));
+    assert.equal(env.status, 403);
+    assert.equal((await env.json()).erro, 'fechado');
+    assert.equal(zro.estado.jobs.size, antes, 'nada chegou à API do HUB: a trava é antes');
+    const z = await ia('estado', cookies);
+    assert.equal(z.status, 403);
+    assert.equal((await z.json()).erro, 'fechado');
+    assert.equal(cookiesDe(z).get('cdf_hub'), '');
+  } finally {
+    zro.estado.hubAntigo = false;
+  }
+});
+
+test('o portão: o HUB diz product_closed na API do Carro — 403 fechado aqui também', async () => {
+  /* a claim relida diz allowed (lista), mas a API do HUB fechou o produto no meio do caminho */
+  const { cookies } = await fluxo({ pessoa: Object.assign({}, DONO, { sub: 'zro-api' }) });
+  zro.estado.recusaJob = 'product_closed';
+  try {
+    const env = await enviarJob(sessaoCom(cookies), pedidoJob());
+    assert.equal(env.status, 403);
+    assert.equal((await env.json()).erro, 'fechado');
+  } finally {
+    zro.estado.recusaJob = null;
+  }
+});
+
+test('o portão: HUB fora do ar — nada se confere, nada abre (503/502), e a sessão fica para quando ele voltar', async () => {
+  const { cookies } = await fluxo({ pessoa: Object.assign({}, DONO, { sub: 'zro-fora' }) });
+  zro.estado.fora = true;
+  try {
+    const eu = await pedir('/api/zro/eu', { cookie: cookieDe(cookies) });
+    assert.equal(eu.status, 503);
+    assert.deepEqual(await eu.json(), { erro: 'hub', release: 'closed' });
+    assert.equal(eu.headers.getSetCookie().length, 0, 'os cookies ficam');
+    assert.equal((await enviarJob(sessaoCom(cookies), pedidoJob())).status, 502);
+    assert.equal((await ia('estado', cookies)).status, 502);
+  } finally {
+    zro.estado.fora = false;
+  }
+  assert.equal((await pedir('/api/zro/eu', { cookie: cookieDe(cookies) })).status, 200, 'o HUB voltou: a mesma sessão vale');
+});
+
+test('o portão: /eu sem sessão e sem chaves dizem o estado do deploy (release) — e anônimo não passa em nada', async () => {
+  const r = await pedir('/api/zro/eu');
+  assert.equal(r.status, 401);
+  assert.deepEqual(await r.json(), { erro: 'sem_sessao', release: 'closed' });
+  assert.equal((await ia('estado', new Map())).status, 401);
+  assert.equal((await fetch(SITE + '/api/zro/enviar', { method: 'POST', headers: { 'content-type': 'application/json', origin: SITE }, body: '{}' })).status, 401);
+  const guardado = process.env.ZRO_CLIENT_SECRET;
+  delete process.env.ZRO_CLIENT_SECRET;
+  try {
+    const d = await pedir('/api/zro/eu');
+    assert.equal(d.status, 503);
+    assert.deepEqual(await d.json(), { erro: 'desligado', release: 'closed' });
+  } finally {
+    process.env.ZRO_CLIENT_SECRET = guardado;
+  }
+});
+
+test('o portão: CARRO_RELEASE — só "released" exato abre, e só junto com o HUB', async () => {
+  for (const v of [undefined, '', 'closed', 'aberto', 'RELEASED ', 'true', '1']) {
+    if (v === undefined) delete process.env.CARRO_RELEASE; else process.env.CARRO_RELEASE = v;
+    assert.equal(Z._interno.release(), 'closed', JSON.stringify(v));
+  }
+  process.env.CARRO_RELEASE = 'released';
+  try {
+    assert.equal(Z._interno.release(), 'released');
+    assert.equal((await (await pedir('/api/zro/eu')).json()).release, 'released');
+    /* released nos dois lados: entra */
+    const rel = await fluxo({ pessoa: Object.assign({}, DONO, { sub: 'zro-rel', acesso: 'released' }) });
+    assert.equal(rel.local, '/?zro=entrou');
+    assert.equal((await (await pedir('/api/zro/eu', { cookie: cookieDe(rel.cookies) })).json()).liberado, true);
+    /* a lista continua valendo */
+    assert.equal((await fluxo({ pessoa: Object.assign({}, DONO, { sub: 'zro-rel-2' }) })).local, '/?zro=entrou');
+    /* e quem o HUB diz fechado continua fora, mesmo com o deploy aberto */
+    zro.estado.hubAntigo = true;
+    try {
+      const fechada = await fluxo({ pessoa: Object.assign({}, DONO, { sub: 'zro-rel-3', acesso: 'closed' }) });
+      assert.equal(fechada.local, '/?zro=fechado');
+      semSessao(fechada.cookies, 'fechado com deploy aberto');
+    } finally {
+      zro.estado.hubAntigo = false;
+    }
+  } finally {
+    delete process.env.CARRO_RELEASE;
+  }
+  assert.equal(Z._interno.release(), 'closed');
 });

@@ -72,6 +72,7 @@ Vercel. Agora o build da Vercel gera o mesmo conjunto a partir desta pasta.
 | `CARRO_WEB3FORMS_KEY` | access key do Web3Forms (suporte) | não (vai no HTML), mas fora do fonte |
 | `ZRO_CLIENT_ID` | `carrodofreela-web` | não |
 | `ZRO_CLIENT_SECRET` | segredo do cliente no HUB; também assina os cookies (HKDF) | **sim** |
+| `CARRO_RELEASE` | portão do lançamento (28/out): só o valor exato `released` abre ao público; sem a variável (o padrão) o Carro é **fechado** e só entra a conta que o HUB lista como `allowed` | não (e só com autorização do titular) |
 | `ZRO_ISSUER` | opcional; padrão `https://absolutezro.vercel.app` | não |
 
 Os valores atuais do Supabase e do Web3Forms são os que estavam no fonte do repositório antigo (projeto do Carro).

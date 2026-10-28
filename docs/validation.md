@@ -1480,3 +1480,15 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Não validado: produção (nada publicado; a conta do proprietário e o `revoke --apply` dependem de autorização);
   sites dos produtos lendo `zro_release` (outros agentes); `maestro` (migration 0019 de
   outro agente) só por construção (sem linha = fechado).
+
+## Carro do Freela fechado até o lançamento (28/10/2026)
+
+- Adendo do PRD: só a conta que o HUB lista como `allowed` em `zro_release` entra; claim relida a cada pedido
+  (`/oauth/userinfo`), `CARRO_RELEASE` padrão `closed` (só `released` exato abre). Fechado: callback volta
+  `?zro=fechado` sem sessão; `eu` 401/403 e apaga os cookies; `enviar`/`ia` 403 `fechado`. Tela: build do domínio com
+  `cdf-release=closed`, home sem porta e toda outra tela/rota (`/fase1`) em "Em desenvolvimento". VERSAO `28/out · 1`.
+- Testes: Carro `test:api` 43/43; `node test/run.js` (JUNTAS=2) 84 de 88 numa rodada cortada pelo limite de tempo do
+  ambiente, e as 4 restantes sozinhas, verdes: conta-zro 142 (personas do PRD §11 negadas, conta allowed permitida,
+  sessão antiga negada), sem-zoom 41, abertura 39, tempo-real 23. home-clara 80, baloes 24, menu-recolhivel 52.
+  `scan-secrets` limpo. Telas 1440 e 390 ("Em desenvolvimento" claro/escuro e home fechada).
+- Não validado: HUB real emitindo `zro_release` (contrato simulado pelo HUB falso) e o deploy na Vercel com a variável.

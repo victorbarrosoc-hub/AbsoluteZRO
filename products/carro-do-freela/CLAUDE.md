@@ -398,7 +398,7 @@ a cena da home e a tela de entrar abaixo da janela em todo monitor grande.
 Uma sonda de `100vh` dentro do corpo diz quanto o motor multiplica (Chromium:
 o zoom; Safari: 1), e `--zoom` vira esse número.
 
-⚠️ **A build se identifica** (`VERSAO`, hoje `19/out · 5`): aparece no rodapé do
+⚠️ **A build se identifica** (`VERSAO`, hoje `28/out · 1`): aparece no rodapé do
 menu e vai junto no recado de suporte. Sem isso, três rodadas foram gastas sem
 saber se o defeito relatado era do arquivo novo ou de um cache velho. **Suba a
 VERSAO em toda entrega que o Victor for subir.**
@@ -8537,3 +8537,31 @@ ancestral prende a gaveta de Conversas).
   (`#z-sem`); sem o acesso da Z → "Reconectar com Absolute ZRO" (`#z-acao`).
 - Suítes: `conta-zro` §1 (fora do domínio a aba não aparece) e §11 (cai na Z, botão do topo aceso, primeiro da
   lateral, Feed limpo, reconectar dentro da aba). VERSAO `27/out · 5`.
+
+## 28/out · 1 — o portão do lançamento: só a conta do proprietário entra
+
+Adendo do PRD ("Carro do Freela: acesso exclusivo do proprietário"). Até o titular autorizar o lançamento, o Carro é
+**fechado**: só entra a conta que o HUB lista por `user_id` (claim `zro_release` = `{"carro-do-freela": "allowed"}`).
+Nunca por e-mail, papel ou lista escrita aqui; outros admins, testers e assinantes ficam de fora.
+- **Duas travas, as duas têm de abrir.** (1) `CARRO_RELEASE` do deploy: só o valor exato `released` abre; sem a
+  variável é `closed`, e fechado vale com o HUB fora do ar. (2) A claim **relida no HUB a cada pedido**
+  (`lerConta()` em `api/zro/_zro.js`: `/oauth/userinfo` com o access token de `cdf_hub`, refresh uma vez se vencido
+  ou recusado). O cookie de 30 dias não decide nada.
+- **Servidor:** `callback` só abre sessão com `allowed` (ou `released` nos dois lados); senão volta `?zro=fechado`
+  sem cookie. `eu` responde 401 sem sessão/sessão recusada, 403 `fechado` sem acesso (e apaga os dois cookies), 503
+  com o HUB fora; sempre diz `release`. `enviar` e `ia` exigem a mesma claim relida (403 `fechado` + sessão
+  descartada); 403 `product_closed` do HUB também vira `fechado`. Sessão antiga sem access token não vale.
+- **Tela:** o `vercel-build` passa `--release=<CARRO_RELEASE>` ao `build.js`, que escreve
+  `<meta name="cdf-release" content="closed">`; `zroFechado()` lê a meta no primeiro quadro (só em http(s), fora de
+  iframe). Fechado, `show()` manda toda tela que não seja a home de `/` para `#v-fechado` ("Em desenvolvimento":
+  símbolo pequeno, marca, Figtree Light × ExtraBold, uma linha, `.glass-btn--ink` "Voltar ao HUB" →
+  absolutezro.com/inicio, e a única porta "Entrar com Absolute ZRO"). Isso cobre entrar, cadastro, conta antiga,
+  Google, Feed, Z, Propostas, Agenda, Jobs, Guilda, Brechó e `/fase1…` direto. `entrarNaConta()` recusa tudo
+  fechado. A home vira vitrine sem porta: "Conhecer o projeto" no lugar das chamadas, sem "Criar conta", planos "Em
+  desenvolvimento", Z "Chegando ao Carro do Freela" sem "Conversar com a Z". Só `/api/zro/eu` com `liberado:true`
+  abre; nada da rede abre o que o build fechou.
+- ⚠️ **Prévia interna e suítes:** sem a meta (`npm run build`, `file://`, artifact) nada muda, a prévia é a de sempre.
+  `conta-zro` monta três domínios em miniatura: aberto (com `CARRO_RELEASE=released`, o contrato de quando lançar,
+  itens 2–11), sem funções e fechado (item 12: personas do PRD §11 negadas, a conta allowed permitida, sessão antiga
+  negada quando o acesso sai, telas 390/1440 nos dois temas em `test/saida/fechado-*.png`).
+- VERSAO `28/out · 1`. Figtree entrou em `src/assets/fonts.json` (licença OFL em `src/assets/OFL-figtree.txt`).
