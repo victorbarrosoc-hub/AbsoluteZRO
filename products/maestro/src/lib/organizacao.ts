@@ -4,9 +4,10 @@
  * fechamento. Ficam em maestro.organizations.settings.empresa; só administração muda (RLS da 0000).
  */
 import { sql } from "drizzle-orm";
-import { getBanco, type Contexto } from "@/lib/db/client";
+import { getBanco, type Contexto, type Tx } from "@/lib/db/client";
 import { traduzirPg, type Erros, type Res, falha } from "@/lib/crm/comum";
 import { ehUf } from "@/lib/orcamento/deslocamento";
+import { lerMarcaNaTx, type Marca } from "@/lib/marca/servidor";
 
 export type Empresa = {
   fantasia: string | null;
@@ -24,6 +25,10 @@ export type Empresa = {
   validadeDias: number;
   condicoes: string | null;
   fechamento: string | null;
+  /** Da marca (Ajustes → Marca): logo, cor de destaque e linha de assinatura. */
+  logo?: string | null;
+  cor?: string | null;
+  assinatura?: string | null;
 };
 
 export const EMPRESA_VAZIA: Empresa = {
@@ -81,14 +86,34 @@ export function lerEmpresaDe(settings: unknown): Empresa {
   };
 }
 
+/**
+ * Nome, CNPJ, contato e endereço moram na marca (drizzle/0011); o que estiver lá vale sobre o antigo de
+ * `settings.empresa`. Logo, cor e assinatura também vêm dela.
+ */
+export function comMarca(e: Empresa, m: Marca): Empresa {
+  return {
+    ...e,
+    fantasia: m.nome ?? e.fantasia,
+    cnpj: m.cnpj ?? e.cnpj,
+    email: m.email ?? e.email,
+    telefone: m.telefone ?? e.telefone,
+    endereco: m.endereco ?? e.endereco,
+    logo: m.logo,
+    cor: m.cor,
+    assinatura: m.assinatura,
+  };
+}
+
+export async function lerEmpresaNaTx(tx: Tx, orgId: string): Promise<Empresa & { nomeOrg: string }> {
+  const [o] = (await tx.execute(sql`select name, settings from maestro.organizations where id = ${orgId}`)) as unknown as {
+    name: string;
+    settings: unknown;
+  }[];
+  return { ...comMarca(lerEmpresaDe(o?.settings), await lerMarcaNaTx(tx, orgId)), nomeOrg: o?.name ?? "" };
+}
+
 export async function lerEmpresa(ctx: Contexto): Promise<Empresa & { nomeOrg: string }> {
-  return getBanco().asUser(ctx, async (tx) => {
-    const [o] = (await tx.execute(sql`select name, settings from maestro.organizations where id = ${ctx.orgId}`)) as unknown as {
-      name: string;
-      settings: unknown;
-    }[];
-    return { ...lerEmpresaDe(o?.settings), nomeOrg: o?.name ?? "" };
-  });
+  return getBanco().asUser(ctx, (tx) => lerEmpresaNaTx(tx, ctx.orgId));
 }
 
 export function validarEmpresa(f: Record<string, unknown>): { ok: true; empresa: Empresa } | { ok: false; erros: Erros } {

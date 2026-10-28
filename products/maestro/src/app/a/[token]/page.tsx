@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
 import { ipDe } from "@/lib/http";
 import { hashToken } from "@/lib/auth/cripto";
-import { abrirLink } from "@/lib/revisao/link";
+import { abrirLink, marcaDoLink } from "@/lib/revisao/link";
 import { AprovacaoCliente, LinkNeutro, PedirPin } from "@/components/revisao/aprovar";
 import "../../revisao.css";
 
@@ -24,5 +24,6 @@ export default async function PaginaDoCliente({ params }: PageProps<"/a/[token]"
   if (r.estado === "morto") return <LinkNeutro />;
   if (r.estado === "limite") return <LinkNeutro limite />;
   if (r.estado === "pin") return <PedirPin token={token} />;
-  return <AprovacaoCliente token={token} dados={r.dados} chave={hashToken(token).slice(0, 12)} />;
+  const marca = await marcaDoLink(token).catch(() => null);
+  return <AprovacaoCliente token={token} dados={r.dados} chave={hashToken(token).slice(0, 12)} marca={marca} />;
 }

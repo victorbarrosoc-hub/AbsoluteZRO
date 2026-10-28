@@ -9,12 +9,7 @@ import { salvarEmpresaAcao } from "./acoes";
 export const metadata = { title: "Empresa" };
 
 const CAMPOS: DefCampo[] = [
-  { nome: "fantasia", rotulo: "Nome no timbrado", max: 120, largo: true, dica: "Sem ele, vale o nome da organização." },
-  { nome: "razao", rotulo: "Razão social", max: 200 },
-  { nome: "cnpj", rotulo: "CNPJ", max: 20 },
-  { nome: "endereco", rotulo: "Endereço", max: 300, largo: true },
-  { nome: "email", rotulo: "E-mail", tipo: "email", max: 254 },
-  { nome: "telefone", rotulo: "Telefone", tipo: "tel", max: 30 },
+  { nome: "razao", rotulo: "Razão social", max: 200, largo: true, dica: "Nome, CNPJ, contato e logo ficam em Marca." },
   { nome: "instagram", rotulo: "Instagram", max: 60 },
   { nome: "site", rotulo: "Site", max: 200 },
   { nome: "cidade", rotulo: "Cidade base", max: 120, dica: "Origem do deslocamento." },
@@ -32,7 +27,10 @@ const CAMPOS: DefCampo[] = [
   { nome: "fechamento", rotulo: "Fechamento do timbrado", tipo: "area", linhas: 2, largo: true, max: 500 },
 ];
 
-/** Ajustes → Empresa: os dados que saem no timbrado e a cidade base da calculadora. Só administração muda. */
+/**
+ * Ajustes → Empresa: razão social, redes, cidade base da calculadora e o padrão do orçamento. Nome, CNPJ, contato,
+ * endereço, logo e cor ficam em Ajustes → Marca (drizzle/0011). Só administração muda.
+ */
 export default async function Empresa() {
   const s = await exigirAcessoNaPagina("/app/ajustes/empresa");
   const e = await lerEmpresa({ sub: s.sub, orgId: s.orgId });

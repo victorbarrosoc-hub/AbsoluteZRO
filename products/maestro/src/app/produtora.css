@@ -1791,3 +1791,29 @@ details.secao.secao--abrir > summary {
     break-inside: avoid;
   }
 }
+
+/* ───────────── marca da produtora no timbrado (plano v2 §8) ───────────── */
+.lh-logo {
+  display: block;
+  max-width: 150pt;
+  max-height: 44pt;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  object-position: left top;
+}
+.lh-assinatura {
+  margin-top: 30pt;
+  display: grid;
+  gap: 5pt;
+  max-width: 220pt;
+}
+.lh-assinatura__linha {
+  display: block;
+  height: 0;
+  border-top: 0.75pt solid var(--acento);
+}
+.lh-assinatura p {
+  font-size: 8.5pt;
+  color: var(--lh-mute);
+}

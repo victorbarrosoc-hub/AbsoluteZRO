@@ -12,6 +12,7 @@ import type { LoteDoCliente, PecaVista } from "@/lib/revisao/link";
 import type { ComentarioVisto, VersaoVista } from "@/lib/revisao/tipos";
 import { Icone } from "@/components/icones";
 import { MaestroSimbolo, ZroSimbolo } from "@/components/marca";
+import { CabecaMarca, estiloDaMarca, type MarcaDaPagina } from "@/components/publico/comum";
 import { Revisor, type NovoComentario } from "./revisor";
 
 type Escolha = { decisao: "aprovado" | "ajuste"; nota: string };
@@ -139,7 +140,18 @@ function Progresso({ feitas, total }: { feitas: number; total: number }) {
   );
 }
 
-export function AprovacaoCliente({ token, dados, chave }: { token: string; dados: LoteDoCliente; chave: string }) {
+export function AprovacaoCliente({
+  token,
+  dados,
+  chave,
+  marca = null,
+}: {
+  token: string;
+  dados: LoteDoCliente;
+  chave: string;
+  /** A marca da produtora (Ajustes → Marca): logo no topo e a cor como acento. */
+  marca?: MarcaDaPagina | null;
+}) {
   const router = useRouter();
   const [pecas, setPecas] = useState(dados.pecas);
   const [idx, setIdx] = useState(() =>
@@ -323,7 +335,7 @@ export function AprovacaoCliente({ token, dados, chave }: { token: string; dados
   const cabeca = (
     <header className="cl-topo">
       <div className="cl-topo__miolo">
-        <span className="cl-topo__produtora">{dados.produtora}</span>
+        {marca?.logo ? <CabecaMarca marca={marca} /> : <span className="cl-topo__produtora">{dados.produtora}</span>}
         <h1 className="cl-topo__titulo">{dados.lote.titulo}</h1>
       </div>
       <Progresso feitas={feitas} total={pecas.length} />
@@ -333,7 +345,7 @@ export function AprovacaoCliente({ token, dados, chave }: { token: string; dados
   if (tela === "enviado") {
     const aprovadas = pecas.filter((p) => decidida(p)?.decisao === "aprovado").length;
     return (
-      <main className="cl" id="conteudo">
+      <main className="cl" id="conteudo" style={estiloDaMarca(marca?.cor)}>
         {cabeca}
         <section className="cl-fim" aria-live="polite">
           <SeloAprovado />
@@ -352,7 +364,7 @@ export function AprovacaoCliente({ token, dados, chave }: { token: string; dados
 
   if (tela === "resumo") {
     return (
-      <main className="cl" id="conteudo">
+      <main className="cl" id="conteudo" style={estiloDaMarca(marca?.cor)}>
         {cabeca}
         <form className="cl-resumo" onSubmit={enviar} aria-label="Revisar e enviar">
           <h2>
@@ -417,7 +429,7 @@ export function AprovacaoCliente({ token, dados, chave }: { token: string; dados
   }
 
   return (
-    <main className="cl" id="conteudo">
+    <main className="cl" id="conteudo" style={estiloDaMarca(marca?.cor)}>
       {cabeca}
       <nav className="cl-pecas" aria-label="O que aprovar">
         {pecas.map((p, i) => {

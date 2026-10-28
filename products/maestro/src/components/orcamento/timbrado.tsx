@@ -4,6 +4,7 @@
  * PDF" sai um A4 limpo (CSS de impressão em globals.css, `.imprimivel`). Nunca mostra custo, margem nem nota interna:
  * os dados já chegam sem isso (documentoDoOrcamento).
  */
+import type { CSSProperties } from "react";
 import { brl, dataPorExtenso } from "@/lib/dinheiro";
 import { FECHAMENTO_PADRAO, lerCondicoes, nomeUnidade, rotuloQuantidade, unidadeComQuantidade } from "@/lib/orcamento/motor";
 import type { DocumentoOrcamento } from "@/lib/orcamento/orcamentos";
@@ -21,15 +22,25 @@ function linhasDaEmpresa(e: DocumentoOrcamento["empresa"]) {
   ].filter(Boolean);
 }
 
+/**
+ * A marca da produtora (Ajustes → Marca) entra aqui: o logo no topo (ou o nome), a cor de destaque só nos filetes e no
+ * ponto (`--acento`, nunca em texto) e a linha de assinatura no fim.
+ */
 export function Timbrado({ doc }: { doc: DocumentoOrcamento }) {
   const marca = doc.empresa.fantasia ?? doc.empresa.nomeOrg;
   const condicoes = lerCondicoes(doc.condicoes);
   const codigo = doc.codigo.replace(" v", " · v");
+  const estilo = doc.empresa.cor ? ({ "--acento": doc.empresa.cor } as CSSProperties) : undefined;
   return (
     <div className="lh-palco">
-      <article className="lh imprimivel" aria-label={`Proposta ${codigo}`}>
+      <article className="lh imprimivel" aria-label={`Proposta ${codigo}`} style={estilo}>
         <header className="lh-topo">
-          <span className="lh-marca">{marca}</span>
+          {doc.empresa.logo ? (
+            // eslint-disable-next-line @next/next/no-img-element -- logo da organização, servido pela rota própria (bytes do banco)
+            <img className="lh-logo" src={doc.empresa.logo} alt={marca} />
+          ) : (
+            <span className="lh-marca">{marca}</span>
+          )}
           <div className="lh-topo__meta">
             <span className="lh-mono">Proposta</span>
             <span className="lh-codigo">{codigo}</span>
@@ -157,6 +168,13 @@ export function Timbrado({ doc }: { doc: DocumentoOrcamento }) {
           <h3 className="lh-mono">Próximo passo</h3>
           <p className="lh-corpo">{doc.empresa.fechamento ?? FECHAMENTO_PADRAO}</p>
         </section>
+
+        {doc.empresa.assinatura ? (
+          <section className="lh-assinatura">
+            <span className="lh-assinatura__linha" aria-hidden="true" />
+            <p>{doc.empresa.assinatura}</p>
+          </section>
+        ) : null}
 
         <div className="lh-espaco" />
         <footer className="lh-pe">

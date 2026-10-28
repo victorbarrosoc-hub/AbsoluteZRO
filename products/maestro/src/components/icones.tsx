@@ -43,7 +43,11 @@ export type NomeIcone =
   | "link"
   | "cadeado"
   | "check"
-  | "baixar";
+  | "baixar"
+  | "hoje"
+  | "pedidos"
+  | "marca"
+  | "imagem";
 
 const CAMINHOS: Record<NomeIcone, React.ReactNode> = {
   alvo: (
@@ -72,6 +76,29 @@ const CAMINHOS: Record<NomeIcone, React.ReactNode> = {
   ),
   check: <path d="m5 12.5 4.5 4.5L19 7.5" />,
   baixar: <path d="M12 4v11M7 10.5l5 5 5-5M5 19.5h14" />,
+  hoje: (
+    <>
+      <rect x="4" y="5" width="16" height="15" rx="3" />
+      <path d="M4 9.5h16M8.5 3v4M15.5 3v4" />
+      <circle cx="12" cy="14.5" r="2" fill="currentColor" stroke="none" />
+    </>
+  ),
+  pedidos: <path d="M4 13.5 6.2 6a2 2 0 0 1 1.9-1.5h7.8A2 2 0 0 1 17.8 6l2.2 7.5V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4.5Zm0 0h4.5l1.5 2.5h4l1.5-2.5H20" />,
+  marca: (
+    <>
+      <path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.2 0 1.8-.8 1.8-1.7 0-1.3-1.3-1.6-1.3-2.8 0-1 .8-1.7 1.8-1.7h2.2a4 4 0 0 0 4-4C20.5 6.7 16.7 3.5 12 3.5Z" />
+      <circle cx="7.8" cy="11" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="10.5" cy="7.4" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="7.6" r="1.1" fill="currentColor" stroke="none" />
+    </>
+  ),
+  imagem: (
+    <>
+      <rect x="3.5" y="5" width="17" height="14" rx="3" />
+      <circle cx="9" cy="10" r="1.6" />
+      <path d="m4.5 17.5 5-5 3.5 3.5 2.5-2.5 4 4" />
+    </>
+  ),
   z: <path d="M12 3c.6 4.2 2.3 5.9 9 6.3-6.7.4-8.4 2.1-9 6.3-.6-4.2-2.3-5.9-9-6.3 6.7-.4 8.4-2.1 9-6.3Z" fill="currentColor" stroke="none" />,
   quadro: (
     <>

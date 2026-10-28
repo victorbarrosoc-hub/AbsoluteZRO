@@ -335,3 +335,14 @@ export async function enviarDecisoes(
   if ("erro" in r) return erroDoBanco(r);
   return r;
 }
+
+// ───────────── marca ─────────────
+
+/** A marca da produtora do link (logo, cor e nome), pela porta estreita (`maestro.link_marca`, drizzle/0011). */
+export async function marcaDoLink(token: string): Promise<{ nome: string; logo: string | null; cor: string | null } | null> {
+  if (!ehToken(token)) return null;
+  return comoLink(
+    async (tx) =>
+      (await chamar(tx, sql`select maestro.link_marca(${hashToken(token)}) as r`)) as { nome: string; logo: string | null; cor: string | null } | null,
+  );
+}
