@@ -75,6 +75,23 @@ type ArquivoSd = {
   imagem?: { largura: number | null; altura: number | null } | null
   link?: string | null
   link_download?: string | null
+  abrir_no_sobedesce?: string | null
+}
+
+/**
+ * Link do SOBEDESCE que abre a pasta na aba Drive do app (`<base>/app/#drive/<id>`). Só passa se for exatamente esse
+ * formato, na origem do SOBEDESCE configurada (ou na oficial); qualquer outra coisa some (a Z não repassa link estranho).
+ */
+export function linkDaPastaNoSobedesce(v: unknown, base: string): string | undefined {
+  if (typeof v !== 'string') return undefined
+  try {
+    const u = new URL(v)
+    const origemOk = u.origin === new URL(base).origin || u.origin === SOBEDESCE_URL_PADRAO
+    if (!origemOk || u.pathname !== '/app/' || u.search || !/^#drive\/[A-Za-z0-9_-]{1,200}$/.test(u.hash)) return undefined
+    return u.href
+  } catch {
+    return undefined
+  }
 }
 
 const TIPOS: [RegExp, string][] = [
@@ -117,8 +134,9 @@ export function tamanhoLegivel(bytes: number | null | undefined): string | null 
 const duracao = (s: number | null) => (s === null ? null : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`)
 
 /** O que a Z lê de cada arquivo: só o necessário para responder e apontar o link. */
-export function arquivoParaIa(a: ArquivoSd) {
+export function arquivoParaIa(a: ArquivoSd, base: string = SOBEDESCE_URL_PADRAO) {
   const v = a.video
+  const pastaNoSd = linkDaPastaNoSobedesce(a.abrir_no_sobedesce, base)
   const img = a.imagem
   return {
     nome: a.nome,
@@ -135,6 +153,8 @@ export function arquivoParaIa(a: ArquivoSd) {
     ...(v && v.duracao_s !== null ? { duracao: duracao(v.duracao_s) } : {}),
     ...(a.link ? { abrir: a.link } : {}),
     ...(a.link_download ? { baixar: a.link_download } : {}),
+    // A pasta (ela mesma, ou onde o arquivo está) aberta no SOBEDESCE: um botão por pasta, não por arquivo.
+    ...(pastaNoSd ? { abrir_no_sobedesce: pastaNoSd } : {}),
     id: a.id,
   }
 }
@@ -205,31 +225,38 @@ export async function driveParaIa(
     return {
       texto: JSON.stringify({
         busca: pedido.termo,
-        arquivos: arquivos.map(arquivoParaIa),
+        arquivos: arquivos.map((a) => arquivoParaIa(a, cfg.base)),
         ...(json.incompleta ? { aviso: 'Um dos Drives não respondeu.' } : {}),
       }),
       erro: false,
     }
   }
-  if (pedido.tipo === 'versao') return { texto: versaoParaIa(json), erro: false }
+  if (pedido.tipo === 'versao') return { texto: versaoParaIa(json, cfg.base), erro: false }
   if (pedido.tipo === 'computador') return { texto: pedidoParaIa(json), erro: false }
   if (json.nao_achou)
     return { texto: `Nenhuma pasta com "${pedido.pasta}" no nome. Tente buscar_no_drive com outra palavra ou pergunte o nome certo.`, erro: false }
   if (Array.isArray(json.escolher)) {
-    const pastas = (json.escolher as { id: string; nome: string; modificado?: string | null }[]).map((p) => ({
+    const pastas = (json.escolher as { id: string; nome: string; modificado?: string | null; abrir_no_sobedesce?: string | null }[]).map((p) => ({
       id: p.id,
       nome: p.nome,
       modificado: p.modificado ?? undefined,
+      abrir_no_sobedesce: linkDaPastaNoSobedesce(p.abrir_no_sobedesce, cfg.base),
     }))
     return { texto: JSON.stringify({ varias_pastas: pastas, dica: 'Pergunte qual delas e chame de novo com o id.' }), erro: false }
   }
-  const pasta = json.pasta as { nome?: string; link?: string | null } | undefined
+  const pasta = json.pasta as { nome?: string; link?: string | null; abrir_no_sobedesce?: string | null } | undefined
   const arquivos = Array.isArray(json.arquivos) ? (json.arquivos as ArquivoSd[]) : []
+  const pastaNoSd = linkDaPastaNoSobedesce(pasta?.abrir_no_sobedesce, cfg.base)
   return {
     texto: JSON.stringify({
-      pasta: { nome: pasta?.nome, abrir: pasta?.link ?? undefined },
+      pasta: { nome: pasta?.nome, abrir: pasta?.link ?? undefined, abrir_no_sobedesce: pastaNoSd },
       ordem: json.ordem,
-      itens: arquivos.map(arquivoParaIa),
+      // O link da pasta vai uma vez só (na pasta); nos itens fica só o das subpastas.
+      itens: arquivos.map((a) => {
+        const item = arquivoParaIa(a, cfg.base)
+        if (item.abrir_no_sobedesce === pastaNoSd) delete item.abrir_no_sobedesce
+        return item
+      }),
       ...(arquivos.length ? {} : { vazia: true }),
       ...(json.mais ? { aviso: 'A pasta tem mais itens além destes.' } : {}),
     }),
@@ -245,9 +272,9 @@ const computadoresParaIa = (v: unknown) =>
     visto_em: c.visto_em,
   }))
 
-function versaoParaIa(j: Record<string, unknown>): string {
-  const original = arquivoParaIa((j.original ?? {}) as ArquivoSd)
-  const versoes = (Array.isArray(j.versoes) ? (j.versoes as ArquivoSd[]) : []).map(arquivoParaIa)
+function versaoParaIa(j: Record<string, unknown>, base: string): string {
+  const original = arquivoParaIa((j.original ?? {}) as ArquivoSd, base)
+  const versoes = (Array.isArray(j.versoes) ? (j.versoes as ArquivoSd[]) : []).map((a) => arquivoParaIa(a, base))
   if (j.o_proprio) return JSON.stringify({ ja_esta_no_formato: true, arquivo: original })
   if (versoes.length) return JSON.stringify({ versao_pronta: versoes, original: { nome: original.nome }, dica: 'Entregue o link de baixar da versão pronta.' })
   const computadores = computadoresParaIa(j.computadores)

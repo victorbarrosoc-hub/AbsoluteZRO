@@ -184,17 +184,27 @@ describe("busca", () => {
     assert.equal(q.get("supportsAllDrives"), "true");
     assert.equal(q.get("pageSize"), "10");
     assert.equal(q.get("orderBy"), null);
-    assert.doesNotMatch(q.get("fields") ?? "", /parents|appProperties|description|permission/);
+    assert.doesNotMatch(q.get("fields") ?? "", /appProperties|description|permission/);
   });
 
   test("repassa só metadados, mesmo que o Google mande mais", async () => {
     const c = await corpo(await buscar(jwt(ana.sub), "roteiro"));
     assert.equal(c.arquivos.length, 1);
     const a = c.arquivos[0];
-    assert.deepEqual(Object.keys(a).sort(), ["criado", "icone", "id", "imagem", "link", "link_download", "modificado", "nome", "pasta", "tamanho", "tipo", "video"]);
+    assert.deepEqual(Object.keys(a).sort(), ["abrir_no_sobedesce", "criado", "icone", "id", "imagem", "link", "link_download", "modificado", "nome", "pasta", "tamanho", "tipo", "video"]);
     assert.equal(a.tamanho, 2048);
     assert.equal(a.link, "https://drive.google.com/file/d/r1/view");
-    assert.doesNotMatch(JSON.stringify(c), /segredo interno|permissionIds|appProperties|ya29/);
+    assert.doesNotMatch(JSON.stringify(c), /segredo interno|permissionIds|appProperties|parents|ya29/);
+  });
+
+  test("abrir_no_sobedesce: a pasta onde o arquivo está, ou a própria pasta, na aba Drive do app", async () => {
+    const c = await corpo(await buscar(jwt(ana.sub), "Motion"));
+    const pastaAchada = c.arquivos.find((a: { id: string }) => a.id === pastaMotion);
+    assert.equal(pastaAchada.abrir_no_sobedesce, `http://localhost:3000/app/#drive/${pastaMotion}`);
+    const arq = (await corpo(await buscar(jwt(ana.sub), "primeiro.mov"))).arquivos.find((a: { id: string }) => a.id === primeiro);
+    assert.equal(arq.abrir_no_sobedesce, `http://localhost:3000/app/#drive/${pastaMotion}`);
+    assert.equal(driveZ.linkNoSobedesce("abc_DEF-123"), "http://localhost:3000/app/#drive/abc_DEF-123");
+    for (const ruim of ["", "a/b", "x#y", "../app", "a b", null, 7, "x".repeat(201)]) assert.equal(driveZ.linkNoSobedesce(ruim), null);
   });
 
   test("Drive pedindo reconectar é 409 reconectar_drive", async () => {
@@ -223,6 +233,8 @@ describe("pasta", () => {
     assert.equal(p.link_download, "https://drive.google.com/uc?id=v1&export=download");
     assert.equal(p.tamanho, 734003200);
     assert.deepEqual(p.video, { largura: 3840, altura: 2160, duracao_s: 13 });
+    assert.equal(c.pasta.abrir_no_sobedesce, `http://localhost:3000/app/#drive/${pastaMotion}`);
+    assert.equal(p.abrir_no_sobedesce, c.pasta.abrir_no_sobedesce);
     const q = amb.google.ultimasBuscas.at(-1)!;
     assert.equal(q.get("q"), `'${pastaMotion}' in parents and trashed = false`);
     assert.equal(q.get("orderBy"), "createdTime");
@@ -237,6 +249,7 @@ describe("pasta", () => {
   test("nome em várias pastas devolve as opções; nenhuma, nao_achou; ordem estranha é 400", async () => {
     const c = await corpo(await pasta(jwt(ana.sub, "drive.pasta"), "Motion"));
     assert.deepEqual(c.escolher.map((p: { nome: string }) => p.nome).sort(), ["Motion antigo", "Motion novo", "Referências de Motion"]);
+    for (const p of c.escolher) assert.equal(p.abrir_no_sobedesce, `http://localhost:3000/app/#drive/${p.id}`);
     assert.deepEqual(await corpo(await pasta(jwt(ana.sub, "drive.pasta"), "Casamento 2019")), { nao_achou: true });
     assert.equal((await pasta(jwt(ana.sub, "drive.pasta"), "Motion", "aleatoria")).status, 400);
     assert.equal(driveZ.consultaDePasta("d'x"), "mimeType = 'application/vnd.google-apps.folder' and name contains 'd\\'x' and trashed = false");
@@ -259,6 +272,7 @@ describe("versão pronta e pedido ao computador", () => {
     );
     assert.equal(c.versoes[0].link_download, "https://drive.google.com/uc?id=v720&export=download");
     assert.equal(c.original.nome, "primeiro.mov");
+    assert.equal(c.original.abrir_no_sobedesce, `http://localhost:3000/app/#drive/${pastaMotion}`);
   });
 
   test("o próprio arquivo já está no formato: o_proprio", async () => {

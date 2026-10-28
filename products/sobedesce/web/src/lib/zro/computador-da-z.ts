@@ -84,7 +84,7 @@ type Original = { conta: Conta; arquivo: ArquivoAchado; pais: string[] };
 async function acharOriginal(usuarioId: string, contas: Conta[], fileId: string): Promise<Original | null> {
   for (const conta of contas) {
     try {
-      const f = await chamarDrive<FileDrive>(usuarioId, conta.id, `/files/${encodeURIComponent(fileId)}`, { query: { fields: `${CAMPOS_ARQUIVO},parents,trashed` } });
+      const f = await chamarDrive<FileDrive>(usuarioId, conta.id, `/files/${encodeURIComponent(fileId)}`, { query: { fields: `${CAMPOS_ARQUIVO},trashed` } });
       const a = f && f.trashed !== true && f.mimeType !== PASTA_MIME ? soMetadados(f) : null;
       if (a) return { conta, arquivo: a, pais: Array.isArray(f.parents) ? (f.parents as unknown[]).filter((p): p is string => typeof p === "string") : [] };
     } catch (e) {
