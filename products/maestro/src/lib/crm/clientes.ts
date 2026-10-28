@@ -144,6 +144,9 @@ export type ClienteFicha = EntradaCliente & {
   criadoEm: Date;
   projetos: { id: string; codigo: string; titulo: string; status: string; prazo: string | null; linkStatus: string }[];
   cards: { id: string; tema: string; coluna: string; prazo: string | null; resp: string | null }[];
+  /** Próximo contato (drizzle/0014). */
+  proximoContato: string | null;
+  proximoNota: string | null;
 };
 
 export async function obterCliente(ctx: Contexto, id: string): Promise<ClienteFicha | null> {
@@ -162,6 +165,11 @@ export async function obterCliente(ctx: Contexto, id: string): Promise<ClienteFi
         from maestro.cards where cliente = ${id} and apagado_em is null
        order by array_position(array['pauta','afazer','fazendo','revisao','aprovacao','aprovado','agendado','entregue'], coluna), prazo nulls last
        limit 200`)) as unknown as ClienteFicha["cards"];
+    const [rt] = (await tx.execute(sql`
+      select proximo_contato::text as data, proximo_nota as nota from maestro.clients where id = ${id}`)) as unknown as {
+      data: string | null;
+      nota: string | null;
+    }[];
     return {
       id: c.id,
       nome: c.name,
@@ -174,6 +182,8 @@ export async function obterCliente(ctx: Contexto, id: string): Promise<ClienteFi
       criadoEm: c.createdAt,
       projetos: [...projetos],
       cards: [...cards],
+      proximoContato: rt?.data ?? null,
+      proximoNota: rt?.nota ?? null,
     };
   });
 }

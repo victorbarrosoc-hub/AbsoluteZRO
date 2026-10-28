@@ -12,6 +12,7 @@ import { ehUuid, falha, traduzirPg, type Res } from "@/lib/crm/comum";
 import { hojeBr } from "@/lib/dinheiro";
 import { criarOrcamentoNaTx } from "@/lib/orcamento/orcamentos";
 import { lerTabela } from "@/lib/orcamento/precos";
+import type { Etapa } from "@/lib/funil/regras";
 import { lerConfig, rascunhoDoPedido, type ConfigPedido, type RespostasPedido, type StatusPedido } from "./formulario";
 
 export const contextoTokenPublico = (id: string) => `links_publicos.token:${id}`;
@@ -113,13 +114,22 @@ export type PedidoLista = {
   tipo: string | null;
   criadoEm: string;
   orcamentoId: string | null;
+  etapa: Etapa;
+  /** Valor estimado (centavos) ou, havendo orçamento, o total da última versão. */
+  valor: number | null;
+  proximoContato: string | null;
+  proximoNota: string | null;
 };
 
 export async function listarPedidos(ctx: Contexto): Promise<PedidoLista[]> {
   return getBanco().asUser(ctx, async (tx) => {
     const r = (await tx.execute(sql`
-      select id, protocolo, status, nome, empresa, respostas ->> 'tipo' as tipo, created_at, orcamento_id
-        from maestro.pedidos order by case status when 'novo' then 0 when 'em_orcamento' then 1 else 2 end, created_at desc limit 500`)) as unknown as Record<
+      select p.id, p.protocolo, p.status, p.nome, p.empresa, p.respostas ->> 'tipo' as tipo, p.created_at, p.orcamento_id, p.etapa,
+             p.proximo_contato::text as proximo_contato, p.proximo_nota,
+             coalesce((select greatest(0, coalesce(sum(round(i.quantidade * i.preco_cents)), 0) - q.desconto_cents)
+                         from maestro.orcamentos q left join maestro.orcamento_itens i on i.org_id = q.org_id and i.orcamento_id = q.id
+                        where q.org_id = p.org_id and q.id = p.orcamento_id group by q.desconto_cents), p.valor_estimado_cents)::float8 as valor
+        from maestro.pedidos p order by case p.status when 'novo' then 0 when 'em_orcamento' then 1 else 2 end, p.created_at desc limit 500`)) as unknown as Record<
       string,
       unknown
     >[];
@@ -132,6 +142,10 @@ export async function listarPedidos(ctx: Contexto): Promise<PedidoLista[]> {
       tipo: p.tipo as string | null,
       criadoEm: new Date(p.created_at as string).toISOString(),
       orcamentoId: p.orcamento_id as string | null,
+      etapa: p.etapa as Etapa,
+      valor: p.valor == null ? null : Number(p.valor),
+      proximoContato: (p.proximo_contato as string | null) ?? null,
+      proximoNota: (p.proximo_nota as string | null) ?? null,
     }));
   });
 }
@@ -152,13 +166,16 @@ export type PedidoFicha = PedidoLista & {
   clienteNome: string | null;
   orcamento: { id: string; numero: string; versao: number; status: string } | null;
   notas: string | null;
+  motivoPerda: string | null;
+  valorEstimado: number | null;
+  ultimoContatoEm: string | null;
 };
 
 export async function obterPedido(ctx: Contexto, id: string): Promise<PedidoFicha | null> {
   if (!ehUuid(id)) return null;
   return getBanco().asUser(ctx, async (tx) => {
     const [p] = (await tx.execute(sql`
-      select p.*, c.name as cliente_nome, q.numero, q.versao, q.status as orc_status
+      select p.*, p.proximo_contato::text as proximo_txt, c.name as cliente_nome, q.numero, q.versao, q.status as orc_status
         from maestro.pedidos p
         left join maestro.clients c on c.id = p.cliente_id
         left join maestro.orcamentos q on q.id = p.orcamento_id
@@ -182,6 +199,13 @@ export async function obterPedido(ctx: Contexto, id: string): Promise<PedidoFich
       clienteNome: p.cliente_nome as string | null,
       orcamento: p.orcamento_id ? { id: p.orcamento_id as string, numero: p.numero as string, versao: Number(p.versao), status: p.orc_status as string } : null,
       notas: p.notas as string | null,
+      etapa: p.etapa as Etapa,
+      valor: p.valor_estimado_cents == null ? null : Number(p.valor_estimado_cents),
+      proximoContato: (p.proximo_txt as string | null) ?? null,
+      proximoNota: (p.proximo_nota as string | null) ?? null,
+      motivoPerda: (p.motivo_perda as string | null) ?? null,
+      valorEstimado: p.valor_estimado_cents == null ? null : Number(p.valor_estimado_cents),
+      ultimoContatoEm: p.ultimo_contato_em ? new Date(p.ultimo_contato_em as string).toISOString() : null,
     };
   });
 }

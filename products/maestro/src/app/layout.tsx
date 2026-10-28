@@ -10,6 +10,7 @@ import "./produtora.css";
 import "./comercial.css";
 import "./publico.css";
 import "./aurora.css";
+import "./negocio.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),

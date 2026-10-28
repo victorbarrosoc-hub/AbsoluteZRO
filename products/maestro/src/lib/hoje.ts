@@ -6,6 +6,7 @@
 import { sql } from "drizzle-orm";
 import { getBanco, type Contexto } from "@/lib/db/client";
 import { somarDias } from "@/lib/dinheiro";
+import { listarRetornosNaTx, type Retorno } from "@/lib/funil/servidor";
 import { EM_TRABALHO } from "@/lib/quadro/metodo";
 
 export type EventoDoDia = { id: string; titulo: string; tipo: string; hora: string | null; local: string | null; projeto: string | null };
@@ -19,6 +20,12 @@ export type Dinheiro = {
   caixa: number;
 };
 
+/** Um card que vence (prazo até amanhã) ou que está com o cliente. */
+export type CardDoDia = { id: string; tema: string; cliente: string | null; prazo: string | null; coluna: string; desde: string | null };
+
+/** Um dia da semana no caixa: o que entrou e saiu de fato (baixas), em centavos. */
+export type DiaDoCaixa = { dia: string; entrou: number; saiu: number };
+
 export type ResumoDoDia = {
   hoje: string;
   agenda: { hoje: EventoDoDia[]; semana: number };
@@ -27,7 +34,21 @@ export type ResumoDoDia = {
   pedidosNovos: number;
   orcamentos: { aguardando: number; comAjuste: number; valor: number };
   dinheiro: Dinheiro | null;
+  /** Os cards que vencem até amanhã (os atrasados primeiro), no máximo 5. */
+  vencendo: CardDoDia[];
+  /** Peças em aprovação (com o cliente), as mais antigas primeiro, no máximo 4. */
+  comCliente: CardDoDia[];
+  /** Retornar hoje: pedidos abertos e clientes com o próximo contato vencido ou hoje. */
+  retornos: Retorno[];
+  /** Caixa da semana (segunda a domingo), só para quem vê dinheiro. */
+  semana: DiaDoCaixa[] | null;
 };
+
+/** A segunda-feira da semana de `dia` (AAAA-MM-DD). */
+export function segundaDaSemana(dia: string): string {
+  const d = new Date(`${dia}T12:00:00Z`).getUTCDay();
+  return somarDias(dia, -((d + 6) % 7));
+}
 
 const n = (v: unknown) => Number(v ?? 0) || 0;
 
@@ -67,7 +88,22 @@ export async function resumoDoDia(ctx: Contexto, verDinheiro: boolean, hoje: str
         from ultima u
        where u.status = 'enviado' and (u.validade is null or u.validade >= ${hoje}::date)`)) as unknown as Record<string, number>[];
 
+    const amanha = somarDias(hoje, 1);
+    const vencendo = (await tx.execute(sql`
+      select k.id, coalesce(k.dados ->> 'tema', k.id) as tema, c.name as cliente, left(k.prazo, 10) as prazo, k.coluna, null as desde
+        from maestro.cards k left join maestro.clients c on c.org_id = k.org_id and c.id::text = k.cliente
+       where k.apagado_em is null and k.prazo is not null and left(k.prazo, 10) <= ${amanha}
+         and k.coluna = any (${`{${EM_TRABALHO.join(",")}}`}::text[])
+       order by k.prazo, k.id limit 5`)) as unknown as CardDoDia[];
+    const comCliente = (await tx.execute(sql`
+      select k.id, coalesce(k.dados ->> 'tema', k.id) as tema, c.name as cliente, left(k.prazo, 10) as prazo, k.coluna, k.updated_at::date::text as desde
+        from maestro.cards k left join maestro.clients c on c.org_id = k.org_id and c.id::text = k.cliente
+       where k.apagado_em is null and k.coluna = 'aprovacao'
+       order by k.updated_at limit 4`)) as unknown as CardDoDia[];
+    const retornos = await listarRetornosNaTx(tx, hoje, 8);
+
     let dinheiro: Dinheiro | null = null;
+    let semanaCaixa: DiaDoCaixa[] | null = null;
     if (verDinheiro) {
       const [d] = (await tx.execute(sql`
         select count(*) filter (where tipo = 'entrada' and vencimento between ${hoje}::date and ${semana}::date)::int as rs_n,
@@ -90,6 +126,19 @@ export async function resumoDoDia(ctx: Contexto, verDinheiro: boolean, hoje: str
         pagarAtrasado: { n: n(d.pa_n), valor: n(d.pa_v) },
         caixa: n(c.caixa),
       };
+      const seg = segundaDaSemana(hoje);
+      const dias = (await tx.execute(sql`
+        select b.data::text as dia,
+               coalesce(sum(b.valor_cents) filter (where l.tipo = 'entrada'), 0)::float8 as entrou,
+               coalesce(sum(b.valor_cents) filter (where l.tipo = 'saida'), 0)::float8 as saiu
+          from maestro.baixas b join maestro.lancamentos l on l.org_id = b.org_id and l.id = b.lancamento_id
+         where b.data between ${seg}::date and ${somarDias(seg, 6)}::date
+         group by b.data`)) as unknown as DiaDoCaixa[];
+      semanaCaixa = Array.from({ length: 7 }, (_, i) => {
+        const dia = somarDias(seg, i);
+        const d = dias.find((x) => x.dia === dia);
+        return { dia, entrou: n(d?.entrou), saiu: n(d?.saiu) };
+      });
     }
     return {
       hoje,
@@ -99,6 +148,10 @@ export async function resumoDoDia(ctx: Contexto, verDinheiro: boolean, hoje: str
       pedidosNovos: n(pd?.n),
       orcamentos: { aguardando: n(oc?.n), comAjuste: n(oc?.ajuste), valor: n(oc?.valor) },
       dinheiro,
+      vencendo: [...vencendo],
+      comCliente: [...comCliente],
+      retornos,
+      semana: semanaCaixa,
     };
   });
 }

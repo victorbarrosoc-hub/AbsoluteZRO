@@ -48,7 +48,12 @@ export type NomeIcone =
   | "pedidos"
   | "marca"
   | "imagem"
-  | "abaixo";
+  | "abaixo"
+  | "lista"
+  | "numeros"
+  | "importar"
+  | "retorno"
+  | "pessoas";
 
 const CAMINHOS: Record<NomeIcone, React.ReactNode> = {
   alvo: (
@@ -263,6 +268,27 @@ const CAMINHOS: Record<NomeIcone, React.ReactNode> = {
     <>
       <path d="M12 4 2.8 19.5h18.4L12 4Z" />
       <path d="M12 10v4.5M12 17.2v.01" />
+    </>
+  ),
+  lista: <path d="M9 6.5h11M9 12h11M9 17.5h11M4.5 6.5h.01M4.5 12h.01M4.5 17.5h.01" strokeWidth={1.8} />,
+  numeros: <path d="M4 20h16M7 16.5v-5M12 16.5V7M17 16.5v-8" strokeWidth={1.8} />,
+  importar: (
+    <>
+      <path d="M12 15V4M7.5 8.5 12 4l4.5 4.5" />
+      <path d="M4.5 14.5v3a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3" />
+    </>
+  ),
+  retorno: (
+    <>
+      <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9" />
+      <path d="M4.5 4.5V9H9M12 8.5V12l2.5 2" />
+    </>
+  ),
+  pessoas: (
+    <>
+      <circle cx="9" cy="8.5" r="3.2" />
+      <path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5" />
+      <path d="M15.5 5.6a3 3 0 0 1 0 5.8M17 14.3c2 .5 3.2 2.1 3.5 4.7" />
     </>
   ),
 };

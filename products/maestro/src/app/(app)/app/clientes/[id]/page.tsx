@@ -5,6 +5,7 @@ import { linkWhatsapp, NOME_STATUS_CLIENTE, obterCliente, whatsappLegivel } from
 import { NOME_STATUS_PROJETO } from "@/lib/crm/projetos";
 import { podeEscrever } from "@/lib/papeis";
 import { dataBr, LinhaCard, Monograma, Secao, Selo } from "@/components/crm";
+import { ContatoFeito, ProximoContato } from "@/components/funil";
 import { Icone } from "@/components/icones";
 
 export const metadata = { title: "Cliente" };
@@ -114,6 +115,12 @@ export default async function FichaCliente({ params }: PageProps<"/app/clientes/
             )}
           </Secao>
 
+          {escreve ? (
+            <Secao titulo={c.status === "lead" ? "Retorno do lead" : "Retorno"}>
+              <ProximoContato alvo="cliente" id={c.id} data={c.proximoContato} nota={c.proximoNota} />
+              <ContatoFeito alvo="cliente" id={c.id} />
+            </Secao>
+          ) : null}
           <Secao titulo="Contato">
             <dl className="dados">
               <dt>Contato</dt>

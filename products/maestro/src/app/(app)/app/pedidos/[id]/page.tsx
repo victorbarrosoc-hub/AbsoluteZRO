@@ -1,27 +1,31 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
-import { dataBr } from "@/lib/dinheiro";
+import { centavosParaCampo, dataBr } from "@/lib/dinheiro";
+import { historicoDeContatos } from "@/lib/funil/servidor";
+import { nomeEtapa, tomEtapa } from "@/lib/funil/regras";
 import { carregarTabela } from "@/lib/orcamento/precos";
 import { codigoOrcamento, nomeStatus } from "@/lib/orcamento/motor";
-import { podeEscrever, podeRemover } from "@/lib/papeis";
+import { podeEscrever, podeRemover, podeVerDinheiro } from "@/lib/papeis";
 import { obterPedido } from "@/lib/pedidos/equipe";
 import { whatsappDaProdutora } from "@/lib/publico/porta";
-import { FAIXAS_INVESTIMENTO, nomeStatusPedido, periodoDoPedido, TOM_PEDIDO } from "@/lib/pedidos/formulario";
+import { FAIXAS_INVESTIMENTO, periodoDoPedido } from "@/lib/pedidos/formulario";
 import { BotaoAcao } from "@/components/acao";
 import { Monograma, Secao } from "@/components/crm";
+import { ContatoFeito, EtapaDoPedido, ProximoContato, ValorEstimado } from "@/components/funil";
 import { Icone } from "@/components/icones";
 import { SeloStatus } from "@/components/painel";
-import { apagarPedidoAcao, gerarOrcamentoAcao, statusPedidoAcao } from "../acoes";
+import { apagarPedidoAcao, gerarOrcamentoAcao } from "../acoes";
 
 export const metadata = { title: "Pedido" };
 
 /** O pedido: o que o cliente pediu (nas palavras da tabela de preços), o contato e "Gerar orçamento". */
-export default async function FichaPedido({ params }: PageProps<"/app/pedidos/[id]">) {
+export default async function FichaPedido({ params, searchParams }: PageProps<"/app/pedidos/[id]">) {
   const { id } = await params;
+  const perder = (await searchParams).perder === "1";
   const s = await exigirAcessoNaPagina(`/app/pedidos/${id}`);
   const ctx = { sub: s.sub, orgId: s.orgId };
-  const [p, tabela] = await Promise.all([obterPedido(ctx, id), carregarTabela(ctx)]);
+  const [p, tabela, contatos] = await Promise.all([obterPedido(ctx, id), carregarTabela(ctx), historicoDeContatos(ctx, "pedido", id)]);
   if (!p) notFound();
   const r = p.respostas;
   const escreve = podeEscrever(s.papel);
@@ -46,7 +50,7 @@ export default async function FichaPedido({ params }: PageProps<"/app/pedidos/[i
           </h1>
           <p className="apoio">{[p.tipo, p.empresa ? p.nome : null, `protocolo ${p.protocolo}`].filter(Boolean).join(" · ")}</p>
           <div className="perfil__selos">
-            <SeloStatus status={TOM_PEDIDO[p.status] ?? "neutro"}>{nomeStatusPedido(p.status)}</SeloStatus>
+            <SeloStatus status={tomEtapa(p.etapa)}>{nomeEtapa(p.etapa)}</SeloStatus>
           </div>
         </div>
         <div className="acoes perfil__acoes">
@@ -54,7 +58,7 @@ export default async function FichaPedido({ params }: PageProps<"/app/pedidos/[i
             <Link className="glass-btn glass-btn--ink" href={`/app/orcamentos/${p.orcamento.id}`}>
               <Icone nome="orcamento" size={18} /> Orçamento {codigoOrcamento(p.orcamento.numero, p.orcamento.versao)}
             </Link>
-          ) : escreve && p.status !== "recusado" ? (
+          ) : escreve && p.etapa !== "perdido" ? (
             <BotaoAcao acao={gerarOrcamentoAcao} campos={{ id: p.id }} rotulo="Gerar orçamento" icone="orcamento" classe="glass-btn glass-btn--ink" />
           ) : null}
           {wpp ? (
@@ -104,6 +108,32 @@ export default async function FichaPedido({ params }: PageProps<"/app/pedidos/[i
           {r.ideia ? <p className="observacoes">{r.ideia}</p> : null}
         </Secao>
         <div className="painel__lado">
+          <Secao titulo="Funil">
+            {escreve ? (
+              <EtapaDoPedido id={p.id} etapa={p.etapa} podeGanhar={p.orcamento?.status === "aprovado"} abrirPerda={perder} />
+            ) : (
+              <p>{nomeEtapa(p.etapa)}</p>
+            )}
+            {p.etapa === "perdido" && p.motivoPerda ? <p className="sutil">Motivo: {p.motivoPerda}</p> : null}
+            {escreve && podeVerDinheiro(s.papel) && !p.orcamento ? <ValorEstimado id={p.id} valor={centavosParaCampo(p.valorEstimado)} /> : null}
+            {escreve && p.etapa !== "ganho" && p.etapa !== "perdido" ? (
+              <>
+                <ProximoContato alvo="pedido" id={p.id} data={p.proximoContato} nota={p.proximoNota} />
+                <ContatoFeito alvo="pedido" id={p.id} />
+              </>
+            ) : null}
+            {contatos.length ? (
+              <ul className="funil-historico" aria-label="Contatos feitos">
+                {contatos.map((k) => (
+                  <li key={k.id}>
+                    <span className="num">{dataBr(k.em.slice(0, 10))}</span>
+                    <span>{k.nota ?? "Contato feito"}</span>
+                    {k.por ? <small>{k.por}</small> : null}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </Secao>
           <Secao titulo="Contato">
             <dl className="dados">
               <dt>Nome</dt>
@@ -130,12 +160,8 @@ export default async function FichaPedido({ params }: PageProps<"/app/pedidos/[i
               </p>
             </Secao>
           ) : null}
-          {escreve || podeRemover(s.papel) ? (
+          {podeRemover(s.papel) ? (
             <div className="acoes">
-              {escreve && p.status === "novo" ? (
-                <BotaoAcao acao={statusPedidoAcao} campos={{ id: p.id, para: "recusado" }} rotulo="Recusar" confirmar="Recusar o pedido?" />
-              ) : null}
-              {escreve && p.status === "recusado" ? <BotaoAcao acao={statusPedidoAcao} campos={{ id: p.id, para: "novo" }} rotulo="Reabrir" /> : null}
               {podeRemover(s.papel) ? (
                 <BotaoAcao acao={apagarPedidoAcao} campos={{ id: p.id }} rotulo="Apagar dados" icone="lixo" classe="q-perigo" confirmar="Apagar de vez?" />
               ) : null}

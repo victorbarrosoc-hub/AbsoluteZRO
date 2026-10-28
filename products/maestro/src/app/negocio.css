@@ -1,0 +1,609 @@
+/*
+ * O negócio por dentro (estudo MakersHub §4, itens 1, 2, 3, 6 e 7): funil de pedidos, retornos, Hoje com painéis,
+ * Números, importar planilha, agenda por assinatura e acesso por cliente. Visual C1 · Aurora: painéis claros sobre a
+ * luz, chips tingidos com ponto e texto sempre grafite/branco, gráfico em grafite (entrou) e pêssego (saiu).
+ */
+
+/* ───────────── segmentos com link (Quadro | Lista) ───────────── */
+
+.q-segmentos a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 40px;
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: 9px;
+  color: var(--text-mute);
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+.q-segmentos a[aria-current="true"] {
+  background: var(--surface);
+  color: var(--text-strong);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.08),
+    0 0 0 1px var(--line);
+}
+
+/* ───────────── chip de prazo e retorno ───────────── */
+
+.funil-chip {
+  --d: var(--text-faint);
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 650;
+  white-space: nowrap;
+  color: var(--text-strong);
+  background: color-mix(in srgb, var(--d) var(--chip-mix), var(--chip-base));
+}
+.funil-chip::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--d);
+}
+.funil-chip:has(svg)::before {
+  display: none;
+}
+.funil-chip[data-sit="atrasado"] {
+  --d: var(--st-atrasado);
+}
+.funil-chip[data-sit="hoje"] {
+  --d: var(--st-hoje);
+}
+.funil-chip[data-sit="proximo"] {
+  --d: var(--st-ok);
+}
+.funil-chip[data-sit="cliente"] {
+  --d: var(--st-cliente);
+}
+
+/* ───────────── o quadro do funil ───────────── */
+
+.funil {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(230px, 1fr);
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scroll-snap-type: x proximity;
+}
+.funil__coluna {
+  --c: var(--text-faint);
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-height: 240px;
+  padding: 12px;
+  border-radius: var(--radius-l);
+  background: var(--coluna);
+  box-shadow: inset 0 0 0 1px var(--line);
+  scroll-snap-align: start;
+}
+.funil__coluna[data-etapa="novo"] {
+  --c: var(--st-hoje);
+}
+.funil__coluna[data-etapa="conversa"] {
+  --c: var(--col-afazer);
+}
+.funil__coluna[data-etapa="orcamento"] {
+  --c: var(--acento);
+}
+.funil__coluna[data-etapa="negociando"] {
+  --c: var(--col-revisao);
+}
+.funil__coluna[data-etapa="ganho"] {
+  --c: var(--st-ok);
+}
+.funil__coluna[data-etapa="perdido"] {
+  --c: var(--st-atrasado);
+}
+.funil__topo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 4px 4px;
+}
+.funil__topo i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c);
+}
+.funil__topo h2 {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+.funil__n {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+.funil__soma {
+  margin-left: auto;
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: var(--text-mute);
+}
+.funil__coluna ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.funil__vazio {
+  margin: 0;
+  padding: 10px 4px;
+  color: var(--text-faint);
+}
+.funil-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px 12px 10px;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--card-sombra);
+  animation: hoje-entra 0.45s var(--spring) both;
+  animation-delay: calc(min(var(--i, 0), 8) * 35ms);
+}
+.funil-card__link {
+  display: grid;
+  gap: 2px;
+  color: var(--text-strong);
+  text-decoration: none;
+}
+.funil-card__link:hover .funil-card__nome {
+  text-decoration: underline;
+}
+.funil-card__nome {
+  font-weight: 650;
+  line-height: 1.25;
+}
+.funil-card__apoio {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+.funil-card__pe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.funil-card__pe b {
+  font-size: 0.86rem;
+  color: var(--text-strong);
+}
+.funil-mover {
+  margin-left: auto;
+}
+.funil-mover select {
+  max-width: 120px;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.78rem;
+  color: var(--text-mute);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  cursor: pointer;
+}
+
+/* ───────────── a ficha: etapa, retorno, contato feito ───────────── */
+
+.funil-etapa {
+  display: grid;
+  gap: 10px;
+}
+.funil-etapa__trilho {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.funil-etapa__trilho button {
+  --d: var(--text-faint);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-mute);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  cursor: pointer;
+}
+.funil-etapa__trilho button i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--d);
+}
+.funil-etapa__trilho button[data-etapa="novo"] {
+  --d: var(--st-hoje);
+}
+.funil-etapa__trilho button[data-etapa="conversa"] {
+  --d: var(--col-afazer);
+}
+.funil-etapa__trilho button[data-etapa="orcamento"] {
+  --d: var(--acento);
+}
+.funil-etapa__trilho button[data-etapa="negociando"] {
+  --d: var(--col-revisao);
+}
+.funil-etapa__trilho button[data-etapa="ganho"] {
+  --d: var(--st-ok);
+}
+.funil-etapa__trilho button[data-etapa="perdido"] {
+  --d: var(--st-atrasado);
+}
+.funil-etapa__trilho button[aria-pressed="true"] {
+  color: var(--text-strong);
+  background: color-mix(in srgb, var(--d) var(--chip-mix), var(--chip-base));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--d) 50%, transparent);
+  opacity: 1;
+}
+.funil-etapa__trilho button:disabled:not([aria-pressed="true"]) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.funil-perda,
+.funil-retorno__campos,
+.funil-feito form,
+.funil-valor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+}
+.funil-perda label,
+.funil-retorno label,
+.funil-feito label,
+.funil-valor label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-mute);
+}
+.funil-perda input,
+.funil-retorno input,
+.funil-feito input,
+.funil-valor input {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  color: var(--text-strong);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.funil-perda input {
+  flex: 1;
+  min-width: 180px;
+}
+.funil-retorno {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+.funil-retorno__nota {
+  flex: 1;
+  min-width: 160px;
+}
+.funil-retorno__nota input {
+  width: 100%;
+}
+.funil-feito {
+  margin-top: 10px;
+}
+.funil-feito summary {
+  list-style: none;
+  cursor: pointer;
+}
+.funil-feito summary::-webkit-details-marker {
+  display: none;
+}
+.funil-feito form {
+  margin-top: 10px;
+}
+.funil-valor {
+  margin-top: 12px;
+}
+.funil-historico {
+  display: grid;
+  gap: 6px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.86rem;
+}
+.funil-historico li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  color: var(--text);
+}
+.funil-historico .num {
+  color: var(--text-faint);
+}
+.funil-historico small {
+  color: var(--text-faint);
+}
+.aviso-ok--linha {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.84rem;
+}
+
+/* ───────────── Hoje: os painéis ───────────── */
+
+.hoje-paineis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.hoje-paineis[data-dinheiro] {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 0.95fr);
+}
+.hoje-paineis__col {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+.hoje-painel {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 16px 18px;
+  border-radius: var(--radius-l);
+  background: var(--painel);
+  box-shadow: var(--shadow-float);
+  animation: hoje-entra 0.5s var(--spring) both;
+}
+.hoje-painel__topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.hoje-painel__topo h2 {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+.hoje-painel__mais {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: var(--text-mute);
+}
+.hoje-painel__mais:hover {
+  background: var(--hover);
+}
+.hoje-lista {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hoje-lista > li + li {
+  border-top: 1px solid var(--line);
+}
+.hoje-painel .hoje-evento {
+  padding: 10px 4px;
+}
+.hoje-evento__miolo[data-tipo="entrega"]::before {
+  background: var(--st-ok);
+}
+.hoje-evento__miolo[data-tipo="reuniao"]::before {
+  background: var(--col-afazer);
+}
+.hoje-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 4px;
+  color: var(--text-strong);
+  text-decoration: none;
+  border-radius: 10px;
+}
+.hoje-item:hover {
+  background: var(--hover);
+}
+.hoje-item__ponto {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--col-fazendo);
+}
+.hoje-item__ponto[data-col="pauta"] {
+  background: var(--col-pauta);
+}
+.hoje-item__ponto[data-col="afazer"] {
+  background: var(--col-afazer);
+}
+.hoje-item__ponto[data-col="revisao"] {
+  background: var(--col-revisao);
+}
+.hoje-item__anel {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2.5px solid var(--acento);
+  border-right-color: color-mix(in srgb, var(--acento) 25%, transparent);
+}
+.hoje-item__miolo,
+.hoje-retorno__miolo {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.hoje-item__miolo b,
+.hoje-retorno__miolo b {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hoje-item__miolo small,
+.hoje-retorno__miolo small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.82rem;
+  color: var(--text-faint);
+}
+.hoje-retorno {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 10px 4px;
+}
+.hoje-retorno__miolo {
+  color: var(--text-strong);
+  text-decoration: none;
+}
+.hoje-retorno__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+}
+.hoje-retorno__acoes .acao-form {
+  display: inline-flex;
+}
+
+/* Caixa da semana */
+.hoje-caixa {
+  min-height: 100%;
+  grid-template-rows: auto auto auto 1fr;
+}
+.hoje-caixa__n {
+  font-family: var(--font-apple);
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  color: var(--text-strong);
+}
+.hoje-caixa__legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--text-mute);
+}
+.hoje-caixa__legenda span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.hoje-caixa__legenda i {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+[data-serie="entrada"] i,
+.hoje-caixa__barras [data-serie="entrada"] {
+  background: var(--g-entra);
+}
+[data-serie="saida"] i,
+.hoje-caixa__barras [data-serie="saida"] {
+  background: var(--g-sai);
+}
+.hoje-caixa__grafico {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  align-items: end;
+  gap: 6px;
+  min-height: 180px;
+  margin: 12px 0 0;
+  padding-top: 8px;
+}
+.hoje-caixa__dia {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  height: 100%;
+  min-height: 170px;
+  gap: 6px;
+}
+.hoje-caixa__barras {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  border-bottom: 1px solid var(--line-strong);
+}
+.hoje-caixa__barras span {
+  width: min(14px, 40%);
+  border-radius: 4px 4px 1px 1px;
+  transition: height 0.6s var(--spring);
+}
+.hoje-caixa__rotulo {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+.hoje-caixa__dia[data-hoje] .hoje-caixa__rotulo {
+  font-weight: 800;
+  color: var(--text-strong);
+}
+
+@media (max-width: 1080px) {
+  .hoje-paineis,
+  .hoje-paineis[data-dinheiro] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hoje-paineis[data-dinheiro] > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 720px) {
+  .hoje-paineis,
+  .hoje-paineis[data-dinheiro] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hoje-caixa__grafico {
+    min-height: 140px;
+  }
+  .hoje-caixa__dia {
+    min-height: 130px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hoje-painel,
+  .funil-card {
+    animation: none;
+  }
+  .hoje-caixa__barras span {
+    transition: none;
+  }
+}
