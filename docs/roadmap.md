@@ -329,8 +329,28 @@ Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   "Aprovar esta"/"Pedir ajuste nesta", "Revisar e enviar" com nome e aceite, selo do aprovado, tela neutra). A
   demonstração ganhou aprovações (vídeos sintéticos em `public/demo`, comentários, decisões e link ativo; completa
   demonstrações antigas uma vez). Página inicial: Aprovação em "Já funciona" com captura real.
+- ✅ Maestro v2, a produtora por dentro (plano v2 §6–§7, 28/10/2026): o `/painel` do ZRO portado para o Maestro, com
+  `org_id` + RLS em toda tabela (helper `maestro.politicas_padrao`) e papéis da sessão. Migrations `0006_orcamentos`
+  (tabela de preços com faixas por quantidade, multiplicadores por nicho, modelos; orçamentos numerados com versões,
+  um aprovado por número), `0007_freelas_agenda` (freelas, valores por função, `freela_pagamento` com CPF/PIX
+  cifrados com `MAESTRO_KEY` e lidos só por admin e gestão, diárias, escalas), `0008_financeiro` (lançamentos, baixas
+  por gatilho, recorrências; escala vira "a pagar" sozinha; Financeiro só admin e gestão), `0009_inventario`
+  (equipamentos, veículos com km/L, reservas com conflito barrado no banco: gatilho com trava e, havendo `btree_gist`,
+  `exclude`) e `0010_documentos` (checklist, ordem do dia, roteiro, decupagem). Telas: Orçamentos (editor com motor
+  puro igual ao do ZRO, margem, parcelas, deslocamento por km com cidade-base da organização, timbrado A4 com
+  "Imprimir ou salvar PDF"; aprovar cria o projeto e as entradas), Financeiro (lançamentos, a pagar/a receber, baixas,
+  recorrências, fluxo e resultado com gráfico e tabela acessível; sem DAS/ISS), Freelas, Inventário, Agenda (equipe,
+  equipamento e aviso de conflito), documentos no projeto, Ajustes › Empresa e Tabela de preços. Navegação em grupos
+  (Produção, Comercial, Operação, Dinheiro) e aba Mais no iPhone. Demonstração completa (preços, 8 orçamentos em
+  estados diferentes, finanças de 3 meses atrás a 2 à frente, 16 freelas, 35 equipamentos com reservas, agenda,
+  documentos), idempotente e removível. Página inicial: "A produtora por dentro" em "Já funciona". Serviços abertos da
+  calculadora (Photon/OSRM/ANP) portados mas desligados (`MAESTRO_SERVICOS_ABERTOS`) até a ciência do titular; sem
+  eles, km e litro digitados. Carro do Freela: só o mapa
+  ([maestro-carro-do-freela.md](integration-contracts/maestro-carro-do-freela.md)).
+- ⬜ Maestro v2, depois da produtora por dentro: tela "Hoje", aceite do orçamento por link público, kits e modelos de
+  projeto, etiquetas QR e manutenções do inventário, PDF gerado no servidor (hoje é a impressão do navegador).
 - ⬜ Maestro v2, fase 7 em diante (plano): ponte com o SOBEDESCE (Drive com permissão temporária e stream da equipe),
-  marca da produtora nas páginas do cliente, orçamentos, financeiro, inventário, freelas. Pendente do titular: criar a
+  marca da produtora nas páginas do cliente. Pendente do titular: ciência dos serviços abertos da calculadora; criar a
   chave de API do Google só do Maestro (restrita à Drive API e a `maestro.absolutezro.com`) e pôr em
   `MAESTRO_GOOGLE_API_KEY` na Vercel.
 

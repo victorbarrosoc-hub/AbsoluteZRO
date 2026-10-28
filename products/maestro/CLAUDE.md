@@ -61,12 +61,29 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   `MAESTRO_GOOGLE_API_KEY` (opcional, do titular) faz o Drive tocar num `<video>`; sem ela, iframe. CSP de `/a` e
   `/app/aprovacoes` em `next.config.ts` (abra host novo só lá). A demonstração usa os vídeos sintéticos
   `public/demo/*.mp4` (únicas URLs relativas aceitas, e só em card `demo-`).
+- **A produtora por dentro** (plano v2 §6–§7, o `/painel` do ZRO portado; migrations `0006`–`0010`): toda tabela tem
+  `org_id` e RLS pelo helper `maestro.politicas_padrao(tabela, escrita, remocao, leitura)`; chaves compostas
+  `(org_id, id)` impedem apontar para a linha de outra organização. **Orçamentos** (`src/lib/orcamento`): `motor.ts` é
+  puro e faz as mesmas contas do `quoteTotals` do ZRO (não mude sem o teste); tabela de preços com faixas e
+  multiplicadores por nicho, modelos com fórmula estruturada (nada de `eval`); só rascunho edita; aprovar cria projeto
+  e entradas uma vez. Timbrado = página com CSS de impressão (`.imprimivel`, A4), sem custo nem margem; o PDF é o
+  "salvar PDF" do navegador. Deslocamento: contas em `deslocamento.ts`; Photon/OSRM/ANP em `servicos.ts` **desligados**
+  até a ciência do titular (`MAESTRO_SERVICOS_ABERTOS=1` liga); a tela sempre aceita km e litro digitados.
+  **Financeiro** (`src/lib/financeiro`) só admin e gestão (`podeVerDinheiro`), também no banco; baixas recalculam o
+  pago por gatilho; recorrência gera o mês uma vez; a escala vira "a pagar" pelo gatilho `escala_sincronizar`. Sem
+  DAS/ISS. **Freelas**: CPF e PIX só em `freela_pagamento`, cifrados com `selar()` (`MAESTRO_KEY`, contexto
+  `freela_pagamento:<org>:<freela>:<campo>`), lidos só por admin e gestão; nunca em lista, log ou demonstração real.
+  **Inventário**: reserva em conflito é barrada no banco (gatilho com trava, erro 23P01, e `exclude` com `btree_gist`
+  quando existe). **Agenda** e documentos do projeto (checklist, ordem do dia, roteiro, decupagem). Navegação em
+  `src/lib/navegacao.ts` (módulo sem "use client": o servidor também lê). Carro do Freela: só o mapa em
+  `docs/integration-contracts/maestro-carro-do-freela.md`. A demonstração (`src/lib/demo/operacao.ts`) cobre tudo isso
+  com `demo = true` e PIX aleatório; completa, nunca duplica.
 - **Página inicial** (`src/app/page.tsx`, `inicio.css`, plano v2 §10, ADR 0024): pública, só o que existe, "Em breve"
   para o resto, capturas reais da demonstração em `public/produto/*-{claro,escuro}.webp` (refazer com
   `npm run db:seed:demo` quando a tela mudar; nunca mock). "Quero acesso" grava na lista de espera
   (`drizzle/0004`, `src/lib/lista-espera.ts`): `maestro_app` não tem privilégio na tabela, só a função
   `maestro.lista_espera_entrar()`; armadilha, 5/h por IP e consentimento obrigatório. A lista não libera ninguém.
-- **Visual** (plano v2 §9): navegação em `src/components/nav.tsx` (grupos só com tela de verdade); o latão (`--acento`)
+- **Visual** (plano v2 §9): navegação em `src/components/nav.tsx` com os dados em `src/lib/navegacao.ts` (grupos só com tela de verdade); o latão (`--acento`)
   é superfície, traço e ícone, nunca texto; cada coluna do Quadro tem a cor dela (`--col-*`, `data-col`); motion só
   em CSS e sempre desligado em `prefers-reduced-motion`.
 - Repositório público: nada de `.env`, chave, dado pessoal ou mídia dos repositórios antigos. Semente só `demo-` (`db:seed:demo` usa a mesma demonstração).
@@ -86,6 +103,10 @@ Cobertura mínima que não pode cair: isolamento RLS com duas organizações (`r
 (`zro.test.mts`), repasse da Z (`ia.test.mts`), `temAcesso` e papéis (`acesso.test.mts`), Quadro com conflito por campo (`quadro.test.mts`), clientes e projetos com
 isolamento e papel de leitura (`crm.test.mts`), demonstração idempotente que remove só o que é `demo` (`demo.test.mts`),
 lista de espera com RLS, limite e armadilha (`lista-espera.test.mts`), detector de fontes e tempo (`fontes.test.mts`),
-revisão com duas organizações, porta estreita, PIN, limites e decisão idempotente (`revisao.test.mts`). E2E:
-`npm run build && npm run test:e2e` (Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir
-movimento, navegação e a aprovação inteira (`aprovacao.spec.ts`, mp4 local e YouTube/Vimeo falsos em `e2e/falsos`).
+revisão com duas organizações, porta estreita, PIN, limites e decisão idempotente (`revisao.test.mts`), motor e fluxo
+do orçamento (`orcamento.test.mts`), deslocamento e ANP (`deslocamento.test.mts`), financeiro com baixas, recorrência e
+escala (`financeiro.test.mts`), freelas, pagamento cifrado, reservas sem conflito e documentos (`operacao.test.mts`),
+duas organizações em toda tabela da produtora (`produtora-rls.test.mts`). E2E: `npm run build && npm run test:e2e`
+(Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir movimento, navegação, a aprovação
+inteira (`aprovacao.spec.ts`, mp4 local e YouTube/Vimeo falsos em `e2e/falsos`) e a produtora com a demonstração
+(`produtora.spec.ts`, organização própria criada em `e2e/preparar.ts`).

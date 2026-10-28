@@ -357,6 +357,35 @@
   box-shadow: var(--gbi-shadow);
 }
 
+/* a produtora por dentro: os módulos como forma, a dica fica no title */
+.icartao--produtora {
+  grid-column: 1 / -1;
+}
+.iproduto {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.iproduto li {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 18px 8px;
+  border-radius: 22px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-family: var(--font-apple);
+  font-weight: 700;
+  color: var(--text-strong);
+  text-align: center;
+}
+.iproduto li svg {
+  color: var(--acento);
+}
+
 /* vem aí */
 .ivem {
   display: grid;
@@ -556,6 +585,9 @@
   }
   .icartao--z {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .iproduto {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .espera__campos {
     grid-template-columns: minmax(0, 1fr);

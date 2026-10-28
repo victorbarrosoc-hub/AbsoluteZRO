@@ -15,6 +15,30 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Maestro v2: a produtora por dentro (28/10/2026)
+
+- `products/maestro`: `lint`, `format:check`, `typecheck` ok; `npm test` **199/199** (Postgres 16 local, migrations
+  0000–0010). Novos: `orcamento.test.mts` (motor: totais iguais ao `quoteTotals` do ZRO, desconto, margem e saúde,
+  faixas por quantidade, multiplicador por nicho, parcelas; numeração, versão nova, só rascunho edita, aprovar cria
+  projeto e entradas uma vez), `deslocamento.test.mts` (rodagem, litros e custo de ida e volta com pedágio, linha
+  do orçamento, leitura das respostas do Photon e do OSRM, planilha da ANP num xlsx de teste aberta pelo zip do Node,
+  zip estragado recusado), `financeiro.test.mts` (somas de a
+  pagar/a receber, baixa parcial e total pelo gatilho, desfazer, fluxo e resultado por mês, recorrência gerada uma vez
+  por mês, escala vira lançamento e acompanha mudança e remoção), `operacao.test.mts` (reserva dupla barrada no banco,
+  também com dois pedidos ao mesmo tempo; vizinha, cancelada e outro item passam; saída e retorno; freela: valores,
+  CPF/PIX conferidos e cifrados; escala na diária com aviso de conflito; ordem do dia e checklist) e
+  `produtora-rls.test.mts` (duas organizações em todas as tabelas novas: a B não lê nem escreve na A, `org_id`
+  forjado recusado; leitura e equipe sem Financeiro; CPF/PIX só admin e gestão, no banco só cifrados, outra org não
+  abre). `demo.test.mts`: a demonstração preenche todos os painéis, recarregar só completa (idempotente), remover tira
+  tudo o que é demo e mais nada. `npm run build` ok.
+- `npm run test:e2e` **29/29 + 1 pulado** (o editor do orçamento só no computador). Novo `e2e/produtora.spec.ts`:
+  carrega a demonstração pela tela de Ajustes, cada painel cheio, sem erro e sem rolagem de lado (computador e iPhone),
+  timbrado com total e sem custo/margem, deslocamento digitado (100 km, 10 km/L, R$ 6,00 → R$ 120,00) entra no total e
+  salva, conflito de escala na agenda. Navegação em grupos e aba Mais conferidas em `inicio.spec.ts`.
+- Capturas (claro e escuro a 1440 px, claro no iPhone) de cada painel novo com a demonstração conferidas à mão.
+- Não validado: Photon, OSRM e ANP de verdade (desligados até a ciência do titular; o parser da ANP só com planilha
+  de teste), `btree_gist` no Supabase (sem ele vale só o gatilho, que também barra), PDF fora do Chromium.
+
 ## Maestro v2, fases 3–6: aprovação do cliente com vídeo por link (28/10/2026)
 
 - `products/maestro`: `lint`, `format:check`, `typecheck` ok; `npm test` **149/149** (Postgres 16 local). Novos:

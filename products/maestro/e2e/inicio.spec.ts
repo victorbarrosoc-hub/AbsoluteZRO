@@ -28,10 +28,12 @@ test.describe("página inicial", () => {
       await img.scrollIntoViewIfNeeded();
       await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
     }
-    // Só o que existe: a aprovação já funciona (com a captura real); orçamento e financeiro seguem "Em breve".
+    // Só o que existe: aprovação e a produtora por dentro já funcionam; "Hoje" segue "Em breve".
     await expect(page.locator(".ija h3", { hasText: "Aprovação do cliente" })).toBeVisible();
     await expect(page.locator(".ivem li", { hasText: "Aprovação do cliente" })).toHaveCount(0);
-    await expect(page.locator(".ivem li", { hasText: "Orçamentos" }).getByText("Em breve")).toBeVisible();
+    await expect(page.locator(".iproduto li", { hasText: "Orçamentos" })).toBeVisible();
+    await expect(page.locator(".ivem li", { hasText: "Orçamentos" })).toHaveCount(0);
+    await expect(page.locator(".ivem li", { hasText: "Hoje" }).getByText("Em breve")).toBeVisible();
     await expect(page.locator('a[href="mailto:contato@absolutezro.com"]')).toBeVisible();
     // Sem rolagem de lado.
     const sobra = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -106,12 +108,29 @@ test.describe("navegação do app", () => {
     await expect(nav).toHaveCount(1);
     const links = nav.getByRole("link");
     await expect(links.first()).toHaveAttribute("href", "/app/z");
-    await expect(nav.getByRole("link", { name: /Clientes/ })).toHaveAttribute("aria-current", "page");
     const hrefs = await links.evaluateAll((as) => as.map((a) => a.getAttribute("href")));
-    expect(hrefs).toEqual(["/app/z", "/app/quadro", "/app/aprovacoes", "/app/projetos", "/app/clientes", "/app/ajustes"]);
     if (info.project.name === "computador") {
-      await expect(nav.getByRole("group", { name: "Produção" })).toBeVisible();
-      await expect(nav.getByRole("group", { name: "Comercial" })).toBeVisible();
+      await expect(nav.getByRole("link", { name: /Clientes/ })).toHaveAttribute("aria-current", "page");
+      expect(hrefs).toEqual([
+        "/app/z",
+        "/app/quadro",
+        "/app/aprovacoes",
+        "/app/projetos",
+        "/app/agenda",
+        "/app/clientes",
+        "/app/orcamentos",
+        "/app/freelas",
+        "/app/inventario",
+        "/app/financeiro",
+        "/app/ajustes",
+      ]);
+      for (const g of ["Produção", "Comercial", "Operação", "Dinheiro"]) await expect(nav.getByRole("group", { name: g })).toBeVisible();
+    } else {
+      // Celular: o dia a dia na barra; Clientes está em "Mais", que fica marcado.
+      expect(hrefs).toEqual(["/app/z", "/app/quadro", "/app/aprovacoes", "/app/agenda", "/app/mais"]);
+      await expect(nav.getByRole("link", { name: /Mais/ })).toHaveAttribute("aria-current", "page");
+      await nav.getByRole("link", { name: /Mais/ }).click();
+      await expect(page.getByRole("link", { name: "Financeiro" })).toBeVisible();
     }
   });
 });

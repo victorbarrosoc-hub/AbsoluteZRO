@@ -26,10 +26,19 @@ const JA: { icone: NomeIcone; nome: string; linha: string }[] = [
   { icone: "z", nome: "Z", linha: "A IA da Absolute ZRO em toda tela." },
 ];
 
+/** A produtora por dentro (plano v2 §6–§7): cada item só entra aqui quando a tela existe no app. */
+const PRODUTORA: { icone: NomeIcone; nome: string; dica: string }[] = [
+  { icone: "orcamento", nome: "Orçamentos", dica: "Tabela de preços, versões e timbrado em PDF" },
+  { icone: "dinheiro", nome: "Financeiro", dica: "A pagar, a receber, fluxo e resultado" },
+  { icone: "freelas", nome: "Freelas", dica: "Banco de freelas, escala e pagamentos" },
+  { icone: "inventario", nome: "Inventário", dica: "Equipamento e reservas sem conflito" },
+  { icone: "agenda", nome: "Agenda", dica: "Diárias, equipe e ordem do dia" },
+];
+
 /** O que vem aí, com o selo "Em breve". Só troca de estado quando a fase dele entrar no ar. */
 const CHEGANDO: { icone: NomeIcone; nome: string }[] = [
-  { icone: "orcamento", nome: "Orçamentos" },
-  { icone: "dinheiro", nome: "Financeiro" },
+  { icone: "alvo", nome: "Hoje" },
+  { icone: "check", nome: "Aceite do orçamento" },
 ];
 
 /** Cada palavra do título sobe na sua vez (CSS; o espaço fica fora do bloco). */
@@ -85,7 +94,7 @@ export default async function Inicio() {
             <span className="ihero__fino">{palavras("A produtora", 0)}</span> <strong>{palavras("inteira", 2)}</strong>{" "}
             <span className="ihero__fino">{palavras("num lugar só.", 3)}</span>
           </h1>
-          <p className="apoio ihero__apoio">Pauta, aprovação do cliente e projetos da sua equipe, com a sua conta Absolute ZRO.</p>
+          <p className="apoio ihero__apoio">Pauta, aprovação, orçamento e financeiro da sua equipe, com a sua conta Absolute ZRO.</p>
           <div className="acoes acoes--centro ihero__acoes">
             {dentro ? null : (
               <a className="glass-btn glass-btn--ink" href="#acesso">
@@ -147,6 +156,20 @@ export default async function Inicio() {
                 <p>{JA[2].linha}</p>
               </div>
               <IPhone tela={{ nome: "projetos", alt: "Projetos no iPhone" }} />
+            </article>
+            <article className="icartao icartao--produtora revela">
+              <div className="icartao__texto">
+                <h3>A produtora por dentro.</h3>
+                <p>Do orçamento ao pagamento do freela, no mesmo lugar.</p>
+              </div>
+              <ul className="iproduto" aria-label="A produtora por dentro">
+                {PRODUTORA.map((p) => (
+                  <li key={p.nome} title={p.dica}>
+                    <Icone nome={p.icone} size={22} />
+                    <span>{p.nome}</span>
+                  </li>
+                ))}
+              </ul>
             </article>
             <article className="icartao icartao--z revela">
               <span className="icartao__z" aria-hidden="true">
