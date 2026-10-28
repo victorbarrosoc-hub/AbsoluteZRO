@@ -39,3 +39,8 @@ export function podeEscrever(papel: Papel): boolean {
 export function podeRemover(papel: Papel): boolean {
   return papel === "admin" || papel === "gestor";
 }
+
+/** Quem vê e mexe no Financeiro, na tabela de preços e nos dados de pagamento dos freelas: administração e gestão. */
+export function podeVerDinheiro(papel: Papel): boolean {
+  return papel === "admin" || papel === "gestor";
+}
