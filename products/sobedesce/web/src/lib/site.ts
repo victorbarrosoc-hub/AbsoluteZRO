@@ -57,7 +57,7 @@ export const SITE_NOME = "SOBEDESCE";
 
 export const SITE_URL = siteUrl();
 
-export const CONTATO_EMAIL = "contato@dissesim.com.br";
+export const CONTATO_EMAIL = "contato@absolutezro.com";
 
 /** Data da última revisão da Política de Privacidade e dos Termos. */
 export const LEGAL_ATUALIZADO_EM = "17 de outubro de 2026";
