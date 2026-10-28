@@ -74,7 +74,7 @@ export async function confirmEmailChangeAction(_: FormState, fd: FormData): Prom
     await mail.send({
       to: r.oldEmail,
       subject: 'O e-mail da sua conta Absolute ZRO mudou',
-      text: `A sua conta agora entra com ${r.email}. Se não foi você, fale com o suporte: zro.contato@gmail.com`,
+      text: `A sua conta agora entra com ${r.email}. Se não foi você, fale com o suporte: contato@absolutezro.com`,
     })
     return { ok: `Pronto. Sua conta agora usa ${r.email}.` }
   } catch (e) {

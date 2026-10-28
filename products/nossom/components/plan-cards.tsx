@@ -131,7 +131,7 @@ export default function PlanCards({
       return (
         <a
           className="button primary"
-          href={`mailto:victorbarrosoc@gmail.com?subject=${encodeURIComponent('Ativação NOSSOM · ' + plan.name)}`}
+          href={`mailto:contato@absolutezro.com?subject=${encodeURIComponent('Ativação NOSSOM · ' + plan.name)}`}
         >
           Solicitar ativação <ArrowUpRight size={16} />
         </a>
