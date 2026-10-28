@@ -18,6 +18,8 @@
 | `zro-pedido+jwt` (Drive da Z)   | v1 ([sobedesce-drive.md](sobedesce-drive.md))                      | HUB → SOBEDESCE                                            |
 | `maestro.project`               | v1 (rascunho, [maestro-project.md](maestro-project.md))            | Maestro → HUB (etapa 3); peças via SOBEDESCE (etapa 2)     |
 | `maestro.escala`                | só mapa ([maestro-carro-do-freela.md](maestro-carro-do-freela.md)) | Maestro → Carro do Freela (não implementado)               |
+| `zro-pedido+jwt` (resumo da Z)  | v1, pronto e desligado ([maestro-z.md](maestro-z.md))              | HUB → Maestro                                              |
+| `maestro.agenda` (.ics)         | RFC 5545 ([maestro-z.md](maestro-z.md))                            | Maestro → calendário da pessoa                             |
 
 Regras: payload mínimo (IDs e resumos, sem mídia nem dados pessoais), `idempotency_key` obrigatória, mudança
 incompatível = nova versão.

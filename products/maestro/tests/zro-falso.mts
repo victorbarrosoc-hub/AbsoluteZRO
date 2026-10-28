@@ -241,6 +241,15 @@ export async function iniciarZroFalsa(cliente: { clientId: string; clientSecret:
     url: base,
     estado,
     contas,
+    /** Um pedido servidor-a-servidor como o `assinarPedidoDeApp` do HUB (typ zro-pedido+jwt, 60 s). */
+    assinarPedido: (p: { sub: string; aud: string; acao: string; jti?: string; vida?: number; iss?: string }, errado = false) => {
+      const iat = Math.floor(Date.now() / 1000);
+      return jwt(
+        { iss: p.iss ?? base, sub: p.sub, aud: p.aud, iat, exp: iat + (p.vida ?? 60), jti: p.jti ?? randomBytes(12).toString("hex"), zro_pedido: p.acao },
+        errado,
+        "zro-pedido+jwt",
+      );
+    },
     fechar: () => new Promise<void>((ok) => server.close(() => ok())),
   };
 }
