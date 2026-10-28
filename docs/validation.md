@@ -1371,3 +1371,35 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   arquivo de 2,1 GB pede a confirmação; sem acesso mostra o aviso e fica na raiz; Doc do Google avisa que não baixa;
   o `#` some em todos. Não validado: Drive e conta reais; iPhone de verdade (o app instalado recebendo o link com
   ele aberto).
+
+## Maestro: Etapa 0, fundação (28/10/2026)
+
+- Plataforma nova em `products/maestro` ([ADR 0022](decisions/0022-maestro-no-monorepo.md)): shell, login único,
+  schema `maestro` com RLS, repasse da Z. Nada publicado; nenhum dado dos repositórios antigos.
+- Produto: `npm run lint`, `format:check`, `typecheck`, `npm test` **47/47** em 4 arquivos (`node --test`, Postgres
+  16 local, bancos `maestro_test_*`, Absolute ZRO falsa): `rls.test.mts` (RLS em toda tabela; dona vê a sua
+  organização em 13 tabelas; organização forjada não lê nada em nenhuma; a mesma pessoa vê só a ativa; `org_id`
+  trocado recusado; leitura não escreve; sessões e tentativas sem privilégio; papel só pelo login; só admin muda a
+  organização; auditoria assinada e só inclusão; cards só por função, conflito por campo, lápide, outra organização
+  inalcançável; decisões imutáveis e idempotentes; um link ativo por lote com 30 dias), `zro.test.mts` (entra e vira
+  membro admin, Criar conta com `prompt=create`, papel reaplicado a cada login, sem organização, volta para fora
+  recusada, recusa na Absolute ZRO, `invalid_scope` refaz com os básicos, state/nonce/aud/emissor/assinatura/cookie
+  adulterados recusados, sem acesso cai em `/sem-acesso` e o `/eu` relê os produtos nos dois sentidos, perfil único,
+  renovação do token, renovação recusada encerra a sessão, Absolute ZRO fora do ar mantém a última cópia, sair revoga
+  na Absolute ZRO, POST de outra origem recusado, sessão forjada e vencida negadas), `ia.test.mts` (só os caminhos do
+  painel, Bearer da sessão sem vazar o token, NDJSON em streaming antes do fim, 401/404/403/415, 403 sem acesso,
+  login básico pede reconectar, renovação antes de repassar, recusa esquece os tokens, 502 sem derrubar a sessão) e
+  `acesso.test.mts` (`temAcesso` com e sem a claim `zro_release`, tabela fixa de papéis); `npm run build` ok.
+- Raiz, depois das mudanças no HUB (`ProductId`, `PRODUCT_SCOPES`, `plataformas.ts`, `0019_maestro.sql`, ícone;
+  `ia-plataformas.test.ts` passa a ler os produtos de todas as migrations): `npm run lint` 0 problemas,
+  `format:check` ok, `typecheck` ok, `npm test` **177/177** em 23 arquivos (Postgres local, banco `zro_maestro_test`,
+  com a 0019 aplicada: `openapi`, `schemas`, `findEventCycle`, RLS do `zro` e o plano grátis com 7 apps seguem iguais),
+  `next build --webpack` do hub-web ok (o `node_modules` do worktree é um link e o Turbopack recusa);
+  `contracts:export` não mudou nenhum schema publicado; `scan-secrets`: nenhum segredo em 2.291 arquivos.
+- Telas Playwright (Chromium 1.63; 1440 e 390 px, claro e escuro; 28 imagens): página inicial, `/entrar`, shell com
+  a aba Z (o `<zro-ia>` publicado em absolutezro.com carregou e falou com a Absolute ZRO falsa pelo repasse), Quadro
+  com as 8 colunas vazias, Aprovações (estado vazio), Ajustes e "sem acesso", contra a Absolute ZRO falsa e um
+  Postgres local, com o build de produção (`next start`).
+- Não validado: Absolute ZRO de verdade (cliente `maestro-web` não existe), o `<zro-ia>` publicado respondendo pelo
+  repasse em produção, Supabase (o papel `maestro_app` precisa ser criado pelo `postgres` antes da primeira migração
+  e o login do pool ser o dono do schema `maestro`), projeto Vercel e domínio.

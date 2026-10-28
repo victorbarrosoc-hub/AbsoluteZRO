@@ -29,7 +29,7 @@ export const OIDC_SCOPES = ['openid', 'email', 'profile', 'org', 'offline_access
  * Escopos de API de um produto: o app chama a API do HUB em nome da pessoa (Bearer). Só entram no cadastro do
  * cliente daquele produto, e a rota exige o escopo; organização e papel continuam vindo do banco (authorize).
  */
-export const PRODUCT_SCOPES: Record<string, string[]> = { 'carro-do-freela': ['carro-do-freela.jobs'] }
+export const PRODUCT_SCOPES: Record<string, string[]> = { 'carro-do-freela': ['carro-do-freela.jobs'], maestro: ['maestro.projects'] }
 /** Escopos de todo app da família (cliente com produto): a IA do ecossistema (0016). */
 export const FAMILY_SCOPES = ['zro.ia'] as const
 export const CODE_TTL_MS = 60_000

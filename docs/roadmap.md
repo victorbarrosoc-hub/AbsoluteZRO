@@ -204,6 +204,29 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   descontar. Quando houver, falta rota no HUB para produto debitar e a Revela guardar o token de acesso.
 - ⬜ Revela: compra única (Revela Look + LUTs CST) só depois de validar o Look no Resolve.
 
+## Maestro — plataforma nova (28/10/2026, [ADR 0022](decisions/0022-maestro-no-monorepo.md))
+
+- ✅ Etapa 0, fundação: `products/maestro` (Next 16 + Drizzle, `package.json` próprio, `vercel.json` com deploy
+  travado), shell com a logo do Maestro e o símbolo Absolute ZRO, abas Z · Quadro · Aprovações · Clientes · Projetos ·
+  Ajustes (as não feitas em estado vazio honesto), página inicial "Em desenvolvimento", tema claro/escuro.
+- ✅ Banco: `drizzle/0000_fundacao.sql` no schema `maestro` (organizations, members, sessions, clients, projects com
+  `zro_project_id`/`link_status`, cards com jsonb por campo e `versao`, card_history, card_media para o Drive, lotes,
+  lote_cards, approval_links com hash/validade/PIN/revogação, approvals imutável, client_requests, integration_state,
+  audit_log, rate_limit_attempts), papel `maestro_app`, RLS por organização em todas as tabelas com `with check`,
+  escrita de cards só por função, migrador de schema não-`public`, semente `demo-` opcional.
+- ✅ Login único `api/zro/{entrar,callback,eu,sair}` (PKCE S256, `state`/`nonce` selados, JWKS, `prompt=create`),
+  sessão própria com tokens cifrados, organização e membro criados no callback com o papel por tabela fixa,
+  `temAcesso()` num lugar só (com o encaixe da claim `zro_release` do gate), tela "sem acesso", repasse da Z
+  (`api/zro/ia/*`, NDJSON sem buffer) e a aba Z como primeira.
+- ✅ HUB: `maestro` em `ProductId` e `PRODUCT_SCOPES`, entrada da Z em `plataformas.ts`, migration `0019_maestro.sql`
+  (`coming_soon`, `step_order` 8, feature `project_link`), ícone do produto. Planos não mudam (avulso).
+- ⬜ Etapa 1: Quadro (colunas, Por prazo, Minha lista, ficha por campo, lixeira), clientes com "quem aprova", projetos.
+- ⬜ Etapa 2: aprovação do cliente (`/aprovar/<token>`, um passo, pinos, conferência, idempotência), peças no Drive
+  via SOBEDESCE (proposta em [maestro-project.md](integration-contracts/maestro-project.md)), `wa.me`.
+- ⬜ Etapa 3: `maestro.project/1`, vínculo automático ao criar, chips de status, ferramentas da Z, balões.
+- ⛔ Projeto Vercel `maestro`, domínio `maestro.absolutezro.com`, cliente OIDC `maestro-web` e migrações em produção:
+  autorização do titular.
+
 ## Fase 6 — Escala
 
 - ⬜ Observabilidade em produção (drain de logs, métricas da fila, alertas), backups e retenção definidos.

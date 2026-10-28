@@ -1,13 +1,16 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { guiaDasPlataformas, PLATAFORMAS } from '../../apps/hub-web/lib/ia/plataformas'
 
 describe('Z: o que cada plataforma faz', () => {
   it('cobre todos os produtos do catálogo, com ids que existem', () => {
-    const catalogo = readFileSync(new URL('../../infra/migrations/0003_catalog.sql', import.meta.url), 'utf8')
-    const ids = [...catalogo.matchAll(/^\s+\('([a-z-]+)', '[^']+', '(?:beta|active|coming_soon)'/gm)].map((m) => m[1])
+    // Todo produto inserido em zro.products por alguma migration (0003 e as seguintes, como a 0019 do Maestro).
+    const pasta = new URL('../../infra/migrations/', import.meta.url)
+    const ids = readdirSync(pasta)
+      .filter((f) => f.endsWith('.sql'))
+      .flatMap((f) => [...readFileSync(new URL(f, pasta), 'utf8').matchAll(/^\s+\('([a-z-]+)', '[^']+', '(?:beta|active|coming_soon)'/gm)].map((m) => m[1]))
     expect(ids.length).toBeGreaterThan(5)
-    expect(Object.keys(PLATAFORMAS).sort()).toEqual([...ids].sort())
+    expect(Object.keys(PLATAFORMAS).sort()).toEqual([...new Set(ids)].sort())
   })
 
   it('na Revela, aponta o Clonar LUT e o Meus looks para chegar na cor de um pacote', () => {
