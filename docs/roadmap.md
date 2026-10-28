@@ -333,6 +333,15 @@ Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   selo nos fechados; Maestro em "Conheça de perto" com o ícone (ainda sem foto); `/inicio` só fala de job com o Carro
   aberto; links "Ciclo do O" e "Ferramentas" do menu e do rodapé apontam para seções que existem. Foto dos aparelhos
   (`produto-hub-*`) refeita no HUB local com conta neutra (`scripts/marca/aparelhos/capturar-hub.ts`).
+- ✅ **Apps de celular e computador iguais ao web** (28/10/2026): SOBEDESCE (computador `public/` e celular
+  `web/public/app`, app 2.8.51 / `sobedesce-app-v66`), Synquei (`app/`, `synquei-v22`) e TPeasy (`app/`,
+  `tpeasy-v19`) sem NOSSOM, Revela e Carro do Freela na lista da família; o SOBEDESCE chama a entrada de "conta
+  Absolute ZRO" nos dois apps. Falta o titular autorizar os instaladores novos do SOBEDESCE e do Synquei.
+- ✅ **SOBEDESCE no Windows: bandeja e barra lateral** (28/10/2026, pedido de cliente): minimizar manda para a bandeja
+  (padrão no Windows, ajuste "Minimizar para a bandeja" em Ajustes → Aparência), menu da bandeja com "Abrir SOBEDESCE",
+  quantas transferências andam e "Sair"; fechar no X com transferência andando vai para a bandeja. Barra lateral cabe
+  em 1280×720 com 125% sem rolagem: aviso de versão vira pílula com balão, a família vira uma linha com balão. Falta o
+  titular autorizar o instalador novo.
 - ⬜ Pastas dos quatro produtos fechados (`RELEASE=closed`, telas, `/api/zro/*` com 403, instaladores e Releases) —
   outros agentes, no mesmo branch.
 - ⛔ Em produção, só com autorização: inserir a conta do proprietário em `product_release_access` e rodar o

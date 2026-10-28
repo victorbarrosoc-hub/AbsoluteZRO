@@ -12,6 +12,7 @@
 //                         esse diretório como se fosse a raiz "/" do computador (bom para screenshots)
 //   STUB_PLATFORM=darwin  plataforma informada à interface (darwin | win32 | linux)
 //   STUB_VERSAO=42        aviso de versão nova: o site tem o build 42 e este app é o anterior (sem: build 0, sem aviso)
+//   STUB_VERSAO_PRONTA=1  com STUB_DESKTOP=1: a versão nova já baixada e conferida ("Atualizar agora")
 //   STUB_DESKTOP=1        simula o app de desktop: injeta uma ponte falsa `window.sobedesce` (seletores nativos
 //                         devolvem caminhos da pasta de demonstração, notify/setProgress/reveal só registram no
 //                         console, openExternal da tela de login conclui o OAuth sozinho depois de 2,5 s)
@@ -713,6 +714,8 @@ function versaoStatus() {
     verificando: false,
     verificadaEm: VERSAO > 1 ? new Date().toISOString() : null,
     falhou: false,
+    podeAtualizar: disponivel && DESKTOP,
+    atualizacao: disponivel && DESKTOP && process.env.STUB_VERSAO_PRONTA === '1' ? { fase: 'pronto', build: VERSAO } : null,
   }
 }
 
@@ -1116,6 +1119,9 @@ function fakeBridgeScript() {
       return Promise.resolve()
     },
     reveal: function (p) { log('reveal', p); window.__stubRevealed.push(p) },
+    // Ajustes → Minimizar para a bandeja (desktop/bandeja.js): ligado por padrão só no Windows
+    bandeja: function () { return Promise.resolve({ disponivel: true, minimizar: window.__stubBandeja !== undefined ? window.__stubBandeja : ${JSON.stringify(PLATFORM)} === 'win32', padrao: ${JSON.stringify(PLATFORM)} === 'win32' }) },
+    definirBandeja: function (v) { window.__stubBandeja = !!v; return window.sobedesce.bandeja() },
   }
 })()
 `

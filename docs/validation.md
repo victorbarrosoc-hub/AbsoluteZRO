@@ -1726,3 +1726,19 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   "Do roteiro à entrega.", nada de "do job" na home, selo nos fechados de `/baixar`; conta nova sem "de um job" no
   Início). `scan-secrets` limpo.
 - Não validado: produção (nada publicado); tema escuro da homepage só pela foto dos aparelhos.
+
+## SOBEDESCE no Windows: bandeja e barra lateral (28/10/2026)
+
+- Pedido de cliente (Windows): "minimizar para a bandeja, não para a barra". `desktop/bandeja.js` decide (função pura):
+  minimizar → bandeja com o ajuste ligado (padrão só no Windows); fechar no X → como antes sem transferência; com
+  transferência andando e a bandeja ligada, esconde na bandeja em vez de perguntar "Sair?"; Mac nunca muda (Dock).
+  Aviso "O SOBEDESCE continua aqui na bandeja" uma vez só (`<userData>/bandeja.json`). Segunda abertura traz a janela
+  de volta. Ícones gerados por `scripts/bandeja-icones.mjs` (ICO 16–64 px no Windows, template no Mac). O teste de
+  fumaça não cria bandeja.
+- Barra lateral: medida no Chromium do Playwright com o `scripts/ui-stub.js` (versão nova pronta) em 1366×768,
+  1280×720 e nos equivalentes de 125% (1093×614 e 1024×576 CSS): antes, a família sumia (rolagem interna de 0 px) e a
+  conta ficava fora da janela (sobravam 43 a 236 px); depois, nenhum item fora e nenhuma rolagem. O aviso de versão é
+  uma pílula ("Atualizar") que abre o cartão num balão; "Depois" fecha e esconde. A família é uma linha "Absolute ZRO"
+  que abre a lista num balão.
+- Testes: `test/bandeja.test.js` (7 casos) e `npm run test:fast` no SOBEDESCE; `scan-secrets` limpo.
+- Não validado: Electron real no Windows (bandeja, balão, clique duplo); só lógica, ícones e interface no navegador.
