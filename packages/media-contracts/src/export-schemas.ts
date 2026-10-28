@@ -7,6 +7,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
 import { EVENT_PAYLOADS, EventEnvelopeSchema } from './events'
+import { FreelaInventarioSchema } from './freela'
 import { CarroCrewSchema, CarroJobSchema, TpeasyBackupSchema } from './handoffs'
 import { ZroMediaManifestSchema } from './manifest'
 import { OrganizationPlanSchema } from './organization'
@@ -38,6 +39,7 @@ export function buildSchemas(): Record<string, unknown> {
       'Download do Drive conferido (SOBEDESCE, linha v2 do descargas.jsonl)',
     ),
     'synquei.preparo.v1': s(PreparoSchema, 'synquei.preparo.v1', 'Recibo de preparo do Synquei v1'),
+    'freela.inventario.v1': s(FreelaInventarioSchema, 'freela.inventario.v1', 'Inventário do freela (Carro do Freela → Maestro) v1'),
   }
   for (const [type, versions] of Object.entries(EVENT_PAYLOADS)) {
     for (const [v, schema] of Object.entries(versions as Record<string, z.ZodType>)) {

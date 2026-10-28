@@ -66,7 +66,7 @@ export default async function preparar() {
         .values({ zroOrgId: "00000000-0000-4000-8000-0000000000c1", name: "Lumen Filmes E2E", zroProducts: ["maestro"] })
         .returning({ id: schema.organizations.id });
       await tx.insert(schema.members).values({ orgId: org.id, zroSub: SUB_COM, displayName: "Pessoa Comercial", hubRole: "owner", role: "admin" });
-      const um = async (q: ReturnType<typeof q>) => ((await tx.execute(q)) as unknown as { id: string }[])[0].id;
+      const um = async (x: ReturnType<typeof q>) => ((await tx.execute(x)) as unknown as { id: string }[])[0].id;
       const diaria = await um(
         q`insert into maestro.precos_itens (org_id, grupo, nome, unidade, preco_cents, custo_cents) values (${org.id}, 'captacao', 'Diária de captação', 'diaria', 180000, 90000) returning id`,
       );

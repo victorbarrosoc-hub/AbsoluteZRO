@@ -53,6 +53,19 @@ briefing inteiro, com horário, chamada, local e referências) e, para quem da e
 aparece como "sem conta". O servidor (`api/zro/enviar.js`) fala com o HUB com o token da pessoa, guardado cifrado num
 cookie httpOnly; o navegador nunca vê token. Detalhes em [ORIGEM.md](ORIGEM.md).
 
+## Inventário do freela (próximo passo, ainda não existe aqui)
+
+Pedido do titular (28/10/2026): o freela cadastra o próprio equipamento **aqui**, e o Maestro mostra esse kit no perfil
+dele e na escala (só leitura lá). Hoje não há banco, então nada disso funciona e nada é publicado. Quando houver:
+
+- **Guardar**, por conta Absolute ZRO do freela (`sub`): itens com `id` estável, categoria (câmera, lente, áudio, luz,
+  drone, estabilizador, monitor, acessório, outro), marca, modelo, quantidade, observação, diária de aluguel opcional,
+  ativo e data da última mudança. Sem CPF, e-mail ou telefone no inventário.
+- **Publicar** no HUB, a cada mudança, o evento `freela.inventario.atualizado` com o contrato `freela.inventario/1`
+  (`packages/media-contracts/src/freela.ts`), o inventário inteiro e `idempotency_key` `freela.inventario:<sub>:<data>`.
+- O HUB entrega ao Maestro (rota hoje desligada); o Maestro casa pelo `sub` e pelo `id` de cada item, e o Carro manda
+  nos itens dele. Mapa completo em `docs/integration-contracts/maestro-carro-do-freela.md`.
+
 ---
 
 ## Testar

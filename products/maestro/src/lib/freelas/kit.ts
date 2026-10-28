@@ -43,7 +43,7 @@ export const aluguelDaEscala = (itens: Pick<EquipFreela, "diariaCents">[], dias:
   itens.reduce((s, i) => s + (i.diariaCents ?? 0), 0) * Math.max(1, dias);
 
 /**
- * Espelho do contrato `freela.inventario/1` (packages/media-contracts/src/freela-inventario.ts). Sem CPF, e-mail ou
+ * Espelho do contrato `freela.inventario/1` (packages/media-contracts/src/freela.ts). Sem CPF, e-mail ou
  * telefone: o freela é o `sub` da conta Absolute ZRO.
  */
 export type ItemInventario = {
@@ -57,7 +57,7 @@ export type ItemInventario = {
   ativo: boolean;
   atualizado_em: string;
 };
-export type InventarioDoCarro = { schema: "freela.inventario/1"; sub: string; itens: ItemInventario[]; atualizado_em: string };
+export type InventarioDoCarro = { contract: "freela.inventario/1"; sub: string; itens: ItemInventario[]; atualizado_em: string };
 
 export type PlanoSincronia =
   | { ok: false; motivo: "sub" | "formato" }
@@ -83,7 +83,7 @@ const igual = (a: EquipFreela, b: ItemInventario) =>
  * Maestro. Rodar de novo com o mesmo inventário não muda nada (idempotente).
  */
 export function aplicarInventarioDoCarro(freela: { id: string; zroSub: string | null }, existentes: EquipFreela[], payload: InventarioDoCarro): PlanoSincronia {
-  if (!payload || payload.schema !== "freela.inventario/1" || !Array.isArray(payload.itens)) return { ok: false, motivo: "formato" };
+  if (!payload || payload.contract !== "freela.inventario/1" || !Array.isArray(payload.itens)) return { ok: false, motivo: "formato" };
   if (!freela.zroSub || freela.zroSub.toLowerCase() !== String(payload.sub).toLowerCase()) return { ok: false, motivo: "sub" };
   const doCarro = existentes.filter((e) => e.freelaId === freela.id && e.origem === "carro-do-freela");
   const porOrigem = new Map(doCarro.map((e) => [e.origemId, e]));

@@ -64,4 +64,27 @@ export const ROUTES: RouteTable = {
   'media.manifest.ready': [{ handler: synqueiOrganizationPlan.name, productId: 'synquei', feature: 'organization_plan', maxAttempts: 5 }],
 }
 
-export const HANDLER_EMITS = Object.fromEntries(Object.values(HANDLERS).map((h) => [h.name, h.emits]))
+/**
+ * Pronto e DESLIGADO: o inventário que o freela cadastra no Carro do Freela (freela.inventario/1) vai para o Maestro,
+ * que guarda os itens como só leitura no perfil do freela, ligado pelo `sub` da conta Absolute ZRO
+ * (products/maestro/src/lib/freelas/equipamentos.ts, sincronizarInventarioDoCarro). Não entra em ROUTES nem em
+ * HANDLERS enquanto o Carro do Freela não tiver banco e o Maestro não tiver o endpoint de entrega assinado: nenhum
+ * evento é publicado e o HUB não finge processar nada (docs/integration-contracts/maestro-carro-do-freela.md).
+ */
+export const maestroFreelaInventario: HandlerDef = {
+  name: 'maestro.freela-inventario',
+  productId: 'maestro',
+  feature: null,
+  idempotent: true,
+  emits: [],
+  async run() {
+    throw new PermanentError('Inventário do freela ainda não está ligado: o Carro do Freela não tem banco.')
+  },
+}
+
+/** Rotas registradas mas desligadas (não vão ao worker). Entram na conferência de ciclo com as ativas. */
+export const DISABLED_ROUTES: RouteTable = {
+  'freela.inventario.atualizado': [{ handler: maestroFreelaInventario.name, productId: 'maestro', feature: null, maxAttempts: 5 }],
+}
+
+export const HANDLER_EMITS = Object.fromEntries([...Object.values(HANDLERS), maestroFreelaInventario].map((h) => [h.name, h.emits]))

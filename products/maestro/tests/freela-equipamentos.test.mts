@@ -149,7 +149,7 @@ describe("Carro do Freela (pronto, desligado)", () => {
     atualizado_em: "2026-10-28T12:00:00Z",
     ...extra,
   });
-  const inv = (itens: ReturnType<typeof item>[], sub = SUB) => ({ schema: "freela.inventario/1" as const, sub, itens, atualizado_em: "2026-10-28T12:00:00Z" });
+  const inv = (itens: ReturnType<typeof item>[], sub = SUB) => ({ contract: "freela.inventario/1" as const, sub, itens, atualizado_em: "2026-10-28T12:00:00Z" });
 
   test("a conta pura: só o sub certo; insere, atualiza, desativa e repete sem mudar", () => {
     const f = { id: "f1", zroSub: SUB };

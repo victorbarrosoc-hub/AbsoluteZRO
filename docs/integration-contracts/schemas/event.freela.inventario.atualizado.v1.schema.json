@@ -1,0 +1,134 @@
+{
+  "$id": "https://absolutezro.local/schemas/event.freela.inventario.atualizado.v1.json",
+  "title": "Payload de freela.inventario.atualizado v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "source": {
+      "type": "string",
+      "const": "carro-do-freela"
+    },
+    "inventario": {
+      "type": "object",
+      "properties": {
+        "contract": {
+          "type": "string",
+          "const": "freela.inventario/1"
+        },
+        "sub": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "itens": {
+          "maxItems": 500,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_.:-]{1,100}$"
+              },
+              "categoria": {
+                "type": "string",
+                "enum": [
+                  "camera",
+                  "lente",
+                  "audio",
+                  "luz",
+                  "drone",
+                  "estabilizador",
+                  "monitor",
+                  "acessorio",
+                  "outro"
+                ]
+              },
+              "marca": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "modelo": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "quantidade": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 999
+              },
+              "observacao": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "diaria_cents": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000000000
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "ativo": {
+                "type": "boolean"
+              },
+              "atualizado_em": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              }
+            },
+            "required": [
+              "id",
+              "categoria",
+              "marca",
+              "modelo",
+              "quantidade",
+              "observacao",
+              "diaria_cents",
+              "ativo",
+              "atualizado_em"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "atualizado_em": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        }
+      },
+      "required": [
+        "contract",
+        "sub",
+        "itens",
+        "atualizado_em"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "source",
+    "inventario"
+  ]
+}

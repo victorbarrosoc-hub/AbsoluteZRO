@@ -1,5 +1,6 @@
 export * from './common'
 export * from './events'
+export * from './freela'
 export * from './handoffs'
 export * from './manifest'
 export * from './organization'

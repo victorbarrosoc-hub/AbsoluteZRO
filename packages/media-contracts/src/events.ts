@@ -4,6 +4,7 @@
  */
 import { z } from 'zod'
 import { IsoDate, ProductId, Uuid } from './common'
+import { FreelaInventarioSchema } from './freela'
 
 export const EventEnvelopeSchema = z.object({
   event_id: Uuid,
@@ -63,6 +64,10 @@ export const EVENT_PAYLOADS = {
         .regex(/^https:\/\/drive\.google\.com\/drive\/(u\/\d+\/)?folders\/[\w-]+(\?[\w=&.-]*)?$/),
     }),
   },
+  // O inventário do próprio freela, publicado pelo Carro do Freela e consumido pelo Maestro (freela.inventario/1).
+  // Registrado e testado, mas ainda NÃO publicado por ninguém: o Carro do Freela não tem banco (rota desligada em
+  // @zro/integrations, DISABLED_ROUTES).
+  'freela.inventario.atualizado': { 1: z.object({ source: z.literal('carro-do-freela'), inventario: FreelaInventarioSchema }) },
 } as const satisfies Record<string, Record<number, z.ZodType>>
 
 export type EventType = keyof typeof EVENT_PAYLOADS
@@ -93,4 +98,5 @@ export const EVENT_PRODUCER: Record<EventType, z.infer<typeof ProductId> | 'hub'
   'audio.mix.ready': 'nossom',
   'finishing.qc.completed': 'finishing',
   'delivery.ready': 'finishing',
+  'freela.inventario.atualizado': 'carro-do-freela',
 }
