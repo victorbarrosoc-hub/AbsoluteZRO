@@ -5,9 +5,14 @@
  *
  * O resultado volta como texto para o modelo (dados, não instruções). Falhas viram frases que a Z explica à pessoa,
  * com o link de onde resolver; nenhuma falha vira arquivo inventado.
+ *
+ * Também lê as transferências da pessoa (`transferencias.ler`, Fase 1 da Z: só leitura, com fonte e hora do relato) e
+ * faz o único pedido que muda algo (`pedirAoComputadorAuditado`): só depois do "sim" à ação exata, sempre auditado.
  */
 import { assinarPedidoDeApp } from '@zro/auth'
 import type { Database } from '@zro/db'
+import { audit } from '@zro/observability'
+import type { Actor } from './authz'
 
 export const SOBEDESCE_URL_PADRAO = 'https://sobedesce.com'
 export const SOBEDESCE_CLIENT_PADRAO = 'sobedesce-web'
@@ -26,18 +31,30 @@ export function driveConfigDoAmbiente(env: Record<string, string | undefined> = 
 /** Formatos que o computador sabe fazer ("Baixar como…" do SOBEDESCE). */
 export const DRIVE_FORMATOS = ['mp4', 'mp4-1080', 'mp4-720', 'mp3-320', 'wav', 'm4a', 'jpg'] as const
 export type DriveFormato = (typeof DRIVE_FORMATOS)[number]
+/** O nome curto de cada formato, como o SOBEDESCE salva ("<nome> (MP4 720p).mp4"; web/src/lib/zro/computador-da-z.ts). */
+export const DRIVE_FORMATO_NOME: Record<DriveFormato, string> = {
+  mp4: 'MP4',
+  'mp4-1080': 'MP4 1080p',
+  'mp4-720': 'MP4 720p',
+  'mp3-320': 'MP3 320',
+  wav: 'WAV',
+  m4a: 'M4A',
+  jpg: 'JPG',
+}
 
 export type DrivePedido =
   | { tipo: 'buscar'; termo: string }
   | { tipo: 'pasta'; pasta: string; ordem: DriveOrdem }
   | { tipo: 'versao'; arquivoId: string; formato: DriveFormato }
   | { tipo: 'computador'; arquivoId: string; formato: DriveFormato }
+  | { tipo: 'transferencias' }
 
 const ROTAS: Record<DrivePedido['tipo'], { acao: string; caminho: string }> = {
   buscar: { acao: 'drive.buscar', caminho: '/api/zro/drive/buscar' },
   pasta: { acao: 'drive.pasta', caminho: '/api/zro/drive/pasta' },
   versao: { acao: 'drive.versao', caminho: '/api/zro/drive/versao' },
   computador: { acao: 'drive.computador', caminho: '/api/zro/drive/computador' },
+  transferencias: { acao: 'transferencias.ler', caminho: '/api/zro/transferencias' },
 }
 
 const SIM =
@@ -48,10 +65,12 @@ const NAO = /\b(nao|nunca|espera|cancela|cancelar|melhor nao|pare)\b/
  * A última mensagem da pessoa é um "sim" claro à oferta da Z de pedir ao computador? Exige: a mensagem anterior é da
  * Z e fala do computador; a da pessoa começa com uma confirmação, é curta e não traz negação. Na dúvida, não.
  */
-export function confirmacaoClara(historico: { papel: 'user' | 'assistant'; texto: string }[]): boolean {
+export function confirmacaoClara(historico: { papel: 'user' | 'assistant'; texto: string }[], formato?: DriveFormato): boolean {
   const pessoa = historico.at(-1)
   const oferta = historico.at(-2)
   if (pessoa?.papel !== 'user' || oferta?.papel !== 'assistant' || !/computador/i.test(oferta.texto)) return false
+  // A ação exata aparece antes do "sim": a oferta da Z nomeia o formato que vai ser pedido.
+  if (formato && !oferta.texto.toLowerCase().includes(DRIVE_FORMATO_NOME[formato].toLowerCase())) return false
   const t = pessoa.texto
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -61,7 +80,8 @@ export function confirmacaoClara(historico: { papel: 'user' | 'assistant'; texto
     .trim()
   return t.length > 0 && t.length <= 160 && SIM.test(t) && !NAO.test(t)
 }
-export type DriveResposta = { texto: string; erro: boolean }
+/** `codigo`/`pedido` só servem à auditoria (nunca vão ao modelo além do texto). */
+export type DriveResposta = { texto: string; erro: boolean; codigo?: string | null; pedido?: { id?: string; novo?: boolean } }
 
 type ArquivoSd = {
   id?: string
@@ -210,7 +230,9 @@ export async function driveParaIa(
       ? { termo: pedido.termo }
       : pedido.tipo === 'pasta'
         ? { pasta: pedido.pasta, ordem: pedido.ordem }
-        : { arquivoId: pedido.arquivoId, formato: pedido.formato }
+        : pedido.tipo === 'transferencias'
+          ? {}
+          : { arquivoId: pedido.arquivoId, formato: pedido.formato }
   const token = await assinarPedidoDeApp(db, { sub, aud: cfg.clientId, acao })
   let res: Response
   try {
@@ -224,10 +246,14 @@ export async function driveParaIa(
       redirect: 'error',
     })
   } catch {
-    return { texto: falhaParaIa(0, null, cfg.base), erro: true }
+    return { texto: falhaParaIa(0, null, cfg.base), erro: true, codigo: 'fora_do_ar' }
   }
   const json = (await res.json().catch(() => null)) as Record<string, unknown> | null
-  if (!res.ok || !json) return { texto: falhaParaIa(res.status, typeof json?.erro === 'string' ? json.erro : null, cfg.base), erro: true }
+  if (!res.ok || !json) {
+    const codigo = typeof json?.erro === 'string' ? json.erro : null
+    return { texto: falhaParaIa(res.status, codigo, cfg.base), erro: true, codigo: codigo ?? `http_${res.status}` }
+  }
+  if (pedido.tipo === 'transferencias') return { texto: transferenciasParaIa(json), erro: false }
 
   if (pedido.tipo === 'buscar') {
     const arquivos = Array.isArray(json.arquivos) ? (json.arquivos as ArquivoSd[]) : []
@@ -241,8 +267,15 @@ export async function driveParaIa(
       erro: false,
     }
   }
-  if (pedido.tipo === 'versao') return { texto: versaoParaIa(json, cfg.base), erro: false }
-  if (pedido.tipo === 'computador') return { texto: pedidoParaIa(json), erro: false }
+  if (pedido.tipo === 'versao') return { texto: versaoParaIa(json, cfg.base, pedido.formato), erro: false }
+  if (pedido.tipo === 'computador') {
+    const p = (json.pedido ?? {}) as { id?: unknown; novo?: unknown }
+    return {
+      texto: pedidoParaIa(json, cfg.base),
+      erro: false,
+      pedido: { id: typeof p.id === 'string' ? p.id : undefined, novo: p.novo === true },
+    }
+  }
   if (json.nao_achou)
     return { texto: `Nenhuma pasta com "${pedido.pasta}" no nome. Tente buscar_no_drive com outra palavra ou pergunte o nome certo.`, erro: false }
   if (Array.isArray(json.escolher)) {
@@ -276,7 +309,7 @@ const computadoresParaIa = (v: unknown) =>
     visto_em: c.visto_em,
   }))
 
-function versaoParaIa(j: Record<string, unknown>, base: string): string {
+function versaoParaIa(j: Record<string, unknown>, base: string, formato: DriveFormato): string {
   const original = arquivoParaIa((j.original ?? {}) as ArquivoSd, base)
   const versoes = (Array.isArray(j.versoes) ? (j.versoes as ArquivoSd[]) : []).map((a) => arquivoParaIa(a, base))
   if (j.o_proprio) return JSON.stringify({ ja_esta_no_formato: true, arquivo: original })
@@ -286,17 +319,30 @@ function versaoParaIa(j: Record<string, unknown>, base: string): string {
   return JSON.stringify({
     versao_pronta: null,
     original,
+    ...(j.converte === true && computadores.length && typeof original.nome === 'string' ? { acao_exata: acaoExata(original.nome, formato) } : {}),
     computador_converte_este_tipo: j.converte === true,
     computadores,
     dica: !computadores.length
       ? 'Não há computador com o SOBEDESCE nesta conta: diga o formato real e que converter precisa do SOBEDESCE no computador.'
       : j.converte === true
-        ? 'Diga o formato real e pergunte se ela quer que você peça ao computador para converter. Só chame pedir_ao_computador depois do sim.'
+        ? 'Diga o formato real, mostre a acao_exata como está e pergunte se ela quer que você peça ao computador. Só chame pedir_ao_computador depois do sim.'
         : 'O computador não converte este tipo para o formato pedido: diga o formato real.',
   })
 }
 
-function pedidoParaIa(j: Record<string, unknown>): string {
+const semExtensao = (nome: string) =>
+  nome
+    .replace(/\.[A-Za-z0-9]{1,5}$/, '')
+    .trim()
+    .slice(0, 100)
+
+/** A ação exata que a Z mostra antes do "sim" (o que o SOBEDESCE faz, onde salva e que nada é apagado). */
+export function acaoExata(nome: string, formato: DriveFormato): string {
+  const curto = DRIVE_FORMATO_NOME[formato]
+  return `Pedir ao SOBEDESCE do seu computador para converter "${nome}" em ${curto} e salvar na mesma pasta do original no Drive, como "${semExtensao(nome)} (${curto})". O original fica como está.`
+}
+
+function pedidoParaIa(j: Record<string, unknown>, base: string = SOBEDESCE_URL_PADRAO): string {
   const p = (j.pedido ?? {}) as { status?: string; novo?: boolean }
   const computadores = computadoresParaIa(j.computadores)
   const algumLigado = computadores.some((c) => c.estado !== 'fechado')
@@ -312,5 +358,124 @@ function pedidoParaIa(j: Record<string, unknown>): string {
       : 'Nenhum computador está aberto agora: o pedido espera até o SOBEDESCE abrir no computador.',
     onde_fica: j.destino,
     acompanhar: j.acompanhar,
+    cancelar: `Enquanto o computador não terminar, a pessoa cancela removendo o pedido em ${base}/app/#referencias.`,
   })
+}
+
+// ───── transferências (Fase 1 da Z: só leitura) ─────
+
+/** Retrato mais velho que isso: a Z avisa que pode ter mudado. */
+export const RELATO_VELHO_MIN = 10
+const FUSO = 'America/Sao_Paulo'
+const hora = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: FUSO })
+const dia = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', timeZone: FUSO })
+
+/** "14:02" (hoje) ou "27/10 às 14:02" (outro dia), no horário de Brasília. Data inválida: null. */
+export function horaDoRelato(isoTexto: unknown, agora = Date.now()): string | null {
+  const t = typeof isoTexto === 'string' ? Date.parse(isoTexto) : NaN
+  if (!Number.isFinite(t)) return null
+  const h = hora.format(t)
+  return dia.format(t) === dia.format(agora) ? h : `${dia.format(t)} às ${h}`
+}
+
+type CompTransf = Record<string, unknown> & {
+  nome?: string
+  ligado?: boolean
+  fechado?: boolean
+  relatado_em?: string
+  estado?: string
+  estimativa?: { velocidade_bps?: number | null; faltam_s?: number | null }
+}
+
+const ESTADO_LEGIVEL: Record<string, string> = {
+  enviando: 'enviando',
+  baixando: 'baixando',
+  pausado: 'pausado',
+  parado: 'parado',
+  concluido: 'concluído',
+  erro: 'parou com erro',
+}
+
+/**
+ * O retrato do SOBEDESCE → texto para a Z. Cada computador vai com a `fonte` e a hora do relato prontas para citar,
+ * os fatos separados da estimativa (velocidade e tempo restante) e um aviso quando o relato é velho. Sem computador:
+ * diz que não há dado (nunca um estado inventado).
+ */
+export function transferenciasParaIa(j: Record<string, unknown>, agora = Date.now()): string {
+  const lista = (Array.isArray(j.computadores) ? (j.computadores as CompTransf[]) : []).filter((c) => c && typeof c === 'object')
+  if (!lista.length)
+    return JSON.stringify({
+      sem_dados: true,
+      fonte: 'SOBEDESCE',
+      dica: 'O SOBEDESCE não tem relato de transferências desta conta nos últimos 7 dias (nenhum computador com o SOBEDESCE aberto e "Acompanhar pelo celular" ligado). Diga que não sabe como estão as transferências e que dá para conferir no app do SOBEDESCE no computador. Não invente estado, arquivo nem prazo.',
+    })
+  return JSON.stringify({
+    fonte: 'SOBEDESCE',
+    computadores: lista.map((c) => {
+      const t = typeof c.relatado_em === 'string' ? Date.parse(c.relatado_em) : NaN
+      const idadeMin = Number.isFinite(t) ? Math.max(0, Math.round((agora - t) / 60_000)) : null
+      const asHoras = horaDoRelato(c.relatado_em, agora)
+      const { estimativa, nome, ligado, fechado, relatado_em, estado, ...fatos } = c
+      const velho = idadeMin === null || idadeMin > RELATO_VELHO_MIN || ligado !== true
+      return {
+        fonte: `SOBEDESCE · ${nome ?? 'computador'}`,
+        citar_como: asHoras ? `segundo o SOBEDESCE, às ${asHoras}` : 'segundo o SOBEDESCE (sem hora do relato)',
+        relatado_em,
+        relato_ha_min: idadeMin,
+        computador_ligado: ligado === true && fechado !== true,
+        ...(velho ? { aviso: 'Relato antigo ou computador fechado: pode ter mudado depois. Diga a hora do relato e não afirme que ainda está assim.' } : {}),
+        fatos: { estado: estado ? (ESTADO_LEGIVEL[estado] ?? estado) : null, ...fatos },
+        estimativa: {
+          ...(typeof estimativa?.velocidade_bps === 'number' ? { velocidade_bps: estimativa.velocidade_bps } : {}),
+          ...(typeof estimativa?.faltam_s === 'number' ? { faltam_s: estimativa.faltam_s } : {}),
+          nota: 'Calculada pelo app no momento do relato; é estimativa, não promessa. Sem número aqui, não dê prazo.',
+        },
+      }
+    }),
+  })
+}
+
+// ───── o pedido ao computador (piloto da Fase 3), sempre auditado ─────
+
+export const IA_ACAO_COMPUTADOR = 'ia.computador.pedido'
+
+/**
+ * `pedir_ao_computador`: confere o "sim" à ação exata (a oferta anterior da Z nomeia o computador e o formato), pede ao
+ * SOBEDESCE e registra em `zro.audit_logs` quem pediu, o formato, o resultado e o erro. Nada do conteúdo privado (nome
+ * do arquivo, id do Drive, texto da conversa) vai para a auditoria. Recusa por falta de confirmação também fica.
+ */
+export async function pedirAoComputadorAuditado(
+  db: Database,
+  turno: { actor: Pick<Actor, 'userId' | 'orgId'>; historico: { papel: 'user' | 'assistant'; texto: string }[] },
+  entrada: { arquivoId: string; formato: DriveFormato; confirmado: boolean },
+  cfg: DriveConfig = driveConfigDoAmbiente(),
+  signal?: AbortSignal,
+): Promise<DriveResposta> {
+  const { actor } = turno
+  const registrar = (resultado: string, extra: { erro?: string | null; pedidoId?: string } = {}) =>
+    db
+      .asUser({ userId: actor.userId, orgId: actor.orgId }, (tx) =>
+        audit(tx, {
+          orgId: actor.orgId,
+          actorUserId: actor.userId,
+          action: IA_ACAO_COMPUTADOR,
+          targetType: 'sobedesce_pedido',
+          targetId: extra.pedidoId ?? null,
+          metadata: { produto: 'sobedesce', formato: entrada.formato, resultado, erro: extra.erro ?? null },
+        }),
+      )
+      .catch(() => {}) // auditoria que falha não desfaz nem inventa o resultado do pedido
+
+  if (!entrada.confirmado || !confirmacaoClara(turno.historico, entrada.formato)) {
+    await registrar('recusado', { erro: 'sem_confirmacao' })
+    return {
+      texto: `Nada foi pedido. Mostre antes a ação exata (${DRIVE_FORMATO_NOME[entrada.formato]}, onde salva) e pergunte se a pessoa quer que você peça ao computador; espere um "sim" claro dela na próxima mensagem.`,
+      erro: true,
+      codigo: 'sem_confirmacao',
+    }
+  }
+  const r = await driveParaIa(db, actor.userId, { tipo: 'computador', arquivoId: entrada.arquivoId, formato: entrada.formato }, cfg, signal)
+  if (r.erro) await registrar('falhou', { erro: r.codigo ?? 'desconhecido' })
+  else await registrar(r.pedido?.novo === false ? 'ja_estava_na_fila' : 'pedido', { pedidoId: r.pedido?.id })
+  return r
 }
