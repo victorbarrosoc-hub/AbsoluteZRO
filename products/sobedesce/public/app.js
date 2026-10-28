@@ -22,6 +22,7 @@ import { ModalHost } from './components/modal.js'
 import { Toasts } from './components/toasts.js'
 import { OAuthWaitDialog } from './components/oauth-wait.js'
 import { abertura } from './lib/abertura.js'
+import { telaDeEntrada } from './lib/entrada.js'
 
 const TITLES = { z: 'Z', painel: 'Início', transferencias: 'Transferências', drive: 'Drive', referencias: 'Referências', frames: 'Frames', comparar: 'Comparar', computadores: 'Dispositivos', cartoes: 'Cartões', ajustes: 'Ajustes', inicio: 'Primeiros passos' }
 
@@ -85,7 +86,17 @@ function App() {
   const accounts = useStore((s) => s.accounts)
   const oauthWait = useStore((s) => s.oauthWait)
   const justSignedIn = useStore((s) => s.cloud?.login?.estado === 'pronto')
-  const route = useRoute()
+  const transfers = useStore((s) => s.transfers)
+  const backup = useStore((s) => s.backup)
+  const rotaLida = useRoute()
+  // Abriu sem rota no endereço: a entrada é decidida uma vez, com o estado do motor já carregado (a tarefa em curso,
+  // senão a Z), e vira rota de verdade. Depois disso a tela não pula sozinha quando a tarefa termina.
+  const entrada = useRef(null)
+  if (status === 'ready' && rotaLida.padrao && !entrada.current) entrada.current = telaDeEntrada({ transfers, backup })
+  const route = rotaLida.padrao && entrada.current ? { ...rotaLida, name: entrada.current } : rotaLida
+  useEffect(() => {
+    if (rotaLida.padrao && entrada.current) navigate(entrada.current, { replace: true })
+  }, [rotaLida.padrao, status])
   // O "pronto" do login some sozinho depois de um minuto (motor): quem ainda está lendo a tela de boas-vindas
   // não é jogado para Transferências por isso; sai pelo botão Começar.
   const keepWelcome = useRef(false)
@@ -100,7 +111,7 @@ function App() {
     // Já tem Drive e alguém abriu #/inicio sem querer trocar a chave nem conectar um Drive local → Transferências.
     // Logo depois de entrar na conta, a tela fica para mostrar o "Pronto" (o botão Começar segue).
     const sub = route.parts[1]
-    if (!needsSetup && route.name === 'inicio' && sub !== 'chave' && sub !== 'local' && !justSignedIn && !keepWelcome.current) navigate('z', { replace: true })
+    if (!needsSetup && route.name === 'inicio' && sub !== 'chave' && sub !== 'local' && !justSignedIn && !keepWelcome.current) navigate(telaDeEntrada({ transfers, backup }), { replace: true })
     if (needsSetup && route.name !== 'inicio') navigate('inicio', { replace: true })
   }, [status, needsSetup, route.name, route.parts[1], justSignedIn])
 

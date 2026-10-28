@@ -196,7 +196,7 @@ describe('painel do app', () => {
   })
   test('o service worker não guarda a Z', () => {
     const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
-    assert.match(sw, /synquei-v22/)
+    assert.match(sw, /synquei-v23/)
     assert.match(sw, /startsWith\('\/api\/'\)/)
     assert.match(sw, /u\.origin !== location\.origin/)
   })

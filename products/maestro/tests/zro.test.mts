@@ -103,9 +103,9 @@ describe("entrar", () => {
     assert.ok(auditoria.some((a) => a.action === "membro.entrou"));
   });
 
-  test("sem volta: cai na Z (primeira aba)", async () => {
+  test("sem volta: cai na entrada (/app: a tarefa em andamento, senão a Z)", async () => {
     const r = await fluxo();
-    assert.equal(r.destino, "/app/z");
+    assert.equal(r.destino, "/app");
   });
 
   test("Criar conta manda prompt=create e entra do mesmo jeito", async () => {
@@ -135,7 +135,7 @@ describe("entrar", () => {
   test("volta para fora do site é recusada", async () => {
     for (const v of ["https://mal.exemplo/roubo", "//mal.exemplo/x", "/\\mal.exemplo", "javascript:alert(1)"]) {
       const r = await fluxo({ volta: v });
-      assert.equal(r.destino, "/app/z", v);
+      assert.equal(r.destino, "/app", v);
     }
   });
 

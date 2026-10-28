@@ -29,6 +29,7 @@ import { startP2p } from './lib/p2p.js'
 import { parseDriveLink } from './lib/copiar.js'
 import { abertura, aberturaAoVoltar } from './lib/abertura.js'
 import { linkDoHash } from './lib/drive-link.js'
+import { vigiarEntrada } from './lib/entrada.js'
 
 const SHEETS = {
   folders: FolderSheet,
@@ -104,6 +105,9 @@ function openShared(state) {
 if (!LAN) {
   auth.boot()
   setState({ tab: savedTab(), abrirLink: linkDoHash(location.hash) })
+  // Abriu na Z sem link: se um computador estiver transferindo, vai para Início (o cartão do andamento) — uma vez,
+  // nos primeiros segundos (lib/entrada.js, decisão do titular de 28/10/2026).
+  vigiarEntrada({ getState, setState, subscribe })
   startBridge() // o service worker pede o token por aqui para a prévia e o download (/app/stream/)
   subscribe(openShared)
   // /app/#referencias (link de Sua conta): abre a aba, se a conta tiver o recurso.
