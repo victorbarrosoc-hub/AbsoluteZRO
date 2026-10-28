@@ -1,9 +1,11 @@
 import { test as guest } from '@playwright/test';
-import { test, expect, existingAccount, signIn, zroLink } from './fixtures';
+import { test, expect, existingAccount, signIn, zroLink, ALLOWED, onlyWhenOpen } from './fixtures';
 import AxeBuilder from '@axe-core/playwright';
 guest(
   'homepage login menu animates, traps focus, switches forms and signs in without leaving the homepage first',
   async ({ page }) => {
+    // Descreve o produto aberto (entrar, assinar, home com ações, /apps).
+    onlyWhenOpen();
     await page.goto('/');
     const trigger = page.getByRole('button', { name: 'Entrar na sua conta', exact: true });
     await trigger.click();
@@ -46,6 +48,8 @@ guest(
 guest(
   'mobile access menu respects reduced motion, fits the screen and closes with Escape or outside tap',
   async ({ page }) => {
+    // Descreve o produto aberto (entrar, assinar, home com ações, /apps).
+    onlyWhenOpen();
     await page.setViewportSize({ width: 390, height: 844 });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
@@ -73,6 +77,8 @@ guest(
 test('account menu shows the actual profile and balance, navigates and logs out on mobile', async ({
   page,
 }) => {
+  // Descreve o produto aberto (entrar, assinar, home com ações, /apps).
+  onlyWhenOpen();
   await page.goto('/studio/inicio');
   const trigger = page.getByRole('button', { name: 'Abrir menu da conta', exact: true });
   await trigger.click();
@@ -112,7 +118,7 @@ guest(
       password: 'senha-de-teste',
       name: 'Lia Produtora',
     });
-    await zroLink(page.request, id!, ['nossom']);
+    await zroLink(page.request, id!, ['nossom'], ALLOWED);
     expect((await signIn(page.request, email, 'senha-de-teste')).status()).toBe(200);
     for (const width of [1440, 390]) {
       await page.setViewportSize({ width, height: width > 500 ? 1000 : 844 });

@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect, onlyWhenOpen } from './fixtures';
 import { mkdir, writeFile } from 'node:fs/promises';
 test('compact navigation exposes six destinations, the Z first, and switches tools without losing the project', async ({
   page,
@@ -85,6 +85,7 @@ test('manifest, Apple icon and social metadata serve real correctly sized images
 test('iPhone installation help explains the Safari share action and restores focus when closed', async ({
   browser,
 }) => {
+  onlyWhenOpen();
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
     isMobile: true,

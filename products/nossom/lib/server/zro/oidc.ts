@@ -4,6 +4,7 @@
  * aceito sem essa conferência.
  */
 import { createPublicKey, randomBytes, verify, type JsonWebKey } from 'node:crypto';
+import { readZroRelease, type ZroRelease } from '../release';
 import { zroCredentials, zroIssuer, zroManageUrl, zroPictureUrl, ZRO_SCOPES } from './config';
 
 export class ZroError extends Error {
@@ -88,7 +89,10 @@ export type ZroProfile = {
   emailVerified: boolean;
   name: string | null;
   organization: string | null;
+  /** `zro_products`: só os produtos que a pessoa pode usar. */
   products: string[];
+  /** `zro_release`: estado de cada produto para esta pessoa (`allowed` = fechado, mas na lista). */
+  release: ZroRelease;
   /** Foto da conta Absolute ZRO (claim `picture`, endereço público do emissor), ou null. */
   picture: string | null;
   /** Onde a pessoa edita nome, foto e e-mail (claim `zro_conta`, ou o Perfil da Absolute ZRO). */
@@ -169,6 +173,7 @@ export async function verifyIdToken(
     products: Array.isArray(claims.zro_products)
       ? claims.zro_products.filter((p): p is string => typeof p === 'string').slice(0, 50)
       : [],
+    release: readZroRelease(claims.zro_release),
     picture: zroPictureUrl(claims.picture),
     manage: zroManageUrl(claims.zro_conta),
   };

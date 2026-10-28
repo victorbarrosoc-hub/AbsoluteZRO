@@ -7,7 +7,10 @@ export type Account = {
   isAdmin: boolean;
   /** Version of the profile photo (upload time); absent when the person has none. */
   avatar?: number;
-  /** Conta Absolute ZRO cuja organização ainda não tem o NOSSOM liberado (zro_products). */
+  /**
+   * Sem direito de usar o NOSSOM (`temAcesso`, lib/server/release.ts): fechado ao público e sem `allowed` no
+   * HUB, ou organização sem o NOSSOM em `zro_products`. Entra, mas o estúdio e as APIs ficam fechados.
+   */
   zroBlocked?: true;
   /**
    * Conta ligada à Absolute ZRO (perfil único): e-mail e organização do vínculo, a foto da conta

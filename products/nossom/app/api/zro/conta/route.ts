@@ -74,8 +74,8 @@ export async function DELETE(request: Request) {
     const headers = new Headers(privateHeaders);
     headers.append('Set-Cookie', await forgetIaTokens(request));
     const session = decodeSession(accountToken(request));
-    if (session?.zroProducts || session?.zro) {
-      const { zroProducts: _, zro: _zro, ...rest } = session;
+    if (session?.zroProducts || session?.zroRelease || session?.zro) {
+      const { zroProducts: _, zroRelease: _release, zro: _zro, ...rest } = session;
       headers.append('Set-Cookie', sessionCookie(encodeSession(rest)));
     }
     return Response.json({ unlinked: true }, { headers });

@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { existingAccount } from './fixtures';
+import { existingAccount, onlyWhenOpen } from './fixtures';
 async function openAccess(page: Page) {
   const card = page.locator('.account-form-wrap');
   await expect(card).toHaveCSS('opacity', '1');
@@ -22,6 +22,8 @@ test('every studio route and the paid assistant require an account; public shari
   page,
   request,
 }) => {
+  // Descreve o produto aberto (entrar, assinar, home com ações, /apps).
+  onlyWhenOpen();
   await page.goto('/studio/efeitos');
   await expect(page).toHaveURL(/\/entrar\?next=/);
   await openAccess(page);
@@ -60,6 +62,8 @@ test('existing Supabase accounts sign in, sign out and sign in from another brow
   page,
   context,
 }) => {
+  // Descreve o produto aberto (entrar, assinar, home com ações, /apps).
+  onlyWhenOpen();
   await create(page, 'Pessoa Fictícia', 'pessoa.ficticia@example.test');
   const cookie = (await context.cookies()).find((c) => c.name === 'nossom-account')!;
   expect(cookie.httpOnly).toBe(true);
@@ -103,6 +107,8 @@ test('existing Supabase accounts sign in, sign out and sign in from another brow
 test('accounts keep separate project spaces and logging back in restores the first account workspace', async ({
   page,
 }) => {
+  // Descreve o produto aberto (entrar, assinar, home com ações, /apps).
+  onlyWhenOpen();
   await create(page, 'Alice de teste', 'alice.demo@example.test');
   await page.goto('/studio/automatico');
   await page
@@ -142,6 +148,8 @@ test('accounts keep separate project spaces and logging back in restores the fir
 test('account access is responsive and accessible with email and no per-user API configuration', async ({
   page,
 }) => {
+  // Descreve o produto aberto (entrar, assinar, home com ações, /apps).
+  onlyWhenOpen();
   await page.goto('/entrar');
   await openAccess(page);
   await expect(page.getByLabel('E-mail', { exact: true })).toBeVisible();

@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import { Apple, Monitor, Download, ArrowLeft, Smartphone } from 'lucide-react';
 import { Brand } from '@/components/brand';
+import EmDesenvolvimento from '@/components/em-desenvolvimento';
 import InstallApp from '@/components/install-app';
 import DownloadNotice from '@/components/download-notice';
 import { desktopInstallers } from '@/lib/desktop-releases';
+import { nossomClosed } from '@/lib/server/release';
 export const metadata = {
   title: 'Aplicativos NOSSOM',
   description: 'NOSSOM no Mac, Windows e na tela de início do seu celular.',
@@ -23,6 +25,8 @@ function download(value: string | undefined) {
 // prioridade. A versão mostrada é conferida de hora em hora.
 export const revalidate = 3600;
 export default async function Apps() {
+  // Fechado ao público (28/10/2026): nenhum instalador nem instrução de instalação, só a página institucional.
+  if (nossomClosed()) return <EmDesenvolvimento />;
   const previews = await desktopInstallers();
   const builds = [
     {
