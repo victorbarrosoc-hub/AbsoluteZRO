@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { Enviar } from "@/components/conta/enviar";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
+import { InputSenha } from "@/components/ui/senha";
 import { acaoApagarConta, type EstadoForm } from "../acoes";
 
 const PALAVRA = "APAGAR";
@@ -62,7 +63,7 @@ export function ApagarConta({ email, temSenha }: { email: string; temSenha: bool
 
           {temSenha ? (
             <Field label="Senha atual" htmlFor="apagar-senha" error={estado?.campo === "senha" ? estado.erro : null}>
-              <Input id="apagar-senha" name="senha" type="password" autoComplete="current-password" required aria-invalid={estado?.campo === "senha"} />
+              <InputSenha id="apagar-senha" name="senha" autoComplete="current-password" required aria-invalid={estado?.campo === "senha"} />
             </Field>
           ) : null}
           <Field label={`Para confirmar, digite ${PALAVRA}`} htmlFor="apagar-palavra" error={estado?.campo === "palavra" ? estado.erro : null}>

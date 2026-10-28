@@ -6,6 +6,7 @@
  * Animação em CSS (globals.css, "Conversa de conta") e o Z (components/ia/simbolo-z.tsx); "reduzir movimento" deixa tudo parado.
  */
 import { startTransition, useActionState, useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from 'react'
+import { CampoSenha } from '@zro/ui/senha'
 import type { FormState } from './action-form'
 import { PalcoZ, Z, type CenaZ, type MovimentoZ } from './ia/simbolo-z'
 
@@ -151,6 +152,24 @@ export function ConversaConta({
     const titulo = p === 'email' ? 'Qual é o seu e-mail?' : p === 'nome' ? 'Como podemos te chamar?' : modo === 'criar' ? 'Crie uma senha' : 'Sua senha'
     const rotuloBotao = ultimo ? (modo === 'criar' ? 'Criar conta' : 'Entrar') : 'Continuar'
     const mostraErro = ativo && erro
+    const atributos = {
+      ref: refs[p],
+      id,
+      name: p === 'senha' ? 'password' : p === 'nome' ? 'name' : 'email',
+      autoComplete: p === 'senha' ? (modo === 'criar' ? 'new-password' : 'current-password') : p === 'nome' ? 'name' : 'email',
+      inputMode: p === 'email' ? ('email' as const) : undefined,
+      autoCapitalize: p === 'nome' ? 'words' : 'none',
+      spellCheck: false,
+      required: true,
+      maxLength: p === 'nome' ? 120 : undefined,
+      minLength: p === 'senha' && modo === 'criar' ? senhaMin : undefined,
+      placeholder: p === 'email' ? 'voce@exemplo.com' : p === 'nome' ? 'Seu nome' : modo === 'criar' ? `${senhaMin}+ caracteres` : '',
+      autoFocus: autoFocus && p === 'email' && !erroInicial,
+      value: valores[p],
+      onChange: mudar(p),
+      'aria-invalid': mostraErro ? true : undefined,
+      'aria-describedby': mostraErro ? `${id}-erro` : undefined,
+    }
     return (
       <div key={p} className="conversa__passo" data-ativo={ativo} inert={js && !ativo ? true : undefined}>
         {apoio && <p className="conversa__apoio">{apoio}</p>}
@@ -158,25 +177,7 @@ export function ConversaConta({
           <label htmlFor={id}>{titulo}</label>
         </Titulo>
         <div className="conversa__campo">
-          <input
-            ref={refs[p]}
-            id={id}
-            name={p === 'senha' ? 'password' : p === 'nome' ? 'name' : 'email'}
-            type={p === 'senha' ? 'password' : p === 'email' ? 'email' : 'text'}
-            autoComplete={p === 'senha' ? (modo === 'criar' ? 'new-password' : 'current-password') : p === 'nome' ? 'name' : 'email'}
-            inputMode={p === 'email' ? 'email' : undefined}
-            autoCapitalize={p === 'nome' ? 'words' : 'none'}
-            spellCheck={false}
-            required
-            maxLength={p === 'nome' ? 120 : undefined}
-            minLength={p === 'senha' && modo === 'criar' ? senhaMin : undefined}
-            placeholder={p === 'email' ? 'voce@exemplo.com' : p === 'nome' ? 'Seu nome' : modo === 'criar' ? `${senhaMin}+ caracteres` : ''}
-            autoFocus={autoFocus && p === 'email' && !erroInicial}
-            value={valores[p]}
-            onChange={mudar(p)}
-            aria-invalid={mostraErro ? true : undefined}
-            aria-describedby={mostraErro ? `${id}-erro` : undefined}
-          />
+          {p === 'senha' ? <CampoSenha {...atributos} /> : <input {...atributos} type={p === 'email' ? 'email' : 'text'} />}
           {(!js || ativo) && (
             <button type="submit" className="conversa__enviar" aria-label={rotuloBotao} title={rotuloBotao} disabled={pending}>
               <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">

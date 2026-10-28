@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { Enviar } from "@/components/conta/enviar";
 import { Field, Input } from "@/components/ui/field";
+import { InputSenha } from "@/components/ui/senha";
 import { SENHA_MINIMA } from "@/lib/auth/senha-regras";
 import type { Conta } from "@/lib/google/contas";
 import { acaoDesligarZro, acaoPedirPrimeiraSenha, acaoTrocarGoogleDeEntrar, acaoTrocarNome, acaoTrocarSenha, type EstadoForm } from "../acoes";
@@ -59,10 +60,10 @@ export function FormSenha({ links = 0 }: { links?: number }) {
   return (
     <form action={acao} className="grid gap-5" key={estado?.ok ?? "senha"}>
       <Field label="Senha atual" htmlFor="senhaAtual" error={erroDo("senhaAtual")}>
-        <Input id="senhaAtual" name="senhaAtual" type="password" autoComplete="current-password" required aria-invalid={Boolean(erroDo("senhaAtual"))} />
+        <InputSenha id="senhaAtual" name="senhaAtual" autoComplete="current-password" required aria-invalid={Boolean(erroDo("senhaAtual"))} />
       </Field>
       <Field label="Senha nova" htmlFor="senhaNova" hint={`Pelo menos ${SENHA_MINIMA} caracteres.`} error={erroDo("senhaNova")}>
-        <Input id="senhaNova" name="senhaNova" type="password" autoComplete="new-password" required minLength={SENHA_MINIMA} aria-invalid={Boolean(erroDo("senhaNova"))} />
+        <InputSenha id="senhaNova" name="senhaNova" autoComplete="new-password" required minLength={SENHA_MINIMA} aria-invalid={Boolean(erroDo("senhaNova"))} />
       </Field>
       {links ? (
         <label className="flex items-start gap-3 text-[14px] leading-snug text-ink-2">
@@ -122,7 +123,7 @@ export function FormGoogleDeEntrar({ contas, entrar, temSenha }: { contas: Conta
             </select>
           </Field>
           <Field label="Senha atual" htmlFor="senhaAtualGoogle" error={erroDo("senhaAtual")}>
-            <Input id="senhaAtualGoogle" name="senhaAtual" type="password" autoComplete="current-password" required aria-invalid={Boolean(erroDo("senhaAtual"))} />
+            <InputSenha id="senhaAtualGoogle" name="senhaAtual" autoComplete="current-password" required aria-invalid={Boolean(erroDo("senhaAtual"))} />
           </Field>
           <div className="flex flex-wrap items-center gap-4">
             <Enviar variant="secondary" ocupado="Salvando…">

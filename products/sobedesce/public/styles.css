@@ -2727,6 +2727,41 @@ button.crumb:hover {
 .input::placeholder {
   color: var(--text-3);
 }
+/* Campo de senha com o olho dentro, à direita (components/senha.js) */
+.senha-campo {
+  position: relative;
+  display: block;
+}
+.senha-campo > .input {
+  padding-right: 40px;
+}
+.senha-campo > input::-ms-reveal {
+  display: none;
+}
+.senha-olho {
+  position: absolute;
+  top: 50%;
+  right: 3px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.senha-olho:hover,
+.senha-olho[aria-pressed='true'] {
+  color: var(--text);
+}
+.senha-olho:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
 
 /* seletores */
 .picker .modal-body {

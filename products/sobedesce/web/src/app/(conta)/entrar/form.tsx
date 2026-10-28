@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { Aviso } from "@/components/conta/aviso";
 import { Enviar } from "@/components/conta/enviar";
 import { Field, Input } from "@/components/ui/field";
+import { InputSenha } from "@/components/ui/senha";
 import { acaoEntrar, type EstadoForm } from "../acoes";
 
 export function FormEntrar({ volta }: { volta: string }) {
@@ -21,7 +22,7 @@ export function FormEntrar({ volta }: { volta: string }) {
         <Input id="email" name="email" type="email" autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false} required defaultValue={estado?.valores?.email} />
       </Field>
       <Field label="Senha" htmlFor="senha">
-        <Input id="senha" name="senha" type="password" autoComplete="current-password" required />
+        <InputSenha id="senha" name="senha" autoComplete="current-password" required />
       </Field>
       <Link href="/esqueci-a-senha" className="toque -mt-2 justify-self-end rounded-full text-[14px] text-ink-2 underline-offset-4 hover:text-ink hover:underline">
         Esqueci a senha
