@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import type { CSSProperties } from 'react'
 import {
   listReleaseAccess,
   RELEASE_ACCESS_KINDS,
@@ -12,13 +13,14 @@ import {
   type ReleaseState,
 } from '@zro/billing'
 import { requirePlatformAdmin } from '@zro/core'
-import { Card, EmptyState, Field, Notice, Pill } from '@zro/ui'
+import { EmptyState, Field, Notice, ProductMark } from '@zro/ui'
 import { ActionForm } from '@/components/action-form'
+import { Fold } from '@/components/admin/parts'
 import { grantReleaseAccessAction, revokeReleaseAccessAction, setReleaseAction } from '@/lib/actions/release'
-import { fmtDate, fmtDay } from '@/lib/labels'
+import { fmtAgo, fmtDate, fmtDay } from '@/lib/labels'
 import { db, getAuth } from '@/lib/session'
 
-export const metadata: Metadata = { title: 'Lançamento · Administração', robots: { index: false, follow: false } }
+export const metadata: Metadata = { title: 'Lançamento · Console', robots: { index: false, follow: false } }
 
 const STATE_LABEL: Record<ReleaseState, string> = {
   development: 'Em desenvolvimento',
@@ -28,7 +30,7 @@ const STATE_LABEL: Record<ReleaseState, string> = {
   released: 'Lançado',
   retired: 'Encerrado',
 }
-const CHANNEL_LABEL: Record<ReleaseChannel, string> = { web: 'Web', desktop: 'Desktop', api: 'API', download: 'Download', sso: 'Login único' }
+const CHANNEL_LABEL: Record<ReleaseChannel, string> = { web: 'Web', desktop: 'Computador', api: 'API', download: 'Download', sso: 'Login único' }
 const KIND_LABEL: Record<ReleaseAccessKind, string> = { owner: 'Proprietário', internal: 'Equipe', tester: 'Tester' }
 const AUDIT: Record<string, string> = {
   'release.state_set': 'Estado definido',
@@ -44,7 +46,7 @@ const AUDIT: Record<string, string> = {
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> }
 
-/** Administração › Lançamento (ADR 0023): o que está aberto ao público e quem entra no que está fechado. */
+/** Console › Lançamento (ADR 0023): o que está aberto ao público e quem entra no que está fechado. */
 export default async function Lancamento({ searchParams }: Props) {
   const auth = await getAuth()
   // Layout e página renderizam em paralelo no Next: a página confere por conta própria.
@@ -68,137 +70,132 @@ export default async function Lancamento({ searchParams }: Props) {
   }))
   const nameOf = new Map(d.products.map((p) => [p.id as string, p.name as string]))
   const closed = d.products.filter((p) => !d.states[p.id as string]?.open)
+  const openCount = d.products.length - closed.length
 
   return (
-    <div className="page">
-      <div className="page-head">
-        <div className="page-head__text">
-          <p className="zro-eyebrow">Administração</p>
-          <h1>Lançamento</h1>
-          <p>O que está aberto ao público e quem entra no que ainda está fechado. Toda mudança pede motivo e fica na auditoria.</p>
-        </div>
-        <Link className="zro-btn zro-btn--ghost" href="/admin">
-          Visão geral
-        </Link>
-      </div>
-      {!isAdmin && <Notice title="Suporte: somente leitura">Mudar estado e conceder acesso exigem papel admin.</Notice>}
-      <Notice title="Ser admin não abre app fechado">
-        A lista de acesso é por conta. Quem administra a plataforma e não está nela vê "Em desenvolvimento" como todo mundo.
-      </Notice>
+    <div className="page adm-page">
+      <header className="adm-head">
+        <h1>Lançamento</h1>
+        <p>
+          {openCount} {openCount === 1 ? 'app aberto' : 'apps abertos'} ao público · {closed.length} {closed.length === 1 ? 'fechado' : 'fechados'}.
+        </p>
+      </header>
+      {!isAdmin && <Notice title="Só leitura">Mudar estado e conceder acesso exige papel admin.</Notice>}
+      <p className="adm-hint" title="A lista de acesso é por conta. Quem administra a plataforma e não está nela vê 'Em desenvolvimento' como todo mundo.">
+        Ser admin não abre app fechado: só a lista de acesso entra.
+      </p>
 
-      <Card title="Estado por produto" eyebrow="Fechado = só a lista de acesso entra · Lançado = canais marcados abertos ao público" id="estado">
-        <ul className="list-plain">
-          {d.products.map((p) => {
-            const id = p.id as string
-            const s = d.states[id]
-            return (
-              <li key={id} className="stack" data-produto={id}>
-                <div className="row">
+      <ul className="rel-cards" id="estado">
+        {d.products.map((p, i) => {
+          const id = p.id as string
+          const s = d.states[id]
+          const state = s?.state ?? 'development'
+          return (
+            <li key={id} className={`rel-card${s?.open ? ' rel-card--open' : ''}`} data-produto={id} style={{ '--i': i } as CSSProperties}>
+              <div className="rel-card__head">
+                <ProductMark productId={id} name={p.name as string} size={44} />
+                <div className="rel-card__who">
                   <strong>{p.name as string}</strong>
-                  <Pill tone={s?.open ? 'ok' : 'faint'}>{STATE_LABEL[s?.state ?? 'development']}</Pill>
-                  <span className="zro-faint">
-                    {s?.updatedAt ? `atualizado em ${fmtDate(s.updatedAt)}` : 'sem registro (fechado por padrão)'}
-                    {s?.note ? ` · ${s.note}` : ''}
-                  </span>
+                  <span className={`rel-state rel-state--${state}`}>{STATE_LABEL[state]}</span>
                 </div>
-                {isAdmin && (
-                  <ActionForm action={setReleaseAction} submit="Salvar" variant="ghost" className="row" inlineSubmit>
+              </div>
+              <ul className="rel-channels" aria-label={`Canais de ${p.name as string}`}>
+                {RELEASE_CHANNELS.map((c) => (
+                  <li key={c} className={s?.channels[c] ? 'is-on' : ''}>
+                    <span className="rel-channels__dot" aria-hidden="true" />
+                    {CHANNEL_LABEL[c]}
+                    <span className="zro-sr-only">{s?.channels[c] ? ': marcado' : ': desmarcado'}</span>
+                  </li>
+                ))}
+              </ul>
+              <p
+                className="zro-faint rel-card__when"
+                title={[s?.updatedAt ? fmtDate(s.updatedAt) : '', s?.note ?? ''].filter(Boolean).join(' · ') || undefined}
+              >
+                {s?.updatedAt ? `Mudou ${fmtAgo(s.updatedAt)}` : 'Sem registro: fechado por padrão'}
+                {s?.note ? ` · ${s.note}` : ''}
+              </p>
+              {isAdmin && (
+                <details className="adm-confirm rel-card__edit">
+                  <summary className="zro-btn zro-btn--small">Mudar…</summary>
+                  <ActionForm action={setReleaseAction} submit="Salvar" variant="primary" className="stack">
                     <input type="hidden" name="productId" value={id} />
-                    <select className="zro-select" name="state" defaultValue={s?.state ?? 'development'} aria-label={`Estado de ${p.name as string}`}>
+                    <fieldset className="rel-states">
+                      <legend className="zro-faint">Estado</legend>
                       {RELEASE_STATES.map((st) => (
-                        <option key={st} value={st}>
-                          {STATE_LABEL[st]}
-                        </option>
+                        <label key={st}>
+                          <input type="radio" name="state" value={st} defaultChecked={st === state} required />
+                          <span>{STATE_LABEL[st]}</span>
+                        </label>
                       ))}
-                    </select>
-                    {RELEASE_CHANNELS.map((c) => (
-                      <label key={c} className="row">
-                        <input type="checkbox" name={`channel_${c}`} defaultChecked={!!s?.channels[c]} /> {CHANNEL_LABEL[c]}
-                      </label>
-                    ))}
+                    </fieldset>
+                    <fieldset className="stack">
+                      <legend className="zro-faint">Canais abertos quando lançado</legend>
+                      {RELEASE_CHANNELS.map((c) => (
+                        <label key={c} className="switch-row">
+                          <input type="checkbox" className="switch" name={`channel_${c}`} defaultChecked={!!s?.channels[c]} /> {CHANNEL_LABEL[c]}
+                        </label>
+                      ))}
+                    </fieldset>
                     <input className="zro-input" name="reason" placeholder="Motivo" required aria-label={`Motivo para ${p.name as string}`} />
                   </ActionForm>
-                )}
-              </li>
-            )
-          })}
-        </ul>
-      </Card>
+                </details>
+              )}
+            </li>
+          )
+        })}
+      </ul>
 
-      <Card title="Acesso interno" eyebrow="Contas que entram nos produtos fechados, por canal e prazo" id="acesso">
+      <Fold id="acesso" title="Quem entra nos fechados" meta={d.access.length || 'ninguém'} open={d.access.length > 0 || !!q}>
         {d.access.length ? (
-          <div className="zro-table-wrap" tabIndex={0} role="region" aria-label="Tabela">
-            <table className="zro-table">
-              <thead>
-                <tr>
-                  <th>Produto</th>
-                  <th>Pessoa</th>
-                  <th>Tipo</th>
-                  <th>Canais</th>
-                  <th>Validade</th>
-                  <th>Motivo</th>
-                  {isAdmin && <th>Ação</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {d.access.map((a) => (
-                  <tr key={`${a.productId}:${a.userId}`}>
-                    <td>{nameOf.get(a.productId) ?? a.productId}</td>
-                    <td>
-                      <Link href={`/admin/pessoas/${a.userId}`}>{a.userName}</Link>
-                      <div className="zro-faint">{a.userEmail}</div>
-                    </td>
-                    <td>{KIND_LABEL[a.kind]}</td>
-                    <td className="zro-faint">{a.channels.map((c) => CHANNEL_LABEL[c]).join(', ')}</td>
-                    <td className="zro-faint">
-                      {a.active ? (
-                        a.endsAt ? (
-                          `até ${fmtDay(a.endsAt)}`
-                        ) : (
-                          'sem fim'
-                        )
-                      ) : (
-                        <Pill tone="warn">{a.endsAt && a.endsAt <= new Date() ? 'Vencido' : 'Ainda não vale'}</Pill>
-                      )}
-                    </td>
-                    <td className="zro-faint">{a.reason}</td>
-                    {isAdmin && (
-                      <td>
-                        <ActionForm action={revokeReleaseAccessAction} submit="Revogar" variant="danger" className="row" inlineSubmit>
-                          <input type="hidden" name="productId" value={a.productId} />
-                          <input type="hidden" name="userId" value={a.userId} />
-                          <input className="zro-input" name="reason" placeholder="Motivo" required aria-label={`Motivo para revogar ${a.userName}`} />
-                        </ActionForm>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ul className="adm-rows">
+            {d.access.map((a) => (
+              <li key={`${a.productId}:${a.userId}`} className="adm-rows__wide">
+                <span className="row">
+                  <ProductMark productId={a.productId} name={nameOf.get(a.productId) ?? a.productId} size={22} />
+                  <span>
+                    <Link href={`/admin/pessoas/${a.userId}`}>{a.userName}</Link>
+                    <span className="zro-faint">
+                      {' '}
+                      · {nameOf.get(a.productId) ?? a.productId} · {KIND_LABEL[a.kind]}
+                      {a.active ? (a.endsAt ? ` · até ${fmtDay(a.endsAt)}` : '') : a.endsAt && a.endsAt <= new Date() ? ' · vencido' : ' · ainda não vale'}
+                    </span>
+                  </span>
+                </span>
+                <span className="row">
+                  <span className="zro-faint" title={`${a.channels.map((c) => CHANNEL_LABEL[c]).join(', ')} · ${a.reason}`}>
+                    {a.channels.length} {a.channels.length === 1 ? 'canal' : 'canais'}
+                  </span>
+                  {isAdmin && (
+                    <details className="adm-confirm">
+                      <summary className="zro-btn zro-btn--small">Revogar…</summary>
+                      <ActionForm action={revokeReleaseAccessAction} submit="Revogar e encerrar sessões" variant="danger" className="row" inlineSubmit>
+                        <input type="hidden" name="productId" value={a.productId} />
+                        <input type="hidden" name="userId" value={a.userId} />
+                        <input className="zro-input" name="reason" placeholder="Motivo" required aria-label={`Motivo para revogar ${a.userName}`} />
+                      </ActionForm>
+                    </details>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
         ) : (
-          <EmptyState title="Ninguém autorizado ainda.">Produto fechado fica fechado para todo mundo até alguém entrar nesta lista.</EmptyState>
+          <EmptyState title="Ninguém autorizado ainda.">App fechado fica fechado para todo mundo até alguém entrar nesta lista.</EmptyState>
         )}
 
         {isAdmin && (
           <details className="disclosure" open={!!q}>
-            <summary>Conceder acesso</summary>
+            <summary>Dar acesso a alguém</summary>
             <form method="get" role="search" className="row" aria-label="Buscar pessoa">
-              <input
-                className="zro-input"
-                name="q"
-                type="search"
-                defaultValue={q}
-                placeholder="Nome ou e-mail para encontrar a pessoa"
-                aria-label="Buscar pessoa"
-              />
+              <input className="zro-input" name="q" type="search" defaultValue={q} placeholder="Nome ou e-mail" aria-label="Buscar pessoa" />
               <button type="submit" className="zro-btn zro-btn--ghost">
                 Buscar
               </button>
             </form>
-            <ActionForm action={grantReleaseAccessAction} submit="Conceder">
+            <ActionForm action={grantReleaseAccessAction} submit="Dar acesso">
               <div className="zro-form-row">
-                <Field label="Pessoa (da lista de contas)" htmlFor="ra-user" hint={d.people.length >= 200 ? 'Mostrando 200; use a busca.' : undefined}>
+                <Field label="Pessoa" htmlFor="ra-user" hint={d.people.length >= 200 ? 'Mostrando 200; use a busca.' : undefined}>
                   <select className="zro-select" id="ra-user" name="userId" required defaultValue="">
                     <option value="" disabled>
                       Escolha…
@@ -210,7 +207,7 @@ export default async function Lancamento({ searchParams }: Props) {
                     ))}
                   </select>
                 </Field>
-                <Field label="Produto" htmlFor="ra-product">
+                <Field label="App" htmlFor="ra-product">
                   <select className="zro-select" id="ra-product" name="productId" required defaultValue={closed[0]?.id as string}>
                     {d.products.map((p) => (
                       <option key={p.id as string} value={p.id as string}>
@@ -228,15 +225,15 @@ export default async function Lancamento({ searchParams }: Props) {
                     ))}
                   </select>
                 </Field>
-                <Field label="Válido até (opcional)" htmlFor="ra-until" hint="Vazio = sem data de término.">
+                <Field label="Até (opcional)" htmlFor="ra-until" hint="Vazio = sem fim.">
                   <input className="zro-input" id="ra-until" name="until" type="date" />
                 </Field>
               </div>
-              <fieldset className="row">
+              <fieldset className="stack">
                 <legend className="zro-faint">Canais</legend>
                 {RELEASE_CHANNELS.map((c) => (
-                  <label key={c} className="row">
-                    <input type="checkbox" name={`channel_${c}`} defaultChecked /> {CHANNEL_LABEL[c]}
+                  <label key={c} className="switch-row">
+                    <input type="checkbox" className="switch" name={`channel_${c}`} defaultChecked /> {CHANNEL_LABEL[c]}
                   </label>
                 ))}
               </fieldset>
@@ -246,31 +243,35 @@ export default async function Lancamento({ searchParams }: Props) {
             </ActionForm>
           </details>
         )}
-      </Card>
+      </Fold>
 
-      <Card title="Auditoria" eyebrow="Últimas 50 mudanças de lançamento e entradas negadas">
+      <Fold title="Histórico" meta={d.audit.length ? `${d.audit.length} mudanças` : 'vazio'}>
         {d.audit.length ? (
-          <ul className="list-plain">
+          <ul className="adm-rows">
             {d.audit.map((l) => {
               const m = (l.metadata as Record<string, unknown>) ?? {}
               return (
                 <li key={String(l.id)}>
-                  <strong>{AUDIT[l.action as string] ?? (l.action as string)}</strong> · {nameOf.get(l.target_id as string) ?? (l.target_id as string)}
-                  <div className="zro-faint">
-                    {fmtDate(l.created_at as Date)}
-                    {l.actor ? ` · ${l.actor as string}` : ''}
-                    {typeof m.state === 'string' ? ` · ${STATE_LABEL[m.state as ReleaseState] ?? m.state}` : ''}
-                    {typeof m.kind === 'string' ? ` · ${KIND_LABEL[m.kind as ReleaseAccessKind] ?? m.kind}` : ''}
-                    {typeof m.reason === 'string' ? ` · ${m.reason}` : typeof m.note === 'string' && m.note ? ` · ${m.note}` : ''}
-                  </div>
+                  <span>
+                    <strong>{AUDIT[l.action as string] ?? 'Outra mudança'}</strong> · {nameOf.get(l.target_id as string) ?? 'app'}
+                    <span className="zro-faint">
+                      {typeof m.state === 'string' ? ` · ${STATE_LABEL[m.state as ReleaseState] ?? m.state}` : ''}
+                      {typeof m.kind === 'string' ? ` · ${KIND_LABEL[m.kind as ReleaseAccessKind] ?? m.kind}` : ''}
+                      {typeof m.reason === 'string' ? ` · ${m.reason}` : typeof m.note === 'string' && m.note ? ` · ${m.note}` : ''}
+                    </span>
+                  </span>
+                  <span className="zro-faint" title={fmtDate(l.created_at as Date)}>
+                    {l.actor ? `${l.actor as string} · ` : ''}
+                    {fmtAgo(l.created_at as Date)}
+                  </span>
                 </li>
               )
             })}
           </ul>
         ) : (
-          <p className="zro-faint">Nada registrado ainda.</p>
+          <p className="adm-empty">Nada registrado ainda.</p>
         )}
-      </Card>
+      </Fold>
     </div>
   )
 }
