@@ -1342,3 +1342,32 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   versão do app). Raiz lint, format, typecheck, `npm test` 174/174 (Postgres local) e build. Tela Playwright em
   390 px com Google falso: link de fora abre "Meu Drive › Projetos 2026 › Clipe Verão"; `hashchange` com o app
   aberto; pasta sem acesso mostra o aviso e fica na raiz; voltar sobe até a raiz. Não validado: Drive real.
+
+### Abrir e Baixar pelo SOBEDESCE (28/10/2026)
+
+- Pedido do titular: cada arquivo que a Z mostra tem exatamente dois botões, os dois pelo SOBEDESCE, nenhum link do
+  site do Google Drive; pasta só Abrir.
+- SOBEDESCE: as rotas da Z devolvem por arquivo `abrir_no_sobedesce` (`<site>/app/#arquivo/<id>`) e
+  `baixar_pelo_sobedesce` (`<site>/app/#baixar/<id>`), por pasta só `abrir_no_sobedesce` (`#drive/<id>`);
+  `webViewLink` e `webContentLink` saíram da resposta e do pedido ao Google. App do celular 2.8.50 (service worker
+  v65, `lib/drive-link.js`: `linkDoHash`, `alvoDoLink`): `#arquivo/<id>` abre a pasta do arquivo (primeiro pai; sem
+  acesso a ela, Compartilhados comigo) com ele na prévia; `#baixar/<id>` faz o mesmo e aperta o Baixar da prévia
+  (download pelo service worker, confirmação acima de 1 GB, Docs do Google "Esse arquivo não pode ser baixado.").
+  Vale de fora e com o app aberto (`hashchange`, mesmo com outra prévia aberta); o `#` some do endereço; sem acesso,
+  na lixeira ou inexistente: "Esse arquivo não abriu neste Drive." e a raiz.
+- HUB: `linkDoSobedesce` só repassa a origem do SOBEDESCE, caminho `/app/`, rota certa para o tipo e id do próprio
+  item (qualquer outra coisa some); o prompt da Z pede por arquivo `[Abrir]` e `[Baixar]`, por pasta só `[Abrir]`,
+  nunca link do Google nem endereço cru; o botão "Abrir a pasta no SOBEDESCE" por arquivo saiu.
+- Testes: SOBEDESCE web lint, typecheck, `npm test` 263/263 (campos novos, nada de `drive.google.com` nem
+  `webViewLink`/`webContentLink` na resposta e no `fields`) e build; motor `test:fast` 732 ok, 3 pulados
+  (`drive-link.test.js`: `linkDoHash`, `alvoDoLink`; versão 2.8.50/v65). Raiz lint, format, typecheck, `npm test`
+  177/177 (Postgres local; `ia-drive.test.ts`: os dois links por arquivo, só Abrir por pasta, link de outra origem,
+  caminho, query, rota ou id some) e build. `scan-secrets` limpo. Os dois builds rodaram com `next build --webpack`:
+  no worktree desta sessão o `node_modules` é um link para o checkout principal e o Turbopack recusa link que sai da
+  raiz do projeto.
+- Tela Playwright em 390 px com o Drive falso do repositório (`test/mock-drive.js`, `?dev_api=`) e o service worker
+  de verdade: `#arquivo` de fora abre "Meu Drive › Projetos 2026 › Clipe Verão" com Teaser.mp4 tocando na prévia;
+  `#baixar` com o app aberto dispara o download (evento do navegador, bytes iguais por MD5) e mostra "Baixando";
+  arquivo de 2,1 GB pede a confirmação; sem acesso mostra o aviso e fica na raiz; Doc do Google avisa que não baixa;
+  o `#` some em todos. Não validado: Drive e conta reais; iPhone de verdade (o app instalado recebendo o link com
+  ele aberto).

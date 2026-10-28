@@ -73,21 +73,27 @@ type ArquivoSd = {
   tamanho?: number | null
   video?: { largura: number | null; altura: number | null; duracao_s: number | null } | null
   imagem?: { largura: number | null; altura: number | null } | null
-  link?: string | null
-  link_download?: string | null
   abrir_no_sobedesce?: string | null
+  baixar_pelo_sobedesce?: string | null
 }
 
+/** Os links do app do SOBEDESCE (products/sobedesce/web/public/app/lib/drive-link.js). */
+const ROTA_SD = { pasta: 'drive', abrir: 'arquivo', baixar: 'baixar' } as const
+export type LinkSobedesce = keyof typeof ROTA_SD
+
 /**
- * Link do SOBEDESCE que abre a pasta na aba Drive do app (`<base>/app/#drive/<id>`). Só passa se for exatamente esse
- * formato, na origem do SOBEDESCE configurada (ou na oficial); qualquer outra coisa some (a Z não repassa link estranho).
+ * Link do app do SOBEDESCE: `<base>/app/#drive/<pasta>` (pasta), `#arquivo/<id>` (Abrir de um arquivo) ou
+ * `#baixar/<id>` (Baixar). Só passa exatamente esse formato, na origem do SOBEDESCE configurada (ou na oficial) e,
+ * com `id`, com o id do próprio item; qualquer outra coisa some (a Z não repassa link estranho nem do Google).
  */
-export function linkDaPastaNoSobedesce(v: unknown, base: string): string | undefined {
+export function linkDoSobedesce(v: unknown, base: string, tipo: LinkSobedesce, id?: string): string | undefined {
   if (typeof v !== 'string') return undefined
   try {
     const u = new URL(v)
     const origemOk = u.origin === new URL(base).origin || u.origin === SOBEDESCE_URL_PADRAO
-    if (!origemOk || u.pathname !== '/app/' || u.search || !/^#drive\/[A-Za-z0-9_-]{1,200}$/.test(u.hash)) return undefined
+    const m = /^#([a-z]+)\/([A-Za-z0-9_-]{1,200})$/.exec(u.hash)
+    if (!origemOk || u.pathname !== '/app/' || u.search || !m || m[1] !== ROTA_SD[tipo]) return undefined
+    if (id !== undefined && m[2] !== id) return undefined
     return u.href
   } catch {
     return undefined
@@ -133,10 +139,16 @@ export function tamanhoLegivel(bytes: number | null | undefined): string | null 
 
 const duracao = (s: number | null) => (s === null ? null : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`)
 
-/** O que a Z lê de cada arquivo: só o necessário para responder e apontar o link. */
+/**
+ * O que a Z lê de cada arquivo: só o necessário para responder e os links do SOBEDESCE (nunca os do Google).
+ * Arquivo: `abrir_no_sobedesce` (#arquivo) e `baixar_pelo_sobedesce` (#baixar). Pasta: só `abrir_no_sobedesce` (#drive).
+ */
 export function arquivoParaIa(a: ArquivoSd, base: string = SOBEDESCE_URL_PADRAO) {
   const v = a.video
-  const pastaNoSd = linkDaPastaNoSobedesce(a.abrir_no_sobedesce, base)
+  const pasta = a.pasta === true || a.tipo === 'application/vnd.google-apps.folder'
+  const id = typeof a.id === 'string' ? a.id : ''
+  const abrir = linkDoSobedesce(a.abrir_no_sobedesce, base, pasta ? 'pasta' : 'abrir', id)
+  const baixar = pasta ? undefined : linkDoSobedesce(a.baixar_pelo_sobedesce, base, 'baixar', id)
   const img = a.imagem
   return {
     nome: a.nome,
@@ -151,10 +163,8 @@ export function arquivoParaIa(a: ArquivoSd, base: string = SOBEDESCE_URL_PADRAO)
         ? { resolucao: `${img.largura}×${img.altura}` }
         : {}),
     ...(v && v.duracao_s !== null ? { duracao: duracao(v.duracao_s) } : {}),
-    ...(a.link ? { abrir: a.link } : {}),
-    ...(a.link_download ? { baixar: a.link_download } : {}),
-    // A pasta (ela mesma, ou onde o arquivo está) aberta no SOBEDESCE: um botão por pasta, não por arquivo.
-    ...(pastaNoSd ? { abrir_no_sobedesce: pastaNoSd } : {}),
+    ...(abrir ? { abrir_no_sobedesce: abrir } : {}),
+    ...(baixar ? { baixar_pelo_sobedesce: baixar } : {}),
     id: a.id,
   }
 }
@@ -240,23 +250,17 @@ export async function driveParaIa(
       id: p.id,
       nome: p.nome,
       modificado: p.modificado ?? undefined,
-      abrir_no_sobedesce: linkDaPastaNoSobedesce(p.abrir_no_sobedesce, cfg.base),
+      abrir_no_sobedesce: linkDoSobedesce(p.abrir_no_sobedesce, cfg.base, 'pasta', p.id),
     }))
     return { texto: JSON.stringify({ varias_pastas: pastas, dica: 'Pergunte qual delas e chame de novo com o id.' }), erro: false }
   }
-  const pasta = json.pasta as { nome?: string; link?: string | null; abrir_no_sobedesce?: string | null } | undefined
+  const pasta = json.pasta as { id?: string; nome?: string; abrir_no_sobedesce?: string | null } | undefined
   const arquivos = Array.isArray(json.arquivos) ? (json.arquivos as ArquivoSd[]) : []
-  const pastaNoSd = linkDaPastaNoSobedesce(pasta?.abrir_no_sobedesce, cfg.base)
   return {
     texto: JSON.stringify({
-      pasta: { nome: pasta?.nome, abrir: pasta?.link ?? undefined, abrir_no_sobedesce: pastaNoSd },
+      pasta: { nome: pasta?.nome, abrir_no_sobedesce: linkDoSobedesce(pasta?.abrir_no_sobedesce, cfg.base, 'pasta', pasta?.id) },
       ordem: json.ordem,
-      // O link da pasta vai uma vez só (na pasta); nos itens fica só o das subpastas.
-      itens: arquivos.map((a) => {
-        const item = arquivoParaIa(a, cfg.base)
-        if (item.abrir_no_sobedesce === pastaNoSd) delete item.abrir_no_sobedesce
-        return item
-      }),
+      itens: arquivos.map((a) => arquivoParaIa(a, cfg.base)),
       ...(arquivos.length ? {} : { vazia: true }),
       ...(json.mais ? { aviso: 'A pasta tem mais itens além destes.' } : {}),
     }),
@@ -276,7 +280,8 @@ function versaoParaIa(j: Record<string, unknown>, base: string): string {
   const original = arquivoParaIa((j.original ?? {}) as ArquivoSd, base)
   const versoes = (Array.isArray(j.versoes) ? (j.versoes as ArquivoSd[]) : []).map((a) => arquivoParaIa(a, base))
   if (j.o_proprio) return JSON.stringify({ ja_esta_no_formato: true, arquivo: original })
-  if (versoes.length) return JSON.stringify({ versao_pronta: versoes, original: { nome: original.nome }, dica: 'Entregue o link de baixar da versão pronta.' })
+  if (versoes.length)
+    return JSON.stringify({ versao_pronta: versoes, original: { nome: original.nome }, dica: 'Entregue o Abrir e o Baixar da versão pronta.' })
   const computadores = computadoresParaIa(j.computadores)
   return JSON.stringify({
     versao_pronta: null,

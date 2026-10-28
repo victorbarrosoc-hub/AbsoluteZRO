@@ -5,7 +5,7 @@ import http from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { assinarPedidoDeApp, jwks, PEDIDO_TTL_S, PEDIDO_TYP, setIssuer, verifyJwt, loadSigner } from '@zro/auth'
-import { confirmacaoClara, driveParaIa, linkDaPastaNoSobedesce, tamanhoLegivel, tipoLegivel, type DriveConfig } from '@zro/core'
+import { confirmacaoClara, driveParaIa, linkDoSobedesce, tamanhoLegivel, tipoLegivel, type DriveConfig } from '@zro/core'
 import type { Database } from '@zro/db'
 import { testDatabase } from '@zro/db/testing'
 
@@ -82,7 +82,7 @@ describe('pedido assinado pelo HUB', () => {
 })
 
 describe('ferramenta da Z contra o SOBEDESCE falso', () => {
-  it('busca: manda o termo com o pedido assinado e devolve nome, tipo legível, tamanho e links', async () => {
+  it('busca: manda o termo com o pedido assinado e devolve nome, tipo legível, tamanho e os links do SOBEDESCE', async () => {
     respostas.set('/api/zro/drive/buscar', {
       status: 200,
       corpo: {
@@ -94,6 +94,9 @@ describe('ferramenta da Z contra o SOBEDESCE falso', () => {
             criado: '2026-10-01T10:00:00Z',
             tamanho: 734003200,
             video: { largura: 3840, altura: 2160, duracao_s: 75 },
+            abrir_no_sobedesce: `${cfg.base}/app/#arquivo/v1`,
+            baixar_pelo_sobedesce: `${cfg.base}/app/#baixar/v1`,
+            // Links do site do Google (um SOBEDESCE antigo mandaria): nunca chegam à Z.
             link: 'https://drive.google.com/file/d/v1/view',
             link_download: 'https://drive.google.com/uc?id=v1&export=download',
           },
@@ -107,14 +110,19 @@ describe('ferramenta da Z contra o SOBEDESCE falso', () => {
     expect(p.claims).toMatchObject({ sub: 'pessoa-1', zro_pedido: 'drive.buscar' })
     expect(p.corpo).toEqual({ termo: 'primeiro' })
     const j = JSON.parse(r.texto)
-    expect(j.arquivos[0]).toMatchObject({
+    expect(j.arquivos[0]).toEqual({
       nome: 'primeiro.mov',
       tipo: 'vídeo MOV',
+      formato: 'video/quicktime',
+      entrou_no_drive: '2026-10-01T10:00:00Z',
       tamanho: '734 MB',
       resolucao: '3840×2160',
       duracao: '1:15',
-      baixar: 'https://drive.google.com/uc?id=v1&export=download',
+      abrir_no_sobedesce: `${cfg.base}/app/#arquivo/v1`,
+      baixar_pelo_sobedesce: `${cfg.base}/app/#baixar/v1`,
+      id: 'v1',
     })
+    expect(r.texto).not.toMatch(/drive\.google\.com/)
   })
 
   it('pasta com várias opções e pasta listada na ordem pedida', async () => {
@@ -135,54 +143,92 @@ describe('ferramenta da Z contra o SOBEDESCE falso', () => {
     expect(JSON.parse((await driveParaIa(db, 'pessoa-1', { tipo: 'pasta', pasta: 'a', ordem: 'mais_antigo' }, cfg)).texto).vazia).toBe(true)
   })
 
-  it('abrir_no_sobedesce: repassa o link da pasta (uma vez por pasta) e descarta link estranho', async () => {
-    const sd = (id: string) => `${cfg.base}/app/#drive/${id}`
+  it('links do SOBEDESCE: arquivo tem Abrir (#arquivo) e Baixar (#baixar), pasta só Abrir (#drive); link estranho some', async () => {
+    const sd = (rota: string, id: string) => `${cfg.base}/app/#${rota}/${id}`
     respostas.set('/api/zro/drive/buscar', {
       status: 200,
       corpo: {
         arquivos: [
-          { id: 'v1', nome: 'a.mov', tipo: 'video/quicktime', abrir_no_sobedesce: sd('p1') },
-          { id: 'v2', nome: 'b.mov', tipo: 'video/quicktime', abrir_no_sobedesce: 'https://golpe.example/app/#drive/p1?x' },
-          { id: 'v3', nome: 'c.mov', tipo: 'video/quicktime', abrir_no_sobedesce: `${cfg.base}/conta#drive/p1` },
+          { id: 'v1', nome: 'a.mov', tipo: 'video/quicktime', abrir_no_sobedesce: sd('arquivo', 'v1'), baixar_pelo_sobedesce: sd('baixar', 'v1') },
+          // Outra origem; com query.
+          {
+            id: 'v2',
+            nome: 'b.mov',
+            tipo: 'video/quicktime',
+            abrir_no_sobedesce: 'https://golpe.example/app/#arquivo/v2',
+            baixar_pelo_sobedesce: `${cfg.base}/app/#baixar/v2?x`,
+          },
+          // Outro caminho; a rota da pasta no lugar da de baixar.
+          { id: 'v3', nome: 'c.mov', tipo: 'video/quicktime', abrir_no_sobedesce: `${cfg.base}/conta#arquivo/v3`, baixar_pelo_sobedesce: sd('drive', 'p1') },
+          // Links de outro arquivo.
+          { id: 'v4', nome: 'd.mov', tipo: 'video/quicktime', abrir_no_sobedesce: sd('arquivo', 'v1'), baixar_pelo_sobedesce: sd('baixar', 'v1') },
+          // Pasta: nunca tem Baixar.
+          {
+            id: 'p1',
+            nome: 'Motion',
+            tipo: 'application/vnd.google-apps.folder',
+            pasta: true,
+            abrir_no_sobedesce: sd('drive', 'p1'),
+            baixar_pelo_sobedesce: sd('baixar', 'p1'),
+          },
         ],
       },
     })
     const b = JSON.parse((await driveParaIa(db, 'pessoa-1', { tipo: 'buscar', termo: 'mov' }, cfg)).texto)
-    expect(b.arquivos.map((a: { abrir_no_sobedesce?: string }) => a.abrir_no_sobedesce)).toEqual([sd('p1'), undefined, undefined])
-    expect(linkDaPastaNoSobedesce('https://sobedesce.com/app/#drive/abc_1-D', cfg.base)).toBe('https://sobedesce.com/app/#drive/abc_1-D')
-    expect(linkDaPastaNoSobedesce('javascript:alert(1)', cfg.base)).toBeUndefined()
-    expect(linkDaPastaNoSobedesce('http://outro.example/app/#drive/abc', cfg.base)).toBeUndefined()
-    expect(linkDaPastaNoSobedesce('https://golpe.example/app/#drive/abc', cfg.base)).toBeUndefined()
+    expect(b.arquivos.map((a: Record<string, unknown>) => [a.abrir_no_sobedesce, a.baixar_pelo_sobedesce])).toEqual([
+      [sd('arquivo', 'v1'), sd('baixar', 'v1')],
+      [undefined, undefined],
+      [undefined, undefined],
+      [undefined, undefined],
+      [sd('drive', 'p1'), undefined],
+    ])
+    expect(linkDoSobedesce('https://sobedesce.com/app/#drive/abc_1-D', cfg.base, 'pasta')).toBe('https://sobedesce.com/app/#drive/abc_1-D')
+    expect(linkDoSobedesce('https://sobedesce.com/app/#baixar/abc_1-D', cfg.base, 'baixar', 'abc_1-D')).toBe('https://sobedesce.com/app/#baixar/abc_1-D')
+    expect(linkDoSobedesce('https://sobedesce.com/app/#baixar/abc_1-D', cfg.base, 'abrir', 'abc_1-D')).toBeUndefined()
+    expect(linkDoSobedesce('https://sobedesce.com/app/#baixar/abc_1-D', cfg.base, 'baixar', 'outro')).toBeUndefined()
+    expect(linkDoSobedesce('javascript:alert(1)', cfg.base, 'pasta')).toBeUndefined()
+    expect(linkDoSobedesce('http://outro.example/app/#drive/abc', cfg.base, 'pasta')).toBeUndefined()
+    expect(linkDoSobedesce('https://golpe.example/app/#drive/abc', cfg.base, 'pasta')).toBeUndefined()
 
     respostas.set('/api/zro/drive/pasta', {
       status: 200,
       corpo: {
-        pasta: { id: 'p1', nome: 'Motion', abrir_no_sobedesce: sd('p1') },
+        pasta: { id: 'p1', nome: 'Motion', abrir_no_sobedesce: sd('drive', 'p1') },
         ordem: 'nome',
         arquivos: [
-          { id: 's1', nome: 'Brutos', tipo: 'application/vnd.google-apps.folder', pasta: true, abrir_no_sobedesce: sd('s1') },
-          { id: 'v1', nome: 'a.mov', tipo: 'video/quicktime', abrir_no_sobedesce: sd('p1') },
+          { id: 's1', nome: 'Brutos', tipo: 'application/vnd.google-apps.folder', pasta: true, abrir_no_sobedesce: sd('drive', 's1') },
+          { id: 'v1', nome: 'a.mov', tipo: 'video/quicktime', abrir_no_sobedesce: sd('arquivo', 'v1'), baixar_pelo_sobedesce: sd('baixar', 'v1') },
         ],
         mais: false,
       },
     })
     const p = JSON.parse((await driveParaIa(db, 'pessoa-1', { tipo: 'pasta', pasta: 'p1', ordem: 'nome' }, cfg)).texto)
-    expect(p.pasta.abrir_no_sobedesce).toBe(sd('p1'))
-    expect(p.itens[0].abrir_no_sobedesce).toBe(sd('s1'))
-    expect(p.itens[1].abrir_no_sobedesce).toBeUndefined()
+    expect(p.pasta).toEqual({ nome: 'Motion', abrir_no_sobedesce: sd('drive', 'p1') })
+    expect(p.itens[0]).toMatchObject({ nome: 'Brutos', abrir_no_sobedesce: sd('drive', 's1') })
+    expect(p.itens[0].baixar_pelo_sobedesce).toBeUndefined()
+    expect(p.itens[1]).toMatchObject({ abrir_no_sobedesce: sd('arquivo', 'v1'), baixar_pelo_sobedesce: sd('baixar', 'v1') })
   })
 
-  it('versão pronta: entrega o link; sem versão: só orienta a oferecer, sem pedir nada', async () => {
+  it('versão pronta: entrega o Abrir e o Baixar dela; sem versão: só orienta a oferecer, sem pedir nada', async () => {
     respostas.set('/api/zro/drive/versao', {
       status: 200,
       corpo: {
         original: { nome: 'a.mov', tipo: 'video/quicktime' },
-        versoes: [{ id: 'v7', nome: 'a (MP4 720p).mp4', tipo: 'video/mp4', link_download: 'https://drive.google.com/uc?id=v7' }],
+        versoes: [
+          {
+            id: 'v7',
+            nome: 'a (MP4 720p).mp4',
+            tipo: 'video/mp4',
+            abrir_no_sobedesce: `${cfg.base}/app/#arquivo/v7`,
+            baixar_pelo_sobedesce: `${cfg.base}/app/#baixar/v7`,
+          },
+        ],
         o_proprio: false,
       },
     })
     const pronta = JSON.parse((await driveParaIa(db, 'p', { tipo: 'versao', arquivoId: 'v1', formato: 'mp4-720' }, cfg)).texto)
-    expect(pronta.versao_pronta[0].baixar).toBe('https://drive.google.com/uc?id=v7')
+    expect(pronta.versao_pronta[0]).toMatchObject({ abrir_no_sobedesce: `${cfg.base}/app/#arquivo/v7`, baixar_pelo_sobedesce: `${cfg.base}/app/#baixar/v7` })
+    expect(pronta.dica).toMatch(/Abrir e o Baixar/)
     respostas.set('/api/zro/drive/versao', {
       status: 200,
       corpo: {

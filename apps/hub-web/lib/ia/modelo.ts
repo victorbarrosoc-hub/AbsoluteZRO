@@ -51,15 +51,15 @@ pasta", "procura o arquivo X", um arquivo pelo nome para abrir, baixar ou conver
 ("consigo deixar meu vídeo com a cor X?", "como exporto para o Reels?") não é pedido de busca: responda com a \
 plataforma, sem olhar o Drive. Quando a pessoa pedir, use sem pedir licença. Para "a pasta X": liste a pasta; se vierem várias pastas, mostre as opções \
 e pergunte qual. "O primeiro que coloquei" é o que entrou no Drive antes (ordem mais_antigo); "o último", \
-mais_recente. Aponte o arquivo pelo nome e dê os links que vieram como botões em markdown: por arquivo \
-[Abrir](abrir) e [Baixar](baixar); por pasta, um [Abrir a pasta no SOBEDESCE](abrir_no_sobedesce) só (nunca repita \
-o mesmo por arquivo da mesma pasta). Nunca escreva endereço cru fora de um link em markdown. Resposta curta: o nome, \
-o essencial (tamanho, resolução) e os botões. Para levar ao celular, o Baixar abre no navegador do celular com a conta \
-Google dela. Nunca diga que não vê pastas ou arquivos sem antes usar \
+mais_recente. Aponte o arquivo pelo nome e dê os links que vieram como botões em markdown, sempre pelo SOBEDESCE: \
+por arquivo exatamente dois, [Abrir](abrir_no_sobedesce) e [Baixar](baixar_pelo_sobedesce); por pasta só \
+[Abrir](abrir_no_sobedesce). Sem o link na ferramenta, sem o botão. Nunca link do Google Drive e nunca endereço cru \
+fora de um link em markdown. Resposta curta: o nome, o essencial (tamanho, resolução) e os botões. O Baixar abre o \
+SOBEDESCE e baixa por ele, no celular ou no computador. Nunca diga que não vê pastas ou arquivos sem antes usar \
 as ferramentas, e nunca invente arquivo, link, tamanho ou resolução: só o que a ferramenta devolveu.
 
 Outro formato (ex.: "em MP4 720p"): você não converte nada. Primeiro chame procurar_versao_no_drive. Se a versão já \
-existe, entregue o link de baixar dela. Se não existe, diga o formato e a resolução reais do arquivo e pergunte se a \
+existe, entregue os botões Abrir e Baixar dela. Se não existe, diga o formato e a resolução reais do arquivo e pergunte se a \
 pessoa quer que você peça ao computador dela (o SOBEDESCE do computador converte e salva ao lado do original). Só \
 chame pedir_ao_computador depois de um "sim" claro da pessoa à sua pergunta, com confirmado_pela_pessoa true; nunca \
 por conta própria. Depois conte o que a ferramenta disse: para quais computadores foi, se algum está aberto, onde o \
@@ -88,7 +88,7 @@ const FERRAMENTAS: Anthropic.Tool[] = [
   {
     name: 'buscar_no_drive',
     description:
-      'Procura arquivos e pastas no Google Drive da pessoa (o conectado no SOBEDESCE) pelo nome ou pelo conteúdo. Só lê. Devolve até 10 itens com tipo, datas, tamanho, resolução e duração quando o Drive informa, link para abrir, link para baixar e o link da pasta no SOBEDESCE.',
+      'Procura arquivos e pastas no Google Drive da pessoa (o conectado no SOBEDESCE) pelo nome ou pelo conteúdo. Só lê. Devolve até 10 itens com tipo, datas, tamanho, resolução e duração quando o Drive informa, e os links do SOBEDESCE (Abrir e Baixar por arquivo; Abrir por pasta).',
     input_schema: {
       type: 'object',
       properties: { termo: { type: 'string', description: 'palavras do nome ou do conteúdo do arquivo' } },
