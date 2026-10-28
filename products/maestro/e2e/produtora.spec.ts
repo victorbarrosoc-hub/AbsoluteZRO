@@ -52,6 +52,9 @@ test.describe("produtora por dentro", () => {
       ["/app/inventario", /inventário\./, ".lista .item"],
       ["/app/agenda", /agenda\./, ".evento"],
       ["/app/ajustes/precos", /preços\./, ".tabela-precos li"],
+      ["/app/pedidos", /pedidos\./, ".lista .item"],
+      ["/app/freelas?equip=sim", /freelas\./, ".lista .item"],
+      ["/app/hoje", /hoje\./, ".hoje-cartao"],
     ];
     for (const [rota, titulo, item] of paineis) {
       await page.goto(rota);
@@ -94,6 +97,16 @@ test.describe("produtora por dentro", () => {
     await expect(page.getByRole("status").filter({ hasText: "Salvo." })).toBeVisible();
     await page.reload();
     await expect(page.getByLabel("Descrição").last()).toHaveValue(/^Deslocamento/);
+  });
+
+  test("marca de exemplo no timbrado e kit no perfil do freela", async ({ page }) => {
+    await page.goto("/app/ajustes/marca");
+    await expect(page.locator(".marca-logo__palco img")).toBeVisible();
+    await page.goto("/app/freelas?equip=drone");
+    await page.getByRole("link", { name: /Rafael Moura/ }).click();
+    const kit = page.locator("section.secao", { has: page.getByRole("heading", { name: "Equipamento próprio" }) });
+    await expect(kit.getByText("DJI Mavic 3 Classic")).toBeVisible();
+    await semRolagemDeLado(page);
   });
 
   test("agenda mostra o conflito de escala", async ({ page }) => {

@@ -38,6 +38,7 @@ import {
   VARIAVEIS_DEMO,
 } from "./operacao";
 import { carregarRevisaoDemo } from "./revisao";
+import { montarKits, montarMarca, montarPedidos } from "./comercial";
 
 const { clients, projects, lotes, loteCards, auditLog } = schema;
 
@@ -54,6 +55,8 @@ export type Contagem = {
   reservas: number;
   eventos: number;
   documentos: number;
+  pedidos: number;
+  kits: number;
 };
 export const CONTAGEM_ZERO: Contagem = {
   clientes: 0,
@@ -68,6 +71,8 @@ export const CONTAGEM_ZERO: Contagem = {
   reservas: 0,
   eventos: 0,
   documentos: 0,
+  pedidos: 0,
+  kits: 0,
 };
 const soma = (c: Contagem) => Object.values(c).reduce((s, n) => s + n, 0);
 
@@ -95,7 +100,8 @@ async function existeDemo(tx: Tx): Promise<boolean> {
         or exists (select 1 from maestro.orcamentos where demo)
         or exists (select 1 from maestro.freelas where demo)
         or exists (select 1 from maestro.equipamentos where demo)
-        or exists (select 1 from maestro.eventos where demo) as tem`)) as unknown as { tem: boolean }[];
+        or exists (select 1 from maestro.eventos where demo)
+        or exists (select 1 from maestro.pedidos where demo) as tem`)) as unknown as { tem: boolean }[];
   return r.tem;
 }
 
@@ -107,7 +113,8 @@ export async function temDemonstracao(ctx: Contexto): Promise<boolean> {
 /** A demonstração está completa (todos os módulos)? Falso = "Completar demonstração" faz sentido. */
 export async function demonstracaoCompleta(ctx: Contexto): Promise<boolean> {
   return getBanco().asUser(ctx, async (tx) => {
-    for (const t of ["clients", "precos_itens", "orcamentos", "freelas", "equipamentos", "eventos", "documentos"]) if (!(await tem(tx, t))) return false;
+    for (const t of ["clients", "precos_itens", "orcamentos", "freelas", "equipamentos", "eventos", "documentos", "pedidos", "freela_equipamentos"])
+      if (!(await tem(tx, t))) return false;
     return true;
   });
 }
@@ -634,9 +641,13 @@ export async function carregarDemonstracao(ctx: Contexto, hoje = hojeBr()): Prom
       if (!(await tem(tx, "orcamentos"))) await montarOrcamentos(tx, ctx, c, refs, hoje);
       if (!(await tem(tx, "recorrencias"))) await montarFinanceiro(tx, ctx, c, refs, hoje);
       if (!(await tem(tx, "documentos"))) await montarDocumentos(tx, ctx, c, refs, hoje);
+      // Kit dos freelas, pedidos pelo link (um orçado e um aceito que virou projeto e parcelas) e a marca (fases 11 e 14).
+      if (!(await tem(tx, "freela_equipamentos"))) c.kits += await montarKits(tx, ctx);
+      c.pedidos += await montarPedidos(tx, ctx, hoje);
+      const marca = await montarMarca(tx, ctx);
       // Aprovações (versões, comentários, decisões e link dos lotes): idempotente, completa uma demonstração antiga.
       const versoes = await carregarRevisaoDemo(tx, ctx);
-      const criou = soma(c) > 0 || versoes > 0;
+      const criou = soma(c) > 0 || versoes > 0 || marca;
       if (criou) {
         await montarEmpresa(tx, ctx);
         await tx
@@ -661,6 +672,10 @@ export async function removerDemonstracao(ctx: Contexto): Promise<Res<{ contagem
     return await getBanco().asUser(ctx, async (tx) => {
       await travar(tx, ctx.orgId);
       const c: Contagem = { ...CONTAGEM_ZERO };
+      c.pedidos = await apagar(tx, "pedidos");
+      await apagar(tx, "links_publicos");
+      const marca = await apagar(tx, "org_marca");
+      c.kits = await apagar(tx, "freela_equipamentos");
       c.documentos = await apagar(tx, "documentos");
       c.reservas = await apagar(tx, "reservas");
       c.lancamentos = await apagar(tx, "lancamentos");
@@ -678,7 +693,7 @@ export async function removerDemonstracao(ctx: Contexto): Promise<Res<{ contagem
       c.lotes = await apagar(tx, "lotes");
       c.projetos = await apagar(tx, "projects");
       c.clientes = await apagar(tx, "clients");
-      if (soma(c) > 0) {
+      if (soma(c) > 0 || marca > 0) {
         await tx.execute(sql`
           update maestro.organizations set settings = settings - 'empresa'
            where id = ${ctx.orgId} and settings -> 'empresa' ->> 'demo' = 'true'`);

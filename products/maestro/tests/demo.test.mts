@@ -104,7 +104,7 @@ describe("demonstração", () => {
     assert.equal(await demo.temDemonstracao(A()), true);
 
     const clientes = await cli.listarClientes(A());
-    assert.equal(clientes.length, 11);
+    assert.equal(clientes.length, 13, "o de verdade, os 10 da base e 2 que chegaram pelos pedidos");
     for (const k of clientes.filter((x) => x.nome !== "Cliente de verdade")) assert.match(k.email ?? "", /@exemplo\.com$/);
     assert.ok(
       clientes.every((k) => !k.whatsapp),
@@ -164,7 +164,7 @@ describe("demonstração", () => {
     const vazio = await demo.removerDemonstracao(B());
     assert.ok(vazio.ok);
     if (vazio.ok) assert.deepEqual(vazio.contagem, demo.CONTAGEM_ZERO);
-    assert.equal((await contar(orgA)).clientesDemo, 10, "remover em B não toca em A");
+    assert.equal((await contar(orgA)).clientesDemo, 12, "remover em B não toca em A");
   });
 
   test("leitura não carrega; leitura e equipe não removem", async () => {
@@ -175,7 +175,7 @@ describe("demonstração", () => {
     if (!rl.ok) assert.equal(rl.erro, "sem_permissao");
     const re = await demo.removerDemonstracao(EQUIPE());
     assert.equal(re.ok, false);
-    assert.equal((await contar(orgA)).clientesDemo, 10);
+    assert.equal((await contar(orgA)).clientesDemo, 12);
   });
 
   test("remover tira só a demonstração (com histórico e lotes) e é idempotente", async () => {
@@ -186,7 +186,7 @@ describe("demonstração", () => {
 
     const r = await demo.removerDemonstracao(A());
     assert.ok(r.ok);
-    if (r.ok) assert.equal(r.contagem.clientes, 10);
+    if (r.ok) assert.equal(r.contagem.clientes, 12);
     const depois = await contar(orgA);
     assert.deepEqual(depois, {
       clientes: 1,
@@ -337,5 +337,56 @@ describe("demonstração da produtora por dentro", () => {
     }[];
     assert.equal(org.settings.empresa, undefined);
     assert.equal(await demo.temDemonstracao(A()), false);
+  });
+});
+
+describe("demonstração da marca, dos pedidos e do kit dos freelas", () => {
+  const ler = <T,>(q: ReturnType<typeof sql>) => getBanco().asSystem("conferir", (tx) => tx.execute(q)) as unknown as Promise<T[]>;
+
+  test("a B (administração) tem marca com logo, pedidos em todos os passos, um aceito que virou projeto e os kits", async () => {
+    const [m] = await ler<{ nome: string; cor: string; sha: string | null; demo: boolean }>(
+      sql`select nome, cor, logo_sha256 as sha, demo from maestro.org_marca where org_id = ${orgB}`,
+    );
+    assert.equal(m.nome, "Produtora Exemplo");
+    assert.match(m.sha ?? "", /^[0-9a-f]{64}$/);
+    assert.equal(m.demo, true);
+    const ped = await ler<{ status: string; n: number }>(sql`select status, count(*)::int as n from maestro.pedidos where org_id = ${orgB} group by status`);
+    assert.deepEqual(Object.fromEntries(ped.map((p) => [p.status, p.n])), { novo: 3, em_orcamento: 1, virou_projeto: 1, recusado: 1 });
+    const [ac] = await ler<{ status: string; code: string; link: string; parcelas: number; aceite: string }>(sql`
+      select q.status, p.code, p.link_status as link, q.aceite ->> 'nome' as aceite,
+             (select count(*)::int from maestro.lancamentos l where l.orcamento_id = q.id) as parcelas
+        from maestro.pedidos d join maestro.orcamentos q on q.id = d.orcamento_id join maestro.projects p on p.id = q.projeto_id
+       where d.org_id = ${orgB} and d.status = 'virou_projeto'`);
+    assert.equal(ac.status, "aprovado");
+    assert.match(ac.code, /^DEMO-/);
+    assert.equal(ac.link, "unlinked", "o projeto de exemplo nunca liga ao HUB");
+    assert.equal(ac.parcelas, 2);
+    assert.equal(ac.aceite, "Fernando Lima");
+    const [k] = await ler<{ n: number; aluguel: number }>(sql`
+      select (select count(*)::int from maestro.freela_equipamentos where org_id = ${orgB} and demo) as n,
+             (select max(aluguel_cents)::int from maestro.escalas where org_id = ${orgB}) as aluguel`);
+    assert.ok(k.n >= 20, "kits na maioria dos freelas");
+    assert.ok(k.aluguel > 0, "o Rafael leva câmera e drone numa diária");
+    const [l] = await ler<{ n: number }>(
+      sql`select count(*)::int as n from maestro.links_publicos where org_id = ${orgB} and tipo = 'pedido' and revogado_em is null`,
+    );
+    assert.equal(l.n, 1, "o link de pedido de exemplo");
+  });
+
+  test("carregar de novo não duplica; remover tira marca, pedidos, links e kits", async () => {
+    const r = await demo.carregarDemonstracao(B());
+    assert.ok(r.ok && !r.criou);
+    const [p] = await ler<{ n: number }>(sql`select count(*)::int as n from maestro.pedidos where org_id = ${orgB}`);
+    assert.equal(p.n, 6);
+    const tira = await demo.removerDemonstracao(B());
+    assert.ok(tira.ok);
+    const [z] = await ler<Record<string, number>>(sql`
+      select (select count(*)::int from maestro.org_marca where org_id = ${orgB}) as marca,
+             (select count(*)::int from maestro.pedidos where org_id = ${orgB}) as pedidos,
+             (select count(*)::int from maestro.links_publicos where org_id = ${orgB}) as links,
+             (select count(*)::int from maestro.freela_equipamentos where org_id = ${orgB}) as kits,
+             (select count(*)::int from maestro.projects where org_id = ${orgB}) as projetos,
+             (select count(*)::int from maestro.clients where org_id = ${orgB}) as clientes`);
+    assert.deepEqual(z, { marca: 0, pedidos: 0, links: 0, kits: 0, projetos: 0, clientes: 0 });
   });
 });

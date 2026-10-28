@@ -510,6 +510,8 @@ export const EVENTOS_DEMO: EventoDemo[] = [
     ],
     equipamentos: [1, 7, 16, 17, 18, 20],
   },
+  { tipo: "reuniao", titulo: "Revisão interna do teaser Safra", projeto: 0, dia: 0, hora: "10:30", horaFim: "11:30", local: "Estúdio", cor: "amarelo" },
+  { tipo: "entrega", titulo: "Entrega dos stories da semana", projeto: 1, dia: 0, hora: "17:00", cor: "verde" },
   { tipo: "reuniao", titulo: "Pré-produção: Residencial Jardins", projeto: 2, dia: 1, hora: "10:00", horaFim: "11:00", local: "Online", cor: "azul" },
   {
     tipo: "diaria",
