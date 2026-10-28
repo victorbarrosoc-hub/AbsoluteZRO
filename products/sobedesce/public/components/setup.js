@@ -246,11 +246,7 @@ function CloudWelcome() {
             </div>
           </div>`
         : html`<div class="welcome-signin"><${CloudSignIn} hero /></div>
-            ${pending ? null : html`<div class="welcome-alt">
-              <span class="welcome-or"><span>ou</span></span>
-              <button type="button" class="btn btn-ghost btn-sm" onClick=${localPath}><${Icon} name="laptop" size=${15} /><span>Conectar um Drive só neste computador</span></button>
-              <span class="sub">Com a sua própria chave do Google. Leva uns dez minutos.</span>
-            </div>`}`}
+`}
     </main>
     <p class="setup-foot">Os arquivos vão direto deste computador para o Google. O site só guarda o acesso aos seus Drives.</p>
   </div>`
@@ -258,7 +254,9 @@ function CloudWelcome() {
 
 export function SetupScreen({ route }) {
   const sub = route?.parts[1]
-  if (sub !== 'local' && sub !== 'chave') return html`<${CloudWelcome} />`
+  // Drive só neste computador só depois de entrar com a conta Absolute ZRO (decisão do titular, 28/10/2026).
+  const signed = !!getState().cloud?.conectado
+  if ((sub !== 'local' && sub !== 'chave') || !signed) return html`<${CloudWelcome} />`
   return html`<${LocalSetup} route=${route} />`
 }
 
