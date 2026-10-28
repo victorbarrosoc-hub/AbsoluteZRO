@@ -31,10 +31,10 @@ type Corpo = {
 function html(c: Corpo): string {
   const faixa = c.ecossistema
     ? `<tr><td style="padding:40px 48px 0 48px;">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid #e8e8ed;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="z-linha" style="border-top:1px solid #e8e8ed;">
           <tr><td style="padding-top:32px;font-family:${FONTE};">
             <p style="margin:0 0 6px 0;font-size:13px;letter-spacing:.02em;color:${SUTIL};">Uma conta. Todas as ferramentas.</p>
-            <p style="margin:0 0 20px 0;font-size:20px;line-height:1.35;color:${GRAFITE};font-weight:300;">Do roteiro à entrega, <strong style="font-weight:800;">tudo conversa.</strong></p>
+            <p class="z-titulo" style="margin:0 0 20px 0;font-size:20px;line-height:1.35;color:${GRAFITE};font-weight:300;">Do roteiro à entrega, <strong style="font-weight:800;">tudo conversa.</strong></p>
             ${[
               ['TPeasy', 'Roteiro e apoio na hora de gravar.'],
               ['SOBEDESCE', 'Cópia e backup do cartão à nuvem, tudo conferido.'],
@@ -43,7 +43,7 @@ function html(c: Corpo): string {
             ]
               .map(
                 ([nome, frase]) =>
-                  `<p style="margin:0 0 10px 0;font-size:15px;line-height:1.45;color:${APOIO};"><strong style="color:${GRAFITE};font-weight:600;">${nome}</strong> &nbsp;${frase}</p>`,
+                  `<p class="z-apoio" style="margin:0 0 10px 0;font-size:15px;line-height:1.45;color:${APOIO};"><strong class="z-forte" style="color:${GRAFITE};font-weight:600;">${nome}</strong> &nbsp;${frase}</p>`,
               )
               .join('')}
           </td></tr>
@@ -52,41 +52,42 @@ function html(c: Corpo): string {
     : ''
   return `<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">
+<meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">
+<style>.zl-claro,.zl-escuro{display:none!important;max-height:0;overflow:hidden}@media (prefers-color-scheme: light){.zl-neutro{display:none!important}.zl-claro{display:block!important;max-height:none}}@media (prefers-color-scheme: dark){.zl-neutro{display:none!important}.zl-escuro{display:block!important;max-height:none}.z-fundo{background:#000!important}.z-cartao{background:#1c1c1e!important}.z-titulo,.z-titulo strong,.z-forte{color:#f5f5f7!important}.z-apoio{color:#a1a1a6!important}.z-sutil,.z-sutil a{color:#86868b!important}.z-botao{background:#f5f5f7!important}.z-botao a{color:#1d1d1f!important}.z-linha{border-top-color:#38383a!important}}</style>
 <title>${esc(c.fino)} ${esc(c.forte)}</title></head>
-<body style="margin:0;padding:0;background:#f5f5f7;-webkit-font-smoothing:antialiased;">
+<body class="z-fundo" style="margin:0;padding:0;background:#f5f5f7;-webkit-font-smoothing:antialiased;">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${esc(c.previa)}&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f7;">
+<table class="z-fundo" role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f7;">
   <tr><td align="center" style="padding:48px 16px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
       <tr><td style="padding:0 8px 28px 8px;">
-        <a href="${ORIGEM}" style="text-decoration:none;"><img src="${ORIGEM}/brand/email/absolute-zro-grafite.png" width="151" height="14" alt="Absolute ZRO" style="display:block;border:0;width:151px;height:auto;"></a>
+        <a href="${ORIGEM}" style="text-decoration:none;"><img class="zl-neutro" src="${ORIGEM}/brand/email/absolute-zro-cinza.png" width="151" height="14" alt="Absolute ZRO" style="display:block;border:0;width:151px;height:auto;"><img class="zl-claro" src="${ORIGEM}/brand/email/absolute-zro-grafite.png" width="151" height="14" alt="" style="display:none;border:0;width:151px;height:auto;"><img class="zl-escuro" src="${ORIGEM}/brand/email/absolute-zro-branco.png" width="151" height="14" alt="" style="display:none;border:0;width:151px;height:auto;"></a>
       </td></tr>
-      <tr><td style="background:#ffffff;border-radius:28px;">
+      <tr><td class="z-cartao" style="background:#ffffff;border-radius:28px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
           <tr><td style="padding:48px 48px 0 48px;">
-            <img src="${ORIGEM}/brand/email/absolute-zro-simbolo-grafite.png" width="40" height="40" alt="" style="display:block;border:0;width:40px;height:40px;">
+            <img class="zl-neutro" src="${ORIGEM}/brand/email/absolute-zro-simbolo-cinza.png" width="40" height="40" alt="" style="display:block;border:0;width:40px;height:auto;"><img class="zl-claro" src="${ORIGEM}/brand/email/absolute-zro-simbolo-grafite.png" width="40" height="40" alt="" style="display:none;border:0;width:40px;height:auto;"><img class="zl-escuro" src="${ORIGEM}/brand/email/absolute-zro-simbolo-branco.png" width="40" height="40" alt="" style="display:none;border:0;width:40px;height:auto;">
           </td></tr>
           <tr><td style="padding:28px 48px 0 48px;font-family:${FONTE};">
-            <h1 style="margin:0;font-size:36px;line-height:1.12;letter-spacing:-.02em;color:${GRAFITE};font-weight:300;">${esc(c.fino)} <strong style="font-weight:800;">${esc(c.forte)}</strong></h1>
-            <p style="margin:16px 0 0 0;font-size:17px;line-height:1.5;color:${APOIO};">${esc(c.apoio)}</p>
+            <h1 class="z-titulo" style="margin:0;font-size:36px;line-height:1.12;letter-spacing:-.02em;color:${GRAFITE};font-weight:300;">${esc(c.fino)} <strong style="font-weight:800;">${esc(c.forte)}</strong></h1>
+            <p class="z-apoio" style="margin:16px 0 0 0;font-size:17px;line-height:1.5;color:${APOIO};">${esc(c.apoio)}</p>
           </td></tr>
           <tr><td style="padding:32px 48px 0 48px;">
             <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-              <td style="border-radius:999px;background:${GRAFITE};">
+              <td class="z-botao" style="border-radius:999px;background:${GRAFITE};">
                 <a href="${esc(c.botao.link)}" style="display:inline-block;padding:15px 30px;font-family:${FONTE};font-size:16px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:999px;">${esc(c.botao.texto)}</a>
               </td>
             </tr></table>
           </td></tr>
-          ${c.nota ? `<tr><td style="padding:20px 48px 0 48px;font-family:${FONTE};font-size:13px;line-height:1.5;color:${SUTIL};">${esc(c.nota)}</td></tr>` : ''}
+          ${c.nota ? `<tr><td class="z-sutil" style="padding:20px 48px 0 48px;font-family:${FONTE};font-size:13px;line-height:1.5;color:${SUTIL};">${esc(c.nota)}</td></tr>` : ''}
           ${faixa}
-          <tr><td style="padding:40px 48px 44px 48px;font-family:${FONTE};font-size:12px;line-height:1.55;color:${SUTIL};">
+          <tr><td class="z-sutil" style="padding:40px 48px 44px 48px;font-family:${FONTE};font-size:12px;line-height:1.55;color:${SUTIL};">
             O botão não abre? Copie este endereço no navegador:<br>
             <a href="${esc(c.botao.link)}" style="color:${APOIO};word-break:break-all;">${esc(c.botao.link)}</a>
           </td></tr>
         </table>
       </td></tr>
-      <tr><td align="center" style="padding:28px 8px 0 8px;font-family:${FONTE};font-size:12px;line-height:1.6;color:${SUTIL};">
+      <tr><td class="z-sutil" align="center" style="padding:28px 8px 0 8px;font-family:${FONTE};font-size:12px;line-height:1.6;color:${SUTIL};">
         O futuro começa do zero.<br>
         Absolute ZRO · <a href="mailto:contato@absolutezro.com" style="color:${SUTIL};">contato@absolutezro.com</a>
       </td></tr>

@@ -1,12 +1,12 @@
 /**
  * E-mail transacional pelo Resend (POST https://api.resend.com/emails, sem SDK).
- * Variáveis: RESEND_API_KEY, EMAIL_REMETENTE (padrão "SOBEDESCE <nao-responda@dissesim.com.br>").
+ * Variáveis: RESEND_API_KEY, EMAIL_REMETENTE (padrão "SOBEDESCE <nao-responda@absolutezro.com>").
  * Sem chave: fora de produção o e-mail vai para o console e o fluxo segue; em produção não envia
  * (e nada do conteúdo vai para o log, porque pode levar link com token).
  * SOBEDESCE_RESEND_BASE troca a base só em teste local (mesma regra do Google falso).
  */
 
-export const REMETENTE_PADRAO = "SOBEDESCE <nao-responda@dissesim.com.br>";
+export const REMETENTE_PADRAO = "SOBEDESCE <nao-responda@absolutezro.com>";
 
 export type Email = { para: string; assunto: string; html: string; texto: string };
 export type ResultadoEnvio = { ok: true; via: "resend" | "console" } | { ok: false; motivo: "sem_config" | "falhou" };
