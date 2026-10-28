@@ -4,6 +4,7 @@ import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { brl, brlCurto, dataCurta, dataPorExtenso, diasEntre, hojeBr } from "@/lib/dinheiro";
 import { quandoRetorno, situacaoRetorno } from "@/lib/funil/regras";
 import { resumoDoDia, type DiaDoCaixa } from "@/lib/hoje";
+import { metaDoMes } from "@/lib/numeros/servidor";
 import { podeEscrever, podeVerDinheiro } from "@/lib/papeis";
 import { Saudacao } from "@/components/ambiente";
 import { BotaoAcao } from "@/components/acao";
@@ -125,7 +126,8 @@ export default async function Hoje() {
   const hoje = hojeBr();
   const dinheiro = podeVerDinheiro(s.papel);
   const escreve = podeEscrever(s.papel);
-  const r = await resumoDoDia({ sub: s.sub, orgId: s.orgId }, dinheiro, hoje);
+  const ctx = { sub: s.sub, orgId: s.orgId };
+  const [r, meta] = await Promise.all([resumoDoDia(ctx, dinheiro, hoje), dinheiro ? metaDoMes(ctx, hoje.slice(0, 7)) : null]);
   const dia = SEMANA[new Date(`${hoje}T12:00:00Z`).getUTCDay()];
   const d = r.dinheiro;
   const pedem = r.retornos.length + r.cards.vencemHoje + r.cards.atrasados + r.pedidosNovos;
@@ -365,6 +367,15 @@ export default async function Hoje() {
               rotulo="Caixa"
               apoio="Recebido menos pago"
               tom={d.caixa < 0 ? "perigo" : "ok"}
+            />
+            <Cartao
+              i={i++}
+              href="/app/financeiro/numeros"
+              icone="numeros"
+              n={meta ? `${Math.round((meta.faturado / meta.meta) * 100)}%` : "—"}
+              rotulo="Meta do mês"
+              apoio={meta ? `${brlCurto(meta.faturado)} de ${brlCurto(meta.meta)}` : "Defina em Números"}
+              tom={meta && meta.faturado >= meta.meta ? "ok" : undefined}
             />
           </>
         ) : null}

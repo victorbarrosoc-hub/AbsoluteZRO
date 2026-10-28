@@ -10,6 +10,7 @@ import { EstadoVazio } from "./vazio";
 
 const ABAS = [
   { href: "/app/financeiro", nome: "Lançamentos" },
+  { href: "/app/financeiro/numeros", nome: "Números" },
   { href: "/app/financeiro/contas", nome: "A pagar e a receber" },
   { href: "/app/financeiro/fluxo", nome: "Fluxo e resultado" },
   { href: "/app/financeiro/recorrencias", nome: "Recorrências" },
