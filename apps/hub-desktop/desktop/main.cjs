@@ -950,11 +950,19 @@ async function smoke() {
     const bandejaOk = !icone.isEmpty() && itens.some((i) => i.acao === 'reiniciar-e-atualizar') && !!tray && !tray.isDestroyed()
     log(`bandeja: ${bandejaOk ? 'ok' : 'FALHOU'} (${icone.getSize().width}×${icone.getSize().height})`)
     // boas-vindas: a tela abre, a ponte responde e os apps aparecem
-    const b = await mostrarBoasVindas()
+    const b = await Promise.race([mostrarBoasVindas(), new Promise((ok) => setTimeout(() => ok(null), 20000))])
+    // No Windows do CI, janela escondida pode não rodar a página: mostra sem foco (fora da tela) só no teste.
+    if (b && !b.isDestroyed()) {
+      b.setPosition(-3000, -3000)
+      b.showInactive()
+    }
     const bv = b
-      ? await b.webContents.executeJavaScript(
-          `new Promise((ok) => { const t = setInterval(() => { if (window.__zroBoasVindas) { clearInterval(t); ok({ apps: window.__zroBoasVindas.apps, cartoes: document.querySelectorAll('.cartao').length, semNode: typeof require === 'undefined' }) } }, 50) })`,
-        )
+      ? await Promise.race([
+          new Promise((ok) => setTimeout(() => ok(null), 20000)),
+          b.webContents.executeJavaScript(
+            `new Promise((ok) => { const t = setInterval(() => { if (window.__zroBoasVindas) { clearInterval(t); ok({ apps: window.__zroBoasVindas.apps, cartoes: document.querySelectorAll('.cartao').length, semNode: typeof require === 'undefined' }) } }, 50) })`,
+          ),
+        ])
       : null
     const boasOk = !!bv && bv.apps === 1 && bv.cartoes === 1 && bv.semNode
     log(`boas-vindas: ${boasOk ? 'ok' : 'FALHOU'}`)
