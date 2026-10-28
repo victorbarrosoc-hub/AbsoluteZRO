@@ -45,6 +45,12 @@ export const PLATAFORMAS: Record<string, { nome: string; faz: string[] }> = {
     nome: 'Carro do Freela',
     faz: ['Agenda e contratação de freelas do audiovisual (protótipo): quem contrata monta a escala, quem é freela mantém a própria agenda.'],
   },
+  maestro: {
+    nome: 'Maestro',
+    faz: [
+      'Em desenvolvimento, ainda fechado (nada no ar): gestão de conteúdo para agências e produtoras, com o Quadro de pautas em 8 colunas, aprovação do cliente por link sem conta e projetos ligados ao projeto da Absolute ZRO. Não ofereça como disponível.',
+    ],
+  },
 }
 
 /** Bloco de texto fixo para o sistema da Z (fica no cache: não muda por turno). */

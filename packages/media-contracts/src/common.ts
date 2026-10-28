@@ -18,5 +18,5 @@ export const LogicalUri = z
   .regex(/^zro-dest:\/\/[^\s]+$/, 'use zro-dest://<destino>/<caminho>')
   .max(2048)
 
-export const ProductId = z.enum(['carro-do-freela', 'tpeasy', 'sobedesce', 'synquei', 'ai-edit', 'nossom', 'finishing'])
+export const ProductId = z.enum(['carro-do-freela', 'tpeasy', 'sobedesce', 'synquei', 'ai-edit', 'nossom', 'finishing', 'maestro'])
 export type ProductId = z.infer<typeof ProductId>
