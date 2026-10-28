@@ -7,11 +7,13 @@
  * - Termos sempre escapados (aspas e barra invertida) antes de entrar na `q` do Drive.
  * - Busca: a ordem é a do Google (relevância); o Drive não aceita orderBy junto de fullText.
  * - Pasta: pelo id ou pelo nome. Nome que bate em várias pastas devolve as opções (a Z pergunta qual).
- * - O nome da pasta de cada arquivo da busca não vem: custaria uma chamada a mais por arquivo.
+ * - O nome da pasta de cada arquivo da busca não vem (custaria uma chamada a mais por arquivo); vem o link que abre
+ *   essa pasta na aba Drive do app (`abrir_no_sobedesce`, /app/#drive/<id>), feito do primeiro `parent`.
  * Versão pronta e pedido ao computador (o que muda algo): lib/zro/computador-da-z.ts.
  */
 import { listarContas, type Conta } from "@/lib/google/contas";
 import { aspas, chamarDrive, ErroDrive, PASTA_MIME } from "@/lib/google/drive";
+import { siteUrl } from "@/lib/site";
 
 /** `zro_pedido` do JWT do HUB para cada ação. */
 export const ACAO_BUSCA = "drive.buscar";
@@ -21,7 +23,18 @@ export const POR_BUSCA = 10;
 export const POR_PASTA = 25;
 const MAX_CONTAS = 3;
 export const CAMPOS_ARQUIVO =
-  "id,name,mimeType,createdTime,modifiedTime,size,webViewLink,webContentLink,iconLink,videoMediaMetadata(width,height,durationMillis),imageMediaMetadata(width,height)";
+  "id,name,mimeType,parents,createdTime,modifiedTime,size,webViewLink,webContentLink,iconLink,videoMediaMetadata(width,height,durationMillis),imageMediaMetadata(width,height)";
+
+/** Id de arquivo ou pasta do Drive (o que entra no link do app). */
+const ID_SEGURO = /^[A-Za-z0-9_-]{1,200}$/;
+
+/**
+ * Link que abre a pasta na aba Drive do app do SOBEDESCE (public/app, lib/drive-link.js): `<site>/app/#drive/<id>`.
+ * Id estranho: null (nunca monta link com outra coisa no fim).
+ */
+export function linkNoSobedesce(pastaId: unknown): string | null {
+  return typeof pastaId === "string" && ID_SEGURO.test(pastaId) ? `${siteUrl()}/app/#drive/${pastaId}` : null;
+}
 
 export const ORDENS = { mais_antigo: "createdTime", mais_recente: "createdTime desc", nome: "folder,name" } as const;
 export type Ordem = keyof typeof ORDENS;
@@ -40,8 +53,10 @@ export type ArquivoAchado = {
   link: string | null;
   link_download: string | null;
   icone: string | null;
+  /** A pasta (ela mesma, se for pasta; senão a pasta onde o arquivo está) aberta na aba Drive do app. */
+  abrir_no_sobedesce: string | null;
 };
-export type PastaAchada = { id: string; nome: string; link: string | null; modificado: string | null };
+export type PastaAchada = { id: string; nome: string; link: string | null; modificado: string | null; abrir_no_sobedesce: string | null };
 
 export type FalhaDrive = { ok: false; erro: "sem_drive" | "reconectar_drive" | "drive_indisponivel" };
 export type ResultadoBusca = { ok: true; arquivos: ArquivoAchado[]; incompleta: boolean } | FalhaDrive;
@@ -89,11 +104,13 @@ export function soMetadados(f: FileDrive): ArquivoAchado | null {
   const v = f.videoMediaMetadata;
   const i = f.imageMediaMetadata;
   const ms = numero(v?.durationMillis);
+  const pasta = tipo === PASTA_MIME;
+  const pai = Array.isArray(f.parents) ? (f.parents as unknown[])[0] : null;
   return {
     id,
     nome,
     tipo,
-    pasta: tipo === PASTA_MIME,
+    pasta,
     criado: texto(f.createdTime),
     modificado: texto(f.modifiedTime),
     tamanho: numero(f.size),
@@ -102,13 +119,14 @@ export function soMetadados(f: FileDrive): ArquivoAchado | null {
     link: https(f.webViewLink),
     link_download: https(f.webContentLink),
     icone: https(f.iconLink),
+    abrir_no_sobedesce: linkNoSobedesce(pasta ? id : pai),
   };
 }
 
 const pastaDe = (f: FileDrive): PastaAchada | null => {
   const id = texto(f.id);
   const nome = texto(f.name);
-  return id && nome ? { id, nome, link: https(f.webViewLink), modificado: texto(f.modifiedTime) } : null;
+  return id && nome ? { id, nome, link: https(f.webViewLink), modificado: texto(f.modifiedTime), abrir_no_sobedesce: linkNoSobedesce(id) } : null;
 };
 
 /** As contas Google prontas, ou a falha (nenhuma conectada, todas pedindo reconectar). */

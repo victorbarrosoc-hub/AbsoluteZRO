@@ -31,7 +31,10 @@ Enviado como `Authorization: Bearer <jwt>`, `Content-Type: application/json`. Ba
 | `/api/zro/drive/computador` | `{ arquivoId, formato }`                                             | `201`/`200 { pedido: { id, status, novo }, original, formato, computadores, destino, acompanhar }` |
 
 `Arquivo = { id, nome, tipo (mimeType), pasta, criado, modificado, tamanho, video: { largura, altura, duracao_s } |
-null, imagem: { largura, altura } | null, link (webViewLink), link_download (webContentLink), icone }`. Só metadados;
+null, imagem: { largura, altura } | null, link (webViewLink), link_download (webContentLink), icone,
+abrir_no_sobedesce }`. `Pasta = { id, nome, link, modificado, abrir_no_sobedesce }`. `abrir_no_sobedesce` =
+`<site>/app/#drive/<id>`: a própria pasta (pasta) ou a pasta onde o arquivo está (primeiro `parent`); abre a aba
+Drive do app do SOBEDESCE dentro dela. O HUB só repassa esse formato exato, na origem do SOBEDESCE. Só metadados;
 nada é guardado. `formato`: `mp4`, `mp4-1080`, `mp4-720`, `mp3-320`, `wav`, `m4a`, `jpg`.
 
 Busca: `q = (name contains 'x' or fullText contains 'x') and trashed = false`, termo escapado, `corpora=allDrives`,

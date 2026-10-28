@@ -28,6 +28,7 @@ import { P2pEnvioSheet, P2pReceberSheet } from './components/p2p.js'
 import { startP2p } from './lib/p2p.js'
 import { parseDriveLink } from './lib/copiar.js'
 import { abertura, aberturaAoVoltar } from './lib/abertura.js'
+import { pastaDoHash } from './lib/drive-link.js'
 
 const SHEETS = {
   folders: FolderSheet,
@@ -102,7 +103,7 @@ function openShared(state) {
 // Modo Wi-Fi (servido pelo SOBEDESCE do computador): sem conta aqui, quem fala com o Drive é o computador.
 if (!LAN) {
   auth.boot()
-  setState({ tab: savedTab() })
+  setState({ tab: savedTab(), abrirPasta: pastaDoHash(location.hash) })
   startBridge() // o service worker pede o token por aqui para a prévia e o download (/app/stream/)
   subscribe(openShared)
   // /app/#referencias (link de Sua conta): abre a aba, se a conta tiver o recurso.
@@ -110,6 +111,9 @@ if (!LAN) {
     if (location.hash === '#referencias') setState({ tab: 'refs' })
     if (location.hash === '#aparelhos') setState({ tab: 'ap' })
     if (location.hash === '#computador') openComputer()
+    // /app/#drive/<id> (botão "Abrir a pasta no SOBEDESCE" da Z) com o app já aberto: a aba Drive vai até a pasta.
+    const pasta = pastaDoHash(location.hash)
+    if (pasta) setState({ tab: 'drive', abrirPasta: pasta })
   })
   // "No computador" (lib/computador.js): começa a acompanhar depois de entrar; /app/#computador (aviso do celular,
   // link de Sua conta) abre a folha.

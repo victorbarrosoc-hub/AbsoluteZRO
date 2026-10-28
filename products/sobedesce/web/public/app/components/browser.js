@@ -43,6 +43,8 @@ import { framesDoDrive } from './criar.js'
 import { engine } from '../lib/uploader.js'
 import { isIOS } from '../lib/platform.js'
 import { LAN } from '../lib/config.js'
+import { driveCall, folderPath, myDriveId } from '../lib/drive.js'
+import { lugarDaPasta } from '../lib/drive-link.js'
 
 // Listas já abertas (voltar para uma pasta não pisca). Vale enquanto a página está aberta.
 const lists = new Map()
@@ -622,6 +624,19 @@ function usePull(ref, active, onRefresh) {
   return { pull, busy }
 }
 
+/** A pasta pelo id para o link profundo (null quando a conta não enxerga). */
+async function metaDaPasta(id) {
+  try {
+    return await driveCall(`/files/${encodeURIComponent(id)}`, {
+      query: { supportsAllDrives: true, fields: 'id,name,mimeType,parents,driveId,trashed,capabilities(canAddChildren)' },
+      retries: 1,
+    })
+  } catch (err) {
+    if (err?.status === 404 || err?.status === 403 || err?.status === 400) return null
+    throw err
+  }
+}
+
 // ───── voltar de pasta: histórico e gesto da borda ─────
 //
 // Cada pasta aberta vira uma entrada do histórico (history.pushState com o caminho). Assim o gesto nativo do Safari
@@ -1049,6 +1064,29 @@ export function DriveScreen({ active }) {
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
   }, [])
+  // Link profundo /app/#drive/<id> (lib/drive-link.js): abre a pasta com a trilha toda (voltar sobe até a raiz).
+  // Sem acesso ou inexistente: aviso curto e fica na raiz do Meu Drive.
+  const abrirPasta = useApp((s) => s.abrirPasta)
+  const linkSeq = useRef(0)
+  useEffect(() => {
+    if (!abrirPasta || LAN) return
+    const vez = ++linkSeq.current // outro link no meio: vale o último
+    const id = abrirPasta
+    setState({ abrirPasta: null })
+    try {
+      if (location.hash) history.replaceState(history.state, '', location.pathname + location.search)
+    } catch {
+      // segue com o # no endereço
+    }
+    lugarDaPasta(id, { meta: metaDaPasta, caminho: folderPath, raiz: myDriveId })
+      .catch(() => null)
+      .then((lugar) => {
+        if (vez !== linkSeq.current) return
+        if (lugar) return go(lugar.scope, lugar.path, lugar.path.length ? 'push' : 'none')
+        toast('Essa pasta não abriu neste Drive.', { ms: 3200 })
+        go('mine', [], 'none')
+      })
+  }, [abrirPasta])
   const open = (f) => {
     // Escolhendo para os Frames (aba Criar → Do Drive): tocar no vídeo leva para lá.
     if (escolher && !isFolder(f)) {
