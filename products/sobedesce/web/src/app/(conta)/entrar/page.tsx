@@ -3,7 +3,6 @@ import { LogIn } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Aviso } from "@/components/conta/aviso";
-import { LogoGoogle } from "@/components/conta/google";
 import { BotaoZro } from "@/components/conta/zro";
 import { mensagemDeErro } from "@/components/conta/mensagens";
 import { Moldura } from "@/components/conta/moldura";
@@ -55,14 +54,6 @@ export default async function Entrar({ searchParams }: Props) {
       </div>
 
       <FormEntrar volta={volta} />
-
-      {/* Contas antigas criadas pelo "Continuar com Google": o Google de entrar delas continua abrindo a conta. */}
-      <p className="mt-8 text-center text-[13px] text-ink-3">
-        <a href={`/api/google/conectar?${new URLSearchParams({ modo: "entrar", volta })}`} className="toque inline-flex items-center gap-1.5 underline-offset-4 hover:text-ink hover:underline">
-          <LogoGoogle className="size-3.5" />
-          Já tenho conta antiga com Google
-        </a>
-      </p>
 
       <p className="mt-12 text-center text-[15px] text-ink-2">
         Ainda não tem conta?{" "}
