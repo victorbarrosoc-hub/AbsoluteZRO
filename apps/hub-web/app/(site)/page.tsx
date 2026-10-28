@@ -38,6 +38,9 @@ const FATOS: Record<string, string[]> = {
   finishing: ['LUT criativa a partir de uma referência', 'LOG para Rec.709 por câmera', 'PowerGrade para o DaVinci Resolve'],
 }
 
+/** Ferramentas com a tela no MacBook e no iPhone (public/brand/produto-<id>-{claro,escuro}.webp); as outras mostram o ícone. */
+const TELA = new Set(['carro-do-freela', 'tpeasy', 'sobedesce', 'synquei', 'ai-edit', 'nossom', 'finishing'])
+
 /** O nome da etapa no fluxo, na ordem do catálogo. */
 const ETAPA: Record<string, string> = {
   'carro-do-freela': 'Equipe',
@@ -92,8 +95,9 @@ export default async function Landing() {
   const aberto = (id: string) => liberados.has(id)
   const ativos = products.filter((p) => aberto(p.id) && (p.stage === 'active' || p.stage === 'beta'))
   const siteDe = (p: (typeof products)[number]) => (aberto(p.id) ? (p.external_url as string | null) || SITE[p.id as string] || null : null)
-  const eventos = Object.keys(EVENT_PAYLOADS)
-  const formatos = EVENT_PAYLOADS['edit.timeline.ready'][1].shape.format.options.length
+  // Só os eventos de quem está aberto: o fluxo e os números mostram o que roda hoje, não o que ainda está fechado.
+  const eventos = Object.keys(EVENT_PAYLOADS).filter((e) => aberto(EVENT_PRODUCER[e as keyof typeof EVENT_PRODUCER]))
+  const formatos = aberto(EVENT_PRODUCER['edit.timeline.ready']) ? EVENT_PAYLOADS['edit.timeline.ready'][1].shape.format.options.length : 0
   const noComputador = ativos.filter((p) => hasDesktopInstaller(p.id as string, baixaveis)).length
   const numeros = [
     { valor: ativos.length, rotulo: 'ferramentas' },
@@ -101,7 +105,7 @@ export default async function Landing() {
     { valor: eventos.length, rotulo: 'eventos ligam as etapas', dica: 'Contratos versionados em @zro/media-contracts' },
     { valor: formatos, rotulo: 'formatos de linha do tempo', dica: 'OTIO, FCPXML, xmeml, EDL e AAF' },
     { valor: noComputador, rotulo: 'apps para Mac e Windows' },
-  ]
+  ].filter((n) => n.valor > 0)
   // Conheça de perto: os lançados primeiro; os fechados vêm depois, com o selo e sem link.
   const destaques = [...ativos, ...products.filter((p) => !ativos.includes(p))].map((p) => ({
     id: p.id as string,
@@ -110,6 +114,7 @@ export default async function Landing() {
     fatos: FATOS[p.id as string] ?? [],
     site: siteDe(p),
     emDesenvolvimento: !aberto(p.id),
+    tela: TELA.has(p.id as string),
     cor: productColor(p.id as string),
   }))
   const etapas = ativos.map((p) => ({
@@ -143,7 +148,7 @@ export default async function Landing() {
             <span className="phero__thin">{words('O futuro começa', 0)}</span>
             <span className="phero__bold">{words('do zero.', 3)}</span>
           </h1>
-          <p className="phero__lead">Ferramentas e pessoas para todas as etapas da produção audiovisual. Do briefing à entrega final.</p>
+          <p className="phero__lead">Ferramentas para a produção audiovisual, numa conta só.</p>
           <div className="phero__ctas">
             <Link className="glass-btn glass-btn--ink" href="#ecossistema">
               Conheça o ecossistema
@@ -154,7 +159,7 @@ export default async function Landing() {
           </div>
         </div>
         <ul className="phero__side" aria-hidden="true">
-          <li>Pessoas</li>
+          <li>Conta</li>
           <li>Ferramentas</li>
           <li>Fluxo</li>
           <li>Resultado</li>
@@ -202,7 +207,7 @@ export default async function Landing() {
         <p className="pstrip__rule" aria-hidden="true">
           <span>Ferramentas que se conectam</span>
           <i />
-          <span>Um ecossistema completo</span>
+          <span>Uma conta só</span>
         </p>
       </section>
 
@@ -230,7 +235,7 @@ export default async function Landing() {
       <section className="section section--center pfluxo-sec" aria-labelledby="fluxo-title">
         <div className="section__head section__head--wide reveal">
           <h2 id="fluxo-title" className="display-2 atitle">
-            <span className="atitle__thin">Do job</span>
+            <span className="atitle__thin">Do roteiro</span>
             <span className="atitle__bold">à entrega.</span>
           </h2>
           <p>Cada etapa avisa o HUB. A próxima começa de onde a outra parou.</p>
@@ -316,12 +321,12 @@ export default async function Landing() {
       </section>
 
       {/* O plano que abre tudo. */}
-      <section className="pcycle reveal" aria-labelledby="ciclo-title">
+      <section className="pcycle reveal" id="ciclo" aria-labelledby="ciclo-title">
         <div className="pcycle__text">
           <h2 id="ciclo-title" className="pcycle__title">
             O Ciclo do O
           </h2>
-          <p className="pcycle__lead">Acesso a todo o ecossistema com uma única assinatura.</p>
+          <p className="pcycle__lead">Todas as ferramentas lançadas numa assinatura só.</p>
         </div>
         <div className="pcycle__rings" aria-hidden="true">
           {[0, 1, 2, 3].map((i) => (

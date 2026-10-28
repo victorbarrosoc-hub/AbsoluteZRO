@@ -4476,6 +4476,19 @@ a.pstrip__card:focus-visible .pstrip__go {
   opacity: 1;
   scale: 1;
 }
+/* sem a foto nos aparelhos: o ícone grande no meio do palco, na mesma proporção das fotos */
+.pconheca__tela--icone {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1600 / 971;
+}
+.pconheca__tela.pconheca__tela--icone img,
+.pconheca__tela.pconheca__tela--icone svg {
+  width: clamp(96px, 22%, 160px);
+  height: auto;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
 .pconheca__tela img {
   width: 100%;
   height: auto;
@@ -4851,6 +4864,11 @@ a.pstrip__card:focus-visible .pstrip__go {
 .dl-picker__app .zro-mark {
   box-shadow: 0 10px 24px rgb(0 0 0 / 0.16);
   transition: scale 0.4s var(--spring);
+}
+/* fechado ao público: o selo centralizado embaixo do nome */
+.dl-picker__app .selo-dev {
+  justify-self: center;
+  font-weight: 500;
 }
 .dl-picker__app:hover {
   background: var(--glass-fill), var(--surface);

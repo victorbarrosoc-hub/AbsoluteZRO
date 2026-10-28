@@ -17,7 +17,7 @@ export default async function Projetos({ searchParams }: { searchParams: Promise
       <div className="page-head">
         <div className="page-head__text">
           <h1>Meus projetos</h1>
-          <p>Cada projeto liga as etapas do Ciclo do O: do job à entrega.</p>
+          <p>Cada projeto liga as etapas do Ciclo do O: do roteiro à entrega.</p>
         </div>
         <Link className="zro-btn zro-btn--primary" href="/projetos/novo">
           Novo projeto

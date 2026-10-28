@@ -23,6 +23,7 @@ const LINHA: Record<string, string> = {
   'ai-edit': 'Edição de vídeo',
   nossom: 'Tratamento de som',
   finishing: 'Cor e entrega',
+  maestro: 'Gestão da produtora',
 }
 
 /** Site oficial quando o catálogo ainda não tem o endereço. */
