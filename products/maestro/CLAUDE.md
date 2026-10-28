@@ -42,7 +42,11 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   (Server Actions conferem sessão e papel; o banco confere de novo). Remover cliente/projeto = `deleted_at`, só
   admin e gestão.
 - **Z**: `api/zro/ia/[...caminho]` repassa ao HUB com o token da sessão (NDJSON sem buffer); a aba Z é a primeira.
-- Repositório público: nada de `.env`, chave, dado pessoal ou mídia dos repositórios antigos. Semente só `demo-`.
+- **Demonstração** (`src/lib/demo`, migration `0003`): "Carregar demonstração" monta a produtora de exemplo na
+  organização da sessão (só admin e gestão); clientes, projetos e lotes com `demo = true`, cards `demo-…` com
+  `dados.demo`; "Remover demonstração" apaga só esses (cards por `maestro.demo_apagar_cards()`). O selo
+  "Demonstração" aparece no topo enquanto houver.
+- Repositório público: nada de `.env`, chave, dado pessoal ou mídia dos repositórios antigos. Semente só `demo-` (`db:seed:demo` usa a mesma demonstração).
 
 ## Como rodar e testar
 
@@ -57,4 +61,4 @@ Os testes (`node --test` via tsx) criam bancos `maestro_test_<nome>` a partir de
 `postgres://postgres:postgres@localhost:5432/postgres`) e sobem uma Absolute ZRO falsa (`tests/zro-falso.mts`).
 Cobertura mínima que não pode cair: isolamento RLS com duas organizações (`rls.test.mts`), OIDC completo
 (`zro.test.mts`), repasse da Z (`ia.test.mts`), `temAcesso` e papéis (`acesso.test.mts`), Quadro com conflito por campo (`quadro.test.mts`), clientes e projetos com
-isolamento e papel de leitura (`crm.test.mts`).
+isolamento e papel de leitura (`crm.test.mts`), demonstração idempotente que remove só o que é `demo` (`demo.test.mts`).

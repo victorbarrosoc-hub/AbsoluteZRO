@@ -108,6 +108,8 @@ export const clients = maestro.table(
     /** Quem aprova pelo cliente: { nome, email, whatsapp }. */
     approver: jsonb().$type<Record<string, unknown>>().notNull().default({}),
     recurring: jsonb().$type<Record<string, unknown>>(),
+    /** Linha da demonstração (0003): "Remover demonstração" apaga só estas. */
+    demo: boolean().notNull().default(false),
     createdBy: uuid(),
     createdAt: agora(),
     updatedAt: agora(),
@@ -147,6 +149,8 @@ export const projects = maestro.table(
     linkAttempts: integer().notNull().default(0),
     linkLastError: text(),
     linkUpdatedAt: quando(),
+    /** Projeto da demonstração (0003): código DEMO-AAAA-NNN, nunca liga ao HUB. */
+    demo: boolean().notNull().default(false),
     createdBy: uuid(),
     createdAt: agora(),
     updatedAt: agora(),
@@ -238,6 +242,8 @@ export const lotes = maestro.table(
     sentAt: quando(),
     closedAt: quando(),
     term: jsonb().$type<Record<string, unknown>>(),
+    /** Lote da demonstração (0003). */
+    demo: boolean().notNull().default(false),
     createdBy: uuid(),
     createdAt: agora(),
     updatedAt: agora(),

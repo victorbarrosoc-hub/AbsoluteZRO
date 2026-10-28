@@ -269,6 +269,11 @@ Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   em `/api/quadro`); Clientes (CRM básico: nome, empresa, contato, WhatsApp, e-mail, observações, lead/ativo/pausado,
   busca, ficha com cards, projetos e `wa.me`); Projetos (código `MAE-AAAA-NNN` por organização, cliente, status,
   datas, briefing; `link_status` fica `pending`). Migration `drizzle/0002_crm_quadro_projetos.sql`.
+- ✅ Demonstração (28/10/2026, pedido do titular): "Carregar demonstração" (Quadro vazio e Ajustes, só administração e
+  gestão) monta na organização da sessão uma produtora de exemplo com 10 clientes fictícios (`@exemplo.com`, sem
+  telefone), 12 projetos `DEMO-AAAA-NNN` (`unlinked`, com valor), 31 cards nas 8 colunas e 4 lotes enviados; selo
+  "Demonstração" no topo enquanto houver; "Remover demonstração" apaga só o que é `demo`. Idempotente, `asUser` com RLS.
+  Migration `drizzle/0003_demonstracao.sql` (coluna `demo`, `maestro.demo_apagar_cards()`).
 - ⬜ Quadro, depois: vistas Por prazo, Minha lista e Calendário, lixeira com lista, histórico do card na ficha.
 - ⬜ Financeiro (decisão do titular, 28/10/2026): lançamentos, fluxo e resultado por projeto.
 - ⬜ Etapa 2: aprovação do cliente (`/aprovar/<token>`, um passo, pinos, conferência, idempotência), peças no Drive

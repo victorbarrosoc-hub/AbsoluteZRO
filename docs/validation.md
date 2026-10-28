@@ -1568,6 +1568,16 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   repasse em produção, Supabase (o papel `maestro_app` precisa ser criado pelo `postgres` antes da primeira migração
   e o login do pool ser o dono do schema `maestro`), projeto Vercel e domínio.
 
+## Maestro — demonstração de uma produtora (28/10/2026)
+
+- `products/maestro`: `npm run lint`, `format:check`, `typecheck` ok; `npm test` **72/72** em 16 suítes (novo
+  `tests/demo.test.mts`: carrega 10 clientes, projetos e cards nas 8 colunas; carregar de novo, inclusive dois ao mesmo
+  tempo, não duplica; outra organização não vê nem remove; leitura e equipe não removem; remover deixa intactos o
+  cliente, o projeto, o card e o histórico de verdade e a demonstração da outra organização; o histórico segue só
+  inclusão fora da remoção); `npm run build` ok; `db:migrate` + `db:seed:demo` duas vezes num banco novo (a segunda
+  não muda nada).
+- Não validado: telas no Playwright (selo, botões no Quadro vazio e em Ajustes) e a migração 0003 no Supabase.
+
 ## Gate de lançamento no HUB — Etapa B do PRD de acesso (28/10/2026)
 
 - Decisão do proprietário aplicada ([ADR 0023](decisions/0023-gate-de-lancamento.md), migration

@@ -37,7 +37,7 @@ export function Avatar({ sessao, grande = false }: { sessao: Pick<Sessao, "nome"
   );
 }
 
-export function Shell({ sessao, children }: { sessao: Sessao; children: ReactNode }) {
+export function Shell({ sessao, demo = false, children }: { sessao: Sessao; demo?: boolean; children: ReactNode }) {
   return (
     <div className="shell">
       <header className="topo">
@@ -47,6 +47,12 @@ export function Shell({ sessao, children }: { sessao: Sessao; children: ReactNod
         </Link>
         <Abas />
         <div className="topo__fim">
+          {demo ? (
+            <Link className="selo selo--aviso selo--demo" href="/app/ajustes#demonstracao" title="Dados de exemplo. Remova em Ajustes.">
+              <i aria-hidden="true" />
+              Demonstração
+            </Link>
+          ) : null}
           <Link className="conta" href="/app/ajustes" title={sessao.orgNome}>
             <span className="conta__nome">{sessao.nome ?? sessao.email ?? "Conta"}</span>
             <Avatar sessao={sessao} />
