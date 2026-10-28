@@ -245,8 +245,15 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   `docs/integration-contracts/em-desenvolvimento.html`); console Administração › Lançamento (estado, canais, acesso
   interno por conta escolhida na lista, auditoria); `npm run db:release:revoke` (prévia por padrão) para as sessões
   de antes do gate. Catálogo público devolve `release: { state, canais }` por produto.
-- ⬜ Interface do HUB lendo `release` (homepage, `/planos`, `/baixar`, `/downloads`, desktop, nav, painel da Z) e as
-  pastas dos quatro produtos fechados (`RELEASE=closed`, telas, `/api/zro/*` com 403, instaladores e Releases) —
+- ✅ **Interface do HUB lendo `release`** (28/10/2026): homepage (faixa e "Conheça de perto" com selo "Em
+  desenvolvimento" e sem link para os fechados; números, etapas e órbita da Z só com lançados ou liberados para a
+  pessoa logada), `/planos` (fechado não aparece como incluído), `/baixar` e `/downloads` (`downloadsLiberados`: fechado
+  vira `soon` sem instalador, Terminal nem "Conheça mais"; quem está na lista do canal `download` continua baixando),
+  central do computador (`/api/v1/desktop/apps` só com canal `desktop`; `/baixar/app/<id>/…` 404 para fechado), menu
+  "Absolute ZRO" montado do catálogo (lançados/liberados), Ferramentas (grupo "Em desenvolvimento" com os `closed`),
+  `AppTile`, painel do app, `/inicio` (fechados por último e fora da órbita), Sua conta › Acessos e a gaveta da Z com
+  o selo.
+- ⬜ Pastas dos quatro produtos fechados (`RELEASE=closed`, telas, `/api/zro/*` com 403, instaladores e Releases) —
   outros agentes, no mesmo branch.
 - ⛔ Em produção, só com autorização: inserir a conta do proprietário em `product_release_access` e rodar o
   `db:release:revoke --apply` ([checklist 5a](operations/deployment-checklist.md)).
