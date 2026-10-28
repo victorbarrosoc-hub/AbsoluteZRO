@@ -11,7 +11,14 @@ const card = (coluna: ColunaKey, extra: Partial<DadosCard> = {}) => ({ dados: { 
 
 test("sem card seu em andamento: entra na Z", () => {
   assert.equal(entradaDoMaestro([], EU), ENTRADA_Z);
-  const outros = [card("pauta", { resp: EU }), card("afazer", { resp: EU }), card("aprovacao", { resp: EU }), card("entregue", { resp: EU }), card("fazendo", { resp: "outra" }), card("fazendo")];
+  const outros = [
+    card("pauta", { resp: EU }),
+    card("afazer", { resp: EU }),
+    card("aprovacao", { resp: EU }),
+    card("entregue", { resp: EU }),
+    card("fazendo", { resp: "outra" }),
+    card("fazendo"),
+  ];
   assert.equal(entradaDoMaestro(outros, EU), ENTRADA_Z);
 });
 
