@@ -710,7 +710,7 @@ describe('a Z (repasse /api/zro/ia)', () => {
     assert.match(z, /setAttribute\("api", "\/api\/zro\/ia"\)/)
     assert.ok(!/\.token\s*=/.test(z))
     const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
-    assert.match(sw, /tpeasy-v19/)
+    assert.match(sw, /tpeasy-v20/)
     assert.match(sw, /url\.pathname\.startsWith\("\/api\/"\)/)
     // a família só lista plataformas abertas (NOSSOM, AEON, Revela, Carro do Freela e Maestro estão fechados)
     const fam = /<nav class="familia"[\s\S]*?<\/nav>/.exec(readFileSync(new URL('../app/index.html', import.meta.url), 'utf8'))[0]
@@ -728,7 +728,7 @@ describe('a Z (repasse /api/zro/ia)', () => {
     const abas = /<nav class="tabbar"[^>]*>([\s\S]*?)<\/nav>/.exec(html)[1]
     assert.match(abas.trim(), /^<button class="tab" data-go="z">/)
     assert.match(ui, /TABS = \["z", "roteiros", "tp", "ajustes"\]/)
-    assert.match(main, /fromHash\) \? fromHash : "z"/)
+    assert.match(main, /go\(abaDeEntrada\(location\.hash, TABS\), \{ instant: true \}\)/)
     const roteiros = /data-tab="roteiros"[\s\S]*?<\/section>\s*<!--/.exec(html)[0]
     assert.ok(!/zPainel/.test(roteiros), 'a Z não fica empilhada em Roteiros')
     assert.match(/data-tab="z"[\s\S]*?<\/section>/.exec(html)[0], /id="zPainel"/)

@@ -6,6 +6,7 @@ import { renderAll, newFrom, startCalib } from "./views.js";
 import { handleRedirect } from "./sync.js";
 import { verificarZro, avisoDaVolta } from "./zro.js";
 import { iniciarZ } from "./z.js";
+import { abaDeEntrada } from "./entrada.js";
 
 document.querySelector('meta[name="theme-color"]').content = matchMedia("(prefers-color-scheme: dark)").matches ? "#000000" : "#f5f5f7";
 mountSettingsForms();
@@ -41,9 +42,8 @@ addEventListener(
 );
 
 renderAll();
-const fromHash = location.hash.slice(1);
-// quem abre o app cai na Z (um link com #roteiros, #tp ou #ajustes ainda abre a aba dele)
-go(TABS.includes(fromHash) ? fromHash : "z", { instant: true });
+// link com #roteiros, #tp ou #ajustes abre a aba dele; tarefa em curso ganha da Z; senão, a Z (entrada.js)
+go(abaDeEntrada(location.hash, TABS), { instant: true });
 document.documentElement.classList.add("ready");
 handleRedirect();
 const aviso = avisoDaVolta();

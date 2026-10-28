@@ -40,7 +40,8 @@ export function cookieSeguro(origem?: string | null): boolean {
 export const ROTAS = {
   entrar: "/entrar",
   semAcesso: "/sem-acesso",
-  app: "/app/z",
+  /** A entrada: o Quadro com tarefa sua em andamento, senão a Z (src/app/(app)/app/page.tsx, 28/10/2026). */
+  app: "/app",
 } as const;
 
 /** Onde a pessoa vê (e pede) as ferramentas liberadas para a conta Absolute ZRO. */

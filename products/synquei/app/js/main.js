@@ -25,6 +25,7 @@ import { cartaoPlano, abrirPlanos } from './plano.js'
 import { iniciarConta } from './conta.js'
 import { iniciarZ, telaZ } from './z.js'
 import { pendencias, numeroBalao, rotuloBalao } from './pendencias.js'
+import { decidirEntrada } from './entrada.js'
 
 const VIEWS = { z: telaZ, inicio, projetos, midia, sincronizar, linha, exportar, formatos, ajustes, organizar, sfx: sfxMontagem }
 const ORDER = ['z', 'inicio', 'midia', 'sincronizar', 'linha', 'exportar']
@@ -50,7 +51,7 @@ function routeFromHash() {
     }
     return 'inicio'
   }
-  // a Z é a primeira aba e a tela de entrada
+  // a Z é a primeira aba e a entrada quando não há tarefa em curso (entrada.js decide logo ao abrir)
   return VIEWS[r] ? r : 'z'
 }
 
@@ -146,7 +147,14 @@ function chrome() {
  * estado da mesma aba; o item ganha a explicação no title (no menu recolhido, na dica junto do nome).
  */
 function baloes() {
-  const pend = pendencias({ project: S.project, probe: S.probe, sync: S.sync, temMidia: hasMedia, org: ORG.ativo ? ORG : null, atualizacao: estadoAtualizacao() })
+  const pend = pendencias({
+    project: S.project,
+    probe: S.probe,
+    sync: S.sync,
+    temMidia: hasMedia,
+    org: ORG.ativo ? ORG : null,
+    atualizacao: estadoAtualizacao(),
+  })
   for (const b of $$('[data-balao]')) {
     const r = b.dataset.balao
     const p = pend[r]
@@ -532,10 +540,25 @@ if (window.synqueiDesktop) {
   const pc = $('#planoCard')
   if (pc) pc.innerHTML = cartaoPlano()
 }
+const hashInicial = location.hash
+const abriuEm = Date.now()
 loadIndex()
 render()
 iniciarAtualizacao()
-iniciarOrganizar().catch((err) => console.error('organizar:', err))
+iniciarOrganizar()
+  .catch((err) => console.error('organizar:', err))
+  // aberto sem rota: com cartão na fila do Organizar (ou sincronia rodando), abre direto na tarefa (entrada.js)
+  .then(() =>
+    decidirEntrada({
+      hashInicial,
+      hashAgora: location.hash,
+      rotas: Object.keys(VIEWS),
+      estado: { sync: S.sync, org: ORG },
+      inicio: abriuEm,
+      agora: Date.now(),
+      ir: (t) => go(t),
+    }),
+  )
 // "Abrir no Synquei" do SOBEDESCE: a pasta acabou de entrar no Organizar
 globalThis.synqueiDesktop?.organizar?.onAbrir?.(() => go('organizar', true))
 // Organizar: a tela redesenha quando chega cartão ou muda o DaVinci; a barra lateral mostra a fila

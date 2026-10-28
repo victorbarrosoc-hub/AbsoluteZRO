@@ -15,6 +15,27 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Z Fase 1 e entrada dos apps na tarefa (28/10/2026)
+
+- Raiz: `lint`, `format:check`, `typecheck` ok; `npm test` **223/223** em 27 arquivos (Postgres 16 local, banco
+  próprio `zro_agz_test`). Novos em `tests/integration/ia-drive.test.ts`: `ver_transferencias` assina
+  `transferencias.ler`, cita fonte e hora ("segundo o SOBEDESCE, às 14:02"), separa fato de estimativa, avisa relato
+  antigo/computador fechado, sem dado diz que não sabe, SOBEDESCE fora do ar não inventa; `acao_exata` antes do
+  "sim"; `confirmacaoClara` com formato; auditoria de `pedir_ao_computador` (recusa sem confirmação, pedido, já na
+  fila, falha; sem nome de arquivo nem id do Drive na auditoria).
+- SOBEDESCE web: `lint`, `typecheck` ok; `npm test` **271/271**. Novo `tests/zro-transferencias.test.mts`: sem token,
+  vencido, vida longa, outro público, assinatura errada e outra ação = 401; jti reapresentado = 401; sem vínculo 404;
+  sem o SOBEDESCE liberado 403; cada conta vê só os próprios computadores; contagens, conferências, lotes e hora do
+  relato; sem caminho local (Mac, Windows, rede), token nem id de sessão; sem computador = lista vazia.
+- SOBEDESCE motor: `npm run test:fast` 744/748 (3 pulados; 1 falha intermitente em `lan.test.js` "outra conta",
+  temporização, que passa 7/7 rodando o arquivo sozinho). Novos `test/entrada.test.js` e
+  `test/entrada-celular.test.js`; `app-sw.test.js` confere SW v67 / app 2.8.52.
+- Synquei `npm test` 123 ok (4 pulados), novo `tests/entrada.test.mjs`; TPeasy `node --test tests/*.test.mjs`
+  **53/53**, novo `tests/entrada.test.mjs`; Maestro `lint`, `typecheck` ok e `npm test` **70/70**, novo
+  `tests/entrada.test.mts` (login sem volta agora cai em `/app`).
+- `node scripts/scan-secrets.mjs`: nenhum segredo. Nada publicado, nenhum instalador gerado, nenhum banco remoto tocado.
+  Não rodados aqui: `npm run build` e `npm run test:e2e` da raiz.
+
 ## Maestro: Etapa 1, Quadro + Clientes + Projetos (28/10/2026)
 
 - `products/maestro`: `lint`, `format:check`, `typecheck` ok; `npm test` **66/66** (Postgres 16 local, bancos
