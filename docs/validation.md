@@ -886,6 +886,20 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   grade com 6 looks → baixar `revela-zro-filmes-33.cube` → apagar). `products/finishing`: `npm test` 96/96.
 - Não validado: o `.cube` do look novo e de um "meu look" no Resolve, em vídeo.
 
+## Z: sabe o que cada plataforma faz e só busca no Drive quando pedem (28/10/2026)
+
+- Caso real do titular na Revela: "Consigo deixar meu vídeo com a cor parecida do FVPRO+?" A Z buscou no Drive (o texto
+  de sistema mandava usar o Drive "sem pedir licença sempre que a pessoa falar de arquivo, pasta, vídeo, referência"),
+  achou o .zip do pacote e disse não saber se a Revela fazia isso.
+- Agora: o Drive entra só quando a pessoa pede ou fala dele (meu Drive, minha pasta, um arquivo pelo nome); pergunta de
+  como fazer vai para a plataforma atual. O texto de sistema traz o que cada uma das sete faz hoje
+  (`apps/hub-web/lib/ia/plataformas.ts`, fixo, no cache), e para a Revela diz que pacote de LUTs não se aplica direto: o
+  caminho é Clonar LUT com frames antes e depois, salvando em Meus looks.
+- Teste novo `tests/integration/ia-plataformas.test.ts` (3/3): o guia cobre exatamente os produtos do catálogo, a Revela
+  aponta Clonar LUT e Meus looks, e o texto de sistema tem a regra nova do Drive e o guia. Lint, formato, tipos verdes.
+  `npm test` completo fica para o CI (sem Postgres local nesta sessão).
+- Não validado: resposta real da Z com a chave em produção.
+
 ## Revela: abertura de película e transições no celular (27/10/2026)
 
 - Vídeo do titular no iPhone: a abertura do ícone não agradou ("mais a ver com película"); trocar de aba deixava o
