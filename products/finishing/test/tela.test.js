@@ -385,9 +385,7 @@ test('página inicial: seções, conta e sem rolagem horizontal', async () => {
     await pagina.goto(endereco)
     await pagina.getByRole('heading', { level: 1 }).waitFor()
     assert.match(await pagina.getByRole('heading', { level: 1 }).textContent(), /Revela a cor/)
-    for (const id of ['ferramentas', 'entrega', 'converter', 'familia']) assert.equal(await pagina.locator('#' + id).count(), 1, id)
-    // a faixa de destinos vem da mesma lista da Entrega
-    assert.ok((await pagina.locator('#faixa > *').count()) >= 4)
+    for (const id of ['looks', 'ferramentas', 'entrega', 'converter', 'familia', 'z']) assert.equal(await pagina.locator('#' + id).count(), 1, id)
     // sem sessão, o topo oferece "Entrar"
     await pagina.locator('#conta.conta--pronta').waitFor()
     assert.equal(await pagina.locator('#conta').getAttribute('href'), 'entrar.html')
@@ -582,18 +580,81 @@ test('Clonar LUT e preset Lightroom: o mesmo frame com e sem a cor vira .cube e 
   await pagina.close()
 })
 
-test('página inicial: arrastar a comparação e "Testar agora" abre o exemplo pronto', async () => {
+test('página inicial fechada ao público: a comparação segue, "Conhecer o projeto" é âncora e nada leva a uma ferramenta', async () => {
   const pagina = await navegador.newPage({ viewport: { width: 1280, height: 900 } })
   const erros = []
   pagina.on('pageerror', (e) => erros.push(e.message))
+  pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
   await pagina.goto(endereco)
   await pagina.getByRole('slider', { name: 'Comparar log e cor final' }).fill('25')
   assert.equal(await pagina.locator('.comparar').evaluate((n) => [n.classList.contains('manual'), n.style.getPropertyValue('--corte')].join()), 'true,25%')
   assert.equal(await pagina.getByRole('list', { name: 'Editores compatíveis' }).getByRole('listitem').count(), 6)
-  await pagina.getByRole('link', { name: 'Testar agora' }).click()
-  await pagina.waitForURL(/lut\.html\?exemplo=1$/)
-  await pagina.getByText('Pronto. Arraste sobre a imagem para comparar.').waitFor()
+  const hrefs = await pagina.$$eval('a[href]', (as) => as.map((a) => a.getAttribute('href')))
+  assert.deepEqual(
+    hrefs.filter((h) => /^(inicio|lut|cst|entrega|converter)(\.html)?(\?|#|$)/.test(h)),
+    [],
+  )
+  assert.equal(await pagina.getByRole('link', { name: 'Conhecer o projeto' }).first().getAttribute('href'), '#looks')
+  assert.equal(await pagina.getByRole('link', { name: 'Testar agora' }).count(), 0)
+  assert.equal(await pagina.locator('#ferramentas .cartao-home').count(), 4)
+  assert.equal(await pagina.locator('#ferramentas a.cartao-home').count(), 0)
+  assert.match(await pagina.locator('.hero .selo-dev').innerText(), /Em desenvolvimento/)
+  assert.equal(await pagina.locator('.fecho').getByRole('link', { name: 'Voltar ao HUB' }).getAttribute('href'), 'https://absolutezro.com/inicio')
   assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('em desenvolvimento: símbolo, logo, título, uma linha e Voltar ao HUB, nos dois temas e no celular', async () => {
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 390, height: 844 },
+  ]) {
+    const pagina = await navegador.newPage({ viewport })
+    const erros = []
+    pagina.on('pageerror', (e) => erros.push(e.message))
+    pagina.on('console', (m) => m.type() === 'error' && erros.push(m.text()))
+    const r = await pagina.goto(endereco + 'em-desenvolvimento.html')
+    assert.equal(r.status(), 200)
+    assert.match(r.headers()['content-security-policy'], /default-src 'self'/)
+    assert.equal(await pagina.locator('.fechado-zro svg').count(), 1)
+    await pagina.waitForFunction(() => document.querySelector('.fechado-produto img')?.complete)
+    assert.ok(await pagina.evaluate(() => document.querySelector('.fechado-produto img').naturalWidth > 0), 'logo da Revela não carregou')
+    assert.equal(await pagina.getByRole('heading', { level: 1 }).innerText(), 'Em desenvolvimento.')
+    assert.equal(await pagina.locator('.fechado p').count(), 1)
+    const botao = pagina.getByRole('link', { name: 'Voltar ao HUB' })
+    assert.equal(await botao.getAttribute('href'), 'https://absolutezro.com/inicio')
+    assert.ok(await botao.evaluate((b) => b.classList.contains('glass-btn--ink')))
+    await pagina.evaluate(() => document.fonts.ready)
+    assert.ok(await pagina.evaluate(() => document.fonts.check('300 40px Figtree') && document.fonts.check('800 40px Figtree')))
+    const pesos = await pagina.evaluate(() => [getComputedStyle(document.querySelector('.fechado .fino')).fontWeight, getComputedStyle(document.querySelector('.fechado .forte')).fontWeight])
+    assert.deepEqual(pesos, ['300', '800'])
+    // claro por padrão; escuro pela escolha guardada (app/tema.js), com a logo de letras brancas
+    assert.equal(await pagina.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(245, 245, 247)')
+    assert.match(await pagina.locator('.fechado-produto img').getAttribute('src'), /revela-logo-claro\.png$/)
+    await pagina.evaluate(() => window.revelaTema.alternar())
+    assert.equal(await pagina.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(0, 0, 0)')
+    assert.match(await pagina.locator('.fechado-produto img').getAttribute('src'), /revela-logo\.png$/)
+    await pagina.evaluate(() => window.revelaTema.alternar())
+    const largura = await pagina.evaluate(() => document.documentElement.scrollWidth)
+    assert.ok(largura <= viewport.width, `rolagem horizontal: ${largura}px`)
+    assert.deepEqual(erros, [])
+    await pagina.close()
+  }
+})
+
+test('entrar.html com a conta fechada pelo HUB (403): "Em desenvolvimento", Voltar ao HUB e Sair', async () => {
+  const pagina = await navegador.newPage()
+  await pagina.route('**/api/zro/eu', (r) => r.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ ok: false, fechado: true, hub: 'https://absolutezro.com/inicio', pagina: '/em-desenvolvimento' }) }))
+  await pagina.goto(endereco + 'entrar.html')
+  await pagina.locator('#fechado:not([hidden])').waitFor()
+  assert.equal(await pagina.locator('#fechado').getByRole('link', { name: 'Voltar ao HUB' }).getAttribute('href'), 'https://absolutezro.com/inicio')
+  assert.equal(await pagina.locator('#fechado').getByRole('button', { name: 'Sair' }).count(), 1)
+  assert.equal(await pagina.locator('#dentro').isHidden(), true)
+  assert.equal(await pagina.locator('#fora').isHidden(), true)
+  // na página inicial, a conta fechada continua vendo só "Entrar"
+  await pagina.goto(endereco)
+  await pagina.locator('#conta.conta--pronta').waitFor()
+  assert.equal(await pagina.locator('#conta').innerText(), 'Entrar')
   await pagina.close()
 })
 
@@ -908,7 +969,9 @@ test('abas do dock trocam só o painel: sem recarregar, menu parado, marca desli
 test('app na Tela de Início: manifesto, ícones e o passo a passo do Compartilhar no iPhone', async () => {
   const manifesto = JSON.parse(readFileSync(join(RAIZ, 'manifest.webmanifest'), 'utf8'))
   assert.equal(manifesto.display, 'standalone')
-  assert.equal(manifesto.start_url, '/inicio', 'o app instalado abre no painel da Z')
+  // fechada ao público: o app instalado abre na página inicial e não tem atalhos para as ferramentas
+  assert.equal(manifesto.start_url, '/')
+  assert.equal(manifesto.shortcuts, undefined)
   for (const i of manifesto.icons.filter((i) => i.type === 'image/png')) {
     const png = readFileSync(join(RAIZ, i.src))
     const [w, h] = [png.readUInt32BE(16), png.readUInt32BE(20)]
@@ -1101,13 +1164,13 @@ test('painel inicial sem conta ou sem o escopo da Z: Entrar com Absolute ZRO (no
   await pagina.close()
 })
 
-test('página inicial: a seção da Z diz que ela já está na Revela e leva ao painel', async () => {
+test('página inicial fechada ao público: a seção da Z diz "Chegando à Revela", sem link para o painel', async () => {
   const pagina = await navegador.newPage()
   await pagina.goto(endereco)
   const sec = pagina.locator('#z')
-  assert.match(await sec.innerText(), /Agora na Revela/)
-  assert.equal(await sec.getByRole('link', { name: 'Conversar com a Z' }).getAttribute('href'), 'inicio.html')
+  assert.match(await sec.innerText(), /Chegando à Revela/)
+  assert.equal(await sec.getByRole('link', { name: 'Conversar com a Z' }).count(), 0)
   assert.equal(await sec.getByRole('link', { name: 'Conhecer a Z' }).getAttribute('href'), 'https://absolutezro.com/ia')
-  assert.doesNotMatch(await sec.innerText(), /Chegando|o Z\b/)
+  assert.doesNotMatch(await sec.innerText(), /Agora na Revela|o Z\b/)
   await pagina.close()
 })

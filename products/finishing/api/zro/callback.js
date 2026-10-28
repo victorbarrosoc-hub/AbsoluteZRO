@@ -2,8 +2,10 @@
 // (client_secret_basic + PKCE), confere o id_token e cria a sessão do app (rv_conta, 30 dias). Erros voltam ao app
 // como ?zro=<codigo>. A sessão tem só quem é a pessoa (com a foto da conta); os tokens, para reler o perfil depois,
 // vão cifrados num cookie que só /api/zro recebe e que o JavaScript da página não lê.
+// Fechada ao público (../_release.js): conta que o HUB não liberou não ganha sessão e vai para "Em desenvolvimento".
 
 import { timingSafeEqual } from 'node:crypto'
+import { liberado, PAGINA_FECHADO } from '../_release.js'
 import { abrir, cifrar, comAviso, consulta, cookie, COOKIE_CONTA, COOKIE_IDA, COOKIE_TOKENS, CONTA_S, emissor, lerCookie, redirecionar, retorno, selar, sessaoDe, trocarCodigo, VOLTA_PADRAO, voltaSegura } from '../_zro.js'
 
 const igual = (a, b) => {
@@ -38,7 +40,11 @@ export default async function callback(req, res) {
   } catch {
     return falhar('erro')
   }
-  const conta = selar(COOKIE_CONTA, sessaoDe(r.pessoa), CONTA_S)
+  const sessao = sessaoDe(r.pessoa)
+  // o HUB já não emite código para quem não está na lista; aqui vale também com um HUB sem o gate: sem a liberação,
+  // a sessão não nasce (e uma sessão antiga que houvesse é apagada)
+  if (!liberado(sessao)) return redirecionar(res, 303, PAGINA_FECHADO, [limpar, cookie(COOKIE_CONTA, '', { maxAge: 0, path: '/' }), cookie(COOKIE_TOKENS, '', { maxAge: 0, path: '/api/zro' })])
+  const conta = selar(COOKIE_CONTA, sessao, CONTA_S)
   const tokens = r.tokens ? cookie(COOKIE_TOKENS, cifrar(COOKIE_TOKENS, r.tokens, CONTA_S), { maxAge: CONTA_S, path: '/api/zro' }) : cookie(COOKIE_TOKENS, '', { maxAge: 0, path: '/api/zro' })
   return redirecionar(res, 303, comAviso(volta, 'ok'), [limpar, cookie(COOKIE_CONTA, conta, { maxAge: CONTA_S, path: '/' }), tokens])
 }

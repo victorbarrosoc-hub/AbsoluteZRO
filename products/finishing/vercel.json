@@ -2,9 +2,14 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "echo sem dependências para o site",
-  "buildCommand": "echo sem build",
-  "outputDirectory": ".",
+  "buildCommand": "node scripts/publicar-site.mjs",
+  "outputDirectory": "publico",
   "cleanUrls": true,
+  "functions": {
+    "api/app.js": {
+      "includeFiles": "{inicio.html,lut.html,cst.html,entrega.html,converter.html,em-desenvolvimento.html,app/**,src/**,exemplos/**}"
+    }
+  },
   "headers": [
     {
       "source": "/(.*)",
@@ -36,7 +41,7 @@
       ]
     },
     {
-      "source": "/api/zro/(.*)",
+      "source": "/api/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -44,6 +49,16 @@
         }
       ]
     }
+  ],
+  "rewrites": [
+    { "source": "/inicio", "destination": "/api/app?caminho=inicio.html" },
+    { "source": "/lut", "destination": "/api/app?caminho=lut.html" },
+    { "source": "/cst", "destination": "/api/app?caminho=cst.html" },
+    { "source": "/entrega", "destination": "/api/app?caminho=entrega.html" },
+    { "source": "/converter", "destination": "/api/app?caminho=converter.html" },
+    { "source": "/app/:caminho*", "destination": "/api/app?caminho=app/:caminho*" },
+    { "source": "/src/:caminho*", "destination": "/api/app?caminho=src/:caminho*" },
+    { "source": "/exemplos/:caminho*", "destination": "/api/app?caminho=exemplos/:caminho*" }
   ],
   "redirects": [
     {

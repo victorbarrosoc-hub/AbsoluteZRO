@@ -58,18 +58,28 @@
         <span id="avatar" class="avatar surge" style="--d: 1" aria-hidden="true"></span>
         <h1 id="ola" class="surge" style="--d: 1"></h1>
         <p id="quem" class="surge" style="--d: 2"></p>
-        <p id="sem-acesso" class="entrar-aviso" hidden>Sua conta ainda não tem a Revela liberada. As ferramentas seguem abertas.</p>
+        <p id="sem-acesso" class="entrar-aviso" hidden>Sua conta ainda não tem a Revela. <a href="https://absolutezro.com/ferramentas">Ver na Absolute ZRO</a></p>
         <div class="entrar-acoes surge" style="--d: 3">
-          <a class="vidro vidro--tinta grande" href="lut.html">Abrir a Revela</a>
-          <button id="sair" class="vidro grande" type="button">Sair</button>
+          <a id="abrir" class="vidro vidro--tinta grande" href="lut.html">Abrir a Revela</a>
+          <button id="sair" class="vidro grande" type="button" data-sair>Sair</button>
         </div>
         <a id="editar-conta" class="entrar-editar surge" style="--d: 4" href="https://absolutezro.com/perfil" target="_blank" rel="noopener" title="Nome, foto e e-mail são os mesmos em todos os apps">Editar na conta Absolute ZRO</a>
       </section>
 
       <section id="desligado" class="entrar-bloco" hidden>
         <h1 class="surge" style="--d: 1">Entrar chega em breve.</h1>
-        <p class="surge" style="--d: 2">As ferramentas já estão abertas, sem conta.</p>
-        <div class="entrar-acoes surge" style="--d: 3"><a class="vidro vidro--tinta grande" href="lut.html">Abrir a Revela</a></div>
+        <p class="surge" style="--d: 2">A Revela abre com a sua conta Absolute ZRO.</p>
+        <div class="entrar-acoes surge" style="--d: 3"><a class="vidro grande" href="https://absolutezro.com/inicio">Voltar ao HUB</a></div>
+      </section>
+
+      <!-- fechada ao público: a conta entrou, mas o HUB não a liberou para a Revela (api/zro/eu responde 403) -->
+      <section id="fechado" class="entrar-bloco" hidden>
+        <h1 class="surge" style="--d: 1">Em desenvolvimento.</h1>
+        <p class="surge" style="--d: 2">A Revela ainda não abriu para esta conta.</p>
+        <div class="entrar-acoes surge" style="--d: 3">
+          <a class="vidro vidro--tinta grande" href="https://absolutezro.com/inicio">Voltar ao HUB</a>
+          <button class="vidro grande" type="button" data-sair>Sair</button>
+        </div>
       </section>
 
       <p id="aviso" class="entrar-aviso" role="status" aria-live="polite"></p>

@@ -1,16 +1,22 @@
 // "Entrar com Absolute ZRO" (api/zro/*) contra uma Absolute ZRO falsa local: entra e mostra a pessoa, sai, e recusa
 // state errado, nonce errado, emissor e público errados, assinatura inválida, token vencido, cookie adulterado e volta
-// para fora do site. As funções rodam num servidor http de verdade, como na Vercel.
+// para fora do site. Fechada ao público (api/_release.js): só a conta que o HUB marcou como allowed na claim
+// zro_release entra; sessão antiga, claim closed e refresh recusado viram 403. As funções rodam num servidor http de
+// verdade, como na Vercel.
 
 import { after, before, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import http from 'node:http'
 import { iniciarZroFalsa } from './zro-falso.js'
+import { selar } from '../api/_zro.js'
 
 const CLIENTE = { clientId: 'revela-web', clientSecret: 'segredo-de-teste-da-revela' }
-const LIA = { sub: 'zro-111', email: 'Lia@Produtora.com', nome: 'Lia Produtora', org: 'Produtora Lia', produtos: ['finishing', 'sobedesce'] }
+// a conta do titular: na lista do produto fechado (claim zro_release do HUB)
+const LIA = { sub: 'zro-111', email: 'Lia@Produtora.com', nome: 'Lia Produtora', org: 'Produtora Lia', produtos: ['finishing', 'sobedesce'], release: { finishing: 'allowed' } }
 let zro, app, SITE
 const rotas = {}
+/** Uma sessão assinada como o callback grava (sem passar pelo login): `release` ausente = sessão de antes do gate. */
+const sessaoFalsa = (extra = {}) => selar('rv_conta', { sub: 'zro-111', nome: 'Lia Produtora', email: 'lia@produtora.com', foto: null, atualizado: null, conta: null, org: null, produtos: ['finishing'], ...extra }, 3600)
 
 before(async () => {
   zro = await iniciarZroFalsa(CLIENTE)
@@ -286,11 +292,14 @@ describe('perfil único: a conta Absolute ZRO é o perfil', () => {
     // tirou a foto: volta às iniciais
     zro.estado.pessoa = { ...LIA, foto: null }
     assert.equal((await eu(r)).j.pessoa.foto, null)
-    // resposta de outra pessoa não troca a cópia
+    // token que a Absolute ZRO já não reconhece (a resposta seria de outra pessoa: 401): a cópia não é trocada e,
+    // fechada ao público, a sessão deixa de valer como liberada até entrar de novo
     zro.estado.pessoa = { ...LIA, sub: 'outra-pessoa', nome: 'Outra' }
-    const copia = r.conta
-    assert.equal((await eu(r)).j.pessoa.nome, 'Lia Produtora')
-    assert.equal(r.conta, copia)
+    const res = await pedir('/api/zro/eu', { cookies: { rv_conta: r.conta, rv_tokens: r.tokens } })
+    assert.equal(res.status, 403)
+    const copia = JSON.parse(Buffer.from(cookiesDe(res).get('rv_conta').split('.')[0], 'base64url').toString())
+    assert.equal(copia.nome, 'Lia Produtora')
+    assert.equal(copia.release, null)
   })
 
   test('access token vencido: renova pelo refresh token (que gira) e relê', async () => {
@@ -308,14 +317,19 @@ describe('perfil único: a conta Absolute ZRO é o perfil', () => {
     assert.equal(zro.estado.renovacoes, antes + 1)
   })
 
-  test('acesso removido no Perfil: esquece os tokens, a sessão segue com a cópia', async () => {
+  test('acesso removido no Perfil (refresh recusado): esquece os tokens e, fechada ao público, a cópia deixa de valer (403)', async () => {
     const r = await fluxo({ pessoa: { ...LIA } })
     zro.vencer()
     zro.estado.recusarRenovacao = true
     try {
-      const { j, cookies } = await eu(r)
-      assert.equal(j.pessoa.nome, 'Lia Produtora')
-      assert.equal(cookies.get('rv_tokens'), '', 'tokens apagados')
+      const res = await pedir('/api/zro/eu', { cookies: { rv_conta: r.conta, rv_tokens: r.tokens } })
+      assert.equal(res.status, 403)
+      const c = cookiesDe(res)
+      assert.equal(c.get('rv_tokens'), '', 'tokens apagados')
+      // a cópia regravada já não diz "liberada": sozinha, continua 403 até a pessoa entrar de novo
+      assert.ok(c.get('rv_conta'))
+      assert.equal((await pedir('/api/zro/eu', { cookies: { rv_conta: c.get('rv_conta') } })).status, 403)
+      assert.deepEqual(await res.json(), { ok: false, fechado: true, hub: 'https://absolutezro.com/inicio', pagina: '/em-desenvolvimento' })
     } finally {
       zro.estado.recusarRenovacao = false
     }
@@ -338,5 +352,84 @@ describe('perfil único: a conta Absolute ZRO é o perfil', () => {
     assert.equal(s.status, 200)
     assert.match(zro.estado.revogados.at(-1) || '', /^rt_/)
     assert.ok(s.headers.getSetCookie().some((c) => /^rv_tokens=; Path=\/api\/zro; Max-Age=0/.test(c)))
+  })
+})
+
+describe('fechada ao público: o gate de lançamento (api/_release.js)', () => {
+  const FECHADO = { ok: false, fechado: true, hub: 'https://absolutezro.com/inicio', pagina: '/em-desenvolvimento' }
+
+  test('conta allowed na claim zro_release: entra e /eu responde 200', async () => {
+    const r = await fluxo()
+    assert.equal(r.destino, '/lut?zro=ok')
+    assert.ok(r.conta)
+    assert.equal((await pedir('/api/zro/eu', { cookies: { rv_conta: r.conta } })).status, 200)
+  })
+
+  test('sem a claim (HUB sem o gate) ou com closed: a sessão não nasce e a pessoa vai para "Em desenvolvimento"', async () => {
+    for (const release of [undefined, { finishing: 'closed' }, { finishing: 'released' }, { 'ai-edit': 'allowed' }]) {
+      const r = await fluxo({ pessoa: { ...LIA, release } })
+      assert.equal(r.destino, '/em-desenvolvimento', JSON.stringify(release))
+      assert.ok(!r.conta, 'sem sessão')
+      assert.ok(!r.tokens, 'sem tokens')
+    }
+  })
+
+  test('HUB com o gate ligado: conta fora da lista nem recebe código (access_denied)', async () => {
+    zro.estado.gate = 'finishing'
+    try {
+      const r = await fluxo({ pessoa: { ...LIA, release: { finishing: 'closed' } } })
+      assert.equal(r.destino, '/lut?zro=recusado')
+      assert.equal(r.conta, undefined)
+      assert.equal((await fluxo()).destino, '/lut?zro=ok')
+    } finally {
+      zro.estado.gate = null
+    }
+  })
+
+  test('sessão antiga (de antes do gate) ou com closed: /eu 403 com a volta ao HUB, mesmo com o cookie válido', async () => {
+    for (const extra of [{}, { release: null }, { release: 'closed' }, { release: 'released' }, { release: 'sim' }]) {
+      const r = await pedir('/api/zro/eu', { cookies: { rv_conta: sessaoFalsa(extra) } })
+      assert.equal(r.status, 403, JSON.stringify(extra))
+      assert.equal(r.headers.get('cache-control'), 'no-store')
+      assert.deepEqual(await r.json(), FECHADO)
+    }
+    assert.equal((await pedir('/api/zro/eu', { cookies: { rv_conta: sessaoFalsa({ release: 'allowed' }) } })).status, 200)
+  })
+
+  test('liberação tirada no HUB: a releitura do perfil traz closed e a abertura seguinte é 403', async () => {
+    const r = await fluxo()
+    zro.estado.pessoa = { ...LIA, release: { finishing: 'closed' } }
+    const res = await pedir('/api/zro/eu', { cookies: { rv_conta: r.conta, rv_tokens: r.tokens } })
+    assert.equal(res.status, 403)
+    const nova = cookiesDe(res).get('rv_conta')
+    assert.ok(nova && nova !== r.conta)
+    assert.equal((await pedir('/api/zro/eu', { cookies: { rv_conta: nova } })).status, 403)
+  })
+
+  test('HUB com o gate ligado e a conta tirada da lista: userinfo e refresh recusados viram 403 e tokens apagados', async () => {
+    const r = await fluxo()
+    zro.estado.gate = 'finishing'
+    zro.estado.pessoa = { ...LIA, release: { finishing: 'closed' } }
+    try {
+      const res = await pedir('/api/zro/eu', { cookies: { rv_conta: r.conta, rv_tokens: r.tokens } })
+      assert.equal(res.status, 403)
+      assert.equal(cookiesDe(res).get('rv_tokens'), '')
+    } finally {
+      zro.estado.gate = null
+    }
+  })
+
+  test('RELEASE=released: sessão sem a claim entra; closed na claim continua fora (os dois lados têm que abrir)', async () => {
+    process.env.RELEASE = 'released'
+    try {
+      assert.equal((await pedir('/api/zro/eu', { cookies: { rv_conta: sessaoFalsa() } })).status, 200)
+      assert.equal((await pedir('/api/zro/eu', { cookies: { rv_conta: sessaoFalsa({ release: 'released' }) } })).status, 200)
+      assert.equal((await pedir('/api/zro/eu', { cookies: { rv_conta: sessaoFalsa({ release: 'closed' }) } })).status, 403)
+      const r = await fluxo({ pessoa: { ...LIA, release: undefined } })
+      assert.equal(r.destino, '/lut?zro=ok')
+      assert.ok(r.conta)
+    } finally {
+      delete process.env.RELEASE
+    }
   })
 })

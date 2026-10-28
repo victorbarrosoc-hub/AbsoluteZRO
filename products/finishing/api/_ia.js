@@ -5,8 +5,10 @@
 //
 // Sem sessão, sem tokens ou com o refresh recusado: 401 (o <zro-ia> avisa zro-ia:sem-login e a página oferece
 // entrar de novo, já pedindo o escopo zro.ia). Token sem zro.ia (login antigo): a Absolute ZRO responde 401 e passa.
-// Este arquivo é o mesmo no AEON e na Revela; os nomes dos cookies vêm de _zro.js.
+// Produto fechado ao público (_release.js): sessão que o HUB não liberou recebe 403 antes de qualquer pedido à Z.
+// Este arquivo é o mesmo no AEON e na Revela; os nomes dos cookies vêm de _zro.js e o produto de _release.js.
 
+import { liberado } from './_release.js'
 import { abrir, cifrar, configurado, cookie, COOKIE_CONTA, COOKIE_TOKENS, CONTA_S, decifrar, emissor, json, lerCookie, origemDoPedido, renovarTokens, ZroErro } from './_zro.js'
 
 /** Só estes caminhos e métodos (os do contrato da API da Z); o resto nem sai daqui. */
@@ -53,6 +55,8 @@ export async function repassar(req, res, caminho = caminhoDe(req)) {
   }
   if (!configurado()) return negar(res, 503, 'O login com a Absolute ZRO não está ligado aqui.')
   const conta = abrir(COOKIE_CONTA, lerCookie(req, COOKIE_CONTA))
+  // fechado ao público: só a conta que o HUB liberou fala com a Z por aqui (nada sai para a Absolute ZRO)
+  if (conta && typeof conta.sub === 'string' && !liberado(conta)) return negar(res, 403, 'Em desenvolvimento.')
   let t = conta && typeof conta.sub === 'string' ? decifrar(COOKIE_TOKENS, lerCookie(req, COOKIE_TOKENS)) : null
   if (!t) return negar(res, 401, 'Entre com a conta Absolute ZRO para conversar com a Z.')
 
