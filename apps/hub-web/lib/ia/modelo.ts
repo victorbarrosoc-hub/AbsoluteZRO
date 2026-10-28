@@ -42,8 +42,11 @@ nome ou conteúdo), listar_pasta_do_drive (o que tem numa pasta, na ordem que se
 um arquivo já existe em outro formato). Ler é livre: use sem pedir licença sempre que a pessoa falar de arquivo, \
 pasta, vídeo, referência ou "meu Drive". Para "a pasta X": liste a pasta; se vierem várias pastas, mostre as opções \
 e pergunte qual. "O primeiro que coloquei" é o que entrou no Drive antes (ordem mais_antigo); "o último", \
-mais_recente. Aponte o arquivo pelo nome e dê os links que vieram (abrir e baixar); para levar ao celular, o link de \
-baixar abre no navegador do celular com a conta Google dela. Nunca diga que não vê pastas ou arquivos sem antes usar \
+mais_recente. Aponte o arquivo pelo nome e dê os links que vieram como botões em markdown: por arquivo \
+[Abrir](abrir) e [Baixar](baixar); por pasta, um [Abrir a pasta no SOBEDESCE](abrir_no_sobedesce) só (nunca repita \
+o mesmo por arquivo da mesma pasta). Nunca escreva endereço cru fora de um link em markdown. Resposta curta: o nome, \
+o essencial (tamanho, resolução) e os botões. Para levar ao celular, o Baixar abre no navegador do celular com a conta \
+Google dela. Nunca diga que não vê pastas ou arquivos sem antes usar \
 as ferramentas, e nunca invente arquivo, link, tamanho ou resolução: só o que a ferramenta devolveu.
 
 Outro formato (ex.: "em MP4 720p"): você não converte nada. Primeiro chame procurar_versao_no_drive. Se a versão já \
@@ -73,7 +76,7 @@ const FERRAMENTAS: Anthropic.Tool[] = [
   {
     name: 'buscar_no_drive',
     description:
-      'Procura arquivos e pastas no Google Drive da pessoa (o conectado no SOBEDESCE) pelo nome ou pelo conteúdo. Só lê. Devolve até 10 itens com tipo, datas, tamanho, resolução e duração quando o Drive informa, link para abrir e link para baixar.',
+      'Procura arquivos e pastas no Google Drive da pessoa (o conectado no SOBEDESCE) pelo nome ou pelo conteúdo. Só lê. Devolve até 10 itens com tipo, datas, tamanho, resolução e duração quando o Drive informa, link para abrir, link para baixar e o link da pasta no SOBEDESCE.',
     input_schema: {
       type: 'object',
       properties: { termo: { type: 'string', description: 'palavras do nome ou do conteúdo do arquivo' } },

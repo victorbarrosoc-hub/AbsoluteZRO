@@ -1316,3 +1316,15 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   pronta; pedido ao computador com e sem computador; limite) e build ok. `scan-secrets` limpo.
 - Não validado: Drive e conta reais (busca `fullText` e `webContentLink` do Google de verdade), o computador real
   convertendo um arquivo fora de coleção, e `npm run test:e2e` (nenhum E2E cobre a Z).
+
+### Abrir a pasta no SOBEDESCE (28/10/2026)
+
+- SOBEDESCE: cada arquivo e pasta das rotas da Z traz `abrir_no_sobedesce` (`<site>/app/#drive/<id>`, a pasta dele
+  ou a própria). App do celular 2.8.49 (service worker v64): `/app/#drive/<id>` abre a aba Drive na pasta, com a
+  trilha pelos pais (`lib/drive-link.js`), de fora e com o app aberto; sem acesso, aviso e raiz.
+- HUB: as ferramentas repassam o link (só o formato exato, na origem do SOBEDESCE), uma vez por pasta na listagem; o
+  prompt pede botões em markdown (`[Abrir]`, `[Baixar]`, `[Abrir a pasta no SOBEDESCE]`) e nada de endereço cru.
+- Testes: SOBEDESCE web lint, typecheck, `npm test` 263/263 e build; motor `test:fast` 731 ok, 3 pulados (novo `drive-link.test.js`,
+  versão do app). Raiz lint, format, typecheck, `npm test` 174/174 (Postgres local) e build. Tela Playwright em
+  390 px com Google falso: link de fora abre "Meu Drive › Projetos 2026 › Clipe Verão"; `hashchange` com o app
+  aberto; pasta sem acesso mostra o aviso e fica na raiz; voltar sobe até a raiz. Não validado: Drive real.

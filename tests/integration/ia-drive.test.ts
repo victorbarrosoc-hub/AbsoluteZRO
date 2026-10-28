@@ -5,7 +5,7 @@ import http from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { assinarPedidoDeApp, jwks, PEDIDO_TTL_S, PEDIDO_TYP, setIssuer, verifyJwt, loadSigner } from '@zro/auth'
-import { confirmacaoClara, driveParaIa, tamanhoLegivel, tipoLegivel, type DriveConfig } from '@zro/core'
+import { confirmacaoClara, driveParaIa, linkDaPastaNoSobedesce, tamanhoLegivel, tipoLegivel, type DriveConfig } from '@zro/core'
 import type { Database } from '@zro/db'
 import { testDatabase } from '@zro/db/testing'
 
@@ -133,6 +133,43 @@ describe('ferramenta da Z contra o SOBEDESCE falso', () => {
     expect(pedidos.at(-1)!.corpo).toEqual({ pasta: 'Motion', ordem: 'mais_antigo' })
     respostas.set('/api/zro/drive/pasta', { status: 200, corpo: { pasta: { id: 'a', nome: 'Motion' }, ordem: 'mais_antigo', arquivos: [], mais: false } })
     expect(JSON.parse((await driveParaIa(db, 'pessoa-1', { tipo: 'pasta', pasta: 'a', ordem: 'mais_antigo' }, cfg)).texto).vazia).toBe(true)
+  })
+
+  it('abrir_no_sobedesce: repassa o link da pasta (uma vez por pasta) e descarta link estranho', async () => {
+    const sd = (id: string) => `${cfg.base}/app/#drive/${id}`
+    respostas.set('/api/zro/drive/buscar', {
+      status: 200,
+      corpo: {
+        arquivos: [
+          { id: 'v1', nome: 'a.mov', tipo: 'video/quicktime', abrir_no_sobedesce: sd('p1') },
+          { id: 'v2', nome: 'b.mov', tipo: 'video/quicktime', abrir_no_sobedesce: 'https://golpe.example/app/#drive/p1?x' },
+          { id: 'v3', nome: 'c.mov', tipo: 'video/quicktime', abrir_no_sobedesce: `${cfg.base}/conta#drive/p1` },
+        ],
+      },
+    })
+    const b = JSON.parse((await driveParaIa(db, 'pessoa-1', { tipo: 'buscar', termo: 'mov' }, cfg)).texto)
+    expect(b.arquivos.map((a: { abrir_no_sobedesce?: string }) => a.abrir_no_sobedesce)).toEqual([sd('p1'), undefined, undefined])
+    expect(linkDaPastaNoSobedesce('https://sobedesce.com/app/#drive/abc_1-D', cfg.base)).toBe('https://sobedesce.com/app/#drive/abc_1-D')
+    expect(linkDaPastaNoSobedesce('javascript:alert(1)', cfg.base)).toBeUndefined()
+    expect(linkDaPastaNoSobedesce('http://outro.example/app/#drive/abc', cfg.base)).toBeUndefined()
+    expect(linkDaPastaNoSobedesce('https://golpe.example/app/#drive/abc', cfg.base)).toBeUndefined()
+
+    respostas.set('/api/zro/drive/pasta', {
+      status: 200,
+      corpo: {
+        pasta: { id: 'p1', nome: 'Motion', abrir_no_sobedesce: sd('p1') },
+        ordem: 'nome',
+        arquivos: [
+          { id: 's1', nome: 'Brutos', tipo: 'application/vnd.google-apps.folder', pasta: true, abrir_no_sobedesce: sd('s1') },
+          { id: 'v1', nome: 'a.mov', tipo: 'video/quicktime', abrir_no_sobedesce: sd('p1') },
+        ],
+        mais: false,
+      },
+    })
+    const p = JSON.parse((await driveParaIa(db, 'pessoa-1', { tipo: 'pasta', pasta: 'p1', ordem: 'nome' }, cfg)).texto)
+    expect(p.pasta.abrir_no_sobedesce).toBe(sd('p1'))
+    expect(p.itens[0].abrir_no_sobedesce).toBe(sd('s1'))
+    expect(p.itens[1].abrir_no_sobedesce).toBeUndefined()
   })
 
   it('versão pronta: entrega o link; sem versão: só orienta a oferecer, sem pedir nada', async () => {
