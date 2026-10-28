@@ -27,8 +27,10 @@ export default async function Inicio() {
   const d = await homeData(auth)
   const first = auth.user.displayName.split(' ')[0] || 'tudo bem'
   const latest = d.projects[0]
-  const apps = [...d.access].sort((a, b) => Number(b.access === 'contracted') - Number(a.access === 'contracted') || a.stepOrder - b.stepOrder)
-  const orbit = d.access.slice().sort((a, b) => a.stepOrder - b.stepOrder)
+  // Contratadas primeiro; fechadas pelo gate de lançamento (ADR 0023) por último, só com o selo, e fora da órbita.
+  const peso = (a: (typeof d.access)[number]) => (a.access === 'contracted' ? 0 : a.access === 'closed' ? 2 : 1)
+  const apps = [...d.access].sort((a, b) => peso(a) - peso(b) || a.stepOrder - b.stepOrder)
+  const orbit = d.access.filter((a) => a.access !== 'closed').sort((a, b) => a.stepOrder - b.stepOrder)
   return (
     <div className="page">
       <header className="greet">

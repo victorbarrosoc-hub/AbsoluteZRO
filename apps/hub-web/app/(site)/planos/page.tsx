@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { ProductMark } from '@zro/ui'
 import { productColor } from '@/components/app-tile'
 import { AvulsoSeletor } from '@/components/avulso-seletor'
-import { publicCatalog } from '@/lib/data/catalog'
+import { publicCatalog, releaseOpen } from '@/lib/data/catalog'
 import { stripeConfig } from '@/lib/stripe'
 
 export const metadata: Metadata = { title: 'Planos' }
@@ -35,10 +35,12 @@ export default async function Planos() {
   const all = plans as unknown as Row[]
   const vendas = stripeConfig() !== null && sales.launched
   const productName = Object.fromEntries(products.map((p) => [p.id as string, p.name as string]))
-  const disponiveis = products.filter((p) => p.stage === 'active' || p.stage === 'beta').map((p) => p.id as string)
+  // Gate de lançamento (ADR 0023): produto fechado ao público não aparece como incluído, nem no Avulso nem nos pacotes.
+  const lancados = new Set(products.filter((p) => releaseOpen(p.release)).map((p) => p.id))
+  const disponiveis = products.filter((p) => lancados.has(p.id) && (p.stage === 'active' || p.stage === 'beta')).map((p) => p.id as string)
   const yearOf = (code: string) => all.find((p) => p.code === `${code}-anual` && p.price_cents != null)?.price_cents ?? null
   const monthly = all.filter((p) => p.price_cents != null && p.billing_interval === 'month')
-  const singles = monthly.filter((p) => p.kind === 'individual')
+  const singles = monthly.filter((p) => p.kind === 'individual' && p.products.some((x) => lancados.has(x.product_id)))
   const singlePrice = Object.fromEntries(singles.flatMap((p) => p.products.map((x) => [x.product_id, p.price_cents as number])))
   const avulsoMes = singles.length ? Math.min(...singles.map((p) => p.price_cents as number)) : null
   const anos = singles.map((p) => yearOf(p.code)).filter((v): v is number => v != null)
@@ -99,7 +101,7 @@ export default async function Planos() {
             {pacotes.map((p) => {
               const mes = p.price_cents as number
               const ano = yearOf(p.code)
-              const apps = p.products.map((x) => x.product_id)
+              const apps = p.products.map((x) => x.product_id).filter((id) => lancados.has(id))
               const soma = apps.reduce((s, id) => s + (singlePrice[id] ?? avulsoMes ?? 0), 0)
               const destaque = p.code === 'ciclo-do-o'
               const nome = p.name.replace(/^Absolute ZRO\s+/, '')

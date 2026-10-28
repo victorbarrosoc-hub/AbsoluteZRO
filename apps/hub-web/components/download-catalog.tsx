@@ -2,7 +2,7 @@
  * Topo da página Downloads (o app Absolute ZRO para computador) e a lista de ferramentas para o DownloadPicker. O
  * instalador do sistema do visitante ganha destaque pelo atributo data-os do <html> (OsHint).
  */
-import { DOWNLOADS, type Os } from '@/lib/downloads'
+import { downloadsLiberados, type Os } from '@/lib/downloads'
 import { HUB_DESKTOP_OPCOES, SEM_INSTALADOR, type Disponibilidade } from '@/lib/hub-desktop-release'
 import { productColor } from './app-tile'
 import { CopyButton } from './copy-button'
@@ -19,13 +19,23 @@ const HUB_TERMINAL = {
 
 const OS_ICON: Record<Os, IconName> = { mac: 'laptop', windows: 'monitor', mobile: 'phone', web: 'globe' }
 
-/** As ferramentas do catálogo com o que cada uma tem para baixar, na ordem do fluxo (para o DownloadPicker). */
-export function appsParaBaixar(products: CatalogProduct[], extra?: (id: string) => Partial<PickerApp>): PickerApp[] {
+/**
+ * As ferramentas do catálogo com o que cada uma tem para baixar, na ordem do fluxo (para o DownloadPicker). Só os
+ * `liberados` (canal download, ADR 0023) trazem instalador; os outros aparecem como "Em desenvolvimento".
+ */
+export function appsParaBaixar(products: CatalogProduct[], liberados: ReadonlySet<string>, extra?: (id: string) => Partial<PickerApp>): PickerApp[] {
   const byId = new Map(products.map((p) => [p.id, p]))
+  const downloads = downloadsLiberados(liberados)
   return products
-    .map((p) => DOWNLOADS.find((d) => d.productId === p.id))
-    .filter((d): d is (typeof DOWNLOADS)[number] => !!d && byId.has(d.productId))
-    .map((d) => ({ ...d, name: byId.get(d.productId)!.name, role: byId.get(d.productId)!.role, cor: productColor(d.productId), ...extra?.(d.productId) }))
+    .map((p) => downloads.find((d) => d.productId === p.id))
+    .filter((d): d is (typeof downloads)[number] => !!d && byId.has(d.productId))
+    .map((d) => ({
+      ...d,
+      name: byId.get(d.productId)!.name,
+      role: byId.get(d.productId)!.role,
+      cor: productColor(d.productId),
+      ...(d.status === 'soon' ? {} : extra?.(d.productId)),
+    }))
 }
 
 /** Cabeçalho comum: o que existe hoje e o app Absolute ZRO para computador (Release "hub-desktop"). */

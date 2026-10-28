@@ -2,6 +2,10 @@
  * Onde instalar cada ferramenta (página Downloads). Só links oficiais que existem: cada instalador foi conferido
  * com download real em 25/10/2026. Os arquivos ficam nos sites e releases de cada produto; o HUB não hospeda nem
  * repassa instaladores, e cada app continua com o próprio login.
+ *
+ * Gate de lançamento (ADR 0023): `DOWNLOADS` é o que existe; o que cada pessoa vê sai de `downloadsLiberados`, com os
+ * produtos liberados para ela no canal `download` (vindos do banco). Produto fechado vira "Em desenvolvimento", sem
+ * instalador, sem Terminal e sem link.
  */
 export type Os = 'mac' | 'windows' | 'mobile' | 'web'
 
@@ -24,8 +28,8 @@ export type DownloadEntry = {
   terminal?: { mac?: string; windows?: string }
   firstOpen?: { mac?: string; windows?: string }
   moreUrl?: string
-  /** Página da plataforma ("Conheça mais"). */
-  site: string
+  /** Página da plataforma ("Conheça mais"). Produto fechado não tem. */
+  site?: string
 }
 
 // Os repositórios são privados: nada aponta para o github.com. Cada site tem /baixar/<sistema>, que lê o Release com
@@ -132,5 +136,16 @@ export const DOWNLOADS: DownloadEntry[] = [
   },
 ]
 
-export const downloadFor = (productId: string) => DOWNLOADS.find((d) => d.productId === productId)
-export const hasDesktopInstaller = (productId: string) => !!downloadFor(productId)?.options.some((o) => o.os === 'mac' || o.os === 'windows')
+/** Como um produto fechado aparece: só o selo "Em desenvolvimento". */
+export const emDesenvolvimento = (productId: string): DownloadEntry => ({ productId, status: 'soon', options: [] })
+
+/** O catálogo de downloads como esta pessoa vê: o que não está liberado para ela vira "Em desenvolvimento". */
+export const downloadsLiberados = (liberados: ReadonlySet<string>): DownloadEntry[] =>
+  DOWNLOADS.map((d) => (liberados.has(d.productId) ? d : emDesenvolvimento(d.productId)))
+
+export const downloadFor = (productId: string, liberados: ReadonlySet<string>) => {
+  const d = DOWNLOADS.find((x) => x.productId === productId)
+  return d && (liberados.has(productId) ? d : emDesenvolvimento(productId))
+}
+export const hasDesktopInstaller = (productId: string, liberados: ReadonlySet<string>) =>
+  !!downloadFor(productId, liberados)?.options.some((o) => o.os === 'mac' || o.os === 'windows')

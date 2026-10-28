@@ -9,7 +9,7 @@ import { ROLE_LABEL } from '@/lib/labels'
 import { Avatar } from './avatar'
 import { Wordmark } from './brand'
 import { Icon } from './icons'
-import { BackPath, MobileMenu, Nav, NavToggle, type NavMode } from './nav'
+import { BackPath, MobileMenu, Nav, NavToggle, type FamilyApp, type NavMode } from './nav'
 import { ThemeToggle } from './theme-toggle'
 
 function OrgSwitch({ orgs, id }: { orgs: OrganizationSummary[]; id: string }) {
@@ -46,6 +46,7 @@ export function Shell({
   nav,
   avatar,
   pendencias = {},
+  familia = [],
   children,
 }: {
   auth: Authenticated
@@ -55,6 +56,8 @@ export function Shell({
   avatar: number | null
   /** Quantas ações esperam a pessoa em cada seção (o balão do menu). */
   pendencias?: Pendencias
+  /** Apps da família no menu: só os lançados ou liberados para a pessoa (ADR 0023). */
+  familia?: FamilyApp[]
   children: ReactNode
 }) {
   const admin = auth.user.platformRole === 'admin' || auth.user.platformRole === 'support'
@@ -73,7 +76,7 @@ export function Shell({
           <Icon name="plus" />
           <span className="nav__text">Novo projeto</span>
         </Link>
-        <Nav admin={admin} pendencias={pendencias} />
+        <Nav admin={admin} pendencias={pendencias} familia={familia} />
         <div className="sidebar__foot">
           <OrgSwitch orgs={orgs} id="org-switch" />
           <div className="me">
@@ -104,7 +107,7 @@ export function Shell({
                 <Icon name="plus" />
                 Novo projeto
               </Link>
-              <Nav admin={admin} pendencias={pendencias} />
+              <Nav admin={admin} pendencias={pendencias} familia={familia} />
               <OrgSwitch orgs={orgs} id="org-switch-mobile" />
               <form action={logoutAction}>
                 <button className="zro-btn zro-btn--ghost zro-btn--small" type="submit">

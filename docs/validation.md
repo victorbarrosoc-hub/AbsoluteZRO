@@ -1463,6 +1463,20 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   acesso no plano grátis; o cliente de teste do fluxo trusted virou Synquei e o do Carro lista a conta nova como
   proprietária). Tela "Em desenvolvimento" conferida em captura local (claro e escuro, 390 px e 1280 px): símbolo
   pequeno, ícone do app, título Light × ExtraBold, uma linha, botão de vidro escuro.
+- Interface do HUB lendo `release` (28/10/2026, mesmo branch): `liberadosPara(pessoa, canal)` em
+  `lib/data/catalog.ts` (via `releaseClaimsFor`, sem cache) decide o que cada tela mostra; homepage, `/planos`,
+  `/baixar`, `/downloads`, `/api/v1/desktop/apps`, `/baixar/app/<id>/…`, menu "Absolute ZRO", Ferramentas, `AppTile`,
+  painel do app, `/inicio`, Sua conta › Acessos e a gaveta da Z. Testes: `downloads.test.ts` (fechado vira `soon`, sem
+  instalador; lista de acesso continua baixando), `desktop-apps.test.ts` (catálogo e endereço só para liberados),
+  `core.test.ts` com o `maestro` fechado; e2e novo em `hub.spec.ts` (anônimo: homepage com selo e sem nenhum link para
+  site de produto fechado, órbita da Z só com lançados, `/baixar` sem instalador nem "Conheça mais" do NOSSOM,
+  `/api/v1/desktop/apps` sem `nossom`, `/baixar/app/nossom/…` 404) e `/planos` sem AEON/NOSSOM. Resultados (bancos
+  próprios `zro_gateui_test`/`zro_e2e_gateui_test`): lint 0, `format:check` ok, `typecheck` ok, `npm test` 199/199,
+  build ok, `scan-secrets` limpo, `hub.spec.ts` + `sso.spec.ts` 19/19, `test:e2e` 24/25 — o caso "área logada sem
+  violações WCAG" passa sem violação (56 s) mas estoura os 60 s com a máquina carregada; o mesmo caso no commit de
+  antes leva 57–59 s, então o limite já estava no fio (não é regressão). Capturas locais (1280 px, claro): faixa e
+  "Conheça de perto" da homepage, órbita da Z, `/baixar` com NOSSOM e Synquei, `/planos`, `/inicio` e `/ferramentas`
+  de conta básica.
 - Não validado: produção (nada publicado; a conta do proprietário e o `revoke --apply` dependem de autorização);
-  interface do HUB e sites dos produtos lendo `release`/`zro_release` (outros agentes); `maestro` (migration 0019 de
+  sites dos produtos lendo `zro_release` (outros agentes); `maestro` (migration 0019 de
   outro agente) só por construção (sem linha = fechado).

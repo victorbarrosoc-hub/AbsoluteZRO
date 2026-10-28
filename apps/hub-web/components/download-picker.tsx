@@ -124,7 +124,9 @@ export function DownloadPicker({ apps }: { apps: PickerApp[] }) {
                 </div>
               </header>
               {app.note && <p className="dl-app__note">{app.note}</p>}
-              {app.liberado !== undefined && instaladores.length > 0 && <AppActions id={app.productId} nome={app.name} liberado={app.liberado} web={null} />}
+              {app.liberado !== undefined && app.status !== 'soon' && instaladores.length > 0 && (
+                <AppActions id={app.productId} nome={app.name} liberado={app.liberado} web={null} />
+              )}
               <div className="dl-opts dl-painel__opcoes">
                 {instaladores.map((o) => (
                   <span key={o.href} className="dl-opts--instalador">
@@ -169,12 +171,14 @@ export function DownloadPicker({ apps }: { apps: PickerApp[] }) {
                   </div>
                 </details>
               )}
-              <div className="dl-painel__fim">
-                <a className="glass-btn" href={app.site} target="_blank" rel="noopener noreferrer">
-                  Conheça mais
-                  <span className="zro-sr-only"> sobre {app.name} (abre em nova aba)</span>
-                </a>
-              </div>
+              {app.site && (
+                <div className="dl-painel__fim">
+                  <a className="glass-btn" href={app.site} target="_blank" rel="noopener noreferrer">
+                    Conheça mais
+                    <span className="zro-sr-only"> sobre {app.name} (abre em nova aba)</span>
+                  </a>
+                </div>
+              )}
             </article>
           )}
         </div>

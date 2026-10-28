@@ -38,7 +38,11 @@ export default async function Acessos() {
                   <li key={p.id} className={p.access === 'contracted' ? 'is-on' : 'is-off'} title={`${p.name}: ${ACCESS_LABEL[p.access]}`}>
                     <ProductMark productId={p.id} name={p.name} size={36} />
                     <span>{p.name}</span>
-                    <span className="zro-sr-only">: {ACCESS_LABEL[p.access]}</span>
+                    {p.access === 'closed' ? (
+                      <span className="selo-dev">{ACCESS_LABEL.closed}</span>
+                    ) : (
+                      <span className="zro-sr-only">: {ACCESS_LABEL[p.access]}</span>
+                    )}
                   </li>
                 ))}
             </ul>

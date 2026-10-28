@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import type { CSSProperties } from 'react'
 import { productAccessFor } from '@zro/billing'
 import { authorize, avatarVersion } from '@zro/core'
-import { ProductMark } from '@zro/ui'
+import { Pill, ProductMark } from '@zro/ui'
 import { AppActions } from '@/components/app-actions'
 import { productColor } from '@/components/app-tile'
 import { PainelLado, PainelMovel } from '@/components/painel-lado'
@@ -34,7 +34,8 @@ const SITE: Record<string, string> = {
 /**
  * Painel do app Absolute ZRO para computador, no espírito do Creative Cloud: barra lateral com a conta, e as
  * ferramentas em cartões grandes com Instalar, Abrir e Atualizar (central do app) ou Abrir no navegador (apps da web).
- * Sem sessão, vai para o login do próprio app (/app/entrar).
+ * Sem sessão, vai para o login do próprio app (/app/entrar). Produto fechado pelo gate de lançamento (ADR 0023, canal
+ * desktop) fica só com o selo "Em desenvolvimento": sem Instalar e sem Abrir.
  */
 export default async function Painel() {
   const auth = await getAuth()
@@ -42,7 +43,7 @@ export default async function Painel() {
   if (!auth.session.activeOrgId) redirect('/boas-vindas')
   const actor = await authorize(db(), auth)
   const [access, avatar] = await Promise.all([
-    db().asUser({ userId: actor.userId, orgId: actor.orgId }, (tx) => productAccessFor(tx, actor.orgId)),
+    db().asUser({ userId: actor.userId, orgId: actor.orgId }, (tx) => productAccessFor(tx, actor.orgId, { channel: 'desktop' })),
     avatarVersion(db(), auth),
   ])
   const nome = auth.user.displayName || auth.user.email
@@ -64,8 +65,9 @@ export default async function Painel() {
 
         <ul className="painel__apps" aria-label="Ferramentas">
           {access.map((a, i) => {
-            const instalavel = hasDesktopInstaller(a.productId)
-            const abrir = a.ssoStartUrl || a.externalUrl || SITE[a.productId] || null
+            const fechado = a.access === 'closed'
+            const instalavel = !fechado && hasDesktopInstaller(a.productId, new Set([a.productId]))
+            const abrir = fechado ? null : a.ssoStartUrl || a.externalUrl || SITE[a.productId] || null
             return (
               <li key={a.productId} className="pcard" style={{ ...productColor(a.productId), '--i': i } as CSSProperties}>
                 <span className="pcard__luz" aria-hidden="true" />
@@ -75,6 +77,7 @@ export default async function Painel() {
                   <p>{LINHA[a.productId] ?? a.roleInFlow}</p>
                 </div>
                 <div className="pcard__acoes">
+                  {fechado && <Pill tone="faint">Em desenvolvimento</Pill>}
                   {instalavel && <AppActions id={a.productId} nome={a.name} liberado={a.access === 'contracted'} web={abrir} />}
                   {/* no navegador (sem a central) e para os apps da web: abrir o app, já com a conta quando há login único */}
                   {abrir && (
