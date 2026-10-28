@@ -15,6 +15,19 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Console da plataforma redesenhado (28/10/2026)
+
+- Raiz: `lint`, `format:check`, `typecheck` ok; `npm test` **231/231** em 27 arquivos (Postgres 16 local); `npm run build`
+  ok; `npx playwright test` **26/26** (axe WCAG A/AA claro e escuro em `/admin`, `/admin/pessoas`, ficha, `/admin/planos`,
+  `/admin/lancamento` e `/admin/apps`; 390 px sem rolagem horizontal).
+- `tests/integration/people.test.ts` (+5): segmentos ecossistema/avulso/grátis/sem plano e as abas somando o total;
+  online (sessão do HUB nos últimos 15 min, token de app renovado; parado há 20 min e conta suspensa não contam) e
+  filtro por produto; arquivos só do manifesto importado pela pessoa; páginas de 50 (página além do fim); visão geral
+  (créditos de IA, série de 30 dias, pessoas por plano e por app).
+- `tests/e2e/admin.spec.ts`: 404 para quem não é da plataforma em todo o console e em `/admin/online`; número online
+  confere com a rota; segmento Grátis → Avulso depois da troca de plano na ficha; CSV com a coluna segmento.
+- Capturas antes/depois (claro/escuro, 1440 px e iPhone) feitas com dados fictícios locais; não entram no repositório.
+
 ## Z Fase 1 e entrada dos apps na tarefa (28/10/2026)
 
 - Raiz: `lint`, `format:check`, `typecheck` ok; `npm test` **223/223** em 27 arquivos (Postgres 16 local, banco

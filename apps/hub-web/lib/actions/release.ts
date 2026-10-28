@@ -56,7 +56,7 @@ const date = (s: string) => {
 
 function refresh() {
   revalidatePath('/admin/lancamento')
-  revalidatePath('/admin')
+  revalidatePath('/admin', 'layout')
 }
 
 export async function setReleaseAction(_: FormState, fd: FormData): Promise<FormState> {

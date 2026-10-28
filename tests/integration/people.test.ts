@@ -3,7 +3,19 @@ import { randomBytes } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { authenticate } from '@zro/auth'
 import { changeOrgPlan, checkEntitlement } from '@zro/billing'
-import { listPeople, parsePeopleFilter, peopleCsv, peopleSummary, personDetail, reactivateUser, suspendUser } from '@zro/core'
+import {
+  consoleOverview,
+  listPeople,
+  onlineNow,
+  parsePeopleFilter,
+  peopleCsv,
+  peopleFilterQuery,
+  peopleSummary,
+  personDetail,
+  reactivateUser,
+  segmentCounts,
+  suspendUser,
+} from '@zro/core'
 import type { Database, Tx } from '@zro/db'
 import { testDatabase } from '@zro/db/testing'
 import { admin, expectCode, newOrgWithOwner, newUser, planId } from './helpers'
@@ -195,12 +207,15 @@ describe('consultas do painel', () => {
   })
 
   it('filtro desconhecido na URL vira sem filtro; CSV não executa fórmula', () => {
-    expect(parsePeopleFilter(new URLSearchParams({ f: 'xpto', o: 'drop', plano: 'A B', app: '../x' }))).toEqual({
+    expect(parsePeopleFilter(new URLSearchParams({ f: 'xpto', o: 'drop', plano: 'A B', app: '../x', produto: 'X;', seg: 'vip', pagina: '-3' }))).toEqual({
       q: '',
       app: null,
+      product: null,
       plan: null,
+      segment: null,
       flag: null,
       order: 'recentes',
+      page: 1,
     })
     const csv = peopleCsv([
       {
@@ -214,6 +229,10 @@ describe('consultas do painel', () => {
         hubLastSeenAt: null,
         lastSeenAt: null,
         google: false,
+        online: false,
+        segment: 'sem-plano',
+        avatarId: null,
+        files: { count: 0, bytes: 0 },
         orgs: [],
         apps: [],
       },
@@ -237,5 +256,128 @@ describe('consultas do painel', () => {
     expect(d.timeline.map((t) => t.action)).toContain('billing.plan_changed')
     expect(d.timeline.find((t) => t.action === 'billing.plan_changed')!.reason).toBe('cortesia')
     expect(await sys(async (tx) => personDetail(tx, '00000000-0000-4000-8000-000000000000'))).toBeNull()
+  })
+})
+
+describe('segmentos, online, arquivos e páginas', () => {
+  it('ecossistema (Completo), avulso (plano de um app), grátis e sem plano; abas contam cada um', async () => {
+    const tag = randomBytes(3).toString('hex')
+    const adm = await admin(db)
+    const eco = await newOrgWithOwner(db, `seg-eco-${tag}`, { freePlan: true })
+    const avulso = await newOrgWithOwner(db, `seg-avulso-${tag}`, { freePlan: true })
+    const gratis = await newOrgWithOwner(db, `seg-gratis-${tag}`, { freePlan: true })
+    const nada = await newUser(db, `seg-nada-${tag}`)
+    const before = await sys(async (tx) => segmentCounts(tx))
+    await sys(async (tx) => changeOrgPlan(tx, { userId: adm, reason: 'teste' }, { orgId: eco.orgId, planId: await planId(db, 'ciclo-do-o', 2) }))
+    await sys(async (tx) => changeOrgPlan(tx, { userId: adm, reason: 'teste' }, { orgId: avulso.orgId, planId: await planId(db, 'individual-synquei') }))
+    const after = await sys(async (tx) => segmentCounts(tx))
+
+    const all = await sys(async (tx) => listPeople(tx, filter({ q: tag })))
+    const seg = Object.fromEntries(all.rows.map((r) => [r.id, r.segment]))
+    expect(seg[eco.userId]).toBe('ecossistema')
+    expect(seg[avulso.userId]).toBe('avulso')
+    expect(seg[gratis.userId]).toBe('gratis')
+    expect(seg[nada.userId]).toBe('sem-plano')
+
+    for (const [s, who] of [
+      ['ecossistema', eco.userId],
+      ['avulso', avulso.userId],
+      ['gratis', gratis.userId],
+      ['sem-plano', nada.userId],
+    ] as const) {
+      const r = await sys(async (tx) => listPeople(tx, filter({ q: tag, seg: s })))
+      expect(
+        r.rows.map((x) => x.id),
+        s,
+      ).toEqual([who])
+      expect(r.matched).toBe(1)
+    }
+    // Outros testes rodam no mesmo banco: só dá para garantir o que este teste moveu.
+    expect(after.todas).toBeGreaterThanOrEqual(before.todas)
+    expect(after.ecossistema).toBeGreaterThanOrEqual(before.ecossistema + 1)
+    expect(after.avulso).toBeGreaterThanOrEqual(before.avulso + 1)
+    expect(after.todas).toBe(after.ecossistema + after.avulso + after.gratis + after['sem-plano'])
+    expect(peopleFilterQuery(filter({ seg: 'avulso', pagina: '2' }))).toBe('seg=avulso&pagina=2')
+  })
+
+  it('online: sessão do HUB usada há pouco ou app renovando o token; parado há 20 min não conta', async () => {
+    const tag = randomBytes(3).toString('hex')
+    const ativo = await newUser(db, `on-hub-${tag}`)
+    const parado = await newUser(db, `on-parado-${tag}`)
+    const app = await newUser(db, `on-app-${tag}`)
+    await db.sql`update zro.sessions set last_used_at = now() - interval '20 minutes' where user_id = ${parado.userId}`
+    await db.sql`update zro.sessions set last_used_at = now() - interval '2 hours' where user_id = ${app.userId}`
+    const clientId = `on-${tag}`
+    await db.sql`insert into zro.oauth_clients (id, name, product_id, kind, redirect_uris) values (${clientId}, 'App online', 'synquei', 'public', ${['http://127.0.0.1/cb']})`
+    await db.sql`insert into zro.app_accounts (user_id, client_id, product_id, last_login_at) values (${app.userId}, ${clientId}, 'synquei', now() - interval '3 hours')`
+    const before = await sys(async (tx) => onlineNow(tx))
+    await db.sql`insert into zro.oauth_refresh_tokens (token_hash, family_id, client_id, user_id, scopes, auth_time, family_started_at, expires_at)
+                 values (${randomBytes(16).toString('hex')}, gen_random_uuid(), ${clientId}, ${app.userId}, ${['openid']}, now(), now(), now() + interval '1 day')`
+    const after = await sys(async (tx) => onlineNow(tx))
+    expect(after.apps).toBeGreaterThanOrEqual(before.apps + 1)
+    expect(after.total).toBeLessThanOrEqual(after.hub + after.apps)
+
+    const r = await sys(async (tx) => listPeople(tx, filter({ q: tag })))
+    const on = Object.fromEntries(r.rows.map((x) => [x.id, x.online]))
+    expect(on).toEqual({ [ativo.userId]: true, [parado.userId]: false, [app.userId]: true })
+    const only = await sys(async (tx) => listPeople(tx, filter({ q: tag, f: 'online' })))
+    expect(only.rows.map((x) => x.id).sort()).toEqual([ativo.userId, app.userId].sort())
+    // Último acesso conta o app (token renovado agora), não só o HUB.
+    expect(r.rows.find((x) => x.id === app.userId)!.lastSeenAt!.getTime()).toBeGreaterThan(Date.now() - 60_000)
+    const byProduct = await sys(async (tx) => listPeople(tx, filter({ q: tag, produto: 'synquei' })))
+    expect(byProduct.rows.map((x) => x.id)).toEqual([app.userId])
+
+    await sys(async (tx) => suspendUser(tx, { userId: await admin(db), reason: 'teste' }, ativo.userId))
+    const susp = await sys(async (tx) => listPeople(tx, filter({ q: tag, f: 'online' })))
+    expect(susp.rows.map((x) => x.id)).toEqual([app.userId])
+  })
+
+  it('arquivos: só o que a pessoa catalogou nos projetos do HUB (manifesto importado por ela)', async () => {
+    const o = await newOrgWithOwner(db, 'arquivos')
+    const outro = await newUser(db, 'arquivos-outro')
+    const [p] = await db.sql`insert into zro.projects (org_id, title, created_by) values (${o.orgId}, 'Projeto', ${o.userId}) returning id`
+    const [m] = await db.sql`insert into zro.media_manifests (org_id, project_id, manifest_id, schema_version, source_app, status, payload, imported_by)
+      values (${o.orgId}, ${p!.id as string}, ${'m-' + randomBytes(4).toString('hex')}, '1', 'sobedesce', 'valid', '{}', ${o.userId}) returning id`
+    for (const [k, size] of [
+      ['a', 1_500_000_000],
+      ['b', 500_000_000],
+    ] as const) {
+      await db.sql`insert into zro.project_assets (org_id, project_id, asset_key, manifest_row_id, original_name, relative_path, size_bytes)
+        values (${o.orgId}, ${p!.id as string}, ${k}, ${m!.id as string}, ${k + '.mov'}, ${k + '.mov'}, ${size})`
+    }
+    const d = (await sys(async (tx) => personDetail(tx, o.userId)))!
+    expect(d.person.files).toEqual({ count: 2, bytes: 2_000_000_000 })
+    const x = (await sys(async (tx) => personDetail(tx, outro.userId)))!
+    expect(x.person.files).toEqual({ count: 0, bytes: 0 })
+    const ov = await sys(async (tx) => consoleOverview(tx))
+    expect(ov.files.count).toBeGreaterThanOrEqual(2)
+    expect(ov.files.bytes).toBeGreaterThanOrEqual(2_000_000_000)
+  })
+
+  it('páginas: 2 por página, a terceira pessoa vai para a página 2', async () => {
+    const tag = randomBytes(3).toString('hex')
+    for (const i of [1, 2, 3]) await newUser(db, `pag-${i}-${tag}`)
+    const p1 = await sys(async (tx) => listPeople(tx, filter({ q: tag, o: 'nome' }), 2))
+    expect(p1.rows).toHaveLength(2)
+    expect([p1.matched, p1.pages, p1.page]).toEqual([3, 2, 1])
+    const p2 = await sys(async (tx) => listPeople(tx, filter({ q: tag, o: 'nome', pagina: '2' }), 2))
+    expect(p2.rows.map((r) => r.email)).toEqual([expect.stringContaining('pag-3')])
+    const p9 = await sys(async (tx) => listPeople(tx, filter({ q: tag, pagina: '9' }), 2))
+    expect([p9.rows.length, p9.matched, p9.pages]).toEqual([0, 3, 2])
+  })
+
+  it('visão geral: pessoas por plano e por produto, créditos de IA e série de 30 dias', async () => {
+    const o = await newOrgWithOwner(db, 'visao', { freePlan: true })
+    const before = await sys(async (tx) => consoleOverview(tx))
+    await db.sql`insert into zro.usage_events (org_id, user_id, metric, amount, idempotency_key, period_start)
+                 values (${o.orgId}, ${o.userId}, 'zro.ai_credits', 7, ${'visao-' + randomBytes(4).toString('hex')}, date_trunc('month', now()))`
+    const after = await sys(async (tx) => consoleOverview(tx))
+    expect(after.series).toHaveLength(30)
+    expect(after.ai.credits30).toBe(before.ai.credits30 + 7)
+    expect(after.series.at(-1)!.aiCredits).toBeGreaterThanOrEqual(7)
+    expect(after.plans.find((p) => p.name === 'Conta Absolute ZRO')!.people).toBeGreaterThanOrEqual(1)
+    expect(after.products.map((p) => p.id)).toContain('synquei')
+    expect(after.segments.todas).toBeGreaterThanOrEqual(after.accounts)
+    expect(after.online.total).toBeGreaterThanOrEqual(1) // a sessão recém-criada conta
   })
 })

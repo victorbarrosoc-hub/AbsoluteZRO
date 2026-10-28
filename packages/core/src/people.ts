@@ -12,20 +12,47 @@ const TZ = 'America/Fortaleza'
 const LIVE_SUB = ['active', 'trialing', 'past_due']
 
 export type PeopleOrder = 'recentes' | 'acesso' | 'nome'
-export type PeopleFlag = 'google' | 'suspensas' | 'sem-org'
+export type PeopleFlag = 'google' | 'suspensas' | 'sem-org' | 'online'
+/**
+ * Segmento pelo plano vivo das organizações da pessoa (o mais amplo vence):
+ * - ecossistema: Completo ou Pro (plano de pacote ou equipe: todos os apps);
+ * - avulso: só plano de um app (individual), a "plataforma avulsa";
+ * - gratis: só a Conta Absolute ZRO grátis;
+ * - sem-plano: nenhuma assinatura viva (ou sem organização).
+ */
+export type PeopleSegment = 'ecossistema' | 'avulso' | 'gratis' | 'sem-plano'
 export type PeopleFilter = {
   q: string
   /** client_id do app (zro.oauth_clients). */
   app: string | null
+  /** Produto (zro.products.id): quem já entrou em algum app dele. */
+  product: string | null
   /** Código do plano (todas as versões) ou "sem-plano". */
   plan: string | null
+  segment: PeopleSegment | null
   flag: PeopleFlag | null
   order: PeopleOrder
+  /** Página, a partir de 1. */
+  page: number
 }
 
 export const PEOPLE_ORDERS: Record<PeopleOrder, string> = { recentes: 'Mais recentes', acesso: 'Último acesso', nome: 'Nome' }
-export const PEOPLE_FLAGS: Record<PeopleFlag, string> = { google: 'Google ligado', suspensas: 'Suspensas', 'sem-org': 'Sem organização' }
+export const PEOPLE_FLAGS: Record<PeopleFlag, string> = {
+  online: 'Online agora',
+  google: 'Google ligado',
+  suspensas: 'Suspensas',
+  'sem-org': 'Sem organização',
+}
+export const PEOPLE_SEGMENTS: Record<PeopleSegment, { label: string; hint: string }> = {
+  ecossistema: { label: 'Ecossistema', hint: 'Completo ou Pro: todos os apps numa assinatura.' },
+  avulso: { label: 'Avulso', hint: 'Paga só o app que usa (plano de um app).' },
+  gratis: { label: 'Grátis', hint: 'Conta Absolute ZRO, sem plano pago.' },
+  'sem-plano': { label: 'Sem plano', hint: 'Nenhuma assinatura viva ou ainda sem organização.' },
+}
 export const NO_PLAN = 'sem-plano'
+/** Online = movimento real nos últimos 15 minutos (o HUB renova a sessão a cada 10 min de uso; os apps, o token). */
+export const ONLINE_MINUTES = 15
+export const PEOPLE_PAGE = 50
 
 const one = (v: string | string[] | null | undefined) => (Array.isArray(v) ? (v[0] ?? '') : (v ?? '')).trim()
 
@@ -35,13 +62,19 @@ export function parsePeopleFilter(params: URLSearchParams | Record<string, strin
   const flag = get('f')
   const order = get('o')
   const app = get('app')
+  const product = get('produto')
   const plan = get('plano')
+  const seg = get('seg')
+  const page = Number(get('pagina'))
   return {
     q: get('q').slice(0, 100),
     app: /^[a-z0-9][a-z0-9-]{2,62}$/.test(app) ? app : null,
+    product: /^[a-z0-9-]{1,40}$/.test(product) ? product : null,
     plan: /^[a-z0-9-]{1,80}$/.test(plan) ? plan : null,
+    segment: seg in PEOPLE_SEGMENTS ? (seg as PeopleSegment) : null,
     flag: flag in PEOPLE_FLAGS ? (flag as PeopleFlag) : null,
     order: order in PEOPLE_ORDERS ? (order as PeopleOrder) : 'recentes',
+    page: Number.isInteger(page) && page > 1 && page < 10_000 ? page : 1,
   }
 }
 
@@ -50,10 +83,13 @@ export function peopleFilterQuery(f: PeopleFilter, change: Partial<PeopleFilter>
   const v = { ...f, ...change }
   const q = new URLSearchParams()
   if (v.q) q.set('q', v.q)
+  if (v.segment) q.set('seg', v.segment)
   if (v.app) q.set('app', v.app)
+  if (v.product) q.set('produto', v.product)
   if (v.plan) q.set('plano', v.plan)
   if (v.flag) q.set('f', v.flag)
   if (v.order !== 'recentes') q.set('o', v.order)
+  if (v.page > 1) q.set('pagina', String(v.page))
   return q.toString()
 }
 
@@ -82,6 +118,16 @@ export type PersonRow = {
   /** Mais recente entre a sessão no HUB e a entrada num app. */
   lastSeenAt: Date | null
   google: boolean
+  /** Movimento no HUB ou num app nos últimos ONLINE_MINUTES. */
+  online: boolean
+  segment: PeopleSegment
+  /** Endereço público da foto (/api/v1/foto/<id>), null sem foto. */
+  avatarId: string | null
+  /**
+   * Arquivos que a pessoa trouxe para os projetos do HUB (manifestos do SOBEDESCE importados por ela). Envios feitos
+   * só dentro de cada app ficam no banco do app e não entram aqui.
+   */
+  files: { count: number; bytes: number }
   orgs: PersonOrg[]
   apps: PersonApp[]
 }
@@ -94,7 +140,7 @@ type RawApp = Omit<PersonApp, 'firstLoginAt' | 'lastLoginAt'> & { firstLoginAt: 
 function toPerson(r: Record<string, unknown>): PersonRow {
   const hub = date(r.hub_last_seen)
   const apps = ((r.apps as RawApp[]) ?? []).map((a) => ({ ...a, firstLoginAt: new Date(a.firstLoginAt), lastLoginAt: new Date(a.lastLoginAt) }))
-  const lastApp = apps.reduce<Date | null>((m, a) => (!m || a.lastLoginAt > m ? a.lastLoginAt : m), null)
+  const lastApp = [date(r.app_last_seen), ...apps.map((a) => a.lastLoginAt)].reduce<Date | null>((m, d) => (d && (!m || d > m) ? d : m), null)
   return {
     id: r.id as string,
     name: (r.display_name as string) || (r.email as string).split('@')[0]!,
@@ -106,13 +152,61 @@ function toPerson(r: Record<string, unknown>): PersonRow {
     hubLastSeenAt: hub,
     lastSeenAt: !hub ? lastApp : !lastApp ? hub : hub > lastApp ? hub : lastApp,
     google: !!r.google,
+    online: !!r.online,
+    segment: ((r.segment as PeopleSegment) ?? 'sem-plano') as PeopleSegment,
+    avatarId: (r.avatar_id as string) ?? null,
+    files: { count: Number(r.files_count ?? 0), bytes: Number(r.files_bytes ?? 0) },
     orgs: ((r.orgs as RawOrg[]) ?? []).map((o) => ({ ...o, plans: o.plans.map((p) => ({ ...p, periodEnd: date(p.periodEnd) })) })),
     apps,
   }
 }
 
-/** Lista de pessoas com busca, filtros e ordem. `total` = todas as contas (para "x de y"). */
-export async function listPeople(tx: Queryable, f: PeopleFilter, limit = 500): Promise<{ rows: PersonRow[]; total: number }> {
+/**
+ * Colunas de uma pessoa (lista e página). `u` = zro.users. Online e último acesso vêm de movimento real: sessão do HUB
+ * renovada (a cada 10 min de uso), entrada num app ou token de app renovado (a cada 10 min com o app aberto).
+ */
+function personColumns(tx: Queryable) {
+  const online = `${ONLINE_MINUTES} minutes`
+  return tx`u.id, u.email, u.display_name, u.status, u.platform_role, u.email_verified_at, u.created_at,
+    (select max(s.last_used_at) from zro.sessions s where s.user_id = u.id) as hub_last_seen,
+    greatest((select max(a.last_login_at) from zro.app_accounts a where a.user_id = u.id),
+             (select max(r.created_at) from zro.oauth_refresh_tokens r where r.user_id = u.id)) as app_last_seen,
+    (u.status = 'active' and (
+      exists (select 1 from zro.sessions s where s.user_id = u.id and s.revoked_at is null and s.expires_at > now()
+              and s.last_used_at > now() - ${online}::interval)
+      or exists (select 1 from zro.app_accounts a where a.user_id = u.id and a.last_login_at > now() - ${online}::interval)
+      or exists (select 1 from zro.oauth_refresh_tokens r where r.user_id = u.id and r.created_at > now() - ${online}::interval)
+    )) as online,
+    exists (select 1 from zro.external_identities x where x.user_id = u.id and x.provider = 'google') as google,
+    (select v.public_id from zro.user_avatars v where v.user_id = u.id) as avatar_id,
+    (select case when bool_or(p.kind in ('bundle', 'team')) then 'ecossistema' when bool_or(p.kind = 'individual') then 'avulso'
+                 when bool_or(p.kind = 'free') then 'gratis' else 'sem-plano' end
+       from zro.memberships m join zro.subscriptions s on s.org_id = m.org_id join zro.plans p on p.id = s.plan_id
+       where m.user_id = u.id and m.status = 'active' and s.status = any(${LIVE_SUB})) as segment,
+    (select count(*)::int from zro.project_assets pa join zro.media_manifests mm on mm.id = pa.manifest_row_id where mm.imported_by = u.id) as files_count,
+    (select coalesce(sum(pa.size_bytes), 0)::float8 from zro.project_assets pa join zro.media_manifests mm on mm.id = pa.manifest_row_id
+       where mm.imported_by = u.id) as files_bytes,
+    coalesce((
+      select json_agg(json_build_object('clientId', a.client_id, 'name', c.name, 'productId', a.product_id,
+               'firstLoginAt', a.first_login_at, 'lastLoginAt', a.last_login_at, 'logins', a.logins) order by a.last_login_at desc)
+      from zro.app_accounts a join zro.oauth_clients c on c.id = a.client_id where a.user_id = u.id), '[]'::json) as apps,
+    coalesce((
+      select json_agg(json_build_object('orgId', o.id, 'name', o.name, 'role', m.role, 'status', o.status, 'plans', coalesce((
+               select json_agg(json_build_object('subscriptionId', s.id, 'planId', p.id, 'planName', p.name, 'planCode', p.code,
+                        'version', p.version, 'kind', p.kind, 'provider', s.provider, 'status', s.status, 'periodEnd', s.current_period_end)
+                      order by s.created_at desc)
+               from zro.subscriptions s join zro.plans p on p.id = s.plan_id
+               where s.org_id = o.id and s.status = any(${LIVE_SUB})), '[]'::json)) order by m.created_at)
+      from zro.memberships m join zro.organizations o on o.id = m.org_id where m.user_id = u.id and m.status = 'active'), '[]'::json) as orgs`
+}
+
+export type PeopleList = { rows: PersonRow[]; total: number; matched: number; page: number; pages: number }
+
+/**
+ * Lista de pessoas com busca, segmento, filtros, ordem e páginas de `pageSize`. `total` = todas as contas;
+ * `matched` = as que passam no filtro.
+ */
+export async function listPeople(tx: Queryable, f: PeopleFilter, pageSize = PEOPLE_PAGE): Promise<PeopleList> {
   const q = f.q.toLowerCase()
   const where = [
     q ? tx`and (position(${q} in lower(u.email)) > 0 or position(${q} in lower(u.display_name)) > 0)` : tx``,
@@ -127,38 +221,71 @@ export async function listPeople(tx: Queryable, f: PeopleFilter, limit = 500): P
     f.flag === 'google' ? tx`and exists (select 1 from zro.external_identities x where x.user_id = u.id and x.provider = 'google')` : tx``,
     f.flag === 'suspensas' ? tx`and u.status = 'suspended'` : tx``,
     f.flag === 'sem-org' ? tx`and not exists (select 1 from zro.memberships m where m.user_id = u.id and m.status = 'active')` : tx``,
+    f.product ? tx`and exists (select 1 from zro.app_accounts a where a.user_id = u.id and a.product_id = ${f.product})` : tx``,
   ]
+  const outer = [f.segment ? tx`and p.segment = ${f.segment}` : tx``, f.flag === 'online' ? tx`and p.online` : tx``]
   const order =
     f.order === 'nome'
-      ? tx`lower(coalesce(nullif(u.display_name, ''), u.email)), u.created_at desc`
+      ? tx`lower(coalesce(nullif(p.display_name, ''), p.email)), p.created_at desc`
       : f.order === 'acesso'
-        ? tx`greatest(hub_last_seen, app_last_seen) desc nulls last, u.created_at desc`
-        : tx`u.created_at desc`
+        ? tx`greatest(p.hub_last_seen, p.app_last_seen) desc nulls last, p.created_at desc`
+        : tx`p.created_at desc`
+  const size = Math.max(1, Math.min(pageSize, 10_000))
   const rows = await tx`
-    select * from (
-      select u.id, u.email, u.display_name, u.status, u.platform_role, u.email_verified_at, u.created_at,
-        (select max(s.last_used_at) from zro.sessions s where s.user_id = u.id) as hub_last_seen,
-        (select max(a.last_login_at) from zro.app_accounts a where a.user_id = u.id) as app_last_seen,
-        exists (select 1 from zro.external_identities x where x.user_id = u.id and x.provider = 'google') as google,
-        coalesce((
-          select json_agg(json_build_object('clientId', a.client_id, 'name', c.name, 'productId', a.product_id,
-                   'firstLoginAt', a.first_login_at, 'lastLoginAt', a.last_login_at, 'logins', a.logins) order by a.last_login_at desc)
-          from zro.app_accounts a join zro.oauth_clients c on c.id = a.client_id where a.user_id = u.id), '[]'::json) as apps,
-        coalesce((
-          select json_agg(json_build_object('orgId', o.id, 'name', o.name, 'role', m.role, 'status', o.status, 'plans', coalesce((
-                   select json_agg(json_build_object('subscriptionId', s.id, 'planId', p.id, 'planName', p.name, 'planCode', p.code,
-                            'version', p.version, 'kind', p.kind, 'provider', s.provider, 'status', s.status, 'periodEnd', s.current_period_end)
-                          order by s.created_at desc)
-                   from zro.subscriptions s join zro.plans p on p.id = s.plan_id
-                   where s.org_id = o.id and s.status = any(${LIVE_SUB})), '[]'::json)) order by m.created_at)
-          from zro.memberships m join zro.organizations o on o.id = m.org_id where m.user_id = u.id and m.status = 'active'), '[]'::json) as orgs
+    select p.*, count(*) over ()::int as matched from (
+      select ${personColumns(tx)}
       from zro.users u
-      where u.status <> 'deleted' ${where[0]!} ${where[1]!} ${where[2]!} ${where[3]!} ${where[4]!} ${where[5]!}
-    ) u
+      where u.status <> 'deleted' ${where[0]!} ${where[1]!} ${where[2]!} ${where[3]!} ${where[4]!} ${where[5]!} ${where[6]!}
+    ) p
+    where true ${outer[0]!} ${outer[1]!}
     order by ${order}
-    limit ${limit}`
+    limit ${size} offset ${(f.page - 1) * size}`
   const [t] = await tx`select count(*)::int as n from zro.users where status <> 'deleted'`
-  return { rows: rows.map(toPerson), total: t!.n as number }
+  let matched = (rows[0]?.matched as number | undefined) ?? 0
+  if (!rows.length && f.page > 1) {
+    // Página além do fim: conta de novo só para dizer quantas há.
+    const again = await listPeople(tx, { ...f, page: 1 }, size)
+    matched = again.matched
+  }
+  return { rows: rows.map(toPerson), total: t!.n as number, matched, page: f.page, pages: Math.max(1, Math.ceil(matched / size)) }
+}
+
+/** Quantas pessoas em cada segmento (abas da lista). */
+export async function segmentCounts(tx: Queryable): Promise<Record<PeopleSegment | 'todas', number>> {
+  const rows = await tx`
+    select seg, count(*)::int as n from (
+      select (select case when bool_or(p.kind in ('bundle', 'team')) then 'ecossistema' when bool_or(p.kind = 'individual') then 'avulso'
+                          when bool_or(p.kind = 'free') then 'gratis' else 'sem-plano' end
+                from zro.memberships m join zro.subscriptions s on s.org_id = m.org_id join zro.plans p on p.id = s.plan_id
+                where m.user_id = u.id and m.status = 'active' and s.status = any(${LIVE_SUB})) as seg
+      from zro.users u where u.status <> 'deleted') x
+    group by seg`
+  const out: Record<PeopleSegment | 'todas', number> = { todas: 0, ecossistema: 0, avulso: 0, gratis: 0, 'sem-plano': 0 }
+  for (const r of rows) {
+    out[r.seg as PeopleSegment] = r.n as number
+    out.todas += r.n as number
+  }
+  return out
+}
+
+/** Quantas pessoas estão online agora (mesma regra da lista). Barato: só contagens com índice por usuário. */
+export async function onlineNow(tx: Queryable): Promise<{ total: number; hub: number; apps: number }> {
+  const online = `${ONLINE_MINUTES} minutes`
+  const [r] = await tx`
+    with hub as (
+      select distinct s.user_id from zro.sessions s
+      where s.revoked_at is null and s.expires_at > now() and s.last_used_at > now() - ${online}::interval
+    ), apps as (
+      select a.user_id from zro.app_accounts a where a.last_login_at > now() - ${online}::interval
+      union
+      select r.user_id from zro.oauth_refresh_tokens r where r.created_at > now() - ${online}::interval
+    ), todos as (
+      select user_id from hub union select user_id from apps
+    )
+    select (select count(*)::int from todos t join zro.users u on u.id = t.user_id and u.status = 'active') as total,
+           (select count(*)::int from hub t join zro.users u on u.id = t.user_id and u.status = 'active') as hub,
+           (select count(distinct t.user_id)::int from apps t join zro.users u on u.id = t.user_id and u.status = 'active') as apps`
+  return { total: r!.total as number, hub: r!.hub as number, apps: r!.apps as number }
 }
 
 export type PeopleSummary = {
@@ -273,21 +400,7 @@ export async function personDetail(tx: Queryable, userId: string): Promise<Perso
   const [base] = await tx`select 1 from zro.users where id = ${userId}`
   if (!base) return null
   const [row] = await tx`
-    select u.id, u.email, u.display_name, u.status, u.platform_role, u.email_verified_at, u.created_at,
-      (select max(s.last_used_at) from zro.sessions s where s.user_id = u.id) as hub_last_seen,
-      exists (select 1 from zro.external_identities x where x.user_id = u.id and x.provider = 'google') as google,
-      coalesce((
-        select json_agg(json_build_object('clientId', a.client_id, 'name', c.name, 'productId', a.product_id,
-                 'firstLoginAt', a.first_login_at, 'lastLoginAt', a.last_login_at, 'logins', a.logins) order by a.last_login_at desc)
-        from zro.app_accounts a join zro.oauth_clients c on c.id = a.client_id where a.user_id = u.id), '[]'::json) as apps,
-      coalesce((
-        select json_agg(json_build_object('orgId', o.id, 'name', o.name, 'role', m.role, 'status', o.status, 'plans', coalesce((
-                 select json_agg(json_build_object('subscriptionId', s.id, 'planId', p.id, 'planName', p.name, 'planCode', p.code,
-                          'version', p.version, 'kind', p.kind, 'provider', s.provider, 'status', s.status, 'periodEnd', s.current_period_end)
-                        order by s.created_at desc)
-                 from zro.subscriptions s join zro.plans p on p.id = s.plan_id
-                 where s.org_id = o.id and s.status = any(${LIVE_SUB})), '[]'::json)) order by m.created_at)
-        from zro.memberships m join zro.organizations o on o.id = m.org_id where m.user_id = u.id and m.status = 'active'), '[]'::json) as orgs
+    select ${personColumns(tx)}
     from zro.users u where u.id = ${userId}`
   const person = toPerson(row!)
   const orgIds = person.orgs.map((o) => o.orgId)
@@ -419,12 +532,13 @@ const csvCell = (v: string) => {
 /** CSV da lista (só nome, e-mail, plano, apps e datas). BOM para o Excel abrir os acentos. */
 export function peopleCsv(rows: PersonRow[]): string {
   const iso = (d: Date | null) => (d ? d.toISOString() : '')
-  const head = ['nome', 'email', 'situacao', 'criada_em', 'ultimo_acesso_hub', 'ultimo_acesso', 'google', 'organizacoes', 'planos', 'apps']
+  const head = ['nome', 'email', 'situacao', 'segmento', 'criada_em', 'ultimo_acesso_hub', 'ultimo_acesso', 'google', 'organizacoes', 'planos', 'apps']
   const lines = rows.map((p) =>
     [
       p.name,
       p.email,
       p.status === 'suspended' ? 'suspensa' : 'ativa',
+      PEOPLE_SEGMENTS[p.segment]?.label ?? '',
       iso(p.createdAt),
       iso(p.hubLastSeenAt),
       iso(p.lastSeenAt),

@@ -32,6 +32,13 @@ Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ✅ Login único: o HUB é provedor OpenID Connect (código + PKCE, refresh com rotação, permissão por app, Apps com acesso no Perfil, cadastro de apps no console) — [ADR 0012](decisions/0012-login-unico-oidc.md).
 - ✅ Conta única: "Criar conta" nos apps cria a conta na Absolute ZRO (`prompt=create`), conta por app no Perfil e no admin, plano grátis com as ferramentas liberadas na organização nova e "Entrar com o Google" mesclando com a conta (migrations 0006–0008, [ADR 0014](decisions/0014-conta-unica-e-acesso.md)). ⛔ Botão do Google depende do cliente OAuth do titular.
 - ✅ Painel de pessoas no console (`/admin/pessoas`): números, gráfico de 30 dias (cadastros e entradas em apps), funil, contas por app, lista com busca/filtros/ordem, troca de plano por organização (`changeOrgPlan`; Stripe só pelo provedor), página da pessoa com linha do tempo, suspender/reativar (encerra sessões e refresh tokens; admin protegido) e CSV auditado. Suporte vê, só admin muda.
+- ✅ Console redesenhado no Padrão Apple (28/10/2026): barra lateral (pílulas no celular) com Visão geral, Pessoas,
+  Planos, Lançamento e Apps. Visão geral com **online agora** em tempo real (rota `/admin/online`, a cada 15 s; online =
+  sessão do HUB usada ou token de app renovado nos últimos 15 min), números, cadastros e créditos de IA em 30 dias,
+  ecossistema × avulso × grátis × sem plano, pessoas por plano e por app. Pessoas: todas as contas em páginas de 50,
+  abas por segmento, filtro por app com os ícones, foto com ponto de online, último acesso relativo e arquivos/GB
+  catalogados no HUB. Ficha, planos, lançamento e apps em cartões e seções que recolhem; ações com confirmação e motivo;
+  ids técnicos só em "Detalhes técnicos". Envios feitos só dentro de cada app (banco do app) ainda não chegam ao HUB.
 - ✅ "Entrar com Absolute ZRO" nas cinco plataformas (SOBEDESCE, NOSSOM, Synquei, TPeasy, Carro do Freela). Apps da família entram direto, sem a tela Permitir, e o Abrir do HUB já chega logado (`products.sso_start_url`, migration 0005).
 - ✅ Carro do Freela com conta única: "Criar conta" cria a conta Absolute ZRO (`prompt=create`), o app não cria conta própria, e a área logada respeita `carro-do-freela` em `zro_products` (lista de convite segue aberta).
 - ✅ Synquei: conta pela Absolute ZRO ("Criar conta" com `prompt=create`) e aviso "ainda não tem acesso" quando `synquei` não está em `zro_products`; app, site e download continuam abertos.
