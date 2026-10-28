@@ -86,27 +86,29 @@ export function GraficoFluxo({ meses, atual }: { meses: MesDoFluxo[]; atual: str
           </div>
         ))}
       </div>
-      <table className="sr-only">
-        <caption>Fluxo de caixa por mês</caption>
-        <thead>
-          <tr>
-            <th>Mês</th>
-            <th>Entradas</th>
-            <th>Saídas</th>
-            <th>Saldo</th>
-          </tr>
-        </thead>
-        <tbody>
-          {meses.map((m) => (
-            <tr key={m.mes}>
-              <td>{m.mes}</td>
-              <td>{brl(m.entradas)}</td>
-              <td>{brl(m.saidas)}</td>
-              <td>{brl(m.saldo)}</td>
+      <div className="sr-only">
+        <table>
+          <caption>Fluxo de caixa por mês</caption>
+          <thead>
+            <tr>
+              <th>Mês</th>
+              <th>Entradas</th>
+              <th>Saídas</th>
+              <th>Saldo</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {meses.map((m) => (
+              <tr key={m.mes}>
+                <td>{m.mes}</td>
+                <td>{brl(m.entradas)}</td>
+                <td>{brl(m.saidas)}</td>
+                <td>{brl(m.saldo)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </figure>
   );
 }

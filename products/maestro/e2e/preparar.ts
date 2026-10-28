@@ -7,6 +7,7 @@ import postgres from "postgres";
 import { E2E_DB, E2E_KEY } from "../playwright.config";
 
 export const ARQUIVO_SESSAO = "test-results/e2e-sessao.json";
+export const ARQUIVO_SESSAO_DEMO = "test-results/e2e-sessao-demo.json";
 
 export default async function preparar() {
   const alvo = new URL(E2E_DB);
@@ -43,6 +44,18 @@ export default async function preparar() {
     const { token } = await criarSessao({ orgId, sub: SUB, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
     mkdirSync("test-results", { recursive: true });
     writeFileSync(ARQUIVO_SESSAO, JSON.stringify({ token }));
+    // Uma segunda organização só para a demonstração da produtora (e2e/produtora.spec.ts), sem mexer na de cima.
+    const SUB_DEMO = "00000000-0000-4000-8000-0000000000d2";
+    const orgDemo = await getBanco().asSystem("e2e: semente da demonstração", async (tx) => {
+      const [org] = await tx
+        .insert(schema.organizations)
+        .values({ zroOrgId: "00000000-0000-4000-8000-0000000000d1", name: "Produtora Demonstração E2E", zroProducts: ["maestro"] })
+        .returning({ id: schema.organizations.id });
+      await tx.insert(schema.members).values({ orgId: org.id, zroSub: SUB_DEMO, displayName: "Pessoa Demo", hubRole: "owner", role: "admin" });
+      return org.id;
+    });
+    const demo = await criarSessao({ orgId: orgDemo, sub: SUB_DEMO, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    writeFileSync(ARQUIVO_SESSAO_DEMO, JSON.stringify({ token: demo.token }));
   } finally {
     await fecharBanco();
   }

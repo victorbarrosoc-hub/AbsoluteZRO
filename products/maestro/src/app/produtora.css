@@ -315,6 +315,8 @@ a.selo {
 .secao,
 .linhas,
 .lista,
+.grupos,
+.tabela-precos,
 .painel__lado {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -1551,7 +1553,14 @@ details.secao.secao--abrir > summary {
 }
 .folha__secao {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
+  /* No celular a tabela larga rola dentro da seção, nunca a página. */
+  overflow-x: auto;
+}
+.doc,
+.folha {
+  grid-template-columns: minmax(0, 1fr);
 }
 .folha__tabela {
   width: 100%;
@@ -1689,6 +1698,19 @@ details.secao.secao--abrir > summary {
   }
   .lista .selo {
     display: none;
+  }
+  .grupos summary,
+  .grupos .linha,
+  .secao .linha {
+    flex-wrap: wrap;
+  }
+  .grupos .linha__titulo,
+  .secao .linha__titulo {
+    flex: 1 1 60%;
+    white-space: normal;
+  }
+  .secao .linha__meta {
+    max-width: none;
   }
 }
 
