@@ -358,6 +358,13 @@ Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   `freela.inventario.atualizado` registrados, rota desligada (`DISABLED_ROUTES`): o Carro do Freela é a fonte de
   verdade, mas ainda não tem banco. Demonstração com marca, seis pedidos, um aceite que virou projeto, kits e Hoje.
   Página inicial: Hoje, Pedidos, Aceite online e Sua marca em "Já funciona".
+- ✅ Maestro, visual **C1 · Aurora** (escolha do titular, 28/10/2026): luz ambiente que segue a hora de quem vê
+  (manhã, tarde, fim de tarde e noite no claro; o escuro é a noite), cruzamento de 60 s e deriva de 120 s, parada com
+  reduzir movimento; a barra lateral virou a cápsula de vidro no topo (grupos como menus, relógio "Manhã · 10:42"),
+  barra de baixo flutuante no celular; cards brancos, colunas foscas, chips tingidos com texto grafite/branco, latão
+  para "com o cliente", gráfico em grafite e pêssego; Hoje com a saudação da hora; página inicial com a cápsula e
+  capturas refeitas da demonstração. Todo texto AA sobre o pior ponto da luz (e2e `visual.spec.ts`). Só visual: nada de
+  dado ou comportamento mudou.
 - ⬜ Maestro v2, depois: kits e modelos de projeto, etiquetas QR e manutenções do inventário, PDF gerado no servidor
   (hoje é a impressão do navegador), white-label no app inteiro (plano e preço pelo titular), retenção configurável dos
   pedidos, ligar o inventário do Carro do Freela quando ele tiver banco (endpoint assinado no Maestro e a rota sai de

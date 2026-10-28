@@ -1836,3 +1836,21 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   que abre a lista num balão.
 - Testes: `test/bandeja.test.js` (7 casos) e `npm run test:fast` no SOBEDESCE; `scan-secrets` limpo.
 - Não validado: Electron real no Windows (bandeja, balão, clique duplo); só lógica, ícones e interface no navegador.
+
+## Maestro: visual C1 · Aurora (28/10/2026)
+
+- `products/maestro`: `npm ci`, `lint` 0 problemas, `format:check` ok, `typecheck` ok, `npm test` **237/237** (novo
+  `tests/hora.test.mts`: tom da luz, relógio, saudação e hora do Brasil), `npm run build` ok, `npm run test:e2e`
+  **43 passaram, 1 pulado** (o editor completo do orçamento só roda no computador, como antes). E2E novo
+  `e2e/visual.spec.ts`: em Hoje, Quadro, Aprovações, Financeiro, Orçamentos, Freelas, Inventário, Agenda, Ajustes e a
+  página inicial, todo texto visível passa AA compondo os fundos sobre cada foco da luz na opacidade cheia, nas quatro
+  horas do claro e no escuro (computador e iPhone); a luz acende ao montar (`data-hora`), fica parada com reduzir
+  movimento e, com movimento, deriva em 120 s e cruza em 60 s. `inicio.spec.ts` atualizado para a cápsula (menu do
+  grupo com a seção atual, Esc fecha, navegar fecha). Auditoria extra fora do e2e (script local) em 34 telas, incluindo
+  detalhes, timbrado, documentos e `/a`, `/p`, `/o`: sem falhas depois de escurecer o cinza de apoio (`#5e5e63`), os
+  rótulos do timbrado (`#6e6e73`) e dar vidro claro aos botões dentro da folha no escuro.
+- Capturas da página inicial (`public/produto/*.webp`) refeitas com a demonstração no visual novo; capturas de todas as
+  telas (claro e escuro no computador, claro no iPhone) para revisão do titular, fora do repositório.
+- Raiz: `npm run format:check` ok; `node scripts/scan-secrets.mjs` limpo.
+- Não validado: Safari real (o cruzamento de 60 s depende de `@property`, sem ele a cor troca de uma vez) e telas com o
+  menu da cápsula em leitor de tela.

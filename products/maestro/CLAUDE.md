@@ -110,9 +110,23 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   `npm run db:seed:demo` quando a tela mudar; nunca mock). "Quero acesso" grava na lista de espera
   (`drizzle/0004`, `src/lib/lista-espera.ts`): `maestro_app` não tem privilégio na tabela, só a função
   `maestro.lista_espera_entrar()`; armadilha, 5/h por IP e consentimento obrigatório. A lista não libera ninguém.
-- **Visual** (plano v2 §9): navegação em `src/components/nav.tsx` com os dados em `src/lib/navegacao.ts` (grupos só com tela de verdade); o latão (`--acento`)
-  é superfície, traço e ícone, nunca texto; cada coluna do Quadro tem a cor dela (`--col-*`, `data-col`); motion só
-  em CSS e sempre desligado em `prefers-reduced-motion`.
+- **Visual: C1 · Aurora** (escolha do titular, 28/10/2026; plano v2 §9): uma luz ambiente que segue a hora de quem
+  vê (`src/components/ambiente.tsx` + `src/lib/hora.ts`): o servidor desenha a luz apagada e o relógio vazio; ao montar,
+  o `<html>` ganha `data-hora` (`manha`, `tarde`, `fim`, `noite`) e o plano `.amb` acende. No claro, pêssego/rosa de
+  manhã até lavanda à noite; **o escuro é a noite** (índigo, ameixa). As cores são propriedades registradas
+  (`@property --amb-*`): trocar de hora cruza em 60 s; o plano deriva 3% em 120 s; painéis sobem 8 px uma vez; nada
+  em laço visível; tudo parado com "reduzir movimento". Tokens em `globals.css` (`--luz-*`, `--painel`, `--coluna`,
+  `--card-sombra`, `--st-*`, `--g-entra`/`--g-sai`); acabamentos tela a tela em `aurora.css`. Navegação: no computador,
+  a **cápsula de vidro no topo** (`Capsula` em `src/components/nav.tsx`, dados em `src/lib/navegacao.ts`): Z, os grupos
+  Produção/Comercial/Operação como menus (o botão mostra a seção atual, "Produção: Quadro"), Financeiro direto, Ajustes,
+  o relógio "Manhã · 10:42", tema e conta; no celular, topo + barra de baixo flutuante com "Mais". Cards brancos,
+  colunas foscas sem blur; `backdrop-filter` só na cápsula, nos painéis grandes e nos botões de vidro. Chips e selos de
+  estado = fundo tingido + ponto, **texto sempre grafite/branco**; latão para "com o cliente" (`enviado`); gráfico em
+  grafite e pêssego. O latão (`--acento`) segue superfície, traço e ícone, nunca texto; cada coluna do Quadro tem a cor
+  dela (`--col-*`, `data-col`). **Contraste**: todo texto passa AA sobre o ponto mais forte da luz (o cinza de apoio
+  claro é `#5e5e63` por isso); `e2e/visual.spec.ts` confere as telas principais nas quatro horas e no escuro. O
+  timbrado e os documentos continuam papel branco (também no escuro e no PDF). Hoje abre com a saudação da hora
+  ("Bom dia, Diana."; padrão do servidor no fuso do Brasil, corrigido ao montar).
 - Repositório público: nada de `.env`, chave, dado pessoal ou mídia dos repositórios antigos. Semente só `demo-` (`db:seed:demo` usa a mesma demonstração).
 
 ## Como rodar e testar
@@ -139,4 +153,6 @@ kit do freela, aluguel na escala e sincronização desligada (`freela-equipament
 (Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir movimento, navegação, a aprovação
 inteira (`aprovacao.spec.ts`, mp4 local e YouTube/Vimeo falsos em `e2e/falsos`) e a produtora com a demonstração
 (`produtora.spec.ts`, organização própria criada em `e2e/preparar.ts`) e o ciclo comercial (`comercial.spec.ts`: pedido
-público → Pedidos → gerar orçamento → link → aceite → projeto → Hoje, organização própria).
+público → Pedidos → gerar orçamento → link → aceite → projeto → Hoje, organização própria) e o visual
+(`visual.spec.ts`: contraste AA em cada hora e no escuro, luz parada com reduzir movimento). Unitário da hora em
+`hora.test.mts`.
