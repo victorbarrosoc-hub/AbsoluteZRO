@@ -398,3 +398,8 @@ details.aj-avancado > summary:hover .aj-chev {
     transition: none;
   }
 }
+
+/* Minimizar para a bandeja (só no app): a linha logo abaixo dos cartões do tema. */
+.aj-bandeja {
+  margin-top: 14px;
+}
