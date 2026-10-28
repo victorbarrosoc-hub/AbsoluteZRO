@@ -1492,3 +1492,21 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   sessão antiga negada), sem-zoom 41, abertura 39, tempo-real 23. home-clara 80, baloes 24, menu-recolhivel 52.
   `scan-secrets` limpo. Telas 1440 e 390 ("Em desenvolvimento" claro/escuro e home fechada).
 - Não validado: HUB real emitindo `zro_release` (contrato simulado pelo HUB falso) e o deploy na Vercel com a variável.
+
+## Homepage só com a verdade de hoje (28/10/2026)
+
+- Pedido do titular: no ar para todos só SOBEDESCE, Synquei e TPeasy (e o HUB/Z); Carro do Freela, AEON, NOSSOM,
+  Revela e Maestro em desenvolvimento. O gate (`zro.product_release`) já filtrava faixa, órbita e etapas; mudou o
+  texto e as imagens que prometiam o fechado.
+- Foto dos aparelhos (`public/brand/produto-hub-{claro,escuro}.webp`): `scripts/marca/aparelhos/capturar-hub.ts` cria a
+  conta de demonstração "Victor" (Aurora Filmes, projeto "Clipe Aurora") num banco local migrado (0001–0021, estado de
+  lançamento das migrations), simula a central do app de computador (SOBEDESCE e Synquei instalados) e captura
+  `/app/apps` (1440×916 @2x) e `/inicio` (390×860 @2x), claro e escuro; depois `produtos.py <pasta> hub` e
+  `transparente.py`. MacBook: fechados com o selo e sem Abrir; iPhone: órbita com os 3 lançados e "Novo projeto ·
+  Comece do zero". OG e `twitter-image` recapturados de `og-paisagem.html` (Figtree carregada).
+- Conferido no HUB local (anônimo, claro): `/`, `/planos` e `/baixar` em 1440 e 390 sem rolagem lateral e sem
+  recurso 404 (antes, `produto-maestro-claro.webp` dava 404 em "Conheça de perto").
+- `lint`, `format:check`, `typecheck` ok; `npm test` **202/202** (banco próprio); `hub.spec.ts` **14/14** (gate:
+  "Do roteiro à entrega.", nada de "do job" na home, selo nos fechados de `/baixar`; conta nova sem "de um job" no
+  Início). `scan-secrets` limpo.
+- Não validado: produção (nada publicado); tema escuro da homepage só pela foto dos aparelhos.

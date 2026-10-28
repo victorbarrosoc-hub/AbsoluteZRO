@@ -266,6 +266,12 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   "Absolute ZRO" montado do catálogo (lançados/liberados), Ferramentas (grupo "Em desenvolvimento" com os `closed`),
   `AppTile`, painel do app, `/inicio` (fechados por último e fora da órbita), Sua conta › Acessos e a gaveta da Z com
   o selo.
+- ✅ **Homepage só com a verdade de hoje** (28/10/2026, pedido do titular): "Do roteiro à entrega." no lugar de "Do job
+  à entrega." (o job é do Carro do Freela, fechado); números e fluxo só com eventos de produtos abertos; linha do topo,
+  do OG e da descrição sem "pessoas" nem "todas as etapas"; Ciclo do O fala das ferramentas lançadas; `/baixar` com o
+  selo nos fechados; Maestro em "Conheça de perto" com o ícone (ainda sem foto); `/inicio` só fala de job com o Carro
+  aberto; links "Ciclo do O" e "Ferramentas" do menu e do rodapé apontam para seções que existem. Foto dos aparelhos
+  (`produto-hub-*`) refeita no HUB local com conta neutra (`scripts/marca/aparelhos/capturar-hub.ts`).
 - ⬜ Pastas dos quatro produtos fechados (`RELEASE=closed`, telas, `/api/zro/*` com 403, instaladores e Releases) —
   outros agentes, no mesmo branch.
 - ⛔ Em produção, só com autorização: inserir a conta do proprietário em `product_release_access` e rodar o
