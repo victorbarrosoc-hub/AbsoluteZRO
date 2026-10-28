@@ -28,9 +28,10 @@ test.describe("página inicial", () => {
       await img.scrollIntoViewIfNeeded();
       await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
     }
-    // Só o que existe: aprovação aparece como "Em breve", nunca como pronta.
-    const vem = page.locator(".ivem li", { hasText: "Aprovação do cliente" });
-    await expect(vem.getByText("Em breve")).toBeVisible();
+    // Só o que existe: a aprovação já funciona (com a captura real); orçamento e financeiro seguem "Em breve".
+    await expect(page.locator(".ija h3", { hasText: "Aprovação do cliente" })).toBeVisible();
+    await expect(page.locator(".ivem li", { hasText: "Aprovação do cliente" })).toHaveCount(0);
+    await expect(page.locator(".ivem li", { hasText: "Orçamentos" }).getByText("Em breve")).toBeVisible();
     await expect(page.locator('a[href="mailto:contato@absolutezro.com"]')).toBeVisible();
     // Sem rolagem de lado.
     const sobra = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

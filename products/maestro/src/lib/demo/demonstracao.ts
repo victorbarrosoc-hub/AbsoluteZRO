@@ -37,6 +37,7 @@ import {
   ROTEIRO_DEMO,
   VARIAVEIS_DEMO,
 } from "./operacao";
+import { carregarRevisaoDemo } from "./revisao";
 
 const { clients, projects, lotes, loteCards, auditLog } = schema;
 
@@ -633,7 +634,9 @@ export async function carregarDemonstracao(ctx: Contexto, hoje = hojeBr()): Prom
       if (!(await tem(tx, "orcamentos"))) await montarOrcamentos(tx, ctx, c, refs, hoje);
       if (!(await tem(tx, "recorrencias"))) await montarFinanceiro(tx, ctx, c, refs, hoje);
       if (!(await tem(tx, "documentos"))) await montarDocumentos(tx, ctx, c, refs, hoje);
-      const criou = soma(c) > 0;
+      // Aprovações (versões, comentários, decisões e link dos lotes): idempotente, completa uma demonstração antiga.
+      const versoes = await carregarRevisaoDemo(tx, ctx);
+      const criou = soma(c) > 0 || versoes > 0;
       if (criou) {
         await montarEmpresa(tx, ctx);
         await tx

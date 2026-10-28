@@ -32,6 +32,8 @@ const TABELAS_COM_ORG = [
   "client_requests",
   "integration_state",
   "audit_log",
+  "versoes",
+  "comentarios",
 ] as const;
 
 const erroDe = (p: Promise<unknown>) =>
@@ -61,6 +63,11 @@ before(async () => {
   await banco.asUser({ sub: ANA, orgId: orgA }, (tx) =>
     tx.execute(sql`select maestro.card_criar(${CARD_A}, ${JSON.stringify({ tema: "Post de abertura", coluna: "pauta" })}::jsonb)`),
   );
+  // Versão e comentário (0005) pelas funções, como a equipe faria.
+  await banco.asUser({ sub: ANA, orgId: orgA }, async (tx) => {
+    const [v] = await tx.execute(sql`select id from maestro.versao_criar(${CARD_A}, 'mp4', 'https://cdn.exemplo.com/a.mp4', '{}'::jsonb)`);
+    await tx.execute(sql`select maestro.comentario_criar(${v.id as string}::uuid, '{"texto":"Ajustar a cor","t_ms":1200,"idem":"rls-00001"}'::jsonb)`);
+  });
   await banco.asSystem("semente 2", async (tx) => {
     const [lote] = await tx.insert(lotes).values({ orgId: orgA, clientId: clienteA, title: "Lote A" }).returning({ id: lotes.id });
     await tx.insert(loteCards).values({ loteId: lote.id, orgId: orgA, cardId: CARD_A });

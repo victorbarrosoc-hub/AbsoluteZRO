@@ -4,7 +4,8 @@ export const SITE_NOME = "Maestro";
 export const SITE_OFICIAL = "https://maestro.absolutezro.com";
 /** A frase do Maestro (título da página inicial e do OG). */
 export const SITE_FRASE = "A produtora inteira num lugar só.";
-export const SITE_DESCRICAO = "Pauta, clientes e projetos da sua produtora num lugar só, com a conta Absolute ZRO. Em teste fechado, por convite.";
+export const SITE_DESCRICAO =
+  "Pauta, aprovação do cliente, clientes e projetos da sua produtora num lugar só, com a conta Absolute ZRO. Em teste fechado, por convite.";
 /** Fale com a gente (rodapé, lista de espera). */
 export const CONTATO = "contato@absolutezro.com";
 
