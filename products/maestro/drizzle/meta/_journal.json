@@ -15,6 +15,13 @@
       "when": 1793232000000,
       "tag": "0001_release_na_sessao",
       "breakpoints": false
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793318400000,
+      "tag": "0002_crm_quadro_projetos",
+      "breakpoints": false
     }
   ]
 }

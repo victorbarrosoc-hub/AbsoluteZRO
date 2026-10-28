@@ -15,6 +15,23 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Maestro: Etapa 1, Quadro + Clientes + Projetos (28/10/2026)
+
+- `products/maestro`: `lint`, `format:check`, `typecheck` ok; `npm test` **66/66** (Postgres 16 local, bancos
+  `maestro_test_*`). Novos: `quadro.test.mts` (rota `/api/quadro`: 401 sem sessão, 403 de outra origem, criar com
+  cliente/responsável/prazo/prioridade, mover com `colunaEm`, campo fora do método recusado, **conflito por campo**
+  devolve 409 com o card atual e não desfaz a mudança de quem chegou antes, leitura não escreve mas lê, outra
+  organização não vê nem alcança cliente, card ou pessoa da outra, lápide sai da lista e aparece no "desde",
+  restaurar, número repetido não sobrescreve; método: próximo passo, ordem entre vizinhos, filtros) e
+  `crm.test.mts` (validação e WhatsApp normalizado para `wa.me`, busca por nome/contato/WhatsApp com curinga
+  escapado, código `MAE-AAAA-NNN` em sequência por organização e sem colisão em paralelo, `link_status` pendente,
+  outra organização não vê nem muda, leitura não cria nem muda). `build` ok.
+- Navegador (Chromium do Playwright, `next start` com banco local fictício): criar card, arrastar da Pauta para
+  Fazendo, persistir no recarregar, próximo passo, busca, apagar e Desfazer, outra aba recebe pelo poll em ≤ 6,5 s,
+  "Mover para…" no celular (390 px), cliente com erro por campo mantendo o que foi digitado, projeto com o próximo
+  código; console sem erros. Capturas 1440/390, claro e escuro, fora do repositório.
+- Não validado: a migration `0002` no Supabase de produção (aplica no próximo deploy pelo `vercel-build`).
+
 ## Maestro aberto em teste (28/10/2026)
 
 - Raiz: `lint`, `format:check`, `typecheck` ok; `npm test` **202/202** (banco próprio `zro_maestro_open_test`): release

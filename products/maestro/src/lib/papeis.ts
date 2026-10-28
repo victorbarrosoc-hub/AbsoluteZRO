@@ -34,3 +34,8 @@ export const NOME_DO_PAPEL: Record<Papel, string> = {
 export function podeEscrever(papel: Papel): boolean {
   return papel !== "leitura";
 }
+
+/** Quem tira cliente ou projeto da lista: administração e gestão (o mesmo corte da política de remoção do banco). */
+export function podeRemover(papel: Papel): boolean {
+  return papel === "admin" || papel === "gestor";
+}
