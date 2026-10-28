@@ -154,11 +154,15 @@ export async function planCenterData(auth: Authenticated) {
           where s.org_id = ${actor.orgId} and s.status in ('active', 'trialing', 'past_due')
             and (s.current_period_end is null or s.current_period_end > now() or s.grace_until > now()) order by s.created_at desc`
       : []
+    // Só ferramentas abertas ao público contam e só planos com alguma delas aparecem (gate de lançamento, ADR 0023):
+    // produto em construção não é oferecido nem somado ("7 ferramentas" virava propaganda do que não abre).
     const plans = await tx`
+      with abertos as (select r.product_id from zro.product_release r where r.state in ('released', 'public_beta'))
       select p.id, p.code, p.name, p.kind, p.description, p.price_cents, p.currency, p.billing_interval,
-             (select count(*)::int from zro.plan_products pp where pp.plan_id = p.id) as products,
+             (select count(*)::int from zro.plan_products pp where pp.plan_id = p.id and pp.product_id in (select product_id from abertos)) as products,
              (select max((pp.limits ->> 'zro.ai_credits')::int) from zro.plan_products pp where pp.plan_id = p.id) as ai_credits
       from zro.plans p where p.status = 'active' and p.kind <> 'free'
+        and exists (select 1 from zro.plan_products pp where pp.plan_id = p.id and pp.product_id in (select product_id from abertos))
       order by case p.kind when 'bundle' then 0 else 1 end, p.name`
     const requests = canManage
       ? await tx`
