@@ -104,20 +104,21 @@ describe('equipe (caso E e convites)', () => {
 })
 
 describe('projetos', () => {
-  it('etapas começam com estado real e mostram bloqueio por assinatura', async () => {
+  it('etapas começam com estado real, mostram bloqueio por assinatura e indisponível no que está fechado por lançamento', async () => {
     const o = await newOrgWithOwner(db, 'etapas')
     await givePlan(db, o.orgId, 'individual-sobedesce')
     const id = await createProject(db, o.auth, { title: 'Casamento Ana e Leo', type: 'casamento' })
     const { steps } = await getProject(db, o.auth, id)
     const by = Object.fromEntries(steps.map((s) => [s.stepKey, s.displayState]))
+    // Carro, AEON, NOSSOM e Revela estão fechados (ADR 0023): nunca "contrate", sempre indisponível.
     expect(by).toEqual({
-      'carro-do-freela': 'blocked_subscription',
+      'carro-do-freela': 'unavailable',
       tpeasy: 'blocked_subscription',
       sobedesce: 'not_started',
       synquei: 'blocked_subscription',
-      'ai-edit': 'blocked_subscription',
-      nossom: 'blocked_subscription',
-      finishing: 'blocked_subscription',
+      'ai-edit': 'unavailable',
+      nossom: 'unavailable',
+      finishing: 'unavailable',
     })
     await expectCode(createProject(db, o.auth, { title: '' }), 'invalid_input')
   })

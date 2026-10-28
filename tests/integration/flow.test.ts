@@ -17,7 +17,7 @@ import {
   ROUTES,
   toTpeasyBackup,
 } from '@zro/integrations'
-import { expectCode, fixture, giveLimits, givePlan, newOrgWithOwner } from './helpers'
+import { allowRelease, expectCode, fixture, giveLimits, givePlan, newOrgWithOwner } from './helpers'
 
 let db: Database
 const log = createLogger('teste', () => {})
@@ -39,6 +39,8 @@ describe('Ciclo do O ponta a ponta', () => {
   it('Carro do Freela → TPeasy → SOBEDESCE → Synquei, sem perder IDs', async () => {
     const o = await newOrgWithOwner(db, 'ciclo')
     await givePlan(db, o.orgId, 'ciclo-do-o')
+    // O Carro do Freela é fechado (gate de lançamento, ADR 0023): só a conta proprietária listada entra. Aqui o dono faz esse papel.
+    await allowRelease(db, 'carro-do-freela', o.userId, { kind: 'owner' })
     await giveLimits(db, o.orgId, 'sobedesce', { 'sobedesce.manifest_imports': 10 })
     await giveLimits(db, o.orgId, 'synquei', { 'synquei.organization_plans': 10 })
 
@@ -75,7 +77,8 @@ describe('Ciclo do O ponta a ponta', () => {
     expect(step('tpeasy').displayState).toBe('done')
     expect(step('sobedesce').displayState).toBe('done')
     expect(step('synquei').displayState).toBe('needs_review')
-    expect(step('ai-edit').displayState).toBe('not_started')
+    // AEON está fechado por lançamento (ADR 0023): a etapa aparece indisponível mesmo com o plano que o lista.
+    expect(step('ai-edit').displayState).toBe('unavailable')
     const run = p.runs.find((r) => r.handler === 'synquei.organization-plan')!
     expect(run.status).toBe('succeeded')
     const plan = (run.result as { plan: { assets: { asset_id: string }[]; moves: unknown[] } }).plan

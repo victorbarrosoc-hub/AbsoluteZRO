@@ -34,7 +34,9 @@ test('conta nova recebe as ferramentas do plano grátis', async ({ page }) => {
   await signupAndOrg(page, 'Org grátis')
   const ent = await (await page.request.get('/api/v1/entitlements')).json()
   const access = (id: string) => ent.products.find((p: { productId: string }) => p.productId === id).access
-  for (const id of ['carro-do-freela', 'nossom', 'sobedesce', 'synquei', 'tpeasy', 'ai-edit', 'finishing']) expect(access(id)).toBe('contracted')
+  // Os lançados vêm contratados pelo plano grátis; os fechados por lançamento (ADR 0023) aparecem como closed, nunca contratados.
+  for (const id of ['sobedesce', 'synquei', 'tpeasy']) expect(access(id), id).toBe('contracted')
+  for (const id of ['carro-do-freela', 'nossom', 'ai-edit', 'finishing']) expect(access(id), id).toBe('closed')
 })
 
 test('área logada exige sessão', async ({ page }) => {
@@ -97,9 +99,9 @@ test('cadastro → organização → projeto com Ciclo do O e alternativa em lis
   await expect(page.getByRole('heading', { name: 'Casamento E2E' })).toBeVisible()
   const list = page.getByRole('list', { name: 'Etapas do Ciclo do O' })
   await expect(list.getByRole('listitem')).toHaveCount(7)
-  // Sem plano: ferramentas lançadas aparecem bloqueadas por assinatura, futuras indisponíveis
+  // Sem plano: ferramentas lançadas aparecem bloqueadas por assinatura; as fechadas por lançamento (ADR 0023), indisponíveis
   await expect(list.getByRole('listitem').filter({ hasText: 'Synquei' })).toContainText('Bloqueado por assinatura')
-  await expect(list.getByRole('listitem').filter({ hasText: 'AEON' })).toContainText('Bloqueado por assinatura')
+  await expect(list.getByRole('listitem').filter({ hasText: 'AEON' })).toContainText('Indisponível')
 })
 
 test('API: sem assinatura recebe 403 por URL direta; sem sessão 401; outra origem 403', async ({ page, request }) => {
@@ -168,7 +170,9 @@ test('webhook de cobrança: assinatura errada 400, provedor desconhecido 404, ev
   expect(await dup.json()).toMatchObject({ result: 'duplicate' })
   const ent = await (await page.request.get('/api/v1/entitlements')).json()
   expect(ent.products.find((p: { productId: string }) => p.productId === 'synquei').access).toBe('contracted')
-  expect(ent.products.find((p: { productId: string }) => p.productId === 'nossom').access).toBe('available')
+  expect(ent.products.find((p: { productId: string }) => p.productId === 'tpeasy').access).toBe('available')
+  // NOSSOM está fechado por lançamento (ADR 0023): nunca "disponível para contratar"
+  expect(ent.products.find((p: { productId: string }) => p.productId === 'nossom').access).toBe('closed')
 })
 
 test('console de administração não existe para quem não é da plataforma', async ({ page }) => {
@@ -251,7 +255,8 @@ test('sua conta: nome, foto, pedido de upgrade e acessos', async ({ page }) => {
 
   await page.goto('/perfil/acessos')
   await expect(page.getByRole('heading', { name: 'Org conta' })).toBeVisible()
-  await expect(page.locator('.access-org__apps li.is-on')).toHaveCount(7)
+  // Plano grátis lista as sete, mas só as três lançadas contam como acesso (gate de lançamento, ADR 0023).
+  await expect(page.locator('.access-org__apps li.is-on')).toHaveCount(3)
 })
 
 test('central de apps: dentro do app de computador, instala com progresso, abre e atualiza', async ({ page }) => {

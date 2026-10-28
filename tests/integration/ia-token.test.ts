@@ -16,7 +16,7 @@ import {
 import { iniciarTurno, loadOidcClaims } from '@zro/core'
 import type { Database } from '@zro/db'
 import { testDatabase } from '@zro/db/testing'
-import { admin, giveLimits, newOrgWithOwner } from './helpers'
+import { admin, allowRelease, expectCode, giveLimits, newOrgWithOwner } from './helpers'
 
 let db: Database
 beforeAll(() => {
@@ -86,5 +86,24 @@ describe('a Z com o token de um app da família', () => {
     const auth2 = await authenticateAccessToken(db, `Bearer ${r.access_token}`, 'zro.ia')
     expect(auth2).not.toBeNull()
     await iniciarTurno(db, auth2, { texto: 'De novo' })
+  })
+
+  it('app fechado (ADR 0023): sem linha o HUB nem emite o código; listada sem o canal api, o Bearer é recusado; com api, a Z abre; revogada, cai', async () => {
+    const o = await newOrgWithOwner(db, 'z-fechado')
+    await giveLimits(db, o.orgId, 'nossom', { 'zro.ai_credits': 10 })
+    const c = await cliente('nossom')
+    await expect(login(c, o.userId, o.orgId, 'openid org zro.ia')).rejects.toThrow('Este app ainda está em desenvolvimento.')
+    await allowRelease(db, 'nossom', o.userId, { channels: ['sso', 'web'] })
+    const { t } = await login(c, o.userId, o.orgId, 'openid org zro.ia')
+    expect(await authenticateAccessToken(db, `Bearer ${t.access_token}`, 'zro.ia')).toBeNull()
+    await allowRelease(db, 'nossom', o.userId, { channels: ['sso', 'web', 'api'] })
+    const auth = await authenticateAccessToken(db, `Bearer ${t.access_token}`, 'zro.ia')
+    expect(auth?.session.app?.productId).toBe('nossom')
+    const turno = await iniciarTurno(db, auth, { texto: 'Oi' })
+    expect(turno.conversa.produto).toBe('nossom')
+    await db.sql`update zro.product_release_access set revoked_at = now() where product_id = 'nossom' and user_id = ${o.userId}`
+    expect(await authenticateAccessToken(db, `Bearer ${t.access_token}`, 'zro.ia')).toBeNull()
+    // a Z confere o gate de novo por conta própria (defesa em profundidade): mesmo um token que passasse seria negado
+    await expectCode(iniciarTurno(db, auth, { texto: 'De novo' }), 'product_closed')
   })
 })
