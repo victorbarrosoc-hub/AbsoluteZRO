@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect, onlyWhenOpen } from './fixtures';
 import AxeBuilder from '@axe-core/playwright';
 test('home is the assistant, attaches an audio file, sends measurements and opens the reviewed treatment', async ({
   page,
@@ -120,6 +120,8 @@ test('account settings save the profile, require current password and preserve a
 test('readable controls fit mobile and desktop; desktop navigation collapses and download options have no dead links', async ({
   page,
 }) => {
+  // Descreve o produto aberto (entrar, assinar, home com ações, /apps).
+  onlyWhenOpen();
   await page.goto('/studio/inicio');
   await page.getByRole('button', { name: 'Recolher navegação', exact: true }).click();
   await expect(page.locator('.studio-shell')).toHaveClass(/nav-collapsed/);

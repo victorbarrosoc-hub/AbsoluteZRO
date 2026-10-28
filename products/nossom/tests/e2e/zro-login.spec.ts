@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { onlyWhenOpen } from './fixtures';
 test('the Absolute ZRO button keeps the return path and explains a failed trip', async ({
   page,
 }) => {
+  onlyWhenOpen();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/entrar?next=%2Fstudio%2Fia');
   const button = page.getByRole('link', { name: 'Entrar com Absolute ZRO' });
@@ -19,6 +21,7 @@ test('the Absolute ZRO button keeps the return path and explains a failed trip',
 test('creating an account goes to the Absolute ZRO and the sign-up form is gone', async ({
   page,
 }) => {
+  onlyWhenOpen();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/entrar?modo=criar&next=%2Fstudio%2Fia');
   await expect(page.getByText('A conta do NOSSOM é a sua conta Absolute ZRO.')).toBeVisible();

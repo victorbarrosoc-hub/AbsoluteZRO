@@ -20,9 +20,13 @@ import {
   subscriptionsConfigured,
   type Subscription,
 } from '@/lib/server/subscription';
+import { nossomClosed } from '@/lib/server/release';
 export const runtime = 'nodejs';
 const reply = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: privateHeaders });
+// Fechado ao público (28/10/2026): nada à venda. Checkout, troca e portal não abrem, mesmo para a conta
+// autorizada; o webhook assinado continua espelhando o que a Stripe já tem.
+const CLOSED = 'O NOSSOM está em desenvolvimento. Ainda não há planos à venda.';
 const view = (s: Subscription | null) =>
   s?.subscription_id
     ? {
@@ -34,6 +38,7 @@ const view = (s: Subscription | null) =>
     : null;
 /** Whether paid plans can be bought here, and the person's current subscription. */
 export async function GET(request: Request) {
+  if (nossomClosed()) return reply({ enabled: false, closed: true, subscription: null });
   const enabled = subscriptionsConfigured(),
     account = await currentAccount(request);
   if (!enabled || !account) return reply({ enabled, subscription: null });
@@ -51,6 +56,7 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return reply({ error: 'Origem não autorizada.' }, 403);
+  if (nossomClosed()) return reply({ error: CLOSED, code: 'product_closed' }, 403);
   const account = await currentAccount(request);
   if (!account) return reply({ error: 'Entre na sua conta.' }, 401);
   if (!subscriptionsConfigured())

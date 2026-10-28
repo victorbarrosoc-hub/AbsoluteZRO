@@ -1,4 +1,4 @@
-import { test, expect, existingAccount } from './fixtures';
+import { test, expect, existingAccount, allowedAccount, onlyWhenOpen } from './fixtures';
 test('free monthly allowance is visible and local EQ never consumes GPU minutes', async ({
   page,
 }) => {
@@ -34,8 +34,9 @@ test('free monthly allowance is visible and local EQ never consumes GPU minutes'
 test('verified administrator has no monthly minute limit and normal users cannot grant themselves admin', async ({
   page,
 }) => {
-  // Campos de papel enviados pelo navegador são ignorados; o ADM vem do e-mail confirmado.
-  await existingAccount(page.request, {
+  // Campos de papel enviados pelo navegador são ignorados; o ADM vem do e-mail confirmado (e, fechado ao
+  // público, a conta precisa estar na lista do proprietário no HUB).
+  await allowedAccount(page.request, {
     email: 'victorbarrosoc@gmail.com',
     password: 'test-only-password',
     name: 'Administrador',
@@ -68,6 +69,8 @@ test('verified administrator has no monthly minute limit and normal users cannot
 test('an existing account still waiting for e-mail confirmation cannot sign in', async ({
   page,
 }) => {
+  // Descreve o produto aberto (entrar, assinar, home com ações, /apps).
+  onlyWhenOpen();
   await page.request.delete('/api/account', { headers: { Origin: 'http://localhost:3000' } });
   await existingAccount(page.request, {
     email: 'confirm.new@example.test',

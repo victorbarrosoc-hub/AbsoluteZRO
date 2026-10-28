@@ -7,6 +7,7 @@
  * Tudo aqui usa a service role, só no servidor; nada chega ao navegador.
  */
 import type { AuthUser, ProviderSession } from '../account';
+import { readZroRelease, ZRO_PRODUCT, type ZroRelease } from '../release';
 import { supabase, supabaseConfig, SupabaseError } from '../supabase';
 import type { ZroProfile } from './oidc';
 
@@ -45,6 +46,8 @@ const profileData = (p: ZroProfile, createdByZro = false) => ({
   email: p.email,
   organization: p.organization,
   products: p.products,
+  // Estado do lançamento por produto (`zro_release`), relido a cada login pela Absolute ZRO.
+  release: p.release,
   createdByZro,
 });
 
@@ -70,6 +73,21 @@ export async function linkZro(
   if (result?.error === 'already_linked') return { ok: false, error: 'zro_ja_ligada' };
   if (!result?.ok) throw new Error('Não foi possível ligar a Absolute ZRO.');
   return { ok: true };
+}
+
+/**
+ * Conta autorizada pelo proprietário (`allowed` no HUB), com e-mail confirmado lá, e uma conta NOSSOM antiga no
+ * mesmo e-mail ainda sem vínculo: liga as duas (é a mesma pessoa, na lista explícita). Para todo o resto a regra
+ * segue: e-mail em uso nunca liga sozinho. Devolve o dono ligado, ou null quando não há conta nesse e-mail ou ela
+ * já tem outro vínculo. Sem isso o proprietário ficaria trancado fora da própria conta enquanto o login com senha
+ * está fechado (28/10/2026).
+ */
+export async function adoptByEmail(p: ZroProfile): Promise<string | null> {
+  if (p.release[ZRO_PRODUCT] !== 'allowed' || !p.emailVerified) return null;
+  const found = await rpc<{ userId: string | null }>('find_by_email', { data: { email: p.email } });
+  if (typeof found?.userId !== 'string' || !/^[a-f0-9-]{36}$/i.test(found.userId)) return null;
+  const linked = await linkZro(found.userId, p);
+  return linked.ok ? found.userId : null;
 }
 
 export type CreateError = 'zro_email_nao_verificado' | 'zro_email_em_uso';
@@ -139,6 +157,8 @@ export type ZroLink = {
   email: string;
   organization: string | null;
   products: string[];
+  /** `zro_release` guardada (migração 202610280001); ausente no banco anterior a ela. */
+  release?: unknown;
   createdByZro: boolean;
   linkedAt: string;
   lastLoginAt: string | null;
@@ -156,10 +176,16 @@ export function zroLinkReady() {
   );
 }
 
-export type ZroLinkSummary = { products: string[]; email: string; organization: string | null };
+export type ZroLinkSummary = {
+  products: string[];
+  /** Estado do lançamento por produto; `{}` quando o vínculo é anterior à claim (vale como fechado). */
+  release: ZroRelease;
+  email: string;
+  organization: string | null;
+};
 /**
- * Produtos liberados (`zro_products`), e-mail e organização guardados no vínculo, ou null para
- * conta sem vínculo. Sem o cliente da Absolute ZRO configurado não há vínculo a conferir.
+ * Produtos liberados (`zro_products`), estado do lançamento (`zro_release`), e-mail e organização guardados
+ * no vínculo, ou null para conta sem vínculo. Sem o cliente da Absolute ZRO configurado não há vínculo a conferir.
  */
 export async function zroLinkSummary(userId: string): Promise<ZroLinkSummary | null> {
   if (!zroLinkReady()) return null;
@@ -169,6 +195,7 @@ export async function zroLinkSummary(userId: string): Promise<ZroLinkSummary | n
     products: Array.isArray(link.products)
       ? link.products.filter((p): p is string => typeof p === 'string')
       : [],
+    release: readZroRelease(link.release),
     email: typeof link.email === 'string' ? link.email.slice(0, 254) : '',
     organization:
       typeof link.organization === 'string' && link.organization

@@ -1,4 +1,4 @@
-import test, { afterEach } from 'node:test';
+import test, { after, afterEach, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
@@ -8,6 +8,7 @@ import {
   installerUrl,
   LEGACY_RELEASE,
 } from '../lib/desktop-releases';
+import { GET as indice } from '../app/baixar/route';
 import { GET as baixar } from '../app/baixar/[arquivo]/route';
 import { GET as atualizacao } from '../app/baixar/atualizacoes/[arquivo]/route';
 
@@ -17,12 +18,43 @@ const CHANNEL = '/repos/victorbarrosoc-hub/AbsoluteZRO/releases/tags/nossom-atua
 const TOKEN = 'github_pat_teste_falso';
 const realFetch = globalThis.fetch;
 const realToken = process.env.GITHUB_TOKEN;
+const realRelease = process.env.RELEASE;
 
+// A mecânica dos downloads só existe com o produto aberto; fechado ao público (o padrão), tudo é 404.
+before(() => {
+  process.env.RELEASE = 'released';
+});
+after(() => {
+  if (realRelease === undefined) delete process.env.RELEASE;
+  else process.env.RELEASE = realRelease;
+});
 afterEach(() => {
   globalThis.fetch = realFetch;
+  process.env.RELEASE = 'released';
   if (realToken === undefined) delete process.env.GITHUB_TOKEN;
   else process.env.GITHUB_TOKEN = realToken;
   forgetReleases();
+});
+
+test('fechado ao público: /baixar, cada instalador, o diagnóstico e o canal de atualização respondem 404', async () => {
+  process.env.RELEASE = 'closed';
+  process.env.GITHUB_TOKEN = TOKEN;
+  const calls = fakeGitHub({ [OLD_RELEASE]: OLD_ASSETS, [CHANNEL]: [] });
+  assert.equal(indice().status, 404);
+  for (const arquivo of ['mac-arm64', 'mac-x64', 'windows', 'diag', 'outro'])
+    assert.equal((await get(arquivo)).status, 404, arquivo);
+  for (const arquivo of ['latest.yml', 'latest-mac.yml', 'NOSSOM-0.2.2-win-x64.exe'])
+    assert.equal(
+      (
+        await atualizacao(
+          new Request('https://nossom.test/baixar/atualizacoes/' + arquivo),
+          params(arquivo),
+        )
+      ).status,
+      404,
+      arquivo,
+    );
+  assert.equal(calls.length, 0, 'o GitHub nem é consultado');
 });
 
 const asset = (repo: string, id: number, name: string) => ({

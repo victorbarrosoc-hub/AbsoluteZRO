@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect, onlyWhenOpen } from './fixtures';
 function waveFixture(seconds = 4, stereo = false) {
   const rate = 48000,
     channels = stereo ? 2 : 1,
@@ -30,6 +30,8 @@ function waveFixture(seconds = 4, stereo = false) {
   return b;
 }
 test('landing, responsive navigation, functional demonstration and assistant', async ({ page }) => {
+  // Descreve o produto aberto (entrar, assinar, home com ações, /apps).
+  onlyWhenOpen();
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/');

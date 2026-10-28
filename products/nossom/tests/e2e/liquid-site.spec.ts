@@ -1,9 +1,12 @@
 // Public homepage only: no account is needed.
+import { onlyWhenOpen } from './fixtures';
 import { test, expect } from '@playwright/test';
 
 test('glass navigation follows the pointer and the section, shrinks on scroll and keeps interface sounds optional', async ({
   page,
 }) => {
+  // Descreve o produto aberto (entrar, assinar, home com ações, /apps).
+  onlyWhenOpen();
   await page.addInitScript(() => {
     const created: string[] = [];
     (window as unknown as { uiSounds: string[] }).uiSounds = created;
@@ -48,6 +51,8 @@ test('glass navigation follows the pointer and the section, shrinks on scroll an
 test('mobile plans swipe sideways without widening the page and step art rests under reduced motion', async ({
   page,
 }) => {
+  // Descreve o produto aberto (entrar, assinar, home com ações, /apps).
+  onlyWhenOpen();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
@@ -85,6 +90,8 @@ test('the floating capsule stays below the iPhone status bar safe area, at rest 
 test('the opening animation plays once per session, never blocks taps and respects reduced motion', async ({
   page,
 }) => {
+  // Descreve o produto aberto (entrar, assinar, home com ações, /apps).
+  onlyWhenOpen();
   // Automation skips the intro; present a regular browser for this check.
   await page.addInitScript(() =>
     Object.defineProperty(navigator, 'webdriver', { get: () => false }),

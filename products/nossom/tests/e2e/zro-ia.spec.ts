@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { existingAccount, signIn } from './fixtures';
+import { allowedAccount, OPEN, signIn } from './fixtures';
 import { sealIaTokens } from '../../lib/server/zro/ia';
 
 /**
@@ -24,7 +24,8 @@ customElements.define('zro-ia', class extends HTMLElement {
 
 async function enter(page: Page, o: { iaToken?: string } = {}) {
   const email = 'z.' + crypto.randomUUID() + '@example.test';
-  const id = await existingAccount(page.request, { email, password: 'valid-test-password' });
+  // Fechado ao público, só a conta `allowed` no HUB abre o estúdio (e a Z).
+  const id = await allowedAccount(page.request, { email, password: 'valid-test-password' });
   expect((await signIn(page.request, email, 'valid-test-password')).status()).toBe(200);
   if (o.iaToken) {
     process.env.NOSSOM_AUTH_SECRET = 'local-e2e-session-key-placeholder';
@@ -128,6 +129,12 @@ test('the public home tells the truth about the Z: available with the Absolute Z
   // A home é estática: o selo depende das variáveis da Absolute ZRO no momento do build.
   await page.goto('/');
   const section = page.locator('#z');
+  // Fechado ao público: a Z volta a "Chegando ao NOSSOM", sem link nenhum.
+  if (!OPEN) {
+    await expect(section.getByText('Chegando ao NOSSOM')).toBeVisible();
+    await expect(section.getByRole('link')).toHaveCount(0);
+    return;
+  }
   await expect(section.getByRole('link', { name: 'Conhecer a Z' })).toBeVisible();
   const ready = await section.getByText('Já no NOSSOM').count();
   await expect(section.getByText(ready ? 'Já no NOSSOM' : 'Chegando ao NOSSOM')).toBeVisible();

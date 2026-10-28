@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect, onlyWhenOpen } from './fixtures';
 
 test('mobile shortcuts open real tools even while AI is unavailable', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -52,6 +52,8 @@ test('a slow conversation can be cancelled and shortcuts remain available', asyn
 });
 
 test('mobile homepage keeps demo, plans and FAQ in a shorter page', async ({ page }) => {
+  // Descreve o produto aberto (entrar, assinar, home com ações, /apps).
+  onlyWhenOpen();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Ouvir demonstração', exact: true })).toBeVisible();

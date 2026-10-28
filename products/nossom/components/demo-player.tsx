@@ -10,7 +10,8 @@ function time(value: number) {
     .toString()
     .padStart(2, '0')}`;
 }
-export default function DemoPlayer() {
+/** A demonstração antes/depois. Com `closed` (NOSSOM fechado ao público) ela não leva ao estúdio. */
+export default function DemoPlayer({ closed = false }: { closed?: boolean }) {
   const [playing, setPlaying] = useState(false),
     [version, setVersion] = useState<'original' | 'treated'>('original'),
     [position, setPosition] = useState(0),
@@ -235,9 +236,11 @@ export default function DemoPlayer() {
             }}
           />
         </label>
-        <Link href="/studio" className="voice-player-try">
-          Tratar meu áudio <ArrowUpRight size={17} />
-        </Link>
+        {!closed && (
+          <Link href="/studio" className="voice-player-try">
+            Tratar meu áudio <ArrowUpRight size={17} />
+          </Link>
+        )}
       </div>
       {error && (
         <p className="error-text" role="alert">

@@ -13,8 +13,15 @@ import {
   zroIdentity,
 } from '../account';
 import { allowRequest, cookieValue } from '../ai-access';
+import { nossomClosed, temAcesso } from '../release';
 import { zroConfigured, zroIssuer, zroRedirectUri, zroReturnPath } from './config';
-import { createAccountWithZro, linkedUser, linkZro, sessionForUser } from './accounts';
+import {
+  adoptByEmail,
+  createAccountWithZro,
+  linkedUser,
+  linkZro,
+  sessionForUser,
+} from './accounts';
 import { iaCookieFor } from './ia';
 import {
   authorizationUrl,
@@ -132,7 +139,7 @@ export async function finishZro(request: Request): Promise<Response> {
         return go(withParam('/entrar', 'next', SETTINGS));
       const linked = await linkZro(account.id, profile);
       if (!linked.ok) return fail(linked.error);
-      // Mesma sessão, agora com os produtos liberados na Absolute ZRO (podem bloquear o NOSSOM).
+      // Mesma sessão, agora com os produtos e o estado do lançamento na Absolute ZRO (podem bloquear o NOSSOM).
       const current = decodeSession(accountToken(request));
       // O token da Z (escopo zro.ia) fica guardado para esta conta: "Conectar" no painel passa por aqui.
       return go(withParam(next, 'zro', 'ok'), [
@@ -142,6 +149,7 @@ export async function finishZro(request: Request): Promise<Response> {
                 encodeSession({
                   ...current,
                   zroProducts: profile.products,
+                  zroRelease: profile.release,
                   zro: zroIdentity(profile),
                 }),
               ),
@@ -150,16 +158,27 @@ export async function finishZro(request: Request): Promise<Response> {
         ...iaCookieFor(request, account.id, tokens),
       ]);
     }
+    // O vínculo existente guarda a claim nova antes de qualquer decisão.
     let userId = await linkedUser(profile);
+    // Fechado ao público: sem `allowed` no HUB não nasce conta nem sessão (nada do dispositivo muda).
+    if (
+      nossomClosed() &&
+      !temAcesso({ zroProducts: profile.products, zroRelease: profile.release })
+    )
+      return fail('zro_fechado');
+    // Conta `allowed` com e-mail confirmado e uma conta NOSSOM antiga no mesmo e-mail: liga, em vez de "e-mail
+    // em uso" (o login com senha está fechado; sem isso o proprietário não entraria na própria conta).
+    if (!userId) userId = await adoptByEmail(profile);
     if (!userId) {
       const created = await createAccountWithZro(profile);
       if (!created.ok) return fail(created.error);
       userId = created.userId;
     }
-    // Os produtos liberados vêm do id_token; sem o NOSSOM na lista, a conta entra bloqueada.
+    // Os produtos e o estado do lançamento vêm do id_token; sem direito de uso, a conta entra bloqueada.
     const session = {
       ...sessionFromProvider(await sessionForUser(userId)),
       zroProducts: profile.products,
+      zroRelease: profile.release,
       zro: zroIdentity(profile),
     };
     // Uma sessão anterior neste navegador é trocada pela da conta ligada.

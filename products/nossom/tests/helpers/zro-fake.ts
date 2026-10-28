@@ -19,6 +19,11 @@ export type ZroPerson = {
   verified?: boolean;
   org?: string | null;
   products?: string[];
+  /**
+   * Claim `zro_release` como o HUB manda (contrato de 28/10/2026). Sem ela aqui, a ZRO falsa deduz: `released`
+   * quando `nossom` está em `products`, `closed` quando não está.
+   */
+  release?: Record<string, 'released' | 'closed' | 'allowed'>;
   /** Claims do perfil único (`picture`, `zro_conta`), como o HUB manda. */
   picture?: string;
   conta?: string;
@@ -37,6 +42,7 @@ type Link = {
   email: string;
   organization: string | null;
   products: string[];
+  release: Record<string, string>;
   created_by_zro: boolean;
 };
 
@@ -211,6 +217,11 @@ export function startFakes() {
             name: c.person.name,
             zro_org: c.person.org ? { id: 'org-1', name: c.person.org, role: 'owner' } : null,
             zro_products: c.person.products ?? [],
+            zro_release:
+              c.person.release ??
+              (c.person.products?.includes('nossom')
+                ? { nossom: 'released' }
+                : { nossom: 'closed' }),
             ...(c.person.picture ? { picture: c.person.picture } : {}),
             ...(c.person.conta ? { zro_conta: c.person.conta } : {}),
           },
@@ -232,11 +243,18 @@ export function startFakes() {
       email: String(data.email || '').toLowerCase(),
       organization: (data.organization as string) || null,
       products: (data.products as string[]) || [],
+      release: (data.release as Record<string, string>) || {},
     };
     const bySub = [...links.values()].find((l) => l.zro_sub === body.p_sub);
     if (body.p_action === 'find') {
       if (bySub) Object.assign(bySub, fields);
       return { userId: bySub?.user_id ?? null };
+    }
+    if (body.p_action === 'find_by_email') {
+      const user = [...users.values()].find(
+        (u) => u.email === fields.email && u.email_confirmed_at,
+      );
+      return { userId: user?.id ?? null };
     }
     if (!body.p_user || !users.has(body.p_user))
       return Response.json({ message: 'Account required' }, { status: 400 });
@@ -248,6 +266,7 @@ export function startFakes() {
               email: row.email,
               organization: row.organization,
               products: row.products,
+              release: row.release,
               createdByZro: row.created_by_zro,
               linkedAt: new Date().toISOString(),
               lastLoginAt: null,

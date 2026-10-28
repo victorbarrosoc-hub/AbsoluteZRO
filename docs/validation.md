@@ -213,6 +213,13 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
   (mesmas rotas, chaves e CSP) antes da produção.
 - Login único nas cinco: `/api/zro/entrar` de cada domínio leva ao HUB; apps marcados como da família.
 
+## NOSSOM fechado ao público (28/10/2026)
+
+- `products/nossom`: `npm test` **101/101**, `typecheck`, `format:check`, `build` ok; E2E 83 cenários; só os 2 de microfone falham (como antes), 26 pulados por descreverem o produto aberto
+  (`zro-access.spec.ts`: anônimo, conta própria, Absolute ZRO `closed`, `allowed`, sessão antiga). Regra única em
+  `lib/server/release.ts` (`temAcesso`), deny-by-default com `RELEASE=closed`. Detalhes em
+  `products/nossom/docs/validation.md`. Não validado: claim `zro_release` vinda do HUB real e migração em produção.
+
 ## A Z no Início do NOSSOM (27/10/2026)
 
 - `products/nossom`: `npm test` **83/83** (5 novos em `tests/zro.test.ts`: cookie da Z cifrado, HttpOnly e preso a

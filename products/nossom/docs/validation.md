@@ -68,6 +68,26 @@ A revisão ampla identificou expectativas antigas de texto/cor e o teste de aber
 - Não validado: a foto de uma conta real vinda do HUB em produção (a tela com foto foi conferida com a foto servida
   por rota falsa no Playwright).
 
+## 28/10/2026 · Fechado ao público (Etapa B)
+
+- Regra única: `temAcesso()` em `lib/server/release.ts`. `RELEASE` (padrão `closed`, só `released` abre) × claim
+  `zro_release` do HUB guardada no vínculo (migração `202610280001_zro_release.sql`) e relida no login, ao ligar a
+  conta, na renovação e em cada pedido à API. Fechado, só `zro_release.nossom === 'allowed'` entra; conta própria,
+  vínculo sem a claim e `closed` são negados. `ADMIN_EMAIL` ficou como estava (só dá o painel ADM a quem já entrou).
+- Negado: `/studio/*` (inclusive `/studio/z`) vira "Em desenvolvimento" (HTTP 200) pelo proxy e pelo layout; APIs do
+  produto (`/api/usage`, `/api/ai/*`, `/api/audio/jobs*`, `/api/plans`, `/api/admin*`, `/api/zro/ia/*`) → 403;
+  `/baixar`, instaladores e canal de atualização → 404; `/apps` e `/entrar` → "Em desenvolvimento" (em `/entrar`, só
+  a porta "Entrar com Absolute ZRO"); `instalar.sh` → mensagem e `exit 1`; login com senha → 403 sem cookie;
+  checkout/portal Stripe → 403 e `GET /api/subscription` → `enabled: false`. Home sem CTA funcional ("Conhecer o
+  projeto"), sem planos, a Z "Chegando ao NOSSOM" sem link. Ficam abertos o cron de limpeza (CRON_SECRET) e o webhook
+  assinado da Stripe.
+- `npm test` **101/101**, `typecheck`, `format:check` e `build` ok. E2E: suíte completa 83 cenários; depois do ajuste, as specs afetadas de novo: só falham os 2 de microfone (o Chromium daqui não dá o microfone, como antes) e 26 ficam pulados por descreverem o produto aberto. `tests/e2e/zro-access.spec.ts`
+  cobre as personas anônimo, conta própria, Absolute ZRO `closed` (e vínculo sem a claim), `allowed` e sessão antiga
+  que sai da lista (perde o acesso no pedido seguinte). Testes que descrevem o produto aberto (entrar com senha,
+  assinar, instalar no iPhone) só rodam com `RELEASE=released` (`onlyWhenOpen`).
+- Não validado: o HUB real emitindo `zro_release`, a migração no Supabase de produção e a conta do proprietário
+  entrando de verdade.
+
 ## Reproduzir
 
 ```sh

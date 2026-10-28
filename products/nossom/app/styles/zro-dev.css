@@ -1,0 +1,189 @@
+/*
+ * "Em desenvolvimento" (padrão Absolute ZRO, 28/10/2026): claro por padrão, escuro pelo sistema; Figtree
+ * Light × ExtraBold; uma linha de apoio em cinza; botão Liquid Glass escuro (.glass-btn--ink), como no HUB
+ * (packages/ui). Isolada do tema do site, que é escuro, pelo escopo .zro-dev.
+ */
+.zro-dev {
+  --zd-bg: #f4f4f6;
+  --zd-text: #1d1d1f;
+  --zd-muted: #6e6e73;
+  --zd-card: rgb(255 255 255 / 72%);
+  --zd-line: rgb(0 0 0 / 8%);
+  --zd-shadow: 0 24px 60px rgb(0 0 0 / 8%);
+  --zd-btn-fill: rgb(29 29 31 / 92%);
+  --zd-btn-sheen: linear-gradient(180deg, rgb(255 255 255 / 22%), rgb(255 255 255 / 0%) 50%);
+  --zd-btn-ink: #fff;
+  --zd-btn-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 30%), inset 0 -1px 0 rgb(0 0 0 / 35%),
+    0 0 0 1px rgb(0 0 0 / 45%), 0 4px 14px rgb(0 0 0 / 14%);
+  --zd-focus: #1d1d1f;
+  --logo-edge: #1d1d1f;
+  --logo-mid: #6e6e73;
+  color-scheme: light;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: 24px 16px;
+  background: var(--zd-bg);
+  color: var(--zd-text);
+  font-family:
+    'Figtree Variable',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Helvetica,
+    Arial,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-align: center;
+}
+@media (prefers-color-scheme: dark) {
+  .zro-dev {
+    --zd-bg: #000;
+    --zd-text: #f5f5f7;
+    --zd-muted: #a1a1a6;
+    --zd-card: rgb(255 255 255 / 6%);
+    --zd-line: rgb(255 255 255 / 12%);
+    --zd-shadow: 0 24px 60px rgb(0 0 0 / 50%);
+    --zd-btn-fill: rgb(245 245 247 / 94%);
+    --zd-btn-sheen: linear-gradient(180deg, rgb(255 255 255 / 60%), rgb(255 255 255 / 0%) 50%);
+    --zd-btn-ink: #1d1d1f;
+    --zd-btn-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 90%), inset 0 -1px 0 rgb(0 0 0 / 12%),
+      0 0 0 1px rgb(255 255 255 / 30%), 0 6px 18px rgb(0 0 0 / 40%);
+    --zd-focus: #f5f5f7;
+    --logo-edge: #f5f5f7;
+    --logo-mid: #a1a1a6;
+    color-scheme: dark;
+  }
+}
+.zro-dev__card {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  width: min(100%, 440px);
+  padding: 40px 28px 32px;
+  border-radius: 28px;
+  background: var(--zd-card);
+  box-shadow:
+    0 0 0 1px var(--zd-line),
+    var(--zd-shadow);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+.zro-dev__zro {
+  display: inline-flex;
+  color: var(--zd-muted);
+  transition: color 0.2s ease;
+}
+.zro-dev__zro:hover {
+  color: var(--zd-text);
+}
+.zro-dev__nossom .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--zd-text);
+}
+.zro-dev__nossom .brand > span {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 6px;
+}
+.zro-dev__titulo {
+  margin: 10px 0 0;
+  font-size: clamp(34px, 7vw, 48px);
+  font-weight: 300;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  color: var(--zd-text);
+}
+.zro-dev__titulo strong {
+  font-weight: 800;
+}
+.zro-dev__apoio {
+  max-width: 30ch;
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.45;
+  color: var(--zd-muted);
+}
+.zro-dev .glass-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 999px;
+  font: 600 15px/1 inherit;
+  font-family: inherit;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+  transition:
+    transform 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+    filter 0.2s ease;
+}
+.zro-dev .glass-btn--ink {
+  background: var(--zd-btn-sheen), var(--zd-btn-fill);
+  color: var(--zd-btn-ink);
+  box-shadow: var(--zd-btn-shadow);
+}
+.zro-dev .glass-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+.zro-dev .glass-btn:active {
+  transform: scale(0.97);
+}
+.zro-dev .glass-btn:focus-visible,
+.zro-dev__entrar:focus-visible,
+.zro-dev__zro:focus-visible {
+  outline: 2px solid var(--zd-focus);
+  outline-offset: 3px;
+  border-radius: 999px;
+}
+.zro-dev__entrar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--zd-muted);
+  transition: color 0.2s ease;
+}
+.zro-dev__entrar:hover {
+  color: var(--zd-text);
+}
+.zro-dev__aviso {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--zd-text);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .zro-dev__card {
+    animation: zro-dev-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  @keyframes zro-dev-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+  }
+}
+@media (max-width: 420px) {
+  .zro-dev__card {
+    padding: 32px 20px 26px;
+    border-radius: 24px;
+  }
+}

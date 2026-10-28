@@ -256,11 +256,25 @@ const server = createServer(async (req, res) => {
   if (url.pathname === '/rest/v1/rpc/nossom_zro_link') {
     if (token !== 'service-e2e-placeholder') return send({ code: '42501' }, 403);
     const data = body.p_data || {},
-      products = Array.isArray(data.products) ? data.products : [];
+      products = Array.isArray(data.products) ? data.products : [],
+      // `zro_release` (migração 202610280001): só os três estados, por produto.
+      release = Object.fromEntries(
+        Object.entries(data.release && typeof data.release === 'object' ? data.release : {}).filter(
+          ([, v]) => ['released', 'closed', 'allowed'].includes(v),
+        ),
+      );
     if (body.p_action === 'find') {
       const found = [...zroLinks.values()].find((l) => l.sub === body.p_sub);
-      if (found) found.products = products;
+      if (found) {
+        found.products = products;
+        found.release = release;
+      }
       return send({ userId: found?.userId ?? null });
+    }
+    // Conta `allowed` adota a conta antiga de mesmo e-mail confirmado (migração 202610280001).
+    if (body.p_action === 'find_by_email') {
+      const saved = users.get(String(data.email || '').toLowerCase());
+      return send({ userId: saved?.user.email_confirmed_at ? saved.user.id : null });
     }
     if (![...users.values()].some((u) => u.user.id === body.p_user))
       return send({ message: 'Account required' }, 400);
@@ -272,6 +286,7 @@ const server = createServer(async (req, res) => {
               email: row.email,
               organization: row.organization,
               products: row.products,
+              release: row.release,
               createdByZro: row.createdByZro,
               linkedAt: row.linkedAt,
               lastLoginAt: null,
@@ -285,6 +300,7 @@ const server = createServer(async (req, res) => {
         email: String(data.email || ''),
         organization: data.organization || null,
         products,
+        release,
         createdByZro: data.createdByZro === true,
         linkedAt: row?.linkedAt ?? new Date().toISOString(),
       });
