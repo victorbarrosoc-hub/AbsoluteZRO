@@ -21,13 +21,17 @@ import { safeNext, str, toFormError } from './helpers'
 
 const mail = defaultSender()
 
-async function sendVerify(email: string, token: string): Promise<string | undefined> {
+async function sendVerify(email: string, token: string): Promise<{ devLink?: string; enviado: boolean }> {
   const link = `${appOrigin}/confirmar-email?token=${encodeURIComponent(token)}`
   // A conta já existe: falha no envio não pode parecer falha no cadastro (a pessoa reenvia pela conta).
-  await mail
+  const enviado = await mail
     .send({ to: email, subject: 'Confirme seu e-mail na Absolute ZRO', text: `Para confirmar, abra: ${link}` })
-    .catch((e) => console.error('[e-mail] confirmação não enviada:', e instanceof Error ? e.message : e))
-  return showDevLinks ? link : undefined
+    .then(() => true)
+    .catch((e) => {
+      console.error('[e-mail] confirmação não enviada:', e instanceof Error ? e.message : e)
+      return false
+    })
+  return { devLink: showDevLinks ? link : undefined, enviado }
 }
 
 export async function signupAction(_: FormState, fd: FormData): Promise<FormState> {
@@ -111,8 +115,9 @@ export async function resendVerifyAction(): Promise<FormState> {
   if (!auth) return { error: 'Entre na sua conta.' }
   if (auth.user.emailVerified) return { ok: 'Seu e-mail já está confirmado.' }
   const token = await newVerifyToken(db(), auth.user.id)
-  const devLink = await sendVerify(auth.user.email, token)
+  const { devLink, enviado } = await sendVerify(auth.user.email, token)
   if (!mail.deliveryAvailable) return { error: 'O envio de e-mail ainda não está ligado nesta instalação.' }
+  if (!enviado) return { error: 'Não conseguimos enviar agora. Tente de novo em instantes.' }
   return { ok: 'Enviamos um novo link de confirmação.', devLink }
 }
 
