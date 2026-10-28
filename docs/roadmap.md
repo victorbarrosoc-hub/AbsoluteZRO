@@ -296,6 +296,21 @@ Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   (segredo só por variável). `vercel.json` sem a trava.
 - 🟡 Produção: projeto Vercel `maestro`, domínio, variáveis, papel/schema no Supabase e cliente OIDC
   ([deployment-checklist §5b](operations/deployment-checklist.md)), a fazer pelo titular.
+- ℹ️ Estado atual: **fechado**, só a lista de acesso entra (migration `0024` do HUB). Abrir a todos é a `0022` e pede o
+  titular.
+- ✅ Maestro v2, fases 0–2 ([ADR 0024](decisions/0024-maestro-v2.md), 28/10/2026): `CLAUDE.md` do Maestro corrigido
+  (fechado); `temProduto()` pelas claims; barra lateral em vidro com grupos (Z · Produção · Comercial · Ajustes) e barra
+  de baixo no celular. Página inicial pública em `/` (frase "A produtora inteira num lugar só.", selo "Em teste
+  fechado", capturas reais da demonstração em MacBook e iPhone, claro e escuro; método das 8 colunas, "Já funciona",
+  "Vem aí" com "Em breve"; "Entrar com Absolute ZRO" e "Quero acesso"), OG, ícone Apple, `robots` e `sitemap`. Lista
+  de espera em `drizzle/0004_lista_espera.sql` (e-mail, nome opcional, consentimento, HMAC do IP; RLS ligado,
+  `maestro_app` sem privilégio na tabela, só `maestro.lista_espera_entrar()`; 5/h por IP e teto geral; armadilha;
+  mesmo e-mail não duplica). Sistema visual: acento de latão só em superfície (filete da aba, foco, encaixe de soltar,
+  selos), cor fechada por coluna do Quadro, títulos Light × ExtraBold, monograma com tom por cliente, card que inclina
+  ao pegar e assenta com a mola, entrada de seção de 240 ms, esqueletos (`loading.tsx`), tudo em CSS e desligado em
+  "reduzir movimento". E2E do Maestro (Playwright) no CI.
+- ⬜ Maestro v2, fase 3 em diante (plano): revisão com vídeo por link, ponte com o SOBEDESCE, marca da produtora,
+  orçamentos, financeiro, inventário, freelas.
 
 ## Fase 6 — Escala
 

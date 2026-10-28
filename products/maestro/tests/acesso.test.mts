@@ -1,7 +1,7 @@
 // temAcesso() é o único ponto de decisão (lib/auth/acesso.ts) e papelDoHub() a tabela fixa de papéis. Funções puras.
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { liberacao, temAcesso } from "../src/lib/auth/acesso";
+import { liberacao, temAcesso, temProduto } from "../src/lib/auth/acesso";
 import { papelDoHub, podeEscrever } from "../src/lib/papeis";
 
 describe("temAcesso", () => {
@@ -30,6 +30,27 @@ describe("temAcesso", () => {
     assert.equal(liberacao({ release: { maestro: "released" } }), "released");
     assert.equal(liberacao({ release: { maestro: "development" } }), "closed");
     assert.equal(liberacao({}), "closed");
+  });
+});
+
+describe("temProduto (outros produtos do ecossistema, ex.: SOBEDESCE para a aba Arquivos)", () => {
+  test("precisa do produto em zro_products", () => {
+    assert.equal(temProduto({ produtos: ["maestro", "sobedesce"], release: null }, "sobedesce"), true);
+    assert.equal(temProduto({ produtos: ["maestro"], release: null }, "sobedesce"), false);
+    assert.equal(temProduto({ produtos: [] }, "sobedesce"), false);
+  });
+
+  test("o gate fecha mesmo com o produto listado; sem a claim do produto vale zro_products", () => {
+    assert.equal(temProduto({ produtos: ["sobedesce"], release: { sobedesce: "released" } }, "sobedesce"), true);
+    assert.equal(temProduto({ produtos: ["sobedesce"], release: { sobedesce: "allowed" } }, "sobedesce"), true);
+    assert.equal(temProduto({ produtos: ["sobedesce"], release: { sobedesce: "closed" } }, "sobedesce"), false);
+    assert.equal(temProduto({ produtos: ["sobedesce"], release: { sobedesce: "beta" } }, "sobedesce"), false);
+    assert.equal(temProduto({ produtos: ["sobedesce"], release: { maestro: "allowed" } }, "sobedesce"), true);
+  });
+
+  test("não abre o Maestro por outro caminho: temAcesso continua deny-by-default", () => {
+    assert.equal(temProduto({ produtos: ["maestro"] }, "maestro"), true);
+    assert.equal(temAcesso({ produtos: ["maestro"] }), false);
   });
 });
 

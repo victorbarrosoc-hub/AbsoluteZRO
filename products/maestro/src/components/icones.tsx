@@ -22,7 +22,9 @@ export type NomeIcone =
   | "whatsapp"
   | "email"
   | "editar"
-  | "bandeira";
+  | "bandeira"
+  | "orcamento"
+  | "dinheiro";
 
 const CAMINHOS: Record<NomeIcone, React.ReactNode> = {
   z: <path d="M12 3c.6 4.2 2.3 5.9 9 6.3-6.7.4-8.4 2.1-9 6.3-.6-4.2-2.3-5.9-9-6.3 6.7-.4 8.4-2.1 9-6.3Z" fill="currentColor" stroke="none" />,
@@ -121,6 +123,19 @@ const CAMINHOS: Record<NomeIcone, React.ReactNode> = {
   ),
   editar: <path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4ZM13.5 6.5l4 4" />,
   bandeira: <path d="M5 21V4M5 4h11l-2 4 2 4H5" />,
+  orcamento: (
+    <>
+      <path d="M7 3h7l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
+      <path d="M14 3v4h4M9 12h6M9 16h4" />
+    </>
+  ),
+  dinheiro: (
+    <>
+      <rect x="3" y="6" width="18" height="12" rx="2" />
+      <circle cx="12" cy="12" r="2.6" />
+      <path d="M6.5 9.5v.01M17.5 14.5v.01" />
+    </>
+  ),
 };
 
 export function Icone({ nome, size = 18, className }: { nome: NomeIcone; size?: number; className?: string }) {

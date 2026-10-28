@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import type { ReactNode } from "react";
-import { SITE_DESCRICAO, SITE_NOME, siteUrl } from "@/lib/site";
+import { SITE_DESCRICAO, SITE_FRASE, SITE_NOME, siteUrl } from "@/lib/site";
 import "@fontsource-variable/figtree";
 import "@fontsource-variable/inter";
 import "./globals.css";
@@ -11,9 +11,11 @@ export const metadata: Metadata = {
   title: { default: SITE_NOME, template: `%s · ${SITE_NOME}` },
   description: SITE_DESCRICAO,
   applicationName: SITE_NOME,
-  // Nasce fechado: nada de indexar.
+  // Fechado: só a página inicial pública pode ser achada (ela sobrescreve); app, login e telas de erro, não.
   robots: { index: false, follow: false },
-  openGraph: { type: "website", locale: "pt_BR", siteName: SITE_NOME, title: SITE_NOME, description: SITE_DESCRICAO },
+  // A imagem vem de src/app/opengraph-image.png (convenção do Next).
+  openGraph: { type: "website", locale: "pt_BR", siteName: SITE_NOME, title: `${SITE_NOME} · ${SITE_FRASE}`, description: SITE_DESCRICAO },
+  twitter: { card: "summary_large_image", title: `${SITE_NOME} · ${SITE_FRASE}`, description: SITE_DESCRICAO },
   formatDetection: { telephone: false },
 };
 

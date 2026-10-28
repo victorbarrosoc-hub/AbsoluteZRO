@@ -4,8 +4,8 @@
  *
  * Duas condições, as duas vindas do login e relidas no /api/zro/eu (userinfo), então o que o HUB muda vale na próxima
  * leitura, sem a pessoa fazer nada:
- * 1. Gate de lançamento (ADR 0023): a claim `zro_release.maestro` precisa ser "released" (aberto ao público; desde a
- *    migration 0022 do HUB o Maestro está em teste aberto) ou "allowed" (esta conta está na lista enquanto fechado).
+ * 1. Gate de lançamento (ADR 0023): a claim `zro_release.maestro` precisa ser "released" (aberto ao público; hoje não: a
+ *    migration 0024 do HUB deixou o Maestro fechado, só a lista de acesso entra) ou "allowed" (conta na lista).
  *    "closed", outro valor ou a claim ausente = fechado (deny-by-default, como os outros produtos da família).
  * 2. Entitlement: `maestro` em `zro_products` da organização ativa (plano grátis, Completo, Pro ou concessão do console).
  *
@@ -31,4 +31,16 @@ export function liberacao(a: Pick<Acesso, "release">): "released" | "allowed" | 
 
 export function temAcesso(a: Acesso): boolean {
   return liberacao(a) !== "closed" && a.produtos.includes(PRODUTO);
+}
+
+/**
+ * Outro produto do ecossistema (ex.: `sobedesce`, para a aba Arquivos): a organização o tem em `zro_products` e o gate
+ * não o fecha para esta conta. O HUB já tira de `zro_products` o que está fechado; se a claim `zro_release` citar o
+ * produto como "closed" (ou outro valor), vale o fechado também aqui. Sem a claim do produto, vale `zro_products`.
+ * Só esconde ou mostra tela: quem decide o uso é o produto dono (e o HUB, na chamada entre eles).
+ */
+export function temProduto(a: Acesso, produto: string): boolean {
+  if (!a.produtos.includes(produto)) return false;
+  const r = a.release?.[produto];
+  return r === undefined || r === "released" || r === "allowed";
 }

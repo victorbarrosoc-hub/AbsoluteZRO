@@ -33,7 +33,7 @@ export default async function Projetos({ searchParams }: PageProps<"/app/projeto
     <div className="pagina">
       <header className="pagina__cabeca pagina__cabeca--acao">
         <h1 className="atitle">
-          <strong>Projetos.</strong>
+          Seus <strong>projetos.</strong>
         </h1>
         {escreve ? (
           <Link className="glass-btn glass-btn--ink" href="/app/projetos/novo">

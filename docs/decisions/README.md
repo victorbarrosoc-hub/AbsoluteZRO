@@ -25,3 +25,4 @@ Cada decisão é reversível salvo indicação. Formato: contexto, decisão, con
 | [0021](0021-carro-hub-convidado.md)              | Carro → HUB: token de app e o papel convidado                  | aceita                |
 | [0022](0022-maestro-no-monorepo.md)              | Maestro nasce no monorepo e se integra pelo projeto canônico   | aceita                |
 | [0023](0023-gate-de-lancamento.md)               | Gate de lançamento: fechado é fechado, por conta e por canal   | aceita                |
+| [0024](0024-maestro-v2.md)                       | Maestro v2: a produtora inteira, por fases                     | aceita                |

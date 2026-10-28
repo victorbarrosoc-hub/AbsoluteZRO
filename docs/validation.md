@@ -15,6 +15,21 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Maestro v2, fases 0–2: página inicial, lista de espera e sistema visual (28/10/2026)
+
+- `products/maestro`: `lint`, `format:check`, `typecheck` ok; `npm test` **86/86** (Postgres 16 local). Novos:
+  `lista-espera.test.mts` (entra com consentimento, mesmo e-mail em outra caixa não duplica e responde igual, sem
+  consentimento ou e-mail ruim não grava, armadilha não grava nem conta tentativa, 5/h por IP com outro IP seguindo,
+  IP só como HMAC; `maestro_app` com organização e vínculo válidos não lê/insere/muda/apaga a tabela, a função recusa
+  sem consentimento chamada direto, RLS ligado) e `temProduto` em `acesso.test.mts`. `npm run build` ok.
+- `npm run test:e2e` (novo, Playwright 1.63, Chromium, build local + banco `maestro_test_e2e`) **14/14** no computador
+  e no iPhone: página inicial (título, selo, capturas carregadas, "Em breve" na aprovação, `mailto`, sem rolagem de
+  lado), OG/robots/sitemap, "Quero acesso" (pede consentimento, guarda), sessão vê "Abrir o Maestro", símbolo anima com
+  movimento e nada anima com "reduzir movimento", navegação com a Z primeiro e os grupos.
+- Capturas antes/depois (claro e escuro, computador e iPhone) da inicial, do Quadro e de Clientes conferidas à mão.
+- Não validado: produção (nada publicado), Safari de verdade (a revelação por rolagem usa `animation-timeline`; sem
+  suporte, a seção aparece pronta).
+
 ## Console da plataforma redesenhado (28/10/2026)
 
 - Raiz: `lint`, `format:check`, `typecheck` ok; `npm test` **231/231** em 27 arquivos (Postgres 16 local); `npm run build`

@@ -1,7 +1,7 @@
 /**
  * Limite de tentativas (tabela maestro.rate_limit_attempts, só pela porta de sistema): conta linhas da chave numa
  * janela de tempo. Chaves: "entrar:<ip>" (idas ao login), "pedido-zro:<jti>" (uso único dos pedidos do HUB, etapa 3),
- * "link:<ip>" e "link-token:<hash>" (links do cliente, etapa 2). Limpeza preguiçosa do que tem mais de um dia.
+ * "link:<ip>" e "link-token:<hash>" (links do cliente, etapa 2), "espera:<hash do ip>" e "espera" (lista de espera). Limpeza preguiçosa do que tem mais de um dia.
  */
 import { and, count, eq, gte, lt } from "drizzle-orm";
 import { getBanco, schema } from "@/lib/db/client";
@@ -15,6 +15,10 @@ export const REGRAS = {
   entrarIp: { max: 60, janelaMs: 15 * 60_000 },
   /** Releitura do perfil na Absolute ZRO por sessão. */
   perfilSessao: { max: 30, janelaMs: 10 * 60_000 },
+  /** Lista de espera da página inicial: 5 envios por hora por IP (decisão do plano v2 §10). */
+  esperaIp: { max: 5, janelaMs: 60 * 60_000 },
+  /** Teto geral da lista de espera (IPs trocados não enchem a tabela). */
+  esperaGeral: { max: 300, janelaMs: 60 * 60_000 },
 } satisfies Record<string, Regra>;
 
 /** true = ainda pode tentar. */

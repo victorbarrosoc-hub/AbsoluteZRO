@@ -36,7 +36,7 @@ export default async function Clientes({ searchParams }: PageProps<"/app/cliente
     <div className="pagina">
       <header className="pagina__cabeca pagina__cabeca--acao">
         <h1 className="atitle">
-          <strong>Clientes.</strong>
+          Seus <strong>clientes.</strong>
         </h1>
         {escreve ? (
           <Link className="glass-btn glass-btn--ink" href="/app/clientes/novo">

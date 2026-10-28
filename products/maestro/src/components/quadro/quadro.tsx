@@ -133,7 +133,7 @@ export function Quadro(props: Props) {
     <div className="q">
       <header className="q-cabeca">
         <h1 className="atitle">
-          O <strong>Quadro.</strong>
+          Seu <strong>Quadro.</strong>
         </h1>
         {podeEscrever ? (
           <button
@@ -221,7 +221,15 @@ export function Quadro(props: Props) {
 
           <nav className="q-abas" aria-label="Colunas">
             {COLUNAS.map((c) => (
-              <button key={c.k} type="button" className={c.k === colMovel ? "on" : undefined} aria-pressed={c.k === colMovel} onClick={() => setColMovel(c.k)}>
+              <button
+                key={c.k}
+                type="button"
+                className={c.k === colMovel ? "on" : undefined}
+                data-col={c.k}
+                aria-pressed={c.k === colMovel}
+                onClick={() => setColMovel(c.k)}
+              >
+                <i className="q-ponto" aria-hidden="true" />
                 {c.nome}
                 <span>{visiveis[c.k].length}</span>
               </button>
@@ -236,8 +244,9 @@ export function Quadro(props: Props) {
               const l = visiveis[col.k];
               const sobre = alvo?.col === col.k;
               return (
-                <section key={col.k} className={`q-col${col.k === colMovel ? " on" : ""}${sobre ? " q-col--alvo" : ""}`} aria-label={col.nome}>
+                <section key={col.k} className={`q-col${col.k === colMovel ? " on" : ""}${sobre ? " q-col--alvo" : ""}`} data-col={col.k} aria-label={col.nome}>
                   <header className="q-col__topo" title={col.desc}>
+                    <i className="q-ponto" aria-hidden="true" />
                     <h2>{col.nome}</h2>
                     <span className="q-col__n">{l.length}</span>
                     {podeEscrever ? (
@@ -358,6 +367,7 @@ function Cartao({
     <article
       className={`q-card${arrastando ? " q-card--arrastando" : ""}${d.prioridade === "alta" ? " q-card--alta" : ""}`}
       data-card={c.id}
+      data-col={d.coluna}
       draggable={podeEscrever}
       onDragStart={aoArrastar}
       onDragEnd={aoSoltar}
