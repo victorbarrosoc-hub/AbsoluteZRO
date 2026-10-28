@@ -1,34 +1,15 @@
 "use client";
 /**
- * A navegação do Maestro (plano v2 §3): barra lateral em vidro com grupos, a Z primeiro (padrão do ecossistema). Só
- * entra o que existe hoje; os grupos que ainda não têm tela (Comercial com Pedidos e Orçamentos, Operação, Dinheiro)
- * nascem quando a fase deles entrar no ar. No celular vira a barra de baixo, com as mesmas abas.
+ * A navegação do Maestro (plano v2 §3): barra lateral em vidro com grupos, a Z primeiro (padrão do ecossistema):
+ * Produção (Quadro, Aprovações, Projetos, Agenda), Comercial (Clientes, Orçamentos), Operação (Freelas, Inventário),
+ * Dinheiro (Financeiro) e Ajustes. Só entra o que tem tela de verdade. No celular vira a barra de baixo com o que se
+ * usa todo dia (Z, Quadro, Aprovações, Agenda) e "Mais", que abre todas as seções.
  * A aba ativa segue o caminho e ganha o filete de latão (só superfície, nunca texto).
  */
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Icone, type NomeIcone } from "./icones";
-
-export type Aba = { href: string; nome: string; icone: NomeIcone; curto?: string };
-export type Grupo = { nome: string | null; abas: Aba[] };
-
-export const GRUPOS: Grupo[] = [
-  { nome: null, abas: [{ href: "/app/z", nome: "Z", icone: "z" }] },
-  {
-    nome: "Produção",
-    abas: [
-      { href: "/app/quadro", nome: "Quadro", icone: "quadro" },
-      { href: "/app/aprovacoes", nome: "Aprovações", icone: "aprovacoes", curto: "Aprovar" },
-      { href: "/app/projetos", nome: "Projetos", icone: "projetos" },
-    ],
-  },
-  { nome: "Comercial", abas: [{ href: "/app/clientes", nome: "Clientes", icone: "clientes" }] },
-];
-
-export const AJUSTES: Aba = { href: "/app/ajustes", nome: "Ajustes", icone: "ajustes" };
-
-/** Todas as abas, na ordem da barra (a Z primeiro, Ajustes por último). */
-export const ABAS: Aba[] = [...GRUPOS.flatMap((g) => g.abas), AJUSTES];
+import { AJUSTES, BARRA, GRUPOS, MAIS, type Aba } from "@/lib/navegacao";
+import { Icone } from "./icones";
 
 function ativa(caminho: string, href: string) {
   return caminho === href || caminho.startsWith(`${href}/`);
@@ -64,13 +45,14 @@ export function Lateral() {
   );
 }
 
-/** A barra de baixo (celular): ícone e nome curto. */
+/** A barra de baixo (celular): ícone e nome curto. "Mais" fica marcado nas seções que não estão na barra. */
 export function Barra() {
   const caminho = usePathname();
+  const naBarra = BARRA.slice(0, -1).some((a) => ativa(caminho, a.href));
   return (
     <nav className="barra" aria-label="Seções do Maestro">
-      {ABAS.map((a) => {
-        const on = ativa(caminho, a.href);
+      {BARRA.map((a) => {
+        const on = a === MAIS ? !naBarra : ativa(caminho, a.href);
         return (
           <Link key={a.href} href={a.href} aria-current={on ? "page" : undefined} data-aba={a.icone}>
             <Icone nome={a.icone} size={20} />

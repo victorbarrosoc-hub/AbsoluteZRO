@@ -121,7 +121,7 @@ describe("demonstração", () => {
     assert.equal((await quadro.carregarCards(B())).cards.length, 0);
     const vazio = await demo.removerDemonstracao(B());
     assert.ok(vazio.ok);
-    if (vazio.ok) assert.deepEqual(vazio.contagem, { clientes: 0, projetos: 0, cards: 0, lotes: 0 });
+    if (vazio.ok) assert.deepEqual(vazio.contagem, demo.CONTAGEM_ZERO);
     assert.equal((await contar(orgA)).clientesDemo, 10, "remover em B não toca em A");
   });
 
@@ -156,7 +156,7 @@ describe("demonstração", () => {
 
     const de_novo = await demo.removerDemonstracao(A());
     assert.ok(de_novo.ok);
-    if (de_novo.ok) assert.deepEqual(de_novo.contagem, { clientes: 0, projetos: 0, cards: 0, lotes: 0 });
+    if (de_novo.ok) assert.deepEqual(de_novo.contagem, demo.CONTAGEM_ZERO);
 
     // e pode carregar outra vez
     const outra = await demo.carregarDemonstracao(A());
@@ -172,5 +172,117 @@ describe("demonstração", () => {
       getBanco().asUser(A(), (tx) => tx.execute(sql`delete from maestro.cards where id like 'demo-%'`)),
       (e) => amb.banco.codigoPg(e) === "42501",
     );
+  });
+});
+
+describe("demonstração da produtora por dentro", () => {
+  const TABELAS = [
+    "precos_itens",
+    "orcamentos",
+    "lancamentos",
+    "recorrencias",
+    "freelas",
+    "freela_pagamento",
+    "escalas",
+    "equipamentos",
+    "reservas",
+    "eventos",
+    "documentos",
+  ];
+  const porTabela = (orgId: string) =>
+    getBanco().asSystem("teste conta módulos", async (tx) => {
+      const out: Record<string, number> = {};
+      for (const t of TABELAS) {
+        const [r] = (await tx.execute(sql.raw(`select count(*)::int as n from maestro.${t} where org_id = '${orgId}'`))) as unknown as { n: number }[];
+        out[t] = r.n;
+      }
+      return out;
+    });
+
+  test("todo painel cheio: preços, orçamentos em vários status, 3 meses + 2 de financeiro, 15+ freelas, 30+ itens, agenda e documentos", async () => {
+    const n = await porTabela(orgA);
+    assert.ok(n.precos_itens >= 12, "tabela de preços");
+    assert.ok(n.freelas >= 15, "freelas");
+    assert.ok(n.equipamentos >= 30, "inventário");
+    assert.ok(n.reservas >= 20, "reservas");
+    assert.ok(n.eventos >= 12, "agenda");
+    assert.ok(n.documentos >= 5, "documentos");
+    assert.ok(n.freela_pagamento >= 1, "PIX de exemplo (cifrado)");
+    const [r] = (await getBanco().asSystem("conferir", (tx) =>
+      tx.execute(sql`
+        select (select array_agg(distinct status order by status) from maestro.orcamentos where org_id = ${orgA}) as status,
+               (select count(*)::int from maestro.orcamentos where org_id = ${orgA} and validade < current_date and status = 'enviado') as expirados,
+               (select min(vencimento)::text from maestro.lancamentos where org_id = ${orgA}) as primeiro,
+               (select max(vencimento)::text from maestro.lancamentos where org_id = ${orgA}) as ultimo,
+               (select count(*)::int from maestro.lancamentos where org_id = ${orgA} and escala_id is not null) as de_freela,
+               (select count(*)::int from maestro.lancamentos where org_id = ${orgA} and escala_id is not null and pago_cents >= valor_cents) as freela_pagos,
+               (select count(*)::int from maestro.lancamentos where org_id = ${orgA} and recorrencia_id is not null) as recorrentes,
+               (select count(*)::int from maestro.lancamentos where org_id = ${orgA} and orcamento_id is not null) as parcelas,
+               (select bool_and(demo) from maestro.lancamentos where org_id = ${orgA}) as todos_demo,
+               (select count(*)::int from maestro.freela_pagamento where org_id = ${orgA} and pix_enc not like 'v1.%') as em_claro`),
+    )) as unknown as Record<string, unknown>[];
+    assert.deepEqual(r.status, ["aprovado", "enviado", "rascunho", "recusado"]);
+    assert.ok((r.expirados as number) >= 1, "um enviado vencido aparece como expirado");
+    const hoje = new Date();
+    const meses = (s: string) => (+s.slice(0, 4) - hoje.getFullYear()) * 12 + (+s.slice(5, 7) - (hoje.getMonth() + 1));
+    assert.ok(meses(r.primeiro as string) <= -2, `financeiro começa uns 3 meses atrás (${r.primeiro})`);
+    assert.ok(meses(r.ultimo as string) >= 2, `e vai 2 meses à frente (${r.ultimo})`);
+    assert.ok((r.de_freela as number) >= 10 && (r.freela_pagos as number) >= 3, "pagamentos de freela, alguns pagos");
+    assert.ok((r.recorrentes as number) >= 30, "aluguel, software e contrato mensal");
+    assert.ok((r.parcelas as number) >= 5, "parcelas dos orçamentos aprovados");
+    assert.equal(r.todos_demo, true);
+    assert.equal(r.em_claro, 0);
+  });
+
+  test("completar: uma demonstração antiga ganha só os módulos que faltam, sem duplicar", async () => {
+    const antes = await porTabela(orgA);
+    // Simula a demonstração de antes dos módulos novos: só sobram Quadro, Clientes e Projetos.
+    await getBanco().asUser(A(), async (tx) => {
+      for (const t of [
+        "documentos",
+        "reservas",
+        "lancamentos",
+        "recorrencias",
+        "escalas",
+        "eventos",
+        "equipamentos",
+        "freelas",
+        "orcamentos",
+        "orcamento_modelos",
+        "precos_variaveis",
+        "precos_itens",
+      ])
+        await tx.execute(sql.raw(`delete from maestro.${t} where demo`));
+    });
+    assert.equal(await demo.demonstracaoCompleta(A()), false);
+    const cl = (await contar(orgA)).clientesDemo;
+    const r = await demo.carregarDemonstracao(A());
+    assert.ok(r.ok && r.criou);
+    if (r.ok) assert.equal(r.contagem.clientes, 0, "a base não é refeita");
+    assert.equal((await contar(orgA)).clientesDemo, cl);
+    assert.deepEqual(await porTabela(orgA), antes);
+    assert.equal(await demo.demonstracaoCompleta(A()), true);
+    const de_novo = await demo.carregarDemonstracao(A());
+    assert.ok(de_novo.ok && !de_novo.criou);
+    assert.deepEqual(await porTabela(orgA), antes);
+  });
+
+  test("remover tira os módulos todos (e os dados da empresa que a demonstração pôs); o que é de verdade fica", async () => {
+    const real = await getBanco().asUser(A(), (tx) =>
+      tx.execute(sql`insert into maestro.freelas (org_id, nome) values (${orgA}, 'Freela de verdade') returning id`),
+    );
+    assert.equal(real.length, 1);
+    const r = await demo.removerDemonstracao(A());
+    assert.ok(r.ok);
+    if (r.ok) assert.ok(r.contagem.freelas >= 15 && r.contagem.equipamentos >= 30 && r.contagem.lancamentos > 0);
+    const n = await porTabela(orgA);
+    assert.deepEqual(n, { ...Object.fromEntries(TABELAS.map((t) => [t, 0])), freelas: 1 });
+    const [org] = (await getBanco().asSystem("conferir", (tx) =>
+      tx.execute(sql`select settings from maestro.organizations where id = ${orgA}`),
+    )) as unknown as {
+      settings: Record<string, unknown>;
+    }[];
+    assert.equal(org.settings.empresa, undefined);
+    assert.equal(await demo.temDemonstracao(A()), false);
   });
 });

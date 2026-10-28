@@ -24,7 +24,17 @@ export type NomeIcone =
   | "editar"
   | "bandeira"
   | "orcamento"
-  | "dinheiro";
+  | "dinheiro"
+  | "agenda"
+  | "freelas"
+  | "inventario"
+  | "documento"
+  | "grade"
+  | "imprimir"
+  | "carro"
+  | "check"
+  | "alerta"
+  | "copiar";
 
 const CAMINHOS: Record<NomeIcone, React.ReactNode> = {
   z: <path d="M12 3c.6 4.2 2.3 5.9 9 6.3-6.7.4-8.4 2.1-9 6.3-.6-4.2-2.3-5.9-9-6.3 6.7-.4 8.4-2.1 9-6.3Z" fill="currentColor" stroke="none" />,
@@ -134,6 +144,68 @@ const CAMINHOS: Record<NomeIcone, React.ReactNode> = {
       <rect x="3" y="6" width="18" height="12" rx="2" />
       <circle cx="12" cy="12" r="2.6" />
       <path d="M6.5 9.5v.01M17.5 14.5v.01" />
+    </>
+  ),
+  agenda: (
+    <>
+      <rect x="3.5" y="5" width="17" height="15" rx="2.5" />
+      <path d="M3.5 10h17M8 3v4M16 3v4M8 14h2M14 14h2M8 17h2" />
+    </>
+  ),
+  freelas: (
+    <>
+      <circle cx="12" cy="8" r="3.6" />
+      <path d="M5 20.5c.6-3.6 3.5-6 7-6s6.4 2.4 7 6" />
+      <path d="M18.5 4.5l1.2 1.2M5.5 4.5 4.3 5.7" />
+    </>
+  ),
+  inventario: (
+    <>
+      <rect x="3" y="8" width="13" height="10" rx="2" />
+      <path d="m16 11.5 5-3v9l-5-3" />
+      <circle cx="9.5" cy="13" r="2.4" />
+    </>
+  ),
+  documento: (
+    <>
+      <path d="M7 3h7l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
+      <path d="M14 3v4h4M9 11h6M9 14.5h6M9 18h3" />
+    </>
+  ),
+  grade: (
+    <>
+      <rect x="4" y="4" width="6.5" height="6.5" rx="1.8" />
+      <rect x="13.5" y="4" width="6.5" height="6.5" rx="1.8" />
+      <rect x="4" y="13.5" width="6.5" height="6.5" rx="1.8" />
+      <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8" />
+    </>
+  ),
+  imprimir: (
+    <>
+      <path d="M7 9V3.5h10V9" />
+      <rect x="3.5" y="9" width="17" height="8" rx="2" />
+      <path d="M7 14h10v6.5H7z" />
+    </>
+  ),
+  carro: (
+    <>
+      <path d="M4 16.5v-4l2-5h12l2 5v4" />
+      <path d="M3 16.5h18v2H3zM4 12.5h16" />
+      <circle cx="7.5" cy="18.5" r="1.5" />
+      <circle cx="16.5" cy="18.5" r="1.5" />
+    </>
+  ),
+  check: <path d="m5 12.5 4.5 4.5L19 7.5" />,
+  alerta: (
+    <>
+      <path d="M12 4 2.8 19.5h18.4L12 4Z" />
+      <path d="M12 10v4.5M12 17.2v.01" />
+    </>
+  ),
+  copiar: (
+    <>
+      <rect x="8" y="8" width="12" height="12" rx="2" />
+      <path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8" />
     </>
   ),
 };

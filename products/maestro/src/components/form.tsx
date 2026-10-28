@@ -8,13 +8,22 @@ import { useActionState, useState, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 import { Icone } from "./icones";
 
-export type EstadoForm = { erros?: Record<string, string>; mensagem?: string; valores?: Record<string, string> } | undefined;
+export type EstadoForm =
+  | {
+      erros?: Record<string, string>;
+      mensagem?: string;
+      valores?: Record<string, string>;
+      /** Deu certo sem sair da tela: mostra o aviso e limpa os campos. */
+      aviso?: string;
+      n?: number;
+    }
+  | undefined;
 type Acao = (estado: EstadoForm, fd: FormData) => Promise<EstadoForm>;
 
 export type DefCampo = {
   nome: string;
   rotulo: string;
-  tipo?: "texto" | "email" | "tel" | "data" | "area" | "select" | "segmentos";
+  tipo?: "texto" | "email" | "tel" | "data" | "area" | "select" | "segmentos" | "dinheiro" | "numero" | "hora" | "mes";
   opcoes?: { valor: string; nome: string }[];
   dica?: string;
   obrigatorio?: boolean;
@@ -22,6 +31,7 @@ export type DefCampo = {
   autoFocus?: boolean;
   placeholder?: string;
   max?: number;
+  linhas?: number;
 };
 
 function Enviar({ rotulo }: { rotulo: string }) {
@@ -54,25 +64,39 @@ export function Formulario({
   id,
   rotulo,
   voltar,
+  ocultos,
+  compacto,
 }: {
   acao: Acao;
   campos: DefCampo[];
   inicial: Record<string, string>;
   id?: string;
   rotulo: string;
-  voltar: string;
+  voltar?: string;
+  /** Campos escondidos que vão junto (ex.: o projeto da escala). */
+  ocultos?: Record<string, string>;
+  /** Dentro de uma seção: sem o cartão em volta. */
+  compacto?: boolean;
 }) {
   const [estado, enviar] = useActionState(acao, undefined);
   const valores = estado?.valores ?? inicial;
   return (
-    <form action={enviar} className="form" noValidate>
+    <form action={enviar} className={compacto ? "form form--compacto" : "form"} noValidate>
       {id ? <input type="hidden" name="id" value={id} /> : null}
+      {Object.entries(ocultos ?? {}).map(([k, v]) => (
+        <input key={k} type="hidden" name={k} value={v} />
+      ))}
       {estado?.mensagem ? (
         <p className="erro" role="alert">
           {estado.mensagem}
         </p>
       ) : null}
-      <div className="form__grade">
+      {estado?.aviso ? (
+        <p className="aviso-ok" role="status">
+          <Icone nome="check" size={16} /> {estado.aviso}
+        </p>
+      ) : null}
+      <div className="form__grade" key={estado?.n ?? 0}>
         {campos.map((c) => {
           const erro = estado?.erros?.[c.nome];
           const idCampo = `campo-${c.nome}`;
@@ -91,7 +115,7 @@ export function Formulario({
             <div key={c.nome} className={`form__campo${c.largo ? " form__campo--largo" : ""}${erro ? " form__campo--erro" : ""}`}>
               <label htmlFor={c.tipo === "segmentos" ? undefined : idCampo}>{c.rotulo}</label>
               {c.tipo === "area" ? (
-                <textarea {...comum} rows={4} />
+                <textarea {...comum} rows={c.linhas ?? 4} />
               ) : c.tipo === "select" ? (
                 <select {...comum}>
                   {c.opcoes?.map((o) => (
@@ -105,8 +129,21 @@ export function Formulario({
               ) : (
                 <input
                   {...comum}
-                  type={c.tipo === "data" ? "date" : c.tipo === "email" ? "email" : c.tipo === "tel" ? "tel" : "text"}
-                  inputMode={c.tipo === "tel" ? "tel" : undefined}
+                  type={
+                    c.tipo === "data"
+                      ? "date"
+                      : c.tipo === "email"
+                        ? "email"
+                        : c.tipo === "tel"
+                          ? "tel"
+                          : c.tipo === "hora"
+                            ? "time"
+                            : c.tipo === "mes"
+                              ? "month"
+                              : "text"
+                  }
+                  inputMode={c.tipo === "tel" ? "tel" : c.tipo === "dinheiro" || c.tipo === "numero" ? "decimal" : undefined}
+                  className={c.tipo === "dinheiro" || c.tipo === "numero" ? "num" : undefined}
                 />
               )}
               {erro ? (
@@ -122,9 +159,11 @@ export function Formulario({
       </div>
       <div className="acoes">
         <Enviar rotulo={rotulo} />
-        <Link className="glass-btn" href={voltar}>
-          Cancelar
-        </Link>
+        {voltar ? (
+          <Link className="glass-btn" href={voltar}>
+            Cancelar
+          </Link>
+        ) : null}
       </div>
     </form>
   );

@@ -516,7 +516,7 @@ h3 {
   right: 0;
   bottom: 0;
   z-index: 30;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   padding: 6px 6px max(6px, env(safe-area-inset-bottom));
   background: var(--chrome-bg);
   -webkit-backdrop-filter: blur(22px) saturate(180%);

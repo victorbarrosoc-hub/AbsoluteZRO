@@ -1,5 +1,6 @@
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
-import { temDemonstracao } from "@/lib/demo/demonstracao";
+import Link from "next/link";
+import { demonstracaoCompleta, temDemonstracao } from "@/lib/demo/demonstracao";
 import { NOME_DO_PAPEL, podeRemover } from "@/lib/papeis";
 import { emissor } from "@/lib/zro/config";
 import { Icone } from "@/components/icones";
@@ -15,7 +16,9 @@ export const metadata = { title: "Ajustes" };
  */
 export default async function Ajustes() {
   const s = await exigirAcessoNaPagina("/app/ajustes");
-  const demo = podeRemover(s.papel) ? await temDemonstracao({ sub: s.sub, orgId: s.orgId }) : false;
+  const ctx = { sub: s.sub, orgId: s.orgId };
+  const demo = podeRemover(s.papel) ? await temDemonstracao(ctx) : false;
+  const completa = demo ? await demonstracaoCompleta(ctx) : false;
   return (
     <div className="pagina">
       <header className="pagina__cabeca">
@@ -55,17 +58,36 @@ export default async function Ajustes() {
             </dd>
           </dl>
         </section>
+        <section className="ficha" aria-label="Produtora">
+          <div>
+            <strong className="ficha__titulo">Produtora</strong>
+            <p className="sutil">O que sai no timbrado e a base dos orçamentos.</p>
+          </div>
+          <nav className="atalhos" aria-label="Ajustes da produtora">
+            <Link className="atalho" href="/app/ajustes/empresa">
+              <Icone nome="documento" size={18} /> Empresa e timbrado <Icone nome="seta" size={15} />
+            </Link>
+            <Link className="atalho" href="/app/ajustes/precos">
+              <Icone nome="orcamento" size={18} /> Tabela de preços <Icone nome="seta" size={15} />
+            </Link>
+          </nav>
+        </section>
         {podeRemover(s.papel) ? (
           <section className="ficha" id="demonstracao" aria-label="Demonstração">
             <div>
               <strong className="ficha__titulo">Demonstração</strong>
               <p className="sutil">
                 {demo
-                  ? "Os dados de exemplo estão no Quadro, em Clientes e em Projetos."
-                  : "Uma produtora de exemplo com 10 clientes, para ver o Maestro em ação."}
+                  ? completa
+                    ? "Os dados de exemplo estão em todas as seções."
+                    : "Há seções novas sem exemplo. Complete a demonstração."
+                  : "Uma produtora de exemplo inteira, para ver o Maestro em ação."}
               </p>
             </div>
-            <div className="acoes">{demo ? <RemoverDemonstracao /> : <CarregarDemonstracao className="glass-btn glass-btn--sm" />}</div>
+            <div className="acoes">
+              {!demo || !completa ? <CarregarDemonstracao className="glass-btn glass-btn--sm" rotulo={demo ? "Completar demonstração" : undefined} /> : null}
+              {demo ? <RemoverDemonstracao /> : null}
+            </div>
           </section>
         ) : null}
       </div>

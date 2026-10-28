@@ -5,6 +5,7 @@ import { SITE_DESCRICAO, SITE_FRASE, SITE_NOME, siteUrl } from "@/lib/site";
 import "@fontsource-variable/figtree";
 import "@fontsource-variable/inter";
 import "./globals.css";
+import "./produtora.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),

@@ -17,11 +17,11 @@ function Enviar({ rotulo, ocupado, className }: { rotulo: string; ocupado: strin
   );
 }
 
-export function CarregarDemonstracao({ className = "glass-btn" }: { className?: string }) {
+export function CarregarDemonstracao({ className = "glass-btn", rotulo = "Carregar demonstração" }: { className?: string; rotulo?: string }) {
   const [estado, enviar] = useActionState(carregarDemonstracaoAcao, undefined);
   return (
     <form action={enviar} className="demo-form">
-      <Enviar rotulo="Carregar demonstração" ocupado="Montando a produtora…" className={className} />
+      <Enviar rotulo={rotulo} ocupado="Montando a produtora…" className={className} />
       {estado?.mensagem ? (
         <p className="erro" role="alert">
           {estado.mensagem}

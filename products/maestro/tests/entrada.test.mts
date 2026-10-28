@@ -32,7 +32,7 @@ test("card apagado não conta", () => {
 });
 
 test("a Z segue a primeira aba; /app é a entrada do login", () => {
-  const nav = readFileSync(new URL("../src/components/nav.tsx", import.meta.url), "utf8");
+  const nav = readFileSync(new URL("../src/lib/navegacao.ts", import.meta.url), "utf8");
   assert.ok(nav.indexOf('href: "/app/z"') >= 0 && nav.indexOf('href: "/app/z"') < nav.indexOf('href: "/app/quadro"'));
   const site = readFileSync(new URL("../src/lib/site.ts", import.meta.url), "utf8");
   assert.match(site, /app: "\/app",/);
