@@ -99,6 +99,41 @@
       "when": 1794268800000,
       "tag": "0013_freela_equipamentos",
       "breakpoints": false
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1794355200000,
+      "tag": "0014_funil",
+      "breakpoints": false
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1794441600000,
+      "tag": "0015_metas",
+      "breakpoints": false
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1794528000000,
+      "tag": "0016_importacoes",
+      "breakpoints": false
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794614400000,
+      "tag": "0017_agenda_ics",
+      "breakpoints": false
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794700800000,
+      "tag": "0018_acesso_por_cliente",
+      "breakpoints": false
     }
   ]
 }
