@@ -2434,6 +2434,36 @@
   background: #b0caf212;
   transform: translateX(2px);
 }
+/* Perfil único: o atalho para a conta Absolute ZRO, como nos outros apps da família. */
+.account-zro-badge {
+  color: #e6eefb;
+}
+.account-menu-zro {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 47px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  border: 1px solid #bed7ff1f;
+  background: #e2eeff0a;
+  color: #eef3fb;
+  font-size: 14px;
+  transition:
+    background 0.18s,
+    transform 0.18s;
+}
+.account-menu-zro > span {
+  flex: 1;
+}
+.account-menu-zro > svg:last-child {
+  color: #8c9fb9;
+}
+.account-menu-zro:hover {
+  background: #e2eeff14;
+  transform: translateX(2px);
+}
 .account-menu-logout {
   display: flex;
   align-items: center;
@@ -2537,10 +2567,12 @@
 @media (prefers-reduced-motion: reduce) {
   .account-menu-trigger,
   .account-trigger-chevron,
-  .account-menu-links a {
+  .account-menu-links a,
+  .account-menu-zro {
     transition: none;
   }
-  .account-menu-links a:hover {
+  .account-menu-links a:hover,
+  .account-menu-zro:hover {
     transform: none;
   }
 }

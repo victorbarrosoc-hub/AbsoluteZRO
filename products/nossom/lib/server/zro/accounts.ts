@@ -147,22 +147,39 @@ export async function zroLinkOf(userId: string): Promise<ZroLink | null> {
   return (await rpc<{ link: ZroLink | null }>('get', { user: userId }))?.link ?? null;
 }
 
+/** Vínculo com a Absolute ZRO só existe com o cliente dela configurado. */
+export function zroLinkReady() {
+  return (
+    !!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() &&
+    !!process.env.ZRO_CLIENT_ID?.trim() &&
+    !!process.env.ZRO_CLIENT_SECRET?.trim()
+  );
+}
+
+export type ZroLinkSummary = { products: string[]; email: string; organization: string | null };
 /**
- * Produtos liberados (`zro_products`) guardados no vínculo, ou null para conta sem vínculo.
- * Sem o cliente da Absolute ZRO configurado não há vínculo a conferir.
+ * Produtos liberados (`zro_products`), e-mail e organização guardados no vínculo, ou null para
+ * conta sem vínculo. Sem o cliente da Absolute ZRO configurado não há vínculo a conferir.
  */
-export async function zroProductsOf(userId: string): Promise<string[] | null> {
-  if (
-    !process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
-    !process.env.ZRO_CLIENT_ID?.trim() ||
-    !process.env.ZRO_CLIENT_SECRET?.trim()
-  )
-    return null;
+export async function zroLinkSummary(userId: string): Promise<ZroLinkSummary | null> {
+  if (!zroLinkReady()) return null;
   const link = await zroLinkOf(userId);
   if (!link) return null;
-  return Array.isArray(link.products)
-    ? link.products.filter((p): p is string => typeof p === 'string')
-    : [];
+  return {
+    products: Array.isArray(link.products)
+      ? link.products.filter((p): p is string => typeof p === 'string')
+      : [],
+    email: typeof link.email === 'string' ? link.email.slice(0, 254) : '',
+    organization:
+      typeof link.organization === 'string' && link.organization
+        ? link.organization.slice(0, 200)
+        : null,
+  };
+}
+
+/** Só os produtos liberados (`zro_products`) do vínculo, ou null para conta sem vínculo. */
+export async function zroProductsOf(userId: string): Promise<string[] | null> {
+  return (await zroLinkSummary(userId))?.products ?? null;
 }
 
 /** Desliga. Conta criada pela Absolute ZRO (sem senha) não desliga: ficaria sem como entrar. */

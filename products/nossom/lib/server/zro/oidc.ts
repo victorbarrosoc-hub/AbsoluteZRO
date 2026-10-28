@@ -4,7 +4,7 @@
  * aceito sem essa conferência.
  */
 import { createPublicKey, randomBytes, verify, type JsonWebKey } from 'node:crypto';
-import { zroCredentials, zroIssuer, ZRO_SCOPES } from './config';
+import { zroCredentials, zroIssuer, zroManageUrl, zroPictureUrl, ZRO_SCOPES } from './config';
 
 export class ZroError extends Error {
   constructor(
@@ -89,6 +89,10 @@ export type ZroProfile = {
   name: string | null;
   organization: string | null;
   products: string[];
+  /** Foto da conta Absolute ZRO (claim `picture`, endereço público do emissor), ou null. */
+  picture: string | null;
+  /** Onde a pessoa edita nome, foto e e-mail (claim `zro_conta`, ou o Perfil da Absolute ZRO). */
+  manage: string;
 };
 
 async function publicKey(kid: string): Promise<JsonWebKey | null> {
@@ -165,6 +169,8 @@ export async function verifyIdToken(
     products: Array.isArray(claims.zro_products)
       ? claims.zro_products.filter((p): p is string => typeof p === 'string').slice(0, 50)
       : [],
+    picture: zroPictureUrl(claims.picture),
+    manage: zroManageUrl(claims.zro_conta),
   };
 }
 

@@ -1,25 +1,33 @@
 'use client';
 import { useState } from 'react';
 import type { Account } from '@/lib/accounts';
-/** Profile photo when the person has one, otherwise their initial. */
+/**
+ * Perfil único: a foto da conta Absolute ZRO quando a conta está ligada e tem foto; senão a foto
+ * enviada no NOSSOM; senão a inicial. Foto que não carrega cai para a próxima.
+ */
 export default function UserAvatar({
   account,
   className,
 }: {
-  account: Pick<Account, 'name' | 'avatar'>;
+  account: Pick<Account, 'name' | 'avatar' | 'zro'>;
   className: string;
 }) {
-  const [failed, setFailed] = useState<number | null>(null);
-  const photo = account.avatar && failed !== account.avatar;
+  const [failed, setFailed] = useState<string[]>([]);
+  const photo = [
+    account.zro?.picture,
+    account.avatar ? `/api/account/avatar?v=${account.avatar}` : undefined,
+  ].find((src): src is string => !!src && !failed.includes(src));
   return (
     <span className={`${className} ${photo ? 'has-photo' : ''}`}>
       {photo ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={`/api/account/avatar?v=${account.avatar}`}
+          key={photo}
+          src={photo}
           alt=""
           decoding="async"
-          onError={() => setFailed(account.avatar ?? null)}
+          referrerPolicy="no-referrer"
+          onError={() => setFailed((list) => [...list, photo])}
         />
       ) : (
         account.name.slice(0, 1).toUpperCase()

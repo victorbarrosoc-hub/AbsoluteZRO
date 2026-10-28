@@ -10,6 +10,7 @@ import {
   encodeSession,
   sessionCookie,
   sessionFromProvider,
+  zroIdentity,
 } from '../account';
 import { allowRequest, cookieValue } from '../ai-access';
 import { zroConfigured, zroIssuer, zroRedirectUri, zroReturnPath } from './config';
@@ -136,7 +137,15 @@ export async function finishZro(request: Request): Promise<Response> {
       // O token da Z (escopo zro.ia) fica guardado para esta conta: "Conectar" no painel passa por aqui.
       return go(withParam(next, 'zro', 'ok'), [
         ...(current
-          ? [sessionCookie(encodeSession({ ...current, zroProducts: profile.products }))]
+          ? [
+              sessionCookie(
+                encodeSession({
+                  ...current,
+                  zroProducts: profile.products,
+                  zro: zroIdentity(profile),
+                }),
+              ),
+            ]
           : []),
         ...iaCookieFor(request, account.id, tokens),
       ]);
@@ -151,6 +160,7 @@ export async function finishZro(request: Request): Promise<Response> {
     const session = {
       ...sessionFromProvider(await sessionForUser(userId)),
       zroProducts: profile.products,
+      zro: zroIdentity(profile),
     };
     // Uma sessão anterior neste navegador é trocada pela da conta ligada.
     return go(next, [

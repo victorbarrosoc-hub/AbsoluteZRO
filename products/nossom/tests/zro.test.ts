@@ -284,8 +284,18 @@ test('the signed-in owner links the ZRO in settings, then signs in through it an
   const request = (origin: string) =>
     new Request(SITE + '/api/zro/conta', { method: 'DELETE', headers: { cookie, origin } });
   assert.equal((await unlink(request('https://evil.example'))).status, 403);
-  assert.equal((await unlink(request(SITE))).status, 200);
+  const unlinked = await unlink(
+    new Request(SITE + '/api/zro/conta', {
+      method: 'DELETE',
+      headers: { cookie: cookieFor(linked.session!), origin: SITE },
+    }),
+  );
+  assert.equal(unlinked.status, 200);
   assert.equal(fakes.links.has(owner.id), false);
+  // Desligou: a sessão volta a ser só do NOSSOM, sem a identidade da Absolute ZRO.
+  const after = decodeSession(decodeURIComponent(cookieOf(unlinked, 'nossom-account')!))!;
+  assert.equal(after.zroProducts, undefined);
+  assert.equal(after.zro, undefined);
   const status = await (
     await linkStatus(new Request(SITE + '/api/zro/conta', { headers: { cookie } }))
   ).json();
@@ -294,6 +304,61 @@ test('the signed-in owner links the ZRO in settings, then signs in through it an
 
 const cookieFor = (session: NonNullable<ReturnType<typeof decodeSession>>) =>
   sessionCookie(encodeSession(session)).split(';')[0];
+
+test('the menu shows the Absolute ZRO identity: photo, organization and where to edit (perfil único)', async () => {
+  const photo = ISSUER + '/api/v1/foto/6f1c2a90-1b7e-4a55-9a0c-3f2d1e0b9c11';
+  const r = await flow({ person: { ...LIA, picture: photo, conta: ISSUER + '/perfil' } });
+  assert.deepEqual(r.session?.zro, {
+    email: 'lia@produtora.com',
+    organization: 'Produtora Lia',
+    picture: photo,
+    manage: ISSUER + '/perfil',
+  });
+  const shown = accountFromToken(encodeSession(r.session!));
+  assert.deepEqual(shown?.zro, {
+    email: 'lia@produtora.com',
+    organization: 'Produtora Lia',
+    picture: photo,
+    manage: ISSUER + '/perfil',
+  });
+  assert.equal(shown?.zroInvite, undefined);
+  // A renovação mantém a foto e relê e-mail e organização no vínculo.
+  fakes.links.get(r.session!.account.id)!.organization = 'Produtora Nova';
+  const refreshed = await refreshAccount(
+    encodeSession({ ...r.session!, expires: Date.now() - 1000 }),
+  );
+  assert.ok(refreshed && refreshed !== 'unavailable');
+  assert.equal(refreshed.account.zro?.organization, 'Produtora Nova');
+  assert.equal(refreshed.account.zro?.picture, photo);
+  // Foto ou "onde editar" de outro endereço não entram: sem foto, a inicial; o Perfil do emissor.
+  const unsafe = await flow({
+    person: {
+      ...LIA,
+      picture: 'https://evil.example/api/v1/foto/6f1c2a90-1b7e-4a55-9a0c-3f2d1e0b9c11',
+      conta: 'https://evil.example/perfil',
+    },
+  });
+  assert.equal(unsafe.session?.zro?.picture, undefined);
+  assert.equal(unsafe.session?.zro?.manage, ISSUER + '/perfil');
+  const insecure = await flow({ person: { ...LIA, picture: photo.replace('https:', 'http:') } });
+  assert.equal(insecure.session?.zro?.picture, undefined);
+});
+
+test('an account without the Absolute ZRO gets only the invite to link it', async () => {
+  const owner = fakes.addUser('sem-zro@example.test', 'Sem ZRO');
+  const token = decodeURIComponent(sessionFor(owner).split('=')[1]);
+  const shown = accountFromToken(token);
+  assert.equal(shown?.zro, undefined);
+  assert.equal(shown?.zroInvite, true);
+  // Sem o cliente da Absolute ZRO configurado, nem o convite aparece.
+  const id = process.env.ZRO_CLIENT_ID;
+  delete process.env.ZRO_CLIENT_ID;
+  try {
+    assert.equal(accountFromToken(token)?.zroInvite, undefined);
+  } finally {
+    process.env.ZRO_CLIENT_ID = id;
+  }
+});
 
 test('"Criar conta" asks the HUB for its sign-up screen (prompt=create); signing in does not', async () => {
   const create = await start(

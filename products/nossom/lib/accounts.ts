@@ -9,13 +9,23 @@ export type Account = {
   avatar?: number;
   /** Conta Absolute ZRO cuja organização ainda não tem o NOSSOM liberado (zro_products). */
   zroBlocked?: true;
+  /**
+   * Conta ligada à Absolute ZRO (perfil único): e-mail e organização do vínculo, a foto da conta
+   * (endereço público do emissor) e onde editar nome, foto e e-mail.
+   */
+  zro?: { email?: string; organization?: string; picture?: string; manage: string };
+  /** Dá para ligar a Absolute ZRO e a conta ainda não está ligada. */
+  zroInvite?: true;
 };
 export function accountPlan(
   account: Pick<Account, 'isAdmin'>,
-  usage?: { planName?: string } | null,
+  usage?: { planName?: string; unlimited?: boolean } | null,
 ) {
+  // "Ilimitado" só quando o saldo do servidor diz que é; antes dele chegar, só "ADM".
   return account.isAdmin
-    ? 'ADM · Ilimitado'
+    ? usage?.unlimited
+      ? 'ADM · Ilimitado'
+      : 'ADM'
     : usage?.planName
       ? 'Plano ' + usage.planName
       : 'Plano Gratuito';

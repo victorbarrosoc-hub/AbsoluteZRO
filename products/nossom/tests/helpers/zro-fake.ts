@@ -19,6 +19,9 @@ export type ZroPerson = {
   verified?: boolean;
   org?: string | null;
   products?: string[];
+  /** Claims do perfil único (`picture`, `zro_conta`), como o HUB manda. */
+  picture?: string;
+  conta?: string;
 };
 export type Tamper = null | 'nonce' | 'aud' | 'iss' | 'signature' | 'redirect-iss';
 type User = {
@@ -208,6 +211,8 @@ export function startFakes() {
             name: c.person.name,
             zro_org: c.person.org ? { id: 'org-1', name: c.person.org, role: 'owner' } : null,
             zro_products: c.person.products ?? [],
+            ...(c.person.picture ? { picture: c.person.picture } : {}),
+            ...(c.person.conta ? { zro_conta: c.person.conta } : {}),
           },
           t === 'signature',
         ),
