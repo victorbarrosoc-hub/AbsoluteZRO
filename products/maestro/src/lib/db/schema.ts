@@ -380,3 +380,20 @@ export const rateLimitAttempts = maestro.table("rate_limit_attempts", {
   key: text().notNull(),
   at: agora(),
 });
+
+/**
+ * Lista de espera da página inicial (drizzle/0004). maestro_app não tem privilégio nenhum aqui: a entrada é só por
+ * maestro.lista_espera_entrar(); a leitura é do dono do schema (console, testes).
+ */
+export const listaEspera = maestro.table(
+  "lista_espera",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    email: text().notNull(),
+    nome: text(),
+    consentimentoEm: quando().notNull(),
+    ipHash: text(),
+    createdAt: agora(),
+  },
+  (t) => [uniqueIndex("lista_espera_email_uq").on(t.email)],
+);

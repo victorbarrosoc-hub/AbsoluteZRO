@@ -2,7 +2,11 @@
 
 export const SITE_NOME = "Maestro";
 export const SITE_OFICIAL = "https://maestro.absolutezro.com";
-export const SITE_DESCRICAO = "A gestão da sua produtora num lugar só: CRM, financeiro, controle de pauta e aprovação do cliente. Uma plataforma Absolute ZRO.";
+/** A frase do Maestro (título da página inicial e do OG). */
+export const SITE_FRASE = "A produtora inteira num lugar só.";
+export const SITE_DESCRICAO = "Pauta, clientes e projetos da sua produtora num lugar só, com a conta Absolute ZRO. Em teste fechado, por convite.";
+/** Fale com a gente (rodapé, lista de espera). */
+export const CONTATO = "contato@absolutezro.com";
 
 /** Endereço público do site (retorno do login, links). NEXT_PUBLIC_SITE_URL manda; sem ela, o oficial. */
 export function siteUrl(): string {

@@ -14,9 +14,23 @@
   --zro-light: #f5f5f7;
   --zro-paper-ink: #111114;
 
-  /* o latão da pauta: só no símbolo do Maestro (nunca em texto) */
+  /* o latão da pauta: o símbolo e o acento do Maestro (plano v2 §9). Acento é superfície, traço e ícone; nunca texto. */
   --p-maestro: #ffc857;
   --p-maestro-2: #b8872b;
+  --acento: #c8962f;
+  --acento-suave: rgb(200 150 47 / 0.14);
+  --acento-halo: rgb(255 200 87 / 0);
+
+  /* as 8 colunas do Quadro, fechadas e frias → quentes: pauta cinza, fazendo âmbar, em aprovação latão, entregue oliva.
+     Só em ponto, barra e marcador. */
+  --col-pauta: #a3a3ab;
+  --col-afazer: #8292a8;
+  --col-fazendo: #d6963a;
+  --col-revisao: #c7805a;
+  --col-aprovacao: #c8962f;
+  --col-aprovado: #a8a046;
+  --col-agendado: #8f9a4c;
+  --col-entregue: #6f8a43;
 
   --font-apple: "Figtree Variable", "Inter Variable", system-ui, sans-serif;
   --font-sans: "Inter Variable", ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", sans-serif;
@@ -62,6 +76,18 @@
 }
 
 :root[data-theme="dark"] {
+  --acento: #ffc857;
+  --acento-suave: rgb(255 200 87 / 0.14);
+  /* o halo de latão a 6% atrás do topo, só no escuro */
+  --acento-halo: rgb(255 200 87 / 0.06);
+  --col-pauta: #8e8e96;
+  --col-afazer: #8fa2bb;
+  --col-fazendo: #f0ac48;
+  --col-revisao: #df9470;
+  --col-aprovacao: #ffc857;
+  --col-aprovado: #c4bb5a;
+  --col-agendado: #a9b45e;
+  --col-entregue: #8fae58;
   --bg: var(--zro-void);
   --surface: var(--zro-smoke);
   --surface-2: var(--zro-graphite);
@@ -109,7 +135,9 @@ html {
 body {
   margin: 0;
   min-height: 100dvh;
-  background: var(--bg);
+  background:
+    radial-gradient(900px 420px at 30% -120px, var(--acento-halo), transparent 70%) no-repeat,
+    var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
   font-size: 16px;
@@ -235,8 +263,9 @@ h3 {
 /* Título no contraste da casa: a ideia em Light, o que importa em ExtraBold. */
 .atitle {
   font-family: var(--font-apple);
-  font-size: clamp(2rem, 4.4vw, 2.8rem);
-  line-height: 1.05;
+  /* 32 px no celular, até 56 px no computador (plano v2 §9) */
+  font-size: clamp(2rem, 1.1rem + 2.6vw, 3.5rem);
+  line-height: 1.04;
   letter-spacing: -0.03em;
   font-weight: 300;
   color: var(--text-strong);
@@ -323,30 +352,34 @@ h3 {
   align-items: center;
 }
 
-/* ───────────── shell do app ───────────── */
+/* ───────────── shell do app: barra lateral em vidro (plano v2 §3) ───────────── */
 
 .shell {
   min-height: 100dvh;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-columns: 248px minmax(0, 1fr);
 }
-.topo {
+.lado {
   position: sticky;
   top: 0;
-  z-index: 20;
+  height: 100dvh;
   display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 10px 16px;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px 12px 14px;
   background: var(--chrome-bg);
   -webkit-backdrop-filter: blur(18px) saturate(180%);
   backdrop-filter: blur(18px) saturate(180%);
-  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+  scrollbar-width: none;
 }
+.lado__marca,
 .topo__marca {
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  padding: 6px 10px;
   text-decoration: none;
   color: var(--text-strong);
   font-family: var(--font-apple);
@@ -355,16 +388,177 @@ h3 {
   text-transform: uppercase;
   font-size: 0.86rem;
 }
+.lado__marca svg,
 .topo__marca svg {
-  width: 44px;
   height: auto;
+}
+.lado__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+.lado__grupo {
+  display: grid;
+  gap: 2px;
+}
+/* Ajustes fica embaixo, longe do trabalho do dia. */
+.lado__grupo--fim {
+  margin-top: auto;
+}
+.lado__rotulo {
+  padding: 0 12px 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.lado__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--text-mute);
+  font-family: var(--font-apple);
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition:
+    background 0.2s var(--ease),
+    color 0.2s var(--ease);
+}
+.lado__item svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.lado__item:hover {
+  background: var(--hover);
+  color: var(--text-strong);
+}
+/* A aba ativa: superfície e o filete de latão (acento só em superfície, nunca em texto). */
+.lado__item[aria-current="page"] {
+  background: var(--surface);
+  color: var(--text-strong);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.06),
+    0 0 0 1px var(--line);
+}
+.lado__item::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--acento);
+  transform: scaleY(0);
+  transition: transform 0.32s var(--spring);
+}
+.lado__item[aria-current="page"]::before {
+  transform: scaleY(1);
+}
+.lado__item[data-aba="z"] {
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.lado__pe {
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.lado__pe .selo--demo {
+  justify-self: start;
+}
+.lado__ferramentas {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+/* topo e barra de baixo: só no celular */
+.topo,
+.barra {
+  display: none;
+}
+.topo {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  padding-top: max(8px, env(safe-area-inset-top));
+  background: var(--chrome-bg);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+  border-bottom: 1px solid var(--line);
+}
+.topo__marca {
+  padding: 4px;
 }
 .topo__fim {
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
 }
+.barra {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  padding: 6px 6px max(6px, env(safe-area-inset-bottom));
+  background: var(--chrome-bg);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  backdrop-filter: blur(22px) saturate(180%);
+  border-top: 1px solid var(--line);
+}
+.barra a {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 6px 0 4px;
+  border-radius: 12px;
+  color: var(--text-faint);
+  text-decoration: none;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.barra a svg {
+  width: 22px;
+  height: 22px;
+}
+.barra a[aria-current="page"] {
+  color: var(--text-strong);
+}
+.barra a::after {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 30%;
+  right: 30%;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: var(--acento);
+  transform: scaleX(0);
+  transition: transform 0.32s var(--spring);
+}
+.barra a[aria-current="page"]::after {
+  transform: scaleX(1);
+}
+
 .assinatura {
   display: inline-flex;
   align-items: center;
@@ -381,7 +575,7 @@ h3 {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 4px 4px 4px 10px;
+  padding: 4px;
   border-radius: 999px;
   background: var(--pill-fill);
   box-shadow: var(--pill-rim);
@@ -389,13 +583,31 @@ h3 {
   color: var(--text);
   text-decoration: none;
 }
-.conta__nome {
-  max-width: 160px;
+.conta--inteira {
+  padding: 6px 10px 6px 6px;
+  border-radius: 16px;
+}
+.conta__miolo {
+  display: grid;
+  min-width: 0;
+  line-height: 1.25;
+}
+.conta__nome,
+.conta__org {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.conta__nome {
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.conta__org {
+  font-size: 0.76rem;
+  color: var(--text-faint);
+}
 .avatar {
+  flex: none;
   width: 30px;
   height: 30px;
   border-radius: 50%;
@@ -419,69 +631,56 @@ h3 {
   font-size: 1.2rem;
 }
 
-.nav {
-  display: flex;
-  gap: 2px;
-  padding: 4px;
-  border-radius: 999px;
-  background: var(--pill-fill);
-  box-shadow: var(--pill-rim);
-  max-width: 100%;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.nav::-webkit-scrollbar {
-  display: none;
-}
-.nav a {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 36px;
-  padding: 0 14px;
-  border-radius: 999px;
-  text-decoration: none;
-  color: var(--text-mute);
-  font-family: var(--font-apple);
-  font-weight: 600;
-  font-size: 0.92rem;
-  white-space: nowrap;
-  transition:
-    background 0.2s var(--ease),
-    color 0.2s var(--ease);
-}
-.nav a:hover {
-  background: var(--hover);
-  color: var(--text-strong);
-}
-.nav a[aria-current="page"] {
-  background: var(--surface);
-  color: var(--text-strong);
-  box-shadow:
-    0 1px 2px rgb(0 0 0 / 0.06),
-    0 0 0 1px var(--line);
-}
-.nav a svg {
-  width: 16px;
-  height: 16px;
-}
-.nav a[data-aba="z"] {
-  font-weight: 800;
-  letter-spacing: 0.02em;
-}
-
 .conteudo {
-  width: min(1240px, 100% - 32px);
+  width: min(1240px, 100% - 64px);
   margin: 0 auto;
-  padding: 28px 0 72px;
+  padding: 36px 0 72px;
+  min-width: 0;
+}
+/* A batuta: ao trocar de seção, o conteúdo entra subindo 8 px com a mola (só CSS). */
+.conteudo > * {
+  animation: m-entra 0.24s var(--spring) both;
+}
+@keyframes m-entra {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
 }
 .pagina {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 24px;
 }
 .pagina__cabeca {
   display: grid;
   gap: 6px;
+}
+
+@media (max-width: 900px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+  }
+  .lado {
+    display: none;
+  }
+  .topo {
+    display: flex;
+  }
+  .barra {
+    display: grid;
+  }
+  .conteudo {
+    width: calc(100% - 32px);
+    padding: 20px 0 calc(96px + env(safe-area-inset-bottom));
+  }
+}
+@media (max-width: 440px) {
+  /* no iPhone o gesto basta como marca; o nome fica no título da aba e no ícone */
+  .topo__marca span {
+    display: none;
+  }
 }
 
 /* seletor claro/escuro */
@@ -556,6 +755,7 @@ h3 {
 
 .q {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
 }
 /* o Quadro usa a largura da tela (as 8 colunas pedem espaço) */
@@ -1685,25 +1885,6 @@ h3 {
 /* ───────────── celular ───────────── */
 
 @media (max-width: 760px) {
-  .topo {
-    flex-wrap: wrap;
-    row-gap: 10px;
-    padding: 10px 16px;
-  }
-  .topo__fim {
-    margin-left: auto;
-  }
-  .conta:not(.conta--inteira) .conta__nome {
-    display: none;
-  }
-  .nav {
-    order: 3;
-    width: 100%;
-  }
-  .conteudo {
-    width: calc(100% - 32px);
-    padding: 20px 0 56px;
-  }
   /* Quadro no celular: uma coluna por vez, com as abas das colunas */
   .q-abas {
     display: flex;
@@ -1877,4 +2058,302 @@ h3 {
 }
 .ficha p.sutil {
   margin: 4px 0 0;
+}
+
+/* ───────────── Maestro v2 (plano §9): cores das colunas, o card que se arrasta, esqueletos ───────────── */
+
+[data-col="pauta"] {
+  --col: var(--col-pauta);
+}
+[data-col="afazer"] {
+  --col: var(--col-afazer);
+}
+[data-col="fazendo"] {
+  --col: var(--col-fazendo);
+}
+[data-col="revisao"] {
+  --col: var(--col-revisao);
+}
+[data-col="aprovacao"] {
+  --col: var(--col-aprovacao);
+}
+[data-col="aprovado"] {
+  --col: var(--col-aprovado);
+}
+[data-col="agendado"] {
+  --col: var(--col-agendado);
+}
+[data-col="entregue"] {
+  --col: var(--col-entregue);
+}
+.q-ponto {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--col, var(--text-faint));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--col, transparent) 18%, transparent);
+}
+/* a coluna ganha a barra da cor dela no topo; o resto continua neutro */
+.q-col {
+  position: relative;
+  overflow: hidden;
+}
+.q-col::before,
+.esq-col::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: var(--col);
+  opacity: 0.85;
+}
+/* o card: um filete curto da coluna em cima, à esquerda (some quando a prioridade alta pinta a lateral) */
+.q-card::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 0;
+  width: 22px;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: var(--col);
+  opacity: 0.9;
+}
+.q-card--alta::before {
+  background: var(--col-fazendo);
+}
+/* o card chega (ao abrir, ao ser criado, ao mudar de coluna): assenta com a mola */
+.q-card {
+  animation: q-assenta 0.42s var(--spring) both;
+}
+@keyframes q-assenta {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+}
+/* ao pegar: leve inclinação e sombra alta (o navegador fotografa o card assim para o arraste) */
+.q-card[draggable="true"]:active {
+  cursor: grabbing;
+  transform: rotate(-1.6deg) scale(1.02);
+  box-shadow:
+    0 0 0 1px var(--line-strong),
+    0 22px 48px rgb(0 0 0 / 0.18);
+}
+/* o lugar de onde o card saiu fica como um encaixe tracejado */
+.q-card--arrastando {
+  opacity: 1;
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--line-strong);
+  animation: none;
+}
+.q-card--arrastando > * {
+  visibility: hidden;
+}
+/* a coluna de destino acende no tom dela, e a marca de soltar é de latão */
+.q-col--alvo {
+  background: color-mix(in srgb, var(--col) 9%, var(--surface-2));
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--col) 55%, transparent);
+}
+.q-solta {
+  height: 4px;
+  background: var(--acento);
+  opacity: 1;
+  animation: q-solta 0.28s var(--spring) both;
+}
+@keyframes q-solta {
+  from {
+    transform: scaleX(0.4);
+    opacity: 0;
+  }
+}
+/* foco do Quadro: anel de latão no card */
+.q-card:has(.q-card__abrir:focus-visible) {
+  box-shadow:
+    0 0 0 2px var(--acento),
+    0 8px 22px rgb(0 0 0 / 0.08);
+}
+.q-card__abrir:focus-visible {
+  outline: none;
+}
+.q-abas button {
+  gap: 8px;
+}
+.q-abas button.on .q-ponto {
+  box-shadow: 0 0 0 3px rgb(255 255 255 / 0.18);
+}
+
+/* Clientes e Projetos: o monograma e a linha ganham o acento só no gesto */
+.item {
+  position: relative;
+}
+.item::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 18px;
+  bottom: 18px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--acento);
+  transform: scaleY(0);
+  transition: transform 0.28s var(--spring);
+}
+.item:hover::before,
+.item:focus-visible::before {
+  transform: scaleY(1);
+}
+.lista > li {
+  animation: m-entra 0.32s var(--spring) both;
+  animation-delay: calc(min(var(--i, 0), 12) * 24ms);
+}
+.selo--ok i {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok-text) 16%, transparent);
+}
+/* monogramas com um tom fechado por cliente (fundo só; a letra segue grafite/branco) */
+.monograma[data-tom="0"] {
+  --tom: var(--col-afazer);
+}
+.monograma[data-tom="1"] {
+  --tom: var(--col-fazendo);
+}
+.monograma[data-tom="2"] {
+  --tom: var(--col-revisao);
+}
+.monograma[data-tom="3"] {
+  --tom: var(--col-aprovacao);
+}
+.monograma[data-tom="4"] {
+  --tom: var(--col-agendado);
+}
+.monograma[data-tom="5"] {
+  --tom: var(--col-entregue);
+}
+.monograma[data-tom] {
+  background: color-mix(in srgb, var(--tom) 22%, var(--surface-2));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tom) 30%, transparent);
+}
+.selo--demo {
+  background: var(--acento-suave);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acento) 40%, transparent);
+  color: var(--text-strong);
+}
+.selo--demo i {
+  background: var(--acento);
+  animation: m-pulsa 2.4s ease-in-out infinite;
+}
+@keyframes m-pulsa {
+  50% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--acento) 22%, transparent);
+  }
+}
+.ficha,
+.secao,
+.lista,
+.form,
+.vazio {
+  border-radius: var(--radius-l);
+}
+.vazio__icone {
+  background: var(--acento-suave);
+  color: var(--text-strong);
+}
+
+/* esqueletos: forma do que vem, com brilho lento */
+.esq {
+  display: block;
+  border-radius: 12px;
+  background: linear-gradient(90deg, var(--surface-3) 0%, var(--surface-2) 40%, var(--surface-3) 80%) 0 0 / 300% 100%;
+  animation: esq-brilho 1.8s ease-in-out infinite;
+}
+@keyframes esq-brilho {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+.esq--titulo {
+  width: min(320px, 70%);
+  height: 48px;
+  border-radius: 14px;
+}
+.esq--linha {
+  height: 64px;
+  border-radius: 18px;
+}
+.esq--card {
+  height: 108px;
+  border-radius: 16px;
+}
+.esq-lista {
+  display: grid;
+  gap: 8px;
+  padding: 6px;
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+.esq-quadro {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(220px, 1fr);
+  gap: 12px;
+  overflow: hidden;
+}
+.esq-col {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-height: 420px;
+  padding: 44px 8px 14px;
+  border-radius: 22px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+@media (max-width: 760px) {
+  .q-col {
+    overflow: visible;
+  }
+  .q-col::before,
+  .esq-col::before {
+    display: none;
+  }
+  .esq-quadro {
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+  }
+  .esq-col {
+    min-height: 0;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .esq-col:not(:first-child) {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .conteudo > *,
+  .q-card,
+  .q-solta,
+  .lista > li,
+  .selo--demo i,
+  .esq {
+    animation: none;
+  }
+  .q-card[draggable="true"]:active {
+    transform: none;
+  }
+  .lado__item::before,
+  .barra a::after,
+  .item::before {
+    transition: none;
+  }
 }

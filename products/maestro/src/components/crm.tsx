@@ -26,6 +26,13 @@ export function Pilulas({ itens, ativo }: { itens: { valor: string; nome: string
   );
 }
 
+/** Um tom fechado e fixo por nome (o mesmo cliente tem sempre a mesma cor), só no fundo do monograma. */
+export function tomDoNome(nome: string): number {
+  let h = 0;
+  for (const ch of nome.trim().toLowerCase()) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return h % 6;
+}
+
 export function Monograma({ nome, grande }: { nome: string; grande?: boolean }) {
   const ini =
     nome
@@ -36,7 +43,7 @@ export function Monograma({ nome, grande }: { nome: string; grande?: boolean }) 
       .join("")
       .toUpperCase() || "?";
   return (
-    <span className={`monograma${grande ? " monograma--grande" : ""}`} aria-hidden="true">
+    <span className={`monograma${grande ? " monograma--grande" : ""}`} data-tom={tomDoNome(nome)} aria-hidden="true">
       {ini}
     </span>
   );

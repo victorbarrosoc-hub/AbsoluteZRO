@@ -87,6 +87,11 @@ export function assinaturaConfere(texto: string, assinatura: string, uso: string
   return veio.length === esperada.length && timingSafeEqual(veio, esperada);
 }
 
+/** HMAC-SHA256 inteiro em hexadecimal (ex.: o IP da lista de espera, que nunca é guardado em claro). */
+export function hashComChave(texto: string, uso: string): string {
+  return createHmac("sha256", chavePara(uso)).update(texto, "utf8").digest("hex");
+}
+
 /** sha256 em hexadecimal (tokens de sessão e de link no banco). */
 export function hashToken(token: string): string {
   return createHash("sha256").update(token, "utf8").digest("hex");

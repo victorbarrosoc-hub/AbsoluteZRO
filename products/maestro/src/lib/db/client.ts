@@ -4,7 +4,8 @@
  * - `asUser(ctx, fn)`: toda operação de usuário. Abre a transação, informa a pessoa (sub da Absolute ZRO) e a
  *   organização ativa (set_config local) e assume o papel `maestro_app`, que não é dono das tabelas: o RLS de
  *   drizzle/0000_fundacao.sql vale sempre, mesmo se a checagem do servidor falhar.
- * - `asSystem(motivo, fn)`: autenticação (sessões), callback do login, link do cliente, migração. Roda como dono
+ * - `asSystem(motivo, fn)`: autenticação (sessões), callback do login, link do cliente, migração e a lista de espera
+ *   (que assume `maestro_app` na hora). Roda como dono
  *   (sem RLS); o motivo vai para o log.
  *
  * Este arquivo não importa "server-only" para poder ser usado pelos scripts e pelos testes.

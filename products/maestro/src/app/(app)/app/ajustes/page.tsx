@@ -20,7 +20,7 @@ export default async function Ajustes() {
     <div className="pagina">
       <header className="pagina__cabeca">
         <h1 className="atitle">
-          <strong>Ajustes.</strong>
+          Seus <strong>ajustes.</strong>
         </h1>
         <p className="apoio">Sua conta é a conta Absolute ZRO; o papel vem da organização de lá.</p>
       </header>

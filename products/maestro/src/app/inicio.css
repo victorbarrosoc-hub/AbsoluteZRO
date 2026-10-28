@@ -1,0 +1,559 @@
+/*
+ * Página inicial pública (plano v2 §10), no padrão das irmãs (apps/hub-web (site), SOBEDESCE): o símbolo grande
+ * desenhando a pauta, o produto real em aparelhos, muito respiro. Títulos Figtree só em grafite/branco, Light × ExtraBold;
+ * o latão é só superfície e traço. Motion só CSS e sempre sob "reduzir movimento".
+ */
+
+.inicio {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  overflow-x: clip;
+}
+
+/* ── topo ── */
+.site-topo {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px max(16px, calc((100% - 1180px) / 2));
+  background: var(--chrome-bg);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+  border-bottom: 1px solid var(--line);
+}
+.site-topo__marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text-strong);
+  font-family: var(--font-apple);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.86rem;
+}
+.site-topo__fim {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── topo da página ── */
+.ihero {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 18px;
+  padding: clamp(40px, 8vw, 96px) 16px 0;
+}
+.ihero__simbolo {
+  width: clamp(180px, 34vw, 320px);
+  height: auto;
+  margin-bottom: 6px;
+  /* a batuta desenha a pauta, da esquerda para a direita */
+  animation: i-desenha 1.3s cubic-bezier(0.65, 0, 0.35, 1) 0.1s both;
+}
+@keyframes i-desenha {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+.ihero__titulo {
+  max-width: 15ch;
+  font-family: var(--font-apple);
+  font-size: clamp(2.6rem, 1.2rem + 5.4vw, 5.6rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-weight: 300;
+  color: var(--text-strong);
+}
+.ihero__titulo strong {
+  font-weight: 800;
+}
+.ihero__palavra {
+  display: inline-block;
+  animation: i-sobe 0.9s var(--spring) both;
+  animation-delay: calc(0.5s + var(--i) * 70ms);
+}
+@keyframes i-sobe {
+  from {
+    opacity: 0;
+    transform: translateY(0.4em);
+  }
+}
+.ihero__apoio {
+  max-width: 40ch;
+  text-align: center;
+  font-size: clamp(1.05rem, 0.9rem + 0.5vw, 1.3rem);
+}
+.ihero__acoes {
+  margin-top: 6px;
+}
+.selo--fechado {
+  background: var(--acento-suave);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acento) 40%, transparent);
+  color: var(--text-strong);
+}
+.selo--fechado i {
+  background: var(--acento);
+}
+
+/* MacBook + iPhone (molduras só em CSS; dentro, a captura real) */
+.ihero__aparelhos {
+  position: relative;
+  width: min(1080px, 100%);
+  margin-top: clamp(28px, 5vw, 56px);
+  padding-right: clamp(36px, 9vw, 120px);
+  animation: i-sobe 1.1s var(--spring) 0.9s both;
+}
+.ihero__aparelhos .iphone {
+  position: absolute;
+  right: 0;
+  bottom: -2%;
+  width: clamp(110px, 22%, 236px);
+}
+.tela {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.tela--escuro,
+:root[data-theme="dark"] .tela--claro {
+  display: none;
+}
+:root[data-theme="dark"] .tela--escuro {
+  display: block;
+}
+.mac {
+  margin: 0;
+}
+.mac__tampa {
+  position: relative;
+  padding: clamp(6px, 1.2%, 14px);
+  padding-top: clamp(10px, 1.8%, 20px);
+  border-radius: clamp(12px, 2.2%, 24px) clamp(12px, 2.2%, 24px) 6px 6px;
+  background: #0d0d0f;
+  box-shadow:
+    inset 0 0 0 1.5px #3a3a3f,
+    0 30px 80px rgb(0 0 0 / 0.22);
+}
+.mac__camera {
+  position: absolute;
+  top: clamp(4px, 0.7%, 8px);
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: #26262b;
+}
+.mac__tela {
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--bg);
+}
+.mac__base {
+  position: relative;
+  height: clamp(10px, 1.6vw, 18px);
+  margin: 0 -6%;
+  border-radius: 0 0 18px 18px / 0 0 14px 14px;
+  background: linear-gradient(180deg, #d9d9de, #a9a9b0 70%, #8e8e95);
+  box-shadow: 0 18px 30px -12px rgb(0 0 0 / 0.35);
+}
+.mac__base::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 16%;
+  height: 45%;
+  transform: translateX(-50%);
+  border-radius: 0 0 10px 10px;
+  background: #b9b9bf;
+}
+:root[data-theme="dark"] .mac__base {
+  background: linear-gradient(180deg, #4a4a50, #2d2d32 70%, #1f1f23);
+}
+:root[data-theme="dark"] .mac__base::before {
+  background: #3a3a40;
+}
+.iphone {
+  position: relative;
+  margin: 0;
+  padding: 3.4%;
+  border-radius: 16% / 7.6%;
+  background: #0d0d0f;
+  box-shadow:
+    inset 0 0 0 1.5px #3a3a3f,
+    inset 0 0 0 4px #1b1b1f,
+    0 24px 60px rgb(0 0 0 / 0.28);
+}
+.iphone__tela {
+  overflow: hidden;
+  border-radius: 13% / 6%;
+  background: var(--bg);
+}
+.iphone__ilha {
+  position: absolute;
+  z-index: 1;
+  top: 4.6%;
+  left: 50%;
+  width: 30%;
+  height: 3.1%;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: #000;
+}
+
+/* ── seções ── */
+.isecao {
+  display: grid;
+  justify-items: center;
+  gap: clamp(24px, 4vw, 40px);
+  width: min(1180px, 100% - 32px);
+  margin: 0 auto;
+  padding: clamp(72px, 12vw, 160px) 0 0;
+}
+.isecao__cabeca {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 12px;
+}
+.isecao__cabeca .apoio {
+  text-align: center;
+}
+.isecao__titulo {
+  font-family: var(--font-apple);
+  font-size: clamp(2.2rem, 1.2rem + 3.6vw, 4rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  font-weight: 300;
+  color: var(--text-strong);
+}
+.isecao__titulo strong {
+  font-weight: 800;
+}
+
+/* o método: as 8 colunas em pílulas, com a cor de cada uma */
+.metodo {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  max-width: 900px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: col;
+}
+.metodo li {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 20px 0 16px;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow:
+    var(--shadow-float),
+    inset 0 -3px 0 color-mix(in srgb, var(--col) 70%, transparent);
+  font-family: var(--font-apple);
+  font-weight: 700;
+  font-size: 1.02rem;
+  color: var(--text-strong);
+}
+.metodo li .q-ponto {
+  width: 10px;
+  height: 10px;
+}
+
+/* já funciona */
+.ija {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+.icartao {
+  display: grid;
+  gap: 18px;
+  padding: clamp(22px, 3vw, 36px);
+  border-radius: 32px;
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+  overflow: hidden;
+}
+.icartao__texto {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  color: var(--text-strong);
+}
+.icartao h3 {
+  font-size: clamp(1.5rem, 1.1rem + 1vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.icartao p {
+  margin: 0;
+  color: var(--text-faint);
+  max-width: 32ch;
+}
+.icartao--tela {
+  grid-template-rows: auto 1fr;
+  background: radial-gradient(90% 70% at 50% 110%, var(--acento-suave), transparent 70%), var(--surface);
+}
+.icartao--tela .iphone {
+  justify-self: center;
+  width: min(250px, 70%);
+  margin-bottom: calc(-1 * clamp(80px, 12vw, 160px));
+}
+.icartao--z {
+  grid-column: 1 / -1;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 22px;
+}
+.icartao__z {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  border-radius: 26px;
+  background: var(--gbi-fill);
+  color: var(--gbi-ink);
+  box-shadow: var(--gbi-shadow);
+}
+
+/* vem aí */
+.ivem {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ivem li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  padding: 0 18px;
+  border-radius: 22px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-family: var(--font-apple);
+  font-weight: 700;
+  color: var(--text-mute);
+}
+.ivem li .selo {
+  margin-left: auto;
+}
+
+/* acesso */
+.iacesso {
+  padding-bottom: clamp(64px, 10vw, 120px);
+}
+.espera {
+  display: grid;
+  gap: 16px;
+  width: min(560px, 100%);
+  padding: clamp(20px, 3vw, 28px);
+  border-radius: 28px;
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+.espera__campos {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 12px;
+}
+.espera__campo {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.espera__campo > span {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+.espera__campo input {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font: inherit;
+  color: var(--text-strong);
+  outline: none;
+  transition: box-shadow 0.2s var(--ease);
+}
+.espera__campo input:focus {
+  box-shadow:
+    inset 0 0 0 1px var(--line-strong),
+    0 0 0 2px var(--focus);
+}
+.espera__campo--erro input {
+  box-shadow: inset 0 0 0 1.5px var(--danger-text);
+}
+.espera__erro {
+  font-size: 0.82rem;
+  color: var(--danger-text);
+}
+.espera__ok {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 0.9rem;
+  color: var(--text-mute);
+  cursor: pointer;
+}
+.espera__ok input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: #1d1d1f;
+}
+:root[data-theme="dark"] .espera__ok input {
+  accent-color: #f5f5f7;
+}
+.espera__ok--erro span {
+  color: var(--text-strong);
+}
+.espera .glass-btn {
+  justify-self: start;
+}
+.espera .glass-btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+/* a armadilha: fora da tela, fora do Tab e do leitor de tela */
+.espera__armadilha {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.espera--feito {
+  justify-items: center;
+  text-align: center;
+}
+.espera__selo {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--acento-suave);
+  color: var(--text-strong);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--acento) 45%, transparent);
+  animation: i-acorde 0.6s var(--spring) both;
+}
+@keyframes i-acorde {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+.espera__titulo {
+  margin: 0;
+  font-family: var(--font-apple);
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+.iacesso__ja a {
+  color: var(--text-strong);
+  font-weight: 600;
+}
+
+/* ── rodapé ── */
+.site-rodape {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px 24px;
+  padding: 24px max(16px, calc((100% - 1180px) / 2)) calc(24px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  font-size: 0.88rem;
+  color: var(--text-faint);
+}
+.site-rodape a {
+  color: var(--text-mute);
+  text-decoration: none;
+}
+.site-rodape a:hover {
+  color: var(--text-strong);
+}
+.site-rodape__zro {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* a seção entra com a rolagem (CSS puro onde o navegador sabe; nos outros, já aparece pronta) */
+@supports (animation-timeline: view()) {
+  .revela {
+    animation: i-revela linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 45%;
+  }
+}
+@keyframes i-revela {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+}
+
+@media (max-width: 760px) {
+  .site-topo .tema {
+    display: none;
+  }
+  .ija,
+  .ivem {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .icartao--z {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .espera__campos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .espera .glass-btn {
+    justify-self: stretch;
+  }
+  .ihero__acoes {
+    flex-direction: column;
+    align-items: stretch;
+    width: min(340px, 100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ihero__simbolo,
+  .ihero__palavra,
+  .ihero__aparelhos,
+  .espera__selo,
+  .revela {
+    animation: none !important;
+  }
+}

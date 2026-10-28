@@ -1,4 +1,4 @@
-# Maestro (products/maestro): lint, tipos, testes e build a cada mudança na pasta dele.
+# Maestro (products/maestro): lint, tipos, testes, build e e2e (Playwright) a cada mudança na pasta dele.
 # A publicação é da Vercel (projeto próprio, Root Directory products/maestro, só com autorização do titular); aqui só conferimos.
 # Os testes de RLS, OIDC e repasse da Z rodam num Postgres de verdade (TEST_DATABASE_URL) com uma Absolute ZRO falsa.
 name: Maestro
@@ -58,3 +58,5 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

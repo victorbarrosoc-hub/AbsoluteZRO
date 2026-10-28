@@ -10,7 +10,7 @@ export default async function Aprovacoes() {
     <div className="pagina">
       <header className="pagina__cabeca">
         <h1 className="atitle">
-          <strong>Aprovações.</strong>
+          Suas <strong>aprovações.</strong>
         </h1>
         <p className="apoio">O cliente decide pelo link, sem conta: aprova ou pede ajuste, peça a peça.</p>
       </header>
