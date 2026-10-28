@@ -365,7 +365,7 @@ function Painel({ v, topo, onNovo, onEditar }) {
   const synquei = !v.job && v.ultimo?.resultado === 'ok'
   const lado = html`<${Resumo} titulo=${desligado ? 'Backup automático' : 'Agora'}>
       ${destaque}
-      ${synquei ? html`<${Button} icon="arrow-right" class="bk-synquei" onClick=${() => abrirNoSynquei(v.atual)} title=${p.tipo ? `Como ${v.tiposSynquei?.find((t) => t.id === p.tipo)?.label || p.tipo}` : 'O tipo de projeto você escolhe no Synquei'}>Abrir no Synquei</${Button}>` : null}
+      ${synquei ? html`<${Button} icon="arrow-right" class="bk-synquei" onClick=${() => abrirNoSynquei(v.atual)} title=${p.tipo ? `Como ${v.tiposSynquei?.find((t) => t.id === p.tipo)?.label || p.tipo}` : 'O tipo de projeto você escolhe no Synquei'}>Preparar no Synquei</${Button}>` : null}
       <div class="k-caixa bk-destinos">
         ${p.destinos.map((d, i) => html`<${EspacoDestino} d=${d} i=${i} media=${p.mediaCartao} />`)}
       </div>

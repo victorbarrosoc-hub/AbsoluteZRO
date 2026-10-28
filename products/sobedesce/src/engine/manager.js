@@ -424,6 +424,17 @@ export class TransferManager extends EventEmitter {
     return claimed
   }
 
+  /** Guarda uma informação no lote (vai para queue.json e para a tela pelo evento 'batches'). */
+  setBatchInfo(batchId, key, value) {
+    const b = this.batches.get(batchId)
+    if (!b || !/^[a-z]\w{0,30}$/i.test(String(key))) return false
+    if (value === undefined) delete b[key]
+    else b[key] = value
+    this.batchesDirty = true
+    this.#saveSoon()
+    return true
+  }
+
   idsOfBatch(batchId) {
     const out = []
     for (const r of this.records.values()) if (r.batchId === batchId) out.push(r.id)
@@ -1371,6 +1382,8 @@ export class TransferManager extends EventEmitter {
     if (this.doneBatches.has(batchId)) return
     this.doneBatches.add(batchId)
     const b = this.batches.get(batchId)
+    // Quem precisa saber que um lote fechou (src/engine/preparo-synquei.js grava o manifesto da pasta baixada).
+    if (b) this.emit('lote-concluido', { batch: b })
     // Lote "quieto": quem criou avisa do jeito dele (Referências: "Salvo em <Coleção>").
     if (b?.quiet) return
     const label = b?.label || (b?.type === 'upload' ? 'Envio' : 'Download')

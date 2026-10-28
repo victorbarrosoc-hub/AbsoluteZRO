@@ -28,6 +28,7 @@ import { registerLan } from './lan.js'
 import { registerCelular } from './celular.js'
 import { registerBackup } from './backup.js'
 import { EntregaError, comprovanteDeEntrega, pastaDoLote } from '../engine/entrega.js'
+import { PreparoError, PreparoSynquei } from '../engine/preparo-synquei.js'
 
 const BODY_LIMIT = 1024 * 1024
 const BODY_HARD_LIMIT = 16 * BODY_LIMIT // além disso nem lê o resto: derruba a conexão
@@ -432,6 +433,8 @@ export function createApi(ctx) {
   const route = (method, pattern, handler, { raw = false, corpo = true } = {}) => routes.push({ method, pattern: pattern.split('/').filter(Boolean), handler, raw, corpo })
   const jobs = new CompareJobs(ctx)
   const thumbJobs = new RawThumbJobs(ctx)
+  // "Preparar no Synquei" de um download do Drive (src/engine/preparo-synquei.js): manifesto na pasta e recibo de volta.
+  const preparo = ctx.preparo !== undefined ? ctx.preparo : ctx.manager?.setBatchInfo ? new PreparoSynquei({ manager: ctx.manager, log: (...a) => ctx.log?.(...a) }).start() : null
 
   const state = () => {
     const snap = ctx.manager.snapshot()
@@ -987,6 +990,20 @@ export function createApi(ctx) {
     }
   })
 
+  // ── Preparar no Synquei: o lote de download de uma pasta, terminado sem arquivo diferente. Devolve o link
+  // synquei://organizar?pasta=…&op=<id do lote>; o andamento volta no próprio lote (batch.synquei), pelo recibo.
+  route('POST', '/api/transfers/synquei', async ({ body }) => {
+    const batchId = typeof body.batchId === 'string' && /^[\w-]{1,100}$/.test(body.batchId) ? body.batchId : null
+    if (!batchId) throw new HttpProblem(400, 'Download inválido.')
+    if (!preparo) throw new HttpProblem(503, 'Indisponível agora.')
+    try {
+      return await preparo.preparar(batchId)
+    } catch (err) {
+      if (err instanceof PreparoError) throw new HttpProblem(err.status, err.message)
+      throw err
+    }
+  })
+
   route('POST', '/api/transfers/clear', () => {
     ctx.manager.clearFinished()
     return {}
@@ -1206,6 +1223,7 @@ export function createApi(ctx) {
     dispatch,
     state,
     close: () => {
+      if (preparo && ctx.preparo === undefined) preparo.close()
       jobs.close()
       thumbJobs.close()
       previas.close()

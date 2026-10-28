@@ -107,7 +107,7 @@ function normalizarProjeto(p) {
     nome: String(p.nome || 'Projeto'),
     destinos: Array.isArray(p.destinos) ? p.destinos.filter((d) => typeof d === 'string') : [],
     ejetar: p.ejetar === true,
-    // Tipo de projeto no Synquei (videoclipe, casamento…): vai no descargas.jsonl e no "Abrir no Synquei".
+    // Tipo de projeto no Synquei (videoclipe, casamento…): vai no descargas.jsonl e no "Preparar no Synquei".
     tipo: tipoSynquei(p.tipo),
     criadoEm: p.criadoEm || new Date().toISOString(),
     diarias: Array.isArray(p.diarias) && p.diarias.length ? p.diarias : [{ n: 1, nome: 'Diária 01', criadaEm: new Date().toISOString() }],
@@ -930,7 +930,7 @@ export class BackupService {
   }
 
   /**
-   * "Abrir no Synquei": a pasta do projeto no primeiro destino que já tem o resumo (descargas.jsonl) e o link que o
+   * "Preparar no Synquei": a pasta do projeto no primeiro destino que já tem o resumo (descargas.jsonl) e o link que o
    * Synquei abre. Sem descarga gravada ainda, não há o que organizar.
    */
   async paraSynquei(id = this.dados.atual) {

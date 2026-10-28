@@ -11,7 +11,7 @@ import { AVISO_COOKIES, marcarAvisado, migrarCookies, precisaAvisar } from './co
 import { abrirNavegador, cookiesPara, fecharNavegador, registrarCanais } from './navegador.js'
 import { handoffCommand, isHandoffScript } from '../src/updater.js'
 import { arquivoDaCentral } from '../src/gerenciado.js'
-import { SYNQUEI_BAIXAR } from '../src/backup/synquei.js'
+import { aberturaSynquei } from '../src/backup/synquei.js'
 import { ligarZoom } from './zoom.js'
 
 const here = import.meta.dirname
@@ -422,16 +422,26 @@ ipcMain.handle('sobedesce:open-external', (event, url) => {
   if (trustedSender(event, engineUrl)) openExternal(url)
 })
 
-// "Abrir no Synquei" (src/backup/synquei.js): só o link synquei://organizar. Sem o Synquei instalado, abre a página
-// de download dele e devolve false (a tela avisa).
+// "Preparar no Synquei" (src/backup/synquei.js, aberturaSynquei): só o link synquei://organizar. Sem o Synquei
+// instalado, abre a central do Absolute ZRO (página Downloads) se ela estiver no computador, senão a mesma página no
+// navegador. Devolve { aberto, para } para a tela explicar o que aconteceu (nunca diz que preparou: isso é o recibo).
 ipcMain.handle('sobedesce:abrir-synquei', async (event, link) => {
-  if (!trustedSender(event, engineUrl) || typeof link !== 'string' || !link.startsWith('synquei://organizar?')) return false
-  if (!app.getApplicationNameForProtocol('synquei://')) {
-    openExternal(SYNQUEI_BAIXAR)
-    return false
+  if (!trustedSender(event, engineUrl)) return { aberto: false, para: null }
+  const temProtocolo = (p) => {
+    try {
+      return !!app.getApplicationNameForProtocol(p)
+    } catch {
+      return false
+    }
   }
-  await shell.openExternal(link)
-  return true
+  const d = aberturaSynquei({ link, temSynquei: temProtocolo('synquei://'), temCentral: temProtocolo('absolutezro://') })
+  if (!d.abrir) return { aberto: false, para: null }
+  try {
+    await shell.openExternal(d.abrir)
+  } catch {
+    return { aberto: false, para: d.para === 'synquei' ? null : d.para }
+  }
+  return { aberto: d.para === 'synquei', para: d.para }
 })
 
 // Só estes endereços fixos (openExternal só abre http/https): Rede Local e Firewall nos Ajustes do Sistema.
