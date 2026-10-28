@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { hasPassword, PASSWORD_MIN } from '@zro/auth'
 import { avatarVersion } from '@zro/core'
 import { Card, Field, Pill } from '@zro/ui'
+import { CampoSenha } from '@zro/ui/senha'
 import { AccountFrame } from '@/components/account-frame'
 import { ActionForm } from '@/components/action-form'
 import { requestEmailChangeAction } from '@/lib/actions/account'
@@ -55,7 +56,7 @@ export default async function Seguranca() {
                 <input className="zro-input" id="novo-email" name="email" type="email" autoComplete="email" required />
               </Field>
               <Field label="Senha atual" htmlFor="senha-email">
-                <input className="zro-input" id="senha-email" name="password" type="password" autoComplete="current-password" required />
+                <CampoSenha className="zro-input" id="senha-email" name="password" autoComplete="current-password" required />
               </Field>
             </ActionForm>
           </details>
@@ -66,10 +67,10 @@ export default async function Seguranca() {
               <summary>Trocar senha</summary>
               <ActionForm action={changePasswordAction} submit="Trocar senha">
                 <Field label="Senha atual" htmlFor="cur">
-                  <input className="zro-input" id="cur" name="current" type="password" autoComplete="current-password" required />
+                  <CampoSenha className="zro-input" id="cur" name="current" autoComplete="current-password" required />
                 </Field>
                 <Field label="Nova senha" htmlFor="nxt" hint={`Pelo menos ${PASSWORD_MIN} caracteres. As outras sessões serão encerradas.`}>
-                  <input className="zro-input" id="nxt" name="next" type="password" autoComplete="new-password" minLength={PASSWORD_MIN} required />
+                  <CampoSenha className="zro-input" id="nxt" name="next" autoComplete="new-password" minLength={PASSWORD_MIN} required />
                 </Field>
               </ActionForm>
             </details>

@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { useActionState, useRef, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { Field } from '@zro/ui'
+import { CampoSenha } from '@zro/ui/senha'
 import type { FormState } from './action-form'
 
 type Acao = (prev: FormState, fd: FormData) => Promise<FormState>
@@ -59,7 +60,7 @@ export function ExcluirConta({ confirmarCom, email, conferir, excluir }: { confi
     <form action={conferirAction} className="excluir">
       {confirmarCom === 'senha' ? (
         <Field label="Senha atual" htmlFor="excluir-confirmacao">
-          <input className="zro-input" id="excluir-confirmacao" name="confirmacao" type="password" autoComplete="current-password" required />
+          <CampoSenha className="zro-input" id="excluir-confirmacao" name="confirmacao" autoComplete="current-password" required />
         </Field>
       ) : (
         <Field label="Digite seu e-mail" htmlFor="excluir-confirmacao" hint={email}>

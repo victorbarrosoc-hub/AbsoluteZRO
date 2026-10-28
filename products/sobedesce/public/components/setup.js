@@ -8,6 +8,7 @@ import { SETUP_STEPS } from '../lib/setup-steps.js'
 import { toast } from '../lib/toasts.js'
 import { Icon, Wordmark } from './icons.js'
 import { Button } from './common.js'
+import { CampoSenha } from './senha.js'
 import { OAuthWaiting } from './oauth-wait.js'
 import { CloudDrives, CloudReady, CloudSignIn, confirmCloudLogout } from './cloud.js'
 import { cloudCancel, cloudRefresh } from '../lib/cloud.js'
@@ -160,10 +161,18 @@ function StepPaste({ step, onDone, onBack, backLabel }) {
               <span class="field-label">${step.manual.clientId}</span>
               <input class="input mono" type="text" value=${clientId} placeholder=${step.manual.clientIdPlaceholder} onInput=${(e) => setClientId(e.currentTarget.value)} spellcheck="false" autocomplete="off" />
             </label>
-            <label class="field">
-              <span class="field-label">${step.manual.clientSecret}</span>
-              <input class="input mono" type="password" value=${secret} placeholder=${step.manual.clientSecretPlaceholder} onInput=${(e) => setSecret(e.currentTarget.value)} spellcheck="false" autocomplete="off" />
-            </label>
+            <div class="field">
+              <label class="field-label" for="manual-secret">${step.manual.clientSecret}</label>
+              <${CampoSenha}
+                id="manual-secret"
+                nome="chave"
+                class="input mono"
+                value=${secret}
+                placeholder=${step.manual.clientSecretPlaceholder}
+                onInput=${(e) => setSecret(e.currentTarget.value)}
+                autocomplete="off"
+              />
+            </div>
             <div class="manual-actions">
               <${Button} type="submit" variant="primary" loading=${busy} disabled=${!clientId.trim() || !secret.trim()}>${step.manual.submit}</${Button}>
             </div>

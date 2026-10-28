@@ -67,6 +67,9 @@ Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   atualiza e remove SOBEDESCE, Synquei e NOSSOM (catálogo `GET /api/v1/desktop/apps` a partir dos Releases, SHA-256
   conferido, sem administrador). Sites das ferramentas com "Instale pelo Absolute ZRO" primeiro e o download direto
   como reserva; no celular, o Absolute ZRO instala na tela de início (Android com um toque, iPhone com guia).
+- 🟡 Olho no campo de senha (28/10/2026, pedido do titular): mostrar/ocultar o que foi digitado em todo campo de senha
+  do HUB (`@zro/ui/senha`), do site do SOBEDESCE, do NOSSOM e na chave manual do SOBEDESCE para computador; Carro do
+  Freela já tinha. Falta: publicar os sites e um novo build do SOBEDESCE para computador.
 - 🟡 Instalador do ecossistema em segundo plano (28/10/2026, pedido do titular; adendo do [ADR 0018](decisions/0018-central-de-apps.md)):
   Absolute ZRO para computador 1.3.0 com o símbolo na barra de menus/bandeja, abre com o computador (escondido),
   confere o catálogo do HUB a cada 4 h e atualiza SOBEDESCE e Synquei sozinho (instala com o app fechado; aberto,

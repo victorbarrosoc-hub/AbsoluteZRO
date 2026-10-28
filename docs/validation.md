@@ -125,6 +125,29 @@ Roteiro manual (precisa de computadores e discos reais; não feito aqui):
   allowed, ausente e released, relida no `/eu`), `build` ok, `db:migrate` aplica `0000` e `0001` e é idempotente.
 - Não validado: produção (projeto Vercel, domínio, cliente OIDC real, migrations no Supabase).
 
+## Olho no campo de senha (28/10/2026)
+
+Pedido do titular: em todo campo de senha, um olho dentro do campo, à direita, para mostrar e esconder o que foi
+digitado. Botão `type="button"` (não envia o form), `aria-label` "Mostrar senha"/"Ocultar senha", `aria-pressed`,
+clique sem tirar o foco do campo e com o cursor no mesmo lugar, `autocomplete` mantido, ícone em `currentColor` cinza.
+
+- HUB: `CampoSenha` em `@zro/ui/senha` (`packages/ui/src/senha.tsx`, estilo `.zro-senha` em `components.css`) em
+  /entrar, /criar-conta e /app/entrar (conversa, olho à esquerda da seta), /redefinir-senha, Perfil e segurança (trocar
+  e-mail, trocar senha) e Excluir a conta. O app de computador carrega o site e herda. `packages/ui/test/senha.test.ts`
+  (4) e o E2E "entrar é uma conversa…" (mostra, foco no campo, `autocomplete`, não envia, esconde). `lint`,
+  `format:check`, `typecheck`, `npm test` (218/218 em 28 arquivos), `build` e `test:e2e` (26/26, axe claro e escuro) ok.
+- SOBEDESCE site (`web/src/components/ui/senha.tsx`): entrar, nova senha, conta (trocar senha, trocar o Google) e
+  apagar a conta. `web/tests/senha.test.mts` (nenhum campo de senha sem olho; HTML do olho). `lint`, `typecheck`,
+  `npm test` (265/265) ok. Celular (`web/public/app`): sem campo de senha.
+- SOBEDESCE computador (`public/components/senha.js` + `public/lib/senha.js`): client secret da chave manual
+  ("Mostrar chave"). `test/senha.test.js` (rótulos, troca com cursor preservado, nenhum `type="password"` solto em
+  `public/` e `web/public/app`). `npm run test:fast` 739/742 (3 pulados, 0 falhas). Chega às pessoas só com um novo
+  build do app de computador.
+- NOSSOM (`components/password-field.tsx`): entrar (já tinha olho, agora no componente) e Conta (senha para trocar
+  e-mail, senha atual, nova senha). `tests/password-field.test.ts`; `typecheck`, `format:check`, `npm test` (103/103).
+- Carro do Freela: o login já tinha o olho (`lg-olho`). Synquei, TPeasy, Maestro, AEON e Revela: sem campo de senha
+  (entram pela Absolute ZRO).
+
 ## Excluir a conta (28/10/2026)
 
 - `tests/integration/excluir-conta.test.ts` (12): exclusão feliz (anonimiza, todas as sessões caem, organização só dela
