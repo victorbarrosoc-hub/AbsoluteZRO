@@ -78,6 +78,33 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   `src/lib/navegacao.ts` (módulo sem "use client": o servidor também lê). Carro do Freela: só o mapa em
   `docs/integration-contracts/maestro-carro-do-freela.md`. A demonstração (`src/lib/demo/operacao.ts`) cobre tudo isso
   com `demo = true` e PIX aleatório; completa, nunca duplica.
+- **Marca da produtora** (plano v2 §8, fase 11, `drizzle/0011`, `src/lib/marca`): `maestro.org_marca` (logo em bytea,
+  nome, CNPJ, contato, endereço, assinatura, cor), todos leem e só admin muda. O logo entra só como PNG/JPEG/WebP
+  conferido pelos bytes (SVG nunca), passa pelo `sharp` (gira, tira metadados, cabe em 1024 px) e é gravado em WebP até
+  512 KB; sai por `GET /api/marca/<org>/<sha>` (porta `maestro.marca_logo`, cache imutável). A cor passa por contraste
+  de 3:1 no papel e vira `--acento` (filete e ponto, nunca texto) no timbrado e em `/a`, `/p` e `/o`, para todos os
+  planos. Nome, CNPJ, contato e endereço saíram de Ajustes → Empresa (a 0011 copiou uma vez); `lerEmpresa` junta os
+  dois. O app inteiro com a marca (white-label) não existe ainda.
+- **Pedido público e aceite** (plano v2 §6.2–§6.3, fase 14, `drizzle/0012`): `maestro.links_publicos` (tipos `pedido`
+  e `orcamento`, token só como sha256 + `token_enc`, revogação, validade, um ativo por organização/orçamento; só admin
+  e gestão) e `maestro.pedidos`. Quem não tem conta passa só pela porta estreita (`src/lib/publico/porta.ts`, funções
+  `pedido_form`, `pedido_enviar`, `orcamento_link_abrir`, `orcamento_link_aceitar`, `orcamento_link_ajuste`), com os
+  limites por IP do link de aprovação, armadilha, selo de tempo assinado (3 s a 24 h), 5/h por IP e 30/10 min por link
+  (`REGRAS.pedido*`/`orcamento*`). As perguntas do `/p/<token>` vêm da tabela de preços (modelos = tipo, variável
+  `nicho`, variáveis de número = entregas) e o cliente nunca vê preço nem multiplicador. "Gerar orçamento"
+  (`src/lib/pedidos/equipe.ts`, puro em `formulario.ts`: `rascunhoDoPedido`) cria o cliente como lead e roda o motor.
+  O link do orçamento (`src/lib/orcamento/link.ts`) combina 1–3 parcelas e vale até a validade; versão nova derruba o
+  aceite da antiga. O aceite vale uma vez: cliente (se não há), projeto `MAE-` pendente de ligar ao HUB, parcelas a
+  receber e o termo (nome, hora, sha256) no orçamento. Rotas `POST /api/publico/{pedido,orcamento/aceitar,orcamento/ajuste}`
+  com Origin conferido; CSP de `/p` e `/o` em `next.config.ts`.
+- **Hoje** (`/app/hoje`, `src/lib/hoje.ts`): só contagens da organização (agenda do dia, cards no prazo, peças com o
+  cliente, pedidos novos, orçamentos aguardando, a receber e a pagar da semana, caixa); dinheiro só admin e gestão (o
+  RLS esconde de qualquer jeito). Primeiro item de Produção e na barra do celular.
+- **Kit do freela** (`drizzle/0013`, `src/lib/freelas/{kit,equipamentos}.ts`): `freela_equipamentos` (origem `maestro`
+  ou `carro-do-freela`) e `escala_equipamentos`; o aluguel (diária × dias) soma ao mesmo "a pagar" da escala (gatilho
+  `escala_sincronizar` refeito na 0013). Itens do Carro do Freela são só leitura (gatilho barra `maestro_app`). A
+  sincronização (`aplicarInventarioDoCarro`, contrato `freela.inventario/1`, pelo `zro_sub`) está pronta e **desligada**:
+  nada a chama enquanto o Carro não tem banco (`docs/integration-contracts/maestro-carro-do-freela.md`).
 - **Página inicial** (`src/app/page.tsx`, `inicio.css`, plano v2 §10, ADR 0024): pública, só o que existe, "Em breve"
   para o resto, capturas reais da demonstração em `public/produto/*-{claro,escuro}.webp` (refazer com
   `npm run db:seed:demo` quando a tela mudar; nunca mock). "Quero acesso" grava na lista de espera
@@ -106,7 +133,10 @@ lista de espera com RLS, limite e armadilha (`lista-espera.test.mts`), detector 
 revisão com duas organizações, porta estreita, PIN, limites e decisão idempotente (`revisao.test.mts`), motor e fluxo
 do orçamento (`orcamento.test.mts`), deslocamento e ANP (`deslocamento.test.mts`), financeiro com baixas, recorrência e
 escala (`financeiro.test.mts`), freelas, pagamento cifrado, reservas sem conflito e documentos (`operacao.test.mts`),
-duas organizações em toda tabela da produtora (`produtora-rls.test.mts`). E2E: `npm run build && npm run test:e2e`
+duas organizações em toda tabela da produtora (`produtora-rls.test.mts`), logo, cor e marca com duas organizações
+(`marca.test.mts`), pedido público, link e aceite idempotente (`pedidos.test.mts`), contagens do Hoje (`hoje.test.mts`),
+kit do freela, aluguel na escala e sincronização desligada (`freela-equipamentos.test.mts`). E2E: `npm run build && npm run test:e2e`
 (Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir movimento, navegação, a aprovação
 inteira (`aprovacao.spec.ts`, mp4 local e YouTube/Vimeo falsos em `e2e/falsos`) e a produtora com a demonstração
-(`produtora.spec.ts`, organização própria criada em `e2e/preparar.ts`).
+(`produtora.spec.ts`, organização própria criada em `e2e/preparar.ts`) e o ciclo comercial (`comercial.spec.ts`: pedido
+público → Pedidos → gerar orçamento → link → aceite → projeto → Hoje, organização própria).

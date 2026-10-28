@@ -347,10 +347,23 @@ Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   calculadora (Photon/OSRM/ANP) portados mas desligados (`MAESTRO_SERVICOS_ABERTOS`) até a ciência do titular; sem
   eles, km e litro digitados. Carro do Freela: só o mapa
   ([maestro-carro-do-freela.md](integration-contracts/maestro-carro-do-freela.md)).
-- ⬜ Maestro v2, depois da produtora por dentro: tela "Hoje", aceite do orçamento por link público, kits e modelos de
-  projeto, etiquetas QR e manutenções do inventário, PDF gerado no servidor (hoje é a impressão do navegador).
-- ⬜ Maestro v2, fase 7 em diante (plano): ponte com o SOBEDESCE (Drive com permissão temporária e stream da equipe),
-  marca da produtora nas páginas do cliente. Pendente do titular: ciência dos serviços abertos da calculadora; criar a
+- ✅ Maestro v2, fases 11, 14 e 19 (28/10/2026): **marca da produtora** (`0011_marca`: logo reencodado em WebP no
+  servidor e guardado no Postgres, SVG recusado, cor com contraste conferido; no timbrado e nas páginas do cliente
+  `/a`, `/p` e `/o`, para todos os planos; Ajustes → Marca), **pedido público e aceite** (`0012_pedidos`: link de pedido
+  com token só em sha256, revogável; formulário `/p` com as perguntas da tabela de preços, armadilha, tempo mínimo e
+  limites; Comercial → Pedidos; "Gerar orçamento" pelo motor; link do orçamento `/o` com parcelas; aceite uma vez que
+  abre projeto, cliente e parcelas a receber; pedir ajuste) e **Hoje** (`/app/hoje`, contagens do dia por organização).
+  Pedido do titular no mesmo dia: **kit próprio do freela** (`0013_freela_equipamentos`: perfil, filtro no banco de
+  freelas, o que ele leva na diária com o aluguel no mesmo "a pagar"). Contrato `freela.inventario/1` e evento
+  `freela.inventario.atualizado` registrados, rota desligada (`DISABLED_ROUTES`): o Carro do Freela é a fonte de
+  verdade, mas ainda não tem banco. Demonstração com marca, seis pedidos, um aceite que virou projeto, kits e Hoje.
+  Página inicial: Hoje, Pedidos, Aceite online e Sua marca em "Já funciona".
+- ⬜ Maestro v2, depois: kits e modelos de projeto, etiquetas QR e manutenções do inventário, PDF gerado no servidor
+  (hoje é a impressão do navegador), white-label no app inteiro (plano e preço pelo titular), retenção configurável dos
+  pedidos, ligar o inventário do Carro do Freela quando ele tiver banco (endpoint assinado no Maestro e a rota sai de
+  `DISABLED_ROUTES`).
+- ⬜ Maestro v2, fase 7 em diante (plano): ponte com o SOBEDESCE (Drive com permissão temporária e stream da equipe).
+  Pendente do titular: ciência dos serviços abertos da calculadora; criar a
   chave de API do Google só do Maestro (restrita à Drive API e a `maestro.absolutezro.com`) e pôr em
   `MAESTRO_GOOGLE_API_KEY` na Vercel.
 

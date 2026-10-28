@@ -28,12 +28,16 @@ test.describe("página inicial", () => {
       await img.scrollIntoViewIfNeeded();
       await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
     }
-    // Só o que existe: aprovação e a produtora por dentro já funcionam; "Hoje" segue "Em breve".
+    // Só o que existe: aprovação, a produtora por dentro, Hoje e o aceite online já funcionam; Arquivos segue "Em breve".
     await expect(page.locator(".ija h3", { hasText: "Aprovação do cliente" })).toBeVisible();
     await expect(page.locator(".ivem li", { hasText: "Aprovação do cliente" })).toHaveCount(0);
     await expect(page.locator(".iproduto li", { hasText: "Orçamentos" })).toBeVisible();
     await expect(page.locator(".ivem li", { hasText: "Orçamentos" })).toHaveCount(0);
-    await expect(page.locator(".ivem li", { hasText: "Hoje" }).getByText("Em breve")).toBeVisible();
+    for (const nome of ["Hoje", "Aceite online", "Pedidos"]) {
+      await expect(page.locator(".iproduto li", { hasText: nome })).toBeVisible();
+      await expect(page.locator(".ivem li", { hasText: nome })).toHaveCount(0);
+    }
+    await expect(page.locator(".ivem li", { hasText: "Arquivos no Drive" }).getByText("Em breve")).toBeVisible();
     await expect(page.locator('a[href="mailto:contato@absolutezro.com"]')).toBeVisible();
     // Sem rolagem de lado.
     const sobra = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

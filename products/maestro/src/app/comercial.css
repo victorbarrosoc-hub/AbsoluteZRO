@@ -159,6 +159,12 @@
     0 30px 80px -30px rgb(0 0 0 / 0.35),
     0 0 0 1px rgb(0 0 0 / 0.06);
 }
+.marca fieldset.form__grade {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
 .marca-folha__topo {
   display: flex;
   justify-content: space-between;
@@ -290,6 +296,9 @@
   display: grid;
   gap: 12px;
   justify-items: start;
+}
+.lp-gerar .q-segmentos button {
+  white-space: nowrap;
 }
 .lp-parcelas {
   display: flex;
@@ -554,7 +563,7 @@
 }
 .hoje-cartao__n {
   font-family: var(--font-apple);
-  font-size: clamp(1.7rem, 3.4vw, 2.3rem);
+  font-size: clamp(1.6rem, 2.6vw, 2.1rem);
   font-weight: 800;
   letter-spacing: -0.035em;
   line-height: 1.05;

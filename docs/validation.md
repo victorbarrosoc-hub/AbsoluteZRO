@@ -15,6 +15,36 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Maestro v2: marca, pedido público, aceite, Hoje e kit do freela (28/10/2026)
+
+- `products/maestro`: `lint`, `format:check`, `typecheck` ok; `npm test` **234/234** (Postgres 16 local, migrations
+  0000–0013). Novos: `marca.test.mts` (PNG, JPEG e WebP reencodados em WebP ≤ 1024 px e sem metadados; SVG, GIF, texto,
+  vazio, PNG falso e arquivo grande recusados; contraste da cor; só admin grava; B e organização forjada não veem;
+  logo público só com organização e sha certos, cache imutável), `pedidos.test.mts` (link só admin e gestão, banco com
+  sha256 e cópia cifrada; formulário sem preço nem multiplicador; armadilha não grava; selo de tempo rápido, adulterado
+  e de outro link recusados; consentimento e contato obrigatórios; chave do aparelho não duplica; 5/h por IP; Origin
+  conferido; revogar mata na hora; "Gerar orçamento" monta as linhas iguais ao motor com nicho e entregas do pedido e
+  cria o cliente lead, idempotente; link do orçamento só admin e gestão; o cliente não vê custo, margem nem nota; aceite
+  confere nome e aceite, abre projeto, ativa o cliente e lança as parcelas uma vez; sem cliente o aceite cria; versão
+  nova barra o aceite e derruba o link antigo; vencido e revogado mortos; a B não acha nada), `hoje.test.mts` (as
+  contagens da A, zero para a B e a forjada, dinheiro escondido da equipe mesmo pedindo), `freela-equipamentos.test.mts`
+  (validação, papéis, filtro por categoria, aluguel × dias no a pagar, item de outro freela barrado no banco,
+  sincronização pelo `sub`: idempotente, desativa o que sumiu, só leitura para `maestro_app`). `produtora-rls.test.mts`
+  com as cinco tabelas novas; `demo.test.mts` com marca, pedidos, aceite, kits e remoção. `npm run build` ok.
+- `npm run test:e2e` **35/35 + 1 pulado**. Novo `e2e/comercial.spec.ts` (computador e iPhone): marca, criar o link de
+  pedido, o cliente num navegador limpo preenche o formulário (tipo, nicho, vídeos, diárias, local, faixa, ideia,
+  contato e consentimento), Pedidos, "Gerar orçamento" (R$ 8.190,00 pelo motor), link com 2 parcelas, o cliente vê o
+  timbrado sem custo e aceita, o projeto `MAE-` nasce, Hoje sem rolagem de lado; link desconhecido em `/p` e `/o` dá a
+  tela neutra. `produtora.spec.ts` ganhou Pedidos, filtro de kit, Hoje, logo de exemplo e kit no perfil.
+- Raiz: `packages/media-contracts` (`freela.inventario/1` estrito: sem e-mail, CPF ou telefone; evento
+  `freela.inventario.atualizado`) e `packages/integrations` (rota desligada fora de `ROUTES` e `HANDLERS`, sem ciclo
+  somada às ativas) com testes; `npm run contracts:export` em dia; `typecheck` ok.
+- Capturas (claro e escuro a 1440 px, claro no iPhone) de Marca, Link de pedido, formulário público, Pedidos, orçamento
+  automático, aceite e Hoje conferidas à mão.
+- **Não está no ar / não validado**: o inventário do Carro do Freela (contrato, evento e importação prontos, mas nada
+  publica nem chama: o Carro não tem banco); retenção configurável dos pedidos (hoje só apagar a pedido); o app inteiro
+  com a marca da produtora (white-label); `sharp` no runtime da Vercel (é o mesmo binário que o Next já usa).
+
 ## Maestro v2: a produtora por dentro (28/10/2026)
 
 - `products/maestro`: `lint`, `format:check`, `typecheck` ok; `npm test` **199/199** (Postgres 16 local, migrations
