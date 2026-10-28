@@ -9,8 +9,9 @@ import { Conheca } from '@/components/home/conheca'
 import { Fluxo } from '@/components/home/fluxo'
 import { Numeros } from '@/components/home/numeros'
 import { PalcoZ, Z } from '@/components/ia/simbolo-z'
-import { publicCatalog } from '@/lib/data/catalog'
+import { liberadosPara, publicCatalog } from '@/lib/data/catalog'
 import { hasDesktopInstaller } from '@/lib/downloads'
+import { getAuth } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,6 +24,7 @@ const LINE: Record<string, string> = {
   'ai-edit': 'Edição de vídeo',
   nossom: 'Tratamento de som',
   finishing: 'Cor e entrega',
+  maestro: 'Pauta e aprovação',
 }
 
 /** Três fatos por ferramenta, tirados do que cada uma faz hoje (README de cada produto em products/). */
@@ -71,7 +73,14 @@ const SITE: Record<string, string> = {
 }
 
 export default async function Landing() {
-  const { products } = await publicCatalog()
+  // Gate de lançamento (ADR 0023): o que não está aberto ao público (ou liberado para a pessoa logada) aparece como
+  // "Em desenvolvimento", sem link, e fica fora dos números, das etapas e da órbita da Z.
+  const auth = await getAuth()
+  const [{ products }, liberados, baixaveis] = await Promise.all([
+    publicCatalog(),
+    liberadosPara(auth?.user.id ?? null, 'web'),
+    liberadosPara(auth?.user.id ?? null, 'download'),
+  ])
   // Cada palavra sobe na sua vez; o espaço fica fora do bloco para não sumir.
   const words = (text: string, from: number) =>
     text.split(' ').flatMap((w, i) => [
@@ -80,11 +89,12 @@ export default async function Landing() {
         {w}
       </span>,
     ])
-  const ativos = products.filter((p) => p.stage === 'active' || p.stage === 'beta')
-  const siteDe = (p: (typeof products)[number]) => (p.external_url as string | null) || SITE[p.id as string] || null
+  const aberto = (id: string) => liberados.has(id)
+  const ativos = products.filter((p) => aberto(p.id) && (p.stage === 'active' || p.stage === 'beta'))
+  const siteDe = (p: (typeof products)[number]) => (aberto(p.id) ? (p.external_url as string | null) || SITE[p.id as string] || null : null)
   const eventos = Object.keys(EVENT_PAYLOADS)
   const formatos = EVENT_PAYLOADS['edit.timeline.ready'][1].shape.format.options.length
-  const noComputador = ativos.filter((p) => hasDesktopInstaller(p.id as string)).length
+  const noComputador = ativos.filter((p) => hasDesktopInstaller(p.id as string, baixaveis)).length
   const numeros = [
     { valor: ativos.length, rotulo: 'ferramentas' },
     { valor: 1, rotulo: 'conta para tudo' },
@@ -92,12 +102,14 @@ export default async function Landing() {
     { valor: formatos, rotulo: 'formatos de linha do tempo', dica: 'OTIO, FCPXML, xmeml, EDL e AAF' },
     { valor: noComputador, rotulo: 'apps para Mac e Windows' },
   ]
-  const destaques = ativos.map((p) => ({
+  // Conheça de perto: os lançados primeiro; os fechados vêm depois, com o selo e sem link.
+  const destaques = [...ativos, ...products.filter((p) => !ativos.includes(p))].map((p) => ({
     id: p.id as string,
     nome: p.name as string,
     linha: LINE[p.id as string] ?? (p.role_in_flow as string),
     fatos: FATOS[p.id as string] ?? [],
     site: siteDe(p),
+    emDesenvolvimento: !aberto(p.id),
     cor: productColor(p.id as string),
   }))
   const etapas = ativos.map((p) => ({
@@ -151,21 +163,24 @@ export default async function Landing() {
 
       {/* As ferramentas numa faixa só, discreta: ícone, nome e uma linha. */}
       <section className="pstrip" id="ecossistema" aria-label="Ferramentas">
-        <ul className="pstrip__list">
+        <ul className="pstrip__list" style={{ '--n': products.length } as CSSProperties}>
           {products.map((p, i) => {
             const id = p.id as string
             const name = p.name as string
-            const site = (p.external_url as string | null) || SITE[id] || null
+            const site = siteDe(p)
             const inner = (
               <>
                 <ProductMark productId={id} name={name} size={40} />
                 <span className="pstrip__text">
                   <span className="pstrip__name">{name}</span>
                   <span className="pstrip__line">{LINE[id] ?? (p.role_in_flow as string)}</span>
+                  {!aberto(id) && <span className="selo-dev">Em desenvolvimento</span>}
                 </span>
-                <span className="pstrip__go" aria-hidden="true">
-                  ›
-                </span>
+                {site && (
+                  <span className="pstrip__go" aria-hidden="true">
+                    ›
+                  </span>
+                )}
               </>
             )
             return (
@@ -176,7 +191,9 @@ export default async function Landing() {
                     <span className="zro-sr-only"> (abre o site oficial em nova aba)</span>
                   </a>
                 ) : (
-                  <span className="pstrip__card">{inner}</span>
+                  <span className="pstrip__card" data-fechado={aberto(id) ? undefined : 'sim'}>
+                    {inner}
+                  </span>
                 )}
               </li>
             )
@@ -202,7 +219,7 @@ export default async function Landing() {
       <section className="section section--center pconheca-sec" aria-labelledby="conheca-title">
         <div className="section__head section__head--wide reveal">
           <h2 id="conheca-title" className="display-2 atitle">
-            <span className="atitle__thin">{ativos.length} ferramentas.</span>
+            <span className="atitle__thin">Uma por uma.</span>
             <span className="atitle__bold">Conheça de perto.</span>
           </h2>
         </div>

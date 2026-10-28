@@ -178,17 +178,21 @@ export async function appNoCatalogo(app: AppDesktop, d: Deps = {}): Promise<AppN
   return { id: app.id, nome: app.nome, mac: null, windows: null }
 }
 
-/** Catálogo completo para o app de computador (público: são os mesmos arquivos da página de downloads). */
-export async function catalogoDesktop(d: Deps = {}) {
-  const apps = await Promise.all(APPS_DESKTOP.map((a) => appNoCatalogo(a, d)))
+/**
+ * Catálogo para o app de computador. Gate de lançamento (ADR 0023): só entram os `liberados` (canal desktop, lidos do
+ * banco para quem pede); produto fechado não aparece, nem com instalador no GitHub.
+ */
+export async function catalogoDesktop(liberados: ReadonlySet<string>, d: Deps = {}) {
+  const apps = await Promise.all(APPS_DESKTOP.filter((a) => liberados.has(a.id)).map((a) => appNoCatalogo(a, d)))
   return { versao: 1, apps }
 }
 
 /**
  * Endereço do arquivo pedido pela central (/baixar/app/<id>/<arquivo>). Só arquivos que o catálogo dessa ferramenta
- * reconhece; nada de nome livre. null = não existe ou sem acesso.
+ * reconhece; nada de nome livre. null = não existe ou sem acesso (produto fora dos `liberados` no canal download).
  */
-export async function enderecoDoArquivo(id: string, nome: string, d: Deps = {}): Promise<string | null> {
+export async function enderecoDoArquivo(liberados: ReadonlySet<string>, id: string, nome: string, d: Deps = {}): Promise<string | null> {
+  if (!liberados.has(id)) return null
   const app = APPS_DESKTOP.find((a) => a.id === id)
   if (!app || !/^[A-Za-z0-9._-]{1,120}$/.test(nome)) return null
   const reconhece = app.windows.re.test(nome) || app.mac.arquivos.some((x) => x.re.test(nome))

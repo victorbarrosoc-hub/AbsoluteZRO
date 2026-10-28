@@ -98,7 +98,7 @@ test('cadastro → organização → projeto com Ciclo do O e alternativa em lis
   await page.waitForURL(/\/projetos\/[0-9a-f-]{36}$/)
   await expect(page.getByRole('heading', { name: 'Casamento E2E' })).toBeVisible()
   const list = page.getByRole('list', { name: 'Etapas do Ciclo do O' })
-  await expect(list.getByRole('listitem')).toHaveCount(7)
+  await expect(list.getByRole('listitem')).toHaveCount(8)
   // Sem plano: ferramentas lançadas aparecem bloqueadas por assinatura; as fechadas por lançamento (ADR 0023), indisponíveis
   await expect(list.getByRole('listitem').filter({ hasText: 'Synquei' })).toContainText('Bloqueado por assinatura')
   await expect(list.getByRole('listitem').filter({ hasText: 'AEON' })).toContainText('Indisponível')
@@ -192,9 +192,38 @@ test('páginas públicas e mobile sem rolagem horizontal', async ({ page }) => {
   await expect(page.getByText('Por enquanto, tudo liberado.')).toBeVisible()
   await expect(page.getByText('R$ 149,90').first()).toBeVisible()
   // Avulso numa janela só: marcar dois apps soma o valor e o botão vira "Baixar 2 apps"
-  await page.getByRole('button', { name: 'AEON' }).click()
-  await page.getByRole('button', { name: 'Revela' }).click()
+  await page.getByRole('button', { name: 'SOBEDESCE' }).click()
+  await page.getByRole('button', { name: 'Synquei' }).click()
   await expect(page.getByRole('link', { name: 'Baixar 2 apps' })).toBeVisible()
+  // Gate de lançamento (ADR 0023): produto fechado não aparece como incluído
+  await expect(page.getByRole('button', { name: 'AEON' })).toHaveCount(0)
+  await expect(page.locator('.tier__apps li[title="NOSSOM"], .tier__apps li[title="AEON"]')).toHaveCount(0)
+})
+
+test('gate de lançamento: anônimo não vê CTA, link nem instalador de produto fechado', async ({ page, request }) => {
+  const FECHADOS = /nossom-teal\.vercel\.app|aeon\.absolutezro\.com|revela\.absolutezro\.com|carrodofreela\.com\.br/
+  await page.goto('/')
+  const strip = page.locator('.pstrip__list')
+  await expect(strip.locator('.selo-dev').first()).toHaveText('Em desenvolvimento')
+  await expect(strip.locator('a.pstrip__card[href*="synquei"]')).toHaveCount(1)
+  const hrefs = await page.locator('a[href]').evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''))
+  expect(hrefs.filter((h) => FECHADOS.test(h))).toEqual([])
+  // a órbita da Z só tem lançados
+  await expect(page.locator('.pz__orbita li[title="NOSSOM"], .pz__orbita li[title="AEON"]')).toHaveCount(0)
+  await expect(page.locator('.pz__orbita li[title="Synquei"]')).toHaveCount(1)
+
+  await page.goto('/baixar')
+  await page.getByRole('button', { name: 'NOSSOM' }).click()
+  const painel = page.locator('#dl-painel')
+  await expect(painel.getByText('Em desenvolvimento')).toBeVisible()
+  await expect(painel.locator('a.dl-opt')).toHaveCount(0)
+  await expect(painel.getByText('Conheça mais')).toHaveCount(0)
+  const hrefsBaixar = await page.locator('a[href]').evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''))
+  expect(hrefsBaixar.filter((h) => FECHADOS.test(h))).toEqual([])
+
+  const desktop = await (await request.get('/api/v1/desktop/apps')).json()
+  expect(desktop.apps.map((a: { id: string }) => a.id)).not.toContain('nossom')
+  expect((await request.get('/baixar/app/nossom/NOSSOM-0.2.2-win-x64.exe', { maxRedirects: 0 })).status()).toBe(404)
 })
 
 test('menu lateral recolhe, lembra a escolha e o celular usa uma barra só', async ({ page }) => {

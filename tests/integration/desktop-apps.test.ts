@@ -27,6 +27,8 @@ function github(rotas: Rota) {
   return { f, chamadas }
 }
 
+const TODOS = new Set(APPS_DESKTOP.map((a) => a.id))
+
 const SOBE = 'https://api.github.com/repos/victorbarrosoc-hub/AbsoluteZRO/releases/tags/sobedesce-versao-de-teste'
 
 beforeEach(() => limparCacheApps())
@@ -94,9 +96,23 @@ describe('catálogo', () => {
     const f = (async () => {
       throw new Error('rede')
     }) as unknown as typeof fetch
-    const c = await catalogoDesktop({ fetch: f, env: {} })
+    const c = await catalogoDesktop(TODOS, { fetch: f, env: {} })
     expect(c.apps.map((a) => a.id)).toEqual(['sobedesce', 'synquei', 'nossom'])
     expect(c.apps.every((a) => a.mac === null && a.windows === null)).toBe(true)
+  })
+})
+
+describe('gate de lançamento (ADR 0023)', () => {
+  it('produto fora dos liberados não entra no catálogo nem tem endereço (404)', async () => {
+    const { f } = github({
+      [SOBE]: { assets: [asset('SOBEDESCE-0.1.0-b1005-windows-setup.exe')] },
+      'https://api.github.com/repos/victorbarrosoc-hub/nossom/releases/tags/desktop-v0.2.2': { assets: [asset('NOSSOM-0.2.2-win-x64.exe')] },
+    })
+    const lancados = new Set(['sobedesce', 'synquei'])
+    const c = await catalogoDesktop(lancados, { fetch: f, env: {} })
+    expect(c.apps.map((a) => a.id)).toEqual(['sobedesce', 'synquei'])
+    expect(await enderecoDoArquivo(lancados, 'nossom', 'NOSSOM-0.2.2-win-x64.exe', { fetch: f, env: {} })).toBeNull()
+    expect(await enderecoDoArquivo(new Set(), 'sobedesce', 'SOBEDESCE-0.1.0-b1005-windows-setup.exe', { fetch: f, env: {} })).toBeNull()
   })
 })
 
@@ -104,18 +120,18 @@ describe('endereço do download', () => {
   it('com token: só arquivo reconhecido, redireciona para o endereço assinado', async () => {
     const { f, chamadas } = github({ [SOBE]: { assets: [asset('SOBEDESCE-0.1.0-b1005-windows-setup.exe')] } })
     const d = { fetch: f, env: { GITHUB_TOKEN: 'github_pat_teste ' } }
-    expect(await enderecoDoArquivo('sobedesce', 'SOBEDESCE-0.1.0-b1005-windows-setup.exe', d)).toBe(
+    expect(await enderecoDoArquivo(TODOS, 'sobedesce', 'SOBEDESCE-0.1.0-b1005-windows-setup.exe', d)).toBe(
       'https://objects.githubusercontent.com/assinado/SOBEDESCE-0.1.0-b1005-windows-setup.exe',
     )
-    expect(await enderecoDoArquivo('sobedesce', 'versao.json', d)).toBeNull()
-    expect(await enderecoDoArquivo('sobedesce', '../../etc/passwd', d)).toBeNull()
-    expect(await enderecoDoArquivo('outro', 'SOBEDESCE-0.1.0-b1005-windows-setup.exe', d)).toBeNull()
+    expect(await enderecoDoArquivo(TODOS, 'sobedesce', 'versao.json', d)).toBeNull()
+    expect(await enderecoDoArquivo(TODOS, 'sobedesce', '../../etc/passwd', d)).toBeNull()
+    expect(await enderecoDoArquivo(TODOS, 'outro', 'SOBEDESCE-0.1.0-b1005-windows-setup.exe', d)).toBeNull()
     expect(chamadas.filter((c) => c.includes('/releases/assets/'))).toHaveLength(1)
   })
 
   it('sem token: link público do Release', async () => {
     const { f } = github({ [SOBE]: { assets: [asset('SOBEDESCE-0.1.0-b1005-mac-universal.dmg')] } })
-    expect(await enderecoDoArquivo('sobedesce', 'SOBEDESCE-0.1.0-b1005-mac-universal.dmg', { fetch: f, env: {} })).toBe(
+    expect(await enderecoDoArquivo(TODOS, 'sobedesce', 'SOBEDESCE-0.1.0-b1005-mac-universal.dmg', { fetch: f, env: {} })).toBe(
       'https://github.com/x/y/releases/download/t/SOBEDESCE-0.1.0-b1005-mac-universal.dmg',
     )
   })

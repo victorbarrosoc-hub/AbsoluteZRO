@@ -10,7 +10,8 @@ import { Icon } from '../icons'
 import { PalcoZ, Z, type CenaZ } from './simbolo-z'
 import { TextoIa } from './texto-ia'
 
-export type IaPlataforma = { id: string; nome: string; cor: CSSProperties }
+/** `emDesenvolvimento`: plataforma fechada pelo gate de lançamento (ADR 0023); a gaveta mostra o selo. */
+export type IaPlataforma = { id: string; nome: string; cor: CSSProperties; emDesenvolvimento?: boolean }
 type Conversa = { id: string; titulo: string; produto: string | null; produtoNome: string | null; atualizada: string }
 type Mensagem = { id: string; papel: 'user' | 'assistant'; texto: string; erro?: boolean }
 type Creditos = { usados: number; limite: number | null; renova_em: string } | null
@@ -244,8 +245,8 @@ export function PainelIa({
 
   // grupos da gaveta: HUB primeiro, depois cada plataforma na ordem do ciclo
   const grupos = [
-    { id: null as string | null, nome: 'HUB', cor: {} as CSSProperties },
-    ...plataformas.map((p) => ({ id: p.id as string | null, nome: p.nome, cor: p.cor })),
+    { id: null as string | null, nome: 'HUB', cor: {} as CSSProperties, emDesenvolvimento: false },
+    ...plataformas.map((p) => ({ id: p.id as string | null, nome: p.nome, cor: p.cor, emDesenvolvimento: !!p.emDesenvolvimento })),
   ]
     .map((g) => ({ ...g, itens: conversas.filter((c) => c.produto === g.id) }))
     .filter((g) => g.itens.length > 0)
@@ -366,6 +367,7 @@ export function PainelIa({
               <summary tabIndex={gaveta ? 0 : -1}>
                 {g.id ? <ProductMark productId={g.id} name={g.nome} size={22} /> : <ZroSymbol size={20} />}
                 <span>{g.nome}</span>
+                {g.emDesenvolvimento && <span className="selo-dev">Em desenvolvimento</span>}
                 <span className="ia-grupo__n">{g.itens.length}</span>
                 <Icon name="chevron" size={14} className="ia-grupo__seta" />
               </summary>

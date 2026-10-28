@@ -2297,6 +2297,38 @@ details.disclosure[open] > summary {
   margin-top: 8px;
 }
 
+/* Selo curto de produto fechado ao público (homepage, Conheça de perto): pílula de vidro, texto cinza. */
+.selo-dev {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--glass-fill), var(--surface);
+  box-shadow:
+    inset 0 0 0 1px rgb(127 127 127 / 0.18),
+    inset 0 1px 0 rgb(255 255 255 / 0.25);
+  font: 600 0.68rem/1.4 var(--font-apple);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  color: var(--text-faint);
+}
+.pstrip .selo-dev {
+  max-width: 100%;
+  padding: 2px 8px;
+  font-size: 0.62rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pstrip__card[data-fechado] .zro-mark {
+  opacity: 0.55;
+  filter: grayscale(0.6);
+}
+.pconheca__ficha .selo-dev {
+  margin-bottom: 4px;
+}
+
 /* ───── Padrão Apple (25/10/2026): o produto na frente, tipografia sóbria, vidro ───── */
 
 /* Títulos da marca em Figtree (escolha do titular, 25/10/2026), igual em todos os aparelhos e no OG. */
@@ -3055,6 +3087,14 @@ details.disclosure[open] > summary {
 .access-org__apps li.is-on {
   color: var(--text-strong);
 }
+.access-org__apps .selo-dev {
+  justify-self: center;
+  width: auto;
+  padding: 2px 7px;
+  font-size: 0.6rem;
+  white-space: normal;
+  line-height: 1.25;
+}
 
 @media (max-width: 760px) {
   .account {
@@ -3355,7 +3395,8 @@ details.disclosure[open] > summary {
 }
 .pstrip__list {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  /* --n = quantos produtos o catálogo tem (page.tsx): todos numa linha só */
+  grid-template-columns: repeat(var(--n, 7), minmax(0, 1fr));
   gap: 10px;
   margin: 0;
   padding: 0;

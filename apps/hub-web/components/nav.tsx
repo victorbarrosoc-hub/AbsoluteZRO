@@ -32,17 +32,10 @@ const GROUPS: { label: string; items: Item[] }[] = [
   },
 ]
 
-// A família Absolute ZRO, como no menu da Revela. O HUB é o app atual, então fica de fora.
-const FAMILY = [
-  { productId: 'carro-do-freela', name: 'Carro do Freela', href: 'https://carrodofreela.com.br' },
-  { productId: 'nossom', name: 'Nossom', href: 'https://nossom-teal.vercel.app' },
-  { productId: 'finishing', name: 'Revela', href: 'https://revela.absolutezro.com' },
-  { productId: 'sobedesce', name: 'Sobedesce', href: 'https://sobedesce.vercel.app' },
-  { productId: 'synquei', name: 'Synquei', href: 'https://synquei.vercel.app' },
-  { productId: 'tpeasy', name: 'TPEasy', href: 'https://tpeasy.vercel.app' },
-]
+/** Um app da família no menu. A lista vem do servidor: só o lançado ou liberado para a pessoa (ADR 0023). */
+export type FamilyApp = { productId: string; name: string; href: string }
 
-export function Nav({ admin, pendencias = {} }: { admin: boolean; pendencias?: Record<string, number> }) {
+export function Nav({ admin, pendencias = {}, familia = [] }: { admin: boolean; pendencias?: Record<string, number>; familia?: FamilyApp[] }) {
   const path = usePathname()
   const groups = admin ? [...GROUPS, { label: 'Plataforma', items: [{ href: '/admin', label: 'Administração', icon: 'shield' as const }] }] : GROUPS
   return (
@@ -67,15 +60,17 @@ export function Nav({ admin, pendencias = {} }: { admin: boolean; pendencias?: R
           })}
         </div>
       ))}
-      <div className="nav__group nav__family">
-        <p className="nav__label">Absolute ZRO</p>
-        {FAMILY.map((app) => (
-          <a key={app.productId} href={app.href} rel="noopener" title={app.name}>
-            <ProductMark productId={app.productId} name={app.name} size={22} />
-            <span className="nav__text">{app.name}</span>
-          </a>
-        ))}
-      </div>
+      {familia.length > 0 && (
+        <div className="nav__group nav__family">
+          <p className="nav__label">Absolute ZRO</p>
+          {familia.map((app) => (
+            <a key={app.productId} href={app.href} rel="noopener" title={app.name}>
+              <ProductMark productId={app.productId} name={app.name} size={22} />
+              <span className="nav__text">{app.name}</span>
+            </a>
+          ))}
+        </div>
+      )}
     </nav>
   )
 }

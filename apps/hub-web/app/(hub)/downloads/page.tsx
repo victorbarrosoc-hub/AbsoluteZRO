@@ -14,7 +14,7 @@ export default async function Downloads() {
   const auth = await requireOrgPage()
   const actor = await authorize(db(), auth)
   const [access, hub] = await Promise.all([
-    db().asUser({ userId: actor.userId, orgId: actor.orgId }, (tx) => productAccessFor(tx, actor.orgId)),
+    db().asUser({ userId: actor.userId, orgId: actor.orgId }, (tx) => productAccessFor(tx, actor.orgId, { channel: 'download' })),
     disponibilidade(),
   ])
   const byId = new Map(access.map((a) => [a.productId, a]))
@@ -26,6 +26,7 @@ export default async function Downloads() {
       <DownloadPicker
         apps={appsParaBaixar(
           access.map((a) => ({ id: a.productId, name: a.name, role: a.roleInFlow })),
+          new Set(access.filter((a) => a.release.allowed).map((a) => a.productId)),
           (id) => ({ contratada: byId.get(id)?.access === 'contracted', liberado: byId.get(id)?.access === 'contracted' }),
         )}
       />

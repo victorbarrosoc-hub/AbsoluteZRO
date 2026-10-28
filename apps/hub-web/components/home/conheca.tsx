@@ -8,7 +8,8 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { ProductMark } from '@zro/ui'
 
-export type Destaque = { id: string; nome: string; linha: string; fatos: string[]; site: string | null; cor: CSSProperties }
+/** `emDesenvolvimento`: fechado ao público (ADR 0023); a ficha mostra o selo e nenhum link. */
+export type Destaque = { id: string; nome: string; linha: string; fatos: string[]; site: string | null; cor: CSSProperties; emDesenvolvimento?: boolean }
 
 export function Conheca({ itens }: { itens: Destaque[] }) {
   const [ativo, setAtivo] = useState(0)
@@ -67,12 +68,13 @@ export function Conheca({ itens }: { itens: Destaque[] }) {
         <div className="pconheca__ficha" key={atual.id}>
           <h3>{atual.nome}</h3>
           <p className="pconheca__linha">{atual.linha}</p>
+          {atual.emDesenvolvimento && <span className="selo-dev">Em desenvolvimento</span>}
           <ul>
             {atual.fatos.map((f) => (
               <li key={f}>{f}</li>
             ))}
           </ul>
-          {atual.site && (
+          {atual.site && !atual.emDesenvolvimento && (
             <a className="glass-btn" href={atual.site} target="_blank" rel="noopener noreferrer">
               Visitar o site
               <span className="zro-sr-only"> de {atual.nome} (abre em nova aba)</span>
