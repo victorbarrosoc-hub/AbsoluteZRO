@@ -1,0 +1,464 @@
+/*
+ * As páginas que o cliente abre sem conta: o pedido (/p, pd-*) e o orçamento (/o, oc-*), plano v2 §6.2 e §6.3.
+ * Celular primeiro. A cor da produtora entra como `--acento` (barra, filete, número da parcela); texto só em grafite.
+ * Motion só em CSS, parado com "reduzir movimento".
+ */
+
+/* ───────────── pedido público (/p) ───────────── */
+.pd-pagina {
+  max-width: 720px;
+  padding-bottom: 32px;
+}
+.pd-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 2px 0;
+}
+.pd {
+  display: grid;
+  gap: 22px;
+}
+.pd-progresso {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.pd-progresso span {
+  display: block;
+  height: 100%;
+  background: var(--acento);
+  transition: width 0.5s var(--spring);
+}
+.pd-boas-vindas {
+  margin: 0;
+  color: var(--text-faint);
+}
+.pd-passo {
+  display: grid;
+  gap: 22px;
+  animation: pd-entra 0.42s var(--spring) both;
+}
+@keyframes pd-entra {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+.pd-titulo {
+  margin: 8px 0 0;
+  font-family: var(--font-apple);
+  font-weight: 800;
+  font-size: clamp(1.9rem, 6vw, 2.8rem);
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  color: var(--text-strong);
+}
+.pd-opcoes {
+  display: grid;
+  gap: 10px;
+}
+@media (min-width: 620px) {
+  .pd-opcoes:not(.pd-opcoes--lista) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.pd-opcao {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  padding: 18px 20px;
+  border: 0;
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+  font: inherit;
+  color: var(--text-strong);
+  cursor: pointer;
+  transition:
+    box-shadow 0.2s var(--ease),
+    transform 0.2s var(--spring);
+}
+.pd-opcao strong {
+  font-family: var(--font-apple);
+  font-size: 1.08rem;
+  font-weight: 700;
+}
+.pd-opcao span {
+  font-size: 0.88rem;
+  color: var(--text-faint);
+}
+.pd-opcao:active {
+  transform: scale(0.985);
+}
+.pd-opcao[aria-checked="true"] {
+  box-shadow:
+    inset 0 0 0 2px var(--text-strong),
+    var(--shadow-float);
+}
+.pd-opcao[aria-checked="true"]::after {
+  content: "";
+  display: block;
+  width: 28px;
+  height: 3px;
+  margin-top: 6px;
+  border-radius: 2px;
+  background: var(--acento);
+}
+.pd-campos {
+  display: grid;
+  gap: 18px;
+}
+.pd-campos--grade {
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.pd-campo--largo {
+  grid-column: 1 / -1;
+}
+.pd-campo {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+.pd-campo :is(input, textarea) {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  border-radius: 14px;
+  padding: 13px 14px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--text-strong);
+  outline: none;
+}
+.pd-campo :is(input, textarea):focus {
+  box-shadow:
+    inset 0 0 0 1px var(--line-strong),
+    0 0 0 2px var(--focus);
+}
+.pd-campo [aria-invalid="true"] {
+  box-shadow: inset 0 0 0 2px var(--danger-text);
+}
+.pd-grupo {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.pd-grupo legend {
+  padding: 0;
+  margin-bottom: 10px;
+  font-size: 0.84rem;
+  font-weight: 650;
+  color: var(--text-faint);
+}
+.pd-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pd-chip {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--gb-fill);
+  box-shadow: var(--gb-shadow);
+  font: inherit;
+  font-weight: 600;
+  color: var(--text-strong);
+  cursor: pointer;
+}
+.pd-chip[aria-pressed="true"] {
+  background: var(--gbi-fill);
+  color: var(--gbi-ink);
+  box-shadow: var(--gbi-shadow);
+}
+.pd-contador {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px 12px 20px;
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+.pd-contador__rotulo {
+  font-family: var(--font-apple);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text-strong);
+}
+.pd-contador__controle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pd-contador__controle button {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-3);
+  font:
+    600 1.3rem/1 var(--font-apple),
+    sans-serif;
+  color: var(--text-strong);
+  cursor: pointer;
+}
+.pd-contador__controle button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.pd-contador__controle input {
+  width: 52px;
+  border: 0;
+  background: none;
+  text-align: center;
+  font-family: var(--font-apple);
+  font-size: 1.35rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
+}
+.pd-consentimento {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 0.88rem;
+  color: var(--text-mute);
+}
+.pd-consentimento input {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  accent-color: #1d1d1f;
+}
+.pd-armadilha {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.pd-erro {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--danger-text);
+}
+.pd-erro--geral {
+  text-align: center;
+}
+.pd-barra {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.pd-barra .glass-btn {
+  min-height: 50px;
+  padding: 0 22px;
+}
+.pd-fim {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 40px 16px;
+  text-align: center;
+  animation: pd-entra 0.5s var(--spring) both;
+}
+.pd-fim h1 {
+  margin: 8px 0 0;
+  font-family: var(--font-apple);
+  font-weight: 800;
+  font-size: clamp(2rem, 7vw, 2.8rem);
+  letter-spacing: -0.03em;
+  color: var(--text-strong);
+}
+.pd-fim p {
+  margin: 0;
+  color: var(--text-faint);
+}
+.pd-protocolo b {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  letter-spacing: 0.08em;
+  color: var(--text-strong);
+}
+@media (max-width: 560px) {
+  .pd-campos--grade {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ───────────── orçamento para o cliente (/o) ───────────── */
+.oc {
+  max-width: 980px;
+  padding-bottom: 32px;
+}
+.oc-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 2px 0;
+}
+.oc-resumo {
+  display: grid;
+  gap: 10px;
+  padding: 24px;
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+.oc-resumo__codigo {
+  margin: 4px 0 0;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.oc-resumo__titulo {
+  margin: 0;
+  font-family: var(--font-apple);
+  font-weight: 800;
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  color: var(--text-strong);
+}
+.oc-resumo__numeros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 36px;
+  margin: 8px 0 0;
+}
+.oc-resumo__numeros dt {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+.oc-resumo__numeros dd {
+  margin: 2px 0 0;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
+}
+.oc-resumo__numeros dd.oc-total {
+  font-family: var(--font-apple);
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.oc-parcelas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.oc-parcelas li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.oc-parcelas__n {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  box-shadow: inset 0 -3px 0 var(--acento);
+  color: var(--text-strong);
+  font-size: 0.78rem;
+  font-weight: 800;
+  flex: none;
+}
+.oc-parcelas__miolo {
+  display: grid;
+}
+.oc-parcelas__miolo b {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
+}
+.oc-parcelas__miolo small {
+  color: var(--text-faint);
+}
+.oc-decidir {
+  display: grid;
+  gap: 12px;
+}
+.oc-botoes .cl-escolha {
+  min-height: 58px;
+}
+.oc-form {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+  animation: pd-entra 0.36s var(--spring) both;
+}
+.oc-form .glass-btn {
+  justify-self: start;
+  min-height: 50px;
+  padding: 0 22px;
+}
+.oc-retorno {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-mute);
+}
+.oc-feito {
+  padding: 24px 16px;
+}
+.oc-aviso {
+  justify-items: start;
+}
+.oc-aviso p {
+  margin: 0;
+}
+.oc-icone {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+  color: var(--text-strong);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pd-passo,
+  .pd-fim,
+  .oc-form {
+    animation: none;
+  }
+  .pd-progresso span,
+  .pd-opcao {
+    transition: none;
+  }
+}

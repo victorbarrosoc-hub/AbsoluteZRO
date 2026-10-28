@@ -6,6 +6,10 @@ import { hojeBr } from "@/lib/dinheiro";
 import { listarVeiculos } from "@/lib/inventario/servidor";
 import { avisoDeValidade, codigoOrcamento, nomeStatus } from "@/lib/orcamento/motor";
 import { obterOrcamento } from "@/lib/orcamento/orcamentos";
+import { lerLinkDoOrcamento } from "@/lib/orcamento/link";
+import { totais } from "@/lib/orcamento/motor";
+import { siteUrl } from "@/lib/site";
+import { LinkDoOrcamentoPainel } from "@/components/link-publico";
 import { carregarTabela } from "@/lib/orcamento/precos";
 import { servicosAbertos } from "@/lib/orcamento/servicos";
 import { lerEmpresa } from "@/lib/organizacao";
@@ -26,7 +30,15 @@ export default async function FichaOrcamento({ params }: PageProps<"/app/orcamen
   const hoje = hojeBr();
   const o = await obterOrcamento(ctx, id, hoje);
   if (!o) notFound();
-  const [tabela, clientes, empresa, veiculos] = await Promise.all([carregarTabela(ctx), listarClientes(ctx), lerEmpresa(ctx), listarVeiculos(ctx)]);
+  const dinheiro = podeVerDinheiro(sessao.papel);
+  const [tabela, clientes, empresa, veiculos, link] = await Promise.all([
+    carregarTabela(ctx),
+    listarClientes(ctx),
+    lerEmpresa(ctx),
+    listarVeiculos(ctx),
+    dinheiro ? lerLinkDoOrcamento(ctx, o.id) : Promise.resolve(null),
+  ]);
+  const quando = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
   const escreve = podeEscrever(sessao.papel);
   const editavel = escreve && o.status === "rascunho";
   const validade = avisoDeValidade(o.validade, hoje, o.status);
@@ -92,13 +104,45 @@ export default async function FichaOrcamento({ params }: PageProps<"/app/orcamen
         </div>
       </header>
 
+      {o.aceite ? (
+        <p className="aviso-ok oc-aviso-equipe" role="status">
+          <Icone nome="check" size={16} /> Aceito pelo cliente: {o.aceite.nome}, em {quando(o.aceite.em)}.
+        </p>
+      ) : null}
+      {o.retorno && o.status === "enviado" ? (
+        <section className="ficha oc-retorno-equipe" aria-label="Pedido de ajuste">
+          <strong className="ficha__titulo">
+            <Icone nome="balao" size={16} /> {o.retorno.nome} pediu ajuste · {quando(o.retorno.em)}
+          </strong>
+          <p className="observacoes">{o.retorno.texto}</p>
+          <p className="sutil">Faça uma nova versão e mande o link de novo.</p>
+        </section>
+      ) : null}
+      {o.pedidoId ? (
+        <p className="sutil">
+          Nasceu de um <Link href={`/app/pedidos/${o.pedidoId}`}>pedido pelo link</Link>.
+        </p>
+      ) : null}
+      {dinheiro && (o.status === "rascunho" || o.status === "enviado" || link) ? (
+        <LinkDoOrcamentoPainel
+          orcamentoId={o.id}
+          url={link?.token ? `${siteUrl()}/o/${link.token}` : null}
+          total={totais(o.itens, o.descontoCents).total}
+          hoje={hoje}
+          status={o.status}
+          parcelasAtuais={o.parcelas.length}
+          expira={link?.expira ?? null}
+          usos={link?.usos ?? 0}
+        />
+      ) : null}
+
       <EditorOrcamento
         key={`${o.id}:${o.status}`}
         ficha={o}
         tabela={tabela}
         clientes={clientes.map((c) => ({ id: c.id, nome: c.nome }))}
         editavel={editavel}
-        podeAprovar={podeVerDinheiro(sessao.papel) && (o.status === "enviado" || o.status === "rascunho")}
+        podeAprovar={dinheiro && (o.status === "enviado" || o.status === "rascunho")}
         base={base}
         veiculos={veiculos}
         servicos={servicosAbertos()}

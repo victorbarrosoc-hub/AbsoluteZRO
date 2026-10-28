@@ -61,11 +61,17 @@ export default async function Ajustes() {
         <section className="ficha" aria-label="Produtora">
           <div>
             <strong className="ficha__titulo">Produtora</strong>
-            <p className="sutil">O que sai no timbrado e a base dos orçamentos.</p>
+            <p className="sutil">A marca, o link de pedido e a base dos orçamentos.</p>
           </div>
           <nav className="atalhos" aria-label="Ajustes da produtora">
+            <Link className="atalho" href="/app/ajustes/marca">
+              <Icone nome="marca" size={18} /> Marca <Icone nome="seta" size={15} />
+            </Link>
             <Link className="atalho" href="/app/ajustes/empresa">
-              <Icone nome="documento" size={18} /> Empresa e timbrado <Icone nome="seta" size={15} />
+              <Icone nome="documento" size={18} /> Empresa e orçamento <Icone nome="seta" size={15} />
+            </Link>
+            <Link className="atalho" href="/app/ajustes/pedido">
+              <Icone nome="link" size={18} /> Link de pedido <Icone nome="seta" size={15} />
             </Link>
             <Link className="atalho" href="/app/ajustes/precos">
               <Icone nome="orcamento" size={18} /> Tabela de preços <Icone nome="seta" size={15} />

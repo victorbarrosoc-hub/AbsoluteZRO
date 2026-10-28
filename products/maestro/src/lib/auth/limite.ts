@@ -1,7 +1,8 @@
 /**
  * Limite de tentativas (tabela maestro.rate_limit_attempts, só pela porta de sistema): conta linhas da chave numa
  * janela de tempo. Chaves: "entrar:<ip>" (idas ao login), "pedido-zro:<jti>" (uso único dos pedidos do HUB, etapa 3),
- * "link-*:<hash do token ou do ip>" (links do cliente, src/lib/revisao/link.ts), "espera:<hash do ip>" e "espera" (lista de espera). Limpeza preguiçosa do que tem mais de um dia.
+ * "link-*:<hash do token ou do ip>" (links do cliente, src/lib/revisao/link.ts), "pedido-*" e "orcamento-*" (links públicos,
+ * src/lib/publico), "espera:<hash do ip>" e "espera" (lista de espera). Limpeza preguiçosa do que tem mais de um dia.
  */
 import { and, count, eq, gte, lt } from "drizzle-orm";
 import { getBanco, schema } from "@/lib/db/client";
@@ -30,6 +31,12 @@ export const REGRAS = {
   /** Comentar 60/h por link; enviar decisões 20/h por link (a decisão em si vale uma vez por peça e volta). */
   linkComentar: { max: 60, janelaMs: 60 * 60_000 },
   linkEnviar: { max: 20, janelaMs: 60 * 60_000 },
+  /** Pedido público (plano v2 §4.4): 5/h por IP e 30 a cada 10 min por link (o link de pedido é um por organização). */
+  pedidoIp: { max: 5, janelaMs: 60 * 60_000 },
+  pedidoLink: { max: 30, janelaMs: 10 * 60_000 },
+  /** Orçamento público: abrir 120/h por link; aceitar ou pedir ajuste 20/h por link (o aceite vale uma vez). */
+  orcamentoAbrir: { max: 120, janelaMs: 60 * 60_000 },
+  orcamentoDecidir: { max: 20, janelaMs: 60 * 60_000 },
 } satisfies Record<string, Regra>;
 
 /** true = ainda pode tentar. */

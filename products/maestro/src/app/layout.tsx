@@ -6,6 +6,8 @@ import "@fontsource-variable/figtree";
 import "@fontsource-variable/inter";
 import "./globals.css";
 import "./produtora.css";
+import "./comercial.css";
+import "./publico.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),

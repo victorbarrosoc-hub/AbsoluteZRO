@@ -113,12 +113,14 @@ test.describe("navegação do app", () => {
       await expect(nav.getByRole("link", { name: /Clientes/ })).toHaveAttribute("aria-current", "page");
       expect(hrefs).toEqual([
         "/app/z",
+        "/app/hoje",
         "/app/quadro",
         "/app/aprovacoes",
         "/app/projetos",
         "/app/agenda",
-        "/app/clientes",
+        "/app/pedidos",
         "/app/orcamentos",
+        "/app/clientes",
         "/app/freelas",
         "/app/inventario",
         "/app/financeiro",
@@ -127,7 +129,7 @@ test.describe("navegação do app", () => {
       for (const g of ["Produção", "Comercial", "Operação", "Dinheiro"]) await expect(nav.getByRole("group", { name: g })).toBeVisible();
     } else {
       // Celular: o dia a dia na barra; Clientes está em "Mais", que fica marcado.
-      expect(hrefs).toEqual(["/app/z", "/app/quadro", "/app/aprovacoes", "/app/agenda", "/app/mais"]);
+      expect(hrefs).toEqual(["/app/z", "/app/hoje", "/app/quadro", "/app/aprovacoes", "/app/mais"]);
       await expect(nav.getByRole("link", { name: /Mais/ })).toHaveAttribute("aria-current", "page");
       await nav.getByRole("link", { name: /Mais/ }).click();
       await expect(page.getByRole("link", { name: "Financeiro" })).toBeVisible();

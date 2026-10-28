@@ -1,9 +1,9 @@
 "use client";
 /**
  * A navegação do Maestro (plano v2 §3): barra lateral em vidro com grupos, a Z primeiro (padrão do ecossistema):
- * Produção (Quadro, Aprovações, Projetos, Agenda), Comercial (Clientes, Orçamentos), Operação (Freelas, Inventário),
+ * Produção (Hoje, Quadro, Aprovações, Projetos, Agenda), Comercial (Pedidos, Orçamentos, Clientes), Operação (Freelas, Inventário),
  * Dinheiro (Financeiro) e Ajustes. Só entra o que tem tela de verdade. No celular vira a barra de baixo com o que se
- * usa todo dia (Z, Quadro, Aprovações, Agenda) e "Mais", que abre todas as seções.
+ * usa todo dia (Z, Hoje, Quadro, Aprovações) e "Mais", que abre todas as seções.
  * A aba ativa segue o caminho e ganha o filete de latão (só superfície, nunca texto).
  */
 import Link from "next/link";

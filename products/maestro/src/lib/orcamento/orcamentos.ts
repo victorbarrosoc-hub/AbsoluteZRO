@@ -8,7 +8,7 @@ import { codigoPg, getBanco, PG, type Contexto, type Tx } from "@/lib/db/client"
 import { ehUuid, falha, padraoBusca, traduzirPg, type Res } from "@/lib/crm/comum";
 import { proximoCodigo } from "@/lib/crm/projetos";
 import { ehData, hojeBr, somarDias } from "@/lib/dinheiro";
-import { lerEmpresaDe, type Empresa } from "@/lib/organizacao";
+import { lerEmpresaDe, lerEmpresaNaTx, type Empresa } from "@/lib/organizacao";
 import { lerTabela } from "./precos";
 import {
   aplicarModelo,
@@ -132,6 +132,10 @@ export type OrcamentoFicha = {
   projetoCodigo: string | null;
   itens: LinhaOrc[];
   versoes: { id: string; versao: number; status: StatusOrcamento }[];
+  /** Do pedido público, o aceite do cliente pelo link (nome e hora) e o último pedido de ajuste (drizzle/0012). */
+  pedidoId: string | null;
+  aceite: { nome: string; em: string } | null;
+  retorno: { nome: string; texto: string; em: string } | null;
 };
 
 async function lerFicha(tx: Tx, id: string, hoje: string): Promise<OrcamentoFicha | null> {
@@ -172,6 +176,11 @@ async function lerFicha(tx: Tx, id: string, hoje: string): Promise<OrcamentoFich
     projetoCodigo: q.projeto_codigo as string | null,
     itens: itens.map(deBanco),
     versoes: [...versoes].map((v) => ({ ...v, versao: Number(v.versao) })),
+    pedidoId: (q.pedido_id as string | null) ?? null,
+    aceite: q.aceite ? { nome: (q.aceite as Record<string, string>).nome, em: (q.aceite as Record<string, string>).em } : null,
+    retorno: q.retorno
+      ? { nome: (q.retorno as Record<string, string>).nome, texto: (q.retorno as Record<string, string>).texto, em: (q.retorno as Record<string, string>).em }
+      : null,
   };
 }
 
@@ -207,32 +216,42 @@ export type NovoOrcamento = {
   modeloId: string | null;
   respostas: Respostas;
   demo?: boolean;
+  /** Do pedido público (Comercial → Pedidos → "Gerar orçamento"). */
+  pedidoId?: string | null;
+  escopo?: string | null;
+  periodo?: string | null;
+  notasInternas?: string | null;
 };
+
+/** Cria o rascunho dentro de uma transação já aberta como a pessoa (o pedido usa). Linhas pelo motor, com o modelo. */
+export async function criarOrcamentoNaTx(tx: Tx, ctx: Contexto, e: NovoOrcamento, hoje = hojeBr()): Promise<{ id: string; numero: string }> {
+  const numero = await numeroNovo(tx, ctx.orgId, hoje);
+  const [org] = (await tx.execute(sql`select settings from maestro.organizations where id = ${ctx.orgId}`)) as unknown as { settings: unknown }[];
+  const empresa: Empresa = lerEmpresaDe(org?.settings);
+  let linhas: LinhaOrc[] = [];
+  let categoria: string | null = null;
+  if (e.modeloId) {
+    const tabela = await lerTabela(tx);
+    const modelo = tabela.modelos.find((m) => m.id === e.modeloId);
+    if (modelo) {
+      linhas = aplicarModelo(modelo, { ...modelo.respostas, ...e.respostas }, tabela.itens, tabela.variaveis);
+      categoria = modelo.nicho;
+    }
+  }
+  const [q] = (await tx.execute(sql`
+    insert into maestro.orcamentos (org_id, numero, versao, cliente_id, projeto_id, titulo, categoria, emissao, validade, condicoes, respostas,
+                                    escopo, periodo, notas_internas, pedido_id, demo, created_by)
+    values (${ctx.orgId}, ${numero}, 1, ${e.clienteId}, ${e.projetoId}, ${e.titulo}, ${categoria}, ${hoje}, ${somarDias(hoje, empresa.validadeDias)},
+            ${empresa.condicoes}, ${JSON.stringify(e.respostas)}::jsonb, ${e.escopo ?? null}, ${e.periodo ?? null}, ${e.notasInternas ?? null},
+            ${e.pedidoId ?? null}, ${e.demo ?? false}, ${ctx.sub})
+    returning id`)) as unknown as { id: string }[];
+  await inserirItens(tx, ctx.orgId, q.id, linhas);
+  return { id: q.id, numero };
+}
 
 export async function criarOrcamento(ctx: Contexto, e: NovoOrcamento, hoje = hojeBr()): Promise<Res<{ id: string; numero: string }>> {
   try {
-    return await getBanco().asUser(ctx, async (tx) => {
-      const numero = await numeroNovo(tx, ctx.orgId, hoje);
-      const [org] = (await tx.execute(sql`select settings from maestro.organizations where id = ${ctx.orgId}`)) as unknown as { settings: unknown }[];
-      const empresa: Empresa = lerEmpresaDe(org?.settings);
-      let linhas: LinhaOrc[] = [];
-      let categoria: string | null = null;
-      if (e.modeloId) {
-        const tabela = await lerTabela(tx);
-        const modelo = tabela.modelos.find((m) => m.id === e.modeloId);
-        if (modelo) {
-          linhas = aplicarModelo(modelo, { ...modelo.respostas, ...e.respostas }, tabela.itens, tabela.variaveis);
-          categoria = modelo.nicho;
-        }
-      }
-      const [q] = (await tx.execute(sql`
-        insert into maestro.orcamentos (org_id, numero, versao, cliente_id, projeto_id, titulo, categoria, emissao, validade, condicoes, respostas, demo, created_by)
-        values (${ctx.orgId}, ${numero}, 1, ${e.clienteId}, ${e.projetoId}, ${e.titulo}, ${categoria}, ${hoje}, ${somarDias(hoje, empresa.validadeDias)},
-                ${empresa.condicoes}, ${JSON.stringify(e.respostas)}::jsonb, ${e.demo ?? false}, ${ctx.sub})
-        returning id`)) as unknown as { id: string }[];
-      await inserirItens(tx, ctx.orgId, q.id, linhas);
-      return { ok: true as const, id: q.id, numero };
-    });
+    return await getBanco().asUser(ctx, async (tx) => ({ ok: true as const, ...(await criarOrcamentoNaTx(tx, ctx, e, hoje)) }));
   } catch (err) {
     if (codigoPg(err) === PG.chaveEstrangeira) return falha("vinculo", "Escolha um cliente da lista.");
     return traduzirPg(err);
@@ -524,10 +543,7 @@ export async function documentoDoOrcamento(ctx: Contexto, id: string, hoje = hoj
   return getBanco().asUser(ctx, async (tx) => {
     const f = await lerFicha(tx, id, hoje);
     if (!f) return null;
-    const [o] = (await tx.execute(sql`select name, settings from maestro.organizations where id = ${ctx.orgId}`)) as unknown as {
-      name: string;
-      settings: unknown;
-    }[];
+    const empresa = await lerEmpresaNaTx(tx, ctx.orgId);
     const [c] = f.clienteId
       ? ((await tx.execute(sql`select name, company, contact_name, city, document from maestro.clients where id = ${f.clienteId}`)) as unknown as Record<
           string,
@@ -559,7 +575,7 @@ export async function documentoDoOrcamento(ctx: Contexto, id: string, hoje = hoj
       subtotal: t.subtotal,
       desconto: t.desconto,
       total: t.total,
-      empresa: { ...lerEmpresaDe(o?.settings), nomeOrg: o?.name ?? "" },
+      empresa,
     };
   });
 }

@@ -9,6 +9,7 @@ export const GRUPOS: Grupo[] = [
   {
     nome: "Produção",
     abas: [
+      { href: "/app/hoje", nome: "Hoje", icone: "hoje" },
       { href: "/app/quadro", nome: "Quadro", icone: "quadro" },
       { href: "/app/aprovacoes", nome: "Aprovações", icone: "aprovacoes", curto: "Aprovar" },
       { href: "/app/projetos", nome: "Projetos", icone: "projetos" },
@@ -18,8 +19,9 @@ export const GRUPOS: Grupo[] = [
   {
     nome: "Comercial",
     abas: [
-      { href: "/app/clientes", nome: "Clientes", icone: "clientes" },
+      { href: "/app/pedidos", nome: "Pedidos", icone: "pedidos" },
       { href: "/app/orcamentos", nome: "Orçamentos", icone: "orcamento" },
+      { href: "/app/clientes", nome: "Clientes", icone: "clientes" },
     ],
   },
   {
@@ -37,6 +39,7 @@ export const AJUSTES: Aba = { href: "/app/ajustes", nome: "Ajustes", icone: "aju
 /** Todas as abas, na ordem da barra (a Z primeiro, Ajustes por último). */
 export const ABAS: Aba[] = [...GRUPOS.flatMap((g) => g.abas), AJUSTES];
 
-/** A barra de baixo do celular: o dia a dia e "Mais" (todas as seções). */
+/** A barra de baixo do celular (plano v2 §3): a Z, o dia a dia (Hoje, Quadro, Aprovações) e "Mais" (todas as seções). */
 export const MAIS: Aba = { href: "/app/mais", nome: "Mais", icone: "grade" };
-export const BARRA: Aba[] = [ABAS[0], ABAS[1], ABAS[2], ABAS[4], MAIS];
+const aba = (href: string) => ABAS.find((a) => a.href === href)!;
+export const BARRA: Aba[] = [aba("/app/z"), aba("/app/hoje"), aba("/app/quadro"), aba("/app/aprovacoes"), MAIS];

@@ -39,6 +39,8 @@ function csp(extrasScript: string[] = []): string {
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  // O logo da marca sobe por Server Action (até 4 MB; o servidor reencoda e grava no máximo 512 KB).
+  experimental: { serverActions: { bodySizeLimit: "5mb" } },
   async headers() {
     return [
       { source: "/:path*", headers: cabecalhos },
@@ -52,6 +54,23 @@ const nextConfig: NextConfig = {
           { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
           { key: "Referrer-Policy", value: "strict-origin" },
           { key: "Cache-Control", value: "no-store" },
+        ],
+      },
+      // Os links públicos da produtora (plano v2 §4.4): pedido (/p) e orçamento (/o). Sem player: nada de frame.
+      ...["/p/:path*", "/o/:path*"].map((source) => ({
+        source,
+        headers: [
+          { key: "Content-Security-Policy", value: csp() },
+          { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
+          { key: "Referrer-Policy", value: "strict-origin" },
+          { key: "Cache-Control", value: "no-store" },
+        ],
+      })),
+      {
+        source: "/api/publico/:path*",
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
+          { key: "Referrer-Policy", value: "strict-origin" },
         ],
       },
       {

@@ -78,6 +78,27 @@
       "when": 1794009600000,
       "tag": "0010_documentos",
       "breakpoints": false
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794096000000,
+      "tag": "0011_marca",
+      "breakpoints": false
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794182400000,
+      "tag": "0012_pedidos",
+      "breakpoints": false
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794268800000,
+      "tag": "0013_freela_equipamentos",
+      "breakpoints": false
     }
   ]
 }

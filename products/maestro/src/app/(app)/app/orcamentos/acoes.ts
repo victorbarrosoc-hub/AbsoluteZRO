@@ -12,6 +12,7 @@ import { aprovarOrcamento, criarOrcamento, mudarStatus, novaVersao, removerOrcam
 import type { StatusOrcamento } from "@/lib/orcamento/motor";
 import { lerEmpresa } from "@/lib/organizacao";
 import { buscarLugares, medirRota, precoDaGasolina } from "@/lib/orcamento/servicos";
+import { gerarLinkDoOrcamento, revogarLinkDoOrcamento } from "@/lib/orcamento/link";
 import type { Lugar, PrecoCombustivel } from "@/lib/orcamento/deslocamento";
 import type { EstadoForm } from "@/components/form";
 
@@ -131,4 +132,29 @@ export async function precoGasolinaAcao(): Promise<PrecoCombustivel | null> {
   } catch {
     return null;
   }
+}
+
+/* ───────────── link do orçamento para o cliente (/o) ───────────── */
+
+const SO_GESTAO = "Mandar o link é de administração e gestão: o aceite lança as parcelas no Financeiro.";
+
+export async function gerarLinkOrcamentoAcao(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
+  const s = await exigirAcessoNaAcao();
+  if (!podeVerDinheiro(s.papel)) return { mensagem: SO_GESTAO };
+  const id = String(fd.get("id") ?? "");
+  const r = await gerarLinkDoOrcamento(ctxDe(s), id, Number(fd.get("parcelas") ?? 2));
+  if (!r.ok) return { mensagem: r.mensagem };
+  revalidatePath(`/app/orcamentos/${id}`);
+  revalidatePath("/app/orcamentos");
+  return { aviso: "Link pronto. Copie e mande ao cliente." };
+}
+
+export async function revogarLinkOrcamentoAcao(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
+  const s = await exigirAcessoNaAcao();
+  if (!podeVerDinheiro(s.papel)) return { mensagem: SO_GESTAO };
+  const id = String(fd.get("id") ?? "");
+  const r = await revogarLinkDoOrcamento(ctxDe(s), id);
+  if (!r.ok) return { mensagem: r.mensagem };
+  revalidatePath(`/app/orcamentos/${id}`);
+  return { aviso: "Link revogado." };
 }
