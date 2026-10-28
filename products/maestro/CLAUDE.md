@@ -26,7 +26,7 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
 
 - **Acesso**: `temAcesso()` em `src/lib/auth/acesso.ts` é o ÚNICO ponto de decisão: `zro_release.maestro` released
   ou allowed (sem a claim = fechado) **e** `maestro` em `zro_products`. As duas claims ficam na sessão e são relidas
-  no `/eu`. Desde 28/10/2026 o Maestro está em teste aberto a todos (migration `0021` do HUB). Páginas usam `exigirAcessoNaPagina()` (cada página chama,
+  no `/eu`. Desde 28/10/2026 o Maestro está em teste aberto a todos (migration `0022` do HUB). Páginas usam `exigirAcessoNaPagina()` (cada página chama,
   além do layout: no Next 16 os dois renderizam em paralelo) e rotas de dados usam `exigirAcesso()`. Sem sessão 401,
   sem acesso 403; nunca só a tela.
 - **Login único**: `api/zro/{entrar,callback,eu,sair}` (PKCE S256, `state`/`nonce` selados, `id_token` conferido pela

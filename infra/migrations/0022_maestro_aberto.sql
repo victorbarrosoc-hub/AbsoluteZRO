@@ -11,7 +11,7 @@ update zro.products
    set stage = 'beta',
        external_url = 'https://maestro.absolutezro.com',
        sso_start_url = 'https://maestro.absolutezro.com/api/zro/entrar',
-       description = 'Em teste aberto. Pauta e aprovação do cliente para agências e produtoras; os recursos chegam por etapas.'
+       description = 'Em teste aberto. A gestão da sua produtora num lugar só: CRM, financeiro, controle de pauta e aprovação do cliente, chegando por etapas.'
  where id = 'maestro' and stage in ('coming_soon', 'beta');
 
 insert into zro.product_release (product_id, state, web, desktop, api, download, sso, note)

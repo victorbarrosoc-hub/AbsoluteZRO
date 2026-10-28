@@ -40,7 +40,7 @@ describe('plano grátis da organização nova', () => {
     expect(rows.every((r) => r.provider === 'free' && r.code === 'conta-absolute-zro' && r.version === 2)).toBe(true)
     const claims = await db.asSystem('t', (tx) => loadOidcClaims(tx, o.userId, o.orgId))
     // No login único só entram os abertos (gate de lançamento, ADR 0023); os fechados vão como "closed" em zro_release.
-    // O Maestro está em teste aberto (0021): entra, com zro_release "released".
+    // O Maestro está em teste aberto (0022): entra, com zro_release "released".
     expect([...claims.products].sort()).toEqual(['maestro', 'sobedesce', 'synquei', 'tpeasy'])
     expect(claims.release).toMatchObject({
       maestro: 'released',

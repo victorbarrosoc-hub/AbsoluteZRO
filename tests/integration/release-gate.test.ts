@@ -30,7 +30,7 @@ afterAll(() => db.close())
 
 const LANCADOS = ['sobedesce', 'synquei', 'tpeasy']
 const FECHADOS = ['nossom', 'ai-edit', 'finishing', 'carro-do-freela']
-/** Teste aberto a todos (0021, decisão do titular de 28/10/2026): web, api e sso; sem desktop nem download. */
+/** Teste aberto a todos (0022, decisão do titular de 28/10/2026): web, api e sso; sem desktop nem download. */
 const ABERTOS_EM_TESTE = ['maestro']
 const sys = <T>(fn: (tx: Tx) => Promise<T>) => db.asSystem('teste', fn)
 
@@ -57,7 +57,7 @@ describe('seed e regra do banco', () => {
     }
   })
 
-  it('Maestro em teste aberto (0021): public_beta com web, api e sso; desktop e download fechados', async () => {
+  it('Maestro em teste aberto (0022): public_beta com web, api e sso; desktop e download fechados', async () => {
     const s = await sys((tx) => releaseState(tx, { fresh: true }))
     expect(s.maestro).toMatchObject({ state: 'public_beta', open: true, channels: { web: true, desktop: false, api: true, download: false, sso: true } })
     for (const ch of ['web', 'api', 'sso'] as const) expect(await sys((tx) => releaseAllows(tx, 'maestro', null, ch)), ch).toBe(true)
@@ -70,11 +70,11 @@ describe('seed e regra do banco', () => {
     expect(planos.map((r) => r.code)).toEqual(['absolute-zro-pro', 'absolute-zro-pro-anual', 'ciclo-do-o', 'ciclo-do-o-anual', 'conta-absolute-zro'])
   })
 
-  it('0021 dá o Maestro às contas que já existiam pela assinatura vigente, uma vez só', async () => {
-    const o = await newOrgWithOwner(db, 'gate-maestro-0021', { freePlan: true })
-    // Organização de antes da 0021: sem o entitlement do Maestro.
+  it('0022 dá o Maestro às contas que já existiam pela assinatura vigente, uma vez só', async () => {
+    const o = await newOrgWithOwner(db, 'gate-maestro-0022', { freePlan: true })
+    // Organização de antes da 0022: sem o entitlement do Maestro.
     await db.sql`delete from zro.entitlements where org_id = ${o.orgId} and product_id = 'maestro'`
-    const sqlDaMigration = readFileSync(new URL('../../infra/migrations/0021_maestro_aberto.sql', import.meta.url), 'utf8')
+    const sqlDaMigration = readFileSync(new URL('../../infra/migrations/0022_maestro_aberto.sql', import.meta.url), 'utf8')
     const conta = async () => {
       const [r] = await db.sql`select count(*)::int as n from zro.entitlements where org_id = ${o.orgId} and product_id = 'maestro' and status = 'active'`
       return r!.n as number

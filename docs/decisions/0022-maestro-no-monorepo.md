@@ -55,7 +55,7 @@ antigos, que seguem arquivados como estavam.
 
 ## Adendo (28/10/2026): teste aberto
 
-O titular abriu o Maestro a todos já com a fundação, em `maestro.absolutezro.com`: migration `0021_maestro_aberto.sql`
+O titular abriu o Maestro a todos já com a fundação, em `maestro.absolutezro.com`: migration `0022_maestro_aberto.sql`
 (`beta`, `public_beta` com web/api/sso, no grátis, no Completo e no Pro; avulso ainda não), `temAcesso()` com
 `zro_release` e `zro_products`, `vercel.json` sem a trava e o cliente `maestro-web` por `npm run db:client:maestro`
 (segredo só por variável). Fechar de novo = mudar a linha em Administração › Lançamento.

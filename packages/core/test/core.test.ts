@@ -111,7 +111,7 @@ describe('projetos', () => {
     const { steps } = await getProject(db, o.auth, id)
     const by = Object.fromEntries(steps.map((s) => [s.stepKey, s.displayState]))
     // Carro, AEON, NOSSOM e Revela estão fechados (ADR 0023): nunca "contrate", sempre indisponível. O Maestro está em
-    // teste aberto (0021) e só vem no grátis, no Completo e no Pro: aqui, bloqueado pela assinatura.
+    // teste aberto (0022) e só vem no grátis, no Completo e no Pro: aqui, bloqueado pela assinatura.
     expect(by).toEqual({
       'carro-do-freela': 'unavailable',
       tpeasy: 'blocked_subscription',

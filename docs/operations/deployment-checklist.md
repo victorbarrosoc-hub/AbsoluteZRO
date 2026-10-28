@@ -85,7 +85,7 @@ nem no código: entra em produção nesta publicação, uma vez, de um dos dois 
 
 ## 5b. Maestro em teste aberto (decisão do titular, 28/10/2026)
 
-A migration `0021_maestro_aberto.sql` do HUB (aplicada pelo build do `absolutezro`) abre o Maestro: `beta`,
+A migration `0022_maestro_aberto.sql` do HUB (aplicada pelo build do `absolutezro`) abre o Maestro: `beta`,
 `public_beta` com web/api/sso, no grátis, no Completo e no Pro, e o entitlement para as contas atuais. O resto, nesta
 ordem:
 
