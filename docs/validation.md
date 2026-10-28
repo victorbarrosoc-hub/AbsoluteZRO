@@ -1510,6 +1510,7 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   "Do roteiro à entrega.", nada de "do job" na home, selo nos fechados de `/baixar`; conta nova sem "de um job" no
   Início). `scan-secrets` limpo.
 - Não validado: produção (nada publicado); tema escuro da homepage só pela foto dos aparelhos.
+
 ## Apps de celular e computador iguais ao web (28/10/2026)
 
 - Pedido do titular: "atualiza as plataformas no mobile e no computador também". Conferido em cada cliente lançado:
