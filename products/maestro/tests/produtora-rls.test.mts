@@ -30,8 +30,13 @@ const TODAS = [
   "equipamentos",
   "reservas",
   "documentos",
+  "org_marca",
+  "links_publicos",
+  "pedidos",
+  "freela_equipamentos",
+  "escala_equipamentos",
 ] as const;
-const SO_GESTAO = ["freela_pagamento", "lancamentos", "baixas", "recorrencias", "recorrencia_execucoes"];
+const SO_GESTAO = ["freela_pagamento", "lancamentos", "baixas", "recorrencias", "recorrencia_execucoes", "links_publicos"];
 
 const ids: Record<string, string> = {};
 
@@ -74,6 +79,14 @@ before(async () => {
     ids.equip = await um(sql`insert into maestro.equipamentos (org_id, nome, chave) values (${A}, 'Sony FX6', 'sonyfx6') returning id`);
     await tx.execute(sql`insert into maestro.reservas (org_id, equipamento_id, inicio, fim) values (${A}, ${ids.equip}, '2026-11-01', '2026-11-01')`);
     await tx.execute(sql`insert into maestro.documentos (org_id, projeto_id, tipo, titulo) values (${A}, ${ids.projeto}, 'roteiro', 'Roteiro')`);
+    // drizzle/0011–0013: marca, links públicos, pedidos e o equipamento do freela.
+    await tx.execute(sql`insert into maestro.org_marca (org_id, nome, cor) values (${A}, 'Marca A', '#1f6feb')`);
+    ids.link = await um(sql`insert into maestro.links_publicos (org_id, tipo, token_hash) values (${A}, 'pedido', ${"b".repeat(64)}) returning id`);
+    await tx.execute(
+      sql`insert into maestro.pedidos (org_id, link_id, protocolo, nome, email, consentimento_em) values (${A}, ${ids.link}, 'PED00001', 'Pessoa', 'p@exemplo.com', now())`,
+    );
+    ids.fequip = await um(sql`insert into maestro.freela_equipamentos (org_id, freela_id, modelo) values (${A}, ${ids.freela}, 'FX6') returning id`);
+    await tx.execute(sql`insert into maestro.escala_equipamentos (org_id, escala_id, equipamento_id) values (${A}, ${ids.escala}, ${ids.fequip})`);
   });
 });
 after(() => amb.fechar());
@@ -160,6 +173,14 @@ describe("tabelas da produtora: duas organizações", () => {
       ),
     );
     assert.equal(codigoPg(e3), PG.chaveEstrangeira);
+    // Pedido da B apontando para o cliente ou o link da A; equipamento da B no freela da A.
+    for (const q of [
+      sql`insert into maestro.pedidos (org_id, protocolo, nome, email, consentimento_em, cliente_id) values (${o.orgB}, 'PED00002', 'Xx', 'x@exemplo.com', now(), ${ids.cliente})`,
+      sql`insert into maestro.pedidos (org_id, protocolo, nome, email, consentimento_em, link_id) values (${o.orgB}, 'PED00003', 'Xx', 'x@exemplo.com', now(), ${ids.link})`,
+      sql`insert into maestro.freela_equipamentos (org_id, freela_id, modelo) values (${o.orgB}, ${ids.freela}, 'x')`,
+    ]) {
+      assert.equal(codigoPg(await erroDe(getBanco().asUser(o.b, (tx) => tx.execute(q)))), PG.chaveEstrangeira);
+    }
   });
 
   test("leitura não escreve; equipe não escreve na tabela de preços nem no dinheiro", async () => {

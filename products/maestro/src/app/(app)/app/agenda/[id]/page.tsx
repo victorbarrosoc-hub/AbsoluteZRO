@@ -7,6 +7,8 @@ import { listarProjetos } from "@/lib/crm/projetos";
 import { dataBr, dataCurta, hojeBr } from "@/lib/dinheiro";
 import { nomeFuncao } from "@/lib/freelas/funcoes";
 import { listarFreelas } from "@/lib/freelas/servidor";
+import { equipamentosDasEscalas } from "@/lib/freelas/equipamentos";
+import { EquipNaEscala } from "@/components/kit-freela";
 import { listarEquipamentos, reservasDoPeriodo } from "@/lib/inventario/servidor";
 import { podeEscrever } from "@/lib/papeis";
 import { BotaoAcao } from "@/components/acao";
@@ -28,11 +30,15 @@ export default async function FichaEvento({ params }: PageProps<"/app/agenda/[id
   const e = await obterEvento(ctx, id);
   if (!e) notFound();
   const fim = e.dataFim ?? e.data;
-  const [projetos, freelas, equipamentos, reservas] = await Promise.all([
+  const [projetos, freelas, equipamentos, reservas, kits] = await Promise.all([
     listarProjetos(ctx),
     listarFreelas(ctx),
     listarEquipamentos(ctx, hojeBr()),
     reservasDoPeriodo(ctx, e.data, fim),
+    equipamentosDasEscalas(
+      ctx,
+      e.equipe.map((p) => p.escalaId),
+    ),
   ]);
   const minhas = reservas.filter((r) => r.eventoId === e.id);
   const ocupados = new Set(reservas.map((r) => r.equipamentoId));
@@ -106,6 +112,14 @@ export default async function FichaEvento({ params }: PageProps<"/app/agenda/[id
                   {escreve ? (
                     <BotaoAcao acao={removerEscalaAcao} campos={{ id: p.escalaId }} rotulo="Tirar" classe="q-limpar" confirmar="Tirar da diária?" />
                   ) : null}
+                  {escreve
+                    ? (() => {
+                        const k = kits.find((x) => x.escalaId === p.escalaId);
+                        return k ? (
+                          <EquipNaEscala escalaId={k.escalaId} disponiveis={k.disponiveis} marcados={k.marcados} dias={k.dias} aluguelCents={k.aluguelCents} />
+                        ) : null;
+                      })()
+                    : null}
                 </li>
               ))}
             </ul>

@@ -14,17 +14,31 @@ import { abrirCampo, cifrarCampo, lerDocumento, lerPix, type TipoPix } from "./p
 
 /* ───────────── lista e ficha ───────────── */
 
-export type FreelaLista = { id: string; nome: string; cidade: string | null; funcoes: string[]; ativo: boolean; diaria: number | null; escalas: number };
+export type FreelaLista = {
+  id: string;
+  nome: string;
+  cidade: string | null;
+  funcoes: string[];
+  ativo: boolean;
+  diaria: number | null;
+  escalas: number;
+  /** Itens ativos do kit próprio (drizzle/0013). */
+  equipamentos: number;
+};
 
-export async function listarFreelas(ctx: Contexto, o: { busca?: string; funcao?: string; inativos?: boolean } = {}): Promise<FreelaLista[]> {
+/** `equip`: "sim" = tem equipamento próprio; uma categoria (camera, drone…) = tem dessa categoria. */
+export async function listarFreelas(ctx: Contexto, o: { busca?: string; funcao?: string; inativos?: boolean; equip?: string } = {}): Promise<FreelaLista[]> {
   const busca = o.busca?.trim().slice(0, 100);
   return getBanco().asUser(ctx, async (tx) => {
     const r = await tx.execute(sql`
       select f.id, f.nome, f.cidade, f.funcoes, f.ativo,
              (select min(v.valor_cents)::float8 from maestro.freela_valores v where v.freela_id = f.id and v.unidade = 'diaria') as diaria,
-             (select count(*)::int from maestro.escalas e where e.freela_id = f.id) as escalas
+             (select count(*)::int from maestro.escalas e where e.freela_id = f.id) as escalas,
+             (select count(*)::int from maestro.freela_equipamentos q where q.freela_id = f.id and q.ativo) as equipamentos
         from maestro.freelas f
        where true
+         ${o.equip === "sim" ? sql`and exists (select 1 from maestro.freela_equipamentos q where q.freela_id = f.id and q.ativo)` : sql``}
+         ${o.equip && o.equip !== "sim" ? sql`and exists (select 1 from maestro.freela_equipamentos q where q.freela_id = f.id and q.ativo and q.categoria = ${o.equip})` : sql``}
          ${o.inativos ? sql`` : sql`and f.ativo`}
          ${o.funcao ? sql`and ${o.funcao} = any (f.funcoes)` : sql``}
          ${busca ? sql`and (f.nome ilike ${padraoBusca(busca)} or f.cidade ilike ${padraoBusca(busca)} or array_to_string(f.funcoes, ' ') ilike ${padraoBusca(busca)})` : sql``}

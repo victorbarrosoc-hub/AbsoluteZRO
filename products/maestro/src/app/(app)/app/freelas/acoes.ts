@@ -14,6 +14,7 @@ import {
   validarFreela,
   validarPagamento,
 } from "@/lib/freelas/servidor";
+import { marcarEquipNaEscala, removerEquipFreela, salvarEquipFreela, validarEquipFreela } from "@/lib/freelas/equipamentos";
 import type { EstadoForm } from "@/components/form";
 
 const valoresDe = (fd: FormData) => Object.fromEntries([...fd.entries()].map(([k, v]) => [k, String(v)]));
@@ -74,4 +75,39 @@ export async function removerEscalaAcao(_: EstadoForm, fd: FormData): Promise<Es
   if (!r.ok) return { mensagem: r.mensagem };
   revalidatePath("/app", "layout");
   return { aviso: "Saiu da escala." };
+}
+
+/* ───────────── kit próprio do freela (drizzle/0013) ───────────── */
+
+export async function salvarEquipFreelaAcao(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
+  const s = await exigirAcessoNaAcao();
+  const valores = valoresDe(fd);
+  if (!podeEscrever(s.papel)) return { mensagem: LE, valores };
+  const v = validarEquipFreela(valores);
+  if (!v.ok) return { erros: v.erros, valores };
+  const r = await salvarEquipFreela({ sub: s.sub, orgId: s.orgId }, valores.freela, v.entrada, valores.id || undefined);
+  if (!r.ok) return { mensagem: r.mensagem, valores };
+  revalidatePath(`/app/freelas/${valores.freela}`);
+  revalidatePath("/app/freelas");
+  return { aviso: valores.id ? "Salvo." : "Adicionado.", n: Date.now() };
+}
+
+export async function removerEquipFreelaAcao(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
+  const s = await exigirAcessoNaAcao();
+  if (!podeEscrever(s.papel)) return { mensagem: LE };
+  const r = await removerEquipFreela({ sub: s.sub, orgId: s.orgId }, String(fd.get("id") ?? ""));
+  if (!r.ok) return { mensagem: r.mensagem };
+  revalidatePath(`/app/freelas/${String(fd.get("freela") ?? "")}`);
+  revalidatePath("/app/freelas");
+  return { aviso: "Removido." };
+}
+
+/** O que o freela leva na escala: os itens marcados (checkbox `equip`). O aluguel soma ao a pagar da escala. */
+export async function equipNaEscalaAcao(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
+  const s = await exigirAcessoNaAcao();
+  if (!podeEscrever(s.papel)) return { mensagem: LE };
+  const r = await marcarEquipNaEscala({ sub: s.sub, orgId: s.orgId }, String(fd.get("escala") ?? ""), fd.getAll("equip").map(String));
+  if (!r.ok) return { mensagem: r.mensagem };
+  revalidatePath("/app", "layout");
+  return { aviso: "Salvo.", n: Date.now() };
 }

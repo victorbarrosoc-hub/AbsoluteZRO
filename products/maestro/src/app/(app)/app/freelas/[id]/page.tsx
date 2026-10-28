@@ -7,6 +7,8 @@ import { CAMPOS_PAGAMENTO } from "@/lib/freelas/formularios";
 import { nomeFuncao, nomeUnidadeValor, textoWhatsapp } from "@/lib/freelas/funcoes";
 import { formatarDocumento, TIPOS_PIX } from "@/lib/freelas/pagamento";
 import { obterFreela } from "@/lib/freelas/servidor";
+import { listarEquipDoFreela } from "@/lib/freelas/equipamentos";
+import { KitDoFreela } from "@/components/kit-freela";
 import { nomeCategoriaEquip } from "@/lib/inventario/nomes";
 import { podeEscrever } from "@/lib/papeis";
 import { Monograma, Secao } from "@/components/crm";
@@ -22,7 +24,7 @@ export default async function FichaFreela({ params }: PageProps<"/app/freelas/[i
   const { id } = await params;
   const s = await exigirAcessoNaPagina(`/app/freelas/${id}`);
   const hoje = hojeBr();
-  const f = await obterFreela({ sub: s.sub, orgId: s.orgId }, s.papel, id, hoje);
+  const [f, kit] = await Promise.all([obterFreela({ sub: s.sub, orgId: s.orgId }, s.papel, id, hoje), listarEquipDoFreela({ sub: s.sub, orgId: s.orgId }, id)]);
   if (!f) notFound();
   const wpp = f.whatsapp ? `https://wa.me/${f.whatsapp}?text=${encodeURIComponent(textoWhatsapp(f.whatsappMsg, f.nome, s.orgNome))}` : null;
   const aPagar = f.escalas.filter((e) => e.pagamento && e.pagamento.status !== "pago").reduce((t, e) => t + e.valorCents - (e.pagamento?.pagoCents ?? 0), 0);
@@ -85,6 +87,9 @@ export default async function FichaFreela({ params }: PageProps<"/app/freelas/[i
           )}
           {f.dadosPagamento !== undefined && aPagar > 0 ? <p className="sutil">A pagar: {brl(aPagar)}</p> : null}
         </Secao>
+        <Secao titulo="Equipamento próprio">
+          <KitDoFreela freelaId={f.id} itens={kit} podeMudar={podeEscrever(s.papel)} />
+        </Secao>
         <div className="painel__lado">
           <Secao titulo="Valores">
             {f.valores.length ? (
@@ -102,7 +107,7 @@ export default async function FichaFreela({ params }: PageProps<"/app/freelas/[i
               <p className="nada">Sem valores.</p>
             )}
           </Secao>
-          <Secao titulo="Equipamento">
+          <Secao titulo="No inventário">
             {f.equipamentos.length ? (
               <ul className="linhas">
                 {f.equipamentos.map((e) => (
@@ -115,7 +120,7 @@ export default async function FichaFreela({ params }: PageProps<"/app/freelas/[i
                 ))}
               </ul>
             ) : (
-              <p className="nada">Nenhum equipamento próprio no inventário.</p>
+              <p className="nada">Nada dele no inventário da produtora.</p>
             )}
           </Secao>
           {f.dadosPagamento !== undefined ? (

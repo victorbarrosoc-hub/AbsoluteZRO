@@ -3,6 +3,7 @@ import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { brl } from "@/lib/dinheiro";
 import { FUNCOES, nomeFuncao } from "@/lib/freelas/funcoes";
 import { listarFreelas } from "@/lib/freelas/servidor";
+import { CATEGORIAS_EQUIP_FREELA, ehCategoriaEquipFreela } from "@/lib/freelas/kit";
 import { podeEscrever } from "@/lib/papeis";
 import { Busca } from "@/components/busca";
 import { Monograma, Pilulas } from "@/components/crm";
@@ -18,14 +19,19 @@ export default async function Freelas({ searchParams }: PageProps<"/app/freelas"
   const q = typeof sp.q === "string" ? sp.q : "";
   const funcao = typeof sp.funcao === "string" ? sp.funcao : "";
   const inativos = sp.inativos === "1";
+  const equip = sp.equip === "sim" || ehCategoriaEquipFreela(sp.equip) ? (sp.equip as string) : "";
   const ctx = { sub: sessao.sub, orgId: sessao.orgId };
-  const [lista, todos] = await Promise.all([listarFreelas(ctx, { busca: q, funcao: funcao || undefined, inativos }), listarFreelas(ctx, { inativos: true })]);
+  const [lista, todos] = await Promise.all([
+    listarFreelas(ctx, { busca: q, funcao: funcao || undefined, inativos, equip: equip || undefined }),
+    listarFreelas(ctx, { inativos: true }),
+  ]);
   const escreve = podeEscrever(sessao.papel);
   const usadas = FUNCOES.filter((f) => todos.some((x) => x.funcoes.includes(f.k)));
-  const href = (f: string) => {
+  const href = (f: string, e = equip) => {
     const u = new URLSearchParams();
     if (q) u.set("q", q);
     if (f) u.set("funcao", f);
+    if (e) u.set("equip", e);
     const t = u.toString();
     return t ? `/app/freelas?${t}` : "/app/freelas";
   };
@@ -57,6 +63,14 @@ export default async function Freelas({ searchParams }: PageProps<"/app/freelas"
               ativo={funcao || "todas"}
               itens={[{ valor: "todas", nome: "Todas", href: href("") }, ...usadas.map((f) => ({ valor: f.k, nome: f.nome, href: href(f.k) }))]}
             />
+            <Pilulas
+              ativo={equip || "qualquer"}
+              itens={[
+                { valor: "qualquer", nome: "Com ou sem kit", href: href(funcao, "") },
+                { valor: "sim", nome: "Tem equipamento", href: href(funcao, "sim") },
+                ...CATEGORIAS_EQUIP_FREELA.filter((c) => c.k !== "outro").map((c) => ({ valor: c.k, nome: c.nome, href: href(funcao, c.k) })),
+              ]}
+            />
           </div>
           {lista.length ? (
             <ul className="lista lista--grade" aria-label="Freelas">
@@ -70,6 +84,11 @@ export default async function Freelas({ searchParams }: PageProps<"/app/freelas"
                     </span>
                     <span className="item__numeros">
                       {f.diaria != null ? <span title="Diária">{brl(f.diaria)}</span> : null}
+                      {f.equipamentos ? (
+                        <span title="Equipamento próprio">
+                          <Icone nome="inventario" size={14} /> {f.equipamentos}
+                        </span>
+                      ) : null}
                       <span title="Escalas">
                         <Icone nome="agenda" size={14} /> {f.escalas}
                       </span>
