@@ -39,6 +39,7 @@ import {
 } from "./operacao";
 import { carregarRevisaoDemo } from "./revisao";
 import { montarKits, montarMarca, montarPedidos } from "./comercial";
+import { montarNegocio } from "./negocio";
 
 const { clients, projects, lotes, loteCards, auditLog } = schema;
 
@@ -113,7 +114,7 @@ export async function temDemonstracao(ctx: Contexto): Promise<boolean> {
 /** A demonstração está completa (todos os módulos)? Falso = "Completar demonstração" faz sentido. */
 export async function demonstracaoCompleta(ctx: Contexto): Promise<boolean> {
   return getBanco().asUser(ctx, async (tx) => {
-    for (const t of ["clients", "precos_itens", "orcamentos", "freelas", "equipamentos", "eventos", "documentos", "pedidos", "freela_equipamentos"])
+    for (const t of ["clients", "precos_itens", "orcamentos", "freelas", "equipamentos", "eventos", "documentos", "pedidos", "freela_equipamentos", "contatos"])
       if (!(await tem(tx, t))) return false;
     return true;
   });
@@ -644,10 +645,12 @@ export async function carregarDemonstracao(ctx: Contexto, hoje = hojeBr()): Prom
       // Kit dos freelas, pedidos pelo link (um orçado e um aceito que virou projeto e parcelas) e a marca (fases 11 e 14).
       if (!(await tem(tx, "freela_equipamentos"))) c.kits += await montarKits(tx, ctx);
       c.pedidos += await montarPedidos(tx, ctx, hoje);
+      // Funil, retornos e meta do mês (estudo MakersHub §4): sobre os pedidos de exemplo.
+      const negocio = await montarNegocio(tx, ctx, hoje);
       const marca = await montarMarca(tx, ctx);
       // Aprovações (versões, comentários, decisões e link dos lotes): idempotente, completa uma demonstração antiga.
       const versoes = await carregarRevisaoDemo(tx, ctx);
-      const criou = soma(c) > 0 || versoes > 0 || marca;
+      const criou = soma(c) > 0 || versoes > 0 || marca || negocio > 0;
       if (criou) {
         await montarEmpresa(tx, ctx);
         await tx
@@ -672,6 +675,8 @@ export async function removerDemonstracao(ctx: Contexto): Promise<Res<{ contagem
     return await getBanco().asUser(ctx, async (tx) => {
       await travar(tx, ctx.orgId);
       const c: Contagem = { ...CONTAGEM_ZERO };
+      await apagar(tx, "contatos");
+      await apagar(tx, "metas");
       c.pedidos = await apagar(tx, "pedidos");
       await apagar(tx, "links_publicos");
       const marca = await apagar(tx, "org_marca");

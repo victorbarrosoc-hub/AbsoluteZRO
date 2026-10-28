@@ -66,6 +66,14 @@ before(async () => {
     await tx.execute(sql`insert into maestro.baixas (org_id, lancamento_id, valor_cents) values (${A}, ${pago}, 200000)`);
     const saidaPaga = await lanc("saida", 50000, somarDias(HOJE, -10));
     await tx.execute(sql`insert into maestro.baixas (org_id, lancamento_id, valor_cents) values (${A}, ${saidaPaga}, 50000)`);
+    // Caixa da semana (segunda 09/11 a domingo 15/11): entrou 300 na terça, saiu 120 na quarta (hoje).
+    const recebida = await lanc("entrada", 30000, somarDias(HOJE, -1));
+    await tx.execute(sql`insert into maestro.baixas (org_id, lancamento_id, valor_cents, data) values (${A}, ${recebida}, 30000, ${somarDias(HOJE, -1)})`);
+    const paga = await lanc("saida", 12000, HOJE);
+    await tx.execute(sql`insert into maestro.baixas (org_id, lancamento_id, valor_cents, data) values (${A}, ${paga}, 12000, ${HOJE})`);
+    await tx.execute(sql`update maestro.pedidos set proximo_contato = ${somarDias(HOJE, -1)}, proximo_nota = 'Ligar' where protocolo = 'AAAA1111'`);
+    await tx.execute(sql`update maestro.clients set proximo_contato = ${HOJE} where id = ${cli}`);
+    await tx.execute(sql`update maestro.pedidos set proximo_contato = ${somarDias(HOJE, 3)} where protocolo = 'AAAA2222'`);
   });
 });
 after(() => amb.fechar());
@@ -84,8 +92,44 @@ describe("Hoje", () => {
       receberAtrasado: { n: 1, valor: 30000 },
       pagarSemana: { n: 1, valor: 40000 },
       pagarAtrasado: { n: 0, valor: 0 },
-      caixa: 150000,
+      caixa: 168000,
     });
+  });
+
+  test("as listas do dia: vencendo, com o cliente, retornar hoje e o caixa da semana", async () => {
+    const r = await resumoDoDia(o.admin, true, HOJE);
+    assert.deepEqual(
+      r.vencendo.map((k) => k.id),
+      ["card-atrasado", "card-hoje", "card-amanha"],
+    );
+    assert.deepEqual(
+      r.comCliente.map((k) => k.id),
+      ["card-aprov"],
+    );
+    assert.deepEqual(
+      r.retornos.map((x) => [x.alvo, x.nome, x.data]),
+      [
+        ["pedido", "Um", somarDias(HOJE, -1)],
+        ["cliente", "Cliente", HOJE],
+      ],
+    );
+    assert.equal(r.semana?.length, 7);
+    assert.equal(r.semana?.[0].dia, "2026-11-09", "começa na segunda");
+    assert.deepEqual(
+      r.semana?.map((d) => [d.entrou, d.saiu]),
+      [
+        [30000, 0],
+        [0, 12000],
+        [0, 0],
+        [0, 0],
+        [0, 0],
+        [0, 0],
+        [0, 0],
+      ],
+    );
+    const e = await resumoDoDia(o.equipe, false, HOJE);
+    assert.equal(e.semana, null, "a equipe não vê o caixa");
+    assert.equal(e.retornos.length, 2, "retornos a equipe vê");
   });
 
   test("a B e a forjada veem zero", async () => {
@@ -97,6 +141,7 @@ describe("Hoje", () => {
       assert.equal(r.pedidosNovos, 0);
       assert.equal(r.orcamentos.aguardando, 0);
       assert.equal(r.dinheiro?.caixa, 0);
+      assert.equal(r.vencendo.length + r.comCliente.length + r.retornos.length, 0);
     }
   });
 

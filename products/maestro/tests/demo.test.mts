@@ -12,6 +12,7 @@ const demo = await import("../src/lib/demo/demonstracao");
 const cli = await import("../src/lib/crm/clientes");
 const proj = await import("../src/lib/crm/projetos");
 const quadro = await import("../src/lib/quadro/servidor");
+const { hojeBr } = await import("../src/lib/dinheiro");
 
 const ANA = UUID();
 const LEO = UUID();
@@ -373,6 +374,23 @@ describe("demonstração da marca, dos pedidos e do kit dos freelas", () => {
     assert.equal(l.n, 1, "o link de pedido de exemplo");
   });
 
+  test("o funil: uma etapa por pedido, retornos (atrasado, hoje, amanhã e um lead), contatos e meta de seis meses", async () => {
+    const et = await ler<{ etapa: string; n: number }>(sql`select etapa, count(*)::int as n from maestro.pedidos where org_id = ${orgB} group by etapa`);
+    assert.deepEqual(Object.fromEntries(et.map((p) => [p.etapa, p.n])), { novo: 1, conversa: 2, negociando: 1, ganho: 1, perdido: 1 });
+    const [pd] = await ler<{ motivo: string }>(sql`select motivo_perda as motivo from maestro.pedidos where org_id = ${orgB} and etapa = 'perdido'`);
+    assert.equal(pd.motivo, "Preço");
+    const ret = await ler<{ data: string }>(sql`
+      select proximo_contato::text as data from maestro.pedidos where org_id = ${orgB} and proximo_contato is not null
+      union all select proximo_contato::text from maestro.clients where org_id = ${orgB} and proximo_contato is not null`);
+    const h = hojeBr();
+    assert.ok(ret.some((r) => r.data < h) && ret.filter((r) => r.data === h).length >= 2, "um atrasado e dois para hoje");
+    const [c] = await ler<{ contatos: number; metas: number }>(sql`
+      select (select count(*)::int from maestro.contatos where org_id = ${orgB} and demo) as contatos,
+             (select count(*)::int from maestro.metas where org_id = ${orgB} and demo) as metas`);
+    assert.ok(c.contatos >= 3);
+    assert.equal(c.metas, 6);
+  });
+
   test("carregar de novo não duplica; remover tira marca, pedidos, links e kits", async () => {
     const r = await demo.carregarDemonstracao(B());
     assert.ok(r.ok && !r.criou);
@@ -386,7 +404,9 @@ describe("demonstração da marca, dos pedidos e do kit dos freelas", () => {
              (select count(*)::int from maestro.links_publicos where org_id = ${orgB}) as links,
              (select count(*)::int from maestro.freela_equipamentos where org_id = ${orgB}) as kits,
              (select count(*)::int from maestro.projects where org_id = ${orgB}) as projetos,
-             (select count(*)::int from maestro.clients where org_id = ${orgB}) as clientes`);
-    assert.deepEqual(z, { marca: 0, pedidos: 0, links: 0, kits: 0, projetos: 0, clientes: 0 });
+             (select count(*)::int from maestro.clients where org_id = ${orgB}) as clientes,
+             (select count(*)::int from maestro.metas where org_id = ${orgB}) as metas,
+             (select count(*)::int from maestro.contatos where org_id = ${orgB}) as contatos`);
+    assert.deepEqual(z, { marca: 0, pedidos: 0, links: 0, kits: 0, projetos: 0, clientes: 0, metas: 0, contatos: 0 });
   });
 });

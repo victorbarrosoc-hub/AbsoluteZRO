@@ -2,6 +2,7 @@
 // cabeçalhos em português, a conferência de cada linha, a prévia que não grava nada, a confirmação (sha256 do mesmo
 // arquivo), a reimportação idempotente, quem pode importar e o relatório isolado por organização.
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { after, before, describe, test } from "node:test";
 import { sql } from "drizzle-orm";
 import { prepararAmbiente } from "./ambiente.mts";
@@ -70,6 +71,20 @@ describe("leitor e conferência (puro)", () => {
       if (!l.ok) continue;
       const m = csv.autoMapa(t.k, l.cabecalho);
       csv.CAMPOS[t.k].forEach((c, i) => assert.equal(m[c.k], i, `${t.k}.${c.k}`));
+    }
+  });
+
+  test("as planilhas de exemplo da demonstração se leem sem erro", () => {
+    for (const [tipo, arq, n] of [
+      ["clientes", "clientes-exemplo.csv", 4],
+      ["freelas", "freelas-exemplo.csv", 3],
+    ] as const) {
+      const p = csv.previa(tipo, readFileSync(new URL(`../docs/demonstracao/${arq}`, import.meta.url), "utf8"));
+      assert.ok(p.ok, arq);
+      if (!p.ok) continue;
+      assert.equal(p.previa.linhas.length, n, arq);
+      assert.equal(p.previa.invalidas, 0, `${arq}: ${JSON.stringify(p.previa.linhas.map((l) => l.erros))}`);
+      assert.deepEqual(p.previa.faltando, []);
     }
   });
 
