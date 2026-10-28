@@ -1,6 +1,6 @@
 // Processo principal do app de desktop: sobe o motor, abre a janela e cuida do que é nativo
 // (seletor de pastas, Dock/barra de tarefas, notificações, sair sem perder transferências).
-import { app, BrowserWindow, Menu, Notification, dialog, ipcMain, nativeTheme, powerSaveBlocker, safeStorage, session, shell, utilityProcess } from 'electron'
+import { app, BrowserWindow, Menu, Notification, Tray, dialog, ipcMain, nativeImage, nativeTheme, powerSaveBlocker, safeStorage, session, shell, utilityProcess } from 'electron'
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -13,6 +13,7 @@ import { handoffCommand, isHandoffScript } from '../src/updater.js'
 import { arquivoDaCentral } from '../src/gerenciado.js'
 import { aberturaSynquei } from '../src/backup/synquei.js'
 import { ligarZoom } from './zoom.js'
+import { AVISO_BANDEJA, acaoAoFechar, acaoAoMinimizar, deveAvisar, dicaBandeja, gravarPrefs, iconeBandeja, lerPrefs, minimizarLigado, modeloMenuBandeja, padraoMinimizar } from './bandeja.js'
 
 const here = import.meta.dirname
 const isMac = process.platform === 'darwin'
@@ -33,6 +34,8 @@ let quitting = false
 let quitConfirmed = false // a pessoa já disse "Sair" com transferências andando (não pergunta duas vezes)
 let activeCount = 0
 let sleepBlocker = null
+let tray = null // ícone na bandeja (Windows/Linux) ou na barra de menus (Mac); desktop/bandeja.js
+let trayCount = -1 // quantas transferências o menu da bandeja mostra (remonta só quando muda)
 
 // `SOBEDESCE --smoke` (CI, desktop/smoke.js): sobe o motor numa pasta temporária, confere tudo, escreve "SMOKE OK" e
 // sai com 0 (ou 1). Não abre janela, não usa os dados nem os cookies da pessoa e não disputa a trava de instância.
@@ -204,6 +207,7 @@ async function boot() {
     }
   }
   createWindow()
+  criarBandeja()
   abrirJanelaCelular()
   app.on('activate', () => showWindow())
 }
@@ -294,14 +298,21 @@ function createWindow() {
   zoom = ligarZoom(win, { userData: app.getPath('userData') })
   win.once('ready-to-show', () => win.show())
   win.on('close', event => {
-    if (quitting || isMac) {
-      // No Mac fechar a janela não fecha o app: as transferências continuam (padrão do macOS).
-      return
+    // No Mac fechar a janela não fecha o app: as transferências continuam (padrão do macOS). No Windows/Linux, com
+    // transferência andando e a bandeja ligada, a janela vai para a bandeja em vez de fechar (desktop/bandeja.js).
+    const acao = acaoAoFechar({ plataforma: process.platform, minimizar: minimizarParaBandeja(), temBandeja: temBandeja(), transferencias: activeCount, saindo: quitting, confirmado: quitConfirmed })
+    if (acao === 'bandeja') {
+      event.preventDefault()
+      return irParaBandeja()
     }
-    if (activeCount > 0 && !quitConfirmed) {
+    if (acao === 'perguntar') {
       if (!confirmQuit()) return event.preventDefault()
       quitConfirmed = true
     }
+  })
+  // Minimizar: com a bandeja ligada (padrão no Windows), a janela sai da barra de tarefas e fica só o ícone da bandeja.
+  win.on('minimize', () => {
+    if (acaoAoMinimizar({ plataforma: process.platform, minimizar: minimizarParaBandeja(), temBandeja: temBandeja() }) === 'bandeja') irParaBandeja()
   })
   win.on('closed', () => {
     win = null
@@ -314,13 +325,74 @@ function createWindow() {
 function showWindow() {
   if (!engineUrl) return
   if (!win) createWindow()
+  // Volta da bandeja: de novo na barra de tarefas, visível, no tamanho de antes e na frente.
+  if (!isMac) win.setSkipTaskbar(false)
+  if (!win.isVisible()) win.show()
   if (win.isMinimized()) win.restore()
-  win.show()
   win.focus()
 }
 
+// ---- Bandeja (desktop/bandeja.js) ----
+
+const temBandeja = () => !!tray && !tray.isDestroyed()
+const minimizarParaBandeja = () => minimizarLigado(lerPrefs(app.getPath('userData')), process.platform)
+
+function criarBandeja() {
+  if (SMOKE || temBandeja()) return
+  try {
+    const i = iconeBandeja(process.platform)
+    const img = nativeImage.createFromPath(path.join(here, 'bandeja', i.arquivo))
+    if (i.template) img.setTemplateImage(true)
+    tray = new Tray(img)
+  } catch (err) {
+    // Sem área de notificação (alguns Linux): segue sem bandeja; minimizar e fechar ficam como antes.
+    console.log('[sobedesce] sem bandeja:', err?.message || err)
+    tray = null
+    return
+  }
+  // Windows: clique (ou clique duplo) abre a janela e o botão direito mostra o menu. Mac e Linux: o clique mostra o menu.
+  if (isWin) {
+    tray.on('click', () => showWindow())
+    tray.on('double-click', () => showWindow())
+  }
+  atualizarBandeja()
+}
+
+function atualizarBandeja() {
+  if (!temBandeja() || trayCount === activeCount) return
+  trayCount = activeCount
+  const acoes = { abrir: () => showWindow(), sair: () => app.quit() }
+  const itens = modeloMenuBandeja(activeCount).map(i =>
+    i.tipo === 'separador' ? { type: 'separator' } : { label: i.rotulo, enabled: i.ativo !== false, click: i.acao ? () => acoes[i.acao]?.() : undefined },
+  )
+  tray.setContextMenu(Menu.buildFromTemplate(itens))
+  tray.setToolTip(dicaBandeja(activeCount))
+}
+
+/** Esconde a janela na bandeja (fora da barra de tarefas). Na primeira vez, avisa uma vez que o app continua ali. */
+function irParaBandeja() {
+  if (!win || !temBandeja()) return
+  if (!isMac) win.setSkipTaskbar(true)
+  win.hide()
+  const userData = app.getPath('userData')
+  if (!deveAvisar(lerPrefs(userData))) return
+  gravarPrefs(userData, { avisou: true })
+  if (isWin) {
+    try {
+      tray.displayBalloon({ title: AVISO_BANDEJA.titulo, content: AVISO_BANDEJA.texto, iconType: 'info' })
+      return
+    } catch {}
+  }
+  if (Notification.isSupported()) {
+    const n = new Notification({ title: AVISO_BANDEJA.titulo, body: AVISO_BANDEJA.texto, silent: true })
+    n.on('click', () => showWindow())
+    n.show()
+  }
+}
+
 function confirmQuit() {
-  const choice = dialog.showMessageBoxSync(win ?? undefined, {
+  // Janela escondida na bandeja não serve de dono (o diálogo ficaria invisível): aí ele sai solto.
+  const choice = dialog.showMessageBoxSync(win && win.isVisible() ? win : undefined, {
     type: 'question',
     message: 'Sair do SOBEDESCE?',
     detail: `${activeCount === 1 ? 'Há 1 transferência' : `Há ${activeCount} transferências`} em andamento. Elas pausam agora e continuam de onde pararam quando você abrir o app de novo.`,
@@ -352,6 +424,7 @@ app.on('before-quit', event => {
   quitting = true
   fecharNavegador()
   fecharJanelaCelular()
+  if (temBandeja()) tray.destroy()
   if (!engine) return
   event.preventDefault()
   const child = engine
@@ -402,6 +475,7 @@ ipcMain.on('sobedesce:progress', (event, { fraction, activeCount: count } = {}) 
   const value = typeof fraction === 'number' && Number.isFinite(fraction) ? Math.min(1, Math.max(0, fraction)) : -1
   owner?.setProgressBar(activeCount > 0 ? value : -1)
   if (isMac) app.dock?.setBadge(activeCount > 0 ? String(activeCount) : '')
+  atualizarBandeja()
   // Sem isso o sistema pode suspender o app (e a rede) no meio de uma transferência longa.
   if (activeCount > 0 && sleepBlocker == null) sleepBlocker = powerSaveBlocker.start('prevent-app-suspension')
   if (activeCount === 0 && sleepBlocker != null) {
@@ -416,6 +490,18 @@ ipcMain.on('sobedesce:notify', (event, { title, body } = {}) => {
   const n = new Notification({ title: String(title || 'SOBEDESCE'), body: String(body || ''), silent: false })
   n.on('click', () => showWindow())
   n.show()
+})
+
+// Ajustes → "Minimizar para a bandeja": guardado em <userData>/bandeja.json (é do app de desktop, não do motor).
+ipcMain.handle('sobedesce:bandeja', event => {
+  if (!trustedSender(event, engineUrl)) return null
+  return { disponivel: temBandeja(), minimizar: minimizarParaBandeja(), padrao: padraoMinimizar(process.platform) }
+})
+
+ipcMain.handle('sobedesce:bandeja-definir', (event, ligado) => {
+  if (!trustedSender(event, engineUrl) || typeof ligado !== 'boolean') return null
+  gravarPrefs(app.getPath('userData'), { minimizar: ligado })
+  return { disponivel: temBandeja(), minimizar: minimizarParaBandeja(), padrao: padraoMinimizar(process.platform) }
 })
 
 ipcMain.handle('sobedesce:open-external', (event, url) => {

@@ -158,6 +158,25 @@ export function abrirAjustesRede(qual = 'rede-local') {
   return true
 }
 
+/** Ajustes → "Minimizar para a bandeja" (só no app): { disponivel, minimizar, padrao }, ou null no navegador. */
+export async function lerBandeja() {
+  if (!bridge?.bandeja) return null
+  try {
+    return (await bridge.bandeja()) || null
+  } catch {
+    return null
+  }
+}
+
+export async function definirBandeja(ligado) {
+  if (!bridge?.definirBandeja) return null
+  try {
+    return (await bridge.definirBandeja(!!ligado)) || null
+  } catch {
+    return null
+  }
+}
+
 export function revealPath(path) {
   if (!path) return null
   if (bridge?.reveal) {

@@ -23,4 +23,7 @@ contextBridge.exposeInMainWorld('sobedesce', {
   abrirNavegador: url => ipcRenderer.invoke('sobedesce:abrir-navegador', url || null),
   // "Preparar no Synquei" (cartão ou pasta baixada): o link synquei://organizar → { aberto, para: synquei|central|site }.
   abrirSynquei: link => ipcRenderer.invoke('sobedesce:abrir-synquei', String(link || '')),
+  // Ajustes → "Minimizar para a bandeja": { disponivel, minimizar, padrao } (desktop/bandeja.js).
+  bandeja: () => ipcRenderer.invoke('sobedesce:bandeja'),
+  definirBandeja: ligado => ipcRenderer.invoke('sobedesce:bandeja-definir', !!ligado),
 })

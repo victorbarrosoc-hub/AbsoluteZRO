@@ -7,7 +7,7 @@ import { relTime, tildify, plural } from '../lib/format.js'
 import { cx } from '../lib/ui.js'
 import { navigate } from '../lib/router.js'
 import { confirmDialog, pickDriveFolder } from '../lib/modals.js'
-import { pickFolderPath, revealLabel, revealPath } from '../lib/desktop.js'
+import { definirBandeja, lerBandeja, pickFolderPath, revealLabel, revealPath } from '../lib/desktop.js'
 import { toast } from '../lib/toasts.js'
 import { copyText, rotateMobileCode, useMobileState } from '../lib/mobile.js'
 import { Icon } from './icons.js'
@@ -83,6 +83,25 @@ function RawThumbRow({ d, set }) {
   >
     <${Switch} label="Gerar miniatura de BRAW" checked=${on} onChange=${(v) => set('brawThumbnails', v, { now: true })} />
   </${Row}>`
+}
+
+// ───── Bandeja (só no app de desktop) ─────
+
+/** "Minimizar para a bandeja": no Windows vem ligado. Com transferência andando, fechar também manda para lá. */
+function BandejaRow({ platform }) {
+  const [b, setB] = useState(null)
+  useEffect(() => {
+    let live = true
+    lerBandeja().then((r) => live && setB(r))
+    return () => {
+      live = false
+    }
+  }, [])
+  if (!b?.disponivel) return null
+  const onde = platform === 'darwin' ? 'na barra de menus' : 'perto do relógio'
+  return html`<div class="aj-linhas aj-bandeja"><${Row} label="Minimizar para a bandeja" desc=${`Sai da barra de tarefas e fica ${onde}.`}>
+    <${Switch} label="Minimizar para a bandeja" checked=${b.minimizar} onChange=${async (v) => setB((await definirBandeja(v)) || b)} />
+  </${Row}></div>`
 }
 
 // ───── Versão ─────
@@ -808,7 +827,7 @@ export function SettingsScreen({ route } = {}) {
           icon="sun"
           tone="warning"
           frase="Claro, escuro ou igual ao computador."
-          extra=${html`<${Temas} valor=${d.theme} onEscolher=${(v) => set('theme', v, { now: true })} />`}
+          extra=${html`<${Temas} valor=${d.theme} onEscolher=${(v) => set('theme', v, { now: true })} /><${BandejaRow} platform=${app?.platform} />`}
         />
 
         <${Group}
