@@ -33,6 +33,16 @@ const anon = process.argv.includes('--anon');
    segunda verdade para manter. */
 const argFase = process.argv.find(a => a.startsWith('--fase='));
 const fase = argFase ? Math.max(1, Math.min(6, +argFase.split('=')[1] || 1)) : 0;
+/* ⚠️ O PORTÃO DO LANÇAMENTO (28/out, adendo do PRD). `--release=closed`
+   escreve <meta name="cdf-release" content="closed"> na página: no domínio
+   a tela nasce fechada desde o primeiro quadro (zroFechado no template), e
+   só a conta que /api/zro/eu disser liberada entra. É o vercel-build quem
+   passa isto, SEMPRE (CARRO_RELEASE do ambiente; sem a variável, closed).
+   Sem a flag não há meta: é a prévia interna — o file://, o artifact e as
+   suítes, onde o login do protótipo segue sendo o login. `--release=released`
+   escreve a meta aberta; qualquer outro valor vira closed. */
+const argRelease = process.argv.find(a => a.startsWith('--release='));
+const release = argRelease ? (argRelease.slice('--release='.length) === 'released' ? 'released' : 'closed') : '';
 const FASE_NOME = {1:'A agenda e o brechó',2:'O dinheiro e o brechó completo',
   3:'Os documentos da produção',4:'Rodando e a comunidade',
   5:'Seguro de equipamento',6:'A segunda praça'};
@@ -335,7 +345,9 @@ const posterVar = MIDIA_VAR[MIDIA['home-poster.webp']] || [];
 const preloadPoster = posterVar.length ? '<link rel="preload" as="image" fetchpriority="high" imagesizes="100vw" imagesrcset="'
   + posterVar.map(d => d.u + ' ' + d.w + 'w').join(', ') + '">' : '';
 const preload = PRELOAD.map(f => '<link rel="preload" href="' + f + '" as="font" type="font/woff2" crossorigin>').concat(preloadPoster ? [preloadPoster] : []).join('\n');
-const pagina = '<!doctype html>\n<html lang="pt-BR">\n<head>\n' + META + '\n' + metaFase + '\n' + titulo + '\n' +
+/* o portão só na PÁGINA do domínio (o artifact mora num iframe e nunca é o domínio) */
+const metaRelease = release ? '<meta name="cdf-release" content="' + release + '">\n' : '';
+const pagina = '<!doctype html>\n<html lang="pt-BR">\n<head>\n' + META + '\n' + metaFase + '\n' + metaRelease + titulo + '\n' +
   preload + '\n' + folha + '\n</head>\n<body>\n' + corpo + '\n' + script + '\n</body>\n</html>\n';
 /* o artifact: o mesmo, sem <head> (o visualizador monta por fora) — e ele
    publica a pasta m/ junto, então os dois arquivos vão com ele */
@@ -351,7 +363,8 @@ fs.writeFileSync(base + '.html', pagina);
 fs.writeFileSync(fase ? base + '-artifact.html' : path.join(DIR_SAIDA, 'artifact.html'), artifact);
 
 const kbDe = f => (fs.statSync(path.join(SAIDA_MIDIA, f.slice(2))).size / 1024).toFixed(0);
-const kb = (Buffer.byteLength(pagina) / 1024).toFixed(0) + ' KB + ' + JS + ' (' + kbDe(JS) + ' KB) + ' + CSS + ' (' + kbDe(CSS) + ' KB)';
+const kb = (Buffer.byteLength(pagina) / 1024).toFixed(0) + ' KB + ' + JS + ' (' + kbDe(JS) + ' KB) + ' + CSS + ' (' + kbDe(CSS) + ' KB)'
+  + (release ? ' · lançamento ' + (release === 'closed' ? 'FECHADO (só a conta do proprietário)' : 'ABERTO') : ' · prévia interna (sem portão)');
 if (fase) {
   console.log(`${base}.html — ${kb} · Fase ${fase}: ${FASE_NOME[fase]}`);
   console.log(`${base}-artifact.html — o mesmo sem <head>, para publicar como artifact`);

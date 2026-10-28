@@ -41,6 +41,13 @@ const FASES = [1, 2, 3, 4, 5, 6];
 const ESTATICOS = ['apple-touch-icon.png', 'icone-192.png', 'icone-512.png', 'icone-maskable.png', 'app.webmanifest', 'og.jpg'];
 const FUNCOES = ['entrar', 'callback', 'eu', 'sair', 'enviar', 'ia'];
 const RUNTIME = 'nodejs22.x';
+/* ⚠️ O PORTÃO DO LANÇAMENTO (28/out, adendo do PRD): o domínio nasce
+   FECHADO — só a conta do proprietário entra, e só com a claim relida no
+   HUB. A mesma variável vale para a página (meta cdf-release, lida no
+   primeiro quadro) e para as funções (/api/zro/*): só CARRO_RELEASE=released
+   abre, e isso é decisão do titular, nunca sem autorização nova. Qualquer
+   outro valor — ou nenhum — é closed. */
+const RELEASE = process.env.CARRO_RELEASE === 'released' ? 'released' : 'closed';
 
 let falhou = false;
 const ok = m => console.log('  ✓ ' + m);
@@ -66,16 +73,19 @@ try {
 }
 const zro = !!(String(process.env.ZRO_CLIENT_ID || '').trim() && String(process.env.ZRO_CLIENT_SECRET || '').trim());
 console.log('  · login Absolute ZRO ' + (zro ? 'configurado' : 'sem ZRO_CLIENT_ID/ZRO_CLIENT_SECRET — o botão some sozinho'));
+console.log('  · lançamento: ' + (RELEASE === 'closed'
+  ? 'FECHADO — só a conta do proprietário entra (CARRO_RELEASE ausente ou diferente de "released")'
+  : 'ABERTO AO PÚBLICO (CARRO_RELEASE=released) — decisão do titular'));
 if (falhou) parar('NADA FOI GERADO. Conserte as travas acima.');
 
 /* ===================== 2. OS SETE ANÔNIMOS ===================== */
 console.log('\nBUILDS ANÔNIMOS (é o que o domínio serve)');
 fs.rmSync(SAIDA, { recursive: true, force: true });
 fs.mkdirSync(STATIC, { recursive: true });
-node(['src/build.js', '--anon']);
+node(['src/build.js', '--anon', '--release=' + RELEASE]);
 fs.copyFileSync(path.join(RAIZ, 'public/index.html'), path.join(STATIC, 'index.html'));
 for (const f of FASES) {
-  node(['src/build.js', '--anon', '--fase=' + f]);
+  node(['src/build.js', '--anon', '--release=' + RELEASE, '--fase=' + f]);
   fs.copyFileSync(path.join(RAIZ, 'public/fase-' + f + '.html'), path.join(STATIC, 'fase' + f + '.html'));
 }
 
@@ -110,7 +120,9 @@ for (const nome of alvos) {
   for (const tag of ['apple-touch-icon', 'apple-mobile-web-app-capable', 'apple-mobile-web-app-title', 'app.webmanifest'])
     if (!html.includes(tag)) problemas.push('sem ' + tag);
   if (/__(WEB3FORMS_KEY|SUPABASE_URL|SUPABASE_ANON_KEY)__/.test(txt)) problemas.push('marcador de chave sobrou no HTML');
-  problemas.length ? nao(nome + '.html — ' + problemas.join(' · ')) : ok(nome + '.html — FASE=' + fase + ' · ' + ver + ' · anônimo · ' + Math.round(html.length / 1024) + ' KB de HTML');
+  /* o portão: página do domínio sem a meta nasceria aberta ao público */
+  if (!html.includes('<meta name="cdf-release" content="' + RELEASE + '">')) problemas.push('SEM o portão do lançamento (cdf-release=' + RELEASE + ')');
+  problemas.length ? nao(nome + '.html — ' + problemas.join(' · ')) : ok(nome + '.html — FASE=' + fase + ' · ' + ver + ' · anônimo · ' + (RELEASE === 'closed' ? 'fechado' : 'ABERTO') + ' · ' + Math.round(html.length / 1024) + ' KB de HTML');
   scripts.push(...SEG.scriptsDoHtml(html));
 }
 
@@ -166,4 +178,4 @@ if (!process.env.VERCEL) {
 }
 
 if (falhou) parar('O BUILD REPROVOU — nada deste build pode ir ao ar.');
-console.log('\nPRONTO: ' + path.relative(RAIZ, SAIDA) + ' · build ' + VERSAO + '\n');
+console.log('\nPRONTO: ' + path.relative(RAIZ, SAIDA) + ' · build ' + VERSAO + ' · lançamento ' + (RELEASE === 'closed' ? 'FECHADO' : 'ABERTO') + '\n');

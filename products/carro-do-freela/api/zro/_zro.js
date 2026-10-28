@@ -44,6 +44,21 @@
  * caminhos do painel passam; a resposta das mensagens (NDJSON) vai pedaço a
  * pedaço, sem buffer. Sem o escopo, sem o cookie ou com o acesso recusado:
  * 401 `reconectar`, que o painel transforma em "Reconectar com Absolute ZRO".
+ *
+ * ⚠️ O PORTÃO DO LANÇAMENTO (28/out, adendo do PRD: acesso exclusivo do
+ * proprietário). Até a autorização de lançamento o Carro é FECHADO: só entra
+ * a conta que o HUB lista por `user_id` (claim `zro_release` =
+ * { "carro-do-freela": "allowed" } — hoje, só a do proprietário; outros
+ * admins, testers e assinantes ficam de fora). Nunca por e-mail, nunca por
+ * papel, nunca por lista escrita aqui. Duas travas, e as duas têm de abrir:
+ *   1. a claim é RELIDA no HUB a cada pedido (/oauth/userinfo com o token
+ *      guardado em `cdf_hub`, renovando como o Synquei faz) — o cookie de
+ *      30 dias não decide nada, e a sessão que o HUB recusa é descartada;
+ *   2. CARRO_RELEASE deste deploy: sem a variável, ou com qualquer valor
+ *      que não seja exatamente "released", é `closed`, e fechado vale até
+ *      com o HUB fora do ar. "released" no HUB só abre se aqui também for.
+ * Fechado: o callback não abre sessão (volta ?zro=fechado), /eu responde
+ * 401/403 e apaga os cookies, /enviar e /ia respondem 403 `fechado`.
  */
 const crypto = require('crypto');
 
@@ -52,13 +67,31 @@ const ESCOPOS_BASE = 'openid email profile org';
 const ESCOPO_JOBS = 'carro-do-freela.jobs';
 const ESCOPO_IA = 'zro.ia';
 const ESCOPOS = ESCOPOS_BASE + ' offline_access ' + ESCOPO_JOBS + ' ' + ESCOPO_IA;
+/* o pedido sem os escopos novos (HUB que ainda não os conhece): o refresh
+   fica, porque é com ele que a claim é relida depois */
+const ESCOPOS_BASICO = ESCOPOS_BASE + ' offline_access';
 const COOKIE_IDA = 'cdf_zro';
 const COOKIE_SESSAO = 'cdf_sessao';
 const COOKIE_HUB = 'cdf_hub';
 const IDA_S = 10 * 60;
 const SESSAO_S = 30 * 24 * 60 * 60;
-/** o id deste app em zro_products */
+/** o id deste app em zro_products e em zro_release */
 const PRODUTO = 'carro-do-freela';
+
+/* ---------------- o portão do lançamento (28/out) ---------------- */
+/** o estado deste deploy: `released` só com CARRO_RELEASE=released; qualquer outra coisa é `closed` */
+function release(env = process.env) {
+  return env.CARRO_RELEASE === 'released' ? 'released' : 'closed';
+}
+/** o que o HUB diz desta conta sobre o Carro: released | closed | allowed (sem a claim = closed) */
+function liberacaoDe(claims) {
+  const r = claims && claims.zro_release && typeof claims.zro_release === 'object' ? claims.zro_release[PRODUTO] : null;
+  return r === 'released' || r === 'allowed' ? r : 'closed';
+}
+/** a conta pode usar o Carro agora? `allowed` sempre; `released` só com este deploy também released */
+function acessoOk(quem) {
+  return !!quem && (quem.release === 'allowed' || (quem.release === 'released' && release() === 'released'));
+}
 
 /* ⚠️ SÓ ESTES ENDEREÇOS, e são os mesmos retornos cadastrados no HUB para o
    cliente `carrodofreela-web`. Um Host que não está aqui não recebe login —
@@ -176,6 +209,11 @@ function cookie(nome, valor, o) {
     .concat(o.seguro ? ['Secure'] : [])
     .join('; ');
 }
+/** os dois cookies da sessão, apagados: a sessão é descartada por inteiro */
+function apagarCookies(origem) {
+  const s = origem ? seguro(origem) : true;
+  return [cookie(COOKIE_SESSAO, '', { path: '/', maxAge: 0, seguro: s }), cookie(COOKIE_HUB, '', { path: '/api/zro', maxAge: 0, seguro: s })];
+}
 
 /* ---------------- respostas ---------------- */
 function json(res, status, corpo, extra = {}) {
@@ -263,6 +301,11 @@ async function conferirIdToken(cfg, idToken, nonce, agora = Date.now()) {
   if (typeof dados.iat === 'number' && dados.iat > s + 300) throw new Error('data futura');
   if (typeof nonce !== 'string' || !nonce || dados.nonce !== nonce) throw new Error('nonce');
   if (typeof dados.sub !== 'string' || !dados.sub || typeof dados.email !== 'string') throw new Error('sem sub ou e-mail');
+  return contaDeClaims(dados);
+}
+
+/** a conta como o HUB a descreve (id_token ou /oauth/userinfo): quem é, o que pode, e o que diz do Carro */
+function contaDeClaims(dados) {
   const org = dados.zro_org && typeof dados.zro_org === 'object' ? dados.zro_org : null;
   /* sem a lista (escopo org não concedido, formato estranho) = nada liberado */
   const produtos = Array.isArray(dados.zro_products)
@@ -275,6 +318,8 @@ async function conferirIdToken(cfg, idToken, nonce, agora = Date.now()) {
     nome: typeof dados.name === 'string' && dados.name.trim() ? dados.name.trim().slice(0, 120) : null,
     organizacao: org && typeof org.name === 'string' ? org.name.slice(0, 120) : null,
     produtos,
+    /* o portão: released | closed | allowed — sem a claim, closed */
+    release: liberacaoDe(dados),
   };
 }
 
@@ -287,14 +332,22 @@ async function pedirToken(cfg, form) {
     body: new URLSearchParams(form).toString(),
   });
 }
-/** o que vai no cookie do HUB: só se o HUB deu o escopo de jobs ou o da Z, E o refresh token.
- *  `jobs` e `ia` dizem para que o acesso serve (cookie de antes da Z não tem `ia`: reconectar). */
+/** o que vai no cookie do HUB: o access token (é com ele que a claim é RELIDA a cada pedido, 28/out), o
+ *  refresh token quando o HUB deu offline_access, e para que o acesso serve: `jobs` e `ia` (cookie de antes
+ *  da Z não tem `ia`: reconectar). Sem access token não há sessão que se confira: null. */
 function acessoHub(corpo, sub) {
-  const escopos = String((corpo && corpo.scope) || '').split(' ');
-  const jobs = escopos.includes(ESCOPO_JOBS), ia = escopos.includes(ESCOPO_IA);
-  if ((!jobs && !ia) || typeof corpo.refresh_token !== 'string' || typeof corpo.access_token !== 'string') return null;
+  if (!corpo || typeof corpo.access_token !== 'string') return null;
+  const escopos = String(corpo.scope || '').split(' ');
   const agora = Math.floor(Date.now() / 1000);
-  return { sub, rt: corpo.refresh_token, at: corpo.access_token, atExp: agora + Math.min(Number(corpo.expires_in) || 0, 3600), exp: agora + SESSAO_S, jobs, ia };
+  return {
+    sub,
+    rt: typeof corpo.refresh_token === 'string' ? corpo.refresh_token : null,
+    at: corpo.access_token,
+    atExp: agora + Math.min(Number(corpo.expires_in) || 0, 3600),
+    exp: agora + SESSAO_S,
+    jobs: escopos.includes(ESCOPO_JOBS),
+    ia: escopos.includes(ESCOPO_IA),
+  };
 }
 
 async function trocarCodigo(cfg, code, verificador, nonce, retorno) {
@@ -338,7 +391,7 @@ async function entrar(req, res) {
   u.searchParams.set('response_type', 'code');
   u.searchParams.set('client_id', cfg.clientId);
   u.searchParams.set('redirect_uri', origem + '/api/zro/callback');
-  u.searchParams.set('scope', basico ? ESCOPOS_BASE : ESCOPOS);
+  u.searchParams.set('scope', basico ? ESCOPOS_BASICO : ESCOPOS);
   u.searchParams.set('state', state);
   u.searchParams.set('nonce', nonce);
   u.searchParams.set('code_challenge', desafio);
@@ -379,38 +432,56 @@ async function callback(req, res) {
   } catch (e) {
     return falhar('erro');
   }
+  /* sem o access token não há como RELER a claim depois: sessão que não se confere não nasce */
+  if (!hub) return falhar('erro');
+  /* ⚠️ O PORTÃO (28/out): sem "allowed" (ou "released" dos dois lados) a
+     sessão NÃO nasce — nenhum cookie fica, e a volta diz "Em desenvolvimento".
+     O HUB normalmente nem emite o código para quem está de fora; esta é a
+     trava DESTE lado, para token de HUB antigo ou de outro estado não abrir
+     nada. */
+  if (!acessoOk(quem)) return ir(res, 303, comMarca(volta, 'fechado'), [limpar].concat(apagarCookies(origem)));
   const exp = Math.floor(Date.now() / 1000) + SESSAO_S;
   const sessao = selar({ sub: quem.sub, nome: quem.nome, email: quem.email, org: quem.organizacao, produtos: quem.produtos, exp }, cfg.clientSecret, COOKIE_SESSAO);
-  const cookieHub = hub
-    ? cookie(COOKIE_HUB, cifrar(hub, cfg.clientSecret), { path: '/api/zro', maxAge: SESSAO_S, seguro: seguro(origem) })
-    : cookie(COOKIE_HUB, '', { path: '/api/zro', maxAge: 0, seguro: seguro(origem) });
+  const cookieHub = cookie(COOKIE_HUB, cifrar(hub, cfg.clientSecret), { path: '/api/zro', maxAge: SESSAO_S, seguro: seguro(origem) });
   return ir(res, 303, comMarca(volta, 'entrou'), [limpar, cookie(COOKIE_SESSAO, sessao, { path: '/', maxAge: SESSAO_S, seguro: seguro(origem) }), cookieHub]);
 }
 
-/** GET /api/zro/eu — quem está na sessão, ou 401 */
-function eu(req, res) {
+/** GET /api/zro/eu — quem está na sessão SEGUNDO O HUB AGORA, ou 401/403 (e `release`, o estado deste deploy) */
+async function eu(req, res) {
   if (req.method !== 'GET') return json(res, 405, { erro: 'metodo' }, { Allow: 'GET' });
   const cfg = config();
-  if (!cfg.ligado) return json(res, 503, { erro: 'desligado' });
+  const estado = release();
+  if (!cfg.ligado) return json(res, 503, { erro: 'desligado', release: estado });
+  const origem = origemDe(req);
+  const apagar = { 'Set-Cookie': apagarCookies(origem) };
   const s = abrir(lerCookie(req, COOKIE_SESSAO), cfg.clientSecret, COOKIE_SESSAO);
-  if (!s || typeof s.sub !== 'string') return json(res, 401, { erro: 'sem_sessao' });
-  /* sessão de antes da lista de produtos: entra de novo pelo HUB, que é
-     onde o direito de uso é lido — nunca "liberado" nem "bloqueado" no chute */
-  if (!Array.isArray(s.produtos)) return json(res, 401, { erro: 'sem_sessao' });
-  const produtos = s.produtos.filter(p => typeof p === 'string');
+  if (!s || typeof s.sub !== 'string') return json(res, 401, { erro: 'sem_sessao', release: estado });
+  /* ⚠️ O COOKIE DE 30 DIAS NÃO DECIDE NADA (28/out): a claim é RELIDA no HUB
+     a cada pedido, com o token guardado. Sessão de antes disso (sem o token)
+     não tem como ser conferida e não vale; sessão que o HUB recusa (acesso
+     removido, token revogado) é descartada aqui mesmo. */
   const h = decifrar(lerCookie(req, COOKIE_HUB), cfg.clientSecret);
+  if (!h || h.sub !== s.sub) return json(res, 401, { erro: 'sem_sessao', release: estado }, apagar);
+  const c = await lerConta(cfg, h);
+  if (c.recusado) return json(res, 401, { erro: 'sem_sessao', release: estado }, apagar);
+  /* HUB fora do ar: nada se confere, nada abre — e a sessão fica para quando ele voltar */
+  if (!c.quem) return json(res, 503, { erro: 'hub', release: estado });
+  if (!acessoOk(c.quem)) return json(res, 403, { erro: 'fechado', release: estado }, apagar);
+  const acesso = c.novo || h;
+  const extra = c.novo && origem ? { 'Set-Cookie': [cookie(COOKIE_HUB, cifrar(c.novo, cfg.clientSecret), { path: '/api/zro', maxAge: SESSAO_S, seguro: seguro(origem) })] } : {};
   return json(res, 200, {
-    sub: s.sub,
-    nome: s.nome || null,
-    email: s.email || null,
-    organizacao: s.org || null,
-    produtos,
-    liberado: produtos.includes(PRODUTO),
-    /* dá para levar job e equipe ao HUB a partir daqui */
-    hub: !!(h && h.sub === s.sub && h.jobs !== false),
+    sub: c.quem.sub,
+    nome: c.quem.nome || null,
+    email: c.quem.email || null,
+    organizacao: c.quem.organizacao || null,
+    produtos: c.quem.produtos,
+    liberado: c.quem.produtos.includes(PRODUTO),
+    /* dá para levar job e equipe ao HUB a partir daqui (cookie de antes do envio: ainda vale) */
+    hub: acesso.jobs !== false,
     /* a Z (IA da Absolute ZRO) tem acesso: sem isso o painel pede para reconectar */
-    ia: !!(h && h.sub === s.sub && h.ia === true),
-  });
+    ia: acesso.ia === true,
+    release: estado,
+  }, extra);
 }
 
 /** POST /api/zro/sair — apaga a sessão deste site (não a do HUB) */
@@ -424,7 +495,7 @@ async function sair(req, res) {
   /* o refresh token do HUB morre junto: revoga lá (sem esperar resposta boa) e apaga aqui */
   const cfg = config();
   const h = cfg.ligado ? decifrar(lerCookie(req, COOKIE_HUB), cfg.clientSecret) : null;
-  if (h)
+  if (h && typeof h.rt === 'string' && h.rt)
     try {
       const d = await descobrir(cfg);
       if (d.revocation_endpoint)
@@ -493,10 +564,50 @@ async function lerCorpo(req, max) {
 async function tokenDoHub(cfg, h) {
   const agora = Math.floor(Date.now() / 1000);
   if (h.at && h.atExp - 60 > agora) return { at: h.at, novo: null };
+  /* sem refresh token (login sem offline_access) o acesso acaba com o token: entra de novo */
+  if (typeof h.rt !== 'string' || !h.rt) return { at: null, novo: null, recusado: true };
   const { status, corpo } = await pedirToken(cfg, { grant_type: 'refresh_token', refresh_token: h.rt });
   if (status !== 200 || !corpo) return { at: null, novo: null, recusado: status === 400 || status === 401 };
   const novo = acessoHub(corpo, h.sub);
+  if (novo) {
+    if (!novo.rt) novo.rt = h.rt;
+    /* resposta sem `scope`: o acesso continua servindo para o que servia */
+    if (corpo.scope === undefined) { novo.jobs = h.jobs; novo.ia = h.ia }
+  }
   return { at: novo ? novo.at : null, novo, recusado: !novo };
+}
+
+/** /oauth/userinfo com o token: quem é esta conta e o que ela pode, segundo o HUB agora */
+async function lerUserinfo(cfg, at) {
+  const d = await descobrir(cfg);
+  return buscarJson(d.userinfo_endpoint || cfg.issuer + '/oauth/userinfo', { headers: { Authorization: 'Bearer ' + at, Accept: 'application/json' } });
+}
+
+/**
+ * A CLAIM RELIDA (28/out): quem está na sessão segundo o HUB AGORA — nunca
+ * segundo o cookie de 30 dias. Usa o access token guardado enquanto vale;
+ * vencido ou recusado, troca o refresh token (que RODA) uma vez só. Devolve
+ * { quem, at, novo } (`novo` é o acesso para o cookie, quando a troca rodou),
+ * { recusado } (o HUB não aceita mais esta sessão: acesso removido, token
+ * revogado, outra pessoa) ou { fora } (rede, HUB fora do ar — temporário, e
+ * fechado enquanto durar: ninguém entra sem a claim relida).
+ */
+async function lerConta(cfg, h) {
+  let t;
+  try { t = await tokenDoHub(cfg, h) } catch (e) { return { fora: true } }
+  if (!t.at) return t.recusado ? { recusado: true } : { fora: true };
+  let r;
+  try { r = await lerUserinfo(cfg, t.at) } catch (e) { return { fora: true, novo: t.novo } }
+  if (r.status === 401 && !t.novo) {
+    /* o token guardado parecia valer e o HUB não aceitou: uma troca, uma só */
+    try { t = await tokenDoHub(cfg, Object.assign({}, h, { at: null })) } catch (e) { return { fora: true } }
+    if (!t.at) return t.recusado ? { recusado: true } : { fora: true };
+    try { r = await lerUserinfo(cfg, t.at) } catch (e) { return { fora: true, novo: t.novo } }
+  }
+  if (r.status === 401 || r.status === 403) return { recusado: true, novo: t.novo };
+  if (r.status !== 200 || !r.corpo || typeof r.corpo.sub !== 'string' || typeof r.corpo.email !== 'string') return { fora: true, novo: t.novo };
+  if (r.corpo.sub !== h.sub) return { recusado: true, novo: t.novo };
+  return { quem: contaDeClaims(r.corpo), at: t.at, novo: t.novo };
 }
 
 async function postarNoHub(cfg, at, caminho, corpo) {
@@ -521,39 +632,44 @@ async function enviar(req, res) {
   if (!origem || req.headers.origin !== origem) return json(res, 403, { erro: 'origem' });
   if (!/^application\/json\b/.test(String(req.headers['content-type'] || ''))) return json(res, 415, { erro: 'formato' });
   const s = abrir(lerCookie(req, COOKIE_SESSAO), cfg.clientSecret, COOKIE_SESSAO);
-  if (!s || typeof s.sub !== 'string' || !Array.isArray(s.produtos)) return json(res, 401, { erro: 'sem_sessao' });
-  if (!s.produtos.includes(PRODUTO)) return json(res, 403, { erro: 'plano' });
+  if (!s || typeof s.sub !== 'string') return json(res, 401, { erro: 'sem_sessao' });
   const h = decifrar(lerCookie(req, COOKIE_HUB), cfg.clientSecret);
-  const apagar = cookie(COOKIE_HUB, '', { path: '/api/zro', maxAge: 0, seguro: seguro(origem) });
-  if (!h || h.sub !== s.sub || h.jobs === false) return json(res, 401, { erro: 'reconectar' }, h && h.sub !== s.sub ? { 'Set-Cookie': [apagar] } : {});
+  const apagar = { 'Set-Cookie': apagarCookies(origem) };
+  if (!h || h.sub !== s.sub) return json(res, 401, { erro: 'reconectar' }, apagar);
+  /* ⚠️ A CLAIM RELIDA (28/out): o direito de uso vem do HUB agora, nunca do
+     cookie. Sessão recusada ou fechada é descartada; HUB fora do ar não abre. */
+  const c = await lerConta(cfg, h);
+  if (c.recusado) return json(res, 401, { erro: 'reconectar' }, apagar);
+  if (!c.quem) return json(res, 502, { erro: 'hub' });
+  if (!acessoOk(c.quem)) return json(res, 403, { erro: 'fechado' }, apagar);
+  /* a partir daqui o refresh pode ter rodado: o cookie novo vai em TODA resposta */
+  const extra = c.novo ? { 'Set-Cookie': [cookie(COOKIE_HUB, cifrar(c.novo, cfg.clientSecret), { path: '/api/zro', maxAge: SESSAO_S, seguro: seguro(origem) })] } : {};
+  if (!c.quem.produtos.includes(PRODUTO)) return json(res, 403, { erro: 'plano' }, extra);
+  if ((c.novo || h).jobs === false) return json(res, 401, { erro: 'reconectar' }, extra);
   let pedido;
   try {
     pedido = await lerCorpo(req, 64 * 1024);
   } catch (e) {
-    return json(res, 400, { erro: 'pedido' });
+    return json(res, 400, { erro: 'pedido' }, extra);
   }
   const job = montarJob(pedido && pedido.job);
-  if (!job) return json(res, 400, { erro: 'pedido' });
+  if (!job) return json(res, 400, { erro: 'pedido' }, extra);
   const equipe = montarEquipe(job.job_id, pedido.equipe);
-
-  const t = await tokenDoHub(cfg, h);
-  if (!t.at) return json(res, t.recusado ? 401 : 502, { erro: t.recusado ? 'reconectar' : 'hub' }, t.recusado ? { 'Set-Cookie': [apagar] } : {});
-  /* a partir daqui o refresh já rodou: o cookie novo vai em TODA resposta */
-  const extra = t.novo ? { 'Set-Cookie': [cookie(COOKIE_HUB, cifrar(t.novo, cfg.clientSecret), { path: '/api/zro', maxAge: SESSAO_S, seguro: seguro(origem) })] } : {};
   const recusa = r => {
-    const c = String((r.corpo && r.corpo.error) || '');
+    const cd = String((r.corpo && r.corpo.error) || '');
     if (r.status === 401) return 'reconectar';
-    if (/^(entitlement_required|feature_not_included|product_unavailable)$/.test(c)) return 'plano';
-    return { forbidden_role: 'papel', email_not_verified: 'email', no_active_organization: 'organizacao' }[c] || 'hub';
+    if (cd === 'product_closed') return 'fechado';
+    if (/^(entitlement_required|feature_not_included|product_unavailable)$/.test(cd)) return 'plano';
+    return { forbidden_role: 'papel', email_not_verified: 'email', no_active_organization: 'organizacao' }[cd] || 'hub';
   };
 
-  const rj = await postarNoHub(cfg, t.at, '/api/v1/carro-do-freela/jobs', job);
+  const rj = await postarNoHub(cfg, c.at, '/api/v1/carro-do-freela/jobs', job);
   if ((rj.status !== 200 && rj.status !== 201) || !rj.corpo || !UUID.test(String(rj.corpo.projectId)))
     return json(res, [401, 403, 409].includes(rj.status) ? rj.status : 502, { erro: recusa(rj) }, extra);
   const id = rj.corpo.projectId;
   const saida = { projeto: { id, link: cfg.issuer + '/projetos/' + id, criado: rj.status === 201 }, equipe: null };
   if (equipe) {
-    const re = await postarNoHub(cfg, t.at, '/api/v1/carro-do-freela/jobs/crew', equipe);
+    const re = await postarNoHub(cfg, c.at, '/api/v1/carro-do-freela/jobs/crew', equipe);
     saida.equipe =
       re.status === 200 && re.corpo && Array.isArray(re.corpo.members)
         ? {
@@ -602,43 +718,55 @@ async function ia(req, res) {
   /* GET de outro site não lê nada (sem CORS); o que muda exige a própria origem */
   if (req.method !== 'GET' && req.headers.origin !== origem) return json(res, 403, { erro: 'origem' });
   const s = abrir(lerCookie(req, COOKIE_SESSAO), cfg.clientSecret, COOKIE_SESSAO);
-  if (!s || typeof s.sub !== 'string' || !Array.isArray(s.produtos)) return json(res, 401, { erro: 'sem_sessao' });
-  if (!s.produtos.includes(PRODUTO)) return json(res, 403, { erro: 'plano' });
+  if (!s || typeof s.sub !== 'string') return json(res, 401, { erro: 'sem_sessao' });
   const h = decifrar(lerCookie(req, COOKIE_HUB), cfg.clientSecret);
-  const apagar = cookie(COOKIE_HUB, '', { path: '/api/zro', maxAge: 0, seguro: seguro(origem) });
-  if (!h || h.sub !== s.sub || h.ia !== true) return json(res, 401, { erro: 'reconectar' }, h && h.sub !== s.sub ? { 'Set-Cookie': [apagar] } : {});
+  const apagar = { 'Set-Cookie': apagarCookies(origem) };
+  if (!h || h.sub !== s.sub) return json(res, 401, { erro: 'reconectar' }, apagar);
+  /* ⚠️ A CLAIM RELIDA (28/out), como no /enviar: fechado é 403 e a sessão vai embora */
+  const c = await lerConta(cfg, h);
+  if (c.recusado) return json(res, 401, { erro: 'reconectar' }, apagar);
+  if (!c.quem) return json(res, 502, { erro: 'hub' });
+  if (!acessoOk(c.quem)) return json(res, 403, { erro: 'fechado' }, apagar);
+  /* o refresh rodou: o cookie novo vai nesta resposta, seja ela qual for */
+  const novo = c.novo ? [cookie(COOKIE_HUB, cifrar(c.novo, cfg.clientSecret), { path: '/api/zro', maxAge: SESSAO_S, seguro: seguro(origem) })] : null;
+  const extra = novo ? { 'Set-Cookie': novo } : {};
+  if (!c.quem.produtos.includes(PRODUTO)) return json(res, 403, { erro: 'plano' }, extra);
+  if ((c.novo || h).ia !== true) return json(res, 401, { erro: 'reconectar' }, extra);
   let corpo;
   if (req.method === 'POST') {
-    if (!/^application\/json\b/.test(String(req.headers['content-type'] || ''))) return json(res, 415, { erro: 'formato' });
+    if (!/^application\/json\b/.test(String(req.headers['content-type'] || ''))) return json(res, 415, { erro: 'formato' }, extra);
     try {
       corpo = JSON.stringify(await lerCorpo(req, 64 * 1024));
     } catch (e) {
-      return json(res, 400, { erro: 'pedido' });
+      return json(res, 400, { erro: 'pedido' }, extra);
     }
   }
-  const t = await tokenDoHub(cfg, h);
-  if (!t.at) return json(res, t.recusado ? 401 : 502, { erro: t.recusado ? 'reconectar' : 'hub' }, t.recusado ? { 'Set-Cookie': [apagar] } : {});
-  /* o refresh rodou: o cookie novo vai nesta resposta, seja ela qual for */
-  const novo = t.novo ? [cookie(COOKIE_HUB, cifrar(t.novo, cfg.clientSecret), { path: '/api/zro', maxAge: SESSAO_S, seguro: seguro(origem) })] : null;
   const ac = new AbortController();
   res.on('close', () => { if (!res.writableFinished) ac.abort() });
   let r;
   try {
     r = await fetch(cfg.issuer + '/api/v1/ia/' + caminho, {
       method: req.method,
-      headers: Object.assign({ Authorization: 'Bearer ' + t.at, Accept: 'application/json, application/x-ndjson' }, corpo !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      headers: Object.assign({ Authorization: 'Bearer ' + c.at, Accept: 'application/json, application/x-ndjson' }, corpo !== undefined ? { 'Content-Type': 'application/json' } : {}),
       body: corpo,
       cache: 'no-store',
       redirect: 'error',
       signal: ac.signal,
     });
   } catch (e) {
-    return json(res, 502, { erro: 'hub' }, novo ? { 'Set-Cookie': novo } : {});
+    return json(res, 502, { erro: 'hub' }, extra);
   }
   /* o HUB recusou o token (acesso removido, escopo faltando): pede para entrar de novo */
   if (r.status === 401) {
     try { await r.body.cancel() } catch (e) {}
-    return json(res, 401, { erro: 'reconectar' }, { 'Set-Cookie': [apagar] });
+    return json(res, 401, { erro: 'reconectar' }, apagar);
+  }
+  /* o HUB fechou o produto para esta conta (403 product_closed): a sessão daqui vai junto */
+  if (r.status === 403) {
+    let erro = null;
+    try { erro = (await r.json()).error } catch (e) {}
+    if (erro === 'product_closed') return json(res, 403, { erro: 'fechado' }, apagar);
+    return json(res, 403, { erro: erro || 'hub' }, extra);
   }
   const h2 = { 'Content-Type': r.headers.get('content-type') || 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no' };
   if (novo) h2['Set-Cookie'] = novo;
@@ -670,5 +798,5 @@ module.exports = {
   enviar: protegido(enviar),
   ia: protegido(ia),
   /* para os testes */
-  _interno: { caminhoIa, abrir, selar, cifrar, decifrar, montarJob, montarEquipe, COOKIE_HUB, voltaSegura, origemDe, conferirIdToken, config, esquecer: () => (cache = { descoberta: null, chaves: null }), COOKIE_IDA, COOKIE_SESSAO, ORIGENS, PRODUTO },
+  _interno: { caminhoIa, abrir, selar, cifrar, decifrar, montarJob, montarEquipe, COOKIE_HUB, voltaSegura, origemDe, conferirIdToken, contaDeClaims, lerConta, release, liberacaoDe, acessoOk, config, esquecer: () => (cache = { descoberta: null, chaves: null }), COOKIE_IDA, COOKIE_SESSAO, ORIGENS, PRODUTO },
 };
