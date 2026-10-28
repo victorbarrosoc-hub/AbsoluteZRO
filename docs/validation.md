@@ -1503,3 +1503,27 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   sessão antiga negada), sem-zoom 41, abertura 39, tempo-real 23. home-clara 80, baloes 24, menu-recolhivel 52.
   `scan-secrets` limpo. Telas 1440 e 390 ("Em desenvolvimento" claro/escuro e home fechada).
 - Não validado: HUB real emitindo `zro_release` (contrato simulado pelo HUB falso) e o deploy na Vercel com a variável.
+
+## Apps de celular e computador iguais ao web (28/10/2026)
+
+- Pedido do titular: "atualiza as plataformas no mobile e no computador também". Conferido em cada cliente lançado:
+  - **Aba da Z**: SOBEDESCE (computador `public/`, celular `web/public/app`), Synquei (`app/`, também empacotado no
+    Electron) e TPeasy (`app/`) já tinham a Z como primeira aba. Nenhum cliente guarda cópia do `<zro-ia>`: todos
+    carregam `https://absolutezro.com/ia/v1/zro-ia.js` ao vivo, então a versão é sempre a do HUB.
+  - **SOBEDESCE só com a conta Absolute ZRO**: nenhuma tela dos apps tinha "Entrar com Google" (o computador entra pelo
+    código no site, o celular pelo `/entrar`, que já é só Absolute ZRO). Os textos de entrada passaram de "conta
+    SOBEDESCE" para "conta Absolute ZRO" (Primeiros passos, Ajustes, Z, Dispositivos, Referências, navegador; celular:
+    tela de entrada). O "Conectar um Drive só neste computador" (chave própria do Google) continua como opção de
+    conexão do Drive, não de entrada.
+  - **Contato**: nenhum e-mail pessoal ou gmail nas telas dos clientes.
+  - **Produtos fechados**: NOSSOM, Revela e Carro do Freela saíram da lista "Absolute ZRO" do SOBEDESCE (barra lateral
+    do computador e Ajustes do celular), do Synquei e do TPeasy, e os ícones deles saíram do cache dos service workers.
+    O "Converter com a Revela" do celular do SOBEDESCE (conversão no próprio aparelho, sem abrir a Revela) ficou como
+    está, igual ao web.
+  - **Absolute ZRO para computador** (`apps/hub-desktop`): abre o site ao vivo; nada a mudar.
+- Versões: app do celular SOBEDESCE 2.8.51 / `sobedesce-app-v66`; `synquei-v22`; `tpeasy-v19`. O build dos apps de
+  computador (SOBEDESCE e Synquei) vem do GitHub Actions (`build-info.json`), não do `package.json`.
+- Testes: SOBEDESCE `npm run test:fast` 733 ok, 3 pulados (novos casos em `test/familia.test.js`: só plataformas
+  abertas e entrada só com Absolute ZRO); `web`: lint, typecheck e 263/263. Synquei `npm test` 116 ok, 4 pulados (caso
+  novo da família em `tests/zro-ia.test.mjs`). TPeasy `node --test tests/*.test.mjs` 50/50.
+- Não validado: instaladores novos (dependem de autorização do titular) e telas no Playwright.

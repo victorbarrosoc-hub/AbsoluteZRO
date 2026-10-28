@@ -363,7 +363,7 @@ function MobileGroups({ d, set, accounts, activeId, home, platform }) {
             <${QrBox} svg=${m.webQrSvg} label="QR code do app do celular" />
             <div class="mqr-text">
               <div class="srow-label">Escaneie com o iPhone</div>
-              <div class="srow-desc">Abre o app do celular. Entre na sua conta SOBEDESCE e escolha o Drive.</div>
+              <div class="srow-desc">Abre o app do celular. Entre com a sua conta Absolute ZRO e escolha o Drive.</div>
               <${CopyField} value=${m.webUrl} />
             </div>
           </div>`

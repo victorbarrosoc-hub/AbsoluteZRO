@@ -217,8 +217,8 @@ function CloudWelcome() {
   }
   const localPath = () => (setup.configured ? (location.href = '/api/auth/start') : navigate('inicio/local'))
 
-  let title = 'Entre na sua conta SOBEDESCE'
-  let lead = 'Os Google Drives da sua conta aparecem aqui, prontos para enviar e baixar. Sem chave do Google, sem configuração.'
+  let title = 'Entre com a sua conta Absolute ZRO'
+  let lead = 'Os Google Drives conectados na sua conta aparecem aqui, prontos para enviar e baixar.'
   if (pending) lead = 'Abrimos o navegador. Entre na sua conta e libere este computador com o código abaixo.'
   if (signed && contas.length) {
     title = 'Conta conectada'
@@ -281,7 +281,7 @@ function LocalSetup({ route }) {
     if (changingKey && accounts.length) navigate('ajustes')
     else setCurrent(2)
   }
-  const back = accounts.length ? { label: 'Voltar para Ajustes', go: () => navigate('ajustes') } : { label: 'Entrar com a conta SOBEDESCE', go: () => navigate('inicio') }
+  const back = accounts.length ? { label: 'Voltar para Ajustes', go: () => navigate('ajustes') } : { label: 'Entrar com a conta Absolute ZRO', go: () => navigate('inicio') }
 
   return html`<div class="setup">
     <div class="setup-brand"><${Wordmark} size=${26} /></div>

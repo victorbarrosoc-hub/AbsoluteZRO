@@ -710,8 +710,12 @@ describe('a Z (repasse /api/zro/ia)', () => {
     assert.match(z, /setAttribute\("api", "\/api\/zro\/ia"\)/)
     assert.ok(!/\.token\s*=/.test(z))
     const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
-    assert.match(sw, /tpeasy-v18/)
+    assert.match(sw, /tpeasy-v19/)
     assert.match(sw, /url\.pathname\.startsWith\("\/api\/"\)/)
+    // a família só lista plataformas abertas (NOSSOM, AEON, Revela, Carro do Freela e Maestro estão fechados)
+    const fam = /<nav class="familia"[\s\S]*?<\/nav>/.exec(readFileSync(new URL('../app/index.html', import.meta.url), 'utf8'))[0]
+    assert.doesNotMatch(fam + sw, /nossom|aeon|revela|carrodofreela|carro-do-freela|maestro/i)
+    for (const nome of ['Absolute ZRO', 'Sobedesce', 'Synquei']) assert.ok(fam.includes(`<span>${nome}</span>`), nome)
     const v = JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'))
     assert.ok(v.rewrites.some((r) => r.source === '/api/zro/ia/:caminho*' && r.destination === '/api/zro/ia?c=:caminho*'))
   })

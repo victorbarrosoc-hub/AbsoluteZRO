@@ -74,7 +74,7 @@ export function CloudSignIn({ hero }) {
   if (login.estado === 'expirado' || login.estado === 'erro') return html`<${CloudRetry} login=${login} onRetry=${start} busy=${busy} />`
   return html`<div class=${cx('cloud-signin', hero && 'is-hero')}>
     ${cloud?.aviso ? html`<p class="cloud-problem"><${Icon} name="warning" size=${15} /> ${cloud.aviso}</p>` : null}
-    <${Button} variant="primary" size=${hero ? 'xl' : 'sm'} icon=${hero ? 'user' : null} loading=${busy} onClick=${start}>Entrar com a conta SOBEDESCE</${Button}>
+    <${Button} variant="primary" size=${hero ? 'xl' : 'sm'} icon=${hero ? 'user' : null} loading=${busy} onClick=${start}>Entrar com a conta Absolute ZRO</${Button}>
     ${hero
       ? html`<p class="cloud-signup">Ainda não tem conta? <button type="button" class="link" onClick=${() => openExternal(criarContaUrl())}>Criar no site</button></p>`
       : null}

@@ -271,6 +271,10 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   "Absolute ZRO" montado do catálogo (lançados/liberados), Ferramentas (grupo "Em desenvolvimento" com os `closed`),
   `AppTile`, painel do app, `/inicio` (fechados por último e fora da órbita), Sua conta › Acessos e a gaveta da Z com
   o selo.
+- ✅ **Apps de celular e computador iguais ao web** (28/10/2026): SOBEDESCE (computador `public/` e celular
+  `web/public/app`, app 2.8.51 / `sobedesce-app-v66`), Synquei (`app/`, `synquei-v22`) e TPeasy (`app/`,
+  `tpeasy-v19`) sem NOSSOM, Revela e Carro do Freela na lista da família; o SOBEDESCE chama a entrada de "conta
+  Absolute ZRO" nos dois apps. Falta o titular autorizar os instaladores novos do SOBEDESCE e do Synquei.
 - ⬜ Pastas dos quatro produtos fechados (`RELEASE=closed`, telas, `/api/zro/*` com 403, instaladores e Releases) —
   outros agentes, no mesmo branch.
 - ⛔ Em produção, só com autorização: inserir a conta do proprietário em `product_release_access` e rodar o
