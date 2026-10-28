@@ -1,7 +1,7 @@
 /**
- * Envio de e-mail transacional. O provedor ainda não foi escolhido (PRD, decisões pendentes):
- * em desenvolvimento o link aparece no log do servidor; em produção sem provedor, `deliveryAvailable` é false e a
- * interface diz que a confirmação por e-mail está indisponível, em vez de fingir que enviou.
+ * Envio de e-mail transacional pelo Resend (decisão do titular, 28/10/2026), do endereço nao-responda@absolutezro.com.
+ * Em desenvolvimento o link aparece no log do servidor; em produção sem RESEND_API_KEY, `deliveryAvailable` é false e
+ * a interface diz que a confirmação por e-mail está indisponível, em vez de fingir que enviou.
  */
 import { zroEnv } from '@zro/observability'
 
@@ -28,7 +28,26 @@ export function memorySender(): EmailSender & { outbox: OutgoingEmail[] } {
   return { deliveryAvailable: true, outbox, send: async (e) => void outbox.push(e) }
 }
 
+const REMETENTE = 'Absolute ZRO <nao-responda@absolutezro.com>'
+const RESPONDER_PARA = 'contato@absolutezro.com'
+
+export function resendSender(apiKey: string, fetcher: typeof fetch = fetch): EmailSender {
+  return {
+    deliveryAvailable: true,
+    async send(e) {
+      const r = await fetcher('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ from: REMETENTE, reply_to: RESPONDER_PARA, to: [e.to], subject: e.subject, text: e.text }),
+      })
+      if (!r.ok) throw new Error(`Resend recusou o envio (${r.status}).`)
+    },
+  }
+}
+
 export function defaultSender(): EmailSender {
+  const key = process.env.RESEND_API_KEY?.trim()
+  if (key) return resendSender(key)
   if (zroEnv() === 'production') return unavailableSender
   return devConsoleSender()
 }

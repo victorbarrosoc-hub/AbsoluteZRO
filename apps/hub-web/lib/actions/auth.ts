@@ -23,7 +23,10 @@ const mail = defaultSender()
 
 async function sendVerify(email: string, token: string): Promise<string | undefined> {
   const link = `${appOrigin}/confirmar-email?token=${encodeURIComponent(token)}`
-  await mail.send({ to: email, subject: 'Confirme seu e-mail na Absolute ZRO', text: `Para confirmar, abra: ${link}` })
+  // A conta já existe: falha no envio não pode parecer falha no cadastro (a pessoa reenvia pela conta).
+  await mail
+    .send({ to: email, subject: 'Confirme seu e-mail na Absolute ZRO', text: `Para confirmar, abra: ${link}` })
+    .catch((e) => console.error('[e-mail] confirmação não enviada:', e instanceof Error ? e.message : e))
   return showDevLinks ? link : undefined
 }
 
