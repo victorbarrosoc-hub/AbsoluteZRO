@@ -1,12 +1,47 @@
 import 'server-only'
-import { salesStatus } from '@zro/billing'
+import { releaseState, salesStatus, type ReleaseChannels, type ReleaseState } from '@zro/billing'
 import { db } from '../session'
 
-/** Catálogo público (produtos e planos ativos). Só dados públicos; nada de organização. */
+/** Estado de lançamento de um produto no catálogo público (ADR 0023). Sem linha no banco = development, canais fechados. */
+export type ReleasePublic = { state: ReleaseState; canais: ReleaseChannels }
+
+export type CatalogProduct = {
+  id: string
+  name: string
+  stage: string
+  step_order: number
+  role_in_flow: string
+  description: string
+  external_url: string | null
+  provisional_name: boolean
+  release: ReleasePublic
+}
+
+/**
+ * Catálogo público (produtos e planos ativos). Só dados públicos; nada de organização. Cada produto traz `release`
+ * (estado e canais abertos ao público) para a homepage, /baixar, o desktop e a navegação decidirem o que mostrar:
+ * produto fechado é "Em desenvolvimento", sem Abrir/Baixar/Entrar.
+ */
 export async function publicCatalog() {
   return db().asSystem('site: catálogo público', async (tx) => {
-    const products =
-      await tx`select id, name, stage, step_order, role_in_flow, description, external_url, provisional_name from zro.products order by step_order`
+    const rows = await tx`select id, name, stage, step_order, role_in_flow, description, external_url, provisional_name from zro.products order by step_order`
+    const states = await releaseState(tx)
+    const products: CatalogProduct[] = rows.map((p) => {
+      const r = states[p.id as string]
+      return {
+        id: p.id as string,
+        name: p.name as string,
+        stage: p.stage as string,
+        step_order: p.step_order as number,
+        role_in_flow: p.role_in_flow as string,
+        description: p.description as string,
+        external_url: (p.external_url as string) ?? null,
+        provisional_name: !!p.provisional_name,
+        release: r
+          ? { state: r.state, canais: r.channels }
+          : { state: 'development', canais: { web: false, desktop: false, api: false, download: false, sso: false } },
+      }
+    })
     const plans = await tx`
       select p.id, p.code, p.version, p.name, p.kind, p.price_cents, p.currency, p.billing_interval, p.trial_days, p.description,
              max((pp.limits ->> 'zro.ai_credits')::int) as ai_credits,
@@ -16,6 +51,9 @@ export async function publicCatalog() {
     return { products, plans, sales: await salesStatus(tx) }
   })
 }
+
+/** Aberto ao público (released ou public_beta). O que não está assim é "Em desenvolvimento". */
+export const releaseOpen = (r: ReleasePublic) => r.state === 'released' || r.state === 'public_beta'
 
 export function priceLabel(p: { price_cents: number | null; currency: string | null; billing_interval: string | null; kind: string }) {
   if (p.kind === 'free') return 'Gratuita'

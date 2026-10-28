@@ -2253,6 +2253,50 @@ details.disclosure[open] > summary {
   width: 100%;
 }
 
+/* ───── Em desenvolvimento (ADR 0023): porta fechada de um app da família ───── */
+
+.emdev {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 16px;
+  padding: 6px 0 2px;
+}
+.emdev__marca {
+  color: var(--text-strong);
+  opacity: 0.85;
+}
+.emdev__app {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.emdev__app .zro-mark {
+  filter: drop-shadow(0 10px 24px rgb(0 0 0 / 0.18));
+}
+.emdev__nome {
+  margin: 0;
+  font: 600 1rem var(--font-apple);
+  color: var(--text-mute);
+}
+.emdev__titulo {
+  margin: 4px 0 0;
+  justify-items: center;
+  font-size: clamp(1.9rem, 7vw, 2.5rem);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  color: var(--text-strong);
+}
+.emdev__apoio {
+  margin: 0;
+  max-width: 32ch;
+  color: var(--text-mute);
+}
+.emdev .glass-btn {
+  margin-top: 8px;
+}
+
 /* ───── Padrão Apple (25/10/2026): o produto na frente, tipografia sóbria, vidro ───── */
 
 /* Títulos da marca em Figtree (escolha do titular, 25/10/2026), igual em todos os aparelhos e no OG. */
