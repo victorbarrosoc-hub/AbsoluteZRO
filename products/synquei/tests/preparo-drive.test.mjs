@@ -16,7 +16,8 @@ const { Organizador, IGNORAR } = require('../desktop/organizador.cjs')
 const { validarLinhaDrive, conferirArquivos, linhaRecibo } = require('../desktop/manifesto-drive.cjs')
 
 const sobedesce = new URL('../../sobedesce/src/engine/manifesto.js', import.meta.url)
-const temSobedesce = existsSync(sobedesce)
+// o manifesto do SOBEDESCE importa o cliente HTTP dele: sem as dependências instaladas (CI só do Synquei), pula
+const temSobedesce = existsSync(sobedesce) && existsSync(new URL('../../sobedesce/node_modules/undici', import.meta.url))
 const md5 = (n) => n.toString(16).padStart(32, '0')
 const OP = 'bLoteDrive01'
 
@@ -65,7 +66,7 @@ function montar(nome = 'Gravação · São João') {
   return { tmp, raiz, org, eventos, escrever, recibos, resumo }
 }
 
-test('contrato: a linha do SOBEDESCE real passa; o recibo do Synquei passa no leitor do SOBEDESCE', { skip: !temSobedesce && 'SOBEDESCE fora do monorepo' }, async () => {
+test('contrato: a linha do SOBEDESCE real passa; o recibo do Synquei passa no leitor do SOBEDESCE', { skip: !temSobedesce && 'SOBEDESCE fora do monorepo ou sem dependências' }, async () => {
   const { manifestoDoLote, lerLinhaRecibo } = await import(sobedesce.href)
   const { raiz } = montar()
   const base = join(raiz, '..')
