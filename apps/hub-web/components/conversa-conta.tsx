@@ -12,7 +12,7 @@ import { PalcoZ, Z, type CenaZ, type MovimentoZ } from './ia/simbolo-z'
 type Passo = 'email' | 'nome' | 'senha'
 type Estado = 'absolute-zro' | 'ouvindo' | 'conferindo' | 'pronto'
 
-const ROTULO: Record<Estado, string> = { 'absolute-zro': 'Absolute ZRO', ouvindo: 'ouvindo', conferindo: 'conferindo', pronto: 'pronto' }
+const ROTULO: Record<Estado, string> = { 'absolute-zro': 'Z', ouvindo: 'ouvindo', conferindo: 'conferindo', pronto: 'pronto' }
 const MOVIMENTO: Record<Estado, MovimentoZ> = { 'absolute-zro': 'parada', ouvindo: 'parada', conferindo: 'pensando', pronto: 'pronta' }
 const CENA: Record<Estado, CenaZ> = { 'absolute-zro': 'calma', ouvindo: 'ouvindo', conferindo: 'pensando', pronto: 'pronta' }
 const semAssinatura = () => () => {}
