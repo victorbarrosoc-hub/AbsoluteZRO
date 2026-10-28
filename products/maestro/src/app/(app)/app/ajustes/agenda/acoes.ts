@@ -4,14 +4,14 @@ import { revalidatePath } from "next/cache";
 import { exigirAcessoNaAcao } from "@/lib/auth/acao";
 import { gerarAssinatura, revogarAssinatura } from "@/lib/agenda/feed";
 
-export type EstadoAgenda = { url?: string; mensagem?: string; aviso?: string } | undefined;
+export type EstadoAgenda = { url?: string; mensagem?: string; aviso?: string; em?: number } | undefined;
 
 export async function gerarAssinaturaAcao(_: EstadoAgenda, __: FormData): Promise<EstadoAgenda> {
   const s = await exigirAcessoNaAcao();
   const r = await gerarAssinatura({ sub: s.sub, orgId: s.orgId });
   if (!r.ok) return { mensagem: r.mensagem };
   revalidatePath("/app/ajustes/agenda");
-  return { url: r.url };
+  return { url: r.url, em: Date.now() };
 }
 
 export async function revogarAssinaturaAcao(_: EstadoAgenda, __: FormData): Promise<EstadoAgenda> {
@@ -19,5 +19,5 @@ export async function revogarAssinaturaAcao(_: EstadoAgenda, __: FormData): Prom
   const r = await revogarAssinatura({ sub: s.sub, orgId: s.orgId });
   if (!r.ok) return { mensagem: r.mensagem };
   revalidatePath("/app/ajustes/agenda");
-  return { aviso: "Endereço desligado. O calendário para de atualizar." };
+  return { aviso: "Endereço desligado. O calendário para de atualizar.", em: Date.now() };
 }

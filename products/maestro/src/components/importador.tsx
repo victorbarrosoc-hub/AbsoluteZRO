@@ -79,7 +79,8 @@ export function Importador() {
       {p ? (
         <>
           <input type="hidden" name="tipo" value={vista} />
-          <input type="hidden" name="texto" value={estado?.texto ?? ""} />
+          {/* textarea (não input): um input escondido perde as quebras de linha do arquivo */}
+          <textarea name="texto" defaultValue={estado?.texto ?? ""} hidden readOnly aria-hidden="true" />
           <input type="hidden" name="arquivo_nome" value={estado?.arquivo ?? ""} />
           <input type="hidden" name="sha" value={p.sha256} />
           <input type="hidden" name="mapa" value={JSON.stringify(mapaAtual ?? {})} />

@@ -37,6 +37,8 @@ export async function importarAcao(_: EstadoImportar, fd: FormData): Promise<Est
     texto = decodificar(new Uint8Array(await f.arrayBuffer()));
     arquivo = f.name.slice(0, 200);
   }
+  // Quebras de linha num formato só: o formulário devolve o texto com CRLF, e o sha256 da prévia tem de bater.
+  texto = texto.replace(/\r\n?/g, "\n");
   if (!texto) return { mensagem: "Escolha o arquivo .csv.", tipo };
   let mapa: Mapa | undefined;
   try {

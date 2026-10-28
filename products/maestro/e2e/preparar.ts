@@ -9,6 +9,7 @@ import { E2E_DB, E2E_KEY } from "../playwright.config";
 export const ARQUIVO_SESSAO = "test-results/e2e-sessao.json";
 export const ARQUIVO_SESSAO_DEMO = "test-results/e2e-sessao-demo.json";
 export const ARQUIVO_SESSAO_COMERCIAL = "test-results/e2e-sessao-comercial.json";
+export const ARQUIVO_SESSAO_NEGOCIO = "test-results/e2e-sessao-negocio.json";
 
 export default async function preparar() {
   const alvo = new URL(E2E_DB);
@@ -92,6 +93,43 @@ export default async function preparar() {
     });
     const com = await criarSessao({ orgId: orgCom, sub: SUB_COM, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
     writeFileSync(ARQUIVO_SESSAO_COMERCIAL, JSON.stringify({ token: com.token }));
+    // Uma quarta organização para o negócio (e2e/negocio.spec.ts): funil, importar, agenda .ics e acesso por cliente.
+    // Admin (Nara) e uma pessoa da equipe (Téo), mais dois clientes com projeto e card, e um pedido por aparelho.
+    const SUB_NEG = "00000000-0000-4000-8000-0000000000b2";
+    const SUB_TEO = "00000000-0000-4000-8000-0000000000b3";
+    const neg = await getBanco().asSystem("e2e: semente do negócio", async (tx) => {
+      const [org] = await tx
+        .insert(schema.organizations)
+        .values({ zroOrgId: "00000000-0000-4000-8000-0000000000b1", name: "Estúdio Negócio E2E", zroProducts: ["maestro"] })
+        .returning({ id: schema.organizations.id });
+      await tx.insert(schema.members).values([
+        { orgId: org.id, zroSub: SUB_NEG, displayName: "Nara Gestão", hubRole: "owner", role: "admin" },
+        { orgId: org.id, zroSub: SUB_TEO, displayName: "Téo Equipe", email: "teo@exemplo.com", hubRole: "editor", role: "equipe" },
+      ]);
+      const um = async (x: ReturnType<typeof q>) => ((await tx.execute(x)) as unknown as { id: string }[])[0].id;
+      const sim = await um(q`insert into maestro.clients (org_id, name) values (${org.id}, 'Cliente Permitido') returning id`);
+      const nao = await um(q`insert into maestro.clients (org_id, name) values (${org.id}, 'Cliente Proibido') returning id`);
+      for (const [c, nome, n] of [
+        [sim, "Permitido", "001"],
+        [nao, "Proibido", "002"],
+      ] as const) {
+        await tx.execute(q`insert into maestro.projects (org_id, code, title, client_id) values (${org.id}, ${`MAE-2026-${n}`}, ${`Projeto ${nome}`}, ${c})`);
+        await tx.execute(
+          q`insert into maestro.cards (org_id, id, dados) values (${org.id}, ${`e2e-${n}`}, ${JSON.stringify({ tema: `Card ${nome}`, coluna: "fazendo", cliente: c })}::jsonb)`,
+        );
+      }
+      for (const [prot, nome] of [
+        ["NEGPC001", "Lead Computador"],
+        ["NEGPI001", "Lead Iphone"],
+      ])
+        await tx.execute(
+          q`insert into maestro.pedidos (org_id, protocolo, nome, email, consentimento_em, respostas) values (${org.id}, ${prot}, ${nome}, 'lead@exemplo.com', now(), '{"tipo":"Filme institucional","vars":{}}'::jsonb)`,
+        );
+      return { org: org.id, nao };
+    });
+    const sNeg = await criarSessao({ orgId: neg.org, sub: SUB_NEG, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    const sTeo = await criarSessao({ orgId: neg.org, sub: SUB_TEO, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    writeFileSync(ARQUIVO_SESSAO_NEGOCIO, JSON.stringify({ token: sNeg.token, equipe: sTeo.token, proibido: neg.nao }));
   } finally {
     await fecharBanco();
   }

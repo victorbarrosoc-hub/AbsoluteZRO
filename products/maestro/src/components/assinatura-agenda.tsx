@@ -41,7 +41,9 @@ function Copiar({ texto }: { texto: string }) {
 export function AssinaturaAgenda({ ativa }: { ativa: boolean }) {
   const [gerado, gerar] = useActionState<EstadoAgenda, FormData>(gerarAssinaturaAcao, undefined);
   const [revogado, revogar] = useActionState<EstadoAgenda, FormData>(revogarAssinaturaAcao, undefined);
-  const url = gerado?.url;
+  // O último que aconteceu manda: gerou depois de desligar mostra o endereço; desligou depois de gerar, o aviso.
+  const desligou = (revogado?.em ?? 0) > (gerado?.em ?? 0);
+  const url = desligou ? undefined : gerado?.url;
   const webcal = url?.replace(/^https?:/, "webcal:");
   return (
     <div className="assinatura">
@@ -59,9 +61,12 @@ export function AssinaturaAgenda({ ativa }: { ativa: boolean }) {
       ) : null}
       <div className="acoes">
         <form action={gerar}>
-          <Botao rotulo={ativa || url ? "Trocar endereço" : "Gerar endereço"} classe={ativa || url ? "glass-btn" : "glass-btn glass-btn--ink"} />
+          <Botao
+            rotulo={(ativa && !desligou) || url ? "Trocar endereço" : "Gerar endereço"}
+            classe={(ativa && !desligou) || url ? "glass-btn" : "glass-btn glass-btn--ink"}
+          />
         </form>
-        {ativa || url ? (
+        {(ativa && !desligou) || url ? (
           <form action={revogar}>
             <Botao rotulo="Desligar" classe="q-perigo" />
           </form>
@@ -75,7 +80,7 @@ export function AssinaturaAgenda({ ativa }: { ativa: boolean }) {
           {gerado?.mensagem ?? revogado?.mensagem}
         </p>
       ) : null}
-      {revogado?.aviso && !url ? (
+      {revogado?.aviso && desligou ? (
         <p className="aviso-ok" role="status">
           <Icone nome="check" size={15} /> {revogado.aviso}
         </p>

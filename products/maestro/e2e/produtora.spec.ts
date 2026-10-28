@@ -52,7 +52,9 @@ test.describe("produtora por dentro", () => {
       ["/app/inventario", /inventário\./, ".lista .item"],
       ["/app/agenda", /agenda\./, ".evento"],
       ["/app/ajustes/precos", /preços\./, ".tabela-precos li"],
-      ["/app/pedidos", /pedidos\./, ".lista .item"],
+      ["/app/pedidos?ver=lista", /pedidos\./, ".lista .item"],
+      ["/app/pedidos", /pedidos\./, ".funil-card"],
+      ["/app/financeiro/numeros", /financeiro\./, ".numeros-serie__mes"],
       ["/app/freelas?equip=sim", /freelas\./, ".lista .item"],
       ["/app/hoje", /^(Bom dia|Boa tarde|Boa noite)/, ".hoje-cartao"],
     ];

@@ -102,6 +102,11 @@ const TELAS = [
   "/app/inventario",
   "/app/agenda",
   "/app/ajustes",
+  "/app/pedidos",
+  "/app/financeiro/numeros",
+  "/app/ajustes/pessoas",
+  "/app/ajustes/agenda",
+  "/app/ajustes/importar",
   "/",
 ];
 
