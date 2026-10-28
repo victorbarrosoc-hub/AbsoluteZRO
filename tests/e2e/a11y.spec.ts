@@ -27,7 +27,7 @@ async function check(page: Page, path: string) {
 for (const theme of THEMES) {
   test(`páginas públicas sem violações WCAG A/AA (tema ${theme})`, async ({ page, context, baseURL }) => {
     await useTheme(context, theme, baseURL)
-    for (const p of ['/', '/planos', '/baixar', '/entrar', '/criar-conta']) await check(page, p)
+    for (const p of ['/', '/planos', '/baixar', '/entrar', '/criar-conta', '/conta-excluida']) await check(page, p)
   })
 }
 
@@ -72,6 +72,7 @@ test('área logada e projeto sem violações WCAG A/AA (claro e escuro)', async 
       '/perfil/seguranca',
       '/perfil/plano',
       '/perfil/acessos',
+      '/perfil/excluir',
     ])
       await check(page, p)
   }

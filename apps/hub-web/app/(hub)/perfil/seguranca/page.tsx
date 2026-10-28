@@ -117,6 +117,17 @@ export default async function Seguranca() {
           })}
         </ul>
       </Card>
+      <section className="excluir-zona" aria-labelledby="excluir-zona-titulo">
+        <div className="excluir-zona__texto">
+          <h2 id="excluir-zona-titulo" className="excluir-zona__titulo">
+            Excluir conta
+          </h2>
+          <p className="zro-faint">Apaga a conta e o acesso a todos os apps.</p>
+        </div>
+        <Link className="zro-btn zro-btn--small zro-btn--danger" href="/perfil/excluir">
+          Excluir…
+        </Link>
+      </section>
     </AccountFrame>
   )
 }

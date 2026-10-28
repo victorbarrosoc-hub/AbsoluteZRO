@@ -26,6 +26,21 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
   allowed, ausente e released, relida no `/eu`), `build` ok, `db:migrate` aplica `0000` e `0001` e é idempotente.
 - Não validado: produção (projeto Vercel, domínio, cliente OIDC real, migrations no Supabase).
 
+## Excluir a conta (28/10/2026)
+
+- `tests/integration/excluir-conta.test.ts` (12): exclusão feliz (anonimiza, todas as sessões caem, organização só dela
+  `closed` com assinatura e acessos encerrados, auditoria sem e-mail nem nome, conta e organização não voltam); e-mail
+  liberado para recadastro; conta só do Google confirma com o e-mail e o Google depois cria conta nova; refresh token e
+  userinfo do login único recusados; bloqueio por organização com membros (e saída quando há outro dono); membro sai
+  sem encerrar a equipe; bloqueio por assinatura paga (liberado com cancelamento no fim do período); admin de
+  plataforma; sem sessão e token de app recusados; limite de tentativas; isolamento (zro_app não muda e-mail nem
+  status, a equipe deixa de ver a conta excluída); e-mail de confirmação só com links da marca e do contato.
+- E2E `hub.spec.ts` "excluir a conta…": senha errada, confirmação, `/conta-excluida`, sem cookie, `/inicio` → `/entrar`
+  e o mesmo e-mail cria conta nova. `a11y.spec.ts` passa por `/perfil/excluir` e `/conta-excluida` (claro e escuro).
+- `npm run lint`, `format:check`, `typecheck`, `npm test` (214/214 em 27 arquivos), `npm run build` e
+  `npm run test:e2e` ok neste ambiente (Postgres local, banco próprio). Telas 1440 e 390 (claro) conferidas.
+- Não validado: migração 0023 no banco de produção e o envio real do e-mail.
+
 ## AEON e Revela fechados ao público (28/10/2026)
 
 - `products/ai-edit`: `npm test` 122/122 (novo `test/fechado.test.js`: anônimo, conta `closed`, conta `allowed`, sessão

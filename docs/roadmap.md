@@ -91,6 +91,14 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ✅ Projeto canônico com etapas reais, briefing/roteiro versionados, Ciclo do O navegável com alternativa em lista.
 - ✅ Auditoria só-inclusão; logs sem dados pessoais.
 - 🟡 2FA (⬜), provedor de e-mail (⛔ decisão), login social (⬜).
+- ✅ Excluir a conta (28/10/2026, pedido do titular): Sua conta › Segurança › "Excluir…" abre `/perfil/excluir`, em duas
+  etapas (senha atual, ou o e-mail para quem só entra pelo Google; depois uma tela que diz o que acontece). No core
+  (`packages/core/src/excluir-conta.ts`, migração 0023): anonimiza (e-mail único e inválido, nome, foto, senha e Google
+  apagados, status `deleted`), encerra todas as sessões, revoga refresh tokens e consentimentos do login único em todos
+  os apps, cancela pedidos e convites abertos, apaga as conversas com a Z, encerra as organizações só dela (`closed`) e
+  registra `account.deleted` sem dado pessoal; auditoria, uso e cobrança ficam. Bloqueia dona de organização com outras
+  pessoas (lista quais), assinatura paga ativa e administração da plataforma. O e-mail fica livre para conta nova; a
+  pessoa recebe "Sua conta foi excluída" e cai em `/conta-excluida`. Falta: aplicar 0023 em produção e publicar.
 
 ## Fase 2 — Conexão real
 
