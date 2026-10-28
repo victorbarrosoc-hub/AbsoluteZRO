@@ -951,6 +951,7 @@ Respostas JSON `{ ok: true, ... }` ou `{ ok: false, error: 'mensagem PT-BR' }` c
 | POST | `/api/transfers/upload` | `{ accountId, paths, destFolderId, driveId?, conflict?, proxy?: boolean, destName? }` | `{ batch, count, bytes, skipped }` (`destName` = nome da pasta do Drive, só para o "Acompanhar pelo celular") |
 | POST | `/api/transfers/action` | `{ action: pause|resume|cancel|retry|remove|prioritize, ids?: string[]|'all', batchId? }` | `{ }` |
 | POST | `/api/transfers/clear` | | `{ }` |
+| POST | `/api/transfers/synquei` | `{ batchId }` | `{ link, pasta, op }` ("Preparar no Synquei" de um download do Drive; 409 com o motivo se o lote não terminou, tem arquivo diferente, não é uma pasta inteira ou a pasta sumiu). Ver "Preparar no Synquei" |
 | GET | `/api/settings` / PATCH `/api/settings` | patch | `{ settings }` |
 | GET | `/api/raw-thumbs` | `refresh=1` (refaz a detecção) | `{ rawThumbs: { supported, found, via, enabled, last, downloadUrl } }` |
 | POST | `/api/raw-thumbs/lote` | `{ accountId, driveFolderId, localDir, recursive?: true, refazer?: false, folderName? }` | `{ jobId }` (progresso via SSE `rawthumbs`; 400 pasta inválida, 409 já tem um rodando) |
@@ -1132,6 +1133,29 @@ Seletor de pastas/arquivos locais próprio (modal) usando `/api/local/*`.
 - Limites de banda na UI são MB/s decimais (× 1e6); pedaço de upload em MiB (0 = contínuo).
 - Servir de `public/`: `/favicon.svg`, `/lib/*`, `/components/*`, `/app.js`, `/styles.css`. Sem scripts inline (CSP estrita funciona).
 - Depois do OAuth, o callback leva para `/` (a UI recarrega `/api/state`).
+
+## Preparar no Synquei (download do Drive)
+
+Plano SD→SQ (28/10/2026). Contrato de referência em `packages/media-contracts/src/preparo.ts` (raiz do monorepo).
+
+- **Quando:** o lote de download termina (`TransferManager` emite `lote-concluido`) com todos os arquivos concluídos ou
+  pulados, nenhum com MD5 diferente e todos dentro de uma pasta baixada inteira (`relPath` = `Pasta/…`).
+  `src/engine/preparo-synquei.js` chama `manifestoDoLote` (`src/engine/manifesto.js`), que confere no disco a
+  existência e o tamanho de cada arquivo, e grava **uma linha v2** em `<pasta>/.sobedesce/descargas.jsonl`:
+  `v: 2, tipo: 'drive.download', op` (id do lote), `app_versao`, `project_id` (null por ora), `quando`,
+  `origem { tipo: 'drive', pasta_id, pasta }` (sem conta nem token), `destino { pasta, caminho }`,
+  `estado: conferido|parcial`, `verificacao { algoritmo: 'md5', total, conferidos, sem_conferencia, tamanho: true }`,
+  `bytes`, `arquivos[{ rel, nome, size, file_id, md5|null, conferido }]` (até 50.000). Pedir de novo não repete a linha.
+  Leitores v1 (cartões) pulam a linha.
+- **Na tela:** o lote ganha `batch.synquei = { op, pasta, nome, total, conferidos, semConferencia, gravadoEm }` (ou
+  `{ indisponivel: motivo }`). "Preparar no Synquei" só aparece com o lote terminado e o manifesto gravado.
+- **Pedido:** `POST /api/transfers/synquei` confere de novo, marca `pedidoEm` e devolve
+  `synquei://organizar?pasta=…&op=…`. A ponte (`sobedesce:abrir-synquei`, `aberturaSynquei` em
+  `src/backup/synquei.js`) abre o Synquei; sem ele, a central (`absolutezro://baixar`) ou absolutezro.com/baixar.
+- **Volta:** a cada 3 s, enquanto espera, o motor lê `<pasta>/Synquei/preparos.jsonl` (`synquei.preparo/1`, só o fim
+  do arquivo, linha validada campo a campo) e põe em `batch.synquei.recibo`. Sem recibo novo em 45 s:
+  `semResposta: true` ("O Synquei não confirmou. Atualize o Synquei"). Pasta sumida ou sem leitura: `acesso`.
+  O SOBEDESCE nunca diz "preparado" sem o recibo.
 
 ## App de desktop (Electron) — contrato com `src/index.js`
 

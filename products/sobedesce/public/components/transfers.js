@@ -6,7 +6,7 @@ import { api, attempt } from '../lib/api.js'
 import { aprox, bytes, clock, count, dirOf, percent, plural, relTime, speed, timecode, fullDate } from '../lib/format.js'
 import { cx, memo, usePersistentState, storage } from '../lib/ui.js'
 import { batchAction, cancelBatch, cancelTransfer, driveFileUrl, driveFolderUrl, reveal, transferAction, uploadFlow, uploadPaths } from '../lib/actions.js'
-import { bridge, openExternal, revealLabel } from '../lib/desktop.js'
+import { bridge, openExternal, prepararNoSynquei, revealLabel } from '../lib/desktop.js'
 import { copyDriveLink } from './link-share.js'
 import { FileDrop } from './drop.js'
 import { confirmDialog } from '../lib/modals.js'
@@ -19,6 +19,7 @@ import { contaUrl, isCloudAccount } from '../lib/cloud.js'
 import { navigate } from '../lib/router.js'
 import { PreviaLine } from './previa.js'
 import { FILTER_TESTS, batchFolder, batchLocal, integrity, integrityLabel, meterTotals, sortRows } from '../lib/transferencias.js'
+import { SYNQUEI_ATUALIZAR, estadoPreparo } from '../lib/preparo.js'
 
 /** "Conectar de novo" certo para a conta: OAuth deste computador, o site (Drive da conta) ou entrar na conta. */
 function ReauthLink({ t }) {
@@ -200,6 +201,33 @@ async function baixarComprovante(batchId) {
   toast('success', 'Registre o comprovante no projeto, em Finalização e entregas.', { title: 'Comprovante pronto' })
 }
 
+/**
+ * "Preparar no Synquei" (download do Drive): o botão só com o lote terminado e o manifesto gravado na pasta; o estado
+ * vem do recibo do Synquei (public/lib/preparo.js). Sem recibo, nunca diz que preparou.
+ */
+function PrepararSynquei({ batch, finished }) {
+  const [abrindo, setAbrindo] = useState(false)
+  const e = estadoPreparo(batch.synquei, { terminado: finished })
+  if (!e) return null
+  const preparar = async () => {
+    setAbrindo(true)
+    try {
+      await prepararNoSynquei(batch.id)
+    } finally {
+      setAbrindo(false)
+    }
+  }
+  return html`<div class="batch-share batch-synquei">
+    ${e.texto
+      ? html`<span class=${cx('batch-check', e.tom === 'ok' ? 'is-ok' : e.tom === 'warn' ? 'is-warn' : 'is-partial')} title=${e.detalhe || e.texto}>
+          ${e.fase === 'aguardando' || e.fase === 'preparando' ? html`<span class="shimmer-text">${e.texto}…</span>` : e.texto}
+        </span>`
+      : null}
+    ${e.atualizar ? html`<${Button} size="sm" variant="ghost" icon="external" title="Página Downloads da Absolute ZRO" onClick=${() => openExternal(SYNQUEI_ATUALIZAR)}>Atualizar o Synquei</${Button}>` : null}
+    ${e.botao ? html`<${Button} size="sm" icon="arrow-right" disabled=${abrindo} title=${e.detalhe || 'Abre a pasta baixada no Synquei'} onClick=${preparar}>Preparar no Synquei</${Button}>` : null}
+  </div>`
+}
+
 function BatchGroup({ group, rows, expanded, onToggle, limit, onMore, platform }) {
   const { batch, items, sum } = group
   const type = batch.type || items[0]?.type || 'download'
@@ -251,6 +279,7 @@ function BatchGroup({ group, rows, expanded, onToggle, limit, onMore, platform }
               <${Button} size="sm" variant=${finished ? 'secondary' : 'ghost'} icon="reveal" title=${`Abrir ${local.dir}`} onClick=${() => reveal(local.target)}>${revealLabel(platform)}</${Button}>
             </div>`
           : null}
+        ${type === 'download' ? html`<${PrepararSynquei} batch=${batch} finished=${finished} />` : null}
         ${pasta
         ? html`<div class="batch-share">
             ${finished && check?.total && pasta.id !== 'root'

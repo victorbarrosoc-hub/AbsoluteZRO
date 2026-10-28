@@ -47,7 +47,7 @@ export function registerBackup({ route, ctx, HttpProblem, servico }) {
 
   route('POST', '/api/backup/abrir', tratar(async ({ body }) => svc.abrir(texto(body.id, 100))))
 
-  // "Abrir no Synquei": o link synquei://organizar da pasta do projeto (quem abre é a ponte do app ou o navegador).
+  // "Preparar no Synquei": o link synquei://organizar da pasta do projeto (quem abre é a ponte do app ou o navegador).
   route('POST', '/api/backup/synquei', tratar(async ({ body }) => svc.paraSynquei(texto(body.id, 100) || undefined)))
 
   route('POST', '/api/backup/apagar', tratar(async ({ body }) => svc.apagarProjeto(texto(body.id, 100))))

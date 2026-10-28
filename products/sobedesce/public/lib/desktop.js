@@ -32,19 +32,40 @@ function safe(fn, fallback = null) {
 // ───── Synquei ─────
 
 /**
- * "Abrir no Synquei" (Backup Automático): o motor devolve o link synquei://organizar da pasta do projeto. No app, a
- * ponte confere se o Synquei está instalado (senão abre a página de download); no navegador, o link vai direto.
+ * Abre o link synquei://organizar. No app, a ponte confere se o Synquei está instalado; sem ele, abre a central do
+ * Absolute ZRO (ou a página Downloads) e a tela explica. No navegador, o link vai direto (sem como saber se abriu: quem
+ * confirma é o recibo do Synquei). Devolve 'synquei' | 'central' | 'site' | null.
  */
+export async function abrirLinkSynquei(link) {
+  if (!link) return null
+  if (bridge?.abrirSynquei) {
+    const r = await bridge.abrirSynquei(link).catch(() => null)
+    // ponte antiga devolvia true/false
+    const para = r === true ? 'synquei' : r === false ? 'site' : r?.para || null
+    if (para === 'central') toast('info', 'Abri a central Absolute ZRO. Instale o Synquei e toque de novo em “Preparar no Synquei”.', { title: 'O Synquei não está neste computador' })
+    else if (para === 'site') toast('info', 'Abri a página de download. Depois de instalar, toque de novo em “Preparar no Synquei”.', { title: 'O Synquei não está neste computador' })
+    else if (!para) toast('error', 'Não consegui abrir o Synquei.')
+    return para
+  }
+  window.location.href = link
+  return 'synquei'
+}
+
+/** "Preparar no Synquei" do Backup Automático: a pasta do projeto que já tem os cartões conferidos. */
 export async function abrirNoSynquei(id) {
   const r = await attempt(api.post('/api/backup/synquei', { id }))
   if (!r?.link) return false
-  if (bridge?.abrirSynquei) {
-    const ok = await bridge.abrirSynquei(r.link).catch(() => false)
-    if (!ok) toast('info', 'Abri a página de download. Depois de instalar, toque de novo em “Abrir no Synquei”.', { title: 'Instale o Synquei' })
-    return ok
-  }
-  window.location.href = r.link
-  return true
+  return (await abrirLinkSynquei(r.link)) === 'synquei'
+}
+
+/**
+ * "Preparar no Synquei" de um download do Drive: o motor confere o lote e a pasta, grava o manifesto (se faltar) e
+ * devolve o link com o id da operação. Depois a tela acompanha o recibo do Synquei pelo lote (batch.synquei).
+ */
+export async function prepararNoSynquei(batchId) {
+  const r = await attempt(api.post('/api/transfers/synquei', { batchId }))
+  if (!r?.link) return null
+  return abrirLinkSynquei(r.link)
 }
 
 // ───── seletores ─────
