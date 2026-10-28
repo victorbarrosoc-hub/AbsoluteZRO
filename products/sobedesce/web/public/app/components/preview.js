@@ -634,7 +634,7 @@ function BigWarning({ file, onGo, onCancel }) {
 
 // ───── a prévia ─────
 
-export function Preview({ files, index, onIndex, onClose, extra, album }) {
+export function Preview({ files, index, onIndex, onClose, extra, album, baixar = 0 }) {
   const raw = files[index]
   const [resolved, setResolved] = useState(null)
   const file = resolved?.id === target(raw).id ? resolved : target(raw)
@@ -751,6 +751,13 @@ export function Preview({ files, index, onIndex, onClose, extra, album }) {
     streamReady().then((ok) => (ok ? startDownload(file) : toast(FAIL_TEXT.nosw, { tone: 'error', ms: 4200 })))
   }
   const dl = canDownload(file)
+  // Aberta pelo link #baixar/<id> (botão Baixar da Z): aperta o Baixar uma vez por link (`baixar` é o número do link;
+  // muda quando outro chega com a prévia já aberta), com as mesmas regras do toque.
+  useEffect(() => {
+    if (!baixar) return
+    if (canDownload(file)) download()
+    else toast('Esse arquivo não pode ser baixado.', { ms: 3200 })
+  }, [baixar])
   const media = kind === 'video' || kind === 'image' || kind === 'audio'
 
   return html`<div class=${cx('pv-layer', `is-${phase}`)}>

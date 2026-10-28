@@ -191,20 +191,29 @@ describe("busca", () => {
     const c = await corpo(await buscar(jwt(ana.sub), "roteiro"));
     assert.equal(c.arquivos.length, 1);
     const a = c.arquivos[0];
-    assert.deepEqual(Object.keys(a).sort(), ["abrir_no_sobedesce", "criado", "icone", "id", "imagem", "link", "link_download", "modificado", "nome", "pasta", "tamanho", "tipo", "video"]);
+    assert.deepEqual(Object.keys(a).sort(), ["abrir_no_sobedesce", "baixar_pelo_sobedesce", "criado", "icone", "id", "imagem", "modificado", "nome", "pasta", "tamanho", "tipo", "video"]);
     assert.equal(a.tamanho, 2048);
-    assert.equal(a.link, "https://drive.google.com/file/d/r1/view");
-    assert.doesNotMatch(JSON.stringify(c), /segredo interno|permissionIds|appProperties|parents|ya29/);
+    assert.equal(a.abrir_no_sobedesce, `http://localhost:3000/app/#arquivo/${a.id}`);
+    assert.equal(a.baixar_pelo_sobedesce, `http://localhost:3000/app/#baixar/${a.id}`);
+    // Nada de link do site do Google Drive (nem pedido ao Google).
+    assert.doesNotMatch(JSON.stringify(c), /segredo interno|permissionIds|appProperties|parents|ya29|drive\.google\.com|webViewLink|webContentLink/);
+    assert.doesNotMatch(amb.google.ultimasBuscas.at(-1)!.get("fields") ?? "", /webViewLink|webContentLink/);
   });
 
-  test("abrir_no_sobedesce: a pasta onde o arquivo está, ou a própria pasta, na aba Drive do app", async () => {
+  test("links do app: pasta só Abrir (#drive); arquivo Abrir (#arquivo) e Baixar (#baixar)", async () => {
     const c = await corpo(await buscar(jwt(ana.sub), "Motion"));
     const pastaAchada = c.arquivos.find((a: { id: string }) => a.id === pastaMotion);
     assert.equal(pastaAchada.abrir_no_sobedesce, `http://localhost:3000/app/#drive/${pastaMotion}`);
+    assert.equal(pastaAchada.baixar_pelo_sobedesce, null);
     const arq = (await corpo(await buscar(jwt(ana.sub), "primeiro.mov"))).arquivos.find((a: { id: string }) => a.id === primeiro);
-    assert.equal(arq.abrir_no_sobedesce, `http://localhost:3000/app/#drive/${pastaMotion}`);
+    assert.equal(arq.abrir_no_sobedesce, `http://localhost:3000/app/#arquivo/${primeiro}`);
+    assert.equal(arq.baixar_pelo_sobedesce, `http://localhost:3000/app/#baixar/${primeiro}`);
     assert.equal(driveZ.linkNoSobedesce("abc_DEF-123"), "http://localhost:3000/app/#drive/abc_DEF-123");
-    for (const ruim of ["", "a/b", "x#y", "../app", "a b", null, 7, "x".repeat(201)]) assert.equal(driveZ.linkNoSobedesce(ruim), null);
+    assert.equal(driveZ.linkNoSobedesce("abc_DEF-123", "baixar"), "http://localhost:3000/app/#baixar/abc_DEF-123");
+    for (const ruim of ["", "a/b", "x#y", "../app", "a b", null, 7, "x".repeat(201)]) {
+      assert.equal(driveZ.linkNoSobedesce(ruim), null);
+      assert.equal(driveZ.linkNoSobedesce(ruim, "abrir"), null);
+    }
   });
 
   test("Drive pedindo reconectar é 409 reconectar_drive", async () => {
@@ -230,11 +239,12 @@ describe("pasta", () => {
       ["primeiro.mov", "segundo.mp4"],
     );
     const p = c.arquivos[0];
-    assert.equal(p.link_download, "https://drive.google.com/uc?id=v1&export=download");
+    assert.equal(p.baixar_pelo_sobedesce, `http://localhost:3000/app/#baixar/${p.id}`);
     assert.equal(p.tamanho, 734003200);
     assert.deepEqual(p.video, { largura: 3840, altura: 2160, duracao_s: 13 });
     assert.equal(c.pasta.abrir_no_sobedesce, `http://localhost:3000/app/#drive/${pastaMotion}`);
-    assert.equal(p.abrir_no_sobedesce, c.pasta.abrir_no_sobedesce);
+    assert.equal(p.abrir_no_sobedesce, `http://localhost:3000/app/#arquivo/${p.id}`);
+    assert.equal(c.pasta.link, undefined);
     const q = amb.google.ultimasBuscas.at(-1)!;
     assert.equal(q.get("q"), `'${pastaMotion}' in parents and trashed = false`);
     assert.equal(q.get("orderBy"), "createdTime");
@@ -270,9 +280,9 @@ describe("versão pronta e pedido ao computador", () => {
       c.versoes.map((v: { nome: string }) => v.nome),
       ["primeiro (MP4 720p).mp4"],
     );
-    assert.equal(c.versoes[0].link_download, "https://drive.google.com/uc?id=v720&export=download");
+    assert.equal(c.versoes[0].baixar_pelo_sobedesce, `http://localhost:3000/app/#baixar/${c.versoes[0].id}`);
     assert.equal(c.original.nome, "primeiro.mov");
-    assert.equal(c.original.abrir_no_sobedesce, `http://localhost:3000/app/#drive/${pastaMotion}`);
+    assert.equal(c.original.abrir_no_sobedesce, `http://localhost:3000/app/#arquivo/${primeiro}`);
   });
 
   test("o próprio arquivo já está no formato: o_proprio", async () => {

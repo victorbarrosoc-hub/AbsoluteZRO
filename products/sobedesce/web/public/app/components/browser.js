@@ -7,6 +7,7 @@ import {
   FILTERS,
   SCOPES,
   SORTS,
+  FILE_FIELDS,
   autoView,
   filterById,
   folderSizes,
@@ -44,7 +45,7 @@ import { engine } from '../lib/uploader.js'
 import { isIOS } from '../lib/platform.js'
 import { LAN } from '../lib/config.js'
 import { driveCall, folderPath, myDriveId } from '../lib/drive.js'
-import { lugarDaPasta } from '../lib/drive-link.js'
+import { alvoDoLink } from '../lib/drive-link.js'
 
 // Listas já abertas (voltar para uma pasta não pisca). Vale enquanto a página está aberta.
 const lists = new Map()
@@ -637,6 +638,16 @@ async function metaDaPasta(id) {
   }
 }
 
+/** O arquivo pelo id para o link profundo, com os campos da lista (a prévia usa os mesmos); null sem acesso. */
+async function metaDoArquivo(id) {
+  try {
+    return await driveCall(`/files/${encodeURIComponent(id)}`, { query: { supportsAllDrives: true, fields: `${FILE_FIELDS},trashed` }, retries: 1 })
+  } catch (err) {
+    if (err?.status === 404 || err?.status === 403 || err?.status === 400) return null
+    throw err
+  }
+}
+
 // ───── voltar de pasta: histórico e gesto da borda ─────
 //
 // Cada pasta aberta vira uma entrada do histórico (history.pushState com o caminho). Assim o gesto nativo do Safari
@@ -921,7 +932,7 @@ export function DriveScreen({ active }) {
   const [filter, setFilter] = useState('all')
   const [showMac, setShowMac] = useState(false)
   const [wantAll, setWantAll] = useState(false) // "Somar tudo": carregar a pasta toda
-  const [preview, setPreview] = useState(null) // { files, index }
+  const [preview, setPreview] = useState(null) // { files, index, baixar? (link #baixar/<id>) }
   const sel = useSelecao()
   const escolher = useApp((s) => s.escolher)
   // Saiu da aba Drive no meio da escolha: desiste dela.
@@ -1064,29 +1075,42 @@ export function DriveScreen({ active }) {
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
   }, [])
-  // Link profundo /app/#drive/<id> (lib/drive-link.js): abre a pasta com a trilha toda (voltar sobe até a raiz).
+  // Links profundos (lib/drive-link.js): #drive/<pasta> abre a pasta com a trilha toda (voltar sobe até a raiz);
+  // #arquivo/<id> abre a pasta do arquivo e ele na prévia; #baixar/<id> faz o mesmo e aperta o Baixar da prévia.
   // Sem acesso ou inexistente: aviso curto e fica na raiz do Meu Drive.
-  const abrirPasta = useApp((s) => s.abrirPasta)
+  const abrirLink = useApp((s) => s.abrirLink)
   const linkSeq = useRef(0)
   useEffect(() => {
-    if (!abrirPasta || LAN) return
+    if (!abrirLink || LAN) return
     const vez = ++linkSeq.current // outro link no meio: vale o último
-    const id = abrirPasta
-    setState({ abrirPasta: null })
+    const link = abrirLink
+    setState({ abrirLink: null })
     try {
       if (location.hash) history.replaceState(history.state, '', location.pathname + location.search)
     } catch {
       // segue com o # no endereço
     }
-    lugarDaPasta(id, { meta: metaDaPasta, caminho: folderPath, raiz: myDriveId })
+    alvoDoLink(link, { meta: metaDaPasta, arquivo: metaDoArquivo, caminho: folderPath, raiz: myDriveId })
       .catch(() => null)
-      .then((lugar) => {
+      .then((alvo) => {
         if (vez !== linkSeq.current) return
-        if (lugar) return go(lugar.scope, lugar.path, lugar.path.length ? 'push' : 'none')
-        toast('Essa pasta não abriu neste Drive.', { ms: 3200 })
-        go('mine', [], 'none')
+        if (!alvo) {
+          toast(link.tipo === 'pasta' ? 'Essa pasta não abriu neste Drive.' : 'Esse arquivo não abriu neste Drive.', { ms: 3200 })
+          return go('mine', [], 'none')
+        }
+        const lugar = alvo.lugar || { scope: 'shared', path: [] }
+        go(lugar.scope, lugar.path, lugar.path.length ? 'push' : 'none')
+        if (!alvo.arquivo) return
+        // `baixar`: o número deste link (não um booleano), para a prévia apertar o Baixar de novo se outro link
+        // #baixar chegar com ela já aberta.
+        setPreview({ files: [alvo.arquivo], index: 0, baixar: link.tipo === 'baixar' ? vez : 0 })
+        try {
+          history.pushState({ ...(historyState() || {}), preview: true }, '')
+        } catch {
+          // segue sem
+        }
       })
-  }, [abrirPasta])
+  }, [abrirLink])
   const open = (f) => {
     // Escolhendo para os Frames (aba Criar → Do Drive): tocar no vídeo leva para lá.
     if (escolher && !isFolder(f)) {
@@ -1367,6 +1391,7 @@ export function DriveScreen({ active }) {
           index=${preview.index}
           onIndex=${(i) => setPreview({ ...preview, index: i })}
           onClose=${closePreview}
+          baixar=${preview.baixar}
           album=${folder?.name || scopeLabel}
         />`
       : null}

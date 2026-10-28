@@ -11,7 +11,7 @@ const GAPPS = 'application/vnd.google-apps.'
 const PAGE = 60
 
 // O que a grade e a prévia precisam de cada arquivo (sem isto o Google devolve só id, nome e tipo).
-const FILE_FIELDS = [
+export const FILE_FIELDS = [
   'id',
   'name',
   'mimeType',

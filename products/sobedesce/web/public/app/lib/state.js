@@ -1,7 +1,7 @@
 // Estado global mínimo: um objeto, quem quiser se inscreve. Os componentes leem com useApp(seletor).
 import { useEffect, useReducer, useRef } from '../vendor/preact-htm.js'
 import { LAN, local } from './config.js'
-import { pastaDoHash } from './drive-link.js'
+import { linkDoHash } from './drive-link.js'
 
 const listeners = new Set()
 
@@ -21,7 +21,7 @@ let state = {
   sheet: null, // { name, props }
   tab: 'z', // 'z' (a Z, a primeira aba e a tela de entrada) | 'send' (envio) | 'drive' (navegar e baixar) | 'ap' (Aparelhos, Wi-Fi) | 'refs' (Referências) | 'criar' (Frames…); no modo Wi-Fi só 'send'
   criarTela: 'hub', // aba Criar: 'hub' | 'frames' | 'calc'
-  abrirPasta: null, // link profundo /app/#drive/<id> (lib/drive-link.js): a aba Drive abre essa pasta e zera
+  abrirLink: null, // link profundo #drive/<id>, #arquivo/<id> ou #baixar/<id> (lib/drive-link.js): a aba Drive abre e zera
   escolher: null, // aba Drive escolhendo um arquivo para outra tela: { para: 'frames' } (tocar no vídeo leva para lá)
   recursos: {}, // de /api/eu: { referencias: boolean }
   refs: { status: 'idle', colecoes: [], fila: [], raiz: null, error: null, at: 0 }, // Referências (lib/referencias.js)
@@ -134,7 +134,7 @@ export function savedTab() {
   if (LAN) return 'send'
   if (typeof location !== 'undefined' && location.hash === '#referencias') return 'refs'
   if (typeof location !== 'undefined' && location.hash === '#aparelhos') return 'ap'
-  if (typeof location !== 'undefined' && pastaDoHash(location.hash)) return 'drive'
+  if (typeof location !== 'undefined' && linkDoHash(location.hash)) return 'drive'
   // Quem abre o app cai na Z (pedido do titular, 27/10/2026); os links com # continuam abrindo a aba deles.
   return 'z'
 }

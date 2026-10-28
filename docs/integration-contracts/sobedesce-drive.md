@@ -31,11 +31,18 @@ Enviado como `Authorization: Bearer <jwt>`, `Content-Type: application/json`. Ba
 | `/api/zro/drive/computador` | `{ arquivoId, formato }`                                             | `201`/`200 { pedido: { id, status, novo }, original, formato, computadores, destino, acompanhar }` |
 
 `Arquivo = { id, nome, tipo (mimeType), pasta, criado, modificado, tamanho, video: { largura, altura, duracao_s } |
-null, imagem: { largura, altura } | null, link (webViewLink), link_download (webContentLink), icone,
-abrir_no_sobedesce }`. `Pasta = { id, nome, link, modificado, abrir_no_sobedesce }`. `abrir_no_sobedesce` =
-`<site>/app/#drive/<id>`: a própria pasta (pasta) ou a pasta onde o arquivo está (primeiro `parent`); abre a aba
-Drive do app do SOBEDESCE dentro dela. O HUB só repassa esse formato exato, na origem do SOBEDESCE. Só metadados;
-nada é guardado. `formato`: `mp4`, `mp4-1080`, `mp4-720`, `mp3-320`, `wav`, `m4a`, `jpg`.
+null, imagem: { largura, altura } | null, icone, abrir_no_sobedesce, baixar_pelo_sobedesce }`. `Pasta = { id, nome,
+modificado, abrir_no_sobedesce }`. Os links são sempre do app do SOBEDESCE (`web/public/app/lib/drive-link.js`), nunca
+do site do Google Drive (`webViewLink` e `webContentLink` não vêm nem são pedidos ao Google):
+
+- arquivo: `abrir_no_sobedesce` = `<site>/app/#arquivo/<id>` (a aba Drive na pasta do arquivo, com ele na prévia) e
+  `baixar_pelo_sobedesce` = `<site>/app/#baixar/<id>` (o mesmo, e o Baixar da prévia é apertado: mesmo download, mesma
+  confirmação de arquivo grande);
+- pasta: só `abrir_no_sobedesce` = `<site>/app/#drive/<id>` (a aba Drive dentro dela); `baixar_pelo_sobedesce` é `null`.
+
+O HUB só repassa esse formato exato (origem do SOBEDESCE, caminho `/app/`, rota certa para o tipo e o id do próprio
+item); a Z mostra por arquivo os botões Abrir e Baixar e por pasta só Abrir. Só metadados; nada é guardado.
+`formato`: `mp4`, `mp4-1080`, `mp4-720`, `mp3-320`, `wav`, `m4a`, `jpg`.
 
 Busca: `q = (name contains 'x' or fullText contains 'x') and trashed = false`, termo escapado, `corpora=allDrives`,
 `includeItemsFromAllDrives`, `supportsAllDrives`, em até 3 Drives da pessoa. Sem `orderBy` (o Drive não ordena com

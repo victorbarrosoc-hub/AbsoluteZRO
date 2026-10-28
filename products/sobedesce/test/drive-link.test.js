@@ -2,13 +2,16 @@
 // hash e monta a trilha da pasta (Meu Drive, Drive compartilhado, Compartilhados comigo). Sem acesso: null.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { lugarDaPasta, pastaDoHash } from '../web/public/app/lib/drive-link.js'
+import { alvoDoLink, linkDoHash, lugarDaPasta } from '../web/public/app/lib/drive-link.js'
 
 const PASTA = 'application/vnd.google-apps.folder'
 
-test('pastaDoHash aceita só #drive/<id do Drive>', () => {
-  assert.equal(pastaDoHash('#drive/1AbC_d-9'), '1AbC_d-9')
-  for (const ruim of ['', '#drive', '#drive/', '#drive/a/b', '#drive/a b', '#referencias', '#drive/x?y', null, undefined]) assert.equal(pastaDoHash(ruim), null)
+test('linkDoHash: #drive (pasta), #arquivo (abrir) e #baixar, só com id do Drive', () => {
+  assert.deepEqual(linkDoHash('#drive/1AbC_d-9'), { tipo: 'pasta', id: '1AbC_d-9' })
+  assert.deepEqual(linkDoHash('#arquivo/1AbC_d-9'), { tipo: 'abrir', id: '1AbC_d-9' })
+  assert.deepEqual(linkDoHash('#baixar/1AbC_d-9'), { tipo: 'baixar', id: '1AbC_d-9' })
+  const ruins = ['', '#drive', '#drive/', '#drive/a/b', '#drive/a b', '#drive/x?y', '#referencias', '#arquivo', '#arquivo/', '#baixar/a/b', '#baixar/a b', '#baixar/x?y', '#Baixar/x', '#abrir/x', 'baixar/x', '#baixar/' + 'a'.repeat(201), null, undefined]
+  for (const ruim of ruins) assert.equal(linkDoHash(ruim), null)
 })
 
 /** Um Drive pequeno: Meu Drive (raiz) › Projetos › Clipe; Drive de equipe › Entregas; Comigo › Cliente › Brutos. */
@@ -75,4 +78,26 @@ test('compartilhada comigo: começa na primeira pasta que a conta enxerga', asyn
 
 test('sem acesso, inexistente, na lixeira ou arquivo: null', async () => {
   for (const id of ['naoExiste', 'video', 'lixo', '']) assert.equal(await lugarDaPasta(id, drive()), null)
+})
+
+test('alvoDoLink: arquivo abre na pasta dele; pasta só a pasta; nada abre: null', async () => {
+  const d = drive()
+  const deps = { ...d, arquivo: d.meta }
+  const a = await alvoDoLink({ tipo: 'baixar', id: 'video' }, deps)
+  assert.equal(a.arquivo.id, 'video')
+  assert.equal(a.lugar.scope, 'mine')
+  assert.deepEqual(
+    a.lugar.path.map((p) => p.id),
+    ['proj', 'clipe'],
+  )
+  const p = await alvoDoLink({ tipo: 'abrir', id: 'clipe' }, deps)
+  assert.equal(p.arquivo, null)
+  assert.equal(p.lugar.path.at(-1).id, 'clipe')
+  assert.equal((await alvoDoLink({ tipo: 'pasta', id: 'entregas' }, deps)).lugar.scope, 'drives')
+  for (const id of ['naoExiste', 'lixo', '']) assert.equal(await alvoDoLink({ tipo: 'abrir', id }, deps), null)
+  assert.equal(await alvoDoLink({ tipo: 'pasta', id: 'video' }, deps), null)
+  // Arquivo cuja pasta a conta não enxerga: abre só a prévia (lugar null).
+  const solto = await alvoDoLink({ tipo: 'abrir', id: 'x' }, { ...deps, arquivo: async () => ({ id: 'x', name: 'x.mov', mimeType: 'video/quicktime', parents: ['naoVejo'] }) })
+  assert.equal(solto.lugar, null)
+  assert.equal(solto.arquivo.id, 'x')
 })

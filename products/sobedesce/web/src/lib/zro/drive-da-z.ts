@@ -1,14 +1,15 @@
 /**
  * O Drive da pessoa para a Z (pedidos do HUB, lib/zro/pedido.ts). Só leitura e só metadados: nome, tipo, datas,
- * tamanho, resolução e duração quando o Google informa, link para abrir e link para baixar. Nada é guardado; nenhum
- * byte de arquivo passa por aqui (o link de baixar leva direto ao Google, com o login da pessoa).
+ * tamanho, resolução e duração quando o Google informa, e os links do app do SOBEDESCE para abrir e para baixar
+ * (nunca os do site do Google Drive). Nada é guardado; nenhum byte de arquivo passa por aqui (o Baixar do app busca
+ * direto no Google, com o login da pessoa).
  *
  * - Usa todos os Drives conectados que estão ok (até 3), com a mesma renovação de token do resto do site.
  * - Termos sempre escapados (aspas e barra invertida) antes de entrar na `q` do Drive.
  * - Busca: a ordem é a do Google (relevância); o Drive não aceita orderBy junto de fullText.
  * - Pasta: pelo id ou pelo nome. Nome que bate em várias pastas devolve as opções (a Z pergunta qual).
- * - O nome da pasta de cada arquivo da busca não vem (custaria uma chamada a mais por arquivo); vem o link que abre
- *   essa pasta na aba Drive do app (`abrir_no_sobedesce`, /app/#drive/<id>), feito do primeiro `parent`.
+ * - Links (public/app/lib/drive-link.js): arquivo → `abrir_no_sobedesce` (/app/#arquivo/<id>: a pasta dele e o
+ *   arquivo na prévia) e `baixar_pelo_sobedesce` (/app/#baixar/<id>); pasta → só `abrir_no_sobedesce` (/app/#drive/<id>).
  * Versão pronta e pedido ao computador (o que muda algo): lib/zro/computador-da-z.ts.
  */
 import { listarContas, type Conta } from "@/lib/google/contas";
@@ -23,17 +24,20 @@ export const POR_BUSCA = 10;
 export const POR_PASTA = 25;
 const MAX_CONTAS = 3;
 export const CAMPOS_ARQUIVO =
-  "id,name,mimeType,parents,createdTime,modifiedTime,size,webViewLink,webContentLink,iconLink,videoMediaMetadata(width,height,durationMillis),imageMediaMetadata(width,height)";
+  "id,name,mimeType,parents,createdTime,modifiedTime,size,iconLink,videoMediaMetadata(width,height,durationMillis),imageMediaMetadata(width,height)";
 
 /** Id de arquivo ou pasta do Drive (o que entra no link do app). */
 const ID_SEGURO = /^[A-Za-z0-9_-]{1,200}$/;
 
+/** Os links profundos do app (public/app/lib/drive-link.js). */
+const ROTA = { pasta: "drive", abrir: "arquivo", baixar: "baixar" } as const;
+
 /**
- * Link que abre a pasta na aba Drive do app do SOBEDESCE (public/app, lib/drive-link.js): `<site>/app/#drive/<id>`.
- * Id estranho: null (nunca monta link com outra coisa no fim).
+ * Link do app do SOBEDESCE: `<site>/app/#drive/<pasta>`, `#arquivo/<id>` (a pasta do arquivo e ele na prévia) ou
+ * `#baixar/<id>` (o mesmo, já baixando). Id estranho: null (nunca monta link com outra coisa no fim).
  */
-export function linkNoSobedesce(pastaId: unknown): string | null {
-  return typeof pastaId === "string" && ID_SEGURO.test(pastaId) ? `${siteUrl()}/app/#drive/${pastaId}` : null;
+export function linkNoSobedesce(id: unknown, tipo: keyof typeof ROTA = "pasta"): string | null {
+  return typeof id === "string" && ID_SEGURO.test(id) ? `${siteUrl()}/app/#${ROTA[tipo]}/${id}` : null;
 }
 
 export const ORDENS = { mais_antigo: "createdTime", mais_recente: "createdTime desc", nome: "folder,name" } as const;
@@ -50,13 +54,13 @@ export type ArquivoAchado = {
   tamanho: number | null;
   video: { largura: number | null; altura: number | null; duracao_s: number | null } | null;
   imagem: { largura: number | null; altura: number | null } | null;
-  link: string | null;
-  link_download: string | null;
   icone: string | null;
-  /** A pasta (ela mesma, se for pasta; senão a pasta onde o arquivo está) aberta na aba Drive do app. */
+  /** Pasta: ela aberta na aba Drive do app. Arquivo: a pasta dele com o arquivo na prévia. */
   abrir_no_sobedesce: string | null;
+  /** Arquivo: o Baixar do app (pasta: null). */
+  baixar_pelo_sobedesce: string | null;
 };
-export type PastaAchada = { id: string; nome: string; link: string | null; modificado: string | null; abrir_no_sobedesce: string | null };
+export type PastaAchada = { id: string; nome: string; modificado: string | null; abrir_no_sobedesce: string | null };
 
 export type FalhaDrive = { ok: false; erro: "sem_drive" | "reconectar_drive" | "drive_indisponivel" };
 export type ResultadoBusca = { ok: true; arquivos: ArquivoAchado[]; incompleta: boolean } | FalhaDrive;
@@ -105,7 +109,6 @@ export function soMetadados(f: FileDrive): ArquivoAchado | null {
   const i = f.imageMediaMetadata;
   const ms = numero(v?.durationMillis);
   const pasta = tipo === PASTA_MIME;
-  const pai = Array.isArray(f.parents) ? (f.parents as unknown[])[0] : null;
   return {
     id,
     nome,
@@ -116,17 +119,16 @@ export function soMetadados(f: FileDrive): ArquivoAchado | null {
     tamanho: numero(f.size),
     video: v ? { largura: numero(v.width), altura: numero(v.height), duracao_s: ms === null ? null : Math.round(ms / 1000) } : null,
     imagem: i ? { largura: numero(i.width), altura: numero(i.height) } : null,
-    link: https(f.webViewLink),
-    link_download: https(f.webContentLink),
     icone: https(f.iconLink),
-    abrir_no_sobedesce: linkNoSobedesce(pasta ? id : pai),
+    abrir_no_sobedesce: linkNoSobedesce(id, pasta ? "pasta" : "abrir"),
+    baixar_pelo_sobedesce: pasta ? null : linkNoSobedesce(id, "baixar"),
   };
 }
 
 const pastaDe = (f: FileDrive): PastaAchada | null => {
   const id = texto(f.id);
   const nome = texto(f.name);
-  return id && nome ? { id, nome, link: https(f.webViewLink), modificado: texto(f.modifiedTime), abrir_no_sobedesce: linkNoSobedesce(id) } : null;
+  return id && nome ? { id, nome, modificado: texto(f.modifiedTime), abrir_no_sobedesce: linkNoSobedesce(id) } : null;
 };
 
 /** As contas Google prontas, ou a falha (nenhuma conectada, todas pedindo reconectar). */
@@ -185,7 +187,7 @@ const PARECE_ID = /^(?=.*\d)[A-Za-z0-9_-]{10,}$/;
 async function pastaPeloId(usuarioId: string, contas: Conta[], id: string): Promise<{ conta: Conta; pasta: PastaAchada } | null> {
   for (const conta of contas) {
     try {
-      const f = await chamarDrive<FileDrive>(usuarioId, conta.id, `/files/${encodeURIComponent(id)}`, { query: { fields: "id,name,mimeType,trashed,webViewLink,modifiedTime" } });
+      const f = await chamarDrive<FileDrive>(usuarioId, conta.id, `/files/${encodeURIComponent(id)}`, { query: { fields: "id,name,mimeType,trashed,modifiedTime" } });
       const p = f && f.mimeType === PASTA_MIME && f.trashed !== true ? pastaDe(f) : null;
       if (p) return { conta, pasta: p };
     } catch (e) {
@@ -210,7 +212,7 @@ export async function listarPasta(usuarioId: string, pedido: string, ordem: Orde
   }
   if (!alvo) {
     const q = consultaDePasta(pedido);
-    const r = await emCadaDrive(usuarioId, (c) => listar(usuarioId, c.id, { q, fields: "files(id,name,mimeType,webViewLink,modifiedTime)", pageSize: 10 }));
+    const r = await emCadaDrive(usuarioId, (c) => listar(usuarioId, c.id, { q, fields: "files(id,name,mimeType,modifiedTime)", pageSize: 10 }));
     if (!Array.isArray(r)) return r;
     const achadas = r.flatMap((x) => (x.lista?.files ?? []).map((f) => ({ conta: x.conta, pasta: pastaDe(f) })).filter((a): a is { conta: Conta; pasta: PastaAchada } => !!a.pasta));
     if (!achadas.length) return { ok: true, tipo: "nao_achou" };
