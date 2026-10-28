@@ -9,6 +9,7 @@ import { getBanco, schema, type Contexto, type Tx } from "@/lib/db/client";
 import { iso } from "@/lib/quadro/metodo";
 import { traduzirPg, type Res } from "@/lib/crm/comum";
 import { CARDS_DEMO, CLIENTES_DEMO, PROJETOS_DEMO } from "./produtora";
+import { carregarRevisaoDemo } from "./revisao";
 
 const { clients, projects, lotes, loteCards, auditLog } = schema;
 
@@ -43,7 +44,11 @@ export async function carregarDemonstracao(ctx: Contexto): Promise<Res<{ criou: 
     return await getBanco().asUser(ctx, async (tx) => {
       await travar(tx, ctx.orgId);
       const vazio = { clientes: 0, projetos: 0, cards: 0, lotes: 0 };
-      if (await existeDemo(tx)) return { ok: true as const, criou: false, contagem: vazio };
+      if (await existeDemo(tx)) {
+        // Demonstração de antes das Aprovações: completa (versões, comentários, decisões e link), uma vez só.
+        await carregarRevisaoDemo(tx, ctx);
+        return { ok: true as const, criou: false, contagem: vazio };
+      }
 
       const idsClientes = await tx
         .insert(clients)
@@ -116,7 +121,7 @@ export async function carregarDemonstracao(ctx: Contexto): Promise<Res<{ criou: 
         idsCards.push(id);
       }
 
-      // Um lote enviado por cliente com cards em aprovação (o link do cliente chega na etapa 2: nenhum é criado aqui).
+      // Um lote enviado por cliente com cards em aprovação; as versões, os comentários e o link vêm logo abaixo.
       const porCliente = new Map<number, number[]>();
       CARDS_DEMO.forEach((c, i) => {
         if (c.coluna === "aprovacao") porCliente.set(c.cliente, [...(porCliente.get(c.cliente) ?? []), i]);
@@ -142,6 +147,8 @@ export async function carregarDemonstracao(ctx: Contexto): Promise<Res<{ criou: 
         await tx.insert(loteCards).values(cardsDoLote.map((i, posicao) => ({ loteId: l.id, orgId: ctx.orgId, cardId: idsCards[i], posicao })));
         nLotes++;
       }
+
+      await carregarRevisaoDemo(tx, ctx);
 
       const contagem = { clientes: idsClientes.length, projetos: idsProjetos.length, cards: idsCards.length, lotes: nLotes };
       await tx

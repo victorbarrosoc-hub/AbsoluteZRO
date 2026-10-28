@@ -318,6 +318,28 @@
   width: min(250px, 70%);
   margin-bottom: calc(-1 * clamp(80px, 12vw, 160px));
 }
+/* A aprovação abre a seção, em largura inteira: o texto de um lado, o iPhone do outro. */
+.icartao--largo {
+  grid-column: 1 / -1;
+}
+@media (min-width: 761px) {
+  .icartao--largo {
+    grid-template-rows: none;
+    grid-template-columns: 1fr minmax(0, 300px);
+    align-items: center;
+    padding-bottom: 0;
+  }
+  .icartao--largo .icartao__texto {
+    align-self: center;
+    padding-bottom: clamp(22px, 3vw, 36px);
+  }
+  .icartao--largo .iphone {
+    align-self: end;
+    width: min(280px, 100%);
+    margin: 0;
+    margin-bottom: -120px;
+  }
+}
 .icartao--z {
   grid-column: 1 / -1;
   grid-template-columns: auto 1fr;

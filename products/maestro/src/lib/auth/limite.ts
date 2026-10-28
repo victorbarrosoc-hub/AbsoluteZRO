@@ -1,7 +1,7 @@
 /**
  * Limite de tentativas (tabela maestro.rate_limit_attempts, só pela porta de sistema): conta linhas da chave numa
  * janela de tempo. Chaves: "entrar:<ip>" (idas ao login), "pedido-zro:<jti>" (uso único dos pedidos do HUB, etapa 3),
- * "link:<ip>" e "link-token:<hash>" (links do cliente, etapa 2), "espera:<hash do ip>" e "espera" (lista de espera). Limpeza preguiçosa do que tem mais de um dia.
+ * "link-*:<hash do token ou do ip>" (links do cliente, src/lib/revisao/link.ts), "espera:<hash do ip>" e "espera" (lista de espera). Limpeza preguiçosa do que tem mais de um dia.
  */
 import { and, count, eq, gte, lt } from "drizzle-orm";
 import { getBanco, schema } from "@/lib/db/client";
@@ -19,6 +19,17 @@ export const REGRAS = {
   esperaIp: { max: 5, janelaMs: 60 * 60_000 },
   /** Teto geral da lista de espera (IPs trocados não enchem a tabela). */
   esperaGeral: { max: 300, janelaMs: 60 * 60_000 },
+  /** Link do cliente (plano v2 §4.4): abrir 120/h por link; qualquer link 300/h por IP (tentar tokens não compensa). */
+  linkAbrir: { max: 120, janelaMs: 60 * 60_000 },
+  linkIp: { max: 300, janelaMs: 60 * 60_000 },
+  /** Link que não existe: 30/h por IP, depois nem link bom abre por um tempo. */
+  linkMortoIp: { max: 30, janelaMs: 60 * 60_000 },
+  /** PIN: 5 tentativas a cada 15 min por link e IP; 20 por link no total. */
+  linkPinIp: { max: 5, janelaMs: 15 * 60_000 },
+  linkPin: { max: 20, janelaMs: 15 * 60_000 },
+  /** Comentar 60/h por link; enviar decisões 20/h por link (a decisão em si vale uma vez por peça e volta). */
+  linkComentar: { max: 60, janelaMs: 60 * 60_000 },
+  linkEnviar: { max: 20, janelaMs: 60 * 60_000 },
 } satisfies Record<string, Regra>;
 
 /** true = ainda pode tentar. */

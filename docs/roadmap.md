@@ -309,8 +309,28 @@ Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   selos), cor fechada por coluna do Quadro, títulos Light × ExtraBold, monograma com tom por cliente, card que inclina
   ao pegar e assenta com a mola, entrada de seção de 240 ms, esqueletos (`loading.tsx`), tudo em CSS e desligado em
   "reduzir movimento". E2E do Maestro (Playwright) no CI.
-- ⬜ Maestro v2, fase 3 em diante (plano): revisão com vídeo por link, ponte com o SOBEDESCE, marca da produtora,
-  orçamentos, financeiro, inventário, freelas.
+- ✅ Maestro v2, fases 3–6 (28/10/2026): **aprovação do cliente com vídeo por link**. Migration
+  `drizzle/0005_revisao.sql`: `versoes` (link + fonte + metadados; n = volta), `comentarios` (tempo em ms, intervalo,
+  pino x/y; o texto nunca muda, só "resolvido"), `approvals` com versão e volta; RLS por organização nas duas tabelas
+  novas, escrita só pelas funções `versao_*`/`comentario_*`; porta estreita do cliente `link_pin`, `link_abrir`,
+  `link_comentar`, `link_enviar` (security definer, sem organização na sessão, só o lote do token). Token só como
+  sha256 (cópia cifrada para a equipe copiar), validade 7/15/30 dias, revogação, um ativo por lote, PIN opcional
+  (scrypt + cookie assinado de 12 h), limites (abrir 120/h por link, 300/h e 30 links mortos/h por IP, PIN 5/15 min,
+  comentar 60/h, enviar 20/h), IP só como HMAC do dia, auditoria. Decisão idempotente por peça e volta; aprovar leva o
+  card a Aprovado e pedir ajuste a Revisão ("ajuste pedido"); gerar o link leva os cards em Revisão a Em aprovação e
+  versão nova com link ativo volta a Em aprovação. Detector de fontes puro (Drive, YouTube, Vimeo, Dropbox `?raw=1`, mp4
+  /mov/webm, HLS, genérico) e players: `<video>` com passo de quadro e timecode, HLS nativo ou hls.js carregado só quando
+  preciso, YouTube IFrame API (nocookie), Vimeo Player SDK, Drive pela chave `MAESTRO_GOOGLE_API_KEY` (opcional; sem
+  ela, iframe com tempo digitado); CSP própria em `/a` e `/app/aprovacoes`. Telas: `/app/aprovacoes` (lotes, novo lote,
+  versões por link colado, régua com marcadores, resolver, filtros, link com PIN/validade, copiar, WhatsApp, revogar,
+  fechar, CSV e EDL de marcadores) e `/a/[token]` (peças numeradas, comentário no tempo com pino, "Antes | Agora",
+  "Aprovar esta"/"Pedir ajuste nesta", "Revisar e enviar" com nome e aceite, selo do aprovado, tela neutra). A
+  demonstração ganhou aprovações (vídeos sintéticos em `public/demo`, comentários, decisões e link ativo; completa
+  demonstrações antigas uma vez). Página inicial: Aprovação em "Já funciona" com captura real.
+- ⬜ Maestro v2, fase 7 em diante (plano): ponte com o SOBEDESCE (Drive com permissão temporária e stream da equipe),
+  marca da produtora nas páginas do cliente, orçamentos, financeiro, inventário, freelas. Pendente do titular: criar a
+  chave de API do Google só do Maestro (restrita à Drive API e a `maestro.absolutezro.com`) e pôr em
+  `MAESTRO_GOOGLE_API_KEY` na Vercel.
 
 ## Fase 6 — Escala
 

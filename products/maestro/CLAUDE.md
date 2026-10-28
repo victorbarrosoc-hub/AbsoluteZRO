@@ -48,6 +48,19 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   organização da sessão (só admin e gestão); clientes, projetos e lotes com `demo = true`, cards `demo-…` com
   `dados.demo`; "Remover demonstração" apaga só esses (cards por `maestro.demo_apagar_cards()`). O selo
   "Demonstração" aparece no topo enquanto houver.
+- **Aprovações** (plano v2 §4, `drizzle/0005_revisao.sql`, `src/lib/revisao`): a peça é um **link** (o Maestro não guarda
+  bytes). `fontes/detectar.ts` é puro (Drive, YouTube, Vimeo, Dropbox `?raw=1`, mp4/mov/webm, HLS; outro https vira
+  "link" com tempo digitado; o servidor nunca busca o link). Versões (`maestro.versao_criar`, n = volta) e comentários
+  (`maestro.comentario_*`; tempo em ms, intervalo, pino x/y; o texto não muda) só por função. Equipe em
+  `src/lib/revisao/equipe.ts` (asUser; link só admin e gestão; gerar leva Revisão → Em aprovação; versão nova com link
+  ativo volta a Em aprovação). Cliente em `/a/[token]` + `/api/link/{pin,comentar,enviar}` (`link.ts`): transação como
+  `maestro_app` **sem organização** e só as funções `maestro.link_*`; token só como sha256 (`token_enc` para copiar),
+  PIN scrypt + cookie assinado, limites em `REGRAS.link*`, IP só como HMAC do dia; link morto = a mesma tela neutra. A
+  decisão (`link_enviar`) vale uma vez por peça e volta e move o card (Aprovado; ajuste → Revisão com `ajustePedido`).
+  Players em `src/components/revisao/player.tsx` (callbacks estáveis: o adaptador recria o player se mudarem);
+  `MAESTRO_GOOGLE_API_KEY` (opcional, do titular) faz o Drive tocar num `<video>`; sem ela, iframe. CSP de `/a` e
+  `/app/aprovacoes` em `next.config.ts` (abra host novo só lá). A demonstração usa os vídeos sintéticos
+  `public/demo/*.mp4` (únicas URLs relativas aceitas, e só em card `demo-`).
 - **Página inicial** (`src/app/page.tsx`, `inicio.css`, plano v2 §10, ADR 0024): pública, só o que existe, "Em breve"
   para o resto, capturas reais da demonstração em `public/produto/*-{claro,escuro}.webp` (refazer com
   `npm run db:seed:demo` quando a tela mudar; nunca mock). "Quero acesso" grava na lista de espera
@@ -72,5 +85,7 @@ Os testes (`node --test` via tsx) criam bancos `maestro_test_<nome>` a partir de
 Cobertura mínima que não pode cair: isolamento RLS com duas organizações (`rls.test.mts`), OIDC completo
 (`zro.test.mts`), repasse da Z (`ia.test.mts`), `temAcesso` e papéis (`acesso.test.mts`), Quadro com conflito por campo (`quadro.test.mts`), clientes e projetos com
 isolamento e papel de leitura (`crm.test.mts`), demonstração idempotente que remove só o que é `demo` (`demo.test.mts`),
-lista de espera com RLS, limite e armadilha (`lista-espera.test.mts`). E2E: `npm run build && npm run test:e2e`
-(Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir movimento e navegação.
+lista de espera com RLS, limite e armadilha (`lista-espera.test.mts`), detector de fontes e tempo (`fontes.test.mts`),
+revisão com duas organizações, porta estreita, PIN, limites e decisão idempotente (`revisao.test.mts`). E2E:
+`npm run build && npm run test:e2e` (Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir
+movimento, navegação e a aprovação inteira (`aprovacao.spec.ts`, mp4 local e YouTube/Vimeo falsos em `e2e/falsos`).

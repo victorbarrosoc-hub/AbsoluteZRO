@@ -15,6 +15,31 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Maestro v2, fases 3–6: aprovação do cliente com vídeo por link (28/10/2026)
+
+- `products/maestro`: `lint`, `format:check`, `typecheck` ok; `npm test` **149/149** (Postgres 16 local). Novos:
+  `fontes.test.mts` (tabela do detector: 27 links aceitos e normalizados de Drive, YouTube, Vimeo, Dropbox, mp4/mov/webm,
+  HLS e genérico; 15 recusados: http, `javascript:`, usuário e senha, localhost/IP, pasta, ids curtos, comprido demais;
+  capacidades e endereços do Drive; tempo, timecode, leitura do tempo digitado, CSV sem fórmula e EDL de marcadores) e
+  `revisao.test.mts` (duas organizações: a B não vê nem alcança lote, versões e comentários da A; leitura não cria
+  versão; `maestro_app` não escreve direto; comentário idempotente, o texto não muda nem pelo dono; só admin e gestão
+  geram link; banco só com o sha256; 30 dias; abrir sem vazar e-mail, sub, ids nem o token; sem organização,
+  `maestro_app` não lê nenhuma tabela e a função interna é fechada; peça e versão têm de ser do lote; nome, aceite e
+  "o que ajustar" obrigatórios; versão velha recusada; decisão vale uma vez por peça e volta e move o card; versão nova
+  sobe a volta e reabre a decisão; revogado, vencido, lote fechado e token desconhecido dão a mesma resposta; PIN:
+  tela do PIN, 5 erros em 15 min bloqueiam, cookie adulterado não vale, scrypt no banco; 120 aberturas/h por link e 30
+  links mortos/h por IP; IP nunca em claro). `rls.test.mts` cobre `versoes` e `comentarios`; `demo.test.mts` confere as
+  aprovações da demonstração, a complementação única e a remoção total. `npm run build` ok.
+- `npm run test:e2e` **20/20** no computador e no iPhone. Novo `e2e/aprovacao.spec.ts`: equipe cria o lote, cola mp4
+  local (servido com Range), YouTube e Vimeo falsos, comenta no tempo e gera o link (cards → Em aprovação); cliente sem
+  conta (cabeçalhos `noindex`, CSP, `strict-origin`; nada de e-mail ou sub no HTML) comenta no tempo com pino, aprova,
+  pede ajuste, revisa e envia com nome e aceite; o Quadro anda (Aprovado/Revisão); a equipe vê a decisão e exporta
+  CSV e EDL; revogado vira a tela neutra; API recusa outra origem e token morto. Página inicial com Aprovação em "Já
+  funciona".
+- Capturas (claro/escuro, 1440 px e iPhone) da equipe e do cliente conferidas à mão, com a demonstração.
+- Não validado: chave de API do Google de verdade (o titular cria; sem ela o Drive toca pelo iframe com tempo
+  digitado), YouTube e Vimeo de verdade (só os falsos no e2e), HLS com hls.js num servidor real, Safari de verdade.
+
 ## Maestro v2, fases 0–2: página inicial, lista de espera e sistema visual (28/10/2026)
 
 - `products/maestro`: `lint`, `format:check`, `typecheck` ok; `npm test` **86/86** (Postgres 16 local). Novos:

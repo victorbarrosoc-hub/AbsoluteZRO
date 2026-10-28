@@ -33,8 +33,23 @@ const contar = (orgId: string) =>
              (select count(*)::int from maestro.projects where org_id = ${orgId}) as projetos,
              (select count(*)::int from maestro.cards where org_id = ${orgId}) as cards,
              (select count(*)::int from maestro.card_history where org_id = ${orgId}) as historico,
-             (select count(*)::int from maestro.lotes where org_id = ${orgId}) as lotes`)) as unknown as Linhas;
-    return r as { clientes: number; clientesDemo: number; projetos: number; cards: number; historico: number; lotes: number };
+             (select count(*)::int from maestro.lotes where org_id = ${orgId}) as lotes,
+             (select count(*)::int from maestro.versoes where org_id = ${orgId}) as versoes,
+             (select count(*)::int from maestro.comentarios where org_id = ${orgId}) as comentarios,
+             (select count(*)::int from maestro.approvals where org_id = ${orgId}) as decisoes,
+             (select count(*)::int from maestro.approval_links where org_id = ${orgId} and revoked_at is null) as links`)) as unknown as Linhas;
+    return r as {
+      clientes: number;
+      clientesDemo: number;
+      projetos: number;
+      cards: number;
+      historico: number;
+      lotes: number;
+      versoes: number;
+      comentarios: number;
+      decisoes: number;
+      links: number;
+    };
   });
 
 before(async () => {
@@ -115,6 +130,33 @@ describe("demonstração", () => {
     assert.deepEqual(await contar(orgA), antes);
   });
 
+  test("aprovações da demonstração: versões, comentários com tempo, decisões e um link ativo por lote", async () => {
+    const c = await contar(orgA);
+    assert.equal(c.versoes, 4);
+    assert.ok(c.comentarios >= 7, `comentários: ${c.comentarios}`);
+    assert.equal(c.decisoes, 3);
+    assert.equal(c.links, c.lotes);
+    const rev = await import("../src/lib/revisao/equipe");
+    const lotes = await rev.listarLotes(A());
+    assert.ok(lotes.every((l) => l.demo && l.link));
+    const com2 = (await Promise.all(lotes.map((l) => rev.carregarLote(A(), l.id)))).flatMap((l) => l!.pecas).find((p) => p.versoes.length === 2);
+    assert.ok(com2, "uma peça com Antes e Agora");
+    assert.equal(com2.coluna, "aprovacao");
+    assert.ok(com2.versoes[1].comentarios.some((k) => k.autor === "cliente" && k.x !== null && k.t !== null));
+    // Demonstração antiga (sem aprovações): carregar de novo completa uma vez só.
+    await getBanco().asSystem("teste: tira as versões", async (tx) => {
+      await tx.execute(sql`select set_config('maestro.limpando_demo', 'on', true)`);
+      await tx.execute(sql`delete from maestro.approvals where org_id = ${orgA}`);
+      await tx.execute(sql`delete from maestro.versoes where org_id = ${orgA}`);
+      await tx.execute(sql`update maestro.approval_links set revoked_at = now() where org_id = ${orgA}`);
+    });
+    await demo.carregarDemonstracao(A());
+    const d = await contar(orgA);
+    assert.equal(d.versoes, 4);
+    await demo.carregarDemonstracao(A());
+    assert.equal((await contar(orgA)).versoes, 4);
+  });
+
   test("a outra organização não vê nada da demonstração", async () => {
     assert.equal(await demo.temDemonstracao(B()), false);
     assert.equal((await cli.listarClientes(B())).length, 0);
@@ -146,7 +188,18 @@ describe("demonstração", () => {
     assert.ok(r.ok);
     if (r.ok) assert.equal(r.contagem.clientes, 10);
     const depois = await contar(orgA);
-    assert.deepEqual(depois, { clientes: 1, clientesDemo: 0, projetos: 1, cards: 1, historico: 1, lotes: 0 });
+    assert.deepEqual(depois, {
+      clientes: 1,
+      clientesDemo: 0,
+      projetos: 1,
+      cards: 1,
+      historico: 1,
+      lotes: 0,
+      versoes: 0,
+      comentarios: 0,
+      decisoes: 0,
+      links: 0,
+    });
     assert.equal(await demo.temDemonstracao(A()), false);
     assert.deepEqual(
       (await cli.listarClientes(A())).map((x) => x.nome),
