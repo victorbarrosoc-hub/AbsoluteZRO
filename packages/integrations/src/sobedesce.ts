@@ -11,7 +11,7 @@
  * Sem relatório, o arquivo fica "unverified" (o SOBEDESCE listou, o HUB não tem prova da conferência).
  */
 import { createHash } from 'node:crypto'
-import { MANIFEST_SCHEMA_VERSION, type MediaAsset, type ZroMediaManifest } from '@zro/media-contracts'
+import { DriveDownloadSchema, MANIFEST_SCHEMA_VERSION, type DriveDownload, type MediaAsset, type ZroMediaManifest } from '@zro/media-contracts'
 import { z } from 'zod'
 
 /** Mesmo limite do SOBEDESCE (RESUMO_MAX_ARQUIVOS): acima disso a linha vem truncada. */
@@ -34,20 +34,42 @@ export const DescargaSchema = z.object({
 })
 export type Descarga = z.infer<typeof DescargaSchema>
 
-export type DescargasParse = { entries: Descarga[]; skipped: { line: number; reason: string }[]; partialTail: boolean }
+export type DescargasParse = {
+  entries: Descarga[]
+  /** Linhas v2: downloads do Drive conferidos (sobedesce.descarga/2), validados pelo contrato estrito. */
+  drive: DriveDownload[]
+  skipped: { line: number; reason: string }[]
+  partialTail: boolean
+}
 
-/** Lê o descargas.jsonl como o Synquei lê (desktop/organizador.cjs): só linhas inteiras; cancelado fica de fora. */
+/** Linha grande demais nem é lida (50.000 arquivos com caminhos longos ficam bem abaixo disso). */
+export const DESCARGA_MAX_LINE = 64 * 1024 * 1024
+
+/**
+ * Lê o descargas.jsonl como o Synquei lê (desktop/organizador.cjs): só linhas inteiras; cancelado fica de fora.
+ * Linha v2 (download do Drive) vai para `drive`; leitor que só conhece a v1 continua pulando.
+ */
 export function parseDescargas(text: string): DescargasParse {
   const lines = text.split('\n')
   const tail = lines.pop() ?? ''
-  const out: DescargasParse = { entries: [], skipped: [], partialTail: tail.trim().length > 0 }
+  const out: DescargasParse = { entries: [], drive: [], skipped: [], partialTail: tail.trim().length > 0 }
   lines.forEach((raw, i) => {
     if (!raw.trim()) return
+    if (raw.length > DESCARGA_MAX_LINE) {
+      out.skipped.push({ line: i + 1, reason: 'linha grande demais' })
+      return
+    }
     let json: unknown
     try {
       json = JSON.parse(raw)
     } catch {
       out.skipped.push({ line: i + 1, reason: 'linha estragada (JSON inválido)' })
+      return
+    }
+    if (json && typeof json === 'object' && (json as { v?: unknown }).v === 2) {
+      const d = parseDriveDownload(json)
+      if (d.ok) out.drive.push(d.descarga)
+      else out.skipped.push({ line: i + 1, reason: d.reason })
       return
     }
     const r = DescargaSchema.safeParse(json)
@@ -62,6 +84,19 @@ export function parseDescargas(text: string): DescargasParse {
     out.entries.push(r.data)
   })
   return out
+}
+
+/**
+ * Uma linha v2 (download do Drive), já como objeto. Entrada não confiável: o contrato é estrito (campo a mais é
+ * recusado) e confere caminhos, contagens e o estado declarado.
+ */
+export function parseDriveDownload(json: unknown): { ok: true; descarga: DriveDownload } | { ok: false; reason: string } {
+  const r = DriveDownloadSchema.safeParse(json)
+  if (!r.success) {
+    const i = r.error.issues[0]
+    return { ok: false, reason: `fora do contrato v2: ${i?.path.join('.')} ${i?.message}` }
+  }
+  return { ok: true, descarga: r.data }
 }
 
 export type ChecksumReport = { algorithm: 'xxh64' | 'md5'; entries: Map<string, string>; invalidLines: number; conflicts: string[] }
