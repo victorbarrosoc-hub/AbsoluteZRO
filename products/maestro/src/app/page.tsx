@@ -28,15 +28,18 @@ const JA: { icone: NomeIcone; nome: string; linha: string }[] = [
 
 /** A produtora por dentro (plano v2 §6–§7): cada item só entra aqui quando a tela existe no app. */
 const PRODUTORA: { icone: NomeIcone; nome: string; dica: string }[] = [
-  { icone: "hoje", nome: "Hoje", dica: "O dia da produtora: agenda, prazos, cliente e caixa" },
-  { icone: "pedidos", nome: "Pedidos", dica: "O cliente pede o orçamento por um link seu" },
+  { icone: "hoje", nome: "Hoje", dica: "O dia da produtora: agenda, prazos, quem retornar e o caixa da semana" },
+  { icone: "pedidos", nome: "Pedidos", dica: "Pedido pelo seu link e funil até o ganho, com o dia de retornar" },
+  { icone: "numeros", nome: "Números", dica: "Meta do mês, ticket médio, conversão e margem por projeto" },
   { icone: "orcamento", nome: "Orçamentos", dica: "Tabela de preços, versões e timbrado em PDF" },
   { icone: "check", nome: "Aceite online", dica: "O cliente aceita o orçamento e nasce o projeto com as parcelas" },
   { icone: "marca", nome: "Sua marca", dica: "Logo e cor no timbrado e em tudo o que o cliente abre" },
   { icone: "dinheiro", nome: "Financeiro", dica: "A pagar, a receber, fluxo e resultado" },
   { icone: "freelas", nome: "Freelas", dica: "Banco de freelas, escala e pagamentos" },
   { icone: "inventario", nome: "Inventário", dica: "Equipamento e reservas sem conflito" },
-  { icone: "agenda", nome: "Agenda", dica: "Diárias, equipe e ordem do dia" },
+  { icone: "agenda", nome: "Agenda", dica: "Diárias, equipe e ordem do dia, também no calendário do celular" },
+  { icone: "pessoas", nome: "Acesso por cliente", dica: "A equipe vê só os clientes dela" },
+  { icone: "importar", nome: "Importar planilha", dica: "Clientes, projetos, freelas e equipamento de um CSV" },
 ];
 
 /** O que vem aí, com o selo "Em breve". Só troca de estado quando a fase dele entrar no ar. */

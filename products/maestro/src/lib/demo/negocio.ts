@@ -1,7 +1,7 @@
 /**
  * Demonstração do negócio (estudo MakersHub §4): o funil dos pedidos de exemplo (uma etapa para cada um, valor
  * estimado, o motivo da perda), os retornos (um atrasado, um hoje, um amanhã e o de um lead), o histórico de contatos
- * e a meta de faturamento dos últimos seis meses. Só mexe no que é `demo`; completa sem duplicar (se já há contato de
+ * e a meta de faturamento dos últimos quatro meses. Só mexe no que é `demo`; completa sem duplicar (se já há contato de
  * exemplo, o funil está montado); "Remover demonstração" apaga metas e contatos de exemplo junto com os pedidos.
  */
 import { sql } from "drizzle-orm";
@@ -14,12 +14,12 @@ type Funil = { protocolo: string; etapa: string; valor?: number; retorno?: numbe
 const FUNIL_DEMO: Funil[] = [
   { protocolo: "DEMO0001", etapa: "novo", valor: 900000, retorno: 0, nota: "Mandar portfólio de reels" },
   { protocolo: "DEMO0002", etapa: "conversa", valor: 2800000, retorno: -1, nota: "Confirmar a data do casamento", contato: "Falamos por WhatsApp" },
-  { protocolo: "DEMO0003", etapa: "conversa", valor: 2200000, retorno: 3, nota: "Visita à clínica", contato: "Ligação de 15 min" },
-  { protocolo: "DEMO0004", etapa: "negociando", retorno: 1, nota: "Ver se fecham 6 ou 8 reels", contato: "Pediu desconto no pacote" },
+  { protocolo: "DEMO0003", etapa: "negociando", valor: 2200000, retorno: 3, nota: "Fechar o escopo na visita", contato: "Ligação de 15 min" },
+  { protocolo: "DEMO0004", etapa: "orcamento", retorno: 1, nota: "Ver se fecham 6 ou 8 reels", contato: "Pediu desconto no pacote" },
   { protocolo: "DEMO0006", etapa: "perdido", motivo: "Preço" },
 ];
 
-export const METAS_DEMO = [3_800_000, 4_000_000, 4_200_000, 4_200_000, 4_500_000, 4_500_000];
+export const METAS_DEMO = [3_500_000, 5_000_000, 4_500_000, 9_500_000];
 
 export async function montarNegocio(tx: Tx, ctx: Contexto, hoje: string): Promise<number> {
   let n = 0;
@@ -40,6 +40,15 @@ export async function montarNegocio(tx: Tx, ctx: Contexto, hoje: string): Promis
           insert into maestro.contatos (org_id, pedido_id, nota, feito_em, feito_por, demo)
           values (${ctx.orgId}, ${id}, ${f.contato}, ${`${somarDias(hoje, -2)}T15:00:00Z`}, ${ctx.sub}, true)`);
     }
+    // O caixa da semana: as entradas de exemplo que venceram de segunda até hoje entram como recebidas.
+    const d = new Date(`${hoje}T12:00:00Z`).getUTCDay();
+    const seg = somarDias(hoje, -((d + 6) % 7));
+    await tx.execute(sql`
+      insert into maestro.baixas (org_id, lancamento_id, valor_cents, data, forma, created_by)
+      select l.org_id, l.id, l.valor_cents - l.pago_cents, l.vencimento, 'pix', ${ctx.sub}
+        from maestro.lancamentos l
+       where l.demo and l.pago_cents < l.valor_cents and l.vencimento between ${seg}::date and ${hoje}::date
+       order by l.vencimento limit 6`);
     // Um lead (cliente) para retornar: o primeiro lead de exemplo.
     const [lead] = (await tx.execute(sql`
       select id from maestro.clients where demo and status = 'lead' and deleted_at is null order by name limit 1`)) as unknown as { id: string }[];
@@ -52,7 +61,7 @@ export async function montarNegocio(tx: Tx, ctx: Contexto, hoje: string): Promis
       n++;
     }
   }
-  // Meta de faturamento: seis meses até o atual (só administração e gestão gravam; o banco confere).
+  // Meta de faturamento: os quatro meses até o atual (só administração e gestão gravam; o banco confere).
   const [pode] = (await tx.execute(sql`select maestro.has_role(${ctx.orgId}::uuid, array['admin', 'gestor']) as ok`)) as unknown as { ok: boolean }[];
   if (pode?.ok) {
     const mes = hoje.slice(0, 7);

@@ -116,19 +116,20 @@
 }
 .assinatura__passos {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   margin: 10px 0;
+  padding: 0;
+  list-style: none;
 }
-.assinatura__passos div {
+.assinatura__passos li {
   display: grid;
   gap: 2px;
 }
-.assinatura__passos dt {
+.assinatura__passos b {
   font-weight: 650;
   color: var(--text-strong);
 }
-.assinatura__passos dd {
-  margin: 0;
+.assinatura__passos span {
   color: var(--text);
 }
 

@@ -46,14 +46,14 @@ export default async function AgendaNoCelular() {
       </section>
       <section className="ficha" aria-label="Como assinar">
         <strong className="ficha__titulo">Como assinar</strong>
-        <dl className="assinatura__passos">
+        <ul className="assinatura__passos">
           {PASSOS.map((p) => (
-            <div key={p.app}>
-              <dt>{p.app}</dt>
-              <dd>{p.passos}</dd>
-            </div>
+            <li key={p.app}>
+              <b>{p.app}</b>
+              <span>{p.passos}</span>
+            </li>
           ))}
-        </dl>
+        </ul>
         <p className="sutil">
           O calendário atualiza sozinho (de hora em hora, no ritmo de cada aplicativo). Quem tiver o endereço vê a sua agenda: não compartilhe; se vazar,
           troque.

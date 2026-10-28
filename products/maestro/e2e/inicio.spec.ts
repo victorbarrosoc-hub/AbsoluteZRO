@@ -33,7 +33,7 @@ test.describe("página inicial", () => {
     await expect(page.locator(".ivem li", { hasText: "Aprovação do cliente" })).toHaveCount(0);
     await expect(page.locator(".iproduto li", { hasText: "Orçamentos" })).toBeVisible();
     await expect(page.locator(".ivem li", { hasText: "Orçamentos" })).toHaveCount(0);
-    for (const nome of ["Hoje", "Aceite online", "Pedidos"]) {
+    for (const nome of ["Hoje", "Aceite online", "Pedidos", "Números", "Acesso por cliente", "Importar planilha"]) {
       await expect(page.locator(".iproduto li", { hasText: nome })).toBeVisible();
       await expect(page.locator(".ivem li", { hasText: nome })).toHaveCount(0);
     }

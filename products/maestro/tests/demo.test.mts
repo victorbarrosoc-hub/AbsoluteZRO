@@ -374,9 +374,9 @@ describe("demonstração da marca, dos pedidos e do kit dos freelas", () => {
     assert.equal(l.n, 1, "o link de pedido de exemplo");
   });
 
-  test("o funil: uma etapa por pedido, retornos (atrasado, hoje, amanhã e um lead), contatos e meta de seis meses", async () => {
+  test("o funil: uma etapa por pedido, retornos (atrasado, hoje, amanhã e um lead), contatos e meta de quatro meses", async () => {
     const et = await ler<{ etapa: string; n: number }>(sql`select etapa, count(*)::int as n from maestro.pedidos where org_id = ${orgB} group by etapa`);
-    assert.deepEqual(Object.fromEntries(et.map((p) => [p.etapa, p.n])), { novo: 1, conversa: 2, negociando: 1, ganho: 1, perdido: 1 });
+    assert.deepEqual(Object.fromEntries(et.map((p) => [p.etapa, p.n])), { novo: 1, conversa: 1, orcamento: 1, negociando: 1, ganho: 1, perdido: 1 });
     const [pd] = await ler<{ motivo: string }>(sql`select motivo_perda as motivo from maestro.pedidos where org_id = ${orgB} and etapa = 'perdido'`);
     assert.equal(pd.motivo, "Preço");
     const ret = await ler<{ data: string }>(sql`
@@ -388,7 +388,7 @@ describe("demonstração da marca, dos pedidos e do kit dos freelas", () => {
       select (select count(*)::int from maestro.contatos where org_id = ${orgB} and demo) as contatos,
              (select count(*)::int from maestro.metas where org_id = ${orgB} and demo) as metas`);
     assert.ok(c.contatos >= 3);
-    assert.equal(c.metas, 6);
+    assert.equal(c.metas, 4);
   });
 
   test("carregar de novo não duplica; remover tira marca, pedidos, links e kits", async () => {
