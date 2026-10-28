@@ -76,12 +76,12 @@ export default async function Inicio() {
     <div className="inicio">
       <header className="site-topo">
         <a className="site-topo__marca" href="#conteudo" aria-label="Maestro">
-          <MaestroSimbolo width={40} />
+          <MaestroSimbolo width={32} />
           <span>Maestro</span>
         </a>
         <div className="site-topo__fim">
           <SeletorDeTema />
-          <a className="glass-btn glass-btn--sm" href={dentro ? ROTAS.app : ROTAS.entrar}>
+          <a className="glass-btn glass-btn--sm glass-btn--ink" href={dentro ? ROTAS.app : ROTAS.entrar}>
             {dentro ? "Abrir" : "Entrar"}
           </a>
         </div>

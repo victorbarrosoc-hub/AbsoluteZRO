@@ -122,7 +122,7 @@ test("pedido público → Pedidos → gerar orçamento → link → aceite → p
 
   // Hoje conta o que está em aberto, sem rolagem de lado.
   await page.goto("/app/hoje");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/hoje\./);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^(Bom dia|Boa tarde|Boa noite)/);
   await expect(page.getByRole("link", { name: /Pedidos novos/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /A receber na semana/ })).toBeVisible();
   await semRolagemDeLado(page);

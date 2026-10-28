@@ -396,8 +396,8 @@ function Cartao({
         </div>
       ) : null}
       {px ? (
-        <button type="button" className="q-card__passo" onClick={passo}>
-          {px.rotulo}
+        <button type="button" className="q-card__passo" onClick={passo} title={px.rotulo}>
+          <span>{px.rotulo}</span>
           <Icone nome="seta" size={13} />
         </button>
       ) : null}

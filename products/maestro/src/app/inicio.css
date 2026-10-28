@@ -12,18 +12,22 @@
 }
 
 /* ── topo ── */
+/* a cápsula de vidro do app, também aqui (C1 · Aurora) */
 .site-topo {
   position: sticky;
-  top: 0;
+  top: 14px;
   z-index: 20;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px max(16px, calc((100% - 1180px) / 2));
-  background: var(--chrome-bg);
-  -webkit-backdrop-filter: blur(18px) saturate(180%);
-  backdrop-filter: blur(18px) saturate(180%);
-  border-bottom: 1px solid var(--line);
+  width: min(1180px, 100% - 32px);
+  margin: 14px auto 0;
+  padding: 6px 6px 6px 14px;
+  border-radius: 999px;
+  background: var(--painel);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  backdrop-filter: blur(24px) saturate(150%);
+  box-shadow: var(--shadow-float);
 }
 .site-topo__marca {
   display: inline-flex;
@@ -33,9 +37,12 @@
   color: var(--text-strong);
   font-family: var(--font-apple);
   font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 0.86rem;
+  letter-spacing: -0.01em;
+  font-size: 1rem;
+}
+.site-topo .tema {
+  background: transparent;
+  box-shadow: none;
 }
 .site-topo__fim {
   margin-left: auto;
@@ -53,7 +60,7 @@
   padding: clamp(40px, 8vw, 96px) 16px 0;
 }
 .ihero__simbolo {
-  width: clamp(180px, 34vw, 320px);
+  width: clamp(150px, 26vw, 250px);
   height: auto;
   margin-bottom: 6px;
   /* a batuta desenha a pauta, da esquerda para a direita */

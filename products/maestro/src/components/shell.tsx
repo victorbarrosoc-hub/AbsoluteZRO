@@ -1,6 +1,6 @@
 /**
- * O shell do app: barra lateral em vidro (computador) ou topo + barra de baixo (celular), com a logo do Maestro, as
- * seções em grupos, a conta e o símbolo da Absolute ZRO pequeno, como assinatura. Componente de servidor: recebe a
+ * O shell do app: cápsula de vidro no topo (computador) ou topo + barra de baixo (celular), com a logo do Maestro, as
+ * seções em grupos, o relógio da luz, a conta e o símbolo da Absolute ZRO pequeno, como assinatura. Componente de servidor: recebe a
  * sessão já conferida pela página.
  */
 import Link from "next/link";
@@ -9,7 +9,8 @@ import type { Sessao } from "@/lib/auth/sessao";
 import { HUB_URL } from "@/lib/site";
 import { Icone } from "./icones";
 import { MaestroSimbolo, ZroSimbolo } from "./marca";
-import { Barra, Lateral } from "./nav";
+import { Relogio } from "./ambiente";
+import { Barra, Capsula } from "./nav";
 import { SeletorDeTema } from "./tema";
 
 export function iniciais(nome: string | null, email: string | null): string {
@@ -47,31 +48,28 @@ export function Shell({ sessao, demo = false, children }: { sessao: Sessao; demo
   ) : null;
   return (
     <div className="shell">
-      {/* Computador: a barra lateral em vidro, com a marca, os grupos, a conta e a assinatura Absolute ZRO. */}
-      <aside className="lado">
-        <Link className="lado__marca" href="/app/z" aria-label="Maestro, início">
-          <MaestroSimbolo width={40} />
+      {/* Computador: a cápsula de vidro no topo (C1 · Aurora): a marca, as seções em menus, o relógio da luz, o tema e a
+          conta; o símbolo da Absolute ZRO pequeno, como assinatura. */}
+      <header className="capsula">
+        <Link className="capsula__marca" href="/app/z" aria-label="Maestro, início">
+          <MaestroSimbolo width={30} />
           <span>Maestro</span>
         </Link>
-        <Lateral />
-        <div className="lado__pe">
+        <Capsula />
+        <div className="capsula__fim">
           {selo}
-          <Link className="conta conta--inteira" href="/app/ajustes" title={sessao.orgNome}>
+          <Relogio />
+          <SeletorDeTema />
+          <a className="assinatura" href={HUB_URL} title="Absolute ZRO" target="_blank" rel="noreferrer">
+            <ZroSimbolo size={18} />
+            <span className="sr-only">Absolute ZRO</span>
+          </a>
+          <Link className="conta" href="/app/ajustes" title={`${sessao.nome ?? sessao.email ?? "Conta"} · ${sessao.orgNome}`}>
             <Avatar sessao={sessao} />
-            <span className="conta__miolo">
-              <span className="conta__nome">{sessao.nome ?? sessao.email ?? "Conta"}</span>
-              <span className="conta__org">{sessao.orgNome}</span>
-            </span>
+            <span className="sr-only">{sessao.nome ?? sessao.email ?? "Conta"}</span>
           </Link>
-          <div className="lado__ferramentas">
-            <SeletorDeTema />
-            <a className="assinatura" href={HUB_URL} title="Absolute ZRO" target="_blank" rel="noreferrer">
-              <ZroSimbolo size={20} />
-              <span className="sr-only">Absolute ZRO</span>
-            </a>
-          </div>
         </div>
-      </aside>
+      </header>
       {/* Celular: a marca e a conta no topo; as seções na barra de baixo. */}
       <header className="topo">
         <Link className="topo__marca" href="/app/z" aria-label="Maestro, início">

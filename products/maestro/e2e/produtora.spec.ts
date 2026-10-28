@@ -54,7 +54,7 @@ test.describe("produtora por dentro", () => {
       ["/app/ajustes/precos", /preços\./, ".tabela-precos li"],
       ["/app/pedidos", /pedidos\./, ".lista .item"],
       ["/app/freelas?equip=sim", /freelas\./, ".lista .item"],
-      ["/app/hoje", /hoje\./, ".hoje-cartao"],
+      ["/app/hoje", /^(Bom dia|Boa tarde|Boa noite)/, ".hoje-cartao"],
     ];
     for (const [rota, titulo, item] of paineis) {
       await page.goto(rota);

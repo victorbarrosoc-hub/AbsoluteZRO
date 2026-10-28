@@ -47,7 +47,8 @@ export type NomeIcone =
   | "hoje"
   | "pedidos"
   | "marca"
-  | "imagem";
+  | "imagem"
+  | "abaixo";
 
 const CAMINHOS: Record<NomeIcone, React.ReactNode> = {
   alvo: (
@@ -153,6 +154,7 @@ const CAMINHOS: Record<NomeIcone, React.ReactNode> = {
     </>
   ),
   mais: <path d="M12 5v14M5 12h14" />,
+  abaixo: <path d="m6 9.5 6 6 6-6" strokeWidth={2} />,
   busca: (
     <>
       <circle cx="11" cy="11" r="6.5" />

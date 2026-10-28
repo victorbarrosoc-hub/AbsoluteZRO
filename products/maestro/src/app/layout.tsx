@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import type { ReactNode } from "react";
+import { Ambiente } from "@/components/ambiente";
 import { SITE_DESCRICAO, SITE_FRASE, SITE_NOME, siteUrl } from "@/lib/site";
 import "@fontsource-variable/figtree";
 import "@fontsource-variable/inter";
@@ -8,6 +9,7 @@ import "./globals.css";
 import "./produtora.css";
 import "./comercial.css";
 import "./publico.css";
+import "./aurora.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
@@ -22,7 +24,7 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
 };
 
-export const viewport: Viewport = { themeColor: "#f4f4f6", width: "device-width", initialScale: 1 };
+export const viewport: Viewport = { themeColor: "#f7f3ee", width: "device-width", initialScale: 1 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   // Claro é o tema da casa; o escuro é escolha de quem usa o seletor (fica no cookie).
@@ -31,6 +33,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html lang="pt-BR" data-theme={tema} suppressHydrationWarning>
       <body>
+        <Ambiente />
         <a className="pular" href="#conteudo">
           Pular para o conteúdo
         </a>

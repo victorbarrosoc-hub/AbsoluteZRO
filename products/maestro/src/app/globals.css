@@ -2,123 +2,245 @@
  * Maestro: identidade Absolute ZRO (packages/ui/src/tokens.css, Padrão Apple do CLAUDE.md), com a cor do produto só
  * no símbolo (latão). Tema claro é o padrão; o escuro é escolha no seletor (data-theme no <html>). Títulos em Figtree,
  * texto só em grafite/branco e cinza de apoio: nada de texto azul ou em degradê. Botões em Liquid Glass.
+ *
+ * Direção visual C1 · Aurora (escolha do titular, 28/10/2026): uma luz ambiente que segue a hora do dia de quem vê
+ * (manhã de pêssego e rosa no claro; noite de índigo e ameixa no escuro), navegação em cápsula de vidro no topo e
+ * cards brancos muito limpos. Todo texto fica sobre base sólida ou fosca (≥ 0,82) ou passa AA sobre o pior ponto da
+ * luz (e2e/contraste.spec.ts). backdrop-filter só na navegação, nos painéis grandes e nos botões de vidro.
  */
 :root {
-  --zro-void: #0e0e10;
-  --zro-ink: #131316;
-  --zro-graphite: #17171a;
-  --zro-smoke: #1e1e22;
-  --zro-mist: #2c2c31;
+  --zro-void: #0a0c16;
+  --zro-ink: #11131e;
+  --zro-graphite: #151724;
+  --zro-smoke: #1a1c29;
+  --zro-mist: #2a2c3b;
   --zro-mute: #8e8e93;
-  --zro-ash: #aeaeb2;
+  --zro-ash: #c7c7cc;
   --zro-light: #f5f5f7;
-  --zro-paper-ink: #111114;
+  --zro-paper-ink: #1d1d1f;
 
   /* o latão da pauta: o símbolo e o acento do Maestro (plano v2 §9). Acento é superfície, traço e ícone; nunca texto. */
   --p-maestro: #ffc857;
   --p-maestro-2: #b8872b;
   --acento: #c8962f;
-  --acento-suave: rgb(200 150 47 / 0.14);
+  --acento-suave: rgb(200 150 47 / 0.16);
   --acento-halo: rgb(255 200 87 / 0);
 
-  /* as 8 colunas do Quadro, fechadas e frias → quentes: pauta cinza, fazendo âmbar, em aprovação latão, entregue oliva.
-     Só em ponto, barra e marcador. */
-  --col-pauta: #a3a3ab;
-  --col-afazer: #8292a8;
-  --col-fazendo: #d6963a;
-  --col-revisao: #c7805a;
+  /* as 8 colunas do Quadro (C1): pauta pedra, a fazer lavanda, fazendo âmbar, revisão laranja, em aprovação latão,
+     aprovado verde, agendado verde-água, entregue oliva. Só em ponto, barra, marcador e fundo tingido. */
+  --col-pauta: #a8a29e;
+  --col-afazer: #9aa3d8;
+  --col-fazendo: #f5a524;
+  --col-revisao: #f76b15;
   --col-aprovacao: #c8962f;
-  --col-aprovado: #a8a046;
-  --col-agendado: #8f9a4c;
-  --col-entregue: #6f8a43;
+  --col-aprovado: #46a758;
+  --col-agendado: #12a594;
+  --col-entregue: #6e8b3d;
+
+  /* estados (chips): fundo tingido com o tom, texto sempre grafite/branco (AA garantido) */
+  --st-atrasado: #e5484d;
+  --st-hoje: #f5a524;
+  --st-ok: #30a46c;
+  --st-cliente: #c8962f;
+  --st-alta: #f76b15;
+  --chip-base: #ffffff;
+  --chip-mix: 24%;
+
+  /* gráficos: entradas em grafite, saídas em pêssego */
+  --g-entra: #2c2c30;
+  --g-sai: #f59e7a;
+
+  /* luz ambiente: três focos (o padrão neutro do servidor; a hora de quem vê troca em [data-hora]) */
+  --luz-1: #ffd9b8;
+  --luz-2: #f9d3dc;
+  --luz-3: #ddd9ff;
+  --luz-o: 0.6;
 
   --font-apple: "Figtree Variable", "Inter Variable", system-ui, sans-serif;
   --font-sans: "Inter Variable", ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", sans-serif;
 
   --radius-s: 10px;
   --radius-m: 16px;
-  --radius-l: 24px;
+  --radius-l: 26px;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --spring: cubic-bezier(0.32, 0.72, 0, 1);
 
   /* tema claro (padrão) */
-  --bg: #f4f4f6;
+  --bg: #f7f3ee;
   --surface: #ffffff;
-  --surface-2: #f7f7f9;
-  --surface-3: #e9e9ee;
+  --surface-2: #f6f2ed;
+  --surface-3: #ece6df;
+  --painel: rgb(255 255 255 / 0.84);
+  --coluna: rgb(255 255 255 / 0.6);
   --text: #1d1d1f;
   --text-strong: var(--zro-paper-ink);
-  --text-mute: #55555b;
-  --text-faint: #6e6e73;
-  --line: rgb(60 60 67 / 0.12);
-  --line-strong: rgb(60 60 67 / 0.24);
+  /* o cinza de apoio passa AA sobre o ponto mais forte da luz (pêssego do fim de tarde) */
+  --text-mute: #48484e;
+  --text-faint: #5e5e63;
+  --line: rgb(60 40 20 / 0.1);
+  --line-strong: rgb(60 40 20 / 0.2);
   --focus: #1d1d1f;
-  --pill-fill: linear-gradient(180deg, rgb(255 255 255 / 0.85), rgb(255 255 255 / 0.55));
-  --pill-rim: inset 0 1px 0 rgb(255 255 255 / 1), 0 0 0 1px rgb(0 0 0 / 0.08);
-  --chrome-bg: rgb(246 246 248 / 0.82);
-  --hover: rgb(0 0 0 / 0.04);
-  --active: rgb(0 0 0 / 0.065);
-  --lift: 0 20px 50px rgb(0 0 0 / 0.1);
-  --shadow-float: 0 1px 0 rgb(255 255 255 / 0.9) inset, 0 1px 2px rgb(0 0 0 / 0.04), 0 18px 48px rgb(0 0 0 / 0.08);
+  --pill-fill: rgb(255 255 255 / 0.9);
+  --pill-rim: 0 0 0 1px rgb(60 40 20 / 0.08);
+  --chrome-bg: rgb(255 255 255 / 0.84);
+  --hover: rgb(60 40 20 / 0.04);
+  --active: rgb(60 40 20 / 0.07);
+  --lift: 0 20px 50px rgb(120 70 40 / 0.12);
+  --card-sombra: 0 0 0 1px rgb(60 40 20 / 0.06), 0 2px 6px rgb(60 40 20 / 0.05);
+  --shadow-float: inset 0 1px 0 #fff, 0 0 0 1px rgb(80 50 30 / 0.06), 0 14px 40px rgb(120 70 40 / 0.08);
   --ok-text: #1d7a37;
-  --warn-text: #9a5300;
-  --danger-text: #c4261d;
-  --gb-fill: rgb(255 255 255 / 0.55);
+  --warn-text: #8a4a00;
+  --danger-text: #b3241b;
+  --gb-fill: rgb(255 255 255 / 0.72);
   --gb-ink: #1d1d1f;
-  --gb-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.5), rgb(255 255 255 / 0) 55%);
-  --gb-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), inset 0 -1px 0 rgb(0 0 0 / 0.06), 0 0 0 1px rgb(0 0 0 / 0.08), 0 8px 24px rgb(0 0 0 / 0.08);
-  --gb-shadow-hover: inset 0 1px 0 rgb(255 255 255 / 0.95), inset 0 -1px 0 rgb(0 0 0 / 0.06), 0 0 0 1px rgb(0 0 0 / 0.1), 0 12px 30px rgb(0 0 0 / 0.12);
-  --gbi-fill: rgb(29 29 31 / 0.92);
+  --gb-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.6), rgb(255 255 255 / 0) 55%);
+  --gb-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgb(0 0 0 / 0.05), 0 0 0 1px rgb(0 0 0 / 0.08), 0 6px 18px rgb(120 70 40 / 0.08);
+  --gb-shadow-hover: inset 0 1px 0 #fff, inset 0 -1px 0 rgb(0 0 0 / 0.05), 0 0 0 1px rgb(0 0 0 / 0.1), 0 10px 26px rgb(120 70 40 / 0.12);
+  --gbi-fill: rgb(29 29 31 / 0.94);
   --gbi-ink: #ffffff;
   --gbi-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.22), rgb(255 255 255 / 0) 50%);
-  --gbi-shadow: inset 0 1px 0 rgb(255 255 255 / 0.35), inset 0 -1px 0 rgb(0 0 0 / 0.4), 0 0 0 1px rgb(0 0 0 / 0.5), 0 10px 28px rgb(0 0 0 / 0.22);
+  --gbi-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), inset 0 -1px 0 rgb(0 0 0 / 0.4), 0 0 0 1px rgb(0 0 0 / 0.5), 0 8px 22px rgb(0 0 0 / 0.2);
   color-scheme: light;
+}
+
+/* A luz do dia no claro (a hora vem do relógio de quem vê; src/components/ambiente.tsx). Todos os tons têm
+   luminância alta o bastante para o cinza de apoio passar AA sobre o pior ponto. */
+:root[data-hora="manha"] {
+  --luz-1: #ffcfa6;
+  --luz-2: #f8c3d0;
+  --luz-3: #d6d1ff;
+}
+:root[data-hora="tarde"] {
+  --luz-1: #ffdca0;
+  --luz-2: #ffd0b8;
+  --luz-3: #cfe3fb;
+}
+:root[data-hora="fim"] {
+  --luz-1: #ffc4a0;
+  --luz-2: #f6bfd4;
+  --luz-3: #d9ccff;
+}
+:root[data-hora="noite"] {
+  --luz-1: #d9d4ff;
+  --luz-2: #ecccea;
+  --luz-3: #c9e0f2;
 }
 
 :root[data-theme="dark"] {
   --acento: #ffc857;
-  --acento-suave: rgb(255 200 87 / 0.14);
-  /* o halo de latão a 6% atrás do topo, só no escuro */
-  --acento-halo: rgb(255 200 87 / 0.06);
-  --col-pauta: #8e8e96;
-  --col-afazer: #8fa2bb;
-  --col-fazendo: #f0ac48;
-  --col-revisao: #df9470;
+  --acento-suave: rgb(255 200 87 / 0.16);
+  --acento-halo: rgb(255 200 87 / 0);
+  --col-pauta: #a8a29e;
+  --col-afazer: #a4adf0;
+  --col-fazendo: #f5b03e;
+  --col-revisao: #ff8a3d;
   --col-aprovacao: #ffc857;
-  --col-aprovado: #c4bb5a;
-  --col-agendado: #a9b45e;
-  --col-entregue: #8fae58;
+  --col-aprovado: #5bbf6e;
+  --col-agendado: #2ec4b0;
+  --col-entregue: #95b35c;
+  --chip-base: #1a1c29;
+  --chip-mix: 34%;
+  --g-entra: #f5f5f7;
+  --g-sai: #f59e7a;
+  /* o escuro é a noite: índigo, ameixa e um verde-mar fundo */
+  --luz-1: #2c3576;
+  --luz-2: #4b2353;
+  --luz-3: #0f4450;
+  --luz-o: 0.75;
   --bg: var(--zro-void);
   --surface: var(--zro-smoke);
   --surface-2: var(--zro-graphite);
   --surface-3: var(--zro-mist);
+  --painel: rgb(20 22 34 / 0.84);
+  --coluna: rgb(20 22 34 / 0.7);
   --text: #e5e5ea;
   --text-strong: var(--zro-light);
   --text-mute: var(--zro-ash);
-  --text-faint: var(--zro-mute);
-  --line: rgb(235 235 245 / 0.1);
-  --line-strong: rgb(235 235 245 / 0.2);
+  --text-faint: #a1a1a6;
+  --line: rgb(255 255 255 / 0.08);
+  --line-strong: rgb(255 255 255 / 0.18);
   --focus: #f5f5f7;
-  --pill-fill: linear-gradient(180deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.04));
-  --pill-rim: inset 0 1px 0 rgb(255 255 255 / 0.12), 0 0 0 1px rgb(255 255 255 / 0.12);
-  --chrome-bg: color-mix(in srgb, var(--zro-ink) 92%, transparent);
+  --pill-fill: rgb(255 255 255 / 0.07);
+  --pill-rim: 0 0 0 1px rgb(255 255 255 / 0.08);
+  --chrome-bg: rgb(20 22 34 / 0.84);
   --hover: rgb(255 255 255 / 0.05);
   --active: rgb(255 255 255 / 0.08);
-  --lift: 0 20px 50px rgb(0 0 0 / 0.35);
-  --shadow-float: 0 1px 0 rgb(255 255 255 / 0.06) inset, 0 24px 60px rgb(0 0 0 / 0.5);
+  --lift: 0 20px 50px rgb(0 0 0 / 0.4);
+  --card-sombra: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 0 0 1px rgb(255 255 255 / 0.06), 0 4px 12px rgb(0 0 0 / 0.3);
+  --shadow-float: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 0 0 1px rgb(255 255 255 / 0.06), 0 20px 50px rgb(0 0 0 / 0.4);
   --ok-text: #30d158;
   --warn-text: #ffb340;
-  --danger-text: #ff453a;
-  --gb-fill: rgb(255 255 255 / 0.1);
-  --gb-ink: #f5f5f7;
+  --danger-text: #ff6961;
+  --gb-fill: rgb(255 255 255 / 0.12);
+  --gb-ink: #ffffff;
   --gb-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0) 55%);
-  --gb-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28), 0 0 0 1px rgb(255 255 255 / 0.14), 0 10px 28px rgb(0 0 0 / 0.4);
-  --gb-shadow-hover: inset 0 1px 0 rgb(255 255 255 / 0.32), 0 0 0 1px rgb(255 255 255 / 0.2), 0 12px 32px rgb(0 0 0 / 0.45);
-  --gbi-fill: rgb(245 245 247 / 0.94);
+  --gb-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), 0 0 0 1px rgb(255 255 255 / 0.1), 0 8px 22px rgb(0 0 0 / 0.4);
+  --gb-shadow-hover: inset 0 1px 0 rgb(255 255 255 / 0.26), 0 0 0 1px rgb(255 255 255 / 0.16), 0 12px 30px rgb(0 0 0 / 0.45);
+  --gbi-fill: rgb(245 245 247 / 0.95);
   --gbi-ink: #1d1d1f;
-  --gbi-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.6), rgb(255 255 255 / 0) 50%);
-  --gbi-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), inset 0 -1px 0 rgb(0 0 0 / 0.12), 0 0 0 1px rgb(255 255 255 / 0.3), 0 6px 18px rgb(0 0 0 / 0.4);
+  --gbi-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.7), rgb(255 255 255 / 0) 55%);
+  --gbi-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgb(255 255 255 / 0.3), 0 8px 24px rgb(0 0 0 / 0.5);
   color-scheme: dark;
+}
+
+/* ───────────── luz ambiente (C1 · Aurora) ─────────────
+   Um plano fixo com três focos radiais (sem filter: blur). As cores são propriedades registradas, então trocar de
+   hora faz um cruzamento lento de 60 s só neste elemento; o plano deriva 3% em 120 s e volta, devagar demais para
+   se ver o laço. Ao montar, a luz acende em 1,2 s (o servidor não sabe a hora de quem vê). Reduzir movimento: parado. */
+@property --amb-1 {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: transparent;
+}
+@property --amb-2 {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: transparent;
+}
+@property --amb-3 {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: transparent;
+}
+.amb {
+  --amb-1: var(--luz-1);
+  --amb-2: var(--luz-2);
+  --amb-3: var(--luz-3);
+  position: fixed;
+  inset: -10%;
+  /* atrás de todo o conteúdo e acima só do fundo do <html> (o body não pinta fundo) */
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(35vmax 35vmax at 12% 4%, var(--amb-1), transparent) no-repeat,
+    radial-gradient(35vmax 35vmax at 92% 14%, var(--amb-2), transparent) no-repeat,
+    radial-gradient(35vmax 35vmax at 52% 108%, var(--amb-3), transparent) no-repeat;
+  transition:
+    --amb-1 60s linear,
+    --amb-2 60s linear,
+    --amb-3 60s linear,
+    opacity 1.2s var(--ease);
+  animation: amb-deriva 120s ease-in-out infinite alternate;
+}
+:root[data-hora] .amb {
+  opacity: var(--luz-o);
+}
+@keyframes amb-deriva {
+  to {
+    transform: translate3d(3%, 2%, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .amb {
+    animation: none;
+    transition: none;
+  }
+}
+@media print {
+  .amb {
+    display: none;
+  }
 }
 
 /* ───────────── base ───────────── */
@@ -135,9 +257,6 @@ html {
 body {
   margin: 0;
   min-height: 100dvh;
-  background:
-    radial-gradient(900px 420px at 30% -120px, var(--acento-halo), transparent 70%) no-repeat,
-    var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
   font-size: 16px;
@@ -352,135 +471,188 @@ h3 {
   align-items: center;
 }
 
-/* ───────────── shell do app: barra lateral em vidro (plano v2 §3) ───────────── */
+/* ───────────── shell do app: a cápsula de vidro no topo (C1 · Aurora) ───────────── */
 
 .shell {
   min-height: 100dvh;
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
 }
-.lado {
+.capsula {
   position: sticky;
-  top: 0;
-  height: 100dvh;
+  top: 14px;
+  z-index: 40;
+  justify-self: center;
   display: flex;
-  flex-direction: column;
-  gap: 18px;
-  padding: 18px 12px 14px;
-  background: var(--chrome-bg);
-  -webkit-backdrop-filter: blur(18px) saturate(180%);
-  backdrop-filter: blur(18px) saturate(180%);
-  border-right: 1px solid var(--line);
-  overflow-y: auto;
-  scrollbar-width: none;
+  align-items: center;
+  gap: 4px;
+  max-width: calc(100% - 32px);
+  margin-top: 14px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: var(--painel);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  backdrop-filter: blur(24px) saturate(150%);
+  box-shadow: var(--shadow-float);
 }
-.lado__marca,
+.capsula__marca,
 .topo__marca {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 10px;
+  gap: 9px;
+  padding: 4px 10px 4px 8px;
   text-decoration: none;
   color: var(--text-strong);
   font-family: var(--font-apple);
   font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 0.86rem;
+  letter-spacing: -0.01em;
+  font-size: 1rem;
 }
-.lado__marca svg,
+.capsula__marca svg,
 .topo__marca svg {
   height: auto;
 }
-.lado__nav {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  flex: 1;
-}
-.lado__grupo {
-  display: grid;
-  gap: 2px;
-}
-/* Ajustes fica embaixo, longe do trabalho do dia. */
-.lado__grupo--fim {
-  margin-top: auto;
-}
-.lado__rotulo {
-  padding: 0 12px 4px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
-.lado__item {
-  position: relative;
+.capsula__nav {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 40px;
+  gap: 2px;
+}
+.capsula__menu {
+  position: relative;
+}
+.capsula__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
   padding: 0 12px;
-  border-radius: 12px;
-  text-decoration: none;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
   color: var(--text-mute);
+  text-decoration: none;
   font-family: var(--font-apple);
+  font-size: 0.875rem;
   font-weight: 600;
-  font-size: 0.95rem;
+  white-space: nowrap;
+  cursor: pointer;
   transition:
     background 0.2s var(--ease),
     color 0.2s var(--ease);
 }
-.lado__item svg {
-  width: 18px;
-  height: 18px;
-  flex: none;
-}
-.lado__item:hover {
+.capsula__item:hover,
+.capsula__menu[data-aberto] > .capsula__item {
   background: var(--hover);
   color: var(--text-strong);
 }
-/* A aba ativa: superfície e o filete de latão (acento só em superfície, nunca em texto). */
-.lado__item[aria-current="page"] {
+/* a seção ativa: a pílula branca do card (no escuro, vidro claro) */
+.capsula__item[aria-current] {
   background: var(--surface);
   color: var(--text-strong);
-  box-shadow:
-    0 1px 2px rgb(0 0 0 / 0.06),
-    0 0 0 1px var(--line);
+  box-shadow: var(--card-sombra);
 }
-.lado__item::before {
+.capsula__item svg {
+  flex: none;
+}
+.capsula__item > svg:last-child:not(:first-child) {
+  opacity: 0.55;
+  margin-left: -1px;
+}
+.capsula__item[data-aba="z"] {
+  padding: 0 11px;
+}
+.capsula__item[data-aba="z"] span,
+.capsula__item--icone span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.capsula__item--icone {
+  padding: 0 11px;
+}
+/* o painel do grupo: vidro grande, abaixo do botão */
+.capsula__painel {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  translate: -50% 0;
+  min-width: 200px;
+  display: grid;
+  gap: 2px;
+  padding: 8px;
+  border-radius: 22px;
+  /* dentro da cápsula o vidro não enxerga além dela (raiz do backdrop): o painel é quase sólido */
+  background: color-mix(in srgb, var(--surface) 97%, transparent);
+  box-shadow: var(--shadow-float), var(--lift);
+  animation: capsula-abre 0.26s var(--spring) both;
+}
+.capsula__painel[hidden] {
+  display: none;
+}
+/* uma ponte invisível entre o botão e o painel (o mouse não fecha o menu no caminho) */
+.capsula__painel::before {
   content: "";
   position: absolute;
-  left: -12px;
-  top: 10px;
-  bottom: 10px;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: var(--acento);
-  transform: scaleY(0);
-  transition: transform 0.32s var(--spring);
+  inset: -12px 0 auto;
+  height: 12px;
 }
-.lado__item[aria-current="page"]::before {
-  transform: scaleY(1);
+@keyframes capsula-abre {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
 }
-.lado__item[data-aba="z"] {
-  font-weight: 800;
-  letter-spacing: 0.02em;
-}
-.lado__pe {
-  display: grid;
-  gap: 10px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
-}
-.lado__pe .selo--demo {
-  justify-self: start;
-}
-.lado__ferramentas {
+.capsula__opcao {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 4px;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 14px;
+  color: var(--text-mute);
+  text-decoration: none;
+  font-family: var(--font-apple);
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+.capsula__opcao:hover {
+  background: var(--hover);
+  color: var(--text-strong);
+}
+.capsula__opcao[aria-current="page"] {
+  background: var(--surface);
+  color: var(--text-strong);
+  box-shadow: var(--card-sombra);
+}
+.capsula__fim {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 6px;
+  padding-left: 10px;
+  border-left: 1px solid var(--line);
+}
+.capsula__fim .tema {
+  background: transparent;
+  box-shadow: none;
+}
+.capsula__fim .selo--demo {
+  min-height: 26px;
+}
+/* o relógio da luz: "Manhã · 10:42" (vazio até montar, sem empurrar nada) */
+.relogio {
+  min-width: 96px;
+  font-family: var(--font-apple);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
 }
 
 /* topo e barra de baixo: só no celular */
@@ -497,9 +669,9 @@ h3 {
   padding: 8px 12px;
   padding-top: max(8px, env(safe-area-inset-top));
   background: var(--chrome-bg);
-  -webkit-backdrop-filter: blur(18px) saturate(180%);
-  backdrop-filter: blur(18px) saturate(180%);
-  border-bottom: 1px solid var(--line);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  backdrop-filter: blur(24px) saturate(150%);
+  box-shadow: 0 1px 0 var(--line);
 }
 .topo__marca {
   padding: 4px;
@@ -510,31 +682,34 @@ h3 {
   align-items: center;
   gap: 10px;
 }
+/* a barra de baixo: uma cápsula de vidro flutuando sobre o conteúdo */
 .barra {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: 10px;
+  right: 10px;
+  bottom: max(10px, env(safe-area-inset-bottom));
   z-index: 30;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  padding: 6px 6px max(6px, env(safe-area-inset-bottom));
-  background: var(--chrome-bg);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
-  backdrop-filter: blur(22px) saturate(180%);
-  border-top: 1px solid var(--line);
+  padding: 6px;
+  border-radius: 26px;
+  background: var(--painel);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  backdrop-filter: blur(24px) saturate(150%);
+  box-shadow: var(--shadow-float);
 }
 .barra a {
   position: relative;
   display: grid;
   justify-items: center;
   gap: 2px;
-  padding: 6px 0 4px;
-  border-radius: 12px;
+  padding: 6px 0 5px;
+  border-radius: 20px;
   color: var(--text-faint);
   text-decoration: none;
   font-size: 0.66rem;
   font-weight: 600;
   letter-spacing: 0.01em;
+  transition: background 0.2s var(--ease);
 }
 .barra a svg {
   width: 22px;
@@ -542,21 +717,8 @@ h3 {
 }
 .barra a[aria-current="page"] {
   color: var(--text-strong);
-}
-.barra a::after {
-  content: "";
-  position: absolute;
-  top: -6px;
-  left: 30%;
-  right: 30%;
-  height: 3px;
-  border-radius: 0 0 3px 3px;
-  background: var(--acento);
-  transform: scaleX(0);
-  transition: transform 0.32s var(--spring);
-}
-.barra a[aria-current="page"]::after {
-  transform: scaleX(1);
+  background: var(--surface);
+  box-shadow: var(--card-sombra);
 }
 
 .assinatura {
@@ -634,7 +796,7 @@ h3 {
 .conteudo {
   width: min(1240px, 100% - 64px);
   margin: 0 auto;
-  padding: 36px 0 72px;
+  padding: 34px 0 72px;
   min-width: 0;
 }
 /* A batuta: ao trocar de seção, o conteúdo entra subindo 8 px com a mola (só CSS). */
@@ -657,12 +819,26 @@ h3 {
   gap: 6px;
 }
 
-@media (max-width: 900px) {
-  .shell {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto 1fr;
+@media (max-width: 1180px) {
+  .relogio,
+  .capsula__fim .assinatura {
+    display: none;
   }
-  .lado {
+  .capsula__item {
+    padding: 0 10px;
+  }
+}
+@media (max-width: 1020px) {
+  .capsula__marca span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+}
+@media (max-width: 900px) {
+  .capsula {
     display: none;
   }
   .topo {
@@ -673,7 +849,7 @@ h3 {
   }
   .conteudo {
     width: calc(100% - 32px);
-    padding: 20px 0 calc(96px + env(safe-area-inset-bottom));
+    padding: 20px 0 calc(104px + env(safe-area-inset-bottom));
   }
 }
 @media (max-width: 440px) {
@@ -1916,7 +2092,7 @@ h3 {
   }
   .q-abas button span {
     font-size: 0.74rem;
-    color: var(--text-faint);
+    color: var(--text-mute);
     font-variant-numeric: tabular-nums;
   }
   .q-abas button.on {
@@ -2241,12 +2417,6 @@ h3 {
 }
 .selo--demo i {
   background: var(--acento);
-  animation: m-pulsa 2.4s ease-in-out infinite;
-}
-@keyframes m-pulsa {
-  50% {
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--acento) 22%, transparent);
-  }
 }
 .ficha,
 .secao,
@@ -2344,16 +2514,16 @@ h3 {
   .q-card,
   .q-solta,
   .lista > li,
-  .selo--demo i,
   .esq {
     animation: none;
   }
   .q-card[draggable="true"]:active {
     transform: none;
   }
-  .lado__item::before,
-  .barra a::after,
   .item::before {
     transition: none;
+  }
+  .capsula__painel {
+    animation: none;
   }
 }

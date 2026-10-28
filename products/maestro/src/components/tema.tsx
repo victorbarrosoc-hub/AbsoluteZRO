@@ -14,7 +14,7 @@ export function SeletorDeTema() {
     raiz.classList.add("theme-switching");
     raiz.dataset.theme = proximo;
     document.cookie = `zro_theme=${proximo}; path=/; max-age=31536000; samesite=lax`;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", proximo === "light" ? "#f4f4f6" : "#0e0e10");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", proximo === "light" ? "#f7f3ee" : "#0a0c16");
     window.setTimeout(() => raiz.classList.remove("theme-switching"), 400);
   }
 

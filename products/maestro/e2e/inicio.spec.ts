@@ -112,9 +112,17 @@ test.describe("navegação do app", () => {
     await expect(nav).toHaveCount(1);
     const links = nav.getByRole("link");
     await expect(links.first()).toHaveAttribute("href", "/app/z");
-    const hrefs = await links.evaluateAll((as) => as.map((a) => a.getAttribute("href")));
+    // Os menus da cápsula guardam as seções fechadas: a ordem vale para todos os links, abertos ou não.
+    const hrefs = await nav.locator("a").evaluateAll((as) => as.map((a) => a.getAttribute("href")));
     if (info.project.name === "computador") {
+      // A cápsula mostra a seção atual no menu do grupo dela.
+      const comercial = nav.getByRole("button", { name: /Comercial: Clientes/ });
+      await expect(comercial).toHaveAttribute("aria-current", "true");
+      await comercial.click();
+      await expect(nav.getByRole("group", { name: "Comercial" })).toBeVisible();
       await expect(nav.getByRole("link", { name: /Clientes/ })).toHaveAttribute("aria-current", "page");
+      await page.keyboard.press("Escape");
+      await expect(nav.getByRole("group", { name: "Comercial" })).toBeHidden();
       expect(hrefs).toEqual([
         "/app/z",
         "/app/hoje",
@@ -130,7 +138,14 @@ test.describe("navegação do app", () => {
         "/app/financeiro",
         "/app/ajustes",
       ]);
-      for (const g of ["Produção", "Comercial", "Operação", "Dinheiro"]) await expect(nav.getByRole("group", { name: g })).toBeVisible();
+      for (const g of ["Produção", "Operação"]) {
+        await nav.getByRole("button", { name: g }).click();
+        await expect(nav.getByRole("group", { name: g })).toBeVisible();
+      }
+      // Um grupo de uma seção só (Dinheiro) é link direto; ir a outra seção fecha o menu.
+      await nav.getByRole("link", { name: "Financeiro" }).click();
+      await page.waitForURL("**/app/financeiro");
+      await expect(nav.getByRole("group", { name: "Operação" })).toBeHidden();
     } else {
       // Celular: o dia a dia na barra; Clientes está em "Mais", que fica marcado.
       expect(hrefs).toEqual(["/app/z", "/app/hoje", "/app/quadro", "/app/aprovacoes", "/app/mais"]);

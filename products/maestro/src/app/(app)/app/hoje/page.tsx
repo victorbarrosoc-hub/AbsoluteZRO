@@ -4,7 +4,9 @@ import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { brl, dataPorExtenso, hojeBr } from "@/lib/dinheiro";
 import { resumoDoDia } from "@/lib/hoje";
 import { podeVerDinheiro } from "@/lib/papeis";
+import { Saudacao } from "@/components/ambiente";
 import { Icone, type NomeIcone } from "@/components/icones";
+import { horaNoBrasil } from "@/lib/hora";
 
 export const metadata = { title: "Hoje" };
 
@@ -54,10 +56,10 @@ export default async function Hoje() {
   return (
     <div className="pagina">
       <header className="pagina__cabeca">
-        <h1 className="atitle">
-          {dia}, <strong>hoje.</strong>
-        </h1>
-        <p className="apoio">{dataPorExtenso(hoje)}</p>
+        <Saudacao nome={s.nome?.trim().split(/\s+/)[0] || null} horaPadrao={horaNoBrasil()} />
+        <p className="apoio">
+          {dia}, {dataPorExtenso(hoje)}
+        </p>
       </header>
 
       <section className="hoje-agenda" aria-label="Agenda de hoje">

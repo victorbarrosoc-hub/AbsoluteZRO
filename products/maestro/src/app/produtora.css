@@ -5,21 +5,20 @@
  */
 
 :root {
-  /* série do gráfico de fluxo (validada para daltonismo, claro e escuro): entradas e saídas */
-  --serie-entrada: #4a6fb5;
-  --serie-saida: #c08a2e;
-  --st-ok: #2f8f4e;
-  --st-aviso: #c27c0e;
-  --st-perigo: #d23b2f;
-  --st-info: #6b7fa8;
+  /* série do gráfico de fluxo (C1): entradas em grafite (branco no escuro), saídas em pêssego; luminâncias bem
+     distantes, legíveis também para daltonismo. Estados: ponto e fundo tingido, texto sempre grafite/branco. */
+  --serie-entrada: var(--g-entra);
+  --serie-saida: var(--g-sai);
+  --st-ok: #30a46c;
+  --st-aviso: #f5a524;
+  --st-perigo: #e5484d;
+  --st-info: #9aa3d8;
 }
 :root[data-theme="dark"] {
-  --serie-entrada: #6f8bd2;
-  --serie-saida: #b07a22;
-  --st-ok: #30d158;
-  --st-aviso: #ffb340;
-  --st-perigo: #ff6b5f;
-  --st-info: #8fa2c8;
+  --st-ok: #3dbb7a;
+  --st-aviso: #f5b03e;
+  --st-perigo: #ff6b6f;
+  --st-info: #a4adf0;
 }
 
 .pagina--larga {
@@ -913,7 +912,7 @@ a.selo {
 .lh {
   --lh-ink: #111114;
   --lh-mute: #5c5c62;
-  --lh-soft: #8a8a90;
+  --lh-soft: #6e6e73;
   --lh-rule: #d4d4d1;
   --lh-hair: #e6e6e3;
   display: flex;
@@ -1501,7 +1500,7 @@ details.secao.secao--abrir > summary {
     0 0 0 1px rgb(0 0 0 / 0.06);
   --text-strong: #111114;
   --text-mute: #5c5c62;
-  --text-faint: #8a8a90;
+  --text-faint: #6e6e73;
   --surface-2: #f6f6f8;
   --line: #e3e3e6;
   --line-strong: #c9c9cf;
@@ -1573,7 +1572,7 @@ details.secao.secao--abrir > summary {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #8a8a90;
+  color: #6e6e73;
   border-bottom: 0.75pt solid #111114;
 }
 .folha__tabela td {
