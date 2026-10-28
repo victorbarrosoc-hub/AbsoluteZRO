@@ -97,6 +97,12 @@ export const clients = maestro.table(
     phone: text(),
     instagram: text(),
     notes: text(),
+    /** Empresa (razão ou nome fantasia), quando diferente do nome do cliente (0002). */
+    company: text(),
+    /** WhatsApp só com dígitos, com DDI (ex.: 5511…), para o wa.me (0002). */
+    whatsapp: text(),
+    /** Relacionamento: lead, ativo ou pausado (0002). */
+    status: text().$type<StatusCliente>().notNull().default("ativo"),
     /** Quem aprova pelo cliente: { nome, email, whatsapp }. */
     approver: jsonb().$type<Record<string, unknown>>().notNull().default({}),
     recurring: jsonb().$type<Record<string, unknown>>(),
@@ -107,6 +113,9 @@ export const clients = maestro.table(
   },
   (t) => [index("clients_org_idx").on(t.orgId)],
 );
+
+export type StatusCliente = "lead" | "ativo" | "pausado";
+export type StatusProjeto = "active" | "paused" | "done" | "archived";
 
 export type LinkStatus = "unlinked" | "pending" | "linked" | "failed";
 
@@ -123,7 +132,7 @@ export const projects = maestro.table(
     title: text().notNull(),
     category: text(),
     stage: text(),
-    status: text().notNull().default("active"),
+    status: text().$type<StatusProjeto>().notNull().default("active"),
     startDate: date({ mode: "string" }),
     dueDate: date({ mode: "string" }),
     valueCents: bigint({ mode: "number" }),

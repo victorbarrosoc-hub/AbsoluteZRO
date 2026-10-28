@@ -34,6 +34,11 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   tabela (`with check` inclusive); `asSystem` só para sessões, callback do login, link do cliente e migração. Cards
   só mudam pelas funções `maestro.card_*`. Migrações em `drizzle/*.sql` + `drizzle/meta/_journal.json`, aplicadas
   pelo migrador próprio (`src/lib/db/migrador.ts`); nunca edite uma aplicada.
+- **Quadro**: a tela (`src/components/quadro`) grava por campo em `/api/quadro` mandando a versão de cada campo que viu
+  (409 `conflito` traz o card atual); campos aceitos e forma de cada um em `CAMPOS_EDITAVEIS`/`valorDoCampo`
+  (`src/lib/quadro/metodo.ts`); tempo real é poll de 5 s ("o que mudou desde"). Clientes e projetos em `src/lib/crm`
+  (Server Actions conferem sessão e papel; o banco confere de novo). Remover cliente/projeto = `deleted_at`, só
+  admin e gestão.
 - **Z**: `api/zro/ia/[...caminho]` repassa ao HUB com o token da sessão (NDJSON sem buffer); a aba Z é a primeira.
 - Repositório público: nada de `.env`, chave, dado pessoal ou mídia dos repositórios antigos. Semente só `demo-`.
 
@@ -49,4 +54,5 @@ npm run lint && npm run typecheck && npm test && npm run build
 Os testes (`node --test` via tsx) criam bancos `maestro_test_<nome>` a partir de `TEST_DATABASE_URL` (padrão
 `postgres://postgres:postgres@localhost:5432/postgres`) e sobem uma Absolute ZRO falsa (`tests/zro-falso.mts`).
 Cobertura mínima que não pode cair: isolamento RLS com duas organizações (`rls.test.mts`), OIDC completo
-(`zro.test.mts`), repasse da Z (`ia.test.mts`), `temAcesso` e papéis (`acesso.test.mts`).
+(`zro.test.mts`), repasse da Z (`ia.test.mts`), `temAcesso` e papéis (`acesso.test.mts`), Quadro com conflito por campo (`quadro.test.mts`), clientes e projetos com
+isolamento e papel de leitura (`crm.test.mts`).

@@ -248,7 +248,15 @@ Atualizado em 26/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   (`api/zro/ia/*`, NDJSON sem buffer) e a aba Z como primeira.
 - ✅ HUB: `maestro` em `ProductId` e `PRODUCT_SCOPES`, entrada da Z em `plataformas.ts`, migration `0019_maestro.sql`
   (`coming_soon`, `step_order` 8, feature `project_link`), ícone do produto. Planos não mudam (avulso).
-- ⬜ Etapa 1: Quadro (colunas, Por prazo, Minha lista, ficha por campo, lixeira), clientes com "quem aprova", projetos.
+- ✅ Etapa 1 (28/10/2026; o titular definiu o Maestro como a gestão da produtora: CRM, financeiro, pauta e aprovação):
+  Quadro de pauta funcionando sobre `maestro.card_*` (criar, ficha por campo com conflito por campo, mover entre as 8
+  colunas arrastando no computador e por "Mover para…" no celular, próximo passo do método, responsável, prazo,
+  cliente, projeto, prioridade, filtro por cliente/responsável, busca, apagar com Desfazer, tempo real por poll de 5 s
+  em `/api/quadro`); Clientes (CRM básico: nome, empresa, contato, WhatsApp, e-mail, observações, lead/ativo/pausado,
+  busca, ficha com cards, projetos e `wa.me`); Projetos (código `MAE-AAAA-NNN` por organização, cliente, status,
+  datas, briefing; `link_status` fica `pending`). Migration `drizzle/0002_crm_quadro_projetos.sql`.
+- ⬜ Quadro, depois: vistas Por prazo, Minha lista e Calendário, lixeira com lista, histórico do card na ficha.
+- ⬜ Financeiro (decisão do titular, 28/10/2026): lançamentos, fluxo e resultado por projeto.
 - ⬜ Etapa 2: aprovação do cliente (`/aprovar/<token>`, um passo, pinos, conferência, idempotência), peças no Drive
   via SOBEDESCE (proposta em [maestro-project.md](integration-contracts/maestro-project.md)), `wa.me`.
 - ⬜ Etapa 3: `maestro.project/1`, vínculo automático ao criar, chips de status, ferramentas da Z, balões.

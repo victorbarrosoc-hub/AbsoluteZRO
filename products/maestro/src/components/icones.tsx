@@ -1,6 +1,28 @@
 /** Ícones de traço (1.6 px), em `currentColor`. Só os que o shell usa. */
 
-export type NomeIcone = "z" | "quadro" | "aprovacoes" | "clientes" | "projetos" | "ajustes" | "sol" | "lua" | "sair" | "externo";
+export type NomeIcone =
+  | "z"
+  | "quadro"
+  | "aprovacoes"
+  | "clientes"
+  | "projetos"
+  | "ajustes"
+  | "sol"
+  | "lua"
+  | "sair"
+  | "externo"
+  | "mais"
+  | "busca"
+  | "fechar"
+  | "pontos"
+  | "relogio"
+  | "seta"
+  | "voltar"
+  | "lixo"
+  | "whatsapp"
+  | "email"
+  | "editar"
+  | "bandeira";
 
 const CAMINHOS: Record<NomeIcone, React.ReactNode> = {
   z: <path d="M12 3c.6 4.2 2.3 5.9 9 6.3-6.7.4-8.4 2.1-9 6.3-.6-4.2-2.3-5.9-9-6.3 6.7-.4 8.4-2.1 9-6.3Z" fill="currentColor" stroke="none" />,
@@ -56,6 +78,49 @@ const CAMINHOS: Record<NomeIcone, React.ReactNode> = {
       <path d="M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5" />
     </>
   ),
+  mais: <path d="M12 5v14M5 12h14" />,
+  busca: (
+    <>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m20 20-4.2-4.2" />
+    </>
+  ),
+  fechar: <path d="M6 6l12 12M18 6 6 18" />,
+  pontos: (
+    <>
+      <circle cx="6" cy="12" r="1.3" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none" />
+      <circle cx="18" cy="12" r="1.3" fill="currentColor" stroke="none" />
+    </>
+  ),
+  relogio: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" />
+    </>
+  ),
+  seta: <path d="M5 12h14M13 6l6 6-6 6" />,
+  voltar: <path d="M19 12H5M11 6l-6 6 6 6" />,
+  lixo: (
+    <>
+      <path d="M4 7h16M10 11v6M14 11v6" />
+      <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </>
+  ),
+  whatsapp: (
+    <>
+      <path d="M4 20l1.3-4A8 8 0 1 1 8.4 19L4 20Z" />
+      <path d="M9.2 9.3c.2 2.6 2.9 5.3 5.5 5.5l1.1-1.3-1.8-.9-.8.8c-1-.4-2-1.4-2.4-2.4l.8-.8-.9-1.8-1.5.9Z" />
+    </>
+  ),
+  email: (
+    <>
+      <rect x="3" y="5.5" width="18" height="13" rx="2" />
+      <path d="m4 7 8 6 8-6" />
+    </>
+  ),
+  editar: <path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4ZM13.5 6.5l4 4" />,
+  bandeira: <path d="M5 21V4M5 4h11l-2 4 2 4H5" />,
 };
 
 export function Icone({ nome, size = 18, className }: { nome: NomeIcone; size?: number; className?: string }) {

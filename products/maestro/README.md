@@ -5,8 +5,12 @@ para tudo, o projeto canônico no HUB, as peças no Google Drive da organizaçã
 
 **Etapa 0 (fundação, 28/10/2026):** shell com a identidade, login único Absolute ZRO, sessão própria, schema
 `maestro` com RLS por organização, repasse da Z. O Quadro, os clientes, os projetos e a aprovação do cliente chegam
-nas etapas 1 a 3 (`docs/roadmap.md` na raiz). O Maestro nasce fechado: só entra quem tem `maestro` em
-`zro_products` (concessão pelo console da Absolute ZRO) e, quando o gate de lançamento existir, quem ele liberar.
+nas etapas 1 a 3 (`docs/roadmap.md` na raiz).
+
+**Etapa 1 (28/10/2026):** o Quadro de pauta funcionando (8 colunas, arrastar no computador, "Mover para…" no celular,
+ficha por campo com conflito por campo, filtros e busca, tempo real por poll), Clientes (CRM básico) e Projetos
+(`MAE-AAAA-NNN`). O Maestro é a gestão da produtora: CRM, financeiro, pauta e aprovação do cliente. Em teste aberto desde 28/10/2026: entra quem tem `zro_release.maestro`
+released/allowed e `maestro` em `zro_products` (plano grátis, Completo, Pro ou concessão do console).
 
 ## Rodar
 
@@ -37,5 +41,9 @@ npm run build
 - `src/lib/auth` — `acesso.ts` (o único `temAcesso`), sessão, cripto, limite, quem pede (rota e página).
 - `src/lib/zro` — cliente OIDC, callback (organização e membro), `/eu`, `/sair`, repasse da Z.
 - `src/lib/db` — duas portas (`asUser` com RLS, `asSystem`), schema Drizzle, migrador do schema `maestro`.
-- `drizzle/0000_fundacao.sql` — tabelas, papéis, RLS, funções do Quadro.
-- `tests/` — RLS com duas organizações, OIDC completo, repasse da Z, acesso e papéis.
+- `src/lib/quadro` — o método (`metodo.ts`), o banco do Quadro (`servidor.ts`, sempre `asUser`) e a rota `/api/quadro`.
+- `src/lib/crm` — clientes e projetos (validação, lista, ficha, código `MAE-AAAA-NNN`), sempre `asUser`.
+- `src/components/quadro` — a tela do Quadro (estado otimista + poll, ficha, "Mover para…").
+- `drizzle/0000_fundacao.sql` — tabelas, papéis, RLS, funções do Quadro; `0002` — campos do CRM e checagem da coluna.
+- `tests/` — RLS com duas organizações, OIDC completo, repasse da Z, acesso e papéis, Quadro (`quadro.test.mts`) e
+  CRM/projetos (`crm.test.mts`).
