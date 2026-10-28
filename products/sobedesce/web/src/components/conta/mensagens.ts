@@ -15,7 +15,7 @@ export const ERROS_GOOGLE: Record<string, string> = {
   zro_recusado: "Tudo bem, nada foi conectado.",
   zro_sem_acesso: "Sua conta Absolute ZRO ainda não tem acesso ao SOBEDESCE.",
   zro_email_em_uso: "Este e-mail já tem uma conta SOBEDESCE. Entre como sempre e ligue a Absolute ZRO em Sua conta.",
-  zro_email_nao_verificado: "Confirme seu e-mail na Absolute ZRO antes de criar a conta por ela.",
+  zro_email_nao_verificado: "Falta confirmar seu e-mail na Absolute ZRO. Reenvie o link, confirme e volte aqui.",
   zro_devagar: "Muitas contas criadas daqui agora há pouco. Espere alguns minutos e tente de novo.",
   zro_outra_conta: "Esta conta Absolute ZRO já está ligada a outra conta SOBEDESCE.",
   zro_ja_ligada: "Esta conta SOBEDESCE já está ligada a outra conta Absolute ZRO. Desligue a atual primeiro.",

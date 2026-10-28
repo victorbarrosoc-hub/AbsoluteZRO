@@ -39,6 +39,13 @@ export default async function Entrar({ searchParams }: Props) {
       {mensagemDeErro(erro) ? (
         <Aviso tom={erro === "google_recusado" || erro === "zro_recusado" ? "info" : "erro"} className="mb-8">
           <p>{mensagemDeErro(erro)}</p>
+          {erro === "zro_email_nao_verificado" ? (
+            <p className="mt-3">
+              <a href="https://absolutezro.com/boas-vindas" className="toque font-medium text-ink underline underline-offset-4">
+                Reenviar o link na Absolute ZRO
+              </a>
+            </p>
+          ) : null}
         </Aviso>
       ) : null}
 
@@ -47,13 +54,15 @@ export default async function Entrar({ searchParams }: Props) {
       </BotaoZro>
       <p className="mt-3 text-center text-[13px] leading-relaxed text-pretty text-ink-3">A sua conta da família Absolute ZRO.</p>
 
-      <div className="my-8 flex items-center gap-4 text-[13px] text-ink-3" aria-hidden>
-        <span className="h-px flex-1 bg-line" />
-        ou com e-mail
-        <span className="h-px flex-1 bg-line" />
-      </div>
-
-      <FormEntrar volta={volta} />
+      {/* Contas antigas do SOBEDESCE (com senha própria) continuam entrando por aqui; conta nova é só Absolute ZRO. */}
+      <details className="mt-10 group" open={erro === "senha" || erro === "credenciais"}>
+        <summary className="toque cursor-pointer list-none text-center text-[13px] text-ink-3 hover:text-ink">
+          Tenho conta antiga do SOBEDESCE
+        </summary>
+        <div className="mt-6">
+          <FormEntrar volta={volta} />
+        </div>
+      </details>
 
       <p className="mt-12 text-center text-[15px] text-ink-2">
         Ainda não tem conta?{" "}
