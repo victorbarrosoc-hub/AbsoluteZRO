@@ -19,6 +19,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           <span className="zro-eyebrow">Console da plataforma · {auth.user.platformRole}</span>
           <Link href="/admin">Visão geral</Link>
           <Link href="/admin/pessoas">Pessoas</Link>
+          <Link href="/admin/lancamento">Lançamento</Link>
           <Link href="/inicio">Voltar ao HUB</Link>
           <ThemeToggle />
         </nav>
