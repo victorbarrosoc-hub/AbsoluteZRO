@@ -586,6 +586,7 @@ export function SettingsScreen({ route } = {}) {
   const app = useStore((s) => s.app)
   const roots = useLocalRoots()
   const localAccounts = accounts.filter((a) => a.source !== 'nuvem')
+  const cloudSigned = !!useStore((s) => s.cloud?.conectado)
   const [draft, setDraft] = useState(settings || {})
   const pending = useRef({})
   const timer = useRef(null)
@@ -859,7 +860,7 @@ export function SettingsScreen({ route } = {}) {
             ${app?.desktop ? html`<${Row} label="Onde ficam os acessos" desc=${protecaoTexto(app)} />` : null}
           </${Caixa}>
 
-          <${Caixa} rot="Drives só neste computador">
+          ${cloudSigned || localAccounts.length ? html`<${Caixa} rot="Drives só neste computador">
             ${localAccounts.map(
               (a) => html`<div class="srow account-row">
                 <div class="account-id">
@@ -883,7 +884,7 @@ export function SettingsScreen({ route } = {}) {
                   : html`<${Button} size="sm" icon="plus" onClick=${() => navigate('inicio/local')}>Conectar um Drive só neste computador</${Button}>`}
               </div>
             </div>
-          </${Caixa}>
+          </${Caixa}>` : null}
 
           ${setup?.configured || localAccounts.length
             ? html`<${Caixa} rot="Chave do Google">
