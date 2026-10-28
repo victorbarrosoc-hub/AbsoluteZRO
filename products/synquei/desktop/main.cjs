@@ -48,7 +48,7 @@ protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: 
 // Um app só: abrir de novo traz a janela que já existe para a frente.
 if (!SMOKE && !app.requestSingleInstanceLock()) app.quit()
 
-// "Abrir no Synquei" do SOBEDESCE: o sistema abre synquei://organizar?pasta=… com este app (desktop/link-organizar.cjs).
+// "Preparar no Synquei" do SOBEDESCE: o sistema abre synquei://organizar?pasta=… com este app (desktop/link-organizar.cjs).
 // O link pode chegar antes de o Organizar estar pronto: fica guardado até lá.
 let linkPendente = SMOKE ? null : linkNoArgv(process.argv)
 if (!SMOKE) {
@@ -273,7 +273,9 @@ const enviar = (canal, dado) => {
 // ───────── Organizar: pasta do SOBEDESCE → Synquei → DaVinci (desktop/organizador.cjs e davinci.cjs) ─────────
 function iniciarOrganizar() {
   const userData = app.getPath('userData')
-  org = new Organizador({ stateDir: userData, log: (...a) => console.log('[organizar]', ...a) })
+  // versão no recibo do download do Drive (Synquei/preparos.jsonl): "1.0.0+<build>"
+  const build = readBuildInfo(path.join(__dirname, 'build-info.json')).build
+  org = new Organizador({ stateDir: userData, log: (...a) => console.log('[organizar]', ...a), versao: `${app.getVersion()}+${build > 0 ? build : 'dev'}` })
   ponte = new Ponte({ troca: pastaTroca(process.platform, userData), log: (...a) => console.log('[davinci]', ...a) })
   org.on('cartao', (ev) => enviar('synquei:org-cartao', ev))
   org.on('mudou', (st) => enviar('synquei:org-estado', st))
@@ -313,7 +315,8 @@ function iniciarOrganizar() {
   handle('org:remover', (id) => org.remover(String(id)))
   handle('org:ligar', (id, ligado) => org.ligar(String(id), !!ligado))
   handle('org:vincular', (id, dados) => org.vincular(String(id), dados || {}))
-  handle('org:marcar', (pastaId, cartaoId, estado, erro) => org.marcar(String(pastaId), String(cartaoId), String(estado), erro ? String(erro) : null))
+  handle('org:marcar', (pastaId, cartaoId, estado, erro, revisar) => org.marcar(String(pastaId), String(cartaoId), String(estado), erro ? String(erro) : null, Array.isArray(revisar) ? revisar : null))
+  handle('org:recibo', (pastaId, op, dados) => org.recibo(String(pastaId), String(op), dados && typeof dados === 'object' ? dados : {}))
   handle('org:pendentes', (pastaId) => org.pendentes(String(pastaId)))
   handle('org:todos', (pastaId) => org.todos(String(pastaId)))
   handle('org:assets', (pastaId) => org.assets(String(pastaId)))
@@ -344,18 +347,25 @@ async function receberLink(link) {
     win.focus()
   }
   const tipo = pedido.tipo ? TIPOS_NOMES[pedido.tipo] || pedido.tipo : null
+  const drive = !!pedido.op
   const r = await dialog.showMessageBox(win || undefined, {
     type: 'question',
-    message: `Organizar "${path.basename(pedido.pasta)}" no Synquei?`,
-    detail: [pedido.pasta, tipo ? `Tipo: ${tipo}` : 'O tipo de projeto você escolhe em seguida.', 'O Synquei não move nem renomeia nada: só lê os cartões conferidos pelo SOBEDESCE.'].join('\n\n'),
-    buttons: ['Organizar', 'Cancelar'],
+    message: drive ? `Preparar "${path.basename(pedido.pasta)}" no Synquei?` : `Organizar "${path.basename(pedido.pasta)}" no Synquei?`,
+    detail: [
+      pedido.pasta,
+      tipo ? `Tipo: ${tipo}` : 'O tipo de projeto você escolhe em seguida.',
+      drive ? 'O Synquei não move nem renomeia nada: confere os arquivos baixados pelo SOBEDESCE e monta o projeto.' : 'O Synquei não move nem renomeia nada: só lê os cartões conferidos pelo SOBEDESCE.',
+    ].join('\n\n'),
+    buttons: [drive ? 'Preparar' : 'Organizar', 'Cancelar'],
     defaultId: 0,
     cancelId: 1,
   })
   if (r.response !== 0) return
   try {
-    const p = await org.adicionar(pedido.pasta, { tipo: pedido.tipo })
+    const p = await org.adicionar(pedido.pasta, { tipo: pedido.tipo, op: pedido.op })
     if (pedido.tipo && !p.tipo) await org.vincular(p.id, { tipo: pedido.tipo })
+    // o mesmo download pedido de novo: confere e responde sem duplicar (desktop/organizador.cjs, pedirDeNovo)
+    if (pedido.op) await org.pedirDeNovo(p.id, pedido.op)
     enviar('synquei:org-abrir', { pastaId: p.id })
   } catch (err) {
     dialog.showMessageBox(win || undefined, { type: 'warning', message: 'Não deu para organizar essa pasta.', detail: String((err && err.message) || err) })

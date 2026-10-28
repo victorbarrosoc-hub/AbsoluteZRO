@@ -45,6 +45,7 @@ const CORE = [
   '/app/js/montagem-sfx.js',
   '/app/js/organizar.js',
   '/app/js/pendencias.js',
+  '/app/js/preparo.js',
   '/app/js/plano.js',
   '/app/js/project.js',
   '/app/js/sfx.js',

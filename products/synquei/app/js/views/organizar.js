@@ -52,7 +52,23 @@ function davinci() {
   </div></section>`
 }
 
+/** Download do Drive (modo pasta única): a operação inteira, com o que a conferência do disco achou. */
+function operacao(c) {
+  const [cls, txt0] = ESTADO[c.estado] || ESTADO.novo
+  const conf = c.conferencia || { ausentes: [], alterados: [], movidos: [] }
+  const pend = conf.ausentes.length + conf.alterados.length
+  const txt = c.estado === 'pronto' ? (pend || (c.recibo && c.recibo.estado === 'com_pendencias') ? 'Preparado · com pendências' : 'Preparado') : txt0
+  const atual = O.atual && O.atual.id === c.id
+  const det = [plural(c.arquivos, 'arquivo', 'arquivos')]
+  if (conf.ausentes.length) det.push(plural(conf.ausentes.length, 'ausente', 'ausentes'))
+  if (conf.alterados.length) det.push(plural(conf.alterados.length, 'alterado', 'alterados'))
+  if (conf.movidos.length) det.push(plural(conf.movidos.length, 'movido', 'movidos'))
+  const dica = [...conf.ausentes.map((r) => `Ausente: ${r}`), ...conf.alterados.map((r) => `Alterado: ${r}`), ...conf.movidos.map((r) => `Movido: ${r}`)].slice(0, 12).join('\n')
+  return `<li class="org-cartao"${dica ? ` title="${h(dica)}"` : ''}><span class="dot" style="--c:${devColor({ color: 0 }, uiDark())}"></span><div><b>${h(c.nome || 'Download do Drive')}</b> · Download do Drive<small>${det.join(' · ')}${c.quando ? ` · ${ago(Date.parse(c.quando))}` : ''}${c.erro ? ` · ${h(c.erro)}` : ''}</small></div><span class="${atual ? 'chip chip-blue' : pend && c.estado === 'pronto' ? 'chip chip-warn' : cls}">${atual ? 'Preparando' : txt}</span></li>`
+}
+
 function cartao(c, cores) {
+  if (c.modo === 'drive') return operacao(c)
   const [cls, txt] = ESTADO[c.estado] || ESTADO.novo
   const atual = O.atual && O.atual.id === c.id
   return `<li class="org-cartao"><span class="dot" style="--c:${devColor({ color: Math.min(8, (cores || {})[c.dono.pasta || c.dono.nome] ?? 8) }, uiDark())}"></span><div><b>${h(c.dono.pasta || c.dono.nome)}</b> · ${h(c.pasta.split('/').pop())}<small>${plural(c.arquivos, 'arquivo', 'arquivos')}${c.quando ? ` · ${ago(Date.parse(c.quando))}` : ''}${c.erro ? ` · ${h(c.erro)}` : ''}</small></div><span class="${atual ? 'chip chip-blue' : cls}">${atual ? 'Organizando' : txt}</span></li>`
@@ -76,7 +92,7 @@ function pasta(p) {
         ? diarias
             .map(([n, d]) => {
               const pid = p.projetos && p.projetos[n]
-              return `<div class="org-diaria"><div class="org-diaria-topo"><h3>${h(d.nome)}</h3><span class="sub">${plural(d.cartoes.length, 'cartão', 'cartões')}</span>${pid && S.list.some((x) => x.id === pid) ? `<button class="btn btn-secondary btn-sm" data-act="org-proj" data-id="${h(pid)}">${icon('timeline')}Abrir no Synquei</button>` : ''}</div><ul class="org-cartoes">${d.cartoes.map((c) => cartao(c, p.cores)).join('')}</ul></div>`
+              return `<div class="org-diaria"><div class="org-diaria-topo"><h3>${h(d.nome)}</h3><span class="sub">${d.cartoes.every((c) => c.modo === 'drive') ? 'Download do Drive' : plural(d.cartoes.length, 'cartão', 'cartões')}</span>${pid && S.list.some((x) => x.id === pid) ? `<button class="btn btn-secondary btn-sm" data-act="org-proj" data-id="${h(pid)}">${icon('timeline')}Abrir projeto</button>` : ''}</div><ul class="org-cartoes">${d.cartoes.map((c) => cartao(c, p.cores)).join('')}</ul></div>`
             })
             .join('')
         : `<p class="sub">Nenhum cartão terminou ainda. Quando o SOBEDESCE terminar o próximo, ele aparece aqui e vai sozinho para o projeto.</p>`

@@ -140,6 +140,25 @@ Como funciona:
 - **Janelinha no Resolve** com o mesmo desenho do app no tema escuro: título "Organizar", cartão de status com ícone, botões em pílula, os quadros Projeto/Fila/Último com os quadradinhos coloridos e "Últimos cartões" com a miniatura na cor da câmera e o selo Organizado (o histórico dos últimos 6 fica em `historico.txt`). O Qt do Resolve não desenha SVG nem cantos dentro do texto, então os ícones vão como PNG (`desktop/davinci-ui/`, gerados por `scripts/davinci-ui.cjs` com os desenhos do app). Quando o app atualiza, o script do Resolve é trocado sozinho (vale na próxima vez que abrir Workspace › Scripts › Synquei).
 - `desktop/davinci.cjs`: a ponte. O Resolve só deixa mexer no projeto por script (por isso o **Studio**: a versão grátis não aceita). O script Lua fica no menu Workspace › Scripts e conversa por uma pasta de troca: pedidos em Lua (`pedidos/000012.lua` + `indice.lua`), respostas em JSON, `vivo.json` a cada 3 s. No Windows a pasta fica em `C:\ProgramData\Synquei\davinci` (o Lua do Resolve não abre caminhos com acento).
 
+### Download do Drive ("Preparar no Synquei" do SOBEDESCE)
+
+Quando o SOBEDESCE termina e confere (MD5) o download de uma pasta do Drive, ele grava uma linha `v: 2` no
+`.sobedesce/descargas.jsonl` da pasta baixada e oferece **Preparar no Synquei** (`synquei://organizar?pasta=…&op=<id>`).
+Contrato em `docs/integration-contracts/README.md` (raiz).
+
+- `desktop/manifesto-drive.cjs`: confere a linha à risca (entrada não confiável: campos, caminhos relativos sem `..`,
+  contagens, até 50.000 arquivos) e cada arquivo no disco: existe, tamanho igual, sem `.sobedesce-part` ao lado. O que
+  falta vira **ausente**; tamanho diferente ou baixando de novo, **alterado**; sumiu do lugar mas há um só arquivo com
+  o mesmo nome e tamanho em outro canto, **movido** (entra pelo lugar novo). Acentos: tenta o caminho em NFC e NFD.
+- **Pasta única:** a operação inteira vira um projeto do Synquei (achado pelo `op`). Subpasta de cima = aparelho.
+  Repetir o mesmo link não duplica projeto, clipe, sincronia nem importação no DaVinci: já preparado e nada mudou,
+  só grava um recibo `repetido`; mudou algo na pasta, a operação volta para a fila.
+- **Recibo** em `<pasta>/Synquei/preparos.jsonl` (`synquei.preparo/1`): `recebido` → `preparando` → `preparado`,
+  `com_pendencias` (ausentes, alterados ou sincronia ambígua, a de confiança baixa que a linha do tempo mostra em
+  laranja, para revisar) ou `erro`. O SOBEDESCE lê esse arquivo; sem ele, nunca diz que preparou.
+- Testes: `tests/preparo-drive.test.mjs` (contrato com o código real do SOBEDESCE, manifesto adulterado, ausentes/
+  movidos/alterados, NFC × NFD, repetir sem duplicar, retomada, disco desconectado, ~320 GB em arquivos esparsos).
+
 Testes: `tests/organizador.test.mjs` (resumo, linha pela metade, cancelado, segunda leva, permissões de leitura e escrita) e `tests/davinci.test.mjs` (o script do Resolve roda no LuaJIT com um Resolve de mentira: pastas, cores, Cena/Take, sem importar duas vezes, linha do tempo editada guardada, projeto errado esperando). Falta testar num DaVinci Resolve Studio de verdade.
 
 ## Conta Absolute ZRO (opcional)

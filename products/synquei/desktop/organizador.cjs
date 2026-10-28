@@ -10,6 +10,11 @@
 // Os arquivos nunca são movidos nem renomeados: o SOBEDESCE compara pelo caminho na segunda leva do mesmo cartão. O
 // Synquei só cria em volta as pastas de trabalho (Assets, Exports e Synquei/Sequências).
 //
+//  3. Download do Drive (linha v2, desktop/manifesto-drive.cjs): uma pasta baixada inteira pelo SOBEDESCE vira UMA
+//     operação ("modo pasta única"), identificada pelo `op` do link synquei://organizar?…&op=. Cada arquivo é conferido
+//     no disco (existe, tamanho, não está baixando); ausentes, movidos e alterados vão para o recibo
+//     (<pasta>/Synquei/preparos.jsonl), que o SOBEDESCE lê. Repetir o mesmo op não duplica nada.
+//
 // Nada aqui importa o Electron: desktop/main.cjs liga os eventos e a página. Os testes usam pastas temporárias.
 
 const fs = require('node:fs')
@@ -18,11 +23,15 @@ const path = require('node:path')
 const crypto = require('node:crypto')
 const { EventEmitter } = require('node:events')
 const { TIPOS } = require('./link-organizar.cjs')
+const { validarLinhaDrive, conferirArquivos, linhaRecibo, OP, RECIBO } = require('./manifesto-drive.cjs')
 
 const RESUMO = path.join('.sobedesce', 'descargas.jsonl')
 const PASTAS_DE_TRABALHO = ['Assets', 'Exports', path.join('Synquei', 'Sequências')]
-const IGNORAR = /(^|\/)(\.sobedesce-anteriores|\.sobedesce|\.Spotlight-V100|\.Trashes|\.fseventsd)(\/|$)|\.sobedesce-parcial$|(^|\/)\._|(^|\/)\.DS_Store$|(^|\/)SOBEDESCE_copia_[^/]*\.xxh64$/
+const IGNORAR = /(^|\/)(\.sobedesce-anteriores|\.sobedesce|\.Spotlight-V100|\.Trashes|\.fseventsd)(\/|$)|\.sobedesce-parcial$|\.sobedesce-part$|(^|\/)\._|(^|\/)\.DS_Store$|(^|\/)SOBEDESCE_copia_[^/]*\.xxh64$/
 const CONFIG = 'organizador.json'
+
+const idDrive = (op) => `drive:${op}`
+const resumoLinha = (l) => crypto.createHash('sha1').update(JSON.stringify({ ...l, quando: null })).digest('hex').slice(0, 16)
 
 const idDe = (raiz) => crypto.createHash('sha1').update(path.resolve(raiz)).digest('hex').slice(0, 12)
 const dentro = (pai, filho) => {
@@ -76,8 +85,9 @@ function donoDaPasta(pasta) {
 }
 
 class Organizador extends EventEmitter {
-  constructor({ stateDir, intervaloMs = 4000, log = () => {} } = {}) {
+  constructor({ stateDir, intervaloMs = 4000, log = () => {}, versao = '0' } = {}) {
     super()
+    this.versao = versao
     this.stateDir = stateDir
     this.intervaloMs = intervaloMs
     this.log = log
@@ -116,14 +126,26 @@ class Organizador extends EventEmitter {
       cartoes: Object.values(p.cartoes)
         .sort((a, b) => String(b.quando).localeCompare(String(a.quando)))
         .slice(0, 200)
-        .map((c) => ({ id: c.id, pasta: c.pasta, diaria: c.diaria, dono: c.dono, cartao: c.cartao, quando: c.quando, resultado: c.resultado, arquivos: c.arquivos, estado: c.estado, erro: c.erro || null })),
+        .map((c) => ({ id: c.id, modo: c.modo || 'cartao', op: c.op || null, nome: c.nome || null, pasta: c.pasta, diaria: c.diaria, dono: c.dono, cartao: c.cartao, quando: c.quando, resultado: c.resultado, arquivos: c.arquivos, estado: c.estado, erro: c.erro || null, conferencia: c.conferencia || null, recibo: c.recibo || null })),
     }))
   }
 
   /** Pasta do projeto (a que o SOBEDESCE cria dentro do destino: <destino>/<Projeto>). */
-  async adicionar(raiz, { tipo = null } = {}) {
+  async adicionar(raiz, { tipo = null, op = null } = {}) {
     raiz = path.resolve(String(raiz || ''))
     if (!(await eDiretorio(raiz))) throw new Error('Essa pasta não existe ou não abre.')
+    try {
+      await fsp.readdir(raiz)
+    } catch {
+      throw new Error('Sem permissão para ler essa pasta. Libere o acesso nos ajustes do sistema e tente de novo.')
+    }
+    // link com op (download do Drive): a operação precisa existir no manifesto desta pasta (senão é um link qualquer)
+    if (op != null) {
+      if (!OP.test(String(op))) throw new Error('Esse pedido do SOBEDESCE não é válido.')
+      const l = await this.#linhaDoOp(raiz, op)
+      if (!l) throw new Error('Não achei esse download do SOBEDESCE nesta pasta. Ela pode ter sido movida ou o resumo do SOBEDESCE apagado.')
+      if (!l.ok) throw new Error(`O resumo do SOBEDESCE desta pasta está estragado (${l.erro}).`)
+    }
     const id = idDe(raiz)
     if (!this.cfg.pastas[id]) {
       const temResumo = fs.existsSync(path.join(raiz, RESUMO))
@@ -218,6 +240,27 @@ class Organizador extends EventEmitter {
   }
 
   #evento(p, c) {
+    if (c.modo === 'drive') {
+      return {
+        modo: 'drive',
+        op: c.op,
+        pastaId: p.id,
+        raiz: p.raiz,
+        projetoNome: c.nome || p.nome,
+        projetoId: (p.projetos || {})[`op:${c.op}`] || null,
+        tipo: p.tipo,
+        cor: 0,
+        id: c.id,
+        quando: c.quando,
+        diaria: { n: `op:${c.op}`, nome: c.nome || p.nome, data: null },
+        dono: { nome: '', camera: '', pasta: '' },
+        cartao: { n: 1, nome: '' },
+        pasta: '',
+        resultado: 'ok',
+        conferencia: c.conferencia || null,
+        arquivos: c.lista.map((r) => ({ rel: r.rel, abs: r.abs, size: r.size, mtimeMs: r.mtimeMs })),
+      }
+    }
     return {
       pastaId: p.id,
       raiz: p.raiz,
@@ -274,6 +317,11 @@ class Organizador extends EventEmitter {
         this.log('linha estragada no resumo do SOBEDESCE')
         continue
       }
+      if (d && d.v === 2) {
+        const op = await this.#operacao(p, d)
+        if (op) novos.push(op)
+        continue
+      }
       if (!d || d.v !== 1 || !d.cartao || !d.cartao.pasta || d.resultado === 'cancelado') continue
       // o tipo de projeto escolhido no SOBEDESCE vale enquanto a pasta não tiver um (o daqui sempre ganha)
       if (!p.tipo && typeof d.tipo === 'string' && Object.hasOwn(TIPOS, d.tipo)) p.tipo = d.tipo
@@ -302,6 +350,130 @@ class Organizador extends EventEmitter {
       })
     }
     return novos
+  }
+
+  /**
+   * Uma linha v2 (download do Drive) vira uma operação. Inválida: nada é processado e, se o op dá para ler, o recibo
+   * diz o porquê (o SOBEDESCE mostra). A mesma linha de novo não repete; linha nova do mesmo op (baixou de novo) sim.
+   */
+  async #operacao(p, d) {
+    const v = validarLinhaDrive(d)
+    const opLido = d && typeof d.op === 'string' && OP.test(d.op) ? d.op : null
+    if (!v.ok) {
+      this.log('linha v2 recusada:', v.erro)
+      if (opLido) await this.#gravarRecibo(p, opLido, { estado: 'erro', erro: `Resumo do SOBEDESCE recusado: ${v.erro}.` }).catch(() => {})
+      return null
+    }
+    const l = v.linha
+    const id = idDrive(l.op)
+    const hash = resumoLinha(l)
+    const antes = p.cartoes[id]
+    if (antes && antes.hash === hash) return null
+    const conf = await conferirArquivos(p.raiz, l)
+    const conferencia = { ausentes: conf.ausentes, alterados: conf.alterados, movidos: conf.movidos }
+    const c = { id, modo: 'drive', op: l.op, hash, nome: l.destino.pasta, quando: l.quando, diaria: { n: `op:${l.op}`, nome: l.destino.pasta }, dono: { nome: '', camera: '', pasta: '' }, cartao: { n: 1, nome: '' }, pasta: '', resultado: 'ok', conferencia, lista: conf.presentes }
+    const pend = conf.ausentes.length + conf.alterados.length
+    if (!conf.presentes.length) {
+      p.cartoes[id] = { ...c, arquivos: 0, estado: 'erro', erro: 'Nenhum arquivo do download está na pasta.', lista: undefined }
+    }
+    await this.#gravarRecibo(p, l.op, {
+      estado: conf.presentes.length ? 'recebido' : 'erro',
+      resultado: { pendentes: pend, ausentes: conf.ausentes.length, alterados: conf.alterados.length, movidos: conf.movidos.length },
+      exemplos: { ausentes: conf.ausentes, alterados: conf.alterados, movidos: conf.movidos },
+      erro: conf.presentes.length ? null : 'Nenhum arquivo do download está na pasta (apagados, movidos ou ainda baixando).',
+    }).catch((err) => this.log('recibo:', err && err.message))
+    return conf.presentes.length ? c : null
+  }
+
+  /** A última linha v2 deste op no resumo da pasta: { ok, linha } | { ok: false, erro } | null (não tem). */
+  async #linhaDoOp(raiz, op) {
+    let texto
+    try {
+      texto = await fsp.readFile(path.join(raiz, RESUMO), 'utf8')
+    } catch {
+      return null
+    }
+    let achada = null
+    for (const l of texto.split('\n')) {
+      if (!l.includes(op)) continue
+      let d
+      try {
+        d = JSON.parse(l)
+      } catch {
+        continue
+      }
+      if (d && d.v === 2 && d.op === op) achada = validarLinhaDrive(d)
+    }
+    return achada
+  }
+
+  async #gravarRecibo(p, op, dados) {
+    const linha = linhaRecibo({ op, versao: this.versao, ...dados })
+    const abs = path.join(p.raiz, RECIBO)
+    await fsp.mkdir(path.dirname(abs), { recursive: true })
+    await fsp.appendFile(abs, JSON.stringify(linha) + '\n')
+    const c = p.cartoes[idDrive(op)]
+    if (c) c.recibo = { estado: linha.estado, quando: linha.quando, resultado: linha.resultado }
+    return linha
+  }
+
+  /** A página conta como foi (preparando, preparado, com pendências, erro): vai para o recibo. */
+  async recibo(pastaId, op, dados = {}) {
+    const p = this.cfg.pastas[pastaId]
+    if (!p) throw new Error('pasta não vigiada')
+    if (!OP.test(String(op))) throw new Error('op inválido')
+    const c = p.cartoes[idDrive(op)]
+    const conf = (c && c.conferencia) || { ausentes: [], alterados: [], movidos: [] }
+    const r = dados.resultado || {}
+    const revisar = (dados.exemplos && Array.isArray(dados.exemplos.revisar) && dados.exemplos.revisar) || []
+    if (c) c.revisar = revisar.filter((x) => typeof x === 'string').slice(0, 30)
+    const linha = await this.#gravarRecibo(p, op, {
+      // preparou, mas sobrou arquivo ausente ou alterado na pasta: é "com pendências", nunca "preparado"
+      estado: dados.estado === 'preparado' && conf.ausentes.length + conf.alterados.length > 0 ? 'com_pendencias' : String(dados.estado),
+      resultado: { ...r, ausentes: conf.ausentes.length, alterados: conf.alterados.length, movidos: conf.movidos.length, pendentes: (Number(r.revisar) || 0) + conf.ausentes.length + conf.alterados.length },
+      exemplos: { ausentes: conf.ausentes, alterados: conf.alterados, movidos: conf.movidos, revisar },
+      repetido: !!dados.repetido,
+      erro: dados.erro || null,
+    })
+    await this.#gravar()
+    this.emit('mudou', this.estado())
+    return linha
+  }
+
+  /**
+   * O mesmo link (op) pedido de novo. Já preparado e nada mudou na pasta: só um recibo "repetido" (nada duplica).
+   * Mudou alguma coisa, ou não terminou: volta como evento (a página não repete clipe, projeto nem sincronia).
+   * Ainda não visto: a próxima passada acha. Devolve 'repetido' | 'de-novo' | 'novo'.
+   */
+  async pedirDeNovo(pastaId, op) {
+    const p = this.cfg.pastas[pastaId]
+    const c = p && p.cartoes[idDrive(op)]
+    if (!c) {
+      await this.verificar()
+      return 'novo'
+    }
+    const l = await this.#linhaDoOp(p.raiz, op)
+    if (!l || !l.ok) return 'novo'
+    const conf = await conferirArquivos(p.raiz, l.linha)
+    const conferencia = { ausentes: conf.ausentes, alterados: conf.alterados, movidos: conf.movidos }
+    const igual = JSON.stringify(conferencia) === JSON.stringify(c.conferencia || {})
+    if (c.estado === 'pronto' && igual && c.recibo && ['preparado', 'com_pendencias'].includes(c.recibo.estado)) {
+      await this.#gravarRecibo(p, op, { estado: c.recibo.estado, resultado: c.recibo.resultado, exemplos: { ...conferencia, revisar: c.revisar || [] }, repetido: true })
+      await this.#gravar()
+      return 'repetido'
+    }
+    if (!conf.presentes.length) {
+      await this.#gravarRecibo(p, op, { estado: 'erro', resultado: { ausentes: conf.ausentes.length, alterados: conf.alterados.length, pendentes: conf.ausentes.length + conf.alterados.length }, exemplos: conferencia, erro: 'Nenhum arquivo do download está na pasta.' })
+      await this.#gravar()
+      return 'de-novo'
+    }
+    c.conferencia = conferencia
+    c.estado = 'novo'
+    c.arquivos = conf.presentes.length
+    await this.#gravar()
+    this.emit('cartao', this.#evento(p, { ...c, lista: conf.presentes }))
+    this.emit('mudou', this.estado())
+    return 'de-novo'
   }
 
   /** Sem resumo: cada Cartão NN com o relatório .xxh64 do SOBEDESCE (o cartão terminou e foi conferido). */
@@ -341,10 +513,11 @@ class Organizador extends EventEmitter {
   }
 
   /** A página terminou (ou falhou) com um cartão. */
-  async marcar(pastaId, cartaoId, estado, erro = null) {
+  async marcar(pastaId, cartaoId, estado, erro = null, revisar = null) {
     const p = this.cfg.pastas[pastaId]
     const c = p && p.cartoes[cartaoId]
     if (!c) return
+    if (Array.isArray(revisar)) c.revisar = revisar.filter((r) => typeof r === 'string').slice(0, 30)
     c.estado = estado
     c.erro = erro
     if (estado === 'pronto') c.prontoEm = new Date().toISOString()
@@ -359,6 +532,13 @@ class Organizador extends EventEmitter {
     const out = []
     for (const c of Object.values(p.cartoes)) {
       if (c.estado === 'pronto') continue
+      if (c.modo === 'drive') {
+        const l = await this.#linhaDoOp(p.raiz, c.op)
+        if (!l || !l.ok) continue
+        const conf = await conferirArquivos(p.raiz, l.linha)
+        if (conf.presentes.length) out.push(this.#evento(p, { ...c, conferencia: { ausentes: conf.ausentes, alterados: conf.alterados, movidos: conf.movidos }, lista: conf.presentes }))
+        continue
+      }
       const dir = path.join(p.raiz, ...c.pasta.split('/'))
       const lista = []
       for (const rel of await arquivosDe(dir)) {
@@ -428,4 +608,4 @@ class Organizador extends EventEmitter {
   }
 }
 
-module.exports = { Organizador, idDe, donoDaPasta, numeroDiaria, numeroCartao, IGNORAR, RESUMO, PASTAS_DE_TRABALHO }
+module.exports = { Organizador, idDrive, idDe, donoDaPasta, numeroDiaria, numeroCartao, IGNORAR, RESUMO, PASTAS_DE_TRABALHO }
