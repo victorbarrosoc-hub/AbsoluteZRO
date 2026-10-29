@@ -36,4 +36,16 @@ describe('Z: o que cada plataforma faz', () => {
     const fonte = readFileSync(new URL('../../apps/hub-web/lib/ia/modelo.ts', import.meta.url), 'utf8')
     expect(fonte).toMatch(/f\.acesso !== 'closed'/)
   })
+
+  it('o Maestro: a Z só ganha ver_maestro (e o texto dele) com o Maestro aberto e contratado; o guia diz que é só leitura', () => {
+    const fonte = readFileSync(new URL('../../apps/hub-web/lib/ia/modelo.ts', import.meta.url), 'utf8')
+    expect(fonte).toMatch(/f\.id === MAESTRO_PRODUTO && f\.acesso === 'contracted'/)
+    expect(fonte).toMatch(/FERRAMENTAS\.filter\(\(f\) => f\.name !== 'ver_maestro'\)/)
+    expect(fonte).toMatch(/tools: ferramentas/)
+    expect(fonte).toContain("${maestro ? `\\n${MAESTRO_NA_Z}\\n` : ''}")
+    const guia = guiaDasPlataformas(['maestro'])
+    expect(guia).toMatch(/ver_maestro/)
+    expect(guia).toMatch(/Só leitura/)
+    expect(guia).not.toMatch(/nada no ar/)
+  })
 })

@@ -4,7 +4,8 @@
  * chave do login único (ES256, no JWKS; `assinarPedidoDeApp` em packages/auth) e o Maestro confere aqui.
  *
  * Confere: typ `zro-pedido+jwt` (id_token e access token não servem), alg ES256, assinatura pela JWKS, `iss` = o
- * emissor configurado, `aud` = o client_id do Maestro, vida de no máximo 60 s, não vencido, `zro_pedido` = a ação e
+ * emissor configurado, `aud` = o client_id do Maestro, vida de no máximo 60 s, não vencido, `zro_pedido` = a ação (que
+ * precisa estar em ACOES_ABERTAS) e
  * `jti` de uso único (reapresentado dentro da validade é recusado). Sem "server-only": os testes chamam direto.
  */
 import { createPublicKey, verify } from "node:crypto";
@@ -15,6 +16,12 @@ import { chavePublica } from "./oidc";
 export const TIPO_PEDIDO = "zro-pedido+jwt";
 export const VIDA_MAX_S = 60;
 const FOLGA_S = 30;
+
+/**
+ * As ações que o Maestro aceita da Absolute ZRO. Só a leitura do dia para a Z (autorizada pelo titular em 28/10/2026,
+ * "Z lendo a Maestro"); escrita pela Z (criar pedido, despesa) fica fora até nova decisão, mesmo com assinatura válida.
+ */
+export const ACOES_ABERTAS: ReadonlySet<string> = new Set(["maestro.resumo"]);
 
 export type PedidoZro = { sub: string; jti: string };
 
@@ -27,6 +34,7 @@ export class PedidoRecusado extends Error {
 
 /** Lê o `Authorization: Bearer …` e confere o pedido para a `acao`. Lança PedidoRecusado (o motivo não vai à resposta). */
 export async function conferirPedidoZro(autorizacao: string | null, acao: string, agora = Date.now()): Promise<PedidoZro> {
+  if (!ACOES_ABERTAS.has(acao)) throw new PedidoRecusado("ação fechada");
   const token = /^Bearer\s+([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/.exec(autorizacao ?? "")?.[1];
   if (!token) throw new PedidoRecusado("sem token");
   const [c, d, a] = token.split(".");

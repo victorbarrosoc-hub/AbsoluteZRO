@@ -1,8 +1,8 @@
 /**
  * O dia da produtora para a Z (só leitura): `POST /api/zro/maestro/resumo`, chamado pelo HUB servidor a servidor com o
  * pedido assinado (ação `maestro.resumo`, src/lib/zro/pedido.ts). Contrato em
- * docs/integration-contracts/maestro-z.md. **Pronto e desligado**: o HUB ainda não tem a ferramenta da Z que chama
- * aqui (estudo MakersHub §4.5, "Z com os números do Maestro", espera a decisão do titular sobre cota e plano).
+ * docs/integration-contracts/maestro-z.md. **Ligado** (titular, 28/10/2026, "Z lendo a Maestro"): a ferramenta
+ * `ver_maestro` da Z do HUB (packages/core/src/ia-maestro.ts) chama aqui, só para quem tem o Maestro aberto e no plano.
  *
  * A pessoa é a do pedido (`sub`); a organização é a do último login dela no Maestro, e só vale se esse login tinha
  * acesso (o mesmo temAcesso()) e ela segue ativa. Tudo é lido como ela (`asUser`: RLS, papel, acesso por cliente):
