@@ -298,6 +298,8 @@ test('converter: ProRes 422 HQ vira MP4 H.264 marcado BT.709, no navegador', asy
     'sine=frequency=440:sample_rate=48000',
     '-t',
     '2',
+    '-vf',
+    'scale=out_color_matrix=bt709:out_range=tv',
     '-c:v',
     'prores_ks',
     '-profile:v',
@@ -314,6 +316,10 @@ test('converter: ProRes 422 HQ vira MP4 H.264 marcado BT.709, no navegador', asy
     'pcm_s24le',
     master,
   ])
+  // cabeçalho dos quadros em BT.601 (6) e contêiner em BT.709, o desencontro do ffmpeg 8 no CI: vale o contêiner
+  const bruto = readFileSync(master)
+  for (let i = bruto.indexOf('icpf'); i >= 0; i = bruto.indexOf('icpf', i + 4)) bruto.fill(6, i + 18, i + 21)
+  writeFileSync(master, bruto)
   const pagina = await navegador.newPage({ acceptDownloads: true })
   const erros = []
   pagina.on('pageerror', (e) => erros.push(e.message))

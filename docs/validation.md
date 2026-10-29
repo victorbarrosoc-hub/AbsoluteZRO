@@ -1407,6 +1407,10 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   protegida, correção de frame escuro e azulado, receita ida e volta) e Chromium em 390 px (exemplo → Película →
   Negativo 500T → Calor → LUT `revela-lab-noite-quente-33.cube` → receita → zerar → reabrir → Meus looks).
   `products/finishing`: `npm test` 153/153.
+- Converter: o CI passou para Ubuntu 26.04 (ffmpeg 8) e o ProRes de teste saiu com o cabeçalho dos quadros em BT.601
+  contra o contêiner em BT.709; a saída vinha marcada `smpte170m`. Agora a cor do contêiner vale (como no QuickTime) e
+  só sem ela fica a do quadro. O teste grava esse desencontro no master, então cobre o caso com qualquer ffmpeg
+  (reproduzido com o código antigo: `smpte170m`; com o novo: `bt709`).
 - Não validado: a LUT do Lab num Resolve real.
 
 ## Z: sabe o que cada plataforma faz e só busca no Drive quando pedem (28/10/2026)
