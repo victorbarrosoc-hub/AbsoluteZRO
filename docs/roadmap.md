@@ -159,6 +159,19 @@ Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   entra (claim `zro_release` relida a cada pedido; `CARRO_RELEASE` padrão `closed`). O resto vê "Em desenvolvimento".
 - ✅ Carro do Freela (27/10/2026): sem selo "Prévia" na barra de cima (a prévia segue dita no pé da home, no menu e
   no rodapé do app) e o "Continuar com Absolute ZRO" com o símbolo flat no lugar do feixe de luz antigo.
+- 🟡 Carro do Freela com banco próprio (29/10/2026, pedido do titular): schema `carro_do_freela` no Supabase
+  AbsoluteZRO (já existia, com `cadastros`, `leads` e `passos` do app antigo, que ficam intactas), login
+  `carro_do_freela` (migra) e `carro_do_freela_app` sem login (RLS por `sub`), migrações em
+  `products/carro-do-freela/db/migrations` (diário com sha256; recusa editada, sumida e fora de ordem; servem também
+  para o projeto novo em São Paulo), aplicadas no build da Vercel só com `CARRO_DATABASE_URL`. Perfil
+  (`carro_do_freela.perfis`, sem telefone, CPF ou e-mail; visibilidade nasce privada) e inventário
+  (`carro_do_freela.inventario`) pelo próprio freela em `/api/zro/perfil` e `/api/zro/inventario`, com a sessão
+  conferida no HUB e o portão fechado (só o proprietário). Cada mudança grava o evento `freela.inventario.atualizado`
+  (contrato `freela.inventario/1`) na fila do Carro. Falta, em produção e com o titular: criar os papéis, passar o
+  schema para o login do app e pôr `CARRO_DATABASE_URL` no projeto `carrodofreela-app`
+  (`products/carro-do-freela/db/PRODUCAO.md`).
+- ⬜ Inventário do Carro chegando ao Maestro: o publicador existe e está desligado (`CARRO_SYNC_ATIVO`); falta o
+  endpoint de entrada no HUB, a entrega assinada ao Maestro e tirar a rota de `DISABLED_ROUTES`, com decisão do titular.
 - ✅ Eventos versionados, outbox, fila com retry/backoff, dead-letter, revisão, reprocessamento; fluxo ponta a ponta
   testado com fixtures gerados pelo código real do SOBEDESCE.
 - 🟡 NOSSOM: link e contrato `edit.timeline.ready`; passagem automática ⬜ (precisa de mudança no NOSSOM, com autorização).
@@ -356,7 +369,7 @@ Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   Pedido do titular no mesmo dia: **kit próprio do freela** (`0013_freela_equipamentos`: perfil, filtro no banco de
   freelas, o que ele leva na diária com o aluguel no mesmo "a pagar"). Contrato `freela.inventario/1` e evento
   `freela.inventario.atualizado` registrados, rota desligada (`DISABLED_ROUTES`): o Carro do Freela é a fonte de
-  verdade, mas ainda não tem banco. Demonstração com marca, seis pedidos, um aceite que virou projeto, kits e Hoje.
+  verdade (o banco dele nasceu em 29/10/2026; a publicação segue desligada). Demonstração com marca, seis pedidos, um aceite que virou projeto, kits e Hoje.
   Página inicial: Hoje, Pedidos, Aceite online e Sua marca em "Já funciona".
 - ✅ Maestro, visual **C1 · Aurora** (escolha do titular, 28/10/2026): luz ambiente que segue a hora de quem vê
   (manhã, tarde, fim de tarde e noite no claro; o escuro é a noite), cruzamento de 60 s e deriva de 120 s, parada com
@@ -386,8 +399,8 @@ Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   `maestro.pedido.ganho`, `maestro.orcamento.aceito` e `maestro.projeto.criado` no HUB (desenho no mapa).
 - ⬜ Maestro v2, depois: kits e modelos de projeto, etiquetas QR e manutenções do inventário, PDF gerado no servidor
   (hoje é a impressão do navegador), white-label no app inteiro (plano e preço pelo titular), retenção configurável dos
-  pedidos, ligar o inventário do Carro do Freela quando ele tiver banco (endpoint assinado no Maestro e a rota sai de
-  `DISABLED_ROUTES`).
+  pedidos, ligar o inventário do Carro do Freela (o banco e a fila do Carro existem desde 29/10/2026; falta o endpoint de
+  entrada no HUB, o endpoint assinado no Maestro e a rota sair de `DISABLED_ROUTES`).
 - ⬜ Maestro v2, fase 7 em diante (plano): ponte com o SOBEDESCE (Drive com permissão temporária e stream da equipe).
   Pendente do titular: ciência dos serviços abertos da calculadora; criar a
   chave de API do Google só do Maestro (restrita à Drive API e a `maestro.absolutezro.com`) e pôr em

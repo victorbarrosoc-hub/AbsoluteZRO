@@ -15,6 +15,28 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Carro do Freela: banco próprio, perfil e inventário (29/10/2026)
+
+- `products/carro-do-freela`: `npm run test:banco` **24/24** (Postgres 16 local, um banco descartável por arquivo):
+  migrações num banco vazio e de novo sem efeito; recusa da migração editada, sumida e fora de ordem; a 0000 aplicada
+  por um login **sem superusuário** num schema `carro_do_freela` que reproduz o de produção (`cadastros`, `leads`,
+  `passos`, `anon` só INSERT) — tabelas, colunas, permissões, políticas e linhas antigas iguais antes e depois, `anon`
+  sem acesso às tabelas novas; RLS com duas contas (ler, mudar, apagar e criar em nome da outra: nada passa) e
+  `carro_do_freela_app` sem acesso à fila e ao diário; o banco recusando telefone e link de WhatsApp; a fila com um
+  retrato por transação, conferido contra os JSON Schemas `freela.inventario.v1` e
+  `event.freela.inventario.atualizado.v1`, inclusive vazio e com 500 itens (o 501º é recusado); o publicador desligado
+  por padrão, e ligado mandando só o mais novo com `Idempotency-Key`, com recusa, erro e rede caída indo para
+  `revisao` sem nova tentativa; as rotas `/api/zro/perfil` e `/api/zro/inventario` contra a Absolute ZRO falsa (sessão
+  obrigatória, portão, plano, conta de outro, mesma origem, JSON, campos de telefone/CPF/e-mail recusados, isolamento
+  entre contas, banco desligado = 503, limite = 429); e a tela num Chromium (bloco ausente sem sessão, grava perfil e
+  item, recusa telefone dizendo por quê, edita, remove, some com o banco desligado).
+- `npm run test:api` **43/43** (login, sem mudança de comportamento); bateria de navegador `npm test` **88/88**
+  (`versoes` refeita sozinha depois de o template mudar no meio da rodada; `conta-zro` e `sem-zoom` passaram sozinhas,
+  como o arnês manda); `npm run build:vercel` ok, com `perfil` e `inventario` empacotadas com o `pg`.
+- Raiz: `node scripts/scan-secrets.mjs` sem segredo; Vitest de `freela.inventario` (contrato e rota desligada) 6/6.
+- Produção **não** foi tocada: o schema `carro_do_freela` foi só lido (três tabelas antigas, 1/0/375 linhas, sem
+  papéis do Carro). Passos para ligar em `products/carro-do-freela/db/PRODUCAO.md`.
+
 ## Maestro: funil, Números, importar planilha, agenda .ics e acesso por cliente (28/10/2026)
 
 - `products/maestro`: `lint`, `format:check`, `typecheck` ok; `npm test` **289/289** (Postgres 16 local, migrations

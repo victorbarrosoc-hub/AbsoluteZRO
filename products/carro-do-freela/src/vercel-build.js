@@ -15,6 +15,9 @@
  *   cabeçalhos de segurança + CSP calculada destes HTML
  *   /app e /README voltando para a home
  *   /api/zro/*   o login único da Absolute ZRO (funções Node)
+ *   /api/zro/perfil e /api/zro/inventario  o banco do Carro (29/out), com o pg
+ *                empacotado pelo esbuild; e, com CARRO_DATABASE_URL, as migrações
+ *                de db/migrations aplicadas ANTES de gerar qualquer coisa
  *
  * Sai em `.vercel/output` (Build Output API v3): é o único jeito de a CSP,
  * que depende do build, virar cabeçalho — um vercel.json fixo não sabe o
@@ -40,6 +43,9 @@ const STATIC = path.join(SAIDA, 'static');
 const FASES = [1, 2, 3, 4, 5, 6];
 const ESTATICOS = ['apple-touch-icon.png', 'icone-192.png', 'icone-512.png', 'icone-maskable.png', 'app.webmanifest', 'og.jpg'];
 const FUNCOES = ['entrar', 'callback', 'eu', 'sair', 'enviar', 'ia'];
+/* (28/out) as rotas de dados falam com o banco (pg): vão EMPACOTADAS pelo
+   esbuild num arquivo só, com o `pg` dentro — as outras seguem copiadas */
+const FUNCOES_BANCO = ['perfil', 'inventario'];
 const RUNTIME = 'nodejs22.x';
 /* ⚠️ O PORTÃO DO LANÇAMENTO (28/out, adendo do PRD): o domínio nasce
    FECHADO — só a conta do proprietário entra, e só com a claim relida no
@@ -77,6 +83,20 @@ console.log('  · lançamento: ' + (RELEASE === 'closed'
   ? 'FECHADO — só a conta do proprietário entra (CARRO_RELEASE ausente ou diferente de "released")'
   : 'ABERTO AO PÚBLICO (CARRO_RELEASE=released) — decisão do titular'));
 if (falhou) parar('NADA FOI GERADO. Conserte as travas acima.');
+
+/* ===================== 1b. O BANCO (28/out) ===================== */
+/* Só com CARRO_DATABASE_URL: aplica as migrações de db/migrations ANTES de
+   gerar qualquer coisa. Migração recusada (aplicada e editada, fora de
+   ordem, erro no SQL) reprova o build — site novo com banco velho não sobe.
+   Sem a variável, segue sem banco, e as rotas de dados respondem 503. */
+if (String(process.env.CARRO_DATABASE_URL || '').trim()) {
+  console.log('\nBANCO');
+  try {
+    ok(node(['db/migrar.js']).trim());
+  } catch (e) {
+    parar('A MIGRAÇÃO REPROVOU — nada foi gerado:\n' + String(e.stderr || e.stdout || e.message).trim().split('\n').slice(-8).join('\n'));
+  }
+} else console.log('  · banco: sem CARRO_DATABASE_URL — perfil e inventário respondem 503 sem_banco');
 
 /* ===================== 2. OS SETE ANÔNIMOS ===================== */
 console.log('\nBUILDS ANÔNIMOS (é o que o domínio serve)');
@@ -162,7 +182,20 @@ for (const n of FUNCOES) {
     ...(n === 'ia' ? { maxDuration: 120, supportsResponseStreaming: true } : { maxDuration: 20 })
   }, null, 2) + '\n');
 }
-ok('funções /api/zro/' + FUNCOES.join(', /api/zro/') + ' (' + RUNTIME + ')');
+for (const n of FUNCOES_BANCO) {
+  const dir = path.join(SAIDA, 'functions', 'api', 'zro', n + '.func');
+  fs.mkdirSync(dir, { recursive: true });
+  require('esbuild').buildSync({
+    entryPoints: [path.join(RAIZ, 'api', 'zro', n + '.js')], outfile: path.join(dir, 'index.js'),
+    bundle: true, platform: 'node', target: 'node22', format: 'cjs', minify: false, legalComments: 'none',
+    /* o pg só tenta o pg-native se ele existir; aqui ele não existe nem deve ir */
+    external: ['pg-native'], logLevel: 'error',
+  });
+  fs.writeFileSync(path.join(dir, '.vc-config.json'), JSON.stringify({
+    runtime: RUNTIME, handler: 'index.js', launcherType: 'Nodejs', shouldAddHelpers: false, maxDuration: 20
+  }, null, 2) + '\n');
+}
+ok('funções /api/zro/' + FUNCOES.concat(FUNCOES_BANCO).join(', /api/zro/') + ' (' + RUNTIME + '; ' + FUNCOES_BANCO.join(' e ') + ' empacotadas com o pg)');
 
 /* ===================== 4. CABEÇALHOS E ROTAS ===================== */
 const csp = SEG.politica(scripts, SEG.conexoes());
