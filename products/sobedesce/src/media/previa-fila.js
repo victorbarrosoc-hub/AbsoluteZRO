@@ -378,14 +378,14 @@ export class GeradorPrevias {
   }
 
   /**
-   * Roda `fn` na vaga única de conversão (o "Converter com a Revela" usa a mesma: uma conversão por vez no app).
+   * Roda `fn` na vaga única de conversão (o "Converter com o Relay" usa a mesma: uma conversão por vez no app).
    * Desistir na espera não fura a fila.
    */
   emVaga(fn, signal) {
     return this.#slot(fn, signal)
   }
 
-  /** Sobe um arquivo gerado aqui por outra ferramenta (o convertido da Revela). Mesmas regras do proxy. */
+  /** Sobe um arquivo gerado aqui por outra ferramenta (o convertido do Relay). Mesmas regras do proxy. */
   subirArquivo(drive, opts) {
     return this.#subir(drive, opts)
   }

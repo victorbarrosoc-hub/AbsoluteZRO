@@ -2438,3 +2438,27 @@ catálogo de downloads da Absolute ZRO, atrás do gate.
 
 Não conferido aqui: instalar e abrir num Mac e num Windows de verdade, o "Atualizar" trocando o app (só nos testes com
 sistema simulado), e o primeiro Release (sai no primeiro push na main com `products/maestro/desktop/**`).
+
+## Conversão de mídia como setor próprio (29/10/2026)
+
+Só documentos ([ADR 0030](decisions/0030-relay-conversao.md), PRD §2, roadmap): nenhum código mudou. Mapa feito
+lendo o código de `products/finishing`, `products/sobedesce`, `products/ai-edit`, `products/nossom`,
+`products/synquei` e `products/maestro`. Synquei exporta projeto (XML, OTIO, EDL), não mídia; Maestro, TPeasy, Carro
+do Freela e HUB não convertem. `npm run format:check` e `node scripts/scan-secrets.mjs` ok.
+
+## Relay: plataforma de conversão, SOBEDESCE e HUB (29/10/2026)
+
+- `products/relay`: `npm test` **38/38** (núcleo, presets da pessoa, ffmpeg de verdade, Chromium de verdade com
+  conversão real, Lanczos conferido com o ffmpeg em SSIM > 0,97 e sem virar, celular girado igual à rotação do ffmpeg,
+  tamanho exato cabendo, presets da pessoa ponta a ponta, nenhuma página rolando para o lado em 375 px, cópias nas
+  outras plataformas).
+- Qualidade: `npm run qualidade` com 4 masters ProRes contra os presets do HandBrake e o HandBrake no mesmo tamanho
+  ([QUALIDADE](../products/relay/docs/QUALIDADE.md)). No computador, empate (0,9469 × 0,9468 no grão; 0,9927 × 0,9923
+  no movimento; 0,9962 × 0,9966 na limpa; 0,9779 × 0,9798 no 4K → 1080p). No navegador do Linux (OpenH264) o x264
+  guarda mais no mesmo tamanho. Três correções de cor e a escala na placa saíram da medição.
+- SOBEDESCE: `npm run test:fast` 780 ok; 2 falhas na primeira rodada: a versão do app de celular (subiu com o cache:
+  2.8.54 / v69, corrigido, 9/9) e o limitador de metadados (tempo, 2,002 × 2; passa sozinho, sem relação com o Relay).
+  `test/relay.test.js` 8/8 e `test/relay-celular.test.js` 1/1 (Chromium com a CSP do app, Drive por pedaços, AAC).
+  Site: `npm run lint`, `typecheck` e `npm test` (291) ok.
+- HUB: migration `0031_relay.sql`; `npm run lint`, `typecheck` ok; `npm test` 328 com 2 falhas que contavam os produtos
+  dos planos e as etapas do projeto, atualizadas (billing e core 41/41).

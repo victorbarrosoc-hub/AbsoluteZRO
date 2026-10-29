@@ -1,0 +1,456 @@
+/* Relay · página inicial. O relé é o protagonista: liga ao abrir, o sinal passa e respira. O resto entra com a
+   rolagem (scroll-driven, com @supports) e tudo para com "reduzir movimento". */
+
+@property --curso {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+
+main {
+  overflow-x: clip; /* o brilho do relé passa da borda: não abre rolagem de lado */
+}
+main > section {
+  padding: clamp(72px, 12vw, 140px) 16px;
+  text-align: center;
+}
+main h2 {
+  font-size: clamp(32px, 5.4vw, 56px);
+  line-height: 1.06;
+  max-width: 900px;
+  margin: 0 auto 16px;
+}
+main .apoio {
+  max-width: 560px;
+  margin: 0 auto;
+  font-size: clamp(17px, 2vw, 21px);
+}
+
+/* ─────────── 1 · herói ─────────── */
+.heroi {
+  min-height: calc(100svh - 56px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding-top: 48px !important;
+}
+.heroi-rele {
+  position: relative;
+  margin-bottom: clamp(40px, 7vw, 72px);
+}
+.rele--heroi {
+  --largura: min(440px, 78vw);
+  --altura: calc(var(--largura) * 0.326);
+  animation: liga 1.8s var(--mola) 0.25s both;
+  box-shadow: inset 0 1px 0 rgb(var(--t) / 0.04);
+}
+.rele--heroi::before,
+.rele--heroi::after {
+  transition: none;
+}
+@keyframes liga {
+  from {
+    --curso: 0;
+  }
+  to {
+    --curso: 1;
+  }
+}
+.heroi-pulso {
+  /* o brilho do sinal atrás do anel: respira devagar */
+  position: absolute;
+  inset: -40% -20%;
+  z-index: -1;
+  background: radial-gradient(closest-side at 78% 50%, rgb(216 247 106 / 0.45), rgb(47 217 174 / 0.18) 55%, transparent);
+  filter: blur(20px);
+  opacity: 0;
+  animation:
+    acende 1.2s var(--suave) 1.4s forwards,
+    respira 5s ease-in-out 2.6s infinite;
+}
+@keyframes acende {
+  to {
+    opacity: 0.7;
+  }
+}
+@keyframes respira {
+  50% {
+    opacity: 0.35;
+    transform: scale(0.94);
+  }
+}
+.heroi h1 {
+  font-size: clamp(40px, 7.6vw, 84px);
+  line-height: 1.02;
+  max-width: 980px;
+}
+.heroi h1 span {
+  display: inline-block;
+  animation: sobe 1s var(--mola) both;
+}
+.heroi h1 .fino {
+  animation-delay: 0.7s;
+}
+.heroi h1 .pesado {
+  animation-delay: 0.9s;
+}
+.heroi .apoio {
+  margin-top: 20px;
+  animation: sobe 1s var(--mola) 1.1s both;
+}
+.heroi .sobretitulo {
+  animation: sobe 1s var(--mola) 0.55s both;
+}
+@keyframes sobe {
+  from {
+    opacity: 0;
+    translate: 0 18px;
+    filter: blur(6px);
+  }
+}
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 36px;
+  animation: sobe 1s var(--mola) 1.25s both;
+}
+
+/* ─────────── 2 · um arquivo, todos os destinos ─────────── */
+.fluxo-palco {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.2fr);
+  align-items: center;
+  gap: clamp(16px, 4vw, 48px);
+  max-width: 1040px;
+  margin: 56px auto 0;
+  text-align: left;
+}
+.arquivo {
+  padding: 18px;
+  display: grid;
+  gap: 10px;
+}
+.arquivo-quadro {
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  background:
+    radial-gradient(120% 80% at 70% 20%, rgb(216 247 106 / 0.35), transparent 60%),
+    radial-gradient(90% 90% at 20% 90%, rgb(47 217 174 / 0.35), transparent 60%),
+    linear-gradient(160deg, #26262b, #0e0e10);
+}
+.fichas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.fluxo-rele .rele {
+  --largura: 120px;
+  --altura: 40px;
+}
+.saidas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.saidas li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 20px;
+}
+.saidas li > svg {
+  width: 26px;
+  height: 26px;
+  flex: none;
+}
+.saidas strong {
+  display: block;
+  font: 650 16px/1.25 var(--fonte-titulo);
+}
+.saidas small {
+  color: var(--mudo);
+  font-size: 13px;
+}
+@supports (animation-timeline: view()) {
+  .saidas li {
+    animation: entra linear both;
+    animation-timeline: view();
+    animation-range: entry 10% cover 35%;
+  }
+  .saidas li:nth-child(2) {
+    animation-range: entry 18% cover 40%;
+  }
+  .saidas li:nth-child(3) {
+    animation-range: entry 26% cover 45%;
+  }
+  .saidas li:nth-child(4) {
+    animation-range: entry 34% cover 50%;
+  }
+  .fluxo-rele .rele {
+    animation: liga linear both;
+    animation-timeline: view();
+    animation-range: entry 20% cover 45%;
+  }
+  .fluxo-rele .rele::before,
+  .fluxo-rele .rele::after {
+    transition: none;
+  }
+}
+@keyframes entra {
+  from {
+    opacity: 0;
+    translate: -48px 0;
+    scale: 0.96;
+  }
+}
+@media (max-width: 760px) {
+  .fluxo-palco {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+  .fluxo-palco > * {
+    width: 100%;
+    max-width: 420px;
+  }
+  .fluxo-rele {
+    rotate: 90deg;
+    width: auto !important;
+    margin: 30px 0;
+  }
+}
+
+/* ─────────── 3 · destinos ─────────── */
+.grade-destinos {
+  max-width: 1120px;
+  margin: 56px auto 0;
+  display: grid;
+  gap: 40px;
+  text-align: left;
+}
+.grupo-nome {
+  font: 600 13px/1 var(--fonte);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mudo);
+  margin: 0 0 14px 4px;
+}
+.grupo ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.destino {
+  display: grid;
+  gap: 4px;
+  padding: 18px;
+  height: 100%;
+  text-decoration: none;
+  border-radius: 22px;
+  transition:
+    transform 0.35s var(--mola),
+    box-shadow 0.35s var(--suave);
+}
+.destino:hover {
+  transform: translateY(-3px);
+}
+.destino-icone {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 10px;
+  background: rgb(var(--t) / 0.05);
+}
+.destino-icone svg {
+  width: 22px;
+  height: 22px;
+}
+.destino:hover .destino-icone {
+  background: var(--sinal);
+  color: #0c0c0e;
+}
+.destino strong {
+  font: 650 17px/1.25 var(--fonte-titulo);
+}
+.destino small {
+  color: var(--mudo);
+  font-size: 13px;
+}
+
+/* ─────────── 4 · qualidade ─────────── */
+.grade-qualidade {
+  max-width: 1120px;
+  margin: 56px auto 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+  text-align: left;
+}
+.q {
+  padding: 28px 24px;
+}
+.q svg {
+  width: 30px;
+  height: 30px;
+  margin-bottom: 18px;
+}
+.q h3 {
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+.q .apoio {
+  font-size: 15px;
+  margin: 0;
+}
+.mais {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 32px;
+  color: var(--mudo);
+  text-decoration: none;
+  font-weight: 500;
+}
+.mais:hover {
+  color: var(--texto);
+}
+.mais svg {
+  width: 16px;
+  height: 16px;
+  transition: translate 0.3s var(--mola);
+}
+.mais:hover svg {
+  translate: 4px 0;
+}
+@supports (animation-timeline: view()) {
+  .q,
+  .destino {
+    animation: aparece linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 25%;
+  }
+}
+@keyframes aparece {
+  from {
+    opacity: 0;
+    translate: 0 28px;
+  }
+}
+
+/* ─────────── 5 · privado ─────────── */
+.privado {
+  background: #0e0e10;
+  color: #f5f5f7;
+  margin: 0 12px;
+  border-radius: 40px;
+}
+.privado h2 {
+  color: #f5f5f7;
+}
+.privado .apoio {
+  color: #a1a1a6;
+}
+.cadeado {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 28px;
+  border-radius: 22px;
+  display: grid;
+  place-items: center;
+  background: var(--sinal);
+  color: #0c0c0e;
+  box-shadow: 0 0 60px rgb(216 247 106 / 0.35);
+}
+.cadeado svg {
+  width: 34px;
+  height: 34px;
+}
+
+/* ─────────── 6 · família em órbita ─────────── */
+.orbita {
+  --raio: min(250px, 38vw);
+  position: relative;
+  width: calc(var(--raio) * 2 + 120px);
+  max-width: 100%;
+  aspect-ratio: 1;
+  margin: 48px auto 0;
+}
+.orbita::before {
+  content: '';
+  position: absolute;
+  inset: 60px;
+  border-radius: 50%;
+  border: 1px dashed var(--linha-forte);
+}
+.orbita-centro {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  width: 112px;
+  height: 112px;
+}
+.orbita-centro img {
+  width: 100%;
+  height: 100%;
+  border-radius: 26px;
+  box-shadow: 0 20px 60px rgb(47 217 174 / 0.25);
+}
+.orbita-app {
+  --angulo: calc(360deg / var(--n) * var(--i) - 90deg);
+  position: absolute;
+  left: calc(50% + cos(var(--angulo)) * var(--raio));
+  top: calc(50% + sin(var(--angulo)) * var(--raio));
+  translate: -50% -50%;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  width: 92px;
+  text-decoration: none;
+  font-size: 12px;
+  color: var(--mudo);
+  transition: scale 0.3s var(--mola);
+}
+.orbita-app:hover {
+  scale: 1.08;
+  color: var(--texto);
+}
+.orbita-app img {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  object-fit: cover;
+  box-shadow: var(--sombra-cartao);
+}
+@supports (animation-timeline: view()) {
+  .orbita-app {
+    animation: orbita linear both;
+    animation-timeline: view();
+    animation-range: entry 10% cover 45%;
+  }
+}
+@keyframes orbita {
+  from {
+    left: 50%;
+    top: 50%;
+    opacity: 0;
+    scale: 0.5;
+  }
+}
+
+/* ─────────── fecho ─────────── */
+.fecho h2 {
+  margin-bottom: 32px;
+}
