@@ -8,6 +8,7 @@ import { Icone } from "@/components/icones";
 import { Avatar, BotaoSair } from "@/components/shell";
 import { SeletorDeTema } from "@/components/tema";
 import { CarregarDemonstracao, RemoverDemonstracao } from "@/components/demonstracao";
+import { InstalarNoCelular } from "@/components/instalar";
 
 export const metadata = { title: "Ajustes" };
 
@@ -68,6 +69,7 @@ export default async function Ajustes() {
             </dd>
           </dl>
         </section>
+        <InstalarNoCelular />
         <section className="ficha" aria-label="Equipe e agenda">
           <div>
             <strong className="ficha__titulo">Equipe e agenda</strong>
