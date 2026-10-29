@@ -65,6 +65,10 @@ export function allowRequest(key: string, limit = 20, period = 3600000) {
   entry.count++;
   return entry.count <= limit;
 }
+/** Tests run many requests as one account in one process; production never calls this. */
+export function resetRequestLimits() {
+  attempts.clear();
+}
 export const privateHeaders = { 'Cache-Control': 'no-store' };
 // Our own errors carry Portuguese messages for the person; runtime and network errors
 // (fetch failed, timeouts, aborts) stay internal and become the fallback.

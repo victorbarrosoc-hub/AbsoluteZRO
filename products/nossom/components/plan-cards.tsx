@@ -256,8 +256,7 @@ export default function PlanCards({
       </div>
       <p className="plans-terms">
         Franquia renovada no dia 1, à 0h de Brasília, sem acumular saldo. Cada restauração desconta
-        no mínimo 1 minuto; áudios maiores usam a duração em segundos. Até 100 MB e 10 minutos por
-        arquivo.{' '}
+        no mínimo 1 minuto; áudios maiores usam a duração em segundos. Até 10 minutos por arquivo.{' '}
         {enabled
           ? 'Planos pagos são cobrados todo mês no cartão, pela Stripe; a NOSSOM não guarda dados do cartão. Cancele quando quiser: o plano vale até o fim do período pago.'
           : 'Planos pagos são ativados pelo administrador após contato; não há cobrança automática de cartão nesta etapa.'}

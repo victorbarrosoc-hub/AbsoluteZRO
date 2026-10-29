@@ -2537,3 +2537,20 @@ sistema simulado), e o primeiro Release (sai no primeiro push na main com `produ
   `npm test` 61/61 (caso b1034 → b1042 sem registro, build do app vale mais que o registro, Synquei em
   `desktop/build-info.json`, versão de desenvolvimento sem build).
 - Não validado: a leitura do `app.asar` de outro app pela central empacotada num Mac e num Windows reais.
+
+## NOSSOM: Isolar voz no nível do Voice Isolator (29/10/2026)
+
+- Nova cadeia no worker de GPU (`voice-isolator-v1`: Mel-Band RoFormer + MossFormer2 SE 48K, mono 48 kHz;
+  `roformer-vocals-v1`: vocal estéreo 44,1 kHz), pesos com revisão e SHA-256 fixos, `weights_only=True`.
+- Benchmark em CPU com fala real em português e ruído/música CC BY: SI-SDR médio 15,46 dB contra 11,13
+  (DeepFilterNet3, motor local) e 9,96 (HTDemucs, Isolar voz anterior); melhor também em PESQ, ESTOI e DNSMOS. O
+  código de produção reproduz o benchmark (14,72 × 14,74 dB). Detalhes em `products/nossom/docs/validation.md`.
+- `products/nossom`: `npm test` 76/76, `npm run test:e2e` 75 + 1 pulado, `typecheck`, `format:check` e `build` ok;
+  testes Python do worker no CI.
+- Não validado: imagem na GPU, custo por minuto, cold start, audição cega. Sem deploy.
+- Vídeo (29/10/2026): NOSSOM importa vídeo até 2 GB sem copiar para a memória, envia à GPU só FLAC do som e devolve
+  o vídeo original com o som novo (vídeo copiado, AAC). E2E com MP4 sintético; ffprobe confere H.264 + AAC de 4,000 s.
+  Build da imagem do worker passou com inferência real em CPU; publicação movida para `absolutezro-nossom-worker`.
+- Legendas e Remixar no NOSSOM (29/10/2026): Whisper turbo com WER 4,1% em 3 min de português (CPU) e janelas
+  cortadas em pausas depois de achar estouro de memória no modo em blocos; remixer com cinco faixas que somam o
+  original (erro 1e-7). `npm test` 115/115, e2e 61 + 26 pulados.

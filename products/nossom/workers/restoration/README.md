@@ -28,3 +28,22 @@ O preset `htdemucs-vocals-v1` usa HTDemucs 4.0.1 e retorna apenas o stem `vocals
 O checkpoint oficial fixo `955717e8-8726e21a.th` é baixado e tem seu hash verificado no build, sem nomes/URLs de modelos vindos do navegador. O build carrega os pesos e roda uma inferência sintética em CPU para verificar compatibilidade com PyTorch. Isso não substitui ouvir uma música real na GPU. O worker antigo aceita somente fala: para ativar a separação, o endpoint precisa concluir a construção e usar esta nova imagem. Nenhuma nova migração SQL é necessária: o tipo confirmado do pedido é guardado no `report` já existente.
 
 Para estéreo, são assinadas até 11 partes de saída (até 20 MiB cada), sem ampliar os limites de entrada de 100 MiB e 10 minutos. A restauração D continua mono e usa até seis partes, preservando o contrato do worker anterior. Cancelamento, reserva/devolução de minutos e exclusão privada seguem o mesmo fluxo. Confira a licença MIT incluída do Demucs e a licença do checkpoint upstream.
+
+## Isolar voz (Fala e Música)
+
+`voice-isolator-v1` (**Fala**, padrão da ferramenta) roda duas etapas não generativas, por máscara: **Mel-Band RoFormer** separa a voz de música e ruídos que não são voz; **MossFormer2 SE 48K** tira o que sobra, inclusive conversa de fundo. Sai WAV float32 **mono a 48 kHz**. Como as duas etapas só atenuam o que não é fala, não criam nem trocam palavras, ao contrário de um modelo generativo. `roformer-vocals-v1` (**Música**) roda só o RoFormer e devolve o vocal em estéreo a 44,1 kHz, sem a etapa de fala, que estragaria o canto.
+
+- Pesos: `KimberleyJSN/melbandroformer` (MIT) e `alibabasglab/MossFormer2_SE_48K` (Apache-2.0), com revisão do Hugging Face e SHA-256 fixos em `isolator.py`, baixados no build e carregados como `state_dict` com `weights_only=True`. Nada vem do navegador.
+- Código: `bs-roformer==0.3.10` (a versão que bate exatamente com o checkpoint) e `clearvoice==0.1.2`, ambos do PyPI.
+- Janelas: RoFormer em blocos de 8 s com metade de sobreposição e transição linear; MossFormer2 em uma passada até 20 s e em janelas de 4 s (passo 3 s) acima disso, com a cauda preservada. `test_isolator.py` confere, com modelos substitutos, que nenhuma emenda ou final se perde.
+- O build roda `smoke_isolator.py` (inferência real em CPU com os pesos) e o CI roda `test_handler.py` e `test_isolator.py`.
+- `htdemucs-vocals-v1` continua aceito para pedidos antigos; pedidos novos de Música usam o RoFormer.
+- Limite conhecido: nenhuma das duas etapas tira eco/reverberação da sala. Não prometa isso.
+
+## Remixar (`stems-v1`)
+
+Cinco faixas estéreo a 44,1 kHz: **voz** (Mel-Band RoFormer), **bateria**, **baixo** e **guitarra** (HTDemucs 6 fontes, checkpoint oficial `5c90dfd2-34c22ccb`, sobre o instrumental) e **outros** = o que resta (piano, sintetizadores, efeitos). Por construção as cinco somam exatamente a entrada: com todos os faders em 0 dB o remix é o original. Um ganho único (≤ 0) protege o FLAC de 24 bits sem mudar a relação entre as faixas; o navegador desfaz esse ganho ao mixar. As faixas vão em um único pacote de FLACs concatenados, dividido em até 40 partes de 20 MiB (dez minutos cabem mesmo sem compressão). Teste em CPU: soma com erro de 1e-7; em música + fala em português, a voz separada teve SI-SDR de 10,8 dB e não vazou para as outras faixas.
+
+## Legendas (`whisper-transcript-v1`)
+
+Whisper large-v3-turbo (MIT) com tempo por palavra, revisão e SHA-256 fixos. O idioma é detectado uma vez, nos 30 s mais altos, e fixado para todas as janelas. O áudio é cortado em janelas de até 28 s **no ponto mais silencioso** dos últimos 8 s de cada janela: o modo em blocos do pipeline, com tempo por palavra, guardava a atenção de todas as janelas e estourou a memória (SIGKILL) a partir de 30 s. Palavras abaixo do ruído (35 dB sob as partes altas, mínimo −60 dBFS), só pontuação ou créditos que o Whisper inventa ("Amara.org") são descartados; "quinta" + "-feira" voltam a ser uma palavra. O worker devolve só palavras e tempos (JSON até 4 MiB); as linhas e os arquivos SRT/VTT/TXT são montados no navegador. Medido em CPU com 20 frases do TTS-Portuguese Corpus: WER de 6,8% (frases isoladas) e de 4,1% num arquivo de 3 min, com pico de memória estável (10,3 GB em CPU, sem crescer com a duração). Limite conhecido: em frase curta isolada, o Whisper às vezes perde a primeira palavra.

@@ -211,6 +211,11 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   endpoint de entrada no HUB, a entrega assinada ao Maestro e tirar a rota de `DISABLED_ROUTES`, com decisão do titular.
 - ✅ Eventos versionados, outbox, fila com retry/backoff, dead-letter, revisão, reprocessamento; fluxo ponta a ponta
   testado com fixtures gerados pelo código real do SOBEDESCE.
+- 🟡 NOSSOM · Isolar voz no nível do Voice Isolator do ElevenLabs (29/10/2026): Mel-Band RoFormer + MossFormer2 SE 48K, modos Fala e Música, medido em CPU ([estudo](../products/nossom/docs/estudo-elevenlabs.md)); falta build da imagem, homologação na GPU e audição cega (⛔ autorização de deploy e GPU).
+- ✅ NOSSOM · vídeo de verdade (29/10/2026): vídeo até 2 GB lido no aparelho, só o som (FLAC) vai à GPU, botão Vídeo devolve o original com o som novo (até 1 GB).
+- ✅ NOSSOM · Legendas (29/10/2026): Whisper large-v3-turbo com tempo por palavra, SRT/VTT/TXT no navegador.
+- ✅ NOSSOM · Remixar (29/10/2026, pedido do titular): voz, bateria, baixo, guitarra e outros com faders, mudo, Só instrumental e Só acapella; as faixas somam o original.
+- ⬜ NOSSOM · próximas fases do estudo: arquivos de 1 h, tirar eco, edição por texto, voz com consentimento, dublagem.
 - 🟡 NOSSOM: link e contrato `edit.timeline.ready`; passagem automática ⬜ (precisa de mudança no NOSSOM, com autorização).
 - ⬜ HUB recebendo o recibo do Synquei (`synquei.preparo/1`, parser pronto em `parsePreparos`) no projeto; o Synquei
   segue lendo o manifesto local e o `OrganizationPlan` do HUB fica como prévia.

@@ -210,7 +210,7 @@ const faqs = [
   ],
   [
     'Quais arquivos posso usar?',
-    'WAV, MP3, M4A, FLAC, OGG e áudio de MP4 ou MOV. Até 100 MB e 10 minutos. Limpeza de fala em mono e separação musical em estéreo. Exporte o resultado em WAV ou MP3.',
+    'Áudio (WAV, MP3, M4A, FLAC, OGG) até 500 MB e vídeo (MP4, MOV, WebM) até 2 GB, com até 10 minutos. Em vídeo, só o som vai para a IA e você baixa o vídeo com o som novo. Exporte também em WAV ou MP3.',
   ],
   [
     'Posso desfazer um tratamento?',
@@ -397,11 +397,11 @@ export default function Landing({
                 <small>Reduza ruídos da gravação</small>
               </span>
             </Intent>
-            <Intent closed={closed} href="/studio/isolar-voz" intent="vocals" label="Isolar cantor">
+            <Intent closed={closed} href="/studio/isolar-voz" intent="vocals" label="Isolar voz">
               <Mic2 size={32} />
               <span>
-                <strong>Isolar cantor</strong>
-                <small>Separe a voz dos instrumentos</small>
+                <strong>Isolar voz</strong>
+                <small>Sem música nem ruído de fundo</small>
               </span>
             </Intent>
             <Intent closed={closed} href="/studio/efeitos" intent="effects" label="Criar efeitos">
