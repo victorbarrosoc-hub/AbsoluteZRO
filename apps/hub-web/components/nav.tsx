@@ -14,6 +14,7 @@ const GROUPS: { label: string; items: Item[] }[] = [
     items: [
       { href: '/inicio', label: 'Início', icon: 'home' },
       { href: '/ia', label: 'IA', icon: 'sparkle' },
+      { href: '/set', label: 'Set', icon: 'chat' },
       { href: '/projetos', label: 'Meus projetos', icon: 'projects' },
       { href: '/ciclo', label: 'Ciclo do O', icon: 'cycle' },
       { href: '/ferramentas', label: 'Ferramentas', icon: 'apps' },

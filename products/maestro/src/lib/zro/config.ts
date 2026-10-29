@@ -16,22 +16,28 @@ export const ESCOPO_PROJETOS = "maestro.projects";
 export const ESCOPO_AGENDA = "zro.agenda";
 /** Pessoas da Absolute ZRO (ADR 0029 do HUB): busca por @ ou nome e convite pelo @. */
 export const ESCOPO_PESSOAS = "zro.pessoas";
+/** O Set da Absolute ZRO (ADR 0031 do HUB): quem está online e as conversas, pelo repasse /api/zro/set. */
+export const ESCOPO_SET = "zro.set";
 export const ESCOPOS_SEM_AGENDA = `${ESCOPOS_BASICOS} ${ESCOPO_IA} ${ESCOPO_PROJETOS}`;
 export const ESCOPOS_SEM_PESSOAS = `${ESCOPOS_SEM_AGENDA} ${ESCOPO_AGENDA}`;
-export const ESCOPOS_COMPLETOS = `${ESCOPOS_SEM_PESSOAS} ${ESCOPO_PESSOAS}`;
+export const ESCOPOS_SEM_SET = `${ESCOPOS_SEM_PESSOAS} ${ESCOPO_PESSOAS}`;
+export const ESCOPOS_COMPLETOS = `${ESCOPOS_SEM_SET} ${ESCOPO_SET}`;
 /**
- * Até onde pedir: `completo` (tudo); `sem_pessoas` quando a Absolute ZRO ainda não conhece zro.pessoas (recusou com
- * invalid_scope); `sem_agenda` quando recusou de novo (sem zro.agenda); `basico` por último.
+ * Até onde pedir: `completo` (tudo); `sem_set` quando a Absolute ZRO ainda não conhece zro.set (recusou com
+ * invalid_scope); `sem_pessoas` quando recusou de novo (sem zro.pessoas); `sem_agenda` (sem zro.agenda); `basico` por
+ * último.
  */
-export type NivelEscopo = "completo" | "sem_pessoas" | "sem_agenda" | "basico";
+export type NivelEscopo = "completo" | "sem_set" | "sem_pessoas" | "sem_agenda" | "basico";
 export const ESCOPOS_DO_NIVEL: Record<NivelEscopo, string> = {
   completo: ESCOPOS_COMPLETOS,
+  sem_set: ESCOPOS_SEM_SET,
   sem_pessoas: ESCOPOS_SEM_PESSOAS,
   sem_agenda: ESCOPOS_SEM_AGENDA,
   basico: ESCOPOS_BASICOS,
 };
 export const PROXIMO_NIVEL: Record<NivelEscopo, NivelEscopo | null> = {
-  completo: "sem_pessoas",
+  completo: "sem_set",
+  sem_set: "sem_pessoas",
   sem_pessoas: "sem_agenda",
   sem_agenda: "basico",
   basico: null,

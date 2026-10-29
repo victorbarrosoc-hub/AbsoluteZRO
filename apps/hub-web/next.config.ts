@@ -39,6 +39,16 @@ const config: NextConfig = {
       // o painel (zro-ia.js e o digitando.js que ele importa) muda no mesmo endereço: o navegador confere a cada carga,
       // e todas as plataformas recebem a versão nova (VERSAO, no data-versao do elemento) sem trocar o link.
       { source: '/ia/v1/:path*', headers: [{ key: 'Cache-Control', value: 'public, max-age=0, must-revalidate' }] },
+      // o Set (<zro-set>, ADR 0031): o mesmo script em todas as plataformas, carregado de outra origem; muda no mesmo
+      // endereço (VERSAO no data-versao). A API não tem CORS: cada app repassa pelo próprio servidor.
+      {
+        source: '/set/v1/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Cross-Origin-Resource-Policy', value: 'cross-origin' },
+          { key: 'Cache-Control', value: 'public, max-age=0, must-revalidate' },
+        ],
+      },
     ]
   },
 }

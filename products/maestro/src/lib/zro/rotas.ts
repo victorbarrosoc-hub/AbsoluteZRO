@@ -45,7 +45,7 @@ export async function entrar(req: Request): Promise<Response> {
   const pedido = url.searchParams.get("nivel");
   // `basico=1` é o formato antigo do mesmo pedido.
   const nivel: NivelEscopo =
-    pedido === "sem_pessoas" || pedido === "sem_agenda" || pedido === "basico" ? pedido : url.searchParams.get("basico") === "1" ? "basico" : "completo";
+    pedido === "sem_set" || pedido === "sem_pessoas" || pedido === "sem_agenda" || pedido === "basico" ? pedido : url.searchParams.get("basico") === "1" ? "basico" : "completo";
   const volta = voltaSegura(url.searchParams.get("volta"), VOLTA_PADRAO);
 
   // A Absolute ZRO volta para o endereço cadastrado: o cookie do state precisa nascer nele.
@@ -91,7 +91,7 @@ export async function callback(req: Request): Promise<Response> {
   const iss = url.searchParams.get("iss");
   if (iss && iss !== emissor()) return falhar("zro_erro");
   const erroZro = url.searchParams.get("error");
-  // A Absolute ZRO ainda não conhece um dos escopos: tira primeiro Pessoas (zro.pessoas), depois a Agenda, depois a Z e projetos.
+  // A Absolute ZRO ainda não conhece um dos escopos: tira primeiro o Set (zro.set), depois Pessoas, a Agenda, e a Z e projetos.
   const proximo = erroZro === "invalid_scope" ? PROXIMO_NIVEL[estado.nivel ?? "completo"] : null;
   if (proximo) {
     const q = new URLSearchParams({ modo, volta, nivel: proximo });

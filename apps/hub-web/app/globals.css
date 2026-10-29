@@ -8400,3 +8400,24 @@ a.pstrip__card:focus-visible .pstrip__go {
     transition: none;
   }
 }
+
+/* ───── Set (ADR 0031): a pílula na barra de cima e a página /set ───── */
+.topbar__set {
+  flex: none;
+}
+/* na própria página do Set, a pílula da barra sai (a página já mostra tudo) */
+.shell:has(zro-set[modo='pagina']) .topbar__set {
+  display: none;
+}
+/* no celular estreito, a pílula do Set entra no lugar do atalho de Ferramentas (que segue no menu) */
+@media (max-width: 430px) {
+  .topbar__end .icon-btn[href='/ferramentas'] {
+    display: none;
+  }
+}
+.set-pagina__fino {
+  font-weight: 300;
+}
+.set-pagina zro-set {
+  margin-top: 8px;
+}
