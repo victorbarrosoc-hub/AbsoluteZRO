@@ -9,7 +9,7 @@ import { ReadableStream } from 'node:stream/web'
 import { createRequire } from 'node:module'
 
 const require = createRequire(import.meta.url)
-const { Central, validarCatalogo, arquivoPara, temAtualizacao, lerRegistro, caminhoDoComando, baixar } = require('../desktop/central.cjs')
+const { Central, validarCatalogo, arquivoPara, temAtualizacao, lerBuildInstalado, lerRegistro, caminhoDoComando, baixar } = require('../desktop/central.cjs')
 
 const HUB = 'https://absolutezro.com'
 const conteudo = Buffer.from('instalador de teste '.repeat(500))
@@ -136,6 +136,31 @@ test('arquivo certo para o computador e regra de atualização', () => {
   assert.equal(temAtualizacao({ versao: '1.2.0' }, null, disp), false)
   assert.equal(temAtualizacao({ versao: '1.3.0' }, null, disp), false)
   assert.equal(temAtualizacao(null, null, disp), false)
+})
+
+test('build do app instalado (o build-info.json dentro dele): instalado por outro caminho também atualiza', () => {
+  // SOBEDESCE 0.1.0 b1034 instalado pelo Terminal (sem registro da central) e o catálogo com o b1042
+  const disp = { versao: '0.1.0', build: 1042 }
+  assert.equal(temAtualizacao({ versao: '0.1.0', build: 1034 }, null, disp), true)
+  assert.equal(temAtualizacao({ versao: '0.1.0', build: 1042 }, null, disp), false)
+  // o build do próprio app vale mais que o registro (o app pode ter se atualizado sozinho antes)
+  assert.equal(temAtualizacao({ versao: '0.1.0', build: 1042 }, { build: 1034 }, disp), false)
+  assert.equal(temAtualizacao({ versao: '0.1.0', build: null }, { build: 1034 }, disp), true)
+
+  const raiz = fs.mkdtempSync(path.join(os.tmpdir(), 'central-build-'))
+  const sobedesce = path.join(raiz, 'SOBEDESCE.app', 'Contents', 'Resources', 'app.asar')
+  fs.mkdirSync(path.join(sobedesce, 'src'), { recursive: true })
+  fs.writeFileSync(path.join(sobedesce, 'src', 'build-info.json'), JSON.stringify({ build: 1034, commit: 'e79ff63' }))
+  assert.equal(lerBuildInstalado(fs, sobedesce), 1034)
+  const synquei = path.join(raiz, 'Synquei.app', 'Contents', 'Resources', 'app.asar')
+  fs.mkdirSync(path.join(synquei, 'desktop'), { recursive: true })
+  fs.writeFileSync(path.join(synquei, 'desktop', 'build-info.json'), JSON.stringify({ build: 1038 }))
+  assert.equal(lerBuildInstalado(fs, synquei), 1038)
+  const dev = path.join(raiz, 'Dev.app', 'Contents', 'Resources', 'app.asar')
+  fs.mkdirSync(path.join(dev, 'src'), { recursive: true })
+  fs.writeFileSync(path.join(dev, 'src', 'build-info.json'), JSON.stringify({ build: 0 }))
+  assert.equal(lerBuildInstalado(fs, dev), null, 'versão de desenvolvimento não tem build')
+  assert.equal(lerBuildInstalado(fs, path.join(raiz, 'nada')), null)
 })
 
 test('registro do Windows: acha a entrada do app e o desinstalador', () => {
