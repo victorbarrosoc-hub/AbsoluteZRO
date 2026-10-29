@@ -1,6 +1,11 @@
 // Família Absolute ZRO no menu do estúdio: cada app com o próprio ícone e nome.
 // Os ícones moram em /public (cada app publica sozinho). Abre em outra aba para não
 // interromper gravação nem tratamento em andamento; no app de Mac/Windows abre no navegador.
+
+// Maestro na família (lançamento em Beta grátis, docs/operations/lancamento-maestro.md): fica de fora até o titular
+// abrir; vira com `node scripts/lancamento-maestro.mjs --abrir` (e volta com --fechar).
+const MAESTRO_NA_FAMILIA = true;
+
 const FAMILY = [
   {
     href: 'https://absolutezro.com',
@@ -12,11 +17,14 @@ const FAMILY = [
     name: 'Carro do Freela',
     icon: '/familia/carro-do-freela.png',
   },
+  ...(MAESTRO_NA_FAMILIA
+    ? [{ href: 'https://maestro.absolutezro.com', name: 'Maestro', icon: '/familia/maestro.svg' }]
+    : []),
   { href: 'https://revela.absolutezro.com', name: 'Revela', icon: '/familia/revela.svg' },
   { href: 'https://sobedesce.vercel.app', name: 'Sobedesce', icon: '/familia/sobedesce.svg' },
   { href: 'https://synquei.absolutezro.com', name: 'Synquei', icon: '/familia/synquei.svg' },
   { href: 'https://tpeasy.vercel.app', name: 'TPEasy', icon: '/familia/tpeasy.svg' },
-] as const;
+];
 
 export default function FamilyNav({ onOpen }: { onOpen?: () => void }) {
   return (

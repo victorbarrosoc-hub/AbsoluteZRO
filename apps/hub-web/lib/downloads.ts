@@ -143,11 +143,12 @@ export const DOWNLOADS: DownloadEntry[] = [
     productId: 'maestro',
     site: 'https://maestro.absolutezro.com',
     status: 'test',
-    note: 'Com a conta Absolute ZRO. O app de computador avisa e se atualiza quando sai versão nova.',
+    note: 'Com a conta Absolute ZRO. No iPhone: Safari › Compartilhar › Adicionar à Tela de Início.',
     options: [
       { os: 'mac', label: 'Mac', detail: 'Apple Silicon e Intel', href: MAESTRO_BAIXAR + 'mac', format: 'Instalador .dmg' },
       { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11', href: MAESTRO_BAIXAR + 'windows', format: 'Instalador .exe' },
       { os: 'web', label: 'Navegador', detail: 'Chrome, Edge ou Safari', href: 'https://maestro.absolutezro.com/app', format: 'Sem instalar' },
+      { os: 'mobile', label: 'Celular', detail: 'iPhone e Android, na Tela de Início', href: 'https://maestro.absolutezro.com/app', format: 'Sem instalar' },
     ],
     firstOpen: {
       mac: 'Abra o .dmg e arraste para Aplicativos. Na primeira vez: botão direito › Abrir › Abrir.',

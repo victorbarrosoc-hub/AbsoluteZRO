@@ -27,7 +27,7 @@ beforeAll(() => {
 afterAll(() => db.close())
 
 const rid = (p: string) => `${p}-${randomBytes(4).toString('hex')}`
-const APPS = ['ai-edit', 'carro-do-freela', 'finishing', 'nossom', 'sobedesce', 'synquei', 'tpeasy']
+const APPS = ['ai-edit', 'carro-do-freela', 'finishing', 'maestro', 'nossom', 'relay', 'sobedesce', 'synquei', 'tpeasy']
 
 describe('plano grátis da organização nova', () => {
   it('libera as ferramentas do plano grátis vigente e aparece no login único', async () => {
@@ -39,9 +39,11 @@ describe('plano grátis da organização nova', () => {
     expect(rows.map((r) => r.product_id)).toEqual(APPS)
     expect(rows.every((r) => r.provider === 'free' && r.code === 'conta-absolute-zro' && r.version === 2)).toBe(true)
     const claims = await db.asSystem('t', (tx) => loadOidcClaims(tx, o.userId, o.orgId))
-    // No login único só entram os lançados (gate de lançamento, ADR 0023); os fechados vão como "closed" em zro_release.
-    expect([...claims.products].sort()).toEqual(['sobedesce', 'synquei', 'tpeasy'])
+    // No login único só entram os abertos (gate de lançamento, ADR 0023): os lançados e o Maestro em Beta
+    // (0027); os fechados vão como "closed" em zro_release.
+    expect([...claims.products].sort()).toEqual(['maestro', 'sobedesce', 'synquei', 'tpeasy'])
     expect(claims.release).toMatchObject({
+      maestro: 'released',
       sobedesce: 'released',
       synquei: 'released',
       tpeasy: 'released',

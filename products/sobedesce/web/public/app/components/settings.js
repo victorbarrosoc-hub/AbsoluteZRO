@@ -18,6 +18,11 @@ const FAMILIA = [
   { href: 'https://synquei.absolutezro.com', nome: 'Synquei', img: 'icons/familia/synquei.svg' },
   { href: 'https://tpeasy.vercel.app', nome: 'TPEasy', img: 'icons/familia/tpeasy.svg' },
 ]
+// Maestro na família (lançamento em Beta grátis, docs/operations/lancamento-maestro.md): fica de fora até o titular
+// abrir; vira com `node scripts/lancamento-maestro.mjs --abrir` (e volta com --fechar).
+const MAESTRO_NA_FAMILIA = true
+// em ordem alfabética, logo depois da Absolute ZRO
+if (MAESTRO_NA_FAMILIA) FAMILIA.splice(1, 0, { href: 'https://maestro.absolutezro.com', nome: 'Maestro', img: 'icons/familia/maestro.svg' })
 
 function Familia() {
   return html`<section class="k-familia k-entra" style="--i:5" aria-label="Absolute ZRO">

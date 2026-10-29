@@ -1,4 +1,4 @@
-// Revela · conversor no navegador (o "Handbrake" da Revela). Lê o arquivo com o Mediabunny (ProRes pelo decodificador
+// Revela · conversor no navegador. Lê o arquivo com o Mediabunny (ProRes pelo decodificador
 // WASM), converte com WebCodecs (hardware quando o aparelho deixa) e grava MP4 marcado BT.709. Nada sai do aparelho.
 
 import './conta.js'

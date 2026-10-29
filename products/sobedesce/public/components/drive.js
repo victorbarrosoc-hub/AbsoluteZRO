@@ -26,7 +26,7 @@ import { hasRawFiles, onRawThumbsDone, openRawThumbs, useRawThumbsRunning } from
 import { hasVideoFiles, isVideoName, onPreviasDone, openPrevias, openProxyArquivo, usePreviasRunning, useComProxy } from './previa.js'
 import { FolderSummary, calcSize, focusSize, getSize, sizeId, useSizes } from './drive-tamanho.js'
 import { copyDriveLink, driveLinkFor } from './link-share.js'
-import { openRevela } from './revela.js'
+import { openRelay } from './relay.js'
 import { DEFAULT_SORT, FILTERS, driveView, filterChips, keepVisible, normalizeSort, visibleSummary } from '../lib/ordenar.js'
 import { MacLine, SortMenu, openMacTrash } from './drive-ordenar.js'
 import { openCopyLink, useCopiaRunning } from './copiar-link.js'
@@ -426,6 +426,7 @@ export function DriveScreen({ route }) {
     const pasta = isOpenable(it)
     const n = alvo.length
     const video = !pasta && isVideoName(it.name)
+    const audio = !pasta && /\.(wav|aiff?|flac|mp3|m4a|aac|ogg|opus|caf)$/i.test(it.name)
     const itens = [
       { id: 'abrir', icon: pasta ? 'folder' : 'eye', label: pasta ? 'Abrir' : 'Prévia', hint: pasta ? '' : 'espaço' },
       { id: 'baixar', icon: 'download', label: n > 1 ? `Baixar ${plural(n, 'item', 'itens')}` : 'Baixar', disabled: !n || alvo.every((x) => x.canDownload === false), title: `Baixar em ${shortPath(dest, home) || 'Downloads'}` },
@@ -436,7 +437,7 @@ export function DriveScreen({ route }) {
       { id: 'mover', icon: 'arrow-right', label: n > 1 ? `Mover ${plural(n, 'item', 'itens')} para…` : 'Mover para…', disabled: alvo.some((x) => x.canMove === false), title: alvo.some((x) => x.canMove === false) ? 'Sua conta não pode mudar este item de lugar' : undefined },
       pasta && !it.isShortcut ? { id: 'tamanho', icon: 'disk', label: 'Calcular tamanho', sep: true } : null,
       video && n === 1 ? { id: 'proxy', icon: 'film', label: 'Gerar proxy', sep: !pasta } : null,
-      video && n === 1 ? { id: 'revela', icon: 'compare', label: 'Converter com a Revela…' } : null,
+      (video || audio) && n === 1 ? { id: 'relay', icon: 'compare', label: 'Converter com o Relay…' } : null,
     ]
     const escolha = await abrirMenuContexto({ titulo: n > 1 ? plural(n, 'item selecionado', 'itens selecionados') : it.name, itens, x: ponto.x, y: ponto.y })
     if (escolha === 'abrir') pasta ? open(it) : preview(it)
@@ -450,7 +451,7 @@ export function DriveScreen({ route }) {
     else if (escolha === 'mover') moverPara(alvo)
     else if (escolha === 'tamanho') calcFolder(it)
     else if (escolha === 'proxy') openProxyArquivo({ accountId, item: it })
-    else if (escolha === 'revela') openRevela({ accountId, item: it })
+    else if (escolha === 'relay') openRelay({ accountId, item: it })
   }
 
   const emptyView =

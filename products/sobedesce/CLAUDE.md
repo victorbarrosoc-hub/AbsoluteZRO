@@ -7,7 +7,7 @@ do SOBEDESCE. Arquitetura em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md); o sit
 ## O que é cada pasta
 
 - `src/` motor (Node): Drive (download em pedaços, envio, MD5), Backup Automático (`src/backup/`), discos, celular,
-  Revela. Servidor local em `src/server/` (porta 4317), estado pelo SSE.
+  Relay ("Converter com o Relay", núcleo em `src/relay/`, cópia de `products/relay`). Servidor local em `src/server/` (porta 4317), estado pelo SSE.
 - `desktop/` Electron (ponte mínima em `preload.cjs`, cada canal confere a origem com `trustedSender`).
 - `public/` a interface (Preact + htm, sem build). `web/` o site sobedesce.vercel.app e o app do celular (`web/public/app`).
 - `test/` testes do motor: `npm run test:fast` (é o que o CI roda). Site: `cd web && npm run lint && npm run typecheck && npm test`.

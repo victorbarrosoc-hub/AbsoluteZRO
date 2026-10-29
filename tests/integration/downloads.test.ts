@@ -62,7 +62,7 @@ describe('downloads', () => {
     expect(hasDesktopInstaller('nossom', new Set([...lancados, 'nossom']))).toBe(true)
   })
 
-  it('Maestro: fechado (download = false) não mostra instalador; liberado mostra Mac e Windows pela Absolute ZRO', () => {
+  it('Maestro: fechado (download = false) não mostra instalador; liberado mostra Mac e Windows pela Absolute ZRO, navegador e Tela de Início', () => {
     const fechado = downloadsLiberados(new Set(['sobedesce']))
     expect(fechado.find((x) => x.productId === 'maestro')).toEqual({ productId: 'maestro', status: 'soon', options: [] })
     expect(hasDesktopInstaller('maestro', new Set(['sobedesce']))).toBe(false)
@@ -70,6 +70,7 @@ describe('downloads', () => {
     expect(aberto.options.map((o) => o.href)).toEqual([
       'https://absolutezro.com/baixar/app/maestro/mac',
       'https://absolutezro.com/baixar/app/maestro/windows',
+      'https://maestro.absolutezro.com/app',
       'https://maestro.absolutezro.com/app',
     ])
     expect(hasDesktopInstaller('maestro', new Set(['maestro']))).toBe(true)

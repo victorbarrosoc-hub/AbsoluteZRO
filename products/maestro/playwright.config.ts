@@ -38,6 +38,8 @@ export default defineConfig({
       // Chave fixa só de teste (32 bytes 0x07): o build roda em modo produção, que exige MAESTRO_KEY.
       MAESTRO_KEY: E2E_KEY,
       NEXT_TELEMETRY_DISABLED: "1",
+      // A página inicial lançada lê o app de computador no catálogo do HUB: no e2e, nunca (sem serviço externo).
+      MAESTRO_CATALOGO_DESKTOP: "desligado",
       // O HUB e o SOBEDESCE de mentira do e2e de Arquivos (e2e/preparar.ts); o Google é interceptado no navegador.
       MAESTRO_PONTE_URL: `http://127.0.0.1:${Number(process.env.E2E_PONTE_PORT || 3219)}`,
       // A ANP de mentira (tests/anp-fixture.mts) e o segredo do agendamento: o combustível automático sem rede.
