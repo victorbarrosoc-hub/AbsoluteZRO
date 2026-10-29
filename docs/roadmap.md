@@ -174,6 +174,9 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   pelo HUB, mesma permissão e cota da importação de descarga, sem duplicar). ⬜ Envio automático do app para o HUB:
   pede o HUB aceitar o token do login único com escopo próprio (decisão de arquitetura, ADR nova).
 - ⬜ SOBEDESCE · "Converter com a Revela" em Mac, Windows, iPhone e Android reais (roteiro em validation.md).
+- ✅ SOBEDESCE · contador de "Agora" corrigido (29/10/2026): a porcentagem somava a lista inteira (lotes antigos
+  concluídos e a tentativa que falhou de novo junto com a nova), e um envio de 100 GB aparecia como "51% de 205 GB"
+  depois de terminado. Agora conta só a rodada de agora, e o envio mandado de novo substitui a tentativa que falhou.
 - ✅ SOBEDESCE · build do app de desktop de volta (26/10/2026): o download do SDK da Blackmagic devolvia 400 com o
   cadastro antigo; com o segredo `BRAW_SDK_CADASTRO` refeito, Mac e Windows passam (SDK, empacotamento e teste de fumaça).
 - ✅ TPeasy ↔ HUB pelo backup JSON do próprio app.
