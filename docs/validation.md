@@ -15,6 +15,23 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## TPeasy: Abrir no TPeasy, registro de leituras e tpeasy.absolutezro.com (29/10/2026)
+
+- `node --test tests/*.test.mjs` em `products/tpeasy`: **73/73** (repasse `/api/zro/roteiro` contra a Absolute ZRO
+  falsa: Bearer da sessão, token fora da página, 400/401 `reconectar`/403/404/502, renovação; mescla da versão nova com
+  cópia do que mudou no aparelho; linha `tpeasy.leituras/1` com fuso, blocos e limite; `#hub/<projeto>` abre Roteiros;
+  `tpeasy.absolutezro.com` oficial e `tpeasy.vercel.app` com o próprio retorno).
+- `npx vitest run tests/integration/tpeasy-roteiro.test.ts packages/media-contracts` (Postgres 16 local, migrações até
+  a `0033`): cliente do TPeasy nasce com `tpeasy.roteiros`, outro produto não pode pedir; token lê a versão 2 e o
+  documento certo; sem escopo, outra organização e projeto sem roteiro recusados; linhas geradas pelo código do app
+  passam no schema e linhas ruins não.
+- Raiz: lint, formatação, tipos e build ok; `npm test` **347/347** em 40 arquivos; `npm run test:e2e` **40/43**: as 3
+  que faltam são de WebKit (`esqueleto`, `home-celular`) e não abriram aqui (WebKit não instalado neste ambiente,
+  `Executable doesn't exist`); Chromium todo verde. Fumaça no Chromium (iPhone 13): `#hub/<projeto>` vai para Roteiros
+  com aviso, uma leitura de 3,5 s grava a linha com o bloco "Começo", toque de 0,5 s não grava; nenhum erro no console.
+- Domínio: `tpeasy.absolutezro.com` adicionado ao projeto Vercel `tpeasy` (DNS da Vercel, verificado na hora);
+  `curl` em `/` e `/app/` → 200. O login no endereço novo depende do deploy deste código e da `0033`.
+
 ## Página inicial no iPhone: topo por cima de tudo e grade de ícones (29/10/2026)
 
 Relato do titular (Safari do iPhone, tema claro): texto das seções aparecia entre a barra de status e a cápsula do topo e

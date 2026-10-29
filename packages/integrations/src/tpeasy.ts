@@ -9,6 +9,27 @@ export function tpeasyScriptId(projectId: string): string {
   return `zro-${projectId}`
 }
 
+/** Entrada do TPeasy quando o cadastro do produto não diz outra (o login do app, que volta já logado). */
+export const TPEASY_ENTRADA = 'https://tpeasy.absolutezro.com/api/zro/entrar'
+
+/**
+ * "Abrir no TPeasy": passa pelo login do TPeasy (a pessoa já está logada no HUB, então volta sem tela) e cai no
+ * roteiro do projeto (`/app/#hub/<projeto>`), que o app carrega sozinho. `entrada` é o `sso_start_url` do produto.
+ */
+export function tpeasyOpenUrl(projectId: string, entrada?: string | null): string {
+  let u: URL
+  try {
+    u = new URL(entrada || TPEASY_ENTRADA)
+    if (u.protocol !== 'https:' || !u.pathname.endsWith('/api/zro/entrar')) u = new URL(TPEASY_ENTRADA)
+  } catch {
+    u = new URL(TPEASY_ENTRADA)
+  }
+  u.search = ''
+  u.hash = ''
+  u.searchParams.set('volta', `/app/#hub/${projectId}`)
+  return u.toString()
+}
+
 export function toTpeasyBackup(input: { projectId: string; title: string; body: string; updatedAt: Date }): TpeasyBackup {
   return {
     app: 'tpeasy',

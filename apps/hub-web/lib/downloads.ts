@@ -92,7 +92,7 @@ export const DOWNLOADS: DownloadEntry[] = [
   },
   {
     productId: 'tpeasy',
-    site: 'https://tpeasy.vercel.app',
+    site: 'https://tpeasy.absolutezro.com',
     status: 'web',
     note: 'Feito para iPhone e iPad. Instala pela tela de início, sem loja.',
     options: [
@@ -100,7 +100,7 @@ export const DOWNLOADS: DownloadEntry[] = [
         os: 'mobile',
         label: 'iPhone e iPad',
         detail: 'Safari › Compartilhar › Adicionar à Tela de Início',
-        href: 'https://tpeasy.vercel.app/app/',
+        href: 'https://tpeasy.absolutezro.com/app/',
         format: 'App da web',
       },
     ],

@@ -1,12 +1,14 @@
 // Ponto de partida do app: monta as telas, liga as abas e registra o modo offline.
-import { $, $$ } from "./util.js";
+import { $, $$, uid } from "./util.js";
 import { go, TABS, enableSheetDrag, toast } from "./ui.js";
 import { mountSettingsForms, syncSettingsUI } from "./settings.js";
-import { renderAll, newFrom, startCalib } from "./views.js";
+import { renderAll, newFrom, startCalib, openEditor } from "./views.js";
 import { handleRedirect } from "./sync.js";
 import { verificarZro, avisoDaVolta } from "./zro.js";
 import { iniciarZ } from "./z.js";
 import { abaDeEntrada } from "./entrada.js";
+import { projetoDoHash, abrirDoHub } from "./hub.js";
+import { allScripts, replaceScripts } from "./data.js";
 
 document.querySelector('meta[name="theme-color"]').content = matchMedia("(prefers-color-scheme: dark)").matches ? "#000000" : "#f5f5f7";
 mountSettingsForms();
@@ -45,6 +47,12 @@ renderAll();
 // link com #roteiros, #tp ou #ajustes abre a aba dele; tarefa em curso ganha da Z; senão, a Z (entrada.js)
 go(abaDeEntrada(location.hash, TABS), { instant: true });
 document.documentElement.classList.add("ready");
+// "Abrir no TPeasy": o roteiro do projeto da Absolute ZRO chega já carregado no editor
+const projetoHub = projetoDoHash(location.hash);
+if (projetoHub) {
+  history.replaceState(null, "", location.pathname + location.search + "#roteiros");
+  abrirDoHub(projetoHub, { toast, allScripts, replaceScripts, uid, openEditor });
+}
 handleRedirect();
 const aviso = avisoDaVolta();
 if (aviso) toast(aviso, 3200);

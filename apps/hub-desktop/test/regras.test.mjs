@@ -25,7 +25,7 @@ test('navegação: só o HUB e o login do Google ficam na janela', () => {
     'https://sobedesce.vercel.app/',
     'https://nossom-teal.vercel.app/studio',
     'https://synquei.vercel.app/app/',
-    'https://tpeasy.vercel.app/app/',
+    'https://tpeasy.absolutezro.com/app/',
     'https://carrodofreela.com.br',
     'https://github.com/victorbarrosoc-hub',
     // parecidos com o HUB, mas não são ele

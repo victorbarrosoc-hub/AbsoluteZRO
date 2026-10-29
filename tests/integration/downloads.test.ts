@@ -6,7 +6,7 @@ const OFFICIAL = new Set([
   'sobedesce.vercel.app',
   'synquei.vercel.app',
   'nossom-teal.vercel.app',
-  'tpeasy.vercel.app',
+  'tpeasy.absolutezro.com',
   'carrodofreela.com.br',
   'aeon.absolutezro.com',
   'revela.absolutezro.com',

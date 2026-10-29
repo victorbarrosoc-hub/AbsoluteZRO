@@ -579,6 +579,29 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   0029 cai em `nivel=sem_pessoas`, sem quebrar o login).
 - ⬜ Inventário do Carro no freela achado pelo @ (pronto atrás de `CARRO_SYNC_ATIVO`, desligado).
 
+## TPeasy no ecossistema (29/10/2026, [contrato](integration-contracts/tpeasy-leituras.md))
+
+- ✅ **Abrir no TPeasy**: no projeto do HUB, o botão passa pelo login do TPeasy e abre o roteiro mais novo já no
+  editor (`/app/#hub/<projeto>`, função `api/zro/roteiro`, escopo `tpeasy.roteiros` na migração `0032`, versão nos
+  cabeçalhos `X-Zro-Versao`/`X-Zro-Documento`). Versão nova com mudança feita no aparelho vira cópia "(do aparelho)".
+  O "Baixar backup" continua.
+- ✅ **Registro de leituras** `tpeasy.leituras/1`: cada vez que o texto anda no TP vira uma linha com a hora do bip e
+  os blocos que passaram; **Ajustes › Exportar leituras** gera o `.jsonl` (schema em `packages/media-contracts`,
+  linhas de teste geradas pelo código real do app). SW `tpeasy-v21`, app 2.3.
+- ✅ Formato do roteiro para o modelo de "roteiro de vídeo" do Maestro documentado (blocos `#` únicos e curtos).
+- ✅ **`tpeasy.absolutezro.com`** no projeto Vercel `tpeasy` (titular, 29/10/2026; ADR 0025): no ar e respondendo.
+  Código aceita os dois endereços, cada um com o próprio retorno; migração `0033` põe o retorno novo no cliente
+  `tpeasy-web` e o Abrir do HUB no endereço novo. `tpeasy.vercel.app` **sem** redirecionamento (os roteiros ficam no
+  aparelho, por endereço).
+- ⬜ Levar os roteiros de quem instalou pelo `tpeasy.vercel.app` (ex.: botão "Levar para o endereço novo" com o
+  backup) e só então o 308. Links da família nos outros apps ainda apontam para o antigo (funcionam).
+- ⬜ Maestro: vínculo do projeto com o HUB (etapa 3) + rota para o roteiro do Maestro virar versão no HUB; aí o botão
+  "Abrir no TPeasy" no próprio roteiro do Maestro.
+- ⬜ Synquei: ler `tpeasy.leituras/1`, achar o bip no áudio do clipe e propor o nome do bloco (prévia + confirmação;
+  ambíguo → revisar). AEON: bloco como etiqueta do clipe.
+- ⬜ Vídeo 9:16 em uso real com um número medido (do próprio registro de leituras) e ficha de compatibilidade com
+  aparelhos testados. Conferir o Abrir no TPeasy com conta real depois do deploy.
+
 ## Fase 6 — Escala
 
 - ⬜ Observabilidade em produção (drain de logs, métricas da fila, alertas), backups e retenção definidos.

@@ -7,8 +7,9 @@ import { syncSettingsUI, setPref } from "./settings.js";
 import * as Sync from "./sync.js";
 import * as Zro from "./zro.js";
 import { pendencias, numeroBalao, rotuloBalao } from "./pendencias.js";
+import { paraJsonl, nomeDoArquivo } from "./leituras.js";
 
-const VERSION = "2.2";
+const VERSION = "2.3";
 const wpm = () => D.S().wpm;
 const durOf = (s) => (D.countWords(s.body) / wpm()) * 60;
 const PALETTE = [
@@ -365,9 +366,24 @@ $("#soundsSwitch").addEventListener("click", () => {
   D.saveUi();
   renderAccount();
 });
-$("#exportBtn").addEventListener("click", async () => {
+$("#exportBtn").addEventListener("click", () => {
   const name = `tpeasy-${new Date().toISOString().slice(0, 10)}.json`;
-  const file = new File([JSON.stringify(D.exportAll(), null, 2)], name, { type: "application/json" });
+  return entregarArquivo(new File([JSON.stringify(D.exportAll(), null, 2)], name, { type: "application/json" }));
+});
+// Registro de leituras (tpeasy.leituras/1): um arquivo .jsonl para pôr na pasta do material (AirDrop ou Arquivos)
+$("#leiturasBtn").addEventListener("click", () => {
+  const lista = D.allLeituras();
+  if (!lista.length) return toast("Nenhuma leitura ainda", 2200);
+  return entregarArquivo(new File([paraJsonl(lista)], nomeDoArquivo(), { type: "application/x-ndjson" }));
+});
+function renderLeituras() {
+  const n = D.allLeituras().length;
+  $("#leiturasState").textContent = n ? String(n) : "";
+}
+D.on("leituras", renderLeituras);
+renderLeituras();
+async function entregarArquivo(file) {
+  const name = file.name;
   try {
     if (navigator.canShare && navigator.canShare({ files: [file] })) return await navigator.share({ files: [file] });
   } catch (err) {
@@ -382,7 +398,7 @@ $("#exportBtn").addEventListener("click", async () => {
     URL.revokeObjectURL(a.href);
     a.remove();
   }, 1000);
-});
+}
 $("#importBtn").addEventListener("click", () => $("#backupInput").click());
 $("#backupInput").addEventListener("change", async (e) => {
   const f = e.target.files && e.target.files[0];

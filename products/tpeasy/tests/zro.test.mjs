@@ -10,7 +10,7 @@ import http from 'node:http'
 import { after, afterEach, before, beforeEach, describe, mock, test } from 'node:test'
 
 const CLIENTE = { clientId: 'tpeasy-web', clientSecret: 'zk_segredo_so_de_teste' }
-const ESCOPOS = 'openid email profile org offline_access zro.ia'
+const ESCOPOS = 'openid email profile org offline_access zro.ia tpeasy.roteiros'
 const LIA = { sub: 'zro-111', email: 'Lia@Produtora.com', nome: 'Lia Produtora', org: 'Produtora Lia', produtos: ['tpeasy', 'sobedesce'] }
 
 // ───────────── Absolute ZRO falsa ─────────────
@@ -30,6 +30,9 @@ function iniciarZroFalsa() {
     contas: new Map(), // sub → a conta na Absolute ZRO (o teste muda nome, e-mail e foto aqui)
     atTtl: 600,
     semIa: false,
+    semRoteiro: false, // token sem tpeasy.roteiros (login de antes do "Abrir no TPeasy")
+    roteiros: new Map(), // projeto → { status, corpo, versao, documento }
+    roteiroPedidos: [],
     iaPedidos: [],
     iaPausa: null,
     fora: false,
@@ -187,6 +190,19 @@ function iniciarZroFalsa() {
       }
       return responder(res, 404, { error: 'not_found' })
     }
+    // "Abrir no TPeasy": GET /api/v1/projects/<id>/tpeasy/script com Bearer (escopo tpeasy.roteiros)
+    const mr = /^\/api\/v1\/projects\/([^/]+)\/tpeasy\/script$/.exec(url.pathname)
+    if (mr && req.method === 'GET') {
+      const auth = String(req.headers.authorization ?? '')
+      zro.roteiroPedidos.push({ projeto: mr[1], auth, cookie: req.headers.cookie ?? null })
+      const a = acessos.get(auth.replace(/^Bearer /, ''))
+      if (!a || a.exp < Date.now() || zro.semRoteiro) return responder(res, 401, { error: 'unauthenticated' })
+      const r = zro.roteiros.get(mr[1])
+      if (!r) return responder(res, 404, { error: 'not_found', message: 'Este projeto ainda não tem roteiro.' })
+      if (r.status !== 200) return responder(res, r.status, { error: 'feature_not_included' })
+      res.writeHead(200, { 'content-type': 'application/json', 'x-zro-versao': String(r.versao), 'x-zro-documento': r.documento })
+      return res.end(JSON.stringify(r.corpo))
+    }
     responder(res, 404, { error: 'not_found' })
   })
   return new Promise((ok) =>
@@ -205,7 +221,7 @@ let lib
 
 async function iniciarApp() {
   const rotas = {}
-  for (const nome of ['entrar', 'callback', 'eu', 'sair', 'ia']) rotas[`/api/zro/${nome}`] = (await import(`../api/zro/${nome}.mjs`)).default
+  for (const nome of ['entrar', 'callback', 'eu', 'sair', 'ia', 'roteiro']) rotas[`/api/zro/${nome}`] = (await import(`../api/zro/${nome}.mjs`)).default
   const server = http.createServer(async (req, res) => {
     const caminho = new URL(req.url, 'http://x').pathname
     const rota = rotas[caminho] || (caminho.startsWith('/api/zro/ia/') ? rotas['/api/zro/ia'] : null)
@@ -288,8 +304,15 @@ describe('entrar', () => {
     assert.doesNotMatch(linha, /Secure/, 'em http://127.0.0.1 o cookie não pode ser Secure')
   })
 
-  test('no site oficial o cookie é Secure e o retorno é https://tpeasy.vercel.app', async () => {
+  test('no site oficial (tpeasy.absolutezro.com) o cookie é Secure e o retorno é o dele', async () => {
+    const ida = await ir('/api/zro/entrar', { headers: { 'x-forwarded-host': 'tpeasy.absolutezro.com' } })
+    assert.equal(new URL(ida.headers.get('location')).searchParams.get('redirect_uri'), 'https://tpeasy.absolutezro.com/api/zro/callback')
+    assert.match(setCookies(ida)[0], /; Secure/)
+  })
+
+  test('o endereço antigo (tpeasy.vercel.app) segue entrando com o próprio retorno: os roteiros do aparelho ficam lá', async () => {
     const ida = await ir('/api/zro/entrar', { headers: { 'x-forwarded-host': 'tpeasy.vercel.app' } })
+    assert.equal(ida.status, 302)
     assert.equal(new URL(ida.headers.get('location')).searchParams.get('redirect_uri'), 'https://tpeasy.vercel.app/api/zro/callback')
     assert.match(setCookies(ida)[0], /; Secure/)
   })
@@ -297,7 +320,7 @@ describe('entrar', () => {
   test('outro endereço (prévia, domínio estranho) vai para o site oficial antes de tudo', async () => {
     const ida = await ir('/api/zro/entrar?volta=%2Fapp%2F', { headers: { 'x-forwarded-host': 'tpeasy-git-teste.vercel.app' } })
     assert.equal(ida.status, 307)
-    assert.equal(ida.headers.get('location'), 'https://tpeasy.vercel.app/api/zro/entrar?volta=%2Fapp%2F')
+    assert.equal(ida.headers.get('location'), 'https://tpeasy.absolutezro.com/api/zro/entrar?volta=%2Fapp%2F')
     assert.equal(setCookies(ida).length, 0)
   })
 
@@ -454,7 +477,7 @@ describe('conta única da Absolute ZRO', () => {
     assert.equal(criar.searchParams.get('code_challenge_method'), 'S256')
     // Fora do site oficial, o pedido de cadastro segue junto para o site oficial.
     const previa = await ir('/api/zro/entrar?criar=1', { headers: { 'x-forwarded-host': 'tpeasy-git-teste.vercel.app' } })
-    assert.equal(previa.headers.get('location'), 'https://tpeasy.vercel.app/api/zro/entrar?criar=1')
+    assert.equal(previa.headers.get('location'), 'https://tpeasy.absolutezro.com/api/zro/entrar?criar=1')
   })
 
   test('criar conta volta ao app já logado', async () => {
@@ -710,7 +733,7 @@ describe('a Z (repasse /api/zro/ia)', () => {
     assert.match(z, /setAttribute\("api", "\/api\/zro\/ia"\)/)
     assert.ok(!/\.token\s*=/.test(z))
     const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
-    assert.match(sw, /tpeasy-v20/)
+    assert.match(sw, /tpeasy-v21/)
     assert.match(sw, /url\.pathname\.startsWith\("\/api\/"\)/)
     // a família só lista plataformas abertas (NOSSOM, AEON, Revela, Carro do Freela e Maestro estão fechados)
     const fam = /<nav class="familia"[\s\S]*?<\/nav>/.exec(readFileSync(new URL('../app/index.html', import.meta.url), 'utf8'))[0]
@@ -732,5 +755,92 @@ describe('a Z (repasse /api/zro/ia)', () => {
     const roteiros = /data-tab="roteiros"[\s\S]*?<\/section>\s*<!--/.exec(html)[0]
     assert.ok(!/zPainel/.test(roteiros), 'a Z não fica empilhada em Roteiros')
     assert.match(/data-tab="z"[\s\S]*?<\/section>/.exec(html)[0], /id="zPainel"/)
+  })
+})
+
+describe('"Abrir no TPeasy" (repasse /api/zro/roteiro)', () => {
+  const PROJ = '6f1c2d3e-4b5a-4c6d-8e7f-9a0b1c2d3e4f'
+  const DOC = '11111111-2222-4333-8444-555555555555'
+  const backup = (extra = {}) => ({ app: 'tpeasy', version: 1, scripts: [{ id: `zro-${PROJ}`, title: 'Lançamento', body: '# Gancho\nOlá', updated: 1, pos: 0, fav: false, target: 0, ...extra }] })
+  beforeEach(() => {
+    Object.assign(zro, { atTtl: 600, fora: false, semRoteiro: false, roteiroPedidos: [] })
+    zro.roteiros.clear()
+    zro.roteiros.set(PROJ, { status: 200, corpo: backup(), versao: 4, documento: DOC })
+  })
+  const sessao = async () => {
+    const f = await fluxo()
+    return `tp_zro=${encodeURIComponent(f.sessao)}; tp_zro_hub=${encodeURIComponent(f.hub)}`
+  }
+
+  test('o login pede o escopo do roteiro', async () => {
+    const ida = await ir('/api/zro/entrar')
+    assert.ok(new URL(ida.headers.get('location')).searchParams.get('scope').split(' ').includes('tpeasy.roteiros'))
+  })
+
+  test('traz o roteiro e a versão com o Bearer da sessão; o token não vai para a página', async () => {
+    const cookie = await sessao()
+    const r = await ir(`/api/zro/roteiro?projeto=${PROJ.toUpperCase()}`, { cookie })
+    assert.equal(r.status, 200)
+    assert.equal(r.headers.get('cache-control'), 'no-store')
+    const texto = await r.text()
+    assert.deepEqual(JSON.parse(texto), { projeto: PROJ, versao: 4, documento: DOC, roteiro: { id: `zro-${PROJ}`, title: 'Lançamento', body: '# Gancho\nOlá', updated: 1 } })
+    const p = zro.roteiroPedidos.at(-1)
+    assert.equal(p.projeto, PROJ)
+    assert.match(p.auth, /^Bearer at_[0-9a-f]{32}$/)
+    assert.equal(p.cookie, null, 'o cookie do app não vai para o HUB')
+    assert.ok(!texto.includes(p.auth.slice(7)))
+  })
+
+  test('sem sessão ou projeto inválido: nada chega ao HUB', async () => {
+    const semLogin = await ir(`/api/zro/roteiro?projeto=${PROJ}`)
+    assert.equal(semLogin.status, 401)
+    assert.equal((await semLogin.json()).reconectar, true)
+    const cookie = await sessao()
+    for (const q of ['', '?projeto=../admin', '?projeto=123']) assert.equal((await ir(`/api/zro/roteiro${q}`, { cookie })).status, 400, q)
+    assert.equal((await ir(`/api/zro/roteiro?projeto=${PROJ}`, { cookie, method: 'POST' })).status, 405)
+    assert.equal(zro.roteiroPedidos.length, 0)
+  })
+
+  test('login de antes do escopo: 401 com reconectar (entrar de novo resolve)', async () => {
+    const cookie = await sessao()
+    zro.semRoteiro = true
+    const r = await ir(`/api/zro/roteiro?projeto=${PROJ}`, { cookie })
+    assert.equal(r.status, 401)
+    assert.equal((await r.json()).reconectar, true)
+  })
+
+  test('sem roteiro, sem acesso ou resposta estranha do HUB', async () => {
+    const cookie = await sessao()
+    const outro = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'
+    const r404 = await ir(`/api/zro/roteiro?projeto=${outro}`, { cookie })
+    assert.equal(r404.status, 404)
+    assert.equal((await r404.json()).mensagem, 'Este projeto ainda não tem roteiro.')
+    zro.roteiros.set(outro, { status: 403 })
+    assert.equal((await ir(`/api/zro/roteiro?projeto=${outro}`, { cookie })).status, 403)
+    // roteiro de outro projeto ou com mais de um roteiro: recusado
+    zro.roteiros.set(outro, { status: 200, corpo: backup(), versao: 1, documento: DOC })
+    assert.equal((await ir(`/api/zro/roteiro?projeto=${outro}`, { cookie })).status, 502)
+    zro.roteiros.set(PROJ, { status: 200, corpo: { ...backup(), scripts: [...backup().scripts, ...backup().scripts] }, versao: 1, documento: DOC })
+    assert.equal((await ir(`/api/zro/roteiro?projeto=${PROJ}`, { cookie })).status, 502)
+  })
+
+  test('token vencido: renova e grava o cofre novo', async () => {
+    zro.atTtl = 10
+    const cookie = await sessao()
+    const antes = zro.renovacoes
+    const r = await ir(`/api/zro/roteiro?projeto=${PROJ}`, { cookie })
+    assert.equal(r.status, 200)
+    assert.equal(zro.renovacoes, antes + 1)
+    assert.match(setCookies(r).find((c) => c.startsWith('tp_zro_hub=')), /HttpOnly/)
+  })
+
+  test('o HUB e o service worker: o link chega pelo login e /api nunca vai para o cache', async () => {
+    const { readFileSync } = await import('node:fs')
+    const main = readFileSync(new URL('../app/js/main.js', import.meta.url), 'utf8')
+    assert.match(main, /projetoDoHash\(location\.hash\)/)
+    const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
+    for (const f of ['/app/js/hub.js', '/app/js/leituras.js']) assert.ok(sw.includes(`"${f}"`), f)
+    const volta = lib.voltaSegura(`/app/#hub/${PROJ}`)
+    assert.equal(volta, `/app/#hub/${PROJ}`, 'a volta do login guarda o #hub/<projeto>')
   })
 })

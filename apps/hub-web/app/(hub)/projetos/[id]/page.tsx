@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getProject, type StepView } from '@zro/core'
-import { adapterFor } from '@zro/integrations'
+import { adapterFor, tpeasyOpenUrl } from '@zro/integrations'
 import { isDomainError } from '@zro/observability'
 import { Card, EmptyState, Field, Notice, Pill, ProductMark } from '@zro/ui'
 import { ActionForm } from '@/components/action-form'
@@ -257,12 +257,26 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
         <div className="grid grid--2">
           <div className="stack">
             <h3>Levar para o TPeasy</h3>
-            <p className="zro-faint">Baixa o roteiro no formato de backup do TPeasy (Ajustes › Backup › Importar). Não mexe nos ajustes do app.</p>
+            <p className="zro-faint">Abre a versão mais nova, já carregada no app.</p>
             {step('tpeasy').access === 'contracted' ? (
               script ? (
-                <a className="zro-btn zro-btn--small" href={`/api/v1/projects/${id}/tpeasy/script`}>
-                  Baixar backup do roteiro
-                </a>
+                <div className="row">
+                  <a
+                    className="zro-btn zro-btn--small zro-btn--primary"
+                    href={tpeasyOpenUrl(id, step('tpeasy').externalUrl)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Abrir no TPeasy
+                  </a>
+                  <a
+                    className="zro-btn zro-btn--small zro-btn--ghost"
+                    href={`/api/v1/projects/${id}/tpeasy/script`}
+                    title="Backup do TPeasy (Ajustes › Backup › Importar)"
+                  >
+                    Baixar backup
+                  </a>
+                </div>
               ) : (
                 <p className="zro-faint">Salve um roteiro primeiro.</p>
               )

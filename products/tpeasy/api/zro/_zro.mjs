@@ -15,8 +15,12 @@ import { createCipheriv, createDecipheriv, createHash, createHmac, createPublicK
 export const EMISSOR_PADRAO = 'https://absolutezro.com'
 // offline_access: o refresh token deixa o app reler o perfil (nome, e-mail, foto) a cada abertura
 // zro.ia: a Z (a IA do ecossistema) conversa com a pessoa no painel inicial, pelo repasse /api/zro/ia
-export const ESCOPOS = 'openid email profile org offline_access zro.ia'
-export const SITE_OFICIAL = 'https://tpeasy.vercel.app'
+// tpeasy.roteiros: "Abrir no TPeasy" lê o roteiro do projeto da Absolute ZRO, pelo /api/zro/roteiro
+export const ESCOPOS = 'openid email profile org offline_access zro.ia tpeasy.roteiros'
+// Endereço oficial desde 29/10/2026 (ADR 0025). O antigo segue valendo com o próprio retorno: os roteiros ficam no
+// aparelho, por endereço, e quem instalou pelo tpeasy.vercel.app não pode perder nada.
+export const SITE_OFICIAL = 'https://tpeasy.absolutezro.com'
+export const SITE_ANTIGO = 'https://tpeasy.vercel.app'
 export const VOLTA_PADRAO = '/app/'
 /** Id do TPeasy na lista `zro_products` do HUB. Fora da lista: entra, mas a conta fica sem acesso ao app. */
 export const PRODUTO = 'tpeasy'
@@ -52,7 +56,8 @@ export function configurado() {
 export function origemDoPedido(req) {
   const bruto = String(req.headers['x-forwarded-host'] || req.headers.host || '')
   const host = bruto.split(',')[0].trim().toLowerCase()
-  if (host === 'tpeasy.vercel.app') return SITE_OFICIAL
+  if (host === 'tpeasy.absolutezro.com') return SITE_OFICIAL
+  if (host === 'tpeasy.vercel.app') return SITE_ANTIGO
   if (/^(localhost|127\.0\.0\.1)(:\d{1,5})?$/.test(host)) return `http://${host}`
   return null
 }
