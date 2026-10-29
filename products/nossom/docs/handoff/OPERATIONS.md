@@ -90,7 +90,7 @@ Os links de instalação, ícones e imagem social precisam responder sem autenti
 
 ## RunPod Serverless
 
-O worker é uma imagem Docker externa à Vercel. O workflow manual `.github/workflows/nossom-restoration.yml` (na raiz do repositório AbsoluteZRO) publica tag imutável `ghcr.io/victorbarrosoc-hub/nossom-restoration:<SHA>`. A alternativa usada pelo titular é Deploy from GitHub/Dockerfile na RunPod; confirme o mecanismo realmente conectado no painel. O repositório é público; o pacote GHCR tem configuração de acesso própria.
+O worker é uma imagem Docker externa à Vercel. O workflow manual `.github/workflows/nossom-restoration.yml` (na raiz do repositório AbsoluteZRO) publica tag imutável `ghcr.io/victorbarrosoc-hub/absolutezro-nossom-worker:<SHA>`. O pacote antigo `nossom-restoration` pertence ao repositório `nossom` arquivado e recusa escrita deste repositório (`permission_denied: write_package`, 29/10/2026); por isso o nome novo. Em produção (desde 29/10/2026) o endpoint é o `nossom-v2`, Deploy from GitHub ligado a `victorbarrosoc-hub/AbsoluteZRO`, branch `main`, Dockerfile `products/nossom/Dockerfile`, contexto `products/nossom`, 24 GB, 1 worker, disco de 40 GB e `NOSSOM_STORAGE_ORIGIN` nas variáveis: cada merge na `main` remonta o worker. O endpoint antigo `nossom` estava ligado ao repositório `nossom` arquivado, que a RunPod não deixa trocar; fica parado até ser apagado. O repositório é público; o pacote GHCR tem configuração de acesso própria.
 
 Configuração de referência: Queue/Serverless Flex, mínimo 0, máximo 1, concorrência 1 por worker, idle timeout de 15 s. **Isso é orientação, não prova dos valores atuais.** Não aumente workers nem deixe GPU ativa permanentemente para mascarar um problema de startup.
 

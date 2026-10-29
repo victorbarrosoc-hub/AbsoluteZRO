@@ -1,4 +1,4 @@
-import type { FFmpeg } from '@ffmpeg/ffmpeg';
+import type { FFmpeg, FFFSType } from '@ffmpeg/ffmpeg';
 import {
   treatmentFilter,
   strengthValue,
@@ -13,8 +13,30 @@ import { denoiseVoice, cancelNeural, type RestorationAnalysis } from './neural';
 import { freshBroadcast } from './broadcast';
 import { renderEffect } from './effects';
 import { clippingRepairFilter, denseClipping } from './declip';
-export const MAX_BYTES = 100 * 1024 * 1024;
+import { CLOUD_MAX_BYTES } from './restoration';
+export const MAX_BYTES = 500 * 1024 * 1024;
+/** Videos are read in place (WORKERFS), never copied whole into memory. */
+export const MAX_VIDEO_BYTES = 2 * 1024 * 1024 * 1024;
+/** The rebuilt video is assembled in memory; above this, export the audio instead. */
+export const MAX_REMUX_BYTES = 1024 * 1024 * 1024;
 export const MAX_DURATION = 600;
+const videoExtension = /\.(mp4|m4v|mov|webm|mkv)$/i;
+/** Container that may carry a picture. The MIME type wins; the extension only when it is missing. */
+export function isVideoFile(file: Blob & { name?: string }) {
+  return file.type ? file.type.startsWith('video/') : videoExtension.test(file.name ?? '');
+}
+const mountPoint = '/source';
+/** Mount a Blob for FFmpeg to read directly from the browser, without copying it into WASM memory. */
+async function withMountedSource<T>(ff: FFmpeg, blob: Blob, task: (path: string) => Promise<T>) {
+  await ff.createDir(mountPoint).catch(() => {});
+  await ff.mount('WORKERFS' as FFFSType, { blobs: [{ name: 'input', data: blob }] }, mountPoint);
+  try {
+    return await task(mountPoint + '/input');
+  } finally {
+    await ff.unmount(mountPoint).catch(() => {});
+    await ff.deleteDir(mountPoint).catch(() => {});
+  }
+}
 export type Measurements = { lufs: number | null; truePeak: number | null; lra: number | null };
 export type AudioInfo = {
   duration: number;
@@ -102,8 +124,8 @@ async function exclusive<T>(task: () => Promise<T>): Promise<T> {
     inUse = false;
   }
 }
-async function execChecked(ff: FFmpeg, args: string[]) {
-  const code = await ff.exec(args, 180000);
+async function execChecked(ff: FFmpeg, args: string[], timeout = 180000) {
+  const code = await ff.exec(args, timeout);
   if (code !== 0)
     throw new Error(
       code === 1
@@ -331,39 +353,48 @@ export async function measure(blob: Blob, onStatus?: (s: string) => void): Promi
 }
 export async function importAudio(file: File, onStatus?: (s: string) => void) {
   const epoch = cancellationEpoch;
+  const video = isVideoFile(file);
   if (file.size === 0) throw new Error('Este arquivo está vazio.');
-  if (file.size > MAX_BYTES) throw new Error('O limite por arquivo é de 100 MB.');
+  if (file.size > (video ? MAX_VIDEO_BYTES : MAX_BYTES))
+    throw new Error(video ? 'O limite por vídeo é de 2 GB.' : 'O limite por áudio é de 500 MB.');
   let buffer: AudioBuffer;
-  try {
-    buffer = await decode(file);
-  } catch {
+  let hasPicture = false;
+  const extract = async () => {
     checkCancellation(epoch);
     const converted = await exclusive(async () => {
       const ff = await getEngine(onStatus);
-      onStatus?.('Extraindo o áudio…');
-      await ff.writeFile('upload', new Uint8Array(await file.arrayBuffer()));
+      onStatus?.(video ? 'Extraindo o áudio do vídeo…' : 'Extraindo o áudio…');
+      const logs: string[] = [];
+      const listener = ({ message }: { message: string }) => logs.push(message);
+      ff.on('log', listener);
       try {
-        await execChecked(ff, [
-          '-i',
-          'upload',
-          '-vn',
-          '-t',
-          '601',
-          '-ar',
-          '48000',
-          '-c:a',
-          'pcm_f32le',
-          'import.wav',
-        ]);
-        const bytes = await ff.readFile('import.wav');
-        return new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'audio/wav' });
+        return await withMountedSource(ff, file, async (path) => {
+          await execChecked(
+            ff,
+            ['-i', path, '-vn', '-t', '601', '-ar', '48000', '-c:a', 'pcm_f32le', 'import.wav'],
+            600000,
+          );
+          // A cover image inside an audio file is a video stream too; it is not a picture to keep.
+          hasPicture = logs.some(
+            (line) => /Stream #\d+:\d+.*: Video:/.test(line) && !/attached pic/.test(line),
+          );
+          const bytes = await ff.readFile('import.wav');
+          return new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'audio/wav' });
+        });
       } finally {
-        await ff.deleteFile('upload').catch(() => {});
+        ff.off('log', listener);
         await ff.deleteFile('import.wav').catch(() => {});
       }
     });
-    buffer = await decode(converted);
-  }
+    return decode(converted);
+  };
+  if (video) buffer = await extract();
+  else
+    try {
+      buffer = await decode(file);
+    } catch {
+      buffer = await extract();
+    }
   checkCancellation(epoch);
   if (buffer.duration > MAX_DURATION)
     throw new Error('O limite desta versão é de 10 minutos por arquivo.');
@@ -375,7 +406,89 @@ export async function importAudio(file: File, onStatus?: (s: string) => void) {
     info = inspect(buffer),
     metrics = await measure(blob, onStatus);
   checkCancellation(epoch);
-  return { blob, info, metrics };
+  return { blob, info, metrics, video: hasPicture };
+}
+/**
+ * What the GPU receives: the original when it is a small audio file; otherwise lossless
+ * FLAC of the imported audio, so a video never travels and large files fit the upload.
+ */
+export async function cloudSource(original: Blob, imported: Blob, peakDb: number) {
+  if (!isVideoFile(original) && original.size <= CLOUD_MAX_BYTES) return original;
+  return exclusive(async () => {
+    const ff = await getEngine();
+    await ff.writeFile('cloud.wav', new Uint8Array(await imported.arrayBuffer()));
+    try {
+      // Integer FLAC has no headroom above full scale; lower float overs instead of clipping them.
+      const peak = 10 ** (peakDb / 20);
+      const gain = peak > 0.999 ? ['-af', `volume=${(0.999 / peak).toFixed(6)}`] : [];
+      for (const format of ['s32', 's16']) {
+        await execChecked(
+          ff,
+          ['-y', '-i', 'cloud.wav', ...gain, '-ar', '44100', '-sample_fmt', format]
+            .concat(format === 's32' ? ['-bits_per_raw_sample', '24'] : [])
+            .concat(['-c:a', 'flac', 'cloud.flac']),
+          600000,
+        );
+        const data = (await ff.readFile('cloud.flac')) as Uint8Array<ArrayBuffer>;
+        if (data.byteLength <= CLOUD_MAX_BYTES) return new Blob([data], { type: 'audio/flac' });
+      }
+      throw new Error('Este áudio passa de 100 MB mesmo comprimido. Use um trecho menor.');
+    } finally {
+      await ff.deleteFile('cloud.wav').catch(() => {});
+      await ff.deleteFile('cloud.flac').catch(() => {});
+    }
+  });
+}
+const videoTypes: Record<string, string> = {
+  mp4: 'video/mp4',
+  m4v: 'video/mp4',
+  mov: 'video/quicktime',
+  webm: 'video/webm',
+  mkv: 'video/x-matroska',
+};
+/** Put a treated soundtrack back under the original picture, copying the video stream untouched. */
+export async function muxVideo(original: Blob, originalName: string, audio: Blob) {
+  if (original.size > MAX_REMUX_BYTES)
+    throw new Error(
+      'Vídeos acima de 1 GB ainda não são remontados aqui. Baixe o WAV e junte no editor.',
+    );
+  const extension = originalName.match(videoExtension)?.[1].toLowerCase() ?? 'mp4';
+  const webm = extension === 'webm';
+  const output = `mux-out.${extension}`;
+  return exclusive(async () => {
+    const ff = await getEngine();
+    await ff.writeFile('mux-audio.wav', new Uint8Array(await audio.arrayBuffer()));
+    try {
+      await withMountedSource(ff, original, (path) =>
+        execChecked(
+          ff,
+          [
+            '-i',
+            path,
+            '-i',
+            'mux-audio.wav',
+            '-map',
+            '0:v:0',
+            '-map',
+            '1:a:0',
+            '-map_metadata',
+            '0',
+            '-c:v',
+            'copy',
+            ...(webm ? ['-c:a', 'libopus', '-b:a', '192k'] : ['-c:a', 'aac', '-b:a', '256k']),
+            ...(webm || extension === 'mkv' ? [] : ['-movflags', '+faststart']),
+            output,
+          ],
+          600000,
+        ),
+      );
+      const data = (await ff.readFile(output)) as Uint8Array<ArrayBuffer>;
+      return new Blob([data], { type: videoTypes[extension] ?? 'video/mp4' });
+    } finally {
+      await ff.deleteFile('mux-audio.wav').catch(() => {});
+      await ff.deleteFile(output).catch(() => {});
+    }
+  });
 }
 export type ProcessOptions = {
   operation: Operation;

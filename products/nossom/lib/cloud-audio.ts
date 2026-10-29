@@ -1,6 +1,38 @@
 import { inspect, decode, measure } from './audio';
-import { restorationD, vocalSeparation, type CloudPreset, validCloudReport } from './restoration';
+import {
+  isCloudPreset,
+  isVoiceToolPreset,
+  restorationD,
+  singingSeparation,
+  stemSeparation,
+  transcription,
+  validStemsReport,
+  validTranscriptReport,
+  vocalSeparation,
+  voiceIsolator,
+  type CloudPreset,
+  validCloudReport,
+  validJobReport,
+} from './restoration';
+import { parseTranscript } from './transcript';
 import type { AudioUsage } from './usage';
+
+const engines: Record<CloudPreset, string> = {
+  [restorationD.id]: 'Resemble Enhance · NOSSOM Restore D',
+  [vocalSeparation.id]: 'Demucs · HTDemucs vocals',
+  [voiceIsolator.id]: 'Mel-Band RoFormer + MossFormer2 SE 48K',
+  [singingSeparation.id]: 'Mel-Band RoFormer · vocals',
+  [transcription.id]: 'Whisper large-v3-turbo',
+  [stemSeparation.id]: 'Mel-Band RoFormer + HTDemucs 6s',
+};
+const runningLabels: Record<CloudPreset, string> = {
+  [restorationD.id]: 'Melhorando sua voz…',
+  [vocalSeparation.id]: 'Separando a voz dos instrumentos…',
+  [voiceIsolator.id]: 'Isolando sua voz…',
+  [singingSeparation.id]: 'Separando a voz dos instrumentos…',
+  [transcription.id]: 'Escrevendo o que foi dito…',
+  [stemSeparation.id]: 'Separando voz, bateria, baixo e guitarra…',
+};
 
 export class CloudCancelled extends Error {
   constructor(message = 'Cancelamento solicitado. O original foi preservado.') {
@@ -19,7 +51,8 @@ async function api(body: Record<string, unknown>, signal?: AbortSignal) {
   return data;
 }
 export async function restoreCloud(
-  source: Blob,
+  /** Resolved only when bytes must be sent, so resuming a queued job encodes nothing. */
+  getSource: () => Promise<Blob>,
   duration: number,
   options: {
     resumeId?: string;
@@ -33,6 +66,7 @@ export async function restoreCloud(
 ) {
   let id: string | undefined;
   let preset = options.preset ?? restorationD.id;
+  let source: Blob | undefined;
   try {
     let prepared;
     if (options.resumeId) {
@@ -44,12 +78,14 @@ export async function restoreCloud(
       });
       const existing = await response.json();
       if (!response.ok) throw new Error(existing.error || 'Não foi possível retomar o tratamento.');
-      if (existing.preset === vocalSeparation.id || existing.preset === restorationD.id)
-        preset = existing.preset;
-      if (existing.status === 'uploading')
+      if (isCloudPreset(existing.preset)) preset = existing.preset;
+      if (existing.status === 'uploading') {
+        source = await getSource();
         prepared = await api({ action: 'resume-upload', id }, options.signal);
+      }
     } else {
       options.onStatus('Preparando o envio privado para restauração…');
+      source = await getSource();
       prepared = await api({ action: 'prepare', bytes: source.size, duration }, options.signal);
       id = prepared.id;
       options.onJob(id!);
@@ -61,7 +97,7 @@ export async function restoreCloud(
           method: 'PUT',
           signal: options.signal,
           headers: { 'Content-Type': 'application/octet-stream' },
-          body: source.slice(i * prepared.partBytes, (i + 1) * prepared.partBytes),
+          body: source!.slice(i * prepared.partBytes, (i + 1) * prepared.partBytes),
         });
         if (!response.ok)
           throw new Error('Não foi possível enviar o áudio. Seu original foi preservado.');
@@ -93,9 +129,7 @@ export async function restoreCloud(
       const waiting = seconds >= 60 ? ` há ${Math.floor(seconds / 60)}min ${seconds % 60}s` : '';
       options.onStatus(
         status?.status === 'running'
-          ? preset === vocalSeparation.id
-            ? 'Separando a voz dos instrumentos…'
-            : 'Melhorando sua voz…'
+          ? runningLabels[preset]
           : status?.status === 'submitting'
             ? 'Aguardando confirmação do pedido. O processamento ainda não foi confirmado.'
             : `Seu áudio está na fila${waiting}. O tratamento ainda não começou.`,
@@ -117,14 +151,20 @@ export async function restoreCloud(
     if (
       !status ||
       status.status !== 'completed' ||
-      !validCloudReport(status.report) ||
+      !validJobReport(status.report) ||
       status.report.preset !== preset ||
       !Array.isArray(status.downloadUrls)
     )
       throw new Error(
         'A restauração ainda não foi concluída. Consulte o tratamento antes de iniciar outro.',
       );
-    options.onStatus('Recebendo o áudio tratado…');
+    options.onStatus(
+      preset === transcription.id
+        ? 'Recebendo o texto…'
+        : preset === stemSeparation.id
+          ? 'Recebendo as faixas…'
+          : 'Recebendo o áudio tratado…',
+    );
     const parts: Blob[] = [];
     let receivedBytes = 0;
     for (const [index, url] of (status.downloadUrls as string[]).entries()) {
@@ -137,6 +177,38 @@ export async function restoreCloud(
       receivedBytes += part.size;
       options.onProgress(Math.round((100 * receivedBytes) / status.report.totalBytes));
     }
+    if (validTranscriptReport(status.report)) {
+      let transcript;
+      try {
+        transcript = parseTranscript(JSON.parse(await new Blob(parts).text()), duration);
+      } catch {
+        transcript = null;
+      }
+      if (!transcript || transcript.words.length !== status.report.words)
+        throw new Error('O texto recebido não corresponde a este áudio.');
+      options.onProgress(100);
+      return { kind: 'transcript' as const, id: id!, transcript };
+    }
+    if (validStemsReport(status.report)) {
+      options.onStatus('Conferindo cada faixa…');
+      options.onProgress(-1);
+      const pack = new Blob(parts);
+      const files: Blob[] = [];
+      let offset = 0;
+      for (const stem of status.report.stems) {
+        const file = new Blob([pack.slice(offset, offset + stem.bytes)], { type: 'audio/flac' });
+        offset += stem.bytes;
+        const head = new TextDecoder().decode(await file.slice(0, 4).arrayBuffer());
+        // Decoded one at a time: the browser keeps only one stem in memory while checking.
+        const buffer = head === 'fLaC' ? await decode(file).catch(() => null) : null;
+        if (!buffer || Math.abs(buffer.duration - duration) > 0.1 || buffer.numberOfChannels !== 2)
+          throw new Error('Uma das faixas chegou incompleta. Seu original foi preservado.');
+        files.push(file);
+      }
+      options.onProgress(100);
+      return { kind: 'stems' as const, id: id!, files, gainDb: status.report.gainDb };
+    }
+    if (!validCloudReport(status.report)) throw new Error('O resultado não é um áudio válido.');
     const blob = new Blob(parts, { type: 'audio/wav' });
     options.onStatus('Verificando o resultado e preparando seus ajustes…');
     options.onProgress(-1);
@@ -151,20 +223,18 @@ export async function restoreCloud(
     options.onProgress(100);
     // Release only after the caller has saved the returned version locally.
     return {
+      kind: 'audio' as const,
       id: id!,
       blob,
       info,
       metrics,
       processing: {
-        engine:
-          status.report.preset === vocalSeparation.id
-            ? 'Demucs · HTDemucs vocals'
-            : 'Resemble Enhance · NOSSOM Restore D',
+        engine: engines[status.report.preset],
         strength: 100,
         noiseFloor: info.noiseFloor ?? -60,
         mode: 'cloud',
         automatic: status.report.preset === restorationD.id,
-        ...(status.report.preset === vocalSeparation.id
+        ...(isVoiceToolPreset(status.report.preset)
           ? { vocalSeparation: status.report }
           : { cloudRestoration: { ...restorationD, ...status.report } }),
       },
