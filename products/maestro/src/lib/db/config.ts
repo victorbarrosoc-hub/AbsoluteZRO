@@ -44,6 +44,24 @@ export function normalizarUrl(raw: string): string {
   return url.toString();
 }
 
+/**
+ * Endereço para o app em execução. O pooler do Supabase na porta 5432 é o modo sessão: cada função da Vercel prende
+ * conexões até o limite do pool (15) e o resto recebe EMAXCONNSESSION. O app usa o modo transação (6543, mesmo
+ * usuário e senha); as migrações continuam com o endereço como veio.
+ */
+export function urlDeExecucao(raw: string): string {
+  try {
+    const u = new URL(raw);
+    if (u.hostname.endsWith(".pooler.supabase.com") && (u.port === "5432" || u.port === "")) {
+      u.port = "6543";
+      return u.toString();
+    }
+  } catch {
+    // endereço inválido: o driver avisa
+  }
+  return raw;
+}
+
 /** Nome curto e seguro do banco, para mostrar na tela e no log (sem senha). */
 export function databaseLabel(url: string): string {
   try {
