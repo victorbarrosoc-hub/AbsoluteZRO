@@ -307,7 +307,7 @@ test('sua conta: nome, foto, pedido de upgrade e acessos', async ({ page }) => {
   await page.goto('/perfil/acessos')
   await expect(page.getByRole('heading', { name: 'Org conta' })).toBeVisible()
   // Plano grátis lista as oito, mas só as abertas contam como acesso (gate de lançamento, ADR 0023): as três lançadas e
-  // o Maestro em Beta grátis (0027).
+  // o Maestro em Beta (0027).
   await expect(page.locator('.access-org__apps li.is-on')).toHaveCount(4)
 })
 

@@ -31,11 +31,11 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
 - **Acesso**: `temAcesso()` em `src/lib/auth/acesso.ts` é o ÚNICO ponto de decisão: `zro_release.maestro` released
   ou allowed (sem a claim = fechado) **e** `maestro` em `zro_products`. As duas claims ficam na sessão e são relidas
   no `/eu`. **Hoje o Maestro está fechado** (migration `0024` do HUB, `product_release` em `development`: só a lista
-  de acesso entra). **Lançamento em Beta grátis** (ADR 0027 do HUB, no OK final do titular;
+  de acesso entra). **Lançamento em Beta** (ADR 0027 do HUB, no OK final do titular;
   `docs/operations/lancamento-maestro.md`): a migration `0027` abre o gate (`public_beta`, todos os canais) e põe o
   Maestro no grátis, no Completo e no Pro (o grátis nunca leva `maestro.marca_propria`); a vitrine vira com
   `MAESTRO_LANCADO` em `src/lib/site.ts` (`node scripts/lancamento-maestro.mjs --abrir` na raiz, junto com as listas
-  da família dos outros apps). A página inicial lançada mostra "Beta grátis", "Criar conta grátis"/"Entrar com
+  da família dos outros apps). A página inicial lançada mostra "Beta" (sem "grátis": posicionamento da marca, 29/10/2026), "Criar conta"/"Entrar com
   Absolute ZRO" (`CRIAR_CONTA_ZRO`/`ENTRAR_ZRO`, direto no login único), "No celular, como app." e, só com instalador
   publicado no catálogo da central do HUB, o app de computador (`src/lib/desktop.ts`; `MAESTRO_CATALOGO_DESKTOP=desligado`
   no e2e). A lista de espera fica no código, sem aparecer. A vitrine nunca abre nada: quem entra é o gate. Páginas usam `exigirAcessoNaPagina()` (cada página

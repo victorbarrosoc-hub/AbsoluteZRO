@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Lançamento do Maestro em Beta grátis (ADR 0027, docs/operations/lancamento-maestro.md): as chaves que ficam no código
+// Lançamento do Maestro em Beta (ADR 0027, docs/operations/lancamento-maestro.md): as chaves que ficam no código
 // dos apps (listas fixas da família e a vitrine do Maestro). O HUB não está aqui: ele lê o gate do banco (migration
 // 0027) e mostra o Maestro sozinho. Uso:
 //   node scripts/lancamento-maestro.mjs              mostra o estado de cada chave (não muda nada)
@@ -18,7 +18,7 @@ const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 /** Cada chave: arquivo, tipo e quantos blocos HTML o arquivo tem. */
 export const CHAVES = [
-  { arquivo: 'products/maestro/src/lib/site.ts', tipo: 'js', nome: 'MAESTRO_LANCADO', o_que: 'Maestro: página inicial em Beta grátis' },
+  { arquivo: 'products/maestro/src/lib/site.ts', tipo: 'js', nome: 'MAESTRO_LANCADO', o_que: 'Maestro: página inicial em Beta' },
   { arquivo: 'products/sobedesce/public/components/sidebar.js', tipo: 'js', nome: 'MAESTRO_NA_FAMILIA', o_que: 'SOBEDESCE (computador): família' },
   {
     arquivo: 'products/sobedesce/web/public/app/components/settings.js',

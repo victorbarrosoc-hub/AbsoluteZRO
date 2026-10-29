@@ -51,7 +51,7 @@ export const PLATAFORMAS: Record<string, { nome: string; faz: string[] }> = {
   maestro: {
     nome: 'Maestro (maestro.absolutezro.com)',
     faz: [
-      'Beta grátis para toda conta Absolute ZRO: a gestão da produtora num lugar só: funil de pedidos e CRM de clientes, orçamentos com contrato e aceite online, financeiro, freelas, equipamento, controle de pauta (Quadro em 8 colunas), agenda e aprovação do cliente por link sem conta, com projetos ligados ao projeto da Absolute ZRO.',
+      'Em Beta para toda conta Absolute ZRO: a gestão da produtora num lugar só: funil de pedidos e CRM de clientes, orçamentos com contrato e aceite online, financeiro, freelas, equipamento, controle de pauta (Quadro em 8 colunas), agenda e aprovação do cliente por link sem conta, com projetos ligados ao projeto da Absolute ZRO.',
       'Entra com a mesma conta (maestro.absolutezro.com › Entrar com Absolute ZRO). No celular vira app: no Safari, Compartilhar › Adicionar à Tela de Início; Ajustes do Maestro mostra o caminho.',
       'A Z lê o dia da produtora no Maestro (ver_maestro): retornos de hoje, cards vencendo, peças com o cliente, contagens e, para administração e gestão, meta, faturado, caixa, a receber e a pagar. Só leitura: criar pedido, cliente ou despesa e mexer no Quadro é no próprio Maestro.',
     ],

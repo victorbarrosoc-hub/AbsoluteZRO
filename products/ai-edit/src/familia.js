@@ -3,7 +3,7 @@
 
 // Maestro na família (lançamento em Beta grátis, docs/operations/lancamento-maestro.md): fica de fora até o titular
 // abrir; vira com `node scripts/lancamento-maestro.mjs --abrir` (e volta com --fechar).
-const MAESTRO_NA_FAMILIA = false
+const MAESTRO_NA_FAMILIA = true
 
 export const FAMILIA = [
   { id: 'hub', nome: 'Absolute ZRO', href: 'https://absolutezro.com', icone: 'absolute-zro', papel: 'Sua conta e seus projetos' },

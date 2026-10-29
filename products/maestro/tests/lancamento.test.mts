@@ -1,4 +1,4 @@
-// Lançamento em Beta grátis (ADR 0027 do HUB): o app de computador só aparece com instalador publicado no catálogo
+// Lançamento em Beta (ADR 0027 do HUB): o app de computador só aparece com instalador publicado no catálogo
 // da Absolute ZRO (nada de botão para arquivo que não existe), o manifesto do app na Tela de Início e a chave da vitrine.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -108,7 +108,7 @@ describe("app na Tela de Início", () => {
 
   test("a vitrine do lançamento é uma chave só, e a descrição acompanha", () => {
     assert.equal(typeof site.MAESTRO_LANCADO, "boolean");
-    assert.match(site.SITE_DESCRICAO, site.MAESTRO_LANCADO ? /Beta grátis\.$/ : /Em teste fechado, por convite\.$/);
+    assert.match(site.SITE_DESCRICAO, site.MAESTRO_LANCADO ? /Em Beta\.$/ : /Em teste fechado, por convite\.$/);
     assert.equal(site.ENTRAR_ZRO, "/api/zro/entrar?volta=%2Fapp");
     assert.equal(site.CRIAR_CONTA_ZRO, "/api/zro/entrar?modo=criar&volta=%2Fapp");
   });

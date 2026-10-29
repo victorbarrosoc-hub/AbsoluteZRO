@@ -20,7 +20,7 @@ const FAMILIA = [
 ]
 // Maestro na família (lançamento em Beta grátis, docs/operations/lancamento-maestro.md): fica de fora até o titular
 // abrir; vira com `node scripts/lancamento-maestro.mjs --abrir` (e volta com --fechar).
-const MAESTRO_NA_FAMILIA = false
+const MAESTRO_NA_FAMILIA = true
 // em ordem alfabética, logo depois da Absolute ZRO
 if (MAESTRO_NA_FAMILIA) FAMILIA.splice(1, 0, { href: 'https://maestro.absolutezro.com', nome: 'Maestro', img: 'icons/familia/maestro.svg' })
 

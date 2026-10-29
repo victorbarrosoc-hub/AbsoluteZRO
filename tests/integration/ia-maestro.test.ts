@@ -131,7 +131,7 @@ describe('ver_maestro: a Z lendo o Maestro', () => {
     expect(m.chamadas[0]!.claims.jti).not.toBe(m.chamadas[1]!.claims.jti)
   })
 
-  it('Beta grátis (0027): conta comum no plano grátis, fora de qualquer lista, lê o Maestro', async () => {
+  it('Beta (0027): conta comum no plano grátis, fora de qualquer lista, lê o Maestro', async () => {
     const o = await newOrgWithOwner(db, 'maestro-beta', { freePlan: true })
     const m = maestroFalso({ status: 200, corpo: RESUMO })
     const r = await maestroParaIa(db, { actor: { auth: o.auth, userId: o.userId, orgId: o.orgId } }, 'resumo', m.cfg)

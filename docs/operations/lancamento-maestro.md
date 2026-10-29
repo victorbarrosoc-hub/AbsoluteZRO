@@ -1,7 +1,11 @@
-# Lançamento do Maestro em Beta grátis — o que vira no dia
+# Lançamento do Maestro em Beta — o que vira no dia
 
 Decisão em [ADR 0027](../decisions/0027-lancamento-maestro-beta-gratis.md). Nada disto roda antes do **OK final do
 titular**. Tudo é reversível sem apagar dado.
+
+**OK dado em 29/10/2026** (junto com o Relay, sem e-mail nenhum). Sem "grátis" nos textos (posicionamento da marca).
+O app de computador fica para depois: a 0027 abre só web, api e sso (desktop e download fechados) até o pendente
+estar pronto e ligado nas páginas e nos programas; abrir depois é uma migration nova.
 
 ## Antes (no ramo, já pronto)
 

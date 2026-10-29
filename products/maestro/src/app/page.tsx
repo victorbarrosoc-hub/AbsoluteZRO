@@ -64,7 +64,7 @@ function palavras(texto: string, de: number) {
 
 /**
  * Página inicial pública do Maestro (plano v2 §10), no padrão das irmãs: o símbolo desenhando a pauta, o produto real em
- * aparelhos, só o que existe, e a porta. Lançado (`MAESTRO_LANCADO`, Beta grátis para toda conta Absolute ZRO):
+ * aparelhos, só o que existe, e a porta. Lançado (`MAESTRO_LANCADO`, Beta para toda conta Absolute ZRO):
  * "Criar conta" e "Entrar com Absolute ZRO" direto no login único, o app no celular e, se houver instalador publicado,
  * o de computador. Antes do lançamento: "Em teste fechado", "Quero acesso" (lista de espera) e "Entrar" para quem já
  * está na lista do HUB. Quem entra é sempre o gate do HUB (temAcesso), nunca esta página.
@@ -84,7 +84,7 @@ export default async function Inicio() {
   );
   const criarConta = dentro ? null : (
     <a className="glass-btn glass-btn--ink" href={CRIAR_CONTA_ZRO}>
-      Criar conta grátis
+      Criar conta
     </a>
   );
   return (

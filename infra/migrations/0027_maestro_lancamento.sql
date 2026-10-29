@@ -1,11 +1,12 @@
--- Absolute ZRO HUB · 0027 · o Maestro abre para todos em Beta grátis (decisão do titular; vale quando ele der o OK final).
+-- Absolute ZRO HUB · 0027 · o Maestro abre para todos em Beta (OK do titular, 29/10/2026, sem e-mail).
 -- Substitui a proposta antiga `0022_maestro_aberto.sql` (nunca publicada; o número foi usado por outra migration).
 -- Checklist e reversão: docs/operations/lancamento-maestro.md · ADR 0027.
 --
 -- - Catálogo: stage 'beta' (selo "Beta"), endereço público, início do login único e a descrição de agora.
--- - Gate (0018): 'public_beta' com web, api, sso, desktop e download abertos ao público. Desktop e download abrem
---   já porque o app de computador está a caminho; enquanto não houver instalador publicado, o HUB não mostra
---   download nenhum (lib/downloads.ts só lista o que existe) e a página do Maestro esconde a área.
+-- - Gate (0018): 'public_beta' com web, api e sso abertos ao público. Desktop e download ficam FECHADOS: o titular
+--   pediu o app de computador só depois que o pendente estiver pronto e ligado nas páginas e nos programas
+--   (29/10/2026). A central mostra o app de computador "Em desenvolvimento" e a página do Maestro esconde a área;
+--   abrir depois é uma migration nova com desktop/download = true.
 -- - Planos: o Maestro entra no grátis vigente e nos pagos que dão todas as ferramentas (Completo e Pro, mensal e
 --   anual), com os mesmos créditos de IA que o plano já dá às outras ferramentas (como a 0013 fez com AEON e Revela).
 --   Sem cobrança: o Stripe não está configurado e o grátis é a porta. O avulso do Maestro não existe.
@@ -24,7 +25,7 @@ update zro.products
  where id = 'maestro' and stage in ('coming_soon', 'beta');
 
 insert into zro.product_release (product_id, state, web, desktop, api, download, sso, note)
-select p.id, 'public_beta', true, true, true, true, true, 'Beta grátis para toda conta Absolute ZRO (lançamento do Maestro, ADR 0027).'
+select p.id, 'public_beta', true, false, true, false, true, 'Beta para toda conta Absolute ZRO (lançamento do Maestro, ADR 0027); app de computador depois.'
 from zro.products p where p.id = 'maestro'
 on conflict (product_id) do update
   set state = excluded.state, web = excluded.web, desktop = excluded.desktop, api = excluded.api,

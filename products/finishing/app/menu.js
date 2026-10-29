@@ -34,7 +34,7 @@ const FAMILIA = [
 ]
 // Maestro na família (lançamento em Beta grátis, docs/operations/lancamento-maestro.md): fica de fora até o titular
 // abrir; vira com `node scripts/lancamento-maestro.mjs --abrir` (e volta com --fechar).
-const MAESTRO_NA_FAMILIA = false
+const MAESTRO_NA_FAMILIA = true
 // em ordem alfabética, como em todas as plataformas: entre o Carro do Freela e o Nossom
 if (MAESTRO_NA_FAMILIA) FAMILIA.splice(3, 0, { href: 'https://maestro.absolutezro.com', nome: 'Maestro', img: 'marca/familia/maestro.svg' })
 

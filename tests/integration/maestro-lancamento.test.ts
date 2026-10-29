@@ -1,4 +1,4 @@
-// Lançamento do Maestro em Beta grátis (migration 0027, ADR 0027): o gate abre para qualquer conta, em todos os
+// Lançamento do Maestro em Beta (migration 0027, ADR 0027): o gate abre para qualquer conta, em todos os
 // canais; o grátis, o Completo e o Pro trazem o Maestro inteiro; o sinal da marca própria nunca vem do grátis; e
 // rodar a migration de novo não duplica nada.
 import { readFileSync } from 'node:fs'
@@ -19,19 +19,19 @@ const sys = <T>(fn: (tx: Tx) => Promise<T>) => db.asSystem('teste', fn)
 const MIGRATION = readFileSync(new URL('../../infra/migrations/0027_maestro_lancamento.sql', import.meta.url), 'utf8')
 const CANAIS = ['web', 'desktop', 'api', 'download', 'sso'] as const
 
-describe('Maestro em Beta grátis (0027)', () => {
-  it('catálogo e gate: beta, endereço público, public_beta com os cinco canais abertos a qualquer um', async () => {
+describe('Maestro em Beta (0027)', () => {
+  it('catálogo e gate: beta, endereço público, public_beta com web, api e sso abertos a qualquer um (computador e download ficam para depois)', async () => {
     const [p] = await db.sql`select stage, external_url, sso_start_url, description from zro.products where id = 'maestro'`
     expect(p).toMatchObject({
       stage: 'beta',
       external_url: 'https://maestro.absolutezro.com',
       sso_start_url: 'https://maestro.absolutezro.com/api/zro/entrar',
     })
-    expect(p!.description).toMatch(/^Beta grátis\./)
+    expect(p!.description).toMatch(/^A gestão da sua produtora/)
     expect(p!.description).not.toMatch(/desenvolvimento|fechado/i)
     const s = await sys((tx) => releaseState(tx, { fresh: true }))
-    expect(s.maestro).toMatchObject({ state: 'public_beta', open: true, channels: { web: true, desktop: true, api: true, download: true, sso: true } })
-    for (const ch of CANAIS) expect(await sys((tx) => releaseAllows(tx, 'maestro', null, ch)), ch).toBe(true)
+    expect(s.maestro).toMatchObject({ state: 'public_beta', open: true, channels: { web: true, desktop: false, api: true, download: false, sso: true } })
+    for (const ch of CANAIS) expect(await sys((tx) => releaseAllows(tx, 'maestro', null, ch)), ch).toBe(ch !== 'desktop' && ch !== 'download')
   })
 
   it('conta comum, só com o grátis e fora de qualquer lista: contratada, autorizada e no login único', async () => {

@@ -14,15 +14,15 @@ async function entrar(context: BrowserContext, baseURL: string) {
 }
 
 test.describe("página inicial", () => {
-  test("mostra a frase, o selo (Beta grátis ou teste fechado), o produto real e as duas portas", async ({ page }) => {
+  test("mostra a frase, o selo (Beta ou teste fechado), o produto real e as duas portas", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveTitle("Maestro · A produtora inteira num lugar só.");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(/A produtora\s+inteira\s+num lugar só\./);
     if (MAESTRO_LANCADO) {
-      // Lançado: "Criar conta grátis" e "Entrar com Absolute ZRO" direto no login único; nada de lista de espera.
-      await expect(page.locator(".ihero .selo")).toHaveText("Beta grátis");
+      // Lançado: "Criar conta" e "Entrar com Absolute ZRO" direto no login único; nada de lista de espera.
+      await expect(page.locator(".ihero .selo")).toHaveText("Beta");
       await expect(page.getByText("Em teste fechado")).toHaveCount(0);
-      await expect(page.getByRole("link", { name: "Criar conta grátis" }).first()).toHaveAttribute("href", CRIAR_CONTA_ZRO);
+      await expect(page.getByRole("link", { name: "Criar conta" }).first()).toHaveAttribute("href", CRIAR_CONTA_ZRO);
       await expect(page.getByRole("link", { name: "Entrar com Absolute ZRO" }).first()).toHaveAttribute("href", ENTRAR_ZRO);
       await expect(page.getByRole("form", { name: "Quero acesso ao Maestro" })).toHaveCount(0);
       await expect(page.getByRole("link", { name: "Quero acesso" })).toHaveCount(0);
