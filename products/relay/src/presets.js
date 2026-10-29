@@ -36,6 +36,15 @@ const F = {
   discord: fonte('Discord: anexos de até 20 MB na conta grátis (agosto de 2026)', 'https://www.dexerto.com/entertainment/discord-raises-free-upload-limit-to-20mb-after-lowering-it-two-years-ago-3398251/', 'mercado'),
   gmail: fonte('Gmail: anexos de até 25 MB por e-mail', 'https://support.google.com/mail/answer/6584'),
   apple: fonte('Apple: HEVC (hvc1) toca no iPhone, iPad, Mac e Apple TV', 'https://support.apple.com/en-us/116944'),
+  samsungTv: fonte(
+    'Samsung Smart TV: H.264 Full HD no nível 4.1, acima de 720p até 30 fps na maioria dos decodificadores; HEVC até 4096×2160 em MP4',
+    'https://developer.samsung.com/smarttv/develop/specifications/media-specifications/2017-tv-video-specifications.html',
+  ),
+  lgTv: fonte('LG Smart TV (USB): MP4 com H.264 ou HEVC e áudio AAC', 'https://www.lg.com/us/support/help-library/lg-tv-supported-video-codecs-for-connected-usb-devices-CT10000018-20153095976198'),
+  powerpoint: fonte('PowerPoint: o formato recomendado é MP4 com vídeo H.264 e áudio AAC', 'https://support.microsoft.com/en-us/office/video-and-audio-file-formats-supported-in-powerpoint-d8b12450-26db-4c7b-a5c1-593d3418fb59'),
+  web: fonte('Vídeo na web: H.264 em MP4 toca em todo navegador; vídeo de fundo vai sem som (o autoplay exige mudo)', 'https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Autoplay', 'mercado'),
+  linkedin: fonte('LinkedIn não publica bitrate: MP4 H.264 + AAC, até 4096×2304, 10 a 60 fps, até 5 GB (guias de criadores)', 'https://www.tella.com/blog/linkedin-video-specs-size-length', 'mercado'),
+  x: fonte('X: H.264 High, 1280×720, 30 ou 60 fps, vídeo a partir de 5.000 kbit/s, AAC-LC a partir de 128 kbit/s, GOP fechado', 'https://docs.x.com/x-api/media/quickstart/best-practices'),
   mp3: fonte('MP3 320 kbit/s CBR: o teto do formato (MPEG-1 Layer III), padrão de mercado', 'https://lame.sourceforge.io/', 'mercado'),
   wav: fonte('WAV PCM 48 kHz: a taxa de áudio do vídeo e dos editores (EBU R 128 / produção)', 'https://tech.ebu.ch/docs/r/r128.pdf', 'mercado'),
 }
@@ -145,6 +154,29 @@ export const PRESETS = [
     dica: 'Envie com o botão HD ligado; sem ele, o WhatsApp reduz para 480p.',
   },
   {
+    id: 'linkedin',
+    nome: 'LinkedIn',
+    grupo: 'Redes',
+    icone: 'linkedin',
+    resumo: 'Full HD a 30 fps, H.264 + AAC.',
+    formato: 'mp4',
+    video: { codec: 'avc', ladoMenor: 1080, fpsMax: 30, gop: 2, kbps: { 1080: [12000, 12000] }, crf: 18 },
+    audio: AAC(256),
+    fontes: [F.linkedin],
+  },
+  {
+    id: 'x',
+    nome: 'X',
+    grupo: 'Redes',
+    icone: 'xcom',
+    resumo: '720p, a resolução que o X serve para todo mundo.',
+    formato: 'mp4',
+    video: { codec: 'avc', ladoMenor: 720, fpsMax: 60, gop: 2, kbps: { 720: [8000, 10000] }, crf: 18 },
+    audio: AAC(192),
+    fontes: [F.x],
+    dica: 'Assinantes podem mandar 1080p: use o YouTube 1080p.',
+  },
+  {
     id: 'vimeo',
     nome: 'Vimeo',
     grupo: 'Trabalho',
@@ -167,7 +199,31 @@ export const PRESETS = [
     fontes: [F.apple],
   },
   {
-    
+    id: 'slides',
+    nome: 'Slides',
+    grupo: 'Trabalho',
+    icone: 'slides',
+    resumo: 'Toca liso no PowerPoint, no Keynote e no Google Slides.',
+    formato: 'mp4',
+    video: { codec: 'avc', ladoMenor: 1080, fpsMax: 30, gop: 2, kbps: { 1080: [8000, 8000] }, crf: 20, teto: 1.5 },
+    audio: AAC(192),
+    fontes: [F.powerpoint],
+  },
+  {
+    id: 'site',
+    nome: 'Vídeo de fundo',
+    grupo: 'Trabalho',
+    icone: 'site',
+    resumo: 'Para o topo do site: leve, sem som, abre rápido.',
+    formato: 'mp4',
+    semAudio: true,
+    video: { codec: 'avc', ladoMenor: 1080, fpsMax: 30, gop: 2, kbps: { 720: [2500, 2500], 1080: [4500, 4500] }, crf: 24, teto: 1.5 },
+    audio: AAC(128),
+    fontes: [F.web],
+    dica: 'Deixe curto (10 a 20 s) e em loop: o tamanho cai junto.',
+  },
+  {
+    id: 'proxy',
     nome: 'Proxy para edição',
     grupo: 'Trabalho',
     icone: 'proxy',
@@ -176,6 +232,30 @@ export const PRESETS = [
     video: { codec: 'avc', ladoMenor: 720, fpsMax: 120, gop: 1, kbps: { 720: [6000, 9000] }, crf: 20, teto: 2 },
     audio: { codec: 'aac', kbps: 192, taxa: 48000, canais: null },
     fontes: [fonte('Proxy de edição: 720p, GOP curto para correr na timeline, mesmo nome e duração do original', 'https://www.blackmagicdesign.com/products/davinciresolve/', 'mercado')],
+  },
+  {
+    id: 'tv',
+    nome: 'Smart TV',
+    grupo: 'TV',
+    icone: 'tv',
+    resumo: 'Full HD que abre em qualquer TV pelo pendrive.',
+    formato: 'mp4',
+    video: { codec: 'avc', ladoMenor: 1080, fpsMax: 30, gop: 2, kbps: { 720: [8000, 8000], 1080: [14000, 14000] }, crf: 18 },
+    audio: AAC(256),
+    fontes: [F.samsungTv, F.lgTv],
+    dica: 'Pendrive em exFAT: o FAT32 não aceita arquivo acima de 4 GB.',
+  },
+  {
+    id: 'tv-4k',
+    nome: 'Smart TV 4K',
+    grupo: 'TV',
+    icone: 'tv',
+    resumo: '4K em HEVC, o codec das TVs 4K.',
+    formato: 'mp4',
+    video: { codec: 'hevc', ladoMenor: 2160, fpsMax: 60, gop: 2, kbps: { 1440: [16000, 24000], 2160: [30000, 38000] }, crf: 19 },
+    audio: AAC(256),
+    fontes: [F.samsungTv, F.lgTv],
+    dica: 'TV Full HD não abre 4K: use Smart TV.',
   },
   {
     id: 'discord',
@@ -249,7 +329,7 @@ export const PRESETS = [
   },
 ]
 
-export const GRUPOS = ['Redes', 'Trabalho', 'Tamanho', 'Áudio']
+export const GRUPOS = ['Redes', 'Trabalho', 'TV', 'Tamanho', 'Áudio']
 
 /**
  * Os destinos que uma produtora mais entrega ao cliente (o Maestro mostra estes primeiro em "Gerar versões"; os

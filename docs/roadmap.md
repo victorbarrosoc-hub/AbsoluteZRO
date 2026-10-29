@@ -606,7 +606,7 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
 - ✅ Nome: **Relay** (`relay`, relay.absolutezro.com), aberto. Contrato de integração por plataforma em
   [integration-contracts/relay.md](integration-contracts/relay.md).
 - ✅ Relay de pé em `products/relay/` (29/10/2026): identidade (o relé: trilho, sinal menta → limão e o anel do O;
-  guia em `marca/`), página inicial com o relé ligando e as entradas na rolagem, conversor com 16 destinos com fonte e
+  guia em `marca/`), página inicial com o relé ligando e as entradas na rolagem, conversor com 16 destinos (23 desde 29/10: TV, LinkedIn, X, Slides, Vídeo de fundo) com fonte e
   data, vários destinos e arquivos de uma vez, ficha técnica de cada saída, presets da pessoa ("Meus", editor com a
   ficha ao vivo, levar e trazer em `.relay.json`) e tamanho máximo que escolhe a resolução. 38 testes (unidade, ffmpeg
   e Chromium de verdade). ⛔ Projeto Vercel `relay` e domínio pedem autorização do titular.
@@ -630,6 +630,12 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
   de integrações e a Z.
 - ⬜ Revela tira a aba Converter e aponta para o Relay (na conversa da Revela); AEON e NOSSOM exportam pelos presets do
   Relay; Synquei e Maestro pedem versões pela fila ([contrato](integration-contracts/relay.md)).
+- ✅ Presets de TV e formatos específicos (pedido do titular, 29/10/2026): Smart TV (H.264 Full HD a 30 fps, pendrive) e
+  Smart TV 4K (HEVC) num grupo TV; LinkedIn e X em Redes; Slides e Vídeo de fundo (sem som) em Trabalho. Entrega para
+  emissora (MXF/XDCAM, ProRes, loudness) fica de fora até existir no computador.
+- ✅ Leitura com plano B: gravação de tela do Mac recusada pelo navegador ("Este navegador não lê H.264") é tentada de
+  outras formas, só vale a que devolve quadro; sem jeito, o erro mostra codec, tamanho e navegador.
+- ⬜ Confirmar no aparelho do titular qual navegador recusou a gravação de tela (o detalhe do erro agora diz).
 - ⬜ "Baixar como…" das Referências e o pedido da Z no SOBEDESCE pelos presets do Relay.
 - ⬜ Computador: ProRes, DNxHR e HDR 10 bits de saída; loudness normalizado; legenda queimada; corte de trecho.
 - ⬜ Evento `media.conversion.completed` no HUB, quando a primeira integração passar por ele.

@@ -2615,6 +2615,17 @@ do Freela e HUB não convertem. `npm run format:check` e `node scripts/scan-secr
 - O deploy só de variável (mesmo commit da prévia) é cancelado pelo Ignored Build Step do projeto (`git diff` contra o
   commit anterior). Contorno usado: a checagem foi trocada por `exit 1` só durante esse deploy e voltou igual depois.
 
+## Relay: presets de TV e leitura com plano B (29/10/2026)
+
+- Gravação de tela do Mac recusada ("Este navegador não lê H.264"): no Chromium do Linux, Retina 3024×1964, 5K, P3,
+  região e 4:4:4 abrem; a causa no aparelho do titular ainda não foi vista. `test/tela.test.js` simula um navegador que
+  recusa o nível 5.2: o Relay acha outra forma (nível menor), converte 1920×1200 a 60 fps para YouTube 1080p
+  (1728×1080, 60 quadros, SSIM > 0,9). Navegador que não lê H.264 nenhum: a mensagem mostra
+  `avc1.640034 · 1920×1200 · <navegador>`.
+- O preset Proxy para edição estava sem `id` desde o primeiro commit; corrigido e conferido em `test/plano.test.js`.
+- 23 destinos (Smart TV, Smart TV 4K, LinkedIn, X, Slides, Vídeo de fundo novos), cópias no SOBEDESCE iguais
+  (`test/relay.test.js`), app do celular 2.8.55 / v70.
+
 ## NOSSOM: Isolar voz no nível do Voice Isolator (29/10/2026)
 
 - Nova cadeia no worker de GPU (`voice-isolator-v1`: Mel-Band RoFormer + MossFormer2 SE 48K, mono 48 kHz;

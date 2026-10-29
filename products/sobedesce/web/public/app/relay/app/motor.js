@@ -142,6 +142,84 @@ export async function para8bits(amostra, cor) {
   return nova
 }
 
+// Plano B da leitura. Há navegador que recusa o H.264/HEVC do jeito que o arquivo descreve (nível acima do que ele
+// declara, cor que ele não aceita), mas decodifica se a gente pedir de outro jeito. O Relay testa de verdade: só vale a
+// configuração que devolveu um quadro do próprio arquivo; aí um decodificador do Mediabunny passa a usá-la.
+const ACEITAS = new Map()
+const hex = (d) => (d ? Array.from(d instanceof ArrayBuffer ? new Uint8Array(d) : new Uint8Array(d.buffer, d.byteOffset, d.byteLength), (b) => b.toString(16).padStart(2, '0')).join('') : '')
+const chaveDe = (c) => `${c.codec}|${c.codedWidth}x${c.codedHeight}|${hex(c.description)}`
+
+class DecodificadorAlternativo extends MB.CustomVideoDecoder {
+  static supports(_codec, config) {
+    return ACEITAS.has(chaveDe(config))
+  }
+  init() {
+    this.d = new VideoDecoder({ output: (q) => this.onSample(new MB.VideoSample(q)), error: (e) => this.onError(e) })
+    this.d.configure(ACEITAS.get(chaveDe(this.config)))
+  }
+  decode(pacote) {
+    this.d.decode(pacote.toEncodedVideoChunk())
+  }
+  flush() {
+    return this.d.flush()
+  }
+  close() {
+    if (this.d?.state !== 'closed') this.d?.close()
+  }
+}
+MB.registerDecoder(DecodificadorAlternativo)
+
+/** Outras formas de pedir o mesmo vídeo: sem a cor, só codec e descrição, decodificação por software, nível menor. */
+export function alternativas(cfg) {
+  const base = { codec: cfg.codec, description: cfg.description }
+  const lista = [{ ...cfg, colorSpace: undefined }, base, { ...base, hardwareAcceleration: 'prefer-software' }]
+  const avc = /^(avc[13])\.([0-9a-f]{4})([0-9a-f]{2})$/i.exec(cfg.codec)
+  if (avc) for (const nivel of ['33', '32', '2a', '28']) if (parseInt(nivel, 16) < parseInt(avc[3], 16)) lista.push({ ...base, codec: `${avc[1]}.${avc[2]}${nivel}` })
+  return lista
+}
+
+/** Um quadro de verdade sai com esta configuração? (com prazo: decodificador travado conta como não) */
+async function devolveQuadro(config, pacote) {
+  const aceita = await VideoDecoder.isConfigSupported(config).then((r) => r.supported === true, () => false)
+  if (!aceita) return false
+  return new Promise((pronto) => {
+    let quadro = false
+    const d = new VideoDecoder({ output: (q) => ((quadro = true), q.close()), error: () => pronto(false) })
+    const prazo = setTimeout(() => (d.state !== 'closed' && d.close(), pronto(false)), 5000)
+    try {
+      d.configure(config)
+      d.decode(pacote.toEncodedVideoChunk())
+      d.flush().then(
+        () => (clearTimeout(prazo), d.close(), pronto(quadro)),
+        () => (clearTimeout(prazo), pronto(false)),
+      )
+    } catch {
+      clearTimeout(prazo)
+      pronto(false)
+    }
+  })
+}
+
+async function lerDeOutroJeito(video) {
+  if (typeof VideoDecoder === 'undefined' || !['avc', 'hevc'].includes(video.codec)) return false
+  const cfg = await video.getDecoderConfig().catch(() => null)
+  const pacote = cfg && (await new MB.EncodedPacketSink(video).getFirstPacket().catch(() => null))
+  if (!pacote) return false
+  for (const outra of alternativas(cfg))
+    if (await devolveQuadro(outra, pacote)) {
+      ACEITAS.set(chaveDe(cfg), outra)
+      return true
+    }
+  return false
+}
+
+/** Para a mensagem de erro: o que o arquivo pede, em uma linha. */
+async function descreverVideo(video) {
+  const cfg = await video.getDecoderConfig().catch(() => null)
+  const qual = cfg ? `${cfg.codec} · ${cfg.codedWidth}×${cfg.codedHeight}` : `${video.codec ?? '?'} sem descrição`
+  return typeof VideoDecoder === 'undefined' ? `${qual} · sem WebCodecs` : qual
+}
+
 /** O que o plano precisa saber do arquivo. */
 export async function lerArquivo(arquivo) {
   const input = new MB.Input({ source: fonteDe(arquivo), formats: MB.ALL_FORMATS })
@@ -159,6 +237,10 @@ export async function lerArquivo(arquivo) {
         video.canDecode(),
       ])
       Object.assign(info, { codec: video.codec, largura, altura, cor, fps: Math.round(estat.averagePacketRate * 1000) / 1000, decodifica })
+      if (!decodifica) {
+        info.decodifica = await lerDeOutroJeito(video)
+        if (!info.decodifica) info.detalheCodec = await descreverVideo(video)
+      }
     }
     if (audio) {
       const [decodificaAudio] = await Promise.all([audio.canDecode()])

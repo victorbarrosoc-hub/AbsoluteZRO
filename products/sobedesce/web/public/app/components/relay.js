@@ -12,7 +12,7 @@ import { closeSheet } from '../lib/state.js'
 import { Icon } from './icons.js'
 import { Button, SheetHead, cx } from './ui.js'
 
-const GRUPOS = ['Redes', 'Trabalho', 'Tamanho', 'Áudio']
+const GRUPOS = ['Redes', 'Trabalho', 'TV', 'Tamanho', 'Áudio']
 const AUDIO = /\.(wav|aiff?|flac|mp3|m4a|aac|ogg|opus|caf)$/i
 const FASE = { carregando: 'Preparando', lendo: 'Lendo do Drive', convertendo: 'Convertendo', enviando: 'Enviando' }
 const forma = (d) => (!d.video ? 'audio' : d.video.quadro && d.video.quadro.altura > d.video.quadro.largura ? 'vertical' : 'horizontal')
