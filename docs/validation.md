@@ -15,6 +15,45 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Fluidez entre abas: HUB, Maestro e SOBEDESCE (29/10/2026)
+
+Pedido do titular: "abrir uma aba é lento e sem fluidez; o Synquei é instantâneo". O Synquei é uma SPA local: troca de
+tela por hash sem rede (render direto da memória), service worker com cache primeiro, a tela entra deslizando 22 px
+do lado da navegação (0,45 s), pílula da barra que desliza e números que contam. Medição local (build de produção,
+Postgres local, Playwright/Chromium sem GPU, mediana de 5 rodadas, clique → conteúdo da aba visível):
+
+- **Causa**: o servidor respondia em 10–40 ms, mas toda troca mostrava o esqueleto do `loading.tsx` e o React segura a
+  revelação do conteúdo por 300 ms depois de um esqueleto (Suspense throttle). Resultado: ~330 ms em toda aba do
+  Maestro e em quase todas do HUB, e nenhuma transição (só um `fade` de 0,24 s no Maestro).
+- **Maestro**: mediana 338 ms → 90 ms (1ª visita) e 337 ms → 88 ms (volta); todas as 11 abas com View Transition.
+- **HUB**: mediana 326 ms → 97 ms (1ª visita) e 79 ms → 94 ms (volta, agora com a transição de 320 ms por cima);
+  telas do HUB com View Transition; o site público também.
+- O que mudou: pré-busca da seção inteira com a intenção (mouse em cima, foco, toque) e do esqueleto de todas as
+  seções com a página parada; `staleTimes` (30 s dinâmico, 60 s pré-busca) com Server Actions limpando o cache e o
+  Quadro perguntando "o que mudou" ao abrir; `<ViewTransition>` do React 19.3 na área de conteúdo (frente/volta pela
+  ordem do menu, menu e topo parados); pílula do menu que desliza; destino aceso no clique; contagem dos números do
+  Hoje e de Números. Tudo parado com "reduzir movimento".
+- **Maestro, folhas**: o véu cobria só um retângulo (a animação de entrada da seção deixava `transform` no ancestral e
+  prendia o `position: fixed`). Agora a folha vai por portal ao `<body>`, véu na janela inteira com desfoque, folha do
+  tamanho do conteúdo no centro (computador) ou de baixo com alça (celular), entrada e saída com mola, foco preso, Esc.
+  "Novo card" redesenhado (título grande, coluna em pílulas com a cor, listas com avatar/sigla, prazo amigável com
+  atalhos, briefing que cresce, Enter cria), card que voa até a coluna (FLIP), Quadro que se reorganiza deslizando,
+  avisos "Card criado." e "Movido para Revisão." com Desfazer.
+- **SOBEDESCE (computador)**: as telas já eram locais com cache (stale-while-revalidate do Drive); a tela nova agora
+  entra do lado para onde a pessoa foi na barra, como no Synquei.
+- Testes: `products/maestro/e2e/quadro.spec.ts` (computador e iPhone: véu na janela inteira por cima de tudo, folha do
+  tamanho do conteúdo/folha de baixo, foco preso, roda não rola a página, Esc; criar com coluna, prazo e prioridade sem
+  recarregar e persistido; Mover para com aviso e Desfazer; ficha com saída; troca de seção com View Transition;
+  reduzir movimento parado).
+- Cuidado achado no caminho: com `staleTimes`, um redirect de Server Action para a mesma rota reaproveitava a tela
+  guardada (o "Permitir" do login único ficava parado em `/oauth/authorize`). No HUB, login, saída, troca de
+  organização e consentimento agora redirecionam por `lib/actions/ir.ts`, que limpa o cache do roteador antes; no
+  Maestro toda Server Action já chamava `revalidatePath`.
+- Rodado: HUB `lint`, `format:check`, `typecheck`, `npm test` **257/257**, `build`, `test:e2e` **26/26**,
+  `scan-secrets` ok. Maestro `lint`, `format:check`, `typecheck`, `npm test` **302/302**, `build`, `test:e2e`
+  completo (inclui `sem-corte` no Chromium e no WebKit) 72 passaram e o `quadro.spec.ts` novo (corrigida a espera da
+  aba no iPhone) **24/24** em três rodadas com `inicio.spec.ts`. SOBEDESCE `test:fast` **769/769** (4 pulados).
+
 ## Maestro v2, fases 7–10: ponte com o SOBEDESCE, Drive na revisão e Arquivos (29/10/2026)
 
 - HUB: `tests/integration/pedidos-entre-apps.test.ts` (6): pedido assinado com `aud` do SOBEDESCE, `sub` da pessoa,
