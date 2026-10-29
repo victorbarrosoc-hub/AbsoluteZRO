@@ -15,6 +15,8 @@ import {
   validarPagamento,
 } from "@/lib/freelas/servidor";
 import { marcarEquipNaEscala, removerEquipFreela, salvarEquipFreela, validarEquipFreela } from "@/lib/freelas/equipamentos";
+import { adicionarFreelaDaZro } from "@/lib/freelas/da-zro";
+import { buscarPessoas, pessoaPorArroba, type PessoaZro } from "@/lib/zro/pessoas";
 import type { EstadoForm } from "@/components/form";
 
 const valoresDe = (fd: FormData) => Object.fromEntries([...fd.entries()].map(([k, v]) => [k, String(v)]));
@@ -110,4 +112,25 @@ export async function equipNaEscalaAcao(_: EstadoForm, fd: FormData): Promise<Es
   if (!r.ok) return { mensagem: r.mensagem };
   revalidatePath("/app", "layout");
   return { aviso: "Salvo.", n: Date.now() };
+}
+
+/* ───────────── freela achado pelo @ na Absolute ZRO (ADR 0029 do HUB, drizzle/0022) ───────────── */
+
+export async function buscarFreelaNaZroAcao(q: string): Promise<{ pessoas: PessoaZro[]; erro?: string; reconectar?: boolean }> {
+  const s = await exigirAcessoNaAcao();
+  const r = await buscarPessoas(s.id, q);
+  if (!r.ok) return { pessoas: [], erro: r.mensagem, reconectar: r.estado === "reconectar_zro" };
+  return { pessoas: r.pessoas };
+}
+
+/** Adiciona ao banco pelo @: o perfil é relido na Absolute ZRO (a tela não manda nome nem função). */
+export async function adicionarFreelaDaZroAcao(arroba: string): Promise<EstadoForm & { id?: string }> {
+  const s = await exigirAcessoNaAcao();
+  if (!podeEscrever(s.papel)) return { mensagem: LE };
+  const p = await pessoaPorArroba(s.id, arroba);
+  if (!p.ok) return { mensagem: p.mensagem };
+  const r = await adicionarFreelaDaZro({ sub: s.sub, orgId: s.orgId }, p.pessoa);
+  if (!r.ok) return { mensagem: r.mensagem };
+  revalidatePath("/app/freelas");
+  return { aviso: r.novo ? "No banco de freelas." : "Já estava no banco.", id: r.id, n: Date.now() };
 }

@@ -2,6 +2,7 @@
 import type { Database } from '@zro/db'
 import { pgErrorCode, PG } from '@zro/db'
 import { audit, DomainError } from '@zro/observability'
+import { normalizarArroba, validarArroba } from './arroba'
 import { decoyHash, hashPassword, verifyPassword } from './password'
 import { clearAttempts, LIMIT_MESSAGE, registerAttempt, RULES, withinLimit } from './rate-limit'
 import { normalizeEmail, validateDisplayName, validateEmail, validatePassword } from './rules'
@@ -15,12 +16,16 @@ export type RequestMeta = { ipHash?: string | null; userAgent?: string | null }
 
 export async function signUp(
   db: Database,
-  input: { email: string; password: string; displayName: string },
+  input: { email: string; password: string; displayName: string; arroba?: string | null; arrobaFlexivel?: boolean },
   meta: RequestMeta = {},
 ): Promise<{ userId: string; verifyToken: string; session: { token: string; expiresAt: Date } }> {
   const email = normalizeEmail(input.email)
   const problem = validateEmail(email) ?? validatePassword(input.password) ?? validateDisplayName(input.displayName)
   if (problem) throw new DomainError('invalid_input', problem)
+  // O @ escolhido no cadastro (0029). Sem ele, a conta nasce com a sugestão do banco e a pessoa troca no Perfil.
+  const arroba = input.arroba ? normalizarArroba(input.arroba) : null
+  const arrobaRuim = arroba !== null ? validarArroba(arroba) : null
+  if (arrobaRuim) throw new DomainError('invalid_input', `@: ${arrobaRuim}`, { campo: 'arroba' })
   const passwordHash = await hashPassword(input.password)
   const ipKey = meta.ipHash ? `signup-ip:${meta.ipHash}` : null
   if (ipKey) {
@@ -39,6 +44,20 @@ export async function signUp(
     } catch (e) {
       if (pgErrorCode(e) === PG.uniqueViolation) throw new DomainError('conflict', 'Já existe uma conta com esse e-mail. Entre ou redefina a senha.')
       throw e
+    }
+    if (arroba) {
+      try {
+        await tx.savepoint(async (sp) => {
+          await sp`select set_config('zro.user_id', ${userId}, true)`
+          await sp`select zro.trocar_arroba(${arroba})`
+        })
+      } catch (e) {
+        if (pgErrorCode(e) !== PG.uniqueViolation) throw e
+        // A pessoa aceitou a sugestão sem mexer e alguém já tem: fica a do banco (o mesmo nome com um número).
+        if (!input.arrobaFlexivel) throw new DomainError('conflict', `O @${arroba} já é de outra pessoa. Escolha outro.`, { campo: 'arroba' })
+        await tx`update zro.perfis set arroba_sugerida = false where user_id = ${userId}`
+      }
+      await tx`select set_config('zro.user_id', '', true)`
     }
     await tx`insert into zro.auth_credentials (user_id, password_hash) values (${userId}, ${passwordHash})`
     const verifyToken = newToken('zv')

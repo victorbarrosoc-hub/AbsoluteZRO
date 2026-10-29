@@ -351,6 +351,62 @@ paths:
           '409': { $ref: '#/components/responses/Error' },
           '429': { $ref: '#/components/responses/Error' },
         }
+  /api/v1/pessoas/busca:
+    get:
+      security: [{ appToken: [zro.pessoas] }]
+      summary: 'Perfil profissional (ADR 0029): busca por @ (q começa com @) ou nome. Só perfis visíveis, sem a própria pessoa, sem e-mail nem telefone. Contrato em docs/integration-contracts/pessoas.md'
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string, maxLength: 60 }, description: '@começo-do-arroba ou parte do nome (2+ caracteres)' }
+        - { name: limite, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 20, default: 12 } }
+      responses:
+        {
+          '200':
+            {
+              description: '{ pessoas: [{ id (sub), arroba, nome, foto, funcoes: [{ chave, nome }], cidade, portfolio, bio, selos: [{ produto, texto }], perfil }] }',
+            },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/pessoas/convites:
+    post:
+      security: [{ appToken: [zro.pessoas] }]
+      summary: Convida o @ para a organização do token (dono ou administração). A pessoa aceita na Absolute ZRO; o e-mail dela nunca volta
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [arroba]
+              properties:
+                arroba: { type: string, description: 'com ou sem @' }
+                papel: { type: string, enum: [admin, manager, editor, viewer, billing], default: editor }
+      responses:
+        {
+          '201': { description: '{ convite: { id, arroba, papel, aviso: email | central } }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/pessoas/{arroba}:
+    get:
+      security: [{ appToken: [zro.pessoas] }]
+      summary: 'O perfil visível de um @ (o caminho leva o @: /api/v1/pessoas/@fulano). @ antigo dos últimos 90 dias leva ao atual com antiga: true. Escondido ou inexistente: 404'
+      parameters:
+        - { name: arroba, in: path, required: true, schema: { type: string, pattern: '^@[a-z0-9._]{3,30}$' } }
+      responses:
+        {
+          '200': { description: '{ pessoa: { id, arroba, nome, foto, funcoes, cidade, portfolio, bio, selos, perfil }, antiga }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
   /api/v1/desktop/apps:
     get:
       summary: Catálogo da central de apps do computador (ferramentas, versões, arquivos por sistema e SHA-256). Público.

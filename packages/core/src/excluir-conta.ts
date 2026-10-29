@@ -223,6 +223,11 @@ export async function excluirConta(db: Database, auth: Authenticated | null, con
     await tx`delete from zro.conexoes where user_id = ${userId}`
     await tx`delete from zro.user_avatars where user_id = ${userId}`
     await tx`delete from zro.ia_conversas where user_id = ${userId}`
+    // Perfil profissional (0029): sai da busca na hora; o @ fica guardado 90 dias para ninguém se passar pela pessoa.
+    const [perfil] = await tx`delete from zro.perfis where user_id = ${userId} returning arroba`
+    if (perfil)
+      await tx`insert into zro.perfil_arrobas_antigas (arroba, user_id, ate, troca) values (${perfil.arroba as string}, ${userId}, now() + interval '90 days', false)
+               on conflict (arroba) do update set user_id = excluded.user_id, ate = excluded.ate, troca = false, criado_em = now()`
     await tx`delete from zro.rate_limit_attempts
              where key in (${'login-account:' + email}, ${'reset:' + email}) or left(key, ${('login:' + email + ':').length}) = ${'login:' + email + ':'}`
     await tx`update zro.users set email = ${emailDeContaExcluida(userId)}, display_name = 'Conta excluída', email_verified_at = null,

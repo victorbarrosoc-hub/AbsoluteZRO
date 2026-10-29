@@ -8,11 +8,16 @@ import type { Database } from '@zro/db'
 import { BILLING_ROLES } from './account'
 import { EDIT_ROLES, type OrgRole } from './authz'
 
-export type Pendencias = Partial<Record<'/projetos' | '/atividades' | '/assinatura' | '/perfil' | '/admin', number>>
+export type Pendencias = Partial<Record<'/projetos' | '/atividades' | '/assinatura' | '/perfil' | '/equipe' | '/admin', number>>
 
 export async function pendencias(db: Database, auth: Authenticated): Promise<Pendencias> {
   const out: Pendencias = {}
   if (!auth.user.emailVerified) out['/perfil'] = 1
+  // Convites para a pessoa (por @ ou pelo e-mail dela, 0029): aceita ou recusa em Equipe.
+  if (auth.user.emailVerified) {
+    const [c] = await db.asUser({ userId: auth.user.id, orgId: auth.session.activeOrgId }, (tx) => tx`select count(*)::int as n from zro.meus_convites()`)
+    if (c?.n) out['/equipe'] = c.n as number
+  }
   const orgId = auth.session.activeOrgId
   if (orgId) {
     const [r] = await db.asUser(

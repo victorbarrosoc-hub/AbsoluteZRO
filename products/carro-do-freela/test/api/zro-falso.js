@@ -69,6 +69,8 @@ async function iniciarZroFalsa(cliente) {
   };
   const claimsDe = p => Object.assign(
     { zro_org: p.org ? { id: 'org-1', name: p.org, role: 'owner' } : null, zro_products: produtosDe(p) },
+    /* o @ do perfil profissional (ADR 0029 do HUB) */
+    p.arroba ? { preferred_username: p.arroba } : {},
     p.semRelease ? {} : { zro_release: { 'carro-do-freela': liberacao(p) } },
   );
   const emitir = (pessoa, escopo) => {

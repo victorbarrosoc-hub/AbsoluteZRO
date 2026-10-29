@@ -6,11 +6,13 @@
  * Animação em CSS (globals.css, "Conversa de conta") e o Z (components/ia/simbolo-z.tsx); "reduzir movimento" deixa tudo parado.
  */
 import { startTransition, useActionState, useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from 'react'
+import { normalizarArroba, sugerirArroba, validarArroba } from '@zro/auth/arroba'
 import { CampoSenha } from '@zro/ui/senha'
 import type { FormState } from './action-form'
 import { PalcoZ, Z, type CenaZ, type MovimentoZ } from './ia/simbolo-z'
+import './pessoas/pessoas.css'
 
-type Passo = 'email' | 'nome' | 'senha'
+type Passo = 'email' | 'nome' | 'arroba' | 'senha'
 type Estado = 'absolute-zro' | 'ouvindo' | 'conferindo' | 'pronto'
 
 const ROTULO: Record<Estado, string> = { 'absolute-zro': 'Z', ouvindo: 'ouvindo', conferindo: 'conferindo', pronto: 'pronto' }
@@ -43,7 +45,8 @@ export function ConversaConta({
   autoFocus?: boolean
   destinoNome?: string
 }) {
-  const passos: Passo[] = modo === 'criar' ? ['email', 'nome', 'senha'] : ['email', 'senha']
+  // Criar conta também escolhe o @ do perfil profissional (0029): a sugestão vem do nome e a pessoa troca se quiser.
+  const passos: Passo[] = modo === 'criar' ? ['email', 'nome', 'arroba', 'senha'] : ['email', 'senha']
   const [state, formAction, pending] = useActionState(action, null)
   const js = useSyncExternalStore(
     semAssinatura,
@@ -51,11 +54,17 @@ export function ConversaConta({
     () => false,
   )
   const [passo, setPasso] = useState<Passo>('email')
-  const [valores, setValores] = useState({ email: '', nome: '', senha: '' })
+  const [valores, setValores] = useState({ email: '', nome: '', arroba: '', senha: '' })
+  const [arrobaMexida, setArrobaMexida] = useState(false)
   const [erro, setErro] = useState<string | null>(erroInicial ?? null)
   const [foco, setFoco] = useState(false)
   const [focoPedido, setFocoPedido] = useState(0)
-  const refs = { email: useRef<HTMLInputElement>(null), nome: useRef<HTMLInputElement>(null), senha: useRef<HTMLInputElement>(null) }
+  const refs = {
+    email: useRef<HTMLInputElement>(null),
+    nome: useRef<HTMLInputElement>(null),
+    arroba: useRef<HTMLInputElement>(null),
+    senha: useRef<HTMLInputElement>(null),
+  }
 
   // Resposta da Server Action: erro volta ao passo certo (e o orbe a "ouvir"); sucesso vira "pronto".
   const [visto, setVisto] = useState<FormState>(state)
@@ -84,6 +93,7 @@ export function ConversaConta({
   const estado: Estado = destino ? 'pronto' : pending ? 'conferindo' : foco ? 'ouvindo' : 'absolute-zro'
 
   function irPara(p: Passo, mensagem: string | null = null) {
+    if (p === 'arroba' && !arrobaMexida) setValores((v) => ({ ...v, arroba: sugerirArroba(v.nome, v.email) }))
     setPasso(p)
     setErro(mensagem)
     setFocoPedido((n) => n + 1)
@@ -91,6 +101,7 @@ export function ConversaConta({
 
   function invalido(p: Passo): string | null {
     const c = refs[p].current
+    if (p === 'arroba' && c) return c.value.trim() ? validarArroba(normalizarArroba(c.value)) : 'Escolha seu @.'
     if (!c || c.checkValidity()) return null
     if (p === 'email') return c.value ? 'Confira o e-mail.' : 'Digite seu e-mail.'
     if (p === 'nome') return 'Diga como podemos te chamar.'
@@ -114,7 +125,8 @@ export function ConversaConta({
   }
 
   const mudar = (k: keyof typeof valores) => (ev: { target: { value: string } }) => {
-    setValores((v) => ({ ...v, [k]: ev.target.value }))
+    if (k === 'arroba') setArrobaMexida(true)
+    setValores((v) => ({ ...v, [k]: k === 'arroba' ? ev.target.value.replace(/^@+/, '').toLowerCase() : ev.target.value }))
     if (erro) setErro(null)
   }
 
@@ -140,30 +152,51 @@ export function ConversaConta({
     </button>
   )
 
+  const arrobaPilula = valores.arroba ? (
+    <button type="button" className="conversa__quem" onClick={() => irPara('arroba')} aria-label={`@${valores.arroba}. Trocar o @`}>
+      @{valores.arroba}
+      <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      </svg>
+    </button>
+  ) : null
+
   const campo = (p: Passo) => {
     const ativo = passo === p
     const ultimo = p === passos[passos.length - 1]
     const Titulo = ativo ? 'h1' : 'h2'
-    const id = p === 'senha' ? 'password' : p === 'nome' ? 'name' : 'email'
+    const id = p === 'senha' ? 'password' : p === 'nome' ? 'name' : p === 'arroba' ? 'arroba' : 'email'
     let apoio: ReactNode = null
     if (p === 'email') apoio = aviso ?? (modo === 'criar' ? 'Oi! Vamos criar sua conta.' : 'Oi! Que bom te ver.')
     else if (js && p === 'nome') apoio = emailPilula
-    else if (js && p === 'senha') apoio = modo === 'entrar' ? emailPilula : primeiroNome ? `Prazer, ${primeiroNome}.` : null
-    const titulo = p === 'email' ? 'Qual é o seu e-mail?' : p === 'nome' ? 'Como podemos te chamar?' : modo === 'criar' ? 'Crie uma senha' : 'Sua senha'
+    else if (js && p === 'arroba') apoio = primeiroNome ? `Prazer, ${primeiroNome}.` : null
+    else if (js && p === 'senha') apoio = modo === 'entrar' ? emailPilula : arrobaPilula
+    const titulo =
+      p === 'email'
+        ? 'Qual é o seu e-mail?'
+        : p === 'nome'
+          ? 'Como podemos te chamar?'
+          : p === 'arroba'
+            ? 'Escolha seu @'
+            : modo === 'criar'
+              ? 'Crie uma senha'
+              : 'Sua senha'
     const rotuloBotao = ultimo ? (modo === 'criar' ? 'Criar conta' : 'Entrar') : 'Continuar'
     const mostraErro = ativo && erro
     const atributos = {
       ref: refs[p],
       id,
-      name: p === 'senha' ? 'password' : p === 'nome' ? 'name' : 'email',
-      autoComplete: p === 'senha' ? (modo === 'criar' ? 'new-password' : 'current-password') : p === 'nome' ? 'name' : 'email',
+      name: p === 'senha' ? 'password' : p === 'nome' ? 'name' : p === 'arroba' ? 'arroba' : 'email',
+      autoComplete: p === 'senha' ? (modo === 'criar' ? 'new-password' : 'current-password') : p === 'nome' ? 'name' : p === 'arroba' ? 'username' : 'email',
       inputMode: p === 'email' ? ('email' as const) : undefined,
       autoCapitalize: p === 'nome' ? 'words' : 'none',
       spellCheck: false,
-      required: true,
-      maxLength: p === 'nome' ? 120 : undefined,
+      // Sem JavaScript o @ é opcional: a conta nasce com a sugestão e a pessoa troca no Perfil.
+      required: p !== 'arroba' || js,
+      maxLength: p === 'nome' ? 120 : p === 'arroba' ? 31 : undefined,
       minLength: p === 'senha' && modo === 'criar' ? senhaMin : undefined,
-      placeholder: p === 'email' ? 'voce@exemplo.com' : p === 'nome' ? 'Seu nome' : modo === 'criar' ? `${senhaMin}+ caracteres` : '',
+      placeholder:
+        p === 'email' ? 'voce@exemplo.com' : p === 'nome' ? 'Seu nome' : p === 'arroba' ? 'seu.nome' : modo === 'criar' ? `${senhaMin}+ caracteres` : '',
       autoFocus: autoFocus && p === 'email' && !erroInicial,
       value: valores[p],
       onChange: mudar(p),
@@ -176,7 +209,7 @@ export function ConversaConta({
         <Titulo className="conversa__titulo">
           <label htmlFor={id}>{titulo}</label>
         </Titulo>
-        <div className="conversa__campo">
+        <div className="conversa__campo" data-arroba={p === 'arroba' ? '' : undefined}>
           {p === 'senha' ? <CampoSenha {...atributos} /> : <input {...atributos} type={p === 'email' ? 'email' : 'text'} />}
           {(!js || ativo) && (
             <button type="submit" className="conversa__enviar" aria-label={rotuloBotao} title={rotuloBotao} disabled={pending}>
@@ -214,6 +247,7 @@ export function ConversaConta({
       <Orbe estado={estado} />
       <input type="hidden" name="next" value={next ?? ''} />
       {js && <input type="hidden" name="conversa" value="1" />}
+      {js && modo === 'criar' && !arrobaMexida && <input type="hidden" name="arroba_sugerida" value="1" />}
       <div className="conversa__passos">{passos.map(campo)}</div>
       {(google || rodape) && (
         <div className="conversa__fora">
@@ -251,6 +285,7 @@ function Orbe({ estado }: { estado: Estado }) {
 
 function passoDoErro(modo: 'entrar' | 'criar', msg: string): Passo {
   if (modo === 'entrar') return 'senha'
+  if (msg.includes('@')) return 'arroba'
   if (/e-mail/i.test(msg)) return 'email'
   if (/nome/i.test(msg)) return 'nome'
   return 'senha'

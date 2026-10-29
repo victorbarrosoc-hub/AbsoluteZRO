@@ -316,6 +316,9 @@ function contaDeClaims(dados) {
     email: dados.email.trim().toLowerCase().slice(0, 254),
     emailVerificado: dados.email_verified === true,
     nome: typeof dados.name === 'string' && dados.name.trim() ? dados.name.trim().slice(0, 120) : null,
+    /* o @ do perfil profissional da Absolute ZRO (claim preferred_username, ADR 0029 do HUB): o perfil da
+       comunidade é o mesmo da conta, lido do HUB a cada /eu; o Carro não guarda outro @ */
+    arroba: typeof dados.preferred_username === 'string' && /^[a-z0-9._]{3,30}$/.test(dados.preferred_username) ? dados.preferred_username : null,
     organizacao: org && typeof org.name === 'string' ? org.name.slice(0, 120) : null,
     produtos,
     /* o portão: released | closed | allowed — sem a claim, closed */
@@ -472,6 +475,8 @@ async function eu(req, res) {
   return json(res, 200, {
     sub: c.quem.sub,
     nome: c.quem.nome || null,
+    /* o @ só vai quando o HUB manda (HUB de antes da 0029 não manda) */
+    ...(c.quem.arroba ? { arroba: c.quem.arroba } : {}),
     email: c.quem.email || null,
     organizacao: c.quem.organizacao || null,
     produtos: c.quem.produtos,

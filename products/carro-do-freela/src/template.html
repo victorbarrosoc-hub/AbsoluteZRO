@@ -20393,7 +20393,7 @@ function cfbDesenhar(){
   var fun=FUNCOES.filter(function(f){return f!=="Não informado"});
   var it=CFB.itens;
   el.innerHTML=
-    '<div class="cfb-cab"><b>Meu perfil</b><em>na sua conta Absolute ZRO</em></div>'+
+    '<div class="cfb-cab"><b>Meu perfil</b><em>'+(ZRO_CONTA&&ZRO_CONTA.arroba?'<span id="cfb-arroba">@'+esc(ZRO_CONTA.arroba)+'</span> · ':'')+'na sua conta Absolute ZRO</em></div>'+
     '<div class="cfb-gr">'+
       '<div class="frow"><span class="lab">Nome</span><input class="fld" id="cfb-nome" maxlength="80" value="'+esc(p.nome||"")+'"></div>'+
       '<div class="cfb-gr2"><div class="frow"><span class="lab">Cidade</span><input class="fld" id="cfb-cidade" maxlength="80" value="'+esc(p.cidade||"")+'"></div>'+
@@ -28358,6 +28358,8 @@ v("z-entrar").onclick=()=>{ if(zroBloqueado()) return zroMostrarBloqueio(); loca
       if(j&&j.release==="closed") ZRO_FECHADO=true;
       if(r.status===200&&j&&typeof j.sub==="string"&&j.sub){
         ZRO_CONTA={sub:j.sub,nome:typeof j.nome==="string"?j.nome:"",email:typeof j.email==="string"?j.email:"",
+          /* o @ do perfil da Absolute ZRO (o mesmo da comunidade; editado lá) */
+          arroba:typeof j.arroba==="string"&&/^[a-z0-9._]{3,30}$/.test(j.arroba)?j.arroba:"",
           organizacao:typeof j.organizacao==="string"?j.organizacao:"",
           /* o direito de uso vem do admin da Absolute ZRO, RELIDO a cada abertura */
           liberado:j.liberado===true,

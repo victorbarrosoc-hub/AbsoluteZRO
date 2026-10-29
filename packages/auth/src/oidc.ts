@@ -33,8 +33,11 @@ export const OIDC_SCOPES = ['openid', 'email', 'profile', 'org', 'offline_access
  * cliente daquele produto, e a rota exige o escopo; organização e papel continuam vindo do banco (authorize).
  */
 export const PRODUCT_SCOPES: Record<string, string[]> = { 'carro-do-freela': ['carro-do-freela.jobs'], maestro: ['maestro.projects'] }
-/** Escopos de todo app da família (cliente com produto): a IA do ecossistema (0016) e a Agenda das Conexões (0026). */
-export const FAMILY_SCOPES = ['zro.ia', 'zro.agenda'] as const
+/**
+ * Escopos de todo app da família (cliente com produto): a IA do ecossistema (0016), a Agenda das Conexões (0026) e a
+ * busca de perfis com convite pelo @ (0029).
+ */
+export const FAMILY_SCOPES = ['zro.ia', 'zro.agenda', 'zro.pessoas'] as const
 export const CODE_TTL_MS = 60_000
 export const ACCESS_TTL_S = 600
 export const ID_TTL_S = 600
@@ -189,6 +192,7 @@ export function discovery(issuer: string) {
       'email',
       'email_verified',
       'name',
+      'preferred_username',
       'picture',
       'updated_at',
       'zro_conta',
@@ -499,9 +503,9 @@ export type TokenResponse = {
 async function userClaims(tx: Queryable, userId: string) {
   // perfil único: a foto (endereço público que muda a cada foto nova) e a data da última mudança do perfil
   const [u] = await tx`
-    select u.id, u.email, u.display_name, u.email_verified_at, a.public_id as foto,
-           greatest(u.updated_at, coalesce(a.updated_at, u.updated_at)) as perfil_em
-    from zro.users u left join zro.user_avatars a on a.user_id = u.id
+    select u.id, u.email, u.display_name, u.email_verified_at, a.public_id as foto, p.arroba,
+           greatest(u.updated_at, coalesce(a.updated_at, u.updated_at), coalesce(p.atualizado_em, u.updated_at)) as perfil_em
+    from zro.users u left join zro.user_avatars a on a.user_id = u.id left join zro.perfis p on p.user_id = u.id
     where u.id = ${userId} and u.status = 'active'`
   return u
 }
@@ -509,10 +513,12 @@ async function userClaims(tx: Queryable, userId: string) {
 /**
  * Claims do escopo profile (perfil único, 0015): nome, foto (sem foto, sem claim: o app mostra as iniciais),
  * updated_at (o app compara e atualiza a cópia dele) e zro_conta, onde a pessoa edita nome, foto e e-mail.
+ * preferred_username (claim padrão do OIDC) é o @ do perfil profissional (0029), sem o "@".
  */
 export function profileClaims(iss: string, u: Record<string, unknown>) {
   return {
     name: u.display_name,
+    ...(u.arroba ? { preferred_username: u.arroba as string } : {}),
     ...(u.foto ? { picture: `${iss}/api/v1/foto/${u.foto as string}` } : {}),
     updated_at: Math.floor(new Date(u.perfil_em as string | Date).getTime() / 1000),
     zro_conta: `${iss}/perfil`,

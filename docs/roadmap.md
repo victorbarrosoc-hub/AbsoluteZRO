@@ -519,6 +519,25 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   (Maestro) no próximo deploy autorizado. Primeira semana da ANP entra no primeiro sábado ou na primeira abertura da
   calculadora.
 
+## Perfil profissional com @ (29/10/2026, [ADR 0029](decisions/0029-perfil-profissional-arroba.md))
+
+- ✅ Toda conta é um perfil do audiovisual com @ único (migração `0029`): escolhido na conversa de criar conta (sugestão
+  do nome), sugestão para quem já tinha conta, troca 2×/mês com o @ antigo levando ao perfil por 90 dias, reservados
+  recusados. Funções (lista fixa + Outra), cidade, portfólio, bio, selos dos apps que a pessoa usa e liga. Sem e-mail
+  nem telefone.
+- ✅ Visível na busca por padrão, com "Aparecer na busca" em Sua conta › Perfil profissional e o aviso único na central
+  (Entendi / Esconder meu perfil). Página `/pessoas/@fulano` (só logado; @ antigo redireciona).
+- ✅ Equipe: um campo "@fulano, nome ou e-mail" com as fichas e "Convidar" (convite por @ sem mostrar o e-mail; e-mail
+  exato para quem escondeu), "Convites para você" com Aceitar/Recusar e o balão no menu, e cada pessoa com um menu só
+  (papel marcado + "Remover da equipe…" com confirmação).
+- ✅ Apps: `preferred_username` no login único e o escopo de família `zro.pessoas` para `/api/v1/pessoas/{busca,@arroba,convites}`
+  ([contrato](integration-contracts/pessoas.md)): `authorize()`, limites, auditoria sem o texto buscado.
+- ✅ Maestro: busca e convite pelo @ em Ajustes › Pessoas, o @ e a "Função na produtora" de cada pessoa, e "Achar pelo @"
+  em Freelas (freela ligado ao perfil, `drizzle/0023`). Carro do Freela: o @ no `/eu` e em "Meu perfil".
+- ⛔ Em produção: migrações `0029` (HUB) e `0022` (Maestro) no deploy; o Maestro passa a pedir `zro.pessoas` (HUB sem a
+  0029 cai em `nivel=sem_pessoas`, sem quebrar o login).
+- ⬜ Inventário do Carro no freela achado pelo @ (pronto atrás de `CARRO_SYNC_ATIVO`, desligado).
+
 ## Fase 6 — Escala
 
 - ⬜ Observabilidade em produção (drain de logs, métricas da fila, alertas), backups e retenção definidos.

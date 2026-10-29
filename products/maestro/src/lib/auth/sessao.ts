@@ -186,7 +186,7 @@ export async function aplicarPerfilNaSessao(s: Sessao, perfil: PerfilZro, agora 
   await getBanco().asSystem("sessão: perfil", async (tx) => {
     await tx
       .update(members)
-      .set({ displayName: perfil.nome, email: perfil.email, pictureUrl: perfil.foto })
+      .set({ displayName: perfil.nome, email: perfil.email, pictureUrl: perfil.foto, zroArroba: perfil.arroba })
       .where(and(eq(members.orgId, s.orgId), eq(members.zroSub, s.sub)));
     if (perfil.org && perfil.org.id === s.zroOrgId) {
       await tx
