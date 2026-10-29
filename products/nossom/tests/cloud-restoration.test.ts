@@ -1,13 +1,24 @@
-import test from 'node:test';
+import test, { beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { GET, POST } from '../app/api/audio/jobs/route';
 import {
   CLOUD_PART_BYTES,
+  outputParts,
+  presetSpec,
   restorationD,
+  singingSeparation,
+  stemSeparation,
+  transcription,
+  validStemsReport,
+  validTranscriptReport,
   vocalSeparation,
+  voiceIsolator,
   validCloudReport,
 } from '../lib/restoration';
 import { authEnvironment, testCookie, testUser } from './helpers/auth';
+import { resetRequestLimits } from '../lib/server/ai-access';
+
+beforeEach(resetRequestLimits);
 
 const report = {
   preset: restorationD.id,
@@ -31,16 +42,36 @@ test('cloud result contract rejects truncated, unbounded and wrong-preset output
   ])
     assert.equal(validCloudReport(bad), false);
 });
-for (const preset of [restorationD.id, vocalSeparation.id])
+for (const preset of [
+  restorationD.id,
+  vocalSeparation.id,
+  voiceIsolator.id,
+  singingSeparation.id,
+  transcription.id,
+] as const)
   test(`cloud ${preset} verifies identity, owns jobs, dispatches once and privately releases parts`, async () => {
-    const channels = preset === vocalSeparation.id ? 2 : 1;
-    const outputReport = {
-      ...report,
-      preset,
-      channels,
-      totalBytes: report.frames * channels * 4 + 44,
-      chunks: [{ index: 0, bytes: report.frames * channels * 4 + 44 }],
-    };
+    const parts = outputParts(preset);
+    const outputReport =
+      preset === transcription.id
+        ? {
+            preset,
+            chunks: [{ index: 0, bytes: 120 }],
+            totalBytes: 120,
+            words: 3,
+            language: 'pt',
+          }
+        : (() => {
+            const { channels, sampleRate } = presetSpec(preset);
+            return {
+              ...report,
+              preset,
+              channels,
+              sampleRate,
+              frames: sampleRate,
+              totalBytes: sampleRate * channels * 4 + 44,
+              chunks: [{ index: 0, bytes: sampleRate * channels * 4 + 44 }],
+            };
+          })();
     const restore = authEnvironment(),
       before = globalThis.fetch;
     const keys = ['RUNPOD_API_KEY', 'RUNPOD_ENDPOINT_ID', 'SUPABASE_SERVICE_ROLE_KEY'];
@@ -128,7 +159,7 @@ for (const preset of [restorationD.id, vocalSeparation.id])
       assert.equal(dispatches, 1);
       assert.equal(providerPayload.input.preset, preset);
       assert.equal(providerPayload.input.tau, undefined);
-      assert.equal(providerPayload.input.output_urls.length, channels === 2 ? 11 : 6);
+      assert.equal(providerPayload.input.output_urls.length, parts);
       assert.equal(providerPayload.policy.executionTimeout, 900000);
       const own = await GET(
         new Request(`http://localhost/api/audio/jobs?id=${id}`, {
@@ -171,7 +202,7 @@ for (const preset of [restorationD.id, vocalSeparation.id])
 
       globalThis.fetch = previousFetch;
       assert.equal((await POST(request({ action: 'release', id }))).status, 200);
-      assert.equal(removed.length, channels === 2 ? 13 : 8);
+      assert.equal(removed.length, 2 + parts);
       assert.ok(removed.every((p) => p.startsWith(`${testUser.id}/${id}/`)));
     } finally {
       globalThis.fetch = before;
@@ -340,4 +371,92 @@ test('vocals report preserves stereo and refuses speech reports disguised as sep
   assert.equal(validCloudReport(stereo), true);
   assert.equal(validCloudReport({ ...stereo, channels: 1 }), false);
   assert.equal(validCloudReport({ ...stereo, totalBytes: report.totalBytes }), false);
+});
+
+test('voice isolator reports 48 kHz mono speech; the singing stem stays stereo 44.1 kHz', () => {
+  const speech = {
+    ...report,
+    preset: voiceIsolator.id,
+    sampleRate: 48000,
+    frames: 48000 * 600,
+    totalBytes: 48000 * 600 * 4 + 44,
+    chunks: Array.from({ length: 6 }, (_, index) => ({
+      index,
+      bytes: index < 5 ? CLOUD_PART_BYTES : 48000 * 600 * 4 + 44 - 5 * CLOUD_PART_BYTES,
+    })),
+  };
+  assert.equal(validCloudReport(speech), true);
+  assert.equal(validCloudReport({ ...speech, sampleRate: 44100 }), false);
+  assert.equal(validCloudReport({ ...speech, channels: 2 }), false);
+  assert.equal(validCloudReport({ ...speech, frames: 48000 * 601 }), false);
+  const stem = {
+    ...report,
+    preset: singingSeparation.id,
+    channels: 2,
+    totalBytes: report.frames * 8 + 44,
+    chunks: [{ index: 0, bytes: report.frames * 8 + 44 }],
+  };
+  assert.equal(validCloudReport(stem), true);
+  assert.equal(validCloudReport({ ...stem, channels: 1 }), false);
+  assert.equal(validCloudReport({ ...stem, sampleRate: 48000 }), false);
+});
+
+test('a transcript report is one bounded JSON part and never passes as audio', () => {
+  const ok = {
+    preset: transcription.id,
+    chunks: [{ index: 0, bytes: 900 }],
+    totalBytes: 900,
+    words: 120,
+    language: 'pt',
+  };
+  assert.equal(validTranscriptReport(ok), true);
+  assert.equal(validTranscriptReport({ ...ok, language: null }), true);
+  assert.equal(validCloudReport(ok), false);
+  for (const bad of [
+    { ...ok, preset: voiceIsolator.id },
+    { ...ok, totalBytes: 5 * 1024 * 1024, chunks: [{ index: 0, bytes: 5 * 1024 * 1024 }] },
+    { ...ok, chunks: [{ index: 0, bytes: 899 }] },
+    { ...ok, chunks: [ok.chunks[0], { index: 1, bytes: 1 }] },
+    { ...ok, words: -1 },
+    { ...ok, language: 'Português' },
+  ])
+    assert.equal(validTranscriptReport(bad), false);
+  assert.equal(outputParts(transcription.id), 1);
+});
+
+test('stems report: five named stems that fill the package exactly', () => {
+  const sizes = [30, 40, 50, 60, 70];
+  const ok = {
+    preset: stemSeparation.id,
+    chunks: [{ index: 0, bytes: 250 }],
+    totalBytes: 250,
+    frames: 44100,
+    sampleRate: 44100,
+    channels: 2,
+    gainDb: -0.4,
+    stems: ['voz', 'bateria', 'baixo', 'guitarra', 'outros'].map((name, i) => ({
+      name,
+      bytes: sizes[i],
+    })),
+  };
+  assert.equal(validStemsReport(ok), true);
+  assert.equal(validCloudReport(ok), false);
+  assert.equal(outputParts(stemSeparation.id), 40);
+  for (const bad of [
+    { ...ok, stems: ok.stems.slice(0, 4) },
+    { ...ok, stems: [...ok.stems].reverse() },
+    { ...ok, totalBytes: 251, chunks: [{ index: 0, bytes: 251 }] },
+    { ...ok, channels: 1 },
+    { ...ok, sampleRate: 48000 },
+    { ...ok, gainDb: 3 },
+    { ...ok, frames: 44100 * 601 },
+    {
+      ...ok,
+      chunks: [
+        { index: 0, bytes: 100 },
+        { index: 1, bytes: 150 },
+      ],
+    },
+  ])
+    assert.equal(validStemsReport(bad), false);
 });

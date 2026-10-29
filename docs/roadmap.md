@@ -211,6 +211,11 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   endpoint de entrada no HUB, a entrega assinada ao Maestro e tirar a rota de `DISABLED_ROUTES`, com decisão do titular.
 - ✅ Eventos versionados, outbox, fila com retry/backoff, dead-letter, revisão, reprocessamento; fluxo ponta a ponta
   testado com fixtures gerados pelo código real do SOBEDESCE.
+- 🟡 NOSSOM · Isolar voz no nível do Voice Isolator do ElevenLabs (29/10/2026): Mel-Band RoFormer + MossFormer2 SE 48K, modos Fala e Música, medido em CPU ([estudo](../products/nossom/docs/estudo-elevenlabs.md)); falta build da imagem, homologação na GPU e audição cega (⛔ autorização de deploy e GPU).
+- ✅ NOSSOM · vídeo de verdade (29/10/2026): vídeo até 2 GB lido no aparelho, só o som (FLAC) vai à GPU, botão Vídeo devolve o original com o som novo (até 1 GB).
+- ✅ NOSSOM · Legendas (29/10/2026): Whisper large-v3-turbo com tempo por palavra, SRT/VTT/TXT no navegador.
+- ✅ NOSSOM · Remixar (29/10/2026, pedido do titular): voz, bateria, baixo, guitarra e outros com faders, mudo, Só instrumental e Só acapella; as faixas somam o original.
+- ⬜ NOSSOM · próximas fases do estudo: arquivos de 1 h, tirar eco, edição por texto, voz com consentimento, dublagem.
 - 🟡 NOSSOM: link e contrato `edit.timeline.ready`; passagem automática ⬜ (precisa de mudança no NOSSOM, com autorização).
 - ⬜ HUB recebendo o recibo do Synquei (`synquei.preparo/1`, parser pronto em `parsePreparos`) no projeto; o Synquei
   segue lendo o manifesto local e o `OrganizationPlan` do HUB fica como prévia.
@@ -502,6 +507,19 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   como "em produção". Só administração e gestão mudam (RLS + funções `maestro.coluna_*`); organizações existentes
   ficam com as 8 de hoje. Falta: aplicar a 0024 em produção (vai junto com o próximo deploy autorizado do Maestro) e
   conferir num iPhone de verdade.
+
+- 🟡 **Lançamento do Maestro em Beta grátis** (29/10/2026, decisão do titular, [ADR 0027](decisions/0027-lancamento-maestro-beta-gratis.md);
+  pronto no ramo, vale no OK final): migration `0027_maestro_lancamento.sql` (gate `public_beta` em todos os canais; o
+  Maestro inteiro no grátis, no Completo e no Pro com os créditos do plano; Pro v2 em rascunho abre o Maestro e mantém
+  a marca própria; o grátis nunca leva o sinal; entitlements das contas atuais, idempotente). HUB: "Conheça de perto"
+  com o Maestro no MacBook e no iPhone (`produto-maestro-*.webp`), `/baixar` com navegador e Tela de Início, a Z
+  sabendo que é Beta grátis; o fluxo só mostra quem manda evento. PWA do Maestro (manifesto, ícones do ícone oficial,
+  `apple-touch-icon`, metas do Safari, "No celular, como app." em Ajustes e na página inicial). Página inicial lançada
+  (Beta grátis, "Criar conta grátis", "Entrar com Absolute ZRO", app de computador só com instalador publicado) e o
+  Maestro nas listas da família de SOBEDESCE, Synquei, TPeasy, NOSSOM, AEON, Revela e Carro do Freela, tudo atrás de
+  chaves que viram juntas (`node scripts/lancamento-maestro.mjs --abrir`; checklist e reversão em
+  [docs/operations/lancamento-maestro.md](operations/lancamento-maestro.md)). Falta: o OK do titular, publicar cada
+  app e o app de computador do Maestro entrar na central (`APPS_DESKTOP`) quando tiver Release.
 - ⬜ Maestro, pendente do titular: ciência dos serviços abertos da calculadora; criar a chave de API do Google só do
   Maestro (restrita à Drive API e a `maestro.absolutezro.com`) e pôr em `MAESTRO_GOOGLE_API_KEY` na Vercel; pôr
   `CRON_SECRET` no projeto `maestro` da Vercel (agendamento que desliga o compartilhamento de revisão vencido).
@@ -620,6 +638,49 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   Card) e a Lista por seção; a barra Hoje · Quadro · Aprovar · Mais fica. Quem só lê anda e lê. Claro e escuro,
   reduzir movimento.
 - ⬜ Entrada "Criação" na navegação e o seletor Roteiros · Fluxos (F2, em paralelo); Exportar (F6).
+
+## Relay: conversão de mídia como setor próprio (29/10/2026, [ADR 0030](decisions/0030-relay-conversao.md))
+
+A Revela fica só com a cor (looks, espaço de cor, LUT e PowerGrade). Codec, contêiner e formatos de vídeo e áudio vão
+para uma plataforma nova, vendida sozinha e chamada pelas outras.
+
+- ✅ Mapa do que já converte no ecossistema (Revela, SOBEDESCE, AEON, NOSSOM) e a divisão entre os setores, na ADR.
+- ✅ Nome: **Relay** (`relay`, relay.absolutezro.com), aberto. Contrato de integração por plataforma em
+  [integration-contracts/relay.md](integration-contracts/relay.md).
+- ✅ Relay de pé em `products/relay/` (29/10/2026): identidade (o relé: trilho, sinal menta → limão e o anel do O;
+  guia em `marca/`), página inicial com o relé ligando e as entradas na rolagem, conversor com 16 destinos (23 desde 29/10: TV, LinkedIn, X, Slides, Vídeo de fundo) com fonte e
+  data, vários destinos e arquivos de uma vez, ficha técnica de cada saída, presets da pessoa ("Meus", editor com a
+  ficha ao vivo, levar e trazer em `.relay.json`) e tamanho máximo que escolhe a resolução. 38 testes (unidade, ffmpeg
+  e Chromium de verdade). ⛔ Projeto Vercel `relay` e domínio pedem autorização do titular.
+- ✅ Qualidade medida contra uma referência x264 no mesmo tamanho (`npm run qualidade`,
+  [QUALIDADE](../products/relay/docs/QUALIDADE.md), interno): no computador, empata; no navegador, Lanczos e YUV
+  BT.709 na placa, cor do ProRes corrigida e 10 bits arredondados. O Chromium do Linux (OpenH264) fica abaixo do x264.
+  Falta: medir em Mac (VideoToolbox), Windows e iPhone reais.
+- ✅ Liberado aos usuários junto com o Maestro (29/10/2026, decisão do titular, sem e-mail): `RELEASE=released` no
+  projeto Vercel `relay` e a migration `0032` (produto ativo, gate web). Site sem "grátis" no texto (posicionamento da
+  marca, como a página inicial do HUB).
+- ✅ Comparativo com outros conversores fora do público (pedido do titular): sem a página de qualidade, sem citar marca
+  em texto ou código; o laboratório interno mede contra uma referência x264.
+- ✅ Laboratório de aparelhos (`/laboratorio`, só nas prévias da Vercel e no `npm run dev`): cenas geradas no aparelho,
+  codificadas pelo chip dele e medidas contra a referência x264 no mesmo bitrate. ⬜ Rodar no Mac, iPhone e Windows do
+  titular e ajustar os bitrates por aparelho.
+- ✅ Máxima qualidade: no Mac e no Windows, o Relay abre o app SOBEDESCE pelo link `sobedesce://relay` com os destinos
+  (inclusive os da pessoa); o app converte arquivos do computador com o x264 e salva ao lado do original.
+- ✅ SOBEDESCE: "Converter com o Relay" no computador e no celular, com o núcleo do Relay copiado e conferido por teste
+  dos dois lados; a Revela sai do SOBEDESCE.
+- ✅ HUB: produto `relay` no catálogo (migration `0031`, incluído em todo plano, fechado pelo gate), `ProductId`, catálogo
+  de integrações e a Z.
+- ⬜ Revela tira a aba Converter e aponta para o Relay (na conversa da Revela); AEON e NOSSOM exportam pelos presets do
+  Relay; Synquei e Maestro pedem versões pela fila ([contrato](integration-contracts/relay.md)).
+- ✅ Presets de TV e formatos específicos (pedido do titular, 29/10/2026): Smart TV (H.264 Full HD a 30 fps, pendrive) e
+  Smart TV 4K (HEVC) num grupo TV; LinkedIn e X em Redes; Slides e Vídeo de fundo (sem som) em Trabalho. Entrega para
+  emissora (MXF/XDCAM, ProRes, loudness) fica de fora até existir no computador.
+- ✅ Leitura com plano B: gravação de tela do Mac recusada pelo navegador ("Este navegador não lê H.264") é tentada de
+  outras formas, só vale a que devolve quadro; sem jeito, o erro mostra codec, tamanho e navegador.
+- ⬜ Confirmar no aparelho do titular qual navegador recusou a gravação de tela (o detalhe do erro agora diz).
+- ⬜ "Baixar como…" das Referências e o pedido da Z no SOBEDESCE pelos presets do Relay.
+- ⬜ Computador: ProRes, DNxHR e HDR 10 bits de saída; loudness normalizado; legenda queimada; corte de trecho.
+- ⬜ Evento `media.conversion.completed` no HUB, quando a primeira integração passar por ele.
 
 ## Fase 6 — Escala
 

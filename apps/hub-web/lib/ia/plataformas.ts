@@ -24,7 +24,15 @@ export const PLATAFORMAS: Record<string, { nome: string; faz: string[] }> = {
     nome: 'SOBEDESCE',
     faz: [
       'Baixa e sobe pastas gigantes no Google Drive com várias conexões, pausa e continua, e confere cada arquivo (MD5).',
-      'Compara uma pasta do computador com uma do Drive, recebe arquivos do celular pelo Wi-Fi, gera proxies e converte com a Revela pelo celular.',
+      'Compara uma pasta do computador com uma do Drive, recebe arquivos do celular pelo Wi-Fi, gera proxies e converte com o Relay (no computador e no celular).',
+    ],
+  },
+  relay: {
+    nome: 'Relay (relay.absolutezro.com)',
+    faz: [
+      'Conversor de vídeo e áudio no próprio aparelho (nada é enviado), incluído em toda conta Absolute ZRO: YouTube 1080p/1440p/4K, Shorts, Reels · No Compress, Instagram Feed 4:5, TikTok, WhatsApp, LinkedIn, X, Vimeo, Apple HEVC, Slides (PowerPoint, Keynote), vídeo de fundo de site (sem som), proxy para edição, Smart TV (Full HD pelo pendrive) e Smart TV 4K (HEVC), Discord (20 MB), e-mail (25 MB), tamanho exato e áudio em MP3 320, AAC 256 ou WAV 48 kHz.',
+      'Vários destinos de uma vez, presets próprios da pessoa ("Meus", com ficha técnica: codec, tamanho, cadência, bitrate ou tamanho máximo, quadro-chave e áudio) e levar/trazer presets em arquivo .relay.json.',
+      'Para arquivo que está no Drive: o SOBEDESCE converte com o Relay no computador ou no celular e sobe ao lado do original.',
     ],
   },
   synquei: {
@@ -51,7 +59,8 @@ export const PLATAFORMAS: Record<string, { nome: string; faz: string[] }> = {
   maestro: {
     nome: 'Maestro (maestro.absolutezro.com)',
     faz: [
-      'Em teste fechado (só a lista de acesso entra): a gestão da produtora num lugar só: funil de pedidos e CRM de clientes, orçamentos, financeiro, controle de pauta (Quadro em 8 colunas), agenda e aprovação do cliente por link sem conta, com projetos ligados ao projeto da Absolute ZRO.',
+      'Em Beta para toda conta Absolute ZRO: a gestão da produtora num lugar só: funil de pedidos e CRM de clientes, orçamentos com contrato e aceite online, financeiro, freelas, equipamento, controle de pauta (Quadro em 8 colunas), agenda e aprovação do cliente por link sem conta, com projetos ligados ao projeto da Absolute ZRO.',
+      'Entra com a mesma conta (maestro.absolutezro.com › Entrar com Absolute ZRO). No celular vira app: no Safari, Compartilhar › Adicionar à Tela de Início; Ajustes do Maestro mostra o caminho.',
       'A Z lê o dia da produtora no Maestro (ver_maestro): retornos de hoje, cards vencendo, peças com o cliente, contagens e, para administração e gestão, meta, faturado, caixa, a receber e a pagar. Só leitura: criar pedido, cliente ou despesa e mexer no Quadro é no próprio Maestro.',
     ],
   },

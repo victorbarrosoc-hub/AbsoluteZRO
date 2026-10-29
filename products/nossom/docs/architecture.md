@@ -17,13 +17,16 @@ flowchart LR
   UI -->|salvar resultado e pedir limpeza| API
 ```
 
-A aplicação tem três caminhos de áudio, que não devem ser confundidos:
+A aplicação tem estes caminhos de áudio, que não devem ser confundidos:
 
-| Caminho                    | Execução                            | Dados enviados                                  | Resultado                                                        |
-| -------------------------- | ----------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------- |
-| Ferramentas locais         | Navegador, workers/WASM             | Não enviam o arquivo ao servidor para processar | Limpeza local, EQ, dinâmica, efeitos, mixagem, medição e entrega |
-| Restauração de fala `auto` | RunPod, preset `resemble-d-v1`      | Cópia temporária privada do original            | WAV float32 mono, 44,1 kHz                                       |
-| Separação musical `vocals` | RunPod, preset `htdemucs-vocals-v1` | Cópia temporária privada do original            | Stem `vocals`, WAV float32 estéreo, 44,1 kHz                     |
+| Caminho                    | Execução                               | Dados enviados                                  | Resultado                                                        |
+| -------------------------- | -------------------------------------- | ----------------------------------------------- | ---------------------------------------------------------------- |
+| Ferramentas locais         | Navegador, workers/WASM                | Não enviam o arquivo ao servidor para processar | Limpeza local, EQ, dinâmica, efeitos, mixagem, medição e entrega |
+| Restauração de fala `auto` | RunPod, preset `resemble-d-v1`         | Cópia temporária privada do original            | WAV float32 mono, 44,1 kHz                                       |
+| Isolar voz · Fala          | RunPod, preset `voice-isolator-v1`     | Cópia temporária privada do original            | Só a fala, WAV float32 mono, 48 kHz                              |
+| Isolar voz · Música        | RunPod, preset `roformer-vocals-v1`    | Cópia temporária privada do original            | Stem vocal, WAV float32 estéreo, 44,1 kHz                        |
+| Remixar                    | RunPod, preset `stems-v1`              | Cópia temporária privada do original            | 5 stems FLAC 24 bits estéreo; o remix é mixado no navegador      |
+| Legendas                   | RunPod, preset `whisper-transcript-v1` | Cópia temporária privada do original            | JSON com palavras e tempos; SRT/VTT/TXT montados no navegador    |
 
 A conversa Anthropic recebe pedido e medições, **não o áudio**. Voz ao vivo ElevenLabs é opcional e usa o microfone apenas quando iniciada pelo usuário. Nenhum modo promete funcionamento offline completo.
 
@@ -40,7 +43,10 @@ Rotas principais:
 - `/api/zro/entrar`, `/api/zro/callback`, `/api/zro/conta`: "Continuar com Absolute ZRO" (OIDC + PKCE) e a ligação em Minha conta; veja [zro-login.md](zro-login.md).
 - `/studio`, `/studio/ia`: assistente com anexo e atalhos para ferramentas reais.
 - `/studio/projetos`, `/studio/conta`, `/studio/admin`: projetos locais, conta e administração restrita.
-- `/studio/automatico`, `/studio/isolar-voz`: restauração remota e separação musical.
+- `/studio/automatico`: restauração remota (Resemble Enhance D).
+- `/studio/remixar`: cinco faixas (voz, bateria, baixo, guitarra, outros) que somam exatamente o original; faders em dB, mudo, atalhos Só instrumental e Só acapella, prévia ao vivo e versão renderizada no navegador.
+- `/studio/legendas`: transcrição com tempo por palavra (Whisper large-v3-turbo); SRT, VTT e TXT gerados no navegador e guardados no projeto.
+- `/studio/isolar-voz`: Isolar voz, com dois modos: **Fala** (`voice-isolator-v1`, padrão) e **Música** (`roformer-vocals-v1`). Pedidos antigos `htdemucs-vocals-v1` continuam aceitos até terminar.
 - As demais ferramentas são mapeadas em `lib/studio-routes.ts` e agrupadas em `lib/workflow.ts`.
 - `/apps`, `/privacidade`: distribuição e explicação de armazenamento/envio.
 
@@ -55,7 +61,8 @@ Rotas principais:
 | Controles e presets       | `lib/presets.ts`, `lib/equalizer.ts`, `lib/broadcast.ts`, `lib/effects.ts`, `lib/voice-presets.ts`, `lib/saved-presets.ts`                               |
 | Cliente de jobs           | `lib/cloud-audio.ts`, `lib/restoration.ts`                                                                                                               |
 | Orquestração remota       | `app/api/audio/jobs/route.ts`, `lib/server/restoration.ts`                                                                                               |
-| Worker e modelo musical   | `Dockerfile`, `workers/restoration/handler.py`, `workers/restoration/vocals.py`                                                                          |
+| Worker e modelos          | `Dockerfile`, `workers/restoration/handler.py`, `isolator.py`, `stems.py`, `transcribe.py`, `vocals.py` em `workers/restoration/`                        |
+| Remix e legendas          | `lib/stems.ts`, `components/stem-mixer.tsx`, `lib/transcript.ts`                                                                                         |
 | Conta e sessão            | `app/api/account/route.ts`, `lib/server/account.ts`, `lib/server/supabase.ts`, `proxy.ts`                                                                |
 | Planos, cota e ADM        | `lib/server/usage.ts`, `lib/plans.ts`, `app/api/usage/`, `app/api/admin/`, `components/admin-dashboard.tsx`                                              |
 | IA de texto               | `components/assistant.tsx`, `app/api/ai/`, `lib/server/managed-agent.ts`, `lib/server/claude.ts`                                                         |
@@ -82,7 +89,7 @@ A/B iguala o volume de escuta sem alterar o export. As medições devem ser do W
 4. A submissão envia um preset validado. O worker não recebe service role nem aceita URL/modelo arbitrário do cliente.
 5. O provedor retorna um ID. Despacho ambíguo não é repetido automaticamente.
 6. A consulta reconcilia o estado com o provedor. `queued` não ganha porcentagem inventada.
-7. Relatório de saída é validado por preset, canais, taxa, frames, bytes e partes. D usa até 6 partes; vocais estéreo, até 11. O limite de entrada não aumenta.
+7. Relatório de saída é validado por preset, canais, taxa, frames, bytes e partes (`presetSpec` em `lib/restoration.ts`, espelhado em `PRESETS` no worker). D e Fala usam até 6 partes; vocais estéreo, até 11. O limite de entrada não aumenta.
 8. O resultado vira versão local antes da limpeza dos objetos temporários. Retomar um job não deve submeter outra GPU.
 9. Cancelamento/falha confirmados devolvem a reserva. Falha de comunicação não autoriza liberar/repetir um job ainda ambíguo.
 
@@ -104,4 +111,4 @@ ADM confirmado tem franquia NOSSOM ilimitada, mas isso não remove custos/limite
 
 Mantenha as políticas e headers de `next.config.ts`: workers, WASM, áudio, blobs e isolamento dependem deles. Não abra `connect-src`/origens sem analisar a necessidade. Não coloque segredos no prefixo `NEXT_PUBLIC_`, no renderer Electron, em URLs de download ou em logs públicos.
 
-Preserve licenças de FFmpeg, DeepFilterNet, RNNoise, Resemble Enhance, Demucs e dos materiais demonstrativos. Não alegue equivalência ao Adobe, separação perfeita, compreensão auditiva pelo Claude ou qualidade musical homologada apenas por mocks/sinais sintéticos.
+Preserve licenças de FFmpeg, DeepFilterNet, RNNoise, Resemble Enhance, Demucs, Mel-Band RoFormer (pesos de Kimberley Jensen, MIT; código bs-roformer, MIT), MossFormer2 SE 48K (ClearerVoice-Studio, Apache-2.0) e dos materiais demonstrativos. Não alegue equivalência ao Adobe, separação perfeita, compreensão auditiva pelo Claude ou qualidade musical homologada apenas por mocks/sinais sintéticos.

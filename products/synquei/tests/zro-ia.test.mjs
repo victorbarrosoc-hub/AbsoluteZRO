@@ -6,7 +6,7 @@
 import { after, before, beforeEach, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import http from 'node:http'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { iniciarZroFalsa } from './zro-falso.mjs'
 
 const CLIENTE = { clientId: 'synquei-web', clientSecret: 'segredo-de-teste-do-synquei' }
@@ -200,10 +200,24 @@ describe('painel do app', () => {
     assert.match(sw, /startsWith\('\/api\/'\)/)
     assert.match(sw, /u\.origin !== location\.origin/)
   })
-  test('a família só lista plataformas abertas (NOSSOM, AEON, Revela, Carro do Freela e Maestro estão fechados)', () => {
+  test('a família só lista plataformas abertas (NOSSOM, AEON, Revela e Carro do Freela estão fechados)', () => {
     const fam = /<nav class="nav nav-familia"[\s\S]*?<\/nav>/.exec(html)[0]
     const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
-    assert.doesNotMatch(fam + sw, /nossom|aeon|revela|carrodofreela|carro-do-freela|maestro/i)
+    assert.doesNotMatch(fam + sw, /nossom|aeon|revela|carrodofreela|carro-do-freela/i)
     for (const nome of ['Absolute ZRO', 'Sobedesce', 'TPEasy']) assert.ok(fam.includes(`<span>${nome}</span>`), nome)
+  })
+  test('o Maestro entra na família no lançamento (bloco maestro-familia, aberto ou comentado), com o ícone dele', () => {
+    const fam = /<nav class="nav nav-familia"[\s\S]*?<\/nav>/.exec(html)[0]
+    const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
+    const aberto = /<!--maestro-familia-->([\s\S]*?)<!--\/maestro-familia-->/.exec(fam)
+    const fechado = /<!--maestro-familia ([\s\S]*?) maestro-familia-->/.exec(fam)
+    assert.ok(!!aberto !== !!fechado, 'um bloco só, aberto ou fechado')
+    const bloco = (aberto ?? fechado)[1]
+    assert.match(bloco, /href="https:\/\/maestro\.absolutezro\.com"/)
+    assert.match(bloco, /<span>Maestro<\/span>/)
+    assert.ok(existsSync(new URL('../app/familia/maestro.svg', import.meta.url)))
+    assert.ok(sw.includes("'/app/familia/maestro.svg'"))
+    // fora do bloco, nenhum Maestro
+    assert.doesNotMatch(fam.replace((aberto ?? fechado)[0], ''), /maestro\.absolutezro/)
   })
 })

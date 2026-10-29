@@ -3,9 +3,11 @@ import type { CSSProperties } from "react";
 import { temAcesso } from "@/lib/auth/acesso";
 import { sessaoDaPagina } from "@/lib/auth/pagina";
 import { COLUNAS } from "@/lib/quadro/metodo";
-import { CONTATO, HUB_URL, ROTAS, SITE_FRASE, SITE_NOME } from "@/lib/site";
+import { downloadsDoMaestro } from "@/lib/desktop";
+import { CONTATO, CRIAR_CONTA_ZRO, ENTRAR_ZRO, HUB_URL, MAESTRO_LANCADO, ROTAS, SITE_FRASE, SITE_NOME } from "@/lib/site";
 import { Icone, type NomeIcone } from "@/components/icones";
 import { IPhone, MacBook } from "@/components/inicio/aparelhos";
+import { InstalarNoCelular } from "@/components/instalar";
 import { QueroAcesso } from "@/components/inicio/quero-acesso";
 import { MaestroSimbolo, ZroSimbolo } from "@/components/marca";
 import { SeletorDeTema } from "@/components/tema";
@@ -62,19 +64,27 @@ function palavras(texto: string, de: number) {
 
 /**
  * Página inicial pública do Maestro (plano v2 §10), no padrão das irmãs: o símbolo desenhando a pauta, o produto real em
- * aparelhos, só o que existe, e a porta: "Entrar com Absolute ZRO" para quem já tem acesso e "Quero acesso" para os
- * outros. O Maestro está fechado (só a lista de acesso do HUB entra): a página diz isso sem rodeio.
+ * aparelhos, só o que existe, e a porta. Lançado (`MAESTRO_LANCADO`, Beta para toda conta Absolute ZRO):
+ * "Criar conta" e "Entrar com Absolute ZRO" direto no login único, o app no celular e, se houver instalador publicado,
+ * o de computador. Antes do lançamento: "Em teste fechado", "Quero acesso" (lista de espera) e "Entrar" para quem já
+ * está na lista do HUB. Quem entra é sempre o gate do HUB (temAcesso), nunca esta página.
  */
 export default async function Inicio() {
   const sessao = await sessaoDaPagina().catch(() => null);
   const dentro = !!sessao && temAcesso(sessao);
+  const downloads = MAESTRO_LANCADO ? await downloadsDoMaestro() : [];
   const entrar = dentro ? (
     <a className="glass-btn glass-btn--ink" href={ROTAS.app}>
       Abrir o Maestro
     </a>
   ) : (
-    <a className="glass-btn" href={ROTAS.entrar}>
+    <a className="glass-btn" href={MAESTRO_LANCADO ? ENTRAR_ZRO : ROTAS.entrar}>
       <ZroSimbolo size={18} /> Entrar com Absolute ZRO
+    </a>
+  );
+  const criarConta = dentro ? null : (
+    <a className="glass-btn glass-btn--ink" href={CRIAR_CONTA_ZRO}>
+      Criar conta
     </a>
   );
   return (
@@ -86,7 +96,7 @@ export default async function Inicio() {
         </a>
         <div className="site-topo__fim">
           <SeletorDeTema />
-          <a className="glass-btn glass-btn--sm glass-btn--ink" href={dentro ? ROTAS.app : ROTAS.entrar}>
+          <a className="glass-btn glass-btn--sm glass-btn--ink" href={dentro ? ROTAS.app : MAESTRO_LANCADO ? ENTRAR_ZRO : ROTAS.entrar}>
             {dentro ? "Abrir" : "Entrar"}
           </a>
         </div>
@@ -95,17 +105,26 @@ export default async function Inicio() {
       <main id="conteudo">
         <section className="ihero" aria-labelledby="ihero-titulo">
           <MaestroSimbolo width={320} className="ihero__simbolo" />
-          <span className="selo selo--fechado">
-            <i aria-hidden="true" />
-            Em teste fechado
-          </span>
+          {MAESTRO_LANCADO ? (
+            <span className="selo selo--beta">
+              <i aria-hidden="true" />
+              Beta
+            </span>
+          ) : (
+            <span className="selo selo--fechado">
+              <i aria-hidden="true" />
+              Em teste fechado
+            </span>
+          )}
           <h1 className="ihero__titulo" id="ihero-titulo">
             <span className="ihero__fino">{palavras("A produtora", 0)}</span> <strong>{palavras("inteira", 2)}</strong>{" "}
             <span className="ihero__fino">{palavras("num lugar só.", 3)}</span>
           </h1>
           <p className="apoio ihero__apoio">Pauta, aprovação, orçamento e financeiro da sua equipe, com a sua conta Absolute ZRO.</p>
           <div className="acoes acoes--centro ihero__acoes">
-            {dentro ? null : (
+            {dentro ? null : MAESTRO_LANCADO ? (
+              criarConta
+            ) : (
               <a className="glass-btn glass-btn--ink" href="#acesso">
                 Quero acesso
               </a>
@@ -209,25 +228,63 @@ export default async function Inicio() {
           </ul>
         </section>
 
-        <section className="isecao iacesso" id="acesso" aria-labelledby="acesso-titulo">
-          <div className="isecao__cabeca revela">
-            <MaestroSimbolo width={96} />
-            <h2 className="isecao__titulo" id="acesso-titulo">
-              Por convite, <strong>por enquanto.</strong>
-            </h2>
-            <p className="apoio">Deixe seu e-mail e a gente avisa quando abrir para você.</p>
-          </div>
-          {dentro ? (
-            <div className="acoes acoes--centro">{entrar}</div>
-          ) : (
-            <>
-              <QueroAcesso />
-              <p className="sutil iacesso__ja">
-                Já tem acesso? <a href={ROTAS.entrar}>Entrar com Absolute ZRO</a>
-              </p>
-            </>
-          )}
-        </section>
+        {MAESTRO_LANCADO ? (
+          <section className="isecao" id="celular" aria-label="No celular e no computador">
+            <div className="revela">
+              <InstalarNoCelular variante="pagina" />
+            </div>
+            {downloads.length ? (
+              <div className="isecao__cabeca revela">
+                <h2 className="isecao__titulo">
+                  No <strong>computador.</strong>
+                </h2>
+                <div className="idesktop">
+                  {downloads.map((d) => (
+                    <a key={d.sistema} className="glass-btn" href={d.href} title={d.versao ? `Versão ${d.versao}` : undefined}>
+                      <Icone nome="computador" size={18} /> {d.rotulo}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </section>
+        ) : null}
+
+        {MAESTRO_LANCADO ? (
+          <section className="isecao iacesso" id="acesso" aria-labelledby="acesso-titulo">
+            <div className="isecao__cabeca revela">
+              <MaestroSimbolo width={96} />
+              <h2 className="isecao__titulo" id="acesso-titulo">
+                Já está <strong>na sua conta.</strong>
+              </h2>
+              <p className="apoio">Entre com a conta Absolute ZRO.</p>
+            </div>
+            <div className="acoes acoes--centro">
+              {criarConta}
+              {entrar}
+            </div>
+          </section>
+        ) : (
+          <section className="isecao iacesso" id="acesso" aria-labelledby="acesso-titulo">
+            <div className="isecao__cabeca revela">
+              <MaestroSimbolo width={96} />
+              <h2 className="isecao__titulo" id="acesso-titulo">
+                Por convite, <strong>por enquanto.</strong>
+              </h2>
+              <p className="apoio">Deixe seu e-mail e a gente avisa quando abrir para você.</p>
+            </div>
+            {dentro ? (
+              <div className="acoes acoes--centro">{entrar}</div>
+            ) : (
+              <>
+                <QueroAcesso />
+                <p className="sutil iacesso__ja">
+                  Já tem acesso? <a href={ROTAS.entrar}>Entrar com Absolute ZRO</a>
+                </p>
+              </>
+            )}
+          </section>
+        )}
       </main>
 
       <footer className="site-rodape">

@@ -86,6 +86,15 @@ export const ADAPTERS: AdapterInfo[] = [
     notYet: ['Ainda não está no ar: existe o protótipo referência → LUT, sem tela e sem ligação com o HUB'],
     sourceManifest: null,
   },
+  {
+    productId: 'relay',
+    strategy: 'Relay: conversão e exportação em products/relay (ADR 0030), em todo plano; as outras plataformas usam o núcleo dele',
+    inputs: ['Vídeo ou áudio (do aparelho, ou do Drive pelo SOBEDESCE)', 'Preset do Relay ou da pessoa'],
+    outputs: ['A versão de cada destino, ao lado do original'],
+    hubCan: ['Catálogo e gate de lançamento', 'A Z sabe o que o Relay faz e pede conversões pelo computador da conta (SOBEDESCE)'],
+    notYet: ['Evento media.conversion.completed: só quando a primeira conversão passar pelo HUB (docs/integration-contracts/relay.md)'],
+    sourceManifest: null,
+  },
 ]
 
 export const adapterFor = (productId: string) => ADAPTERS.find((a) => a.productId === productId) ?? null

@@ -116,3 +116,62 @@ Não execute duas suítes simultaneamente nas portas 3000/55440. Para investiga�
 - Equivalência de qualidade a motores proprietários ou certificação de entrega audiovisual.
 
 [Registros históricos de medição e validação](validation-history.md) permanecem para auditoria, mas contêm versões, cotas e hipóteses antigas. Não os use como checklist operacional atual. Consulte [handoff/OPERATIONS.md](handoff/OPERATIONS.md).
+
+## 29/10/2026 · Isolar voz (Fala e Música)
+
+- Benchmark em CPU (`workers/restoration/benchmark`, dados CC BY 4.0, 8 cenários com fala real em português):
+  média de 7 cenários com ruído, SI-SDR **15,46 dB** para RoFormer + MossFormer2 contra 11,13 do DeepFilterNet3,
+  9,96 do HTDemucs e −0,17 da entrada. PESQ-WB 2,56, ESTOI 0,90 e DNSMOS OVRL 3,23 também são os melhores. Fala
+  limpa passa transparente (39 dB). Reverberação não é removida (4,6 dB no cenário com sala). Tabela completa em
+  [estudo-elevenlabs.md](estudo-elevenlabs.md).
+- Código de produção (`isolator.isolate_voice`, decodificado com FFmpeg como no worker, pesos reais em CPU): SI-SDR
+  14,72 dB no cenário vlog (benchmark 14,74), 511.680 frames a 48 kHz, exatamente a duração da entrada.
+- `test_isolator.py` (PyTorch CPU, modelos substitutos): separação com identidade devolve a entrada (0,1–21 s, erro
+  ≤ 1e-6); máscara unitária preserva duração e cauda nas passagens única e em janelas (3–47 s); saída mono 48 kHz.
+- `test_handler.py`: tabela de presets igual a `presetSpec`, 10 min de cada preset cabem nas partes assinadas,
+  preset desconhecido recusado sem detalhes. Ambos rodam no CI (`worker`), conferidos num ambiente limpo.
+- `npm test` 76/76 (contrato de 48 kHz mono e de estéreo 44,1 kHz; os quatro presets despacham uma vez só);
+  `npm run test:e2e` 75 passaram e 1 pulado (gravação privada ausente); Fala e Música salvam o WAV exato, mobile sem
+  rolagem lateral e sem violações axe.
+- Correções de tela achadas na revisão: o controle de intensidade não aparece mais nas ferramentas de GPU (o
+  servidor o ignorava) e o rodapé mostra 48 kHz quando é o caso.
+- **Não validado:** build da imagem, tempo e custo na GPU, cold start, áudio real de clientes e audição cega contra
+  ElevenLabs e Resemble D. Nada disso foi publicado (exige autorização).
+
+## 29/10/2026 · Vídeo de verdade
+
+- Importação: vídeo (MP4, MOV, M4V, WebM, MKV) até 2 GB é lido no lugar com WORKERFS, sem copiar o arquivo para a
+  memória do FFmpeg; áudio passa de 100 MB para 500 MB; duração segue em 10 min. Capa de música (`attached pic`)
+  não conta como vídeo.
+- GPU: em vídeo ou arquivo acima de 100 MB, só vai FLAC sem perda a 44,1 kHz (24 bits; 16 bits se passar de 100 MB),
+  com ganho reduzido só quando o pico passa de 0 dBFS. Retomar um pedido já na fila não codifica de novo.
+- Exportar: botão **Vídeo** remonta o original com o som da versão escolhida, vídeo copiado sem recodificar, AAC
+  256 kb/s (Opus em WebM), até 1 GB; acima disso, a tela pede para baixar o WAV.
+- `tests/e2e/video.spec.ts` (MP4 sintético H.264 + AAC, `tests/fixtures/synthetic-video.mp4`): o envio começa com
+  `fLaC`, não contém o MP4 e tem o tamanho declarado; o vídeo baixado tem `ftyp`, `avc1` e `mp4a`. Conferido à parte
+  com ffprobe: H.264 96×64 e AAC 48 kHz, 4,000 s cada, decodifica sem erro, e o som é o tom devolvido pelo serviço
+  simulado (220 Hz), não o original.
+- Build da imagem do worker no GitHub Actions (run 40940137593): pesos conferidos e as três inferências de teste em
+  CPU passaram (`Voice isolator CPU inference passed`); só a publicação falhou, porque o pacote GHCR antigo é do
+  repositório arquivado. O workflow passa a publicar `absolutezro-nossom-worker`.
+- Suítes: `npm test` 76/76, `npm run test:e2e` 76 passaram + 1 pulado.
+- Não validado: vídeo de celular real de 1–2 GB (memória do navegador no iPhone), HEVC e rotação no Safari.
+
+## 29/10/2026 · Legendas e Remixar
+
+- **Legendas** (`whisper-transcript-v1`): `transcribe.py` medido em CPU com o código de produção: WER 6,8% (20 frases
+  limpas), 5,4% (café a 5 dB), 4,1% num arquivo de 3 min; idioma `pt` detectado; silêncio não gera texto. O modo em
+  blocos do pipeline com tempo por palavra estourou a memória acima de 30 s; trocado por janelas cortadas em pausas
+  (pico estável de 10,3 GB em CPU de 56 s a 3 min). `test_handler.py`: decodificação a 16 kHz mono, JSON único,
+  limite de 4 MiB. `tests/transcript.test.ts`: contrato, linhas (pausa, fim de frase, 42 caracteres × 2 linhas, sem
+  sobreposição) e formatos SRT/VTT/TXT. `tests/e2e/transcribe.spec.ts`: um pedido, legendas salvas no projeto sem
+  criar versão de áudio, arquivos baixados exatos, recarregar mantém, mobile sem rolagem lateral e axe sem violações.
+- **Remixar** (`stems-v1`): `stems.py` em CPU com pesos reais: as cinco faixas somam a entrada (erro 1e-7), FLAC volta
+  idêntico, música instrumental dá voz a −93 dB, voz separada com SI-SDR 10,8 dB sem vazar para as outras.
+  `test_handler.py`: pacote em ordem e dividido nas partes assinadas, 10 min cabem em 40 partes, `output-40`
+  recusado. `tests/stems.test.ts` e contrato em `tests/cloud-restoration.test.ts`. `tests/e2e/remix.spec.ts` (cinco
+  tons como faixas): prévia ao vivo, Só instrumental sem o tom da voz (> 60 dB abaixo), Só acapella só com ele, Baixo
+  +6 dB dobra a amplitude, WAV float32 44,1 kHz.
+- Builds de teste das imagens: `smoke_transcribe.py` e `smoke_stems.py` passaram localmente com os pesos reais.
+- Suítes: `npm test` 115/115; `npm run test:e2e` 61 passaram + 26 pulados (produto fechado, padrão da `main`).
+- Não validado: GPU real (tempo, memória de vídeo, custo), músicas reais variadas e audição das faixas.

@@ -218,13 +218,15 @@ O Google Drive toca vídeo pesado sem travar porque usa uma cópia leve que ele 
 - **Espaço no Drive:** cada cópia ocupa cerca de **2 a 5% do original** (≈ 40 MB por minuto de vídeo). Uma diária de 500 GB em ProRes vira uns 10–20 GB de prévias.
 - O ffmpeg vem dentro do app (GPL v3; licença e fontes em `Resources/ffmpeg-licencas`). Sem ele (rodando do código), o app usa o ffmpeg do sistema (`brew install ffmpeg`), a variável `SOBEDESCE_FFMPEG`, ou `node scripts/ffmpeg-baixar.mjs` para baixar o mesmo do instalador.
 
-### Converter com a Revela
+### Converter com o Relay
 
-Botão direito num vídeo do Drive → **Converter com a Revela…** → escolha **YouTube**, **Vimeo**, **Reels** ou
-**TikTok** → **Converter**. O app converte com o chip de vídeo da máquina e sobe `<nome>-<destino>.mp4` **na mesma pasta**,
-com o MD5 conferido. Codec, bitrate, tamanho e áudio vêm dos presets da **Revela** (a ferramenta de finalização da
-Absolute ZRO): H.264 marcado BT.709, AAC 48 kHz. Pelo celular: no menu do vídeo, **Converter com a Revela**; o
-**próprio celular** converte (sem computador ligado) e envia o arquivo novo para a mesma pasta. Converte quem tocou no
+Botão direito num vídeo ou áudio do Drive → **Converter com o Relay…** → escolha o grupo (Redes, Trabalho, Tamanho,
+Áudio) e o destino (YouTube 1080p/1440p/4K, Shorts, Reels · No Compress, TikTok, WhatsApp, Vimeo, Apple HEVC, Proxy,
+Discord, E-mail, MP3, AAC, WAV) → **Converter**. O app converte com o x264 em qualidade constante
+(o chip de vídeo só sem x264) e sobe `<nome> (<destino>).<ext>` **na mesma pasta**, com o MD5 conferido. Tamanho,
+cadência, bitrate, cor e áudio vêm dos presets do **Relay** (o conversor da Absolute ZRO). Pelo celular: no menu do
+arquivo, **Converter com o Relay**; o **próprio celular** converte com o motor do Relay (sem computador ligado) e envia
+o arquivo novo para a mesma pasta. Converte quem tocou no
 botão. Deixe a tela aberta; acima de ~1,5 GB de arquivo final, prefira o computador. O original nunca muda.
 
 ### Referências (vídeos e fotos que inspiram seus projetos)
