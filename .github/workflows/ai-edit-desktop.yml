@@ -1,0 +1,178 @@
+# Editor da Absolute ZRO (products/ai-edit, nome provisório "AI Edit"): testes, app de desktop e Release, no molde do
+# Synquei. Pull request e main: testes (unidade, telas no Chromium, Electron no Linux) e os instaladores de Mac e
+# Windows com teste de fumaça. Publicar no Release (tag ai-edit-app-desktop) só pelo botão "Run workflow" com
+# "publicar" marcado: distribuir o app é decisão do titular (CLAUDE.md: deploy só com autorização).
+name: Editor · app de desktop
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'products/ai-edit/**'
+      - 'packages/ui/src/tokens.css'
+      - 'docs/integration-contracts/schemas/zro-timeline-ref.v0.schema.json'
+      - '.github/workflows/ai-edit-desktop.yml'
+  pull_request:
+    paths:
+      - 'products/ai-edit/**'
+      - 'packages/ui/src/tokens.css'
+      - 'docs/integration-contracts/schemas/zro-timeline-ref.v0.schema.json'
+      - '.github/workflows/ai-edit-desktop.yml'
+  workflow_dispatch:
+    inputs:
+      publicar:
+        description: 'Publicar os instaladores no Release ai-edit-app-desktop'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ai-edit-desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: products/ai-edit
+
+jobs:
+  testes:
+    name: Testes
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: products/ai-edit/package-lock.json
+      - run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg libxml2-utils xvfb
+      - run: npm ci
+      - run: npm run vendor
+      - run: npx playwright install --with-deps chromium
+      # unidade, exportadores (xmllint), SOBEDESCE, instaladores e telas no Chromium (a transcrição baixa o modelo
+      # Rápido do Hugging Face uma vez)
+      - run: npm test
+      - name: Teste de fumaça do Electron (Linux)
+        run: |
+          export AIEDIT_SMOKE_SAIDA="$RUNNER_TEMP/smoke.txt"
+          code=0
+          xvfb-run -a npx electron . --smoke --no-sandbox || code=$?
+          cat "$AIEDIT_SMOKE_SAIDA" || true
+          test "$code" -eq 0
+          grep -q '^SMOKE OK$' "$AIEDIT_SMOKE_SAIDA"
+
+  # Instaladores só pelo botão "Run workflow" (decisão do titular, 29/10/2026: AEON fechado, sem gerar instalador a
+  # cada push). Push e PR rodam só os testes.
+  app:
+    name: App (${{ matrix.label }})
+    needs: testes
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            label: Mac
+            plataforma: mac
+            build: npm run dist:mac
+          - os: windows-latest
+            label: Windows
+            plataforma: windows
+            build: npm run dist:win
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      CSC_FOR_PULL_REQUEST: 'true'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: products/ai-edit/package-lock.json
+      - run: npm ci
+      - run: npm run vendor
+      - run: node scripts/release.mjs build-info
+      - run: ${{ matrix.build }}
+      - name: Nome do app
+        shell: bash
+        run: echo "NOME=$(node -p "require('./src/produto.js').PRODUTO.nome")" >> "$GITHUB_ENV"
+      # Teste de fumaça do app empacotado (desktop/main.cjs --smoke → app/autoteste.js): grava um vídeo, acha os
+      # silêncios, aprova, exporta para os editores e renderiza. Qualquer outra coisa falha antes de publicar.
+      - if: matrix.plataforma == 'mac'
+        name: Teste de fumaça (Mac)
+        timeout-minutes: 6
+        run: |
+          export AIEDIT_SMOKE_SAIDA="$RUNNER_TEMP/smoke.txt"
+          code=0
+          "dist/mac-universal/$NOME.app/Contents/MacOS/$NOME" --smoke || code=$?
+          cat "$AIEDIT_SMOKE_SAIDA" || true
+          test "$code" -eq 0
+          grep -q '^SMOKE OK$' "$AIEDIT_SMOKE_SAIDA"
+      - if: matrix.plataforma == 'windows'
+        name: Teste de fumaça (Windows)
+        timeout-minutes: 6
+        shell: pwsh
+        run: |
+          $env:AIEDIT_SMOKE_SAIDA = Join-Path $env:RUNNER_TEMP 'smoke.txt'
+          $p = Start-Process -FilePath "dist\win-unpacked\$env:NOME.exe" -ArgumentList '--smoke' -PassThru
+          $null = $p.Handle
+          if (-not $p.WaitForExit(240000)) { $p.Kill($true); Write-Error 'o teste de fumaça passou de 4 minutos'; exit 1 }
+          Get-Content $env:AIEDIT_SMOKE_SAIDA -ErrorAction SilentlyContinue
+          if ($p.ExitCode -ne 0) { exit 1 }
+          if (-not (Select-String -Path $env:AIEDIT_SMOKE_SAIDA -Pattern '^SMOKE OK$' -Quiet)) { exit 1 }
+      - if: github.event_name == 'workflow_dispatch' && inputs.publicar
+        run: node scripts/release.mjs nomear ${{ matrix.plataforma }} dist dist
+      - if: github.event_name == 'workflow_dispatch' && inputs.publicar
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        with:
+          tag_name: ai-edit-app-desktop
+          name: Editor da Absolute ZRO · app de desktop (prévia)
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          files: |
+            products/ai-edit/dist/*-mac-universal.dmg
+            products/ai-edit/dist/*-windows-setup.exe
+            products/ai-edit/dist/sha256-*.json
+          fail_on_unmatched_files: false
+          body: Prévia do editor da Absolute ZRO (nome provisório). Sem assinatura da Apple/Microsoft (custo zero); instale pelo Terminal ou PowerShell (products/ai-edit/README.md).
+
+  # Depois dos instaladores no Release: o versao.json com o nome e o SHA-256 de cada um (os instaladores leem). Roda
+  # mesmo se uma plataforma falhou: a que passou no teste de fumaça sai; a outra fica de fora até o próximo build.
+  versao:
+    name: Publicar versão
+    if: always() && github.event_name == 'workflow_dispatch' && inputs.publicar
+    needs: app
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - run: gh release download ai-edit-app-desktop -R "$GITHUB_REPOSITORY" -p "sha256-*.json" -D sha256 --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - run: node scripts/release.mjs versao sha256 versao.json
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        with:
+          tag_name: ai-edit-app-desktop
+          name: Editor da Absolute ZRO · app de desktop (prévia)
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          files: products/ai-edit/versao.json
+          fail_on_unmatched_files: true

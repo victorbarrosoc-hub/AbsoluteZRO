@@ -20,37 +20,103 @@ e como conferir estão em [ORIGEM.md](ORIGEM.md).
 
 ---
 
-## ⚠️ Antes de tornar o link público — leia
+## ⚠️ Antes de abrir para o público — leia
 
-Este protótipo contém **dados profissionais reais de 109 pessoas**, informados por
-elas próprias num cadastro de freelas (nome, cidade, função, equipamento, portfólio).
-Telefones **não** estão incluídos.
+**Hoje não há dado real de pessoas aqui.** Os 109 cadastros da prévia são **fictícios** desde 13/set (`src/crew.json`,
+selado por `src/crew.selo.json`; a suíte `sem-nome-real` reprova se o seed mudar). Telefone nunca entra no seed. O selo
+**Prévia**, ao lado da marca, diz que pessoas, agendas e números são ilustrativos.
 
-Estas coisas são **simuladas** e aparecem atribuídas a pessoas reais:
+São **simulados**: a agenda (quem está livre), a reputação de operação, o pagamento (sinal, custódia, take) e as
+integrações com Google Agenda e WhatsApp.
 
-- a **agenda** (quem está livre em cada data)
-- a **reputação de operação** (agenda em dia, tempo de resposta, jobs concluídos)
-- o **pagamento garantido** (quem aceita, quem exige, valores em custódia)
-- as **integrações** (Google Agenda, WhatsApp)
+**Regra do titular: nada de tráfego pago** enquanto agenda, reputação e pagamento forem simulados e faltar o
+consentimento registrado de quem tiver dado real. O portão para abrir ao público:
 
-Há um aviso visível no topo da busca, mas um aviso não substitui consentimento.
-**Antes de divulgar o link amplamente**, escolha um caminho:
+| | Estado |
+| --- | --- |
+| Origem do dado | Perfil criado pela pessoa sai marcado `origem: "autodeclarado"`; a prévia é fictícia |
+| Consentimento | No cadastro, "Mostrar meu perfil para quem contrata" nasce **desmarcado**; marcar grava versão do texto e data, desmarcar grava a retirada (suíte `consentimento`) |
+| Onde o registro mora | **No aparelho**, junto com o perfil da prévia. O perfil da conta Absolute ZRO já mora no banco (`carro_do_freela.perfis.visibilidade`, nasce `privado`, com a data da mudança), mas o cadastro da prévia ainda não foi ligado a ele ([docs/fase1-no-ar.html](docs/fase1-no-ar.html)) |
+| Agenda, reputação, pagamento | Simulados |
 
-1. **Avisar o grupo** e obter o de acordo de quem está listado; ou
-2. **Publicar a versão anonimizada** — nomes viram "Ana S." e o portfólio sai:
-   ```bash
-   npm run build:anon
-   ```
+O build do domínio (`src/vercel-build.js`) envia `X-Robots-Tag: noindex, nofollow`: reduz a exposição, mas **não**
+torna o link privado. Se um dia entrar lista real de convocação, o caminho é o de sempre: o de acordo de quem está nela,
+ou `npm run build:anon` (nome reduzido, sem portfólio).
 
-O build do domínio (`src/vercel-build.js`) já envia `X-Robots-Tag: noindex, nofollow`, então o site não é
-indexado por buscadores. Isso reduz a exposição, mas **não** torna o link privado.
+## Job e equipe na Absolute ZRO (26/out · 3)
+
+Quem contrata e entrou com a conta Absolute ZRO leva o job para a organização dele no HUB, pelo painel do job
+("Levar para a Absolute ZRO"). Vai o contrato `carro-do-freela.job/1` (título, tipo, cliente, data, funções e o
+briefing inteiro, com horário, chamada, local e referências) e, para quem da escala tem conta Absolute ZRO, o
+`carro-do-freela.crew/1`: quem já é da organização entra na equipe do projeto; quem não é recebe convite de
+**convidado**, que só abre aquele projeto e só pode ser aceito pela mesma conta. Gente da prévia não tem conta e
+aparece como "sem conta". O servidor (`api/zro/enviar.js`) fala com o HUB com o token da pessoa, guardado cifrado num
+cookie httpOnly; o navegador nunca vê token. Detalhes em [ORIGEM.md](ORIGEM.md).
+
+## Banco de dados: perfil e inventário do freela (29/out)
+
+Pedido do titular: "ligar o banco de dados do Carro do Freela", começando pelo que o ecossistema precisa. O Carro tem
+agora um banco **próprio**: Supabase **AbsoluteZRO**, schema **`carro_do_freela`**, papel de login `carro_do_freela` (dono, roda as
+migrações) e papel sem login `carro_do_freela_app` (o servidor o assume em toda operação de pessoa; RLS sempre vale). Nada no
+schema `zro`, nada nos schemas dos outros apps.
+
+⚠️ **O schema já existia em produção** (ADR 0013), com as tabelas do app antigo: `cadastros` (convite do lançamento),
+`leads` (landing) e `passos` (contagem anônima), dono `postgres`, `anon` só com INSERT. A migração 0000 **não toca
+nelas** nem no acesso do `anon`; só acrescenta as tabelas novas, fechadas para `anon` e `authenticated`. O que foi lido
+lá e os passos estão em [db/PRODUCAO.md](db/PRODUCAO.md). Os mesmos arquivos de migração servem para o projeto novo
+(a mudança para São Paulo).
+
+| Peça | Onde |
+| --- | --- |
+| Migrações (SQL, uma por arquivo, nunca editar uma aplicada) | `db/migrations/NNNN_nome.sql` |
+| Migrador (diário `carro_do_freela.__migracoes` com sha256; recusa editada, sumida e fora de ordem) | `db/migrador.js`, `npm run db:migrate` |
+| Conexão e as duas portas (`asUser(sub)` com `set_config('carro_do_freela.sub')` + `SET LOCAL ROLE carro_do_freela_app`; `asSystem`) | `db/banco.js` |
+| Regras do que entra (estritas, sem telefone, catálogos do app) | `db/regras.js` |
+| Rotas | `api/zro/perfil.js`, `api/zro/inventario.js` (miolo `api/zro/_dados.js`) |
+| Publicador da sincronização (desligado) | `db/sync.js` |
+| O que falta fazer em produção | [db/PRODUCAO.md](db/PRODUCAO.md) |
+
+**Tabelas.** `perfis` (uma linha por `sub` da conta Absolute ZRO: nome de exibição, cidade/UF, funções e nichos do
+catálogo, bio curta, portfólio https opcional, visibilidade que nasce `privado`), `inventario` (itens da pessoa, `id`
+estável, categoria, marca, modelo, quantidade, observação, diária opcional, ativo, `atualizado_em`) e
+`inventario_eventos` (fila de saída). **Sem telefone, CPF ou e-mail**: não há coluna para isso, a API recusa o campo
+(`proibido`) e o texto com jeito de número (`telefone`), e o banco confere de novo (`carro_do_freela.tem_telefone`).
+
+**Rotas** (só da própria origem para escrever, só JSON, limite de pedidos por IP, sessão conferida no HUB a cada
+pedido, como o `/eu`):
+
+| | |
+| --- | --- |
+| `GET /api/zro/perfil` · `PUT /api/zro/perfil` | o perfil inteiro |
+| `GET /api/zro/inventario` · `POST` · `PATCH ?id=` · `DELETE ?id=` | os itens |
+
+Moram em `/api/zro/` de propósito: o cookie `cdf_hub` (o acesso ao HUB, com que a claim é relida) só vai para esse
+caminho. O `sub` vem da sessão, nunca do pedido. Sem `CARRO_DATABASE_URL` respondem `503 sem_banco`.
+
+**Fase fechada.** Só a conta liberada pelo portão do lançamento (hoje, a do proprietário) chega às rotas. Na tela, o
+bloco "Meu perfil / Meu inventário" nasce por código dentro de "Meu perfil", só no domínio e só com essa conta; nas
+suítes, no `file://` e no artifact ele não existe. O selo "Prévia" continua onde estava. Nenhuma linha é semeada.
+
+**Sincronização com o Maestro: pronta e DESLIGADA.** Cada mudança no inventário grava na fila, pelo gatilho do banco,
+o inventário inteiro no formato do evento `freela.inventario.atualizado` v1 (`{ source: "carro-do-freela", inventario:
+freela.inventario/1 }`, chave `freela.inventario:<sub>:<atualizado_em>`). O publicador só manda com
+`CARRO_SYNC_ATIVO=1`, e não deve ser ligado enquanto a rota do HUB estiver desligada e o HUB não tiver o endpoint de
+entrada. Ligado: manda o retrato mais novo, marca os velhos como `substituido`, e qualquer falha vai para `revisao`
+(nunca nova tentativa sozinho). Mapa: `docs/integration-contracts/maestro-carro-do-freela.md` na raiz.
+
+**Build.** `npm run build:vercel` roda `db/migrar.js` antes de gerar o site **só** com `CARRO_DATABASE_URL`; as duas
+rotas de dados vão empacotadas pelo esbuild com o `pg` dentro (dependência nova, a única de execução).
+
+**Testes.** `npm run test:banco` (Postgres local: `service postgresql start`, ou `TEST_DATABASE_URL`): migrações num
+banco vazio e com papel sem superusuário, as três recusas, RLS com duas contas, a fila conferida contra o JSON Schema de
+`freela.inventario/1`, o publicador e as rotas contra a Absolute ZRO falsa; e a tela num Chromium (pula sem Playwright).
 
 ---
 
 ## Testar
 
 ```bash
-npm test                       # as 28 suítes
+npm test                       # todas as suítes (gera os sete builds quando precisa)
 node test/run.js busca take    # só essas
 ```
 

@@ -12,7 +12,9 @@ export const RULES = {
   loginAccount: { max: 30, windowMs: 60 * 60_000 },
   signupIp: { max: 10, windowMs: 60 * 60_000 },
   resetEmail: { max: 3, windowMs: 60 * 60_000 },
+  emailChange: { max: 5, windowMs: 60 * 60_000 },
   inviteAccept: { max: 20, windowMs: 15 * 60_000 },
+  accountDelete: { max: 5, windowMs: 60 * 60_000 },
 } satisfies Record<string, Rule>
 
 export async function withinLimit(tx: Queryable, key: string, rule: Rule): Promise<boolean> {

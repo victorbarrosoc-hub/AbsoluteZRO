@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { denyUrl, grantConsent, hasConsent, issueCode, parseAuthorizeRequest } from '@zro/auth'
+import { denyUrl, grantConsent, hasConsent, issueCode, parseAuthorizeRequest, productClosedFor, RELEASE_CLOSED_DESCRIPTION } from '@zro/auth'
 import { listMyOrganizations } from '@zro/core'
-import { Notice, ProductMark } from '@zro/ui'
+import { audit } from '@zro/observability'
+import { Notice, ProductMark, ZroSymbol } from '@zro/ui'
+import { EmDesenvolvimento } from '@/components/em-desenvolvimento'
 import { Icon } from '@/components/icons'
 import { approveAppAction } from '@/lib/actions/oidc'
 import '@/lib/oidc'
@@ -16,6 +18,8 @@ const SHARED: Record<string, string> = {
   profile: 'Seu nome',
   org: 'A organização ativa, seu papel nela e as ferramentas contratadas',
   offline_access: 'Continuar conectado sem pedir login de novo (dá para remover no Perfil)',
+  'carro-do-freela.jobs': 'Levar seus jobs e a equipe escalada para os projetos da organização',
+  'zro.ia': 'Conversar com a IA da Absolute ZRO (usa os créditos de IA do seu plano)',
 }
 
 function toQuery(sp: Record<string, string | string[] | undefined>) {
@@ -54,6 +58,29 @@ export default async function Authorize({ searchParams }: { searchParams: Promis
     }
     redirect(`/entrar?next=${encodeURIComponent(here)}`)
   }
+  // Gate de lançamento (ADR 0023): app de produto fechado só para contas listadas. Para as outras, nenhum código:
+  // a pessoa vê "Em desenvolvimento" (200) e fica registrado; com prompt=none o app recebe access_denied.
+  if (req.client.productId) {
+    const productId = req.client.productId
+    const fechado = await db().asSystem('oidc: gate de lançamento', async (tx) => {
+      if (!(await productClosedFor(tx, req.client, auth.user.id, 'sso'))) return null
+      const [p] = await tx`select name from zro.products where id = ${productId}`
+      if (req.prompt !== 'none') {
+        await audit(tx, {
+          actorUserId: auth.user.id,
+          action: 'release.denied',
+          targetType: 'product',
+          targetId: productId,
+          metadata: { client: req.client.id, channel: 'sso' },
+        })
+      }
+      return { id: productId, nome: (p?.name as string) ?? req.client.name }
+    })
+    if (fechado) {
+      if (req.prompt === 'none') redirect(denyUrl(req, RELEASE_CLOSED_DESCRIPTION))
+      return <EmDesenvolvimento produto={fechado} />
+    }
+  }
   // O acesso às ferramentas vem do plano da organização: conta recém-criada passa por Boas-vindas e volta aqui.
   if (!auth.session.activeOrgId && req.prompt !== 'none') redirect(`/boas-vindas?next=${encodeURIComponent(here)}`)
 
@@ -87,7 +114,7 @@ export default async function Authorize({ searchParams }: { searchParams: Promis
         <span className="consent__link">
           <Icon name="swap" size={18} />
         </span>
-        <img src="/brand/absolute-zro-o-alpha.webp" alt="" width={56} height={50} />
+        <ZroSymbol size={56} title="Absolute ZRO" />
       </div>
       <div className="stack">
         <h1>Entrar no {req.client.name}</h1>

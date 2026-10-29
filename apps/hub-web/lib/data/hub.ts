@@ -1,14 +1,33 @@
 import 'server-only'
+import { cache } from 'react'
 import type { Authenticated } from '@zro/auth'
-import { productAccessFor, quotaPeriod } from '@zro/billing'
-import { ADMIN_ROLES, authorize } from '@zro/core'
+import { isFeatureFlag, productAccessFor, quotaPeriod } from '@zro/billing'
+import { ADMIN_ROLES, authorize, BILLING_ROLES } from '@zro/core'
 import { db } from '../session'
 
-/** Início: projetos recentes, pendências reais, uso do plano e ferramentas. */
-export async function homeData(auth: Authenticated) {
-  const actor = await authorize(db(), auth)
+/** Uma autorização por pedido para as duas partes do Início (a sessão é o mesmo objeto, vindo de getAuth). */
+const atorDoInicio = cache((auth: Authenticated) => authorize(db(), auth))
+
+/**
+ * Início em duas partes (titular, 29/10/2026: a tela não pode piscar inteira em cinza): o topo (saudação, palco e
+ * atalhos) chega primeiro; os números, os painéis e os apps vêm em seguida, cada um com o próprio esqueleto. As duas
+ * consultas correm juntas.
+ */
+export async function homeTopo(auth: Authenticated) {
+  const actor = await atorDoInicio(auth)
   return db().asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
     const [org] = await tx`select name from zro.organizations where id = ${actor.orgId}`
+    const [latest] =
+      await tx`select id, title, status, updated_at from zro.projects where org_id = ${actor.orgId} and status <> 'archived' order by updated_at desc limit 1`
+    const access = await productAccessFor(tx, actor.orgId)
+    return { org, latest, access }
+  })
+}
+
+/** Início, segunda parte: projetos recentes, pendências reais, execuções e uso do plano. */
+export async function homePaineis(auth: Authenticated) {
+  const actor = await atorDoInicio(auth)
+  return db().asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
     const projects =
       await tx`select id, title, status, updated_at from zro.projects where org_id = ${actor.orgId} and status <> 'archived' order by updated_at desc limit 6`
     const [counts] = await tx`
@@ -24,11 +43,10 @@ export async function homeData(auth: Authenticated) {
       select r.id, r.handler, r.status, r.updated_at, p.title as project_title, r.project_id
       from zro.workflow_runs r left join zro.projects p on p.id = r.project_id
       where r.org_id = ${actor.orgId} order by r.updated_at desc limit 6`
-    const access = await productAccessFor(tx, actor.orgId)
     const { start } = quotaPeriod()
     const quotas =
       await tx`select metric, used, limit_value, period_end from zro.quotas where org_id = ${actor.orgId} and period_start = ${start} order by metric`
-    return { actor, org, projects, counts: counts!, attention, runs, access, quotas }
+    return { projects, counts: counts!, attention, runs, quotas }
   })
 }
 
@@ -48,7 +66,32 @@ export async function subscriptionData(auth: Authenticated) {
     const { start, end } = quotaPeriod()
     const quotas = await tx`select metric, used, limit_value from zro.quotas where org_id = ${actor.orgId} and period_start = ${start} order by metric`
     const access = await productAccessFor(tx, actor.orgId)
-    return { actor, canSeeBilling, subscriptions, entitlements, quotas, period: { start, end }, access }
+    // Medidores: toda métrica com limite nas ferramentas liberadas aparece, mesmo sem uso ainda (0 de N).
+    const limites = new Map<string, number>()
+    for (const e of entitlements)
+      for (const [k, v] of Object.entries((e.limits as Record<string, unknown>) ?? {})) {
+        // sinal de recurso (ex.: maestro.marca_propria) não é medidor de uso
+        if (isFeatureFlag(k)) continue
+        const n = Number(v)
+        if (Number.isFinite(n)) limites.set(k, Math.max(limites.get(k) ?? 0, n))
+      }
+    const usado = new Map(quotas.map((q) => [q.metric as string, Number(q.used)]))
+    // o limite gravado na cota do mês (no primeiro uso) vale quando a ferramenta já não traz o limite
+    const limiteDaCota = new Map(quotas.filter((q) => q.limit_value != null).map((q) => [q.metric as string, Number(q.limit_value)]))
+    const metricas = [...new Set([...limites.keys(), ...usado.keys()])].sort().map((metric) => ({
+      metric,
+      used: usado.get(metric) ?? 0,
+      limit: limites.get(metric) ?? limiteDaCota.get(metric) ?? null,
+    }))
+    // Uso por dia no mês (todas as métricas) e as últimas operações medidas, de quem e quando.
+    const diario = await tx`
+      select (date_trunc('day', created_at at time zone 'UTC'))::date as dia, metric, sum(amount)::float8 as total
+      from zro.usage_events where org_id = ${actor.orgId} and period_start = ${start} group by 1, 2 order by 1`
+    const recentes = await tx`
+      select ev.metric, ev.amount::float8 as amount, ev.created_at, u.display_name
+      from zro.usage_events ev left join zro.users u on u.id = ev.user_id
+      where ev.org_id = ${actor.orgId} order by ev.created_at desc limit 8`
+    return { actor, canSeeBilling, subscriptions, entitlements, quotas, period: { start, end }, access, metricas, diario, recentes }
   })
 }
 
@@ -116,4 +159,50 @@ export async function connectedAppsData(auth: Authenticated) {
     left join zro.app_accounts a on a.user_id = c.user_id and a.client_id = c.client_id
     where c.user_id = ${auth.user.id} and c.revoked_at is null order by c.granted_at desc`,
   )
+}
+
+/** Sua conta › Plano: plano da organização ativa, planos para upgrade e pedidos abertos. */
+export async function planCenterData(auth: Authenticated) {
+  const actor = await authorize(db(), auth)
+  const canManage = BILLING_ROLES.includes(actor.role)
+  return db().asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
+    const [org] = await tx`select name from zro.organizations where id = ${actor.orgId}`
+    const subscriptions = canManage
+      ? await tx`
+          select s.id, s.status, s.provider, s.current_period_end, s.cancel_at_period_end, s.grace_until, p.id as plan_id, p.code, p.name, p.kind
+          from zro.subscriptions s join zro.plans p on p.id = s.plan_id
+          where s.org_id = ${actor.orgId} and s.status in ('active', 'trialing', 'past_due')
+            and (s.current_period_end is null or s.current_period_end > now() or s.grace_until > now()) order by s.created_at desc`
+      : []
+    // Só ferramentas abertas ao público contam e só planos com alguma delas aparecem (gate de lançamento, ADR 0023):
+    // produto em construção não é oferecido nem somado ("7 ferramentas" virava propaganda do que não abre).
+    const plans = await tx`
+      with abertos as (select r.product_id from zro.product_release r where r.state in ('released', 'public_beta'))
+      select p.id, p.code, p.name, p.kind, p.description, p.price_cents, p.currency, p.billing_interval,
+             (select count(*)::int from zro.plan_products pp where pp.plan_id = p.id and pp.product_id in (select product_id from abertos)) as products,
+             (select max((pp.limits ->> 'zro.ai_credits')::int) from zro.plan_products pp where pp.plan_id = p.id) as ai_credits
+      from zro.plans p where p.status = 'active' and p.kind <> 'free'
+        and exists (select 1 from zro.plan_products pp where pp.plan_id = p.id and pp.product_id in (select product_id from abertos))
+      order by case p.kind when 'bundle' then 0 else 1 end, p.name`
+    const requests = canManage
+      ? await tx`
+          select r.id, r.kind, r.created_at, p.name as plan from zro.plan_requests r left join zro.plans p on p.id = r.plan_id
+          where r.org_id = ${actor.orgId} and r.status = 'open' order by r.created_at desc`
+      : []
+    return { actor, canManage, org: org!, subscriptions, plans, requests }
+  })
+}
+
+/** Sua conta › visão geral: números que resumem as outras seções. */
+export async function accountSummary(auth: Authenticated) {
+  return db().asUser({ userId: auth.user.id, orgId: auth.session.activeOrgId }, async (tx) => {
+    const [r] = await tx`
+      select (select count(*)::int from zro.sessions where user_id = ${auth.user.id} and revoked_at is null and expires_at > now()) as sessions,
+             (select count(*)::int from zro.oauth_consents where user_id = ${auth.user.id} and revoked_at is null) as apps,
+             (select count(*)::int from zro.memberships m join zro.organizations o on o.id = m.org_id
+               where m.user_id = ${auth.user.id} and m.status = 'active' and o.status = 'active') as orgs,
+             (select count(*)::int from zro.entitlements e where e.org_id = ${auth.session.activeOrgId} and e.status = 'active'
+               and (e.ends_at is null or e.ends_at > now())) as tools`
+    return r! as { sessions: number; apps: number; orgs: number; tools: number }
+  })
 }

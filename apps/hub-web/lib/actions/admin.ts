@@ -1,12 +1,13 @@
 'use server'
 import { revalidatePath } from 'next/cache'
-import { assignPlan, cancelManualSubscription, createPlanVersion, grantEntitlement, publishPlanVersion, revokeEntitlement } from '@zro/billing'
+import { assignPlan, cancelManualSubscription, createPlanVersion, grantEntitlement, launchSales, publishPlanVersion, revokeEntitlement } from '@zro/billing'
 import { OAuthError, registerClient } from '@zro/auth'
-import { requirePlatformAdmin } from '@zro/core'
+import { requirePlatformAdmin, resolvePlanRequest } from '@zro/core'
 import { pgErrorCode, PG } from '@zro/db'
 import { DomainError } from '@zro/observability'
 import type { FormState } from '@/components/action-form'
 import { db, getAuth } from '../session'
+import { stripeConfig } from '../stripe'
 import { str, toFormError } from './helpers'
 
 async function adminActor(fd: FormData) {
@@ -28,6 +29,14 @@ function parseLimits(raw: string): Record<string, number> {
   return v as Record<string, number>
 }
 
+/** Campo simples "créditos de IA por mês" do console: vira o limite zro.ai_credits (vazio = não mexe). */
+function withAiCredits(limits: Record<string, number>, raw: string): Record<string, number> {
+  if (!raw.trim()) return limits
+  const n = Number(raw)
+  if (!Number.isInteger(n) || n < 0 || n > 1_000_000) throw new DomainError('invalid_input', 'Créditos de IA: um número inteiro de 0 a 1.000.000.')
+  return { ...limits, 'zro.ai_credits': n }
+}
+
 const date = (s: string) => {
   if (!s) return null
   const d = new Date(`${s}T23:59:59-03:00`)
@@ -41,7 +50,7 @@ export async function assignPlanAction(_: FormState, fd: FormData): Promise<Form
     await db().asSystem('admin: conceder plano', (tx) =>
       assignPlan(tx, actor, { orgId: str(fd, 'orgId'), planId: str(fd, 'planId'), periodEnd: date(str(fd, 'until')) }),
     )
-    revalidatePath('/admin')
+    revalidatePath('/admin', 'layout')
     return { ok: 'Plano concedido e acessos recalculados.' }
   } catch (e) {
     return toFormError(e)
@@ -54,7 +63,7 @@ export async function cancelSubscriptionAction(_: FormState, fd: FormData): Prom
     await db().asSystem('admin: cancelar assinatura', (tx) =>
       cancelManualSubscription(tx, actor, { subscriptionId: str(fd, 'subscriptionId'), atPeriodEnd: str(fd, 'when') === 'end' }),
     )
-    revalidatePath('/admin')
+    revalidatePath('/admin', 'layout')
     return { ok: 'Assinatura cancelada.' }
   } catch (e) {
     return toFormError(e)
@@ -75,11 +84,11 @@ export async function grantAction(_: FormState, fd: FormData): Promise<FormState
               .map((s) => s.trim())
               .filter(Boolean)
           : null,
-        limits: parseLimits(String(fd.get('limits') ?? '')),
+        limits: withAiCredits(parseLimits(String(fd.get('limits') ?? '')), str(fd, 'aiCredits')),
         endsAt: date(str(fd, 'until')),
       }),
     )
-    revalidatePath('/admin')
+    revalidatePath('/admin', 'layout')
     return { ok: 'Concessão criada.' }
   } catch (e) {
     return toFormError(e)
@@ -90,7 +99,7 @@ export async function revokeGrantAction(_: FormState, fd: FormData): Promise<For
   try {
     const actor = await adminActor(fd)
     await db().asSystem('admin: revogar concessão', (tx) => revokeEntitlement(tx, actor, str(fd, 'entitlementId')))
-    revalidatePath('/admin')
+    revalidatePath('/admin', 'layout')
     return { ok: 'Concessão revogada.' }
   } catch (e) {
     return toFormError(e)
@@ -118,7 +127,7 @@ export async function createPlanVersionAction(_: FormState, fd: FormData): Promi
         products,
       }),
     )
-    revalidatePath('/admin')
+    revalidatePath('/admin', 'layout')
     return { ok: `Rascunho criado: versão ${r.version}. Publique para valer em novas vendas.` }
   } catch (e) {
     if (e instanceof SyntaxError) return { error: 'Produtos precisam ser JSON válido.' }
@@ -130,7 +139,7 @@ export async function publishPlanAction(_: FormState, fd: FormData): Promise<For
   try {
     const actor = await adminActor(fd)
     await db().asSystem('admin: publicar plano', (tx) => publishPlanVersion(tx, actor, str(fd, 'planId')))
-    revalidatePath('/admin')
+    revalidatePath('/admin', 'layout')
     return { ok: 'Versão publicada. As anteriores ficam só para quem já assinou.' }
   } catch (e) {
     return toFormError(e)
@@ -157,7 +166,7 @@ export async function registerOAuthClientAction(_: FormState, fd: FormData): Pro
                values (${actor.userId}, 'admin', 'oauth_client.created', 'oauth_client', ${out.clientId}, ${tx.json({ reason: actor.reason, kind })})`
       return out
     })
-    revalidatePath('/admin')
+    revalidatePath('/admin', 'layout')
     return {
       ok: r.clientSecret
         ? `App cadastrado. client_id: ${r.clientId} · client_secret (copie agora, não aparece de novo): ${r.clientSecret}`
@@ -181,8 +190,35 @@ export async function setOAuthClientStatusAction(_: FormState, fd: FormData): Pr
       await tx`insert into zro.audit_logs (actor_user_id, actor_kind, action, target_type, target_id, metadata)
                values (${actor.userId}, 'admin', ${`oauth_client.${status}`}, 'oauth_client', ${id}, ${tx.json({ reason: actor.reason })})`
     })
-    revalidatePath('/admin')
+    revalidatePath('/admin', 'layout')
     return { ok: status === 'active' ? 'App reativado.' : 'App desativado e sessões dele encerradas.' }
+  } catch (e) {
+    return toFormError(e)
+  }
+}
+
+export async function resolvePlanRequestAction(_: FormState, fd: FormData): Promise<FormState> {
+  try {
+    const actor = await adminActor(fd)
+    await db().asSystem('admin: atender pedido de plano', (tx) => resolvePlanRequest(tx, actor, str(fd, 'requestId')))
+    revalidatePath('/admin', 'layout')
+    return { ok: 'Pedido marcado como atendido.' }
+  } catch (e) {
+    return toFormError(e)
+  }
+}
+
+/** Ligar as vendas: teste do Completo para conta nova e data de corte do grátis antigo (só admin, com motivo). */
+export async function launchSalesAction(_: FormState, fd: FormData): Promise<FormState> {
+  try {
+    const actor = await adminActor(fd)
+    if (!stripeConfig()) throw new DomainError('conflict', 'Coloque STRIPE_SECRET_KEY e STRIPE_WEBHOOK_SECRET na Vercel antes.')
+    const cutoff = new Date(`${str(fd, 'cutoff')}T23:59:59-03:00`)
+    if (Number.isNaN(cutoff.getTime())) throw new DomainError('invalid_input', 'Escolha a data de corte.')
+    const trialDays = Number(str(fd, 'trialDays') || '7')
+    const r = await db().asSystem('admin: ligar vendas', (tx) => launchSales(tx, actor, { cutoff, trialDays }))
+    revalidatePath('/admin', 'layout')
+    return { ok: `Vendas ligadas. ${r.grandfathered} organizações seguem liberadas até a data de corte.` }
   } catch (e) {
     return toFormError(e)
   }

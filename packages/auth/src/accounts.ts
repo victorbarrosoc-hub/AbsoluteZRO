@@ -2,6 +2,7 @@
 import type { Database } from '@zro/db'
 import { pgErrorCode, PG } from '@zro/db'
 import { audit, DomainError } from '@zro/observability'
+import { normalizarArroba, validarArroba } from './arroba'
 import { decoyHash, hashPassword, verifyPassword } from './password'
 import { clearAttempts, LIMIT_MESSAGE, registerAttempt, RULES, withinLimit } from './rate-limit'
 import { normalizeEmail, validateDisplayName, validateEmail, validatePassword } from './rules'
@@ -15,12 +16,16 @@ export type RequestMeta = { ipHash?: string | null; userAgent?: string | null }
 
 export async function signUp(
   db: Database,
-  input: { email: string; password: string; displayName: string },
+  input: { email: string; password: string; displayName: string; arroba?: string | null; arrobaFlexivel?: boolean },
   meta: RequestMeta = {},
 ): Promise<{ userId: string; verifyToken: string; session: { token: string; expiresAt: Date } }> {
   const email = normalizeEmail(input.email)
   const problem = validateEmail(email) ?? validatePassword(input.password) ?? validateDisplayName(input.displayName)
   if (problem) throw new DomainError('invalid_input', problem)
+  // O @ escolhido no cadastro (0029). Sem ele, a conta nasce com a sugestão do banco e a pessoa troca no Perfil.
+  const arroba = input.arroba ? normalizarArroba(input.arroba) : null
+  const arrobaRuim = arroba !== null ? validarArroba(arroba) : null
+  if (arrobaRuim) throw new DomainError('invalid_input', `@: ${arrobaRuim}`, { campo: 'arroba' })
   const passwordHash = await hashPassword(input.password)
   const ipKey = meta.ipHash ? `signup-ip:${meta.ipHash}` : null
   if (ipKey) {
@@ -39,6 +44,20 @@ export async function signUp(
     } catch (e) {
       if (pgErrorCode(e) === PG.uniqueViolation) throw new DomainError('conflict', 'Já existe uma conta com esse e-mail. Entre ou redefina a senha.')
       throw e
+    }
+    if (arroba) {
+      try {
+        await tx.savepoint(async (sp) => {
+          await sp`select set_config('zro.user_id', ${userId}, true)`
+          await sp`select zro.trocar_arroba(${arroba})`
+        })
+      } catch (e) {
+        if (pgErrorCode(e) !== PG.uniqueViolation) throw e
+        // A pessoa aceitou a sugestão sem mexer e alguém já tem: fica a do banco (o mesmo nome com um número).
+        if (!input.arrobaFlexivel) throw new DomainError('conflict', `O @${arroba} já é de outra pessoa. Escolha outro.`, { campo: 'arroba' })
+        await tx`update zro.perfis set arroba_sugerida = false where user_id = ${userId}`
+      }
+      await tx`select set_config('zro.user_id', '', true)`
     }
     await tx`insert into zro.auth_credentials (user_id, password_hash) values (${userId}, ${passwordHash})`
     const verifyToken = newToken('zv')
@@ -147,6 +166,74 @@ export async function resetPassword(db: Database, token: string, newPassword: st
     await tx`update zro.auth_credentials set password_hash = ${hash}, updated_at = now() where user_id = ${userId}`
     await revokeOtherSessions(tx, userId, null)
     await audit(tx, { actorUserId: userId, action: 'account.password_reset', targetType: 'user', targetId: userId })
+  })
+}
+
+/** A conta tem senha? (Quem só entra pelo Google não tem até criar uma pelo "Esqueci a senha".) */
+export async function hasPassword(db: Database, userId: string): Promise<boolean> {
+  const [row] = await db.asSystem('auth: conta tem senha', (tx) => tx`select 1 from zro.auth_credentials where user_id = ${userId}`)
+  return Boolean(row)
+}
+
+/**
+ * Pede a troca de e-mail: confere a senha e devolve um link de uso único para o servidor mandar ao endereço NOVO.
+ * Nada muda até a confirmação; o e-mail atual continua valendo.
+ */
+export async function requestEmailChange(db: Database, userId: string, password: string, rawEmail: string): Promise<{ email: string; token: string }> {
+  const email = normalizeEmail(rawEmail)
+  const problem = validateEmail(email)
+  if (problem) throw new DomainError('invalid_input', problem)
+  const key = `email-change:${userId}`
+  const [row] = await db.asSystem('auth: trocar e-mail (limite e credencial)', async (tx) => {
+    if (!(await withinLimit(tx, key, RULES.emailChange))) throw new DomainError('rate_limited', LIMIT_MESSAGE)
+    return tx`select u.email, c.password_hash from zro.users u left join zro.auth_credentials c on c.user_id = u.id where u.id = ${userId}`
+  })
+  if (!row) throw new DomainError('unauthenticated', 'Entre na sua conta.')
+  if (!row.password_hash) throw new DomainError('invalid_input', 'Sua conta entra pelo Google. Crie uma senha em "Esqueci a senha" antes de trocar o e-mail.')
+  if (!(await verifyPassword(password, row.password_hash as string))) {
+    await db.asSystem('auth: trocar e-mail recusado', (tx) => registerAttempt(tx, key))
+    throw new DomainError('unauthenticated', 'Senha incorreta.')
+  }
+  if (email === row.email) throw new DomainError('invalid_input', 'Esse já é o seu e-mail.')
+  return db.asSystem('auth: pedir troca de e-mail', async (tx) => {
+    await registerAttempt(tx, key)
+    const [taken] = await tx`select 1 from zro.users where email = ${email}`
+    if (taken) throw new DomainError('conflict', 'Esse e-mail já está em outra conta.')
+    const token = newToken('zm')
+    await tx`insert into zro.auth_tokens (user_id, purpose, token_hash, expires_at, new_email)
+             values (${userId}, 'change_email', ${hashToken(token)}, ${new Date(Date.now() + VERIFY_TTL_MS)}, ${email})`
+    await audit(tx, { actorUserId: userId, action: 'account.email_change_requested', targetType: 'user', targetId: userId })
+    return { email, token }
+  })
+}
+
+/**
+ * Confirma a troca pelo link mandado ao endereço novo. O e-mail novo já nasce confirmado, os links de nova senha
+ * pendentes (mandados ao endereço antigo) deixam de valer e as outras trocas pedidas são descartadas.
+ * Devolve o endereço antigo, para o aviso de segurança.
+ */
+export async function confirmEmailChange(db: Database, token: string): Promise<{ userId: string; oldEmail: string; email: string } | null> {
+  if (!TOKEN_FORMAT.changeEmail.test(token)) return null
+  return db.asSystem('auth: confirmar troca de e-mail', async (tx) => {
+    const [t] = await tx`
+      update zro.auth_tokens set used_at = now()
+      where token_hash = ${hashToken(token)} and purpose = 'change_email' and used_at is null and expires_at > now()
+      returning user_id, new_email`
+    if (!t) return null
+    const userId = t.user_id as string
+    const email = t.new_email as string
+    const [u] = await tx`select email from zro.users where id = ${userId} and status = 'active' for update`
+    if (!u) return null
+    try {
+      await tx.savepoint((sp) => sp`update zro.users set email = ${email}, email_verified_at = now() where id = ${userId}`)
+    } catch (e) {
+      if (pgErrorCode(e) === PG.uniqueViolation)
+        throw new DomainError('conflict', 'Esse e-mail passou a ser de outra conta. Peça a troca de novo com outro endereço.')
+      throw e
+    }
+    await tx`update zro.auth_tokens set used_at = now() where user_id = ${userId} and used_at is null and purpose in ('reset_password', 'change_email')`
+    await audit(tx, { actorUserId: userId, action: 'account.email_changed', targetType: 'user', targetId: userId })
+    return { userId, oldEmail: u.email as string, email }
   })
 }
 

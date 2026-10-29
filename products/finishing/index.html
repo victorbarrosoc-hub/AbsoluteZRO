@@ -3,119 +3,320 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Revela · LUT a partir de uma referência</title>
-    <meta name="description" content="Dê um frame de referência e um frame do seu material. Sai uma LUT para o DaVinci Resolve." />
-    <meta name="color-scheme" content="dark" />
-    <meta name="theme-color" content="#0e0e10" />
-    <link rel="canonical" href="https://revela-zro.vercel.app/" />
+    <title>Revela · cor e entrega para o DaVinci Resolve</title>
+    <meta name="description" content="A cor que você quer numa LUT, o preset certo para cada destino e a conversão no seu aparelho. Para o DaVinci Resolve. Em desenvolvimento." />
+    <meta name="color-scheme" content="light" />
+    <script src="app/tema.js"></script>
+    <meta name="theme-color" content="#f5f5f7" />
+    <link rel="canonical" href="https://revela.absolutezro.com/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Revela" />
     <meta property="og:locale" content="pt_BR" />
-    <meta property="og:url" content="https://revela-zro.vercel.app/" />
+    <meta property="og:url" content="https://revela.absolutezro.com/" />
     <meta property="og:title" content="Revela · a cor que você quer, numa LUT" />
-    <meta property="og:description" content="Dê um frame de referência e um frame do seu material. Sai uma LUT para o DaVinci Resolve." />
-    <meta property="og:image" content="https://revela-zro.vercel.app/og.jpg?v=2" />
-    <meta property="og:image:secure_url" content="https://revela-zro.vercel.app/og.jpg?v=2" />
+    <meta property="og:description" content="Dê um frame de referência e um frame do seu material. Sai uma LUT para o DaVinci Resolve. Em desenvolvimento." />
+    <meta property="og:image" content="https://revela.absolutezro.com/og.jpg?v=2" />
+    <meta property="og:image:secure_url" content="https://revela.absolutezro.com/og.jpg?v=2" />
     <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Revela: revela a cor que você quer. Um frame de referência vira uma LUT para o DaVinci Resolve." />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Revela · a cor que você quer, numa LUT" />
-    <meta name="twitter:description" content="Dê um frame de referência e um frame do seu material. Sai uma LUT para o DaVinci Resolve." />
-    <meta name="twitter:image" content="https://revela-zro.vercel.app/og.jpg?v=2" />
+    <meta name="twitter:description" content="Dê um frame de referência e um frame do seu material. Sai uma LUT para o DaVinci Resolve. Em desenvolvimento." />
+    <meta name="twitter:image" content="https://revela.absolutezro.com/og.jpg?v=2" />
     <meta name="twitter:image:alt" content="Revela: revela a cor que você quer. Um frame de referência vira uma LUT para o DaVinci Resolve." />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="marca/app/apple-touch-icon.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Revela" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="icon" href="marca/revela-icone.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="app/revela.css" />
-    <script type="module" src="app/revela.js"></script>
+    <link rel="stylesheet" href="app/home.css" />
+    <script type="module" src="app/home.js"></script>
   </head>
-  <body>
-    <header class="topo">
-      <a class="marca" href="./"><img src="marca/revela-logo.png" alt="Revela" width="150" height="28" /></a>
-      <nav class="abas" aria-label="Ferramentas da Revela">
-        <a href="./" aria-current="page"><span class="aba-icone" data-icone="lut"></span>LUT</a>
-        <a href="entrega.html"><span class="aba-icone" data-icone="entrega"></span>Entrega</a>
-        <a href="converter.html"><span class="aba-icone" data-icone="converter"></span>Converter</a>
+  <!-- Fechada ao público (api/_release.js): só a apresentação. Nenhum link leva a uma ferramenta; "Conhecer o projeto"
+       é âncora na própria página; a conta do titular entra por "Entrar" (entrar.html) e as ferramentas saem pela
+       função api/app.js só para ela. -->
+  <body class="home">
+    <header class="nav" id="nav">
+      <a class="marca" href="./" aria-label="Revela, página inicial"><img src="marca/revela-logo-claro.png" alt="Revela" width="150" height="28" /></a>
+      <nav class="nav-links" aria-label="Seções">
+        <a href="#looks">Looks</a>
+        <a href="#ferramentas">Ferramentas</a>
+        <a href="#entrega">Entrega</a>
+        <a href="#familia">Família</a>
       </nav>
-      <span class="selo">Protótipo</span>
+      <div class="nav-acoes">
+        <button class="nav-tema" id="tema" type="button" aria-label="Tema escuro" title="Tema escuro"></button>
+        <a class="conta" id="conta" href="entrar.html">Entrar</a>
+        <a class="vidro vidro--tinta nav-abrir" href="#looks">Conhecer o projeto</a>
+      </div>
     </header>
 
-    <main class="tela">
-      <section class="abertura entra">
-        <h1>Revela a cor que você quer.</h1>
-        <p>Referência entra, LUT sai.</p>
-      </section>
-
-      <section class="entradas entra" aria-label="Imagens">
-        <label class="entrada" id="caixa-referencia" for="arquivo-referencia">
-          <span class="entrada-icone" data-icone="imagem"></span>
-          <strong>Referência</strong>
-          <img alt="" hidden />
-          <span class="acao">Escolher ou soltar</span>
-          <input id="arquivo-referencia" type="file" accept="image/*" />
-        </label>
-        <label class="entrada" id="caixa-material" for="arquivo-material">
-          <span class="entrada-icone" data-icone="filme"></span>
-          <strong>Seu frame</strong>
-          <span class="ficha" title="Exporte o still do Resolve depois da conversão do LOG">Rec.709</span>
-          <img alt="" hidden />
-          <span class="acao">Escolher ou soltar</span>
-          <input id="arquivo-material" type="file" accept="image/*" />
-        </label>
-      </section>
-
-      <p id="estado" class="estado" role="status" aria-live="polite"></p>
-
-      <section id="resultado" class="resultado" hidden aria-label="Resultado">
-        <div class="palco">
-          <canvas id="previa" aria-label="Seu frame antes e depois da LUT"></canvas>
-          <span class="rotulo rotulo-antes" aria-hidden="true">Antes</span>
-          <span class="rotulo rotulo-depois" aria-hidden="true">Depois</span>
-          <input id="divisao" class="divisao" type="range" min="0" max="100" value="50" aria-label="Comparar antes e depois" />
+    <main>
+      <section class="hero" aria-labelledby="hero-titulo">
+        <h1 id="hero-titulo" class="surge" style="--d: 1">Revela a cor<br /><span class="fino">que você quer.</span></h1>
+        <p class="hero-sub surge" style="--d: 2">Da referência à entrega, num lugar só.</p>
+        <p class="z-selo selo-dev surge" style="--d: 3"><i aria-hidden="true"></i>Em desenvolvimento</p>
+        <div class="hero-acoes surge" style="--d: 3">
+          <a class="vidro vidro--tinta grande-pilula" href="#looks">Conhecer o projeto</a>
         </div>
-
-        <div class="painel">
-          <div class="controle">
-            <label for="intensidade">Intensidade</label>
-            <output id="valor-intensidade" for="intensidade">100%</output>
-            <input id="intensidade" type="range" min="0" max="100" value="100" />
-          </div>
-
-          <div class="pilulas" role="group" aria-label="Copiar">
-            <label class="pilula"><input id="usar-tom" type="checkbox" checked /> Contraste</label>
-            <label class="pilula"><input id="usar-cor" type="checkbox" checked /> Cor</label>
-          </div>
-
-          <div class="segmentado" role="radiogroup" aria-label="Tamanho da LUT">
-            <label title="Monitor e câmera"><input type="radio" name="tamanho" value="33" checked /> 33 pontos</label>
-            <label title="Grading"><input type="radio" name="tamanho" value="65" /> 65 pontos</label>
-          </div>
-
-          <div class="conta-gotas">
-            <button
-              id="marcar-par"
-              class="vidro"
-              type="button"
-              aria-pressed="false"
-              title="Marque a mesma coisa nas duas imagens: pele com pele, branco com branco. Até 3 pares."
-            >
-              <span data-icone="gota"></span> Conta-gotas
-            </button>
-            <ul id="pares" class="pares" aria-label="Pares de cor"></ul>
-            <button id="limpar-pares" class="vidro vidro--icone" type="button" hidden aria-label="Limpar"><span data-icone="x"></span></button>
-          </div>
-
-          <button id="baixar" class="vidro vidro--tinta grande" type="button"><span data-icone="baixar"></span> Baixar LUT</button>
-
-          <details class="leitura">
-            <summary>Leitura da referência</summary>
-            <p id="tom"></p>
-            <ul id="faixas"></ul>
-          </details>
+        <figure class="comparar surge" style="--d: 4" aria-label="O mesmo frame em log e com a cor final">
+          <img class="antes" src="marca/home/hero-antes.jpg" alt="" width="1600" height="900" fetchpriority="high" />
+          <img class="depois" src="marca/home/hero-depois.jpg" alt="" width="1600" height="900" />
+          <span class="linha" aria-hidden="true"></span>
+          <span class="rotulo-home rotulo-home--antes">Log</span>
+          <span class="rotulo-home rotulo-home--depois">Final</span>
+          <span class="arraste" aria-hidden="true">Arraste</span>
+          <input class="comparar-divisao" type="range" min="0" max="100" value="50" aria-label="Comparar log e cor final" />
+        </figure>
+        <div class="editores surge" style="--d: 5">
+          <ul aria-label="Editores compatíveis">
+            <li title="LUT .cube e script de entrega">DaVinci Resolve</li>
+            <li title="LUT .cube">Premiere Pro</li>
+            <li title="LUT .cube">Final Cut Pro</li>
+            <li title="LUT .cube">CapCut</li>
+            <li title="LUT .cube">Filmora</li>
+            <li title="Preset .xmp, aproximado do look">Lightroom</li>
+          </ul>
         </div>
       </section>
 
-      <footer class="rodape entra"><span data-icone="cadeado"></span> Suas imagens não saem daqui</footer>
+      <section class="sec sec-destaque" id="looks" aria-labelledby="looks-titulo">
+        <h2 id="looks-titulo" class="revela-ao-rolar">Um frame.<br /><span class="fino">Todos os looks.</span></h2>
+        <div class="looks-home revela-ao-rolar" role="list" aria-label="O mesmo frame em cada look da Revela">
+          <figure role="listitem"><img src="marca/home/look-revela.jpg" alt="Revela Look" title="Revela Look" width="640" height="360" loading="lazy" /></figure>
+          <figure role="listitem"><img src="marca/home/look-suave.jpg" alt="Suave" title="Suave" width="640" height="360" loading="lazy" /></figure>
+          <figure role="listitem"><img src="marca/home/look-petroleo.jpg" alt="Petróleo" title="Petróleo" width="640" height="360" loading="lazy" /></figure>
+          <figure role="listitem"><img src="marca/home/look-dourado.jpg" alt="Dourado" title="Dourado" width="640" height="360" loading="lazy" /></figure>
+          <figure role="listitem"><img src="marca/home/look-pb.jpg" alt="P&amp;B" title="P&amp;B" width="640" height="360" loading="lazy" /></figure>
+        </div>
+      </section>
+
+      <section class="sec" id="ferramentas" aria-labelledby="ferramentas-titulo">
+        <h2 id="ferramentas-titulo" class="revela-ao-rolar">Do frame ao arquivo final.</h2>
+        <div class="trio">
+          <span class="cartao-home revela-ao-rolar" style="--d: 0"
+            ><span class="cartao-icone"
+              ><svg
+                viewBox="0 0 24 24"
+                width="26"
+                height="26"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M12 3.5 19.5 8v8L12 20.5 4.5 16V8Z" />
+                <path d="M12 12 19.5 8M12 12v8.5M12 12 4.5 8" /></svg></span
+            ><b>LUT por referência</b></span
+          >
+          <span class="cartao-home revela-ao-rolar" style="--d: 1"
+            ><span class="cartao-icone"
+              ><svg
+                viewBox="0 0 24 24"
+                width="26"
+                height="26"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="9" cy="12" r="5.5" />
+                <circle cx="15" cy="12" r="5.5" /></svg></span
+            ><b>CST</b></span
+          >
+          <span class="cartao-home revela-ao-rolar" style="--d: 2"
+            ><span class="cartao-icone"
+              ><svg
+                viewBox="0 0 24 24"
+                width="26"
+                height="26"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M5 12h12" />
+                <path d="m13 7 5 5-5 5" />
+                <path d="M5 5v14" /></svg></span
+            ><b>Entrega</b></span
+          >
+          <span class="cartao-home revela-ao-rolar" style="--d: 3"
+            ><span class="cartao-icone"
+              ><svg
+                viewBox="0 0 24 24"
+                width="26"
+                height="26"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M4 8h13l-3.5-3.5" />
+                <path d="M20 16H7l3.5 3.5" /></svg></span
+            ><b>Converter</b></span
+          >
+        </div>
+        <figure class="mac revela-ao-rolar">
+          <div class="mac-tela">
+            <img class="so-claro"
+              src="marca/home/h-lut-claro.jpg"
+              alt="A tela de LUT da Revela: referência, frame e a comparação antes e depois"
+              width="1440"
+              height="900"
+              loading="lazy"
+            />
+            <img class="so-escuro"
+              src="marca/home/h-lut.jpg"
+              alt="A tela de LUT da Revela: referência, frame e a comparação antes e depois"
+              width="1440"
+              height="900"
+              loading="lazy"
+            />
+          </div>
+          <div class="mac-base" aria-hidden="true"></div>
+        </figure>
+      </section>
+
+      <section class="sec sec-destaque" id="entrega" aria-labelledby="entrega-titulo">
+        <h2 id="entrega-titulo" class="revela-ao-rolar">Cada destino,<br /><span class="fino">do jeito certo.</span></h2>
+        <figure class="mac revela-ao-rolar">
+          <div class="mac-tela">
+            <img class="so-claro"
+              src="marca/home/h-entrega-claro.jpg"
+              alt="Tela de Entrega da Revela com codec, bitrate, cor e áudio do YouTube"
+              width="1440"
+              height="900"
+              loading="lazy"
+            />
+            <img class="so-escuro"
+              src="marca/home/h-entrega.jpg"
+              alt="Tela de Entrega da Revela com codec, bitrate, cor e áudio do YouTube"
+              width="1440"
+              height="900"
+              loading="lazy"
+            />
+          </div>
+          <div class="mac-base" aria-hidden="true"></div>
+        </figure>
+      </section>
+
+      <section class="sec" id="converter" aria-labelledby="converter-titulo">
+        <div class="lado-a-lado">
+          <div class="lado-texto">
+            <h2 id="converter-titulo" class="revela-ao-rolar">No celular<br /><span class="fino">ou no computador.</span></h2>
+            <p class="apoio revela-ao-rolar">O arquivo não sai do aparelho.</p>
+          </div>
+          <div class="aparelhos revela-ao-rolar">
+            <figure class="mac mac--menor">
+              <div class="mac-tela">
+                <img class="so-claro"
+                  src="marca/home/h-conv-claro.jpg"
+                  alt="Dois masters em ProRes convertidos para o YouTube no computador"
+                  width="1440"
+                  height="900"
+                  loading="lazy"
+                />
+            <img class="so-escuro"
+                  src="marca/home/h-conv.jpg"
+                  alt="Dois masters em ProRes convertidos para o YouTube no computador"
+                  width="1440"
+                  height="900"
+                  loading="lazy"
+                />
+              </div>
+              <div class="mac-base" aria-hidden="true"></div>
+            </figure>
+            <figure class="iphone">
+              <img class="so-claro" src="marca/home/h-conv-cel-claro.jpg" alt="O conversor da Revela no celular" width="390" height="844" loading="lazy" /><img class="so-escuro" src="marca/home/h-conv-cel.jpg" alt="O conversor da Revela no celular" width="390" height="844" loading="lazy" />
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section class="sec sec-destaque" id="familia" aria-labelledby="familia-titulo">
+        <h2 id="familia-titulo" class="revela-ao-rolar">Uma conta.<br /><span class="fino">Todas as ferramentas.</span></h2>
+        <div class="familia revela-ao-rolar">
+          <span class="familia-app familia-app--revela"><img src="marca/revela-icone.svg" alt="" width="56" height="56" /><small>Revela</small></span>
+          <span class="familia-app"><img src="marca/familia/aeon.svg" alt="" width="56" height="56" /><small>AEON</small></span>
+          <span class="familia-app"><img src="marca/familia/sobedesce.svg" alt="" width="56" height="56" /><small>SOBEDESCE</small></span>
+          <span class="familia-app"><img src="marca/familia/synquei.svg" alt="" width="56" height="56" /><small>Synquei</small></span>
+          <span class="familia-app"><img src="marca/familia/nossom.svg" alt="" width="56" height="56" /><small>NOSSOM</small></span>
+          <span class="familia-app"><img src="marca/familia/tpeasy.svg" alt="" width="56" height="56" /><small>TPeasy</small></span>
+          <span class="familia-app"><img src="marca/familia/carro-do-freela.png" alt="" width="56" height="56" /><small>Carro do Freela</small></span>
+        </div>
+        <figure class="janela revela-ao-rolar">
+          <img
+            src="marca/home/h-sobedesce.jpg"
+            alt="No SOBEDESCE, a janela Converter com a Revela com os destinos YouTube, Vimeo, Reels e TikTok"
+            width="1280"
+            height="820"
+            loading="lazy"
+          />
+        </figure>
+        <p class="apoio revela-ao-rolar">No SOBEDESCE: botão direito → <b>Converter com a Revela</b>.</p>
+      </section>
+
+      <!-- a Z, a IA do ecossistema: chega junto com a Revela (fechada ao público, só a apresentação). -->
+      <section class="sec z-sec" id="z" aria-labelledby="z-titulo">
+        <div class="z-simbolo revela-ao-rolar" aria-hidden="true"><img class="z-anel" src="marca/z/anel.webp" alt="" width="560" height="560" loading="lazy" /><img class="z-estrela" src="marca/z/estrela.webp" alt="" width="400" height="400" loading="lazy" /></div>
+        <p class="z-selo revela-ao-rolar"><i aria-hidden="true"></i>Chegando à Revela</p>
+        <h2 id="z-titulo" class="z-titulo revela-ao-rolar">Z.<br /><span class="fino">Uma IA para todo o ecossistema.</span></h2>
+        <p class="apoio revela-ao-rolar">No painel inicial do app, quando ele abrir. Ela conversa e lê sua conta; a cor é sua.</p>
+        <ul class="z-fichas revela-ao-rolar" aria-label="Como a Z funciona">
+          <li title="A mesma conta Absolute ZRO que você já usa."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>Mesma conta</li>
+          <li title="Guardadas por plataforma e reunidas em absolutezro.com/ia."><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.5h14v10H10l-5 4z" /></svg>Conversas reunidas</li>
+          <li title="Nenhuma ação sem você conferir."><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M8.5 12.2l2.4 2.4 4.6-4.9" /></svg>Você confere antes</li>
+          <li title="Usa os créditos de IA do seu plano."><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l1.8 6.2L20 12l-6.2 1.8L12 20l-1.8-6.2L4 12l6.2-1.8z" /></svg>1 crédito por resposta</li>
+        </ul>
+        <div class="hero-acoes revela-ao-rolar"><a class="vidro grande-pilula" href="https://absolutezro.com/ia" rel="noopener">Conhecer a Z</a></div>
+      </section>
+
+      <section class="fecho" aria-labelledby="fecho-titulo">
+        <p class="selo-fecho revela-ao-rolar">
+          <svg
+            viewBox="0 0 24 24"
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <rect x="5" y="10.5" width="14" height="9.5" rx="2.5" />
+            <path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" />
+          </svg>
+          Suas imagens não saem do aparelho
+        </p>
+        <h2 id="fecho-titulo" class="revela-ao-rolar">Em <span class="fino">desenvolvimento.</span></h2>
+        <p class="apoio revela-ao-rolar">A Revela chega com a sua conta Absolute ZRO.</p>
+        <div class="hero-acoes revela-ao-rolar">
+          <a class="vidro vidro--tinta grande-pilula" href="https://absolutezro.com/inicio">Voltar ao HUB</a>
+        </div>
+      </section>
     </main>
+
+    <footer class="rodape-home">
+      <img src="marca/revela-icone.svg" alt="" width="22" height="22" />
+      <span>Revela</span>
+      <nav aria-label="Rodapé">
+        <a href="marca/">Marca</a>
+      </nav>
+      <span class="assina"><img src="marca/familia/absolute-zro-o.webp" alt="" width="14" height="14" /> An Absolute ZRO Company</span>
+    </footer>
   </body>
 </html>

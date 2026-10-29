@@ -18,6 +18,7 @@ import { qrSvg, shortcutSteps } from '../mobile/qr.js'
 import { gerarMiniaturasLote, resumoLote } from '../media/raw-thumb-lote.js'
 import { referenciasRoutes } from './referencias.js'
 import { registerPrevias } from './previas.js'
+import { registerRevela } from './revela.js'
 import { registerTamanho } from './tamanho.js'
 import { registerCopiar } from './copiar.js'
 import { registerFrames } from './frames.js'
@@ -26,6 +27,8 @@ import { registerDiscos } from './discos.js'
 import { registerLan } from './lan.js'
 import { registerCelular } from './celular.js'
 import { registerBackup } from './backup.js'
+import { EntregaError, comprovanteDeEntrega, pastaDoLote } from '../engine/entrega.js'
+import { PreparoError, PreparoSynquei } from '../engine/preparo-synquei.js'
 
 const BODY_LIMIT = 1024 * 1024
 const BODY_HARD_LIMIT = 16 * BODY_LIMIT // além disso nem lê o resto: derruba a conexão
@@ -430,6 +433,8 @@ export function createApi(ctx) {
   const route = (method, pattern, handler, { raw = false, corpo = true } = {}) => routes.push({ method, pattern: pattern.split('/').filter(Boolean), handler, raw, corpo })
   const jobs = new CompareJobs(ctx)
   const thumbJobs = new RawThumbJobs(ctx)
+  // "Preparar no Synquei" de um download do Drive (src/engine/preparo-synquei.js): manifesto na pasta e recibo de volta.
+  const preparo = ctx.preparo !== undefined ? ctx.preparo : ctx.manager?.setBatchInfo ? new PreparoSynquei({ manager: ctx.manager, log: (...a) => ctx.log?.(...a) }).start() : null
 
   const state = () => {
     const snap = ctx.manager.snapshot()
@@ -452,6 +457,8 @@ export function createApi(ctx) {
       referencias: ctx.referencias?.status() ?? null,
       // "Gerar prévias": o lote atual (ou o último).
       previas: previas.view(),
+      // "Converter com a Revela": os trabalhos em andamento e os últimos que terminaram.
+      revela: revela.view(),
       // "Copiar de um link": a cópia atual (ou a última).
       copia: copias.view(),
       // Frames: o trabalho atual (ou o último).
@@ -500,6 +507,9 @@ export function createApi(ctx) {
 
   // Prévia leve (src/server/previas.js): /api/previas, /api/previas/pular e o lote /api/previas/lote.
   const previas = registerPrevias({ route, ctx, account, HttpProblem, toProblem })
+
+  // "Converter com a Revela" (src/server/revela.js): /api/revela e /api/revela/converter.
+  const revela = registerRevela({ route, ctx, account, HttpProblem })
 
   // Tamanho das pastas (src/server/tamanho.js): /api/drive/:acc/tamanho.
   const tamanhos = registerTamanho({ route, ctx, account, HttpProblem, toProblem })
@@ -585,6 +595,38 @@ export function createApi(ctx) {
     }
   }, { raw: true })
 
+  // ── a Z, a IA da Absolute ZRO (public/components/z.js): o painel fala com /api/ia/* e o motor repassa ao site com o
+  //    Bearer deste computador (CloudAuth.ia). A resposta (NDJSON nas mensagens) passa pedaço a pedaço, sem buffer.
+  const ia = (caminho) => async ({ req, res, params, body, signal }) => {
+    const alvo = typeof caminho === 'function' ? caminho(params) : caminho
+    let r
+    try {
+      r = ctx.auth.cloud ? await ctx.auth.cloud.ia(req.method, alvo, { body: req.method === 'POST' ? JSON.stringify(body) : undefined, signal }) : null
+    } catch {
+      if (signal.aborted) return res.destroy()
+      return sendJSON(res, 502, { erro: 'rede', mensagem: 'Sem conexão com a conta SOBEDESCE agora.' })
+    }
+    if (!r) return sendJSON(res, 401, { erro: 'sem_conta', mensagem: 'Entre na conta SOBEDESCE para conversar com a Z.' })
+    res.writeHead(r.status, baseHeaders({ 'content-type': r.headers.get('content-type') || 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-accel-buffering': 'no' }))
+    if (!r.body) return res.end()
+    try {
+      for await (const pedaco of r.body) res.write(pedaco)
+    } catch {
+      return res.destroy()
+    }
+    res.end()
+  }
+  const ID_CONVERSA = /^[A-Za-z0-9_-]{1,80}$/
+  const conversa = (params) => {
+    if (!ID_CONVERSA.test(params.id)) throw new HttpProblem(404, 'Conversa não encontrada.')
+    return `conversas/${params.id}`
+  }
+  route('GET', '/api/ia/estado', ia('estado'), { raw: true })
+  route('GET', '/api/ia/conversas', ia('conversas'), { raw: true })
+  route('GET', '/api/ia/conversas/:id', ia(conversa), { raw: true })
+  route('DELETE', '/api/ia/conversas/:id', ia(conversa), { raw: true, corpo: false })
+  route('POST', '/api/ia/mensagens', ia('mensagens'), { raw: true })
+
   // ── conta SOBEDESCE (fluxo de dispositivo; docs/CONTAS.md §7)
   const cloud = () => {
     if (!ctx.auth.cloud) throw new HttpProblem(404, 'A conta SOBEDESCE não está disponível nesta versão.')
@@ -611,6 +653,17 @@ export function createApi(ctx) {
   route('POST', '/api/cloud/logout', async () => ({ cloud: await cloud().signOut() }))
 
   route('POST', '/api/cloud/refresh', async () => ({ cloud: await cloud().refresh({ full: true }) }))
+
+  // "Agora sua conta é Absolute ZRO" (conta antiga sem vínculo): devolve o endereço do vincular de sempre no site; a
+  // interface abre no navegador do sistema e o motor confere a conta até ligar. A fila de transferências não para.
+  route('POST', '/api/cloud/zro/ligar', async () => {
+    try {
+      return await cloud().ligarZro()
+    } catch (err) {
+      if (err?.name === 'SobeDesceError') throw new HttpProblem(409, err.message)
+      throw err
+    }
+  })
 
   route('DELETE', '/api/accounts/:id', async ({ params }) => {
     account(params.id)
@@ -922,10 +975,48 @@ export function createApi(ctx) {
     return {}
   })
 
-  route('POST', '/api/transfers/clear', () => {
-    ctx.manager.clearFinished()
-    return {}
+  // ── Entrega conferida (src/engine/entrega.js): o comprovante de um lote de envio de uma pasta, para registrar no
+  // projeto do HUB. Sai só com todos os arquivos concluídos e conferidos pelo MD5. O id é o do lote: gerar de novo dá o
+  // mesmo comprovante (o HUB não duplica).
+  route('POST', '/api/entregas/comprovante', async ({ body, signal }) => {
+    const batchId = typeof body.batchId === 'string' && /^[\w-]{1,100}$/.test(body.batchId) ? body.batchId : null
+    if (!batchId) throw new HttpProblem(400, 'Envio inválido.')
+    const recs = ctx.manager.snapshot().transfers.filter(r => r.batchId === batchId && r.type === 'upload')
+    if (!recs.length) throw new HttpProblem(404, 'Não achei esse envio. Ele pode ter sido limpo da lista.')
+    const pasta = pastaDoLote(recs)
+    if (!pasta) throw new HttpProblem(400, 'O comprovante é de uma pasta enviada inteira (um envio, uma pasta).')
+    // a pasta no Drive: o pai de um arquivo que está direto nela; senão, procurada pelo nome no destino do envio
+    const t = recs[0].target || {}
+    let pastaId = recs.find(r => r.target?.relDir === pasta && r.target?.parentId)?.target.parentId || null
+    if (!pastaId) {
+      const achada = await ctx.manager.driveFor(recs[0].accountId).findChild(t.rootId || 'root', pasta, { folder: true, signal, driveId: t.driveId || undefined })
+      pastaId = achada?.id || null
+    }
+    try {
+      const entrega = comprovanteDeEntrega({ records: recs, pastaId, id: `ent-${batchId}`, origem: body.revela === true ? 'revela' : null })
+      return { entrega, arquivo: `${pasta.replace(/[^\w .-]+/g, '_').slice(0, 80)} · entrega conferida.json` }
+    } catch (err) {
+      if (err instanceof EntregaError) throw new HttpProblem(err.status, err.message)
+      throw err
+    }
   })
+
+  // ── Preparar no Synquei: o lote de download de uma pasta, terminado sem arquivo diferente. Devolve o link
+  // synquei://organizar?pasta=…&op=<id do lote>; o andamento volta no próprio lote (batch.synquei), pelo recibo.
+  route('POST', '/api/transfers/synquei', async ({ body }) => {
+    const batchId = typeof body.batchId === 'string' && /^[\w-]{1,100}$/.test(body.batchId) ? body.batchId : null
+    if (!batchId) throw new HttpProblem(400, 'Download inválido.')
+    if (!preparo) throw new HttpProblem(503, 'Indisponível agora.')
+    try {
+      return await preparo.preparar(batchId)
+    } catch (err) {
+      if (err instanceof PreparoError) throw new HttpProblem(err.status, err.message)
+      throw err
+    }
+  })
+
+  // Limpar concluídas: lote com proxy ainda sendo feito fica (e o proxy segue); a tela diz quantos ficaram.
+  route('POST', '/api/transfers/clear', () => ctx.manager.clearFinished() ?? {})
 
   // ── ajustes
   route('GET', '/api/settings', () => ({ settings: ctx.settings.get() }))
@@ -1141,9 +1232,11 @@ export function createApi(ctx) {
     dispatch,
     state,
     close: () => {
+      if (preparo && ctx.preparo === undefined) preparo.close()
       jobs.close()
       thumbJobs.close()
       previas.close()
+      revela.close()
       tamanhos.close()
       copias.close()
       frames.close()

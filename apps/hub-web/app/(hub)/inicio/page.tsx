@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Card, EmptyState, Notice, Pill, ProductMark, Stat } from '@zro/ui'
+import { Suspense } from 'react'
+import { Card, EmptyState, Notice, Pill, ProductMark, Stat, ZroSymbol } from '@zro/ui'
 import { AppTile, productColor } from '@/components/app-tile'
+import { EsqueletoPaineis } from '@/components/esqueleto'
 import { Icon, type IconName } from '@/components/icons'
 import { MotionGate } from '@/components/motion-gate'
-import { homeData } from '@/lib/data/hub'
+import { homePaineis, homeTopo } from '@/lib/data/hub'
 import { fmtDate, PROJECT_STATUS_LABEL, RUN_LABEL, RUN_TONE, STEP_LABEL, STEP_TONE } from '@/lib/labels'
 import { requireOrgPage } from '@/lib/session'
 
@@ -16,19 +18,29 @@ function greeting(now = new Date()) {
 }
 
 const QUICK: { href: string; title: string; hint: string; icon: IconName; color: string }[] = [
-  { href: '/projetos/novo', title: 'Novo projeto', hint: 'Do zero ou de um job', icon: 'plus', color: 'var(--zro-blue)' },
+  { href: '/projetos/novo', title: 'Novo projeto', hint: 'Comece do zero', icon: 'plus', color: 'var(--zro-blue)' },
   { href: '/projetos', title: 'Importar descarga', hint: 'Resumo do SOBEDESCE', icon: 'upload', color: 'var(--p-sobedesce)' },
   { href: '/ciclo', title: 'Ciclo do O', hint: 'Onde cada projeto está', icon: 'cycle', color: 'var(--p-synquei-2)' },
   { href: '/equipe', title: 'Convidar equipe', hint: 'Papéis por pessoa', icon: 'team', color: 'var(--p-carro-do-freela)' },
 ]
 
+type Acesso = Awaited<ReturnType<typeof homeTopo>>['access']
+
 export default async function Inicio() {
   const auth = await requireOrgPage()
-  const d = await homeData(auth)
+  // As duas partes saem juntas; a página espera só o topo e os painéis chegam no próprio esqueleto (streaming).
+  const paineis = homePaineis(auth)
+  paineis.catch(() => {}) // o erro, se houver, aparece onde a parte é lida (Paineis), não como rejeição solta
+  const d = await homeTopo(auth)
   const first = auth.user.displayName.split(' ')[0] || 'tudo bem'
-  const latest = d.projects[0]
-  const apps = [...d.access].sort((a, b) => Number(b.access === 'contracted') - Number(a.access === 'contracted') || a.stepOrder - b.stepOrder)
-  const orbit = d.access.slice().sort((a, b) => a.stepOrder - b.stepOrder)
+  const latest = d.latest
+  // Contratadas primeiro; fechadas pelo gate de lançamento (ADR 0023) por último, só com o selo, e fora da órbita.
+  const peso = (a: (typeof d.access)[number]) => (a.access === 'contracted' ? 0 : a.access === 'closed' ? 2 : 1)
+  const apps = [...d.access].sort((a, b) => peso(a) - peso(b) || a.stepOrder - b.stepOrder)
+  const orbit = d.access.filter((a) => a.access !== 'closed').sort((a, b) => a.stepOrder - b.stepOrder)
+  // "De um job" só quando o Carro do Freela está aberto para a pessoa (gate de lançamento); fechado, nada de prometer.
+  const comJob = orbit.some((a) => a.productId === 'carro-do-freela')
+  const atalhos = QUICK.map((q) => (q.href === '/projetos/novo' && comJob ? { ...q, hint: 'Do zero ou de um job' } : q))
   return (
     <div className="page">
       <header className="greet">
@@ -43,7 +55,7 @@ export default async function Inicio() {
 
       {!auth.user.emailVerified && (
         <Notice tone="warn" title="Confirme seu e-mail">
-          Sem confirmar, você não aceita convites nem convida pessoas. <Link href="/perfil">Reenviar link</Link>
+          Sem confirmar, você não aceita convites nem convida pessoas. <Link href="/perfil/seguranca">Reenviar link</Link>
         </Notice>
       )}
 
@@ -51,7 +63,7 @@ export default async function Inicio() {
         <MotionGate className="orbit" as="div">
           <div className="orbit__ring" aria-hidden="true" />
           <div className="orbit__core" aria-hidden="true">
-            <img src="/brand/absolute-zro-o-alpha.webp" alt="" width={64} height={58} />
+            <ZroSymbol size={64} animated />
           </div>
           <ul className="orbit__items" aria-label="Ferramentas do Ciclo do O">
             {orbit.map((p, i) => (
@@ -102,7 +114,7 @@ export default async function Inicio() {
       </section>
 
       <nav className="quick" aria-label="Atalhos">
-        {QUICK.map((q) => (
+        {atalhos.map((q) => (
           <Link key={q.title} href={q.href} className="quick__tile" style={{ ['--c' as string]: q.color }}>
             <span className="quick__icon">
               <Icon name={q.icon} />
@@ -115,6 +127,18 @@ export default async function Inicio() {
         ))}
       </nav>
 
+      <Suspense fallback={<EsqueletoPaineis />}>
+        <Paineis dados={paineis} apps={apps} comJob={comJob} />
+      </Suspense>
+    </div>
+  )
+}
+
+/** Números, painéis e apps: a parte do Início que espera o banco (com o esqueleto da mesma forma enquanto isso). */
+async function Paineis({ dados, apps, comJob }: { dados: ReturnType<typeof homePaineis>; apps: Acesso; comJob: boolean }) {
+  const d = await dados
+  return (
+    <div className="inicio-paineis">
       <div className="stats">
         <Card>
           <Stat label="Projetos ativos" value={d.counts.projects} />
@@ -155,7 +179,7 @@ export default async function Inicio() {
                 </Link>
               }
             >
-              Crie do zero ou a partir de um job do Carro do Freela.
+              {comJob ? 'Crie do zero ou a partir de um job do Carro do Freela.' : 'Crie o primeiro e ligue as etapas.'}
             </EmptyState>
           )}
         </Card>

@@ -9,7 +9,15 @@ export const ICONES = {
   baixar: traco('<path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 19h14"/>'),
   imagem: traco('<rect x="3.5" y="5" width="17" height="14" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="m4 17 5-4.5 4 3.5 3-2.5 4 3.5"/>'),
   filme: traco('<rect x="3.5" y="5" width="17" height="14" rx="3"/><path d="M3.5 9h17M3.5 15h17M8 5v4M12 5v4M16 5v4M8 15v4M12 15v4M16 15v4"/>'),
+  brilho: traco('<path d="M12 3.5 13.9 9.1 19.5 11l-5.6 1.9L12 18.5l-1.9-5.6L4.5 11l5.6-1.9Z"/><path d="M18.5 3.5v3M17 5h3"/>'),
+  cst: traco('<circle cx="9" cy="12" r="5.5"/><circle cx="15" cy="12" r="5.5"/>'),
+  tela: traco('<rect x="3.5" y="4.5" width="17" height="12" rx="2.5"/><path d="M9 20h6M12 16.5V20"/>'),
+  // a Z: o anel com a estrela de 4 pontas às 3 horas
+  z: traco('<circle cx="12" cy="12" r="7.5"/><path d="M19.5 8.8l.8 2.4 2.4.8-2.4.8-.8 2.4-.8-2.4-2.4-.8 2.4-.8z" fill="currentColor" stroke="none"/>'),
+  casa: traco('<path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-6h-6v6H5.5A1.5 1.5 0 0 1 4 19Z"/>'),
+  menu: traco('<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M9.5 4.5v15"/>'),
   gota: traco('<path d="M12 3.5s-6 6.6-6 10.8a6 6 0 0 0 12 0C18 10.1 12 3.5 12 3.5Z"/>'),
+  mais: traco('<path d="M12 5v14M5 12h14"/>'),
   copiar: traco('<rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>'),
   pasta: traco('<path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v7.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2Z"/>'),
   ok: traco('<path d="m5 12.5 4.5 4.5L19 7.5"/>'),
@@ -18,8 +26,16 @@ export const ICONES = {
   cadeado: traco('<rect x="5" y="10.5" width="14" height="9.5" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>'),
   info: traco('<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8v.1"/>'),
   converter: traco('<path d="M4 8h13l-3.5-3.5"/><path d="M20 16H7l3.5 3.5"/>'),
+  // frasco do laboratório com a película dentro
+  lab: traco('<path d="M9.5 3.5h5M10.5 3.5v5.2L5.6 17.4a2 2 0 0 0 1.8 3.1h9.2a2 2 0 0 0 1.8-3.1l-4.9-8.7V3.5"/><path d="M7.8 14h8.4"/>'),
+  // looks prontos: três quadros de filme empilhados
+  looks: traco('<rect x="3.5" y="8" width="13" height="12" rx="2.5"/><path d="M7 5h11a2.5 2.5 0 0 1 2.5 2.5V16"/><path d="M3.5 15.5 7.5 12l3 2.5 2.5-2 3.5 3"/>'),
   lut: traco('<path d="M12 3.5 19.5 8v8L12 20.5 4.5 16V8Z"/><path d="M12 12 19.5 8M12 12v8.5M12 12 4.5 8"/>'),
+  sol: traco('<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/>'),
+  lua: traco('<path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10Z"/>'),
   entrega: traco('<path d="M5 12h12"/><path d="m13 7 5 5-5 5"/><path d="M5 5v14"/>'),
+  compartilhar: traco('<path d="M12 3.5v11"/><path d="m8 7.5 4-4 4 4"/><path d="M8.5 10.5H7a2 2 0 0 0-2 2V19a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6.5a2 2 0 0 0-2-2h-1.5"/>'),
+  instalar: traco('<rect x="4.5" y="4.5" width="15" height="15" rx="4"/><path d="M12 8.5v7M8.5 12h7"/>'),
 }
 
 /** Nome curto para o cartão; o nome inteiro vai no rótulo acessível. */
@@ -58,6 +74,14 @@ export function svg(html) {
 /** Pontos de entrada com escalonamento: cada `.entra` recebe a ordem dele (a animação fica no CSS). */
 export function escalonar(raiz = document) {
   raiz.querySelectorAll('.entra').forEach((n, i) => n.style.setProperty('--i', String(i)))
+}
+
+/** Entrada em cascata dos filhos de uma lista (cartões, miniaturas): cada um chega 24 ms depois do anterior. */
+export function cascata(lista) {
+  ;[...lista.children].forEach((n, i) => n.style.setProperty('--i', String(Math.min(i, 12))))
+  lista.classList.remove('cascata')
+  void lista.offsetWidth // recomeça quando a lista é refeita
+  lista.classList.add('cascata')
 }
 
 /** Troca cada `[data-icone]` pelo ícone. */

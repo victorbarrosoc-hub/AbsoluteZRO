@@ -102,7 +102,7 @@ const SONDA = () => {
   t(faltando.length===0,'e ele existe nas '+saidas.length+' saídas, com todas as seções fechadas'
     +(faltando.length?' — falha em '+faltando.join(', '):''));
 
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
   const abrir=async(reduz)=>{
     const ctx=await b.newContext({viewport:{width:390,height:844},isMobile:true,
       reducedMotion:reduz?'reduce':'no-preference'});
@@ -195,8 +195,8 @@ const SONDA = () => {
   /* ⚠️ ESTE CONTEXTO É UMA PRIMEIRA VISITA DE VERDADE — sem `cdf-pv` no
      armazenamento, que é como a pessoa abre o site. Desde 17/out · 5 nada
      abre sozinho por cima da home: a prévia se declara no selo. */
-  t(await a.p.locator('#ovl-pv').isHidden()&&await a.p.locator('.homenav [data-previa]').isVisible(),
-    'depois do véu, nenhum aviso abre sozinho — a prévia está dita no selo ao lado da marca');
+  t(await a.p.locator('#ovl-pv').isHidden()&&!await a.p.locator('.homenav [data-previa]').count()&&await a.p.locator('#v-home .fim-prev').count()===1,
+    'depois do véu, nenhum aviso abre sozinho — a prévia está dita no pé da home (o selo saiu do topo em 27/out)');
   await a.p.locator('.homenav .entrar-cta').click();
   await a.p.waitForTimeout(250);
   t(await a.p.locator('#v-entrar').isVisible(),
@@ -245,7 +245,13 @@ const SONDA = () => {
     const p=await ctx.newPage();
     await p.goto(URL,{waitUntil:'domcontentloaded'});
     const m=await p.evaluate(()=>{ const sp=document.getElementById('splash'); if(!sp||sp.classList.contains('sai')) return null;
-      return {r:parseFloat(getComputedStyle(sp).getPropertyValue('--sp-r')), disco:sp.querySelector('.sp-cena').getBoundingClientRect().width/2} });
+      /* (26/out · 2) o raio do disco é o do DESENHO (offsetWidth), não o da
+         caixa na tela: o disco entra com scale(.88)→1 em .24s, e com o HTML
+         leve o domcontentloaded passou a cair no fim dessa entrada — a caixa
+         media 51,9995 e o halo (8 + 44 = 52, encostado na borda por desenho)
+         reprovava por meio milésimo de pixel. --sp-r também é medida do
+         desenho, sem escala: as duas réguas agora são a mesma */
+      return {r:parseFloat(getComputedStyle(sp).getPropertyValue('--sp-r')), disco:sp.querySelector('.sp-cena').offsetWidth/2} });
     t(m&&m.r+44<=m.disco,'o halo do íris começa escondido atrás do disco (raio '+(m?m.r:'-')+' + faixa 44 ≤ '+(m?m.disco:'-')+') — sem estourar num quadro só');
     await ctx.close();
   }

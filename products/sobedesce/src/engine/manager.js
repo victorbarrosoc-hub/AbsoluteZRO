@@ -25,12 +25,15 @@ import { FolderListings } from './folder-listings.js'
 import { KeepAwake } from './power.js'
 import { RawThumbnailer } from '../media/raw-thumb.js'
 import { GeradorPrevias, PREVIA_PENDENTE } from '../media/previa-fila.js'
+import { LoteTempo } from './lote-tempo.js'
 
 const MINUTE = 60_000
 const HOUR = 60 * MINUTE
 
 const STATUSES = new Set(['queued', 'running', 'verifying', 'paused', 'waiting', 'completed', 'skipped', 'failed', 'canceled'])
 const FINISHED = new Set(['completed', 'skipped', 'canceled'])
+/** Envio cujo proxy (prévia leve) ainda vai andar: na fila, pausado ou sendo feito. */
+const proxyPendente = r => r.type === 'upload' && PREVIA_PENDENTE.includes(r.previa?.estado)
 const TYPES = ['download', 'upload']
 
 const TRANSFERS_MS = 250 // 'transfers' no máximo 4×/s
@@ -182,6 +185,7 @@ export class TransferManager extends EventEmitter {
     this.removedQueue = []
     this.batchesDirty = false
     this.doneBatches = new Set()
+    this.loteTempo = new LoteTempo() // números do lote (batch.stats): tempo andando, bytes, proxies
     this.reauthNotified = new Set()
     this.prioritySeq = 0
     this.meters = { download: new SpeedMeter(), upload: new SpeedMeter() }
@@ -315,6 +319,7 @@ export class TransferManager extends EventEmitter {
       await this.#waitFor(waits, SHUTDOWN_WAIT_MS)
       await this.thumbnailer?.close().catch(noop)
       await this.previas?.close().catch(noop)
+      this.loteTempo.fecharTudo(this.batches)
       this.settings.off?.('change', this.onSettingsChange)
       this.auth?.off?.('accounts', this.onAccounts)
       try {
@@ -424,6 +429,17 @@ export class TransferManager extends EventEmitter {
     return claimed
   }
 
+  /** Guarda uma informação no lote (vai para queue.json e para a tela pelo evento 'batches'). */
+  setBatchInfo(batchId, key, value) {
+    const b = this.batches.get(batchId)
+    if (!b || !/^[a-z]\w{0,30}$/i.test(String(key))) return false
+    if (value === undefined) delete b[key]
+    else b[key] = value
+    this.batchesDirty = true
+    this.#saveSoon()
+    return true
+  }
+
   idsOfBatch(batchId) {
     const out = []
     for (const r of this.records.values()) if (r.batchId === batchId) out.push(r.id)
@@ -504,8 +520,13 @@ export class TransferManager extends EventEmitter {
     // Um temporário ainda sendo apagado (cancelado/removido) também conta: o novo download não pode nascer nele.
     const claimed = this.#downloadClaims()
     const uploads = new Set()
+    // Envio que falhou e é mandado de novo (o mesmo arquivo para o mesmo lugar): a tentativa nova entra e a antiga sai
+    // da conta (vira cancelada, "substituída"). Sem isso, os dois contavam no total e a porcentagem ficava pela metade.
+    const falhos = new Map()
     for (const r of this.records.values()) {
-      if (r.type === 'upload' && !FINISHED.has(r.status) && r.status !== 'failed') uploads.add(this.#uploadKey(r))
+      if (r.type !== 'upload') continue
+      if (r.status === 'failed' && !this.entries.has(r.id)) falhos.set(this.#uploadKey(r), r)
+      else if (!FINISHED.has(r.status) && r.status !== 'failed') uploads.add(this.#uploadKey(r))
     }
     for (const r of records) {
       if (!validRecord(r) || this.records.has(r.id)) {
@@ -540,6 +561,14 @@ export class TransferManager extends EventEmitter {
           continue
         }
         uploads.add(key)
+        const antigo = falhos.get(key)
+        if (antigo) {
+          antigo.status = 'canceled'
+          antigo.substituidaPor = r.id
+          antigo.finishedAt ??= now
+          falhos.delete(key)
+          this.#touch(antigo)
+        }
       }
       if (!STATUSES.has(r.status) || r.status === 'running' || r.status === 'verifying') r.status = 'queued'
       r.bytesDone ??= 0
@@ -686,10 +715,14 @@ export class TransferManager extends EventEmitter {
     this.#schedule()
   }
 
-  /** Tira da lista (abortando se estiver rodando). O que não terminou é limpo como num cancelamento. */
+  /**
+   * Tira da lista (abortando se estiver rodando). O que não terminou é limpo como num cancelamento.
+   * Envio que já chegou mas ainda tem proxy na fila ou sendo feito fica (pule o proxy antes): tirar da lista não para
+   * o proxy no meio. Devolve quantos saíram.
+   */
   async remove(ids) {
     const waits = []
-    const list = this.#select(ids)
+    const list = this.#select(ids).filter(r => !(FINISHED.has(r.status) && proxyPendente(r)))
     for (const r of list) {
       const e = this.entries.get(r.id)
       this.#clearWait(r.id)
@@ -708,6 +741,7 @@ export class TransferManager extends EventEmitter {
       this.#saveSoon()
     }
     await this.#waitFor(waits)
+    return list.length
   }
 
   /** Passa na frente: ganha a maior prioridade da fila (o primeiro id fica na frente dos outros). */
@@ -743,18 +777,31 @@ export class TransferManager extends EventEmitter {
     return this.cancel(this.idsOfBatch(batchId))
   }
 
-  /** Tira da lista o que terminou (concluído, pulado, cancelado). Os arquivos continuam onde estão. */
+  /**
+   * Tira da lista o que terminou (concluído, pulado, cancelado). Os arquivos continuam onde estão.
+   * Lote com proxy ainda na fila ou sendo feito fica inteiro (os originais já estão no Drive, mas o trabalho continua e
+   * precisa do registro para seguir e voltar depois de fechar o app); limpar nunca cancela proxy.
+   * Devolve { removidos, mantidos } (mantidos = lotes que ficaram por causa dos proxies).
+   */
   clearFinished() {
-    let n = 0
+    let removidos = 0
+    const presos = new Set()
+    for (const r of this.records.values()) if (r.batchId && proxyPendente(r)) presos.add(r.batchId)
+    const mantidos = new Set()
     for (const r of [...this.records.values()]) {
       if (!FINISHED.has(r.status) || this.entries.has(r.id) || this.busy.has(r.id)) continue
+      if (proxyPendente(r) || presos.has(r.batchId)) {
+        mantidos.add(r.batchId || r.id)
+        continue
+      }
       this.#forget(r.id)
-      n++
+      removidos++
     }
-    if (n) {
+    if (removidos) {
       this.#pruneBatches()
       this.#saveSoon()
     }
+    return { removidos, mantidos: mantidos.size }
   }
 
   // ─────────── agendamento ───────────
@@ -897,6 +944,8 @@ export class TransferManager extends EventEmitter {
     rec.finishedAt = null
     rec.error = null
     rec.retryAt = null
+    this.loteTempo.comecou(this.batches.get(rec.batchId), now)
+    entry.contou = true
     this.#touch(rec)
     this.#saveSoon()
     // Ainda chegando do celular: o frame sai do arquivo final, quando o envio terminar.
@@ -951,6 +1000,7 @@ export class TransferManager extends EventEmitter {
         if (rec.status !== 'skipped') rec.status = 'completed'
         if (rec.size != null && rec.status === 'completed') rec.bytesDone = rec.size
         rec.finishedAt = now
+        entry.chegou = true
         rec.error = null
         rec.retryAt = null
         delete rec.quotaHits
@@ -986,6 +1036,11 @@ export class TransferManager extends EventEmitter {
       this.log('erro ao fechar a tarefa', rec?.id, e?.message)
     } finally {
       if (this.entries.get(entry.id) === entry) this.entries.delete(entry.id)
+      if (entry.contou) {
+        entry.contou = false
+        this.loteTempo.parou(this.batches.get(rec?.batchId), { ok: !!entry.chegou })
+        this.batchesDirty = true
+      }
       this.#schedule()
       this.#updateKeepAwake()
     }
@@ -1326,6 +1381,7 @@ export class TransferManager extends EventEmitter {
 
   #previaChanged(rec, { estado = true } = {}) {
     if (this.records.get(rec.id) !== rec) return
+    if (estado && rec.batchId && this.loteTempo.proxy(this.batches.get(rec.batchId), rec.id, rec.previa?.estado)) this.batchesDirty = true
     this.#touch(rec)
     // Progresso só vai para a tela; mudança de fase também vai para o disco.
     if (estado) this.#saveSoon()
@@ -1371,10 +1427,16 @@ export class TransferManager extends EventEmitter {
     if (this.doneBatches.has(batchId)) return
     this.doneBatches.add(batchId)
     const b = this.batches.get(batchId)
+    // Quem precisa saber que um lote fechou (src/engine/preparo-synquei.js grava o manifesto da pasta baixada).
+    if (b) this.emit('lote-concluido', { batch: b })
     // Lote "quieto": quem criou avisa do jeito dele (Referências: "Salvo em <Coleção>").
     if (b?.quiet) return
     const label = b?.label || (b?.type === 'upload' ? 'Envio' : 'Download')
-    this.emit('toast', { kind: 'success', message: `${label} terminou: ${plural(n, 'arquivo', 'arquivos')}.`, batchId, bytes: size })
+    // Originais no Drive, proxies ainda andando: o aviso diz, para ninguém achar que acabou tudo.
+    let proxies = 0
+    for (const r of this.records.values()) if (r.batchId === batchId && proxyPendente(r)) proxies++
+    const resto = proxies ? ` Gerando ${plural(proxies, 'proxy', 'proxies')}.` : ''
+    this.emit('toast', { kind: 'success', message: `${label} terminou: ${plural(n, 'arquivo', 'arquivos')}.${resto}`, batchId, bytes: size, ...(proxies ? { proxies } : {}) })
   }
 
   #flushEvents() {
@@ -1414,6 +1476,7 @@ export class TransferManager extends EventEmitter {
     if (!(n > 0)) return
     const now = Date.now()
     this.meters[rec.type]?.add(n, now)
+    if (rec.batchId) this.loteTempo.bytes(this.batches.get(rec.batchId), n)
     const acc = (this.usageFile.data.accounts[rec.accountId] ??= {})
     const hour = String(now - (now % HOUR))
     const b = (acc[hour] ??= { up: 0, down: 0 })

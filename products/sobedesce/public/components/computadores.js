@@ -458,7 +458,7 @@ export function ComputadoresScreen() {
   if (!conectado) {
     return html`<${Pagina} titulo="Dispositivos" frase=${FRASE} class="dv" lado=${html`<${EsteComputador} lan=${lan} settings=${settings} cel=${cel} home=${roots?.home} />`}>
       <section class="k-passo k-entra" style="--i:1">
-        <${Vazio} icone="laptop" titulo="Entre na sua conta SOBEDESCE" acoes=${html`<${BotaoGrande} icone="user" cheio=${false} onClick=${() => navigate('ajustes')}>Abrir Ajustes</${BotaoGrande}>`}>
+        <${Vazio} icone="laptop" titulo="Entre com a sua conta Absolute ZRO" acoes=${html`<${BotaoGrande} icone="user" cheio=${false} onClick=${() => navigate('ajustes')}>Abrir Ajustes</${BotaoGrande}>`}>
           Os aparelhos se acham pela sua conta. Entre nela neste computador e no outro aparelho (no celular, em sobedesce.com/app).
         </${Vazio}>
       </section>

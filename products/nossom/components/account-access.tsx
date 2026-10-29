@@ -3,9 +3,11 @@ import DesktopUpdates from './desktop-updates';
 import Link from 'next/link';
 import { useEffect, useId, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
-import { ArrowRight, LoaderCircle, ShieldCheck, UserRound, Eye, EyeOff } from 'lucide-react';
+import { ArrowRight, LoaderCircle, ShieldCheck, UserRound } from 'lucide-react';
 import { Brand } from './brand';
+import { ZroSymbol } from './zro-symbol';
 import AIMotion from './ai-motion';
+import { PasswordField } from './password-field';
 export function AccountForm({
   next,
   initialMode = 'login',
@@ -34,7 +36,6 @@ export function AccountForm({
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   }, [expandable]);
-  const [showPassword, setShowPassword] = useState(false);
   const [mode, setMode] = useState<'login' | 'register'>(initialMode),
     [email, setEmail] = useState(''),
     [password, setPassword] = useState(''),
@@ -113,7 +114,6 @@ export function AccountForm({
                 onClick={() => {
                   setMode(value);
                   setPassword('');
-                  setShowPassword(false);
                   setError('');
                 }}
               >
@@ -130,8 +130,7 @@ export function AccountForm({
                 className="button primary account-zro-button"
                 href={'/api/zro/entrar?volta=' + encodeURIComponent(next)}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/absolute-zro-o-alpha.webp" alt="" width={20} height={20} />
+                <ZroSymbol size={20} />
                 Entrar com Absolute ZRO
               </a>
               <span className="account-zro-divider">ou com e-mail e senha</span>
@@ -151,8 +150,7 @@ export function AccountForm({
                 </p>
               )}
               <a className="button primary account-zro-create-button" href={createHref}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/absolute-zro-o-alpha.webp" alt="" width={20} height={20} />
+                <ZroSymbol size={20} />
                 Criar conta com a Absolute ZRO
               </a>
             </motion.div>
@@ -182,31 +180,19 @@ export function AccountForm({
               </label>
               <label htmlFor={id + '-password'}>
                 Senha
-                <span className="account-password">
-                  <input
-                    id={id + '-password'}
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    minLength={1}
-                    maxLength={128}
-                    required
-                    disabled={busy}
-                    placeholder="Sua senha"
-                  />
-                  <button
-                    type="button"
-                    className="account-password-toggle"
-                    aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                    aria-pressed={showPassword}
-                    onClick={() => setShowPassword(!showPassword)}
-                    disabled={busy}
-                  >
-                    {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                  </button>
-                </span>
+                <PasswordField
+                  key={mode}
+                  id={id + '-password'}
+                  name="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  minLength={1}
+                  maxLength={128}
+                  required
+                  disabled={busy}
+                  placeholder="Sua senha"
+                />
               </label>
               {error && (
                 <p className="account-error" role="alert">

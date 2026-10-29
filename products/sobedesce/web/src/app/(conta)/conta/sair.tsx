@@ -10,3 +10,14 @@ export function BotaoSair() {
     </form>
   );
 }
+
+/** "Sair" pequeno, no canto da tela de ligar a Absolute ZRO (lib/zro/ligar.ts). */
+export function SairDiscreto() {
+  return (
+    <form action={acaoSair}>
+      <Enviar variant="ghost" size="sm" className="text-ink-2" ocupado="Saindo…">
+        Sair
+      </Enviar>
+    </form>
+  );
+}

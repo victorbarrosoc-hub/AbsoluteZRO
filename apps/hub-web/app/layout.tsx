@@ -2,9 +2,10 @@ import type { Metadata, Viewport } from 'next'
 import { cookies } from 'next/headers'
 import type { ReactNode } from 'react'
 import { appOrigin } from '@/lib/env'
+import { SCRIPT_ESQUELETO } from '@/lib/esqueleto-script'
 import './globals.css'
 
-const description = 'O futuro começa do zero. Uma conta para todas as ferramentas, do job à entrega.'
+const description = 'O futuro começa do zero. Uma conta para todas as ferramentas, do roteiro à entrega.'
 
 export const metadata: Metadata = {
   metadataBase: new URL(appOrigin),
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
   // A imagem vem de app/opengraph-image.jpg e app/twitter-image.jpg (arte em scripts/marca).
   openGraph: { type: 'website', locale: 'pt_BR', siteName: 'Absolute ZRO', title: 'Absolute ZRO', description },
   twitter: { card: 'summary_large_image', title: 'Absolute ZRO', description },
-  appleWebApp: { capable: true, title: 'Absolute ZRO', statusBarStyle: 'black' },
+  appleWebApp: { capable: true, title: 'Absolute ZRO', statusBarStyle: 'default' },
   formatDetection: { telephone: false },
 }
 
@@ -28,6 +29,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html lang="pt-BR" data-theme={theme} suppressHydrationWarning>
       <body>
+        {/* a dissolvência do esqueleto para o conteúdo, antes de qualquer HTML em streaming (lib/esqueleto-script.ts) */}
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_ESQUELETO }} />
         <a className="zro-skip" href="#conteudo">
           Pular para o conteúdo
         </a>

@@ -10,7 +10,10 @@ import { Tabs } from './components/tabs.js'
 import { FolderSheet } from './components/folders.js'
 import { SettingsSheet } from './components/settings.js'
 import { ItemSheet } from './components/queue.js'
-import { SheetHost, Toasts } from './components/ui.js'
+import { SheetHost, Toasts, useEngine } from './components/ui.js'
+import { LigarZroFaixa, LigarZroTela } from './components/ligar-zro.js'
+import { filaAndando, modoLigar } from './lib/ligar-zro.js'
+import { useP2pAviso } from './components/p2p.js'
 import { engine } from './lib/uploader.js'
 import { startBridge } from './lib/stream.js'
 import { RefAtalhoSheet, RefDeleteSheet, RefItemSheet, RefLinkSheet, RefMenuSheet, RefNameSheet, RefSaveSheet } from './components/referencias.js'
@@ -21,12 +24,15 @@ import { MacJunkSheet } from './components/browser.js'
 import { BaixarSheet, LixeiraSheet } from './components/selecao.js'
 import { ItemMenuSheet } from './components/item-menu.js'
 import { ProxySheet } from './components/proxies.js'
+import { RevelaSheet } from './components/revela.js'
 import { CopySheet } from './components/copiar.js'
 import { FramesPostSheet } from './components/criar.js'
 import { P2pEnvioSheet, P2pReceberSheet } from './components/p2p.js'
 import { startP2p } from './lib/p2p.js'
 import { parseDriveLink } from './lib/copiar.js'
 import { abertura, aberturaAoVoltar } from './lib/abertura.js'
+import { linkDoHash } from './lib/drive-link.js'
+import { vigiarEntrada } from './lib/entrada.js'
 
 const SHEETS = {
   folders: FolderSheet,
@@ -46,6 +52,7 @@ const SHEETS = {
   lixeiraSelecao: LixeiraSheet,
   itemMenu: ItemMenuSheet,
   proxySelecao: ProxySheet,
+  revela: RevelaSheet,
   copiar: CopySheet,
   framesPost: FramesPostSheet,
   p2pEnvio: P2pEnvioSheet,
@@ -100,7 +107,10 @@ function openShared(state) {
 // Modo Wi-Fi (servido pelo SOBEDESCE do computador): sem conta aqui, quem fala com o Drive é o computador.
 if (!LAN) {
   auth.boot()
-  setState({ tab: savedTab() })
+  setState({ tab: savedTab(), abrirLink: linkDoHash(location.hash) })
+  // Abriu na Z sem link: se um computador estiver transferindo, vai para Início (o cartão do andamento) — uma vez,
+  // nos primeiros segundos (lib/entrada.js, decisão do titular de 28/10/2026).
+  vigiarEntrada({ getState, setState, subscribe })
   startBridge() // o service worker pede o token por aqui para a prévia e o download (/app/stream/)
   subscribe(openShared)
   // /app/#referencias (link de Sua conta): abre a aba, se a conta tiver o recurso.
@@ -108,6 +118,9 @@ if (!LAN) {
     if (location.hash === '#referencias') setState({ tab: 'refs' })
     if (location.hash === '#aparelhos') setState({ tab: 'ap' })
     if (location.hash === '#computador') openComputer()
+    // /app/#drive/<pasta>, #arquivo/<id>, #baixar/<id> (botões Abrir e Baixar da Z) com o app já aberto.
+    const link = linkDoHash(location.hash)
+    if (link) setState({ tab: 'drive', abrirLink: link })
   })
   // "No computador" (lib/computador.js): começa a acompanhar depois de entrar; /app/#computador (aviso do celular,
   // link de Sua conta) abre a folha.
@@ -136,10 +149,38 @@ function openComputer() {
   openSheet('computador')
 }
 
+// Volta do vincular da Absolute ZRO com erro (/app/?erro=zro_...): guarda o recado para a tela de ligar e limpa o endereço.
+function takeZroErro() {
+  if (LAN) return
+  const url = new URL(location.href)
+  const erro = url.searchParams.get('erro')
+  if (!erro?.startsWith('zro_')) return
+  setState({ zroErro: erro })
+  url.searchParams.delete('erro')
+  history.replaceState(null, '', url.pathname + url.search + url.hash)
+}
+takeZroErro()
+
+/**
+ * Conta antiga sem vínculo com a Absolute ZRO (lib/ligar-zro.js): a tela inteira no lugar das abas; com envio andando
+ * (fila ou Wi-Fi), só a faixa em cima e as abas continuam. Só este pedaço acompanha a fila, e só enquanto pede.
+ */
+function ComLigarZro({ children }) {
+  useEngine()
+  const p2p = useP2pAviso()
+  const temDrive = useApp((s) => (s.drives || []).length > 0)
+  const zroErro = useApp((s) => s.zroErro)
+  const modo = modoLigar(getState(), filaAndando(engine.items) || p2p === 'andando')
+  if (modo === 'tela') return html`<${LigarZroTela} temDrive=${temDrive} erro=${zroErro} />`
+  return html`<${LigarZroFaixa} />${children}`
+}
+
 function App() {
   const status = useApp((s) => s.auth.status)
-  const view = LAN ? html`<${MainScreen} />` : status === 'signedIn' ? html`<${Tabs} />` : html`<${AccountScreen} />`
-  return html`${view}<${SheetHost} registry=${SHEETS} /><${Toasts} />`
+  const ligar = useApp((s) => !LAN && modoLigar(s, false) !== null)
+  // A Z tem aba própria e aparece sempre (com o estado de login dela): só a abertura da conta fica sem abas.
+  const view = LAN ? html`<${MainScreen} />` : status === 'loading' ? html`<${AccountScreen} />` : html`<${Tabs} pronto=${status === 'signedIn'} />`
+  return html`${ligar ? html`<${ComLigarZro}>${view}</${ComLigarZro}>` : view}<${SheetHost} registry=${SHEETS} /><${Toasts} />`
 }
 
 // A abertura com o símbolo (Versão 1, lib/abertura.js): toda vez que o app abre e quando ele volta para a tela depois

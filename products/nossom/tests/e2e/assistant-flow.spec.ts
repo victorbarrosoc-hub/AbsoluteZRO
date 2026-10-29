@@ -1,4 +1,4 @@
-import { test, expect } from './fixtures';
+import { test, expect, onlyWhenOpen } from './fixtures';
 
 test('mobile shortcuts open real tools even while AI is unavailable', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -15,7 +15,7 @@ test('mobile shortcuts open real tools even while AI is unavailable', async ({ p
     ['Nivelar volumes', 'nivelamento'],
     ['Preparar para publicar', 'masterizacao'],
   ]) {
-    await page.goto('/studio');
+    await page.goto('/studio/inicio');
     await expect(page.getByRole('heading', { name: 'Seu áudio, melhor.' })).toBeVisible();
     await expect(page.locator('.assistant-details')).not.toHaveAttribute('open');
     await page.getByRole('button', { name: label, exact: true }).click();
@@ -37,7 +37,7 @@ test('a slow conversation can be cancelled and shortcuts remain available', asyn
     await wait;
     await r.fulfill({ json: { reply: 'Resposta antiga', operation: 'auto' } }).catch(() => {});
   });
-  await page.goto('/studio');
+  await page.goto('/studio/inicio');
   await page.getByLabel('Descreva seu objetivo').fill('Quero uma voz mais suave');
   await page.getByRole('button', { name: 'Encontrar tratamento', exact: true }).click();
   await expect(page.locator('.assistant-panel .ai-motion')).toHaveClass(/state-thinking/);
@@ -52,10 +52,13 @@ test('a slow conversation can be cancelled and shortcuts remain available', asyn
 });
 
 test('mobile homepage keeps demo, plans and FAQ in a shorter page', async ({ page }) => {
+  // Descreve o produto aberto (entrar, assinar, home com ações, /apps).
+  onlyWhenOpen();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Ouvir demonstração', exact: true })).toBeVisible();
-  expect(await page.locator('main > section').count()).toBe(6);
+  // Seis seções do NOSSOM e a da Z, a IA da Absolute ZRO.
+  expect(await page.locator('main > section').count()).toBe(7);
   await page.locator('.ns-faq').scrollIntoViewIfNeeded();
   await page.getByRole('button', { name: 'Meu áudio é enviado à IA?' }).click();
   await expect(page.locator('#faq-2')).toBeVisible();

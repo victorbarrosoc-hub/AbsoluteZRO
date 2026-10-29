@@ -170,6 +170,15 @@ Embaixo, duas abas: **Enviar** (violeta, a tela de sempre) e **Drive** (azul). A
   cancelados", conferência ("1 de 1 conferido (MD5)"), velocidade e quanto falta, ou "há 59 min" quando terminou. Filtros
   Tudo · Em andamento · Na fila · Concluídas · Com problema; tocar abre os arquivos daquele pedido. Vem de `lotes` no
   retrato (docs/CONTAS.md §9); app de computador antigo (sem `lotes`) continua com as listas "Agora" e "Já passou".
+- **Link para uma pasta (2.8.49):** `/app/#drive/<id da pasta>` abre a aba Drive já dentro da pasta, com a trilha
+  montada pelos pais (Meu Drive, Drive compartilhado ou Compartilhados comigo; `lib/drive-link.js`). Vale com o app
+  fechado e com ele aberto (`hashchange`); a seta e a trilha sobem até a raiz. Sem acesso ou inexistente: “Essa pasta
+  não abriu neste Drive.” e fica na raiz. É o Abrir das pastas que a Z mostra (`abrir_no_sobedesce`).
+- **Links de arquivo (2.8.50):** `/app/#arquivo/<id>` abre a pasta do arquivo (o primeiro pai; sem acesso a ela,
+  Compartilhados comigo) e o arquivo na prévia; `/app/#baixar/<id>` faz o mesmo e aperta o Baixar da prévia (mesmo
+  download pelo service worker; acima de 1 GB pede a confirmação de arquivo grande; Docs do Google: “Esse arquivo não
+  pode ser baixado.”). Sem acesso, na lixeira ou inexistente: “Esse arquivo não abriu neste Drive.” O hash some do
+  endereço. São os botões Abrir e Baixar de cada arquivo da Z (`abrir_no_sobedesce`, `baixar_pelo_sobedesce`).
 - **Copiar de um link (2.8.11):** botão de link no topo da aba Drive (`components/copiar.js`, `lib/copiar.js`). Cola o
   link de uma pasta ou arquivo do Drive de outra pessoa (compartilhado com a conta ou liberado para quem tem o link,
   com `resourcekey` quando o link traz), “Ver o que tem” mostra nome, dono, arquivos, subpastas e tamanho, e o destino

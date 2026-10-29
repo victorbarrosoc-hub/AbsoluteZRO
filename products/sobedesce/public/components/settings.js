@@ -7,7 +7,7 @@ import { relTime, tildify, plural } from '../lib/format.js'
 import { cx } from '../lib/ui.js'
 import { navigate } from '../lib/router.js'
 import { confirmDialog, pickDriveFolder } from '../lib/modals.js'
-import { pickFolderPath, revealLabel, revealPath } from '../lib/desktop.js'
+import { definirBandeja, lerBandeja, pickFolderPath, revealLabel, revealPath } from '../lib/desktop.js'
 import { toast } from '../lib/toasts.js'
 import { copyText, rotateMobileCode, useMobileState } from '../lib/mobile.js'
 import { Icon } from './icons.js'
@@ -83,6 +83,25 @@ function RawThumbRow({ d, set }) {
   >
     <${Switch} label="Gerar miniatura de BRAW" checked=${on} onChange=${(v) => set('brawThumbnails', v, { now: true })} />
   </${Row}>`
+}
+
+// ───── Bandeja (só no app de desktop) ─────
+
+/** "Minimizar para a bandeja": no Windows vem ligado. Com transferência andando, fechar também manda para lá. */
+function BandejaRow({ platform }) {
+  const [b, setB] = useState(null)
+  useEffect(() => {
+    let live = true
+    lerBandeja().then((r) => live && setB(r))
+    return () => {
+      live = false
+    }
+  }, [])
+  if (!b?.disponivel) return null
+  const onde = platform === 'darwin' ? 'na barra de menus' : 'perto do relógio'
+  return html`<div class="aj-linhas aj-bandeja"><${Row} label="Minimizar para a bandeja" desc=${`Sai da barra de tarefas e fica ${onde}.`}>
+    <${Switch} label="Minimizar para a bandeja" checked=${b.minimizar} onChange=${async (v) => setB((await definirBandeja(v)) || b)} />
+  </${Row}></div>`
 }
 
 // ───── Versão ─────
@@ -363,7 +382,7 @@ function MobileGroups({ d, set, accounts, activeId, home, platform }) {
             <${QrBox} svg=${m.webQrSvg} label="QR code do app do celular" />
             <div class="mqr-text">
               <div class="srow-label">Escaneie com o iPhone</div>
-              <div class="srow-desc">Abre o app do celular. Entre na sua conta SOBEDESCE e escolha o Drive.</div>
+              <div class="srow-desc">Abre o app do celular. Entre com a sua conta Absolute ZRO e escolha o Drive.</div>
               <${CopyField} value=${m.webUrl} />
             </div>
           </div>`
@@ -586,6 +605,7 @@ export function SettingsScreen({ route } = {}) {
   const app = useStore((s) => s.app)
   const roots = useLocalRoots()
   const localAccounts = accounts.filter((a) => a.source !== 'nuvem')
+  const cloudSigned = !!useStore((s) => s.cloud?.conectado)
   const [draft, setDraft] = useState(settings || {})
   const pending = useRef({})
   const timer = useRef(null)
@@ -807,7 +827,7 @@ export function SettingsScreen({ route } = {}) {
           icon="sun"
           tone="warning"
           frase="Claro, escuro ou igual ao computador."
-          extra=${html`<${Temas} valor=${d.theme} onEscolher=${(v) => set('theme', v, { now: true })} />`}
+          extra=${html`<${Temas} valor=${d.theme} onEscolher=${(v) => set('theme', v, { now: true })} /><${BandejaRow} platform=${app?.platform} />`}
         />
 
         <${Group}
@@ -859,7 +879,7 @@ export function SettingsScreen({ route } = {}) {
             ${app?.desktop ? html`<${Row} label="Onde ficam os acessos" desc=${protecaoTexto(app)} />` : null}
           </${Caixa}>
 
-          <${Caixa} rot="Drives só neste computador">
+          ${cloudSigned || localAccounts.length ? html`<${Caixa} rot="Drives só neste computador">
             ${localAccounts.map(
               (a) => html`<div class="srow account-row">
                 <div class="account-id">
@@ -883,7 +903,7 @@ export function SettingsScreen({ route } = {}) {
                   : html`<${Button} size="sm" icon="plus" onClick=${() => navigate('inicio/local')}>Conectar um Drive só neste computador</${Button}>`}
               </div>
             </div>
-          </${Caixa}>
+          </${Caixa}>` : null}
 
           ${setup?.configured || localAccounts.length
             ? html`<${Caixa} rot="Chave do Google">

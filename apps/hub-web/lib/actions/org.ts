@@ -1,5 +1,6 @@
 'use server'
-import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
+import { redirect } from './ir'
 import { defaultSender } from '@zro/auth'
 import {
   acceptInvitation,
@@ -14,6 +15,7 @@ import {
 import type { FormState } from '@/components/action-form'
 import { appOrigin, showDevLinks } from '../env'
 import { db, getAuth } from '../session'
+import { emailConvite } from '../email/modelos'
 import { safeNext, str, toFormError } from './helpers'
 
 const mail = defaultSender()
@@ -38,7 +40,8 @@ export async function inviteAction(_: FormState, fd: FormData): Promise<FormStat
   try {
     const r = await inviteMember(db(), await getAuth(), { email: str(fd, 'email'), role: str(fd, 'role') as Exclude<OrgRole, 'owner'> })
     const link = `${appOrigin}/convite?token=${encodeURIComponent(r.token)}`
-    await mail.send({ to: r.email, subject: 'Convite para uma equipe na Absolute ZRO', text: `Você foi convidado. Para aceitar (vale 7 dias): ${link}` })
+    await mail.send(emailConvite(r.email, link))
+    revalidatePath('/equipe')
     return {
       ok: mail.deliveryAvailable
         ? `Convite enviado para ${r.email}.`
@@ -67,6 +70,7 @@ export async function revokeInviteAction(fd: FormData) {
 export async function changeRoleAction(_: FormState, fd: FormData): Promise<FormState> {
   try {
     await changeMemberRole(db(), await getAuth(), str(fd, 'userId'), str(fd, 'role') as OrgRole)
+    revalidatePath('/equipe')
     return { ok: 'Papel atualizado.' }
   } catch (e) {
     return toFormError(e)
@@ -76,6 +80,7 @@ export async function changeRoleAction(_: FormState, fd: FormData): Promise<Form
 export async function removeMemberAction(_: FormState, fd: FormData): Promise<FormState> {
   try {
     await removeMember(db(), await getAuth(), str(fd, 'userId'))
+    revalidatePath('/equipe')
     return { ok: 'Pessoa removida da organização.' }
   } catch (e) {
     return toFormError(e)

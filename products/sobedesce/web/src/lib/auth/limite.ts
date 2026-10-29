@@ -2,7 +2,9 @@
  * Limite de tentativas (tabela `tentativas`): conta linhas da chave numa janela de tempo.
  * Chaves: "login:<email>:<ip>", "login-conta:<email>", "login-ip:<ip>", "criar:<ip>", "disp-iniciar:<ip>", "disp-codigo:<ip>",
  * "esqueci:<email>", "esqueci-ip:<ip>", "apagar:<usuario>", "senha:<usuario>", "atalho:<id>", "atalho-ip:<ip>",
- * "aviso-tentativas:<usuario>" (o e-mail de muitas senhas erradas, um por dia).
+ * "aviso-tentativas:<usuario>" (o e-mail de muitas senhas erradas, um por dia), "drive-busca-zro:<sub>" (a Z no Drive), "drive-maestro:<sub>" e
+ * "drive-token-maestro:<sub>" (o Maestro pela ponte do HUB) e
+ * "pedido-zro:<jti>" (uso único dos pedidos do HUB).
  * Limpeza preguiçosa: de vez em quando apaga o que tem mais de um dia.
  */
 import { and, count, eq, gte, isNotNull, lt, or } from "drizzle-orm";
@@ -30,6 +32,12 @@ export const REGRAS = {
   atalhoErro: { max: 20, janelaMs: 15 * 60_000 },
   /** E-mail "muitas senhas erradas" (lib/email/avisos.ts): no máximo um por conta a cada 24 horas. */
   avisoTentativas: { max: 1, janelaMs: 24 * 60 * 60_000 },
+  /** Buscas da Z no Drive (pedido do HUB, /api/zro/drive/buscar), por pessoa da Absolute ZRO. */
+  driveBuscaZro: { max: 30, janelaMs: 10 * 60_000 },
+  /** O Maestro no Drive da pessoa (ponte do HUB, /api/zro/drive/{listar,miniatura,pasta/criar,revisao/*}). */
+  driveMaestro: { max: 240, janelaMs: 10 * 60_000 },
+  /** O token curto do Drive para o Maestro (/api/zro/drive/token). */
+  driveTokenMaestro: { max: 40, janelaMs: 10 * 60_000 },
 } satisfies Record<string, Regra>;
 
 /** true = ainda pode tentar. */

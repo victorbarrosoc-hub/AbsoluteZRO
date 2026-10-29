@@ -322,3 +322,39 @@ test('rotas: /api/state, /api/versao, verificar, depois (com validação) e o ev
     await fs.rm(home, { recursive: true, force: true })
   }
 })
+
+test('instalado pela central do Absolute ZRO: não pergunta ao site, não baixa sozinho e recusa Atualizar', async () => {
+  const s = await freshSettings('central')
+  const f = fakeFetch(remote(41))
+  let central = false
+  const v = checker(s, f, 40, { gerenciado: () => central })
+  let st = await v.check()
+  assert.equal(st.nova, true)
+  assert.equal(st.gerenciado, false)
+  // a central passou a cuidar do app com ele aberto: o aviso some e nada mais é perguntado
+  central = true
+  st = await v.check()
+  assert.equal(f.calls.length, 1)
+  assert.equal(st.gerenciado, true)
+  assert.equal(st.nova, false)
+  assert.equal(st.ultima, null)
+  await assert.rejects(v.update(), (e) => e.status === 409 && /Absolute ZRO/.test(e.message))
+  await assert.rejects(v.baixar(), (e) => e.status === 409)
+  v.stop()
+})
+
+test('arquivo da central: vale com o app na lista e a central viva há menos de 14 dias', async () => {
+  const { arquivoDaCentral, eGerenciado, lerGerenciado } = await import('../src/gerenciado.js')
+  assert.equal(arquivoDaCentral('/Users/v/Library/Application Support'), path.join('/Users/v/Library/Application Support', 'Absolute ZRO', 'apps-gerenciados.json'))
+  assert.equal(arquivoDaCentral(''), '')
+  const agora = Date.parse('2026-10-28T12:00:00Z')
+  const json = { versao: 1, visto: '2026-10-27T12:00:00.000Z', apps: { sobedesce: { desde: '2026-10-20T00:00:00.000Z' } } }
+  assert.equal(eGerenciado(json, 'sobedesce', agora), true)
+  assert.equal(eGerenciado(json, 'synquei', agora), false)
+  assert.equal(eGerenciado(json, 'sobedesce', agora + 15 * 86_400_000), false, 'central sumida: volta a se atualizar sozinho')
+  const arquivo = path.join(dir, 'apps-gerenciados.json')
+  await fs.writeFile(arquivo, JSON.stringify({ ...json, visto: new Date().toISOString() }))
+  assert.equal(lerGerenciado(arquivo), true)
+  assert.equal(lerGerenciado(path.join(dir, 'nao-existe.json')), false)
+  assert.equal(lerGerenciado(''), false)
+})

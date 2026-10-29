@@ -30,7 +30,7 @@ const PRE=pg=>pg.addInitScript(()=>{ try{
 }catch(e){} });
 
 (async()=>{
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
   const ctx=await b.newContext({viewport:{width:390,height:844},isMobile:true});
   const p=await ctx.newPage();
   const errs=[]; p.on('pageerror',e=>errs.push('ERR: '+e.message));

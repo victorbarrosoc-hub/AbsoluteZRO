@@ -310,6 +310,48 @@ code,
 .zro-field--error .zro-input {
   border-color: var(--zro-danger);
 }
+/* Campo de senha com o olho (packages/ui/src/senha.tsx): o olho fica dentro do campo, à direita. */
+.zro-senha {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+.zro-senha > input {
+  padding-right: 48px;
+}
+.zro-senha > input::-ms-reveal,
+.zro-senha > input::-ms-clear {
+  display: none;
+}
+.zro-senha__olho {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  translate: 0 -50%;
+  border: 0;
+  border-radius: 10px;
+  color: var(--text-faint);
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.2s var(--ease);
+}
+.zro-senha__olho:hover,
+.zro-senha__olho[aria-pressed='true'] {
+  color: var(--text-strong);
+}
+.zro-senha__olho:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+.zro-senha__olho:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
 .zro-form {
   display: grid;
   gap: var(--space-4);
@@ -582,5 +624,31 @@ code,
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Marca animada: a centelha nasce inteira (4 pontas) e recolhe as verticais para trás do anel, ficando na forma
+   flat. Só com movimento liberado; com "reduzir movimento" a marca já aparece flat. */
+@media (prefers-reduced-motion: no-preference) {
+  .zro-symbol--anim .zro-symbol__spark {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: zro-spark 1.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s both;
+  }
+}
+@keyframes zro-spark {
+  0% {
+    transform: scale(0.2, 0.2);
+    opacity: 0;
+  }
+  35% {
+    transform: scale(1.15, 2.9);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(1.05, 2.6);
+  }
+  100% {
+    transform: scale(1, 1);
   }
 }

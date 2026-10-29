@@ -3,7 +3,7 @@
 //
 // window.sobedesce = { desktop: true, platform, pickFolder({ title, defaultPath }) → Promise<string|null>,
 //   pickPaths({ title, defaultPath, kind: 'any'|'files' }) → Promise<string[]>, pathForFile(File) → string,
-//   setProgress(fraction|null, activeCount), notify(title, body), openExternal(url), reveal(path) }
+//   setProgress(fraction|null, activeCount, proxies), notify(title, body), openExternal(url), reveal(path) }
 import { api, attempt } from './api.js'
 import { toast } from './toasts.js'
 import { openModal, pickLocal } from './modals.js'
@@ -27,6 +27,45 @@ function safe(fn, fallback = null) {
     console.info('[sobedesce] ponte nativa falhou:', err?.message || err)
     return fallback
   }
+}
+
+// ───── Synquei ─────
+
+/**
+ * Abre o link synquei://organizar. No app, a ponte confere se o Synquei está instalado; sem ele, abre a central do
+ * Absolute ZRO (ou a página Downloads) e a tela explica. No navegador, o link vai direto (sem como saber se abriu: quem
+ * confirma é o recibo do Synquei). Devolve 'synquei' | 'central' | 'site' | null.
+ */
+export async function abrirLinkSynquei(link) {
+  if (!link) return null
+  if (bridge?.abrirSynquei) {
+    const r = await bridge.abrirSynquei(link).catch(() => null)
+    // ponte antiga devolvia true/false
+    const para = r === true ? 'synquei' : r === false ? 'site' : r?.para || null
+    if (para === 'central') toast('info', 'Abri a central Absolute ZRO. Instale o Synquei e toque de novo em “Preparar no Synquei”.', { title: 'O Synquei não está neste computador' })
+    else if (para === 'site') toast('info', 'Abri a página de download. Depois de instalar, toque de novo em “Preparar no Synquei”.', { title: 'O Synquei não está neste computador' })
+    else if (!para) toast('error', 'Não consegui abrir o Synquei.')
+    return para
+  }
+  window.location.href = link
+  return 'synquei'
+}
+
+/** "Preparar no Synquei" do Backup Automático: a pasta do projeto que já tem os cartões conferidos. */
+export async function abrirNoSynquei(id) {
+  const r = await attempt(api.post('/api/backup/synquei', { id }))
+  if (!r?.link) return false
+  return (await abrirLinkSynquei(r.link)) === 'synquei'
+}
+
+/**
+ * "Preparar no Synquei" de um download do Drive: o motor confere o lote e a pasta, grava o manifesto (se faltar) e
+ * devolve o link com o id da operação. Depois a tela acompanha o recibo do Synquei pelo lote (batch.synquei).
+ */
+export async function prepararNoSynquei(batchId) {
+  const r = await attempt(api.post('/api/transfers/synquei', { batchId }))
+  if (!r?.link) return null
+  return abrirLinkSynquei(r.link)
 }
 
 // ───── seletores ─────
@@ -117,6 +156,25 @@ export function abrirAjustesRede(qual = 'rede-local') {
   if (!bridge?.abrirAjustesRede) return false
   safe(() => bridge.abrirAjustesRede(qual))
   return true
+}
+
+/** Ajustes → "Minimizar para a bandeja" (só no app): { disponivel, minimizar, padrao }, ou null no navegador. */
+export async function lerBandeja() {
+  if (!bridge?.bandeja) return null
+  try {
+    return (await bridge.bandeja()) || null
+  } catch {
+    return null
+  }
+}
+
+export async function definirBandeja(ligado) {
+  if (!bridge?.definirBandeja) return null
+  try {
+    return (await bridge.definirBandeja(!!ligado)) || null
+  } catch {
+    return null
+  }
 }
 
 export function revealPath(path) {
@@ -219,6 +277,8 @@ function guardDrops() {
 // ───── progresso no Dock / barra de tarefas ─────
 
 const WORKING = new Set(['running', 'verifying', 'queued', 'waiting'])
+// Proxy na fila ou sendo feito (pausado não conta): a bandeja e o "Sair?" sabem que ainda há trabalho.
+const PROXY_ANDANDO = new Set(['fila', 'analisando', 'baixando', 'gerando', 'enviando'])
 let lastProgressAt = 0
 let lastProgressKey = ''
 let progressTimer = null
@@ -227,25 +287,27 @@ function computeProgress(transfers) {
   let size = 0
   let done = 0
   let active = 0
+  let proxies = 0
   for (const t of transfers.values()) {
+    if (t.type === 'upload' && PROXY_ANDANDO.has(t.previa?.estado)) proxies++
     if (!WORKING.has(t.status)) continue
     active++
     if (!t.size) continue
     size += t.size
     done += t.status === 'verifying' ? t.size : Math.min(t.size, t.bytesDone || 0)
   }
-  if (!active) return { fraction: null, active: 0 }
-  return { fraction: size ? Math.max(0, Math.min(1, done / size)) : 0, active }
+  if (!active) return { fraction: null, active: 0, proxies }
+  return { fraction: size ? Math.max(0, Math.min(1, done / size)) : 0, active, proxies }
 }
 
 function pushProgress() {
   progressTimer = null
   lastProgressAt = Date.now()
-  const { fraction, active } = computeProgress(getState().transfers)
-  const key = fraction == null ? 'none' : `${fraction.toFixed(3)}:${active}`
+  const { fraction, active, proxies } = computeProgress(getState().transfers)
+  const key = `${fraction == null ? 'none' : `${fraction.toFixed(3)}:${active}`}:${proxies}`
   if (key === lastProgressKey) return
   lastProgressKey = key
-  safe(() => bridge.setProgress(fraction, active))
+  safe(() => bridge.setProgress(fraction, active, proxies))
 }
 
 function scheduleProgress() {

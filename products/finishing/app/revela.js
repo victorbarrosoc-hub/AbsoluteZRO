@@ -3,10 +3,16 @@
 // Fluxo: duas imagens → análise (uma vez) → look → LUT 33³ para a prévia (refeita quando a intensidade muda) →
 // LUT no tamanho escolhido para baixar.
 
+import './conta.js'
+import './menu.js'
 import { aplicar, assar, escreverCube } from '../src/cor/cube.js'
 import { oklabParaCodigo } from '../src/cor/oklab.js'
+import { clonarLut, orientarPar } from '../src/cor/clonar.js'
+import { presetLightroom } from '../src/cor/lightroom.js'
+import { LOOKS, criarRevelaLook } from '../src/cor/looks.js'
+import { MAX_LOOKS, PREFIXO, empacotar, lookSalvo } from '../src/cor/meuslooks.js'
 import { amostrar, analisar, criarLook, descrever, descreverSaturacao } from '../src/cor/referencia.js'
-import { ICONES, escalonar, icones, svg } from './visual.js'
+import { ICONES, cascata, escalonar, icones, svg } from './visual.js'
 
 icones()
 escalonar()
@@ -14,7 +20,9 @@ escalonar()
 const LADO_ANALISE = 1600 // a análise amostra até 80 mil pixels; mais que isso só gasta memória
 const LADO_PREVIA = 1280
 
-const $ = (id) => document.getElementById(id)
+// o painel desta ferramenta: as abas trocam de painel sem recarregar (app/navegar.js), então tudo é procurado aqui dentro
+const raiz = document.querySelector('main')
+const $ = (id) => raiz.querySelector(`#${id}`)
 const estado = $('estado')
 const imagens = { referencia: null, material: null }
 let analise = null // { ref, mat, nomeRef, previa: ImageData do material }
@@ -23,6 +31,39 @@ let lutPrevia = null
 let camadas = null // { antes, depois } em canvas fora da tela
 let pares = [] // conta-gotas: [{ ref: [L, a, b], mat: [L, a, b] }]
 let pegando = null // null | { etapa: 'ref' | 'mat', ref?: [L, a, b] }
+// Meus looks (src/cor/meuslooks.js): clones salvos com nome, só neste navegador
+const CHAVE_MEUS = 'revela-meus-looks'
+function lerMeus() {
+  try {
+    const lista = JSON.parse(localStorage.getItem(CHAVE_MEUS) ?? '[]')
+    return Array.isArray(lista) ? lista.filter((l) => l?.id?.startsWith(PREFIXO) && l.dados) : []
+  } catch {
+    return []
+  }
+}
+function gravarMeus(lista) {
+  try {
+    localStorage.setItem(CHAVE_MEUS, JSON.stringify(lista))
+    return true
+  } catch {
+    return false // janela privada ou sem espaço
+  }
+}
+const ehMeu = (id) => typeof id === 'string' && id.startsWith(PREFIXO)
+/** O look (da Revela ou meu) pelo id, já pronto para aplicar. */
+function lookPorId(id, usar = {}) {
+  if (!ehMeu(id)) return criarRevelaLook({ ...usar, look: id })
+  const salvo = lerMeus().find((l) => l.id === id)
+  return salvo ? lookSalvo(salvo) : criarRevelaLook({ ...usar, look: 'revela' })
+}
+
+let preset = null // id do look da Revela (src/cor/looks.js) quando ele está no lugar da referência
+let refPropria = null // a referência que a pessoa trouxe, guardada para voltar a ela pela grade de looks
+let lookRefPropria = null // o look dessa referência sobre o frame atual (para a miniatura da grade)
+let extras = [] // Clonar LUT com mais frames do mesmo grade: [{ antes, depois }] (o par das caixas fica fora)
+const MAX_FRAMES = 6
+const LADO_EXTRA = 800 // os frames a mais entram na mesma conta de amostras: não precisam do tamanho cheio
+let clone = false // Clonar LUT: a caixa da esquerda é o frame COM a cor, a da direita o mesmo frame SEM (src/cor/clonar.js)
 
 function avisar(texto, erro = false) {
   estado.textContent = texto
@@ -50,6 +91,15 @@ function desenhar(bm, lado) {
   return ctx.getImageData(0, 0, c.width, c.height)
 }
 
+function desenharEm(bm, largura, altura) {
+  const c = document.createElement('canvas')
+  c.width = largura
+  c.height = altura
+  const ctx = c.getContext('2d', { willReadFrequently: true })
+  ctx.drawImage(bm, 0, 0, largura, altura)
+  return ctx.getImageData(0, 0, largura, altura)
+}
+
 function paraPixels(dados) {
   const n = dados.width * dados.height
   const pixels = new Float32Array(n * 3)
@@ -68,9 +118,16 @@ async function receber(qual, arquivo) {
   try {
     const bm = await bitmap(arquivo)
     imagens[qual] = { arquivo, bm }
+    if (qual === 'referencia') {
+      usarPreset(null)
+      if (!clone) refPropria = imagens.referencia
+    }
+    lookRefPropria = null
+    extras = []
     const img = caixa.querySelector('img')
     if (img.src) URL.revokeObjectURL(img.src)
     img.src = URL.createObjectURL(arquivo)
+    imagens[qual].url = img.src
     img.alt = qual === 'referencia' ? 'Referência escolhida' : 'Seu frame escolhido'
     img.hidden = false
     caixa.querySelector('.acao').textContent = `${arquivo.name} · trocar`
@@ -78,6 +135,8 @@ async function receber(qual, arquivo) {
     return avisar('Não deu para abrir essa imagem neste navegador. Tente exportar em PNG.', true)
   }
   if (imagens.referencia && imagens.material) await calcular()
+  // só o frame: ele já entra com o Revela Look e a grade mostra todos os looks nele
+  else if (qual === 'material' && !clone) await escolherLook('revela')
   else avisar(qual === 'referencia' ? 'Agora o seu frame.' : 'Agora a referência.')
 }
 
@@ -97,6 +156,143 @@ for (const qual of ['referencia', 'material']) {
   })
 }
 
+// Revela Look: o look de película da plataforma entra no lugar da referência. Uma imagem nova na referência volta ao
+// look por referência.
+function usarPreset(id) {
+  preset = id
+  if (id) usarClone(false)
+  $('usar-look').setAttribute('aria-pressed', String(id === 'revela'))
+  $('titulo-leitura').textContent = id ? 'Leitura do look' : clone ? 'Leitura do clone' : 'Leitura da referência'
+}
+
+// Clonar LUT: as duas caixas viram "com a cor" e "sem a cor" do mesmo frame. A LUT sai do pixel a pixel.
+function usarClone(ligar) {
+  clone = ligar
+  extras = []
+  $('mais-frames').hidden = !ligar
+  $('marcar-par').hidden = ligar
+  $('usar-clone').setAttribute('aria-pressed', String(ligar))
+  $('caixa-referencia').querySelector('strong').textContent = ligar ? 'Com a cor' : 'Referência'
+  $('caixa-material').querySelector('strong').textContent = ligar ? 'Sem a cor' : 'Seu frame'
+  $('titulo-leitura').textContent = ligar ? 'Leitura do clone' : preset ? 'Leitura do look' : 'Leitura da referência'
+}
+
+$('usar-clone').addEventListener('click', async () => {
+  const ligar = !clone
+  if (ligar && preset) {
+    // o Revela Look não é imagem: a caixa da esquerda volta a esperar o frame com a cor
+    usarPreset(null)
+    imagens.referencia = null
+    const img = $('caixa-referencia').querySelector('img')
+    img.hidden = true
+    img.removeAttribute('src')
+    $('caixa-referencia').querySelector('.acao').textContent = 'Escolher ou soltar'
+  }
+  usarClone(ligar)
+  if (imagens.referencia && imagens.material) await calcular()
+  else avisar(ligar ? 'O mesmo frame duas vezes: com a cor e sem a cor.' : 'Escolha a referência e o seu frame.')
+})
+
+// Mais frames: a pessoa solta os stills (com e sem a cor, em qualquer ordem). Cada um acha o seu par pelo
+// enquadramento, e a LUT que já existe diz qual dos dois é o "sem a cor" (src/cor/clonar.js).
+$('arquivo-mais').addEventListener('change', async (e) => {
+  const arquivos = [...e.target.files].filter((f) => f.type.startsWith('image/'))
+  e.target.value = ''
+  if (!analise?.clone || !arquivos.length) return
+  avisar('Lendo os frames…')
+  await espera()
+  let soltos = 0
+  try {
+    const bitmaps = await Promise.all(arquivos.map((f) => bitmap(f)))
+    const usados = new Set()
+    for (let i = 0; i < bitmaps.length; i++) {
+      if (usados.has(i) || extras.length + 1 >= MAX_FRAMES) continue
+      const a = paraPixels(desenhar(bitmaps[i], LADO_EXTRA))
+      let par = null
+      for (let j = i + 1; j < bitmaps.length && !par; j++) {
+        if (usados.has(j) || Math.abs(bitmaps[i].width / bitmaps[i].height - bitmaps[j].width / bitmaps[j].height) > 0.02) continue
+        const b = paraPixels(desenharEm(bitmaps[j], a.largura, a.altura))
+        par = orientarPar(analise.clone, a, b)
+        if (par) usados.add(j)
+      }
+      usados.add(i)
+      if (par) extras.push(par)
+      else soltos++
+    }
+  } catch {
+    return avisar('Não deu para abrir essas imagens neste navegador. Tente exportar em PNG.', true)
+  }
+  await calcular()
+  if (soltos) avisar(`${soltos === 1 ? 'Uma imagem ficou' : `${soltos} imagens ficaram`} sem o par (o mesmo frame com e sem a cor).`, true)
+})
+
+/** Põe um look da Revela no lugar da referência (a referência da pessoa fica guardada para a grade). */
+async function escolherLook(id) {
+  const dados = LOOKS.find((l) => l.id === id) ?? lerMeus().find((l) => l.id === id)
+  if (!dados) return
+  usarPreset(id)
+  imagens.referencia = { arquivo: { name: dados.nome }, preset: id }
+  const caixa = $('caixa-referencia')
+  const img = caixa.querySelector('img')
+  if (img.src.startsWith('blob:') && img.src !== refPropria?.url) URL.revokeObjectURL(img.src)
+  // a miniatura do look no seu frame, quando a grade já existe; senão a imagem do Revela Look
+  img.src = $('looks').querySelector(`[data-look="${id}"] canvas`)?.toDataURL('image/jpeg', 0.85) ?? 'exemplos/revela-look.jpg'
+  img.alt = dados.nome
+  img.hidden = false
+  caixa.querySelector('.acao').textContent = `${dados.nome} · trocar`
+  if (imagens.material) await calcular()
+  else avisar('Agora o seu frame.')
+}
+
+async function voltarParaReferencia() {
+  if (!refPropria) return
+  usarPreset(null)
+  imagens.referencia = refPropria
+  const caixa = $('caixa-referencia')
+  const img = caixa.querySelector('img')
+  img.src = refPropria.url
+  img.alt = 'Referência escolhida'
+  caixa.querySelector('.acao').textContent = `${refPropria.arquivo.name} · trocar`
+  await calcular()
+}
+
+$('usar-look').addEventListener('click', () => escolherLook('revela'))
+
+// Salvar o clone como "meu look": a LUT inteira (intensidade 100%) entra na lista deste navegador
+$('salvar-look').addEventListener('submit', (e) => {
+  e.preventDefault()
+  if (!analise?.clone) return
+  const lista = lerMeus()
+  if (lista.length >= MAX_LOOKS) return avisar(`Já são ${MAX_LOOKS} looks salvos. Apague um para salvar outro.`, true)
+  const novo = empacotar((r, g, b) => analise.clone.aplicar(r, g, b, 1), $('nome-look').value)
+  if (!gravarMeus([...lista, novo])) return avisar('Este navegador não deixou salvar (janela privada ou sem espaço).', true)
+  $('nome-look').value = ''
+  avisar(`"${novo.nome}" salvo. Ele aparece na grade de looks, em qualquer frame.`)
+})
+
+$('apagar-look').addEventListener('click', async () => {
+  if (!ehMeu(preset)) return
+  const nome = look.nome
+  gravarMeus(lerMeus().filter((l) => l.id !== preset))
+  await escolherLook('revela')
+  avisar(`"${nome}" apagado.`)
+})
+
+// Exemplo pronto (frames da ZRO Filmes em exemplos/): o cavalo no pôr do sol como referência, o vestido achatado como frame.
+$('exemplo')?.addEventListener('click', async () => {
+  const pegar = async (url, nome) => new File([await (await fetch(url)).blob()], nome, { type: 'image/jpeg' })
+  try {
+    await receber('referencia', await pegar('exemplos/referencia-cavalo.jpg', 'referencia-cavalo.jpg'))
+    await receber('material', await pegar('exemplos/material-vestido.jpg', 'material-vestido.jpg'))
+    $('resultado').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' })
+  } catch {
+    avisar('Não deu para abrir o exemplo agora.', true)
+  }
+})
+
+// Vindo do "Testar agora" da página inicial: o exemplo já abre carregado
+if (new URLSearchParams(location.search).has('exemplo')) $('exemplo')?.click()
+
 // ─────────── cálculo ───────────
 
 const espera = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r)))
@@ -104,11 +300,33 @@ const espera = () => new Promise((r) => requestAnimationFrame(() => setTimeout(r
 async function calcular() {
   avisar('Lendo as duas imagens…')
   await espera()
-  const refImg = paraPixels(desenhar(imagens.referencia.bm, LADO_ANALISE))
   const matImg = paraPixels(desenhar(imagens.material.bm, LADO_ANALISE))
+  if (clone) {
+    const a = imagens.material.bm
+    const d = imagens.referencia.bm
+    if (Math.abs(a.width / a.height - d.width / d.height) > 0.02) return avisar('As duas imagens precisam ser o mesmo frame, no mesmo enquadramento.', true)
+    // o "com a cor" é desenhado exatamente no tamanho do "sem a cor": pixel com pixel
+    const depois = paraPixels(desenharEm(d, matImg.largura, matImg.altura))
+    const lista = [{ antes: matImg, depois }, ...extras]
+    analise = {
+      clone: clonarLut(
+        lista.map((p) => p.antes),
+        lista.map((p) => p.depois),
+      ),
+      matImg,
+      nomeRef: 'clone',
+      previa: desenhar(a, LADO_PREVIA),
+    }
+    $('n-frames').textContent = String(lista.length)
+    pares = []
+    cancelarPegada()
+    $('looks').hidden = true
+    return refazerLook()
+  }
+  const refImg = preset ? null : paraPixels(desenhar(imagens.referencia.bm, LADO_ANALISE))
   analise = {
-    ref: analisar(refImg),
-    mat: analisar(matImg),
+    ref: preset ? null : analisar(refImg),
+    mat: preset ? null : analisar(matImg),
     refImg,
     matImg,
     nomeRef: imagens.referencia.arquivo.name,
@@ -118,13 +336,21 @@ async function calcular() {
   cancelarPegada()
   mostrarPares()
   await refazerLook()
+  desenharLooks()
 }
 
 async function refazerLook() {
   if (!analise) return
   avisar('Calculando o look…')
   await espera()
-  look = criarLook(analise.ref, analise.mat, { tom: $('usar-tom').checked, cor: $('usar-cor').checked, pares })
+  const usar = { tom: $('usar-tom').checked, cor: $('usar-cor').checked }
+  look = analise.clone ?? (preset ? lookPorId(preset, usar) : criarLook(analise.ref, analise.mat, { ...usar, pares }))
+  raiz.querySelector('.rotulo-depois').textContent = preset ? look.nome : 'Depois'
+  $('salvar-look').hidden = !analise.clone
+  $('apagar-look').hidden = !ehMeu(preset)
+  for (const b of $('looks').querySelectorAll('[data-look]'))
+    b.setAttribute('aria-checked', String(b.dataset.look === (preset ?? (analise.clone ? '' : 'ref'))))
+  mostrarPares()
   mostrarLeitura()
   refazerPrevia()
   $('resultado').hidden = false
@@ -133,6 +359,84 @@ async function refazerLook() {
       ? `Pronto, com ${pares.length} ${pares.length > 1 ? 'pares' : 'par'} de cor. Arraste sobre a imagem para comparar.`
       : 'Pronto. Arraste sobre a imagem para comparar.',
   )
+}
+
+// ─────────── grade de looks ───────────
+// Todos os looks no mesmo frame, lado a lado: compara num olhar, sem ler nada. O nome fica no title e no rótulo do palco.
+
+const LADO_MINI = 360
+
+function miniatura(previa) {
+  const escala = Math.min(1, LADO_MINI / previa.width)
+  const c = document.createElement('canvas')
+  c.width = Math.round(previa.width * escala)
+  c.height = Math.round(previa.height * escala)
+  const fonte = document.createElement('canvas')
+  fonte.width = previa.width
+  fonte.height = previa.height
+  fonte.getContext('2d').putImageData(previa, 0, 0)
+  const ctx = c.getContext('2d', { willReadFrequently: true })
+  ctx.drawImage(fonte, 0, 0, c.width, c.height)
+  return ctx.getImageData(0, 0, c.width, c.height)
+}
+
+function pintarMini(base, aplicarLook) {
+  const lut = assar(aplicarLook, 17)
+  const out = new ImageData(base.width, base.height)
+  for (let i = 0; i < base.data.length; i += 4) {
+    const o = aplicar(lut, base.data[i] / 255, base.data[i + 1] / 255, base.data[i + 2] / 255)
+    out.data[i] = Math.round(o[0] * 255)
+    out.data[i + 1] = Math.round(o[1] * 255)
+    out.data[i + 2] = Math.round(o[2] * 255)
+    out.data[i + 3] = 255
+  }
+  const c = document.createElement('canvas')
+  c.width = base.width
+  c.height = base.height
+  c.getContext('2d').putImageData(out, 0, 0)
+  return c
+}
+
+function botaoLook(id, nome, canvas, escolher) {
+  const b = document.createElement('button')
+  b.type = 'button'
+  b.className = 'look'
+  b.dataset.look = id
+  b.title = nome
+  b.setAttribute('role', 'radio')
+  b.setAttribute('aria-label', nome)
+  b.setAttribute('aria-checked', 'false')
+  b.append(canvas)
+  b.addEventListener('click', escolher)
+  return b
+}
+
+function desenharLooks() {
+  if (!analise || analise.clone) return
+  const base = miniatura(analise.previa)
+  const botoes = LOOKS.map((l) =>
+    botaoLook(l.id, l.nome, pintarMini(base, criarRevelaLook({ look: l.id }).aplicar), () => escolherLook(l.id)),
+  )
+  // os meus looks vêm depois dos da Revela, com o nome que a pessoa deu
+  for (const salvo of lerMeus()) {
+    try {
+      botoes.push(botaoLook(salvo.id, salvo.nome, pintarMini(base, lookSalvo(salvo).aplicar), () => escolherLook(salvo.id)))
+    } catch {
+      // registro corrompido: fica de fora da grade
+    }
+  }
+  // a referência da pessoa entra primeiro: é a LUT que nasce do frame dela
+  if (refPropria && imagens.material) {
+    if (!lookRefPropria) {
+      const refImg = refPropria === imagens.referencia ? analise.refImg : paraPixels(desenhar(refPropria.bm, LADO_ANALISE))
+      lookRefPropria = criarLook(analise.ref ?? analisar(refImg), analise.mat ?? analisar(analise.matImg))
+    }
+    botoes.unshift(botaoLook('ref', 'Sua referência', pintarMini(base, lookRefPropria.aplicar), voltarParaReferencia))
+  }
+  $('looks').replaceChildren(...botoes)
+  cascata($('looks'))
+  $('looks').hidden = false
+  for (const b of botoes) b.setAttribute('aria-checked', String(b.dataset.look === (preset ?? 'ref')))
 }
 
 function intensidade() {
@@ -179,14 +483,25 @@ function pintar() {
 }
 
 function mostrarLeitura() {
+  if (look.preset === 'clone') {
+    const { erro, frames } = look.resumo
+    $('tom').textContent = frames > 1 ? `Feita de ${frames} frames do mesmo grade, com e sem a cor.` : 'Feita do mesmo frame, com e sem a cor.'
+    $('faixas').replaceChildren(
+      ...[`No próprio frame, a LUT fica a ${(erro * 100).toFixed(1)}% do original com a cor.`, 'Cores que o frame não tem seguem a correção geral.'].map(
+        (frase) => Object.assign(document.createElement('li'), { textContent: frase }),
+      ),
+    )
+    return
+  }
   const { tom } = look.resumo
   const pct = (v) => `${Math.round(v * 100)}%`
   $('tom').textContent = $('usar-tom').checked
     ? `Preto em ${pct(tom.preto)}, cinza médio em ${pct(tom.cinza)}, branco em ${pct(tom.branco)} (luz percebida).`
     : 'Contraste desligado: a luz fica como está.'
   const lista = $('faixas')
+  const frases = look.preset ? look.resumo.frases : [descreverSaturacao(look.resumo), ...descrever(look.resumo)]
   lista.replaceChildren(
-    ...($('usar-cor').checked ? [descreverSaturacao(look.resumo), ...descrever(look.resumo)] : ['Cor desligada: as cores ficam como estão.']).map((frase) => {
+    ...($('usar-cor').checked ? frases : ['Cor desligada: as cores ficam como estão.']).map((frase) => {
       const li = document.createElement('li')
       li.textContent = frase
       return li
@@ -228,14 +543,15 @@ function mostrarPares() {
     }),
   )
   $('limpar-pares').hidden = !pares.length
-  $('marcar-par').disabled = pares.length >= 3
+  // o conta-gotas compara com uma referência: no Revela Look não há o que marcar
+  $('marcar-par').disabled = Boolean(preset) || clone || pares.length >= 3
 }
 
 function cancelarPegada() {
   pegando = null
   $('marcar-par').setAttribute('aria-pressed', 'false')
   $('caixa-referencia').classList.remove('pegando')
-  document.querySelector('.palco').classList.remove('pegando')
+  raiz.querySelector('.palco').classList.remove('pegando')
 }
 
 /** Posição relativa (0–1) do clique dentro da imagem que aparece, descontando as faixas pretas do `contain`. */
@@ -272,7 +588,7 @@ $('caixa-referencia')
     if (!pos) return
     pegando = { etapa: 'mat', ref: amostrar(analise.refImg, ...pos) }
     $('caixa-referencia').classList.remove('pegando')
-    document.querySelector('.palco').classList.add('pegando')
+    raiz.querySelector('.palco').classList.add('pegando')
     avisar('Agora clique na mesma coisa no seu frame (na comparação).')
   })
 
@@ -311,29 +627,84 @@ $('divisao').addEventListener('input', pintar)
 $('usar-tom').addEventListener('change', refazerLook)
 $('usar-cor').addEventListener('change', refazerLook)
 
+// Para qual editor: todos leem .cube; muda o tamanho que cada um aceita e onde se importa. 33 pontos é o que todo
+// editor abre; 65 fica para o Resolve, que aguenta e ganha nos degradês.
+const EDITORES = {
+  resolve: { tamanho: null, dica: 'No Resolve: botão direito no nó › LUT.' },
+  premiere: { tamanho: 33, dica: 'No Premiere: Lumetri › Criativo › Look › Procurar.' },
+  fcp: { tamanho: 33, dica: 'No Final Cut: efeito LUT personalizada › Escolher LUT.' },
+  capcut: { tamanho: 33, dica: 'No CapCut: Ajustar › LUT › Importar.' },
+}
+const CHAVE_EDITOR = 'revela-editor'
+function mostrarEditor() {
+  $('tamanhos').hidden = EDITORES[$('editor').value].tamanho !== null
+}
+try {
+  const salvo = localStorage.getItem(CHAVE_EDITOR)
+  if (EDITORES[salvo]) $('editor').value = salvo
+} catch {
+  // sem armazenamento: começa no Resolve
+}
+mostrarEditor()
+$('editor').addEventListener('change', () => {
+  mostrarEditor()
+  try {
+    localStorage.setItem(CHAVE_EDITOR, $('editor').value)
+  } catch {
+    // sem armazenamento: vale só nesta visita
+  }
+})
+
 $('baixar').addEventListener('click', async () => {
   if (!look) return
   const botao = $('baixar')
   botao.disabled = true
-  const tamanho = Number(document.querySelector('input[name=tamanho]:checked').value)
+  const editor = $('editor').value
+  const tamanho = EDITORES[editor].tamanho ?? Number(raiz.querySelector('input[name=tamanho]:checked').value)
   avisar(`Gerando a LUT de ${tamanho} pontos…`)
   await espera()
   const t = intensidade()
   const lut = assar((r, g, b) => look.aplicar(r, g, b, t), tamanho)
-  const base =
+  const base = nomeBase()
+  const texto = escreverCube(lut, preset ? `${look.nome} - ${Math.round(t * 100)}%` : `Revela - ${base} - ${Math.round(t * 100)}%`)
+  baixarTexto(texto, `revela-${base}-${tamanho}${editor === 'resolve' ? '' : `-${editor}`}.cube`)
+  botao.disabled = false
+  avisar(`LUT de ${tamanho} pontos baixada. ${EDITORES[editor].dica}`)
+})
+
+/** Nome do arquivo e do look, a partir do modo e da referência. */
+function nomeBase() {
+  if (ehMeu(preset)) return look.nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w-]+/g, '-').toLowerCase() || 'meu-look'
+  if (preset) return preset === 'revela' ? 'look' : preset
+  if (clone) return 'clone'
+  return (
     analise.nomeRef
       .replace(/\.[^.]+$/, '')
       .replace(/[^\p{L}\p{N}_-]+/gu, '-')
       .slice(0, 60) || 'referencia'
-  const texto = escreverCube(lut, `Revela - ${base} - ${Math.round(t * 100)}%`)
-  const url = URL.createObjectURL(new Blob([texto], { type: 'text/plain' }))
+  )
+}
+
+function baixarTexto(texto, nome) {
+  const url = URL.createObjectURL(new Blob([texto], { type: 'application/octet-stream' }))
   const a = document.createElement('a')
   a.href = url
-  a.download = `revela-${base}-${tamanho}.cube`
+  a.download = nome
   document.body.append(a)
   a.click()
   a.remove()
   setTimeout(() => URL.revokeObjectURL(url), 10_000)
-  botao.disabled = false
-  avisar(`LUT de ${tamanho} pontos baixada. No Resolve: botão direito no nó › LUT.`)
+}
+
+// Preset para Lightroom: curvas e HSL que chegam perto do look (o Lightroom não aplica LUT em preset)
+$('baixar-xmp').addEventListener('click', () => {
+  if (!look) return
+  const t = intensidade()
+  const base = nomeBase()
+  const nome = preset ? look.nome : clone ? 'Revela clone' : `Revela ${base}`
+  baixarTexto(
+    presetLightroom((r, g, b) => look.aplicar(r, g, b, t), nome),
+    `revela-${base}.xmp`,
+  )
+  avisar('Preset baixado. No Lightroom: Predefinições › + › Importar.')
 })

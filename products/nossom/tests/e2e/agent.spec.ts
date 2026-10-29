@@ -54,14 +54,14 @@ test('the platform agent is connected automatically, continues a private convers
   await expect(page.getByRole('button', { name: 'Conectar meu agente', exact: true })).toHaveCount(
     0,
   );
-  await page.goto('/studio');
+  await page.goto('/studio/inicio');
   await page.locator('.assistant-top').click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByText('Pronta para ajudar', { exact: true })).toBeVisible();
   await dialog.getByLabel('Descreva seu objetivo').fill('Mais presença na voz.');
   await dialog.getByRole('button', { name: 'Encontrar tratamento', exact: true }).click();
   await expect(page.getByText('Sugestão 1: mais presença.', { exact: true })).toBeVisible();
-  await expect(page).toHaveURL(/\/studio$/);
+  await expect(page).toHaveURL(/\/studio\/inicio$/);
   await dialog.getByLabel('Descreva seu objetivo').fill('E a equalização?');
   await dialog.getByRole('button', { name: 'Encontrar tratamento', exact: true }).click();
   await expect(page.getByText('Sugestão 2: mais presença.', { exact: true })).toBeVisible();

@@ -1,7 +1,7 @@
 import { toolSlugs } from './studio-routes';
 const paths = new Set([
   '/studio',
-  ...['projetos', 'ia', 'conta', 'planos', 'admin', ...Object.values(toolSlugs)].map(
+  ...['z', 'inicio', 'projetos', 'ia', 'conta', 'planos', 'admin', ...Object.values(toolSlugs)].map(
     (slug) => `/studio/${slug}`,
   ),
 ]);

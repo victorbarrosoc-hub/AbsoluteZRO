@@ -2,6 +2,7 @@
 import { randomUUID } from 'node:crypto'
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type BrowserContext, type Page } from '@playwright/test'
+import { criarConta } from './conversa'
 
 const THEMES = ['dark', 'light'] as const
 const useTheme = (context: BrowserContext, theme: string, baseURL?: string) =>
@@ -10,6 +11,14 @@ const useTheme = (context: BrowserContext, theme: string, baseURL?: string) =>
 async function check(page: Page, path: string) {
   await page.goto(path)
   await page.waitForLoadState('networkidle')
+  // O axe mede o contraste do estado final: entradas animadas (palavras do título que surgem do desfoque) terminam
+  // antes da análise. Animações infinitas e as ligadas à rolagem ficam como estão.
+  await page.evaluate(() => {
+    for (const a of document.getAnimations()) {
+      const end = a.effect?.getComputedTiming().endTime
+      if (a.timeline instanceof DocumentTimeline && typeof end === 'number' && Number.isFinite(end)) a.finish()
+    }
+  })
   const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()
   const summary = r.violations.map((v) => `${v.id} (${v.impact}): ${v.nodes.length} · ${v.nodes[0]?.target.join(' ')}`)
   expect(summary, `${path}\n${summary.join('\n')}`).toEqual([])
@@ -18,7 +27,7 @@ async function check(page: Page, path: string) {
 for (const theme of THEMES) {
   test(`páginas públicas sem violações WCAG A/AA (tema ${theme})`, async ({ page, context, baseURL }) => {
     await useTheme(context, theme, baseURL)
-    for (const p of ['/', '/planos', '/baixar', '/entrar', '/criar-conta']) await check(page, p)
+    for (const p of ['/', '/planos', '/baixar', '/entrar', '/criar-conta', '/conta-excluida']) await check(page, p)
   })
 }
 
@@ -34,11 +43,10 @@ test('seletor de tema troca na hora e guarda a escolha', async ({ page, context,
 })
 
 test('área logada e projeto sem violações WCAG A/AA (claro e escuro)', async ({ page, context, baseURL }) => {
+  // Cria a conta e varre várias telas nos dois temas: passa de 60 s em máquina carregada.
+  test.setTimeout(120_000)
   await page.goto('/criar-conta')
-  await page.getByLabel('Nome').fill('Pessoa A11y')
-  await page.getByLabel('E-mail').fill(`a11y-${randomUUID().slice(0, 8)}@teste.absolutezro.local`)
-  await page.getByLabel('Senha').fill('senha-e2e-segura-1')
-  await page.getByRole('button', { name: 'Criar conta' }).click()
+  await criarConta(page, { nome: 'Pessoa A11y', email: `a11y-${randomUUID().slice(0, 8)}@teste.absolutezro.local`, senha: 'senha-e2e-segura-1' })
   await page.waitForURL('**/boas-vindas')
   await check(page, '/boas-vindas')
   await page.getByLabel('Nome').fill('Org A11y')
@@ -51,6 +59,22 @@ test('área logada e projeto sem violações WCAG A/AA (claro e escuro)', async 
   const projeto = new URL(page.url()).pathname
   for (const theme of THEMES) {
     await useTheme(context, theme, baseURL)
-    for (const p of ['/inicio', '/projetos', projeto, '/ciclo', '/ferramentas', '/downloads', '/equipe', '/assinatura', '/perfil']) await check(page, p)
+    for (const p of [
+      '/inicio',
+      '/projetos',
+      projeto,
+      '/ciclo',
+      '/ferramentas',
+      '/downloads',
+      '/equipe',
+      '/assinatura',
+      '/perfil',
+      '/perfil/seguranca',
+      '/perfil/plano',
+      '/perfil/profissional',
+      '/perfil/acessos',
+      '/perfil/excluir',
+    ])
+      await check(page, p)
   }
 })

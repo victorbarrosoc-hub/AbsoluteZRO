@@ -1,0 +1,819 @@
+/* Revela · página inicial. O produto de verdade em aparelhos (MacBook, iPhone), uma ideia por seção, títulos com
+   contraste fino × pesado e motion só com propósito: o produto entra com a rolagem, a linha da comparação varre a tela
+   do hero. Tudo para com "reduzir movimento". Claro por padrão, escuro no seletor; nada de mancha de luz: quem dá
+   cor à página é a imagem. */
+
+.home {
+  overflow-x: clip;
+}
+.home main {
+  max-width: none;
+  padding: 0;
+}
+
+/* ─────────── barra ─────────── */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: calc(12px + env(safe-area-inset-top)) clamp(16px, 4vw, 40px) 12px;
+  background: rgb(var(--chao) / 0.72);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.3s;
+}
+.nav.rolou {
+  border-bottom-color: var(--linha);
+}
+.nav-links {
+  display: flex;
+  gap: 26px;
+  margin: 0 auto;
+}
+.nav-links a {
+  color: var(--mudo);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.nav-links a:hover {
+  color: var(--texto);
+}
+.nav-acoes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.nav-abrir {
+  min-height: 36px;
+  padding: 0 16px;
+  font-size: 14px;
+}
+
+/* ─────────── textos ─────────── */
+
+.olho {
+  margin: 0 0 14px;
+  color: var(--mudo);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-align: center;
+}
+.home h1,
+.home h2 {
+  margin: 0;
+  text-align: center;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+}
+.home h1 {
+  font-size: clamp(48px, 9vw, 112px);
+}
+.home h2 {
+  font-size: clamp(38px, 6.4vw, 80px);
+}
+.fino {
+  font-weight: 300;
+  color: var(--mudo);
+}
+.hero-sub,
+.apoio {
+  margin: 20px auto 0;
+  max-width: 34ch;
+  color: var(--mudo);
+  font-size: clamp(18px, 2.2vw, 22px);
+  text-align: center;
+}
+.hero-acoes {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 32px;
+}
+.grande-pilula {
+  min-height: 50px;
+  padding: 0 26px;
+  font-size: 16px;
+}
+
+/* ─────────── hero ─────────── */
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  padding: clamp(64px, 11vw, 128px) clamp(16px, 4vw, 40px) 40px;
+  text-align: center;
+}
+
+/* ─────────── aparelhos ─────────── */
+
+.mac {
+  position: relative;
+  width: min(1100px, 100%);
+  margin: clamp(48px, 7vw, 88px) auto 0;
+}
+.mac-tela {
+  position: relative;
+  padding: 1.6% 1.6% 0;
+  border-radius: 20px 20px 0 0;
+  background: #0a0a0b;
+  box-shadow:
+    0 0 0 1.5px #2a2a2e,
+    inset 0 0 0 1px #000,
+    0 60px 120px -40px rgb(0 0 0 / calc(var(--sombra) * 2.4));
+  overflow: hidden;
+}
+.mac-tela img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px 8px 0 0;
+}
+.mac-base {
+  position: relative;
+  width: 116%;
+  height: clamp(10px, 1.6vw, 20px);
+  margin-left: -8%;
+  border-radius: 0 0 18px 18px;
+  background: linear-gradient(180deg, #3a3a3f, #1c1c1f 60%, #0e0e10);
+  box-shadow: 0 30px 60px -20px rgb(0 0 0 / calc(var(--sombra) * 2.4));
+}
+.mac-base::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 14%;
+  height: 40%;
+  transform: translateX(-50%);
+  border-radius: 0 0 10px 10px;
+  background: #121214;
+}
+.mac--menor {
+  width: 100%;
+  margin: 0;
+}
+.iphone {
+  position: absolute;
+  right: -2%;
+  bottom: -6%;
+  width: 26%;
+  margin: 0;
+  padding: 2.2%;
+  border-radius: 18% / 8.5%;
+  background: #0b0b0c;
+  box-shadow:
+    0 0 0 1.5px #2e2e33,
+    0 40px 80px -24px rgb(0 0 0 / calc(var(--sombra) * 2.4));
+}
+.iphone img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 14% / 6.6%;
+}
+.janela {
+  width: min(900px, 100%);
+  margin: 48px auto 0;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px var(--linha),
+    0 50px 100px -40px rgb(0 0 0 / calc(var(--sombra) * 2.4));
+}
+.janela img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* hero: o mesmo frame em log e com a cor final, na proporção original (16:9); a linha da comparação varre a imagem, como na ferramenta */
+.comparar {
+  position: relative;
+  width: min(1180px, 100%);
+  aspect-ratio: 16 / 9;
+  margin: clamp(48px, 7vw, 80px) auto 0;
+  border-radius: clamp(16px, 2.4vw, 28px);
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px var(--linha),
+    0 60px 120px -40px rgb(0 0 0 / calc(var(--sombra) * 2.4));
+}
+.comparar > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.comparar .depois {
+  clip-path: inset(0 0 0 50%);
+}
+.comparar .linha {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  background: #fff4e0;
+  box-shadow: 0 0 24px rgb(255 244 224 / 0.7);
+}
+.rotulo-home {
+  position: absolute;
+  top: 16px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #f5f5f7;
+  background: rgb(14 14 16 / 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.rotulo-home--antes {
+  left: 16px;
+}
+.rotulo-home--depois {
+  right: 16px;
+}
+
+/* ─────────── seções ─────────── */
+
+.sec {
+  padding: clamp(88px, 12vw, 160px) clamp(16px, 4vw, 40px);
+}
+.sec-destaque {
+  background: var(--superficie);
+}
+.trio {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  max-width: 1180px;
+  margin: 56px auto 0;
+}
+.cartao-home {
+  display: grid;
+  gap: 8px;
+  padding: 28px;
+  border-radius: 28px;
+  background: var(--superficie);
+  box-shadow: inset 0 0 0 1px var(--linha);
+  color: var(--texto);
+  text-decoration: none;
+  transition:
+    transform 0.4s var(--mola),
+    box-shadow 0.4s var(--mola);
+}
+.cartao-home:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    inset 0 0 0 1px var(--linha-forte),
+    0 30px 60px -30px rgb(0 0 0 / calc(var(--sombra) * 2));
+}
+/* fechada ao público: os cartões só apresentam (nada abre), então não se levantam ao passar o mouse */
+span.cartao-home {
+  cursor: default;
+}
+span.cartao-home:hover {
+  transform: none;
+  box-shadow: inset 0 0 0 1px var(--linha);
+}
+/* o selo "Em desenvolvimento" do topo (o mesmo desenho do selo da Z) */
+.hero .selo-dev {
+  margin: 22px auto 0;
+}
+.cartao-home b {
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+.cartao-home span:last-child {
+  color: var(--mudo);
+}
+.cartao-icone {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 8px;
+  border-radius: 16px;
+  color: var(--amarelo);
+  background: rgb(255 184 0 / 0.1);
+}
+.destinos-faixa {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 40px;
+}
+.destinos-faixa .glifo-home {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  color: var(--mudo);
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--superficie);
+  box-shadow: inset 0 0 0 1px var(--linha);
+  transition:
+    color 0.3s,
+    box-shadow 0.3s,
+    transform 0.3s var(--mola);
+}
+.destinos-faixa .glifo-home.aceso {
+  color: var(--texto);
+  transform: translateY(-3px);
+  box-shadow:
+    inset 0 0 0 1.5px var(--amarelo),
+    0 16px 32px -16px rgb(255 184 0 / 0.4);
+}
+.destinos-faixa .glifo-home.aceso svg {
+  color: var(--amarelo);
+}
+.lado-a-lado {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: clamp(32px, 6vw, 80px);
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.lado-texto .olho,
+.lado-texto h2,
+.lado-texto .apoio {
+  text-align: left;
+  margin-left: 0;
+}
+.lado-texto .vidro {
+  margin-top: 28px;
+}
+.aparelhos {
+  position: relative;
+  padding-bottom: 6%;
+}
+.familia {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: clamp(16px, 3vw, 36px);
+  margin-top: 48px;
+}
+.familia-app {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  color: var(--mudo);
+  font-size: 13px;
+}
+.familia-app img {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  box-shadow: 0 16px 30px -18px rgb(0 0 0 / calc(var(--sombra) * 2.4));
+}
+.familia-app--revela img {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  box-shadow:
+    0 0 0 2px rgb(255 184 0 / 0.6),
+    0 20px 40px -18px rgb(255 184 0 / 0.5);
+}
+.familia-app--revela small {
+  color: var(--texto);
+  font-weight: 600;
+}
+.fecho {
+  padding: clamp(96px, 14vw, 180px) 16px;
+  text-align: center;
+  background: var(--fundo);
+}
+.selo-fecho {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 22px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  color: var(--mudo);
+  font-size: 13px;
+  background: rgb(var(--t) / 0.06);
+}
+.rodape-home {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  padding: 28px clamp(16px, 4vw, 40px);
+  border-top: 1px solid var(--linha);
+  color: var(--fraco);
+  font-size: 13px;
+}
+.rodape-home nav {
+  display: flex;
+  gap: 18px;
+  margin: 0 auto;
+}
+.rodape-home a {
+  color: var(--mudo);
+  text-decoration: none;
+}
+.assina {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ─────────── a Z, a IA do ecossistema (anel e estrela em marca/z) ─────────── */
+
+.z-sec {
+  text-align: center;
+}
+.z-simbolo {
+  position: relative;
+  width: clamp(112px, 13vw, 160px);
+  aspect-ratio: 1;
+  margin: 0 auto 32px;
+  left: -6%;
+}
+.z-simbolo img {
+  position: absolute;
+  display: block;
+  user-select: none;
+  pointer-events: none;
+}
+.z-anel {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+/* estrela sobre o tubo, às 3 horas: centro a 41,83% do lado a partir do meio, 43% do lado */
+.z-estrela {
+  width: 43%;
+  height: 43%;
+  left: 70.33%;
+  top: 28.5%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .z-estrela {
+    animation: z-brilho 4.8s ease-in-out infinite alternate;
+  }
+}
+@keyframes z-brilho {
+  from {
+    transform: scale(0.86);
+    opacity: 0.82;
+  }
+  to {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+.z-selo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 20px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  color: var(--mudo);
+  font-size: 13px;
+  font-weight: 600;
+  background: rgb(var(--t) / 0.06);
+}
+.z-selo i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--amarelo);
+}
+.z-selo--pronta i {
+  background: var(--verde);
+}
+.home .z-titulo {
+  font-size: clamp(34px, 5vw, 64px);
+}
+.z-fichas {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 640px;
+  margin: 28px auto 0;
+  padding: 0;
+}
+.z-fichas li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  background: var(--superficie);
+  box-shadow: inset 0 0 0 1px var(--linha);
+  color: var(--texto);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.z-fichas svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: var(--mudo);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+@media (max-width: 560px) {
+  .z-fichas {
+    gap: 6px;
+  }
+  .z-fichas li {
+    padding: 7px 11px;
+    font-size: 12.5px;
+  }
+}
+
+/* ─────────── motion ─────────── */
+
+@media (prefers-reduced-motion: no-preference) {
+  .surge {
+    animation: surgir 1s var(--mola) both;
+    animation-delay: calc(var(--d, 0) * 110ms + 80ms);
+  }
+  .js .revela-ao-rolar {
+    opacity: 0;
+    transform: translateY(40px) scale(0.98);
+    transition:
+      opacity 0.9s var(--mola),
+      transform 1.1s var(--mola);
+    transition-delay: calc(var(--d, 0) * 90ms);
+  }
+  .js .revela-ao-rolar.visivel {
+    opacity: 1;
+    transform: none;
+  }
+  .js .mac.revela-ao-rolar {
+    transform: translateY(80px) scale(0.94);
+    transform-origin: 50% 100%;
+  }
+  .js .mac.revela-ao-rolar.visivel {
+    transform: none;
+  }
+  .js .aparelhos.revela-ao-rolar .iphone {
+    transform: translateY(60px);
+    transition: transform 1.3s var(--mola) 0.25s;
+  }
+  .js .aparelhos.revela-ao-rolar.visivel .iphone {
+    transform: none;
+  }
+  .comparar .depois {
+    animation: revelar 7s cubic-bezier(0.65, 0, 0.35, 1) 1.4s infinite;
+  }
+  .comparar .linha {
+    animation: varrer 7s cubic-bezier(0.65, 0, 0.35, 1) 1.4s infinite;
+  }
+}
+@keyframes surgir {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+    filter: blur(8px);
+  }
+}
+@keyframes revelar {
+  0%,
+  100% {
+    clip-path: inset(0 0 0 50%);
+  }
+  40%,
+  55% {
+    clip-path: inset(0 0 0 12%);
+  }
+  80% {
+    clip-path: inset(0 0 0 82%);
+  }
+}
+@keyframes varrer {
+  0%,
+  100% {
+    left: 50%;
+  }
+  40%,
+  55% {
+    left: 12%;
+  }
+  80% {
+    left: 82%;
+  }
+}
+
+/* ─────────── telas menores ─────────── */
+
+@media (max-width: 860px) {
+  .nav-links {
+    display: none;
+  }
+  .nav-acoes {
+    margin-left: auto;
+  }
+  .trio {
+    grid-template-columns: 1fr;
+  }
+  .lado-a-lado {
+    grid-template-columns: 1fr;
+  }
+  .lado-texto,
+  .lado-texto .olho,
+  .lado-texto h2,
+  .lado-texto .apoio {
+    text-align: center;
+  }
+  .lado-texto .apoio {
+    margin-left: auto;
+  }
+}
+@media (max-width: 560px) {
+  .nav-abrir {
+    display: none;
+  }
+  .mac-tela {
+    border-radius: 12px 12px 0 0;
+  }
+  .mac-base {
+    width: 106%;
+    margin-left: -3%;
+  }
+  .iphone {
+    width: 34%;
+    right: 0;
+  }
+  .familia-app img {
+    width: 48px;
+    height: 48px;
+  }
+  .rodape-home nav {
+    margin: 0;
+    width: 100%;
+  }
+}
+
+/* ─────────── topo: nota, comparação arrastável e editores ─────────── */
+
+.hero-nota {
+  margin: 14px 0 0;
+  color: var(--fraco, #8e8e93);
+  font-size: 13px;
+}
+.comparar-divisao {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: ew-resize;
+  touch-action: pan-y;
+}
+.comparar-divisao:focus-visible + .arraste,
+.comparar:focus-within {
+  outline: 2px solid #f5f5f7;
+  outline-offset: 4px;
+}
+.comparar.manual .depois {
+  animation: none;
+  clip-path: inset(0 0 0 var(--corte, 50%));
+}
+.comparar.manual .linha {
+  animation: none;
+  left: var(--corte, 50%);
+}
+.arraste {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  z-index: 2;
+  padding: 4px 12px;
+  border-radius: 999px;
+  color: #f5f5f7;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgb(14 14 16 / 0.6);
+  backdrop-filter: blur(10px);
+  transform: translateX(-50%);
+  pointer-events: none;
+  transition: opacity 0.4s;
+}
+.comparar.manual .arraste {
+  opacity: 0;
+}
+.editores {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  margin-top: 28px;
+}
+.editores p {
+  margin: 0;
+  color: var(--fraco, #8e8e93);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.editores ul {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.editores li {
+  padding: 7px 14px;
+  border-radius: 999px;
+  color: var(--mudo, #a1a1a6);
+  font-size: 13px;
+  font-weight: 600;
+  background: rgb(var(--t) / 0.05);
+  box-shadow: inset 0 0 0 1px rgb(var(--t) / 0.08);
+}
+@media (max-width: 900px) {
+  .trio {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .trio {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ─────────── tema e looks ─────────── */
+
+:root:not([data-tema='escuro']) .so-escuro,
+:root[data-tema='escuro'] .so-claro {
+  display: none !important;
+}
+.nav-tema {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 999px;
+  color: var(--mudo);
+  background: transparent;
+  cursor: pointer;
+}
+.nav-tema:hover {
+  color: var(--texto);
+  background: rgb(var(--t) / 0.06);
+}
+.nav-tema svg {
+  width: 18px;
+  height: 18px;
+}
+/* o mesmo frame em cada look: lado a lado, sem legenda (o nome fica no title) */
+.looks-home {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  max-width: 1180px;
+  margin: 56px auto 0;
+}
+.looks-home figure {
+  margin: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 24px 48px -28px rgb(0 0 0 / calc(var(--sombra) * 2.4));
+}
+.looks-home img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+@media (max-width: 760px) {
+  .looks-home {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .looks-home figure:first-child {
+    grid-column: 1 / -1;
+  }
+}

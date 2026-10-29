@@ -60,6 +60,7 @@ src/
   engine/upload.js       UploadTask (sessão retomável)
   engine/planner.js      expande seleções (pastas) em registros de transferência
   engine/manager.js      TransferManager (fila, concorrência, persistência, eventos)
+  engine/lote-tempo.js   LoteTempo: números de cada lote (batch.stats: tempo andando, bytes, tempo dos proxies)
   engine/compare.js      compareFolders (local × Drive)
   engine/power.js        KeepAwake (impede o computador de dormir)
   engine/acompanhar.js   AcompanharCelular: manda o andamento das transferências para a conta (docs/CONTAS.md §9)
@@ -69,6 +70,9 @@ src/
   media/previa-fila.js   GeradorPrevias: fila depois do envio (Proxy/<nome>.mp4 + appProperties), vaga única de conversão
   media/previa-lote.js   "Gerar proxies da pasta" / "Gerar proxy": vídeos que já estão no Drive, achados no computador por nome + tamanho
   server/previas.js      rotas /api/previas* e o lote (SSE 'previas')
+  media/revela.js        "Converter com a Revela": leitura para o plano, linha de comando (bitrate, BT.709, AAC), conversão e envio ao lado do original
+  revela/                cópia de products/finishing (entrega/destinos.js e conversao/plano.js), conferida por test/revela.test.js
+  server/revela.js       rotas /api/revela* e os trabalhos (SSE 'revela')
   server/tamanho.js      rotas /api/drive/:acc/tamanho (tamanho das pastas: contas guardadas na sessão, fila de 2)
   server/copiar.js       rotas /api/copiar (copiar de um link do Drive para uma pasta da conta; google/copiar.js)
   local/fsbrowse.js      raízes (Início, Mesa, discos externos) e listagem de pastas
@@ -451,7 +455,11 @@ async planUploads({ drive, accountId, paths: string[], destFolderId, driveId, co
   : { batch, records, skipped }
 planUploadsFromCompare(compareResult, { accountId, statuses, relDirs }): { batch, records }
 planDownloadsFromCompare(compareResult, { accountId }): { batch, records }
-Batch = { id, type, label, createdAt, accountId }   // label: 'Pasta Projeto X' / '12 arquivos'
+Batch = { id, type, label, createdAt, accountId, stats? }   // label: 'Pasta Projeto X' / '12 arquivos'
+// stats (engine/lote-tempo.js, gravado em queue.json): { inicio, fim, ativoMs, bytes, proxyInicio?, proxyFim?, proxyMs }
+//   inicio/fim: primeiro arquivo que começou → último original que chegou; ativoMs: tempo com algum arquivo do lote
+//   andando (vários juntos contam uma vez; fila, pausa e esperas fora); bytes: o que passou pela rede; proxyMs: tempo com
+//   um proxy do lote sendo gerado/enviado. A tela mostra "104 GB em 1 h 12 min · 24,6 MB/s" (média = bytes / ativoMs).
 ```
 Downloads: pastas viram `destDir/<nome da pasta>/<relPath>`; nomes passam por `safeLocalName` e
 `uniqueName` (o Drive permite nomes repetidos na mesma pasta). Docs nativos usam `GOOGLE_EXPORTS`;
@@ -473,7 +481,9 @@ snapshot(): { transfers: PublicTransfer[], batches: Batch[], stats: Stats }
 add({ batch, records }): void   // persiste e agenda
 pause(ids|'all'), resume(ids|'all'), cancel(ids), retry(ids), remove(ids), prioritize(ids): Promise<void>
 pauseBatch(batchId), resumeBatch(batchId), cancelBatch(batchId)
-clearFinished(): void           // remove completed/skipped/canceled
+clearFinished(): { removidos, mantidos }   // remove completed/skipped/canceled; lote com proxy pendente (fila, pausada,
+                                // gerando, enviando…) fica inteiro e o proxy segue (mantidos = lotes que ficaram)
+// remove(ids) também não tira envio concluído com proxy pendente (pule o proxy antes); devolve quantos saíram
 canStartUpload(accountId, size): boolean   // vaga de envio livre agora, ninguém na frente, conta fora do limite diário
 attachFeed(id, feed), detachFeed(id)       // recepção do celular em fluxo: envio com local.growing só anda com feed
 async shutdown()                // pausa tudo, espera workers, grava
@@ -693,6 +703,16 @@ SSE `previas`. Na tela Drive: "Gerar proxies da pasta" (barra) e "Gerar proxy" (
 pedidos da conta SOBEDESCE e gera do mesmo jeito (docs/CONTAS.md §11). Selo "Proxy" na lista/grade (`useComProxy`:
 mesmo nome-base na pasta ou dentro da subpasta Proxy/Proxies listada, uma consulta por subpasta).
 
+"Converter com a Revela" (media/revela.js, botão direito num vídeo da tela Drive; pedido pelo celular:
+no celular, o próprio aparelho converte: web/public/app/lib/revela.js, docs/CONTAS.md §11): o vídeo vira a versão de entrega de um destino da
+Revela (YouTube, Vimeo, Reels, TikTok) e sobe NA MESMA PASTA como `<nome>-<destino>.mp4`, com
+`appProperties { sobedesce: 'revela', original, destino }`. Quem decide codec, bitrate, tamanho e áudio é a Revela
+(`src/revela/`, cópia de products/finishing com teste que confere). Usa o original que a fila conhece ou baixa do Drive,
+lê com `ffmpeg -i`, converte com o codificador de hardware (H.264, alvo da Revela, teto 1,5×, GOP de meio segundo,
+`scale` com matriz BT.709 e faixa de TV, tags 1-1-1, AAC 48 kHz) na vaga única da prévia leve, sobe e confere o MD5 que
+o Drive devolve. O original nunca muda. Trabalhos: SSE `revela` (fase `esperando`|`baixando`|`analisando`|
+`convertendo`|`enviando`|`conferindo`, `frac`), vários na fila, um convertendo por vez.
+
 Prévia (as três): vídeo com mais de 30 MB (qualquer codec) procura a cópia leve antes de tocar e toca ela, com
 **Proxy | Original** no canto (troca no mesmo ponto). Sem cópia, as regras de
 antes (proxy para o que não toca, aviso de vídeo pesado). Baixar baixa sempre o original. `appProperties` só é visível
@@ -910,6 +930,7 @@ Respostas JSON `{ ok: true, ... }` ou `{ ok: false, error: 'mensagem PT-BR' }` c
 | POST | `/api/cloud/login/cancel` | | `{ cloud }` |
 | POST | `/api/cloud/logout` | | `{ cloud }` |
 | POST | `/api/cloud/refresh` | | `{ cloud }` (relê /api/eu) |
+| POST | `/api/cloud/zro/ligar` | | `{ url, cloud }`: o vincular da Absolute ZRO no site, para abrir no navegador; o motor confere a conta a cada 3 s até `cloud.zro.pedir` virar false (docs/CONTAS.md §12) · `409` sem conta |
 | GET | `/api/drive/:acc/about` | | `{ about }` |
 | GET | `/api/drive/:acc/drives` | | `{ drives }` |
 | GET | `/api/drive/:acc/list` | `folderId` (padrão `root`) | `{ folder, path, items }` |
@@ -937,7 +958,8 @@ Respostas JSON `{ ok: true, ... }` ou `{ ok: false, error: 'mensagem PT-BR' }` c
 | POST | `/api/transfers/download` | `{ accountId, items: DriveItem[], destDir?, conflict? }` | `{ batch, count, bytes, skipped }` |
 | POST | `/api/transfers/upload` | `{ accountId, paths, destFolderId, driveId?, conflict?, proxy?: boolean, destName? }` | `{ batch, count, bytes, skipped }` (`destName` = nome da pasta do Drive, só para o "Acompanhar pelo celular") |
 | POST | `/api/transfers/action` | `{ action: pause|resume|cancel|retry|remove|prioritize, ids?: string[]|'all', batchId? }` | `{ }` |
-| POST | `/api/transfers/clear` | | `{ }` |
+| POST | `/api/transfers/clear` | | `{ removidos, mantidos }` (lote com proxy ainda na fila ou sendo feito fica e o proxy continua; a tela avisa "1 lote ficou: ainda gerando proxies.") |
+| POST | `/api/transfers/synquei` | `{ batchId }` | `{ link, pasta, op }` ("Preparar no Synquei" de um download do Drive; 409 com o motivo se o lote não terminou, tem arquivo diferente, não é uma pasta inteira ou a pasta sumiu). Ver "Preparar no Synquei" |
 | GET | `/api/settings` / PATCH `/api/settings` | patch | `{ settings }` |
 | GET | `/api/raw-thumbs` | `refresh=1` (refaz a detecção) | `{ rawThumbs: { supported, found, via, enabled, last, downloadUrl } }` |
 | POST | `/api/raw-thumbs/lote` | `{ accountId, driveFolderId, localDir, recursive?: true, refazer?: false, folderName? }` | `{ jobId }` (progresso via SSE `rawthumbs`; 400 pasta inválida, 409 já tem um rodando) |
@@ -949,6 +971,9 @@ Respostas JSON `{ ok: true, ... }` ou `{ ok: false, error: 'mensagem PT-BR' }` c
 | GET | `/api/previas/espaco` | | `{ livre }` (bytes livres onde os originais baixados ficam) |
 | POST | `/api/transfers/proxy` | `{ ids: string[], proxy: boolean }` | `{ count }` (proxy por arquivo; concluído + true = gerar agora) |
 | GET / DELETE | `/api/previas/lote/:jobId` | | como o das miniaturas |
+| GET | `/api/revela` | | `{ destinos: [{ id, nome, resumo, vertical }], pronto, motor }` |
+| POST | `/api/revela/converter` | `{ accountId, id, destino }` | `{ jobId }` (SSE `revela`; 400 destino desconhecido ou não é vídeo, 409 sem conversor) |
+| GET / DELETE | `/api/revela/converter/:jobId` | | o trabalho (`{ jobId, arquivo, destino, status, fase, frac, resultado, error? }`) / parar |
 | POST | `/api/compare` | `{ accountId, localPath, driveFolderId, mode }` | `{ jobId }` (progresso via SSE) |
 | GET | `/api/compare/:jobId` | | `{ status, progress, result?, error? }` |
 | POST | `/api/compare/:jobId/upload` | `{ statuses?: ['missing','different'], relDirs?: string[] }` | `{ batch, count, bytes }` |
@@ -1116,6 +1141,44 @@ Seletor de pastas/arquivos locais próprio (modal) usando `/api/local/*`.
 - Limites de banda na UI são MB/s decimais (× 1e6); pedaço de upload em MiB (0 = contínuo).
 - Servir de `public/`: `/favicon.svg`, `/lib/*`, `/components/*`, `/app.js`, `/styles.css`. Sem scripts inline (CSP estrita funciona).
 - Depois do OAuth, o callback leva para `/` (a UI recarrega `/api/state`).
+
+## O Maestro no Drive (ponte do HUB, 29/10/2026)
+
+O Maestro (outra plataforma da família) chega ao Drive da pessoa só pelo pedido assinado do HUB (`zro-pedido+jwt`, o
+mesmo da Z): `web/src/app/api/zro/drive/{listar,miniatura,pasta/criar,revisao/compartilhar,revisao/recolher,token}`,
+lógica em `web/src/lib/zro/drive-do-maestro.ts` e caminho comum em `web/src/lib/zro/maestro-rota.ts` (limite próprio e
+uma linha em `auditoria_zro` por pedido, migração `0015`). Só metadados, o link curto da miniatura, a árvore
+`Maestro/<Cliente>/<Projeto>/01…05`, ligar/desligar "qualquer pessoa com o link" no arquivo de revisão e o access token
+curto da própria conta (nunca o refresh). Nenhum byte passa pelo site. Contrato:
+`docs/integration-contracts/maestro-sobedesce.md` (raiz do monorepo).
+
+O núcleo da aba Drive do celular (tipos, filtros, ordens, consulta do Drive v3 e formatação) mora em
+`packages/drive-web` (raiz do monorepo), compartilhado com a aba Arquivos do Maestro; o app guarda cópias idênticas em
+`web/public/app/lib/format.js` e `drive-nucleo.js` (`test/drive-web.test.js` confere). Mudou o núcleo: mude no pacote e
+copie para os dois apps.
+
+## Preparar no Synquei (download do Drive)
+
+Plano SD→SQ (28/10/2026). Contrato de referência em `packages/media-contracts/src/preparo.ts` (raiz do monorepo).
+
+- **Quando:** o lote de download termina (`TransferManager` emite `lote-concluido`) com todos os arquivos concluídos ou
+  pulados, nenhum com MD5 diferente e todos dentro de uma pasta baixada inteira (`relPath` = `Pasta/…`).
+  `src/engine/preparo-synquei.js` chama `manifestoDoLote` (`src/engine/manifesto.js`), que confere no disco a
+  existência e o tamanho de cada arquivo, e grava **uma linha v2** em `<pasta>/.sobedesce/descargas.jsonl`:
+  `v: 2, tipo: 'drive.download', op` (id do lote), `app_versao`, `project_id` (null por ora), `quando`,
+  `origem { tipo: 'drive', pasta_id, pasta }` (sem conta nem token), `destino { pasta, caminho }`,
+  `estado: conferido|parcial`, `verificacao { algoritmo: 'md5', total, conferidos, sem_conferencia, tamanho: true }`,
+  `bytes`, `arquivos[{ rel, nome, size, file_id, md5|null, conferido }]` (até 50.000). Pedir de novo não repete a linha.
+  Leitores v1 (cartões) pulam a linha.
+- **Na tela:** o lote ganha `batch.synquei = { op, pasta, nome, total, conferidos, semConferencia, gravadoEm }` (ou
+  `{ indisponivel: motivo }`). "Preparar no Synquei" só aparece com o lote terminado e o manifesto gravado.
+- **Pedido:** `POST /api/transfers/synquei` confere de novo, marca `pedidoEm` e devolve
+  `synquei://organizar?pasta=…&op=…`. A ponte (`sobedesce:abrir-synquei`, `aberturaSynquei` em
+  `src/backup/synquei.js`) abre o Synquei; sem ele, a central (`absolutezro://baixar`) ou absolutezro.com/baixar.
+- **Volta:** a cada 3 s, enquanto espera, o motor lê `<pasta>/Synquei/preparos.jsonl` (`synquei.preparo/1`, só o fim
+  do arquivo, linha validada campo a campo) e põe em `batch.synquei.recibo`. Sem recibo novo em 45 s:
+  `semResposta: true` ("O Synquei não confirmou. Atualize o Synquei"). Pasta sumida ou sem leitura: `acesso`.
+  O SOBEDESCE nunca diz "preparado" sem o recibo.
 
 ## App de desktop (Electron) — contrato com `src/index.js`
 

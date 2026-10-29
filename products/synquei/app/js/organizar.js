@@ -2,12 +2,17 @@
 // O Synquei abre o projeto daquela diária (ou cria), lê os arquivos novos pelo caminho, sincroniza e manda para o
 // DaVinci (desktop/davinci.cjs): pastas por diária › câmeras/áudio › dono › cartão, cor por câmera, Cena/Take e as
 // linhas do tempo da diária trocadas pelas novas. Um cartão por vez, na ordem em que chegaram.
+//
+// Download do Drive (modo pasta única, "Preparar no Synquei" do SOBEDESCE): a operação inteira é um projeto do Synquei
+// (achado pelo op; repetir não cria outro nem repete clipe). No fim, o recibo (app/js/preparo.js) vai para
+// <pasta>/Synquei/preparos.jsonl: preparado, com pendências (sincronia para revisar, ausentes, alterados) ou erro.
 
 import { S, openProject, createProject, closeProject, applyType, addEntries, runSync, save, religarPorCaminho } from './store.js'
 import { PathFile } from './media/pathfile.js'
 import { buildTimelines, safeName } from './export/model.js'
 import { toXmeml } from './export/xmeml.js'
 import { toast, plural } from './util.js'
+import { resumoPreparo } from './preparo.js'
 
 const D = globalThis.synqueiDesktop
 const API = D && D.organizar
@@ -152,8 +157,71 @@ async function abrirProjetoDaDiaria(ev) {
   return p
 }
 
+/** Download do Drive: um projeto do Synquei por operação (o mesmo op reabre o mesmo projeto). */
+async function abrirProjetoDaOperacao(ev) {
+  const k = `${ev.pastaId}|op:${ev.op}`
+  const pasta = O.pastas.find((x) => x.id === ev.pastaId)
+  const id = vinculos.get(k) || (pasta && pasta.projetos && pasta.projetos[`op:${ev.op}`]) || ev.projetoId
+  if (id && S.project && S.project.id === id) return S.project
+  if (S.project && !S.project.demo) save(true)
+  if (id && S.list.some((x) => x.id === id) && openProject(id)) {
+    etapa('Religando os clipes que já estavam no projeto')
+    await religarPorCaminho((c) => new PathFile({ abs: c.absPath, name: c.name, size: c.size, lastModified: c.lastModified }))
+    return S.project
+  }
+  const p = createProject(ev.projetoNome)
+  p.org = { pastaId: ev.pastaId, raiz: ev.raiz, diaria: `op:${ev.op}`, diariaNome: ev.diaria.nome, projetoNome: ev.projetoNome, op: ev.op }
+  if (ev.tipo) applyType({ type: ev.tipo })
+  vinculos.set(k, p.id)
+  await API.vincular(ev.pastaId, { diaria: `op:${ev.op}`, projetoId: p.id })
+  save(true)
+  return p
+}
+
+async function processarDrive(ev) {
+  const rotulo = ev.projetoNome
+  try {
+    await API.recibo(ev.pastaId, ev.op, { estado: 'preparando' }).catch(() => {})
+    etapa(`${rotulo}: abrindo o projeto`)
+    const p = await abrirProjetoDaOperacao(ev)
+    etapa(`${rotulo}: lendo ${ev.arquivos.length} arquivos`)
+    const entries = ev.arquivos.map((a) => {
+      const partes = a.rel.split('/')
+      // subpasta de cima = "câmera" (Câmera A/…, Som/…); arquivo solto na pasta = a própria pasta
+      const dono = partes.length > 1 ? partes[0] : ev.diaria.nome
+      return {
+        file: new PathFile({ abs: a.abs, name: partes.at(-1), size: a.size, lastModified: a.mtimeMs }),
+        path: a.rel,
+        org: { dono, camera: '', diaria: `op:${ev.op}`, diariaNome: ev.diaria.nome, cartao: 1, cartaoNome: partes.length > 2 ? partes[1] : dono, cor: ev.cor, op: ev.op },
+      }
+    })
+    await addEntries(entries)
+    if (p.clips.some((c) => c.status === 'ready')) {
+      etapa(`${rotulo}: sincronizando`)
+      await runSync()
+      cenasDoSom(p)
+      save(true)
+    }
+    if (mandarParaDavinci()) {
+      etapa(`${rotulo}: mandando para o DaVinci`)
+      await D.davinci.enviar(await pedidoDavinci(p, ev))
+    }
+    const r = resumoPreparo(p, ev)
+    await API.recibo(ev.pastaId, ev.op, r)
+    await API.marcar(ev.pastaId, ev.id, 'pronto', null, r.exemplos.revisar)
+    const pend = (ev.conferencia ? ev.conferencia.ausentes.length + ev.conferencia.alterados.length : 0) + r.resultado.revisar
+    toast(pend ? `${rotulo} preparado · ${plural(pend, 'pendência', 'pendências')}` : `${rotulo} preparado`, { icon: pend ? 'warn' : 'check' })
+  } catch (e) {
+    console.error(e)
+    await API.recibo(ev.pastaId, ev.op, { estado: 'erro', erro: e.message || String(e) }).catch(() => {})
+    await API.marcar(ev.pastaId, ev.id, 'erro', e.message || String(e)).catch(() => {})
+    toast(`${rotulo}: ${e.message || e}`, { icon: 'warn' })
+  }
+}
+
 async function processar(ev) {
   O.atual = ev
+  if (ev.modo === 'drive') return processarDrive(ev)
   const rotulo = `${ev.diaria.nome} · ${ev.dono.pasta || ev.dono.nome} · ${ev.cartao.nome || `Cartão ${String(ev.cartao.n).padStart(2, '0')}`}`
   try {
     etapa(`${rotulo}: abrindo o projeto da diária`)
@@ -237,7 +305,7 @@ export async function pedidoDavinci(p, ev) {
       importar.push({ nome, arquivo, pasta: [diaria, 'Sequências'] })
     }
   }
-  const cartao = `${diaria} · ${ev.dono.pasta || ev.dono.nome} · ${ev.pasta.split('/').pop()}`
+  const cartao = ev.modo === 'drive' ? diaria : `${diaria} · ${ev.dono.pasta || ev.dono.nome} · ${ev.pasta.split('/').pop()}`
   return { projeto: ev.projetoNome, pastaId: ev.pastaId, diaria, cartao, cor: ev.cor, itens, linhas: { prefixo: `${diaria} · `, sufixo: SUFIXO, importar } }
 }
 

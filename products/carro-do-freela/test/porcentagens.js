@@ -25,7 +25,7 @@ const entrar=async(p,lado)=>{
 };
 
 (async()=>{
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
   const ctx=await b.newContext({viewport:{width:1280,height:1300},deviceScaleFactor:2});
   const p=await ctx.newPage();
   const errs=[]; p.on('pageerror',e=>errs.push('ERR: '+e.message));

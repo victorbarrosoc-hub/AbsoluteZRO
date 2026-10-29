@@ -8,3 +8,9 @@ SOURCE_MANIFEST.md) em 2026-10-25. Cartão Sony falso, dois destinos ("principal
 - `<destino>-levaN.xxh64`: os relatórios de checksum gravados na pasta do cartão em cada destino. As duas levas
   rodam no mesmo minuto, então o relatório da 2ª grava por cima do da 1ª (carimbo do SOBEDESCE vai até o minuto).
 - `unica-*`: outro projeto com um cartão e uma leva só, conferido nos dois destinos.
+- `entrega.json`: comprovante de entrega conferida (`sobedesce.entrega/1`), gerado por
+  `scripts/fixtures/generate-sobedesce-entrega.mjs` com `products/sobedesce/src/engine/entrega.js` (lote fictício).
+- `drive-descargas.jsonl` e `drive-preparos.jsonl`: "Preparar no Synquei" (download do Drive). Uma linha v1 de
+  cartão seguida da linha v2 que `products/sobedesce/src/engine/manifesto.js` grava, e o recibo `synquei.preparo/1`
+  de `products/synquei/desktop/manifesto-drive.cjs`. Gerados por `scripts/fixtures/generate-sobedesce-drive.mjs`
+  (lote fictício; o `caminho` do destino é de exemplo).

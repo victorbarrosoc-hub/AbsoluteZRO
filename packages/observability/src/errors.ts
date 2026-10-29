@@ -10,6 +10,7 @@ export type ErrorCode =
   | 'forbidden_role'
   | 'project_not_found'
   | 'project_read_only'
+  | 'product_closed'
   | 'product_unavailable'
   | 'entitlement_required'
   | 'feature_not_included'
@@ -23,6 +24,10 @@ export type ErrorCode =
   | 'rate_limited'
   | 'origin_rejected'
   | 'invalid_signature'
+  | 'upstream_unavailable'
+  | 'action_not_allowed'
+  | 'sem_conexao'
+  | 'app_desligado'
 
 const STATUS: Record<ErrorCode, number> = {
   unauthenticated: 401,
@@ -32,6 +37,7 @@ const STATUS: Record<ErrorCode, number> = {
   forbidden_role: 403,
   project_not_found: 404,
   project_read_only: 403,
+  product_closed: 403,
   product_unavailable: 403,
   entitlement_required: 403,
   feature_not_included: 403,
@@ -45,6 +51,10 @@ const STATUS: Record<ErrorCode, number> = {
   rate_limited: 429,
   origin_rejected: 403,
   invalid_signature: 400,
+  upstream_unavailable: 503,
+  action_not_allowed: 403,
+  sem_conexao: 409,
+  app_desligado: 403,
 }
 
 export class DomainError extends Error {

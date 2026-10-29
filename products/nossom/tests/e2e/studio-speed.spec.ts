@@ -69,7 +69,7 @@ test('studio navigation responds without server round trips, supports history an
 });
 
 test('account menu links also change screens locally', async ({ page }) => {
-  await page.goto('/studio');
+  await page.goto('/studio/inicio');
   let serverNavigations = 0;
   await page.route('**/studio**', (route) => {
     if (route.request().headers()['rsc'] || route.request().isNavigationRequest()) {

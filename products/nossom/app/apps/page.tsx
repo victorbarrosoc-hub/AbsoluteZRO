@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import { Apple, Monitor, Download, ArrowLeft, Smartphone } from 'lucide-react';
 import { Brand } from '@/components/brand';
+import EmDesenvolvimento from '@/components/em-desenvolvimento';
 import InstallApp from '@/components/install-app';
 import DownloadNotice from '@/components/download-notice';
 import { desktopInstallers } from '@/lib/desktop-releases';
+import { nossomClosed } from '@/lib/server/release';
 export const metadata = {
   title: 'Aplicativos NOSSOM',
   description: 'NOSSOM no Mac, Windows e na tela de início do seu celular.',
@@ -23,6 +25,8 @@ function download(value: string | undefined) {
 // prioridade. A versão mostrada é conferida de hora em hora.
 export const revalidate = 3600;
 export default async function Apps() {
+  // Fechado ao público (28/10/2026): nenhum instalador nem instrução de instalação, só a página institucional.
+  if (nossomClosed()) return <EmDesenvolvimento />;
   const previews = await desktopInstallers();
   const builds = [
     {
@@ -116,16 +120,16 @@ export default async function Apps() {
             versão mais recente disponível acima. Seus projetos não precisam ser apagados.
           </p>
           <p>
-            Se a prévia continuar bloqueada, confirme que o arquivo veio desta página e que o NOSSOM
-            está em Aplicativos. Abra o Terminal e execute:
+            Se continuar bloqueado, instale pelo Terminal. O arquivo baixado pelo Terminal não fica
+            em quarentena, então o Mac abre o NOSSOM sem o aviso:
           </p>
           <pre>
-            <code>xattr -dr com.apple.quarantine /Applications/NOSSOM.app</code>
+            <code>curl -fsSL https://nossom-teal.vercel.app/instalar.sh | bash</code>
           </pre>
           <p>
-            Esse comando remove o bloqueio de download apenas do NOSSOM. Depois, tente abrir
-            novamente. Se o Terminal disser que o arquivo não existe, confira se o aplicativo foi
-            movido para Aplicativos. Você também pode continuar pelo navegador abaixo.
+            Ele escolhe a versão do seu Mac (Apple Silicon ou Intel), coloca o NOSSOM em Aplicativos
+            e abre. Para atualizar, rode o mesmo comando. Você também pode continuar pelo navegador
+            abaixo.
           </p>
         </details>
       </section>

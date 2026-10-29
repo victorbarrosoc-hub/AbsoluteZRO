@@ -1,0 +1,252 @@
+/*
+ * Números do negócio (Financeiro → Números), importar planilha, agenda por assinatura e acesso por cliente
+ * (estudo MakersHub §4, itens 2, 3, 6 e 7). Visual C1 · Aurora: gráfico em grafite (faturado) e pêssego (meta).
+ */
+
+/* ───────────── Números ───────────── */
+
+.numeros-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.numeros-meta-painel {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 20px 22px;
+  border-radius: var(--radius-l);
+  background: var(--painel);
+  box-shadow: var(--shadow-float);
+}
+.numeros-meta-painel__topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px;
+}
+.numeros-meta-painel__topo > div {
+  display: grid;
+  gap: 2px;
+}
+.numeros-grande {
+  font-family: var(--font-apple);
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  color: var(--text-strong);
+}
+.numeros-meta {
+  display: grid;
+  gap: 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-mute);
+}
+.numeros-meta__campo {
+  display: flex;
+  gap: 6px;
+}
+.numeros-meta input {
+  width: 150px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  color: var(--text-strong);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.numeros-progresso {
+  --d: var(--g-entra);
+  position: relative;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--surface-3);
+}
+.numeros-progresso i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--d);
+  transition: width 0.8s var(--spring);
+}
+.numeros-progresso[data-tom="ok"] {
+  --d: var(--st-ok);
+}
+.numeros-progresso b {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 3px;
+  margin-left: -1.5px;
+  border-radius: 3px;
+  background: var(--g-sai);
+}
+.numeros-legenda {
+  display: flex;
+  gap: 12px;
+  font-size: 0.82rem;
+  color: var(--text-mute);
+}
+.numeros-legenda span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.numeros-legenda i {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+.numeros-legenda [data-serie="meta"] i {
+  height: 3px;
+  background: var(--g-sai);
+}
+.numeros-serie {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  margin: 8px 0 0;
+}
+.numeros-serie__mes {
+  display: grid;
+  gap: 4px;
+  text-align: center;
+}
+.numeros-serie__barra {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 150px;
+  border-bottom: 1px solid var(--line-strong);
+}
+.numeros-serie__barra span {
+  width: min(34px, 60%);
+  border-radius: 6px 6px 1px 1px;
+  background: color-mix(in srgb, var(--g-entra) 55%, transparent);
+  transition: height 0.7s var(--spring);
+}
+.numeros-serie__mes[data-atual] .numeros-serie__barra span {
+  background: var(--g-entra);
+}
+.numeros-serie__barra b {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--g-sai);
+}
+.numeros-serie__rotulo {
+  font-size: 0.82rem;
+  color: var(--text-faint);
+}
+.numeros-serie__mes[data-atual] .numeros-serie__rotulo {
+  font-weight: 800;
+  color: var(--text-strong);
+}
+.numeros-serie__valor {
+  font-size: 0.78rem;
+  color: var(--text-mute);
+}
+.numeros-margens,
+.numeros-barras {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.numeros-margem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 70px 44px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 4px;
+  border-radius: 10px;
+  color: var(--text-strong);
+  text-decoration: none;
+}
+.numeros-margem:hover {
+  background: var(--hover);
+}
+.numeros-margem__nome {
+  display: grid;
+  min-width: 0;
+}
+.numeros-margem__nome b {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.numeros-margem__nome small {
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+.numeros-margem__valor,
+.numeros-margem__pct {
+  font-size: 0.86rem;
+  text-align: right;
+}
+.numeros-barras li {
+  display: grid;
+  grid-template-columns: minmax(0, 9rem) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 0.88rem;
+}
+.numeros-barras__nome {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+.numeros-barras__trilho {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-3);
+}
+.numeros-barras__trilho i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--g-entra);
+}
+.numeros-barras__valor {
+  color: var(--text-mute);
+}
+@media (max-width: 560px) {
+  .numeros-margem {
+    grid-template-columns: minmax(0, 1fr) auto 44px;
+  }
+  .numeros-margem .medidor {
+    display: none;
+  }
+  .numeros-serie {
+    gap: 4px;
+  }
+  .numeros-serie__barra {
+    height: 110px;
+  }
+  .numeros-serie__valor {
+    display: none;
+  }
+  .numeros-barras li {
+    grid-template-columns: minmax(0, 6.5rem) minmax(0, 1fr) auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .numeros-progresso i,
+  .numeros-serie__barra span {
+    transition: none;
+  }
+}

@@ -1,3 +1,4 @@
+import { forgetIaTokens } from '@/lib/server/zro/ia';
 import {
   accountConfigured,
   accountFromUser,
@@ -20,6 +21,7 @@ import {
   sameOrigin,
   requestOrigin,
 } from '@/lib/server/ai-access';
+import { AccessClosedError } from '@/lib/server/release';
 import { supabase, SupabaseError } from '@/lib/server/supabase';
 import { restorationAvailable } from '@/lib/server/restoration';
 export const runtime = 'nodejs';
@@ -110,6 +112,12 @@ export async function POST(request: Request) {
     headers.append('Set-Cookie', sessionCookie(result.token));
     return Response.json({ account: result.account, confirmationRequired: false }, { headers });
   } catch (error) {
+    // Fechado ao público: a senha pode até conferir, mas sem `allowed` no HUB não sai cookie nenhum.
+    if (error instanceof AccessClosedError)
+      return Response.json(
+        { error: error.message, code: error.code },
+        { status: 403, headers: privateHeaders },
+      );
     return Response.json(
       { error: publicError(error, 'Não foi possível entrar.') },
       { status: 400, headers: privateHeaders },
@@ -132,10 +140,11 @@ export async function DELETE(request: Request) {
     } catch {
       /* Local logout still succeeds when the provider is unavailable. */
     }
-  return Response.json(
-    { signedOut: true },
-    { headers: { ...privateHeaders, 'Set-Cookie': sessionCookie(null) } },
-  );
+  // A Z sai junto: o token da Absolute ZRO guardado para ela é apagado e revogado.
+  const headers = new Headers({ ...privateHeaders });
+  headers.append('Set-Cookie', sessionCookie(null));
+  headers.append('Set-Cookie', await forgetIaTokens(request));
+  return Response.json({ signedOut: true }, { headers });
 }
 
 export async function PATCH(request: Request) {
@@ -212,11 +221,13 @@ export async function PATCH(request: Request) {
       { method: 'PUT', token: auth?.access_token || session.access, body: changes },
     );
     const updated = accountFromUser(user);
-    // Os produtos da Absolute ZRO guardados na sessão continuam valendo depois da troca.
+    // O vínculo com a Absolute ZRO guardado na sessão (produtos, lançamento, identidade) continua depois da troca.
     const token = auth
       ? encodeSession({
           ...sessionFromProvider({ ...auth, user }),
-          zroProducts: session.zroProducts,
+          ...(session.zroProducts ? { zroProducts: session.zroProducts } : {}),
+          ...(session.zroRelease ? { zroRelease: session.zroRelease } : {}),
+          ...(session.zro ? { zro: session.zro } : {}),
         })
       : encodeSession({ ...session, account: updated });
     return Response.json(

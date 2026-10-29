@@ -14,7 +14,7 @@ export async function GET(req: Request) {
   }
   const filter = parsePeopleFilter(new URL(req.url).searchParams)
   const rows = await db().asSystem('admin: exportar pessoas', async (tx) => {
-    const r = await listPeople(tx, filter, 10_000)
+    const r = await listPeople(tx, { ...filter, page: 1 }, 10_000)
     // Exportar dados pessoais fica na auditoria (quem, quando, com que filtro e quantas linhas).
     await audit(tx, {
       actorUserId: who.userId,

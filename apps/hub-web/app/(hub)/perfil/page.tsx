@@ -1,111 +1,79 @@
 import type { Metadata } from 'next'
-import { PASSWORD_MIN } from '@zro/auth'
-import { Card, EmptyState, Field, Notice, Pill, ProductMark } from '@zro/ui'
+import Link from 'next/link'
+import { avatarVersion, meuPerfil } from '@zro/core'
+import { Field } from '@zro/ui'
+import { AccountFrame } from '@/components/account-frame'
 import { ActionForm } from '@/components/action-form'
-import { changePasswordAction, logoutAction, resendVerifyAction, revokeSessionAction } from '@/lib/actions/auth'
-import { revokeAppAction } from '@/lib/actions/oidc'
-import { connectedAppsData, profileData } from '@/lib/data/hub'
-import { fmtDate } from '@/lib/labels'
-import { requireOrgPage } from '@/lib/session'
+import { AvatarEditor } from '@/components/avatar-editor'
+import { Icon, type IconName } from '@/components/icons'
+import { avatarAction, removeAvatarAction, updateNameAction } from '@/lib/actions/account'
+import { accountSummary, planCenterData } from '@/lib/data/hub'
+import { db, requireOrgPage } from '@/lib/session'
 
-export const metadata: Metadata = { title: 'Perfil e segurança' }
+export const metadata: Metadata = { title: 'Sua conta' }
+
+function Tile({ href, icon, title, value }: { href: string; icon: IconName; title: string; value: string }) {
+  return (
+    <Link href={href} className="account-tile">
+      <span className="account-tile__icon">
+        <Icon name={icon} size={20} />
+      </span>
+      <span className="account-tile__text">
+        <strong>{title}</strong>
+        <span className="zro-mute">{value}</span>
+      </span>
+      <Icon name="chevron" className="account-tile__go" />
+    </Link>
+  )
+}
 
 export default async function Perfil() {
   const auth = await requireOrgPage()
-  const [sessions, apps] = await Promise.all([profileData(auth), connectedAppsData(auth)])
+  const [avatar, sum, plan, perfil] = await Promise.all([avatarVersion(db(), auth), accountSummary(auth), planCenterData(auth), meuPerfil(db(), auth)])
+  const name = auth.user.displayName || auth.user.email
+  const planName = plan.canManage ? plan.subscriptions.map((s) => s.name as string).join(' + ') || 'Sem plano' : 'Visível para quem cuida da cobrança'
   return (
-    <div className="page">
-      <div className="page-head__text">
-        <h1>Perfil e segurança</h1>
-        <p>Sua conta Absolute ZRO vale para todas as organizações de que você participa.</p>
-      </div>
-      <div className="grid grid--2">
-        <Card title="Conta">
-          <dl className="kv">
-            <dt>Nome</dt>
-            <dd>{auth.user.displayName}</dd>
-            <dt>E-mail</dt>
-            <dd>
-              {auth.user.email} {auth.user.emailVerified ? <Pill tone="ok">confirmado</Pill> : <Pill tone="warn">não confirmado</Pill>}
-            </dd>
-          </dl>
-          {!auth.user.emailVerified && (
-            <ActionForm action={resendVerifyAction} submit="Reenviar link de confirmação" variant="ghost">
-              <span className="zro-faint">O link vale por 48 horas.</span>
-            </ActionForm>
-          )}
-          <Notice title="Verificação em duas etapas">Ainda não disponível. Está no roteiro de segurança (docs/roadmap.md).</Notice>
-        </Card>
-        <Card title="Trocar senha">
-          <ActionForm action={changePasswordAction} submit="Trocar senha">
-            <Field label="Senha atual" htmlFor="cur">
-              <input className="zro-input" id="cur" name="current" type="password" autoComplete="current-password" required />
-            </Field>
-            <Field label="Nova senha" htmlFor="nxt" hint={`Pelo menos ${PASSWORD_MIN} caracteres. As outras sessões serão encerradas.`}>
-              <input className="zro-input" id="nxt" name="next" type="password" autoComplete="new-password" minLength={PASSWORD_MIN} required />
-            </Field>
-          </ActionForm>
-        </Card>
-      </div>
-      <Card
-        title="Sessões abertas"
-        actions={
-          <form action={logoutAction}>
-            <button className="zro-btn zro-btn--small zro-btn--ghost" type="submit">
-              Sair desta sessão
+    <AccountFrame auth={auth} avatar={avatar} title="Visão geral">
+      <div className="account-card account-card--id">
+        <AvatarEditor action={avatarAction} current={avatar ? `/api/v1/users/${auth.user.id}/avatar?v=${avatar}` : null} name={name} />
+        <ActionForm action={updateNameAction} submit="Salvar" variant="ghost" className="zro-form account-name" inlineSubmit>
+          <Field label="Nome" htmlFor="nome">
+            <input className="zro-input" id="nome" name="name" defaultValue={auth.user.displayName} autoComplete="name" maxLength={120} required />
+          </Field>
+        </ActionForm>
+        {avatar ? (
+          <form action={removeAvatarAction}>
+            <button className="zro-btn zro-btn--ghost zro-btn--small" type="submit">
+              Remover foto
             </button>
           </form>
-        }
-      >
-        <ul className="list-plain">
-          {sessions.map((s) => (
-            <li key={s.id as string} className="row row--between">
-              <span>
-                {s.id === auth.session.id ? <Pill tone="accent">esta sessão</Pill> : null}{' '}
-                <span className="zro-mute">{((s.user_agent as string) || 'navegador desconhecido').slice(0, 80)}</span>
-                <div className="zro-faint">
-                  Entrou {fmtDate(s.created_at as Date)} · último uso {fmtDate(s.last_used_at as Date)} · expira {fmtDate(s.expires_at as Date)}
-                </div>
-              </span>
-              {s.id !== auth.session.id && (
-                <form action={revokeSessionAction}>
-                  <input type="hidden" name="sessionId" value={s.id as string} />
-                  <button className="zro-btn zro-btn--danger zro-btn--small" type="submit">
-                    Encerrar
-                  </button>
-                </form>
-              )}
-            </li>
-          ))}
-        </ul>
-      </Card>
-      <Card title="Suas contas nos apps" id="apps">
-        {apps.length ? (
-          <ul className="list-rows">
-            {apps.map((a) => (
-              <li key={a.client_id as string} className="list-rows__item">
-                <ProductMark productId={(a.product_id as string) ?? ''} name={a.name as string} size={30} />
-                <span className="list-rows__main">
-                  {a.name as string}
-                  <span className="zro-faint">
-                    {' '}
-                    · conta desde {fmtDate((a.first_login_at ?? a.granted_at) as Date)}
-                    {a.last_login_at ? ` · último acesso ${fmtDate(a.last_login_at as Date)}` : ''}
-                  </span>
-                </span>
-                <form action={revokeAppAction}>
-                  <input type="hidden" name="clientId" value={a.client_id as string} />
-                  <button className="zro-btn zro-btn--danger zro-btn--small" type="submit">
-                    Remover acesso<span className="zro-sr-only"> do {a.name as string}</span>
-                  </button>
-                </form>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <EmptyState title="Nenhum app ainda">Quando você abrir um app da família com a sua conta Absolute ZRO, a conta dele aparece aqui.</EmptyState>
-        )}
-      </Card>
-    </div>
+        ) : null}
+      </div>
+      {/* perfil único (0015): os apps leem nome, foto e e-mail daqui; cada um guarda só os dados próprios */}
+      <p className="account-unico" title="Os apps leem nome, foto e e-mail desta conta ao abrir. Cada um guarda só os dados próprios dele.">
+        Nome, foto e e-mail valem para todas as ferramentas da Absolute ZRO.
+      </p>
+      <div className="account-tiles">
+        <Tile
+          href="/perfil/profissional"
+          icon="at"
+          title="Perfil profissional"
+          value={`@${perfil.arroba} · ${perfil.visivel ? 'Aparece na busca' : 'Escondido da busca'}`}
+        />
+        <Tile
+          href="/perfil/seguranca"
+          icon="lock"
+          title="Segurança"
+          value={`${auth.user.emailVerified ? 'E-mail confirmado' : 'Confirme o e-mail'} · ${sum.sessions} ${sum.sessions === 1 ? 'sessão' : 'sessões'}`}
+        />
+        <Tile href="/perfil/plano" icon="card" title="Plano" value={planName} />
+        <Tile
+          href="/perfil/acessos"
+          icon="apps"
+          title="Acessos"
+          value={`${sum.tools} ${sum.tools === 1 ? 'ferramenta' : 'ferramentas'} · ${sum.orgs} ${sum.orgs === 1 ? 'organização' : 'organizações'}`}
+        />
+      </div>
+    </AccountFrame>
   )
 }

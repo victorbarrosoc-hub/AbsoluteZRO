@@ -1,11 +1,18 @@
 import { updateFileAddress } from '@/lib/desktop-releases';
+import { nossomClosed } from '@/lib/server/release';
 // Canal da atualização automática do app de desktop (NOSSOM_UPDATE_BASE_URL aponta para cá):
 // latest.yml, latest-mac.yml e os arquivos que eles citam, lidos do Release fixo
 // `nossom-atualizacoes`. Redireciona para o endereço assinado do GitHub; nunca devolve HTML, para o
-// atualizador não confundir uma página com um manifesto.
+// atualizador não confundir uma página com um manifesto. Fechado ao público (28/10/2026): o canal não
+// anuncia versão nenhuma (404), então um app instalado não encontra atualização.
 export const dynamic = 'force-dynamic';
 export async function GET(_request: Request, { params }: { params: Promise<{ arquivo: string }> }) {
   const { arquivo } = await params;
+  if (nossomClosed())
+    return new Response('Arquivo indisponível.', {
+      status: 404,
+      headers: { 'cache-control': 'no-store', 'content-type': 'text/plain; charset=utf-8' },
+    });
   try {
     const address = await updateFileAddress(arquivo);
     if (address)

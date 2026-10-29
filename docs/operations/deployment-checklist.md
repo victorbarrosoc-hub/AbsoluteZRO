@@ -1,7 +1,7 @@
 # Deploy — Vercel + Supabase
 
 **Autorizado pelo titular em 25/10/2026** para o projeto Vercel `absolutezro` (team Victorbarrosoc) em
-https://absolutezro.vercel.app, com o projeto Supabase **novo** `AbsoluteZRO` (nenhum banco de app original).
+https://absolutezro.com, com o projeto Supabase **novo** `AbsoluteZRO` (nenhum banco de app original).
 
 ## 1. Projeto na Vercel (feito)
 
@@ -25,13 +25,23 @@ https://absolutezro.vercel.app, com o projeto Supabase **novo** `AbsoluteZRO` (n
   em `zro.oidc_keys`.
 
 - `ZRO_IP_HASH_SECRET` (openssl rand -hex 32): sem ela, o IP não é guardado nem usado nos limites por IP.
+- `ZRO_CONEXOES_KEY` (openssl rand -base64 32, Production; ADR 0026): chave das Conexões. Dela saem, por HKDF, a chave
+  dos tokens do Google Agenda (AES-256-GCM) e a do cookie da ida ao Google. Sem ela, `/conexoes` mostra
+  "indisponível" e `/api/v1/agenda/*` responde 503. Trocar a chave invalida as conexões guardadas (cada pessoa conecta
+  de novo). O cliente Google é o mesmo do "Entrar com Google" (`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`), com o retorno
+  `https://absolutezro.com/conexoes/google/retorno` e os escopos `calendar.events` e `calendar.calendarlist.readonly`.
+- `CRON_SECRET` (openssl rand -hex 32, Production): o agendamento diário `GET /api/cron/dolar` (vercel.json) busca o dólar
+  PTAX do Banco Central para os Custos (migração 0030). Sem ele, a rota responde 503 e só a página dos Custos atualiza.
 - Ambiente e origem saem da Vercel (`VERCEL_ENV`, `VERCEL_PROJECT_PRODUCTION_URL`); `ZRO_ENV`/`ZRO_APP_ORIGIN` só se
   quiser forçar.
-- Cobrança só quando houver provedor: `ZRO_BILLING_PROVIDERS` e `ZRO_BILLING_WEBHOOK_SECRET_<PROVEDOR>`.
+- Cobrança pelo Stripe (ADR 0019): `STRIPE_SECRET_KEY` e `STRIPE_WEBHOOK_SECRET` no projeto `absolutezro` (Production).
+  Webhook do Stripe em `https://absolutezro.com/api/v1/billing/webhooks/stripe` com `customer.subscription.created`,
+  `.updated` e `.deleted`; portal do cliente salvo uma vez no painel do Stripe. Depois, Administração → Vendas →
+  "Ligar vendas" com a data de corte do grátis antigo.
 
 ## 4. Produção
 
-`absolutezro.vercel.app` publica o branch `main`. Branches de trabalho viram prévias protegidas pelo login da Vercel.
+`absolutezro.com` publica o branch `main`. Branches de trabalho viram prévias protegidas pelo login da Vercel.
 Levar para produção = merge no `main`, com autorização do titular.
 
 ## 5. Primeira conta de administração
@@ -45,6 +55,40 @@ where email = 'seu-email@exemplo.com';
 ```
 
 O console fica em `/admin` (limites dos planos, concessões, fila parada, eventos de cobrança).
+
+## 5a. Gate de lançamento (ADR 0023) — só com autorização do proprietário
+
+A migration `0018_release_gate.sql` deixa NOSSOM, AEON (`ai-edit`), Revela (`finishing`) e Carro do Freela fechados
+para todo mundo. A conta do proprietário (a única autorizada nos quatro, adendo do Carro) **não** está na migration
+nem no código: entra em produção nesta publicação, uma vez, de um dos dois jeitos, e fica na auditoria.
+
+1. Achar o `zro.users.id` da conta (o e-mail não serve de chave): `/admin/pessoas` › a própria pessoa (a URL é
+   `/admin/pessoas/<uuid>`), ou `GET /api/v1/me` logado (`user.id`), ou no SQL Editor:
+   `select id, email, platform_role from zro.users where platform_role = 'admin'` — deve haver uma linha com o e-mail do
+   proprietário; mais de uma, ele aponta qual.
+2. Conceder: Administração › **Lançamento › Acesso interno** (escolher a pessoa na lista, produto, tipo "Proprietário",
+   todos os canais, sem validade, motivo), um produto por vez; ou no SQL Editor, trocando `<uuid>`:
+
+   ```sql
+   insert into zro.product_release_access (product_id, user_id, kind, reason, granted_by)
+   select x.product_id, u.id, 'owner', 'conta do proprietário (adendo do PRD, 27/10/2026)', u.id
+   from zro.users u cross join (values ('carro-do-freela'), ('nossom'), ('ai-edit'), ('finishing')) as x (product_id)
+   where u.id = '<uuid>'
+   on conflict (product_id, user_id) do nothing;
+   ```
+
+3. Sessões emitidas antes do gate (refresh tokens de 30 dias e consentimentos dos clientes `nossom-web`, `aeon-web`,
+   `aeon-desktop`, `revela-web`, `carrodofreela-web` para quem não está na lista): o HUB já não renova nem aceita, mas
+   deixar o banco igual à regra é um comando, primeiro em prévia e só depois para valer, com a `DATABASE_URL` sem pooler:
+
+   ```sh
+   npm run db:release:revoke -- --reason "gate de lançamento (ADR 0023)"            # prévia: só conta, não muda nada
+   npm run db:release:revoke -- --reason "gate de lançamento (ADR 0023)" --apply    # executa e grava a auditoria
+   ```
+
+4. Conferir em `/admin/lancamento`: os três lançados em "Lançado" com todos os canais, os quatro fechados em
+   "Em desenvolvimento", a conta do proprietário nos quatro, e a auditoria com as linhas. Abrir um produto ao público
+   depois = mudar o estado nessa tela (vale em até 30 s, sem redeploy); nunca por migration.
 
 ## 6. Fila
 

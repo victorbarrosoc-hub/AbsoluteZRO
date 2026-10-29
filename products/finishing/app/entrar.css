@@ -1,0 +1,128 @@
+/* Revela · página de entrada: o ícone, uma frase, duas ações. Fundo liso: sem mancha de luz (padrão da família). */
+.pagina-entrar {
+  min-height: 100svh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  overflow-x: hidden;
+}
+.entrar-luz {
+  display: none;
+}
+.entrar-voltar {
+  justify-self: start;
+  padding: calc(20px + env(safe-area-inset-top)) clamp(16px, 4vw, 40px) 20px;
+}
+.entrar-voltar img {
+  display: block;
+  height: 26px;
+  width: auto;
+}
+.entrar {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 24px 16px 48px;
+  text-align: center;
+}
+.entrar-icone {
+  width: 88px;
+  height: 88px;
+  border-radius: 22px;
+  margin-bottom: 18px;
+  box-shadow: 0 30px 60px -20px rgb(255 184 0 / 0.35);
+}
+.entrar-bloco {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+.entrar h1 {
+  margin: 0;
+  font-size: clamp(40px, 7vw, 64px);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  line-height: 1.04;
+}
+.entrar-bloco > p {
+  margin: 0;
+  color: var(--mudo);
+  font-size: 19px;
+}
+.entrar-acoes {
+  display: grid;
+  gap: 10px;
+  width: min(360px, 100%);
+  margin-top: 28px;
+}
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 8px;
+  border-radius: 50%;
+  font-size: 22px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--roxo), var(--vermelho) 55%, var(--amarelo));
+}
+.entrar-aviso {
+  min-height: 22px;
+  margin: 16px 0 0;
+  color: #ffd27a;
+  font-size: 14px;
+}
+.familia-mini {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 40px;
+  color: var(--fraco);
+  font-size: 13px;
+}
+.entrar-editar {
+  margin-top: 18px;
+  color: var(--fraco);
+  font-size: 14px;
+  text-decoration: none;
+}
+.entrar-editar:hover {
+  color: var(--texto);
+}
+.familia-mini img {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+}
+.entrar-rodape {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 20px;
+  color: var(--fraco);
+  font-size: 13px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .surge {
+    animation: surgir 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation-delay: calc(var(--d, 0) * 100ms + 60ms);
+  }
+  .entrar-luz {
+    animation: respirar-luz 14s ease-in-out infinite alternate;
+  }
+}
+@keyframes surgir {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+    filter: blur(8px);
+  }
+}
+@keyframes respirar-luz {
+  to {
+    transform: scale(1.12) rotate(6deg);
+  }
+}

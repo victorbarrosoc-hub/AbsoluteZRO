@@ -211,10 +211,21 @@ O Google Drive toca vídeo pesado sem travar porque usa uma cópia leve que ele 
 - **Você escolhe:** em **Ajustes → Arquivos → Proxy ao enviar**: **Sempre** (padrão), **Perguntar a cada envio** ou **Nunca**. Ali aparece o que o computador está usando ("Usando o chip de vídeo do Mac", "Usando o ffmpeg") ou um aviso se não houver conversor.
   - **Por envio:** ao enviar pelo botão **Enviar**, o seletor de pasta tem **Gerar proxy dos vídeos** já marcado conforme o ajuste. Em **Perguntar**, arrastar arquivos ou **Enviar para esta pasta** abre a janela de envio com a escolha em destaque.
   - **Por arquivo:** em **Transferências**, cada vídeo tem **Proxy: sim/não** enquanto está na fila ou subindo. Depois, a linha mostra **"Gerando proxy… 42%"** → **"Proxy pronto"** (com **Pular**), ou **"Sem proxy · Gerar proxy"**.
+  - **No lote, sem abrir:** quando os originais já chegaram e os proxies ainda andam, o cartão do envio diz **"Originais no Drive · gerando proxies 3 de 26"** (o ícone vira um anel que enche e, à direita, **proxies 3/26**). Depois: **"26 proxies prontos em 18 min"**, ou **"2 proxies falharam · Tentar de novo"**. **Limpar concluídas** não tira esse lote nem para os proxies: ele fica até terminar ("1 lote ficou: ainda gerando proxies."). Fechar o app com proxy andando pergunta antes (eles continuam na próxima abertura) e a bandeja mostra **"Gerando 3 proxies"**.
+  - **Números do lote:** o cartão de um lote terminado mostra quanto passou, quanto levou e a média: **"104 GB em 1 h 12 min · 24,6 MB/s"** (a média conta só o tempo transferindo; parar o ponteiro mostra o detalhe e o equivalente em Mbps). Fica gravado com a fila.
 - **Depois, no Drive:** selecione um vídeo → **Gerar proxy**; ou **Gerar proxies da pasta** na barra (com **Incluir subpastas**). O app usa o original deste computador (o que ele mesmo enviou, ou a pasta que você indicar: mesmo nome e tamanho). Se o original não estiver aqui (subiu pelo celular, por exemplo), **Baixar do Drive para gerar** baixa o original para uma pasta temporária, gera o proxy, sobe e apaga a cópia — mostra antes quanto vai baixar e o espaço livre, e não começa sem espaço. Proxy de câmera nunca é trocado.
 - Vídeo que já tem proxy ganha o selo **Proxy** na lista e na grade do Drive.
 - **Espaço no Drive:** cada cópia ocupa cerca de **2 a 5% do original** (≈ 40 MB por minuto de vídeo). Uma diária de 500 GB em ProRes vira uns 10–20 GB de prévias.
 - O ffmpeg vem dentro do app (GPL v3; licença e fontes em `Resources/ffmpeg-licencas`). Sem ele (rodando do código), o app usa o ffmpeg do sistema (`brew install ffmpeg`), a variável `SOBEDESCE_FFMPEG`, ou `node scripts/ffmpeg-baixar.mjs` para baixar o mesmo do instalador.
+
+### Converter com a Revela
+
+Botão direito num vídeo do Drive → **Converter com a Revela…** → escolha **YouTube**, **Vimeo**, **Reels** ou
+**TikTok** → **Converter**. O app converte com o chip de vídeo da máquina e sobe `<nome>-<destino>.mp4` **na mesma pasta**,
+com o MD5 conferido. Codec, bitrate, tamanho e áudio vêm dos presets da **Revela** (a ferramenta de finalização da
+Absolute ZRO): H.264 marcado BT.709, AAC 48 kHz. Pelo celular: no menu do vídeo, **Converter com a Revela**; o
+**próprio celular** converte (sem computador ligado) e envia o arquivo novo para a mesma pasta. Converte quem tocou no
+botão. Deixe a tela aberta; acima de ~1,5 GB de arquivo final, prefira o computador. O original nunca muda.
 
 ### Referências (vídeos e fotos que inspiram seus projetos)
 

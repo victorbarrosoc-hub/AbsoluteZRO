@@ -6,8 +6,10 @@
 import { accountConfigured } from '../account';
 import { requestOrigin } from '../ai-access';
 
-export const ZRO_ISSUER_DEFAULT = 'https://absolutezro.vercel.app';
-export const ZRO_SCOPES = 'openid email profile org';
+export const ZRO_ISSUER_DEFAULT = 'https://absolutezro.com';
+/** `offline_access` mantém a conversa com a Z depois dos 10 minutos do access token; `zro.ia` abre a API da IA. */
+export const ZRO_IA_SCOPE = 'zro.ia';
+export const ZRO_SCOPES = 'openid email profile org offline_access ' + ZRO_IA_SCOPE;
 
 export function zroIssuer() {
   return (process.env.ZRO_ISSUER?.trim() || ZRO_ISSUER_DEFAULT).replace(/\/$/, '');
@@ -47,4 +49,38 @@ export function zroReturnPath(value: unknown) {
   )
     return '/studio';
   return value;
+}
+
+/**
+ * Perfil único: nome, foto e e-mail se editam na conta Absolute ZRO (claim `zro_conta`), nunca no
+ * NOSSOM. Só vale endereço https do próprio emissor; sem ele, o Perfil da Absolute ZRO.
+ */
+export const ZRO_PROFILE_DEFAULT = ZRO_ISSUER_DEFAULT + '/perfil';
+function fromIssuer(value: unknown, path: RegExp): string | null {
+  if (typeof value !== 'string' || value.length > 512) return null;
+  try {
+    const url = new URL(value),
+      issuer = new URL(zroIssuer());
+    return url.protocol === 'https:' &&
+      url.origin === issuer.origin &&
+      !url.username &&
+      !url.password &&
+      !url.search &&
+      path.test(url.pathname)
+      ? url.href
+      : null;
+  } catch {
+    return null;
+  }
+}
+export function zroManageUrl(claim?: unknown) {
+  return (
+    fromIssuer(claim, /^\/perfil(?:\/[a-z-]*)?$/) ??
+    fromIssuer(zroIssuer() + '/perfil', /^\/perfil$/) ??
+    ZRO_PROFILE_DEFAULT
+  );
+}
+/** Foto da conta (claim `picture`): só o endereço público de fotos do emissor (/api/v1/foto/…). */
+export function zroPictureUrl(claim: unknown) {
+  return fromIssuer(claim, /^\/api\/v1\/foto\/[A-Za-z0-9_-]{8,128}$/);
 }

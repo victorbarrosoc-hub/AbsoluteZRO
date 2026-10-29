@@ -14,7 +14,8 @@ const fs = require('fs');
 const path = require('path');
 
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.webp': 'image/webp', '.mp4': 'video/mp4', '.png': 'image/png',
-  '.jpg': 'image/jpeg', '.webmanifest': 'application/manifest+json', '.json': 'application/json' };
+  '.jpg': 'image/jpeg', '.webmanifest': 'application/manifest+json', '.json': 'application/json', '.svg': 'image/svg+xml',
+  '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.woff2': 'font/woff2' };
 
 function servirSaida(saida) {
   const cfg = JSON.parse(fs.readFileSync(path.join(saida, 'config.json'), 'utf8'));
@@ -38,7 +39,7 @@ function servirSaida(saida) {
     const extra = {};
     for (const r of cfg.routes) {
       if (r.handle === 'filesystem') {
-        const fn = funcoes[caminho];
+        const fn = funcoes[caminho.split('?')[0]];
         if (fn) {
           const escrever = res.writeHead.bind(res);
           res.writeHead = (status, h) => escrever(status, Object.assign({}, extra, h || {}));

@@ -19,6 +19,14 @@ export type ZroPerson = {
   verified?: boolean;
   org?: string | null;
   products?: string[];
+  /**
+   * Claim `zro_release` como o HUB manda (contrato de 28/10/2026). Sem ela aqui, a ZRO falsa deduz: `released`
+   * quando `nossom` está em `products`, `closed` quando não está.
+   */
+  release?: Record<string, 'released' | 'closed' | 'allowed'>;
+  /** Claims do perfil único (`picture`, `zro_conta`), como o HUB manda. */
+  picture?: string;
+  conta?: string;
 };
 export type Tamper = null | 'nonce' | 'aud' | 'iss' | 'signature' | 'redirect-iss';
 type User = {
@@ -34,6 +42,7 @@ type Link = {
   email: string;
   organization: string | null;
   products: string[];
+  release: Record<string, string>;
   created_by_zro: boolean;
 };
 
@@ -53,6 +62,30 @@ export function startFakes() {
     tamper: null as Tamper,
     exchanges: 0,
     created: 0,
+    /** Escopo devolvido no token (um token antigo vinha sem `zro.ia`). */
+    scope: 'openid email profile org offline_access zro.ia',
+    /** Vida do access token, em segundos. */
+    accessLife: 600,
+    refreshes: 0,
+    revoked: [] as string[],
+    /** Pedidos que chegaram à API da IA: caminho, método, Authorization e corpo. */
+    ia: [] as { path: string; method: string; auth: string | null; body: string | null }[],
+  };
+  // access token → pessoa; refresh token → pessoa (gira a cada uso, como na Absolute ZRO).
+  const access = new Map<string, ZroPerson>();
+  const refresh = new Map<string, { person: ZroPerson; used: boolean }>();
+  const issue = (person: ZroPerson) => {
+    const at = 'zat_' + randomBytes(12).toString('hex'),
+      rt = 'zrt_' + randomBytes(12).toString('hex');
+    access.set(at, person);
+    refresh.set(rt, { person, used: false });
+    return {
+      access_token: at,
+      refresh_token: rt,
+      token_type: 'Bearer',
+      expires_in: state.accessLife,
+      scope: state.scope,
+    };
   };
 
   const jwt = (claims: Record<string, unknown>, wrongKey = false) => {
@@ -81,7 +114,7 @@ export function startFakes() {
       q.get('client_id') !== CLIENT.clientId ||
       q.get('code_challenge_method') !== 'S256' ||
       !q.get('nonce') ||
-      q.get('scope') !== 'openid email profile org'
+      q.get('scope') !== 'openid email profile org offline_access zro.ia'
     )
       back.searchParams.set('error', 'invalid_request');
     else if (state.deny || !state.person) back.searchParams.set('error', 'access_denied');
@@ -108,12 +141,55 @@ export function startFakes() {
         jwks_uri: ISSUER + '/oauth/jwks',
       });
     if (url.pathname === '/oauth/jwks') return Response.json({ keys: [jwk] });
+    if (url.pathname.startsWith('/api/v1/ia/')) {
+      const auth = new Headers(init?.headers).get('authorization');
+      state.ia.push({
+        path: url.pathname.slice('/api/v1/ia'.length),
+        method: init?.method || 'GET',
+        auth,
+        body: init?.body ? String(init.body) : null,
+      });
+      const person = access.get((auth || '').replace(/^Bearer /, ''));
+      if (!person) return Response.json({ error: 'unauthenticated' }, { status: 401 });
+      if (url.pathname === '/api/v1/ia/estado')
+        return Response.json({ ligada: true, nome: person.name.split(' ')[0], creditos: null });
+      if (url.pathname === '/api/v1/ia/conversas') return Response.json({ conversas: [] });
+      if (url.pathname === '/api/v1/ia/mensagens')
+        return new Response(
+          new ReadableStream({
+            start(c) {
+              const e = new TextEncoder();
+              c.enqueue(
+                e.encode(JSON.stringify({ tipo: 'conversa', id: 'c1', titulo: 'Teste' }) + '\n'),
+              );
+              c.enqueue(e.encode(JSON.stringify({ tipo: 'texto', t: 'Olá' }) + '\n'));
+              c.enqueue(
+                e.encode(JSON.stringify({ tipo: 'fim', mensagem: 'm1', creditos: 1 }) + '\n'),
+              );
+              c.close();
+            },
+          }),
+          { headers: { 'Content-Type': 'application/x-ndjson; charset=utf-8' } },
+        );
+      return Response.json({ ok: true });
+    }
+    if (url.pathname === '/oauth/revoke' && init?.method === 'POST') {
+      state.revoked.push(new URLSearchParams(String(init.body)).get('token') || '');
+      return new Response(null, { status: 200 });
+    }
     if (url.pathname === '/oauth/token' && init?.method === 'POST') {
       const form = new URLSearchParams(String(init.body));
       const auth = new Headers(init.headers).get('authorization') || '';
       const basic = Buffer.from(auth.replace(/^Basic /, ''), 'base64').toString();
       if (basic !== CLIENT.clientId + ':' + CLIENT.clientSecret)
         return Response.json({ error: 'invalid_client' }, { status: 401 });
+      if (form.get('grant_type') === 'refresh_token') {
+        const r = refresh.get(form.get('refresh_token') || '');
+        if (!r || r.used) return Response.json({ error: 'invalid_grant' }, { status: 400 });
+        r.used = true;
+        state.refreshes++;
+        return Response.json(issue(r.person));
+      }
       const c = codes.get(form.get('code') || '');
       if (!c || c.used) return Response.json({ error: 'invalid_grant' }, { status: 400 });
       c.used = true;
@@ -126,9 +202,7 @@ export function startFakes() {
       const now = Math.floor(Date.now() / 1000),
         t = state.tamper;
       return Response.json({
-        access_token: 'at',
-        token_type: 'Bearer',
-        expires_in: 600,
+        ...issue(c.person),
         id_token: jwt(
           {
             iss: t === 'iss' ? 'https://outro.example' : ISSUER,
@@ -143,6 +217,13 @@ export function startFakes() {
             name: c.person.name,
             zro_org: c.person.org ? { id: 'org-1', name: c.person.org, role: 'owner' } : null,
             zro_products: c.person.products ?? [],
+            zro_release:
+              c.person.release ??
+              (c.person.products?.includes('nossom')
+                ? { nossom: 'released' }
+                : { nossom: 'closed' }),
+            ...(c.person.picture ? { picture: c.person.picture } : {}),
+            ...(c.person.conta ? { zro_conta: c.person.conta } : {}),
           },
           t === 'signature',
         ),
@@ -162,11 +243,18 @@ export function startFakes() {
       email: String(data.email || '').toLowerCase(),
       organization: (data.organization as string) || null,
       products: (data.products as string[]) || [],
+      release: (data.release as Record<string, string>) || {},
     };
     const bySub = [...links.values()].find((l) => l.zro_sub === body.p_sub);
     if (body.p_action === 'find') {
       if (bySub) Object.assign(bySub, fields);
       return { userId: bySub?.user_id ?? null };
+    }
+    if (body.p_action === 'find_by_email') {
+      const user = [...users.values()].find(
+        (u) => u.email === fields.email && u.email_confirmed_at,
+      );
+      return { userId: user?.id ?? null };
     }
     if (!body.p_user || !users.has(body.p_user))
       return Response.json({ message: 'Account required' }, { status: 400 });
@@ -178,6 +266,7 @@ export function startFakes() {
               email: row.email,
               organization: row.organization,
               products: row.products,
+              release: row.release,
               createdByZro: row.created_by_zro,
               linkedAt: new Date().toISOString(),
               lastLoginAt: null,
@@ -309,5 +398,10 @@ export function startFakes() {
     return user;
   }
 
-  return { state, users, links, authorize, fetch: fetchFake, addUser };
+  /** Revoga os tokens de todos (o app foi removido na Absolute ZRO). */
+  const revokeAll = () => {
+    access.clear();
+    refresh.clear();
+  };
+  return { state, users, links, authorize, fetch: fetchFake, addUser, revokeAll };
 }

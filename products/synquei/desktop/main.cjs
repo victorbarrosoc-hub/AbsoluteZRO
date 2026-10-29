@@ -4,16 +4,21 @@
 //
 // `--smoke` (CI, depois do build): abre o app, monta o projeto de exemplo, sincroniza, exporta e escreve "SMOKE OK".
 
-const { app, BrowserWindow, Menu, protocol, shell, session, dialog, ipcMain } = require('electron')
+const { app, BrowserWindow, Menu, protocol, shell, session, dialog, ipcMain, safeStorage } = require('electron')
 const path = require('node:path')
 const fs = require('node:fs')
 const fsp = require('node:fs/promises')
 const { spawn } = require('node:child_process')
 const { Readable } = require('node:stream')
 const { Atualizador, readBuildInfo, handoffCommand, isHandoffScript } = require('./atualizador.cjs')
+const { arquivoDaCentral, lerGerenciado } = require('./gerenciado.cjs')
 const { Organizador } = require('./organizador.cjs')
 const { Ponte, pastaTroca } = require('./davinci.cjs')
 const { Biblioteca } = require('./sfx-biblioteca.cjs')
+const { TIPOS: TIPOS_NOMES, lerLinkOrganizar, linkNoArgv } = require('./link-organizar.cjs')
+// o emissor da conta só muda fora do app empacotado (testes com a Absolute ZRO falsa)
+if (app.isPackaged) delete process.env.ZRO_ISSUER
+const { criarConta } = require('./conta.cjs')
 
 const SCHEME = 'synquei'
 const ROOT = path.join(__dirname, '..')
@@ -30,6 +35,7 @@ const MIME = {
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
+  '.webp': 'image/webp',
   '.ico': 'image/x-icon',
   '.woff2': 'font/woff2',
 }
@@ -41,6 +47,18 @@ protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: 
 
 // Um app só: abrir de novo traz a janela que já existe para a frente.
 if (!SMOKE && !app.requestSingleInstanceLock()) app.quit()
+
+// "Preparar no Synquei" do SOBEDESCE: o sistema abre synquei://organizar?pasta=… com este app (desktop/link-organizar.cjs).
+// O link pode chegar antes de o Organizar estar pronto: fica guardado até lá.
+let linkPendente = SMOKE ? null : linkNoArgv(process.argv)
+if (!SMOKE) {
+  if (process.defaultApp && process.argv[1]) app.setAsDefaultProtocolClient(SCHEME, process.execPath, [path.resolve(process.argv[1])])
+  else app.setAsDefaultProtocolClient(SCHEME)
+  app.on('open-url', (event, link) => {
+    event.preventDefault()
+    receberLink(link)
+  })
+}
 
 let win = null
 let org = null
@@ -74,9 +92,66 @@ async function midia(req, u) {
   return new Response(Readable.toWeb(fs.createReadStream(abs, { start: a, end: b })), { status: 206, headers: { ...base, 'content-length': String(b - a + 1), 'content-range': `bytes ${a}-${b}/${st.size}` } })
 }
 
+// ───────── conta Absolute ZRO: as mesmas rotas do site (api/zro/*), respondidas aqui (desktop/conta.cjs) ─────────
+let conta = null
+// o refresh token da conta (para reler o perfil a cada abertura) só vai para o disco cifrado pelo sistema: Keychain no
+// Mac, DPAPI no Windows. No Linux sem chaveiro (basic_text) não há cofre de verdade: fica só na memória.
+function cofreDoSistema() {
+  try {
+    if (!safeStorage.isEncryptionAvailable()) return null
+    if (process.platform === 'linux' && safeStorage.getSelectedStorageBackend?.() === 'basic_text') return null
+    return { cifrar: (t) => safeStorage.encryptString(t).toString('base64'), decifrar: (b) => safeStorage.decryptString(Buffer.from(b, 'base64')) }
+  } catch {
+    return null
+  }
+}
+const contaApp = () =>
+  (conta ??= criarConta({
+    pasta: app.getPath('userData'),
+    // o login acontece no navegador da pessoa (onde ela já pode estar logada na Absolute ZRO)
+    abrirNavegador: (url) => shell.openExternal(url),
+    cofre: cofreDoSistema(),
+    aoVoltar: () => {
+      if (win && !win.isDestroyed()) {
+        if (win.isMinimized()) win.restore()
+        win.show()
+        win.focus()
+      }
+    },
+  }))
+const jsonResp = (status, corpo) => new Response(JSON.stringify(corpo), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } })
+const voltaSegura = (v) => (typeof v === 'string' && /^\/[^/\\]/.test(v) && v.length < 300 ? v : '/app/index.html')
+
+async function rotaConta(req, u) {
+  // teste de fumaça: sem rede e sem sessão (aparece "Entrar com Absolute ZRO")
+  if (SMOKE) return u.pathname === '/api/zro/eu' || u.pathname.startsWith('/api/zro/ia/') ? jsonResp(401, { ok: false, configurado: true }) : jsonResp(404, { ok: false })
+  // a Z no painel inicial: o mesmo repasse do site (api/zro/ia.js); o token da conta fica neste processo
+  if (u.pathname.startsWith('/api/zro/ia/')) return contaApp().repassarIa(req, decodeURIComponent(u.pathname.slice('/api/zro/ia/'.length)).replace(/\/+$/, ''))
+  if (u.pathname === '/api/zro/eu') {
+    // perfil único: relê nome, e-mail, foto e produtos na Absolute ZRO a cada leitura (sem resposta em 3 s, vale a cópia)
+    if (contaApp().ler()) await contaApp().atualizar()
+    const eu = contaApp().eu()
+    return eu ? jsonResp(200, eu) : jsonResp(401, { ok: false, configurado: true })
+  }
+  if (u.pathname === '/api/zro/sair' && req.method === 'POST') {
+    contaApp().sair()
+    return jsonResp(200, { ok: true })
+  }
+  if (u.pathname === '/api/zro/entrar') {
+    const volta = voltaSegura(u.searchParams.get('volta'))
+    const r = await contaApp().entrar({ criar: u.searchParams.get('criar') === '1' })
+    // a mesma volta do site (?zro=<resultado>): a página mostra o recado e tira o ?zro= do endereço
+    const destino = new URL(`${SCHEME}://app${volta}`)
+    destino.searchParams.set('zro', r)
+    return new Response(null, { status: 303, headers: { location: destino.toString(), 'cache-control': 'no-store' } })
+  }
+  return jsonResp(404, { ok: false })
+}
+
 function serve() {
   protocol.handle(SCHEME, async (req) => {
     const u = new URL(req.url)
+    if (u.pathname.startsWith('/api/zro/')) return rotaConta(req, u)
     if (u.pathname === '/__midia') return midia(req, u)
     let rel = decodeURIComponent(u.pathname)
     if (rel.endsWith('/')) rel += 'index.html'
@@ -157,14 +232,15 @@ function menu() {
     {
       label: 'Ir',
       submenu: [
-        { label: 'Início', accelerator: 'CmdOrCtrl+1', click: tab('inicio') },
-        { label: 'Mídia', accelerator: 'CmdOrCtrl+2', click: tab('midia') },
-        { label: 'Sincronizar', accelerator: 'CmdOrCtrl+3', click: tab('sincronizar') },
-        { label: 'Linha do tempo', accelerator: 'CmdOrCtrl+4', click: tab('linha') },
-        { label: 'Exportar', accelerator: 'CmdOrCtrl+5', click: tab('exportar') },
+        { label: 'Z', accelerator: 'CmdOrCtrl+1', click: tab('z') },
+        { label: 'Início', accelerator: 'CmdOrCtrl+2', click: tab('inicio') },
+        { label: 'Mídia', accelerator: 'CmdOrCtrl+3', click: tab('midia') },
+        { label: 'Sincronizar', accelerator: 'CmdOrCtrl+4', click: tab('sincronizar') },
+        { label: 'Linha do tempo', accelerator: 'CmdOrCtrl+5', click: tab('linha') },
+        { label: 'Exportar', accelerator: 'CmdOrCtrl+6', click: tab('exportar') },
         { type: 'separator' },
-        { label: 'Projetos', accelerator: 'CmdOrCtrl+6', click: tab('projetos') },
-        { label: 'Organizar (SOBEDESCE › DaVinci)', accelerator: 'CmdOrCtrl+7', click: tab('organizar') },
+        { label: 'Projetos', accelerator: 'CmdOrCtrl+7', click: tab('projetos') },
+        { label: 'Organizar (SOBEDESCE › DaVinci)', accelerator: 'CmdOrCtrl+8', click: tab('organizar') },
         { type: 'separator' },
         { label: 'Formatos', click: tab('formatos') },
         { label: 'Ajustes', accelerator: 'CmdOrCtrl+,', click: tab('ajustes') },
@@ -197,7 +273,9 @@ const enviar = (canal, dado) => {
 // ───────── Organizar: pasta do SOBEDESCE → Synquei → DaVinci (desktop/organizador.cjs e davinci.cjs) ─────────
 function iniciarOrganizar() {
   const userData = app.getPath('userData')
-  org = new Organizador({ stateDir: userData, log: (...a) => console.log('[organizar]', ...a) })
+  // versão no recibo do download do Drive (Synquei/preparos.jsonl): "1.0.0+<build>"
+  const build = readBuildInfo(path.join(__dirname, 'build-info.json')).build
+  org = new Organizador({ stateDir: userData, log: (...a) => console.log('[organizar]', ...a), versao: `${app.getVersion()}+${build > 0 ? build : 'dev'}` })
   ponte = new Ponte({ troca: pastaTroca(process.platform, userData), log: (...a) => console.log('[davinci]', ...a) })
   org.on('cartao', (ev) => enviar('synquei:org-cartao', ev))
   org.on('mudou', (st) => enviar('synquei:org-estado', st))
@@ -237,7 +315,8 @@ function iniciarOrganizar() {
   handle('org:remover', (id) => org.remover(String(id)))
   handle('org:ligar', (id, ligado) => org.ligar(String(id), !!ligado))
   handle('org:vincular', (id, dados) => org.vincular(String(id), dados || {}))
-  handle('org:marcar', (pastaId, cartaoId, estado, erro) => org.marcar(String(pastaId), String(cartaoId), String(estado), erro ? String(erro) : null))
+  handle('org:marcar', (pastaId, cartaoId, estado, erro, revisar) => org.marcar(String(pastaId), String(cartaoId), String(estado), erro ? String(erro) : null, Array.isArray(revisar) ? revisar : null))
+  handle('org:recibo', (pastaId, op, dados) => org.recibo(String(pastaId), String(op), dados && typeof dados === 'object' ? dados : {}))
   handle('org:pendentes', (pastaId) => org.pendentes(String(pastaId)))
   handle('org:todos', (pastaId) => org.todos(String(pastaId)))
   handle('org:assets', (pastaId) => org.assets(String(pastaId)))
@@ -251,6 +330,46 @@ function iniciarOrganizar() {
   handle('davinci:enviar', (pedido) => ponte.enviar(pedido))
   org.start()
   ponte.start()
+  if (linkPendente) receberLink(linkPendente)
+}
+
+/** synquei://organizar: pergunta antes (o link pode vir de qualquer lugar) e põe a pasta no Organizar. */
+async function receberLink(link) {
+  if (!org || !app.isReady()) {
+    linkPendente = link
+    return
+  }
+  linkPendente = null
+  const pedido = lerLinkOrganizar(link)
+  if (!pedido) return
+  if (win) {
+    if (win.isMinimized()) win.restore()
+    win.focus()
+  }
+  const tipo = pedido.tipo ? TIPOS_NOMES[pedido.tipo] || pedido.tipo : null
+  const drive = !!pedido.op
+  const r = await dialog.showMessageBox(win || undefined, {
+    type: 'question',
+    message: drive ? `Preparar "${path.basename(pedido.pasta)}" no Synquei?` : `Organizar "${path.basename(pedido.pasta)}" no Synquei?`,
+    detail: [
+      pedido.pasta,
+      tipo ? `Tipo: ${tipo}` : 'O tipo de projeto você escolhe em seguida.',
+      drive ? 'O Synquei não move nem renomeia nada: confere os arquivos baixados pelo SOBEDESCE e monta o projeto.' : 'O Synquei não move nem renomeia nada: só lê os cartões conferidos pelo SOBEDESCE.',
+    ].join('\n\n'),
+    buttons: [drive ? 'Preparar' : 'Organizar', 'Cancelar'],
+    defaultId: 0,
+    cancelId: 1,
+  })
+  if (r.response !== 0) return
+  try {
+    const p = await org.adicionar(pedido.pasta, { tipo: pedido.tipo, op: pedido.op })
+    if (pedido.tipo && !p.tipo) await org.vincular(p.id, { tipo: pedido.tipo })
+    // o mesmo download pedido de novo: confere e responde sem duplicar (desktop/organizador.cjs, pedirDeNovo)
+    if (pedido.op) await org.pedirDeNovo(p.id, pedido.op)
+    enviar('synquei:org-abrir', { pastaId: p.id })
+  } catch (err) {
+    dialog.showMessageBox(win || undefined, { type: 'warning', message: 'Não deu para organizar essa pasta.', detail: String((err && err.message) || err) })
+  }
 }
 
 // ───────── atualização pelo próprio app (desktop/atualizador.cjs) ─────────
@@ -286,6 +405,8 @@ function iniciarAtualizador() {
     stateDir: app.getPath('userData'),
     buildInfo: readBuildInfo(path.join(__dirname, 'build-info.json')),
     handoff: runUpdateHandoff,
+    // instalado pela central do Absolute ZRO: quem atualiza é ela (desktop/gerenciado.cjs, ADR 0018)
+    gerenciado: app.isPackaged ? () => lerGerenciado(arquivoDaCentral(app.getPath('appData'))) : () => false,
     log: (...a) => console.log('[atualização]', ...a),
   })
   atu.on('change', (st) => {
@@ -324,17 +445,22 @@ async function smoke() {
       await wait(() => window.__synquei, 15000)
       const aac = typeof AudioDecoder !== 'undefined' && (await AudioDecoder.isConfigSupported({ codec: 'mp4a.40.2', sampleRate: 48000, numberOfChannels: 2 })).supported
       const desk = !!(window.synqueiDesktop && window.synqueiDesktop.isDesktop)
+      // o app abre na aba da Z
+      const naZ = window.__synquei.S.route === 'z' && !document.getElementById('zPainel').hidden
       location.hash = '#/exemplo'
       await wait(() => { const s = window.__synquei.S; return s.project && s.project.clips.length === 6 && !s.probe.active }, 60000)
       const st = await (await import('/app/js/store.js')).runSync()
       const { zipAll } = await import('/app/js/export/index.js')
       const zip = zipAll(window.__synquei.S.project)
-      return { aac, desk, total: st.total, audio: st.audio, unsynced: st.unsynced, zip: zip.length }
+      // conta Absolute ZRO: no app de desktop a barra lateral oferece entrar (o fumaça responde sem sessão)
+      await wait(() => document.querySelector('#planoCard [data-entrar]'), 10000)
+      const conta = /Entrar com Absolute ZRO/.test(document.getElementById('planoCard').textContent)
+      return { aac, desk, conta, naZ, total: st.total, audio: st.audio, unsynced: st.unsynced, zip: zip.length }
     })()`)
-    log(`desktop: ${r.desk} · AAC no navegador do app: ${r.aac}`)
+    log(`desktop: ${r.desk} · abre na Z: ${r.naZ} · AAC no navegador do app: ${r.aac} · conta Absolute ZRO: ${r.conta}`)
     log(`exemplo: ${r.audio}/${r.total} sincronizados pelo som, ${r.unsynced} de fora, zip com ${r.zip} bytes`)
     clearTimeout(timer)
-    done(r.desk && r.total === 6 && r.audio === 6 && r.unsynced === 0 && r.zip > 1000)
+    done(r.desk && r.naZ && r.conta && r.total === 6 && r.audio === 6 && r.unsynced === 0 && r.zip > 1000)
   } catch (err) {
     clearTimeout(timer)
     log(`erro: ${err && err.message ? err.message : err}`)
@@ -358,7 +484,9 @@ app.whenReady().then(() => {
   })
 })
 
-app.on('second-instance', () => {
+app.on('second-instance', (_e, argv) => {
+  const link = linkNoArgv(argv)
+  if (link) receberLink(link)
   if (win) {
     if (win.isMinimized()) win.restore()
     win.focus()

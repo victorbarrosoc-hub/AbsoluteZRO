@@ -1,6 +1,6 @@
 // Processo principal do app de desktop: sobe o motor, abre a janela e cuida do que é nativo
 // (seletor de pastas, Dock/barra de tarefas, notificações, sair sem perder transferências).
-import { app, BrowserWindow, Menu, Notification, dialog, ipcMain, nativeTheme, powerSaveBlocker, safeStorage, session, shell, utilityProcess } from 'electron'
+import { app, BrowserWindow, Menu, Notification, Tray, dialog, ipcMain, nativeImage, nativeTheme, powerSaveBlocker, safeStorage, session, shell, utilityProcess } from 'electron'
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -10,7 +10,10 @@ import { responderCofre } from './cofre.js'
 import { AVISO_COOKIES, marcarAvisado, migrarCookies, precisaAvisar } from './cookies-cifrados.js'
 import { abrirNavegador, cookiesPara, fecharNavegador, registrarCanais } from './navegador.js'
 import { handoffCommand, isHandoffScript } from '../src/updater.js'
+import { arquivoDaCentral } from '../src/gerenciado.js'
+import { aberturaSynquei } from '../src/backup/synquei.js'
 import { ligarZoom } from './zoom.js'
+import { AVISO_BANDEJA, acaoAoFechar, acaoAoMinimizar, detalheSair, deveAvisar, dicaBandeja, gravarPrefs, iconeBandeja, lerPrefs, minimizarLigado, modeloMenuBandeja, padraoMinimizar } from './bandeja.js'
 
 const here = import.meta.dirname
 const isMac = process.platform === 'darwin'
@@ -30,7 +33,10 @@ let zoom = null // zoom automático pela largura da janela + o escolhido no menu
 let quitting = false
 let quitConfirmed = false // a pessoa já disse "Sair" com transferências andando (não pergunta duas vezes)
 let activeCount = 0
+let proxyCount = 0 // proxies na fila ou sendo feitos (originais já no Drive): também é trabalho andando
 let sleepBlocker = null
+let tray = null // ícone na bandeja (Windows/Linux) ou na barra de menus (Mac); desktop/bandeja.js
+let trayCount = '' // o que o menu da bandeja mostra (transferências:proxies; remonta só quando muda)
 
 // `SOBEDESCE --smoke` (CI, desktop/smoke.js): sobe o motor numa pasta temporária, confere tudo, escreve "SMOKE OK" e
 // sai com 0 (ou 1). Não abre janela, não usa os dados nem os cookies da pessoa e não disputa a trava de instância.
@@ -73,6 +79,8 @@ function startEngine() {
         UV_THREADPOOL_SIZE: process.env.UV_THREADPOOL_SIZE || '16',
         SOBEDESCE_APP_EXE: app.isPackaged ? process.execPath : '',
         SOBEDESCE_APP_PID: app.isPackaged ? String(process.pid) : '',
+        // instalado pela central do Absolute ZRO: quem atualiza é ela (src/gerenciado.js, ADR 0018)
+        SOBEDESCE_CENTRAL_ARQUIVO: app.isPackaged ? arquivoDaCentral(app.getPath('appData')) : '',
       },
     })
     engine.stdout?.pipe(log)
@@ -200,6 +208,7 @@ async function boot() {
     }
   }
   createWindow()
+  criarBandeja()
   abrirJanelaCelular()
   app.on('activate', () => showWindow())
 }
@@ -290,14 +299,21 @@ function createWindow() {
   zoom = ligarZoom(win, { userData: app.getPath('userData') })
   win.once('ready-to-show', () => win.show())
   win.on('close', event => {
-    if (quitting || isMac) {
-      // No Mac fechar a janela não fecha o app: as transferências continuam (padrão do macOS).
-      return
+    // No Mac fechar a janela não fecha o app: as transferências continuam (padrão do macOS). No Windows/Linux, com
+    // transferência andando e a bandeja ligada, a janela vai para a bandeja em vez de fechar (desktop/bandeja.js).
+    const acao = acaoAoFechar({ plataforma: process.platform, minimizar: minimizarParaBandeja(), temBandeja: temBandeja(), transferencias: activeCount + proxyCount, saindo: quitting, confirmado: quitConfirmed })
+    if (acao === 'bandeja') {
+      event.preventDefault()
+      return irParaBandeja()
     }
-    if (activeCount > 0 && !quitConfirmed) {
+    if (acao === 'perguntar') {
       if (!confirmQuit()) return event.preventDefault()
       quitConfirmed = true
     }
+  })
+  // Minimizar: com a bandeja ligada (padrão no Windows), a janela sai da barra de tarefas e fica só o ícone da bandeja.
+  win.on('minimize', () => {
+    if (acaoAoMinimizar({ plataforma: process.platform, minimizar: minimizarParaBandeja(), temBandeja: temBandeja() }) === 'bandeja') irParaBandeja()
   })
   win.on('closed', () => {
     win = null
@@ -310,16 +326,78 @@ function createWindow() {
 function showWindow() {
   if (!engineUrl) return
   if (!win) createWindow()
+  // Volta da bandeja: de novo na barra de tarefas, visível, no tamanho de antes e na frente.
+  if (!isMac) win.setSkipTaskbar(false)
+  if (!win.isVisible()) win.show()
   if (win.isMinimized()) win.restore()
-  win.show()
   win.focus()
 }
 
+// ---- Bandeja (desktop/bandeja.js) ----
+
+const temBandeja = () => !!tray && !tray.isDestroyed()
+const minimizarParaBandeja = () => minimizarLigado(lerPrefs(app.getPath('userData')), process.platform)
+
+function criarBandeja() {
+  if (SMOKE || temBandeja()) return
+  try {
+    const i = iconeBandeja(process.platform)
+    const img = nativeImage.createFromPath(path.join(here, 'bandeja', i.arquivo))
+    if (i.template) img.setTemplateImage(true)
+    tray = new Tray(img)
+  } catch (err) {
+    // Sem área de notificação (alguns Linux): segue sem bandeja; minimizar e fechar ficam como antes.
+    console.log('[sobedesce] sem bandeja:', err?.message || err)
+    tray = null
+    return
+  }
+  // Windows: clique (ou clique duplo) abre a janela e o botão direito mostra o menu. Mac e Linux: o clique mostra o menu.
+  if (isWin) {
+    tray.on('click', () => showWindow())
+    tray.on('double-click', () => showWindow())
+  }
+  atualizarBandeja()
+}
+
+function atualizarBandeja() {
+  const chave = `${activeCount}:${proxyCount}`
+  if (!temBandeja() || trayCount === chave) return
+  trayCount = chave
+  const acoes = { abrir: () => showWindow(), sair: () => app.quit() }
+  const itens = modeloMenuBandeja(activeCount, proxyCount).map(i =>
+    i.tipo === 'separador' ? { type: 'separator' } : { label: i.rotulo, enabled: i.ativo !== false, click: i.acao ? () => acoes[i.acao]?.() : undefined },
+  )
+  tray.setContextMenu(Menu.buildFromTemplate(itens))
+  tray.setToolTip(dicaBandeja(activeCount, proxyCount))
+}
+
+/** Esconde a janela na bandeja (fora da barra de tarefas). Na primeira vez, avisa uma vez que o app continua ali. */
+function irParaBandeja() {
+  if (!win || !temBandeja()) return
+  if (!isMac) win.setSkipTaskbar(true)
+  win.hide()
+  const userData = app.getPath('userData')
+  if (!deveAvisar(lerPrefs(userData))) return
+  gravarPrefs(userData, { avisou: true })
+  if (isWin) {
+    try {
+      tray.displayBalloon({ title: AVISO_BANDEJA.titulo, content: AVISO_BANDEJA.texto, iconType: 'info' })
+      return
+    } catch {}
+  }
+  if (Notification.isSupported()) {
+    const n = new Notification({ title: AVISO_BANDEJA.titulo, body: AVISO_BANDEJA.texto, silent: true })
+    n.on('click', () => showWindow())
+    n.show()
+  }
+}
+
 function confirmQuit() {
-  const choice = dialog.showMessageBoxSync(win ?? undefined, {
+  // Janela escondida na bandeja não serve de dono (o diálogo ficaria invisível): aí ele sai solto.
+  const choice = dialog.showMessageBoxSync(win && win.isVisible() ? win : undefined, {
     type: 'question',
     message: 'Sair do SOBEDESCE?',
-    detail: `${activeCount === 1 ? 'Há 1 transferência' : `Há ${activeCount} transferências`} em andamento. Elas pausam agora e continuam de onde pararam quando você abrir o app de novo.`,
+    detail: detalheSair(activeCount, proxyCount),
     buttons: ['Sair', 'Cancelar'],
     defaultId: 1,
     cancelId: 1,
@@ -340,7 +418,7 @@ function openExternal(url) {
 app.on('before-quit', event => {
   if (quitting) return
   // Vale para ⌘Q no Mac e também para Arquivo → Sair no Windows/Linux (que não passa pelo X da janela).
-  if (activeCount > 0 && !quitConfirmed && !confirmQuit()) {
+  if (activeCount + proxyCount > 0 && !quitConfirmed && !confirmQuit()) {
     event.preventDefault()
     return
   }
@@ -348,6 +426,7 @@ app.on('before-quit', event => {
   quitting = true
   fecharNavegador()
   fecharJanelaCelular()
+  if (temBandeja()) tray.destroy()
   if (!engine) return
   event.preventDefault()
   const child = engine
@@ -391,16 +470,19 @@ ipcMain.handle('sobedesce:pick-paths', async (event, opts = {}) => {
   return res.canceled ? [] : res.filePaths
 })
 
-ipcMain.on('sobedesce:progress', (event, { fraction, activeCount: count } = {}) => {
+ipcMain.on('sobedesce:progress', (event, { fraction, activeCount: count, proxies } = {}) => {
   if (!trustedSender(event, engineUrl)) return
   activeCount = Math.max(0, Number(count) || 0)
+  proxyCount = Math.max(0, Math.min(1e6, Number(proxies) || 0))
   const owner = BrowserWindow.fromWebContents(event.sender)
   const value = typeof fraction === 'number' && Number.isFinite(fraction) ? Math.min(1, Math.max(0, fraction)) : -1
   owner?.setProgressBar(activeCount > 0 ? value : -1)
   if (isMac) app.dock?.setBadge(activeCount > 0 ? String(activeCount) : '')
+  atualizarBandeja()
   // Sem isso o sistema pode suspender o app (e a rede) no meio de uma transferência longa.
-  if (activeCount > 0 && sleepBlocker == null) sleepBlocker = powerSaveBlocker.start('prevent-app-suspension')
-  if (activeCount === 0 && sleepBlocker != null) {
+  // Proxy sendo gerado também: o computador dormir no meio para a conversão e o envio da cópia.
+  if (activeCount + proxyCount > 0 && sleepBlocker == null) sleepBlocker = powerSaveBlocker.start('prevent-app-suspension')
+  if (activeCount + proxyCount === 0 && sleepBlocker != null) {
     powerSaveBlocker.stop(sleepBlocker)
     sleepBlocker = null
   }
@@ -414,8 +496,42 @@ ipcMain.on('sobedesce:notify', (event, { title, body } = {}) => {
   n.show()
 })
 
+// Ajustes → "Minimizar para a bandeja": guardado em <userData>/bandeja.json (é do app de desktop, não do motor).
+ipcMain.handle('sobedesce:bandeja', event => {
+  if (!trustedSender(event, engineUrl)) return null
+  return { disponivel: temBandeja(), minimizar: minimizarParaBandeja(), padrao: padraoMinimizar(process.platform) }
+})
+
+ipcMain.handle('sobedesce:bandeja-definir', (event, ligado) => {
+  if (!trustedSender(event, engineUrl) || typeof ligado !== 'boolean') return null
+  gravarPrefs(app.getPath('userData'), { minimizar: ligado })
+  return { disponivel: temBandeja(), minimizar: minimizarParaBandeja(), padrao: padraoMinimizar(process.platform) }
+})
+
 ipcMain.handle('sobedesce:open-external', (event, url) => {
   if (trustedSender(event, engineUrl)) openExternal(url)
+})
+
+// "Preparar no Synquei" (src/backup/synquei.js, aberturaSynquei): só o link synquei://organizar. Sem o Synquei
+// instalado, abre a central do Absolute ZRO (página Downloads) se ela estiver no computador, senão a mesma página no
+// navegador. Devolve { aberto, para } para a tela explicar o que aconteceu (nunca diz que preparou: isso é o recibo).
+ipcMain.handle('sobedesce:abrir-synquei', async (event, link) => {
+  if (!trustedSender(event, engineUrl)) return { aberto: false, para: null }
+  const temProtocolo = (p) => {
+    try {
+      return !!app.getApplicationNameForProtocol(p)
+    } catch {
+      return false
+    }
+  }
+  const d = aberturaSynquei({ link, temSynquei: temProtocolo('synquei://'), temCentral: temProtocolo('absolutezro://') })
+  if (!d.abrir) return { aberto: false, para: null }
+  try {
+    await shell.openExternal(d.abrir)
+  } catch {
+    return { aberto: false, para: d.para === 'synquei' ? null : d.para }
+  }
+  return { aberto: d.para === 'synquei', para: d.para }
 })
 
 // Só estes endereços fixos (openExternal só abre http/https): Rede Local e Firewall nos Ajustes do Sistema.

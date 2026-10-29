@@ -1,0 +1,435 @@
+// "Entrar com Absolute ZRO" (api/zro/*) contra uma Absolute ZRO falsa local: entra e mostra a pessoa, sai, e recusa
+// state errado, nonce errado, emissor e público errados, assinatura inválida, token vencido, cookie adulterado e volta
+// para fora do site. Fechada ao público (api/_release.js): só a conta que o HUB marcou como allowed na claim
+// zro_release entra; sessão antiga, claim closed e refresh recusado viram 403. As funções rodam num servidor http de
+// verdade, como na Vercel.
+
+import { after, before, describe, test } from 'node:test'
+import assert from 'node:assert/strict'
+import http from 'node:http'
+import { iniciarZroFalsa } from './zro-falso.js'
+import { selar } from '../api/_zro.js'
+
+const CLIENTE = { clientId: 'revela-web', clientSecret: 'segredo-de-teste-da-revela' }
+// a conta do titular: na lista do produto fechado (claim zro_release do HUB)
+const LIA = { sub: 'zro-111', email: 'Lia@Produtora.com', nome: 'Lia Produtora', org: 'Produtora Lia', produtos: ['finishing', 'sobedesce'], release: { finishing: 'allowed' } }
+let zro, app, SITE
+const rotas = {}
+/** Uma sessão assinada como o callback grava (sem passar pelo login): `release` ausente = sessão de antes do gate. */
+const sessaoFalsa = (extra = {}) => selar('rv_conta', { sub: 'zro-111', nome: 'Lia Produtora', email: 'lia@produtora.com', foto: null, atualizado: null, conta: null, org: null, produtos: ['finishing'], ...extra }, 3600)
+
+before(async () => {
+  zro = await iniciarZroFalsa(CLIENTE)
+  Object.assign(process.env, { ZRO_ISSUER: zro.url, ZRO_CLIENT_ID: CLIENTE.clientId, ZRO_CLIENT_SECRET: CLIENTE.clientSecret })
+  for (const r of ['entrar', 'callback', 'eu', 'sair']) rotas[r] = (await import(`../api/zro/${r}.js`)).default
+  app = http.createServer((req, res) => {
+    const r = /^\/api\/zro\/(\w+)/.exec(req.url)
+    if (r && rotas[r[1]]) return rotas[r[1]](req, res)
+    res.statusCode = 404
+    res.end()
+  })
+  await new Promise((ok) => app.listen(0, '127.0.0.1', ok))
+  SITE = `http://127.0.0.1:${app.address().port}`
+})
+
+after(async () => {
+  await zro?.fechar()
+  await new Promise((ok) => app?.close(() => ok()))
+})
+
+const cookiesDe = (res) => new Map(res.headers.getSetCookie().map((c) => [c.split('=')[0], c.slice(c.indexOf('=') + 1).split(';')[0]]))
+const pedir = (caminho, { cookies = {}, ...init } = {}) =>
+  fetch(new URL(caminho, SITE), {
+    redirect: 'manual',
+    ...init,
+    headers: {
+      cookie: Object.entries(cookies)
+        .filter(([, v]) => v)
+        .map(([k, v]) => `${k}=${v}`)
+        .join('; '),
+      ...(init.headers || {}),
+    },
+  })
+
+/** Navegador: /api/zro/entrar → Absolute ZRO falsa → /api/zro/callback. */
+async function fluxo({ pessoa = LIA, volta, criar = false, adulterar = null, negar = false, trocarState = false, mexerNaIda = null } = {}) {
+  Object.assign(zro.estado, { pessoa, adulterar, negar })
+  const q = new URLSearchParams()
+  if (volta !== undefined) q.set('volta', volta)
+  if (criar) q.set('criar', '1')
+  const ida = await pedir(`/api/zro/entrar${q.size ? `?${q}` : ''}`)
+  assert.equal(ida.status, 302)
+  const u = new URL(ida.headers.get('location'))
+  assert.equal(u.origin, zro.url)
+  assert.equal(u.searchParams.get('code_challenge_method'), 'S256')
+  assert.equal(u.searchParams.get('redirect_uri'), `${SITE}/api/zro/callback`)
+  assert.equal(u.searchParams.get('scope'), 'openid email profile org offline_access zro.ia')
+  assert.ok(u.searchParams.get('nonce'))
+  const setCookie = ida.headers.getSetCookie()[0]
+  for (const a of ['HttpOnly', 'Secure', 'SameSite=Lax', 'Path=/api/zro', 'Max-Age=600']) assert.ok(setCookie.includes(a), `cookie da ida com ${a}`)
+  let sqZro = cookiesDe(ida).get('rv_zro')
+  if (mexerNaIda) sqZro = mexerNaIda(sqZro)
+  const z = await fetch(u, { redirect: 'manual' })
+  let vem = z.headers.get('location')
+  if (trocarState) vem = vem.replace(/state=[^&]+/, 'state=outro')
+  const res = await pedir(vem.replace(SITE, ''), { cookies: { rv_zro: sqZro } })
+  assert.equal(res.status, 303)
+  const c = cookiesDe(res)
+  assert.equal(c.get('rv_zro'), '', 'o cookie da ida é apagado na volta')
+  return { res, destino: res.headers.get('location'), conta: c.get('rv_conta'), tokens: c.get('rv_tokens') }
+}
+
+describe('entrar', () => {
+  test('entra, volta para o app e /eu mostra a pessoa (sem token da Absolute ZRO)', async () => {
+    const r = await fluxo({ volta: '/entrega#youtube' })
+    assert.equal(r.destino, '/entrega?zro=ok#youtube')
+    assert.ok(r.conta)
+    const cab = r.res.headers.getSetCookie().find((c) => c.startsWith('rv_conta='))
+    for (const a of ['HttpOnly', 'Secure', 'SameSite=Lax', 'Path=/', `Max-Age=${30 * 24 * 3600}`]) assert.ok(cab.includes(a), `sessão com ${a}`)
+    const eu = await pedir('/api/zro/eu', { cookies: { rv_conta: r.conta } })
+    assert.equal(eu.status, 200)
+    assert.equal(eu.headers.get('cache-control'), 'no-store')
+    const j = await eu.json()
+    assert.equal(j.acesso, true, 'finishing está em zro_products')
+    assert.equal(zro.estado.prompt, null, 'entrar não pede cadastro')
+    assert.deepEqual(j.pessoa, {
+      nome: 'Lia Produtora',
+      email: 'lia@produtora.com',
+      foto: null,
+      organizacao: { nome: 'Produtora Lia', papel: 'owner' },
+      produtos: ['finishing', 'sobedesce'],
+    })
+    assert.equal(j.conta, `${zro.url}/perfil`, 'onde editar: a conta Absolute ZRO')
+    const bruto = Buffer.from(r.conta.split('.')[0], 'base64url').toString()
+    assert.ok(!/id_token|access_token|"at"/.test(bruto), 'nenhum token da Absolute ZRO no cookie')
+  })
+
+  test('sem volta: cai em /lut (o HUB abre o app por aqui)', async () => {
+    const r = await fluxo()
+    assert.equal(r.destino, '/lut?zro=ok')
+  })
+
+  test('volta para fora do site é recusada', async () => {
+    for (const v of ['https://mal.exemplo/roubo', '//mal.exemplo/x', '/\\mal.exemplo', 'javascript:alert(1)']) {
+      const r = await fluxo({ volta: v })
+      assert.equal(r.destino, '/lut?zro=ok', v)
+    }
+  })
+
+  test('pessoa recusou na Absolute ZRO: volta sem sessão', async () => {
+    const r = await fluxo({ negar: true })
+    assert.equal(r.destino, '/lut?zro=recusado')
+    assert.equal(r.conta, undefined)
+  })
+})
+
+describe('conta única e direito de uso', () => {
+  test('criar conta: o mesmo fluxo com prompt=create e volta já logado', async () => {
+    const r = await fluxo({ criar: true, volta: '/entrega#youtube' })
+    assert.equal(zro.estado.prompt, 'create')
+    assert.equal(r.destino, '/entrega?zro=ok#youtube')
+    const j = await (await pedir('/api/zro/eu', { cookies: { rv_conta: r.conta } })).json()
+    assert.equal(j.ok, true)
+    assert.equal(j.acesso, true)
+  })
+
+  test('criar conta fora do endereço oficial leva o criar=1 junto', async () => {
+    const r = await pedir('/api/zro/entrar?volta=/lut&criar=1', {
+      headers: { 'x-forwarded-host': 'revela-git-teste.vercel.app', 'x-forwarded-proto': 'https' },
+    })
+    assert.equal(r.status, 307)
+    assert.equal(r.headers.get('location'), 'https://revela.absolutezro.com/api/zro/entrar?volta=%2Flut&criar=1')
+  })
+
+  test('finishing fora de zro_products: entra, mas /eu diz sem acesso e aponta a Absolute ZRO', async () => {
+    const r = await fluxo({ pessoa: { ...LIA, sub: 'zro-222', produtos: ['sobedesce'] } })
+    assert.equal(r.destino, '/lut?zro=ok')
+    const j = await (await pedir('/api/zro/eu', { cookies: { rv_conta: r.conta } })).json()
+    assert.equal(j.ok, true)
+    assert.equal(j.acesso, false)
+    assert.equal(j.ferramentas, 'https://absolutezro.com/ferramentas')
+    assert.deepEqual(j.pessoa.produtos, ['sobedesce'])
+  })
+
+  test('liberado depois: o novo login reavalia zro_products', async () => {
+    const antes = await fluxo({ pessoa: { ...LIA, produtos: [] } })
+    assert.equal((await (await pedir('/api/zro/eu', { cookies: { rv_conta: antes.conta } })).json()).acesso, false)
+    const depois = await fluxo({ pessoa: { ...LIA, produtos: ['finishing'] } })
+    assert.equal((await (await pedir('/api/zro/eu', { cookies: { rv_conta: depois.conta } })).json()).acesso, true)
+  })
+})
+
+describe('recusa', () => {
+  for (const [nome, o] of [
+    ['state errado', { trocarState: true }],
+    ['nonce errado', { adulterar: 'nonce' }],
+    ['emissor errado', { adulterar: 'emissor' }],
+    ['público errado', { adulterar: 'aud' }],
+    ['assinatura inválida', { adulterar: 'assinatura' }],
+    ['token vencido', { adulterar: 'expirado' }],
+  ]) {
+    test(nome, async () => {
+      const r = await fluxo(o)
+      assert.equal(r.conta, undefined, 'sem sessão')
+      assert.equal(r.destino, o.trocarState ? '/lut?zro=expirou' : '/lut?zro=erro')
+    })
+  }
+
+  test('cookie da ida adulterado (outra volta) não vale', async () => {
+    const mexer = (v) => {
+      const [corpo, ass] = v.split('.')
+      const d = JSON.parse(Buffer.from(corpo, 'base64url').toString())
+      d.volta = 'https://mal.exemplo'
+      return `${Buffer.from(JSON.stringify(d)).toString('base64url')}.${ass}`
+    }
+    const r = await fluxo({ mexerNaIda: mexer })
+    assert.equal(r.destino, '/lut?zro=expirou')
+    assert.equal(r.conta, undefined)
+  })
+
+  test('cookie de sessão adulterado, de outro tipo ou vencido: /eu responde 401', async () => {
+    const { conta } = await fluxo()
+    const [corpo, ass] = conta.split('.')
+    const d = JSON.parse(Buffer.from(corpo, 'base64url').toString())
+    const trocado = `${Buffer.from(JSON.stringify({ ...d, email: 'outra@pessoa.com' })).toString('base64url')}.${ass}`
+    for (const v of [trocado, `${corpo}.${'A'.repeat(43)}`, 'lixo', `${corpo}.${ass}.x`]) {
+      const r = await pedir('/api/zro/eu', { cookies: { rv_conta: v } })
+      assert.equal(r.status, 401, v)
+    }
+    // o cookie da ida é assinado com outra chave (HKDF por cookie): não serve de sessão
+    const ida = await pedir('/api/zro/entrar')
+    const r = await pedir('/api/zro/eu', { cookies: { rv_conta: cookiesDe(ida).get('rv_zro') } })
+    assert.equal(r.status, 401)
+    // segredo trocado no painel: as sessões antigas caem
+    process.env.ZRO_CLIENT_SECRET = 'outro-segredo'
+    const r2 = await pedir('/api/zro/eu', { cookies: { rv_conta: conta } })
+    process.env.ZRO_CLIENT_SECRET = CLIENTE.clientSecret
+    assert.equal(r2.status, 401)
+  })
+
+  test('callback sem cookie da ida', async () => {
+    const r = await pedir('/api/zro/callback?code=x&state=y')
+    assert.equal(r.status, 303)
+    assert.equal(r.headers.get('location'), '/lut?zro=expirou')
+  })
+})
+
+describe('sessão', () => {
+  test('/eu sem sessão: 401 com o caminho para entrar', async () => {
+    const r = await pedir('/api/zro/eu')
+    assert.equal(r.status, 401)
+    assert.equal(r.headers.get('cache-control'), 'no-store')
+    const j = await r.json()
+    assert.equal(j.entrar, '/api/zro/entrar')
+    assert.equal(j.criar, '/api/zro/entrar?criar=1')
+  })
+
+  test('sair apaga a sessão; GET não sai; outra origem não derruba', async () => {
+    assert.equal((await pedir('/api/zro/sair')).status, 405)
+    const fora = await pedir('/api/zro/sair', { method: 'POST', headers: { origin: 'https://mal.exemplo' } })
+    assert.equal(fora.status, 403)
+    const r = await pedir('/api/zro/sair', { method: 'POST', headers: { origin: SITE } })
+    assert.equal(r.status, 200)
+    assert.match(r.headers.getSetCookie()[0], /^rv_conta=; Path=\/; Max-Age=0/)
+  })
+
+  test('sem ZRO_CLIENT_ID/SECRET: /eu 503 e entrar volta ao app com aviso', async () => {
+    const { ZRO_CLIENT_ID } = process.env
+    delete process.env.ZRO_CLIENT_ID
+    try {
+      assert.equal((await pedir('/api/zro/eu')).status, 503)
+      const r = await pedir('/api/zro/entrar?volta=/lut')
+      assert.equal(r.headers.get('location'), '/lut?zro=config')
+    } finally {
+      process.env.ZRO_CLIENT_ID = ZRO_CLIENT_ID
+    }
+  })
+
+  test('endereço fora da lista: entrar manda para o site oficial antes de começar', async () => {
+    const r = await pedir('/api/zro/entrar?volta=/lut', { headers: { 'x-forwarded-host': 'revela-git-teste.vercel.app', 'x-forwarded-proto': 'https' } })
+    assert.equal(r.status, 307)
+    assert.equal(r.headers.get('location'), 'https://revela.absolutezro.com/api/zro/entrar?volta=%2Flut')
+  })
+})
+
+describe('perfil único: a conta Absolute ZRO é o perfil', () => {
+  const FOTO = 'b8a4a3c2-0f4e-4d55-9a51-1f3f0c6a2b10'
+  const eu = async (r) => {
+    const res = await pedir('/api/zro/eu', { cookies: { rv_conta: r.conta, rv_tokens: r.tokens } })
+    assert.equal(res.status, 200)
+    const c = cookiesDe(res)
+    // o navegador guarda a cópia nova (e os tokens que valem agora) para a próxima abertura
+    if (c.get('rv_conta')) r.conta = c.get('rv_conta')
+    if (c.has('rv_tokens')) r.tokens = c.get('rv_tokens')
+    return { j: await res.json(), cookies: c }
+  }
+
+  test('o login traz a foto e onde editar; os tokens vão cifrados e só para /api/zro', async () => {
+    const r = await fluxo({ pessoa: { ...LIA, foto: FOTO } })
+    const cab = r.res.headers.getSetCookie().find((c) => c.startsWith('rv_tokens='))
+    for (const a of ['HttpOnly', 'Secure', 'SameSite=Lax', 'Path=/api/zro']) assert.ok(cab.includes(a), `tokens com ${a}`)
+    assert.ok(!/at_|rt_/.test(Buffer.from(r.tokens.split('.')[1], 'base64url').toString('latin1')), 'tokens cifrados')
+    assert.ok(!/at_|rt_/.test(Buffer.from(r.conta.split('.')[0], 'base64url').toString()), 'nenhum token na sessão')
+    const { j } = await eu(r)
+    assert.equal(j.pessoa.foto, `${zro.url}/api/v1/foto/${FOTO}`)
+    assert.equal(j.conta, `${zro.url}/perfil`)
+  })
+
+  test('mudou na conta, muda no app na próxima abertura (userinfo, sem novo login)', async () => {
+    const r = await fluxo({ pessoa: { ...LIA, foto: FOTO } })
+    const trocas = zro.estado.trocas
+    const leituras = zro.estado.leituras
+    zro.estado.pessoa = { ...LIA, nome: 'Lia Martins', email: 'lia@martins.com', foto: 'c0ffee00-1111-4222-8333-444455556666', atualizado: 1_800_000_000 }
+    const { j } = await eu(r)
+    assert.equal(zro.estado.leituras, leituras + 1, 'leu o /oauth/userinfo')
+    assert.equal(zro.estado.trocas, trocas, 'sem novo login')
+    assert.equal(j.pessoa.nome, 'Lia Martins')
+    assert.equal(j.pessoa.email, 'lia@martins.com')
+    assert.equal(j.pessoa.foto, `${zro.url}/api/v1/foto/c0ffee00-1111-4222-8333-444455556666`)
+    // a cópia nova fica na sessão: vale mesmo sem a Absolute ZRO responder depois
+    const soCopia = await (await pedir('/api/zro/eu', { cookies: { rv_conta: r.conta } })).json()
+    assert.equal(soCopia.pessoa.nome, 'Lia Martins')
+    // tirou a foto: volta às iniciais
+    zro.estado.pessoa = { ...LIA, foto: null }
+    assert.equal((await eu(r)).j.pessoa.foto, null)
+    // token que a Absolute ZRO já não reconhece (a resposta seria de outra pessoa: 401): a cópia não é trocada e,
+    // fechada ao público, a sessão deixa de valer como liberada até entrar de novo
+    zro.estado.pessoa = { ...LIA, sub: 'outra-pessoa', nome: 'Outra' }
+    const res = await pedir('/api/zro/eu', { cookies: { rv_conta: r.conta, rv_tokens: r.tokens } })
+    assert.equal(res.status, 403)
+    const copia = JSON.parse(Buffer.from(cookiesDe(res).get('rv_conta').split('.')[0], 'base64url').toString())
+    assert.equal(copia.nome, 'Lia Produtora')
+    assert.equal(copia.release, null)
+  })
+
+  test('access token vencido: renova pelo refresh token (que gira) e relê', async () => {
+    const r = await fluxo({ pessoa: { ...LIA } })
+    zro.vencer()
+    zro.estado.pessoa = { ...LIA, nome: 'Lia Renovada' }
+    const antes = zro.estado.renovacoes
+    const tokensAntes = r.tokens
+    const { j } = await eu(r)
+    assert.equal(zro.estado.renovacoes, antes + 1)
+    assert.equal(j.pessoa.nome, 'Lia Renovada')
+    assert.notEqual(r.tokens, tokensAntes, 'refresh token novo gravado')
+    // a próxima abertura usa o access token novo, sem renovar de novo
+    await eu(r)
+    assert.equal(zro.estado.renovacoes, antes + 1)
+  })
+
+  test('acesso removido no Perfil (refresh recusado): esquece os tokens e, fechada ao público, a cópia deixa de valer (403)', async () => {
+    const r = await fluxo({ pessoa: { ...LIA } })
+    zro.vencer()
+    zro.estado.recusarRenovacao = true
+    try {
+      const res = await pedir('/api/zro/eu', { cookies: { rv_conta: r.conta, rv_tokens: r.tokens } })
+      assert.equal(res.status, 403)
+      const c = cookiesDe(res)
+      assert.equal(c.get('rv_tokens'), '', 'tokens apagados')
+      // a cópia regravada já não diz "liberada": sozinha, continua 403 até a pessoa entrar de novo
+      assert.ok(c.get('rv_conta'))
+      assert.equal((await pedir('/api/zro/eu', { cookies: { rv_conta: c.get('rv_conta') } })).status, 403)
+      assert.deepEqual(await res.json(), { ok: false, fechado: true, hub: 'https://absolutezro.com/inicio', pagina: '/em-desenvolvimento' })
+    } finally {
+      zro.estado.recusarRenovacao = false
+    }
+  })
+
+  test('foto de fora da Absolute ZRO não entra (fica nas iniciais)', async () => {
+    const r = await fluxo({ pessoa: { ...LIA, foto: FOTO }, adulterar: 'foto-fora' })
+    assert.equal((await (await pedir('/api/zro/eu', { cookies: { rv_conta: r.conta } })).json()).pessoa.foto, null)
+  })
+
+  test('tokens adulterados não valem; sair revoga o refresh token e apaga os dois cookies', async () => {
+    const r = await fluxo({ pessoa: { ...LIA } })
+    const [iv, corpo, tag] = r.tokens.split('.')
+    const mexido = `${iv}.${corpo.slice(0, -2)}${corpo.endsWith('AA') ? 'BB' : 'AA'}.${tag}`
+    const leituras = zro.estado.leituras
+    const res = await pedir('/api/zro/eu', { cookies: { rv_conta: r.conta, rv_tokens: mexido } })
+    assert.equal(res.status, 200)
+    assert.equal(zro.estado.leituras, leituras, 'sem tokens válidos, não relê')
+    const s = await pedir('/api/zro/sair', { method: 'POST', headers: { origin: SITE }, cookies: { rv_conta: r.conta, rv_tokens: r.tokens } })
+    assert.equal(s.status, 200)
+    assert.match(zro.estado.revogados.at(-1) || '', /^rt_/)
+    assert.ok(s.headers.getSetCookie().some((c) => /^rv_tokens=; Path=\/api\/zro; Max-Age=0/.test(c)))
+  })
+})
+
+describe('fechada ao público: o gate de lançamento (api/_release.js)', () => {
+  const FECHADO = { ok: false, fechado: true, hub: 'https://absolutezro.com/inicio', pagina: '/em-desenvolvimento' }
+
+  test('conta allowed na claim zro_release: entra e /eu responde 200', async () => {
+    const r = await fluxo()
+    assert.equal(r.destino, '/lut?zro=ok')
+    assert.ok(r.conta)
+    assert.equal((await pedir('/api/zro/eu', { cookies: { rv_conta: r.conta } })).status, 200)
+  })
+
+  test('sem a claim (HUB sem o gate) ou com closed: a sessão não nasce e a pessoa vai para "Em desenvolvimento"', async () => {
+    for (const release of [undefined, { finishing: 'closed' }, { finishing: 'released' }, { 'ai-edit': 'allowed' }]) {
+      const r = await fluxo({ pessoa: { ...LIA, release } })
+      assert.equal(r.destino, '/em-desenvolvimento', JSON.stringify(release))
+      assert.ok(!r.conta, 'sem sessão')
+      assert.ok(!r.tokens, 'sem tokens')
+    }
+  })
+
+  test('HUB com o gate ligado: conta fora da lista nem recebe código (access_denied)', async () => {
+    zro.estado.gate = 'finishing'
+    try {
+      const r = await fluxo({ pessoa: { ...LIA, release: { finishing: 'closed' } } })
+      assert.equal(r.destino, '/lut?zro=recusado')
+      assert.equal(r.conta, undefined)
+      assert.equal((await fluxo()).destino, '/lut?zro=ok')
+    } finally {
+      zro.estado.gate = null
+    }
+  })
+
+  test('sessão antiga (de antes do gate) ou com closed: /eu 403 com a volta ao HUB, mesmo com o cookie válido', async () => {
+    for (const extra of [{}, { release: null }, { release: 'closed' }, { release: 'released' }, { release: 'sim' }]) {
+      const r = await pedir('/api/zro/eu', { cookies: { rv_conta: sessaoFalsa(extra) } })
+      assert.equal(r.status, 403, JSON.stringify(extra))
+      assert.equal(r.headers.get('cache-control'), 'no-store')
+      assert.deepEqual(await r.json(), FECHADO)
+    }
+    assert.equal((await pedir('/api/zro/eu', { cookies: { rv_conta: sessaoFalsa({ release: 'allowed' }) } })).status, 200)
+  })
+
+  test('liberação tirada no HUB: a releitura do perfil traz closed e a abertura seguinte é 403', async () => {
+    const r = await fluxo()
+    zro.estado.pessoa = { ...LIA, release: { finishing: 'closed' } }
+    const res = await pedir('/api/zro/eu', { cookies: { rv_conta: r.conta, rv_tokens: r.tokens } })
+    assert.equal(res.status, 403)
+    const nova = cookiesDe(res).get('rv_conta')
+    assert.ok(nova && nova !== r.conta)
+    assert.equal((await pedir('/api/zro/eu', { cookies: { rv_conta: nova } })).status, 403)
+  })
+
+  test('HUB com o gate ligado e a conta tirada da lista: userinfo e refresh recusados viram 403 e tokens apagados', async () => {
+    const r = await fluxo()
+    zro.estado.gate = 'finishing'
+    zro.estado.pessoa = { ...LIA, release: { finishing: 'closed' } }
+    try {
+      const res = await pedir('/api/zro/eu', { cookies: { rv_conta: r.conta, rv_tokens: r.tokens } })
+      assert.equal(res.status, 403)
+      assert.equal(cookiesDe(res).get('rv_tokens'), '')
+    } finally {
+      zro.estado.gate = null
+    }
+  })
+
+  test('RELEASE=released: sessão sem a claim entra; closed na claim continua fora (os dois lados têm que abrir)', async () => {
+    process.env.RELEASE = 'released'
+    try {
+      assert.equal((await pedir('/api/zro/eu', { cookies: { rv_conta: sessaoFalsa() } })).status, 200)
+      assert.equal((await pedir('/api/zro/eu', { cookies: { rv_conta: sessaoFalsa({ release: 'released' }) } })).status, 200)
+      assert.equal((await pedir('/api/zro/eu', { cookies: { rv_conta: sessaoFalsa({ release: 'closed' }) } })).status, 403)
+      const r = await fluxo({ pessoa: { ...LIA, release: undefined } })
+      assert.equal(r.destino, '/lut?zro=ok')
+      assert.ok(r.conta)
+    } finally {
+      delete process.env.RELEASE
+    }
+  })
+})

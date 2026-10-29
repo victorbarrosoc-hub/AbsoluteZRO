@@ -1233,6 +1233,61 @@ textarea {
   animation: pulse 1.2s ease-in-out infinite;
 }
 
+/* Aviso de versão nova: uma pílula na barra (acima dos medidores) que abre o cartão num balão ao lado. */
+.update-pilula {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--down) 26%, var(--hairline));
+  background: color-mix(in srgb, var(--down) 7%, var(--surface));
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  animation: update-in 0.35s var(--ease);
+  transition: background-color 0.15s;
+}
+.update-pilula:hover,
+.update-pilula.is-open {
+  background: color-mix(in srgb, var(--down) 13%, var(--surface));
+}
+.update-pilula .icon {
+  margin-left: auto;
+  flex: none;
+  color: var(--text-3);
+}
+.update-pilula-txt {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.update-ponto {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--down);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--down) 22%, transparent);
+}
+.update-pilula.is-erro .update-ponto {
+  background: var(--warn);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--warn) 22%, transparent);
+}
+.update-balao {
+  width: 280px;
+  animation: pop 0.16s var(--ease);
+}
+.update-balao .update-card {
+  background: var(--menu-bg);
+  box-shadow: var(--shadow-lg);
+  animation: none;
+}
 /* Aviso de versão nova (acima dos medidores). Discreto: some com "Depois", não cobre nada. */
 .update-card {
   padding: 11px 12px 12px;
@@ -2726,6 +2781,41 @@ button.crumb:hover {
 }
 .input::placeholder {
   color: var(--text-3);
+}
+/* Campo de senha com o olho dentro, à direita (components/senha.js) */
+.senha-campo {
+  position: relative;
+  display: block;
+}
+.senha-campo > .input {
+  padding-right: 40px;
+}
+.senha-campo > input::-ms-reveal {
+  display: none;
+}
+.senha-olho {
+  position: absolute;
+  top: 50%;
+  right: 3px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.senha-olho:hover,
+.senha-olho[aria-pressed='true'] {
+  color: var(--text);
+}
+.senha-olho:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
 }
 
 /* seletores */
@@ -11526,6 +11616,21 @@ button.tree-twisty:hover {
     transform: translateY(8px);
   }
 }
+/* vindo de outro item da barra: desliza do lado para onde a pessoa foi (o Synquei faz igual) */
+.tela-entra[data-dir='frente'] {
+  animation: tela-entra-lado 0.38s var(--ease) backwards;
+  --tela-x: 22px;
+}
+.tela-entra[data-dir='volta'] {
+  animation: tela-entra-lado 0.38s var(--ease) backwards;
+  --tela-x: -22px;
+}
+@keyframes tela-entra-lado {
+  from {
+    opacity: 0;
+    transform: translateX(var(--tela-x));
+  }
+}
 .nav-item {
   position: relative;
 }
@@ -11553,10 +11658,132 @@ button.tree-twisty:hover {
 .nav-baixo + .sidebar-foot {
   margin-top: 10px;
 }
+/* A família Absolute ZRO (components/sidebar.js): uma linha com ícone de grade; a lista abre num balão. */
+.nav-familia {
+  position: relative;
+  margin-top: 10px;
+}
+.nav-familia-botao {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text-2);
+  cursor: pointer;
+  text-align: left;
+}
+.nav-familia-botao:hover,
+.nav-familia-botao.is-open {
+  color: var(--text);
+}
+.nav-familia-botao.is-open {
+  background: var(--fill-2);
+}
+.nav-familia-txt {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nav-familia-seta {
+  margin-left: auto;
+  flex: none;
+}
+/* Balão ao lado da barra (components/balao.js): posição fixa, nunca cortado pela barra. */
+.menu.balao,
+.balao {
+  position: fixed;
+  z-index: 70;
+  transform-origin: left center;
+}
+.menu.familia-balao {
+  bottom: auto;
+  width: 232px;
+  background: var(--menu-bg);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.familia-balao .menu-item .icon:last-child {
+  color: var(--text-3);
+}
+.nav-app {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border-radius: 5px;
+  object-fit: contain;
+}
 @media (prefers-reduced-motion: reduce) {
   .tela-entra,
-  .nav-item.is-on::before {
+  .nav-item.is-on::before,
+  .update-pilula,
+  .update-balao,
+  .menu.balao {
     animation: none;
+  }
+}
+/* Janela baixa (Windows com 125%: 1366×768 vira 614 px; 1280×720 vira 576 px): itens mais baixos e os medidores
+   numa faixa só, para a navegação inteira e a conta caberem sem rolagem. Abaixo de 540 px a barra inteira rola. */
+@media (max-height: 700px) {
+  .sidebar {
+    padding-top: 12px;
+    padding-bottom: 10px;
+  }
+  .sidebar-brand {
+    padding-bottom: 12px;
+  }
+  .nav-item {
+    height: 30px;
+  }
+  .nav-familia {
+    margin-top: 6px;
+  }
+  .nav-baixo {
+    padding-top: 6px;
+  }
+  .nav-baixo + .sidebar-foot {
+    margin-top: 8px;
+  }
+  .sidebar-foot {
+    gap: 6px;
+  }
+  .update-pilula {
+    height: 30px;
+  }
+  .meters {
+    flex-flow: row wrap;
+    gap: 0 10px;
+    padding: 5px 10px;
+  }
+  .meters .level {
+    flex: 1;
+    min-width: 0;
+    grid-template-columns: 12px auto;
+    height: 20px;
+  }
+  .meters .level-leds {
+    display: none;
+  }
+  .meters .level-num {
+    min-width: 0;
+    text-align: left;
+  }
+  .meters .conn-lost {
+    width: 100%;
+    padding-bottom: 2px;
+  }
+  .account-chip {
+    padding: 4px 8px;
+  }
+}
+@media (max-height: 540px) {
+  .sidebar {
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .sidebar::-webkit-scrollbar {
+    display: none;
   }
 }
 
@@ -11601,6 +11828,33 @@ button.tree-twisty:hover {
 }
 .pn-ola .page-lead {
   margin: 0;
+}
+
+/* a Z, a IA da Absolute ZRO, na aba própria (components/z.js): a primeira do menu e a tela de entrada. O painel ocupa
+   a janela; o botão de entrar ou reconectar só aparece sem o token da Z. */
+.page-z {
+  padding-top: 24px;
+  padding-bottom: 24px;
+}
+.pn-z {
+  display: grid;
+  gap: 12px;
+}
+.pn-z-painel {
+  --zro-ia-altura: max(460px, calc(100vh - 96px));
+  min-height: var(--zro-ia-altura);
+}
+.pn-z-acao {
+  display: flex;
+  justify-content: center;
+}
+.pn-z-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 /* cartões de resumo */
@@ -12091,6 +12345,104 @@ button.pn-cartao:hover .pn-seta {
   .pn-barra i,
   .pn-vazio-arte,
   .pn-enviar::after {
+    animation: none;
+  }
+}
+
+/* ───── Converter com a Revela (components/revela.js): cartões, um número, um selo ───── */
+.rv-dialog .modal-icon {
+  background: none;
+  width: 36px;
+  height: 36px;
+}
+.rv-marca {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+}
+.rv-andamento {
+  display: grid;
+  gap: 12px;
+  padding: 8px 0 4px;
+}
+.rv-fase {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+}
+.rv-pct {
+  margin-left: auto;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.rv-pronto {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 10px 0 4px;
+  text-align: center;
+}
+.rv-ok {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--ok);
+  color: #fff;
+  animation: rv-pop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.rv-nome {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+}
+.rv-fichas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+.rv-fichas span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+.rv-avisos {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  color: var(--warn-text, #b25000);
+  font-size: 12.5px;
+  text-align: left;
+}
+.rv-avisos li {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+@keyframes rv-pop {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rv-ok {
     animation: none;
   }
 }

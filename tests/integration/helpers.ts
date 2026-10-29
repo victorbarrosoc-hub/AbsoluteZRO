@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { authenticate, signUp, type Authenticated } from '@zro/auth'
-import { assignPlan, grantEntitlement } from '@zro/billing'
+import { assignPlan, grantEntitlement, grantReleaseAccess } from '@zro/billing'
 import { createOrganization } from '@zro/core'
 import type { Database } from '@zro/db'
 
@@ -38,8 +38,11 @@ export async function newOrgWithOwner(db: Database, label = 'org', opts: { freeP
   return { ...u, orgId: org.id, auth: await refresh(db, u.token) }
 }
 
-export async function planId(db: Database, code: string, version = 1): Promise<string> {
-  const [p] = await db.sql`select id from zro.plans where code = ${code} and version = ${version}`
+/** Sem versão: a versão ativa mais nova (a que está à venda). */
+export async function planId(db: Database, code: string, version?: number): Promise<string> {
+  const [p] = version
+    ? await db.sql`select id from zro.plans where code = ${code} and version = ${version}`
+    : await db.sql`select id from zro.plans where code = ${code} order by (status = 'active') desc, version desc limit 1`
   return p!.id as string
 }
 
@@ -60,6 +63,26 @@ export async function giveLimits(db: Database, orgId: string, productId: string,
   const adminId = await admin(db)
   return db.asSystem('teste: limites', (tx) =>
     grantEntitlement(tx, { userId: adminId, reason: 'limites de teste' }, { orgId, productId, features: null, limits, endsAt: null }),
+  )
+}
+
+/**
+ * Gate de lançamento (ADR 0023): põe a conta na lista de um produto fechado (NOSSOM, AEON, Revela, Carro). Nos testes,
+ * é como a conta do proprietário (Carro) ou um tester entram; sem isto, produto fechado nega qualquer pessoa.
+ */
+export async function allowRelease(
+  db: Database,
+  productId: string,
+  userId: string,
+  opts: { kind?: 'owner' | 'internal' | 'tester'; channels?: ('web' | 'desktop' | 'api' | 'download' | 'sso')[]; endsAt?: Date | null } = {},
+) {
+  const adminId = await admin(db)
+  return db.asSystem('teste: acesso a produto fechado', (tx) =>
+    grantReleaseAccess(
+      tx,
+      { userId: adminId, reason: 'teste' },
+      { productId, userId, kind: opts.kind ?? 'tester', channels: opts.channels ?? ['web', 'desktop', 'api', 'download', 'sso'], endsAt: opts.endsAt ?? null },
+    ),
   )
 }
 

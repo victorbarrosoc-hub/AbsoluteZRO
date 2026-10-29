@@ -1,8 +1,10 @@
-import { test, expect } from './fixtures';
+import { test, expect, onlyWhenOpen } from './fixtures';
 import AxeBuilder from '@axe-core/playwright';
 test('human voice demo plays real files, preserves time on A/B, seeks and controls volume', async ({
   page,
 }) => {
+  // Descreve o produto aberto (entrar, assinar, home com ações, /apps).
+  onlyWhenOpen();
   await page.goto('/');
   await page.getByRole('button', { name: 'Ouvir demonstração', exact: true }).click();
   await expect(
@@ -70,12 +72,14 @@ test('human voice demo plays real files, preserves time on A/B, seeks and contro
       (window as any).__demoAudio = el;
     });
   await page.locator('.voice-player-try').click();
-  await expect(page).toHaveURL(/\/studio$/);
+  await expect(page).toHaveURL(/\/studio\/z$/);
   expect(await page.evaluate(() => (window as any).__demoAudio.paused)).toBe(true);
 });
 test('immersive homepage fits desktop and mobile, respects reduced motion and remains accessible', async ({
   page,
 }) => {
+  // Descreve o produto aberto (entrar, assinar, home com ações, /apps).
+  onlyWhenOpen();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   for (const width of [1440, 1000, 390]) {
@@ -116,6 +120,8 @@ test('immersive homepage fits desktop and mobile, respects reduced motion and re
 test('current plan is highlighted under the name and desktop update completes without a website download', async ({
   page,
 }) => {
+  // Descreve o produto aberto (entrar, assinar, home com ações, /apps).
+  onlyWhenOpen();
   await page.addInitScript(() => {
     let state = { status: 'available', version: '0.1.0', nextVersion: '0.2.0', progress: 0 };
     let listener: (state: unknown) => void = () => {};

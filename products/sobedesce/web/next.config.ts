@@ -23,15 +23,21 @@ const securityHeaders = [
 // blob:). Vídeo, áudio e foto em tamanho real passam pelo service worker em /app/stream/ (mesma origem: 'self').
 // Em desenvolvimento, ?dev_api= aponta o Drive para um Drive falso em 127.0.0.1/localhost.
 const appConnect = ["'self'", "https://www.googleapis.com", "https://*.googleusercontent.com"];
-const appImg = ["'self'", "data:", "blob:", "https://*.googleusercontent.com"];
+// A Z (IA da Absolute ZRO, components/z.js): o script do painel e as imagens do Z vêm de absolutezro.com; a conversa
+// passa pelo próprio site (/api/zro/ia), então o connect-src não muda.
+const ZRO = "https://absolutezro.com";
+const appImg = ["'self'", "data:", "blob:", "https://*.googleusercontent.com", ZRO];
 if (process.env.NODE_ENV !== "production") {
   appConnect.push("http://127.0.0.1:*", "http://localhost:*");
   appImg.push("http://127.0.0.1:*", "http://localhost:*");
 }
 const appCsp = [
   "default-src 'self'",
-  "script-src 'self'",
-  "style-src 'self'",
+  // 'wasm-unsafe-eval' e worker-src blob:: o "Converter com a Revela" decodifica ProRes em WebAssembly, em workers
+  // criados pela própria biblioteca (lib/revela.js, vendor/mediabunny*). Nenhum script de fora entra por aqui.
+  "script-src 'self' 'wasm-unsafe-eval' https://absolutezro.com",
+  // 'unsafe-inline' só no estilo: o painel da Z desenha num shadow root com <style> próprio. Estilo não executa código.
+  "style-src 'self' 'unsafe-inline'",
   `connect-src ${appConnect.join(" ")}`,
   `img-src ${appImg.join(" ")}`,
   "media-src 'self'",
@@ -40,7 +46,7 @@ const appCsp = [
   "frame-src https://*.google.com https://*.googleusercontent.com",
   "font-src 'self'",
   "manifest-src 'self'",
-  "worker-src 'self'",
+  "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'none'",
   "form-action 'none'",

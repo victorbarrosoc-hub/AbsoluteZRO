@@ -34,7 +34,7 @@ test('Synquei fora de zro_products: aviso curto e Ver na Absolute ZRO', () => {
   assert.equal(C.acesso, false)
   const card = cartaoConta()
   assert.match(card, /Sua conta Absolute ZRO ainda não tem acesso ao Synquei\./)
-  assert.ok(card.includes('href="https://absolutezro.vercel.app/ferramentas"'))
+  assert.ok(card.includes('href="https://absolutezro.com/ferramentas"'))
   assert.match(card, />Ver na Absolute ZRO</)
   assert.match(card, /data-act="conta-sair"/, 'dá para sair e trocar de conta')
   assert.ok(!card.includes('Produtora Lia'), 'a parte de conta fica bloqueada')
@@ -53,4 +53,29 @@ test('Synquei liberado: mostra a pessoa e a organização', () => {
   assert.match(card, /Produtora Lia/)
   assert.match(linhaConta(), /Produtora Lia/)
   assert.ok(!linhaConta().includes('Sem acesso'))
+})
+
+test('perfil único: foto da conta Absolute ZRO no avatar; sem foto, as iniciais', () => {
+  const FOTO = 'https://absolutezro.com/api/v1/foto/3f1c2a9e-0000-4000-8000-000000000001'
+  lerEu(200, { ok: true, acesso: true, pessoa: { ...LIA, foto: FOTO } })
+  for (const html of [linhaConta(), cartaoConta()]) {
+    assert.ok(html.includes(`<img src="${FOTO}"`), 'a foto da conta')
+    assert.match(html, /class="conta-av com-foto"[^>]*>LP</, 'iniciais por baixo, se a foto falhar')
+  }
+  lerEu(200, { ok: true, acesso: true, pessoa: LIA })
+  assert.ok(!linhaConta().includes('<img'))
+  assert.match(linhaConta(), /class="conta-av"[^>]*>LP</)
+  // foto que não é https não vira <img>
+  lerEu(200, { ok: true, acesso: true, pessoa: { ...LIA, foto: 'javascript:alert(1)' } })
+  assert.ok(!cartaoConta().includes('<img'))
+})
+
+test('perfil único: nome, e-mail e foto se editam na conta Absolute ZRO, fora do app', () => {
+  lerEu(200, { ok: true, acesso: true, pessoa: { ...LIA, conta: 'https://absolutezro.com/perfil' } })
+  const card = cartaoConta()
+  assert.match(card, /<a class="btn btn-secondary btn-sm" href="https:\/\/absolutezro\.com\/perfil" target="_blank" rel="noopener">.*Editar na conta Absolute ZRO<\/a>/)
+  assert.ok(!/<input/.test(card), 'nenhum campo de nome, e-mail ou foto no Synquei')
+  // sem zro_conta (sessão antiga) ou endereço estranho: o Perfil da Absolute ZRO
+  lerEu(200, { ok: true, acesso: false, pessoa: { ...LIA, conta: 'javascript:alert(1)' } })
+  assert.ok(cartaoConta().includes('href="https://absolutezro.com/perfil" target="_blank"'))
 })

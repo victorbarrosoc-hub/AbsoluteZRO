@@ -23,7 +23,7 @@ const {servir,URL}=require('./_servir.js');
 const TELA=844;
 
 (async()=>{
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
   const ctx=await b.newContext({viewport:{width:390,height:TELA},deviceScaleFactor:2,isMobile:true,hasTouch:true});
   const p=await ctx.newPage();
   const errs=[]; p.on('pageerror',e=>errs.push('ERR: '+e.message));

@@ -431,6 +431,8 @@ export async function planDownloads({ drive, accountId, items, destDir, conflict
       throw err
     }
     picked.folders.push(toNFC(item.name))
+    picked.folderIds ??= []
+    picked.folderIds.push(item.isShortcut ? item.shortcutTargetId || null : item.id || null)
     const wantedTop = safeLocalName(item.name, platform)
     const top = await placer.topDir(root, wantedTop)
     const topNote = top.renamed ? NOTE.topDup(wantedTop, top.name) : null
@@ -480,6 +482,8 @@ export async function planDownloads({ drive, accountId, items, destDir, conflict
     }
   }
   const batch = newBatch(id, 'download', selectionLabel(picked.folders, picked.files), accountId, now)
+  // Uma pasta do Drive baixada inteira: de onde veio (só id e nome; vai no manifesto do "Preparar no Synquei").
+  if (picked.folders.length === 1 && !picked.files.length) batch.origem = { pastaId: picked.folderIds?.[0] || null, pasta: picked.folders[0] }
   return { batch, records, skipped, warnings, totals }
 }
 

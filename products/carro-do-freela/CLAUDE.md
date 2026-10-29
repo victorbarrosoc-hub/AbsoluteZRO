@@ -59,6 +59,11 @@ mudou de significado — hoje ela descreve um lugar que está vazio de propósit
    legal) e o que sobe no convite de lançamento (é dado pessoal). Tirar o
    selo também seria apresentar gente fictícia como real num domínio
    público — isso não se faz sem conversar.
+   **27/out, pedido do Victor:** o selo saiu da **barra de cima** (home e
+   topo do app). A prévia continua se declarando, e abrindo o mesmo resumo,
+   em três lugares: o **"Prévia" no pé da home** (`.fim-prev`), a etiqueta
+   no topo do **menu** (`.mn-tag`) e o "prévia" do **rodapé do app**. As
+   suítes cobram esses lugares e cobram que a barra de cima fique sem selo.
 
 Se for gerar imagem, texto de exemplo ou número: **derive dos dados ou deixe
 claro que é demonstração** (desde 17/out · 5, "deixar claro" é o selo
@@ -98,23 +103,251 @@ arquivado. Três consequências que valem para toda leva daqui em diante:
 
 Tudo — envs, Root Directory, fluxo — em `ORIGEM.md`.
 
+## 26/out — a família Absolute ZRO no menu
+
+Pedido do titular, do bloco que ele gostou no menu do Revela: ícone + nome de
+cada app da família, levando ao app, em ordem alfabética (pedido do titular,
+26/out): Absolute ZRO, Nossom, Revela, Sobedesce, Synquei, TPEasy — igual na
+lateral e na gaveta. O Carro do Freela fica de fora (é onde a pessoa
+está); o AI Edit também (em desenvolvimento). No computador o bloco mora no
+pé da lateral (`.ladofam`, vira só ícone com a lateral recolhida); no
+celular, na gaveta (`#g-fam`, escondido no computador para não repetir).
+Não são `.tab` nem `.gitem`: não abrem tela daqui, e as suítes contam essas
+classes. Os ícones são cópias em `src/midia/familia-*` (cada app publica
+sozinho; nada de buscar no domínio de outro), citados no template por
+`"midia:<nome>"` — o `build.js` agora resolve esse marcador também no
+template, e nome que falta reprova o build. SVG ganhou tipo em
+`test/_servir.js` e `src/servir-saida.js`, e entra na conferência de mídia
+citada do `vercel-build.js`.
+
+## 27/out · 2 — os balões: o que espera a pessoa em cada aba (`test/baloes.js`)
+
+Pedido do titular para o ecossistema (o SOBEDESCE e o HUB já tinham). `contarPendencias(estado)` é PURA e decide;
+`pendenciasAbas()` lê as variáveis; `pintarBaloes()` desenha na lateral, na doca/barra de baixo e na gaveta. Só conta
+o que a tela já pede com botão: **Propostas** = o "esperando você" de sempre (consulta de job + oferta no brechó);
+**Jobs** = contrato que falta EU assinar, entrega que quem contrata precisa conferir, job liberado sem a minha
+avaliação (de `linhaContrato`, só com `faseTem(2)`); **Brechó** = pedido de aluguel numa peça minha. O resto não
+ganha balão. ⚠️ `#g-msg-bg` (conversa não lida na gaveta de Propostas) e `#bg-gui` continuam como estavam. ⚠️ O
+`title` original do item (`Meus jobs`) é guardado em `data-tit-orig` e volta quando o balão apaga.
+
+## 29/out — o banco do Carro: perfil e inventário do freela (`db/`, `api/zro/_dados.js`, `test/api/banco*.test.js`)
+
+Pedido do titular: *"ligar o banco de dados do Carro do Freela"*, começando pelo que o ecossistema precisa — o perfil do
+freela e o equipamento dele, que vai para o Maestro. Visão geral, tabelas e rotas no README (seção "Banco de dados");
+passos de produção em `db/PRODUCAO.md`. O que não se lê de lá:
+
+- ⚠️ **Um schema e um papel, como manda a raiz**: Supabase AbsoluteZRO, schema `carro_do_freela`, login `carro_do_freela` (dono, migra) e
+  `carro_do_freela_app` sem login (RLS). Nunca `zro`. O login não tem CREATEROLE: em produção `carro_do_freela_app` nasce pelo `postgres`
+  (o `db/PRODUCAO.md` diz os comandos). ⚠️ **O schema `carro_do_freela` JÁ EXISTE em produção** com `cadastros`,
+  `leads` e `passos` do app antigo (dono `postgres`, `anon` só INSERT; o navegador escreve pela chave anon). A 0000
+  não toca nelas nem no `usage` do `anon`: a suíte reproduz esse schema, roda a migração com um login sem
+  superusuário dono do schema e confere tabelas, colunas, permissões, políticas e linhas antes e depois.
+- ⚠️ **Migração aplicada nunca é editada.** O diário (`carro_do_freela.__migracoes`) guarda o sha256; o migrador recusa a
+  editada, a sumida e a nova com número menor que a última. Mudou o banco? Arquivo novo. A 0000 ainda não foi aplicada
+  em produção em 29/out, mas a partir do primeiro build com `CARRO_DATABASE_URL` ela congela.
+- ⚠️ **As rotas moram em `/api/zro/` por causa do cookie**: `cdf_hub` é `Path=/api/zro`, e sem ele não há claim relida
+  (o portão do lançamento). Rota de dados fora desse caminho seria rota sem portão. `sessaoConferida()` (em `_zro.js`)
+  é a MESMA régua do `/eu` e do `/enviar`.
+- ⚠️ **O `sub` nunca vem do pedido**; vem da sessão, vai para `set_config('carro_do_freela.sub', …, true)` e a política RLS faz o
+  resto. Campo desconhecido é recusado (não ignorado): é assim que `telefone`, `whatsapp`, `cpf`, `email` voltam com
+  `proibido`, e texto com jeito de número volta com `telefone` (`db/regras.js` e `carro_do_freela.tem_telefone` no banco).
+- ⚠️ **Funções e nichos são catálogo** (regra "ninguém digita"): funções da base (`src/crew.json`), nichos de `TIPOS`.
+  A suíte confere que o servidor e o template têm as mesmas listas.
+- ⚠️ **A fila é escrita pelo BANCO, não pela API**: gatilho `security definer` grava o inventário inteiro a cada
+  mudança, um retrato por transação. `carro_do_freela_app` não lê nem escreve a fila. `criado_em` usa `clock_timestamp()`: com
+  `now()` dois itens da mesma transação saíam em ordem aleatória (a suíte pegou, 1 em 3).
+- ⚠️ **Sincronização desligada**: `CARRO_SYNC_ATIVO=1` liga o publicador, e não se liga antes de a rota
+  `freela.inventario.atualizado` sair de `DISABLED_ROUTES` no HUB e de o HUB ter o endpoint de entrada (hoje não tem;
+  o padrão do publicador é `<ZRO_ISSUER>/api/v1/carro-do-freela/inventario`, trocável por `CARRO_SYNC_URL`). Falha de
+  envio vai para `revisao`, nunca para nova tentativa sozinha.
+- **Na tela**: bloco `#cfb` (prefixo `cfb-`, conferido por grep antes de nascer) dentro de "Meu perfil", criado por
+  `cfbPintar()` no `show("meu")` e na volta do `/eu`. Só no domínio, com `zroPodeEnviar()`. Banco desligado ou sessão
+  recusada: o bloco some. ⚠️ Código só com `var`/`function` no topo (o TDZ de 19/out · 2). Um sólido por painel:
+  "Salvar perfil" é o sólido; "Adicionar equipamento" é fantasma.
+- **Testes**: `npm run test:banco` (Postgres; a parte de tela pula sem Playwright, dizendo por quê). O CI do Carro
+  ganhou um Postgres nos dois jobs. `npm run test:api` e a bateria seguem iguais.
+- **Dependência nova**: `pg` (a primeira de execução). As duas rotas de dados vão empacotadas pelo esbuild no
+  `vercel-build`; as outras funções continuam copiadas como eram.
+
+## 26/out · 2 — leve sem perder qualidade: o HTML que carrega só a página
+
+Pedido do Victor: *"deixar a plataforma leve sem perder qualidade de imagem"*
+— e a regra dele, que vale para as próximas levas: **a qualidade não pode cair,
+tem que subir; a leveza vem da arquitetura, nunca de comprimir mais**. Na
+dúvida entre peso e qualidade, qualidade, e pergunta para ele. (Ele aprovou o
+peso do vídeo abaixo e disse não a qualquer redução de qualidade.)
+
+### O que mudou no carregamento
+
+| | antes | agora |
+|---|---|---|
+| `index.html` | 2,6 MB (script, CSS, fontes e 108 imagens em base64 dentro) | **241 KB** só de página |
+| script | dentro do HTML, sem cache | `m/app.<hash>.js` (720 KB, esbuild), cache longo |
+| CSS | dentro do HTML | `m/app.<hash>.css` (309 KB), cache longo |
+| fontes | 280 KB de base64 no CSS | 2 `.woff2` (a Schibsted é variável: as espessuras são o MESMO arquivo) |
+| rostos (103) e quadros de portfólio (4) | base64 nos JSON | o build tira para `m/` (mesmos bytes) |
+| fases | uma cópia do app inteiro cada (`public/` com 70 MB) | as seis usam o MESMO script e a mesma folha; a fase vem de `<meta name="cdf-fase">` |
+
+Medido num servidor que comprime como a Vercel, celular em 4G simulado (1,6
+Mb/s, 150 ms) com CPU 4× mais lenta:
+
+| celular 4G | antes | agora |
+|---|---|---|
+| 1ª visita, baixado (sem vídeo) | 1,7 MB | 1,37 MB |
+| 1ª visita, LCP | 7,3 s | 4,1 s |
+| 2ª visita, baixado | 852 KB | 173 KB |
+| 2ª visita, LCP | 5,9 s | 1,6 s |
+
+- ⚠️ **A ORDEM NÃO MUDOU**: a folha no `<head>` bloqueia a pintura como o
+  `<style>` bloqueava, e o `<script src>` está no MESMO lugar do script
+  embutido (fim do corpo, sem defer) — roda no mesmo ponto do parse.
+- ⚠️ **O pôster da carona é o LCP**, e é pedido já no HTML: `<link
+  rel=preload as=image fetchpriority=high imagesrcset=…>`. O `imagesrcset`
+  escolhe o degrau pela mesma conta do `qual()`, então o script acha pronto.
+- ⚠️ **Imagem de tela escondida é `loading="lazy"`.** A primeira medida saiu
+  PIOR que o antes (LCP 9,7 s): com as fotos em resolução de verdade, a home
+  pedia no arranque as fotos de cabeçalho de TODAS as telas (montarHerois) e
+  elas brigavam com o pôster pela rede. Lazy em `<img>` dentro de seção
+  escondida só baixa quando a seção abre; os objetos 3D e as fotos do brechó
+  da home também, porque moram abaixo da primeira tela.
+- ⚠️ **O build NUNCA apaga `public/m`.** Os nomes são o hash do conteúdo;
+  apagar deixava a página anterior apontando para um script que não existia
+  mais (`build:fases` apagava a cada fase). O `vercel-build` sobe só o que as
+  páginas citam — inclusive para o script com chaves de TESTE da suíte
+  `registro` (que também escreve em `public/m`) nunca ir ao ar.
+- `npm ci` agora roda na Vercel (`vercel.json`): o esbuild é a única
+  dependência, e só de build.
+
+### A mídia: escada de larguras e codecs (`src/midia-fonte/`)
+
+Ver `src/midia-fonte/README.md`. Em resumo:
+- **Escada em vez de leve + `@hd`**: `nome@<largura>.webp`,
+  `nome@<largura>[.hevc|.av1].mp4`. `MIDIA_VAR` (do build) lista os degraus;
+  `qual()` escolhe UMA vez o menor que cobre a largura da janela × a
+  densidade, no melhor codec que o navegador toca (AV1 → HEVC → H.264).
+  ⚠️ O corte antigo de 1400 px mandava o "leve" para o iPhone (390 × 3 =
+  1170): o celular via a PIOR qualidade da casa. Agora recebe 1280.
+- **Fotos refeitas dos PNG sem perda** do Higgsfield (baixar do histórico não
+  custa crédito), WebP q95: a foto de cabeçalho de 2560 px tinha 64 KB, a de
+  2688 px tem 226 KB.
+- **Objetos 3D**: a ampliação a 4K não está mais no histórico, então o
+  degrau de cima é o `@hd` de antes, byte a byte. Igual no computador, melhor
+  no celular (antes ia o leve).
+- **Vídeos refeitos dos originais do Kling** (1912×1080, ~30 Mb/s). O script
+  da montagem de 18/out se perdeu com o scratchpad; a receita foi refeita
+  CASANDO cada quadro do vídeo no ar com o original (quadro, média de dois na
+  rampa de 2×, ou flash com branco a 50/90/45%), conferida a ~40 dB por
+  quadro. Tempo, cortes e ciclo iguais.
+- **Qualidade medida contra o master** (SSIM/PSNR, `qualidade.py` no
+  scratchpad): H.264 CRF 18 no computador e 20 no celular (o pedido dele),
+  HEVC e AV1 calibrados para empatar com menos bytes. A carona no celular foi
+  de SSIM 0,923 / 31 dB (1024, CRF 31) para ~0,984 / 41 dB (1280).
+
+| carona | AV1 | HEVC | H.264 |
+|---|---|---|---|
+| celular (1280) | 7,8 MB | 9,5 MB | 11,8 MB |
+| computador (1912) | 14,4 MB | 21,1 MB | 28,3 MB |
+
+- **O vídeo só é pedido com a cena na tela** (`naTela`, IntersectionObserver),
+  `preload="none"` e pôster sempre.
+- **Artifact**: arquivo acima de 16 MB não sobe; só lá
+  (`<meta name="cdf-artifact">`) o `qual()` pula o degrau que não cabe.
+
+### O que NÃO foi feito: dividir o script por tela (Etapa 2)
+
+Medido: na primeira tela roda **40% do script** (286 de 711 KB, cobertura do
+Chrome) — esse é o teto do ganho. Mas o app é um bloco só: 885 comandos no
+topo ligam todas as telas no arranque, e **838 dos 840 KB** são alcançáveis a
+partir dele (grafo de dependências com acorn). Separar exige reescrever a
+arquitetura, com risco alto de mudar comportamento. Victor aprovou deixar
+para um projeto próprio. Enquanto isso, o script tem cache longo: a segunda
+visita não baixa nada dele.
+
+### A bateria em paralelo (Etapa 3)
+
+`test/run.js` sobe UM Chromium (`launchServer`) e roda 3 suítes de cada vez
+(o quarto núcleo fica para o navegador); cada suíte se conecta por
+`test/_navegador.js` (contexto próprio, sem dividir armazenamento). **38 min
+→ ~15 min**, nenhuma suíte pulada. As que medem animação ou tempo de quadro
+rodam no fim, sozinhas (`SOZINHAS` no `run.js`).
+- ⚠️ **Quem falha em paralelo roda de novo, sozinha, e vale esse resultado.**
+  Medido: cada rodada em paralelo derrubava 3 a 6 suítes DIFERENTES, todas de
+  medida no meio de uma animação, e todas passavam sozinhas. Defeito de
+  verdade falha sozinho também; a lista de quem precisou sai no fim do
+  relatório — se ela crescer, olhe. `JUNTAS=1` volta ao modo em série.
+- ⚠️ **`--allow-file-access-from-files` é o que mantém as guardas de CSS de
+  pé.** Com o CSS em arquivo, o Chromium trata a folha como de outra origem
+  no `file://`, e as sete suítes que varrem regras engoliam o erro e liam
+  ZERO regra — verde à toa. A flag mora no `_navegador.js`; `colisao` e
+  `movimento` agora reprovam varredura vazia.
+- O `_servir.js` deixou de ser contado como suíte (era a "87ª", sem asserção).
+- Suíte que lê "o fonte do build" usa `test/_fonte.js` (HTML + o que ele
+  cita em `m/`); a que confere comentário do código lê o template (o script
+  sai minificado, sem comentário).
+
+## 26/out · 3 — o job vira projeto na Absolute ZRO, e o consentimento entra no cadastro
+
+Pedido do titular, por prioridade: (1) backend de jobs que manda `carro-do-freela.job/1` ao HUB — o job vira
+projeto e o briefing não se perde; (2) a equipe da escala vira a equipe do projeto, sem cadastro duplicado;
+(3) consentimento e origem dos dados antes de abrir ao público; (4) as suítes das fases sem `build:fases` à mão.
+**Regra que fica: nada de tráfego pago** enquanto agenda, reputação e pagamento forem simulados e o consentimento
+não estiver registrado no banco.
+
+### Job e equipe → HUB (`api/zro/enviar.js`, `test/api/zro.test.js`, `conta-zro` §10)
+
+- O login pede também `offline_access carro-do-freela.jobs`. ⚠️ **Se o HUB responder `invalid_scope`** (migration
+  0014 ainda não aplicada), o callback refaz o pedido com `basico=1`, sem esses escopos: o login nunca quebra por
+  causa do envio.
+- O refresh token (e o access token de 10 min) vai em `cdf_hub`, **cifrado** (AES-256-GCM, chave por HKDF com uso
+  próprio), httpOnly, só em `/api/zro`. ⚠️ Assinar não bastava: é token. O navegador nunca vê token (a suíte confere
+  `document.cookie`).
+- ⚠️ **O refresh RODA**: cada troca devolve um novo e o velho, reapresentado, derruba a família no HUB. Por isso o
+  envio é UMA rota (`/api/zro/enviar`) que faz job e equipe com UM token, reaproveita o access token enquanto vale,
+  devolve o cookie novo em TODA resposta depois da troca, e o botão trava enquanto envia (`zroEnviando`).
+- O servidor monta o contrato só com os campos aceitos (telefone e o resto do pedido ficam de fora) e a equipe só
+  com quem tem conta Absolute ZRO (`c.zro = {conta, email}`). ⚠️ **Gente da prévia não tem conta** e aparece como
+  "sem conta": convidar pessoa fictícia seria mentira.
+- `e.uid` é o id do job no HUB (`cdf-<uuid>`): o `e.id` é deste aparelho e repete entre aparelhos.
+- Na tela: bloco `.jzro` no fim das ações do job, **só para quem contrata, só no domínio** com conta liberada
+  (`zroPodeEnviar`). Antes: "Levar para a Absolute ZRO"; depois: "Abrir na Absolute ZRO" + "Atualizar equipe" (o job é criado uma vez; reenviar só leva a equipe), e uma linha
+  com quantos estão na equipe, convidados e sem conta.
+- No HUB: rota com Bearer (`route(..., { bearer })`), papel `guest` que só vê os projetos em que está, convite com
+  projeto e conta (`invitee_user_id`), seção Equipe no projeto. Ver `docs/roadmap.md`.
+
+### Consentimento e origem (`test/consentimento.js`)
+
+- "Mostrar meu perfil para quem contrata" no passo 1 do cadastro, **desmarcado** (caixa pré-marcada não é
+  consentimento). A dica (`title`) diz o que é mostrado e que o WhatsApp nunca aparece.
+- `registrarConsentimento()` no `concluirCadastro()`: grava `EU.origem = "autodeclarado"` e
+  `EU.consentimento = {mostrar, versao: TERMO_PERFIL_V, em}`; desmarcar grava a retirada com data. ⚠️ Mudou o
+  texto da caixa? **Suba `TERMO_PERFIL_V`**: o registro vale para o texto que a pessoa leu. ⚠️ Nada de `VERSAO="` no nome de constante nova: o `vercel-build` lê a versão da build por esse padrão e pegou a primeira que achou (por isso o nome não é `CONSENTIMENTO_VERSAO`).
+- ⚠️ O registro mora no aparelho, como o resto do cadastro, até a Fase 1 ter banco. O README diz isso e mantém o
+  portão de abrir ao público.
+
+### O arnês gera as fases (`test/run.js`, `DAS_FASES`)
+
+`versoes`, `fase1-sem-dinheiro`, `seguranca` e `tela-de-inicio` leem os sete builds. Quando alguma delas está na
+lista, o `run.js` gera os sete antes (~4 s); `CDF_SEM_BUILD=1` pula (para testar um build feito à mão, como o
+anônimo). O CI não tem mais o passo separado.
+
 ## Como o projeto é construído
 
 Um HTML sem framework, sem CDN, sem requisição externa — **mais a pasta
-`m/` de mídia, do próprio domínio, ao lado dele** (desde 18/out · 2). Fontes,
-rostos e ícones continuam em base64; vídeos e fotos geradas moram em
-arquivo, cada um em versão leve e `@hd`, porque embutidos eles tinham de ser
-encolhidos até ficar ruins no computador. Ver a seção de 18/out · 2.
+`m/` do próprio domínio, ao lado dele** (desde 18/out · 2). Desde 26/out · 2
+TUDO que não é a página mora lá, com o hash no nome: o script, a folha, as
+fontes, os rostos e a mídia gerada em escada de larguras. Ver a seção de
+26/out · 2.
 
 ```
 src/template.html   markup + estilos + toda a lógica  (é AQUI que se edita)
 src/crew.json       os 109 cadastros normalizados
-src/assets/         fontes e frames em base64; os JSON de mídia apontam "midia:<nome>"
-src/midia/          vídeos e fotos geradas, leve + @hd (50 + 50 arquivos)
+src/assets/         fontes, rostos e frames em base64 (o build tira para m/); os JSON de mídia apontam "midia:<nome>"
+src/midia/          vídeos e fotos geradas em degraus: nome@<largura>.webp, nome@<largura>[.hevc|.av1].mp4
+src/midia-fonte/    de onde cada mídia vem e como refazer (receita dos vídeos, scripts)
         ↓  node src/build.js
-public/index.html    documento completo → é o que vai para a WEB
+public/index.html    a página (241 KB) → é o que vai para a WEB
 public/artifact.html o mesmo sem <head> → é o que se PUBLICA como artifact
-public/m/            a mídia com o hash no nome (saída; fora do git)
+public/m/            script, folha, fontes e mídia com o hash no nome (saída; fora do git; o build nunca apaga)
 ```
 
 ⚠️ **São duas saídas, e confundi-las estraga a entrega.** O template começa
@@ -204,7 +437,7 @@ a cena da home e a tela de entrar abaixo da janela em todo monitor grande.
 Uma sonda de `100vh` dentro do corpo diz quanto o motor multiplica (Chromium:
 o zoom; Safari: 1), e `--zoom` vira esse número.
 
-⚠️ **A build se identifica** (`VERSAO`, hoje `19/out · 5`): aparece no rodapé do
+⚠️ **A build se identifica** (`VERSAO`, hoje `29/out · 1`): aparece no rodapé do
 menu e vai junto no recado de suporte. Sem isso, três rodadas foram gastas sem
 saber se o defeito relatado era do arquivo novo ou de um cache velho. **Suba a
 VERSAO em toda entrega que o Victor for subir.**
@@ -8291,3 +8524,83 @@ Próximos passos que ele conhece e ainda não priorizou:
 - Screenshot do Playwright é a forma de conferir o resultado. Asserção que passa
   não garante que a tela está certa: o botão de remover já ficou como caixa
   branca do browser com todos os testes verdes.
+
+## 27/out · 1 — sem selo na barra de cima, e o símbolo novo no "Continuar com Absolute ZRO"
+
+Pedido do Victor, com print do celular:
+- **"Tira o botão de prévia de cima do site."** Os dois `.selo-prev` (home e topo do app) saíram, com o CSS deles.
+  Sem selo, a home não dizia em lugar nenhum que é prévia (o `#rodape` some na home), então o pé da home ganhou um
+  "Prévia" discreto ao lado de Como funciona · Recursos · Planos (`.fim-prev`, mesmo `data-previa`). Ver a regra nº 6.
+- **O botão "Continuar com Absolute ZRO" usava o feixe de luz antigo** (`zro-simbolo.webp`, apagado). Agora é o
+  símbolo flat da raiz (ADR 0017): SVG embutido, uma cor só (`currentColor`, a do texto do botão), geometria copiada
+  de `packages/ui/src/marca.ts`. As outras plataformas já usavam o flat ou não têm ícone no botão.
+
+## 27/out · 3 — o Z na home, dizendo que está chegando
+
+Pedido do titular: a home apresenta o **Z**, a IA do ecossistema Absolute ZRO (`#h-z`, antes do fechamento ciano).
+O painel do Z **ainda não está dentro do Carro do Freela**, então a seção diz "Chegando ao Carro do Freela" e leva a
+`absolutezro.com/ia`; não afirme que já funciona aqui. Anel e estrela cromados são cópias em `src/midia/z-anel.webp` e
+`z-estrela.webp` (citados por `"midia:..."`, como os ícones da família); a estrela fica sobre o tubo, às 3 horas, e
+respira devagar só em CSS (desliga com "reduzir movimento"). VERSAO `27/out · 3`.
+
+## 27/out · 4 — a Z é o painel inicial (topo do Feed)
+
+Pedido do titular: "a IA precisa estar no painel inicial de todas as plataformas". A Z (feminino, decisão do titular) é
+o `<zro-ia>` da Absolute ZRO no topo do **Feed**, que é a primeira tela de quem entra.
+- **Só no domínio, com conta Absolute ZRO liberada** (`zroMontarZ()`, chamado quando `/api/zro/eu` responde). No
+  `file://`, no artifact e nas suítes o `#z-painel` fica escondido e nada é pedido à absolutezro.com.
+- O elemento nasce por DOM com atributos (`api`, `sugestoes` e `tema` são getters/métodos dele). Tema acompanha
+  `app-light`. ⚠️ `#z-painel` mora **fora da `.wrap`**: o `show()` anima a primeira `.wrap` com transform, e transform
+  no ancestral prende a gaveta de Conversas (`position:fixed`) à caixa.
+- Servidor: o login pede também `zro.ia`; `/api/zro/ia/<caminho>` (função `ia`, rota do build com `?caminho=`,
+  streaming) repassa ao HUB com o MESMO acesso do `cdf_hub`, que agora guarda `jobs` e `ia`. Cookie de antes da Z,
+  HUB sem o escopo ou acesso recusado: 401 `reconectar` → botão "Reconectar com Absolute ZRO".
+- CSP: script e imagens da absolutezro.com; a conversa passa pela mesma origem. A home diz "Agora no Carro do Freela".
+- Suítes: `conta-zro` §11 (o script do painel vem de `apps/hub-web/public` por rota) e `test:api`. VERSAO `27/out · 4`.
+
+## 27/out · 5 — a Z ganha aba própria, a primeira e a tela de entrada
+
+Pedido do titular: "quero que seja uma aba só pra Z em todas as plataformas". O painel saiu do topo do Feed (o Feed
+voltou a ser como era) e mora em `#v-z`, sem `.wrap` e sem a animação de entrada (`show` pula a `z`: transform no
+ancestral prende a gaveta de Conversas).
+- **Onde fica o botão.** No computador, `#tab-z` é o primeiro item da lateral, antes de Planos (ícone do anel em
+  `ICO_MP.z`). ⚠️ **Na barra de baixo NÃO coube**: são 3 + Menu + 3, e o Menu só fica no centro com as metades
+  iguais. Um quarto item à esquerda deixava cada um com ~40px a 390 (36px a 360): "Propostas" não cabe e o toque fica
+  abaixo de 44px; um item em cada metade não existe para equilibrar. Então a Z é o **botão em destaque à esquerda do
+  topo** no celular (`#z-top`, `.ztop`, pílula com o anel, ciano quando aberta), antes da marca.
+- **Só no domínio** (`zAbaLigada()` = `zroLigavel() && ZRO_PRONTO`), pintado por `pintarAbaZ()` quando `/api/zro/eu`
+  responde. Sem `data-modo` de propósito: `aplicarModo` reescreve o hidden de quem tem. Fora do domínio (file://,
+  artifact, suítes) os dois botões ficam escondidos e o Feed segue sendo a primeira tela — a bateria não muda.
+- **Tela de entrada:** quem entra (`entrarNaConta`), quem termina o cadastro e quem abre o app já dentro cai na `z`.
+- **Estados dentro da aba:** conta liberada → `<zro-ia>`; sem conta Absolute ZRO → "Entrar com Absolute ZRO"
+  (`#z-sem`); sem o acesso da Z → "Reconectar com Absolute ZRO" (`#z-acao`).
+- Suítes: `conta-zro` §1 (fora do domínio a aba não aparece) e §11 (cai na Z, botão do topo aceso, primeiro da
+  lateral, Feed limpo, reconectar dentro da aba). VERSAO `27/out · 5`.
+
+## 28/out · 1 — o portão do lançamento: só a conta do proprietário entra
+
+Adendo do PRD ("Carro do Freela: acesso exclusivo do proprietário"). Até o titular autorizar o lançamento, o Carro é
+**fechado**: só entra a conta que o HUB lista por `user_id` (claim `zro_release` = `{"carro-do-freela": "allowed"}`).
+Nunca por e-mail, papel ou lista escrita aqui; outros admins, testers e assinantes ficam de fora.
+- **Duas travas, as duas têm de abrir.** (1) `CARRO_RELEASE` do deploy: só o valor exato `released` abre; sem a
+  variável é `closed`, e fechado vale com o HUB fora do ar. (2) A claim **relida no HUB a cada pedido**
+  (`lerConta()` em `api/zro/_zro.js`: `/oauth/userinfo` com o access token de `cdf_hub`, refresh uma vez se vencido
+  ou recusado). O cookie de 30 dias não decide nada.
+- **Servidor:** `callback` só abre sessão com `allowed` (ou `released` nos dois lados); senão volta `?zro=fechado`
+  sem cookie. `eu` responde 401 sem sessão/sessão recusada, 403 `fechado` sem acesso (e apaga os dois cookies), 503
+  com o HUB fora; sempre diz `release`. `enviar` e `ia` exigem a mesma claim relida (403 `fechado` + sessão
+  descartada); 403 `product_closed` do HUB também vira `fechado`. Sessão antiga sem access token não vale.
+- **Tela:** o `vercel-build` passa `--release=<CARRO_RELEASE>` ao `build.js`, que escreve
+  `<meta name="cdf-release" content="closed">`; `zroFechado()` lê a meta no primeiro quadro (só em http(s), fora de
+  iframe). Fechado, `show()` manda toda tela que não seja a home de `/` para `#v-fechado` ("Em desenvolvimento":
+  símbolo pequeno, marca, Figtree Light × ExtraBold, uma linha, `.glass-btn--ink` "Voltar ao HUB" →
+  absolutezro.com/inicio, e a única porta "Entrar com Absolute ZRO"). Isso cobre entrar, cadastro, conta antiga,
+  Google, Feed, Z, Propostas, Agenda, Jobs, Guilda, Brechó e `/fase1…` direto. `entrarNaConta()` recusa tudo
+  fechado. A home vira vitrine sem porta: "Conhecer o projeto" no lugar das chamadas, sem "Criar conta", planos "Em
+  desenvolvimento", Z "Chegando ao Carro do Freela" sem "Conversar com a Z". Só `/api/zro/eu` com `liberado:true`
+  abre; nada da rede abre o que o build fechou.
+- ⚠️ **Prévia interna e suítes:** sem a meta (`npm run build`, `file://`, artifact) nada muda, a prévia é a de sempre.
+  `conta-zro` monta três domínios em miniatura: aberto (com `CARRO_RELEASE=released`, o contrato de quando lançar,
+  itens 2–11), sem funções e fechado (item 12: personas do PRD §11 negadas, a conta allowed permitida, sessão antiga
+  negada quando o acesso sai, telas 390/1440 nos dois temas em `test/saida/fechado-*.png`).
+- VERSAO `28/out · 1`. Figtree entrou em `src/assets/fonts.json` (licença OFL em `src/assets/OFL-figtree.txt`).

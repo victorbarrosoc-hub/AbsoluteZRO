@@ -51,11 +51,21 @@ export const ADAPTERS: AdapterInfo[] = [
   },
   {
     productId: 'ai-edit',
-    strategy: 'Scaffold de produto futuro',
-    inputs: ['Mídias, transcrições, brief, referências, presets de linguagem'],
-    outputs: ['Decupagem, selects, markers, timeline editável'],
+    strategy: 'AEON: site aeon.absolutezro.com e app de computador (products/ai-edit, ADR 0020), só com a conta Absolute ZRO',
+    inputs: ['Vídeo ou áudio do computador ou cartões conferidos do SOBEDESCE', 'Preset de linguagem versionado'],
+    outputs: [
+      'Edição completa na linha do tempo (cortar, aparar, mover, ajustes)',
+      'Transcrição e legenda (SRT/VTT)',
+      'Cortes e zoom sugeridos pela IA, só com aprovação',
+      'Timeline FCPXML, xmeml, OTIO e EDL com ZroTimelineRef',
+      'Vídeo final',
+    ],
     hubCan: ['Contrato de eventos edit.selects.ready e edit.timeline.ready'],
-    notYet: ['Nenhum processamento: a ferramenta ainda não existe'],
+    notYet: [
+      'Créditos e o evento edit.timeline.ready publicado no HUB',
+      'Entrada do Synquei, do NOSSOM e do roteiro do TPeasy',
+      'Primeiro Release do app de computador',
+    ],
     sourceManifest: null,
   },
   {

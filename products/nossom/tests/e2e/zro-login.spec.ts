@@ -1,13 +1,15 @@
 import { test, expect } from '@playwright/test';
+import { onlyWhenOpen } from './fixtures';
 test('the Absolute ZRO button keeps the return path and explains a failed trip', async ({
   page,
 }) => {
+  onlyWhenOpen();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/entrar?next=%2Fstudio%2Fia');
   const button = page.getByRole('link', { name: 'Entrar com Absolute ZRO' });
   await expect(button).toBeVisible();
   await expect(button).toHaveAttribute('href', '/api/zro/entrar?volta=%2Fstudio%2Fia');
-  await expect(button.locator('img')).toHaveAttribute('src', '/absolute-zro-o-alpha.webp');
+  await expect(button.locator('svg path')).toHaveCount(2); // símbolo flat: centelha + anel
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   // Sem a Absolute ZRO no ar, a pessoa volta para a tela de entrar com um aviso curto.
   await button.click();
@@ -19,6 +21,7 @@ test('the Absolute ZRO button keeps the return path and explains a failed trip',
 test('creating an account goes to the Absolute ZRO and the sign-up form is gone', async ({
   page,
 }) => {
+  onlyWhenOpen();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/entrar?modo=criar&next=%2Fstudio%2Fia');
   await expect(page.getByText('A conta do NOSSOM é a sua conta Absolute ZRO.')).toBeVisible();

@@ -8581,6 +8581,23 @@ button.k-item:active:not(:disabled) {
   display: grid;
   gap: 12px;
 }
+/* A família Absolute ZRO em Ajustes (components/settings.js): ícone de cada app e o nome. */
+.k-familia .list-label {
+  margin: 10px 14px 8px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+}
+.k-familia .k-linha {
+  min-height: 50px;
+}
+.k-familia-ic {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 8px;
+  object-fit: contain;
+}
 .k-espaco {
   display: grid;
   gap: 8px;
@@ -8791,4 +8808,265 @@ select.input {
 }
 .screen {
   overflow-x: clip;
+}
+
+/* ───── Converter com a Revela (components/revela.js): cartões de destino, uma linha de estado ───── */
+.rvsheet {
+  display: grid;
+  gap: 16px;
+}
+.rv-topo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.rv-topo img {
+  flex: none;
+  border-radius: 10px;
+}
+.rv-arquivo {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+}
+.rv-destinos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.rv-destino {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 16px 8px 12px;
+  border: 0;
+  border-radius: var(--r);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--hairline), var(--shadow-card);
+  color: var(--text-2);
+  font: inherit;
+  transition:
+    transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.25s,
+    color 0.2s;
+}
+.rv-destino b {
+  color: var(--text);
+  font-size: 15px;
+}
+.rv-destino small {
+  font-size: 12px;
+  font-weight: 600;
+}
+.rv-destino:active {
+  transform: scale(0.97);
+}
+.rv-destino.is-on {
+  color: var(--down);
+  outline: 2px solid var(--down);
+  outline-offset: -2px;
+}
+.rv-estado {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  min-height: 24px;
+  color: var(--text-2);
+  font-size: 14px;
+}
+.rv-estado > span:not(.spinner) {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.rv-estado.is-pronto {
+  color: var(--ok-text);
+}
+.rv-estado.is-erro {
+  color: var(--err-text);
+}
+.rv-estado.is-aviso {
+  color: var(--warn-text);
+}
+.rv-andamento {
+  display: grid;
+  gap: 12px;
+  padding: 8px 0;
+}
+.rv-fase {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+}
+.rv-pct {
+  margin-left: auto;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.rv-barra {
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--fill-2);
+  overflow: hidden;
+}
+.rv-barra i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #8b3fe8, #e52b1a, #ffb800);
+  transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.rv-barra.is-vivo i {
+  opacity: 0.5;
+  animation: rv-pulso 1.4s ease-in-out infinite;
+}
+.rv-dica {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--text-3);
+  font-size: 13px;
+}
+.rv-fim {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  text-align: center;
+}
+.rv-ok {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--ok);
+  color: #fff;
+  animation: rv-pop 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.rv-fichas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+.rv-fichas span {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--fill-2);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+.rv-avisos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  color: var(--warn-text);
+  font-size: 12.5px;
+  text-align: left;
+}
+@keyframes rv-pop {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+@keyframes rv-pulso {
+  50% {
+    opacity: 0.2;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rv-destino,
+  .rv-barra i {
+    transition: none;
+  }
+  .rv-ok,
+  .rv-barra.is-vivo i {
+    animation: none;
+  }
+}
+
+/* A Z, a IA da Absolute ZRO, na aba própria (components/z.js): a primeira aba e a tela de entrada. O painel ocupa a
+   tela entre o topo seguro e a barra de abas; o botão de reconectar só aparece sem token da Z. */
+.z-tela {
+  padding: calc(var(--safe-t) + 14px) calc(var(--gutter) + var(--safe-r)) calc(var(--safe-b) + 64px) calc(var(--gutter) + var(--safe-l));
+}
+.ini-z {
+  display: grid;
+  gap: 10px;
+}
+.ini-z-painel {
+  --zro-ia-altura: max(420px, calc(100dvh - var(--safe-t) - var(--safe-b) - 96px));
+  min-height: var(--zro-ia-altura);
+}
+.ini-z-entrar {
+  justify-self: center;
+}
+.z-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.z-entrar {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 18px;
+  min-height: calc(100dvh - var(--safe-t) - var(--safe-b) - 120px);
+  text-align: center;
+}
+.z-entrar-anel {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 999px;
+  color: var(--text);
+  background: var(--fill-2);
+}
+.z-entrar-t {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.tab-z.is-on {
+  color: var(--text);
+}
+/* seis abas (com Referências): no celular estreito o rótulo encolhe em vez de cortar */
+.tabbar .tab-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 400px) {
+  .tabbar.n-6 .tab {
+    font-size: 10px;
+    letter-spacing: -0.01em;
+  }
+}
+@media (max-width: 345px) {
+  .tabbar.n-6 .tab {
+    font-size: 9px;
+  }
 }

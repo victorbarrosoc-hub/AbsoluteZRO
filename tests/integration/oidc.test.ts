@@ -2,6 +2,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
+  authenticateAccessToken,
   exchangeToken,
   grantConsent,
   issueCode,
@@ -18,10 +19,11 @@ import {
   verifyJwt,
   type AuthorizeRequest,
 } from '@zro/auth'
+import { grantEntitlement } from '@zro/billing'
 import { loadOidcClaims } from '@zro/core'
 import type { Database } from '@zro/db'
 import { testDatabase } from '@zro/db/testing'
-import { admin, givePlan, newOrgWithOwner, newUser } from './helpers'
+import { admin, allowRelease, giveLimits, givePlan, newOrgWithOwner, newUser } from './helpers'
 
 let db: Database
 const ISS = 'https://hub.teste.absolutezro.local'
@@ -37,11 +39,14 @@ const pkce = () => {
 }
 const rid = (p: string) => `${p}-${randomBytes(4).toString('hex')}`
 
-async function newClient(kind: 'confidential' | 'public' = 'confidential', redirectUris = ['https://app.teste/callback'], allowLoopback = false) {
+async function newClient(
+  kind: 'confidential' | 'public' = 'confidential',
+  redirectUris = ['https://app.teste/callback'],
+  allowLoopback = false,
+  productId = 'sobedesce',
+) {
   const by = await admin(db)
-  return db.asSystem('teste', (tx) =>
-    registerClient(tx, { id: rid('app'), name: 'App de teste', productId: 'sobedesce', kind, redirectUris, allowLoopback, createdBy: by }),
-  )
+  return db.asSystem('teste', (tx) => registerClient(tx, { id: rid('app'), name: 'App de teste', productId, kind, redirectUris, allowLoopback, createdBy: by }))
 }
 
 function authorizeQuery(clientId: string, challenge: string, extra: Record<string, string> = {}) {
@@ -119,11 +124,14 @@ describe('código + PKCE', () => {
     expect(id).toMatchObject({ sub: o.userId, aud: c.clientId, nonce: 'n-1', email: o.email, email_verified: true })
     expect((id.zro_org as { id: string }).id).toBe(o.orgId)
     expect(id.zro_products).toEqual(['sobedesce'])
+    // zro_release (ADR 0023): lançado para o público e fechado para esta conta, em todos os tokens e no userinfo
+    expect(id.zro_release).toMatchObject({ sobedesce: 'released', synquei: 'released', nossom: 'closed', 'carro-do-freela': 'closed' })
     const at = verifyJwt(signer, t.access_token, { typ: 'at+jwt', issuer: ISS })!
     expect(at.aud).toBe(c.clientId)
+    expect((at.zro_release as Record<string, string>).sobedesce).toBe('released')
     expect(t.refresh_token).toMatch(/^zt_/)
     const info = await userInfo(db, `Bearer ${t.access_token}`, loadOidcClaims)
-    expect(info).toMatchObject({ sub: o.userId, email: o.email, zro_products: ['sobedesce'] })
+    expect(info).toMatchObject({ sub: o.userId, email: o.email, zro_products: ['sobedesce'], zro_release: expect.objectContaining({ nossom: 'closed' }) })
   })
 
   it('recusa verifier errado, segredo errado e código reapresentado', async () => {
@@ -238,6 +246,114 @@ describe('refresh token', () => {
   })
 })
 
+describe('gate de lançamento (ADR 0023)', () => {
+  const basic = (c: { clientId: string; clientSecret: string | null }) => `Basic ${Buffer.from(`${c.clientId}:${c.clientSecret}`).toString('base64')}`
+  const closedClient = () => newClient('confidential', ['https://app.teste/callback'], false, 'nossom')
+  const exchange = (c: { clientId: string; clientSecret: string | null }, code: string, verifier: string) =>
+    exchangeToken(
+      db,
+      parseTokenRequest(form({ grant_type: 'authorization_code', code, redirect_uri: 'https://app.teste/callback', code_verifier: verifier }), basic(c)),
+      loadOidcClaims,
+    )
+
+  it('cliente de produto fechado: conta fora da lista não recebe código (access_denied), mesmo com plano e papel de admin', async () => {
+    const o = await newOrgWithOwner(db, 'gate-fechado', { freePlan: true })
+    await db.sql`update zro.users set platform_role = 'admin' where id = ${o.userId}`
+    const c = await closedClient()
+    const { challenge } = pkce()
+    await expect(login(c.clientId, o.userId, o.orgId, challenge)).rejects.toMatchObject({
+      error: 'access_denied',
+      description: 'Este app ainda está em desenvolvimento.',
+    })
+    // nada ficou para trás: nem conta no app
+    const [acc] = await db.sql`select 1 from zro.app_accounts where user_id = ${o.userId} and client_id = ${c.clientId}`
+    expect(acc).toBeUndefined()
+    // o cliente do produto lançado segue igual para a mesma conta
+    const aberto = await newClient()
+    await expect(login(aberto.clientId, o.userId, o.orgId, pkce().challenge)).resolves.toMatch(/^zc_/)
+  })
+
+  it('conta listada entra com zro_release=allowed; o canal api precisa estar na lista; revogada, nem refresh, userinfo ou Bearer', async () => {
+    const o = await newOrgWithOwner(db, 'gate-listada', { freePlan: true })
+    await allowRelease(db, 'nossom', o.userId, { channels: ['sso', 'web'] })
+    const c = await closedClient()
+    const { verifier, challenge } = pkce()
+    const code = await login(c.clientId, o.userId, o.orgId, challenge)
+    const t = await exchange(c, code, verifier)
+    const signer = await loadSigner(db)
+    const id = verifyJwt(signer, t.id_token, { typ: 'JWT', issuer: ISS })!
+    expect(id.zro_release).toMatchObject({ nossom: 'allowed', sobedesce: 'released', 'ai-edit': 'closed' })
+    expect(id.zro_products).toContain('nossom')
+    const at = verifyJwt(signer, t.access_token, { typ: 'at+jwt', issuer: ISS })!
+    expect((at.zro_release as Record<string, string>).nossom).toBe('allowed')
+    expect(await userInfo(db, `Bearer ${t.access_token}`, loadOidcClaims)).toMatchObject({ zro_release: expect.objectContaining({ nossom: 'allowed' }) })
+    // Bearer na API é o canal api: não listado, o token não vale; listado, vale
+    expect(await authenticateAccessToken(db, `Bearer ${t.access_token}`, 'org')).toBeNull()
+    await allowRelease(db, 'nossom', o.userId, { channels: ['sso', 'web', 'api'] })
+    expect((await authenticateAccessToken(db, `Bearer ${t.access_token}`, 'org'))?.session.app?.productId).toBe('nossom')
+    const t2 = await exchangeToken(db, parseTokenRequest(form({ grant_type: 'refresh_token', refresh_token: t.refresh_token! }), basic(c)), loadOidcClaims)
+    expect(t2.refresh_token).toBeTruthy()
+    // sessão antiga: revogar a linha derruba refresh, userinfo e Bearer na hora
+    await db.sql`update zro.product_release_access set revoked_at = now() where product_id = 'nossom' and user_id = ${o.userId}`
+    await expect(
+      exchangeToken(db, parseTokenRequest(form({ grant_type: 'refresh_token', refresh_token: t2.refresh_token! }), basic(c)), loadOidcClaims),
+    ).rejects.toMatchObject({ error: 'invalid_grant', description: 'Este app ainda está em desenvolvimento.' })
+    await expect(userInfo(db, `Bearer ${t2.access_token}`, loadOidcClaims)).rejects.toMatchObject({ error: 'invalid_token', status: 401 })
+    expect(await authenticateAccessToken(db, `Bearer ${t2.access_token}`, 'org')).toBeNull()
+    // o cliente de um produto lançado continua funcionando para a mesma pessoa
+    const aberto = await newClient()
+    const p = pkce()
+    const t3 = await exchange(aberto, await login(aberto.clientId, o.userId, o.orgId, p.challenge), p.verifier)
+    expect((await userInfo(db, `Bearer ${t3.access_token}`, loadOidcClaims)).zro_products).toContain('sobedesce')
+  })
+})
+
+describe('zro_features (sinais de recurso, 0025)', () => {
+  const basic = (c: { clientId: string; clientSecret: string | null }) => `Basic ${Buffer.from(`${c.clientId}:${c.clientSecret}`).toString('base64')}`
+  const exchange = (c: { clientId: string; clientSecret: string | null }, code: string, verifier: string) =>
+    exchangeToken(
+      db,
+      parseTokenRequest(form({ grant_type: 'authorization_code', code, redirect_uri: 'https://app.teste/callback', code_verifier: verifier }), basic(c)),
+      loadOidcClaims,
+    )
+
+  it('o token do Maestro leva maestro.marca_propria só com o sinal; o de outro app, nada; sem o sinal, lista vazia', async () => {
+    const o = await newOrgWithOwner(db, 'zro-features')
+    const sem = await newOrgWithOwner(db, 'zro-features-sem')
+    await allowRelease(db, 'maestro', o.userId, { channels: ['sso', 'web'] })
+    await allowRelease(db, 'maestro', sem.userId, { channels: ['sso', 'web'] })
+    for (const org of [o.orgId, sem.orgId]) await giveLimits(db, org, 'maestro', {})
+    const adminId = await admin(db)
+    await db.asSystem('t', (tx) =>
+      grantEntitlement(
+        tx,
+        { userId: adminId, reason: 'adicional' },
+        { orgId: o.orgId, productId: 'maestro', features: [], limits: { 'maestro.marca_propria': 1 }, endsAt: null },
+      ),
+    )
+    const signer = await loadSigner(db)
+    const maestro = await newClient('confidential', ['https://app.teste/callback'], false, 'maestro')
+    const p = pkce()
+    const t = await exchange(maestro, await login(maestro.clientId, o.userId, o.orgId, p.challenge), p.verifier)
+    const id = verifyJwt(signer, t.id_token, { typ: 'JWT', issuer: ISS })!
+    expect(id.zro_features).toEqual(['maestro.marca_propria'])
+    expect(id.zro_products).toContain('maestro')
+    expect(verifyJwt(signer, t.access_token, { typ: 'at+jwt', issuer: ISS })!.zro_features).toEqual(['maestro.marca_propria'])
+    expect((await userInfo(db, `Bearer ${t.access_token}`, loadOidcClaims)).zro_features).toEqual(['maestro.marca_propria'])
+
+    const outro = await newClient()
+    const p2 = pkce()
+    const t2 = await exchange(outro, await login(outro.clientId, o.userId, o.orgId, p2.challenge), p2.verifier)
+    expect(verifyJwt(signer, t2.id_token, { typ: 'JWT', issuer: ISS })!.zro_features).toEqual([])
+
+    const p3 = pkce()
+    const t3 = await exchange(maestro, await login(maestro.clientId, sem.userId, sem.orgId, p3.challenge), p3.verifier)
+    const id3 = verifyJwt(signer, t3.id_token, { typ: 'JWT', issuer: ISS })!
+    expect(id3.zro_products).toContain('maestro')
+    expect(id3.zro_features).toEqual([])
+  })
+})
+
 describe('isolamento', () => {
   it('zro_app não lê segredo, códigos nem refresh tokens; consentimento só o próprio', async () => {
     const a = await newOrgWithOwner(db, 'oidc-a')
@@ -259,5 +375,47 @@ describe('isolamento', () => {
       const [name] = await tx`select name from zro.oauth_clients where id = ${c.clientId}`
       expect(name?.name).toBe('App de teste')
     })
+  })
+})
+
+describe('perfil único (0015)', () => {
+  // PNG 1×1 válido (o setAvatar confere o formato pelos primeiros bytes)
+  const png = (cor: number) =>
+    Buffer.from(`iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk${cor ? 'YPhfDwAChwGA' : 'AAIAAAUAAen'}60eEAAAAASUVORK5CYII=`, 'base64')
+
+  it('nome, foto e updated_at vêm do login único; foto nova muda o endereço e o antigo some', async () => {
+    const { publicAvatar, setAvatar, updateDisplayName } = await import('@zro/core')
+    const foto = (id: string) => publicAvatar(db, id)
+    const u = await newUser(db, 'perfil')
+    const c = await newClient()
+    const { verifier, challenge } = pkce()
+    const code = await login(c.clientId, u.userId, null, challenge)
+    const basic = `Basic ${Buffer.from(`${c.clientId}:${c.clientSecret}`).toString('base64')}`
+    const t = await exchangeToken(
+      db,
+      parseTokenRequest(form({ grant_type: 'authorization_code', code, redirect_uri: 'https://app.teste/callback', code_verifier: verifier }), basic),
+      loadOidcClaims,
+    )
+    const bearer = `Bearer ${t.access_token}`
+    const antes = await userInfo(db, bearer, loadOidcClaims)
+    expect(antes).toMatchObject({ name: 'perfil', zro_conta: `${ISS}/perfil` })
+    expect(antes.picture).toBeUndefined()
+
+    await setAvatar(db, u.auth, png(1))
+    await updateDisplayName(db, u.auth, 'Victor Barroso')
+    const depois = await userInfo(db, bearer, loadOidcClaims)
+    expect(depois.name).toBe('Victor Barroso')
+    expect(depois.picture).toMatch(new RegExp(`^${ISS}/api/v1/foto/[0-9a-f-]{36}$`))
+    expect(depois.updated_at as number).toBeGreaterThanOrEqual(antes.updated_at as number)
+    const id1 = (depois.picture as string).split('/').pop()!
+    expect((await foto(id1))?.type).toBe('image/png')
+
+    await setAvatar(db, u.auth, png(0))
+    const nova = await userInfo(db, bearer, loadOidcClaims)
+    const id2 = (nova.picture as string).split('/').pop()!
+    expect(id2).not.toBe(id1)
+    expect(await foto(id1)).toBeNull()
+    expect(await foto(id2)).not.toBeNull()
+    expect(await foto('nao-e-uuid')).toBeNull()
   })
 })

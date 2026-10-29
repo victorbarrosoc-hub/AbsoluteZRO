@@ -1,69 +1,13 @@
 /**
- * Peças do painel de pessoas (/admin/pessoas): gráfico de 30 dias, funil, plano por organização e selos.
- * Sem JavaScript no navegador, exceto os formulários (ActionForm). Gráfico estático em SVG: nada anima.
+ * Peças do console sobre pessoas: funil, plano por organização (com a troca) e rótulos em palavras.
+ * Sem JavaScript no navegador, exceto os formulários (ActionForm).
  */
+import type { CSSProperties } from 'react'
 import { providerLabel } from '@zro/billing'
 import type { PersonOrg, PersonPlan } from '@zro/core'
 import { Pill } from '@zro/ui'
 import { ActionForm } from '@/components/action-form'
 import { changeOrgPlanAction } from '@/lib/actions/people'
-
-const dayShort = (day: string) => `${Number(day.slice(8, 10))}/${Number(day.slice(5, 7))}`
-
-/** Barras dos últimos 30 dias: cadastros e entradas em apps (um código do login único = uma entrada). */
-export function Chart30({ series }: { series: { day: string; signups: number; appLogins: number }[] }) {
-  const max = Math.max(1, ...series.map((s) => Math.max(s.signups, s.appLogins)))
-  const signups = series.reduce((n, s) => n + s.signups, 0)
-  const logins = series.reduce((n, s) => n + s.appLogins, 0)
-  const H = 100
-  const W = 10
-  return (
-    <figure className="chart30">
-      <svg
-        className="chart30__svg"
-        viewBox={`0 0 ${series.length * W} ${H}`}
-        preserveAspectRatio="none"
-        role="img"
-        aria-label={`Últimos 30 dias: ${signups} cadastros e ${logins} entradas em apps. Pico de ${max} num dia.`}
-      >
-        {series.map((s, i) => {
-          const hs = (s.signups / max) * (H - 2)
-          const ha = (s.appLogins / max) * (H - 2)
-          return (
-            <g key={s.day}>
-              <title>{`${dayShort(s.day)}: ${s.signups} ${s.signups === 1 ? 'cadastro' : 'cadastros'} · ${s.appLogins} ${s.appLogins === 1 ? 'entrada' : 'entradas'} em apps`}</title>
-              <rect x={i * W} y={0} width={W} height={H} className="chart30__hit" />
-              <rect
-                x={i * W + 1}
-                y={H - Math.max(hs, 1)}
-                width={3.6}
-                height={Math.max(hs, 1)}
-                rx={0.8}
-                className={s.signups ? 'chart30__a' : 'chart30__zero'}
-              />
-              <rect
-                x={i * W + 5.2}
-                y={H - Math.max(ha, 1)}
-                width={3.6}
-                height={Math.max(ha, 1)}
-                rx={0.8}
-                className={s.appLogins ? 'chart30__b' : 'chart30__zero'}
-              />
-            </g>
-          )
-        })}
-      </svg>
-      <figcaption className="chart30__foot">
-        <span>{series[0] ? dayShort(series[0].day) : ''}</span>
-        <span className="chart30__legend">
-          <span className="chart30__key chart30__key--a" aria-hidden /> Cadastros ({signups})
-          <span className="chart30__key chart30__key--b" aria-hidden /> Entradas em apps ({logins})
-        </span>
-        <span>hoje</span>
-      </figcaption>
-    </figure>
-  )
-}
 
 export function Funnel({ steps }: { steps: { label: string; n: number }[] }) {
   const top = Math.max(1, steps[0]?.n ?? 1)
@@ -82,7 +26,7 @@ export function Funnel({ steps }: { steps: { label: string; n: number }[] }) {
               </span>
             </div>
             <div className="funnel__track" aria-hidden>
-              <div className="funnel__bar" style={{ width: `${pct}%` }} />
+              <div className="funnel__bar" style={{ width: `${pct}%`, '--i': i } as CSSProperties} />
             </div>
           </li>
         )
@@ -139,23 +83,33 @@ export function OrgPlan({
         (external ? (
           <p className="zro-faint org-plan__note">Pago pelo {providerLabel(external.provider)}: a troca é feita lá.</p>
         ) : (
-          <ActionForm action={changeOrgPlanAction} submit="Salvar" variant="ghost" className="org-plan__form" inlineSubmit>
-            <input type="hidden" name="orgId" value={org.orgId} />
-            <input type="hidden" name="userId" value={userId} />
-            <select className="zro-select" name="planId" defaultValue={current?.planId ?? ''} aria-label={`Plano de ${org.name}`} required>
-              {!current && (
-                <option value="" disabled>
-                  Escolha um plano
-                </option>
-              )}
-              {plans.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} (v{p.version})
-                </option>
-              ))}
-            </select>
-            <input className="zro-input" name="reason" defaultValue="Troca no painel" maxLength={200} required aria-label={`Motivo da troca em ${org.name}`} />
-          </ActionForm>
+          <details className="adm-confirm">
+            <summary className="zro-btn zro-btn--small">Trocar plano…</summary>
+            <ActionForm action={changeOrgPlanAction} submit="Salvar" variant="primary" className="org-plan__form" inlineSubmit>
+              <input type="hidden" name="orgId" value={org.orgId} />
+              <input type="hidden" name="userId" value={userId} />
+              <select className="zro-select" name="planId" defaultValue={current?.planId ?? ''} aria-label={`Plano de ${org.name}`} required>
+                {!current && (
+                  <option value="" disabled>
+                    Escolha um plano
+                  </option>
+                )}
+                {plans.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              <input
+                className="zro-input"
+                name="reason"
+                defaultValue="Troca no painel"
+                maxLength={200}
+                required
+                aria-label={`Motivo da troca em ${org.name}`}
+              />
+            </ActionForm>
+          </details>
         ))}
     </div>
   )
@@ -181,9 +135,18 @@ export const AUDIT_LABEL: Record<string, string> = {
   'billing.entitlement_revoked': 'Concessão revogada',
   'user.suspended': 'Conta suspensa',
   'user.reactivated': 'Conta reativada',
+  'account.deleted': 'Excluiu a própria conta',
+  'organization.closed': 'Organização encerrada',
   'admin.people_exported': 'Exportou a lista de pessoas',
   'project.created': 'Projeto criado',
   'project.updated': 'Projeto alterado',
+  'release.denied': 'Tentou entrar num app em desenvolvimento',
+  'release.state_set': 'Definiu o estado de lançamento de um app',
+  'release.state_changed': 'Mudou o estado de lançamento de um app',
+  'release.access_granted': 'Concedeu acesso interno a um app fechado',
+  'release.access_changed': 'Renovou um acesso interno',
+  'release.access_revoked': 'Revogou um acesso interno',
+  'release.tokens_revoked': 'Encerrou sessões de um app fechado',
 }
 
 export const ORIGIN_LABEL: Record<string, string> = {
@@ -191,3 +154,10 @@ export const ORIGIN_LABEL: Record<string, string> = {
   trial: 'teste',
   admin_grant: 'concessão',
 }
+
+export const BILLING_EVENT_LABEL: Record<string, string> = {
+  'subscription.updated': 'Assinatura atualizada',
+  'subscription.deleted': 'Assinatura encerrada',
+}
+
+export const BILLING_STATUS: Record<string, string> = { received: 'Recebido', processed: 'Processado', ignored: 'Ignorado', failed: 'Falhou' }

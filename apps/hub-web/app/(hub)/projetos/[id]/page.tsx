@@ -7,14 +7,23 @@ import { isDomainError } from '@zro/observability'
 import { Card, EmptyState, Field, Notice, Pill, ProductMark } from '@zro/ui'
 import { ActionForm } from '@/components/action-form'
 import { CycleO } from '@/components/cycle-o'
-import { importSobedesceAction, importTpeasyAction, previewPlanAction, reprocessAction, saveDocumentAction, updateProjectAction } from '@/lib/actions/project'
-import { fmtDate, MANIFEST_LABEL, MANIFEST_TONE, PROJECT_STATUS_LABEL, RUN_LABEL, RUN_TONE, STEP_LABEL, STEP_TONE } from '@/lib/labels'
+import {
+  importSobedesceAction,
+  importSobedesceDeliveryAction,
+  importTpeasyAction,
+  previewPlanAction,
+  reprocessAction,
+  saveDocumentAction,
+  updateProjectAction,
+} from '@/lib/actions/project'
+import { fmtBytes, fmtDate, MANIFEST_LABEL, MANIFEST_TONE, PROJECT_STATUS_LABEL, RUN_LABEL, RUN_TONE, STEP_LABEL, STEP_TONE } from '@/lib/labels'
 import { db, requireOrgPage } from '@/lib/session'
 
 export const metadata: Metadata = { title: 'Projeto' }
 
 const SECTIONS = [
   ['visao', 'Visão geral'],
+  ['equipe', 'Equipe'],
   ['roteiro', 'Briefing e roteiro'],
   ['midias', 'Mídias e backups'],
   ['organizacao', 'Organização e sync'],
@@ -62,7 +71,14 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
     if (isDomainError(e) && e.code === 'project_not_found') notFound()
     throw e
   }
-  const { project, steps, documents, manifests, runs, events } = data
+  const { project, steps, documents, manifests, runs, events, team, invites } = data
+  // Entregas conferidas pelo SOBEDESCE (delivery.ready v2): o link é sempre o da pasta do Drive montado pelo HUB.
+  const entregas = events
+    .filter((e) => e.event_type === 'delivery.ready' && Number(e.schema_version) === 2)
+    .map((e) => {
+      const p = e.payload as { files: number; bytes: number; folder_url: string }
+      return { id: e.id as string, files: p.files, bytes: p.bytes, link: p.folder_url, quando: e.occurred_at as Date }
+    })
   const canEdit = !!project.can_edit
   const step = (k: string) => steps.find((s) => s.stepKey === k)!
   const brief = documents.find((d) => d.kind === 'brief')
@@ -139,7 +155,7 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
                   <dd>{fmtDate(s.lastSyncedAt)}</dd>
                 </dl>
                 {a && <p className="zro-faint">No HUB: {a.hubCan[0]}</p>}
-                <StepAccess step={s} />
+                {data.actor.role !== 'guest' && <StepAccess step={s} />}
               </div>
             )
           })}
@@ -168,6 +184,35 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
               </div>
             </ActionForm>
           </details>
+        )}
+      </Card>
+
+      <Card id="equipe" title="Equipe" eyebrow="Quem está neste projeto">
+        {team.length || invites.length ? (
+          <ul className="list-rows">
+            {team.map((m) => (
+              <li key={m.user_id as string} className="list-rows__item row--between">
+                <span>
+                  <strong>{m.display_name as string}</strong>
+                  {m.function ? <span className="zro-faint"> · {m.function as string}</span> : null}
+                </span>
+                <Pill>{m.role === 'editor' ? 'Edição' : 'Leitura'}</Pill>
+              </li>
+            ))}
+            {invites.map((i) => (
+              <li key={i.id as string} className="list-rows__item row--between">
+                <span>
+                  {i.email as string}
+                  {i.project_function ? <span className="zro-faint"> · {i.project_function as string}</span> : null}
+                </span>
+                <Pill tone="faint" title={`Vale até ${fmtDate(i.expires_at as Date)}`}>
+                  Convite enviado
+                </Pill>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <EmptyState title="Ninguém na equipe ainda.">Quem for escalado no Carro do Freela aparece aqui.</EmptyState>
         )}
       </Card>
 
@@ -245,7 +290,7 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
           cada destino. Só conta como conferido o que tem checksum no relatório.
         </p>
         {manifests.length ? (
-          <div className="zro-table-wrap">
+          <div className="zro-table-wrap" tabIndex={0} role="region" aria-label="Tabela">
             <table className="zro-table">
               <thead>
                 <tr>
@@ -375,11 +420,13 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
         )}
       </Card>
 
-      <Card id="edicao" title="Decupagem e edição" eyebrow="AI Edit · nome provisório">
-        <Notice title="Em desenvolvimento">
-          O AI Edit ainda não existe como ferramenta. O contrato de entrada (mídia sincronizada, briefing, roteiro) e de saída (<code>edit.selects.ready</code>,{' '}
-          <code>edit.timeline.ready</code>) já está definido. Nenhuma IA roda aqui.
-        </Notice>
+      <Card id="edicao" title="Decupagem e edição" eyebrow="AEON">
+        <p className="zro-mute">
+          O AEON é o editor completo: você monta e corta na linha do tempo, com a IA sugerindo cortes, zoom e legenda quando quiser, e entrega o vídeo ou a
+          timeline para o seu editor. O HUB não processa nada aqui; a passagem segue os contratos <code>edit.selects.ready</code> e{' '}
+          <code>edit.timeline.ready</code>.
+        </p>
+        <StepAccess step={step('ai-edit')} />
       </Card>
 
       <Card id="som" title="Som" eyebrow="NOSSOM">
@@ -391,12 +438,40 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
       </Card>
 
       <Card id="finalizacao" title="Finalização e entregas" eyebrow="Revela">
-        <Notice title="Em desenvolvimento">Começa pela cor no DaVinci Resolve: LUT a partir de uma referência e entrega em PowerGrade e LUT.</Notice>
+        <p className="zro-mute">A Revela cuida da cor no DaVinci Resolve: LUT a partir de uma referência e entregas por destino.</p>
+        {entregas.length ? (
+          <ul className="list-plain">
+            {entregas.map((e) => (
+              <li key={e.id} className="row row--between">
+                <span>
+                  <Pill tone="ok">MD5 conferido</Pill> {e.files} arquivo(s) · {fmtBytes(e.bytes)}
+                </span>
+                <span className="row">
+                  <span className="zro-faint">{fmtDate(e.quando)}</span>
+                  <a className="zro-btn zro-btn--small zro-btn--ghost" href={e.link} target="_blank" rel="noopener noreferrer">
+                    Abrir no Drive
+                  </a>
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {canEdit && step('sobedesce').access === 'contracted' ? (
+          <details className="disclosure">
+            <summary>Registrar entrega do SOBEDESCE</summary>
+            <ActionForm action={importSobedesceDeliveryAction} submit="Registrar entrega">
+              <input type="hidden" name="projectId" value={id} />
+              <Field label="Comprovante (.json)" htmlFor="ent-file" hint="O SOBEDESCE gera depois que a pasta sobe com o MD5 de cada arquivo conferido.">
+                <input className="zro-input" id="ent-file" name="entregaFile" type="file" accept="application/json,.json" required />
+              </Field>
+            </ActionForm>
+          </details>
+        ) : null}
       </Card>
 
       <Card id="atividades" title="Atividades e auditoria">
         {runs.length ? (
-          <div className="zro-table-wrap">
+          <div className="zro-table-wrap" tabIndex={0} role="region" aria-label="Tabela">
             <table className="zro-table">
               <thead>
                 <tr>

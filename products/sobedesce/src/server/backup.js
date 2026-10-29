@@ -32,7 +32,7 @@ export function registerBackup({ route, ctx, HttpProblem, servico }) {
 
   route('GET', '/api/backup', tratar(async () => svc.view()))
 
-  route('POST', '/api/backup/projetos', tratar(async ({ body }) => svc.criarProjeto({ nome: texto(body.nome, 200), destinos: lista(body.destinos), ejetar: body.ejetar === true, ligar: body.ligar !== false })))
+  route('POST', '/api/backup/projetos', tratar(async ({ body }) => svc.criarProjeto({ nome: texto(body.nome, 200), destinos: lista(body.destinos), ejetar: body.ejetar === true, ligar: body.ligar !== false, tipo: texto(body.tipo, 40) })))
 
   route('POST', '/api/backup/projeto', tratar(async ({ body }) => {
     const id = texto(body.id, 100)
@@ -41,10 +41,14 @@ export function registerBackup({ route, ctx, HttpProblem, servico }) {
       nome: body.nome === undefined ? undefined : texto(body.nome, 200),
       destinos: body.destinos === undefined ? undefined : lista(body.destinos),
       ejetar: body.ejetar === undefined ? undefined : body.ejetar === true,
+      tipo: body.tipo === undefined ? undefined : texto(body.tipo, 40),
     })
   }))
 
   route('POST', '/api/backup/abrir', tratar(async ({ body }) => svc.abrir(texto(body.id, 100))))
+
+  // "Preparar no Synquei": o link synquei://organizar da pasta do projeto (quem abre é a ponte do app ou o navegador).
+  route('POST', '/api/backup/synquei', tratar(async ({ body }) => svc.paraSynquei(texto(body.id, 100) || undefined)))
 
   route('POST', '/api/backup/apagar', tratar(async ({ body }) => svc.apagarProjeto(texto(body.id, 100))))
 

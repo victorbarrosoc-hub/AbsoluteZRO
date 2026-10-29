@@ -1,7 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": [
+    "gru1"
+  ],
   "framework": null,
-  "installCommand": "echo sem dependencias",
-  "buildCommand": "node src/vercel-build.js",
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- ."
+  "installCommand": "npm ci --no-audit --no-fund",
+  "buildCommand": "node src/vercel-build.js"
 }

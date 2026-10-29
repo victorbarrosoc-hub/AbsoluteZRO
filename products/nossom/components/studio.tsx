@@ -19,6 +19,7 @@ import { toolPath, routeOperation } from '@/lib/studio-routes';
 import { activateVersion, activeIndex, previousIndex, nextIndex } from '@/lib/history';
 import { EqualizerControls, BroadcastControls } from './preset-controls';
 import AssistantHome from './assistant-home';
+import ZroIaPanel from './zro-ia-panel';
 import AIMotion from './ai-motion';
 import UserAvatar from './user-avatar';
 import AdminDashboard from './admin-dashboard';
@@ -31,6 +32,9 @@ import { voicePresets } from '@/lib/voice-presets';
 import { effectPresets, type EffectId } from '@/lib/effects';
 import { toolGroups } from '@/lib/workflow';
 import InstallApp from './install-app';
+import FamilyNav from './family-nav';
+import NavBadge from './nav-badge';
+import { studioPending } from '@/lib/studio-pending';
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowUpRight,
@@ -41,6 +45,7 @@ import {
   AudioLines,
   Folder,
   House,
+  Circle,
   Sparkles,
   SlidersHorizontal,
   Layers,
@@ -173,7 +178,7 @@ function RangeControl({
     </label>
   );
 }
-export default function Studio({ account }: { account: Account }) {
+export default function Studio({ account, zroIa = false }: { account: Account; zroIa?: boolean }) {
   const pathname = usePathname(),
     searchParams = useSearchParams();
   const requestedProjectId = searchParams.get('project');
@@ -262,21 +267,23 @@ export default function Studio({ account }: { account: Account }) {
     }
   }
   const [view, setView] = useState<
-      'home' | 'projects' | 'editor' | 'tool' | 'ai' | 'account' | 'plans' | 'admin'
+      'z' | 'home' | 'projects' | 'editor' | 'tool' | 'ai' | 'account' | 'plans' | 'admin'
     >(
-      pathname === '/studio/admin'
-        ? 'admin'
-        : pathname === '/studio/planos'
-          ? 'plans'
-          : pathname === '/studio/conta'
-            ? 'account'
-            : pathname === '/studio/ia'
-              ? 'ai'
-              : pathname === '/studio/projetos'
-                ? 'projects'
-                : routeTool
-                  ? 'tool'
-                  : 'home',
+      pathname === '/studio/z' || (pathname === '/studio' && zroIa)
+        ? 'z'
+        : pathname === '/studio/admin'
+          ? 'admin'
+          : pathname === '/studio/planos'
+            ? 'plans'
+            : pathname === '/studio/conta'
+              ? 'account'
+              : pathname === '/studio/ia'
+                ? 'ai'
+                : pathname === '/studio/projetos'
+                  ? 'projects'
+                  : routeTool
+                    ? 'tool'
+                    : 'home',
     ),
     [projects, setProjects] = useState<ProjectSummary[]>([]),
     [project, setProject] = useState<Project | null>(null),
@@ -444,6 +451,9 @@ export default function Studio({ account }: { account: Account }) {
     void refreshCloud();
     const focus = () => {
       void refreshUsage();
+      // o balão de Meus projetos acompanha o pedido de restauração (pronto para salvar enquanto a pessoa estava
+      // fora); durante um envio ou acompanhamento em andamento, quem atualiza o pedido é o próprio fluxo
+      if (!cloudAbort.current) void refreshCloud();
     };
     window.addEventListener('focus', focus);
     return () => window.removeEventListener('focus', focus);
@@ -453,6 +463,7 @@ export default function Studio({ account }: { account: Account }) {
       setCollapsed(localStorage.getItem('nossom-sidebar-collapsed') === 'true');
     } catch {}
   }, []);
+  const pending = studioPending(pendingJob);
   function toggleNavigation() {
     const next = !collapsed;
     setCollapsed(next);
@@ -490,6 +501,10 @@ export default function Studio({ account }: { account: Account }) {
   useEffect(() => {
     let current = true;
     setSidebar(false);
+    if (pathname === '/studio/z' || (pathname === '/studio' && zroIa)) {
+      setView('z');
+      return;
+    }
     if (pathname === '/studio/admin') {
       setView('admin');
       return;
@@ -532,7 +547,7 @@ export default function Studio({ account }: { account: Account }) {
     return () => {
       current = false;
     };
-  }, [pathname, requestedProjectId, account.id]);
+  }, [pathname, requestedProjectId, account.id, zroIa]);
   // Offer the next plan when the month's minutes run low or out: once per stage and month,
   // never during processing or over another dialog, and always when a job is refused for minutes.
   useEffect(() => {
@@ -555,6 +570,8 @@ export default function Studio({ account }: { account: Account }) {
   useEffect(() => {
     const names: Record<string, string> = {
       '/studio': 'Seu estúdio',
+      '/studio/inicio': 'Seu estúdio',
+      '/studio/z': 'Z',
       '/studio/conta': 'Minha conta',
       '/studio/planos': 'Meu plano',
       '/studio/projetos': 'Meus projetos',
@@ -679,7 +696,7 @@ export default function Studio({ account }: { account: Account }) {
       setError('Não foi possível abrir esse projeto.');
     }
   }
-  function navigate(next: 'home' | 'projects' | 'editor') {
+  function navigate(next: 'z' | 'home' | 'projects' | 'editor') {
     setSidebar(false);
     if (busy || recording) return;
     setSidebar(false);
@@ -687,8 +704,10 @@ export default function Studio({ account }: { account: Account }) {
       next === 'projects'
         ? '/studio/projetos'
         : next === 'home'
-          ? '/studio'
-          : toolPath(operation, project?.id),
+          ? '/studio/inicio'
+          : next === 'z'
+            ? '/studio/z'
+            : toolPath(operation, project?.id),
     );
   }
   function chooseTool(next: Operation) {
@@ -1118,7 +1137,7 @@ export default function Studio({ account }: { account: Account }) {
   );
   return (
     <div
-      className={`studio-shell ${collapsed ? 'nav-collapsed' : ''} ${routeTool ? `tool-editor tool-${routeTool}` : ''}`}
+      className={`studio-shell ${collapsed ? 'nav-collapsed' : ''} ${routeTool ? `tool-editor tool-${routeTool}` : ''} ${view === 'z' ? 'view-z' : ''}`}
       data-theme={theme}
     >
       <a className="skip-link" href="#studio-main">
@@ -1205,6 +1224,11 @@ export default function Studio({ account }: { account: Account }) {
           <Plus size={17} /> Novo projeto
         </button>
         <nav aria-label="Navegação do estúdio">
+          {zroIa && (
+            <button className={view === 'z' ? 'active' : ''} onClick={() => navigate('z')}>
+              <Circle size={18} strokeWidth={1.5} /> Z
+            </button>
+          )}
           <button
             className={view === 'home' || view === 'ai' ? 'active' : ''}
             onClick={() => navigate('home')}
@@ -1214,8 +1238,14 @@ export default function Studio({ account }: { account: Account }) {
           <button
             className={view === 'projects' ? 'active' : ''}
             onClick={() => navigate('projects')}
+            title={pending.projects.title || undefined}
           >
-            <Folder size={18} /> Meus projetos <small>{projects.length}</small>
+            <Folder size={18} /> Meus projetos
+            {pending.projects.count ? (
+              <NavBadge count={pending.projects.count} />
+            ) : (
+              <small>{projects.length}</small>
+            )}
           </button>
           <button
             className={routeTool ? 'active' : ''}
@@ -1256,6 +1286,7 @@ export default function Studio({ account }: { account: Account }) {
             </button>
           )}
         </nav>
+        <FamilyNav onOpen={() => setSidebar(false)} />
         <div className="sidebar-bottom">
           <InstallApp onOpen={() => setSidebar(false)} />
           <Link
@@ -1295,8 +1326,10 @@ export default function Studio({ account }: { account: Account }) {
               aria-expanded={!collapsed}
               aria-controls="studio-navigation"
               onClick={toggleNavigation}
+              title={collapsed && pending.projects.title ? pending.projects.title : undefined}
             >
               <Menu size={18} />
+              {collapsed && <NavBadge count={pending.projects.count} corner />}
             </button>
             <span>Meu espaço</span>
             <ChevronRight size={12} />
@@ -1320,17 +1353,19 @@ export default function Studio({ account }: { account: Account }) {
               </select>
             ) : (
               <strong>
-                {view === 'ai'
-                  ? 'Assistente'
-                  : view === 'projects'
-                    ? 'Meus projetos'
-                    : view === 'admin'
-                      ? 'Administração'
-                      : view === 'account'
-                        ? 'Minha conta'
-                        : view === 'plans'
-                          ? 'Meu plano'
-                          : 'Assistente'}
+                {view === 'z'
+                  ? 'Z'
+                  : view === 'ai'
+                    ? 'Assistente'
+                    : view === 'projects'
+                      ? 'Meus projetos'
+                      : view === 'admin'
+                        ? 'Administração'
+                        : view === 'account'
+                          ? 'Minha conta'
+                          : view === 'plans'
+                            ? 'Meu plano'
+                            : 'Assistente'}
               </strong>
             )}
           </div>
@@ -1607,6 +1642,8 @@ export default function Studio({ account }: { account: Account }) {
               </div>
             </>
           )}
+          {/* A Z, a IA da Absolute ZRO, tem a aba própria e ocupa a tela toda. */}
+          {view === 'z' && zroIa && <ZroIaPanel theme={theme} />}
           {(view === 'home' || view === 'ai') && (
             <AssistantHome
               onOpen={() => setAssistant(true)}
@@ -2895,6 +2932,12 @@ export default function Studio({ account }: { account: Account }) {
         </div>
       )}
       <nav className="studio-tabs" aria-label="Navegação rápida" inert={mobile && sidebar}>
+        {zroIa && (
+          <button className={view === 'z' ? 'active' : ''} onClick={() => navigate('z')}>
+            <Circle size={19} strokeWidth={1.5} />
+            <span>Z</span>
+          </button>
+        )}
         <button
           className={view === 'home' || view === 'ai' ? 'active' : ''}
           onClick={() => navigate('home')}
@@ -2905,9 +2948,11 @@ export default function Studio({ account }: { account: Account }) {
         <button
           className={view === 'projects' ? 'active' : ''}
           onClick={() => navigate('projects')}
+          title={pending.projects.title || undefined}
         >
           <Folder size={19} />
           <span>Projetos</span>
+          <NavBadge count={pending.projects.count} corner />
         </button>
         <button
           className={routeTool ? 'active' : ''}

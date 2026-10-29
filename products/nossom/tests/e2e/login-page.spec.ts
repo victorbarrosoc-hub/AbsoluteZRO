@@ -1,8 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { onlyWhenOpen } from './fixtures';
 import AxeBuilder from '@axe-core/playwright';
 test('desktop access expands by hover and keyboard, keeping fields available while typing', async ({
   page,
 }) => {
+  onlyWhenOpen();
   await page.goto('/entrar');
   const card = page.locator('.account-expandable');
   await expect(card).not.toHaveClass(/is-expanded/);
@@ -25,6 +27,7 @@ test('desktop access expands by hover and keyboard, keeping fields available whi
 test('mobile login opens without hover and account creation goes to the Absolute ZRO', async ({
   page,
 }) => {
+  onlyWhenOpen();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/entrar');
   await expect(page.getByLabel('E-mail', { exact: true })).toBeVisible();

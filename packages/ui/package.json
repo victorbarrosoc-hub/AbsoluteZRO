@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.tsx",
+    "./senha": "./src/senha.tsx",
     "./tokens.css": "./src/tokens.css",
     "./components.css": "./src/components.css"
   },

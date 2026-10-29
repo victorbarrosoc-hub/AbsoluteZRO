@@ -1,6 +1,6 @@
 'use server'
 import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
+import { redirect } from './ir'
 import {
   changePassword,
   defaultSender,
@@ -17,30 +17,52 @@ import {
 import type { FormState } from '@/components/action-form'
 import { appOrigin, showDevLinks } from '../env'
 import { clearSessionCookie, db, getAuth, requestMeta, setSessionCookie } from '../session'
+import { emailConfirmacao, emailNovaSenha } from '../email/modelos'
 import { safeNext, str, toFormError } from './helpers'
 
 const mail = defaultSender()
 
-async function sendVerify(email: string, token: string): Promise<string | undefined> {
+async function sendVerify(email: string, token: string, opts: { nome?: string | null; boasVindas: boolean }): Promise<{ devLink?: string; enviado: boolean }> {
   const link = `${appOrigin}/confirmar-email?token=${encodeURIComponent(token)}`
-  await mail.send({ to: email, subject: 'Confirme seu e-mail na Absolute ZRO', text: `Para confirmar, abra: ${link}` })
-  return showDevLinks ? link : undefined
+  // A conta já existe: falha no envio não pode parecer falha no cadastro (a pessoa reenvia pela conta).
+  const enviado = await mail
+    .send(emailConfirmacao(email, link, opts))
+    .then(() => true)
+    .catch((e) => {
+      console.error('[e-mail] confirmação não enviada:', e instanceof Error ? e.message : e)
+      return false
+    })
+  return { devLink: showDevLinks ? link : undefined, enviado }
 }
 
 export async function signupAction(_: FormState, fd: FormData): Promise<FormState> {
   let ok = false
   try {
     const email = str(fd, 'email')
-    const r = await signUp(db(), { email, password: String(fd.get('password') ?? ''), displayName: str(fd, 'name') }, await requestMeta())
+    const r = await signUp(
+      db(),
+      // O @ escolhido na conversa (0029); sugestão aceita sem mexer vira a do banco se alguém já tiver.
+      {
+        email,
+        password: String(fd.get('password') ?? ''),
+        displayName: str(fd, 'name'),
+        arroba: str(fd, 'arroba') || null,
+        arrobaFlexivel: str(fd, 'arroba_sugerida') === '1',
+      },
+      await requestMeta(),
+    )
     await setSessionCookie(r.session.token)
-    await sendVerify(email, r.verifyToken)
+    await sendVerify(email, r.verifyToken, { nome: str(fd, 'name'), boasVindas: true })
     ok = true
   } catch (e) {
     return toFormError(e)
   }
   const next = safeNext(str(fd, 'next'))
-  if (ok) redirect(next ? `/boas-vindas?next=${encodeURIComponent(next)}` : '/boas-vindas')
-  return null
+  if (!ok) return null
+  const to = next ? `/boas-vindas?next=${encodeURIComponent(next)}` : '/boas-vindas'
+  // Na conversa (com JavaScript) o cliente mostra "pronto" e abre o destino; sem JavaScript, redireciona aqui.
+  if (str(fd, 'conversa') === '1') return { ok: 'pronto', data: { to } }
+  redirect(to)
 }
 
 export async function loginAction(_: FormState, fd: FormData): Promise<FormState> {
@@ -50,7 +72,9 @@ export async function loginAction(_: FormState, fd: FormData): Promise<FormState
   } catch (e) {
     return toFormError(e)
   }
-  redirect(safeNext(str(fd, 'next')) ?? '/inicio')
+  const to = safeNext(str(fd, 'next')) ?? '/inicio'
+  if (str(fd, 'conversa') === '1') return { ok: 'pronto', data: { to } }
+  redirect(to)
 }
 
 export async function logoutAction() {
@@ -60,13 +84,21 @@ export async function logoutAction() {
   redirect('/entrar')
 }
 
+/** Sair pelo painel do app de computador: volta para o login do próprio app. */
+export async function logoutAppAction() {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value
+  if (token) await revokeSessionByToken(db(), token)
+  await clearSessionCookie()
+  redirect('/app/entrar')
+}
+
 export async function forgotAction(_: FormState, fd: FormData): Promise<FormState> {
   try {
     const r = await requestPasswordReset(db(), str(fd, 'email'))
     let devLink: string | undefined
     if (r) {
       const link = `${appOrigin}/redefinir-senha?token=${encodeURIComponent(r.token)}`
-      await mail.send({ to: r.email, subject: 'Nova senha na Absolute ZRO', text: `Para criar uma nova senha, abra (vale 1 hora): ${link}` })
+      await mail.send(emailNovaSenha(r.email, link))
       if (showDevLinks) devLink = link
     }
     if (!mail.deliveryAvailable) return { error: 'O envio de e-mail ainda não está ligado nesta instalação. Fale com o suporte.' }
@@ -82,6 +114,11 @@ export async function resetAction(_: FormState, fd: FormData): Promise<FormState
   } catch (e) {
     return toFormError(e)
   }
+  // Quem redefiniu entra de novo com a senha nova: a sessão que já estava aberta neste aparelho (de qualquer conta) é
+  // encerrada, para /entrar não pular direto para o painel de outra pessoa.
+  const token = (await cookies()).get(SESSION_COOKIE)?.value
+  if (token) await revokeSessionByToken(db(), token)
+  await clearSessionCookie()
   redirect('/entrar?senha=nova')
 }
 
@@ -95,8 +132,9 @@ export async function resendVerifyAction(): Promise<FormState> {
   if (!auth) return { error: 'Entre na sua conta.' }
   if (auth.user.emailVerified) return { ok: 'Seu e-mail já está confirmado.' }
   const token = await newVerifyToken(db(), auth.user.id)
-  const devLink = await sendVerify(auth.user.email, token)
+  const { devLink, enviado } = await sendVerify(auth.user.email, token, { nome: auth.user.displayName, boasVindas: true })
   if (!mail.deliveryAvailable) return { error: 'O envio de e-mail ainda não está ligado nesta instalação.' }
+  if (!enviado) return { error: 'Não conseguimos enviar agora. Tente de novo em instantes.' }
   return { ok: 'Enviamos um novo link de confirmação.', devLink }
 }
 
@@ -115,7 +153,7 @@ export async function revokeSessionAction(fd: FormData) {
   const auth = await getAuth()
   if (!auth) redirect('/entrar')
   await revokeOwnSession(db(), auth.user.id, str(fd, 'sessionId'))
-  redirect('/perfil')
+  redirect('/perfil/seguranca')
 }
 
 export async function themeAction(fd: FormData) {

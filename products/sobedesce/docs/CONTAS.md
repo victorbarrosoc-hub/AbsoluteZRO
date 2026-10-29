@@ -51,7 +51,8 @@ Mudou algo aqui? Avise as outras frentes.
 | `SOBEDESCE_PGLITE_DIR` | Só testes/local: onde fica o PGlite (padrão `./data/pglite`; `memory://` = em memória). |
 | `ZRO_CLIENT_ID` | "Entrar com Absolute ZRO" (§12): o client_id cadastrado no console da Absolute ZRO. Sem ele, o botão não aparece. |
 | `ZRO_CLIENT_SECRET` | Segredo do mesmo cliente (aparece uma vez no console da Absolute ZRO). |
-| `ZRO_ISSUER` | Opcional. Padrão `https://absolutezro.vercel.app`. Nos testes, a Absolute ZRO falsa (`web/tests/zro-falso.mts`). |
+| `ZRO_ISSUER` | Opcional. Padrão `https://absolutezro.com`. Nos testes, a Absolute ZRO falsa (`web/tests/zro-falso.mts`). |
+| `ZRO_CONEXOES_URL` | Opcional. Para onde vai quem acabou de ligar a conta antiga (§12). Padrão `${ZRO_ISSUER}/conexoes`. |
 
 ### 2.1 Virada do Neon para o Supabase da Absolute ZRO
 
@@ -133,7 +134,7 @@ Códigos comuns: `401 sem_sessao`, `403 origem` (cookie sem Origin do site), `40
 
 | Método e caminho | Entrada | Saída |
 |---|---|---|
-| `GET /api/eu` | | `200 { usuario: { id, email, nome }, contas: Conta[], recursos: { referencias } }` · `401 { erro: "sem_sessao" }` |
+| `GET /api/eu` | | `200 { usuario: { id, email, nome }, contas: Conta[], recursos: { referencias }, zro: { ligada, pedir, ligar } }` (§12) · `401 { erro: "sem_sessao" }` |
 | `GET /api/drive/contas` | | `200 { contas: Conta[] }` |
 | `POST /api/drive/token` | `{ conta: "<id>", renovar?: boolean }` | `200 { accessToken, expiraEm (ms epoch), email }` · `404 nao_encontrada` · `409 { erro: "reconectar", mensagem }` · `502 google` · `503 sem_config` |
 | `POST /api/dispositivo/iniciar` | `{ nome, plataforma }` (sem sessão; `plataforma` fora de mac/windows/linux vira null) | `200 { codigo, segredo, url, intervalo: 3, expiraEm }` · `429 devagar` |
@@ -321,6 +322,9 @@ das Referências (pegar de uma vez só, sinal de vida, preso volta para a fila).
 - **Celular** (`components/proxies.js`): na seleção da aba Drive, **Gerar proxy** (só vídeos, inclusive RAW de câmera;
   não as próprias cópias leves). A folha diz se há um computador ligado (pela notícia do "Acompanhar pelo celular"),
   pede e acompanha cada vídeo a cada 5 s enquanto está aberta: esperando, gerando, pronto ou o erro com **De novo**.
+  No menu de um vídeo, **Converter com a Revela** (`components/revela.js`) NÃO é pedido ao computador: o próprio
+  celular converte (`lib/revela.js`: lê do Drive por pedaços com o token, WebCodecs, ProRes em WASM, BT.709) e o
+  arquivo novo entra na fila de envios para a mesma pasta. Um botão só: converte o aparelho que tocou.
 
 ## 12. Entrar com Absolute ZRO (login único da família)
 
@@ -351,6 +355,28 @@ emissor, público (`ZRO_CLIENT_ID`), validade e nonce.
     em Sua conta › Absolute ZRO.
   - A mesma Absolute ZRO não liga em duas contas; conta sem senha e sem Google de entrar não desliga (ficaria sem
     como entrar).
+- **Conta antiga sem vínculo (29/10/2026, decisão do titular): "Agora sua conta é Absolute ZRO".** O ecossistema
+  (Maestro etc.) só acha o Drive de alguém pelo vínculo, então quem está logado sem linha em `contas_zro` vê, uma vez,
+  uma tela inteira com o símbolo, o título, o botão "Continuar com Absolute ZRO" e "Seu Google Drive continua
+  conectado." (`src/lib/zro/ligar.ts`, `src/components/conta/ligar-zro.tsx`). Ninguém sai da conta.
+  - **Site:** `/conta` e `/z` mostram a tela no lugar da página (com um "Sair" discreto). `/dispositivo` (liberar um
+    computador), `/admin` e as rotas de saúde não mudam.
+  - **API:** nunca bloqueia por falta de vínculo. `GET /api/eu` traz `zro: { ligada, pedir, ligar }` (`pedir` só com a
+    Absolute ZRO configurada; `ligar` = `/api/zro/entrar?modo=vincular&volta=%2Fconta`). Drives, token do Drive,
+    andamento do computador e transferências seguem iguais.
+  - **Celular (`/app/`):** tela inteira no lugar das abas; com envio andando (fila ou Wi-Fi), só uma faixa fixa em cima
+    e o link abre em outra janela para a página (que faz o envio) não sair. Erro volta em `/app/?erro=zro_*`.
+  - **Computador:** o motor lê `zro` do `/api/eu` (`CloudAuth.status().zro`). App parado: folha por cima da interface;
+    transferência ou cartão andando: faixa fixa que não fecha, e a fila continua. O botão chama
+    `POST /api/cloud/zro/ligar` (local), abre o vincular no navegador do sistema e o motor confere a conta a cada 3 s
+    (até 15 min); ligou, a folha some.
+  - **Depois de ligar:** vínculo novo → 303 para as Conexões da central, `ZRO_CONEXOES_URL` (padrão
+    `${ZRO_ISSUER}/conexoes`). Religar uma conta já ligada continua voltando com `?zro=ok`. Vínculo novo sem a SOBEDESCE em
+    `zro_products` fica no site (a tela "Acesso ainda não liberado" vale, como para qualquer conta ligada).
+  - **Bordas:** vínculo novo exige e-mail confirmado na Absolute ZRO (`zro_email_nao_verificado`); Absolute ZRO de outra
+    conta (`zro_outra_conta`); cancelar (`zro_recusado`). O recado aparece na própria tela de ligar.
+  - **Testes:** `web/tests/zro-ligar.test.mts` e `test/ligar-zro.test.js` (envio de verdade terminando conferido
+    enquanto a conta liga).
 - **Cadastro no console da Absolute ZRO:** confidencial, produto SOBEDESCE, retornos
   `https://sobedesce.com/api/zro/callback` e `https://sobedesce.vercel.app/api/zro/callback` (e
   `http://localhost:3000/api/zro/callback` para desenvolvimento).

@@ -8,7 +8,7 @@ import { db, requireOrgPage } from '@/lib/session'
 export const metadata: Metadata = { title: 'Ferramentas' }
 
 function HubDoes({ p }: { p: ProductAccess }) {
-  const a = adapterFor(p.productId)
+  const a = p.access === 'closed' ? null : adapterFor(p.productId)
   if (!a) return null
   return (
     <details className="disclosure">
@@ -35,7 +35,8 @@ export default async function Ferramentas() {
   const groups: [string, ProductAccess[]][] = [
     ['Contratadas', access.filter((a) => a.access === 'contracted')],
     ['Disponíveis para contratar', access.filter((a) => a.access === 'available')],
-    ['Em desenvolvimento', access.filter((a) => a.access === 'coming_soon')],
+    // fechado pelo gate de lançamento (ADR 0023) aparece aqui com o selo, sem Abrir nem Instalar
+    ['Em desenvolvimento', access.filter((a) => a.access === 'coming_soon' || a.access === 'closed')],
   ]
   return (
     <div className="page">

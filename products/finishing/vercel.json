@@ -2,10 +2,14 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "echo sem dependências para o site",
-  "buildCommand": "echo sem build",
-  "outputDirectory": ".",
-  "ignoreCommand": "git diff --quiet HEAD^ HEAD -- .",
+  "buildCommand": "node scripts/publicar-site.mjs",
+  "outputDirectory": "publico",
   "cleanUrls": true,
+  "functions": {
+    "api/app.js": {
+      "includeFiles": "{inicio.html,lut.html,lab.html,looks.html,cst.html,entrega.html,converter.html,em-desenvolvimento.html,app/**,src/**,exemplos/**}"
+    }
+  },
   "headers": [
     {
       "source": "/(.*)",
@@ -24,7 +28,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; img-src 'self' blob: data:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self' blob: data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+          "value": "default-src 'self'; img-src 'self' blob: data: https://absolutezro.com; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval' https://absolutezro.com; worker-src 'self' blob:; connect-src 'self' blob: data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
         },
         {
           "key": "Cross-Origin-Opener-Policy",
@@ -35,6 +39,40 @@
           "value": "require-corp"
         }
       ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    { "source": "/inicio", "destination": "/api/app?caminho=inicio.html" },
+    { "source": "/lut", "destination": "/api/app?caminho=lut.html" },
+    { "source": "/lab", "destination": "/api/app?caminho=lab.html" },
+    { "source": "/looks", "destination": "/api/app?caminho=looks.html" },
+    { "source": "/cst", "destination": "/api/app?caminho=cst.html" },
+    { "source": "/entrega", "destination": "/api/app?caminho=entrega.html" },
+    { "source": "/converter", "destination": "/api/app?caminho=converter.html" },
+    { "source": "/app/:caminho*", "destination": "/api/app?caminho=app/:caminho*" },
+    { "source": "/src/:caminho*", "destination": "/api/app?caminho=src/:caminho*" },
+    { "source": "/exemplos/:caminho*", "destination": "/api/app?caminho=exemplos/:caminho*" }
+  ],
+  "redirects": [
+    {
+      "source": "/:caminho*",
+      "has": [
+        {
+          "type": "host",
+          "value": "revela-zro.vercel.app"
+        }
+      ],
+      "destination": "https://revela.absolutezro.com/:caminho*",
+      "permanent": true
     }
   ]
 }

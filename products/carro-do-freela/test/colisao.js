@@ -6,7 +6,7 @@
 const { chromium } = require('playwright');
 const path=require('path');
 (async()=>{
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
   const p=await b.newPage({viewport:{width:1280,height:900}});
   /* o aviso de primeira visita cobre a tela e intercepta clique;
      quem testa ELE e a suite primeira-visita */
@@ -107,9 +107,9 @@ const path=require('path');
     document.querySelectorAll("[id]").forEach(e=>{ids[e.id]=(ids[e.id]||0)+1});
     Object.entries(ids).forEach(([k,n])=>{if(n>1)dup.push(k+" ×"+n)});
     return {conflitos:[...new Set(conflitos)],compostos:[...new Set(compostos)],
-            contextuais:[...new Set(contextuais)],idsDuplicados:dup};
+            contextuais:[...new Set(contextuais)],idsDuplicados:dup,seletores:sels.length};
   });
-  console.log(JSON.stringify(r,null,1));
+  console.log(JSON.stringify(Object.assign({},r,{seletores:undefined}),null,1)+'\n'+r.seletores+' seletores lidos');
   await b.close();
   /* ⚠️ A GUARDA PRECISA DERRUBAR A SUÍTE, e não só imprimir.
      Ela achou pf-lista duplicado (o modal do plano de freela escrevendo
@@ -132,7 +132,12 @@ const path=require('path');
      olha — que é o trabalho que a guarda existe para forçar. */
   const CTX_CONHECIDOS=[".revelar .rv",".cmp .cplano",".cmp .cdest",".cx .lgpe",".cx .lgnota"];
   const ctxNovos=r.contextuais.filter(x=>!CTX_CONHECIDOS.some(k=>x.endsWith(k)));
-  const falhas=novos.length+r.compostos.length+ctxNovos.length+r.idsDuplicados.length;
+  /* (26/out) o CSS mora em arquivo próprio: se a folha não puder ser lida
+     (file:// sem a flag do _navegador.js), a varredura vem VAZIA e a guarda
+     inteira passaria sem olhar nada — vazio reprova */
+  const cega=r.seletores<500?1:0;
+  if(cega) console.log("\na varredura leu só "+r.seletores+" seletores — a folha de estilo não foi lida");
+  const falhas=cega+novos.length+r.compostos.length+ctxNovos.length+r.idsDuplicados.length;
   if(process.env.AUTOTESTE){
     console.log(falhas?"\nAUTOTESTE ok — a guarda acusou o defeito semeado":"\nAUTOTESTE FALHOU — a guarda não viu o defeito");
     process.exit(falhas?0:1);

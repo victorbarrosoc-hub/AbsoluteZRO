@@ -48,7 +48,7 @@ describe('autorização', () => {
     await expectCode(authorize(db, o.auth, { project: { id: '00000000-0000-0000-0000-000000000000', access: 'view' } }), 'project_not_found')
     const err = await expectCode(authorize(db, o.auth, { product: { id: 'synquei', feature: 'organization_plan' } }), 'entitlement_required')
     expect(err.status).toBe(403)
-    await expectCode(authorize(db, o.auth, { product: { id: 'ai-edit' } }), 'product_unavailable')
+    await expectCode(authorize(db, o.auth, { product: { id: 'ferramenta-inexistente' } }), 'product_unavailable')
   })
 
   it('organização no cliente não vale: só a da sessão, conferida no banco', async () => {
@@ -64,7 +64,7 @@ describe('autorização', () => {
   it('quota sem limite configurado bloqueia antes de executar', async () => {
     const o = await newOrgWithOwner(db, 'quota')
     await givePlan(db, o.orgId, 'individual-synquei')
-    await expectCode(authorize(db, o.auth, { product: { id: 'synquei' }, quota: { metric: 'synquei.organization_plans' } }), 'quota_not_configured')
+    await expectCode(authorize(db, o.auth, { product: { id: 'synquei' }, quota: { metric: 'synquei.metrica_sem_limite' } }), 'quota_not_configured')
   })
 })
 
@@ -104,20 +104,22 @@ describe('equipe (caso E e convites)', () => {
 })
 
 describe('projetos', () => {
-  it('etapas começam com estado real e mostram bloqueio por assinatura', async () => {
+  it('etapas começam com estado real, mostram bloqueio por assinatura e indisponível no que está fechado por lançamento', async () => {
     const o = await newOrgWithOwner(db, 'etapas')
     await givePlan(db, o.orgId, 'individual-sobedesce')
     const id = await createProject(db, o.auth, { title: 'Casamento Ana e Leo', type: 'casamento' })
     const { steps } = await getProject(db, o.auth, id)
     const by = Object.fromEntries(steps.map((s) => [s.stepKey, s.displayState]))
+    // Carro, AEON, NOSSOM, Revela e Maestro estão fechados (ADR 0023): nunca "contrate", sempre indisponível.
     expect(by).toEqual({
-      'carro-do-freela': 'blocked_subscription',
+      'carro-do-freela': 'unavailable',
       tpeasy: 'blocked_subscription',
       sobedesce: 'not_started',
       synquei: 'blocked_subscription',
       'ai-edit': 'unavailable',
-      nossom: 'blocked_subscription',
+      nossom: 'unavailable',
       finishing: 'unavailable',
+      maestro: 'unavailable',
     })
     await expectCode(createProject(db, o.auth, { title: '' }), 'invalid_input')
   })

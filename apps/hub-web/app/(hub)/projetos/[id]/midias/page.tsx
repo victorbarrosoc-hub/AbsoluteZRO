@@ -35,7 +35,7 @@ export default async function Midias({ params }: { params: Promise<{ id: string 
         <p>Onde cada arquivo está, segundo o SOBEDESCE. O HUB não guarda a mídia. Caminhos são relativos à pasta do projeto no destino.</p>
       </div>
       {rows.length ? (
-        <div className="zro-table-wrap">
+        <div className="zro-table-wrap" tabIndex={0} role="region" aria-label="Tabela">
           <table className="zro-table">
             <thead>
               <tr>

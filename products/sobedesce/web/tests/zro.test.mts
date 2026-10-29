@@ -127,9 +127,14 @@ describe("token adulterado ou fora de ordem", () => {
     assert.equal(zro.estado.trocas, antes, "o código nem foi usado");
   });
 
+  test("sem volta pedida, quem entra cai na aba da Z", async () => {
+    const r = await fluxo({ pessoa: PRODUTORA });
+    assert.equal(r.destino, "/z");
+  });
+
   test("volta externo é ignorado", async () => {
     const r = await fluxo({ pessoa: PRODUTORA, volta: "https://evil.com/roubar" });
-    assert.equal(r.destino, "/conta");
+    assert.equal(r.destino, "/z", "volta padrão: a aba da Z, a tela de entrada");
   });
 
   test("volta sem o cookie da ida: pede para tentar de novo", async () => {
@@ -144,6 +149,8 @@ describe("Sua conta", () => {
     assert.ok(c.ok);
     const bia: PessoaZro = { sub: "zro-bia", email: "bia.zro@exemplo.com", nome: "Bia" };
     const v = await fluxo({ modo: "vincular", pessoa: bia, sessao: c.token });
+    // Ligou agora, mas sem a SOBEDESCE em zro_products: fica em Sua conta (com a SOBEDESCE, vai para as Conexões,
+    // tests/zro-ligar.test.mts).
     assert.equal(v.destino, "/conta?zro=ok");
     const e = await fluxo({ pessoa: bia });
     const a = await sessao.autenticar({ cookie: e.cookies.get("sd_sessao") });
@@ -200,7 +207,7 @@ describe("direito de uso (zro_products)", () => {
     const corpo = await eu.json();
     assert.equal(corpo.erro, "sem_acesso_zro");
     assert.match(corpo.mensagem, /Sua conta Absolute ZRO ainda não tem acesso ao SOBEDESCE\./);
-    assert.match(corpo.mensagem, /absolutezro\.vercel\.app\/ferramentas/);
+    assert.match(corpo.mensagem, /absolutezro\.com\/ferramentas/);
     assert.equal((await rotaDrives.GET(pedido("/api/drive/contas", { cookies: { sd_sessao: token } }))).status, 403);
 
     // O admin da Absolute ZRO libera; "Já liberaram? Atualizar" religa e traz a lista nova.

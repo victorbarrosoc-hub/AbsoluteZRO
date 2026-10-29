@@ -53,12 +53,15 @@ export const ROLE_LABEL: Record<string, string> = {
   editor: 'Edição',
   viewer: 'Leitura',
   billing: 'Financeiro',
+  guest: 'Convidado',
 }
 
 export const ACCESS_LABEL: Record<string, string> = {
   contracted: 'Contratada',
   available: 'Disponível para contratar',
   coming_soon: 'Em desenvolvimento',
+  // Fechado por lançamento para a pessoa (ADR 0023): o mesmo rótulo, sem "contrate".
+  closed: 'Em desenvolvimento',
   disabled: 'Desativada',
 }
 
@@ -75,6 +78,28 @@ const dateFmt = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle
 const dayFmt = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium', timeZone: 'America/Fortaleza' })
 export const fmtDate = (d: Date | string | null | undefined) => (d ? dateFmt.format(new Date(d)) : '—')
 export const fmtDay = (d: Date | string | null | undefined) => (d ? dayFmt.format(new Date(d)) : '—')
+/** "agora", "há 5 min", "há 3 h", "ontem", "há 4 dias"; mais de 30 dias vira a data. */
+export function fmtAgo(d: Date | string | null | undefined, now = Date.now()): string {
+  if (!d) return 'nunca'
+  const min = Math.round((now - new Date(d).getTime()) / 60_000)
+  if (min < 2) return 'agora'
+  if (min < 60) return `há ${min} min`
+  const h = Math.round(min / 60)
+  if (h < 24) return `há ${h} h`
+  const days = Math.round(h / 24)
+  if (days <= 1) return 'ontem'
+  if (days <= 30) return `há ${days} dias`
+  return fmtDay(d)
+}
+
+/** Limites de plano e concessão em palavras (a chave técnica fica no title). */
+export const LIMIT_LABEL: Record<string, string> = {
+  'zro.ai_credits': 'créditos de IA por mês',
+  'sobedesce.manifest_imports': 'manifestos do SOBEDESCE',
+  'synquei.organization_plans': 'planos no Synquei',
+}
+export const limitText = (key: string, n: number) => `${Number(n).toLocaleString('pt-BR')} ${LIMIT_LABEL[key] ?? key}`
+
 export const fmtBytes = (n: number | null | undefined) => {
   if (n == null) return '—'
   const u = ['B', 'KB', 'MB', 'GB', 'TB']

@@ -8,6 +8,7 @@ import { SETUP_STEPS } from '../lib/setup-steps.js'
 import { toast } from '../lib/toasts.js'
 import { Icon, Wordmark } from './icons.js'
 import { Button } from './common.js'
+import { CampoSenha } from './senha.js'
 import { OAuthWaiting } from './oauth-wait.js'
 import { CloudDrives, CloudReady, CloudSignIn, confirmCloudLogout } from './cloud.js'
 import { cloudCancel, cloudRefresh } from '../lib/cloud.js'
@@ -160,10 +161,18 @@ function StepPaste({ step, onDone, onBack, backLabel }) {
               <span class="field-label">${step.manual.clientId}</span>
               <input class="input mono" type="text" value=${clientId} placeholder=${step.manual.clientIdPlaceholder} onInput=${(e) => setClientId(e.currentTarget.value)} spellcheck="false" autocomplete="off" />
             </label>
-            <label class="field">
-              <span class="field-label">${step.manual.clientSecret}</span>
-              <input class="input mono" type="password" value=${secret} placeholder=${step.manual.clientSecretPlaceholder} onInput=${(e) => setSecret(e.currentTarget.value)} spellcheck="false" autocomplete="off" />
-            </label>
+            <div class="field">
+              <label class="field-label" for="manual-secret">${step.manual.clientSecret}</label>
+              <${CampoSenha}
+                id="manual-secret"
+                nome="chave"
+                class="input mono"
+                value=${secret}
+                placeholder=${step.manual.clientSecretPlaceholder}
+                onInput=${(e) => setSecret(e.currentTarget.value)}
+                autocomplete="off"
+              />
+            </div>
             <div class="manual-actions">
               <${Button} type="submit" variant="primary" loading=${busy} disabled=${!clientId.trim() || !secret.trim()}>${step.manual.submit}</${Button}>
             </div>
@@ -213,12 +222,12 @@ function CloudWelcome() {
 
   const begin = async () => {
     await cloudCancel() // limpa o "pronto" do login
-    navigate('painel')
+    navigate('z')
   }
   const localPath = () => (setup.configured ? (location.href = '/api/auth/start') : navigate('inicio/local'))
 
-  let title = 'Entre na sua conta SOBEDESCE'
-  let lead = 'Os Google Drives da sua conta aparecem aqui, prontos para enviar e baixar. Sem chave do Google, sem configuração.'
+  let title = 'Entre com a sua conta Absolute ZRO'
+  let lead = 'Os Google Drives conectados na sua conta aparecem aqui, prontos para enviar e baixar.'
   if (pending) lead = 'Abrimos o navegador. Entre na sua conta e libere este computador com o código abaixo.'
   if (signed && contas.length) {
     title = 'Conta conectada'
@@ -246,11 +255,7 @@ function CloudWelcome() {
             </div>
           </div>`
         : html`<div class="welcome-signin"><${CloudSignIn} hero /></div>
-            ${pending ? null : html`<div class="welcome-alt">
-              <span class="welcome-or"><span>ou</span></span>
-              <button type="button" class="btn btn-ghost btn-sm" onClick=${localPath}><${Icon} name="laptop" size=${15} /><span>Conectar um Drive só neste computador</span></button>
-              <span class="sub">Com a sua própria chave do Google. Leva uns dez minutos.</span>
-            </div>`}`}
+`}
     </main>
     <p class="setup-foot">Os arquivos vão direto deste computador para o Google. O site só guarda o acesso aos seus Drives.</p>
   </div>`
@@ -258,7 +263,9 @@ function CloudWelcome() {
 
 export function SetupScreen({ route }) {
   const sub = route?.parts[1]
-  if (sub !== 'local' && sub !== 'chave') return html`<${CloudWelcome} />`
+  // Drive só neste computador só depois de entrar com a conta Absolute ZRO (decisão do titular, 28/10/2026).
+  const signed = !!getState().cloud?.conectado
+  if ((sub !== 'local' && sub !== 'chave') || !signed) return html`<${CloudWelcome} />`
   return html`<${LocalSetup} route=${route} />`
 }
 
@@ -281,7 +288,7 @@ function LocalSetup({ route }) {
     if (changingKey && accounts.length) navigate('ajustes')
     else setCurrent(2)
   }
-  const back = accounts.length ? { label: 'Voltar para Ajustes', go: () => navigate('ajustes') } : { label: 'Entrar com a conta SOBEDESCE', go: () => navigate('inicio') }
+  const back = accounts.length ? { label: 'Voltar para Ajustes', go: () => navigate('ajustes') } : { label: 'Entrar com a conta Absolute ZRO', go: () => navigate('inicio') }
 
   return html`<div class="setup">
     <div class="setup-brand"><${Wordmark} size=${26} /></div>

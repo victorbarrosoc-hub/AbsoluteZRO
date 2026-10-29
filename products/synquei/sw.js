@@ -1,6 +1,7 @@
-// Modo offline do Synquei: guarda o site e o app na primeira visita. HTML vem da rede quando dá (para pegar
-// versões novas); o resto vem do cache e é atualizado em segundo plano. /api/ e /baixar/ vão sempre direto à rede.
-const CACHE = 'synquei-v10'
+// Modo offline do Synquei: guarda o site e o app na primeira visita. HTML, site.css e site.js vêm da rede quando dá
+// (para pegar versões novas); o resto vem do cache e é atualizado em segundo plano. /api/ (inclusive a Z, /api/zro/ia) e
+// /baixar/ vão sempre direto à rede; o painel da Z (absolutezro.com) é de outra origem e também não passa por aqui.
+const CACHE = 'synquei-v24'
 const CORE = [
   '/',
   '/site.css',
@@ -8,11 +9,17 @@ const CORE = [
   '/formatos/',
   '/icons/favicon.svg',
   '/icons/icon-192.png',
+  '/icons/z/anel.webp',
+  '/icons/z/estrela.webp',
   '/app/',
   '/app/app.css',
+  '/app/familia/absolute-zro.webp',
+  '/app/familia/sobedesce.svg',
+  '/app/familia/tpeasy.svg',
   '/app/js/atualizacao.js',
   '/app/js/conta.js',
   '/app/js/demo.js',
+  '/app/js/entrada.js',
   '/app/js/export/fcpxml.js',
   '/app/js/export/index.js',
   '/app/js/export/model.js',
@@ -37,6 +44,8 @@ const CORE = [
   '/app/js/montagem.js',
   '/app/js/montagem-sfx.js',
   '/app/js/organizar.js',
+  '/app/js/pendencias.js',
+  '/app/js/preparo.js',
   '/app/js/plano.js',
   '/app/js/project.js',
   '/app/js/sfx.js',
@@ -61,6 +70,7 @@ const CORE = [
   '/app/js/views/projetos.js',
   '/app/js/views/sfx.js',
   '/app/js/views/sincronizar.js',
+  '/app/js/z.js',
   '/app/manifest.webmanifest',
 ]
 
@@ -84,7 +94,9 @@ self.addEventListener('fetch', (e) => {
   // funções (login, /api/zro/eu com dados da pessoa) e downloads nunca passam pelo cache
   if (u.pathname.startsWith('/api/') || u.pathname.startsWith('/baixar/')) return
   const html = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html')
-  if (html) {
+  // o CSS e o JS do site andam junto com o HTML: vêm da rede também, senão uma página nova pega o estilo velho
+  const doSite = u.pathname === '/site.css' || u.pathname === '/site.js'
+  if (html || doSite) {
     e.respondWith(
       fetch(req)
         .then((res) => {

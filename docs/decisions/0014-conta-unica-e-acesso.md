@@ -34,4 +34,4 @@ como conexão dentro da plataforma.
   (`newOrgWithOwner(..., { freePlan: false })`, o padrão) e há testes próprios do plano grátis.
 - `zro_products` é lido no login. Uma mudança feita no admin vale a partir do próximo login ou refresh no app.
 - O "Entrar com o Google" precisa de um cliente OAuth do Google criado pelo titular, com o retorno
-  `https://absolutezro.vercel.app/entrar/google/retorno`.
+  `https://absolutezro.com/entrar/google/retorno`.

@@ -91,8 +91,8 @@ export function AccountScreen() {
       foot = null
       break
     case 'signedOut':
-      head = 'Entre na sua conta SOBEDESCE'
-      lead = 'Os Drives da sua conta já ficam prontos aqui. Vídeos no tamanho original, direto para o Google.'
+      head = 'Entre com a sua conta Absolute ZRO'
+      lead = 'Uma conta para a família toda. O Google entra depois, só para conectar o Drive.'
       body = html`<${LinkPill} href=${ACCOUNT.signIn}>Entrar</${LinkPill}>
         <${LinkPill} href=${ACCOUNT.signUp} variant="secondary">Criar conta</${LinkPill}>`
       break

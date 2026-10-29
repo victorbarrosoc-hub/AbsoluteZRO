@@ -492,8 +492,14 @@
   color: var(--text-2);
 }
 .bk-projetos,
-.bk-diarias {
+.bk-diarias,
+.bk-tipo {
   min-width: 140px;
+}
+/* "Preparar no Synquei": cartão conferido, a mídia segue para o projeto de edição */
+.bk-synquei {
+  width: 100%;
+  justify-content: center;
 }
 
 @media (max-width: 1180px) {

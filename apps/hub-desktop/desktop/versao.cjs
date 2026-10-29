@@ -1,8 +1,8 @@
-// Aviso de versão nova (no espírito do Synquei, sem a troca automática): o app confere o site do HUB
-// (GET <hub>/baixar/hub/versao) uns segundos depois de abrir e a cada 6 horas. Saiu um build maior que o deste app:
-// avisa uma vez por build, com "Baixar" (abre o instalador no navegador) e "Depois". A pessoa instala por cima;
-// o login e os dados continuam. Não há atualização automática: os instaladores não têm assinatura da Apple nem da
-// Microsoft, e trocar o app sozinho sem isso não é seguro.
+// Aviso de versão nova: o app confere o site do HUB (GET <hub>/baixar/hub/versao) uns segundos depois de abrir e a
+// cada 6 horas. Saiu um build maior que o deste app: avisa uma vez por build, com "Atualizar" (baixa, confere o
+// SHA-256, fecha e abre já na versão nova, pelo atualizador.cjs, como no SOBEDESCE) e "Depois". Quando o app não
+// consegue se trocar (aberto do disco de instalação, sem permissão na pasta, troca anterior que falhou), o botão vira
+// "Baixar" e abre o instalador no navegador. O login e os dados continuam.
 //
 // O build deste app vem de desktop/build-info.json, gravado pelo GitHub Actions (scripts/release.mjs build-info).
 // Sem ele (npm run desktop, testes) o build é 0 e nada é conferido. Sem Electron aqui: o main.cjs injeta fetch,
@@ -35,7 +35,8 @@ function lerRemoto(json) {
   const build = Number(json.build)
   if (!Number.isInteger(build) || build <= 0 || build > 1e9) return null
   const versao = typeof json.versao === 'string' && /^\d+\.\d+\.\d+([-.][\w.]+)?$/.test(json.versao) ? json.versao : null
-  return { build, versao }
+  const sha = (v) => (typeof v === 'string' && /^[0-9a-f]{64}$/i.test(v) ? v.toLowerCase() : null)
+  return { build, versao, sha256Mac: sha(json.sha256Mac), sha256Windows: sha(json.sha256Windows) }
 }
 
 /** Tem versão nova para avisar? Build local 0 (desenvolvimento) nunca avisa. */
@@ -61,8 +62,9 @@ function compararVersao(a, b) {
 class AvisoDeVersao {
   /**
    * @param {{ hub: string, plataforma: 'mac'|'windows'|'linux', build: number, pasta: string,
-   *           fetch?: typeof fetch, avisar: (nova: {build:number, versao:string|null, baixarUrl:string}) => Promise<'baixar'|'depois'>,
-   *           abrir: (url: string) => void, log?: (...a: unknown[]) => void }} o
+   *           fetch?: typeof fetch, avisar: (nova: {build:number, versao:string|null, baixarUrl:string}) => Promise<'atualizar'|'baixar'|'depois'|'mais-tarde'>,
+   *           abrir: (url: string) => void, atualizar?: (nova: {build:number, versao:string|null, url:string, sha256:string|null}) => void,
+   *           log?: (...a: unknown[]) => void }} o
    */
   constructor(o) {
     this.o = o
@@ -75,6 +77,23 @@ class AvisoDeVersao {
   get baixarUrl() {
     const p = this.o.plataforma === 'mac' ? 'mac' : 'windows'
     return `${this.o.hub}/baixar/hub/${p}`
+  }
+
+  /** O que o atualizador precisa: o endereço deste build e o SHA-256 da plataforma. */
+  paraInstalar(remoto) {
+    const sha256 = this.o.plataforma === 'mac' ? remoto.sha256Mac : remoto.sha256Windows
+    return { build: remoto.build, versao: remoto.versao, url: `${this.baixarUrl}?build=${remoto.build}`, sha256: sha256 || null }
+  }
+
+  /** Pergunta ao site de novo (o atualizador usa quando o arquivo baixado não bate: pode ter saído um build novo). */
+  async remoto() {
+    const r = await this.fetch(`${this.o.hub}/baixar/hub/versao`, {
+      headers: { accept: 'application/json' },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(10_000),
+    })
+    const remoto = r.ok ? lerRemoto(await r.json()) : null
+    return remoto ? this.paraInstalar(remoto) : null
   }
 
   prefs() {
@@ -121,8 +140,10 @@ class AvisoDeVersao {
     } finally {
       this.avisando = false
     }
-    if (escolha === 'baixar') this.o.abrir(this.baixarUrl)
-    else this.lembrarDepois(remoto.build)
+    if (escolha === 'atualizar' && this.o.atualizar) this.o.atualizar(this.paraInstalar(remoto))
+    else if (escolha === 'baixar') this.o.abrir(this.baixarUrl)
+    // 'mais-tarde': o app está só na bandeja e avisou por notificação; não conta como "Depois" (avisa de novo)
+    else if (escolha !== 'mais-tarde') this.lembrarDepois(remoto.build)
     return { estado: 'nova', remoto, escolha }
   }
 

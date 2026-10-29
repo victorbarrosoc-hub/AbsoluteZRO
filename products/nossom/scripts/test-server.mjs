@@ -88,6 +88,35 @@ const server = createServer(async (req, res) => {
     res.end('{}');
     return;
   }
+  // API da IA da Absolute ZRO (a Z), só o necessário para o painel do Início: aceita o token de teste
+  // `zat_e2e` (o mesmo que os testes guardam no cookie cifrado da Z) e responde em NDJSON como o HUB.
+  if (url.pathname.startsWith('/zro/api/v1/ia/')) {
+    const path = url.pathname.slice('/zro/api/v1/ia'.length);
+    const reply = (data, status = 200) => {
+      res.writeHead(status, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(data));
+    };
+    if (req.headers.authorization !== 'Bearer zat_e2e')
+      return reply({ error: 'unauthenticated', message: 'Token inválido.' }, 401);
+    if (path === '/estado' && req.method === 'GET')
+      return reply({
+        ligada: true,
+        nome: 'Teste',
+        creditos: { usados: 3, limite: 200, renova_em: '2026-11-27T03:00:00.000Z' },
+      });
+    if (path === '/conversas' && req.method === 'GET') return reply({ conversas: [] });
+    if (path === '/mensagens' && req.method === 'POST') {
+      res.writeHead(200, { 'Content-Type': 'application/x-ndjson; charset=utf-8' });
+      for (const e of [
+        { tipo: 'conversa', id: '00000000-0000-4000-8000-000000000001', titulo: 'Fala limpa' },
+        { tipo: 'texto', t: 'Comece pela Limpeza no estúdio e confira antes de salvar.' },
+        { tipo: 'fim', mensagem: '00000000-0000-4000-8000-000000000002', creditos: 1 },
+      ])
+        res.write(JSON.stringify(e) + '\n');
+      return res.end();
+    }
+    return reply({ error: 'not_found' }, 404);
+  }
   if (url.pathname.startsWith('/stripe/')) {
     const form = new URLSearchParams(Buffer.concat(chunks).toString());
     const json = (data, status = 200) => {
@@ -227,11 +256,25 @@ const server = createServer(async (req, res) => {
   if (url.pathname === '/rest/v1/rpc/nossom_zro_link') {
     if (token !== 'service-e2e-placeholder') return send({ code: '42501' }, 403);
     const data = body.p_data || {},
-      products = Array.isArray(data.products) ? data.products : [];
+      products = Array.isArray(data.products) ? data.products : [],
+      // `zro_release` (migração 202610280001): só os três estados, por produto.
+      release = Object.fromEntries(
+        Object.entries(data.release && typeof data.release === 'object' ? data.release : {}).filter(
+          ([, v]) => ['released', 'closed', 'allowed'].includes(v),
+        ),
+      );
     if (body.p_action === 'find') {
       const found = [...zroLinks.values()].find((l) => l.sub === body.p_sub);
-      if (found) found.products = products;
+      if (found) {
+        found.products = products;
+        found.release = release;
+      }
       return send({ userId: found?.userId ?? null });
+    }
+    // Conta `allowed` adota a conta antiga de mesmo e-mail confirmado (migração 202610280001).
+    if (body.p_action === 'find_by_email') {
+      const saved = users.get(String(data.email || '').toLowerCase());
+      return send({ userId: saved?.user.email_confirmed_at ? saved.user.id : null });
     }
     if (![...users.values()].some((u) => u.user.id === body.p_user))
       return send({ message: 'Account required' }, 400);
@@ -243,6 +286,7 @@ const server = createServer(async (req, res) => {
               email: row.email,
               organization: row.organization,
               products: row.products,
+              release: row.release,
               createdByZro: row.createdByZro,
               linkedAt: row.linkedAt,
               lastLoginAt: null,
@@ -256,6 +300,7 @@ const server = createServer(async (req, res) => {
         email: String(data.email || ''),
         organization: data.organization || null,
         products,
+        release,
         createdByZro: data.createdByZro === true,
         linkedAt: row?.linkedAt ?? new Date().toISOString(),
       });

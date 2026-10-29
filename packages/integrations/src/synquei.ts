@@ -4,7 +4,7 @@
  * os originais nunca são movidos; ao redor são criadas Assets, Exports e Synquei/Sequências; no editor, bins por
  * diária, câmera e cartão. Sempre dry_run: nada é executado no disco pelo HUB.
  */
-import type { OrganizationPlan, ZroMediaManifest } from '@zro/media-contracts'
+import { PreparoSchema, type OrganizationPlan, type Preparo, type ZroMediaManifest } from '@zro/media-contracts'
 
 export const SYNQUEI_WORK_FOLDERS = ['Assets', 'Exports', 'Synquei/Sequências']
 
@@ -42,4 +42,45 @@ export function planOrganization(manifest: ZroMediaManifest, now = new Date()): 
     preserved_asset_ids: assets.length,
     warnings,
   }
+}
+
+/**
+ * Recibo do Synquei (`synquei.preparo/1`, `<pasta>/Synquei/preparos.jsonl`): uma linha por mudança de estado de cada
+ * operação. Só linhas inteiras; linha fora do contrato fica de fora com o motivo. Produtor:
+ * products/synquei/desktop/manifesto-drive.cjs (linhaRecibo).
+ */
+export type PreparosParse = { entries: Preparo[]; skipped: { line: number; reason: string }[]; partialTail: boolean }
+
+export function parsePreparos(text: string): PreparosParse {
+  const lines = text.split('\n')
+  const tail = lines.pop() ?? ''
+  const out: PreparosParse = { entries: [], skipped: [], partialTail: tail.trim().length > 0 }
+  lines.forEach((raw, i) => {
+    if (!raw.trim()) return
+    if (raw.length > 64 * 1024) {
+      out.skipped.push({ line: i + 1, reason: 'linha grande demais' })
+      return
+    }
+    let json: unknown
+    try {
+      json = JSON.parse(raw)
+    } catch {
+      out.skipped.push({ line: i + 1, reason: 'linha estragada (JSON inválido)' })
+      return
+    }
+    const r = PreparoSchema.safeParse(json)
+    if (!r.success) {
+      const e = r.error.issues[0]
+      out.skipped.push({ line: i + 1, reason: `fora do contrato synquei.preparo/1: ${e?.path.join('.')} ${e?.message}` })
+      return
+    }
+    out.entries.push(r.data)
+  })
+  return out
+}
+
+/** O estado atual de uma operação: a última linha dela (null se o Synquei ainda não escreveu nada). */
+export function ultimoPreparo(entries: Preparo[], op: string): Preparo | null {
+  for (let i = entries.length - 1; i >= 0; i--) if (entries[i]!.op === op) return entries[i]!
+  return null
 }

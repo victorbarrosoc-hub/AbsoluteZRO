@@ -1,0 +1,160 @@
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #f7f3ee;
+  color: #6e6e73;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+.barra {
+  position: relative;
+  /* só a faixa da barra (ALTURA_BARRA no main.cjs). Esta página ocupa a janela inteira por baixo do HUB e, no Mac, a
+     área de arrastar vale para a janela toda: com height 100% ela engolia os cliques no painel. */
+  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px 0 0;
+  border-bottom: 1px solid rgb(0 0 0 / 0.07);
+  /* a barra inteira arrasta a janela; os botões não */
+  -webkit-app-region: drag;
+}
+
+.barra__semaforo {
+  /* espaço dos três botões do Mac (trafficLightPosition no main.cjs) */
+  width: 78px;
+  flex: none;
+}
+
+.tela-cheia .barra__semaforo {
+  width: 6px;
+}
+
+.barra__nav {
+  display: flex;
+  gap: 2px;
+  -webkit-app-region: no-drag;
+}
+
+.barra__nav--fim {
+  margin-left: auto;
+}
+
+.barra__titulo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 46%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #1d1d1f;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.barra__titulo img {
+  flex: none;
+  width: 18px;
+  height: auto;
+  /* o ícone do Maestro (gesto em latão sobre grafite) com os cantos do app */
+  border-radius: 4px;
+}
+
+.barra__titulo span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.icone {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #6e6e73;
+  cursor: default;
+}
+
+.icone svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icone:hover:not([disabled]) {
+  background: rgb(0 0 0 / 0.05);
+  color: #1d1d1f;
+}
+
+.icone:focus-visible {
+  outline: 2px solid #1d1d1f;
+  outline-offset: 1px;
+}
+
+.icone[disabled] {
+  opacity: 0.28;
+}
+
+.barra__carregando {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, #c8962f 35%, #ffc857 50%, #c8962f 65%, transparent);
+  background-size: 50% 100%;
+  background-repeat: no-repeat;
+  transition: opacity 0.2s ease;
+}
+
+/* carregando: só um brilho que corre, sem porcentagem (não sabemos quanto falta) */
+.carregando .barra__carregando {
+  opacity: 1;
+  animation: correr 1.2s linear infinite;
+}
+
+.desfocada .barra__titulo,
+.desfocada .icone {
+  opacity: 0.55;
+}
+
+@keyframes correr {
+  from {
+    background-position: -50% 0;
+  }
+  to {
+    background-position: 150% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carregando .barra__carregando {
+    animation: none;
+    background: rgb(200 150 47 / 0.6);
+  }
+}

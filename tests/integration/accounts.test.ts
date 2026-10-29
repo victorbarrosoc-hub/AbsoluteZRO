@@ -27,7 +27,7 @@ beforeAll(() => {
 afterAll(() => db.close())
 
 const rid = (p: string) => `${p}-${randomBytes(4).toString('hex')}`
-const APPS = ['carro-do-freela', 'nossom', 'sobedesce', 'synquei', 'tpeasy']
+const APPS = ['ai-edit', 'carro-do-freela', 'finishing', 'nossom', 'sobedesce', 'synquei', 'tpeasy']
 
 describe('plano grátis da organização nova', () => {
   it('libera as ferramentas do plano grátis vigente e aparece no login único', async () => {
@@ -39,7 +39,17 @@ describe('plano grátis da organização nova', () => {
     expect(rows.map((r) => r.product_id)).toEqual(APPS)
     expect(rows.every((r) => r.provider === 'free' && r.code === 'conta-absolute-zro' && r.version === 2)).toBe(true)
     const claims = await db.asSystem('t', (tx) => loadOidcClaims(tx, o.userId, o.orgId))
-    expect([...claims.products].sort()).toEqual(APPS)
+    // No login único só entram os lançados (gate de lançamento, ADR 0023); os fechados vão como "closed" em zro_release.
+    expect([...claims.products].sort()).toEqual(['sobedesce', 'synquei', 'tpeasy'])
+    expect(claims.release).toMatchObject({
+      sobedesce: 'released',
+      synquei: 'released',
+      tpeasy: 'released',
+      nossom: 'closed',
+      'ai-edit': 'closed',
+      finishing: 'closed',
+      'carro-do-freela': 'closed',
+    })
   })
 
   it('é idempotente: não assina de novo nem duplica entitlements', async () => {

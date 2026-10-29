@@ -644,6 +644,34 @@ button {
   background: color-mix(in srgb, var(--ok) 18%, transparent);
   color: var(--ok-text);
 }
+/* balão: o que espera uma ação da pessoa nesta aba (app/js/pendencias.js), no desenho do SOBEDESCE e do HUB */
+.balao {
+  margin-left: auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--primary-bg);
+  color: var(--primary-fg);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-grid;
+  place-items: center;
+  font-variant-numeric: tabular-nums;
+  animation: balao-entra 0.32s var(--spring) both;
+}
+@keyframes balao-entra {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .balao {
+    animation: none;
+  }
+}
 .sidebar-foot {
   margin-top: auto;
   display: grid;
@@ -761,7 +789,7 @@ button {
     right: 0;
     bottom: 0;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
     background: var(--glass);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
@@ -783,6 +811,19 @@ button {
   }
   .tabbar a.is-on {
     color: var(--blue-text);
+  }
+  .tabbar a {
+    position: relative;
+  }
+  .tabbar .balao {
+    position: absolute;
+    top: 1px;
+    left: calc(50% + 5px);
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    font-size: 10px;
+    box-shadow: 0 0 0 2px var(--bg);
   }
   .search input {
     min-width: 0;
@@ -2109,6 +2150,14 @@ button {
 /* ───────────── barra lateral: pílula, grupos e atividade ───────────── */
 .nav-wrap {
   position: relative;
+  /* janela baixa: a lista rola e o rodapé (conta, plano, Ajustes) continua à vista */
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.nav-wrap::-webkit-scrollbar {
+  display: none;
 }
 .nav-wrap .nav {
   position: relative;
@@ -4077,7 +4126,7 @@ html:not(.is-desktop) .so-desktop {
   padding: 4px 0;
 }
 .side-recolhida .brand > span,
-.side-recolhida .nav-item > span:not(.badge),
+.side-recolhida .nav-item > span:not(.badge):not(.balao),
 .side-recolhida .novo-btn span,
 .side-recolhida .novo-btn kbd,
 .side-recolhida .atividade-txt,
@@ -4100,6 +4149,16 @@ html:not(.is-desktop) .so-desktop {
 .side-recolhida .novo-btn {
   justify-content: center;
   padding: 0;
+}
+.side-recolhida .nav-item .balao {
+  position: absolute;
+  top: 2px;
+  left: calc(50% + 4px);
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 10px;
+  box-shadow: 0 0 0 2px var(--sidebar-bg);
 }
 .side-recolhida .nav-item .badge {
   position: absolute;
@@ -4230,6 +4289,23 @@ html:not(.is-desktop) .so-desktop {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;
+}
+/* foto da conta Absolute ZRO por cima das iniciais (se não carregar, conta.js tira a imagem e ficam as iniciais) */
+.conta-av.com-foto {
+  position: relative;
+  overflow: hidden;
+}
+.conta-av img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.conta-quem .conta-av {
+  width: 40px;
+  height: 40px;
+  font-size: 14px;
 }
 .conta-entrar {
   display: inline-flex;
@@ -4571,5 +4647,100 @@ html:not(.is-desktop) .so-desktop {
   }
   .sfx-escolha {
     grid-column: 1 / -1;
+  }
+}
+
+/* ───────────── família Absolute ZRO na barra lateral ───────────── */
+/* ícone de cada app com o próprio desenho; 22px ocupando o lugar dos 18px do ícone de linha, para os nomes alinharem */
+.familia-icone {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 0 -2px;
+  border-radius: 6px;
+  object-fit: contain;
+}
+/* recolhido: a lista cresce, então a barra rola em vez de cortar o rodapé */
+.side-recolhida .sidebar {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* ───────────── a aba da Z (app/js/z.js): a Z ocupa a tela toda ───────────── */
+.z-painel {
+  --z-pad: clamp(20px, 2.4vw, 40px);
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: var(--z-pad) var(--page-x);
+  font-family: var(--display);
+  --zro-ia-altura: calc(100dvh - 2 * var(--z-pad));
+  --zro-ia-fundo-gaveta: var(--bg);
+  /* o brilho do campo da Z passa um pouco da borda: não abre rolagem */
+  overflow: clip;
+}
+.z-painel[hidden] {
+  display: none;
+}
+/* na aba da Z, #view fica vazia e não ocupa espaço */
+.na-z #view {
+  display: none;
+}
+.z-entrar {
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+.z-entrar[hidden] {
+  display: none;
+}
+/* com o botão de entrar embaixo, a Z encolhe o que ele ocupa: a tela não rola */
+.z-painel:has(.z-entrar:not([hidden])) {
+  --zro-ia-altura: calc(100dvh - 2 * var(--z-pad) - 52px);
+}
+/* sem a Z neste lugar (offline, aberto de arquivo) */
+.z-fora {
+  min-height: calc(100dvh - 2 * var(--z-pad));
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+}
+.z-fora-anel {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 10px;
+  border: 1.5px solid var(--text-3);
+  border-radius: 50%;
+  opacity: 0.6;
+}
+.z-fora h2 {
+  font-size: clamp(26px, 3vw, 34px);
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+.z-fora p {
+  color: var(--text-2);
+}
+.z-fora-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+@media (max-width: 860px) {
+  .z-painel {
+    --z-pad: 16px;
+    --z-tab: calc(66px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--z-pad) + var(--z-tab));
+    --zro-ia-altura: calc(100dvh - 2 * var(--z-pad) - var(--z-tab));
+  }
+  .z-painel:has(.z-entrar:not([hidden])) {
+    --zro-ia-altura: calc(100dvh - 2 * var(--z-pad) - var(--z-tab) - 52px);
+  }
+  .z-fora {
+    min-height: calc(100dvh - 2 * var(--z-pad) - var(--z-tab));
   }
 }

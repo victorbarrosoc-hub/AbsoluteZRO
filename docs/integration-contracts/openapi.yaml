@@ -8,14 +8,23 @@ info:
     feature → quota → recurso externo. A organização é sempre a da sessão; nenhum id de organização do cliente vale
     como autorização.
     Erros: `{ "error": "<código>", "message": "<texto>" }` com 401 unauthenticated, 403 forbidden_role |
-    entitlement_required | feature_not_included | product_unavailable | quota_not_configured | origin_rejected,
-    404 project_not_found | not_found, 409 no_active_organization | conflict, 422 invalid_input, 429 quota_exceeded | rate_limited.
+    entitlement_required | feature_not_included | product_unavailable | product_closed | quota_not_configured | origin_rejected,
+    404 project_not_found | not_found, 409 no_active_organization | conflict | sem_conexao, 422 invalid_input, 429 quota_exceeded | rate_limited,
+    403 app_desligado (Agenda: o app foi desligado nas Conexões da pessoa), 503 upstream_unavailable.
+    Gate de lançamento (ADR 0023): produto fechado ao público só abre para contas listadas em `zro.product_release_access`,
+    no canal do pedido (sessão do HUB = web, token de app = api). Fora disso toda rota com produto responde 403
+    `product_closed` ("Este app ainda está em desenvolvimento.", `details.closed = true`, `details.upgrade = false`),
+    inclusive as rotas do Carro do Freela e a Z chamada de dentro de um app. Token Bearer de cliente de produto fechado
+    para conta fora da lista é 401 unauthenticated.
 servers:
   - url: http://localhost:3000
 components:
   securitySchemes:
     session: { type: apiKey, in: cookie, name: zro_session }
+    appToken: { type: http, scheme: bearer, bearerFormat: JWT, description: 'Access token do login único (at+jwt) de um app da família, com o escopo da rota.' }
+    appClient: { type: http, scheme: basic, description: 'client_id:client_secret de um app confidencial da família (só onde a rota diz).' }
     providerSignature: { type: apiKey, in: header, name: zro-signature, description: 't=<unix>,v1=<hex HMAC-SHA256 de "t.corpo">' }
+    cronSecret: { type: http, scheme: bearer, description: 'CRON_SECRET do projeto na Vercel (só o agendamento da própria Vercel manda).' }
   schemas:
     Error:
       type: object
@@ -25,6 +34,7 @@ components:
     MediaManifest: { $ref: './schemas/zro-media-manifest.v1.schema.json' }
     OrganizationPlan: { $ref: './schemas/zro-organization-plan.v1.schema.json' }
     CarroJob: { $ref: './schemas/carro-do-freela.job.v1.schema.json' }
+    CarroCrew: { $ref: './schemas/carro-do-freela.crew.v1.schema.json' }
     TpeasyBackup: { $ref: './schemas/tpeasy.backup.v1.schema.json' }
   responses:
     Error: { description: Erro de domínio, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
@@ -32,6 +42,19 @@ security: [{ session: [] }]
 paths:
   /api/health:
     get: { security: [], summary: Saúde do HUB e do banco, responses: { '200': { description: ok }, '503': { description: banco indisponível } } }
+  /api/cron/dolar:
+    get:
+      {
+        security: [{ cronSecret: [] }],
+        summary: 'Agendamento diário: dólar PTAX (venda) do Banco Central para os Custos (migração 0030)',
+        responses:
+          {
+            '200': { description: 'cotação gravada (venda, data, fonte bcb-ptax)' },
+            '401': { description: sem o CRON_SECRET certo },
+            '502': { description: 'Banco Central fora do ar (o último valor continua)' },
+            '503': { description: CRON_SECRET não configurado },
+          },
+      }
   /api/v1/auth/signup:
     post:
       {
@@ -45,6 +68,65 @@ paths:
     post: { summary: Sair (revoga a sessão), responses: { '200': { description: ok } } }
   /api/v1/me:
     get: { summary: Pessoa, organização ativa e organizações, responses: { '200': { description: ok }, default: { $ref: '#/components/responses/Error' } } }
+  /api/v1/users/{id}/avatar:
+    get:
+      summary: Foto do perfil (a própria ou de quem está na organização ativa; muda de endereço com ?v=)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: imagem (webp, jpeg ou png) }, '404': { $ref: '#/components/responses/Error' } }
+  /api/v1/foto/{id}:
+    get:
+      summary: Foto do perfil para os apps da família (perfil único). Endereço público vindo do claim picture; muda a cada foto nova
+      security: []
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: imagem (webp, jpeg ou png), em cache para sempre }, '404': { description: foto trocada ou conta inativa } }
+  /api/v1/ia/estado:
+    get:
+      summary: IA do ecossistema · se está ligada, primeiro nome, plataforma (do token) e créditos do mês (zro.ai_credits)
+      security: [{ session: [] }, { appToken: [] }]
+      responses:
+        { '200': { description: '{ ligada, nome, produto, creditos: { usados, limite, renova_em } }' }, default: { $ref: '#/components/responses/Error' } }
+  /api/v1/ia/conversas:
+    get:
+      summary: Conversas da pessoa com a IA. Com o token de um app (escopo zro.ia), só as daquele app; pelo HUB, todas ou ?produto=<id>|hub
+      security: [{ session: [] }, { appToken: [] }]
+      parameters: [{ name: produto, in: query, required: false, schema: { type: string } }]
+      responses:
+        {
+          '200': { description: '{ conversas: [{ id, titulo, produto, produtoNome, atualizada, criada }] }' },
+          default: { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/ia/conversas/{id}:
+    get:
+      summary: Uma conversa com as mensagens (só de quem conversou)
+      security: [{ session: [] }, { appToken: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: '{ conversa, mensagens: [{ id, papel, texto, criada }] }' }, '404': { $ref: '#/components/responses/Error' } }
+    delete:
+      summary: Apaga a conversa
+      security: [{ session: [] }, { appToken: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '204': { description: apagada }, '404': { $ref: '#/components/responses/Error' } }
+  /api/v1/ia/mensagens:
+    post:
+      summary: Pergunta à IA do ecossistema. Resposta em streaming NDJSON (conversa, lendo, texto, fim | erro). Gasta 1 crédito zro.ai_credits por resposta
+      security: [{ session: [] }, { appToken: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [texto]
+              properties:
+                {
+                  conversa: { type: string, format: uuid, description: 'continua uma conversa; sem ele, começa outra' },
+                  texto: { type: string, maxLength: 8000 },
+                }
+      responses:
+        '200': { description: 'application/x-ndjson: uma linha JSON por evento' }
+        '403': { description: quota_not_configured (plano sem créditos de IA) }
+        '429': { description: quota_exceeded (créditos do mês acabaram) }
+        '503': { description: upstream_unavailable (IA ainda não ligada) }
+        default: { $ref: '#/components/responses/Error' }
   /api/v1/organizations:
     get: { summary: Minhas organizações, responses: { '200': { description: ok } } }
     post: { summary: Criar organização (a pessoa vira dona), responses: { '201': { description: criada }, default: { $ref: '#/components/responses/Error' } } }
@@ -88,6 +170,19 @@ paths:
                       label: { type: string }
                       reports: { type: array, items: { type: object, properties: { name: { type: string }, text: { type: string } } } }
       responses: { '201': { description: importado }, '200': { description: já importado (idempotente) }, '403': { $ref: '#/components/responses/Error' } }
+  /api/v1/projects/{id}/sobedesce/deliveries:
+    post:
+      summary: Registrar entrega conferida pelo SOBEDESCE e publicar delivery.ready v2 (entitlement sobedesce:manifest_import, quota sobedesce.manifest_imports)
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [entrega]
+              properties:
+                entrega: { type: string, description: 'conteúdo do comprovante sobedesce.entrega/1 (JSON com a pasta do Drive e o MD5 de cada arquivo)' }
+      responses: { '201': { description: registrada }, '200': { description: já registrada (idempotente) }, '403': { $ref: '#/components/responses/Error' } }
   /api/v1/projects/{id}/synquei/organization-plan:
     post:
       summary: Prévia de organização do Synquei (dry-run, nada é movido)
@@ -115,9 +210,207 @@ paths:
       responses: { '201': { description: nova versão }, '403': { $ref: '#/components/responses/Error' } }
   /api/v1/carro-do-freela/jobs:
     post:
+      security: [{ session: [] }, { appToken: [carro-do-freela.jobs] }]
       summary: Criar (ou devolver) o projeto de um job — contrato carro-do-freela.job/1
       requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/CarroJob' } } } }
-      responses: { '201': { description: criado }, '200': { description: já existia }, '403': { $ref: '#/components/responses/Error' } }
+      responses:
+        {
+          '201': { description: criado },
+          '200': { description: já existia },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/carro-do-freela/jobs/crew:
+    post:
+      security: [{ session: [] }, { appToken: [carro-do-freela.jobs] }]
+      summary: Equipe escalada vira equipe do projeto do job (carro-do-freela.crew/1); quem é de fora recebe convite de convidado por e-mail
+      requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/CarroCrew' } } } }
+      responses:
+        {
+          '200': { description: 'projectId, members[{zro_user_id, function, status: na_equipe | convidado | convite_pendente}], emailDelivery' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/apps/pedidos:
+    post:
+      security: [{ appToken: [maestro.projects] }, { appClient: [] }]
+      summary: Ponte entre apps (Maestro → SOBEDESCE). Devolve um pedido assinado zro-pedido+jwt (60 s, jti de uso único) para o próprio app chamar o destino; o HUB só assina e audita (app.pedido.emitido). Ações em docs/integration-contracts/maestro-sobedesce.md
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [destino, acao]
+              properties:
+                destino: { type: string, enum: [sobedesce] }
+                acao:
+                  { type: string, enum: [drive.listar, drive.miniatura, drive.pasta.criar, drive.compartilhar_revisao, drive.recolher_revisao, drive.token] }
+                sub: { type: string, format: uuid, description: 'Só com a credencial do app (Basic) e só para drive.recolher_revisao' }
+      responses:
+        {
+          '201': { description: '{ tipo: zro-pedido+jwt, token, aud, acao, expira_em, url }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/agenda/conexao:
+    get:
+      security: [{ appToken: [zro.agenda] }]
+      summary: 'Conexões (ADR 0026): como está o Google Agenda da pessoa para este app. Contrato em docs/integration-contracts/agenda.md'
+      responses:
+        {
+          '200': { description: '{ conectada, estado: ativa | reconectar | null, conta_email, app_ligado, calendarios, conectar }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '503': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/agenda/livre-ocupado:
+    get:
+      security: [{ appToken: [zro.agenda] }]
+      summary: Intervalos ocupados nas agendas escolhidas pela pessoa (até 62 dias), sem os eventos do próprio app a menos que incluir_proprios=1
+      parameters:
+        - { name: de, in: query, required: true, schema: { type: string, format: date-time }, description: 'RFC 3339 com fuso' }
+        - { name: ate, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: incluir_proprios, in: query, required: false, schema: { type: string, enum: ['1'] } }
+      responses:
+        {
+          '200': { description: '{ de, ate, ocupado: [{ inicio, fim }], calendarios, incompleta }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '409':
+            {
+              description: 'sem_conexao (details.motivo nenhuma | reconectar, details.conectar)',
+              content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } },
+            },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+          '503': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/agenda/eventos:
+    get:
+      security: [{ appToken: [zro.agenda] }]
+      summary: Eventos das agendas escolhidas, com campos mínimos (até 62 dias, 500 no máximo)
+      parameters:
+        - { name: de, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: ate, in: query, required: true, schema: { type: string, format: date-time } }
+      responses:
+        {
+          '200': { description: '{ de, ate, eventos: [{ id, calendario, titulo, inicio, fim, dia_inteiro, ocupa, app, ref }], incompleta }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/agenda/eventos/{app}/{ref}:
+    parameters:
+      - { name: app, in: path, required: true, schema: { type: string, pattern: '^[a-z0-9-]{1,40}$' }, description: 'O app do token (product_id do cliente)' }
+      - { name: ref, in: path, required: true, schema: { type: string, pattern: '^[A-Za-z0-9._:-]{1,120}$' }, description: 'Id do item no app' }
+    put:
+      security: [{ appToken: [zro.agenda] }]
+      summary: Grava o evento do app na agenda principal da pessoa, idempotente por (app, ref). Um app só mexe no que é dele (extendedProperties.private zro_app/zro_ref)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [titulo]
+              properties:
+                titulo: { type: string, maxLength: 200 }
+                inicio: { type: string, format: date-time }
+                fim: { type: string, format: date-time }
+                dia: { type: string, format: date }
+                ate_dia: { type: string, format: date, description: inclusivo }
+                local: { type: string, maxLength: 300 }
+                descricao: { type: string, maxLength: 4000 }
+                fuso: { type: string, default: America/Sao_Paulo }
+                ocupa: { type: boolean, default: true }
+                link: { type: string, format: uri, description: https }
+      responses:
+        {
+          '201': { description: '{ id, criado: true, link }' },
+          '200': { description: '{ id, criado: false, link }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+          '503': { $ref: '#/components/responses/Error' },
+        }
+    delete:
+      security: [{ appToken: [zro.agenda] }]
+      summary: Apaga o evento do app (204 mesmo se já não existia)
+      responses:
+        {
+          '204': { description: apagado },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/pessoas/busca:
+    get:
+      security: [{ appToken: [zro.pessoas] }]
+      summary: 'Perfil profissional (ADR 0029): busca por @ (q começa com @) ou nome. Só perfis visíveis, sem a própria pessoa, sem e-mail nem telefone. Contrato em docs/integration-contracts/pessoas.md'
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string, maxLength: 60 }, description: '@começo-do-arroba ou parte do nome (2+ caracteres)' }
+        - { name: limite, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 20, default: 12 } }
+      responses:
+        {
+          '200':
+            {
+              description: '{ pessoas: [{ id (sub), arroba, nome, foto, funcoes: [{ chave, nome }], cidade, portfolio, bio, selos: [{ produto, texto }], perfil }] }',
+            },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/pessoas/convites:
+    post:
+      security: [{ appToken: [zro.pessoas] }]
+      summary: Convida o @ para a organização do token (dono ou administração). A pessoa aceita na Absolute ZRO; o e-mail dela nunca volta
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [arroba]
+              properties:
+                arroba: { type: string, description: 'com ou sem @' }
+                papel: { type: string, enum: [admin, manager, editor, viewer, billing], default: editor }
+      responses:
+        {
+          '201': { description: '{ convite: { id, arroba, papel, aviso: email | central } }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/pessoas/{arroba}:
+    get:
+      security: [{ appToken: [zro.pessoas] }]
+      summary: 'O perfil visível de um @ (o caminho leva o @: /api/v1/pessoas/@fulano). @ antigo dos últimos 90 dias leva ao atual com antiga: true. Escondido ou inexistente: 404'
+      parameters:
+        - { name: arroba, in: path, required: true, schema: { type: string, pattern: '^@[a-z0-9._]{3,30}$' } }
+      responses:
+        {
+          '200': { description: '{ pessoa: { id, arroba, nome, foto, funcoes, cidade, portfolio, bio, selos, perfil }, antiga }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/desktop/apps:
+    get:
+      summary: Catálogo da central de apps do computador (ferramentas, versões, arquivos por sistema e SHA-256). Público.
+      responses: { '200': { description: ok } }
   /api/v1/entitlements:
     get: { summary: Situação de cada ferramenta para a organização ativa, responses: { '200': { description: ok } } }
   /api/v1/runs:
@@ -130,7 +423,7 @@ paths:
   /api/v1/billing/webhooks/{provider}:
     post:
       security: [{ providerSignature: [] }]
-      summary: Evento de cobrança assinado (provedor habilitado em ZRO_BILLING_PROVIDERS)
+      summary: Evento de cobrança assinado (stripe com Stripe-Signature e STRIPE_WEBHOOK_SECRET; outros em ZRO_BILLING_PROVIDERS)
       parameters: [{ name: provider, in: path, required: true, schema: { type: string } }]
       responses:
         {
@@ -146,21 +439,31 @@ paths:
   /oauth/authorize:
     get:
       summary: Início do login (código + PKCE S256 obrigatório). Pede login e permissão; volta ao app com code, state e iss
-      responses: { '307': { description: volta ao redirect_uri cadastrado }, '200': { description: tela de permissão ou de erro } }
+      description: |
+        Cliente de produto fechado (ADR 0023) para conta fora da lista: nenhum código. A pessoa vê a página "Em
+        desenvolvimento" (200, com "Voltar ao HUB") e fica registrado `release.denied`; com `prompt=none` o app recebe
+        `error=access_denied` e `error_description=Este app ainda está em desenvolvimento.`.
+      responses: { '307': { description: volta ao redirect_uri cadastrado }, '200': { description: 'tela de permissão, "Em desenvolvimento" ou de erro' } }
   /oauth/token:
     post:
       summary: Troca code (com code_verifier) ou refresh_token por tokens. Apps confidenciais usam client_secret_basic/post
+      description: |
+        Tokens levam `zro_release` (`{ "<product_id>": "released" | "allowed" | "closed" }`: aberto ao público, fechado
+        mas esta conta está na lista, fechado sem acesso) e, com o escopo org, `zro_org` e `zro_products` (só produtos
+        contratados e abertos para a pessoa) e `zro_features` (sinais de recurso da organização só do produto do app,
+        ex.: `["maestro.marca_propria"]`; lista vazia sem sinal). Produto fechado para a conta: `invalid_grant` com
+        `error_description=Este app ainda está em desenvolvimento.`, no code e no refresh.
       requestBody: { content: { application/x-www-form-urlencoded: { schema: { type: object } } } }
       responses:
         {
           '200': { description: access_token (JWT at+jwt, 10 min), id_token, refresh_token rotativo },
-          '400': { description: invalid_request | invalid_grant | unsupported_grant_type },
+          '400': { description: invalid_request | invalid_grant (inclusive produto fechado) | unsupported_grant_type },
           '401': { description: invalid_client },
         }
   /oauth/userinfo:
     get:
-      summary: Dados da pessoa (sub, email, name, zro_org, zro_products) pelo access token Bearer
-      responses: { '200': { description: claims }, '401': { description: invalid_token } }
+      summary: Dados da pessoa (sub, email, name, zro_org, zro_products, zro_features, zro_release) pelo access token Bearer
+      responses: { '200': { description: claims }, '401': { description: 'invalid_token (token inválido, app desativado ou produto fechado para a conta)' } }
   /oauth/jwks:
     get:
       summary: Chaves públicas (ES256) para conferir tokens

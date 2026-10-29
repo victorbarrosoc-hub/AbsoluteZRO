@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { LayoutGroup, motion, useReducedMotion } from 'motion/react';
 import {
   AudioLines,
@@ -18,10 +18,15 @@ import {
   X,
   Plus,
   Minus,
+  UserRound,
+  MessageSquare,
+  CircleCheck,
+  Sparkle,
 } from 'lucide-react';
 import CinematicRibbon from './cinematic-ribbon';
 import SignalField from './signal-field';
 import { Brand } from './brand';
+import { ZroSymbol } from './zro-symbol';
 import DemoPlayer from './demo-player';
 import PlanCards from './plan-cards';
 import InstallApp from './install-app';
@@ -29,13 +34,14 @@ import AccountMenu from './account-menu';
 import DesktopUpdates from './desktop-updates';
 import SiteMotion from './site-motion';
 import SoundToggle from './sound-toggle';
-const sections = [
+const SECTIONS = [
   ['Ouça a diferença', 'experimente'],
   ['Como funciona', 'produto'],
   ['Planos', 'planos'],
 ] as const;
+type Section = (typeof SECTIONS)[number];
 // Lights the nav item of the section in view; one state change per section, not per frame.
-function useSectionInView() {
+function useSectionInView(sections: readonly Section[]) {
   const [active, setActive] = useState<string | null>(null);
   useEffect(() => {
     const seen = new Map<string, boolean>();
@@ -51,8 +57,46 @@ function useSectionInView() {
       if (el) io.observe(el);
     }
     return () => io.disconnect();
-  }, []);
+  }, [sections]);
   return active;
+}
+/** As três ações do estúdio: cartões que abrem a ferramenta; fechado ao público, só apresentam (sem link). */
+function Intent({
+  closed,
+  href,
+  intent,
+  label,
+  children,
+}: {
+  closed: boolean;
+  href: string;
+  intent: string;
+  label: string;
+  children: ReactNode;
+}) {
+  if (closed)
+    return (
+      <a className="lg" data-intent={intent}>
+        {children}
+      </a>
+    );
+  return (
+    <Link href={href} data-intent={intent} className="lg" aria-label={label}>
+      {children}
+      <ArrowRight size={18} />
+    </Link>
+  );
+}
+/** Navegação quando os cartões levam ao estúdio; só um bloco de apresentação quando fechado. */
+function IntentsWrap({ closed, children }: { closed: boolean; children: ReactNode }) {
+  const className = 'home-intents chrome-intents ns-wrap';
+  return closed ? (
+    <div className={className}>{children}</div>
+  ) : (
+    <nav className={className} aria-label="Escolha o que fazer com seu áudio">
+      {children}
+    </nav>
+  );
 }
 function StepArt({ kind }: { kind: 'send' | 'clean' | 'export' }) {
   const bars = Array.from({ length: 11 }, (_, i) => i);
@@ -173,12 +217,30 @@ const faqs = [
     'Sim. O original é preservado e os tratamentos criam versões. Compare antes e depois, desfaça, refaça ou retome uma versão anterior. Os efeitos também podem ser removidos. Exporte seus projetos antes de limpar os dados do navegador.',
   ],
 ];
-export default function Landing() {
+/**
+ * Página inicial. Com `closed` (NOSSOM fechado ao público, 28/10/2026) ela só apresenta o projeto: nada de
+ * abrir, entrar, baixar, instalar ou assinar ("Conhecer o projeto" leva à seção de como funciona), a Z fica
+ * "chegando" e sem link, e planos e preços somem.
+ */
+export default function Landing({
+  zroIa = false,
+  closed = false,
+}: {
+  zroIa?: boolean;
+  closed?: boolean;
+}) {
+  const sections = useMemo(
+    () => (closed ? SECTIONS.filter(([, id]) => id !== 'planos') : SECTIONS),
+    [closed],
+  );
+  const faqList = closed
+    ? faqs.filter(([question]) => question !== 'O que está incluído na minha conta?')
+    : faqs;
   const [menu, setMenu] = useState(false),
     [faq, setFaq] = useState<number | null>(null),
     [hover, setHover] = useState<string | null>(null),
     reduced = useReducedMotion(),
-    inView = useSectionInView(),
+    inView = useSectionInView(sections),
     lens = hover ?? inView;
   return (
     <div className="ns-site home-v2 chrome-site">
@@ -222,35 +284,45 @@ export default function Landing() {
                   {label}
                 </a>
               ))}
-              <Link
-                href="/apps"
-                className="nav-apps"
-                onPointerEnter={() => setHover('apps')}
-                onFocus={() => setHover('apps')}
-                onBlur={() => setHover(null)}
-                onClick={() => setMenu(false)}
-              >
-                {lens === 'apps' && (
-                  <motion.span
-                    className="nav-lens"
-                    layoutId="nav-lens"
-                    transition={
-                      reduced
-                        ? { duration: 0 }
-                        : { type: 'spring', stiffness: 520, damping: 38, mass: 0.7 }
-                    }
-                  />
-                )}
-                <Download size={15} /> Baixar app
-              </Link>
+              {!closed && (
+                <Link
+                  href="/apps"
+                  className="nav-apps"
+                  onPointerEnter={() => setHover('apps')}
+                  onFocus={() => setHover('apps')}
+                  onBlur={() => setHover(null)}
+                  onClick={() => setMenu(false)}
+                >
+                  {lens === 'apps' && (
+                    <motion.span
+                      className="nav-lens"
+                      layoutId="nav-lens"
+                      transition={
+                        reduced
+                          ? { duration: 0 }
+                          : { type: 'spring', stiffness: 520, damping: 38, mass: 0.7 }
+                      }
+                    />
+                  )}
+                  <Download size={15} /> Baixar app
+                </Link>
+              )}
             </nav>
           </LayoutGroup>
           <div className="ns-nav-actions">
             <DesktopUpdates />
-            <AccountMenu />
-            <Link href="/studio" className="button primary small">
-              Começar grátis <ArrowRight size={14} />
-            </Link>
+            {closed ? (
+              <a href="#produto" className="button primary small">
+                Conhecer o projeto <ArrowRight size={14} />
+              </a>
+            ) : (
+              <>
+                <AccountMenu />
+                <Link href="/studio" className="button primary small">
+                  Começar grátis <ArrowRight size={14} />
+                </Link>
+              </>
+            )}
             <button
               className="icon-button ns-menu"
               onClick={() => setMenu(!menu)}
@@ -282,9 +354,15 @@ export default function Landing() {
               </h1>
               <p>Limpe sua voz. Isole vocais. Crie do seu jeito.</p>
               <div className="ns-actions">
-                <Link href="/studio" className="button primary">
-                  Começar grátis <ArrowUpRight size={17} />
-                </Link>
+                {closed ? (
+                  <a href="#produto" className="button primary">
+                    Conhecer o projeto <ArrowRight size={17} />
+                  </a>
+                ) : (
+                  <Link href="/studio" className="button primary">
+                    Começar grátis <ArrowUpRight size={17} />
+                  </Link>
+                )}
                 <a href="#experimente" className="home-listen-link">
                   <span>
                     <Play size={13} fill="currentColor" />
@@ -293,58 +371,47 @@ export default function Landing() {
                 </a>
               </div>
               <div className="home-hero-proof">
-                <ShieldCheck size={15} />
-                <span>5 minutos grátis de IA por mês. Seu original preservado.</span>
+                {closed ? (
+                  <>
+                    <Sparkle size={15} />
+                    <span>Em desenvolvimento. Em breve, no Absolute ZRO.</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck size={15} />
+                    <span>5 minutos grátis de IA por mês. Seu original preservado.</span>
+                  </>
+                )}
               </div>
             </Reveal>
             <div className="home-hero-interface chrome-hero-art">
               <CinematicRibbon priority />
             </div>
           </div>
-          <nav
-            className="home-intents chrome-intents ns-wrap"
-            aria-label="Escolha o que fazer com seu áudio"
-          >
-            <Link
-              href="/studio/automatico"
-              data-intent="auto"
-              className="lg"
-              aria-label="Limpar fala"
-            >
+          {/* Fechado ao público os três cartões só apresentam o que o estúdio faz: nada abre. */}
+          <IntentsWrap closed={closed}>
+            <Intent closed={closed} href="/studio/automatico" intent="auto" label="Limpar fala">
               <AudioLines size={32} />
               <span>
                 <strong>Limpar fala</strong>
                 <small>Reduza ruídos da gravação</small>
               </span>
-              <ArrowRight size={18} />
-            </Link>
-            <Link
-              href="/studio/isolar-voz"
-              data-intent="vocals"
-              className="lg"
-              aria-label="Isolar voz"
-            >
+            </Intent>
+            <Intent closed={closed} href="/studio/isolar-voz" intent="vocals" label="Isolar voz">
               <Mic2 size={32} />
               <span>
                 <strong>Isolar voz</strong>
                 <small>Sem música nem ruído de fundo</small>
               </span>
-              <ArrowRight size={18} />
-            </Link>
-            <Link
-              href="/studio/efeitos"
-              data-intent="effects"
-              className="lg"
-              aria-label="Criar efeitos"
-            >
+            </Intent>
+            <Intent closed={closed} href="/studio/efeitos" intent="effects" label="Criar efeitos">
               <SlidersHorizontal size={32} />
               <span>
                 <strong>Criar efeitos</strong>
                 <small>Transforme seu som</small>
               </span>
-              <ArrowRight size={18} />
-            </Link>
-          </nav>
+            </Intent>
+          </IntentsWrap>
         </section>
         <section className="home-listen ns-wrap" id="experimente">
           <div className="chrome-listen-heading">
@@ -352,7 +419,7 @@ export default function Landing() {
             <p>Uma gravação real, antes e depois.</p>
           </div>
           <Reveal>
-            <DemoPlayer />
+            <DemoPlayer closed={closed} />
           </Reveal>
         </section>
         <section className="home-quick ns-wrap" id="produto">
@@ -371,38 +438,122 @@ export default function Landing() {
               <strong>3. Baixe</strong> Compare e exporte em WAV ou MP3.
             </p>
           </div>
-          <Link href="/studio" className="button primary">
-            Experimentar grátis <ArrowRight size={16} />
-          </Link>
-        </section>
-        <section className="ns-wrap" id="planos">
-          <PlanCards />
-        </section>
-        <section className="home-downloads ns-wrap" id="baixar" aria-labelledby="baixar-title">
-          <h2 id="baixar-title">Leve o NOSSOM com você.</h2>
-          <p>No computador ou no celular, com a mesma conta.</p>
-          <div className="home-downloads-grid">
-            <Link href="/apps" className="lg home-download">
-              <Laptop size={26} />
-              <strong>Mac</strong>
-              <small>Apple Silicon e Intel</small>
-              <span className="home-download-action">
-                Baixar <Download size={15} />
-              </span>
+          {!closed && (
+            <Link href="/studio" className="button primary">
+              Experimentar grátis <ArrowRight size={16} />
             </Link>
-            <Link href="/apps" className="lg home-download">
-              <Monitor size={26} />
-              <strong>Windows</strong>
-              <small>Windows 10 e 11</small>
-              <span className="home-download-action">
-                Baixar <Download size={15} />
-              </span>
-            </Link>
-            <div className="lg home-download">
-              <Smartphone size={26} />
-              <strong>iPhone e Android</strong>
-              <small>Direto na Tela de Início</small>
-              <InstallApp label="Instalar" />
+          )}
+        </section>
+        {!closed && (
+          <section className="ns-wrap" id="planos">
+            <PlanCards />
+          </section>
+        )}
+        {!closed && (
+          <section className="home-downloads ns-wrap" id="baixar" aria-labelledby="baixar-title">
+            <h2 id="baixar-title">Leve o NOSSOM com você.</h2>
+            <p>No computador ou no celular, com a mesma conta.</p>
+            {/* Central de apps da Absolute ZRO: o jeito recomendado de instalar; o download direto continua abaixo. */}
+            <div className="lg zro-central">
+              <ZroSymbol size={40} />
+              <div>
+                <strong>Instale pelo Absolute ZRO</strong>
+                <small>
+                  Um app só para instalar, abrir e atualizar o NOSSOM e as outras ferramentas, com a
+                  mesma conta.
+                </small>
+              </div>
+              <a className="button primary" href="https://absolutezro.com/baixar#app-nossom">
+                Baixar o Absolute ZRO
+              </a>
+            </div>
+            <p className="zro-central-ou">Ou baixe só o NOSSOM:</p>
+            <div className="home-downloads-grid">
+              <Link href="/apps" className="lg home-download">
+                <Laptop size={26} />
+                <strong>Mac</strong>
+                <small>Apple Silicon e Intel</small>
+                <span className="home-download-action">
+                  Baixar <Download size={15} />
+                </span>
+              </Link>
+              <Link href="/apps" className="lg home-download">
+                <Monitor size={26} />
+                <strong>Windows</strong>
+                <small>Windows 10 e 11</small>
+                <span className="home-download-action">
+                  Baixar <Download size={15} />
+                </span>
+              </Link>
+              <div className="lg home-download">
+                <Smartphone size={26} />
+                <strong>iPhone e Android</strong>
+                <small>Direto na Tela de Início</small>
+                <InstallApp label="Instalar" />
+              </div>
+            </div>
+          </section>
+        )}
+        {/* Z, a IA do ecossistema Absolute ZRO. Com o login Absolute ZRO configurado (e o NOSSOM aberto), ela
+            abre a aba da Z no estúdio (repasse em /api/zro/ia); fechado ao público ou sem o login, a seção diz
+            que está chegando, sem link nenhum. */}
+        <section className="home-z ns-wrap" id="z" aria-labelledby="z-title">
+          <div className="lg home-z-card">
+            <div className="z-simbolo" aria-hidden="true">
+              <img
+                className="z-anel"
+                src="/z/anel.webp"
+                alt=""
+                width={560}
+                height={560}
+                loading="lazy"
+              />
+              <img
+                className="z-estrela"
+                src="/z/estrela.webp"
+                alt=""
+                width={400}
+                height={400}
+                loading="lazy"
+              />
+            </div>
+            <div className="home-z-copy">
+              <p className="z-selo">
+                <i aria-hidden="true" />
+                {zroIa ? 'Já no NOSSOM' : 'Chegando ao NOSSOM'}
+              </p>
+              <h2 id="z-title">Z. Uma IA para todo o ecossistema.</h2>
+              <p>
+                {zroIa
+                  ? 'Ela abre o seu estúdio: pergunte sobre seu áudio e siga para a edição.'
+                  : 'Vai entender seus projetos de áudio e ajudar a seguir para a edição.'}
+              </p>
+              <ul className="z-fichas" aria-label="Como a Z funciona">
+                <li title="A mesma conta Absolute ZRO que você já usa.">
+                  <UserRound size={16} aria-hidden="true" /> Mesma conta
+                </li>
+                <li title="Guardadas por plataforma e reunidas em absolutezro.com/ia.">
+                  <MessageSquare size={16} aria-hidden="true" /> Conversas reunidas
+                </li>
+                <li title="Nenhuma ação sem você conferir.">
+                  <CircleCheck size={16} aria-hidden="true" /> Você confere antes
+                </li>
+                <li title="Usa os créditos de IA do seu plano.">
+                  <Sparkle size={16} aria-hidden="true" /> 1 crédito por resposta
+                </li>
+              </ul>
+              {!closed && (
+                <div className="home-z-acoes">
+                  {zroIa && (
+                    <Link className="button primary" href="/studio/z">
+                      Conversar com a Z <ArrowRight size={15} />
+                    </Link>
+                  )}
+                  <a className="button secondary" href="https://absolutezro.com/ia" rel="noopener">
+                    Conhecer a Z <ArrowUpRight size={15} />
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -411,7 +562,7 @@ export default function Landing() {
             <h2>Dúvidas?</h2>
           </Reveal>
           <div>
-            {faqs.map(([question, answer], i) => (
+            {faqList.map(([question, answer], i) => (
               <div className="ns-faq-item" key={question}>
                 <button
                   onClick={() => setFaq(faq === i ? null : i)}
@@ -437,13 +588,19 @@ export default function Landing() {
           <p>Tudo acontece no som.</p>
         </div>
         <nav aria-label="Rodapé">
-          <InstallApp />
+          {!closed && <InstallApp />}
           <SoundToggle />
-          <Link href="/apps">Aplicativos para Mac e Windows</Link>
+          {!closed && <Link href="/apps">Aplicativos para Mac e Windows</Link>}
           <Link href="/privacidade">Privacidade</Link>
-          <Link href="/studio">
-            Abrir estúdio <ArrowUpRight size={13} />
-          </Link>
+          {closed ? (
+            <a href="https://absolutezro.com/inicio">
+              Absolute ZRO <ArrowUpRight size={13} />
+            </a>
+          ) : (
+            <Link href="/studio">
+              Abrir estúdio <ArrowUpRight size={13} />
+            </Link>
+          )}
           <span>© {new Date().getFullYear()} NOSSOM</span>
         </nav>
       </footer>

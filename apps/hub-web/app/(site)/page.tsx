@@ -1,258 +1,347 @@
 import Link from 'next/link'
-import type { ReactNode } from 'react'
-import { Pill, ProductMark } from '@zro/ui'
+import type { CSSProperties } from 'react'
+import { EVENT_PAYLOADS, EVENT_PRODUCER } from '@zro/media-contracts'
+import { ProductMark } from '@zro/ui'
 import { productColor } from '@/components/app-tile'
-import { CycleO } from '@/components/cycle-o'
-import { MotionGate } from '@/components/motion-gate'
-import { publicCatalog } from '@/lib/data/catalog'
+import { BrandSymbol } from '@/components/brand-symbol'
+import { Aparece } from '@/components/home/aparece'
+import { Conheca } from '@/components/home/conheca'
+import { Fluxo } from '@/components/home/fluxo'
+import { Numeros } from '@/components/home/numeros'
+import { PalcoZ, Z } from '@/components/ia/simbolo-z'
+import { liberadosPara, publicCatalog } from '@/lib/data/catalog'
 import { hasDesktopInstaller } from '@/lib/downloads'
+import { getAuth } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
 
-const STAGE: Record<string, { label: string; tone: 'ok' | 'accent' | 'faint' }> = {
-  active: { label: 'Disponível', tone: 'ok' },
-  beta: { label: 'Beta', tone: 'accent' },
-  coming_soon: { label: 'Em desenvolvimento', tone: 'faint' },
-  disabled: { label: 'Desativada', tone: 'faint' },
+/** Uma linha por ferramenta, curta, na faixa logo abaixo do topo. */
+const LINE: Record<string, string> = {
+  'carro-do-freela': 'Equipe e oportunidades',
+  tpeasy: 'Teleprompter',
+  sobedesce: 'Cópia e backup conferidos',
+  synquei: 'Organização e sincronia',
+  'ai-edit': 'Edição de vídeo',
+  nossom: 'Tratamento de som',
+  finishing: 'Cor e entrega',
+  maestro: 'Gestão da produtora',
 }
 
-/** Frase de cada marca, na voz dela. */
-const TAGLINE: Record<string, string> = {
-  'carro-do-freela': 'Quem está livre, em cada data.',
-  tpeasy: 'Fale olhando para a câmera.',
-  sobedesce: 'Cada cartão copiado e conferido.',
-  synquei: 'Solta o cartão. Sai sincronizado.',
-  'ai-edit': 'Decupagem e montagem assistida.',
-  nossom: 'Seu som, em outra escala.',
-  finishing: 'Revela a cor que você quer.',
+/** Três fatos por ferramenta, tirados do que cada uma faz hoje (README de cada produto em products/). */
+const FATOS: Record<string, string[]> = {
+  'carro-do-freela': ['Agenda de freelas por praça', 'Disponibilidade pública que sai da agenda', 'Escala da equipe sem adivinhar'],
+  tpeasy: ['Teleprompter no Safari do iPhone', 'Rola com a sua voz', 'Funciona sem internet'],
+  sobedesce: ['Até 32 conexões por arquivo', 'MD5 conferido em cada arquivo', 'Pausa e continua de onde parou'],
+  synquei: ['Sincroniza câmeras e gravadores pelo som', 'Exporta para Premiere, Resolve, Final Cut e Avid', 'Nada sai do seu computador'],
+  'ai-edit': ['Transcrição na sua máquina', 'Cortes e zoom propostos para você aprovar', 'Linha do tempo para o seu editor'],
+  nossom: ['Estúdio de áudio para criadores', 'Instala pelo navegador', 'App para Mac e Windows'],
+  finishing: ['LUT criativa a partir de uma referência', 'LOG para Rec.709 por câmera', 'PowerGrade para o DaVinci Resolve'],
 }
 
-const bars = (n: number, seed: number) =>
-  Array.from({ length: n }, (_, i) => 18 + Math.round(Math.abs(Math.sin((i + 1) * seed) * 0.6 + Math.sin((i + 3) * seed * 0.37) * 0.4) * 82))
+/** Ferramentas com a tela no MacBook e no iPhone (public/brand/produto-<id>-{claro,escuro}.webp); as outras mostram o ícone. */
+const TELA = new Set(['carro-do-freela', 'tpeasy', 'sobedesce', 'synquei', 'ai-edit', 'nossom', 'finishing'])
 
-/** Telas reais de cada app (capturas públicas de 25/10/2026 em MacBook e iPhone; ver scripts/marca/README.md). */
-const SHOT: Record<string, string> = {
-  'carro-do-freela': 'O Carro do Freela aberto num MacBook e num iPhone',
-  tpeasy: 'O TPeasy aberto num MacBook e num iPhone',
-  sobedesce: 'O SOBEDESCE aberto num MacBook e num iPhone',
-  synquei: 'O Synquei aberto num MacBook e num iPhone',
-  nossom: 'O NOSSOM aberto num MacBook e num iPhone',
+/** O nome da etapa no fluxo, na ordem do catálogo. */
+const ETAPA: Record<string, string> = {
+  'carro-do-freela': 'Equipe',
+  tpeasy: 'Roteiro',
+  sobedesce: 'Cópia',
+  synquei: 'Sincronia',
+  'ai-edit': 'Edição',
+  nossom: 'Som',
+  finishing: 'Cor e entrega',
 }
 
-function Lane({ id, name, status, children, tone }: { id: string; name: string; status: string; children: ReactNode; tone?: 'live' | 'done' | 'soon' }) {
-  return (
-    <li className={`suite__lane suite__lane--${tone ?? 'done'}`} style={productColor(id)}>
-      <span className="suite__who">
-        <ProductMark productId={id} name={name} size={26} />
-        <span>{name}</span>
-      </span>
-      <span className="suite__track">{children}</span>
-      <span className="suite__status">{status}</span>
-    </li>
-  )
+/** O que cada evento quer dizer, em português de gente (o nome técnico fica na dica). */
+const EVENTO: Record<string, string> = {
+  'job.created': 'Job e equipe definidos',
+  'script.ready': 'Roteiro pronto',
+  'ingest.completed': 'Cópia conferida',
+  'media.manifest.ready': 'Lista das mídias',
+  'media.sync.completed': 'Áudio e vídeo sincronizados',
+  'edit.selects.ready': 'Melhores takes separados',
+  'edit.timeline.ready': 'Linha do tempo pronta',
+  'audio.mix.ready': 'Som tratado e mixado',
+  'finishing.qc.completed': 'Cor e qualidade conferidas',
+  'delivery.ready': 'Entrega pronta',
+}
+
+/** Eventos de bastidor que não entram no fluxo da página (começo e falha da cópia). */
+const SO_BASTIDOR = new Set(['ingest.started', 'ingest.failed'])
+
+/** Site oficial quando o catálogo ainda não tem o endereço (Revela e AEON já estão no ar nos subdomínios). */
+const SITE: Record<string, string> = {
+  'ai-edit': 'https://aeon.absolutezro.com',
+  finishing: 'https://revela.absolutezro.com',
 }
 
 export default async function Landing() {
-  const { products } = await publicCatalog()
+  // Gate de lançamento (ADR 0023): o que não está aberto ao público (ou liberado para a pessoa logada) aparece como
+  // "Em desenvolvimento", sem link, e fica fora dos números, das etapas e da órbita da Z.
+  const auth = await getAuth()
+  const [{ products }, liberados, baixaveis] = await Promise.all([
+    publicCatalog(),
+    liberadosPara(auth?.user.id ?? null, 'web'),
+    liberadosPara(auth?.user.id ?? null, 'download'),
+  ])
+  // Cada palavra sobe na sua vez; o espaço fica fora do bloco para não sumir.
+  const words = (text: string, from: number) =>
+    text.split(' ').flatMap((w, i) => [
+      i > 0 ? ' ' : '',
+      <span key={w + i} className="phero__word" style={{ '--i': from + i } as CSSProperties}>
+        {w}
+      </span>,
+    ])
+  const aberto = (id: string) => liberados.has(id)
+  const ativos = products.filter((p) => aberto(p.id) && (p.stage === 'active' || p.stage === 'beta'))
+  const siteDe = (p: (typeof products)[number]) => (aberto(p.id) ? (p.external_url as string | null) || SITE[p.id as string] || null : null)
+  // Só os eventos de quem está aberto: o fluxo e os números mostram o que roda hoje, não o que ainda está fechado.
+  const eventos = Object.keys(EVENT_PAYLOADS).filter((e) => aberto(EVENT_PRODUCER[e as keyof typeof EVENT_PRODUCER]))
+  const formatos = aberto(EVENT_PRODUCER['edit.timeline.ready']) ? EVENT_PAYLOADS['edit.timeline.ready'][1].shape.format.options.length : 0
+  const noComputador = ativos.filter((p) => hasDesktopInstaller(p.id as string, baixaveis)).length
+  const numeros = [
+    { valor: ativos.length, rotulo: 'ferramentas' },
+    { valor: 1, rotulo: 'conta para tudo' },
+    { valor: eventos.length, rotulo: 'eventos ligam as etapas', dica: 'Contratos versionados em @zro/media-contracts' },
+    { valor: formatos, rotulo: 'formatos de linha do tempo', dica: 'OTIO, FCPXML, xmeml, EDL e AAF' },
+    { valor: noComputador, rotulo: 'apps para Mac e Windows' },
+  ].filter((n) => n.valor > 0)
+  // Conheça de perto: os lançados primeiro; os fechados vêm depois, com o selo e sem link.
+  const destaques = [...ativos, ...products.filter((p) => !ativos.includes(p))].map((p) => ({
+    id: p.id as string,
+    nome: p.name as string,
+    linha: LINE[p.id as string] ?? (p.role_in_flow as string),
+    fatos: FATOS[p.id as string] ?? [],
+    site: siteDe(p),
+    emDesenvolvimento: !aberto(p.id),
+    tela: TELA.has(p.id as string),
+    cor: productColor(p.id as string),
+  }))
+  const etapas = ativos.map((p) => ({
+    id: p.id as string,
+    nome: p.name as string,
+    etapa: ETAPA[p.id as string] ?? (p.role_in_flow as string),
+    eventos: eventos
+      .filter((e) => EVENT_PRODUCER[e as keyof typeof EVENT_PRODUCER] === p.id && !SO_BASTIDOR.has(e))
+      .map((e) => ({ id: e, nome: EVENTO[e] ?? e })),
+    cor: productColor(p.id as string),
+  }))
   return (
     <>
-      <section className="ahero" aria-labelledby="hero-title">
-        <div className="ahero__text">
-          <img className="ahero__mark" src="/brand/absolute-zro-o-alpha.webp" alt="" width={56} height={50} />
-          <h1 className="ahero__title" id="hero-title">
-            <span className="ahero__thin">O futuro começa</span>
-            <span className="ahero__bold">do zero.</span>
+      {/* Topo de cinema: a paisagem em preto e branco com o símbolo esculpido em metal sobre a rocha (Higgsfield, fiel à marca). */}
+      <section className="phero" aria-labelledby="hero-title">
+        <div className="phero__scene">
+          <picture>
+            <source media="(max-width: 700px)" srcSet="/brand/home-paisagem-sm.webp" />
+            <img
+              className="phero__photo"
+              src="/brand/home-paisagem.webp"
+              alt="O símbolo da Absolute ZRO, um anel com a centelha, em metal sobre uma rocha diante do mar"
+              width={2400}
+              height={1357}
+              fetchPriority="high"
+            />
+          </picture>
+        </div>
+        <div className="phero__text">
+          <h1 className="phero__title" id="hero-title">
+            <span className="phero__thin">{words('O futuro começa', 0)}</span>
+            <span className="phero__bold">{words('do zero.', 3)}</span>
           </h1>
-          <p className="ahero__lead">Uma conta. Todas as ferramentas.</p>
-          <div className="ahero__ctas">
-            <Link className="glass-btn glass-btn--ink" href="/criar-conta">
-              Criar conta
+          <p className="phero__lead">Ferramentas para a produção audiovisual, numa conta só.</p>
+          <div className="phero__ctas">
+            <Link className="glass-btn glass-btn--ink" href="#ecossistema">
+              Conheça o ecossistema
             </Link>
-            <Link className="glass-btn" href="#ferramentas">
-              Ver as ferramentas
+            <Link className="glass-btn" href="/planos">
+              Ver planos
             </Link>
           </div>
         </div>
-        {/* O produto de verdade: telas reais do HUB, uma foto para cada tema. */}
-        <figure className="ahero__product ahero__product--claro">
-          <img
-            src="/brand/produto-hub-claro.webp"
-            alt="O HUB da Absolute ZRO aberto num MacBook e num iPhone"
-            width={2400}
-            height={1500}
-            fetchPriority="high"
-          />
-        </figure>
-        <figure className="ahero__product ahero__product--escuro">
-          <img src="/brand/produto-hub-escuro.webp" alt="O HUB da Absolute ZRO aberto num MacBook e num iPhone" width={2400} height={1500} loading="lazy" />
-        </figure>
+        <ul className="phero__side" aria-hidden="true">
+          <li>Conta</li>
+          <li>Ferramentas</li>
+          <li>Fluxo</li>
+          <li>Resultado</li>
+        </ul>
       </section>
 
-      <section className="aproject reveal" aria-labelledby="projeto-title">
-        <div className="section__head section__head--center">
-          <h2 id="projeto-title" className="display-2 atitle">
-            <span className="atitle__thin">Um projeto.</span> <span className="atitle__bold">Todas as etapas.</span>
-          </h2>
-          <p>Do job à entrega, cada ferramenta faz a sua parte e o projeto guarda o que ela entregou.</p>
-        </div>
-        <MotionGate className="suite" as="div">
-          <div className="suite__head">
-            <span className="suite__label">Exemplo · Show de lançamento</span>
-            <span className="suite__live">
-              <span className="suite__dot" />
-              Sincronizando
-            </span>
-          </div>
-          <ol className="suite__lanes" aria-label="Exemplo de projeto passando pelas ferramentas">
-            <Lane id="carro-do-freela" name="Carro do Freela" status="Equipe fechada">
-              <span className="suite__chip">Câmera</span>
-              <span className="suite__chip">Som</span>
-              <span className="suite__chip">Drone</span>
-            </Lane>
-            <Lane id="tpeasy" name="TPeasy" status="Roteiro v3">
-              <span className="suite__lines">
-                <i />
-                <i />
-                <i />
-              </span>
-            </Lane>
-            <Lane id="sobedesce" name="SOBEDESCE" status="2 cópias conferidas">
-              <span className="suite__fill" />
-            </Lane>
-            <Lane id="synquei" name="Synquei" status="Sincronizando" tone="live">
-              <span className="suite__wave">
-                {bars(36, 1.3).map((h, i) => (
-                  <i key={i} style={{ height: `${h}%` }} />
-                ))}
-              </span>
-            </Lane>
-            <Lane id="nossom" name="NOSSOM" status="Próxima etapa" tone="soon">
-              <span className="suite__ghost" />
-            </Lane>
-          </ol>
-          <div className="suite__foot">
-            <span>
-              <strong>Um projeto</strong>
-              Tudo que cada etapa entregou
-            </span>
-            <span>
-              <strong>Prova real</strong>
-              Checksum por destino, nada de “parece que foi”
-            </span>
-          </div>
-        </MotionGate>
-      </section>
-
-      <section className="logos reveal" aria-label="Ferramentas da família">
-        {products.map((p) => (
-          <span key={p.id as string} className="logos__item">
-            <ProductMark productId={p.id as string} name={p.name as string} size={30} />
-            {p.name as string}
-          </span>
-        ))}
-      </section>
-
-      <section className="section section--center reveal" id="ciclo" aria-labelledby="ciclo-title">
-        <div className="section__head section__head--wide">
-          <p className="zro-eyebrow">Ciclo do O</p>
-          <h2 id="ciclo-title" className="display-2 atitle">
-            <span className="atitle__thin">Comece em qualquer ponto</span>
-            <span className="atitle__bold">do círculo.</span>
-          </h2>
-          <p>A ordem é sugestão, não obrigação. Use uma ferramenta só ou o ciclo inteiro: o projeto guarda o que cada etapa entregou.</p>
-        </div>
-        <div className="zro-card zro-card--stage cycle-stage">
-          <CycleO
-            labelledBy="ciclo-title"
-            title="Ciclo do O"
-            subtitle="7 etapas, 1 projeto"
-            steps={products.map((p) => ({
-              key: p.id as string,
-              name: p.name as string,
-              role: p.role_in_flow as string,
-              state: p.stage === 'coming_soon' ? 'unavailable' : 'ready',
-              label: STAGE[p.stage as string]?.label,
-              note: `${p.role_in_flow}${p.stage === 'coming_soon' ? ' · em desenvolvimento' : ''}`,
-            }))}
-          />
-        </div>
-      </section>
-
-      <section className="section section--center" id="ferramentas" aria-labelledby="ferr-title">
-        <div className="section__head section__head--wide reveal">
-          <p className="zro-eyebrow">Ferramentas</p>
-          <h2 id="ferr-title" className="display-2 atitle">
-            <span className="atitle__thin">Sete marcas.</span>
-            <span className="atitle__bold">Uma conta.</span>
-          </h2>
-          <p>Cada uma com a própria cara. Em desenvolvimento aparece como tal: nada de recurso de fachada.</p>
-        </div>
-        <div className="tiles">
-          {/* Primeiro o que já tem tela de verdade; em desenvolvimento fica junto, no fim. */}
-          {[...products.filter((p) => SHOT[p.id as string]), ...products.filter((p) => !SHOT[p.id as string])].map((p) => {
+      {/* As ferramentas numa faixa só, discreta: ícone, nome e uma linha. */}
+      <section className="pstrip" id="ecossistema" aria-label="Ferramentas">
+        <ul className="pstrip__list" style={{ '--n': products.length } as CSSProperties}>
+          {products.map((p, i) => {
             const id = p.id as string
             const name = p.name as string
-            const shot = SHOT[id]
-            const site = p.external_url as string | null
-            const stage = STAGE[p.stage as string]
-            return (
-              <article key={id} className={`tile reveal${shot ? '' : ' tile--soon'}`} style={productColor(id)} aria-labelledby={`tile-${id}`}>
-                <div className="tile__text">
-                  <ProductMark productId={id} name={name} size={shot ? 52 : 44} />
-                  <p className="tile__name">
-                    {name}
-                    {p.provisional_name ? <span className="zro-faint"> · nome provisório</span> : null}
-                  </p>
-                  <h3 id={`tile-${id}`} className="tile__title">
-                    {TAGLINE[id] ?? (p.role_in_flow as string)}
-                  </h3>
-                  <p className="tile__lead">{p.role_in_flow as string}</p>
-                  <div className="tile__links">
-                    {stage && <Pill tone={stage.tone}>{stage.label}</Pill>}
-                    {site && p.stage !== 'coming_soon' && (
-                      <a className="more-link" href={site} target="_blank" rel="noopener noreferrer">
-                        Saiba mais<span aria-hidden="true"> ›</span>
-                        <span className="zro-sr-only"> sobre {name} (abre o site oficial em nova aba)</span>
-                      </a>
-                    )}
-                    {hasDesktopInstaller(id) && (
-                      <Link className="more-link" href={`/baixar#app-${id}`}>
-                        Baixar<span aria-hidden="true"> ›</span>
-                        <span className="zro-sr-only"> {name}</span>
-                      </Link>
-                    )}
-                  </div>
-                </div>
-                {shot && (
-                  <div className="tile__shot">
-                    <img className="tile__img tile__img--claro" src={`/brand/produto-${id}-claro.webp`} alt={shot} width={1600} height={971} loading="lazy" />
-                    <img className="tile__img tile__img--escuro" src={`/brand/produto-${id}-escuro.webp`} alt="" width={1600} height={971} loading="lazy" />
-                  </div>
+            const site = siteDe(p)
+            const inner = (
+              <>
+                <ProductMark productId={id} name={name} size={40} />
+                <span className="pstrip__text">
+                  <span className="pstrip__name">{name}</span>
+                  <span className="pstrip__line">{LINE[id] ?? (p.role_in_flow as string)}</span>
+                  {!aberto(id) && <span className="selo-dev">Em desenvolvimento</span>}
+                </span>
+                {site && (
+                  <span className="pstrip__go" aria-hidden="true">
+                    ›
+                  </span>
                 )}
-              </article>
+              </>
+            )
+            return (
+              <li key={id} style={{ '--i': i } as CSSProperties}>
+                {site ? (
+                  <a className="pstrip__card" href={site} target="_blank" rel="noopener noreferrer">
+                    {inner}
+                    <span className="zro-sr-only"> (abre o site oficial em nova aba)</span>
+                  </a>
+                ) : (
+                  <span className="pstrip__card" data-fechado={aberto(id) ? undefined : 'sim'}>
+                    {inner}
+                  </span>
+                )}
+              </li>
             )
           })}
+        </ul>
+        <p className="pstrip__rule" aria-hidden="true">
+          <span>Ferramentas que se conectam</span>
+          <i />
+          <span>Uma conta só</span>
+        </p>
+      </section>
+
+      {/* O ecossistema em números, todos tirados do catálogo e dos contratos (nada digitado à mão). */}
+      <section className="pnum" aria-labelledby="numeros-title">
+        <h2 id="numeros-title" className="display-2 atitle reveal">
+          <span className="atitle__thin">Um ecossistema.</span>
+          <span className="atitle__bold">Em números.</span>
+        </h2>
+        <Numeros itens={numeros} />
+      </section>
+
+      {/* Uma ferramenta por vez, de perto, como os destaques da apple.com. */}
+      <section className="section section--center pconheca-sec" aria-labelledby="conheca-title">
+        <div className="section__head section__head--wide reveal">
+          <h2 id="conheca-title" className="display-2 atitle">
+            <span className="atitle__thin">Uma por uma.</span>
+            <span className="atitle__bold">Conheça de perto.</span>
+          </h2>
+        </div>
+        <Conheca itens={destaques} />
+      </section>
+
+      {/* Como uma etapa passa para a outra: os eventos reais que cada app manda para o HUB. */}
+      <section className="section section--center pfluxo-sec" aria-labelledby="fluxo-title">
+        <div className="section__head section__head--wide reveal">
+          <h2 id="fluxo-title" className="display-2 atitle">
+            <span className="atitle__thin">Do roteiro</span>
+            <span className="atitle__bold">à entrega.</span>
+          </h2>
+          <p>Cada etapa avisa o HUB. A próxima começa de onde a outra parou.</p>
+        </div>
+        <Fluxo etapas={etapas} />
+      </section>
+
+      {/* O Z, a IA do ecossistema: o símbolo no centro e as ferramentas em volta, ligadas pelo ar dele. */}
+      <section className="section section--center pz-sec" aria-labelledby="z-title">
+        <div className="section__head section__head--wide reveal">
+          <h2 id="z-title" className="display-2 atitle">
+            <span className="atitle__thin">Conheça a Z.</span>
+            <span className="atitle__bold">A ponte entre tudo.</span>
+          </h2>
+          <p>Uma IA para o ecossistema inteiro. Lê o que acontece nas ferramentas e ajuda você a seguir para a próxima.</p>
+        </div>
+        <PalcoZ cena="ouvindo" className="pz">
+          <Z movimento="pensando" tamanho={200} vento className="pz__z" />
+          <ul className="pz__orbita" aria-label="Ferramentas que a Z conhece">
+            {ativos.map((p, i) => (
+              <li key={p.id as string} style={{ '--i': i, '--n': ativos.length } as CSSProperties} title={p.name as string}>
+                <ProductMark productId={p.id as string} name={p.name as string} size={44} />
+              </li>
+            ))}
+          </ul>
+        </PalcoZ>
+        <ul className="papp__chips reveal" aria-label="Como a Z funciona">
+          <li>Uma conta só</li>
+          <li>Conversas de todas as plataformas</li>
+          <li>Você confere antes de agir</li>
+        </ul>
+        <div className="papp__ctas reveal">
+          <Link className="glass-btn glass-btn--ink" href="/ia">
+            Conversar com a Z
+          </Link>
+          <Link className="glass-btn" href="/planos">
+            Créditos nos planos
+          </Link>
         </div>
       </section>
 
-      <section className="get-apps reveal" aria-labelledby="get-apps-title">
-        <div className="get-apps__marks" aria-hidden="true">
-          {['sobedesce', 'synquei', 'nossom', 'tpeasy'].map((id) => (
-            <ProductMark key={id} productId={id} name={id} size={64} />
+      {/* O app para computador: o painel de verdade num MacBook e o HUB no iPhone. */}
+      <section className="section section--center papp" aria-labelledby="app-title">
+        <div className="section__head section__head--wide reveal">
+          <h2 id="app-title" className="display-2 atitle">
+            <span className="atitle__thin">Um app no computador.</span>
+            <span className="atitle__bold">Todas as ferramentas.</span>
+          </h2>
+        </div>
+        <div className="showcase papp__aparelhos">
+          <figure className="ahero__product ahero__product--claro">
+            <img
+              src="/brand/produto-hub-claro.webp"
+              alt="O app Absolute ZRO aberto num MacBook, com as ferramentas, e o HUB num iPhone"
+              width={2400}
+              height={1500}
+              loading="lazy"
+            />
+          </figure>
+          <figure className="ahero__product ahero__product--escuro">
+            <img
+              src="/brand/produto-hub-escuro.webp"
+              alt="O app Absolute ZRO aberto num MacBook, com as ferramentas, e o HUB num iPhone"
+              width={2400}
+              height={1500}
+              loading="lazy"
+            />
+          </figure>
+        </div>
+        <ul className="papp__chips reveal" aria-label="O que o app faz">
+          <li>Instala, abre e atualiza</li>
+          <li>Uma conta só</li>
+          <li>Mac e Windows</li>
+        </ul>
+        <div className="papp__ctas reveal">
+          <Link className="glass-btn glass-btn--ink" href="/baixar#absolute-zro">
+            Baixar o app
+          </Link>
+          <Link className="glass-btn" href="/app">
+            Abrir no navegador
+          </Link>
+        </div>
+      </section>
+
+      {/* O plano que abre tudo. */}
+      <section className="pcycle reveal" id="ciclo" aria-labelledby="ciclo-title">
+        <div className="pcycle__text">
+          <h2 id="ciclo-title" className="pcycle__title">
+            O Ciclo do O
+          </h2>
+          <p className="pcycle__lead">Todas as ferramentas lançadas numa assinatura só.</p>
+        </div>
+        <div className="pcycle__rings" aria-hidden="true">
+          {[0, 1, 2, 3].map((i) => (
+            <i key={i} style={{ '--i': i } as CSSProperties} />
           ))}
         </div>
-        <h2 id="get-apps-title" className="display-3 atitle">
-          <span className="atitle__thin">Instale uma vez.</span>
-          <span className="atitle__bold">Entre com a mesma conta.</span>
-        </h2>
-        <p className="get-apps__lead">SOBEDESCE, Synquei e NOSSOM para Mac e Windows. TPeasy no iPhone. Tudo num lugar só.</p>
-        <Link className="glass-btn" href="/baixar">
-          Ver downloads
+        <Link className="glass-btn pcycle__cta" href="/planos">
+          Conheça o plano completo
         </Link>
       </section>
 
       <section className="closing reveal" aria-labelledby="closing-title">
-        <img className="closing__mark" src="/brand/absolute-zro-o-alpha.webp" alt="" width={40} height={36} loading="lazy" />
+        <Aparece className="closing__aparece">
+          <BrandSymbol className="closing__mark bsym--aparece" />
+        </Aparece>
         <h2 id="closing-title" className="display-2 atitle">
           <span className="atitle__thin">Seus dados, seus acessos.</span>
           <span className="atitle__bold">Nada além do contratado.</span>

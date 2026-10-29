@@ -1,11 +1,14 @@
-// GET /api/zro/callback — volta do HUB. Confere tudo e grava só quem é a pessoa num cookie assinado do app.
+// GET /api/zro/callback — volta do HUB. Confere tudo e grava quem é a pessoa num cookie assinado do app; os tokens do
+// HUB vão cifrados noutro cookie (só /api/zro), para o /eu reler o perfil.
 import {
+  COOKIE_HUB,
   COOKIE_IDA,
   COOKIE_SESSAO,
   DURACAO_SESSAO_S,
   SITE_OFICIAL,
   VOLTA_PADRAO,
   abrir,
+  cifrar,
   comAviso,
   config,
   configurado,
@@ -16,6 +19,7 @@ import {
   selar,
   seguro,
   serializarCookie,
+  sessaoDe,
   trocarCodigo,
   urlDoPedido,
   voltaSegura,
@@ -44,12 +48,16 @@ export default async function callback(req, res) {
   const code = url.searchParams.get('code')
   if (!code) return ir(comAviso(volta, 'erro'))
 
-  let pessoa
+  let r
   try {
-    pessoa = await trocarCodigo({ code, verificador: ida.verificador, nonce: ida.nonce, origem })
+    r = await trocarCodigo({ code, verificador: ida.verificador, nonce: ida.nonce, origem })
   } catch {
     return ir(comAviso(volta, 'erro'))
   }
-  const sessao = selar(pessoa, 'sessao', DURACAO_SESSAO_S)
-  ir(volta, [serializarCookie(COOKIE_SESSAO, sessao, { path: '/', secure, maxAge: DURACAO_SESSAO_S })])
+  const sessao = selar(sessaoDe(r.pessoa), 'sessao', DURACAO_SESSAO_S)
+  // sem access token: a sessão vale, só não relê o perfil até a próxima entrada
+  const hub = r.tokens
+    ? serializarCookie(COOKIE_HUB, cifrar({ sub: r.pessoa.sub, ...r.tokens }), { path: '/api/zro', secure, maxAge: DURACAO_SESSAO_S })
+    : serializarCookie(COOKIE_HUB, '', { path: '/api/zro', secure, maxAge: 0 })
+  ir(volta, [serializarCookie(COOKIE_SESSAO, sessao, { path: '/', secure, maxAge: DURACAO_SESSAO_S }), hub])
 }

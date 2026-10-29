@@ -7,7 +7,7 @@ import { useStore } from '../lib/store.js'
 import { api, attempt } from '../lib/api.js'
 import { bytes, count, plural, tildify, baseName } from '../lib/format.js'
 import { cx } from '../lib/ui.js'
-import { pickFolderPath } from '../lib/desktop.js'
+import { abrirNoSynquei, pickFolderPath } from '../lib/desktop.js'
 import { Icon } from './icons.js'
 import { Button, Switch } from './common.js'
 import { Barra, BotaoGrande, Destaque, GraficoVelocidade, Item, Linha, Linhas, Pagina, Passo, Resumo, Stats, Vazio } from './kit.js'
@@ -44,18 +44,19 @@ const horaDe = (iso) => {
 
 // ───── criar / editar o projeto ─────
 
-function FormProjeto({ inicial, onPronto, onCancelar, topo }) {
+function FormProjeto({ inicial, tipos = [], onPronto, onCancelar, topo }) {
   const roots = useLocalRoots()
   const [nome, setNome] = useState(inicial?.nome || '')
   const [destinos, setDestinos] = useState(inicial?.destinos?.length ? inicial.destinos.map((d) => d.caminho) : [null])
   const [ejetar, setEjetar] = useState(!!inicial?.ejetar)
+  const [tipo, setTipo] = useState(inicial?.tipo || '')
   const [ligar, setLigar] = useState(true)
   const [ocupado, setOcupado] = useState(false)
   const ds = destinos.filter(Boolean)
   const escolher = (atual) => pickFolderPath({ title: 'Onde guardar o backup?', defaultPath: atual || undefined })
   const salvar = async () => {
     setOcupado(true)
-    const r = inicial ? await post('/api/backup/projeto', { id: inicial.id, nome, destinos: ds, ejetar }) : await post('/api/backup/projetos', { nome, destinos: ds, ejetar, ligar })
+    const r = inicial ? await post('/api/backup/projeto', { id: inicial.id, nome, destinos: ds, ejetar, tipo }) : await post('/api/backup/projetos', { nome, destinos: ds, ejetar, ligar, tipo })
     setOcupado(false)
     if (r) onPronto?.()
   }
@@ -116,6 +117,14 @@ function FormProjeto({ inicial, onPronto, onCancelar, topo }) {
         <${Linha} titulo="Ejetar o cartão ao terminar" sub="Só quando estiver tudo certo em todos os destinos.">
           <${Switch} checked=${ejetar} label="Ejetar o cartão ao terminar" onChange=${setEjetar} />
         </${Linha}>
+        ${tipos.length
+          ? html`<${Linha} titulo="No Synquei" sub="O tipo de projeto já chega escolhido.">
+              <span class="select bk-tipo"><select value=${tipo} onChange=${(e) => setTipo(e.currentTarget.value)} aria-label="Tipo de projeto no Synquei">
+                <option value="">Escolher lá</option>
+                ${tipos.map((t) => html`<option value=${t.id}>${t.label}</option>`)}
+              </select><${Icon} name="chevron-down" size=${12} /></span>
+            </${Linha}>`
+          : null}
       </${Linhas}>
     </${Passo}>
   </${Pagina}>`
@@ -352,8 +361,11 @@ function Painel({ v, topo, onNovo, onEditar }) {
   else if (v.ultimo?.resultado === 'ok') destaque = html`<${Destaque} tom="ok" titulo=${v.ultimo.soPasta ? 'Pasta copiada (o resto do cartão não foi conferido)' : 'Cartão OK, pode formatar'} numero=${count(v.ultimo.copiados)} unidade=${v.ultimo.copiados === 1 ? 'arquivo novo' : 'arquivos novos'} linha=${`${v.ultimo.dono} · ${bytes(v.ultimo.bytes)} em ${duracao(v.ultimo.segundos)}`} />`
   else destaque = html`<${Destaque} tom="grad" titulo="Ligado" linha="Espete um cartão" vivo />`
 
+  // Cartão conferido: a mídia já pode ir para o Synquei (ele lê o descargas.jsonl da pasta do projeto).
+  const synquei = !v.job && v.ultimo?.resultado === 'ok'
   const lado = html`<${Resumo} titulo=${desligado ? 'Backup automático' : 'Agora'}>
       ${destaque}
+      ${synquei ? html`<${Button} icon="arrow-right" class="bk-synquei" onClick=${() => abrirNoSynquei(v.atual)} title=${p.tipo ? `Como ${v.tiposSynquei?.find((t) => t.id === p.tipo)?.label || p.tipo}` : 'O tipo de projeto você escolhe no Synquei'}>Preparar no Synquei</${Button}>` : null}
       <div class="k-caixa bk-destinos">
         ${p.destinos.map((d, i) => html`<${EspacoDestino} d=${d} i=${i} media=${p.mediaCartao} />`)}
       </div>
@@ -472,7 +484,7 @@ export function BackupPanel({ topo }) {
   if (!v) {
     return html`<${Pagina} titulo="Cartões" frase=${FRASE} class="page-backup">${topo}<${Passo} icone="refresh" cor="down" titulo="Carregando" i=${2}><${Barra} p=${null} /></${Passo}></${Pagina}>`
   }
-  if (!v.projeto || modo === 'novo') return html`<${FormProjeto} topo=${topo} onPronto=${() => setModo(null)} onCancelar=${v.projeto ? () => setModo(null) : null} />`
-  if (modo === 'editar') return html`<${FormProjeto} topo=${topo} inicial=${v.projeto} onPronto=${() => setModo(null)} onCancelar=${() => setModo(null)} />`
+  if (!v.projeto || modo === 'novo') return html`<${FormProjeto} topo=${topo} tipos=${v.tiposSynquei || []} onPronto=${() => setModo(null)} onCancelar=${v.projeto ? () => setModo(null) : null} />`
+  if (modo === 'editar') return html`<${FormProjeto} topo=${topo} tipos=${v.tiposSynquei || []} inicial=${v.projeto} onPronto=${() => setModo(null)} onCancelar=${() => setModo(null)} />`
   return html`<${Painel} v=${v} topo=${topo} onNovo=${() => setModo('novo')} onEditar=${() => setModo('editar')} />`
 }

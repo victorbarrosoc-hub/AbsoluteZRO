@@ -70,13 +70,45 @@ export function cartaoHtml(v = st) {
   </section>`
 }
 
+/** O cartão sem os números do progresso: se só eles mudaram, o cartão continua o mesmo. */
+const formaDoCartao = (v) => (v && v.fase ? cartaoHtml({ ...v, recebido: v.total ? 0 : null, fase: BAIXANDO.has(v.fase) ? 'baixando' : v.fase }) : cartaoHtml(v))
+
+/**
+ * Desenha o cartão em `box`. Enquanto baixa, o progresso chega até 4 vezes por segundo: trocar o HTML a cada evento
+ * recriava o cartão, a entrada (`rise`) recomeçava e o aviso piscava. Agora, se a forma é a mesma, só a barra e o
+ * texto mudam no lugar. Devolve 'progresso' (mudou no lugar), 'novo' (HTML trocado) ou 'igual'.
+ */
+export function aplicarCartao(box, v = st) {
+  const forma = formaDoCartao(v)
+  const barraEl = box.querySelector('.atu-barra')
+  const texto = box.querySelector('.atu-prog p')
+  if (box.dataset.forma === forma && barraEl && texto) {
+    const p = progresso(v)
+    const f = p && typeof p.f === 'number' ? p.f : null
+    const label = p ? p.label : ''
+    if (texto.textContent !== label) texto.textContent = label
+    if (f !== null) {
+      const largura = `${(f * 100).toFixed(1)}%`
+      const span = barraEl.querySelector('span')
+      if (span && span.style.width !== largura) {
+        span.style.width = largura
+        barraEl.setAttribute('aria-valuenow', String(Math.round(f * 100)))
+      }
+    }
+    return 'progresso'
+  }
+  const html = cartaoHtml(v)
+  box.dataset.forma = forma
+  if (box.innerHTML === html) return 'igual'
+  box.innerHTML = html
+  return 'novo'
+}
+
 function desenhar() {
   const box = document.getElementById('atuCard')
-  if (box) {
-    const html = cartaoHtml()
-    if (box.innerHTML !== html) box.innerHTML = html
-  }
-  document.dispatchEvent(new CustomEvent('synquei:atualizacao-mudou'))
+  const r = box ? aplicarCartao(box) : 'novo'
+  // Ajustes não mostra o progresso: não precisa se redesenhar a cada pedaço baixado
+  if (r !== 'progresso') document.dispatchEvent(new CustomEvent('synquei:atualizacao-mudou'))
 }
 
 export function iniciarAtualizacao() {

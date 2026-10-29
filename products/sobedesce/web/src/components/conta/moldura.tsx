@@ -7,6 +7,7 @@ import { Cabecalho } from "./cabecalho";
  * `larga`: a conta e o admin, que se espalham pela tela no desktop (até 2240 px, em colunas nas próprias páginas).
  * Padrão do kit (components/kit): título e conteúdo entram em cascata; nas estreitas, o ícone em gradiente em cima e o
  * formulário num cartão (`icone` troca o desenho; sem ele, as barras da marca).
+ * `abas`: as abas da área logada (Z e Conta), logo abaixo do cabeçalho.
  */
 export function Moldura({
   titulo,
@@ -15,6 +16,7 @@ export function Moldura({
   estreita = false,
   larga = false,
   icone,
+  abas,
   children,
 }: {
   titulo: React.ReactNode;
@@ -23,11 +25,13 @@ export function Moldura({
   estreita?: boolean;
   larga?: boolean;
   icone?: React.ReactNode;
+  abas?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <div className="flex min-h-dvh flex-col pb-[env(safe-area-inset-bottom)]">
       <Cabecalho acao={acao} />
+      {abas}
       <main
         className={cn(
           "mx-auto w-full flex-1 pt-8 pb-20 sm:pt-16",

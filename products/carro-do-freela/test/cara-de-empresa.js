@@ -33,7 +33,7 @@ const PRE=pg=>pg.addInitScript(()=>{ try{
 }catch(e){} });
 
 (async()=>{
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
   const errs=[];
   const abrir=async(W,H,mob)=>{
     const ctx=await b.newContext({viewport:{width:W,height:H},isMobile:!!mob});
@@ -60,7 +60,7 @@ const PRE=pg=>pg.addInitScript(()=>{ try{
         prem, det:PLANO_DET.premium,
         cortados:prem.filter(x=>/Recibo e contrato|apareceu em busca|Clube de desconto/i.test(x)),
         nasceu:(document.querySelector('.hnasceu')||{}).textContent||'',
-        selo:!!document.querySelector('.homenav [data-previa]'),
+        selo:!!document.querySelector('#v-home .fim-prev')&&!document.querySelector('.homenav [data-previa]'),
         resumo:(document.getElementById('pv-bem')||{}).textContent||''};
     });
     t(!r.reais,'⟶⟶ nenhum texto diz que os cadastros são reais — a lista é fictícia desde 13/set');
@@ -141,7 +141,10 @@ const PRE=pg=>pg.addInitScript(()=>{ try{
     const r=await p.evaluate(()=>{
       const hero=document.querySelector('#v-home .hero');
       const comFoto=CREW.filter(c=>!c.me&&!(c.principal||[]).includes('Perfil incompleto'));
-      const sem=comFoto.filter(c=>!/^data:image\//.test(c.foto||''));
+      /* (26/out) o rosto saiu do base64 para um arquivo em m/ (foto-rostos-<id>.<hash>.webp):
+         continua sendo foto de verdade, só não mora mais dentro do HTML */
+      const ROSTO=/(?:data:image\/|\/m\/foto-rostos-\d+\.\w+\.webp)/;
+      const sem=comFoto.filter(c=>!ROSTO.test(c.foto||''));
       const unicos=new Set(comFoto.map(c=>c.foto)).size;
       const eu=CREW.find(c=>c.me);
       const imgs=[...hero.querySelectorAll('img')];
@@ -155,7 +158,7 @@ const PRE=pg=>pg.addInitScript(()=>{ try{
              e o do banco do carona (parado) —, e os dois são a cena */
           &&imgs.length===0&&!!HOME_VIDEO.poster&&[HOME_VIDEO.poster,HOME_VIDEO.parado].some(q=>q&&cena.includes(q))
           &&![...Object.values(FOTOS.capas||{}),...Object.values(HERO_ARTE)].some(u=>cena.includes(String(u))),
-        heroComRosto:[...document.querySelectorAll('#hj-lista .av')].filter(x=>/data:image\//.test(x.style.backgroundImage)).length,
+        heroComRosto:[...document.querySelectorAll('#hj-lista .av')].filter(x=>ROSTO.test(x.style.backgroundImage)).length,
         semAsset:!('hero' in FOTOS)&&!('recorte' in FOTOS),
         n:comFoto.length, sem:sem.length, unicos, euSemRosto:!eu||!FOTOS.rostos[eu.id],
         incompletos:CREW.filter(c=>(c.principal||[]).includes('Perfil incompleto')&&FOTOS.rostos[c.id]).length};
@@ -179,7 +182,7 @@ const PRE=pg=>pg.addInitScript(()=>{ try{
       const c=CREW.find(x=>!x.me&&!trabalhosDe(x).length&&x.foto);
       abrirPerfil(c.id);
       const cp=document.getElementById('p-capa'), av=document.querySelector('#p-av img');
-      return {foto:cp.classList.contains('foto'), av:!!av&&/^data:image\//.test(av.src)};
+      return {foto:cp.classList.contains('foto'), av:!!av&&/(?:data:image\/|\/m\/foto-rostos-\d+\.\w+\.webp)/.test(av.src)};
     });
     t(pc.foto,'⟶⟶ perfil sem trabalho publicado ganha a foto da função como capa, nítida — não o quadro borrado');
     t(pc.av,'e a foto de rosto no lugar das iniciais');

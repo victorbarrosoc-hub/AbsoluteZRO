@@ -37,6 +37,8 @@ jobs:
     steps:
       - name: Validate publication mode
         shell: bash
+        # roda antes do checkout: a pasta products/nossom (padrão do job) ainda não existe
+        working-directory: .
         env:
           SIGNED: ${{ inputs.publish_signed }}
           PREVIEW: ${{ inputs.publish_preview }}

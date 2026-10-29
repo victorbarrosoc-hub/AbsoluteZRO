@@ -1,0 +1,263 @@
+/*
+ * Ajustes da equipe: Pessoas e acesso por cliente (drizzle/0018), agenda no celular (.ics, 0017) e importar planilha
+ * (0016). Visual C1 · Aurora: fichas claras, chips tingidos, texto sempre grafite/branco.
+ */
+
+/* ───────────── Pessoas ───────────── */
+
+.pessoas {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.pessoa {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: var(--radius-l);
+  background: var(--painel);
+  box-shadow: var(--shadow-float);
+}
+.pessoa[data-inativa] {
+  opacity: 0.6;
+}
+.pessoa__topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.pessoa__miolo {
+  display: grid;
+  flex: 1;
+  min-width: 180px;
+}
+.pessoa__miolo b {
+  font-weight: 650;
+  color: var(--text-strong);
+}
+.pessoa__miolo small {
+  font-size: 0.82rem;
+  color: var(--text-faint);
+}
+.pessoa__alcance summary {
+  width: max-content;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-mute);
+  cursor: pointer;
+}
+.alcance {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+.alcance .q-segmentos {
+  max-width: 360px;
+}
+.alcance__lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 10px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+.alcance__lista label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  color: var(--text);
+  cursor: pointer;
+}
+.alcance__lista label:hover {
+  background: var(--hover);
+}
+.alcance__lista input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--text-strong);
+}
+
+/* ───────────── Agenda no celular ───────────── */
+
+.assinatura,
+.assinatura__url {
+  display: grid;
+  gap: 10px;
+}
+.assinatura__estado {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.assinatura__estado > div {
+  display: grid;
+}
+.assinatura__url {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.assinatura__url p {
+  margin: 0;
+}
+.assinatura__url code {
+  overflow-wrap: anywhere;
+  font-size: 0.86rem;
+  color: var(--text-strong);
+}
+.assinatura__passos {
+  display: grid;
+  gap: 12px;
+  margin: 10px 0;
+  padding: 0;
+  list-style: none;
+}
+.assinatura__passos li {
+  display: grid;
+  gap: 2px;
+}
+.assinatura__passos b {
+  font-weight: 650;
+  color: var(--text-strong);
+}
+.assinatura__passos span {
+  color: var(--text);
+}
+
+/* ───────────── Importar planilha ───────────── */
+
+.importar {
+  display: grid;
+  gap: 14px;
+}
+.importar__tipos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr));
+  gap: 10px;
+}
+.importar__tipo {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--card-sombra);
+  color: var(--text-strong);
+  cursor: pointer;
+}
+.importar__tipo:has(input:checked) {
+  box-shadow:
+    var(--card-sombra),
+    inset 0 0 0 2px var(--text-strong);
+}
+.importar__tipo input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.importar__tipo small {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+.importar__tipo a {
+  font-size: 0.8rem;
+  color: var(--text-mute);
+}
+.importar__arquivo {
+  display: grid;
+  gap: 6px;
+  padding: 18px;
+  border-radius: 16px;
+  border: 1.5px dashed var(--line-strong);
+  background: var(--surface-2);
+  text-align: center;
+  color: var(--text-mute);
+}
+.importar__arquivo input {
+  justify-self: center;
+  max-width: 100%;
+}
+.importar__mapa {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: 8px;
+}
+.importar__mapa label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-mute);
+}
+.importar__mapa select {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  color: var(--text-strong);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.importar__resumo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.importar__tabela {
+  overflow-x: auto;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--card-sombra);
+}
+.importar__tabela table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+.importar__tabela th,
+.importar__tabela td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+  color: var(--text);
+}
+.importar__tabela th {
+  font-weight: 650;
+  color: var(--text-strong);
+  background: var(--surface-2);
+}
+.importar__tabela tr[data-erro] td {
+  background: color-mix(in srgb, var(--st-atrasado) 9%, transparent);
+}
+.importar__tabela td.importar__msg {
+  white-space: normal;
+  min-width: 180px;
+}
+.importar__historico {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.88rem;
+}
+.importar__historico li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  color: var(--text);
+}
+.importar__historico small {
+  color: var(--text-faint);
+}

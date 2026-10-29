@@ -773,6 +773,9 @@ html.scrolled .topbar-title {
 .row > .row-ic + span {
   flex: 1;
 }
+.row[hidden] + .row::before {
+  display: none;
+}
 .row + .row::before {
   content: "";
   position: absolute;
@@ -833,6 +836,37 @@ html.scrolled .topbar-title {
   width: 15px;
   height: 15px;
   color: var(--text-3);
+}
+
+/* família Absolute ZRO (Ajustes): ícone e nome de cada app, como no menu do Revela */
+.familia {
+  display: grid;
+}
+.familia-label {
+  padding-top: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.row.fam {
+  min-height: 44px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  gap: 14px;
+}
+.fam img {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  object-fit: contain;
+  flex: none;
+}
+.fam span {
+  flex: 1;
+}
+.row.fam + .row.fam::before {
+  left: 52px;
 }
 .keys {
   display: grid;
@@ -1008,6 +1042,21 @@ a.btn {
   font-size: 20px;
   font-weight: 700;
 }
+/* foto da conta Absolute ZRO por cima da inicial */
+.avatar.com-foto {
+  position: relative;
+  overflow: hidden;
+}
+.avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.account-edit {
+  grid-column: 1 / -1;
+}
 .avatar .icon {
   width: 24px;
   height: 24px;
@@ -1052,7 +1101,7 @@ a.btn {
   bottom: 0;
   z-index: 20;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   height: calc(var(--tabbar-h) + var(--safe-b));
   padding: 0 var(--safe-r) var(--safe-b) var(--safe-l);
   background: var(--tab-glass);
@@ -1095,6 +1144,41 @@ html.has-prompter .tabbar {
 @keyframes tabpop {
   40% {
     transform: scale(0.88);
+  }
+}
+/* balão: o que espera uma ação da pessoa nesta aba (app/js/pendencias.js), no desenho do SOBEDESCE e do HUB.
+   Na barra de abas ele senta no canto do ícone, como no iOS. */
+.tab {
+  position: relative;
+}
+.balao {
+  position: absolute;
+  top: 5px;
+  left: calc(50% + 6px);
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--surface);
+  box-shadow: 0 0 0 2px var(--tab-glass);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-grid;
+  place-items: center;
+  font-variant-numeric: tabular-nums;
+  animation: balao-entra 0.32s var(--spring) both;
+}
+@keyframes balao-entra {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .balao {
+    animation: none;
   }
 }
 
@@ -2367,4 +2451,61 @@ html.kb-open .editor-bar {
   .rc-script .cue {
     color: #c9b6ff;
   }
+}
+
+/* ───────────── a aba da Z (app/js/z.js): a Z ocupa a tela toda ───────────── */
+.view-z {
+  padding-top: calc(var(--safe-t) + 16px);
+  padding-bottom: calc(var(--tabbar-h) + var(--safe-b) + 12px);
+}
+.z-painel {
+  --z-livre: calc(100dvh - var(--safe-t) - 16px - var(--tabbar-h) - var(--safe-b) - 12px);
+  --zro-ia-altura: var(--z-livre);
+  --zro-ia-fundo-gaveta: var(--bg);
+  max-width: 760px;
+  margin: 0 auto;
+}
+/* com o botão de entrar embaixo, a Z encolhe o que ele ocupa: a tela não rola */
+.z-painel:has(.z-entrar:not([hidden])) {
+  --zro-ia-altura: calc(var(--z-livre) - 62px);
+}
+.z-entrar[hidden] {
+  display: none;
+}
+.z-entrar {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+/* sem a Z aqui (offline, sem as funções da conta) */
+.z-fora {
+  min-height: var(--z-livre);
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+}
+.z-fora-anel {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 12px;
+  border: 1.5px solid var(--text-3);
+  border-radius: 50%;
+  opacity: 0.6;
+}
+.z-fora h2 {
+  font-size: 28px;
+  font-weight: 300;
+  letter-spacing: -0.03em;
+}
+.z-fora p {
+  color: var(--text-2);
+}
+.z-fora-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
 }

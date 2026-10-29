@@ -4,14 +4,18 @@
  *
  * - Ida (/api/zro/entrar): state, nonce e verificador PKCE num cookie assinado (HMAC) de 10 minutos, só em /api/zro.
  * - Volta (/api/zro/callback): confere o state, troca o código (client_secret_basic), confere o id_token ES256 pela
- *   JWKS (iss, aud, exp, nonce) e grava a sessão do app num cookie assinado de 30 dias. Nenhum token do HUB vai para
- *   o navegador: o cookie guarda só quem é a pessoa.
+ *   JWKS (iss, aud, exp, nonce) e grava a sessão do app num cookie assinado de 30 dias (só quem é a pessoa). O access
+ *   token e o refresh token (offline_access) vão CIFRADOS (AES-256-GCM) noutro cookie, só em /api/zro.
+ * - Perfil único (docs/integration-contracts/perfil-unico.md): o /eu relê nome, e-mail e foto em /oauth/userinfo a
+ *   cada abertura do app. Mudou na conta Absolute ZRO, muda aqui. O TPeasy não edita nenhum dos três.
  * - As chaves dos cookies saem de ZRO_CLIENT_SECRET por HKDF, uma por finalidade.
  */
-import { createHash, createHmac, createPublicKey, hkdfSync, randomBytes, timingSafeEqual, verify } from 'node:crypto'
+import { createCipheriv, createDecipheriv, createHash, createHmac, createPublicKey, hkdfSync, randomBytes, timingSafeEqual, verify } from 'node:crypto'
 
-export const EMISSOR_PADRAO = 'https://absolutezro.vercel.app'
-export const ESCOPOS = 'openid email profile org'
+export const EMISSOR_PADRAO = 'https://absolutezro.com'
+// offline_access: o refresh token deixa o app reler o perfil (nome, e-mail, foto) a cada abertura
+// zro.ia: a Z (a IA do ecossistema) conversa com a pessoa no painel inicial, pelo repasse /api/zro/ia
+export const ESCOPOS = 'openid email profile org offline_access zro.ia'
 export const SITE_OFICIAL = 'https://tpeasy.vercel.app'
 export const VOLTA_PADRAO = '/app/'
 /** Id do TPeasy na lista `zro_products` do HUB. Fora da lista: entra, mas a conta fica sem acesso ao app. */
@@ -21,6 +25,10 @@ export const COOKIE_IDA = 'tp_zro_ida'
 export const DURACAO_IDA_S = 600
 export const COOKIE_SESSAO = 'tp_zro'
 export const DURACAO_SESSAO_S = 30 * 24 * 3600
+/** Cofre: tokens do HUB, cifrados, só em /api/zro. */
+export const COOKIE_HUB = 'tp_zro_hub'
+/** O /eu pergunta ao HUB no máximo uma vez por minuto. */
+export const REVER_S = 60
 
 // ───────────── configuração ─────────────
 
@@ -78,6 +86,36 @@ function chave(finalidade) {
   const { clientSecret } = config()
   if (!clientSecret) throw new Error('Falta ZRO_CLIENT_SECRET.')
   return Buffer.from(hkdfSync('sha256', clientSecret, 'tpeasy-zro-v1', `cookie:${finalidade}`, 32))
+}
+
+// ───────────── cofre: tokens cifrados ─────────────
+// Assinar não basta para token: o corpo do cookie seria legível. AES-256-GCM com chave própria.
+
+const chaveCofre = () => {
+  const { clientSecret } = config()
+  if (!clientSecret) throw new Error('Falta ZRO_CLIENT_SECRET.')
+  return Buffer.from(hkdfSync('sha256', clientSecret, 'tpeasy-zro-v1', 'cofre:hub', 32))
+}
+
+export function cifrar(dados) {
+  const iv = randomBytes(12)
+  const c = createCipheriv('aes-256-gcm', chaveCofre(), iv)
+  const corpo = Buffer.concat([c.update(JSON.stringify(dados), 'utf8'), c.final()])
+  return Buffer.concat([iv, c.getAuthTag(), corpo]).toString('base64url')
+}
+
+export function decifrar(valor) {
+  if (typeof valor !== 'string' || !valor || valor.length > 4096) return null
+  try {
+    const b = Buffer.from(valor, 'base64url')
+    if (b.length < 29) return null
+    const d = createDecipheriv('aes-256-gcm', chaveCofre(), b.subarray(0, 12))
+    d.setAuthTag(b.subarray(12, 28))
+    const dados = JSON.parse(Buffer.concat([d.update(b.subarray(28)), d.final()]).toString('utf8'))
+    return dados && typeof dados === 'object' ? dados : null
+  } catch {
+    return null
+  }
 }
 
 const assinatura = (finalidade, corpo) => createHmac('sha256', chave(finalidade)).update(corpo).digest()
@@ -251,28 +289,123 @@ export async function conferirIdToken(idToken, nonce, agora = Date.now()) {
   if (typeof dados.iat === 'number' && dados.iat > s + 300) throw new ZroError('token_invalido', 'data futura')
   if (typeof dados.nonce !== 'string' || dados.nonce !== nonce) throw new ZroError('token_invalido', 'nonce')
   if (typeof dados.sub !== 'string' || !dados.sub || typeof dados.email !== 'string') throw new ZroError('token_invalido', 'sem sub ou e-mail')
+  return perfilDeClaims(dados)
+}
+
+/** Endereço que só vale se for da Absolute ZRO configurada (a foto vai num <img>, a conta num link). */
+function daConta(v, caminho) {
+  if (typeof v !== 'string' || v.length > 300 || /[\s"'<>\\]/.test(v)) return null
+  return v.startsWith(`${config().emissor}${caminho}`) ? v : null
+}
+
+/**
+ * Perfil único: claims do id_token ou do /oauth/userinfo → a cópia que o TPeasy guarda. Nome, e-mail e foto são da
+ * conta Absolute ZRO; `conta` é onde editar. Sem `picture`, sem foto (o app mostra a inicial).
+ */
+export function perfilDeClaims(dados) {
   const org = dados.zro_org && typeof dados.zro_org === 'object' && typeof dados.zro_org.name === 'string' ? dados.zro_org : null
   return {
-    sub: dados.sub,
-    email: dados.email.trim().toLowerCase(),
+    sub: String(dados.sub),
+    email: typeof dados.email === 'string' ? dados.email.trim().toLowerCase() : null,
     nome: typeof dados.name === 'string' && dados.name.trim() ? dados.name.trim().slice(0, 120) : null,
+    foto: daConta(dados.picture, '/api/v1/foto/'),
+    conta: daConta(dados.zro_conta, '/') || `${config().emissor}/perfil`,
     organizacao: org ? { id: String(org.id ?? ''), nome: org.name.slice(0, 120), papel: typeof org.role === 'string' ? org.role : null } : null,
     produtos: Array.isArray(dados.zro_products) ? dados.zro_products.filter((p) => typeof p === 'string').slice(0, 50) : [],
   }
 }
 
-/** Troca o código (client_secret_basic + PKCE) e confere o id_token. Os tokens do HUB morrem aqui. */
+/** O que a sessão (tp_zro) guarda: só a cópia dos claims, com a hora da última leitura (`lido`). */
+export const sessaoDe = (p, agora = Date.now()) => ({ ...p, lido: Math.floor(agora / 1000) })
+
+/** Tokens que vão para o cofre: access token (10 min) e refresh token (roda a cada troca). */
+function tokensDe(corpo, agora = Date.now()) {
+  if (!corpo || typeof corpo.access_token !== 'string') return null
+  const atExp = Math.floor(agora / 1000) + Math.min(Math.max(Number(corpo.expires_in) || 0, 0), 3600)
+  return { at: corpo.access_token, atExp, rt: typeof corpo.refresh_token === 'string' ? corpo.refresh_token : null }
+}
+
+function basicAuth() {
+  const { clientId, clientSecret } = config()
+  return `Basic ${Buffer.from(`${encodeURIComponent(clientId)}:${encodeURIComponent(clientSecret)}`).toString('base64')}`
+}
+
+/** Troca o código (client_secret_basic + PKCE), confere o id_token e devolve a pessoa e os tokens (para o cofre). */
 export async function trocarCodigo({ code, verificador, nonce, origem }) {
   const d = await descobrir()
-  const { clientId, clientSecret } = config()
-  const basic = Buffer.from(`${encodeURIComponent(clientId)}:${encodeURIComponent(clientSecret)}`).toString('base64')
   const { status, corpo } = await buscarJson(d.token_endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json', Authorization: `Basic ${basic}` },
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json', Authorization: basicAuth() },
     body: new URLSearchParams({ grant_type: 'authorization_code', code, code_verifier: verificador, redirect_uri: retornoDe(origem) }).toString(),
   })
   if (status !== 200 || typeof corpo?.id_token !== 'string') throw new ZroError('recusado', String(corpo?.error ?? status))
-  return conferirIdToken(corpo.id_token, nonce)
+  return { pessoa: await conferirIdToken(corpo.id_token, nonce), tokens: tokensDe(corpo) }
+}
+
+async function renovar(rt) {
+  if (typeof rt !== 'string' || !rt) throw new ZroError('revogado', 'sem refresh token')
+  const d = await descobrir()
+  const { status, corpo } = await buscarJson(d.token_endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json', Authorization: basicAuth() },
+    body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: rt }).toString(),
+  })
+  if (status === 400 && corpo?.error === 'invalid_grant') throw new ZroError('revogado', 'refresh recusado')
+  const t = status === 200 ? tokensDe(corpo) : null
+  if (!t) throw new ZroError('rede', 'refresh')
+  return { ...t, rt: t.rt || rt }
+}
+
+/**
+ * Perfil único: relê nome, e-mail, foto, organização e produtos em /oauth/userinfo. Usa o access token guardado
+ * enquanto vale; vencido (ou recusado), troca o refresh token, que RODA (o novo substitui o velho no cofre).
+ * Erro 'revogado': o HUB não aceita mais esta sessão (acesso removido no Perfil). Erro 'rede': vale a última cópia.
+ */
+export async function lerPerfil(sub, tokens, agora = Date.now()) {
+  const d = await descobrir()
+  const userinfo = d.userinfo_endpoint || `${config().emissor}/oauth/userinfo`
+  let t = tokens && typeof tokens === 'object' ? tokens : {}
+  let renovou = false
+  if (typeof t.at !== 'string' || !(t.atExp > Math.floor(agora / 1000) + 30)) {
+    t = await renovar(t.rt)
+    renovou = true
+  }
+  const perguntar = (at) => buscarJson(userinfo, { headers: { Accept: 'application/json', Authorization: `Bearer ${at}` } })
+  let r = await perguntar(t.at)
+  if (r.status === 401 && !renovou) {
+    t = await renovar(t.rt)
+    r = await perguntar(t.at)
+  }
+  if (r.status === 401) throw new ZroError('revogado', 'userinfo recusou')
+  if (r.status !== 200 || typeof r.corpo?.sub !== 'string') throw new ZroError('rede', 'userinfo')
+  if (r.corpo.sub !== sub) throw new ZroError('revogado', 'outra pessoa')
+  return { pessoa: perfilDeClaims(r.corpo), tokens: t }
+}
+
+/**
+ * Access token para a Z (/api/zro/ia): o guardado enquanto vale; vencido (ou `forcar`, depois de um 401), troca o
+ * refresh token, que RODA. Devolve { tokens, renovou }. Erro 'revogado': o HUB não aceita mais esta sessão.
+ */
+export async function tokenValido(tokens, { forcar = false, agora = Date.now() } = {}) {
+  const t = tokens && typeof tokens === 'object' ? tokens : {}
+  if (!forcar && typeof t.at === 'string' && t.atExp > Math.floor(agora / 1000) + 30) return { tokens: t, renovou: false }
+  return { tokens: await renovar(t.rt), renovou: true }
+}
+
+/** Sair: o refresh token morre também no HUB (sem esperar resposta boa). */
+export async function revogar(rt) {
+  if (typeof rt !== 'string' || !rt) return
+  try {
+    const d = await descobrir()
+    if (!d.revocation_endpoint) return
+    await buscarJson(d.revocation_endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', Authorization: basicAuth() },
+      body: new URLSearchParams({ token: rt, token_type_hint: 'refresh_token' }).toString(),
+    })
+  } catch {
+    // a sessão daqui sai de qualquer jeito
+  }
 }
 
 /** Compara dois textos sem vazar tempo. */

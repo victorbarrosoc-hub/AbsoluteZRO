@@ -41,6 +41,53 @@ A revisão ampla identificou expectativas antigas de texto/cor e o teste de aber
 - `tests/zro.test.ts`: `prompt=create` só em "criar"; produto fora da lista → bloqueio; liberado → acesso; renovação relê o vínculo; conta antiga sem vínculo segue igual. `tests/account.test.ts`: login sem cadastro.
 - `tests/e2e/zro-access.spec.ts` (Supabase falso com `nossom_zro_link`): tela de bloqueio, APIs 401, página pública aberta, liberação na próxima entrada; conta antiga sem vínculo entra normalmente. `tests/e2e/zro-login.spec.ts`: criar conta vai para a Absolute ZRO e o formulário de cadastro sumiu.
 
+## 27/10/2026 · A Z no Início
+
+- A Z (IA da Absolute ZRO) no topo de `/studio`, repasse `/api/zro/ia` com o token `zro.ia` só no servidor (detalhes em
+  [zro-login.md](zro-login.md#a-z-no-início-27102026)). `tests/zro.test.ts` cobre cookie, repasse, recusas, renovação e
+  saída; `tests/e2e/zro-ia.spec.ts` cobre a tela, o "Conectar com Absolute ZRO" e o caminho até a API falsa do HUB
+  (`scripts/test-server.mjs`, `/zro/api/v1/ia`). Sem conta Absolute ZRO real nesta validação.
+
+## 27/10/2026 · A Z em aba própria
+
+- `/studio/z` é a primeira aba e a entrada de `/studio` (redirecionamento no servidor, com a busca). O Início mora em
+  `/studio/inicio`, sem a Z. `tests/e2e/zro-ia.spec.ts` cobre a aba, a entrada, a tela toda, o Início sem a Z e o aviso
+  quando o painel não carrega; contagens da navegação em `install-navigation.spec.ts` (6 na lateral, 5 no celular).
+
+## 28/10/2026 · Conta no padrão Absolute ZRO
+
+- Menu "Sua conta": foto da conta Absolute ZRO (claim `picture`, só `https` do emissor em `/api/v1/foto/…`), nome,
+  e-mail · organização, selo "Conta Absolute ZRO" e "Editar na conta Absolute ZRO" (claim `zro_conta`, ou
+  absolutezro.com/perfil; abre fora do app). Sem vínculo, "Ligar conta Absolute ZRO" (só com o cliente ZRO
+  configurado). A identidade fica na sessão cifrada; a renovação relê e-mail e organização no vínculo; desligar apaga.
+  "ADM · Ilimitado" só com `unlimited` do servidor.
+- `tests/zro.test.ts` 24/24 (identidade no login, renovação, foto/endereço de outro emissor ou http recusados,
+  convite sem vínculo, desligar limpa); `npm test` 85/85; typecheck, format:check e build ok;
+  `tests/e2e/account-menu.spec.ts` (menu ligado em 1440 e 390, axe, sem rolagem lateral). Suíte E2E: 77 ok, 1
+  pulado e 3 que gravam do microfone falham neste ambiente ("Não foi possível acessar o microfone"), fora da conta.
+- Não validado: a foto de uma conta real vinda do HUB em produção (a tela com foto foi conferida com a foto servida
+  por rota falsa no Playwright).
+
+## 28/10/2026 · Fechado ao público (Etapa B)
+
+- Regra única: `temAcesso()` em `lib/server/release.ts`. `RELEASE` (padrão `closed`, só `released` abre) × claim
+  `zro_release` do HUB guardada no vínculo (migração `202610280001_zro_release.sql`) e relida no login, ao ligar a
+  conta, na renovação e em cada pedido à API. Fechado, só `zro_release.nossom === 'allowed'` entra; conta própria,
+  vínculo sem a claim e `closed` são negados. `ADMIN_EMAIL` ficou como estava (só dá o painel ADM a quem já entrou).
+- Negado: `/studio/*` (inclusive `/studio/z`) vira "Em desenvolvimento" (HTTP 200) pelo proxy e pelo layout; APIs do
+  produto (`/api/usage`, `/api/ai/*`, `/api/audio/jobs*`, `/api/plans`, `/api/admin*`, `/api/zro/ia/*`) → 403;
+  `/baixar`, instaladores e canal de atualização → 404; `/apps` e `/entrar` → "Em desenvolvimento" (em `/entrar`, só
+  a porta "Entrar com Absolute ZRO"); `instalar.sh` → mensagem e `exit 1`; login com senha → 403 sem cookie;
+  checkout/portal Stripe → 403 e `GET /api/subscription` → `enabled: false`. Home sem CTA funcional ("Conhecer o
+  projeto"), sem planos, a Z "Chegando ao NOSSOM" sem link. Ficam abertos o cron de limpeza (CRON_SECRET) e o webhook
+  assinado da Stripe.
+- `npm test` **101/101**, `typecheck`, `format:check` e `build` ok. E2E: suíte completa 83 cenários; depois do ajuste, as specs afetadas de novo: só falham os 2 de microfone (o Chromium daqui não dá o microfone, como antes) e 26 ficam pulados por descreverem o produto aberto. `tests/e2e/zro-access.spec.ts`
+  cobre as personas anônimo, conta própria, Absolute ZRO `closed` (e vínculo sem a claim), `allowed` e sessão antiga
+  que sai da lista (perde o acesso no pedido seguinte). Testes que descrevem o produto aberto (entrar com senha,
+  assinar, instalar no iPhone) só rodam com `RELEASE=released` (`onlyWhenOpen`).
+- Não validado: o HUB real emitindo `zro_release`, a migração no Supabase de produção e a conta do proprietário
+  entrando de verdade.
+
 ## Reproduzir
 
 ```sh

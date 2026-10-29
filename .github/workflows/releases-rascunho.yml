@@ -1,0 +1,28 @@
+# Gate de lançamento (ADR 0023): passa para rascunho os Releases de produtos fechados, sem apagar nada.
+# Rodado à mão (Actions › Releases em rascunho › Run workflow). Para reabrir: Edit › Publish release no GitHub.
+name: Releases em rascunho
+
+on:
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: Tags separadas por espaço
+        default: ai-edit-app-desktop nossom-v0.2.2
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  rascunho:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Passar para rascunho
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAGS: ${{ inputs.tags }}
+        run: |
+          for tag in $TAGS; do
+            gh release edit "$tag" --repo "$GITHUB_REPOSITORY" --draft=true
+            gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json tagName,isDraft
+          done

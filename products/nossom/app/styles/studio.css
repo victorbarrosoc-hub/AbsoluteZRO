@@ -2346,3 +2346,130 @@
     display: none;
   }
 }
+/* Família Absolute ZRO: ícone de cada app + nome, abaixo da navegação do estúdio. */
+.studio-sidebar nav.family-nav {
+  gap: 2px;
+  margin-top: 22px;
+}
+.family-nav-title {
+  padding: 0 11px 6px;
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.family-nav > a {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 40px;
+  padding: 0 9px;
+  border-radius: 8px;
+  color: var(--text-2);
+  font-size: 14px;
+  white-space: nowrap;
+  text-decoration: none;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.family-nav > a:hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+.family-nav > a:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: -2px;
+}
+.family-nav img {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  object-fit: contain;
+}
+.family-nav > a > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 680px) {
+  .family-nav > a {
+    min-height: 46px;
+    font-size: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .family-nav > a {
+    transition: none;
+  }
+}
+
+/* A Z, a IA da Absolute ZRO, na aba própria (/studio/z): ocupa a tela toda, sem rodapé. */
+.view-z .studio-footer,
+.view-z .mobile-usage {
+  display: none;
+}
+.view-z .studio-main {
+  display: flex;
+  flex-direction: column;
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+.zro-ia-tela {
+  flex: 1;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+}
+.zro-ia-tela zro-ia {
+  --zro-ia-altura: calc(100dvh - 72px - 40px);
+  --zro-ia-fundo-gaveta: var(--surface);
+  display: block;
+  min-height: var(--zro-ia-altura);
+}
+.zro-ia-tela[data-z='sem-login'] zro-ia {
+  --zro-ia-altura: calc(100dvh - 72px - 120px);
+}
+.zro-ia-conectar,
+.zro-ia-falhou {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 16px;
+  text-align: center;
+}
+.zro-ia-falhou {
+  flex-direction: column;
+  min-height: calc(100dvh - 72px - 40px);
+}
+.zro-ia-conectar p,
+.zro-ia-falhou p {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 14px;
+}
+.zro-ia-conectar .button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+@media (max-width: 680px) {
+  .view-z .studio-main {
+    padding: 8px 14px 12px;
+  }
+  .zro-ia-tela zro-ia {
+    --zro-ia-altura: calc(100dvh - 70px - 64px - env(safe-area-inset-bottom) - 24px);
+  }
+  .zro-ia-tela[data-z='sem-login'] zro-ia {
+    --zro-ia-altura: calc(100dvh - 70px - 64px - env(safe-area-inset-bottom) - 150px);
+  }
+  .zro-ia-falhou {
+    min-height: calc(100dvh - 70px - 64px - env(safe-area-inset-bottom) - 24px);
+  }
+}

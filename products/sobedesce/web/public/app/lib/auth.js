@@ -9,6 +9,7 @@
 // - Sem rede ou servidor fora do ar → tenta de novo com recuo; quem precisa de token espera.
 import { ACCOUNT, LAN, local } from './config.js'
 import { getState, setState } from './state.js'
+import { lerZro } from './ligar-zro.js'
 
 const DRIVE_KEY = 'sobedesce.drive' // id da conta Drive escolhida neste aparelho
 const EARLY_MS = 5 * 60_000 // renova com esta folga (o servidor também renova quando falta menos que isso)
@@ -77,7 +78,7 @@ async function load() {
     // A conta Absolute ZRO ainda não tem a SOBEDESCE liberada: nada de Drive nem envio até o admin liberar.
     forget()
     stopRecheck()
-    setState({ account: null, drives: [], drive: null })
+    setState({ account: null, drives: [], drive: null, zro: null })
     return setAuth({ status: 'error', issue: null, error: r.json.mensagem || 'Sua conta Absolute ZRO ainda não tem acesso ao SOBEDESCE.' })
   }
   if (!r?.ok || !r.json?.usuario) {
@@ -90,9 +91,10 @@ async function load() {
   apply(r.json)
 }
 
-function apply({ usuario, contas, recursos }) {
+function apply({ usuario, contas, recursos, zro }) {
   const drives = Array.isArray(contas) ? contas : []
-  setState({ account: usuario, drives, recursos: recursos && typeof recursos === 'object' ? recursos : {} })
+  // zro.pedir: conta antiga sem vínculo com a Absolute ZRO (lib/ligar-zro.js). Só muda a tela; envio e token seguem.
+  setState({ account: usuario, drives, recursos: recursos && typeof recursos === 'object' ? recursos : {}, zro: lerZro(zro) })
   if (!drives.length) {
     forget()
     setState({ drive: null })
@@ -142,7 +144,7 @@ export function chooseDrive() {
 function endSession(message) {
   forget()
   stopRecheck()
-  setState({ account: null, drives: [], drive: null, user: null, quota: null, sheet: null })
+  setState({ account: null, drives: [], drive: null, user: null, quota: null, sheet: null, zro: null })
   setAuth({ status: 'signedOut', issue: null, error: message || null })
 }
 
@@ -159,6 +161,7 @@ function onBack() {
   const { status, issue } = getState().auth
   if (status !== 'signedIn' && status !== 'loading') boot()
   else if (issue === 'reconectar') boot()
+  else if (getState().zro?.pedir) boot() // voltou de ligar a Absolute ZRO (folha do navegador ou outra aba)
   else ensureFresh()
 }
 

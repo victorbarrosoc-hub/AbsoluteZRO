@@ -27,7 +27,7 @@ const RAIZ = path.resolve(__dirname, '..');
 const pub = f => path.join(RAIZ, 'public', f);
 
 (async()=>{
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
 
   /* ============ 1. as tags, em TODAS as saídas ============ */
   const TAGS=[

@@ -4,6 +4,7 @@
  */
 import { z } from 'zod'
 import { IsoDate, ProductId, Uuid } from './common'
+import { FreelaInventarioSchema } from './freela'
 
 export const EventEnvelopeSchema = z.object({
   event_id: Uuid,
@@ -46,7 +47,27 @@ export const EVENT_PAYLOADS = {
   },
   'audio.mix.ready': { 1: z.object({ source: z.literal('nossom'), mix_ref: z.string().max(300) }) },
   'finishing.qc.completed': { 1: z.object({ source: z.literal('finishing'), qc_ref: z.string().max(300), passed: z.boolean() }) },
-  'delivery.ready': { 1: z.object({ source: z.literal('finishing'), package_ref: z.string().max(300) }) },
+  'delivery.ready': {
+    1: z.object({ source: z.literal('finishing'), package_ref: z.string().max(300) }),
+    // v2: a pasta de entrega subiu para o Drive pelo SOBEDESCE com o MD5 de cada arquivo conferido (comprovante
+    // sobedesce.entrega/1). Só existe entrega conferida: sem MD5 em todos os arquivos, não há evento.
+    2: z.object({
+      source: z.enum(['finishing', 'sobedesce']),
+      package_ref: z.string().max(300),
+      files: z.number().int().positive(),
+      bytes: z.number().int().nonnegative(),
+      checksum: z.literal('md5'),
+      verified: z.literal(true),
+      folder_url: z
+        .string()
+        .max(300)
+        .regex(/^https:\/\/drive\.google\.com\/drive\/(u\/\d+\/)?folders\/[\w-]+(\?[\w=&.-]*)?$/),
+    }),
+  },
+  // O inventário do próprio freela, publicado pelo Carro do Freela e consumido pelo Maestro (freela.inventario/1).
+  // Registrado e testado, mas ainda NÃO publicado por ninguém: o Carro do Freela não tem banco (rota desligada em
+  // @zro/integrations, DISABLED_ROUTES).
+  'freela.inventario.atualizado': { 1: z.object({ source: z.literal('carro-do-freela'), inventario: FreelaInventarioSchema }) },
 } as const satisfies Record<string, Record<number, z.ZodType>>
 
 export type EventType = keyof typeof EVENT_PAYLOADS
@@ -77,4 +98,5 @@ export const EVENT_PRODUCER: Record<EventType, z.infer<typeof ProductId> | 'hub'
   'audio.mix.ready': 'nossom',
   'finishing.qc.completed': 'finishing',
   'delivery.ready': 'finishing',
+  'freela.inventario.atualizado': 'carro-do-freela',
 }

@@ -33,17 +33,33 @@ export async function donoDaContaZro(p: PerfilZro): Promise<string | null> {
   return l.usuarioId;
 }
 
-export type ResultadoVinculoZro = { ok: true } | { ok: false; erro: "zro_outra_conta" | "zro_ja_ligada" };
+export type ResultadoVinculoZro = { ok: true; novo: boolean } | { ok: false; erro: "zro_outra_conta" | "zro_ja_ligada" | "zro_email_nao_verificado" };
 
-/** Liga a Absolute ZRO à conta de quem está logado (em Sua conta). */
+/**
+ * Liga a Absolute ZRO à conta de quem está logado (Sua conta, ou a tela "Agora sua conta é Absolute ZRO").
+ * `novo`: a conta não tinha vínculo (a volta leva às Conexões da central); false é a religação de sempre.
+ * Vínculo novo só com e-mail confirmado na Absolute ZRO, como a conta nova.
+ */
 export async function vincularZro(usuarioId: string, p: PerfilZro): Promise<ResultadoVinculoZro> {
   const dono = await db.query.contasZro.findFirst({ where: eq(contasZro.zroSub, p.sub) });
   if (dono && dono.usuarioId !== usuarioId) return { ok: false, erro: "zro_outra_conta" };
   const atual = await db.query.contasZro.findFirst({ where: eq(contasZro.usuarioId, usuarioId) });
   if (atual && atual.zroSub !== p.sub) return { ok: false, erro: "zro_ja_ligada" };
-  if (atual) await db.update(contasZro).set(camposDoPerfil(p)).where(eq(contasZro.usuarioId, usuarioId));
-  else await db.insert(contasZro).values({ usuarioId, zroSub: p.sub, ...camposDoPerfil(p) });
-  return { ok: true };
+  if (atual) {
+    await db.update(contasZro).set(camposDoPerfil(p)).where(eq(contasZro.usuarioId, usuarioId));
+    return { ok: true, novo: false };
+  }
+  if (!p.emailVerificado) return { ok: false, erro: "zro_email_nao_verificado" };
+  // Dois cliques juntos: o segundo não duplica nem estoura (usuario_id e zro_sub são únicos).
+  const criado = await db
+    .insert(contasZro)
+    .values({ usuarioId, zroSub: p.sub, ...camposDoPerfil(p) })
+    .onConflictDoNothing()
+    .returning({ usuarioId: contasZro.usuarioId });
+  if (criado.length) return { ok: true, novo: true };
+  const agora = await db.query.contasZro.findFirst({ where: eq(contasZro.usuarioId, usuarioId) });
+  if (agora?.zroSub === p.sub) return { ok: true, novo: false };
+  return { ok: false, erro: agora ? "zro_ja_ligada" : "zro_outra_conta" };
 }
 
 export type ResultadoCriacaoZro = { ok: true; usuarioId: string } | { ok: false; erro: "zro_email_em_uso" | "zro_email_nao_verificado" | "zro_devagar" };

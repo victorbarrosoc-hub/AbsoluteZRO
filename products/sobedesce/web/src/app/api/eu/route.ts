@@ -4,6 +4,7 @@ import { listarContas } from "@/lib/google/contas";
 import { json, lerCookie, origemDoPedido, serializarCookie } from "@/lib/http";
 import { recursosDe } from "@/lib/recursos";
 import { cookieSeguro } from "@/lib/site";
+import { caminhoLigarZro, precisaLigarZro } from "@/lib/zro/ligar";
 
 /** Quem sou eu, quais Drives tenho e quais recursos a conta usa (cookie do site ou Bearer do computador). */
 export async function GET(req: Request) {
@@ -24,5 +25,8 @@ export async function GET(req: Request) {
     const o = opcoesCookieAparelho(cookieSeguro(origemDoPedido(req.headers, req.url)));
     extras = { "Set-Cookie": serializarCookie(COOKIE_APARELHO, aparelho, { maxAge: o.maxAge, path: o.path, secure: o.secure }) };
   }
-  return json({ usuario: atual.usuario, contas, recursos }, 200, extras);
+  // Conta antiga sem vínculo com a Absolute ZRO (lib/zro/ligar.ts): os apps mostram uma vez a tela de ligar. Só avisa,
+  // nunca bloqueia. `ligar`: o caminho do vincular de sempre (o app do computador abre no navegador do sistema).
+  const zro = { ligada: atual.ligadoZro, pedir: precisaLigarZro(atual), ligar: caminhoLigarZro("/conta") };
+  return json({ usuario: atual.usuario, contas, recursos, zro }, 200, extras);
 }

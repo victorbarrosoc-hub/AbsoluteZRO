@@ -1,10 +1,11 @@
-import { test, expect, signInExisting } from './fixtures';
+import { test, expect, signInExisting, onlyWhenOpen } from './fixtures';
 import AxeBuilder from '@axe-core/playwright';
 // Runs against the local Stripe double in scripts/test-server.mjs: Checkout, signed webhooks
 // and the customer portal. No real payment provider is contacted.
 test('a person subscribes by card, sees the plan only after Stripe confirms, and can cancel', async ({
   page,
 }) => {
+  onlyWhenOpen();
   await page.goto('/studio/planos');
   const plans = page.getByRole('region', { name: 'Planos da NOSSOM' });
   await expect(plans.getByText(/Planos pagos são cobrados todo mês no cartão/)).toBeVisible();
@@ -40,6 +41,7 @@ test('a person subscribes by card, sees the plan only after Stripe confirms, and
 test('the homepage sends paid plans to the account, where checkout starts after sign-in', async ({
   browser,
 }) => {
+  onlyWhenOpen();
   const page = await browser.newPage();
   await page.goto('/');
   const link = page
@@ -53,7 +55,8 @@ test('the homepage sends paid plans to the account, where checkout starts after 
 test('after signing in, the plan and the upgrade are one tap away from the sidebar, the account menu and settings', async ({
   page,
 }) => {
-  await page.goto('/studio');
+  onlyWhenOpen();
+  await page.goto('/studio/inicio');
   // The minutes card leads to the plan page.
   await page.locator('.weekly-usage').getByRole('link', { name: 'Fazer upgrade' }).click();
   await expect(page).toHaveURL(/\/studio\/planos$/);

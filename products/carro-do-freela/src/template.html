@@ -524,6 +524,32 @@ html.app .homenav{padding-top:env(safe-area-inset-top,0px)}
 .cjr b{display:block;font-size:14px;color:var(--segurando);margin-bottom:5px}
 .cjr p{margin:0;font-size:13.5px;color:var(--cal-fraco);line-height:1.6}
 .jacoes{display:flex;gap:9px;flex-wrap:wrap;margin-top:20px;padding-top:18px;border-top:1px solid var(--linha)}
+.jzro{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
+/* (28/out) perfil e inventário no banco, só com conta Absolute ZRO liberada (cfbPintar) */
+.cfb{border:1px solid var(--linha2);border-radius:14px;padding:16px 17px 18px;margin:22px 0 6px;background:var(--grafite2)}
+.cfb-cab{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 0 10px}
+.cfb-cab b{font-size:15px;color:var(--cal)}
+.cfb-cab em{font-style:normal;font-size:12.5px;color:var(--cal-tenue)}
+.cfb-sep{margin-top:22px}
+.cfb-gr{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.cfb-gr .cfb-cheio{grid-column:1/-1}
+.cfb-gr2{display:grid;grid-template-columns:1fr 84px;gap:8px}
+@media(max-width:560px){.cfb-gr{grid-template-columns:1fr}}
+.cfb textarea.fld{min-height:64px;resize:vertical;font:inherit}
+.cfb-chips{display:flex;flex-wrap:wrap;gap:6px}
+.cfb-chips .chip{padding:5px 11px;font-size:12.5px}
+.cfb-ac{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.cfb-st{font-size:12.5px;color:var(--cal-tenue)}
+.cfb-st.erro{color:var(--magenta)}
+.cfb-vis{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--cal-fraco);margin-top:10px}
+.cfb-it{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--linha)}
+.cfb-it.off{opacity:.55}
+.cfb-it b{font-size:13.5px;color:var(--cal);font-weight:600}
+.cfb-it small{display:block;font-size:12px;color:var(--cal-tenue);margin-top:2px}
+.cfb-num{font-family:var(--mono)}
+.cfb-bts{display:flex;gap:6px}
+.cfb-vz{font-size:13px;color:var(--cal-tenue);padding:6px 0}
+.cfb-form{border-top:1px solid var(--linha);margin-top:10px;padding-top:12px}
 .edbox{border:1px solid var(--ciano-esc);background:var(--ciano-tint);border-radius:12px;padding:16px 17px;margin-top:18px}
 .edl{display:grid;grid-template-columns:34px 1fr auto auto;gap:11px;align-items:center;padding:8px 0;
   border-bottom:1px solid var(--linha)}
@@ -2054,7 +2080,36 @@ body.sem-rodape{padding-bottom:0}
 .lgn-bloq p{margin:10px 0 18px;font-size:15px;line-height:1.45;color:var(--cal-fraco)}
 .lgn-bloq a.lgn-ok{text-decoration:none}
 .lgn-bloq .lgn-troca{margin-top:14px}
-.lgzro .ic img{width:22px;height:20px;border-radius:5px;background:#05070a;padding:1px;display:block}
+/* ===== EM DESENVOLVIMENTO (28/out): a página do portão do lançamento.
+   O mesmo desenho das outras plataformas (padrão Apple): o símbolo da
+   Absolute ZRO pequeno, a marca do Carro, o título em Figtree Light ×
+   ExtraBold, uma linha de apoio e o botão de vidro escuro "Voltar ao HUB".
+   Título e botões só em grafite (#1d1d1f) ou branco; o apoio em cinza. ===== */
+.fc{--fc-ink:#fff;--fc-apoio:#a1a1a6;min-height:calc(100svh / var(--zoom,1));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:48px 24px 64px;text-align:center}
+:root.app-light .fc{--fc-ink:#1d1d1f;--fc-apoio:#6e6e73}
+.fc-zro{display:flex;color:var(--fc-ink);opacity:.85;margin-bottom:6px}
+.fc-marca{display:flex;align-items:center;gap:10px;color:var(--fc-ink)}
+.fc-marca b{font-family:var(--display);font-weight:900;font-size:20px;letter-spacing:-.03em}
+.fc-tit{font-family:"Figtree",var(--display),system-ui,sans-serif;font-size:clamp(40px,7vw,76px);line-height:1.02;letter-spacing:-.035em;margin:12px 0 0;color:var(--fc-ink);text-wrap:balance}
+.fc-fino{font-weight:300}
+.fc-forte{font-weight:800}
+.fc-sub{margin:0;max-width:36ch;font-size:clamp(16px,1.4vw,19px);line-height:1.45;color:var(--fc-apoio)}
+.fc-acoes{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:16px}
+.fc-troca{margin:0;font-size:14px;color:var(--fc-apoio)}
+/* Liquid Glass: a pílula de vidro da Absolute ZRO; a ação principal em vidro escuro (--ink) */
+.glass-btn{--gb-fill:rgba(255,255,255,.1);--gb-ink:#f5f5f7;position:relative;display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:48px;padding:0 26px;border:0;border-radius:999px;font-family:"Figtree",var(--ui),system-ui,sans-serif;font-size:16.5px;font-weight:600;letter-spacing:-.01em;color:var(--gb-ink);text-decoration:none;cursor:pointer;
+  background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,0) 55%),var(--gb-fill);
+  -webkit-backdrop-filter:blur(18px) saturate(180%);backdrop-filter:blur(18px) saturate(180%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 0 0 1px rgba(255,255,255,.14),0 10px 28px rgba(0,0,0,.4);
+  transition:transform .25s var(--mola,ease),box-shadow .25s ease}
+.glass-btn:hover{transform:translateY(-1px) scale(1.02)}
+.glass-btn:active{transform:scale(.98)}
+.glass-btn--ink{--gb-fill:rgba(245,245,247,.94);--gb-ink:#1d1d1f;background:linear-gradient(180deg,rgba(255,255,255,.6),rgba(255,255,255,0) 50%),var(--gb-fill);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(0,0,0,.25),0 10px 28px rgba(0,0,0,.35)}
+:root.app-light .glass-btn{--gb-fill:rgba(255,255,255,.55);--gb-ink:#1d1d1f;background:linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,0) 55%),var(--gb-fill);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -1px 0 rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.08)}
+:root.app-light .glass-btn--ink{--gb-fill:rgba(29,29,31,.92);--gb-ink:#fff;background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0) 50%),var(--gb-fill);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -1px 0 rgba(0,0,0,.4),0 0 0 1px rgba(0,0,0,.5),0 10px 28px rgba(0,0,0,.22)}
+/* símbolo flat da Absolute ZRO (ADR 0017 da raiz): uma cor só, a do texto do botão;
+   geometria de scripts/marca/vetor (27/out: saiu o feixe de luz antigo) */
+.lgzro .ic svg{display:block}
 .lgn-troca{text-align:center;margin:clamp(8px,calc(1.3svh / var(--zoom,1)),14px) 0 0;font-size:14px;color:var(--cal-fraco)}
 .lgn-nota{display:flex;gap:8px;align-items:flex-start;justify-content:center;margin:clamp(8px,calc(1.3svh / var(--zoom,1)),12px) 0 0;
   font-size:12.5px;line-height:1.4;color:var(--cal-tenue);text-align:left}
@@ -2857,6 +2912,11 @@ body.sem-rodape{padding-bottom:0}
 .bg{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;
   background:var(--magenta);color:var(--grafite);font-family:var(--mono);font-size:9.5px;line-height:1;font-weight:700}
 .tab .bg{margin-left:7px;vertical-align:1px}
+/* balão (27/out): número tabular e uma entrada curta, como no SOBEDESCE e
+   no HUB; quem desligou movimento recebe o balão parado */
+.bg{font-variant-numeric:tabular-nums;animation:balao .32s cubic-bezier(.32,.72,0,1) both}
+@keyframes balao{from{opacity:0;transform:scale(.6)}}
+@media(prefers-reduced-motion:reduce){ .bg{animation:none} }
 .tab[aria-current="true"] .bg{background:var(--grafite);color:var(--ciano)}
 .prop{background:var(--grafite2);border:1px solid var(--linha);border-radius:12px;padding:20px;margin-bottom:14px}
 .prop.novo{border-color:var(--novo-borda);background:var(--novo-fundo)}
@@ -4394,6 +4454,63 @@ body.abriu .hp-arte img{animation:hparte 1.1s .1s cubic-bezier(.2,.7,.3,1) both,
 .pc-it small{display:block;font-size:12.5px;color:var(--cal-fraco);margin-top:2px;line-height:1.4}
 .pc-it svg{color:var(--cal-tenue)}
 
+/* ---- a Z, a IA do ecossistema (27/out): anel e estrela em src/midia. O centro do
+   tubo fica a 41,83% do lado a partir do meio; a estrela tem 43% do lado do anel ---- */
+#h-z .z-caixa{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:clamp(28px,6vw,72px);
+  max-width:980px;margin:0 auto;padding:clamp(28px,5vw,56px);border-radius:30px;background:var(--grafite2);border:1px solid var(--linha)}
+.z-simbolo{position:relative;width:clamp(116px,15vw,176px);aspect-ratio:1;margin-right:13%}
+.z-simbolo img{position:absolute;display:block;pointer-events:none;-webkit-user-select:none;user-select:none}
+.z-anel{inset:0;width:100%;height:100%}
+.z-estrela{width:43%;height:43%;left:70.33%;top:28.5%}
+@media(prefers-reduced-motion:no-preference){.z-estrela{animation:z-brilho 4.8s ease-in-out infinite alternate}}
+@keyframes z-brilho{from{transform:scale(.86);opacity:.82}to{transform:scale(1.06);opacity:1}}
+.z-tx{display:grid;justify-items:start;min-width:0}
+.z-selo{display:inline-flex;align-items:center;gap:8px;margin:0 0 16px;padding:6px 12px;border-radius:999px;
+  border:1px solid var(--linha);color:var(--cal-fraco);font-size:13px;font-weight:700}
+.z-selo i{width:7px;height:7px;border-radius:50%;background:var(--marca)}
+#h-z h2{font-family:var(--display);font-weight:900;font-size:clamp(28px,3.4vw,44px);line-height:1.04;letter-spacing:-.045em;margin:0;text-wrap:balance}
+.z-tx>p:not(.z-selo){margin:12px 0 0;font-size:clamp(16px,1.6vw,18px);color:var(--cal-fraco);line-height:1.5}
+.z-fichas{list-style:none;display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 24px;padding:0}
+.z-fichas li{display:inline-flex;align-items:center;gap:7px;padding:8px 13px;border-radius:999px;background:var(--grafite3);
+  color:var(--cal);font-size:13.5px;font-weight:700}
+.z-fichas svg{color:var(--cal-fraco);flex:none}
+#h-z .z-ir{width:auto;margin:0;padding:13px 22px;border-radius:14px;text-decoration:none}
+.z-acoes{display:flex;flex-wrap:wrap;gap:10px}
+@media (max-width:720px){
+  #h-z .z-caixa{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center;padding:32px 20px}
+  .z-simbolo{width:112px;margin:0 15% 0 0}
+  .z-tx{justify-items:center}
+  .z-fichas{justify-content:center;gap:6px}
+  .z-fichas li{padding:7px 11px;font-size:12.5px}
+  .z-acoes{justify-content:center}
+}
+
+/* ---- a Z na aba própria (27/out · 5): o painel <zro-ia> desenha sozinho,
+   no shadow root dele; aqui só o lugar, a altura (a janela menos o topo e a
+   barra de baixo, dividida pelo zoom como toda altura de tela) e os botões
+   de entrar e reconectar ---- */
+.zpainel{display:grid;gap:12px;max-width:820px;margin:0 auto;padding:24px 22px 28px}
+.zp-caixa{--zro-ia-altura:max(420px,calc(100svh / var(--zoom,1) - 150px));min-height:var(--zro-ia-altura)}
+.zp-caixa:empty{display:none}
+.zp-acao{display:flex;justify-content:center}
+.zp-oculto{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.zp-sem{display:grid;justify-items:center;align-content:center;gap:18px;text-align:center;
+  min-height:calc(100svh / var(--zoom,1) - 220px)}
+.zp-sem p{margin:0;font-size:22px;font-weight:700;letter-spacing:-.02em;color:var(--cal);text-wrap:balance;max-width:20ch}
+.zp-anel{display:grid;place-items:center;width:76px;height:76px;border-radius:50%;color:var(--cal);
+  background:var(--grafite3);border:1px solid var(--linha2)}
+.zp-entrar{width:auto;margin:0;padding:13px 22px;border-radius:14px}
+@media (max-width:820px){ .zp-caixa{--zro-ia-altura:max(380px,calc(100svh - 150px))} .zpainel{padding:14px 14px 20px} }
+/* o botão da Z no topo do celular: em destaque, à esquerda da marca */
+.ztop{display:none}
+@media (max-width:820px){
+  .ztop:not([hidden]){display:inline-flex;align-items:center;gap:5px;flex:none;height:34px;padding:0 11px 0 8px;
+    border-radius:999px;border:1px solid var(--linha2);background:var(--grafite3);color:var(--cal);cursor:pointer;
+    font:700 13px/1 var(--ui);letter-spacing:-.01em}
+  .ztop[aria-current="true"]{color:var(--ciano);border-color:var(--ciano)}
+  .ztop:active{transform:scale(.94)}
+}
+
 /* ---- planos da home: cartões brancos, o recomendado de ciano da marca ---- */
 #h-planos .plsep span{font-weight:700}
 #h-planos .plano{background:var(--grafite2);border:1px solid var(--linha);border-radius:26px;box-shadow:var(--sombra-card);padding:28px 26px}
@@ -4425,8 +4542,10 @@ body.abriu .hp-arte img{animation:hparte 1.1s .1s cubic-bezier(.2,.7,.3,1) both,
 .fim-marca svg{fill:var(--marca)}
 .fim-marca b{font-family:var(--display);font-weight:900;font-size:16px;letter-spacing:-.03em}
 .fim-links{display:flex;gap:22px;flex-wrap:wrap}
-.fim-links a{color:var(--cal-fraco);font-size:13.5px;text-decoration:none}
-.fim-links a:hover{color:var(--cal)}
+.fim-links a,.fim-links .fim-prev{color:var(--cal-fraco);font-size:13.5px;text-decoration:none}
+.fim-links a:hover,.fim-links .fim-prev:hover{color:var(--cal)}
+/* o selo saiu do topo (27/out): na home a prévia se declara aqui, no pé */
+.fim-links .fim-prev{border:0;background:none;padding:0;font:inherit;font-size:13.5px;cursor:pointer}
 #v-home .hnasceu{margin:0;flex-basis:100%;font-size:12.5px;max-width:none;text-align:left;color:var(--cal-tenue)}
 
 /* ---- a barra da home ---- */
@@ -4820,7 +4939,7 @@ section[data-area].entra>.wrap>*:nth-child(n+6){animation-delay:.2s}
 @media(min-width:821px){
   :root{--lado:236px}
   .top .tabs{top:0;padding:64px 12px 84px;z-index:2;gap:1px}
-  .top .brand,.top .selo-prev{position:relative;z-index:3}
+  .top .brand{position:relative;z-index:3}
   .top .brand b{font-size:16.5px}
   .ladog{display:block;padding:16px 10px 6px;font-size:11px;font-weight:600;letter-spacing:.01em;color:var(--cal-tenue)}
   .ladog[hidden]{display:none}
@@ -5239,6 +5358,31 @@ html.app .mn-pe{padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
 }
 @media(prefers-reduced-motion:reduce){ html.lado-anda *{transition:none!important} }
 
+/* ---- a família Absolute ZRO (26/out), do menu do Revela ----
+   Ícone de 22px com canto de 6px e o nome ao lado; na lateral a linha tem a
+   altura de uma aba (34px), na gaveta a de um item (42px). Nada de cor de
+   seleção: é saída para outro app, não tela daqui. */
+.ladofam{display:none}
+.fam{display:flex;align-items:center;gap:10px;min-height:34px;padding:0 10px;border-radius:8px;
+  color:var(--cal);text-decoration:none;font:500 13.5px/1.2 var(--ui);white-space:nowrap;
+  transition:background-color .15s var(--ease-suave)}
+.fam:hover{background:var(--fill)}
+.fam img{width:22px;height:22px;flex:none;border-radius:6px;object-fit:contain}
+.fam span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.fam-t{display:block;padding:14px 10px 6px;font-size:11px;font-weight:650;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--cal-tenue);white-space:nowrap;overflow:hidden}
+/* rótulo próprio, não .mn-sec: as seções da gaveta são TELAS daqui (mapa.js
+   confere a ordem delas), e a família é saída */
+.mn-fam .fam-t{padding:16px 12px 6px}
+.mn-fam .fam{min-height:42px;padding:0 12px;gap:12px;border-radius:12px;font-size:14.5px}
+@media(min-width:821px){
+  .ladofam{display:grid;gap:1px;flex:none;margin-top:12px;padding-top:2px;border-top:1px solid var(--fino);position:relative;z-index:1}
+  .mn-fam{display:none}
+  html.lado-min .ladofam .fam-t{visibility:hidden;height:14px;padding:0}
+  html.lado-min .ladofam .fam{justify-content:center;gap:0;padding:0}
+  html.lado-min .ladofam .fam span{display:none}
+}
+
 /* ---- a barra do celular: o Menu levantado no centro ---- */
 .bt-lado{display:contents}
 @media(max-width:820px){
@@ -5347,18 +5491,10 @@ html.app .mn-pe{padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
   .modotog{padding:7px;gap:0}
 }
 
-/* o selo "Prévia": o único lugar onde a casa diz que é prévia (17/out · 5) */
-.selo-prev{flex:none;border:1px solid var(--linha2);background:var(--grafite2);color:var(--cal-fraco);
-  border-radius:999px;padding:3px 10px;font:inherit;font-size:11.5px;font-weight:700;letter-spacing:.02em;
-  cursor:pointer;line-height:1.4;margin-left:-4px}
-.selo-prev:hover{color:var(--cal);border-color:var(--cal-tenue)}
+/* o selo "Prévia" saiu do topo a pedido do Victor (27/out): a prévia se declara na
+   etiqueta do menu (.mn-tag), no "Prévia" do pé da home (.fim-prev), no "prévia" do
+   rodapé do app e no aviso de entrar */
 .mlnota{margin:14px 0 0;font-size:13.5px;color:var(--cal-fraco)}
-@media(max-width:560px){ .top .selo-prev{display:none} }
-/* na barra da home o selo é a ÚNICA declaração da prévia no celular: quem
-   cede o lugar é o seletor de tema (ele continua no menu, em Preferências) */
-@media(max-width:480px){ .homenav .tema{display:none} .homenav .wrap{gap:10px} }
-/* o selo mora JUNTO da marca: no celular a marca empurrava tudo para a direita */
-@media(max-width:820px){ .homenav .brand{margin-right:0} .homenav .selo-prev{margin-right:auto} }
 
 /* ==== O CABEÇALHO DE CINEMA E O AZUL E ROSA NOS DETALHES (17/out · 14) ====
    Victor, com uma prancha das abas redesenhadas: "acho que nesse estilo fica
@@ -5832,11 +5968,18 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
 
 <header class="top" id="topbar" hidden>
   <div class="wrap">
+    <!-- ⚠️ A Z NO CELULAR MORA AQUI, À ESQUERDA, EM DESTAQUE (27/out · 5). A
+         barra de baixo não tem lugar: são 3 + Menu + 3, e um quarto item de
+         um lado espremia cada um a 40px a 390 (36px a 360) — "Propostas" não
+         cabe e o toque fica abaixo de 44px. Pôr um item nas duas metades
+         tiraria o Menu do centro. Então a Z é o primeiro botão do topo, que
+         é o que a pessoa vê primeiro. No computador ela é o primeiro item
+         da lateral (#tab-z). Só no domínio (pintarAbaZ). -->
+    <button class="ztop" id="z-top" data-tab="z" type="button" hidden title="A Z, a IA da Absolute ZRO" aria-label="Z, a IA da Absolute ZRO"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="7.75"/></svg><span>Z</span></button>
     <button class="brand brand-home" title="Ir para a página inicial">
       <svg viewBox="0 0 100 100" width="26" height="26" fill="var(--marca)" class="mk-marca"><use href="#mk"/></svg>
       <b>Carro do Freela</b>
     </button>
-    <button class="selo-prev" type="button" data-previa title="O que é esta prévia">Prévia</button>
     <span class="toptit" id="top-tit" aria-hidden="true"></span>
     <!-- ⚠️ A FAIXA DE CIMA É O DESKTOP, e ela tinha ficado sem revisão
          enquanto a barra de baixo e o menu eram arrumados. Três defeitos:
@@ -5856,6 +5999,10 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
            sem botão visível embaixo some sozinho (pintarGruposLado). -->
       <!-- PLANOS LÁ EM CIMA (17/out · 10): "bota a aba de planos assim, e o
            tipo de plano, lá em cima". Acima do dia, com o tipo à direita. -->
+      <!-- a Z, a IA da Absolute ZRO (27/out · 5): a primeira aba e a tela de
+           entrada. Sem data-modo de propósito (aplicarModo reescreve o hidden
+           de quem tem); quem mostra é pintarAbaZ, só no domínio. -->
+      <button class="tab" data-tab="z" id="tab-z" hidden title="A Z, a IA da Absolute ZRO">Z</button>
       <button class="tab" data-tab="planos" data-modo="ambos" title="Planos">Planos<span class="pl-tipo" id="lado-tipo"></span></button>
       <div class="ladog" aria-hidden="true">Hoje</div>
       <button class="tab" data-tab="feed" data-modo="ambos" aria-current="true">Feed</button>
@@ -5875,6 +6022,22 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
       <button class="tab" data-tab="meu" data-modo="freela" title="Meu perfil">Perfil</button>
       <button class="tab" data-tab="minhaprod" data-modo="contratante" title="Meu perfil">Perfil</button>
       <button class="tab" data-tab="aprender" data-modo="ambos">Aprender</button>
+      <!-- ⚠️ A FAMÍLIA ABSOLUTE ZRO (26/out), pedido do titular: o bloco que
+           ele gostou no menu do Revela — ícone e nome de cada app, levando
+           até ele. NÃO é .tab nem .ladog de propósito: não abre tela daqui,
+           a pastilha não deve pousar nele e pintarGruposLado não o conhece.
+           O Carro do Freela fica de fora (é onde a pessoa está). Os ícones
+           moram em src/midia/familia-* (cada app publica sozinho); a mesma
+           lista está na gaveta (#g-fam), que é o menu do celular. -->
+      <div class="ladofam" role="group" aria-label="Absolute ZRO">
+        <span class="fam-t" aria-hidden="true">Absolute ZRO</span>
+        <a class="fam" href="https://absolutezro.com" rel="noopener" title="Absolute ZRO"><img src="midia:familia-absolute-zro.webp" alt="" width="22" height="22" decoding="async"><span>Absolute ZRO</span></a>
+        <a class="fam" href="https://nossom-teal.vercel.app" rel="noopener" title="Nossom"><img src="midia:familia-nossom.svg" alt="" width="22" height="22" decoding="async"><span>Nossom</span></a>
+        <a class="fam" href="https://revela.absolutezro.com" rel="noopener" title="Revela"><img src="midia:familia-revela.svg" alt="" width="22" height="22" decoding="async"><span>Revela</span></a>
+        <a class="fam" href="https://sobedesce.vercel.app" rel="noopener" title="Sobedesce"><img src="midia:familia-sobedesce.svg" alt="" width="22" height="22" decoding="async"><span>Sobedesce</span></a>
+        <a class="fam" href="https://synquei.vercel.app" rel="noopener" title="Synquei"><img src="midia:familia-synquei.svg" alt="" width="22" height="22" decoding="async"><span>Synquei</span></a>
+        <a class="fam" href="https://tpeasy.vercel.app" rel="noopener" title="TPEasy"><img src="midia:familia-tpeasy.svg" alt="" width="22" height="22" decoding="async"><span>TPEasy</span></a>
+      </div>
       <!-- o pé da lateral (17/out · 6), da referência SOBEDESCE: lá ele mostra
            a velocidade agora; aqui, o que a pessoa quer saber de relance —
            a semana dela, ou quantos estão na escuta hoje. drawLadoPe(). -->
@@ -5957,6 +6120,16 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
     <div class="mn-g"><span class="mn-sec">Encontrar</span><div id="g-nav"></div></div>
     <div class="mn-g"><span class="mn-sec">Ferramentas</span><div id="g-ferr"></div></div>
     <div class="mn-g"><span class="mn-sec">A praça</span><div id="g-mercado"></div></div>
+    <!-- a família Absolute ZRO (26/out): no computador ela já está na
+         lateral, então aqui só aparece no celular — ver .ladofam -->
+    <div class="mn-g mn-fam" id="g-fam" role="group" aria-label="Absolute ZRO"><span class="fam-t" aria-hidden="true">Absolute ZRO</span>
+      <a class="fam" href="https://absolutezro.com" rel="noopener" title="Absolute ZRO"><img src="midia:familia-absolute-zro.webp" alt="" width="22" height="22" decoding="async"><span>Absolute ZRO</span></a>
+      <a class="fam" href="https://nossom-teal.vercel.app" rel="noopener" title="Nossom"><img src="midia:familia-nossom.svg" alt="" width="22" height="22" decoding="async"><span>Nossom</span></a>
+      <a class="fam" href="https://revela.absolutezro.com" rel="noopener" title="Revela"><img src="midia:familia-revela.svg" alt="" width="22" height="22" decoding="async"><span>Revela</span></a>
+      <a class="fam" href="https://sobedesce.vercel.app" rel="noopener" title="Sobedesce"><img src="midia:familia-sobedesce.svg" alt="" width="22" height="22" decoding="async"><span>Sobedesce</span></a>
+      <a class="fam" href="https://synquei.vercel.app" rel="noopener" title="Synquei"><img src="midia:familia-synquei.svg" alt="" width="22" height="22" decoding="async"><span>Synquei</span></a>
+      <a class="fam" href="https://tpeasy.vercel.app" rel="noopener" title="TPEasy"><img src="midia:familia-tpeasy.svg" alt="" width="22" height="22" decoding="async"><span>TPEasy</span></a>
+    </div>
     <div class="mn-g mn-fim">
       <!-- recolhidos: leitura de uma vez na vida e ajuste de vez em quando.
            Abertos ou fechados, ficam como a pessoa deixou (cdf-menu-abertos). -->
@@ -5994,7 +6167,7 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
       <button class="mn-pill" id="g-tema" type="button"><i id="g-tema-i"></i><span id="g-tema-t">Tema</span></button>
       <button class="mn-pill" id="g-som" type="button"><i id="g-som-i"></i><span id="g-som-t">Som</span></button>
     </div>
-    <span class="mn-nota">Natal/RN · <span class="mini" id="g-versao"></span> · carrodofreela@gmail.com</span>
+    <span class="mn-nota">Natal/RN · <span class="mini" id="g-versao"></span> · contato@absolutezro.com</span>
   </div>
 </aside></div>
 
@@ -6429,7 +6602,6 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
       <svg viewBox="0 0 100 100" width="26" height="26" fill="var(--marca)" class="mk-marca"><use href="#mk"/></svg>
       <b>Carro do Freela</b>
     </button>
-    <button class="selo-prev" type="button" data-previa title="O que é esta prévia">Prévia</button>
     <nav class="hlinks">
       <a href="#h-como">Como funciona</a>
       <a href="#h-rec">Recursos</a>
@@ -6707,6 +6879,33 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
     </div>
   </div>
 
+  <!-- a Z, a IA do ecossistema Absolute ZRO. Desde 27/out · 5 ela tem aba
+       própria no app (só com sessão liberada). ⚠️ (28/out) O Carro está
+       FECHADO (adendo do PRD): a seção diz "Chegando" e NÃO tem porta — nada
+       de "Conversar com a Z" na home pública; fica só "Conhecer a Z", que é
+       apresentação. Anel e estrela são cópias em src/midia (z-anel,
+       z-estrela), como os ícones da família; a estrela fica sobre o tubo,
+       às 3 horas. -->
+  <div class="sec rvsec hsec" id="h-z">
+    <div class="wrap">
+      <div class="z-caixa">
+        <div class="z-simbolo" aria-hidden="true"><img class="z-anel" src="midia:z-anel.webp" alt="" width="560" height="560" loading="lazy" decoding="async"><img class="z-estrela" src="midia:z-estrela.webp" alt="" width="400" height="400" loading="lazy" decoding="async"></div>
+        <div class="z-tx">
+          <p class="z-selo"><i aria-hidden="true"></i>Chegando ao Carro do Freela</p>
+          <h2>Z. Uma IA para todo o ecossistema.</h2>
+          <p>Responde sobre seus jobs, a agenda e a equipe, logo na abertura do app.</p>
+          <ul class="z-fichas" aria-label="Como a Z funciona">
+            <li title="A mesma conta Absolute ZRO que você já usa."><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>Mesma conta</li>
+            <li title="Guardadas por plataforma e reunidas em absolutezro.com/ia."><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5.5h14v10H10l-5 4z"/></svg>Conversas reunidas</li>
+            <li title="Nenhuma ação sem você conferir."><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.2l2.4 2.4 4.6-4.9"/></svg>Você confere antes</li>
+            <li title="Usa os créditos de IA do seu plano."><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l1.8 6.2L20 12l-6.2 1.8L12 20l-1.8-6.2L4 12l6.2-1.8z"/></svg>1 crédito por resposta</li>
+          </ul>
+          <div class="z-acoes"><a class="btn gh z-ir" href="https://absolutezro.com/ia" rel="noopener">Conhecer a Z</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- o fechamento é a faixa ciano da C, com o carro 3D chegando -->
   <div class="fim2">
     <div class="wrap">
@@ -6723,7 +6922,7 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
       </div>
       <div class="fim-pe">
         <span class="fim-marca"><svg viewBox="0 0 100 100" width="24" height="24" aria-hidden="true"><use href="#mk"/></svg><b>Carro do Freela</b></span>
-        <nav class="fim-links"><a href="#h-como">Como funciona</a><a href="#h-rec">Recursos</a><a href="#h-planos">Planos</a></nav>
+        <nav class="fim-links"><a href="#h-como">Como funciona</a><a href="#h-rec">Recursos</a><a href="#h-planos">Planos</a><button class="fim-prev" type="button" data-previa title="O que é esta prévia">Prévia</button></nav>
       </div>
     </div>
   </div>
@@ -6808,7 +7007,7 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
            tela fica exatamente como era. O símbolo é o oficial da Absolute
            ZRO (apps/hub-web/public/brand), reduzido; nada de logo inventado. -->
       <button class="blogin lgzro" data-lgi style="--i:5" id="lg-zro" type="button" hidden>
-        <span class="ic"><img alt="" width="22" height="20" src="data:image/webp;base64,UklGRkAIAABXRUJQVlA4WAoAAAAQAAAAKwAAJwAAQUxQSA8DAAABD8aobSRJ6/TM8Oe8x2sBRERefpwgI18RuccogrzDkHEMu85uBmPlI7uEwrZt25QyutWI/gfEnBNirZWggpYQ8QWdbduO2c51P+83Xmvv2LZt27ZtVLadKiX/Qmo7qbLL2LYzizPfexeDb6I+IiaA/1sFkv6uiDBSEBqQJqdCAEVpSI0iIgI0oSRau2y7+nRbs798OverGwmDhFwt0b7kycc///zrxc4aa6+99Rb81CksRRi7gmqc8NQtW8kMf3e5Ldb/8I9UChvssYRufXRTiCQTStF9860djp77aakUSOAxpMYD10EKIERErbFc79npM8ov6kYOGY9K3HMRKRgqRQRZ7WVxYvf3WmkhxkhcfAOFGKlIIRGrfrbcfp/OKwXYGAGhrR4pkhhTkaSoFct9tP2G7zYjci4NHsLNexKMrZQi1QJ1d3Mvev0yAxiCTe5WUDFFiKitoI1W/WJ+pmcb21Bw2WmkKiGpaEwt12ms+1MvJOfSDsis/CaqIksi92vd5TbqloszfWOM8vJ8S2UJ205T+nN5uhFymW3E6i6jmolIDRbrfy3X8Xxv1oEBOgtUDyGco1XM99v1hSjKMucB9SYwKKWi7FkZsiOJwe5EDFbuz/c69YWFVr3MzgLz5xSuJuxyYT7F0u4iolkjGPipucSq5EFFdufXbitySikCCK7eUVENQJp/bZV2NKdbhT1i/6uoJqDs9+c+27LerNXrNUkMRueRtaQKwja5t3pjSxWhSEp4IHH8NaQKICuavx2+pkoVSUMHCK7ZgzSecOT0877lWkWybZIYLq3y8MaksRDR+nPdAx6ZyTYSYnRi6/u2ohYjFFjp+y3PfezNhfkSCBmNoGDLew8BhYGQIub/OG2LO1/cOtl2NmLcGkuuuGE7QBF2CbtdsNwzLxZzecCY8QMOvufec5Z93c1p5fW23nK5d5+eac0tZjvjrAqoTuxw0RrtcKsZv7390g9LoufSZNlMMAK0yortxV9+nUtLUq/MNraZrFLNZFEUYeecLWwzcTlCAmxswOZvFsKYfzcAVlA4IAoFAADwGgCdASosACgAPjEUiEKiISEXGgZkIAMEtgBOmWEdr9A/ED2Iqi/R/vnkufLX+U6QH2ge4B+i/+l6gHmA/UX/D/2b2Zv8B7APQA/VXrAPQA/Tz1P/8X+z/wI/sN+xvwE/zT+tf8z8/9AA6rn1Adsr5z9lspJGdvO5C5850Sz7gPVV4xT+0ep//Hf8zycfNX+p9wD+Vfzj/S/1/+9f+b4jPOA9iz9UEzQ2H1yNmxx/EkSfNCDRYgLf1AGzzEc5sDJbExEH1pPun5XZOpjim2Sf9ZtUPMiNn3dG3qb3F86hgAD+/+g7TcQKmw1jkhOkwLC9EVfPxof7234JHMLnyWe/BlWTPzr6nuYVcazs5PUtw0/XlnmUWHZ8eNTzNgHLPF6AkT82dSIl7qOPeintiKX8dOhuBw5hGtxDhdQUWj2XqsffwzWmlc+J+vsYNJ4WwkP70Pkah+/goewW/qXMbtGdFH3elB9uyGWhCvMnYtZewwsi8Lf/Tl7CIFf0B2a29tof9QoJmPmi7TeQV03prgPygZRgUov1n/tU5ntnWf9qWR2bMYDtIU/lP3TaRoev1ZUtdmXfbnBTilALsq+WERNasoIK25DuRrCvOb3gZP4fcFQGogf/+93Kz42hJKR41HBeemcSk8uutj8XlHZiGBdv3qPGFnHXumZaNlx9Ucx7uwG756oyIiRc1vyrAt9qzSlmt240MKRv/4kzhwH6oAHBFSzJRvCyp4Ig/hu8k/C8MkfVZYDFAUU2NaC+Ad6n42q1sOBJUbHw47kSdiTPg4zhzXI6F+b8M6FyKMXV6gEg1MB2vahopsgyJgKuC2FD5tKb7plLfVir7RH4eVaz/F6CU9RHAvudNIHaYx+x8404FEzRTWaYl/eIfBErNI5Hz0WZwQGDfxM97LFQOQk+YheuUSkTusI0uoj+BydLSSDunmM/w8e6fiMqluEWtCHMcfMfK647+PxcjmYzRpOCIGCxadPwGWUFkbW7AdJ5Cqsjmzupdb/2oghmXA6iO56vVcKNu4QnDk/wjzkUfCCvXKBVuYNAf5T67rNqbn2vUJ5hG+xVjew3wCrsgj0e1WH6nnttIMQ8Ve6qec2djjJ/8ICgBRwFhfvDCXzjXLOci9VX18SHNqnFAEB495VmtJtI9Ez/MpqqPRNab5hMb1OBMVODP0ADDm5gzWrslw9atGW/8vXq7y1hEueVfgtLjX0AqxD4m028ZcK+N+cmHha7fOzXATLiZ8/5BtPM+bDhHZr+2UA6WXjpNUD68SK41RU3NW4g2an/UqaUByfLy34r4qgMIGRI/peYMaFVu/rlC7GeqXA2hQk3XUjD4TapcwynScDoP/8pQXzEJ5cWoAEZFloeUUw4g/17WzyARUy1AV1xsuNNruP+3l3ZwgJc8YMwA4HZ5M0U6+jZE0KXo19wfzZzorWgj6Y4OyEb/Eo0VKmhGDWw+XMN2/zIIyXLcmb3hvTCul5fkKtyC/8cqJ3RNS4mjG/AJ/WtZkPw3VSx5dFrrO7JSkfGW9WDunuUlHo0gKayrof/suOlYEugPd5gOYFbH1//8d5toHzxNLT6Ehk84sgIBRmi/Sf+3ospLCBNZIfMbVYjxAeaPEBCRxuOki2k01ipv13HK6J7tEvFnvv+c0em74D0T/XYFkvVnUmMCg4f9Vl/8m16TyFbjoKmeuEt22bkJn/7158Mp/K+W82UHnqRD4SUxGAAAAA="></span>
+        <span class="ic"><svg viewBox="0 0 100 100" width="22" height="22" fill="currentColor" aria-hidden="true" focusable="false"><path d="M74.00 40.02C75.00 47.51 77.33 49.00 94.82 50.00C77.33 51.00 75.00 52.49 74.00 59.98C73.00 52.49 70.67 51.00 53.18 50.00C70.67 49.00 73.00 47.51 74.00 40.02Z"/><path fill-rule="evenodd" d="M9.70 50.00a34.30 34.30 0 1 0 68.60 0a34.30 34.30 0 1 0 -68.60 0ZM18.30 50.00a25.70 25.70 0 1 0 51.40 0a25.70 25.70 0 1 0 -51.40 0Z"/></svg></span>
         <span id="lg-zro-t">Continuar com Absolute ZRO</span>
       </button>
       <p class="lgn-troca" data-lgi style="--i:6"><span id="lg-pergunta">Ainda não tem conta?</span> <button type="button" class="lgn-link" id="lg-cad">Criar conta</button></p>
@@ -6819,10 +7018,36 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
       <div class="lgn-bloq" id="lg-bloq" role="status" hidden>
         <h2 id="lg-bloq-t">Sua conta Absolute ZRO ainda não tem acesso ao Carro do Freela.</h2>
         <p id="lg-bloq-s">Quem cuida da sua organização na Absolute ZRO pode liberar.</p>
-        <a class="lgn-ok" id="lg-bloq-ir" href="https://absolutezro.vercel.app/ferramentas" rel="noopener"><span>Ver na Absolute ZRO</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <a class="lgn-ok" id="lg-bloq-ir" href="https://absolutezro.com/ferramentas" rel="noopener"><span>Ver na Absolute ZRO</span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
         <p class="lgn-troca"><button type="button" class="lgn-link" id="lg-bloq-sair">Sair desta conta</button></p>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- ================= EM DESENVOLVIMENTO (28/out) =================
+     ⚠️ O PORTÃO DO LANÇAMENTO (adendo do PRD: acesso exclusivo do
+     proprietário). Enquanto o Carro não for lançado, no domínio só entra a
+     conta que a Absolute ZRO lista — hoje, a do proprietário. Tudo o mais
+     cai aqui: a tela de entrar, o cadastro, o Feed, a Z, cada tela de dentro
+     e os builds por fase (/fase1…). É a página "Em desenvolvimento" de toda
+     a família (símbolo pequeno, título curto, uma linha, "Voltar ao HUB"),
+     com a única porta que existe: "Entrar com Absolute ZRO", que o HUB só
+     abre para quem está na lista. Fora do domínio (file://, artifact,
+     suítes) a prévia segue como era: a página só vale quando o build do
+     domínio marca cdf-release=closed ou /api/zro/eu diz release:"closed".
+     Nada de dado interno aqui: a página é a mesma para todo mundo. -->
+<section id="v-fechado" hidden>
+  <div class="fc">
+    <span class="fc-zro" aria-label="Absolute ZRO"><svg viewBox="0 0 100 100" width="26" height="26" fill="currentColor" aria-hidden="true" focusable="false"><path d="M74.00 40.02C75.00 47.51 77.33 49.00 94.82 50.00C77.33 51.00 75.00 52.49 74.00 59.98C73.00 52.49 70.67 51.00 53.18 50.00C70.67 49.00 73.00 47.51 74.00 40.02Z"/><path fill-rule="evenodd" d="M9.70 50.00a34.30 34.30 0 1 0 68.60 0a34.30 34.30 0 1 0 -68.60 0ZM18.30 50.00a25.70 25.70 0 1 0 51.40 0a25.70 25.70 0 1 0 -51.40 0Z"/></svg></span>
+    <span class="fc-marca"><svg viewBox="0 0 100 100" width="40" height="40" fill="var(--marca)" aria-hidden="true"><use href="#mk"/></svg><b>Carro do Freela</b></span>
+    <h1 class="fc-tit"><span class="fc-fino">Em</span> <span class="fc-forte">desenvolvimento.</span></h1>
+    <p class="fc-sub" id="fc-sub">Estamos construindo o Carro do Freela. Em breve, na Absolute ZRO.</p>
+    <div class="fc-acoes">
+      <a class="glass-btn glass-btn--ink" id="fc-hub" href="https://absolutezro.com/inicio" rel="noopener">Voltar ao HUB</a>
+      <button type="button" class="glass-btn" id="fc-entrar" hidden>Entrar com Absolute ZRO</button>
+    </div>
+    <p class="fc-troca" id="fc-troca" hidden><button type="button" class="lgn-link" id="fc-sair">Sair desta conta</button></p>
   </div>
 </section>
 
@@ -7774,6 +7999,10 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
             <div class="frow"><span class="lab">Portfólio</span><input class="fld" id="cd-port" placeholder="@seuinstagram ou link"></div>
           </div>
           <p class="note" style="margin-top:0">Seu telefone <strong style="color:var(--cal)">não aparece para ninguém</strong>. Ele serve para a chamada chegar no seu WhatsApp — quem contrata fala com você por dentro da plataforma.</p>
+          <!-- ⚠️ CONSENTIMENTO (26/out · 3): nasce DESMARCADO e é a pessoa que
+               marca — caixa pré-marcada não é consentimento. Ver
+               registrarConsentimento(). -->
+          <label class="tog" style="margin-top:14px" title="Quem contrata vê nome, praça, funções, equipamento, tabela e portfólio. O WhatsApp nunca aparece. Dá para mudar quando quiser, aqui no cadastro."><input type="checkbox" id="cd-consente"> Mostrar meu perfil para quem contrata</label>
           <div class="cdnav">
             <button class="btn" data-ir="2">Continuar</button>
             <!-- ⚠️ ESTE BOTÃO MUDOU DE SIGNIFICADO QUANDO A PORTA MUDOU. Ele
@@ -7984,6 +8213,27 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
           <p style="margin:12px 0 0;font-size:13.5px;color:var(--cal-fraco);line-height:1.6">E cada campo vazio é uma busca em que você não aparece. Quem procura “drone em Mossoró” não encontra quem não disse que tem drone.</p>
         </div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- A Z, a IA da Absolute ZRO, na aba própria (27/out · 5, pedido do
+     titular: "uma aba só pra Z em todas as plataformas"). É a primeira aba e
+     a tela de entrada. Só existe no domínio: o <zro-ia> nasce por script
+     (zroMontarZ) com conta Absolute ZRO liberada e fala com /api/zro/ia, que
+     acrescenta o token no servidor. Sem a conta, o "Entrar" fica aqui; sem o
+     acesso da Z, o "Reconectar". Fora do domínio a aba nem aparece.
+     ⚠️ SEM .wrap e sem animação de entrada (show pula a "z"): transform no
+     ancestral prende a gaveta de Conversas (position:fixed) à caixa. -->
+<section id="v-z" hidden>
+  <div class="zpainel" id="z-painel" aria-label="Z, a IA da Absolute ZRO" role="region">
+    <h1 class="zp-oculto">Z</h1>
+    <div class="zp-caixa" id="z-caixa"></div>
+    <div class="zp-acao" id="z-acao" hidden><button type="button" class="btn gh sm" id="z-reconectar">Reconectar com Absolute ZRO</button></div>
+    <div class="zp-sem" id="z-sem" hidden>
+      <span class="zp-anel" aria-hidden="true"><svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><circle cx="12" cy="12" r="7.75"/></svg></span>
+      <p>Entre com a Absolute ZRO para conversar com a Z.</p>
+      <button type="button" class="btn zp-entrar" id="z-entrar">Entrar com Absolute ZRO</button>
     </div>
   </div>
 </section>
@@ -9305,8 +9555,26 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
    morta do `const`: "Cannot access 'faseTem' before initialization". O erro
    caía num try/catch e o cadastro inteiro deixava de virar perguntas, sem
    nenhuma suíte de fase perceber. Literal sem dependência: subir é seguro. */
+/* ⚠️ (26/out) A FASE VEM DA PÁGINA: o script é um arquivo só (m/app.<hash>.js)
+   para o app e as seis fases; cada página diz a dela em <meta name="cdf-fase">
+   e o build troca o marcador abaixo pela leitura dessa meta. */
 const FASE=/*__FASE__*/0;
 const faseTem=n=>!FASE||FASE>=n;
+/* ⚠️ O PORTÃO DO LANÇAMENTO (28/out, adendo do PRD: acesso exclusivo do
+   proprietário). No domínio o build marca <meta name="cdf-release"
+   content="closed"> e a tela nasce FECHADA desde o primeiro quadro: a home
+   de / fica como vitrine sem porta e todo o resto é "Em desenvolvimento".
+   Só o que /api/zro/eu responder abre — e só para a conta que o HUB lista
+   (liberado:true); o servidor também pode dizer release:"closed", e isso
+   fecha, mas nada que venha pela rede ABRE o que o build fechou. Lido aqui,
+   antes de qualquer show(): fora do domínio (file://, artifact) e nos
+   builds sem a meta (as suítes) nada muda — a prévia é a de sempre. */
+const RELEASE_PAGINA=((document.querySelector('meta[name="cdf-release"]')||{}).content||"").trim();
+const NA_WEB=/^https?:$/.test(location.protocol)&&(()=>{ try{ return window.top===window.self }catch(e){ return false } })();
+let ZRO_FECHADO=NA_WEB&&RELEASE_PAGINA==="closed", ZRO_LIBERADO=false;
+const zroFechado=()=>ZRO_FECHADO&&!ZRO_LIBERADO;
+/* a tela que o portão segurou (abre se a conta puder) e por que a página mostra "sem acesso" */
+let FC_VOLTA=null, FC_MOTIVO=null;
 /* ================= NENHUM ERRO PRENDE A ABERTURA (18/out · 3) =================
    Victor, no Safari do computador: "travado o site" — a logo parada, para
    sempre. A janela anônima abria. A diferença entre as duas é o que a
@@ -9332,18 +9600,37 @@ addEventListener("error",e=>{
 setTimeout(soltarAbertura,9000);
 
 /* ================= A MÍDIA EM ARQUIVO (18/out · 2) =================
-   Vídeos e fotos geradas moram em m/ (do próprio domínio), cada um em duas
-   versões: a leve e a @hd. MIDIA_HD liga uma à outra (vem do build). A tela
-   decide UMA vez, no arranque: mais de 1400 pixels físicos de largura
-   (computador, tablet, notebook retina) leva a @hd; celular leva a leve —
-   a janela do vídeo lá tem uns 350px e o plano de dados é de alguém.
+   Vídeos e fotos geradas moram em m/ (do próprio domínio).
+   ⚠️ DESDE 26/out É UMA ESCADA, NÃO LEVE + @hd. Cada mídia tem degraus de
+   largura (640, 1280, 1920, a cheia…) e o vídeo também tem codecs. MIDIA_VAR
+   (vem do build) lista os degraus de cada uma, e a tela decide UMA vez, no
+   arranque: o menor degrau que cobre a largura da janela × a densidade —
+   nenhuma mídia ocupa mais que a janela, então nunca sai menor que o lugar
+   dela. Antes o corte era 1400 px físicos: um iPhone (390 × 3 = 1170) caía
+   no "leve", e o celular via a pior qualidade da casa.
+   No vídeo, o melhor codec que o navegador toca: AV1 (Chrome, Firefox), HEVC
+   (Safari, iPhone) e H.264 de reserva — mais qualidade no mesmo tamanho.
    ⚠️ qual() devolve URL ABSOLUTA: img.src e o fundo pintado comparam
    igual com o valor guardado, e o artifact resolve m/ ao lado da página. */
-const MIDIA_HD=/*__MIDIA_HD__*/{};
-const MIDIA_GRANDE=(()=>{ try{ return innerWidth*(devicePixelRatio||1)>1400 }catch(e){ return false } })();
+const MIDIA_VAR=/*__MIDIA_VAR__*/{};
+const MIDIA_PX=(()=>{ try{ return Math.round(innerWidth*(devicePixelRatio||1)) }catch(e){ return 1280 } })();
+const MIDIA_CODEC=(()=>{
+  const tipos={av01:'video/mp4; codecs="av01.0.08M.08"',hvc1:'video/mp4; codecs="hvc1.1.6.L120.90"',avc1:'video/mp4; codecs="avc1.640028"'};
+  const ok=[]; try{ const vd=document.createElement("video"); for(const c in tipos) if(vd.canPlayType(tipos[c])) ok.push(c) }catch(e){}
+  return ok;   /* na ordem de preferência */
+})();
 function qual(u){
   if(typeof u!=="string"||!/^m\//.test(u)) return u;
-  const x=(MIDIA_GRANDE&&MIDIA_HD[u])||u;
+  let x=u; const vs=MIDIA_VAR[u];
+  if(vs){
+    const temCodec=vs.some(d=>d.c);
+    const c=temCodec&&(MIDIA_CODEC.find(c=>vs.some(d=>d.c===c))||"avc1");
+    /* no artifact (e só nele) arquivo acima de 16 MB não sobe: lá fica o
+       maior degrau que cabe. O site de verdade não perde nada por isso. */
+    const artifact=!!document.querySelector('meta[name="cdf-artifact"]');
+    const lista=vs.filter(d=>(!temCodec||d.c===c)&&!(artifact&&d.b>16e6));
+    x=(lista.find(d=>d.w>=MIDIA_PX)||lista[lista.length-1]||{u}).u;
+  }
   try{ return new URL(x,document.baseURI).href }catch(e){ return x }
 }
 function midia(o){ if(o&&typeof o==="object") for(const k in o){ const x=o[k]; if(typeof x==="string") o[k]=qual(x); else midia(x) } return o }
@@ -10282,7 +10569,7 @@ const AJUDA={
   ]},
   contato:{rot:"Contato",tit:"Falar com a gente",corpo:[
     ["p","O Carro do Freela é feito em Natal/RN por gente que trabalha no set. Se você achou um erro, tem uma ideia ou quer trazer a sua praça para a plataforma, escreva."],
-    ["q","E-mail","carrodofreela@gmail.com"],
+    ["q","E-mail","contato@absolutezro.com"],
     ["q","WhatsApp","o mesmo número por onde chegam as chamadas"],
     ["q","Encontro presencial","uma vez por mês, em Natal. É onde o cadastro cresce de verdade."],
     ["p","O e-mail é real e chega — é para onde vai o botão de suporte também. O WhatsApp e o encontro presencial ainda são de demonstração."]
@@ -10376,6 +10663,8 @@ function abrirAjuda(k){
    deixar clicar é honesto: mostra o tamanho do produto sem prometer uma
    porta que não existe. */
 const ICO_MP={
+  /* a Z (27/out · 5): o anel fino */
+  z:'M4.25 12a7.75 7.75 0 1 0 15.5 0a7.75 7.75 0 1 0-15.5 0',
   casa:'M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
   carta:'M3 7h18v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z|m3 7 9 7 9-7',
   cofre:'M4 5h16a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z|M12 11.5m-3.1 0a3.1 3.1 0 1 0 6.2 0a3.1 3.1 0 1 0-6.2 0|M12 8.4v-1.3M12 15.9v-1.3M8.9 11.5H7.6M16.4 11.5h-1.3|M7 18v2M17 18v2',
@@ -10544,6 +10833,7 @@ function pintarGaveta(){
     bt.onclick=()=>{ abrirSanfMN(sf,bt.getAttribute("aria-expanded")!=="true",true); som("leve") };
   });
   pintarBadgeMsg();   /* só agora: o contador nasce junto com a lista acima */
+  pintarBaloes();     /* e os balões, pelo mesmo motivo */
 }
 function abrirGaveta(){ pintarGaveta(); v("gaveta").classList.add("on"); v("velo").classList.add("on");
   v("gaveta").setAttribute("aria-hidden","false"); v("menu-bt").setAttribute("aria-expanded","true");
@@ -10633,7 +10923,8 @@ function aplicarTema(t){
 /* quando o script começou — a abertura usa isto para saber quanto do piso
    já foi gasto pelo próprio boot, em vez de somar tempo por cima dele */
 window.__t0=performance.now();
-const FRAMES = /*__FRAMES__*/;
+/* (26/out) os quadros de portfólio também viraram arquivo em m/ — o build tira o base64 */
+const FRAMES = midia(/*__FRAMES__*/{});
 const CREW = /*__CREW__*/;
 const FUNCOES = /*__FUNCOES__*/;
 /* ⚠️ FOTOGRAFIA DE DEMONSTRAÇÃO (04/out) — src/assets/fotos.json, gerada no
@@ -11238,8 +11529,13 @@ function marcarVisto(t){
   VISTOS.add(t);
   try{localStorage.setItem(VISTO_KEY,JSON.stringify([...VISTOS]))}catch(e){}
 }
-const views={salao:v("v-salao"),guildas:v("v-guildas"),jobs:v("v-jobs"),ajuda:v("v-ajuda"),home:v("v-home"),entrar:v("v-entrar"),cadastro:v("v-cadastro"),brecho:v("v-brecho"),anuncio:v("v-anuncio"),produtora:v("v-produtora"),minhaprod:v("v-minhaprod"),propostas:v("v-propostas"),feed:v("v-feed"),pracas:v("v-pracas"),buscar:v("v-buscar"),perfil:v("v-perfil"),equipe:v("v-equipe"),passar:v("v-passar"),agenda:v("v-agenda"),meu:v("v-meu"),aprender:v("v-aprender"),planos:v("v-planos"),orcar:v("v-orcar"),cofre:v("v-cofre"),achar:v("v-achar"),malas:v("v-malas"),vagas:v("v-vagas")};
+const views={salao:v("v-salao"),guildas:v("v-guildas"),jobs:v("v-jobs"),ajuda:v("v-ajuda"),home:v("v-home"),entrar:v("v-entrar"),fechado:v("v-fechado"),cadastro:v("v-cadastro"),brecho:v("v-brecho"),anuncio:v("v-anuncio"),produtora:v("v-produtora"),minhaprod:v("v-minhaprod"),propostas:v("v-propostas"),feed:v("v-feed"),z:v("v-z"),pracas:v("v-pracas"),buscar:v("v-buscar"),perfil:v("v-perfil"),equipe:v("v-equipe"),passar:v("v-passar"),agenda:v("v-agenda"),meu:v("v-meu"),aprender:v("v-aprender"),planos:v("v-planos"),orcar:v("v-orcar"),cofre:v("v-cofre"),achar:v("v-achar"),malas:v("v-malas"),vagas:v("v-vagas")};
 function show(t){
+  /* ⚠️ O PORTÃO (28/out): fechado, só a home de / existe. O resto — a tela de
+     entrar, o cadastro, cada tela de dentro, e a home dos builds por fase
+     (/fase1…) — é "Em desenvolvimento". A tela pedida fica guardada: se o
+     /api/zro/eu disser que esta conta pode, ela abre. */
+  if(zroFechado()&&t!=="fechado"&&(t!=="home"||FASE)){ FC_VOLTA=t; t="fechado" }
   /* quem assinou tem os dois chapéus: entrar nas telas de contratar
      assume o chapéu certo sozinho. O toggle no topo mostra a troca —
      ninguém fica sem saber de que lado está. */
@@ -11251,7 +11547,7 @@ function show(t){
   usoMarcar();
   /* a tela de entrar ocupa a janela inteira: rodapé embaixo dela é
      rolagem garantida numa tela que não deveria rolar */
-  document.body.classList.toggle("sem-rodape",t==="entrar");
+  document.body.classList.toggle("sem-rodape",t==="entrar"||t==="fechado");
   /* a home não tem barra de abas embaixo: a folga de 74px que o corpo
      reserva para ela era só papel em branco no fim da página */
   document.body.classList.toggle("na-home",t==="home");
@@ -11263,11 +11559,11 @@ function show(t){
      `both` deixa um transform neutro grudado nela depois: a cena do vídeo
      encolhia para a caixa do texto e ficava assim (o Victor viu voltando
      de dentro do app pela logo). A home tem as entradas dela. */
-  if(mudou&&views[t]&&t!=="home"){
+  if(mudou&&views[t]&&t!=="home"&&t!=="z"){
     const alvo=views[t].querySelector(".wrap")||views[t];
     alvo.classList.remove("entra"); void alvo.offsetWidth; alvo.classList.add("entra");
   }
-  const fora=(t==="entrar"||t==="home"||(t==="cadastro"&&S.voltaDe==="entrar"));
+  const fora=(t==="entrar"||t==="home"||t==="fechado"||(t==="cadastro"&&S.voltaDe==="entrar"));
   v("topbar").hidden=fora;
   document.body.classList.toggle("com-lateral",!fora);
   v("homenav").hidden=(t!=="home");
@@ -11278,7 +11574,7 @@ function show(t){
      virou item de menu. Perfil e produtora continuam sem acender nada, que
      é o comportamento de sempre. */
   const hl=(t==="perfil"||t==="produtora")?"pracas":(t==="anuncio"?"brecho":t==="salao"?"guildas":t);
-  document.querySelectorAll(".tab,.bt").forEach(b=>b.setAttribute("aria-current",String(b.dataset.tab===hl)));
+  document.querySelectorAll(".tab,.bt,.ztop").forEach(b=>b.setAttribute("aria-current",String(b.dataset.tab===hl)));
   const comData=["buscar","equipe","passar"].includes(t);
   v("databar").hidden=!comData;
   v("bottombar").hidden=fora;
@@ -11295,9 +11591,12 @@ function show(t){
   if(t==="planos"){ pnLado=MODO; drawPlanos(); }
   if(t==="orcar") drawOrcar();
   if(t==="cofre") drawCofre(true);
-  if(t==="meu"){ drawMeuPort(); pintarRelFreela(); pintarInvPerfil(); pintarVooPerfil(); }
+  if(t==="meu"){ drawMeuPort(); pintarRelFreela(); pintarInvPerfil(); pintarVooPerfil(); cfbPintar(); }
   if(t==="minhaprod") pintarProd();
   if(t==="feed") drawFeed();
+  if(t==="z") pintarZ();
+  /* fechado: a página "Em desenvolvimento" e a home sem porta se repintam ao abrir */
+  if(t==="fechado"||(t==="home"&&zroFechado())) pintarFechado();
   if(t==="equipe") drawEquipe();   /* favoritar na busca precisa chegar no Meu time */
   /* ⚠️ ATÉ AQUI QUEM DESENHAVA A BUSCA ERA `irPraca`, e só ele. Enquanto a
      única porta era escolher a praça, isso bastava; com a entrada direta na
@@ -11319,16 +11618,24 @@ function show(t){
   medirAbas();
   window.scrollTo({top:0,behavior:"instant"});
 }
-document.querySelectorAll(".tab,.bt").forEach(b=>b.onclick=()=>show(b.dataset.tab));
+document.querySelectorAll(".tab,.bt,.ztop").forEach(b=>b.onclick=()=>show(b.dataset.tab));
 /* o botão que já diz o lado ("Quero contratar" / "Sou freela") abre o
    login na aba certa — a pessoa não escolhe a mesma coisa duas vezes */
 document.querySelectorAll(".entrar-cta").forEach(b=>b.onclick=()=>{
+  /* fechado (28/out): a home não tem porta — "Conhecer o projeto" rola até
+     Como funciona, e o "Entrar" do topo mostra a página "Em desenvolvimento" */
+  if(zroFechado()){
+    const alvo=b.dataset.ir&&document.querySelector(b.dataset.ir);
+    if(alvo) alvo.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"});
+    else show("fechado");
+    return;
+  }
   if(b.dataset.lg) LG_TIPO=b.dataset.lg;
   LG_MODO="entrar"; lgAviso(""); pintarLogin();
   show("entrar");
 });
-/* "Criar conta" abre a mesma porta, já no modo de criar */
-v("hn-criar").onclick=()=>{ LG_MODO="criar"; lgAviso(""); pintarLogin(); show("entrar") };
+/* "Criar conta" abre a mesma porta, já no modo de criar (fechado: não há conta a criar) */
+v("hn-criar").onclick=()=>{ if(zroFechado()) return show("fechado"); LG_MODO="criar"; lgAviso(""); pintarLogin(); show("entrar") };
 document.querySelectorAll(".brand-home").forEach(b=>b.onclick=()=>{ som("leve"); show("home"); scrollTo(0,0) });
 v("lg-back").onclick=()=>show("home");
 /* ============================================================
@@ -12815,6 +13122,7 @@ function ligarVideoLogin(){
   }
   /* movimento reduzido: o quadro parado, sem vídeo nenhum */
   if(matchMedia("(prefers-reduced-motion:reduce)").matches){ vd.hidden=true; return }
+  if(!naTela(cena,ligarVideoLogin)) return;
   if(!lgVideoUrl){
     lgVideoUrl=videoBlob("login",LOGIN_VIDEO.mp4); if(!lgVideoUrl) return;
     /* não tocou (codec, economia de bateria): some o vídeo, fica o pôster */
@@ -12929,6 +13237,10 @@ function partirDoLogin(){
   setTimeout(()=>o.remove(),900);
 }
 function entrarNaConta(prov,criar){
+  /* ⚠️ O PORTÃO (28/out): fechado, NENHUMA porta abre a conta — nem a da
+     Absolute ZRO sem a liberação, nem a antiga deste aparelho, nem o
+     cadastro. A página "Em desenvolvimento" diz o que há. */
+  if(zroFechado()){ show("fechado"); return }
   /* ⚠️ DIREITO DE USO (25/out · 2): com sessão Absolute ZRO, quem decide é o
      admin dela. Sem "carro-do-freela" em zro_products, nenhuma porta abre a
      conta — nem a da conta Absolute ZRO, nem a antiga deste aparelho. */
@@ -12998,7 +13310,8 @@ function entrarNaConta(prov,criar){
      montar o perfil, mesmo que este aparelho já tenha passado pela porta. */
   if(criar&&MODO!=="contratante") abrirCadastro("entrar");
   else if(criar){ pintarProd&&pintarProd(); show("minhaprod") }
-  else if(perfilProntoDoLado()) show(naFase("feed")?"feed":"propostas");
+  /* a Z é a tela de entrada onde ela existe (27/out · 5: no domínio) */
+  else if(perfilProntoDoLado()) show(zAbaLigada()?"z":naFase("feed")?"feed":"propostas");
   else if(MODO==="contratante"){ pintarProd&&pintarProd(); show("minhaprod") }
   else abrirCadastro("entrar");
   LG_MODO="entrar";
@@ -14543,9 +14856,96 @@ const ROTP={novo:"Esperando você",aceita:"Aceita",recusada:"Recusada",perdida:"
    faz desconfiar de uma tela. */
 const esperaJobs=()=>MODO==="freela"?PROPOSTAS.filter(x=>x.status==="novo").length:0;
 const esperandoVoce=()=>esperaJobs()+equipRecebidas().length;
-function drawBadge(){
-  const n=esperandoVoce();
-  [v("bg-top"),v("bg-bot")].forEach(el=>{el.hidden=!n;el.textContent=n});
+function drawBadge(){ pintarBaloes() }
+
+/* ============ OS BALÕES (27/out) ============
+   Pedido do titular para o ecossistema Absolute ZRO: aba com alguma coisa
+   esperando uma ação da pessoa mostra a quantidade num balão, como o
+   SOBEDESCE e o HUB. A régua é a do "esperando você" lá de cima: só conta o
+   que a PRÓPRIA tela já pede com botão. Nada de número de fachada.
+
+     Propostas  consulta de job "Esperando você" (freela) + proposta de valor
+                num anúncio meu do brechó (`equipRecebidas`) — a mesma conta
+                do número grande da aba, que já existia;
+     Jobs       contrato que falta EU assinar ("Assinar"), entrega que quem
+                contrata precisa conferir ("Recebi, liberar") e job liberado
+                sem a minha avaliação ("Avaliar") — tudo de `linhaContrato`,
+                e só a partir da Fase 2, que é quando o contrato existe;
+     Brechó     pedido de aluguel numa peça minha ("Topar" / "Recusar").
+
+   Feed, Agenda, Equipe, Vagas, Aprender e o resto não têm nada que dependa
+   da pessoa: não ganham balão. A Guilda já tem o ponto de conversa não lida
+   (`#bg-gui`), que continua como está.
+
+   ⚠️ `contarPendencias` É PURA: recebe o estado e devolve {aba:{n,t}}. A
+   suíte `baloes` chama com estado montado à mão; `pendenciasAbas` é quem lê
+   as variáveis da página. */
+function contarPendencias(e){
+  e=e||{};
+  const out={}, pl2=(n,um,v2)=>n+" "+(n===1?um:v2);
+  const nJ=e.jobsNovos||0, nE=e.equipRecebidas||0;
+  if(nJ+nE) out.propostas={n:nJ+nE,t:[nJ?pl2(nJ,"consulta de job esperando você","consultas de job esperando você"):"",
+    nE?pl2(nE,"oferta no brechó esperando você","ofertas no brechó esperando você"):""].filter(Boolean).join(" · ")};
+  let ass=0,conf=0,aval=0;
+  for(const x of e.vagas||[]){
+    if(x.fase==="contrato"&&!x.jaAssinei) ass++;
+    else if(x.fase==="conferir"&&e.prod) conf++;
+    else if(x.fase==="liberado"&&!x.avaliado) aval++;
+  }
+  if(ass+conf+aval) out.jobs={n:ass+conf+aval,t:[ass?pl2(ass,"contrato para assinar","contratos para assinar"):"",
+    conf?pl2(conf,"entrega para conferir","entregas para conferir"):"",
+    aval?pl2(aval,"avaliação para fazer","avaliações para fazer"):""].filter(Boolean).join(" · ")};
+  const nP=e.pedidosAluguel||0;
+  if(nP) out.brecho={n:nP,t:pl2(nP,"pedido de aluguel esperando você","pedidos de aluguel esperando você")};
+  return out;
+}
+const numeroBalao=n=>n>99?"99+":String(n);
+const rotuloBalao=n=>n+" "+(n===1?"pendência":"pendências");
+/* cada parte num try: na abertura o script ainda não chegou em ESCALAS,
+   AVALIACOES e PEDIDOS (let/const mais abaixo), e um balão que estoura não
+   pode levar a barra junto */
+function pendenciasAbas(){
+  const prod=MODO==="contratante", est={prod};
+  try{ est.jobsNovos=esperaJobs(); est.equipRecebidas=equipRecebidas().length }catch(e){}
+  try{
+    est.vagas=faseTem(2)?meusJobs().flatMap(j=>(prod?j.equipe:j.equipe.filter(x=>x.quem===EU.id)).map(x=>({
+      fase:faseVaga(x), jaAssinei:!!(prod?x.assProd:x.assFreela),
+      avaliado:jaAvaliei(j.off,prod?x.quem:"prod",prod?"prod":"freela")}))):[];
+  }catch(e){}
+  try{ est.pedidosAluguel=PEDIDOS.length }catch(e){}
+  return contarPendencias(est);
+}
+/* onde mora o balão de cada aba: a lateral (e a doca), a barra de baixo e a
+   gaveta. Propostas já tinha os dela (#bg-top, #bg-bot); as outras ganham um
+   `.bg[data-balao]` na primeira vez que precisam. */
+function hostsBalao(t){
+  return [...document.querySelectorAll('.tabs .tab[data-tab="'+t+'"], .bottombar .bt[data-tab="'+t+'"], '+
+    '#gaveta .gitem[data-ir="'+t+'"], #gaveta [data-sanf="'+t+'"] > .mn-abre')];
+}
+function pintarBaloes(){
+  let P={};
+  try{ P=pendenciasAbas() }catch(e){}
+  ["propostas","jobs","brecho"].forEach(t=>{
+    const pd=P[t], n=pd?numeroBalao(pd.n):"";
+    hostsBalao(t).forEach(h=>{
+      let b=h.querySelector(".bg[data-balao], #bg-top, #bg-bot");
+      /* a gaveta de Propostas tem o contador de CONVERSA (#g-msg-bg): ele
+         fica como está, e o balão não entra por cima dele */
+      if(!b&&h.querySelector("#g-msg-bg")) return;
+      if(!b){
+        if(!pd) return;
+        b=document.createElement("span"); b.className="bg"; b.dataset.balao=t; b.hidden=true;
+        const chev=h.querySelector(".mn-chev"); chev?h.insertBefore(b,chev):h.appendChild(b);
+      }
+      if(b.textContent!==n) b.textContent=n;
+      b.hidden=!pd;
+      if(pd) b.setAttribute("aria-label",rotuloBalao(pd.n)); else b.removeAttribute("aria-label");
+      if(!("titOrig" in h.dataset)) h.dataset.titOrig=h.getAttribute("title")||"";
+      const orig=h.dataset.titOrig;
+      if(pd) h.title=(orig?orig+" · ":"")+pd.t;
+      else if(orig) h.title=orig; else h.removeAttribute("title");
+    });
+  });
 }
 function cardProposta(pr){
   const d=new Date(pr.data+"T00:00:00");
@@ -16338,6 +16738,7 @@ function drawCadPasso(){
 function abrirCadastro(volta){
   S.voltaDe=volta||"meu";
   cadTodo=false;   /* cada entrada recomeça pela régua do lado por onde veio */
+  if(v("cd-consente")) v("cd-consente").checked=perfilAutorizado(EU);
   const pv=v("cd-primeira"); if(pv) pv.hidden=(S.voltaDe!=="entrar")||perfilPronto();
   /* ⚠️ NO CAMINHO CURTO A PENDÊNCIA SÓ CONTA ATÉ A ETAPA 2. Sem este
      filtro, quem entra com nome e função preenchidos cairia direto na
@@ -16808,13 +17209,34 @@ v("ovl-guia").addEventListener("click",ev=>{ if(ev.target===v("ovl-guia")) fecha
 /* ⚠️ DOIS BOTÕES, UMA SAÍDA. `cd-fim` fecha as seis etapas; `cd-fim2`
    fecha as duas do caminho curto. Duplicar o corpo aqui seria garantir que
    um dos dois esquece de contar o passo ou de mandar para a tela certa. */
+/* ============ CONSENTIMENTO E ORIGEM DO DADO (26/out · 3) ============
+   Antes de abrir para o público, cada perfil de gente real precisa de
+   duas coisas registradas: DE ONDE veio o dado (a própria pessoa declarou
+   — "autodeclarado"; os cadastros da prévia são "ficticio") e SE ela
+   autorizou mostrar o perfil a quem contrata, com a versão do texto que
+   leu e a data. Sem marcar, o perfil fica só com ela.
+   ⚠️ Hoje o registro mora no perfil, NESTE aparelho, como o resto do
+   cadastro: vai para o banco junto com o perfil quando a Fase 1 tiver
+   servidor. Até lá não há divulgação para o público (README). */
+const TERMO_PERFIL_V="2026-10-26";
+function registrarConsentimento(mostrar){
+  const antes=EU.consentimento;
+  EU.origem="autodeclarado";
+  if(mostrar&&!(antes&&antes.mostrar&&antes.versao===TERMO_PERFIL_V))
+    EU.consentimento={mostrar:true,versao:TERMO_PERFIL_V,em:new Date().toISOString()};
+  else if(!mostrar) EU.consentimento=antes&&antes.mostrar?{mostrar:false,versao:TERMO_PERFIL_V,em:new Date().toISOString()}:null;
+  usoGravar();
+}
+const perfilAutorizado=c=>!!(c&&c.consentimento&&c.consentimento.mostrar);
 function concluirCadastro(){
+  registrarConsentimento(!!(v("cd-consente")&&v("cd-consente").checked));
   EU.cadReceber=true; recalcular(); nuvemPasso("cadastro");
   /* ⚠️ Vindo de "entrar", o fim do cadastro cai no FEED — a mesma primeira
      tela de quem já tem perfil. Antes caía em Praças, que é tela de
      trabalho: a pessoa terminava de se cadastrar e era largada numa lista
      de cidades. Fecha o ciclo que o Victor pediu: cadastro → plataforma. */
-  if(S.voltaDe==="entrar"){ drawFeed(); som("claquete"); show("feed"); vivoAgenda(true);
+  /* no domínio, a primeira tela é a Z (27/out · 5) */
+  if(S.voltaDe==="entrar"){ drawFeed(); som("claquete"); show(zAbaLigada()?"z":"feed"); vivoAgenda(true);
     /* ⚠️ O AVISO "Perfil criado" SÓ EXISTE QUANDO O GUIA NÃO VEM. Os dois
        dizem a mesma coisa — "pronto, você está dentro" — e empilhados o
        aviso cobria o pé do guia, que é onde ficam os botões de dispensar.
@@ -19056,6 +19478,7 @@ function ligarAcoesJob(el,e){
     som(j.lider?"claquete":"toque"); drawJobs();
   });
   el.querySelectorAll("[data-lsjob]").forEach(b=>b.onclick=()=>abrirLista(+b.dataset.lsjob));
+  el.querySelectorAll("[data-zroenv]").forEach(b=>b.onclick=()=>enviarZro(ESCALAS.find(x=>x.id===+b.dataset.zroenv),b));
   el.querySelectorAll("[data-odjob]").forEach(b=>b.onclick=()=>abrirOrdemDia(+b.dataset.odjob));
   el.querySelectorAll("[data-dcgjob]").forEach(b=>b.onclick=()=>abrirDescarga(+b.dataset.dcgjob));
   el.querySelectorAll("[data-odpdf]").forEach(b=>b.onclick=()=>{
@@ -19887,7 +20310,236 @@ function acoesJob(e,prod){
       (prod?"Editar escala":"Editar job")+'</button>':'')+
     (prod?'<button class="btn gh" data-rep="'+e.id+'">Repetir escala</button>':'')+
     '<button class="btn gh" data-canc="'+e.id+'">'+(prod?"Cancelar job":"Sair deste job")+'</button>'+
-    '</div><p class="note" style="margin-top:9px">'+esc(aviso)+'</p>';
+    '</div><p class="note" style="margin-top:9px">'+esc(aviso)+'</p>'+
+    (prod?blocoZroJob(e):'');
+}
+
+/* ============ o job vira projeto na Absolute ZRO (26/out · 3) ============
+   Quem contrata leva o job para a organização dele no HUB: título, data,
+   funções e o briefing inteiro (com horário, chamada, local e referências)
+   viram um projeto, e quem está escalado e TEM conta Absolute ZRO entra na
+   equipe do projeto — quem já é da organização direto, quem não é por
+   convite que só abre aquele projeto. O servidor (/api/zro/enviar) fala com
+   o HUB com o token da pessoa; o navegador nunca vê token.
+
+   ⚠️ SÓ NO DOMÍNIO, com conta Absolute ZRO liberada. No file://, no
+   artifact e nas suítes o bloco não existe (zroLigavel), como o botão de
+   entrar. ⚠️ Gente da prévia não tem conta: ela aparece como "sem conta",
+   nunca como convidada — convite para pessoa fictícia seria mentira.
+   ⚠️ e.uid é o id do job no HUB (o e.id é só deste aparelho e repete). */
+const ZRO_ENV_ERRO={
+  plano:"O Carro do Freela não está no plano da sua organização.",
+  papel:"Seu papel na organização não cria projetos.",
+  email:"Confirme seu e-mail na Absolute ZRO.",
+  organizacao:"Escolha uma organização na Absolute ZRO.",
+  hub:"A Absolute ZRO não respondeu. Tente de novo."
+};
+function zroPodeEnviar(){ return zroLigavel()&&!!ZRO_CONTA&&ZRO_CONTA.liberado===true }
+/* ============ MEU PERFIL E MEU INVENTÁRIO NO BANCO (28/out) ============
+   O primeiro dado do Carro que mora num BANCO de verdade (schema `carro_do_freela`,
+   /api/zro/perfil e /api/zro/inventario), e não no aparelho. ⚠️ SÓ NO
+   DOMÍNIO, com conta Absolute ZRO liberada (zroPodeEnviar) — na fase
+   fechada, só a conta do proprietário. No file://, no artifact e nas suítes
+   o bloco NÃO EXISTE (nasce por DOM aqui, nunca no markup). Banco desligado
+   (503 sem_banco) ou sessão recusada: o bloco some, e a tela segue igual.
+   ⚠️ Sem telefone: o servidor e o banco recusam, e a tela diz por quê.
+   ⚠️ Diária do item é opcional e só a pessoa escreve: nada é sugerido.
+   ⚠️ Nada de const/let no topo deste bloco: show("meu") pode rodar no boot,
+   antes desta linha (o TDZ de 19/out · 2). Só var e function. */
+var CFB=null;
+var CFB_CAT={camera:"Câmera",lente:"Lente",audio:"Áudio",luz:"Luz",drone:"Drone",estabilizador:"Estabilizador",monitor:"Monitor",acessorio:"Acessório",outro:"Outro"};
+var CFB_UF=["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"];
+var CFB_ERRO={
+  telefone:"Sem telefone aqui: o contato fica pelo app.",
+  proibido:"Esse dado não fica no Carro: o contato fica pelo app.",
+  obrigatorio:"Preencha o que falta.", tamanho:"Texto longo demais.", link:"Use um link https.",
+  catalogo:"Escolha da lista.", numero:"Confira os números.", limite:"Limite de 500 itens.",
+  devagar:"Muitos pedidos. Espere um minuto.", hub:"A Absolute ZRO não respondeu. Tente de novo.",
+  reconectar:"Entre de novo com a Absolute ZRO.", fechado:"Sua conta não tem acesso agora."
+};
+function cfbPedir(metodo,caminho,corpo){
+  var o={method:metodo,credentials:"same-origin",cache:"no-store",headers:{Accept:"application/json"}};
+  if(corpo!==undefined){ o.headers["Content-Type"]="application/json"; o.body=JSON.stringify(corpo) }
+  return fetch(caminho,o).then(function(r){
+    if(r.status===204) return {status:204,j:null};
+    return r.json().catch(function(){return null}).then(function(j){return {status:r.status,j:j}});
+  }).catch(function(){return {status:0,j:null}});
+}
+function cfbMsg(r){ var e=r&&r.j&&r.j.erro; return CFB_ERRO[e]||"Não deu para salvar agora. Tente de novo." }
+function cfbReais(c){ return "R$ "+(c/100).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}) }
+function cfbPintar(){
+  var el=v("cfb");
+  if(!zroPodeEnviar()){ if(el) el.remove(); CFB=null; return }
+  if(S.tab!=="meu") return;
+  if(!el){
+    var ac=v("pf-add"), linha=ac&&ac.parentNode; if(!linha) return;
+    el=document.createElement("div"); el.id="cfb"; el.className="cfb"; el.hidden=true;
+    linha.parentNode.insertBefore(el,linha.nextSibling);
+  }
+  if(CFB) return cfbDesenhar();
+  CFB={perfil:null,itens:[],editando:null,carregado:false};
+  Promise.all([cfbPedir("GET","/api/zro/perfil"),cfbPedir("GET","/api/zro/inventario")]).then(function(rs){
+    if(rs[0].status!==200||rs[1].status!==200||!rs[0].j||!rs[1].j){ var x=v("cfb"); if(x) x.remove(); CFB=null; return }
+    CFB.perfil=rs[0].j.perfil; CFB.itens=rs[1].j.itens||[]; CFB.carregado=true; cfbDesenhar();
+  });
+}
+function cfbChips(id,lista,marcados){
+  return '<div class="cfb-chips" id="'+id+'">'+lista.map(function(f){
+    return '<button type="button" class="chip" aria-pressed="'+(marcados.indexOf(f)>=0)+'" data-v="'+esc(f)+'">'+esc(f)+'</button>'}).join("")+'</div>';
+}
+function cfbDesenhar(){
+  var el=v("cfb"); if(!el||!CFB||!CFB.carregado) return;
+  var p=CFB.perfil||{nome:(ZRO_CONTA&&ZRO_CONTA.nome)||"",cidade:"",uf:"",funcoes:[],nichos:[],bio:"",portfolio:"",visibilidade:"privado"};
+  var fun=FUNCOES.filter(function(f){return f!=="Não informado"});
+  var it=CFB.itens;
+  el.innerHTML=
+    '<div class="cfb-cab"><b>Meu perfil</b><em>'+(ZRO_CONTA&&ZRO_CONTA.arroba?'<span id="cfb-arroba">@'+esc(ZRO_CONTA.arroba)+'</span> · ':'')+'na sua conta Absolute ZRO</em></div>'+
+    '<div class="cfb-gr">'+
+      '<div class="frow"><span class="lab">Nome</span><input class="fld" id="cfb-nome" maxlength="80" value="'+esc(p.nome||"")+'"></div>'+
+      '<div class="cfb-gr2"><div class="frow"><span class="lab">Cidade</span><input class="fld" id="cfb-cidade" maxlength="80" value="'+esc(p.cidade||"")+'"></div>'+
+      '<div class="frow"><span class="lab">UF</span><select class="fld" id="cfb-uf"><option value=""></option>'+CFB_UF.map(function(u){return '<option'+(p.uf===u?' selected':'')+'>'+u+'</option>'}).join("")+'</select></div></div>'+
+      '<div class="frow cfb-cheio"><span class="lab">Funções</span>'+cfbChips("cfb-fun",fun,p.funcoes||[])+'</div>'+
+      '<div class="frow cfb-cheio"><span class="lab">Nichos</span>'+cfbChips("cfb-nic",TIPOS,p.nichos||[])+'</div>'+
+      '<div class="frow cfb-cheio"><span class="lab">Bio curta</span><textarea class="fld" id="cfb-bio" maxlength="280">'+esc(p.bio||"")+'</textarea></div>'+
+      '<div class="frow cfb-cheio"><span class="lab">Portfólio</span><input class="fld" id="cfb-port" type="url" maxlength="300" placeholder="https://" value="'+esc(p.portfolio||"")+'"></div>'+
+    '</div>'+
+    '<label class="cfb-vis" title="Nome, cidade, funções, nichos, bio e portfólio. Telefone nunca."><input type="checkbox" id="cfb-vis"'+(p.visibilidade==="contratantes"?' checked':'')+'> Mostrar meu perfil para quem contrata</label>'+
+    '<div class="cfb-ac"><button class="btn sm" id="cfb-salvar">Salvar perfil</button><span class="cfb-st" id="cfb-pst" role="status"></span></div>'+
+    '<div class="cfb-cab cfb-sep"><b>Meu inventário</b><em>'+(it.length?pl(it.length,"item","itens"):"")+'</em></div>'+
+    (it.length?it.map(function(i){
+      var sub=[CFB_CAT[i.categoria]||"Outro"];
+      if(i.quantidade>1) sub.push('<span class="cfb-num">'+Number(i.quantidade)+'×</span>');
+      if(i.diaria_cents!==null) sub.push('diária <span class="cfb-num">'+esc(cfbReais(i.diaria_cents))+'</span>');
+      if(!i.ativo) sub.push("fora de uso");
+      return '<div class="cfb-it'+(i.ativo?'':' off')+'"><div><b>'+esc([i.marca,i.modelo].filter(Boolean).join(" "))+'</b><small>'+sub.join(" · ")+'</small></div>'+
+        '<div class="cfb-bts"><button class="btn sm gh" data-cfb-ed="'+esc(i.id)+'">Editar</button><button class="btn sm gh" data-cfb-rm="'+esc(i.id)+'">Remover</button></div></div>'}).join("")
+      :'<div class="cfb-vz">Nenhum equipamento ainda.</div>')+
+    (CFB.editando?cfbFormItem():'<div class="cfb-ac"><button class="btn sm gh" id="cfb-novo">Adicionar equipamento</button><span class="cfb-st" id="cfb-ist" role="status"></span></div>');
+  el.hidden=false;
+  ["cfb-fun","cfb-nic"].forEach(function(id){
+    v(id).querySelectorAll(".chip").forEach(function(b){ b.onclick=function(){ b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")==="true"?"false":"true") } });
+  });
+  v("cfb-salvar").onclick=cfbSalvarPerfil;
+  var nv=v("cfb-novo"); if(nv) nv.onclick=function(){ CFB.editando="novo"; cfbDesenhar() };
+  el.querySelectorAll("[data-cfb-ed]").forEach(function(b){ b.onclick=function(){ CFB.editando=b.dataset.cfbEd; cfbDesenhar() } });
+  el.querySelectorAll("[data-cfb-rm]").forEach(function(b){ b.onclick=function(){ cfbRemover(b.dataset.cfbRm,b) } });
+  if(CFB.editando){ v("cfb-isalvar").onclick=cfbSalvarItem; v("cfb-icanc").onclick=function(){ CFB.editando=null; cfbDesenhar() }; v("cfb-imod").focus() }
+}
+function cfbFormItem(){
+  var i=CFB.editando==="novo"?{categoria:"camera",marca:"",modelo:"",quantidade:1,observacao:"",diaria_cents:null,ativo:true}
+    :CFB.itens.find(function(x){return x.id===CFB.editando})||{};
+  var d=i.diaria_cents===null||i.diaria_cents===undefined?"":(i.diaria_cents/100).toFixed(2).replace(".",",");
+  return '<div class="cfb-form"><div class="cfb-gr">'+
+    '<div class="frow"><span class="lab">Categoria</span><select class="fld" id="cfb-icat">'+Object.keys(CFB_CAT).map(function(k){return '<option value="'+k+'"'+(i.categoria===k?' selected':'')+'>'+CFB_CAT[k]+'</option>'}).join("")+'</select></div>'+
+    '<div class="frow"><span class="lab">Marca</span><input class="fld" id="cfb-imar" maxlength="60" value="'+esc(i.marca||"")+'"></div>'+
+    '<div class="frow"><span class="lab">Modelo</span><input class="fld" id="cfb-imod" maxlength="120" value="'+esc(i.modelo||"")+'"></div>'+
+    '<div class="cfb-gr2"><div class="frow"><span class="lab">Quantidade</span><input class="fld" id="cfb-iqtd" type="number" min="1" max="999" value="'+Number(i.quantidade||1)+'"></div>'+
+    '<div class="frow"><span class="lab">Diária</span><input class="fld" id="cfb-idia" inputmode="decimal" placeholder="opcional" value="'+esc(d)+'"></div></div>'+
+    '<div class="frow cfb-cheio"><span class="lab">Observação</span><input class="fld" id="cfb-iobs" maxlength="500" value="'+esc(i.observacao||"")+'"></div>'+
+    '</div><label class="cfb-vis"><input type="checkbox" id="cfb-iat"'+(i.ativo!==false?' checked':'')+'> Em uso</label>'+
+    '<div class="cfb-ac"><button class="btn sm" id="cfb-isalvar">Salvar</button><button class="btn sm gh" id="cfb-icanc">Cancelar</button><span class="cfb-st" id="cfb-ist" role="status"></span></div></div>';
+}
+function cfbStatus(id,txt,erro){ var s=v(id); if(!s) return; s.textContent=txt; s.classList.toggle("erro",!!erro) }
+function cfbMarcados(id){ return [].map.call(v(id).querySelectorAll('.chip[aria-pressed="true"]'),function(b){return b.dataset.v}) }
+function cfbSalvarPerfil(){
+  var b=v("cfb-salvar"); if(b.disabled) return; b.disabled=true; cfbStatus("cfb-pst","Salvando…");
+  cfbPedir("PUT","/api/zro/perfil",{nome:v("cfb-nome").value,cidade:v("cfb-cidade").value,uf:v("cfb-uf").value,
+    funcoes:cfbMarcados("cfb-fun"),nichos:cfbMarcados("cfb-nic"),bio:v("cfb-bio").value,portfolio:v("cfb-port").value,
+    visibilidade:v("cfb-vis").checked?"contratantes":"privado"}).then(function(r){
+    b.disabled=false;
+    if(r.status===200&&r.j&&r.j.perfil){ CFB.perfil=r.j.perfil; cfbStatus("cfb-pst","Salvo.") }
+    else cfbStatus("cfb-pst",cfbMsg(r),true);
+  });
+}
+function cfbSalvarItem(){
+  var b=v("cfb-isalvar"); if(b.disabled) return;
+  var dia=v("cfb-idia").value.trim().replace(/^R\$\s*/,"").replace(/\./g,"").replace(",",".");
+  var cents=dia===""?null:Math.round(parseFloat(dia)*100);
+  if(dia!==""&&!(cents>=0)) return cfbStatus("cfb-ist","Confira a diária.",true);
+  var corpo={categoria:v("cfb-icat").value,marca:v("cfb-imar").value,modelo:v("cfb-imod").value,
+    quantidade:parseInt(v("cfb-iqtd").value,10)||1,observacao:v("cfb-iobs").value,diaria_cents:cents,ativo:v("cfb-iat").checked};
+  var novo=CFB.editando==="novo";
+  b.disabled=true; cfbStatus("cfb-ist","Salvando…");
+  cfbPedir(novo?"POST":"PATCH","/api/zro/inventario"+(novo?"":"?id="+encodeURIComponent(CFB.editando)),corpo).then(function(r){
+    b.disabled=false;
+    if((r.status===200||r.status===201)&&r.j&&r.j.item){
+      if(novo) CFB.itens.push(r.j.item); else CFB.itens=CFB.itens.map(function(x){return x.id===r.j.item.id?r.j.item:x});
+      CFB.editando=null; cfbDesenhar();
+    } else cfbStatus("cfb-ist",cfbMsg(r),true);
+  });
+}
+function cfbRemover(id,b){
+  if(b.dataset.certo!=="1"){ b.dataset.certo="1"; b.textContent="Remover mesmo?"; return }
+  b.disabled=true;
+  cfbPedir("DELETE","/api/zro/inventario?id="+encodeURIComponent(id)).then(function(r){
+    if(r.status===204||r.status===404){ CFB.itens=CFB.itens.filter(function(x){return x.id!==id}); cfbDesenhar() }
+    else { b.disabled=false; cfbStatus("cfb-ist",cfbMsg(r),true) }
+  });
+}
+function contaZroDe(x){
+  const c=CREW.find(y=>y.id===x.quem);
+  return c&&c.zro&&typeof c.zro.conta==="string"&&typeof c.zro.email==="string"?c.zro:null;
+}
+function equipeZro(e){
+  const fora=e.equipe.filter(x=>x.quem!==EU.id);
+  return {com:fora.filter(contaZroDe), sem:fora.filter(x=>!contaZroDe(x)).length};
+}
+function blocoZroJob(e){
+  if(!zroPodeEnviar()) return "";
+  const z=e.zro, q=equipeZro(e), n=z&&z.equipe?z.equipe:null;
+  const resumo=[];
+  if(n){ const est=k=>n.filter(m=>m.estado===k).length;
+    if(est("na_equipe")) resumo.push(est("na_equipe")+" na equipe");
+    if(est("convidado")+est("convite_pendente")) resumo.push(pl(est("convidado")+est("convite_pendente"),"convidado","convidados")) }
+  if(q.sem) resumo.push(q.sem+" sem conta Absolute ZRO");
+  return '<div class="jzro">'+
+    (z&&z.link?'<a class="btn gh" href="'+esc(z.link)+'" target="_blank" rel="noopener">Abrir na Absolute ZRO</a>':'')+
+    '<button class="btn gh" data-zroenv="'+e.id+'">'+(z?"Atualizar equipe":"Levar para a Absolute ZRO")+'</button>'+
+    '</div>'+(resumo.length?'<p class="note" style="margin-top:9px">'+esc(resumo.join(" · "))+'</p>':'');
+}
+function isoLocal(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0") }
+function pedidoZro(e){
+  if(!e.uid) e.uid=(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));
+  const refs=(e.refs||[]).map(r=>Array.isArray(r)?r:[r,""]);
+  const linhas=[e.brief||""];
+  linhas.push("", "Horário: "+e.ini+" às "+e.fim);
+  if(e.chamada) linhas.push("Chamada: "+e.chamada);
+  if(e.local) linhas.push("Local: "+e.local);
+  if(refs.length) linhas.push("", "Referências:", ...refs.map(r=>"- "+[r[0],r[1]].filter(Boolean).join(" — ")));
+  const funcoes={};
+  e.equipe.forEach(x=>{ funcoes[x.func]=(funcoes[x.func]||0)+1 });
+  return {
+    job:{ id:"cdf-"+e.uid, titulo:e.nome, tipo:e.tipo||"", cliente:e.cliente||"",
+      cidade:String(e.local||"").split(" — ")[0], briefing:linhas.join("\n").trim(),
+      datas:[{data:isoLocal(dataEsc(e)), rotulo:e.ini+" às "+e.fim}],
+      funcoes:Object.entries(funcoes).map(([f,q])=>({funcao:f,quantas:q})),
+      referencias:refs.flat().filter(u=>/^https:\/\/\S+$/.test(u||"")) },
+    equipe:equipeZro(e).com.map(x=>{ const z=contaZroDe(x); return {conta:z.conta,email:z.email,funcao:x.func,papel:"viewer"} })
+  };
+}
+let zroEnviando=false;
+function enviarZro(e,bt){
+  if(!e||zroEnviando||!zroPodeEnviar()) return;
+  const voltar=()=>{ location.href="/api/zro/entrar?volta="+encodeURIComponent(location.pathname) };
+  if(!ZRO_CONTA.hub) return voltar();
+  zroEnviando=true; if(bt){ bt.disabled=true; bt.textContent="Levando…" }
+  fetch("/api/zro/enviar",{method:"POST",credentials:"same-origin",cache:"no-store",
+      headers:{"Content-Type":"application/json",Accept:"application/json"},body:JSON.stringify(pedidoZro(e))})
+    .then(r=>r.json().catch(()=>({})).then(j=>({s:r.status,j})))
+    .catch(()=>({s:0,j:{}}))
+    .then(({s,j})=>{
+      zroEnviando=false;
+      if(s===200&&j.projeto&&j.projeto.id){
+        e.zro={id:j.projeto.id, link:j.projeto.link, equipe:j.equipe&&Array.isArray(j.equipe.membros)?j.equipe.membros:(e.zro&&e.zro.equipe)||null};
+        usoGravar&&usoGravar();
+        som("claquete");
+        avisar({t:j.projeto.criado?"Projeto criado na Absolute ZRO":"Equipe atualizada na Absolute ZRO",
+          sub:j.equipe&&j.equipe.erro?ZRO_ENV_ERRO[j.equipe.erro==="papel"?"papel":"hub"]:e.nome,
+          tipo:"bom", icone:"✓", fazer:()=>window.open(j.projeto.link,"_blank","noopener")});
+      } else if(j.erro==="reconectar"||s===401){ ZRO_CONTA.hub=false; return voltar() }
+      else avisar({t:"Não deu para levar o job", sub:ZRO_ENV_ERRO[j.erro]||ZRO_ENV_ERRO.hub, tipo:"chama", icone:"⚠"});
+      drawJobs();
+    });
 }
 
 v("rf-x").onclick=()=>{v("ovl-ref").hidden=true};
@@ -19904,6 +20556,7 @@ zonaDrop(v("ovl-doc"),fs=>{ if(!v("dc-arq").hidden) porDocArquivo(fs[0]) });
 v("dc-ok").onclick=salvarDoc;
 
 function drawJobs(){
+  pintarBaloes();   /* assinar, conferir e avaliar mudam por aqui */
   const list=meusJobs(), prod=MODO==="contratante";
   v("jb-rot").textContent=prod?"O dia da equipe":"O dia do job";
   v("jb-tit").textContent=prod?"Jobs da sua agenda":"Meus jobs";
@@ -20716,6 +21369,7 @@ function pedidoChegou(pd,sim){
     sub:pl(pd.dias,"dia")+" · "+brl(pd.valor)+(pd.job?" · "+pd.job:""),
     tipo:"chama",icone:"◈",som:"chegou",ir:"brecho",dur:9000,sim:!!sim});
   if(BPANEL==="inv") drawInventario();
+  pintarBaloes();
 }
 function simularPedido(sim){
   const meus=invItens().filter(x=>x.locacao&&statusInv(x)==="guardado");
@@ -20745,11 +21399,11 @@ function aceitarPedido(id){
   avisar({t:"Combinado com "+titulo((c||{}).nome||""),
     sub:pd.t+" · agora vale formalizar em contrato antes de entregar",
     tipo:"bom",icone:"✓"});
-  drawInventario(); drawCatalogoAluguel();
+  drawInventario(); drawCatalogoAluguel(); pintarBaloes();
 }
 function recusarPedido(id){
   PEDIDOS=PEDIDOS.filter(x=>x.id!==id);
-  som("nao"); drawInventario();
+  som("nao"); drawInventario(); pintarBaloes();
 }
 
 /* semeia do que a conta já declarou — nada inventado */
@@ -24819,6 +25473,26 @@ function videoBlob(chave,b64){
    ciclo (poster); sem H.264, com movimento reduzido ou com o play recusado,
    fica o quadro do banco do carona (parado), que é onde a cena descansa. */
 const homeParado=()=>HOME_VIDEO.parado||HOME_VIDEO.poster;
+/* ⚠️ O VÍDEO SÓ É PEDIDO COM A CENA NA TELA (26/out). Até aqui a carona
+   começava a baixar assim que a home abria, e o login assim que a tela de
+   entrar abria — mesmo com a cena fora da vista (a home rolada até o fim,
+   voltando de dentro do app). Agora quem dá a partida é a cena aparecer
+   (IntersectionObserver); antes disso fica o pôster, e o <video> nasce com
+   preload="none". Sem o observador (navegador antigo), é como era. */
+function naTela(el,ligar){
+  if(!el||!("IntersectionObserver" in window)) return true;
+  /* o mapa mora na própria função (e não num const do lado): a tela de
+     entrar pode ser pintada no arranque, antes desta linha do arquivo rodar */
+  const cenaNaTela=naTela.vistas||(naTela.vistas=new WeakMap());
+  if(!cenaNaTela.has(el)){
+    cenaNaTela.set(el,false);
+    new IntersectionObserver(es=>es.forEach(e=>{
+      const antes=cenaNaTela.get(el); cenaNaTela.set(el,e.isIntersecting);
+      if(e.isIntersecting&&!antes) ligar();
+    })).observe(el);
+  }
+  return cenaNaTela.get(el);
+}
 function homeDescansa(){
   const cena=v("hp-cena"), vd=v("hp-video");
   if(vd) vd.hidden=true;
@@ -24830,6 +25504,7 @@ function ligarVideoHome(){
   const semVideo=quieto||!vd||!HOME_VIDEO.mp4;
   if(!cena.style.backgroundImage){ const q=semVideo?homeParado():(HOME_VIDEO.poster||homeParado()); if(q) cena.style.backgroundImage="url("+q+")" }
   if(semVideo||v("v-home").hidden) return;
+  if(!naTela(cena,ligarVideoHome)) return;
   const url=videoBlob("home",HOME_VIDEO.mp4); if(!url) return;
   if(!vd.dataset.ligado){ vd.dataset.ligado="1"; vd.addEventListener("error",homeDescansa) }
   if(vd.getAttribute("src")!==url){ vd.preload="auto"; if(HOME_VIDEO.poster) vd.poster=HOME_VIDEO.poster; vd.src=url }
@@ -24839,7 +25514,9 @@ function ligarVideoHome(){
 function pintarArte3D(){
   ligarVideoHome();
   document.querySelectorAll("#v-home img[data-obj]").forEach(im=>{
-    const o=HOME3D[im.dataset.obj]; if(o&&!im.getAttribute("src")){ im.width=o.w; im.height=o.h; im.src=o.src }
+    /* (26/out) lazy: os objetos moram nos blocos abaixo da primeira tela —
+       o pôster da carona (o maior quadro da home) chega primeiro */
+    const o=HOME3D[im.dataset.obj]; if(o&&!im.getAttribute("src")){ im.width=o.w; im.height=o.h; im.loading="lazy"; im.src=o.src }
   });
   /* a banda da praça: a foto do coletivo e as miniaturas das fotos novas
      (17/out · 15); sem elas, as capas de ofício de antes (sem rosto, sem marca) */
@@ -24909,7 +25586,7 @@ function drawBento(){
       return '<div class="vsm vsm-'+st+'"><span>'+(i===0?"hoje":DIAS[d.getDay()])+'</span><b>'+pad(d.getDate())+'</b><i></i></div>';
     }).join("")+'</div><div class="vsm-leg"><span>livre</span><span class="s">segurando</span><span class="o">ocupado</span></div>';
   document.querySelectorAll("#hb-brecho img[data-cat]").forEach(im=>{
-    const u=FOTO_CAT[im.dataset.cat]; if(u&&!im.src) im.src=u;
+    const u=FOTO_CAT[im.dataset.cat]; if(u&&!im.src){ im.loading="lazy"; im.src=u }
   });
 }
 /* cada bloco anima UMA vez, quando entra na tela; sem observador ou com
@@ -25552,7 +26229,7 @@ function abrirFase(){
 const AREA_ICO={};
 MENU.forEach(([tab,,,ico])=>{ if(!AREA_ICO[tab]) AREA_ICO[tab]=ico });
 /* as que abrem por uma peça e não pelo menu (MENU_FLUXO) */
-Object.assign(AREA_ICO,{anuncio:"papel",salao:"escudo",perfil:"pessoa",produtora:"pessoa"});
+Object.assign(AREA_ICO,{z:"z",anuncio:"papel",salao:"escudo",perfil:"pessoa",produtora:"pessoa"});
 function arGlifo(k){
   const d=ICO_MP[k]||ICO_MP.papel;
   return '<span class="arico" aria-hidden="true"><svg viewBox="0 0 24 24" width="21" height="21" '+
@@ -25651,12 +26328,14 @@ const fotoDoTopo=nome=>HERO_ARTE[nome]||(nome==="passar"&&LOGIN_VIDEO&&LOGIN_VID
         ic.appendChild(cv);
       } else if(fo){
         const ph=document.createElement("img");
-        ph.className="pg-foto"; ph.alt=""; ph.decoding="async"; ph.src=fo;
+        /* (26/out) lazy: a tela está escondida no arranque — a foto só é
+           pedida quando ela abre, e não disputa a rede com a home */
+        ph.className="pg-foto"; ph.alt=""; ph.decoding="async"; ph.loading="lazy"; ph.src=fo;
         ic.appendChild(ph); hero.classList.add("cine-foto");
       } else {
         const im=document.createElement("img");
         im.className="pg-obj"; im.alt=""; im.setAttribute("aria-hidden","true");
-        im.decoding="async"; im.width=o.w; im.height=o.h; im.src=o.src;
+        im.decoding="async"; im.loading="lazy"; im.width=o.w; im.height=o.h; im.src=o.src;
         ic.appendChild(im);
       }
       hero.insertBefore(ic,tx); hero.classList.add("tem-obj");
@@ -25670,7 +26349,7 @@ const fotoDoTopo=nome=>HERO_ARTE[nome]||(nome==="passar"&&LOGIN_VIDEO&&LOGIN_VID
   if(bh&&fone&&!bh.querySelector(".pg-obj")){
     const im=document.createElement("img");
     im.className="pg-obj"; im.alt=""; im.setAttribute("aria-hidden","true");
-    im.decoding="async"; im.width=fone.w; im.height=fone.h; im.src=fone.src;
+    im.decoding="async"; im.loading="lazy"; im.width=fone.w; im.height=fone.h; im.src=fone.src;
     const ic=document.createElement("span"); ic.className="pg-ico"; ic.setAttribute("aria-hidden","true");
     ic.appendChild(im); bh.insertBefore(ic,bh.firstElementChild); bh.classList.add("pg-busca");
   }
@@ -26110,7 +26789,7 @@ if(HAVIA_USO){
 
   /* Onde a página abre. `entrar` e `cadastro` ficam de fora de propósito:
      são passagem, e voltar nelas parece que o progresso se perdeu. */
-  const PASSAGEM=["entrar","cadastro"];
+  const PASSAGEM=["entrar","cadastro","fechado"];
   if(S.tab&&views[S.tab]&&!PASSAGEM.includes(S.tab)) show(S.tab);
   }catch(e){
     ERROS_BOOT.push("uso: "+((e&&e.message)||e));
@@ -26989,7 +27668,7 @@ const FBK_KEY=/*__WEB3FORMS_KEY__*/"";   /* Web3Forms → carrodofreela@gmail.co
    suporte: durante os testes a primeira pergunta de todo relato e "qual
    versao voce esta usando?", e sem ela nao da para saber se o defeito ja
    foi consertado ou se a pessoa esta com um arquivo velho no cache. */
-const VERSAO="25/out · 2";
+const VERSAO="29/out · 1";
 /* ?diag na URL faz a linha de contexto do suporte mostrar as medidas do
    aparelho. Existe porque daqui não dá para inspecionar o Safari do
    Victor: em vez de adivinhar uma quarta vez, ele abre com ?diag, toca no
@@ -27161,6 +27840,7 @@ function ligarTituloTopo(){
   _titObs.observe(h);
 }
 function drawLadoPe(){
+  try{ pintarBaloes() }catch(e){}
   try{ pintarGruposLado() }catch(e){}
   try{ pintarTipoPlano() }catch(e){}
   try{ ligarTituloTopo() }catch(e){}
@@ -27511,6 +28191,7 @@ var ZRO_CONTA=null, ZRO_PRONTO=false;
 const ZRO_MSG={
   erro:"Não deu para entrar com a Absolute ZRO agora. Tente de novo.",
   recusado:"O acesso não foi liberado na Absolute ZRO.",
+  fechado:"O Carro do Freela ainda não foi liberado para a sua conta.",
   expirou:"A entrada demorou demais. Tente de novo.",
   indisponivel:"Entrar com a Absolute ZRO ainda não está ligado aqui."
 };
@@ -27574,6 +28255,90 @@ v("lg-zro").onclick=()=>{
   location.href="/api/zro/entrar?volta="+encodeURIComponent(volta)+(criar?"&criar=1":"");
 };
 v("lg-bloq-sair").onclick=()=>{ zroSair(); pintarLogin() };
+/* ======================= EM DESENVOLVIMENTO (28/out) =======================
+   O portão do lançamento na TELA. Fechado (build do domínio com
+   cdf-release=closed, ou /api/zro/eu dizendo release:"closed") e sem a conta
+   liberada: a home de / fica como vitrine sem porta — "Conhecer o projeto"
+   no lugar das chamadas, sem "Criar conta", planos "Em desenvolvimento" —, e
+   qualquer outra tela (entrar, cadastro, Feed, Z, Propostas…, e a home dos
+   builds por fase) é a página "Em desenvolvimento", com a única porta que
+   existe: "Entrar com Absolute ZRO", que o HUB só abre para a conta da
+   lista. Com sessão sem direito de uso (plano), a página diz isso e deixa
+   sair. Fora do domínio nada disto roda: zroFechado() é falso. */
+function pintarFechado(){
+  const on=zroFechado();
+  document.documentElement.classList.toggle("fechado",on);
+  if(!on) return;
+  const conta=!!ZRO_CONTA;
+  v("fc-sub").textContent=(conta||FC_MOTIVO==="conta")
+    ?"Sua conta Absolute ZRO ainda não tem acesso ao Carro do Freela."
+    :"Estamos construindo o Carro do Freela. Em breve, na Absolute ZRO.";
+  v("fc-entrar").hidden=!(ZRO_PRONTO&&!conta);
+  v("fc-troca").hidden=!conta;
+  /* a home pública: nenhuma porta funcional */
+  v("hn-criar").hidden=true;
+  document.querySelectorAll("#v-home .hcta").forEach(c=>c.querySelectorAll(".entrar-cta").forEach((b,i)=>{
+    if(i){ b.hidden=true; return }
+    b.removeAttribute("data-lg"); b.dataset.ir="#h-como";
+    const tx=[...b.childNodes].find(n=>n.nodeType===3);
+    if(tx) tx.nodeValue="Conhecer o projeto"; else b.prepend("Conhecer o projeto");
+  }));
+  const hv=v("hj-ver"); if(hv) hv.hidden=true;
+  document.querySelectorAll("#v-home .pc-cta").forEach(b=>{ b.hidden=true });
+  document.querySelectorAll("#v-home .pc-it").forEach(b=>{ b.disabled=true });
+  document.querySelectorAll("#h-planos .entrar-cta").forEach(b=>{ b.textContent="Em desenvolvimento"; b.disabled=true });
+}
+v("fc-entrar").onclick=()=>{ location.href="/api/zro/entrar?volta="+encodeURIComponent(location.pathname) };
+v("fc-sair").onclick=()=>{ zroSair(); ZRO_LIBERADO=false; FC_MOTIVO=null; pintarFechado() };
+/* A Z, A IA DO ECOSSISTEMA (27/out · 4) — o painel inicial do app logado.
+   ⚠️ SÓ NO DOMÍNIO, com conta Absolute ZRO liberada (zroPodeEnviar): o
+   script vem de absolutezro.com e a conversa passa por /api/zro/ia, que
+   põe o token no servidor. O navegador nunca vê token. Sem o acesso da Z
+   (login de antes, HUB sem o escopo, acesso removido), o painel avisa com
+   `zro-ia:sem-login` e aparece "Reconectar com Absolute ZRO".
+   ⚠️ O elemento nasce por DOM e recebe ATRIBUTOS: `api`, `sugestoes` e
+   `tema` são getters/métodos dele. O tema acompanha o do app (app-light). */
+const Z_SCRIPT="https://absolutezro.com/ia/v1/zro-ia.js";
+/* só o que a Z faz: conversa e lê o retrato da conta (projetos, equipe,
+   pendências); ela não age sozinha */
+const Z_SUGESTOES=["Meus projetos de agora","O que está pendente","Quem está na equipe de um job","Quanto usei este mês"];
+const zTema=()=>document.documentElement.classList.contains("app-light")?"claro":"escuro";
+/* a aba existe no domínio (as funções respondem); a conversa, só com conta
+   Absolute ZRO liberada. Sem ela, a aba mostra o "Entrar". */
+/* fechado (28/out), a aba só existe com a sessão liberada */
+function zAbaLigada(){ return zroLigavel()&&ZRO_PRONTO&&!zroFechado() }
+function pintarAbaZ(){
+  const on=zAbaLigada();
+  ["tab-z","z-top"].forEach(id=>{ const e=v(id); if(e) e.hidden=!on });
+  if(typeof medirAbas==="function") medirAbas();
+  if(typeof moverIndLado==="function") moverIndLado();
+  pintarZ();
+}
+function pintarZ(){
+  const sem=v("z-sem"); if(!sem) return;
+  const pode=zroPodeEnviar();
+  sem.hidden=pode;
+  if(pode) zroMontarZ();
+}
+function zroMontarZ(){
+  const caixa=v("z-caixa"), painel=v("z-painel");
+  if(!caixa||!painel||!zroPodeEnviar()||caixa.firstChild) return;
+  const el=document.createElement("zro-ia");
+  el.setAttribute("api","/api/zro/ia");
+  el.setAttribute("apoio","Pergunte sobre seus jobs, a agenda e a equipe.");
+  el.setAttribute("sugestoes",JSON.stringify(Z_SUGESTOES));
+  el.setAttribute("tema",zTema());
+  const nome=(ZRO_CONTA.nome||"").trim().split(/\s+/)[0];
+  if(nome) el.setAttribute("nome",nome);
+  el.addEventListener("zro-ia:sem-login",()=>{ v("z-acao").hidden=false });
+  new MutationObserver(()=>el.setAttribute("tema",zTema())).observe(document.documentElement,{attributes:true,attributeFilter:["class"]});
+  caixa.appendChild(el);
+  if(!document.querySelector('script[src="'+Z_SCRIPT+'"]')){
+    const s=document.createElement("script"); s.type="module"; s.src=Z_SCRIPT; document.head.appendChild(s);
+  }
+}
+v("z-reconectar").onclick=()=>{ location.href="/api/zro/entrar?volta="+encodeURIComponent(location.pathname) };
+v("z-entrar").onclick=()=>{ if(zroBloqueado()) return zroMostrarBloqueio(); location.href="/api/zro/entrar?volta="+encodeURIComponent(location.pathname) };
 (function(){
   if(!zroLigavel()) return;
   let marca=null, lado=null, conta=null;
@@ -27584,22 +28349,46 @@ v("lg-bloq-sair").onclick=()=>{ zroSair(); pintarLogin() };
       history.replaceState(history.state,"",u.pathname+u.search+u.hash) }
   }catch(e){}
   fetch("/api/zro/eu",{credentials:"same-origin",cache:"no-store",headers:{Accept:"application/json"}})
-    .then(r=>r.status===200?r.json().then(j=>({j:j})):{ligado:r.status===401})
-    .catch(()=>({}))
+    .then(r=>r.json().catch(()=>null).then(j=>({status:r.status,j:j})))
+    .catch(()=>({status:0,j:null}))
     .then(r=>{
       const j=r.j;
-      if(j&&typeof j.sub==="string"&&j.sub){
+      /* o servidor diz se este deploy está fechado; fechado nunca se abre por
+         aqui — só o build abre, e só com a conta liberada se entra */
+      if(j&&j.release==="closed") ZRO_FECHADO=true;
+      if(r.status===200&&j&&typeof j.sub==="string"&&j.sub){
         ZRO_CONTA={sub:j.sub,nome:typeof j.nome==="string"?j.nome:"",email:typeof j.email==="string"?j.email:"",
+          /* o @ do perfil da Absolute ZRO (o mesmo da comunidade; editado lá) */
+          arroba:typeof j.arroba==="string"&&/^[a-z0-9._]{3,30}$/.test(j.arroba)?j.arroba:"",
           organizacao:typeof j.organizacao==="string"?j.organizacao:"",
-          /* o direito de uso vem do admin da Absolute ZRO, a cada login */
-          liberado:j.liberado===true};
+          /* o direito de uso vem do admin da Absolute ZRO, RELIDO a cada abertura */
+          liberado:j.liberado===true,
+          /* dá para levar jobs ao HUB (o login guardou o acesso) */
+          hub:j.hub===true};
         ZRO_PRONTO=true;
-      } else ZRO_PRONTO=!!r.ligado;
+      } else {
+        /* 401 = sem sessão; 403 = a sessão foi descartada: o Carro está fechado para esta conta */
+        ZRO_PRONTO=r.status===401||r.status===403;
+        if(r.status===403&&j&&j.erro==="fechado"&&!marca) marca="fechado";
+      }
+      ZRO_LIBERADO=!!(ZRO_CONTA&&ZRO_CONTA.liberado);
       pintarZro();
+      pintarAbaZ();
+      pintarFechado();
+      cfbPintar();
+      /* a conta pode: a tela que o portão segurou abre agora */
+      if(ZRO_LIBERADO&&S.tab==="fechado") show(FC_VOLTA&&FC_VOLTA!=="fechado"?FC_VOLTA:(zAbaLigada()?"z":"home"));
+      /* quem abre o app já dentro cai na Z (a tela de entrada) */
+      if(!marca&&zAbaLigada()&&!v("topbar").hidden&&S.tab!=="z") show("z");
       if(lado==="contratante"||lado==="freela"){ LG_TIPO=lado; pintarLogin() }
       if(marca==="entrou"&&ZRO_CONTA) zroEntrar(conta==="criar");
+      /* a volta com aviso: fechado, é a página "Em desenvolvimento" (recusado e
+         fechado dizem que foi esta conta); aberto, o aviso na tela de entrar */
+      else if(marca&&ZRO_MSG[marca]){
+        if(zroFechado()){ FC_MOTIVO=(marca==="fechado"||marca==="recusado")?"conta":null; pintarFechado(); show("fechado") }
+        else { LG_MODO="entrar"; pintarLogin(); show("entrar"); lgAviso(ZRO_MSG[marca]) }
+      }
       else if(zroBloqueado()&&!v("v-entrar").hidden) pintarLogin();
-      else if(marca&&ZRO_MSG[marca]){ LG_MODO="entrar"; pintarLogin(); show("entrar"); lgAviso(ZRO_MSG[marca]) }
     })
     .catch(()=>{});
 })();

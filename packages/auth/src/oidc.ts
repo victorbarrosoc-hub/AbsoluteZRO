@@ -6,6 +6,9 @@
  * - Access token: JWT ES256 de 10 min (typ at+jwt), aud = client_id. Os apps conferem pelo JWKS.
  * - Refresh token: opaco, 30 dias, com rotação; reapresentar um já trocado revoga a família (RFC 9700 §4.14).
  * - Organização e produtos contratados vêm do banco no momento da emissão (loader injetado), nunca do cliente.
+ * - Gate de lançamento (ADR 0023): cliente de produto fechado só recebe código, refresh, userinfo ou Bearer se a pessoa
+ *   está em zro.product_release_access (zro.release_allows, canal sso/api). Fora disso, nada é emitido e o token antigo
+ *   deixa de valer; o app mostra "Em desenvolvimento".
  * Chave: ZRO_OIDC_SIGNING_KEY (PEM, EC P-256) ou, sem ela, a guardada em zro.oidc_keys (gerada no primeiro uso).
  */
 import {
@@ -21,14 +24,27 @@ import {
   type KeyObject,
 } from 'node:crypto'
 import type { Database, Queryable } from '@zro/db'
+import type { Authenticated } from './sessions'
 import { hashToken, newToken } from './tokens'
 
 export const OIDC_SCOPES = ['openid', 'email', 'profile', 'org', 'offline_access'] as const
+/**
+ * Escopos de API de um produto: o app chama a API do HUB em nome da pessoa (Bearer). Só entram no cadastro do
+ * cliente daquele produto, e a rota exige o escopo; organização e papel continuam vindo do banco (authorize).
+ */
+export const PRODUCT_SCOPES: Record<string, string[]> = { 'carro-do-freela': ['carro-do-freela.jobs'], maestro: ['maestro.projects'] }
+/**
+ * Escopos de todo app da família (cliente com produto): a IA do ecossistema (0016), a Agenda das Conexões (0026) e a
+ * busca de perfis com convite pelo @ (0029).
+ */
+export const FAMILY_SCOPES = ['zro.ia', 'zro.agenda', 'zro.pessoas'] as const
 export const CODE_TTL_MS = 60_000
 export const ACCESS_TTL_S = 600
 export const ID_TTL_S = 600
 export const REFRESH_TTL_MS = 30 * 24 * 3_600_000
 export const FAMILY_MAX_MS = 90 * 24 * 3_600_000
+/** Texto único para "produto fechado" em todas as respostas do login único (o app pode mostrar como está). */
+export const RELEASE_CLOSED_DESCRIPTION = 'Este app ainda está em desenvolvimento.'
 
 export class OAuthError extends Error {
   constructor(
@@ -139,6 +155,22 @@ export function verifyJwt(s: Signer, token: string, expect: { typ: string; issue
   }
 }
 
+/**
+ * Pedido servidor-a-servidor do HUB a um app da família, em nome de uma pessoa (a Z buscando no Drive pelo SOBEDESCE).
+ * Sem segredo compartilhado: JWT ES256 com a chave do login único (o app confere pelo /oauth/jwks), typ próprio (um
+ * id_token ou access token nunca passa por pedido), `aud` = client_id do app, `sub` = a pessoa, vida de 60 s, `jti`
+ * de uso único e `zro_pedido` = a ação (o app recusa pedido de outra ação).
+ */
+export const PEDIDO_TYP = 'zro-pedido+jwt'
+export const PEDIDO_TTL_S = 60
+
+export async function assinarPedidoDeApp(db: Database, p: { sub: string; aud: string; acao: string }, agora = Date.now()): Promise<string> {
+  if (!p.sub || !p.aud || !p.acao) throw new Error('Pedido de app sem sub, aud ou ação.')
+  const s = await loadSigner(db)
+  const iat = Math.floor(agora / 1000)
+  return signJwt(s, { iss: issuerFromEnv(), sub: p.sub, aud: p.aud, iat, exp: iat + PEDIDO_TTL_S, jti: randomUUID(), zro_pedido: p.acao }, PEDIDO_TYP)
+}
+
 export function discovery(issuer: string) {
   return {
     issuer,
@@ -155,7 +187,22 @@ export function discovery(issuer: string) {
     scopes_supported: [...OIDC_SCOPES],
     token_endpoint_auth_methods_supported: ['client_secret_basic', 'client_secret_post', 'none'],
     code_challenge_methods_supported: ['S256'],
-    claims_supported: ['sub', 'email', 'email_verified', 'name', 'zro_org', 'zro_products', 'auth_time', 'nonce'],
+    claims_supported: [
+      'sub',
+      'email',
+      'email_verified',
+      'name',
+      'preferred_username',
+      'picture',
+      'updated_at',
+      'zro_conta',
+      'zro_org',
+      'zro_products',
+      'zro_release',
+      'zro_features',
+      'auth_time',
+      'nonce',
+    ],
     prompt_values_supported: ['none', 'consent', 'create'],
   }
 }
@@ -232,6 +279,22 @@ export async function findActiveClient(tx: Queryable, clientId: string): Promise
   return r ? rowToClient(r) : null
 }
 
+/**
+ * Gate de lançamento do cliente (ADR 0023): true quando o app é de um produto fechado para esta pessoa no canal.
+ * Lê a regra do banco a cada pedido (zro.release_allows, migration 0018): revogação vale na hora, sem cache. Cliente
+ * sem produto (um app genérico) não tem gate. Cliente de desktop segue a mesma regra, pelo product_id.
+ */
+export async function productClosedFor(
+  tx: Queryable,
+  client: Pick<OAuthClient, 'productId'>,
+  userId: string,
+  channel: 'sso' | 'api' = 'sso',
+): Promise<boolean> {
+  if (!client.productId) return false
+  const [r] = await tx`select zro.release_allows(${client.productId}, ${userId}::uuid, ${channel}) as ok`
+  return !r?.ok
+}
+
 /** Cadastro pelo console. O segredo aparece uma vez; o banco guarda só o sha256. */
 export async function registerClient(
   tx: Queryable,
@@ -255,10 +318,11 @@ export async function registerClient(
     throw new OAuthError('invalid_request', 'Para app de desktop, cadastre um retorno em http://127.0.0.1/caminho.')
   }
   const secret = input.kind === 'confidential' ? newToken('zk') : null
+  const scopes = [...OIDC_SCOPES, ...(input.productId ? [...FAMILY_SCOPES, ...(PRODUCT_SCOPES[input.productId] ?? [])] : [])]
   await tx`
-    insert into zro.oauth_clients (id, name, product_id, kind, secret_hash, redirect_uris, allow_loopback, trusted, created_by)
+    insert into zro.oauth_clients (id, name, product_id, kind, secret_hash, redirect_uris, allow_loopback, trusted, scopes, created_by)
     values (${input.id}, ${input.name.trim()}, ${input.productId}, ${input.kind}, ${secret ? hashToken(secret) : null}, ${uris}, ${input.allowLoopback},
-            ${!!input.trusted}, ${input.createdBy})`
+            ${!!input.trusted}, ${scopes}, ${input.createdBy})`
   return { clientId: input.id, clientSecret: secret }
 }
 
@@ -328,8 +392,9 @@ export async function grantConsent(tx: Queryable, userId: string, clientId: stri
     on conflict (user_id, client_id) do update set scopes = excluded.scopes, granted_at = now(), revoked_at = null`
 }
 
-/** Emite o código e devolve a URL de retorno ao app. */
+/** Emite o código e devolve a URL de retorno ao app. Produto fechado para a pessoa: nada é emitido (access_denied). */
 export async function issueCode(tx: Queryable, req: AuthorizeRequest, who: { userId: string; orgId: string | null; authTime: Date }): Promise<string> {
+  if (await productClosedFor(tx, req.client, who.userId, 'sso')) throw new OAuthError('access_denied', RELEASE_CLOSED_DESCRIPTION, 403)
   const code = newToken('zc')
   // A conta da pessoa neste app (0006): nasce no primeiro acesso e marca o último.
   await tx`
@@ -346,10 +411,10 @@ export async function issueCode(tx: Queryable, req: AuthorizeRequest, who: { use
   return u.toString()
 }
 
-export function denyUrl(req: AuthorizeRequest): string {
+export function denyUrl(req: AuthorizeRequest, description = 'A pessoa não autorizou.'): string {
   const u = new URL(req.redirectUri)
   u.searchParams.set('error', 'access_denied')
-  u.searchParams.set('error_description', 'A pessoa não autorizou.')
+  u.searchParams.set('error_description', description)
   u.searchParams.set('state', req.state)
   return u.toString()
 }
@@ -365,7 +430,24 @@ export function issuerFromEnv(): string {
 
 // ───────────── token ─────────────
 
-export type OrgClaims = { org: { id: string; name: string; role: string } | null; products: string[] }
+/** released = aberto ao público; allowed = fechado, mas esta conta está na lista; closed = fechado e sem acesso. */
+export type ReleaseClaimValue = 'released' | 'allowed' | 'closed'
+export type OrgClaims = {
+  org: { id: string; name: string; role: string } | null
+  /** Produtos contratados e abertos para a pessoa (gate aplicado). */
+  products: string[]
+  /** Claim zro_release: um valor por produto do catálogo. */
+  release: Record<string, ReleaseClaimValue>
+  /** Claim zro_features: sinais de recurso da organização (`produto.recurso`); cada app recebe só os do produto dele. */
+  features?: string[]
+}
+
+/** Os sinais que vão no token de um app: só os do produto do cliente (app sem produto, nenhum). */
+export function featuresForClient(client: Pick<OAuthClient, 'productId'>, features: string[] | undefined): string[] {
+  if (!client.productId) return []
+  const prefix = `${client.productId}.`
+  return (features ?? []).filter((f) => f.startsWith(prefix))
+}
 export type ClaimsLoader = (tx: Queryable, userId: string, orgId: string | null) => Promise<OrgClaims>
 
 type TokenRequest = {
@@ -419,8 +501,28 @@ export type TokenResponse = {
 }
 
 async function userClaims(tx: Queryable, userId: string) {
-  const [u] = await tx`select id, email, display_name, email_verified_at from zro.users where id = ${userId} and status = 'active'`
+  // perfil único: a foto (endereço público que muda a cada foto nova) e a data da última mudança do perfil
+  const [u] = await tx`
+    select u.id, u.email, u.display_name, u.email_verified_at, a.public_id as foto, p.arroba,
+           greatest(u.updated_at, coalesce(a.updated_at, u.updated_at), coalesce(p.atualizado_em, u.updated_at)) as perfil_em
+    from zro.users u left join zro.user_avatars a on a.user_id = u.id left join zro.perfis p on p.user_id = u.id
+    where u.id = ${userId} and u.status = 'active'`
   return u
+}
+
+/**
+ * Claims do escopo profile (perfil único, 0015): nome, foto (sem foto, sem claim: o app mostra as iniciais),
+ * updated_at (o app compara e atualiza a cópia dele) e zro_conta, onde a pessoa edita nome, foto e e-mail.
+ * preferred_username (claim padrão do OIDC) é o @ do perfil profissional (0029), sem o "@".
+ */
+export function profileClaims(iss: string, u: Record<string, unknown>) {
+  return {
+    name: u.display_name,
+    ...(u.arroba ? { preferred_username: u.arroba as string } : {}),
+    ...(u.foto ? { picture: `${iss}/api/v1/foto/${u.foto as string}` } : {}),
+    updated_at: Math.floor(new Date(u.perfil_em as string | Date).getTime() / 1000),
+    zro_conta: `${iss}/perfil`,
+  }
 }
 
 async function buildTokens(
@@ -435,7 +537,9 @@ async function buildTokens(
   if (!u) throw new OAuthError('invalid_grant', 'Conta inativa.')
   const iss = issuerFromEnv()
   const now = Math.floor(Date.now() / 1000)
-  const claims = g.scopes.includes('org') ? await loadClaims(tx, g.userId, g.orgId) : { org: null, products: [] }
+  // zro_release vai sempre (é da pessoa, não da organização); zro_org e zro_products só com o escopo org.
+  const comOrg = g.scopes.includes('org')
+  const claims = await loadClaims(tx, g.userId, comOrg ? g.orgId : null)
   const access_token = signJwt(
     s,
     {
@@ -447,7 +551,8 @@ async function buildTokens(
       iat: now,
       exp: now + ACCESS_TTL_S,
       jti: randomUUID(),
-      ...(g.scopes.includes('org') ? { zro_org: claims.org?.id ?? null, zro_products: claims.products } : {}),
+      ...(comOrg ? { zro_org: claims.org?.id ?? null, zro_products: claims.products, zro_features: featuresForClient(client, claims.features) } : {}),
+      zro_release: claims.release,
     },
     'at+jwt',
   )
@@ -460,8 +565,9 @@ async function buildTokens(
     auth_time: Math.floor(g.authTime.getTime() / 1000),
     ...(g.nonce ? { nonce: g.nonce } : {}),
     ...(g.scopes.includes('email') ? { email: u.email, email_verified: !!u.email_verified_at } : {}),
-    ...(g.scopes.includes('profile') ? { name: u.display_name } : {}),
-    ...(g.scopes.includes('org') ? { zro_org: claims.org, zro_products: claims.products } : {}),
+    ...(g.scopes.includes('profile') ? profileClaims(iss, u) : {}),
+    ...(comOrg ? { zro_org: claims.org, zro_products: claims.products, zro_features: featuresForClient(client, claims.features) } : {}),
+    zro_release: claims.release,
   })
   const out: TokenResponse = { access_token, token_type: 'Bearer', expires_in: ACCESS_TTL_S, id_token, scope: g.scopes.join(' ') }
   if (g.scopes.includes('offline_access')) {
@@ -503,6 +609,8 @@ export async function exchangeToken(db: Database, t: TokenRequest, loadClaims: C
       if ((c.expires_at as Date).getTime() < Date.now()) return new OAuthError('invalid_grant', 'Código expirado.')
       if (c.redirect_uri !== t.redirectUri) return new OAuthError('invalid_grant', 'redirect_uri diferente do pedido.')
       if (s256(t.codeVerifier) !== c.code_challenge) return new OAuthError('invalid_grant', 'PKCE não confere.')
+      // Gate de lançamento conferido de novo na troca (o acesso pode ter sido revogado entre o código e a troca).
+      if (await productClosedFor(tx, client, c.user_id as string, 'sso')) return new OAuthError('invalid_grant', RELEASE_CLOSED_DESCRIPTION)
       return buildTokens(
         s,
         tx,
@@ -528,6 +636,9 @@ export async function exchangeToken(db: Database, t: TokenRequest, loadClaims: C
     if ((r.expires_at as Date).getTime() < Date.now()) return new OAuthError('invalid_grant', 'Refresh token expirado.')
     const [consent] = await tx`select 1 from zro.oauth_consents where user_id = ${r.user_id as string} and client_id = ${client.id} and revoked_at is null`
     if (!consent) return new OAuthError('invalid_grant', 'Acesso do app foi removido.')
+    // Produto fechado para a pessoa: não renova (sessão antiga de antes do gate morre aqui). O token não é gasto:
+    // se a conta entrar na lista depois, o app volta sem novo login.
+    if (await productClosedFor(tx, client, r.user_id as string, 'sso')) return new OAuthError('invalid_grant', RELEASE_CLOSED_DESCRIPTION)
     await tx`update zro.oauth_refresh_tokens set used_at = now() where id = ${r.id as string}`
     // A organização é conferida de novo: se a pessoa saiu dela, o token segue sem organização.
     const [m] = r.org_id
@@ -554,17 +665,81 @@ export async function userInfo(db: Database, bearer: string | null, loadClaims: 
   if (!p) throw new OAuthError('invalid_token', 'Token inválido ou expirado.')
   const scopes = String(p.scope ?? '').split(' ')
   return db.asSystem('oidc: userinfo', async (tx) => {
+    const client = typeof p.client_id === 'string' ? await findActiveClient(tx, p.client_id) : null
+    if (!client) throw new OAuthError('invalid_token', 'App desconhecido ou desativado.')
+    // Produto fechado para a pessoa: 401, mesmo com token assinado e dentro da validade.
+    if (await productClosedFor(tx, client, p.sub as string, 'sso')) throw new OAuthError('invalid_token', RELEASE_CLOSED_DESCRIPTION)
     const u = await userClaims(tx, p.sub as string)
     if (!u) throw new OAuthError('invalid_token', 'Conta inativa.')
     const out: Record<string, unknown> = { sub: u.id }
     if (scopes.includes('email')) Object.assign(out, { email: u.email, email_verified: !!u.email_verified_at })
-    if (scopes.includes('profile')) out.name = u.display_name
-    if (scopes.includes('org')) {
-      const c = await loadClaims(tx, u.id as string, (p.zro_org as string) ?? null)
-      Object.assign(out, { zro_org: c.org, zro_products: c.products })
-    }
+    if (scopes.includes('profile')) Object.assign(out, profileClaims(issuerFromEnv(), u))
+    const comOrg = scopes.includes('org')
+    const c = await loadClaims(tx, u.id as string, comOrg ? ((p.zro_org as string) ?? null) : null)
+    if (comOrg) Object.assign(out, { zro_org: c.org, zro_products: c.products, zro_features: featuresForClient(client, c.features) })
+    out.zro_release = c.release
     return out
   })
+}
+
+/**
+ * Rota da API chamada por um app da família com o access token da pessoa (Authorization: Bearer). Confere assinatura,
+ * emissor, validade e o escopo pedido; o app precisa seguir ativo e o acesso dele não pode ter sido removido no
+ * Perfil (o token de 10 min morre junto com o consentimento). Devolve a pessoa como numa sessão: a organização é a
+ * do token e o papel sai do banco no authorize(). Papel de plataforma nunca vem por token de app.
+ */
+export async function authenticateAccessToken(db: Database, authorization: string | null, requiredScope: string): Promise<Authenticated | null> {
+  const token = authorization?.startsWith('Bearer ') ? authorization.slice(7).trim() : null
+  const p = token ? verifyJwt(await loadSigner(db), token, { typ: 'at+jwt', issuer: issuerFromEnv() }) : null
+  if (!p || typeof p.sub !== 'string' || typeof p.client_id !== 'string') return null
+  if (
+    !String(p.scope ?? '')
+      .split(' ')
+      .includes(requiredScope)
+  )
+    return null
+  return db.asSystem('oidc: token de app', async (tx) => {
+    const client = await findActiveClient(tx, p.client_id as string)
+    if (!client || !client.scopes.includes(requiredScope)) return null
+    if (!(await hasConsent(tx, p.sub as string, client.id, [requiredScope]))) return null
+    // Produto fechado para a pessoa (canal api): o token não vale, mesmo assinado e dentro da validade.
+    if (await productClosedFor(tx, client, p.sub as string, 'api')) return null
+    const u = await userClaims(tx, p.sub as string)
+    if (!u) return null
+    return {
+      user: { id: u.id as string, email: u.email as string, displayName: u.display_name as string, emailVerified: !!u.email_verified_at, platformRole: null },
+      session: {
+        id: `oauth:${String(p.jti ?? '')}`,
+        activeOrgId: typeof p.zro_org === 'string' ? p.zro_org : null,
+        expiresAt: new Date((p.exp as number) * 1000),
+        createdAt: new Date(((p.iat as number) ?? 0) * 1000),
+        app: { clientId: client.id, productId: client.productId },
+      },
+    }
+  })
+}
+
+/**
+ * O próprio app (servidor a servidor, sem a pessoa por perto): `Authorization: Basic client_id:client_secret` de um
+ * cliente confidencial ativo. Usado só onde a rota permite (ex.: o Maestro recolher o compartilhamento de revisão que
+ * venceu, por agendamento). null = credencial ausente, cliente público ou segredo errado.
+ */
+export async function authenticateAppClient(db: Database, authorization: string | null): Promise<OAuthClient | null> {
+  if (!authorization?.startsWith('Basic ')) return null
+  const t = parseTokenRequest(new URLSearchParams(), authorization)
+  return db.asSystem('oidc: app por credencial', async (tx) => {
+    try {
+      const c = await authenticateClient(tx, t)
+      return c.kind === 'confidential' ? c : null
+    } catch {
+      return null
+    }
+  })
+}
+
+/** A pessoa já entrou neste app e não removeu o acesso (consentimento ativo, sem exigir escopo). */
+export async function appHasPerson(db: Database, userId: string, clientId: string): Promise<boolean> {
+  return db.asSystem('oidc: pessoa no app', (tx) => hasConsent(tx, userId, clientId, []))
 }
 
 /** /oauth/revoke (RFC 7009): sempre 200, mesmo para token desconhecido. */

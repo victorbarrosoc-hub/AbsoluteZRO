@@ -482,6 +482,28 @@ export const contasZro = pgTable("contas_zro", {
   /** Produtos contratados pela organização ativa no último login (zro_products), separados por espaço. */
   produtos: text().notNull().default(""),
   organizacao: text(),
+  /** Tokens da Z (escopo zro.ia: refresh, access e validade), cifrados com SOBEDESCE_KEY (lib/zro/ia.ts). Null = sem a Z. */
+  ia: text(),
   criadoEm: agora(),
   ultimoLoginEm: quando(),
 });
+
+/**
+ * O que outro app da família fez no Drive da pessoa pela ponte do HUB (Maestro v2: miniatura, listar, criar pasta,
+ * compartilhar para revisão, recolher e o token curto). Uma linha por pedido atendido ou recusado, sem nome de arquivo
+ * nem token: a ação, o alvo (id do Drive, quando há), o resultado e o `jti` do pedido assinado.
+ */
+export const auditoriaZro = pgTable(
+  "auditoria_zro",
+  {
+    id: bigint({ mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
+    usuarioId: text().references(() => usuarios.id, { onDelete: "cascade" }),
+    zroSub: text().notNull(),
+    acao: text().notNull(),
+    alvo: text(),
+    resultado: text().notNull(),
+    jti: text().notNull(),
+    criadoEm: agora(),
+  },
+  (t) => [index("auditoria_zro_usuario_idx").on(t.usuarioId, t.criadoEm)],
+);

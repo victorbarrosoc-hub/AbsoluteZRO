@@ -235,7 +235,7 @@ describe("entrar com Google", () => {
     assert.ok((await contasGoogle.trocarGoogleDeEntrar({ usuarioId: criada.usuario.id, contaId: drive0.id, senhaAtual: "senha provisória longa" })).ok);
     await db.update(schema.usuarios).set({ senhaHash: contasGoogle.SEM_SENHA }).where(eq(schema.usuarios.id, criada.usuario.id));
     const entrou = await fluxo({ modo: "entrar", conta: google });
-    assert.equal(entrou.destino, "/conta", "quem já tem o Google ligado entra como antes");
+    assert.equal(entrou.destino, "/z", "quem já tem o Google ligado entra como antes (na aba da Z, a tela de entrada)");
     const corpo = await (await eu.GET(pedido("/api/eu", { cookies: { sd_sessao: cookiesDe(entrou.res!).get("sd_sessao")! } }))).json();
     assert.equal(corpo.usuario.id, criada.usuario.id);
     assert.equal((await contas.entrarComSenha({ email: "novo@exemplo.com", senha: "google", ip: "9.9.9.9" })).ok, false, "sem senha: nenhuma senha entra");

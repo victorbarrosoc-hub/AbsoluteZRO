@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /*
  * SOBEDESCE: Apple + ElevenLabs. Calma, preto e branco, pílulas, muito respiro.
@@ -6,9 +6,9 @@
  * podem mudar de valor, não de nome.
  */
 @theme {
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
-  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter Display", "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
-  --font-mono: "SF Mono", ui-monospace, Menlo, "Roboto Mono", Consolas, monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter Display', 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'SF Mono', ui-monospace, Menlo, 'Roboto Mono', Consolas, monospace;
 
   --color-bg: #fbfbfd;
   --color-surface: #ffffff;
@@ -52,7 +52,7 @@
  * muda nada: tudo aqui está dentro do @media.
  */
 @media (prefers-color-scheme: dark) {
-  :root:has([data-tema="conta"]) {
+  :root:has([data-tema='conta']) {
     color-scheme: dark;
     --color-bg: #000000;
     --color-surface: #1c1c1e;
@@ -80,7 +80,7 @@
 @utility toque {
   position: relative;
   &::before {
-    content: "";
+    content: '';
     position: absolute;
     top: 50%;
     left: 50%;
@@ -253,7 +253,7 @@
   }
 }
 .k-vivo::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.16) 50%, transparent 65%);
@@ -262,7 +262,7 @@
   pointer-events: none;
 }
 .k-barra-viva::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
@@ -271,7 +271,7 @@
 }
 .k-onda::before,
 .k-onda::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   border-radius: 9999px;
@@ -299,6 +299,51 @@ body {
 :focus-visible {
   outline: 2px solid var(--color-down);
   outline-offset: 2px;
+}
+
+/* O Z na home (components/home/z-section.tsx): a estrela sobre o tubo do anel, às 3 horas. O centro do tubo fica a
+   41,83% do lado a partir do meio e a estrela tem 43% do lado do anel. Respira devagar; "reduzir movimento" desliga. */
+.z-estrela {
+  width: 43%;
+  height: 43%;
+  left: 70.33%;
+  top: 28.5%;
+}
+/* O movimento da Z do HUB (MotorZ em zro-ia.js: volta de 3,2 s com aceleração suave, pausa de 1 s): a estrela contorna
+   o anel uma vez, gira em torno de si e acende no meio do caminho; parada, respira. */
+@keyframes z-volta {
+  0% {
+    rotate: 0deg;
+  }
+  76%,
+  100% {
+    rotate: 360deg;
+  }
+}
+@keyframes z-giro {
+  0% {
+    rotate: 0deg;
+    scale: 0.9;
+    opacity: 0.85;
+  }
+  38% {
+    scale: 1.12;
+    opacity: 1;
+  }
+  76%,
+  100% {
+    rotate: 270deg;
+    scale: 0.9;
+    opacity: 0.85;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .z-orbita {
+    animation: z-volta 4.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  }
+  .z-estrela {
+    animation: z-giro 4.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  }
 }
 
 @media (prefers-reduced-motion: no-preference) {

@@ -5,17 +5,19 @@
 import { createHash } from "node:crypto";
 import { COOKIE_APARELHO, conferirAparelho, opcoesCookieAparelho } from "@/lib/auth/aparelho";
 import { autenticar, COOKIE_SESSAO, criarSessao, opcoesCookieSessao } from "@/lib/auth/sessao";
-import { voltaSegura } from "@/lib/auth/volta";
+import { destinoDeEntrada, voltaSegura } from "@/lib/auth/volta";
 import { depoisDaResposta, type Depois } from "@/lib/depois";
 import { chaveConfigurada } from "@/lib/google/cripto";
 import { comParametro } from "@/lib/google/rotas";
 import { stateConfere } from "@/lib/google/estado";
 import { ipDe, lerCookie, lugarDe, origemDoPedido, redirecionar, serializarCookie } from "@/lib/http";
 import { cookieSeguro } from "@/lib/site";
-import { retornoZro, zroConfigurado } from "./config";
+import { liberadoPelaZro } from "./acesso";
+import { conexoesZro, retornoZro, zroConfigurado } from "./config";
 import { criarContaComZro, donoDaContaZro, vincularZro } from "./contas";
 import { abrirEstadoZro, COOKIE_ZRO, DURACAO_ZRO_S, selarEstadoZro, type ModoZro } from "./estado";
-import { novoValor, trocarCodigoZro, urlDeLogin, type PerfilZro } from "./oidc";
+import { guardarTokensIa } from "./ia";
+import { novoValor, trocarCodigoZro, urlDeLogin, type PerfilZro, type TokensIa } from "./oidc";
 
 function paginaDeErro(modo: ModoZro, volta: string, codigo: string): string {
   if (modo === "entrar") {
@@ -34,6 +36,7 @@ export async function entrar(req: Request): Promise<Response> {
   const pedido = url.searchParams.get("modo");
   const modo: ModoZro = pedido === "vincular" ? "vincular" : "entrar";
   const criar = pedido === "criar";
+  const basico = url.searchParams.get("basico") === "1";
   const volta = voltaSegura(url.searchParams.get("volta"));
 
   // A Absolute ZRO volta para o endereço cadastrado: o cookie do state precisa nascer nele.
@@ -54,11 +57,11 @@ export async function entrar(req: Request): Promise<Response> {
   const desafio = createHash("sha256").update(verificador).digest("base64url");
   let destino: string;
   try {
-    destino = await urlDeLogin({ state, desafio, nonce, origem: retorno.origin, criar });
+    destino = await urlDeLogin({ state, desafio, nonce, origem: retorno.origin, criar, basico });
   } catch {
     return redirecionar(new URL(paginaDeErro(modo, volta, "zro_erro"), url.origin));
   }
-  const cookie = serializarCookie(COOKIE_ZRO, selarEstadoZro({ state, verificador, nonce, modo, usuarioId, volta }), {
+  const cookie = serializarCookie(COOKIE_ZRO, selarEstadoZro({ state, verificador, nonce, modo, usuarioId, volta, basico }), {
     maxAge: DURACAO_ZRO_S,
     path: "/api/zro",
     secure: cookieSeguro(url.origin),
@@ -83,13 +86,19 @@ export async function callback(req: Request, depois: Depois = depoisDaResposta):
   if (!stateConfere(url.searchParams.get("state"), estado.state)) return falhar("zro_expirou");
   // RFC 9207: a resposta diz quem a emitiu; confere antes de usar o código.
   const erroZro = url.searchParams.get("error");
+  // A Absolute ZRO ainda não conhece o escopo da Z: refaz o pedido sem ele (o login nunca quebra por causa da Z).
+  if (erroZro === "invalid_scope" && !estado.basico) {
+    const q = new URLSearchParams({ modo, volta, basico: "1" });
+    return ir(`/api/zro/entrar?${q}`);
+  }
   if (erroZro) return falhar(erroZro === "access_denied" ? "zro_recusado" : "zro_erro");
   const code = url.searchParams.get("code");
   if (!code) return falhar("zro_erro");
 
   let quem: PerfilZro;
+  let ia: TokensIa | null;
   try {
-    quem = await trocarCodigoZro(code, estado.verificador, estado.nonce, url.origin);
+    ({ perfil: quem, ia } = await trocarCodigoZro(code, estado.verificador, estado.nonce, url.origin));
   } catch {
     return falhar("zro_erro");
   }
@@ -99,6 +108,10 @@ export async function callback(req: Request, depois: Depois = depoisDaResposta):
     if (!atual || atual.usuario.id !== estado.usuarioId) return ir(comParametro("/entrar", "volta", volta));
     const r = await vincularZro(atual.usuario.id, quem);
     if (!r.ok) return falhar(r.erro);
+    await guardarTokensIa(atual.usuario.id, ia);
+    // Ligou agora (conta antiga sem vínculo): segue para as Conexões da central (lib/zro/ligar.ts). Religar fica aqui.
+    // Sem a SOBEDESCE em zro_products, fica aqui também: a tela "Acesso ainda não liberado" explica o próximo passo.
+    if (r.novo && liberadoPelaZro(quem.produtos.join(" "))) return ir(conexoesZro());
     return ir(comParametro(volta, "zro", "ok"));
   }
 
@@ -110,6 +123,7 @@ export async function callback(req: Request, depois: Depois = depoisDaResposta):
     usuarioId = novo.usuarioId;
     criou = true;
   }
+  await guardarTokensIa(usuarioId, ia);
   const sessao = await criarSessao(usuarioId, "web");
   const o = opcoesCookieSessao(seguro);
   const cookies = [serializarCookie(COOKIE_SESSAO, sessao.token, { maxAge: o.maxAge, path: o.path, secure: o.secure })];
@@ -126,6 +140,6 @@ export async function callback(req: Request, depois: Depois = depoisDaResposta):
     cookies.push(serializarCookie(COOKIE_APARELHO, aparelho, { maxAge: a.maxAge, path: a.path, secure: a.secure }));
   }
   const celular = /iPhone|iPad|iPod|Android|Mobile/i.test(req.headers.get("user-agent") ?? "");
-  const destino = volta === "/conta" && celular ? "/app/" : criou ? comParametro(volta, "zro", "ok") : volta;
+  const destino = volta === "/conta" && celular ? "/app/" : criou ? comParametro(volta, "zro", "ok") : destinoDeEntrada(volta);
   return ir(destino, cookies);
 }

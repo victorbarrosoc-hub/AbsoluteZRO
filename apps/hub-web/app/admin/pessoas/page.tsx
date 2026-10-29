@@ -1,223 +1,226 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import type { CSSProperties } from 'react'
 import {
   listPeople,
-  NO_PLAN,
   parsePeopleFilter,
   PEOPLE_FLAGS,
   PEOPLE_ORDERS,
+  PEOPLE_SEGMENTS,
   peopleFilterQuery,
-  peopleSummary,
-  planOptions,
   requirePlatformAdmin,
+  segmentCounts,
+  type PeopleSegment,
+  type PersonRow,
 } from '@zro/core'
-import { Card, EmptyState, Field, Notice, Pill, Stat } from '@zro/ui'
-import { Chart30, Funnel, OrgPlan } from '@/components/admin-people'
+import { EmptyState, Field, ProductMark } from '@zro/ui'
+import { AppIcons, Face } from '@/components/admin/parts'
 import { Icon } from '@/components/icons'
-import { fmtDate, fmtDay } from '@/lib/labels'
+import { fmtAgo, fmtBytes, fmtDate } from '@/lib/labels'
 import { db, getAuth } from '@/lib/session'
 
-export const metadata: Metadata = { title: 'Pessoas · Administração', robots: { index: false, follow: false } }
+export const metadata: Metadata = { title: 'Pessoas · Console', robots: { index: false, follow: false } }
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> }
+
+const SEG_ORDER: (PeopleSegment | null)[] = [null, 'ecossistema', 'avulso', 'gratis', 'sem-plano']
+
+/** Plano em uma palavra para a linha (o detalhe fica na ficha). */
+function planName(p: PersonRow): string {
+  const plans = p.orgs.flatMap((o) => o.plans)
+  if (!plans.length) return p.orgs.length ? 'Sem plano' : 'Sem organização'
+  const names = [...new Set(plans.map((x) => x.planName))]
+  return names.length > 1 ? `${names[0]} +${names.length - 1}` : names[0]!
+}
 
 export default async function Pessoas({ searchParams }: Props) {
   const auth = await getAuth()
   // Layout e página renderizam em paralelo no Next: a página confere por conta própria.
   if (!auth?.user.platformRole || !auth.user.emailVerified) notFound()
   requirePlatformAdmin(auth, ['admin', 'support'])
-  const isAdmin = auth.user.platformRole === 'admin'
   const filter = parsePeopleFilter(await searchParams)
-  const d = await db().asSystem('admin: painel de pessoas', async (tx) => ({
-    summary: await peopleSummary(tx),
+  const d = await db().asSystem('admin: pessoas', async (tx) => ({
     list: await listPeople(tx, filter),
-    plans: await planOptions(tx),
+    counts: await segmentCounts(tx),
+    products: await tx`select id, name from zro.products order by step_order`,
   }))
-  const { summary: s, list } = d
-  const qs = peopleFilterQuery(filter)
-  const filtered = !!(filter.q || filter.app || filter.plan || filter.flag)
+  const { list } = d
+  const qs = (change: Parameters<typeof peopleFilterQuery>[1] = {}) => {
+    const s = peopleFilterQuery(filter, { page: 1, ...change })
+    return s ? `/admin/pessoas?${s}` : '/admin/pessoas'
+  }
+  const more = !!(filter.flag || filter.order !== 'recentes' || filter.plan || filter.app)
+  const filtered = !!(filter.q || filter.product || filter.plan || filter.flag || filter.app || filter.segment)
+  const csv = peopleFilterQuery({ ...filter, page: 1 })
 
   return (
-    <div className="page">
-      <div className="page-head">
-        <div className="page-head__text">
-          <p className="zro-eyebrow">Administração</p>
+    <div className="page adm-page">
+      <header className="adm-head adm-head--row">
+        <div>
           <h1>Pessoas</h1>
-          <p>Quem entrou, em que plano está cada organização e quais apps cada pessoa usa.</p>
+          <p>
+            {d.counts.todas.toLocaleString('pt-BR')} {d.counts.todas === 1 ? 'conta' : 'contas'} na plataforma.
+          </p>
         </div>
-      </div>
-      {!isAdmin && <Notice title="Suporte: somente leitura">Trocar plano e suspender conta exigem papel admin.</Notice>}
+        <a className="zro-btn zro-btn--ghost zro-btn--small" href={`/admin/pessoas/csv${csv ? `?${csv}` : ''}`} download>
+          <Icon name="download" /> Planilha
+        </a>
+      </header>
 
-      <div className="stats">
-        <Stat label="Contas" value={s.accounts} hint={`${s.suspended} suspensa(s)`} />
-        <Stat label="Novas em 7 dias" value={s.new7} hint={`${s.new30} em 30 dias`} />
-        <Stat label="Ativas em 7 dias" value={s.active7} hint="Entrou no HUB ou num app" />
-        <Stat label="Com Google" value={s.google} hint={`${s.noOrg} sem organização`} />
+      <nav className="seg" aria-label="Segmentos">
+        {SEG_ORDER.map((k) => (
+          <Link
+            key={k ?? 'todas'}
+            href={qs({ segment: k })}
+            aria-current={filter.segment === k ? 'page' : undefined}
+            title={k ? PEOPLE_SEGMENTS[k].hint : 'Todas as contas'}
+          >
+            {k ? PEOPLE_SEGMENTS[k].label : 'Todas'}
+            <span className="seg__n">{d.counts[k ?? 'todas'].toLocaleString('pt-BR')}</span>
+          </Link>
+        ))}
+      </nav>
+
+      <div className="prod-filter" role="list" aria-label="Filtrar por app">
+        <Link role="listitem" href={qs({ product: null })} aria-current={!filter.product ? 'true' : undefined} className="prod-filter__all">
+          Todos os apps
+        </Link>
+        {d.products.map((p) => (
+          <Link
+            role="listitem"
+            key={p.id as string}
+            href={qs({ product: filter.product === p.id ? null : (p.id as string) })}
+            aria-current={filter.product === p.id ? 'true' : undefined}
+            title={`Quem já entrou no ${p.name as string}`}
+          >
+            <ProductMark productId={p.id as string} name={p.name as string} size={22} />
+            <span>{p.name as string}</span>
+          </Link>
+        ))}
       </div>
 
-      <div className="grid grid--2">
-        <Card title="Últimos 30 dias" eyebrow="Cadastros e entradas em apps">
-          <Chart30 series={s.series} />
-        </Card>
-        <Card title="Do cadastro ao uso" eyebrow="Quantas contas chegaram em cada passo">
-          <Funnel steps={s.funnel} />
-        </Card>
-      </div>
-
-      <Card title="Contas por app" eyebrow="Login único">
-        {s.apps.length ? (
-          <div className="zro-table-wrap">
-            <table className="zro-table">
-              <thead>
-                <tr>
-                  <th>App</th>
-                  <th>Contas</th>
-                  <th>Novas em 30 dias</th>
-                  <th>Ativas em 7 dias</th>
-                </tr>
-              </thead>
-              <tbody>
-                {s.apps.map((a) => (
-                  <tr key={a.clientId}>
-                    <td>
-                      <Link href={`/admin/pessoas?${peopleFilterQuery(filter, { app: a.clientId })}`}>{a.name}</Link>
-                    </td>
-                    <td>{a.accounts}</td>
-                    <td>{a.new30}</td>
-                    <td>{a.active7}</td>
-                  </tr>
+      <form method="get" role="search" className="people-search" aria-label="Buscar pessoas">
+        {filter.segment && <input type="hidden" name="seg" value={filter.segment} />}
+        {filter.product && <input type="hidden" name="produto" value={filter.product} />}
+        <label className="people-search__box">
+          <span className="zro-sr-only">Buscar</span>
+          <input className="zro-input" name="q" type="search" defaultValue={filter.q} placeholder="Nome ou e-mail" aria-label="Buscar" />
+        </label>
+        <button type="submit" className="zro-btn zro-btn--primary">
+          Buscar
+        </button>
+        <details className="people-search__more" open={more}>
+          <summary className="zro-btn">Mais filtros</summary>
+          <div className="people-search__grid">
+            <Field label="Mostrar" htmlFor="pf-f">
+              <select className="zro-select" id="pf-f" name="f" defaultValue={filter.flag ?? ''}>
+                <option value="">Todas</option>
+                {Object.entries(PEOPLE_FLAGS).map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
                 ))}
-              </tbody>
-            </table>
+              </select>
+            </Field>
+            <Field label="Ordem" htmlFor="pf-o">
+              <select className="zro-select" id="pf-o" name="o" defaultValue={filter.order}>
+                {Object.entries(PEOPLE_ORDERS).map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </Field>
           </div>
-        ) : (
-          <p className="zro-mute">Nenhum app cadastrado no login único.</p>
+        </details>
+        {filtered && (
+          <Link className="zro-btn zro-btn--ghost" href="/admin/pessoas">
+            Limpar
+          </Link>
         )}
-      </Card>
+      </form>
 
-      <section className="stack" aria-labelledby="lista-pessoas">
-        <h2 id="lista-pessoas">Lista de pessoas</h2>
-        <form method="get" role="search" className="people-filters" aria-label="Buscar e filtrar pessoas">
-          <Field label="Buscar" htmlFor="pf-q">
-            <input className="zro-input" id="pf-q" name="q" type="search" defaultValue={filter.q} placeholder="Nome ou e-mail" />
-          </Field>
-          <Field label="App usado" htmlFor="pf-app">
-            <select className="zro-select" id="pf-app" name="app" defaultValue={filter.app ?? ''}>
-              <option value="">Todos</option>
-              {s.apps.map((a) => (
-                <option key={a.clientId} value={a.clientId}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Plano" htmlFor="pf-plan">
-            <select className="zro-select" id="pf-plan" name="plano" defaultValue={filter.plan ?? ''}>
-              <option value="">Todos</option>
-              {d.plans.codes.map((p) => (
-                <option key={p.code} value={p.code}>
-                  {p.name}
-                </option>
-              ))}
-              <option value={NO_PLAN}>Sem plano</option>
-            </select>
-          </Field>
-          <Field label="Mostrar" htmlFor="pf-f">
-            <select className="zro-select" id="pf-f" name="f" defaultValue={filter.flag ?? ''}>
-              <option value="">Todas</option>
-              {Object.entries(PEOPLE_FLAGS).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Ordem" htmlFor="pf-o">
-            <select className="zro-select" id="pf-o" name="o" defaultValue={filter.order}>
-              {Object.entries(PEOPLE_ORDERS).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <div className="row people-filters__actions">
-            <button type="submit" className="zro-btn zro-btn--primary">
-              Filtrar
-            </button>
-            {filtered && (
-              <Link className="zro-btn zro-btn--ghost" href="/admin/pessoas">
-                Limpar
-              </Link>
-            )}
-            <a className="zro-btn zro-btn--ghost" href={`/admin/pessoas/csv${qs ? `?${qs}` : ''}`} download>
-              <Icon name="download" /> CSV
-            </a>
-          </div>
-        </form>
-        <p className="zro-faint" role="status">
-          {list.rows.length} de {list.total} contas{filter.q ? ` para “${filter.q}”` : ''}
-          {list.rows.length >= 500 ? ' (mostrando as 500 primeiras; use a busca)' : ''}
-        </p>
+      <p className="zro-faint adm-count" role="status">
+        {list.matched === list.total
+          ? `${list.total.toLocaleString('pt-BR')} pessoas`
+          : `${list.matched.toLocaleString('pt-BR')} de ${list.total.toLocaleString('pt-BR')}`}
+        {filter.q ? ` para “${filter.q}”` : ''}
+        {list.pages > 1 ? ` · página ${list.page} de ${list.pages}` : ''}
+      </p>
 
-        {list.rows.length ? (
-          <ul className="people-list">
-            {list.rows.map((p) => (
-              <li key={p.id} className="person-row">
-                <div className="person-row__head">
-                  <div className="person-row__who">
-                    <Link className="person-row__name" href={`/admin/pessoas/${p.id}`}>
+      {list.rows.length ? (
+        <ul className="people">
+          <li className="people__head" aria-hidden="true">
+            <span>Pessoa</span>
+            <span>Plano</span>
+            <span>Apps</span>
+            <span>Arquivos</span>
+            <span>Último acesso</span>
+          </li>
+          {list.rows.map((p, i) => (
+            <li key={p.id} className="person" style={{ '--i': i } as CSSProperties}>
+              <Link href={`/admin/pessoas/${p.id}`} className="person__link">
+                <span className="person__who">
+                  <Face name={p.name} avatarId={p.avatarId} online={p.online} />
+                  <span className="person__id">
+                    <span className="person__name">
                       {p.name}
-                    </Link>
-                    <span className="zro-mute person-row__email">{p.email}</span>
-                  </div>
-                  <div className="row person-row__tags">
-                    {p.status === 'suspended' && <Pill tone="danger">Suspensa</Pill>}
-                    {p.platformRole && <Pill tone="accent">{p.platformRole === 'admin' ? 'Admin' : 'Suporte'}</Pill>}
-                    {p.google && <Pill tone="neutral">Google</Pill>}
-                    {!p.emailVerified && <Pill tone="warn">E-mail sem confirmar</Pill>}
-                  </div>
-                </div>
-                <dl className="person-row__facts">
-                  <div>
-                    <dt>Último acesso ao HUB</dt>
-                    <dd>{p.hubLastSeenAt ? fmtDate(p.hubLastSeenAt) : 'nunca'}</dd>
-                  </div>
-                  <div>
-                    <dt>Conta criada</dt>
-                    <dd>{fmtDay(p.createdAt)}</dd>
-                  </div>
-                  <div>
-                    <dt>Apps</dt>
-                    <dd>
-                      {p.apps.length
-                        ? p.apps.map((a, i) => (
-                            <span key={a.clientId}>
-                              {i > 0 && ' · '}
-                              {a.name} <span className="zro-faint">({fmtDate(a.lastLoginAt)})</span>
-                            </span>
-                          ))
-                        : 'nenhum ainda'}
-                    </dd>
-                  </div>
-                </dl>
-                {p.orgs.length ? (
-                  <div className="stack person-row__orgs">
-                    {p.orgs.map((o) => (
-                      <OrgPlan key={o.orgId} org={o} userId={p.id} plans={d.plans.active} canEdit={isAdmin} />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="zro-faint">Sem organização: ainda não passou de Boas-vindas.</p>
-                )}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <EmptyState title={filtered ? 'Ninguém com esse filtro.' : 'Ainda não tem ninguém aqui.'} />
-        )}
-      </section>
+                      {p.status === 'suspended' && <span className="adm-chip adm-chip--danger">Suspensa</span>}
+                      {p.platformRole && <span className="adm-chip">{p.platformRole === 'admin' ? 'Admin' : 'Suporte'}</span>}
+                    </span>
+                    <span className="person__email">{p.email}</span>
+                  </span>
+                </span>
+                <span className="person__plan" data-label="Plano">
+                  <span className={`seg-dot seg-dot--${p.segment}`} title={PEOPLE_SEGMENTS[p.segment].label} aria-hidden="true" />
+                  <span>
+                    {planName(p)}
+                    <span className="zro-sr-only"> · {PEOPLE_SEGMENTS[p.segment].label}</span>
+                  </span>
+                </span>
+                <span className="person__apps" data-label="Apps">
+                  <AppIcons apps={p.apps} />
+                </span>
+                <span
+                  className="person__files"
+                  data-label="Arquivos"
+                  title="Arquivos que a pessoa trouxe para os projetos do HUB (manifestos do SOBEDESCE). Envios feitos só dentro de cada app ficam no banco do app."
+                >
+                  {p.files.count ? `${p.files.count.toLocaleString('pt-BR')} · ${fmtBytes(p.files.bytes)}` : '—'}
+                </span>
+                <span className="person__seen" data-label="Último acesso" title={p.lastSeenAt ? fmtDate(p.lastSeenAt) : 'Nunca entrou'}>
+                  {p.online ? <strong className="person__online">Online</strong> : fmtAgo(p.lastSeenAt)}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <EmptyState title={filtered ? 'Ninguém com esse filtro.' : 'Ainda não tem ninguém aqui.'} />
+      )}
+
+      {list.pages > 1 && (
+        <nav className="pager" aria-label="Páginas">
+          {list.page > 1 ? (
+            <Link className="zro-btn zro-btn--ghost" href={qs({ page: list.page - 1 })} rel="prev">
+              Anterior
+            </Link>
+          ) : (
+            <span />
+          )}
+          <span className="zro-faint">
+            {list.page} de {list.pages}
+          </span>
+          {list.page < list.pages ? (
+            <Link className="zro-btn zro-btn--primary" href={qs({ page: list.page + 1 })} rel="next">
+              Próxima
+            </Link>
+          ) : (
+            <span />
+          )}
+        </nav>
+      )}
     </div>
   )
 }

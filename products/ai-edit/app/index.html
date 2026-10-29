@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AEON · Absolute ZRO</title>
+    <meta name="color-scheme" content="dark light" />
+    <link rel="icon" href="../marca/aeon-favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="../vendor/zro-tokens.css" />
+    <link rel="stylesheet" href="editor.css" />
+    <script type="module" src="editor.js"></script>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <defs>
+        <symbol id="i-z" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5" /><path d="M19.5 8.8l.8 2.4 2.4.8-2.4.8-.8 2.4-.8-2.4-2.4-.8 2.4-.8z" fill="currentColor" stroke="none" /></symbol>
+        <symbol id="i-midia" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M10 9.5v5l4.5-2.5z" fill="currentColor" stroke="none" /></symbol>
+        <symbol id="i-revisar" viewBox="0 0 24 24"><path d="M4 7l2 2 3.5-3.5M4 15l2 2 3.5-3.5M13 7.5h7M13 15.5h7" /></symbol>
+        <symbol id="i-edicao" viewBox="0 0 24 24"><rect x="3" y="5" width="8" height="4" rx="1.2" /><rect x="12" y="5" width="9" height="4" rx="1.2" /><rect x="3" y="12" width="12" height="3" rx="1" /><path d="M16.5 3v18" /></symbol>
+        <symbol id="i-entrega" viewBox="0 0 24 24"><path d="M12 15V3.5M7.5 8L12 3.5 16.5 8M4.5 13v4.5a2.5 2.5 0 0 0 2.5 2.5h10a2.5 2.5 0 0 0 2.5-2.5V13" /></symbol>
+        <symbol id="i-desfazer" viewBox="0 0 24 24"><path d="M9 7L4.5 11.5 9 16M5 11.5h9.5a5 5 0 0 1 0 10H12" /></symbol>
+        <symbol id="i-refazer" viewBox="0 0 24 24"><path d="M15 7l4.5 4.5L15 16M19 11.5H9.5a5 5 0 0 0 0 10H12" /></symbol>
+        <symbol id="i-sol" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" /><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" /></symbol>
+        <symbol id="i-lua" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" /></symbol>
+        <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="none" /></symbol>
+        <symbol id="i-pausa" viewBox="0 0 24 24"><rect x="6.5" y="5.5" width="4" height="13" rx="1" fill="currentColor" stroke="none" /><rect x="13.5" y="5.5" width="4" height="13" rx="1" fill="currentColor" stroke="none" /></symbol>
+        <symbol id="i-lamina" viewBox="0 0 24 24"><path d="M12 8v13M8.5 3h7l-3.5 5z" /></symbol>
+        <symbol id="i-lixo" viewBox="0 0 24 24"><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13" /></symbol>
+        <symbol id="i-ok" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></symbol>
+        <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" /></symbol>
+        <symbol id="i-pasta" viewBox="0 0 24 24"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2.5h6.5A2.5 2.5 0 0 1 21 10v7.5a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z" /></symbol>
+        <symbol id="i-cartao" viewBox="0 0 24 24"><path d="M7 3h7.5L19 7.5V19a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM9 3v4M12 3v4M15 3.5V7" /></symbol>
+        <symbol id="i-zoom" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></symbol>
+        <symbol id="i-corte" viewBox="0 0 24 24"><circle cx="6.5" cy="6.5" r="2.5" /><circle cx="6.5" cy="17.5" r="2.5" /><path d="M8.5 8l11 9.5M8.5 16l11-9.5" /></symbol>
+        <symbol id="i-menu" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="3.5" /><path d="M9.5 4.5v15" /></symbol>
+        <symbol id="i-abrir" viewBox="0 0 24 24"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H10l2 2.5h5.5A2.5 2.5 0 0 1 20 10v1M4 7.5v10A1.5 1.5 0 0 0 5.5 19h12.3a1.5 1.5 0 0 0 1.45-1.12L21 12H7.2a1.5 1.5 0 0 0-1.45 1.12L4 19" /></symbol>
+        <symbol id="i-salvar" viewBox="0 0 24 24"><path d="M5 4.5h11l3 3V18a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 18zM8 4.5v5h7v-5M8 19.5v-5h8v5" /></symbol>
+        <symbol id="i-conta" viewBox="0 0 24 24"><circle cx="12" cy="9" r="3.5" /><path d="M5 19.5a7 7 0 0 1 14 0" /></symbol>
+        <symbol id="i-fora" viewBox="0 0 24 24"><path d="M14 4.5h4.5A1.5 1.5 0 0 1 20 6v12a1.5 1.5 0 0 1-1.5 1.5H14M10 8l-4 4 4 4M6 12h10" /></symbol>
+        <symbol id="i-marcador" viewBox="0 0 24 24"><path d="M7 3.5h10v11l-5 5-5-5z" /></symbol>
+        <symbol id="i-universos" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="2" /><rect x="13.5" y="3.5" width="7" height="7" rx="2" /><rect x="3.5" y="13.5" width="7" height="7" rx="2" /><rect x="13.5" y="13.5" width="7" height="7" rx="2" /></symbol>
+        <symbol id="i-mais" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+        <symbol id="i-apps" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2" /><circle cx="12" cy="6" r="2" /><circle cx="18" cy="6" r="2" /><circle cx="6" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="18" cy="12" r="2" /><circle cx="6" cy="18" r="2" /><circle cx="12" cy="18" r="2" /><circle cx="18" cy="18" r="2" /></symbol>
+        <symbol id="i-legenda" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M7 14.5h4M13 14.5h4M7 11h10" /></symbol>
+      </defs>
+    </svg>
+
+    <header class="barra">
+      <div class="barra-produto">
+        <button class="icone-btn" id="menuBotao" title="Menu (⌘\)" aria-label="Abrir menu" aria-controls="trilho" aria-expanded="false"><svg><use href="#i-menu" /></svg></button>
+        <span class="marca-produto" id="marcaProduto"></span>
+      </div>
+      <div class="barra-projeto"><span id="nomeProjeto" title="Clique para renomear"></span><span class="salvo" id="salvo" role="status" aria-live="polite"></span></div>
+      <div class="barra-acoes">
+        <!-- versão nova (só no app de desktop instalado): app/atualizacao.js -->
+        <div class="atualizacao" id="atualizacao" role="status" aria-live="polite" hidden>
+          <span class="atualizacao-texto"></span>
+          <span class="atualizacao-barra" role="progressbar" aria-label="Progresso da atualização" aria-valuemin="0" aria-valuemax="100" hidden><span></span></span>
+          <button class="glass-btn glass-btn--ink atualizacao-botao" type="button" hidden></button>
+          <button class="atualizacao-depois" type="button" title="Depois" aria-label="Depois" hidden><svg><use href="#i-x" /></svg></button>
+        </div>
+        <button class="icone-btn" id="desfazer" title="Desfazer (⌘Z)" aria-label="Desfazer" disabled><svg><use href="#i-desfazer" /></svg></button>
+        <button class="icone-btn" id="refazer" title="Refazer (⇧⌘Z)" aria-label="Refazer" disabled><svg><use href="#i-refazer" /></svg></button>
+        <button class="icone-btn" id="tema" title="Tema claro ou escuro" aria-label="Tema"><svg><use href="#i-sol" /></svg></button>
+        <button class="glass-btn glass-btn--ink barra-exportar" id="barraExportar" hidden>Exportar</button>
+        <img class="assinatura" src="../vendor/marca/absolute-zro-simbolo-branco.svg" alt="Absolute ZRO" title="Absolute ZRO" />
+      </div>
+    </header>
+
+    <main class="paginas" id="paginas">
+      <!-- INÍCIO: a Z, a IA do ecossistema (app/z.js). O editor fica nas outras páginas do dock. -->
+      <section class="pagina" data-pagina="inicio" aria-label="Início">
+        <div class="z-painel" id="zPainel">
+          <div class="z-aviso" role="status" hidden>
+            <p></p>
+            <a class="glass-btn glass-btn--ink" hidden>Entrar de novo</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- MÍDIA -->
+      <section class="pagina" data-pagina="midia" aria-label="Mídia">
+        <div class="vazio" id="midiaVazia">
+          <h1 class="titulo"><span class="fino">Solte o vídeo.</span> <span class="forte">Edite do seu jeito.</span></h1>
+          <p class="apoio">Fica no seu computador. Nada é enviado.</p>
+          <div class="acoes">
+            <button class="glass-btn glass-btn--ink" id="escolher">Escolher vídeo</button>
+            <button class="glass-btn" id="abrirSobedesce" hidden><svg><use href="#i-cartao" /></svg> Abrir do SOBEDESCE</button>
+          </div>
+          <button class="link" id="abrirProjetoBtn">Abrir projeto</button>
+        </div>
+
+        <div class="universos" id="universos" hidden>
+          <div class="universos-topo">
+            <h2 class="titulo-p">Seus universos</h2>
+            <button class="glass-btn" id="novoProjeto"><svg><use href="#i-mais" /></svg> Novo projeto</button>
+          </div>
+          <ul class="cartoes-projeto" id="listaProjetos"></ul>
+        </div>
+
+        <div class="midia-cheia" id="midiaCheia" hidden>
+          <div class="midia-topo">
+            <h2 class="titulo-p">Mídia</h2>
+            <div class="midia-config">
+              <div class="segmento" role="radiogroup" aria-label="Transcrição" id="modelo">
+                <button role="radio" data-valor="rapido" aria-checked="true">Rápido</button>
+                <button role="radio" data-valor="preciso" aria-checked="false">Preciso</button>
+              </div>
+              <button class="glass-btn" id="selecionarMidia">Selecionar</button>
+              <button class="glass-btn" id="maisMidia">Adicionar</button>
+              <button class="glass-btn glass-btn--ink" id="analisar">Analisar</button>
+              <span class="contagem-sel" id="contaSel" aria-live="polite" hidden></span>
+              <button class="glass-btn glass-btn--ink" id="tirarSel" hidden disabled>Tirar do projeto</button>
+            </div>
+          </div>
+          <ul class="cartoes-midia" id="listaMidia"></ul>
+          <div class="analise" id="analise" hidden>
+            <div class="anel" id="anel"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" class="anel-fundo" /><circle cx="60" cy="60" r="52" class="anel-cheio" id="anelCheio" /></svg><strong id="anelPct">0%</strong></div>
+            <div class="analise-texto">
+              <strong id="fase">Lendo o áudio</strong>
+              <span id="faseDetalhe" class="apoio"></span>
+            </div>
+            <button class="glass-btn" id="cancelar">Cancelar</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- REVISAR -->
+      <section class="pagina" data-pagina="revisar" aria-label="Revisar">
+        <div class="revisar">
+          <div class="vaga-palco" data-vaga="revisar"></div>
+          <aside class="painel">
+            <div class="resumo" id="resumo">
+              <span class="resumo-num" id="resumoNum">0:00</span>
+              <span class="apoio" id="resumoTexto">Nada para revisar.</span>
+              <div class="legenda-cores" id="legendaCores"></div>
+            </div>
+            <div class="filtros" role="tablist" id="filtros">
+              <button role="tab" data-filtro="tudo" aria-selected="true">Tudo</button>
+              <button role="tab" data-filtro="cortes" aria-selected="false">Cortes</button>
+              <button role="tab" data-filtro="zoom" aria-selected="false">Zoom</button>
+            </div>
+            <ol class="propostas" id="propostas" tabindex="0" aria-label="Propostas"></ol>
+            <div class="acoes acoes-painel">
+              <button class="glass-btn glass-btn--ink" id="aprovarTodos">Aprovar todos</button>
+              <button class="glass-btn" id="irEdicao">Editar</button>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- EDIÇÃO -->
+      <section class="pagina" data-pagina="edicao" aria-label="Edição">
+        <div class="edicao">
+          <div class="edicao-topo">
+            <div class="vaga-palco" data-vaga="edicao"></div>
+            <aside class="painel painel-lateral">
+              <div class="abas" role="tablist" aria-label="Painel" id="abasPainel">
+                <button role="tab" data-aba="inspector" aria-selected="true">Inspector</button>
+                <button role="tab" data-aba="texto" aria-selected="false">Texto</button>
+                <button role="tab" data-aba="historico" aria-selected="false">Histórico</button>
+              </div>
+              <section class="aba" data-aba="inspector" id="inspector" aria-label="Inspector"></section>
+              <section class="aba" data-aba="texto" hidden aria-label="Texto">
+                <div class="painel-cabeca">
+                  <h2 class="titulo-p">Legenda</h2>
+                  <label class="chave" title="Mostrar a legenda no vídeo"><input type="checkbox" id="legendaLigada" checked /><span></span></label>
+                  <select id="estiloLegenda" aria-label="Estilo da legenda">
+                    <option value="destaque">Destaque</option>
+                    <option value="pop">Pop</option>
+                    <option value="limpa">Limpa</option>
+                  </select>
+                </div>
+                <div class="texto" id="texto" title="Clique numa palavra para ir até ela; dois cliques para corrigir."></div>
+              </section>
+              <section class="aba" data-aba="historico" hidden aria-label="Histórico"><ol class="historico" id="historico"></ol></section>
+            </aside>
+          </div>
+          <div class="linha" id="linha"></div>
+        </div>
+      </section>
+
+      <!-- ENTREGA -->
+      <section class="pagina" data-pagina="entrega" aria-label="Entrega">
+        <div class="entrega">
+          <h1 class="titulo"><span class="fino">Leve para o seu editor.</span> <span class="forte">Ou saia com o vídeo pronto.</span></h1>
+          <div class="destinos" id="destinos">
+            <label class="destino"><input type="checkbox" value="xmeml" checked /><span class="destino-nome">Premiere Pro</span><span class="destino-ext">.xml</span></label>
+            <label class="destino"><input type="checkbox" value="fcpxml" checked /><span class="destino-nome">Final Cut Pro</span><span class="destino-ext">.fcpxml</span></label>
+            <label class="destino"><input type="checkbox" value="resolve" checked /><span class="destino-nome">DaVinci Resolve</span><span class="destino-ext">.fcpxml · .edl</span></label>
+            <label class="destino"><input type="checkbox" value="video" /><span class="destino-nome">Vídeo final</span><span class="destino-ext" id="extVideo">.mp4</span></label>
+          </div>
+          <div class="acoes">
+            <button class="glass-btn glass-btn--ink" id="exportar">Exportar</button>
+          </div>
+          <div class="render" id="render" hidden>
+            <div class="barra-progresso"><div id="renderBarra"></div></div>
+            <span class="apoio" id="renderTexto"></span>
+            <button class="glass-btn" id="renderCancelar">Cancelar</button>
+          </div>
+          <p class="apoio" id="entregaFim" hidden></p>
+          <div class="depois" id="depois" aria-label="Depois do AEON"></div>
+        </div>
+      </section>
+    </main>
+
+    <nav class="dock" aria-label="Páginas">
+      <button data-ir="inicio" aria-current="page" title="A Z, a IA da Absolute ZRO"><svg><use href="#i-z" /></svg><span>Z</span></button>
+      <button data-ir="midia"><svg><use href="#i-midia" /></svg><span>Mídia</span></button>
+      <button data-ir="revisar"><svg><use href="#i-revisar" /></svg><span>Revisar</span></button>
+      <button data-ir="edicao"><svg><use href="#i-edicao" /></svg><span>Edição</span></button>
+      <button data-ir="entrega"><svg><use href="#i-entrega" /></svg><span>Entrega</span></button>
+    </nav>
+
+    <!-- o palco (vídeo + legenda) muda de vaga entre Revisar e Edição -->
+    <div class="palco-guarda" hidden>
+      <div class="palco" id="palco">
+        <div class="tela-caixa"><div class="tela" id="tela"></div></div>
+        <div class="controles">
+          <button class="icone-btn" id="tocar" title="Tocar (espaço)" aria-label="Tocar"><svg><use href="#i-play" /></svg></button>
+          <span class="tempo" id="tempo">0:00 / 0:00</span>
+        </div>
+      </div>
+    </div>
+
+    <dialog class="folha" id="folhaSobedesce">
+      <h2 class="titulo-p">Do SOBEDESCE</h2>
+      <p class="apoio" id="sbdProjeto"></p>
+      <ul class="cartoes-sbd" id="sbdCartoes"></ul>
+      <div class="acoes">
+        <button class="glass-btn" id="sbdFechar">Fechar</button>
+        <button class="glass-btn glass-btn--ink" id="sbdUsar" disabled>Usar estes</button>
+      </div>
+    </dialog>
+
+    <dialog class="folha" id="folhaNovo">
+      <form method="dialog" id="formNovo">
+        <h2 class="titulo-p">Novo projeto</h2>
+        <label class="campo"><span>Nome</span><input type="text" id="novoNome" maxlength="80" placeholder="Sem nome" autocomplete="off" /></label>
+        <div class="formatos" role="radiogroup" aria-label="Formato" id="novoFormato">
+          <label class="formato"><input type="radio" name="formato" value="1920x1080" checked /><i style="--ar: 16/9"></i><span>16:9</span></label>
+          <label class="formato"><input type="radio" name="formato" value="1080x1920" /><i style="--ar: 9/16"></i><span>9:16</span></label>
+          <label class="formato"><input type="radio" name="formato" value="1080x1080" /><i style="--ar: 1/1"></i><span>1:1</span></label>
+          <label class="formato"><input type="radio" name="formato" value="1080x1350" /><i style="--ar: 4/5"></i><span>4:5</span></label>
+        </div>
+        <label class="campo"><span>Quadros por segundo</span>
+          <select id="novoFps">
+            <option value="23.976">23,976</option>
+            <option value="24">24</option>
+            <option value="25">25</option>
+            <option value="29.97">29,97</option>
+            <option value="30" selected>30</option>
+            <option value="60">60</option>
+          </select>
+        </label>
+        <div class="acoes">
+          <button class="glass-btn" value="cancelar" formnovalidate>Cancelar</button>
+          <button class="glass-btn glass-btn--ink" value="criar" id="novoCriar">Criar</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="aviso" id="aviso" role="status" aria-live="polite"></div>
+    <input type="file" id="arquivo" accept="video/*,audio/*,.mov,.mxf,.mkv" multiple hidden />
+    <input type="file" id="arquivoProjeto" accept=".aeon,.zroedit,application/json" hidden />
+  </body>
+</html>

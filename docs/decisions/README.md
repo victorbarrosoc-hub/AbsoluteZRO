@@ -20,3 +20,12 @@ Cada decisão é reversível salvo indicação. Formato: contexto, decisão, con
 | [0014](0014-conta-unica-e-acesso.md)             | Conta única Absolute ZRO e acesso decidido no admin            | aceita                |
 | [0015](0015-finishing-resolve-powergrade-lut.md) | Revela (ex-Finishing): só Resolve, cor em PowerGrade e LUT     | aceita                |
 | [0016](0016-identidade-revela.md)                | Identidade visual da Revela                                    | aceita                |
+| [0019](0019-vendas-stripe.md)                    | Vendas pelo Stripe: avulso + Completo, teste de 7 dias         | aceita                |
+| [0020](0020-editor-desktop-custo-zero.md)        | Editor de vídeo: app de desktop, custo zero, IA na máquina     | aceita                |
+| [0021](0021-carro-hub-convidado.md)              | Carro → HUB: token de app e o papel convidado                  | aceita                |
+| [0022](0022-maestro-no-monorepo.md)              | Maestro nasce no monorepo e se integra pelo projeto canônico   | aceita                |
+| [0023](0023-gate-de-lancamento.md)               | Gate de lançamento: fechado é fechado, por conta e por canal   | aceita                |
+| [0024](0024-maestro-v2.md)                       | Maestro v2: a produtora inteira, por fases                     | aceita                |
+| [0025](0025-dominios-do-ecossistema.md)          | Cada plataforma em `<app>.absolutezro.com`                     | aceita                |
+| [0026](0026-conexoes.md)                         | Conexões: o Google Agenda conectado uma vez na conta           | aceita                |
+| [0028](0028-custos-do-ecossistema.md)            | Custos do ecossistema no console, só admin                     | aceita                |

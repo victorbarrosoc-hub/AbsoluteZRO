@@ -140,22 +140,43 @@ Como funciona:
 - **Janelinha no Resolve** com o mesmo desenho do app no tema escuro: título "Organizar", cartão de status com ícone, botões em pílula, os quadros Projeto/Fila/Último com os quadradinhos coloridos e "Últimos cartões" com a miniatura na cor da câmera e o selo Organizado (o histórico dos últimos 6 fica em `historico.txt`). O Qt do Resolve não desenha SVG nem cantos dentro do texto, então os ícones vão como PNG (`desktop/davinci-ui/`, gerados por `scripts/davinci-ui.cjs` com os desenhos do app). Quando o app atualiza, o script do Resolve é trocado sozinho (vale na próxima vez que abrir Workspace › Scripts › Synquei).
 - `desktop/davinci.cjs`: a ponte. O Resolve só deixa mexer no projeto por script (por isso o **Studio**: a versão grátis não aceita). O script Lua fica no menu Workspace › Scripts e conversa por uma pasta de troca: pedidos em Lua (`pedidos/000012.lua` + `indice.lua`), respostas em JSON, `vivo.json` a cada 3 s. No Windows a pasta fica em `C:\ProgramData\Synquei\davinci` (o Lua do Resolve não abre caminhos com acento).
 
+### Download do Drive ("Preparar no Synquei" do SOBEDESCE)
+
+Quando o SOBEDESCE termina e confere (MD5) o download de uma pasta do Drive, ele grava uma linha `v: 2` no
+`.sobedesce/descargas.jsonl` da pasta baixada e oferece **Preparar no Synquei** (`synquei://organizar?pasta=…&op=<id>`).
+Contrato em `docs/integration-contracts/README.md` (raiz).
+
+- `desktop/manifesto-drive.cjs`: confere a linha à risca (entrada não confiável: campos, caminhos relativos sem `..`,
+  contagens, até 50.000 arquivos) e cada arquivo no disco: existe, tamanho igual, sem `.sobedesce-part` ao lado. O que
+  falta vira **ausente**; tamanho diferente ou baixando de novo, **alterado**; sumiu do lugar mas há um só arquivo com
+  o mesmo nome e tamanho em outro canto, **movido** (entra pelo lugar novo). Acentos: tenta o caminho em NFC e NFD.
+- **Pasta única:** a operação inteira vira um projeto do Synquei (achado pelo `op`). Subpasta de cima = aparelho.
+  Repetir o mesmo link não duplica projeto, clipe, sincronia nem importação no DaVinci: já preparado e nada mudou,
+  só grava um recibo `repetido`; mudou algo na pasta, a operação volta para a fila.
+- **Recibo** em `<pasta>/Synquei/preparos.jsonl` (`synquei.preparo/1`): `recebido` → `preparando` → `preparado`,
+  `com_pendencias` (ausentes, alterados ou sincronia ambígua, a de confiança baixa que a linha do tempo mostra em
+  laranja, para revisar) ou `erro`. O SOBEDESCE lê esse arquivo; sem ele, nunca diz que preparou.
+- Testes: `tests/preparo-drive.test.mjs` (contrato com o código real do SOBEDESCE, manifesto adulterado, ausentes/
+  movidos/alterados, NFC × NFD, repetir sem duplicar, retomada, disco desconectado, ~320 GB em arquivos esparsos).
+
 Testes: `tests/organizador.test.mjs` (resumo, linha pela metade, cancelado, segunda leva, permissões de leitura e escrita) e `tests/davinci.test.mjs` (o script do Resolve roda no LuaJIT com um Resolve de mentira: pastas, cores, Cena/Take, sem importar duas vezes, linha do tempo editada guardada, projeto errado esperando). Falta testar num DaVinci Resolve Studio de verdade.
 
 ## Conta Absolute ZRO (opcional)
 
-O Synquei não tem conta própria: **a conta é a da Absolute ZRO**. O app, o site e o download continuam abertos, sem entrar. No site, Ajustes e o cartão do plano mostram **Entrar com Absolute ZRO** e **Criar conta**; "Criar conta" é o mesmo fluxo com `prompt=create` (o HUB abre o cadastro e volta ao Synquei já logado). Logada, a pessoa aparece no cartão da barra lateral e em Ajustes (nome, e-mail, organização, Sair). O plano continua o de `app/js/plano.js`. No app de desktop, offline ou aberto como arquivo, nada muda.
+O Synquei não tem conta própria: **a conta é a da Absolute ZRO**. O app, o site e o download continuam abertos, sem entrar. No site, Ajustes e o cartão do plano mostram **Entrar com Absolute ZRO** e **Criar conta**; "Criar conta" é o mesmo fluxo com `prompt=create` (o HUB abre o cadastro e volta ao Synquei já logado). Logada, a pessoa aparece no cartão da barra lateral e em Ajustes (foto ou iniciais, nome, e-mail, organização, Sair). O plano continua o de `app/js/plano.js`. No app de desktop, offline ou aberto como arquivo, nada muda.
 
-**Direito de uso:** vem do admin da Absolute ZRO, em `zro_products` do id_token (gravado na sessão a cada login, reavaliado no login seguinte). Sem `synquei` na lista, a pessoa entra, mas a parte de conta mostra só "Sua conta Absolute ZRO ainda não tem acesso ao Synquei." com o botão **Ver na Absolute ZRO** (`/ferramentas` do HUB) e o Sair.
+**Perfil único** (`docs/integration-contracts/perfil-unico.md` na raiz): nome, e-mail e foto são os da conta Absolute ZRO. O Synquei não edita nenhum dos três; em Ajustes, **Editar na conta Absolute ZRO** abre `zro_conta` (o Perfil da Absolute ZRO) numa aba nova. A cada abertura do app (no máximo uma vez por minuto) o `/api/zro/eu` relê o perfil em `/oauth/userinfo`, e o que mudou na conta aparece aqui sem a pessoa fazer nada. As configurações do Synquei (padrões de projeto, tema, sons) continuam aqui.
+
+**Direito de uso:** vem do admin da Absolute ZRO, em `zro_products` (gravado na sessão a cada login e relido junto com o perfil). Sem `synquei` na lista, a pessoa entra, mas a parte de conta mostra só "Sua conta Absolute ZRO ainda não tem acesso ao Synquei." com o botão **Ver na Absolute ZRO** (`/ferramentas` do HUB) e o Sair.
 
 Funções da Vercel (só Node, sem dependências; código comum em `api/_zro.js`, que a Vercel não publica como função):
 
 | Rota | O que faz |
 | --- | --- |
 | `GET /api/zro/entrar?volta=/app/%23/ajustes` | Cria state, nonce e PKCE S256, guarda num cookie assinado (`sq_zro`, 10 min, só em `/api/zro`) e manda para a Absolute ZRO. `volta` só aceita caminho deste site (padrão `/app/`). É o endereço de entrada que o HUB usa para abrir o app já logado. Com `&criar=1`, pede `prompt=create` (Criar conta). |
-| `GET /api/zro/callback` | Confere o state, troca o código com `client_secret_basic` + `code_verifier`, confere o id_token (ES256 pela JWKS, `iss`, `aud`, `exp`, `nonce`) e cria a sessão `sq_conta` (30 dias) com sub, nome, e-mail, organização e produtos. Nenhum token da Absolute ZRO vai para o navegador. Erros voltam como `?zro=expirou\|recusado\|erro\|config`. |
-| `GET /api/zro/eu` | 200 com a pessoa e `acesso` (Synquei em `zro_products`), 401 sem sessão (com os links `entrar` e `criar`), 503 se o login não estiver configurado. `no-store`. |
-| `POST /api/zro/sair` | Apaga `sq_conta` (a sessão na Absolute ZRO continua). |
+| `GET /api/zro/callback` | Confere o state, troca o código com `client_secret_basic` + `code_verifier`, confere o id_token (ES256 pela JWKS, `iss`, `aud`, `exp`, `nonce`) e cria a sessão `sq_conta` (30 dias) com sub, nome, e-mail, foto, `zro_conta`, organização e produtos. O access token e o refresh token (`offline_access`) vão **cifrados** (AES-256-GCM) em `sq_hub`, só em `/api/zro`; o navegador nunca lê token. Erros voltam como `?zro=expirou\|recusado\|erro\|config`. |
+| `GET /api/zro/eu` | 200 com a pessoa (`nome`, `email`, `foto`, `conta`, organização, produtos) e `acesso` (Synquei em `zro_products`), 401 sem sessão (com os links `entrar` e `criar`), 503 se o login não estiver configurado. `no-store`. Relê o perfil em `/oauth/userinfo` (troca o refresh token, que roda, quando o access token venceu) e regrava os dois cookies; Absolute ZRO fora do ar mantém a última cópia; acesso removido no Perfil da Absolute ZRO encerra a sessão. |
+| `POST /api/zro/sair` | Revoga o refresh token na Absolute ZRO e apaga `sq_conta` e `sq_hub` (a sessão na Absolute ZRO continua). |
 
 Cookies `HttpOnly; Secure; SameSite=Lax`, assinados com HMAC-SHA256; a chave de cada cookie sai de `ZRO_CLIENT_SECRET` por HKDF (trocar o segredo derruba as sessões). O retorno só vale em `https://synquei.vercel.app` e `localhost`/`127.0.0.1`; qualquer outro endereço (prévia da Vercel) é mandado para o site oficial antes de começar.
 
@@ -165,11 +186,11 @@ Variáveis na Vercel (projeto `synquei`, Production):
 | --- | --- |
 | `ZRO_CLIENT_ID` | `synquei-web` |
 | `ZRO_CLIENT_SECRET` | o segredo do cliente `synquei-web` no console da Absolute ZRO (sensível) |
-| `ZRO_ISSUER` | opcional; padrão `https://absolutezro.vercel.app` |
+| `ZRO_ISSUER` | opcional; padrão `https://absolutezro.com` |
 
 No console da Absolute ZRO, o cliente `synquei-web` precisa do retorno `https://synquei.vercel.app/api/zro/callback` e o produto Synquei do endereço de entrada `https://synquei.vercel.app/api/zro/entrar`. Sem `ZRO_CLIENT_ID`/`ZRO_CLIENT_SECRET`, o botão não aparece e o app segue como antes.
 
-Testes: `tests/zro.test.mjs` com uma Absolute ZRO falsa local (`tests/zro-falso.mjs`, chave EC P-256 gerada no teste): fluxo completo, criar conta (`prompt=create`), Synquei fora de `zro_products` (sem acesso) e liberado depois, state, nonce, emissor e público errados, assinatura inválida, token vencido, cookies adulterados e volta para fora do site. `tests/conta-ui.test.mjs`: o que a parte de conta do app mostra em cada caso.
+Testes: `tests/zro.test.mjs` com uma Absolute ZRO falsa local (`tests/zro-falso.mjs`, chave EC P-256 gerada no teste): fluxo completo, criar conta (`prompt=create`), Synquei fora de `zro_products` (sem acesso) e liberado depois, state, nonce, emissor e público errados, assinatura inválida, token vencido, cookies adulterados e volta para fora do site; perfil único (foto, mudança na conta aparece na abertura seguinte, refresh que roda, Absolute ZRO fora do ar, acesso removido, cofre cifrado, sair revoga). `tests/conta-ui.test.mjs`: o que a parte de conta do app mostra em cada caso (foto ou iniciais, Editar na conta Absolute ZRO).
 
 ## Rodar local
 

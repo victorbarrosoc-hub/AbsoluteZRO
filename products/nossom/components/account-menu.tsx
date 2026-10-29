@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import {
   ArrowRight,
+  ArrowUpRight,
   AudioLines,
   ChevronDown,
   Folder,
@@ -17,6 +18,7 @@ import {
 } from 'lucide-react';
 import { AccountForm } from './account-access';
 import UserAvatar from './user-avatar';
+import { ZroSymbol } from './zro-symbol';
 import { useDialog } from '@/lib/use-dialog';
 import { accountPlan, type Account } from '@/lib/accounts';
 import { usageLabel, type AudioUsage } from '@/lib/usage';
@@ -182,11 +184,28 @@ export default function AccountMenu({
                         <div>
                           <strong>{account.name}</strong>
                           <span className="account-plan">{accountPlan(account, saldo)}</span>
-                          <p>{account.email}</p>
-                          <span className="account-profile-badge">
-                            <ShieldCheck size={12} />
-                            {account.isAdmin ? 'Administrador' : 'Conta NOSSOM'}
-                          </span>
+                          <p>
+                            {[account.email, account.zro?.organization].filter(Boolean).join(' · ')}
+                          </p>
+                          {account.zro ? (
+                            // Perfil único: a mesma conta em todos os apps da Absolute ZRO.
+                            <span
+                              className="account-profile-badge account-zro-badge"
+                              title={
+                                account.zro.email && account.zro.email !== account.email
+                                  ? 'Conta Absolute ZRO: ' + account.zro.email
+                                  : 'A mesma conta em todos os apps da Absolute ZRO'
+                              }
+                            >
+                              <ZroSymbol size={13} />
+                              Conta Absolute ZRO
+                            </span>
+                          ) : (
+                            <span className="account-profile-badge">
+                              <ShieldCheck size={12} />
+                              {account.isAdmin ? 'Administrador' : 'Conta NOSSOM'}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="account-menu-quota">
@@ -246,6 +265,33 @@ export default function AccountMenu({
                           </motion.div>
                         ))}
                       </nav>
+                      {account.zro ? (
+                        <a
+                          className="account-menu-zro"
+                          href={account.zro.manage}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Nome, foto e e-mail são os mesmos em todos os apps. Abre no navegador."
+                          onClick={() => setOpen(false)}
+                        >
+                          <ZroSymbol size={17} />
+                          <span>Editar na conta Absolute ZRO</span>
+                          <ArrowUpRight size={14} />
+                        </a>
+                      ) : account.zroInvite ? (
+                        <a
+                          className="account-menu-zro"
+                          href={
+                            '/api/zro/entrar?modo=ligar&volta=' +
+                            encodeURIComponent('/studio/conta')
+                          }
+                          title="Uma conta para todos os apps da Absolute ZRO."
+                        >
+                          <ZroSymbol size={17} />
+                          <span>Ligar conta Absolute ZRO</span>
+                          <ArrowRight size={14} />
+                        </a>
+                      ) : null}
                       {error && (
                         <p className="account-menu-error" role="alert">
                           {error}

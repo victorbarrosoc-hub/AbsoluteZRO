@@ -6,6 +6,7 @@ import { openPrompter, openCalib, prompterOpen } from "./prompter.js";
 import { syncSettingsUI, setPref } from "./settings.js";
 import * as Sync from "./sync.js";
 import * as Zro from "./zro.js";
+import { pendencias, numeroBalao, rotuloBalao } from "./pendencias.js";
 
 const VERSION = "2.2";
 const wpm = () => D.S().wpm;
@@ -267,7 +268,9 @@ export function renderAccount() {
   if (Zro.zro.estado === "dentro") {
     const p = Zro.zro.pessoa;
     const org = p.organizacao && p.organizacao.nome ? `<span>${esc(p.organizacao.nome)}</span>` : "";
-    conta = `<div class="account"><span class="avatar is-on">${esc((p.nome || p.email || "?").charAt(0).toUpperCase())}</span><div class="account-text"><b>${esc(p.nome || p.email)}</b>${p.nome ? `<span>${esc(p.email)}</span>` : ""}${org}</div><button class="pill is-small" id="zroSair">Sair</button>${local}</div>`;
+    // nome, e-mail e foto vêm da conta Absolute ZRO e só se editam lá (perfil único)
+    const editar = `<a class="btn btn-soft btn-block account-edit" id="zroEditar" href="${esc(Zro.linkConta(p))}" target="_blank" rel="noopener">Editar na conta Absolute ZRO</a>`;
+    conta = `<div class="account">${Zro.avatarHtml(p)}<div class="account-text"><b>${esc(p.nome || p.email)}</b>${p.nome ? `<span>${esc(p.email)}</span>` : ""}${org}</div><button class="pill is-small" id="zroSair">Sair</button>${editar}${local}</div>`;
     if (Zro.semAcesso())
       conta += `<div class="account account-form" id="zroSemAcesso"><div class="account-row"><span class="avatar">${icon("user")}</span><div class="account-text"><b>Sem acesso</b><span>Sua conta Absolute ZRO ainda não tem acesso ao TPeasy.</span></div></div><a class="btn btn-blue btn-block" href="${Zro.HUB_FERRAMENTAS}" target="_blank" rel="noopener">Ver na Absolute ZRO</a></div>`;
   } else if (Zro.zro.estado === "fora") {
@@ -290,10 +293,31 @@ export function renderAccount() {
     const status = st.status === "syncing" ? "Sincronizando…" : st.status === "error" ? "Erro ao sincronizar" : st.at ? `Sincronizado ${fmtAgo(st.at)}` : "Conectado";
     card.innerHTML = conta + `<div class="account"><span class="avatar is-on">${esc((user.email || "?").charAt(0).toUpperCase())}</span><div class="account-text"><b>${esc(user.email || "Conta")}</b><span>${status}</span></div><button class="pill is-small" id="signOutBtn">Sair</button></div>`;
   }
+  // quem entrou com a Absolute ZRO não tem nome próprio no TPeasy: o nome é o da conta
+  $("#setName").hidden = Zro.zro.estado === "dentro";
   $("#nameValue").textContent = D.ui.name || "";
   $("#soundsSwitch").setAttribute("aria-checked", String(!!D.ui.sounds));
   $("#installState").textContent = isStandalone() ? "Instalado" : "";
   $("#appVersion").textContent = `versão ${VERSION}`;
+  renderBaloes();
+}
+// Balões da barra de abas (app/js/pendencias.js): redesenham junto com a conta (zro, auth, sync)
+export function renderBaloes() {
+  const pend = pendencias({ zro: Zro.zro, nuvem: Sync.cloudEnabled, usuario: Sync.currentUser(), sync: Sync.syncState });
+  for (const b of $$("[data-balao]")) {
+    const p = pend[b.dataset.balao];
+    const tab = b.closest(".tab");
+    const n = p ? numeroBalao(p.n) : "";
+    if (b.textContent !== n) b.textContent = n;
+    b.hidden = !p;
+    if (p) {
+      b.setAttribute("aria-label", rotuloBalao(p.n));
+      tab.title = p.t;
+    } else {
+      b.removeAttribute("aria-label");
+      tab.removeAttribute("title");
+    }
+  }
 }
 $("#accountCard").addEventListener("submit", async (e) => {
   e.preventDefault();

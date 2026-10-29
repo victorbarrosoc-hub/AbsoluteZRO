@@ -1,9 +1,11 @@
 import { test as guest } from '@playwright/test';
-import { test, expect, existingAccount } from './fixtures';
+import { test, expect, existingAccount, signIn, zroLink, ALLOWED, onlyWhenOpen } from './fixtures';
 import AxeBuilder from '@axe-core/playwright';
 guest(
   'homepage login menu animates, traps focus, switches forms and signs in without leaving the homepage first',
   async ({ page }) => {
+    // Descreve o produto aberto (entrar, assinar, home com ações, /apps).
+    onlyWhenOpen();
     await page.goto('/');
     const trigger = page.getByRole('button', { name: 'Entrar na sua conta', exact: true });
     await trigger.click();
@@ -37,7 +39,7 @@ guest(
         .violations,
     ).toEqual([]);
     await dialog.getByRole('button', { name: 'Entrar no estúdio', exact: true }).click();
-    await expect(page).toHaveURL(/\/studio$/);
+    await expect(page).toHaveURL(/\/studio\/z$/);
     await expect(
       page.getByRole('button', { name: 'Abrir menu da conta', exact: true }),
     ).toBeVisible();
@@ -46,6 +48,8 @@ guest(
 guest(
   'mobile access menu respects reduced motion, fits the screen and closes with Escape or outside tap',
   async ({ page }) => {
+    // Descreve o produto aberto (entrar, assinar, home com ações, /apps).
+    onlyWhenOpen();
     await page.setViewportSize({ width: 390, height: 844 });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
@@ -73,13 +77,20 @@ guest(
 test('account menu shows the actual profile and balance, navigates and logs out on mobile', async ({
   page,
 }) => {
-  await page.goto('/studio');
+  // Descreve o produto aberto (entrar, assinar, home com ações, /apps).
+  onlyWhenOpen();
+  await page.goto('/studio/inicio');
   const trigger = page.getByRole('button', { name: 'Abrir menu da conta', exact: true });
   await trigger.click();
   const dialog = page.getByRole('dialog', { name: 'Sua conta', exact: true });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText('Pessoa de teste', { exact: true })).toBeVisible();
   await expect(dialog.getByText('5 de 5 min disponíveis neste mês', { exact: true })).toBeVisible();
+  // Sem a Absolute ZRO ligada: o menu de sempre, com o convite para ligar.
+  await expect(
+    dialog.getByRole('link', { name: 'Ligar conta Absolute ZRO', exact: true }),
+  ).toHaveAttribute('href', '/api/zro/entrar?modo=ligar&volta=%2Fstudio%2Fconta');
+  await expect(dialog.getByText('Conta Absolute ZRO', { exact: true })).toHaveCount(0);
   expect(
     (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze())
       .violations,
@@ -97,3 +108,44 @@ test('account menu shows the actual profile and balance, navigates and logs out 
   await expect(page).toHaveURL(/\/entrar$/);
   expect((await page.request.get('/api/account')).status()).toBe(401);
 });
+guest(
+  'a linked account shows the Absolute ZRO identity and the shortcut to edit it there',
+  async ({ page }) => {
+    await page.route('https://absolutezro.com/**', (route) => route.abort());
+    const email = 'lia.' + crypto.randomUUID() + '@example.test';
+    const id = await existingAccount(page.request, {
+      email,
+      password: 'senha-de-teste',
+      name: 'Lia Produtora',
+    });
+    await zroLink(page.request, id!, ['nossom'], ALLOWED);
+    expect((await signIn(page.request, email, 'senha-de-teste')).status()).toBe(200);
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: width > 500 ? 1000 : 844 });
+      await page.goto('/studio/inicio');
+      await page.getByRole('button', { name: 'Abrir menu da conta', exact: true }).click();
+      const dialog = page.getByRole('dialog', { name: 'Sua conta', exact: true });
+      await expect(dialog).toBeVisible();
+      await expect(dialog.getByText('Lia Produtora', { exact: true })).toBeVisible();
+      await expect(dialog.getByText(email + ' · Produtora', { exact: true })).toBeVisible();
+      await expect(dialog.getByText('Conta Absolute ZRO', { exact: true })).toBeVisible();
+      // O selo do plano é o do servidor: conta gratuita não vira "ilimitado".
+      await expect(dialog.locator('.account-plan')).not.toContainText('Ilimitado');
+      const edit = dialog.getByRole('link', { name: 'Editar na conta Absolute ZRO', exact: true });
+      await expect(edit).toHaveAttribute('href', 'https://absolutezro.com/perfil');
+      await expect(edit).toHaveAttribute('target', '_blank');
+      await expect(dialog.getByRole('link', { name: 'Ligar conta Absolute ZRO' })).toHaveCount(0);
+      for (const label of ['Meu estúdio', 'Meus projetos', 'Configurações da conta'])
+        await expect(dialog.getByRole('link', { name: label, exact: true })).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+      expect(
+        (await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze())
+          .violations,
+      ).toEqual([]);
+      await page.keyboard.press('Escape');
+      await expect(dialog).toBeHidden();
+    }
+  },
+);

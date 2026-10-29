@@ -26,7 +26,7 @@ const id = (fd: FormData, k: string) => {
 function refresh(userId?: string) {
   revalidatePath('/admin/pessoas')
   if (userId) revalidatePath(`/admin/pessoas/${userId}`)
-  revalidatePath('/admin')
+  revalidatePath('/admin', 'layout')
 }
 
 export async function changeOrgPlanAction(_: FormState, fd: FormData): Promise<FormState> {

@@ -54,6 +54,7 @@ test('public pages and every studio tool fit mobile and desktop workspaces', asy
       '/apps',
       '/privacidade',
       '/studio',
+      '/studio/inicio',
       '/studio/projetos',
       '/studio/conta',
       '/studio/planos',

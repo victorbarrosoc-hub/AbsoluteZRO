@@ -1,6 +1,8 @@
 /**
  * Bloco de um app da família, no espírito de uma suíte: ícone da própria marca, brilho na cor dela, papel no
  * fluxo e a ação que a organização realmente tem (abrir, contratar ou aguardar). Nada de acesso de fachada.
+ * Produto fechado pelo gate de lançamento (access `closed`, ADR 0023): só o selo "Em desenvolvimento", sem Abrir,
+ * sem Ver planos e sem Instalar.
  */
 import Link from 'next/link'
 import type { CSSProperties, ReactNode } from 'react'
@@ -16,7 +18,7 @@ export const productColor = (id: string): CSSProperties =>
 export function AppTile({ p, children, compact }: { p: ProductAccess; children?: ReactNode; compact?: boolean }) {
   return (
     <article
-      className={`app-tile${compact ? ' app-tile--compact' : ''}${p.access === 'coming_soon' ? ' app-tile--soon' : ''}`}
+      className={`app-tile${compact ? ' app-tile--compact' : ''}${p.access === 'coming_soon' || p.access === 'closed' ? ' app-tile--soon' : ''}`}
       style={productColor(p.productId)}
     >
       <div className="app-tile__glow" aria-hidden="true" />
@@ -57,10 +59,10 @@ export function AppTile({ p, children, compact }: { p: ProductAccess; children?:
           <Link className="zro-btn zro-btn--small" href="/planos">
             Ver planos
           </Link>
-        ) : (
+        ) : p.access === 'closed' ? null : (
           <span className="zro-faint">Em breve no Ciclo do O</span>
         )}
-        {hasDesktopInstaller(p.productId) && (
+        {p.access !== 'closed' && hasDesktopInstaller(p.productId, new Set([p.productId])) && (
           <Link className="zro-btn zro-btn--small zro-btn--ghost" href={`/downloads#app-${p.productId}`}>
             <Icon name="download" />
             Instalar

@@ -12,7 +12,7 @@
 //     página confirmar a chave (quem manda um link de fora não sabe a chave).
 //  3. Avisos (Web Push): "Pronto: 8 arquivos enviados do MacBook…" quando o computador termina; o toque abre
 //     /app/#computador (ou a folha, se o app já estiver aberto).
-const CACHE = 'sobedesce-app-v58'
+const CACHE = 'sobedesce-app-v68'
 const SCOPE = new URL('./', self.location).pathname // "/app/"
 const STREAM = SCOPE + 'stream/'
 const GOOGLE_API = 'https://www.googleapis.com/drive/v3'
@@ -21,6 +21,7 @@ const SHELL = [
   './',
   './index.html',
   './app.css',
+  './ligar-zro.css',
   './app.js',
   './manifest.webmanifest',
   './vendor/preact-htm.js',
@@ -36,6 +37,9 @@ const SHELL = [
   './lib/cor-gl.js',
   './lib/cor-lut.js',
   './lib/drive.js',
+  './lib/drive-nucleo.js',
+  './lib/drive-link.js',
+  './lib/entrada.js',
   './lib/frames/celular.js',
   './lib/frames/codec.js',
   './lib/frames/escolha.js',
@@ -44,6 +48,7 @@ const SHELL = [
   './lib/format.js',
   './lib/idb.js',
   './lib/lan.js',
+  './lib/ligar-zro.js',
   './lib/midia-conta.js',
   './lib/midia-modos.js',
   './lib/p2p.js',
@@ -57,6 +62,9 @@ const SHELL = [
   './lib/psd-ler.js',
   './lib/psd-worker.js',
   './lib/referencias.js',
+  './lib/revela.js',
+  './lib/revela/conversao/plano.js',
+  './lib/revela/entrega/destinos.js',
   './lib/state.js',
   './lib/stream.js',
   './lib/tamanho.js',
@@ -74,6 +82,7 @@ const SHELL = [
   './components/inicio.js',
   './components/item-menu.js',
   './components/kit.js',
+  './components/ligar-zro.js',
   './components/install-hint.js',
   './components/main.js',
   './components/p2p.js',
@@ -83,15 +92,21 @@ const SHELL = [
   './components/psd.js',
   './components/queue.js',
   './components/referencias.js',
+  './components/revela.js',
   './components/scrub.js',
   './components/selecao.js',
   './components/settings.js',
   './components/tabs.js',
   './components/thumb.js',
   './components/ui.js',
+  './components/z.js',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',
   './icons/favicon.svg',
+  './icons/familia/absolute-zro.png',
+  './icons/familia/synquei.svg',
+  './icons/familia/tpeasy.svg',
+  './icons/revela.svg',
 ]
 
 self.addEventListener('install', (event) => {

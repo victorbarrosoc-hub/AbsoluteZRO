@@ -1,4 +1,6 @@
-// Barra lateral translúcida: marca, navegação (com contador ao vivo), aviso de versão nova, medidores ↓/↑ e a conta.
+// Barra lateral translúcida: marca, navegação (com contador ao vivo), a família Absolute ZRO (uma linha que abre um
+// balão), a pílula de versão nova, medidores ↓/↑ e a conta. Tudo cabe numa janela de 576 px de altura (1280×720 no
+// Windows com 125%), sem rolagem dentro da barra.
 import { html, useMemo, useRef, useState } from '/vendor/preact-htm.js'
 import { useStore, activeCount, setActiveAccount } from '../lib/store.js'
 import { navigate } from '../lib/router.js'
@@ -8,10 +10,14 @@ import { Icon, Wordmark } from './icons.js'
 import { Avatar } from './common.js'
 import { LevelMeter } from './meter.js'
 import { useAbout } from './drive-data.js'
-import { UpdateCard } from './versao.js'
+import { UpdatePill } from './versao.js'
+import { balaoAoLado } from './balao.js'
+import { openExternal } from '../lib/desktop.js'
 
 // O que se usa todo dia em cima; Dispositivos e Ajustes embaixo. Frames e Cartões com item próprio (não ficam escondidos).
 const NAV = [
+  // a Z, a IA da Absolute ZRO: o primeiro item e a tela de entrada (pedido do titular, 27/10/2026)
+  { id: 'z', label: 'Z', icon: 'z', title: 'A Z, a IA da Absolute ZRO' },
   { id: 'painel', label: 'Início', icon: 'home' },
   { id: 'transferencias', label: 'Transferências', icon: 'transfers' },
   { id: 'drive', label: 'Drive', icon: 'cloud' },
@@ -24,6 +30,62 @@ const NAV_BAIXO = [
   { id: 'computadores', label: 'Dispositivos', icon: 'laptop' },
   { id: 'ajustes', label: 'Ajustes', icon: 'sliders' },
 ]
+
+// Os outros apps da Absolute ZRO, cada um com o próprio ícone (cópias em public/familia/). Abrem no navegador do
+// sistema: no Electron pela ponte, no navegador numa aba nova; a janela do app nunca sai do SOBEDESCE.
+const FAMILIA = [
+  { href: 'https://absolutezro.com', nome: 'Absolute ZRO', img: '/familia/absolute-zro.png' },
+  { href: 'https://synquei.vercel.app', nome: 'Synquei', img: '/familia/synquei.svg' },
+  { href: 'https://tpeasy.vercel.app', nome: 'TPEasy', img: '/familia/tpeasy.svg' },
+]
+
+/**
+ * Os apps da família numa linha só ("Absolute ZRO", ícone de grade); o clique abre a lista num
+ * balão ao lado da barra. Antes era uma lista própria que, em janela baixa (Windows com 125%), virava uma faixa
+ * minúscula com rolagem.
+ */
+function Familia() {
+  const [pos, setPos] = useState(null)
+  const caixa = useRef(null)
+  useDismiss(caixa, () => setPos(null), !!pos)
+  return html`<div class="nav nav-familia" ref=${caixa}>
+    <button
+      type="button"
+      class=${cx('nav-item nav-familia-botao', pos && 'is-open')}
+      aria-haspopup="menu"
+      aria-expanded=${pos ? 'true' : 'false'}
+      aria-label="Apps da Absolute ZRO"
+      title="Apps da Absolute ZRO"
+      onClick=${(e) => setPos(pos ? null : balaoAoLado(e.currentTarget))}
+    >
+      <${Icon} name="grid" size=${17} />
+      <span class="nav-familia-txt">Absolute ZRO</span>
+      <${Icon} name="chevron-right" size=${14} class="nav-familia-seta" />
+    </button>
+    ${pos
+      ? html`<div class="menu balao familia-balao" role="menu" aria-label="Apps da Absolute ZRO" style=${pos}>
+          ${FAMILIA.map(
+            (f) => html`<a
+              href=${f.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              role="menuitem"
+              class="menu-item"
+              onClick=${(e) => {
+                e.preventDefault()
+                setPos(null)
+                openExternal(f.href)
+              }}
+            >
+              <img class="nav-app" src=${f.img} alt="" width="20" height="20" draggable="false" />
+              <span class="menu-item-text">${f.nome}</span>
+              <${Icon} name="external" size=${13} />
+            </a>`,
+          )}
+        </div>`
+      : null}
+  </div>`
+}
 
 function NavBadge() {
   const transfers = useStore((s) => s.transfers)
@@ -128,7 +190,7 @@ function AccountChip() {
 
 function NavItem({ n, current }) {
   const on = current === n.id || n.tambem?.includes(current)
-  return html`<a href=${`#/${n.id}`} class=${cx('nav-item', on && 'is-on')} aria-current=${on ? 'page' : undefined}>
+  return html`<a href=${`#/${n.id}`} class=${cx('nav-item', on && 'is-on')} aria-current=${on ? 'page' : undefined} title=${n.title}>
     <${Icon} name=${n.icon} size=${17} />
     <span>${n.label}</span>
     ${n.id === 'transferencias' ? html`<${NavBadge} />` : null}
@@ -138,15 +200,16 @@ function NavItem({ n, current }) {
 
 export function Sidebar({ current }) {
   return html`<aside class="sidebar">
-    <div class="sidebar-brand"><a href="#/painel" aria-label="SOBEDESCE — início"><${Wordmark} size=${22} /></a></div>
+    <div class="sidebar-brand"><a href="#/z" aria-label="SOBEDESCE — início"><${Wordmark} size=${22} /></a></div>
     <nav class="nav" aria-label="Principal">
       ${NAV.map((n) => html`<${NavItem} n=${n} current=${current} />`)}
     </nav>
+    <${Familia} />
     <nav class="nav nav-baixo" aria-label="Dispositivos e ajustes">
       ${NAV_BAIXO.map((n) => html`<${NavItem} n=${n} current=${current} />`)}
     </nav>
     <div class="sidebar-foot">
-      <${UpdateCard} />
+      <${UpdatePill} />
       <${Meters} />
       <${AccountChip} />
     </div>

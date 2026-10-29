@@ -1,9 +1,9 @@
 // Synquei — app. Módulos ES sem build: rotas por hash, uma tela por aba, eventos delegados.
 
-import { S, on, changed, loadIndex, addEntries, runSync, save, createProject, applyType, closeProject, stopSync } from './store.js'
+import { S, on, changed, loadIndex, addEntries, runSync, save, createProject, applyType, closeProject, stopSync, hasMedia } from './store.js'
 import { escolherTipo } from './tipo-picker.js'
 import { tipoDe } from './tipos.js'
-import { iniciarAtualizacao, acoesAtualizacao } from './atualizacao.js'
+import { iniciarAtualizacao, acoesAtualizacao, estadoAtualizacao } from './atualizacao.js'
 import { entriesFromDrop, entriesFromInput } from './media/scan.js'
 import { $, $$, h, icon, toast, plural, download, uiDark, modal } from './util.js'
 import { sfx } from './sfx.js'
@@ -23,11 +23,14 @@ import sfxMontagem from './views/sfx.js'
 import { iniciarOrganizar, O as ORG } from './organizar.js'
 import { cartaoPlano, abrirPlanos } from './plano.js'
 import { iniciarConta } from './conta.js'
+import { iniciarZ, telaZ } from './z.js'
+import { pendencias, numeroBalao, rotuloBalao } from './pendencias.js'
+import { decidirEntrada } from './entrada.js'
 
-const VIEWS = { inicio, projetos, midia, sincronizar, linha, exportar, formatos, ajustes, organizar, sfx: sfxMontagem }
-const ORDER = ['inicio', 'midia', 'sincronizar', 'linha', 'exportar']
+const VIEWS = { z: telaZ, inicio, projetos, midia, sincronizar, linha, exportar, formatos, ajustes, organizar, sfx: sfxMontagem }
+const ORDER = ['z', 'inicio', 'midia', 'sincronizar', 'linha', 'exportar']
 // ordem da barra lateral: decide se a tela entra pela direita ou pela esquerda
-const SEQ = ['inicio', 'midia', 'sincronizar', 'linha', 'exportar', 'projetos', 'organizar', 'sfx', 'formatos', 'ajustes']
+const SEQ = ['z', 'inicio', 'midia', 'sincronizar', 'linha', 'exportar', 'projetos', 'organizar', 'sfx', 'formatos', 'ajustes']
 const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 
 export function go(route, force) {
@@ -48,7 +51,8 @@ function routeFromHash() {
     }
     return 'inicio'
   }
-  return VIEWS[r] ? r : 'inicio'
+  // a Z é a primeira aba e a entrada quando não há tarefa em curso (entrada.js decide logo ao abrir)
+  return VIEWS[r] ? r : 'z'
 }
 
 let lastRoute = null
@@ -78,6 +82,10 @@ function render() {
     countUp(root)
   } else scrollTo(0, keepScroll)
   lastRoute = route
+  // a Z fica fora da tela que redesenha (a conversa não se perde): aparece só na aba dela
+  const z = $('#zPainel')
+  if (z) z.hidden = route !== 'z'
+  document.documentElement.classList.toggle('na-z', route === 'z')
   hideTip()
   chrome()
 }
@@ -124,12 +132,48 @@ function chrome() {
     sb.textContent = S.sync.running ? '…' : p && p.result ? '✓' : ''
     sb.className = `badge ${S.sync.running ? 'is-live' : 'is-ok'}`
   }
+  baloes()
   const card = $('#projCard')
   if (card) {
     const html = p
       ? `<div class="proj-card"><a class="proj-card-link" href="#/inicio"><span class="eyebrow">Projeto aberto</span><b>${h(p.name)}</b><span class="sub">${plural(p.clips.length, 'clipe', 'clipes')}${p.result ? ` · ${p.result.stats.total - p.result.stats.unsynced} na linha` : ''}</span><span class="dots">${p.devices.map((d) => `<i class="dot" style="--c:${devColor(d, uiDark())}" title="${h(d.label)}"></i>`).join('')}</span></a><button class="proj-fechar" data-act="fechar" title="Fechar este projeto (ele continua em Projetos)">${icon('close')}Fechar projeto</button></div>`
       : ''
     if (card.innerHTML !== html) card.innerHTML = html
+  }
+}
+
+/**
+ * Balões: o que espera uma ação da pessoa em cada aba (app/js/pendencias.js). O balão toma o lugar do contador de
+ * estado da mesma aba; o item ganha a explicação no title (no menu recolhido, na dica junto do nome).
+ */
+function baloes() {
+  const pend = pendencias({
+    project: S.project,
+    probe: S.probe,
+    sync: S.sync,
+    temMidia: hasMedia,
+    org: ORG.ativo ? ORG : null,
+    atualizacao: estadoAtualizacao(),
+  })
+  for (const b of $$('[data-balao]')) {
+    const r = b.dataset.balao
+    const p = pend[r]
+    const item = b.closest('a')
+    const n = p ? numeroBalao(p.n) : ''
+    if (b.textContent !== n) b.textContent = n
+    b.hidden = !p
+    if (p) b.setAttribute('aria-label', rotuloBalao(p.n))
+    else b.removeAttribute('aria-label')
+    const st = item && $('.badge', item)
+    if (st && p) st.hidden = true
+    if (!item) continue
+    if (p) item.title = p.t
+    else item.removeAttribute('title')
+    if (item.closest('.sidebar') && recolhido()) {
+      const nome = ($('span', item) || item).textContent.trim()
+      item.dataset.tip = p ? `${nome} · ${p.t}` : nome
+      item.removeAttribute('title')
+    }
   }
 }
 
@@ -151,6 +195,7 @@ function aplicarMenu(fechar, salvar = true) {
     else delete a.dataset.tip
   }
   activity()
+  baloes()
   if (salvar) {
     try {
       localStorage.setItem(MENU, fechar ? 'recolhido' : 'aberto')
@@ -405,7 +450,8 @@ addEventListener('drop', async (e) => {
 
 // atalhos
 addEventListener('keydown', (e) => {
-  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)
+  // o campo da Z fica dentro do <zro-ia> (shadow DOM): digitar nele não troca de aba
+  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || !!e.target.closest?.('zro-ia')
   const mod = e.metaKey || e.ctrlKey
   if (mod && !e.shiftKey && e.key.toLowerCase() === 'n') {
     e.preventDefault()
@@ -439,7 +485,7 @@ addEventListener('keydown', (e) => {
   if (typing || mod) return
   const v = VIEWS[S.route]
   if (v.keys && v.keys(e)) return e.preventDefault()
-  if (/^[1-5]$/.test(e.key)) go(ORDER[+e.key - 1])
+  if (/^[1-6]$/.test(e.key)) go(ORDER[+e.key - 1])
 })
 
 // ───────── início ─────────
@@ -482,7 +528,7 @@ if (kbdNovo) kbdNovo.textContent = /Mac|iPhone|iPad/.test(navigator.platform || 
 // no app de desktop a marca leva ao início (não ao site)
 if (window.synqueiDesktop) {
   const b = $('.brand')
-  if (b) b.setAttribute('href', '#/inicio')
+  if (b) b.setAttribute('href', '#/z')
 }
 // o menu volta como estava (recolhido ou aberto) e o cartão do plano entra na barra
 {
@@ -494,22 +540,40 @@ if (window.synqueiDesktop) {
   const pc = $('#planoCard')
   if (pc) pc.innerHTML = cartaoPlano()
 }
+const hashInicial = location.hash
+const abriuEm = Date.now()
 loadIndex()
 render()
 iniciarAtualizacao()
-iniciarOrganizar().catch((err) => console.error('organizar:', err))
+iniciarOrganizar()
+  .catch((err) => console.error('organizar:', err))
+  // aberto sem rota: com cartão na fila do Organizar (ou sincronia rodando), abre direto na tarefa (entrada.js)
+  .then(() =>
+    decidirEntrada({
+      hashInicial,
+      hashAgora: location.hash,
+      rotas: Object.keys(VIEWS),
+      estado: { sync: S.sync, org: ORG },
+      inicio: abriuEm,
+      agora: Date.now(),
+      ir: (t) => go(t),
+    }),
+  )
+// "Abrir no Synquei" do SOBEDESCE: a pasta acabou de entrar no Organizar
+globalThis.synqueiDesktop?.organizar?.onAbrir?.(() => go('organizar', true))
 // Organizar: a tela redesenha quando chega cartão ou muda o DaVinci; a barra lateral mostra a fila
 document.addEventListener('synquei:organizar-mudou', () => (S.route === 'organizar' ? render() : chrome()))
 document.addEventListener('synquei:montagem-mudou', () => S.route === 'sfx' && render())
 // Ajustes mostra a versão e o estado da atualização: redesenha quando muda
-document.addEventListener('synquei:atualizacao-mudou', () => S.route === 'ajustes' && render())
-// Conta Absolute ZRO (só no site): o cartão do plano e Ajustes mostram quem entrou
+document.addEventListener('synquei:atualizacao-mudou', () => (S.route === 'ajustes' ? render() : baloes()))
+// Conta Absolute ZRO (site e desktop): o cartão do plano e Ajustes mostram quem entrou
 document.addEventListener('synquei:conta-mudou', () => {
   const pc = $('#planoCard')
   if (pc) pc.innerHTML = cartaoPlano()
   if (S.route === 'ajustes') render()
 })
-iniciarConta()
+// a Z entra na aba dela depois de saber da conta (app/js/z.js)
+iniciarConta().then(iniciarZ)
 
 if ('serviceWorker' in navigator && !window.synqueiDesktop && location.protocol === 'https:') {
   navigator.serviceWorker.register('/sw.js').catch(() => {})

@@ -17,6 +17,7 @@
     "worker": "npm run start -w @zro/worker",
     "db:migrate": "tsx packages/db/src/cli.ts",
     "db:seed:demo": "tsx scripts/seed-demo.ts",
+    "db:release:revoke": "tsx scripts/release-revoke.ts",
     "contracts:export": "tsx packages/media-contracts/src/export-schemas.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit && npm run typecheck -w @zro/hub-web",
     "lint": "eslint .",

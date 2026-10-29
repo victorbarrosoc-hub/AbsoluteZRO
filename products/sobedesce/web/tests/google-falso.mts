@@ -28,8 +28,15 @@ export type ArquivoFalso = {
   createdTime: string;
   modifiedTime: string;
   permissionIds?: string[];
-  videoMediaMetadata?: { durationMillis: string };
+  /** Permissões (o Maestro liga e desliga "qualquer pessoa com o link"). Sem a lista: só a do dono. */
+  permissoes?: { id: string; type: string; role: string }[];
+  thumbnailLink?: string;
+  resourceKey?: string;
+  videoMediaMetadata?: { durationMillis: string; width?: number; height?: number };
   webViewLink?: string;
+  webContentLink?: string;
+  iconLink?: string;
+  size?: string;
 };
 
 /** Quebra a consulta do Drive nos "and" de fora (fora de aspas e chaves). */
@@ -86,6 +93,16 @@ function condicao(parte: string): (f: ArquivoFalso) => boolean {
     const v = tirarEscape(m[2]);
     return (f) => f.appProperties?.[k] === v;
   }
+  if ((m = new RegExp(`^name\\s+contains\\s+${STR}$`).exec(parte))) {
+    const n = tirarEscape(m[1]).toLowerCase();
+    return (f) => f.name.toLowerCase().includes(n);
+  }
+  // Busca da Z (lib/zro/drive-busca.ts): nome ou conteúdo contém (o "conteúdo" aqui é a descrição), sem diferenciar maiúsculas.
+  if ((m = new RegExp(`^\\(name\\s+contains\\s+${STR}\\s+or\\s+fullText\\s+contains\\s+${STR}\\)$`).exec(parte))) {
+    const n = tirarEscape(m[1]).toLowerCase();
+    const t = tirarEscape(m[2]).toLowerCase();
+    return (f) => f.name.toLowerCase().includes(n) || (f.description ?? "").toLowerCase().includes(t);
+  }
   throw new Error(`consulta: ${parte}`);
 }
 
@@ -103,6 +120,8 @@ export async function iniciarGoogleFalso(cliente: { clientId: string; clientSecr
   /** Drive de cada conta Google (por sub). */
   const drives = new Map<string, Map<string, ArquivoFalso>>();
   const contadoresDrive = { list: 0, create: 0, update: 0, get: 0 };
+  /** Parâmetros de cada files.list (para conferir q, fields, corpora...). */
+  const ultimasBuscas: URLSearchParams[] = [];
   const driveDe = (sub: string) => {
     if (!drives.has(sub)) drives.set(sub, new Map());
     return drives.get(sub)!;
@@ -223,6 +242,7 @@ export async function iniciarGoogleFalso(cliente: { clientId: string; clientSecr
         };
         if (!id && req.method === "GET") {
           contadoresDrive.list++;
+          ultimasBuscas.push(new URLSearchParams(url.searchParams));
           let filtros: ((f: ArquivoFalso) => boolean)[];
           try {
             filtros = partesDoQ(url.searchParams.get("q") ?? "").map(condicao);
@@ -230,8 +250,13 @@ export async function iniciarGoogleFalso(cliente: { clientId: string; clientSecr
             return enviar(res, 400, { error: { code: 400, message: "Invalid Value", errors: [{ reason: "invalid" }] } });
           }
           let lista = [...drive.values()].filter((f) => filtros.every((fn) => fn(f)));
-          if (/createdTime desc/.test(url.searchParams.get("orderBy") ?? "")) lista = lista.sort((x, y) => y.createdTime.localeCompare(x.createdTime));
-          return enviar(res, 200, { files: lista });
+          const ordem = url.searchParams.get("orderBy") ?? "";
+          if (/createdTime desc/.test(ordem)) lista = lista.sort((x, y) => y.createdTime.localeCompare(x.createdTime));
+          else if (/^createdTime$/.test(ordem)) lista = lista.sort((x, y) => x.createdTime.localeCompare(y.createdTime));
+          else if (/^modifiedTime desc$/.test(ordem)) lista = lista.sort((x, y) => y.modifiedTime.localeCompare(x.modifiedTime));
+          else if (/^(folder,)?name(_natural)?$/.test(ordem)) lista = lista.sort((x, y) => x.name.localeCompare(y.name));
+          const tamanho = Number(url.searchParams.get("pageSize")) || 100;
+          return enviar(res, 200, { files: lista.slice(0, tamanho) });
         }
         if (!id && req.method === "POST") {
           contadoresDrive.create++;
@@ -240,6 +265,29 @@ export async function iniciarGoogleFalso(cliente: { clientId: string; clientSecr
           const pai = b.parents[0];
           if (pai !== "root" && !drive.has(pai)) return naoAchou();
           return enviar(res, 200, novoArquivo(a.conta.sub, { name: b.name, mimeType: b.mimeType ?? "application/octet-stream", parents: b.parents, appProperties: b.appProperties, description: b.description }));
+        }
+        // Permissões: /files/<id>/permissions[/<pid>] (list, create, get, delete).
+        const perm = /^([^/]+)\/permissions(?:\/([^/]+))?$/.exec(id);
+        if (perm) {
+          const alvo = drive.get(perm[1]);
+          if (!alvo) return naoAchou();
+          alvo.permissoes ??= [{ id: `dono-${a.conta.sub}`, type: "user", role: "owner" }];
+          if (!perm[2] && req.method === "GET") return enviar(res, 200, { permissions: alvo.permissoes });
+          if (!perm[2] && req.method === "POST") {
+            const b = await lerCorpo();
+            const nova = { id: `perm${++seqArquivo}${randomBytes(3).toString("hex")}`, type: String(b.type), role: String(b.role) };
+            alvo.permissoes.push(nova);
+            return enviar(res, 200, nova);
+          }
+          const existente = alvo.permissoes.find((x) => x.id === perm[2]);
+          if (!existente) return enviar(res, 404, { error: { code: 404, message: "Permission not found", errors: [{ reason: "notFound" }] } });
+          if (req.method === "GET") return enviar(res, 200, existente);
+          if (req.method === "DELETE") {
+            alvo.permissoes = alvo.permissoes.filter((x) => x.id !== perm[2]);
+            res.writeHead(204);
+            return res.end();
+          }
+          return enviar(res, 405, { error: { code: 405, message: "Method not allowed" } });
         }
         const f = drive.get(id);
         if (!f) return naoAchou();
@@ -305,6 +353,7 @@ export async function iniciarGoogleFalso(cliente: { clientId: string; clientSecr
       for (const a of acessos.values()) a.expira = 0;
     },
     contadoresDrive,
+    ultimasBuscas,
     driveDe,
     /** Põe um arquivo no Drive falso (como o computador faria ao salvar uma referência). */
     adicionarArquivo(sub: string, a: Partial<ArquivoFalso> & { name: string; mimeType: string; parents: string[] }) {

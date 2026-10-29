@@ -15,7 +15,7 @@ const {servir,URL}=require('./_servir.js');
 const ok=[],bad=[]; const t=(c,m)=>(c?ok:bad).push(m);
 
 (async()=>{
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
   const errs=[];
   const entrar=async(W,H,mob,lado)=>{
     const ctx=await b.newContext({viewport:{width:W,height:H},isMobile:mob,hasTouch:mob});
@@ -36,7 +36,7 @@ const ok=[],bad=[]; const t=(c,m)=>(c?ok:bad).push(m);
     const tog=document.getElementById('lado-tog').getBoundingClientRect();
     const quem=document.elementFromPoint(tog.right-4,tog.top+tog.height/2);
     const at=nav.querySelector('.tab[aria-current="true"]:not([hidden])'), ind=nav.querySelector('.tabind');
-    const seal=document.querySelector('.top .selo-prev').getBoundingClientRect();
+    const seal=document.querySelector('.top .brand').getBoundingClientRect(); /* o selo Prévia saiu do topo (27/out): a marca é o vizinho */
     const menu=document.getElementById('menu-bt').getBoundingClientRect();
     return {min:document.documentElement.classList.contains('lado-min'),
       lado:getComputedStyle(document.documentElement).getPropertyValue('--lado').trim(),

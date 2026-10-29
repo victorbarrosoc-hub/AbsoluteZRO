@@ -1,0 +1,19 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": ["gru1"],
+  "framework": "nextjs",
+  "installCommand": "npm ci",
+  "buildCommand": "npm run vercel-build",
+  "devCommand": "npm run dev",
+  "outputDirectory": ".next",
+  "crons": [
+    {
+      "path": "/api/cron/revisao",
+      "schedule": "17 6 * * *"
+    },
+    {
+      "path": "/api/cron/combustivel",
+      "schedule": "41 13 * * 6"
+    }
+  ]
+}

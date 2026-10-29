@@ -1,0 +1,13 @@
+{
+  "name": "@zro/drive-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Núcleo do navegador do Google Drive da família (SOBEDESCE e Maestro): tipos, filtros, ordens, consulta do Drive v3, formatação e o stream por service worker. Sem framework.",
+  "exports": {
+    "./format.js": "./src/format.js",
+    "./nucleo.js": "./src/nucleo.js",
+    "./stream-pagina.js": "./src/stream-pagina.js",
+    "./sw.js": "./src/sw.js"
+  }
+}

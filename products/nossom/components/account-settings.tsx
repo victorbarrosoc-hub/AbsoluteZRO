@@ -18,8 +18,10 @@ import {
 import { accountPlan, type Account } from '@/lib/accounts';
 import StudioLink from './studio-link';
 import UserAvatar, { avatarFromFile } from './user-avatar';
+import { ZroSymbol } from './zro-symbol';
 import { usageLabel, type AudioUsage } from '@/lib/usage';
 import { zroMessage } from '@/lib/zro-messages';
+import { PasswordField } from './password-field';
 type ZroStatus = {
   configured: boolean;
   link: { email: string; organization: string | null; onlyLogin: boolean } | null;
@@ -300,8 +302,7 @@ export default function AccountSettings({
         {zro?.configured && (
           <section className="account-zro-card">
             <header className="settings-card-heading">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/absolute-zro-o-alpha.webp" alt="" width={21} height={21} />
+              <ZroSymbol size={21} />
               <h2>Absolute ZRO</h2>
             </header>
             {zro.link ? (
@@ -362,8 +363,7 @@ export default function AccountSettings({
             </label>
             <label>
               Senha atual para alterar e-mail
-              <input
-                type="password"
+              <PasswordField
                 value={emailPassword}
                 onChange={(e) => setEmailPassword(e.target.value)}
                 autoComplete="current-password"
@@ -391,8 +391,7 @@ export default function AccountSettings({
             </header>
             <label>
               Senha atual
-              <input
-                type="password"
+              <PasswordField
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 autoComplete="current-password"
@@ -402,8 +401,7 @@ export default function AccountSettings({
             </label>
             <label>
               Nova senha
-              <input
-                type="password"
+              <PasswordField
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"

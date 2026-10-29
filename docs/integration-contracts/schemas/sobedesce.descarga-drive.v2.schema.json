@@ -1,0 +1,218 @@
+{
+  "$id": "https://absolutezro.local/schemas/sobedesce.descarga-drive.v2.json",
+  "title": "Download do Drive conferido (SOBEDESCE, linha v2 do descargas.jsonl)",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "v": {
+      "type": "number",
+      "const": 2
+    },
+    "app": {
+      "type": "string",
+      "const": "sobedesce"
+    },
+    "app_versao": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    },
+    "tipo": {
+      "type": "string",
+      "const": "drive.download"
+    },
+    "op": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{6,100}$"
+    },
+    "project_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "quando": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+    },
+    "origem": {
+      "type": "object",
+      "properties": {
+        "tipo": {
+          "type": "string",
+          "const": "drive"
+        },
+        "pasta_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[\\w-]{1,200}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pasta": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        }
+      },
+      "required": [
+        "tipo",
+        "pasta_id",
+        "pasta"
+      ],
+      "additionalProperties": false
+    },
+    "destino": {
+      "type": "object",
+      "properties": {
+        "pasta": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "caminho": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "pasta"
+      ],
+      "additionalProperties": false
+    },
+    "estado": {
+      "type": "string",
+      "enum": [
+        "conferido",
+        "parcial"
+      ]
+    },
+    "verificacao": {
+      "type": "object",
+      "properties": {
+        "algoritmo": {
+          "type": "string",
+          "const": "md5"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "conferidos": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "sem_conferencia": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "tamanho": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": [
+        "algoritmo",
+        "total",
+        "conferidos",
+        "sem_conferencia",
+        "tamanho"
+      ],
+      "additionalProperties": false
+    },
+    "bytes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "arquivos": {
+      "minItems": 1,
+      "maxItems": 50000,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "rel": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "nome": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "file_id": {
+            "type": "string",
+            "pattern": "^[\\w-]{1,200}$"
+          },
+          "md5": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{32}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "conferido": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "rel",
+          "nome",
+          "size",
+          "file_id",
+          "md5",
+          "conferido"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "v",
+    "app",
+    "app_versao",
+    "tipo",
+    "op",
+    "quando",
+    "origem",
+    "destino",
+    "estado",
+    "verificacao",
+    "bytes",
+    "arquivos"
+  ],
+  "additionalProperties": false
+}

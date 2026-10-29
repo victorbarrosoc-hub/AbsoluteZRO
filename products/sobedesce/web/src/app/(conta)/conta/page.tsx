@@ -5,12 +5,13 @@ import { BotaoZro, LogoZro } from "@/components/conta/zro";
 import { mensagemDeErro } from "@/components/conta/mensagens";
 import { Moldura } from "@/components/conta/moldura";
 import { Linha, Linhas, Passo } from "@/components/kit/kit";
-import { Cloud, KeyRound, Laptop, LockKeyhole, Trash2, UserRound } from "lucide-react";
+import { Cloud, Laptop, LockKeyhole, Trash2, UserRound } from "lucide-react";
 import { exigirUsuario } from "@/lib/auth/atual";
 import { listarDispositivos } from "@/lib/auth/sessao";
 import { NoComputador } from "@/components/conta/no-computador";
 import { InicioConta } from "@/components/conta/inicio";
 import { MenuConta } from "@/components/conta/menu";
+import { AbasConta } from "@/components/conta/abas";
 import { contaComSenha } from "@/lib/auth/contas";
 import { linksLigados } from "@/lib/auth/encerrar";
 import { ehAdmin } from "@/lib/admin";
@@ -24,19 +25,27 @@ import { contaZroDe } from "@/lib/zro/contas";
 import { NOME_PLATAFORMA, tempoRelativo } from "@/lib/tempo";
 import { Computadores } from "./computadores";
 import { Drives } from "./drives";
-import { FormDesligarZro, FormGoogleDeEntrar, FormNome, FormPrimeiraSenha, FormSenha } from "./forms";
+import { FormDesligarZro, FormNome, FormPrimeiraSenha, FormSenha } from "./forms";
 import { ApagarConta } from "./apagar";
-import { BotaoSair } from "./sair";
+import { BotaoSair, SairDiscreto } from "./sair";
 import { SemAcessoZro } from "../sem-acesso";
+import { LigarZro } from "@/components/conta/ligar-zro";
+import { precisaLigarZro } from "@/lib/zro/ligar";
 
 export const metadata: Metadata = { title: "Sua conta" };
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 export default async function Conta({ searchParams }: Props) {
-  const { usuario, liberado } = await exigirUsuario("/conta");
+  const atual = await exigirUsuario("/conta");
+  const { usuario, liberado } = atual;
   if (!liberado) return <SemAcessoZro volta="/conta" />;
   const q = await searchParams;
+  // Conta antiga sem vínculo com a Absolute ZRO: a tela de ligar, uma vez (lib/zro/ligar.ts).
+  if (precisaLigarZro(atual)) {
+    const drives = await listarContas(usuario.id);
+    return <LigarZro volta="/conta" erro={typeof q.erro === "string" ? q.erro : undefined} temDrive={drives.length > 0} sair={<SairDiscreto />} />;
+  }
   const [contas, dispositivos, temSenha, admin, referencias, computadores, links, entrar, macs, zro] = await Promise.all([
     listarContas(usuario.id),
     listarDispositivos(usuario.id),
@@ -55,7 +64,7 @@ export default async function Conta({ searchParams }: Props) {
   const drivesOk = contas.filter((c) => c.estado === "ok").length;
 
   return (
-    <Moldura larga titulo={`Olá, ${primeiroNome}`} acao={<MenuConta admin={admin} sair={false} />}>
+    <Moldura larga abas={<AbasConta atual="conta" />} titulo={`Olá, ${primeiroNome}`} acao={<MenuConta admin={admin} sair={false} />}>
       {q.aviso === "nao-fui-eu" ? (
         // "Não fui eu" dos e-mails de aviso: o passo a passo para tirar da conta quem não devia estar nela.
         <Aviso tom="erro" className="mb-10">
@@ -81,11 +90,7 @@ export default async function Conta({ searchParams }: Props) {
               )}
             </li>
             <li>
-              Confira o{" "}
-              <a href="#entrar-google" className="font-medium underline underline-offset-2">
-                Google de entrar
-              </a>{" "}
-              e os{" "}
+              Confira os{" "}
               <a href="#computadores" className="font-medium underline underline-offset-2">
                 computadores
               </a>
@@ -165,24 +170,11 @@ export default async function Conta({ searchParams }: Props) {
             </p>
           </Passo>
 
-          {contas.length || entrar ? (
-            <Passo
-              id="entrar-google"
-              icone={<KeyRound />}
-              tom="up"
-              i={2}
-              titulo="Entrar com Google"
-              frase="Só um Google abre a sua conta. Os outros Drives conectados servem para enviar e baixar, não para entrar."
-            >
-              <FormGoogleDeEntrar contas={contas} entrar={entrar} temSenha={temSenha} />
-            </Passo>
-          ) : null}
-
           <Passo
             id="computadores"
             icone={<Laptop />}
             tom="ok"
-            i={3}
+            i={2}
             titulo="Computadores"
             frase="O app SOBEDESCE do computador entra na sua conta e usa os mesmos Drives."
             acao={dispositivos.length ? <span className="text-[13px] font-medium text-ink-3 tabular-nums">{dispositivos.length}</span> : null}

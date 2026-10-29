@@ -51,6 +51,11 @@ class MockCloud {
     this.andamento = [] // { metodo, corpo, nome }
     this.builds = [] // cabeçalho x-sobedesce-build de cada pedido
     this.uso = [] // corpos de POST /api/dispositivos/uso
+    // A Z (IA da Absolute ZRO): os pedidos repassados pelo motor a /api/zro/ia/*; `iaSemToken` = a conta não tem o token da Z.
+    this.ia = [] // { metodo, caminho, autorizacao, corpo }
+    this.iaSemToken = false
+    // Vínculo com a Absolute ZRO no /api/eu (web/src/lib/zro/ligar.ts). null = site antigo, sem o campo.
+    this.zro = null // { ligada, pedir, ligar }
     this.seq = 0
     this.server = null
     this.url = null
@@ -293,7 +298,7 @@ class MockCloud {
 
     if (method === 'GET' && p === '/api/eu') {
       this.stats.eu++
-      return this.#send(res, 200, { usuario: { ...this.user }, contas: this.contas.map(c => this.#conta(c)) })
+      return this.#send(res, 200, { usuario: { ...this.user }, contas: this.contas.map(c => this.#conta(c)), ...(this.zro ? { zro: { ...this.zro } } : {}) })
     }
 
     if (method === 'GET' && p === '/api/drive/contas') {
@@ -318,6 +323,27 @@ class MockCloud {
     }
 
     if (p.startsWith('/api/referencias/')) return this.#referencias(req, res, url, session)
+
+    if (p.startsWith('/api/zro/ia/')) {
+      const corpo = method === 'POST' ? JSON.stringify(await this.#body(req)) : ''
+      const caminho = p.slice('/api/zro/ia/'.length)
+      this.ia.push({ metodo: method, caminho, autorizacao: req.headers.authorization || null, corpo })
+      if (this.iaSemToken) return this.#send(res, 401, { erro: 'reconectar_zro', mensagem: 'Entre de novo com a Absolute ZRO para conversar com a Z.' })
+      if (method === 'GET' && caminho === 'estado') return this.#send(res, 200, { ligada: true, nome: this.user.nome.split(' ')[0], produto: 'sobedesce', creditos: { usados: 2, limite: 100, renova_em: '2026-11-01T00:00:00.000Z' } })
+      if (method === 'GET' && caminho === 'conversas') return this.#send(res, 200, { conversas: [] })
+      if (method === 'DELETE' && caminho.startsWith('conversas/')) {
+        res.writeHead(204)
+        return res.end()
+      }
+      if (method === 'POST' && caminho === 'mensagens') {
+        res.writeHead(200, { 'content-type': 'application/x-ndjson; charset=utf-8' })
+        res.write(JSON.stringify({ tipo: 'conversa', id: 'c1', titulo: 'Teste' }) + '\n')
+        await new Promise(ok => setTimeout(ok, 80))
+        res.write(JSON.stringify({ tipo: 'texto', t: 'Olá.' }) + '\n')
+        return res.end(JSON.stringify({ tipo: 'fim', mensagem: 'm1', creditos: 1 }) + '\n')
+      }
+      return this.#send(res, 404, { erro: 'nao_encontrado', mensagem: 'Não encontrado.' })
+    }
 
     if (p === '/api/dispositivos/uso' && method === 'POST') {
       this.uso.push(await this.#body(req))

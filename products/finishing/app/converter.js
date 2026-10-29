@@ -1,16 +1,32 @@
 // Revela · conversor no navegador (o "Handbrake" da Revela). Lê o arquivo com o Mediabunny (ProRes pelo decodificador
 // WASM), converte com WebCodecs (hardware quando o aparelho deixa) e grava MP4 marcado BT.709. Nada sai do aparelho.
 
+import './conta.js'
+import './menu.js'
 import * as MB from '../vendor/mediabunny.min.mjs'
 import { registerProresDecoder } from '../vendor/mediabunny-prores.min.mjs'
+import { assar } from '../src/cor/cube.js'
+import { ENTRADAS, criarCst } from '../src/cor/espacos.js'
+import { criarAplicadorLut } from './lut-gpu.js'
+import { criarEscalaGpu } from './escala-gpu.js'
 import { DESTINOS_CONVERSAO, LIMITE_MEMORIA, RESOLUCOES, nomeSaida, planejar, tamanhoLegivel } from '../src/conversao/plano.js'
 import { ICONES, NOME_CURTO, escalonar, glifo, icones, svg } from './visual.js'
+import { avisarPendencias } from './baloes.js'
+import { pendenciasConverter } from '../src/pendencias.js'
 
 registerProresDecoder()
+// reduzir o quadro na placa de vídeo (app/escala-gpu.js); para comparar, ?escala=canvas fica no caminho do Mediabunny
+// e ?escala=gpu usa a placa mesmo quando o WebGL é de software (testes)
+const escala = new URLSearchParams(location.search).get('escala')
+let escalouNaGpu = false
+if (escala !== 'canvas')
+  MB.registerVideoSampleTransformer(criarEscalaGpu(MB.VideoSample, { aoUsar: () => (escalouNaGpu = true), forcar: escala === 'gpu' }))
 icones()
 escalonar()
 
-const $ = (id) => document.getElementById(id)
+// o painel desta ferramenta: as abas trocam de painel sem recarregar (app/navegar.js), então tudo é procurado aqui dentro
+const raiz = document.querySelector('main')
+const $ = (id) => raiz.querySelector(`#${id}`)
 const fila = []
 let pasta = null // pasta escolhida para salvar direto no disco (computador)
 let rodando = false
@@ -51,7 +67,9 @@ $('resolucoes').append(
     no('label', { title: r.nome }, no('input', { type: 'radio', name: 'resolucao', value: String(r.id), checked: i === 0 }), NOMES_RESOLUCAO[r.id]),
   ),
 )
-const marcado = (nome) => document.querySelector(`input[name=${nome}]:checked`).value
+// Arquivo em log: o CST da Revela leva ao Rec.709 no caminho (mesmas curvas da tela de CST)
+$('cst').append(...ENTRADAS.map((e) => no('option', { value: e.id, textContent: e.nome })))
+const marcado = (nome) => raiz.querySelector(`input[name=${nome}]:checked`).value
 const destinoAtual = () => DESTINOS_CONVERSAO.find((d) => d.id === marcado('destino'))
 const resolucaoAtual = () => (marcado('resolucao') === 'original' ? 'original' : Number(marcado('resolucao')))
 const atualizar = () => fila.forEach((i) => i.estado === 'pronto' && mostrar(i))
@@ -103,9 +121,17 @@ async function adicionar(arquivos) {
   $('converter').disabled = !fila.some((i) => i.estado === 'pronto')
 }
 
-/** O decodificador de ProRes entrega quadros sem a cor; sem ela o navegador assume BT.601 (SD). */
-async function comCor(amostra, cor) {
-  if (amostra.colorSpace?.matrix) return amostra
+const REC709 = { primaries: 'bt709', transfer: 'bt709', matrix: 'bt709', fullRange: false }
+
+/**
+ * A cor de cada quadro. O decodificador de ProRes lê a do cabeçalho do quadro, que pode faltar (aí o navegador assume
+ * BT.601, de SD) ou contradizer o contêiner. A do contêiner manda, como no QuickTime; sem nenhuma, Rec.709.
+ */
+async function comCor(amostra, conteiner) {
+  const atual = amostra.colorSpace
+  const cor = conteiner?.matrix ? conteiner : atual?.matrix ? null : REC709
+  const igual = (k) => atual?.[k] === cor[k]
+  if (!cor || (igual('primaries') && igual('transfer') && igual('matrix') && Boolean(atual.fullRange) === Boolean(cor.fullRange))) return amostra
   const dados = new Uint8Array(amostra.allocationSize())
   const layout = await amostra.copyTo(dados)
   const nova = new MB.VideoSample(dados, {
@@ -154,7 +180,7 @@ async function miniatura(video, duracao, cor, item) {
   const inicio = await video.getFirstTimestamp()
   const amostra = await new MB.VideoSampleSink(video).getSample(inicio + Math.min(1, duracao * 0.1))
   if (!amostra) return
-  const certa = await comCor(amostra, cor?.matrix ? cor : { primaries: 'bt709', transfer: 'bt709', matrix: 'bt709', fullRange: false })
+  const certa = await comCor(amostra, cor)
   const tela = $(`item-${item.id}`)?.querySelector('canvas')
   if (tela) {
     tela.width = 224
@@ -230,9 +256,18 @@ function mostrar(item) {
   if (item.estado === 'feito' && item.url) {
     const a = no('a', { className: 'vidro vidro--tinta', href: item.url, download: item.nomeSaida, title: item.nomeSaida }, svg(ICONES.baixar), 'Baixar')
     a.setAttribute('aria-label', `Baixar ${item.nomeSaida}`)
+    // baixou: o vídeo deixa de esperar a pessoa (o balão da aba desconta)
+    a.addEventListener('click', () => {
+      item.baixado = true
+      contar()
+    })
     acoes.append(a)
   }
+  contar()
 }
+
+/** O balão da aba Converter: vídeos esperando o botão Converter e prontos para baixar (src/pendencias.js). */
+const contar = () => avisarPendencias('converter', pendenciasConverter(fila, { rodando }))
 
 function progresso(item, valor, inicio) {
   const li = $(`item-${item.id}`)
@@ -273,6 +308,29 @@ async function converter(item) {
   const input = new MB.Input({ source: new MB.BlobSource(item.arquivo), formats: MB.ALL_FORMATS })
   const output = new MB.Output({ format: new MB.Mp4OutputFormat({ fastStart: pasta ? false : 'in-memory' }), target })
   const corOrigem = item.info.cor?.matrix ? item.info.cor : plano.cor
+  const cstId = $('cst').value
+  const gpu = cstId ? criarAplicadorLut(assar(criarCst(cstId, 'rec709').aplicar, 65)) : null
+  if (cstId) item.avisos.push(`Log ${ENTRADAS.find((e) => e.id === cstId).nome} → Rec.709.`)
+  // com o CST, cada quadro passa pela LUT na GPU e volta como RGBA marcado BT.709
+  const processar = async (amostra) => {
+    const certa = await comCor(amostra, item.info.cor)
+    if (!gpu) return certa
+    const quadro = certa.toVideoFrame()
+    const largura = certa.displayWidth
+    const altura = certa.displayHeight
+    const rgba = gpu.aplicar(quadro, largura, altura, !corOrigem.fullRange)
+    quadro.close()
+    const nova = new MB.VideoSample(rgba, {
+      format: 'RGBA',
+      codedWidth: largura,
+      codedHeight: altura,
+      timestamp: certa.timestamp,
+      duration: certa.duration,
+      colorSpace: { primaries: 'bt709', transfer: 'bt709', matrix: 'rgb', fullRange: true },
+    })
+    certa.close()
+    return nova
+  }
 
   const conversao = await MB.Conversion.init({
     input,
@@ -286,7 +344,7 @@ async function converter(item) {
       quality: new MB.Quality({ bitrate: plano.video.bitrate }),
       forceTranscode: true,
       hardwareAcceleration: 'no-preference', // o navegador usa o hardware quando existe; exigir hardware falha onde não há
-      process: (amostra) => comCor(amostra, corOrigem),
+      process: processar,
     },
     audio: acodec
       ? { codec: acodec, quality: new MB.Quality({ bitrate: plano.audio.bitrate }), sampleRate: plano.audio.taxa, forceTranscode: true }
@@ -296,6 +354,7 @@ async function converter(item) {
   item.conversao = conversao
   mostrar(item)
   const inicio = performance.now()
+  escalouNaGpu = false
   conversao.onProgress = (v) => progresso(item, v, inicio)
   await conversao.execute()
 
@@ -312,12 +371,14 @@ async function converter(item) {
     item.bytes ? tamanhoLegivel(item.bytes) : 'salvo na pasta',
   ]
   item.estado = 'feito'
+  $(`item-${item.id}`).dataset.escala = escalouNaGpu ? 'gpu' : 'nenhuma'
   mostrar(item)
 }
 
 $('converter').addEventListener('click', async () => {
   if (rodando) return
   rodando = true
+  contar()
   $('converter').disabled = true
   try {
     if ($('salvar-pasta').checked && 'showDirectoryPicker' in window && !pasta) pasta = await window.showDirectoryPicker({ mode: 'readwrite' })
@@ -334,6 +395,7 @@ $('converter').addEventListener('click', async () => {
     }
   }
   rodando = false
+  contar()
   $('converter').disabled = !fila.some((i) => i.estado === 'pronto')
   avisar('')
 })

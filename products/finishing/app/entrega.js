@@ -1,10 +1,14 @@
 // Revela · entrega por destino: escolhe o destino, mostra codec/cor/áudio com fonte e data, baixa o script do Resolve.
 
+import './conta.js'
+import './menu.js'
 import { DESTINOS, destino } from '../src/entrega/destinos.js'
 import { gerarScript, nomeScript } from '../src/entrega/resolve.js'
-import { ICONES, NOME_CURTO, escalonar, glifo, icones, svg } from './visual.js'
+import { ICONES, NOME_CURTO, cascata, escalonar, glifo, icones, svg } from './visual.js'
 
-const $ = (id) => document.getElementById(id)
+// o painel desta ferramenta: as abas trocam de painel sem recarregar (app/navegar.js), então tudo é procurado aqui dentro
+const raiz = document.querySelector('main')
+const $ = (id) => raiz.querySelector(`#${id}`)
 const el = (tag, { dataset, ...props } = {}, ...filhos) => {
   const n = Object.assign(document.createElement(tag), props)
   if (dataset) Object.assign(n.dataset, dataset) // dataset é só leitura no elemento: preenche por dentro
@@ -28,6 +32,7 @@ function listar() {
   )
   // o nome inteiro para leitor de tela e para a busca por nome
   for (const b of $('destinos').children) b.setAttribute('aria-label', destino(b.dataset.id).nome)
+  cascata($('destinos'))
 }
 
 function linha(rotulo, valor) {
@@ -36,7 +41,7 @@ function linha(rotulo, valor) {
 
 function escolher(id) {
   const d = destino(id) ?? DESTINOS[0]
-  for (const b of document.querySelectorAll('#destinos .cartao')) {
+  for (const b of raiz.querySelectorAll('#destinos .cartao')) {
     b.setAttribute('aria-pressed', String(b.dataset.id === d.id))
     if (b.dataset.id === d.id) b.scrollIntoView({ block: 'nearest', inline: 'nearest' }) // na fileira do celular
   }
@@ -163,7 +168,7 @@ function spec(rotulo, valor, sub) {
 const audioNome = (a) => (a.codec === 'lpcm' ? `PCM ${a.bits} bits` : `${a.codec.toUpperCase()} ${a.kbps}`)
 
 function baixar(d) {
-  const url = URL.createObjectURL(new Blob([gerarScript(d)], { type: 'text/x-python' }))
+  const url = URL.createObjectURL(new Blob([gerarScript(d)], { type: 'application/octet-stream' }))
   const link = el('a', { href: url, download: nomeScript(d) })
   document.body.append(link)
   link.click()

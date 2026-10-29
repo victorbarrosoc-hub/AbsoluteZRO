@@ -105,7 +105,7 @@ for (const mode of [
       }
       return r.fulfill({ status: 400 });
     });
-    await page.goto('/studio');
+    await page.goto('/studio/inicio');
     await page.getByRole('button', { name: 'Isolar voz', exact: true }).click();
     await expect(page).toHaveURL(/\/studio\/isolar-voz$/);
     await page

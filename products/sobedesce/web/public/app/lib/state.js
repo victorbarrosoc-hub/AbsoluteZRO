@@ -1,6 +1,7 @@
 // Estado global mínimo: um objeto, quem quiser se inscreve. Os componentes leem com useApp(seletor).
 import { useEffect, useReducer, useRef } from '../vendor/preact-htm.js'
 import { LAN, local } from './config.js'
+import { linkDoHash } from './drive-link.js'
 
 const listeners = new Set()
 
@@ -9,6 +10,8 @@ let state = {
   // issue (com a tela principal aberta): null | 'reconectar' (o Google pediu nova autorização) | 'rede' (sem resposta)
   auth: { status: LAN ? 'signedIn' : 'loading', issue: null, error: null },
   account: null, // conta SOBEDESCE { id, email, nome }
+  zro: null, // vínculo com a Absolute ZRO { ligada, pedir } (lib/ligar-zro.js); null = o servidor não disse
+  zroErro: null, // ?erro= da volta do vincular (só os zro_*), lido uma vez ao abrir
   drives: [], // Google Drives da conta: [{ id, email, nome, fotoUrl, estado: 'ok' | 'reconectar' }]
   drive: null, // o Drive escolhido neste aparelho (um dos acima)
   resumeAt: 0, // o Drive voltou depois de "reconectar": retomar o que pausou por isso
@@ -18,8 +21,9 @@ let state = {
   awake: false, // trava de tela acesa ativa
   lan: null, // modo Wi-Fi: { mac, noAccount, deleteAfterUpload, error, badCode }
   sheet: null, // { name, props }
-  tab: 'send', // 'send' (envio) | 'drive' (navegar e baixar) | 'ap' (Aparelhos, Wi-Fi) | 'refs' (Referências) | 'criar' (Frames…); no modo Wi-Fi só 'send'
+  tab: 'z', // 'z' (a Z, a primeira aba; a entrada quando não há tarefa em curso, lib/entrada.js) | 'send' (envio) | 'drive' (navegar e baixar) | 'ap' (Aparelhos, Wi-Fi) | 'refs' (Referências) | 'criar' (Frames…); no modo Wi-Fi só 'send'
   criarTela: 'hub', // aba Criar: 'hub' | 'frames' | 'calc'
+  abrirLink: null, // link profundo #drive/<id>, #arquivo/<id> ou #baixar/<id> (lib/drive-link.js): a aba Drive abre e zera
   escolher: null, // aba Drive escolhendo um arquivo para outra tela: { para: 'frames' } (tocar no vídeo leva para lá)
   recursos: {}, // de /api/eu: { referencias: boolean }
   refs: { status: 'idle', colecoes: [], fila: [], raiz: null, error: null, at: 0 }, // Referências (lib/referencias.js)
@@ -132,6 +136,8 @@ export function savedTab() {
   if (LAN) return 'send'
   if (typeof location !== 'undefined' && location.hash === '#referencias') return 'refs'
   if (typeof location !== 'undefined' && location.hash === '#aparelhos') return 'ap'
-  const t = local.get('sobedesce.tab')
-  return t === 'drive' || t === 'ap' || t === 'refs' || t === 'criar' ? t : 'send'
+  if (typeof location !== 'undefined' && linkDoHash(location.hash)) return 'drive'
+  // Quem abre o app cai na Z (pedido do titular, 27/10/2026), a não ser que haja tarefa em curso (lib/entrada.js,
+  // 28/10/2026); os links com # continuam abrindo a aba deles.
+  return 'z'
 }

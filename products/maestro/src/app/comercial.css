@@ -1,0 +1,604 @@
+/*
+ * Marca da produtora, pedidos, link do orçamento e "Hoje" (plano v2 §6.2, §6.3, §8 e fase 19).
+ * A cor da produtora entra como `--acento` (superfície, filete, ponto); texto só em grafite/branco e cinza de apoio.
+ * Motion só em CSS, desligado com "reduzir movimento".
+ */
+
+/* ───────────── Ajustes → Marca ───────────── */
+.marca {
+  display: grid;
+  gap: 20px;
+  align-items: start;
+}
+@media (min-width: 1040px) {
+  .marca {
+    grid-template-columns: minmax(0, 1fr) 360px;
+  }
+  .marca__previa {
+    position: sticky;
+    top: 24px;
+  }
+}
+.marca__lado {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.marca-logo {
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: center;
+}
+.marca-logo__palco {
+  display: grid;
+  place-items: center;
+  width: 112px;
+  height: 112px;
+  padding: 12px;
+  border-radius: 20px;
+  background: repeating-conic-gradient(var(--surface-3) 0% 25%, var(--surface) 0% 50%) 50% / 16px 16px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.marca-logo__palco img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.marca-logo__vazio {
+  color: var(--text-faint);
+}
+.marca-logo__miolo {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.marca-logo__miolo p {
+  margin: 0;
+}
+.marca-logo__arquivo {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+}
+.marca-logo__arquivo input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.marca-logo__arquivo:focus-within .glass-btn {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.marca-cor {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.marca-cor legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font-size: 0.86rem;
+  font-weight: 650;
+  color: var(--text-mute);
+}
+.marca-cor__linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.marca-cor__amostra {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.12),
+    0 1px 2px rgb(0 0 0 / 0.1);
+  transition: transform 0.2s var(--spring);
+}
+.marca-cor__amostra[aria-pressed="true"] {
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 4px var(--text-strong);
+}
+.marca-cor__amostra:hover {
+  transform: scale(1.08);
+}
+.marca-cor__seletor {
+  width: 40px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.marca-cor__hex {
+  width: 110px;
+  height: 38px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  font:
+    600 0.92rem ui-monospace,
+    "SF Mono",
+    Menlo,
+    monospace;
+  color: var(--text-strong);
+}
+.marca__previa {
+  display: grid;
+  gap: 10px;
+}
+.marca__previa-rotulo {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.marca-folha {
+  --lh-ink: #111114;
+  --lh-mute: #5c5c62;
+  --lh-soft: #6e6e73;
+  display: grid;
+  gap: 10px;
+  padding: 28px 26px 34px;
+  border-radius: 6px;
+  background: #fff;
+  color: #111114;
+  align-content: start;
+  min-height: 300px;
+  box-shadow:
+    0 30px 80px -30px rgb(0 0 0 / 0.35),
+    0 0 0 1px rgb(0 0 0 / 0.06);
+}
+.marca fieldset.form__grade {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.marca-folha__topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.marca-folha__topo img {
+  max-width: 130px;
+  max-height: 40px;
+  object-fit: contain;
+}
+.marca-folha .lh-marca {
+  font-size: 1rem;
+}
+.marca-folha .lh-kicker {
+  margin: 0;
+}
+.marca-folha__titulo {
+  margin: 0;
+  font-family: var(--font-apple);
+  font-weight: 700;
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+}
+.marca-folha__barra {
+  display: block;
+  height: 7px;
+  border-radius: 4px;
+  background: #ededef;
+}
+.marca-folha__barra--curta {
+  width: 60%;
+}
+.marca-folha .lh-assinatura {
+  margin-top: 18px;
+}
+@media (max-width: 560px) {
+  .marca-logo {
+    grid-template-columns: 1fr;
+    justify-items: start;
+  }
+}
+
+/* ───────────── a marca nas páginas do cliente (/a, /p, /o) ───────────── */
+.cl-marca {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+}
+.cl-marca img {
+  display: block;
+  max-height: 40px;
+  max-width: 160px;
+  object-fit: contain;
+}
+.cl-marca__nome {
+  font-family: var(--font-apple);
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  color: var(--text-strong);
+  padding-top: 3px;
+  border-top: 3px solid var(--acento);
+}
+.cl-filete {
+  display: block;
+  height: 3px;
+  width: 48px;
+  border-radius: 2px;
+  background: var(--acento);
+}
+
+/* ───────────── links públicos na tela da equipe (pedido e orçamento) ───────────── */
+.lp {
+  display: grid;
+  gap: 16px;
+}
+.lp-cartao {
+  gap: 14px;
+}
+.lp-cartao p {
+  margin: 0;
+}
+.lp-link {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.lp-link input {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font:
+    500 0.86rem ui-monospace,
+    "SF Mono",
+    Menlo,
+    monospace;
+  color: var(--text-strong);
+  text-overflow: ellipsis;
+}
+.lp-perguntas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.lp-pergunta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-size: 0.9rem;
+  color: var(--text-strong);
+  cursor: pointer;
+}
+.lp-pergunta input {
+  accent-color: #1d1d1f;
+}
+.lp-gerar {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+.lp-gerar .q-segmentos button {
+  white-space: nowrap;
+}
+.lp-parcelas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9rem;
+}
+.lp-orcamento {
+  margin-bottom: 16px;
+}
+.oc-aviso-equipe {
+  margin: 0 0 12px;
+}
+.oc-retorno-equipe {
+  margin-bottom: 12px;
+  gap: 8px;
+}
+.oc-retorno-equipe .ficha__titulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.oc-retorno-equipe p {
+  margin: 0;
+}
+
+/* ───────────── kit próprio do freela (drizzle/0013) ───────────── */
+.kit {
+  display: grid;
+  gap: 12px;
+}
+.kit-lista {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.kit-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--line);
+}
+.kit-item[data-inativo] {
+  opacity: 0.6;
+}
+.kit-item--aberto {
+  display: block;
+}
+.kit-item__cat {
+  flex: none;
+  min-width: 96px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.kit-item__nome {
+  display: grid;
+  flex: 1 1 160px;
+  min-width: 0;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.kit-item__nome small {
+  font-weight: 400;
+  color: var(--text-faint);
+}
+.kit-item__diaria {
+  font-size: 0.88rem;
+  color: var(--text-mute);
+}
+.kit-item__acoes {
+  display: inline-flex;
+  gap: 2px;
+}
+.kit-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  padding: 14px;
+  border-radius: 18px;
+  background: var(--surface-2);
+}
+.kit-form__largo {
+  grid-column: 1 / -1;
+}
+.kit-form .form__campo {
+  display: grid;
+  gap: 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+.kit-form :is(input, select) {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: var(--text-strong);
+}
+.kit-escala {
+  flex-basis: 100%;
+  font-size: 0.88rem;
+}
+.kit-escala summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: var(--text-mute);
+}
+.kit-escala__form {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+.kit-escala__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.kit-escala__item span:nth-of-type(1) {
+  flex: 1;
+  color: var(--text-strong);
+}
+
+/* ───────────── Hoje ───────────── */
+.hoje-agenda {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 18px 20px;
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+.hoje-agenda ul {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hoje-evento {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 6px;
+  border-radius: 12px;
+  color: var(--text-strong);
+  text-decoration: none;
+}
+.hoje-evento:hover {
+  background: var(--hover);
+}
+.hoje-evento__hora {
+  flex: none;
+  width: 72px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text-mute);
+  border-left: 3px solid var(--acento);
+  padding-left: 10px;
+}
+.hoje-evento__miolo {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.hoje-evento__miolo small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-faint);
+}
+.hoje-agenda__vazio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--text-faint);
+}
+.hoje-agenda__mais {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-mute);
+  text-decoration: none;
+}
+.hoje-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: 12px;
+}
+.hoje-cartao {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  min-height: 150px;
+  padding: 18px 18px 16px;
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+  color: var(--text-strong);
+  text-decoration: none;
+  transition:
+    transform 0.25s var(--spring),
+    box-shadow 0.25s var(--ease);
+  animation: hoje-entra 0.5s var(--spring) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+.hoje-cartao:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-float), var(--lift);
+}
+@keyframes hoje-entra {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.hoje-cartao__icone {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 10px;
+  border-radius: 11px;
+  background: var(--acento-suave);
+  color: var(--text-strong);
+}
+.hoje-cartao[data-tom="aviso"] .hoje-cartao__icone {
+  background: color-mix(in srgb, var(--warn-text) 16%, transparent);
+}
+.hoje-cartao[data-tom="perigo"] .hoje-cartao__icone {
+  background: color-mix(in srgb, var(--danger-text) 14%, transparent);
+}
+.hoje-cartao[data-tom="ok"] .hoje-cartao__icone {
+  background: color-mix(in srgb, var(--ok-text) 14%, transparent);
+}
+.hoje-cartao__n {
+  font-family: var(--font-apple);
+  font-size: clamp(1.6rem, 2.6vw, 2.1rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.hoje-cartao__rotulo {
+  font-weight: 650;
+}
+.hoje-cartao__apoio {
+  font-size: 0.86rem;
+  color: var(--text-faint);
+}
+.hoje-cartao[data-tom="aviso"] .hoje-cartao__apoio {
+  color: var(--warn-text);
+}
+.hoje-cartao[data-tom="perigo"] .hoje-cartao__apoio {
+  color: var(--danger-text);
+}
+@media (max-width: 560px) {
+  .hoje-grade {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .hoje-cartao {
+    min-height: 132px;
+    padding: 14px;
+  }
+  .hoje-cartao__n {
+    font-size: 1.45rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hoje-cartao {
+    animation: none;
+    transition: none;
+  }
+}

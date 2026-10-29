@@ -12,7 +12,7 @@ const path=require('path');
 const ok=[],bad=[]; const t=(c,m)=>(c?ok:bad).push(m);
 
 (async()=>{
-  const b=await chromium.launch({executablePath:process.env.CHROME||'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
+  const b=await require('./_navegador.js').abrir();
   for(const [W,H,mob] of [[1440,900,false],[390,844,true]]){
     const ctx=await b.newContext({viewport:{width:W,height:H},isMobile:mob});
     const p=await ctx.newPage();

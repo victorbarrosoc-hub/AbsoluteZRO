@@ -1,0 +1,33 @@
+{
+  "$id": "https://absolutezro.local/schemas/zro.app-pedido.entrada.v1.json",
+  "title": "Ponte entre apps: pedido ao HUB v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "destino": {
+      "type": "string",
+      "const": "sobedesce"
+    },
+    "acao": {
+      "type": "string",
+      "enum": [
+        "drive.listar",
+        "drive.miniatura",
+        "drive.pasta.criar",
+        "drive.compartilhar_revisao",
+        "drive.recolher_revisao",
+        "drive.token"
+      ]
+    },
+    "sub": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    }
+  },
+  "required": [
+    "destino",
+    "acao"
+  ],
+  "additionalProperties": false
+}

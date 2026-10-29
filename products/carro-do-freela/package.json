@@ -12,6 +12,14 @@
     "test:api": "node --test test/api/zro.test.js",
     "build:vercel": "node src/vercel-build.js",
     "servir": "node src/servir-saida.js",
-    "publicar": "node src/publicar.js"
+    "publicar": "node src/publicar.js",
+    "test:banco": "node --test --test-concurrency=1 test/api/banco.test.js test/api/banco-tela.test.js",
+    "db:migrate": "node db/migrar.js"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  },
+  "dependencies": {
+    "pg": "8.23.1"
   }
 }

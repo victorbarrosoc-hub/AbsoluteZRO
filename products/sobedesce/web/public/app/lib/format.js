@@ -1,4 +1,6 @@
 // Formatação em pt-BR. Tamanhos em unidades DECIMAIS (1 GB = 1e9 bytes), como o app do computador.
+// Parte do núcleo do Drive da família (packages/drive-web/src/format.js); a cópia do SOBEDESCE
+// (products/sobedesce/web/public/app/lib/format.js) tem de ser idêntica (products/sobedesce/test/drive-web.test.js).
 
 const nf = (min, max) => new Intl.NumberFormat('pt-BR', { minimumFractionDigits: min, maximumFractionDigits: max })
 const NF0 = nf(0, 0)

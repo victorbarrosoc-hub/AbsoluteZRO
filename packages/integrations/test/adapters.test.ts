@@ -6,12 +6,15 @@ import {
   buildSobedesceManifest,
   parseChecksumReport,
   parseDescargas,
+  parseEntrega,
+  parsePreparos,
   planOrganization,
   projectInputFromJob,
   scriptFromTpeasyBackup,
   sobedesceAssetId,
   toTpeasyBackup,
   tpeasyBlocks,
+  ultimoPreparo,
 } from '../src/index'
 import { fixture } from '../../../tests/integration/helpers'
 
@@ -144,5 +147,94 @@ describe('TPeasy e Carro do Freela', () => {
     const p = projectInputFromJob(job)
     expect(p.brief).toMatchObject({ source: 'carro-do-freela', job_id: 'job-1', crew_roles: [{ role: 'Câmera', count: 2 }] })
     expect(CarroJobSchema.safeParse({ contract: 'carro-do-freela.job/1', job_id: 'j', title: 't', references: ['http://inseguro'] }).success).toBe(false)
+  })
+})
+
+describe('SOBEDESCE → entrega conferida', () => {
+  const base = () => JSON.parse(fixture('sobedesce/entrega.json'))
+  it('lê o comprovante gerado pelo código real', () => {
+    const r = parseEntrega(fixture('sobedesce/entrega.json'))
+    expect(r.ok && r.entrega.arquivos.map((a) => a.rel)).toEqual(['Filme X · Reels.mp4', 'Filme X · YouTube.mp4', 'Legendas/Filme X.srt'])
+  })
+  it('recusa caminho perigoso, MD5 fora do formato, arquivo repetido e link que não é o da pasta', () => {
+    const casos: [string, (e: ReturnType<typeof base>) => void][] = [
+      ['caminho', (e) => (e.arquivos[0].rel = '../fora.mp4')],
+      ['md5', (e) => (e.arquivos[0].md5 = 'abc')],
+      ['repetido', (e) => (e.arquivos[1].rel = e.arquivos[0].rel)],
+      ['link', (e) => (e.drive.link = 'https://drive.google.com/drive/folders/outra')],
+      ['vazio', (e) => (e.arquivos = [])],
+    ]
+    for (const [nome, mexer] of casos) {
+      const e = base()
+      mexer(e)
+      expect(parseEntrega(JSON.stringify(e)).ok, nome).toBe(false)
+    }
+    expect(parseEntrega('não é json').ok).toBe(false)
+  })
+})
+
+describe('SOBEDESCE → Synquei: download do Drive (v2) e recibo do Synquei', () => {
+  const texto = fixture('sobedesce/drive-descargas.jsonl')
+  const linhaV2 = () => JSON.parse(texto.trim().split('\n')[1]!)
+  const comLinha = (l: unknown) => `${JSON.stringify(l)}\n`
+
+  it('lê a linha v2 gerada pelo código real; a v1 do mesmo arquivo continua igual', () => {
+    const p = parseDescargas(texto)
+    expect(p.entries).toHaveLength(1)
+    expect(p.drive).toHaveLength(1)
+    expect(p.skipped).toEqual([])
+    const d = p.drive[0]!
+    expect(d).toMatchObject({ v: 2, tipo: 'drive.download', op: 'bFixtureDrive01', estado: 'parcial', project_id: null })
+    expect(d.verificacao).toEqual({ algoritmo: 'md5', total: 4, conferidos: 3, sem_conferencia: 1, tamanho: true })
+    expect(d.arquivos.find((a) => a.rel === 'Roteiro.docx')).toMatchObject({ md5: null, conferido: false })
+    expect(JSON.stringify(d)).not.toMatch(/token|@|https:/)
+  })
+
+  it('manifesto adulterado ou fora do contrato fica de fora, com o motivo', () => {
+    const casos: [string, (l: ReturnType<typeof linhaV2>) => void][] = [
+      ['campo a mais', (l) => (l.token = 'x')],
+      ['..', (l) => (l.arquivos[0].rel = '../../etc/passwd')],
+      ['absoluto', (l) => (l.arquivos[0].rel = '/etc/passwd')],
+      ['barra invertida', (l) => (l.arquivos[0].rel = 'Câmera A\\C0001.MP4')],
+      ['segmento vazio', (l) => (l.arquivos[0].rel = 'Câmera A//C0001.MP4')],
+      ['conferido sem md5', (l) => (l.arquivos[0].md5 = null)],
+      ['contagem', (l) => (l.verificacao.conferidos = 4)],
+      ['estado mentindo', (l) => (l.estado = 'conferido')],
+      ['bytes', (l) => (l.bytes = 1)],
+      ['repetido', (l) => (l.arquivos[1] = { ...l.arquivos[0] })],
+      ['op', (l) => (l.op = 'a b')],
+      ['project_id', (l) => (l.project_id = 'nao-uuid')],
+      ['origem com conta', (l) => (l.origem.conta = 'x@y.z')],
+    ]
+    for (const [nome, mexer] of casos) {
+      const l = linhaV2()
+      mexer(l)
+      const p = parseDescargas(comLinha(l))
+      expect(p.drive, nome).toHaveLength(0)
+      expect(p.skipped[0]?.reason, nome).toMatch(/fora do contrato v2/)
+    }
+    // project_id de verdade (vínculo em degraus) passa
+    expect(parseDescargas(comLinha({ ...linhaV2(), project_id: projectId })).drive[0]?.project_id).toBe(projectId)
+  })
+
+  it('recibo do Synquei: a última linha do op vale; adulterado fica de fora', () => {
+    const r = parsePreparos(fixture('sobedesce/drive-preparos.jsonl'))
+    expect(r.entries.map((e) => e.estado)).toEqual(['recebido', 'preparando', 'com_pendencias'])
+    const ultimo = ultimoPreparo(r.entries, 'bFixtureDrive01')
+    expect(ultimo?.resultado).toMatchObject({ organizados: 3, revisar: 1, pendentes: 1 })
+    expect(ultimo?.exemplos.revisar).toEqual(['Câmera B/A001_C002.MOV'])
+    expect(ultimoPreparo(r.entries, 'outroLote01')).toBeNull()
+    const base = r.entries[2]!
+    const ruins = [
+      { ...base, estado: 'feito' },
+      { ...base, resultado: { ...base.resultado, organizados: -1 } },
+      { ...base, exemplos: { ...base.exemplos, ausentes: ['../x'] } },
+      { ...base, exemplos: { ...base.exemplos, ausentes: Array.from({ length: 31 }, (_, i) => `a${i}`) } },
+      { ...base, extra: 1 },
+    ]
+    const p2 = parsePreparos(ruins.map((x) => JSON.stringify(x)).join('\n') + '\nlixo\n{"formato":')
+    expect(p2.entries).toHaveLength(0)
+    expect(p2.skipped).toHaveLength(6)
+    expect(p2.partialTail).toBe(true)
   })
 })
