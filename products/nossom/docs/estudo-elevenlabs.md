@@ -5,16 +5,16 @@ sozinha e leve as pessoas ao ecossistema Absolute ZRO. Este documento separa o q
 
 ## O que o ElevenLabs entrega (out/2026)
 
-| Produto            | O que faz                                                                                  |
-| ------------------ | ------------------------------------------------------------------------------------------ |
-| Voice Isolator     | Tira música, ruído e multidão de qualquer gravação de fala; um clique, aceita vídeo. API.  |
-| Scribe (STT)       | Transcrição em 99 idiomas, diarização (até 48 falantes), marcação de tempo, tempo real.    |
-| Studio 4.0         | Editor de projeto longo com vídeo, imagem, fala, música e efeitos.                         |
-| TTS v4 e clonagem  | Vozes sintéticas, desenho de voz, clone com ~30 s de áudio.                                |
-| Voice changer      | Troca a voz preservando a interpretação.                                                   |
-| Dubbing v2         | Tradução com a voz original, edição de transcrição e tradução.                             |
-| Efeitos e música   | Geração por texto.                                                                         |
-| Preço do Isolator  | API por volta de US$ 0,12/min (página de preços; confirmar antes de citar publicamente).   |
+| Produto           | O que faz                                                                                 |
+| ----------------- | ----------------------------------------------------------------------------------------- |
+| Voice Isolator    | Tira música, ruído e multidão de qualquer gravação de fala; um clique, aceita vídeo. API. |
+| Scribe (STT)      | Transcrição em 99 idiomas, diarização (até 48 falantes), marcação de tempo, tempo real.   |
+| Studio 4.0        | Editor de projeto longo com vídeo, imagem, fala, música e efeitos.                        |
+| TTS v4 e clonagem | Vozes sintéticas, desenho de voz, clone com ~30 s de áudio.                               |
+| Voice changer     | Troca a voz preservando a interpretação.                                                  |
+| Dubbing v2        | Tradução com a voz original, edição de transcrição e tradução.                            |
+| Efeitos e música  | Geração por texto.                                                                        |
+| Preço do Isolator | API por volta de US$ 0,12/min (página de preços; confirmar antes de citar publicamente).  |
 
 ## Onde o NOSSOM estava (antes desta entrega)
 
@@ -53,14 +53,14 @@ cozinha; CC BY 4.0), música instrumental (Kevin MacLeod, CC BY 4.0) e uma sala 
 10–15 s. Métricas: SI-SDR e PESQ-WB/ESTOI contra a fala limpa; DNSMOS (Microsoft) sem referência. Média dos sete
 cenários com ruído:
 
-| Motor                                 | SI-SDR (dB) | PESQ-WB  | ESTOI    | DNSMOS OVRL |
-| ------------------------------------- | ----------- | -------- | -------- | ----------- |
-| Entrada (sem tratar)                  | −0,17       | 1,26     | 0,68     | 1,81        |
-| HTDemucs (Isolar voz antigo)          | 9,96        | 1,87     | 0,81     | 2,52        |
-| DeepFilterNet3 (motor local)          | 11,13       | 2,16     | 0,83     | 3,02        |
-| MossFormer2 sozinho                   | 13,14       | 2,46     | 0,87     | 3,15        |
-| Mel-Band RoFormer sozinho             | 14,09       | 2,36     | 0,86     | 2,90        |
-| **RoFormer + MossFormer2 (novo)**     | **15,46**   | **2,56** | **0,90** | **3,23**    |
+| Motor                             | SI-SDR (dB) | PESQ-WB  | ESTOI    | DNSMOS OVRL |
+| --------------------------------- | ----------- | -------- | -------- | ----------- |
+| Entrada (sem tratar)              | −0,17       | 1,26     | 0,68     | 1,81        |
+| HTDemucs (Isolar voz antigo)      | 9,96        | 1,87     | 0,81     | 2,52        |
+| DeepFilterNet3 (motor local)      | 11,13       | 2,16     | 0,83     | 3,02        |
+| MossFormer2 sozinho               | 13,14       | 2,46     | 0,87     | 3,15        |
+| Mel-Band RoFormer sozinho         | 14,09       | 2,36     | 0,86     | 2,90        |
+| **RoFormer + MossFormer2 (novo)** | **15,46**   | **2,56** | **0,90** | **3,23**    |
 
 Destaques por cenário (SI-SDR): música a 0 dB, 14,0 → **18,1**; música alta (−6 dB), 9,1 → **14,1**; vlog com
 música e café, 7,2 → **14,7**; café, 2,0 → **10,7**. Em fala já limpa a cadeia fica transparente (39 dB).
@@ -72,17 +72,17 @@ em tempo útil. A comparação com D e com o próprio ElevenLabs precisa de **au
 
 ## Plano, em ordem de impacto
 
-| Fase | Entrega                                                                                                         | Por quê                                                     |
-| ---- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| 0    | Publicar o worker, homologar na GPU (tempo, custo por minuto, cold start) e fazer audição cega contra ElevenLabs | Nada vira promessa antes disso                              |
-| 1    | **Vídeo de verdade:** extrair o áudio no aparelho (envia só o som) e devolver o vídeo com a voz limpa           | Tira o teto de 100 MB do vídeo; é o uso do criador          |
-| 1    | Arquivos de até 1 h                                                                                             | Podcast e aula passam de 10 min                             |
-| 1    | Tirar eco: avaliar modelo de dereverberação (o melhor aberto é GPL-3.0; exige decisão de licença) ou treinar    | É o que falta para o "som de estúdio" em sala comum         |
-| 2    | **Transcrição e legendas** (Whisper large-v3-turbo, MIT): SRT/VTT, palavras com tempo                           | Segundo uso mais comum; abre edição por texto               |
-| 2    | **Editar pelo texto:** apagar a frase apaga o áudio; cortar silêncios e vícios ("é…", "tipo")                   | Diferencial que o Voice Isolator sozinho não tem            |
-| 2    | Lote e API para equipes (B2B)                                                                                   | Agências e estúdios processam dezenas de arquivos           |
-| 3    | Voz sintética e clone com **consentimento gravado** (Chatterbox multilíngue, MIT)                               | Correções de fala sem regravar; exige trava contra abuso    |
-| 4    | Dublagem: transcrição + tradução (Claude) + voz clonada + mixagem                                               | Junta tudo; só depois das fases 2 e 3                       |
+| Fase | Entrega                                                                                                          | Por quê                                                  |
+| ---- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| 0    | Publicar o worker, homologar na GPU (tempo, custo por minuto, cold start) e fazer audição cega contra ElevenLabs | Nada vira promessa antes disso                           |
+| 1 ✅ | **Vídeo de verdade** (feito em 29/10): só o som vai à GPU e o botão Vídeo devolve o original com o som novo      | Tira o teto de 100 MB do vídeo; é o uso do criador       |
+| 1    | Arquivos de até 1 h                                                                                              | Podcast e aula passam de 10 min                          |
+| 1    | Tirar eco: avaliar modelo de dereverberação (o melhor aberto é GPL-3.0; exige decisão de licença) ou treinar     | É o que falta para o "som de estúdio" em sala comum      |
+| 2    | **Transcrição e legendas** (Whisper large-v3-turbo, MIT): SRT/VTT, palavras com tempo                            | Segundo uso mais comum; abre edição por texto            |
+| 2    | **Editar pelo texto:** apagar a frase apaga o áudio; cortar silêncios e vícios ("é…", "tipo")                    | Diferencial que o Voice Isolator sozinho não tem         |
+| 2    | Lote e API para equipes (B2B)                                                                                    | Agências e estúdios processam dezenas de arquivos        |
+| 3    | Voz sintética e clone com **consentimento gravado** (Chatterbox multilíngue, MIT)                                | Correções de fala sem regravar; exige trava contra abuso |
+| 4    | Dublagem: transcrição + tradução (Claude) + voz clonada + mixagem                                                | Junta tudo; só depois das fases 2 e 3                    |
 
 Ecossistema: a voz limpa e a legenda seguem para o Synquei/Revela pelo HUB (`edit.timeline.ready` já existe), e o
 login é o da Absolute ZRO.

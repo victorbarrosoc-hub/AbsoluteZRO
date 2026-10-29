@@ -51,7 +51,8 @@ Atualizado em 25/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ✅ Eventos versionados, outbox, fila com retry/backoff, dead-letter, revisão, reprocessamento; fluxo ponta a ponta
   testado com fixtures gerados pelo código real do SOBEDESCE.
 - 🟡 NOSSOM · Isolar voz no nível do Voice Isolator do ElevenLabs (29/10/2026): Mel-Band RoFormer + MossFormer2 SE 48K, modos Fala e Música, medido em CPU ([estudo](../products/nossom/docs/estudo-elevenlabs.md)); falta build da imagem, homologação na GPU e audição cega (⛔ autorização de deploy e GPU).
-- ⬜ NOSSOM · próximas fases do estudo: vídeo de verdade (enviar só o áudio, devolver o vídeo limpo), arquivos de 1 h, tirar eco, transcrição/legendas, edição por texto, voz com consentimento, dublagem.
+- ✅ NOSSOM · vídeo de verdade (29/10/2026): vídeo até 2 GB lido no aparelho, só o som (FLAC) vai à GPU, botão Vídeo devolve o original com o som novo (até 1 GB).
+- ⬜ NOSSOM · próximas fases do estudo: arquivos de 1 h, tirar eco, transcrição/legendas, edição por texto, voz com consentimento, dublagem.
 - 🟡 NOSSOM: link e contrato `edit.timeline.ready`; passagem automática ⬜ (precisa de mudança no NOSSOM, com autorização).
 - ⬜ Synquei lendo o plano do HUB (hoje o Synquei lê o `descargas.jsonl` direto; integrar exige mudança no original).
 - ⬜ Carro do Freela emitindo jobs (o protótipo não tem backend de jobs).

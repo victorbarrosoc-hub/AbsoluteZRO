@@ -90,3 +90,22 @@ Não execute duas suítes simultaneamente nas portas 3000/55440. Para investiga�
   servidor o ignorava) e o rodapé mostra 48 kHz quando é o caso.
 - **Não validado:** build da imagem, tempo e custo na GPU, cold start, áudio real de clientes e audição cega contra
   ElevenLabs e Resemble D. Nada disso foi publicado (exige autorização).
+
+## 29/10/2026 · Vídeo de verdade
+
+- Importação: vídeo (MP4, MOV, M4V, WebM, MKV) até 2 GB é lido no lugar com WORKERFS, sem copiar o arquivo para a
+  memória do FFmpeg; áudio passa de 100 MB para 500 MB; duração segue em 10 min. Capa de música (`attached pic`)
+  não conta como vídeo.
+- GPU: em vídeo ou arquivo acima de 100 MB, só vai FLAC sem perda a 44,1 kHz (24 bits; 16 bits se passar de 100 MB),
+  com ganho reduzido só quando o pico passa de 0 dBFS. Retomar um pedido já na fila não codifica de novo.
+- Exportar: botão **Vídeo** remonta o original com o som da versão escolhida, vídeo copiado sem recodificar, AAC
+  256 kb/s (Opus em WebM), até 1 GB; acima disso, a tela pede para baixar o WAV.
+- `tests/e2e/video.spec.ts` (MP4 sintético H.264 + AAC, `tests/fixtures/synthetic-video.mp4`): o envio começa com
+  `fLaC`, não contém o MP4 e tem o tamanho declarado; o vídeo baixado tem `ftyp`, `avc1` e `mp4a`. Conferido à parte
+  com ffprobe: H.264 96×64 e AAC 48 kHz, 4,000 s cada, decodifica sem erro, e o som é o tom devolvido pelo serviço
+  simulado (220 Hz), não o original.
+- Build da imagem do worker no GitHub Actions (run 40940137593): pesos conferidos e as três inferências de teste em
+  CPU passaram (`Voice isolator CPU inference passed`); só a publicação falhou, porque o pacote GHCR antigo é do
+  repositório arquivado. O workflow passa a publicar `absolutezro-nossom-worker`.
+- Suítes: `npm test` 76/76, `npm run test:e2e` 76 passaram + 1 pulado.
+- Não validado: vídeo de celular real de 1–2 GB (memória do navegador no iPhone), HEVC e rotação no Safari.

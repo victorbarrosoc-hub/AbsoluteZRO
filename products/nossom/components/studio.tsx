@@ -86,6 +86,9 @@ import {
   importAudio,
   processAudio,
   exportMp3,
+  cloudSource,
+  isVideoFile,
+  muxVideo,
   makeDemo,
   download,
   formatTime,
@@ -391,7 +394,8 @@ export default function Studio({ account }: { account: Account }) {
       if (original.size !== data.bytes)
         throw new Error('O original foi recebido incompleto. Tente novamente.');
       const file = new File([original], 'Áudio recuperado.wav');
-      const imported = await importAudio(file, setBusy);
+      const { blob, info, metrics } = await importAudio(file, setBusy);
+      const imported = { blob, info, metrics };
       if (Math.abs(imported.info.duration - data.duration) > 0.1)
         throw new Error('O original recebido não corresponde ao pedido.');
       const now = Date.now();
@@ -635,7 +639,7 @@ export default function Studio({ account }: { account: Account }) {
           'Você chegou a 20 projetos locais. Exporte e exclua projetos antigos para liberar espaço.',
         );
       setBusy('Lendo seu áudio…');
-      const result = await importAudio(file, setBusy);
+      const { video, ...result } = await importAudio(file, setBusy);
       const now = Date.now();
       const created: Project = {
         id: crypto.randomUUID(),
@@ -644,6 +648,7 @@ export default function Studio({ account }: { account: Account }) {
         updatedAt: now,
         originalFile: file,
         originalName: file.name,
+        ...(video ? { hasVideo: true } : {}),
         versions: [{ id: crypto.randomUUID(), label: 'Original', createdAt: now, ...result }],
       };
       await saveProject(created, account.id);
@@ -776,7 +781,13 @@ export default function Studio({ account }: { account: Account }) {
           );
         const controller = new AbortController();
         cloudAbort.current = controller;
-        const cloud = await restoreCloud(project.originalFile, project.versions[0].info.duration, {
+        const original = project.versions[0];
+        const sendSource = () => {
+          if (project.hasVideo || isVideoFile(project.originalFile))
+            setBusy('Separando o áudio do vídeo para enviar só o som…');
+          return cloudSource(project.originalFile, original.blob, original.info.peak);
+        };
+        const cloud = await restoreCloud(sendSource, original.info.duration, {
           preset: cloudPreset,
           resumeId: pendingJob?.id,
           signal: controller.signal,
@@ -925,6 +936,16 @@ export default function Studio({ account }: { account: Account }) {
       notify('Seu download está pronto.');
     });
   }
+  async function exportVideo() {
+    if (!project || !version) return;
+    await run(async () => {
+      setBusy('Colocando o som novo no vídeo…');
+      const blob = await muxVideo(project.originalFile, project.originalName, version.blob);
+      const extension = project.originalName.match(/\.([a-z0-9]+)$/i)?.[1] ?? 'mp4';
+      download(blob, `${project.name}-v${versionIndex}.${extension.toLowerCase()}`);
+      notify('Vídeo pronto, com o som novo.');
+    });
+  }
   function report() {
     if (!project || !version) return;
     const body = {
@@ -1036,7 +1057,8 @@ export default function Studio({ account }: { account: Account }) {
     operationLock.current = true;
     setBusy('Preparando gravação…');
     try {
-      const result = await importAudio(file, setBusy);
+      const { blob, info, metrics } = await importAudio(file, setBusy);
+      const result = { blob, info, metrics };
       const now = Date.now();
       const p: Project = {
         id: crypto.randomUUID(),
@@ -1520,9 +1542,7 @@ export default function Studio({ account }: { account: Account }) {
                       {recording ? `Finalizar · ${formatTime(recordSeconds)}` : 'Gravar uma ideia'}
                     </button>
                   </div>
-                  <span className="upload-formats">
-                    WAV, MP3, M4A, FLAC, OGG, MP4 e MOV · até 100 MB / 10 min
-                  </span>
+                  <span className="upload-formats">Áudio ou vídeo · até 10 min</span>
                 </section>
                 <aside className="studio-start-guide">
                   <span className="eyebrow">DO ARQUIVO AO ÁUDIO PRONTO</span>
@@ -2008,12 +2028,26 @@ export default function Studio({ account }: { account: Account }) {
                       <Download size={14} /> MP3
                     </button>
                     <button
-                      className="button primary small"
+                      className={`button ${project.hasVideo ? 'secondary' : 'primary'} small`}
                       onClick={() => exportAudio('wav')}
                       disabled={!!busy}
                     >
                       <Download size={14} /> WAV
                     </button>
+                    {project.hasVideo && (
+                      <button
+                        className="button primary small"
+                        onClick={() => void exportVideo()}
+                        disabled={!!busy || versionIndex === 0}
+                        title={
+                          versionIndex === 0
+                            ? 'Trate o áudio para baixar o vídeo com o som novo.'
+                            : 'O vídeo original, com o som desta versão.'
+                        }
+                      >
+                        <Download size={14} /> Vídeo
+                      </button>
+                    )}
                   </div>
                 </div>
                 <aside className="treatment-panel">

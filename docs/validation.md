@@ -422,3 +422,6 @@ tests/integration/flow.test.ts > Ciclo do O ponta a ponta > manifest com diverg�
 - `products/nossom`: `npm test` 76/76, `npm run test:e2e` 75 + 1 pulado, `typecheck`, `format:check` e `build` ok;
   testes Python do worker no CI.
 - Não validado: imagem na GPU, custo por minuto, cold start, audição cega. Sem deploy.
+- Vídeo (29/10/2026): NOSSOM importa vídeo até 2 GB sem copiar para a memória, envia à GPU só FLAC do som e devolve
+  o vídeo original com o som novo (vídeo copiado, AAC). E2E com MP4 sintético; ffprobe confere H.264 + AAC de 4,000 s.
+  Build da imagem do worker passou com inferência real em CPU; publicação movida para `absolutezro-nossom-worker`.

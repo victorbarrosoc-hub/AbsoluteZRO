@@ -31,6 +31,8 @@ export type Project = {
   redoVersionIds?: string[];
   originalFile: Blob;
   originalName: string;
+  /** The original is a video with a picture: the treated audio can go back under it. */
+  hasVideo?: boolean;
   versions: Version[];
 };
 export type ProjectSummary = Omit<Project, 'versions' | 'originalFile'> & {

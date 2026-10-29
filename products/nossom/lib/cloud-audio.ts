@@ -41,7 +41,8 @@ async function api(body: Record<string, unknown>, signal?: AbortSignal) {
   return data;
 }
 export async function restoreCloud(
-  source: Blob,
+  /** Resolved only when bytes must be sent, so resuming a queued job encodes nothing. */
+  getSource: () => Promise<Blob>,
   duration: number,
   options: {
     resumeId?: string;
@@ -55,6 +56,7 @@ export async function restoreCloud(
 ) {
   let id: string | undefined;
   let preset = options.preset ?? restorationD.id;
+  let source: Blob | undefined;
   try {
     let prepared;
     if (options.resumeId) {
@@ -67,10 +69,13 @@ export async function restoreCloud(
       const existing = await response.json();
       if (!response.ok) throw new Error(existing.error || 'Não foi possível retomar o tratamento.');
       if (isCloudPreset(existing.preset)) preset = existing.preset;
-      if (existing.status === 'uploading')
+      if (existing.status === 'uploading') {
+        source = await getSource();
         prepared = await api({ action: 'resume-upload', id }, options.signal);
+      }
     } else {
       options.onStatus('Preparando o envio privado para restauração…');
+      source = await getSource();
       prepared = await api({ action: 'prepare', bytes: source.size, duration }, options.signal);
       id = prepared.id;
       options.onJob(id!);
@@ -82,7 +87,7 @@ export async function restoreCloud(
           method: 'PUT',
           signal: options.signal,
           headers: { 'Content-Type': 'application/octet-stream' },
-          body: source.slice(i * prepared.partBytes, (i + 1) * prepared.partBytes),
+          body: source!.slice(i * prepared.partBytes, (i + 1) * prepared.partBytes),
         });
         if (!response.ok)
           throw new Error('Não foi possível enviar o áudio. Seu original foi preservado.');
