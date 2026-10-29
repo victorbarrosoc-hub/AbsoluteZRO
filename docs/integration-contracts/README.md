@@ -23,6 +23,7 @@
 | `maestro.agenda` (.ics)          | RFC 5545 ([maestro-z.md](maestro-z.md))                            | Maestro → calendário da pessoa                                  |
 | `zro.agenda` (Conexões)          | v1 ([agenda.md](agenda.md))                                        | Apps → HUB → Google Agenda da pessoa (Maestro primeiro)         |
 | `zro.pessoas` (perfil com @)     | v1 ([pessoas.md](pessoas.md))                                      | Apps → HUB: busca de perfis, @ e convite (Maestro primeiro)     |
+| `relay` (conversão e exportação) | v1, em construção ([relay.md](relay.md))                           | Apps → Relay: núcleo embutido, link ou pedido ao computador     |
 
 Regras: payload mínimo (IDs e resumos, sem mídia nem dados pessoais), `idempotency_key` obrigatória, mudança
 incompatível = nova versão.

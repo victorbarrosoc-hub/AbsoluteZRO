@@ -1,6 +1,8 @@
-# ADR 0030 — Conversão e exportação de mídia viram um setor próprio; a Revela fica só com a cor
+# ADR 0030 — Relay: conversão e exportação de mídia viram um setor próprio; a Revela fica só com a cor
 
-**Status:** aceita (29/10/2026, pedido do titular). Nome da plataforma: a definir pelo titular.
+**Status:** aceita (29/10/2026, pedido do titular). Nome: **Relay** (id técnico `relay`, domínio
+`relay.absolutezro.com`; se o INPI pedir, vira "Relay Convert" sem mudar o id). Contrato de integração com cada
+plataforma: [docs/integration-contracts/relay.md](../integration-contracts/relay.md).
 
 ## Contexto
 
@@ -28,9 +30,15 @@ chamam.
   continua valendo.
 - **Plataforma nova = conversão.** Dona única de codec, contêiner, resolução, bitrate e áudio de saída, dos presets
   por destino (com fonte e data de verificação, regra do PRD §8) e do plano de conversão (decisão pura e testada).
-  Funciona sozinha: solta o arquivo, escolhe o destino, sai a versão nova. Pasta `products/<id>/`, domínio
-  `<id>.absolutezro.com` (ADR 0025), schema e papel próprios no Supabase `AbsoluteZRO` (ADR 0013). Nasce fechada ao
-  público (gate da ADR 0023). O id técnico sai junto com o nome e não muda depois, como `finishing` e `ai-edit`.
+  Funciona sozinha: solta o arquivo, escolhe o destino, sai a versão nova. Pasta `products/relay/`, domínio
+  `relay.absolutezro.com` (ADR 0025), schema e papel próprios (`relay`) no Supabase `AbsoluteZRO` (ADR 0013).
+- **Grátis e aberto** (decisão do titular, 29/10/2026): o Relay é a porta de entrada do ecossistema. Converter no
+  aparelho não pede conta e não consome quota (nenhum custo de servidor). A conta Absolute ZRO entra só no que toca a
+  conta (Drive, o computador da pessoa, histórico). Grátis em todos os planos do catálogo.
+- **Qualidade no nível do HandBrake, ou acima.** No computador, o mesmo x264 do HandBrake (CRF com o bitrate do
+  destino como teto, duas passadas no tamanho exato); no navegador, Lanczos na placa, cor marcada BT.709 e bitrate com
+  folga para os codificadores de hardware. Medido contra os presets do HandBrake em
+  `products/relay/docs/QUALIDADE.md`, sem esconder onde o navegador perde.
 - **Dois motores, um plano.** Navegador (Mediabunny + WebCodecs, o arquivo não sai do aparelho) e computador (ffmpeg
   com o codificador do chip ou da placa). Os dois seguem o mesmo plano e os mesmos presets. No primeiro recorte, quem
   executa no computador continua sendo o app do SOBEDESCE, que já tem o ffmpeg, o Drive e a fila. Um app de computador
@@ -41,13 +49,15 @@ chamam.
   - o AEON renderiza a timeline que montou;
   - o NOSSOM exporta o áudio que tratou.
 
-  Converter para entregar ou para levar a outro lugar é do setor novo, onde quer que o botão apareça: "Converter com a
-  Revela", "Baixar como…", a Z pedindo "MP4 720p", as versões de entrega de um master.
+  Converter para entregar ou para levar a outro lugar é do Relay, onde quer que o botão apareça: "Converter com a
+  Revela" (vira "Converter com o Relay"), "Baixar como…", a Z pedindo "MP4 720p", as versões de entrega de um master.
+  Mesmo quando o app grava sozinho (AEON, NOSSOM), os formatos e números de saída vêm dos presets do Relay.
 
-- **Integração.** Nos outros apps o botão aparece sempre. Com o setor contratado, converte. Sem ele, mostra a prévia
-  do resultado e "Disponível com <nome>", o padrão do catálogo do HUB (PRD §4.3). Nunca converte escondido e nunca
-  finge. O acesso passa por `authorize()` com o produto novo. Cada conversão consome quota (`consumeQuota`, chave de
-  idempotência = id do pedido). Sem limite configurado, fica bloqueado.
+- **Integração, em três jeitos** (detalhes no contrato): núcleo embutido (o app copia `presets.js`, `plano.js` e o
+  motor, com teste que confere a cópia), "Abrir no Relay" (link com o preset) e pedido ao computador (fila). O botão
+  diz "Exportar com o Relay", com o ícone dele. Nunca converte escondido e nunca finge. Fila e Drive passam por
+  `authorize()` com o produto `relay`; se um dia houver conversão em servidor, ela entra com `consumeQuota` (chave =
+  id do pedido).
 - **Fila.** Nasce do modelo de `pedidos_proxy` do SOBEDESCE: pedido → um computador da conta pega (409 se outro levou)
   → converte → sobe ao lado do original → confere o MD5 → pronto. Fica no schema da plataforma nova. Pedido ambíguo
   vai para revisão, nunca para nova tentativa sozinho. "Pronto" só depois da conferência.
@@ -58,11 +68,11 @@ chamam.
 
 ## Ordem
 
-1. **Mudança sem recurso novo.** Conversor, plano e presets saem de `products/finishing` para `products/<id>/`, com a
-   mesma tela. O `/converter` da Revela aponta para o setor novo. A cópia do SOBEDESCE (`src/revela/`) passa a conferir
-   contra a pasta nova. O texto "Converter com a Revela" troca de nome.
-2. **Integrações.** "Baixar como…" e o pedido da Z passam a usar o setor novo, com a quota e o "Disponível com"
-   explicados acima.
+1. **Relay de pé.** `products/relay/` com identidade, página inicial, conversor, presets e o laboratório de
+   qualidade. A cópia do SOBEDESCE (`src/revela/`) vira `src/relay/`, conferida contra o Relay; o botão vira
+   "Converter com o Relay". O catálogo do HUB e a Z passam a conhecer o Relay.
+2. **Integrações.** A Revela tira a aba Converter e aponta para o Relay; AEON e NOSSOM exportam pelos presets do
+   Relay; Synquei e Maestro pedem versões pela fila (contrato, tabela por plataforma).
 3. **O que ninguém faz hoje:** fila em lote com vários destinos de uma vez, ProRes e DNxHR de saída (computador),
    HDR 10 bits, loudness normalizado na exportação, legenda queimada, corte de trecho e presets salvos pela pessoa.
 
@@ -73,10 +83,10 @@ chamam.
 - A Revela fica menor e focada. O script do Deliver do Resolve (ADR 0015) usa os presets da plataforma nova, mas as
   tags de cor (BT.709, `cor.resolve`) continuam sendo decisão da Revela.
 - Um projeto Vercel novo, o domínio e a migration do schema pedem autorização do titular antes do deploy.
-- Até o passo 1 terminar, o conversor continua funcionando na Revela, sem mudança para quem usa.
+- Até a Revela apontar para o Relay, o conversor dela continua funcionando, sem mudança para quem usa.
 
 ## Como reverter
 
-Antes do passo 1, basta apagar esta ADR. Depois dele, os arquivos voltam para `products/finishing`, a cópia do
+Antes do passo 1, basta apagar esta ADR. Depois dele, a Revela volta a ter o conversor, a cópia do
 SOBEDESCE volta a conferir contra a Revela e o produto sai do catálogo com migration nova. A fila e as quotas da
 plataforma nova ficam sem uso e saem do jeito de sempre: migration nova, nunca editando uma aplicada.

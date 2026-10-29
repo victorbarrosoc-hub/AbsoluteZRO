@@ -538,13 +538,14 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   0029 cai em `nivel=sem_pessoas`, sem quebrar o login).
 - ⬜ Inventário do Carro no freela achado pelo @ (pronto atrás de `CARRO_SYNC_ATIVO`, desligado).
 
-## Conversão de mídia como setor próprio (29/10/2026, [ADR 0030](decisions/0030-relay-conversao.md))
+## Relay: conversão de mídia como setor próprio (29/10/2026, [ADR 0030](decisions/0030-relay-conversao.md))
 
 A Revela fica só com a cor (looks, espaço de cor, LUT e PowerGrade). Codec, contêiner e formatos de vídeo e áudio vão
 para uma plataforma nova, vendida sozinha e chamada pelas outras.
 
 - ✅ Mapa do que já converte no ecossistema (Revela, SOBEDESCE, AEON, NOSSOM) e a divisão entre os setores, na ADR.
-- ⬜ Nome e id técnico (decisão do titular).
+- ✅ Nome: **Relay** (`relay`, relay.absolutezro.com), grátis e aberto. Contrato de integração por plataforma em
+  [integration-contracts/relay.md](integration-contracts/relay.md).
 - ⬜ Passo 1: conversor, plano e presets saem de `products/finishing` para `products/<id>/`, com a mesma tela; a cópia
   do SOBEDESCE confere contra a pasta nova. ⛔ Projeto Vercel, domínio e schema pedem autorização do titular.
 - ⬜ Passo 2: "Baixar como…" e o pedido da Z pelo setor novo, com quota e "Disponível com" para quem não contratou.
