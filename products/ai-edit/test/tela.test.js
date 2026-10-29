@@ -12,6 +12,7 @@ import { join } from 'node:path'
 import { after, before, test } from 'node:test'
 import { CABECALHOS_SITE, servir } from '../scripts/servidor.mjs'
 import { simularZ } from './z-falso.js'
+import { FAMILIA } from '../src/familia.js'
 
 const { chromium } = createRequire(import.meta.url)('playwright')
 let s
@@ -413,7 +414,8 @@ test('menu: cada item faz algo de verdade (projetos, conta, sair, apps da famíl
   assert.equal(await pagina.locator('#trilho .trilho-item').count(), 6, 'projeto (4) + apps + conta')
   await item('apps').click()
   await pagina.locator('#trilhoApps:popover-open').waitFor()
-  assert.equal(await pagina.locator('#trilhoApps .familia-app').count(), 7)
+  // a família de src/familia.js (7 hoje; 8 com o Maestro no lançamento, MAESTRO_NA_FAMILIA)
+  assert.equal(await pagina.locator('#trilhoApps .familia-app').count(), FAMILIA.length)
   await pagina.context().route('https://sobedesce.vercel.app/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: 'ok' }))
   const [aba] = await Promise.all([pagina.context().waitForEvent('page'), pagina.locator('#trilhoApps .familia-app', { hasText: 'SOBEDESCE' }).click()])
   assert.match(aba.url(), /^https:\/\/sobedesce\.vercel\.app/)

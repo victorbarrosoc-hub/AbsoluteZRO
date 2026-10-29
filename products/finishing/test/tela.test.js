@@ -530,7 +530,9 @@ test('dock embaixo e menu recolhível: computador lembra, celular abre em gaveta
   assert.equal(await pagina.locator('#menu [aria-current="page"]').textContent(), 'CST')
   // família em ordem alfabética, como em todas as plataformas
   const familia = await pagina.locator('#menu .menu-item[href^="http"]').allTextContents()
-  assert.deepEqual(familia, ['Absolute ZRO', 'AEON', 'Carro do Freela', 'Nossom', 'Sobedesce', 'Synquei', 'TPEasy'])
+  // o Maestro entra no lançamento (MAESTRO_NA_FAMILIA em app/menu.js, scripts/lancamento-maestro.mjs na raiz)
+  const comMaestro = /^const MAESTRO_NA_FAMILIA = true$/m.test(readFileSync(new URL('../app/menu.js', import.meta.url), 'utf8'))
+  assert.deepEqual(familia, ['Absolute ZRO', 'AEON', 'Carro do Freela', ...(comMaestro ? ['Maestro'] : []), 'Nossom', 'Sobedesce', 'Synquei', 'TPEasy'])
   await contexto.close()
 
   const celular = await navegador.newPage({ viewport: { width: 375, height: 800 } })

@@ -1,6 +1,10 @@
 // A família Absolute ZRO vista do AEON: onde cada app mora e o que ele faz no caminho do vídeo. O app e o site usam
 // a mesma lista (menu recolhível, Entrega e a seção do fluxo na página inicial). Ícone de cada produto é o dele.
 
+// Maestro na família (lançamento em Beta grátis, docs/operations/lancamento-maestro.md): fica de fora até o titular
+// abrir; vira com `node scripts/lancamento-maestro.mjs --abrir` (e volta com --fechar).
+const MAESTRO_NA_FAMILIA = false
+
 export const FAMILIA = [
   { id: 'hub', nome: 'Absolute ZRO', href: 'https://absolutezro.com', icone: 'absolute-zro', papel: 'Sua conta e seus projetos' },
   { id: 'sobedesce', nome: 'SOBEDESCE', href: 'https://sobedesce.vercel.app', icone: 'sobedesce.svg', papel: 'Descarga e subida conferidas' },
@@ -9,6 +13,9 @@ export const FAMILIA = [
   { id: 'finishing', nome: 'Revela', href: 'https://revela.absolutezro.com', icone: 'revela.svg', papel: 'Cor, LUT e entrega' },
   { id: 'tpeasy', nome: 'TPeasy', href: 'https://tpeasy.vercel.app', icone: 'tpeasy.svg', papel: 'Teleprompter com o roteiro' },
   { id: 'carro-do-freela', nome: 'Carro do Freela', href: 'https://carrodofreela.com.br', icone: 'carro-do-freela.png', papel: 'Escala de freelas' },
+  ...(MAESTRO_NA_FAMILIA
+    ? [{ id: 'maestro', nome: 'Maestro', href: 'https://maestro.absolutezro.com', icone: 'maestro.svg', papel: 'Gestão da produtora' }]
+    : []),
 ]
 
 /** Depois do AEON: os próximos passos que abrem o app certo (Entrega). */
