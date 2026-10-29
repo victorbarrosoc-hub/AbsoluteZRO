@@ -58,7 +58,9 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   PIN scrypt + cookie assinado, limites em `REGRAS.link*`, IP só como HMAC do dia; link morto = a mesma tela neutra. A
   decisão (`link_enviar`) vale uma vez por peça e volta e move o card (Aprovado; ajuste → Revisão com `ajustePedido`).
   Players em `src/components/revisao/player.tsx` (callbacks estáveis: o adaptador recria o player se mudarem);
-  `MAESTRO_GOOGLE_API_KEY` (opcional, do titular) faz o Drive tocar num `<video>`; sem ela, iframe. CSP de `/a` e
+  `MAESTRO_GOOGLE_API_KEY` (opcional, do titular; desde 29/10/2026 variável compartilhada do time, chave "Absolute ZRO –
+  navegador" do projeto Google do ecossistema, restrita por site à Drive API) faz o Drive tocar num `<video>`; sem
+  ela, iframe. CSP de `/a` e
   `/app/aprovacoes` em `next.config.ts` (abra host novo só lá). A demonstração usa os vídeos sintéticos
   `public/demo/*.mp4` (únicas URLs relativas aceitas, e só em card `demo-`).
 - **Drive pelo SOBEDESCE** (plano v2 §4.1 e §5, fases 7–10; `src/lib/sobedesce`, `drizzle/0019`; contrato em
