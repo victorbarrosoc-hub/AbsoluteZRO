@@ -11,6 +11,22 @@ import { FreelaInventarioSchema } from './freela'
 import { CarroCrewSchema, CarroJobSchema, TpeasyBackupSchema } from './handoffs'
 import { ZroMediaManifestSchema } from './manifest'
 import { OrganizationPlanSchema } from './organization'
+import {
+  AppPedidoEntradaSchema,
+  AppPedidoRespostaSchema,
+  DriveCompartilharEntradaSchema,
+  DriveCompartilharRespostaSchema,
+  DriveListarEntradaSchema,
+  DriveListarRespostaSchema,
+  DriveMiniaturaEntradaSchema,
+  DriveMiniaturaRespostaSchema,
+  DrivePastaCriarEntradaSchema,
+  DrivePastaCriarRespostaSchema,
+  DriveRecolherEntradaSchema,
+  DriveRecolherRespostaSchema,
+  DriveTokenEntradaSchema,
+  DriveTokenRespostaSchema,
+} from './ponte'
 import { DriveDownloadSchema, PreparoSchema } from './preparo'
 import { ProjectCreateSchema, ZroProjectSchema } from './project'
 import { TimelineRefSchema } from './timeline'
@@ -41,6 +57,24 @@ export function buildSchemas(): Record<string, unknown> {
     'synquei.preparo.v1': s(PreparoSchema, 'synquei.preparo.v1', 'Recibo de preparo do Synquei v1'),
     'freela.inventario.v1': s(FreelaInventarioSchema, 'freela.inventario.v1', 'Inventário do freela (Carro do Freela → Maestro) v1'),
   }
+  // Ponte Maestro → SOBEDESCE pelo HUB (docs/integration-contracts/maestro-sobedesce.md).
+  const ponte: [string, z.ZodType, string][] = [
+    ['zro.app-pedido.entrada.v1', AppPedidoEntradaSchema, 'Ponte entre apps: pedido ao HUB v1'],
+    ['zro.app-pedido.resposta.v1', AppPedidoRespostaSchema, 'Ponte entre apps: pedido assinado pelo HUB v1'],
+    ['sobedesce.drive-listar.entrada.v1', DriveListarEntradaSchema, 'SOBEDESCE drive.listar: corpo v1'],
+    ['sobedesce.drive-listar.resposta.v1', DriveListarRespostaSchema, 'SOBEDESCE drive.listar: resposta v1'],
+    ['sobedesce.drive-miniatura.entrada.v1', DriveMiniaturaEntradaSchema, 'SOBEDESCE drive.miniatura: corpo v1'],
+    ['sobedesce.drive-miniatura.resposta.v1', DriveMiniaturaRespostaSchema, 'SOBEDESCE drive.miniatura: resposta v1'],
+    ['sobedesce.drive-pasta-criar.entrada.v1', DrivePastaCriarEntradaSchema, 'SOBEDESCE drive.pasta.criar: corpo v1'],
+    ['sobedesce.drive-pasta-criar.resposta.v1', DrivePastaCriarRespostaSchema, 'SOBEDESCE drive.pasta.criar: resposta v1'],
+    ['sobedesce.drive-compartilhar.entrada.v1', DriveCompartilharEntradaSchema, 'SOBEDESCE drive.compartilhar_revisao: corpo v1'],
+    ['sobedesce.drive-compartilhar.resposta.v1', DriveCompartilharRespostaSchema, 'SOBEDESCE drive.compartilhar_revisao: resposta v1'],
+    ['sobedesce.drive-recolher.entrada.v1', DriveRecolherEntradaSchema, 'SOBEDESCE drive.recolher_revisao: corpo v1'],
+    ['sobedesce.drive-recolher.resposta.v1', DriveRecolherRespostaSchema, 'SOBEDESCE drive.recolher_revisao: resposta v1'],
+    ['sobedesce.drive-token.entrada.v1', DriveTokenEntradaSchema, 'SOBEDESCE drive.token: corpo v1'],
+    ['sobedesce.drive-token.resposta.v1', DriveTokenRespostaSchema, 'SOBEDESCE drive.token: resposta v1'],
+  ]
+  for (const [id, schema, title] of ponte) out[id] = s(schema, id, title)
   for (const [type, versions] of Object.entries(EVENT_PAYLOADS)) {
     for (const [v, schema] of Object.entries(versions as Record<string, z.ZodType>)) {
       out[`event.${type}.v${v}`] = s(schema, `event.${type}.v${v}`, `Payload de ${type} v${v}`)

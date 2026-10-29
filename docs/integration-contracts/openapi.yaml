@@ -21,6 +21,7 @@ components:
   securitySchemes:
     session: { type: apiKey, in: cookie, name: zro_session }
     appToken: { type: http, scheme: bearer, bearerFormat: JWT, description: 'Access token do login único (at+jwt) de um app da família, com o escopo da rota.' }
+    appClient: { type: http, scheme: basic, description: 'client_id:client_secret de um app confidencial da família (só onde a rota diz).' }
     providerSignature: { type: apiKey, in: header, name: zro-signature, description: 't=<unix>,v1=<hex HMAC-SHA256 de "t.corpo">' }
   schemas:
     Error:
@@ -215,6 +216,30 @@ paths:
           '401': { $ref: '#/components/responses/Error' },
           '403': { $ref: '#/components/responses/Error' },
           '404': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/apps/pedidos:
+    post:
+      security: [{ appToken: [maestro.projects] }, { appClient: [] }]
+      summary: Ponte entre apps (Maestro → SOBEDESCE). Devolve um pedido assinado zro-pedido+jwt (60 s, jti de uso único) para o próprio app chamar o destino; o HUB só assina e audita (app.pedido.emitido). Ações em docs/integration-contracts/maestro-sobedesce.md
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [destino, acao]
+              properties:
+                destino: { type: string, enum: [sobedesce] }
+                acao:
+                  { type: string, enum: [drive.listar, drive.miniatura, drive.pasta.criar, drive.compartilhar_revisao, drive.recolher_revisao, drive.token] }
+                sub: { type: string, format: uuid, description: 'Só com a credencial do app (Basic) e só para drive.recolher_revisao' }
+      responses:
+        {
+          '201': { description: '{ tipo: zro-pedido+jwt, token, aud, acao, expira_em, url }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
         }
   /api/v1/desktop/apps:
     get:

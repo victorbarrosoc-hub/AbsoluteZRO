@@ -703,6 +703,29 @@ export async function authenticateAccessToken(db: Database, authorization: strin
   })
 }
 
+/**
+ * O próprio app (servidor a servidor, sem a pessoa por perto): `Authorization: Basic client_id:client_secret` de um
+ * cliente confidencial ativo. Usado só onde a rota permite (ex.: o Maestro recolher o compartilhamento de revisão que
+ * venceu, por agendamento). null = credencial ausente, cliente público ou segredo errado.
+ */
+export async function authenticateAppClient(db: Database, authorization: string | null): Promise<OAuthClient | null> {
+  if (!authorization?.startsWith('Basic ')) return null
+  const t = parseTokenRequest(new URLSearchParams(), authorization)
+  return db.asSystem('oidc: app por credencial', async (tx) => {
+    try {
+      const c = await authenticateClient(tx, t)
+      return c.kind === 'confidential' ? c : null
+    } catch {
+      return null
+    }
+  })
+}
+
+/** A pessoa já entrou neste app e não removeu o acesso (consentimento ativo, sem exigir escopo). */
+export async function appHasPerson(db: Database, userId: string, clientId: string): Promise<boolean> {
+  return db.asSystem('oidc: pessoa no app', (tx) => hasConsent(tx, userId, clientId, []))
+}
+
 /** /oauth/revoke (RFC 7009): sempre 200, mesmo para token desconhecido. */
 export async function revokeToken(db: Database, t: TokenRequest & { token: string | null }): Promise<void> {
   await db.asSystem('oidc: revoke', async (tx) => {

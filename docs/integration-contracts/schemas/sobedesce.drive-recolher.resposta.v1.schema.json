@@ -1,0 +1,20 @@
+{
+  "$id": "https://absolutezro.local/schemas/sobedesce.drive-recolher.resposta.v1.json",
+  "title": "SOBEDESCE drive.recolher_revisao: resposta v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "recolhido": {
+      "type": "boolean",
+      "const": true
+    },
+    "ja_nao_havia": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "recolhido",
+    "ja_nao_havia"
+  ],
+  "additionalProperties": false
+}

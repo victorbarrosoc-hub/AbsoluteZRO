@@ -25,6 +25,7 @@ export type ErrorCode =
   | 'origin_rejected'
   | 'invalid_signature'
   | 'upstream_unavailable'
+  | 'action_not_allowed'
 
 const STATUS: Record<ErrorCode, number> = {
   unauthenticated: 401,
@@ -49,6 +50,7 @@ const STATUS: Record<ErrorCode, number> = {
   origin_rejected: 403,
   invalid_signature: 400,
   upstream_unavailable: 503,
+  action_not_allowed: 403,
 }
 
 export class DomainError extends Error {

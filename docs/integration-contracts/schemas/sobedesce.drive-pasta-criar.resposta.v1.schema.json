@@ -1,0 +1,70 @@
+{
+  "$id": "https://absolutezro.local/schemas/sobedesce.drive-pasta-criar.resposta.v1.json",
+  "title": "SOBEDESCE drive.pasta.criar: resposta v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "pasta": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,200}$"
+        },
+        "nome": {
+          "type": "string"
+        },
+        "abrir_no_sobedesce": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uri"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "nome",
+        "abrir_no_sobedesce"
+      ],
+      "additionalProperties": false
+    },
+    "subpastas": {
+      "minItems": 5,
+      "maxItems": 5,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,200}$"
+          },
+          "nome": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "nome"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "criadas": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 8
+    }
+  },
+  "required": [
+    "pasta",
+    "subpastas",
+    "criadas"
+  ],
+  "additionalProperties": false
+}

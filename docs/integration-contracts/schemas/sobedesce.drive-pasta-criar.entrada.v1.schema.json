@@ -1,0 +1,39 @@
+{
+  "$id": "https://absolutezro.local/schemas/sobedesce.drive-pasta-criar.entrada.v1.json",
+  "title": "SOBEDESCE drive.pasta.criar: corpo v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "cliente": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "projeto": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "raiz": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,200}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "conta": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    }
+  },
+  "required": [
+    "cliente",
+    "projeto"
+  ],
+  "additionalProperties": false
+}

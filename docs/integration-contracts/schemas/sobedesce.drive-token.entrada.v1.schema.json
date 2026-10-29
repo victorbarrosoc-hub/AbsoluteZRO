@@ -1,0 +1,14 @@
+{
+  "$id": "https://absolutezro.local/schemas/sobedesce.drive-token.entrada.v1.json",
+  "title": "SOBEDESCE drive.token: corpo v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "conta": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    }
+  },
+  "additionalProperties": false
+}

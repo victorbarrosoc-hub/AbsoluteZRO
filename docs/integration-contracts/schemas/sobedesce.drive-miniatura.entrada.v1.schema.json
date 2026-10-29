@@ -1,0 +1,21 @@
+{
+  "$id": "https://absolutezro.local/schemas/sobedesce.drive-miniatura.entrada.v1.json",
+  "title": "SOBEDESCE drive.miniatura: corpo v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "arquivoId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,200}$"
+    },
+    "px": {
+      "type": "integer",
+      "minimum": 64,
+      "maximum": 1600
+    }
+  },
+  "required": [
+    "arquivoId"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,174 @@
+{
+  "$id": "https://absolutezro.local/schemas/sobedesce.drive-listar.resposta.v1.json",
+  "title": "SOBEDESCE drive.listar: resposta v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "conta": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "email": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "email"
+      ],
+      "additionalProperties": false
+    },
+    "pasta": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,200}$"
+            },
+            "nome": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "nome"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "itens": {
+      "maxItems": 100,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,200}$"
+          },
+          "nome": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tipo": {
+            "type": "string",
+            "minLength": 1
+          },
+          "pasta": {
+            "type": "boolean"
+          },
+          "modificado": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tamanho": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "miniatura": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "video": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "largura": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "altura": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "duracao_ms": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "largura",
+                  "altura",
+                  "duracao_ms"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "abrir_no_sobedesce": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "tipo",
+          "pasta",
+          "modificado",
+          "tamanho",
+          "miniatura",
+          "video",
+          "abrir_no_sobedesce"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "proxima": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "conta",
+    "pasta",
+    "itens",
+    "proxima"
+  ],
+  "additionalProperties": false
+}

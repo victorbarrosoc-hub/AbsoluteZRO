@@ -1,0 +1,34 @@
+{
+  "$id": "https://absolutezro.local/schemas/sobedesce.drive-compartilhar.resposta.v1.json",
+  "title": "SOBEDESCE drive.compartilhar_revisao: resposta v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "arquivoId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,200}$"
+    },
+    "permissao_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "ja_publico": {
+      "type": "boolean"
+    },
+    "resource_key": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "arquivoId",
+    "permissao_id",
+    "ja_publico",
+    "resource_key"
+  ],
+  "additionalProperties": false
+}

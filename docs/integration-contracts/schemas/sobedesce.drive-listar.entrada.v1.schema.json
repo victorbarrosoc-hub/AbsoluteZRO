@@ -1,0 +1,35 @@
+{
+  "$id": "https://absolutezro.local/schemas/sobedesce.drive-listar.entrada.v1.json",
+  "title": "SOBEDESCE drive.listar: corpo v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "pasta": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,200}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "busca": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "pagina": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "conta": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    }
+  },
+  "additionalProperties": false
+}
