@@ -552,6 +552,92 @@
   }
 }
 
+/* ───── Esqueleto com a forma da tela (titular, 29/10/2026: o Início piscava cinza e o conteúdo "pulava") ─────
+   components/esqueleto.tsx. A raiz ([data-esqueleto]) fica invisível nos primeiros 320 ms (o tempo que a troca de tela
+   espera pelo conteúdo em components/movimento.tsx, acima dos 300 ms que o React segura o conteúdo depois de um
+   fallback) e só então aparece. Uma animação só, desde o primeiro quadro: o script de app/layout.tsx ouve o início
+   dela para saber que o esqueleto foi pintado e, quando o conteúdo chega, faz a dissolvência por cima. */
+[data-esqueleto] {
+  animation: z-esq-aparece 540ms linear both;
+}
+@keyframes z-esq-aparece {
+  0%,
+  59.26% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  }
+  100% {
+    opacity: 1;
+  }
+}
+/* "reduzir movimento" encurta toda animação para 0,01 ms (packages/ui/src/components.css): a espera vira atraso e a
+   entrada é seca */
+@keyframes z-esq-aparece-seco {
+  from {
+    opacity: 0;
+  }
+}
+.inicio-paineis {
+  display: grid;
+  gap: var(--space-6);
+  min-width: 0;
+}
+.esq-linha,
+.esq-botao,
+.esq-icone {
+  background: linear-gradient(100deg, var(--surface-3) 30%, var(--surface-2) 50%, var(--surface-3) 70%) 0 0 / 300% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+.esq-linha {
+  display: inline-block;
+  width: var(--w, 8rem);
+  max-width: 100%;
+  height: 0.72em;
+  vertical-align: middle;
+  border-radius: 999px;
+}
+.esq-botao {
+  display: inline-block;
+  width: 190px;
+  height: 40px;
+  border-radius: 999px;
+}
+.esq-icone {
+  box-shadow: none;
+}
+.esq-ver {
+  font-size: 0.9rem; /* o "Ver catálogo" (.section-bar a) */
+}
+.esq-marca {
+  display: block;
+  width: 40px;
+  height: 40px;
+  border-radius: 22%;
+}
+.esq-tile {
+  min-height: 200px;
+}
+/* a altura do cartão vazio (o Início de quem está começando), para os apps abaixo não andarem */
+.esq-painel {
+  min-height: 184px;
+  align-content: start;
+}
+.esq-cartao {
+  min-height: 150px;
+  align-content: start;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-esqueleto] {
+    animation: z-esq-aparece-seco 1ms linear 320ms both;
+  }
+  .skeleton__block,
+  .esq-linha,
+  .esq-botao,
+  .esq-icone {
+    animation: none;
+  }
+}
+
 .mobile-nav {
   display: none;
 }

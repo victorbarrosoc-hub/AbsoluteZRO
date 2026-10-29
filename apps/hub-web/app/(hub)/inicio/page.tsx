@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { Card, EmptyState, Notice, Pill, ProductMark, Stat, ZroSymbol } from '@zro/ui'
 import { AppTile, productColor } from '@/components/app-tile'
+import { EsqueletoPaineis } from '@/components/esqueleto'
 import { Icon, type IconName } from '@/components/icons'
 import { MotionGate } from '@/components/motion-gate'
-import { homeData } from '@/lib/data/hub'
+import { homePaineis, homeTopo } from '@/lib/data/hub'
 import { fmtDate, PROJECT_STATUS_LABEL, RUN_LABEL, RUN_TONE, STEP_LABEL, STEP_TONE } from '@/lib/labels'
 import { requireOrgPage } from '@/lib/session'
 
@@ -22,11 +24,16 @@ const QUICK: { href: string; title: string; hint: string; icon: IconName; color:
   { href: '/equipe', title: 'Convidar equipe', hint: 'Papéis por pessoa', icon: 'team', color: 'var(--p-carro-do-freela)' },
 ]
 
+type Acesso = Awaited<ReturnType<typeof homeTopo>>['access']
+
 export default async function Inicio() {
   const auth = await requireOrgPage()
-  const d = await homeData(auth)
+  // As duas partes saem juntas; a página espera só o topo e os painéis chegam no próprio esqueleto (streaming).
+  const paineis = homePaineis(auth)
+  paineis.catch(() => {}) // o erro, se houver, aparece onde a parte é lida (Paineis), não como rejeição solta
+  const d = await homeTopo(auth)
   const first = auth.user.displayName.split(' ')[0] || 'tudo bem'
-  const latest = d.projects[0]
+  const latest = d.latest
   // Contratadas primeiro; fechadas pelo gate de lançamento (ADR 0023) por último, só com o selo, e fora da órbita.
   const peso = (a: (typeof d.access)[number]) => (a.access === 'contracted' ? 0 : a.access === 'closed' ? 2 : 1)
   const apps = [...d.access].sort((a, b) => peso(a) - peso(b) || a.stepOrder - b.stepOrder)
@@ -120,6 +127,18 @@ export default async function Inicio() {
         ))}
       </nav>
 
+      <Suspense fallback={<EsqueletoPaineis />}>
+        <Paineis dados={paineis} apps={apps} comJob={comJob} />
+      </Suspense>
+    </div>
+  )
+}
+
+/** Números, painéis e apps: a parte do Início que espera o banco (com o esqueleto da mesma forma enquanto isso). */
+async function Paineis({ dados, apps, comJob }: { dados: ReturnType<typeof homePaineis>; apps: Acesso; comJob: boolean }) {
+  const d = await dados
+  return (
+    <div className="inicio-paineis">
       <div className="stats">
         <Card>
           <Stat label="Projetos ativos" value={d.counts.projects} />

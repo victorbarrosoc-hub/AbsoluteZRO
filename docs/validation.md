@@ -15,6 +15,33 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Início sem piscar cinza nem pular (29/10/2026)
+
+Vídeo do titular (Mac, absolutezro.com, recarregando o Início): 12 quadros (~200 ms) só com o esqueleto genérico de
+`(hub)/loading.tsx` (um bloco largo e quatro pequenos), depois o Início inteiro de uma vez. Causa: a página esperava
+todas as consultas (8 em série) atrás de um esqueleto de outro formato, visível desde o primeiro quadro, e a troca era
+seca. Reproduzido aqui com o build de produção e um proxy que atrasa o Postgres em 12 ms por pacote (antes: esqueleto à
+vista em 6–9 quadros no Chromium e 3 no WebKit a cada recarga).
+
+Agora: `homeTopo` + `homePaineis` em paralelo (o topo chega e os painéis vêm em streaming com o próprio esqueleto);
+esqueletos com as mesmas classes da tela (`components/esqueleto.tsx`: Início inteiro, painéis e o genérico de página);
+invisíveis nos primeiros 320 ms (o mesmo tempo que `movimento.tsx` espera, acima dos 300 ms que o React segura o
+conteúdo depois de um fallback); se chegaram a aparecer, o conteúdo dissolve por cima (`lib/esqueleto-script.ts`, só Web
+Animations, sem mexer em atributo); "reduzir movimento" troca seco.
+
+| Verificação                                   | Resultado                                                                                                  |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Lint, formatação, tipos, `scan-secrets`       | ok                                                                                                         |
+| `npm test` (raiz, Postgres real)              | **340/340** em 38 arquivos                                                                                 |
+| `npm run build` (HUB)                         | ok                                                                                                         |
+| `npm run test:e2e` (HUB)                      | **41/41**; `esqueleto.spec.ts` 5/5 (3 rodadas seguidas, sem falha)                                         |
+| Banco rápido, Chromium e WebKit               | recarregar, menu e logo: nenhum quadro com esqueleto à vista; palco e atalhos nascem no lugar final; CLS 0 |
+| Banco preso (cotas travadas), Chromium/WebKit | topo chega antes; esqueleto invisível até 300 ms; números, painéis e apps no mesmo lugar do esqueleto      |
+| Reduzir movimento                             | esqueleto aparece seco aos 320 ms, sem cópia nem animação no conteúdo                                      |
+| Proxy de 12 ms (como o vídeo), depois         | Chromium: 0 quadros com esqueleto; WebKit (mais lento aqui): 0–1 quadro, já com a dissolvência             |
+
+Não conferido: o Safari do titular em produção (precisa publicar).
+
 ## A Z digita as sugestões no campo (29/10/2026)
 
 Rodado neste ambiente (Postgres 16 local próprio, Chromium do Playwright 1.63), máquina compartilhada.

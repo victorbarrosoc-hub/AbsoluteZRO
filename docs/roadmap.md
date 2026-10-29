@@ -33,6 +33,10 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   No Quadro do celular: deslizar de lado troca de coluna (segue o dedo, mola, pílula que anda junto) e o card se arrasta
   segurando 280 ms (fantasma do tamanho real, passa de coluna na borda ou soltando na pílula). No Maestro a Z saiu da
   primeira aba (ícone discreto) e `/app` abre no Hoje. Falta: conferir num iPhone de verdade depois de publicar.
+- ✅ Início sem piscar cinza (29/10/2026, vídeo do titular no Mac): ao recarregar, o esqueleto genérico aparecia ~200 ms
+  e o conteúdo "pulava" por cima. Agora o topo (saudação, palco, atalhos) chega primeiro e os painéis vêm em streaming;
+  todo esqueleto da área logada tem a forma da tela real e só aparece depois de 320 ms; quando aparece, o conteúdo
+  dissolve por cima; com "reduzir movimento", troca seca. Falta: conferir no Safari do titular depois de publicar.
 - ✅ Página inicial de cinema (26/10/2026): paisagem com o símbolo esculpido sobre a rocha, faixa discreta das 7 ferramentas e cartão do Ciclo do O; sem selos de "em construção".
 - ✅ AEON (26/10/2026): a plataforma de edição ganha nome e ícone no catálogo, na home e no HUB (migration 0012); segue em desenvolvimento.
 - ✅ Página inicial com o símbolo como protagonista (26/10/2026): o anel se desenha a partir da centelha, a estrela

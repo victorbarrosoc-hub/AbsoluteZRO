@@ -18,7 +18,11 @@ import { startTransition, useEffect, useState, type ComponentProps, type ReactNo
 
 type Roteador = ReturnType<typeof useRouter>
 
-/** Quanto a troca segura a foto da tela velha: até a nova montar e, se veio o esqueleto, pelo conteúdo. */
+/**
+ * Quanto a troca segura a foto da tela velha: até a nova montar e, se veio algum esqueleto (a tela inteira ou uma parte,
+ * como os painéis do Início), pelo conteúdo. ESPERA_CONTEUDO é o mesmo atraso com que o esqueleto aparece
+ * (components/esqueleto.tsx): passou disso, a tela nova entra com ele e o conteúdo dissolve por cima quando chegar.
+ */
 const ESPERA_TELA = 900
 const ESPERA_CONTEUDO = 320
 
@@ -41,7 +45,7 @@ function esperarTela(caminho: string): Promise<HTMLElement | null> {
     }
     function olhar() {
       const nova = achar()
-      const esqueleto = nova?.querySelector(':scope > [aria-busy="true"]')
+      const esqueleto = nova?.querySelector('[data-esqueleto]')
       if (nova && (!esqueleto || performance.now() - t0 > ESPERA_CONTEUDO)) terminar(nova)
     }
     obs.observe(main, { childList: true, subtree: true })
