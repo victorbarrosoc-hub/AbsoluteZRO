@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { exigirAcessoNaAcao } from "@/lib/auth/acao";
-import { podeEscrever, podeRemover, podeVerDinheiro } from "@/lib/papeis";
+import { podeEscrever, podeRemover } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
 import {
   removerEscala,
   removerFreela,
@@ -46,7 +47,7 @@ export async function removerFreelaAcao(_: EstadoForm, fd: FormData): Promise<Es
 export async function salvarPagamentoAcao(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
   const s = await exigirAcessoNaAcao();
   const valores = valoresDe(fd);
-  if (!podeVerDinheiro(s.papel)) return { mensagem: "Só administração e gestão veem e mudam dados de pagamento." };
+  if (!podeArea(s, "dados_equipe") || !podeEscrever(s.papel)) return { mensagem: "Você não mexe nos dados de pagamento." };
   const v = validarPagamento(valores);
   if (!v.ok) return { erros: v.erros, valores };
   const r = await salvarPagamento({ sub: s.sub, orgId: s.orgId }, valores.freela, v.entrada);

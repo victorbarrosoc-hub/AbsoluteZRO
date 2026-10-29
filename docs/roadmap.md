@@ -640,6 +640,18 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
 - ⬜ Computador: ProRes, DNxHR e HDR 10 bits de saída; loudness normalizado; legenda queimada; corte de trecho.
 - ⬜ Evento `media.conversion.completed` no HUB, quando a primeira integração passar por ele.
 
+## Maestro: quem vê o quê (29/10/2026, [ADR 0031](decisions/0031-maestro-acesso-por-area.md))
+
+- ✅ Seis áreas sensíveis (Financeiro, Orçamentos e preços, Contratos, Diárias e cachês, Dados da equipe, Valores do
+  inventário) com padrão por papel e ajuste por pessoa só da Administração em Ajustes → Pessoas → "O que vê"
+  (interruptores, auditado). Regra no banco (`drizzle/0027`: RLS por área, máscara das colunas de dinheiro, gatilhos
+  que guardam o valor de antes), na navegação (sem link morto), no Hoje, nas fichas, nas ações e na Z. Mapa em
+  `products/maestro/docs/permissoes.md`.
+- ⛔ Em produção: migração `0027` do Maestro no próximo deploy autorizado. Avisar quem é Gestão e usa o Financeiro: a
+  Administração liga a área (a Gestão não vê o Financeiro por padrão).
+- ⬜ Perguntas ao titular: Gestão com Financeiro por padrão? Contato dos freelas separado de CPF/PIX? Restringir
+  clientes só com a Administração? Aprovar na tela pedir também o Financeiro?
+
 ## Fase 6 — Escala
 
 - ⬜ Observabilidade em produção (drain de logs, métricas da fila, alertas), backups e retenção definidos.

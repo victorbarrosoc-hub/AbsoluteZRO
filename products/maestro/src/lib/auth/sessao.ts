@@ -4,7 +4,8 @@
  * (lib/auth/cripto.ts) e nunca vão ao navegador. Tudo pela porta de sistema: maestro_app não lê sessões.
  * Sem next/headers aqui: as rotas e os testes passam o cookie direto.
  */
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, eq, gt, isNull, sql } from "drizzle-orm";
+import { acessosDe, type Acessos, type AjustesDeAcesso } from "@/lib/acessos";
 import { getBanco, schema } from "@/lib/db/client";
 import type { Papel } from "@/lib/papeis";
 import type { PerfilZro, TokensZro } from "@/lib/zro/oidc";
@@ -30,6 +31,8 @@ export type Sessao = {
   foto: string | null;
   hubRole: string | null;
   papel: Papel;
+  /** As áreas sensíveis que a pessoa vê (padrão do papel + ajustes da administração; o banco confere de novo). */
+  acessos: Acessos;
   /** zro_products do último login ou releitura: o que temAcesso() confere. */
   produtos: string[];
   /** zro_release do último login ou releitura (gate de lançamento). null = sessão sem a claim (fechado). */
@@ -103,6 +106,7 @@ export async function autenticar(cookie: string | undefined, agora = new Date())
         hubRole: members.hubRole,
         papel: members.role,
         status: members.status,
+        ajustes: sql<AjustesDeAcesso>`(select jsonb_object_agg(a.area, a.permitido) from maestro.acessos a where a.org_id = ${sessions.orgId} and a.zro_sub = ${sessions.zroSub})`,
       })
       .from(sessions)
       .innerJoin(organizations, eq(organizations.id, sessions.orgId))
@@ -126,6 +130,7 @@ export async function autenticar(cookie: string | undefined, agora = new Date())
       foto: l.foto,
       hubRole: l.hubRole,
       papel: l.papel,
+      acessos: acessosDe(l.papel, l.ajustes),
       produtos: l.produtos,
       release: l.release ?? null,
       recursos: l.recursos ?? [],

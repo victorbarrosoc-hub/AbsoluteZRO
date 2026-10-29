@@ -181,8 +181,8 @@ function Menu({
   );
 }
 
-/** A cápsula (computador). */
-export function Capsula() {
+/** A cápsula (computador). `ocultas`: as seções de área que a pessoa não tem (src/lib/acessos.ts), nem aparecem. */
+export function Capsula({ ocultas = [] }: { ocultas?: readonly string[] }) {
   const { caminho, visto, ir } = useCaminho();
   const router = useRouter();
   // O menu aberto vale só no caminho em que abriu: ao navegar, fecha sozinho (sem efeito).
@@ -204,9 +204,9 @@ export function Capsula() {
   useEffect(() => {
     const ocioso = (window as Window & { requestIdleCallback?: (f: () => void) => number }).requestIdleCallback ?? ((f: () => void) => setTimeout(f, 600));
     ocioso(() => {
-      for (const a of ABAS) router.prefetch(a.href);
+      for (const a of ABAS) if (!ocultas.includes(a.href)) router.prefetch(a.href);
     });
-  }, [router]);
+  }, [router, ocultas]);
 
   // A pílula da seção ativa desliza de um item para o outro (transform com a mola, só CSS; aqui só se mede).
   const pilula = useRef<HTMLSpanElement>(null);
@@ -243,22 +243,24 @@ export function Capsula() {
   return (
     <nav ref={raiz} className="capsula__nav" aria-label="Seções do Maestro">
       <span ref={pilula} className="capsula__pilula" aria-hidden="true" />
-      {GRUPOS.map((g) =>
-        g.nome === null || g.abas.length === 1 ? (
-          g.abas.map((a) => <Item key={a.href} aba={a} caminho={caminho} visto={visto} ir={ir} className="capsula__item" />)
-        ) : (
-          <Menu
-            key={g.nome}
-            grupo={g}
-            caminho={caminho}
-            visto={visto}
-            ir={ir}
-            aberto={qual === g.nome}
-            abrir={() => setAberto({ grupo: g.nome!, caminho })}
-            fechar={() => setAberto((x) => (x?.grupo === g.nome ? null : x))}
-          />
-        ),
-      )}
+      {GRUPOS.map((g) => ({ ...g, abas: g.abas.filter((a) => !ocultas.includes(a.href)) }))
+        .filter((g) => g.abas.length > 0)
+        .map((g) =>
+          g.nome === null || g.abas.length === 1 ? (
+            g.abas.map((a) => <Item key={a.href} aba={a} caminho={caminho} visto={visto} ir={ir} className="capsula__item" />)
+          ) : (
+            <Menu
+              key={g.nome}
+              grupo={g}
+              caminho={caminho}
+              visto={visto}
+              ir={ir}
+              aberto={qual === g.nome}
+              abrir={() => setAberto({ grupo: g.nome!, caminho })}
+              fechar={() => setAberto((x) => (x?.grupo === g.nome ? null : x))}
+            />
+          ),
+        )}
       <Item aba={AJUSTES} caminho={caminho} visto={visto} ir={ir} className="capsula__item capsula__item--icone" />
       <Item aba={Z} caminho={caminho} visto={visto} ir={ir} className="capsula__item capsula__item--icone" />
     </nav>

@@ -5,7 +5,7 @@ import { brl, dataBr, hojeBr } from "@/lib/dinheiro";
 import { FORMAS, NOME_STATUS, nomeCategoria } from "@/lib/financeiro/contas";
 import { CAMPOS_BAIXA } from "@/lib/financeiro/formularios";
 import { obterLancamento } from "@/lib/financeiro/servidor";
-import { podeVerDinheiro } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
 import { BotaoAcao } from "@/components/acao";
 import { Secao } from "@/components/crm";
 import { Formulario } from "@/components/form";
@@ -19,7 +19,7 @@ export const metadata = { title: "Lançamento" };
 export default async function FichaLancamento({ params }: PageProps<"/app/financeiro/[id]">) {
   const { id } = await params;
   const s = await exigirAcessoNaPagina(`/app/financeiro/${id}`);
-  if (!podeVerDinheiro(s.papel)) redirect("/app/financeiro");
+  if (!podeArea(s, "financeiro")) redirect("/app/financeiro");
   const hoje = hojeBr();
   const l = await obterLancamento({ sub: s.sub, orgId: s.orgId }, id, hoje);
   if (!l) notFound();

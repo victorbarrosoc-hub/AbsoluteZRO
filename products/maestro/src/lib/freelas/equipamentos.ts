@@ -25,8 +25,14 @@ import {
 
 export * from "./kit";
 
+async function veDiarias(tx: Tx, orgId: string): Promise<boolean> {
+  const [r] = (await tx.execute(sql`select maestro.pode(${orgId}::uuid, 'diarias') as ve`)) as unknown as { ve: boolean }[];
+  return r?.ve === true;
+}
+
 type Linha = Record<string, unknown>;
-const deLinha = (r: Linha): EquipFreela => ({
+/** `ve` = a pessoa tem a área "Diárias e cachês" (src/lib/acessos.ts); sem ela, a diária do kit não sai do servidor. */
+const deLinha = (r: Linha, ve = true): EquipFreela => ({
   id: r.id as string,
   freelaId: r.freela_id as string,
   categoria: r.categoria as CategoriaEquipFreela,
@@ -34,7 +40,7 @@ const deLinha = (r: Linha): EquipFreela => ({
   modelo: r.modelo as string,
   quantidade: Number(r.quantidade),
   observacao: r.observacao as string | null,
-  diariaCents: r.diaria_cents == null ? null : Number(r.diaria_cents),
+  diariaCents: r.diaria_cents == null || !ve ? null : Number(r.diaria_cents),
   ativo: r.ativo as boolean,
   origem: r.origem as OrigemEquip,
   origemId: r.origem_id as string | null,
@@ -49,7 +55,8 @@ export async function listarEquipDoFreela(ctx: Contexto, freelaId: string): Prom
     const r = (await tx.execute(sql`
       select * from maestro.freela_equipamentos where freela_id = ${freelaId}
        order by ativo desc, array_position(array['camera','lente','audio','luz','drone','estabilizador','monitor','acessorio','outro'], categoria), marca, modelo`)) as unknown as Linha[];
-    return r.map(deLinha);
+    const ve = await veDiarias(tx, ctx.orgId);
+    return r.map((x) => deLinha(x, ve));
   });
 }
 
@@ -134,7 +141,16 @@ export async function removerEquipFreela(ctx: Contexto, id: string): Promise<Res
 
 /* ───────────── na escala ───────────── */
 
-export type EquipDaEscala = { escalaId: string; freelaId: string; disponiveis: EquipFreela[]; marcados: string[]; aluguelCents: number; dias: number };
+export type EquipDaEscala = {
+  escalaId: string;
+  freelaId: string;
+  disponiveis: EquipFreela[];
+  marcados: string[];
+  /** 0 para quem não tem a área "Diárias e cachês" (`veValores` false). */
+  aluguelCents: number;
+  dias: number;
+  veValores: boolean;
+};
 
 /** O que cada freela escalado tem e o que já marcou que leva. */
 export async function equipamentosDasEscalas(ctx: Contexto, escalaIds: string[]): Promise<EquipDaEscala[]> {
@@ -152,18 +168,20 @@ export async function equipamentosDasEscalas(ctx: Contexto, escalaIds: string[])
       marcados: string[];
     }[];
     const freelas = [...new Set(esc.map((e) => e.freela_id))];
+    const ve = await veDiarias(tx, ctx.orgId);
     const eqs = freelas.length
       ? (
           (await tx.execute(sql`
           select * from maestro.freela_equipamentos where ativo and freela_id = any (${`{${freelas.join(",")}}`}::uuid[]) order by categoria, modelo`)) as unknown as Linha[]
-        ).map(deLinha)
+        ).map((x) => deLinha(x, ve))
       : [];
     return esc.map((e) => ({
       escalaId: e.id,
       freelaId: e.freela_id,
       disponiveis: eqs.filter((q) => q.freelaId === e.freela_id),
       marcados: e.marcados,
-      aluguelCents: Number(e.aluguel),
+      aluguelCents: ve ? Number(e.aluguel) : 0,
+      veValores: ve,
       dias: Number(e.dias),
     }));
   });
@@ -233,7 +251,9 @@ export async function sincronizarInventarioDoCarro(
       zro_sub: string;
     }[];
     for (const f of freelas) {
-      const existentes = ((await tx.execute(sql`select * from maestro.freela_equipamentos where freela_id = ${f.id}`)) as unknown as Linha[]).map(deLinha);
+      const existentes = ((await tx.execute(sql`select * from maestro.freela_equipamentos where freela_id = ${f.id}`)) as unknown as Linha[]).map((x) =>
+        deLinha(x),
+      );
       const plano = aplicarInventarioDoCarro({ id: f.id, zroSub: f.zro_sub }, existentes, payload);
       if (!plano.ok) continue;
       total.freelas++;

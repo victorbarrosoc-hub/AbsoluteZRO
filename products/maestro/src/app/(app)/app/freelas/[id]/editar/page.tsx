@@ -14,7 +14,7 @@ export default async function EditarFreela({ params }: PageProps<"/app/freelas/[
   const { id } = await params;
   const s = await exigirAcessoNaPagina(`/app/freelas/${id}/editar`);
   if (!podeEscrever(s.papel)) redirect(`/app/freelas/${id}`);
-  const f = await obterFreela({ sub: s.sub, orgId: s.orgId }, s.papel, id, hojeBr());
+  const f = await obterFreela({ sub: s.sub, orgId: s.orgId }, id, hojeBr());
   if (!f) notFound();
   return (
     <div className="pagina pagina--estreita">
@@ -28,7 +28,8 @@ export default async function EditarFreela({ params }: PageProps<"/app/freelas/[
       />
       <Formulario
         acao={salvarFreelaAcao}
-        campos={CAMPOS_FREELA}
+        // Sem a área, o campo nem aparece (e o banco guarda o valor de antes: gatilho freelas_guarda_area).
+        campos={CAMPOS_FREELA.filter((c) => (c.nome !== "valores" || f.ve.diarias) && ((c.nome !== "email" && c.nome !== "whatsapp") || f.ve.dados))}
         id={id}
         inicial={{
           nome: f.nome,

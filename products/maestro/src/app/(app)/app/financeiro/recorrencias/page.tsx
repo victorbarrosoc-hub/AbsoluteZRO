@@ -4,7 +4,7 @@ import { brl, centavosParaCampo, hojeBr, mesPorExtenso } from "@/lib/dinheiro";
 import { nomeCategoria } from "@/lib/financeiro/contas";
 import { camposRecorrencia } from "@/lib/financeiro/formularios";
 import { listarRecorrencias } from "@/lib/financeiro/servidor";
-import { podeVerDinheiro } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
 import { BotaoAcao } from "@/components/acao";
 import { Secao } from "@/components/crm";
 import { CabecaFinanceiro, SemDinheiro } from "@/components/financeiro";
@@ -17,10 +17,9 @@ export const metadata = { title: "Recorrências" };
 /** Aluguel, software, contrato mensal: cada mês vira lançamento (e cards na Pauta), uma vez só. */
 export default async function Recorrencias() {
   const sessao = await exigirAcessoNaPagina("/app/financeiro/recorrencias");
-  if (!podeVerDinheiro(sessao.papel))
+  if (!podeArea(sessao, "financeiro"))
     return (
       <div className="pagina">
-        <CabecaFinanceiro ativa="/app/financeiro/recorrencias" />
         <SemDinheiro />
       </div>
     );

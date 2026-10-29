@@ -25,8 +25,10 @@ O que o funil, os números, a importação, a agenda por assinatura e o acesso p
 - **Resposta** (JSON, sem cache): `fonte: "Maestro"`, `organizacao`, `gerado_em` (ISO), `hoje`, `link` (a tela Hoje),
   `retornar_hoje[]` (nome, tipo pedido|cliente, data, nota), `vencendo[]` e `com_o_cliente[]` (card, cliente, prazo ou
   desde), `contagens` (pedidos novos, orçamentos aguardando, agenda de hoje, cards atrasados) e `dinheiro` (meta e
-  faturado do mês, caixa, a receber e a pagar da semana, em centavos) **só para administração e gestão**; `null` para
-  os outros. Tudo lido como a pessoa (`asUser`, RLS e acesso por cliente). Nada é guardado.
+  faturado do mês, caixa, a receber e a pagar da semana, em centavos) **só para quem tem a área Financeiro** no
+  Maestro (`maestro.pode`, `products/maestro/docs/permissoes.md`; a gestão não tem por padrão); `null` para os outros.
+  `orcamentos_aguardando` é `null` para quem não tem a área Orçamentos. Tudo lido como a pessoa (`asUser`, RLS, áreas
+  e acesso por cliente). Nada é guardado.
 - **No HUB**: a ferramenta `ver_maestro` da Z (`packages/core/src/ia-maestro.ts`, `maestroParaIa`; ligada em
   `apps/hub-web/lib/ia/modelo.ts`). Antes de qualquer pedido, `authorize` com o produto `maestro`: gate de lançamento
   (hoje só a lista de acesso, ou seja, o titular) **e** o Maestro no plano da organização. Fechado ou fora do plano:
