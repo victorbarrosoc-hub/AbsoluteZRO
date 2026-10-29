@@ -476,6 +476,19 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   deploy. Não testado contra o Google de verdade (aviso de app não verificado esperado).
 - ⬜ Z, "Hoje" do HUB e Carro do Freela pelo mesmo contrato.
 
+## Custos do ecossistema no console (29/10/2026, [ADR 0028](decisions/0028-custos-do-ecossistema.md))
+
+- ✅ `/admin/custos` (só papel admin; suporte recebe 404 e não vê a seção): custo por mês hoje e por ano em R$ e US$
+  (anual ÷ 12 no mês, por uso à parte como "+ uso"), cotação do dólar editável com data, rosca por categoria, barras por
+  fornecedor, projeção de 12 meses (ativo, previsto e futuro pelo mês estimado), ponto de equilíbrio com os planos
+  publicados e a receita real das assinaturas pagas, metas (receita, assinantes, data-alvo) e recomendações por regra.
+- ✅ Lista por estado com filtros, folha para criar, editar e apagar (com confirmação) e planilha CSV. Tudo auditado.
+- ✅ Migration `0028_custos.sql` (`zro.custos`, `zro.custos_config`, sem acesso para `zro_app`) com os 12 itens que o
+  titular listou; o que não foi confirmado entra com valor 0 e "a conferir".
+- ⛔ Titular: informar a cotação do dólar e as metas no console e conferir os itens marcados "a conferir" (API da Z,
+  Vercel uso, Stripe, RunPod, avaliação CASA, Resend, domínio). Migration `0028` sobe no próximo deploy autorizado.
+- ⬜ Contagem de quem conectou o Drive (mora no SOBEDESCE) para o gatilho da avaliação CASA, se o SOBEDESCE expuser.
+
 ## Fase 6 — Escala
 
 - ⬜ Observabilidade em produção (drain de logs, métricas da fila, alertas), backups e retenção definidos.

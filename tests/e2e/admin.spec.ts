@@ -6,7 +6,7 @@ import postgres from 'postgres'
 import { criarConta } from './conversa'
 
 const DB = process.env.E2E_DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/zro_e2e_test'
-const CONSOLE = ['/admin', '/admin/pessoas', '/admin/planos', '/admin/lancamento', '/admin/apps']
+const CONSOLE = ['/admin', '/admin/pessoas', '/admin/planos', '/admin/custos', '/admin/lancamento', '/admin/apps']
 
 async function signupAndOrg(page: Page, name: string, org: string) {
   const address = `adm-${randomUUID().slice(0, 8)}@teste.absolutezro.local`
@@ -20,9 +20,9 @@ async function signupAndOrg(page: Page, name: string, org: string) {
 }
 
 /** Promove a conta a admin da plataforma direto no banco de e2e (o console não tem cadastro de admin). */
-async function promote(address: string) {
+async function promote(address: string, role: 'admin' | 'support' = 'admin') {
   const sql = postgres(DB, { max: 1, onnotice: () => {} })
-  await sql`update zro.users set platform_role = 'admin', email_verified_at = coalesce(email_verified_at, now()) where email = ${address}`
+  await sql`update zro.users set platform_role = ${role}, email_verified_at = coalesce(email_verified_at, now()) where email = ${address}`
   await sql.end()
 }
 
@@ -36,7 +36,7 @@ async function axe(page: Page, path: string) {
 
 test('console não existe para quem não é da plataforma', async ({ page }) => {
   await signupAndOrg(page, 'Pessoa comum', 'Org comum')
-  for (const path of [...CONSOLE, '/admin/online', '/admin/pessoas/csv', `/admin/pessoas/${randomUUID()}`]) {
+  for (const path of [...CONSOLE, '/admin/online', '/admin/pessoas/csv', '/admin/custos/csv', `/admin/pessoas/${randomUUID()}`]) {
     const r = await page.goto(path)
     expect(r?.status(), path).toBe(404)
   }
@@ -117,4 +117,81 @@ test('admin vê online agora, acha a pessoa por segmento, troca o plano, exporta
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
     expect(overflow, path).toBeLessThanOrEqual(0)
   }
+})
+
+test('custos: suporte não vê; admin vê o mês, edita um item, cria e apaga outro, exporta', async ({ page }) => {
+  const suporte = await signupAndOrg(page, 'Suporte E2E', 'Org do suporte')
+  await promote(suporte, 'support')
+  await page.goto('/admin')
+  await expect(page.getByRole('navigation', { name: 'Console' }).getByRole('link', { name: 'Custos' })).toHaveCount(0)
+  expect((await page.goto('/admin/custos'))?.status()).toBe(404)
+  expect((await page.request.get('/admin/custos/csv')).status()).toBe(404)
+  await page.context().clearCookies()
+
+  const address = await signupAndOrg(page, 'Dono E2E', 'Org do dono')
+  await promote(address)
+  await page.goto('/admin')
+  await page.getByRole('navigation', { name: 'Console' }).getByRole('link', { name: 'Custos' }).click()
+  await page.waitForURL('**/admin/custos')
+  await expect(page.getByRole('heading', { level: 1, name: 'Custo do ecossistema' })).toBeVisible()
+  // Ativos hoje (itens da migration): Claude US$ 200 + Vercel US$ 20 + ElevenLabs US$ 22. Sem cotação, em dólar.
+  await expect(page.locator('.cst-hero__n')).toHaveText('US$ 242')
+  await expect(page.locator('.cst-conferir')).toHaveText(/\d+ itens a conferir/)
+  await expect(page.getByText('Nenhuma assinatura paga ainda')).toBeVisible()
+
+  // Cotação: agora em reais também.
+  await page.getByRole('button', { name: 'Informar cotação do dólar' }).click()
+  const cfg = page.getByRole('dialog', { name: 'Cotação e metas' })
+  await cfg.getByLabel('US$ 1 em reais').fill('5,50')
+  await cfg.getByLabel('Meta de assinantes').fill('100')
+  await cfg.getByRole('button', { name: 'Salvar' }).click()
+  await expect(cfg).toHaveCount(0)
+  await expect(page.locator('.cst-hero__n')).toHaveText('R$ 1.331')
+  await expect(page.locator('.cst-hero__sub')).toContainText('US$ 242')
+  await expect(page.locator('.cst-eq__planos')).toContainText('Absolute ZRO Completo')
+
+  // Editar: Claude passa de US$ 200 para US$ 210.
+  const linha = (texto: string) => page.locator('.cst-linha').filter({ hasText: texto })
+  await expect(linha('Claude (desenvolvimento)')).toHaveAccessibleName(/^Editar\s*Anthropic/)
+  await linha('Claude (desenvolvimento)').click()
+  const folha = page.getByRole('dialog', { name: 'Anthropic · Claude (desenvolvimento)' })
+  await folha.getByLabel('Valor').fill('210')
+  await folha.getByRole('button', { name: 'Salvar' }).click()
+  await expect(folha).toHaveCount(0)
+  await expect(page.locator('.cst-hero__sub')).toContainText('US$ 252')
+
+  // Criar e apagar (com confirmação).
+  await page.getByRole('button', { name: 'Novo item' }).click()
+  const novo = page.getByRole('dialog', { name: 'Novo item' })
+  await novo.getByLabel('Fornecedor').fill('Figma')
+  await novo.getByLabel('Item', { exact: true }).fill('Design')
+  await novo.getByLabel('Valor').fill('15')
+  await novo.getByRole('button', { name: 'Criar' }).click()
+  await expect(novo).toHaveCount(0)
+  await linha('Figma').click()
+  const fig = page.getByRole('dialog', { name: 'Figma · Design' })
+  await fig.getByRole('button', { name: 'Apagar item…' }).click()
+  await fig.getByRole('button', { name: 'Apagar', exact: true }).click()
+  await expect(fig).toHaveCount(0)
+  await expect(linha('Figma')).toHaveCount(0)
+
+  // Filtro por estado.
+  await page
+    .getByRole('group', { name: 'Estado' })
+    .getByRole('button', { name: /Futuros/ })
+    .click()
+  await expect(linha('Supabase')).toBeVisible()
+  await expect(linha('Claude (desenvolvimento)')).toHaveCount(0)
+
+  const csv = await page.request.get('/admin/custos/csv')
+  expect(csv.status()).toBe(200)
+  expect(csv.headers()['content-type']).toContain('text/csv')
+  expect(await csv.text()).toContain('Anthropic,Claude (desenvolvimento),IA,Max 20x,210.00,USD,Mensal,210.00,1155.00,Ativo')
+
+  const sql = postgres(DB, { max: 1, onnotice: () => {} })
+  const logs = await sql`select action from zro.audit_logs where action like 'admin.custo%' order by id`
+  await sql.end()
+  expect(logs.map((l) => l.action)).toEqual(
+    expect.arrayContaining(['admin.custos_config_alterada', 'admin.custo_alterado', 'admin.custo_criado', 'admin.custo_apagado', 'admin.custos_exportados']),
+  )
 })

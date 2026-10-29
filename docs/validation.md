@@ -56,6 +56,28 @@ Postgres local, Playwright/Chromium sem GPU, mediana de 5 rodadas, clique → co
   `build`, `test:e2e` completo **82/82** (6 pulados; inclui `quadro.spec.ts` e `sem-corte` no Chromium e no WebKit).
   SOBEDESCE `test:fast` **769/769** (4 pulados).
 
+## Custos do ecossistema no console (29/10/2026, ADR 0028)
+
+Postgres 16 próprio, build de produção local.
+
+- `tests/integration/custos.test.ts` (18): mês = mensal + anual ÷ 12, por uso fora; conversão com e sem cotação (zero
+  não precisa); só o vigente conta (fim no passado e pausado ficam fora); item em reais sem cotação fica fora dos
+  gráficos e é contado; nome sem repetir o fornecedor; projeção de 12 meses empilhada pelo mês estimado (virada de ano,
+  fim no meio); planos à venda (um por nome, mensal primeiro, avulsos juntos, anual sozinho ÷ 12) e ponto de equilíbrio
+  arredondado para cima; recomendações (anual mais barato, uso sem teto, a conferir, conferência velha, custo por conta,
+  sem receita, receita abaixo do custo, próximos gatilhos, cotação faltando); formulário (número brasileiro, datas, apps
+  conhecidos, recusas); planilha com BOM e sem fórmula. No banco: os 12 itens da migration (US$ 242 por mês ativos),
+  `zro_app` sem leitura nem escrita nas duas tabelas (42501, inclusive admin via `asUser`), auditoria de criar, alterar
+  (campos e de → para dos números, sem texto livre), apagar e configurar, duplicado = `conflict`, receita só de
+  assinatura paga ativa (manual não conta). Raiz `npm test` **292/292** em 35 arquivos.
+- E2E `tests/e2e/admin.spec.ts`: `/admin/custos` e `/admin/custos/csv` dão 404 para conta comum e para o suporte (sem
+  a seção no menu); admin vê US$ 242, informa a cotação (R$ 1.331), edita o Claude para US$ 210, cria e apaga um item
+  com confirmação, filtra por estado, exporta a planilha e a auditoria registra tudo; axe WCAG 2.1 A/AA nos dois temas e
+  celular sem rolagem lateral (com as outras telas do console). Suíte e2e do HUB inteira **30/30**.
+- Lint, formatação, tipos e build ok. `node scripts/scan-secrets.mjs`: nenhum segredo. Capturas (claro/escuro,
+  computador/celular, folha de edição) fora do repositório.
+- Não verificado: os valores "a conferir" nas páginas dos fornecedores e a migration `0028` no banco de produção.
+
 ## E-mails da central com cara de e-mail de conta (29/10/2026)
 
 - Convite caiu em Promoções no Gmail (SPF, DKIM e DMARC conferidos no DNS: ok). `apps/hub-web/lib/email/modelos.ts`

@@ -40,6 +40,7 @@ const PATHS = {
   terminal: 'M4 5h16v14H4zM7.5 9.5 10 12l-2.5 2.5M12.5 15h4',
   calendar: 'M4 6h16v14H4zM4 10h16M8 3.5v4M16 3.5v4',
   link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
+  pie: 'M11 4a8 8 0 1 0 8.9 9H11zM14 2.6V10h7.4A7.5 7.5 0 0 0 14 2.6z',
 } as const
 
 export type IconName = keyof typeof PATHS
