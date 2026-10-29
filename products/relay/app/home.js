@@ -69,7 +69,7 @@ const FAMILIA = [
   { nome: 'Revela', img: 'marca/familia/revela.svg', href: 'https://revela.absolutezro.com', uso: 'Exportar depois da cor' },
   { nome: 'AEON', img: 'marca/familia/aeon.svg', href: 'https://aeon.absolutezro.com', uso: 'Exportar a edição' },
   { nome: 'NOSSOM', img: 'marca/familia/nossom.svg', href: 'https://nossom-teal.vercel.app', uso: 'Exportar o áudio' },
-  { nome: 'Synquei', img: 'marca/familia/synquei.svg', href: 'https://synquei.vercel.app', uso: 'Pronto para editar' },
+  { nome: 'Synquei', img: 'marca/familia/synquei.svg', href: 'https://synquei.absolutezro.com', uso: 'Pronto para editar' },
   { nome: 'TPeasy', img: 'marca/familia/tpeasy.svg', href: 'https://tpeasy.vercel.app', uso: 'Gravação para a rede' },
   { nome: 'Carro do Freela', img: 'marca/familia/carro-do-freela.png', href: 'https://carrodofreela.com.br', uso: 'Reel do portfólio' },
 ]
