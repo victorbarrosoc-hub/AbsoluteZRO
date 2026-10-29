@@ -8,12 +8,15 @@ import { agendarRetorno, contatoFeito, moverEtapa, reagendar, salvarValorEstimad
 import { podeEscrever, podeRemover } from "@/lib/papeis";
 import { apagarPedido, gerarOrcamentoDoPedido, mudarStatusPedido } from "@/lib/pedidos/equipe";
 import type { EstadoForm } from "@/components/form";
+import { pode as podeArea } from "@/lib/acessos";
 
 const LE = "Seu papel nesta organização só lê.";
+const SEM_ORCAMENTOS = "Você não mexe em orçamentos e valores.";
 
 export async function gerarOrcamentoAcao(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
   const s = await exigirAcessoNaAcao();
   if (!podeEscrever(s.papel)) return { mensagem: LE };
+  if (!podeArea(s, "orcamentos")) return { mensagem: SEM_ORCAMENTOS };
   const r = await gerarOrcamentoDoPedido({ sub: s.sub, orgId: s.orgId }, String(fd.get("id") ?? ""));
   if (!r.ok) return { mensagem: r.mensagem };
   revalidatePath("/app", "layout");
@@ -55,6 +58,7 @@ export async function moverEtapaAcao(_: EstadoForm, fd: FormData): Promise<Estad
 export async function valorEstimadoAcao(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
   const s = await exigirAcessoNaAcao();
   if (!podeEscrever(s.papel)) return { mensagem: LE };
+  if (!podeArea(s, "orcamentos")) return { mensagem: SEM_ORCAMENTOS };
   const bruto = String(fd.get("valor") ?? "").trim();
   const centavos = bruto ? lerReais(bruto) : null;
   if (bruto && (centavos == null || Number.isNaN(centavos))) return { mensagem: "Valor em reais, como 4.500,00." };

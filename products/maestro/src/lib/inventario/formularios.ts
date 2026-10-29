@@ -2,8 +2,9 @@
 import type { DefCampo } from "@/components/form";
 import { CATEGORIAS_EQUIP, DONOS, ESTADOS } from "./nomes";
 
-export function camposEquipamento(freelas: { id: string; nome: string }[]): DefCampo[] {
-  return [
+/** `veValor` = a área "Valores do inventário" (src/lib/acessos.ts); sem ela, o campo do valor some. */
+export function camposEquipamento(freelas: { id: string; nome: string }[], veValor = true): DefCampo[] {
+  const campos: DefCampo[] = [
     { nome: "nome", rotulo: "Equipamento", obrigatorio: true, autoFocus: true, max: 80, placeholder: "Sony FX3" },
     {
       nome: "categoria",
@@ -29,6 +30,7 @@ export function camposEquipamento(freelas: { id: string; nome: string }[]): DefC
     { nome: "kmL", rotulo: "Consumo (km/L)", tipo: "numero", max: 6, dica: "Só para veículos: entra na calculadora de deslocamento." },
     { nome: "notas", rotulo: "Notas", tipo: "area", linhas: 2, largo: true, max: 2000 },
   ];
+  return veValor ? campos : campos.filter((c) => c.nome !== "valor");
 }
 
 export function camposReserva(o: { equipamentos?: { id: string; nome: string }[]; projetos: { id: string; codigo: string; titulo: string }[] }): DefCampo[] {

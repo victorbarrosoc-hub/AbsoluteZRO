@@ -122,10 +122,10 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   aquele combustível naquele orçamento (localStorage); a linha grava o preço usado (orçamento salvo não muda). Sem
   semana guardada, campo vazio e "Digite o preço do posto"; nunca preço inventado. Teste com a ANP falsa
   (`tests/anp-fixture.mts`, `MAESTRO_ANP_URL`).
-  **Financeiro** (`src/lib/financeiro`) só admin e gestão (`podeVerDinheiro`), também no banco; baixas recalculam o
+  **Financeiro** (`src/lib/financeiro`) só com a área Financeiro (`pode(sessao, "financeiro")`, ver "Quem vê o quê"), também no banco; baixas recalculam o
   pago por gatilho; recorrência gera o mês uma vez; a escala vira "a pagar" pelo gatilho `escala_sincronizar`. Sem
   DAS/ISS. **Freelas**: CPF e PIX só em `freela_pagamento`, cifrados com `selar()` (`MAESTRO_KEY`, contexto
-  `freela_pagamento:<org>:<freela>:<campo>`), lidos só por admin e gestão; nunca em lista, log ou demonstração real.
+  `freela_pagamento:<org>:<freela>:<campo>`), lidos só com a área Dados da equipe; nunca em lista, log ou demonstração real.
   **Inventário**: reserva em conflito é barrada no banco (gatilho com trava, erro 23P01, e `exclude` com `btree_gist`
   quando existe). **Agenda** e documentos do projeto (checklist, ordem do dia, roteiro, decupagem). Navegação em
   `src/lib/navegacao.ts` (módulo sem "use client": o servidor também lê). Carro do Freela: só o mapa em
@@ -174,7 +174,20 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
 - **Hoje** (`/app/hoje`, `src/lib/hoje.ts`, desenho C1): agenda do dia, "Vencendo", "Com o cliente", **Retornar hoje**
   (com "Feito", "Amanhã" e "+1 sem.") e o caixa da semana (baixas de segunda a domingo), mais as contagens (cards no
   prazo, peças com o cliente, pedidos novos, orçamentos aguardando, a receber e a pagar, caixa, meta do mês); dinheiro
-  só admin e gestão (o RLS esconde de qualquer jeito). Primeiro item de Produção e na barra do celular.
+  só com a área Financeiro e orçamentos só com a área Orçamentos (o RLS esconde de qualquer jeito). Primeiro item de
+  Produção e na barra do celular.
+- **Quem vê o quê** (titular 29/10/2026, [ADR 0031](../../docs/decisions/0031-maestro-acesso-por-area.md), mapa e
+  auditoria em `docs/permissoes.md`; `drizzle/0027`, `src/lib/acessos.ts` puro, `src/lib/acessos-servidor.ts`): o papel
+  do HUB decide escrever/remover; por cima, seis **áreas** (`financeiro`, `orcamentos`, `contratos`, `diarias`,
+  `dados_equipe`, `inventario_valores`) com padrão por papel (`PADRAO` = `maestro.area_padrao`; Gestão sem Financeiro,
+  Equipe e Leitura sem nenhuma) e ajuste por pessoa em `maestro.acessos`, que **só a Administração** muda (Ajustes →
+  Pessoas → "O que vê", `salvarAreas`, auditado `acesso.areas`); a Administração vê tudo sempre. No banco:
+  `maestro.pode(org, área)` em política restritiva `<tabela>_area` (`maestro.politica_area`) nas tabelas de cada área;
+  colunas de dinheiro em tabelas de todos (escala, freela, kit, equipamento, pedido, projeto) mascaradas na consulta
+  (`case when maestro.pode(...)`, `areasNaTx`) e guardadas pelos gatilhos `*_guarda_area` (quem não vê não troca; a
+  escala nova pega a diária do cadastro). Na tela: `sessao.acessos` e `pode(sessao, área)`; a navegação esconde a seção
+  (`gruposPara`/`abasOcultas`, `Aba.area`); endereço digitado mostra `SemArea` ou 404. Tela, ação ou tabela nova com
+  dinheiro: escolha a área, ponha a política/máscara e um caso em `tests/acessos.test.mts`.
 - **O negócio por dentro** (estudo MakersHub §4, itens 1, 2, 3, 6 e 7; `drizzle/0014`–`0018`; mapa das ligações em
   `docs/integration-contracts/maestro-z.md`):
   - **Funil** (`0014`, `src/lib/funil`): `pedidos.etapa` (novo, conversa, orcamento, negociando, ganho, perdido) e o
@@ -302,7 +315,8 @@ kit do freela, aluguel na escala e sincronização desligada (`freela-equipament
 novas com duas organizações (`negocio-rls.test.mts`) e o resumo para a Z (`resumo-z.test.mts`), o contrato (preenchimento, versões, aceite com hash, imutável;
 `contrato.test.mts`), a marca própria (sinal ligado e desligado, contraste, duas organizações; `marca-propria.test.mts`), a ponte do Drive, Arquivos, compartilhar/recolher e o agendamento
 (`drive-sobedesce.test.mts`), a versão colada na ficha do card (`versoes-card.test.mts`), pessoas da Absolute ZRO (`pessoas-zro.test.mts`), colunas do Quadro (fábrica e backfill, duas organizações, papéis,
-automação pelo papel, arquivar com destino, paleta; `colunas.test.mts`). E2E: `npm run build && npm run test:e2e`
+automação pelo papel, arquivar com destino, paleta; `colunas.test.mts`), quem vê o quê (padrão igual no TS e no banco,
+cada área por pessoa, máscaras, gatilhos, só a administração muda e audita, sessão, navegação e a Z; `acessos.test.mts`). E2E: `npm run build && npm run test:e2e`
 (Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir movimento, navegação, a aprovação
 inteira (`aprovacao.spec.ts`, mp4 local e YouTube/Vimeo falsos em `e2e/falsos`) e a versão colada na ficha do card que aparece no lote (`versao-card.spec.ts`) e a produtora com a demonstração
 (`produtora.spec.ts`, organização própria criada em `e2e/preparar.ts`) e o ciclo comercial (`comercial.spec.ts`: pedido
@@ -318,7 +332,9 @@ faixa que rola de lado só com `data-rolagem`; regras de celular em `src/app/cel
 a troca de seção sem duas telas juntas (`transicao.spec.ts`, Chromium e WebKit: pelo relógio das animações e amostrando
 quadro a quadro) e os gestos do Quadro no celular (`gestos.spec.ts`, Chromium e WebKit, organização própria) e as colunas
 (`colunas.spec.ts`: renomear no lugar, reordenar, criar e recolorir, arquivar com destino e restaurar, sistema não
-arquiva, equipe não edita; computador e iPhone, organização própria).
+arquiva, equipe não edita; computador e iPhone, organização própria) e quem vê o quê (`acessos.spec.ts`: o editor sem
+dinheiro na navegação, no Hoje, nas fichas e no HTML; a administração liga o Financeiro e volta ao padrão; `SHOTS_DIR`
+guarda `pessoas-acesso-*`). `E2E_DB_SUFIXO` separa o banco do e2e quando duas cópias rodam ao mesmo tempo.
 Movimento (29/10/2026): toda folha usa `Folha` (`src/components/folha.tsx`, portal no `<body>`). **Troca de seção**
 (`src/components/movimento.tsx` + `src/app/motion.css`): a View Transition é chamada por nós, não pelo
 `<ViewTransition>` do React (no Safari do iPhone o par sai/entra do React deixava a tela velha e a nova uma sobre a

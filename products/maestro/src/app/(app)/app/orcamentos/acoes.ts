@@ -1,7 +1,7 @@
 "use server";
 /**
- * Ações de orçamentos: sessão e acesso conferidos aqui; organização e pessoa vêm da sessão; o banco confere o papel
- * (RLS). A calculadora de deslocamento usa Photon e OSRM só se ligados (MAESTRO_SERVICOS_ABERTOS=1); o preço do litro
+ * Ações de orçamentos: sessão, papel e a área "Orçamentos e preços" (src/lib/acessos.ts) conferidos aqui; organização e
+ * pessoa vêm da sessão; o banco confere de novo (RLS com `maestro.pode`). A calculadora de deslocamento usa Photon e OSRM só se ligados (MAESTRO_SERVICOS_ABERTOS=1); o preço do litro
  * vem da semana da ANP guardada pelo agendamento (drizzle/0022).
  */
 import { revalidatePath } from "next/cache";
@@ -9,7 +9,9 @@ import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { exigirAcessoNaAcao } from "@/lib/auth/acao";
 import { ehUuid } from "@/lib/crm/comum";
-import { podeEscrever, podeRemover, podeVerDinheiro } from "@/lib/papeis";
+import { podeEscrever, podeRemover } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
+import type { Sessao } from "@/lib/auth/sessao";
 import { aprovarOrcamento, criarOrcamento, mudarStatus, novaVersao, removerOrcamento, salvarOrcamento, validarEdicao } from "@/lib/orcamento/orcamentos";
 import type { StatusOrcamento } from "@/lib/orcamento/motor";
 import { lerEmpresa } from "@/lib/organizacao";
@@ -21,11 +23,14 @@ import { ligarContrato } from "@/lib/contrato/servidor";
 import type { EstadoForm } from "@/components/form";
 
 const ctxDe = (s: { sub: string; orgId: string }) => ({ sub: s.sub, orgId: s.orgId });
+/** Escreve em orçamentos: não é só leitura e tem a área. */
+const escreveOrcamento = (s: Sessao) => podeEscrever(s.papel) && podeArea(s, "orcamentos");
+const NAO_ESCREVE = "Você não mexe em orçamentos.";
 
 export async function criarOrcamentoAcao(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
   const s = await exigirAcessoNaAcao();
   const valores = Object.fromEntries([...fd.entries()].map(([k, v]) => [k, String(v)]));
-  if (!podeEscrever(s.papel)) return { mensagem: "Seu papel nesta organização só lê.", valores };
+  if (!escreveOrcamento(s)) return { mensagem: NAO_ESCREVE, valores };
   const titulo = (valores.titulo ?? "").trim();
   if (!titulo || titulo.length > 200) return { erros: { titulo: "Dê um título (até 200)." }, valores };
   const respostas: Record<string, string> = {};
@@ -45,7 +50,7 @@ export async function criarOrcamentoAcao(_: EstadoForm, fd: FormData): Promise<E
 /** O editor manda o orçamento inteiro (campos e linhas) em JSON. */
 export async function salvarEdicaoAcao(id: string, corpo: unknown): Promise<{ ok: boolean; mensagem?: string }> {
   const s = await exigirAcessoNaAcao();
-  if (!podeEscrever(s.papel)) return { ok: false, mensagem: "Seu papel nesta organização só lê." };
+  if (!escreveOrcamento(s)) return { ok: false, mensagem: NAO_ESCREVE };
   const v = validarEdicao(corpo);
   if (!v.ok) return { ok: false, mensagem: v.mensagem };
   const r = await salvarOrcamento(ctxDe(s), id, v.e);
@@ -57,7 +62,7 @@ export async function salvarEdicaoAcao(id: string, corpo: unknown): Promise<{ ok
 
 export async function statusAcao(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
   const s = await exigirAcessoNaAcao();
-  if (!podeEscrever(s.papel)) return { mensagem: "Seu papel nesta organização só lê." };
+  if (!escreveOrcamento(s)) return { mensagem: NAO_ESCREVE };
   const id = String(fd.get("id") ?? "");
   const para = String(fd.get("para") ?? "") as StatusOrcamento;
   if (!["rascunho", "enviado", "recusado"].includes(para)) return { mensagem: "Passo inválido." };
@@ -68,10 +73,10 @@ export async function statusAcao(_: EstadoForm, fd: FormData): Promise<EstadoFor
   return { aviso: "Feito." };
 }
 
-/** "Enviar contrato junto" (administração e gestão; rascunho ou enviado). */
+/** "Enviar contrato junto" (administração e gestão com as áreas Orçamentos e Contratos; rascunho ou enviado). */
 export async function contratoAcao(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
   const s = await exigirAcessoNaAcao();
-  if (!podeVerDinheiro(s.papel)) return { mensagem: "Só administração e gestão." };
+  if (!podeRemover(s.papel) || !podeArea(s, "orcamentos") || !podeArea(s, "contratos")) return { mensagem: "Você não liga o contrato." };
   const id = String(fd.get("id") ?? "");
   const r = await ligarContrato(ctxDe(s), id, fd.get("ligar") === "1");
   if (!r.ok) return { mensagem: r.mensagem };
@@ -81,7 +86,7 @@ export async function contratoAcao(_: EstadoForm, fd: FormData): Promise<EstadoF
 
 export async function novaVersaoAcao(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
   const s = await exigirAcessoNaAcao();
-  if (!podeEscrever(s.papel)) return { mensagem: "Seu papel nesta organização só lê." };
+  if (!escreveOrcamento(s)) return { mensagem: NAO_ESCREVE };
   const r = await novaVersao(ctxDe(s), String(fd.get("id") ?? ""));
   if (!r.ok) return { mensagem: r.mensagem };
   revalidatePath("/app/orcamentos");
@@ -90,7 +95,8 @@ export async function novaVersaoAcao(_: EstadoForm, fd: FormData): Promise<Estad
 
 export async function aprovarAcao(id: string, parcelas: unknown): Promise<{ ok: boolean; mensagem?: string; projetoId?: string }> {
   const s = await exigirAcessoNaAcao();
-  if (!podeVerDinheiro(s.papel)) return { ok: false, mensagem: "Aprovar lança as parcelas no Financeiro: só administração e gestão." };
+  if (!podeRemover(s.papel) || !podeArea(s, "orcamentos") || !podeArea(s, "financeiro"))
+    return { ok: false, mensagem: "Aprovar lança as parcelas no Financeiro: precisa das áreas Orçamentos e Financeiro." };
   const r = await aprovarOrcamento(ctxDe(s), id, parcelas);
   if (!r.ok) return { ok: false, mensagem: r.mensagem };
   revalidatePath(`/app/orcamentos/${id}`);
@@ -102,7 +108,7 @@ export async function aprovarAcao(id: string, parcelas: unknown): Promise<{ ok: 
 
 export async function removerOrcamentoAcao(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
   const s = await exigirAcessoNaAcao();
-  if (!podeRemover(s.papel)) return { mensagem: "Só administração e gestão apagam orçamentos." };
+  if (!podeRemover(s.papel) || !podeArea(s, "orcamentos")) return { mensagem: "Só administração e gestão apagam orçamentos." };
   const r = await removerOrcamento(ctxDe(s), String(fd.get("id") ?? ""));
   if (!r.ok) return { mensagem: r.mensagem };
   revalidatePath("/app/orcamentos");
@@ -157,11 +163,11 @@ export async function precoCombustivelAcao(combustivel: unknown): Promise<{ prec
 
 /* ───────────── link do orçamento para o cliente (/o) ───────────── */
 
-const SO_GESTAO = "Mandar o link é de administração e gestão: o aceite lança as parcelas no Financeiro.";
+const SO_GESTAO = "Mandar o link é da gestão com a área Orçamentos.";
 
 export async function gerarLinkOrcamentoAcao(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
   const s = await exigirAcessoNaAcao();
-  if (!podeVerDinheiro(s.papel)) return { mensagem: SO_GESTAO };
+  if (!podeRemover(s.papel) || !podeArea(s, "orcamentos")) return { mensagem: SO_GESTAO };
   const id = String(fd.get("id") ?? "");
   const r = await gerarLinkDoOrcamento(ctxDe(s), id, Number(fd.get("parcelas") ?? 2));
   if (!r.ok) return { mensagem: r.mensagem };
@@ -172,7 +178,7 @@ export async function gerarLinkOrcamentoAcao(_: EstadoForm, fd: FormData): Promi
 
 export async function revogarLinkOrcamentoAcao(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
   const s = await exigirAcessoNaAcao();
-  if (!podeVerDinheiro(s.papel)) return { mensagem: SO_GESTAO };
+  if (!podeRemover(s.papel) || !podeArea(s, "orcamentos")) return { mensagem: SO_GESTAO };
   const id = String(fd.get("id") ?? "");
   const r = await revogarLinkDoOrcamento(ctxDe(s), id);
   if (!r.ok) return { mensagem: r.mensagem };

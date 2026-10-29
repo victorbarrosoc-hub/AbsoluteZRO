@@ -2,6 +2,7 @@
  * Semente comum dos testes da produtora: duas organizações (A e B) e uma pessoa por papel. Ana é admin na A, Gil é
  * gestor na A, Eva é equipe na A, Leo é leitura na A; Bia é admin na B. Use depois de prepararAmbiente().
  */
+import { sql } from "drizzle-orm";
 import { UUID } from "./ambiente.mts";
 
 export async function duasOrganizacoes() {
@@ -21,6 +22,10 @@ export async function duasOrganizacoes() {
       { orgId: a.id, zroSub: LEO, role: "leitura" },
       { orgId: b.id, zroSub: BIA, role: "admin" },
     ]);
+    // A gestão não vê o Financeiro por padrão (drizzle/0027); nesta semente a Ana (administração) ligou para o Gil, como
+    // uma produtora que confia o Financeiro à gestão. O padrão sem o ajuste está em tests/acessos.test.mts.
+    await tx.execute(sql`
+      insert into maestro.acessos (org_id, zro_sub, area, permitido, atualizado_por) values (${a.id}, ${GIL}, 'financeiro', true, ${ANA})`);
     return { orgA: a.id, orgB: b.id };
   });
   return {

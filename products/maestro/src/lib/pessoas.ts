@@ -10,6 +10,8 @@ import { sql } from "drizzle-orm";
 import { getBanco, type Contexto } from "@/lib/db/client";
 import { ehUuid, falha, traduzirPg, type Res } from "@/lib/crm/comum";
 import type { Papel } from "@/lib/papeis";
+import { acessosDe, type Acessos } from "@/lib/acessos";
+import { ajustesDaOrganizacao } from "@/lib/acessos-servidor";
 
 export type Pessoa = {
   sub: string;
@@ -26,6 +28,10 @@ export type Pessoa = {
   /** Só para equipe e leitura: restrita a alguns clientes? */
   restrito: boolean;
   clientes: string[];
+  /** As áreas sensíveis que vê (padrão do papel + ajustes; quem não é da administração só conhece as próprias). */
+  acessos: Acessos;
+  /** A administração mudou alguma área desta pessoa (difere do padrão do papel)? */
+  ajustado: boolean;
 };
 
 /** Papéis que podem ser restritos (admin e gestão sempre veem tudo). */
@@ -34,7 +40,10 @@ export const PODE_RESTRINGIR: readonly Papel[] = ["equipe", "leitura"];
 export async function listarPessoas(ctx: Contexto): Promise<Pessoa[]> {
   return getBanco().asUser(ctx, async (tx) => {
     const r = (await tx.execute(sql`
-      select m.zro_sub, m.display_name, m.email, m.picture_url, m.zro_arroba, m.funcao, m.role, m.status, m.last_login_at,
+      select m.zro_sub, m.display_name,
+             -- E-mail de outra pessoa só para quem vê os dados da equipe (o próprio, sempre).
+             case when m.zro_sub = maestro.current_sub() or maestro.pode(m.org_id, 'dados_equipe') then m.email end as email,
+             m.picture_url, m.zro_arroba, m.funcao, m.role, m.status, m.last_login_at,
              exists (select 1 from maestro.acesso_restrito r where r.org_id = m.org_id and r.zro_sub = m.zro_sub) as restrito,
              coalesce((select array_agg(a.cliente_id::text order by a.cliente_id) from maestro.acesso_clientes a
                         where a.org_id = m.org_id and a.zro_sub = m.zro_sub), '{}') as clientes
@@ -43,6 +52,7 @@ export async function listarPessoas(ctx: Contexto): Promise<Pessoa[]> {
       string,
       unknown
     >[];
+    const ajustes = await ajustesDaOrganizacao(tx);
     return r.map((m) => ({
       sub: m.zro_sub as string,
       nome: (m.display_name as string | null) ?? null,
@@ -55,6 +65,8 @@ export async function listarPessoas(ctx: Contexto): Promise<Pessoa[]> {
       ultimoLogin: m.last_login_at ? new Date(m.last_login_at as string).toISOString() : null,
       restrito: Boolean(m.restrito) && PODE_RESTRINGIR.includes(m.role as Papel),
       clientes: (m.clientes as string[]) ?? [],
+      acessos: acessosDe(m.role as Papel, ajustes.get(m.zro_sub as string)),
+      ajustado: m.role !== "admin" && Object.keys(ajustes.get(m.zro_sub as string) ?? {}).length > 0,
     }));
   });
 }

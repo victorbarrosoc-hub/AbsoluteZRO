@@ -36,7 +36,22 @@ const TODAS = [
   "freela_equipamentos",
   "escala_equipamentos",
 ] as const;
-const SO_GESTAO = ["freela_pagamento", "lancamentos", "baixas", "recorrencias", "recorrencia_execucoes", "links_publicos"];
+// Tabelas inteiras de uma área sensível (drizzle/0027): equipe e leitura, sem a área por padrão, não leem nada delas.
+const SO_GESTAO = [
+  "freela_pagamento",
+  "lancamentos",
+  "baixas",
+  "recorrencias",
+  "recorrencia_execucoes",
+  "links_publicos",
+  "precos_itens",
+  "precos_faixas",
+  "precos_variaveis",
+  "orcamento_modelos",
+  "orcamentos",
+  "orcamento_itens",
+  "freela_valores",
+];
 
 const ids: Record<string, string> = {};
 

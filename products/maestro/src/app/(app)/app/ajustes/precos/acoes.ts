@@ -1,8 +1,9 @@
 "use server";
-/** Ações da tabela de preços: só administração e gestão (aqui e no banco). */
+/** Ações da tabela de preços: administração e gestão com a área Orçamentos e preços (aqui e no banco). */
 import { revalidatePath } from "next/cache";
 import { exigirAcessoNaAcao } from "@/lib/auth/acao";
-import { podeVerDinheiro } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
+import { podeRemover } from "@/lib/papeis";
 import {
   removerItem,
   removerModelo,
@@ -16,12 +17,12 @@ import {
 } from "@/lib/orcamento/precos";
 import type { EstadoForm } from "@/components/form";
 
-const SO = "Só administração e gestão mudam a tabela de preços.";
+const SO = "Você não muda a tabela de preços.";
 const valoresDe = (fd: FormData) => Object.fromEntries([...fd.entries()].map(([k, v]) => [k, String(v)]));
 
 async function quem() {
   const s = await exigirAcessoNaAcao();
-  return { s, ctx: { sub: s.sub, orgId: s.orgId }, pode: podeVerDinheiro(s.papel) };
+  return { s, ctx: { sub: s.sub, orgId: s.orgId }, pode: podeArea(s, "orcamentos") && podeRemover(s.papel) };
 }
 
 export async function salvarItemAcao(_: EstadoForm, fd: FormData): Promise<EstadoForm> {

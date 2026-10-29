@@ -79,6 +79,74 @@
 .alcance__lista label:hover {
   background: var(--hover);
 }
+
+/* ───────────── O que cada pessoa vê (áreas sensíveis, drizzle/0027) ───────────── */
+
+/* Lista agrupada como nos Ajustes do iPhone: um interruptor por área; a dica fica no title. */
+.areas {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+  max-width: 520px;
+}
+.areas__lista {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: 14px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  overflow: hidden;
+}
+.areas__lista li + li {
+  border-top: 1px solid var(--line);
+}
+.areas__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.areas__item:hover {
+  background: var(--hover);
+}
+.areas__icone {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--painel);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text-strong);
+}
+.areas__icone[data-area="financeiro"] {
+  color: var(--acento);
+}
+.areas__nome {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.95rem;
+  color: var(--text-strong);
+}
+.areas__pe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  min-height: 28px;
+  font-size: 0.88rem;
+}
+.selo--acesso i {
+  background: var(--text-faint);
+}
+.selo--acesso[data-areas="tudo"] i {
+  background: var(--ok-text);
+}
 .alcance__lista input {
   width: 17px;
   height: 17px;

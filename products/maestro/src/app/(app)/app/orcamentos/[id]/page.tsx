@@ -13,7 +13,8 @@ import { LinkDoOrcamentoPainel } from "@/components/link-publico";
 import { carregarTabela } from "@/lib/orcamento/precos";
 import { servicosAbertos } from "@/lib/orcamento/servicos";
 import { lerEmpresa } from "@/lib/organizacao";
-import { podeEscrever, podeRemover, podeVerDinheiro } from "@/lib/papeis";
+import { podeEscrever, podeRemover } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
 import { BotaoAcao } from "@/components/acao";
 import { Icone } from "@/components/icones";
 import { EditorOrcamento } from "@/components/orcamento/editor";
@@ -29,9 +30,15 @@ export default async function FichaOrcamento({ params }: PageProps<"/app/orcamen
   const sessao = await exigirAcessoNaPagina(`/app/orcamentos/${id}`);
   const ctx = { sub: sessao.sub, orgId: sessao.orgId };
   const hoje = hojeBr();
+  if (!podeArea(sessao, "orcamentos")) notFound();
   const o = await obterOrcamento(ctx, id, hoje);
   if (!o) notFound();
-  const dinheiro = podeVerDinheiro(sessao.papel);
+  // Link do orçamento: gestão com a área (o banco confere: links_publicos). Contrato: área Contratos. Aprovar lança as
+  // parcelas no Financeiro: precisa também dessa área.
+  const gestao = podeRemover(sessao.papel);
+  const dinheiro = gestao; // o painel do link
+  const veContrato = podeArea(sessao, "contratos");
+  const aprova = gestao && podeArea(sessao, "financeiro");
   const [tabela, clientes, empresa, veiculos, link] = await Promise.all([
     carregarTabela(ctx),
     listarClientes(ctx),
@@ -39,7 +46,7 @@ export default async function FichaOrcamento({ params }: PageProps<"/app/orcamen
     listarVeiculos(ctx),
     dinheiro ? lerLinkDoOrcamento(ctx, o.id) : Promise.resolve(null),
   ]);
-  const [contrato] = dinheiro ? await contratosDe(ctx, { orcamentoId: o.id }) : [];
+  const [contrato] = veContrato ? await contratosDe(ctx, { orcamentoId: o.id }) : [];
   const quando = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
   const escreve = podeEscrever(sessao.papel);
   const editavel = escreve && o.status === "rascunho";
@@ -138,7 +145,7 @@ export default async function FichaOrcamento({ params }: PageProps<"/app/orcamen
         />
       ) : null}
 
-      {dinheiro ? (
+      {gestao && veContrato ? (
         <section className="ficha ct-ficha" aria-label="Contrato">
           <span className="ct-ficha__icone" data-ligado={o.contrato || !!contrato || undefined} aria-hidden="true">
             <Icone nome="documento" size={20} />
@@ -179,7 +186,7 @@ export default async function FichaOrcamento({ params }: PageProps<"/app/orcamen
         tabela={tabela}
         clientes={clientes.map((c) => ({ id: c.id, nome: c.nome }))}
         editavel={editavel}
-        podeAprovar={dinheiro && (o.status === "enviado" || o.status === "rascunho")}
+        podeAprovar={aprova && (o.status === "enviado" || o.status === "rascunho")}
         base={base}
         veiculos={veiculos}
         servicos={servicosAbertos()}

@@ -49,6 +49,22 @@ describe("kit do freela", () => {
     const lente = await q.salvarEquipFreela(o.equipe, ids.rafa, { ...e, categoria: "lente", modelo: "24-70mm", diariaCents: 10000 });
     assert.ok(lente.ok);
     if (lente.ok) ids.lente = lente.id;
+    // A equipe não tem "Diárias e cachês" (drizzle/0027): o item entra sem a diária do aluguel e ela não vê nenhuma.
+    assert.deepEqual(
+      (await q.listarEquipDoFreela(o.gestor, ids.rafa)).map((x) => x.diariaCents),
+      [null, null],
+    );
+    // A gestão põe a diária; a equipe muda outra coisa e a diária fica (gatilho freela_equipamentos_guarda_area).
+    assert.ok((await q.salvarEquipFreela(o.gestor, ids.rafa, e, ids.fx6)).ok);
+    assert.ok((await q.salvarEquipFreela(o.gestor, ids.rafa, { ...e, categoria: "lente", modelo: "24-70mm", diariaCents: 10000 }, ids.lente)).ok);
+    assert.ok((await q.salvarEquipFreela(o.equipe, ids.rafa, { ...e, observacao: "com baterias", diariaCents: null }, ids.fx6)).ok);
+    const kitGestao = await q.listarEquipDoFreela(o.gestor, ids.rafa);
+    assert.deepEqual(kitGestao.map((x) => x.diariaCents).sort(), [10000, 35000]);
+    assert.deepEqual(
+      (await q.listarEquipDoFreela(o.equipe, ids.rafa)).map((x) => x.diariaCents),
+      [null, null],
+      "a equipe não recebe a diária do kit",
+    );
     assert.equal((await q.salvarEquipFreela(o.leitura, ids.rafa, e)).ok, false);
     assert.equal((await q.listarEquipDoFreela(o.b, ids.rafa)).length, 0);
     assert.equal((await q.listarEquipDoFreela(o.forjado, ids.rafa)).length, 0);

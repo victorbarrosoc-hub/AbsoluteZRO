@@ -2518,3 +2518,23 @@ sistema simulado), e o primeiro Release (sai no primeiro push na main com `produ
 - `test/transferencias-ui.test.js` (`rodada`): lote velho concluído, cancelado e tentativa substituída ficam de fora;
   terminar não faz a porcentagem cair; dois lotes ao mesmo tempo contam juntos até o fim.
 - Não validado: o painel num envio real de 100 GB no Mac do titular.
+
+## Maestro: quem vê o quê (29/10/2026, [ADR 0031](decisions/0031-maestro-acesso-por-area.md))
+
+Seis áreas sensíveis com padrão por papel e ajuste da Administração (`products/maestro/drizzle/0027_acessos.sql`, mapa
+em `products/maestro/docs/permissoes.md`). Local, Postgres e Chromium/WebKit desta máquina.
+
+| O quê                           | Como                                                         | Resultado                                                                                                                                                            |
+| ------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unitários do Maestro            | `cd products/maestro && npm test`                            | **404/404** (27 novos em `acessos.test.mts`; testes antigos ajustados ao padrão novo)                                                                                |
+| Padrão igual no TS e no banco   | `acessos.test.mts`                                           | `PADRAO` = `maestro.area_padrao`; `CRIACAO_PADRAO` = `maestro.criacao_padrao`                                                                                        |
+| Cada área, cada pessoa          | `acessos.test.mts` (asUser direto nas tabelas)               | sem a área: 0 linhas em toda tabela dela; com a área: as linhas; gestão sem Financeiro                                                                               |
+| Máscaras e gatilhos             | `acessos.test.mts`                                           | freela, escala, kit, inventário, pedido, Hoje, Pessoas, tabela e timbrado vazios sem a área; quem não vê grava e o valor fica                                        |
+| Quem muda                       | `acessos.test.mts`                                           | só a Administração (nem direto na tabela), auditado com antes/depois; sessão traz o acesso                                                                           |
+| A Z                             | `acessos.test.mts` (rota com o pedido assinado)              | `dinheiro` null sem Financeiro (gestão inclusive); `orcamentos_aguardando` null sem a área                                                                           |
+| Tela                            | `npm run build && E2E_DB_SUFIXO=acessos npx playwright test` | **135 ok, 21 pulados (por desenho), 0 falhas**; `acessos.spec.ts` 6/6 (computador e iPhone)                                                                          |
+| Lint, Prettier, tipos (Maestro) | `npm run lint`, `format:check`, `typecheck`                  | ok · ok · ok                                                                                                                                                         |
+| Raiz                            | `npm run lint`, `format:check`                               | ok · ok (o `typecheck` da raiz acusa erros em pacotes do HUB não tocados aqui: `node_modules` da cópia principal, desatualizado; não reinstalado por falta de disco) |
+| Segredos                        | `node scripts/scan-secrets.mjs`                              | nenhum                                                                                                                                                               |
+
+Não conferido aqui: a migração `0027` no banco de produção (deploy só com autorização) e a tela com dados reais.

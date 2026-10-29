@@ -3,7 +3,8 @@ import type { CSSProperties } from "react";
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { brlCurto, dataCurta, hojeBr } from "@/lib/dinheiro";
 import { ETAPAS, nomeEtapa, quandoRetorno, situacaoRetorno, tomEtapa, type Etapa } from "@/lib/funil/regras";
-import { podeEscrever, podeVerDinheiro } from "@/lib/papeis";
+import { podeEscrever, podeRemover } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
 import { listarPedidos, type PedidoLista } from "@/lib/pedidos/equipe";
 import { Pilulas } from "@/components/crm";
 import { MoverRapido } from "@/components/funil";
@@ -34,7 +35,7 @@ export default async function Pedidos({ searchParams }: PageProps<"/app/pedidos"
   const etapa = typeof sp.etapa === "string" && ETAPAS.some((x) => x.k === sp.etapa) ? (sp.etapa as Etapa) : "todas";
   const todos = await listarPedidos({ sub: s.sub, orgId: s.orgId });
   const hoje = hojeBr();
-  const dinheiro = podeVerDinheiro(s.papel);
+  const dinheiro = podeArea(s, "orcamentos");
   const escreve = podeEscrever(s.papel);
   const lista = etapa === "todas" ? todos : todos.filter((p) => p.etapa === etapa);
   const abertos = todos.filter((p) => p.etapa !== "ganho" && p.etapa !== "perdido");
@@ -88,7 +89,7 @@ export default async function Pedidos({ searchParams }: PageProps<"/app/pedidos"
               </Link>
             </nav>
           ) : null}
-          {podeVerDinheiro(s.papel) ? (
+          {podeArea(s, "orcamentos") && podeRemover(s.papel) ? (
             <Link className="glass-btn" href="/app/ajustes/pedido">
               <Icone nome="link" size={18} /> Link de pedido
             </Link>
@@ -97,7 +98,7 @@ export default async function Pedidos({ searchParams }: PageProps<"/app/pedidos"
       </header>
       {!todos.length ? (
         <EstadoVazio icone="pedidos" titulo="Nenhum pedido ainda" apoio="Compartilhe o link de pedido: o cliente conta o que precisa e chega aqui.">
-          {podeVerDinheiro(s.papel) ? (
+          {podeArea(s, "orcamentos") && podeRemover(s.papel) ? (
             <Link className="glass-btn glass-btn--ink" href="/app/ajustes/pedido">
               <Icone nome="link" size={18} /> Criar o link
             </Link>

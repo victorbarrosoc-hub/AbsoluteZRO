@@ -12,6 +12,7 @@ import { Icone } from "./icones";
 import { MaestroSimbolo, ZroSimbolo } from "./marca";
 import { Relogio } from "./ambiente";
 import { Barra, Capsula } from "./nav";
+import { abasOcultas } from "@/lib/navegacao";
 import { SeletorDeTema } from "./tema";
 import { Transicao } from "./movimento";
 
@@ -85,7 +86,7 @@ export function Shell({
         <Link className="capsula__marca" href="/app/hoje" aria-label={rotulo}>
           <MarcaDoTopo marca={marca} largura={30} />
         </Link>
-        <Capsula />
+        <Capsula ocultas={abasOcultas(sessao.acessos)} />
         <div className="capsula__fim">
           {selo}
           <Relogio />

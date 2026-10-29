@@ -3,7 +3,7 @@ import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { brl, hojeBr, porcento, somarMeses } from "@/lib/dinheiro";
 import { fluxoEResultado } from "@/lib/financeiro/servidor";
 import { MARGEM_MINIMA } from "@/lib/orcamento/motor";
-import { podeVerDinheiro } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
 import { Secao } from "@/components/crm";
 import { CabecaFinanceiro, SemDinheiro } from "@/components/financeiro";
 import { Cifra, Cifras, GraficoFluxo, Medidor } from "@/components/painel";
@@ -13,10 +13,9 @@ export const metadata = { title: "Fluxo e resultado" };
 /** Fluxo de caixa (3 meses para trás, 2 para a frente) e o resultado de cada projeto: margem real × orçada. */
 export default async function Fluxo() {
   const sessao = await exigirAcessoNaPagina("/app/financeiro/fluxo");
-  if (!podeVerDinheiro(sessao.papel))
+  if (!podeArea(sessao, "financeiro"))
     return (
       <div className="pagina">
-        <CabecaFinanceiro ativa="/app/financeiro/fluxo" />
         <SemDinheiro />
       </div>
     );
