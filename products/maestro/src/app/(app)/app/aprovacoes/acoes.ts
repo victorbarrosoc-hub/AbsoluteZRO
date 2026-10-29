@@ -51,6 +51,12 @@ export async function novaVersaoAcao(cardId: string, link: string, titulo: strin
   return { ok: true };
 }
 
+/** As versões de um card, para a ficha do Quadro (a mesma sessão e o mesmo RLS do lote; leitura também vê). */
+export async function versoesDoCardAcao(cardId: string): Promise<{ ok: true; versoes: eq.VersaoDoCard[] } | { ok: false; mensagem: string }> {
+  const s = await exigirAcessoNaAcao();
+  return { ok: true, versoes: await eq.versoesDoCard(ctxDe(s), cardId) };
+}
+
 export async function apagarVersaoAcao(versaoId: string): Promise<Resposta> {
   const s = await exigirAcessoNaAcao();
   const r = await eq.apagarVersao(ctxDe(s), versaoId);

@@ -19,6 +19,7 @@ import {
 } from "@/lib/quadro/metodo";
 import type { Referencias } from "@/lib/quadro/servidor";
 import { Icone } from "@/components/icones";
+import { VersoesDoCard } from "./versoes";
 
 type Props = {
   card: CardQ | null;
@@ -285,6 +286,8 @@ export function Ficha({ card, novo, refs, podeEscrever, focar, mudar, criar, apa
               aoSalvar={(v) => por({ briefing: v.trim() ? v : null })}
             />
           </label>
+
+          {card ? <VersoesDoCard key={card.id} card={card.id} podeEscrever={podeEscrever} /> : null}
 
           {card && (card.dados.cliente || card.dados.projeto) ? (
             <div className="q-ficha__links">

@@ -58,6 +58,9 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   `maestro_app` **sem organização** e só as funções `maestro.link_*`; token só como sha256 (`token_enc` para copiar),
   PIN scrypt + cookie assinado, limites em `REGRAS.link*`, IP só como HMAC do dia; link morto = a mesma tela neutra. A
   decisão (`link_enviar`) vale uma vez por peça e volta e move o card (Aprovado; ajuste → Revisão com `ajustePedido`).
+  A versão é do **card**: a ficha do Quadro tem o bloco "Versões" (`components/quadro/versoes.tsx`, lista por
+  `versoesDoCard`, leitura vê sem o campo) e cola o link pelo mesmo `useNovaVersao` → `novaVersaoAcao` do lote
+  (`components/revisao/nova-versao.ts`); o lote que tem o card já mostra. Apagar versão não tem tela (nem no lote).
   Players em `src/components/revisao/player.tsx` (callbacks estáveis: o adaptador recria o player se mudarem);
   `MAESTRO_GOOGLE_API_KEY` (opcional, do titular; desde 29/10/2026 variável compartilhada do time, chave "Absolute ZRO –
   navegador" do projeto Google do ecossistema, restrita por site à Drive API) faz o Drive tocar num `<video>`; sem
@@ -226,9 +229,9 @@ kit do freela, aluguel na escala e sincronização desligada (`freela-equipament
 (`agenda-ics.test.mts`), acesso por cliente em toda tabela ligada a cliente (`acesso-cliente.test.mts`), as tabelas
 novas com duas organizações (`negocio-rls.test.mts`) e o resumo para a Z (`resumo-z.test.mts`), o contrato (preenchimento, versões, aceite com hash, imutável;
 `contrato.test.mts`), a marca própria (sinal ligado e desligado, contraste, duas organizações; `marca-propria.test.mts`), a ponte do Drive, Arquivos, compartilhar/recolher e o agendamento
-(`drive-sobedesce.test.mts`). E2E: `npm run build && npm run test:e2e`
+(`drive-sobedesce.test.mts`), a versão colada na ficha do card (`versoes-card.test.mts`). E2E: `npm run build && npm run test:e2e`
 (Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir movimento, navegação, a aprovação
-inteira (`aprovacao.spec.ts`, mp4 local e YouTube/Vimeo falsos em `e2e/falsos`) e a produtora com a demonstração
+inteira (`aprovacao.spec.ts`, mp4 local e YouTube/Vimeo falsos em `e2e/falsos`) e a versão colada na ficha do card que aparece no lote (`versao-card.spec.ts`) e a produtora com a demonstração
 (`produtora.spec.ts`, organização própria criada em `e2e/preparar.ts`) e o ciclo comercial (`comercial.spec.ts`: pedido
 público → Pedidos → gerar orçamento → link → aceite → projeto → Hoje, organização própria) e o visual
 (`visual.spec.ts`: contraste AA em cada hora e no escuro, luz parada com reduzir movimento) e o negócio
