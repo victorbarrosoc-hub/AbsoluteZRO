@@ -12,7 +12,7 @@ import { presetLightroom } from '../src/cor/lightroom.js'
 import { LOOKS, criarRevelaLook } from '../src/cor/looks.js'
 import { MAX_LOOKS, PREFIXO, empacotar, lookSalvo } from '../src/cor/meuslooks.js'
 import { amostrar, analisar, criarLook, descrever, descreverSaturacao } from '../src/cor/referencia.js'
-import { ICONES, escalonar, icones, svg } from './visual.js'
+import { ICONES, cascata, escalonar, icones, svg } from './visual.js'
 
 icones()
 escalonar()
@@ -434,6 +434,7 @@ function desenharLooks() {
     botoes.unshift(botaoLook('ref', 'Sua referência', pintarMini(base, lookRefPropria.aplicar), voltarParaReferencia))
   }
   $('looks').replaceChildren(...botoes)
+  cascata($('looks'))
   $('looks').hidden = false
   for (const b of botoes) b.setAttribute('aria-checked', String(b.dataset.look === (preset ?? 'ref')))
 }

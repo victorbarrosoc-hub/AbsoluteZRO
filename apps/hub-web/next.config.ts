@@ -36,6 +36,9 @@ const config: NextConfig = {
           { key: 'Cross-Origin-Resource-Policy', value: 'cross-origin' },
         ],
       },
+      // o painel (zro-ia.js e o digitando.js que ele importa) muda no mesmo endereço: o navegador confere a cada carga,
+      // e todas as plataformas recebem a versão nova (VERSAO, no data-versao do elemento) sem trocar o link.
+      { source: '/ia/v1/:path*', headers: [{ key: 'Cache-Control', value: 'public, max-age=0, must-revalidate' }] },
     ]
   },
 }

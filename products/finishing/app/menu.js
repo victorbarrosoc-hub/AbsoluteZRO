@@ -17,6 +17,8 @@ const aqui =
 
 const FERRAMENTAS = [
   { href: 'lut.html', nome: 'LUT', icone: 'lut', pagina: 'lut' },
+  { href: 'lab.html', nome: 'Lab', icone: 'lab', pagina: 'lab' },
+  { href: 'looks.html', nome: 'Looks', icone: 'looks', pagina: 'looks' },
   { href: 'cst.html', nome: 'CST', icone: 'cst', pagina: 'cst' },
   { href: 'entrega.html', nome: 'Entrega', icone: 'entrega', pagina: 'entrega' },
   { href: 'converter.html', nome: 'Converter', icone: 'converter', pagina: 'converter' },

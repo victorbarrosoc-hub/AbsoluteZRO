@@ -29,6 +29,8 @@ async function promote(address: string, role: 'admin' | 'support' = 'admin') {
 }
 
 async function axe(page: Page, path: string) {
+  // contraste medido no estado final: sem as animações de entrada (como quem usa "reduzir movimento")
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto(path)
   await page.waitForLoadState('networkidle')
   const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()

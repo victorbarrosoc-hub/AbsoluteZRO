@@ -1,7 +1,7 @@
 /** Esqueleto dos custos: o número do mês, os dois gráficos e a lista, sem texto inventado. */
 export default function Loading() {
   return (
-    <div className="page adm-page skeleton" aria-busy="true">
+    <div className="page adm-page skeleton" data-esqueleto="" aria-busy="true">
       <p className="zro-sr-only" role="status">
         Carregando os custos…
       </p>

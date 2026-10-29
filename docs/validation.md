@@ -15,6 +15,56 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Início sem piscar cinza nem pular (29/10/2026)
+
+Vídeo do titular (Mac, absolutezro.com, recarregando o Início): 12 quadros (~200 ms) só com o esqueleto genérico de
+`(hub)/loading.tsx` (um bloco largo e quatro pequenos), depois o Início inteiro de uma vez. Causa: a página esperava
+todas as consultas (8 em série) atrás de um esqueleto de outro formato, visível desde o primeiro quadro, e a troca era
+seca. Reproduzido aqui com o build de produção e um proxy que atrasa o Postgres em 12 ms por pacote (antes: esqueleto à
+vista em 6–9 quadros no Chromium e 3 no WebKit a cada recarga).
+
+Agora: `homeTopo` + `homePaineis` em paralelo (o topo chega e os painéis vêm em streaming com o próprio esqueleto);
+esqueletos com as mesmas classes da tela (`components/esqueleto.tsx`: Início inteiro, painéis e o genérico de página);
+invisíveis nos primeiros 320 ms (o mesmo tempo que `movimento.tsx` espera, acima dos 300 ms que o React segura o
+conteúdo depois de um fallback); se chegaram a aparecer, o conteúdo dissolve por cima (`lib/esqueleto-script.ts`, só Web
+Animations, sem mexer em atributo); "reduzir movimento" troca seco.
+
+| Verificação                                   | Resultado                                                                                                  |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Lint, formatação, tipos, `scan-secrets`       | ok                                                                                                         |
+| `npm test` (raiz, Postgres real)              | **340/340** em 38 arquivos                                                                                 |
+| `npm run build` (HUB)                         | ok                                                                                                         |
+| `npm run test:e2e` (HUB)                      | **41/41**; `esqueleto.spec.ts` 5/5 (3 rodadas seguidas, sem falha)                                         |
+| Banco rápido, Chromium e WebKit               | recarregar, menu e logo: nenhum quadro com esqueleto à vista; palco e atalhos nascem no lugar final; CLS 0 |
+| Banco preso (cotas travadas), Chromium/WebKit | topo chega antes; esqueleto invisível até 300 ms; números, painéis e apps no mesmo lugar do esqueleto      |
+| Reduzir movimento                             | esqueleto aparece seco aos 320 ms, sem cópia nem animação no conteúdo                                      |
+| Proxy de 12 ms (como o vídeo), depois         | Chromium: 0 quadros com esqueleto; WebKit (mais lento aqui): 0–1 quadro, já com a dissolvência             |
+
+Não conferido: o Safari do titular em produção (precisa publicar).
+
+## A Z digita as sugestões no campo (29/10/2026)
+
+Rodado neste ambiente (Postgres 16 local próprio, Chromium do Playwright 1.63), máquina compartilhada.
+
+| Verificação                                   | Resultado                                                                                                                        |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Lint, formatação, tipos (raiz e hub-web)      | ok                                                                                                                               |
+| `npm test` (raiz, Postgres real)              | **340/340** em 38 arquivos; `tests/integration/z-digitando.test.ts` 12 novos (ordem, ritmo, pausa, foco, Tab, reduzir movimento) |
+| `npm run build` (HUB)                         | ok                                                                                                                               |
+| `npm run test:e2e` (HUB)                      | **34/35**; `z-digitando.spec.ts` 3/3 (sem botões, anima, Tab e → completam sem enviar, Esc, escuro, toque no iPhone)             |
+|                                               | a falha é o axe de `/admin/custos` (contraste do `.cst-chip__n` com `opacity: .7`, em `custos.css`), fora desta mudança          |
+| Maestro lint, formatação, tipos, build        | ok                                                                                                                               |
+| Maestro `npm test`                            | **364/364**                                                                                                                      |
+| Maestro e2e `z.spec.ts` (computador e iPhone) | **5 ok**, 1 pulado (toque só no celular): painel servido do repositório, Tab completa sem enviar, reduzir movimento, escuro      |
+| AEON `npm test` (com `npm run vendor`)        | **122/122** (`tela.test.js`: sem botões, as 4 sugestões na descrição; o vendor copia `digitando.js`)                             |
+| Revela `npm test`                             | **146/146** (`tela.test.js`: Tab completa, nada enviado até o Enter)                                                             |
+| Carro do Freela `node test/run.js conta-zro`  | **144 ok**, 0 falhas (sem botões, Tab completa com sugestão do Carro, Enter manda)                                               |
+| `node scripts/scan-secrets.mjs`               | nenhum segredo                                                                                                                   |
+
+Vídeos (MP4 H.264) do efeito no HUB e no Maestro, computador e iPhone, claro e escuro, gravados com o Playwright: não
+versionados (pasta de trabalho da sessão). SOBEDESCE, Synquei, TPeasy e NOSSOM não mudaram de arquivo: recebem o
+painel novo de absolutezro.com.
+
 ## Perfil profissional com @ (29/10/2026, ADR 0029)
 
 Rodado neste ambiente (Postgres 16.15 local, Chromium do Playwright), máquina compartilhada e carregada (load 15–20).
@@ -49,6 +99,53 @@ Chromium desta máquina (`CHROME=/opt/pw-browsers/chromium-1243/...`), outra ver
 
 Capturas (claro/escuro, computador/celular): aviso único, editor do perfil, busca no Convidar, menu de ações e a folha de
 remover em Equipe, e a busca em Pessoas do Maestro.
+
+## Troca de aba limpa no iPhone, gestos do Quadro e a Z discreta no Maestro (29/10/2026)
+
+Vídeo do titular (iPhone, Safari, maestro.absolutezro.com, demonstração): ao trocar de aba pela barra, a tela velha e a
+nova apareciam juntas ("Seu Quadro." por cima de "Boa tarde, Victor.", cards das duas). Quadro a quadro (120 fps): a
+velha ficava inteira, sem esmaecer, ~250 ms sob a nova, que também não deslizava.
+
+- **Causa**: a troca vinha do `<ViewTransition>` do React com chave por caminho (um grupo só de saída e outro só de
+  entrada, nomes `_t_N_`). No WebKit isso não se comporta como no Chromium: ele cria as duas metades
+  (`::view-transition-old` e `-new`) em todo grupo, inclusive no de saída e no de entrada, e o grupo da tela anterior
+  continuava vivo na troca seguinte; no WebKit do Playwright a seção nova chegou a ser pintada antes da foto e depois
+  esmaecida de novo. Além disso, saída (150 ms) e entrada (320 ms) começavam juntas, então mesmo no Chromium havia
+  ~100 ms das duas visíveis. Vidro (`backdrop-filter`) dentro da seção escapava da foto no WebKit.
+- **Correção** (Maestro `src/components/movimento.tsx` + `motion.css`; HUB `components/movimento.tsx` + bloco "troca de
+  tela" do `globals.css`): a View Transition é chamada por nós. O clique no link de seção é segurado na captura; a seção
+  atual vira o grupo `m-sai` (HUB: `z-sai`), o Next navega dentro da transição (o navegador mostra a foto da velha) e a
+  nova, quando monta, vira `m-entra` (esperando até 320 ms pelo conteúdo quando chega o esqueleto: esqueleto só com
+  espera de verdade); a velha some em 110 ms e a nova só começa aos 100 ms. Regras sem `var()`, a metade inexistente de
+  cada grupo escondida, sem vidro na seção durante a troca, sem a API ou com "reduzir movimento" a troca é na hora. A
+  barra do celular pré-busca as quatro abas inteiras (antes "Mais" mostrava esqueleto).
+- **Quadro no celular** (`src/components/quadro/gestos.ts`): deslizar de lado troca de coluna (lista segue o dedo,
+  elástico nas pontas, mola pela velocidade, a pílula de vidro anda junto; direção trava em 8 px, `touch-action:
+pan-y`, começo a 20 px da borda fica para o Safari). Arrastar o card (segundo vídeo do titular: segurar demorava ~1 s,
+  o card ficava com fundo preto e um fantasma pequeno, e não passava de coluna): o arrastar nativo do HTML saiu do toque
+  (`draggable` só com mouse, `-webkit-touch-callout: none`, `user-select: none`); segurar 280 ms ergue o card do tamanho
+  real (1,03 e sombra macia), os outros abrem espaço com a mola, a página rola perto do topo e do pé, segurar na borda
+  da tela 0,42 s passa para a coluna do lado, soltar sobre uma pílula manda para aquela coluna, soltar acima do Quadro
+  desiste; grava pelo mesmo "mover" (aviso com Desfazer).
+- **A Z discreta** (decisão do titular; PRD Maestro v1.1, Plano de Integração §7–8): barra do celular Hoje · Quadro ·
+  Aprovar · Mais; a Z é ícone no fim da cápsula, no topo do celular e em "Mais"; `/app` (a volta do login) abre sempre
+  no Hoje; a marca no topo leva ao Hoje.
+- Testes novos: `products/maestro/e2e/transicao.spec.ts` (computador, iPhone Chromium e iPhone WebKit: em cada troca,
+  pelo relógio das animações a saída termina antes de a entrada começar, amostrando a cada 4 ms nunca as duas acima de
+  10%, nada de esqueleto na volta, uma seção só no fim; com reduzir movimento, nenhuma transição),
+  `products/maestro/e2e/gestos.spec.ts` (iPhone Chromium e WebKit, organização própria: deslizar troca de coluna e a
+  pílula vai junto, elástico na ponta, borda do Safari e gesto de pé não trocam, toque de verdade pelo CDP rola a
+  página e desliza; segurar ergue em menos de 400 ms do tamanho do card e sem fundo escuro; reordena e grava; borda
+  passa de coluna com Desfazer; pílula recebe o card; soltar fora devolve), `tests/entrada.test.mts` (Hoje na entrada,
+  a Z fora da barra) e no HUB `tests/e2e/hub.spec.ts` ("troca de tela pelo menu").
+- Vídeos a tamanho de iPhone (antes/depois, WebKit e Chromium do Playwright) guardados fora do repositório. O WebKit
+  do Playwright aqui roda sem GPU e tira a foto da troca devagar (0,3–2 s): serve para conferir a ordem das camadas,
+  não a velocidade. Falta conferir num iPhone de verdade depois de publicar.
+- Rodado: Maestro `lint`, `format:check`, `typecheck`, `npm test` **343/343**, `build`, `test:e2e` completo **108/108**
+  (14 pulados: gestos só no celular; inclui `sem-corte`, `transicao` e `gestos` no Chromium e no WebKit). HUB `lint`,
+  `format:check`, `typecheck`, `npm test` **274/274**, `build`, `test:e2e` **30/30** (o cadastro do `sso.spec.ts`
+  estourou o tempo uma vez e passou na repetição). `scan-secrets` ok. Também ficou mais firme o
+  `quadro.spec.ts` ("Desfazer" espera o servidor gravar antes do próximo teste).
 
 ## Fluidez entre abas: HUB, Maestro e SOBEDESCE (29/10/2026)
 
@@ -1429,6 +1526,82 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   dourado, branco neutro, sombra neutra; Petróleo segue com sombra fria) e Chromium (clone → salvar → outra visita →
   grade com 6 looks → baixar `revela-zro-filmes-33.cube` → apagar). `products/finishing`: `npm test` 96/96.
 - Não validado: o `.cube` do look novo e de um "meu look" no Resolve, em vídeo.
+
+## Revela: motor de cor profissional (29/10/2026)
+
+- Pedido do titular: resultado de cinema/Netflix, com testes internos e melhoria constante. Pesquisa (Netflix Partner
+  Help Center, ACES 2.0, ARRI ALF4, RED IPP2, OpenDRT, Cullen Kelly, Yedlin, Dehancer, Film Look Creator): o salto
+  é de arquitetura. O motor antigo aplicava o look sobre Rec.709 de tela (leitoso, preso ao SDR e à câmera).
+- Agora: look na luz da cena (LMT DWG/DI → DWG/DI), tela separada (curva de tom do ACES 2.0 com inversa exata no SDR,
+  gamut comprimido, HDR PQ), película por densidade e pacote com LMT 65 (.cube e CLF), ACEScct, LUT de monitor,
+  Rec.709, CDL, receita, controle de qualidade e LEIA-ME.
+- Controle de qualidade com limites (`src/cor/qc.js`). Primeira rodada: os 13 looks reprovaram (degrau perto do
+  preto, cor fora do gamut virando negativa, Oklab instável fora do lócus espectral, pele variando até 34° com a
+  exposição, LUT 65 errando até ΔE 0,16). Correções: log com base de filme, compressão de gamut no LMT, contas de cor
+  dentro do Rec.2020, pele recortada da separação de tons e com âncora de matiz, transições suaves perto do cinza.
+  Hoje os 13 passam; o pior caso de pele é 6,6° e o de LUT é 0,011.
+- Revisão visual (folha de contato nos três frames de exemplo e na cartela): sem banding nem degrau nas rampas de
+  matiz; ajustes de colorista no 250D e no 500T (estavam lavados) e no branco do Laranja e petróleo e do Dourado.
+- Testes: `test/motor.test.js` (tela, ida e volta, película neutra, os 13 looks no controle de qualidade, um look
+  quebrado reprovado, tetraédrica, pacote, CLF, CDL, zip) e `test/lab.test.js` reescrito; Chromium do Lab baixa o
+  pacote. `products/finishing`: `npm test` 163/163.
+- Não validado: as LUTs num Resolve real (DWG/DI e ACEScct), o CLF num leitor OCIO, a LUT do monitor num monitor de
+  set, material log real de cada câmera e telas HDR.
+
+## Revela: cópias de cinema das fichas técnicas e revisão em material real (29/10/2026)
+
+- Pedido do titular: presets de películas conhecidas (Kodak 2383 e afins) e material de banco com as especificações.
+- Cópias a partir de dado publicado, não de LUT de terceiros: curvas sensitométricas da KODAK VISION 2383 (H-1-2383,
+  2022), da VISION Premier 2393 (H-61, 1998) e da FUJICOLOR ETERNA-CP 3513DI (manual Fujifilm, 2007), digitalizadas
+  dos gráficos (traço por cor ou por linha) e ajustadas por Richards (erro 0,02–0,09 de densidade); corantes da 2383
+  pelo gráfico de densidade espectral em Status A. Na 2393 o verde é a média do vermelho e do azul (a ficha desenha as
+  três quase juntas).
+- Modelo (`src/cor/copia.js`): negativo + cópia com contraste 1,8 no cinza; os negativos que saem do equilíbrio do
+  cinza têm gama 0,50–0,68 (os negativos reais ficam perto de 0,6), conferência independente de que o modelo faz
+  sentido. Cinza na densidade de laboratório (1,0 acima da base) → 10% do branco, igual à tela da Revela. Volta pela
+  inversa exata da tela Rec.709, então na tela SDR o look é a cópia.
+- Rodadas do controle de qualidade:
+  - pele virando 11–21° de -2 a +2 stops e razão R/B linear da pele de 11 (contra 3 na tela neutra). Causa: cada
+    camada do negativo tratada como primária pura. Correção: sobreposição espectral das camadas (saturação do sistema
+    1,3 no meio-tom, em log da razão);
+  - sombra profunda da 2393 e da 3513 puxando a pele para o vermelho, dentro do erro da digitalização: o cruzamento
+    entre camadas entra com peso de confiança (2383: 1; 2393 e 3513: 0,5), sobre a base de cada camada (o cinza
+    continua exato);
+  - a cópia real vira a pele com a exposição (vermelha na sombra, dourada na alta): âncora de 0,75 para o matiz que a
+    própria cópia dá no meio-tom. Limite declarado de 12° para looks com cópia (cobrado no controle de qualidade);
+    medido: 3,8° a 11,4°.
+- Os 20 looks passam (`node scripts/qc-looks.mjs`). Testes novos: cópia (cinza, contraste 1,8, gama dos negativos,
+  preto da densidade máxima, branco da base, motor = cópia na tela), receita com cópia (versão 3; a 2 abre sem cópia),
+  Lab escolhendo a cópia, Looks com o pack Cinema e o pacote com a nota da cópia no LEIA-ME.
+- Desempenho: pacote com cópia caiu de 32 s para 9 s (tabela 1D de cada camada com Hermite; inversa da tela sem busca
+  longe do pico e com secante perto dele).
+- Material real: footage oficial da ARRI (ALEXA Mini e Mini LF em LogC3, ALEXA 35 em LogC4, ProRes 4444 12 bits) e da
+  DJI (Inspire 3, D-Log), só nos testes internos (é de terceiros e não entra no repositório). A tela neutra lê LogC3 e
+  LogC4 certo; as cópias dão preto denso, céu que deita no branco e, com o 250D, grama oliva.
+- Analisar e corrigir no material real: num interior escuro de propósito (galpão com a madeira bem exposta) subia
+  +1,1 stop e estourava o assunto. Agora, numa cena escura de propósito, as altas (percentil 90) não passam de 0,75
+  stop sobre o cinza: +0,5. Os outros três frames não mudaram.
+- Não conseguido: Sony S-Log3 (pro.sony responde 403 a este ambiente), Blackmagic (só BRAW, sem SDK aqui), Panasonic,
+  Canon e Fujifilm (sem footage oficial nos sites). Não validado: as cópias contra uma cópia de verdade projetada ou
+  contra o scan de um laboratório.
+
+## Revela Lab (29/10/2026)
+
+- Pedido do titular depois do estudo do Shift (plugin de grade para quem não é colorista): um laboratório para criar o
+  próprio look com película e looks conhecidos, ajustar e exportar.
+- `src/cor/lab.js`: 13 bases em 3 grupos (os 5 looks da Revela, 5 películas e 3 clássicos, todos com o motor de
+  `looks.js` e nomes genéricos), correção do frame (exposição pelo meio-tom, no máximo ±1,2 stop, e branco pelos tons
+  neutros), 8 ajustes e a receita `.revela` (lida com limites e recusa o que não é receita). `lab.html` protegida como
+  as outras ferramentas (`api/app.js`, `vercel.json`, `publicar-site.mjs`), no dock depois da LUT e no menu.
+- Testes: unidade (`test/lab.test.js` 6/6: neutro não muda o pixel, bases distintas, cada ajuste no sentido certo, pele
+  protegida, correção de frame escuro e azulado, receita ida e volta) e Chromium em 390 px (exemplo → Película →
+  Negativo 500T → Calor → LUT `revela-lab-noite-quente-33.cube` → receita → zerar → reabrir → Meus looks).
+  `products/finishing`: `npm test` 153/153.
+- Converter: o CI passou para Ubuntu 26.04 (ffmpeg 8), que tira a cor dos quadros e ignora as opções `-color_*`
+  sozinhas: o ProRes de teste saiu sem `colr` e com os quadros em BT.601, e a saída (corretamente) em `smpte170m`
+  (diagnóstico no próprio CI). O master agora marca os quadros com `setparams`. De quebra, quando contêiner e quadro
+  discordam, vale o contêiner (como no QuickTime); o teste grava esse desencontro (quadros em 601, `colr` em 709).
+- Não validado: a LUT do Lab num Resolve real.
 
 ## Z: sabe o que cada plataforma faz e só busca no Drive quando pedem (28/10/2026)
 

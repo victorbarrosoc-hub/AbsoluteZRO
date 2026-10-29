@@ -33,6 +33,8 @@ export default defineConfig({
       // Dólar automático dos Custos: o Banco Central falso de tests/e2e/admin.spec.ts e o segredo do agendamento.
       ZRO_PTAX_URL: `http://127.0.0.1:${Number(process.env.E2E_PTAX_PORT || 3297)}`,
       CRON_SECRET: 'segredo-cron-e2e',
+      // A Z "ligada" para a tela (tests/e2e/z-digitando.spec.ts): chave falsa, nunca usada (nenhum teste envia mensagem).
+      IA_ANTHROPIC_KEY: 'chave-falsa-do-e2e',
     },
   },
 })

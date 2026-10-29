@@ -129,8 +129,13 @@ test.describe("Quadro: novo card e folhas", () => {
     await folha.getByRole("button", { name: /Revisão/ }).click();
     await expect(page.getByRole("status").filter({ hasText: "Movido para Revisão." })).toBeVisible();
     await expect(page.locator(".q-card", { hasText: tema })).toHaveAttribute("data-col", "revisao");
+    // o Desfazer grava de volta: espera o servidor (o próximo teste abre o card em Fazendo)
+    const gravou = page.waitForResponse(
+      (r) => r.url().includes("/api/quadro") && r.request().method() !== "GET" && (r.request().postData() ?? "").includes("fazendo"),
+    );
     await page.getByRole("status").getByRole("button", { name: "Desfazer" }).click();
     await expect(page.locator(".q-card", { hasText: tema })).toHaveAttribute("data-col", "fazendo");
+    expect((await gravou).ok()).toBe(true);
   });
 
   test("ficha de um card: abre, mostra a coluna e fecha pelo botão com a saída", async ({ page }, info) => {

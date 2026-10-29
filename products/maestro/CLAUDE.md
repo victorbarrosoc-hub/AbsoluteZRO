@@ -44,7 +44,11 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   (`src/lib/quadro/metodo.ts`); tempo real é poll de 5 s ("o que mudou desde"). Clientes e projetos em `src/lib/crm`
   (Server Actions conferem sessão e papel; o banco confere de novo). Remover cliente/projeto = `deleted_at`, só
   admin e gestão.
-- **Z**: `api/zro/ia/[...caminho]` repassa ao HUB com o token da sessão (NDJSON sem buffer); a aba Z é a primeira.
+- **Z**: `api/zro/ia/[...caminho]` repassa ao HUB com o token da sessão (NDJSON sem buffer). **A Z não é a primeira
+  aba** (titular, 29/10/2026; PRD Maestro v1.1, Plano de Integração §7–8: presença discreta, central de comando no HUB,
+  nunca abrir o chat sozinho): ícone discreto no fim da cápsula, no topo do celular e em "Mais" (`Z` em
+  `src/lib/navegacao.ts`); a barra do celular é Hoje · Quadro · Aprovar · Mais; `/app` (a volta do login) abre
+  sempre no Hoje (`src/lib/entrada.ts`).
 - **Demonstração** (`src/lib/demo`, migration `0003`): "Carregar demonstração" monta a produtora de exemplo na
   organização da sessão (só admin e gestão); clientes, projetos e lotes com `demo = true`, cards `demo-…` com
   `dados.demo`; "Remover demonstração" apaga só esses (cards por `maestro.demo_apagar_cards()`). O selo
@@ -291,9 +295,23 @@ própria ligada e o cartão do adicional; `SHOTS_DIR` guarda `ct-*`/`wl-*`) e o 
 revisão e Escolher no Drive; `SHOTS_DIR` guarda as capturas) e nada cortado no celular (`sem-corte.spec.ts` com o
 detector `e2e/corte.ts`: todas as telas a 375 e 393 px, claro e escuro, Chromium e WebKit; tela nova entra na lista;
 faixa que rola de lado só com `data-rolagem`; regras de celular em `src/app/celular.css`) e o Quadro com fluidez
-(`quadro.spec.ts`: folha na janela inteira, "Novo card", Mover para com Desfazer, troca de seção com View Transition).
-Movimento (29/10/2026): toda folha usa `Folha` (`src/components/folha.tsx`, portal no `<body>`); troca de seção em
-`src/components/movimento.tsx` + `src/app/motion.css`; links da cápsula pré-buscam com a intenção; `staleTimes` em
+(`quadro.spec.ts`: folha na janela inteira, "Novo card", Mover para com Desfazer, troca de seção com View Transition),
+a troca de seção sem duas telas juntas (`transicao.spec.ts`, Chromium e WebKit: pelo relógio das animações e amostrando
+quadro a quadro) e os gestos do Quadro no celular (`gestos.spec.ts`, Chromium e WebKit, organização própria).
+Movimento (29/10/2026): toda folha usa `Folha` (`src/components/folha.tsx`, portal no `<body>`). **Troca de seção**
+(`src/components/movimento.tsx` + `src/app/motion.css`): a View Transition é chamada por nós, não pelo
+`<ViewTransition>` do React (no Safari do iPhone o par sai/entra do React deixava a tela velha e a nova uma sobre a
+outra): o clique num link `/app/…` é segurado na captura, a seção atual (`.m-pagina`) vira `m-sai`, o Next navega
+dentro da transição e a nova, quando monta (esperando até 320 ms pelo conteúdo se veio o esqueleto), vira `m-entra`;
+a velha some em 110 ms e a nova só começa aos 100 ms (nunca as duas juntas). Sentido pelo `data-sentido` do link (ordem
+de `ABAS`). Nada de `var()` nas regras dos pseudo-elementos da transição, e nada de vidro (`backdrop-filter`) na seção
+durante a troca (no WebKit ele escapa da foto). **Gestos do Quadro no celular** (`src/components/quadro/gestos.ts`):
+deslizar de lado troca de coluna (segue o dedo, elástico nas pontas, mola pela velocidade, pílula de vidro que anda
+junto; `touch-action: pan-y`; começo a 20 px da borda é do Safari); segurar o card 280 ms ergue um fantasma do tamanho
+real (sem o arrastar nativo do HTML no toque: `draggable` só com mouse), os outros abrem espaço, a página rola perto das
+bordas, segurar na borda da tela (0,42 s) passa de coluna, soltar na pílula manda para aquela coluna, soltar acima do
+Quadro desiste; grava pelo mesmo `moverPara` (aviso com Desfazer) e o FLIP é "fixado" antes (`useFlip` devolve
+`fixar`). Links da cápsula pré-buscam com a intenção; a barra do celular pré-busca inteira; `staleTimes` em
 `next.config.ts` (o Quadro chama `renovarSecoes` depois de gravar). Nada de `transform` que fique preso num ancestral
 de `position: fixed`. Unitário da hora em
 `hora.test.mts`.

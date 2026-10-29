@@ -1,14 +1,33 @@
 import 'server-only'
+import { cache } from 'react'
 import type { Authenticated } from '@zro/auth'
 import { isFeatureFlag, productAccessFor, quotaPeriod } from '@zro/billing'
 import { ADMIN_ROLES, authorize, BILLING_ROLES } from '@zro/core'
 import { db } from '../session'
 
-/** Início: projetos recentes, pendências reais, uso do plano e ferramentas. */
-export async function homeData(auth: Authenticated) {
-  const actor = await authorize(db(), auth)
+/** Uma autorização por pedido para as duas partes do Início (a sessão é o mesmo objeto, vindo de getAuth). */
+const atorDoInicio = cache((auth: Authenticated) => authorize(db(), auth))
+
+/**
+ * Início em duas partes (titular, 29/10/2026: a tela não pode piscar inteira em cinza): o topo (saudação, palco e
+ * atalhos) chega primeiro; os números, os painéis e os apps vêm em seguida, cada um com o próprio esqueleto. As duas
+ * consultas correm juntas.
+ */
+export async function homeTopo(auth: Authenticated) {
+  const actor = await atorDoInicio(auth)
   return db().asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
     const [org] = await tx`select name from zro.organizations where id = ${actor.orgId}`
+    const [latest] =
+      await tx`select id, title, status, updated_at from zro.projects where org_id = ${actor.orgId} and status <> 'archived' order by updated_at desc limit 1`
+    const access = await productAccessFor(tx, actor.orgId)
+    return { org, latest, access }
+  })
+}
+
+/** Início, segunda parte: projetos recentes, pendências reais, execuções e uso do plano. */
+export async function homePaineis(auth: Authenticated) {
+  const actor = await atorDoInicio(auth)
+  return db().asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
     const projects =
       await tx`select id, title, status, updated_at from zro.projects where org_id = ${actor.orgId} and status <> 'archived' order by updated_at desc limit 6`
     const [counts] = await tx`
@@ -24,11 +43,10 @@ export async function homeData(auth: Authenticated) {
       select r.id, r.handler, r.status, r.updated_at, p.title as project_title, r.project_id
       from zro.workflow_runs r left join zro.projects p on p.id = r.project_id
       where r.org_id = ${actor.orgId} order by r.updated_at desc limit 6`
-    const access = await productAccessFor(tx, actor.orgId)
     const { start } = quotaPeriod()
     const quotas =
       await tx`select metric, used, limit_value, period_end from zro.quotas where org_id = ${actor.orgId} and period_start = ${start} order by metric`
-    return { actor, org, projects, counts: counts!, attention, runs, access, quotas }
+    return { projects, counts: counts!, attention, runs, quotas }
   })
 }
 

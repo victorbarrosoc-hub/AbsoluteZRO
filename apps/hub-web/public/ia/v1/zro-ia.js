@@ -1,7 +1,7 @@
 /* global HTMLElement, location, ResizeObserver, document, performance, devicePixelRatio, customElements, CustomEvent, TextDecoder, AbortController, requestAnimationFrame, cancelAnimationFrame, matchMedia, fetch, addEventListener, removeEventListener */
 /*
  * <zro-ia> · a IA da Absolute ZRO dentro de qualquer plataforma do ecossistema (27/10/2026).
- * A mesma IA e o mesmo painel em todas: saudação com o Z (anel e estrela cromados, com o rastro e as correntes em volta), sugestões, o campo de conversa e "Conversas" (as desta
+ * A mesma IA e o mesmo painel em todas: saudação com o Z (anel e estrela cromados, com o rastro e as correntes em volta), o campo de conversa (que digita sozinho as sugestões, digitando.js) e "Conversas" (as desta
  * plataforma; o app Absolute ZRO mostra as de todas). Fala com a API da IA do HUB (/api/v1/ia), direto com o token do
  * login único (escopo zro.ia) ou por um repasse do próprio app (que acrescenta o token no servidor).
  *
@@ -10,12 +10,17 @@
  *   <zro-ia api="/api/zro/ia" sugestoes='["Limpar minha fala","Isolar voz da música"]' apoio="O que você quer fazer com seu áudio?"></zro-ia>
  *   // sem repasse: el.token = async () => accessToken   (api="https://absolutezro.com/api/v1/ia")
  *
- * Atributos: api (base da API, sem barra no fim), apoio (linha abaixo da saudação), sugestoes (JSON), tema
+ * Atributos: api (base da API, sem barra no fim), apoio (linha abaixo da saudação), sugestoes (JSON: o campo vazio as digita uma a uma), tema
  * (claro|escuro|auto, padrão auto), nome (primeiro nome; sem ele, vem da conta).
  * Eventos: zro-ia:sem-login (401: o app pede login), zro-ia:resposta (detail: { conversa, creditos }).
  * Sem dependências, sem cookies de terceiros e respeita "reduzir movimento". O Z é movido por um laço de quadros (a
  * mesma conta de apps/hub-web/lib/ia/z/motor.ts e ar.ts: mudou lá, mude aqui); as imagens vêm de ../z/ ao lado deste arquivo.
+ * A sugestão que se escreve no campo vem de ./digitando.js (o mesmo módulo do HUB). Mudou o painel, suba VERSAO: ela vai
+ * no atributo data-versao do elemento (é como se confere, numa plataforma, qual painel chegou).
  */
+import { Digitando, descricaoSugestoes, ligarCampo } from './digitando.js'
+
+export const VERSAO = '2026.10.29-digitando'
 const MIDIA = new URL('../z/', import.meta.url).href
 const CSS = `
 :host{--ink:#1d1d1f;--mute:#6e6e73;--faint:#8e8e93;--line:rgb(0 0 0/.09);--line2:rgb(0 0 0/.16);--surf:#fff;--surf2:#f5f5f7;--surf3:#ececf0;--bg:transparent;--send:#1d1d1f;--sendInk:#fff;--ease:cubic-bezier(.2,.8,.2,1);display:block;position:relative;color:var(--ink);font:inherit;font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased;container-type:inline-size}
@@ -52,7 +57,6 @@ h1 strong{font-weight:800}
 @media (prefers-reduced-motion:reduce){.ar{display:none}}
 @media (prefers-reduced-motion:no-preference){
 .msg{animation:entra .35s var(--ease) both}
-.sug li{animation:entra .5s var(--ease) both;animation-delay:calc(.2s + var(--i)*.06s)}
 .gav-painel{transition:translate .38s var(--ease),visibility 0s .38s,box-shadow .38s}.gav[data-on] .gav-painel{transition:translate .38s var(--ease),visibility 0s,box-shadow .38s}.veu{transition:opacity .3s var(--ease)}}
 @keyframes entra{from{opacity:0;translate:0 6px}}
 .conversa{display:flex;flex-direction:column;gap:18px;padding:16px 2px 8px}
@@ -62,10 +66,6 @@ h1 strong{font-weight:800}
 .texto{display:grid;gap:10px}.texto a.zbtn{display:inline-flex;align-items:center;min-height:30px;margin:4px 6px 0 0;padding:0 12px;border:1px solid var(--line2);border-radius:999px;background:var(--surf);color:var(--ink);font-size:.84rem;font-weight:600;text-decoration:none;vertical-align:middle}.texto a.zbtn:hover{border-color:var(--ink)}.texto ul,.texto ol{display:grid;gap:4px;padding-left:1.3em}.texto strong{font-weight:650}
 .pensando{display:inline-flex;align-items:center;gap:10px;color:var(--faint);font-size:.92rem}
 .base{position:sticky;bottom:0;display:grid;gap:10px;padding:10px 0 4px}
-.sug{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;padding:0;list-style:none}
-.sug button{padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:var(--surf);color:var(--mute);font-size:.86rem;cursor:pointer;transition:color .2s,border-color .2s,translate .2s}
-.sug button:hover{color:var(--ink);border-color:var(--line2);translate:0 -1px}
-@container (max-width:520px){.sug li:nth-child(n+4){display:none}.sug button{max-width:100%;white-space:normal;text-align:center}}
 .campo{display:flex;align-items:flex-end;gap:8px;padding:8px 8px 8px 20px;border:1px solid var(--line2);border-radius:28px;background:var(--surf);box-shadow:0 12px 34px rgb(0 0 0/.07);transition:box-shadow .25s,border-color .25s}
 .campo:focus-within{border-color:var(--faint);box-shadow:0 0 0 4px rgb(127 127 127/.12),0 12px 34px rgb(0 0 0/.08)}
 .campo[data-off]{opacity:.7}
@@ -73,6 +73,19 @@ textarea{flex:1;min-height:40px;max-height:200px;padding:9px 0;border:0;outline:
 /* o aviso no campo cabe numa linha só: se faltar espaço, termina em reticências em vez de quebrar e cortar */
 textarea::placeholder{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 textarea::placeholder{color:var(--faint)}
+/* a sugestão que se escreve sozinha: uma camada por cima do campo, na mesma linha e na mesma letra (sem mexer no layout) */
+.entrada{flex:1;min-width:0;display:grid;grid-template-columns:minmax(0,1fr)}
+.entrada>*{grid-area:1/1}.entrada textarea{width:100%}
+.fantasma{display:flex;align-items:center;align-self:start;min-width:0;padding:9px 0;font-size:1rem;line-height:1.4;color:var(--faint);white-space:nowrap;overflow:hidden;pointer-events:none;transition:opacity .2s var(--ease)}
+.fantasma[data-vazio]{visibility:hidden}.fantasma[data-trocando]{opacity:0}
+.zf-texto{min-width:0;overflow:hidden;text-overflow:ellipsis;pointer-events:auto;cursor:text}
+.zf-cursor{display:none;flex:none;width:1.5px;height:1.2em;margin-left:1px;border-radius:1px;background:currentColor}
+.fantasma[data-cursor] .zf-cursor{display:block}
+.fantasma:is([data-fase=inicio],[data-fase=segurando],[data-fase=esperando]) .zf-cursor{animation:pisca 1.06s steps(1) infinite}
+@keyframes pisca{50%{opacity:0}}
+.zf-tab{display:none;flex:none;margin-left:10px;padding:0 6px;border:1px solid var(--line2);border-radius:6px;font:inherit;font-size:.68rem;line-height:1.5;letter-spacing:.02em}
+@media (hover:hover) and (pointer:fine){.fantasma[data-foco] .zf-tab{display:inline-block}}
+@media (prefers-reduced-motion:reduce){.zf-cursor{display:none!important}}
 .enviar{flex:none;display:grid;place-items:center;width:40px;height:40px;border:0;border-radius:50%;background:var(--send);color:var(--sendInk);box-shadow:inset 0 1px 0 rgb(255 255 255/.35),0 6px 16px rgb(0 0 0/.18);cursor:pointer;transition:opacity .2s,scale .2s}
 .enviar:disabled{opacity:.3;cursor:default}.enviar:not(:disabled):active{scale:.94}
 .parar{width:12px;height:12px;border-radius:3px;background:currentColor}
@@ -448,6 +461,9 @@ class ZroIa extends HTMLElement {
     this.zp.mover('pensando')
     this.ar = new MotorAr(this.root.querySelector('.ar'), () => this.hasAttribute('data-escuro'))
     for (const a of [this.z, this.zp, this.ar]) animar(a)
+    // as sugestões se escrevem no campo vazio (no lugar dos botões); o motor vive fora do render e segue de onde estava
+    this.dig = new Digitando({ frases: this.sugestoes })
+    this.dataset.versao = VERSAO
     this.aplicarTema()
     this.mq = matchMedia('(prefers-color-scheme: dark)')
     this.mq.addEventListener?.('change', () => this.aplicarTema())
@@ -458,6 +474,8 @@ class ZroIa extends HTMLElement {
   disconnectedCallback() {
     for (const a of [this.z, this.zp, this.ar]) vivos.delete(a)
     this.ar?.obs.disconnect()
+    this.soltaDig?.()
+    this.soltaDig = null
     this.ctrl?.abort()
   }
 
@@ -485,10 +503,14 @@ class ZroIa extends HTMLElement {
   }
 
   static get observedAttributes() {
-    return ['tema']
+    return ['tema', 'sugestoes']
   }
-  attributeChangedCallback() {
-    if (this.$) this.aplicarTema()
+  attributeChangedCallback(nome) {
+    if (!this.$) return
+    if (nome === 'sugestoes') {
+      this.dig.frases = this.sugestoes
+      this.render()
+    } else this.aplicarTema()
   }
 
   // `tema` também como propriedade: o React 19 grava propriedade (e não atributo) quando o elemento já tem uma com o
@@ -509,6 +531,10 @@ class ZroIa extends HTMLElement {
 
   get api() {
     return (this.getAttribute('api') || 'https://absolutezro.com/api/v1/ia').replace(/\/$/, '')
+  }
+  set api(v) {
+    if (v == null || v === '') this.removeAttribute('api')
+    else this.setAttribute('api', String(v))
   }
 
   async req(caminho, init = {}) {
@@ -550,6 +576,11 @@ class ZroIa extends HTMLElement {
       return []
     }
   }
+  // como `tema`: o React 19 grava propriedade quando o elemento já existe; sem setter, a página quebrava ao voltar à Z
+  set sugestoes(v) {
+    if (v == null) this.removeAttribute('sugestoes')
+    else this.setAttribute('sugestoes', typeof v === 'string' ? v : JSON.stringify(v))
+  }
   get pode() {
     const c = this.s.creditos
     return this.s.ligada && !this.s.semLogin && !(c && (c.limite === null || c.usados >= c.limite))
@@ -569,6 +600,8 @@ class ZroIa extends HTMLElement {
           : em
             ? 'Continue…'
             : 'Pergunte à Z…'
+    // no início, com sugestões, o campo as digita sozinho (camada por cima, aria-hidden) e o aviso real fica vazio
+    const sug = !em && this.pode && this.sugestoes.length > 0
     const valor = this.$.querySelector('textarea')?.value ?? ''
     const focado = this.root.activeElement?.tagName === 'TEXTAREA'
     this.$.innerHTML = `
@@ -588,10 +621,12 @@ class ZroIa extends HTMLElement {
         </div>`
       }</div>
       <div class="base">
-        ${!em && this.pode && this.sugestoes.length ? `<ul class="sug" aria-label="Sugestões">${this.sugestoes.map((t, i) => `<li style="--i:${i}"><button type="button" data-sug="${esc(t)}">${esc(t)}</button></li>`).join('')}</ul>` : ''}
         <form class="campo"${this.pode ? '' : ' data-off'}>
-          <label class="sr" for="t">Mensagem para a Z</label>
-          <textarea id="t" rows="1" maxlength="8000" placeholder="${esc(ph)}"${this.pode ? '' : ' disabled'}>${esc(valor)}</textarea>
+          <span class="entrada">
+            <textarea id="t" rows="1" maxlength="8000" aria-label="Pergunte à Z" placeholder="${sug ? '' : esc(ph)}"${sug ? ' aria-describedby="zd"' : ''}${this.pode ? '' : ' disabled'}>${esc(valor)}</textarea>
+            ${sug ? '<span class="fantasma" aria-hidden="true"></span>' : ''}
+          </span>
+          ${sug ? `<p class="sr" id="zd">${esc(descricaoSugestoes(this.sugestoes))}</p>` : ''}
           ${s.pensando ? '<button type="button" class="enviar" data-a="parar" aria-label="Parar a resposta"><span class="parar"></span></button>' : `<button type="submit" class="enviar" aria-label="Enviar"${valor.trim() && this.pode ? '' : ' disabled'}>${SETA}</button>`}
         </form>
         ${uso(s.ligada && !s.semLogin, c)}
@@ -630,11 +665,16 @@ class ZroIa extends HTMLElement {
         this.render()
       }),
     )
-    $.querySelectorAll('[data-sug]').forEach((b) => b.addEventListener('click', () => this.enviar(b.dataset.sug)))
     $.querySelectorAll('[data-abrir]').forEach((b) => b.addEventListener('click', () => this.abrir(b.dataset.abrir)))
     $.querySelectorAll('[data-apagar]').forEach((b) => b.addEventListener('click', () => this.apagar(b.dataset.apagar)))
     const ta = $.querySelector('textarea')
     const envia = $.querySelector('button[type=submit]')
+    // o campo é refeito a cada desenho: solta o anterior e liga o motor das sugestões no novo
+    this.soltaDig?.()
+    this.soltaDig = null
+    const fantasma = $.querySelector('.fantasma')
+    if (ta && fantasma) this.soltaDig = ligarCampo(ta, fantasma, this.dig)
+    else this.dig.cancelar()
     ta?.addEventListener('input', () => {
       if (envia) envia.disabled = !ta.value.trim() || !this.pode
     })

@@ -1,6 +1,6 @@
 "use client";
 /**
- * A Z, a IA da Absolute ZRO, na aba própria (/app/z, a primeira). O painel é o `<zro-ia>` publicado pela Absolute
+ * A Z, a IA da Absolute ZRO, na aba própria (/app/z, discreta: ícone no fim da cápsula e no topo do celular). O painel é o `<zro-ia>` publicado pela Absolute
  * ZRO; ele fala com /api/zro/ia, o repasse do servidor que acrescenta o token da sessão (nada de token no navegador).
  * Token antigo ou sem o escopo da IA: o painel avisa e aqui aparece "Entrar de novo com Absolute ZRO".
  */
