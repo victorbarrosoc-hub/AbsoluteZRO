@@ -38,6 +38,7 @@ async function ids() {
       equipamento: await um(sql`select id from maestro.equipamentos where org_id = ${org.id} limit 1`),
       evento: await um(sql`select id from maestro.eventos where org_id = ${org.id} order by created_at limit 1`),
       lancamento: await um(sql`select id from maestro.lancamentos where org_id = ${org.id} limit 1`),
+      contrato: await um(sql`select id from maestro.contratos where org_id = ${org.id} limit 1`),
       documentos: (await sql`select distinct on (tipo) id, projeto_id from maestro.documentos where org_id = ${org.id} order by tipo`) as unknown as {
         id: string;
         projeto_id: string;
@@ -101,6 +102,7 @@ async function telas(): Promise<Tela[]> {
     { nome: "ajustes-agenda", rota: "/app/ajustes/agenda" },
     { nome: "ajustes-pessoas", rota: "/app/ajustes/pessoas" },
     { nome: "ajustes-marca", rota: "/app/ajustes/marca" },
+    { nome: "ajustes-contrato", rota: "/app/ajustes/contrato" },
     { nome: "ajustes-pedido", rota: "/app/ajustes/pedido" },
     { nome: "ajustes-precos", rota: "/app/ajustes/precos" },
     { nome: "entrar", rota: "/entrar", publica: true },
@@ -117,6 +119,7 @@ async function telas(): Promise<Tela[]> {
   ficha("orcamento-enviado", i.enviado, (x) => `/app/orcamentos/${x}`);
   ficha("orcamento-aprovado", i.aprovado, (x) => `/app/orcamentos/${x}`);
   ficha("timbrado", i.aprovado, (x) => `/app/orcamentos/${x}/timbrado`);
+  ficha("contrato", i.contrato, (x) => `/app/contratos/${x}`);
   ficha("freela", i.freela, (x) => `/app/freelas/${x}`);
   ficha("freela-editar", i.freela, (x) => `/app/freelas/${x}/editar`);
   ficha("equipamento", i.equipamento, (x) => `/app/inventario/${x}`);

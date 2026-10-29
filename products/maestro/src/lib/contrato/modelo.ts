@@ -360,7 +360,7 @@ export function desenharContrato(modelo: string, valores: Valores): string {
       continue;
     }
     if (ls[0].startsWith("# ")) {
-      out.push(`<h1>${linha(ls[0].slice(2), valores)}</h1>`);
+      out.push(`<h2 class="ct-titulo">${linha(ls[0].slice(2), valores)}</h2>`);
       if (ls.length > 1)
         out.push(
           `<p>${ls
@@ -371,7 +371,7 @@ export function desenharContrato(modelo: string, valores: Valores): string {
       continue;
     }
     if (ls[0].startsWith("## ")) {
-      out.push(`<h2>${linha(ls[0].slice(3), valores)}</h2>`);
+      out.push(`<h3>${linha(ls[0].slice(3), valores)}</h3>`);
       if (ls.length > 1)
         out.push(
           `<p>${ls

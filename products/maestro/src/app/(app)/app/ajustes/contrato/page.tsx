@@ -50,7 +50,6 @@ export default async function PaginaContrato() {
         </p>
       </CabecaForm>
       <EditorContrato
-        key={vigente.versao}
         texto={vigente.texto}
         config={vigente.config}
         contratada={{

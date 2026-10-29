@@ -132,7 +132,7 @@
   outline: 2px solid var(--acento);
   outline-offset: 2px;
 }
-.ct-texto h1 {
+.ct-texto .ct-titulo {
   margin: 0 0 18px;
   font-family: var(--font-apple);
   font-size: 1.35rem;
@@ -140,7 +140,7 @@
   line-height: 1.2;
   color: #1d1d1f;
 }
-.ct-texto h2 {
+.ct-texto h3 {
   margin: 22px 0 6px;
   font-family: var(--font-apple);
   font-size: 1rem;

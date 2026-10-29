@@ -10,6 +10,7 @@ import {
   CAMPOS_CONFIG,
   dadosDeExemplo,
   desenharContrato,
+  MODELO_PADRAO,
   NOMES_DOS_GRUPOS,
   validarConfig,
   valoresDoContrato,
@@ -19,6 +20,7 @@ import {
   type GrupoVariavel,
 } from "@/lib/contrato/modelo";
 import { restaurarContratoAcao, salvarContratoAcao } from "@/app/(app)/app/ajustes/contrato/acoes";
+import type { EstadoForm } from "@/components/form";
 import { Icone } from "@/components/icones";
 
 function Salvar() {
@@ -46,12 +48,21 @@ export function EditorContrato({
   podeMudar: boolean;
 }) {
   const [estado, salvar] = useActionState(salvarContratoAcao, undefined);
-  const [estadoPadrao, restaurar] = useActionState(restaurarContratoAcao, undefined);
+  const [certeza, setCerteza] = useState(false);
   const [texto, setTexto] = useState(estado?.valores?.texto ?? textoInicial);
   const [config, setConfig] = useState<Record<string, string>>(() =>
     Object.fromEntries(CAMPOS_CONFIG.map((c) => [c.chave, String(estado?.valores?.[c.chave] ?? configInicial[c.chave] ?? c.padrao)])),
   );
-  const [certeza, setCerteza] = useState(false);
+  // Restaurar: o servidor grava a versão nova com o modelo base; a tela volta ao mesmo texto e aos números padrão.
+  const [estadoPadrao, restaurar] = useActionState(async (anterior: EstadoForm) => {
+    const r = await restaurarContratoAcao(anterior);
+    if (r?.aviso) {
+      setTexto(MODELO_PADRAO.trim());
+      setConfig(Object.fromEntries(CAMPOS_CONFIG.map((c) => [c.chave, String(c.padrao)])));
+      setCerteza(false);
+    }
+    return r;
+  }, undefined);
   const area = useRef<HTMLTextAreaElement>(null);
 
   const previa = useMemo(() => {

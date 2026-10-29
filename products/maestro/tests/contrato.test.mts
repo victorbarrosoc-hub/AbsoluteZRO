@@ -67,7 +67,7 @@ describe("modelo (puro)", () => {
       entregaveis: ["Filme", "Cortes & versões"],
       valor_total: "R$ 10,00",
     });
-    assert.ok(html.startsWith('<article class="ct-texto"><h1>Contrato</h1>'));
+    assert.ok(html.startsWith('<article class="ct-texto"><h2 class="ct-titulo">Contrato</h2>'));
     assert.ok(html.includes('<strong><span class="ct-var">Lumen &lt;script&gt;alert(1)&lt;/script&gt;</span></strong>'));
     assert.ok(!html.includes("<script>"));
     assert.ok(html.includes('<span class="ct-vazio">[a preencher]</span>'));

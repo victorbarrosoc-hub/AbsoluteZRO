@@ -33,7 +33,9 @@ const PRODUTORA: { icone: NomeIcone; nome: string; dica: string }[] = [
   { icone: "numeros", nome: "Números", dica: "Meta do mês, ticket médio, conversão e margem por projeto" },
   { icone: "orcamento", nome: "Orçamentos", dica: "Tabela de preços, versões e timbrado em PDF" },
   { icone: "check", nome: "Aceite online", dica: "O cliente aceita o orçamento e nasce o projeto com as parcelas" },
+  { icone: "documento", nome: "Contrato", dica: "Vai junto com o orçamento; o cliente aceita com CPF ou CNPJ e fica o registro" },
   { icone: "marca", nome: "Sua marca", dica: "Logo e cor no timbrado e em tudo o que o cliente abre" },
+  { icone: "marca", nome: "O app com a sua marca", dica: "No Pro ou como adicional: seu logo e sua cor no app inteiro" },
   { icone: "dinheiro", nome: "Financeiro", dica: "A pagar, a receber, fluxo e resultado" },
   { icone: "freelas", nome: "Freelas", dica: "Banco de freelas, escala e pagamentos" },
   { icone: "inventario", nome: "Inventário", dica: "Equipamento e reservas sem conflito" },
@@ -45,7 +47,7 @@ const PRODUTORA: { icone: NomeIcone; nome: string; dica: string }[] = [
 /** O que vem aí, com o selo "Em breve". Só troca de estado quando a fase dele entrar no ar. */
 const CHEGANDO: { icone: NomeIcone; nome: string }[] = [
   { icone: "documento", nome: "Arquivos no Drive" },
-  { icone: "marca", nome: "O app inteiro com a sua marca" },
+  { icone: "link", nome: "Domínio próprio" },
 ];
 
 /** Cada palavra do título sobe na sua vez (CSS; o espaço fica fora do bloco). */
