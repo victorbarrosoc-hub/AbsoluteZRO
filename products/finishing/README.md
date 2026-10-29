@@ -75,6 +75,22 @@ Produção (27/10/2026): cliente `revela-web` cadastrado no banco `AbsoluteZRO` 
 `ZRO_CLIENT_SECRET` (sensível) só em Production na Vercel. Mudar uma variável pede deploy novo, e o projeto só publica
 quando esta pasta muda desde o último deploy: um "Redeploy" do mesmo commit é cancelado pelo Ignored Build Step.
 
+## Revela Lab
+
+`lab.html` + `app/lab.js` + `src/cor/lab.js`: a pessoa monta o próprio look e leva a LUT.
+
+- **Bases** em três grupos: Revela (os looks de sempre), **Película** (Negativo 250D, Negativo 500T, Positivo 50D,
+  Reversível, Sem branqueamento) e **Clássicos** (Laranja e petróleo, Anos 70, Nórdico). Todas feitas com o motor de
+  `src/cor/looks.js`, com nomes genéricos: nada imita película de marca nem copia LUT de terceiros.
+- **Analisar e corrigir** (ligado por padrão): lê o frame e acerta exposição (no máximo ±1,2 stop, sem apagar contraluz
+  ou noite) e branco (só o que domina os tons neutros) antes da base; mostra o que fez ("+0,8 stop · branco mais
+  quente"). O mesmo look fica igual em clipes diferentes.
+- **Ajustes** com nome de gente: Luz, Contraste, Cor, Temperatura, Tint (do centro), Calor, Desbotar e Pele protegida
+  (a pele volta para a cor de antes do look). Duplo toque volta ao neutro.
+- **Saída**: `.cube` 33/65 no tamanho do editor, **receita** `.revela` (JSON com base, intensidade, correção e ajustes,
+  para reabrir e continuar) e **Salvar em Meus looks** (aparece na grade da tela de LUT).
+- Grão de filme não entra: LUT não carrega grão.
+
 ## Meus looks
 
 Depois de um clone, **Salvar como meu look** guarda a LUT (33³, 16 bits, `src/cor/meuslooks.js`) com um nome, até 8,

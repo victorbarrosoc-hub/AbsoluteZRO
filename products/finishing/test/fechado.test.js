@@ -16,7 +16,7 @@ import { iniciarZroFalsa } from './zro-falso.js'
 
 const RAIZ = new URL('..', import.meta.url)
 const ler = (p) => readFileSync(new URL(p, RAIZ), 'utf8')
-const FERRAMENTAS = ['inicio', 'lut', 'cst', 'entrega', 'converter']
+const FERRAMENTAS = ['inicio', 'lut', 'lab', 'cst', 'entrega', 'converter']
 
 describe('o que o site publica', () => {
   test('vercel.json: as ferramentas passam pela função, o estático é publico/ e o domínio antigo ainda redireciona', () => {
@@ -96,7 +96,7 @@ describe('o que o site publica', () => {
     assert.equal(m.start_url, '/')
     assert.equal(m.id, '/')
     assert.equal(m.shortcuts, undefined)
-    assert.doesNotMatch(JSON.stringify(m), /\/(lut|cst|entrega|converter|inicio)"/)
+    assert.doesNotMatch(JSON.stringify(m), /\/(lut|lab|cst|entrega|converter|inicio)"/)
   })
 
   test('em-desenvolvimento.html: símbolo pequeno, a logo, título fino × pesado, uma linha e Voltar ao HUB; sem dado interno', () => {
@@ -109,7 +109,7 @@ describe('o que o site publica', () => {
     assert.match(html, /<h1[^>]*><span class="fino">Em<\/span> <span class="forte">desenvolvimento\.<\/span><\/h1>/)
     assert.equal((html.match(/<p[\s>]/g) || []).length, 1, 'uma linha de apoio')
     assert.match(html, /class="glass-btn glass-btn--ink"[^>]*href="https:\/\/absolutezro\.com\/inicio">Voltar ao HUB</)
-    assert.doesNotMatch(html.replaceAll('https://absolutezro.com/inicio', ''), /api\/|\.json|process\.env|RELEASE|\b(lut|cst|entrega|converter|inicio)\b/)
+    assert.doesNotMatch(html.replaceAll('https://absolutezro.com/inicio', ''), /api\/|\.json|process\.env|RELEASE|\b(lut|lab|cst|entrega|converter|inicio)\b/)
     assert.match(html, /"\/app\/tema\.js"/)
     assert.match(html, /"\/app\/fechado\.css"/)
     // a mesma folha do AEON (só o caminho da fonte muda): mesmo desenho nos dois apps
@@ -148,7 +148,7 @@ describe('api/app.js: as ferramentas só para a conta liberada', () => {
       if (u.pathname === '/api/zro/entrar') return f.entrar(req, res)
       if (u.pathname === '/api/zro/callback') return f.callback(req, res)
       if (u.pathname === '/api/app') return f.app(req, res)
-      const ferramenta = /^\/(inicio|lut|cst|entrega|converter)$/.exec(u.pathname)
+      const ferramenta = /^\/(inicio|lut|lab|cst|entrega|converter)$/.exec(u.pathname)
       if (ferramenta) {
         req.url = `/api/app?caminho=${ferramenta[1]}.html`
         return f.app(req, res)

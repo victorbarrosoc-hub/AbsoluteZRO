@@ -591,7 +591,7 @@ test('página inicial fechada ao público: a comparação segue, "Conhecer o pro
   assert.equal(await pagina.getByRole('list', { name: 'Editores compatíveis' }).getByRole('listitem').count(), 6)
   const hrefs = await pagina.$$eval('a[href]', (as) => as.map((a) => a.getAttribute('href')))
   assert.deepEqual(
-    hrefs.filter((h) => /^(inicio|lut|cst|entrega|converter)(\.html)?(\?|#|$)/.test(h)),
+    hrefs.filter((h) => /^(inicio|lut|lab|cst|entrega|converter)(\.html)?(\?|#|$)/.test(h)),
     [],
   )
   assert.equal(await pagina.getByRole('link', { name: 'Conhecer o projeto' }).first().getAttribute('href'), '#looks')
@@ -980,7 +980,7 @@ test('app na Tela de Início: manifesto, ícones e o passo a passo do Compartilh
   // o iPhone usa o apple-touch-icon (180, sem transparência) e não o manifesto
   const toque = readFileSync(join(RAIZ, 'marca/app/apple-touch-icon.png'))
   assert.deepEqual([toque.readUInt32BE(16), toque.readUInt32BE(20), toque[25]], [180, 180, 2], 'PNG 180×180 RGB')
-  for (const f of ['index.html', 'lut.html', 'cst.html', 'entrega.html', 'converter.html', 'entrar.html']) {
+  for (const f of ['index.html', 'lut.html', 'lab.html', 'cst.html', 'entrega.html', 'converter.html', 'entrar.html']) {
     const html = readFileSync(join(RAIZ, f), 'utf8')
     for (const marca of ['rel="manifest"', 'rel="apple-touch-icon"', 'apple-mobile-web-app-title" content="Revela"', 'black-translucent'])
       assert.ok(html.includes(marca), `${f}: ${marca}`)
@@ -1172,5 +1172,51 @@ test('página inicial fechada ao público: a seção da Z diz "Chegando à Revel
   assert.equal(await sec.getByRole('link', { name: 'Conversar com a Z' }).count(), 0)
   assert.equal(await sec.getByRole('link', { name: 'Conhecer a Z' }).getAttribute('href'), 'https://absolutezro.com/ia')
   assert.doesNotMatch(await sec.innerText(), /Agora na Revela|o Z\b/)
+  await pagina.close()
+})
+
+test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks', async () => {
+  const pagina = await navegador.newPage({ acceptDownloads: true, viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
+  await pagina.goto(endereco + 'lab.html')
+  await pagina.getByRole('heading', { name: 'Crie o seu look.' }).waitFor()
+  await pagina.getByRole('button', { name: 'Usar um exemplo' }).click()
+  await pagina.locator('#lab:not([hidden])').waitFor()
+  // "Analisar e corrigir" já vem ligado e diz o que fez
+  assert.equal(await pagina.getByRole('switch', { name: 'Analisar e corrigir' }).isChecked(), true)
+  assert.notEqual((await pagina.locator('#leitura-correcao').textContent()).trim(), '')
+  await pagina.getByRole('tab', { name: 'Película' }).click()
+  assert.deepEqual(await pagina.locator('#bases .look').evaluateAll((n) => n.map((b) => b.dataset.look)), ['negativo-250d', 'negativo-500t', 'positivo-50d', 'reversivel', 'sem-branqueamento'])
+  await pagina.getByRole('radio', { name: 'Negativo 500T' }).click()
+  assert.equal(await pagina.locator('#rotulo-depois').textContent(), 'Negativo 500T')
+  await pagina.locator('#aj-calor').fill('40')
+  await pagina.locator('#aj-calor').dispatchEvent('change')
+  await pagina.locator('#nome-look').fill('Noite quente')
+  assert.equal(await pagina.evaluate(() => document.documentElement.scrollWidth), 390)
+
+  const [lut] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Baixar LUT' }).click()])
+  assert.equal(lut.suggestedFilename(), 'revela-lab-noite-quente-33.cube')
+  assert.match(readFileSync(await lut.path(), 'utf8'), /^TITLE "Revela Lab - Noite quente"\nLUT_3D_SIZE 33\n/)
+  const [receita] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Baixar receita' }).click()])
+  assert.equal(receita.suggestedFilename(), 'noite-quente.revela')
+  const r = JSON.parse(readFileSync(await receita.path(), 'utf8'))
+  assert.equal(r.base, 'negativo-500t')
+  assert.equal(r.ajustes.calor, 40)
+
+  // zera, reabre a receita e volta tudo
+  await pagina.getByRole('button', { name: 'Zerar ajustes' }).click()
+  assert.equal(await pagina.locator('#aj-calor').inputValue(), '0')
+  await pagina.setInputFiles('#arquivo-receita', await receita.path())
+  await pagina.getByText('Receita "Noite quente" aberta.').waitFor()
+  assert.equal(await pagina.locator('#aj-calor').inputValue(), '40')
+  assert.equal(await pagina.locator('#bases [aria-checked=true]').getAttribute('data-look'), 'negativo-500t')
+
+  // salvo em Meus looks: aparece na grade da tela de LUT
+  await pagina.getByRole('button', { name: 'Salvar em Meus looks' }).click()
+  await pagina.getByText('"Noite quente" está em Meus looks').waitFor()
+  assert.equal(await pagina.evaluate(() => JSON.parse(localStorage.getItem('revela-meus-looks')).map((l) => l.nome).join()), 'Noite quente')
+  assert.deepEqual(erros, [])
   await pagina.close()
 })

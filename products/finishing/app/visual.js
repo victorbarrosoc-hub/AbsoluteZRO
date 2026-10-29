@@ -26,6 +26,8 @@ export const ICONES = {
   cadeado: traco('<rect x="5" y="10.5" width="14" height="9.5" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>'),
   info: traco('<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8v.1"/>'),
   converter: traco('<path d="M4 8h13l-3.5-3.5"/><path d="M20 16H7l3.5 3.5"/>'),
+  // frasco do laboratório com a película dentro
+  lab: traco('<path d="M9.5 3.5h5M10.5 3.5v5.2L5.6 17.4a2 2 0 0 0 1.8 3.1h9.2a2 2 0 0 0 1.8-3.1l-4.9-8.7V3.5"/><path d="M7.8 14h8.4"/>'),
   lut: traco('<path d="M12 3.5 19.5 8v8L12 20.5 4.5 16V8Z"/><path d="M12 12 19.5 8M12 12v8.5M12 12 4.5 8"/>'),
   sol: traco('<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/>'),
   lua: traco('<path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10Z"/>'),

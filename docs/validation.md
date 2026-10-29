@@ -1395,6 +1395,20 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   grade com 6 looks → baixar `revela-zro-filmes-33.cube` → apagar). `products/finishing`: `npm test` 96/96.
 - Não validado: o `.cube` do look novo e de um "meu look" no Resolve, em vídeo.
 
+## Revela Lab (29/10/2026)
+
+- Pedido do titular depois do estudo do Shift (plugin de grade para quem não é colorista): um laboratório para criar o
+  próprio look com película e looks conhecidos, ajustar e exportar.
+- `src/cor/lab.js`: 13 bases em 3 grupos (os 5 looks da Revela, 5 películas e 3 clássicos, todos com o motor de
+  `looks.js` e nomes genéricos), correção do frame (exposição pelo meio-tom, no máximo ±1,2 stop, e branco pelos tons
+  neutros), 8 ajustes e a receita `.revela` (lida com limites e recusa o que não é receita). `lab.html` protegida como
+  as outras ferramentas (`api/app.js`, `vercel.json`, `publicar-site.mjs`), no dock depois da LUT e no menu.
+- Testes: unidade (`test/lab.test.js` 6/6: neutro não muda o pixel, bases distintas, cada ajuste no sentido certo, pele
+  protegida, correção de frame escuro e azulado, receita ida e volta) e Chromium em 390 px (exemplo → Película →
+  Negativo 500T → Calor → LUT `revela-lab-noite-quente-33.cube` → receita → zerar → reabrir → Meus looks).
+  `products/finishing`: `npm test` 153/153.
+- Não validado: a LUT do Lab num Resolve real.
+
 ## Z: sabe o que cada plataforma faz e só busca no Drive quando pedem (28/10/2026)
 
 - Caso real do titular na Revela: "Consigo deixar meu vídeo com a cor parecida do FVPRO+?" A Z buscou no Drive (o texto

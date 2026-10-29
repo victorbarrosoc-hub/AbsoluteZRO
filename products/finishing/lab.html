@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Revela Lab · crie o seu look</title>
+    <meta name="description" content="Monte o seu look: película, clássicos ou os looks da Revela, com ajustes simples. Sai uma LUT para os seus projetos." />
+    <meta name="color-scheme" content="light" />
+    <script src="app/tema.js"></script>
+    <script src="app/abertura.js"></script>
+    <meta name="theme-color" content="#f5f5f7" />
+    <link rel="canonical" href="https://revela.absolutezro.com/lab" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Revela" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:url" content="https://revela.absolutezro.com/" />
+    <meta property="og:title" content="Revela Lab · crie o seu look" />
+    <meta property="og:description" content="Monte o seu look: película, clássicos ou os looks da Revela, com ajustes simples. Sai uma LUT para os seus projetos." />
+    <meta property="og:image" content="https://revela.absolutezro.com/og.jpg?v=2" />
+    <meta property="og:image:secure_url" content="https://revela.absolutezro.com/og.jpg?v=2" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Revela: revela a cor que você quer. Um frame de referência vira uma LUT para o DaVinci Resolve." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Revela Lab · crie o seu look" />
+    <meta name="twitter:description" content="Monte o seu look: película, clássicos ou os looks da Revela, com ajustes simples. Sai uma LUT para os seus projetos." />
+    <meta name="twitter:image" content="https://revela.absolutezro.com/og.jpg?v=2" />
+    <meta name="twitter:image:alt" content="Revela: revela a cor que você quer. Um frame de referência vira uma LUT para o DaVinci Resolve." />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="marca/app/apple-touch-icon.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Revela" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="icon" href="marca/revela-icone.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="app/revela.css" />
+    <script type="module" src="app/lab.js"></script>
+  </head>
+  <body>
+    <header class="topo">
+      <a class="marca" href="./" aria-label="Revela, página inicial"><img src="marca/revela-logo-claro.png" alt="Revela" width="150" height="28" /></a>
+      <a class="conta" id="conta" href="entrar.html">Entrar</a>
+    </header>
+
+    <main class="tela tela-lab">
+      <section class="abertura entra">
+        <p class="sobretitulo">Revela Lab</p>
+        <h1>Crie o seu look.</h1>
+        <p>Escolha uma base, ajuste do seu jeito, leve a LUT.</p>
+      </section>
+
+      <section class="lab-entrada entra" id="lab-entrada">
+        <label class="entrada entrada--larga" id="caixa-frame" for="arquivo-frame">
+          <span class="entrada-icone" data-icone="filme"></span>
+          <strong>Seu frame</strong>
+          <span class="ficha" title="Exporte o still do editor já em Rec.709 (depois do CST)">Rec.709</span>
+          <span class="acao">Escolher ou soltar</span>
+          <input id="arquivo-frame" type="file" accept="image/*" />
+        </label>
+        <div class="exemplo">
+          <button id="lab-exemplo" class="vidro" type="button"><span data-icone="imagem"></span> Usar um exemplo</button>
+          <label class="vidro" id="abrir-receita" title="Uma receita .revela salva antes"
+            ><span data-icone="pasta"></span> Abrir receita<input id="arquivo-receita" type="file" accept=".revela,application/json"
+          /></label>
+        </div>
+      </section>
+
+      <p id="estado" class="estado" role="status" aria-live="polite"></p>
+
+      <section id="lab" class="lab" hidden aria-label="Laboratório">
+        <div class="lab-ver">
+        <div class="palco">
+          <canvas id="previa" aria-label="Seu frame antes e depois do look"></canvas>
+          <span class="rotulo rotulo-antes" aria-hidden="true">Antes</span>
+          <span class="rotulo rotulo-depois" id="rotulo-depois" aria-hidden="true">Depois</span>
+          <input id="divisao" class="divisao" type="range" min="0" max="100" value="50" aria-label="Comparar antes e depois" />
+        </div>
+
+        <div class="lab-grupos" id="grupos" role="tablist" aria-label="Bases"></div>
+        <div id="bases" class="looks" role="radiogroup" aria-label="Base do look"></div>
+        </div>
+
+        <div class="lab-lado">
+
+        <div class="lab-painel">
+          <div class="lab-correcao">
+            <label class="chave" title="Acerta a exposição e o branco do frame antes da base: o look fica igual em clipes diferentes"
+              ><input id="corrigir" type="checkbox" role="switch" checked /><span class="chave-trilho"></span> Analisar e corrigir</label
+            >
+            <output id="leitura-correcao" class="leitura-correcao"></output>
+          </div>
+
+          <div class="controle">
+            <label for="intensidade">Intensidade da base</label>
+            <output id="valor-intensidade" for="intensidade">100%</output>
+            <input id="intensidade" type="range" min="0" max="100" value="100" />
+          </div>
+
+          <div id="ajustes" class="ajustes-lab" aria-label="Ajustes"></div>
+          <button id="zerar" class="vidro" type="button"><span data-icone="x"></span> Zerar ajustes</button>
+        </div>
+
+        <div class="lab-saida">
+          <input id="nome-look" class="nome-look" type="text" maxlength="40" value="Meu look" aria-label="Nome do look" autocomplete="off" />
+          <div class="exportar">
+            <label class="campo-log"
+              ><span data-icone="tela"></span
+              ><select id="editor" aria-label="Para qual editor">
+                <option value="resolve">DaVinci Resolve</option>
+                <option value="premiere">Premiere Pro</option>
+                <option value="fcp">Final Cut Pro</option>
+                <option value="capcut">CapCut</option>
+              </select></label
+            >
+            <div class="segmentado" id="tamanhos" role="radiogroup" aria-label="Tamanho da LUT">
+              <label title="Monitor e câmera"><input type="radio" name="tamanho" value="33" checked /> 33</label>
+              <label title="Grading"><input type="radio" name="tamanho" value="65" /> 65</label>
+            </div>
+          </div>
+          <button id="baixar" class="vidro vidro--tinta grande" type="button"><span data-icone="baixar"></span> Baixar LUT</button>
+          <div class="lab-acoes">
+            <button id="salvar" class="vidro" type="button" title="Entra em Meus looks, na tela de LUT, neste navegador"><span data-icone="brilho"></span> Salvar em Meus looks</button>
+            <button id="baixar-receita" class="vidro" type="button" title="Arquivo .revela: reabre aqui com a base e os ajustes"><span data-icone="copiar"></span> Baixar receita</button>
+          </div>
+        </div>
+        </div>
+      </section>
+
+      <footer class="rodape entra"><span data-icone="cadeado"></span> Suas imagens não saem daqui</footer>
+    </main>
+    <nav class="abas" aria-label="Ferramentas da Revela">
+      <a href="inicio.html" title="A Z, a IA da Absolute ZRO"><span class="aba-icone" data-icone="z"></span>Z</a>
+      <a href="lut.html"><span class="aba-icone" data-icone="lut"></span>LUT</a>
+      <a href="lab.html" aria-current="page"><span class="aba-icone" data-icone="lab"></span>Lab</a>
+      <a href="cst.html"><span class="aba-icone" data-icone="cst"></span>CST</a>
+      <a href="entrega.html"><span class="aba-icone" data-icone="entrega"></span>Entrega</a>
+      <a href="converter.html"><span class="aba-icone" data-icone="converter"></span>Converter</a>
+    </nav>
+  </body>
+</html>
