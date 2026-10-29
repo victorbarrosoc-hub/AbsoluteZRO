@@ -75,7 +75,7 @@ export default async function PaginaOrcamento({ params }: PageProps<"/o/[token]"
         </section>
       ) : null}
       <Timbrado doc={doc} />
-      <RodapeMaestro />
+      <RodapeMaestro propria={!!marca.propria} />
     </main>
   );
 }

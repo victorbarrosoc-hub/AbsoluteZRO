@@ -40,6 +40,47 @@ export function conferirCor(v: unknown): ConferenciaCor | { ok: true; cor: null;
   return { ok: true, cor, contraste: Math.round(c * 100) / 100 };
 }
 
+/** Fundo de referência do tema escuro (o mais escuro dos painéis): o acento precisa de 3:1 também ali. */
+export const FUNDO_ESCURO = "#1a1c29";
+
+function misturar(a: string, b: string, t: number): string {
+  const ca = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16));
+  const cb = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16));
+  return `#${ca
+    .map((x, i) =>
+      Math.round(x + (cb[i] - x) * t)
+        .toString(16)
+        .padStart(2, "0"),
+    )
+    .join("")}`;
+}
+
+/** O tom mais perto da cor que chega a `minimo` sobre `fundo`, clareando (fundo escuro) ou escurecendo (fundo claro). */
+export function ajustarContraste(cor: string, fundo: string, minimo = CONTRASTE_MINIMO): string {
+  if (contraste(cor, fundo) >= minimo) return cor;
+  const alvo = contraste(fundo, "#ffffff") > contraste(fundo, "#000000") ? "#ffffff" : "#000000";
+  for (let i = 1; i <= 20; i++) {
+    const c = misturar(cor, alvo, i / 20);
+    if (contraste(c, fundo) >= minimo) return c;
+  }
+  return alvo;
+}
+
+export type AcentosDaMarca = { claro: string; escuro: string; suaveClaro: string; suaveEscuro: string };
+
+/**
+ * A cor da produtora como `--acento` do app inteiro (marca própria): no claro, a cor conferida (≥ 3:1 no papel, a
+ * mesma regra de Ajustes → Marca); no escuro, o tom mais perto que chega a 3:1 no fundo escuro. Cor ausente ou fora
+ * do contraste = null (vale o latão do Maestro). Só superfície, traço e ícone: texto segue grafite/branco.
+ */
+export function acentosDaMarca(v: unknown): AcentosDaMarca | null {
+  const c = conferirCor(v);
+  if (!c.ok || !c.cor) return null;
+  const escuro = ajustarContraste(c.cor, FUNDO_ESCURO);
+  const rgba = (hex: string, a: number) => `rgb(${[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(" ")} / ${a})`;
+  return { claro: c.cor, escuro, suaveClaro: rgba(c.cor, 0.16), suaveEscuro: rgba(escuro, 0.18) };
+}
+
 /** Texto que fica legível sobre a cor (grafite ou branco). */
 export function textoSobre(cor: string): "#ffffff" | "#1d1d1f" {
   return contraste(cor, "#ffffff") >= contraste(cor, "#1d1d1f") ? "#ffffff" : "#1d1d1f";

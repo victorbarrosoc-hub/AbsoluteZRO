@@ -1,0 +1,74 @@
+/*
+ * "Maestro com a sua marca" (white-label): o shell troca o latão pela cor da produtora (claro e escuro, ambos com 3:1
+ * conferido em src/lib/marca/cor.ts) e o gesto do Maestro pelo logo ou nome dela. Só superfície, traço e ícone; texto
+ * segue grafite/branco. Sem `data-marca-propria`, nada aqui vale.
+ */
+.shell[data-marca-propria][style*="--wl-claro"] {
+  --acento: var(--wl-claro);
+  --acento-suave: var(--wl-suave-claro);
+}
+:root[data-theme="dark"] .shell[data-marca-propria][style*="--wl-claro"] {
+  --acento: var(--wl-escuro);
+  --acento-suave: var(--wl-suave-escuro);
+}
+.marca-propria__logo {
+  display: block;
+  height: 28px;
+  width: auto;
+  max-width: 150px;
+  object-fit: contain;
+}
+.topo__marca .marca-propria__logo {
+  height: 30px;
+  max-width: 130px;
+}
+:root[data-theme="dark"] .marca-propria__logo {
+  /* logo escuro sobre vidro escuro: uma placa clara discreta garante leitura */
+  padding: 3px 6px;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.92);
+}
+.marca-propria__nome {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-apple);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text-strong);
+}
+.powered {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  margin: 40px 0 8px;
+  font-size: 0.74rem;
+  color: var(--text-faint);
+}
+
+/* Ajustes → Marca: o cartão do adicional */
+.wl-cartao {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+}
+.wl-cartao__icone {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 12px;
+  background: var(--acento-suave);
+  color: var(--text);
+}
+.wl-cartao__miolo {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.wl-cartao__miolo p {
+  margin: 2px 0 0;
+}

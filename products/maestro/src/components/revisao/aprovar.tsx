@@ -39,7 +39,13 @@ function guardarRascunho(chave: string, r: Rascunho) {
 const chaveEscolha = (p: PecaVista) => `${p.card}:${p.volta}`;
 const decidida = (p: PecaVista) => (p.decisao && p.decisao.volta === p.volta ? p.decisao : null);
 
-function Rodape() {
+function Rodape({ propria = false }: { propria?: boolean }) {
+  if (propria)
+    return (
+      <footer className="cl-rodape cl-rodape--propria">
+        <ZroSimbolo size={14} /> <span>Powered by Absolute ZRO</span>
+      </footer>
+    );
   return (
     <footer className="cl-rodape">
       <span>com</span> <MaestroSimbolo width={22} /> <b>Maestro</b> <span aria-hidden="true">·</span>
@@ -357,7 +363,7 @@ export function AprovacaoCliente({
             Ver as peças
           </button>
         </section>
-        <Rodape />
+        <Rodape propria={!!marca?.propria} />
       </main>
     );
   }
@@ -423,7 +429,7 @@ export function AprovacaoCliente({
             </button>
           </div>
         </form>
-        <Rodape />
+        <Rodape propria={!!marca?.propria} />
       </main>
     );
   }
@@ -490,7 +496,7 @@ export function AprovacaoCliente({
           <SeloAprovado tamanho={36} /> Tudo decidido. Obrigado!
         </div>
       ) : null}
-      <Rodape />
+      <Rodape propria={!!marca?.propria} />
     </main>
   );
 }

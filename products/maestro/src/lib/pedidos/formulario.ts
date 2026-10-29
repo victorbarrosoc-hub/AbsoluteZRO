@@ -21,6 +21,8 @@ export type MarcaPublica = {
   cnpj?: string | null;
   endereco?: string | null;
   assinatura: string | null;
+  /** "Maestro com a sua marca" (drizzle/0020): sem a marca do Maestro, só "Powered by Absolute ZRO". */
+  propria?: boolean;
 };
 export type PerguntasPedido = { ideia: boolean; datas: boolean; local: boolean; investimento: boolean };
 export type ConfigPedido = { perguntas: PerguntasPedido; boasVindas: string | null };

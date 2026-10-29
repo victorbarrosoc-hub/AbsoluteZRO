@@ -34,6 +34,8 @@ export type Sessao = {
   produtos: string[];
   /** zro_release do último login ou releitura (gate de lançamento). null = sessão sem a claim (fechado). */
   release: Record<string, string> | null;
+  /** zro_features da organização (último login ou releitura): o que `temMarcaPropria` confere. */
+  recursos: string[];
   expiraEm: Date;
   perfilLidoEm: Date | null;
   temTokens: boolean;
@@ -94,6 +96,7 @@ export async function autenticar(cookie: string | undefined, agora = new Date())
         tokens: sessions.zroTokensEnc,
         orgNome: organizations.name,
         zroOrgId: organizations.zroOrgId,
+        recursos: organizations.zroFeatures,
         nome: members.displayName,
         email: members.email,
         foto: members.pictureUrl,
@@ -125,6 +128,7 @@ export async function autenticar(cookie: string | undefined, agora = new Date())
       papel: l.papel,
       produtos: l.produtos,
       release: l.release ?? null,
+      recursos: l.recursos ?? [],
       expiraEm: l.expiraEm,
       perfilLidoEm: l.perfilLidoEm,
       temTokens: !!l.tokens,
@@ -185,7 +189,10 @@ export async function aplicarPerfilNaSessao(s: Sessao, perfil: PerfilZro, agora 
       .set({ displayName: perfil.nome, email: perfil.email, pictureUrl: perfil.foto })
       .where(and(eq(members.orgId, s.orgId), eq(members.zroSub, s.sub)));
     if (perfil.org && perfil.org.id === s.zroOrgId) {
-      await tx.update(organizations).set({ name: perfil.org.name, zroProducts: perfil.produtos }).where(eq(organizations.id, s.orgId));
+      await tx
+        .update(organizations)
+        .set({ name: perfil.org.name, zroProducts: perfil.produtos, zroFeatures: perfil.recursos })
+        .where(eq(organizations.id, s.orgId));
     }
     await tx.update(sessions).set({ produtos: perfil.produtos, zroRelease: perfil.release, perfilLidoEm: agora }).where(eq(sessions.id, s.id));
   });

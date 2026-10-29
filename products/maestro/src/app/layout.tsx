@@ -14,6 +14,7 @@ import "./negocio.css";
 import "./numeros.css";
 import "./equipe.css";
 import "./contrato.css";
+import "./marca-propria.css";
 import "./celular.css";
 
 export const metadata: Metadata = {

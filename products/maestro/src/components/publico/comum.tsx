@@ -6,7 +6,7 @@
 import type { CSSProperties } from "react";
 import { MaestroSimbolo, ZroSimbolo } from "@/components/marca";
 
-export type MarcaDaPagina = { nome: string; logo: string | null; cor: string | null };
+export type MarcaDaPagina = { nome: string; logo: string | null; cor: string | null; propria?: boolean };
 
 /** A cor da produtora vira o `--acento` da página (superfície e filete; nunca texto). */
 export const estiloDaMarca = (cor: string | null | undefined): CSSProperties | undefined => (cor ? ({ "--acento": cor } as CSSProperties) : undefined);
@@ -24,7 +24,17 @@ export function CabecaMarca({ marca }: { marca: MarcaDaPagina }) {
   );
 }
 
-export function RodapeMaestro() {
+/**
+ * O rodapé das páginas do cliente: "com Maestro · Absolute ZRO"; com a marca própria da produtora (white-label), só um
+ * "Powered by Absolute ZRO" discreto, sem a marca do Maestro.
+ */
+export function RodapeMaestro({ propria = false }: { propria?: boolean }) {
+  if (propria)
+    return (
+      <footer className="cl-rodape cl-rodape--propria">
+        <ZroSimbolo size={14} /> <span>Powered by Absolute ZRO</span>
+      </footer>
+    );
   return (
     <footer className="cl-rodape">
       <span>com</span> <MaestroSimbolo width={22} /> <b>Maestro</b> <span aria-hidden="true">·</span>
