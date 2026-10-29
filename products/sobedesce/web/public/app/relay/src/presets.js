@@ -251,4 +251,10 @@ export const PRESETS = [
 
 export const GRUPOS = ['Redes', 'Trabalho', 'Tamanho', 'Áudio']
 
+/**
+ * Os destinos que uma produtora mais entrega ao cliente (o Maestro mostra estes primeiro em "Gerar versões"; os
+ * outros ficam em "Mais"). Ordem = ordem na tela.
+ */
+export const ENTREGA_AO_CLIENTE = ['youtube-1080', 'youtube-4k', 'reels', 'feed', 'tiktok', 'whatsapp', 'vimeo', 'email']
+
 export const preset = (id) => PRESETS.find((p) => p.id === id) ?? null

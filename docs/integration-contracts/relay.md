@@ -65,10 +65,45 @@ Regras que valem para os três:
 | **AEON**            | Exportar o vídeo final da timeline (hoje `app/render.js`, só H.264 no tamanho do projeto)                          | 1 (navegador)      | Na tela de exportar, a grade de presets do Relay; o render passa a pedir tamanho, cadência e bitrate ao `planejar` do Relay. O AEON continua desenhando os quadros (cortes, zoom, legenda); o Relay decide como gravar.                                                                                                                                                         | A fazer                                                    |
 | **NOSSOM**          | Exportar o áudio tratado (hoje WAV PCM16 e MP3 320 em `lib/audio.ts`)                                              | 1 (navegador)      | Os formatos de saída pelos presets de áudio do Relay (MP3 320, AAC 256, WAV 48 kHz 24 bits). O NOSSOM mantém medição e loudness; o Relay só grava.                                                                                                                                                                                                                              | A fazer                                                    |
 | **Synquei**         | Depois da sincronia: "Deixar pronto para editar" nos clipes de celular (cadência variável) e proxies               | 3 (ou 2)           | Marcar no relatório os clipes com cadência variável; pedir ao computador a versão de cadência constante e o proxy pelo preset `proxy`. As exportações de projeto (XML, OTIO, EDL) continuam no Synquei.                                                                                                                                                                         | A fazer (depende de preset de cadência constante no Relay) |
-| **Maestro**         | Versões de entrega do card: gerar as versões (YouTube, Reels, WhatsApp para o cliente) a partir do master aprovado | 3 (ou 2)           | Na ficha da versão, "Gerar versões com o Relay" com a lista de presets; os arquivos voltam para a pasta do Drive do projeto (ponte SOBEDESCE já existente).                                                                                                                                                                                                                     | A fazer                                                    |
+| **Maestro**         | Versões de entrega do card: gerar as versões (YouTube, Reels, WhatsApp para o cliente) a partir do master aprovado | 3                  | Ver "Maestro → Relay" abaixo: ações `relay.converter`, `relay.pedido` e `relay.cancelar` pela ponte do HUB (destino `sobedesce`), cópia dos presets em `products/maestro/src/lib/relay/`.                                                                                                                                                                                       | Contrato definido; lança junto com o Maestro               |
 | **HUB e a Z**       | Catálogo (grátis em todos os planos), família no menu, e a Z: "me manda isso em MP4 720p"                          | 3                  | Feito: produto `relay` no catálogo (migration `0031`, grátis em todo plano, sem limites, gate em `development`), ícone em `apps/hub-web/public/products/relay.svg`, `ProductId` com `relay`, o Relay no guia da Z. Na abertura: migration nova com `stage`, `external_url` e o gate.                                                                                            | Feito (fechado até o deploy)                               |
 | **TPeasy**          | Gravações do teleprompter: "Exportar com o Relay" para mandar a gravação no formato da rede                        | 2                  | Link com o preset; nada de conversão própria.                                                                                                                                                                                                                                                                                                                                   | Futuro                                                     |
 | **Carro do Freela** | Portfólio e reel do freela: "Comprimir com o Relay" antes de subir                                                 | 2                  | Link com o preset `tamanho` ou `vimeo`.                                                                                                                                                                                                                                                                                                                                         | Futuro                                                     |
+
+## Maestro → Relay: "Gerar versões com o Relay" (lançam juntos; decisão do titular, 29/10/2026)
+
+O Maestro pede as versões de entrega de um master que está no Drive; o computador da conta converte e sobe na pasta
+do projeto. Reaproveita a ponte que já existe (`maestro-sobedesce.md`): **o destino continua `sobedesce`** (é ele quem
+tem a fila, o Drive e o ffmpeg), com três ações novas na lista fechada `PONTES` (`packages/core/src/pedidos-entre-apps.ts`).
+Pedir conversão exige o **Relay no plano** da organização (entra grátis em todo plano pela `0031`) além do SOBEDESCE.
+
+| Ação              | Rota (SOBEDESCE, `POST`)   | Corpo                                                                                                                                     | Resposta                                                              |
+| ----------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `relay.converter` | `/api/zro/relay/converter` | `{ arquivoId, presets: string[] (1–8, ids de src/presets.js), pastaId?: id (sem ele, a pasta do original), ref: string (≤ 120), conta? }` | `202 { pedidos: [{ id, preset, ref, status }] }`                      |
+| `relay.pedido`    | `/api/zro/relay/pedido`    | `{ ids: string[] (≤ 50) }`                                                                                                                | `{ pedidos: [Pedido], computador: { aberto_agora, usado_ha_pouco } }` |
+| `relay.cancelar`  | `/api/zro/relay/cancelar`  | `{ id }`                                                                                                                                  | `{ cancelado: true, ja_terminado }`                                   |
+
+- **Idempotência:** `ref` é do Maestro (sugestão: id da versão). Cada item da fila tem a chave `ref:preset`; pedir de
+  novo a mesma chave devolve o pedido que já existe (pendente, em andamento ou pronto), nunca um segundo arquivo.
+- **`Pedido`** = `{ id, preset, ref, status: 'pendente' | 'convertendo' | 'pronto' | 'erro' | 'cancelado', frac?,
+resultado?: { arquivoId, nome, tamanho, md5, pastaId }, erro?, criado_em, atualizado_em }`. "pronto" só com o MD5
+  do Drive igual ao do arquivo convertido (regra do SOBEDESCE). O nome segue `nomeSaida`: `<original> (<preset>).<ext>`.
+- **Quem executa:** a fila `pedidos_proxy` do SOBEDESCE ganha o tipo `relay` (ajustes `{ preset, pastaId, ref }`); o
+  app de computador da conta pega (409 se outro levou), converte com `converterComRelay` (x264, qualidade constante)
+  e sobe em `pastaId`. Sem computador aberto, o pedido espera; `computador` na resposta diz se há um aberto agora ou
+  usado há pouco, para o Maestro dizer isso à pessoa sem prometer prazo.
+- **Andamento:** o Maestro consulta `relay.pedido` enquanto a ficha da versão está aberta (a cada 5 s, como as prévias
+  do celular) e guarda o resultado no próprio banco. Sem evento na v1: `media.conversion.completed` (fonte `relay`,
+  `{ projeto, origem, resultado, preset, md5 }`, projeto = id canônico de `zro.projects`) entra quando o HUB receber o
+  resultado de alguém; até lá, nada de evento inventado.
+- **Presets na tela do Maestro:** cópia de `products/relay/src/presets.js` e `src/plano.js` (o peso estimado é
+  `planejar(origem, preset).tamanhoEstimado`, com `origem` do `ItemDrive.video`) em `products/maestro/src/lib/relay/`,
+  conferida por teste do Maestro contra `products/relay`. Primeiro os de `ENTREGA_AO_CLIENTE` (YouTube 1080p e 4K,
+  Reels · No Compress, Feed 4:5, TikTok, WhatsApp, Vimeo, E-mail); os outros em "Mais". "Tamanho exato" fica de fora
+  (pede o MB na hora).
+- **Quem constrói o quê:** Relay/SOBEDESCE (este lado): as três rotas, o tipo `relay` na fila, o executor no app de
+  computador e as ações na `PONTES` com teste. Maestro: a ficha "Gerar versões", a cópia dos presets e o
+  acompanhamento. Estado: contrato definido; implementação a seguir.
 
 ## Eventos e conta
 

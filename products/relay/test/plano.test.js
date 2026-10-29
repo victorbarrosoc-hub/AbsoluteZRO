@@ -141,3 +141,9 @@ test('ficha técnica: o que sai, conforme o motor', async () => {
   const mp3 = Object.fromEntries(fichaTecnica(planejar(horizontal(), 'mp3')))
   assert.equal(mp3['Vídeo'], undefined)
 })
+
+test('entrega ao cliente: só ids que existem, sem repetir', async () => {
+  const { ENTREGA_AO_CLIENTE } = await import('../src/presets.js')
+  assert.equal(new Set(ENTREGA_AO_CLIENTE).size, ENTREGA_AO_CLIENTE.length)
+  for (const id of ENTREGA_AO_CLIENTE) assert.ok(preset(id), id)
+})
