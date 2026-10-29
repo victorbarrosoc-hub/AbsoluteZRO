@@ -1,9 +1,10 @@
-# Maestro ↔ Carro do Freela: mapa de integração (28/10/2026)
+# Maestro ↔ Carro do Freela: mapa de integração (28/10/2026; lado do Carro em 29/10/2026)
 
-**Estado: mapa, mais um caminho pronto e desligado.** Nenhum dado sai do Maestro para o Carro do Freela e nada volta.
-O inventário do freela (abaixo) tem contrato exportado, evento registrado, rota **desligada** no HUB e a função de
-importação testada no Maestro, mas **não está no ar**: o Carro do Freela é um protótipo estático, sem banco, e não
-publica nada. Ligar pede o banco do Carro, o endpoint assinado no Maestro e decisão do titular.
+**Estado: mapa, mais um caminho pronto dos dois lados e desligado no meio.** Nenhum dado sai do Maestro para o Carro do
+Freela e nada volta. Desde 29/10/2026 o **lado do Carro existe**: banco próprio (schema `carro_do_freela`), o freela cadastra o
+perfil e o inventário, e cada mudança vira um evento na fila de saída, já no contrato `freela.inventario/1`. Mas a
+**publicação está desligada** (`CARRO_SYNC_ATIVO` ausente), a rota do HUB segue **desligada** e o HUB não tem o endpoint
+de entrada. Ligar pede decisão do titular.
 
 ## O que o Maestro já tem e pode servir de origem
 
@@ -29,7 +30,8 @@ no perfil dele e na escala. **A fonte de verdade é o Carro do Freela.**
   telefone** (o schema é estrito e recusa campo a mais).
 - **Evento** `freela.inventario.atualizado` v1, produtor `carro-do-freela`, payload
   `{ source: "carro-do-freela", inventario }`. Publicado com `publishEvent` e `idempotency_key`
-  `freela.inventario:<sub>:<atualizado_em>` quando o Carro tiver banco.
+  `freela.inventario:<sub>:<atualizado_em>`. Desde 29/10/2026 o Carro grava cada evento na fila dele; publicar
+  continua desligado.
 - **Rota** em `packages/integrations/src/handlers.ts`: `DISABLED_ROUTES` → handler `maestro.freela-inventario`
   (produto `maestro`, não emite nada). Fica **fora** de `ROUTES` e de `HANDLERS`: o worker não roda e o HUB não finge
   processar. `findEventCycle` continua sem ciclo com as rotas ativas e as desligadas somadas (teste em
@@ -42,10 +44,19 @@ no perfil dele e na escala. **A fonte de verdade é o Carro do Freela.**
   `maestro_app` de criar ou mudar linha com `origem = 'carro-do-freela'`). Itens locais (`origem = 'maestro'`) seguem
   editáveis e nunca são apagados pela sincronização. Freela sem conta Absolute ZRO (sem `zro_sub`) fica só com o
   cadastro local.
-- **Para ligar**: (1) o Carro do Freela com banco e o cadastro do inventário pelo próprio freela (nota em
-  `products/carro-do-freela/README.md`); (2) o Carro publica no HUB pelo token do app; (3) o HUB entrega ao Maestro por
-  um endpoint assinado (como o pedido do SOBEDESCE) e o handler sai de `DISABLED_ROUTES` para `ROUTES`; (4) teste ponta
-  a ponta no HUB, no Carro e no Maestro.
+- **Carro do Freela (feito, 29/10/2026)**: `carro_do_freela.inventario` (por `sub`, RLS: cada pessoa só vê e muda o dela) e a
+  fila `carro_do_freela.inventario_eventos`, escrita por gatilho do banco a cada mudança: o inventário **inteiro**, no payload do
+  evento (`{ source, inventario }`) e com a `idempotency_key` acima; várias mudanças na mesma transação viram um
+  retrato só. A suíte `products/carro-do-freela/test/api/banco.test.js` confere o retrato contra os JSON Schemas
+  `freela.inventario.v1` e `event.freela.inventario.atualizado.v1` (estes arquivos). O publicador
+  (`products/carro-do-freela/db/sync.js`) só age com `CARRO_SYNC_ATIVO=1`: manda o retrato mais novo de cada pessoa
+  com o Bearer da própria pessoa e o cabeçalho `Idempotency-Key`, marca os velhos como `substituido`, e qualquer falha
+  (recusa, erro, rede, tempo) vai para `revisao`, nunca para nova tentativa sozinha. Destino padrão
+  `<ZRO_ISSUER>/api/v1/carro-do-freela/inventario` (`CARRO_SYNC_URL` troca), **que ainda não existe no HUB**.
+- **Para ligar o resto**: (1) o HUB ganha o endpoint de entrada (Bearer do freela, escopo próprio, `publishEvent` com
+  a chave recebida) e documenta em `openapi.yaml`; (2) o HUB entrega ao Maestro por um endpoint assinado (como o
+  pedido do SOBEDESCE) e o handler sai de `DISABLED_ROUTES` para `ROUTES`; (3) `CARRO_SYNC_ATIVO=1` no projeto
+  `carrodofreela-app`; (4) teste ponta a ponta no HUB, no Carro e no Maestro.
 
 ## Desenho proposto para a escala (quando houver decisão)
 

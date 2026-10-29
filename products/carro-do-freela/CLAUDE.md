@@ -130,6 +130,45 @@ avaliação (de `linhaContrato`, só com `faseTem(2)`); **Brechó** = pedido de 
 ganha balão. ⚠️ `#g-msg-bg` (conversa não lida na gaveta de Propostas) e `#bg-gui` continuam como estavam. ⚠️ O
 `title` original do item (`Meus jobs`) é guardado em `data-tit-orig` e volta quando o balão apaga.
 
+## 29/out — o banco do Carro: perfil e inventário do freela (`db/`, `api/zro/_dados.js`, `test/api/banco*.test.js`)
+
+Pedido do titular: *"ligar o banco de dados do Carro do Freela"*, começando pelo que o ecossistema precisa — o perfil do
+freela e o equipamento dele, que vai para o Maestro. Visão geral, tabelas e rotas no README (seção "Banco de dados");
+passos de produção em `db/PRODUCAO.md`. O que não se lê de lá:
+
+- ⚠️ **Um schema e um papel, como manda a raiz**: Supabase AbsoluteZRO, schema `carro_do_freela`, login `carro_do_freela` (dono, migra) e
+  `carro_do_freela_app` sem login (RLS). Nunca `zro`. O login não tem CREATEROLE: em produção `carro_do_freela_app` nasce pelo `postgres`
+  (o `db/PRODUCAO.md` diz os comandos). ⚠️ **O schema `carro_do_freela` JÁ EXISTE em produção** com `cadastros`,
+  `leads` e `passos` do app antigo (dono `postgres`, `anon` só INSERT; o navegador escreve pela chave anon). A 0000
+  não toca nelas nem no `usage` do `anon`: a suíte reproduz esse schema, roda a migração com um login sem
+  superusuário dono do schema e confere tabelas, colunas, permissões, políticas e linhas antes e depois.
+- ⚠️ **Migração aplicada nunca é editada.** O diário (`carro_do_freela.__migracoes`) guarda o sha256; o migrador recusa a
+  editada, a sumida e a nova com número menor que a última. Mudou o banco? Arquivo novo. A 0000 ainda não foi aplicada
+  em produção em 29/out, mas a partir do primeiro build com `CARRO_DATABASE_URL` ela congela.
+- ⚠️ **As rotas moram em `/api/zro/` por causa do cookie**: `cdf_hub` é `Path=/api/zro`, e sem ele não há claim relida
+  (o portão do lançamento). Rota de dados fora desse caminho seria rota sem portão. `sessaoConferida()` (em `_zro.js`)
+  é a MESMA régua do `/eu` e do `/enviar`.
+- ⚠️ **O `sub` nunca vem do pedido**; vem da sessão, vai para `set_config('carro_do_freela.sub', …, true)` e a política RLS faz o
+  resto. Campo desconhecido é recusado (não ignorado): é assim que `telefone`, `whatsapp`, `cpf`, `email` voltam com
+  `proibido`, e texto com jeito de número volta com `telefone` (`db/regras.js` e `carro_do_freela.tem_telefone` no banco).
+- ⚠️ **Funções e nichos são catálogo** (regra "ninguém digita"): funções da base (`src/crew.json`), nichos de `TIPOS`.
+  A suíte confere que o servidor e o template têm as mesmas listas.
+- ⚠️ **A fila é escrita pelo BANCO, não pela API**: gatilho `security definer` grava o inventário inteiro a cada
+  mudança, um retrato por transação. `carro_do_freela_app` não lê nem escreve a fila. `criado_em` usa `clock_timestamp()`: com
+  `now()` dois itens da mesma transação saíam em ordem aleatória (a suíte pegou, 1 em 3).
+- ⚠️ **Sincronização desligada**: `CARRO_SYNC_ATIVO=1` liga o publicador, e não se liga antes de a rota
+  `freela.inventario.atualizado` sair de `DISABLED_ROUTES` no HUB e de o HUB ter o endpoint de entrada (hoje não tem;
+  o padrão do publicador é `<ZRO_ISSUER>/api/v1/carro-do-freela/inventario`, trocável por `CARRO_SYNC_URL`). Falha de
+  envio vai para `revisao`, nunca para nova tentativa sozinha.
+- **Na tela**: bloco `#cfb` (prefixo `cfb-`, conferido por grep antes de nascer) dentro de "Meu perfil", criado por
+  `cfbPintar()` no `show("meu")` e na volta do `/eu`. Só no domínio, com `zroPodeEnviar()`. Banco desligado ou sessão
+  recusada: o bloco some. ⚠️ Código só com `var`/`function` no topo (o TDZ de 19/out · 2). Um sólido por painel:
+  "Salvar perfil" é o sólido; "Adicionar equipamento" é fantasma.
+- **Testes**: `npm run test:banco` (Postgres; a parte de tela pula sem Playwright, dizendo por quê). O CI do Carro
+  ganhou um Postgres nos dois jobs. `npm run test:api` e a bateria seguem iguais.
+- **Dependência nova**: `pg` (a primeira de execução). As duas rotas de dados vão empacotadas pelo esbuild no
+  `vercel-build`; as outras funções continuam copiadas como eram.
+
 ## 26/out · 2 — leve sem perder qualidade: o HTML que carrega só a página
 
 Pedido do Victor: *"deixar a plataforma leve sem perder qualidade de imagem"*
@@ -398,7 +437,7 @@ a cena da home e a tela de entrar abaixo da janela em todo monitor grande.
 Uma sonda de `100vh` dentro do corpo diz quanto o motor multiplica (Chromium:
 o zoom; Safari: 1), e `--zoom` vira esse número.
 
-⚠️ **A build se identifica** (`VERSAO`, hoje `28/out · 1`): aparece no rodapé do
+⚠️ **A build se identifica** (`VERSAO`, hoje `29/out · 1`): aparece no rodapé do
 menu e vai junto no recado de suporte. Sem isso, três rodadas foram gastas sem
 saber se o defeito relatado era do arquivo novo ou de um cache velho. **Suba a
 VERSAO em toda entrega que o Victor for subir.**

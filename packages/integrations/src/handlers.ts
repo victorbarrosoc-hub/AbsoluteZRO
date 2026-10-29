@@ -68,8 +68,9 @@ export const ROUTES: RouteTable = {
  * Pronto e DESLIGADO: o inventário que o freela cadastra no Carro do Freela (freela.inventario/1) vai para o Maestro,
  * que guarda os itens como só leitura no perfil do freela, ligado pelo `sub` da conta Absolute ZRO
  * (products/maestro/src/lib/freelas/equipamentos.ts, sincronizarInventarioDoCarro). Não entra em ROUTES nem em
- * HANDLERS enquanto o Carro do Freela não tiver banco e o Maestro não tiver o endpoint de entrega assinado: nenhum
- * evento é publicado e o HUB não finge processar nada (docs/integration-contracts/maestro-carro-do-freela.md).
+ * HANDLERS enquanto o HUB não tiver o endpoint de entrada e o Maestro não tiver o endpoint de entrega assinado. O Carro
+ * já tem banco e fila (29/10/2026), mas a publicação dele também está desligada: nenhum evento é publicado e o HUB não
+ * finge processar nada (docs/integration-contracts/maestro-carro-do-freela.md).
  */
 export const maestroFreelaInventario: HandlerDef = {
   name: 'maestro.freela-inventario',

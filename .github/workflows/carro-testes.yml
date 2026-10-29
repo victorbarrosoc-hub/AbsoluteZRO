@@ -1,4 +1,4 @@
-# Testes do Carro do Freela (products/carro-do-freela): login Absolute ZRO contra um HUB falso, o build do domínio
+# Testes do Carro do Freela (products/carro-do-freela): login Absolute ZRO contra um HUB falso, o banco (Postgres), o build do domínio
 # (o mesmo que a Vercel roda) e a bateria de navegador. Roda só quando a pasta do Carro (ou este arquivo) muda.
 name: Carro do Freela · testes
 
@@ -30,6 +30,16 @@ jobs:
     name: Login e build do domínio
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,6 +53,10 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Login Absolute ZRO (OIDC falso, chave EC P-256)
         run: npm run test:api
+      # (28/out) o banco do Carro: migrações, RLS com duas contas, fila do inventário no contrato
+      # freela.inventario/1 e as rotas de perfil e inventário (a parte de tela pula aqui: sem Playwright)
+      - name: Banco do Carro (Postgres descartável)
+        run: npm run test:banco
       - name: Build do domínio, sem chaves (como um Preview sem variáveis)
         run: npm run build:vercel
       - name: Nada de chave nem marcador no que iria ao ar
@@ -53,6 +67,16 @@ jobs:
     name: Bateria de navegador
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
     steps:
       - uses: actions/checkout@v4
         with:
@@ -72,6 +96,8 @@ jobs:
       # uma suíte que lê os arquivos das fases (test/run.js, DAS_FASES)
       - name: Bateria
         run: npm test
+      - name: Meu perfil e Meu inventário na tela (Chromium + Postgres)
+        run: node --test test/api/banco-tela.test.js
       - name: A CSP do build do domínio, provada num Chromium
         run: |
           npm run build:vercel

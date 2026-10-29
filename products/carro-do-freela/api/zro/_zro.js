@@ -780,6 +780,35 @@ async function ia(req, res) {
   res.end();
 }
 
+/* ---------------- a sessão das rotas de dados (perfil e inventário, 28/out) ---------------- */
+
+/**
+ * Quem está pedindo, CONFERIDO NO HUB AGORA — a mesma régua do /eu e do
+ * /enviar: cookie de sessão + `cdf_hub` da MESMA conta, claim relida, portão
+ * do lançamento (fechado: só a conta `allowed`) e o Carro no plano. Devolve
+ * { quem, at, extra, origem } ou { status, corpo, headers } para responder.
+ * ⚠️ É por isso que as rotas de dados moram em /api/zro/: o `cdf_hub` só vai
+ * para esse caminho (Path=/api/zro), e sem ele não há claim relida.
+ */
+async function sessaoConferida(req) {
+  const cfg = config();
+  if (!cfg.ligado) return { status: 503, corpo: { erro: 'desligado' } };
+  const origem = origemDe(req);
+  if (!origem) return { status: 400, corpo: { erro: 'origem' } };
+  const s = abrir(lerCookie(req, COOKIE_SESSAO), cfg.clientSecret, COOKIE_SESSAO);
+  if (!s || typeof s.sub !== 'string') return { status: 401, corpo: { erro: 'sem_sessao' } };
+  const apagar = { 'Set-Cookie': apagarCookies(origem) };
+  const h = decifrar(lerCookie(req, COOKIE_HUB), cfg.clientSecret);
+  if (!h || h.sub !== s.sub) return { status: 401, corpo: { erro: 'reconectar' }, headers: apagar };
+  const c = await lerConta(cfg, h);
+  if (c.recusado) return { status: 401, corpo: { erro: 'reconectar' }, headers: apagar };
+  if (!c.quem) return { status: 503, corpo: { erro: 'hub' } };
+  if (!acessoOk(c.quem)) return { status: 403, corpo: { erro: 'fechado' }, headers: apagar };
+  const extra = c.novo ? { 'Set-Cookie': [cookie(COOKIE_HUB, cifrar(c.novo, cfg.clientSecret), { path: '/api/zro', maxAge: SESSAO_S, seguro: seguro(origem) })] } : {};
+  if (!c.quem.produtos.includes(PRODUTO)) return { status: 403, corpo: { erro: 'plano' }, headers: extra };
+  return { quem: c.quem, at: c.at, extra, origem };
+}
+
 /* cada função responde 500 curto em vez de derrubar o processo */
 const protegido = fn => async (req, res) => {
   try {
@@ -797,6 +826,10 @@ module.exports = {
   sair: protegido(sair),
   enviar: protegido(enviar),
   ia: protegido(ia),
+  /* para as rotas de dados (api/zro/_dados.js) */
+  sessaoConferida,
+  lerCorpo,
+  origemDe,
   /* para os testes */
   _interno: { caminhoIa, abrir, selar, cifrar, decifrar, montarJob, montarEquipe, COOKIE_HUB, voltaSegura, origemDe, conferirIdToken, contaDeClaims, lerConta, release, liberacaoDe, acessoOk, config, esquecer: () => (cache = { descoberta: null, chaves: null }), COOKIE_IDA, COOKIE_SESSAO, ORIGENS, PRODUTO },
 };

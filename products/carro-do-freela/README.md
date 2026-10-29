@@ -36,7 +36,7 @@ consentimento registrado de quem tiver dado real. O portão para abrir ao públi
 | --- | --- |
 | Origem do dado | Perfil criado pela pessoa sai marcado `origem: "autodeclarado"`; a prévia é fictícia |
 | Consentimento | No cadastro, "Mostrar meu perfil para quem contrata" nasce **desmarcado**; marcar grava versão do texto e data, desmarcar grava a retirada (suíte `consentimento`) |
-| Onde o registro mora | **No aparelho**, junto com o perfil. Vai para o banco quando a Fase 1 tiver servidor ([docs/fase1-no-ar.html](docs/fase1-no-ar.html)) |
+| Onde o registro mora | **No aparelho**, junto com o perfil da prévia. O perfil da conta Absolute ZRO já mora no banco (`carro_do_freela.perfis.visibilidade`, nasce `privado`, com a data da mudança), mas o cadastro da prévia ainda não foi ligado a ele ([docs/fase1-no-ar.html](docs/fase1-no-ar.html)) |
 | Agenda, reputação, pagamento | Simulados |
 
 O build do domínio (`src/vercel-build.js`) envia `X-Robots-Tag: noindex, nofollow`: reduz a exposição, mas **não**
@@ -53,18 +53,63 @@ briefing inteiro, com horário, chamada, local e referências) e, para quem da e
 aparece como "sem conta". O servidor (`api/zro/enviar.js`) fala com o HUB com o token da pessoa, guardado cifrado num
 cookie httpOnly; o navegador nunca vê token. Detalhes em [ORIGEM.md](ORIGEM.md).
 
-## Inventário do freela (próximo passo, ainda não existe aqui)
+## Banco de dados: perfil e inventário do freela (29/out)
 
-Pedido do titular (28/10/2026): o freela cadastra o próprio equipamento **aqui**, e o Maestro mostra esse kit no perfil
-dele e na escala (só leitura lá). Hoje não há banco, então nada disso funciona e nada é publicado. Quando houver:
+Pedido do titular: "ligar o banco de dados do Carro do Freela", começando pelo que o ecossistema precisa. O Carro tem
+agora um banco **próprio**: Supabase **AbsoluteZRO**, schema **`carro_do_freela`**, papel de login `carro_do_freela` (dono, roda as
+migrações) e papel sem login `carro_do_freela_app` (o servidor o assume em toda operação de pessoa; RLS sempre vale). Nada no
+schema `zro`, nada nos schemas dos outros apps.
 
-- **Guardar**, por conta Absolute ZRO do freela (`sub`): itens com `id` estável, categoria (câmera, lente, áudio, luz,
-  drone, estabilizador, monitor, acessório, outro), marca, modelo, quantidade, observação, diária de aluguel opcional,
-  ativo e data da última mudança. Sem CPF, e-mail ou telefone no inventário.
-- **Publicar** no HUB, a cada mudança, o evento `freela.inventario.atualizado` com o contrato `freela.inventario/1`
-  (`packages/media-contracts/src/freela.ts`), o inventário inteiro e `idempotency_key` `freela.inventario:<sub>:<data>`.
-- O HUB entrega ao Maestro (rota hoje desligada); o Maestro casa pelo `sub` e pelo `id` de cada item, e o Carro manda
-  nos itens dele. Mapa completo em `docs/integration-contracts/maestro-carro-do-freela.md`.
+⚠️ **O schema já existia em produção** (ADR 0013), com as tabelas do app antigo: `cadastros` (convite do lançamento),
+`leads` (landing) e `passos` (contagem anônima), dono `postgres`, `anon` só com INSERT. A migração 0000 **não toca
+nelas** nem no acesso do `anon`; só acrescenta as tabelas novas, fechadas para `anon` e `authenticated`. O que foi lido
+lá e os passos estão em [db/PRODUCAO.md](db/PRODUCAO.md). Os mesmos arquivos de migração servem para o projeto novo
+(a mudança para São Paulo).
+
+| Peça | Onde |
+| --- | --- |
+| Migrações (SQL, uma por arquivo, nunca editar uma aplicada) | `db/migrations/NNNN_nome.sql` |
+| Migrador (diário `carro_do_freela.__migracoes` com sha256; recusa editada, sumida e fora de ordem) | `db/migrador.js`, `npm run db:migrate` |
+| Conexão e as duas portas (`asUser(sub)` com `set_config('carro_do_freela.sub')` + `SET LOCAL ROLE carro_do_freela_app`; `asSystem`) | `db/banco.js` |
+| Regras do que entra (estritas, sem telefone, catálogos do app) | `db/regras.js` |
+| Rotas | `api/zro/perfil.js`, `api/zro/inventario.js` (miolo `api/zro/_dados.js`) |
+| Publicador da sincronização (desligado) | `db/sync.js` |
+| O que falta fazer em produção | [db/PRODUCAO.md](db/PRODUCAO.md) |
+
+**Tabelas.** `perfis` (uma linha por `sub` da conta Absolute ZRO: nome de exibição, cidade/UF, funções e nichos do
+catálogo, bio curta, portfólio https opcional, visibilidade que nasce `privado`), `inventario` (itens da pessoa, `id`
+estável, categoria, marca, modelo, quantidade, observação, diária opcional, ativo, `atualizado_em`) e
+`inventario_eventos` (fila de saída). **Sem telefone, CPF ou e-mail**: não há coluna para isso, a API recusa o campo
+(`proibido`) e o texto com jeito de número (`telefone`), e o banco confere de novo (`carro_do_freela.tem_telefone`).
+
+**Rotas** (só da própria origem para escrever, só JSON, limite de pedidos por IP, sessão conferida no HUB a cada
+pedido, como o `/eu`):
+
+| | |
+| --- | --- |
+| `GET /api/zro/perfil` · `PUT /api/zro/perfil` | o perfil inteiro |
+| `GET /api/zro/inventario` · `POST` · `PATCH ?id=` · `DELETE ?id=` | os itens |
+
+Moram em `/api/zro/` de propósito: o cookie `cdf_hub` (o acesso ao HUB, com que a claim é relida) só vai para esse
+caminho. O `sub` vem da sessão, nunca do pedido. Sem `CARRO_DATABASE_URL` respondem `503 sem_banco`.
+
+**Fase fechada.** Só a conta liberada pelo portão do lançamento (hoje, a do proprietário) chega às rotas. Na tela, o
+bloco "Meu perfil / Meu inventário" nasce por código dentro de "Meu perfil", só no domínio e só com essa conta; nas
+suítes, no `file://` e no artifact ele não existe. O selo "Prévia" continua onde estava. Nenhuma linha é semeada.
+
+**Sincronização com o Maestro: pronta e DESLIGADA.** Cada mudança no inventário grava na fila, pelo gatilho do banco,
+o inventário inteiro no formato do evento `freela.inventario.atualizado` v1 (`{ source: "carro-do-freela", inventario:
+freela.inventario/1 }`, chave `freela.inventario:<sub>:<atualizado_em>`). O publicador só manda com
+`CARRO_SYNC_ATIVO=1`, e não deve ser ligado enquanto a rota do HUB estiver desligada e o HUB não tiver o endpoint de
+entrada. Ligado: manda o retrato mais novo, marca os velhos como `substituido`, e qualquer falha vai para `revisao`
+(nunca nova tentativa sozinho). Mapa: `docs/integration-contracts/maestro-carro-do-freela.md` na raiz.
+
+**Build.** `npm run build:vercel` roda `db/migrar.js` antes de gerar o site **só** com `CARRO_DATABASE_URL`; as duas
+rotas de dados vão empacotadas pelo esbuild com o `pg` dentro (dependência nova, a única de execução).
+
+**Testes.** `npm run test:banco` (Postgres local: `service postgresql start`, ou `TEST_DATABASE_URL`): migrações num
+banco vazio e com papel sem superusuário, as três recusas, RLS com duas contas, a fila conferida contra o JSON Schema de
+`freela.inventario/1`, o publicador e as rotas contra a Absolute ZRO falsa; e a tela num Chromium (pula sem Playwright).
 
 ---
 

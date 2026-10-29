@@ -2,8 +2,9 @@
  * freela.inventario/1 — o inventário que o próprio freela cadastra no Carro do Freela (fonte de verdade), para o
  * Maestro mostrar no perfil dele e na escala (docs/integration-contracts/maestro-carro-do-freela.md). Direção:
  * Carro do Freela → HUB (evento `freela.inventario.atualizado`) → Maestro. O freela é a conta Absolute ZRO (`sub`):
- * nada de CPF, e-mail ou telefone. Cada item tem `id` estável no Carro (o Maestro casa por ele). Ainda NÃO está no ar:
- * o Carro do Freela é um protótipo estático, sem banco.
+ * nada de CPF, e-mail ou telefone. Cada item tem `id` estável no Carro (o Maestro casa por ele). Desde 29/10/2026 o
+ * Carro grava cada mudança na fila dele (products/carro-do-freela/db), já neste formato; publicar no HUB e a rota do HUB
+ * seguem desligados.
  */
 import { z } from 'zod'
 import { IsoDate, Uuid } from './common'
