@@ -200,6 +200,18 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   `npm run db:seed:demo` quando a tela mudar; nunca mock). "Quero acesso" grava na lista de espera
   (`drizzle/0004`, `src/lib/lista-espera.ts`): `maestro_app` não tem privilégio na tabela, só a função
   `maestro.lista_espera_entrar()`; armadilha, 5/h por IP e consentimento obrigatório. A lista não libera ninguém.
+- **App de computador** (`desktop/`, Mac e Windows; [README](desktop/README.md)): Electron com pacote próprio (fora
+  do `package.json` do site; ignorado no lint, Prettier, tsconfig, `maestro.yml` e `.vercelignore` daqui; lint pela
+  raiz, como o `apps/hub-desktop`). Abre `/app` numa `WebContentsView` (partição `persist:maestro`, sandbox, sem Node);
+  na janela só o Maestro, as telas de entrar da Absolute ZRO e `accounts.google.com` (`desktop/regras.cjs`); `/a`,
+  `/o`, `/p`, o resto do HUB e outros sites vão para o navegador. Login = o fluxo normal do site, os cookies ficam
+  (Max-Age). Motor do "Atualizar", memória da janela e a "Sem conexão" são **cópias idênticas** do hub-desktop
+  (`npm run compartilhado`; o teste confere). Ícone = `src/app/icon.svg` (`npm run icones`). Aviso "Nova versão" e
+  download passam pela Absolute ZRO (`/baixar/app/maestro/{versao.json,mac,windows,<arquivo>}`, gate do canal
+  `download`; `APPS_DESKTOP` em `apps/hub-web/lib/desktop-apps.ts`, `DOWNLOADS` em `lib/downloads.ts`): fechado, só
+  a lista de acesso vê. Release de teste `maestro-versao-de-teste` pelo `.github/workflows/maestro-desktop.yml` a
+  cada push na main que mexe em `desktop/`. Sem assinatura da Apple/Microsoft por enquanto. Rota nova que deve abrir
+  no navegador (página do cliente): ponha em `DO_CLIENTE` de `regras.cjs` e no teste.
 - **Visual: C1 · Aurora** (escolha do titular, 28/10/2026; plano v2 §9): uma luz ambiente que segue a hora de quem
   vê (`src/components/ambiente.tsx` + `src/lib/hora.ts`): o servidor desenha a luz apagada e o relógio vazio; ao montar,
   o `<html>` ganha `data-hora` (`manha`, `tarde`, `fim`, `noite`) e o plano `.amb` acende. No claro, pêssego/rosa de

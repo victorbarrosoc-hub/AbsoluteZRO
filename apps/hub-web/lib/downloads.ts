@@ -35,6 +35,8 @@ export type DownloadEntry = {
 // Os repositórios são privados: nada aponta para o github.com. Cada site tem /baixar/<sistema>, que lê o Release com
 // GITHUB_TOKEN e redireciona para o endereço assinado e temporário do arquivo.
 const NOSSOM_BAIXAR = 'https://nossom-teal.vercel.app/baixar/'
+// Maestro: pela própria Absolute ZRO (apps/hub-web/app/(site)/baixar/app/[id]/[arquivo]), com o gate do canal download.
+const MAESTRO_BAIXAR = 'https://absolutezro.com/baixar/app/maestro/'
 
 export const DOWNLOADS: DownloadEntry[] = [
   {
@@ -133,6 +135,24 @@ export const DOWNLOADS: DownloadEntry[] = [
     status: 'web',
     note: 'Abre no navegador, no computador e no celular.',
     options: [{ os: 'web', label: 'Navegador', detail: 'Computador ou celular', href: 'https://revela.absolutezro.com', format: 'Sem instalar' }],
+  },
+  {
+    // Maestro (products/maestro/desktop): o instalador vem do Release "Maestro · versão de teste" pela rota da Absolute
+    // ZRO (/baixar/app/maestro/<sistema>), que confere o gate de novo e entrega o mais novo com SHA-256. Fechado
+    // (0024, download = false) aparece "Em desenvolvimento"; a 0027 do lançamento abre.
+    productId: 'maestro',
+    site: 'https://maestro.absolutezro.com',
+    status: 'test',
+    note: 'Com a conta Absolute ZRO. O app de computador avisa e se atualiza quando sai versão nova.',
+    options: [
+      { os: 'mac', label: 'Mac', detail: 'Apple Silicon e Intel', href: MAESTRO_BAIXAR + 'mac', format: 'Instalador .dmg' },
+      { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11', href: MAESTRO_BAIXAR + 'windows', format: 'Instalador .exe' },
+      { os: 'web', label: 'Navegador', detail: 'Chrome, Edge ou Safari', href: 'https://maestro.absolutezro.com/app', format: 'Sem instalar' },
+    ],
+    firstOpen: {
+      mac: 'Abra o .dmg e arraste para Aplicativos. Na primeira vez: botão direito › Abrir › Abrir.',
+      windows: 'Se o Windows avisar: Mais informações › Executar assim mesmo.',
+    },
   },
 ]
 

@@ -21,6 +21,8 @@ export type AppDesktop = {
   fontes: Fonte[]
   mac: { arquivos: { arch: Arquitetura; re: RegExp }[]; bundle: string }
   windows: { re: RegExp; exe: string; nomeNoSistema: string }
+  /** O Release tem o versao.json do aviso "Nova versão" do próprio app (o app pede por /baixar/app/<id>/versao.json). */
+  versaoJson?: boolean
 }
 
 /** As ferramentas de computador. Nome do .app (Mac) e do .exe (Windows) vêm do electron-builder de cada uma. */
@@ -55,6 +57,16 @@ export const APPS_DESKTOP: AppDesktop[] = [
       bundle: 'NOSSOM.app',
     },
     windows: { re: /^NOSSOM-(\d+\.\d+\.\d+)-win-x64\.exe$/, exe: 'NOSSOM.exe', nomeNoSistema: 'NOSSOM' },
+  },
+  {
+    // Maestro para computador (products/maestro/desktop, .github/workflows/maestro-desktop.yml). Fechado pelo gate
+    // enquanto o canal desktop/download do Maestro estiver fechado (0024); a 0027 do lançamento abre.
+    id: 'maestro',
+    nome: 'Maestro',
+    fontes: [{ repo: 'victorbarrosoc-hub/AbsoluteZRO', tag: 'maestro-versao-de-teste' }],
+    versaoJson: true,
+    mac: { arquivos: [{ arch: 'universal', re: /^Maestro-(\d+\.\d+\.\d+)-b(\d+)-mac-universal\.dmg$/ }], bundle: 'Maestro.app' },
+    windows: { re: /^Maestro-(\d+\.\d+\.\d+)-b(\d+)-windows-setup\.exe$/, exe: 'Maestro.exe', nomeNoSistema: 'Maestro' },
   },
 ]
 
@@ -190,12 +202,20 @@ export async function catalogoDesktop(liberados: ReadonlySet<string>, d: Deps = 
 /**
  * Endereço do arquivo pedido pela central (/baixar/app/<id>/<arquivo>). Só arquivos que o catálogo dessa ferramenta
  * reconhece; nada de nome livre. null = não existe ou sem acesso (produto fora dos `liberados` no canal download).
+ * Também: `mac` e `windows` = o instalador mais novo daquele sistema (os botões da página Downloads), e `versao.json`
+ * para a ferramenta que publica o aviso "Nova versão" no Release (`versaoJson`).
  */
 export async function enderecoDoArquivo(liberados: ReadonlySet<string>, id: string, nome: string, d: Deps = {}): Promise<string | null> {
   if (!liberados.has(id)) return null
   const app = APPS_DESKTOP.find((a) => a.id === id)
   if (!app || !/^[A-Za-z0-9._-]{1,120}$/.test(nome)) return null
-  const reconhece = app.windows.re.test(nome) || app.mac.arquivos.some((x) => x.re.test(nome))
+  if (nome === 'mac' || nome === 'windows') {
+    const c = await appNoCatalogo(app, d)
+    const maisNovo = nome === 'mac' ? c.mac?.arquivos[0]?.arquivo : c.windows?.arquivo.arquivo
+    if (!maisNovo) return null
+    nome = maisNovo
+  }
+  const reconhece = (app.versaoJson && nome === 'versao.json') || app.windows.re.test(nome) || app.mac.arquivos.some((x) => x.re.test(nome))
   if (!reconhece) return null
   const c = config(d)
   for (const fonte of app.fontes) {

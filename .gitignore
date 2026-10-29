@@ -18,3 +18,6 @@ next-env.d.ts
 # app de desktop: identidade do build (gravada pelo CI) e versao.json do Release
 apps/hub-desktop/desktop/build-info.json
 apps/hub-desktop/versao.json
+products/maestro/desktop/desktop/build-info.json
+products/maestro/desktop/versao.json
+products/maestro/desktop/sha256/

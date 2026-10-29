@@ -8,11 +8,13 @@ on:
     branches: [main]
     paths:
       - 'products/maestro/**'
+      - '!products/maestro/desktop/**'
       - '.github/workflows/maestro.yml'
   pull_request:
     branches: [main]
     paths:
       - 'products/maestro/**'
+      - '!products/maestro/desktop/**'
       - '.github/workflows/maestro.yml'
   workflow_dispatch:
 

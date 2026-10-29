@@ -4,7 +4,12 @@ import tseslint from 'typescript-eslint'
 export default tseslint.config(
   {
     ignores: [
-      'products/**',
+      // products/ tem as regras de cada app; só o Maestro para computador entra aqui (as mesmas do hub-desktop, abaixo)
+      'products/*',
+      '!products/maestro/',
+      'products/maestro/*',
+      '!products/maestro/desktop/',
+      'products/maestro/desktop/dist/**',
       'apps/hub-desktop/dist/**',
       '**/node_modules/**',
       '**/.next/**',
@@ -36,7 +41,7 @@ export default tseslint.config(
   },
   // App de desktop (Electron): CommonJS no processo principal e scripts de navegador nas páginas locais.
   {
-    files: ['apps/hub-desktop/desktop/**/*.cjs'],
+    files: ['apps/hub-desktop/desktop/**/*.cjs', 'products/maestro/desktop/desktop/**/*.cjs', 'products/maestro/desktop/scripts/**/*.cjs'],
     languageOptions: {
       sourceType: 'commonjs',
       globals: {
@@ -54,7 +59,7 @@ export default tseslint.config(
     rules: { '@typescript-eslint/no-require-imports': 'off' },
   },
   {
-    files: ['apps/hub-desktop/desktop/paginas/**/*.js'],
+    files: ['apps/hub-desktop/desktop/paginas/**/*.js', 'products/maestro/desktop/desktop/paginas/**/*.js'],
     languageOptions: {
       sourceType: 'script',
       globals: {
@@ -68,7 +73,12 @@ export default tseslint.config(
     },
   },
   {
-    files: ['apps/hub-desktop/scripts/**/*.mjs', 'apps/hub-desktop/test/**/*.mjs'],
+    files: [
+      'apps/hub-desktop/scripts/**/*.mjs',
+      'apps/hub-desktop/test/**/*.mjs',
+      'products/maestro/desktop/scripts/**/*.mjs',
+      'products/maestro/desktop/test/**/*.mjs',
+    ],
     languageOptions: { globals: { fetch: 'readonly', AbortSignal: 'readonly', setInterval: 'readonly' } },
   },
   // Núcleo do Drive (packages/drive-web): módulos de navegador e o service worker, sem build.

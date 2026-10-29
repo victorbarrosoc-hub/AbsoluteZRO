@@ -1,0 +1,16 @@
+/* O que muda do estilo comum (offline.css, igual ao do Absolute ZRO para computador): o papel do Maestro no claro
+   (#f7f3ee, o mesmo do site) e o ícone com os cantos do app. */
+:root {
+  --papel: #f7f3ee;
+}
+
+.simbolo {
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgb(29 29 31 / 0.14);
+}
+
+/* wordmark flat da Absolute ZRO (marca.svg), discreto no pé */
+.marca {
+  width: 150px;
+  opacity: 0.55;
+}

@@ -3,7 +3,7 @@
 O HUB (https://absolutezro.com) numa janela própria, no Mac e no Windows. Abre pelo Dock ou pela barra de
 tarefas, continua logado, mostra uma tela "Sem conexão" local quando falta internet e avisa quando sai versão nova.
 É também a **central de apps** ([ADR 0018](../../docs/decisions/0018-central-de-apps.md)): instala, abre, atualiza e
-remove SOBEDESCE, Synquei e NOSSOM pela página Downloads do HUB. Desde a 1.3.0 é o **instalador do ecossistema** e roda
+remove SOBEDESCE, Synquei, NOSSOM e o Maestro (quando liberado pelo gate) pela página Downloads do HUB. Desde a 1.3.0 é o **instalador do ecossistema** e roda
 em segundo plano, como o SOBEDESCE: símbolo na barra de menus (Mac) ou na bandeja (Windows), abre com o computador,
 mantém os apps instalados em dia sozinho e, na primeira abertura, pergunta quais apps instalar.
 
@@ -32,7 +32,7 @@ npx electron-builder --linux dir   # empacota para conferir (o .dmg e o .exe sae
 | `desktop/bandeja.cjs`        | menu da barra de menus/bandeja (lista de itens), dica e ícone de cada sistema                      |
 | `desktop/inicio-sistema.cjs` | abrir com o computador (ligado na primeira vez, escondido) e `preferencias.json`                   |
 | `desktop/gerenciados.cjs`    | `apps-gerenciados.json`: quais apps a central atualiza (o SOBEDESCE e o Synquei leem)              |
-| `desktop/atualizador.cjs`    | "Atualizar" do próprio Absolute ZRO: baixa, confere, troca e abre de novo                          |
+| `desktop/atualizador.cjs`    | "Atualizar" do próprio Absolute ZRO (e do Maestro, cópia idêntica): baixa, confere, troca e abre   |
 | `desktop/paginas/`           | barra de título do Mac, "Sem conexão" e boas-vindas (HTML local, CSP fechada, Figtree local)       |
 | `scripts/bandeja.mjs`        | ícone da barra de menus (template) e da bandeja a partir de `absolute-zro-simbolo.svg`             |
 | `scripts/icons.mjs`          | gera `.icns`, `.ico` e PNGs a partir da arte oficial; chama `scripts/fundo-dmg.mjs`                |
