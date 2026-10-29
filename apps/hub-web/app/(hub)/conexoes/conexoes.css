@@ -1,0 +1,182 @@
+/* Conexões (ADR 0026): um cartão por serviço, como os ajustes do Apple ID. Pouco texto, estado em forma. */
+
+.conexoes {
+  display: grid;
+  gap: var(--space-5);
+}
+.conexao {
+  display: grid;
+  gap: var(--space-4);
+  padding: clamp(18px, 2.4vw, 28px);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.conexao__cab {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.conexao__icone {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text-strong);
+}
+.conexao__nome {
+  flex: 1;
+  min-width: 0;
+}
+.conexao__nome h2 {
+  margin: 0;
+  font: 650 1.15rem var(--font-display);
+  letter-spacing: -0.015em;
+  color: var(--text-strong);
+}
+.conexao__nome p {
+  margin: 2px 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.conexao__selo {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-strong);
+  background: color-mix(in srgb, var(--zro-ok) 16%, transparent);
+}
+.conexao__selo svg {
+  color: var(--zro-ok);
+}
+.conexao__corpo {
+  display: grid;
+  gap: var(--space-5);
+  margin: 0;
+}
+.conexao__vazia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.conexao__beneficios {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text);
+}
+.conexao__beneficios li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.conexao__beneficios svg {
+  color: var(--text-faint);
+}
+.conexao__secao {
+  display: grid;
+  gap: var(--space-2);
+}
+.conexao__secao h3 {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.conexao__lista {
+  display: grid;
+  border-radius: var(--radius-l);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  overflow: hidden;
+}
+.conexao__lista > .conexao__linha + .conexao__linha,
+.conexao__lista > form + form {
+  border-top: 1px solid var(--line);
+}
+.conexao__linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+.conexao__linha-nome {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-strong);
+}
+.conexao__cor {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  box-shadow: 0 0 0 1px var(--line);
+}
+.conexao__estado-form {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 0.85rem;
+}
+.conexao__estado-form:empty {
+  display: none;
+}
+.conexao__lista > .conexao__estado-form {
+  padding: 0 14px;
+}
+.conexao__lista > .conexao__estado-form:has(> *) {
+  padding: 8px 14px;
+  border-top: 1px solid var(--line);
+}
+.conexao__linha > .conexao__estado-form {
+  flex-basis: 100%;
+  padding-left: 40px;
+}
+.conexao__pe {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--space-2);
+}
+.conexao__desconectar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+@media (max-width: 560px) {
+  .conexao__cab {
+    flex-wrap: wrap;
+  }
+  .conexao__vazia > .glass-btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}
+.conexao .glass-btn {
+  gap: 6px;
+}

@@ -15,6 +15,40 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Conexões: Google Agenda pelo HUB (29/10/2026, ADR 0026)
+
+Contra um Google falso (`tests/fixtures/google-falso.ts`: OAuth com PKCE, refresh, revogar e o pedaço da Calendar
+API usado), Postgres 16 próprio.
+
+- HUB: `tests/integration/conexoes.test.ts` (14): chave por HKDF de `ZRO_CONEXOES_KEY` (recusa sem ela ou curta);
+  AES-256-GCM com contexto (outro contexto, outra chave ou byte trocado não abrem); ida ao Google com `offline`,
+  `consent`, escopos e PKCE S256, cookie cifrado, curto e preso à conta; cancelar, state trocado, permissão desmarcada e
+  nonce trocado viram motivos; tokens só cifrados no banco; RLS (outra pessoa não vê, não muda, não insere); agendas só
+  as da conta; renovação do token vencido e `invalid_grant` → `reconectar` sem tokens e 409 `sem_conexao`; desconectar
+  revoga e apaga; API: sessão do HUB e sem token = 403 `so_app`, token sem `zro.agenda` não autentica, app fechado =
+  `product_closed`, sem conexão = 409 com o link, app desligado = 403, outro app no caminho = 403, conexão de uma pessoa
+  não vale para outra, PUT idempotente por (app, ref) (mesmo id, uma linha), dia inteiro com fim exclusivo, evento
+  forjado de outro app = 409, apagar idempotente e regravar o apagado, auditoria sem título nem lugar, "Usado por";
+  livre/ocupado junta intervalos, ignora livre, recusado e os do próprio app, e renova depois de 401; limite por pessoa
+  e app. Raiz `npm test` **274/274** em 34 arquivos (com `findEventCycle` e o teste do openapi com as 4 rotas novas).
+- HUB e2e `tests/e2e/conexoes.spec.ts` (3): vazio, cancelar, permissão desmarcada, conectar, agendas salvando sozinhas,
+  Maestro desligado, reconectar, desconectar (revogado no Google falso), celular sem rolagem lateral e a página exige
+  sessão. Suíte e2e do HUB inteira **29/29** (o Google falso usa um cliente só de teste, `ZRO_GOOGLE_TESTE_*`, para o
+  "Entrar com Google" seguir desligado nos outros testes); build ok.
+- Maestro: `tests/agenda-google.test.mts` (14): desenho da diária (hora de Brasília com o deslocamento do dia, lugar,
+  projeto, equipe, sem as notas), dia inteiro, entrega livre, prazo de card; hash estável; ninguém ligado = fila vazia;
+  ligar enfileira o que a pessoa vê; PUT idempotente e sem chamada quando nada mudou; mudar hora, escalar e apagar pelos
+  gatilhos; acesso por cliente (a restrita não manda o prazo do outro cliente); RLS da fila e da escolha; HUB fora do ar
+  não desfaz o salvar, conta tentativa, espera e envia depois; sem conexão e sessão sem o escopo param sem contar
+  tentativa; desligar tira do Google; rota do ocupado (estado, 400, 401). `tests/zro.test.mts`: a ida cai em
+  `sem_agenda` e depois `basico` com invalid_scope. `npm test` **345/345**; lint, formatação, tipos e build ok.
+- Maestro e2e `e2e/agenda-google.spec.ts` (computador e iPhone, 4/4) e `e2e/negocio.spec.ts` (8/8): Ajustes → Agenda
+  conectada, ligar manda a diária e o prazo ao HUB falso, "Sincronizar agora" = "Tudo em dia", sem conexão leva às
+  Conexões; "Ocupado no Google" segue a data do formulário (bloco 09:00–11:00, livre, sem conexão).
+- `node scripts/scan-secrets.mjs`: nenhum segredo. Capturas (claro/escuro, computador/celular) fora do repositório.
+- Não verificado: o Google de verdade (consentimento, aviso de app não verificado, cotas) e as migrations no banco de
+  produção.
+
 ## Maestro v2, fases 7–10: ponte com o SOBEDESCE, Drive na revisão e Arquivos (29/10/2026)
 
 - HUB: `tests/integration/pedidos-entre-apps.test.ts` (6): pedido assinado com `aud` do SOBEDESCE, `sub` da pessoa,

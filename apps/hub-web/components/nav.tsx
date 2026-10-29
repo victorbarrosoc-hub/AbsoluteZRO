@@ -28,6 +28,7 @@ const GROUPS: { label: string; items: Item[] }[] = [
       { href: '/equipe', label: 'Equipe', icon: 'team' },
       { href: '/assinatura', label: 'Assinatura e consumo', icon: 'card' },
       { href: '/perfil', label: 'Sua conta', icon: 'user' },
+      { href: '/conexoes', label: 'Conexões', icon: 'link' },
     ],
   },
 ]

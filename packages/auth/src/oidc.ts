@@ -33,8 +33,8 @@ export const OIDC_SCOPES = ['openid', 'email', 'profile', 'org', 'offline_access
  * cliente daquele produto, e a rota exige o escopo; organização e papel continuam vindo do banco (authorize).
  */
 export const PRODUCT_SCOPES: Record<string, string[]> = { 'carro-do-freela': ['carro-do-freela.jobs'], maestro: ['maestro.projects'] }
-/** Escopos de todo app da família (cliente com produto): a IA do ecossistema (0016). */
-export const FAMILY_SCOPES = ['zro.ia'] as const
+/** Escopos de todo app da família (cliente com produto): a IA do ecossistema (0016) e a Agenda das Conexões (0026). */
+export const FAMILY_SCOPES = ['zro.ia', 'zro.agenda'] as const
 export const CODE_TTL_MS = 60_000
 export const ACCESS_TTL_S = 600
 export const ID_TTL_S = 600

@@ -9,7 +9,8 @@ info:
     como autorização.
     Erros: `{ "error": "<código>", "message": "<texto>" }` com 401 unauthenticated, 403 forbidden_role |
     entitlement_required | feature_not_included | product_unavailable | product_closed | quota_not_configured | origin_rejected,
-    404 project_not_found | not_found, 409 no_active_organization | conflict, 422 invalid_input, 429 quota_exceeded | rate_limited.
+    404 project_not_found | not_found, 409 no_active_organization | conflict | sem_conexao, 422 invalid_input, 429 quota_exceeded | rate_limited,
+    403 app_desligado (Agenda: o app foi desligado nas Conexões da pessoa), 503 upstream_unavailable.
     Gate de lançamento (ADR 0023): produto fechado ao público só abre para contas listadas em `zro.product_release_access`,
     no canal do pedido (sessão do HUB = web, token de app = api). Fora disso toda rota com produto responde 403
     `product_closed` ("Este app ainda está em desenvolvimento.", `details.closed = true`, `details.upgrade = false`),
@@ -239,6 +240,101 @@ paths:
           '403': { $ref: '#/components/responses/Error' },
           '404': { $ref: '#/components/responses/Error' },
           '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/agenda/conexao:
+    get:
+      security: [{ appToken: [zro.agenda] }]
+      summary: 'Conexões (ADR 0026): como está o Google Agenda da pessoa para este app. Contrato em docs/integration-contracts/agenda.md'
+      responses:
+        {
+          '200': { description: '{ conectada, estado: ativa | reconectar | null, conta_email, app_ligado, calendarios, conectar }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '503': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/agenda/livre-ocupado:
+    get:
+      security: [{ appToken: [zro.agenda] }]
+      summary: Intervalos ocupados nas agendas escolhidas pela pessoa (até 62 dias), sem os eventos do próprio app a menos que incluir_proprios=1
+      parameters:
+        - { name: de, in: query, required: true, schema: { type: string, format: date-time }, description: 'RFC 3339 com fuso' }
+        - { name: ate, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: incluir_proprios, in: query, required: false, schema: { type: string, enum: ['1'] } }
+      responses:
+        {
+          '200': { description: '{ de, ate, ocupado: [{ inicio, fim }], calendarios, incompleta }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '409':
+            {
+              description: 'sem_conexao (details.motivo nenhuma | reconectar, details.conectar)',
+              content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } },
+            },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+          '503': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/agenda/eventos:
+    get:
+      security: [{ appToken: [zro.agenda] }]
+      summary: Eventos das agendas escolhidas, com campos mínimos (até 62 dias, 500 no máximo)
+      parameters:
+        - { name: de, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: ate, in: query, required: true, schema: { type: string, format: date-time } }
+      responses:
+        {
+          '200': { description: '{ de, ate, eventos: [{ id, calendario, titulo, inicio, fim, dia_inteiro, ocupa, app, ref }], incompleta }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/agenda/eventos/{app}/{ref}:
+    parameters:
+      - { name: app, in: path, required: true, schema: { type: string, pattern: '^[a-z0-9-]{1,40}$' }, description: 'O app do token (product_id do cliente)' }
+      - { name: ref, in: path, required: true, schema: { type: string, pattern: '^[A-Za-z0-9._:-]{1,120}$' }, description: 'Id do item no app' }
+    put:
+      security: [{ appToken: [zro.agenda] }]
+      summary: Grava o evento do app na agenda principal da pessoa, idempotente por (app, ref). Um app só mexe no que é dele (extendedProperties.private zro_app/zro_ref)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [titulo]
+              properties:
+                titulo: { type: string, maxLength: 200 }
+                inicio: { type: string, format: date-time }
+                fim: { type: string, format: date-time }
+                dia: { type: string, format: date }
+                ate_dia: { type: string, format: date, description: inclusivo }
+                local: { type: string, maxLength: 300 }
+                descricao: { type: string, maxLength: 4000 }
+                fuso: { type: string, default: America/Sao_Paulo }
+                ocupa: { type: boolean, default: true }
+                link: { type: string, format: uri, description: https }
+      responses:
+        {
+          '201': { description: '{ id, criado: true, link }' },
+          '200': { description: '{ id, criado: false, link }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+          '503': { $ref: '#/components/responses/Error' },
+        }
+    delete:
+      security: [{ appToken: [zro.agenda] }]
+      summary: Apaga o evento do app (204 mesmo se já não existia)
+      responses:
+        {
+          '204': { description: apagado },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
           '429': { $ref: '#/components/responses/Error' },
         }
   /api/v1/desktop/apps:
