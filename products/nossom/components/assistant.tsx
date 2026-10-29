@@ -280,9 +280,9 @@ export default function Assistant({
                 description: 'Reduzir ruído da gravação',
               },
               {
-                label: 'Isolar voz da música',
+                label: 'Isolar voz',
                 operation: 'vocals',
-                description: 'Separar o cantor dos instrumentos',
+                description: 'Tirar música e ruído de fundo',
               },
               {
                 label: 'Nivelar volumes',

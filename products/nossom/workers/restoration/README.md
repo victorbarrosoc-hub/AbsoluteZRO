@@ -28,3 +28,14 @@ O preset `htdemucs-vocals-v1` usa HTDemucs 4.0.1 e retorna apenas o stem `vocals
 O checkpoint oficial fixo `955717e8-8726e21a.th` é baixado e tem seu hash verificado no build, sem nomes/URLs de modelos vindos do navegador. O build carrega os pesos e roda uma inferência sintética em CPU para verificar compatibilidade com PyTorch. Isso não substitui ouvir uma música real na GPU. O worker antigo aceita somente fala: para ativar a separação, o endpoint precisa concluir a construção e usar esta nova imagem. Nenhuma nova migração SQL é necessária: o tipo confirmado do pedido é guardado no `report` já existente.
 
 Para estéreo, são assinadas até 11 partes de saída (até 20 MiB cada), sem ampliar os limites de entrada de 100 MiB e 10 minutos. A restauração D continua mono e usa até seis partes, preservando o contrato do worker anterior. Cancelamento, reserva/devolução de minutos e exclusão privada seguem o mesmo fluxo. Confira a licença MIT incluída do Demucs e a licença do checkpoint upstream.
+
+## Isolar voz (Fala e Música)
+
+`voice-isolator-v1` (**Fala**, padrão da ferramenta) roda duas etapas não generativas, por máscara: **Mel-Band RoFormer** separa a voz de música e ruídos que não são voz; **MossFormer2 SE 48K** tira o que sobra, inclusive conversa de fundo. Sai WAV float32 **mono a 48 kHz**. Como as duas etapas só atenuam o que não é fala, não criam nem trocam palavras, ao contrário de um modelo generativo. `roformer-vocals-v1` (**Música**) roda só o RoFormer e devolve o vocal em estéreo a 44,1 kHz, sem a etapa de fala, que estragaria o canto.
+
+- Pesos: `KimberleyJSN/melbandroformer` (MIT) e `alibabasglab/MossFormer2_SE_48K` (Apache-2.0), com revisão do Hugging Face e SHA-256 fixos em `isolator.py`, baixados no build e carregados como `state_dict` com `weights_only=True`. Nada vem do navegador.
+- Código: `bs-roformer==0.3.10` (a versão que bate exatamente com o checkpoint) e `clearvoice==0.1.2`, ambos do PyPI.
+- Janelas: RoFormer em blocos de 8 s com metade de sobreposição e transição linear; MossFormer2 em uma passada até 20 s e em janelas de 4 s (passo 3 s) acima disso, com a cauda preservada. `test_isolator.py` confere, com modelos substitutos, que nenhuma emenda ou final se perde.
+- O build roda `smoke_isolator.py` (inferência real em CPU com os pesos) e o CI roda `test_handler.py` e `test_isolator.py`.
+- `htdemucs-vocals-v1` continua aceito para pedidos antigos; pedidos novos de Música usam o RoFormer.
+- Limite conhecido: nenhuma das duas etapas tira eco/reverberação da sala. Não prometa isso.

@@ -55,8 +55,8 @@ export type FilterSettings = {
 export const operations: { id: Operation; label: string; description: string }[] = [
   {
     id: 'vocals',
-    label: 'Isolar voz da música',
-    description: 'Separe o cantor dos instrumentos. Ouça e baixe só os vocais.',
+    label: 'Isolar voz',
+    description: 'Fica só a voz: sem música, ruído ou conversa de fundo.',
   },
   {
     id: 'auto',

@@ -322,12 +322,12 @@ export default function Landing() {
               href="/studio/isolar-voz"
               data-intent="vocals"
               className="lg"
-              aria-label="Isolar cantor"
+              aria-label="Isolar voz"
             >
               <Mic2 size={32} />
               <span>
-                <strong>Isolar cantor</strong>
-                <small>Separe a voz dos instrumentos</small>
+                <strong>Isolar voz</strong>
+                <small>Sem música nem ruído de fundo</small>
               </span>
               <ArrowRight size={18} />
             </Link>

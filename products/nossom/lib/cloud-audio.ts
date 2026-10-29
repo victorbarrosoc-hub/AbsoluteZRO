@@ -1,6 +1,28 @@
 import { inspect, decode, measure } from './audio';
-import { restorationD, vocalSeparation, type CloudPreset, validCloudReport } from './restoration';
+import {
+  isCloudPreset,
+  isVoiceToolPreset,
+  restorationD,
+  singingSeparation,
+  vocalSeparation,
+  voiceIsolator,
+  type CloudPreset,
+  validCloudReport,
+} from './restoration';
 import type { AudioUsage } from './usage';
+
+const engines: Record<CloudPreset, string> = {
+  [restorationD.id]: 'Resemble Enhance · NOSSOM Restore D',
+  [vocalSeparation.id]: 'Demucs · HTDemucs vocals',
+  [voiceIsolator.id]: 'Mel-Band RoFormer + MossFormer2 SE 48K',
+  [singingSeparation.id]: 'Mel-Band RoFormer · vocals',
+};
+const runningLabels: Record<CloudPreset, string> = {
+  [restorationD.id]: 'Melhorando sua voz…',
+  [vocalSeparation.id]: 'Separando a voz dos instrumentos…',
+  [voiceIsolator.id]: 'Isolando sua voz…',
+  [singingSeparation.id]: 'Separando a voz dos instrumentos…',
+};
 
 export class CloudCancelled extends Error {
   constructor(message = 'Cancelamento solicitado. O original foi preservado.') {
@@ -44,8 +66,7 @@ export async function restoreCloud(
       });
       const existing = await response.json();
       if (!response.ok) throw new Error(existing.error || 'Não foi possível retomar o tratamento.');
-      if (existing.preset === vocalSeparation.id || existing.preset === restorationD.id)
-        preset = existing.preset;
+      if (isCloudPreset(existing.preset)) preset = existing.preset;
       if (existing.status === 'uploading')
         prepared = await api({ action: 'resume-upload', id }, options.signal);
     } else {
@@ -93,9 +114,7 @@ export async function restoreCloud(
       const waiting = seconds >= 60 ? ` há ${Math.floor(seconds / 60)}min ${seconds % 60}s` : '';
       options.onStatus(
         status?.status === 'running'
-          ? preset === vocalSeparation.id
-            ? 'Separando a voz dos instrumentos…'
-            : 'Melhorando sua voz…'
+          ? runningLabels[preset]
           : status?.status === 'submitting'
             ? 'Aguardando confirmação do pedido. O processamento ainda não foi confirmado.'
             : `Seu áudio está na fila${waiting}. O tratamento ainda não começou.`,
@@ -156,15 +175,12 @@ export async function restoreCloud(
       info,
       metrics,
       processing: {
-        engine:
-          status.report.preset === vocalSeparation.id
-            ? 'Demucs · HTDemucs vocals'
-            : 'Resemble Enhance · NOSSOM Restore D',
+        engine: engines[status.report.preset],
         strength: 100,
         noiseFloor: info.noiseFloor ?? -60,
         mode: 'cloud',
         automatic: status.report.preset === restorationD.id,
-        ...(status.report.preset === vocalSeparation.id
+        ...(isVoiceToolPreset(status.report.preset)
           ? { vocalSeparation: status.report }
           : { cloudRestoration: { ...restorationD, ...status.report } }),
       },

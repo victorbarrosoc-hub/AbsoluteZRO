@@ -69,3 +69,24 @@ Não execute duas suítes simultaneamente nas portas 3000/55440. Para investiga�
 - Equivalência de qualidade a motores proprietários ou certificação de entrega audiovisual.
 
 [Registros históricos de medição e validação](validation-history.md) permanecem para auditoria, mas contêm versões, cotas e hipóteses antigas. Não os use como checklist operacional atual. Consulte [handoff/OPERATIONS.md](handoff/OPERATIONS.md).
+
+## 29/10/2026 · Isolar voz (Fala e Música)
+
+- Benchmark em CPU (`workers/restoration/benchmark`, dados CC BY 4.0, 8 cenários com fala real em português):
+  média de 7 cenários com ruído, SI-SDR **15,46 dB** para RoFormer + MossFormer2 contra 11,13 do DeepFilterNet3,
+  9,96 do HTDemucs e −0,17 da entrada. PESQ-WB 2,56, ESTOI 0,90 e DNSMOS OVRL 3,23 também são os melhores. Fala
+  limpa passa transparente (39 dB). Reverberação não é removida (4,6 dB no cenário com sala). Tabela completa em
+  [estudo-elevenlabs.md](estudo-elevenlabs.md).
+- Código de produção (`isolator.isolate_voice`, decodificado com FFmpeg como no worker, pesos reais em CPU): SI-SDR
+  14,72 dB no cenário vlog (benchmark 14,74), 511.680 frames a 48 kHz, exatamente a duração da entrada.
+- `test_isolator.py` (PyTorch CPU, modelos substitutos): separação com identidade devolve a entrada (0,1–21 s, erro
+  ≤ 1e-6); máscara unitária preserva duração e cauda nas passagens única e em janelas (3–47 s); saída mono 48 kHz.
+- `test_handler.py`: tabela de presets igual a `presetSpec`, 10 min de cada preset cabem nas partes assinadas,
+  preset desconhecido recusado sem detalhes. Ambos rodam no CI (`worker`), conferidos num ambiente limpo.
+- `npm test` 76/76 (contrato de 48 kHz mono e de estéreo 44,1 kHz; os quatro presets despacham uma vez só);
+  `npm run test:e2e` 75 passaram e 1 pulado (gravação privada ausente); Fala e Música salvam o WAV exato, mobile sem
+  rolagem lateral e sem violações axe.
+- Correções de tela achadas na revisão: o controle de intensidade não aparece mais nas ferramentas de GPU (o
+  servidor o ignorava) e o rodapé mostra 48 kHz quando é o caso.
+- **Não validado:** build da imagem, tempo e custo na GPU, cold start, áudio real de clientes e audição cega contra
+  ElevenLabs e Resemble D. Nada disso foi publicado (exige autorização).

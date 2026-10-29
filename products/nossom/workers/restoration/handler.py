@@ -1,4 +1,4 @@
-"""RunPod queue worker for the owner-selected Resemble Enhance preset D.
+"""RunPod queue worker: Resemble Enhance preset D, voice isolation and vocal stems.
 
 URLs are short-lived private Supabase object capabilities, never arbitrary URLs.
 No administrator key, provider key or database key is sent to this worker.
@@ -25,6 +25,15 @@ MAX_BYTES = 100 * 1024 * 1024
 MAX_SECONDS = 600
 PRESET = 'resemble-d-v1'
 VOCALS_PRESET = 'htdemucs-vocals-v1'
+ISOLATOR_PRESET = 'voice-isolator-v1'
+SINGING_PRESET = 'roformer-vocals-v1'
+# preset: (decoded channels, output channels, output rate, output parts)
+PRESETS = {
+    PRESET: (1, 1, 44100, 6),
+    VOCALS_PRESET: (2, 2, 44100, 11),
+    ISOLATOR_PRESET: (2, 1, 48000, 6),
+    SINGING_PRESET: (2, 2, 44100, 11),
+}
 
 
 def allowed_url(url, kind):
@@ -74,10 +83,9 @@ def handler(job):
     try:
         payload = job.get('input', {})
         preset = payload.get('preset')
-        channels = 2 if preset == VOCALS_PRESET else 1
-        output_count = 11 if preset == VOCALS_PRESET else 6
-        if preset not in (PRESET, VOCALS_PRESET):
+        if preset not in PRESETS:
             raise ValueError('Unknown preset')
+        channels, out_channels, out_rate, output_count = PRESETS[preset]
         urls, outputs = payload.get('input_urls'), payload.get('output_urls')
         size = payload.get('input_bytes')
         duration = payload.get('duration')
@@ -116,7 +124,17 @@ def handler(job):
             np.random.seed(2026)
             torch.manual_seed(2026)
             torch.cuda.manual_seed_all(2026)
-            if preset == VOCALS_PRESET:
+            if preset == ISOLATOR_PRESET:
+                print('NOSSOM: isolating voice', flush=True)
+                from isolator import isolate_voice
+                samples = isolate_voice(audio)
+                rate = 48000
+            elif preset == SINGING_PRESET:
+                print('NOSSOM: separating vocal stem', flush=True)
+                from isolator import separate_vocals as roformer_vocals
+                samples = roformer_vocals(audio)
+                rate = 44100
+            elif preset == VOCALS_PRESET:
                 print('NOSSOM: separating music vocals', flush=True)
                 from vocals import separate_vocals
                 samples = separate_vocals(audio)
@@ -126,11 +144,14 @@ def handler(job):
                     restored, rate = enhance(torch.from_numpy(audio), 44100, 'cuda',
                                               nfe=64, solver='midpoint', lambd=0.5, tau=0.1)
                 samples = restored.detach().cpu().numpy().reshape(-1).astype(np.float32)
-            if rate != 44100 or samples.shape != audio.shape or not np.isfinite(samples).all():
+            if (rate != out_rate or samples.ndim != (1 if out_channels == 1 else 2)
+                    or (out_channels == 2 and samples.shape[1] != 2)
+                    or abs(len(samples) / rate - len(audio) / 44100) > 0.01
+                    or not np.isfinite(samples).all()):
                 raise ValueError('Audio output invalid')
             maximum = float(np.max(np.abs(samples)))
             gain = min(1.0, 10 ** (-3 / 20) / max(maximum, 1e-12))
-            wav = float_wav(samples * gain, rate, channels)
+            wav = float_wav(samples * gain, rate, out_channels)
             parts = []
             for index, start in enumerate(range(0, len(wav), PART_BYTES)):
                 block = wav[start:start + PART_BYTES]
@@ -141,7 +162,7 @@ def handler(job):
                     raise ValueError('Result upload failed')
                 parts.append({'index': index, 'bytes': len(block)})
             return {'preset': preset, 'chunks': parts, 'totalBytes': len(wav),
-                    'frames': len(samples), 'sampleRate': rate, 'channels': channels,
+                    'frames': len(samples), 'sampleRate': rate, 'channels': out_channels,
                     'gainDb': 20 * math.log10(gain)}
     except Exception:
         # Never return tracebacks containing signed source URLs to the provider.
@@ -154,5 +175,8 @@ if __name__ == '__main__':
     if not torch.cuda.is_available():
         raise SystemExit('GPU CUDA is required')
     load_enhancer(None, 'cuda')
-    print('NOSSOM worker ready: resemble-d-v1 + htdemucs-vocals-v1', flush=True)
+    from isolator import mossformer, roformer
+    roformer('cuda')
+    mossformer('cuda')
+    print('NOSSOM worker ready: ' + ' + '.join(PRESETS), flush=True)
     runpod.serverless.start({'handler': handler})

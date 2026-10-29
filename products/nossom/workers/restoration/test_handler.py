@@ -56,5 +56,25 @@ class TransportTests(unittest.TestCase):
                 worker.download_parts([url], Path(folder) / 'source', 5)
 
 
+class PresetTests(unittest.TestCase):
+    def test_presets_match_the_web_contract(self):
+        # Mirrors presetSpec() in lib/restoration.ts: decoded channels, output channels, rate, parts.
+        self.assertEqual(worker.PRESETS, {
+            'resemble-d-v1': (1, 1, 44100, 6),
+            'htdemucs-vocals-v1': (2, 2, 44100, 11),
+            'voice-isolator-v1': (2, 1, 48000, 6),
+            'roformer-vocals-v1': (2, 2, 44100, 11),
+        })
+
+    def test_ten_minutes_of_isolated_speech_fit_the_signed_output_parts(self):
+        for preset, (_, channels, rate, parts) in worker.PRESETS.items():
+            wav_bytes = 44 + rate * worker.MAX_SECONDS * channels * 4
+            self.assertLessEqual(-(-wav_bytes // worker.PART_BYTES), parts, preset)
+
+    def test_unknown_preset_is_refused_without_details(self):
+        with self.assertRaisesRegex(RuntimeError, 'retry with the original file'):
+            worker.handler({'input': {'preset': 'any-model-url'}})
+
+
 if __name__ == '__main__':
     unittest.main()

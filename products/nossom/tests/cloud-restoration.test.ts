@@ -3,8 +3,11 @@ import assert from 'node:assert/strict';
 import { GET, POST } from '../app/api/audio/jobs/route';
 import {
   CLOUD_PART_BYTES,
+  presetSpec,
   restorationD,
+  singingSeparation,
   vocalSeparation,
+  voiceIsolator,
   validCloudReport,
 } from '../lib/restoration';
 import { authEnvironment, testCookie, testUser } from './helpers/auth';
@@ -31,15 +34,17 @@ test('cloud result contract rejects truncated, unbounded and wrong-preset output
   ])
     assert.equal(validCloudReport(bad), false);
 });
-for (const preset of [restorationD.id, vocalSeparation.id])
+for (const preset of [restorationD.id, vocalSeparation.id, voiceIsolator.id, singingSeparation.id])
   test(`cloud ${preset} verifies identity, owns jobs, dispatches once and privately releases parts`, async () => {
-    const channels = preset === vocalSeparation.id ? 2 : 1;
+    const { channels, sampleRate, parts } = presetSpec(preset);
     const outputReport = {
       ...report,
       preset,
       channels,
-      totalBytes: report.frames * channels * 4 + 44,
-      chunks: [{ index: 0, bytes: report.frames * channels * 4 + 44 }],
+      sampleRate,
+      frames: sampleRate,
+      totalBytes: sampleRate * channels * 4 + 44,
+      chunks: [{ index: 0, bytes: sampleRate * channels * 4 + 44 }],
     };
     const restore = authEnvironment(),
       before = globalThis.fetch;
@@ -128,7 +133,7 @@ for (const preset of [restorationD.id, vocalSeparation.id])
       assert.equal(dispatches, 1);
       assert.equal(providerPayload.input.preset, preset);
       assert.equal(providerPayload.input.tau, undefined);
-      assert.equal(providerPayload.input.output_urls.length, channels === 2 ? 11 : 6);
+      assert.equal(providerPayload.input.output_urls.length, parts);
       assert.equal(providerPayload.policy.executionTimeout, 900000);
       const own = await GET(
         new Request(`http://localhost/api/audio/jobs?id=${id}`, {
@@ -340,4 +345,32 @@ test('vocals report preserves stereo and refuses speech reports disguised as sep
   assert.equal(validCloudReport(stereo), true);
   assert.equal(validCloudReport({ ...stereo, channels: 1 }), false);
   assert.equal(validCloudReport({ ...stereo, totalBytes: report.totalBytes }), false);
+});
+
+test('voice isolator reports 48 kHz mono speech; the singing stem stays stereo 44.1 kHz', () => {
+  const speech = {
+    ...report,
+    preset: voiceIsolator.id,
+    sampleRate: 48000,
+    frames: 48000 * 600,
+    totalBytes: 48000 * 600 * 4 + 44,
+    chunks: Array.from({ length: 6 }, (_, index) => ({
+      index,
+      bytes: index < 5 ? CLOUD_PART_BYTES : 48000 * 600 * 4 + 44 - 5 * CLOUD_PART_BYTES,
+    })),
+  };
+  assert.equal(validCloudReport(speech), true);
+  assert.equal(validCloudReport({ ...speech, sampleRate: 44100 }), false);
+  assert.equal(validCloudReport({ ...speech, channels: 2 }), false);
+  assert.equal(validCloudReport({ ...speech, frames: 48000 * 601 }), false);
+  const stem = {
+    ...report,
+    preset: singingSeparation.id,
+    channels: 2,
+    totalBytes: report.frames * 8 + 44,
+    chunks: [{ index: 0, bytes: report.frames * 8 + 44 }],
+  };
+  assert.equal(validCloudReport(stem), true);
+  assert.equal(validCloudReport({ ...stem, channels: 1 }), false);
+  assert.equal(validCloudReport({ ...stem, sampleRate: 48000 }), false);
 });
