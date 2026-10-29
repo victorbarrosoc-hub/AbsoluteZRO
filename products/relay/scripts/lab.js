@@ -1,5 +1,5 @@
 // Laboratório de qualidade (scripts/qualidade.mjs): converte no Chromium com o motor do navegador do Relay e devolve
-// o arquivo, para medir contra o HandBrake. Não vai para o site.
+// o arquivo, para medir contra a referência x264. Não vai para o site.
 
 import { converterArquivo, usarEscala } from '/app/motor.js'
 

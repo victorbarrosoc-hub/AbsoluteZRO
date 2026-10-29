@@ -573,8 +573,8 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
   data, vários destinos e arquivos de uma vez, ficha técnica de cada saída, presets da pessoa ("Meus", editor com a
   ficha ao vivo, levar e trazer em `.relay.json`) e tamanho máximo que escolhe a resolução. 38 testes (unidade, ffmpeg
   e Chromium de verdade). ⛔ Projeto Vercel `relay` e domínio pedem autorização do titular.
-- ✅ Qualidade medida contra o HandBrake (`npm run qualidade`, [QUALIDADE](../products/relay/docs/QUALIDADE.md)): no
-  computador, o x264 em qualidade constante iguala ou passa o HandBrake no mesmo tamanho; no navegador, Lanczos e YUV
+- ✅ Qualidade medida contra uma referência x264 no mesmo tamanho (`npm run qualidade`,
+  [QUALIDADE](../products/relay/docs/QUALIDADE.md), interno): no computador, empata; no navegador, Lanczos e YUV
   BT.709 na placa, cor do ProRes corrigida e 10 bits arredondados. O Chromium do Linux (OpenH264) fica abaixo do x264.
   Falta: medir em Mac (VideoToolbox), Windows e iPhone reais.
 - ✅ SOBEDESCE: "Converter com o Relay" no computador e no celular, com o núcleo do Relay copiado e conferido por teste

@@ -2452,7 +2452,7 @@ do Freela e HUB não convertem. `npm run format:check` e `node scripts/scan-secr
   conversão real, Lanczos conferido com o ffmpeg em SSIM > 0,97 e sem virar, celular girado igual à rotação do ffmpeg,
   tamanho exato cabendo, presets da pessoa ponta a ponta, nenhuma página rolando para o lado em 375 px, cópias nas
   outras plataformas).
-- Qualidade: `npm run qualidade` com 4 masters ProRes contra os presets do HandBrake e o HandBrake no mesmo tamanho
+- Qualidade: `npm run qualidade` com 4 masters ProRes contra presets x264 de referência e a referência no mesmo tamanho
   ([QUALIDADE](../products/relay/docs/QUALIDADE.md)). No computador, empate (0,9469 × 0,9468 no grão; 0,9927 × 0,9923
   no movimento; 0,9962 × 0,9966 na limpa; 0,9779 × 0,9798 no 4K → 1080p). No navegador do Linux (OpenH264) o x264
   guarda mais no mesmo tamanho. Três correções de cor e a escala na placa saíram da medição.

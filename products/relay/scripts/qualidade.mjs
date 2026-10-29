@@ -1,7 +1,7 @@
-// Laboratório de qualidade do Relay: o mesmo master convertido pelo Relay (navegador e computador) e pelos presets do
-// HandBrake (refeitos com o mesmo x264 que o HandBrake usa), medido contra o original em SSIM, PSNR e tamanho.
+// Laboratório de qualidade do Relay (interno: não vai para o site): o mesmo master convertido pelo Relay (navegador e
+// computador) e por ajustes x264 de referência do mercado, medido contra o original em SSIM, PSNR e tamanho.
 //
-//   node scripts/qualidade.mjs <pasta com os masters .mov> [--so=foto,movimento] [--presets=youtube-1080] [--publicar]
+//   node scripts/qualidade.mjs <pasta com os masters .mov> [--so=foto,movimento] [--presets=youtube-1080]
 //
 // Os masters não vão para o Git (centenas de MB). Para gerar os mesmos do relatório (docs/QUALIDADE.md), veja lá.
 // Precisa do ffmpeg com libx264 e do Chromium do Playwright.
@@ -63,15 +63,14 @@ const tempo = async (fn) => {
   return (performance.now() - t) / 1000
 }
 
-// HandBrake 1.x, presets oficiais (x264), com a escala dele (swscale Lanczos com arredondamento preciso): "Fast 1080p30" = preset fast, RF 22; "HQ 1080p30 Surround" = slow, RF 20;
-// "Super HQ 1080p30 Surround" = veryslow, RF 18. Mesmo x264, mesma decisão; o HandBrake põe AAC 160k (Fast).
-const HANDBRAKE = [
-  { id: 'hb-fast', nome: 'HandBrake Fast 1080p30', args: ['-preset', 'fast', '-crf', '22'] },
-  { id: 'hb-hq', nome: 'HandBrake HQ 1080p30', args: ['-preset', 'slow', '-crf', '20'] },
-  { id: 'hb-superhq', nome: 'HandBrake Super HQ 1080p30', args: ['-preset', 'veryslow', '-crf', '18'] },
+// Ajustes x264 de referência do mercado, com escala swscale Lanczos de arredondamento preciso e AAC 160k.
+const REFERENCIA = [
+  { id: 'ref-rapida', nome: 'Referência x264 rápida (fast, RF 22)', args: ['-preset', 'fast', '-crf', '22'] },
+  { id: 'ref-alta', nome: 'Referência x264 alta (slow, RF 20)', args: ['-preset', 'slow', '-crf', '20'] },
+  { id: 'ref-maxima', nome: 'Referência x264 máxima (veryslow, RF 18)', args: ['-preset', 'veryslow', '-crf', '18'] },
 ]
 
-async function handbrake(master, o, h) {
+async function referencia(master, o, h) {
   const out = join(saidas, `${o}-${h.id}.mp4`)
   const seg = await tempo(() =>
     sh('ffmpeg', ['-hide_banner', '-v', 'error', '-y', '-i', master, '-vf', 'scale=-2:1080:flags=lanczos+accurate_rnd:in_color_matrix=bt709:out_color_matrix=bt709,format=yuv420p', '-c:v', 'libx264', ...h.args, '-profile:v', 'high', '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', out]),
@@ -79,18 +78,18 @@ async function handbrake(master, o, h) {
   return { nome: h.nome, arquivo: out, segundos: seg }
 }
 
-/** O HandBrake no MESMO tamanho do arquivo do Relay ("Avg Bitrate", 2 passadas, x264 fast): qualidade por byte. */
-async function handbrakeMesmoTamanho(master, o, rotulo, arquivoRelay) {
+/** A referência no MESMO tamanho do arquivo do Relay (bitrate médio, 2 passadas, x264 fast): qualidade por byte. */
+async function referenciaMesmoTamanho(master, o, rotulo, arquivoRelay) {
   const { stdout } = await sh('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=bit_rate,width,height', '-of', 'csv=p=0', arquivoRelay])
   const [w, h, bps] = stdout.trim().split(',').map(Number)
-  const out = join(saidas, `${o}-hb-igual-${rotulo}.mp4`)
-  const log = join(saidas, `hb-${o}-${rotulo}`)
+  const out = join(saidas, `${o}-ref-igual-${rotulo}.mp4`)
+  const log = join(saidas, `ref-${o}-${rotulo}`)
   const comum = ['-hide_banner', '-v', 'error', '-y', '-i', master, '-vf', `scale=${w}:${h}:flags=lanczos+accurate_rnd:in_color_matrix=bt709:out_color_matrix=bt709,format=yuv420p`, '-c:v', 'libx264', '-preset', 'fast', '-b:v', String(bps), '-passlogfile', log, '-profile:v', 'high']
   const seg = await tempo(async () => {
     await sh('ffmpeg', [...comum, '-pass', '1', '-an', '-f', 'null', '/dev/null'])
     await sh('ffmpeg', [...comum, '-pass', '2', '-an', out])
   })
-  return { nome: `HandBrake no mesmo tamanho (${rotulo})`, arquivo: out, segundos: seg }
+  return { nome: `Referência x264 no mesmo tamanho (${rotulo})`, arquivo: out, segundos: seg }
 }
 
 async function relayComputador(master, o, p) {
@@ -146,15 +145,15 @@ for (const m of masters) {
   const master = join(pasta, m)
   const o = m.replace(/\.mov$/i, '')
   const testes = []
-  for (const h of HANDBRAKE) testes.push(await handbrake(master, o, h))
+  for (const h of REFERENCIA) testes.push(await referencia(master, o, h))
   for (const p of presetsLab) {
     const comp = await relayComputador(master, o, p)
-    testes.push(comp, await handbrakeMesmoTamanho(master, o, `${p}-computador`, comp.arquivo))
+    testes.push(comp, await referenciaMesmoTamanho(master, o, `${p}-computador`, comp.arquivo))
     for (const escala of ['canvas', 'gpu']) {
       const r = await pagina.evaluate(([nome, p, escala]) => window.labConverter(nome, p, { escala, sufixo: `-${escala}` }), [m, p, escala])
       const arquivo = join(saidas, r.nome)
       testes.push({ nome: `Relay ${preset(p).nome} · navegador (${r.codec}, ${r.escala})`, arquivo, segundos: r.segundos })
-      if (escala === 'gpu') testes.push(await handbrakeMesmoTamanho(master, o, `${p}-navegador`, arquivo))
+      if (escala === 'gpu') testes.push(await referenciaMesmoTamanho(master, o, `${p}-navegador`, arquivo))
     }
   }
   for (const t of testes) {
@@ -166,14 +165,3 @@ for (const m of masters) {
 await navegador.close()
 servidor.close()
 await writeFile(join(saidas, 'resultado.json'), JSON.stringify(linhas, null, 2))
-// --publicar: a página /qualidade lê daqui (só os números, sem caminho de arquivo)
-if (resto.includes('--publicar')) await writeFile(new URL('../app/qualidade-dados.js', import.meta.url), dados(linhas))
-
-/** O módulo que a página de qualidade importa. */
-export function dados(linhas) {
-  // a página mostra o caminho padrão do navegador (com a placa); a rodada só com o canvas fica no resultado.json
-  const limpas = linhas
-    .filter((l) => !/-canvas\.mp4$/.test(l.arquivo))
-    .map(({ master, nome, ssim, ssimY, psnrY, bytes, segundos }) => ({ master, nome: nome.replace(/ \(avc, [a-z]+\)/, ''), ssim, ssimY, psnrY, bytes, segundos: Math.round(segundos * 10) / 10 }))
-  return `// Gerado por scripts/qualidade.mjs --publicar em ${new Date().toISOString().slice(0, 10)}. Não edite à mão.\nexport const MEDIDO_EM = '${new Date().toISOString().slice(0, 10)}'\nexport const LINHAS = ${JSON.stringify(limpas, null, 2)}\n`
-}

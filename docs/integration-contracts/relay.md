@@ -17,9 +17,9 @@ TikTok, WhatsApp, Vimeo, Apple HEVC, Proxy, Discord, E-mail, Tamanho exato, MP3,
 
 - **Grátis**, para trazer gente nova ao ecossistema: converter no aparelho não pede conta. A conta Absolute ZRO só
   entra no que toca a conta (Drive, o computador da pessoa, histórico).
-- **Qualidade no nível do HandBrake, ou acima:** no computador, o mesmo x264 do HandBrake (CRF com o teto do
-  destino, duas passadas para tamanho exato); no navegador, redução em Lanczos na placa de vídeo, cor marcada BT.709
-  e bitrate com folga para os codificadores de hardware. Medição em `products/relay/docs/QUALIDADE.md`.
+- **Qualidade medida:** no computador, o x264 em `slow` e qualidade constante (duas passadas no tamanho exato); no
+  navegador, redução em Lanczos na placa de vídeo, cor marcada BT.709 e bitrate com folga para os codificadores de
+  hardware. Medição interna em `products/relay/docs/QUALIDADE.md`.
 - **Dono único dos presets de entrega.** Nenhuma outra plataforma mantém tabela própria de codec ou bitrate: copia
   do Relay, com teste que confere.
 - **O que não é do Relay:** cor e look (Revela: LUT, PowerGrade, espaço de cor), edição (AEON), tratamento de som

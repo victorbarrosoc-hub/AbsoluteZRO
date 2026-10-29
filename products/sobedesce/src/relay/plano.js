@@ -210,7 +210,7 @@ const MATRIZES = { bt709: 'bt709', smpte170m: 'bt601', bt470bg: 'bt601', bt601: 
 
 /**
  * A matriz e a faixa do arquivo de entrada, para converter sem desvio (o ffmpeg, sem isso, supõe BT.601 e escurece o
- * HD). Sem marca: BT.709 para HD e BT.601 para SD, o palpite do ffmpeg e do HandBrake.
+ * HD). Sem marca: BT.709 para HD e BT.601 para SD, o mesmo palpite do ffmpeg.
  */
 export function corDeEntrada(origem) {
   const marcada = MATRIZES[origem.cor?.matrix]

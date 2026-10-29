@@ -3,7 +3,7 @@
 //
 // Um preset próprio parte de um do Relay (a base) e muda o que a pessoa quiser: contêiner e codec, tamanho (lado menor
 // ou tela fixa), cadência máxima, bitrate médio OU tamanho máximo, quadro-chave e áudio. Bitrate aqui é literal: no
-// navegador vira o alvo do codificador; no computador, duas passadas no x264 (o "bitrate médio" do HandBrake).
+// navegador vira o alvo do codificador; no computador, duas passadas no x264 (bitrate médio).
 
 import { preset as presetDoRelay } from './presets.js'
 

@@ -1,10 +1,10 @@
 // Motor do computador do Relay: o plano (src/plano.js) em linha de comando do ffmpeg, sem shell. Quem roda é o app de
 // computador da família (hoje o SOBEDESCE, com o ffmpeg dele: products/sobedesce/src/relay/ é cópia conferida).
 //
-// Qualidade no nível do HandBrake, com o mesmo codificador dele:
-//  - x264 `slow` com CRF (qualidade constante, como o "RF" do HandBrake). Teto de bitrate só nos presets em que o
+// Qualidade: o x264 bem configurado (medido em docs/QUALIDADE.md):
+//  - x264 `slow` com CRF (qualidade constante). Teto de bitrate só nos presets em que o
 //    tamanho importa (WhatsApp, proxy): no resto, cena difícil leva os bits que precisa.
-//  - Tamanho máximo: duas passadas com bitrate médio, que acerta o tamanho (o "2-pass" do HandBrake).
+//  - Tamanho máximo: duas passadas com bitrate médio, que acerta o tamanho.
 //  - Redução em Lanczos com arredondamento preciso e croma em resolução cheia; matriz BT.709 e faixa de TV na saída,
 //    marcado 1-1-1. Cadência pelo filtro `fps` (descarta quadros inteiros, sem mistura).
 //  - Codificador de hardware (VideoToolbox, NVENC, Quick Sync, AMF) só no modo rápido: no mesmo tamanho, perde para o
@@ -40,8 +40,8 @@ export function filtroVideo(plano, encoder = 'libx264') {
 export function argsCodificador(plano, encoder = 'libx264', passe = null, log = null) {
   const v = plano.video
   const hevc = v.codec === 'hevc'
-  // CRF livre, como o HandBrake: o teto (VBV) só onde o tamanho importa (WhatsApp, proxy). Medido: o teto é o que
-  // fazia o x264 perder para o HandBrake no mesmo tamanho; sem ele, ganha (docs/QUALIDADE.md)
+  // CRF livre: o teto (VBV) só onde o tamanho importa (WhatsApp, proxy). Medido: com o teto, o x264 perdia para a
+  // referência de duas passadas no mesmo tamanho; sem ele, ganha (docs/QUALIDADE.md)
   const teto = v.teto ? ['-maxrate', k(v.bitrate * v.teto), '-bufsize', k(v.bitrate * v.teto * 2)] : []
   const vbr = ['-b:v', k(v.bitrate), '-maxrate', k(v.bitrate * 1.5), '-bufsize', k(v.bitrate * 2)]
   if (encoder === 'libx264' || encoder === 'libx265') {
@@ -114,7 +114,7 @@ export function argsFfmpeg(plano, { input, output, origem = {}, encoder = 'libx2
   const cor = ['-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709', '-color_range', 'tv']
   const mapa = ['-map', '0:v:0', ...(plano.audio ? ['-map', '0:a:0?'] : []), '-dn', '-sn', '-map_chapters', '-1']
   const video = (passe) => ['-vf', filtroVideo(plano, encoder), ...argsCodificador(plano, encoder, passe, log), ...gop, ...cor]
-  // tamanho máximo ou bitrate escolhido pela pessoa: duas passadas acertam o número (o "bitrate médio" do HandBrake)
+  // tamanho máximo ou bitrate escolhido pela pessoa: duas passadas acertam o número (bitrate médio)
   const duasPassadas = (plano.tamanhoMax || v.fixo) && (encoder === 'libx264' || encoder === 'libx265')
   if (!duasPassadas) return [[...base, ...mapa, ...video(null), ...argsAudio(plano), ...MUX[plano.formato], output]]
   return [

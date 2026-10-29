@@ -8,7 +8,7 @@ plataforma: [docs/integration-contracts/relay.md](../integration-contracts/relay
 
 A Absolute ZRO é um produto completo de pós-produção desmontado em setores: cada setor é um app que funciona e se
 vende sozinho, e o conjunto se vende como integração (Ciclo do O, PRD §1 e §4.3). Até aqui a conversão de mídia (o
-"Handbrake" do ecossistema) não tinha dono e estava espalhada:
+conversor do ecossistema) não tinha dono e estava espalhada:
 
 | Onde                          | O que converte                                                                                                                                                                                                                                                                                                                                                                                           | Motor                                     |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
@@ -35,10 +35,11 @@ chamam.
 - **Grátis e aberto** (decisão do titular, 29/10/2026): o Relay é a porta de entrada do ecossistema. Converter no
   aparelho não pede conta e não consome quota (nenhum custo de servidor). A conta Absolute ZRO entra só no que toca a
   conta (Drive, o computador da pessoa, histórico). Grátis em todos os planos do catálogo.
-- **Qualidade no nível do HandBrake, ou acima.** No computador, o mesmo x264 do HandBrake (CRF com o bitrate do
-  destino como teto, duas passadas no tamanho exato); no navegador, Lanczos na placa, cor marcada BT.709 e bitrate com
-  folga para os codificadores de hardware. Medido contra os presets do HandBrake em
-  `products/relay/docs/QUALIDADE.md`, sem esconder onde o navegador perde.
+- **Qualidade medida, não prometida.** No computador, o x264 em `slow` e qualidade constante (duas passadas no
+  tamanho exato); no navegador, Lanczos na placa, cor marcada BT.709 e bitrate com folga para os codificadores de
+  hardware. O laboratório (`npm run qualidade`, `products/relay/docs/QUALIDADE.md`) mede contra uma referência x264
+  no mesmo tamanho de arquivo. O comparativo com outros conversores é interno: não vai para o site nem para
+  divulgação (decisão do titular, 29/10/2026).
 - **Dois motores, um plano.** Navegador (Mediabunny + WebCodecs, o arquivo não sai do aparelho) e computador (ffmpeg
   com o codificador do chip ou da placa). Os dois seguem o mesmo plano e os mesmos presets. No primeiro recorte, quem
   executa no computador continua sendo o app do SOBEDESCE, que já tem o ffmpeg, o Drive e a fila. Um app de computador

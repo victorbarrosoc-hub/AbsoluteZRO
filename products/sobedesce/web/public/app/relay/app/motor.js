@@ -2,7 +2,7 @@
 // (src/plano.js) e grava com WebCodecs, no hardware quando o aparelho deixa. Nada sai do aparelho.
 //
 // Onde a qualidade se ganha aqui:
-//  - Redução de tamanho em Lanczos na placa de vídeo (app/escala.js), como o HandBrake e o ffmpeg; sem placa, o
+//  - Redução de tamanho em Lanczos na placa de vídeo (app/escala.js), como o ffmpeg; sem placa, o
 //    canvas do navegador em qualidade alta.
 //  - Cor: o decodificador de ProRes entrega quadros sem a cor, e sem ela o navegador assume BT.601 (SD): o motor
 //    marca a cor do arquivo antes de converter. Saída SDR marcada BT.709.
@@ -57,7 +57,7 @@ const SDR = { primaries: 'bt709', transfer: 'bt709', matrix: 'bt709', fullRange:
  * A cor de verdade de cada quadro. O decodificador de ProRes entrega os quadros marcados como BT.601 (ou sem marca),
  * mesmo quando o arquivo diz BT.709: o navegador converte errado e a imagem escurece (medido: docs/QUALIDADE.md).
  * Vale a cor que o contêiner declara; sem ela, a do próprio quadro; sem nenhuma, BT.709 para HD e BT.601 para SD
- * (o mesmo palpite do ffmpeg e do HandBrake). Só remarca: os valores já estão na matriz certa.
+ * (o mesmo palpite do ffmpeg). Só remarca: os valores já estão na matriz certa.
  */
 export function corDoArquivo(info) {
   if (info?.cor?.matrix) return { primaries: info.cor.primaries ?? 'bt709', transfer: info.cor.transfer ?? 'bt709', matrix: info.cor.matrix, fullRange: Boolean(info.cor.fullRange) }

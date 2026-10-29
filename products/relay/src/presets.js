@@ -6,7 +6,7 @@
 //
 // Bitrate: tabela em kbit/s pelo LADO MENOR do quadro (1080p = 1920×1080 ou 1080×1920) e pela cadência
 // ([até 30 fps, acima de 30]). É o alvo para os codificadores do navegador e de hardware; no computador, com o x264,
-// o mesmo número vira o teto de um CRF (qualidade constante, como o HandBrake), então sai igual ou menor e melhor.
+// o mesmo número vira a referência de um CRF (qualidade constante), então sai igual ou menor e melhor.
 // Os números de upload ficam ACIMA do mínimo da plataforma de propósito: ela recomprime tudo, e quanto mais limpo o
 // arquivo que chega, melhor a versão dela.
 //
@@ -46,7 +46,7 @@ const AAC = (kbps) => ({ codec: 'aac', kbps, taxa: 48000, canais: 2 })
  * Cada preset:
  * - `video`: null (só áudio) ou { codec 'avc'|'hevc', ladoMenor (null = o do arquivo), quadro: { largura, altura }
  *   (tela fixa, ex.: 9:16), fpsMax, gop (s), kbps: { lado: [≤30, >30] }, crf (computador), ampliar (pode aumentar),
- *   teto (computador: limite do CRF em múltiplos do bitrate; sem ele, qualidade constante livre, como o HandBrake) }
+ *   teto (computador: limite do CRF em múltiplos do bitrate; sem ele, qualidade constante livre) }
  * - `audio`: { codec 'aac'|'mp3'|'pcm-s24'|'pcm-s16', kbps, taxa, canais }
  * - `tamanhoMax`: bytes (cabe no limite: o Relay escolhe tamanho e bitrate para caber)
  * - `formato`: contêiner de saída ('mp4' | 'mp3' | 'wav' | 'm4a')

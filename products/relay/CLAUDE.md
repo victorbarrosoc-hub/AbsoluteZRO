@@ -17,7 +17,7 @@ Relay. Decisão em [ADR 0030](../../docs/decisions/0030-relay-conversao.md); int
 ## Regras
 
 - **Qualidade só com medição.** Mexeu em bitrate, escala, cor ou codificador: rode `npm run qualidade` e atualize
-  `docs/QUALIDADE.md`. Nada de "igual ao HandBrake" sem o número do mesmo tamanho de arquivo ao lado.
+  `docs/QUALIDADE.md`. O comparativo com outros conversores é interno: não vai para o site nem para texto de divulgação.
 - **Preset novo nasce aqui**, com fonte e data (`fontes`); as plataformas que embutem o núcleo copiam
   (`test/copias.test.js` falha até copiar). Hoje: `products/sobedesce/src/relay/` e `products/sobedesce/web/public/app/relay/`.
 - **O arquivo da pessoa não sai do aparelho.** Nenhum upload; o site é estático.

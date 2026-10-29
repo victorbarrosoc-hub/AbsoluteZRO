@@ -25,8 +25,8 @@ arquivo não é enviado. É a porta de entrada do ecossistema Absolute ZRO.
 
 Detalhes, números e como repetir: [docs/QUALIDADE.md](docs/QUALIDADE.md). Em resumo:
 
-- **Computador** (`src/ffmpeg.js`, executado hoje pelo SOBEDESCE): o mesmo x264 do HandBrake, em `slow` e qualidade
-  constante. No mesmo tamanho de arquivo, iguala ou passa o HandBrake.
+- **Computador** (`src/ffmpeg.js`, executado hoje pelo SOBEDESCE): o x264 em `slow` e qualidade constante. No mesmo
+  tamanho de arquivo, empata com a referência x264 de duas passadas.
 - **Navegador** (`app/motor.js`): redução em Lanczos-3 na placa de vídeo, YUV BT.709 montado pelo próprio Relay, cor do
   ProRes corrigida e 10 bits arredondados para 8. O codificador é o do aparelho: no Chromium do Linux (OpenH264) fica
   abaixo do x264 no mesmo tamanho, e os bitrates dos presets têm folga para compensar.

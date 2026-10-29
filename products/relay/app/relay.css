@@ -325,6 +325,7 @@ h3 {
 .progresso {
   --curso: 0;
   position: relative;
+  display: block;
   height: 10px;
   border-radius: 999px;
   background: var(--trilho);

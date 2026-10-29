@@ -1,4 +1,4 @@
-// Relay · redução e ampliação em Lanczos-3 na placa de vídeo (WebGL2), o mesmo filtro do HandBrake e do ffmpeg.
+// Relay · redução e ampliação em Lanczos-3 na placa de vídeo (WebGL2), o mesmo filtro do ffmpeg.
 //
 // Por quê: o canvas do navegador reduz com mipmaps/bilinear, que borra (4K → 1080p perde a textura fina) ou
 // serrilha. Aqui são duas passadas separáveis (horizontal e vertical) com o núcleo alargado na redução (antialias,

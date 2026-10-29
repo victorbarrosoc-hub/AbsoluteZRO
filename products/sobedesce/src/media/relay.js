@@ -3,7 +3,7 @@
 // tamanho, cadência, bitrate, cor e áudio é o Relay (src/relay/, cópia conferida por teste de products/relay); aqui só
 // executa, com o ffmpeg do app (o mesmo motor e a mesma vaga da prévia leve: uma conversão por vez no app inteiro).
 //
-// Qualidade (products/relay/docs/QUALIDADE.md): o x264 do app em qualidade constante, como o HandBrake; o codificador
+// Qualidade (products/relay/docs/QUALIDADE.md): o x264 do app em qualidade constante; o codificador
 // de hardware só entra se o ffmpeg não tiver o x264.
 //
 //   original na fila (o envio que subiu ele) ou baixado do Drive ──▶ ffmpeg -i (lê) ──▶ planejar (Relay)
@@ -64,7 +64,7 @@ export function origemDoProbe(text, info = parseProbe(text)) {
 }
 
 /**
- * Tentativas de codificador: o x264 primeiro (qualidade do HandBrake), o de hardware só se não houver x264.
+ * Tentativas de codificador: o x264 primeiro (a melhor qualidade medida), o de hardware só se não houver x264.
  * HEVC: libx265 se o ffmpeg tiver; senão o de hardware equivalente.
  */
 export function tentativasRelay(motor, plano, platform = process.platform) {

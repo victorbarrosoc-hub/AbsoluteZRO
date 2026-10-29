@@ -158,11 +158,29 @@ test('meus presets: cria a partir de um do Relay, aparece na aba Meus, converte 
 })
 
 test('celular (375 px): nenhuma página rola para o lado', { skip: pular }, async () => {
-  for (const c of ['/', '/converter', '/qualidade', '/marca/']) {
+  for (const c of ['/', '/converter', '/marca/']) {
     const p = await s.nova(c, { viewport: { width: 375, height: 800 } })
     await p.waitForTimeout(400)
     const [largura, tela] = await p.evaluate(() => [document.documentElement.scrollWidth, innerWidth])
     assert.equal(largura, tela, `${c} rola para o lado`)
     await p.close()
   }
+})
+
+test('laboratório de aparelhos: gera, codifica, mede contra a referência e entrega o resultado para copiar', { skip: pular }, async () => {
+  const p = await s.nova('/laboratorio?rapido')
+  await p.waitForFunction(() => window.labPronto)
+  await p.click('#comecar')
+  await p.waitForFunction(() => window.labResultado, null, { timeout: 300_000 })
+  const r = await p.evaluate(() => window.labResultado)
+  assert.equal(r.relay, 'laboratorio')
+  assert.equal(r.linhas.length, 1)
+  const [l] = r.linhas
+  assert.equal(l.erro, undefined, l.erro)
+  assert.ok(l.ssim > 0.95 && l.ssim <= 1, `SSIM ${l.ssim}`)
+  assert.ok(l.referencia > 0.99, `referência ${l.referencia}`)
+  assert.ok(Math.abs(l.real - 16000) < 4000, `bitrate ${l.real}`)
+  assert.match(await p.inputValue('#json'), /"relay": "laboratorio"/)
+  assert.deepEqual(s.erros, [])
+  await p.close()
 })
