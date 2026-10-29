@@ -21,6 +21,9 @@ SOBEDESCE confere pela JWKS da Absolute ZRO (`/oauth/jwks`, cache de 10 min; `we
 Enviado como `Authorization: Bearer <jwt>`, `Content-Type: application/json`. Base no HUB: `ZRO_SOBEDESCE_URL`
 (padrão `https://sobedesce.com`).
 
+Outras ações (`drive.listar`, `drive.miniatura`, `drive.pasta.criar`, `drive.compartilhar_revisao`,
+`drive.recolher_revisao`, `drive.token`) servem ao Maestro pela ponte do HUB: [maestro-sobedesce.md](maestro-sobedesce.md).
+
 ## Rotas (SOBEDESCE, todas `POST`)
 
 | Rota                        | Corpo                                                                | Resposta 200                                                                                       |

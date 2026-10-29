@@ -15,6 +15,30 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Maestro v2, fases 7–10: ponte com o SOBEDESCE, Drive na revisão e Arquivos (29/10/2026)
+
+- HUB: `tests/integration/pedidos-entre-apps.test.ts` (6): pedido assinado com `aud` do SOBEDESCE, `sub` da pessoa,
+  60 s e `jti` diferente a cada pedido, conferido pela JWKS; auditoria `app.pedido.emitido` com a organização; sem o
+  SOBEDESCE no plano 403 `entitlement_required` (nada assinado nem auditado), menos desfazer; ação fora da lista,
+  outro destino ou sessão do navegador → 403 `action_not_allowed`; credencial do app (Basic) só para
+  `drive.recolher_revisao` e só para quem usa o app; limite próprio do `drive.token`. Contratos exportados
+  (`npm run contracts:export`), openapi com a rota nova (teste de deriva), `packages/drive-web/test` (4: núcleo, service
+  worker do stream numa vm com Range → 206, chave da aba, só mídia, CSP sandbox).
+- SOBEDESCE: `web/tests/zro-maestro.test.mts` (7): outra ação, outro público e `jti` reapresentado → 401; sem o
+  SOBEDESCE liberado → 403 em tudo menos recolher; listar só metadados e a miniatura no tamanho; miniatura sem byte;
+  estrutura `Maestro/<Cliente>/<Projeto>/01…05` idempotente e com nomes limpos; compartilhar liga `anyone` uma vez e
+  recolher só apaga ela (a do dono, nunca); token = access token (nunca o refresh) e auditoria sem o token. `web`:
+  lint, typecheck e `npm test` **280/280** antes do Maestro e de novo no fim; `npm run test:fast` do motor com
+  `test/drive-web.test.js` (cópias idênticas do pacote, listador com os 400 contornados) e o SW em v68.
+- Maestro: `tests/drive-sobedesce.test.mts` (11): token pela ponte e não guardado; sem o SOBEDESCE 403 sem pedir ao HUB;
+  HUB negando = 403; sem Drive = 409 com onde conectar; estrutura do projeto idempotente e pasta ligada; compartilhar ao
+  gerar o link e em versão nova com link ativo; revogar desfaz pela pessoa e, quando foi outra pessoa, pela credencial
+  do Maestro; cron 503 sem segredo, 401 com o errado e desliga o que venceu; `urlConfere`; cópias de
+  `packages/drive-web`. `npm test` **311/311**; e2e `arquivos.spec.ts` (6, computador e iPhone): cadeado, navegador,
+  migalhas, filtro, prévia com `00:00:02` real pelo service worker, Abrir no SOBEDESCE, estrutura, sem rolagem lateral,
+  o Drive tocando na revisão com o timecode e Escolher no Drive. Suíte e2e inteira 57/57 (1 pulado, como antes).
+- Capturas (claro, escuro e iPhone) geradas pelo e2e com `SHOTS_DIR` (fora do repositório).
+
 ## Maestro: funil, Números, importar planilha, agenda .ics e acesso por cliente (28/10/2026)
 
 - `products/maestro`: `lint`, `format:check`, `typecheck` ok; `npm test` **289/289** (Postgres 16 local, migrations

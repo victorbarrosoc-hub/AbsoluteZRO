@@ -388,10 +388,22 @@ Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   (hoje é a impressão do navegador), white-label no app inteiro (plano e preço pelo titular), retenção configurável dos
   pedidos, ligar o inventário do Carro do Freela quando ele tiver banco (endpoint assinado no Maestro e a rota sai de
   `DISABLED_ROUTES`).
-- ⬜ Maestro v2, fase 7 em diante (plano): ponte com o SOBEDESCE (Drive com permissão temporária e stream da equipe).
-  Pendente do titular: ciência dos serviços abertos da calculadora; criar a
-  chave de API do Google só do Maestro (restrita à Drive API e a `maestro.absolutezro.com`) e pôr em
-  `MAESTRO_GOOGLE_API_KEY` na Vercel.
+- ✅ Maestro v2, fases 7–10 (29/10/2026; decisões do titular de 28/10): **ponte com o SOBEDESCE** pelo HUB
+  (`POST /api/v1/apps/pedidos` assina um `zro-pedido+jwt` e o próprio Maestro chama o SOBEDESCE; lista fechada, 403
+  sem o SOBEDESCE no plano, limite e auditoria nos dois lados); ações novas no SOBEDESCE `drive.listar`,
+  `drive.miniatura`, `drive.pasta.criar`, `drive.compartilhar_revisao`, `drive.recolher_revisao` e `drive.token`
+  (`auditoria_zro`, migração 0015); contratos em `packages/media-contracts/src/ponte.ts` e
+  [maestro-sobedesce.md](integration-contracts/maestro-sobedesce.md). **Drive na revisão**: a equipe toca a versão do
+  Drive num `<video>` pelo service worker do Maestro (Range, tempo e timecode de verdade, até arquivo privado) e
+  "Escolher no Drive" no formulário da versão; o link do cliente liga "qualquer pessoa com o link" e revogar, fechar
+  ou vencer (Vercel Cron diário, `CRON_SECRET`) desliga. **Arquivos** (`/app/arquivos`, só com o SOBEDESCE no plano;
+  cadeado e "Ver planos" sem ele): o navegador do Drive da aba do SOBEDESCE (núcleo extraído para
+  `packages/drive-web`, que o SOBEDESCE passou a usar), prévia de vídeo, imagem e PDF, "Abrir no SOBEDESCE",
+  "Estrutura no Drive" por projeto e ligar pasta a projeto (migração 0019). Falta: upload pelo Maestro
+  (`drive.enviar`), raiz do Drive compartilhado da organização em Ajustes, proxy 720p automático para ProRes.
+- ⬜ Maestro, pendente do titular: ciência dos serviços abertos da calculadora; criar a chave de API do Google só do
+  Maestro (restrita à Drive API e a `maestro.absolutezro.com`) e pôr em `MAESTRO_GOOGLE_API_KEY` na Vercel; pôr
+  `CRON_SECRET` no projeto `maestro` da Vercel (agendamento que desliga o compartilhamento de revisão vencido).
 
 ## Fase 6 — Escala
 

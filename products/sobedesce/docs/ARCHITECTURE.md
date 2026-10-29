@@ -1134,6 +1134,21 @@ Seletor de pastas/arquivos locais próprio (modal) usando `/api/local/*`.
 - Servir de `public/`: `/favicon.svg`, `/lib/*`, `/components/*`, `/app.js`, `/styles.css`. Sem scripts inline (CSP estrita funciona).
 - Depois do OAuth, o callback leva para `/` (a UI recarrega `/api/state`).
 
+## O Maestro no Drive (ponte do HUB, 29/10/2026)
+
+O Maestro (outra plataforma da família) chega ao Drive da pessoa só pelo pedido assinado do HUB (`zro-pedido+jwt`, o
+mesmo da Z): `web/src/app/api/zro/drive/{listar,miniatura,pasta/criar,revisao/compartilhar,revisao/recolher,token}`,
+lógica em `web/src/lib/zro/drive-do-maestro.ts` e caminho comum em `web/src/lib/zro/maestro-rota.ts` (limite próprio e
+uma linha em `auditoria_zro` por pedido, migração `0015`). Só metadados, o link curto da miniatura, a árvore
+`Maestro/<Cliente>/<Projeto>/01…05`, ligar/desligar "qualquer pessoa com o link" no arquivo de revisão e o access token
+curto da própria conta (nunca o refresh). Nenhum byte passa pelo site. Contrato:
+`docs/integration-contracts/maestro-sobedesce.md` (raiz do monorepo).
+
+O núcleo da aba Drive do celular (tipos, filtros, ordens, consulta do Drive v3 e formatação) mora em
+`packages/drive-web` (raiz do monorepo), compartilhado com a aba Arquivos do Maestro; o app guarda cópias idênticas em
+`web/public/app/lib/format.js` e `drive-nucleo.js` (`test/drive-web.test.js` confere). Mudou o núcleo: mude no pacote e
+copie para os dois apps.
+
 ## Preparar no Synquei (download do Drive)
 
 Plano SD→SQ (28/10/2026). Contrato de referência em `packages/media-contracts/src/preparo.ts` (raiz do monorepo).
