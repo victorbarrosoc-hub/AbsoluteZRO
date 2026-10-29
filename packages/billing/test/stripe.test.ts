@@ -62,16 +62,15 @@ describe('preços à venda', () => {
     const credits = await db.sql`
       select p.code, count(*)::int as n, min((pp.limits ->> 'zro.ai_credits')::int) as ai from zro.plan_products pp join zro.plans p on p.id = pp.plan_id
       where p.status = 'active' and p.code in ('individual-nossom', 'ciclo-do-o', 'absolute-zro-pro', 'absolute-zro-pro-anual') group by p.code order by p.code`
-    // 7 ferramentas + o Maestro em Beta grátis (0027), com os mesmos créditos
     expect(credits.map((r) => `${r.code}:${r.n}:${r.ai}`)).toEqual([
       // o Maestro (0027) e o Relay (0031) entram nos planos sem mexer nos créditos
-      'absolute-zro-pro:8:2000',
-      'absolute-zro-pro-anual:8:2000',
-      'ciclo-do-o:8:600',
-      'individual-nossom:1:200',
+      'absolute-zro-pro:9:2000',
+      'absolute-zro-pro-anual:9:2000',
+      'ciclo-do-o:9:600',
+      'individual-nossom:2:200',
     ])
     const [anual] = await db.sql`select count(*)::int as n from zro.plan_products pp join zro.plans p on p.id = pp.plan_id where p.code = 'ciclo-do-o-anual'`
-    expect(anual!.n).toBe(8)
+    expect(anual!.n).toBe(9)
   })
 })
 
