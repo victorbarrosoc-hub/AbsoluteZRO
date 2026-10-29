@@ -1,7 +1,7 @@
 /** Peças das telas de clientes e projetos (componentes de servidor): selos, filtros em pílula, iniciais e linhas. */
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { COLUNA, type ColunaKey } from "@/lib/quadro/metodo";
+import { nomeDaColuna } from "@/lib/quadro/colunas";
 import { Icone } from "./icones";
 
 export function Selo({ tom, children }: { tom: "ok" | "aviso" | "neutro"; children: ReactNode }) {
@@ -50,11 +50,11 @@ export function Monograma({ nome, grande }: { nome: string; grande?: boolean }) 
 }
 
 /** Um card do Quadro numa lista (ficha do cliente ou do projeto): coluna, título, prazo; abre a ficha no Quadro. */
-export function LinhaCard({ c }: { c: { id: string; tema: string; coluna: string; prazo: string | null } }) {
+export function LinhaCard({ c }: { c: { id: string; tema: string; coluna: string; colunaNome?: string | null; prazo: string | null } }) {
   return (
     <li>
       <Link className="linha" href={`/app/quadro?card=${encodeURIComponent(c.id)}`}>
-        <span className="linha__coluna">{COLUNA[c.coluna as ColunaKey]?.nome ?? c.coluna}</span>
+        <span className="linha__coluna">{c.colunaNome ?? nomeDaColuna([], c.coluna)}</span>
         <span className="linha__titulo">{c.tema}</span>
         {c.prazo ? (
           <span className="linha__meta">

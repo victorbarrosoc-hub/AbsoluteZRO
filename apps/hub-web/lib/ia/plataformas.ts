@@ -30,7 +30,7 @@ export const PLATAFORMAS: Record<string, { nome: string; faz: string[] }> = {
   relay: {
     nome: 'Relay (relay.absolutezro.com)',
     faz: [
-      'Conversor de vídeo e áudio grátis, no próprio aparelho (nada é enviado): YouTube 1080p/1440p/4K, Shorts, Reels · No Compress, Instagram Feed 4:5, TikTok, WhatsApp, Vimeo, Apple HEVC, proxy para edição, Discord (20 MB), e-mail (25 MB), tamanho exato e áudio em MP3 320, AAC 256 ou WAV 48 kHz.',
+      'Conversor de vídeo e áudio no próprio aparelho (nada é enviado), incluído em toda conta Absolute ZRO: YouTube 1080p/1440p/4K, Shorts, Reels · No Compress, Instagram Feed 4:5, TikTok, WhatsApp, Vimeo, Apple HEVC, proxy para edição, Discord (20 MB), e-mail (25 MB), tamanho exato e áudio em MP3 320, AAC 256 ou WAV 48 kHz.',
       'Vários destinos de uma vez, presets próprios da pessoa ("Meus", com ficha técnica: codec, tamanho, cadência, bitrate ou tamanho máximo, quadro-chave e áudio) e levar/trazer presets em arquivo .relay.json.',
       'Para arquivo que está no Drive: o SOBEDESCE converte com o Relay no computador ou no celular e sobe ao lado do original.',
     ],

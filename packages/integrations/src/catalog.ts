@@ -88,7 +88,7 @@ export const ADAPTERS: AdapterInfo[] = [
   },
   {
     productId: 'relay',
-    strategy: 'Relay: conversão e exportação em products/relay (ADR 0030), grátis; as outras plataformas usam o núcleo dele',
+    strategy: 'Relay: conversão e exportação em products/relay (ADR 0030), em todo plano; as outras plataformas usam o núcleo dele',
     inputs: ['Vídeo ou áudio (do aparelho, ou do Drive pelo SOBEDESCE)', 'Preset do Relay ou da pessoa'],
     outputs: ['A versão de cada destino, ao lado do original'],
     hubCan: ['Catálogo e gate de lançamento', 'A Z sabe o que o Relay faz e pede conversões pelo computador da conta (SOBEDESCE)'],

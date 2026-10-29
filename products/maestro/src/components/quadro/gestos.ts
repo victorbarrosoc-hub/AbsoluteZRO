@@ -16,7 +16,7 @@
  */
 import { useCallback, useEffect, useLayoutEffect, useRef, type RefObject } from "react";
 import { flushSync } from "react-dom";
-import type { ColunaKey } from "@/lib/quadro/metodo";
+import type { ColunaId } from "@/lib/quadro/metodo";
 
 const CELULAR = "(max-width: 760px)";
 const GAP = 16; // entre a coluna atual e a vizinha enquanto deslizam (é a margem da tela: a vizinha nasce na borda)
@@ -76,12 +76,12 @@ function mola(de: number, para: number, v0: number, passo: (x: number) => void, 
 type Opcoes = {
   quadro: RefObject<HTMLDivElement | null>;
   abas: RefObject<HTMLElement | null>;
-  colunas: readonly ColunaKey[];
-  coluna: ColunaKey;
-  setColuna: (k: ColunaKey) => void;
+  colunas: readonly ColunaId[];
+  coluna: ColunaId;
+  setColuna: (k: ColunaId) => void;
   podeArrastar: boolean;
   /** Grava a mudança (o mesmo "mover" do Quadro: avisa com Desfazer quando muda de coluna). */
-  mover: (id: string, col: ColunaKey, antes: string | null) => void;
+  mover: (id: string, col: ColunaId, antes: string | null) => void;
   /** FLIP: toma a tela atual como "antes" do próximo render (flip.ts). */
   fixar: (em?: { id: string; rect: DOMRect }) => void;
 };
@@ -91,12 +91,12 @@ type Arrasto = {
   id: string;
   card: HTMLElement;
   fantasma: HTMLElement;
-  de: ColunaKey;
+  de: ColunaId;
   x0: number;
   y0: number;
   r0: DOMRect;
   /** coluna à vista e os cards dela (sem o arrastado), medidos sem transform, em coordenadas da página */
-  col: ColunaKey;
+  col: ColunaId;
   outros: Base[];
   corpoTop: number;
   gap: number;
@@ -104,7 +104,7 @@ type Arrasto = {
   to: number;
   x: number;
   y: number;
-  pilula: ColunaKey | null;
+  pilula: ColunaId | null;
   borda: { lado: -1 | 1; timer: number } | null;
   rolar: number;
   trocando: boolean;
@@ -118,12 +118,12 @@ export function useGestosCelular(o: Opcoes) {
   const animando = useRef<(() => void) | null>(null);
   const parada = useRef(0);
 
-  const colEl = useCallback((k: ColunaKey) => op.current.quadro.current?.querySelector<HTMLElement>(`.q-col[data-col="${k}"]`) ?? null, []);
-  const pilEl = useCallback((k: ColunaKey) => op.current.abas.current?.querySelector<HTMLElement>(`button[data-col="${k}"]`) ?? null, []);
+  const colEl = useCallback((k: ColunaId) => op.current.quadro.current?.querySelector<HTMLElement>(`.q-col[data-col="${k}"]`) ?? null, []);
+  const pilEl = useCallback((k: ColunaId) => op.current.abas.current?.querySelector<HTMLElement>(`button[data-col="${k}"]`) ?? null, []);
 
   /** A pílula de vidro das colunas: no lugar da coluna `k`, ou a meio caminho entre duas (p de 0 a 1). */
   const pilula = useCallback(
-    (de: ColunaKey, para: ColunaKey | null = null, p = 0, suave = false) => {
+    (de: ColunaId, para: ColunaId | null = null, p = 0, suave = false) => {
       const nav = op.current.abas.current;
       const ind = nav?.querySelector<HTMLElement>(".q-abas__pilula");
       const a = pilEl(de);
@@ -166,7 +166,7 @@ export function useGestosCelular(o: Opcoes) {
 
   /** Põe a coluna atual em dx e a vizinha (`viz`, do lado `lado`) colada nela. */
   const posicionar = useCallback(
-    (dx: number, viz: ColunaKey | null, lado: -1 | 1) => {
+    (dx: number, viz: ColunaId | null, lado: -1 | 1) => {
       const atual = colEl(op.current.coluna);
       if (!atual) return;
       const w = atual.offsetWidth + GAP;
@@ -198,7 +198,7 @@ export function useGestosCelular(o: Opcoes) {
 
   /** Fecha a troca: a vizinha vira a coluna escolhida (no mesmo quadro, sem pulo). */
   const confirmar = useCallback(
-    (k: ColunaKey) => {
+    (k: ColunaId) => {
       flushSync(() => op.current.setColuna(k));
       limparPosicao();
       pilula(k);
@@ -208,7 +208,7 @@ export function useGestosCelular(o: Opcoes) {
 
   /** Vai para a coluna `k` deslizando (pílula, borda segurando o card). `v` = velocidade do dedo, px/ms. */
   const irPara = useCallback(
-    (k: ColunaKey, dxInicial = 0, v = 0, aoFim?: () => void) => {
+    (k: ColunaId, dxInicial = 0, v = 0, aoFim?: () => void) => {
       animando.current?.();
       const { colunas, coluna } = op.current;
       if (k === coluna) {
@@ -249,7 +249,7 @@ export function useGestosCelular(o: Opcoes) {
     let arr: Arrasto | null = null;
     let engolir = 0;
 
-    const vizinhaDe = (dx: number): ColunaKey | null => {
+    const vizinhaDe = (dx: number): ColunaId | null => {
       const { colunas, coluna } = op.current;
       const i = colunas.indexOf(coluna) + (dx < 0 ? 1 : -1);
       return colunas[i] ?? null;
@@ -362,7 +362,7 @@ export function useGestosCelular(o: Opcoes) {
       if (!toque?.card) return;
       const card = toque.card;
       const id = card.dataset.card!;
-      const col = card.closest<HTMLElement>(".q-col")?.dataset.col as ColunaKey | undefined;
+      const col = card.closest<HTMLElement>(".q-col")?.dataset.col as ColunaId | undefined;
       if (!col) return;
       toque.modo = "arrasto";
       try {
@@ -436,7 +436,7 @@ export function useGestosCelular(o: Opcoes) {
       a.fantasma.style.translate = `${x - a.x0}px ${y - a.y0}px`;
       // sobre uma pílula: o card vai para aquela coluna
       const sob = document.elementFromPoint(x, y)?.closest<HTMLElement>(".q-abas button[data-col]");
-      const pil = (sob?.dataset.col as ColunaKey | undefined) ?? null;
+      const pil = (sob?.dataset.col as ColunaId | undefined) ?? null;
       if (pil !== a.pilula) {
         if (a.pilula) delete pilEl(a.pilula)?.dataset.alvo;
         if (pil) pilEl(pil)!.dataset.alvo = "";

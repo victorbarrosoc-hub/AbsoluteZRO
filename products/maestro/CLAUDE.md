@@ -19,7 +19,9 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
    Storage próprio. WhatsApp: `wa.me` com texto pronto, sem API. Plano avulso: não mexa em `zro.plan_products` (exceção do
    titular, 29/10/2026: o adicional da marca própria e o Pro v2, migração `0025` do HUB, em rascunho).
 5. Quadro: as 8 colunas do método (`src/lib/quadro/metodo.ts`); "Com o cliente" = **Em aprovação**, "Publicado" =
-   **Entregue**. O método não muda.
+   **Entregue**. O método não muda: desde 29/10/2026 (colunas como no Trello) cada produtora renomeia, recolore e
+   reordena as 8 e cria as dela, mas as 8 nunca são arquivadas e tudo o que o produto automatiza olha o **id/papel** da
+   coluna, nunca o nome.
 6. Logo: o gesto da pauta em latão (`public/brand/maestro-symbol*.svg`), colorido ao lado da marca flat da Absolute
    ZRO; o resto é identidade Absolute ZRO (Figtree, grafite, Liquid Glass, tema claro padrão, pouco texto).
 
@@ -44,6 +46,22 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   (`src/lib/quadro/metodo.ts`); tempo real é poll de 5 s ("o que mudou desde"). Clientes e projetos em `src/lib/crm`
   (Server Actions conferem sessão e papel; o banco confere de novo). Remover cliente/projeto = `deleted_at`, só
   admin e gestão.
+- **Colunas do Quadro** (titular 29/10/2026, "como no Trello"; `drizzle/0024_colunas.sql`, `src/lib/quadro/colunas.ts`
+  puro, `colunas-servidor.ts`, tela em `components/quadro/colunas.tsx`): `maestro.colunas` por organização (id, papel,
+  nome 1–30, cor da paleta fechada `CORES_COLUNA`/`--cor-*`, ordem, arquivada). As 8 do método são de sistema: **id =
+  papel** (`pauta`…`entregue`), então renomear/reordenar não regrava card nem histórico e toda automação (`link_enviar`
+  → Aprovado/Revisão, gerar link → Em aprovação, Hoje, agenda, Z) segue pelo id; nunca compare pelo nome. As da
+  produtora (`x-<12 hex>`, até 24) contam como "em produção" (`emTrabalho`, `FORA_DO_TRABALHO`). Todos leem
+  (inclusive acesso por cliente); só admin e gestão mudam (`podeEditarColunas`), e só pelas funções `maestro.coluna_*`
+  (`maestro_app` sem insert/update/delete). Arquivar exige o destino e move cada card por `card_mudar` (apagados
+  inclusive; histórico só de inclusão); sistema não arquiva (check + função). O card só entra em coluna viva da própria
+  organização (gatilho `cards_coluna_valida`, que trocou o check fixo `cards_coluna_ok`). Organização nova ganha as 8
+  pelo gatilho em `organizations`. Na tela: clique duplo no cabeçalho renomeia e arrastar o cabeçalho reordena
+  (computador); no celular, tocar na aba já escolhida renomeia; "Colunas" abre a folha "Editar colunas" (`Folha`):
+  renomear, cor, alça (mouse na hora, toque segurando 280 ms, setas do teclado), arquivar com destino, "Nova coluna",
+  arquivadas com "Restaurar" e "Restaurar padrão". Tudo otimista, com volta se o banco recusar; o poll de 5 s traz as
+  colunas. `/api/quadro` aceita `coluna_criar|coluna_mudar|coluna_ordenar|coluna_arquivar|coluna_restaurar|colunas_padrao`.
+  Nome ou cor de coluna em outra tela: junte `maestro.colunas` pelo id (`colunaNome`/`colunaCor`, `data-cor`).
 - **Z**: `api/zro/ia/[...caminho]` repassa ao HUB com o token da sessão (NDJSON sem buffer). **A Z não é a primeira
   aba** (titular, 29/10/2026; PRD Maestro v1.1, Plano de Integração §7–8: presença discreta, central de comando no HUB,
   nunca abrir o chat sozinho): ícone discreto no fim da cápsula, no topo do celular e em "Mais" (`Z` em
@@ -283,7 +301,8 @@ kit do freela, aluguel na escala e sincronização desligada (`freela-equipament
 (`agenda-ics.test.mts`), acesso por cliente em toda tabela ligada a cliente (`acesso-cliente.test.mts`), as tabelas
 novas com duas organizações (`negocio-rls.test.mts`) e o resumo para a Z (`resumo-z.test.mts`), o contrato (preenchimento, versões, aceite com hash, imutável;
 `contrato.test.mts`), a marca própria (sinal ligado e desligado, contraste, duas organizações; `marca-propria.test.mts`), a ponte do Drive, Arquivos, compartilhar/recolher e o agendamento
-(`drive-sobedesce.test.mts`), a versão colada na ficha do card (`versoes-card.test.mts`), pessoas da Absolute ZRO (`pessoas-zro.test.mts`). E2E: `npm run build && npm run test:e2e`
+(`drive-sobedesce.test.mts`), a versão colada na ficha do card (`versoes-card.test.mts`), pessoas da Absolute ZRO (`pessoas-zro.test.mts`), colunas do Quadro (fábrica e backfill, duas organizações, papéis,
+automação pelo papel, arquivar com destino, paleta; `colunas.test.mts`). E2E: `npm run build && npm run test:e2e`
 (Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir movimento, navegação, a aprovação
 inteira (`aprovacao.spec.ts`, mp4 local e YouTube/Vimeo falsos em `e2e/falsos`) e a versão colada na ficha do card que aparece no lote (`versao-card.spec.ts`) e a produtora com a demonstração
 (`produtora.spec.ts`, organização própria criada em `e2e/preparar.ts`) e o ciclo comercial (`comercial.spec.ts`: pedido
@@ -297,7 +316,9 @@ detector `e2e/corte.ts`: todas as telas a 375 e 393 px, claro e escuro, Chromium
 faixa que rola de lado só com `data-rolagem`; regras de celular em `src/app/celular.css`) e o Quadro com fluidez
 (`quadro.spec.ts`: folha na janela inteira, "Novo card", Mover para com Desfazer, troca de seção com View Transition),
 a troca de seção sem duas telas juntas (`transicao.spec.ts`, Chromium e WebKit: pelo relógio das animações e amostrando
-quadro a quadro) e os gestos do Quadro no celular (`gestos.spec.ts`, Chromium e WebKit, organização própria).
+quadro a quadro) e os gestos do Quadro no celular (`gestos.spec.ts`, Chromium e WebKit, organização própria) e as colunas
+(`colunas.spec.ts`: renomear no lugar, reordenar, criar e recolorir, arquivar com destino e restaurar, sistema não
+arquiva, equipe não edita; computador e iPhone, organização própria).
 Movimento (29/10/2026): toda folha usa `Folha` (`src/components/folha.tsx`, portal no `<body>`). **Troca de seção**
 (`src/components/movimento.tsx` + `src/app/motion.css`): a View Transition é chamada por nós, não pelo
 `<ViewTransition>` do React (no Safari do iPhone o par sai/entra do React deixava a tela velha e a nova uma sobre a

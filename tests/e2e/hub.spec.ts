@@ -114,7 +114,8 @@ test('cadastro → organização → projeto com Ciclo do O e alternativa em lis
   // Sem plano: ferramentas lançadas aparecem bloqueadas por assinatura; as fechadas por lançamento (ADR 0023), indisponíveis
   await expect(list.getByRole('listitem').filter({ hasText: 'Synquei' })).toContainText('Bloqueado por assinatura')
   await expect(list.getByRole('listitem').filter({ hasText: 'AEON' })).toContainText('Indisponível')
-  await expect(list.getByRole('listitem').filter({ hasText: 'Relay' })).toContainText('Indisponível')
+  // o Relay abriu (0032): sem plano, fica como as outras ferramentas lançadas
+  await expect(list.getByRole('listitem').filter({ hasText: 'Relay' })).toContainText('Bloqueado por assinatura')
 })
 
 test('API: sem assinatura recebe 403 por URL direta; sem sessão 401; outra origem 403', async ({ page, request }) => {
@@ -217,7 +218,7 @@ test('gate de lançamento: anônimo não vê CTA, link nem instalador de produto
   const FECHADOS = /nossom-teal\.vercel\.app|aeon\.absolutezro\.com|revela\.absolutezro\.com|carrodofreela\.com\.br/
   await page.goto('/')
   const strip = page.locator('.pstrip__list')
-  await expect(strip.locator('.selo-dev').first()).toHaveText('Em desenvolvimento')
+  await expect(strip.locator('.selo-dev').first()).toHaveText('Em breve')
   await expect(strip.locator('a.pstrip__card[href*="synquei"]')).toHaveCount(1)
   const hrefs = await page.locator('a[href]').evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''))
   expect(hrefs.filter((h) => FECHADOS.test(h))).toEqual([])
@@ -307,8 +308,9 @@ test('sua conta: nome, foto, pedido de upgrade e acessos', async ({ page }) => {
 
   await page.goto('/perfil/acessos')
   await expect(page.getByRole('heading', { name: 'Org conta' })).toBeVisible()
-  // Plano grátis lista as sete, mas só as três lançadas contam como acesso (gate de lançamento, ADR 0023).
-  await expect(page.locator('.access-org__apps li.is-on')).toHaveCount(3)
+  // Plano grátis lista todas, mas só as lançadas contam como acesso (gate de lançamento, ADR 0023): SOBEDESCE, Synquei,
+  // TPeasy e o Relay (0032).
+  await expect(page.locator('.access-org__apps li.is-on')).toHaveCount(4)
 })
 
 test('excluir a conta: senha, confirmação, sai da sessão e o e-mail volta a ficar livre', async ({ page }) => {

@@ -520,8 +520,13 @@ export class TransferManager extends EventEmitter {
     // Um temporário ainda sendo apagado (cancelado/removido) também conta: o novo download não pode nascer nele.
     const claimed = this.#downloadClaims()
     const uploads = new Set()
+    // Envio que falhou e é mandado de novo (o mesmo arquivo para o mesmo lugar): a tentativa nova entra e a antiga sai
+    // da conta (vira cancelada, "substituída"). Sem isso, os dois contavam no total e a porcentagem ficava pela metade.
+    const falhos = new Map()
     for (const r of this.records.values()) {
-      if (r.type === 'upload' && !FINISHED.has(r.status) && r.status !== 'failed') uploads.add(this.#uploadKey(r))
+      if (r.type !== 'upload') continue
+      if (r.status === 'failed' && !this.entries.has(r.id)) falhos.set(this.#uploadKey(r), r)
+      else if (!FINISHED.has(r.status) && r.status !== 'failed') uploads.add(this.#uploadKey(r))
     }
     for (const r of records) {
       if (!validRecord(r) || this.records.has(r.id)) {
@@ -556,6 +561,14 @@ export class TransferManager extends EventEmitter {
           continue
         }
         uploads.add(key)
+        const antigo = falhos.get(key)
+        if (antigo) {
+          antigo.status = 'canceled'
+          antigo.substituidaPor = r.id
+          antigo.finishedAt ??= now
+          falhos.delete(key)
+          this.#touch(antigo)
+        }
       }
       if (!STATUSES.has(r.status) || r.status === 'running' || r.status === 'verifying') r.status = 'queued'
       r.bytesDone ??= 0

@@ -18,7 +18,7 @@ import { SequenceBar, Timeline } from './timeline.js'
 import { contaUrl, isCloudAccount } from '../lib/cloud.js'
 import { navigate } from '../lib/router.js'
 import { PreviaLine } from './previa.js'
-import { FILTER_TESTS, batchFolder, batchLocal, integrity, integrityLabel, meterTotals, numerosLote, numerosTexto, proxiesDoLote, proxyPendente, proxyResumo, sortRows } from '../lib/transferencias.js'
+import { FILTER_TESTS, batchFolder, batchLocal, integrity, rodada, integrityLabel, meterTotals, numerosLote, numerosTexto, proxiesDoLote, proxyPendente, proxyResumo, sortRows } from '../lib/transferencias.js'
 import { SYNQUEI_ATUALIZAR, estadoPreparo } from '../lib/preparo.js'
 
 /** "Conectar de novo" certo para a conta: OAuth deste computador, o site (Drive da conta) ou entrar na conta. */
@@ -67,7 +67,7 @@ export function statusInfo(t) {
     case 'failed':
       return { tone: 'error', label: 'Com problema', icon: 'warning' }
     case 'canceled':
-      return { tone: 'muted', label: 'Cancelado', icon: 'x' }
+      return t.substituidaPor ? { tone: 'muted', label: 'Enviado de novo', icon: 'refresh' } : { tone: 'muted', label: 'Cancelado', icon: 'x' }
     default:
       return { tone: 'neutral', label: t.status, icon: null }
   }
@@ -481,16 +481,10 @@ export function TransfersScreen() {
     let canResume = false
     let finished = 0
     let proxies = 0
-    let size = 0
-    let done = 0
     const byBatch = new Map()
     for (const t of all) {
       for (const f of FILTERS) if (f.test(t)) counts[f.value]++
-      if (t.status !== 'canceled') {
-        totalCount++
-        size += t.size || 0
-        done += t.status === 'completed' || t.status === 'skipped' ? t.size || 0 : t.bytesDone || 0
-      }
+      if (t.status !== 'canceled') totalCount++
       if (t.status === 'completed' || t.status === 'skipped') doneCount++
       if (FINISHED.has(t.status)) finished++
       if (proxyPendente(t) && t.previa.estado !== 'pausada') proxies++
@@ -512,7 +506,8 @@ export function TransfersScreen() {
       groups.push({ batch, items, sum, isActive, rank })
     }
     groups.sort((a, b) => a.rank - b.rank || (a.rank === 3 ? -1 : 1) * ((a.batch.createdAt || 0) - (b.batch.createdAt || 0)))
-    const geral = { size, done, total: totalCount, feitos: doneCount }
+    // O número grande: só a rodada de agora (public/lib/transferencias.js → rodada), não a lista inteira.
+    const geral = rodada(all)
     return { all, counts, doneCount, totalCount, canPause, canResume, finished, groups, geral, proxies }
   }, [transfers, batches])
 

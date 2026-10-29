@@ -14,8 +14,8 @@ bitrate, escala, cor ou codificador (CLAUDE.md da pasta).
   - `limpa`: 1080p, 6 s, panorâmica limpa com som;
   - `movimento`: 1080p, 6 s, zoom num fractal (detalhe fino em movimento) com som;
   - `uhd`: 4K, 5 s, foto ampliada com grão leve — testa a **redução 4K → 1080p**.
-- **Referência x264**: três ajustes de mercado com o x264 e a escala swscale (Lanczos com arredondamento
-  preciso): Fast 1080p30 (x264 `fast`, RF 22), HQ 1080p30 (`slow`, RF 20), Super HQ 1080p30 (`veryslow`, RF 18).
+- **Referência x264**: três ajustes comuns de mercado com o x264 e a escala swscale (Lanczos com arredondamento
+  preciso): rápida (x264 `fast`, RF 22), alta (`slow`, RF 20) e máxima (`veryslow`, RF 18).
 - **A comparação justa: o mesmo tamanho de arquivo.** Para cada saída do Relay, a referência x264 no modo "bitrate médio,
   duas passadas" (x264 `fast`) com o bitrate exato do arquivo do Relay. Assim a pergunta é "no mesmo peso, quem guarda
   mais imagem?".
@@ -87,7 +87,7 @@ Todas as conversões (`resultado.json` do laboratório; o navegador do `uhd` tam
   `slow` em vez de `fast`, qualidade constante, escala com arredondamento preciso e cor marcada. No mesmo tamanho,
   **empata**: ganha nos clipes difíceis (grão, movimento fino) e perde por milésimos nos fáceis (limpa: −0,0004;
   4K → 1080p: −0,002). Testamos quadro-chave mais espaçado e não muda o placar: é a diferença entre qualidade
-  constante e duas passadas. Nos presets de upload, entrega arquivos maiores que o "Fast 1080p30" porque guarda mais
+  constante e duas passadas. Nos presets de upload, entrega arquivos maiores que a referência rápida porque guarda mais
   imagem (o que o YouTube e o Instagram precisam para recomprimir bem).
 - **No navegador**, a escala, a cor e o arredondamento são do Relay e estão certos (o `uhd` mostra). O que sobra é o
   codificador de cada aparelho. No Chromium do Linux (OpenH264), no mesmo tamanho, a referência x264 guarda mais.

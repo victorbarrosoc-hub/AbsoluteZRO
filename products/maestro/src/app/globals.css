@@ -36,6 +36,19 @@
   --col-aprovado: #46a758;
   --col-agendado: #12a594;
   --col-entregue: #6e8b3d;
+  /* a paleta das colunas (0024: cada produtora escolhe a cor de cada coluna; TONS_COLUNA em src/lib/quadro/colunas.ts) */
+  --cor-pedra: var(--col-pauta);
+  --cor-lavanda: var(--col-afazer);
+  --cor-ambar: var(--col-fazendo);
+  --cor-laranja: var(--col-revisao);
+  --cor-latao: var(--col-aprovacao);
+  --cor-verde: var(--col-aprovado);
+  --cor-turquesa: var(--col-agendado);
+  --cor-oliva: var(--col-entregue);
+  --cor-rosa: #e0607e;
+  --cor-ceu: #3e8ed0;
+  --cor-ameixa: #9a62b8;
+  --cor-grafite: #6e6e73;
 
   /* estados (chips): fundo tingido com o tom, texto sempre grafite/branco (AA garantido) */
   --st-atrasado: #e5484d;
@@ -138,6 +151,10 @@
   --col-aprovado: #5bbf6e;
   --col-agendado: #2ec4b0;
   --col-entregue: #95b35c;
+  --cor-rosa: #f28ba3;
+  --cor-ceu: #6cb0ef;
+  --cor-ameixa: #c49be0;
+  --cor-grafite: #aeaeb2;
   --chip-base: #1a1c29;
   --chip-mix: 34%;
   --g-entra: #f5f5f7;
@@ -2220,6 +2237,43 @@ h3 {
 }
 [data-col="entregue"] {
   --col: var(--col-entregue);
+}
+/* a cor que a produtora escolheu para a coluna (vale mais que a de fábrica pelo id) */
+[data-cor="pedra"] {
+  --col: var(--cor-pedra);
+}
+[data-cor="lavanda"] {
+  --col: var(--cor-lavanda);
+}
+[data-cor="ambar"] {
+  --col: var(--cor-ambar);
+}
+[data-cor="laranja"] {
+  --col: var(--cor-laranja);
+}
+[data-cor="latao"] {
+  --col: var(--cor-latao);
+}
+[data-cor="verde"] {
+  --col: var(--cor-verde);
+}
+[data-cor="turquesa"] {
+  --col: var(--cor-turquesa);
+}
+[data-cor="oliva"] {
+  --col: var(--cor-oliva);
+}
+[data-cor="rosa"] {
+  --col: var(--cor-rosa);
+}
+[data-cor="ceu"] {
+  --col: var(--cor-ceu);
+}
+[data-cor="ameixa"] {
+  --col: var(--cor-ameixa);
+}
+[data-cor="grafite"] {
+  --col: var(--cor-grafite);
 }
 .q-ponto {
   flex: none;

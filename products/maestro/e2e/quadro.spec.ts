@@ -37,9 +37,9 @@ async function verColuna(page: Page, col: string, projeto: string) {
   if (projeto === "computador") return;
   const aba = page.locator(`.q-abas button[data-col="${col}"]`);
   await expect(aba).toBeVisible();
-  // o clique só vale depois da hidratação: tenta de novo até a aba ficar marcada
+  // o clique só vale depois da hidratação: tenta de novo até a aba ficar marcada (tocar na aba já marcada renomeia)
   await expect(async () => {
-    await aba.click();
+    if ((await aba.getAttribute("aria-pressed")) !== "true") await aba.click();
     await expect(aba).toHaveAttribute("aria-pressed", "true", { timeout: 1000 });
   }).toPass();
 }

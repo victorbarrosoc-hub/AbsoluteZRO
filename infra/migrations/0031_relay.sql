@@ -8,12 +8,12 @@
 
 insert into zro.products (id, name, stage, step_order, role_in_flow, description, integration_mode, external_url, provisional_name) values
   ('relay', 'Relay', 'coming_soon', 9, 'Conversão e exportação de vídeo e áudio para cada destino',
-   'Grátis. YouTube, Reels, TikTok, WhatsApp, Vimeo, Apple, tamanho máximo e áudio (MP3, AAC, WAV), com presets próprios e ficha técnica. Converte no aparelho, sem enviar o arquivo.',
+   'YouTube, Reels, TikTok, WhatsApp, Vimeo, Apple, tamanho máximo e áudio (MP3, AAC, WAV), com presets próprios e ficha técnica. Converte no aparelho, sem enviar o arquivo.',
    'api_adapter', null, false)
 on conflict (id) do nothing;
 
 insert into zro.product_release (product_id, state, web, desktop, api, download, sso, note)
-values ('relay', 'development', false, false, false, false, false, 'Em desenvolvimento; abre grátis quando o deploy for autorizado')
+values ('relay', 'development', false, false, false, false, false, 'Em desenvolvimento; abre quando o deploy for autorizado')
 on conflict (product_id) do nothing;
 
 -- Todo plano vigente (Completo, Pro, avulsos e a conta grátis) leva o Relay, sem limite: ele não tem nada medido

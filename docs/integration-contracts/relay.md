@@ -5,9 +5,8 @@ plataformas o usam e o que cada uma precisa preparar para ele chegar. Vale para 
 plataforma da família. Se o INPI pedir, o nome vira **Relay Convert**; o id técnico `relay` não muda.
 
 **Estado (29/10/2026):** o Relay está pronto em `products/relay/` (site, conversor, presets da pessoa, laboratório de
-qualidade) e já embutido no SOBEDESCE (computador e celular). Fechado até o lançamento junto com o Maestro: o projeto Vercel `relay` e o domínio
-`relay.absolutezro.com` existem, mas o build só publica "Em breve" sem `RELEASE=released`; no HUB ele entra fechado
-(migration `0031`).
+qualidade) e já embutido no SOBEDESCE (computador e celular). Liberado aos usuários junto com o Maestro (29/10/2026, sem e-mail de lançamento):
+`relay.absolutezro.com` com `RELEASE=released`; no HUB, a migration `0032` abre o produto e o gate (canal web).
 
 ## O que é
 

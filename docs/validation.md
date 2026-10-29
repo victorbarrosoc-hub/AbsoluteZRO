@@ -15,6 +15,31 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Página inicial no iPhone: topo por cima de tudo e grade de ícones (29/10/2026)
+
+Relato do titular (Safari do iPhone, tema claro): texto das seções aparecia entre a barra de status e a cápsula do topo e
+lia através dela; selos "Em desenvolvimento" cortados e nomes desalinhados na grade; buraco depois de "Ferramentas que
+se conectam". Reproduzido no build de produção (WebKit e Chromium, 393 px): a cápsula era vidro com ~14% de
+transparência e nada cobria a faixa acima dela; o selo longo empurrava o nome de um ícone e o cartão esticava as linhas.
+
+Agora: `viewport-fit=cover` só no site, cápsula abaixo da safe area e faixa da cor da página atrás dela (some em
+degradê); vidro da cápsula quase opaco; `.public-main` isolado (nada da página sobe acima do topo); grade como a Tela de
+Início (4 por linha, 3 quando fecha a conta), nome alinhado pelo topo e "Em breve" em cinza; ícones fechados sem
+esmaecer; régua centrada e sem a margem extra. Maestro e Relay ("Em breve", pelo gate) com ícone e linha; o Relay entra
+sozinho quando a 0031 chegar (conferido aplicando a 0031 num banco local: 3×3 no celular, 5+4 no computador).
+
+| Verificação                             | Resultado                                                                                              |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Lint, formatação, tipos, `scan-secrets` | ok                                                                                                     |
+| `npm test` (raiz, Postgres real)        | **340/340** em 38 arquivos                                                                             |
+| `npm run build` (HUB)                   | ok                                                                                                     |
+| `npm run test:e2e` (HUB)                | **43/43**; novo `home-celular.spec.ts` (WebKit e Chromium, 375/393/430 px), que falha no código antigo |
+
+`home-celular.spec.ts` rola a página inteira e compara a faixa acima da cápsula e o meio dela com e sem o conteúdo da
+página (nada pode aparecer), confere nomes alinhados e selos inteiros na grade, o espaço até "Em números" e corte ou
+rolagem de lado em todas as seções. A foto do app para computador (`produto-hub-*.webp`) já mostra o catálogo atual;
+quando a 0031 entrar, regerar com `scripts/marca/aparelhos/capturar-hub.ts`. Falta conferir num iPhone de verdade.
+
 ## Início sem piscar cinza nem pular (29/10/2026)
 
 Vídeo do titular (Mac, absolutezro.com, recarregando o Início): 12 quadros (~200 ms) só com o esqueleto genérico de
@@ -38,9 +63,58 @@ Animations, sem mexer em atributo); "reduzir movimento" troca seco.
 | Banco rápido, Chromium e WebKit               | recarregar, menu e logo: nenhum quadro com esqueleto à vista; palco e atalhos nascem no lugar final; CLS 0 |
 | Banco preso (cotas travadas), Chromium/WebKit | topo chega antes; esqueleto invisível até 300 ms; números, painéis e apps no mesmo lugar do esqueleto      |
 | Reduzir movimento                             | esqueleto aparece seco aos 320 ms, sem cópia nem animação no conteúdo                                      |
-| Proxy de 12 ms (como o vídeo), depois         | Chromium: 0 quadros com esqueleto; WebKit (mais lento aqui): 0–1 quadro, já com a dissolvência             |
+
+CI com WebKit (29/10/2026, run 40943896316): o WebKit headless do runner dá ~3 quadros por segundo, e as sondas, só em
+`requestAnimationFrame`, contavam 3 quadros e perdiam a cópia que dissolve (vive 260 ms). Agora as sondas também amostram
+a cada 10 ms e a cópia é contada quando entra no body (MutationObserver). Reproduzido aqui atrasando os quadros das sondas
+para 400 ms: antes 2 falhas iguais às do CI; depois `esqueleto.spec.ts` 20/20 (4 rodadas sem atraso).
+
+Segunda rodada no CI (run 40948422689): o runner levou mais de 3 s para pintar o Início, e a sonda (que parava 3 s depois
+de abrir) não viu o palco. Agora ela segue até 1,5 s depois de o palco aparecer (no máximo 20 s). E a regra conferida
+virou a do desenho, que vale em qualquer máquina: nenhum esqueleto à vista nos primeiros 300 ms de vida (numa máquina
+lenta ele pode viver mais e aparecer, de propósito). Local: 15/15, e 6/6 no WebKit com as sondas atrasadas.
+| Proxy de 12 ms (como o vídeo), depois | Chromium: 0 quadros com esqueleto; WebKit (mais lento aqui): 0–1 quadro, já com a dissolvência |
 
 Não conferido: o Safari do titular em produção (precisa publicar).
+
+## Maestro: colunas do Quadro como no Trello (29/10/2026)
+
+Pedido do titular: renomear, recolorir, reordenar, criar e arquivar colunas por organização, só administração e gestão.
+Rodado neste ambiente (Postgres 16 local próprio, Chromium e WebKit do Playwright 1.63), máquina compartilhada.
+
+- **Dados** (`products/maestro/drizzle/0024_colunas.sql`): `maestro.colunas` (org, id, papel, nome 1–30, cor da paleta,
+  ordem, arquivada). Escolha: o card continua guardando a coluna em `dados.coluna` e o **id das 8 colunas de sistema é o
+  próprio papel** (`pauta`…`entregue`, check `papel = id`). Assim nenhum card, histórico ou decisão do cliente é
+  regravado; as funções `card_*` e `link_enviar` seguem iguais e renomear/reordenar nunca quebra uma automação. Colunas
+  novas têm id `x-<12 hex>`. O check fixo `cards_coluna_ok` virou o gatilho `cards_coluna_valida` (só coluna viva da
+  própria organização, com trava contra arquivar ao mesmo tempo). Backfill das organizações existentes e gatilho para as
+  novas. Escrita só por `maestro.coluna_*` (security definer, papel conferido; `maestro_app` sem insert/update/delete);
+  arquivar move cada card por `card_mudar` (histórico só de inclusão, apagados inclusive); sistema não arquiva (check).
+- **Tela** (`src/components/quadro/colunas.tsx`, `quadro.tsx`, `estado.ts`, `src/app/colunas.css`): clique duplo no
+  cabeçalho renomeia (Enter/sair salva, Esc desiste, vazio não vale); arrastar o cabeçalho reordena com Desfazer; no
+  celular, tocar na aba já escolhida renomeia; "Colunas" abre a folha "Editar colunas" (`Folha`): alça (mouse na hora,
+  toque segurando 280 ms, setas do teclado), cor, arquivar com destino, "Nova coluna", arquivadas, "Restaurar padrão".
+  Otimista com volta e aviso; o poll de 5 s traz as colunas. Hoje, fichas de cliente/projeto e lotes mostram nome e cor
+  da organização; coluna nova conta como "em produção" (prazo, Vencendo, lote).
+- Testes novos: `tests/colunas.test.mts` (15: fábrica igual ao código, backfill migrando até a 0023 e depois a 0024,
+  equipe/leitura 403 no banco e na rota, `maestro_app` sem escrita direta, duas organizações, arquivar com destino e
+  histórico intacto, sistema não arquiva nem por fora da função, restaurar e padrão, limite, aprovação do cliente
+  depois de renomear e reordenar ainda leva a Aprovado/Revisão, Hoje e lote com coluna nova, acesso por cliente lê,
+  paleta do CSS = código com contraste) e `e2e/colunas.spec.ts` (computador e iPhone: renomear no lugar, reordenar
+  com Desfazer, criar/renomear/recolorir na folha, sistema não arquiva, arquivar com destino e restaurar, aba do
+  celular, alça segurando 280 ms, equipe não edita). `quadro.spec.ts`: a ajuda de trocar de aba não toca na aba já
+  marcada (agora renomeia).
+- No celular o botão "Colunas" fica ao lado da busca (o topo segue numa linha só: título e "Novo card"; com o topo em
+  duas linhas, o card descia e o `gestos.spec.ts` "soltar sobre a pílula" falhava).
+- Capturas e vídeos (claro e escuro, computador e iPhone) guardados fora do repositório. Falta conferir num iPhone de
+  verdade e aplicar a 0024 em produção (com o próximo deploy autorizado).
+
+| Verificação                            | Resultado                                                                                             |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Maestro lint, formatação, tipos, build | ok                                                                                                    |
+| Maestro `npm test`                     | **377/377** (`colunas.test.mts` 15 novos)                                                             |
+| Maestro `test:e2e` completo            | **129 ok**, 21 pulados (por aparelho), 0 falhas; inclui `sem-corte`, `transicao` e `gestos` no WebKit |
+| `node scripts/scan-secrets.mjs`        | nenhum segredo                                                                                        |
 
 ## A Z digita as sugestões no campo (29/10/2026)
 
@@ -2439,6 +2513,31 @@ catálogo de downloads da Absolute ZRO, atrás do gate.
 Não conferido aqui: instalar e abrir num Mac e num Windows de verdade, o "Atualizar" trocando o app (só nos testes com
 sistema simulado), e o primeiro Release (sai no primeiro push na main com `products/maestro/desktop/**`).
 
+## SOBEDESCE: contador de "Agora" (29/10/2026)
+
+- Relato do titular: pasta de 100,3 GB enviada de novo depois de uma falha; terminou e o painel mostrava "51% de 205 GB".
+  Causa: o número grande somava todas as transferências da lista (lotes antigos concluídos e a tentativa que falhou,
+  com o que já tinha subido) e o motor deixava a tentativa velha "com problema" ao lado da nova.
+- `test/manager.test.js`: envio que falhou e é mandado de novo entra; a tentativa antiga vira cancelada
+  (`substituidaPor`) e sai do total, do "parado" e dos problemas.
+- `test/transferencias-ui.test.js` (`rodada`): lote velho concluído, cancelado e tentativa substituída ficam de fora;
+  terminar não faz a porcentagem cair; dois lotes ao mesmo tempo contam juntos até o fim.
+- Não validado: o painel num envio real de 100 GB no Mac do titular.
+
+## SOBEDESCE: Atualizações quando o Absolute ZRO cuida do app (29/10/2026)
+
+- Relato do titular: o app no build 1034 dizia "Você está na versão mais nova" com o 1042 publicado. Instalado pela
+  central do Absolute ZRO, o SOBEDESCE não pergunta ao site (quem atualiza é a central, `src/gerenciado.js`) e a tela
+  caía no texto de "em dia". Agora diz que quem atualiza é o Absolute ZRO e some o "Procurar atualização" (que não
+  procurava nada nesse caso). O catálogo da central (`/api/v1/desktop/apps`) já oferecia o 1042.
+- E a central também não oferecia: ela só comparava o build com o que ela mesma tinha instalado (`registro`), e o
+  SOBEDESCE instalado pelo Terminal, pelo .dmg ou pela atualização própria dele não tem registro; como a versão é sempre
+  0.1.0, ninguém atualizava. Agora a central lê o build de dentro do app instalado (`build-info.json` no `app.asar`,
+  `lerBuildInstalado` em `apps/hub-desktop/desktop/central.cjs`) e compara com o catálogo. `apps/hub-desktop`:
+  `npm test` 61/61 (caso b1034 → b1042 sem registro, build do app vale mais que o registro, Synquei em
+  `desktop/build-info.json`, versão de desenvolvimento sem build).
+- Não validado: a leitura do `app.asar` de outro app pela central empacotada num Mac e num Windows reais.
+
 ## Conversão de mídia como setor próprio (29/10/2026)
 
 Só documentos ([ADR 0030](decisions/0030-relay-conversao.md), PRD §2, roadmap): nenhum código mudou. Mapa feito
@@ -2476,3 +2575,12 @@ do Freela e HUB não convertem. `npm run format:check` e `node scripts/scan-secr
   nada), nome livre sem gravar por cima, conversão local de verdade (WhatsApp 1280×720 e MP3 da pessoa ao lado do
   original, MD5 do original igual, nenhum parcial sobrando) e a rota `/api/relay/local` recusando caminho relativo,
   extensão errada e destino inventado.
+
+## Relay liberado (29/10/2026)
+
+- Menções a outro conversor fora do repositório inteiro (Revela, ADR 0015, Synquei, laboratório); no Synquei, a regra
+  que separa arquivo de software de arquivo de câmera passou a reconhecer a versão no campo do fabricante (138/138).
+- Migration `0032_relay_aberto.sql`: `npm test` **340/340** (planos, etapas e acessos com o Relay aberto); e2e do HUB
+  16/16 (Ciclo do O com o Relay "Bloqueado por assinatura" sem plano, 4 acessos lançados no plano grátis).
+- Nenhum e-mail: o HUB só envia e-mail de login e de conta (`packages/auth/src/email.ts`); abrir produto e gate não
+  manda aviso.

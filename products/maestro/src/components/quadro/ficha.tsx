@@ -11,8 +11,6 @@
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import {
-  COLUNA,
-  COLUNAS,
   LIMITE_BRIEFING,
   LIMITE_TEMA,
   PRIORIDADES,
@@ -22,9 +20,10 @@ import {
   somaDias,
   type CampoEditavel,
   type CardQ,
-  type ColunaKey,
+  type ColunaId,
   type DadosCard,
 } from "@/lib/quadro/metodo";
+import { nomeDaColuna, type Coluna } from "@/lib/quadro/colunas";
 import type { Referencias } from "@/lib/quadro/servidor";
 import { Icone } from "@/components/icones";
 import { Folha, useFecharFolha } from "@/components/folha";
@@ -34,8 +33,10 @@ import { VersoesDoCard } from "./versoes";
 type Props = {
   card: CardQ | null;
   /** Coluna e cliente iniciais do rascunho (modo novo). */
-  novo: { coluna: ColunaKey; cliente?: string; projeto?: string } | null;
+  novo: { coluna: ColunaId; cliente?: string; projeto?: string } | null;
   refs: Referencias;
+  /** As colunas vivas da produtora, na ordem do Quadro (nome e cor de cada uma). */
+  colunas: Coluna[];
   podeEscrever: boolean;
   focar?: string | null;
   mudar: (id: string, campos: Partial<Record<CampoEditavel, unknown>>) => Promise<boolean>;
@@ -43,7 +44,7 @@ type Props = {
   apagar: (id: string) => void;
   fechar: () => void;
   /** O card nasceu: o Quadro o leva da folha até a coluna (a origem é o título da folha). */
-  aoCriar: (id: string, origem: DOMRect | null, coluna: ColunaKey) => void;
+  aoCriar: (id: string, origem: DOMRect | null, coluna: ColunaId) => void;
 };
 
 /** Texto que grava ao sair do campo; o que chega do banco só entra quando a pessoa não está digitando ali. */
@@ -192,7 +193,7 @@ export function Ficha(props: Props) {
   );
 }
 
-function Conteudo({ card, novo, refs, podeEscrever, focar, mudar, criar, apagar, aoCriar }: Props) {
+function Conteudo({ card, novo, refs, colunas, podeEscrever, focar, mudar, criar, apagar, aoCriar }: Props) {
   const fechar = useFecharFolha();
   const idBase = useId();
   const caixa = useRef<HTMLFormElement>(null);
@@ -256,12 +257,13 @@ function Conteudo({ card, novo, refs, podeEscrever, focar, mudar, criar, apagar,
     const origem = caixa.current?.querySelector<HTMLElement>("[data-campo='tema']")?.getBoundingClientRect() ?? null;
     const id = await criar({ ...rascunho, tema });
     setCriando(false);
-    if (id) aoCriar(id, origem, (rascunho.coluna as ColunaKey) ?? "pauta");
+    if (id) aoCriar(id, origem, rascunho.coluna ?? "pauta");
   }
 
   const passo = card ? proximoPasso(card.dados) : null;
   const campo = (nome: string) => `${idBase}-${nome}`;
-  const colunaAtual = (d.coluna as ColunaKey) ?? "pauta";
+  const colunaAtual: ColunaId = d.coluna ?? "pauta";
+  const corAtual = colunas.find((c) => c.id === colunaAtual)?.cor;
 
   return (
     <form
@@ -277,9 +279,9 @@ function Conteudo({ card, novo, refs, podeEscrever, focar, mudar, criar, apagar,
       }}
     >
       <div className="q-ficha__topo">
-        <span className="q-ficha__coluna" data-col={colunaAtual}>
+        <span className="q-ficha__coluna" data-col={colunaAtual} data-cor={corAtual}>
           <i className="q-ponto" aria-hidden="true" />
-          {card ? COLUNA[colunaAtual]?.nome : "Novo card"}
+          {card ? nomeDaColuna(colunas, colunaAtual) : "Novo card"}
         </span>
         <button type="button" className="q-icone-btn q-ficha__fechar" onClick={fechar} aria-label="Fechar">
           <Icone nome="fechar" size={18} />
@@ -361,15 +363,16 @@ function Conteudo({ card, novo, refs, podeEscrever, focar, mudar, criar, apagar,
       <div className="q-campo" role="radiogroup" aria-labelledby={campo("coluna")}>
         <span id={campo("coluna")}>Coluna</span>
         <div className="q-pilulas" data-campo="coluna" tabIndex={-1}>
-          {COLUNAS.map((c) => (
+          {colunas.map((c) => (
             <button
-              key={c.k}
+              key={c.id}
               type="button"
               role="radio"
-              data-col={c.k}
-              aria-checked={colunaAtual === c.k}
+              data-col={c.id}
+              data-cor={c.cor}
+              aria-checked={colunaAtual === c.id}
               disabled={ro}
-              onClick={() => colunaAtual !== c.k && por({ coluna: c.k })}
+              onClick={() => colunaAtual !== c.id && por({ coluna: c.id })}
             >
               <i className="q-ponto" aria-hidden="true" />
               {c.nome}

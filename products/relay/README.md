@@ -1,9 +1,9 @@
 # Relay — conversão e exportação de vídeo e áudio
 
-**Estado (29/10/2026): pronto no repositório e fechado até o lançamento junto com o Maestro.** Projeto Vercel `relay`
-(Root Directory `products/relay`) e domínio `relay.absolutezro.com` criados com a autorização do titular (sessão da
-central, 29/10/2026). O build (`scripts/publicar-site.mjs`) publica só a página "Em breve" em todas as rotas; abrir é
-`RELEASE=released` no projeto Vercel e um deploy novo (o mesmo modelo da Revela), junto com a abertura do gate no HUB. Decisão: [ADR 0030](../../docs/decisions/0030-relay-conversao.md).
+**Estado (29/10/2026): liberado aos usuários, junto com o Maestro, sem e-mail de lançamento (decisão do titular).**
+Projeto Vercel `relay` (Root Directory `products/relay`) em `relay.absolutezro.com`, com `RELEASE=released` em
+produção. No HUB, a migration `0032` abre o produto e o gate (canal web). Sem `RELEASE=released`,
+`scripts/publicar-site.mjs` volta a publicar só "Em breve". Decisão: [ADR 0030](../../docs/decisions/0030-relay-conversao.md).
 Como as outras plataformas usam: [docs/integration-contracts/relay.md](../../docs/integration-contracts/relay.md).
 
 Grátis e sem cadastro: solta o arquivo, escolhe para onde vai, sai a versão certa. Converte no próprio aparelho; o

@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, useTransition, type FormEvent } from "react";
 import { createPortal } from "react-dom";
-import { COLUNA, type ColunaKey } from "@/lib/quadro/metodo";
+import { nomeDaColuna } from "@/lib/quadro/colunas";
 import { NOME_DA_FONTE, resumoDaFonte } from "@/lib/revisao/fontes/detectar";
 import type { CardDisponivel, LoteDaEquipe, PecaDaEquipe } from "@/lib/revisao/equipe";
 import type { ComentarioVisto, VersaoVista } from "@/lib/revisao/tipos";
@@ -408,9 +408,9 @@ export function LoteEquipe({
         <section className="ap-detalhe" aria-label={peca.titulo}>
           <header className="ap-detalhe__cabeca">
             <h2>{peca.titulo}</h2>
-            <span className="selo" data-col={peca.coluna}>
+            <span className="selo" data-col={peca.coluna} data-cor={peca.colunaCor ?? undefined}>
               <i className="q-ponto" aria-hidden="true" />
-              {COLUNA[peca.coluna as ColunaKey]?.nome ?? peca.coluna}
+              {peca.colunaNome ?? nomeDaColuna([], peca.coluna)}
             </span>
             {ultimaDecisao ? (
               <span className={`selo selo--${ultimaDecisao.decisao === "aprovado" ? "ok" : "aviso"}`} title={ultimaDecisao.nota ?? undefined}>

@@ -143,7 +143,7 @@ export type ClienteFicha = EntradaCliente & {
   id: string;
   criadoEm: Date;
   projetos: { id: string; codigo: string; titulo: string; status: string; prazo: string | null; linkStatus: string }[];
-  cards: { id: string; tema: string; coluna: string; prazo: string | null; resp: string | null }[];
+  cards: { id: string; tema: string; coluna: string; colunaNome: string | null; colunaCor: string | null; prazo: string | null; resp: string | null }[];
   /** Próximo contato (drizzle/0014). */
   proximoContato: string | null;
   proximoNota: string | null;
@@ -161,9 +161,10 @@ export async function obterCliente(ctx: Contexto, id: string): Promise<ClienteFi
       select id, code as codigo, title as titulo, status, due_date::text as prazo, link_status as "linkStatus"
         from maestro.projects where client_id = ${id} and deleted_at is null order by code desc`)) as unknown as ClienteFicha["projetos"];
     const cards = (await tx.execute(sql`
-      select id, dados ->> 'tema' as tema, coluna, prazo, resp
-        from maestro.cards where cliente = ${id} and apagado_em is null
-       order by array_position(array['pauta','afazer','fazendo','revisao','aprovacao','aprovado','agendado','entregue'], coluna), prazo nulls last
+      select k.id, k.dados ->> 'tema' as tema, k.coluna, co.nome as "colunaNome", co.cor as "colunaCor", k.prazo, k.resp
+        from maestro.cards k left join maestro.colunas co on co.org_id = k.org_id and co.id = k.coluna
+       where k.cliente = ${id} and k.apagado_em is null
+       order by co.ordem nulls last, k.prazo nulls last
        limit 200`)) as unknown as ClienteFicha["cards"];
     const [rt] = (await tx.execute(sql`
       select proximo_contato::text as data, proximo_nota as nota from maestro.clients where id = ${id}`)) as unknown as {

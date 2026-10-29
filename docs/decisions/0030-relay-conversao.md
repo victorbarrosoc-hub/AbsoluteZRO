@@ -1,6 +1,6 @@
 # ADR 0030 — Relay: conversão e exportação de mídia viram um setor próprio; a Revela fica só com a cor
 
-**Status:** aceita (29/10/2026, pedido do titular). Nome: **Relay** (id técnico `relay`, domínio
+**Status:** aceita e em produção (29/10/2026, pedido do titular; liberado com o Maestro, sem e-mail). Nome: **Relay** (id técnico `relay`, domínio
 `relay.absolutezro.com`; se o INPI pedir, vira "Relay Convert" sem mudar o id). Contrato de integração com cada
 plataforma: [docs/integration-contracts/relay.md](../integration-contracts/relay.md).
 

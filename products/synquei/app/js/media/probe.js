@@ -169,8 +169,9 @@ export async function probe(file, relPath = file.name) {
     error: info.error || null,
     audioPlan: info.audioPlan || null,
   }
-  // gravado por software (conversão, exportação): não é o aparelho que filmou
-  if (out.device && /ffmpeg|lavf|handbrake|opatom|op1a muxer|compressor|davinci|media composer|premiere|final cut/i.test(`${out.device.make} ${out.device.model}`)) {
+  // gravado por software (conversão, exportação): não é o aparelho que filmou. Conversores gravam o próprio nome com a
+  // versão no campo do fabricante ("Programa 1.6.1 …"); câmera e celular não põem versão ali.
+  if (out.device && (/ffmpeg|lavf|opatom|op1a muxer|compressor|davinci|media composer|premiere|final cut/i.test(`${out.device.make} ${out.device.model}`) || /\b\d+\.\d+\.\d+\b/.test(out.device.make || ''))) {
     out.software = out.software || [out.device.make, out.device.model].filter(Boolean).join(' ')
     out.device = null
   }

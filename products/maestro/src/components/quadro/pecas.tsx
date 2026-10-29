@@ -1,7 +1,8 @@
 "use client";
 /** Peças pequenas do Quadro: avatar da pessoa, chip do prazo, prioridade e a folha "Mover para…". */
 import { useEffect, useRef } from "react";
-import { COLUNAS, estadoPrazo, rotuloDia, type ColunaKey, type DadosCard } from "@/lib/quadro/metodo";
+import { estadoPrazo, rotuloDia, type ColunaId, type DadosCard } from "@/lib/quadro/metodo";
+import type { Coluna } from "@/lib/quadro/colunas";
 import type { Referencias } from "@/lib/quadro/servidor";
 import { Icone } from "@/components/icones";
 import { Folha, useFecharFolha } from "@/components/folha";
@@ -66,8 +67,18 @@ export function ChipPrioridade({ p }: { p?: DadosCard["prioridade"] }) {
   );
 }
 
-/** Folha "Mover para…": as 8 colunas, a atual marcada. No celular é o jeito de mover; no computador, o atalho. */
-export function MoverPara({ atual, aoEscolher, aoFechar }: { atual: ColunaKey; aoEscolher: (k: ColunaKey) => void; aoFechar: () => void }) {
+/** Folha "Mover para…": as colunas vivas, a atual marcada. No celular é o jeito de mover; no computador, o atalho. */
+export function MoverPara({
+  colunas,
+  atual,
+  aoEscolher,
+  aoFechar,
+}: {
+  colunas: Coluna[];
+  atual: ColunaId;
+  aoEscolher: (k: ColunaId) => void;
+  aoFechar: () => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     ref.current?.querySelector<HTMLButtonElement>("button[aria-current='true'], button")?.focus({ preventScroll: true });
@@ -77,13 +88,13 @@ export function MoverPara({ atual, aoEscolher, aoFechar }: { atual: ColunaKey; a
       <div ref={ref} className="q-folha__corpo">
         <h2 className="q-folha__titulo">Mover para…</h2>
         <ul className="q-folha__lista">
-          {COLUNAS.map((c, i) => (
-            <li key={c.k}>
-              <button type="button" data-col={c.k} aria-current={c.k === atual} onClick={() => aoEscolher(c.k)}>
+          {colunas.map((c, i) => (
+            <li key={c.id}>
+              <button type="button" data-col={c.id} data-cor={c.cor} aria-current={c.id === atual} onClick={() => aoEscolher(c.id)}>
                 <i className="q-ponto" aria-hidden="true" />
                 <span className="q-folha__n">{i + 1}</span>
                 {c.nome}
-                {c.k === atual ? <span className="q-folha__aqui">Aqui</span> : null}
+                {c.id === atual ? <span className="q-folha__aqui">Aqui</span> : null}
               </button>
             </li>
           ))}
