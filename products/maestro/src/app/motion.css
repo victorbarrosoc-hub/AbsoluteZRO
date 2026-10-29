@@ -1,0 +1,648 @@
+/*
+ * Movimento do Maestro (plano v2 §9, pedido do titular em 29/10/2026: "fluidez de gestão, com cara de produto"):
+ * troca de seção com View Transitions, a pílula da cápsula que desliza, a folha (véu na janela inteira, mola na
+ * entrada e na saída, folha de baixo no celular), a ficha do card redesenhada, avisos e o Quadro que se reorganiza
+ * deslizando (FLIP em src/components/quadro/flip.ts). Durações de 150 a 320 ms com a mola da casa; com "reduzir
+ * movimento", tudo aparece pronto.
+ */
+
+/* ───────────── troca de seção (View Transitions; src/components/movimento.tsx) ───────────── */
+
+/* a cápsula, o topo e a barra de baixo ficam parados: só o conteúdo anda */
+.capsula {
+  view-transition-name: m-capsula;
+}
+.topo {
+  view-transition-name: m-topo;
+}
+.barra {
+  view-transition-name: m-barra;
+}
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-group(m-capsula),
+::view-transition-group(m-topo),
+::view-transition-group(m-barra) {
+  animation: none;
+  z-index: 10;
+}
+::view-transition-old(m-capsula),
+::view-transition-old(m-topo),
+::view-transition-old(m-barra) {
+  display: none;
+}
+::view-transition-new(m-capsula),
+::view-transition-new(m-topo),
+::view-transition-new(m-barra) {
+  animation: none;
+}
+/* o resto da página (a luz ambiente) não pisca */
+::view-transition-old(root) {
+  display: none;
+}
+::view-transition-new(root) {
+  animation: none;
+}
+
+/* frente: a seção nova vem da direita; a antiga sai esmaecendo para a esquerda */
+::view-transition-old(.m-frente) {
+  animation: 150ms var(--ease) both m-vt-sai;
+  --m-vt-x: -16px;
+}
+::view-transition-new(.m-frente) {
+  animation: 320ms var(--spring) both m-vt-entra;
+  --m-vt-x: 28px;
+}
+::view-transition-old(.m-volta) {
+  animation: 150ms var(--ease) both m-vt-sai;
+  --m-vt-x: 16px;
+}
+::view-transition-new(.m-volta) {
+  animation: 320ms var(--spring) both m-vt-entra;
+  --m-vt-x: -28px;
+}
+/* troca sem direção (link de dentro da tela, voltar do navegador): sobe 8 px e aparece */
+::view-transition-old(.m-troca) {
+  animation: 140ms var(--ease) both m-vt-some;
+}
+::view-transition-new(.m-troca) {
+  animation: 280ms var(--spring) both m-vt-sobe;
+}
+@keyframes m-vt-sai {
+  to {
+    opacity: 0;
+    transform: translateX(var(--m-vt-x));
+  }
+}
+@keyframes m-vt-entra {
+  from {
+    opacity: 0;
+    transform: translateX(var(--m-vt-x));
+  }
+}
+@keyframes m-vt-some {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes m-vt-sobe {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* ───────────── a pílula da cápsula ───────────── */
+
+.capsula__nav {
+  position: relative;
+}
+.capsula__nav > :not(.capsula__pilula) {
+  position: relative;
+  z-index: 1;
+}
+.capsula__pilula {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 36px;
+  margin-top: -18px;
+  width: 0;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: var(--card-sombra);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 0.42s var(--spring),
+    width 0.32s var(--spring),
+    opacity 0.2s var(--ease);
+}
+/* com a pílula medida, o item ativo deixa o fundo para ela (sem JavaScript, o fundo continua no item) */
+.capsula__nav[data-pilula] .capsula__item[aria-current] {
+  background: transparent;
+  box-shadow: none;
+}
+.capsula__nav[data-pilula] .capsula__menu[data-aberto] > .capsula__item[aria-current] {
+  background: transparent;
+}
+.capsula__opcao {
+  transition:
+    background 0.2s var(--ease),
+    color 0.2s var(--ease);
+}
+.barra a {
+  transition:
+    background 0.25s var(--ease),
+    box-shadow 0.25s var(--ease),
+    color 0.2s var(--ease);
+}
+.barra a svg {
+  transition: transform 0.35s var(--spring);
+}
+.barra a[aria-current="page"] svg {
+  transform: translateY(-1px) scale(1.06);
+}
+
+/* ───────────── a folha (src/components/folha.tsx) ───────────── */
+
+.m-veu {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(20 14 8 / 0.26);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  backdrop-filter: blur(10px) saturate(120%);
+  /* o véu é um contêiner de rolagem que não rola: a roda e o dedo param nele (a página por trás fica parada, sem
+     esconder a barra de rolagem nem mexer na largura da página) */
+  overflow: auto;
+  overscroll-behavior: contain;
+  animation: m-veu-entra 0.24s var(--ease) both;
+}
+:root[data-theme="dark"] .m-veu {
+  background: rgb(0 0 0 / 0.5);
+}
+.m-veu[data-saindo] {
+  animation: m-veu-sai 0.22s var(--ease) both;
+}
+.m-folha {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(var(--m-folha-w, 600px), 100%);
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 28px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow:
+    0 0 0 1px var(--line),
+    0 30px 80px rgb(40 20 10 / 0.22),
+    0 8px 24px rgb(40 20 10 / 0.1);
+  outline: none;
+  animation: m-folha-entra 0.3s var(--spring) both;
+}
+.m-folha[data-saindo] {
+  animation: m-folha-sai 0.2s var(--ease) both;
+}
+.m-folha--acao {
+  --m-folha-w: 380px;
+}
+.m-folha__alca {
+  display: none;
+}
+@keyframes m-veu-entra {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes m-veu-sai {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes m-folha-entra {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.965);
+  }
+}
+@keyframes m-folha-sai {
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+/* celular: a folha de baixo, com a alça (puxar fecha) */
+@media (max-width: 760px) {
+  .m-veu {
+    place-items: end stretch;
+    padding: 0;
+    padding-top: max(24px, env(safe-area-inset-top));
+  }
+  .m-folha {
+    width: 100%;
+    max-height: calc(100dvh - max(24px, env(safe-area-inset-top)));
+    border-radius: 28px 28px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    animation-name: m-folha-sobe;
+    animation-duration: 0.34s;
+  }
+  .m-folha[data-saindo] {
+    animation: m-folha-desce 0.22s var(--ease) both;
+  }
+  .m-folha__alca {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    flex: none;
+    height: 22px;
+    margin-bottom: -10px;
+    touch-action: none;
+    cursor: grab;
+  }
+  .m-folha__alca i {
+    width: 38px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--line-strong);
+  }
+  .m-folha {
+    transition: transform 0.3s var(--spring);
+  }
+}
+@keyframes m-folha-sobe {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes m-folha-desce {
+  to {
+    transform: translateY(100%);
+  }
+}
+
+/* "Mover para…" */
+.q-folha__corpo {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+}
+.q-folha__lista button .q-ponto {
+  margin-left: 2px;
+}
+
+/* ───────────── a ficha do card ───────────── */
+
+.q-ficha__corpo {
+  display: grid;
+  gap: 20px;
+  padding: 18px 24px 22px;
+}
+.q-ficha__topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.q-ficha__coluna {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 12px 0 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--col, var(--text-faint)) 14%, var(--surface));
+  color: var(--text-strong);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  transition: background 0.3s var(--ease);
+}
+.q-ficha__fechar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--surface-2);
+}
+.q-ficha__tema {
+  display: block;
+  resize: none;
+  overflow: hidden;
+  field-sizing: content;
+  min-height: 1.3em;
+  font-size: clamp(1.6rem, 1.2rem + 1.2vw, 2rem);
+  line-height: 1.12;
+  padding: 2px 0 6px;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  transition: border-color 0.2s var(--ease);
+}
+.q-ficha__tema:focus {
+  border-bottom-color: var(--line);
+}
+.q-ficha__grade {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 14px;
+}
+
+/* pílulas da coluna: cada uma com a cor dela */
+.q-pilulas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  outline: none;
+}
+.q-pilulas button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 13px 0 11px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text-mute);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.22s var(--ease),
+    box-shadow 0.22s var(--ease),
+    color 0.22s var(--ease),
+    transform 0.25s var(--spring);
+}
+.q-pilulas button:hover:not(:disabled) {
+  color: var(--text-strong);
+  transform: translateY(-1px);
+}
+.q-pilulas button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.q-pilulas button[aria-checked="true"] {
+  background: color-mix(in srgb, var(--col) 18%, var(--surface));
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--col) 70%, transparent);
+  color: var(--text-strong);
+}
+.q-pilulas button:disabled {
+  cursor: default;
+}
+.q-pilulas button:disabled:not([aria-checked="true"]) {
+  opacity: 0.55;
+}
+.q-pilulas button:focus-visible,
+.q-segmentos button:focus-visible,
+.q-prazo button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* listas com a marca do escolhido (avatar, sigla, código) */
+.q-lista__caixa {
+  position: relative;
+  display: block;
+}
+.q-lista__marca {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  translate: 0 -50%;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.q-lista select {
+  padding-left: 44px;
+  min-height: 46px;
+}
+.q-sigla {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--acento) 18%, var(--surface));
+  color: var(--text-strong);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.q-sigla--vazia {
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--line-strong);
+  color: var(--text-faint);
+}
+.q-sigla--codigo {
+  border-radius: 7px;
+  background: var(--surface-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* prioridade: o segmento escolhido desliza (fundo branco) e a alta ganha a bandeira */
+.q-segmentos button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition:
+    background 0.25s var(--spring),
+    box-shadow 0.25s var(--spring),
+    color 0.2s var(--ease);
+}
+.q-segmentos button[data-prio="alta"][aria-checked="true"] {
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.08),
+    inset 0 0 0 1.5px color-mix(in srgb, var(--st-alta) 65%, transparent);
+}
+.q-segmentos button[data-prio="alta"] svg {
+  color: var(--st-alta);
+}
+
+/* prazo: pílula amigável + atalhos; o seletor do sistema por baixo */
+.q-prazo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.q-prazo__pilula {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 16px 0 13px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text-mute);
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition:
+    background 0.22s var(--ease),
+    box-shadow 0.22s var(--ease);
+}
+.q-prazo__pilula.on {
+  background: var(--surface);
+  box-shadow:
+    inset 0 0 0 1.5px var(--line-strong),
+    0 1px 2px rgb(0 0 0 / 0.05);
+  color: var(--text-strong);
+}
+.q-prazo__pilula[data-atrasado] svg {
+  color: var(--st-atrasado);
+}
+.q-prazo__texto::first-letter {
+  text-transform: uppercase;
+}
+.q-prazo__pilula:focus-within {
+  box-shadow:
+    inset 0 0 0 1px var(--line-strong),
+    0 0 0 2px var(--focus);
+}
+/* o campo de data do sistema cobre a pílula, invisível: toque e teclado vão direto para ele */
+.q-campo .q-prazo__nativo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+  box-shadow: none;
+  background: transparent;
+}
+.q-prazo__nativo::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+.q-prazo__atalhos {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.q-prazo__atalhos button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text-mute);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s var(--ease),
+    color 0.2s var(--ease);
+}
+.q-prazo__atalhos button:hover,
+.q-prazo__atalhos button[aria-pressed="true"] {
+  background: var(--surface-2);
+  color: var(--text-strong);
+}
+.q-prazo__atalhos .q-prazo__limpar {
+  width: 34px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+}
+
+/* briefing que cresce com o texto */
+.q-campo textarea.q-briefing {
+  min-height: 96px;
+  max-height: 40vh;
+  resize: none;
+  field-sizing: content;
+  line-height: 1.5;
+}
+
+.q-ficha__fim {
+  position: sticky;
+  bottom: -22px;
+  margin: 0 -24px -22px;
+  padding: 14px 24px 18px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+.q-ficha__dica {
+  margin-right: auto;
+  color: var(--text-faint);
+  font-size: 0.8rem;
+}
+.q-ficha__dica kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  margin-right: 4px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font: inherit;
+  font-size: 0.78rem;
+}
+@media (max-width: 760px) {
+  .q-ficha__corpo {
+    gap: 18px;
+    padding: 6px 18px 18px;
+  }
+  .q-ficha__grade {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .q-ficha__fim {
+    bottom: calc(-18px - env(safe-area-inset-bottom));
+    margin: 0 -18px -18px;
+    padding: 12px 18px calc(14px + env(safe-area-inset-bottom));
+  }
+  .q-ficha__dica {
+    display: none;
+  }
+  .q-ficha__fim .glass-btn {
+    flex: 1;
+  }
+  .q-ficha__fim .q-perigo {
+    flex: none;
+  }
+}
+
+/* ───────────── avisos ───────────── */
+
+.q-aviso {
+  animation: m-aviso 0.36s var(--spring) both;
+}
+@keyframes m-aviso {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 16px) scale(0.96);
+  }
+}
+
+/* ───────────── reduzir movimento ───────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+  ::view-transition-old(*) {
+    display: none;
+  }
+  .capsula__pilula,
+  .capsula__opcao,
+  .barra a,
+  .barra a svg,
+  .q-pilulas button,
+  .q-segmentos button,
+  .q-prazo__pilula,
+  .m-folha {
+    transition: none !important;
+  }
+  .barra a[aria-current="page"] svg {
+    transform: none;
+  }
+  .m-veu,
+  .m-folha,
+  .q-aviso {
+    animation: none !important;
+  }
+}

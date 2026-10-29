@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Contar } from "@/components/movimento";
 import type { CSSProperties, ReactNode } from "react";
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { brl, brlCurto, dataCurta, dataPorExtenso, diasEntre, hojeBr } from "@/lib/dinheiro";
@@ -380,6 +381,7 @@ export default async function Hoje() {
           </>
         ) : null}
       </div>
+      <Contar />
     </div>
   );
 }

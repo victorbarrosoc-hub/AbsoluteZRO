@@ -7,28 +7,101 @@
  * No celular vira a barra de baixo com o que se usa todo dia (Z, Hoje, Quadro, Aprovações) e "Mais".
  */
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { AJUSTES, BARRA, GRUPOS, MAIS, type Aba, type Grupo } from "@/lib/navegacao";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { ABAS, AJUSTES, BARRA, GRUPOS, MAIS, type Aba, type Grupo } from "@/lib/navegacao";
 import { Icone } from "./icones";
 
 function ativa(caminho: string, href: string) {
   return caminho === href || caminho.startsWith(`${href}/`);
 }
 
-function Item({ aba, caminho, className }: { aba: Aba; caminho: string; className: string }) {
-  const on = ativa(caminho, aba.href);
+/** A posição da seção na ordem da cápsula: decide se a tela entra pela direita (frente) ou pela esquerda (volta). */
+const ordem = (caminho: string) => ABAS.findIndex((a) => ativa(caminho, a.href));
+const sentido = (de: string, para: string) => (ordem(para) >= ordem(de) ? "m-frente" : "m-volta");
+
+/**
+ * O caminho que a navegação mostra: o destino acende no clique, antes de a seção chegar (como no Synquei), e volta ao
+ * caminho de verdade assim que ele muda.
+ */
+function useCaminho() {
+  const caminho = usePathname();
+  const [indo, setIndo] = useState<{ de: string; para: string } | null>(null);
+  const visto = indo && indo.de === caminho ? indo.para : caminho;
+  return { caminho, visto, ir: (para: string) => setIndo({ de: caminho, para }) };
+}
+
+/**
+ * Link de seção: o esqueleto já vem pela pré-busca automática; com a intenção (mouse em cima, foco ou toque), a seção
+ * inteira, com os dados, para a troca ser imediata. O cache do roteador guarda por pouco tempo (staleTimes em
+ * next.config.ts) e qualquer Server Action com revalidatePath o limpa.
+ */
+function LinkSecao({
+  aba,
+  caminho,
+  visto,
+  ir,
+  className,
+  children,
+}: {
+  aba: Aba;
+  caminho: string;
+  visto: string;
+  ir: (p: string) => void;
+  className: string;
+  children: React.ReactNode;
+}) {
+  const [intencao, setIntencao] = useState(false);
+  const querer = () => setIntencao(true);
+  const on = ativa(visto, aba.href);
   return (
-    <Link href={aba.href} aria-current={on ? "page" : undefined} data-aba={aba.icone} className={className}>
-      <Icone nome={aba.icone} size={16} />
-      <span>{aba.nome}</span>
+    <Link
+      href={aba.href}
+      prefetch={intencao ? true : null}
+      transitionTypes={[sentido(caminho, aba.href)]}
+      aria-current={on ? "page" : undefined}
+      data-aba={aba.icone}
+      className={className}
+      onPointerEnter={querer}
+      onFocus={querer}
+      onTouchStart={querer}
+      onClick={(e) => {
+        if (!e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey && e.button === 0) ir(aba.href);
+      }}
+    >
+      {children}
     </Link>
   );
 }
 
+function Item({ aba, caminho, visto, ir, className }: { aba: Aba; caminho: string; visto: string; ir: (p: string) => void; className: string }) {
+  return (
+    <LinkSecao aba={aba} caminho={caminho} visto={visto} ir={ir} className={className}>
+      <Icone nome={aba.icone} size={16} />
+      <span>{aba.nome}</span>
+    </LinkSecao>
+  );
+}
+
 /** Um grupo como menu da cápsula: botão (com a seção atual, se for deste grupo) e o painel de vidro com as seções. */
-function Menu({ grupo, caminho, aberto, abrir, fechar }: { grupo: Grupo; caminho: string; aberto: boolean; abrir: () => void; fechar: () => void }) {
-  const atual = grupo.abas.find((a) => ativa(caminho, a.href));
+function Menu({
+  grupo,
+  caminho,
+  visto,
+  ir,
+  aberto,
+  abrir,
+  fechar,
+}: {
+  grupo: Grupo;
+  caminho: string;
+  visto: string;
+  ir: (p: string) => void;
+  aberto: boolean;
+  abrir: () => void;
+  fechar: () => void;
+}) {
+  const atual = grupo.abas.find((a) => ativa(visto, a.href));
   const botao = useRef<HTMLButtonElement>(null);
   const espera = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Abriu agora pelo mouse? Então o clique logo em seguida confirma, não fecha.
@@ -91,7 +164,7 @@ function Menu({ grupo, caminho, aberto, abrir, fechar }: { grupo: Grupo; caminho
       </button>
       <div id={id} className="capsula__painel" role="group" aria-label={grupo.nome ?? undefined} hidden={!aberto}>
         {grupo.abas.map((a) => (
-          <Item key={a.href} aba={a} caminho={caminho} className="capsula__opcao" />
+          <Item key={a.href} aba={a} caminho={caminho} visto={visto} ir={ir} className="capsula__opcao" />
         ))}
       </div>
     </div>
@@ -100,7 +173,8 @@ function Menu({ grupo, caminho, aberto, abrir, fechar }: { grupo: Grupo; caminho
 
 /** A cápsula (computador). */
 export function Capsula() {
-  const caminho = usePathname();
+  const { caminho, visto, ir } = useCaminho();
+  const router = useRouter();
   // O menu aberto vale só no caminho em que abriu: ao navegar, fecha sozinho (sem efeito).
   const [aberto, setAberto] = useState<{ grupo: string; caminho: string } | null>(null);
   const raiz = useRef<HTMLElement>(null);
@@ -115,37 +189,92 @@ export function Capsula() {
     return () => document.removeEventListener("pointerdown", fora);
   }, [qual]);
 
+  // As seções dos menus fechados não ficam à vista (o Link só pré-busca o que aparece): com a página parada, pede o
+  // esqueleto de todas, para nenhuma troca começar do zero.
+  useEffect(() => {
+    const ocioso = (window as Window & { requestIdleCallback?: (f: () => void) => number }).requestIdleCallback ?? ((f: () => void) => setTimeout(f, 600));
+    ocioso(() => {
+      for (const a of ABAS) router.prefetch(a.href);
+    });
+  }, [router]);
+
+  // A pílula da seção ativa desliza de um item para o outro (transform com a mola, só CSS; aqui só se mede).
+  const pilula = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    const nav = raiz.current;
+    const p = pilula.current;
+    if (!nav || !p) return;
+    const pos = () => {
+      const alvo = nav.querySelector<HTMLElement>(":scope > .capsula__item[aria-current], :scope > .capsula__menu > .capsula__item[aria-current]");
+      if (!alvo) {
+        p.style.opacity = "0";
+        return;
+      }
+      const a = alvo.getBoundingClientRect();
+      const b = nav.getBoundingClientRect();
+      const primeira = !nav.dataset.pilula;
+      if (primeira) p.style.transition = "none";
+      p.style.opacity = "1";
+      p.style.width = `${a.width}px`;
+      p.style.transform = `translateX(${a.left - b.left}px)`;
+      if (primeira) {
+        void p.offsetWidth;
+        p.style.transition = "";
+        nav.dataset.pilula = "";
+      }
+    };
+    pos();
+    const ro = new ResizeObserver(pos);
+    ro.observe(nav);
+    for (const el of nav.querySelectorAll(":scope > .capsula__item, :scope > .capsula__menu > .capsula__item")) ro.observe(el);
+    return () => ro.disconnect();
+  }, [visto]);
+
   return (
     <nav ref={raiz} className="capsula__nav" aria-label="Seções do Maestro">
+      <span ref={pilula} className="capsula__pilula" aria-hidden="true" />
       {GRUPOS.map((g) =>
         g.nome === null || g.abas.length === 1 ? (
-          g.abas.map((a) => <Item key={a.href} aba={a} caminho={caminho} className="capsula__item" />)
+          g.abas.map((a) => <Item key={a.href} aba={a} caminho={caminho} visto={visto} ir={ir} className="capsula__item" />)
         ) : (
           <Menu
             key={g.nome}
             grupo={g}
             caminho={caminho}
+            visto={visto}
+            ir={ir}
             aberto={qual === g.nome}
             abrir={() => setAberto({ grupo: g.nome!, caminho })}
             fechar={() => setAberto((x) => (x?.grupo === g.nome ? null : x))}
           />
         ),
       )}
-      <Item aba={AJUSTES} caminho={caminho} className="capsula__item capsula__item--icone" />
+      <Item aba={AJUSTES} caminho={caminho} visto={visto} ir={ir} className="capsula__item capsula__item--icone" />
     </nav>
   );
 }
 
 /** A barra de baixo (celular): ícone e nome curto. "Mais" fica marcado nas seções que não estão na barra. */
 export function Barra() {
-  const caminho = usePathname();
-  const naBarra = BARRA.slice(0, -1).some((a) => ativa(caminho, a.href));
+  const { caminho, visto, ir } = useCaminho();
+  const naBarra = BARRA.slice(0, -1).some((a) => ativa(visto, a.href));
   return (
     <nav className="barra" aria-label="Seções do Maestro">
       {BARRA.map((a) => {
-        const on = a === MAIS ? !naBarra : ativa(caminho, a.href);
+        const on = a === MAIS ? !naBarra : ativa(visto, a.href);
+        // No celular não há "mouse em cima": as abas do dia a dia já vêm inteiras (são poucas e as mais usadas).
         return (
-          <Link key={a.href} href={a.href} aria-current={on ? "page" : undefined} data-aba={a.icone}>
+          <Link
+            key={a.href}
+            href={a.href}
+            prefetch={a === MAIS ? null : true}
+            transitionTypes={[sentido(caminho, a.href)]}
+            aria-current={on ? "page" : undefined}
+            data-aba={a.icone}
+            onClick={(e) => {
+              if (!e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey && e.button === 0) ir(a.href);
+            }}
+          >
             <Icone nome={a.icone} size={20} />
             <span>{a.curto ?? a.nome}</span>
           </Link>

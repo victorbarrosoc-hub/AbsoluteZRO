@@ -800,9 +800,13 @@ h3 {
   padding: 34px 0 72px;
   min-width: 0;
 }
-/* A batuta: ao trocar de seção, o conteúdo entra subindo 8 px com a mola (só CSS). */
-.conteudo > * {
-  animation: m-entra 0.24s var(--spring) both;
+/* A batuta: ao trocar de seção, o conteúdo entra subindo 8 px com a mola. Com View Transitions quem anima é o
+   navegador (motion.css); sem elas, só CSS. "backwards": acabou a entrada, não sobra transform (uma transform que
+   fica prende position: fixed, o véu e o aviso, ao retângulo da seção). */
+@supports not (view-transition-name: none) {
+  .conteudo > * {
+    animation: m-entra 0.24s var(--spring) backwards;
+  }
 }
 @keyframes m-entra {
   from {
@@ -1292,28 +1296,6 @@ h3 {
 }
 
 /* véu, folha "Mover para…" e ficha */
-.q-veu {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: grid;
-  place-items: center;
-  padding: 16px;
-  background: rgb(0 0 0 / 0.28);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-  animation: q-entra 0.2s var(--ease);
-}
-.q-folha {
-  width: min(360px, 100%);
-  display: grid;
-  gap: 12px;
-  padding: 20px;
-  border-radius: 26px;
-  background: var(--surface);
-  box-shadow: var(--shadow-float);
-  animation: q-sobe 0.32s var(--spring);
-}
 .q-folha__titulo {
   font-size: 1.1rem;
   font-weight: 700;
@@ -1365,19 +1347,6 @@ h3 {
   justify-self: center;
 }
 
-.q-veu--ficha {
-  place-items: stretch end;
-  padding: 12px;
-}
-.q-ficha {
-  width: min(480px, 100%);
-  max-height: calc(100dvh - 24px);
-  overflow-y: auto;
-  border-radius: 28px;
-  background: var(--surface);
-  box-shadow: var(--shadow-float);
-  animation: q-lado 0.34s var(--spring);
-}
 .q-ficha__corpo {
   display: grid;
   gap: 18px;
@@ -1610,9 +1579,6 @@ h3 {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .q-veu,
-  .q-folha,
-  .q-ficha,
   .q-aviso {
     animation: none;
   }
@@ -2145,28 +2111,6 @@ h3 {
   .q-filtro select {
     width: 100%;
     max-width: none;
-  }
-  .q-veu--ficha {
-    place-items: end stretch;
-    padding: 0;
-  }
-  .q-ficha {
-    width: 100%;
-    max-height: 92dvh;
-    border-radius: 28px 28px 0 0;
-    animation-name: q-sobe;
-  }
-  .q-ficha__corpo {
-    padding: 16px 18px calc(20px + env(safe-area-inset-bottom));
-  }
-  .q-veu:not(.q-veu--ficha) {
-    place-items: end stretch;
-    padding: 0;
-  }
-  .q-folha {
-    width: 100%;
-    border-radius: 28px 28px 0 0;
-    padding-bottom: calc(20px + env(safe-area-inset-bottom));
   }
   .q-aviso {
     bottom: calc(16px + env(safe-area-inset-bottom));

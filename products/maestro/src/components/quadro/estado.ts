@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Referencias } from "@/lib/quadro/servidor";
 import { novoId, type CampoEditavel, type CardQ, type DadosCard } from "@/lib/quadro/metodo";
+import { renovarSecoes } from "@/lib/quadro/renovar";
 
 export type Inicial = Referencias & { cards: CardQ[]; cursor: string; eu: string; podeEscrever: boolean };
 export type Aviso = { id: number; texto: string; desfazer?: () => void };
@@ -45,6 +46,14 @@ export function useQuadro(ini: Inicial) {
   useEffect(() => {
     atual.current = cards;
   });
+
+  // depois de gravar (com uma folga, para juntar várias mudanças), as outras seções guardadas no navegador caducam
+  const renovarT = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const renovar = useCallback(() => {
+    clearTimeout(renovarT.current);
+    renovarT.current = setTimeout(() => void renovarSecoes().catch(() => {}), 1500);
+  }, []);
+  useEffect(() => () => clearTimeout(renovarT.current), []);
 
   const avisar = useCallback((texto: string, desfazer?: () => void) => setAviso({ id: Date.now(), texto, desfazer }), []);
   const fecharAviso = useCallback(() => setAviso(null), []);
@@ -107,7 +116,8 @@ export function useQuadro(ini: Inicial) {
     const aoVoltar = () => {
       if (document.visibilityState === "visible") void volta();
     };
-    t = setTimeout(volta, POLL_MS);
+    // A tela pode ter vindo do cache do roteador (staleTimes em next.config.ts): pergunta já o que mudou desde então.
+    t = setTimeout(volta, 0);
     document.addEventListener("visibilitychange", aoVoltar);
     return () => {
       parado = true;
@@ -135,6 +145,7 @@ export function useQuadro(ini: Inicial) {
       voar(id, -1);
       if (r.ok) {
         por(r.card);
+        renovar();
         return true;
       }
       if (r.card) por(r.card);
@@ -142,7 +153,7 @@ export function useQuadro(ini: Inicial) {
       avisar(r.mensagem);
       return false;
     },
-    [por, avisar],
+    [por, avisar, renovar],
   );
 
   const criar = useCallback(
@@ -157,6 +168,7 @@ export function useQuadro(ini: Inicial) {
       voar(id, -1);
       if (r.ok) {
         por(r.card);
+        renovar();
         return id;
       }
       setCards((m) => {
@@ -167,7 +179,7 @@ export function useQuadro(ini: Inicial) {
       avisar(r.mensagem);
       return null;
     },
-    [por, avisar],
+    [por, avisar, renovar],
   );
 
   const restaurar = useCallback(
@@ -191,14 +203,16 @@ export function useQuadro(ini: Inicial) {
       voar(id, 1);
       const r = await chamar({ op: "apagar", id });
       voar(id, -1);
-      if (r.ok) avisar("Card apagado.", () => void restaurar(id));
-      else {
+      if (r.ok) {
+        avisar("Card apagado.", () => void restaurar(id));
+        renovar();
+      } else {
         por(antes);
         avisar(r.mensagem);
       }
     },
-    [por, avisar, restaurar],
+    [por, avisar, restaurar, renovar],
   );
 
-  return { cards, mudar, criar, apagar, aviso, fecharAviso };
+  return { cards, mudar, criar, apagar, aviso, avisar, fecharAviso };
 }

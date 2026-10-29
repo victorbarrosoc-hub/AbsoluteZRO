@@ -4,6 +4,16 @@ import { useEffect, useRef } from "react";
 import { COLUNAS, estadoPrazo, rotuloDia, type ColunaKey, type DadosCard } from "@/lib/quadro/metodo";
 import type { Referencias } from "@/lib/quadro/servidor";
 import { Icone } from "@/components/icones";
+import { Folha, useFecharFolha } from "@/components/folha";
+
+function BotaoFechar() {
+  const fechar = useFecharFolha();
+  return (
+    <button type="button" className="glass-btn glass-btn--sm q-folha__fechar" onClick={fechar}>
+      Cancelar
+    </button>
+  );
+}
 
 type Pessoa = Referencias["pessoas"][number];
 
@@ -60,19 +70,17 @@ export function ChipPrioridade({ p }: { p?: DadosCard["prioridade"] }) {
 export function MoverPara({ atual, aoEscolher, aoFechar }: { atual: ColunaKey; aoEscolher: (k: ColunaKey) => void; aoFechar: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    ref.current?.querySelector<HTMLButtonElement>("button[aria-current='true'], button")?.focus();
-    const tecla = (e: KeyboardEvent) => e.key === "Escape" && aoFechar();
-    document.addEventListener("keydown", tecla);
-    return () => document.removeEventListener("keydown", tecla);
-  }, [aoFechar]);
+    ref.current?.querySelector<HTMLButtonElement>("button[aria-current='true'], button")?.focus({ preventScroll: true });
+  }, []);
   return (
-    <div className="q-veu" onClick={aoFechar}>
-      <div className="q-folha" role="dialog" aria-modal="true" aria-label="Mover para" ref={ref} onClick={(e) => e.stopPropagation()}>
+    <Folha rotulo="Mover para" aoFechar={aoFechar} tamanho="acao" className="q-folha">
+      <div ref={ref} className="q-folha__corpo">
         <h2 className="q-folha__titulo">Mover para…</h2>
         <ul className="q-folha__lista">
           {COLUNAS.map((c, i) => (
             <li key={c.k}>
-              <button type="button" aria-current={c.k === atual} onClick={() => aoEscolher(c.k)}>
+              <button type="button" data-col={c.k} aria-current={c.k === atual} onClick={() => aoEscolher(c.k)}>
+                <i className="q-ponto" aria-hidden="true" />
                 <span className="q-folha__n">{i + 1}</span>
                 {c.nome}
                 {c.k === atual ? <span className="q-folha__aqui">Aqui</span> : null}
@@ -80,10 +88,8 @@ export function MoverPara({ atual, aoEscolher, aoFechar }: { atual: ColunaKey; a
             </li>
           ))}
         </ul>
-        <button type="button" className="glass-btn glass-btn--sm q-folha__fechar" onClick={aoFechar}>
-          Cancelar
-        </button>
+        <BotaoFechar />
       </div>
-    </div>
+    </Folha>
   );
 }

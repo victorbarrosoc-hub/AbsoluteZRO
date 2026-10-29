@@ -211,5 +211,10 @@ público → Pedidos → gerar orçamento → link → aceite → projeto → Ho
 (`arquivos.spec.ts`: cadeado sem o SOBEDESCE, navegador, prévia com timecode, estrutura do projeto, Drive tocando na
 revisão e Escolher no Drive; `SHOTS_DIR` guarda as capturas) e nada cortado no celular (`sem-corte.spec.ts` com o
 detector `e2e/corte.ts`: todas as telas a 375 e 393 px, claro e escuro, Chromium e WebKit; tela nova entra na lista;
-faixa que rola de lado só com `data-rolagem`; regras de celular em `src/app/celular.css`). Unitário da hora em
+faixa que rola de lado só com `data-rolagem`; regras de celular em `src/app/celular.css`) e o Quadro com fluidez
+(`quadro.spec.ts`: folha na janela inteira, "Novo card", Mover para com Desfazer, troca de seção com View Transition).
+Movimento (29/10/2026): toda folha usa `Folha` (`src/components/folha.tsx`, portal no `<body>`); troca de seção em
+`src/components/movimento.tsx` + `src/app/motion.css`; links da cápsula pré-buscam com a intenção; `staleTimes` em
+`next.config.ts` (o Quadro chama `renovarSecoes` depois de gravar). Nada de `transform` que fique preso num ancestral
+de `position: fixed`. Unitário da hora em
 `hora.test.mts`.
