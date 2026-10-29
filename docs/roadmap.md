@@ -450,6 +450,17 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   `packages/drive-web`, que o SOBEDESCE passou a usar), prévia de vídeo, imagem e PDF, "Abrir no SOBEDESCE",
   "Estrutura no Drive" por projeto e ligar pasta a projeto (migração 0019). Falta: upload pelo Maestro
   (`drive.enviar`), raiz do Drive compartilhado da organização em Ajustes, proxy 720p automático para ProRes.
+- ✅ Maestro para computador (29/10/2026, pedido do titular; `products/maestro/desktop`,
+  [README](../products/maestro/desktop/README.md)): Electron no Mac e no Windows com a moldura do Absolute ZRO para
+  computador (barra própria no Mac, papel claro do Maestro, menu em português, memória da janela, uma instância,
+  `maestro://`, "Sem conexão" local) e o ícone oficial. Na janela só o Maestro, as telas de entrar da Absolute ZRO e o
+  Google; links do cliente (`/a`, `/o`, `/p`) e o resto vão para o navegador. Login único pelo próprio site, cookies
+  guardados. "Nova versão do Maestro" com Atualizar (motor compartilhado com o hub-desktop, que ganhou o nome do app
+  como opção) pela Absolute ZRO: `/baixar/app/maestro/{versao.json,mac,windows,<arquivo>}` com o gate do canal
+  download; Maestro em `APPS_DESKTOP` (central) e em `DOWNLOADS` (`/baixar`), escondido enquanto fechado.
+  `.github/workflows/maestro-desktop.yml` publica no Release de teste `maestro-versao-de-teste` (SHA-256,
+  `versao.json`, três últimos builds). Falta: primeiro build no GitHub (sai no próximo push na main), instalar num Mac e
+  num Windows de verdade, assinatura/notarização da Apple e certificado da Microsoft (decisão e conta do titular).
 - ⬜ Maestro, pendente do titular: ciência dos serviços abertos da calculadora; criar a chave de API do Google só do
   Maestro (restrita à Drive API e a `maestro.absolutezro.com`) e pôr em `MAESTRO_GOOGLE_API_KEY` na Vercel; pôr
   `CRON_SECRET` no projeto `maestro` da Vercel (agendamento que desliga o compartilhamento de revisão vencido).

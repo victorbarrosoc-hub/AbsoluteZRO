@@ -2152,3 +2152,24 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   `scripts/ui-stub.js` com `STUB_ZRO=folha|faixa` (app do computador) no Chromium do Playwright.
 - Não validado: a página de Conexões da central (outro deploy), o caminho no iPhone com o app instalado (folha do
   navegador por cima ao tocar na faixa) e o Electron de verdade abrindo o navegador do sistema.
+
+## Maestro para computador (29/10/2026)
+
+App Electron em `products/maestro/desktop` (Mac e Windows), Release de teste `maestro-versao-de-teste` e o Maestro no
+catálogo de downloads da Absolute ZRO, atrás do gate.
+
+| Verificação                                       | Comando                                                                         | Resultado                                                                                                   |
+| ------------------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Regras, aviso de versão, cópias, ícones e Release | `cd products/maestro/desktop && npm test`                                       | **24/24** (navegação, links do cliente, `mailto:`/`webcal:`, deep link, permissões, versão, gerenciado)     |
+| Fumaça (dev e empacotado)                         | `xvfb-run -a electron . --smoke --no-sandbox` e `dist/linux-unpacked/… --smoke` | `SMOKE OK` nos dois (ponte, sem Node, Figtree, ícone, papel `#f7f3ee`, regras); asar só com `desktop/**`    |
+| Empacotar                                         | `electron-builder --linux dir`                                                  | ok, fusíveis gravados; o .dmg e o .exe saem no GitHub Actions (Mac e Windows não rodam aqui)                |
+| Login dentro da janela (site real)                | app em dev, CDP                                                                 | `/app` → "Entrar com Absolute ZRO." do Maestro → `absolutezro.com/entrar?next=/oauth/authorize…` na janela  |
+| Sessão guardada (Maestro e HUB falsos, local)     | app em dev com `MAESTRO_URL`/`ZRO_HUB_URL`                                      | entra, volta em `/app/hoje`; fecha e abre: continua logado (`mae_sessao` com validade, não de sessão)       |
+| Hub: catálogo e downloads                         | `npx vitest run tests/integration/{desktop-apps,downloads}.test.ts`             | fechado = fora do catálogo e 404 em `mac`, `windows`, `versao.json` e arquivo; liberado = Mac/Windows/aviso |
+| Raiz                                              | `npm run lint`, `format:check`, `typecheck`, `npm test`                         | ok · ok · ok · **280/280** em 34 arquivos                                                                   |
+| E2E do HUB                                        | `next build --webpack` + `npx playwright test`                                  | **29/29**; o gate confere que nada do Maestro para computador aparece nem responde para anônimo             |
+| hub-desktop (motor com o nome do app)             | `cd apps/hub-desktop && npm test`                                               | 60/60                                                                                                       |
+| Segredos                                          | `node scripts/scan-secrets.mjs`                                                 | nenhum                                                                                                      |
+
+Não conferido aqui: instalar e abrir num Mac e num Windows de verdade, o "Atualizar" trocando o app (só nos testes com
+sistema simulado), e o primeiro Release (sai no primeiro push na main com `products/maestro/desktop/**`).

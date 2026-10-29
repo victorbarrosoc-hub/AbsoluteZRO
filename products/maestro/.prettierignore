@@ -7,3 +7,4 @@ public/brand/
 next-env.d.ts
 src/lib/drive-web/
 public/drive-sw.js
+desktop/

@@ -118,7 +118,7 @@ rm -rf "$TMP"
 }
 
 /** Script do Windows: espera o app fechar, roda o instalador em silêncio e abre o app (se o instalador não abriu). */
-function scriptWin({ pid, setup, exe, marca, tmp, build }) {
+function scriptWin({ pid, setup, exe, marca, tmp, build, nome = NOME_APP }) {
   const falha = (motivo) => `Set-Content -LiteralPath $marca -Value ${psQuote(JSON.stringify({ build, motivo }))} -Encoding UTF8`
   return `# Absolute ZRO: instala a versão nova depois que o app fechar (gerado por desktop/atualizador.cjs).
 $ErrorActionPreference = 'Continue'
@@ -143,7 +143,7 @@ try {
 } catch {}
 if (-not $ok) { ${falha('O instalador do Windows não terminou.')} }
 Start-Sleep -Seconds 3
-if (-not (Get-Process -Name ${psQuote(NOME_APP)} -ErrorAction SilentlyContinue)) {
+if (-not (Get-Process -Name ${psQuote(nome)} -ErrorAction SilentlyContinue)) {
   if (Test-Path -LiteralPath $exe) { Start-Process -FilePath $exe }
 }
 Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
@@ -232,8 +232,11 @@ class Atualizador extends EventEmitter {
     tmpRoot,
     log = () => {},
     progressoMs = PROGRESSO_MS,
+    nome = NOME_APP,
   } = {}) {
     super()
+    // nome do app (do .app no Mac e do processo no Windows): o Maestro usa este mesmo motor (products/maestro/desktop)
+    this.nome = String(nome)
     this.platform = platform
     this.plataforma = PLATAFORMAS[platform] || null
     this.appExe = appExe ? String(appExe) : ''
@@ -269,8 +272,8 @@ class Atualizador extends EventEmitter {
     if (this.plataforma === 'mac') {
       const bundle = macBundle(this.appExe)
       if (!bundle) return 'Não encontrei o app para trocar.'
-      if (bundle.includes('/AppTranslocation/')) return 'Mova o Absolute ZRO para Aplicativos e abra de novo para ele se atualizar sozinho.'
-      if (bundle.startsWith('/Volumes/')) return 'O Absolute ZRO está aberto direto do disco de instalação. Arraste para Aplicativos e abra de lá.'
+      if (bundle.includes('/AppTranslocation/')) return `Mova o ${this.nome} para Aplicativos e abra de novo para ele se atualizar sozinho.`
+      if (bundle.startsWith('/Volumes/')) return `O ${this.nome} está aberto direto do disco de instalação. Arraste para Aplicativos e abra de lá.`
       if (!this.canWrite(path.posix.dirname(bundle)) || !this.canWrite(bundle)) return 'Sem permissão para trocar o app nesta pasta.'
       this.bundle = bundle
     } else if (!this.canWrite(path.win32.dirname(this.appExe))) {
@@ -437,7 +440,7 @@ class Atualizador extends EventEmitter {
     }
     try {
       const apps = (await fsp.readdir(montagem)).filter((n) => n.endsWith('.app'))
-      const origem = apps.includes(`${base}.app`) ? `${base}.app` : apps.find((n) => n === `${NOME_APP}.app`)
+      const origem = apps.includes(`${base}.app`) ? `${base}.app` : apps.find((n) => n === `${this.nome}.app`)
       if (!origem) throw definitivo('O instalador baixado não tem o app dentro.')
       await this.run('/bin/rm', ['-rf', novo]).catch(() => {
         throw definitivo('Uma atualização antiga ficou presa na pasta de Aplicativos.')
@@ -463,7 +466,7 @@ class Atualizador extends EventEmitter {
     const script = path.join(tmp, 'trocar.ps1')
     const marca = path.join(this.pasta || tmp, MARCA)
     // BOM: o PowerShell 5 lê o script como UTF-8 (acentos nos caminhos e nas mensagens).
-    await fsp.writeFile(script, BOM + scriptWin({ pid: this.appPid, setup: arquivo, exe: this.appExe, marca, tmp, build }), { mode: 0o700 })
+    await fsp.writeFile(script, BOM + scriptWin({ pid: this.appPid, setup: arquivo, exe: this.appExe, marca, tmp, build, nome: this.nome }), { mode: 0o700 })
     return script
   }
 }
