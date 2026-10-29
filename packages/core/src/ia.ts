@@ -6,7 +6,7 @@
  * - Cada resposta gasta 1 crédito de `zro.ai_credits`, com chave de idempotência; sem crédito, a IA nem é chamada.
  */
 import type { Authenticated } from '@zro/auth'
-import { consumeQuota, productAccessFor, quotaPeriod } from '@zro/billing'
+import { consumeQuota, FEATURE_FLAGS, productAccessFor, quotaPeriod } from '@zro/billing'
 import type { Database, Queryable } from '@zro/db'
 import { DomainError } from '@zro/observability'
 import { z } from 'zod'
@@ -204,6 +204,7 @@ export async function retratoDoEcossistema(db: Database, actor: Actor, produto: 
         select l.key as metrica, max(l.value::bigint) as limite
         from zro.entitlements e, jsonb_each_text(e.limits) l
         where e.org_id = ${actor.orgId} and e.status = 'active' and e.starts_at <= now() and (e.ends_at is null or e.ends_at > now())
+          and l.key <> all(${[...FEATURE_FLAGS]}::text[])
         group by l.key
       )
       select coalesce(l.metrica, q.metric) as metrica, coalesce(q.used, 0)::bigint as usado, coalesce(l.limite, q.limit_value) as limite

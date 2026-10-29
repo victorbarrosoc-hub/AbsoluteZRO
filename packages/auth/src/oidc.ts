@@ -195,6 +195,7 @@ export function discovery(issuer: string) {
       'zro_org',
       'zro_products',
       'zro_release',
+      'zro_features',
       'auth_time',
       'nonce',
     ],
@@ -433,6 +434,15 @@ export type OrgClaims = {
   products: string[]
   /** Claim zro_release: um valor por produto do catálogo. */
   release: Record<string, ReleaseClaimValue>
+  /** Claim zro_features: sinais de recurso da organização (`produto.recurso`); cada app recebe só os do produto dele. */
+  features?: string[]
+}
+
+/** Os sinais que vão no token de um app: só os do produto do cliente (app sem produto, nenhum). */
+export function featuresForClient(client: Pick<OAuthClient, 'productId'>, features: string[] | undefined): string[] {
+  if (!client.productId) return []
+  const prefix = `${client.productId}.`
+  return (features ?? []).filter((f) => f.startsWith(prefix))
 }
 export type ClaimsLoader = (tx: Queryable, userId: string, orgId: string | null) => Promise<OrgClaims>
 
@@ -535,7 +545,7 @@ async function buildTokens(
       iat: now,
       exp: now + ACCESS_TTL_S,
       jti: randomUUID(),
-      ...(comOrg ? { zro_org: claims.org?.id ?? null, zro_products: claims.products } : {}),
+      ...(comOrg ? { zro_org: claims.org?.id ?? null, zro_products: claims.products, zro_features: featuresForClient(client, claims.features) } : {}),
       zro_release: claims.release,
     },
     'at+jwt',
@@ -550,7 +560,7 @@ async function buildTokens(
     ...(g.nonce ? { nonce: g.nonce } : {}),
     ...(g.scopes.includes('email') ? { email: u.email, email_verified: !!u.email_verified_at } : {}),
     ...(g.scopes.includes('profile') ? profileClaims(iss, u) : {}),
-    ...(comOrg ? { zro_org: claims.org, zro_products: claims.products } : {}),
+    ...(comOrg ? { zro_org: claims.org, zro_products: claims.products, zro_features: featuresForClient(client, claims.features) } : {}),
     zro_release: claims.release,
   })
   const out: TokenResponse = { access_token, token_type: 'Bearer', expires_in: ACCESS_TTL_S, id_token, scope: g.scopes.join(' ') }
@@ -660,7 +670,7 @@ export async function userInfo(db: Database, bearer: string | null, loadClaims: 
     if (scopes.includes('profile')) Object.assign(out, profileClaims(issuerFromEnv(), u))
     const comOrg = scopes.includes('org')
     const c = await loadClaims(tx, u.id as string, comOrg ? ((p.zro_org as string) ?? null) : null)
-    if (comOrg) Object.assign(out, { zro_org: c.org, zro_products: c.products })
+    if (comOrg) Object.assign(out, { zro_org: c.org, zro_products: c.products, zro_features: featuresForClient(client, c.features) })
     out.zro_release = c.release
     return out
   })

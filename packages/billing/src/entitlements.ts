@@ -106,6 +106,8 @@ export async function checkEntitlement(
     select id, source, ends_at, features from zro.entitlements
     where org_id = ${orgId} and product_id = ${productId} and status = 'active'
       and starts_at <= ${now} and (ends_at is null or ends_at > ${now})
+      -- features = '{}' é adicional (só sinais e limites, ex.: maestro.marca_propria): não dá a ferramenta.
+      and (features is null or cardinality(features) > 0)
     order by ends_at desc nulls first`
   if (!rows.length) {
     return { ok: false, code: 'entitlement_required', message: `${product.name as string} não está no plano desta organização.` }
@@ -161,6 +163,7 @@ export async function productAccessFor(
       select ends_at, source from zro.entitlements e
       where ${orgId}::uuid is not null and e.org_id = ${orgId}::uuid and e.product_id = p.id and e.status = 'active'
         and e.starts_at <= ${now} and (e.ends_at is null or e.ends_at > ${now})
+        and (e.features is null or cardinality(e.features) > 0)
       order by e.ends_at desc nulls first limit 1
     ) e on true
     order by p.step_order`
@@ -190,4 +193,28 @@ export async function productAccessFor(
       },
     }
   })
+}
+
+/**
+ * Sinais de recurso (limite `produto.recurso` = 1 numa feature sem métrica, ex.: `maestro.marca_propria`, migração 0025):
+ * o que a claim `zro_features` conta ao app. Vêm de qualquer entitlement vigente da organização (inclusive o de um
+ * adicional, `features = '{}'`), só de produto lançado (active/beta) e aberto para a pessoa no canal pedido.
+ */
+export const FEATURE_FLAGS = ['maestro.marca_propria'] as const
+
+/** Limite que é sinal (sim/não), não medidor: fica fora dos medidores de uso. */
+export const isFeatureFlag = (key: string) => (FEATURE_FLAGS as readonly string[]).includes(key)
+
+export async function featureFlagsFor(tx: Queryable, orgId: string, who: { userId: string; channel?: ReleaseChannel }, now = new Date()): Promise<string[]> {
+  const rows = await tx`
+    select distinct f.product_id || '.' || f.feature_key as flag
+    from zro.entitlements e
+    join zro.products p on p.id = e.product_id and p.stage in ('active', 'beta')
+    join zro.product_features f on f.product_id = e.product_id and f.metric is null
+    where e.org_id = ${orgId} and e.status = 'active' and e.starts_at <= ${now} and (e.ends_at is null or e.ends_at > ${now})
+      and jsonb_typeof(e.limits -> (f.product_id || '.' || f.feature_key)) = 'number'
+      and (e.limits ->> (f.product_id || '.' || f.feature_key))::numeric >= 1
+      and zro.release_allows(e.product_id, ${who.userId}::uuid, ${who.channel ?? 'sso'})
+    order by 1`
+  return rows.map((r) => r.flag as string)
 }
