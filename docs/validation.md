@@ -2230,3 +2230,10 @@ catálogo de downloads da Absolute ZRO, atrás do gate.
 
 Não conferido aqui: instalar e abrir num Mac e num Windows de verdade, o "Atualizar" trocando o app (só nos testes com
 sistema simulado), e o primeiro Release (sai no primeiro push na main com `products/maestro/desktop/**`).
+
+## Conversão de mídia como setor próprio (29/10/2026)
+
+Só documentos ([ADR 0029](decisions/0029-conversao-como-setor.md), PRD §2, roadmap): nenhum código mudou. Mapa feito
+lendo o código de `products/finishing`, `products/sobedesce`, `products/ai-edit`, `products/nossom`,
+`products/synquei` e `products/maestro`. Synquei exporta projeto (XML, OTIO, EDL), não mídia; Maestro, TPeasy, Carro
+do Freela e HUB não convertem. `npm run format:check` e `node scripts/scan-secrets.mjs` ok.

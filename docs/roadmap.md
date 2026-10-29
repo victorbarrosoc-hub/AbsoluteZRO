@@ -519,6 +519,19 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   (Maestro) no próximo deploy autorizado. Primeira semana da ANP entra no primeiro sábado ou na primeira abertura da
   calculadora.
 
+## Conversão de mídia como setor próprio (29/10/2026, [ADR 0029](decisions/0029-conversao-como-setor.md))
+
+A Revela fica só com a cor (looks, espaço de cor, LUT e PowerGrade). Codec, contêiner e formatos de vídeo e áudio vão
+para uma plataforma nova, vendida sozinha e chamada pelas outras.
+
+- ✅ Mapa do que já converte no ecossistema (Revela, SOBEDESCE, AEON, NOSSOM) e a divisão entre os setores, na ADR.
+- ⬜ Nome e id técnico (decisão do titular).
+- ⬜ Passo 1: conversor, plano e presets saem de `products/finishing` para `products/<id>/`, com a mesma tela; a cópia
+  do SOBEDESCE confere contra a pasta nova. ⛔ Projeto Vercel, domínio e schema pedem autorização do titular.
+- ⬜ Passo 2: "Baixar como…" e o pedido da Z pelo setor novo, com quota e "Disponível com" para quem não contratou.
+- ⬜ Passo 3: lote com vários destinos, ProRes/DNxHR, HDR 10 bits, loudness, legenda queimada, corte e presets da pessoa.
+- ⬜ Evento `media.conversion.completed` no HUB, quando a primeira integração passar por ele.
+
 ## Fase 6 — Escala
 
 - ⬜ Observabilidade em produção (drain de logs, métricas da fila, alertas), backups e retenção definidos.
