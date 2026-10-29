@@ -4,7 +4,7 @@ import './conta.js'
 import './menu.js'
 import { DESTINOS, destino } from '../src/entrega/destinos.js'
 import { gerarScript, nomeScript } from '../src/entrega/resolve.js'
-import { ICONES, NOME_CURTO, escalonar, glifo, icones, svg } from './visual.js'
+import { ICONES, NOME_CURTO, cascata, escalonar, glifo, icones, svg } from './visual.js'
 
 // o painel desta ferramenta: as abas trocam de painel sem recarregar (app/navegar.js), então tudo é procurado aqui dentro
 const raiz = document.querySelector('main')
@@ -32,6 +32,7 @@ function listar() {
   )
   // o nome inteiro para leitor de tela e para a busca por nome
   for (const b of $('destinos').children) b.setAttribute('aria-label', destino(b.dataset.id).nome)
+  cascata($('destinos'))
 }
 
 function linha(rotulo, valor) {

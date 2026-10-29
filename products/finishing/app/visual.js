@@ -26,6 +26,10 @@ export const ICONES = {
   cadeado: traco('<rect x="5" y="10.5" width="14" height="9.5" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>'),
   info: traco('<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8v.1"/>'),
   converter: traco('<path d="M4 8h13l-3.5-3.5"/><path d="M20 16H7l3.5 3.5"/>'),
+  // frasco do laboratório com a película dentro
+  lab: traco('<path d="M9.5 3.5h5M10.5 3.5v5.2L5.6 17.4a2 2 0 0 0 1.8 3.1h9.2a2 2 0 0 0 1.8-3.1l-4.9-8.7V3.5"/><path d="M7.8 14h8.4"/>'),
+  // looks prontos: três quadros de filme empilhados
+  looks: traco('<rect x="3.5" y="8" width="13" height="12" rx="2.5"/><path d="M7 5h11a2.5 2.5 0 0 1 2.5 2.5V16"/><path d="M3.5 15.5 7.5 12l3 2.5 2.5-2 3.5 3"/>'),
   lut: traco('<path d="M12 3.5 19.5 8v8L12 20.5 4.5 16V8Z"/><path d="M12 12 19.5 8M12 12v8.5M12 12 4.5 8"/>'),
   sol: traco('<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/>'),
   lua: traco('<path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10Z"/>'),
@@ -70,6 +74,14 @@ export function svg(html) {
 /** Pontos de entrada com escalonamento: cada `.entra` recebe a ordem dele (a animação fica no CSS). */
 export function escalonar(raiz = document) {
   raiz.querySelectorAll('.entra').forEach((n, i) => n.style.setProperty('--i', String(i)))
+}
+
+/** Entrada em cascata dos filhos de uma lista (cartões, miniaturas): cada um chega 24 ms depois do anterior. */
+export function cascata(lista) {
+  ;[...lista.children].forEach((n, i) => n.style.setProperty('--i', String(Math.min(i, 12))))
+  lista.classList.remove('cascata')
+  void lista.offsetWidth // recomeça quando a lista é refeita
+  lista.classList.add('cascata')
 }
 
 /** Troca cada `[data-icone]` pelo ícone. */

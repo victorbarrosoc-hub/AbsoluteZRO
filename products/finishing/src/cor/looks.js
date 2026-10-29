@@ -119,6 +119,9 @@ export const LOOKS = [
   },
 ]
 
+/** Os parâmetros da primeira versão, para outros looks feitos com o mesmo motor (src/cor/lab.js). */
+export const BASE_DE_LOOK = BASE
+
 /** Curva de filme em L (0–1): S logístico misturado com a reta, preto e branco deslocados. Monótona. */
 export function curvaDeFilme(L, p = REVELA_LOOK) {
   // gama (padrão 1): abre ou fecha o meio-tom sem mexer no preto e no branco
@@ -134,7 +137,8 @@ export function curvaDeFilme(L, p = REVELA_LOOK) {
  * ligam só a curva ou só a cor, como na tela; `opcoes.intensidade` (0–1, padrão 1).
  */
 export function criarRevelaLook(opcoes = {}) {
-  const p = LOOKS.find((l) => l.id === opcoes.look) ?? REVELA_LOOK
+  // `opcoes.parametros`: um look montado fora desta lista com o mesmo motor (as películas do Revela Lab)
+  const p = opcoes.parametros ?? LOOKS.find((l) => l.id === opcoes.look) ?? REVELA_LOOK
   const intensidade = limitar(opcoes.intensidade ?? 1, [0, 1])
   const usarTom = opcoes.tom ?? true
   const usarCor = opcoes.cor ?? true

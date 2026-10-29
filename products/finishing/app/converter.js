@@ -121,9 +121,17 @@ async function adicionar(arquivos) {
   $('converter').disabled = !fila.some((i) => i.estado === 'pronto')
 }
 
-/** O decodificador de ProRes entrega quadros sem a cor; sem ela o navegador assume BT.601 (SD). */
-async function comCor(amostra, cor) {
-  if (amostra.colorSpace?.matrix) return amostra
+const REC709 = { primaries: 'bt709', transfer: 'bt709', matrix: 'bt709', fullRange: false }
+
+/**
+ * A cor de cada quadro. O decodificador de ProRes lê a do cabeçalho do quadro, que pode faltar (aí o navegador assume
+ * BT.601, de SD) ou contradizer o contêiner. A do contêiner manda, como no QuickTime; sem nenhuma, Rec.709.
+ */
+async function comCor(amostra, conteiner) {
+  const atual = amostra.colorSpace
+  const cor = conteiner?.matrix ? conteiner : atual?.matrix ? null : REC709
+  const igual = (k) => atual?.[k] === cor[k]
+  if (!cor || (igual('primaries') && igual('transfer') && igual('matrix') && Boolean(atual.fullRange) === Boolean(cor.fullRange))) return amostra
   const dados = new Uint8Array(amostra.allocationSize())
   const layout = await amostra.copyTo(dados)
   const nova = new MB.VideoSample(dados, {
@@ -172,7 +180,7 @@ async function miniatura(video, duracao, cor, item) {
   const inicio = await video.getFirstTimestamp()
   const amostra = await new MB.VideoSampleSink(video).getSample(inicio + Math.min(1, duracao * 0.1))
   if (!amostra) return
-  const certa = await comCor(amostra, cor?.matrix ? cor : { primaries: 'bt709', transfer: 'bt709', matrix: 'bt709', fullRange: false })
+  const certa = await comCor(amostra, cor)
   const tela = $(`item-${item.id}`)?.querySelector('canvas')
   if (tela) {
     tela.width = 224
@@ -305,7 +313,7 @@ async function converter(item) {
   if (cstId) item.avisos.push(`Log ${ENTRADAS.find((e) => e.id === cstId).nome} → Rec.709.`)
   // com o CST, cada quadro passa pela LUT na GPU e volta como RGBA marcado BT.709
   const processar = async (amostra) => {
-    const certa = await comCor(amostra, corOrigem)
+    const certa = await comCor(amostra, item.info.cor)
     if (!gpu) return certa
     const quadro = certa.toVideoFrame()
     const largura = certa.displayWidth

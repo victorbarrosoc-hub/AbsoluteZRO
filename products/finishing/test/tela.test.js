@@ -298,6 +298,9 @@ test('converter: ProRes 422 HQ vira MP4 H.264 marcado BT.709, no navegador', asy
     'sine=frequency=440:sample_rate=48000',
     '-t',
     '2',
+    '-vf',
+    // o ffmpeg 8 tira a cor dos quadros (as opções -color_* sozinhas não bastam): marca cada quadro com setparams
+    'scale=out_color_matrix=bt709:out_range=tv,setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv',
     '-c:v',
     'prores_ks',
     '-profile:v',
@@ -314,6 +317,10 @@ test('converter: ProRes 422 HQ vira MP4 H.264 marcado BT.709, no navegador', asy
     'pcm_s24le',
     master,
   ])
+  // cabeçalho dos quadros em BT.601 (6) contra o contêiner em BT.709: vale o contêiner, como no QuickTime
+  const bruto = readFileSync(master)
+  for (let i = bruto.indexOf('icpf'); i >= 0; i = bruto.indexOf('icpf', i + 4)) bruto.fill(6, i + 18, i + 21)
+  writeFileSync(master, bruto)
   const pagina = await navegador.newPage({ acceptDownloads: true })
   const erros = []
   pagina.on('pageerror', (e) => erros.push(e.message))
@@ -364,7 +371,17 @@ test('converter: ProRes 422 HQ vira MP4 H.264 marcado BT.709, no navegador', asy
   )
   const video = sonda.streams.find((s) => s.codec_type === 'video')
   assert.deepEqual([video.codec_name, video.width, video.height], ['h264', 1280, 720])
-  assert.deepEqual([video.color_primaries, video.color_transfer, video.color_space], ['bt709', 'bt709', 'bt709'])
+  // na falha, as marcas de cor de cada lado: colr do contêiner e cabeçalho do primeiro quadro ProRes
+  const marcas = (arquivo, caixa, deslocamento) => {
+    const b = readFileSync(arquivo)
+    const i = b.indexOf(caixa)
+    return i < 0 ? `${caixa} ausente` : `${caixa} ${[...b.subarray(i + deslocamento, i + deslocamento + 10)].join(',')}`
+  }
+  assert.deepEqual(
+    [video.color_primaries, video.color_transfer, video.color_space],
+    ['bt709', 'bt709', 'bt709'],
+    `master: ${marcas(master, 'colr', 0)} · ${marcas(master, 'icpf', 16)} · saída: ${marcas(saida, 'colr', 0)}`,
+  )
   assert.ok(
     sonda.streams.some((s) => s.codec_type === 'audio'),
     'sem áudio na saída',
@@ -591,7 +608,7 @@ test('página inicial fechada ao público: a comparação segue, "Conhecer o pro
   assert.equal(await pagina.getByRole('list', { name: 'Editores compatíveis' }).getByRole('listitem').count(), 6)
   const hrefs = await pagina.$$eval('a[href]', (as) => as.map((a) => a.getAttribute('href')))
   assert.deepEqual(
-    hrefs.filter((h) => /^(inicio|lut|cst|entrega|converter)(\.html)?(\?|#|$)/.test(h)),
+    hrefs.filter((h) => /^(inicio|lut|lab|looks|cst|entrega|converter)(\.html)?(\?|#|$)/.test(h)),
     [],
   )
   assert.equal(await pagina.getByRole('link', { name: 'Conhecer o projeto' }).first().getAttribute('href'), '#looks')
@@ -980,7 +997,7 @@ test('app na Tela de Início: manifesto, ícones e o passo a passo do Compartilh
   // o iPhone usa o apple-touch-icon (180, sem transparência) e não o manifesto
   const toque = readFileSync(join(RAIZ, 'marca/app/apple-touch-icon.png'))
   assert.deepEqual([toque.readUInt32BE(16), toque.readUInt32BE(20), toque[25]], [180, 180, 2], 'PNG 180×180 RGB')
-  for (const f of ['index.html', 'lut.html', 'cst.html', 'entrega.html', 'converter.html', 'entrar.html']) {
+  for (const f of ['index.html', 'lut.html', 'lab.html', 'looks.html', 'cst.html', 'entrega.html', 'converter.html', 'entrar.html']) {
     const html = readFileSync(join(RAIZ, f), 'utf8')
     for (const marca of ['rel="manifest"', 'rel="apple-touch-icon"', 'apple-mobile-web-app-title" content="Revela"', 'black-translucent'])
       assert.ok(html.includes(marca), `${f}: ${marca}`)
@@ -1178,5 +1195,106 @@ test('página inicial fechada ao público: a seção da Z diz "Chegando à Revel
   assert.equal(await sec.getByRole('link', { name: 'Conversar com a Z' }).count(), 0)
   assert.equal(await sec.getByRole('link', { name: 'Conhecer a Z' }).getAttribute('href'), 'https://absolutezro.com/ia')
   assert.doesNotMatch(await sec.innerText(), /Agora na Revela|o Z\b/)
+  await pagina.close()
+})
+
+test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks', async () => {
+  const pagina = await navegador.newPage({ acceptDownloads: true, viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
+  await pagina.goto(endereco + 'lab.html')
+  await pagina.getByRole('heading', { name: 'Crie o seu look.' }).waitFor()
+  await pagina.getByRole('button', { name: 'Usar um exemplo' }).click()
+  await pagina.locator('#lab:not([hidden])').waitFor()
+  // "Analisar e corrigir" já vem ligado e diz o que fez
+  assert.equal(await pagina.getByRole('switch', { name: 'Analisar e corrigir' }).isChecked(), true)
+  assert.notEqual((await pagina.locator('#leitura-correcao').textContent()).trim(), '')
+  await pagina.getByRole('tab', { name: 'Película' }).click()
+  assert.deepEqual(await pagina.locator('#bases .look').evaluateAll((n) => n.map((b) => b.dataset.look)), ['negativo-250d', 'negativo-500t', 'positivo-50d', 'reversivel', 'sem-branqueamento'])
+  await pagina.getByRole('radio', { name: 'Negativo 500T' }).click()
+  assert.equal(await pagina.locator('#rotulo-depois').textContent(), 'Negativo 500T')
+  // a cópia de cinema vai na receita
+  await pagina.getByRole('combobox', { name: 'Cópia de cinema' }).selectOption('2383')
+  await pagina.locator('#aj-calor').fill('40')
+  await pagina.locator('#aj-calor').dispatchEvent('change')
+  await pagina.locator('#nome-look').fill('Noite quente')
+  assert.equal(await pagina.evaluate(() => document.documentElement.scrollWidth), 390)
+
+  const [lut] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Baixar LUT' }).click()])
+  assert.equal(lut.suggestedFilename(), 'revela-lab-noite-quente-33.cube')
+  assert.match(readFileSync(await lut.path(), 'utf8'), /^# Revela Lab · Noite quente\n# Entrada: Rec.709[^\n]*\n# Saída: Rec.709[^\n]*\nTITLE "Revela Lab - Noite quente"\nLUT_3D_SIZE 33\n/)
+  const [receita] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Baixar receita' }).click()])
+  assert.equal(receita.suggestedFilename(), 'noite-quente.revela')
+  const r = JSON.parse(readFileSync(await receita.path(), 'utf8'))
+  assert.equal(r.base, 'negativo-500t')
+  assert.equal(r.ajustes.calor, 40)
+  assert.equal(r.copia, '2383')
+
+  // zera, reabre a receita e volta tudo
+  await pagina.getByRole('button', { name: 'Zerar ajustes' }).click()
+  assert.equal(await pagina.locator('#aj-calor').inputValue(), '0')
+  await pagina.setInputFiles('#arquivo-receita', await receita.path())
+  await pagina.getByText('Receita "Noite quente" aberta.').waitFor()
+  assert.equal(await pagina.locator('#aj-calor').inputValue(), '40')
+  assert.equal(await pagina.locator('#bases [aria-checked=true]').getAttribute('data-look'), 'negativo-500t')
+  assert.equal(await pagina.locator('#copia').inputValue(), '2383')
+
+  // pacote profissional (worker): zip com o look em log, a LUT do monitor, CDL e o controle de qualidade aprovado
+  assert.equal(await pagina.locator('#entrada option').first().textContent(), 'Still já tratado (Rec.709)')
+  const [pacote] = await Promise.all([pagina.waitForEvent('download', { timeout: 60_000 }), pagina.getByRole('button', { name: 'Pacote profissional' }).click()])
+  assert.equal(pacote.suggestedFilename(), 'REVELA_NOITE-QUENTE.zip')
+  const zip = readFileSync(await pacote.path())
+  assert.equal(zip.readUInt32LE(0), 0x04034b50)
+  assert.ok(zip.includes('REVELA_NOITE-QUENTE_DWG-DI-to-DWG-DI_v1_65.cube'))
+  assert.ok(zip.includes('REVELA_NOITE-QUENTE_ACEScct-AP1-to-ACEScct-AP1_v1_65.cube'))
+  assert.ok(zip.includes('O look inclui a cópia 2383'))
+  assert.equal(await pagina.locator('#qc').textContent(), 'Controle de qualidade: aprovado')
+
+  // salvo em Meus looks: aparece na grade da tela de LUT
+  await pagina.getByRole('button', { name: 'Salvar em Meus looks' }).click()
+  await pagina.getByText('"Noite quente" está em Meus looks').waitFor()
+  assert.equal(await pagina.evaluate(() => JSON.parse(localStorage.getItem('revela-meus-looks')).map((l) => l.nome).join()), 'Noite quente')
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('Revela Looks: vitrine com o motor, packs em faixas, Abrir no Lab com a base, e a troca de aba com View Transition', async () => {
+  const pagina = await navegador.newPage({ viewport: { width: 390, height: 844 } })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
+  await pagina.goto(endereco + 'looks.html')
+  await pagina.getByRole('heading', { name: 'Looks prontos.' }).waitFor()
+  await pagina.locator('#packs .pack').nth(3).waitFor()
+  assert.deepEqual(await pagina.locator('#packs .pack h2').allTextContents(), ['Revela', 'Película', 'Cinema', 'Clássicos'])
+  assert.match(await pagina.locator('#vitrine-nome').textContent(), /^Revela · /)
+  // a vitrine é o frame de verdade com o look (não fica preto nem igual ao original)
+  const media = () =>
+    pagina.evaluate(() => {
+      const c = document.querySelector('.vitrine-palco canvas.visivel')
+      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data
+      let s = 0
+      for (let i = 0; i < d.length; i += 4) s += d[i] + d[i + 1] + d[i + 2]
+      return s / (d.length * 0.75)
+    })
+  assert.ok((await media()) > 20)
+  // a capa do Película leva a vitrine para o pack; os pontos trocam o look
+  await pagina.locator('.pack[data-pack="pelicula"] .pack-capa').click()
+  assert.equal(await pagina.locator('#vitrine-nome').textContent(), 'Película · Negativo 250D')
+  assert.equal(await pagina.locator('#vitrine-pontos [role=tab]').count(), 5)
+  await pagina.getByRole('tab', { name: 'Negativo 500T' }).click()
+  assert.equal(await pagina.locator('#vitrine-nome').textContent(), 'Película · Negativo 500T')
+  assert.equal(await pagina.locator('.pack[data-pack="pelicula"]').getAttribute('class'), 'pack ativo')
+  assert.equal(await pagina.locator('.pack .ficha--saida').first().textContent(), 'Loja em breve')
+  assert.equal(await pagina.evaluate(() => document.documentElement.scrollWidth), 390)
+  // Abrir no Lab: troca de aba sem recarregar, com a base do pack e o exemplo
+  await pagina.locator('.pack[data-pack="pelicula"]').getByRole('link', { name: 'Abrir no Lab' }).click()
+  await pagina.locator('#lab:not([hidden])').waitFor()
+  assert.match(pagina.url(), /lab\.html\?base=negativo-250d&exemplo$/)
+  assert.equal(await pagina.getByRole('tab', { name: 'Película' }).getAttribute('aria-selected'), 'true')
+  assert.equal(await pagina.getByRole('radio', { name: 'Negativo 250D' }).getAttribute('aria-checked'), 'true')
+  assert.equal(await pagina.evaluate(() => getComputedStyle(document.querySelector('main')).viewTransitionName), 'painel')
+  assert.deepEqual(erros, [])
   await pagina.close()
 })

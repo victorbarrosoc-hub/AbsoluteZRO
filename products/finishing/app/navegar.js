@@ -6,7 +6,7 @@
 // Cada módulo procura os elementos dentro do próprio <main> (ver `raiz` em revela.js, cst.js…), então os painéis
 // guardados fora da página não se misturam. Sem fetch, sem history ou com erro: vai pelo link, como sempre.
 
-const PAGINAS = ['inicio', 'lut', 'cst', 'entrega', 'converter']
+const PAGINAS = ['inicio', 'lut', 'lab', 'looks', 'cst', 'entrega', 'converter']
 
 /** Endereço → nome da ferramenta, ou null quando não é uma das abas (início, conta, outro site). */
 export function paginaDe(href) {
@@ -17,6 +17,7 @@ export function paginaDe(href) {
 }
 
 const dock = document.querySelector('.abas')
+const reduzir = matchMedia('(prefers-reduced-motion: reduce)')
 const aqui = paginaDe(location.href)
 if (dock && aqui && 'fetch' in window && history.pushState) iniciar()
 
@@ -45,6 +46,7 @@ function iniciar() {
   const aba = (p) => dock.querySelector(`a[href^="${p}"]`)
   function moverMarca() {
     const a = aba(atual)
+    marca.style.opacity = a ? '' : '0' // página fora do dock (Looks): a marca some até voltar a uma aba
     if (!a) return
     marca.style.width = `${a.offsetWidth}px`
     marca.style.height = `${a.offsetHeight}px`
@@ -97,23 +99,33 @@ function iniciar() {
     antes.url = location.href
     antes.rolagem = scrollY
 
-    // troca curta, deslizando para o lado da aba nova; a entrada lenta (.entra) fica só para a primeira visita da página
-    novo.main.classList.remove('painel-troca')
-    novo.main.style.setProperty('--lado', PAGINAS.indexOf(p) > PAGINAS.indexOf(atual) ? '1' : '-1')
-    antes.main.replaceWith(novo.main)
-    void novo.main.offsetWidth // reinicia a animação quando o painel volta
-    novo.main.classList.add('painel-troca')
-    atual = p
-    document.title = novo.titulo
-    const canon = document.querySelector('link[rel=canonical]')
-    if (canon && novo.canonico) canon.href = novo.canonico
-    if (empilhar) history.pushState({ revela: p }, '', url ?? novo.url)
-    for (const a of dock.querySelectorAll('a')) {
-      if (paginaDe(a.href) === p) a.setAttribute('aria-current', 'page')
-      else a.removeAttribute('aria-current')
+    // troca curta para o lado da aba nova: o painel de antes sai rápido e o novo entra com a mola (View Transitions,
+    // como no Maestro; sem elas, a animação .painel-troca). A entrada lenta (.entra) fica só para a primeira visita.
+    const frente = PAGINAS.indexOf(p) >= PAGINAS.indexOf(atual)
+    const trocar = () => {
+      novo.main.classList.remove('painel-troca')
+      novo.main.style.setProperty('--lado', frente ? '1' : '-1')
+      antes.main.replaceWith(novo.main)
+      void novo.main.offsetWidth // reinicia a animação quando o painel volta
+      novo.main.classList.add('painel-troca')
+      atual = p
+      document.title = novo.titulo
+      const canon = document.querySelector('link[rel=canonical]')
+      if (canon && novo.canonico) canon.href = novo.canonico
+      if (empilhar) history.pushState({ revela: p }, '', url ?? novo.url)
+      for (const a of dock.querySelectorAll('a')) {
+        if (paginaDe(a.href) === p) a.setAttribute('aria-current', 'page')
+        else a.removeAttribute('aria-current')
+      }
+      moverMarca()
+      scrollTo(0, empilhar ? 0 : novo.rolagem)
     }
-    moverMarca()
-    scrollTo(0, empilhar ? 0 : novo.rolagem)
+    if (document.startViewTransition && !reduzir.matches) {
+      document.documentElement.dataset.sentido = frente ? 'frente' : 'volta'
+      const vt = document.startViewTransition(trocar)
+      vt.finished.finally(() => delete document.documentElement.dataset.sentido)
+      await vt.updateCallbackDone
+    } else trocar()
     dispatchEvent(new CustomEvent('revela:pagina', { detail: p }))
     // o módulo do painel roda uma vez, já com o painel na página (ele procura os elementos no <main> de agora)
     novo.pronto ??= import(novo.modulo).catch(() => {
@@ -128,7 +140,7 @@ function iniciar() {
     const p = paginaDe(a.href)
     if (!p) return
     e.preventDefault()
-    ir(p, { url: a.hash ? a.href : undefined })
+    ir(p, { url: a.hash || a.search ? a.href : undefined })
   })
   // adianta o painel quando o ponteiro chega na aba
   dock.addEventListener('pointerover', (e) => {

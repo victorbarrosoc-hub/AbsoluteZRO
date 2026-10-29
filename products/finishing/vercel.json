@@ -7,7 +7,7 @@
   "cleanUrls": true,
   "functions": {
     "api/app.js": {
-      "includeFiles": "{inicio.html,lut.html,cst.html,entrega.html,converter.html,em-desenvolvimento.html,app/**,src/**,exemplos/**}"
+      "includeFiles": "{inicio.html,lut.html,lab.html,looks.html,cst.html,entrega.html,converter.html,em-desenvolvimento.html,app/**,src/**,exemplos/**}"
     }
   },
   "headers": [
@@ -53,6 +53,8 @@
   "rewrites": [
     { "source": "/inicio", "destination": "/api/app?caminho=inicio.html" },
     { "source": "/lut", "destination": "/api/app?caminho=lut.html" },
+    { "source": "/lab", "destination": "/api/app?caminho=lab.html" },
+    { "source": "/looks", "destination": "/api/app?caminho=looks.html" },
     { "source": "/cst", "destination": "/api/app?caminho=cst.html" },
     { "source": "/entrega", "destination": "/api/app?caminho=entrega.html" },
     { "source": "/converter", "destination": "/api/app?caminho=converter.html" },

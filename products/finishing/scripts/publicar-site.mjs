@@ -1,6 +1,6 @@
 // Monta publico/ para a Vercel (revela.absolutezro.com). Fechada ao público (api/_release.js, o padrão): só o site
 // institucional (página inicial, entrar, "Em desenvolvimento", manifesto, OG, marca/, fontes/, vendor/ e o pouco de app/
-// que a página inicial usa); as ferramentas (inicio, lut, cst, entrega, converter, com o resto de app/, src/ e
+// que a página inicial usa); as ferramentas (inicio, lut, lab, looks, cst, entrega, converter, com o resto de app/, src/ e
 // exemplos/) ficam fora do estático e só saem pela função api/app.js para a conta liberada. Com RELEASE=released,
 // tudo como antes. Só arquivos de site: nada de api/, testes, scripts ou node_modules.
 import { cpSync, existsSync, mkdirSync, rmSync, statSync } from 'node:fs'
@@ -13,7 +13,7 @@ export const SITE = ['index.html', 'entrar.html', 'em-desenvolvimento.html', 'ma
 /** O que a página inicial, a entrada e a página "Em desenvolvimento" usam de app/: tema, folhas, conta, ícones. */
 export const SITE_APP = ['app/tema.js', 'app/revela.css', 'app/home.css', 'app/home.js', 'app/conta.js', 'app/visual.js', 'app/entrar.js', 'app/entrar.css', 'app/fechado.css']
 /** Só com RELEASE=released: as ferramentas e tudo que elas carregam. */
-export const ABERTO = ['inicio.html', 'lut.html', 'cst.html', 'entrega.html', 'converter.html', 'app', 'src', 'exemplos']
+export const ABERTO = ['inicio.html', 'lut.html', 'lab.html', 'looks.html', 'cst.html', 'entrega.html', 'converter.html', 'app', 'src', 'exemplos']
 
 export const itens = (estado = release()) => (estado === 'released' ? [...SITE, ...ABERTO] : [...SITE, ...SITE_APP])
 

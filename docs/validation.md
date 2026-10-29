@@ -1527,6 +1527,82 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   grade com 6 looks → baixar `revela-zro-filmes-33.cube` → apagar). `products/finishing`: `npm test` 96/96.
 - Não validado: o `.cube` do look novo e de um "meu look" no Resolve, em vídeo.
 
+## Revela: motor de cor profissional (29/10/2026)
+
+- Pedido do titular: resultado de cinema/Netflix, com testes internos e melhoria constante. Pesquisa (Netflix Partner
+  Help Center, ACES 2.0, ARRI ALF4, RED IPP2, OpenDRT, Cullen Kelly, Yedlin, Dehancer, Film Look Creator): o salto
+  é de arquitetura. O motor antigo aplicava o look sobre Rec.709 de tela (leitoso, preso ao SDR e à câmera).
+- Agora: look na luz da cena (LMT DWG/DI → DWG/DI), tela separada (curva de tom do ACES 2.0 com inversa exata no SDR,
+  gamut comprimido, HDR PQ), película por densidade e pacote com LMT 65 (.cube e CLF), ACEScct, LUT de monitor,
+  Rec.709, CDL, receita, controle de qualidade e LEIA-ME.
+- Controle de qualidade com limites (`src/cor/qc.js`). Primeira rodada: os 13 looks reprovaram (degrau perto do
+  preto, cor fora do gamut virando negativa, Oklab instável fora do lócus espectral, pele variando até 34° com a
+  exposição, LUT 65 errando até ΔE 0,16). Correções: log com base de filme, compressão de gamut no LMT, contas de cor
+  dentro do Rec.2020, pele recortada da separação de tons e com âncora de matiz, transições suaves perto do cinza.
+  Hoje os 13 passam; o pior caso de pele é 6,6° e o de LUT é 0,011.
+- Revisão visual (folha de contato nos três frames de exemplo e na cartela): sem banding nem degrau nas rampas de
+  matiz; ajustes de colorista no 250D e no 500T (estavam lavados) e no branco do Laranja e petróleo e do Dourado.
+- Testes: `test/motor.test.js` (tela, ida e volta, película neutra, os 13 looks no controle de qualidade, um look
+  quebrado reprovado, tetraédrica, pacote, CLF, CDL, zip) e `test/lab.test.js` reescrito; Chromium do Lab baixa o
+  pacote. `products/finishing`: `npm test` 163/163.
+- Não validado: as LUTs num Resolve real (DWG/DI e ACEScct), o CLF num leitor OCIO, a LUT do monitor num monitor de
+  set, material log real de cada câmera e telas HDR.
+
+## Revela: cópias de cinema das fichas técnicas e revisão em material real (29/10/2026)
+
+- Pedido do titular: presets de películas conhecidas (Kodak 2383 e afins) e material de banco com as especificações.
+- Cópias a partir de dado publicado, não de LUT de terceiros: curvas sensitométricas da KODAK VISION 2383 (H-1-2383,
+  2022), da VISION Premier 2393 (H-61, 1998) e da FUJICOLOR ETERNA-CP 3513DI (manual Fujifilm, 2007), digitalizadas
+  dos gráficos (traço por cor ou por linha) e ajustadas por Richards (erro 0,02–0,09 de densidade); corantes da 2383
+  pelo gráfico de densidade espectral em Status A. Na 2393 o verde é a média do vermelho e do azul (a ficha desenha as
+  três quase juntas).
+- Modelo (`src/cor/copia.js`): negativo + cópia com contraste 1,8 no cinza; os negativos que saem do equilíbrio do
+  cinza têm gama 0,50–0,68 (os negativos reais ficam perto de 0,6), conferência independente de que o modelo faz
+  sentido. Cinza na densidade de laboratório (1,0 acima da base) → 10% do branco, igual à tela da Revela. Volta pela
+  inversa exata da tela Rec.709, então na tela SDR o look é a cópia.
+- Rodadas do controle de qualidade:
+  - pele virando 11–21° de -2 a +2 stops e razão R/B linear da pele de 11 (contra 3 na tela neutra). Causa: cada
+    camada do negativo tratada como primária pura. Correção: sobreposição espectral das camadas (saturação do sistema
+    1,3 no meio-tom, em log da razão);
+  - sombra profunda da 2393 e da 3513 puxando a pele para o vermelho, dentro do erro da digitalização: o cruzamento
+    entre camadas entra com peso de confiança (2383: 1; 2393 e 3513: 0,5), sobre a base de cada camada (o cinza
+    continua exato);
+  - a cópia real vira a pele com a exposição (vermelha na sombra, dourada na alta): âncora de 0,75 para o matiz que a
+    própria cópia dá no meio-tom. Limite declarado de 12° para looks com cópia (cobrado no controle de qualidade);
+    medido: 3,8° a 11,4°.
+- Os 20 looks passam (`node scripts/qc-looks.mjs`). Testes novos: cópia (cinza, contraste 1,8, gama dos negativos,
+  preto da densidade máxima, branco da base, motor = cópia na tela), receita com cópia (versão 3; a 2 abre sem cópia),
+  Lab escolhendo a cópia, Looks com o pack Cinema e o pacote com a nota da cópia no LEIA-ME.
+- Desempenho: pacote com cópia caiu de 32 s para 9 s (tabela 1D de cada camada com Hermite; inversa da tela sem busca
+  longe do pico e com secante perto dele).
+- Material real: footage oficial da ARRI (ALEXA Mini e Mini LF em LogC3, ALEXA 35 em LogC4, ProRes 4444 12 bits) e da
+  DJI (Inspire 3, D-Log), só nos testes internos (é de terceiros e não entra no repositório). A tela neutra lê LogC3 e
+  LogC4 certo; as cópias dão preto denso, céu que deita no branco e, com o 250D, grama oliva.
+- Analisar e corrigir no material real: num interior escuro de propósito (galpão com a madeira bem exposta) subia
+  +1,1 stop e estourava o assunto. Agora, numa cena escura de propósito, as altas (percentil 90) não passam de 0,75
+  stop sobre o cinza: +0,5. Os outros três frames não mudaram.
+- Não conseguido: Sony S-Log3 (pro.sony responde 403 a este ambiente), Blackmagic (só BRAW, sem SDK aqui), Panasonic,
+  Canon e Fujifilm (sem footage oficial nos sites). Não validado: as cópias contra uma cópia de verdade projetada ou
+  contra o scan de um laboratório.
+
+## Revela Lab (29/10/2026)
+
+- Pedido do titular depois do estudo do Shift (plugin de grade para quem não é colorista): um laboratório para criar o
+  próprio look com película e looks conhecidos, ajustar e exportar.
+- `src/cor/lab.js`: 13 bases em 3 grupos (os 5 looks da Revela, 5 películas e 3 clássicos, todos com o motor de
+  `looks.js` e nomes genéricos), correção do frame (exposição pelo meio-tom, no máximo ±1,2 stop, e branco pelos tons
+  neutros), 8 ajustes e a receita `.revela` (lida com limites e recusa o que não é receita). `lab.html` protegida como
+  as outras ferramentas (`api/app.js`, `vercel.json`, `publicar-site.mjs`), no dock depois da LUT e no menu.
+- Testes: unidade (`test/lab.test.js` 6/6: neutro não muda o pixel, bases distintas, cada ajuste no sentido certo, pele
+  protegida, correção de frame escuro e azulado, receita ida e volta) e Chromium em 390 px (exemplo → Película →
+  Negativo 500T → Calor → LUT `revela-lab-noite-quente-33.cube` → receita → zerar → reabrir → Meus looks).
+  `products/finishing`: `npm test` 153/153.
+- Converter: o CI passou para Ubuntu 26.04 (ffmpeg 8), que tira a cor dos quadros e ignora as opções `-color_*`
+  sozinhas: o ProRes de teste saiu sem `colr` e com os quadros em BT.601, e a saída (corretamente) em `smpte170m`
+  (diagnóstico no próprio CI). O master agora marca os quadros com `setparams`. De quebra, quando contêiner e quadro
+  discordam, vale o contêiner (como no QuickTime); o teste grava esse desencontro (quadros em 601, `colr` em 709).
+- Não validado: a LUT do Lab num Resolve real.
+
 ## Z: sabe o que cada plataforma faz e só busca no Drive quando pedem (28/10/2026)
 
 - Caso real do titular na Revela: "Consigo deixar meu vídeo com a cor parecida do FVPRO+?" A Z buscou no Drive (o texto

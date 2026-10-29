@@ -1,7 +1,7 @@
-// GET /api/app?caminho=lut.html — as ferramentas da Revela (as páginas inicio, lut, cst, entrega e converter, com app/,
+// GET /api/app?caminho=lut.html — as ferramentas da Revela (as páginas inicio, lut, lab, looks, cst, entrega e converter, com app/,
 // src/ e exemplos/), só para a conta que o HUB liberou enquanto a Revela está fechada ao público (api/_release.js).
 // Esses arquivos ficam fora do site estático (scripts/publicar-site.mjs) e vêm no pacote desta função (includeFiles
-// no vercel.json); o vercel.json reescreve /lut, /cst, /entrega, /converter, /inicio, /app/*, /src/* e /exemplos/*
+// no vercel.json); o vercel.json reescreve /lut, /lab, /looks, /cst, /entrega, /converter, /inicio, /app/*, /src/* e /exemplos/*
 // para cá quando o caminho não existe no estático (o que a página inicial usa de app/ existe). Sem sessão liberada: a
 // página "Em desenvolvimento" (200) no lugar de um HTML e 403 para qualquer outro arquivo. Nada é listado; caminho
 // fora dessa lista ou com ".." é 404. Com RELEASE=released os arquivos vão para o estático e esta função só os repete.
@@ -13,7 +13,7 @@ import { abrir, configurado, COOKIE_CONTA, lerCookie } from './_zro.js'
 
 const RAIZ = new URL('..', import.meta.url)
 /** As páginas das ferramentas (na raiz) e as pastas que elas carregam. vendor/ é só biblioteca e fica no estático. */
-export const PAGINAS = ['inicio.html', 'lut.html', 'cst.html', 'entrega.html', 'converter.html']
+export const PAGINAS = ['inicio.html', 'lut.html', 'lab.html', 'looks.html', 'cst.html', 'entrega.html', 'converter.html']
 export const PASTAS = ['app', 'src', 'exemplos']
 const PAGINA = 'em-desenvolvimento.html'
 const TIPOS = {
