@@ -411,12 +411,15 @@ paths:
     get:
       security: [{ session: [] }, { appToken: [zro.set] }]
       summary: 'Set (ADR 0031): a pessoa e as preferências, quem da equipe e dos contatos está online (e em qual app; só para quem a pessoa deixou ver), não lidas e pedidos. Nunca e-mail nem telefone. Contrato em docs/integration-contracts/set.md'
+      parameters:
+        - { name: If-None-Match, in: header, required: false, description: 'a ETag da última leitura (o poll do widget)', schema: { type: string } }
       responses:
         {
           '200':
             {
               description: '{ eu: { id, arroba, nome, foto, preferencias: { invisivel, quemVe, mostrarVisto } }, pessoas: [{ id, arroba, nome, foto, equipe, contato, estado: online | ausente | offline, app: { id, nome } | null, vistoEm }], naoLidas, pedidos, porConversa: { <conversa>: n }, ultima }',
             },
+          '304': { description: 'nada mudou desde a ETag mandada (sem corpo; mesma ETag no cabeçalho)' },
           '401': { $ref: '#/components/responses/Error' },
           '403': { $ref: '#/components/responses/Error' },
           '404': { $ref: '#/components/responses/Error' },
@@ -582,12 +585,15 @@ paths:
     get:
       security: [{ session: [] }, { appToken: [zro.set] }]
       summary: 'As conversas (diretas e dos projetos da organização ativa) e os projetos ainda sem conversa'
+      parameters:
+        - { name: If-None-Match, in: header, required: false, description: 'a ETag da última leitura (o poll do widget)', schema: { type: string } }
       responses:
         {
           '200':
             {
               description: '{ conversas: [{ id, tipo: direta | projeto, pessoa, projeto: { id, titulo }, titulo, ultima, ultimaEm, previa, previaMinha, naoLidas, silenciada, podeEscrever }], projetos: [{ id, titulo }] }',
             },
+          '304': { description: 'nada mudou desde a ETag mandada (sem corpo; mesma ETag no cabeçalho)' },
           '401': { $ref: '#/components/responses/Error' },
           '403': { $ref: '#/components/responses/Error' },
           '404': { $ref: '#/components/responses/Error' },
@@ -625,9 +631,11 @@ paths:
         - { name: antes, in: query, required: false, schema: { type: integer } }
         - { name: depois, in: query, required: false, schema: { type: integer } }
         - { name: limite, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: If-None-Match, in: header, required: false, description: 'a ETag da última leitura (o poll do widget)', schema: { type: string } }
       responses:
         {
           '200': { description: '{ conversa, mensagens: [{ id, seq, autor: { id, arroba, nome, foto }, minha, texto, criadaEm, editadaEm, apagada }], mais }' },
+          '304': { description: 'nada mudou desde a ETag mandada (sem corpo; mesma ETag no cabeçalho)' },
           '401': { $ref: '#/components/responses/Error' },
           '403': { $ref: '#/components/responses/Error' },
           '404': { $ref: '#/components/responses/Error' },

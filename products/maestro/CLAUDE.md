@@ -234,6 +234,14 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   mapeadas; contato nunca vem do perfil); a ficha mostra o @ com link para o perfil. O inventário do Carro chega pelo
   mesmo `zro_sub` só quando `CARRO_SYNC_ATIVO` ligar. Testes: `tests/pessoas-zro.test.mts` e `e2e/pessoas-zro.spec.ts`
   (HUB falso com perfis fictícios em `tests/ponte-falsa.mts`).
+- **Set da Absolute ZRO** (ADR 0031 do HUB, contrato em `docs/integration-contracts/set.md`): quem da equipe e dos
+  contatos está online e as conversas (diretas e do projeto canônico). O widget `<zro-set>` vem de
+  `absolutezro.com/set/v1/zro-set.js` (`components/set-zro.tsx`, pílula discreta na cápsula e no topo do celular, como
+  a Z; nunca aba) e fala só com `/api/zro/set/*`, o repasse de `src/lib/zro/set.ts`: caminhos e métodos fechados
+  (`caminhoSet`), Origin conferido, JSON até 20 kB, Bearer da sessão com `zro.set` só no servidor, ETag/304 de ida e
+  volta. O login pede `zro.set` (HUB antigo recusa: `nivel=sem_set`); sem o escopo, 401 `reconectar_zro` e a pílula
+  some, sem apagar os tokens da Z. Testes: `tests/set.test.mts` e `e2e/set.spec.ts`. Duas baterias de e2e na mesma máquina:
+  `E2E_DB_NAME=maestro_test_<nome>` (com `E2E_PORT`, `E2E_PONTE_PORT` e `E2E_ANP_PORT` próprios).
 - **Kit do freela** (`drizzle/0013`, `src/lib/freelas/{kit,equipamentos}.ts`): `freela_equipamentos` (origem `maestro`
   ou `carro-do-freela`) e `escala_equipamentos`; o aluguel (diária × dias) soma ao mesmo "a pagar" da escala (gatilho
   `escala_sincronizar` refeito na 0013). Itens do Carro do Freela são só leitura (gatilho barra `maestro_app`). A

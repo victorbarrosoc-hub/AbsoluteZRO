@@ -223,7 +223,7 @@ export async function excluirConta(db: Database, auth: Authenticated | null, con
     await tx`delete from zro.conexoes where user_id = ${userId}`
     await tx`delete from zro.user_avatars where user_id = ${userId}`
     await tx`delete from zro.ia_conversas where user_id = ${userId}`
-    // Set (0032): as conversas diretas dela (a outra pessoa já não a veria), as mensagens que ela escreveu nos
+    // Set (0035): as conversas diretas dela (a outra pessoa já não a veria), as mensagens que ela escreveu nos
     // projetos (com as versões guardadas para a moderação), presença, preferências, contatos, pedidos, bloqueios,
     // leituras e as denúncias que ela fez. Denúncias contra a conta continuam para a moderação.
     await tx`delete from zro.set_conversas where tipo = 'direta' and (a = ${userId} or b = ${userId})`

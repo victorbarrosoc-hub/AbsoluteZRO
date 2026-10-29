@@ -8,7 +8,10 @@ import { defineConfig, devices } from "@playwright/test";
 const PORT = Number(process.env.E2E_PORT || 3217);
 const BASE = process.env.TEST_DATABASE_URL || "postgres://postgres:postgres@localhost:5432/postgres";
 const u = new URL(BASE);
-u.pathname = "/maestro_test_e2e";
+// E2E_DB_NAME (maestro_test_<nome>) separa duas baterias na mesma máquina; o padrão é maestro_test_e2e.
+const NOME_DB = process.env.E2E_DB_NAME || "maestro_test_e2e";
+if (!/^maestro_test_[a-z0-9_]+$/.test(NOME_DB)) throw new Error(`E2E_DB_NAME precisa ser maestro_test_<nome>: ${NOME_DB}`);
+u.pathname = `/${NOME_DB}`;
 export const E2E_DB = u.toString();
 export const E2E_KEY = Buffer.alloc(32, 7).toString("base64");
 

@@ -27,8 +27,10 @@ export default async function preparar() {
   admin.pathname = "/postgres";
   const a = postgres(admin.toString(), { max: 1, onnotice: () => {} });
   try {
-    await a.unsafe("drop database if exists maestro_test_e2e with (force)");
-    await a.unsafe("create database maestro_test_e2e");
+    // o nome já foi conferido em playwright.config.ts (maestro_test_<nome>)
+    const nome = alvo.pathname.slice(1);
+    await a.unsafe(`drop database if exists ${nome} with (force)`);
+    await a.unsafe(`create database ${nome}`);
   } finally {
     await a.end();
   }

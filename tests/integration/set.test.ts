@@ -1,4 +1,4 @@
-// Set (migração 0032, ADR 0031): presença da equipe e dos contatos (com o app), invisível e "quem vê", contatos por
+// Set (migração 0035, ADR 0031): presença da equipe e dos contatos (com o app), invisível e "quem vê", contatos por
 // pedido aceito, conversa direta só com quem trabalha junto ou é contato, conversa do projeto pelo acesso ao projeto,
 // bloqueio nos dois sentidos, silêncio, não lidas, editar e apagar com versão para a moderação, denúncia, limites, a
 // API dos apps (escopo zro.set, app vindo do token), RLS das tabelas e a exclusão da conta.

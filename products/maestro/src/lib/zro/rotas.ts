@@ -45,7 +45,11 @@ export async function entrar(req: Request): Promise<Response> {
   const pedido = url.searchParams.get("nivel");
   // `basico=1` é o formato antigo do mesmo pedido.
   const nivel: NivelEscopo =
-    pedido === "sem_set" || pedido === "sem_pessoas" || pedido === "sem_agenda" || pedido === "basico" ? pedido : url.searchParams.get("basico") === "1" ? "basico" : "completo";
+    pedido === "sem_set" || pedido === "sem_pessoas" || pedido === "sem_agenda" || pedido === "basico"
+      ? pedido
+      : url.searchParams.get("basico") === "1"
+        ? "basico"
+        : "completo";
   const volta = voltaSegura(url.searchParams.get("volta"), VOLTA_PADRAO);
 
   // A Absolute ZRO volta para o endereço cadastrado: o cookie do state precisa nascer nele.

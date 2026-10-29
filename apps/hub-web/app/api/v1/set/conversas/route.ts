@@ -1,10 +1,10 @@
 import { abrirConversaSet, ESCOPO_SET, minhasConversasSet } from '@zro/core'
 import { DomainError } from '@zro/observability'
 import { route } from '@/lib/api'
-import { corpo, paraApi, texto } from '@/lib/set'
+import { comEtag, corpo, paraApi, texto } from '@/lib/set'
 
-/** GET /api/v1/set/conversas — as conversas (diretas e dos projetos) e os projetos da organização ainda sem conversa. */
-export const GET = route(async ({ db, auth }) => paraApi(await minhasConversasSet(db, auth)), { bearer: ESCOPO_SET })
+/** GET /api/v1/set/conversas — as conversas (diretas e dos projetos) e os projetos da organização ainda sem conversa (com ETag). */
+export const GET = route(async ({ db, auth, req }) => comEtag(req, await minhasConversasSet(db, auth)), { bearer: ESCOPO_SET })
 
 /**
  * POST /api/v1/set/conversas { pessoa } | { projeto } — abre (ou cria) a conversa direta com quem trabalha junto ou é

@@ -1,4 +1,4 @@
--- Absolute ZRO HUB · 0032 · Set: quem está no Set e as conversas (decisão do titular, 29/10/2026; ADR 0031).
+-- Absolute ZRO HUB · 0035 · Set: quem está no Set e as conversas (decisão do titular, 29/10/2026; ADR 0031).
 -- Fase 1, presença: a pessoa vê quem da equipe e dos contatos está online e em qual app ("Victor · no Maestro"). Cada
 -- um fica invisível com um toque e escolhe quem vê (equipe e contatos, só equipe, só contatos, ninguém); "visto há 5 min"
 -- segue a mesma escolha. Invisível: nada de presença gravada.

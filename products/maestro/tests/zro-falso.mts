@@ -53,7 +53,7 @@ export async function iniciarZroFalsa(cliente: { clientId: string; clientSecret:
     recusarAgenda: false,
     /** A Absolute ZRO ainda não conhece só o zro.pessoas (HUB antes da migração 0029). */
     recusarPessoas: false,
-    /** A Absolute ZRO ainda não conhece só o zro.set (HUB antes da migração 0032). */
+    /** A Absolute ZRO ainda não conhece só o zro.set (HUB antes da migração 0035). */
     recusarSet: false,
     /** Vida do access token (s); 0 obriga o Maestro a renovar antes de cada uso. */
     vidaAcesso: 600,
@@ -66,7 +66,7 @@ export async function iniciarZroFalsa(cliente: { clientId: string; clientSecret:
     /** Fora do ar: toda chamada de token/userinfo/ia falha (rede). */
     fora: false,
     pedidosIa: [] as PedidoIa[],
-    pedidosSet: [] as PedidoIa[],
+    pedidosSet: [] as (PedidoIa & { seEtag?: string | null })[],
   };
   const acessos = new Map<string, { exp: number; escopo: string; sub: string }>();
   const refreshs = new Map<string, { usado: boolean; escopo: string; sub: string }>();
@@ -263,6 +263,17 @@ export async function iniciarZroFalsa(cliente: { clientId: string; clientSecret:
       estado.pedidosSet.push({ metodo: req.method ?? "GET", caminho, autorizacao, corpo });
       const a = acessos.get(bearer);
       if (!valido(a) || !a.escopo.split(" ").includes("zro.set")) return responder(res, 401, { error: "unauthenticated" });
+      if (caminho === "" && req.method === "GET") {
+        // a leitura com ETag (o poll do widget): sem mudança, 304 sem corpo
+        const etag = 'W/"estado-falso-1"';
+        estado.pedidosSet[estado.pedidosSet.length - 1]!.seEtag = (req.headers["if-none-match"] as string | undefined) ?? null;
+        if (req.headers["if-none-match"] === etag) {
+          res.writeHead(304, { ETag: etag });
+          return res.end();
+        }
+        res.writeHead(200, { "Content-Type": "application/json", ETag: etag });
+        return res.end(JSON.stringify({ eu: { id: a.sub }, pessoas: [], naoLidas: 0, pedidos: 0, porConversa: {}, ultima: 0 }));
+      }
       if (caminho === "") return responder(res, 200, { eu: { id: a.sub }, pessoas: [], naoLidas: 0, pedidos: 0, porConversa: {}, ultima: 0 });
       if (req.method === "DELETE" || req.method === "PATCH") {
         res.writeHead(204);

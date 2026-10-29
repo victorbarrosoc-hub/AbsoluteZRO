@@ -35,7 +35,7 @@ export const OIDC_SCOPES = ['openid', 'email', 'profile', 'org', 'offline_access
 export const PRODUCT_SCOPES: Record<string, string[]> = { 'carro-do-freela': ['carro-do-freela.jobs'], maestro: ['maestro.projects'] }
 /**
  * Escopos de todo app da família (cliente com produto): a IA do ecossistema (0016), a Agenda das Conexões (0026), a
- * busca de perfis com convite pelo @ (0029) e o Set, presença e conversas (0032).
+ * busca de perfis com convite pelo @ (0029) e o Set, presença e conversas (0035).
  */
 export const FAMILY_SCOPES = ['zro.ia', 'zro.agenda', 'zro.pessoas', 'zro.set'] as const
 export const CODE_TTL_MS = 60_000

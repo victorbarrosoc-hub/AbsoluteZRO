@@ -1,4 +1,4 @@
-/* global HTMLElement, document, location, URLSearchParams, customElements, CustomEvent, fetch, matchMedia, MutationObserver, addEventListener, removeEventListener, clearTimeout */
+/* global HTMLElement, document, location, URLSearchParams, customElements, CustomEvent, fetch, matchMedia, MutationObserver, addEventListener, removeEventListener, clearTimeout, structuredClone */
 /*
  * <zro-set> · o Set da Absolute ZRO dentro de qualquer plataforma do ecossistema (29/10/2026, ADR 0031).
  * Quem da equipe e dos contatos está no Set agora (e em qual app), e as conversas: diretas pelo @ e do projeto. Uma
@@ -13,8 +13,10 @@
  * (claro|escuro|auto; auto segue o html[data-theme] do app ou o sistema), projeto (id do projeto canônico aberto no app:
  * a conversa dele fica no topo), abrir (pessoa:<id> | projeto:<id> | conversa:<id> | ajustes: abre direto).
  * Eventos: zro-set:sem-login (401: o app pede login de novo; a pílula some), zro-set:estado (detail { online, naoLidas }).
+ * No modo página, o elemento ganha data-conversa enquanto uma conversa está aberta.
  * Presença: uma batida a cada 45 s com a aba visível ("ativo"), a cada 3 min escondida ("ausente") e "saiu" ao fechar.
- * Com a folha aberta, o estado é relido a cada 12 s; com uma conversa aberta, as mensagens novas a cada 4 s.
+ * Com a folha aberta, o estado é relido a cada 12 s; com uma conversa aberta, as mensagens novas a cada 4 s. Toda
+ * leitura repetida manda If-None-Match (ETag da API): sem mudança, 304 sem corpo. Nada de serviço pago de tempo real.
  * Sem dependências, sem cookies de terceiros, respeita "reduzir movimento". Mudou, suba VERSAO (vai no data-versao).
  */
 export const VERSAO = '2026.10.29-set'
@@ -30,6 +32,8 @@ const CSS = `
 :host([modo=pagina]){display:block}
 :host([data-fora]){display:none!important}
 *{box-sizing:border-box;margin:0}
+/* o atributo hidden vale mesmo onde a regra dá display (a lista some quando a conversa abre na folha) */
+[hidden]{display:none!important}
 button,input,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--ink);outline-offset:2px}
@@ -267,6 +271,7 @@ class ZroSet extends HTMLElement {
       semLogin: false,
     }
     this.token = null
+    this.etags = new Map()
     this.root = this.attachShadow({ mode: 'open' })
     this.timers = {}
     this.ultimaBatida = 0
@@ -338,7 +343,8 @@ class ZroSet extends HTMLElement {
   aplicarTema() {
     const t = this.tema
     const h = document.documentElement
-    const doApp = h.dataset.theme === 'dark' || h.classList.contains('dark') ? true : h.dataset.theme === 'light' || h.classList.contains('light') ? false : null
+    const doApp =
+      h.dataset.theme === 'dark' || h.classList.contains('dark') ? true : h.dataset.theme === 'light' || h.classList.contains('light') ? false : null
     const escuro = t === 'escuro' || (t === 'auto' && (doApp ?? matchMedia('(prefers-color-scheme: dark)').matches))
     this.toggleAttribute('data-escuro', escuro)
     this.folhaHost?.toggleAttribute('data-escuro', escuro)
@@ -348,6 +354,10 @@ class ZroSet extends HTMLElement {
 
   async req(caminho, init = {}) {
     const headers = { Accept: 'application/json', ...(init.body ? { 'Content-Type': 'application/json' } : {}), ...(init.headers || {}) }
+    // leitura repetida (o poll): manda a ETag da última resposta; 304 = nada mudou, vale a cópia guardada
+    const leitura = !init.method || init.method === 'GET'
+    const guardada = leitura ? this.etags.get(caminho) : null
+    if (guardada) headers['If-None-Match'] = guardada.etag
     if (typeof this.token === 'function') {
       const t = await this.token()
       if (t) headers.Authorization = `Bearer ${t}`
@@ -368,6 +378,7 @@ class ZroSet extends HTMLElement {
       }
       throw new Error('sem-login')
     }
+    if (r.status === 304 && guardada) return structuredClone(guardada.dados)
     if (!r.ok) {
       let msg = 'Não deu certo agora. Tente de novo.'
       try {
@@ -381,7 +392,16 @@ class ZroSet extends HTMLElement {
       e.status = r.status
       throw e
     }
-    return r.status === 204 ? null : r.json()
+    if (r.status === 204) return null
+    const dados = await r.json()
+    const etag = leitura && r.headers.get('etag')
+    if (etag) {
+      // poucas leituras diferentes por widget (estado, lista, a conversa aberta): guarda só as últimas
+      this.etags.delete(caminho)
+      this.etags.set(caminho, { etag, dados: structuredClone(dados) })
+      if (this.etags.size > 8) this.etags.delete(this.etags.keys().next().value)
+    }
+    return dados
   }
 
   /** A batida de presença (e o estado de volta). `agora`: fora do ritmo (abriu, voltou à aba). */
@@ -439,7 +459,11 @@ class ZroSet extends HTMLElement {
     const e = this.s.estado
     if (!e) return
     this.dispatchEvent(
-      new CustomEvent('zro-set:estado', { bubbles: true, composed: true, detail: { online: e.pessoas.filter((p) => p.estado === 'online').length, naoLidas: e.naoLidas } }),
+      new CustomEvent('zro-set:estado', {
+        bubbles: true,
+        composed: true,
+        detail: { online: e.pessoas.filter((p) => p.estado === 'online').length, naoLidas: e.naoLidas },
+      }),
     )
   }
 
@@ -844,6 +868,8 @@ class ZroSet extends HTMLElement {
   render(rolarAoFim = false) {
     if (!this.$) return
     if (!this.$.dataset.montado) this.montar()
+    // na página, o app sabe quando uma conversa está aberta (no celular a página dá a tela inteira para ela)
+    if (this.pagina) this.toggleAttribute('data-conversa', !!this.s.conv)
     this.renderPilula()
     const folha = this.r.querySelector('.folha')
     if (folha) {
@@ -1019,8 +1045,7 @@ class ZroSet extends HTMLElement {
     const novos = projetos.length
       ? `<p class="grupo">Projetos</p><ul class="lista">${projetos.map((p) => `<li><button class="linha" data-a="projeto" data-id="${esc(p.id)}">${av({ titulo: p.titulo }, { proj: true })}<span class="txt"><span class="nome">${esc(p.titulo)}</span><span class="sub">${p.id === atual ? 'Este projeto · começar conversa' : 'Começar conversa'}</span></span></button></li>`).join('')}</ul>`
       : ''
-    if (!s.conversas.length)
-      return `<div class="vazio"><span class="sinal">${I.pessoas}</span><p>Toque em alguém online para conversar.</p></div>${novos}`
+    if (!s.conversas.length) return `<div class="vazio"><span class="sinal">${I.pessoas}</span><p>Toque em alguém online para conversar.</p></div>${novos}`
     return `<ul class="lista">${s.conversas.map(linha).join('')}</ul>${novos}`
   }
 
@@ -1029,7 +1054,8 @@ class ZroSet extends HTMLElement {
     const c = this.s.contatos
     const pessoa = (x, botoes) =>
       `<li class="linha">${av(x)}<span class="txt"><span class="nome">${esc(x.nome)}</span>${x.arroba ? `<span class="sub">@${esc(x.arroba)}</span>` : ''}</span><span class="lado" style="display:flex;gap:6px">${botoes}</span></li>`
-    const bloco = (titulo, lista, botoes) => (lista?.length ? `<p class="grupo">${titulo}</p><ul class="lista">${lista.map((x) => pessoa(x, botoes(x))).join('')}</ul>` : '')
+    const bloco = (titulo, lista, botoes) =>
+      lista?.length ? `<p class="grupo">${titulo}</p><ul class="lista">${lista.map((x) => pessoa(x, botoes(x))).join('')}</ul>` : ''
     return `<div class="secao">
         <div class="opcao"><span>Invisível<small>Ninguém vê você online.</small></span><button class="chave" role="switch" aria-checked="${p.invisivel}" data-a="invisivel" aria-label="Invisível"></button></div>
       </div>
@@ -1055,8 +1081,7 @@ class ZroSet extends HTMLElement {
     const c = this.s.conv
     col.hidden = !this.pagina && !c
     if (!c) {
-      if (this.pagina)
-        col.innerHTML = `<div class="vazio-conv"><b>O <strong>Set</strong> da sua equipe.</b><span>Escolha alguém ou uma conversa.</span></div>`
+      if (this.pagina) col.innerHTML = `<div class="vazio-conv"><b>O <strong>Set</strong> da sua equipe.</b><span>Escolha alguém ou uma conversa.</span></div>`
       else col.innerHTML = ''
       return
     }

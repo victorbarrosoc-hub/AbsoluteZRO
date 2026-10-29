@@ -1,15 +1,15 @@
 import { estadoSet, ESCOPO_SET, type Batida } from '@zro/core'
 import { DomainError } from '@zro/observability'
 import { route } from '@/lib/api'
-import { corpo, paraApi } from '@/lib/set'
+import { comEtag, corpo, paraApi } from '@/lib/set'
 
 /**
  * GET /api/v1/set — o estado do Set: a pessoa e as preferências, quem da equipe e dos contatos está online (e em qual
- * app), não lidas e pedidos. POST { estado: ativo | ausente | saiu } — a batida de presença do app (o app vem do token;
+ * app), não lidas e pedidos; com ETag (o poll manda If-None-Match e recebe 304 sem mudança). POST { estado: ativo | ausente | saiu } — a batida de presença do app (o app vem do token;
  * pela central, "Absolute ZRO") e devolve o mesmo estado. Sessão do HUB ou token do app (escopo zro.set).
  * Contrato: docs/integration-contracts/set.md.
  */
-export const GET = route(async ({ db, auth }) => paraApi(await estadoSet(db, auth)), { bearer: ESCOPO_SET })
+export const GET = route(async ({ db, auth, req }) => comEtag(req, await estadoSet(db, auth)), { bearer: ESCOPO_SET })
 
 const BATIDAS: Batida[] = ['ativo', 'ausente', 'saiu']
 

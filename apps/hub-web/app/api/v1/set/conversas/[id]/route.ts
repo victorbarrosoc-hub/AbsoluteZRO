@@ -1,11 +1,11 @@
 import { atualizarConversaSet, ESCOPO_SET, lerConversaSet } from '@zro/core'
 import { route } from '@/lib/api'
-import { corpo, paraApi } from '@/lib/set'
+import { comEtag, corpo } from '@/lib/set'
 
 type P = { id: string }
 const num = (v: string | null) => (v !== null && /^\d{1,15}$/.test(v) ? Number(v) : undefined)
 
-/** GET /api/v1/set/conversas/{id}?antes=&depois=&limite= — a conversa e as mensagens (a mais antiga primeiro). */
+/** GET /api/v1/set/conversas/{id}?antes=&depois=&limite= — a conversa e as mensagens (a mais antiga primeiro), com ETag. */
 export const GET = route<P>(
   async ({ db, auth, req }, { id }) => {
     const u = new URL(req.url)
@@ -14,7 +14,7 @@ export const GET = route<P>(
       depois: num(u.searchParams.get('depois')),
       limite: num(u.searchParams.get('limite')),
     })
-    return paraApi(r)
+    return comEtag(req, r)
   },
   { bearer: ESCOPO_SET },
 )

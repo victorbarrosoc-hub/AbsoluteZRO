@@ -60,6 +60,22 @@ describe("repasse do Set", () => {
     assert.equal((await set(sessao, ["mensagens", id], { method: "DELETE" })).status, 204);
   });
 
+  test("o poll com ETag: If-None-Match segue, o 304 volta sem corpo e com a ETag; ETag estranha não segue", async () => {
+    const sessao = await entrar();
+    zro.estado.pedidosSet.length = 0;
+    const r1 = await set(sessao, []);
+    assert.equal(r1.status, 200);
+    const etag = r1.headers.get("etag")!;
+    assert.equal(etag, 'W/"estado-falso-1"');
+    const r2 = await set(sessao, [], { headers: { "if-none-match": etag } });
+    assert.equal(r2.status, 304);
+    assert.equal(r2.headers.get("etag"), etag);
+    assert.equal(await r2.text(), "");
+    assert.equal(zro.estado.pedidosSet[1]!.seEtag, etag);
+    await set(sessao, [], { headers: { "if-none-match": '"x", <script>' } });
+    assert.equal(zro.estado.pedidosSet[2]!.seEtag, null);
+  });
+
   test("nega sem sessão, caminho fora da lista, outra origem e corpo que não é JSON", async () => {
     assert.equal((await set(undefined, [])).status, 401);
     const sessao = await entrar();

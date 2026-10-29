@@ -1,6 +1,6 @@
 // Set (ADR 0031): duas pessoas da mesma equipe se veem online (e onde), invisível esconde, conversa direta só depois do
 // pedido aceito, a conversa do projeto aberta pela página do projeto, denunciar e bloquear. Em Chromium e WebKit, no
-// computador e no iPhone. Com SHOTS_DIR, guarda capturas (claro e escuro) e vídeos de cada navegador.
+// computador e no iPhone; a moderação resolve no console; a leitura repetida volta 304 com a ETag. Com SHOTS_DIR, guarda capturas (claro e escuro) e vídeos de cada navegador.
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -39,7 +39,13 @@ async function naEquipe(p: Conta, orgId: string) {
 
 const ARQUIVOS = path.resolve(SHOTS ?? '.', 'video')
 
-async function aba(b: Browser, baseURL: string, p: Conta, opts: Parameters<Browser['newContext']>[0], video: boolean): Promise<{ ctx: BrowserContext; page: Page }> {
+async function aba(
+  b: Browser,
+  baseURL: string,
+  p: Conta,
+  opts: Parameters<Browser['newContext']>[0],
+  video: boolean,
+): Promise<{ ctx: BrowserContext; page: Page }> {
   const ctx = await b.newContext({ ...opts, baseURL, ...(video && SHOTS ? { recordVideo: { dir: ARQUIVOS, size: opts?.viewport ?? undefined } } : {}) })
   await ctx.addCookies([{ name: SESSION_COOKIE, value: p.token, url: baseURL }])
   ctx.setDefaultTimeout(20_000)
@@ -72,6 +78,8 @@ for (const [nome, tipo, opts] of COMBOS) {
   test(`Set (${nome}): online na equipe, invisível, conversa depois do aceite, projeto, denunciar e bloquear`, async ({ baseURL }) => {
     test.setTimeout(180_000)
     const principal = nome === 'Chromium-computador' || nome === 'WebKit-iphone'
+    // capturas no Chromium (computador e 393 px): o WebKit sem tela não desenha o vidro (backdrop-filter) nas fotos
+    const fotos = nome.startsWith('Chromium')
     const b = await tipo.launch()
     try {
       const victor = await conta('Victor')
@@ -90,7 +98,7 @@ for (const [nome, tipo, opts] of COMBOS) {
       await pilula(A.page).click()
       const f = folha(A.page)
       await expect(f.getByRole('button', { name: /Bia/ })).toContainText('na Absolute ZRO')
-      if (principal) await foto(A.page, `set-online-${nome}`)
+      if (fotos) await foto(A.page, `set-online-${nome}`)
       await f.getByRole('button', { name: 'Fechar' }).click()
 
       // 2. Bia fica invisível: some do "Agora" para o Victor
@@ -112,7 +120,7 @@ for (const [nome, tipo, opts] of COMBOS) {
       await A.page.goto('/set?ajustes')
       const pa = naPagina(A.page)
       await expect(pa.getByText('Pedidos')).toBeVisible()
-      if (principal) await foto(A.page, `set-pedido-${nome}`)
+      if (fotos) await foto(A.page, `set-pedido-${nome}`)
       await pa.getByRole('button', { name: 'Aceitar' }).click()
       await expect(pa.getByRole('status')).toContainText('Agora vocês são contatos')
       await pa.getByRole('button', { name: 'Conversar' }).click()
@@ -123,16 +131,20 @@ for (const [nome, tipo, opts] of COMBOS) {
       await expect(pa.getByRole('log').getByRole('link', { name: 'https://absolutezro.com' })).toBeVisible()
 
       await C.page.goto('/set')
-      await naPagina(C.page).getByRole('tab', { name: /Conversas/ }).click()
+      await naPagina(C.page)
+        .getByRole('tab', { name: /Conversas/ })
+        .click()
       await expect(naPagina(C.page).getByRole('tab', { name: /Conversas/ })).toContainText('1')
-      await naPagina(C.page).getByRole('button', { name: /Victor/ }).click()
+      await naPagina(C.page)
+        .getByRole('button', { name: /Victor/ })
+        .click()
       await expect(naPagina(C.page).getByRole('log')).toContainText('Oi, Caio!')
       const campoC = naPagina(C.page).getByRole('textbox', { name: 'Mensagem' })
       await campoC.fill('Oi! Vi sim.')
       await campoC.press('Enter')
       // a conversa aberta do Victor recebe sozinha (a cada 4 s)
       await expect(pa.getByRole('log')).toContainText('Oi! Vi sim.', { timeout: 15_000 })
-      if (principal) await foto(A.page, `set-conversa-${nome}`)
+      if (fotos) await foto(A.page, `set-conversa-${nome}`)
 
       // 4. A conversa do projeto: a Bia escreve pelo /set?projeto, o Victor abre pela página do projeto
       const [pj] = await db.sql`insert into zro.projects (org_id, title, created_by) values (${victor.orgId}, 'Filme Safra', ${victor.userId}) returning id`
@@ -146,11 +158,13 @@ for (const [nome, tipo, opts] of COMBOS) {
       await A.page.waitForURL(/\/set\?projeto=/)
       await expect(naPagina(A.page).getByRole('log')).toContainText('Diária confirmada para sexta.')
       await expect(naPagina(A.page).getByRole('log')).toContainText('Bia')
-      if (principal) await foto(A.page, `set-projeto-${nome}`)
+      if (fotos) await foto(A.page, `set-projeto-${nome}`)
 
       // 5. Denunciar e bloquear o Caio, pela conversa
       await A.page.goto('/set')
-      await naPagina(A.page).getByRole('tab', { name: /Conversas/ }).click()
+      await naPagina(A.page)
+        .getByRole('tab', { name: /Conversas/ })
+        .click()
       await naPagina(A.page).getByRole('button', { name: /Caio/ }).click()
       await naPagina(A.page).getByRole('button', { name: 'Opções da conversa' }).click()
       await naPagina(A.page).getByRole('button', { name: 'Denunciar' }).click()
@@ -160,15 +174,33 @@ for (const [nome, tipo, opts] of COMBOS) {
       await naPagina(A.page).getByRole('button', { name: 'Cancelar' }).click()
       await naPagina(A.page).getByRole('button', { name: 'Opções da conversa' }).click()
       await naPagina(A.page).getByRole('button', { name: 'Bloquear', exact: true }).click()
-      if (principal) await foto(A.page, `set-bloquear-${nome}`)
+      if (fotos) await foto(A.page, `set-bloquear-${nome}`)
       await naPagina(A.page).getByRole('button', { name: 'Bloquear', exact: true }).click()
       await expect(naPagina(A.page).getByRole('status')).toContainText('Bloqueado')
       const [d] = await db.sql`select motivo from zro.set_denuncias where denunciante = ${victor.userId} and denunciado = ${caio.userId}`
       expect(d?.motivo).toBe('spam')
 
       await C.page.reload()
-      await naPagina(C.page).getByRole('tab', { name: /Conversas/ }).click()
+      await naPagina(C.page)
+        .getByRole('tab', { name: /Conversas/ })
+        .click()
       await expect(naPagina(C.page).getByRole('button', { name: /Victor/ })).toHaveCount(0)
+
+      // 6. A moderação vê a denúncia no console (motivo e de quem; nada de e-mail) e resolve
+      if (nome === 'Chromium-computador') {
+        const mod = await conta('Moderadora')
+        await db.sql`update zro.users set platform_role = 'support' where id = ${mod.userId}`
+        const M = await aba(b, baseURL!, mod, opts, false)
+        await M.page.goto('/admin/denuncias')
+        const item = M.page.locator('li[data-denuncia]').filter({ hasText: `@${caio.arroba}` })
+        await expect(item).toContainText('Spam')
+        await expect(item).toContainText('De Victor')
+        await expect(item).not.toContainText('@teste.absolutezro.local')
+        if (fotos) await foto(M.page, `set-moderacao-${nome}`)
+        await item.getByRole('button', { name: 'Resolver' }).click()
+        await expect(M.page.locator('li[data-denuncia]').filter({ hasText: `@${caio.arroba}` })).toHaveCount(0)
+        await M.ctx.close()
+      }
 
       for (const x of [A, B, C]) await x.ctx.close()
       const v = await A.page.video()?.path()
@@ -178,3 +210,23 @@ for (const [nome, tipo, opts] of COMBOS) {
     }
   })
 }
+
+test('Set: a leitura repetida (o poll) volta 304 com a mesma ETag e 200 quando muda', async ({ baseURL, request }) => {
+  const ana = await conta('Ana')
+  const headers = { cookie: `${SESSION_COOKIE}=${ana.token}` }
+  const r1 = await request.get(`${baseURL}/api/v1/set`, { headers })
+  expect(r1.status()).toBe(200)
+  const etag = r1.headers()['etag']!
+  expect(etag).toMatch(/^W\/"[A-Za-z0-9_-]+"$/)
+  expect(r1.headers()['cache-control']).toBe('no-store')
+  const r2 = await request.get(`${baseURL}/api/v1/set`, { headers: { ...headers, 'if-none-match': etag } })
+  expect(r2.status()).toBe(304)
+  expect(await r2.text()).toBe('')
+  // ficou invisível: o estado mudou, a ETag também
+  const p = await request.put(`${baseURL}/api/v1/set/preferencias`, { headers: { ...headers, origin: baseURL! }, data: { invisivel: true } })
+  expect(p.status()).toBe(200)
+  const r3 = await request.get(`${baseURL}/api/v1/set`, { headers: { ...headers, 'if-none-match': etag } })
+  expect(r3.status()).toBe(200)
+  expect(r3.headers()['etag']).not.toBe(etag)
+  expect(JSON.stringify(await r3.json())).not.toContain('@teste.absolutezro.local')
+})

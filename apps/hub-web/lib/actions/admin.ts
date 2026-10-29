@@ -2,7 +2,7 @@
 import { revalidatePath } from 'next/cache'
 import { assignPlan, cancelManualSubscription, createPlanVersion, grantEntitlement, launchSales, publishPlanVersion, revokeEntitlement } from '@zro/billing'
 import { OAuthError, registerClient } from '@zro/auth'
-import { requirePlatformAdmin, resolvePlanRequest } from '@zro/core'
+import { requirePlatformAdmin, resolvePlanRequest, resolverDenunciaSet } from '@zro/core'
 import { pgErrorCode, PG } from '@zro/db'
 import { DomainError } from '@zro/observability'
 import type { FormState } from '@/components/action-form'
@@ -219,6 +219,18 @@ export async function launchSalesAction(_: FormState, fd: FormData): Promise<For
     const r = await db().asSystem('admin: ligar vendas', (tx) => launchSales(tx, actor, { cutoff, trialDays }))
     revalidatePath('/admin', 'layout')
     return { ok: `Vendas ligadas. ${r.grandfathered} organizações seguem liberadas até a data de corte.` }
+  } catch (e) {
+    return toFormError(e)
+  }
+}
+
+/** Denúncia do Set resolvida (ADR 0031): admin ou suporte; a auditoria guarda quem resolveu. */
+export async function resolverDenunciaSetAction(_: FormState, fd: FormData): Promise<FormState> {
+  try {
+    const u = requirePlatformAdmin(await getAuth(), ['admin', 'support'])
+    await db().asSystem('admin: resolver denúncia do Set', (tx) => resolverDenunciaSet(tx, u.userId, str(fd, 'id')))
+    revalidatePath('/admin/denuncias')
+    return { ok: 'Denúncia resolvida.' }
   } catch (e) {
     return toFormError(e)
   }

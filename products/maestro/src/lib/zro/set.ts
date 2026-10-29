@@ -7,6 +7,7 @@
  * - Sem token com o escopo (login antigo): 401 `reconectar_zro` e o widget some sem alarde. Diferente da Z, um 401 da
  *   Absolute ZRO aqui NÃO apaga os tokens (eles continuam valendo para a Z e o resto).
  * - Sem acesso ao Maestro: 403, como toda rota de dados.
+ * - Leitura com ETag: o If-None-Match do widget segue e o 304 (sem corpo) volta; o poll não traz o que não mudou.
  */
 import { exigirAcesso } from "@/lib/auth/requisicao";
 import { erro, origemConfere } from "@/lib/http";
@@ -16,6 +17,8 @@ import { acessoIa } from "./ia";
 
 const MAX_CORPO = 20_000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** A ETag fraca da API do Set (W/"…"): só ela vai e volta. */
+const ETAG = /^W\/"[A-Za-z0-9_-]{1,64}"$/;
 
 /** O caminho da API do Set (sem a barra do começo), se ele existe com este método; senão null. */
 export function caminhoSet(partes: string[], metodo: string): string | null {
@@ -68,11 +71,19 @@ export async function repassarSet(req: Request, partes: string[]): Promise<Respo
     return acesso.erro === "reconectar"
       ? erro(401, "reconectar_zro", "Entre de novo com a Absolute ZRO para ver o Set.")
       : erro(502, "rede", "A Absolute ZRO não respondeu agora. Tente de novo.");
+  const pedida = req.headers.get("if-none-match");
+  const etagPedida = pedida && pedida.length <= 200 && ETAG.test(pedida) ? pedida : null;
   let resposta: Response;
   try {
     resposta = await fetch(`${emissor()}/api/v1/set${caminho ? `/${caminho}` : ""}${busca(req, caminho)}`, {
       method: req.method,
-      headers: { Authorization: `Bearer ${acesso.at}`, Accept: "application/json", ...(corpo !== undefined ? { "Content-Type": "application/json" } : {}) },
+      headers: {
+        Authorization: `Bearer ${acesso.at}`,
+        Accept: "application/json",
+        ...(corpo !== undefined ? { "Content-Type": "application/json" } : {}),
+        // o poll do widget: a ETag segue e o 304 volta sem corpo
+        ...(req.method === "GET" && etagPedida ? { "If-None-Match": etagPedida } : {}),
+      },
       body: corpo,
       cache: "no-store",
       redirect: "error",
@@ -84,5 +95,8 @@ export async function repassarSet(req: Request, partes: string[]): Promise<Respo
   const headers = new Headers({ "Cache-Control": "no-store" });
   const tipo = resposta.headers.get("content-type");
   if (tipo) headers.set("Content-Type", tipo);
-  return new Response(resposta.status === 204 ? null : resposta.body, { status: resposta.status, headers });
+  const etag = resposta.headers.get("etag");
+  if (etag && ETAG.test(etag)) headers.set("ETag", etag);
+  const semCorpo = resposta.status === 204 || resposta.status === 304;
+  return new Response(semCorpo ? null : resposta.body, { status: resposta.status, headers });
 }

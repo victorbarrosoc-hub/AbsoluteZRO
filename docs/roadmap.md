@@ -579,6 +579,27 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   0029 cai em `nivel=sem_pessoas`, sem quebrar o login).
 - ⬜ Inventário do Carro no freela achado pelo @ (pronto atrás de `CARRO_SYNC_ATIVO`, desligado).
 
+## Set: presença e conversas (29/10/2026, [ADR 0031](decisions/0031-set-presenca-e-conversas.md))
+
+- ✅ Fase 1, presença (migração `0035_set.sql`): quem da equipe (mesma organização ou projeto) e dos contatos aceitos
+  está online e em qual app ("na Absolute ZRO", "no Maestro"; o app vem do token). Invisível com um toque, "Quem vê
+  você online" e "Mostrar visto há". Ninguém de fora vê ninguém; e-mail e telefone nunca saem.
+- ✅ Fase 2, conversas: direta com quem trabalha junto ou é contato (pedido pelo @ de perfil visível; recusa sem aviso e
+  30 dias de espera), e a do projeto canônico para quem vê o projeto, de qualquer app. Não lidas, silenciar, editar
+  (24 h) e apagar com a versão anterior só para a moderação (90 dias), bloquear nos dois sentidos, denunciar.
+  Limites: 30 mensagens/min, 20 pedidos e 10 denúncias por dia. Exclusão da conta leva os dados do Set.
+- ✅ Tempo real sem serviço novo: poll curto com ETag (304 sem corpo) — batida 45 s, estado 12 s com a folha aberta,
+  conversa 4 s.
+- ✅ Central: "Set" no menu (não é aba principal), pílula discreta na barra de cima (rostos de quem está online e o
+  balão), página `/set` (lista e conversa lado a lado; no iPhone a conversa fica com a tela) e "Conversa" na página do
+  projeto. Console › Denúncias (admin ou suporte) para resolver.
+- ✅ Apps: escopo de família `zro.set` e o widget `<zro-set>` (`/set/v1/zro-set.js`, [contrato](integration-contracts/set.md)).
+  Maestro: pílula na cápsula e no topo do celular, repasse `/api/zro/set/*` com o token no servidor (ETag inclusive),
+  login pede `zro.set` (HUB antigo: `nivel=sem_set`).
+- ⛔ Em produção: migração `0035` no deploy e novo login no Maestro para o escopo `zro.set`.
+- ⬜ SOBEDESCE, Synquei e os demais apps com o widget; aviso fora do app (e-mail/push); anexos.
+- ⬜ Fase 3, salas abertas da comunidade: com o lançamento do Carro do Freela (novo tipo de conversa, mesma API).
+
 ## Fase 6 — Escala
 
 - ⬜ Observabilidade em produção (drain de logs, métricas da fila, alertas), backups e retenção definidos.

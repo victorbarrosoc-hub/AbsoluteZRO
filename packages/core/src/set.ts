@@ -1,10 +1,10 @@
 /**
- * Set: quem está no Set e as conversas (migração 0032, ADR 0031). A mesma conta em todo app: a pessoa vê quem da
+ * Set: quem está no Set e as conversas (migração 0035, ADR 0031). A mesma conta em todo app: a pessoa vê quem da
  * equipe e dos contatos está online e em qual app, conversa direto pelo @ com quem aceitou ou já trabalha junto e
  * conversa no projeto (o projeto canônico, `zro.projects`) de qualquer app do projeto.
  *
  * - Tudo como a própria pessoa (zro_app + RLS). O que é de outra pessoa (nome, @, foto, presença) sai só das funções
- *   security definer da 0032, com campos mínimos; e-mail e telefone nunca.
+ *   security definer da 0035, com campos mínimos; e-mail e telefone nunca.
  * - `authorize()` na ordem do PRD §5.2 em toda operação (com e-mail confirmado para quem escreve ou pede contato); o
  *   acesso à conversa (passo 4: a direta é das duas pessoas, a do projeto é de quem vê o projeto) fica no banco.
  * - O app da presença vem do token (produto do cliente OAuth) ou é a central ('hub'); nunca do navegador.
@@ -16,7 +16,7 @@ import { pgErrorCode, PG, type Database, type Tx } from '@zro/db'
 import { audit, DomainError } from '@zro/observability'
 import { authorize, type Actor } from './authz'
 
-/** Escopo de família para os apps usarem o Set (todo cliente com produto, migração 0032). */
+/** Escopo de família para os apps usarem o Set (todo cliente com produto, migração 0035). */
 export const ESCOPO_SET = 'zro.set'
 /** A central (sessão do navegador do HUB) aparece como "Absolute ZRO". */
 export const APP_HUB = 'hub'
@@ -126,7 +126,7 @@ async function limite(db: Database, chave: string, regra: Rule, msg: string) {
   if (!ok) throw new DomainError('rate_limited', msg)
 }
 
-/** Erros do banco (funções da 0032) viram erros de domínio com a mensagem da tela. */
+/** Erros do banco (funções da 0035) viram erros de domínio com a mensagem da tela. */
 function traduzir(e: unknown, o: { proibido?: string; nao?: string; invalido?: string } = {}): never {
   const code = pgErrorCode(e)
   if (code === PG.insufficientPrivilege) throw new DomainError('action_not_allowed', o.proibido ?? 'Você não pode fazer isso.')
@@ -208,7 +208,13 @@ export async function estadoSet(db: Database, auth: Authenticated | null, o: { b
 
 function estadoVazio(actor: Actor): EstadoSet {
   return {
-    eu: { id: actor.userId, arroba: null, nome: actor.auth.user.displayName, foto: null, preferencias: { invisivel: false, quemVe: 'equipe_contatos', mostrarVisto: true } },
+    eu: {
+      id: actor.userId,
+      arroba: null,
+      nome: actor.auth.user.displayName,
+      foto: null,
+      preferencias: { invisivel: false, quemVe: 'equipe_contatos', mostrarVisto: true },
+    },
     pessoas: [],
     naoLidas: 0,
     pedidos: 0,
@@ -409,18 +415,16 @@ export async function lerConversaSet(
     const depois = Number.isFinite(o.depois) && o.depois! >= 0 ? Math.trunc(o.depois!) : null
     const rows = await tx`select * from zro.set_ler_mensagens(${conversaId}, ${antes}, ${depois}, ${limiteN + 1})`
     const mais = rows.length > limiteN
-    const lista = rows.slice(0, limiteN).map(
-      (r): MensagemSet => ({
-        id: r.id as string,
-        seq: Number(r.seq),
-        autor: pessoa(r.autor, r.autor_arroba, r.autor_nome, r.autor_foto),
-        minha: r.autor === actor.userId,
-        texto: r.apagada ? null : ((r.texto as string) ?? null),
-        criadaEm: iso(r.criada_em)!,
-        editadaEm: iso(r.editada_em),
-        apagada: !!r.apagada,
-      }),
-    )
+    const lista = rows.slice(0, limiteN).map((r): MensagemSet => ({
+      id: r.id as string,
+      seq: Number(r.seq),
+      autor: pessoa(r.autor, r.autor_arroba, r.autor_nome, r.autor_foto),
+      minha: r.autor === actor.userId,
+      texto: r.apagada ? null : ((r.texto as string) ?? null),
+      criadaEm: iso(r.criada_em)!,
+      editadaEm: iso(r.editada_em),
+      apagada: !!r.apagada,
+    }))
     // Sempre em ordem de chegada (a mais antiga primeiro).
     if (depois === null) lista.reverse()
     return { conversa: conversaDe(c), mensagens: lista, mais: depois === null ? mais : false }
@@ -480,7 +484,8 @@ export async function atualizarConversaSet(
   exigirId(conversaId, 'Conversa não encontrada.')
   try {
     await db.asUser(ctx(actor), async (tx) => {
-      if (typeof o.lidaAte === 'number' && Number.isFinite(o.lidaAte)) await tx`select zro.set_marcar_lida(${conversaId}, ${Math.max(0, Math.trunc(o.lidaAte))})`
+      if (typeof o.lidaAte === 'number' && Number.isFinite(o.lidaAte))
+        await tx`select zro.set_marcar_lida(${conversaId}, ${Math.max(0, Math.trunc(o.lidaAte))})`
       if (typeof o.silenciada === 'boolean') await tx`select zro.set_silenciar(${conversaId}, ${o.silenciada})`
     })
   } catch (e) {
