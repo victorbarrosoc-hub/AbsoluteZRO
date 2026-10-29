@@ -18,7 +18,7 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 ## E-mails da central com cara de e-mail de conta (29/10/2026)
 
 - Convite caiu em Promoções no Gmail (SPF, DKIM e DMARC conferidos no DNS: ok). `apps/hub-web/lib/email/modelos.ts`
-  passa a mandar fundo branco, marca escrita, título curto, um botão simples e o endereço por extenso, sem imagem
+  passa a mandar fundo branco, símbolo e logo pequenos (PNG do site em cinza, nunca anexado), título curto, um botão simples e o endereço por extenso, sem imagem
   anexada (o `imagens.ts` saiu), sem preenchimento na prévia e sem a faixa de produtos. Lint, formatação, tipos e
   `npm test` **260/260** (inclui `excluir-conta`: links só para a marca e o contato). Prévias renderizadas no claro e no
   escuro conferidas no Chromium.

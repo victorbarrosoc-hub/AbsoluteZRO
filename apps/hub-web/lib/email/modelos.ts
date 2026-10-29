@@ -1,8 +1,9 @@
 /**
  * Os e-mails da Absolute ZRO. Primeiro desenho (28/10/2026): cartão com marca em imagem e faixa do ecossistema; o
  * Gmail mandava tudo para Promoções. Desde 29/10/2026 (pedido do titular): com cara de e-mail de conta, como os da
- * Apple e do Google: fundo branco, a marca escrita (sem imagem), título curto, uma linha de apoio, um botão simples e
- * o endereço por extenso. Nada de imagem anexada, texto escondido de prévia com preenchimento ou bloco de produtos.
+ * Apple e do Google: fundo branco, símbolo e logo pequenos no topo (PNG servido pelo site, em cinza, que funciona no
+ * claro e no escuro; nunca anexado), título curto, uma linha de apoio, um botão simples e o endereço por extenso.
+ * Nada de imagem anexada, texto escondido de prévia com preenchimento ou bloco de produtos.
  * HTML em tabelas e estilo inline (Gmail, Outlook e Mail do iPhone) e sempre uma versão em texto.
  */
 import type { OutgoingEmail } from '@zro/auth'
@@ -38,8 +39,11 @@ function html(c: Corpo): string {
 <table class="z-fundo" role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;">
   <tr><td style="padding:32px 24px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
-      <tr><td class="z-forte" style="padding:0 0 28px 0;font-family:${FONTE};font-size:15px;font-weight:600;color:${GRAFITE};">
-        <a href="${ORIGEM}" class="z-forte" style="color:${GRAFITE};text-decoration:none;">Absolute ZRO</a>
+      <tr><td style="padding:0 0 28px 0;">
+        <a href="${ORIGEM}" style="text-decoration:none;"><table role="presentation" cellpadding="0" cellspacing="0"><tr>
+          <td style="padding:0 10px 0 0;vertical-align:middle;"><img src="${ORIGEM}/brand/email/absolute-zro-simbolo-cinza.png" width="28" height="28" alt="" style="display:block;border:0;width:28px;height:28px;"></td>
+          <td style="vertical-align:middle;"><img src="${ORIGEM}/brand/email/absolute-zro-cinza.png" width="151" height="14" alt="Absolute ZRO" style="display:block;border:0;width:151px;height:auto;"></td>
+        </tr></table></a>
       </td></tr>
       <tr><td style="font-family:${FONTE};">
         <h1 class="z-titulo" style="margin:0;font-size:24px;line-height:1.25;color:${GRAFITE};font-weight:600;">${esc(c.fino)} ${esc(c.forte)}</h1>
