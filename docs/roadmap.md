@@ -592,6 +592,20 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ⬜ F2 (editor e telas), F3 (enviar: TPeasy, edição, PDF, versões na ficha do card), F7 (aprovação pelo `/a`).
 - ⛔ Em produção: migração `0030` do Maestro no próximo deploy autorizado.
 
+## Maestro · Criação: núcleo do Fluxo (F4, 29/10/2026)
+
+- ✅ Banco: `drizzle/0031_fluxos.sql` (`fluxos`, `fluxo_nos` com nota/imagem/link/roteiro/card/seção, `fluxo_ligacoes`,
+  `fluxo_imagens`), RLS por organização e por cliente (o fluxo segue o projeto/card; o solto some para quem é restrito),
+  `rev` por nó e por ligação, lápide em vez de apagar, limites de 2.000 nós e 4.000 ligações por fluxo.
+- ✅ Servidor (`src/lib/criacao/fluxo`): operações em lote com conflito por item, "o que mudou desde" para o poll de
+  5 s, referências vivas a roteiro e card ("sem acesso" sem título), imagens em WebP ≤ 400 KB + miniatura, sem
+  metadados, com cota por produtora (200 MB) e por fluxo (300) conferida no banco, rota autorizada
+  `/api/criacao/img/<id>/<sha>`. Link colado reconhecido pelo endereço (YouTube, Vimeo, Drive), sem buscar nada.
+  Markdown e JSON `maestro.fluxo/1` para "Copiar para IA" (sem endereço de imagem sem o link da F6).
+- ⬜ F5 (canvas), F6 (exportar, link privado `/f`).
+- ⛔ Em produção: migração `0031` do Maestro no próximo deploy autorizado. A cota de 200 MB depende do plano do
+  Supabase `AbsoluteZRO` (conferir com o titular).
+
 ## Fase 6 — Escala
 
 - ⬜ Observabilidade em produção (drain de logs, métricas da fila, alertas), backups e retenção definidos.

@@ -254,6 +254,22 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   (`podeVerCriacao`/`podeEditarCriacao`/`podeEnviarCriacao`; trocar pela área `criacao` quando o acesso por área tiver).
   O migrador aplica qualquer migração do journal ainda não gravada (pelo `when` ou pelo hash), então números fora de
   ordem entre frentes funcionam; `when` repetido para o deploy.
+- **Criação · Fluxo** (plano da Criação §6, fase F4 = só o núcleo, sem tela; `drizzle/0031_fluxos.sql`,
+  `src/lib/criacao/fluxo/**`): cada nó é uma linha de `fluxo_nos` (`nota`, `imagem`, `link`, `roteiro`, `card`,
+  `secao`; x/y/w/h/z, `secao_id` do mesmo fluxo, `dados` ≤ 16 KB conferidos por `lerDados`, `rev` subido pelo gatilho
+  `fluxo_nos_guarda`), ligações em `fluxo_ligacoes` (de → para, rótulo, `rev`); apagar = lápide (`apagado_em`) e a
+  limpeza (`maestro.fluxo_limpar`) tira de vez depois de 7 dias. Gravação por `aplicarOps` (lista conferida por
+  `lerOps`, até 500 por pedido, numa transação): `rev` velho = `conflito` só naquele item; sem `rev` (mover) o último
+  leva; erro de regra desfaz tudo. Poll de 5 s em `fluxoDesde` (índice por `updated_at`, lápides inclusive).
+  Referência guarda só o id (`roteiro_id`/`card_id`, chave composta): título e estado vêm de `resolverReferencias` com
+  o RLS de quem vê; fora do alcance = "sem acesso", nunca o título; criar referência ao que não se vê é barrado no
+  gatilho. Imagens (decisão do titular: no banco, WebP, cota por produtora): `prepararImagem` (bytes conferidos como no
+  logo, sharp, ≤ 2048 px e 400 KB, miniatura ≤ 40 KB, sem metadados) → `fluxo_imagens` (sha256 por check; cota em
+  `maestro.fluxo_cota`, 200 MB por produtora e 300 por fluxo, igual a `cota.ts`, conferida no insert com trava);
+  `maestro_app` não lê os bytes pela tabela, só pela porta `maestro.fluxo_imagem(id, sha, mini)`; rota
+  `GET /api/criacao/img/<id>/<sha>` com sessão (cache privado). Link colado: `endereco.ts` puro (YouTube, Vimeo, Drive
+  pelo endereço; nunca busca a página). "Copiar para IA": `exportar.ts` (Markdown e `maestro.fluxo/1`; imagem só leva
+  endereço com o link da F6). Rotas em `src/lib/criacao/fluxo/rota.ts` (`/api/criacao/fluxo`, `/api/criacao/img`).
 - **Página inicial** (`src/app/page.tsx`, `inicio.css`, plano v2 §10, ADR 0024): pública, só o que existe, "Em breve"
   para o resto, capturas reais da demonstração em `public/produto/*-{claro,escuro}.webp` (refazer com
   `npm run db:seed:demo` quando a tela mudar; nunca mock). "Quero acesso" grava na lista de espera
@@ -319,7 +335,10 @@ novas com duas organizações (`negocio-rls.test.mts`) e o resumo para a Z (`res
 (`drive-sobedesce.test.mts`), a versão colada na ficha do card (`versoes-card.test.mts`), pessoas da Absolute ZRO (`pessoas-zro.test.mts`), colunas do Quadro (fábrica e backfill, duas organizações, papéis,
 automação pelo papel, arquivar com destino, paleta; `colunas.test.mts`), o roteiro puro (modelo, tempo, cada vista, TPeasy
 contra o código do próprio app, modelos só com dica, documento antigo, junção; `roteiro.test.mts`), roteiros no banco
-(duas organizações, papéis, rev, versões imutáveis; `criacao-rls.test.mts`) e o migrador com migração atrasada
+(duas organizações, papéis, rev, versões imutáveis; `criacao-rls.test.mts`), o fluxo puro (link, operações,
+exportação, cota, imagem; `fluxo.test.mts`), fluxos no banco (duas organizações, papéis, rev por nó, o que mudou,
+referências "sem acesso", porta da imagem, cota, limpeza; `fluxo-rls.test.mts`) e as rotas do fluxo e da imagem
+(`fluxo-rota.test.mts`) e o migrador com migração atrasada
 (`migrador.test.mts`). E2E: `npm run build && npm run test:e2e`
 (Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir movimento, navegação, a aprovação
 inteira (`aprovacao.spec.ts`, mp4 local e YouTube/Vimeo falsos em `e2e/falsos`) e a versão colada na ficha do card que aparece no lote (`versao-card.spec.ts`) e a produtora com a demonstração

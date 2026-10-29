@@ -2541,6 +2541,24 @@ migração `0030_roteiros` e o migrador aceitando migração fora de ordem.
 
 Não rodado: o e2e do Maestro (nenhuma tela mudou). A migração `0030` não foi aplicada em banco de verdade.
 
+## Maestro · Criação: núcleo do Fluxo (F4, 29/10/2026)
+
+Sem tela nesta fase: migração `0031_fluxos`, operações por nó com `rev`, "o que mudou desde", referências vivas,
+imagens em WebP com cota, link colado sem rede e a exportação em Markdown/JSON.
+
+| Verificação                                                          | Comando                                                          | Resultado                       |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------- |
+| Puro: link, operações, notas coladas, exportação, cota, imagem limpa | `cd products/maestro && npx tsx --test tests/fluxo.test.mts`     | **20/20**                       |
+| Banco: duas organizações, papéis, rev, desde, referências, cota      | `npx tsx --test tests/fluxo-rls.test.mts`                        | **19/19**                       |
+| Rotas do fluxo e da imagem (401/403/404, cabeçalhos)                 | `npx tsx --test tests/fluxo-rota.test.mts`                       | **5/5**                         |
+| Acesso por cliente com as quatro tabelas do fluxo e a porta          | `npx tsx --test tests/acesso-cliente.test.mts`                   | **7/7**                         |
+| Maestro inteiro                                                      | `npm run lint`, `format:check`, `typecheck`, `npm test`, `build` | ok · ok · ok · **463/463** · ok |
+| Raiz                                                                 | `npm run lint`, `format:check`, `typecheck`                      | ok · ok · ok                    |
+| Segredos                                                             | `node scripts/scan-secrets.mjs`                                  | nenhum                          |
+
+Não rodado: o e2e do Maestro (nenhuma tela mudou). A migração `0031` não foi aplicada em banco de verdade; a cota de
+200 MB por produtora ainda depende do plano do Supabase `AbsoluteZRO`.
+
 ## SOBEDESCE: Atualizações quando o Absolute ZRO cuida do app (29/10/2026)
 
 - Relato do titular: o app no build 1034 dizia "Você está na versão mais nova" com o 1042 publicado. Instalado pela

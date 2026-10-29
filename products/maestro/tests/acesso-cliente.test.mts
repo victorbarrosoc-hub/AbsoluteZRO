@@ -39,6 +39,9 @@ const TABELAS = [
   "reservas",
   "roteiros",
   "roteiro_versoes",
+  "fluxos",
+  "fluxo_ligacoes",
+  "fluxo_imagens",
 ] as const;
 
 const contar = async (ctx: { sub: string; orgId: string }, t: string) =>
@@ -109,7 +112,22 @@ before(async () => {
       await tx.execute(sql`
         insert into maestro.roteiro_versoes (org_id, roteiro_id, n, titulo, conteudo, sha256)
         values (${A}, ${rot}, 1, 'Roteiro', '{"v":1}'::jsonb, encode(sha256(convert_to('{"v": 1}', 'UTF8')), 'hex'))`);
+      // fluxo (Criação, 0031) ligado ao projeto do cliente: uma imagem, um nó com a imagem e uma ligação (que sai da
+      // seção, então são dois nós: a contagem de fluxo_nos é conferida à parte)
+      const flx = await um(sql`insert into maestro.fluxos (org_id, projeto_id, titulo) values (${A}, ${p}, 'Fluxo') returning id`);
+      ids[`f_${k}`] = flx;
+      const img = await um(sql`
+        insert into maestro.fluxo_imagens (org_id, fluxo_id, sha256, largura, altura, webp, mini, mini_largura, mini_altura)
+        values (${A}, ${flx}, encode(sha256('\\x52494646'::bytea), 'hex'), 1, 1, '\\x52494646'::bytea, '\\x52'::bytea, 1, 1) returning id`);
+      const n1 = await um(
+        sql`insert into maestro.fluxo_nos (org_id, fluxo_id, tipo, w, h, imagem_id) values (${A}, ${flx}, 'imagem', 100, 100, ${img}) returning id`,
+      );
+      ids[`n_${k}`] = n1;
+      const n2 = await um(sql`insert into maestro.fluxo_nos (org_id, fluxo_id, tipo, w, h) values (${A}, ${flx}, 'nota', 100, 100) returning id`);
+      await tx.execute(sql`insert into maestro.fluxo_ligacoes (org_id, fluxo_id, de, para) values (${A}, ${flx}, ${n2}, ${n1})`);
     }
+    // Um fluxo sem vínculo: quem é restrito não vê.
+    await tx.execute(sql`insert into maestro.fluxos (org_id, titulo) values (${A}, 'Fluxo solto')`);
     // Um roteiro sem vínculo: quem é restrito não vê.
     await tx.execute(sql`insert into maestro.roteiros (org_id, titulo, conteudo) values (${A}, 'Ideia solta', '{"v":1}'::jsonb)`);
     // Um card sem cliente e uma diária sem projeto: a pessoa restrita não vê.
@@ -125,6 +143,15 @@ after(() => amb.fechar());
 describe("acesso por cliente", () => {
   test("restrita a um cliente: em toda tabela ligada a cliente só a linha dele", async () => {
     for (const t of TABELAS) assert.equal(await contar(o.equipe, t), 1, `equipe em ${t}`);
+    // fluxo_nos: os dois nós do fluxo do cliente Sim (os do Não somem)
+    const nos = (await getBanco().asUser(o.equipe, (tx) => tx.execute(sql`select distinct fluxo_id from maestro.fluxo_nos`))) as unknown as {
+      fluxo_id: string;
+    }[];
+    assert.deepEqual(
+      nos.map((x) => x.fluxo_id),
+      [ids.f_sim],
+    );
+    assert.equal(await contar(o.equipe, "fluxo_nos"), 2);
     const [c] = (await getBanco().asUser(o.equipe, (tx) => tx.execute(sql`select id from maestro.clients`))) as unknown as { id: string }[];
     assert.equal(c.id, ids.c_sim);
     const k = (await getBanco().asUser(o.equipe, (tx) => tx.execute(sql`select id from maestro.cards`))) as unknown as { id: string }[];
@@ -139,7 +166,7 @@ describe("acesso por cliente", () => {
   });
 
   test("restrita a nenhum: nada ligado a cliente; o que não é de cliente segue visível", async () => {
-    for (const t of TABELAS) assert.equal(await contar(o.leitura, t), 0, `leitura em ${t}`);
+    for (const t of [...TABELAS, "fluxo_nos"]) assert.equal(await contar(o.leitura, t), 0, `leitura em ${t}`);
     assert.equal(await contar(o.leitura, "freelas"), 1);
     assert.equal(await contar(o.leitura, "equipamentos"), 1);
   });
@@ -201,6 +228,25 @@ describe("acesso por cliente", () => {
     const versaoFora = await erroDe(getBanco().asUser(o.equipe, (tx) => tx.execute(sql`select maestro.roteiro_versao_salvar(${ids.r_nao}::uuid, null)`)));
     assert.equal(codigoPg(versaoFora), "P0002");
     await getBanco().asUser(o.equipe, (tx) => tx.execute(sql`select maestro.roteiro_versao_salvar(${ids.r_sim}::uuid, null)`));
+    // fluxos (0031): solto, no projeto de fora, nó no fluxo de fora, mudar o próprio para fora; imagem do fluxo de fora
+    for (const q of [
+      sql`insert into maestro.fluxos (org_id, titulo) values (${o.orgA}, 'solto')`,
+      sql`insert into maestro.fluxos (org_id, projeto_id, titulo) values (${o.orgA}, ${ids.p_nao}, 'x')`,
+      sql`insert into maestro.fluxo_nos (org_id, fluxo_id, tipo, w, h) values (${o.orgA}, ${ids.f_nao}, 'nota', 100, 100)`,
+      sql`update maestro.fluxos set projeto_id = ${ids.p_nao} where id = ${ids.f_sim}`,
+    ]) {
+      assert.equal(codigoPg(await erroDe(getBanco().asUser(o.equipe, (tx) => tx.execute(q)))), PG.rls, String(q));
+    }
+    const mexeu = await getBanco().asUser(o.equipe, (tx) => tx.execute(sql`update maestro.fluxo_nos set x = 1 where fluxo_id = ${ids.f_nao} returning id`));
+    assert.equal(mexeu.length, 0);
+    const [fora] = (await getBanco().asSystem("teste", (tx) =>
+      tx.execute(sql`select id, sha256 from maestro.fluxo_imagens where fluxo_id = ${ids.f_nao}`),
+    )) as unknown as { id: string; sha256: string }[];
+    const bytes = (await getBanco().asUser(o.equipe, (tx) =>
+      tx.execute(sql`select bytes from maestro.fluxo_imagem(${fora.id}::uuid, ${fora.sha256}, false)`),
+    )) as unknown as unknown[];
+    assert.equal(bytes.length, 0, "a porta da imagem também respeita o cliente");
+    await getBanco().asUser(o.equipe, (tx) => tx.execute(sql`update maestro.fluxo_nos set x = 1 where fluxo_id = ${ids.f_sim}`));
     // o próprio cliente funciona
     await getBanco().asUser(o.equipe, (tx) => tx.execute(sql`select maestro.card_mudar('card-sim', '{"tema":"Novo tema"}'::jsonb)`));
     await getBanco().asUser(o.equipe, (tx) =>
@@ -218,7 +264,7 @@ describe("acesso por cliente", () => {
   test("tirar a restrição devolve tudo; a outra organização segue isolada", async () => {
     assert.equal((await pessoas.salvarAcesso(o.admin, o.equipe.sub, false, [])).ok, true);
     assert.equal(await contar(o.equipe, "clients"), 2);
-    for (const t of TABELAS) assert.equal(await contar(o.b, t), 0, `B em ${t}`);
+    for (const t of [...TABELAS, "fluxo_nos"]) assert.equal(await contar(o.b, t), 0, `B em ${t}`);
     const lista = await pessoas.listarPessoas(o.admin);
     assert.equal(lista.find((p) => p.sub === o.leitura.sub)?.restrito, true);
     assert.equal(lista.find((p) => p.sub === o.equipe.sub)?.restrito, false);
