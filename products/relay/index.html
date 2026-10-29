@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Relay · Do master ao feed, sem perder nada</title>
+    <meta name="description" content="Conversor de vídeo e áudio grátis da Absolute ZRO. YouTube, Reels, TikTok, WhatsApp, MP3 e mais, no seu aparelho, sem cadastro." />
+    <meta name="theme-color" content="#f5f5f7" />
+    <meta property="og:title" content="Relay · Do master ao feed, sem perder nada" />
+    <meta property="og:description" content="Conversor de vídeo e áudio grátis da Absolute ZRO. Roda no seu aparelho." />
+    <meta property="og:image" content="https://relay.absolutezro.com/marca/og.png" />
+    <meta property="og:url" content="https://relay.absolutezro.com/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="marca/relay-icone.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="marca/app/apple-touch-icon.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="app/relay.css" />
+    <link rel="stylesheet" href="app/home.css" />
+    <script src="app/tema.js"></script>
+    <script type="module" src="app/home.js"></script>
+  </head>
+  <body>
+    <header class="topo">
+      <a class="marca" href="./" aria-label="Relay, início"><img src="marca/relay-icone.svg" alt="" />Relay</a>
+      <nav aria-label="Seções">
+        <a class="opcional" href="#destinos">Destinos</a>
+        <a class="opcional" href="#qualidade">Qualidade</a>
+        <a class="opcional" href="#familia">Família</a>
+      </nav>
+      <button class="vidro vidro--icone tema" type="button" data-tema-botao title="Tema claro ou escuro" aria-label="Trocar tema"><i data-icone="lua"></i></button>
+      <a class="vidro vidro--tinta" href="converter">Converter</a>
+    </header>
+
+    <main>
+      <!-- 1 · o símbolo é o protagonista: o relé liga, o sinal passa -->
+      <section class="heroi">
+        <div class="heroi-rele" aria-hidden="true">
+          <div class="rele rele--heroi"></div>
+          <div class="heroi-pulso"></div>
+        </div>
+        <p class="sobretitulo">Relay · grátis</p>
+        <h1><span class="fino">Do master ao feed.</span> <span class="pesado">Sem perder nada.</span></h1>
+        <p class="apoio">Vídeo e áudio no formato certo para cada destino. No seu aparelho, sem cadastro.</p>
+        <div class="acoes">
+          <a class="vidro vidro--tinta vidro--grande" href="converter">Converter agora</a>
+          <a class="vidro vidro--grande" href="#destinos">Ver os destinos</a>
+        </div>
+      </section>
+
+      <!-- 2 · um arquivo entra, todos os destinos saem -->
+      <section class="fluxo" aria-labelledby="t-fluxo">
+        <h2 id="t-fluxo"><span class="fino">Um arquivo.</span> <span class="pesado">Todos os destinos.</span></h2>
+        <div class="fluxo-palco">
+          <div class="arquivo cartao">
+            <div class="arquivo-quadro"></div>
+            <strong>master.mov</strong>
+            <span class="fichas"><span class="ficha">ProRes 422 HQ</span><span class="ficha">4K</span><span class="ficha">2 min</span></span>
+          </div>
+          <div class="fluxo-rele" aria-hidden="true"><div class="rele"></div></div>
+          <ol class="saidas">
+            <li class="cartao"><i data-icone="youtube"></i><span><strong>YouTube 4K</strong><small data-exemplo="youtube-4k"></small></span></li>
+            <li class="cartao"><i data-icone="instagram"></i><span><strong>Reels · No Compress</strong><small data-exemplo="reels"></small></span></li>
+            <li class="cartao"><i data-icone="whatsapp"></i><span><strong>WhatsApp</strong><small data-exemplo="whatsapp"></small></span></li>
+            <li class="cartao"><i data-icone="onda"></i><span><strong>MP3 320</strong><small data-exemplo="mp3"></small></span></li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- 3 · destinos -->
+      <section class="destinos" id="destinos" aria-labelledby="t-destinos">
+        <h2 id="t-destinos"><span class="fino">Escolha para onde vai.</span> <span class="pesado">O resto é com ele.</span></h2>
+        <div class="grade-destinos" data-destinos></div>
+      </section>
+
+      <!-- 4 · qualidade -->
+      <section class="qualidade" id="qualidade" aria-labelledby="t-qualidade">
+        <h2 id="t-qualidade"><span class="fino">Qualidade de</span> <span class="pesado">quem entrega.</span></h2>
+        <div class="grade-qualidade">
+          <article class="cartao q">
+            <i data-icone="lupa"></i>
+            <h3>Lanczos</h3>
+            <p class="apoio">Redução nítida, sem serrilhado. Na placa de vídeo.</p>
+          </article>
+          <article class="cartao q">
+            <i data-icone="chip"></i>
+            <h3>Hardware</h3>
+            <p class="apoio">Usa o chip de vídeo do seu aparelho.</p>
+          </article>
+          <article class="cartao q">
+            <i data-icone="cor"></i>
+            <h3>Cor certa</h3>
+            <p class="apoio">BT.709 marcado. Igual em todo player.</p>
+          </article>
+          <article class="cartao q">
+            <i data-icone="peso"></i>
+            <h3>Cabe no limite</h3>
+            <p class="apoio">20 MB? Escolhe a resolução que fica nítida.</p>
+          </article>
+        </div>
+        <a class="mais" href="qualidade">Como medimos contra o HandBrake <i data-icone="seta"></i></a>
+      </section>
+
+      <!-- 5 · privacidade -->
+      <section class="privado" aria-labelledby="t-privado">
+        <div class="cadeado" aria-hidden="true"><i data-icone="cadeado"></i></div>
+        <h2 id="t-privado"><span class="pesado">O arquivo não sai</span> <span class="fino">do seu aparelho.</span></h2>
+        <p class="apoio">Nenhum upload. Converte aqui mesmo, até offline.</p>
+      </section>
+
+      <!-- 6 · família -->
+      <section class="familia" id="familia" aria-labelledby="t-familia">
+        <h2 id="t-familia"><span class="fino">Mora no</span> <span class="pesado">ecossistema inteiro.</span></h2>
+        <p class="apoio">Uma conta Absolute ZRO. O Relay aparece onde você precisa exportar.</p>
+        <div class="orbita" data-familia>
+          <div class="orbita-centro"><img src="marca/relay-icone.svg" alt="Relay" /></div>
+        </div>
+      </section>
+
+      <section class="fecho">
+        <h2><span class="fino">Solte o arquivo.</span> <span class="pesado">Pronto.</span></h2>
+        <a class="vidro vidro--tinta vidro--grande" href="converter">Converter agora</a>
+      </section>
+    </main>
+
+    <footer class="rodape">
+      <a class="zro" href="https://absolutezro.com" title="Absolute ZRO">
+        <svg viewBox="0 0 100 100" aria-hidden="true"><path fill="currentColor" d="M74.00 40.02C75.00 47.51 77.33 49.00 94.82 50.00C77.33 51.00 75.00 52.49 74.00 59.98C73.00 52.49 70.67 51.00 53.18 50.00C70.67 49.00 73.00 47.51 74.00 40.02Z"/><path fill="currentColor" fill-rule="evenodd" d="M9.70 50.00a34.30 34.30 0 1 0 68.60 0a34.30 34.30 0 1 0 -68.60 0ZM18.30 50.00a25.70 25.70 0 1 0 51.40 0a25.70 25.70 0 1 0 -51.40 0Z"/></svg>
+        Feito pela Absolute ZRO
+      </a>
+      <a href="converter">Converter</a>
+      <a href="qualidade">Qualidade</a>
+      <a href="marca/">Marca</a>
+      <span>O futuro começa do zero.</span>
+    </footer>
+  </body>
+</html>

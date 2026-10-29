@@ -22,7 +22,15 @@ export const PLATAFORMAS: Record<string, { nome: string; faz: string[] }> = {
     nome: 'SOBEDESCE',
     faz: [
       'Baixa e sobe pastas gigantes no Google Drive com várias conexões, pausa e continua, e confere cada arquivo (MD5).',
-      'Compara uma pasta do computador com uma do Drive, recebe arquivos do celular pelo Wi-Fi, gera proxies e converte com a Revela pelo celular.',
+      'Compara uma pasta do computador com uma do Drive, recebe arquivos do celular pelo Wi-Fi, gera proxies e converte com o Relay (no computador e no celular).',
+    ],
+  },
+  relay: {
+    nome: 'Relay (relay.absolutezro.com)',
+    faz: [
+      'Conversor de vídeo e áudio grátis, no próprio aparelho (nada é enviado): YouTube 1080p/1440p/4K, Shorts, Reels · No Compress, Instagram Feed 4:5, TikTok, WhatsApp, Vimeo, Apple HEVC, proxy para edição, Discord (20 MB), e-mail (25 MB), tamanho exato e áudio em MP3 320, AAC 256 ou WAV 48 kHz.',
+      'Vários destinos de uma vez, presets próprios da pessoa ("Meus", com ficha técnica: codec, tamanho, cadência, bitrate ou tamanho máximo, quadro-chave e áudio) e levar/trazer presets em arquivo .relay.json.',
+      'Para arquivo que está no Drive: o SOBEDESCE converte com o Relay no computador ou no celular e sobe ao lado do original.',
     ],
   },
   synquei: {

@@ -1,0 +1,420 @@
+/* Relay · a linguagem da família Absolute ZRO no Padrão Apple (CLAUDE.md): claro por padrão, títulos em Figtree
+   (fino × pesado), botões em Liquid Glass, uma ideia por tela, pouco texto, motion só com propósito e "reduzir
+   movimento" respeitado. Marca: o relé (trilho, sinal verde-menta → limão, anel do O). A cor fica no símbolo, no
+   sinal e no progresso; texto sempre grafite, branco ou cinza. */
+
+@font-face {
+  font-family: 'Figtree Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300 900;
+  src: url('../fontes/figtree-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Figtree Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 300 900;
+  src: url('../fontes/figtree-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  --fundo: #f5f5f7;
+  --superficie: #ffffff;
+  --superficie-2: #ececf0;
+  --t: 0 0 0; /* tinta das camadas translúcidas: preto no claro, branco no escuro */
+  --linha: rgb(0 0 0 / 0.08);
+  --linha-forte: rgb(0 0 0 / 0.14);
+  --texto: #1d1d1f;
+  --mudo: #6e6e73;
+  --fraco: #86868b;
+  --menta: #2fd9ae;
+  --limao: #d8f76a;
+  --sinal: linear-gradient(90deg, var(--menta), var(--limao));
+  --trilho: rgb(0 0 0 / 0.07);
+  --aviso: #9a5300;
+  --erro: #c4261d;
+  --raio: 18px;
+  --raio-g: 28px;
+  --mola: cubic-bezier(0.32, 0.72, 0, 1);
+  --suave: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --fonte-titulo: 'Figtree Variable', ui-sans-serif, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --fonte: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter Variable', system-ui, 'Segoe UI', sans-serif;
+  --sombra-cartao: 0 1px 2px rgb(0 0 0 / 0.04), 0 18px 48px rgb(0 0 0 / 0.07);
+  /* Liquid Glass (packages/ui/src/tokens.css) */
+  --btn-fill: rgb(255 255 255 / 0.55);
+  --btn-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.5), rgb(255 255 255 / 0) 55%);
+  --btn-ink: #1d1d1f;
+  --btn-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), inset 0 -1px 0 rgb(0 0 0 / 0.06), 0 0 0 1px rgb(0 0 0 / 0.1), 0 6px 18px rgb(0 0 0 / 0.07);
+  --btn-main-fill: rgb(29 29 31 / 0.92);
+  --btn-main-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.22), rgb(255 255 255 / 0) 50%);
+  --btn-main-ink: #ffffff;
+  --btn-main-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), inset 0 -1px 0 rgb(0 0 0 / 0.35), 0 0 0 1px rgb(0 0 0 / 0.45), 0 4px 14px rgb(0 0 0 / 0.14);
+  --vidro-topo: rgb(245 245 247 / 0.78);
+  color-scheme: light;
+}
+:root[data-tema='escuro'] {
+  --fundo: #0e0e10;
+  --superficie: #161619;
+  --superficie-2: #1f1f23;
+  --t: 255 255 255;
+  --linha: rgb(255 255 255 / 0.09);
+  --linha-forte: rgb(255 255 255 / 0.16);
+  --texto: #f5f5f7;
+  --mudo: #a1a1a6;
+  --fraco: #8e8e93;
+  --trilho: rgb(255 255 255 / 0.09);
+  --aviso: #ffb340;
+  --erro: #ff6961;
+  --sombra-cartao: 0 1px 0 rgb(255 255 255 / 0.05) inset, 0 24px 60px rgb(0 0 0 / 0.45);
+  --btn-fill: rgb(255 255 255 / 0.1);
+  --btn-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0) 55%);
+  --btn-ink: #f5f5f7;
+  --btn-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28), 0 0 0 1px rgb(255 255 255 / 0.14), 0 10px 28px rgb(0 0 0 / 0.4);
+  --btn-main-fill: rgb(245 245 247 / 0.94);
+  --btn-main-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.6), rgb(255 255 255 / 0) 50%);
+  --btn-main-ink: #1d1d1f;
+  --btn-main-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), inset 0 -1px 0 rgb(0 0 0 / 0.12), 0 0 0 1px rgb(255 255 255 / 0.3), 0 6px 18px rgb(0 0 0 / 0.4);
+  --vidro-topo: rgb(14 14 16 / 0.72);
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background: var(--fundo);
+  color: var(--texto);
+  font: 400 17px/1.47 var(--fonte);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  transition: background-color 0.4s var(--suave);
+}
+img,
+svg,
+canvas,
+video {
+  display: block;
+  max-width: 100%;
+}
+a {
+  color: inherit;
+}
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+:focus-visible {
+  outline: 2px solid var(--texto);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+[hidden] {
+  display: none !important;
+}
+.so-leitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ─────────── títulos: fino × pesado, só grafite/branco ─────────── */
+h1,
+h2,
+h3 {
+  font-family: var(--fonte-titulo);
+  color: var(--texto);
+  margin: 0;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+.fino {
+  font-weight: 300;
+}
+.pesado {
+  font-weight: 800;
+}
+.apoio {
+  color: var(--mudo);
+  margin: 0;
+  text-wrap: pretty;
+}
+.sobretitulo {
+  font: 600 13px/1 var(--fonte);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mudo);
+  margin: 0 0 14px;
+}
+
+/* ─────────── Liquid Glass ─────────── */
+.vidro {
+  --fill: var(--btn-fill);
+  --sheen: var(--btn-sheen);
+  --sombra: var(--btn-shadow);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--sheen), var(--fill);
+  box-shadow: var(--sombra);
+  color: var(--btn-ink);
+  font: 600 15px/1 var(--fonte);
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(18px) saturate(1.6);
+  backdrop-filter: blur(18px) saturate(1.6);
+  transition:
+    transform 0.25s var(--mola),
+    box-shadow 0.25s var(--suave),
+    opacity 0.2s;
+  white-space: nowrap;
+}
+.vidro:hover {
+  transform: translateY(-1px);
+}
+.vidro:active {
+  transform: scale(0.97);
+}
+.vidro:disabled {
+  opacity: 0.4;
+  cursor: default;
+  transform: none;
+}
+.vidro svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.vidro--tinta {
+  --fill: var(--btn-main-fill);
+  --sheen: var(--btn-main-sheen);
+  --sombra: var(--btn-main-shadow);
+  color: var(--btn-main-ink);
+}
+.vidro--grande {
+  min-height: 52px;
+  padding: 0 28px;
+  font-size: 17px;
+}
+.vidro--icone {
+  width: 40px;
+  min-height: 40px;
+  padding: 0;
+}
+
+/* ─────────── topo ─────────── */
+.topo {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 56px;
+  padding: 0 max(16px, calc((100vw - 1120px) / 2));
+  background: var(--vidro-topo);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  backdrop-filter: blur(20px) saturate(1.8);
+  border-bottom: 1px solid var(--linha);
+}
+.marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  text-decoration: none;
+  font: 800 19px/1 var(--fonte-titulo);
+  letter-spacing: -0.02em;
+}
+.marca img {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+}
+.topo nav {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+.topo nav a {
+  padding: 8px 12px;
+  border-radius: 999px;
+  color: var(--mudo);
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+.topo nav a:hover,
+.topo nav a[aria-current='page'] {
+  color: var(--texto);
+}
+.tema {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+}
+@media (max-width: 640px) {
+  .topo nav a.opcional {
+    display: none;
+  }
+}
+
+/* ─────────── o relé: símbolo vivo (trilho, sinal, anel) ─────────── */
+.rele {
+  --largura: 168px;
+  --altura: 56px;
+  --curso: 1; /* 0 = desligado, 1 = ligado (o anel no fim) */
+  position: relative;
+  display: block;
+  width: var(--largura);
+  height: var(--altura);
+  border-radius: 999px;
+  background: var(--trilho);
+  flex: none;
+}
+.rele::before {
+  /* o sinal: cresce com o curso e passa por baixo do anel */
+  content: '';
+  position: absolute;
+  inset: 0;
+  right: auto;
+  width: calc(var(--altura) + (var(--largura) - var(--altura)) * var(--curso));
+  border-radius: inherit;
+  background: var(--sinal);
+  transition: width 0.6s var(--mola);
+}
+.rele::after {
+  /* o anel do O: grafite no claro, branco no escuro (como o símbolo da família) */
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: calc(var(--altura) / 2 + (var(--largura) - var(--altura)) * var(--curso));
+  width: calc(var(--altura) * 0.5);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  border: calc(var(--altura) * 0.12) solid var(--anel);
+  transition: left 0.6s var(--mola);
+}
+:root {
+  --anel: #1d1d1f;
+}
+:root[data-tema='escuro'] {
+  --anel: #ffffff;
+}
+
+/* barra de progresso = o relé em curso */
+.progresso {
+  --curso: 0;
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--trilho);
+  overflow: visible;
+}
+.progresso::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  right: auto;
+  width: calc(10px + (100% - 10px) * var(--curso));
+  border-radius: inherit;
+  background: var(--sinal);
+  transition: width 0.3s linear;
+}
+.progresso::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: calc(5px + (100% - 10px) * var(--curso));
+  width: 16px;
+  height: 16px;
+  translate: -50% -50%;
+  border-radius: 50%;
+  border: 3px solid var(--anel);
+  background: var(--fundo);
+  transition: left 0.3s linear;
+}
+
+/* ─────────── cartões e fichas ─────────── */
+.cartao {
+  background: var(--superficie);
+  border-radius: var(--raio-g);
+  box-shadow: var(--sombra-cartao);
+}
+.ficha {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgb(var(--t) / 0.05);
+  color: var(--mudo);
+  font: 500 13px/1.3 var(--fonte);
+  white-space: nowrap;
+}
+.ficha svg {
+  width: 13px;
+  height: 13px;
+}
+.ficha--sinal {
+  background: linear-gradient(90deg, rgb(47 217 174 / 0.16), rgb(216 247 106 / 0.2));
+  color: var(--texto);
+}
+
+/* ─────────── rodapé ─────────── */
+.rodape {
+  padding: 48px max(16px, calc((100vw - 1120px) / 2)) 64px;
+  border-top: 1px solid var(--linha);
+  color: var(--fraco);
+  font-size: 13px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  align-items: center;
+}
+.rodape a {
+  color: var(--mudo);
+  text-decoration: none;
+}
+.rodape a:hover {
+  color: var(--texto);
+}
+.rodape .zro {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.rodape .zro svg {
+  width: 20px;
+  height: 20px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
