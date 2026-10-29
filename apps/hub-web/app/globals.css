@@ -1057,7 +1057,9 @@
   position: sticky;
   top: 0;
   z-index: 30;
-  padding: 14px clamp(12px, 3vw, 32px) 0;
+  /* viewport-fit=cover no site ((site)/layout.tsx): a cápsula desce abaixo da barra de status do iPhone */
+  padding: calc(14px + env(safe-area-inset-top)) max(clamp(12px, 3vw, 32px), env(safe-area-inset-right)) 0
+    max(clamp(12px, 3vw, 32px), env(safe-area-inset-left));
   pointer-events: none;
 }
 .capsule {
@@ -1070,10 +1072,25 @@
   gap: var(--space-4);
   padding: 8px 8px 8px 20px;
   border-radius: 999px;
-  background: var(--glass-fill), var(--glass-bg);
+  /* vidro quase opaco: o Safari do iPhone nem sempre desfoca o que passa por trás, e texto da página não pode ler
+     através do topo (relato do titular, 29/10/2026) */
+  background: var(--glass-fill), color-mix(in srgb, var(--surface) 90%, transparent);
   box-shadow: var(--shadow-float);
-  backdrop-filter: blur(20px) saturate(170%);
-  -webkit-backdrop-filter: blur(20px) saturate(170%);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+/* No celular, uma faixa da cor da página atrás da barra de status e da cápsula: nada da página aparece entre o relógio
+   e o topo enquanto rola; ela some em degradê logo abaixo da cápsula. Começa acima da tela (o Safari pinta a página
+   atrás da barra de status mesmo sem safe area). */
+@media (max-width: 760px) {
+  .capsule-wrap::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: -120px 0 -18px;
+    background: linear-gradient(to bottom, var(--bg) calc(120px + env(safe-area-inset-top) + 40px), color-mix(in srgb, var(--bg) 0%, transparent));
+    pointer-events: none;
+  }
 }
 .capsule::before {
   content: '';
@@ -1164,7 +1181,9 @@
   width: 140px;
 }
 .public-main {
-  padding: 0 clamp(16px, 4vw, 48px) var(--space-8);
+  /* contexto próprio: nada da página (camadas animadas, vidro, z-index alto) sobe acima da cápsula do topo */
+  isolation: isolate;
+  padding: 0 max(clamp(16px, 4vw, 48px), env(safe-area-inset-right)) var(--space-8) max(clamp(16px, 4vw, 48px), env(safe-area-inset-left));
   display: grid;
   gap: clamp(72px, 10vw, 140px);
   max-width: 1240px;
@@ -2401,15 +2420,8 @@ details.disclosure[open] > summary {
   color: var(--text-faint);
 }
 .pstrip .selo-dev {
-  max-width: 100%;
   padding: 2px 8px;
   font-size: 0.62rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.pstrip__card[data-fechado] .zro-mark {
-  opacity: 0.55;
-  filter: grayscale(0.6);
 }
 .pconheca__ficha .selo-dev {
   margin-bottom: 4px;
@@ -4870,13 +4882,18 @@ a.hbars__row:hover {
   gap: 28px;
 }
 .pstrip__list {
-  display: grid;
-  /* --n = quantos produtos o catálogo tem (page.tsx): todos numa linha só */
-  grid-template-columns: repeat(var(--n, 7), minmax(0, 1fr));
+  /* --n = quantos por linha (page.tsx): todos numa linha até 8; a última linha fica centrada */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 10px;
   margin: 0;
   padding: 0;
   list-style: none;
+}
+.pstrip__list li {
+  flex: 0 0 calc((100% - (var(--n, 7) - 1) * 10px) / var(--n, 7));
+  min-width: 0;
 }
 .pstrip__card {
   /* ícone em cima, nome e uma linha embaixo: os sete cartões com a mesma altura e o texto sem quebrar no meio */
@@ -4975,29 +4992,30 @@ a.pstrip__card:focus-visible .pstrip__go {
 }
 @media (max-width: 1100px) {
   /* quatro por linha e a segunda linha centralizada, sem buraco no canto */
-  .pstrip__list {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
   .pstrip__list li {
     flex: 0 0 calc((100% - 30px) / 4);
   }
 }
+/* No celular, como a Tela de Início do iPhone: grade de ícones (4 por linha, ou 3 quando fecha a conta; --cols em
+   page.tsx), nome embaixo e, se for o caso, "Em breve" em cinza. Tudo alinhado pelo topo: o selo não empurra o nome. */
 @media (max-width: 760px) {
   .pstrip {
     margin-top: 0;
+    padding: 0 4px;
+    gap: 22px;
   }
   .pstrip__list {
-    gap: 14px 8px;
+    gap: 22px 4px;
   }
   .pstrip__list li {
-    flex-basis: calc((100% - 24px) / 4);
+    flex-basis: calc((100% - (var(--cols, 4) - 1) * 4px) / var(--cols, 4));
   }
   .pstrip__card {
+    height: auto;
     grid-template-rows: auto auto;
+    align-content: start;
     justify-items: center;
-    gap: 6px;
+    gap: 8px;
     padding: 0;
     background: none;
     -webkit-backdrop-filter: none;
@@ -5006,17 +5024,37 @@ a.pstrip__card:focus-visible .pstrip__go {
     text-align: center;
   }
   .pstrip__card .zro-mark {
-    width: 52px !important;
-    height: 52px !important;
+    width: 56px !important;
+    height: 56px !important;
+  }
+  .pstrip__text {
+    justify-items: center;
+    gap: 2px;
   }
   .pstrip__name {
-    font-size: 0.72rem;
+    font-size: 0.74rem;
     font-weight: 600;
+    line-height: 1.25;
     white-space: normal;
+    text-wrap: balance;
+    overflow-wrap: normal;
+  }
+  .pstrip .selo-dev {
+    justify-self: center;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+    font-size: 0.66rem;
+    font-weight: 500;
   }
   .pstrip__line,
   .pstrip__go {
     display: none;
+  }
+  /* a régua vira uma legenda curta e centrada logo abaixo da grade, sem buraco até a seção seguinte */
+  .pstrip__rule {
+    justify-content: center;
+    letter-spacing: 0.22em;
   }
   .pstrip__rule span:last-child,
   .pstrip__rule i {
@@ -5820,6 +5858,9 @@ a.pstrip__card:focus-visible .pstrip__go {
   color: var(--text-strong);
 }
 @media (max-width: 760px) {
+  .pnum {
+    margin-top: 0;
+  }
   .pnum__lista {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -5832,7 +5873,8 @@ a.pstrip__card:focus-visible .pstrip__go {
   .pnum__item:nth-child(n + 3) {
     border-top: 1px solid var(--line);
   }
-  .pnum__item:last-child {
+  /* número ímpar de itens: o último ocupa a linha inteira (com par, cada um fica na sua coluna) */
+  .pnum__item:last-child:nth-child(odd) {
     grid-column: 1 / -1;
     border-left: 0;
   }
