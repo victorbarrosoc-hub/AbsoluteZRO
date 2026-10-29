@@ -54,19 +54,19 @@ export const DOWNLOADS: DownloadEntry[] = [
   },
   {
     productId: 'synquei',
-    site: 'https://synquei.vercel.app',
+    site: 'https://synquei.absolutezro.com',
     status: 'stable',
     options: [
-      { os: 'mac', label: 'Mac', detail: 'macOS 11 ou mais novo', href: 'https://synquei.vercel.app/baixar/mac', format: 'Instalador .dmg' },
-      { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11', href: 'https://synquei.vercel.app/baixar/windows', format: 'Instalador .exe' },
-      { os: 'web', label: 'Navegador', detail: 'Chrome, Edge ou Safari', href: 'https://synquei.vercel.app/app/', format: 'Sem instalar' },
+      { os: 'mac', label: 'Mac', detail: 'macOS 11 ou mais novo', href: 'https://synquei.absolutezro.com/baixar/mac', format: 'Instalador .dmg' },
+      { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11', href: 'https://synquei.absolutezro.com/baixar/windows', format: 'Instalador .exe' },
+      { os: 'web', label: 'Navegador', detail: 'Chrome, Edge ou Safari', href: 'https://synquei.absolutezro.com/app/', format: 'Sem instalar' },
     ],
-    terminal: { mac: 'curl -fsSL https://synquei.vercel.app/instalar.sh | bash', windows: 'irm https://synquei.vercel.app/instalar.ps1 | iex' },
+    terminal: { mac: 'curl -fsSL https://synquei.absolutezro.com/instalar.sh | bash', windows: 'irm https://synquei.absolutezro.com/instalar.ps1 | iex' },
     firstOpen: {
       mac: 'Abra o .dmg e arraste para Aplicativos. Na primeira vez: botão direito › Abrir › Abrir.',
       windows: 'Se o Windows avisar: Mais informações › Executar assim mesmo.',
     },
-    moreUrl: 'https://synquei.vercel.app/#baixar',
+    moreUrl: 'https://synquei.absolutezro.com/#baixar',
   },
   {
     productId: 'nossom',

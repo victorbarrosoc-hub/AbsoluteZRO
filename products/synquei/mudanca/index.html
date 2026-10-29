@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="robots" content="noindex" />
+    <title>Synquei</title>
+    <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #fbfbfd;
+        --fg: #1d1d1f;
+        --sub: #6e6e73;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #000;
+          --fg: #f5f5f7;
+          --sub: #a1a1a6;
+        }
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font: 15px/1.4 -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+      }
+      main {
+        display: grid;
+        place-items: center;
+        align-content: center;
+        gap: 14px;
+        height: 100%;
+        opacity: 0;
+        animation: entra 0.4s 0.3s ease forwards;
+      }
+      img {
+        width: 44px;
+        height: 44px;
+      }
+      p {
+        margin: 0;
+        color: var(--sub);
+      }
+      @keyframes entra {
+        to {
+          opacity: 1;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        main {
+          animation: none;
+          opacity: 1;
+        }
+      }
+    </style>
+    <script src="/app/mudanca.js"></script>
+  </head>
+  <body>
+    <main>
+      <img src="/icons/favicon.svg" alt="" />
+      <p>Trazendo seus projetos…</p>
+    </main>
+    <script>
+      // Chegada do endereço antigo: grava o que veio no # (sem trocar nada que já exista aqui) e segue para a página
+      // de onde a pessoa saiu. Sem pacote válido, vai para o app.
+      ;(function () {
+        var M = window.SynqueiMudanca
+        var pacote = location.hash.slice(1)
+        history.replaceState(null, '', '/mudanca/')
+        M.abrir(pacote).then(function (d) {
+          if (d) {
+            try {
+              M.aplicar(localStorage, d.itens)
+            } catch (e) {}
+          }
+          location.replace(d ? d.volta : '/app/')
+        })
+      })()
+    </script>
+  </body>
+</html>

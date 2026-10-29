@@ -15,7 +15,7 @@ import { AceitarOutros } from './p2p.js'
 // Os outros apps da Absolute ZRO, cada um com o próprio ícone (cópias em icons/familia/). Abrem fora do app.
 const FAMILIA = [
   { href: 'https://absolutezro.com', nome: 'Absolute ZRO', img: 'icons/familia/absolute-zro.png' },
-  { href: 'https://synquei.vercel.app', nome: 'Synquei', img: 'icons/familia/synquei.svg' },
+  { href: 'https://synquei.absolutezro.com', nome: 'Synquei', img: 'icons/familia/synquei.svg' },
   { href: 'https://tpeasy.vercel.app', nome: 'TPEasy', img: 'icons/familia/tpeasy.svg' },
 ]
 

@@ -19,7 +19,7 @@ export const EMISSOR_PADRAO = 'https://absolutezro.com'
 // offline_access: o refresh token deixa o app reler o perfil (nome, e-mail, foto) a cada abertura
 // zro.ia: a Z (a IA do ecossistema) conversa com a pessoa no painel inicial, pelo repasse /api/zro/ia
 export const ESCOPOS = 'openid email profile org offline_access zro.ia'
-export const SITE = 'https://synquei.vercel.app'
+export const SITE = 'https://synquei.absolutezro.com'
 export const COOKIE_IDA = 'sq_zro'
 export const COOKIE_CONTA = 'sq_conta'
 export const COOKIE_HUB = 'sq_hub'
@@ -42,13 +42,14 @@ export const temAcesso = (produtos) => Array.isArray(produtos) && produtos.inclu
 
 // ───────── origem do site ─────────
 
-/** Só estes endereços recebem a volta da Absolute ZRO (cadastrados no console). Qualquer outro usa o site oficial. */
+/** Só estes endereços recebem a volta da Absolute ZRO (cadastrados no console). Qualquer outro, inclusive o antigo
+ * synquei.vercel.app, usa o site oficial (ADR 0025). */
 export function origemPermitida(req) {
   const host = String(req.headers['x-forwarded-host'] || req.headers.host || '')
     .split(',')[0]
     .trim()
     .toLowerCase()
-  if (host === 'synquei.vercel.app') return SITE
+  if (host === 'synquei.absolutezro.com') return SITE
   if (/^(localhost|127\.0\.0\.1)(:\d{1,5})?$/.test(host)) return `http://${host}`
   return SITE
 }

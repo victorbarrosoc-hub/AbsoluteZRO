@@ -26,7 +26,7 @@ const path = require('node:path')
 const { EventEmitter } = require('node:events')
 const { execFile } = require('node:child_process')
 
-const SITE = (process.env.SYNQUEI_SITE || 'https://synquei.vercel.app').replace(/\/+$/, '')
+const SITE = (process.env.SYNQUEI_SITE || 'https://synquei.absolutezro.com').replace(/\/+$/, '')
 const MARK_FILE = 'atualizacao-falhou.json'
 const PREFS_FILE = 'atualizacao.json'
 const TMP_PREFIX = 'synquei-atualizacao-'

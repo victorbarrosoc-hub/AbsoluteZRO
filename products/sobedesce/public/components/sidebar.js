@@ -35,7 +35,7 @@ const NAV_BAIXO = [
 // sistema: no Electron pela ponte, no navegador numa aba nova; a janela do app nunca sai do SOBEDESCE.
 const FAMILIA = [
   { href: 'https://absolutezro.com', nome: 'Absolute ZRO', img: '/familia/absolute-zro.png' },
-  { href: 'https://synquei.vercel.app', nome: 'Synquei', img: '/familia/synquei.svg' },
+  { href: 'https://synquei.absolutezro.com', nome: 'Synquei', img: '/familia/synquei.svg' },
   { href: 'https://tpeasy.vercel.app', nome: 'TPEasy', img: '/familia/tpeasy.svg' },
 ]
 

@@ -142,7 +142,7 @@ jobs:
             products/synquei/dist/Synquei-*-windows-setup.exe
             products/synquei/dist/Synquei-sha256-*.json
           fail_on_unmatched_files: false
-          body: Instaladores gerados automaticamente a partir da main. Sem assinatura da Apple/Microsoft por enquanto; o site ensina a instalar (synquei.vercel.app/#baixar).
+          body: Instaladores gerados automaticamente a partir da main. Sem assinatura da Apple/Microsoft por enquanto; o site ensina a instalar (synquei.absolutezro.com/#baixar).
 
   # Depois dos DOIS instaladores no Release: o versao.json com o SHA-256 de cada um (o site serve em /baixar/versao).
   versao:
@@ -168,7 +168,7 @@ jobs:
           target_commitish: ${{ github.sha }}
           files: products/synquei/versao.json
           fail_on_unmatched_files: true
-          body: Instaladores gerados automaticamente a partir da main. Sem assinatura da Apple/Microsoft por enquanto; o site ensina a instalar (synquei.vercel.app/#baixar).
+          body: Instaladores gerados automaticamente a partir da main. Sem assinatura da Apple/Microsoft por enquanto; o site ensina a instalar (synquei.absolutezro.com/#baixar).
       - run: node scripts/release.mjs limpar
         env:
           GITHUB_TOKEN: ${{ github.token }}

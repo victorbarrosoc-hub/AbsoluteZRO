@@ -94,7 +94,7 @@ const PLANOS: Plano[] = [
       { texto: "Exporta para Premiere, Resolve, Final Cut e Avid" },
     ],
     extra: "A integração com o DaVinci precisa do DaVinci Resolve Studio.",
-    acao: { label: "Conhecer o Synquei", href: "https://synquei.vercel.app", externo: true },
+    acao: { label: "Conhecer o Synquei", href: "https://synquei.absolutezro.com", externo: true },
   },
 ];
 
