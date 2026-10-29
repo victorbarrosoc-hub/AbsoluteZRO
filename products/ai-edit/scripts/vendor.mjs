@@ -66,7 +66,8 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split(/[\\/]/).p
   // absolutezro.com; a janela do app, que tem a ponte com o sistema, não roda código de fora.
   mkdirSync(destino('ia/v1'), { recursive: true })
   mkdirSync(destino('ia/z'), { recursive: true })
-  copyFileSync(repo('apps/hub-web/public/ia/v1/zro-ia.js'), destino('ia/v1/zro-ia.js'))
+  // o painel importa ./digitando.js (a sugestão que se escreve sozinha no campo): vão os dois juntos
+  for (const f of ['zro-ia.js', 'digitando.js']) copyFileSync(repo(`apps/hub-web/public/ia/v1/${f}`), destino(`ia/v1/${f}`))
   for (const f of ['anel.webp', 'estrela.webp']) copyFileSync(repo(`apps/hub-web/public/ia/z/${f}`), destino(`ia/z/${f}`))
   console.log('vendor/ atualizado')
 }

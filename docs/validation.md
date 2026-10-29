@@ -15,6 +15,29 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## A Z digita as sugestões no campo (29/10/2026)
+
+Rodado neste ambiente (Postgres 16 local próprio, Chromium do Playwright 1.63), máquina compartilhada.
+
+| Verificação                                   | Resultado                                                                                                                        |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Lint, formatação, tipos (raiz e hub-web)      | ok                                                                                                                               |
+| `npm test` (raiz, Postgres real)              | **340/340** em 38 arquivos; `tests/integration/z-digitando.test.ts` 12 novos (ordem, ritmo, pausa, foco, Tab, reduzir movimento) |
+| `npm run build` (HUB)                         | ok                                                                                                                               |
+| `npm run test:e2e` (HUB)                      | **34/35**; `z-digitando.spec.ts` 3/3 (sem botões, anima, Tab e → completam sem enviar, Esc, escuro, toque no iPhone)             |
+|                                               | a falha é o axe de `/admin/custos` (contraste do `.cst-chip__n` com `opacity: .7`, em `custos.css`), fora desta mudança          |
+| Maestro lint, formatação, tipos, build        | ok                                                                                                                               |
+| Maestro `npm test`                            | **364/364**                                                                                                                      |
+| Maestro e2e `z.spec.ts` (computador e iPhone) | **5 ok**, 1 pulado (toque só no celular): painel servido do repositório, Tab completa sem enviar, reduzir movimento, escuro      |
+| AEON `npm test` (com `npm run vendor`)        | **122/122** (`tela.test.js`: sem botões, as 4 sugestões na descrição; o vendor copia `digitando.js`)                             |
+| Revela `npm test`                             | **146/146** (`tela.test.js`: Tab completa, nada enviado até o Enter)                                                             |
+| Carro do Freela `node test/run.js conta-zro`  | **144 ok**, 0 falhas (sem botões, Tab completa com sugestão do Carro, Enter manda)                                               |
+| `node scripts/scan-secrets.mjs`               | nenhum segredo                                                                                                                   |
+
+Vídeos (MP4 H.264) do efeito no HUB e no Maestro, computador e iPhone, claro e escuro, gravados com o Playwright: não
+versionados (pasta de trabalho da sessão). SOBEDESCE, Synquei, TPeasy e NOSSOM não mudaram de arquivo: recebem o
+painel novo de absolutezro.com.
+
 ## Perfil profissional com @ (29/10/2026, ADR 0029)
 
 Rodado neste ambiente (Postgres 16.15 local, Chromium do Playwright), máquina compartilhada e carregada (load 15–20).

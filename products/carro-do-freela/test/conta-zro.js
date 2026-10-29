@@ -373,8 +373,14 @@ function montarSaida(o = {}) {
     await p.evaluate(() => aplicarTema('light'));
     await p.waitForTimeout(100);
     t(await p.evaluate(() => document.querySelector('zro-ia').getAttribute('tema')) === 'claro', 'e troca junto quando o app troca de tema');
-    /* conversa: a sugestão vai, a resposta volta pelo repasse */
-    await p.evaluate(() => document.querySelector('zro-ia').shadowRoot.querySelector('.sug button').click());
+    /* conversa: sem botões, a sugestão se escreve no campo; Tab completa, Enter manda e a resposta volta pelo repasse */
+    t(await p.evaluate(() => { const r = document.querySelector('zro-ia').shadowRoot; return !r.querySelector('.sug, [data-sug]') && !!r.querySelector('.fantasma') }),
+      'sem botões de sugestão: o campo da Z digita as sugestões do Carro');
+    await p.evaluate(() => document.querySelector('zro-ia').shadowRoot.querySelector('textarea').focus());
+    await p.keyboard.press('Tab');
+    const sugerida = await p.evaluate(() => document.querySelector('zro-ia').shadowRoot.querySelector('textarea').value);
+    t(z.sug.includes(sugerida), 'Tab completa com uma sugestão do Carro (' + sugerida + ')');
+    await p.keyboard.press('Enter');
     await p.waitForFunction(() => /Olá\./.test(document.querySelector('zro-ia').shadowRoot.textContent), null, { timeout: 15000 }).catch(() => {});
     const pedido = zro.estado.pedidosIa.filter(x => x.caminho === 'mensagens').pop();
     t(await p.evaluate(() => /Olá\./.test(document.querySelector('zro-ia').shadowRoot.textContent)), '⟶⟶ a pergunta foi e a resposta da Z chegou pelo /api/zro/ia');
