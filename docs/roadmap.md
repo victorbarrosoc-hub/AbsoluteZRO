@@ -477,6 +477,15 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   `.github/workflows/maestro-desktop.yml` publica no Release de teste `maestro-versao-de-teste` (SHA-256,
   `versao.json`, três últimos builds). Falta: primeiro build no GitHub (sai no próximo push na main), instalar num Mac e
   num Windows de verdade, assinatura/notarização da Apple e certificado da Microsoft (decisão e conta do titular).
+- ✅ Maestro, **colunas do Quadro como no Trello** (pedido do titular, 29/10/2026; `drizzle/0024_colunas.sql`): cada
+  produtora renomeia no lugar (clique duplo no cabeçalho; no celular, tocar na aba já escolhida), recolore (paleta de
+  12 tons da Aurora), reordena (arrastar o cabeçalho; no celular, segurar a alça 280 ms na folha) e cria colunas
+  ("Captação", "Color"); a folha "Editar colunas" junta tudo, com arquivar perguntando para onde vão os cards,
+  arquivadas para restaurar e "Restaurar padrão". As 8 do método são de sistema (id = papel, cadeado com o porquê,
+  nunca arquivam): a aprovação do cliente, o Hoje, a agenda e a Z seguem pelo id, nunca pelo nome; as novas contam
+  como "em produção". Só administração e gestão mudam (RLS + funções `maestro.coluna_*`); organizações existentes
+  ficam com as 8 de hoje. Falta: aplicar a 0024 em produção (vai junto com o próximo deploy autorizado do Maestro) e
+  conferir num iPhone de verdade.
 - ⬜ Maestro, pendente do titular: ciência dos serviços abertos da calculadora; criar a chave de API do Google só do
   Maestro (restrita à Drive API e a `maestro.absolutezro.com`) e pôr em `MAESTRO_GOOGLE_API_KEY` na Vercel; pôr
   `CRON_SECRET` no projeto `maestro` da Vercel (agendamento que desliga o compartilhamento de revisão vencido).

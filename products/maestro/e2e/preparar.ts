@@ -15,6 +15,7 @@ export const ARQUIVO_SESSAO_CORTE = "test-results/e2e-sessao-corte.json";
 export const ARQUIVO_SESSAO_CONTRATO = "test-results/e2e-sessao-contrato.json";
 export const ARQUIVO_SESSAO_AGENDA = "test-results/e2e-sessao-agenda.json";
 export const ARQUIVO_SESSAO_GESTOS = "test-results/e2e-sessao-gestos.json";
+export const ARQUIVO_SESSAO_COLUNAS = "test-results/e2e-sessao-colunas.json";
 /** A ponte falsa (HUB + SOBEDESCE de mentira, tests/ponte-falsa.mts) do e2e de Arquivos: MAESTRO_PONTE_URL no servidor. */
 export const PORTA_PONTE = Number(process.env.E2E_PONTE_PORT || 3219);
 /** A ANP falsa (tests/anp-fixture.mts, valores inventados) da calculadora de deslocamento: MAESTRO_ANP_URL no servidor. */
@@ -289,6 +290,23 @@ export default async function preparar() {
     });
     const sGe = await criarSessao({ orgId: orgGe, sub: SUB_GE, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
     writeFileSync(ARQUIVO_SESSAO_GESTOS, JSON.stringify({ token: sGe.token, org: orgGe }));
+    // Uma organização para as colunas do Quadro (e2e/colunas.spec.ts): administração (edita) e equipe (só usa).
+    const SUB_CO = "00000000-0000-4000-8000-0000000000c8";
+    const SUB_CO_EQ = "00000000-0000-4000-8000-0000000000c9";
+    const orgCo = await getBanco().asSystem("e2e: semente das colunas", async (tx) => {
+      const [org] = await tx
+        .insert(schema.organizations)
+        .values({ zroOrgId: "00000000-0000-4000-8000-0000000000c7", name: "Colunas E2E", zroProducts: ["maestro"] })
+        .returning({ id: schema.organizations.id });
+      await tx.insert(schema.members).values([
+        { orgId: org.id, zroSub: SUB_CO, displayName: "Cora Colunas", hubRole: "owner", role: "admin" },
+        { orgId: org.id, zroSub: SUB_CO_EQ, displayName: "Edu Equipe", hubRole: "editor", role: "equipe" },
+      ]);
+      return org.id;
+    });
+    const sCo = await criarSessao({ orgId: orgCo, sub: SUB_CO, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    const sCoEq = await criarSessao({ orgId: orgCo, sub: SUB_CO_EQ, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    writeFileSync(ARQUIVO_SESSAO_COLUNAS, JSON.stringify({ token: sCo.token, equipe: sCoEq.token, org: orgCo }));
   } finally {
     await fecharBanco();
   }

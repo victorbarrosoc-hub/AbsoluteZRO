@@ -1,0 +1,386 @@
+/*
+ * As colunas do Quadro de cada produtora (drizzle/0024, src/components/quadro/colunas.tsx): o botão "Colunas", o nome
+ * editável no lugar, a marca de soltar ao reordenar pelo cabeçalho e a folha "Editar colunas". A cor da coluna é só
+ * ponto e filete (`--col` pelo `data-cor`); o texto segue grafite/branco.
+ */
+
+.q-cabeca__acoes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+/* o botão "Colunas" ao lado dos filtros é o do celular */
+.q-barra__colunas {
+  display: none !important;
+}
+
+/* o nome editável (cabeçalho, aba do celular, folha) */
+.q-nome-campo {
+  min-width: 0;
+  width: 100%;
+  margin: 0;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--col, var(--text-faint)) 60%, var(--line));
+  font: inherit;
+  color: var(--text-strong);
+  outline: none;
+}
+.q-nome-campo:focus-visible {
+  box-shadow:
+    inset 0 0 0 1.5px color-mix(in srgb, var(--col, var(--text-faint)) 60%, var(--line)),
+    0 0 0 2px var(--focus);
+}
+.q-nome-campo[aria-invalid="true"] {
+  box-shadow:
+    inset 0 0 0 1.5px var(--danger-text),
+    0 0 0 2px color-mix(in srgb, var(--danger-text) 25%, transparent);
+  animation: qc-nao 0.32s var(--ease);
+}
+@keyframes qc-nao {
+  25% {
+    transform: translateX(-3px);
+  }
+  75% {
+    transform: translateX(3px);
+  }
+}
+.q-col__topo .q-nome-campo {
+  flex: 1;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+/* reordenar pelo cabeçalho (computador) */
+.q-col__topo[draggable="true"] {
+  cursor: grab;
+}
+.q-col__topo[draggable="true"]:active {
+  cursor: grabbing;
+}
+.q-col--erguida {
+  opacity: 0.45;
+}
+.q-col[data-marca="antes"] {
+  box-shadow:
+    inset 0 0 0 1px var(--line),
+    -8px 0 0 -5px var(--acento);
+}
+.q-col[data-marca="depois"] {
+  box-shadow:
+    inset 0 0 0 1px var(--line),
+    8px 0 0 -5px var(--acento);
+}
+
+/* ───────────── a folha "Editar colunas" ───────────── */
+
+.qc {
+  gap: 14px;
+}
+.qc-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.qc-lista > li {
+  position: relative;
+  border-radius: 16px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  transition:
+    transform 0.28s var(--spring),
+    box-shadow 0.2s var(--ease);
+}
+.qc-lista[data-arrastando] > li {
+  user-select: none;
+  -webkit-user-select: none;
+}
+.qc-lista[data-sem-mola] > li,
+.qc-lista > li[data-erguida] {
+  transition: none;
+}
+.qc-lista > li[data-erguida] {
+  z-index: 2;
+  background: var(--surface);
+  box-shadow:
+    0 0 0 1px var(--line-strong),
+    0 14px 34px rgb(0 0 0 / 0.16);
+  scale: 1.02;
+}
+.qc-linha {
+  display: grid;
+  grid-template-columns: 34px 30px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 4px;
+  min-height: 50px;
+  padding: 4px 6px 4px 4px;
+}
+.qc-alca,
+.qc-cor {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: grab;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.qc-cor {
+  width: 30px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.qc-cor .q-ponto {
+  width: 12px;
+  height: 12px;
+}
+.qc-alca:hover,
+.qc-cor:hover,
+.qc-cor[aria-expanded="true"] {
+  background: var(--hover);
+  color: var(--text-strong);
+}
+.qc-alca:focus-visible,
+.qc-cor:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+.qc-nome {
+  font-size: 0.98rem;
+  font-weight: 600;
+  background: transparent;
+  box-shadow: none;
+  padding: 8px 6px;
+}
+.qc-nome:hover {
+  background: var(--hover);
+}
+.qc-nome:focus {
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--col) 60%, var(--line));
+}
+.qc-selo {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  color: var(--text-faint);
+  cursor: help;
+}
+.qc-arquivar {
+  width: 34px;
+  height: 34px;
+}
+
+/* a paleta: 12 cores, a escolhida com o anel */
+.qc-paleta {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  padding: 2px 12px 12px 42px;
+}
+.qc-paleta button {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  min-height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+}
+.qc-paleta button i {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--col);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.08);
+  transition: transform 0.2s var(--spring);
+}
+.qc-paleta button:hover i {
+  transform: scale(1.1);
+}
+.qc-paleta button[aria-checked="true"] {
+  box-shadow:
+    0 0 0 2px var(--surface-2),
+    0 0 0 4px var(--col);
+}
+.qc-paleta button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* arquivar: para onde vão os cards */
+.qc-arquivar-painel {
+  display: grid;
+  gap: 8px;
+  padding: 2px 12px 12px 42px;
+  font-size: 0.9rem;
+  color: var(--text-mute);
+}
+.qc-arquivar-painel p {
+  margin: 0;
+}
+.qc-arquivar-painel select {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 40px;
+  padding: 0 34px 0 12px;
+  border: 0;
+  border-radius: 12px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+      no-repeat right 12px center,
+    var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font: inherit;
+  color: var(--text-strong);
+}
+
+.qc-nova .q-nome-campo {
+  min-height: 46px;
+  padding: 0 14px;
+  border-radius: 14px;
+  font-size: 0.98rem;
+  font-weight: 600;
+}
+.qc-nova-btn {
+  justify-self: start;
+}
+
+.qc-arquivadas h3 {
+  margin: 4px 0 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-mute);
+}
+.qc-arquivadas ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.qc-arquivadas li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 6px 0 14px;
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text-mute);
+}
+.qc-arquivadas li span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qc-pe {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+.qc-confirma {
+  display: grid;
+  gap: 8px;
+  flex: 1 1 100%;
+}
+.qc-confirma p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-mute);
+}
+.qc-pronto {
+  margin-left: auto;
+}
+
+/* ───────────── celular ───────────── */
+
+@media (max-width: 760px) {
+  /* com os filtros à vista, "Colunas" vai para a linha deles e o topo fica só com o título e "Novo card" */
+  .q:has(.q-barra) .q-cabeca__colunas {
+    display: none;
+  }
+  /* na linha da busca (os dois filtros seguem inteiros embaixo) */
+  .q-barra:has(.q-barra__colunas) > .q-busca {
+    flex-basis: calc(100% - 50px);
+  }
+  .q-barra:has(.q-barra__colunas) > * {
+    order: 2;
+  }
+  .q-barra:has(.q-barra__colunas) > .q-busca {
+    order: 0;
+  }
+  .q-barra__colunas {
+    order: 1 !important;
+    display: inline-flex !important;
+    flex: none;
+    width: 40px;
+    min-height: 40px;
+    padding: 0 !important;
+    justify-content: center;
+  }
+  .q-cabeca__colunas {
+    width: 42px;
+    padding: 0 !important;
+    justify-content: center;
+  }
+  .q-cabeca__colunas span {
+    display: none;
+  }
+  /* a aba já escolhida vira o campo do nome (tocar de novo renomeia) */
+  .q-abas__campo {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 36px;
+    padding: 0 6px 0 12px;
+    border-radius: 999px;
+    background: var(--pill-fill);
+    box-shadow: var(--pill-rim);
+  }
+  .q-abas__campo .q-nome-campo {
+    width: 11em;
+    padding: 4px 8px;
+    font-size: 16px; /* 16 px: o Safari do iPhone não dá zoom no campo */
+    font-weight: 600;
+  }
+  .qc-nome,
+  .qc-arquivar-painel select {
+    font-size: 16px;
+  }
+  .qc-paleta,
+  .qc-arquivar-painel {
+    padding-left: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qc-lista > li,
+  .qc-paleta button i {
+    transition: none;
+  }
+  .q-nome-campo[aria-invalid="true"] {
+    animation: none;
+  }
+}

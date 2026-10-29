@@ -451,6 +451,9 @@
 .hoje-item__ponto[data-col="revisao"] {
   background: var(--col-revisao);
 }
+.hoje-item__ponto[data-cor] {
+  background: var(--col);
+}
 .hoje-item__anel {
   flex: none;
   width: 18px;

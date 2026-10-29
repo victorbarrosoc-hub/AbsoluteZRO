@@ -169,6 +169,13 @@
       "when": 1795132800000,
       "tag": "0023_perfil_arroba",
       "breakpoints": false
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1795219200000,
+      "tag": "0024_colunas",
+      "breakpoints": false
     }
   ]
 }

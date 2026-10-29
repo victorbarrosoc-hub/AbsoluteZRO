@@ -15,6 +15,45 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Maestro: colunas do Quadro como no Trello (29/10/2026)
+
+Pedido do titular: renomear, recolorir, reordenar, criar e arquivar colunas por organização, só administração e gestão.
+Rodado neste ambiente (Postgres 16 local próprio, Chromium e WebKit do Playwright 1.63), máquina compartilhada.
+
+- **Dados** (`products/maestro/drizzle/0024_colunas.sql`): `maestro.colunas` (org, id, papel, nome 1–30, cor da paleta,
+  ordem, arquivada). Escolha: o card continua guardando a coluna em `dados.coluna` e o **id das 8 colunas de sistema é o
+  próprio papel** (`pauta`…`entregue`, check `papel = id`). Assim nenhum card, histórico ou decisão do cliente é
+  regravado; as funções `card_*` e `link_enviar` seguem iguais e renomear/reordenar nunca quebra uma automação. Colunas
+  novas têm id `x-<12 hex>`. O check fixo `cards_coluna_ok` virou o gatilho `cards_coluna_valida` (só coluna viva da
+  própria organização, com trava contra arquivar ao mesmo tempo). Backfill das organizações existentes e gatilho para as
+  novas. Escrita só por `maestro.coluna_*` (security definer, papel conferido; `maestro_app` sem insert/update/delete);
+  arquivar move cada card por `card_mudar` (histórico só de inclusão, apagados inclusive); sistema não arquiva (check).
+- **Tela** (`src/components/quadro/colunas.tsx`, `quadro.tsx`, `estado.ts`, `src/app/colunas.css`): clique duplo no
+  cabeçalho renomeia (Enter/sair salva, Esc desiste, vazio não vale); arrastar o cabeçalho reordena com Desfazer; no
+  celular, tocar na aba já escolhida renomeia; "Colunas" abre a folha "Editar colunas" (`Folha`): alça (mouse na hora,
+  toque segurando 280 ms, setas do teclado), cor, arquivar com destino, "Nova coluna", arquivadas, "Restaurar padrão".
+  Otimista com volta e aviso; o poll de 5 s traz as colunas. Hoje, fichas de cliente/projeto e lotes mostram nome e cor
+  da organização; coluna nova conta como "em produção" (prazo, Vencendo, lote).
+- Testes novos: `tests/colunas.test.mts` (15: fábrica igual ao código, backfill migrando até a 0023 e depois a 0024,
+  equipe/leitura 403 no banco e na rota, `maestro_app` sem escrita direta, duas organizações, arquivar com destino e
+  histórico intacto, sistema não arquiva nem por fora da função, restaurar e padrão, limite, aprovação do cliente
+  depois de renomear e reordenar ainda leva a Aprovado/Revisão, Hoje e lote com coluna nova, acesso por cliente lê,
+  paleta do CSS = código com contraste) e `e2e/colunas.spec.ts` (computador e iPhone: renomear no lugar, reordenar
+  com Desfazer, criar/renomear/recolorir na folha, sistema não arquiva, arquivar com destino e restaurar, aba do
+  celular, alça segurando 280 ms, equipe não edita). `quadro.spec.ts`: a ajuda de trocar de aba não toca na aba já
+  marcada (agora renomeia).
+- No celular o botão "Colunas" fica ao lado da busca (o topo segue numa linha só: título e "Novo card"; com o topo em
+  duas linhas, o card descia e o `gestos.spec.ts` "soltar sobre a pílula" falhava).
+- Capturas e vídeos (claro e escuro, computador e iPhone) guardados fora do repositório. Falta conferir num iPhone de
+  verdade e aplicar a 0024 em produção (com o próximo deploy autorizado).
+
+| Verificação                            | Resultado                                                                                             |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Maestro lint, formatação, tipos, build | ok                                                                                                    |
+| Maestro `npm test`                     | **377/377** (`colunas.test.mts` 15 novos)                                                             |
+| Maestro `test:e2e` completo            | **129 ok**, 21 pulados (por aparelho), 0 falhas; inclui `sem-corte`, `transicao` e `gestos` no WebKit |
+| `node scripts/scan-secrets.mjs`        | nenhum segredo                                                                                        |
+
 ## A Z digita as sugestões no campo (29/10/2026)
 
 Rodado neste ambiente (Postgres 16 local próprio, Chromium do Playwright 1.63), máquina compartilhada.

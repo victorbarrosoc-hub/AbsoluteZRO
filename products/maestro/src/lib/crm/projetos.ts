@@ -119,7 +119,7 @@ export type ProjetoFicha = EntradaProjeto & {
   codigo: string;
   clienteNome: string | null;
   linkStatus: string;
-  cards: { id: string; tema: string; coluna: string; prazo: string | null }[];
+  cards: { id: string; tema: string; coluna: string; colunaNome: string | null; colunaCor: string | null; prazo: string | null }[];
 };
 
 export async function obterProjeto(ctx: Contexto, id: string): Promise<ProjetoFicha | null> {
@@ -132,8 +132,10 @@ export async function obterProjeto(ctx: Contexto, id: string): Promise<ProjetoFi
        where p.id = ${id} and p.deleted_at is null`)) as unknown as Record<string, string | null>[];
     if (!p) return null;
     const cards = (await tx.execute(sql`
-      select id, dados ->> 'tema' as tema, coluna, prazo from maestro.cards where projeto = ${id} and apagado_em is null
-       order by array_position(array['pauta','afazer','fazendo','revisao','aprovacao','aprovado','agendado','entregue'], coluna), prazo nulls last
+      select k.id, k.dados ->> 'tema' as tema, k.coluna, co.nome as "colunaNome", co.cor as "colunaCor", k.prazo
+        from maestro.cards k left join maestro.colunas co on co.org_id = k.org_id and co.id = k.coluna
+       where k.projeto = ${id} and k.apagado_em is null
+       order by co.ordem nulls last, k.prazo nulls last
        limit 200`)) as unknown as ProjetoFicha["cards"];
     return {
       id: p.id!,
