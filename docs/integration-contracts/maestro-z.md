@@ -1,7 +1,8 @@
 # Maestro no ecossistema: Z, eventos, agenda e acesso (28/10/2026)
 
 O que o funil, os números, a importação, a agenda por assinatura e o acesso por cliente do Maestro (migrations
-`0014`–`0018` de `products/maestro/drizzle`) ligam com o resto da Absolute ZRO, e o que está **pronto e desligado**.
+`0014`–`0018` de `products/maestro/drizzle`) ligam com o resto da Absolute ZRO. A Z **lê** o Maestro desde 28/10/2026
+(autorização do titular, "Z lendo a Maestro"); escrever pela Z e os eventos seguem desligados.
 
 ## Identidade e acesso por cliente
 
@@ -12,12 +13,13 @@ O que o funil, os números, a importação, a agenda por assinatura e o acesso p
   `equipe` ou `leitura`. Se o HUB promover a pessoa a gestão, ela vê tudo no próximo login; se rebaixar, a restrição
   guardada volta a valer. A regra vale no banco (políticas restritivas `<tabela>_cliente`), também para a Z e o .ics.
 
-## Z: o dia da produtora (pronto, desligado)
+## Z: o dia da produtora (ligado, só leitura)
 
 - **Rota** `POST /api/zro/maestro/resumo` no Maestro, só leitura, com o **mesmo pedido servidor a servidor do Drive da
   Z** ([sobedesce-drive.md](sobedesce-drive.md)): `Authorization: Bearer <zro-pedido+jwt>` assinado pelo HUB com
   `assinarPedidoDeApp` (`aud` = `maestro-web`, ação `maestro.resumo`, 60 s, `jti` de uso único), conferido em
-  `products/maestro/src/lib/zro/pedido.ts`.
+  `products/maestro/src/lib/zro/pedido.ts`. O Maestro só aceita as ações de `ACOES_ABERTAS` (hoje só
+  `maestro.resumo`): uma ação de escrita é recusada mesmo com assinatura válida.
 - **Quem**: o `sub` do pedido; a organização é a do último login dele no Maestro, só se esse login tinha acesso
   (`temAcesso`) e ele segue ativo. Senão `404 sem_vinculo` (neutro). Limite: 30 a cada 10 min por pessoa.
 - **Resposta** (JSON, sem cache): `fonte: "Maestro"`, `organizacao`, `gerado_em` (ISO), `hoje`, `link` (a tela Hoje),
@@ -25,10 +27,23 @@ O que o funil, os números, a importação, a agenda por assinatura e o acesso p
   desde), `contagens` (pedidos novos, orçamentos aguardando, agenda de hoje, cards atrasados) e `dinheiro` (meta e
   faturado do mês, caixa, a receber e a pagar da semana, em centavos) **só para administração e gestão**; `null` para
   os outros. Tudo lido como a pessoa (`asUser`, RLS e acesso por cliente). Nada é guardado.
-- **Para ligar** (estudo MakersHub §4.5, espera decisão do titular sobre cota e plano da Z): a ferramenta só leitura
-  na Z do HUB (`packages/core/src/ia*.ts`, no molde de `ia-drive.ts`), com o texto devolvido como dado, a fonte e a
-  hora, e o teste ponta a ponta. Escrever pela Z (criar pedido, marcar contato) fica para depois, sempre com
-  confirmação explícita.
+- **No HUB**: a ferramenta `ver_maestro` da Z (`packages/core/src/ia-maestro.ts`, `maestroParaIa`; ligada em
+  `apps/hub-web/lib/ia/modelo.ts`). Antes de qualquer pedido, `authorize` com o produto `maestro`: gate de lançamento
+  (hoje só a lista de acesso, ou seja, o titular) **e** o Maestro no plano da organização. Fechado ou fora do plano:
+  nenhum pedido sai. A ferramenta e o parágrafo dela no sistema da Z só aparecem quando o retrato traz o Maestro como
+  `contracted`. A resposta vira texto para o modelo com `fonte`, `citar_como` ("segundo o Maestro, às 14:02"), só os
+  campos conhecidos (listas até 20, textos cortados), o link só se for a tela Hoje do Maestro configurado, e o dinheiro
+  em reais **só se o Maestro mandou**; sem ele, a Z é avisada para não falar de valores. Toda leitura, recusa ou
+  falha fica em `zro.audit_logs` (`ia.maestro.leitura`, alvo `maestro_leitura`, com `acao`, `resultado`, `erro` e se
+  veio dinheiro; nada do conteúdo lido).
+- **Configuração**: sem segredo novo. O HUB usa a chave do login único (a mesma do Drive) e, opcionais,
+  `ZRO_MAESTRO_URL` (padrão `https://maestro.absolutezro.com`) e `ZRO_MAESTRO_CLIENT_ID` (padrão `maestro-web`) no
+  projeto Vercel `absolutezro`. O Maestro confere pela JWKS do emissor (`ZRO_ISSUER`, padrão
+  `https://absolutezro.com`) e precisa de `ZRO_CLIENT_ID=maestro-web` e `ZRO_CLIENT_SECRET` (já usados pelo login) no
+  projeto Vercel `maestro`; sem eles a rota responde `503 sem_config`.
+- **Próximo passo (fora deste corte)**: escrever pela Z (criar pedido, registrar despesa, marcar contato) com a ação
+  exata mostrada antes e o "sim" da pessoa conferido no core (como `pedirAoComputadorAuditado`), cada ação nova em
+  `ACOES_ABERTAS` do Maestro só com decisão do titular, e a cota/plano da Z no Maestro.
 
 ## Eventos (desenho; o Maestro ainda não publica no HUB)
 

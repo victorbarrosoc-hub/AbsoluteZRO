@@ -1,8 +1,8 @@
-// O resumo do dia para a Z (só leitura, pronto e desligado no HUB): o pedido assinado pela Absolute ZRO é conferido
+// O resumo do dia para a Z (só leitura, ligado: ver_maestro da Z do HUB): o pedido assinado pela Absolute ZRO é conferido
 // (typ, assinatura, aud, ação, vida e uso único), a pessoa precisa ter acesso no último login, tudo é lido como ela
 // (dinheiro só para gestão; acesso por cliente vale), com fonte e hora.
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { after, before, describe, test } from "node:test";
 import { sql } from "drizzle-orm";
 import { CLIENTE, pedido, prepararAmbiente, UUID } from "./ambiente.mts";
@@ -11,6 +11,7 @@ import { duasOrganizacoes } from "./semente.mts";
 const amb = await prepararAmbiente("resumo_z");
 const { getBanco } = amb.banco;
 const { rotaResumoDaZ, ACAO_RESUMO } = await import("../src/lib/zro/resumo-da-z");
+const { ACOES_ABERTAS, conferirPedidoZro, PedidoRecusado } = await import("../src/lib/zro/pedido");
 const pessoas = await import("../src/lib/pessoas");
 const { hojeBr } = await import("../src/lib/dinheiro");
 let o: Awaited<ReturnType<typeof duasOrganizacoes>>;
@@ -74,6 +75,21 @@ describe("resumo do dia para a Z", () => {
     const uma = assinar(o.ANA, { jti: "jti-unico-123456" });
     assert.equal((await chamar(uma)).status, 200);
     assert.equal((await chamar(uma)).status, 401, "uso único");
+  });
+
+  test("o pedido como o HUB assina (jti uuid, 60 s, aud maestro-web): aceito uma vez", async () => {
+    const t = assinar(o.ANA, { jti: randomUUID() });
+    const r = await chamar(t);
+    assert.equal(r.status, 200);
+    assert.equal(r.headers.get("cache-control")?.includes("no-store"), true);
+    assert.equal((await chamar(t)).status, 401, "o mesmo jti não serve de novo");
+  });
+
+  test("só a leitura do dia está aberta: ação de escrita é recusada mesmo assinada para ela", async () => {
+    assert.deepEqual([...ACOES_ABERTAS], [ACAO_RESUMO]);
+    const escrita = assinar(o.ANA, { acao: "maestro.pedido.criar" });
+    await assert.rejects(conferirPedidoZro(`Bearer ${escrita}`, "maestro.pedido.criar"), (e) => e instanceof PedidoRecusado && e.motivo === "ação fechada");
+    assert.equal((await chamar(assinar(o.ANA, { acao: "maestro.pedido.criar" }))).status, 401);
   });
 
   test("sem acesso ao Maestro, de fora ou sem login: 404 neutro", async () => {

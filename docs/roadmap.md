@@ -378,11 +378,16 @@ Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   baixar. **Agenda no celular** (.ics por endereço secreto, só o hash no banco, trocar e desligar; diárias, escala,
   prazos, aprovações e retornos, só o que a pessoa vê; passos para iPhone, Google e Outlook). **Acesso por cliente**
   (Ajustes → Pessoas: equipe e leitura restritas a alguns clientes, regra no banco em toda tabela ligada a cliente e
-  nas funções do Quadro e da revisão). Resumo do dia para a Z **pronto e desligado** (`POST /api/zro/maestro/resumo`,
-  pedido assinado como o Drive da Z; a ferramenta no HUB espera a decisão do item 5). Mapa em
+  nas funções do Quadro e da revisão). Resumo do dia para a Z (`POST /api/zro/maestro/resumo`, pedido assinado como
+  o Drive da Z; ligado em 29/10/2026, item abaixo). Mapa em
   [maestro-z.md](integration-contracts/maestro-z.md). Demonstração com o funil inteiro, retornos, contatos e metas.
-- ⬜ Maestro, do mesmo estudo e à espera do titular: contrato por modelo (item 4) e a Z com os números do Maestro (item
-  5: ligar a ferramenta no HUB, cota e plano); sincronia de duas vias com o Google Agenda (OAuth); eventos
+- ✅ **Z lendo o Maestro** (autorização do titular, 28/10/2026; item 5, só leitura): ferramenta `ver_maestro` na Z do
+  HUB (`packages/core/src/ia-maestro.ts`), só com o Maestro aberto (gate, hoje o titular) e no plano; pedido assinado
+  `zro-pedido+jwt` (`aud` `maestro-web`, ação `maestro.resumo`, 60 s, `jti` novo); fonte e hora em toda resposta,
+  dinheiro só quando o Maestro manda (administração e gestão); auditoria `ia.maestro.leitura`. No Maestro, a lista
+  `ACOES_ABERTAS` aceita só `maestro.resumo`. Sem variável nova obrigatória.
+- ⬜ Maestro, do mesmo estudo e à espera do titular: contrato por modelo (item 4); a Z **escrevendo** no Maestro (criar
+  pedido, despesa, marcar contato, sempre com a ação exata e o "sim"; cota e plano da Z); sincronia de duas vias com o Google Agenda (OAuth); eventos
   `maestro.pedido.ganho`, `maestro.orcamento.aceito` e `maestro.projeto.criado` no HUB (desenho no mapa).
 - ⬜ Maestro v2, depois: kits e modelos de projeto, etiquetas QR e manutenções do inventário, PDF gerado no servidor
   (hoje é a impressão do navegador), white-label no app inteiro (plano e preço pelo titular), retenção configurável dos

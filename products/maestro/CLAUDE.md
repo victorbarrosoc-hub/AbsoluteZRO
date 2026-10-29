@@ -144,9 +144,10 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
     `maestro.cliente_visivel`, `projeto_visivel`, `card_visivel`…) em toda tabela ligada a cliente, e os gatilhos
     `cards_guarda_cliente`/`*_guarda_cliente` barram as funções security definer. Tabela nova ligada a cliente precisa
     da política `_cliente` e de entrar em `tests/acesso-cliente.test.mts`.
-  - **Z** (pronto e desligado): `POST /api/zro/maestro/resumo` (`src/lib/zro/{pedido,resumo-da-z}.ts`) com o pedido
-    assinado `zro-pedido+jwt` do HUB (ação `maestro.resumo`), lido como a pessoa, com fonte e hora. O HUB não chama
-    ainda (item 5 do estudo, decisão do titular).
+  - **Z** (ligada só para leitura, titular 28/10/2026): `POST /api/zro/maestro/resumo` (`src/lib/zro/{pedido,resumo-da-z}.ts`)
+    com o pedido assinado `zro-pedido+jwt` do HUB (ação `maestro.resumo`, a única em `ACOES_ABERTAS`), lido como a
+    pessoa, com fonte e hora. Quem chama é a ferramenta `ver_maestro` da Z do HUB (`packages/core/src/ia-maestro.ts`).
+    Ação nova (escrita pela Z) só com nova decisão do titular e entrando em `ACOES_ABERTAS`.
 - **Kit do freela** (`drizzle/0013`, `src/lib/freelas/{kit,equipamentos}.ts`): `freela_equipamentos` (origem `maestro`
   ou `carro-do-freela`) e `escala_equipamentos`; o aluguel (diária × dias) soma ao mesmo "a pagar" da escala (gatilho
   `escala_sincronizar` refeito na 0013). Itens do Carro do Freela são só leitura (gatilho barra `maestro_app`). A
