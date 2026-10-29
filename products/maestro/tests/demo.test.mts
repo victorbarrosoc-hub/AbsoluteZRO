@@ -293,6 +293,7 @@ describe("demonstração da produtora por dentro", () => {
     // Simula a demonstração de antes dos módulos novos: só sobram Quadro, Clientes e Projetos.
     await getBanco().asUser(A(), async (tx) => {
       for (const t of [
+        "contratos",
         "documentos",
         "reservas",
         "lancamentos",

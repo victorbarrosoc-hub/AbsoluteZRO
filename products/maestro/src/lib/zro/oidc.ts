@@ -93,6 +93,8 @@ export type PerfilZro = {
   produtos: string[];
   /** Gate de lançamento (claim zro_release, quando existir): { "<product_id>": "released|closed|allowed" }. */
   release: Record<string, string> | null;
+  /** Sinais de recurso da organização para o Maestro (claim zro_features; ex.: maestro.marca_propria). */
+  recursos: string[];
 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -107,6 +109,9 @@ export function perfilDeClaims(dados: Record<string, unknown>): PerfilZro {
       ? { id: o.id, name: o.name, role: typeof o.role === "string" ? o.role : "" }
       : null;
   const produtos = Array.isArray(dados.zro_products) ? dados.zro_products.filter((p): p is string => typeof p === "string" && /^[a-z0-9-]{1,40}$/.test(p)) : [];
+  const recursos = Array.isArray(dados.zro_features)
+    ? dados.zro_features.filter((f): f is string => typeof f === "string" && /^maestro\.[a-z0-9_]{1,40}$/.test(f)).slice(0, 20)
+    : [];
   const r = dados.zro_release;
   const release =
     r && typeof r === "object" && !Array.isArray(r)
@@ -122,6 +127,7 @@ export function perfilDeClaims(dados: Record<string, unknown>): PerfilZro {
     org,
     produtos,
     release,
+    recursos,
   };
 }
 

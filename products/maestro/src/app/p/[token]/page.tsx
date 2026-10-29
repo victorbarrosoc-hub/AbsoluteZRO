@@ -26,7 +26,7 @@ export default async function PaginaPedido({ params }: PageProps<"/p/[token]">) 
         <CabecaMarca marca={r.form.marca} />
       </header>
       <PedidoPublico token={token} form={r.form} selo={r.selo} />
-      <RodapeMaestro />
+      <RodapeMaestro propria={!!r.form.marca.propria} />
     </main>
   );
 }

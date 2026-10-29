@@ -13,6 +13,8 @@ import "./aurora.css";
 import "./negocio.css";
 import "./numeros.css";
 import "./equipe.css";
+import "./contrato.css";
+import "./marca-propria.css";
 import "./celular.css";
 import "./motion.css";
 

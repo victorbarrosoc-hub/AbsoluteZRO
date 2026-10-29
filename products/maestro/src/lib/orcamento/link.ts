@@ -21,6 +21,16 @@ import type { MarcaPublica } from "@/lib/pedidos/formulario";
 import { chamarPorta, ipDentroDoLimite, ipHashDoDia, marcarMorto, whatsappDaProdutora } from "@/lib/publico/porta";
 import { codigoOrcamento, parcelasPadrao, statusEfetivo, totais, totalDaLinha, type Parcela, type StatusEfetivo } from "./motor";
 import type { DocumentoOrcamento } from "./orcamentos";
+import {
+  conferirDocumento,
+  desenharContrato,
+  lerConfig,
+  MODELO_PADRAO,
+  valoresDoContrato,
+  type ConfigContrato,
+  type DadosDoContrato,
+} from "@/lib/contrato/modelo";
+import { hashDoHtml } from "@/lib/contrato/servidor";
 
 /* ───────────── equipe ───────────── */
 
@@ -159,7 +169,66 @@ type Bruto = {
   itens: { descricao: string; detalhe: string | null; quantidade: number | string; unidade: string | null; preco: number | string }[];
 };
 
+/** O contrato que vai junto (drizzle/0020): o modelo vigente (versão 0 = o base do Maestro) e, se já aceito, o registro. */
+export type ContratoDoCliente = {
+  modeloVersao: number;
+  texto: string;
+  config: ConfigContrato;
+  sede: { cidade: string | null; uf: string | null } | null;
+  aceito: { id: string; html: string; hash: string; em: string; nome: string } | null;
+};
+
+type ContratoBruto = {
+  enviar: boolean;
+  modelo?: { versao: number; texto: string; config: unknown } | null;
+  sede?: { cidade: string | null; uf: string | null } | null;
+  aceito?: { id: string; html: string; hash: string; em: string; nome: string } | null;
+} | null;
+
+function contratoDe(c: ContratoBruto): ContratoDoCliente | null {
+  if (!c?.enviar) return null;
+  return {
+    modeloVersao: c.modelo ? Number(c.modelo.versao) : 0,
+    texto: c.modelo?.texto ?? MODELO_PADRAO,
+    config: lerConfig(c.modelo?.config ?? {}),
+    sede: c.sede ?? null,
+    aceito: c.aceito ?? null,
+  };
+}
+
+/** Os dados do contrato a partir do orçamento como o cliente vê (o mesmo na página e no aceite). Puro. */
+export function dadosDoContrato(
+  o: Pick<OrcamentoDoCliente, "doc" | "parcelas">,
+  c: ContratoDoCliente,
+  contratante: DadosDoContrato["contratante"],
+  dataAceite: string,
+): DadosDoContrato {
+  const e = o.doc.empresa;
+  return {
+    contratada: { nome: e.fantasia ?? e.nomeOrg, razao: e.razao, cnpj: e.cnpj, endereco: e.endereco, email: e.email, telefone: e.telefone },
+    sede: c.sede,
+    proposta: {
+      codigo: o.doc.codigo,
+      titulo: o.doc.titulo,
+      emissao: o.doc.emissao,
+      periodo: o.doc.periodo,
+      escopo: o.doc.escopo,
+      pagamento: o.doc.pagamento,
+      totalCents: o.doc.total,
+      itens: o.doc.itens.map((i) => ({ descricao: i.descricao, quantidade: i.quantidade, unidade: i.unidade, totalCents: i.totalCents })),
+      parcelas: o.parcelas,
+    },
+    config: c.config,
+    contratante,
+    dataAceite,
+  };
+}
+
+/** Nome e endereço normalizados como o banco faz (0012: espaços juntos, aparado, limite). */
+const normal = (v: unknown, max: number) => (typeof v === "string" ? v : "").replace(/\s+/g, " ").trim().slice(0, max);
+
 export type OrcamentoDoCliente = {
+  contrato: ContratoDoCliente | null;
   doc: DocumentoOrcamento;
   marca: MarcaPublica;
   status: StatusEfetivo;
@@ -185,6 +254,7 @@ function paraTela(b: Bruto): OrcamentoDoCliente {
   const para = b.para ?? (b.pedido ? { nome: b.pedido.nome, contato: b.pedido.contato, cidade: null, documento: null } : null);
   const codigo = codigoOrcamento(o.numero, o.versao);
   return {
+    contrato: null,
     marca: b.marca,
     status,
     parcelas: o.parcelas ?? [],
@@ -248,7 +318,8 @@ export async function abrirOrcamentoDoCliente(token: string, ip: string): Promis
     return { estado: "morto" };
   }
   await registrarTentativa(`link-ip:${ipHash}`, `orcamento-abrir:${th}`);
-  return { estado: "ok", dados: paraTela(b) };
+  const c = (await chamarPorta("contrato do orçamento", sql`select maestro.orcamento_link_contrato(${th}) as r`)) as ContratoBruto;
+  return { estado: "ok", dados: { ...paraTela(b), contrato: contratoDe(c) } };
 }
 
 export type ResultadoDecisao = { ok: true; repetido: boolean; nome: string } | { ok: false; status: number; erro: string; mensagem: string };
@@ -263,6 +334,11 @@ const MENSAGENS: Record<string, [number, string]> = {
   texto: [400, "Diga o que ajustar (até 2.000 caracteres)."],
   sem_valor: [409, "Este orçamento está sem valor. Fale com a produtora."],
   parcelas: [409, "As parcelas não fecham com o total. Fale com a produtora."],
+  documento: [400, "Confira o CPF ou CNPJ."],
+  endereco: [400, "Escreva o endereço completo."],
+  contrato: [400, "Leia e aceite o contrato."],
+  hash: [409, "O contrato mudou. Recarregue a página."],
+  contrato_mudou: [409, "A produtora atualizou o contrato. Recarregue a página para ler a versão nova."],
 };
 const erroDe = (e: string) => {
   const [status, mensagem] = MENSAGENS[e] ?? [400, "Não deu certo."];
@@ -283,17 +359,56 @@ async function preparar(token: string, ip: string): Promise<{ th: string; ipHash
   return { th, ipHash };
 }
 
+/**
+ * O contrato do aceite: confere CPF/CNPJ, endereço e o "Li e aceito", preenche o modelo com o orçamento (o que
+ * `orcamento_link_abrir` devolveu) e o que o cliente informou e calcula o sha256. O banco confere tudo de novo (0020).
+ */
+export function contratoDoAceite(
+  bruto: unknown,
+  contrato: unknown,
+  corpo: Record<string, unknown>,
+  hoje: string,
+):
+  | { ok: true; contrato: { html: string; hash: string; modelo_versao: number; documento: string; endereco: string; portfolio: boolean } }
+  | { ok: false; erro: string } {
+  const c = contratoDe(contrato as ContratoBruto);
+  if (!c) return { ok: false, erro: "contrato" };
+  const doc = conferirDocumento(corpo.documento);
+  if (!doc.ok) return { ok: false, erro: "documento" };
+  const endereco = normal(corpo.endereco, 300);
+  if (endereco.length < 5) return { ok: false, erro: "endereco" };
+  if (corpo.contrato !== true) return { ok: false, erro: "contrato" };
+  const nome = normal(corpo.nome, 80);
+  if (nome.length < 2) return { ok: false, erro: "nome" };
+  const portfolio = corpo.portfolio !== false;
+  const html = desenharContrato(
+    c.texto,
+    valoresDoContrato(dadosDoContrato(paraTela(bruto as Bruto), c, { nome, documento: doc.digitos, endereco, portfolio }, hoje)),
+  );
+  return { ok: true, contrato: { html, hash: hashDoHtml(html), modelo_versao: c.modeloVersao, documento: doc.digitos, endereco, portfolio } };
+}
+
 /** "Aceitar": nome e aceite. Uma vez só; repetir devolve o mesmo resultado. */
 export async function aceitarOrcamento(token: string, corpo: Record<string, unknown>, ip: string, userAgent: string | null): Promise<ResultadoDecisao> {
   const p = await preparar(token, ip);
   if ("ok" in p) return p;
-  const dados = {
+  const dados: Record<string, unknown> = {
     nome: typeof corpo.nome === "string" ? corpo.nome.slice(0, 200) : "",
     aceite: corpo.aceite === true,
     ip: p.ipHash,
     ua: (userAgent ?? "").slice(0, 300),
   };
-  const r = (await chamarPorta("aceite do orçamento", sql`select maestro.orcamento_link_aceitar(${p.th}, ${JSON.stringify(dados)}::jsonb) as r`)) as
+  // Com contrato: o servidor preenche o mesmo modelo com os dados do orçamento e o que o cliente informou, e o banco
+  // grava o HTML e o sha256 dele junto com o aceite (drizzle/0020).
+  const c = (await chamarPorta("contrato do orçamento", sql`select maestro.orcamento_link_contrato(${p.th}) as r`)) as ContratoBruto;
+  if (contratoDe(c) && !contratoDe(c)?.aceito) {
+    const b = (await chamarPorta("orçamento público", sql`select maestro.orcamento_link_abrir(${p.th}) as r`)) as Bruto | null;
+    if (!b) return erroDe("link");
+    const m = contratoDoAceite(b, c, corpo, hojeBr());
+    if (!m.ok) return erroDe(m.erro);
+    dados.contrato = m.contrato;
+  }
+  const r = (await chamarPorta("aceite do orçamento", sql`select maestro.orcamento_link_aceitar_contrato(${p.th}, ${JSON.stringify(dados)}::jsonb) as r`)) as
     { ok: true; repetido: boolean; nome: string } | { erro: string };
   if ("erro" in r) {
     if (r.erro === "link") await marcarMorto(p.ipHash);

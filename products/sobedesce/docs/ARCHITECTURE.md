@@ -60,6 +60,7 @@ src/
   engine/upload.js       UploadTask (sessão retomável)
   engine/planner.js      expande seleções (pastas) em registros de transferência
   engine/manager.js      TransferManager (fila, concorrência, persistência, eventos)
+  engine/lote-tempo.js   LoteTempo: números de cada lote (batch.stats: tempo andando, bytes, tempo dos proxies)
   engine/compare.js      compareFolders (local × Drive)
   engine/power.js        KeepAwake (impede o computador de dormir)
   engine/acompanhar.js   AcompanharCelular: manda o andamento das transferências para a conta (docs/CONTAS.md §9)
@@ -454,7 +455,11 @@ async planUploads({ drive, accountId, paths: string[], destFolderId, driveId, co
   : { batch, records, skipped }
 planUploadsFromCompare(compareResult, { accountId, statuses, relDirs }): { batch, records }
 planDownloadsFromCompare(compareResult, { accountId }): { batch, records }
-Batch = { id, type, label, createdAt, accountId }   // label: 'Pasta Projeto X' / '12 arquivos'
+Batch = { id, type, label, createdAt, accountId, stats? }   // label: 'Pasta Projeto X' / '12 arquivos'
+// stats (engine/lote-tempo.js, gravado em queue.json): { inicio, fim, ativoMs, bytes, proxyInicio?, proxyFim?, proxyMs }
+//   inicio/fim: primeiro arquivo que começou → último original que chegou; ativoMs: tempo com algum arquivo do lote
+//   andando (vários juntos contam uma vez; fila, pausa e esperas fora); bytes: o que passou pela rede; proxyMs: tempo com
+//   um proxy do lote sendo gerado/enviado. A tela mostra "104 GB em 1 h 12 min · 24,6 MB/s" (média = bytes / ativoMs).
 ```
 Downloads: pastas viram `destDir/<nome da pasta>/<relPath>`; nomes passam por `safeLocalName` e
 `uniqueName` (o Drive permite nomes repetidos na mesma pasta). Docs nativos usam `GOOGLE_EXPORTS`;
@@ -476,7 +481,9 @@ snapshot(): { transfers: PublicTransfer[], batches: Batch[], stats: Stats }
 add({ batch, records }): void   // persiste e agenda
 pause(ids|'all'), resume(ids|'all'), cancel(ids), retry(ids), remove(ids), prioritize(ids): Promise<void>
 pauseBatch(batchId), resumeBatch(batchId), cancelBatch(batchId)
-clearFinished(): void           // remove completed/skipped/canceled
+clearFinished(): { removidos, mantidos }   // remove completed/skipped/canceled; lote com proxy pendente (fila, pausada,
+                                // gerando, enviando…) fica inteiro e o proxy segue (mantidos = lotes que ficaram)
+// remove(ids) também não tira envio concluído com proxy pendente (pule o proxy antes); devolve quantos saíram
 canStartUpload(accountId, size): boolean   // vaga de envio livre agora, ninguém na frente, conta fora do limite diário
 attachFeed(id, feed), detachFeed(id)       // recepção do celular em fluxo: envio com local.growing só anda com feed
 async shutdown()                // pausa tudo, espera workers, grava
@@ -950,7 +957,7 @@ Respostas JSON `{ ok: true, ... }` ou `{ ok: false, error: 'mensagem PT-BR' }` c
 | POST | `/api/transfers/download` | `{ accountId, items: DriveItem[], destDir?, conflict? }` | `{ batch, count, bytes, skipped }` |
 | POST | `/api/transfers/upload` | `{ accountId, paths, destFolderId, driveId?, conflict?, proxy?: boolean, destName? }` | `{ batch, count, bytes, skipped }` (`destName` = nome da pasta do Drive, só para o "Acompanhar pelo celular") |
 | POST | `/api/transfers/action` | `{ action: pause|resume|cancel|retry|remove|prioritize, ids?: string[]|'all', batchId? }` | `{ }` |
-| POST | `/api/transfers/clear` | | `{ }` |
+| POST | `/api/transfers/clear` | | `{ removidos, mantidos }` (lote com proxy ainda na fila ou sendo feito fica e o proxy continua; a tela avisa "1 lote ficou: ainda gerando proxies.") |
 | POST | `/api/transfers/synquei` | `{ batchId }` | `{ link, pasta, op }` ("Preparar no Synquei" de um download do Drive; 409 com o motivo se o lote não terminou, tem arquivo diferente, não é uma pasta inteira ou a pasta sumiu). Ver "Preparar no Synquei" |
 | GET | `/api/settings` / PATCH `/api/settings` | patch | `{ settings }` |
 | GET | `/api/raw-thumbs` | `refresh=1` (refaz a detecção) | `{ rawThumbs: { supported, found, via, enabled, last, downloadUrl } }` |

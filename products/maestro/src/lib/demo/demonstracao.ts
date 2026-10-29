@@ -675,6 +675,8 @@ export async function removerDemonstracao(ctx: Contexto): Promise<Res<{ contagem
     return await getBanco().asUser(ctx, async (tx) => {
       await travar(tx, ctx.orgId);
       const c: Contagem = { ...CONTAGEM_ZERO };
+      // O contrato de exemplo sai primeiro (registro imutável: só a linha demo se apaga; aponta para orçamento e projeto).
+      await apagar(tx, "contratos");
       await apagar(tx, "contatos");
       await apagar(tx, "metas");
       c.pedidos = await apagar(tx, "pedidos");

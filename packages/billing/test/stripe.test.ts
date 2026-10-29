@@ -7,6 +7,11 @@ import {
   applyBillingEvent,
   checkEntitlement,
   createCheckoutSession,
+  featureFlagsFor,
+  grantEntitlement,
+  grantReleaseAccess,
+  isFeatureFlag,
+  productAccessFor,
   launchSales,
   recomputeEntitlements,
   salesStatus,
@@ -66,6 +71,60 @@ describe('preços à venda', () => {
     ])
     const [anual] = await db.sql`select count(*)::int as n from zro.plan_products pp join zro.plans p on p.id = pp.plan_id where p.code = 'ciclo-do-o-anual'`
     expect(anual!.n).toBe(7)
+  })
+})
+
+describe('Maestro com a sua marca (0025)', () => {
+  it('adicional R$ 89,90/mês ou R$ 899/ano e o Pro v2 com o sinal, tudo em rascunho; o Pro publicado não muda', async () => {
+    const rows = await db.sql`
+      select p.code, p.version, p.status, p.price_cents, p.billing_interval, pp.features, pp.limits
+      from zro.plans p join zro.plan_products pp on pp.plan_id = p.id and pp.product_id = 'maestro'
+      where p.code like 'maestro-marca-propria%' or p.code like 'absolute-zro-pro%' order by p.code, p.version`
+    expect(rows.map((r) => `${r.code}@${r.version}:${r.status}:${r.price_cents}:${r.billing_interval}`)).toEqual([
+      'absolute-zro-pro@2:draft:29990:month',
+      'absolute-zro-pro-anual@2:draft:299900:year',
+      'maestro-marca-propria@1:draft:8990:month',
+      'maestro-marca-propria-anual@1:draft:89900:year',
+    ])
+    for (const r of rows) {
+      expect(r.features).toEqual([])
+      expect(r.limits).toEqual({ 'maestro.marca_propria': 1 })
+    }
+    // Pro v2 = as 7 ferramentas da v1 (com os mesmos créditos) + o sinal do Maestro
+    const [n] = await db.sql`
+      select count(*)::int as n, max((pp.limits ->> 'zro.ai_credits')::int) as ai from zro.plan_products pp join zro.plans p on p.id = pp.plan_id
+      where p.code = 'absolute-zro-pro' and p.version = 2 and pp.product_id <> 'maestro'`
+    expect(n).toMatchObject({ n: 7, ai: 2000 })
+    // nenhum rascunho aparece à venda
+    const [vend] = await db.sql`select count(*)::int as n from zro.plans where status = 'active' and code like 'maestro-marca-propria%'`
+    expect(vend!.n).toBe(0)
+  })
+
+  it('o adicional dá só o sinal: não abre o Maestro nem conta como ferramenta contratada', async () => {
+    const o = await newOrgWithOwner(db, 'marca-propria')
+    const adminId = await admin(db)
+    await db.asSystem('t', (tx) =>
+      grantEntitlement(
+        tx,
+        { userId: adminId, reason: 'teste do adicional' },
+        { orgId: o.orgId, productId: 'maestro', features: [], limits: { 'maestro.marca_propria': 1 }, endsAt: null },
+      ),
+    )
+    const check = await db.asSystem('t', (tx) => checkEntitlement(tx, o.orgId, 'maestro', null))
+    expect(check).toMatchObject({ ok: false, code: 'entitlement_required' })
+    const acesso = await db.asSystem('t', (tx) => productAccessFor(tx, o.orgId, { userId: o.userId }))
+    expect(acesso.find((a) => a.productId === 'maestro')?.source).toBeNull()
+    // o Maestro está fechado (0024): sem a pessoa na lista, nem o sinal sai
+    expect(await db.asSystem('t', (tx) => featureFlagsFor(tx, o.orgId, { userId: o.userId }))).toEqual([])
+    await db.asSystem('t', (tx) =>
+      grantReleaseAccess(tx, { userId: adminId, reason: 'teste' }, { productId: 'maestro', userId: o.userId, kind: 'tester', channels: ['sso'], endsAt: null }),
+    )
+    expect(await db.asSystem('t', (tx) => featureFlagsFor(tx, o.orgId, { userId: o.userId }))).toEqual(['maestro.marca_propria'])
+    // outra organização não herda o sinal
+    const b = await newOrgWithOwner(db, 'marca-propria-b')
+    expect(await db.asSystem('t', (tx) => featureFlagsFor(tx, b.orgId, { userId: o.userId }))).toEqual([])
+    expect(isFeatureFlag('maestro.marca_propria')).toBe(true)
+    expect(isFeatureFlag('zro.ai_credits')).toBe(false)
   })
 })
 

@@ -14,6 +14,8 @@ import { reservasDoProjeto } from "@/lib/inventario/servidor";
 import { podeEscrever, podeVerDinheiro } from "@/lib/papeis";
 import { BotaoAcao } from "@/components/acao";
 import { dataBr, LinhaCard, Secao, Selo } from "@/components/crm";
+import { ListaContratos } from "@/components/contrato/lista";
+import { contratosDe } from "@/lib/contrato/servidor";
 import { Formulario } from "@/components/form";
 import { Icone } from "@/components/icones";
 import { SeloStatus } from "@/components/painel";
@@ -32,12 +34,13 @@ export default async function FichaProjeto({ params }: PageProps<"/app/projetos/
   const p = await obterProjeto(ctx, id);
   if (!p) notFound();
   const hoje = hojeBr();
-  const [escalas, freelas, eventos, reservas, docs] = await Promise.all([
+  const [escalas, freelas, eventos, reservas, docs, contratos] = await Promise.all([
     escalasDoProjeto(ctx, sessao.papel, id, hoje),
     listarFreelas(ctx),
     listarEventos(ctx, "2000-01-01", "2999-12-31", { projeto: id }),
     reservasDoProjeto(ctx, id),
     listarDocumentos(ctx, id),
+    podeVerDinheiro(sessao.papel) ? contratosDe(ctx, { projetoId: id }) : Promise.resolve([]),
   ]);
   const escreve = podeEscrever(sessao.papel);
   const dinheiro = podeVerDinheiro(sessao.papel);
@@ -94,6 +97,8 @@ export default async function FichaProjeto({ params }: PageProps<"/app/projetos/
               <p className="nada">Nenhum card neste projeto. Escolha o projeto na ficha do card.</p>
             )}
           </Secao>
+
+          <ListaContratos contratos={contratos} />
 
           <Secao titulo="Equipe" acao={escalas.length ? <span className="sutil num">{brl(custoEquipe)}</span> : undefined}>
             {escalas.length ? (

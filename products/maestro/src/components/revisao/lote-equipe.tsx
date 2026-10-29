@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, useTransition, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { COLUNA, type ColunaKey } from "@/lib/quadro/metodo";
-import { detectarFonte, NOME_DA_FONTE, resumoDaFonte } from "@/lib/revisao/fontes/detectar";
+import { NOME_DA_FONTE, resumoDaFonte } from "@/lib/revisao/fontes/detectar";
 import type { CardDisponivel, LoteDaEquipe, PecaDaEquipe } from "@/lib/revisao/equipe";
 import type { ComentarioVisto, VersaoVista } from "@/lib/revisao/tipos";
 import {
@@ -18,7 +18,6 @@ import {
   copiarLinkAcao,
   fecharLoteAcao,
   gerarLinkAcao,
-  novaVersaoAcao,
   resolverAcao,
   revogarLinkAcao,
 } from "@/app/(app)/app/aprovacoes/acoes";
@@ -26,6 +25,7 @@ import { Icone } from "@/components/icones";
 import { NavegadorDrive } from "@/components/arquivos/navegador";
 import { useMidia } from "@/components/use-midia";
 import { ComDriveDaEquipe } from "./drive-equipe";
+import { useNovaVersao } from "./nova-versao";
 import { Revisor, type NovoComentario } from "./revisor";
 
 const dataCurta = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
@@ -61,33 +61,19 @@ function EscolherNoDrive({ sobedesce, aoEscolher, aoFechar }: { sobedesce: strin
 }
 
 function NovaVersao({ card, driveStream, sobedesce, aoFim }: { card: string; driveStream: boolean; sobedesce: string | null; aoFim: () => void }) {
-  const [link, setLink] = useState("");
-  const [titulo, setTitulo] = useState("");
+  const { link, setLink, titulo, setTitulo, fonte: f, pendente, enviar, mensagem } = useNovaVersao(card, aoFim);
   const [escolhendo, setEscolhendo] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
-  const [pendente, iniciar] = useTransition();
   // No celular a lista inteira de fontes não cabe no campo: o placeholder encurta (o resto aparece ao colar).
   const celular = useMidia("(max-width: 600px)");
-  const f = link.trim() ? detectarFonte(link) : null;
-  function enviar(e: FormEvent) {
-    e.preventDefault();
-    if (!f?.ok) {
-      setErro(f && !f.ok ? f.erro : "Cole o link da peça.");
-      return;
-    }
-    iniciar(async () => {
-      const r = await novaVersaoAcao(card, link, titulo);
-      if (!r.ok) setErro(r.mensagem);
-      else {
-        setLink("");
-        setTitulo("");
-        setErro(null);
-        aoFim();
-      }
-    });
-  }
   return (
-    <form className="ap-versao" onSubmit={enviar} aria-label="Nova versão">
+    <form
+      className="ap-versao"
+      onSubmit={(e: FormEvent) => {
+        e.preventDefault();
+        enviar();
+      }}
+      aria-label="Nova versão"
+    >
       <div className="ap-versao__linha">
         <Icone nome="link" size={16} />
         <input
@@ -96,10 +82,7 @@ function NovaVersao({ card, driveStream, sobedesce, aoFim }: { card: string; dri
           placeholder={celular ? "Cole o link da versão" : "Cole o link: Drive, YouTube, Vimeo, Dropbox, mp4…"}
           aria-label="Link da nova versão"
           value={link}
-          onChange={(e) => {
-            setLink(e.target.value);
-            setErro(null);
-          }}
+          onChange={(e) => setLink(e.target.value)}
           maxLength={2000}
         />
         {sobedesce ? (
@@ -118,7 +101,6 @@ function NovaVersao({ card, driveStream, sobedesce, aoFim }: { card: string; dri
           aoEscolher={(id, nome) => {
             setLink(`https://drive.google.com/file/d/${id}/view`);
             setTitulo((t) => t || nome.replace(/\.[A-Za-z0-9]{2,5}$/, "").slice(0, 200));
-            setErro(null);
             setEscolhendo(false);
           }}
         />
@@ -133,9 +115,9 @@ function NovaVersao({ card, driveStream, sobedesce, aoFim }: { card: string; dri
           <input placeholder="Nome (opcional)" aria-label="Nome da versão" value={titulo} maxLength={200} onChange={(e) => setTitulo(e.target.value)} />
         </div>
       ) : null}
-      {erro || (f && !f.ok) ? (
+      {mensagem ? (
         <p className="rv-erro" role="alert">
-          {erro ?? (f && !f.ok ? f.erro : "")}
+          {mensagem}
         </p>
       ) : null}
     </form>

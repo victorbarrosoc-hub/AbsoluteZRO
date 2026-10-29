@@ -7,6 +7,9 @@
 //   STUB_PORT=4318        porta
 //   STUB_SETUP=0          simula instalação nova (sem chave do Google, sem contas, sem transferências)
 //   STUB_MANY=1           acrescenta um lote com 3.000 quadros EXR (teste de desempenho da lista)
+//   STUB_PROXIES=1        acrescenta envios de vídeo já no Drive: um com os proxies ainda andando (26 originais,
+//                         proxies 3 de 26), um com os proxies prontos e um com 2 proxies que falharam (com os números
+//                         do lote: "104 GB em 1 h 12 min · 24,6 MB/s")
 //   STUB_DEMO_DIR=/caminho  cria ali um disco de exemplo (/Users/victor com Filmes, Downloads…, e
 //                         /Volumes/Externo SSD) com arquivos esparsos (não ocupam espaço) e mostra
 //                         esse diretório como se fosse a raiz "/" do computador (bom para screenshots)
@@ -36,6 +39,7 @@ const VENDOR = path.join(ROOT, 'node_modules/htm/preact/standalone.module.js')
 const PORT = Number(process.env.STUB_PORT || 4318)
 const FRESH = process.env.STUB_SETUP === '0'
 const MANY = process.env.STUB_MANY === '1'
+const PROXIES = process.env.STUB_PROXIES === '1'
 const DEMO_DIR = process.env.STUB_DEMO_DIR ? path.resolve(process.env.STUB_DEMO_DIR) : ''
 const PLATFORM = process.env.STUB_PLATFORM || 'darwin'
 const DESKTOP = process.env.STUB_DESKTOP === '1'
@@ -472,6 +476,8 @@ function buildTransfers() {
   v.verify = { state: 'running', expected: backup.md5, actual: null }
   v._verifyUntil = t0 + 9000
 
+  if (PROXIES) buildProxyBatches(t0)
+
   if (MANY) {
     const b4 = makeBatch('download', 'Cor — EXR (3.000 quadros)', t0 - 40 * 60e3)
     const destDir = vjoin(dl, 'Cor EXR')
@@ -491,6 +497,51 @@ function buildTransfers() {
     r2.status = 'paused'
   }
 }
+
+/** Envios de vídeo já no Drive com os proxies em vários pontos (STUB_PROXIES=1). */
+function buildProxyBatches(t0) {
+  const lote = (label, minAtras, n, gb, estados, stats) => {
+    const b = makeBatch('upload', label, t0 - minAtras * 60e3)
+    const dir = vjoin(HOME, 'Movies', 'Documentário Mar Aberto', label)
+    const start = b.createdAt + 20e3
+    const fim = start + stats.duracaoMin * 60e3
+    b.stats = { inicio: start, fim, ativoMs: Math.round((gb * 1e9) / stats.mbps / 1e6) * 1000, bytes: gb * 1e9, proxyMs: (stats.proxyMin || 0) * 60e3 }
+    if (stats.proxyMin) Object.assign(b.stats, { proxyInicio: start + 10 * 60e3, proxyFim: fim + stats.proxyMin * 60e3 })
+    for (let i = 0; i < n; i++) {
+      const name = `A${String(i + 1).padStart(3, '0')}_C${String(10 + i).padStart(3, '0')}_0614${String.fromCharCode(65 + (i % 26))}Q.mov`
+      const size = Math.round(((gb * 1e9) / n) * between(0.85, 1.15))
+      const r = addUpload(b, vjoin(dir, name), size, `${label}/${name}`, { rootId: 'f_mar', relDir: label }, { status: 'completed', startedAt: start, finishedAt: start + ((i + 1) / n) * (fim - start) })
+      r.bytesDone = r.size
+      r.target.fileId = newId('f')
+      r.target.parentId = 'f_mar'
+      r.verify = { state: 'ok', expected: md5Of(name), actual: md5Of(name) }
+      const e = estados(i)
+      if (e) r.previa = { estado: e, at: t0, ...(e === 'gerando' ? { frac: 0.42 } : {}), ...(e === 'pronta' ? { size: Math.round(size / 40) } : {}), ...(e === 'falhou' ? { motivo: 'o ffmpeg não abriu este arquivo' } : {}) }
+    }
+    return b
+  }
+  lote('Diária 02', 75, 26, 104, (i) => (i < 3 ? 'pronta' : i === 3 ? 'gerando' : 'fila'), { duracaoMin: 72, mbps: 24.6 })
+  lote('Diária 01', 26 * 60, 18, 61, () => 'pronta', { duracaoMin: 48, mbps: 22.9, proxyMin: 31 })
+  lote('Making of', 2 * 24 * 60, 6, 9.4, (i) => (i < 2 ? 'falhou' : 'pronta'), { duracaoMin: 9, mbps: 19.8, proxyMin: 7 })
+}
+
+/** Proxies andando: um por vez, gerando e depois enviando (como a fila do motor). */
+function tickProxies(dt) {
+  const ups = [...transfers.values()].filter((t) => t.type === 'upload' && t.previa)
+  let cur = ups.find((t) => ['analisando', 'gerando', 'enviando'].includes(t.previa.estado))
+  if (!cur) {
+    cur = ups.find((t) => t.previa.estado === 'fila')
+    if (!cur) return
+    cur.previa = { estado: 'gerando', frac: 0, at: now() }
+  }
+  const p = cur.previa
+  p.frac = Math.min(1, (p.frac || 0) + dt * (p.estado === 'gerando' ? 0.06 : 0.25))
+  if (p.frac >= 1) cur.previa = p.estado === 'gerando' ? { estado: 'enviando', frac: 0, at: now() } : { estado: 'pronta', size: Math.round(cur.size / 40), at: now() }
+  dirty.add(cur.id)
+}
+
+const PROXY_PENDENTE = ['fila', 'pausada', 'analisando', 'baixando', 'gerando', 'enviando']
+const proxyPendente = (t) => t.type === 'upload' && PROXY_PENDENTE.includes(t.previa?.estado)
 
 function liveSegments(t) {
   if (t.type !== 'download' || !t.segments?.length) return undefined
@@ -586,6 +637,7 @@ function tick() {
     }
   }
   startQueued()
+  if (PROXIES) tickProxies(dt)
 
   const runDown = [...transfers.values()].filter((x) => x.type === 'download' && x.status === 'running')
   const runUp = [...transfers.values()].filter((x) => x.type === 'upload' && x.status === 'running')
@@ -761,7 +813,7 @@ function doAction({ action, ids, batchId }) {
         if (['failed', 'canceled', 'waiting', 'paused'].includes(st)) { t.status = 'queued'; t.error = null; t.retryAt = null; t.attempts = 0; t.verify = null }
         break
       case 'remove':
-        if (['running', 'verifying'].includes(st)) break
+        if (['running', 'verifying'].includes(st) || proxyPendente(t)) break
         transfers.delete(id)
         removed.push(id)
         continue
@@ -1412,9 +1464,34 @@ async function route(req, res, url) {
   }
 
   if (method === 'POST' && pathname === '/api/transfers/clear') {
-    for (const [id, t] of transfers) if (['completed', 'skipped', 'canceled'].includes(t.status)) { transfers.delete(id); removedQueue.push(id) }
+    // Como o motor: lote com proxy ainda andando fica inteiro (e o proxy segue).
+    const presos = new Set([...transfers.values()].filter(proxyPendente).map((t) => t.batchId))
+    const mantidos = new Set()
+    let removidos = 0
+    for (const [id, t] of transfers) {
+      if (!['completed', 'skipped', 'canceled'].includes(t.status)) continue
+      if (presos.has(t.batchId)) { mantidos.add(t.batchId); continue }
+      transfers.delete(id)
+      removedQueue.push(id)
+      removidos++
+    }
     pruneBatches()
-    return {}
+    return { removidos, mantidos: mantidos.size }
+  }
+
+  if (method === 'POST' && pathname === '/api/transfers/proxy') {
+    const body = await readBody(req)
+    let count = 0
+    for (const id of Array.isArray(body.ids) ? body.ids : []) {
+      const t = transfers.get(id)
+      if (!t || t.type !== 'upload') continue
+      t.proxy = !!body.proxy
+      if (body.proxy && ['completed', 'skipped'].includes(t.status) && !['pronta', ...PROXY_PENDENTE].includes(t.previa?.estado)) t.previa = { estado: 'fila', at: now() }
+      if (!body.proxy && proxyPendente(t)) t.previa = { estado: 'cancelada', at: now() }
+      dirty.add(id)
+      count++
+    }
+    return { count }
   }
 
   if (pathname === '/api/settings') {

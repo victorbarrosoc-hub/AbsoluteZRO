@@ -38,6 +38,10 @@ async function ids() {
       equipamento: await um(sql`select id from maestro.equipamentos where org_id = ${org.id} limit 1`),
       evento: await um(sql`select id from maestro.eventos where org_id = ${org.id} order by created_at limit 1`),
       lancamento: await um(sql`select id from maestro.lancamentos where org_id = ${org.id} limit 1`),
+      contrato: await um(sql`select id from maestro.contratos where org_id = ${org.id} limit 1`),
+      // Um card da demonstração com versões: a ficha mostra a lista e o campo de colar o link.
+      cardComVersao:
+        (await sql`select card_id from maestro.versoes where org_id = ${org.id} and apagado_em is null order by n desc limit 1`)[0]?.card_id ?? null,
       documentos: (await sql`select distinct on (tipo) id, projeto_id from maestro.documentos where org_id = ${org.id} order by tipo`) as unknown as {
         id: string;
         projeto_id: string;
@@ -67,6 +71,24 @@ async function telas(): Promise<Tela[]> {
         await ver("quadro-ficha");
       },
     },
+    ...(i.cardComVersao
+      ? [
+          {
+            nome: "quadro-ficha-versoes",
+            rota: `/app/quadro?card=${encodeURIComponent(i.cardComVersao)}`,
+            depois: async (page: Page, ver: (nome: string) => Promise<void>) => {
+              const versoes = page.getByRole("region", { name: "Versões" });
+              await versoes.locator(".vc__versao").first().waitFor();
+              await versoes.scrollIntoViewIfNeeded();
+              await ver("quadro-ficha-versoes-lista");
+              // O erro do link colado (pasta do Drive) cabe na ficha.
+              await versoes.getByLabel("Link da versão").fill("https://drive.google.com/drive/folders/1AbCdEfGhIjKlMnOp");
+              await versoes.getByRole("alert").waitFor();
+              await ver("quadro-ficha-versoes-erro");
+            },
+          },
+        ]
+      : []),
     { nome: "aprovacoes", rota: "/app/aprovacoes" },
     { nome: "aprovacoes-novo", rota: "/app/aprovacoes/novo" },
     ...s.lotes.map((l, n) => ({ nome: `lote-${n + 1}`, rota: `/app/aprovacoes/${l}` })),
@@ -101,6 +123,7 @@ async function telas(): Promise<Tela[]> {
     { nome: "ajustes-agenda", rota: "/app/ajustes/agenda" },
     { nome: "ajustes-pessoas", rota: "/app/ajustes/pessoas" },
     { nome: "ajustes-marca", rota: "/app/ajustes/marca" },
+    { nome: "ajustes-contrato", rota: "/app/ajustes/contrato" },
     { nome: "ajustes-pedido", rota: "/app/ajustes/pedido" },
     { nome: "ajustes-precos", rota: "/app/ajustes/precos" },
     { nome: "entrar", rota: "/entrar", publica: true },
@@ -117,6 +140,7 @@ async function telas(): Promise<Tela[]> {
   ficha("orcamento-enviado", i.enviado, (x) => `/app/orcamentos/${x}`);
   ficha("orcamento-aprovado", i.aprovado, (x) => `/app/orcamentos/${x}`);
   ficha("timbrado", i.aprovado, (x) => `/app/orcamentos/${x}/timbrado`);
+  ficha("contrato", i.contrato, (x) => `/app/contratos/${x}`);
   ficha("freela", i.freela, (x) => `/app/freelas/${x}`);
   ficha("freela-editar", i.freela, (x) => `/app/freelas/${x}/editar`);
   ficha("equipamento", i.equipamento, (x) => `/app/inventario/${x}`);

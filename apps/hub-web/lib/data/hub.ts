@@ -1,6 +1,6 @@
 import 'server-only'
 import type { Authenticated } from '@zro/auth'
-import { productAccessFor, quotaPeriod } from '@zro/billing'
+import { isFeatureFlag, productAccessFor, quotaPeriod } from '@zro/billing'
 import { ADMIN_ROLES, authorize, BILLING_ROLES } from '@zro/core'
 import { db } from '../session'
 
@@ -52,6 +52,8 @@ export async function subscriptionData(auth: Authenticated) {
     const limites = new Map<string, number>()
     for (const e of entitlements)
       for (const [k, v] of Object.entries((e.limits as Record<string, unknown>) ?? {})) {
+        // sinal de recurso (ex.: maestro.marca_propria) não é medidor de uso
+        if (isFeatureFlag(k)) continue
         const n = Number(v)
         if (Number.isFinite(n)) limites.set(k, Math.max(limites.get(k) ?? 0, n))
       }

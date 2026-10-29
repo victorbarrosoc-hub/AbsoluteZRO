@@ -4,7 +4,8 @@
  * sessão já conferida pela página.
  */
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { estiloDaMarcaPropria, type MarcaPropria } from "@/lib/marca/propria";
 import type { Sessao } from "@/lib/auth/sessao";
 import { HUB_URL } from "@/lib/site";
 import { Icone } from "./icones";
@@ -40,7 +41,36 @@ export function Avatar({ sessao, grande = false }: { sessao: Pick<Sessao, "nome"
   );
 }
 
-export function Shell({ sessao, demo = false, children }: { sessao: Sessao; demo?: boolean; children: ReactNode }) {
+/** A marca no topo: o gesto do Maestro ou, com a marca própria, o logo (ou o nome) da produtora. */
+function MarcaDoTopo({ marca, largura }: { marca: MarcaPropria | null; largura: number }) {
+  if (!marca)
+    return (
+      <>
+        <MaestroSimbolo width={largura} />
+        <span>Maestro</span>
+      </>
+    );
+  return marca.logo ? (
+    // eslint-disable-next-line @next/next/no-img-element -- logo da produtora, bytes do banco pela rota própria
+    <img className="marca-propria__logo" src={marca.logo} alt="" />
+  ) : (
+    <span className="marca-propria__nome">{marca.nome}</span>
+  );
+}
+
+export function Shell({
+  sessao,
+  demo = false,
+  marca = null,
+  children,
+}: {
+  sessao: Sessao;
+  demo?: boolean;
+  /** "Maestro com a sua marca" (src/lib/marca/propria.ts); null = a marca do Maestro. */
+  marca?: MarcaPropria | null;
+  children: ReactNode;
+}) {
+  const rotulo = marca ? `${marca.nome}, início` : "Maestro, início";
   const selo = demo ? (
     <Link className="selo selo--demo" href="/app/ajustes#demonstracao" title="Dados de exemplo. Remova em Ajustes.">
       <i aria-hidden="true" />
@@ -48,22 +78,21 @@ export function Shell({ sessao, demo = false, children }: { sessao: Sessao; demo
     </Link>
   ) : null;
   return (
-    <div className="shell">
+    <div className="shell" data-marca-propria={marca ? "" : undefined} style={estiloDaMarcaPropria(marca) as CSSProperties | undefined}>
       {/* Computador: a cápsula de vidro no topo (C1 · Aurora): a marca, as seções em menus, o relógio da luz, o tema e a
           conta; o símbolo da Absolute ZRO pequeno, como assinatura. */}
       <header className="capsula">
-        <Link className="capsula__marca" href="/app/z" aria-label="Maestro, início">
-          <MaestroSimbolo width={30} />
-          <span>Maestro</span>
+        <Link className="capsula__marca" href="/app/z" aria-label={rotulo}>
+          <MarcaDoTopo marca={marca} largura={30} />
         </Link>
         <Capsula />
         <div className="capsula__fim">
           {selo}
           <Relogio />
           <SeletorDeTema />
-          <a className="assinatura" href={HUB_URL} title="Absolute ZRO" target="_blank" rel="noreferrer">
+          <a className="assinatura" href={HUB_URL} title={marca ? "Powered by Absolute ZRO" : "Absolute ZRO"} target="_blank" rel="noreferrer">
             <ZroSimbolo size={18} />
-            <span className="sr-only">Absolute ZRO</span>
+            <span className="sr-only">{marca ? "Powered by Absolute ZRO" : "Absolute ZRO"}</span>
           </a>
           <Link className="conta" href="/app/ajustes" title={`${sessao.nome ?? sessao.email ?? "Conta"} · ${sessao.orgNome}`}>
             <Avatar sessao={sessao} />
@@ -73,9 +102,8 @@ export function Shell({ sessao, demo = false, children }: { sessao: Sessao; demo
       </header>
       {/* Celular: a marca e a conta no topo; as seções na barra de baixo. */}
       <header className="topo">
-        <Link className="topo__marca" href="/app/z" aria-label="Maestro, início">
-          <MaestroSimbolo width={36} />
-          <span>Maestro</span>
+        <Link className="topo__marca" href="/app/z" aria-label={rotulo}>
+          <MarcaDoTopo marca={marca} largura={36} />
         </Link>
         <div className="topo__fim">
           {selo}
@@ -88,6 +116,11 @@ export function Shell({ sessao, demo = false, children }: { sessao: Sessao; demo
       </header>
       <main id="conteudo" className="conteudo">
         <Transicao>{children}</Transicao>
+        {marca ? (
+          <p className="powered">
+            <ZroSimbolo size={14} /> Powered by Absolute ZRO
+          </p>
+        ) : null}
       </main>
       <Barra />
     </div>

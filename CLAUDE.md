@@ -11,6 +11,8 @@ Leia antes de mudar qualquer coisa: [PRD.md](PRD.md) (referência principal), [A
   projeto Vercel dela (Root Directory = pasta do app). Os repositórios antigos (nossom, synquei, baixadordodrive,
   tpeasy, carrodofreela-app) só recebem a importação final (`scripts/import-product.mjs`) e depois são arquivados;
   nada de trabalho novo neles. Banco: um schema e um papel por app no Supabase `AbsoluteZRO`, nunca dentro de `zro`.
+- **Domínio padrão: `<app>.absolutezro.com`** (ADR 0025, pedido do titular em 29/10/2026). App novo nasce assim; os de
+  domínio próprio migram quando o titular autorizar, com o antigo redirecionando.
 - **Deploy só com autorização explícita do titular.** Em 25/10/2026 o titular autorizou o projeto Vercel `absolutezro`
   (absolutezro.vercel.app, hoje no domínio absolutezro.com) com o projeto Supabase novo `AbsoluteZRO`; a trava `git.deploymentEnabled: false` saiu. Qualquer outro projeto,
   domínio, DNS, banco pago ou ação irreversível pede nova autorização.

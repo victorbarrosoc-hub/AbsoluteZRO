@@ -47,7 +47,8 @@ export function Quadro(props: Props) {
         ? { novo: { coluna: "pauta", cliente: props.clienteInicial ?? undefined, projeto: props.projetoInicial ?? undefined } }
         : null,
   );
-  const [mover, setMover] = useState<string | null>(null);  const [colMovel, setColMovel] = useState<ColunaKey>(() => (props.cardInicial && cards[props.cardInicial] ? cards[props.cardInicial].dados.coluna : "pauta"));
+  const [mover, setMover] = useState<string | null>(null);
+  const [colMovel, setColMovel] = useState<ColunaKey>(() => (props.cardInicial && cards[props.cardInicial] ? cards[props.cardInicial].dados.coluna : "pauta"));
   const [arrastando, setArrastando] = useState<string | null>(null);
   const [alvo, setAlvo] = useState<Alvo | null>(null);
   const arraste = useRef<string | null>(null);

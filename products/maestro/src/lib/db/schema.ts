@@ -24,6 +24,11 @@ export const organizations = maestro.table("organizations", {
     .array()
     .notNull()
     .default(sql`'{}'::text[]`),
+  /** Claim zro_features do último login ou releitura (ex.: maestro.marca_propria; drizzle/0020). */
+  zroFeatures: text()
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
   /** Empresa, WhatsApp, condições… (por organização). */
   settings: jsonb().$type<Record<string, unknown>>().notNull().default({}),
   createdAt: agora(),

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { brl, dataBr } from "@/lib/dinheiro";
+import { brl, dataBr, hojeBr } from "@/lib/dinheiro";
 import { ipDe } from "@/lib/http";
-import { abrirOrcamentoDoCliente } from "@/lib/orcamento/link";
+import { abrirOrcamentoDoCliente, dadosDoContrato } from "@/lib/orcamento/link";
+import { FolhaContrato } from "@/components/contrato/folha";
 import { BotaoImprimir } from "@/components/acao";
 import { Timbrado } from "@/components/orcamento/timbrado";
 import { AceiteOrcamento, ParcelasDoOrcamento } from "@/components/publico/aceite";
@@ -23,7 +24,11 @@ export default async function PaginaOrcamento({ params }: PageProps<"/o/[token]"
   const { token } = await params;
   const r = await abrirOrcamentoDoCliente(token, ipDe(await headers())).catch(() => ({ estado: "morto" as const }));
   if (r.estado !== "ok") return <NeutroPublico limite={r.estado === "limite"} />;
-  const { doc, marca } = r.dados;
+  const { doc, marca, contrato } = r.dados;
+  const paraAceitar =
+    contrato && !contrato.aceito
+      ? { texto: contrato.texto, dados: dadosDoContrato(r.dados, contrato, { nome: "", documento: "", endereco: "", portfolio: true }, hojeBr()) }
+      : null;
   return (
     <main className="cl oc" id="conteudo" style={estiloDaMarca(marca.cor)}>
       <header className="oc-topo">
@@ -58,9 +63,19 @@ export default async function PaginaOrcamento({ params }: PageProps<"/o/[token]"
         aceite={r.dados.aceite}
         retorno={r.dados.retorno}
         whatsapp={r.dados.whatsapp}
+        contrato={paraAceitar}
       />
+      {contrato?.aceito ? (
+        <section className="ct-cliente" aria-label="Contrato aceito">
+          <div className="ct-cliente__cabeca">
+            <h2>Contrato aceito</h2>
+            <p className="sutil">O texto que você aceitou, com o registro. Baixe o PDF para guardar.</p>
+          </div>
+          <FolhaContrato html={contrato.aceito.html} registro={{ nome: contrato.aceito.nome, em: contrato.aceito.em, hash: contrato.aceito.hash }} />
+        </section>
+      ) : null}
       <Timbrado doc={doc} />
-      <RodapeMaestro />
+      <RodapeMaestro propria={!!marca.propria} />
     </main>
   );
 }

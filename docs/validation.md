@@ -26,10 +26,12 @@ Postgres local, Playwright/Chromium sem GPU, mediana de 5 rodadas, clique → co
   revelação do conteúdo por 300 ms depois de um esqueleto (Suspense throttle). Resultado: ~330 ms em toda aba do
   Maestro e em quase todas do HUB, e nenhuma transição (só um `fade` de 0,24 s no Maestro).
 - **Maestro**: mediana 338 ms → 90 ms (1ª visita) e 337 ms → 88 ms (volta); todas as 11 abas com View Transition.
-- **HUB**: mediana 326 ms → 97 ms (1ª visita) e 79 ms → 94 ms (volta, agora com a transição de 320 ms por cima);
-  telas do HUB com View Transition; o site público também.
+- **HUB** (telas logadas): mediana 335 ms → 97–143 ms (1ª visita) e 314 ms → 94–118 ms (volta), conforme a carga
+  da máquina; todas com View Transition. O site público já trocava em 50–80 ms (sem esqueleto) e agora paga a
+  transição (80–160 ms até o primeiro quadro animado no Chromium sem GPU).
 - O que mudou: pré-busca da seção inteira com a intenção (mouse em cima, foco, toque) e do esqueleto de todas as
-  seções com a página parada; `staleTimes` (30 s dinâmico, 60 s pré-busca) com Server Actions limpando o cache e o
+  seções com a página parada; `staleTimes` (Maestro: 30 s dinâmico, 60 s pré-busca; HUB: só os 60 s da pré-busca,
+  porque com o dinâmico o login único reaproveitava `/entrar` e `/criar-conta` no meio do fluxo) e o
   Quadro perguntando "o que mudou" ao abrir; `<ViewTransition>` do React 19.3 na área de conteúdo (frente/volta pela
   ordem do menu, menu e topo parados); pílula do menu que desliza; destino aceso no clique; contagem dos números do
   Hoje e de Números. Tudo parado com "reduzir movimento".
@@ -49,10 +51,18 @@ Postgres local, Playwright/Chromium sem GPU, mediana de 5 rodadas, clique → co
   guardada (o "Permitir" do login único ficava parado em `/oauth/authorize`). No HUB, login, saída, troca de
   organização e consentimento agora redirecionam por `lib/actions/ir.ts`, que limpa o cache do roteador antes; no
   Maestro toda Server Action já chamava `revalidatePath`.
-- Rodado: HUB `lint`, `format:check`, `typecheck`, `npm test` **257/257**, `build`, `test:e2e` **26/26**,
-  `scan-secrets` ok. Maestro `lint`, `format:check`, `typecheck`, `npm test` **302/302**, `build`, `test:e2e`
-  completo (inclui `sem-corte` no Chromium e no WebKit) 72 passaram e o `quadro.spec.ts` novo (corrigida a espera da
-  aba no iPhone) **24/24** em três rodadas com `inicio.spec.ts`. SOBEDESCE `test:fast` **769/769** (4 pulados).
+- Rodado (depois do merge com a main): HUB `lint`, `format:check`, `typecheck`, `npm test` **260/260**, `build`,
+  `test:e2e` **26/26**, `scan-secrets` ok. Maestro `lint`, `format:check`, `typecheck`, `npm test` **330/330**,
+  `build`, `test:e2e` completo **82/82** (6 pulados; inclui `quadro.spec.ts` e `sem-corte` no Chromium e no WebKit).
+  SOBEDESCE `test:fast` **769/769** (4 pulados).
+
+## E-mails da central com cara de e-mail de conta (29/10/2026)
+
+- Convite caiu em Promoções no Gmail (SPF, DKIM e DMARC conferidos no DNS: ok). `apps/hub-web/lib/email/modelos.ts`
+  passa a mandar fundo branco, símbolo e logo pequenos (PNG do site em cinza, nunca anexado), título curto, um botão simples e o endereço por extenso, sem imagem
+  anexada (o `imagens.ts` saiu), sem preenchimento na prévia e sem a faixa de produtos. Lint, formatação, tipos e
+  `npm test` **260/260** (inclui `excluir-conta`: links só para a marca e o contato). Prévias renderizadas no claro e no
+  escuro conferidas no Chromium.
 
 ## Maestro v2, fases 7–10: ponte com o SOBEDESCE, Drive na revisão e Arquivos (29/10/2026)
 
@@ -2008,3 +2018,79 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   no select só valem quando algo transbordava).
 - Não validado: Safari num iPhone de verdade (WebKit do Playwright com emulação) e o iframe do Drive sem a chave (a
   barra dele é do Google).
+
+## Maestro: versão colada na ficha do card (29/10/2026)
+
+- `tests/versoes-card.test.mts` (7): colada no card aparece na ficha (mais nova primeiro) e no lote que já tinha o card
+  (a volta sobe); lote criado depois começa na versão do card; link `http://` e pasta do Drive recusados com a mesma
+  mensagem do lote; leitura lê e não cola (`sem_permissao`); duas organizações; equipe com acesso restrito a outro
+  cliente não vê nem cola; id inválido não chega ao banco. `npm test` **330/330** (33 arquivos).
+- E2E `e2e/versao-card.spec.ts` (computador e iPhone): cola YouTube com Enter (a ficha não envia), pasta do Drive dá o
+  erro do lote e desliga "Adicionar", mp4 por "Adicionar" vira v2; o lote criado depois traz v2 e v1 com a v2 na mesa; a
+  versão colada no lote (Vimeo) aparece na ficha. `sem-corte.spec.ts` ganhou a ficha com Versões e com o erro (375 e
+  393 px, claro e escuro, Chromium e WebKit). `test:e2e` inteiro: **72 passaram, 6 pulados**. `lint`, `format:check`,
+  `typecheck`, `build` ok; `node scripts/scan-secrets.mjs` sem segredo.
+- Capturas: `scratchpad/maestro-versao-card/ficha-versoes-{desktop,phone}-{light,dark}.png`.
+- Não validado: Safari num iPhone de verdade; Drive real (a versão do Drive colada na ficha usa o mesmo
+  `compartilharVersaoSeComLink` do lote, coberto pelos testes do SOBEDESCE).
+
+## Maestro: contrato junto com o orçamento e "Maestro com a sua marca" (29/10/2026)
+
+- HUB: migração `0025` (adicional `maestro-marca-propria` R$ 89,90/mês e `-anual` R$ 899/ano e o Pro v2 com o sinal,
+  tudo em rascunho). `packages/billing/test/stripe.test.ts` (+2): preços, rascunho fora da venda, Pro v2 com as 7
+  ferramentas e os créditos da v1 mais o sinal; o adicional sozinho não abre o Maestro (`checkEntitlement`
+  `entitlement_required`, `productAccessFor` sem contrato), o sinal só sai com o Maestro aberto para a pessoa e não
+  vaza para outra organização. `tests/integration/oidc.test.ts` (+1): `zro_features` no id_token, no access token e no
+  userinfo só para o cliente do Maestro; outro app recebe lista vazia; organização sem o sinal, vazia. Sinal fora dos
+  medidores (`isFeatureFlag`) e da vitrine. Raiz: `lint`, `format:check`, `typecheck` ok, `npm test` **260/260** (33
+  arquivos), `apps/hub-web` build ok, `node scripts/scan-secrets.mjs` sem segredo.
+- Maestro: migração `0020`. `tests/contrato.test.mts` (14): preenchimento e escape das variáveis, listas, o que falta,
+  modelo base só com variáveis conhecidas, números com limites, CPF/CNPJ com dígito, foro pela sede, parcelas que andam
+  com o aceite atrasado; versões só de inclusão (admin salva, gestão lê, equipe e a outra organização não, igual não
+  cria versão, restaurar vira versão); versão imutável até para o dono do banco; aceite com contrato: o banco recusa a
+  função antiga, documento inválido, sem "Li e aceito", hash trocado e modelo velho; aceita uma vez com projeto,
+  parcelas e o registro (hash = sha256 do HTML, CPF formatado, endereço, total, sede, portfólio, IP em HMAC, navegador,
+  auditoria); repetir não duplica; a equipe com dinheiro lê e confere, equipe/leitura/outra organização não; registro não
+  muda nem se apaga (nem como admin), check do hash, contrato de orçamento aprovado não desliga; sem contrato, o aceite
+  de sempre. `tests/marca-propria.test.mts` (4): claim filtrada, `temMarcaPropria` (acesso + sinal; fechado é fechado),
+  acento com 3:1 no claro e no escuro e fallback, login → sinal na organização → releitura apaga; `marca_publica.propria`
+  só na organização com o sinal. `acesso-cliente.test.mts` (+1, política `contratos_cliente`), `demo.test.mts` (o
+  contrato de exemplo sai com a demonstração). `npm test` **321/321**; `lint`, `format:check`, `typecheck`, `build` ok.
+- E2E `e2e/contrato.spec.ts` (computador e iPhone): Ajustes → Contrato salva versão com a prévia ao vivo; "Enviar
+  contrato junto"; o cliente lê o contrato com a marca da produtora e o rodapé só "Powered by Absolute ZRO", preenche
+  CPF e endereço (o texto se completa ao digitar) e aceita; reabre e vê o registro com o hash; a equipe abre "Ver
+  contrato" (aceito · conferido) e o projeto lista o contrato; marca própria: logo na cápsula/topo, título com a
+  produtora, `--acento` com a cor dela, "Powered by"; outra organização sem o sinal vê o cartão do adicional com o link
+  para os planos. `sem-corte.spec.ts` ganhou Ajustes → Contrato e o contrato aceito. `test:e2e` inteiro: **67 passaram,
+  6 pulados, 3 caíram por disco cheio no ambiente (ENOSPC, Chromium travado)**; os 3 rodados de novo passaram (o
+  `negocio` do iPhone e o sem-corte do iPhone no Chromium a 375 escuro e 393 claro e escuro). WebKit (Safari) sem corte
+  nas 4 combinações.
+- Capturas: `scratchpad/maestro-v2/shots/ct-*.png` e `wl-*.png` (claro, escuro e iPhone).
+- Não validado: revisão jurídica do texto do contrato (é modelo base); planos publicados e cobrança do adicional
+  (rascunho até o titular); concessão do sinal à organização do titular em produção; domínio próprio (fora do escopo).
+
+## SOBEDESCE: proxies à vista no lote e números do envio (29/10/2026)
+
+- Pedido do titular: o lote "26 arquivos · 104 GB · 100% · 26 de 26 conferidos" parecia pronto, mas os proxies ainda
+  eram gerados e enviados (só aparecia abrindo o lote), e dava para limpar a fila sem querer. Fonte: `record.previa`
+  de cada envio (o motor já mandava pelo SSE `transfers`); `public/lib/transferencias.js` (`proxiesDoLote`,
+  `proxyResumo`) monta o estado do cartão fechado; nada inventado na tela.
+- Limpar: `TransferManager.clearFinished()` mantém o lote inteiro com proxy pendente (na fila, pausado, gerando ou
+  enviando) e devolve `{ removidos, mantidos }`; `remove(ids)` não tira envio concluído com proxy pendente (a linha
+  esconde "Tirar da lista"; "Pular" continua sendo o jeito de cancelar o proxy). Antes, limpar tirava o registro e o
+  proxy seguia invisível e se perdia ao fechar o app.
+- Números do lote: `src/engine/lote-tempo.js` grava em `batch.stats` o primeiro começo, o último original que chegou, o
+  tempo com algum arquivo andando (vários juntos contam uma vez; fila, pausa e esperas fora), os bytes que passaram e o
+  tempo dos proxies. Média = bytes / tempo andando, em MB/s como o resto do app (Mbps na dica). Lote de versão anterior:
+  relógio inteiro, marcado na dica. O uso diário enviado à conta (`src/engine/uso.js`) já tem bytes e `msAtivo` por dia;
+  não mudou.
+- Bandeja e fechar o app (`desktop/bandeja.js`, `main.js`): com os originais no Drive e proxies andando, "Gerando 3
+  proxies" no menu e na dica, pergunta antes de sair e o computador não dorme.
+- Testes: `test/lote-proxies.test.js` (7 casos: cartão, falhas, conta da média, LoteTempo, bandeja, limpar com o motor de
+  verdade e o Drive falso sem cancelar o proxy, `batch.stats` gravado e lido ao reabrir); `test/server.test.js` com a
+  resposta nova do `/api/transfers/clear`. SOBEDESCE `npm run test:fast` **776 ok, 4 pulados**, 0 falhas; teste de fumaça do
+  Electron (`--smoke`, Linux com xvfb) `SMOKE OK`; `scan-secrets` limpo.
+- Telas: `scripts/ui-stub.js` com `STUB_PROXIES=1` no Chromium do Playwright, claro e escuro (cartão andando, prontos,
+  com falha, e a tela depois de Limpar concluídas com o aviso).
+- Não validado: Electron real com bandeja no Windows/Mac e um lote real de 100 GB (a conta da média foi conferida com
+  números feitos e com o Drive falso).

@@ -29,6 +29,7 @@ import type { Referencias } from "@/lib/quadro/servidor";
 import { Icone } from "@/components/icones";
 import { Folha, useFecharFolha } from "@/components/folha";
 import { AvatarPessoa, iniciaisDe } from "./pecas";
+import { VersoesDoCard } from "./versoes";
 
 type Props = {
   card: CardQ | null;
@@ -474,6 +475,8 @@ function Conteudo({ card, novo, refs, podeEscrever, focar, mudar, criar, apagar,
           />
         )}
       </label>
+
+      {card ? <VersoesDoCard key={card.id} card={card.id} podeEscrever={podeEscrever} /> : null}
 
       {card && (card.dados.cliente || card.dados.projeto) ? (
         <div className="q-ficha__links">

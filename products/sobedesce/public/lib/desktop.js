@@ -3,7 +3,7 @@
 //
 // window.sobedesce = { desktop: true, platform, pickFolder({ title, defaultPath }) → Promise<string|null>,
 //   pickPaths({ title, defaultPath, kind: 'any'|'files' }) → Promise<string[]>, pathForFile(File) → string,
-//   setProgress(fraction|null, activeCount), notify(title, body), openExternal(url), reveal(path) }
+//   setProgress(fraction|null, activeCount, proxies), notify(title, body), openExternal(url), reveal(path) }
 import { api, attempt } from './api.js'
 import { toast } from './toasts.js'
 import { openModal, pickLocal } from './modals.js'
@@ -277,6 +277,8 @@ function guardDrops() {
 // ───── progresso no Dock / barra de tarefas ─────
 
 const WORKING = new Set(['running', 'verifying', 'queued', 'waiting'])
+// Proxy na fila ou sendo feito (pausado não conta): a bandeja e o "Sair?" sabem que ainda há trabalho.
+const PROXY_ANDANDO = new Set(['fila', 'analisando', 'baixando', 'gerando', 'enviando'])
 let lastProgressAt = 0
 let lastProgressKey = ''
 let progressTimer = null
@@ -285,25 +287,27 @@ function computeProgress(transfers) {
   let size = 0
   let done = 0
   let active = 0
+  let proxies = 0
   for (const t of transfers.values()) {
+    if (t.type === 'upload' && PROXY_ANDANDO.has(t.previa?.estado)) proxies++
     if (!WORKING.has(t.status)) continue
     active++
     if (!t.size) continue
     size += t.size
     done += t.status === 'verifying' ? t.size : Math.min(t.size, t.bytesDone || 0)
   }
-  if (!active) return { fraction: null, active: 0 }
-  return { fraction: size ? Math.max(0, Math.min(1, done / size)) : 0, active }
+  if (!active) return { fraction: null, active: 0, proxies }
+  return { fraction: size ? Math.max(0, Math.min(1, done / size)) : 0, active, proxies }
 }
 
 function pushProgress() {
   progressTimer = null
   lastProgressAt = Date.now()
-  const { fraction, active } = computeProgress(getState().transfers)
-  const key = fraction == null ? 'none' : `${fraction.toFixed(3)}:${active}`
+  const { fraction, active, proxies } = computeProgress(getState().transfers)
+  const key = `${fraction == null ? 'none' : `${fraction.toFixed(3)}:${active}`}:${proxies}`
   if (key === lastProgressKey) return
   lastProgressKey = key
-  safe(() => bridge.setProgress(fraction, active))
+  safe(() => bridge.setProgress(fraction, active, proxies))
 }
 
 function scheduleProgress() {

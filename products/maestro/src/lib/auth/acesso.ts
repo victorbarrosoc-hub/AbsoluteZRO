@@ -33,6 +33,17 @@ export function temAcesso(a: Acesso): boolean {
   return liberacao(a) !== "closed" && a.produtos.includes(PRODUTO);
 }
 
+/** O sinal do HUB para "Maestro com a sua marca" (adicional ou Pro; migração 0025 do HUB). */
+export const MARCA_PROPRIA = "maestro.marca_propria";
+
+/**
+ * White-label (plano v2 §8, fase 20): o app inteiro com a marca da produtora. Precisa do acesso ao Maestro e do sinal
+ * `maestro.marca_propria` na claim `zro_features` da organização. Sem o sinal (ou sem a claim), nada muda.
+ */
+export function temMarcaPropria(a: Acesso & { recursos?: readonly string[] | null }): boolean {
+  return temAcesso(a) && (a.recursos ?? []).includes(MARCA_PROPRIA);
+}
+
 /**
  * Outro produto do ecossistema (ex.: `sobedesce`, para a aba Arquivos): a organização o tem em `zro_products` e o gate
  * não o fecha para esta conta. O HUB já tira de `zro_products` o que está fechado; se a claim `zro_release` citar o

@@ -44,7 +44,8 @@ const nextConfig: NextConfig = {
     serverActions: { bodySizeLimit: "5mb" },
     // Troca de seção na hora (pedido do titular, 29/10/2026): o roteador guarda a seção visitada por 30 s e a
     // pré-busca inteira (intenção na cápsula, abas do celular) por 60 s. O cache é deste navegador e desta sessão; toda
-    // Server Action com revalidatePath o limpa, e o Quadro pergunta "o que mudou" ao abrir.
+    // Server Action daqui chama revalidatePath (que o limpa), o login e a saída são rotas (página inteira), e o Quadro
+    // pergunta "o que mudou" ao abrir. Ação nova que redireciona sem revalidatePath reaproveitaria a tela guardada.
     staleTimes: { dynamic: 30, static: 60 },
   },
   async headers() {

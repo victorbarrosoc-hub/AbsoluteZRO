@@ -18,8 +18,8 @@ export async function entrarNaOrganizacao(perfil: PerfilZro, agora = new Date())
   return getBanco().asSystem("login: organização e membro", async (tx) => {
     const [o] = await tx
       .insert(organizations)
-      .values({ zroOrgId: org.id, name: org.name, zroProducts: perfil.produtos })
-      .onConflictDoUpdate({ target: organizations.zroOrgId, set: { name: org.name, zroProducts: perfil.produtos } })
+      .values({ zroOrgId: org.id, name: org.name, zroProducts: perfil.produtos, zroFeatures: perfil.recursos })
+      .onConflictDoUpdate({ target: organizations.zroOrgId, set: { name: org.name, zroProducts: perfil.produtos, zroFeatures: perfil.recursos } })
       .returning({ id: organizations.id, name: organizations.name });
     const pessoa = { displayName: perfil.nome, email: perfil.email, pictureUrl: perfil.foto, hubRole: org.role || null, role: papel, lastLoginAt: agora };
     await tx

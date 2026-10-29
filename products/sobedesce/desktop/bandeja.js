@@ -51,20 +51,40 @@ export function textoTransferencias(n) {
   return v === 1 ? '1 transferência em andamento' : `${v} transferências em andamento`
 }
 
+/** Proxies (cópias leves) ainda sendo gerados e enviados, depois de os originais chegarem. Zero: null. */
+export function textoProxies(n) {
+  const v = Math.max(0, Number(n) || 0)
+  if (!v) return null
+  return v === 1 ? 'Gerando 1 proxy' : `Gerando ${v} proxies`
+}
+
 /** Dica ao parar o ponteiro no ícone. */
-export function dicaBandeja(n) {
-  return Number(n) > 0 ? `SOBEDESCE · ${textoTransferencias(n)}` : 'SOBEDESCE'
+export function dicaBandeja(n, proxies = 0) {
+  if (Number(n) > 0) return `SOBEDESCE · ${textoTransferencias(n)}`
+  const p = textoProxies(proxies)
+  return p ? `SOBEDESCE · ${p}` : 'SOBEDESCE'
 }
 
 /** Menu da bandeja como lista (o main.js monta o Menu do Electron e liga cada `acao`). */
-export function modeloMenuBandeja(transferencias) {
+export function modeloMenuBandeja(transferencias, proxies = 0) {
+  const p = textoProxies(proxies)
   return [
     { tipo: 'item', acao: 'abrir', rotulo: 'Abrir SOBEDESCE' },
     { tipo: 'separador' },
-    { tipo: 'item', rotulo: textoTransferencias(transferencias), ativo: false },
+    // Originais no Drive e proxies andando: "Nenhuma transferência" sozinho pareceria que acabou tudo.
+    ...(p && !(Number(transferencias) > 0) ? [] : [{ tipo: 'item', rotulo: textoTransferencias(transferencias), ativo: false }]),
+    ...(p ? [{ tipo: 'item', rotulo: p, ativo: false }] : []),
     { tipo: 'separador' },
     { tipo: 'item', acao: 'sair', rotulo: 'Sair' },
   ]
+}
+
+/** Texto do "Sair do SOBEDESCE?" com transferências e/ou proxies andando. */
+export function detalheSair(transferencias, proxies = 0) {
+  const n = Math.max(0, Number(transferencias) || 0)
+  const p = Math.max(0, Number(proxies) || 0)
+  if (n > 0) return `${n === 1 ? 'Há 1 transferência' : `Há ${n} transferências`} em andamento. Elas pausam agora e continuam de onde pararam quando você abrir o app de novo.`
+  return `Os originais já estão no Drive, mas ${p === 1 ? 'falta 1 proxy' : `faltam ${p} proxies`}. Eles param agora e continuam quando você abrir o app de novo.`
 }
 
 /** Arquivo do ícone para cada sistema (desktop/bandeja/, gerado por scripts/bandeja-icones.mjs). */

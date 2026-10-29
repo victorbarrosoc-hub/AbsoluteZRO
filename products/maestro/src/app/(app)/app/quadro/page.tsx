@@ -3,6 +3,7 @@ import { podeEscrever, podeRemover } from "@/lib/papeis";
 import { carregarCards, referenciasDoQuadro } from "@/lib/quadro/servidor";
 import { Quadro } from "@/components/quadro/quadro";
 import { CarregarDemonstracao } from "@/components/demonstracao";
+import "../../../versoes-card.css";
 
 export const metadata = { title: "Quadro" };
 

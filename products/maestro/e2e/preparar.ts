@@ -12,6 +12,7 @@ export const ARQUIVO_SESSAO_COMERCIAL = "test-results/e2e-sessao-comercial.json"
 export const ARQUIVO_SESSAO_NEGOCIO = "test-results/e2e-sessao-negocio.json";
 export const ARQUIVO_SESSAO_DRIVE = "test-results/e2e-sessao-drive.json";
 export const ARQUIVO_SESSAO_CORTE = "test-results/e2e-sessao-corte.json";
+export const ARQUIVO_SESSAO_CONTRATO = "test-results/e2e-sessao-contrato.json";
 /** A ponte falsa (HUB + SOBEDESCE de mentira, tests/ponte-falsa.mts) do e2e de Arquivos: MAESTRO_PONTE_URL no servidor. */
 export const PORTA_PONTE = Number(process.env.E2E_PONTE_PORT || 3219);
 
@@ -214,6 +215,34 @@ export default async function preparar() {
         o: tokenOrc,
       }),
     );
+    // Uma sétima organização para o contrato e a marca própria (e2e/contrato.spec.ts): a demonstração inteira e o sinal
+    // maestro.marca_propria na organização (como o HUB mandaria na claim zro_features).
+    const SUB_CT = "00000000-0000-4000-8000-000000000ca2";
+    const orgCt = await getBanco().asSystem("e2e: semente do contrato", async (tx) => {
+      const [org] = await tx
+        .insert(schema.organizations)
+        .values({
+          zroOrgId: "00000000-0000-4000-8000-000000000ca1",
+          name: "Contrato E2E",
+          zroProducts: ["maestro"],
+          zroFeatures: ["maestro.marca_propria"],
+        })
+        .returning({ id: schema.organizations.id });
+      await tx.insert(schema.members).values({ orgId: org.id, zroSub: SUB_CT, displayName: "Clara Contrato", hubRole: "owner", role: "admin" });
+      return org.id;
+    });
+    const ctxCt = { sub: SUB_CT, orgId: orgCt };
+    const ct = await carregarDemonstracao(ctxCt);
+    if (!ct.ok) throw new Error(ct.mensagem);
+    const [rasc] = await getBanco().asUser(
+      ctxCt,
+      async (tx) =>
+        (await tx.execute(
+          q`select id from maestro.orcamentos where status = 'rascunho' and (validade is null or validade >= current_date) order by numero limit 1`,
+        )) as unknown as { id: string }[],
+    );
+    const sCt = await criarSessao({ orgId: orgCt, sub: SUB_CT, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    writeFileSync(ARQUIVO_SESSAO_CONTRATO, JSON.stringify({ token: sCt.token, rascunho: rasc?.id ?? null }));
   } finally {
     await fecharBanco();
   }

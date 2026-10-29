@@ -12,7 +12,7 @@ import { hashToken } from "@/lib/auth/cripto";
 import { somarDias } from "@/lib/dinheiro";
 import { gravarEquipFreela, marcarEquipNaEscalaNaTx, type CategoriaEquipFreela } from "@/lib/freelas/equipamentos";
 import { prepararLogo } from "@/lib/marca/logo";
-import { gerarLinkDoOrcamentoNaTx } from "@/lib/orcamento/link";
+import { contratoDoAceite, gerarLinkDoOrcamentoNaTx } from "@/lib/orcamento/link";
 import { criarLinkDePedidoNaTx, gerarOrcamentoDoPedidoNaTx } from "@/lib/pedidos/equipe";
 import { lerConfig, type RespostasPedido } from "@/lib/pedidos/formulario";
 
@@ -238,11 +238,27 @@ export async function montarPedidos(tx: Tx, ctx: Contexto, hoje: string): Promis
     )[0].titulo;
     const projeto = projetos.find((x) => x.title === titulo);
     if (projeto) await tx.execute(sql`update maestro.orcamentos set projeto_id = ${projeto.id} where id = ${g.orcamentoId}`);
+    // O aceito leva o contrato junto (Ajustes → Contrato; o modelo base, se a produtora não tem um).
+    if (p.fim_ === "aceito") await tx.execute(sql`update maestro.orcamentos set contrato = true where id = ${g.orcamentoId}`);
     const link = await gerarLinkDoOrcamentoNaTx(tx, ctx, g.orcamentoId, 2, hoje);
     if (!link.ok || p.fim_ !== "aceito") continue;
-    // O "cliente" aceita pela porta estreita, como se tivesse aberto o link.
+    // O "cliente" aceita pela porta estreita, como se tivesse aberto o link: lê o orçamento e o contrato, preenche com
+    // dados de exemplo (CNPJ de exemplo da Receita, endereço fictício) e aceita os dois.
+    const th = hashToken(link.token);
+    const [ab] = (await tx.execute(sql`select maestro.orcamento_link_abrir(${th}) as r`)) as unknown as { r: unknown }[];
+    const [cn] = (await tx.execute(sql`select maestro.orcamento_link_contrato(${th}) as r`)) as unknown as { r: unknown }[];
+    const corpo = {
+      nome: p.nome,
+      aceite: true,
+      contrato: true,
+      documento: "11.222.333/0001-81",
+      endereco: "Rua de Exemplo, 100, São Paulo/SP",
+      portfolio: true,
+    };
+    const ct = contratoDoAceite(ab.r, cn.r, corpo, hoje);
+    if (!ct.ok) throw new Error(`demonstração: contrato recusado (${ct.erro})`);
     const [ac] = (await tx.execute(
-      sql`select maestro.orcamento_link_aceitar(${hashToken(link.token)}, ${JSON.stringify({ nome: p.nome, aceite: true })}::jsonb) as r`,
+      sql`select maestro.orcamento_link_aceitar_contrato(${th}, ${JSON.stringify({ nome: p.nome, aceite: true, contrato: ct.contrato })}::jsonb) as r`,
     )) as unknown as { r: { ok?: boolean; erro?: string } }[];
     if (!ac.r.ok) throw new Error(`demonstração: aceite recusado (${ac.r.erro})`);
     // O projeto que nasceu do aceite é de exemplo: numeração DEMO e nunca liga ao HUB.

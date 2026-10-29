@@ -171,7 +171,7 @@ async function relerPerfil(s: Sessao): Promise<Sessao | "revogado" | null> {
   const p: PerfilZro = perfil;
   if (p.sub !== s.sub) return "revogado";
   await aplicarPerfilNaSessao(s, p);
-  return { ...s, nome: p.nome, email: p.email, foto: p.foto, produtos: p.produtos, release: p.release, perfilLidoEm: new Date() };
+  return { ...s, nome: p.nome, email: p.email, foto: p.foto, produtos: p.produtos, release: p.release, recursos: p.recursos, perfilLidoEm: new Date() };
 }
 
 /** GET /api/zro/eu: quem está logado, com `acesso` (o Maestro em zro_products) relido na Absolute ZRO. */

@@ -19,10 +19,11 @@ import {
   verifyJwt,
   type AuthorizeRequest,
 } from '@zro/auth'
+import { grantEntitlement } from '@zro/billing'
 import { loadOidcClaims } from '@zro/core'
 import type { Database } from '@zro/db'
 import { testDatabase } from '@zro/db/testing'
-import { admin, allowRelease, givePlan, newOrgWithOwner, newUser } from './helpers'
+import { admin, allowRelease, giveLimits, givePlan, newOrgWithOwner, newUser } from './helpers'
 
 let db: Database
 const ISS = 'https://hub.teste.absolutezro.local'
@@ -304,6 +305,52 @@ describe('gate de lançamento (ADR 0023)', () => {
     const p = pkce()
     const t3 = await exchange(aberto, await login(aberto.clientId, o.userId, o.orgId, p.challenge), p.verifier)
     expect((await userInfo(db, `Bearer ${t3.access_token}`, loadOidcClaims)).zro_products).toContain('sobedesce')
+  })
+})
+
+describe('zro_features (sinais de recurso, 0025)', () => {
+  const basic = (c: { clientId: string; clientSecret: string | null }) => `Basic ${Buffer.from(`${c.clientId}:${c.clientSecret}`).toString('base64')}`
+  const exchange = (c: { clientId: string; clientSecret: string | null }, code: string, verifier: string) =>
+    exchangeToken(
+      db,
+      parseTokenRequest(form({ grant_type: 'authorization_code', code, redirect_uri: 'https://app.teste/callback', code_verifier: verifier }), basic(c)),
+      loadOidcClaims,
+    )
+
+  it('o token do Maestro leva maestro.marca_propria só com o sinal; o de outro app, nada; sem o sinal, lista vazia', async () => {
+    const o = await newOrgWithOwner(db, 'zro-features')
+    const sem = await newOrgWithOwner(db, 'zro-features-sem')
+    await allowRelease(db, 'maestro', o.userId, { channels: ['sso', 'web'] })
+    await allowRelease(db, 'maestro', sem.userId, { channels: ['sso', 'web'] })
+    for (const org of [o.orgId, sem.orgId]) await giveLimits(db, org, 'maestro', {})
+    const adminId = await admin(db)
+    await db.asSystem('t', (tx) =>
+      grantEntitlement(
+        tx,
+        { userId: adminId, reason: 'adicional' },
+        { orgId: o.orgId, productId: 'maestro', features: [], limits: { 'maestro.marca_propria': 1 }, endsAt: null },
+      ),
+    )
+    const signer = await loadSigner(db)
+    const maestro = await newClient('confidential', ['https://app.teste/callback'], false, 'maestro')
+    const p = pkce()
+    const t = await exchange(maestro, await login(maestro.clientId, o.userId, o.orgId, p.challenge), p.verifier)
+    const id = verifyJwt(signer, t.id_token, { typ: 'JWT', issuer: ISS })!
+    expect(id.zro_features).toEqual(['maestro.marca_propria'])
+    expect(id.zro_products).toContain('maestro')
+    expect(verifyJwt(signer, t.access_token, { typ: 'at+jwt', issuer: ISS })!.zro_features).toEqual(['maestro.marca_propria'])
+    expect((await userInfo(db, `Bearer ${t.access_token}`, loadOidcClaims)).zro_features).toEqual(['maestro.marca_propria'])
+
+    const outro = await newClient()
+    const p2 = pkce()
+    const t2 = await exchange(outro, await login(outro.clientId, o.userId, o.orgId, p2.challenge), p2.verifier)
+    expect(verifyJwt(signer, t2.id_token, { typ: 'JWT', issuer: ISS })!.zro_features).toEqual([])
+
+    const p3 = pkce()
+    const t3 = await exchange(maestro, await login(maestro.clientId, sem.userId, sem.orgId, p3.challenge), p3.verifier)
+    const id3 = verifyJwt(signer, t3.id_token, { typ: 'JWT', issuer: ISS })!
+    expect(id3.zro_products).toContain('maestro')
+    expect(id3.zro_features).toEqual([])
   })
 })
 

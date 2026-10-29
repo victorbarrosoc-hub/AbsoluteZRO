@@ -404,13 +404,34 @@ Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   `zro-pedido+jwt` (`aud` `maestro-web`, ação `maestro.resumo`, 60 s, `jti` novo); fonte e hora em toda resposta,
   dinheiro só quando o Maestro manda (administração e gestão); auditoria `ia.maestro.leitura`. No Maestro, a lista
   `ACOES_ABERTAS` aceita só `maestro.resumo`. Sem variável nova obrigatória.
-- ⬜ Maestro, do mesmo estudo e à espera do titular: contrato por modelo (item 4); a Z **escrevendo** no Maestro (criar
+- ✅ Maestro, contrato junto com o orçamento (29/10/2026; estudo MakersHub item 4, "Escreva" do titular): modelo base
+  de "Contrato de prestação de serviços audiovisuais" em português com `{{variáveis}}` e todos os números configuráveis
+  (revisões, multas, prazos, licença, foro), Ajustes → Contrato com chips, prévia ao vivo, versões só de inclusão e
+  restaurar; "Enviar contrato junto" por orçamento; em `/o` o cliente informa CPF/CNPJ e endereço, escolhe o portfólio e
+  aceita, e fica o registro imutável (HTML + sha256 conferido pelo banco, hora, IP em HMAC, navegador) com PDF pelo
+  navegador para os dois lados; links no orçamento, projeto e cliente; demonstração com um aceito. Migração `0020` do
+  Maestro. "Modelo base; revise com um advogado" e "aceite eletrônico, não ICP-Brasil" na tela. Falta: revisão
+  jurídica do texto pelo titular; assinatura com certificado (paga) só com nova decisão.
+- ✅ Maestro com a sua marca, fase 20 (29/10/2026; "pode aplicar" do titular): o logo no timbrado e nas páginas do
+  cliente segue grátis; o app inteiro com o logo e a cor da produtora e só "Powered by Absolute ZRO" é o adicional
+  R$ 89,90/mês ou R$ 899/ano, incluído no Pro. HUB: migração `0025` (planos `maestro-marca-propria`/`-anual` e Pro v2,
+  **em rascunho** até o titular revisar os preços; o adicional dá só o sinal, nunca a ferramenta), claim nova
+  `zro_features` (só os sinais do produto do app, com o gate). Maestro: sinal em `organizations.zro_features`, shell com
+  a marca, acento com 3:1 no claro e no escuro, páginas do cliente sem a marca do Maestro, cartão "Disponível no Pro ou
+  como adicional" com link para os planos. Falta: o titular revisar e publicar os planos no console (e conceder o sinal à
+  organização dele para testar: Concessão, produto Maestro, limite `maestro.marca_propria` = 1); domínio próprio
+  depois, com autorização.
+- ⬜ Maestro, do mesmo estudo e à espera do titular: a Z **escrevendo** no Maestro (criar
   pedido, despesa, marcar contato, sempre com a ação exata e o "sim"; cota e plano da Z); sincronia de duas vias com o Google Agenda (OAuth); eventos
   `maestro.pedido.ganho`, `maestro.orcamento.aceito` e `maestro.projeto.criado` no HUB (desenho no mapa).
 - ⬜ Maestro v2, depois: kits e modelos de projeto, etiquetas QR e manutenções do inventário, PDF gerado no servidor
-  (hoje é a impressão do navegador), white-label no app inteiro (plano e preço pelo titular), retenção configurável dos
+  (hoje é a impressão do navegador), domínio próprio da produtora, retenção configurável dos
   pedidos, ligar o inventário do Carro do Freela quando ele tiver banco (endpoint assinado no Maestro e a rota sai de
   `DISABLED_ROUTES`).
+- ✅ Maestro, versão colada na ficha do card (29/10/2026, pedido do titular): o bloco "Versões" abaixo do Briefing
+  lista v1, v2… (fonte e link para abrir) e cola o próximo link (Enter ou "Adicionar") pelo mesmo caminho do lote
+  (`useNovaVersao` → `novaVersaoAcao` → `maestro.versao_criar`; mesmas fontes, mensagens e papéis; leitura vê sem o
+  campo). O lote que tem o card já mostra a versão. Apagar versão continua sem tela (nem no lote).
 - ✅ Maestro, nada cortado no iPhone (29/10/2026; relato do titular no lote de Aprovações): detector de corte
   (`e2e/corte.ts`) e `e2e/sem-corte.spec.ts` em todas as telas a 375 e 393 px, claro e escuro, Chromium e WebKit
   (Safari); faixa com rolagem de lado só com `data-rolagem` e ponta esmaecida enquanto há mais; no lote, CSV/EDL/Fechar
@@ -480,6 +501,13 @@ Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   quantas transferências andam e "Sair"; fechar no X com transferência andando vai para a bandeja. Barra lateral cabe
   em 1280×720 com 125% sem rolagem: aviso de versão vira pílula com balão, a família vira uma linha com balão. Falta o
   titular autorizar o instalador novo.
+- ✅ **SOBEDESCE: proxies à vista no lote e números do envio** (29/10/2026, pedido do titular): o cartão fechado de um
+  envio com os originais no Drive e os proxies andando diz "Originais no Drive · gerando proxies 3 de 26" (anel no ícone,
+  "proxies 3/26" à direita); depois "26 proxies prontos em 18 min" ou "2 proxies falharam · Tentar de novo". Limpar
+  concluídas e "Tirar da lista" não tiram lote com proxy pendente nem cancelam o proxy ("1 lote ficou: ainda gerando
+  proxies."); a bandeja mostra "Gerando 3 proxies" e fechar o app pergunta antes. Lote terminado mostra "104 GB em 1 h
+  12 min · 24,6 MB/s" (média pelo tempo transferindo), gravado em `queue.json` (`batch.stats`). Falta publicar o
+  instalador (autorização do titular).
 - ⬜ Pastas dos quatro produtos fechados (`RELEASE=closed`, telas, `/api/zro/*` com 403, instaladores e Releases) —
   outros agentes, no mesmo branch.
 - ⛔ Em produção, só com autorização: inserir a conta do proprietário em `product_release_access` e rodar o
