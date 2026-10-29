@@ -2053,3 +2053,26 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   com falha, e a tela depois de Limpar concluídas com o aviso).
 - Não validado: Electron real com bandeja no Windows/Mac e um lote real de 100 GB (a conta da média foi conferida com
   números feitos e com o Drive falso).
+
+## SOBEDESCE: "Agora sua conta é Absolute ZRO" para contas antigas (29/10/2026)
+
+- Decisão do titular: contas antigas sem `contas_zro` (várias com Drive em `contas_google`) precisam ligar a Absolute
+  ZRO para o ecossistema achar o Drive, sem tirar ninguém da conta e sem parar transferência. Regra em
+  `web/src/lib/zro/ligar.ts`; o botão usa o `modo=vincular` de sempre. Vínculo novo → 303 para
+  `ZRO_CONEXOES_URL` (padrão `${ZRO_ISSUER}/conexoes`); religar segue em `?zro=ok`; vínculo novo exige e-mail confirmado.
+- Site: `/conta` e `/z` trocam a página pela tela (`components/conta/ligar-zro.tsx`). `/dispositivo`, `/admin` e a API
+  não mudam; `/api/eu` ganhou `zro: { ligada, pedir, ligar }`.
+- Celular (`web/public/app`): tela inteira no lugar das abas; com envio andando, faixa fixa e link em outra janela.
+- Computador: `CloudAuth` lê `zro` do `/api/eu`; `POST /api/cloud/zro/ligar` devolve o endereço e confere a cada 3 s.
+  Folha com o app parado, faixa fixa com transferência ou cartão andando; a fila não é tocada.
+- Testes: `web/tests/zro-ligar.test.mts` (11 casos: tela aparece e some, API sem 403 para Drives/token/andamento,
+  Conexões e `ZRO_CONEXOES_URL`, outra conta, e-mail não confirmado, cancelar, sem SOBEDESCE em `zro_products`, sem
+  configuração, render da tela); web `npm test` **291 ok**, lint e typecheck limpos, `next build` ok.
+  `test/ligar-zro.test.js` (5 casos, com envio real no Drive falso terminando conferido enquanto a conta liga);
+  `npm run test:fast` **779 ok, 4 pulados**; as 2 falhas da rodada foram o teste do cache do app (já corrigido) e
+  `revela.test.js` sem espaço em disco nesta máquina (precisa de 1,1 GB). Fumaça do Electron (`--smoke`, xvfb)
+  `SMOKE OK`; `scan-secrets` limpo.
+- Telas: `next start` com banco e Absolute ZRO falsos (site claro/escuro, celular claro/escuro, recados) e
+  `scripts/ui-stub.js` com `STUB_ZRO=folha|faixa` (app do computador) no Chromium do Playwright.
+- Não validado: a página de Conexões da central (outro deploy), o caminho no iPhone com o app instalado (folha do
+  navegador por cima ao tocar na faixa) e o Electron de verdade abrindo o navegador do sistema.

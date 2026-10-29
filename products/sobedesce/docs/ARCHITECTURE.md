@@ -930,6 +930,7 @@ Respostas JSON `{ ok: true, ... }` ou `{ ok: false, error: 'mensagem PT-BR' }` c
 | POST | `/api/cloud/login/cancel` | | `{ cloud }` |
 | POST | `/api/cloud/logout` | | `{ cloud }` |
 | POST | `/api/cloud/refresh` | | `{ cloud }` (relê /api/eu) |
+| POST | `/api/cloud/zro/ligar` | | `{ url, cloud }`: o vincular da Absolute ZRO no site, para abrir no navegador; o motor confere a conta a cada 3 s até `cloud.zro.pedir` virar false (docs/CONTAS.md §12) · `409` sem conta |
 | GET | `/api/drive/:acc/about` | | `{ about }` |
 | GET | `/api/drive/:acc/drives` | | `{ drives }` |
 | GET | `/api/drive/:acc/list` | `folderId` (padrão `root`) | `{ folder, path, items }` |

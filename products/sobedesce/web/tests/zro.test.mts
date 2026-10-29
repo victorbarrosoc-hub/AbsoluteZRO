@@ -149,6 +149,8 @@ describe("Sua conta", () => {
     assert.ok(c.ok);
     const bia: PessoaZro = { sub: "zro-bia", email: "bia.zro@exemplo.com", nome: "Bia" };
     const v = await fluxo({ modo: "vincular", pessoa: bia, sessao: c.token });
+    // Ligou agora, mas sem a SOBEDESCE em zro_products: fica em Sua conta (com a SOBEDESCE, vai para as Conexões,
+    // tests/zro-ligar.test.mts).
     assert.equal(v.destino, "/conta?zro=ok");
     const e = await fluxo({ pessoa: bia });
     const a = await sessao.autenticar({ cookie: e.cookies.get("sd_sessao") });

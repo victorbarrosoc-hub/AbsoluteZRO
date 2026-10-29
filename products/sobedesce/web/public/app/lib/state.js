@@ -10,6 +10,8 @@ let state = {
   // issue (com a tela principal aberta): null | 'reconectar' (o Google pediu nova autorização) | 'rede' (sem resposta)
   auth: { status: LAN ? 'signedIn' : 'loading', issue: null, error: null },
   account: null, // conta SOBEDESCE { id, email, nome }
+  zro: null, // vínculo com a Absolute ZRO { ligada, pedir } (lib/ligar-zro.js); null = o servidor não disse
+  zroErro: null, // ?erro= da volta do vincular (só os zro_*), lido uma vez ao abrir
   drives: [], // Google Drives da conta: [{ id, email, nome, fotoUrl, estado: 'ok' | 'reconectar' }]
   drive: null, // o Drive escolhido neste aparelho (um dos acima)
   resumeAt: 0, // o Drive voltou depois de "reconectar": retomar o que pausou por isso

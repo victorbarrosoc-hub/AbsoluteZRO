@@ -27,17 +27,25 @@ import { Computadores } from "./computadores";
 import { Drives } from "./drives";
 import { FormDesligarZro, FormNome, FormPrimeiraSenha, FormSenha } from "./forms";
 import { ApagarConta } from "./apagar";
-import { BotaoSair } from "./sair";
+import { BotaoSair, SairDiscreto } from "./sair";
 import { SemAcessoZro } from "../sem-acesso";
+import { LigarZro } from "@/components/conta/ligar-zro";
+import { precisaLigarZro } from "@/lib/zro/ligar";
 
 export const metadata: Metadata = { title: "Sua conta" };
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 export default async function Conta({ searchParams }: Props) {
-  const { usuario, liberado } = await exigirUsuario("/conta");
+  const atual = await exigirUsuario("/conta");
+  const { usuario, liberado } = atual;
   if (!liberado) return <SemAcessoZro volta="/conta" />;
   const q = await searchParams;
+  // Conta antiga sem vínculo com a Absolute ZRO: a tela de ligar, uma vez (lib/zro/ligar.ts).
+  if (precisaLigarZro(atual)) {
+    const drives = await listarContas(usuario.id);
+    return <LigarZro volta="/conta" erro={typeof q.erro === "string" ? q.erro : undefined} temDrive={drives.length > 0} sair={<SairDiscreto />} />;
+  }
   const [contas, dispositivos, temSenha, admin, referencias, computadores, links, entrar, macs, zro] = await Promise.all([
     listarContas(usuario.id),
     listarDispositivos(usuario.id),

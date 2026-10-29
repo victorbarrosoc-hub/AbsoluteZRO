@@ -9,6 +9,10 @@ import { buttonClasses } from "@/components/ui/button";
 import { ehAdmin } from "@/lib/admin";
 import { usuarioAtual } from "@/lib/auth/atual";
 import { SemAcessoZro } from "../sem-acesso";
+import { SairDiscreto } from "../conta/sair";
+import { LigarZro } from "@/components/conta/ligar-zro";
+import { listarContas } from "@/lib/google/contas";
+import { precisaLigarZro } from "@/lib/zro/ligar";
 
 export const metadata: Metadata = { title: "Z" };
 
@@ -17,9 +21,14 @@ export const metadata: Metadata = { title: "Z" };
  * primeira aba e a tela de entrada da área logada (lib/auth/volta.ts › destinoDeEntrada). A Z ocupa a tela; sem
  * login, o "Entrar" fica aqui mesmo, e sem o token da Z o painel mostra "Reconectar com Absolute ZRO".
  */
-export default async function PaginaZ() {
+export default async function PaginaZ({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const atual = await usuarioAtual();
   if (atual && !atual.liberado) return <SemAcessoZro volta="/z" />;
+  // Conta antiga sem vínculo com a Absolute ZRO: a tela de ligar, uma vez (lib/zro/ligar.ts).
+  if (atual && precisaLigarZro(atual)) {
+    const [q, drives] = await Promise.all([searchParams, listarContas(atual.usuario.id)]);
+    return <LigarZro volta="/z" erro={typeof q.erro === "string" ? q.erro : undefined} temDrive={drives.length > 0} sair={<SairDiscreto />} />;
+  }
   const admin = atual ? await ehAdmin(atual.usuario) : false;
 
   return (

@@ -88,6 +88,11 @@ export type Autenticado = {
    * login). A pessoa continua logada, mas as funções da conta ficam bloqueadas (lib/zro/acesso.ts).
    */
   liberado: boolean;
+  /**
+   * A conta tem linha em contas_zro. Conta antiga sem vínculo (false) segue funcionando, mas as telas pedem uma vez
+   * para ligar a Absolute ZRO (lib/zro/ligar.ts); a API nunca bloqueia por isso.
+   */
+  ligadoZro: boolean;
 };
 
 export async function criarSessao(
@@ -184,6 +189,7 @@ export async function autenticar(credenciais: {
     sessao: { id: linha.sessao.id, tipo: linha.sessao.tipo, nome: linha.sessao.nome, plataforma: linha.sessao.plataforma, expiraEm },
     via,
     liberado: liberadoPelaZro(linha.produtosZro),
+    ligadoZro: linha.produtosZro !== null,
   };
 }
 

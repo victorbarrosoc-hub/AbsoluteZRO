@@ -21,6 +21,7 @@ import { SetupScreen } from './components/setup.js'
 import { ModalHost } from './components/modal.js'
 import { Toasts } from './components/toasts.js'
 import { OAuthWaitDialog } from './components/oauth-wait.js'
+import { LigarZro } from './components/ligar-zro.js'
 import { abertura } from './lib/abertura.js'
 import { telaDeEntrada } from './lib/entrada.js'
 
@@ -133,6 +134,7 @@ function App() {
     ${inSetup ? html`<${SetupScreen} route=${route} />` : html`<${Shell} route=${route} />`}
     <${ModalHost} />
     ${oauthWait && !inSetup ? html`<${OAuthWaitDialog} />` : null}
+    <${LigarZro} />
     <${Toasts} />
   `
 }

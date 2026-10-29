@@ -29,6 +29,8 @@ const DEFAULT_INTERVAL_S = 3
 const MAX_INTERVAL_MS = 15_000
 const DEFAULT_LOGIN_TTL_MS = 10 * 60_000
 const READY_SHOWN_MS = 60_000 // "Pronto. Seus Drives apareceram aqui." fica na tela só esse tempo depois de entrar
+const ZRO_WATCH_MS = 3_000 // depois de "Continuar com Absolute ZRO": confere a conta a cada 3 s...
+const ZRO_WATCH_TTL_MS = 15 * 60_000 // ...por até 15 min (depois, o refresh normal de 5 min segue conferindo)
 
 export const MSG_RECONNECT = 'Reconecte este Drive em sobedesce.com/conta'
 const MSG_SIGNED_OUT = 'Sua sessão na conta SOBEDESCE terminou. Entre de novo para usar seus Drives.'
@@ -83,6 +85,16 @@ function normalizeUsuario(raw) {
   }
 }
 
+/**
+ * `zro` do /api/eu (web/src/lib/zro/ligar.ts): conta antiga sem vínculo com a Absolute ZRO. Servidor antigo (sem o
+ * campo) → null: o app não pede nada. `ligar` só vale como caminho do próprio site.
+ */
+export function normalizeZro(raw) {
+  if (!raw || typeof raw !== 'object') return null
+  const ligar = typeof raw.ligar === 'string' && raw.ligar.startsWith('/api/zro/entrar?') ? raw.ligar : '/api/zro/entrar?modo=vincular&volta=%2Fconta'
+  return { ligada: raw.ligada === true, pedir: raw.pedir === true, ligar }
+}
+
 function webUrl(value, base) {
   try {
     const u = new URL(String(value), base)
@@ -124,8 +136,9 @@ export class CloudAuth extends EventEmitter {
    *   refreshEveryMs?: number, retryBaseMs?: number, pollMs?: number|null, readyShownMs?: number, log?: Function }} [opts]
    *   `pollMs`: intervalo fixo entre consultas do login (só testes; o normal é o `intervalo` do site, mínimo 1 s).
    *   `readyShownMs`: por quanto tempo o login fica "pronto" (o aviso de sucesso) antes de voltar a "nenhum".
+   *   `zroWatchMs`: intervalo da conferência depois de "Continuar com Absolute ZRO" (3 s; menor só nos testes).
    */
-  constructor({ paths = dataPaths(), baseUrl, deviceName = null, platform = process.platform, build = readBuildInfo().build, refreshEveryMs = REFRESH_EVERY_MS, retryBaseMs = 400, pollMs = null, readyShownMs = READY_SHOWN_MS, log, segredos = null } = {}) {
+  constructor({ paths = dataPaths(), baseUrl, deviceName = null, platform = process.platform, build = readBuildInfo().build, refreshEveryMs = REFRESH_EVERY_MS, retryBaseMs = 400, pollMs = null, readyShownMs = READY_SHOWN_MS, zroWatchMs = ZRO_WATCH_MS, log, segredos = null } = {}) {
     super()
     this.paths = paths
     this.file = paths.cloud
@@ -141,6 +154,7 @@ export class CloudAuth extends EventEmitter {
     this.pollMs = pollMs
     this.readyShownMs = readyShownMs
     this.readyTimer = null
+    this.zroWatchMs = zroWatchMs
     this.log = log || ((...args) => console.warn('[conta]', ...args))
     this.session = null // { token, usuario, contas, entrouEm, atualizadoEm }
     this.tokens = new Map() // contaId -> { token, expiresAt, at }
@@ -154,6 +168,8 @@ export class CloudAuth extends EventEmitter {
     this.loaded = false
     this.loading = null
     this.signingOut = null
+    this.zro = null // { ligada, pedir, ligar } do último /api/eu (só em memória: sem internet, nada é pedido)
+    this.zroWatch = null // { timer, ate, esperando } enquanto a pessoa liga a Absolute ZRO no navegador
   }
 
   // ─────────── ciclo de vida ───────────
@@ -190,6 +206,7 @@ export class CloudAuth extends EventEmitter {
 
   close() {
     this.closed = true
+    this.#stopZroWatch()
     this.#stopTimer()
     clearTimeout(this.readyTimer)
     this.login?.ac.abort()
@@ -198,7 +215,8 @@ export class CloudAuth extends EventEmitter {
   #startTimer() {
     this.#stopTimer()
     if (!this.refreshEveryMs || this.closed) return
-    this.timer = setInterval(() => this.refresh().catch(() => {}), this.refreshEveryMs)
+    // Com a tela de ligar a Absolute ZRO aberta, o refresh relê o /api/eu (é ele que diz quando a conta ligou).
+    this.timer = setInterval(() => this.refresh({ full: Boolean(this.zro?.pedir) }).catch(() => {}), this.refreshEveryMs)
     this.timer.unref?.()
   }
 
@@ -241,7 +259,46 @@ export class CloudAuth extends EventEmitter {
       atualizadoEm: s?.atualizadoEm ?? null,
       erro: s ? this.lastError : null,
       aviso: this.notice,
+      // "Agora sua conta é Absolute ZRO" (public/components/ligar-zro.js). Só pede; nada aqui para transferência.
+      zro: s && this.zro ? { ligada: this.zro.ligada, pedir: this.zro.pedir, esperando: Boolean(this.zroWatch?.esperando) } : null,
     }
+  }
+
+  // ─────────── ligar a Absolute ZRO (conta antiga) ───────────
+
+  /**
+   * "Continuar com Absolute ZRO": devolve o endereço do vincular de sempre no site (a interface abre no navegador do
+   * sistema) e passa a conferir a conta a cada 3 s. Quando o site disser que ligou, a tela some sozinha; o navegador
+   * já foi levado às Conexões da central pelo próprio site. Transferências não param em nenhum momento.
+   */
+  async ligarZro() {
+    await this.#ready()
+    if (!this.session) throw new SobeDesceError('reauth', MSG_NOT_SIGNED_IN, { reason: 'cloudSignedOut' })
+    const url = `${this.baseUrl}${this.zro?.ligar || '/api/zro/entrar?modo=vincular&volta=%2Fconta'}`
+    this.#stopZroWatch()
+    const watch = { timer: null, ate: Date.now() + ZRO_WATCH_TTL_MS, esperando: true }
+    this.zroWatch = watch
+    const tick = async () => {
+      if (this.zroWatch !== watch || this.closed) return
+      await this.refresh({ full: true }).catch(() => {})
+      if (this.zroWatch !== watch) return
+      if (!this.session || !this.zro?.pedir || Date.now() > watch.ate) {
+        this.#stopZroWatch()
+        this.#emitStatus()
+        return
+      }
+      watch.timer = setTimeout(tick, this.zroWatchMs)
+      watch.timer.unref?.()
+    }
+    watch.timer = setTimeout(tick, this.zroWatchMs)
+    watch.timer.unref?.()
+    this.#emitStatus()
+    return { url, cloud: this.status() }
+  }
+
+  #stopZroWatch() {
+    if (this.zroWatch?.timer) clearTimeout(this.zroWatch.timer)
+    this.zroWatch = null
   }
 
   #emitStatus() {
@@ -445,6 +502,8 @@ export class CloudAuth extends EventEmitter {
     this.tokens.clear()
     this.notice = null
     this.lastError = null
+    this.zro = null
+    this.#stopZroWatch()
     try {
       await this.#save()
     } catch (err) {
@@ -478,6 +537,8 @@ export class CloudAuth extends EventEmitter {
     this.tokens.clear()
     this.lastError = null
     this.notice = notice
+    this.zro = null
+    this.#stopZroWatch()
     this.#stopTimer()
     if (this.login?.estado === 'pronto') this.login = null
     await this.arquivo.apagar().catch(err => this.log('não consegui apagar a sessão da conta:', err?.message))
@@ -539,6 +600,11 @@ export class CloudAuth extends EventEmitter {
       return
     }
     if (res.data?.usuario) s.usuario = normalizeUsuario(res.data.usuario)
+    // Só o /api/eu traz o vínculo; o /api/drive/contas não mexe no que já se sabe.
+    if (res.data && 'zro' in res.data) {
+      this.zro = normalizeZro(res.data.zro)
+      if (!this.zro?.pedir) this.#stopZroWatch() // ligou: a folha some já nesta notícia
+    }
     const before = JSON.stringify(s.contas)
     s.contas = list
     s.atualizadoEm = Date.now()
