@@ -89,10 +89,24 @@ quando esta pasta muda desde o último deploy: um "Redeploy" do mesmo commit é 
   log) e as camadas conversam (efeito entre camadas); depois, cor como no filme subtrativo (cor forte mais densa,
   saturação menor nas altas e sombras, verde oliva, azul petróleo), separação de tons com a pele recortada e uma
   âncora que mantém o matiz da pele quando a exposição muda.
-- **Bases** em três grupos: Revela, **Película** (Negativo 250D, Negativo 500T, Positivo 50D, Reversível, Sem
-  branqueamento) e **Clássicos** (Laranja e petróleo, Anos 70, Nórdico), com nomes genéricos.
+- **Bases** em quatro grupos: Revela, **Película** (Negativo 250D, Negativo 500T, Positivo 50D, Reversível, Sem
+  branqueamento), **Cinema** (as cópias sozinhas e com os negativos: Cópia 2383, 2393 e 3513, 500T + 2383, 250D + 2383,
+  250D + 2393, 500T + 3513) e **Clássicos** (Laranja e petróleo, Anos 70, Nórdico). Negativos e looks têm nomes
+  genéricos.
+- **Cópia de cinema** (`src/cor/copia.js`): as curvas sensitométricas publicadas nas fichas técnicas (KODAK VISION 2383,
+  H-1-2383; VISION Premier 2393, H-61; FUJICOLOR ETERNA-CP 3513DI, manual Fujifilm), digitalizadas e ajustadas por uma
+  logística de Richards (erro de 0,02 a 0,09 de densidade), e os corantes da 2383 (densidade espectral, Status A).
+  Negativo + cópia com contraste 1,8 no cinza (os negativos que saem disso têm gama 0,50 a 0,68, como os reais), a
+  sobreposição espectral das camadas do negativo, cinza na densidade de laboratório (1,0 acima da base) e volta pela
+  inversa exata da tela: na tela SDR, o look é o que a cópia mostraria. A pele vira de matiz com a exposição como na
+  película; o motor tira a maior parte (âncora) e o controle de qualidade cobra 12° em vez de 7°. No Lab, a **Cópia**
+  troca a da base (ou tira). Sem vínculo com a Kodak ou a Fujifilm; as fichas são referência.
+- **Revisão em material de câmera real**: footage oficial da ARRI (ALEXA Mini e Mini LF em LogC3, ALEXA 35 em LogC4) e
+  da DJI (Inspire 3, D-Log), baixado só para os testes internos (não fica no repositório: é de terceiros).
 - **O frame**: still já tratado (Rec.709) ou log de câmera (as mesmas do CST). **Analisar e corrigir** mede na cena:
-  exposição (clareia 60% até +1,5 stop; escurece só 35% até -0,6, para frame claro de propósito continuar claro) e branco nos cones, só pelos tons quase neutros.
+  exposição (clareia 60% até +1,5 stop; escurece só 35% até -0,6, para frame claro de propósito continuar claro; numa
+  cena escura de propósito as altas não passam de 0,75 stop sobre o cinza) e branco nos cones, só pelos tons quase
+  neutros.
 - **Ajustes** com nome de gente: Luz (±2 stops), Contraste (em log), Cor, Temperatura e Tint (adaptação cromática),
   Calor, Desbotar e Pele protegida. A intensidade dosa o look; a primária vale sempre.
 - **Saída**: LUT no tamanho do editor; **Pacote profissional** (.zip, num worker): LMT DWG/DI 65 e 33, CLF, LMT
@@ -100,7 +114,7 @@ quando esta pasta muda desde o último deploy: um "Redeploy" do mesmo commit é 
   receita, o controle de qualidade e um LEIA-ME com a ordem. Nomes no padrão da ARRI.
 - **Controle de qualidade** (`src/cor/qc.js`, `node scripts/qc-looks.mjs`): cinza neutro (ou o tom declarado), luz que
   só sobe, sem degrau (medido em duas resoluções), pele estável de -2 a +2 stops, preto e branco no lugar, cor extrema
-  finita e LUT 65 tetraédrica igual à conta (ΔE Oklab ≤ 0,012). Os 13 looks passam; `test/motor.test.js` cobra.
+  finita e LUT 65 tetraédrica igual à conta (ΔE Oklab ≤ 0,012). Os 20 looks passam; `test/motor.test.js` cobra.
 - **Folha de contato** para revisão (`node scripts/folha-de-contato.mjs <pasta>`): cada look nos frames de exemplo e
   numa cartela (ColorChecker, rampa de cinza, rampas de cor), pelo caminho inteiro.
 - Grão, halation e bloom não entram: dependem dos vizinhos do pixel e nenhuma LUT carrega.

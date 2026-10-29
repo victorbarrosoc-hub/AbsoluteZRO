@@ -9,6 +9,7 @@ import { assar, escreverCube } from './cube.js'
 import { ENTRADAS } from './espacos.js'
 import { criarTela, deTrabalho, linearParaDi, paraTrabalho } from './cena.js'
 import { criarLab, escreverReceita, paraCena } from './lab.js'
+import { copiaDe } from './copia.js'
 import { NEUTRO, criarMotor } from './pelicula.js'
 import { avaliarLook, relatorioEmTexto } from './qc.js'
 import { criarZip } from '../imagem/zip.js'
@@ -200,11 +201,12 @@ export function montarPacote(receita, opcoes = {}) {
     qc = avaliarLook(look.motor, { veu: (receita.ajustes?.desbotar ?? 0) > 0 || look.perfil.veu > 0, pb: !!look.perfil.pb, tingeMax: look.perfil.tingeMax })
     arquivos.push({ nome: `${pasta}/CONTROLE-DE-QUALIDADE.txt`, dados: relatorioEmTexto(receita.nome || 'Meu look', qc) })
   }
-  arquivos.push({ nome: `${pasta}/LEIA-ME.txt`, dados: leiaMe(nome, receita, cam, qc) })
+  arquivos.push({ nome: `${pasta}/LEIA-ME.txt`, dados: leiaMe(nome, receita, cam, qc, look.motor.copia) })
   return { pasta, arquivos, qc, zip: criarZip(arquivos) }
 }
 
-function leiaMe(nome, receita, cam, qc) {
+function leiaMe(nome, receita, cam, qc, copia) {
+  const c = copia ? copiaDe(copia) : null
   return `REVELA · ${receita.nome || 'Meu look'}
 Feito no Revela Lab (revela.absolutezro.com). Look na luz da cena, separado da tela.
 
@@ -228,7 +230,15 @@ ARQUIVOS
   REVELA_${nome}.revela
     A receita, para reabrir e ajustar no Revela Lab.
 
-FAIXA E INTERPOLAÇÃO
+${
+    c
+      ? `CÓPIA DE CINEMA
+  O look inclui a cópia ${c.id} (curvas de ${c.ficha}; a Revela não tem vínculo com o fabricante). A cópia foi
+  desenhada para a tela SDR: no HDR o look funciona, mas o branco da cópia fica no SDR.
+
+`
+      : ''
+  }FAIXA E INTERPOLAÇÃO
   Todas as LUTs são full range (0–1). Use interpolação tetraédrica (Resolve: Project Settings → Color Management →
   3D Lookup Table Interpolation → Tetrahedral).
 

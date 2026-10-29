@@ -9,6 +9,7 @@ import { GRUPOS, NEUTRO, criarMotor } from '../src/cor/pelicula.js'
 import { avaliarLook } from '../src/cor/qc.js'
 import { escreverClf, montarPacote, offsetDaCorrecao, slugPack } from '../src/cor/pacote.js'
 import { crc32 } from '../src/imagem/zip.js'
+import { COPIAS, criarCopia } from '../src/cor/copia.js'
 
 test('tela: cinza 18% vai a 10 nits no SDR e 14,5 no HDR 1000; curva de tom com inversa exata', () => {
   const sdr = criarTela('rec709')
@@ -68,13 +69,36 @@ test('película: o perfil neutro não muda nada dentro do Rec.2020 (o motor part
   assert.ok(fora.every((v) => v >= 0))
 })
 
-test('controle de qualidade: os 13 looks passam em tudo (cinza, monotonia, degrau, pele, preto, branco, gamut, LUT)', () => {
+test('controle de qualidade: os 20 looks passam em tudo (cinza, monotonia, degrau, pele, preto, branco, gamut, LUT)', () => {
+  assert.equal(GRUPOS.flatMap((g) => g.looks).length, 20)
   for (const g of GRUPOS)
     for (const p of g.looks) {
       const r = avaliarLook(criarMotor(p), { veu: p.veu > 0, pb: !!p.pb, tingeMax: p.tingeMax })
       const falhas = r.verificacoes.filter((v) => !v.ok).map((v) => `${v.nome} ${v.valor}/${v.limite} ${v.detalhe}`)
       assert.deepEqual(falhas, [], p.id)
     }
+})
+
+test('cópia de cinema: cinza no lugar e neutro, contraste de projeção, preto da densidade máxima e branco da base', () => {
+  const sdr = criarTela('rec709')
+  for (const c of COPIAS) {
+    const copia = criarCopia(c.id)
+    // a cópia de laboratório põe o cinza 18% na densidade 1,0 acima da base: 10% do branco, como a tela da Revela
+    const cinza = copia.tela([0.18, 0.18, 0.18])
+    assert.ok(cinza.every((v) => Math.abs(v - 0.0985) < 1e-6), `${c.id} cinza ${cinza}`)
+    // contraste do sistema no cinza: 1,8 (log da tela por log da cena), com negativos de gama 0,5 a 0,7, como os reais
+    const y = (s) => copia.tela([0.18 * 10 ** s, 0.18 * 10 ** s, 0.18 * 10 ** s])[1]
+    const gama = (Math.log10(y(0.01)) - Math.log10(y(-0.01))) / 0.02
+    assert.ok(Math.abs(gama - 1.8) < 0.03, `${c.id} gama ${gama}`)
+    for (const g of copia.gamaNegativo) assert.ok(g > 0.45 && g < 0.75, `${c.id} negativo ${g}`)
+    // preto: a densidade máxima da ficha; branco: a base, logo abaixo do pico
+    assert.ok(y(-3) < 10 ** -(c.curvas[1].dmax - c.curvas[1].dmin - 1) * 0.11)
+    assert.ok(y(3) > 0.95 && y(3) < 0.985)
+    // e o motor inteiro devolve na tela o que a cópia daria
+    const tela = sdr.aplicar(copia.emCena([0.5, 0.3, 0.2]))
+    const esperado = copia.tela([0.5, 0.3, 0.2]).map((v) => Math.max(0, v) ** (1 / 2.4))
+    assert.ok(tela.every((v, i) => Math.abs(v - esperado[i]) < 2e-3), `${c.id} ${tela} × ${esperado}`)
+  }
 })
 
 test('controle de qualidade: pega um look quebrado (degrau na curva e cinza tingido)', () => {

@@ -21,7 +21,7 @@ test('Lab: cada base tem nome, id único e muda o frame', () => {
   assert.equal(new Set(ids).size, ids.length)
   assert.deepEqual(
     GRUPOS.map((g) => g.id),
-    ['revela', 'pelicula', 'classicos'],
+    ['revela', 'pelicula', 'cinema', 'classicos'],
   )
   for (const id of ids) {
     const o = criarLab({ base: id }).aplicar(0.55, 0.45, 0.35)
@@ -80,13 +80,25 @@ test('Lab: frame em log de câmera entra pela câmera (S-Log3 cinza → cinza na
   assert.ok(Math.abs(o[0] - 0.383) < 0.02 && Math.max(...o) - Math.min(...o) < 0.01, o.join())
 })
 
+test('Lab: a cópia de cinema é uma escolha da receita (da base, nenhuma ou outra)', () => {
+  const c = [0.55, 0.42, 0.33]
+  // "Cópia 2383" sem a cópia é o perfil neutro: o still volta como veio
+  assert.ok(distancia(criarLab({ base: 'copia-2383', copia: 'nenhuma' }).aplicar(...c), c) < 2e-3)
+  const da2383 = criarLab({ base: 'copia-2383' }).aplicar(...c)
+  assert.ok(distancia(da2383, c) > 0.01)
+  assert.ok(distancia(criarLab({ base: 'revela', copia: '2383' }).aplicar(...c), criarLab({ base: 'revela' }).aplicar(...c)) > 0.01)
+  assert.ok(distancia(criarLab({ base: 'copia-2383', copia: '3513' }).aplicar(...c), da2383) > 0.005)
+})
+
 test('Receita .revela: ida e volta, valores fora do limite voltam para o limite, lixo é recusado, versão 1 abre', () => {
   const r = lerReceita(
-    escreverReceita({ nome: 'Meu filme', entrada: 'arri-logc4', base: 'negativo-500t', intensidade: 0.8, ajustes: { calor: 60, luz: 999 } }),
+    escreverReceita({ nome: 'Meu filme', entrada: 'arri-logc4', base: 'negativo-500t', copia: '2393', intensidade: 0.8, ajustes: { calor: 60, luz: 999 } }),
   )
   assert.equal(r.nome, 'Meu filme')
   assert.equal(r.entrada, 'arri-logc4')
   assert.equal(r.base, 'negativo-500t')
+  assert.equal(r.copia, '2393')
+  assert.equal(lerReceita(escreverReceita({ base: 'revela', copia: 'kodak' })).copia, '')
   assert.equal(r.intensidade, 0.8)
   assert.equal(r.ajustes.calor, 60)
   assert.equal(r.ajustes.luz, 100)
@@ -97,4 +109,6 @@ test('Receita .revela: ida e volta, valores fora do limite voltam para o limite,
   assert.throws(() => lerReceita('{"revela":"lab","versao":99}'), /mais nova/)
   const v1 = lerReceita('{"revela":"lab","versao":1,"nome":"Antiga","base":"anos-70","correcao":{"exposicao":0.5,"branco":[0.01,0.02]},"ajustes":{"cor":20}}')
   assert.deepEqual([v1.base, v1.entrada, v1.ajustes.cor, v1.correcao.exposicao, v1.correcao.ganhos], ['anos-70', 'still', 20, 0.5, null])
+  // a versão 2 não tinha cópia: abre com a cópia da base
+  assert.equal(lerReceita('{"revela":"lab","versao":2,"base":"revela"}').copia, '')
 })

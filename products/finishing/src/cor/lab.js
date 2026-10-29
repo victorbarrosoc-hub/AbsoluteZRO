@@ -7,13 +7,18 @@
 // O frame pode ser um still já tratado (Rec.709: a tela faz o caminho de volta até a cena) ou um still em log de
 // câmera (S-Log3, LogC4, V-Log…: a curva e o gamut da câmera levam até a cena, como um IDT).
 //
-// Nada aqui imita uma película de marca nem copia LUT de terceiros: os perfis têm nomes genéricos.
+// Os negativos e looks da Revela têm nomes genéricos e não imitam película de marca. As cópias de cinema (2383, 2393,
+// 3513) saem das curvas publicadas nas fichas técnicas dos fabricantes (src/cor/copia.js); nada copia LUT de terceiros.
 
 import { ENTRADAS } from './espacos.js'
 import { criarTela, luminancia, paraTrabalho } from './cena.js'
 import { GRUPOS, criarMotor, dwgParaCones, dwgParaOklab, perfilDe } from './pelicula.js'
+import { COPIAS } from './copia.js'
 
 export { GRUPOS }
+
+/** Cópia de cinema do look: '' = a da base, 'nenhuma' ou o id de uma cópia (src/cor/copia.js). */
+export const COPIAS_LAB = [{ id: '', nome: 'Cópia da base' }, { id: 'nenhuma', nome: 'Sem cópia' }, ...COPIAS.map((c) => ({ id: c.id, nome: c.nome }))]
 export const baseDoLab = perfilDe
 
 const limitar = (v, a, b) => Math.min(b, Math.max(a, v))
@@ -48,7 +53,8 @@ export const AJUSTES_NEUTROS = Object.fromEntries(AJUSTES.map((a) => [a.id, 0]))
 /**
  * Lê o frame (`pixels`: Float32Array RGB no código da entrada, 0–1) e devolve a correção: exposição em stops para o
  * meio-tom ir na direção do cinza 18% e ganhos de branco (nos cones, como a câmera faria) a partir dos tons quase
- * neutros. Clareia 60% (até 1,5 stop) e escurece só 35% (até 0,6): frame claro de propósito continua claro.
+ * neutros. Clareia 60% (até 1,5 stop) e escurece só 35% (até 0,6): frame claro de propósito continua claro. Ao
+ * clarear, as altas do frame (percentil 90) não passam de 0,75 stop acima do cinza.
  */
 export function analisarFrame(pixels, { entrada = 'still', passo = 7 } = {}) {
   const cena = paraCena(entrada)
@@ -76,7 +82,13 @@ export function analisarFrame(pixels, { entrada = 'still', passo = 7 } = {}) {
   // assimétrica, como um colorista: clareia o que ficou escuro (60%, até +1,5), mas escurece pouco o que é claro de
   // propósito (35%, até -0,6): vestido de noiva e cena clara não viram cinza médio
   const desvio = Math.log2(0.18 / mediana)
-  const exposicao = desvio >= 0 ? Math.min(1.5, desvio * 0.6) : Math.max(-0.6, desvio * 0.35)
+  let exposicao = desvio >= 0 ? Math.min(1.5, desvio * 0.6) : Math.max(-0.6, desvio * 0.35)
+  // cena escura de propósito (low key): se as altas do frame (percentil 90, o assunto iluminado) já estão no cinza ou
+  // acima, clarear não as leva além de 0,75 stop sobre o cinza. Interior com o assunto bem exposto continua interior
+  if (exposicao > 0) {
+    const alto = Ys[Math.min(Ys.length - 1, Math.floor(Ys.length * 0.9))]
+    exposicao = Math.min(exposicao, Math.max(0, Math.log2((0.18 * 2 ** 0.75) / alto)))
+  }
   let ganhos = null
   if (n > 40) {
     const media = (soma[0] + soma[1] + soma[2]) / 3
@@ -103,8 +115,8 @@ export function descreverCorrecao(exposicao, ganhos) {
 // ─────────── o look do Lab ───────────
 
 /**
- * Receita → look. `receita`: { entrada ('still' ou id de câmera), base, intensidade (0–1),
- * correcao: { exposicao, ganhos } | null, ajustes }. Devolve o motor (luz da cena → luz da cena), `emDi` (código
+ * Receita → look. `receita`: { entrada ('still' ou id de câmera), base, copia ('' = a da base, 'nenhuma' ou id),
+ * intensidade (0–1), correcao: { exposicao, ganhos } | null, ajustes }. Devolve o motor (luz da cena → luz da cena), `emDi` (código
  * DaVinci Intermediate → DI, para a LUT log → log) e `aplicar(r, g, b)`: a prévia do código da entrada até a tela
  * Rec.709, o caminho inteiro.
  */
@@ -123,6 +135,7 @@ export function criarLab(receita = {}) {
     calor: aj.calor / 100,
     veu: (aj.desbotar / 100) * 1.8,
     pele: aj.pele / 100,
+    copia: receita.copia || undefined,
     intensidade,
   })
   const entrada = receita.entrada ?? 'still'
@@ -132,7 +145,7 @@ export function criarLab(receita = {}) {
     emCena: motor.emCena,
     emDi: motor.emDi,
     aplicar: (r, g, b) => telaSdr.aplicar(motor.emCena(cena(r, g, b))),
-    receita: { ...receita, entrada, ajustes: aj, intensidade },
+    receita: { ...receita, entrada, copia: receita.copia ?? '', ajustes: aj, intensidade },
     nome: receita.nome || perfil.nome || 'Meu look',
     perfil,
   }
@@ -140,7 +153,7 @@ export function criarLab(receita = {}) {
 
 // ─────────── receita (.revela) ───────────
 
-export const VERSAO_RECEITA = 2
+export const VERSAO_RECEITA = 3
 
 /** Receita → texto do arquivo .revela (JSON, legível, para reabrir no Lab). */
 export function escreverReceita(receita) {
@@ -151,6 +164,7 @@ export function escreverReceita(receita) {
     nome: String(receita.nome ?? 'Meu look').slice(0, 40),
     entrada: receita.entrada ?? 'still',
     base: receita.base,
+    copia: receita.copia ?? '',
     intensidade: receita.intensidade ?? 1,
     correcao: receita.correcao ?? null,
     ajustes: { ...AJUSTES_NEUTROS, ...(receita.ajustes ?? {}) },
@@ -160,7 +174,8 @@ export function escreverReceita(receita) {
 
 /**
  * Texto .revela → receita. Recusa o que não for receita do Lab; valores fora do lugar voltam para o limite. A versão 1
- * (motor de tela) abre com a mesma base e os mesmos ajustes; a correção de branco antiga não vale no motor novo.
+ * (motor de tela) abre com a mesma base e os mesmos ajustes; a correção de branco antiga não vale no motor novo. A
+ * versão 2 não tinha cópia: abre com a cópia da base.
  */
 export function lerReceita(texto) {
   let r
@@ -179,6 +194,7 @@ export function lerReceita(texto) {
     nome: typeof r.nome === 'string' ? r.nome.slice(0, 40) : 'Meu look',
     entrada: ENTRADAS_LAB.some((e) => e.id === r.entrada) ? r.entrada : 'still',
     base: perfilDe(r.base) ? r.base : 'revela',
+    copia: COPIAS_LAB.some((c) => c.id === r.copia) ? r.copia : '',
     intensidade: limitar(Number(r.intensidade ?? 1), 0, 1),
     correcao: c && typeof c === 'object' ? { exposicao: limitar(Number(c.exposicao) || 0, -2, 2), ganhos } : null,
     ajustes,

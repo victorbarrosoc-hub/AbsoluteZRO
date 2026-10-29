@@ -1416,6 +1416,43 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Não validado: as LUTs num Resolve real (DWG/DI e ACEScct), o CLF num leitor OCIO, a LUT do monitor num monitor de
   set, material log real de cada câmera e telas HDR.
 
+## Revela: cópias de cinema das fichas técnicas e revisão em material real (29/10/2026)
+
+- Pedido do titular: presets de películas conhecidas (Kodak 2383 e afins) e material de banco com as especificações.
+- Cópias a partir de dado publicado, não de LUT de terceiros: curvas sensitométricas da KODAK VISION 2383 (H-1-2383,
+  2022), da VISION Premier 2393 (H-61, 1998) e da FUJICOLOR ETERNA-CP 3513DI (manual Fujifilm, 2007), digitalizadas
+  dos gráficos (traço por cor ou por linha) e ajustadas por Richards (erro 0,02–0,09 de densidade); corantes da 2383
+  pelo gráfico de densidade espectral em Status A. Na 2393 o verde é a média do vermelho e do azul (a ficha desenha as
+  três quase juntas).
+- Modelo (`src/cor/copia.js`): negativo + cópia com contraste 1,8 no cinza; os negativos que saem do equilíbrio do
+  cinza têm gama 0,50–0,68 (os negativos reais ficam perto de 0,6), conferência independente de que o modelo faz
+  sentido. Cinza na densidade de laboratório (1,0 acima da base) → 10% do branco, igual à tela da Revela. Volta pela
+  inversa exata da tela Rec.709, então na tela SDR o look é a cópia.
+- Rodadas do controle de qualidade:
+  - pele virando 11–21° de -2 a +2 stops e razão R/B linear da pele de 11 (contra 3 na tela neutra). Causa: cada
+    camada do negativo tratada como primária pura. Correção: sobreposição espectral das camadas (saturação do sistema
+    1,3 no meio-tom, em log da razão);
+  - sombra profunda da 2393 e da 3513 puxando a pele para o vermelho, dentro do erro da digitalização: o cruzamento
+    entre camadas entra com peso de confiança (2383: 1; 2393 e 3513: 0,5), sobre a base de cada camada (o cinza
+    continua exato);
+  - a cópia real vira a pele com a exposição (vermelha na sombra, dourada na alta): âncora de 0,75 para o matiz que a
+    própria cópia dá no meio-tom. Limite declarado de 12° para looks com cópia (cobrado no controle de qualidade);
+    medido: 3,8° a 11,4°.
+- Os 20 looks passam (`node scripts/qc-looks.mjs`). Testes novos: cópia (cinza, contraste 1,8, gama dos negativos,
+  preto da densidade máxima, branco da base, motor = cópia na tela), receita com cópia (versão 3; a 2 abre sem cópia),
+  Lab escolhendo a cópia, Looks com o pack Cinema e o pacote com a nota da cópia no LEIA-ME.
+- Desempenho: pacote com cópia caiu de 32 s para 9 s (tabela 1D de cada camada com Hermite; inversa da tela sem busca
+  longe do pico e com secante perto dele).
+- Material real: footage oficial da ARRI (ALEXA Mini e Mini LF em LogC3, ALEXA 35 em LogC4, ProRes 4444 12 bits) e da
+  DJI (Inspire 3, D-Log), só nos testes internos (é de terceiros e não entra no repositório). A tela neutra lê LogC3 e
+  LogC4 certo; as cópias dão preto denso, céu que deita no branco e, com o 250D, grama oliva.
+- Analisar e corrigir no material real: num interior escuro de propósito (galpão com a madeira bem exposta) subia
+  +1,1 stop e estourava o assunto. Agora, numa cena escura de propósito, as altas (percentil 90) não passam de 0,75
+  stop sobre o cinza: +0,5. Os outros três frames não mudaram.
+- Não conseguido: Sony S-Log3 (pro.sony responde 403 a este ambiente), Blackmagic (só BRAW, sem SDK aqui), Panasonic,
+  Canon e Fujifilm (sem footage oficial nos sites). Não validado: as cópias contra uma cópia de verdade projetada ou
+  contra o scan de um laboratório.
+
 ## Revela Lab (29/10/2026)
 
 - Pedido do titular depois do estudo do Shift (plugin de grade para quem não é colorista): um laboratório para criar o

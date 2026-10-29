@@ -7,6 +7,7 @@ import { aplicarTetra, assar } from './cube.js'
 import { CURVAS, matrizGamut } from './espacos.js'
 import { criarTela, diParaLinear, linearParaDi } from './cena.js'
 import { linearParaOklab } from './oklab.js'
+import { copiaDe } from './copia.js'
 
 const mul = (m, v) => [
   m[0][0] * v[0] + m[0][1] * v[1] + m[0][2] * v[2],
@@ -69,8 +70,8 @@ function sorteio(semente = 7) {
 
 /**
  * Confere um look. `motor`: { emCena([r,g,b]) DWG linear → DWG linear } (src/cor/pelicula.js · criarMotor).
- * `opcoes`: { tingeMax (croma Oklab máximo no cinza, padrão 0,035), veu (o look levanta o preto de propósito),
- * pb (preto e branco) }. Devolve { ok, verificacoes: [{ id, nome, valor, limite, ok, detalhe }], cartela }.
+ * `opcoes`: { tingeMax (croma Oklab máximo no cinza, padrão 0,035), peleMax (graus; padrão 7, ou o da cópia de
+ * cinema), veu (o look levanta o preto de propósito), pb (preto e branco) }. Devolve { ok, verificacoes: [{ id, nome, valor, limite, ok, detalhe }], cartela }.
  */
 export function avaliarLook(motor, opcoes = {}) {
   const tela = criarTela('rec709')
@@ -80,6 +81,8 @@ export function avaliarLook(motor, opcoes = {}) {
 
   // 1. eixo neutro: cinza de -4 a +4 stops sai com pouca cor (o tom do look pode existir, mas contido)
   const tingeMax = opcoes.tingeMax ?? 0.035
+  // com cópia de cinema, o limite declarado da cópia (src/cor/copia.js)
+  const peleMax = opcoes.peleMax ?? (motor.copia ? (copiaDe(motor.copia)?.peleMax ?? 7) : 7)
   let maiorTinge = 0
   let ondeTinge = 0
   for (let s = -4; s <= 4; s += 0.25) {
@@ -159,7 +162,7 @@ export function avaliarLook(motor, opcoes = {}) {
       espalha = Math.max(espalha, Math.max(0, ...desvios) - Math.min(0, ...desvios))
       foraDoLugar = Math.max(foraDoLugar, meio < 35 ? 35 - meio : meio > 80 ? meio - 80 : 0)
     }
-    conferir('pele', 'Pele estável na exposição', espalha, 7, espalha <= 7, 'variação do matiz da pele de -2 a +2 stops (graus)')
+    conferir('pele', 'Pele estável na exposição', espalha, peleMax, espalha <= peleMax, 'variação do matiz da pele de -2 a +2 stops (graus)')
     conferir('pele-lugar', 'Pele no lugar da pele', foraDoLugar, 0, foraDoLugar === 0, 'matiz da pele entre 35° e 80°')
   }
 

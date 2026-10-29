@@ -10,11 +10,14 @@
 //      do filme e sem curva de tela embutida;
 //   3. cor como no filme subtrativo: cor saturada fica mais densa (mais escura), saturação cai nas altas e nas sombras,
 //      verde puxa para oliva, azul para petróleo, pele se junta, separação de tons em sombras, meios e altas;
-//   4. desbotar (véu de flare na cena) e P&B por filtro.
+//   4. cópia de cinema (opcional, src/cor/copia.js): o negativo copiado numa película de cópia (2383, 2393, 3513), com as
+//      curvas das fichas técnicas dos fabricantes;
+//   5. desbotar (véu de flare na cena) e P&B por filtro.
 // Efeitos de espaço (halation, grão, bloom) não cabem numa LUT e ficam fora deste motor, de propósito.
 
 import { inversa, matrizGamut, rgbParaXyz } from './espacos.js'
 import { diParaLinear, linearParaDi } from './cena.js'
+import { criarCopia } from './copia.js'
 
 const mul = (m, v) => [
   m[0][0] * v[0] + m[0][1] * v[1] + m[0][2] * v[2],
@@ -135,7 +138,9 @@ export const dwgParaCones = (rgb) => mul(mulM(BRADFORD, DWG_XYZ), rgb)
  * contraste (em log, 1 = igual), canais (contraste por camada), timing (stops por camada no cinza: o tom do
  * laboratório), pe/ombro (stops abaixo/acima do cinza até a curva deitar), sensibilidade (quanto cada camada vê das
  * vizinhas), entreCamadas (separação por densidade), densidade (cor saturada escurece), saturacao, satAltas/satSombras,
- * verde/azul/pele/ceu (matizes), sombras/meios/altas (separação de tons, em Oklab a e b), veu (desbotar), pb.
+ * verde/azul/pele/ceu (matizes), sombras/meios/altas (separação de tons, em Oklab a e b), veu (desbotar), pb,
+ * copia (id da película de cópia, src/cor/copia.js), gamaCopia (contraste negativo × cópia no cinza) e ancoraCopia
+ * (quanto da virada de matiz da pele com a exposição, que a cópia real faz, fica de fora: 0 = toda, 1 = nenhuma).
  */
 export const NEUTRO = {
   contraste: 1,
@@ -157,6 +162,9 @@ export const NEUTRO = {
   altas: [0, 0],
   veu: 0,
   pb: null,
+  copia: null,
+  gamaCopia: 1.8,
+  ancoraCopia: 0.75,
 }
 const perfil = (p) => ({ ...NEUTRO, ...p })
 
@@ -409,9 +417,26 @@ export const CLASSICOS = [
   }),
 ]
 
+// Cinema: as cópias das fichas técnicas (src/cor/copia.js), sozinhas sobre a câmera digital (o uso mais comum no
+// intermediário digital) e com os negativos da Revela, como no laboratório.
+const negativo = (id) => {
+  const { id: _, nome: __, frases: ___, ...resto } = PELICULAS.find((p) => p.id === id)
+  return resto
+}
+export const CINEMA = [
+  perfil({ id: 'copia-2383', nome: 'Cópia 2383', copia: '2383', frases: ['A cópia de cinema mais usada, sobre a câmera digital.', 'Contraste de projeção e preto denso.'] }),
+  perfil({ id: 'copia-2393', nome: 'Cópia 2393', copia: '2393', frases: ['A cópia premium: preto ainda mais fundo e cor mais cheia.'] }),
+  perfil({ id: 'copia-3513', nome: 'Cópia 3513', copia: '3513', frases: ['A cópia feita para o intermediário digital: verde mais frio, branco limpo.'] }),
+  perfil({ ...negativo('negativo-500t'), id: '500t-2383', nome: '500T + 2383', copia: '2383', frases: ['O negativo de tungstênio copiado na 2383: a noite do cinema.'] }),
+  perfil({ ...negativo('negativo-250d'), id: '250d-2383', nome: '250D + 2383', copia: '2383', frases: ['O negativo de dia copiado na 2383: o dia do cinema.'] }),
+  perfil({ ...negativo('negativo-250d'), id: '250d-2393', nome: '250D + 2393', copia: '2393', frases: ['O negativo de dia na cópia premium.'] }),
+  perfil({ ...negativo('negativo-500t'), id: '500t-3513', nome: '500T + 3513', copia: '3513', frases: ['O negativo de tungstênio na cópia japonesa.'] }),
+]
+
 export const GRUPOS = [
   { id: 'revela', nome: 'Revela', looks: REVELA },
   { id: 'pelicula', nome: 'Película', looks: PELICULAS },
+  { id: 'cinema', nome: 'Cinema', looks: CINEMA },
   { id: 'classicos', nome: 'Clássicos', looks: CLASSICOS },
 ]
 const TODOS = GRUPOS.flatMap((g) => g.looks)
@@ -434,7 +459,7 @@ const peOmbro = (e, pe, ombro) => (e >= 0 ? (ombro === Infinity ? e : ombro * Ma
 /**
  * O look de um perfil em luz da cena: `emCena([r, g, b]) → [r, g, b]`, DWG linear nos dois lados.
  * `extra`: { exposicao (stops), temperatura, tint (-1–1), ganhosLms, contraste (×), saturacao (×), calor (0–1),
- * veu (0–1), pele (0–1, protege a cor da pele), intensidade (0–1) }.
+ * veu (0–1), pele (0–1, protege a cor da pele), copia (id, 'nenhuma' ou ausente = a do perfil), intensidade (0–1) }.
  */
 export function criarMotor(p = NEUTRO, extra = {}) {
   const pr = perfil(p)
@@ -453,6 +478,8 @@ export function criarMotor(p = NEUTRO, extra = {}) {
   const veu = pr.veu + (extra.veu ?? 0)
   const pele = extra.pele ?? 0
   const t = limitar(extra.intensidade ?? 1, 0, 1)
+  const idCopia = extra.copia === 'nenhuma' ? null : (extra.copia ?? pr.copia)
+  const copia = idCopia ? criarCopia(idCopia, { gamaSistema: pr.gamaCopia }).emCena : null
 
   function negativo(x) {
     const camada = mul(sens, x)
@@ -529,6 +556,28 @@ export function criarMotor(p = NEUTRO, extra = {}) {
     return oklabParaDwg([L, a, b])
   }
 
+  // a cópia real vira o matiz da pele com a exposição (mais vermelha na sombra, dourada na alta). A âncora puxa o
+  // matiz da pele para o que a própria cópia dá a essa cor no meio-tom: fica o desenho da cópia, sai a deriva
+  const ancoraCopia = Math.max(pr.ancoraCopia, pele)
+  function copiar(y, antes) {
+    const z = copia(y)
+    if (!(ancoraCopia > 0) || !antes) return z
+    // cor relativa à luz (croma ÷ L): a pele no escuro continua pele
+    const Ca = Math.hypot(antes[1], antes[2]) / Math.max(antes[0], 0.02)
+    const naPele = noMatiz(Math.atan2(antes[2], antes[1]) / GRAU, 52, 38) * ((Ca * Ca) / (Ca * Ca + 0.0025))
+    if (!(naPele > 0.001)) return z
+    const Lr = dwgParaOklab(y)[0] / L_CINZA
+    if (!(Lr > 0.05)) return z
+    const k = limitar(1 / (Lr * Lr * Lr), 1 / 32, 32)
+    const meio = dwgParaOklab(copia(y.map((v) => v * k)))
+    const [L, a, b] = dwgParaOklab(z)
+    const C = Math.hypot(a, b)
+    if (!(C > 1e-6) || !(Math.hypot(meio[1], meio[2]) > 1e-6)) return z
+    let h = Math.atan2(b, a) / GRAU
+    h += ancoraCopia * naPele * distancia(Math.atan2(meio[2], meio[1]) / GRAU, h)
+    return oklabParaDwg([L, C * Math.cos(h * GRAU), C * Math.sin(h * GRAU)])
+  }
+
   function primaria(rgb) {
     const x = rgb.map((v) => v * ganho)
     return branco ? mul(branco, x) : x
@@ -536,9 +585,10 @@ export function criarMotor(p = NEUTRO, extra = {}) {
 
   function emCena(rgb) {
     const x = dentroDoGamut(primaria(rgb))
-    const antes = pele || pr.pele.ancora > 0 ? dwgParaOklab(x) : null
+    const antes = pele || pr.pele.ancora > 0 || copia ? dwgParaOklab(x) : null
     let y = negativo(x)
     y = dentroDoGamut(cor(y, antes))
+    if (copia) y = copiar(y, antes)
     if (veu) y = y.map((v) => v + veu * 0.005)
     if (t >= 1) return y
     // intensidade: mistura em log (DI) entre a primária (exposição e branco, que valem sempre) e o look, como um nó
@@ -550,7 +600,8 @@ export function criarMotor(p = NEUTRO, extra = {}) {
   return {
     perfil: pr,
     emCena,
-    partes: { negativo, cor, dentroDoGamut }, // para os testes internos olharem cada etapa
+    copia: idCopia,
+    partes: { negativo, cor, dentroDoGamut, copia }, // para os testes internos olharem cada etapa
     /** O mesmo look em código DaVinci Intermediate, para a LUT log → log. */
     emDi(r, g, b) {
       return emCena([diParaLinear(r), diParaLinear(g), diParaLinear(b)]).map(linearParaDi)

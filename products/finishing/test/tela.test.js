@@ -1208,6 +1208,8 @@ test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks
   assert.deepEqual(await pagina.locator('#bases .look').evaluateAll((n) => n.map((b) => b.dataset.look)), ['negativo-250d', 'negativo-500t', 'positivo-50d', 'reversivel', 'sem-branqueamento'])
   await pagina.getByRole('radio', { name: 'Negativo 500T' }).click()
   assert.equal(await pagina.locator('#rotulo-depois').textContent(), 'Negativo 500T')
+  // a cópia de cinema vai na receita
+  await pagina.getByRole('combobox', { name: 'Cópia de cinema' }).selectOption('2383')
   await pagina.locator('#aj-calor').fill('40')
   await pagina.locator('#aj-calor').dispatchEvent('change')
   await pagina.locator('#nome-look').fill('Noite quente')
@@ -1221,6 +1223,7 @@ test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks
   const r = JSON.parse(readFileSync(await receita.path(), 'utf8'))
   assert.equal(r.base, 'negativo-500t')
   assert.equal(r.ajustes.calor, 40)
+  assert.equal(r.copia, '2383')
 
   // zera, reabre a receita e volta tudo
   await pagina.getByRole('button', { name: 'Zerar ajustes' }).click()
@@ -1229,6 +1232,7 @@ test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks
   await pagina.getByText('Receita "Noite quente" aberta.').waitFor()
   assert.equal(await pagina.locator('#aj-calor').inputValue(), '40')
   assert.equal(await pagina.locator('#bases [aria-checked=true]').getAttribute('data-look'), 'negativo-500t')
+  assert.equal(await pagina.locator('#copia').inputValue(), '2383')
 
   // pacote profissional (worker): zip com o look em log, a LUT do monitor, CDL e o controle de qualidade aprovado
   assert.equal(await pagina.locator('#entrada option').first().textContent(), 'Still já tratado (Rec.709)')
@@ -1238,6 +1242,7 @@ test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks
   assert.equal(zip.readUInt32LE(0), 0x04034b50)
   assert.ok(zip.includes('REVELA_NOITE-QUENTE_DWG-DI-to-DWG-DI_v1_65.cube'))
   assert.ok(zip.includes('REVELA_NOITE-QUENTE_ACEScct-AP1-to-ACEScct-AP1_v1_65.cube'))
+  assert.ok(zip.includes('O look inclui a cópia 2383'))
   assert.equal(await pagina.locator('#qc').textContent(), 'Controle de qualidade: aprovado')
 
   // salvo em Meus looks: aparece na grade da tela de LUT
@@ -1255,8 +1260,8 @@ test('Revela Looks: vitrine com o motor, packs em faixas, Abrir no Lab com a bas
   pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
   await pagina.goto(endereco + 'looks.html')
   await pagina.getByRole('heading', { name: 'Looks prontos.' }).waitFor()
-  await pagina.locator('#packs .pack').nth(2).waitFor()
-  assert.deepEqual(await pagina.locator('#packs .pack h2').allTextContents(), ['Revela', 'Película', 'Clássicos'])
+  await pagina.locator('#packs .pack').nth(3).waitFor()
+  assert.deepEqual(await pagina.locator('#packs .pack h2').allTextContents(), ['Revela', 'Película', 'Cinema', 'Clássicos'])
   assert.match(await pagina.locator('#vitrine-nome').textContent(), /^Revela · /)
   // a vitrine é o frame de verdade com o look (não fica preto nem igual ao original)
   const media = () =>

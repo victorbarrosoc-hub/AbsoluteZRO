@@ -2818,7 +2818,8 @@ html:not(.menu-aberto):not(.menu-gaveta) main.tela--z {
 }
 
 /* Lab · de onde vem o frame e o selo do controle de qualidade do pacote */
-.entrada-lab {
+.entrada-lab,
+.copia-lab {
   max-width: 360px;
   width: 100%;
 }

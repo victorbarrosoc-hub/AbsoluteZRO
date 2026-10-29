@@ -186,15 +186,34 @@ export function criarTela(id = 'rec709') {
     const misto = lin.map((x) => x / h)
     // a razão de antes do "para o branco": a escala s que devolve norma 1 (busca binária, a norma cresce com s)
     const razao = (s) => misto.map((x) => (s * x - k) / (1 - k))
-    let lo = 0
-    let hi = 64
-    for (let i = 0; i < 48; i++) {
-      const meio = (lo + hi) / 2
-      if (norma(Yt, razao(meio)) < 1) lo = meio
-      else hi = meio
-    }
     const n = tom.volta(h)
-    return mul(Mi, razao((lo + hi) / 2).map((x) => x * n))
+    // longe do pico a cor não foi para o branco (k = 0): a razão é a própria mistura, sem busca
+    if (k === 0) return mul(Mi, misto.map((x) => x * n))
+    // perto do pico: a norma cresce suave com s (é quase uma reta), então a secante acha s em poucos passos; se não
+    // convergir, a busca binária garante
+    const erro = (s) => norma(Yt, razao(s)) - 1
+    let s0 = 1
+    let s1 = 1.01
+    let e0 = erro(s0)
+    let e1 = erro(s1)
+    for (let i = 0; i < 12 && Math.abs(e1) > 1e-13 && e1 !== e0; i++) {
+      const s2 = s1 - (e1 * (s1 - s0)) / (e1 - e0)
+      s0 = s1
+      e0 = e1
+      s1 = s2
+      e1 = erro(s1)
+    }
+    if (!(Math.abs(e1) <= 1e-9 && s1 > 0 && s1 < 64)) {
+      let lo = 0
+      let hi = 64
+      for (let i = 0; i < 48; i++) {
+        const meio = (lo + hi) / 2
+        if (norma(Yt, razao(meio)) < 1) lo = meio
+        else hi = meio
+      }
+      s1 = (lo + hi) / 2
+    }
+    return mul(Mi, razao(s1).map((x) => x * n))
   }
 
   return { ...tela, curvaDeTom: tom, aplicar, inverter }

@@ -5,7 +5,7 @@
 import './conta.js'
 import './menu.js'
 import { aplicar, assar, escreverCube } from '../src/cor/cube.js'
-import { AJUSTES, AJUSTES_NEUTROS, ENTRADAS_LAB, GRUPOS, analisarFrame, baseDoLab, criarLab, escreverReceita, lerReceita } from '../src/cor/lab.js'
+import { AJUSTES, AJUSTES_NEUTROS, COPIAS_LAB, ENTRADAS_LAB, GRUPOS, analisarFrame, baseDoLab, criarLab, escreverReceita, lerReceita } from '../src/cor/lab.js'
 import { MAX_LOOKS, PREFIXO, empacotar } from '../src/cor/meuslooks.js'
 import { cascata, escalonar, icones } from './visual.js'
 
@@ -21,7 +21,7 @@ const EDITORES = { resolve: 65, premiere: 33, fcp: 65, capcut: 33 }
 
 let frame = null // { previa: ImageData, mini: ImageData, pixels: Float32Array }
 let correcaoLida = null
-let receita = { nome: 'Meu look', entrada: 'still', base: 'revela', intensidade: 1, correcao: null, ajustes: { ...AJUSTES_NEUTROS } }
+let receita = { nome: 'Meu look', entrada: 'still', base: 'revela', copia: '', intensidade: 1, correcao: null, ajustes: { ...AJUSTES_NEUTROS } }
 let grupo = 'revela'
 let corrigirSozinho = true // "Analisar e corrigir" começa ligado: quem não é colorista já ganha o frame equilibrado
 let camadas = null
@@ -295,6 +295,13 @@ $('zerar').addEventListener('click', () => {
   desenharAjustes()
   refazer()
 })
+$('copia').replaceChildren(...COPIAS_LAB.map((c) => Object.assign(document.createElement('option'), { value: c.id, textContent: c.nome })))
+$('copia').addEventListener('change', () => {
+  receita.copia = $('copia').value
+  refazer()
+  trocouLook()
+})
+
 $('intensidade').addEventListener('input', () => {
   receita.intensidade = Number($('intensidade').value) / 100
   $('valor-intensidade').textContent = `${$('intensidade').value}%`
@@ -410,6 +417,7 @@ $('arquivo-receita').addEventListener('change', async (e) => {
     // a correção da receita era do frame de quem salvou: aqui vale a leitura deste frame
     receita = { ...lida, correcao: lida.correcao && correcaoLida ? { exposicao: correcaoLida.exposicao, ganhos: correcaoLida.ganhos } : lida.correcao }
     $('entrada').value = receita.entrada
+    $('copia').value = receita.copia ?? ''
     $('nome-look').value = lida.nome
     $('intensidade').value = String(Math.round(receita.intensidade * 100))
     $('valor-intensidade').textContent = `${$('intensidade').value}%`
