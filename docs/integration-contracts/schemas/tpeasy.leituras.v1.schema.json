@@ -1,0 +1,154 @@
+{
+  "$id": "https://absolutezro.local/schemas/tpeasy.leituras.v1.json",
+  "title": "Leitura no TPeasy (uma linha do registro de leituras) v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "contrato": {
+      "type": "string",
+      "const": "tpeasy.leituras/1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^l[0-9a-f]{18}$"
+    },
+    "roteiro": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "titulo": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "projeto": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "versao": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "titulo",
+        "projeto",
+        "versao"
+      ],
+      "additionalProperties": false
+    },
+    "inicio": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+    },
+    "fim": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+    },
+    "fuso_min": {
+      "type": "integer",
+      "minimum": -840,
+      "maximum": 840
+    },
+    "duracao_ms": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 21600000
+    },
+    "bip": {
+      "type": "boolean"
+    },
+    "contagem_s": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10
+    },
+    "voz": {
+      "type": "boolean"
+    },
+    "completo": {
+      "type": "boolean"
+    },
+    "blocos": {
+      "minItems": 1,
+      "maxItems": 500,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "i": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 499
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nome": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "em_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 21600000
+          }
+        },
+        "required": [
+          "i",
+          "nome",
+          "em_ms"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "contrato",
+    "id",
+    "roteiro",
+    "inicio",
+    "fim",
+    "fuso_min",
+    "duracao_ms",
+    "bip",
+    "contagem_s",
+    "voz",
+    "completo",
+    "blocos"
+  ],
+  "additionalProperties": false
+}

@@ -19,3 +19,7 @@ test('tarefa em curso ganha da Z; aba desconhecida não', () => {
   assert.equal(abaDeEntrada('', ABAS, { emCurso: 'tp' }), 'tp')
   assert.equal(abaDeEntrada('', ABAS, { emCurso: 'outra' }), 'z')
 })
+
+test('"Abrir no TPeasy" (#hub/<projeto>) entra em Roteiros', () => {
+  assert.equal(abaDeEntrada('#hub/6f1c2d3e-4b5a-4c6d-8e7f-9a0b1c2d3e4f', ABAS), 'roteiros')
+})

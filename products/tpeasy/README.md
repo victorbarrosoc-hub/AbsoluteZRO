@@ -24,12 +24,14 @@ Visual claro com modo escuro automático; o TP é sempre escuro.
 
 **TP:** área calibrada arrastando as bordas, palavras por minuto, **rolar com a voz** (o texto anda enquanto você fala; só mede volume), espelho, linha de leitura com foco, contagem com bip opcional de sincronia, pinça para a letra, arrasto para voltar, ← → pulam de bloco no controle Bluetooth, tela sempre acesa.
 
+**Registro de leituras:** cada vez que o texto anda no TP vira uma leitura com a hora do bip e os blocos que passaram (`app/js/leituras.js`, contrato `tpeasy.leituras/1`). **Ajustes › Exportar leituras** gera o `.jsonl` para a pasta do material; o Synquei e o AEON dão o nome do bloco a cada take.
+
 ## Entrar com Absolute ZRO
 
 A conta do TPeasy é a mesma da Absolute ZRO (login único do HUB, ADR 0012). Os roteiros **continuam salvos só no
 aparelho**: entrar mostra quem você é, mas não liga sincronização.
 
-- **`api/zro/`** quatro funções da Vercel, só com módulos do Node (sem `package.json`, sem build):
+- **`api/zro/`** funções da Vercel, só com módulos do Node (sem `package.json`, sem build):
   - `entrar` (GET, `?volta=/app/...`): cria state, nonce e PKCE S256 num cookie assinado de 10 min (`tp_zro_ida`,
     HttpOnly, Secure, SameSite=Lax, só em `/api/zro`) e manda para o HUB. O botão **Abrir** do HUB usa este endereço.
     Com `&criar=1` é o **Criar conta**: o HUB abre o cadastro (`prompt=create`) e volta já logado.
@@ -44,9 +46,13 @@ aparelho**: entrar mostra quem você é, mas não liga sincronização.
     Perfil da Absolute ZRO: a sessão acaba.
   - `sair` (POST, só do próprio site): revoga o refresh token no HUB e apaga `tp_zro` e `tp_zro_hub`. A conta no HUB
     continua aberta.
+  - `ia`: repasse da Z. `roteiro` (GET, `?projeto=<uuid>`): **Abrir no TPeasy**, o roteiro mais novo do projeto da
+    Absolute ZRO com a versão (escopo `tpeasy.roteiros`); o app abre por `/app/#hub/<projeto>` (`app/js/hub.js`).
+    Contrato em `docs/integration-contracts/tpeasy-leituras.md`.
 - As chaves dos cookies saem de `ZRO_CLIENT_SECRET` por HKDF (uma por finalidade).
-- Só aceita `tpeasy.vercel.app` e `localhost`/`127.0.0.1`; outro endereço (prévia da Vercel) vai para o site oficial
-  antes de começar. `volta` só aceita caminho deste site; o resto vira `/app/`.
+- Só aceita `tpeasy.absolutezro.com` (oficial), `tpeasy.vercel.app` (antigo, cada um com o próprio retorno) e
+  `localhost`/`127.0.0.1`; outro endereço (prévia da Vercel) vai para o site oficial antes de começar. O antigo não
+  redireciona: os roteiros ficam no aparelho, por endereço. `volta` só aceita caminho deste site; o resto vira `/app/`.
 - Erros voltam como `?zro=recusado|expirou|erro|config`; o app mostra um aviso curto e limpa o endereço.
 - Sem as funções (offline, `file://`, `python3 -m http.server`) a tela de Ajustes fica como antes.
 - O service worker não guarda nada de `/api/`.
@@ -58,8 +64,9 @@ aparelho**: entrar mostra quem você é, mas não liga sincronização.
   - `ZRO_CLIENT_ID` = `tpeasy-web`
   - `ZRO_CLIENT_SECRET` = segredo do cliente `tpeasy-web` no console do HUB
   - `ZRO_ISSUER` (opcional) = `https://absolutezro.com`
-- No HUB, o cliente `tpeasy-web` tem retorno `https://tpeasy.vercel.app/api/zro/callback` e endereço de entrada
-  `https://tpeasy.vercel.app/api/zro/entrar`.
+- Domínios: `tpeasy.absolutezro.com` (oficial, 29/10/2026) e `tpeasy.vercel.app`.
+- No HUB, o cliente `tpeasy-web` tem os dois retornos (`https://tpeasy.absolutezro.com/api/zro/callback` e o antigo,
+  migração `0033`) e o escopo `tpeasy.roteiros` (`0032`); entrada `https://tpeasy.absolutezro.com/api/zro/entrar`.
 
 No app instalado no iPhone, a ida ao HUB pode abrir numa janela do Safari; ao voltar, o app pergunta de novo quem está
 logado.

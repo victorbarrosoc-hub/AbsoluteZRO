@@ -1,6 +1,7 @@
 // O teleprompter: rolagem por palavras/minuto, área calibrada, espelho, voz, gestos e controle Bluetooth.
 import { $, $$, clamp, fmtClock, beep } from "./util.js";
-import { S, areaNow, orient, savePrefs, byId, updateScript, countWords, renderScript, logSession, on, emit, FONTS, COLORS, ui } from "./data.js";
+import { S, areaNow, orient, savePrefs, byId, updateScript, countWords, renderScript, logSession, registrarLeitura, on, emit, FONTS, COLORS, ui } from "./data.js";
+import * as Leitura from "./leituras.js";
 import { toast, openSheet, closeSheet, sheetIsOpen } from "./ui.js";
 import { setPref, syncSettingsUI } from "./settings.js";
 import { voice, startVoice, stopVoice, sampleVoice } from "./voice.js";
@@ -47,6 +48,11 @@ const P = {
   fracStart: 0,
   fracMax: 0,
   onClose: null,
+  // registro de leituras: a leitura em curso, os blocos ("# bloco") com a altura de cada um e o bip da contagem
+  leitura: null,
+  secs: [],
+  contou: false,
+  bipAgora: false,
 };
 export const prompterOpen = () => P.open;
 
@@ -123,6 +129,7 @@ export function layout() {
     focusEl.style.background = `linear-gradient(to bottom, ${onC} 0px, ${onC} ${g - band * 2.2}px, ${off} ${g - band}px, ${off} ${g + band}px, ${onC} ${g + band * 2.6}px, ${onC} 100%)`;
   } else focusEl.style.background = "none";
 
+  P.secs = $$(".sec", textEl).map((el, i) => ({ i, nome: el.textContent.trim(), top: el.offsetTop - P.padTop }));
   $("#pMirror").setAttribute("aria-pressed", String(s.mirrorX || s.mirrorY));
   $("#pSpeed b").textContent = s.wpm;
   P.lastSec = -1;
@@ -175,6 +182,10 @@ function tick(now) {
   }
   P.frac = P.max ? P.pos / P.max : 0;
   P.fracMax = Math.max(P.fracMax, P.frac);
+  if (P.leitura) {
+    Leitura.passarBloco(P.leitura, blocoNaLinha());
+    if (voice.on) Leitura.usouVoz(P.leitura);
+  }
   render();
   if (now - P.saveTick > 2000) {
     P.saveTick = now;
@@ -189,7 +200,30 @@ function savePos() {
 }
 
 // ───────────── tocar / pausar ─────────────
+// o bloco na linha de leitura (o texto em P.pos está na altura da linha guia)
+function blocoNaLinha() {
+  let b = null;
+  for (const s of P.secs) {
+    if (s.top <= P.pos + 2) b = s;
+    else break;
+  }
+  return b ? { i: b.i, nome: b.nome } : null;
+}
+// Cada vez que o texto começa a andar é uma leitura (um take); pausar, voltar, chegar ao fim ou fechar termina.
+function comecarLeitura() {
+  const s = byId(P.id);
+  if (!s || P.leitura) return;
+  P.leitura = Leitura.comecar({ roteiro: s, bip: P.bipAgora, contagem: P.contou ? S().countdown : 0, voz: voice.on, bloco: blocoNaLinha() });
+  P.bipAgora = P.contou = false;
+}
+function terminarLeitura() {
+  if (!P.leitura) return;
+  registrarLeitura(Leitura.terminar(P.leitura, { completo: P.pos >= P.max - 1 }));
+  P.leitura = null;
+}
 function setPlaying(on) {
+  if (on) comecarLeitura();
+  else terminarLeitura();
   P.playing = on;
   playBtn.classList.toggle("is-paused", !on);
   playBtn.innerHTML = `<svg class="icon"><use href="#i-${on ? "pause" : "play"}"/></svg>`;
@@ -223,7 +257,11 @@ function startCountdown(n) {
     k -= 1;
     if (k <= 0) {
       cancelCountdown();
-      if (S().beep) beep(1000, 160, 0.25);
+      P.contou = true;
+      if (S().beep) {
+        beep(1000, 160, 0.25);
+        P.bipAgora = true;
+      }
       setPlaying(true);
     } else show();
   }, 1000);

@@ -197,12 +197,20 @@ paths:
         '403': { $ref: '#/components/responses/Error' }
   /api/v1/projects/{id}/tpeasy/script:
     get:
-      summary: Baixar o roteiro no formato de backup do TPeasy
+      security: [{ session: [] }, { appToken: [tpeasy.roteiros] }]
+      summary: Baixar o roteiro no formato de backup do TPeasy (também o "Abrir no TPeasy", pelo servidor do app)
       parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
       responses:
         {
-          '200': { description: backup, content: { application/json: { schema: { $ref: '#/components/schemas/TpeasyBackup' } } } },
+          '200':
+            {
+              description: backup da versão mais nova; o número da versão e o documento vão nos cabeçalhos,
+              headers: { X-Zro-Versao: { schema: { type: integer } }, X-Zro-Documento: { schema: { type: string, format: uuid } } },
+              content: { application/json: { schema: { $ref: '#/components/schemas/TpeasyBackup' } } },
+            },
+          '401': { $ref: '#/components/responses/Error' },
           '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
         }
     post:
       summary: Importar roteiro de um backup do TPeasy como nova versão

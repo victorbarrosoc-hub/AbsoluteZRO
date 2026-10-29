@@ -264,15 +264,27 @@ export async function previewOrganizationPlan(db: Database, auth: Authenticated 
 
 // ───────────── TPeasy ─────────────
 
-export async function exportScriptToTpeasy(db: Database, auth: Authenticated | null, projectId: string) {
+/**
+ * A versão mais nova do roteiro do projeto, no formato do TPeasy, com o número da versão e o id do documento.
+ * "Abrir no TPeasy" usa os dois para dizer que versão está no aparelho; o backup em si fica igual ao de sempre.
+ */
+export async function openScriptInTpeasy(db: Database, auth: Authenticated | null, projectId: string) {
   const actor = await authorize(db, auth, { project: { id: projectId, access: 'view' }, product: { id: 'tpeasy', feature: 'script_export' } })
   const [doc] = await db.asUser(
     { userId: actor.userId, orgId: actor.orgId },
     (tx) => tx`
-    select title, body, created_at from zro.project_documents where project_id = ${projectId} and kind = 'script' order by version desc limit 1`,
+    select id, version, title, body, created_at from zro.project_documents where project_id = ${projectId} and kind = 'script' order by version desc limit 1`,
   )
   if (!doc) throw new DomainError('not_found', 'Este projeto ainda não tem roteiro.')
-  return toTpeasyBackup({ projectId, title: doc.title as string, body: doc.body as string, updatedAt: doc.created_at as Date })
+  return {
+    backup: toTpeasyBackup({ projectId, title: doc.title as string, body: doc.body as string, updatedAt: doc.created_at as Date }),
+    version: Number(doc.version),
+    documentId: doc.id as string,
+  }
+}
+
+export async function exportScriptToTpeasy(db: Database, auth: Authenticated | null, projectId: string) {
+  return (await openScriptInTpeasy(db, auth, projectId)).backup
 }
 
 export async function importScriptFromTpeasy(db: Database, auth: Authenticated | null, input: { projectId: string; backup: unknown; scriptId?: string }) {
