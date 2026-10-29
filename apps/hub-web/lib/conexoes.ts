@@ -6,6 +6,7 @@ import { appOrigin, isProduction } from './env'
  * Conexões (ADR 0026): o mesmo cliente OAuth do "Entrar com Google" (GOOGLE_CLIENT_ID/SECRET, "Absolute ZRO – central")
  * com o retorno /conexoes/google/retorno, e a chave ZRO_CONEXOES_KEY para cifrar os tokens. Sem qualquer um dos dois,
  * a tela mostra "indisponível" e a API responde 503: nunca guarda token em claro.
+ * Em produção desde 29/10/2026 (projeto Vercel absolutezro). Trocar a chave obriga todo mundo a conectar de novo.
  * ZRO_GOOGLE_TESTE_URL (+ _CLIENT_ID/_CLIENT_SECRET) troca o Google por um falso, e só fora de produção (testes e2e).
  */
 export function googleAgendaConfig(): GoogleAgendaConfig | null {
