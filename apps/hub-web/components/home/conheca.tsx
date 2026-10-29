@@ -86,7 +86,7 @@ export function Conheca({ itens }: { itens: Destaque[] }) {
         <div className="pconheca__ficha" key={atual.id}>
           <h3>{atual.nome}</h3>
           <p className="pconheca__linha">{atual.linha}</p>
-          {atual.emDesenvolvimento && <span className="selo-dev">Em desenvolvimento</span>}
+          {atual.emDesenvolvimento && <span className="selo-dev">Em breve</span>}
           <ul>
             {atual.fatos.map((f) => (
               <li key={f}>{f}</li>

@@ -216,7 +216,7 @@ test('gate de lançamento: anônimo não vê CTA, link nem instalador de produto
   const FECHADOS = /nossom-teal\.vercel\.app|aeon\.absolutezro\.com|revela\.absolutezro\.com|carrodofreela\.com\.br/
   await page.goto('/')
   const strip = page.locator('.pstrip__list')
-  await expect(strip.locator('.selo-dev').first()).toHaveText('Em desenvolvimento')
+  await expect(strip.locator('.selo-dev').first()).toHaveText('Em breve')
   await expect(strip.locator('a.pstrip__card[href*="synquei"]')).toHaveCount(1)
   const hrefs = await page.locator('a[href]').evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''))
   expect(hrefs.filter((h) => FECHADOS.test(h))).toEqual([])

@@ -121,6 +121,7 @@ export function ProductMark({ productId, name, size = 32 }: { productId: string;
     finishing: '/products/finishing.svg',
     'ai-edit': '/products/ai-edit.svg',
     maestro: '/products/maestro.svg',
+    relay: '/products/relay.svg',
   }
   const src = icons[productId]
   if (!src) {
