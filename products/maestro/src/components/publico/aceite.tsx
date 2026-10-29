@@ -5,7 +5,8 @@
  * mesmo "acorde" da aprovação (só CSS, parado com "reduzir movimento").
  */
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
+import { AVISO_ACEITE, conferirDocumento, desenharContrato, valoresDoContrato, type DadosDoContrato } from "@/lib/contrato/modelo";
 import { brl, dataBr } from "@/lib/dinheiro";
 import type { Parcela } from "@/lib/orcamento/motor";
 import { Icone } from "@/components/icones";
@@ -21,6 +22,8 @@ type Props = {
   aceite: { nome: string; em: string } | null;
   retorno: { nome: string; texto: string; em: string } | null;
   whatsapp: string | null;
+  /** O contrato que vai junto (Ajustes → Contrato): o texto do modelo e os dados da proposta; o cliente completa. */
+  contrato?: { texto: string; dados: DadosDoContrato } | null;
 };
 
 const quando = (iso: string) => {
@@ -66,6 +69,29 @@ export function AceiteOrcamento(p: Props) {
   const [erro, setErro] = useState<string | null>(null);
   const [indo, setIndo] = useState(false);
   const [feito, setFeito] = useState<"aceito" | "ajuste" | null>(null);
+  const [documento, setDocumento] = useState("");
+  const [endereco, setEndereco] = useState("");
+  const [semPortfolio, setSemPortfolio] = useState(false);
+  const ct = p.contrato ?? null;
+  const html = useMemo(
+    () =>
+      ct
+        ? desenharContrato(
+            ct.texto,
+            valoresDoContrato({
+              ...ct.dados,
+              contratante: {
+                nome: nome.replace(/\s+/g, " ").trim(),
+                documento: conferirDocumento(documento).ok ? documento : "",
+                endereco,
+                portfolio: !semPortfolio,
+              },
+            }),
+          )
+        : "",
+    [ct, nome, documento, endereco, semPortfolio],
+  );
+  const docOk = conferirDocumento(documento).ok;
 
   if (p.aceite || feito === "aceito")
     return (
@@ -96,7 +122,10 @@ export function AceiteOrcamento(p: Props) {
     setErro(null);
     try {
       const url = modo === "aceitar" ? "/api/publico/orcamento/aceitar" : "/api/publico/orcamento/ajuste";
-      const corpo = modo === "aceitar" ? { token: p.token, nome, aceite } : { token: p.token, nome, texto };
+      const corpo =
+        modo === "aceitar"
+          ? { token: p.token, nome, aceite, ...(ct ? { contrato: aceite, documento, endereco, portfolio: !semPortfolio } : {}) }
+          : { token: p.token, nome, texto };
       const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(corpo) });
       const j = (await r.json().catch(() => ({}))) as { mensagem?: string };
       if (!r.ok) {
@@ -124,54 +153,90 @@ export function AceiteOrcamento(p: Props) {
     );
 
   return (
-    <section className="oc-decidir" aria-label="Sua resposta">
-      {p.retorno ? (
-        <p className="oc-retorno">
-          <Icone nome="balao" size={16} /> Ajuste pedido por {p.retorno.nome} em {quando(p.retorno.em)}. Se já combinaram, pode aceitar.
-        </p>
+    <>
+      {ct ? (
+        <section className="ct-cliente" aria-label="Contrato">
+          <div className="ct-cliente__cabeca">
+            <h2>Contrato</h2>
+            <p className="sutil">Leia antes de aceitar. Seus dados entram no texto ao preencher.</p>
+          </div>
+          <div className="ct-folha ct-folha--papel ct-folha--rolar" tabIndex={0} aria-label="Texto do contrato" dangerouslySetInnerHTML={{ __html: html }} />
+        </section>
       ) : null}
-      <div className="cl-decidir__botoes oc-botoes">
-        <button type="button" className="cl-escolha" data-tipo="aprovado" aria-checked={modo === "aceitar"} role="radio" onClick={() => setModo("aceitar")}>
-          <Icone nome="check" size={20} /> Aceitar
-        </button>
-        <button type="button" className="cl-escolha" data-tipo="ajuste" aria-checked={modo === "ajuste"} role="radio" onClick={() => setModo("ajuste")}>
-          <Icone nome="editar" size={20} /> Pedir ajuste
-        </button>
-      </div>
-      {modo ? (
-        <form className="oc-form" onSubmit={enviar}>
-          <label className="cl-campo">
-            <span>Seu nome</span>
-            <input autoComplete="name" maxLength={80} value={nome} onChange={(e) => setNome(e.target.value)} autoFocus />
-          </label>
-          {modo === "aceitar" ? (
-            <label className="cl-termo">
-              <input type="checkbox" checked={aceite} onChange={(e) => setAceite(e.target.checked)} />
-              <span>
-                Aceito a proposta {p.codigo} da {p.produtora}, no total de {brl(p.total)}
-                {p.parcelas.length > 1 ? `, em ${p.parcelas.length} parcelas` : ""}. Vale como resposta formal, com meu nome e a data.
-              </span>
-            </label>
-          ) : (
-            <label className="cl-campo">
-              <span>O que ajustar</span>
-              <textarea rows={4} maxLength={2000} value={texto} onChange={(e) => setTexto(e.target.value)} />
-            </label>
-          )}
-          {erro ? (
-            <p className="rv-erro" role="alert">
-              {erro}
-            </p>
-          ) : null}
-          <button
-            type="submit"
-            className="glass-btn glass-btn--ink"
-            disabled={indo || nome.trim().length < 2 || (modo === "aceitar" ? !aceite : !texto.trim())}
-          >
-            {indo ? "Enviando…" : modo === "aceitar" ? "Confirmar aceite" : "Enviar pedido de ajuste"}
+      <section className="oc-decidir" aria-label="Sua resposta">
+        {p.retorno ? (
+          <p className="oc-retorno">
+            <Icone nome="balao" size={16} /> Ajuste pedido por {p.retorno.nome} em {quando(p.retorno.em)}. Se já combinaram, pode aceitar.
+          </p>
+        ) : null}
+        <div className="cl-decidir__botoes oc-botoes">
+          <button type="button" className="cl-escolha" data-tipo="aprovado" aria-checked={modo === "aceitar"} role="radio" onClick={() => setModo("aceitar")}>
+            <Icone nome="check" size={20} /> Aceitar
           </button>
-        </form>
-      ) : null}
-    </section>
+          <button type="button" className="cl-escolha" data-tipo="ajuste" aria-checked={modo === "ajuste"} role="radio" onClick={() => setModo("ajuste")}>
+            <Icone nome="editar" size={20} /> Pedir ajuste
+          </button>
+        </div>
+        {modo ? (
+          <form className="oc-form" onSubmit={enviar}>
+            <label className="cl-campo">
+              <span>Seu nome</span>
+              <input autoComplete="name" maxLength={80} value={nome} onChange={(e) => setNome(e.target.value)} autoFocus />
+            </label>
+            {modo === "aceitar" && ct ? (
+              <>
+                <label className="cl-campo">
+                  <span>CPF ou CNPJ</span>
+                  <input
+                    inputMode="numeric"
+                    autoComplete="off"
+                    maxLength={18}
+                    value={documento}
+                    aria-invalid={documento.length > 10 && !docOk ? true : undefined}
+                    onChange={(e) => setDocumento(e.target.value)}
+                  />
+                  {documento.replace(/\D/g, "").length >= 11 && !docOk ? <small className="rv-erro">Confira o número.</small> : null}
+                </label>
+                <label className="cl-campo">
+                  <span>Endereço completo</span>
+                  <input autoComplete="street-address" maxLength={300} value={endereco} onChange={(e) => setEndereco(e.target.value)} />
+                </label>
+                <label className="cl-termo cl-termo--leve">
+                  <input type="checkbox" checked={semPortfolio} onChange={(e) => setSemPortfolio(e.target.checked)} />
+                  <span>Prefiro que não usem no portfólio.</span>
+                </label>
+              </>
+            ) : null}
+            {modo === "aceitar" ? (
+              <label className="cl-termo">
+                <input type="checkbox" checked={aceite} onChange={(e) => setAceite(e.target.checked)} />
+                <span>
+                  {ct ? "Li e aceito o contrato e a proposta" : "Aceito a proposta"} {p.codigo} da {p.produtora}, no total de {brl(p.total)}
+                  {p.parcelas.length > 1 ? `, em ${p.parcelas.length} parcelas` : ""}. Vale como resposta formal, com meu nome e a data.
+                </span>
+              </label>
+            ) : (
+              <label className="cl-campo">
+                <span>O que ajustar</span>
+                <textarea rows={4} maxLength={2000} value={texto} onChange={(e) => setTexto(e.target.value)} />
+              </label>
+            )}
+            {erro ? (
+              <p className="rv-erro" role="alert">
+                {erro}
+              </p>
+            ) : null}
+            <button
+              type="submit"
+              className="glass-btn glass-btn--ink"
+              disabled={indo || nome.trim().length < 2 || (modo === "aceitar" ? !aceite || (!!ct && (!docOk || endereco.trim().length < 5)) : !texto.trim())}
+            >
+              {indo ? "Enviando…" : modo === "aceitar" ? "Confirmar aceite" : "Enviar pedido de ajuste"}
+            </button>
+            {modo === "aceitar" && ct ? <p className="ct-registro__nota">{AVISO_ACEITE}</p> : null}
+          </form>
+        ) : null}
+      </section>
+    </>
   );
 }

@@ -18,7 +18,8 @@ import { BotaoAcao } from "@/components/acao";
 import { Icone } from "@/components/icones";
 import { EditorOrcamento } from "@/components/orcamento/editor";
 import { SeloStatus } from "@/components/painel";
-import { novaVersaoAcao, removerOrcamentoAcao, statusAcao } from "../acoes";
+import { contratoAcao, novaVersaoAcao, removerOrcamentoAcao, statusAcao } from "../acoes";
+import { contratosDe } from "@/lib/contrato/servidor";
 
 export const metadata = { title: "Orçamento" };
 
@@ -38,6 +39,7 @@ export default async function FichaOrcamento({ params }: PageProps<"/app/orcamen
     listarVeiculos(ctx),
     dinheiro ? lerLinkDoOrcamento(ctx, o.id) : Promise.resolve(null),
   ]);
+  const [contrato] = dinheiro ? await contratosDe(ctx, { orcamentoId: o.id }) : [];
   const quando = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
   const escreve = podeEscrever(sessao.papel);
   const editavel = escreve && o.status === "rascunho";
@@ -134,6 +136,41 @@ export default async function FichaOrcamento({ params }: PageProps<"/app/orcamen
           expira={link?.expira ?? null}
           usos={link?.usos ?? 0}
         />
+      ) : null}
+
+      {dinheiro ? (
+        <section className="ficha ct-ficha" aria-label="Contrato">
+          <span className="ct-ficha__icone" data-ligado={o.contrato || !!contrato || undefined} aria-hidden="true">
+            <Icone nome="documento" size={20} />
+          </span>
+          <div className="ct-ficha__miolo">
+            <strong className="ficha__titulo">Contrato</strong>
+            <p className="sutil">
+              {contrato
+                ? `Aceito por ${contrato.nome} em ${quando(contrato.aceitoEm)}.`
+                : o.contrato
+                  ? "Vai junto com o link; o cliente aceita os dois."
+                  : "O cliente aceita só a proposta."}
+            </p>
+          </div>
+          <div className="acoes">
+            {contrato ? (
+              <Link className="glass-btn glass-btn--sm glass-btn--ink" href={`/app/contratos/${contrato.id}`}>
+                <Icone nome="documento" size={16} /> Ver contrato
+              </Link>
+            ) : o.status === "rascunho" || o.status === "enviado" ? (
+              <BotaoAcao
+                acao={contratoAcao}
+                campos={{ id: o.id, ligar: o.contrato ? "0" : "1" }}
+                rotulo={o.contrato ? "Não enviar contrato" : "Enviar contrato junto"}
+                icone={o.contrato ? "fechar" : "check"}
+              />
+            ) : null}
+            <Link className="q-limpar" href="/app/ajustes/contrato">
+              Modelo
+            </Link>
+          </div>
+        </section>
       ) : null}
 
       <EditorOrcamento

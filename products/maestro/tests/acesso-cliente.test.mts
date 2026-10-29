@@ -201,3 +201,28 @@ describe("acesso por cliente", () => {
     assert.equal((await pessoas.listarPessoas(o.b)).length, 1);
   });
 });
+
+describe("contratos (drizzle/0020)", () => {
+  test("tabela ligada a cliente com a política _cliente; quem lê é só administração e gestão", async () => {
+    const [p] = (await getBanco().asSystem("teste", (tx) =>
+      tx.execute(sql`select permissive from pg_policies where schemaname = 'maestro' and tablename = 'contratos' and policyname = 'contratos_cliente'`),
+    )) as unknown as { permissive: string }[];
+    assert.equal(p?.permissive, "RESTRICTIVE");
+    const html = `<article class="ct-texto"><p>${"contrato de teste ".repeat(5)}</p></article>`;
+    await getBanco().asSystem("semente", async (tx) => {
+      for (const k of ["sim", "nao"]) {
+        const [q] = (await tx.execute(
+          sql`select id from maestro.orcamentos where org_id = ${o.orgA} and cliente_id = ${ids[`c_${k}`]} limit 1`,
+        )) as unknown as { id: string }[];
+        await tx.execute(sql`
+          insert into maestro.contratos (org_id, orcamento_id, cliente_id, projeto_id, modelo_versao, html, hash, nome, documento, endereco)
+          values (${o.orgA}, ${q.id}, ${ids[`c_${k}`]}, ${ids[`p_${k}`]}, 0, ${html}, encode(sha256(convert_to(${html}, 'UTF8')), 'hex'), 'Nome', '52998224725', 'Rua A, 1')`);
+      }
+    });
+    assert.equal(await contar(o.admin, "contratos"), 2);
+    assert.equal(await contar(o.gestor, "contratos"), 2);
+    assert.equal(await contar(o.equipe, "contratos"), 0, "equipe não lê contrato (tem valor e documento)");
+    assert.equal(await contar(o.leitura, "contratos"), 0);
+    assert.equal(await contar(o.b, "contratos"), 0);
+  });
+});

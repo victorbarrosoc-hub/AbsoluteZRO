@@ -1,7 +1,7 @@
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import Link from "next/link";
 import { demonstracaoCompleta, temDemonstracao } from "@/lib/demo/demonstracao";
-import { NOME_DO_PAPEL, podeRemover } from "@/lib/papeis";
+import { NOME_DO_PAPEL, podeRemover, podeVerDinheiro } from "@/lib/papeis";
 import { meuAlcance } from "@/lib/pessoas";
 import { emissor } from "@/lib/zro/config";
 import { Icone } from "@/components/icones";
@@ -90,7 +90,7 @@ export default async function Ajustes() {
         <section className="ficha" aria-label="Produtora">
           <div>
             <strong className="ficha__titulo">Produtora</strong>
-            <p className="sutil">A marca, o link de pedido e a base dos orçamentos.</p>
+            <p className="sutil">A marca, o contrato, o link de pedido e a base dos orçamentos.</p>
           </div>
           <nav className="atalhos" aria-label="Ajustes da produtora">
             <Link className="atalho" href="/app/ajustes/marca">
@@ -99,6 +99,11 @@ export default async function Ajustes() {
             <Link className="atalho" href="/app/ajustes/empresa">
               <Icone nome="documento" size={18} /> Empresa e orçamento <Icone nome="seta" size={15} />
             </Link>
+            {podeVerDinheiro(s.papel) ? (
+              <Link className="atalho" href="/app/ajustes/contrato">
+                <Icone nome="documento" size={18} /> Contrato <Icone nome="seta" size={15} />
+              </Link>
+            ) : null}
             <Link className="atalho" href="/app/ajustes/pedido">
               <Icone nome="link" size={18} /> Link de pedido <Icone nome="seta" size={15} />
             </Link>

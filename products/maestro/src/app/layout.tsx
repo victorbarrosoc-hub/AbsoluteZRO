@@ -13,6 +13,7 @@ import "./aurora.css";
 import "./negocio.css";
 import "./numeros.css";
 import "./equipe.css";
+import "./contrato.css";
 import "./celular.css";
 
 export const metadata: Metadata = {

@@ -1,0 +1,306 @@
+/*
+ * Contrato (Ajustes → Contrato, a ficha no orçamento, /app/contratos e o /o do cliente). O contrato é papel branco com
+ * texto grafite em qualquer tema e no PDF; a variável preenchida tem um fundo tingido leve (nunca texto colorido), e o
+ * que falta preencher, um tracejado.
+ */
+
+.ct-editor {
+  display: grid;
+  gap: 20px;
+  align-items: start;
+}
+@media (min-width: 1100px) {
+  .ct-editor {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .ct-editor__previa {
+    position: sticky;
+    top: 96px;
+  }
+}
+.ct-editor__lado {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.ct-editor__previa {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.ct-editor__previa .ct-folha {
+  max-height: min(78vh, 900px);
+  overflow: auto;
+}
+.ct-editor__texto {
+  width: 100%;
+  min-height: 420px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.84rem;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.ct-aviso {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-s);
+  background: var(--acento-suave);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acento) 35%, transparent);
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.ct-chips {
+  display: grid;
+  gap: 8px;
+}
+.ct-chips__grupo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+.ct-chips__rotulo {
+  min-width: 100%;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.ct-chip {
+  max-width: 100%;
+  padding: 5px 11px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 160ms ease;
+  overflow-wrap: anywhere;
+}
+.ct-chip:hover:not(:disabled) {
+  background: var(--acento-suave);
+}
+.ct-chip:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.ct-numeros > summary {
+  cursor: pointer;
+  font-weight: 650;
+  padding: 6px 0;
+}
+.ct-numeros > fieldset {
+  margin-top: 8px;
+}
+
+/* ───────────── a folha ───────────── */
+
+.ct-folha {
+  min-width: 0;
+  padding: 30px 28px 36px;
+  border-radius: 6px;
+  background: #fff;
+  color: #1d1d1f;
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.06),
+    0 12px 40px rgb(30 20 10 / 0.1);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.ct-folha--papel {
+  max-width: 820px;
+  margin-inline: auto;
+}
+.ct-folha--rolar {
+  max-height: 60vh;
+  overflow: auto;
+}
+.ct-folha--rolar:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
+.ct-texto h1 {
+  margin: 0 0 18px;
+  font-family: var(--font-apple);
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #1d1d1f;
+}
+.ct-texto h2 {
+  margin: 22px 0 6px;
+  font-family: var(--font-apple);
+  font-size: 1rem;
+  font-weight: 750;
+  color: #1d1d1f;
+}
+.ct-texto p {
+  margin: 0 0 10px;
+}
+.ct-texto ul {
+  margin: 0 0 10px;
+  padding-left: 22px;
+}
+.ct-texto li {
+  margin: 2px 0;
+}
+.ct-var {
+  padding: 0 2px;
+  border-radius: 3px;
+  background: rgb(200 150 47 / 0.14);
+}
+.ct-vazio {
+  padding: 0 3px;
+  border-radius: 3px;
+  border-bottom: 1.5px dashed #8a6a1f;
+  color: #5c5c62;
+}
+.ct-registro {
+  margin-top: 26px;
+  padding-top: 18px;
+  border-top: 2px solid var(--acento);
+  break-inside: avoid;
+}
+.ct-registro h2 {
+  margin: 0 0 10px;
+  font-family: var(--font-apple);
+  font-size: 0.98rem;
+  font-weight: 750;
+  color: #1d1d1f;
+}
+.ct-registro dl {
+  display: grid;
+  grid-template-columns: minmax(0, 150px) minmax(0, 1fr);
+  gap: 4px 14px;
+  margin: 0 0 12px;
+  font-size: 0.86rem;
+}
+.ct-registro dt {
+  color: #5c5c62;
+}
+.ct-registro dd {
+  margin: 0;
+  min-width: 0;
+}
+.ct-registro__hash,
+.ct-registro__ua {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.76rem;
+  word-break: break-all;
+}
+.ct-registro__nota {
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  color: #5c5c62;
+}
+.ct-folha .aviso-ok,
+.ct-folha .erro {
+  color: #1d1d1f;
+}
+.oc-form .ct-registro__nota {
+  color: var(--text-faint);
+}
+@media (max-width: 560px) {
+  .ct-folha {
+    padding: 22px 18px 26px;
+    font-size: 0.9rem;
+  }
+  .ct-registro dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ct-registro dt {
+    margin-top: 6px;
+  }
+}
+
+/* ───────────── ficha no orçamento, versões e página do cliente ───────────── */
+
+.ct-ficha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+}
+.ct-ficha__icone {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text-faint);
+}
+.ct-ficha__icone[data-ligado] {
+  background: var(--acento-suave);
+  color: var(--text);
+}
+.ct-ficha__miolo {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.ct-ficha__miolo p {
+  margin: 2px 0 0;
+}
+.ct-versoes > summary {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 650;
+}
+.ct-versoes ol {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ct-versoes li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.ct-versoes li .sutil {
+  margin-left: auto;
+}
+.ct-cliente {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  max-width: 820px;
+  margin-inline: auto;
+}
+.ct-cliente__cabeca h2 {
+  margin: 0;
+  font-family: var(--font-apple);
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+.ct-cliente__cabeca p {
+  margin: 2px 0 0;
+}
+.cl-termo--leve {
+  padding: 10px 14px;
+}
+
+/* Marca própria: "Powered by Absolute ZRO" discreto (rodapé das páginas do cliente). */
+.cl-rodape--propria {
+  gap: 6px;
+  font-size: 0.78rem;
+  opacity: 0.85;
+}

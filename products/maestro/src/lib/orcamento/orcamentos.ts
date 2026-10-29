@@ -136,6 +136,8 @@ export type OrcamentoFicha = {
   pedidoId: string | null;
   aceite: { nome: string; em: string } | null;
   retorno: { nome: string; texto: string; em: string } | null;
+  /** "Enviar contrato junto" (drizzle/0020). */
+  contrato: boolean;
 };
 
 async function lerFicha(tx: Tx, id: string, hoje: string): Promise<OrcamentoFicha | null> {
@@ -177,6 +179,7 @@ async function lerFicha(tx: Tx, id: string, hoje: string): Promise<OrcamentoFich
     itens: itens.map(deBanco),
     versoes: [...versoes].map((v) => ({ ...v, versao: Number(v.versao) })),
     pedidoId: (q.pedido_id as string | null) ?? null,
+    contrato: !!q.contrato,
     aceite: q.aceite ? { nome: (q.aceite as Record<string, string>).nome, em: (q.aceite as Record<string, string>).em } : null,
     retorno: q.retorno
       ? { nome: (q.retorno as Record<string, string>).nome, texto: (q.retorno as Record<string, string>).texto, em: (q.retorno as Record<string, string>).em }
@@ -410,9 +413,9 @@ export async function novaVersao(ctx: Contexto, id: string, hoje = hojeBr()): Pr
       const validadeAntiga = q.validade && q.emissao ? Math.round((+new Date(q.validade as string) - +new Date(q.emissao as string)) / 86_400_000) : 15;
       const [n] = (await tx.execute(sql`
         insert into maestro.orcamentos (org_id, numero, versao, cliente_id, projeto_id, titulo, categoria, emissao, validade, periodo, escopo, pagamento,
-                                        condicoes, desconto_cents, imposto_pct, notas_internas, respostas, demo, created_by)
+                                        condicoes, desconto_cents, imposto_pct, notas_internas, respostas, contrato, demo, created_by)
         select org_id, numero, ${v + 1}, cliente_id, null, titulo, categoria, ${hoje}, ${somarDias(hoje, Math.max(1, validadeAntiga))}, periodo, escopo,
-               pagamento, condicoes, desconto_cents, imposto_pct, notas_internas, respostas, demo, ${ctx.sub}
+               pagamento, condicoes, desconto_cents, imposto_pct, notas_internas, respostas, contrato, demo, ${ctx.sub}
           from maestro.orcamentos where id = ${id}
         returning id`)) as unknown as { id: string }[];
       await tx.execute(sql`

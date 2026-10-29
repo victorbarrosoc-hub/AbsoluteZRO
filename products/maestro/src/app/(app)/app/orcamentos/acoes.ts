@@ -14,6 +14,7 @@ import { lerEmpresa } from "@/lib/organizacao";
 import { buscarLugares, medirRota, precoDaGasolina } from "@/lib/orcamento/servicos";
 import { gerarLinkDoOrcamento, revogarLinkDoOrcamento } from "@/lib/orcamento/link";
 import type { Lugar, PrecoCombustivel } from "@/lib/orcamento/deslocamento";
+import { ligarContrato } from "@/lib/contrato/servidor";
 import type { EstadoForm } from "@/components/form";
 
 const ctxDe = (s: { sub: string; orgId: string }) => ({ sub: s.sub, orgId: s.orgId });
@@ -61,6 +62,17 @@ export async function statusAcao(_: EstadoForm, fd: FormData): Promise<EstadoFor
   if (!r.ok) return { mensagem: r.mensagem };
   revalidatePath(`/app/orcamentos/${id}`);
   revalidatePath("/app/orcamentos");
+  return { aviso: "Feito." };
+}
+
+/** "Enviar contrato junto" (administração e gestão; rascunho ou enviado). */
+export async function contratoAcao(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
+  const s = await exigirAcessoNaAcao();
+  if (!podeVerDinheiro(s.papel)) return { mensagem: "Só administração e gestão." };
+  const id = String(fd.get("id") ?? "");
+  const r = await ligarContrato(ctxDe(s), id, fd.get("ligar") === "1");
+  if (!r.ok) return { mensagem: r.mensagem };
+  revalidatePath(`/app/orcamentos/${id}`);
   return { aviso: "Feito." };
 }
 
