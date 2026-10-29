@@ -35,7 +35,7 @@ test('conta nova recebe as ferramentas do plano grátis', async ({ page }) => {
   const ent = await (await page.request.get('/api/v1/entitlements')).json()
   const access = (id: string) => ent.products.find((p: { productId: string }) => p.productId === id).access
   // Os lançados vêm contratados pelo plano grátis; os fechados por lançamento (ADR 0023) aparecem como closed, nunca contratados.
-  for (const id of ['sobedesce', 'synquei', 'tpeasy']) expect(access(id), id).toBe('contracted')
+  for (const id of ['sobedesce', 'synquei', 'tpeasy', 'maestro']) expect(access(id), id).toBe('contracted')
   for (const id of ['carro-do-freela', 'nossom', 'ai-edit', 'finishing']) expect(access(id), id).toBe('closed')
   // Com o Carro do Freela fechado, o Início não promete projeto "de um job".
   await expect(page.locator('.quick')).toContainText('Comece do zero')
@@ -306,8 +306,9 @@ test('sua conta: nome, foto, pedido de upgrade e acessos', async ({ page }) => {
 
   await page.goto('/perfil/acessos')
   await expect(page.getByRole('heading', { name: 'Org conta' })).toBeVisible()
-  // Plano grátis lista as sete, mas só as três lançadas contam como acesso (gate de lançamento, ADR 0023).
-  await expect(page.locator('.access-org__apps li.is-on')).toHaveCount(3)
+  // Plano grátis lista as oito, mas só as abertas contam como acesso (gate de lançamento, ADR 0023): as três lançadas e
+  // o Maestro em Beta grátis (0027).
+  await expect(page.locator('.access-org__apps li.is-on')).toHaveCount(4)
 })
 
 test('excluir a conta: senha, confirmação, sai da sessão e o e-mail volta a ficar livre', async ({ page }) => {

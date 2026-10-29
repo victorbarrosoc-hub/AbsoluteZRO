@@ -502,6 +502,19 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   como "em produção". Só administração e gestão mudam (RLS + funções `maestro.coluna_*`); organizações existentes
   ficam com as 8 de hoje. Falta: aplicar a 0024 em produção (vai junto com o próximo deploy autorizado do Maestro) e
   conferir num iPhone de verdade.
+
+- 🟡 **Lançamento do Maestro em Beta grátis** (29/10/2026, decisão do titular, [ADR 0027](decisions/0027-lancamento-maestro-beta-gratis.md);
+  pronto no ramo, vale no OK final): migration `0027_maestro_lancamento.sql` (gate `public_beta` em todos os canais; o
+  Maestro inteiro no grátis, no Completo e no Pro com os créditos do plano; Pro v2 em rascunho abre o Maestro e mantém
+  a marca própria; o grátis nunca leva o sinal; entitlements das contas atuais, idempotente). HUB: "Conheça de perto"
+  com o Maestro no MacBook e no iPhone (`produto-maestro-*.webp`), `/baixar` com navegador e Tela de Início, a Z
+  sabendo que é Beta grátis; o fluxo só mostra quem manda evento. PWA do Maestro (manifesto, ícones do ícone oficial,
+  `apple-touch-icon`, metas do Safari, "No celular, como app." em Ajustes e na página inicial). Página inicial lançada
+  (Beta grátis, "Criar conta grátis", "Entrar com Absolute ZRO", app de computador só com instalador publicado) e o
+  Maestro nas listas da família de SOBEDESCE, Synquei, TPeasy, NOSSOM, AEON, Revela e Carro do Freela, tudo atrás de
+  chaves que viram juntas (`node scripts/lancamento-maestro.mjs --abrir`; checklist e reversão em
+  [docs/operations/lancamento-maestro.md](operations/lancamento-maestro.md)). Falta: o OK do titular, publicar cada
+  app e o app de computador do Maestro entrar na central (`APPS_DESKTOP`) quando tiver Release.
 - ⬜ Maestro, pendente do titular: ciência dos serviços abertos da calculadora; criar a chave de API do Google só do
   Maestro (restrita à Drive API e a `maestro.absolutezro.com`) e pôr em `MAESTRO_GOOGLE_API_KEY` na Vercel; pôr
   `CRON_SECRET` no projeto `maestro` da Vercel (agendamento que desliga o compartilhamento de revisão vencido).

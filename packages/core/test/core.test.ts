@@ -110,7 +110,8 @@ describe('projetos', () => {
     const id = await createProject(db, o.auth, { title: 'Casamento Ana e Leo', type: 'casamento' })
     const { steps } = await getProject(db, o.auth, id)
     const by = Object.fromEntries(steps.map((s) => [s.stepKey, s.displayState]))
-    // Carro, AEON, NOSSOM, Revela e Maestro estão fechados (ADR 0023): nunca "contrate", sempre indisponível.
+    // Carro, AEON, NOSSOM e Revela estão fechados (ADR 0023): nunca "contrate", sempre indisponível. O Maestro está em
+    // Beta grátis (0027): sem o plano grátis nem outro que o traga, pede assinatura como os lançados.
     expect(by).toEqual({
       'carro-do-freela': 'unavailable',
       tpeasy: 'blocked_subscription',
@@ -119,7 +120,7 @@ describe('projetos', () => {
       'ai-edit': 'unavailable',
       nossom: 'unavailable',
       finishing: 'unavailable',
-      maestro: 'unavailable',
+      maestro: 'blocked_subscription',
     })
     await expectCode(createProject(db, o.auth, { title: '' }), 'invalid_input')
   })

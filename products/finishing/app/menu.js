@@ -32,6 +32,11 @@ const FAMILIA = [
   { href: 'https://synquei.vercel.app', nome: 'Synquei', img: 'marca/familia/synquei.svg' },
   { href: 'https://tpeasy.vercel.app', nome: 'TPEasy', img: 'marca/familia/tpeasy.svg' },
 ]
+// Maestro na família (lançamento em Beta grátis, docs/operations/lancamento-maestro.md): fica de fora até o titular
+// abrir; vira com `node scripts/lancamento-maestro.mjs --abrir` (e volta com --fechar).
+const MAESTRO_NA_FAMILIA = false
+// em ordem alfabética, como em todas as plataformas: entre o Carro do Freela e o Nossom
+if (MAESTRO_NA_FAMILIA) FAMILIA.splice(3, 0, { href: 'https://maestro.absolutezro.com', nome: 'Maestro', img: 'marca/familia/maestro.svg' })
 
 const el = (tag, props = {}, ...filhos) => {
   const n = Object.assign(document.createElement(tag), props)

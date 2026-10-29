@@ -28,4 +28,5 @@ Cada decisão é reversível salvo indicação. Formato: contexto, decisão, con
 | [0024](0024-maestro-v2.md)                       | Maestro v2: a produtora inteira, por fases                     | aceita                |
 | [0025](0025-dominios-do-ecossistema.md)          | Cada plataforma em `<app>.absolutezro.com`                     | aceita                |
 | [0026](0026-conexoes.md)                         | Conexões: o Google Agenda conectado uma vez na conta           | aceita                |
+| [0027](0027-lancamento-maestro-beta-gratis.md)   | Lançamento do Maestro em Beta                                  | aceita                |
 | [0028](0028-custos-do-ecossistema.md)            | Custos do ecossistema no console, só admin                     | aceita                |

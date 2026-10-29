@@ -106,6 +106,7 @@ const SHELL = [
   './icons/familia/absolute-zro.png',
   './icons/familia/synquei.svg',
   './icons/familia/tpeasy.svg',
+  './icons/familia/maestro.svg',
   './icons/revela.svg',
 ]
 

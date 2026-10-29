@@ -43,10 +43,11 @@ const FATOS: Record<string, string[]> = {
   nossom: ['Estúdio de áudio para criadores', 'Instala pelo navegador', 'App para Mac e Windows'],
   finishing: ['LUT criativa a partir de uma referência', 'LOG para Rec.709 por câmera', 'PowerGrade para o DaVinci Resolve'],
   relay: ['YouTube, Reels, TikTok, WhatsApp e mais', 'Converte no aparelho, sem enviar o arquivo', 'Predefinição pronta para cada destino'],
+  maestro: ['Quadro de pauta em oito colunas', 'Aprovação do cliente no tempo do vídeo', 'Orçamento, contrato e financeiro'],
 }
 
 /** Ferramentas com a tela no MacBook e no iPhone (public/brand/produto-<id>-{claro,escuro}.webp); as outras mostram o ícone. */
-const TELA = new Set(['carro-do-freela', 'tpeasy', 'sobedesce', 'synquei', 'ai-edit', 'nossom', 'finishing'])
+const TELA = new Set(['carro-do-freela', 'tpeasy', 'sobedesce', 'synquei', 'ai-edit', 'nossom', 'finishing', 'maestro'])
 
 /** O nome da etapa no fluxo, na ordem do catálogo. */
 const ETAPA: Record<string, string> = {
@@ -57,6 +58,7 @@ const ETAPA: Record<string, string> = {
   'ai-edit': 'Edição',
   nossom: 'Som',
   finishing: 'Cor e entrega',
+  maestro: 'Gestão',
 }
 
 /** O que cada evento quer dizer, em português de gente (o nome técnico fica na dica). */
@@ -129,15 +131,18 @@ export default async function Landing() {
     tela: TELA.has(p.id as string),
     cor: productColor(p.id as string),
   }))
-  const etapas = ativos.map((p) => ({
-    id: p.id as string,
-    nome: p.name as string,
-    etapa: ETAPA[p.id as string] ?? (p.role_in_flow as string),
-    eventos: eventos
-      .filter((e) => EVENT_PRODUCER[e as keyof typeof EVENT_PRODUCER] === p.id && !SO_BASTIDOR.has(e))
-      .map((e) => ({ id: e, nome: EVENTO[e] ?? e })),
-    cor: productColor(p.id as string),
-  }))
+  // Só entra no fluxo quem avisa o HUB de verdade (o Maestro, por exemplo, ainda não manda evento).
+  const etapas = ativos
+    .map((p) => ({
+      id: p.id as string,
+      nome: p.name as string,
+      etapa: ETAPA[p.id as string] ?? (p.role_in_flow as string),
+      eventos: eventos
+        .filter((e) => EVENT_PRODUCER[e as keyof typeof EVENT_PRODUCER] === p.id && !SO_BASTIDOR.has(e))
+        .map((e) => ({ id: e, nome: EVENTO[e] ?? e })),
+      cor: productColor(p.id as string),
+    }))
+    .filter((e) => e.eventos.length > 0)
   return (
     <>
       {/* Topo de cinema: a paisagem em preto e branco com o símbolo esculpido em metal sobre a rocha (Higgsfield, fiel à marca). */}
