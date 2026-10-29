@@ -370,7 +370,17 @@ test('converter: ProRes 422 HQ vira MP4 H.264 marcado BT.709, no navegador', asy
   )
   const video = sonda.streams.find((s) => s.codec_type === 'video')
   assert.deepEqual([video.codec_name, video.width, video.height], ['h264', 1280, 720])
-  assert.deepEqual([video.color_primaries, video.color_transfer, video.color_space], ['bt709', 'bt709', 'bt709'])
+  // na falha, as marcas de cor de cada lado: colr do contêiner e cabeçalho do primeiro quadro ProRes
+  const marcas = (arquivo, caixa, deslocamento) => {
+    const b = readFileSync(arquivo)
+    const i = b.indexOf(caixa)
+    return i < 0 ? `${caixa} ausente` : `${caixa} ${[...b.subarray(i + deslocamento, i + deslocamento + 10)].join(',')}`
+  }
+  assert.deepEqual(
+    [video.color_primaries, video.color_transfer, video.color_space],
+    ['bt709', 'bt709', 'bt709'],
+    `master: ${marcas(master, 'colr', 0)} · ${marcas(master, 'icpf', 16)} · saída: ${marcas(saida, 'colr', 0)}`,
+  )
   assert.ok(
     sonda.streams.some((s) => s.codec_type === 'audio'),
     'sem áudio na saída',
