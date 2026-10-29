@@ -15,6 +15,31 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Lançamento do Maestro em Beta grátis, pronto no ramo (29/10/2026, ADR 0027)
+
+- HUB: `tests/integration/maestro-lancamento.test.ts` (4): catálogo `beta` e gate `public_beta` com os cinco canais
+  abertos a qualquer um; conta comum só com o grátis, fora de lista, fica `contracted`, `authorize` passa e o login
+  único leva `maestro` em `zro_products` e `released` em `zro_release` (os fechados seguem `closed`); grátis e Completo
+  sem `maestro.marca_propria`, Pro v2 (rascunho) com o Maestro inteiro e o sinal, adicional só o sinal, nenhum plano
+  aposentado tocado; backfill idempotente (conta de antes ganha o entitlement uma vez; rodar a 0027 de novo não muda
+  plano, entitlement nem auditoria). `lancamento-maestro-chaves.test.ts` (2): as 11 chaves do código existem, viram
+  juntas e abrir + fechar devolve o arquivo idêntico; o ícone do Maestro em cada app é o oficial. Testes que diziam
+  "Maestro fechado" passam ao estado de lançamento (accounts, release-gate, ia-maestro, stripe, core, downloads, e2e
+  `hub.spec`). Lint, formatação, tipos, `npm test` **267/267**, build ok, e2e **26/26** (hub, a11y, admin, sso),
+  `scan-secrets` limpo.
+- Maestro: `npm test` **335/335** (inclui `lancamento.test.mts`: app de computador só com instalador publicado no
+  catálogo, nome de arquivo estranho não vira link, cache de 5 min e HUB fora do ar = nada; manifesto e ícones;
+  chave da vitrine). Build ok com a vitrine fechada e aberta. E2E com a vitrine **aberta** (todas as chaves em
+  `--abrir`): **80 passaram**, 12 pulados de propósito (inclui o detector de corte em Chromium e WebKit a 375/393 px,
+  claro e escuro, e `instalar.spec.ts`: manifesto, metas do Safari, `theme-color` pelo tema, a dica em Ajustes que some
+  aberto como app e o app instalado sem corte). Com a vitrine **fechada** (estado do ramo): `inicio.spec.ts` +
+  `instalar.spec.ts` **24/24**.
+- Outros apps (no estado aberto e no fechado): SOBEDESCE `test:fast` 777 ok/4 pulados (`familia.test.js` 4), Synquei
+  `npm test` 139 ok, TPeasy 53/53, NOSSOM `npm test` 105/105 + tipos e formatação, AEON `familia.test.js` 2/2, Revela
+  `npm test` 147/147 (menu em ordem alfabética com o Maestro), Carro do Freela `npm run build` com o ícone na lateral
+  e na gaveta. Não verificado aqui: as telas do AEON (`tela.test.js` pede `npm run vendor`, que não roda neste
+  ambiente; o teste do menu passou a contar a família de `src/familia.js`).
+
 ## E-mails da central com cara de e-mail de conta (29/10/2026)
 
 - Convite caiu em Promoções no Gmail (SPF, DKIM e DMARC conferidos no DNS: ok). `apps/hub-web/lib/email/modelos.ts`
