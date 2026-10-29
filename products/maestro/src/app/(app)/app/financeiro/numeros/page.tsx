@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Contar } from "@/components/movimento";
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { brl, brlCurto, centavosParaCampo, hojeBr, mesCurto, mesPorExtenso, porcento, somarMeses } from "@/lib/dinheiro";
 import { periodoDe, ritmoEsperado } from "@/lib/numeros/formulas";
@@ -219,6 +220,7 @@ export default async function Numeros({ searchParams }: PageProps<"/app/financei
           ) : null}
         </div>
       </div>
+      <Contar />
     </div>
   );
 }

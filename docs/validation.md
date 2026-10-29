@@ -15,6 +15,47 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Fluidez entre abas: HUB, Maestro e SOBEDESCE (29/10/2026)
+
+Pedido do titular: "abrir uma aba é lento e sem fluidez; o Synquei é instantâneo". O Synquei é uma SPA local: troca de
+tela por hash sem rede (render direto da memória), service worker com cache primeiro, a tela entra deslizando 22 px
+do lado da navegação (0,45 s), pílula da barra que desliza e números que contam. Medição local (build de produção,
+Postgres local, Playwright/Chromium sem GPU, mediana de 5 rodadas, clique → conteúdo da aba visível):
+
+- **Causa**: o servidor respondia em 10–40 ms, mas toda troca mostrava o esqueleto do `loading.tsx` e o React segura a
+  revelação do conteúdo por 300 ms depois de um esqueleto (Suspense throttle). Resultado: ~330 ms em toda aba do
+  Maestro e em quase todas do HUB, e nenhuma transição (só um `fade` de 0,24 s no Maestro).
+- **Maestro**: mediana 338 ms → 90 ms (1ª visita) e 337 ms → 88 ms (volta); todas as 11 abas com View Transition.
+- **HUB** (telas logadas): mediana 335 ms → 97–143 ms (1ª visita) e 314 ms → 94–118 ms (volta), conforme a carga
+  da máquina; todas com View Transition. O site público já trocava em 50–80 ms (sem esqueleto) e agora paga a
+  transição (80–160 ms até o primeiro quadro animado no Chromium sem GPU).
+- O que mudou: pré-busca da seção inteira com a intenção (mouse em cima, foco, toque) e do esqueleto de todas as
+  seções com a página parada; `staleTimes` (Maestro: 30 s dinâmico, 60 s pré-busca; HUB: só os 60 s da pré-busca,
+  porque com o dinâmico o login único reaproveitava `/entrar` e `/criar-conta` no meio do fluxo) e o
+  Quadro perguntando "o que mudou" ao abrir; `<ViewTransition>` do React 19.3 na área de conteúdo (frente/volta pela
+  ordem do menu, menu e topo parados); pílula do menu que desliza; destino aceso no clique; contagem dos números do
+  Hoje e de Números. Tudo parado com "reduzir movimento".
+- **Maestro, folhas**: o véu cobria só um retângulo (a animação de entrada da seção deixava `transform` no ancestral e
+  prendia o `position: fixed`). Agora a folha vai por portal ao `<body>`, véu na janela inteira com desfoque, folha do
+  tamanho do conteúdo no centro (computador) ou de baixo com alça (celular), entrada e saída com mola, foco preso, Esc.
+  "Novo card" redesenhado (título grande, coluna em pílulas com a cor, listas com avatar/sigla, prazo amigável com
+  atalhos, briefing que cresce, Enter cria), card que voa até a coluna (FLIP), Quadro que se reorganiza deslizando,
+  avisos "Card criado." e "Movido para Revisão." com Desfazer.
+- **SOBEDESCE (computador)**: as telas já eram locais com cache (stale-while-revalidate do Drive); a tela nova agora
+  entra do lado para onde a pessoa foi na barra, como no Synquei.
+- Testes: `products/maestro/e2e/quadro.spec.ts` (computador e iPhone: véu na janela inteira por cima de tudo, folha do
+  tamanho do conteúdo/folha de baixo, foco preso, roda não rola a página, Esc; criar com coluna, prazo e prioridade sem
+  recarregar e persistido; Mover para com aviso e Desfazer; ficha com saída; troca de seção com View Transition;
+  reduzir movimento parado).
+- Cuidado achado no caminho: com `staleTimes`, um redirect de Server Action para a mesma rota reaproveitava a tela
+  guardada (o "Permitir" do login único ficava parado em `/oauth/authorize`). No HUB, login, saída, troca de
+  organização e consentimento agora redirecionam por `lib/actions/ir.ts`, que limpa o cache do roteador antes; no
+  Maestro toda Server Action já chamava `revalidatePath`.
+- Rodado (depois do merge com a main): HUB `lint`, `format:check`, `typecheck`, `npm test` **260/260**, `build`,
+  `test:e2e` **26/26**, `scan-secrets` ok. Maestro `lint`, `format:check`, `typecheck`, `npm test` **330/330**,
+  `build`, `test:e2e` completo **82/82** (6 pulados; inclui `quadro.spec.ts` e `sem-corte` no Chromium e no WebKit).
+  SOBEDESCE `test:fast` **769/769** (4 pulados).
+
 ## E-mails da central com cara de e-mail de conta (29/10/2026)
 
 - Convite caiu em Promoções no Gmail (SPF, DKIM e DMARC conferidos no DNS: ok). `apps/hub-web/lib/email/modelos.ts`

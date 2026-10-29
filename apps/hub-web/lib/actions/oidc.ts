@@ -1,5 +1,5 @@
 'use server'
-import { redirect } from 'next/navigation'
+import { redirect } from './ir'
 import { grantConsent, parseAuthorizeRequest, revokeAppAccess } from '@zro/auth'
 import '../oidc'
 import { db, getAuth } from '../session'

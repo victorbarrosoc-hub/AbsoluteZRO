@@ -5,12 +5,24 @@
  * cliente e responsável, busca, ficha lateral e o próximo passo de cada coluna (porte do Maestro antigo).
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { COLUNAS, FILTRO_VAZIO, ordemEntre, ordenarColuna, passaFiltro, proximoPasso, type CardQ, type ColunaKey, type Filtro } from "@/lib/quadro/metodo";
+import {
+  COLUNA,
+  COLUNAS,
+  FILTRO_VAZIO,
+  ordemEntre,
+  ordenarColuna,
+  passaFiltro,
+  proximoPasso,
+  type CardQ,
+  type ColunaKey,
+  type Filtro,
+} from "@/lib/quadro/metodo";
 import type { Referencias } from "@/lib/quadro/servidor";
 import { Icone } from "@/components/icones";
 import { Ficha } from "./ficha";
 import { AvatarPessoa, ChipPrazo, ChipPrioridade, MoverPara } from "./pecas";
 import { useQuadro, type Inicial } from "./estado";
+import { useFlip } from "./flip";
 
 type Props = Inicial & {
   cardInicial?: string | null;
@@ -24,7 +36,7 @@ type Alvo = { col: ColunaKey; antes: string | null };
 type FichaAberta = { id: string; focar?: string | null } | { novo: { coluna: ColunaKey; cliente?: string; projeto?: string } };
 
 export function Quadro(props: Props) {
-  const { cards, mudar, criar, apagar, aviso, fecharAviso } = useQuadro(props);
+  const { cards, mudar, criar, apagar, aviso, avisar, fecharAviso } = useQuadro(props);
   const { pessoas, clientes, projetos, eu, podeEscrever } = props;
   const refs = useMemo(() => ({ pessoas, clientes, projetos }), [pessoas, clientes, projetos]);
   const [filtro, setFiltro] = useState<Filtro>(() => ({ ...FILTRO_VAZIO, cliente: props.clienteInicial ?? "todos" }));
@@ -40,6 +52,9 @@ export function Quadro(props: Props) {
   const [arrastando, setArrastando] = useState<string | null>(null);
   const [alvo, setAlvo] = useState<Alvo | null>(null);
   const arraste = useRef<string | null>(null);
+  const quadro = useRef<HTMLDivElement>(null);
+  const voo = useRef<{ id: string; de: DOMRect } | null>(null);
+  useFlip(quadro, voo);
 
   const pessoa = useCallback((sub?: string) => pessoas.find((p) => p.sub === sub) ?? null, [pessoas]);
   const nomeCliente = useCallback((id?: string) => clientes.find((c) => c.id === id)?.nome ?? "", [clientes]);
@@ -82,9 +97,16 @@ export function Quadro(props: Props) {
       const pos = i < 0 ? outros.length : i;
       const ordem = ordemEntre(outros[pos - 1]?.dados ?? null, outros[pos]?.dados ?? null);
       if (c.dados.coluna === col && (c.dados.ordem ?? 0) === ordem) return;
-      void mudar(id, c.dados.coluna === col ? { ordem } : { coluna: col, ordem });
+      const de = c.dados.coluna;
+      void mudar(id, de === col ? { ordem } : { coluna: col, ordem });
+      // mudou de coluna: o aviso diz para onde, com "Desfazer" (volta para a coluna e o lugar de antes)
+      if (de !== col)
+        avisar(
+          `Movido para ${COLUNA[col].nome}.`,
+          () => void mudar(id, typeof c.dados.ordem === "number" ? { coluna: de, ordem: c.dados.ordem } : { coluna: de }),
+        );
     },
-    [cards, porColuna, mudar],
+    [cards, porColuna, mudar, avisar],
   );
 
   const executar = (c: CardQ) => {
@@ -237,6 +259,7 @@ export function Quadro(props: Props) {
           </nav>
 
           <div
+            ref={quadro}
             className={`q-quadro${arrastando ? " q-quadro--arrastando" : ""}`}
             onDragLeave={(e) => !e.currentTarget.contains(e.relatedTarget as Node) && setAlvo(null)}
           >
@@ -311,10 +334,11 @@ export function Quadro(props: Props) {
             void apagar(id);
           }}
           fechar={fecharFicha}
-          aoCriar={(id) => {
+          aoCriar={(id, origem, col) => {
+            if (origem) voo.current = { id, de: origem };
             setFicha(null);
-            const col = cards[id]?.dados.coluna;
-            if (col) setColMovel(col);
+            setColMovel(col);
+            avisar("Card criado.");
           }}
         />
       ) : null}

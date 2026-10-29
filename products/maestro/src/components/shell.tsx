@@ -13,6 +13,7 @@ import { MaestroSimbolo, ZroSimbolo } from "./marca";
 import { Relogio } from "./ambiente";
 import { Barra, Capsula } from "./nav";
 import { SeletorDeTema } from "./tema";
+import { Transicao } from "./movimento";
 
 export function iniciais(nome: string | null, email: string | null): string {
   const base = (nome || email || "?").trim();
@@ -114,7 +115,7 @@ export function Shell({
         </div>
       </header>
       <main id="conteudo" className="conteudo">
-        {children}
+        <Transicao>{children}</Transicao>
         {marca ? (
           <p className="powered">
             <ZroSimbolo size={14} /> Powered by Absolute ZRO

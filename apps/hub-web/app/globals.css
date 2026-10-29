@@ -8121,3 +8121,130 @@ a.pstrip__card:focus-visible .pstrip__go {
     box-shadow: 0 0 0 2px var(--surface);
   }
 }
+
+/* ───── Troca de tela (pedido do titular, 29/10/2026: a fluidez do Synquei em todo o HUB) ─────
+   components/movimento.tsx: a tela nova entra com View Transitions (frente = da direita, volta = da esquerda, sem
+   direção = sobe 8 px); o menu, o topo e a cápsula do site ficam parados. A pílula do menu desliza até a tela ativa. */
+.sidebar {
+  view-transition-name: z-lateral;
+}
+.topbar {
+  view-transition-name: z-topo;
+}
+.adm-side {
+  view-transition-name: z-adm;
+}
+.capsule-wrap {
+  view-transition-name: z-capsula;
+}
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-group(z-lateral),
+::view-transition-group(z-topo),
+::view-transition-group(z-adm),
+::view-transition-group(z-capsula) {
+  animation: none;
+  z-index: 10;
+}
+::view-transition-old(z-lateral),
+::view-transition-old(z-topo),
+::view-transition-old(z-adm),
+::view-transition-old(z-capsula),
+::view-transition-old(root) {
+  display: none;
+}
+::view-transition-new(z-lateral),
+::view-transition-new(z-topo),
+::view-transition-new(z-adm),
+::view-transition-new(z-capsula),
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition-old(.z-frente) {
+  --z-vt-x: -16px;
+  animation: 150ms var(--ease) both z-vt-sai;
+}
+::view-transition-new(.z-frente) {
+  --z-vt-x: 28px;
+  animation: 320ms var(--spring) both z-vt-entra;
+}
+::view-transition-old(.z-volta) {
+  --z-vt-x: 16px;
+  animation: 150ms var(--ease) both z-vt-sai;
+}
+::view-transition-new(.z-volta) {
+  --z-vt-x: -28px;
+  animation: 320ms var(--spring) both z-vt-entra;
+}
+::view-transition-old(.z-troca) {
+  animation: 140ms var(--ease) both z-vt-some;
+}
+::view-transition-new(.z-troca) {
+  animation: 280ms var(--spring) both z-vt-sobe;
+}
+@keyframes z-vt-sai {
+  to {
+    opacity: 0;
+    transform: translateX(var(--z-vt-x));
+  }
+}
+@keyframes z-vt-entra {
+  from {
+    opacity: 0;
+    transform: translateX(var(--z-vt-x));
+  }
+}
+@keyframes z-vt-some {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes z-vt-sobe {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.nav {
+  position: relative;
+}
+.nav > :not(.nav__pilula) {
+  position: relative;
+  z-index: 1;
+}
+.nav__pilula {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  border-radius: 10px;
+  background: var(--active);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 0.42s var(--spring),
+    height 0.3s var(--spring),
+    width 0.3s var(--spring),
+    opacity 0.2s var(--ease);
+}
+.nav[data-pilula] a[aria-current='page'] {
+  background: transparent;
+}
+.nav[data-pilula] a[aria-current='page']:hover {
+  background: var(--hover);
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+  ::view-transition-old(*) {
+    display: none;
+  }
+  .nav__pilula {
+    transition: none;
+  }
+}

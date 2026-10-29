@@ -16,6 +16,7 @@ import "./equipe.css";
 import "./contrato.css";
 import "./marca-propria.css";
 import "./celular.css";
+import "./motion.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),

@@ -1,5 +1,5 @@
 'use server'
-import { redirect } from 'next/navigation'
+import { redirect } from './ir'
 import { defaultSender } from '@zro/auth'
 import {
   acceptInvitation,

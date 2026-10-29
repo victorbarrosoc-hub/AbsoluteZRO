@@ -40,7 +40,14 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   // O logo da marca sobe por Server Action (até 4 MB; o servidor reencoda e grava no máximo 512 KB).
-  experimental: { serverActions: { bodySizeLimit: "5mb" } },
+  experimental: {
+    serverActions: { bodySizeLimit: "5mb" },
+    // Troca de seção na hora (pedido do titular, 29/10/2026): o roteador guarda a seção visitada por 30 s e a
+    // pré-busca inteira (intenção na cápsula, abas do celular) por 60 s. O cache é deste navegador e desta sessão; toda
+    // Server Action daqui chama revalidatePath (que o limpa), o login e a saída são rotas (página inteira), e o Quadro
+    // pergunta "o que mudou" ao abrir. Ação nova que redireciona sem revalidatePath reaproveitaria a tela guardada.
+    staleTimes: { dynamic: 30, static: 60 },
+  },
   async headers() {
     return [
       { source: "/:path*", headers: cabecalhos },

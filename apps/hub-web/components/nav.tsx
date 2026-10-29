@@ -1,10 +1,10 @@
 'use client'
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import { ProductMark } from '@zro/ui'
 import { navAction } from '@/lib/actions/account'
 import { Icon, type IconName } from './icons'
+import { LinkIntencao, sentido } from './movimento'
 
 type Item = { href: string; label: string; icon: IconName }
 
@@ -38,25 +38,69 @@ export type FamilyApp = { productId: string; name: string; href: string }
 
 export function Nav({ admin, pendencias = {}, familia = [] }: { admin: boolean; pendencias?: Record<string, number>; familia?: FamilyApp[] }) {
   const path = usePathname()
+  // o destino acende no clique, antes de a tela chegar (como no Synquei); volta ao caminho de verdade quando ele muda
+  const [indo, setIndo] = useState<{ de: string; para: string } | null>(null)
+  const visto = indo && indo.de === path ? indo.para : path
   const groups = admin ? [...GROUPS, { label: 'Plataforma', items: [{ href: '/admin', label: 'Administração', icon: 'shield' as const }] }] : GROUPS
+  const ordem = groups.flatMap((g) => g.items.map((i) => i.href))
+  const ativo = (href: string) => visto === href || visto.startsWith(href + '/')
+
+  // a pílula da tela ativa desliza de um item para o outro (transform com a mola, só CSS; aqui só se mede)
+  const raiz = useRef<HTMLElement>(null)
+  const pilula = useRef<HTMLSpanElement>(null)
+  useLayoutEffect(() => {
+    const nav = raiz.current
+    const p = pilula.current
+    if (!nav || !p) return
+    const pos = () => {
+      const alvo = nav.querySelector<HTMLElement>('a[aria-current="page"]')
+      if (!alvo || !alvo.offsetParent) {
+        p.style.opacity = '0'
+        return
+      }
+      const a = alvo.getBoundingClientRect()
+      const b = nav.getBoundingClientRect()
+      const primeira = !nav.dataset.pilula
+      if (primeira) p.style.transition = 'none'
+      p.style.opacity = '1'
+      p.style.height = `${a.height}px`
+      p.style.width = `${a.width}px`
+      p.style.transform = `translate(${a.left - b.left}px, ${a.top - b.top}px)`
+      if (primeira) {
+        void p.offsetWidth
+        p.style.transition = ''
+        nav.dataset.pilula = ''
+      }
+    }
+    pos()
+    const ro = new ResizeObserver(pos)
+    ro.observe(nav)
+    return () => ro.disconnect()
+  }, [visto])
+
   return (
-    <nav className="nav" aria-label="Navegação do HUB">
+    <nav ref={raiz} className="nav" aria-label="Navegação do HUB">
+      <span ref={pilula} className="nav__pilula" aria-hidden="true" />
       {groups.map((g) => (
         <div key={g.label} className="nav__group">
           <p className="nav__label">{g.label}</p>
           {g.items.map((i) => {
             const n = pendencias[i.href] ?? 0
             return (
-              <Link
+              <LinkIntencao
                 key={i.href}
                 href={i.href}
+                transitionTypes={[sentido(ordem, path, i.href)]}
                 title={n ? `${i.label} · ${n} ${n === 1 ? 'espera' : 'esperam'} você` : i.label}
-                aria-current={path === i.href || path.startsWith(i.href + '/') ? 'page' : undefined}
+                aria-current={ativo(i.href) ? 'page' : undefined}
+                onClick={(e) => {
+                  if (!e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey && e.button === 0) setIndo({ de: path, para: i.href })
+                }}
               >
                 <Icon name={i.icon} />
                 <span className="nav__text">{i.label}</span>
                 {n > 0 && <Balao n={n} />}
-              </Link>
+              </LinkIntencao>
             )
           })}
         </div>

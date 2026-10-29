@@ -23,6 +23,11 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   site, HUB, login único, ícones (navegador, iPhone, manifest, Mac, Windows), OG, app de computador, NOSSOM e
   SOBEDESCE. Em animação a estrela aparece inteira e recolhe até a forma flat. Manual e branding (Higgsfield) em
   [docs/marca](marca/README.md). O feixe de luz saiu.
+- ✅ Fluidez entre abas no padrão do Synquei (29/10/2026): HUB, site e Maestro com pré-busca por intenção, cache curto
+  do roteador, View Transitions (frente/volta pela ordem do menu) e a pílula do menu que desliza; troca de aba de
+  ~330 ms para ~90 ms (medição em [validation](validation.md)). Maestro com folhas novas (véu na janela inteira, folha
+  de baixo no celular), "Novo card" redesenhado, Quadro com FLIP e avisos com Desfazer. SOBEDESCE com a tela entrando
+  do lado da navegação.
 - ✅ Página inicial de cinema (26/10/2026): paisagem com o símbolo esculpido sobre a rocha, faixa discreta das 7 ferramentas e cartão do Ciclo do O; sem selos de "em construção".
 - ✅ AEON (26/10/2026): a plataforma de edição ganha nome e ícone no catálogo, na home e no HUB (migration 0012); segue em desenvolvimento.
 - ✅ Página inicial com o símbolo como protagonista (26/10/2026): o anel se desenha a partir da centelha, a estrela

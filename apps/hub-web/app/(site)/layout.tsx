@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { Wordmark } from '@/components/brand'
+import { LinkIntencao, Transicao } from '@/components/movimento'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { getAuth } from '@/lib/session'
 
@@ -13,10 +14,14 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
         <div className="capsule">
           <Wordmark />
           <nav aria-label="Principal" className="capsule__links">
-            <Link href="/#ciclo">Ciclo do O</Link>
-            <Link href="/#ecossistema">Ferramentas</Link>
-            <Link href="/baixar">Downloads</Link>
-            <Link href="/planos">Planos</Link>
+            <LinkIntencao href="/#ciclo">Ciclo do O</LinkIntencao>
+            <LinkIntencao href="/#ecossistema">Ferramentas</LinkIntencao>
+            <LinkIntencao href="/baixar" transitionTypes={['z-frente']}>
+              Downloads
+            </LinkIntencao>
+            <LinkIntencao href="/planos" transitionTypes={['z-frente']}>
+              Planos
+            </LinkIntencao>
           </nav>
           <div className="capsule__cta">
             <ThemeToggle />
@@ -38,7 +43,7 @@ export default async function SiteLayout({ children }: { children: ReactNode }) 
         </div>
       </header>
       <main id="conteudo" className="public-main">
-        {children}
+        <Transicao>{children}</Transicao>
       </main>
       <footer className="public-footer">
         <Wordmark height={18} />
