@@ -30,7 +30,7 @@ const LINE: Record<string, string> = {
 
 /** A linha da ficha em "Conheça de perto", quando pede mais que a faixa do topo. */
 const LINHA_LONGA: Record<string, string> = {
-  relay: 'Converte e exporta para qualquer destino. Grátis.',
+  relay: 'Converte e exporta para qualquer destino.',
 }
 
 /** Três fatos por ferramenta, tirados do que cada uma faz hoje (README de cada produto em products/). */
@@ -42,7 +42,7 @@ const FATOS: Record<string, string[]> = {
   'ai-edit': ['Transcrição na sua máquina', 'Cortes e zoom propostos para você aprovar', 'Linha do tempo para o seu editor'],
   nossom: ['Estúdio de áudio para criadores', 'Instala pelo navegador', 'App para Mac e Windows'],
   finishing: ['LUT criativa a partir de uma referência', 'LOG para Rec.709 por câmera', 'PowerGrade para o DaVinci Resolve'],
-  relay: ['YouTube, Reels, TikTok, WhatsApp e mais', 'Converte no aparelho, sem enviar o arquivo', 'Grátis em toda conta'],
+  relay: ['YouTube, Reels, TikTok, WhatsApp e mais', 'Converte no aparelho, sem enviar o arquivo', 'Predefinição pronta para cada destino'],
 }
 
 /** Ferramentas com a tela no MacBook e no iPhone (public/brand/produto-<id>-{claro,escuro}.webp); as outras mostram o ícone. */
