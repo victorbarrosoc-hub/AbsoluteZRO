@@ -22,6 +22,8 @@ M={
  # AEON e Revela: o site no ar (aeon-/revela-{mac,iph}-{light,dark}.png), 26/10/2026
  'ai-edit':lambda s:(f'{CAP}/aeon-mac-{s}.png',f'{CAP}/aeon-iph-{s}.png'),
  'finishing':lambda s:(f'{CAP}/revela-mac-{s}.png',f'{CAP}/revela-iph-{s}.png'),
+ # Maestro: as capturas da demonstração (products/maestro/public/produto/quadro-{mac,iphone}-*.webp em PNG), 29/10/2026
+ 'maestro':lambda s:(f'{CAP}/maestro-mac-{s}.png',f'{CAP}/maestro-iph-{s}.png'),
 }
 for tema,s in [('claro','light'),('escuro','dark')]:
   t=np.asarray(Image.open(f'{A}/aparelhos-{tema}-verde.png').convert('RGB')).astype(int)

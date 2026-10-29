@@ -134,6 +134,18 @@ export const DOWNLOADS: DownloadEntry[] = [
     note: 'Abre no navegador, no computador e no celular.',
     options: [{ os: 'web', label: 'Navegador', detail: 'Computador ou celular', href: 'https://revela.absolutezro.com', format: 'Sem instalar' }],
   },
+  {
+    // Maestro (Beta grátis, ADR 0027): navegador e app na Tela de Início do celular (PWA). O app de computador entra aqui
+    // (Mac/Windows pela rota /baixar do site) quando tiver instalador publicado; até lá, nada de botão.
+    productId: 'maestro',
+    site: 'https://maestro.absolutezro.com',
+    status: 'web',
+    note: 'No iPhone: Safari › Compartilhar › Adicionar à Tela de Início.',
+    options: [
+      { os: 'web', label: 'Navegador', detail: 'Chrome, Edge ou Safari', href: 'https://maestro.absolutezro.com/app', format: 'Sem instalar' },
+      { os: 'mobile', label: 'Celular', detail: 'iPhone e Android, na Tela de Início', href: 'https://maestro.absolutezro.com/app', format: 'Sem instalar' },
+    ],
+  },
 ]
 
 /** Como um produto fechado aparece: só o selo "Em desenvolvimento". */

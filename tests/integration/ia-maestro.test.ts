@@ -131,19 +131,17 @@ describe('ver_maestro: a Z lendo o Maestro', () => {
     expect(m.chamadas[0]!.claims.jti).not.toBe(m.chamadas[1]!.claims.jti)
   })
 
-  it('gate fechado (fora da lista de acesso): nenhum pedido sai e a recusa fica na auditoria', async () => {
-    const o = await newOrgWithOwner(db, 'maestro-fechado')
-    await giveLimits(db, o.orgId, 'maestro', {})
+  it('Beta grátis (0027): conta comum no plano grátis, fora de qualquer lista, lê o Maestro', async () => {
+    const o = await newOrgWithOwner(db, 'maestro-beta', { freePlan: true })
     const m = maestroFalso({ status: 200, corpo: RESUMO })
     const r = await maestroParaIa(db, { actor: { auth: o.auth, userId: o.userId, orgId: o.orgId } }, 'resumo', m.cfg)
-    expect(r).toMatchObject({ erro: true, codigo: 'product_closed' })
-    expect(r.texto).toMatch(/não está liberado/)
-    expect(m.chamadas).toHaveLength(0)
+    expect(r.erro).toBe(false)
+    expect(m.chamadas).toHaveLength(1)
     const a = await auditoria(o.userId)
-    expect(a.map((x) => x.metadata)).toEqual([expect.objectContaining({ resultado: 'recusado', erro: 'product_closed' })])
+    expect(a.map((x) => x.metadata)).toEqual([expect.objectContaining({ resultado: 'lido', erro: null })])
   })
 
-  it('liberado mas sem o Maestro no plano: nenhum pedido sai', async () => {
+  it('aberto mas sem o Maestro no plano: nenhum pedido sai', async () => {
     const o = await newOrgWithOwner(db, 'maestro-sem-plano')
     await allowRelease(db, 'maestro', o.userId)
     const m = maestroFalso({ status: 200, corpo: RESUMO })

@@ -10,8 +10,9 @@ const OFFICIAL = new Set([
   'carrodofreela.com.br',
   'aeon.absolutezro.com',
   'revela.absolutezro.com',
+  'maestro.absolutezro.com',
 ])
-const CATALOG = ['carro-do-freela', 'tpeasy', 'sobedesce', 'synquei', 'ai-edit', 'nossom', 'finishing']
+const CATALOG = ['carro-do-freela', 'tpeasy', 'sobedesce', 'synquei', 'ai-edit', 'nossom', 'finishing', 'maestro']
 
 describe('downloads', () => {
   it('cobre o catálogo inteiro, sem repetir', () => {
@@ -46,7 +47,7 @@ describe('downloads', () => {
   it('gate de lançamento: produto fora dos liberados vira "Em desenvolvimento", sem instalador, Terminal nem link', () => {
     const lancados = new Set(['sobedesce', 'synquei', 'tpeasy'])
     const vistos = downloadsLiberados(lancados)
-    for (const id of ['nossom', 'ai-edit', 'finishing', 'carro-do-freela']) {
+    for (const id of ['nossom', 'ai-edit', 'finishing', 'carro-do-freela', 'maestro']) {
       const d = vistos.find((x) => x.productId === id)!
       expect(d).toEqual({ productId: id, status: 'soon', options: [] })
       expect(hasDesktopInstaller(id, lancados)).toBe(false)
@@ -55,5 +56,13 @@ describe('downloads', () => {
     expect(hasDesktopInstaller('synquei', lancados)).toBe(true)
     // quem está na lista de acesso continua baixando
     expect(hasDesktopInstaller('nossom', new Set([...lancados, 'nossom']))).toBe(true)
+  })
+
+  it('Maestro em Beta grátis: navegador e Tela de Início do celular; sem instalador de computador até haver Release', () => {
+    const abertos = new Set(['sobedesce', 'synquei', 'tpeasy', 'maestro'])
+    const m = downloadsLiberados(abertos).find((x) => x.productId === 'maestro')!
+    expect(m.options.map((o) => o.os)).toEqual(['web', 'mobile'])
+    expect(m.site).toBe('https://maestro.absolutezro.com')
+    expect(hasDesktopInstaller('maestro', abertos)).toBe(false)
   })
 })

@@ -128,7 +128,8 @@ describe('contas do PRD §11', () => {
     const auth = { ...o.auth, user: { ...o.auth.user, platformRole: 'admin' as const } }
     for (const id of FECHADOS) await expectCode(authorize(db, auth, { product: { id } }), 'product_closed')
     const claims = await sys((tx) => loadOidcClaims(tx, o.userId, o.orgId))
-    expect(claims.products.sort()).toEqual([...LANCADOS].sort())
+    // o Maestro está em Beta grátis (0027): entra como qualquer aberto
+    expect(claims.products.sort()).toEqual([...LANCADOS, 'maestro'].sort())
     for (const id of FECHADOS) expect(claims.release[id], id).toBe('closed')
   })
 
