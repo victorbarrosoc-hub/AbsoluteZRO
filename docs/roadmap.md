@@ -577,6 +577,13 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
   [QUALIDADE](../products/relay/docs/QUALIDADE.md), interno): no computador, empata; no navegador, Lanczos e YUV
   BT.709 na placa, cor do ProRes corrigida e 10 bits arredondados. O Chromium do Linux (OpenH264) fica abaixo do x264.
   Falta: medir em Mac (VideoToolbox), Windows e iPhone reais.
+- ✅ Comparativo com outros conversores fora do público (pedido do titular): sem a página de qualidade, sem citar marca
+  em texto ou código; o laboratório interno mede contra uma referência x264.
+- ✅ Laboratório de aparelhos (`/laboratorio`, só nas prévias da Vercel e no `npm run dev`): cenas geradas no aparelho,
+  codificadas pelo chip dele e medidas contra a referência x264 no mesmo bitrate. ⬜ Rodar no Mac, iPhone e Windows do
+  titular e ajustar os bitrates por aparelho.
+- ✅ Máxima qualidade: no Mac e no Windows, o Relay abre o app SOBEDESCE pelo link `sobedesce://relay` com os destinos
+  (inclusive os da pessoa); o app converte arquivos do computador com o x264 e salva ao lado do original.
 - ✅ SOBEDESCE: "Converter com o Relay" no computador e no celular, com o núcleo do Relay copiado e conferido por teste
   dos dois lados; a Revela sai do SOBEDESCE.
 - ✅ HUB: produto `relay` no catálogo (migration `0031`, grátis em todo plano, fechado pelo gate), `ProductId`, catálogo

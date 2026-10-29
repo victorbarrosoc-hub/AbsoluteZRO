@@ -45,6 +45,15 @@ Regras que valem para os três:
   (`products/relay/marca/`). O app mantém a própria marca no resto.
 - **Mesmo preset, mesmo resultado:** quem embute não muda número de preset. Preset novo nasce no Relay.
 
+## "Máxima qualidade": do site do Relay para o app de computador
+
+No Mac e no Windows, o conversor do Relay oferece **Máxima qualidade**: abre o app SOBEDESCE pelo link
+`sobedesce://relay?presets=<ids>&meus=<base64url das fichas>` (`products/relay/src/link.js` monta, até 8 destinos e
+8 KB; `products/sobedesce/desktop/links.js` lê e recusa o resto). O app mostra a folha "Máxima qualidade", a pessoa
+escolhe os arquivos do computador e ele converte com o x264 (`POST /api/relay/local` no servidor local), salvando
+`<original> (<destino>).<ext>` na mesma pasta, sem gravar por cima (`… 2`) e com `.sobedesce-parcial` até terminar.
+Nenhum arquivo passa pelo site: o link leva só os destinos.
+
 ## Requisitos técnicos para o núcleo no navegador (jeito 1)
 
 - **Mediabunny 1.62.1** (MPL-2.0) em `vendor/`, com as extensões `@mediabunny/prores` (ler ProRes),

@@ -6,6 +6,7 @@ import { LIMITE_MEMORIA, RESOLUCOES, fichaTecnica, fmtDuracao, nomeSaida, planej
 import { capacidades, converterArquivo, lerArquivo, miniatura, MB } from './motor.js'
 import { icone, icones } from './icones.js'
 import * as Meus from './meus.js'
+import { linkMaxima } from '../src/link.js'
 
 const $ = (id) => document.getElementById(id)
 const el = (tag, props = {}, ...filhos) => {
@@ -436,6 +437,41 @@ for (const alvo of [zona, document.body]) {
     zona.classList.remove('soltando')
     adicionar([...(e.dataTransfer?.files ?? [])])
   })
+}
+
+// ─────────── "Máxima qualidade": o app SOBEDESCE converte com o x264 deste computador ───────────
+
+/** Computador (Mac ou Windows): onde o app SOBEDESCE existe. */
+const computador = !/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && /Mac|Win/i.test(navigator.platform || navigator.userAgent) && !('ontouchend' in document && /Mac/.test(navigator.platform))
+
+function abrirMaxima() {
+  const { link, levados, fora } = linkMaxima([...escolhidos], meus)
+  const d = el('dialog', { className: 'folha folha--curta', ariaLabel: 'Máxima qualidade' })
+  const fechar = () => (d.close(), d.remove())
+  d.addEventListener('click', (e) => e.target === d && fechar())
+  d.addEventListener('close', () => d.remove())
+  const abrir = el('a', { className: 'vidro vidro--tinta', href: link, textContent: 'Abrir no SOBEDESCE' })
+  abrir.addEventListener('click', () => setTimeout(fechar, 300))
+  const cancelar = el('button', { type: 'button', className: 'vidro', textContent: 'Agora não' })
+  cancelar.onclick = fechar
+  d.append(
+    el('div', { className: 'folha-topo' }, el('h2', {}, el('span', { className: 'fino', textContent: 'Máxima ' }), el('span', { className: 'pesado', textContent: 'qualidade' })), el('p', { className: 'apoio', textContent: 'O app SOBEDESCE converte com o x264 deste computador. O arquivo fica ao lado do original.' })),
+    el(
+      'div',
+      { className: 'folha-meio folha-meio--uma' },
+      el('div', { className: 'fichas' }, ...levados.map((n) => ficha(n, 'ficha--sinal'))),
+      fora.length ? el('p', { className: 'apoio', textContent: `Fica só aqui no navegador: ${fora.join(', ')}.` }) : null,
+      el('p', { className: 'apoio' }, 'Ainda não tem o app? ', el('a', { href: 'https://sobedesce.vercel.app', target: '_blank', rel: 'noopener', textContent: 'Baixar o SOBEDESCE' }), '.'),
+    ),
+    el('div', { className: 'folha-acoes' }, el('span', { className: 'espaco' }), cancelar, abrir),
+  )
+  document.body.append(d)
+  d.showModal()
+}
+
+if (computador) {
+  $('maxima').hidden = false
+  $('maxima').addEventListener('click', abrirMaxima)
 }
 
 // ─────────── aparelho e tema ───────────

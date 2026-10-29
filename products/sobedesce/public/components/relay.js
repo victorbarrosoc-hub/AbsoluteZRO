@@ -5,7 +5,7 @@ import { html, useEffect, useState } from '/vendor/preact-htm.js'
 import { api, attempt, enc } from '../lib/api.js'
 import { setRelayJob, subscribe, useStore } from '../lib/store.js'
 import { openModal, registerModal } from '../lib/modals.js'
-import { openExternal } from '../lib/desktop.js'
+import { bridge, openExternal } from '../lib/desktop.js'
 import { toast } from '../lib/toasts.js'
 import { bytes } from '../lib/format.js'
 import { Icon } from './icons.js'
@@ -45,7 +45,7 @@ export function avisarRelay(job) {
   const antes = vistos.get(job.jobId)
   vistos.set(job.jobId, job.status)
   if (antes !== 'running' || job.status === 'running') return
-  if (job.status === 'done') invalidateAccount(job.accountId)
+  if (job.status === 'done' && job.accountId) invalidateAccount(job.accountId)
   if (janelas) return
   if (job.status === 'done') toast('success', `Pronto: ${job.resultado?.nome || 'arquivo convertido'}`)
   else if (job.status === 'error') toast('error', `Relay: ${job.error || 'não deu para converter.'}`)
@@ -180,3 +180,110 @@ registerModal('relay', RelayDialog)
 export function openRelay({ accountId, item }) {
   return openModal('relay', { accountId, arquivo: { id: item.id, name: item.name, size: item.size } })
 }
+
+// ─────────── "Máxima qualidade": arquivos deste computador (o site do Relay abre o app pelo link sobedesce://relay) ───────────
+
+const nomeDestino = (d, lista) => (typeof d === 'string' ? lista.find((x) => x.id === d)?.nome || d : d?.nome || 'Meu preset')
+const nomeArquivo = (c) => String(c).split(/[\\/]/).pop()
+
+/** @param {{ destinos: (string|object)[], onClose: Function }} props */
+export function RelayLocalDialog({ destinos: doLink = [], onClose }) {
+  const info = useRelay()
+  const [arquivos, setArquivos] = useState([])
+  const [escolhido, setEscolhido] = useState('youtube-1080')
+  const [grupo, setGrupo] = useState('Redes')
+  const [jobIds, setJobIds] = useState([])
+  const [comecando, setComecando] = useState(false)
+  const jobs = useStore((s) => jobIds.map((id) => s.relay?.[id]).filter(Boolean))
+  useEffect(() => {
+    janelas++
+    return () => {
+      janelas--
+    }
+  }, [])
+
+  const lista = info?.destinos || []
+  const destinos = doLink.length ? doLink : [escolhido]
+  const escolher = async () => {
+    const r = await bridge?.pickPaths?.({ kind: 'files', title: 'Escolher o que converter' })
+    if (r?.length) setArquivos([...new Set([...arquivos, ...r])].slice(0, 20))
+  }
+  const converter = async () => {
+    if (comecando || !arquivos.length) return
+    setComecando(true)
+    const r = await attempt(api.post('/api/relay/local', { caminhos: arquivos, destinos }))
+    setComecando(false)
+    if (r?.jobIds) setJobIds(r.jobIds)
+  }
+  const rodando = jobs.some((j) => j.status === 'running')
+  const terminou = jobIds.length > 0 && jobs.length === jobIds.length && !rodando
+  const semMotor = info && !info.erro && !info.pronto
+
+  let corpo
+  let rodape
+  if (jobIds.length) {
+    corpo = html`<ul class="rv-local-jobs">
+      ${jobs.map(
+        (j) => html`<li>
+          <span class="rv-local-nome"><b title=${j.arquivo?.name}>${j.arquivo?.name}</b><small>${j.destino}</small></span>
+          ${j.status === 'running'
+            ? html`<span class="rv-local-fase">${FASE[j.fase] || 'Começando'}${j.frac != null ? ` ${Math.round(j.frac * 100)}%` : ''}</span><${Barra} p=${j.frac} vivo label="Andamento" />`
+            : j.status === 'done'
+              ? html`<${Button} icon="reveal" onClick=${() => bridge?.reveal?.(j.resultado?.caminho)}>Mostrar</${Button}>`
+              : html`<span class="rv-local-erro">${j.status === 'canceled' ? 'Parado' : j.error || 'Não deu'}</span>`}
+        </li>`,
+      )}
+    </ul>`
+    rodape = terminou
+      ? html`<${Button} variant="primary" onClick=${() => onClose()} data-autofocus>Concluir</${Button}>`
+      : html`<span class="rt-foot-hint sub">Fica ao lado do original. Pode fechar: continua.</span>
+          <${Button} icon="x" onClick=${() => jobIds.forEach((id) => attempt(api.del(`/api/relay/converter/${enc(id)}`)))}>Parar</${Button}>
+          <${Button} variant="primary" onClick=${() => onClose()}>Fechar</${Button}>`
+  } else if (!info) {
+    corpo = html`<div class="rt-phase"><${Spinner} size=${16} /></div>`
+  } else if (info.erro || semMotor) {
+    corpo = html`<div class="rt-warn" role="alert"><${Icon} name="warning" size=${18} /><div><b>${info.erro || 'Este computador não tem o ffmpeg para converter.'}</b>${semMotor && info.motor ? html`<span>${info.motor}</span>` : null}</div></div>`
+    rodape = html`<${Button} variant="primary" onClick=${() => onClose()}>Fechar</${Button}>`
+  } else {
+    corpo = html`<div class="rv-local">
+      ${doLink.length
+        ? html`<div class="rv-fichas">${doLink.map((d) => html`<span>${nomeDestino(d, lista)}</span>`)}</div>`
+        : html`<${Pilulas} label="Grupo" valor=${grupo} onEscolher=${(g) => {
+              setGrupo(g)
+              const primeiro = lista.find((d) => d.grupo === g)
+              if (primeiro) setEscolhido(primeiro.id)
+            }} itens=${GRUPOS.map((g) => ({ value: g, label: g }))} />
+            <${Opcoes} label="Destino" valor=${escolhido} colunas=${3} onEscolher=${setEscolhido} itens=${lista.filter((d) => d.grupo === grupo).map((d) => ({ value: d.id, icone: ICONE[d.forma], titulo: d.nome, sub: d.resumo }))} />`}
+      ${arquivos.length
+        ? html`<ul class="rv-local-arquivos">${arquivos.map((c) => html`<li title=${c}><${Icon} name="film" size=${15} /> ${nomeArquivo(c)}</li>`)}</ul>`
+        : null}
+      <${Button} icon="plus" onClick=${escolher}>${arquivos.length ? 'Mais arquivos' : 'Escolher arquivos'}</${Button}>
+    </div>`
+    rodape = html`<${Button} onClick=${() => onClose()}>Cancelar</${Button}>
+      <${Button} variant="primary" icon="compare" onClick=${converter} loading=${comecando} disabled=${!arquivos.length}>Converter ${arquivos.length * destinos.length > 1 ? arquivos.length * destinos.length : ''}</${Button}>`
+  }
+
+  return html`<${Modal}
+    size="md"
+    class="dialog rv-dialog"
+    icon=${html`<img class="rv-marca" src="/relay-icone.svg" alt="" width="28" height="28" />`}
+    title="Máxima qualidade"
+    subtitle="Relay no x264 deste computador"
+    onClose=${() => onClose()}
+    footer=${rodape}
+  >
+    ${corpo}
+  </${Modal}>`
+}
+
+registerModal('relay-local', RelayLocalDialog)
+
+/** "Máxima qualidade" (link sobedesce://relay do site do Relay): arquivos deste computador, destinos já marcados. */
+export function openRelayLocal({ destinos = [] } = {}) {
+  return openModal('relay-local', { destinos })
+}
+
+// o link chega pela ponte do app (desktop/links.js já conferiu)
+bridge?.aoLink?.((link) => {
+  if (link?.tipo === 'relay') openRelayLocal({ destinos: link.destinos })
+})

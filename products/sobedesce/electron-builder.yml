@@ -70,6 +70,12 @@ extraResources:
   - from: build/quickjs-licenca
     to: quickjs-licenca
 
+# sobedesce:// (desktop/links.js): o "Máxima qualidade" do site do Relay abre o app com os destinos marcados.
+protocols:
+  - name: SOBEDESCE
+    schemes:
+      - sobedesce
+
 mac:
   target:
     - target: dmg

@@ -11,6 +11,7 @@ const COPIAS = [
   ['sobedesce/src/relay/presets.js', 'src/presets.js'],
   ['sobedesce/src/relay/plano.js', 'src/plano.js'],
   ['sobedesce/src/relay/ffmpeg.js', 'src/ffmpeg.js'],
+  ['sobedesce/src/relay/personalizado.js', 'src/personalizado.js'],
   ['sobedesce/web/public/app/relay/src/presets.js', 'src/presets.js'],
   ['sobedesce/web/public/app/relay/src/plano.js', 'src/plano.js'],
   ['sobedesce/web/public/app/relay/app/motor.js', 'app/motor.js'],

@@ -2465,3 +2465,14 @@ do Freela e HUB não convertem. `npm run format:check` e `node scripts/scan-secr
   **340/340** e `build` ok; e2e 38/41: o Ciclo do O passa a ter 9 etapas (teste atualizado, Relay indisponível); os
   dois testes de WebKit do esqueleto (vindos do `main`) não rodam aqui (WebKit não instalado neste ambiente); o
   "Escolha seu @" do SSO do Carro falhou uma vez e passa sozinho (tempo).
+
+## Relay: comparativo interno, laboratório de aparelhos e Máxima qualidade (29/10/2026)
+
+- `products/relay`: `npm test` **45/45** (link do Máxima qualidade com acentos e limite de 8 destinos; publicação:
+  produção fechada sem o laboratório, prévia com ele; laboratório no Chromium gerando, codificando e medindo).
+- Laboratório no Chromium deste ambiente (OpenH264, sem placa): 0,0116 de SSIM abaixo da referência x264 no mesmo
+  bitrate, em média (6 medidas, 56 s). Falta o Mac, o iPhone e o Windows de verdade.
+- SOBEDESCE: `test/relay.test.js` **12/12**: o link montado pelo Relay é o que o app aceita (e links tortos viram
+  nada), nome livre sem gravar por cima, conversão local de verdade (WhatsApp 1280×720 e MP3 da pessoa ao lado do
+  original, MD5 do original igual, nenhum parcial sobrando) e a rota `/api/relay/local` recusando caminho relativo,
+  extensão errada e destino inventado.

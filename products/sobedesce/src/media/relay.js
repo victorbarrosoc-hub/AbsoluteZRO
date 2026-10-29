@@ -17,6 +17,7 @@ import { abortError } from '../util/backoff.js'
 import { parseProbe, runTool, timeoutFor } from './previa.js'
 import { originaisLocais } from './previa-lote.js'
 import { PRESETS } from '../relay/presets.js'
+import { presetPersonalizado } from '../relay/personalizado.js'
 import { extensao, nomeSaida, planejar } from '../relay/plano.js'
 import { argsFfmpeg } from '../relay/ffmpeg.js'
 
@@ -25,7 +26,23 @@ export const RELAY_MARCA = 'relay'
 
 /** Os destinos que dá para gerar daqui: todos os presets do Relay, menos o de tamanho escolhido na hora. */
 export const DESTINOS_RELAY = PRESETS.filter(p => !p.ajustavel)
-export const destinoRelay = id => DESTINOS_RELAY.find(p => p.id === id) ?? null
+/** Um destino: o id de um preset do Relay ou a ficha de um preset da pessoa (vinda do link do site do Relay). */
+export const destinoRelay = d => {
+  if (typeof d === 'string') return DESTINOS_RELAY.find(p => p.id === d) ?? null
+  if (d && typeof d === 'object') {
+    try {
+      return presetPersonalizado(d)
+    } catch {
+      return null
+    }
+  }
+  return null
+}
+
+const AUDIO = /\.(wav|aiff?|flac|mp3|m4a|aac|ogg|opus|caf)$/i
+const VIDEO = /\.(mov|mp4|m4v|mxf|mkv|avi|webm|mts|m2ts|braw|r3d|3gp|mpg|mpeg|wmv|flv|dv)$/i
+/** Arquivo que o Relay converte (pelo nome). */
+export const convertivel = nome => VIDEO.test(nome) || AUDIO.test(nome)
 
 const STALL_MS = 5 * 60_000
 const PROBE_TIMEOUT_MS = 60_000
@@ -199,6 +216,65 @@ export async function converterComRelay({ gerador, drive, item, destino, localPa
       return { fileId, nome: noDrive.name || nome, size: st.size, encoder, destino: p.id, avisos: plano.avisos, conferido: Boolean(noDrive.md5) }
     } finally {
       await baixado?.limpar()
+      if (dir) await fsp.rm(dir, { recursive: true, force: true }).catch(() => {})
+    }
+  }, signal)
+}
+
+/** Caminho livre ao lado do original: "<nome> (<destino>).mp4", ou "… 2.mp4", "… 3.mp4" se já existir. Nunca grava por cima. */
+export async function caminhoLivre(pasta, nome) {
+  const ext = path.extname(nome)
+  const base = nome.slice(0, nome.length - ext.length)
+  for (let i = 1; i < 1000; i++) {
+    const p = path.join(pasta, i === 1 ? nome : `${base} ${i}${ext}`)
+    const existe = await fsp.stat(p).then(() => true, () => false)
+    if (!existe) return p
+  }
+  throw new Error('não achei um nome livre ao lado do original')
+}
+
+/**
+ * "Máxima qualidade" (o site do Relay manda para cá): um arquivo DESTE computador vira a versão de um destino com o
+ * x264 e fica na MESMA PASTA do original, com nome novo. Escreve em "<saída>.sobedesce-parcial" e só renomeia no fim:
+ * nada pela metade com nome de pronto, nada por cima. O original nunca muda.
+ * @returns {Promise<{ caminho, nome, size, encoder, destino, avisos }>}
+ */
+export async function converterLocal({ gerador, caminho, destino, signal, onFase, log = () => {} }) {
+  const p = destinoRelay(destino)
+  if (!p) throw Object.assign(new Error('Destino desconhecido.'), { status: 400 })
+  const st = await fsp.stat(caminho).catch(() => null)
+  if (!st?.isFile()) throw Object.assign(new Error('O arquivo não está mais aqui.'), { status: 404 })
+  const motor = await gerador.motor()
+  if (!motor?.ffmpeg?.path) throw Object.assign(new Error(motor?.aviso || 'Este computador não tem o ffmpeg para converter.'), { status: 409 })
+  onFase?.('esperando')
+  return gerador.emVaga(async () => {
+    let parcial = null
+    let dir = null
+    try {
+      onFase?.('analisando')
+      const r = await runTool(motor.ffmpeg.path, ['-hide_banner', '-nostdin', '-i', caminho], { timeoutMs: PROBE_TIMEOUT_MS, signal })
+      if (r.aborted) throw abortError(signal)
+      const origem = origemDoProbe(r.stderr)
+      if (!origem) throw new Error('o ffmpeg não abriu este arquivo como vídeo nem áudio')
+      const plano = planejar(origem, p, { motor: 'computador' })
+      const final = await caminhoLivre(path.dirname(caminho), nomeSaida(path.basename(caminho), p))
+      parcial = `${final}.sobedesce-parcial`
+      dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'sobedesce-relay-')) // log das duas passadas
+      onFase?.('convertendo', 0)
+      // o ffmpeg escolhe o contêiner pela extensão: grava num nome com a extensão certa dentro da pasta temporária e
+      // traz para o lado do original como parcial antes de renomear (cópia se for outro disco)
+      const saida = path.join(dir, `saida.${extensao(plano.formato)}`)
+      const encoder = await transcodificarRelay(motor, { input: caminho, output: saida, plano, origem, signal, tmpDir: dir, onProgress: f => onFase?.('convertendo', f), log })
+      const tam = (await fsp.stat(saida)).size
+      if (tam < 1024) throw new Error('o convertido saiu vazio')
+      onFase?.('conferindo')
+      await fsp.rename(saida, parcial).catch(() => fsp.copyFile(saida, parcial))
+      await fsp.rename(parcial, final)
+      parcial = null
+      log(`relay: "${caminho}" → ${final} (${p.id}, ${encoder})`)
+      return { caminho: final, nome: path.basename(final), size: tam, encoder, destino: p.id, avisos: plano.avisos }
+    } finally {
+      if (parcial) await fsp.rm(parcial, { force: true }).catch(() => {})
       if (dir) await fsp.rm(dir, { recursive: true, force: true }).catch(() => {})
     }
   }, signal)

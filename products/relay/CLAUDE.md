@@ -19,7 +19,8 @@ Relay. Decisão em [ADR 0030](../../docs/decisions/0030-relay-conversao.md); int
 - **Qualidade só com medição.** Mexeu em bitrate, escala, cor ou codificador: rode `npm run qualidade` e atualize
   `docs/QUALIDADE.md`. O comparativo com outros conversores é interno: não vai para o site nem para texto de divulgação.
 - **Preset novo nasce aqui**, com fonte e data (`fontes`); as plataformas que embutem o núcleo copiam
-  (`test/copias.test.js` falha até copiar). Hoje: `products/sobedesce/src/relay/` e `products/sobedesce/web/public/app/relay/`.
+  (`test/copias.test.js` falha até copiar). Hoje: `products/sobedesce/src/relay/` (com `personalizado.js`, para o "Máxima qualidade") e
+  `products/sobedesce/web/public/app/relay/`.
 - **O arquivo da pessoa não sai do aparelho.** Nenhum upload; o site é estático.
 - **Cor:** SDR sai marcado BT.709 (1-1-1). A cor de entrada vem do contêiner (o decodificador de ProRes erra a marca);
   10 bits vira 8 com arredondamento. HDR e gamut largo viram aviso, nunca silêncio.

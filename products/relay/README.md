@@ -20,6 +20,11 @@ arquivo não é enviado. É a porta de entrada do ecossistema Absolute ZRO.
   cadência máxima, bitrate médio ou tamanho máximo, quadro-chave e áudio, com a ficha ao vivo. Fica no aparelho e
   vai para outro aparelho ou para a equipe como `.relay.json` (Levar / Trazer).
 - **Arquivo grande**: grava direto numa pasta (Chrome e Edge no computador).
+- **Máxima qualidade** (Mac e Windows): abre o app SOBEDESCE pelo link `sobedesce://relay` com os destinos escolhidos
+  (inclusive os da pessoa); ele converte os arquivos do computador com o x264 e salva ao lado do original
+  (`src/link.js` monta o link; `products/sobedesce/desktop/links.js` lê).
+- **Laboratório de aparelhos** (`/laboratorio`, interno: só nas prévias da Vercel e no `npm run dev`): mede o codificador
+  do aparelho contra a referência x264 no mesmo bitrate, com cenas geradas no próprio aparelho.
 
 ## Qualidade (o que foi medido)
 
