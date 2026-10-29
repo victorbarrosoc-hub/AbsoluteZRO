@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Relay · Em breve</title>
+    <meta name="description" content="O Relay, conversor de vídeo e áudio grátis da Absolute ZRO, chega em breve." />
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#f5f5f7" />
+    <meta property="og:title" content="Relay · Em breve" />
+    <meta property="og:image" content="https://relay.absolutezro.com/marca/og.png" />
+    <!-- caminhos absolutos: enquanto o Relay está fechado, esta página responde em todas as rotas do site -->
+    <link rel="icon" href="/marca/relay-icone.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/marca/app/apple-touch-icon.png" />
+    <link rel="stylesheet" href="/app/relay.css" />
+    <script src="/app/tema.js"></script>
+    <style>
+      @property --curso { syntax: '<number>'; inherits: true; initial-value: 1; }
+      body { min-height: 100svh; display: grid; grid-template-rows: auto 1fr; }
+      main { display: grid; place-content: center; justify-items: center; gap: 20px; padding: 48px 16px; text-align: center; }
+      .rele { --largura: min(280px, 70vw); --altura: calc(var(--largura) * 0.326); animation: liga 1.8s var(--mola) 0.2s both; margin-bottom: 24px; }
+      .rele::before, .rele::after { transition: none; }
+      @keyframes liga { from { --curso: 0; } }
+      h1 { font-size: clamp(40px, 8vw, 72px); line-height: 1.04; }
+      .apoio { max-width: 460px; font-size: 18px; }
+      .vidro { margin-top: 12px; }
+    </style>
+  </head>
+  <body>
+    <header class="topo">
+      <span class="marca"><img src="/marca/relay-icone.svg" alt="" />Relay</span>
+    </header>
+    <main>
+      <div class="rele" aria-hidden="true"></div>
+      <h1><span class="fino">Em</span> <span class="pesado">breve.</span></h1>
+      <p class="apoio">O conversor de vídeo e áudio grátis da Absolute ZRO. Do master ao feed, sem perder nada.</p>
+      <a class="vidro vidro--tinta vidro--grande" href="https://absolutezro.com">Conhecer a Absolute ZRO</a>
+    </main>
+  </body>
+</html>
