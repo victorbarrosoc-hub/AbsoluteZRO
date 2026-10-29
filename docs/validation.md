@@ -34,7 +34,7 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
   HUB negando = 403; sem Drive = 409 com onde conectar; estrutura do projeto idempotente e pasta ligada; compartilhar ao
   gerar o link e em versão nova com link ativo; revogar desfaz pela pessoa e, quando foi outra pessoa, pela credencial
   do Maestro; cron 503 sem segredo, 401 com o errado e desliga o que venceu; `urlConfere`; cópias de
-  `packages/drive-web`. `npm test` **311/311**; e2e `arquivos.spec.ts` (6, computador e iPhone): cadeado, navegador,
+  `packages/drive-web`. `npm test` **302/302** (com a main); e2e `arquivos.spec.ts` (6, computador e iPhone): cadeado, navegador,
   migalhas, filtro, prévia com `00:00:02` real pelo service worker, Abrir no SOBEDESCE, estrutura, sem rolagem lateral,
   o Drive tocando na revisão com o timecode e Escolher no Drive. Suíte e2e inteira 57/57 (1 pulado, como antes).
 - Capturas (claro, escuro e iPhone) geradas pelo e2e com `SHOTS_DIR` (fora do repositório).
