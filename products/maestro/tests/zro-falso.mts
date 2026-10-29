@@ -27,7 +27,8 @@ export type PessoaZro = {
 type Codigo = { desafio: string; redirectUri: string; pessoa: PessoaZro; nonce: string; usado: boolean; escopo: string };
 export type PedidoIa = { metodo: string; caminho: string; autorizacao: string | null; corpo: string };
 
-export const ESCOPOS_COMPLETOS = "openid email profile org offline_access zro.ia maestro.projects";
+export const ESCOPOS_SEM_AGENDA = "openid email profile org offline_access zro.ia maestro.projects";
+export const ESCOPOS_COMPLETOS = `${ESCOPOS_SEM_AGENDA} zro.agenda`;
 export const ESCOPOS_BASICOS = "openid email profile org offline_access";
 
 export async function iniciarZroFalsa(cliente: { clientId: string; clientSecret: string }) {
@@ -44,6 +45,8 @@ export async function iniciarZroFalsa(cliente: { clientId: string; clientSecret:
     ultimoEscopo: null as string | null,
     /** A Absolute ZRO ainda não conhece os escopos além dos básicos: responde invalid_scope a quem pedir. */
     recusarEscoposExtras: false,
+    /** A Absolute ZRO ainda não conhece só o zro.agenda (HUB antes da migration 0026). */
+    recusarAgenda: false,
     /** Vida do access token (s); 0 obriga o Maestro a renovar antes de cada uso. */
     vidaAcesso: 600,
     renovacoes: 0,
@@ -122,7 +125,10 @@ export async function iniciarZroFalsa(cliente: { clientId: string; clientSecret:
       const escopo = q.get("scope") ?? "";
       if (q.get("client_id") !== cliente.clientId || q.get("code_challenge_method") !== "S256" || !q.get("nonce")) {
         volta.searchParams.set("error", "invalid_request");
-      } else if (estado.recusarEscoposExtras && escopo.split(" ").some((s) => !ESCOPOS_BASICOS.split(" ").includes(s))) {
+      } else if (
+        (estado.recusarEscoposExtras && escopo.split(" ").some((s) => !ESCOPOS_BASICOS.split(" ").includes(s))) ||
+        (estado.recusarAgenda && escopo.split(" ").includes("zro.agenda"))
+      ) {
         volta.searchParams.set("error", "invalid_scope");
       } else if (estado.proximo.negar || !estado.proximo.pessoa) {
         volta.searchParams.set("error", "access_denied");

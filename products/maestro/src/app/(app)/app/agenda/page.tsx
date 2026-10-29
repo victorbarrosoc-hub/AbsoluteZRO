@@ -6,6 +6,7 @@ import { nomeFuncao } from "@/lib/freelas/funcoes";
 import { podeEscrever } from "@/lib/papeis";
 import { Icone } from "@/components/icones";
 import { EstadoVazio } from "@/components/vazio";
+import { sincronizarDepois } from "@/lib/agenda/depois";
 
 export const metadata = { title: "Agenda" };
 
@@ -26,6 +27,8 @@ function porDia(eventos: Evento[], de: string, dias: number) {
 /** A agenda da produtora: diárias, entregas e reuniões das próximas quatro semanas, com a equipe e os conflitos. */
 export default async function Agenda({ searchParams }: PageProps<"/app/agenda">) {
   const sessao = await exigirAcessoNaPagina("/app/agenda");
+  // Abriu a agenda: o que ficou na fila do Google Agenda desta pessoa sai depois da resposta.
+  sincronizarDepois(sessao);
   const sp = await searchParams;
   const hoje = hojeBr();
   const de = ehData(sp.de) ? sp.de : hoje;

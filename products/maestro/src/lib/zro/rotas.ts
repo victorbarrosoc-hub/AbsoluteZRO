@@ -21,7 +21,7 @@ import {
 import { comParametro, erro, ipDe, json, lerCookie, origemConfere, origemDoPedido, redirecionar, serializarCookie, voltaSegura } from "@/lib/http";
 import { NOME_DO_PAPEL } from "@/lib/papeis";
 import { cookieSeguro, FERRAMENTAS_ZRO, origensDoSite, ROTAS } from "@/lib/site";
-import { emissor, retornoZro, zroConfigurado } from "./config";
+import { emissor, PROXIMO_NIVEL, retornoZro, zroConfigurado, type NivelEscopo } from "./config";
 import { entrarNaOrganizacao } from "./contas";
 import { abrirEstadoZro, COOKIE_ZRO, DURACAO_ZRO_S, selarEstadoZro, type ModoZro } from "./estado";
 import { lerUserinfo, novoValor, renovarTokens, revogarToken, trocarCodigoZro, urlDeLogin, type PerfilZro, type TokensZro } from "./oidc";
@@ -42,7 +42,9 @@ function paginaDeErro(volta: string, codigo: string): string {
 export async function entrar(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const modo: ModoZro = url.searchParams.get("modo") === "criar" ? "criar" : "entrar";
-  const basico = url.searchParams.get("basico") === "1";
+  const pedido = url.searchParams.get("nivel");
+  // `basico=1` é o formato antigo do mesmo pedido.
+  const nivel: NivelEscopo = pedido === "sem_agenda" || pedido === "basico" ? pedido : url.searchParams.get("basico") === "1" ? "basico" : "completo";
   const volta = voltaSegura(url.searchParams.get("volta"), VOLTA_PADRAO);
 
   // A Absolute ZRO volta para o endereço cadastrado: o cookie do state precisa nascer nele.
@@ -59,11 +61,11 @@ export async function entrar(req: Request): Promise<Response> {
   const desafio = createHash("sha256").update(verificador).digest("base64url");
   let destino: string;
   try {
-    destino = await urlDeLogin({ state, desafio, nonce, origem: retorno.origin, criar: modo === "criar", basico });
+    destino = await urlDeLogin({ state, desafio, nonce, origem: retorno.origin, criar: modo === "criar", nivel });
   } catch {
     return redirecionar(new URL(paginaDeErro(volta, "zro_erro"), url.origin));
   }
-  const cookie = serializarCookie(COOKIE_ZRO, selarEstadoZro({ state, verificador, nonce, modo, volta, basico }), {
+  const cookie = serializarCookie(COOKIE_ZRO, selarEstadoZro({ state, verificador, nonce, modo, volta, nivel }), {
     maxAge: DURACAO_ZRO_S,
     path: "/api/zro",
     secure: cookieSeguro(url.origin),
@@ -88,9 +90,10 @@ export async function callback(req: Request): Promise<Response> {
   const iss = url.searchParams.get("iss");
   if (iss && iss !== emissor()) return falhar("zro_erro");
   const erroZro = url.searchParams.get("error");
-  // A Absolute ZRO ainda não conhece um dos escopos (zro.ia, maestro.projects): refaz o pedido só com os básicos.
-  if (erroZro === "invalid_scope" && !estado.basico) {
-    const q = new URLSearchParams({ modo, volta, basico: "1" });
+  // A Absolute ZRO ainda não conhece um dos escopos: tira primeiro a Agenda (zro.agenda), depois a Z e projetos.
+  const proximo = erroZro === "invalid_scope" ? PROXIMO_NIVEL[estado.nivel ?? "completo"] : null;
+  if (proximo) {
+    const q = new URLSearchParams({ modo, volta, nivel: proximo });
     return ir(`/api/zro/entrar?${q}`);
   }
   if (erroZro) return falhar(erroZro === "access_denied" ? "zro_recusado" : "zro_erro");

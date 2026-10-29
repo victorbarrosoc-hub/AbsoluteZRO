@@ -8,6 +8,7 @@ import { erro, json, lerJson, origemConfere } from "@/lib/http";
 import { exigirAcesso } from "@/lib/auth/requisicao";
 import { podeEscrever } from "@/lib/papeis";
 import { origensDoSite } from "@/lib/site";
+import { sincronizarDepois } from "@/lib/agenda/depois";
 import { apagarCard, carregarCards, cardsDesde, criarCard, mudarCard, referenciasDoQuadro, type Falha } from "./servidor";
 
 const responderFalha = (f: Falha) => json({ erro: f.erro, mensagem: f.mensagem, campo: f.campo, card: f.card ?? undefined }, f.status);
@@ -44,5 +45,7 @@ export async function postQuadro(req: Request): Promise<Response> {
             ? await apagarCard(ctx, corpo.id, true)
             : null;
   if (!r) return erro(400, "formato", "Operação desconhecida.");
+  // Prazo mudou: o Google Agenda de quem sincroniza recebe depois da resposta (drizzle/0021).
+  if (r.ok) sincronizarDepois(s);
   return r.ok ? json({ card: r.card }) : responderFalha(r);
 }

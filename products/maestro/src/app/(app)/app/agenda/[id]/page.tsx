@@ -15,6 +15,7 @@ import { BotaoAcao } from "@/components/acao";
 import { Secao } from "@/components/crm";
 import { Formulario } from "@/components/form";
 import { Icone } from "@/components/icones";
+import { OcupadoNoGoogle } from "@/components/ocupado-google";
 import { removerEscalaAcao } from "../../freelas/acoes";
 import { mudarReservaAcao } from "../../inventario/acoes";
 import { criarDocumentoAcao } from "../../projetos/[id]/documentos/acoes";
@@ -92,6 +93,8 @@ export default async function FichaEvento({ params }: PageProps<"/app/agenda/[id
           </div>
         ) : null}
       </header>
+
+      {escreve ? <OcupadoNoGoogle de={e.data} ate={fim} volta={`/app/agenda/${e.id}`} /> : null}
 
       <div className="painel">
         <Secao titulo="Equipe">

@@ -5,6 +5,7 @@ import { listarProjetos } from "@/lib/crm/projetos";
 import { ehData, hojeBr } from "@/lib/dinheiro";
 import { podeEscrever } from "@/lib/papeis";
 import { CabecaForm, Formulario } from "@/components/form";
+import { OcupadoNoGoogle } from "@/components/ocupado-google";
 import { salvarEventoAcao } from "../acoes";
 
 export const metadata = { title: "Novo na agenda" };
@@ -27,6 +28,7 @@ export default async function NovoEvento({ searchParams }: PageProps<"/app/agend
       >
         <p className="apoio">Depois de salvar, escale a equipe e reserve o equipamento.</p>
       </CabecaForm>
+      <OcupadoNoGoogle volta="/app/agenda/novo" />
       <Formulario
         acao={salvarEventoAcao}
         campos={camposEvento(projetos)}

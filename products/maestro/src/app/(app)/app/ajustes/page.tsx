@@ -71,14 +71,14 @@ export default async function Ajustes() {
         <section className="ficha" aria-label="Equipe e agenda">
           <div>
             <strong className="ficha__titulo">Equipe e agenda</strong>
-            <p className="sutil">Quem vê o quê, e a sua agenda no celular.</p>
+            <p className="sutil">Quem vê o quê, e a sua agenda no Google e no celular.</p>
           </div>
           <nav className="atalhos" aria-label="Equipe e agenda">
             <Link className="atalho" href="/app/ajustes/pessoas">
               <Icone nome="pessoas" size={18} /> Pessoas e acesso <Icone nome="seta" size={15} />
             </Link>
             <Link className="atalho" href="/app/ajustes/agenda">
-              <Icone nome="agenda" size={18} /> Agenda no celular <Icone nome="seta" size={15} />
+              <Icone nome="agenda" size={18} /> Agenda <Icone nome="seta" size={15} />
             </Link>
             {podeRemover(s.papel) ? (
               <Link className="atalho" href="/app/ajustes/importar">

@@ -44,7 +44,8 @@ API usado), Postgres 16 próprio.
   `sem_agenda` e depois `basico` com invalid_scope. `npm test` **345/345**; lint, formatação, tipos e build ok.
 - Maestro e2e `e2e/agenda-google.spec.ts` (computador e iPhone, 4/4) e `e2e/negocio.spec.ts` (8/8): Ajustes → Agenda
   conectada, ligar manda a diária e o prazo ao HUB falso, "Sincronizar agora" = "Tudo em dia", sem conexão leva às
-  Conexões; "Ocupado no Google" segue a data do formulário (bloco 09:00–11:00, livre, sem conexão).
+  Conexões; "Ocupado no Google" segue a data do formulário (bloco 09:00–11:00, livre, sem conexão). Suíte e2e do Maestro
+  inteira: **76 passaram**, 6 pulados (como antes), nenhuma falha.
 - `node scripts/scan-secrets.mjs`: nenhum segredo. Capturas (claro/escuro, computador/celular) fora do repositório.
 - Não verificado: o Google de verdade (consentimento, aviso de app não verificado, cotas) e as migrations no banco de
   produção.
