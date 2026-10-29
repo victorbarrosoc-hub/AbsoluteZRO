@@ -2534,3 +2534,17 @@ sistema simulado), e o primeiro Release (sai no primeiro push na main com `produ
 - `test/transferencias-ui.test.js` (`rodada`): lote velho concluído, cancelado e tentativa substituída ficam de fora;
   terminar não faz a porcentagem cair; dois lotes ao mesmo tempo contam juntos até o fim.
 - Não validado: o painel num envio real de 100 GB no Mac do titular.
+
+## SOBEDESCE: Atualizações quando o Absolute ZRO cuida do app (29/10/2026)
+
+- Relato do titular: o app no build 1034 dizia "Você está na versão mais nova" com o 1042 publicado. Instalado pela
+  central do Absolute ZRO, o SOBEDESCE não pergunta ao site (quem atualiza é a central, `src/gerenciado.js`) e a tela
+  caía no texto de "em dia". Agora diz que quem atualiza é o Absolute ZRO e some o "Procurar atualização" (que não
+  procurava nada nesse caso). O catálogo da central (`/api/v1/desktop/apps`) já oferecia o 1042.
+- E a central também não oferecia: ela só comparava o build com o que ela mesma tinha instalado (`registro`), e o
+  SOBEDESCE instalado pelo Terminal, pelo .dmg ou pela atualização própria dele não tem registro; como a versão é sempre
+  0.1.0, ninguém atualizava. Agora a central lê o build de dentro do app instalado (`build-info.json` no `app.asar`,
+  `lerBuildInstalado` em `apps/hub-desktop/desktop/central.cjs`) e compara com o catálogo. `apps/hub-desktop`:
+  `npm test` 61/61 (caso b1034 → b1042 sem registro, build do app vale mais que o registro, Synquei em
+  `desktop/build-info.json`, versão de desenvolvimento sem build).
+- Não validado: a leitura do `app.asar` de outro app pela central empacotada num Mac e num Windows reais.
