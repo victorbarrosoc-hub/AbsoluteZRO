@@ -2438,3 +2438,14 @@ catálogo de downloads da Absolute ZRO, atrás do gate.
 
 Não conferido aqui: instalar e abrir num Mac e num Windows de verdade, o "Atualizar" trocando o app (só nos testes com
 sistema simulado), e o primeiro Release (sai no primeiro push na main com `products/maestro/desktop/**`).
+
+## SOBEDESCE: contador de "Agora" (29/10/2026)
+
+- Relato do titular: pasta de 100,3 GB enviada de novo depois de uma falha; terminou e o painel mostrava "51% de 205 GB".
+  Causa: o número grande somava todas as transferências da lista (lotes antigos concluídos e a tentativa que falhou,
+  com o que já tinha subido) e o motor deixava a tentativa velha "com problema" ao lado da nova.
+- `test/manager.test.js`: envio que falhou e é mandado de novo entra; a tentativa antiga vira cancelada
+  (`substituidaPor`) e sai do total, do "parado" e dos problemas.
+- `test/transferencias-ui.test.js` (`rodada`): lote velho concluído, cancelado e tentativa substituída ficam de fora;
+  terminar não faz a porcentagem cair; dois lotes ao mesmo tempo contam juntos até o fim.
+- Não validado: o painel num envio real de 100 GB no Mac do titular.
