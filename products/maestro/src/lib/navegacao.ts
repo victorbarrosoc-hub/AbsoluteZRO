@@ -5,7 +5,6 @@ export type Aba = { href: string; nome: string; icone: NomeIcone; curto?: string
 export type Grupo = { nome: string | null; abas: Aba[] };
 
 export const GRUPOS: Grupo[] = [
-  { nome: null, abas: [{ href: "/app/z", nome: "Z", icone: "z" }] },
   {
     nome: "Produção",
     abas: [
@@ -37,10 +36,16 @@ export const GRUPOS: Grupo[] = [
 
 export const AJUSTES: Aba = { href: "/app/ajustes", nome: "Ajustes", icone: "ajustes" };
 
-/** Todas as abas, na ordem da barra (a Z primeiro, Ajustes por último). */
-export const ABAS: Aba[] = [...GRUPOS.flatMap((g) => g.abas), AJUSTES];
+/**
+ * A Z (decisão do titular, 29/10/2026; PRD Maestro v1.1: "presença discreta contextual; central de comando no HUB"):
+ * não é a primeira aba nem fica na barra do celular. Ícone discreto no fim da cápsula, no topo do celular e em "Mais".
+ */
+export const Z: Aba = { href: "/app/z", nome: "Z", icone: "z" };
 
-/** A barra de baixo do celular (plano v2 §3): a Z, o dia a dia (Hoje, Quadro, Aprovações) e "Mais" (todas as seções). */
+/** Todas as abas, na ordem da cápsula (Hoje primeiro; Ajustes e a Z, discretos, no fim): dá o sentido da troca. */
+export const ABAS: Aba[] = [...GRUPOS.flatMap((g) => g.abas), AJUSTES, Z];
+
+/** A barra de baixo do celular (plano v2 §3): o dia a dia (Hoje, Quadro, Aprovações) e "Mais" (todas as seções). */
 export const MAIS: Aba = { href: "/app/mais", nome: "Mais", icone: "grade" };
 const aba = (href: string) => ABAS.find((a) => a.href === href)!;
-export const BARRA: Aba[] = [aba("/app/z"), aba("/app/hoje"), aba("/app/quadro"), aba("/app/aprovacoes"), MAIS];
+export const BARRA: Aba[] = [aba("/app/hoje"), aba("/app/quadro"), aba("/app/aprovacoes"), MAIS];

@@ -408,3 +408,66 @@ test('central de apps: no navegador não aparece nada da central', async ({ page
   await expect(page.locator('.app-actions')).toHaveCount(0)
   await expect(page.locator('#app-synquei .dl-opt[data-os="mac"]')).toBeVisible()
 })
+
+/**
+ * Troca de tela sem duas telas uma sobre a outra (titular, 29/10/2026, o mesmo defeito do Maestro no iPhone): pelo menu,
+ * a tela velha (grupo z-sai) termina antes de a nova (z-entra) começar e, amostrando quadro a quadro, nunca as duas
+ * acima de 10%. components/movimento.tsx e o bloco "troca de tela" de app/globals.css.
+ */
+async function trocarDeTela(page: Page, link: () => Promise<void>, url: string) {
+  await page.evaluate(() => {
+    const w = window as unknown as { sonda: { juntas: number; vts: number; relogio: [number, number] | null } }
+    w.sonda = { juntas: 0, vts: 0, relogio: null }
+    const d = document as Document & { __sonda?: boolean }
+    if (!d.__sonda) {
+      d.__sonda = true
+      const original = document.startViewTransition.bind(document)
+      document.startViewTransition = ((arg: ViewTransitionUpdateCallback) => {
+        w.sonda.vts++
+        const vt = original(arg)
+        vt.ready
+          .then(() => {
+            const an = document.getAnimations()
+            const pe = (n: string) => an.find((a) => (a.effect as KeyframeEffect | null)?.pseudoElement === n)
+            const sai = pe('::view-transition-old(z-sai)')
+            const entra = pe('::view-transition-new(z-entra)')
+            if (sai && entra) w.sonda.relogio = [Number(sai.effect!.getComputedTiming().endTime), Number(entra.effect!.getTiming().delay ?? 0)]
+          })
+          .catch(() => {})
+        return vt
+      }) as typeof document.startViewTransition
+    }
+    const op = (n: string) =>
+      document.getAnimations().some((a) => (a.effect as KeyframeEffect | null)?.pseudoElement === n)
+        ? Number(getComputedStyle(document.documentElement, n).opacity)
+        : 0
+    const t0 = performance.now()
+    const iv = setInterval(() => {
+      if (op('::view-transition-old(z-sai)') > 0.1 && op('::view-transition-new(z-entra)') > 0.1) w.sonda.juntas++
+      if (performance.now() - t0 > 3000) clearInterval(iv)
+    }, 4)
+  })
+  await link()
+  await page.waitForURL(`**${url}`)
+  await page.waitForFunction(() => !document.documentElement.dataset.zSentido, null, { timeout: 8000 })
+  const s = await page.evaluate(() => (window as unknown as { sonda: { juntas: number; vts: number; relogio: [number, number] | null } }).sonda)
+  expect(s.vts, `${url}: houve View Transition`).toBeGreaterThan(0)
+  expect(s.relogio, `${url}: grupos z-sai e z-entra`).not.toBeNull()
+  expect(s.relogio![0], `${url}: a velha termina antes de a nova começar`).toBeLessThanOrEqual(s.relogio![1] + 12)
+  expect(s.juntas, `${url}: velha e nova juntas`).toBe(0)
+  await expect(page.locator('#conteudo > .z-pagina')).toHaveCount(1)
+}
+
+test('troca de tela pelo menu: a velha sai antes de a nova entrar', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await signupAndOrg(page, 'Org troca')
+  await page.waitForLoadState('networkidle')
+  const menu = page.locator('.sidebar')
+  for (const [nome, url] of [
+    ['Meus projetos', '/projetos'],
+    ['Atividades', '/atividades'],
+    ['Início', '/inicio'],
+  ] as const) {
+    await trocarDeTela(page, () => menu.getByRole('link', { name: nome, exact: true }).click(), url)
+  }
+})

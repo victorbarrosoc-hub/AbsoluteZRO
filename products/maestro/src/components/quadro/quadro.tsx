@@ -1,7 +1,8 @@
 "use client";
 /**
  * O Quadro: as 8 colunas do método com os cards de verdade. No computador arrasta-se o card entre (e dentro das)
- * colunas; no celular uma coluna por vez, com as abas das colunas, e o card se move por "Mover para…". Filtro por
+ * colunas; no celular uma coluna por vez, com as abas das colunas: desliza-se de lado para trocar de coluna e segura-se
+ * o card para arrastar (gestos.ts), além do "Mover para…". Filtro por
  * cliente e responsável, busca, ficha lateral e o próximo passo de cada coluna (porte do Maestro antigo).
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -23,6 +24,7 @@ import { Ficha } from "./ficha";
 import { AvatarPessoa, ChipPrazo, ChipPrioridade, MoverPara } from "./pecas";
 import { useQuadro, type Inicial } from "./estado";
 import { useFlip } from "./flip";
+import { useGestosCelular } from "./gestos";
 
 type Props = Inicial & {
   cardInicial?: string | null;
@@ -33,6 +35,7 @@ type Props = Inicial & {
   demonstracao?: ReactNode;
 };
 type Alvo = { col: ColunaKey; antes: string | null };
+const ORDEM_COLUNAS = COLUNAS.map((c) => c.k);
 type FichaAberta = { id: string; focar?: string | null } | { novo: { coluna: ColunaKey; cliente?: string; projeto?: string } };
 
 export function Quadro(props: Props) {
@@ -53,8 +56,18 @@ export function Quadro(props: Props) {
   const [alvo, setAlvo] = useState<Alvo | null>(null);
   const arraste = useRef<string | null>(null);
   const quadro = useRef<HTMLDivElement>(null);
+  const abas = useRef<HTMLElement>(null);
   const voo = useRef<{ id: string; de: DOMRect } | null>(null);
-  useFlip(quadro, voo);
+  const fixar = useFlip(quadro, voo);
+  // arrastar do HTML só com mouse; no toque o arrastar é o de gestos.ts (o nativo do iOS demora e pinta de preto)
+  const [mouse, setMouse] = useState(false);
+  useEffect(() => {
+    const m = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const ver = () => setMouse(m.matches);
+    ver();
+    m.addEventListener("change", ver);
+    return () => m.removeEventListener("change", ver);
+  }, []);
 
   const pessoa = useCallback((sub?: string) => pessoas.find((p) => p.sub === sub) ?? null, [pessoas]);
   const nomeCliente = useCallback((id?: string) => clientes.find((c) => c.id === id)?.nome ?? "", [clientes]);
@@ -108,6 +121,17 @@ export function Quadro(props: Props) {
     },
     [cards, porColuna, mudar, avisar],
   );
+
+  const irParaColuna = useGestosCelular({
+    quadro,
+    abas,
+    colunas: ORDEM_COLUNAS,
+    coluna: colMovel,
+    setColuna: setColMovel,
+    podeArrastar: podeEscrever,
+    mover: moverPara,
+    fixar,
+  });
 
   const executar = (c: CardQ) => {
     const p = proximoPasso(c.dados)?.principal;
@@ -241,7 +265,8 @@ export function Quadro(props: Props) {
             ) : null}
           </div>
 
-          <nav className="q-abas" aria-label="Colunas" data-rolagem>
+          <nav ref={abas} className="q-abas" aria-label="Colunas" data-rolagem>
+            <span className="q-abas__pilula" aria-hidden="true" />
             {COLUNAS.map((c) => (
               <button
                 key={c.k}
@@ -249,7 +274,7 @@ export function Quadro(props: Props) {
                 className={c.k === colMovel ? "on" : undefined}
                 data-col={c.k}
                 aria-pressed={c.k === colMovel}
-                onClick={() => setColMovel(c.k)}
+                onClick={() => irParaColuna(c.k)}
               >
                 <i className="q-ponto" aria-hidden="true" />
                 {c.nome}
@@ -293,6 +318,7 @@ export function Quadro(props: Props) {
                           projeto={codigoProjeto(c.dados.projeto)}
                           resp={pessoa(c.dados.resp)}
                           podeEscrever={podeEscrever}
+                          arrastavel={podeEscrever && mouse}
                           arrastando={arrastando === c.id}
                           abrir={() => setFicha({ id: c.id })}
                           passo={() => executar(c)}
@@ -366,6 +392,7 @@ function Cartao({
   projeto,
   resp,
   podeEscrever,
+  arrastavel,
   arrastando,
   abrir,
   passo,
@@ -378,6 +405,7 @@ function Cartao({
   projeto: string;
   resp: Referencias["pessoas"][number] | null;
   podeEscrever: boolean;
+  arrastavel: boolean;
   arrastando: boolean;
   abrir: () => void;
   passo: () => void;
@@ -392,7 +420,7 @@ function Cartao({
       className={`q-card${arrastando ? " q-card--arrastando" : ""}${d.prioridade === "alta" ? " q-card--alta" : ""}`}
       data-card={c.id}
       data-col={d.coluna}
-      draggable={podeEscrever}
+      draggable={arrastavel}
       onDragStart={aoArrastar}
       onDragEnd={aoSoltar}
     >

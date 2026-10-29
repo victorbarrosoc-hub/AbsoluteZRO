@@ -8161,39 +8161,47 @@ a.pstrip__card:focus-visible .pstrip__go {
 ::view-transition-new(root) {
   animation: none;
 }
-::view-transition-old(.z-frente) {
-  --z-vt-x: -16px;
-  animation: 150ms var(--ease) both z-vt-sai;
+/* A tela velha (grupo z-sai) e a nova (z-entra), postos por components/movimento.tsx só durante a troca. Primeiro a
+   velha some (110 ms); a nova só começa aos 100 ms, quando a velha já está abaixo de 2%: nunca as duas juntas. Valores
+   fixos (sem var()): os pseudo-elementos da transição não dependem de herança nenhuma. */
+.z-pagina {
+  min-width: 0;
 }
-::view-transition-new(.z-frente) {
-  --z-vt-x: 28px;
-  animation: 320ms var(--spring) both z-vt-entra;
+.public-main > .z-pagina {
+  display: grid;
+  gap: inherit;
 }
-::view-transition-old(.z-volta) {
-  --z-vt-x: 16px;
-  animation: 150ms var(--ease) both z-vt-sai;
+::view-transition-group(z-sai),
+::view-transition-group(z-entra) {
+  animation: none;
 }
-::view-transition-new(.z-volta) {
-  --z-vt-x: -28px;
-  animation: 320ms var(--spring) both z-vt-entra;
+/* no WebKit, vidro (backdrop-filter) dentro da tela escapa da foto e fica à vista durante a troca: sem ele na troca */
+:root[data-z-sentido] .z-pagina * {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }
-::view-transition-old(.z-troca) {
-  animation: 140ms var(--ease) both z-vt-some;
+/* o WebKit cria as duas metades até em grupo só de saída ou só de entrada: a metade que não existe não aparece */
+::view-transition-new(z-sai),
+::view-transition-old(z-entra) {
+  display: none;
 }
-::view-transition-new(.z-troca) {
-  animation: 280ms var(--spring) both z-vt-sobe;
+::view-transition-old(z-sai) {
+  animation: z-vt-some 110ms cubic-bezier(0.2, 0, 0, 1) both;
 }
-@keyframes z-vt-sai {
-  to {
-    opacity: 0;
-    transform: translateX(var(--z-vt-x));
-  }
+::view-transition-new(z-entra) {
+  animation: z-vt-sobe 300ms cubic-bezier(0.32, 0.72, 0, 1) 100ms both;
 }
-@keyframes z-vt-entra {
-  from {
-    opacity: 0;
-    transform: translateX(var(--z-vt-x));
-  }
+:root[data-z-sentido='frente']::view-transition-old(z-sai) {
+  animation-name: z-vt-sai-frente;
+}
+:root[data-z-sentido='frente']::view-transition-new(z-entra) {
+  animation-name: z-vt-entra-frente;
+}
+:root[data-z-sentido='volta']::view-transition-old(z-sai) {
+  animation-name: z-vt-sai-volta;
+}
+:root[data-z-sentido='volta']::view-transition-new(z-entra) {
+  animation-name: z-vt-entra-volta;
 }
 @keyframes z-vt-some {
   to {
@@ -8204,6 +8212,30 @@ a.pstrip__card:focus-visible .pstrip__go {
   from {
     opacity: 0;
     transform: translateY(8px);
+  }
+}
+@keyframes z-vt-sai-frente {
+  to {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+}
+@keyframes z-vt-sai-volta {
+  to {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+}
+@keyframes z-vt-entra-frente {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+}
+@keyframes z-vt-entra-volta {
+  from {
+    opacity: 0;
+    transform: translateX(-28px);
   }
 }
 .nav {

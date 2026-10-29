@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { Icone } from "@/components/icones";
-import { AJUSTES, GRUPOS } from "@/lib/navegacao";
+import { AJUSTES, GRUPOS, Z } from "@/lib/navegacao";
 
 export const metadata = { title: "Seções" };
 
@@ -28,12 +28,14 @@ export default async function Mais() {
           </div>
         </section>
       ))}
-      <section className="mais-grupo" aria-label="Ajustes">
+      <section className="mais-grupo" aria-label="Ajustes e Z">
         <div className="mais-grade">
-          <Link href={AJUSTES.href} className="mais-item">
-            <Icone nome={AJUSTES.icone} size={24} />
-            <span>{AJUSTES.nome}</span>
-          </Link>
+          {[AJUSTES, Z].map((a) => (
+            <Link key={a.href} href={a.href} className="mais-item">
+              <Icone nome={a.icone} size={24} />
+              <span>{a.nome}</span>
+            </Link>
+          ))}
         </div>
       </section>
     </div>
