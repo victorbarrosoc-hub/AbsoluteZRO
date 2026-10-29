@@ -89,8 +89,17 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   puro e faz as mesmas contas do `quoteTotals` do ZRO (não mude sem o teste); tabela de preços com faixas e
   multiplicadores por nicho, modelos com fórmula estruturada (nada de `eval`); só rascunho edita; aprovar cria projeto
   e entradas uma vez. Timbrado = página com CSS de impressão (`.imprimivel`, A4), sem custo nem margem; o PDF é o
-  "salvar PDF" do navegador. Deslocamento: contas em `deslocamento.ts`; Photon/OSRM/ANP em `servicos.ts` **desligados**
+  "salvar PDF" do navegador. Deslocamento: contas em `deslocamento.ts`; Photon/OSRM em `servicos.ts` **desligados**
   até a ciência do titular (`MAESTRO_SERVICOS_ABERTOS=1` liga); a tela sempre aceita km e litro digitados.
+  **Combustível automático** (titular 29/10/2026, `drizzle/0022`): gasolina, etanol ou diesel S10 com o preço médio da
+  semana da ANP (planilha semanal `resumo_semanal_lpc`, abas MUNICIPIOS/ESTADOS/BRASIL) no município da produtora
+  (Ajustes → Empresa), senão no estado, senão no Brasil, sempre com "· ANP, semana de dd/mm". Só o agendamento fala com
+  a ANP: `GET /api/cron/combustivel` (Vercel Cron no sábado, `CRON_SECRET`, porta `src/lib/cron.ts`) guarda a semana em
+  `maestro.combustivel_precos` (referência sem organização: `maestro_app` só SELECT; 8 semanas) e
+  `coletarSeAtrasado` (`after()` na ação) cobre o agendamento atrasado, uma vez por hora. Preço digitado vale para
+  aquele combustível naquele orçamento (localStorage); a linha grava o preço usado (orçamento salvo não muda). Sem
+  semana guardada, campo vazio e "Digite o preço do posto"; nunca preço inventado. Teste com a ANP falsa
+  (`tests/anp-fixture.mts`, `MAESTRO_ANP_URL`).
   **Financeiro** (`src/lib/financeiro`) só admin e gestão (`podeVerDinheiro`), também no banco; baixas recalculam o
   pago por gatilho; recorrência gera o mês uma vez; a escala vira "a pagar" pelo gatilho `escala_sincronizar`. Sem
   DAS/ISS. **Freelas**: CPF e PIX só em `freela_pagamento`, cifrados com `selar()` (`MAESTRO_KEY`, contexto
@@ -235,7 +244,8 @@ Cobertura mínima que não pode cair: isolamento RLS com duas organizações (`r
 isolamento e papel de leitura (`crm.test.mts`), demonstração idempotente que remove só o que é `demo` (`demo.test.mts`),
 lista de espera com RLS, limite e armadilha (`lista-espera.test.mts`), detector de fontes e tempo (`fontes.test.mts`),
 revisão com duas organizações, porta estreita, PIN, limites e decisão idempotente (`revisao.test.mts`), motor e fluxo
-do orçamento (`orcamento.test.mts`), deslocamento e ANP (`deslocamento.test.mts`), financeiro com baixas, recorrência e
+do orçamento (`orcamento.test.mts`), deslocamento e a planilha da ANP (`deslocamento.test.mts`), combustível automático com a ANP falsa, agendamento,
+fallbacks e só leitura (`combustivel.test.mts`), financeiro com baixas, recorrência e
 escala (`financeiro.test.mts`), freelas, pagamento cifrado, reservas sem conflito e documentos (`operacao.test.mts`),
 duas organizações em toda tabela da produtora (`produtora-rls.test.mts`), logo, cor e marca com duas organizações
 (`marca.test.mts`), pedido público, link e aceite idempotente (`pedidos.test.mts`), contagens do Hoje (`hoje.test.mts`),

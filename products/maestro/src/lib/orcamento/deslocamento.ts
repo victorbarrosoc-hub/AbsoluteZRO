@@ -1,8 +1,9 @@
 /**
  * Calculadora de deslocamento (plano v2 §6.4; porte de travel-item.tsx, services/route.ts e services/fuel.ts do ZRO),
- * generalizada: a origem é a cidade base da organização (não mais Natal) e o preço da gasolina é o da ANP da capital
- * da UF da organização ou, fora da capital, a média do estado. Aqui só o que é puro (contas e leitura das respostas
- * de Photon, OSRM e da planilha da ANP); quem busca é src/lib/orcamento/servicos.ts, e sempre há a saída manual.
+ * generalizada: a origem é a cidade base da organização e o preço do litro é o preço médio da semana na ANP (gasolina,
+ * etanol ou diesel S10) no município da produtora, senão no estado, senão no Brasil. Aqui só o que é puro (contas e
+ * leitura das respostas de Photon, OSRM e da planilha semanal da ANP); quem busca é src/lib/orcamento/servicos.ts e
+ * quem guarda a semana é o agendamento (drizzle/0022). Sempre há a saída manual.
  */
 
 export type Lugar = { rotulo: string; detalhe: string; lat: number; lon: number };
@@ -18,6 +19,8 @@ export type EntradaDeslocamento = {
   litroCents: number;
   /** Pedágio por viagem completa (opcional), em centavos. */
   pedagioCents?: number;
+  /** Combustível, só para o texto da linha ("L de gasolina"); sem ele, "L" como antes. */
+  combustivel?: Combustivel;
 };
 
 export type Deslocamento = { kmTotal: number; litros: number; combustivelCents: number; pedagioCents: number; custoCents: number };
@@ -37,7 +40,10 @@ export function calcularDeslocamento(e: EntradaDeslocamento): Deslocamento {
 const fmt = (n: number, casas = 1) => n.toLocaleString("pt-BR", { maximumFractionDigits: casas });
 const reais = (c: number) => `R$ ${(c / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-/** A linha "Deslocamento" do orçamento: "Natal → Mossoró", "560 km · ida e volta · 2 viagens · 46,7 L a R$ 6,29/L". */
+/**
+ * A linha "Deslocamento" do orçamento: "Natal → Mossoró", "560 km · ida e volta · 2 viagens · 46,7 L de gasolina a
+ * R$ 6,29/L". O preço usado fica gravado no texto e no valor: orçamento salvo não muda quando a ANP muda.
+ */
 export function linhaDeDeslocamento(e: EntradaDeslocamento, de: string | null, para: string | null) {
   const d = calcularDeslocamento(e);
   const rota = [de, para].filter(Boolean).join(" → ") || `${fmt(e.kmIda)} km`;
@@ -46,7 +52,7 @@ export function linhaDeDeslocamento(e: EntradaDeslocamento, de: string | null, p
     `${fmt(d.kmTotal, 0)} km`,
     e.idaEVolta ? "ida e volta" : "só ida",
     viagens > 1 ? `${viagens} viagens` : null,
-    `${fmt(d.litros)} L a ${reais(e.litroCents)}/L`,
+    `${fmt(d.litros)} L${e.combustivel ? ` de ${COMBUSTIVEIS[e.combustivel].texto}` : ""} a ${reais(e.litroCents)}/L`,
     d.pedagioCents > 0 ? `pedágio ${reais(d.pedagioCents)}` : null,
   ]
     .filter(Boolean)
@@ -152,20 +158,31 @@ export function rotaDoOsrm(dados: unknown): { km: number; minutos: number } | nu
 
 /* ───────────── ANP: planilha semanal "resumo_semanal_lpc" ───────────── */
 
-export type PrecoCombustivel = {
-  /** Preço médio do litro, em centavos. */
-  litroCents: number;
-  inicio: string;
-  fim: string;
-  postos: number;
-  /** "capital" (média do município) ou "estado" (média do estado). */
-  base: "capital" | "estado";
-  onde: string;
-  buscadoEm: string;
-};
+/**
+ * Os três combustíveis da calculadora, com o nome do produto na planilha da ANP e um consumo de partida (km/L) para
+ * quando não há veículo no inventário: carro a gasolina ~10, o mesmo carro no etanol ~7 (o etanol rende uns 70%) e van
+ * ou picape a diesel ~9. É só o valor inicial do campo; quem sabe o do carro troca.
+ */
+export const COMBUSTIVEIS = {
+  gasolina: { nome: "Gasolina", texto: "gasolina", produto: "GASOLINA COMUM", kmL: 10 },
+  etanol: { nome: "Etanol", texto: "etanol", produto: "ETANOL HIDRATADO", kmL: 7 },
+  diesel: { nome: "Diesel S10", texto: "diesel S10", produto: "OLEO DIESEL S10", kmL: 9 },
+} as const;
+export type Combustivel = keyof typeof COMBUSTIVEIS;
+export const ehCombustivel = (v: unknown): v is Combustivel => typeof v === "string" && Object.hasOwn(COMBUSTIVEIS, v);
 
-/** Data do Excel (dias desde 1899-12-30) → AAAA-MM-DD. */
+/** Nome de município como chave: "Santa Bárbara d'Oeste" e "SANTA BARBARA D OESTE" dão o mesmo. */
+export const chaveDoMunicipio = (s: string) =>
+  semAcento(s)
+    .replace(/[^A-Z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80);
+
+/** Data do Excel (dias desde 1899-12-30) ou "18/10/2026" → AAAA-MM-DD. */
 export function dataDoExcel(serial: string): string {
+  const br = serial.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (br) return `${br[3]}-${br[2]}-${br[1]}`;
   const n = Number(serial);
   if (!Number.isFinite(n) || n <= 0) return "";
   return new Date(Date.UTC(1899, 11, 30) + n * 86_400_000).toISOString().slice(0, 10);
@@ -212,23 +229,24 @@ export function linhasDaAba(xlsx: Xlsx, aba: string): Record<string, string>[] {
   return linhas;
 }
 
-type Colunas = { ini: string; fim: string; estado: string; municipio?: string; produto: string; postos?: string; preco: string };
+type Colunas = { ini: string; fim: string; estado?: string; municipio?: string; produto: string; postos?: string; preco: string };
 
-/** Acha o cabeçalho (a linha com PRODUTO) e as colunas pelo nome; sem cabeçalho, o desenho fixo da aba CAPITAIS. */
-function colunas(linhas: Record<string, string>[]): { inicio: number; c: Colunas } {
+/** Acha o cabeçalho (a linha com PRODUTO, PREÇO MÉDIO REVENDA e as datas) e as colunas pelo nome. Sem cabeçalho, nada. */
+function cabecalho(linhas: Record<string, string>[]): { inicio: number; c: Colunas } | null {
   for (const [i, l] of linhas.entries()) {
     const nomes = Object.entries(l).map(([k, v]) => [k, semAcento(v)] as const);
     const acha = (f: (v: string) => boolean) => nomes.find(([, v]) => f(v))?.[0];
     const produto = acha((v) => v === "PRODUTO");
     const preco = acha((v) => v.includes("PRECO MEDIO REVENDA"));
-    const estado = acha((v) => v.startsWith("ESTADO"));
-    if (produto && preco && estado) {
+    const ini = acha((v) => v.includes("DATA INICIAL"));
+    const fim = acha((v) => v.includes("DATA FINAL"));
+    if (produto && preco && ini && fim) {
       return {
         inicio: i + 1,
         c: {
-          ini: acha((v) => v.includes("DATA INICIAL")) ?? "A",
-          fim: acha((v) => v.includes("DATA FINAL")) ?? "B",
-          estado,
+          ini,
+          fim,
+          estado: acha((v) => v.startsWith("ESTADO")),
           municipio: acha((v) => v.startsWith("MUNICIPIO")),
           produto,
           postos: acha((v) => v.includes("POSTOS")),
@@ -237,37 +255,109 @@ function colunas(linhas: Record<string, string>[]): { inicio: number; c: Colunas
       };
     }
   }
-  return { inicio: 0, c: { ini: "A", fim: "B", estado: "C", municipio: "D", produto: "E", postos: "F", preco: "H" } };
+  return null;
+}
+
+const PRODUTOS = new Map(Object.entries(COMBUSTIVEIS).map(([k, v]) => [v.produto as string, k as Combustivel]));
+
+/** Uma linha da semana: `uf` 'BR' = Brasil; `municipio` '' = média do estado (ou do Brasil). */
+export type LinhaAnp = { uf: string; municipio: string; combustivel: Combustivel; preco: number; postos: number };
+export type SemanaAnp = { semana: string; semanaFim: string; linhas: LinhaAnp[] };
+
+/**
+ * A semana inteira da planilha: abas MUNICIPIOS, ESTADOS e BRASIL, só gasolina comum, etanol hidratado e diesel S10.
+ * As datas vêm das células (não do nome do arquivo). Linha de outra semana, de estado desconhecido ou com preço fora
+ * de 0–100 fica de fora; repetida, vale a primeira. Sem nenhuma linha boa, null.
+ */
+export function semanaDaPlanilha(xlsx: Xlsx): SemanaAnp | null {
+  let semana = "";
+  let semanaFim = "";
+  const vistas = new Set<string>();
+  const linhas: LinhaAnp[] = [];
+  for (const aba of ["MUNICIPIOS", "ESTADOS", "BRASIL"] as const) {
+    const todas = linhasDaAba(xlsx, aba);
+    const h = cabecalho(todas);
+    if (!h) continue;
+    const { c } = h;
+    for (const l of todas.slice(h.inicio)) {
+      const combustivel = PRODUTOS.get(semAcento(l[c.produto] ?? ""));
+      if (!combustivel) continue;
+      const ini = dataDoExcel(l[c.ini] ?? "");
+      const fim = dataDoExcel(l[c.fim] ?? "");
+      if (!ini || !fim) continue;
+      if (!semana) [semana, semanaFim] = [ini, fim];
+      if (ini !== semana || fim !== semanaFim) continue;
+      let uf = "BR";
+      let municipio = "";
+      if (aba !== "BRASIL") {
+        const sigla = c.estado ? SIGLA_DO_ESTADO.get(semAcento(l[c.estado] ?? "")) : undefined;
+        if (!sigla) continue;
+        uf = sigla;
+        if (aba === "MUNICIPIOS") {
+          municipio = c.municipio ? chaveDoMunicipio(l[c.municipio] ?? "") : "";
+          if (!municipio) continue;
+        }
+      }
+      const preco = Number(String(l[c.preco] ?? "").replace(",", "."));
+      if (!(preco > 0 && preco < 100)) continue;
+      const chave = `${uf}|${municipio}|${combustivel}`;
+      if (vistas.has(chave)) continue;
+      vistas.add(chave);
+      const postos = Math.max(0, Math.round(Number(c.postos ? l[c.postos] : 0) || 0));
+      linhas.push({ uf, municipio, combustivel, preco: Math.round(preco * 1000) / 1000, postos });
+    }
+  }
+  return linhas.length ? { semana, semanaFim, linhas } : null;
+}
+
+/** Fim da semana pelo nome do arquivo ("..._2026_10_18-2026_10_24.xlsx", "...-16-10-2022-22-10-2022.xlsx"); "" sem data. */
+function fimPeloNome(caminho: string): string {
+  const [a = "", , c = "", x = "", y = "", z = ""] = (caminho.split("/").pop() ?? "").match(/\d+/g) ?? [];
+  const d = (ano: string, mes: string, dia: string) => `${ano}-${mes.padStart(2, "0")}-${dia.padStart(2, "0")}`;
+  if (z && a.length === 4 && x.length === 4) return d(x, y, z);
+  if (z && c.length === 4 && z.length === 4) return d(z, y, x);
+  return "";
 }
 
 /**
- * Gasolina comum na planilha da ANP: a capital da UF (aba CAPITAIS) quando a cidade é a capital, senão a média do
- * estado (aba ESTADOS). Se a cidade é a capital e a aba de capitais não tem a linha, cai na média do estado.
+ * O link da planilha semanal mais recente na página "últimas semanas pesquisadas". A ANP muda o jeito de escrever o
+ * nome (hífen, sublinhado, ordem da data); escolhemos a de data final mais nova e, sem data no nome, a primeira da
+ * página (a mais nova vem em cima). Só links do mesmo site da página.
  */
-export function precoNaPlanilha(xlsx: Xlsx, uf: string, cidade: string | null, agora = new Date()): PrecoCombustivel | null {
-  const info = UFS[uf];
-  if (!info) return null;
-  const ehCapital = !cidade || semAcento(cidade) === semAcento(info.capital);
-  const procurar = (aba: string, municipio: string | null): PrecoCombustivel | null => {
-    const linhas = linhasDaAba(xlsx, aba);
-    const { inicio, c } = colunas(linhas);
-    for (const l of linhas.slice(inicio)) {
-      if (semAcento(l[c.estado] ?? "") !== semAcento(info.estado)) continue;
-      if (municipio && c.municipio && semAcento(l[c.municipio] ?? "") !== semAcento(municipio)) continue;
-      if (semAcento(l[c.produto] ?? "") !== "GASOLINA COMUM") continue;
-      const preco = Number(String(l[c.preco] ?? "").replace(",", "."));
-      if (!(preco > 0 && preco < 100)) return null;
-      return {
-        litroCents: Math.round(preco * 100),
-        inicio: dataDoExcel(l[c.ini] ?? ""),
-        fim: dataDoExcel(l[c.fim] ?? ""),
-        postos: Number(c.postos ? l[c.postos] : 0) || 0,
-        base: municipio ? "capital" : "estado",
-        onde: municipio ? `${info.capital}, ${uf}` : info.estado,
-        buscadoEm: agora.toISOString(),
-      };
+export function linkDaPlanilhaSemanal(html: string, pagina: string): string | null {
+  const origem = new URL(pagina).origin;
+  let melhor: { url: string; fim: string } | null = null;
+  for (const m of html.matchAll(/[^"'\s<>()]*resumo[_-]semanal[_-]lpc[^"'\s<>()]*\.xlsx/gi)) {
+    let url: URL;
+    try {
+      url = new URL(decodificar(m[0]), pagina);
+    } catch {
+      continue;
     }
-    return null;
-  };
-  return (ehCapital ? procurar("CAPITAIS", info.capital) : null) ?? procurar("ESTADOS", null);
+    if (url.origin !== origem) continue;
+    const fim = fimPeloNome(url.pathname);
+    if (!melhor || fim > melhor.fim) melhor = { url: url.href, fim };
+  }
+  return melhor?.url ?? null;
+}
+
+/** O preço que a calculadora mostra (sempre de uma semana guardada; nunca inventado). */
+export type PrecoCombustivel = {
+  combustivel: Combustivel;
+  /** Preço médio do litro, em centavos. */
+  litroCents: number;
+  semana: string;
+  semanaFim: string;
+  postos: number;
+  /** Onde a média foi medida: o município da produtora, o estado ou o Brasil. */
+  base: "municipio" | "estado" | "brasil";
+  /** "Natal/RN", "RN" ou "Brasil". */
+  onde: string;
+  fonte: string;
+};
+
+/** "Preço médio da semana em Natal/RN · ANP, semana de 18/10". */
+export function rotuloDoPreco(p: Pick<PrecoCombustivel, "base" | "onde" | "semana">): string {
+  const onde = p.base === "municipio" ? `em ${p.onde}` : p.base === "estado" ? `no estado (${p.onde})` : "no Brasil";
+  return `Preço médio da semana ${onde} · ANP, semana de ${p.semana.slice(8, 10)}/${p.semana.slice(5, 7)}`;
 }

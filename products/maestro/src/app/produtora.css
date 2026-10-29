@@ -840,7 +840,7 @@ a.selo {
 }
 .resumo-desl {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 10px;
   margin: 0;
   padding: 14px;
@@ -860,6 +860,11 @@ a.selo {
 .resumo-desl strong {
   font-family: var(--font-apple);
   font-size: 1.3rem;
+}
+/* De onde veio o preço do litro: ANP (semana e lugar) ou digitado, com a volta para o da ANP. */
+.desl-fonte__voltar {
+  padding: 0;
+  font-size: inherit;
 }
 .lugar {
   position: relative;
@@ -1686,7 +1691,7 @@ details.secao.secao--abrir > summary {
     grid-template-columns: 1fr;
   }
   .resumo-desl {
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
   }
   .mes-nav .sutil {
     margin-left: 0;

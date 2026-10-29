@@ -498,6 +498,7 @@ export function EditorOrcamento({
 
       {painel === "deslocamento" ? (
         <Deslocamento
+          orcamentoId={ficha.id}
           base={base}
           veiculos={veiculos}
           servicos={servicos}

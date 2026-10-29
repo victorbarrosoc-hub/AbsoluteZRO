@@ -10,6 +10,10 @@
     {
       "path": "/api/cron/revisao",
       "schedule": "17 6 * * *"
+    },
+    {
+      "path": "/api/cron/combustivel",
+      "schedule": "41 13 * * 6"
     }
   ]
 }

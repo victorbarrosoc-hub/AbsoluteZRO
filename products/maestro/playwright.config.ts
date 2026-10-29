@@ -40,6 +40,9 @@ export default defineConfig({
       NEXT_TELEMETRY_DISABLED: "1",
       // O HUB e o SOBEDESCE de mentira do e2e de Arquivos (e2e/preparar.ts); o Google é interceptado no navegador.
       MAESTRO_PONTE_URL: `http://127.0.0.1:${Number(process.env.E2E_PONTE_PORT || 3219)}`,
+      // A ANP de mentira (tests/anp-fixture.mts) e o segredo do agendamento: o combustível automático sem rede.
+      MAESTRO_ANP_URL: `http://127.0.0.1:${Number(process.env.E2E_ANP_PORT || 3221)}/pagina`,
+      CRON_SECRET: "segredo-do-cron-e2e",
     },
   },
 });

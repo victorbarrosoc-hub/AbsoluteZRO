@@ -91,7 +91,7 @@ test.describe("produtora por dentro", () => {
     const dialogo = page.getByRole("dialog");
     await dialogo.getByLabel("Km de uma ida").fill("100");
     await dialogo.getByLabel("Consumo (km/L)").fill("10");
-    await dialogo.getByLabel("Gasolina (litro)").fill("6,00");
+    await dialogo.getByLabel("Preço do litro").fill("6,00");
     await expect(dialogo.getByText("R$ 120,00")).toBeVisible();
     await dialogo.getByRole("button", { name: "Adicionar ao orçamento" }).click();
     await expect(total).not.toHaveText(antes);
@@ -99,6 +99,52 @@ test.describe("produtora por dentro", () => {
     await expect(page.getByRole("status").filter({ hasText: "Salvo." })).toBeVisible();
     await page.reload();
     await expect(page.getByLabel("Descrição").last()).toHaveValue(/^Deslocamento/);
+  });
+
+  test("combustível automático: preço da semana da ANP, troca de combustível, digitado vale neste orçamento", async ({ page, request }, info) => {
+    test.skip(info.project.name !== "computador", "o editor completo roda no computador; o celular só lê");
+    // O agendamento semanal (com o segredo) guarda a semana da ANP de mentira (tests/anp-fixture.mts).
+    expect((await request.get("/api/cron/combustivel")).status()).toBe(401);
+    const r = await request.get("/api/cron/combustivel", { headers: { authorization: "Bearer segredo-do-cron-e2e" } });
+    expect(r.status()).toBe(200);
+    expect(await r.json()).toMatchObject({ ok: true, semana: "2026-10-18" });
+
+    await page.goto("/app/orcamentos?status=rascunho");
+    await page.locator(".lista .item").first().click();
+    await page.getByRole("button", { name: "Deslocamento" }).click();
+    const dialogo = page.getByRole("dialog");
+    const litro = dialogo.getByLabel("Preço do litro");
+    // A demonstração fica em São Paulo/SP: gasolina do município.
+    await expect(dialogo.getByRole("radio", { name: "Gasolina" })).toHaveAttribute("aria-checked", "true");
+    await expect(litro).toHaveValue("6,11");
+    await expect(dialogo.getByText("Preço médio da semana em São Paulo/SP · ANP, semana de 18/10")).toBeVisible();
+    // Etanol: SP sem a linha na planilha de mentira, vale a média do Brasil.
+    await dialogo.getByRole("radio", { name: "Etanol" }).click();
+    await expect(litro).toHaveValue("4,11");
+    await expect(dialogo.getByText("Preço médio da semana no Brasil · ANP, semana de 18/10")).toBeVisible();
+    await dialogo.getByLabel("Km de uma ida").fill("100");
+    await dialogo.getByLabel("Consumo (km/L)").fill("10");
+    const resumo = dialogo.locator(".resumo-desl");
+    await expect(resumo.getByText("R$ 82,20")).toBeVisible();
+    await expect(resumo.getByText("R$ 0,41")).toBeVisible();
+    if (process.env.SHOTS_DIR) await dialogo.screenshot({ path: `${process.env.SHOTS_DIR}/maestro-combustivel-claro-computador.png` });
+    // Preço digitado vale para o etanol neste orçamento, mesmo fechando e abrindo de novo; dá para voltar ao da ANP.
+    await litro.fill("5,00");
+    await expect(dialogo.getByText("Preço digitado.")).toBeVisible();
+    await dialogo.getByRole("button", { name: "Fechar" }).click();
+    await page.getByRole("button", { name: "Deslocamento" }).click();
+    await expect(dialogo.getByRole("radio", { name: "Etanol" })).toHaveAttribute("aria-checked", "true");
+    await expect(litro).toHaveValue("5,00");
+    await dialogo.getByRole("radio", { name: "Diesel S10" }).click();
+    await expect(litro).toHaveValue("7,32");
+    await dialogo.getByRole("radio", { name: "Etanol" }).click();
+    await expect(litro).toHaveValue("5,00");
+    await dialogo.getByRole("button", { name: "Usar o da ANP (R$ 4,11)" }).click();
+    await expect(litro).toHaveValue("4,11");
+    await dialogo.getByLabel("Km de uma ida").fill("100");
+    await dialogo.getByLabel("Consumo (km/L)").fill("10");
+    await dialogo.getByRole("button", { name: "Adicionar ao orçamento" }).click();
+    await expect(page.getByLabel("Detalhe").last()).toHaveValue(/20 L de etanol a R\$ 4,11\/L/);
   });
 
   test("marca de exemplo no timbrado e kit no perfil do freela", async ({ page }) => {

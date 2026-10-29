@@ -1,22 +1,37 @@
 /**
- * Serviços abertos da calculadora de deslocamento, do mesmo jeito que o ZRO usava: Photon (lugares) e OSRM (km de
- * carro), do OpenStreetMap, e a planilha semanal de preços da ANP. São públicos, de uso justo e sem chave; por isso
- * ficam DESLIGADOS até o titular dar ciência (plano v2 §6.4/§11, fase 13): liga com MAESTRO_SERVICOS_ABERTOS=1.
- * Desligados ou fora do ar, a tela pede os km e o preço do litro à mão (a saída manual existe sempre).
- * O preço da ANP fica em maestro.cache_combustivel por 12 h (porta de sistema: tabela sem dado de ninguém).
+ * Serviços de fora da calculadora de deslocamento.
+ *
+ * - Photon (lugares) e OSRM (km de carro), do OpenStreetMap: públicos, de uso justo e sem chave; ficam DESLIGADOS até
+ *   o titular dar ciência (plano v2 §6.4/§11, fase 13): liga com MAESTRO_SERVICOS_ABERTOS=1. Desligados ou fora do ar,
+ *   a tela pede os km à mão.
+ * - ANP (preço do litro): ligada desde 29/10/2026 (pedido do titular, "combustível automático"). Quem fala com a ANP é
+ *   só o agendamento semanal (`coletarSemanaAnp`, GET /api/cron/combustivel, CRON_SECRET), que guarda a planilha da
+ *   semana em maestro.combustivel_precos (drizzle/0022); a calculadora só lê do banco (`precoDoCombustivel`). Sem
+ *   semana guardada, a tela pede o preço à mão e diz por quê; nada é inventado.
  */
-import "server-only";
 import { sql } from "drizzle-orm";
-import { getBanco } from "@/lib/db/client";
-import { lugaresDoPhoton, precoNaPlanilha, rotaDoOsrm, type Lugar, type PrecoCombustivel } from "./deslocamento";
+import { getBanco, type Contexto } from "@/lib/db/client";
+import {
+  chaveDoMunicipio,
+  linkDaPlanilhaSemanal,
+  lugaresDoPhoton,
+  rotaDoOsrm,
+  semanaDaPlanilha,
+  type Combustivel,
+  type Lugar,
+  type PrecoCombustivel,
+} from "./deslocamento";
 import { lerZip } from "./zip";
 
 const UA = "Maestro/1.0 (Absolute ZRO; calculadora de deslocamento; contato@absolutezro.com)";
-const PAGINA_ANP =
+export const PAGINA_ANP =
   "https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/levantamento-de-precos-de-combustiveis-ultimas-semanas-pesquisadas";
-const DOZE_HORAS = 12 * 60 * 60 * 1000;
+/** Semanas guardadas (a mais nova e as 7 anteriores). */
+export const SEMANAS_GUARDADAS = 8;
 
 export const servicosAbertos = () => process.env.MAESTRO_SERVICOS_ABERTOS === "1";
+/** A página da ANP (troca só em teste: MAESTRO_ANP_URL aponta para uma ANP falsa). */
+const paginaAnp = () => process.env.MAESTRO_ANP_URL || PAGINA_ANP;
 
 async function buscar(url: string | URL, ms: number) {
   const r = await fetch(url, { headers: { "user-agent": UA }, signal: AbortSignal.timeout(ms), cache: "no-store" });
@@ -46,38 +61,100 @@ export async function medirRota(de: { lat: number; lon: number }, para: { lat: n
   return rotaDoOsrm(await (await buscar(`https://router.project-osrm.org/route/v1/driving/${c}?overview=false`, 10000)).json());
 }
 
-async function daAnp(uf: string, cidade: string | null): Promise<PrecoCombustivel | null> {
-  const html = await (await buscar(PAGINA_ANP, 15000)).text();
-  const link = html.match(/https:\/\/[^"']*resumo_semanal_lpc_[\d-]+_[\d-]+\.xlsx/)?.[0];
-  if (!link) throw new Error("planilha semanal não encontrada na página da ANP");
-  const buf = Buffer.from(await (await buscar(link, 20000)).arrayBuffer());
-  const xlsx = lerZip(
-    buf,
-    (n) => n === "xl/workbook.xml" || n === "xl/_rels/workbook.xml.rels" || n === "xl/sharedStrings.xml" || n.startsWith("xl/worksheets/"),
-  );
-  return precoNaPlanilha(xlsx, uf, cidade);
+/* ───────────── ANP: o agendamento guarda, a calculadora lê ───────────── */
+
+export type ColetaAnp = { ok: true; semana: string; semanaFim: string; linhas: number; fonte: string; apagadas: number } | { ok: false; erro: string };
+
+/**
+ * Baixa a planilha semanal mais nova da ANP e guarda a semana (gasolina, etanol e diesel S10 por município, estado e
+ * Brasil). Repetir a mesma semana só regrava os mesmos números. Guarda as últimas 8 semanas. Nunca lança.
+ */
+export async function coletarSemanaAnp(): Promise<ColetaAnp> {
+  try {
+    const pagina = paginaAnp();
+    const html = await (await buscar(pagina, 20000)).text();
+    const link = linkDaPlanilhaSemanal(html, pagina);
+    if (!link) throw new Error("planilha semanal não encontrada na página da ANP");
+    const buf = Buffer.from(await (await buscar(link, 30000)).arrayBuffer());
+    const xlsx = lerZip(
+      buf,
+      (n) => n === "xl/workbook.xml" || n === "xl/_rels/workbook.xml.rels" || n === "xl/sharedStrings.xml" || n.startsWith("xl/worksheets/"),
+    );
+    const s = semanaDaPlanilha(xlsx);
+    if (!s) throw new Error("planilha da ANP sem gasolina, etanol ou diesel S10");
+    const apagadas = await getBanco().asSystem("combustível da ANP (agendamento)", async (tx) => {
+      for (let i = 0; i < s.linhas.length; i += 500) {
+        const lote = s.linhas.slice(i, i + 500);
+        await tx.execute(sql`
+          insert into maestro.combustivel_precos (semana, semana_fim, uf, municipio, combustivel, preco_medio, postos, fonte)
+          values ${sql.join(
+            lote.map((l) => sql`(${s.semana}::date, ${s.semanaFim}::date, ${l.uf}, ${l.municipio}, ${l.combustivel}, ${l.preco}, ${l.postos}, ${link})`),
+            sql`, `,
+          )}
+          on conflict (semana, uf, municipio, combustivel) do update set semana_fim = excluded.semana_fim, preco_medio = excluded.preco_medio,
+            postos = excluded.postos, fonte = excluded.fonte, buscado_em = now()`);
+      }
+      const r = await tx.execute(sql`
+        delete from maestro.combustivel_precos
+        where semana < (select max(semana) from maestro.combustivel_precos) - ${(SEMANAS_GUARDADAS - 1) * 7}::int
+        returning 1`);
+      return r.length;
+    });
+    return { ok: true, semana: s.semana, semanaFim: s.semanaFim, linhas: s.linhas.length, fonte: link, apagadas };
+  } catch (e) {
+    const erro = e instanceof Error ? e.message : String(e);
+    console.warn("[anp] coleta da semana falhou:", erro);
+    return { ok: false, erro };
+  }
 }
 
-/** Gasolina comum da semana na ANP para a base da organização (cache de 12 h; sem resposta, o último guardado). */
-export async function precoDaGasolina(uf: string, cidade: string | null): Promise<PrecoCombustivel | null> {
-  if (!servicosAbertos()) return null;
-  const chave = `gasolina:${uf}:${(cidade ?? "").toLowerCase().slice(0, 80)}`;
-  const banco = getBanco();
-  const [guardado] = (await banco.asSystem("cache do combustível", (tx) =>
-    tx.execute(sql`select dados, buscado_em from maestro.cache_combustivel where chave = ${chave}`),
-  )) as unknown as { dados: PrecoCombustivel; buscado_em: Date }[];
-  if (guardado && Date.now() - new Date(guardado.buscado_em).getTime() < DOZE_HORAS) return guardado.dados;
-  try {
-    const novo = await daAnp(uf, cidade);
-    if (novo) {
-      await banco.asSystem("cache do combustível", (tx) =>
-        tx.execute(sql`insert into maestro.cache_combustivel (chave, dados) values (${chave}, ${JSON.stringify(novo)}::jsonb)
-                       on conflict (chave) do update set dados = excluded.dados, buscado_em = now()`),
-      );
-      return novo;
-    }
-  } catch (e) {
-    console.warn("[anp] preço indisponível agora:", e instanceof Error ? e.message : e);
-  }
-  return guardado?.dados ?? null;
+let ultimaTentativa = 0;
+/**
+ * Sem nenhuma semana guardada, ou com a última terminada há mais de 13 dias (o agendamento falhou), tenta coletar de
+ * novo, no máximo uma vez por hora por servidor. Para `after()`: nunca segura a resposta.
+ */
+export async function coletarSeAtrasado(hoje: string): Promise<void> {
+  if (Date.now() - ultimaTentativa < 60 * 60 * 1000) return;
+  const [r] = (await getBanco().asSystem("combustível da ANP (conferir semana)", (tx) =>
+    tx.execute(sql`select max(semana_fim)::text as fim from maestro.combustivel_precos`),
+  )) as unknown as { fim: string | null }[];
+  const limite = new Date(Date.parse(`${hoje}T12:00:00Z`) - 13 * 86_400_000).toISOString().slice(0, 10);
+  if (r?.fim && r.fim >= limite) return;
+  ultimaTentativa = Date.now();
+  await coletarSemanaAnp();
+}
+
+/**
+ * O preço médio da semana mais nova guardada para o lugar da produtora: o município, senão o estado, senão o Brasil
+ * (na mesma semana, o mais perto ganha; uma semana mais nova ganha de uma mais velha). Lido como a pessoa (maestro_app
+ * só lê esta tabela). Sem nada guardado, null.
+ */
+export async function precoDoCombustivel(
+  ctx: Contexto,
+  lugar: { uf: string | null; cidade: string | null },
+  combustivel: Combustivel,
+): Promise<PrecoCombustivel | null> {
+  const uf = lugar.uf ?? "";
+  const municipio = lugar.cidade ? chaveDoMunicipio(lugar.cidade) : "";
+  const [r] = (await getBanco().asUser(ctx, (tx) =>
+    tx.execute(sql`
+      select semana::text, semana_fim::text as "semanaFim", uf, municipio, preco_medio::float8 as preco, postos, fonte
+      from maestro.combustivel_precos
+      where combustivel = ${combustivel}
+        and ((uf = ${uf} and (municipio = '' or (municipio = ${municipio} and ${municipio} <> ''))) or (uf = 'BR' and municipio = ''))
+      order by semana desc, case when municipio <> '' then 0 when uf <> 'BR' then 1 else 2 end
+      limit 1`),
+  )) as unknown as { semana: string; semanaFim: string; uf: string; municipio: string; preco: number; postos: number; fonte: string }[];
+  if (!r) return null;
+  const base = r.municipio ? "municipio" : r.uf === "BR" ? "brasil" : "estado";
+  return {
+    combustivel,
+    litroCents: Math.round(r.preco * 100),
+    semana: r.semana,
+    semanaFim: r.semanaFim,
+    postos: r.postos,
+    base,
+    onde: base === "municipio" ? `${lugar.cidade}/${r.uf}` : base === "estado" ? r.uf : "Brasil",
+    fonte: r.fonte,
+  };
 }

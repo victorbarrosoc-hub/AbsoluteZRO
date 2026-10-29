@@ -1,5 +1,5 @@
-import { timingSafeEqual } from "node:crypto";
-import { erro, json } from "@/lib/http";
+import { recusaDoCron } from "@/lib/cron";
+import { json } from "@/lib/http";
 import { varrerCompartilhamentos } from "@/lib/sobedesce/revisao";
 
 /**
@@ -10,10 +10,5 @@ import { varrerCompartilhamentos } from "@/lib/sobedesce/revisao";
 export const maxDuration = 60;
 
 export async function GET(req: Request): Promise<Response> {
-  const segredo = process.env.CRON_SECRET?.trim();
-  if (!segredo) return erro(503, "sem_config", "Agendamento sem CRON_SECRET.");
-  const veio = Buffer.from(req.headers.get("authorization") ?? "");
-  const esperado = Buffer.from(`Bearer ${segredo}`);
-  if (veio.length !== esperado.length || !timingSafeEqual(veio, esperado)) return erro(401, "nao_autorizado", "Não autorizado.");
-  return json(await varrerCompartilhamentos());
+  return recusaDoCron(req) ?? json(await varrerCompartilhamentos());
 }

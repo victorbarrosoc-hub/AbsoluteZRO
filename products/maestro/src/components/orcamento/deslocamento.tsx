@@ -1,27 +1,64 @@
 "use client";
 /**
  * Calculadora de deslocamento (porte de travel-item.tsx do ZRO): saída (a cidade base da organização), chegada, km,
- * ida e volta, viagens, consumo (do veículo do inventário ou digitado; lembrado no aparelho), preço do litro (ANP da
- * UF da organização quando os serviços abertos estão ligados; senão digitado) e pedágio. Vira a linha "Deslocamento".
- * Sem os serviços abertos, tudo é digitado: a saída manual existe sempre.
+ * ida e volta, viagens, combustível (gasolina, etanol ou diesel S10), consumo (do veículo do inventário, digitado ou o
+ * de partida do combustível; lembrado no aparelho), preço do litro e pedágio. Vira a linha "Deslocamento".
+ *
+ * O preço do litro vem pronto: o preço médio da semana na ANP no município da produtora, senão no estado, senão no
+ * Brasil (guardado pelo agendamento semanal; drizzle/0022), com a fonte e a semana escritas embaixo. Mudou o preço à
+ * mão, vale o digitado para aquele combustível neste orçamento (lembrado no aparelho). Sem semana guardada, o campo
+ * fica vazio e diz por quê. Orçamento salvo não muda: a linha grava o preço usado.
  */
 import { useEffect, useRef, useState, useTransition } from "react";
-import { buscarLugaresAcao, medirRotaAcao, precoGasolinaAcao } from "@/app/(app)/app/orcamentos/acoes";
-import { brl, centavosParaCampo, dataCurta, lerNumero, lerReais, numeroBr } from "@/lib/dinheiro";
-import { calcularDeslocamento, linhaDeDeslocamento, type Lugar, type PrecoCombustivel } from "@/lib/orcamento/deslocamento";
+import Link from "next/link";
+import { buscarLugaresAcao, medirRotaAcao, precoCombustivelAcao } from "@/app/(app)/app/orcamentos/acoes";
+import { brl, centavosParaCampo, lerNumero, lerReais, numeroBr } from "@/lib/dinheiro";
+import {
+  calcularDeslocamento,
+  COMBUSTIVEIS,
+  ehCombustivel,
+  linhaDeDeslocamento,
+  rotuloDoPreco,
+  type Combustivel,
+  type Lugar,
+  type PrecoCombustivel,
+} from "@/lib/orcamento/deslocamento";
 import { Icone } from "../icones";
 
 const KML = "maestro:deslocamento:km-l";
+const ULTIMO_COMBUSTIVEL = "maestro:deslocamento:combustivel";
+/** O que vale só para este orçamento: o combustível escolhido e os preços digitados. */
+const DO_ORCAMENTO = (id: string) => `maestro:deslocamento:orcamento:${id}`;
+
+type Lembrado = { combustivel?: Combustivel; litro?: Partial<Record<Combustivel, string>> };
+
+function ler<T>(chave: string, padrao: T): T {
+  try {
+    const v = localStorage.getItem(chave);
+    return v == null ? padrao : (JSON.parse(v) as T);
+  } catch {
+    return padrao;
+  }
+}
+function gravar(chave: string, valor: unknown) {
+  try {
+    localStorage.setItem(chave, JSON.stringify(valor));
+  } catch {
+    // aparelho sem armazenamento: segue sem lembrar
+  }
+}
 
 export type LinhaDeslocamento = ReturnType<typeof linhaDeDeslocamento>;
 
 export function Deslocamento({
+  orcamentoId,
   base,
   veiculos,
   servicos,
   aoAdicionar,
   aoFechar,
 }: {
+  orcamentoId: string;
   base: Lugar | null;
   veiculos: { id: string; nome: string; kmL: number }[];
   servicos: boolean;
@@ -38,16 +75,21 @@ export function Deslocamento({
   const [minutos, setMinutos] = useState<number | null>(null);
   const [erroRota, setErroRota] = useState<string | null>(null);
   const [medindo, medir] = useTransition();
-  const [kml, setKml] = useState(() => {
-    try {
-      return localStorage.getItem(KML) ?? (veiculos[0] ? String(veiculos[0].kmL).replace(".", ",") : "10");
-    } catch {
-      return "10";
-    }
+  const [lembrado, setLembrado] = useState<Lembrado>(() => ler<Lembrado>(DO_ORCAMENTO(orcamentoId), {}));
+  const [combustivel, setCombustivel] = useState<Combustivel>(() => {
+    const c = lembrado.combustivel ?? ler<string>(ULTIMO_COMBUSTIVEL, "gasolina");
+    return ehCombustivel(c) ? c : "gasolina";
   });
-  const [anp, setAnp] = useState<PrecoCombustivel | null>(null);
-  const [buscandoAnp, setBuscandoAnp] = useState(servicos);
-  const [litro, setLitro] = useState("");
+  // Consumo: o lembrado no aparelho, senão o do primeiro veículo, senão o de partida do combustível. Enquanto ninguém
+  // mexe, trocar o combustível troca o de partida.
+  const [kmlTocado, setKmlTocado] = useState(() => ler<string | null>(KML, null) != null || veiculos.length > 0);
+  const [kml, setKml] = useState(() => {
+    const salvo = ler<string | null>(KML, null);
+    if (salvo) return salvo;
+    return veiculos[0] ? String(veiculos[0].kmL).replace(".", ",") : String(COMBUSTIVEIS[combustivel].kmL);
+  });
+  const [anp, setAnp] = useState<Partial<Record<Combustivel, PrecoCombustivel | null>>>({});
+  const [semLugar, setSemLugar] = useState(false);
   const [pedagio, setPedagio] = useState("");
   const [erro, setErro] = useState<string | null>(null);
   const dialogo = useRef<HTMLDialogElement>(null);
@@ -56,21 +98,22 @@ export function Deslocamento({
     dialogo.current?.showModal();
   }, []);
 
+  // Preço da semana na ANP: um pedido por combustível, guardado enquanto a folha está aberta.
+  const buscando = !(combustivel in anp);
   useEffect(() => {
-    if (!servicos) return;
+    if (!buscando) return;
     let vivo = true;
-    precoGasolinaAcao()
-      .then((p) => {
+    precoCombustivelAcao(combustivel)
+      .then((r) => {
         if (!vivo) return;
-        setAnp(p);
-        if (p) setLitro((v) => v || centavosParaCampo(p.litroCents));
+        setAnp((a) => ({ ...a, [combustivel]: r.preco }));
+        setSemLugar(r.semLugar);
       })
-      .catch(() => {})
-      .finally(() => vivo && setBuscandoAnp(false));
+      .catch(() => vivo && setAnp((a) => ({ ...a, [combustivel]: null })));
     return () => {
       vivo = false;
     };
-  }, [servicos]);
+  }, [combustivel, buscando]);
 
   useEffect(() => {
     if (!servicos || !de || !para) return;
@@ -87,6 +130,34 @@ export function Deslocamento({
     });
   }, [servicos, de, para]);
 
+  const preco = anp[combustivel] ?? null;
+  const digitado = lembrado.litro?.[combustivel];
+  const litro = digitado ?? (preco ? centavosParaCampo(preco.litroCents) : "");
+  const manual = digitado != null && (!preco || lerReais(digitado) !== preco.litroCents);
+
+  function lembrar(novo: Lembrado) {
+    setLembrado(novo);
+    gravar(DO_ORCAMENTO(orcamentoId), novo);
+  }
+  function escolherCombustivel(c: Combustivel) {
+    setCombustivel(c);
+    gravar(ULTIMO_COMBUSTIVEL, c);
+    lembrar({ ...lembrado, combustivel: c });
+    if (!kmlTocado) setKml(String(COMBUSTIVEIS[c].kmL));
+  }
+  function digitarLitro(v: string) {
+    lembrar({ ...lembrado, litro: { ...lembrado.litro, [combustivel]: v } });
+  }
+  function usarAnp() {
+    const litros = { ...lembrado.litro };
+    delete litros[combustivel];
+    lembrar({ ...lembrado, litro: litros });
+  }
+  function mudarKml(v: string) {
+    setKml(v);
+    setKmlTocado(true);
+  }
+
   const entrada = {
     kmIda: lerNumero(km) ?? 0,
     idaEVolta,
@@ -94,19 +165,17 @@ export function Deslocamento({
     kmPorLitro: lerNumero(kml) ?? 0,
     litroCents: lerReais(litro) ?? 0,
     pedagioCents: lerReais(pedagio) ?? 0,
+    combustivel,
   };
   const d = calcularDeslocamento(entrada);
+  const porKmCents = entrada.kmPorLitro > 0 && entrada.litroCents > 0 ? entrada.litroCents / entrada.kmPorLitro : 0;
 
   function adicionar(e: React.FormEvent) {
     e.preventDefault();
     if (!(entrada.kmIda > 0)) return setErro("Diga os km de uma ida.");
     if (!(entrada.kmPorLitro > 0)) return setErro("Quantos km o carro faz com 1 litro?");
     if (!(entrada.litroCents > 0)) return setErro("Coloque o preço do litro.");
-    try {
-      localStorage.setItem(KML, kml);
-    } catch {
-      // aparelho sem armazenamento: segue sem lembrar
-    }
+    if (kmlTocado) gravar(KML, kml);
     aoAdicionar(linhaDeDeslocamento(entrada, de?.rotulo ?? (deTexto.trim() || null), para?.rotulo ?? (paraTexto.trim() || null)));
   }
 
@@ -163,29 +232,66 @@ export function Deslocamento({
             <span className="form__dica">3 diárias indo e voltando = 3</span>
           </div>
           <div className="form__campo">
+            <label>Combustível</label>
+            <div className="q-segmentos" role="radiogroup" aria-label="Combustível">
+              {(Object.keys(COMBUSTIVEIS) as Combustivel[]).map((c) => (
+                <button key={c} type="button" role="radio" aria-checked={combustivel === c} onClick={() => escolherCombustivel(c)}>
+                  {COMBUSTIVEIS[c].nome}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="form__campo">
             <label htmlFor="desl-kml">Consumo (km/L)</label>
-            <input id="desl-kml" className="num" inputMode="decimal" value={kml} onChange={(e) => setKml(e.target.value)} />
+            <input id="desl-kml" className="num" inputMode="decimal" value={kml} onChange={(e) => mudarKml(e.target.value)} />
             {veiculos.length ? (
               <span className="chips">
                 {veiculos.map((v) => (
-                  <button key={v.id} type="button" className="chip" onClick={() => setKml(String(v.kmL).replace(".", ","))}>
+                  <button key={v.id} type="button" className="chip" onClick={() => mudarKml(String(v.kmL).replace(".", ","))}>
                     {v.nome} · {numeroBr(v.kmL, 1)}
                   </button>
                 ))}
               </span>
             ) : (
-              <span className="form__dica">Cadastre veículos no inventário para escolher aqui.</span>
+              <span className="form__dica">{kmlTocado ? "Cadastre veículos no inventário para escolher aqui." : "Média de um carro; troque pelo do seu."}</span>
             )}
           </div>
           <div className="form__campo">
-            <label htmlFor="desl-litro">Gasolina (litro)</label>
-            <input id="desl-litro" className="num" inputMode="decimal" value={litro} onChange={(e) => setLitro(e.target.value)} placeholder="0,00" />
-            <span className="form__dica">
-              {buscandoAnp
-                ? "Buscando o preço da semana na ANP…"
-                : anp
-                  ? `ANP, ${anp.base === "capital" ? anp.onde : `média de ${anp.onde}`}, ${dataCurta(anp.inicio)} a ${dataCurta(anp.fim)}. Dá para mudar.`
-                  : "Digite o preço do posto."}
+            <label htmlFor="desl-litro">Preço do litro</label>
+            <input
+              id="desl-litro"
+              className="num"
+              inputMode="decimal"
+              value={litro}
+              onChange={(e) => digitarLitro(e.target.value)}
+              placeholder="0,00"
+              aria-describedby="desl-litro-fonte"
+            />
+            <span id="desl-litro-fonte" className="form__dica desl-fonte" data-fonte={manual ? "manual" : preco ? "anp" : "nenhuma"}>
+              {buscando && !digitado ? (
+                "Buscando o preço da semana…"
+              ) : manual ? (
+                <>
+                  Preço digitado.{" "}
+                  {preco ? (
+                    <button type="button" className="q-limpar desl-fonte__voltar" onClick={usarAnp}>
+                      Usar o da ANP ({brl(preco.litroCents)})
+                    </button>
+                  ) : null}
+                </>
+              ) : preco ? (
+                <>
+                  {rotuloDoPreco(preco)}
+                  {semLugar ? (
+                    <>
+                      {" · "}
+                      <Link href="/app/ajustes/empresa">Diga a cidade da produtora</Link>
+                    </>
+                  ) : null}
+                </>
+              ) : (
+                "Sem preço da ANP guardado agora. Digite o preço do posto."
+              )}
             </span>
           </div>
           <div className="form__campo">
@@ -200,8 +306,12 @@ export function Deslocamento({
             <dd>{d.kmTotal > 0 ? `${numeroBr(d.kmTotal, 0)} km` : "—"}</dd>
           </div>
           <div>
-            <dt>Gasolina</dt>
+            <dt>{COMBUSTIVEIS[combustivel].nome}</dt>
             <dd>{d.litros > 0 ? `${numeroBr(d.litros, 1)} L` : "—"}</dd>
+          </div>
+          <div>
+            <dt>Por km</dt>
+            <dd>{porKmCents > 0 ? brl(Math.round(porKmCents)) : "—"}</dd>
           </div>
           <div>
             <dt>Custo</dt>
