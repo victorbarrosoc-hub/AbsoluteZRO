@@ -2,7 +2,10 @@ import 'server-only'
 import type { GoogleConfig, GooglePending } from '@zro/auth'
 import { appOrigin, isProduction } from './env'
 
-/** Botão do Google só aparece com GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET configurados (cliente próprio do HUB). */
+/**
+ * Botão do Google só aparece com GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET configurados: o cliente "Absolute ZRO – central"
+ * do projeto Google do ecossistema (ADR 0025), o mesmo que vai servir às Conexões (Google Agenda).
+ */
 export function googleConfig(): GoogleConfig | null {
   const clientId = process.env.GOOGLE_CLIENT_ID?.trim()
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim()
