@@ -64,6 +64,7 @@ describe('preços à venda', () => {
       where p.status = 'active' and p.code in ('individual-nossom', 'ciclo-do-o', 'absolute-zro-pro', 'absolute-zro-pro-anual') group by p.code order by p.code`
     // 7 ferramentas + o Maestro em Beta grátis (0027), com os mesmos créditos
     expect(credits.map((r) => `${r.code}:${r.n}:${r.ai}`)).toEqual([
+      // o Maestro (0027) e o Relay (0031) entram nos planos sem mexer nos créditos
       'absolute-zro-pro:8:2000',
       'absolute-zro-pro-anual:8:2000',
       'ciclo-do-o:8:600',

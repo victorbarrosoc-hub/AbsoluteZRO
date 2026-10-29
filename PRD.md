@@ -76,7 +76,8 @@ funcionalidades autorizadas.
 | Synquei                     | Organização, alinhamento e sincronização              | Manifest SOBEDESCE ou import manual, mídias e áudio                 | Pastas, logs, metadados, sync maps, projeto de edição               |
 | AI Edit — nome provisório   | Decupagem, seleção e montagem assistida               | Mídias, transcrições, brief, referências e presets de linguagem     | Decupagem, selects, markers, edição preliminar/timeline editável    |
 | NOSSOM                      | Tratamento sonoro e SFX                               | Sequência/timeline, áudio, marcações da edição e bancos autorizados | Sugestões de efeitos, áudio limpo, mix, master e relatórios         |
-| Revela (ex-Finishing)       | GMA/Media Manager, color grading assistido e entregas | Timeline aprovada, mídia vinculada, perfis de destino               | Master, versões, QC e pacotes de entrega                            |
+| Revela (ex-Finishing)       | Laboratório de cor: looks, espaço de cor, LUT, PowerGrade | Frames, referências, câmera e espaço de cor de origem           | LUTs, PowerGrades, looks e pacotes de cor                           |
+| Relay                       | Conversão e exportação de vídeo e áudio, grátis (ADR 0030) | Master ou arquivo, preset de destino                            | Versões de entrega ao lado do original, conferidas                  |
 
 **Importante:** AI Edit e Finishing **ainda não existem**. São espaços
 de produto, com interfaces e contratos iniciais e implementação

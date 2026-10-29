@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Marca · Relay</title>
+    <meta name="theme-color" content="#f5f5f7" />
+    <link rel="icon" href="relay-icone.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="../app/relay.css" />
+    <script src="../app/tema.js"></script>
+    <style>
+      main { max-width: 1040px; margin: 0 auto; padding: 56px 16px 120px; display: grid; gap: 88px; }
+      section > h2 { font-size: clamp(28px, 4vw, 40px); margin-bottom: 12px; }
+      .grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 28px; }
+      .peca { padding: 28px; display: grid; gap: 14px; justify-items: center; text-align: center; }
+      .peca img { width: 132px; height: 132px; }
+      .peca small { color: var(--mudo); }
+      .escuro { background: #0e0e10; color: #f5f5f7; }
+      .escuro small { color: #a1a1a6; }
+      .cor { height: 120px; border-radius: 22px; display: flex; align-items: end; padding: 14px; font: 600 14px/1.3 var(--fonte); }
+      .rele-demo { display: grid; place-items: center; gap: 32px; padding: 56px 16px; }
+      .rele-demo .rele { --largura: 300px; --altura: 98px; animation: liga 2.4s var(--mola) infinite alternate; }
+      @property --curso { syntax: '<number>'; inherits: true; initial-value: 1; }
+      @keyframes liga { 0%, 15% { --curso: 0; } 85%, 100% { --curso: 1; } }
+      .rele-demo .rele::before, .rele-demo .rele::after { transition: none; }
+      .par { display: flex; gap: 36px; justify-content: center; align-items: center; flex-wrap: wrap; }
+      .par img { width: 120px; height: 120px; border-radius: 27px; }
+      .regras { margin: 24px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+      .regras li { display: flex; gap: 10px; }
+      .regras li::before { content: ''; flex: none; width: 10px; height: 10px; margin-top: 8px; border-radius: 50%; background: var(--sinal); }
+      .tipo { padding: 32px; }
+      .tipo p { margin: 0; font-family: var(--fonte-titulo); font-size: clamp(36px, 6vw, 64px); line-height: 1.05; letter-spacing: -0.025em; }
+    </style>
+  </head>
+  <body>
+    <header class="topo">
+      <a class="marca" href="../"><img src="relay-icone.svg" alt="" />Relay</a>
+      <nav aria-label="Páginas"><a href="../converter">Converter</a></nav>
+    </header>
+    <main>
+      <section>
+        <p class="sobretitulo">Identidade</p>
+        <h2><span class="fino">O relé.</span> <span class="pesado">O sinal passa.</span></h2>
+        <p class="apoio">Relay é repassar: receber num formato e entregar em outro. O símbolo é uma chave ligada: o trilho, o sinal que já passou (menta → limão) e o anel do O da Absolute ZRO no fim do curso.</p>
+        <div class="grade">
+          <div class="peca cartao"><img src="relay-icone.svg" alt="Ícone do Relay" /><strong>Ícone</strong><small>Placa até a borda, como os ícones da família.</small></div>
+          <div class="peca cartao"><img src="relay-simbolo.svg" alt="Símbolo do Relay em grafite" /><strong>Símbolo</strong><small>Uma cor: grafite no claro.</small></div>
+          <div class="peca cartao escuro"><img src="relay-simbolo-branco.svg" alt="Símbolo do Relay em branco" /><strong>Símbolo</strong><small>Branco no escuro.</small></div>
+        </div>
+      </section>
+
+      <section>
+        <p class="sobretitulo">Família</p>
+        <h2><span class="fino">SOBEDESCE sobe e desce.</span> <span class="pesado">Relay passa adiante.</span></h2>
+        <p class="apoio">O irmão horizontal: o SOBEDESCE são duas pílulas na vertical; o Relay, uma na horizontal, ligada.</p>
+        <div class="par" style="margin-top: 32px">
+          <img src="familia/sobedesce.svg" alt="SOBEDESCE" />
+          <img src="relay-icone.svg" alt="Relay" />
+        </div>
+      </section>
+
+      <section>
+        <p class="sobretitulo">Movimento</p>
+        <h2><span class="fino">Liga quando</span> <span class="pesado">converte.</span></h2>
+        <p class="apoio">O relé é a barra de progresso: o anel corre e o sinal enche. Ao abrir, ele liga uma vez. Com "reduzir movimento", já aparece ligado.</p>
+        <div class="rele-demo cartao"><div class="rele"></div></div>
+      </section>
+
+      <section>
+        <p class="sobretitulo">Cor</p>
+        <h2><span class="fino">Cor no sinal,</span> <span class="pesado">nunca no texto.</span></h2>
+        <div class="grade">
+          <div class="cor" style="background: #2fd9ae; color: #0c0c0e">Menta<br />#2FD9AE</div>
+          <div class="cor" style="background: #d8f76a; color: #0c0c0e">Limão<br />#D8F76A</div>
+          <div class="cor" style="background: linear-gradient(90deg, #2fd9ae, #d8f76a); color: #0c0c0e">Sinal<br />menta → limão</div>
+          <div class="cor" style="background: #1d1d1f; color: #f5f5f7">Grafite<br />#1D1D1F</div>
+        </div>
+        <ul class="regras">
+          <li>O degradê só no sinal: símbolo, progresso, selo do que ficou pronto.</li>
+          <li>Texto em grafite, branco ou cinza (#6E6E73). Nada de texto verde.</li>
+          <li>Botões em Liquid Glass da família; a ação principal em vidro escuro.</li>
+          <li>Destinos em formas genéricas (play, câmera, nota, balão): o Relay não usa logo de terceiros.</li>
+        </ul>
+      </section>
+
+      <section>
+        <p class="sobretitulo">Tipografia</p>
+        <div class="tipo cartao"><p><span class="fino">Do master ao feed.</span> <span class="pesado">Sem perder nada.</span></p></div>
+        <p class="apoio" style="margin-top: 16px">Figtree, fino × pesado, como toda a família. Texto corrido na fonte do sistema.</p>
+      </section>
+    </main>
+  </body>
+</html>

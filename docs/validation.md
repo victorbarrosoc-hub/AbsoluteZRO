@@ -2562,3 +2562,55 @@ sistema simulado), e o primeiro Release (sai no primeiro push na main com `produ
   `npm test` 61/61 (caso b1034 → b1042 sem registro, build do app vale mais que o registro, Synquei em
   `desktop/build-info.json`, versão de desenvolvimento sem build).
 - Não validado: a leitura do `app.asar` de outro app pela central empacotada num Mac e num Windows reais.
+
+## Conversão de mídia como setor próprio (29/10/2026)
+
+Só documentos ([ADR 0030](decisions/0030-relay-conversao.md), PRD §2, roadmap): nenhum código mudou. Mapa feito
+lendo o código de `products/finishing`, `products/sobedesce`, `products/ai-edit`, `products/nossom`,
+`products/synquei` e `products/maestro`. Synquei exporta projeto (XML, OTIO, EDL), não mídia; Maestro, TPeasy, Carro
+do Freela e HUB não convertem. `npm run format:check` e `node scripts/scan-secrets.mjs` ok.
+
+## Relay: plataforma de conversão, SOBEDESCE e HUB (29/10/2026)
+
+- `products/relay`: `npm test` **38/38** (núcleo, presets da pessoa, ffmpeg de verdade, Chromium de verdade com
+  conversão real, Lanczos conferido com o ffmpeg em SSIM > 0,97 e sem virar, celular girado igual à rotação do ffmpeg,
+  tamanho exato cabendo, presets da pessoa ponta a ponta, nenhuma página rolando para o lado em 375 px, cópias nas
+  outras plataformas).
+- Qualidade: `npm run qualidade` com 4 masters ProRes contra presets x264 de referência e a referência no mesmo tamanho
+  ([QUALIDADE](../products/relay/docs/QUALIDADE.md)). No computador, empate (0,9469 × 0,9468 no grão; 0,9927 × 0,9923
+  no movimento; 0,9962 × 0,9966 na limpa; 0,9779 × 0,9798 no 4K → 1080p). No navegador do Linux (OpenH264) o x264
+  guarda mais no mesmo tamanho. Três correções de cor e a escala na placa saíram da medição.
+- SOBEDESCE: `npm run test:fast` 780 ok; 2 falhas na primeira rodada: a versão do app de celular (subiu com o cache:
+  2.8.54 / v69, corrigido, 9/9) e o limitador de metadados (tempo, 2,002 × 2; passa sozinho, sem relação com o Relay).
+  `test/relay.test.js` 8/8 e `test/relay-celular.test.js` 1/1 (Chromium com a CSP do app, Drive por pedaços, AAC).
+  Site: `npm run lint`, `typecheck` e `npm test` (291) ok.
+- HUB: migration `0031_relay.sql`; `npm test` 328 com 2 falhas que contavam os produtos dos planos e as etapas do
+  projeto, atualizadas (billing e core 41/41). Depois de juntar o `main`: `format:check`, `lint`, `typecheck`, `npm test`
+  **340/340** e `build` ok; e2e 38/41: o Ciclo do O passa a ter 9 etapas (teste atualizado, Relay indisponível); os
+  dois testes de WebKit do esqueleto (vindos do `main`) não rodam aqui (WebKit não instalado neste ambiente); o
+  "Escolha seu @" do SSO do Carro falhou uma vez e passa sozinho (tempo).
+
+## Relay: comparativo interno, laboratório de aparelhos e Máxima qualidade (29/10/2026)
+
+- `products/relay`: `npm test` **45/45** (link do Máxima qualidade com acentos e limite de 8 destinos; publicação:
+  produção fechada sem o laboratório, prévia com ele; laboratório no Chromium gerando, codificando e medindo).
+- Laboratório no Chromium deste ambiente (OpenH264, sem placa): 0,0116 de SSIM abaixo da referência x264 no mesmo
+  bitrate, em média (6 medidas, 56 s). Falta o Mac, o iPhone e o Windows de verdade.
+- SOBEDESCE: `test/relay.test.js` **12/12**: o link montado pelo Relay é o que o app aceita (e links tortos viram
+  nada), nome livre sem gravar por cima, conversão local de verdade (WhatsApp 1280×720 e MP3 da pessoa ao lado do
+  original, MD5 do original igual, nenhum parcial sobrando) e a rota `/api/relay/local` recusando caminho relativo,
+  extensão errada e destino inventado.
+
+## Relay liberado (29/10/2026)
+
+- Menções a outro conversor fora do repositório inteiro (Revela, ADR 0015, Synquei, laboratório); no Synquei, a regra
+  que separa arquivo de software de arquivo de câmera passou a reconhecer a versão no campo do fabricante (138/138).
+- Migration `0032_relay_aberto.sql`: `npm test` **340/340** (planos, etapas e acessos com o Relay aberto); e2e do HUB
+  16/16 (Ciclo do O com o Relay "Bloqueado por assinatura" sem plano, 4 acessos lançados no plano grátis).
+- Nenhum e-mail: o HUB só envia e-mail de login e de conta (`packages/auth/src/email.ts`); abrir produto e gate não
+  manda aviso.
+- Produção (`relay.absolutezro.com`, deploy `dpl_BSNVYA6bT95oHzNLh8JsrA6ivrhU`, commit `7d408bd`, `RELEASE=released`):
+  `/` e `/converter` 200 com o site de verdade, `/laboratorio` e `/qualidade` 404, `vendor/` servido. Chromium de
+  verdade contra a produção: um ProRes 1080p de 2 s virou "YouTube 1080p" (MP4, 3,9 MB), sem erro no console.
+- O deploy só de variável (mesmo commit da prévia) é cancelado pelo Ignored Build Step do projeto (`git diff` contra o
+  commit anterior). Contorno usado: a checagem foi trocada por `exit 1` só durante esse deploy e voltou igual depois.

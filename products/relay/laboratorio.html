@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Laboratório · Relay</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#f5f5f7" />
+    <link rel="icon" href="marca/relay-icone.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="app/relay.css" />
+    <script src="app/tema.js"></script>
+    <script type="module" src="app/laboratorio.js"></script>
+    <style>
+      main { max-width: 860px; margin: 0 auto; padding: 48px 16px 96px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
+      h1 { font-size: clamp(36px, 7vw, 56px); line-height: 1.04; }
+      .painel { padding: 24px; display: grid; gap: 18px; }
+      .progresso { height: 12px; }
+      #estado { margin: 0; color: var(--mudo); font-variant-numeric: tabular-nums; min-height: 1.4em; }
+      .tabela { overflow-x: auto; }
+      table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+      th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--linha); white-space: nowrap; }
+      th { color: var(--mudo); font-size: 12px; font-weight: 600; }
+      .ganha { font-weight: 700; }
+      .perde { color: var(--aviso); font-weight: 600; }
+      textarea { width: 100%; min-height: 140px; border-radius: 14px; border: 1px solid var(--linha-forte); background: var(--superficie); color: var(--texto); font: 12px/1.4 ui-monospace, Menlo, monospace; padding: 12px; }
+      .acoes { display: flex; flex-wrap: wrap; gap: 10px; }
+    </style>
+  </head>
+  <body>
+    <header class="topo">
+      <a class="marca" href="./"><img src="marca/relay-icone.svg" alt="" />Relay</a>
+    </header>
+    <main>
+      <section>
+        <p class="sobretitulo">Interno</p>
+        <h1><span class="fino">Laboratório</span> <span class="pesado">deste aparelho.</span></h1>
+        <p class="apoio" style="margin-top: 12px">Mede o codificador de vídeo deste aparelho contra a referência x264. Uns 2 minutos; deixe a tela aberta.</p>
+      </section>
+      <section class="painel cartao">
+        <div class="acoes"><button class="vidro vidro--tinta vidro--grande" type="button" id="comecar">Começar</button></div>
+        <span class="progresso" id="progresso" style="--curso: 0"></span>
+        <p id="estado" aria-live="polite"></p>
+        <div class="tabela">
+          <table id="tabela">
+            <thead><tr><th>Cena</th><th>Bitrate (alvo → real)</th><th>Este aparelho</th><th>Referência x264</th><th>Diferença</th><th>Velocidade</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+      <section class="painel cartao" id="resultado" hidden>
+        <p class="apoio" style="margin: 0">Copie e mande na conversa: é com isso que o Relay ajusta os presets deste tipo de aparelho.</p>
+        <textarea id="json" readonly aria-label="Resultado"></textarea>
+        <div class="acoes"><button class="vidro" type="button" id="copiar"><i data-icone="ficha"></i>Copiar resultado</button></div>
+      </section>
+    </main>
+  </body>
+</html>

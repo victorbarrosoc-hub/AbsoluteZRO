@@ -592,6 +592,43 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   0029 cai em `nivel=sem_pessoas`, sem quebrar o login).
 - ⬜ Inventário do Carro no freela achado pelo @ (pronto atrás de `CARRO_SYNC_ATIVO`, desligado).
 
+## Relay: conversão de mídia como setor próprio (29/10/2026, [ADR 0030](decisions/0030-relay-conversao.md))
+
+A Revela fica só com a cor (looks, espaço de cor, LUT e PowerGrade). Codec, contêiner e formatos de vídeo e áudio vão
+para uma plataforma nova, vendida sozinha e chamada pelas outras.
+
+- ✅ Mapa do que já converte no ecossistema (Revela, SOBEDESCE, AEON, NOSSOM) e a divisão entre os setores, na ADR.
+- ✅ Nome: **Relay** (`relay`, relay.absolutezro.com), aberto. Contrato de integração por plataforma em
+  [integration-contracts/relay.md](integration-contracts/relay.md).
+- ✅ Relay de pé em `products/relay/` (29/10/2026): identidade (o relé: trilho, sinal menta → limão e o anel do O;
+  guia em `marca/`), página inicial com o relé ligando e as entradas na rolagem, conversor com 16 destinos com fonte e
+  data, vários destinos e arquivos de uma vez, ficha técnica de cada saída, presets da pessoa ("Meus", editor com a
+  ficha ao vivo, levar e trazer em `.relay.json`) e tamanho máximo que escolhe a resolução. 38 testes (unidade, ffmpeg
+  e Chromium de verdade). ⛔ Projeto Vercel `relay` e domínio pedem autorização do titular.
+- ✅ Qualidade medida contra uma referência x264 no mesmo tamanho (`npm run qualidade`,
+  [QUALIDADE](../products/relay/docs/QUALIDADE.md), interno): no computador, empata; no navegador, Lanczos e YUV
+  BT.709 na placa, cor do ProRes corrigida e 10 bits arredondados. O Chromium do Linux (OpenH264) fica abaixo do x264.
+  Falta: medir em Mac (VideoToolbox), Windows e iPhone reais.
+- ✅ Liberado aos usuários junto com o Maestro (29/10/2026, decisão do titular, sem e-mail): `RELEASE=released` no
+  projeto Vercel `relay` e a migration `0032` (produto ativo, gate web). Site sem "grátis" no texto (posicionamento da
+  marca, como a página inicial do HUB).
+- ✅ Comparativo com outros conversores fora do público (pedido do titular): sem a página de qualidade, sem citar marca
+  em texto ou código; o laboratório interno mede contra uma referência x264.
+- ✅ Laboratório de aparelhos (`/laboratorio`, só nas prévias da Vercel e no `npm run dev`): cenas geradas no aparelho,
+  codificadas pelo chip dele e medidas contra a referência x264 no mesmo bitrate. ⬜ Rodar no Mac, iPhone e Windows do
+  titular e ajustar os bitrates por aparelho.
+- ✅ Máxima qualidade: no Mac e no Windows, o Relay abre o app SOBEDESCE pelo link `sobedesce://relay` com os destinos
+  (inclusive os da pessoa); o app converte arquivos do computador com o x264 e salva ao lado do original.
+- ✅ SOBEDESCE: "Converter com o Relay" no computador e no celular, com o núcleo do Relay copiado e conferido por teste
+  dos dois lados; a Revela sai do SOBEDESCE.
+- ✅ HUB: produto `relay` no catálogo (migration `0031`, incluído em todo plano, fechado pelo gate), `ProductId`, catálogo
+  de integrações e a Z.
+- ⬜ Revela tira a aba Converter e aponta para o Relay (na conversa da Revela); AEON e NOSSOM exportam pelos presets do
+  Relay; Synquei e Maestro pedem versões pela fila ([contrato](integration-contracts/relay.md)).
+- ⬜ "Baixar como…" das Referências e o pedido da Z no SOBEDESCE pelos presets do Relay.
+- ⬜ Computador: ProRes, DNxHR e HDR 10 bits de saída; loudness normalizado; legenda queimada; corte de trecho.
+- ⬜ Evento `media.conversion.completed` no HUB, quando a primeira integração passar por ele.
+
 ## Fase 6 — Escala
 
 - ⬜ Observabilidade em produção (drain de logs, métricas da fila, alertas), backups e retenção definidos.

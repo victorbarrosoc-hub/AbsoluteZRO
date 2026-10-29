@@ -247,7 +247,7 @@ listas do próprio Resolve, aplica cada ajuste do Deliver, escolhe o bitrate pel
 Resolve recusar e salva o preset "Revela · <destino>". Loudness não tem chave na API: vai na lista do que conferir.
 Os testes rodam o script num Resolve simulado.
 
-## Converter (o "Handbrake" da Revela)
+## Converter
 
 `converter.html` + `app/converter.js` + `src/conversao/`: o Resolve exporta **um master** (ProRes, preset "Master de
 arquivo") e o conversor gera cada versão de entrega a partir dele, **no celular ou no computador, dentro do

@@ -30,3 +30,4 @@ Cada decisão é reversível salvo indicação. Formato: contexto, decisão, con
 | [0026](0026-conexoes.md)                         | Conexões: o Google Agenda conectado uma vez na conta           | aceita                |
 | [0027](0027-lancamento-maestro-beta-gratis.md)   | Lançamento do Maestro em Beta                                  | aceita                |
 | [0028](0028-custos-do-ecossistema.md)            | Custos do ecossistema no console, só admin                     | aceita                |
+| [0030](0030-relay-conversao.md)                  | Relay: conversão de mídia como setor; Revela fica com a cor    | aceita                |

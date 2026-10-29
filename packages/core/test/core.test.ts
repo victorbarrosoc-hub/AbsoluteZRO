@@ -111,7 +111,8 @@ describe('projetos', () => {
     const { steps } = await getProject(db, o.auth, id)
     const by = Object.fromEntries(steps.map((s) => [s.stepKey, s.displayState]))
     // Carro, AEON, NOSSOM e Revela estão fechados (ADR 0023): nunca "contrate", sempre indisponível. O Maestro está em
-    // Beta grátis (0027): sem o plano grátis nem outro que o traga, pede assinatura como os lançados.
+    // Beta (0027): sem o plano grátis nem outro que o traga, pede assinatura como os lançados. O Relay abriu (0032) e
+    // entra em todo plano, inclusive o avulso do SOBEDESCE.
     expect(by).toEqual({
       'carro-do-freela': 'unavailable',
       tpeasy: 'blocked_subscription',
@@ -121,6 +122,7 @@ describe('projetos', () => {
       nossom: 'unavailable',
       finishing: 'unavailable',
       maestro: 'blocked_subscription',
+      relay: 'not_started',
     })
     await expectCode(createProject(db, o.auth, { title: '' }), 'invalid_input')
   })

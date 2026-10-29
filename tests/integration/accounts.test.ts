@@ -27,7 +27,7 @@ beforeAll(() => {
 afterAll(() => db.close())
 
 const rid = (p: string) => `${p}-${randomBytes(4).toString('hex')}`
-const APPS = ['ai-edit', 'carro-do-freela', 'finishing', 'maestro', 'nossom', 'sobedesce', 'synquei', 'tpeasy']
+const APPS = ['ai-edit', 'carro-do-freela', 'finishing', 'maestro', 'nossom', 'relay', 'sobedesce', 'synquei', 'tpeasy']
 
 describe('plano grátis da organização nova', () => {
   it('libera as ferramentas do plano grátis vigente e aparece no login único', async () => {

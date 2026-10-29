@@ -110,10 +110,12 @@ test('cadastro → organização → projeto com Ciclo do O e alternativa em lis
   await page.waitForURL(/\/projetos\/[0-9a-f-]{36}$/)
   await expect(page.getByRole('heading', { name: 'Casamento E2E' })).toBeVisible()
   const list = page.getByRole('list', { name: 'Etapas do Ciclo do O' })
-  await expect(list.getByRole('listitem')).toHaveCount(8)
+  await expect(list.getByRole('listitem')).toHaveCount(9) // com o Relay (0031), a exportação no fim do ciclo
   // Sem plano: ferramentas lançadas aparecem bloqueadas por assinatura; as fechadas por lançamento (ADR 0023), indisponíveis
   await expect(list.getByRole('listitem').filter({ hasText: 'Synquei' })).toContainText('Bloqueado por assinatura')
   await expect(list.getByRole('listitem').filter({ hasText: 'AEON' })).toContainText('Indisponível')
+  // o Relay abriu (0032): sem plano, fica como as outras ferramentas lançadas
+  await expect(list.getByRole('listitem').filter({ hasText: 'Relay' })).toContainText('Bloqueado por assinatura')
 })
 
 test('API: sem assinatura recebe 403 por URL direta; sem sessão 401; outra origem 403', async ({ page, request }) => {
@@ -306,9 +308,9 @@ test('sua conta: nome, foto, pedido de upgrade e acessos', async ({ page }) => {
 
   await page.goto('/perfil/acessos')
   await expect(page.getByRole('heading', { name: 'Org conta' })).toBeVisible()
-  // Plano grátis lista as oito, mas só as abertas contam como acesso (gate de lançamento, ADR 0023): as três lançadas e
-  // o Maestro em Beta (0027).
-  await expect(page.locator('.access-org__apps li.is-on')).toHaveCount(4)
+  // Plano grátis lista todas, mas só as abertas contam como acesso (gate de lançamento, ADR 0023): SOBEDESCE, Synquei,
+  // TPeasy, o Maestro em Beta (0027) e o Relay (0032).
+  await expect(page.locator('.access-org__apps li.is-on')).toHaveCount(5)
 })
 
 test('excluir a conta: senha, confirmação, sai da sessão e o e-mail volta a ficar livre', async ({ page }) => {

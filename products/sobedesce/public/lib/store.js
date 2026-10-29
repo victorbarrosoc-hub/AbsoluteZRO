@@ -35,7 +35,7 @@ let state = {
   rawThumbs: null, // "Gerar miniaturas": o lote atual ou o último { jobId, status, progress, error, driveFolderId, localDir }
   referencias: null, // Referências (src/referencias/service.js): { ativo, motivo, navegador, trabalhos, versoes, ytdlp }
   previas: null, // "Gerar prévias": o lote atual ou o último (mesmo formato)
-  revela: {}, // "Converter com a Revela": jobId -> { status, fase, frac, arquivo, destino, resultado, error }
+  relay: {}, // "Converter com o Relay": jobId -> { status, fase, frac, arquivo, destino, resultado, error }
   copia: null, // "Copiar de um link": a cópia atual ou a última (src/server/copiar.js)
   celular: null, // Celular pelo Wi-Fi: { receber, pasta, conectado, pronto, celulares, transferencias } (src/server/celular.js)
   lan: null, // Entre computadores: { receber, rodando, porta, pasta, recebendo, envio, conectado } (src/server/lan.js)
@@ -112,7 +112,7 @@ function applyFull(data) {
     media: data.media ?? state.media,
     rawThumbs: data.rawThumbs !== undefined ? data.rawThumbs : state.rawThumbs,
     previas: data.previas !== undefined ? data.previas : state.previas,
-    revela: Array.isArray(data.revela) ? Object.fromEntries(data.revela.map((j) => [j.jobId, j])) : state.revela,
+    relay: Array.isArray(data.relay) ? Object.fromEntries(data.relay.map((j) => [j.jobId, j])) : state.relay,
     copia: data.copia !== undefined ? data.copia : state.copia,
     frames: data.frames !== undefined ? data.frames : state.frames,
     cenas: data.cenas !== undefined ? data.cenas : state.cenas,
@@ -182,8 +182,8 @@ export function setPrevias(job) {
   setState({ previas: job || null })
 }
 
-export function setRevelaJob(job) {
-  if (job?.jobId) setState({ revela: { ...state.revela, [job.jobId]: job } })
+export function setRelayJob(job) {
+  if (job?.jobId) setState({ relay: { ...state.relay, [job.jobId]: job } })
 }
 
 export function setFrames(job) {
@@ -258,7 +258,7 @@ function connect() {
   on('compare', (d) => d?.jobId && setCompareJob(d.jobId, { status: d.status, progress: d.progress, error: d.error || null }))
   on('rawthumbs', (d) => d?.jobId && setRawThumbs(d))
   on('previas', (d) => d?.jobId && setPrevias(d))
-  on('revela', (d) => d?.jobId && setRevelaJob(d))
+  on('relay', (d) => d?.jobId && setRelayJob(d))
   on('copiar', (d) => d?.jobId && setCopia(d))
   on('frames', (d) => d?.jobId && setFrames(d))
   on('cenas', (d) => d && typeof d === 'object' && setState({ cenas: d }))
