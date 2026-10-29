@@ -37,6 +37,8 @@ const TABELAS = [
   "escalas",
   "documentos",
   "reservas",
+  "roteiros",
+  "roteiro_versoes",
 ] as const;
 
 const contar = async (ctx: { sub: string; orgId: string }, t: string) =>
@@ -99,7 +101,17 @@ before(async () => {
       await tx.execute(
         sql`insert into maestro.reservas (org_id, equipamento_id, projeto_id, inicio, fim) values (${A}, ${ids.equip}, ${p}, ${`2026-12-${dia}`}, ${`2026-12-${dia}`})`,
       );
+      // roteiro (Criação, 0030) ligado ao projeto e ao card do cliente, com uma versão
+      const rot = await um(
+        sql`insert into maestro.roteiros (org_id, projeto_id, card_id, titulo, conteudo) values (${A}, ${p}, ${card}, 'Roteiro', '{"v":1}'::jsonb) returning id`,
+      );
+      ids[`r_${k}`] = rot;
+      await tx.execute(sql`
+        insert into maestro.roteiro_versoes (org_id, roteiro_id, n, titulo, conteudo, sha256)
+        values (${A}, ${rot}, 1, 'Roteiro', '{"v":1}'::jsonb, encode(sha256(convert_to('{"v": 1}', 'UTF8')), 'hex'))`);
     }
+    // Um roteiro sem vínculo: quem é restrito não vê.
+    await tx.execute(sql`insert into maestro.roteiros (org_id, titulo, conteudo) values (${A}, 'Ideia solta', '{"v":1}'::jsonb)`);
     // Um card sem cliente e uma diária sem projeto: a pessoa restrita não vê.
     await tx.execute(sql`insert into maestro.cards (org_id, id, dados) values (${A}, 'card-solto', '{"tema":"Solto","coluna":"pauta"}'::jsonb)`);
     await tx.execute(sql`insert into maestro.eventos (org_id, titulo, data) values (${A}, 'Reunião interna', '2026-11-05')`);
@@ -177,6 +189,18 @@ describe("acesso por cliente", () => {
     ]) {
       assert.equal(codigoPg(await erroDe(getBanco().asUser(o.equipe, (tx) => tx.execute(q)))), PG.rls, String(q));
     }
+    // roteiros (0030): sem vínculo, no projeto ou card de fora, e versão do roteiro de fora pela função
+    for (const q of [
+      sql`insert into maestro.roteiros (org_id, titulo, conteudo) values (${o.orgA}, 'solto', '{}'::jsonb)`,
+      sql`insert into maestro.roteiros (org_id, projeto_id, titulo, conteudo) values (${o.orgA}, ${ids.p_nao}, 'x', '{}'::jsonb)`,
+      sql`insert into maestro.roteiros (org_id, projeto_id, card_id, titulo, conteudo) values (${o.orgA}, ${ids.p_sim}, 'card-nao', 'x', '{}'::jsonb)`,
+      sql`update maestro.roteiros set projeto_id = ${ids.p_nao} where id = ${ids.r_sim}`,
+    ]) {
+      assert.equal(codigoPg(await erroDe(getBanco().asUser(o.equipe, (tx) => tx.execute(q)))), PG.rls, String(q));
+    }
+    const versaoFora = await erroDe(getBanco().asUser(o.equipe, (tx) => tx.execute(sql`select maestro.roteiro_versao_salvar(${ids.r_nao}::uuid, null)`)));
+    assert.equal(codigoPg(versaoFora), "P0002");
+    await getBanco().asUser(o.equipe, (tx) => tx.execute(sql`select maestro.roteiro_versao_salvar(${ids.r_sim}::uuid, null)`));
     // o próprio cliente funciona
     await getBanco().asUser(o.equipe, (tx) => tx.execute(sql`select maestro.card_mudar('card-sim', '{"tema":"Novo tema"}'::jsonb)`));
     await getBanco().asUser(o.equipe, (tx) =>

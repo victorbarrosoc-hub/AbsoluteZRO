@@ -4,7 +4,10 @@
  *
  * Lê drizzle/meta/_journal.json (o mesmo formato do Drizzle), guarda o que já rodou em
  * `maestro.__drizzle_migrations (id serial, hash text, created_at bigint)` com o sha256 do arquivo .sql e o `when`
- * do journal, e aplica só as migrações com `when` maior que o da última aplicada. Cada migração roda na própria
+ * do journal, e aplica, na ordem do journal, cada migração cujo `when` ainda não está gravado. Buraco na numeração
+ * (0025–0029 reservadas a outras frentes enquanto a 0030 já entrou) é normal: a que chegar depois, mesmo com `when`
+ * menor que o da última aplicada, roda uma vez quando entrar no journal (antes, só rodava `when` maior que o da última,
+ * e a migração atrasada era pulada em silêncio). Cada `when` precisa ser único no journal. Cada migração roda na própria
  * transação, com `set local search_path` no schema; o `"public".` que o drizzle-kit põe nas chaves estrangeiras vira
  * `"maestro".`. Duas execuções ao mesmo tempo (dois deploys) esperam uma pela outra (trava consultiva).
  *
@@ -56,14 +59,21 @@ export async function migrarNoSchema(sql: postgres.Sql, pasta = "./drizzle", sch
   if (!existe) await sql.unsafe(`create schema ${s}`);
   await sql.unsafe(`create table if not exists ${s}."__drizzle_migrations" (id serial primary key, hash text not null, created_at bigint)`);
 
+  const vistos = new Set<number>();
+  for (const m of migracoes) {
+    if (vistos.has(m.when)) throw new Error(`journal com "when" repetido (${m.when}): ${m.tag}`);
+    vistos.add(m.when);
+  }
   const aplicadas: string[] = [];
   for (const m of migracoes) {
     const aplicou = await sql.begin(async (tx) => {
       await tx`select pg_advisory_xact_lock(hashtext(${`maestro:migracoes:${schema}`}))`;
-      const [ultima] = await tx.unsafe<{ created_at: string | number | null }[]>(
-        `select created_at from ${s}."__drizzle_migrations" order by created_at desc nulls last limit 1`,
-      );
-      if (ultima?.created_at != null && Number(ultima.created_at) >= m.when) return false;
+      // Já rodou: o mesmo `when` ou o mesmo arquivo (por segurança, se um `when` antigo tivesse mudado no journal).
+      const ja = await tx.unsafe<{ n: number }[]>(`select 1 as n from ${s}."__drizzle_migrations" where created_at = $1 or hash = $2 limit 1`, [
+        m.when,
+        m.hash,
+      ]);
+      if (ja.length) return false;
       await tx.unsafe(`set local search_path to ${s}, pg_catalog`);
       for (const comando of comandosNoSchema(m.sql, schema)) await tx.unsafe(comando);
       await tx.unsafe(`insert into ${s}."__drizzle_migrations" (hash, created_at) values ($1, $2)`, [m.hash, m.when]);

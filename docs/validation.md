@@ -2523,3 +2523,20 @@ sistema simulado), e o primeiro Release (sai no primeiro push na main com `produ
 - `test/transferencias-ui.test.js` (`rodada`): lote velho concluído, cancelado e tentativa substituída ficam de fora;
   terminar não faz a porcentagem cair; dois lotes ao mesmo tempo contam juntos até o fim.
 - Não validado: o painel num envio real de 100 GB no Mac do titular.
+
+## Maestro · Criação: núcleo do Roteiro (F1, 29/10/2026)
+
+Sem tela nesta fase: modelo, tempo, vistas, modelos de criação, conversão do documento antigo, junção por id, a
+migração `0030_roteiros` e o migrador aceitando migração fora de ordem.
+
+| Verificação                                                  | Comando                                                          | Resultado                                                                                      |
+| ------------------------------------------------------------ | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Puro: modelo, tempo, vistas, modelos, antigo, junção, papéis | `cd products/maestro && npx tsx --test tests/roteiro.test.mts`   | **31/31**; Teleprompter byte a byte e contra `countWords`/`renderScript`/`importAll` do TPeasy |
+| Banco: duas organizações, papéis, rev, versões imutáveis     | `npx tsx --test tests/criacao-rls.test.mts`                      | **9/9**                                                                                        |
+| Acesso por cliente com `roteiros` e `roteiro_versoes`        | `npx tsx --test tests/acesso-cliente.test.mts`                   | ok                                                                                             |
+| Migrador: 0027 atrasada depois da 0030, `when` repetido      | `npx tsx --test tests/migrador.test.mts`                         | **2/2**                                                                                        |
+| Maestro inteiro                                              | `npm run lint`, `format:check`, `typecheck`, `npm test`, `build` | ok · ok · ok · **419/419** · ok                                                                |
+| Raiz                                                         | `npm run lint`, `format:check`, `typecheck`                      | ok · ok · ok                                                                                   |
+| Segredos                                                     | `node scripts/scan-secrets.mjs`                                  | nenhum                                                                                         |
+
+Não rodado: o e2e do Maestro (nenhuma tela mudou). A migração `0030` não foi aplicada em banco de verdade.

@@ -576,6 +576,19 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   0029 cai em `nivel=sem_pessoas`, sem quebrar o login).
 - ⬜ Inventário do Carro no freela achado pelo @ (pronto atrás de `CARRO_SYNC_ATIVO`, desligado).
 
+## Maestro · Criação: núcleo do Roteiro (F1, 29/10/2026)
+
+- ✅ Modelo único do roteiro (cenas → blocos: fala on/OFF/sonora/passagem com pessoa, ação, plano, lettering
+  GC/título/legenda/CTA/legal, áudio trilha/efeito/BG/silêncio, observação, nota interna), tempo estimado (150 palavras
+  por minuto, regra de contagem do TPeasy) e alvo. Vistas puras: Literário, Técnico, Teleprompter (marcação e backup do
+  TPeasy, id estável por pessoa), Edição, Markdown e dados da impressão. 6 modelos só com dica cinza. Documento antigo
+  (roteiro/decupagem) abre no editor novo sem mudar o antigo. Junção por id no conflito de `rev`.
+- ✅ Banco: `drizzle/0030_roteiros.sql` (`roteiros`, `roteiro_versoes` só de inclusão com sha256 conferido), RLS por
+  organização e por cliente, papéis provisórios até a área `criacao` do acesso por área. O migrador do Maestro passa a
+  aplicar migração que entra fora de ordem (0025–0029 de outras frentes depois da 0030).
+- ⬜ F2 (editor e telas), F3 (enviar: TPeasy, edição, PDF, versões na ficha do card), F7 (aprovação pelo `/a`).
+- ⛔ Em produção: migração `0030` do Maestro no próximo deploy autorizado.
+
 ## Fase 6 — Escala
 
 - ⬜ Observabilidade em produção (drain de logs, métricas da fila, alertas), backups e retenção definidos.

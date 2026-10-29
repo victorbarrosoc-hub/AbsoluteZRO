@@ -239,6 +239,21 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   `escala_sincronizar` refeito na 0013). Itens do Carro do Freela são só leitura (gatilho barra `maestro_app`). A
   sincronização (`aplicarInventarioDoCarro`, contrato `freela.inventario/1`, pelo `zro_sub`) está pronta e **desligada**:
   nada a chama enquanto o Carro não tem banco (`docs/integration-contracts/maestro-carro-do-freela.md`).
+- **Criação · Roteiro** (plano da Criação, fase F1 = só o núcleo, sem tela; `drizzle/0030_roteiros.sql`,
+  `src/lib/criacao/roteiro/**`): UM documento (`Roteiro`: formato, alvo min–max, wpm 150, pessoas, cenas → blocos
+  `fala`/`acao`/`plano`/`lettering`/`audio`/`observacao`/`nota`, ids estáveis) em `roteiros.conteudo`, conferido por
+  `lerRoteiro` (conserta; `null` só fora dos limites: 300 cenas, 3.000 blocos, 256 KB). `dica` é o cinza dos modelos e
+  nunca vira texto. Tempo em `tempo.ts` (fala = palavras ÷ wpm pela regra do `countWords` do TPeasy; plano + ações
+  = um plano; cena = `duracaoSeg` digitado ou o maior entre voz e imagem; medidor com 5% de folga). Vistas puras em
+  `vistas/` (Literário, Técnico, Teleprompter na marcação do TPeasy + `paraBackupTpeasy` com id
+  `maestro-<roteiro>-<pessoa>`, Edição, Markdown, `dadosImpressao`); 6 modelos em `modelos.ts`; documento antigo →
+  novo em `antigo.ts` (só leitura); `juntar.ts` junta por id no 409 do `rev`. Banco: `servidor.ts` (asUser; `rev` sobe
+  por gatilho; estado só admin/gestão pelo gatilho `roteiros_guarda`; `versao_atual`/`rev`/`demo` sem UPDATE para
+  `maestro_app`), versões só por `maestro.roteiro_versao_salvar` (sha256 por check, `registro_imutavel`), políticas
+  `_cliente` (sem vínculo fica escondido de quem é restrito). Papéis provisórios em `src/lib/criacao/permissoes.ts`
+  (`podeVerCriacao`/`podeEditarCriacao`/`podeEnviarCriacao`; trocar pela área `criacao` quando o acesso por área tiver).
+  O migrador aplica qualquer migração do journal ainda não gravada (pelo `when` ou pelo hash), então números fora de
+  ordem entre frentes funcionam; `when` repetido para o deploy.
 - **Página inicial** (`src/app/page.tsx`, `inicio.css`, plano v2 §10, ADR 0024): pública, só o que existe, "Em breve"
   para o resto, capturas reais da demonstração em `public/produto/*-{claro,escuro}.webp` (refazer com
   `npm run db:seed:demo` quando a tela mudar; nunca mock). "Quero acesso" grava na lista de espera
@@ -302,7 +317,10 @@ kit do freela, aluguel na escala e sincronização desligada (`freela-equipament
 novas com duas organizações (`negocio-rls.test.mts`) e o resumo para a Z (`resumo-z.test.mts`), o contrato (preenchimento, versões, aceite com hash, imutável;
 `contrato.test.mts`), a marca própria (sinal ligado e desligado, contraste, duas organizações; `marca-propria.test.mts`), a ponte do Drive, Arquivos, compartilhar/recolher e o agendamento
 (`drive-sobedesce.test.mts`), a versão colada na ficha do card (`versoes-card.test.mts`), pessoas da Absolute ZRO (`pessoas-zro.test.mts`), colunas do Quadro (fábrica e backfill, duas organizações, papéis,
-automação pelo papel, arquivar com destino, paleta; `colunas.test.mts`). E2E: `npm run build && npm run test:e2e`
+automação pelo papel, arquivar com destino, paleta; `colunas.test.mts`), o roteiro puro (modelo, tempo, cada vista, TPeasy
+contra o código do próprio app, modelos só com dica, documento antigo, junção; `roteiro.test.mts`), roteiros no banco
+(duas organizações, papéis, rev, versões imutáveis; `criacao-rls.test.mts`) e o migrador com migração atrasada
+(`migrador.test.mts`). E2E: `npm run build && npm run test:e2e`
 (Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir movimento, navegação, a aprovação
 inteira (`aprovacao.spec.ts`, mp4 local e YouTube/Vimeo falsos em `e2e/falsos`) e a versão colada na ficha do card que aparece no lote (`versao-card.spec.ts`) e a produtora com a demonstração
 (`produtora.spec.ts`, organização própria criada em `e2e/preparar.ts`) e o ciclo comercial (`comercial.spec.ts`: pedido
