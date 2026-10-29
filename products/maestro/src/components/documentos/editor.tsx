@@ -129,7 +129,7 @@ function EdChecklist({ c, mudar, so }: Ed<Checklist>) {
   const a = andamentoChecklist(c);
   const it = (i: number, k: keyof Checklist["itens"][number], v: unknown) => mudar({ itens: c.itens.map((x, j) => (j === i ? { ...x, [k]: v } : x)) });
   return (
-    <section className="folha__secao">
+    <section className="folha__secao" data-rolagem>
       <p className="sutil">
         {a.total} itens · saíram {a.sairam} · voltaram {a.voltaram}
       </p>
@@ -200,7 +200,7 @@ function EdOrdem({ c, mudar, so }: Ed<OrdemDoDia>) {
           <input value={c.localUrl ?? ""} onChange={(e) => set("localUrl", e.target.value || null)} readOnly={so} maxLength={500} placeholder="https://" />
         </label>
       </section>
-      <section className="folha__secao">
+      <section className="folha__secao" data-rolagem>
         <h3 className="lh-mono">Cronograma</h3>
         <table className="folha__tabela">
           <tbody>
@@ -245,7 +245,7 @@ function EdOrdem({ c, mudar, so }: Ed<OrdemDoDia>) {
         </table>
         <Mais so={so} rotulo="Horário" onClick={() => set("cronograma", [...c.cronograma, { hora: "", atividade: "", obs: "" }])} />
       </section>
-      <section className="folha__secao">
+      <section className="folha__secao" data-rolagem>
         <h3 className="lh-mono">Equipe</h3>
         <table className="folha__tabela">
           <tbody>
@@ -284,7 +284,7 @@ function EdOrdem({ c, mudar, so }: Ed<OrdemDoDia>) {
         </table>
         <Mais so={so} rotulo="Pessoa" onClick={() => set("equipe", [...c.equipe, { nome: "", funcao: "", chamada: c.chamada ?? "" }])} />
       </section>
-      <section className="folha__secao">
+      <section className="folha__secao" data-rolagem>
         <h3 className="lh-mono">Contatos</h3>
         <table className="folha__tabela">
           <tbody>
@@ -358,7 +358,7 @@ function EdDecupagem({ c, mudar, so }: Ed<Decupagem>) {
   const pl = (i: number, k: string, v: unknown) => mudar({ planos: c.planos.map((x, j) => (j === i ? { ...x, [k]: v } : x)) });
   const feitos = c.planos.filter((x) => x.feito).length;
   return (
-    <section className="folha__secao">
+    <section className="folha__secao" data-rolagem>
       <p className="sutil">
         {c.planos.length} planos · {feitos} feitos
       </p>

@@ -219,7 +219,7 @@ export function Quadro(props: Props) {
             ) : null}
           </div>
 
-          <nav className="q-abas" aria-label="Colunas">
+          <nav className="q-abas" aria-label="Colunas" data-rolagem>
             {COLUNAS.map((c) => (
               <button
                 key={c.k}

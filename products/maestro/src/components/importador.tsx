@@ -132,7 +132,7 @@ export function Importador() {
             </p>
           ) : null}
 
-          <div className="importar__tabela">
+          <div className="importar__tabela" data-rolagem>
             <table>
               <thead>
                 <tr>

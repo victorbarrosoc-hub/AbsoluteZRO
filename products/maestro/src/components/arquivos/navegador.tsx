@@ -255,7 +255,7 @@ export function NavegadorDrive({
   return (
     <section className="dv" data-modo={modo} aria-label="Google Drive">
       <div className="dv-barra">
-        <nav className="pilulas" aria-label="Onde">
+        <nav className="pilulas" aria-label="Onde" data-rolagem>
           {SCOPES.map((s) => (
             <a
               key={s.id}
@@ -326,7 +326,7 @@ export function NavegadorDrive({
           ))}
         </ol>
         {modo === "navegar" ? (
-          <div className="dv-filtros" role="group" aria-label="Tipo">
+          <div className="dv-filtros" role="group" aria-label="Tipo" data-rolagem>
             {FILTERS.map((f) => (
               <button key={f.id} type="button" className="chip" aria-pressed={filtro === f.id} onClick={() => setFiltro(f.id)}>
                 {f.label}

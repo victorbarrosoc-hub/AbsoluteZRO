@@ -1949,3 +1949,23 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Raiz: `npm run format:check` ok; `node scripts/scan-secrets.mjs` limpo.
 - Não validado: Safari real (o cruzamento de 60 s depende de `@property`, sem ele a cor troca de uma vez) e telas com o
   menu da cápsula em leitor de tela.
+
+## Maestro: nada cortado no iPhone (29/10/2026)
+
+- Relato do titular (iPhone, Safari, 393 px, claro) no lote de Aprovações: ações, peças, linha da versão e o tempo no
+  player cortados dentro das caixas. Detector novo `products/maestro/e2e/corte.ts` (texto ou controle fora do ancestral
+  que corta ou da tela, texto cortado sem reticências, rolagem de lado sem `data-rolagem`, placeholder que não cabe,
+  rótulo curto quebrado em duas linhas, textos sobrepostos e barra nativa do `<video>` no player) e
+  `e2e/sem-corte.spec.ts`: mais de 60 telas e estados com a demonstração (Hoje, Quadro e ficha, Aprovações, os lotes e o lote
+  com o SOBEDESCE, `/a` com Antes e Resumo, Projetos, Clientes, Pedidos quadro/lista/ficha, Orçamentos lista/editor/
+  timbrado, Financeiro e Números, Freelas e o perfil com kit, Inventário, Agenda, Documentos, Arquivos com cadeado e com
+  o Drive falso, Ajustes e subpáginas, `/p`, `/o`, página inicial, Z, formulários) a 375 e 393 px, claro e escuro, no
+  Chromium e no WebKit (projeto `iphone-safari`; o CI do Maestro passa a instalar o WebKit).
+- Antes: 40 achados a 393 px no WebKit (faixas sem aviso, `+ Peça` e filtros cortados, placeholders, a página de
+  editar lançamento alargada por um select no WebKit, o arquivo do Importar fora da tela, o select da ficha do Quadro).
+  Depois: nenhum. `products/maestro`: `lint` ok, `format:check` ok, `typecheck` ok, `npm test` **302/302**, `build` ok,
+  `test:e2e` **65 passaram, 5 pulados** (o detector não roda no computador; o editor completo do orçamento só no
+  computador). Computador sem mudança visual (regras em media query de celular; `min-width: 0` e `overflow: hidden`
+  no select só valem quando algo transbordava).
+- Não validado: Safari num iPhone de verdade (WebKit do Playwright com emulação) e o iframe do Drive sem a chave (a
+  barra dele é do Google).

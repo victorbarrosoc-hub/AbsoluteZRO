@@ -1385,3 +1385,79 @@ li[data-decisao="ajuste"] .cl-resumo__marca {
     transition: none !important;
   }
 }
+
+/* nada cortado no iPhone (e2e/sem-corte.spec.ts) */
+@media (max-width: 600px) {
+  /* Aprovações (equipe): CSV, EDL e Fechar lote dividem a linha por igual, sem sair da caixa */
+  .ap .pagina__cabeca--acao > div:first-child {
+    min-width: 0;
+  }
+  .ap .pagina__cabeca--acao .acoes {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    width: 100%;
+    gap: 8px;
+  }
+  .ap .pagina__cabeca--acao .acoes .glass-btn {
+    min-width: 0;
+    padding: 0 10px;
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  /* as peças do lote quebram linha (cada uma com o nome inteiro) e o "+ Peça" vai junto, nunca cortado */
+  .ap-pecas {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+  .ap-peca {
+    max-width: 100%;
+    min-width: 0;
+  }
+  .ap-pecas__mais {
+    /* o select mede a opção mais comprida; no celular fica do tamanho do "+ Peça" */
+    width: 8.5rem;
+    max-width: 100%;
+  }
+
+  /* o link da versão ocupa a linha inteira; Escolher no Drive e Nova versão vão embaixo, lado a lado */
+  .ap-versao__linha {
+    flex-wrap: wrap;
+    border-radius: 22px;
+    padding: 6px 6px 6px 14px;
+    row-gap: 6px;
+  }
+  .ap-versao__linha input {
+    flex: 1 1 calc(100% - 40px);
+    min-height: 38px;
+  }
+  .ap-versao__linha .glass-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+    white-space: nowrap;
+  }
+  .ap-versao__linha .glass-btn svg {
+    flex: none;
+  }
+
+  /* gerar o link: a validade em uma linha ("15 dias" inteiro) e o botão ocupando o que sobra */
+  .ap-link__gerar .q-segmentos > * {
+    white-space: nowrap;
+  }
+  .ap-link__gerar > .glass-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  /* filtros dos comentários: quebram linha em vez de sumir pela direita */
+  .rv-filtros {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    gap: 2px;
+  }
+  .rv-filtros button {
+    padding: 6px 9px;
+  }
+}

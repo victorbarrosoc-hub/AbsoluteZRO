@@ -46,7 +46,7 @@ export default async function Fluxo() {
       </Secao>
       <Secao titulo="Resultado por projeto">
         {resultado.length ? (
-          <div className="tabela-rolagem">
+          <div className="tabela-rolagem" data-rolagem>
             <table className="tabela">
               <thead>
                 <tr>

@@ -28,7 +28,7 @@ export function Cifra({ rotulo, valor, apoio, tom }: { rotulo: string; valor: Re
 /** Abas de uma seção (links): a ativa marcada. */
 export function Abas({ itens, ativa }: { itens: { href: string; nome: string; n?: number }[]; ativa: string }) {
   return (
-    <nav className="abas" aria-label="Partes da seção">
+    <nav className="abas" aria-label="Partes da seção" data-rolagem>
       {itens.map((i) => (
         <Link key={i.href} href={i.href} aria-current={i.href === ativa ? "page" : undefined}>
           {i.nome}

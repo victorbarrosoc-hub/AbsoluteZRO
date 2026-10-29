@@ -11,9 +11,8 @@ export const CAMPOS_FREELA: DefCampo[] = [
     rotulo: "Funções",
     max: 400,
     largo: true,
-    placeholder: FUNCOES.slice(0, 3)
-      .map((f) => f.nome)
-      .join(", "),
+    // Curto: no iPhone o campo tem uns 300 px.
+    placeholder: `${FUNCOES[0].nome}, …`,
     dica: "Separadas por vírgula.",
   },
   {
@@ -29,7 +28,7 @@ export const CAMPOS_FREELA: DefCampo[] = [
   { nome: "whatsapp", rotulo: "WhatsApp", tipo: "tel", max: 30 },
   { nome: "email", rotulo: "E-mail", tipo: "email", max: 254 },
   { nome: "instagram", rotulo: "Instagram", max: 60 },
-  { nome: "whatsappMsg", rotulo: "Mensagem do WhatsApp", max: 500, largo: true, placeholder: "Oi, {nome}! Tudo bem? Aqui é da {produtora}." },
+  { nome: "whatsappMsg", rotulo: "Mensagem do WhatsApp", max: 500, largo: true, placeholder: "Oi, {nome}! Aqui é da {produtora}." },
   { nome: "notas", rotulo: "Notas", tipo: "area", linhas: 3, largo: true, max: 4000 },
   {
     nome: "ativo",

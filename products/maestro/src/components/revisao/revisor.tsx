@@ -348,7 +348,7 @@ function Mesa({
 
   return (
     <div className="rv">
-      <div className="rv-mesa">
+      <div className="rv-mesa" data-player>
         {versoes.length > 1 ? (
           <div className="rv-versoes" role="tablist" aria-label="Versões">
             {modo === "cliente"
