@@ -110,10 +110,11 @@ test('cadastro → organização → projeto com Ciclo do O e alternativa em lis
   await page.waitForURL(/\/projetos\/[0-9a-f-]{36}$/)
   await expect(page.getByRole('heading', { name: 'Casamento E2E' })).toBeVisible()
   const list = page.getByRole('list', { name: 'Etapas do Ciclo do O' })
-  await expect(list.getByRole('listitem')).toHaveCount(8)
+  await expect(list.getByRole('listitem')).toHaveCount(9) // com o Relay (0031), a exportação no fim do ciclo
   // Sem plano: ferramentas lançadas aparecem bloqueadas por assinatura; as fechadas por lançamento (ADR 0023), indisponíveis
   await expect(list.getByRole('listitem').filter({ hasText: 'Synquei' })).toContainText('Bloqueado por assinatura')
   await expect(list.getByRole('listitem').filter({ hasText: 'AEON' })).toContainText('Indisponível')
+  await expect(list.getByRole('listitem').filter({ hasText: 'Relay' })).toContainText('Indisponível')
 })
 
 test('API: sem assinatura recebe 403 por URL direta; sem sessão 401; outra origem 403', async ({ page, request }) => {
