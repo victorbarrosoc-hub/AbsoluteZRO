@@ -18,7 +18,7 @@ import { SequenceBar, Timeline } from './timeline.js'
 import { contaUrl, isCloudAccount } from '../lib/cloud.js'
 import { navigate } from '../lib/router.js'
 import { PreviaLine } from './previa.js'
-import { FILTER_TESTS, batchFolder, batchLocal, integrity, integrityLabel, meterTotals, sortRows } from '../lib/transferencias.js'
+import { FILTER_TESTS, batchFolder, batchLocal, integrity, integrityLabel, meterTotals, numerosLote, numerosTexto, proxiesDoLote, proxyPendente, proxyResumo, sortRows } from '../lib/transferencias.js'
 import { SYNQUEI_ATUALIZAR, estadoPreparo } from '../lib/preparo.js'
 
 /** "Conectar de novo" certo para a conta: OAuth deste computador, o site (Drive da conta) ou entrar na conta. */
@@ -130,7 +130,8 @@ const TransferRow = memo(function TransferRow({ t, platform }) {
     actions.push(html`<a class="icon-btn" href=${driveFileUrl(driveId)} target="_blank" rel="noopener" aria-label="Abrir no Drive" title="Abrir no Drive"><${Icon} name="external" /></a>`)
   if (!FINISHED.has(t.status) && t.status !== 'failed')
     actions.push(html`<${IconButton} icon="x" label="Cancelar" tone="danger" onClick=${() => cancelTransfer(t)} />`)
-  else if (t.status !== 'running' && t.status !== 'verifying')
+  // Com o proxy ainda na fila ou sendo feito, o envio fica na lista (pule o proxy antes, na linha dele).
+  else if (t.status !== 'running' && t.status !== 'verifying' && !proxyPendente(t))
     actions.push(html`<${IconButton} icon="minus" label="Tirar da lista" onClick=${() => transferAction('remove', [t.id])} />`)
 
   return html`<div class=${cx('trow', `is-${t.status}`)} data-id=${t.id}>
@@ -228,6 +229,43 @@ function PrepararSynquei({ batch, finished }) {
   </div>`
 }
 
+/** Ícone do lote enquanto os proxies andam: o anel enche com o andamento dos proxies do lote. */
+function ProxyAnel({ frac, pausado }) {
+  const r = 16
+  const c = 2 * Math.PI * r
+  const f = Math.max(0.02, Math.min(1, frac || 0))
+  return html`<span class=${cx('tl-dir tl-dir-proxy', pausado && 'is-paused')} title="Originais no Drive. Gerando e enviando os proxies">
+    <svg class="tl-anel" viewBox="0 0 38 38" width="38" height="38" aria-hidden="true">
+      <circle class="tl-anel-fundo" cx="19" cy="19" r=${r} />
+      <circle class="tl-anel-feito" cx="19" cy="19" r=${r} stroke-dasharray=${`${(f * c).toFixed(2)} ${c.toFixed(2)}`} />
+    </svg>
+    <${Icon} name="film" size=${15} strokeWidth=${1.9} />
+  </span>`
+}
+
+/** Linha dos proxies no cartão do lote (sem precisar abrir): andamento, pausado ou os que falharam. */
+function ProxyLinha({ proxy, px }) {
+  const [indo, setIndo] = useState(false)
+  const tentar = async () => {
+    setIndo(true)
+    try {
+      await attempt(api.post('/api/transfers/proxy', { ids: px.falhouIds, proxy: true }))
+    } finally {
+      setIndo(false)
+    }
+  }
+  return html`<div class=${cx('batch-proxy', `is-${proxy.tom}`)} role="status">
+    ${proxy.tom === 'trabalhando'
+      ? html`<span class="batch-proxy-pulso" aria-hidden="true"></span>`
+      : html`<${Icon} name=${proxy.tom === 'falhou' ? 'info' : 'pause'} size=${13} />`}
+    <span class="batch-proxy-texto">${proxy.texto}</span>
+    ${px.pendentes ? html`<span class="previa-bar batch-proxy-bar" aria-hidden="true"><i style=${`width:${(px.frac * 100).toFixed(1)}%`}></i></span>` : null}
+    ${proxy.tom === 'falhou' && px.falhouIds.length
+      ? html`<button type="button" class="link" disabled=${indo} onClick=${tentar} title="Gera de novo os proxies que falharam">Tentar de novo</button>`
+      : null}
+  </div>`
+}
+
 function BatchGroup({ group, rows, expanded, onToggle, limit, onMore, platform }) {
   const { batch, items, sum } = group
   const type = batch.type || items[0]?.type || 'download'
@@ -245,15 +283,22 @@ function BatchGroup({ group, rows, expanded, onToggle, limit, onMore, platform }
   const pasta = type === 'upload' ? batchFolder(items, batch) : null
   // Download: a pasta do computador onde os arquivos estão caindo (antes, durante e depois).
   const local = type === 'download' ? batchLocal(items) : null
+  // Proxies: os originais podem ter chegado com os proxies ainda sendo gerados e subindo (motor: t.previa).
+  const px = useMemo(() => (type === 'upload' ? proxiesDoLote(items) : null), [items, type])
+  const proxy = proxyResumo(px, { originais: finished, proxyMs: batch.stats?.proxyMs })
+  const trabalhando = finished && px?.pendentes > 0
+  const numeros = finished ? numerosTexto(numerosLote(batch, items)) : null
 
-  return html`<section class=${cx('batch tl-lote', `is-${type === 'upload' ? 'up' : 'down'}`, !expanded && 'is-collapsed', finished && 'is-finished')} aria-labelledby=${id}>
+  return html`<section class=${cx('batch tl-lote', `is-${type === 'upload' ? 'up' : 'down'}`, !expanded && 'is-collapsed', finished && 'is-finished', trabalhando && 'is-proxies')} aria-labelledby=${id}>
     <header class="batch-head">
       <button type="button" class="batch-toggle" aria-expanded=${expanded ? 'true' : 'false'} aria-controls=${id + '-rows'} onClick=${onToggle} title=${expanded ? 'Recolher' : 'Mostrar arquivos'}>
         <${Icon} name="chevron-right" size=${14} strokeWidth=${2} />
       </button>
-      <span class="tl-dir" title=${type === 'upload' ? 'Envio para o Drive' : 'Download do Drive'}>
-        <${Icon} name=${type === 'upload' ? 'arrow-up' : 'arrow-down'} size=${17} strokeWidth=${2} />
-      </span>
+      ${trabalhando
+        ? html`<${ProxyAnel} frac=${px.frac} pausado=${proxy.tom === 'pausado'} />`
+        : html`<span class="tl-dir" title=${type === 'upload' ? 'Envio para o Drive' : 'Download do Drive'}>
+            <${Icon} name=${type === 'upload' ? 'arrow-up' : 'arrow-down'} size=${17} strokeWidth=${2} />
+          </span>`}
       <div class="batch-info">
         <div class="batch-title">
           <h3 id=${id} onClick=${onToggle}>${batch.label || 'Lote'}</h3>
@@ -267,11 +312,24 @@ function BatchGroup({ group, rows, expanded, onToggle, limit, onMore, platform }
                 <${Icon} name="shield" size=${12} strokeWidth=${1.7} />${checkText}
               </span>`
             : null}
+          ${proxy?.tom === 'ok'
+            ? html`<span class="batch-check is-ok" title="Proxy (cópia leve 720p) de cada vídeo em Proxy/, ao lado do original"><${Icon} name="film" size=${12} strokeWidth=${1.7} />${proxy.texto}</span>`
+            : null}
         </div>
+        ${proxy && proxy.tom !== 'ok' ? html`<${ProxyLinha} proxy=${proxy} px=${px} />` : null}
+        ${numeros
+          ? html`<div class="batch-dados num" title=${numeros.dica} aria-label=${numeros.texto}>
+              <${Icon} name="clock" size=${12} strokeWidth=${1.7} />${numeros.partes.map((x, i) => html`<span key=${i}>${x}</span>`)}
+            </div>`
+          : null}
       </div>
       <div class="batch-stats">
         <span class="batch-pct">${percent(sum.size ? sum.done / sum.size : finished ? 1 : 0)}</span>
-        ${sum.speed > 0 ? html`<span class="tc">${timecode(remaining / sum.speed)}</span>` : html`<span class="sub">${finished ? relTime(batch.createdAt) : ' '}</span>`}
+        ${trabalhando
+          ? html`<span class="batch-proxy-mini" title="Os originais já estão no Drive; os proxies ainda estão sendo gerados e enviados">${proxy.curto}</span>`
+          : sum.speed > 0
+            ? html`<span class="tc">${timecode(remaining / sum.speed)}</span>`
+            : html`<span class="sub">${finished ? relTime(batch.createdAt) : ' '}</span>`}
       </div>
       <div class="batch-actions">
         ${local
@@ -323,7 +381,7 @@ const DAILY_UPLOAD = 750e9 // limite do Google por conta, a cada 24 h
  * A coluna da direita: o que está andando agora (número grande), o gráfico de velocidade, os números e a ação
  * principal. Assina `stats` sozinha (2×/s) para a lista não ser redesenhada a cada atualização de velocidade.
  */
-const PainelAgora = memo(function PainelAgora({ geral, canPause, canResume, falta, problemas }) {
+const PainelAgora = memo(function PainelAgora({ geral, canPause, canResume, falta, problemas, proxies = 0 }) {
   const stats = useStore((s) => s.stats)
   const lost = useStore((s) => s.conn === 'lost')
   const accountId = useStore((s) => s.activeAccountId)
@@ -334,11 +392,15 @@ const PainelAgora = memo(function PainelAgora({ geral, canPause, canResume, falt
   const eta = moving && tot.moving > 0 ? stats.eta : null
   const pronto = geral.total > 0 && geral.feitos === geral.total
   const frac = geral.size ? geral.done / geral.size : pronto ? 1 : 0
-  const titulo = moving ? (down && up ? 'Subindo e descendo' : up ? 'Enviando agora' : 'Baixando agora') : pronto ? 'Tudo pronto' : canResume && !canPause ? 'Parado' : 'Na fila'
+  // Tudo chegou, mas ainda há proxy sendo feito: não é "Tudo pronto".
+  const soProxies = pronto && !moving && proxies > 0
+  const titulo = moving ? (down && up ? 'Subindo e descendo' : up ? 'Enviando agora' : 'Baixando agora') : soProxies ? 'Gerando proxies' : pronto ? 'Tudo pronto' : canResume && !canPause ? 'Parado' : 'Na fila'
   const linha =
     eta != null
       ? html`faltam <b>${aprox(eta)}</b>${eta >= 600 ? ` · ${terminaAs(eta)}` : ''}`
-      : html`${count(geral.feitos)} de ${plural(geral.total, 'arquivo', 'arquivos')}${tot.parked ? ` · ${bytes(tot.parked)} ${tot.parkedCount === 1 ? 'parado' : 'parados'}` : ''}`
+      : soProxies
+        ? html`originais no Drive · ${plural(proxies, 'proxy falta', 'proxies faltam')}`
+        : html`${count(geral.feitos)} de ${plural(geral.total, 'arquivo', 'arquivos')}${tot.parked ? ` · ${bytes(tot.parked)} ${tot.parkedCount === 1 ? 'parado' : 'parados'}` : ''}`
   const historico = (stats.history || []).slice(-120)
   const up24 = stats.usage?.[accountId]?.up24h || 0
 
@@ -350,8 +412,8 @@ const PainelAgora = memo(function PainelAgora({ geral, canPause, canResume, falt
         unidade=${`% de ${bytes(geral.size)}`}
         progresso=${frac}
         linha=${linha}
-        tom=${pronto ? 'ok' : 'grad'}
-        vivo=${moving}
+        tom=${pronto && !soProxies ? 'ok' : 'grad'}
+        vivo=${moving || soProxies}
       />
     </div>
     <div class="k-caixa">
@@ -418,6 +480,7 @@ export function TransfersScreen() {
     let canPause = false
     let canResume = false
     let finished = 0
+    let proxies = 0
     let size = 0
     let done = 0
     const byBatch = new Map()
@@ -430,6 +493,7 @@ export function TransfersScreen() {
       }
       if (t.status === 'completed' || t.status === 'skipped') doneCount++
       if (FINISHED.has(t.status)) finished++
+      if (proxyPendente(t) && t.previa.estado !== 'pausada') proxies++
       if (t.status === 'running' || t.status === 'queued' || t.status === 'waiting') canPause = true
       if (t.status === 'paused') canResume = true
       let list = byBatch.get(t.batchId)
@@ -449,7 +513,7 @@ export function TransfersScreen() {
     }
     groups.sort((a, b) => a.rank - b.rank || (a.rank === 3 ? -1 : 1) * ((a.batch.createdAt || 0) - (b.batch.createdAt || 0)))
     const geral = { size, done, total: totalCount, feitos: doneCount }
-    return { all, counts, doneCount, totalCount, canPause, canResume, finished, groups, geral }
+    return { all, counts, doneCount, totalCount, canPause, canResume, finished, groups, geral, proxies }
   }, [transfers, batches])
 
   const f = FILTERS.find((x) => x.value === filter) || FILTERS[0]
@@ -478,7 +542,9 @@ export function TransfersScreen() {
       const ok = await confirmDialog({ title: 'Limpar concluídas?', message: `${plural(data.finished, 'item sai', 'itens saem')} da lista. Os arquivos continuam onde estão.`, confirmLabel: 'Limpar' })
       if (!ok) return
     }
-    attempt(api.post('/api/transfers/clear', {}))
+    const r = await attempt(api.post('/api/transfers/clear', {}))
+    // Lote com proxy ainda sendo feito fica na lista (e o proxy segue): a pessoa sabe por quê.
+    if (r?.mantidos) toast('info', r.mantidos === 1 ? '1 lote ficou: ainda gerando proxies.' : `${count(r.mantidos)} lotes ficaram: ainda gerando proxies.`)
   }
 
   // soltar arquivos aqui envia para a última pasta aberta no Drive (ou Meu Drive)
@@ -523,7 +589,7 @@ export function TransfersScreen() {
 
   const problemas = data.counts.failed || 0
   const falta = Math.max(0, data.totalCount - data.doneCount)
-  const lado = html`<${PainelAgora} geral=${data.geral} canPause=${data.canPause} canResume=${data.canResume} falta=${falta} problemas=${problemas} />`
+  const lado = html`<${PainelAgora} geral=${data.geral} canPause=${data.canPause} canResume=${data.canResume} falta=${falta} problemas=${problemas} proxies=${data.proxies} />`
   const acoes = html`<${Button} icon="upload" onClick=${(e) => uploadFlow({ anchor: e.currentTarget })}>Enviar</${Button}>`
   const secoes = SECOES.map((sec) => ({ ...sec, itens: visible.filter((v) => sec.ranks.includes(v.g.rank)) })).filter((sec) => sec.itens.length)
 

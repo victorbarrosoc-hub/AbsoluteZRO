@@ -1,5 +1,6 @@
 // Regras da tela Transferências sem interface (dá para testar no Node): filtros, integridade do lote e o rodapé
 // do medidor ("1,7 GB andando · 42 GB parados").
+import { bits, bytes, duracao, speed } from './format.js'
 
 const RANK = { running: 0, verifying: 0, failed: 1, waiting: 2, paused: 3, queued: 4, completed: 5, skipped: 5, canceled: 6 }
 
@@ -121,4 +122,118 @@ export function batchLocal(items) {
   const indo = downs.find((t) => here(t) && t.dest.tempPath && (t.status === 'running' || t.status === 'verifying'))
   const target = pronto ? pronto.dest.path : indo ? indo.dest.tempPath : dir
   return { dir, target, name: common[common.length - 1] }
+}
+
+// ───── proxies (prévia leve) e números do lote ─────
+
+/** Fases da prévia leve que ainda vão andar (as mesmas do motor: src/media/previa-fila.js, PREVIA_PENDENTE). */
+export const PROXY_PENDENTE = new Set(['fila', 'pausada', 'analisando', 'baixando', 'gerando', 'enviando'])
+const PROXY_ATIVO = new Set(['analisando', 'baixando', 'gerando', 'enviando'])
+
+/** O envio tem proxy na fila ou sendo feito? (limpar a lista não tira esse lote) */
+export const proxyPendente = (t) => t?.type === 'upload' && PROXY_PENDENTE.has(t.previa?.estado)
+
+/**
+ * Proxies dos vídeos de um lote, pelo que o motor grava em cada envio (`t.previa`): quantos precisam (`total` =
+ * prontos + pendentes + falharam; "já tinha proxy" e pulados não contam), quantos faltam, quantos falharam (com os ids
+ * para "Tentar de novo") e o andamento do lote inteiro (`frac`, 0–1).
+ */
+export function proxiesDoLote(items) {
+  const px = { total: 0, prontos: 0, pendentes: 0, ativos: 0, pausados: 0, falhou: 0, falhouIds: [], feitos: 0, frac: 0 }
+  let parcial = 0
+  for (const t of items || []) {
+    if (t.type !== 'upload' || t.status === 'canceled' || t.status === 'failed') continue
+    const e = t.previa?.estado
+    if (e === 'pronta') px.prontos++
+    else if (e === 'falhou') {
+      px.falhou++
+      px.falhouIds.push(t.id)
+    } else if (PROXY_PENDENTE.has(e)) {
+      px.pendentes++
+      if (e === 'pausada') px.pausados++
+      if (PROXY_ATIVO.has(e)) {
+        px.ativos++
+        const f = Number.isFinite(t.previa.frac) ? Math.max(0, Math.min(1, t.previa.frac)) : 0
+        // Gerar pesa mais que subir (a cópia é leve): ~85% do tempo de um proxy é a conversão.
+        parcial += e === 'enviando' ? 0.85 + 0.15 * f : e === 'gerando' ? 0.85 * f : 0
+      }
+    } else continue
+    px.total++
+  }
+  px.feitos = px.total - px.pendentes
+  px.frac = px.total ? Math.min(1, (px.feitos + parcial) / px.total) : 0
+  return px
+}
+
+/**
+ * O que o cartão do lote diz dos proxies. `originais`: todos os originais já chegaram (o lote "terminou").
+ * `proxyMs`: quanto os proxies levaram (batch.stats), para "26 proxies prontos em 18 min".
+ * Devolve null (lote sem proxy) ou { tom: 'trabalhando'|'pausado'|'falhou'|'ok', texto, curto }.
+ */
+export function proxyResumo(px, { originais = false, proxyMs = 0 } = {}) {
+  if (!px?.total) return null
+  const prontos = (n) => `${n} ${n === 1 ? 'proxy pronto' : 'proxies prontos'}`
+  if (px.pendentes) {
+    const pausado = px.pausados === px.pendentes
+    const fase = pausado ? 'proxies pausados' : 'gerando proxies'
+    return {
+      tom: pausado ? 'pausado' : 'trabalhando',
+      texto: originais ? `Originais no Drive · ${fase} ${px.feitos} de ${px.total}` : `${pausado ? 'Proxies pausados' : 'Gerando proxies'} ${px.feitos} de ${px.total}`,
+      curto: `proxies ${px.feitos}/${px.total}`,
+    }
+  }
+  if (px.falhou) {
+    const falhou = px.falhou === 1 ? '1 proxy falhou' : `${px.falhou} proxies falharam`
+    return { tom: 'falhou', texto: px.prontos ? `${falhou} · ${px.prontos} ${px.prontos === 1 ? 'pronto' : 'prontos'}` : falhou, curto: falhou }
+  }
+  const em = proxyMs >= 1000 ? ` em ${duracao(proxyMs)}` : ''
+  return { tom: 'ok', texto: prontos(px.prontos) + em, curto: prontos(px.prontos) }
+}
+
+/**
+ * Números do lote para quem quer saber como foi. Vêm de `batch.stats` (o motor grava: src/engine/lote-tempo.js).
+ * Lote de uma versão anterior, sem eles: cai no relógio (primeiro começo → último fim) e no tamanho do que chegou, e
+ * marca `estimado`. Devolve null enquanto não há o que mostrar (nada chegou, ou tudo já estava no destino).
+ * @returns {{ bytes, duracaoMs, ativoMs, velocidade, proxyMs, estimado } | null}
+ */
+export function numerosLote(batch, items) {
+  const s = batch?.stats
+  const chegou = (items || []).filter((t) => t.status === 'completed' || t.status === 'skipped')
+  let inicio = Number(s?.inicio) || 0
+  let fim = Number(s?.fim) || 0
+  let bytesRede = Number(s?.bytes) || 0
+  let ativoMs = Number(s?.ativoMs) || 0
+  let estimado = false
+  if (!inicio || !fim) {
+    if (!chegou.length) return null
+    inicio = Math.min(...(items || []).map((t) => Number(t.startedAt) || Infinity))
+    fim = Math.max(...chegou.map((t) => Number(t.finishedAt) || 0))
+    if (!Number.isFinite(inicio) || !fim || fim < inicio) return null
+    bytesRede = chegou.filter((t) => t.status === 'completed').reduce((a, t) => a + (t.size || 0), 0)
+    ativoMs = 0
+  }
+  const duracaoMs = Math.max(0, fim - inicio)
+  // Sem o tempo andando (versão anterior) a média usa o relógio inteiro: dá um número menor, nunca maior.
+  if (!ativoMs) {
+    ativoMs = duracaoMs
+    estimado = true
+  }
+  if (!(bytesRede > 0) || !(ativoMs > 0)) return null
+  return { bytes: bytesRede, duracaoMs, ativoMs, velocidade: bytesRede / (ativoMs / 1000), proxyMs: Number(s?.proxyMs) || 0, estimado }
+}
+
+/**
+ * "104 GB em 1 h 12 min · 24,6 MB/s" e a dica com o detalhe (tempo andando, média em Mbps, tempo dos proxies).
+ * O tempo dos proxies vai na linha deles ("26 proxies prontos em 18 min", proxyResumo).
+ */
+export function numerosTexto(n) {
+  if (!n) return null
+  const parts = [`${bytes(n.bytes)} em ${duracao(n.duracaoMs)}`, speed(n.velocidade)]
+  const dica = [
+    `Do primeiro arquivo ao último que chegou: ${duracao(n.duracaoMs)}.`,
+    n.estimado ? 'Média pelo tempo total (lote de uma versão anterior).' : `Transferindo de fato: ${duracao(n.ativoMs)} (fila, pausas e esperas ficam fora).`,
+    `Média: ${speed(n.velocidade)} (${bits(n.velocidade)}).`,
+  ]
+  if (n.proxyMs >= 1000) dica.push(`Proxies: ${duracao(n.proxyMs)} gerando e subindo.`)
+  return { texto: parts.join(' · '), partes: parts, dica: dica.join(' ') }
 }

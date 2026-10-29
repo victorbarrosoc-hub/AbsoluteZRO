@@ -71,6 +71,146 @@
 .tl .batch-stats {
   min-width: 64px;
 }
+
+/* ───── originais no Drive, proxies ainda andando: o cartão não parece "terminado" ───── */
+.tl .tl-lote.is-proxies {
+  --c: var(--up);
+}
+.tl-dir-proxy {
+  position: relative;
+  color: var(--c);
+  background: color-mix(in srgb, var(--c) 10%, transparent);
+}
+.tl .tl-lote.is-proxies .tl-dir-proxy {
+  color: var(--c);
+  background: color-mix(in srgb, var(--c) 10%, transparent);
+  box-shadow: none;
+}
+.tl-dir-proxy .icon {
+  position: relative;
+}
+.tl-anel {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+}
+.tl-anel circle {
+  fill: none;
+  stroke-width: 2.5;
+}
+.tl-anel-fundo {
+  stroke: color-mix(in srgb, var(--c) 18%, transparent);
+}
+.tl-anel-feito {
+  stroke: var(--c);
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.5s var(--ease);
+}
+.tl-dir-proxy.is-paused {
+  --c: var(--text-3);
+}
+.tl .batch-proxy-mini {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.tl .tl-lote.is-proxies .batch-pct {
+  color: var(--text-2);
+}
+.batch-proxy {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.batch-proxy > .icon {
+  flex: none;
+  color: var(--text-2);
+}
+/* Na coluna estreita o que importa é ler tudo: a linha do lote quebra em vez de cortar com reticências. */
+.tl .batch-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 2px;
+  white-space: normal;
+}
+.tl .batch-sub {
+  column-gap: 12px;
+}
+.tl .batch-check {
+  margin-left: 0;
+  padding-left: 0;
+  border-left: 0;
+  white-space: nowrap;
+}
+.batch-proxy-texto {
+  min-width: 0;
+}
+.batch-proxy.is-pausado {
+  color: var(--text-2);
+}
+.batch-proxy.is-falhou {
+  color: var(--warn-text);
+}
+.batch-proxy.is-falhou > .icon {
+  color: var(--warn-text);
+}
+.batch-proxy .link {
+  flex: none;
+  font-size: 12px;
+}
+.batch-proxy-texto {
+  flex: 0 1 auto;
+}
+.batch-proxy-bar {
+  flex: 0 0 72px;
+}
+/* Um ponto que respira: está trabalhando, sem girar nada na cara de ninguém. */
+.batch-proxy-pulso {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--up);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--up) 45%, transparent);
+  animation: tl-pulso 1.8s var(--ease) infinite;
+}
+@keyframes tl-pulso {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--up) 45%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--up) 0%, transparent);
+  }
+}
+.batch-dados {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--text-3);
+  flex-wrap: wrap;
+  font-variant-numeric: tabular-nums;
+}
+.batch-dados > .icon {
+  flex: none;
+}
+.batch-dados > span {
+  white-space: nowrap;
+}
+.batch-dados > span + span::before {
+  content: '·';
+  margin-right: 5px;
+}
 .tl .batch-rows {
   border-top: 1px solid var(--hairline);
   background: var(--surface);
@@ -252,5 +392,11 @@
 @media (prefers-reduced-motion: reduce) {
   .tl .tl-lote {
     animation: none;
+  }
+  .batch-proxy-pulso {
+    animation: none;
+  }
+  .tl-anel-feito {
+    transition: none;
   }
 }

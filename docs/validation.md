@@ -1969,3 +1969,29 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   no select só valem quando algo transbordava).
 - Não validado: Safari num iPhone de verdade (WebKit do Playwright com emulação) e o iframe do Drive sem a chave (a
   barra dele é do Google).
+
+## SOBEDESCE: proxies à vista no lote e números do envio (29/10/2026)
+
+- Pedido do titular: o lote "26 arquivos · 104 GB · 100% · 26 de 26 conferidos" parecia pronto, mas os proxies ainda
+  eram gerados e enviados (só aparecia abrindo o lote), e dava para limpar a fila sem querer. Fonte: `record.previa`
+  de cada envio (o motor já mandava pelo SSE `transfers`); `public/lib/transferencias.js` (`proxiesDoLote`,
+  `proxyResumo`) monta o estado do cartão fechado; nada inventado na tela.
+- Limpar: `TransferManager.clearFinished()` mantém o lote inteiro com proxy pendente (na fila, pausado, gerando ou
+  enviando) e devolve `{ removidos, mantidos }`; `remove(ids)` não tira envio concluído com proxy pendente (a linha
+  esconde "Tirar da lista"; "Pular" continua sendo o jeito de cancelar o proxy). Antes, limpar tirava o registro e o
+  proxy seguia invisível e se perdia ao fechar o app.
+- Números do lote: `src/engine/lote-tempo.js` grava em `batch.stats` o primeiro começo, o último original que chegou, o
+  tempo com algum arquivo andando (vários juntos contam uma vez; fila, pausa e esperas fora), os bytes que passaram e o
+  tempo dos proxies. Média = bytes / tempo andando, em MB/s como o resto do app (Mbps na dica). Lote de versão anterior:
+  relógio inteiro, marcado na dica. O uso diário enviado à conta (`src/engine/uso.js`) já tem bytes e `msAtivo` por dia;
+  não mudou.
+- Bandeja e fechar o app (`desktop/bandeja.js`, `main.js`): com os originais no Drive e proxies andando, "Gerando 3
+  proxies" no menu e na dica, pergunta antes de sair e o computador não dorme.
+- Testes: `test/lote-proxies.test.js` (7 casos: cartão, falhas, conta da média, LoteTempo, bandeja, limpar com o motor de
+  verdade e o Drive falso sem cancelar o proxy, `batch.stats` gravado e lido ao reabrir); `test/server.test.js` com a
+  resposta nova do `/api/transfers/clear`. SOBEDESCE `npm run test:fast` **776 ok, 4 pulados**, 0 falhas; teste de fumaça do
+  Electron (`--smoke`, Linux com xvfb) `SMOKE OK`; `scan-secrets` limpo.
+- Telas: `scripts/ui-stub.js` com `STUB_PROXIES=1` no Chromium do Playwright, claro e escuro (cartão andando, prontos,
+  com falha, e a tela depois de Limpar concluídas com o aviso).
+- Não validado: Electron real com bandeja no Windows/Mac e um lote real de 100 GB (a conta da média foi conferida com
+  números feitos e com o Drive falso).
