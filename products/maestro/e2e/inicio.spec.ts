@@ -104,14 +104,14 @@ test.describe("motion", () => {
 });
 
 test.describe("navegação do app", () => {
-  test("Z primeiro, grupos só com o que existe e a aba ativa marcada", async ({ page, context, baseURL }, info) => {
+  test("Hoje primeiro, a Z discreta no fim, grupos só com o que existe e a aba ativa marcada", async ({ page, context, baseURL }, info) => {
     await entrar(context, baseURL!);
     await page.goto("/app/clientes");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("clientes.");
     const nav = page.getByRole("navigation", { name: "Seções do Maestro" }).filter({ visible: true });
     await expect(nav).toHaveCount(1);
-    const links = nav.getByRole("link");
-    await expect(links.first()).toHaveAttribute("href", "/app/z");
+    // o primeiro é o Hoje (no computador, dentro do menu Produção; no celular, a primeira aba da barra)
+    await expect(nav.locator("a").first()).toHaveAttribute("href", "/app/hoje");
     // Os menus da cápsula guardam as seções fechadas: a ordem vale para todos os links, abertos ou não.
     const hrefs = await nav.locator("a").evaluateAll((as) => as.map((a) => a.getAttribute("href")));
     if (info.project.name === "computador") {
@@ -124,7 +124,6 @@ test.describe("navegação do app", () => {
       await page.keyboard.press("Escape");
       await expect(nav.getByRole("group", { name: "Comercial" })).toBeHidden();
       expect(hrefs).toEqual([
-        "/app/z",
         "/app/hoje",
         "/app/quadro",
         "/app/aprovacoes",
@@ -138,6 +137,7 @@ test.describe("navegação do app", () => {
         "/app/inventario",
         "/app/financeiro",
         "/app/ajustes",
+        "/app/z",
       ]);
       for (const g of ["Produção", "Operação"]) {
         await nav.getByRole("button", { name: g }).click();
@@ -149,7 +149,9 @@ test.describe("navegação do app", () => {
       await expect(nav.getByRole("group", { name: "Operação" })).toBeHidden();
     } else {
       // Celular: o dia a dia na barra; Clientes está em "Mais", que fica marcado.
-      expect(hrefs).toEqual(["/app/z", "/app/hoje", "/app/quadro", "/app/aprovacoes", "/app/mais"]);
+      expect(hrefs).toEqual(["/app/hoje", "/app/quadro", "/app/aprovacoes", "/app/mais"]);
+      // a Z fica discreta no topo e em "Mais"
+      await expect(page.locator(".topo .topo__z")).toHaveAttribute("href", "/app/z");
       await expect(nav.getByRole("link", { name: /Mais/ })).toHaveAttribute("aria-current", "page");
       await nav.getByRole("link", { name: /Mais/ }).click();
       await expect(page.getByRole("link", { name: "Financeiro" })).toBeVisible();

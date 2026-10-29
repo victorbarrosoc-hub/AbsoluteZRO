@@ -682,6 +682,20 @@ h3 {
   align-items: center;
   gap: 10px;
 }
+/* a Z no topo do celular: discreta, um ícone como o do tema (decisão do titular, 29/10/2026) */
+.topo__z {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--pill-fill);
+  box-shadow: var(--pill-rim);
+  color: var(--text-mute);
+}
+.topo__z:hover {
+  color: var(--text);
+}
 /* a barra de baixo: presa ao rodapé como a barra de abas do iPhone (vidro quase opaco, filete em cima), nada vaza por
    baixo dela; a área segura do aparelho entra no próprio fundo da barra */
 .barra {

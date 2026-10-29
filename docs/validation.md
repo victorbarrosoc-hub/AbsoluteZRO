@@ -15,6 +15,53 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Troca de aba limpa no iPhone, gestos do Quadro e a Z discreta no Maestro (29/10/2026)
+
+Vídeo do titular (iPhone, Safari, maestro.absolutezro.com, demonstração): ao trocar de aba pela barra, a tela velha e a
+nova apareciam juntas ("Seu Quadro." por cima de "Boa tarde, Victor.", cards das duas). Quadro a quadro (120 fps): a
+velha ficava inteira, sem esmaecer, ~250 ms sob a nova, que também não deslizava.
+
+- **Causa**: a troca vinha do `<ViewTransition>` do React com chave por caminho (um grupo só de saída e outro só de
+  entrada, nomes `_t_N_`). No WebKit isso não se comporta como no Chromium: ele cria as duas metades
+  (`::view-transition-old` e `-new`) em todo grupo, inclusive no de saída e no de entrada, e o grupo da tela anterior
+  continuava vivo na troca seguinte; no WebKit do Playwright a seção nova chegou a ser pintada antes da foto e depois
+  esmaecida de novo. Além disso, saída (150 ms) e entrada (320 ms) começavam juntas, então mesmo no Chromium havia
+  ~100 ms das duas visíveis. Vidro (`backdrop-filter`) dentro da seção escapava da foto no WebKit.
+- **Correção** (Maestro `src/components/movimento.tsx` + `motion.css`; HUB `components/movimento.tsx` + bloco "troca de
+  tela" do `globals.css`): a View Transition é chamada por nós. O clique no link de seção é segurado na captura; a seção
+  atual vira o grupo `m-sai` (HUB: `z-sai`), o Next navega dentro da transição (o navegador mostra a foto da velha) e a
+  nova, quando monta, vira `m-entra` (esperando até 320 ms pelo conteúdo quando chega o esqueleto: esqueleto só com
+  espera de verdade); a velha some em 110 ms e a nova só começa aos 100 ms. Regras sem `var()`, a metade inexistente de
+  cada grupo escondida, sem vidro na seção durante a troca, sem a API ou com "reduzir movimento" a troca é na hora. A
+  barra do celular pré-busca as quatro abas inteiras (antes "Mais" mostrava esqueleto).
+- **Quadro no celular** (`src/components/quadro/gestos.ts`): deslizar de lado troca de coluna (lista segue o dedo,
+  elástico nas pontas, mola pela velocidade, a pílula de vidro anda junto; direção trava em 8 px, `touch-action:
+pan-y`, começo a 20 px da borda fica para o Safari). Arrastar o card (segundo vídeo do titular: segurar demorava ~1 s,
+  o card ficava com fundo preto e um fantasma pequeno, e não passava de coluna): o arrastar nativo do HTML saiu do toque
+  (`draggable` só com mouse, `-webkit-touch-callout: none`, `user-select: none`); segurar 280 ms ergue o card do tamanho
+  real (1,03 e sombra macia), os outros abrem espaço com a mola, a página rola perto do topo e do pé, segurar na borda
+  da tela 0,42 s passa para a coluna do lado, soltar sobre uma pílula manda para aquela coluna, soltar acima do Quadro
+  desiste; grava pelo mesmo "mover" (aviso com Desfazer).
+- **A Z discreta** (decisão do titular; PRD Maestro v1.1, Plano de Integração §7–8): barra do celular Hoje · Quadro ·
+  Aprovar · Mais; a Z é ícone no fim da cápsula, no topo do celular e em "Mais"; `/app` (a volta do login) abre sempre
+  no Hoje; a marca no topo leva ao Hoje.
+- Testes novos: `products/maestro/e2e/transicao.spec.ts` (computador, iPhone Chromium e iPhone WebKit: em cada troca,
+  pelo relógio das animações a saída termina antes de a entrada começar, amostrando a cada 4 ms nunca as duas acima de
+  10%, nada de esqueleto na volta, uma seção só no fim; com reduzir movimento, nenhuma transição),
+  `products/maestro/e2e/gestos.spec.ts` (iPhone Chromium e WebKit, organização própria: deslizar troca de coluna e a
+  pílula vai junto, elástico na ponta, borda do Safari e gesto de pé não trocam, toque de verdade pelo CDP rola a
+  página e desliza; segurar ergue em menos de 400 ms do tamanho do card e sem fundo escuro; reordena e grava; borda
+  passa de coluna com Desfazer; pílula recebe o card; soltar fora devolve), `tests/entrada.test.mts` (Hoje na entrada,
+  a Z fora da barra) e no HUB `tests/e2e/hub.spec.ts` ("troca de tela pelo menu").
+- Vídeos a tamanho de iPhone (antes/depois, WebKit e Chromium do Playwright) guardados fora do repositório. O WebKit
+  do Playwright aqui roda sem GPU e tira a foto da troca devagar (0,3–2 s): serve para conferir a ordem das camadas,
+  não a velocidade. Falta conferir num iPhone de verdade depois de publicar.
+- Rodado: Maestro `lint`, `format:check`, `typecheck`, `npm test` **343/343**, `build`, `test:e2e` completo **108/108**
+  (14 pulados: gestos só no celular; inclui `sem-corte`, `transicao` e `gestos` no Chromium e no WebKit). HUB `lint`,
+  `format:check`, `typecheck`, `npm test` **274/274**, `build`, `test:e2e` **30/30** (o cadastro do `sso.spec.ts`
+  estourou o tempo uma vez e passou na repetição). `scan-secrets` ok. Também ficou mais firme o
+  `quadro.spec.ts` ("Desfazer" espera o servidor gravar antes do próximo teste).
+
 ## Fluidez entre abas: HUB, Maestro e SOBEDESCE (29/10/2026)
 
 Pedido do titular: "abrir uma aba é lento e sem fluidez; o Synquei é instantâneo". O Synquei é uma SPA local: troca de

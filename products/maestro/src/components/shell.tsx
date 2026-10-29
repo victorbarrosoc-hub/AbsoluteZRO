@@ -82,7 +82,7 @@ export function Shell({
       {/* Computador: a cápsula de vidro no topo (C1 · Aurora): a marca, as seções em menus, o relógio da luz, o tema e a
           conta; o símbolo da Absolute ZRO pequeno, como assinatura. */}
       <header className="capsula">
-        <Link className="capsula__marca" href="/app/z" aria-label={rotulo}>
+        <Link className="capsula__marca" href="/app/hoje" aria-label={rotulo}>
           <MarcaDoTopo marca={marca} largura={30} />
         </Link>
         <Capsula />
@@ -102,11 +102,16 @@ export function Shell({
       </header>
       {/* Celular: a marca e a conta no topo; as seções na barra de baixo. */}
       <header className="topo">
-        <Link className="topo__marca" href="/app/z" aria-label={rotulo}>
+        <Link className="topo__marca" href="/app/hoje" aria-label={rotulo}>
           <MarcaDoTopo marca={marca} largura={36} />
         </Link>
         <div className="topo__fim">
           {selo}
+          {/* a Z, discreta (decisão do titular, 29/10/2026: nunca a primeira aba nem aberta sozinha) */}
+          <Link className="topo__z" href="/app/z" title="Z" data-sentido="frente">
+            <Icone nome="z" size={18} />
+            <span className="sr-only">Z</span>
+          </Link>
           <SeletorDeTema />
           <Link className="conta" href="/app/ajustes" title={sessao.orgNome}>
             <Avatar sessao={sessao} />

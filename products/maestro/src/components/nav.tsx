@@ -1,24 +1,34 @@
 "use client";
 /**
- * A navegação do Maestro (C1 · Aurora): no computador, uma cápsula de vidro no topo com a Z primeiro (padrão do
- * ecossistema) e os grupos como menus: Produção (Hoje, Quadro, Aprovações, Projetos, Agenda), Comercial (Pedidos,
- * Orçamentos, Clientes), Operação (Freelas, Inventário), Dinheiro (Financeiro, direto, por ser um só) e Ajustes.
- * O menu do grupo onde a pessoa está mostra o nome da seção ("Quadro"). Só entra o que tem tela de verdade.
- * No celular vira a barra de baixo com o que se usa todo dia (Z, Hoje, Quadro, Aprovações) e "Mais".
+ * A navegação do Maestro (C1 · Aurora): no computador, uma cápsula de vidro no topo com os grupos como menus: Produção
+ * (Hoje, Quadro, Aprovações, Projetos, Agenda), Comercial (Pedidos, Orçamentos, Clientes), Operação (Freelas,
+ * Inventário), Dinheiro (Financeiro, direto, por ser um só), Ajustes e, discreta no fim, a Z (decisão do titular,
+ * 29/10/2026: a Z não é a primeira aba). O menu do grupo onde a pessoa está mostra o nome da seção ("Quadro"). Só entra
+ * o que tem tela de verdade. No celular vira a barra de baixo com o dia a dia (Hoje, Quadro, Aprovações) e "Mais"; a Z
+ * fica no topo (src/components/shell.tsx).
  */
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ABAS, AJUSTES, BARRA, GRUPOS, MAIS, type Aba, type Grupo } from "@/lib/navegacao";
+import { ABAS, AJUSTES, BARRA, GRUPOS, MAIS, Z, type Aba, type Grupo } from "@/lib/navegacao";
 import { Icone } from "./icones";
 
 function ativa(caminho: string, href: string) {
   return caminho === href || caminho.startsWith(`${href}/`);
 }
 
-/** A posição da seção na ordem da cápsula: decide se a tela entra pela direita (frente) ou pela esquerda (volta). */
+/**
+ * A posição da seção na ordem da cápsula: decide se a tela entra pela direita (frente) ou pela esquerda (volta). Vai no
+ * `data-sentido` do link, que a troca de seção lê (src/components/movimento.tsx).
+ */
 const ordem = (caminho: string) => ABAS.findIndex((a) => ativa(caminho, a.href));
-const sentido = (de: string, para: string) => (ordem(para) >= ordem(de) ? "m-frente" : "m-volta");
+const sentido = (de: string, para: string) => (ordem(para) >= ordem(de) ? "frente" : "volta");
+/** Na barra do celular, a ordem é a da barra; seção fora dela conta como "Mais" (a última). */
+const naOrdemDaBarra = (caminho: string) => {
+  const i = BARRA.findIndex((a) => ativa(caminho, a.href));
+  return i < 0 ? BARRA.length - 1 : i;
+};
+const sentidoNaBarra = (de: string, para: string) => (naOrdemDaBarra(para) >= naOrdemDaBarra(de) ? "frente" : "volta");
 
 /**
  * O caminho que a navegação mostra: o destino acende no clique, antes de a seção chegar (como no Synquei), e volta ao
@@ -58,7 +68,7 @@ function LinkSecao({
     <Link
       href={aba.href}
       prefetch={intencao ? true : null}
-      transitionTypes={[sentido(caminho, aba.href)]}
+      data-sentido={sentido(caminho, aba.href)}
       aria-current={on ? "page" : undefined}
       data-aba={aba.icone}
       className={className}
@@ -250,6 +260,7 @@ export function Capsula() {
         ),
       )}
       <Item aba={AJUSTES} caminho={caminho} visto={visto} ir={ir} className="capsula__item capsula__item--icone" />
+      <Item aba={Z} caminho={caminho} visto={visto} ir={ir} className="capsula__item capsula__item--icone" />
     </nav>
   );
 }
@@ -262,13 +273,13 @@ export function Barra() {
     <nav className="barra" aria-label="Seções do Maestro">
       {BARRA.map((a) => {
         const on = a === MAIS ? !naBarra : ativa(visto, a.href);
-        // No celular não há "mouse em cima": as abas do dia a dia já vêm inteiras (são poucas e as mais usadas).
+        // No celular não há "mouse em cima": as abas já vêm inteiras (são quatro), para a troca não mostrar esqueleto.
         return (
           <Link
             key={a.href}
             href={a.href}
-            prefetch={a === MAIS ? null : true}
-            transitionTypes={[sentido(caminho, a.href)]}
+            prefetch
+            data-sentido={sentidoNaBarra(caminho, a.href)}
             aria-current={on ? "page" : undefined}
             data-aba={a.icone}
             onClick={(e) => {

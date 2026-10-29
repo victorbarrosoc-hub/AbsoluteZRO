@@ -14,6 +14,7 @@ export const ARQUIVO_SESSAO_DRIVE = "test-results/e2e-sessao-drive.json";
 export const ARQUIVO_SESSAO_CORTE = "test-results/e2e-sessao-corte.json";
 export const ARQUIVO_SESSAO_CONTRATO = "test-results/e2e-sessao-contrato.json";
 export const ARQUIVO_SESSAO_AGENDA = "test-results/e2e-sessao-agenda.json";
+export const ARQUIVO_SESSAO_GESTOS = "test-results/e2e-sessao-gestos.json";
 /** A ponte falsa (HUB + SOBEDESCE de mentira, tests/ponte-falsa.mts) do e2e de Arquivos: MAESTRO_PONTE_URL no servidor. */
 export const PORTA_PONTE = Number(process.env.E2E_PONTE_PORT || 3219);
 
@@ -274,6 +275,18 @@ export default async function preparar() {
       },
     });
     writeFileSync(ARQUIVO_SESSAO_AGENDA, JSON.stringify({ token: sAg.token }));
+    // Uma organização para os gestos do Quadro no celular (e2e/gestos.spec.ts): os cards são semeados pelo próprio teste.
+    const SUB_GE = "00000000-0000-4000-8000-0000000000b8";
+    const orgGe = await getBanco().asSystem("e2e: semente dos gestos", async (tx) => {
+      const [org] = await tx
+        .insert(schema.organizations)
+        .values({ zroOrgId: "00000000-0000-4000-8000-0000000000b7", name: "Gestos E2E", zroProducts: ["maestro"] })
+        .returning({ id: schema.organizations.id });
+      await tx.insert(schema.members).values({ orgId: org.id, zroSub: SUB_GE, displayName: "Gil Gestos", hubRole: "owner", role: "admin" });
+      return org.id;
+    });
+    const sGe = await criarSessao({ orgId: orgGe, sub: SUB_GE, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    writeFileSync(ARQUIVO_SESSAO_GESTOS, JSON.stringify({ token: sGe.token, org: orgGe }));
   } finally {
     await fecharBanco();
   }

@@ -5,7 +5,7 @@
  * quadro no React). As posições são medidas em relação ao conteúdo do Quadro, então rolar a página ou o Quadro de lado
  * não conta como movimento. Com "reduzir movimento", nada desliza.
  */
-import { useLayoutEffect, useRef, type RefObject } from "react";
+import { useCallback, useLayoutEffect, useRef, type RefObject } from "react";
 
 type Pos = { x: number; y: number };
 const MOLA = "cubic-bezier(0.32, 0.72, 0, 1)";
@@ -27,6 +27,24 @@ function medir(raiz: HTMLElement): Map<string, Pos> {
  */
 export function useFlip(raizRef: RefObject<HTMLElement | null>, vooRef: RefObject<{ id: string; de: DOMRect } | null>) {
   const antes = useRef<Map<string, Pos>>(new Map());
+  /**
+   * Mede agora (com o que estiver na tela, transform incluso) e toma isso como "antes" do próximo render. O arrastar do
+   * celular (gestos.ts) chama logo antes de gravar: os cards já estão onde vão ficar, então nada desliza de novo. `em`
+   * troca a medida de um card pelo retângulo dado (o card arrastado assenta onde o fantasma pousou).
+   */
+  const fixar = useCallback(
+    (em?: { id: string; rect: DOMRect }) => {
+      const el = raizRef.current;
+      if (!el) return;
+      const m = medir(el);
+      if (em) {
+        const base = el.getBoundingClientRect();
+        m.set(em.id, { x: em.rect.left - base.left + el.scrollLeft, y: em.rect.top - base.top + el.scrollTop });
+      }
+      antes.current = m;
+    },
+    [raizRef],
+  );
 
   // depois de cada render: compara com a última medida e anima o que andou
   useLayoutEffect(() => {
@@ -90,4 +108,6 @@ export function useFlip(raizRef: RefObject<HTMLElement | null>, vooRef: RefObjec
       el.removeEventListener("scroll", remedir);
     };
   }, [raizRef]);
+
+  return fixar;
 }

@@ -8,6 +8,11 @@
 
 /* ───────────── troca de seção (View Transitions; src/components/movimento.tsx) ───────────── */
 
+/* o invólucro de cada seção (src/components/movimento.tsx) */
+.m-pagina {
+  min-width: 0;
+}
+
 /* a cápsula, o topo e a barra de baixo ficam parados: só o conteúdo anda */
 .capsula {
   view-transition-name: m-capsula;
@@ -45,41 +50,42 @@
   animation: none;
 }
 
-/* frente: a seção nova vem da direita; a antiga sai esmaecendo para a esquerda */
-::view-transition-old(.m-frente) {
-  animation: 150ms var(--ease) both m-vt-sai;
-  --m-vt-x: -16px;
+/*
+ * A seção velha (grupo m-sai) e a nova (m-entra), postos por src/components/movimento.tsx só durante a troca. Primeiro
+ * a velha some (110 ms); a nova só começa aos 100 ms, quando a velha já está abaixo de 2%: nunca as duas juntas.
+ * Valores fixos nas regras (sem var()): os pseudo-elementos da transição não dependem de herança nenhuma.
+ */
+::view-transition-group(m-sai),
+::view-transition-group(m-entra) {
+  animation: none;
 }
-::view-transition-new(.m-frente) {
-  animation: 320ms var(--spring) both m-vt-entra;
-  --m-vt-x: 28px;
+/* no WebKit, vidro (backdrop-filter) dentro da seção escapa da foto e fica à vista durante a troca: sem ele na troca */
+:root[data-m-sentido] .m-pagina * {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }
-::view-transition-old(.m-volta) {
-  animation: 150ms var(--ease) both m-vt-sai;
-  --m-vt-x: 16px;
+/* o WebKit cria as duas metades até em grupo só de saída ou só de entrada: a metade que não existe não aparece */
+::view-transition-new(m-sai),
+::view-transition-old(m-entra) {
+  display: none;
 }
-::view-transition-new(.m-volta) {
-  animation: 320ms var(--spring) both m-vt-entra;
-  --m-vt-x: -28px;
+::view-transition-old(m-sai) {
+  animation: m-vt-some 110ms cubic-bezier(0.2, 0, 0, 1) both;
 }
-/* troca sem direção (link de dentro da tela, voltar do navegador): sobe 8 px e aparece */
-::view-transition-old(.m-troca) {
-  animation: 140ms var(--ease) both m-vt-some;
+::view-transition-new(m-entra) {
+  animation: m-vt-sobe 300ms cubic-bezier(0.32, 0.72, 0, 1) 100ms both;
 }
-::view-transition-new(.m-troca) {
-  animation: 280ms var(--spring) both m-vt-sobe;
+:root[data-m-sentido="frente"]::view-transition-old(m-sai) {
+  animation-name: m-vt-sai-frente;
 }
-@keyframes m-vt-sai {
-  to {
-    opacity: 0;
-    transform: translateX(var(--m-vt-x));
-  }
+:root[data-m-sentido="frente"]::view-transition-new(m-entra) {
+  animation-name: m-vt-entra-frente;
 }
-@keyframes m-vt-entra {
-  from {
-    opacity: 0;
-    transform: translateX(var(--m-vt-x));
-  }
+:root[data-m-sentido="volta"]::view-transition-old(m-sai) {
+  animation-name: m-vt-sai-volta;
+}
+:root[data-m-sentido="volta"]::view-transition-new(m-entra) {
+  animation-name: m-vt-entra-volta;
 }
 @keyframes m-vt-some {
   to {
@@ -90,6 +96,30 @@
   from {
     opacity: 0;
     transform: translateY(8px);
+  }
+}
+@keyframes m-vt-sai-frente {
+  to {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+}
+@keyframes m-vt-sai-volta {
+  to {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+}
+@keyframes m-vt-entra-frente {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+}
+@keyframes m-vt-entra-volta {
+  from {
+    opacity: 0;
+    transform: translateX(-28px);
   }
 }
 
@@ -616,6 +646,117 @@
   }
 }
 
+/* ───────────── Quadro no celular: deslizar entre colunas e arrastar o card (src/components/quadro/gestos.ts) ───────────── */
+
+.q-card--origem {
+  visibility: hidden;
+}
+.q-fantasma {
+  z-index: 85;
+  pointer-events: none;
+  box-sizing: border-box;
+  transition:
+    transform 0.24s cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* no ar: um pouco maior e com a sombra macia (nada do contorno preto do arrastar nativo) */
+.q-fantasma--no-ar {
+  transform: scale(1.03);
+  box-shadow:
+    0 0 0 1px var(--line),
+    0 18px 40px rgb(40 20 10 / 0.16),
+    0 4px 12px rgb(40 20 10 / 0.08);
+}
+@media (max-width: 760px) {
+  .q-quadro {
+    position: relative;
+    /* a vizinha nasce na borda da tela, não na margem do conteúdo */
+    margin-inline: -16px;
+    padding-inline: 16px;
+    overflow-x: clip;
+    touch-action: pan-y pinch-zoom;
+  }
+  .q-col[data-vizinha] {
+    display: grid;
+    position: absolute;
+    top: 0;
+    left: 16px;
+    right: 16px;
+  }
+  .q-card {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .q-quadro[data-arrasto] .q-lugar {
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .q-quadro[data-sem-mola] .q-lugar {
+    transition: none;
+  }
+  /* a pílula de vidro das colunas anda com o dedo */
+  .q-abas {
+    position: relative;
+  }
+  .q-abas > button {
+    position: relative;
+    z-index: 1;
+    transition:
+      color 0.2s var(--ease),
+      transform 0.25s var(--spring);
+  }
+  .q-abas__pilula {
+    position: absolute;
+    left: 0;
+    top: 2px;
+    height: 36px;
+    width: 0;
+    border-radius: 999px;
+    background: var(--gbi-fill);
+    box-shadow: var(--gbi-shadow);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      transform 0.42s var(--spring),
+      width 0.32s var(--spring);
+  }
+  .q-abas[data-andando] > .q-abas__pilula {
+    opacity: 1;
+  }
+  /* com a pílula medida, as abas ficam só com o contorno (a pílula passa por baixo delas) */
+  .q-abas[data-pilula] > button,
+  .q-abas[data-pilula] > button.on {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--line-strong);
+    color: var(--text-mute);
+  }
+  .q-abas[data-pilula] > button span,
+  .q-abas[data-pilula] > button.on span {
+    color: var(--text-mute);
+    opacity: 1;
+  }
+  .q-abas[data-pilula] > button[data-sob] {
+    background: var(--gbi-fill);
+    box-shadow: var(--gbi-shadow);
+    color: var(--gbi-ink);
+  }
+  .q-abas[data-andando] > button[data-sob] {
+    background: transparent;
+    box-shadow: none;
+  }
+  .q-abas[data-pilula] > button[data-sob] span {
+    color: inherit;
+    opacity: 0.7;
+  }
+  /* soltar o card aqui manda para esta coluna */
+  .q-abas > button[data-alvo] {
+    transform: scale(1.08);
+    box-shadow:
+      var(--pill-rim),
+      0 0 0 2px color-mix(in srgb, var(--col, var(--text)) 55%, transparent);
+  }
+}
+
 /* ───────────── reduzir movimento ───────────── */
 
 @media (prefers-reduced-motion: reduce) {
@@ -644,5 +785,14 @@
   .m-folha,
   .q-aviso {
     animation: none !important;
+  }
+  .q-fantasma,
+  .q-quadro[data-arrasto] .q-lugar,
+  .q-abas > button,
+  .q-abas__pilula {
+    transition: none !important;
+  }
+  .q-fantasma--no-ar {
+    transform: none;
   }
 }

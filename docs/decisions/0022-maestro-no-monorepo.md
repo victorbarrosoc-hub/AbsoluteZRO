@@ -37,7 +37,7 @@ banco ou chave migra. O desenho e as decisões estão no PRD de 28/10/2026 (`des
   na etapa 2 com base no rascunho do contrato.
 - **Quadro.** As 8 colunas do método, com "Com o cliente" = **Em aprovação** e "Publicado" = **Entregue**.
 - **Identidade.** O gesto da pauta em latão (logo do Maestro) colorido ao lado da marca flat da Absolute ZRO; o resto
-  é a identidade Absolute ZRO (Figtree, grafite, Liquid Glass, tema claro padrão, pouco texto). A Z é a primeira aba.
+  é a identidade Absolute ZRO (Figtree, grafite, Liquid Glass, tema claro padrão, pouco texto). A Z é a primeira aba (29/10/2026, titular: deixou de ser; ícone discreto e `/app` abre no Hoje, ver `products/maestro/CLAUDE.md`).
 
 ## Consequências
 
