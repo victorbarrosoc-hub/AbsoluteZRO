@@ -5,7 +5,8 @@ import nextTs from "eslint-config-next/typescript";
 export default defineConfig([
   ...nextVitals,
   ...nextTs,
-  globalIgnores([".next/**", "out/**", "next-env.d.ts", "node_modules/**"]),
+  // Cópias idênticas de packages/drive-web (tests/drive-web.test.mts confere): o estilo é o do pacote.
+  globalIgnores([".next/**", "out/**", "next-env.d.ts", "node_modules/**", "src/lib/drive-web/**", "public/drive-sw.js"]),
   {
     rules: {
       "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],

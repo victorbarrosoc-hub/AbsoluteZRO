@@ -10,6 +10,7 @@ import { exigirAcessoNaAcao } from "@/lib/auth/acao";
 import { podeEscrever } from "@/lib/papeis";
 import { origemDoSite } from "@/lib/site";
 import * as eq from "@/lib/revisao/equipe";
+import { compartilharLote, compartilharVersaoSeComLink, recolherLote } from "@/lib/sobedesce/revisao";
 import type { EstadoForm } from "@/components/form";
 
 const ctxDe = (s: { sub: string; orgId: string }) => ({ sub: s.sub, orgId: s.orgId });
@@ -44,7 +45,10 @@ export async function adicionarPecaAcao(loteId: string, cardId: string): Promise
 export async function novaVersaoAcao(cardId: string, link: string, titulo: string): Promise<Resposta> {
   const s = await exigirAcessoNaAcao();
   const r = await eq.novaVersao(ctxDe(s), cardId, link, titulo);
-  return r.ok ? { ok: true } : { ok: false, mensagem: r.mensagem };
+  if (!r.ok) return { ok: false, mensagem: r.mensagem };
+  // Versão nova do Drive num card que já está com o cliente: o arquivo também fica como "qualquer pessoa com o link".
+  await compartilharVersaoSeComLink(s, cardId).catch(() => undefined);
+  return { ok: true };
 }
 
 export async function apagarVersaoAcao(versaoId: string): Promise<Resposta> {
@@ -73,6 +77,9 @@ export async function gerarLinkAcao(loteId: string, pin: string, dias: number): 
   if (!podeLink(s.papel)) return { ok: false, mensagem: "Só administração e gestão geram o link do cliente." };
   const r = await eq.gerarLink(ctxDe(s), loteId, { pin, dias });
   if (!r.ok) return { ok: false, mensagem: r.mensagem };
+  // Com o SOBEDESCE no plano: os vídeos do Drive do lote tocam para o cliente enquanto o link vale (plano v2 §4.1).
+  // Falha do Drive não impede o link: o cliente cai no iframe do Drive, como antes.
+  await compartilharLote(s, loteId).catch(() => undefined);
   return { ok: true, url: await urlDoLink(r.token) };
 }
 
@@ -87,12 +94,16 @@ export async function revogarLinkAcao(loteId: string): Promise<Resposta> {
   const s = await exigirAcessoNaAcao();
   if (!podeLink(s.papel)) return { ok: false, mensagem: "Só administração e gestão revogam o link do cliente." };
   const r = await eq.revogarLink(ctxDe(s), loteId);
-  return r.ok ? { ok: true } : { ok: false, mensagem: r.mensagem };
+  if (!r.ok) return { ok: false, mensagem: r.mensagem };
+  await recolherLote(s, loteId).catch(() => undefined); // o que falhar, o agendamento tenta de novo
+  return { ok: true };
 }
 
 export async function fecharLoteAcao(loteId: string): Promise<Resposta> {
   const s = await exigirAcessoNaAcao();
   if (!podeLink(s.papel)) return { ok: false, mensagem: "Só administração e gestão fecham o lote." };
   const r = await eq.fecharLote(ctxDe(s), loteId);
-  return r.ok ? { ok: true } : { ok: false, mensagem: r.mensagem };
+  if (!r.ok) return { ok: false, mensagem: r.mensagem };
+  await recolherLote(s, loteId).catch(() => undefined);
+  return { ok: true };
 }

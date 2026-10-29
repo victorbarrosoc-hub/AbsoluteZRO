@@ -2,6 +2,11 @@
 
 export type NomeIcone =
   | "z"
+  | "arquivos"
+  | "pasta"
+  | "filme"
+  | "musica"
+  | "nuvem"
   | "quadro"
   | "aprovacoes"
   | "clientes"
@@ -127,6 +132,27 @@ const CAMINHOS: Record<NomeIcone, React.ReactNode> = {
       <path d="M17 14c2.2 0 4 1.8 4 4" />
     </>
   ),
+  arquivos: (
+    <>
+      <path d="M3.5 8A1.5 1.5 0 0 1 5 6.5h4l2 2h8A1.5 1.5 0 0 1 20.5 10v7.5A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5V8Z" />
+      <path d="M6 4.5h4l1.5 1.5" />
+    </>
+  ),
+  pasta: <path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5v-10Z" />,
+  filme: (
+    <>
+      <rect x="3.5" y="5" width="17" height="14" rx="3" />
+      <path d="m10.5 9.5 4 2.5-4 2.5v-5Z" />
+    </>
+  ),
+  musica: (
+    <>
+      <path d="M9 17.5V6.5l10-2v11" />
+      <circle cx="6.8" cy="17.5" r="2.2" />
+      <circle cx="16.8" cy="15.5" r="2.2" />
+    </>
+  ),
+  nuvem: <path d="M7.5 18.5h10a4 4 0 0 0 .6-7.95A5.5 5.5 0 0 0 7.4 9.1 4.75 4.75 0 0 0 7.5 18.5Z" />,
   projetos: (
     <>
       <path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2h8.5A1.5 1.5 0 0 1 21 9.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5v-10Z" />

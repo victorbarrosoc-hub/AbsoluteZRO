@@ -7,6 +7,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, useTransition, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 import { COLUNA, type ColunaKey } from "@/lib/quadro/metodo";
 import { detectarFonte, NOME_DA_FONTE, resumoDaFonte } from "@/lib/revisao/fontes/detectar";
 import type { CardDisponivel, LoteDaEquipe, PecaDaEquipe } from "@/lib/revisao/equipe";
@@ -22,6 +23,8 @@ import {
   revogarLinkAcao,
 } from "@/app/(app)/app/aprovacoes/acoes";
 import { Icone } from "@/components/icones";
+import { NavegadorDrive } from "@/components/arquivos/navegador";
+import { ComDriveDaEquipe } from "./drive-equipe";
 import { Revisor, type NovoComentario } from "./revisor";
 
 const dataCurta = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
@@ -33,9 +36,33 @@ function estadoDaPeca(p: PecaDaEquipe): "aprovado" | "ajuste" | "falta" {
 
 const NOME_ESTADO = { aprovado: "Aprovada", ajuste: "Ajuste pedido", falta: "Esperando" } as const;
 
-function NovaVersao({ card, driveStream, aoFim }: { card: string; driveStream: boolean; aoFim: () => void }) {
+/** "Escolher no Drive" (com o SOBEDESCE): o navegador do Drive como seletor, só vídeos. */
+function EscolherNoDrive({ sobedesce, aoEscolher, aoFechar }: { sobedesce: string; aoEscolher: (id: string, nome: string) => void; aoFechar: () => void }) {
+  useEffect(() => {
+    const tecla = (e: KeyboardEvent) => e.key === "Escape" && aoFechar();
+    addEventListener("keydown", tecla);
+    return () => removeEventListener("keydown", tecla);
+  }, [aoFechar]);
+  return createPortal(
+    <div className="rv-escolher" role="dialog" aria-modal="true" aria-label="Escolher no Drive" onClick={(e) => e.target === e.currentTarget && aoFechar()}>
+      <div className="rv-escolher__caixa">
+        <div className="rv-escolher__topo">
+          <h2>Escolher no Drive</h2>
+          <button type="button" className="glass-btn glass-btn--sm" onClick={aoFechar} aria-label="Fechar">
+            <Icone nome="fechar" size={16} />
+          </button>
+        </div>
+        <NavegadorDrive modo="escolher" sobedesce={sobedesce} aoEscolher={(f) => aoEscolher(f.id, f.name)} />
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+function NovaVersao({ card, driveStream, sobedesce, aoFim }: { card: string; driveStream: boolean; sobedesce: string | null; aoFim: () => void }) {
   const [link, setLink] = useState("");
   const [titulo, setTitulo] = useState("");
+  const [escolhendo, setEscolhendo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, iniciar] = useTransition();
   const f = link.trim() ? detectarFonte(link) : null;
@@ -72,17 +99,34 @@ function NovaVersao({ card, driveStream, aoFim }: { card: string; driveStream: b
           }}
           maxLength={2000}
         />
+        {sobedesce ? (
+          <button type="button" className="glass-btn glass-btn--sm" onClick={() => setEscolhendo(true)}>
+            <Icone nome="nuvem" size={15} /> Escolher no Drive
+          </button>
+        ) : null}
         <button type="submit" className="glass-btn glass-btn--ink glass-btn--sm" disabled={pendente || !f?.ok}>
           {pendente ? "Guardando…" : "Nova versão"}
         </button>
       </div>
+      {escolhendo && sobedesce ? (
+        <EscolherNoDrive
+          sobedesce={sobedesce}
+          aoFechar={() => setEscolhendo(false)}
+          aoEscolher={(id, nome) => {
+            setLink(`https://drive.google.com/file/d/${id}/view`);
+            setTitulo((t) => t || nome.replace(/\.[A-Za-z0-9]{2,5}$/, "").slice(0, 200));
+            setErro(null);
+            setEscolhendo(false);
+          }}
+        />
+      ) : null}
       {f?.ok ? (
         <div className="ap-versao__fonte">
           <span className="selo selo--ok">
             <i aria-hidden="true" />
             {NOME_DA_FONTE[f.tipo]}
           </span>
-          <span>{resumoDaFonte(f, { driveStream })}</span>
+          <span>{f.tipo === "drive" && sobedesce && !f.chave ? "Toca com tempo automático pelo SOBEDESCE." : resumoDaFonte(f, { driveStream })}</span>
           <input placeholder="Nome (opcional)" aria-label="Nome da versão" value={titulo} maxLength={200} onChange={(e) => setTitulo(e.target.value)} />
         </div>
       ) : null}
@@ -237,6 +281,7 @@ export function LoteEquipe({
   gereLink,
   pecaInicial,
   driveStream,
+  sobedesce = null,
 }: {
   lote: LoteDaEquipe;
   disponiveis: CardDisponivel[];
@@ -244,6 +289,8 @@ export function LoteEquipe({
   gereLink: boolean;
   pecaInicial: string | null;
   driveStream: boolean;
+  /** Com o SOBEDESCE no plano: a origem do app (Escolher no Drive e o Drive tocando pela conta da pessoa). */
+  sobedesce?: string | null;
 }) {
   const router = useRouter();
   const [card, setCard] = useState(pecaInicial && lote.pecas.some((p) => p.card === pecaInicial) ? pecaInicial : (lote.pecas[0]?.card ?? null));
@@ -392,16 +439,18 @@ export function LoteEquipe({
             </Link>
           </header>
           {ultimaDecisao?.nota ? <p className="ap-nota">“{ultimaDecisao.nota}”</p> : null}
-          {escreve && lote.status !== "fechado" ? <NovaVersao card={peca.card} driveStream={driveStream} aoFim={atualizar} /> : null}
+          {escreve && lote.status !== "fechado" ? <NovaVersao card={peca.card} driveStream={driveStream} sobedesce={sobedesce} aoFim={atualizar} /> : null}
           {peca.versoes.length ? (
-            <Revisor
-              key={peca.card}
-              versoes={peca.versoes}
-              modo="equipe"
-              podeComentar={escreve}
-              aoComentar={aoComentar}
-              aoResolver={escreve ? aoResolver : undefined}
-            />
+            <ComDriveDaEquipe ligado={!!sobedesce}>
+              <Revisor
+                key={peca.card}
+                versoes={peca.versoes}
+                modo="equipe"
+                podeComentar={escreve}
+                aoComentar={aoComentar}
+                aoResolver={escreve ? aoResolver : undefined}
+              />
+            </ComDriveDaEquipe>
           ) : (
             <p className="rv-vazio">Cole o link da primeira versão. Sem vídeo, o cliente decide pelo título.</p>
           )}

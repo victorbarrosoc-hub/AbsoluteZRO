@@ -6,11 +6,12 @@
  * último recurso (sem tempo: o comentário leva o tempo digitado). O tempo sobe para a tela no máximo 4 vezes por
  * segundo (timeupdate / consulta), nunca por quadro.
  */
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { capacidades, urlDrivePreview, type Capacidades } from "@/lib/revisao/fontes/detectar";
 import { FPS_PADRAO } from "@/lib/revisao/tempo";
 import type { VersaoVista } from "@/lib/revisao/tipos";
 import { Icone } from "@/components/icones";
+import { DriveEquipe } from "./drive-equipe";
 
 export type Controle = {
   tocar(): void;
@@ -307,21 +308,39 @@ export function Player({ versao, aoControle, ...ev }: { versao: VersaoVista; aoC
   const [falhou, setFalhou] = useState(false);
   const { aoCapacidades } = ev;
   const fps = versao.fps && versao.fps > 0 ? versao.fps : FPS_PADRAO;
-  const streamDrive = versao.fonte === "drive" && !!versao.stream && !falhou;
+  // Equipe com o SOBEDESCE: o Drive toca pelo service worker com o token curto da pessoa (tempo de verdade).
+  const resolverDrive = useContext(DriveEquipe);
+  const pedeEquipe = versao.fonte === "drive" && !!versao.driveId && !versao.driveChave && !!resolverDrive;
+  const [equipe, setEquipe] = useState<{ id: string; src: string | null } | null>(null);
+  useEffect(() => {
+    if (!pedeEquipe || !resolverDrive || !versao.driveId) return;
+    let vivo = true;
+    const id = versao.driveId;
+    void resolverDrive(id).then((src) => vivo && setEquipe({ id, src }));
+    return () => {
+      vivo = false;
+    };
+  }, [pedeEquipe, resolverDrive, versao.driveId]);
+  const srcEquipe = pedeEquipe && equipe?.id === versao.driveId ? equipe.src : null;
+  const esperandoEquipe = pedeEquipe && equipe?.id !== versao.driveId && !falhou;
+  const stream = srcEquipe ?? versao.stream;
+  const streamDrive = versao.fonte === "drive" && !!stream && !falhou;
   const id = versao.fonte === "youtube" ? new URL(versao.url).searchParams.get("v") : null;
 
   useEffect(() => {
     // Falhou o player com tempo: o Drive cai no iframe (sem tempo); os outros, no aviso com o link.
     const c = falhou
       ? { tempo: false, quadro: false, velocidade: false }
-      : capacidades({ tipo: versao.fonte, chave: versao.driveChave ?? undefined }, { driveStream: !!versao.stream });
+      : capacidades({ tipo: versao.fonte, chave: versao.driveChave ?? undefined }, { driveStream: !!stream });
     aoCapacidades?.(c);
-  }, [versao.fonte, versao.driveChave, versao.stream, falhou, aoCapacidades]);
+  }, [versao.fonte, versao.driveChave, stream, falhou, aoCapacidades]);
 
   // Estável: os adaptadores recriam o player quando ela muda (e o <video> voltaria ao zero a cada render).
   const erro = useCallback(() => setFalhou(true), []);
   let miolo: ReactNode;
-  if (versao.fonte === "link") {
+  if (esperandoEquipe) {
+    miolo = <div className="rv-embed rv-carregando" aria-busy="true" aria-label="Abrindo o vídeo do Drive" />;
+  } else if (versao.fonte === "link") {
     miolo = <Aviso href={versao.url}>Este vídeo abre em outra aba. Comente com o tempo digitado.</Aviso>;
   } else if (versao.fonte === "drive" && !streamDrive) {
     const prev = versao.driveId ? urlDrivePreview(versao.driveId, versao.driveChave) : null;
@@ -344,8 +363,18 @@ export function Player({ versao, aoControle, ...ev }: { versao: VersaoVista; aoC
   } else if (versao.fonte === "vimeo") {
     miolo = <Vimeo key={versao.id} url={versao.url} aoControle={aoControle} aoErro={erro} {...ev} />;
   } else {
-    const src = streamDrive ? versao.stream! : versao.url;
-    miolo = <VideoNativo key={versao.id} src={src} hls={versao.fonte === "hls"} fps={fps} aoControle={aoControle} aoErro={erro} {...ev} />;
+    const src = streamDrive ? stream! : versao.url;
+    miolo = (
+      <VideoNativo
+        key={`${versao.id}:${srcEquipe ? "equipe" : "url"}`}
+        src={src}
+        hls={versao.fonte === "hls"}
+        fps={fps}
+        aoControle={aoControle}
+        aoErro={erro}
+        {...ev}
+      />
+    );
   }
   return <>{miolo}</>;
 }

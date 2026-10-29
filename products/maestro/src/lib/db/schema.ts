@@ -141,8 +141,9 @@ export const projects = maestro.table(
     dueDate: date({ mode: "string" }),
     valueCents: bigint({ mode: "number" }),
     briefing: text(),
-    /** Pasta do projeto no Google Drive da organização (via SOBEDESCE, etapa 2). */
+    /** Pasta do projeto no Google Drive (via SOBEDESCE, aba Arquivos; drizzle/0019): só o id e o nome. */
     driveFolderId: text(),
+    driveFolderNome: text(),
     /** Projeto canônico no HUB (zro.projects.id). Vínculo automático ao criar, idempotente. */
     zroProjectId: uuid().unique(),
     linkStatus: text().$type<LinkStatus>().notNull().default("pending"),

@@ -61,6 +61,22 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   `MAESTRO_GOOGLE_API_KEY` (opcional, do titular) faz o Drive tocar num `<video>`; sem ela, iframe. CSP de `/a` e
   `/app/aprovacoes` em `next.config.ts` (abra host novo só lá). A demonstração usa os vídeos sintéticos
   `public/demo/*.mp4` (únicas URLs relativas aceitas, e só em card `demo-`).
+- **Drive pelo SOBEDESCE** (plano v2 §4.1 e §5, fases 7–10; `src/lib/sobedesce`, `drizzle/0019`; contrato em
+  `docs/integration-contracts/maestro-sobedesce.md`): só com `temProduto(sessao, 'sobedesce')`. A ponte
+  (`ponte.ts`) pede ao HUB um `zro-pedido+jwt` (`POST <HUB>/api/v1/apps/pedidos`, Bearer da sessão com escopo
+  `maestro.projects`) e o próprio Maestro chama o SOBEDESCE na `url` devolvida (https; http só em loopback de teste);
+  desfazer sem a pessoa usa a credencial do Maestro (Basic) + `sub`. **Arquivos** (`/app/arquivos`): sem o produto,
+  cadeado e 403 em `POST /api/arquivos/token`; com ele, o token curto do Drive (`drive.token`) só vai para a memória da
+  aba (`components/arquivos/drive-cliente.ts`), o navegador (`navegador.tsx`) usa o núcleo de `packages/drive-web`
+  (cópias idênticas em `src/lib/drive-web/` e `public/drive-sw.js`; `tests/drive-sobedesce.test.mts` confere; mude no
+  pacote e copie) e chama o Google direto; "Estrutura no Drive" e "Ligar a um projeto" gravam só
+  `projects.drive_folder_id`/`drive_folder_nome`. **Revisão**: a equipe toca o Drive pelo SW (`/app/stream/<id>`,
+  Range, contexto `DriveEquipe` no player) e tem "Escolher no Drive"; gerar o link e versão nova com link ativo ligam
+  "qualquer pessoa com o link" (`revisao.ts`, `versoes.compartilhamento` por `maestro.versao_compartilhamento`);
+  revogar e fechar desligam; vencido, o `GET /api/cron/revisao` (Vercel Cron, `CRON_SECRET`) desliga. Nenhum byte passa
+  pelo servidor. Demonstração sem Drive de verdade: o estado honesto "Conecte o Drive no SOBEDESCE" (nunca arquivo
+  inventado); o e2e usa a ponte falsa (`tests/ponte-falsa.mts`, `MAESTRO_PONTE_URL`) e intercepta o Google no navegador
+  (`e2e/falsos/google-drive.ts`, `tests/drive-fixture.mts`).
 - **A produtora por dentro** (plano v2 §6–§7, o `/painel` do ZRO portado; migrations `0006`–`0010`): toda tabela tem
   `org_id` e RLS pelo helper `maestro.politicas_padrao(tabela, escrita, remocao, leitura)`; chaves compostas
   `(org_id, id)` impedem apontar para a linha de outra organização. **Orçamentos** (`src/lib/orcamento`): `motor.ts` é
@@ -183,11 +199,14 @@ duas organizações em toda tabela da produtora (`produtora-rls.test.mts`), logo
 kit do freela, aluguel na escala e sincronização desligada (`freela-equipamentos.test.mts`), funil e retornos
 (`funil.test.mts`), números (`numeros.test.mts`), importar planilha (`importar.test.mts`), agenda .ics
 (`agenda-ics.test.mts`), acesso por cliente em toda tabela ligada a cliente (`acesso-cliente.test.mts`), as tabelas
-novas com duas organizações (`negocio-rls.test.mts`) e o resumo para a Z (`resumo-z.test.mts`). E2E: `npm run build && npm run test:e2e`
+novas com duas organizações (`negocio-rls.test.mts`) e o resumo para a Z (`resumo-z.test.mts`), a ponte do Drive, Arquivos, compartilhar/recolher e o agendamento
+(`drive-sobedesce.test.mts`). E2E: `npm run build && npm run test:e2e`
 (Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir movimento, navegação, a aprovação
 inteira (`aprovacao.spec.ts`, mp4 local e YouTube/Vimeo falsos em `e2e/falsos`) e a produtora com a demonstração
 (`produtora.spec.ts`, organização própria criada em `e2e/preparar.ts`) e o ciclo comercial (`comercial.spec.ts`: pedido
 público → Pedidos → gerar orçamento → link → aceite → projeto → Hoje, organização própria) e o visual
 (`visual.spec.ts`: contraste AA em cada hora e no escuro, luz parada com reduzir movimento) e o negócio
-(`negocio.spec.ts`: funil com Retornar hoje, importar, .ics e acesso por cliente, organização própria). Unitário da hora em
+(`negocio.spec.ts`: funil com Retornar hoje, importar, .ics e acesso por cliente, organização própria) e o Drive
+(`arquivos.spec.ts`: cadeado sem o SOBEDESCE, navegador, prévia com timecode, estrutura do projeto, Drive tocando na
+revisão e Escolher no Drive; `SHOTS_DIR` guarda as capturas). Unitário da hora em
 `hora.test.mts`.

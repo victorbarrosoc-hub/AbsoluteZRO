@@ -4,6 +4,8 @@ import { podeEscrever } from "@/lib/papeis";
 import { cardsDisponiveis, carregarLote } from "@/lib/revisao/equipe";
 import { chaveGoogle } from "@/lib/revisao/fontes/player";
 import { LoteEquipe } from "@/components/revisao/lote-equipe";
+import { temArquivos } from "@/lib/sobedesce/arquivos";
+import "../../../../arquivos.css";
 import "../../../../revisao.css";
 
 export const metadata = { title: "Lote" };
@@ -25,6 +27,7 @@ export default async function LotePagina({ params, searchParams }: PageProps<"/a
       gereLink={sessao.papel === "admin" || sessao.papel === "gestor"}
       pecaInicial={peca}
       driveStream={!!chaveGoogle()}
+      sobedesce={temArquivos(sessao) ? (process.env.MAESTRO_SOBEDESCE_URL?.trim() || "https://sobedesce.com").replace(/\/$/, "") : null}
     />
   );
 }

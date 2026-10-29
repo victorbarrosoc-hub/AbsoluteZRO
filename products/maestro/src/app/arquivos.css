@@ -1,0 +1,542 @@
+/* Arquivos (plano v2 §5) e o seletor "Escolher no Drive": o navegador do Drive no visual C1 · Aurora. Painéis de vidro
+   fosco sobre a luz, cards brancos, miniatura como protagonista, texto sempre grafite/branco; o latão só no ponto do
+   projeto ligado e no anel do foco. Motion só na entrada (8 px), parado com "reduzir movimento". */
+
+.pagina--arquivos {
+  display: grid;
+  gap: 18px;
+}
+.pagina--arquivos > *,
+.dv > *,
+.dv-projetos > *,
+.rv-escolher__caixa > * {
+  min-width: 0;
+}
+
+.dv,
+.dv-projetos {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-radius: var(--radius-l);
+  background: var(--painel);
+  box-shadow: var(--shadow-float);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  animation: dv-entra 360ms var(--spring) both;
+}
+@keyframes dv-entra {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.dv-titulo {
+  margin: 0;
+  font-family: var(--font-apple);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+.dv-projetos ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 8px;
+}
+.dv-projeto {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  box-shadow: var(--card-sombra);
+}
+.dv-projeto__icone {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text-strong);
+}
+.dv-projeto__icone[data-ligado="sim"]::after {
+  content: "";
+  position: absolute;
+  right: -2px;
+  top: -2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--acento);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.dv-projeto__texto {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+}
+.dv-projeto__texto strong,
+.dv-item__texto strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-strong);
+  font-weight: 600;
+}
+.dv-projeto__texto small,
+.dv-item__texto small {
+  color: var(--text-faint);
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dv-projeto__acoes {
+  display: flex;
+  gap: 6px;
+}
+.dv-aviso {
+  margin: 0;
+  color: var(--text-mute);
+  font-size: 0.9rem;
+}
+
+.dv-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.dv-busca {
+  max-width: 420px;
+}
+.dv-conta,
+.dv-ligar select {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--pill-fill);
+  box-shadow: var(--pill-rim);
+  color: var(--text-strong);
+  font: inherit;
+  font-size: 0.88rem;
+  max-width: 260px;
+}
+.dv-vista {
+  margin-left: auto;
+}
+.dv-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.dv-migalhas {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.dv-migalhas li {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--text-faint);
+}
+.dv-migalhas button {
+  border: 0;
+  background: transparent;
+  padding: 4px 6px;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text-mute);
+  cursor: pointer;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dv-migalhas button[aria-current="page"] {
+  color: var(--text-strong);
+}
+.dv-migalhas button:hover {
+  background: var(--surface-2);
+}
+.dv-filtros {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.dv-filtros .chip {
+  border: 0;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dv-filtros .chip[aria-pressed="true"] {
+  background: var(--text-strong);
+  color: var(--bg);
+}
+.dv-extra,
+.dv-ligar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dv-grade,
+.dv-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.dv-grade {
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+}
+.dv-lista {
+  gap: 4px;
+}
+.dv-item {
+  position: relative;
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  box-shadow: var(--card-sombra);
+  overflow: hidden;
+  min-width: 0;
+}
+.dv-item__botao {
+  display: grid;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.dv-item__botao:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+  border-radius: var(--radius-m);
+}
+.dv-grade .dv-item__texto {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px 12px;
+  min-width: 0;
+}
+.dv-thumb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 10;
+  background: var(--surface-2);
+  color: var(--text-mute);
+  overflow: hidden;
+}
+.dv-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.dv-thumb[data-tipo="folder"] {
+  aspect-ratio: 16 / 7;
+}
+.dv-dur {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.62);
+  color: #fff;
+  font-style: normal;
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+}
+.dv-lista .dv-item__botao {
+  grid-template-columns: 48px 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 10px 6px 6px;
+}
+.dv-lista .dv-thumb {
+  width: 48px;
+  aspect-ratio: 1;
+  border-radius: 10px;
+}
+.dv-lista .dv-dur {
+  display: none;
+}
+.dv-lista .dv-item__texto {
+  display: grid;
+  min-width: 0;
+}
+.dv-item__escolher {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-strong);
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: var(--card-sombra);
+  pointer-events: none;
+}
+.dv-item--esqueleto {
+  aspect-ratio: 16 / 13;
+  background: linear-gradient(100deg, var(--surface-2) 30%, var(--surface) 50%, var(--surface-2) 70%) 0 0 / 300% 100%;
+  animation: dv-brilho 1.6s linear infinite;
+}
+@keyframes dv-brilho {
+  to {
+    background-position: -300% 0;
+  }
+}
+.dv-mais {
+  display: flex;
+  justify-content: center;
+}
+
+.dv-vazio {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 44px 16px;
+  text-align: center;
+  border-radius: var(--radius-l);
+  background: var(--painel);
+  box-shadow: var(--shadow-float);
+}
+.dv .dv-vazio {
+  box-shadow: none;
+  background: transparent;
+}
+.dv-vazio__icone {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--card-sombra);
+  color: var(--text-strong);
+}
+.dv-vazio h2 {
+  margin: 6px 0 0;
+  font-family: var(--font-apple);
+  font-size: 1.2rem;
+  color: var(--text-strong);
+}
+.dv-vazio p {
+  margin: 0 0 8px;
+  color: var(--text-mute);
+  max-width: 40ch;
+}
+
+/* prévia */
+.dv-previa {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(10 10 16 / 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.dv-previa__caixa {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 12px;
+  width: min(1100px, 100%);
+  max-height: calc(100dvh - 32px);
+  padding: 14px;
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+  animation: dv-entra 280ms var(--spring) both;
+}
+.dv-previa__topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+.dv-previa__topo > div {
+  min-width: 0;
+}
+.dv-previa__topo h2 {
+  margin: 0;
+  font-family: var(--font-apple);
+  font-size: 1.05rem;
+  color: var(--text-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dv-previa__topo p {
+  margin: 2px 0 0;
+  color: var(--text-faint);
+  font-size: 0.82rem;
+}
+.dv-previa__palco {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  min-height: 0;
+  border-radius: var(--radius-m);
+  background: #0b0b10;
+  overflow: hidden;
+}
+.dv-video,
+.dv-imagem {
+  width: 100%;
+  max-height: 68dvh;
+  object-fit: contain;
+}
+.dv-pdf {
+  width: 100%;
+  height: 68dvh;
+  border: 0;
+  background: #fff;
+}
+.dv-tc {
+  margin: 0 0 10px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.12);
+  color: #fff;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+.dv-sem-previa {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 60px 16px;
+  color: #fff;
+}
+.dv-carregando {
+  width: 100%;
+  min-height: 240px;
+}
+.dv-previa__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* "Escolher no Drive" no formulário da versão */
+.rv-escolher {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(10 10 16 / 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.rv-escolher__caixa {
+  width: min(980px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  display: grid;
+  gap: 10px;
+}
+.rv-escolher__topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 4px;
+}
+.rv-escolher__topo h2 {
+  margin: 0;
+  color: #fff;
+  font-family: var(--font-apple);
+  font-size: 1.1rem;
+}
+
+@media (max-width: 640px) {
+  .dv,
+  .dv-projetos {
+    padding: 12px;
+    border-radius: var(--radius-m);
+  }
+  .dv-grade {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .dv-busca {
+    flex-basis: 100%;
+    max-width: none;
+    order: 3;
+  }
+  .dv-projetos ul {
+    grid-template-columns: 1fr;
+  }
+  .dv-sub {
+    display: grid;
+    justify-content: stretch;
+  }
+  .dv-barra .pilulas {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .dv-ligar select {
+    flex: 1;
+    min-width: 0;
+  }
+  .dv-projeto__texto small {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dv,
+  .dv-projetos,
+  .dv-previa__caixa,
+  .dv-item--esqueleto {
+    animation: none;
+  }
+}
+
+.rv-carregando {
+  aspect-ratio: 16 / 9;
+  background: #0b0b10;
+}

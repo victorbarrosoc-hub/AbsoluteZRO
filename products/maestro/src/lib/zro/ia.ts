@@ -24,12 +24,12 @@ export const MENSAGEM_RECONECTAR = "Entre de novo com a Absolute ZRO para conver
 const RECONECTAR = () => erro(401, "reconectar_zro", MENSAGEM_RECONECTAR);
 
 /**
- * O access token da Z para esta sessão: o guardado, se ainda vale um minuto; senão troca o refresh (com a linha
+ * O access token da Absolute ZRO para esta sessão (escopo da Z por padrão; a ponte do Drive usa `maestro.projects`): o guardado, se ainda vale um minuto; senão troca o refresh (com a linha
  * travada) e guarda o novo. `reconectar`: não há token, falta o escopo ou a Absolute ZRO recusou. `rede`: não respondeu.
  */
-export async function acessoIa(sessaoId: string, agora = Date.now()): Promise<{ at: string } | { erro: "reconectar" | "rede" }> {
+export async function acessoIa(sessaoId: string, agora = Date.now(), escopo: string = ESCOPO_IA): Promise<{ at: string } | { erro: "reconectar" | "rede" }> {
   return comTokensDaSessao(sessaoId, async (tokens, guardar) => {
-    if (!tokens || !tokens.escopo.split(" ").includes(ESCOPO_IA)) return { erro: "reconectar" as const };
+    if (!tokens || !tokens.escopo.split(" ").includes(escopo)) return { erro: "reconectar" as const };
     if (tokens.atExp - 60 > Math.floor(agora / 1000)) return { at: tokens.at };
     let r: Awaited<ReturnType<typeof renovarTokens>>;
     try {

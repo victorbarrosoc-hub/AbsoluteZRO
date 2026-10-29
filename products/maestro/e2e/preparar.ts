@@ -10,6 +10,9 @@ export const ARQUIVO_SESSAO = "test-results/e2e-sessao.json";
 export const ARQUIVO_SESSAO_DEMO = "test-results/e2e-sessao-demo.json";
 export const ARQUIVO_SESSAO_COMERCIAL = "test-results/e2e-sessao-comercial.json";
 export const ARQUIVO_SESSAO_NEGOCIO = "test-results/e2e-sessao-negocio.json";
+export const ARQUIVO_SESSAO_DRIVE = "test-results/e2e-sessao-drive.json";
+/** A ponte falsa (HUB + SOBEDESCE de mentira, tests/ponte-falsa.mts) do e2e de Arquivos: MAESTRO_PONTE_URL no servidor. */
+export const PORTA_PONTE = Number(process.env.E2E_PONTE_PORT || 3219);
 
 export default async function preparar() {
   const alvo = new URL(E2E_DB);
@@ -130,7 +133,49 @@ export default async function preparar() {
     const sNeg = await criarSessao({ orgId: neg.org, sub: SUB_NEG, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
     const sTeo = await criarSessao({ orgId: neg.org, sub: SUB_TEO, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
     writeFileSync(ARQUIVO_SESSAO_NEGOCIO, JSON.stringify({ token: sNeg.token, equipe: sTeo.token, proibido: neg.nao }));
+    // Uma quinta organização com o SOBEDESCE no plano (e2e/arquivos.spec.ts): Drive de mentira pela ponte falsa, um
+    // projeto e um lote com a versão do Drive. A sessão tem o token da Absolute ZRO (escopo maestro.projects).
+    const SUB_DRV = "00000000-0000-4000-8000-0000000000f2";
+    const drv = await getBanco().asSystem("e2e: semente do Drive", async (tx) => {
+      const [org] = await tx
+        .insert(schema.organizations)
+        .values({ zroOrgId: "00000000-0000-4000-8000-0000000000f1", name: "Aurora Filmes E2E", zroProducts: ["maestro", "sobedesce"] })
+        .returning({ id: schema.organizations.id });
+      await tx.insert(schema.members).values({ orgId: org.id, zroSub: SUB_DRV, displayName: "Pessoa Drive", hubRole: "owner", role: "admin" });
+      const um = async (x: ReturnType<typeof q>) => ((await tx.execute(x)) as unknown as { id: string }[])[0].id;
+      const cli = await um(q`insert into maestro.clients (org_id, name) values (${org.id}, 'Café Aurora') returning id`);
+      await tx.execute(q`insert into maestro.projects (org_id, client_id, code, title) values (${org.id}, ${cli}, 'MAE-2026-014', 'Filme manifesto')`);
+      await tx.execute(q`insert into maestro.projects (org_id, client_id, code, title) values (${org.id}, ${cli}, 'MAE-2026-015', 'Teasers de lançamento')`);
+      await tx.execute(
+        q`insert into maestro.cards (org_id, id, dados) values (${org.id}, 'e2e-drive-1', ${JSON.stringify({ tema: "Filme manifesto", coluna: "revisao", cliente: cli })}::jsonb)`,
+      );
+      const lote = await um(
+        q`insert into maestro.lotes (org_id, client_id, title, status) values (${org.id}, ${cli}, 'Manifesto · semana 44', 'rascunho') returning id`,
+      );
+      await tx.execute(q`insert into maestro.lote_cards (lote_id, org_id, card_id, posicao, volta) values (${lote}, ${org.id}, 'e2e-drive-1', 0, 1)`);
+      await tx.execute(q`
+        insert into maestro.versoes (org_id, card_id, n, titulo, fonte, url, drive_file_id)
+        values (${org.id}, 'e2e-drive-1', 1, 'Corte 1', 'drive', 'https://drive.google.com/file/d/vid-manifesto/view', 'vid-manifesto')`);
+      return { org: org.id, lote };
+    });
+    const sDrv = await criarSessao({
+      orgId: drv.org,
+      sub: SUB_DRV,
+      produtos: ["maestro", "sobedesce"],
+      release: { maestro: "allowed" },
+      tokens: {
+        at: "at-e2e-drive",
+        rt: "rt-e2e-drive",
+        atExp: Math.floor(Date.now() / 1000) + 24 * 3600,
+        escopo: "openid email profile org offline_access zro.ia maestro.projects",
+      },
+    });
+    writeFileSync(ARQUIVO_SESSAO_DRIVE, JSON.stringify({ token: sDrv.token, lote: drv.lote }));
   } finally {
     await fecharBanco();
   }
+  // A ponte falsa vive enquanto o Playwright roda (o retorno é o teardown).
+  const { iniciarPonteFalsa } = await import("../tests/ponte-falsa.mts");
+  const ponte = await iniciarPonteFalsa({ porta: PORTA_PONTE });
+  return () => ponte.fechar();
 }
