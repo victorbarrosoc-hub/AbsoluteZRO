@@ -602,9 +602,24 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   metadados, com cota por produtora (200 MB) e por fluxo (300) conferida no banco, rota autorizada
   `/api/criacao/img/<id>/<sha>`. Link colado reconhecido pelo endereço (YouTube, Vimeo, Drive), sem buscar nada.
   Markdown e JSON `maestro.fluxo/1` para "Copiar para IA" (sem endereço de imagem sem o link da F6).
-- ⬜ F5 (canvas), F6 (exportar, link privado `/f`).
+- ✅ F5 (canvas, abaixo). ⬜ F6 (exportar, link privado `/f`).
 - ⛔ Em produção: migração `0031` do Maestro no próximo deploy autorizado. A cota de 200 MB depende do plano do
   Supabase `AbsoluteZRO` (conferir com o titular).
+
+## Maestro · Criação: o canvas do Fluxo (F5, 29/10/2026)
+
+- ✅ `/app/criacao/fluxos` (cartões, "Novo fluxo", lixeira) e `/app/criacao/fluxos/[id]`: canvas infinito feito à mão
+  (DOM + SVG, sem tldraw), grade de pontos, andar e aproximar (trackpad, ⌘/Ctrl + roda, pinça), laço e ⇧, mover,
+  redimensionar, seções coloridas que levam o que está dentro, ligações puxadas da bolinha com rótulo opcional, apagar
+  com Desfazer/Refazer, cores, duplicar, setas e atalhos; barra de vidro (Selecionar · Nota · Imagem · Link · Seção ·
+  Ligar · Roteiro · Card) e o zoom no pé.
+- ✅ Colar é o gesto principal: imagem sobe com progresso e mensagem de cota, link vira nó (YouTube/Vimeo/Drive pelo
+  endereço, sem buscar nada), texto vira notas, link de roteiro/card do Maestro vira referência viva; soltar arquivo
+  também. Gravação otimista em lote (`aplicarOps`), conflito por item, poll de 5 s que não mexe na vista.
+- ✅ iPhone: segurar 280 ms ergue o nó, pinça, "+" com a folha Adicionar (Foto, Imagem, Link, Nota, Seção, Roteiro ·
+  Card) e a Lista por seção; a barra Hoje · Quadro · Aprovar · Mais fica. Quem só lê anda e lê. Claro e escuro,
+  reduzir movimento.
+- ⬜ Entrada "Criação" na navegação e o seletor Roteiros · Fluxos (F2, em paralelo); Exportar (F6).
 
 ## Fase 6 — Escala
 

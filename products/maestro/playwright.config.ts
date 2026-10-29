@@ -8,7 +8,9 @@ import { defineConfig, devices } from "@playwright/test";
 const PORT = Number(process.env.E2E_PORT || 3217);
 const BASE = process.env.TEST_DATABASE_URL || "postgres://postgres:postgres@localhost:5432/postgres";
 const u = new URL(BASE);
-u.pathname = "/maestro_test_e2e";
+// E2E_DB_SUFIXO separa o banco quando duas cópias do repositório rodam o e2e ao mesmo tempo (maestro_test_e2e_<sufixo>).
+const SUFIXO = (process.env.E2E_DB_SUFIXO ?? "").replace(/[^a-z0-9_]/g, "");
+u.pathname = `/maestro_test_e2e${SUFIXO ? `_${SUFIXO}` : ""}`;
 export const E2E_DB = u.toString();
 export const E2E_KEY = Buffer.alloc(32, 7).toString("base64");
 

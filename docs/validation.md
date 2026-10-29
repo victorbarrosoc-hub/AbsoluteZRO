@@ -2559,6 +2559,22 @@ imagens em WebP com cota, link colado sem rede e a exportação em Markdown/JSON
 Não rodado: o e2e do Maestro (nenhuma tela mudou). A migração `0031` não foi aplicada em banco de verdade; a cota de
 200 MB por produtora ainda depende do plano do Supabase `AbsoluteZRO`.
 
+## Maestro · Criação: o canvas do Fluxo (F5, 29/10/2026)
+
+Telas `/app/criacao/fluxos` e `/app/criacao/fluxos/[id]` sobre o núcleo da F4; nenhuma migração nova.
+
+| Verificação                                                                                                           | Comando                                                                      | Resultado                                                 |
+| --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Puro: vista, zoom, enquadrar, seção sob o ponto, ligação, colar, fila e poll                                          | `cd products/maestro && npx tsx --test tests/fluxo-tela.test.mts`            | **16/16**                                                 |
+| E2E: criar, nota, colar texto/imagem/link, ligar, mover, Desfazer, seção, recarregar; leitura; iPhone segurar e Lista | `E2E_DB_SUFIXO=f5 npx playwright test e2e/criacao-fluxo.spec.ts`             | **3/3**                                                   |
+| Nada cortado a 375/393 px (lista, canvas, Lista, folha Adicionar)                                                     | `npx playwright test e2e/sem-corte.spec.ts`                                  | ok (Chromium e WebKit, 375/393, claro e escuro)           |
+| Maestro inteiro                                                                                                       | `npm run lint`, `format:check`, `typecheck`, `npm test`, `build`, `test:e2e` | ok · ok · ok · **479/479** · ok · **132 ok** (24 pulados) |
+| Raiz                                                                                                                  | `npm run lint`, `format:check`, `typecheck`                                  | ok · ok · ok                                              |
+| Segredos                                                                                                              | `node scripts/scan-secrets.mjs`                                              | nenhum                                                    |
+
+`E2E_DB_SUFIXO` separa o banco do e2e quando duas cópias rodam juntas. Não validado: pinça do trackpad no Safari de
+verdade (`gesture*`) e o toque num iPhone físico (o e2e usa toques sintéticos no Chromium).
+
 ## SOBEDESCE: Atualizações quando o Absolute ZRO cuida do app (29/10/2026)
 
 - Relato do titular: o app no build 1034 dizia "Você está na versão mais nova" com o 1042 publicado. Instalado pela

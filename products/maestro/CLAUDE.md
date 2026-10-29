@@ -270,6 +270,17 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   `GET /api/criacao/img/<id>/<sha>` com sessão (cache privado). Link colado: `endereco.ts` puro (YouTube, Vimeo, Drive
   pelo endereço; nunca busca a página). "Copiar para IA": `exportar.ts` (Markdown e `maestro.fluxo/1`; imagem só leva
   endereço com o link da F6). Rotas em `src/lib/criacao/fluxo/rota.ts` (`/api/criacao/fluxo`, `/api/criacao/img`).
+- **Criação · Fluxo, a tela** (fase F5; `src/components/criacao/fluxo/**`, `src/app/fluxo.css`, rotas
+  `/app/criacao/fluxos` e `/app/criacao/fluxos/[id]`): canvas feito à mão (DOM + SVG; tldraw não). O que acontece a cada
+  quadro (andar, zoom, arrastar, redimensionar, puxar ligação, laço) mexe só no estilo (`canvas.tsx`); o React recebe ao
+  soltar. Contas puras em `geometria.ts`, colar em `colar.ts` (referência do Maestro → link → notas), estado otimista
+  em `ops.ts` + `estado.ts` (fila juntada, `rev` só em mudança de conteúdo, conflito por item fica com a versão do
+  banco, recusa do pedido inteiro recarrega, poll de 5 s que não passa por cima do que está na fila ou em edição, nem
+  mexe na vista). Desfazer guarda volta e refazer (criar desfaz com lápide e refaz com restaurar). Apagar seção leva o
+  que mora nela; apagar nó leva as ligações. A vista fica por aparelho em `localStorage`. No celular (≤ 900 px) o topo
+  do shell some e a barra de abas fica; segurar 280 ms ergue o nó. Nó usa `scale` na entrada (o `transform` é do
+  arrastar) e nada de `overflow: hidden` no próprio nó (a alça e a bolinha saem da borda). Testes:
+  `tests/fluxo-tela.test.mts`, `e2e/criacao-fluxo.spec.ts`, telas no `sem-corte.spec.ts`.
 - **Página inicial** (`src/app/page.tsx`, `inicio.css`, plano v2 §10, ADR 0024): pública, só o que existe, "Em breve"
   para o resto, capturas reais da demonstração em `public/produto/*-{claro,escuro}.webp` (refazer com
   `npm run db:seed:demo` quando a tela mudar; nunca mock). "Quero acesso" grava na lista de espera

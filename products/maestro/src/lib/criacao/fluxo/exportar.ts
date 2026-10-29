@@ -42,12 +42,13 @@ export function duracao(seg: number): string {
 
 const umaLinha = (t: string) => t.replace(/\s+/g, " ").trim();
 const corta = (t: string, n: number) => (t.length > n ? `${t.slice(0, n - 1).trimEnd()}…` : t);
-const prazoCurto = (p: string | null) => (p && /^\d{4}-\d{2}-\d{2}/.test(p) ? `${p.slice(8, 10)}/${p.slice(5, 7)}` : null);
+export const prazoCurto = (p: string | null) => (p && /^\d{4}-\d{2}-\d{2}/.test(p) ? `${p.slice(8, 10)}/${p.slice(5, 7)}` : null);
 const ordemDeLeitura = (a: NoFluxo, b: NoFluxo) => a.y - b.y || a.x - b.x || a.z - b.z || a.id.localeCompare(b.id);
 
-type Organizado = { secoes: { no: NoFluxo; itens: NoFluxo[] }[]; soltos: NoFluxo[]; vivos: Map<string, NoFluxo>; ligacoes: LigacaoFluxo[] };
+export type Organizado = { secoes: { no: NoFluxo; itens: NoFluxo[] }[]; soltos: NoFluxo[]; vivos: Map<string, NoFluxo>; ligacoes: LigacaoFluxo[] };
 
-function organizar(f: FluxoParaExportar): Organizado {
+/** Seções na ordem de leitura com os itens de cada uma, os soltos e as ligações vivas (a Lista da tela usa também). */
+export function organizar(f: FluxoParaExportar): Organizado {
   const vivos = new Map(f.nos.filter((n) => !n.apagado).map((n) => [n.id, n]));
   const lista = [...vivos.values()].sort(ordemDeLeitura);
   const secoes = lista.filter((n) => n.tipo === "secao").map((no) => ({ no, itens: [] as NoFluxo[] }));
