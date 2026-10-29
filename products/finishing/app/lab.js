@@ -7,7 +7,7 @@ import './menu.js'
 import { aplicar, assar, escreverCube } from '../src/cor/cube.js'
 import { AJUSTES, AJUSTES_NEUTROS, GRUPOS, analisarFrame, baseDoLab, criarLab, escreverReceita, lerReceita } from '../src/cor/lab.js'
 import { MAX_LOOKS, PREFIXO, empacotar } from '../src/cor/meuslooks.js'
-import { escalonar, icones } from './visual.js'
+import { cascata, escalonar, icones } from './visual.js'
 
 icones()
 escalonar()
@@ -198,10 +198,20 @@ function desenharBases() {
         receita.base = l.id
         for (const x of $('bases').querySelectorAll('.look')) x.setAttribute('aria-checked', String(x === b))
         refazer()
+        trocouLook()
       })
       return b
     }),
   )
+  cascata($('bases'))
+}
+
+/** O frame acusa a troca de base com um fade curto (o canvas é o mesmo, então recomeça a animação). */
+function trocouLook() {
+  const c = $('previa')
+  c.classList.remove('trocou-look')
+  void c.offsetWidth
+  c.classList.add('trocou-look')
 }
 
 // ─────────── correção e ajustes ───────────
@@ -360,6 +370,22 @@ $('arquivo-receita').addEventListener('change', async (e) => {
   }
 })
 
+/** ?base=negativo-500t (vindo de Revela Looks) escolhe a base; ?exemplo abre o frame de exemplo. */
+function aplicarPedido() {
+  const pedido = new URLSearchParams(location.search)
+  const base = baseDoLab(pedido.get('base') ?? '')
+  if (base) {
+    receita.base = base.id
+    grupo = GRUPOS.find((g) => g.looks.includes(base)).id
+    desenharGrupos()
+    desenharBases()
+    refazer()
+  }
+  if (pedido.has('exemplo') && !frame) $('lab-exemplo').click()
+}
+
 desenharGrupos()
 desenharAjustes()
-if (new URLSearchParams(location.search).has('exemplo')) $('lab-exemplo').click()
+aplicarPedido()
+// o painel do Lab fica guardado entre as abas: quem chega de novo por um link com ?base= escolhe de novo
+addEventListener('revela:pagina', (e) => e.detail === 'lab' && aplicarPedido())

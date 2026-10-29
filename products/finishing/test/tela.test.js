@@ -607,7 +607,7 @@ test('página inicial fechada ao público: a comparação segue, "Conhecer o pro
   assert.equal(await pagina.getByRole('list', { name: 'Editores compatíveis' }).getByRole('listitem').count(), 6)
   const hrefs = await pagina.$$eval('a[href]', (as) => as.map((a) => a.getAttribute('href')))
   assert.deepEqual(
-    hrefs.filter((h) => /^(inicio|lut|lab|cst|entrega|converter)(\.html)?(\?|#|$)/.test(h)),
+    hrefs.filter((h) => /^(inicio|lut|lab|looks|cst|entrega|converter)(\.html)?(\?|#|$)/.test(h)),
     [],
   )
   assert.equal(await pagina.getByRole('link', { name: 'Conhecer o projeto' }).first().getAttribute('href'), '#looks')
@@ -996,7 +996,7 @@ test('app na Tela de Início: manifesto, ícones e o passo a passo do Compartilh
   // o iPhone usa o apple-touch-icon (180, sem transparência) e não o manifesto
   const toque = readFileSync(join(RAIZ, 'marca/app/apple-touch-icon.png'))
   assert.deepEqual([toque.readUInt32BE(16), toque.readUInt32BE(20), toque[25]], [180, 180, 2], 'PNG 180×180 RGB')
-  for (const f of ['index.html', 'lut.html', 'lab.html', 'cst.html', 'entrega.html', 'converter.html', 'entrar.html']) {
+  for (const f of ['index.html', 'lut.html', 'lab.html', 'looks.html', 'cst.html', 'entrega.html', 'converter.html', 'entrar.html']) {
     const html = readFileSync(join(RAIZ, f), 'utf8')
     for (const marca of ['rel="manifest"', 'rel="apple-touch-icon"', 'apple-mobile-web-app-title" content="Revela"', 'black-translucent'])
       assert.ok(html.includes(marca), `${f}: ${marca}`)
@@ -1233,6 +1233,46 @@ test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks
   await pagina.getByRole('button', { name: 'Salvar em Meus looks' }).click()
   await pagina.getByText('"Noite quente" está em Meus looks').waitFor()
   assert.equal(await pagina.evaluate(() => JSON.parse(localStorage.getItem('revela-meus-looks')).map((l) => l.nome).join()), 'Noite quente')
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('Revela Looks: vitrine com o motor, packs em faixas, Abrir no Lab com a base, e a troca de aba com View Transition', async () => {
+  const pagina = await navegador.newPage({ viewport: { width: 390, height: 844 } })
+  const erros = []
+  pagina.on('pageerror', (e) => erros.push(e.message))
+  pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
+  await pagina.goto(endereco + 'looks.html')
+  await pagina.getByRole('heading', { name: 'Looks prontos.' }).waitFor()
+  await pagina.locator('#packs .pack').nth(2).waitFor()
+  assert.deepEqual(await pagina.locator('#packs .pack h2').allTextContents(), ['Revela', 'Película', 'Clássicos'])
+  assert.match(await pagina.locator('#vitrine-nome').textContent(), /^Revela · /)
+  // a vitrine é o frame de verdade com o look (não fica preto nem igual ao original)
+  const media = () =>
+    pagina.evaluate(() => {
+      const c = document.querySelector('.vitrine-palco canvas.visivel')
+      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data
+      let s = 0
+      for (let i = 0; i < d.length; i += 4) s += d[i] + d[i + 1] + d[i + 2]
+      return s / (d.length * 0.75)
+    })
+  assert.ok((await media()) > 20)
+  // a capa do Película leva a vitrine para o pack; os pontos trocam o look
+  await pagina.locator('.pack[data-pack="pelicula"] .pack-capa').click()
+  assert.equal(await pagina.locator('#vitrine-nome').textContent(), 'Película · Negativo 250D')
+  assert.equal(await pagina.locator('#vitrine-pontos [role=tab]').count(), 5)
+  await pagina.getByRole('tab', { name: 'Negativo 500T' }).click()
+  assert.equal(await pagina.locator('#vitrine-nome').textContent(), 'Película · Negativo 500T')
+  assert.equal(await pagina.locator('.pack[data-pack="pelicula"]').getAttribute('class'), 'pack ativo')
+  assert.equal(await pagina.locator('.pack .ficha--saida').first().textContent(), 'Loja em breve')
+  assert.equal(await pagina.evaluate(() => document.documentElement.scrollWidth), 390)
+  // Abrir no Lab: troca de aba sem recarregar, com a base do pack e o exemplo
+  await pagina.locator('.pack[data-pack="pelicula"]').getByRole('link', { name: 'Abrir no Lab' }).click()
+  await pagina.locator('#lab:not([hidden])').waitFor()
+  assert.match(pagina.url(), /lab\.html\?base=negativo-250d&exemplo$/)
+  assert.equal(await pagina.getByRole('tab', { name: 'Película' }).getAttribute('aria-selected'), 'true')
+  assert.equal(await pagina.getByRole('radio', { name: 'Negativo 250D' }).getAttribute('aria-checked'), 'true')
+  assert.equal(await pagina.evaluate(() => getComputedStyle(document.querySelector('main')).viewTransitionName), 'painel')
   assert.deepEqual(erros, [])
   await pagina.close()
 })
