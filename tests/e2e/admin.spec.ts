@@ -1,11 +1,13 @@
 // Console da plataforma (/admin): só papel de plataforma, online agora, pessoas por segmento, troca de plano, CSV e axe.
 import { randomUUID } from 'node:crypto'
+import http from 'node:http'
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 import postgres from 'postgres'
 import { criarConta } from './conversa'
 
 const DB = process.env.E2E_DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/zro_e2e_test'
+const PORTA_PTAX = Number(process.env.E2E_PTAX_PORT || 3297)
 const CONSOLE = ['/admin', '/admin/pessoas', '/admin/planos', '/admin/custos', '/admin/lancamento', '/admin/apps']
 
 async function signupAndOrg(page: Page, name: string, org: string) {
@@ -119,7 +121,25 @@ test('admin vê online agora, acha a pessoa por segmento, troca o plano, exporta
   }
 })
 
-test('custos: suporte não vê; admin vê o mês, edita um item, cria e apaga outro, exporta', async ({ page }) => {
+test('custos: suporte não vê; admin vê o mês, usa o dólar manual e o automático, edita um item, cria e apaga outro, exporta', async ({ page }) => {
+  // Banco Central falso (PTAX): fora do ar no começo; depois responde US$ 1 = R$ 5,00 para qualquer dia.
+  const bcb = { fora: true }
+  const servidor = http.createServer((req, res) => {
+    if (bcb.fora) return void res.writeHead(503).end()
+    const [, m, d, a] = decodeURIComponent(req.url ?? '').match(/'(\d{2})-(\d{2})-(\d{4})'/) ?? []
+    res.writeHead(200, { 'content-type': 'application/json' })
+    res.end(JSON.stringify({ value: [{ cotacaoCompra: 4.99, cotacaoVenda: 5, dataHoraCotacao: `${a}-${m}-${d} 13:05:00.000` }] }))
+  })
+  await new Promise<void>((ok) => servidor.listen(PORTA_PTAX, '127.0.0.1', ok))
+  try {
+    await custos(page, bcb)
+  } finally {
+    servidor.closeAllConnections()
+    await new Promise<void>((ok) => servidor.close(() => ok()))
+  }
+})
+
+async function custos(page: Page, bcb: { fora: boolean }) {
   const suporte = await signupAndOrg(page, 'Suporte E2E', 'Org do suporte')
   await promote(suporte, 'support')
   await page.goto('/admin')
@@ -139,16 +159,24 @@ test('custos: suporte não vê; admin vê o mês, edita um item, cria e apaga ou
   await expect(page.locator('.cst-conferir')).toHaveText(/\d+ itens a conferir/)
   await expect(page.getByText('Nenhuma assinatura paga ainda')).toBeVisible()
 
-  // Cotação: agora em reais também.
-  await page.getByRole('button', { name: 'Informar cotação do dólar' }).click()
-  const cfg = page.getByRole('dialog', { name: 'Cotação e metas' })
-  await cfg.getByLabel('US$ 1 em reais').fill('5,50')
-  await cfg.getByLabel('Meta de assinantes').fill('100')
-  await cfg.getByRole('button', { name: 'Salvar' }).click()
-  await expect(cfg).toHaveCount(0)
+  // Dólar: o Banco Central (falso) fora do ar; o valor manual vale e as contas aparecem em reais.
+  await page.getByRole('button', { name: 'Sem cotação' }).click()
+  const dolar = page.getByRole('dialog', { name: 'Dólar' })
+  await dolar.getByRole('button', { name: 'Usar valor manual' }).click()
+  await dolar.getByLabel('US$ 1 em reais').fill('5,50')
+  await dolar.getByRole('button', { name: 'Usar este valor' }).click()
+  await expect(dolar).toHaveCount(0)
   await expect(page.locator('.cst-hero__n')).toHaveText('R$ 1.331')
   await expect(page.locator('.cst-hero__sub')).toContainText('US$ 242')
+  await expect(page.locator('.cst-dolar__origem')).toHaveText(/^Valor manual, \d\d\/\d\d$/)
   await expect(page.locator('.cst-eq__planos')).toContainText('Absolute ZRO Completo')
+
+  // Metas na folha própria.
+  await page.getByRole('button', { name: 'Definir metas' }).click()
+  const metas = page.getByRole('dialog', { name: 'Metas' })
+  await metas.getByLabel('Meta de assinantes').fill('100')
+  await metas.getByRole('button', { name: 'Salvar' }).click()
+  await expect(metas).toHaveCount(0)
 
   // Editar: Claude passa de US$ 200 para US$ 210.
   const linha = (texto: string) => page.locator('.cst-linha').filter({ hasText: texto })
@@ -188,10 +216,35 @@ test('custos: suporte não vê; admin vê o mês, edita um item, cria e apaga ou
   expect(csv.headers()['content-type']).toContain('text/csv')
   expect(await csv.text()).toContain('Anthropic,Claude (desenvolvimento),IA,Max 20x,210.00,USD,Mensal,210.00,1155.00,Ativo')
 
+  // O Banco Central volta: o agendamento (só com o segredo) busca; o manual continua valendo até voltar ao automático.
+  bcb.fora = false
+  expect((await page.request.get('/api/cron/dolar')).status()).toBe(401)
+  const cron = await page.request.get('/api/cron/dolar', { headers: { authorization: 'Bearer segredo-cron-e2e' } })
+  expect(cron.status()).toBe(200)
+  expect(await cron.json()).toMatchObject({ ok: true, venda: 5, fonte: 'bcb-ptax' })
+  await page.reload()
+  await expect(page.locator('.cst-hero__n')).toHaveText('R$ 1.386')
+  await page.locator('.cst-cotacao').click()
+  await expect(dolar.getByText(/^Banco Central: R\$ 5,0000 em \d\d\/\d\d\.$/)).toBeVisible()
+  await dolar.getByRole('button', { name: 'Voltar ao automático' }).click()
+  await expect(dolar).toHaveCount(0)
+  // US$ 252 × 5 (o Claude passou para US$ 210 acima).
+  await expect(page.locator('.cst-hero__n')).toHaveText('R$ 1.260')
+  await expect(page.locator('.cst-dolar__origem')).toHaveText(/^Banco Central, \d\d\/\d\d$/)
+  await expect(page.locator('.cst-cotacao')).toHaveText('R$ 5,00')
+
   const sql = postgres(DB, { max: 1, onnotice: () => {} })
   const logs = await sql`select action from zro.audit_logs where action like 'admin.custo%' order by id`
   await sql.end()
   expect(logs.map((l) => l.action)).toEqual(
-    expect.arrayContaining(['admin.custos_config_alterada', 'admin.custo_alterado', 'admin.custo_criado', 'admin.custo_apagado', 'admin.custos_exportados']),
+    expect.arrayContaining([
+      'admin.custos_config_alterada',
+      'admin.custos_cotacao_manual',
+      'admin.custos_cotacao_automatica',
+      'admin.custo_alterado',
+      'admin.custo_criado',
+      'admin.custo_apagado',
+      'admin.custos_exportados',
+    ]),
   )
-})
+}

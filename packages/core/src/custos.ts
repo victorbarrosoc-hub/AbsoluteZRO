@@ -2,8 +2,9 @@
  * Custos do ecossistema (console /admin/custos, ADR 0028). Quanto custa manter tudo no ar, por mês e por ano.
  *
  * - Conta do mês: item mensal entra pelo valor, anual entra dividido por 12, "por uso" fica à parte ("+ uso").
- * - Moeda: cada item tem a sua (US$ ou R$). A cotação do dólar é do titular, com data; sem cotação, o que precisa de
- *   conversão fica "sem cotação" em vez de virar número inventado.
+ * - Moeda: cada item tem a sua (US$ ou R$). A cotação do dólar vem sozinha do Banco Central (PTAX, `dolar.ts`), com
+ *   data; o titular pode usar um valor manual. Sem cotação, o que precisa de conversão fica "sem cotação" em vez de
+ *   virar número inventado.
  * - Ponto de equilíbrio: preços dos planos publicados (zro.plans) e receita das assinaturas pagas ativas, do banco.
  * - Recomendações: regras fixas sobre os próprios dados. Nada de IA, nada de uso estimado.
  *
@@ -11,6 +12,7 @@
  */
 import type { Queryable } from '@zro/db'
 import { audit, DomainError } from '@zro/observability'
+import { lerEstadoDolar } from './dolar'
 
 export const CUSTO_CATEGORIAS = {
   ia: 'IA',
@@ -56,12 +58,44 @@ export type CustoDados = {
 }
 export type Custo = CustoDados & { id: string; atualizadoEm: string }
 
+/** De onde veio a cotação que vale agora. */
+export type FonteCotacao = 'bcb' | 'manual'
+
 export type CustosConfig = {
+  /** A cotação que vale nas contas (ver `cotacaoQueVale`). */
   cotacao: number | null
   cotacaoEm: string | null
+  cotacaoFonte: FonteCotacao | null
+  /** 'auto' = Banco Central (migração 0030); 'manual' = a digitada no console. */
+  cotacaoModo: 'auto' | 'manual'
+  cotacaoManual: number | null
+  cotacaoManualEm: string | null
+  cotacaoAuto: number | null
+  cotacaoAutoEm: string | null
+  /** Quando o HUB buscou no Banco Central (ISO). */
+  cotacaoAutoBuscadaEm: string | null
+  /** Última falha da busca, se veio depois do último sucesso. */
+  cotacaoAutoErro: string | null
+  cotacaoAutoErroEm: string | null
   metaReceitaMensal: number | null
   metaAssinantes: number | null
   dataAlvo: string | null
+}
+
+export type MetasCustos = Pick<CustosConfig, 'metaReceitaMensal' | 'metaAssinantes' | 'dataAlvo'>
+
+/**
+ * Qual cotação vale: no manual, a digitada; no automático, a do Banco Central e, enquanto ele nunca respondeu, a
+ * digitada (se houver). Sem nenhuma, null: o que precisa de conversão fica "sem cotação".
+ */
+export function cotacaoQueVale(c: Pick<CustosConfig, 'cotacaoModo' | 'cotacaoManual' | 'cotacaoManualEm' | 'cotacaoAuto' | 'cotacaoAutoEm'>): {
+  cotacao: number | null
+  cotacaoEm: string | null
+  cotacaoFonte: FonteCotacao | null
+} {
+  if (c.cotacaoModo === 'auto' && c.cotacaoAuto) return { cotacao: c.cotacaoAuto, cotacaoEm: c.cotacaoAutoEm, cotacaoFonte: 'bcb' }
+  if (c.cotacaoManual) return { cotacao: c.cotacaoManual, cotacaoEm: c.cotacaoManualEm, cotacaoFonte: 'manual' }
+  return { cotacao: null, cotacaoEm: null, cotacaoFonte: null }
 }
 
 /** Valor nas duas moedas; null = precisa da cotação para saber. */
@@ -342,9 +376,16 @@ export function recomendacoes(input: { custos: Custo[]; resumo: ResumoCustos; co
   }
 
   if (resumo.semCotacao)
-    out.push({ id: 'cotacao', tom: 'atencao', titulo: 'Informe a cotação do dólar', detalhe: 'Sem ela, os itens em reais e em dólar não se somam.' })
-  else if (config.cotacaoEm && diasEntre(config.cotacaoEm, hoje) > 30)
-    out.push({ id: 'cotacao-velha', tom: 'info', titulo: 'Cotação do dólar com mais de 30 dias', detalhe: `Informada em ${fmtDiaBR(config.cotacaoEm)}.` })
+    out.push({
+      id: 'cotacao',
+      tom: 'atencao',
+      titulo: 'Sem cotação do dólar',
+      detalhe: 'O Banco Central ainda não respondeu. Dá para usar um valor manual enquanto isso.',
+    })
+  else if (config.cotacaoFonte === 'bcb' && config.cotacaoEm && diasEntre(config.cotacaoEm, hoje) > 5)
+    out.push({ id: 'cotacao-velha', tom: 'info', titulo: 'Dólar do Banco Central sem atualizar', detalhe: `Última cotação de ${fmtDiaBR(config.cotacaoEm)}.` })
+  else if (config.cotacaoFonte === 'manual' && config.cotacaoEm && diasEntre(config.cotacaoEm, hoje) > 30)
+    out.push({ id: 'cotacao-velha', tom: 'info', titulo: 'Cotação manual com mais de 30 dias', detalhe: `Informada em ${fmtDiaBR(config.cotacaoEm)}.` })
 
   return out
 }
@@ -448,18 +489,24 @@ export function lerFormularioCusto(f: Campos, produtosValidos: string[] = []): C
   }
 }
 
-export function lerFormularioConfig(f: Campos): CustosConfig {
-  const cotacao = lerNumero(f.cotacao, 'Cotação', { opcional: true, max: 99, casas: 4 })
+/** Metas (a cotação tem formulário próprio: `lerFormularioCotacao`). */
+export function lerFormularioConfig(f: Campos): MetasCustos {
   const metaAssinantes = lerNumero(f.metaAssinantes, 'Meta de assinantes', { opcional: true, max: 10_000_000 })
   if (metaAssinantes != null && !Number.isInteger(metaAssinantes)) throw new DomainError('invalid_input', 'Meta de assinantes: um número inteiro.')
-  if (cotacao === 0) throw new DomainError('invalid_input', 'Cotação: maior que zero.')
   return {
-    cotacao: cotacao,
-    cotacaoEm: dataOuNull(f.cotacaoEm, 'Data da cotação'),
     metaReceitaMensal: lerNumero(f.metaReceitaMensal, 'Meta de receita', { opcional: true }),
     metaAssinantes,
     dataAlvo: dataOuNull(f.dataAlvo, 'Data-alvo'),
   }
+}
+
+/** O valor manual do dólar: obrigatório, maior que zero, com a data (sem data = hoje de quem chama). */
+export function lerFormularioCotacao(f: Campos, hoje: string): { valor: number; em: string } {
+  const valor = lerNumero(f.cotacao, 'Cotação', { max: 99, casas: 4 })
+  if (!valor) throw new DomainError('invalid_input', 'Cotação: maior que zero.')
+  const em = dataOuNull(f.cotacaoEm, 'Data da cotação') ?? hoje
+  if (em > hoje) throw new DomainError('invalid_input', 'Data da cotação: não pode ser no futuro.')
+  return { valor, em }
 }
 
 // ───────────── banco ─────────────
@@ -508,11 +555,24 @@ export async function listarCustos(tx: Queryable): Promise<Custo[]> {
 export async function lerConfigCustos(tx: Queryable): Promise<CustosConfig> {
   const [r] = await tx`
     select cotacao_usd_brl::text as cotacao, to_char(cotacao_em, 'YYYY-MM-DD') as cotacao_em, meta_receita_mensal::text as meta,
-      meta_assinantes, to_char(data_alvo, 'YYYY-MM-DD') as data_alvo
+      meta_assinantes, to_char(data_alvo, 'YYYY-MM-DD') as data_alvo, cotacao_modo
     from zro.custos_config where id`
+  const auto = await lerEstadoDolar(tx)
+  // Falha antiga (antes do último sucesso) não conta.
+  const falhaValendo = auto.erroEm && (!auto.buscadaEm || auto.erroEm > auto.buscadaEm)
+  const base = {
+    cotacaoModo: auto.modo,
+    cotacaoManual: num(r?.cotacao),
+    cotacaoManualEm: (r?.cotacao_em as string | null) ?? null,
+    cotacaoAuto: auto.auto,
+    cotacaoAutoEm: auto.autoEm,
+    cotacaoAutoBuscadaEm: auto.buscadaEm,
+    cotacaoAutoErro: falhaValendo ? auto.erro : null,
+    cotacaoAutoErroEm: falhaValendo ? auto.erroEm : null,
+  }
   return {
-    cotacao: num(r?.cotacao),
-    cotacaoEm: (r?.cotacao_em as string | null) ?? null,
+    ...cotacaoQueVale(base),
+    ...base,
     metaReceitaMensal: num(r?.meta),
     metaAssinantes: (r?.meta_assinantes as number | null) ?? null,
     dataAlvo: (r?.data_alvo as string | null) ?? null,
@@ -631,22 +691,59 @@ export async function apagarCusto(tx: Queryable, ator: AtorAdmin, id: string): P
   })
 }
 
-export async function salvarConfig(tx: Queryable, ator: AtorAdmin, c: CustosConfig): Promise<void> {
+/** Metas. A cotação não passa por aqui (`salvarCotacaoManual` e `usarCotacaoAutomatica`). */
+export async function salvarConfig(tx: Queryable, ator: AtorAdmin, c: MetasCustos): Promise<void> {
   const antes = await lerConfigCustos(tx)
-  const campos = (Object.keys(c) as (keyof CustosConfig)[]).filter((k) => !igual(antes[k], c[k]))
+  const campos = (['metaReceitaMensal', 'metaAssinantes', 'dataAlvo'] as const).filter((k) => !igual(antes[k], c[k]))
   if (!campos.length) return
   await tx`
-    insert into zro.custos_config (id, cotacao_usd_brl, cotacao_em, meta_receita_mensal, meta_assinantes, data_alvo, atualizado_em, atualizado_por)
-    values (true, ${c.cotacao}, ${c.cotacaoEm}::date, ${c.metaReceitaMensal}, ${c.metaAssinantes}, ${c.dataAlvo}::date, now(), ${ator.userId})
-    on conflict (id) do update set cotacao_usd_brl = excluded.cotacao_usd_brl, cotacao_em = excluded.cotacao_em,
-      meta_receita_mensal = excluded.meta_receita_mensal, meta_assinantes = excluded.meta_assinantes, data_alvo = excluded.data_alvo,
-      atualizado_em = now(), atualizado_por = excluded.atualizado_por`
+    insert into zro.custos_config (id, meta_receita_mensal, meta_assinantes, data_alvo, atualizado_em, atualizado_por)
+    values (true, ${c.metaReceitaMensal}, ${c.metaAssinantes}, ${c.dataAlvo}::date, now(), ${ator.userId})
+    on conflict (id) do update set meta_receita_mensal = excluded.meta_receita_mensal, meta_assinantes = excluded.meta_assinantes,
+      data_alvo = excluded.data_alvo, atualizado_em = now(), atualizado_por = excluded.atualizado_por`
   await audit(tx, {
     actorUserId: ator.userId,
     actorKind: 'admin',
     action: 'admin.custos_config_alterada',
     targetType: 'custos_config',
     metadata: Object.fromEntries(campos.map((k) => [k, { de: antes[k], para: c[k] }])),
+  })
+}
+
+/** "Usar valor manual": grava o valor digitado e passa a valer ele (o automático segue sendo buscado, sem valer). */
+export async function salvarCotacaoManual(tx: Queryable, ator: AtorAdmin, v: { valor: number; em: string }): Promise<void> {
+  const antes = await lerConfigCustos(tx)
+  if (antes.cotacaoModo === 'manual' && antes.cotacaoManual === v.valor && antes.cotacaoManualEm === v.em) return
+  await tx`
+    update zro.custos_config set cotacao_usd_brl = ${v.valor}, cotacao_em = ${v.em}::date, cotacao_modo = 'manual',
+      atualizado_em = now(), atualizado_por = ${ator.userId}
+    where id`
+  await audit(tx, {
+    actorUserId: ator.userId,
+    actorKind: 'admin',
+    action: 'admin.custos_cotacao_manual',
+    targetType: 'custos_config',
+    metadata: {
+      de: { modo: antes.cotacaoModo, cotacao: antes.cotacao, em: antes.cotacaoEm, fonte: antes.cotacaoFonte },
+      para: { modo: 'manual', cotacao: v.valor, em: v.em, fonte: 'manual' },
+    },
+  })
+}
+
+/** "Voltar ao automático": vale de novo o Banco Central. O valor manual fica guardado para a próxima vez. */
+export async function usarCotacaoAutomatica(tx: Queryable, ator: AtorAdmin): Promise<void> {
+  const antes = await lerConfigCustos(tx)
+  if (antes.cotacaoModo === 'auto') return
+  await tx`update zro.custos_config set cotacao_modo = 'auto', atualizado_em = now(), atualizado_por = ${ator.userId} where id`
+  await audit(tx, {
+    actorUserId: ator.userId,
+    actorKind: 'admin',
+    action: 'admin.custos_cotacao_automatica',
+    targetType: 'custos_config',
+    metadata: {
+      de: { modo: 'manual', cotacao: antes.cotacao, em: antes.cotacaoEm },
+      para: { modo: 'auto', cotacao: antes.cotacaoAuto, em: antes.cotacaoAutoEm },
+    },
   })
 }
 

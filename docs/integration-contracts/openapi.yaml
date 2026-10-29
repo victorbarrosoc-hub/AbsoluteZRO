@@ -24,6 +24,7 @@ components:
     appToken: { type: http, scheme: bearer, bearerFormat: JWT, description: 'Access token do login único (at+jwt) de um app da família, com o escopo da rota.' }
     appClient: { type: http, scheme: basic, description: 'client_id:client_secret de um app confidencial da família (só onde a rota diz).' }
     providerSignature: { type: apiKey, in: header, name: zro-signature, description: 't=<unix>,v1=<hex HMAC-SHA256 de "t.corpo">' }
+    cronSecret: { type: http, scheme: bearer, description: 'CRON_SECRET do projeto na Vercel (só o agendamento da própria Vercel manda).' }
   schemas:
     Error:
       type: object
@@ -41,6 +42,19 @@ security: [{ session: [] }]
 paths:
   /api/health:
     get: { security: [], summary: Saúde do HUB e do banco, responses: { '200': { description: ok }, '503': { description: banco indisponível } } }
+  /api/cron/dolar:
+    get:
+      {
+        security: [{ cronSecret: [] }],
+        summary: 'Agendamento diário: dólar PTAX (venda) do Banco Central para os Custos (migração 0030)',
+        responses:
+          {
+            '200': { description: 'cotação gravada (venda, data, fonte bcb-ptax)' },
+            '401': { description: sem o CRON_SECRET certo },
+            '502': { description: 'Banco Central fora do ar (o último valor continua)' },
+            '503': { description: CRON_SECRET não configurado },
+          },
+      }
   /api/v1/auth/signup:
     post:
       {

@@ -1,14 +1,18 @@
 // Custos do ecossistema (ADR 0028): a conta do mês e do ano (anual ÷ 12, por uso à parte, duas moedas), a projeção de
 // 12 meses, o ponto de equilíbrio com os planos publicados, as recomendações por regra, o formulário, a planilha e, no
 // banco, os itens iniciais, o isolamento (zro_app não lê nem grava) e a auditoria de cada mudança.
+import http from 'node:http'
+import type { AddressInfo } from 'node:net'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   apagarCusto,
+  atualizarDolar,
   converterMoeda,
   custosCsv,
   dadosFinanceiros,
   lerConfigCustos,
   lerFormularioConfig,
+  lerFormularioCotacao,
   lerFormularioCusto,
   listarCustos,
   mensalDoItem,
@@ -19,17 +23,34 @@ import {
   recomendacoes,
   resumoCustos,
   salvarConfig,
+  salvarCotacaoManual,
   salvarCusto,
   somarDinheiro,
+  usarCotacaoAutomatica,
   type Custo,
   type CustosConfig,
 } from '@zro/core'
-import type { Database } from '@zro/db'
-import { testDatabase } from '@zro/db/testing'
+import { getDatabase, type Database } from '@zro/db'
+import { TEST_DATABASE_URL, testDatabase } from '@zro/db/testing'
 import { admin, expectCode, newOrgWithOwner, newUser } from './helpers'
 
 const HOJE = '2026-10-29'
-const SEM_CONFIG: CustosConfig = { cotacao: null, cotacaoEm: null, metaReceitaMensal: null, metaAssinantes: null, dataAlvo: null }
+const SEM_CONFIG: CustosConfig = {
+  cotacao: null,
+  cotacaoEm: null,
+  cotacaoFonte: null,
+  cotacaoModo: 'auto',
+  cotacaoManual: null,
+  cotacaoManualEm: null,
+  cotacaoAuto: null,
+  cotacaoAutoEm: null,
+  cotacaoAutoBuscadaEm: null,
+  cotacaoAutoErro: null,
+  cotacaoAutoErroEm: null,
+  metaReceitaMensal: null,
+  metaAssinantes: null,
+  dataAlvo: null,
+}
 
 let n = 0
 function custo(p: Partial<Custo>): Custo {
@@ -201,7 +222,7 @@ describe('recomendações por regra', () => {
       custo({ fornecedor: 'Velho', item: 'X', valor: 1, conferidoEm: '2026-01-01' }),
     ]
     const resumo = resumoCustos(itens, { cotacao: 5 }, HOJE)
-    const r = recomendacoes({ custos: itens, resumo, config: { ...SEM_CONFIG, cotacao: 5, cotacaoEm: HOJE }, dados, hoje: HOJE })
+    const r = recomendacoes({ custos: itens, resumo, config: { ...SEM_CONFIG, cotacao: 5, cotacaoEm: HOJE, cotacaoFonte: 'bcb' }, dados, hoje: HOJE })
     const t = Object.fromEntries(r.map((x) => [x.id.replace(/-[0-9a-f-]{36}$/, ''), x]))
     expect(t.anual!.titulo).toBe('Vercel · Pro: no anual, economiza US$ 40 por ano')
     expect(t['sem-teto']!.titulo).toBe('1 item cobra por uso sem teto')
@@ -252,12 +273,15 @@ describe('formulário e planilha', () => {
     expect(() => lerFormularioCusto({ ...base, link: 'http://x' })).toThrow('https://')
     expect(() => lerFormularioCusto({ ...base, produtos: 'outro' }, ['synquei'])).toThrow('App desconhecido')
     expect(() => lerFormularioCusto({ ...base, comecaEm: '2026-11-01', terminaEm: '2026-10-01' })).toThrow('Termina antes')
-    expect(() => lerFormularioConfig({ cotacao: '0' })).toThrow('Cotação')
-    expect(lerFormularioConfig({ cotacao: '5,4321', metaAssinantes: '100', dataAlvo: '2027-06-30' })).toMatchObject({
-      cotacao: 5.4321,
+    expect(lerFormularioConfig({ cotacao: '5,4321', metaAssinantes: '100', dataAlvo: '2027-06-30' })).toEqual({
+      metaReceitaMensal: null,
       metaAssinantes: 100,
       dataAlvo: '2027-06-30',
     })
+    expect(() => lerFormularioCotacao({ cotacao: '0' }, HOJE)).toThrow('Cotação')
+    expect(() => lerFormularioCotacao({ cotacao: '' }, HOJE)).toThrow('Cotação')
+    expect(() => lerFormularioCotacao({ cotacao: '5,1', cotacaoEm: '2026-10-30' }, HOJE)).toThrow('futuro')
+    expect(lerFormularioCotacao({ cotacao: '5,4321' }, HOJE)).toEqual({ valor: 5.4321, em: HOJE })
   })
 
   it('planilha com BOM, cabeçalho, R$ convertido e sem fórmula', () => {
@@ -335,8 +359,8 @@ describe('no banco', () => {
       db.asSystem('teste', (tx) => apagarCusto(tx, ator, id)),
       'not_found',
     )
-    await db.asSystem('teste', (tx) => salvarConfig(tx, ator, { ...SEM_CONFIG, cotacao: 5.4, cotacaoEm: HOJE, metaAssinantes: 50 }))
-    expect(await db.asSystem('teste', (tx) => lerConfigCustos(tx))).toMatchObject({ cotacao: 5.4, cotacaoEm: HOJE, metaAssinantes: 50 })
+    await db.asSystem('teste', (tx) => salvarConfig(tx, ator, { ...SEM_CONFIG, metaAssinantes: 50 }))
+    expect(await db.asSystem('teste', (tx) => lerConfigCustos(tx))).toMatchObject({ cotacao: null, metaAssinantes: 50 })
 
     const logs = await db.sql`
       select action, actor_user_id, actor_kind, target_id, metadata from zro.audit_logs
@@ -345,7 +369,7 @@ describe('no banco', () => {
     expect(logs.every((l) => l.actor_kind === 'admin')).toBe(true)
     expect(logs[1]!.metadata).toMatchObject({ item: 'Auditoria', campos: ['valor', 'observacao'], valor: { de: 10, para: 12 } })
     expect(JSON.stringify(logs[1]!.metadata)).not.toContain('nova')
-    expect(logs[3]!.metadata).toMatchObject({ cotacao: { de: null, para: 5.4 }, metaAssinantes: { de: null, para: 50 } })
+    expect(logs[3]!.metadata).toEqual({ metaAssinantes: { de: null, para: 50 } })
     await db.asSystem('teste', (tx) => salvarConfig(tx, ator, SEM_CONFIG))
   })
 
@@ -363,6 +387,94 @@ describe('no banco', () => {
     expect(depois.receita.mensalBRL).toBeCloseTo(antes.receita.mensalBRL + 149.9)
     expect(depois.contasAtivas).toBeGreaterThan(0)
     await db.sql`delete from zro.subscriptions where org_id = ${org.orgId} and provider in ('manual', 'stripe')`
+  })
+
+  it('dólar automático: grava a PTAX, falha mantém o último valor, valor manual e volta ao automático na auditoria', async () => {
+    // Banco Central falso: 28/10 tem PTAX; depois sai do ar.
+    let fora = false
+    const bcb = http.createServer((req, res) => {
+      if (fora) return void res.writeHead(500).end()
+      const dia = decodeURIComponent(req.url ?? '').match(/'(\d{2}-\d{2}-\d{4})'/)?.[1]
+      res.writeHead(200, { 'content-type': 'application/json' })
+      res.end(JSON.stringify({ value: dia === '10-28-2026' ? [{ cotacaoVenda: 5.342, dataHoraCotacao: '2026-10-28 13:05:31.600' }] : [] }))
+    })
+    await new Promise<void>((ok) => bcb.listen(0, '127.0.0.1', ok))
+    const base = `http://127.0.0.1:${(bcb.address() as AddressInfo).port}`
+    const ator = { userId: adminId }
+    const ler = () => db.asSystem('teste', (tx) => lerConfigCustos(tx))
+    try {
+      // 29/10 às 12 h em Fortaleza: a PTAX do dia ainda não saiu, vale a de 28/10.
+      const r = await atualizarDolar(db, { base, agora: new Date('2026-10-29T15:00:00Z') })
+      expect(r).toMatchObject({ ok: true, cotacao: { venda: 5.342, data: '2026-10-28' } })
+      expect(await ler()).toMatchObject({ cotacao: 5.342, cotacaoEm: '2026-10-28', cotacaoFonte: 'bcb', cotacaoModo: 'auto', cotacaoAutoErro: null })
+      // Busca recente: sem forçar, a página não pede de novo.
+      expect(await atualizarDolar(db, { base })).toEqual({ ok: true, pulado: true })
+
+      // Banco Central fora do ar: o último valor continua, com a data dele, e a falha fica anotada.
+      fora = true
+      const f = await atualizarDolar(db, { base, forcar: true })
+      expect(f.ok).toBe(false)
+      const cfg = await ler()
+      expect(cfg).toMatchObject({ cotacao: 5.342, cotacaoEm: '2026-10-28', cotacaoFonte: 'bcb' })
+      expect(cfg.cotacaoAutoErro).toContain('500')
+      expect(cfg.cotacaoAutoErroEm).not.toBeNull()
+
+      // "Usar valor manual": vale o digitado; o automático segue guardado.
+      await db.asSystem('teste', (tx) => salvarCotacaoManual(tx, ator, { valor: 5.5, em: '2026-10-29' }))
+      await db.asSystem('teste', (tx) => salvarCotacaoManual(tx, ator, { valor: 5.5, em: '2026-10-29' })) // igual: sem linha nova
+      expect(await ler()).toMatchObject({ cotacao: 5.5, cotacaoEm: '2026-10-29', cotacaoFonte: 'manual', cotacaoModo: 'manual', cotacaoAuto: 5.342 })
+      // O agendamento não passa por cima do manual.
+      fora = false
+      await atualizarDolar(db, { base, forcar: true, agora: new Date('2026-10-29T15:00:00Z') })
+      expect(await ler()).toMatchObject({ cotacao: 5.5, cotacaoFonte: 'manual', cotacaoAutoErro: null })
+      // "Voltar ao automático".
+      await db.asSystem('teste', (tx) => usarCotacaoAutomatica(tx, ator))
+      await db.asSystem('teste', (tx) => usarCotacaoAutomatica(tx, ator)) // já está: sem linha nova
+      expect(await ler()).toMatchObject({ cotacao: 5.342, cotacaoFonte: 'bcb', cotacaoModo: 'auto', cotacaoManual: 5.5 })
+
+      const logs = await db.sql`
+        select action, actor_kind, metadata from zro.audit_logs
+        where action like 'admin.custos_cotacao%' and actor_user_id = ${adminId} order by id`
+      expect(logs.map((l) => l.action)).toEqual(['admin.custos_cotacao_manual', 'admin.custos_cotacao_automatica'])
+      expect(logs[0]!.metadata).toMatchObject({ de: { modo: 'auto', cotacao: 5.342, fonte: 'bcb' }, para: { modo: 'manual', cotacao: 5.5, em: '2026-10-29' } })
+      expect(logs[1]!.metadata).toMatchObject({ de: { modo: 'manual', cotacao: 5.5 }, para: { modo: 'auto', cotacao: 5.342 } })
+
+      // O agendamento de verdade (rota), com o segredo certo, grava pelo banco do HUB.
+      process.env.CRON_SECRET = 'segredo-de-teste'
+      process.env.ZRO_PTAX_URL = base
+      process.env.DATABASE_URL ||= TEST_DATABASE_URL
+      const { GET } = await import('../../apps/hub-web/app/api/cron/dolar/route')
+      const res = await GET(new Request('http://hub/api/cron/dolar', { headers: { authorization: 'Bearer segredo-de-teste' } }))
+      // Hoje de verdade: o falso só tem 28/10, então pode responder 502 (dez dias vazios) ou 200 se 28/10 couber.
+      expect([200, 502]).toContain(res.status)
+      fora = true
+      const caiu = await GET(new Request('http://hub/api/cron/dolar', { headers: { authorization: 'Bearer segredo-de-teste' } }))
+      expect(caiu.status).toBe(502)
+      expect(await ler()).toMatchObject({ cotacao: 5.342, cotacaoFonte: 'bcb' })
+    } finally {
+      delete process.env.CRON_SECRET
+      delete process.env.ZRO_PTAX_URL
+      await getDatabase()
+        .close()
+        .catch(() => {})
+      bcb.closeAllConnections()
+      await new Promise<void>((ok) => bcb.close(() => ok()))
+      // Volta ao estado de fábrica (os outros testes contam com a configuração vazia).
+      await db.sql`update zro.custos_config set cotacao_usd_brl = null, cotacao_em = null, cotacao_modo = 'auto', cotacao_auto = null,
+        cotacao_auto_em = null, cotacao_auto_fonte = null, cotacao_auto_buscada_em = null, cotacao_auto_erro = null, cotacao_auto_erro_em = null`
+    }
+  })
+
+  it('zro_app continua sem ver nem gravar o dólar automático', async () => {
+    const pessoa = await newOrgWithOwner(db, 'custos-dolar-rls')
+    await expect(db.asUser({ userId: pessoa.userId, orgId: pessoa.orgId }, (tx) => tx`select cotacao_auto from zro.custos_config`)).rejects.toMatchObject({
+      code: '42501',
+    })
+    await expect(
+      db.asUser({ userId: pessoa.userId, orgId: pessoa.orgId }, (tx) => tx`update zro.custos_config set cotacao_modo = 'manual'`),
+    ).rejects.toMatchObject({ code: '42501' })
+    // Valor automático sem data/fonte não entra nem pelo sistema.
+    await expect(db.sql`update zro.custos_config set cotacao_auto = 5`).rejects.toMatchObject({ code: '23514' })
   })
 
   it('pessoa comum não chega às funções do console (requirePlatformAdmin)', async () => {

@@ -1,11 +1,14 @@
 import type { Metadata } from 'next'
 import type { CSSProperties } from 'react'
 import { notFound } from 'next/navigation'
+import { after } from 'next/server'
 import {
+  atualizarDolar,
   CUSTO_CATEGORIAS,
   CUSTO_ESTADOS,
   CUSTO_PERIODICIDADES,
   dadosFinanceiros,
+  dolarPrecisaAtualizar,
   fmtDiaBR,
   fmtMoeda,
   hojeNoFuso,
@@ -22,6 +25,7 @@ import {
 } from '@zro/core'
 import { ContaAte } from '@/components/admin/custos/conta-ate'
 import { ConfigCustos } from '@/components/admin/custos/config'
+import { DolarCustos } from '@/components/admin/custos/dolar'
 import { PorFornecedor, Progresso, Projecao, Rosca } from '@/components/admin/custos/graficos'
 import { CustosItens, type ItemVista } from '@/components/admin/custos/itens'
 import { db, getAuth } from '@/lib/session'
@@ -59,6 +63,9 @@ export default async function Custos() {
     produtos: (await tx`select id, name from zro.products order by step_order`).map((p) => ({ id: p.id as string, name: p.name as string })),
   }))
   const hoje = hojeNoFuso()
+  // Dólar do Banco Central com mais de 24 h: busca depois de responder (a página não espera). O próximo acesso já vê.
+  if (dolarPrecisaAtualizar({ buscadaEm: d.config.cotacaoAutoBuscadaEm, erroEm: d.config.cotacaoAutoErroEm }))
+    after(() => atualizarDolar(db()).then(() => undefined))
   const resumo = resumoCustos(d.custos, d.config, hoje)
   const recs = recomendacoes({ custos: d.custos, resumo, config: d.config, dados: d.fin, hoje })
   const equilibrio = pontoDeEquilibrio(resumo.mensal.brl, d.fin.planos)
@@ -69,9 +76,6 @@ export default async function Custos() {
   const mensalPrincipal = resumo.mensal.brl ?? resumo.mensal.usd
   const moedaPrincipal = resumo.mensal.brl != null ? 'BRL' : 'USD'
   const anualPrincipal = moedaPrincipal === 'BRL' ? resumo.anual.brl : resumo.anual.usd
-  const cotacaoTexto = d.config.cotacao
-    ? `US$ 1 = ${fmtMoeda(d.config.cotacao, 'BRL').replace(/(,\d\d)\d+$/, '$1')}${d.config.cotacaoEm ? ` · ${fmtDiaBR(d.config.cotacaoEm).slice(0, 5)}` : ''}`
-    : 'Informar cotação do dólar'
   const cobertura = resumo.mensal.brl && resumo.mensal.brl > 0 ? d.fin.receita.mensalBRL / resumo.mensal.brl : null
 
   return (
@@ -103,10 +107,8 @@ export default async function Custos() {
             </span>
           </div>
           <div className="kpi" style={{ '--i': 2 } as CSSProperties}>
-            <span className="kpi__label">Dólar</span>
-            <ConfigCustos config={d.config} hoje={hoje} className="cst-cotacao">
-              {cotacaoTexto}
-            </ConfigCustos>
+            <span className="kpi__label">Dólar hoje</span>
+            <DolarCustos config={d.config} hoje={hoje} />
             {resumo.aConferir > 0 && (
               <a className="kpi__hint cst-conferir" href="#lista">
                 {resumo.aConferir} {resumo.aConferir === 1 ? 'item' : 'itens'} a conferir
@@ -149,12 +151,7 @@ export default async function Custos() {
             Ponto de equilíbrio <span className="adm-card__aside">assinantes por plano</span>
           </h2>
           {resumo.mensal.brl == null ? (
-            <p className="adm-empty">
-              Informe a cotação para comparar com os planos.{' '}
-              <ConfigCustos config={d.config} hoje={hoje}>
-                Informar
-              </ConfigCustos>
-            </p>
+            <p className="adm-empty">Sem cotação do dólar, não dá para comparar com os planos ainda.</p>
           ) : equilibrio.length ? (
             <ul className="cst-eq__planos">
               {equilibrio.map((p, i) => (
@@ -215,12 +212,10 @@ export default async function Custos() {
                   </strong>
                 </div>
               )}
-              <ConfigCustos config={d.config} hoje={hoje}>
-                Mudar metas
-              </ConfigCustos>
+              <ConfigCustos config={d.config}>Mudar metas</ConfigCustos>
             </div>
           ) : (
-            <ConfigCustos config={d.config} hoje={hoje} className="glass-btn cst-btn cst-eq__definir">
+            <ConfigCustos config={d.config} className="glass-btn cst-btn cst-eq__definir">
               Definir metas
             </ConfigCustos>
           )}
