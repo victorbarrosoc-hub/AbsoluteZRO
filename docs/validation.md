@@ -2460,5 +2460,8 @@ do Freela e HUB não convertem. `npm run format:check` e `node scripts/scan-secr
   2.8.54 / v69, corrigido, 9/9) e o limitador de metadados (tempo, 2,002 × 2; passa sozinho, sem relação com o Relay).
   `test/relay.test.js` 8/8 e `test/relay-celular.test.js` 1/1 (Chromium com a CSP do app, Drive por pedaços, AAC).
   Site: `npm run lint`, `typecheck` e `npm test` (291) ok.
-- HUB: migration `0031_relay.sql`; `npm run lint`, `typecheck` ok; `npm test` 328 com 2 falhas que contavam os produtos
-  dos planos e as etapas do projeto, atualizadas (billing e core 41/41).
+- HUB: migration `0031_relay.sql`; `npm test` 328 com 2 falhas que contavam os produtos dos planos e as etapas do
+  projeto, atualizadas (billing e core 41/41). Depois de juntar o `main`: `format:check`, `lint`, `typecheck`, `npm test`
+  **340/340** e `build` ok; e2e 38/41: o Ciclo do O passa a ter 9 etapas (teste atualizado, Relay indisponível); os
+  dois testes de WebKit do esqueleto (vindos do `main`) não rodam aqui (WebKit não instalado neste ambiente); o
+  "Escolha seu @" do SSO do Carro falhou uma vez e passa sozinho (tempo).
