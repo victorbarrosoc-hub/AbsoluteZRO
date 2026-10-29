@@ -78,6 +78,41 @@ Postgres 16 próprio, build de produção local.
   computador/celular, folha de edição) fora do repositório.
 - Não verificado: os valores "a conferir" nas páginas dos fornecedores e a migration `0028` no banco de produção.
 
+## Automáticos: dólar nos Custos e combustível no Maestro (29/10/2026)
+
+Postgres 16 próprio, Banco Central e ANP falsos (servidores locais); nada de rede nos testes. Fontes conferidas à mão
+neste ambiente: PTAX de 28/10/2026 = venda 5,342 (Olinda); planilha `resumo_semanal_lpc_2026_10_18-2026_10_24.xlsx`
+(abas CAPITAIS, MUNICIPIOS, ESTADOS, REGIOES e BRASIL, ~460 municípios) na página "últimas semanas pesquisadas".
+
+- HUB `tests/integration/dolar.test.ts` (11): leitura da resposta (4 casas, último boletim do dia, vazio = null,
+  formato estranho e preço fora da faixa = erro), URL do Olinda, volta de segunda-feira de feriado até a sexta (4
+  pedidos, datas conferidas), dia útil com um pedido, HTTP 503 interrompe, 10 dias vazios = erro, servidor mudo estoura
+  o tempo, regra das 24 h e da espera de 1 h depois de falha, `GET /api/cron/dolar` com 503 sem `CRON_SECRET` e 401
+  com segredo errado ou sem `Bearer` (sem pedido ao Banco Central).
+- HUB `tests/integration/custos.test.ts` (+2, 20): no banco, grava a PTAX (29/10 antes das 13 h vale 28/10), busca
+  recente não repete, Banco Central fora mantém o valor e anota a falha, "Usar valor manual" vale e não é sobrescrito
+  pelo agendamento, "Voltar ao automático", repetição sem linha nova, auditoria com de → para, a rota com o segredo
+  certo (200/502) e `zro_app` sem ver nem gravar as colunas novas (42501); valor automático sem data/fonte barrado
+  (23514). Metas e cotação com formulários separados. Raiz `npm test` **304/304** em 36 arquivos.
+- Maestro `tests/deslocamento.test.mts` (10) e `tests/combustivel.test.mts` (8): planilha no desenho real (municípios,
+  estados, Brasil; aditivada, diesel S500, estado desconhecido, preço zero e outra semana fora; repetido vale o
+  primeiro), link da semana mais nova com nomes bagunçados e só do mesmo site, linha "L de etanol"; no banco, o
+  agendamento com 503/401/200, repetir não duplica (13 linhas), município → estado → Brasil (inclusive cidade com
+  apóstrofo e cidade de outro estado com o mesmo nome), as duas organizações leem o mesmo e `maestro_app` não grava,
+  muda nem apaga (42501), 10 semanas coletadas ficam 8, ANP fora = 502 com as semanas guardadas, coleta de reserva só
+  com semana velha e uma vez por hora; `cache_combustivel` removida. Maestro `npm test` **357/357**.
+- E2E HUB `tests/e2e/admin.spec.ts` (custos) com o Banco Central falso: fora do ar → "Usar valor manual" (R$ 1.331),
+  metas na folha própria, agendamento 401/200, manual continua valendo, "Voltar ao automático" (R$ 1.260, "Banco
+  Central, dd/mm"), auditoria; `admin.spec.ts` + `a11y.spec.ts` **7/7**. E2E Maestro `produtora.spec.ts` (computador)
+  **7/7**, com o combustível automático: agendamento 401/200, gasolina de São Paulo/SP, etanol caindo no Brasil, R$ por
+  km e total, preço digitado que fica no orçamento ao fechar e abrir, "Usar o da ANP" e a linha "L de etanol".
+- Root e Maestro: lint, formatação, tipos e build ok; `node scripts/scan-secrets.mjs` sem segredos. Capturas com dados
+  reais (PTAX de 29/10 = 5,3744; ANP 18–24/10: São Paulo gasolina 6,33) em claro/escuro, computador/celular, fora do
+  repositório. Coleta real da ANP: 1.290 linhas na semana.
+- Não verificado: o Vercel Cron de verdade (precisa de `CRON_SECRET` no `absolutezro`) e as migrações `0030`/`0022` em
+  produção; o e2e do Maestro no iPhone e no WebKit (o editor só roda no computador; o detector de corte não abre a
+  calculadora).
+
 ## E-mails da central com cara de e-mail de conta (29/10/2026)
 
 - Convite caiu em Promoções no Gmail (SPF, DKIM e DMARC conferidos no DNS: ok). `apps/hub-web/lib/email/modelos.ts`

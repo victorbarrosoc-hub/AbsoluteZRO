@@ -1,133 +1,22 @@
 // Calculadora de deslocamento (porte do ZRO, generalizada): contas, a linha do orçamento, a leitura do Photon e do
-// OSRM e a planilha semanal da ANP (capital da UF ou média do estado) num .xlsx de exemplo montado aqui. Nada de rede:
-// os serviços abertos ficam desligados sem MAESTRO_SERVICOS_ABERTOS=1.
+// OSRM e a planilha semanal da ANP (municípios, estados e Brasil; gasolina, etanol e diesel S10) num .xlsx de mentira
+// no desenho da de verdade (tests/anp-fixture.mts). Nada de rede aqui; o banco e o agendamento ficam em
+// combustivel.test.mts.
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { crc32, deflateRawSync } from "node:zlib";
-import { calcularDeslocamento, dataDoExcel, linhaDeDeslocamento, lugaresDoPhoton, precoNaPlanilha, rotaDoOsrm } from "../src/lib/orcamento/deslocamento";
+import {
+  calcularDeslocamento,
+  chaveDoMunicipio,
+  dataDoExcel,
+  linhaDeDeslocamento,
+  linkDaPlanilhaSemanal,
+  lugaresDoPhoton,
+  rotaDoOsrm,
+  rotuloDoPreco,
+  semanaDaPlanilha,
+} from "../src/lib/orcamento/deslocamento";
 import { lerZip } from "../src/lib/orcamento/zip";
-
-/** Zip mínimo (deflate) para o teste: o mesmo formato que a ANP publica. */
-function zip(arquivos: Record<string, string>): Buffer {
-  const locais: Buffer[] = [];
-  const centrais: Buffer[] = [];
-  let pos = 0;
-  for (const [nome, texto] of Object.entries(arquivos)) {
-    const dados = Buffer.from(texto, "utf8");
-    const comp = deflateRawSync(dados);
-    const n = Buffer.from(nome, "utf8");
-    const l = Buffer.alloc(30);
-    l.writeUInt32LE(0x04034b50, 0);
-    l.writeUInt16LE(20, 4);
-    l.writeUInt16LE(8, 8);
-    l.writeUInt32LE(crc32(dados), 14);
-    l.writeUInt32LE(comp.length, 18);
-    l.writeUInt32LE(dados.length, 22);
-    l.writeUInt16LE(n.length, 26);
-    locais.push(l, n, comp);
-    const c = Buffer.alloc(46);
-    c.writeUInt32LE(0x02014b50, 0);
-    c.writeUInt16LE(20, 4);
-    c.writeUInt16LE(20, 6);
-    c.writeUInt16LE(8, 10);
-    c.writeUInt32LE(crc32(dados), 16);
-    c.writeUInt32LE(comp.length, 20);
-    c.writeUInt32LE(dados.length, 24);
-    c.writeUInt16LE(n.length, 28);
-    c.writeUInt32LE(pos, 42);
-    centrais.push(c, n);
-    pos += 30 + n.length + comp.length;
-  }
-  const dir = Buffer.concat(centrais);
-  const fim = Buffer.alloc(22);
-  fim.writeUInt32LE(0x06054b50, 0);
-  fim.writeUInt16LE(Object.keys(arquivos).length, 8);
-  fim.writeUInt16LE(Object.keys(arquivos).length, 10);
-  fim.writeUInt32LE(dir.length, 12);
-  fim.writeUInt32LE(pos, 16);
-  return Buffer.concat([...locais, dir, fim]);
-}
-
-const linha = (r: number, celulas: [string, string | number, boolean?][]) =>
-  `<row r="${r}">${celulas.map(([c, v, s]) => (s ? `<c r="${c}${r}" t="s"><v>${v}</v></c>` : `<c r="${c}${r}"><v>${v}</v></c>`)).join("")}</row>`;
-
-/** Planilha de exemplo: aba CAPITAIS (desenho fixo, sem cabeçalho) e ESTADOS (com cabeçalho). Valores inventados. */
-function planilha() {
-  const textos = [
-    "RIO GRANDE DO NORTE",
-    "NATAL",
-    "GASOLINA COMUM",
-    "ETANOL HIDRATADO",
-    "SÃO PAULO",
-    "DATA INICIAL",
-    "DATA FINAL",
-    "REGIÃO",
-    "ESTADO",
-    "PRODUTO",
-    "NÚMERO DE POSTOS PESQUISADOS",
-    "PREÇO MÉDIO REVENDA",
-    "SUDESTE",
-    "NORDESTE",
-  ];
-  const s = (t: string) => textos.indexOf(t);
-  const capitais = [
-    linha(10, [
-      ["A", 46310],
-      ["B", 46316],
-      ["C", s("RIO GRANDE DO NORTE"), true],
-      ["D", s("NATAL"), true],
-      ["E", s("ETANOL HIDRATADO"), true],
-      ["F", 40],
-      ["H", 4.59],
-    ]),
-    linha(11, [
-      ["A", 46310],
-      ["B", 46316],
-      ["C", s("RIO GRANDE DO NORTE"), true],
-      ["D", s("NATAL"), true],
-      ["E", s("GASOLINA COMUM"), true],
-      ["F", 52],
-      ["H", 6.493],
-    ]),
-  ].join("");
-  const estados = [
-    linha(9, [
-      ["A", s("DATA INICIAL"), true],
-      ["B", s("DATA FINAL"), true],
-      ["C", s("REGIÃO"), true],
-      ["D", s("ESTADO"), true],
-      ["E", s("PRODUTO"), true],
-      ["F", s("NÚMERO DE POSTOS PESQUISADOS"), true],
-      ["G", s("PREÇO MÉDIO REVENDA"), true],
-    ]),
-    linha(10, [
-      ["A", 46310],
-      ["B", 46316],
-      ["C", s("SUDESTE"), true],
-      ["D", s("SÃO PAULO"), true],
-      ["E", s("GASOLINA COMUM"), true],
-      ["F", 1200],
-      ["G", 6.11],
-    ]),
-    linha(11, [
-      ["A", 46310],
-      ["B", 46316],
-      ["C", s("NORDESTE"), true],
-      ["D", s("RIO GRANDE DO NORTE"), true],
-      ["E", s("GASOLINA COMUM"), true],
-      ["F", 300],
-      ["G", 6.55],
-    ]),
-  ].join("");
-  return zip({
-    "[Content_Types].xml": "<Types/>",
-    "xl/workbook.xml": `<workbook><sheets><sheet name="CAPITAIS" sheetId="1" r:id="rId1"/><sheet name="ESTADOS" sheetId="2" r:id="rId2"/></sheets></workbook>`,
-    "xl/_rels/workbook.xml.rels": `<Relationships><Relationship Id="rId1" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Target="/xl/worksheets/sheet2.xml"/></Relationships>`,
-    "xl/sharedStrings.xml": `<sst>${textos.map((t) => `<si><t>${t}</t></si>`).join("")}</sst>`,
-    "xl/worksheets/sheet1.xml": `<worksheet><sheetData>${capitais}</sheetData></worksheet>`,
-    "xl/worksheets/sheet2.xml": `<worksheet><sheetData>${estados}</sheetData></worksheet>`,
-  });
-}
+import { paginaAnp, planilhaAnp } from "./anp-fixture.mts";
 
 describe("contas", () => {
   test("rodagem, litros e custo: ida e volta × viagens, com pedágio", () => {
@@ -187,32 +76,77 @@ describe("serviços abertos (só a leitura das respostas)", () => {
     assert.equal(rotaDoOsrm({ code: "Ok", routes: [{}] }), null);
   });
 
-  test("ANP: o .xlsx abre pelo zip do Node; capital da UF e média do estado", () => {
-    assert.equal(dataDoExcel("46310"), "2026-10-15");
-    const xlsx = lerZip(planilha(), (n) => n.startsWith("xl/"));
-    assert.equal(Object.keys(xlsx).length, 5);
-    const natal = precoNaPlanilha(xlsx, "RN", "Natal", new Date("2026-10-28T12:00:00Z"));
-    assert.deepEqual(natal, {
-      litroCents: 649,
-      inicio: "2026-10-15",
-      fim: "2026-10-21",
-      postos: 52,
-      base: "capital",
-      onde: "Natal, RN",
-      buscadoEm: "2026-10-28T12:00:00.000Z",
-    });
-    const mossoro = precoNaPlanilha(xlsx, "RN", "Mossoró");
-    assert.equal(mossoro?.base, "estado");
-    assert.equal(mossoro?.litroCents, 655);
-    assert.equal(mossoro?.onde, "Rio Grande do Norte");
-    // Capital sem linha na aba de capitais: cai na média do estado (com cabeçalho, coluna G).
-    const sp = precoNaPlanilha(xlsx, "SP", "São Paulo");
-    assert.deepEqual([sp?.base, sp?.litroCents, sp?.postos], ["estado", 611, 1200]);
-    assert.equal(precoNaPlanilha(xlsx, "AM", null), null, "UF fora da planilha");
-    assert.equal(precoNaPlanilha(xlsx, "XX", null), null);
-  });
-
   test("zip estragado não abre", () => {
     assert.throws(() => lerZip(Buffer.from("não é zip"), () => true));
+  });
+});
+
+describe("ANP: a planilha semanal", () => {
+  const xlsx = () => lerZip(planilhaAnp(), (n) => n.startsWith("xl/"));
+
+  test("datas do Excel e dd/mm/aaaa", () => {
+    assert.equal(dataDoExcel("46313"), "2026-10-18");
+    assert.equal(dataDoExcel("18/10/2026"), "2026-10-18");
+    assert.equal(dataDoExcel(""), "");
+    assert.equal(dataDoExcel("abc"), "");
+  });
+
+  test("município, estado e Brasil; só gasolina comum, etanol e diesel S10; datas das células", () => {
+    const s = semanaDaPlanilha(xlsx());
+    assert.ok(s);
+    assert.equal(s.semana, "2026-10-18");
+    assert.equal(s.semanaFim, "2026-10-24");
+    const achar = (uf: string, municipio: string, c: string) => s.linhas.find((l) => l.uf === uf && l.municipio === municipio && l.combustivel === c);
+    assert.deepEqual(achar("RN", "NATAL", "gasolina"), { uf: "RN", municipio: "NATAL", combustivel: "gasolina", preco: 6.493, postos: 52 });
+    assert.equal(achar("RN", "NATAL", "etanol")?.preco, 5.19);
+    assert.equal(achar("RN", "NATAL", "diesel")?.preco, 6.89);
+    assert.equal(achar("SP", "SANTA BARBARA D OESTE", "gasolina")?.preco, 5.99, "apóstrofo vira espaço na chave");
+    assert.equal(achar("RN", "", "gasolina")?.preco, 6.55, "média do estado");
+    assert.equal(achar("BR", "", "gasolina")?.preco, 6.49, "média do Brasil");
+    assert.equal(achar("BR", "", "diesel")?.preco, 7.32, "diesel S10, não o S500; repetido vale o primeiro");
+    // Fora: aditivada, estado desconhecido, preço zero, semana diferente, CAPITAIS (não lida).
+    assert.equal(s.linhas.filter((l) => l.uf === "RN" && l.municipio === "NATAL").length, 3);
+    assert.ok(!s.linhas.some((l) => l.municipio === "X" || l.municipio === "PRECO ERRADO" || l.municipio === "SEMANA VELHA"));
+    assert.ok(!s.linhas.some((l) => l.preco === 1));
+    assert.equal(s.linhas.length, 3 + 1 + 1 + 1 + 3 + 1 + 3);
+  });
+
+  test("planilha sem as abas ou sem cabeçalho = null (nada inventado)", () => {
+    const x = xlsx();
+    assert.equal(semanaDaPlanilha({ ...x, "xl/workbook.xml": "<workbook><sheets/></workbook>" }), null);
+    assert.equal(semanaDaPlanilha({}), null);
+  });
+
+  test("o link da semana mais nova: nomes bagunçados, só do mesmo site", () => {
+    const base = "https://www.gov.br/anp/precos";
+    const html = paginaAnp(base, [46306, 46313, 46299]);
+    assert.equal(linkDaPlanilhaSemanal(html, `${base}/pagina`), `${base}/arquivos-lpc/resumo_semanal_lpc_2026_10_18-2026_10_24.xlsx`);
+    // A página de verdade usa links absolutos do gov.br; relativos também servem.
+    assert.equal(
+      linkDaPlanilhaSemanal('<a href="/anp/x/resumo-semanal-lpc-16-10-2022-22-10-2022.xlsx">a</a>', "https://www.gov.br/anp/pagina"),
+      "https://www.gov.br/anp/x/resumo-semanal-lpc-16-10-2022-22-10-2022.xlsx",
+    );
+    // Sem data no nome: a primeira da página.
+    assert.equal(
+      linkDaPlanilhaSemanal('<a href="/a/resumo_semanal_lpc_2711.xlsx"></a><a href="/a/resumo_semanal_lpc_0311.xlsx"></a>', "https://www.gov.br/x"),
+      "https://www.gov.br/a/resumo_semanal_lpc_2711.xlsx",
+    );
+    assert.equal(linkDaPlanilhaSemanal('<a href="https://outro.example/resumo_semanal_lpc_2026-10-18_2026-10-24.xlsx">x</a>', "https://www.gov.br/x"), null);
+    assert.equal(linkDaPlanilhaSemanal("<p>nada</p>", "https://www.gov.br/x"), null);
+  });
+
+  test("chave do município e o rótulo da fonte", () => {
+    assert.equal(chaveDoMunicipio("  Santa Bárbara d'Oeste "), "SANTA BARBARA D OESTE");
+    assert.equal(chaveDoMunicipio("São Luís"), "SAO LUIS");
+    const etanol = linhaDeDeslocamento({ kmIda: 70, idaEVolta: true, viagens: 1, kmPorLitro: 7, litroCents: 519, combustivel: "etanol" }, "Natal", "Touros");
+    assert.equal(etanol.detalhe, "140 km · ida e volta · 20 L de etanol a R$ 5,19/L");
+    assert.equal(etanol.precoCents, 10_380);
+    assert.match(
+      linhaDeDeslocamento({ kmIda: 10, idaEVolta: false, viagens: 1, kmPorLitro: 10, litroCents: 700, combustivel: "diesel" }, null, null).detalhe,
+      /L de diesel S10 a/,
+    );
+    assert.equal(rotuloDoPreco({ base: "municipio", onde: "Natal/RN", semana: "2026-10-18" }), "Preço médio da semana em Natal/RN · ANP, semana de 18/10");
+    assert.equal(rotuloDoPreco({ base: "estado", onde: "RN", semana: "2026-10-18" }), "Preço médio da semana no estado (RN) · ANP, semana de 18/10");
+    assert.equal(rotuloDoPreco({ base: "brasil", onde: "Brasil", semana: "2026-10-18" }), "Preço médio da semana no Brasil · ANP, semana de 18/10");
   });
 });

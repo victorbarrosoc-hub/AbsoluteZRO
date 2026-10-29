@@ -30,6 +30,8 @@ https://absolutezro.com, com o projeto Supabase **novo** `AbsoluteZRO` (nenhum b
   "indisponível" e `/api/v1/agenda/*` responde 503. Trocar a chave invalida as conexões guardadas (cada pessoa conecta
   de novo). O cliente Google é o mesmo do "Entrar com Google" (`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`), com o retorno
   `https://absolutezro.com/conexoes/google/retorno` e os escopos `calendar.events` e `calendar.calendarlist.readonly`.
+- `CRON_SECRET` (openssl rand -hex 32, Production): o agendamento diário `GET /api/cron/dolar` (vercel.json) busca o dólar
+  PTAX do Banco Central para os Custos (migração 0030). Sem ele, a rota responde 503 e só a página dos Custos atualiza.
 - Ambiente e origem saem da Vercel (`VERCEL_ENV`, `VERCEL_PROJECT_PRODUCTION_URL`); `ZRO_ENV`/`ZRO_APP_ORIGIN` só se
   quiser forçar.
 - Cobrança pelo Stripe (ADR 0019): `STRIPE_SECRET_KEY` e `STRIPE_WEBHOOK_SECRET` no projeto `absolutezro` (Production).

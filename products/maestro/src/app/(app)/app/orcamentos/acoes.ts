@@ -1,9 +1,11 @@
 "use server";
 /**
  * Ações de orçamentos: sessão e acesso conferidos aqui; organização e pessoa vêm da sessão; o banco confere o papel
- * (RLS). A calculadora de deslocamento usa os serviços abertos só se ligados (MAESTRO_SERVICOS_ABERTOS=1).
+ * (RLS). A calculadora de deslocamento usa Photon e OSRM só se ligados (MAESTRO_SERVICOS_ABERTOS=1); o preço do litro
+ * vem da semana da ANP guardada pelo agendamento (drizzle/0022).
  */
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { exigirAcessoNaAcao } from "@/lib/auth/acao";
 import { ehUuid } from "@/lib/crm/comum";
@@ -11,9 +13,10 @@ import { podeEscrever, podeRemover, podeVerDinheiro } from "@/lib/papeis";
 import { aprovarOrcamento, criarOrcamento, mudarStatus, novaVersao, removerOrcamento, salvarOrcamento, validarEdicao } from "@/lib/orcamento/orcamentos";
 import type { StatusOrcamento } from "@/lib/orcamento/motor";
 import { lerEmpresa } from "@/lib/organizacao";
-import { buscarLugares, medirRota, precoDaGasolina } from "@/lib/orcamento/servicos";
+import { buscarLugares, coletarSeAtrasado, medirRota, precoDoCombustivel } from "@/lib/orcamento/servicos";
 import { gerarLinkDoOrcamento, revogarLinkDoOrcamento } from "@/lib/orcamento/link";
-import type { Lugar, PrecoCombustivel } from "@/lib/orcamento/deslocamento";
+import { ehCombustivel, type Lugar, type PrecoCombustivel } from "@/lib/orcamento/deslocamento";
+import { hojeBr } from "@/lib/dinheiro";
 import { ligarContrato } from "@/lib/contrato/servidor";
 import type { EstadoForm } from "@/components/form";
 
@@ -135,14 +138,20 @@ export async function medirRotaAcao(de: unknown, para: unknown): Promise<{ ok: t
   }
 }
 
-export async function precoGasolinaAcao(): Promise<PrecoCombustivel | null> {
+/**
+ * Preço médio da semana (ANP) do combustível no lugar da produtora (Ajustes → Empresa): município, estado ou Brasil.
+ * `semLugar` = a produtora não disse a cidade/UF (a tela pede em Ajustes). Sem semana guardada, preco null e, depois
+ * de responder, uma coleta de reserva se o agendamento atrasou.
+ */
+export async function precoCombustivelAcao(combustivel: unknown): Promise<{ preco: PrecoCombustivel | null; semLugar: boolean }> {
   const s = await exigirAcessoNaAcao();
+  if (!ehCombustivel(combustivel)) return { preco: null, semLugar: false };
   const e = await lerEmpresa(ctxDe(s));
-  if (!e.uf) return null;
+  after(() => coletarSeAtrasado(hojeBr()).catch(() => {}));
   try {
-    return await precoDaGasolina(e.uf, e.cidade);
+    return { preco: await precoDoCombustivel(ctxDe(s), { uf: e.uf, cidade: e.cidade }, combustivel), semLugar: !e.uf };
   } catch {
-    return null;
+    return { preco: null, semLugar: !e.uf };
   }
 }
 

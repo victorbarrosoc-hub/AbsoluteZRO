@@ -16,6 +16,8 @@ export const ARQUIVO_SESSAO_CONTRATO = "test-results/e2e-sessao-contrato.json";
 export const ARQUIVO_SESSAO_AGENDA = "test-results/e2e-sessao-agenda.json";
 /** A ponte falsa (HUB + SOBEDESCE de mentira, tests/ponte-falsa.mts) do e2e de Arquivos: MAESTRO_PONTE_URL no servidor. */
 export const PORTA_PONTE = Number(process.env.E2E_PONTE_PORT || 3219);
+/** A ANP falsa (tests/anp-fixture.mts, valores inventados) da calculadora de deslocamento: MAESTRO_ANP_URL no servidor. */
+export const PORTA_ANP = Number(process.env.E2E_ANP_PORT || 3221);
 
 export default async function preparar() {
   const alvo = new URL(E2E_DB);
@@ -280,5 +282,10 @@ export default async function preparar() {
   // A ponte falsa vive enquanto o Playwright roda (o retorno é o teardown).
   const { iniciarPonteFalsa } = await import("../tests/ponte-falsa.mts");
   const ponte = await iniciarPonteFalsa({ porta: PORTA_PONTE });
-  return () => ponte.fechar();
+  const { iniciarAnpFalsa } = await import("../tests/anp-fixture.mts");
+  const anp = await iniciarAnpFalsa(PORTA_ANP);
+  return async () => {
+    await ponte.fechar();
+    await anp.fechar();
+  };
 }

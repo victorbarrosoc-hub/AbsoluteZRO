@@ -43,3 +43,27 @@ fornecedores, planos, o que está por vir, metas e quando a receita paga a conta
 - O titular corrige os números no console; nenhuma integração com faturas dos fornecedores (Vercel, Anthropic etc.).
   Se um dia vier, entra como item "por uso" com estimativa, não como número escondido.
 - Mudar categorias ou estados pede migration nova (são `check` no banco e listas em `custos.ts`).
+
+## Adendo (29/10/2026): dólar automático
+
+Pedido do titular: a cotação vem sozinha em vez de digitada. Migração `0030_dolar_automatico.sql`, `packages/core/src/dolar.ts`.
+
+- **Fonte**: Banco Central do Brasil, PTAX de **venda** do dia (serviço Olinda, OData público e sem chave:
+  `CotacaoDolarDia(dataCotacao=@dataCotacao)?@dataCotacao='MM-DD-AAAA'&$format=json`). A PTAX sai por volta das 13 h;
+  antes disso, em fim de semana e em feriado o dia vem vazio e voltamos um dia por vez até o último dia útil (no máximo
+  10). Erro de rede, HTTP ou formato interrompe a busca; nada é estimado.
+- **Quando**: agendamento diário da Vercel (`apps/hub-web/vercel.json`, `23 16 * * *` UTC = 13h23 em Brasília, depois da
+  PTAX) em `GET /api/cron/dolar`, só com `Authorization: Bearer <CRON_SECRET>` (sem o segredo, 503; errado, 401). A
+  página dos Custos também pede, depois de responder (`after`), quando a última busca passou de 24 h; depois de uma
+  falha, espera 1 h. O console tem "Atualizar agora".
+- **Guarda**: `custos_config.cotacao_auto` (+ dia, fonte `bcb-ptax`, hora da busca). Falha grava só
+  `cotacao_auto_erro`/`_erro_em`: o último valor bom continua valendo, com a data dele.
+- **Manual**: `cotacao_modo` (`auto` | `manual`). "Usar valor manual" grava `cotacao_usd_brl`/`cotacao_em` e passa a valer
+  o digitado (o automático segue sendo buscado, sem valer); "Voltar ao automático" volta. As duas mudanças vão para
+  `audit_logs` (`admin.custos_cotacao_manual`, `admin.custos_cotacao_automatica`, de → para). A migração deixa todos no
+  automático, como o titular pediu; um valor digitado antes fica guardado para o "Usar valor manual". Enquanto o Banco
+  Central nunca respondeu, vale o manual guardado (se houver); sem nenhum, "Sem cotação" (como antes).
+- **Tela**: "Dólar hoje R$ 5,34 · Banco Central, 28/10" no topo; a folha "Dólar" mostra as 4 casas, a falha (se houver),
+  "Atualizar agora", "Usar valor manual" e "Voltar ao automático". As metas ganharam folha própria.
+- **Produção**: precisa de `CRON_SECRET` no projeto `absolutezro` da Vercel (sem ele o agendamento responde 503 e só a
+  página atualiza) e da migração `0030` no próximo deploy autorizado.

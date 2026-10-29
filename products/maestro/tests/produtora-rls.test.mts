@@ -199,8 +199,9 @@ describe("tabelas da produtora: duas organizações", () => {
     assert.equal(apagou.length, 0, "equipe não apaga freela");
   });
 
-  test("cache do combustível: maestro_app não tem privilégio nenhum", async () => {
-    const e = await erroDe(getBanco().asUser(o.admin, (tx) => tx.execute(sql`select * from maestro.cache_combustivel`)));
+  test("preços de combustível (referência da ANP): maestro_app lê e não grava", async () => {
+    await getBanco().asUser(o.admin, (tx) => tx.execute(sql`select * from maestro.combustivel_precos`));
+    const e = await erroDe(getBanco().asUser(o.admin, (tx) => tx.execute(sql`delete from maestro.combustivel_precos`)));
     assert.equal(codigoPg(e), PG.semPrivilegio);
   });
 });

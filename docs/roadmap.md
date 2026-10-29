@@ -500,6 +500,25 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   Vercel uso, Stripe, RunPod, avaliação CASA, Resend, domínio). Migration `0028` sobe no próximo deploy autorizado.
 - ⬜ Contagem de quem conectou o Drive (mora no SOBEDESCE) para o gatilho da avaliação CASA, se o SOBEDESCE expuser.
 
+## Automáticos: dólar nos Custos e combustível no Maestro (29/10/2026)
+
+- ✅ **Dólar automático** (HUB, migração `0030`, adendo ao [ADR 0028](decisions/0028-custos-do-ecossistema.md)): PTAX de
+  venda do Banco Central (Olinda, sem chave), com volta ao último dia útil; agendamento diário `GET /api/cron/dolar`
+  (Vercel Cron 13h23 de Brasília, `CRON_SECRET`) e a própria página quando a busca passou de 24 h (depois de responder).
+  "Dólar hoje R$ 5,34 · Banco Central, 28/10"; falha mantém o último valor com a data; "Usar valor manual" e "Voltar ao
+  automático" auditados. Metas em folha própria.
+- ✅ **Combustível automático** (Maestro, `drizzle/0022`): a calculadora de deslocamento escolhe gasolina, etanol ou
+  diesel S10 e já vem com o preço médio da semana da ANP no município da produtora (Ajustes → Empresa), senão no
+  estado, senão no Brasil, escrito "Preço médio da semana em Natal/RN · ANP, semana de 18/10". Mostra R$ por km e o
+  total; preço digitado vale para aquele combustível naquele orçamento (no aparelho); consumo de partida por
+  combustível sem veículo no inventário. Agendamento semanal `GET /api/cron/combustivel` (sábado 10h41 de Brasília,
+  `CRON_SECRET`) guarda a planilha semanal (municípios, estados e Brasil; 8 semanas, ~12 mil linhas) em
+  `maestro.combustivel_precos` (só leitura para `maestro_app`); coleta de reserva se o agendamento atrasar. Orçamento
+  salvo não muda. Photon e OSRM continuam desligados (`MAESTRO_SERVICOS_ABERTOS`).
+- ⛔ Em produção: `CRON_SECRET` no projeto `absolutezro` (o do `maestro` já existe), migrações `0030` (HUB) e `0022`
+  (Maestro) no próximo deploy autorizado. Primeira semana da ANP entra no primeiro sábado ou na primeira abertura da
+  calculadora.
+
 ## Fase 6 — Escala
 
 - ⬜ Observabilidade em produção (drain de logs, métricas da fila, alertas), backups e retenção definidos.

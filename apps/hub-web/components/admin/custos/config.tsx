@@ -1,5 +1,5 @@
 'use client'
-/** Cotação do dólar e metas (/admin/custos): um botão que abre a folha. Só o titular informa; nada vem preenchido. */
+/** Metas (/admin/custos): um botão que abre a folha. Só o titular informa; nada vem preenchido. O dólar fica em `dolar.tsx`. */
 import { useActionState, useEffect, useState, type ReactNode } from 'react'
 import { useFormStatus } from 'react-dom'
 import type { CustosConfig } from '@zro/core'
@@ -17,58 +17,26 @@ function Enviar() {
   )
 }
 
-export function ConfigCustos({
-  config,
-  hoje,
-  children,
-  className = 'cst-link',
-}: {
-  config: CustosConfig
-  hoje: string
-  children: ReactNode
-  className?: string
-}) {
+export function ConfigCustos({ config, children, className = 'cst-link' }: { config: CustosConfig; children: ReactNode; className?: string }) {
   const [aberto, setAberto] = useState(false)
   return (
     <>
       <button type="button" className={className} onClick={() => setAberto(true)}>
         {children}
       </button>
-      {aberto && <Formulario config={config} hoje={hoje} onFechar={() => setAberto(false)} />}
+      {aberto && <Formulario config={config} onFechar={() => setAberto(false)} />}
     </>
   )
 }
 
-function Formulario({ config, hoje, onFechar }: { config: CustosConfig; hoje: string; onFechar: () => void }) {
+function Formulario({ config, onFechar }: { config: CustosConfig; onFechar: () => void }) {
   const [state, action] = useActionState(salvarConfigCustosAction, null)
   useEffect(() => {
     if (state?.ok) onFechar()
   }, [state, onFechar])
   return (
-    <Folha titulo="Cotação e metas" onFechar={onFechar}>
+    <Folha titulo="Metas" onFechar={onFechar}>
       <form action={action} className="zro-form cst-form">
-        <div className="zro-form-row">
-          <div className="zro-field">
-            <label className="zro-field__label" htmlFor="cfg-cotacao">
-              US$ 1 em reais
-            </label>
-            <input
-              className="zro-input"
-              id="cfg-cotacao"
-              name="cotacao"
-              inputMode="decimal"
-              defaultValue={numero(config.cotacao)}
-              placeholder="0,00"
-              autoComplete="off"
-            />
-          </div>
-          <div className="zro-field">
-            <label className="zro-field__label" htmlFor="cfg-cotacao-em">
-              Cotação de
-            </label>
-            <input className="zro-input" id="cfg-cotacao-em" name="cotacaoEm" type="date" defaultValue={config.cotacaoEm ?? hoje} />
-          </div>
-        </div>
         <div className="zro-form-row">
           <div className="zro-field">
             <label className="zro-field__label" htmlFor="cfg-receita">
