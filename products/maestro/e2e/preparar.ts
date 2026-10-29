@@ -16,6 +16,7 @@ export const ARQUIVO_SESSAO_CONTRATO = "test-results/e2e-sessao-contrato.json";
 export const ARQUIVO_SESSAO_AGENDA = "test-results/e2e-sessao-agenda.json";
 export const ARQUIVO_SESSAO_GESTOS = "test-results/e2e-sessao-gestos.json";
 export const ARQUIVO_SESSAO_COLUNAS = "test-results/e2e-sessao-colunas.json";
+export const ARQUIVO_SESSAO_CRIACAO = "test-results/e2e-sessao-criacao.json";
 /** A ponte falsa (HUB + SOBEDESCE de mentira, tests/ponte-falsa.mts) do e2e de Arquivos: MAESTRO_PONTE_URL no servidor. */
 export const PORTA_PONTE = Number(process.env.E2E_PONTE_PORT || 3219);
 /** A ANP falsa (tests/anp-fixture.mts, valores inventados) da calculadora de deslocamento: MAESTRO_ANP_URL no servidor. */
@@ -307,6 +308,26 @@ export default async function preparar() {
     const sCo = await criarSessao({ orgId: orgCo, sub: SUB_CO, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
     const sCoEq = await criarSessao({ orgId: orgCo, sub: SUB_CO_EQ, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
     writeFileSync(ARQUIVO_SESSAO_COLUNAS, JSON.stringify({ token: sCo.token, equipe: sCoEq.token, org: orgCo }));
+    // Uma organização para a Criação (e2e/criacao-roteiro.spec.ts): a demonstração inteira (o roteiro de exemplo e o
+    // roteiro e a decupagem antigos do projeto), administração e uma pessoa de leitura.
+    const SUB_CR = "00000000-0000-4000-8000-0000000000d8";
+    const SUB_CR_LE = "00000000-0000-4000-8000-0000000000d9";
+    const orgCr = await getBanco().asSystem("e2e: semente da criação", async (tx) => {
+      const [org] = await tx
+        .insert(schema.organizations)
+        .values({ zroOrgId: "00000000-0000-4000-8000-0000000000d7", name: "Criação E2E", zroProducts: ["maestro"] })
+        .returning({ id: schema.organizations.id });
+      await tx.insert(schema.members).values([
+        { orgId: org.id, zroSub: SUB_CR, displayName: "Rita Roteiro", hubRole: "owner", role: "admin" },
+        { orgId: org.id, zroSub: SUB_CR_LE, displayName: "Lia Leitura", hubRole: "viewer", role: "leitura" },
+      ]);
+      return org.id;
+    });
+    const cr = await carregarDemonstracao({ sub: SUB_CR, orgId: orgCr });
+    if (!cr.ok) throw new Error(cr.mensagem);
+    const sCr = await criarSessao({ orgId: orgCr, sub: SUB_CR, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    const sCrLe = await criarSessao({ orgId: orgCr, sub: SUB_CR_LE, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    writeFileSync(ARQUIVO_SESSAO_CRIACAO, JSON.stringify({ token: sCr.token, leitura: sCrLe.token, org: orgCr }));
   } finally {
     await fecharBanco();
   }

@@ -254,6 +254,19 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   (`podeVerCriacao`/`podeEditarCriacao`/`podeEnviarCriacao`; trocar pela área `criacao` quando o acesso por área tiver).
   O migrador aplica qualquer migração do journal ainda não gravada (pelo `when` ou pelo hash), então números fora de
   ordem entre frentes funcionam; `when` repetido para o deploy.
+- **Criação · editor do Roteiro** (fase F2): "Criação" no grupo Produção e em Mais (`navegacao.ts`; a barra do celular
+  não muda). `/app/criacao` (cartões; "Novo roteiro" em `components/criacao/roteiro/novo.tsx` pela Server Action
+  `criarRoteiroAcao`; `?novo=1&projeto=` abre a folha já ligada; aba Fluxos = "em breve" até a F5). Editor em
+  `/app/criacao/roteiros/[id]` (`editor.tsx`): as vistas puras da F1 (Técnico com `incluirVazios`, a `dica` é só
+  placeholder), operações puras em `lib/criacao/roteiro/editar.ts` (nunca mutam; o que não mudou fica o mesmo objeto) e
+  "Comparar" em `comparar.ts`. Gravação em `gravacao.ts`: 600 ms + ao sair do campo/aba, sempre com `rev`; 409 traz o
+  atual e a tela junta com `juntarRoteiros(base, meu, deles)` e grava de novo; poll de 5 s só adota sem mudança local.
+  Rota única `/api/criacao/roteiros/[id]` (`lib/criacao/roteiro/rota.ts`: GET `?rev=`/`?versoes`/`?versao=`, POST
+  `salvar|versao|restaurar|ligar|estado|lixeira`, Origin conferida, papéis por `permissoes.ts`). Folha A4 em
+  `roteiros/[id]/imprimir` (`dadosImpressao`). Estados e nomes sem banco em `nomes.ts` (a tela no navegador importa
+  dali, nunca de `servidor.ts`). Projeto: seção "Roteiros"; documento `roteiro`/`decupagem` antigo com "Abrir no editor
+  novo" (`abrirNoEditorNovoAcao`); os chips de Documentos não criam mais esses dois tipos. Demonstração: o roteiro
+  institucional com a v1 (`src/lib/demo/criacao.ts`). CSS em `criacao.css` (prefixo `cr-`).
 - **Página inicial** (`src/app/page.tsx`, `inicio.css`, plano v2 §10, ADR 0024): pública, só o que existe, "Em breve"
   para o resto, capturas reais da demonstração em `public/produto/*-{claro,escuro}.webp` (refazer com
   `npm run db:seed:demo` quando a tela mudar; nunca mock). "Quero acesso" grava na lista de espera
@@ -319,7 +332,9 @@ novas com duas organizações (`negocio-rls.test.mts`) e o resumo para a Z (`res
 (`drive-sobedesce.test.mts`), a versão colada na ficha do card (`versoes-card.test.mts`), pessoas da Absolute ZRO (`pessoas-zro.test.mts`), colunas do Quadro (fábrica e backfill, duas organizações, papéis,
 automação pelo papel, arquivar com destino, paleta; `colunas.test.mts`), o roteiro puro (modelo, tempo, cada vista, TPeasy
 contra o código do próprio app, modelos só com dica, documento antigo, junção; `roteiro.test.mts`), roteiros no banco
-(duas organizações, papéis, rev, versões imutáveis; `criacao-rls.test.mts`) e o migrador com migração atrasada
+(duas organizações, papéis, rev, versões imutáveis; `criacao-rls.test.mts`), as operações do editor e o comparar
+(`roteiro-editor.test.mts`), a rota do editor (Origin, papéis, poll, 409 com o atual e a junção, versões, restaurar;
+`criacao-rota.test.mts`) e o migrador com migração atrasada
 (`migrador.test.mts`). E2E: `npm run build && npm run test:e2e`
 (Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir movimento, navegação, a aprovação
 inteira (`aprovacao.spec.ts`, mp4 local e YouTube/Vimeo falsos em `e2e/falsos`) e a versão colada na ficha do card que aparece no lote (`versao-card.spec.ts`) e a produtora com a demonstração
@@ -336,7 +351,9 @@ faixa que rola de lado só com `data-rolagem`; regras de celular em `src/app/cel
 a troca de seção sem duas telas juntas (`transicao.spec.ts`, Chromium e WebKit: pelo relógio das animações e amostrando
 quadro a quadro) e os gestos do Quadro no celular (`gestos.spec.ts`, Chromium e WebKit, organização própria) e as colunas
 (`colunas.spec.ts`: renomear no lugar, reordenar, criar e recolorir, arquivar com destino e restaurar, sistema não
-arquiva, equipe não edita; computador e iPhone, organização própria).
+arquiva, equipe não edita; computador e iPhone, organização própria) e a Criação (`criacao-roteiro.spec.ts`: novo pelo
+modelo → teclado → vistas → grava sozinho → recarregar, versão e comparar, folha A4, junção com outra pessoa, documento
+antigo no editor novo, leitura; no iPhone uma cena por vez, "+", segurar para arrastar e o Teleprompter).
 Movimento (29/10/2026): toda folha usa `Folha` (`src/components/folha.tsx`, portal no `<body>`). **Troca de seção**
 (`src/components/movimento.tsx` + `src/app/motion.css`): a View Transition é chamada por nós, não pelo
 `<ViewTransition>` do React (no Safari do iPhone o par sai/entra do React deixava a tela velha e a nova uma sobre a

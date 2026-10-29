@@ -8,6 +8,8 @@ import { BotaoAcao } from "@/components/acao";
 import { EditorDocumento } from "@/components/documentos/editor";
 import { Icone } from "@/components/icones";
 import { removerDocumentoAcao } from "../acoes";
+import { abrirNoEditorNovoAcao } from "@/app/(app)/app/criacao/acoes";
+import { podeEditarCriacao } from "@/lib/criacao/permissoes";
 
 export const metadata = { title: "Documento" };
 
@@ -24,6 +26,20 @@ export default async function PaginaDocumento({ params }: PageProps<"/app/projet
       <Link className="voltar" href={`/app/projetos/${id}`}>
         <Icone nome="voltar" size={16} /> {d.projetoCodigo} · {d.projeto}
       </Link>
+      {(d.tipo === "roteiro" || d.tipo === "decupagem") && podeEditarCriacao(s.papel) ? (
+        <div className="cr-antigo nao-imprime">
+          <span>
+            <b>Editor novo de roteiro.</b> Cenas, Literário, Técnico e Teleprompter. Este documento fica como está.
+          </span>
+          <BotaoAcao
+            acao={abrirNoEditorNovoAcao}
+            campos={{ documento: d.id, tipo: d.tipo }}
+            rotulo="Abrir no editor novo"
+            icone="criacao"
+            classe="glass-btn glass-btn--ink"
+          />
+        </div>
+      ) : null}
       <EditorDocumento
         key={d.atualizado}
         id={d.id}

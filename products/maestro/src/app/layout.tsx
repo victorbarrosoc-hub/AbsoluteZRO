@@ -15,6 +15,7 @@ import "./numeros.css";
 import "./equipe.css";
 import "./contrato.css";
 import "./marca-propria.css";
+import "./criacao.css";
 import "./celular.css";
 import "./motion.css";
 

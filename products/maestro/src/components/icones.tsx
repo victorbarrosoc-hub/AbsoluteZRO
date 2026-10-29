@@ -61,7 +61,14 @@ export type NomeIcone =
   | "pessoas"
   | "colunas"
   | "alca"
-  | "arquivar";
+  | "arquivar"
+  | "criacao"
+  | "fluxo"
+  | "letra"
+  | "cena"
+  | "camera"
+  | "olho"
+  | "versoes";
 
 const CAMINHOS: Record<NomeIcone, React.ReactNode> = {
   alvo: (
@@ -325,6 +332,45 @@ const CAMINHOS: Record<NomeIcone, React.ReactNode> = {
     <>
       <rect x="3.5" y="4.5" width="17" height="4.5" rx="1.5" />
       <path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4" />
+    </>
+  ),
+  criacao: (
+    <>
+      <path d="M4.5 19.5 5.6 15 15.3 5.3a2 2 0 0 1 2.8 0l.6.6a2 2 0 0 1 0 2.8L9 18.4l-4.5 1.1Z" />
+      <path d="M13.8 6.8l3.4 3.4M18.5 15.5c.3 1.6.9 2.2 2.5 2.5-1.6.3-2.2.9-2.5 2.5-.3-1.6-.9-2.2-2.5-2.5 1.6-.3 2.2-.9 2.5-2.5Z" />
+    </>
+  ),
+  fluxo: (
+    <>
+      <rect x="3" y="4" width="7" height="5.5" rx="1.6" />
+      <rect x="14" y="14.5" width="7" height="5.5" rx="1.6" />
+      <circle cx="18" cy="6.5" r="2.4" />
+      <path d="M10 6.8h5.6M6.5 9.5v5a2.5 2.5 0 0 0 2.5 2.5h5" />
+    </>
+  ),
+  letra: <path d="M5 6.5V5h14v1.5M12 5v14M9 19h6" />,
+  cena: (
+    <>
+      <rect x="3.5" y="9" width="17" height="11" rx="2" />
+      <path d="m3.8 9-.6-3.2 15.7-2.6.6 3.2M7.5 5.6 9.4 8.8M12.6 4.8l1.9 3.2" />
+    </>
+  ),
+  camera: (
+    <>
+      <path d="M4 8.5a2 2 0 0 1 2-2h1.8l1.4-2h5.6l1.4 2H18a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8.5Z" />
+      <circle cx="12" cy="12.5" r="3.4" />
+    </>
+  ),
+  olho: (
+    <>
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+      <circle cx="12" cy="12" r="2.8" />
+    </>
+  ),
+  versoes: (
+    <>
+      <rect x="7" y="7" width="13" height="13" rx="2.5" />
+      <path d="M4 15.5V6a2 2 0 0 1 2-2h9.5" />
     </>
   ),
   pessoas: (

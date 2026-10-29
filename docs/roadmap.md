@@ -589,8 +589,21 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ✅ Banco: `drizzle/0030_roteiros.sql` (`roteiros`, `roteiro_versoes` só de inclusão com sha256 conferido), RLS por
   organização e por cliente, papéis provisórios até a área `criacao` do acesso por área. O migrador do Maestro passa a
   aplicar migração que entra fora de ordem (0025–0029 de outras frentes depois da 0030).
-- ⬜ F2 (editor e telas), F3 (enviar: TPeasy, edição, PDF, versões na ficha do card), F7 (aprovação pelo `/a`).
+- ⬜ F3 (enviar: TPeasy, edição, versões na ficha do card), F5 (Fluxo), F7 (aprovação pelo `/a`).
 - ⛔ Em produção: migração `0030` do Maestro no próximo deploy autorizado.
+
+## Maestro · Criação: editor do Roteiro (F2, 29/10/2026)
+
+- ✅ "Criação" no grupo Produção (computador) e em Mais (iPhone; a barra de baixo não muda). `/app/criacao`: roteiros
+  em cartões (vínculo, duração contra o alvo, estado, quando mudou), "Novo roteiro" com os 6 modelos, vínculo a
+  projeto/card e "Literário ou Técnico primeiro?"; seletor Roteiros · Fluxos (Fluxos com "em breve" honesto até a F5).
+- ✅ Editor `/app/criacao/roteiros/<id>`: Literário · Técnico (células editáveis, colunas escondíveis) · Teleprompter
+  (prévia no preto, por pessoa) · Edição (deixas em ordem de tempo). Teclado: Enter, Tab/⇧Tab, "/", ⌘1–6, "@",
+  ⌘⇧Enter, ⌥↑/⌥↓, ⌫. Grava sozinho (600 ms, `rev`, junção por id no 409, aviso "mudou ao mesmo tempo" com "Ficar com o
+  meu"), poll de 5 s, medidor contra o alvo, versões (salvar com nota, comparar por bloco, restaurar), folha A4 pelo
+  `dadosImpressao`. iPhone: uma cena por vez, "+" com os tipos em ícones grandes, segurar 280 ms para arrastar.
+- ✅ Projeto: seção "Roteiros" e "Novo"; roteiro e decupagem antigos com "Abrir no editor novo" (o antigo fica; os
+  dois tipos deixam de nascer pelos chips de Documentos). Demonstração com o roteiro institucional e a v1.
 
 ## Fase 6 — Escala
 

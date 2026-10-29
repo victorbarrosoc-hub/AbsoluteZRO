@@ -12,18 +12,13 @@ import { sql } from "drizzle-orm";
 import { codigoPg, getBanco, mensagemPg, PG, type Contexto, type Tx } from "@/lib/db/client";
 import { ehUuid, falha, traduzirPg, type Falha, type Res } from "@/lib/crm/comum";
 import { roteiroDoDocumentoAntigo } from "./antigo";
-import { type Formato, lerRoteiro, type Roteiro } from "./modelo";
+import { type Alvo, type Formato, lerRoteiro, type Roteiro } from "./modelo";
 import { ehModeloRoteiro, type ModeloRoteiro, roteiroDoModelo } from "./modelos";
 import { duracaoDoRoteiro } from "./tempo";
 
-export const ESTADOS_ROTEIRO = ["rascunho", "com_cliente", "aprovado", "ajuste"] as const;
-export type EstadoRoteiro = (typeof ESTADOS_ROTEIRO)[number];
-export const NOME_ESTADO_ROTEIRO: Record<EstadoRoteiro, string> = {
-  rascunho: "Rascunho",
-  com_cliente: "Com o cliente",
-  aprovado: "Aprovado",
-  ajuste: "Ajuste",
-};
+import { ESTADOS_ROTEIRO, type EstadoRoteiro } from "./nomes";
+
+export { ESTADOS_ROTEIRO, NOME_ESTADO_ROTEIRO, type EstadoRoteiro } from "./nomes";
 const ehEstado = (v: unknown): v is EstadoRoteiro => ESTADOS_ROTEIRO.includes(v as EstadoRoteiro);
 
 /** Modelo gravado: um dos 6, ou "documento" (veio de um documento antigo do projeto). */
@@ -36,6 +31,8 @@ export type RoteiroLista = {
   formato: Formato;
   estado: EstadoRoteiro;
   duracaoSeg: number;
+  /** O alvo do conteúdo (para o medidor do cartão). */
+  alvo: Alvo | null;
   versaoAtual: number;
   rev: number;
   projetoId: string | null;
@@ -79,7 +76,7 @@ function traduzir(e: unknown): Falha {
 }
 
 const COLUNAS = sql`
-  r.id, r.titulo, r.modelo, r.formato, r.estado, r.duracao_seg as "duracaoSeg", r.versao_atual as "versaoAtual", r.rev,
+  r.id, r.titulo, r.modelo, r.formato, r.estado, r.duracao_seg as "duracaoSeg", r.conteudo -> 'alvo' as alvo, r.versao_atual as "versaoAtual", r.rev,
   r.projeto_id as "projetoId", p.title as projeto, r.card_id as "cardId", k.dados ->> 'tema' as card, r.demo,
   r.updated_at::text as atualizado, r.apagado_em is not null as apagado`;
 const JUNTAS = sql`
@@ -368,4 +365,24 @@ export async function abrirDocumentoAntigo(ctx: Contexto, documentoId: string): 
     if (outro[0]) return { ok: true, id: outro[0].id, rev: outro[0].rev, jaExistia: true };
   }
   return r.ok ? { ...r, jaExistia: false } : r;
+}
+
+/** Projetos e cards que um roteiro pode ligar (folha "Novo roteiro" e "Ligar"): só os vivos que a pessoa vê. */
+export async function opcoesDeVinculo(ctx: Contexto): Promise<{
+  projetos: { id: string; codigo: string; titulo: string }[];
+  cards: { id: string; tema: string; projetoId: string | null }[];
+}> {
+  return getBanco().asUser(ctx, async (tx) => {
+    const projetos = (await tx.execute(sql`
+      select id, code as codigo, title as titulo from maestro.projects
+       where deleted_at is null and status in ('active', 'paused') order by code desc limit 300`)) as unknown as {
+      id: string;
+      codigo: string;
+      titulo: string;
+    }[];
+    const cards = (await tx.execute(sql`
+      select id, coalesce(nullif(dados ->> 'tema', ''), 'Card sem tema') as tema, projeto as "projetoId" from maestro.cards
+       where apagado_em is null order by updated_at desc limit 300`)) as unknown as { id: string; tema: string; projetoId: string | null }[];
+    return { projetos: [...projetos], cards: [...cards] };
+  });
 }

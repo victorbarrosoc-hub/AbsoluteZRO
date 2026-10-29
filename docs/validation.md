@@ -2541,6 +2541,25 @@ migração `0030_roteiros` e o migrador aceitando migração fora de ordem.
 
 Não rodado: o e2e do Maestro (nenhuma tela mudou). A migração `0030` não foi aplicada em banco de verdade.
 
+## Maestro · Criação: editor do Roteiro (F2, 29/10/2026)
+
+`/app/criacao` (lista, "Novo roteiro", Fluxos "em breve"), o editor com as quatro vistas, a rota
+`/api/criacao/roteiros/[id]`, a folha A4, "Abrir no editor novo" e o roteiro da demonstração. Sem migração nova.
+
+| Verificação                                                             | Comando                                                               | Resultado                                   |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------- |
+| Operações do editor e comparar com a versão (puro)                      | `cd products/maestro && npx tsx --test tests/roteiro-editor.test.mts` | **7/7**                                     |
+| Rota: Origin, papéis, poll por `rev`, 409 com o atual e junção, versões | `npx tsx --test tests/criacao-rota.test.mts`                          | **7/7**                                     |
+| Maestro inteiro                                                         | `npm run lint`, `format:check`, `typecheck`, `npm test`, `build`      | ok · ok · ok · **433/433** · ok             |
+| E2E da Criação (computador e iPhone)                                    | `npx playwright test e2e/criacao-roteiro.spec.ts`                     | **6/6**                                     |
+| E2E inteiro (com as telas novas no `sem-corte`, Chromium e WebKit)      | `npm run test:e2e`                                                    | **135 passaram**, 27 pulados (por aparelho) |
+| Raiz                                                                    | `npm run lint`, `format:check`, `typecheck`                           | ok · ok · ok                                |
+| Segredos                                                                | `node scripts/scan-secrets.mjs`                                       | nenhum                                      |
+
+Rodado num Postgres local próprio (porta separada, `TEST_DATABASE_URL`, `E2E_PORT`/`E2E_PONTE_PORT`/`E2E_ANP_PORT`) para
+não disputar os bancos `maestro_test_*` com outras frentes. Não validado: Safari de um iPhone de verdade (o arrastar
+foi conferido com toque sintético; `field-sizing` não existe no WebKit e os campos curtos usam a largura fixa).
+
 ## SOBEDESCE: Atualizações quando o Absolute ZRO cuida do app (29/10/2026)
 
 - Relato do titular: o app no build 1034 dizia "Você está na versão mais nova" com o 1042 publicado. Instalado pela
