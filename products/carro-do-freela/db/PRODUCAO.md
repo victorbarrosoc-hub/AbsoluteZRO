@@ -53,7 +53,7 @@ endereço do pooler do projeto novo e faça um build: as migrações rodam sozin
 
 | Nome | Valor |
 | --- | --- |
-| `CARRO_DATABASE_URL` | `postgresql://carro_do_freela.<project_ref>:<senha>@aws-0-us-east-2.pooler.supabase.com:5432/postgres` |
+| `CARRO_DATABASE_URL` | URL `postgresql://` montada com: host `aws-0-us-east-2.pooler.supabase.com`, porta `5432`, banco `postgres`, usuário `carro_do_freela.<project_ref>` e a senha gerada no passo 1 |
 
 É o **pooler de sessão** (porta 5432), usuário `carro_do_freela.<project_ref>` (`<project_ref>` do AbsoluteZRO). Sensível:
 marque como secreta. Com ela, o próximo build roda `node db/migrar.js` antes de gerar o site; migração recusada
