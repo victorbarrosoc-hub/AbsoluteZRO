@@ -21,6 +21,8 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
   respondem 200 e `/api/zro/eu` 401 sem sessão.
 - Banco (Supabase de produção, `AbsoluteZRO-SP`): migração 0032 aplicada; `synquei-web` aceita a volta nos dois endereços.
 - `products/synquei`: `npm test` **146/146** (novos: `tests/mudanca.test.mjs`, login no endereço antigo recomeçando no novo).
+- Raiz: lint, formatação, tipos e build ok; `npm test` **340/340**; `npm run test:e2e` 40/43 (os 3 que faltam são WebKit,
+  que não está instalado neste ambiente; no CI rodam).
 - Chromium (Playwright, os dois endereços servidos pelos arquivos locais): projeto e tema gravados em `synquei.vercel.app`
   aparecem no endereço novo; segunda visita só redireciona, mantendo caminho e busca.
 
