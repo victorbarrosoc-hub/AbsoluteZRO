@@ -39,7 +39,7 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   dissolve por cima; com "reduzir movimento", troca seca. Falta: conferir no Safari do titular depois de publicar.
 - ✅ Página inicial no iPhone (29/10/2026, relato do titular): a cápsula do topo fica por cima de tudo, com faixa da cor
   da página atrás da barra de status; grade de ícones como a Tela de Início, com "Em breve" curto e alinhado; Maestro e
-  Relay como "Em breve" pelo gate (o Relay aparece sozinho com a 0031). Falta: conferir num iPhone de verdade e regerar
+  Relay como "Em breve" pelo gate (o Relay aparece sozinho com a 0034). Falta: conferir num iPhone de verdade e regerar
   a foto do app para computador quando o Relay entrar.
 - ✅ Página inicial de cinema (26/10/2026): paisagem com o símbolo esculpido sobre a rocha, faixa discreta das 7 ferramentas e cartão do Ciclo do O; sem selos de "em construção".
 - ✅ AEON (26/10/2026): a plataforma de edição ganha nome e ícone no catálogo, na home e no HUB (migration 0012); segue em desenvolvimento.
@@ -208,7 +208,7 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   endpoint de entrada no HUB, a entrega assinada ao Maestro e tirar a rota de `DISABLED_ROUTES`, com decisão do titular.
 - ✅ Eventos versionados, outbox, fila com retry/backoff, dead-letter, revisão, reprocessamento; fluxo ponta a ponta
   testado com fixtures gerados pelo código real do SOBEDESCE.
-- ✅ NOSSOM em `nossom.absolutezro.com` (29/10/2026, ADR 0025): domínio no projeto Vercel, links e migração 0031. Falta aplicar a 0031 no banco, liberar o endereço no Supabase Auth e, depois do app de computador aceitar os dois endereços, redirecionar o antigo.
+- ✅ NOSSOM em `nossom.absolutezro.com` (29/10/2026, ADR 0025): domínio no projeto Vercel, links e migração 0034. Falta aplicar a 0034 no banco, liberar o endereço no Supabase Auth e, depois do app de computador aceitar os dois endereços, redirecionar o antigo.
 - 🟡 NOSSOM: link e contrato `edit.timeline.ready`; passagem automática ⬜ (precisa de mudança no NOSSOM, com autorização).
 - ⬜ HUB recebendo o recibo do Synquei (`synquei.preparo/1`, parser pronto em `parsePreparos`) no projeto; o Synquei
   segue lendo o manifesto local e o `OrganizationPlan` do HUB fica como prévia.

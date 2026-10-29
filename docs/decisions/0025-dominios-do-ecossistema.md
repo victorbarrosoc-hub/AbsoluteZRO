@@ -24,7 +24,7 @@ titular pediu um padrão único, como um ecossistema só.
 ## Andamento
 
 - **NOSSOM** (29/10/2026): `nossom.absolutezro.com` no projeto Vercel, links do HUB e das famílias no endereço novo,
-  migração 0031 (retorno OIDC novo + catálogo). O `nossom-teal.vercel.app` continua respondendo sem redirecionar até o
+  migração 0034 (retorno OIDC novo + catálogo). O `nossom-teal.vercel.app` continua respondendo sem redirecionar até o
   app de computador aceitar os dois endereços.
 
 ## Consequências

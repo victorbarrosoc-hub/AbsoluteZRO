@@ -1,4 +1,4 @@
--- Absolute ZRO HUB · 0031 · NOSSOM em nossom.absolutezro.com (ADR 0025; pedido do titular, 29/10/2026).
+-- Absolute ZRO HUB · 0034 · NOSSOM em nossom.absolutezro.com (ADR 0025; pedido do titular, 29/10/2026).
 -- O domínio já está no projeto Vercel `nossom`. Numa mesma transação: o cliente OIDC passa a aceitar o retorno novo
 -- (o antigo continua, porque o app de computador e links salvos ainda abrem nossom-teal.vercel.app) e o catálogo do HUB
 -- passa a abrir o endereço novo. O redirecionamento do domínio antigo vem depois, quando o app de computador aceitar os
