@@ -16,6 +16,12 @@ const config: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   serverExternalPackages: ['postgres'],
+  experimental: {
+    // Troca de tela na hora (pedido do titular, 29/10/2026): o roteador guarda a tela visitada por 30 s e a pré-busca
+    // inteira (intenção no menu) por 60 s. O cache é deste navegador e desta sessão; toda Server Action com
+    // revalidatePath o limpa (login, saída, troca de organização e consentimento: lib/actions/ir.ts).
+    staleTimes: { dynamic: 30, static: 60 },
+  },
   async headers() {
     return [
       { source: '/:path*', headers: security },

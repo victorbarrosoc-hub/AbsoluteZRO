@@ -9,6 +9,7 @@ import { ROLE_LABEL } from '@/lib/labels'
 import { Avatar } from './avatar'
 import { Wordmark } from './brand'
 import { Icon } from './icons'
+import { Transicao } from './movimento'
 import { BackPath, MobileMenu, Nav, NavToggle, type FamilyApp, type NavMode } from './nav'
 import { ThemeToggle } from './theme-toggle'
 
@@ -137,7 +138,7 @@ export function Shell({
           </div>
         </header>
         <main id="conteudo" className="content">
-          {children}
+          <Transicao>{children}</Transicao>
         </main>
       </div>
     </div>

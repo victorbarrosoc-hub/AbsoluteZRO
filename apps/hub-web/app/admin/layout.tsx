@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { AdminNav } from '@/components/admin/admin-nav'
 import { Wordmark } from '@/components/brand'
 import { Icon } from '@/components/icons'
+import { Transicao } from '@/components/movimento'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { requirePageAuth } from '@/lib/session'
 
@@ -32,7 +33,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         </div>
       </aside>
       <main id="conteudo" className="adm-main">
-        {children}
+        <Transicao>{children}</Transicao>
       </main>
     </div>
   )
