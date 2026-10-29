@@ -585,7 +585,7 @@ A Revela fica só com a cor (looks, espaço de cor, LUT e PowerGrade). Codec, co
 para uma plataforma nova, vendida sozinha e chamada pelas outras.
 
 - ✅ Mapa do que já converte no ecossistema (Revela, SOBEDESCE, AEON, NOSSOM) e a divisão entre os setores, na ADR.
-- ✅ Nome: **Relay** (`relay`, relay.absolutezro.com), grátis e aberto. Contrato de integração por plataforma em
+- ✅ Nome: **Relay** (`relay`, relay.absolutezro.com), aberto. Contrato de integração por plataforma em
   [integration-contracts/relay.md](integration-contracts/relay.md).
 - ✅ Relay de pé em `products/relay/` (29/10/2026): identidade (o relé: trilho, sinal menta → limão e o anel do O;
   guia em `marca/`), página inicial com o relé ligando e as entradas na rolagem, conversor com 16 destinos com fonte e
@@ -608,7 +608,7 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
   (inclusive os da pessoa); o app converte arquivos do computador com o x264 e salva ao lado do original.
 - ✅ SOBEDESCE: "Converter com o Relay" no computador e no celular, com o núcleo do Relay copiado e conferido por teste
   dos dois lados; a Revela sai do SOBEDESCE.
-- ✅ HUB: produto `relay` no catálogo (migration `0031`, grátis em todo plano, fechado pelo gate), `ProductId`, catálogo
+- ✅ HUB: produto `relay` no catálogo (migration `0031`, incluído em todo plano, fechado pelo gate), `ProductId`, catálogo
   de integrações e a Z.
 - ⬜ Revela tira a aba Converter e aponta para o Relay (na conversa da Revela); AEON e NOSSOM exportam pelos presets do
   Relay; Synquei e Maestro pedem versões pela fila ([contrato](integration-contracts/relay.md)).

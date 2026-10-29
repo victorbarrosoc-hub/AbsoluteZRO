@@ -32,9 +32,9 @@ chamam.
   por destino (com fonte e data de verificação, regra do PRD §8) e do plano de conversão (decisão pura e testada).
   Funciona sozinha: solta o arquivo, escolhe o destino, sai a versão nova. Pasta `products/relay/`, domínio
   `relay.absolutezro.com` (ADR 0025), schema e papel próprios (`relay`) no Supabase `AbsoluteZRO` (ADR 0013).
-- **Grátis e aberto** (decisão do titular, 29/10/2026): o Relay é a porta de entrada do ecossistema. Converter no
+- **Aberto** (decisão do titular, 29/10/2026; sem "grátis" no posicionamento): o Relay é a porta de entrada do ecossistema. Converter no
   aparelho não pede conta e não consome quota (nenhum custo de servidor). A conta Absolute ZRO entra só no que toca a
-  conta (Drive, o computador da pessoa, histórico). Grátis em todos os planos do catálogo.
+  conta (Drive, o computador da pessoa, histórico). Incluído em todos os planos do catálogo.
 - **Qualidade medida, não prometida.** No computador, o x264 em `slow` e qualidade constante (duas passadas no
   tamanho exato); no navegador, Lanczos na placa, cor marcada BT.709 e bitrate com folga para os codificadores de
   hardware. O laboratório (`npm run qualidade`, `products/relay/docs/QUALIDADE.md`) mede contra uma referência x264

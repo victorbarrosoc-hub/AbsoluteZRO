@@ -3,10 +3,12 @@
 **Estado (29/10/2026): liberado aos usuários, junto com o Maestro, sem e-mail de lançamento (decisão do titular).**
 Projeto Vercel `relay` (Root Directory `products/relay`) em `relay.absolutezro.com`, com `RELEASE=released` em
 produção. No HUB, a migration `0032` abre o produto e o gate (canal web). Sem `RELEASE=released`,
-`scripts/publicar-site.mjs` volta a publicar só "Em breve". Decisão: [ADR 0030](../../docs/decisions/0030-relay-conversao.md).
+`scripts/publicar-site.mjs` volta a publicar só "Em breve". Mudar só a variável não basta: o Ignored Build Step do projeto
+cancela o deploy de um commit que já tem prévia; o deploy precisa de commit novo em `products/relay` (ou da checagem
+desligada só naquele deploy). Decisão: [ADR 0030](../../docs/decisions/0030-relay-conversao.md).
 Como as outras plataformas usam: [docs/integration-contracts/relay.md](../../docs/integration-contracts/relay.md).
 
-Grátis e sem cadastro: solta o arquivo, escolhe para onde vai, sai a versão certa. Converte no próprio aparelho; o
+Aberto e sem cadastro: solta o arquivo, escolhe para onde vai, sai a versão certa. Converte no próprio aparelho; o
 arquivo não é enviado. É a porta de entrada do ecossistema Absolute ZRO.
 
 ## O que faz

@@ -2584,3 +2584,8 @@ do Freela e HUB não convertem. `npm run format:check` e `node scripts/scan-secr
   16/16 (Ciclo do O com o Relay "Bloqueado por assinatura" sem plano, 4 acessos lançados no plano grátis).
 - Nenhum e-mail: o HUB só envia e-mail de login e de conta (`packages/auth/src/email.ts`); abrir produto e gate não
   manda aviso.
+- Produção (`relay.absolutezro.com`, deploy `dpl_BSNVYA6bT95oHzNLh8JsrA6ivrhU`, commit `7d408bd`, `RELEASE=released`):
+  `/` e `/converter` 200 com o site de verdade, `/laboratorio` e `/qualidade` 404, `vendor/` servido. Chromium de
+  verdade contra a produção: um ProRes 1080p de 2 s virou "YouTube 1080p" (MP4, 3,9 MB), sem erro no console.
+- O deploy só de variável (mesmo commit da prévia) é cancelado pelo Ignored Build Step do projeto (`git diff` contra o
+  commit anterior). Contorno usado: a checagem foi trocada por `exit 1` só durante esse deploy e voltou igual depois.
