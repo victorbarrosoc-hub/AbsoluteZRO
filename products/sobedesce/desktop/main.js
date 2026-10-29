@@ -13,7 +13,7 @@ import { handoffCommand, isHandoffScript } from '../src/updater.js'
 import { arquivoDaCentral } from '../src/gerenciado.js'
 import { aberturaSynquei } from '../src/backup/synquei.js'
 import { ligarZoom } from './zoom.js'
-import { AVISO_BANDEJA, acaoAoFechar, acaoAoMinimizar, deveAvisar, dicaBandeja, gravarPrefs, iconeBandeja, lerPrefs, minimizarLigado, modeloMenuBandeja, padraoMinimizar } from './bandeja.js'
+import { AVISO_BANDEJA, acaoAoFechar, acaoAoMinimizar, detalheSair, deveAvisar, dicaBandeja, gravarPrefs, iconeBandeja, lerPrefs, minimizarLigado, modeloMenuBandeja, padraoMinimizar } from './bandeja.js'
 
 const here = import.meta.dirname
 const isMac = process.platform === 'darwin'
@@ -33,9 +33,10 @@ let zoom = null // zoom automático pela largura da janela + o escolhido no menu
 let quitting = false
 let quitConfirmed = false // a pessoa já disse "Sair" com transferências andando (não pergunta duas vezes)
 let activeCount = 0
+let proxyCount = 0 // proxies na fila ou sendo feitos (originais já no Drive): também é trabalho andando
 let sleepBlocker = null
 let tray = null // ícone na bandeja (Windows/Linux) ou na barra de menus (Mac); desktop/bandeja.js
-let trayCount = -1 // quantas transferências o menu da bandeja mostra (remonta só quando muda)
+let trayCount = '' // o que o menu da bandeja mostra (transferências:proxies; remonta só quando muda)
 
 // `SOBEDESCE --smoke` (CI, desktop/smoke.js): sobe o motor numa pasta temporária, confere tudo, escreve "SMOKE OK" e
 // sai com 0 (ou 1). Não abre janela, não usa os dados nem os cookies da pessoa e não disputa a trava de instância.
@@ -300,7 +301,7 @@ function createWindow() {
   win.on('close', event => {
     // No Mac fechar a janela não fecha o app: as transferências continuam (padrão do macOS). No Windows/Linux, com
     // transferência andando e a bandeja ligada, a janela vai para a bandeja em vez de fechar (desktop/bandeja.js).
-    const acao = acaoAoFechar({ plataforma: process.platform, minimizar: minimizarParaBandeja(), temBandeja: temBandeja(), transferencias: activeCount, saindo: quitting, confirmado: quitConfirmed })
+    const acao = acaoAoFechar({ plataforma: process.platform, minimizar: minimizarParaBandeja(), temBandeja: temBandeja(), transferencias: activeCount + proxyCount, saindo: quitting, confirmado: quitConfirmed })
     if (acao === 'bandeja') {
       event.preventDefault()
       return irParaBandeja()
@@ -359,14 +360,15 @@ function criarBandeja() {
 }
 
 function atualizarBandeja() {
-  if (!temBandeja() || trayCount === activeCount) return
-  trayCount = activeCount
+  const chave = `${activeCount}:${proxyCount}`
+  if (!temBandeja() || trayCount === chave) return
+  trayCount = chave
   const acoes = { abrir: () => showWindow(), sair: () => app.quit() }
-  const itens = modeloMenuBandeja(activeCount).map(i =>
+  const itens = modeloMenuBandeja(activeCount, proxyCount).map(i =>
     i.tipo === 'separador' ? { type: 'separator' } : { label: i.rotulo, enabled: i.ativo !== false, click: i.acao ? () => acoes[i.acao]?.() : undefined },
   )
   tray.setContextMenu(Menu.buildFromTemplate(itens))
-  tray.setToolTip(dicaBandeja(activeCount))
+  tray.setToolTip(dicaBandeja(activeCount, proxyCount))
 }
 
 /** Esconde a janela na bandeja (fora da barra de tarefas). Na primeira vez, avisa uma vez que o app continua ali. */
@@ -395,7 +397,7 @@ function confirmQuit() {
   const choice = dialog.showMessageBoxSync(win && win.isVisible() ? win : undefined, {
     type: 'question',
     message: 'Sair do SOBEDESCE?',
-    detail: `${activeCount === 1 ? 'Há 1 transferência' : `Há ${activeCount} transferências`} em andamento. Elas pausam agora e continuam de onde pararam quando você abrir o app de novo.`,
+    detail: detalheSair(activeCount, proxyCount),
     buttons: ['Sair', 'Cancelar'],
     defaultId: 1,
     cancelId: 1,
@@ -416,7 +418,7 @@ function openExternal(url) {
 app.on('before-quit', event => {
   if (quitting) return
   // Vale para ⌘Q no Mac e também para Arquivo → Sair no Windows/Linux (que não passa pelo X da janela).
-  if (activeCount > 0 && !quitConfirmed && !confirmQuit()) {
+  if (activeCount + proxyCount > 0 && !quitConfirmed && !confirmQuit()) {
     event.preventDefault()
     return
   }
@@ -468,17 +470,19 @@ ipcMain.handle('sobedesce:pick-paths', async (event, opts = {}) => {
   return res.canceled ? [] : res.filePaths
 })
 
-ipcMain.on('sobedesce:progress', (event, { fraction, activeCount: count } = {}) => {
+ipcMain.on('sobedesce:progress', (event, { fraction, activeCount: count, proxies } = {}) => {
   if (!trustedSender(event, engineUrl)) return
   activeCount = Math.max(0, Number(count) || 0)
+  proxyCount = Math.max(0, Math.min(1e6, Number(proxies) || 0))
   const owner = BrowserWindow.fromWebContents(event.sender)
   const value = typeof fraction === 'number' && Number.isFinite(fraction) ? Math.min(1, Math.max(0, fraction)) : -1
   owner?.setProgressBar(activeCount > 0 ? value : -1)
   if (isMac) app.dock?.setBadge(activeCount > 0 ? String(activeCount) : '')
   atualizarBandeja()
   // Sem isso o sistema pode suspender o app (e a rede) no meio de uma transferência longa.
-  if (activeCount > 0 && sleepBlocker == null) sleepBlocker = powerSaveBlocker.start('prevent-app-suspension')
-  if (activeCount === 0 && sleepBlocker != null) {
+  // Proxy sendo gerado também: o computador dormir no meio para a conversão e o envio da cópia.
+  if (activeCount + proxyCount > 0 && sleepBlocker == null) sleepBlocker = powerSaveBlocker.start('prevent-app-suspension')
+  if (activeCount + proxyCount === 0 && sleepBlocker != null) {
     powerSaveBlocker.stop(sleepBlocker)
     sleepBlocker = null
   }

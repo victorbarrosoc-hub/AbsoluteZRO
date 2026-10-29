@@ -73,6 +73,19 @@ export function aprox(sec) {
   return m ? `~${h} h ${m} min` : `~${h} h`
 }
 
+/** Quanto algo levou (exato, sem "~"): "38 s", "12 min", "1 h 12 min", "3 h". */
+export function duracao(ms) {
+  const n = Number(ms)
+  if (!Number.isFinite(n) || n < 0) return null
+  const sec = Math.round(n / 1000)
+  if (sec < 60) return `${Math.max(1, sec)} s`
+  const min = Math.round(sec / 60)
+  if (min < 60) return `${min} min`
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  return m ? `${h} h ${m} min` : `${h} h`
+}
+
 export function count(n) {
   return NF0.format(Number(n) || 0)
 }

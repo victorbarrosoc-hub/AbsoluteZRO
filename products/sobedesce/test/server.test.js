@@ -148,7 +148,7 @@ test('segurança: Host errado 403, sem JSON 415, Origin de fora 403, corpo grand
   assert.equal(r.status, 403)
   r = await post('/api/transfers/clear', {}, { headers: { origin: `http://127.0.0.1:${app.port}` } })
   assert.equal(r.status, 200)
-  assert.deepEqual(r.json, { ok: true })
+  assert.deepEqual(r.json, { ok: true, removidos: 0, mantidos: 0 })
   r = await call('POST', '/api/transfers/clear', { body: '{}', headers: { 'content-type': 'application/json; charset=utf-8' } })
   assert.equal(r.status, 200, 'charset no Content-Type vale')
 

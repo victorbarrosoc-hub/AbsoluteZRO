@@ -13,7 +13,7 @@ contextBridge.exposeInMainWorld('sobedesce', {
       return ''
     }
   },
-  setProgress: (fraction, activeCount) => ipcRenderer.send('sobedesce:progress', { fraction, activeCount }),
+  setProgress: (fraction, activeCount, proxies) => ipcRenderer.send('sobedesce:progress', { fraction, activeCount, proxies }),
   notify: (title, body) => ipcRenderer.send('sobedesce:notify', { title, body }),
   openExternal: url => ipcRenderer.invoke('sobedesce:open-external', url),
   reveal: path => ipcRenderer.invoke('sobedesce:reveal', path),

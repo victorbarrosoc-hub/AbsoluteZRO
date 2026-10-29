@@ -492,6 +492,13 @@ Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   quantas transferências andam e "Sair"; fechar no X com transferência andando vai para a bandeja. Barra lateral cabe
   em 1280×720 com 125% sem rolagem: aviso de versão vira pílula com balão, a família vira uma linha com balão. Falta o
   titular autorizar o instalador novo.
+- ✅ **SOBEDESCE: proxies à vista no lote e números do envio** (29/10/2026, pedido do titular): o cartão fechado de um
+  envio com os originais no Drive e os proxies andando diz "Originais no Drive · gerando proxies 3 de 26" (anel no ícone,
+  "proxies 3/26" à direita); depois "26 proxies prontos em 18 min" ou "2 proxies falharam · Tentar de novo". Limpar
+  concluídas e "Tirar da lista" não tiram lote com proxy pendente nem cancelam o proxy ("1 lote ficou: ainda gerando
+  proxies."); a bandeja mostra "Gerando 3 proxies" e fechar o app pergunta antes. Lote terminado mostra "104 GB em 1 h
+  12 min · 24,6 MB/s" (média pelo tempo transferindo), gravado em `queue.json` (`batch.stats`). Falta publicar o
+  instalador (autorização do titular).
 - ⬜ Pastas dos quatro produtos fechados (`RELEASE=closed`, telas, `/api/zro/*` com 403, instaladores e Releases) —
   outros agentes, no mesmo branch.
 - ⛔ Em produção, só com autorização: inserir a conta do proprietário em `product_release_access` e rodar o

@@ -1004,10 +1004,8 @@ export function createApi(ctx) {
     }
   })
 
-  route('POST', '/api/transfers/clear', () => {
-    ctx.manager.clearFinished()
-    return {}
-  })
+  // Limpar concluídas: lote com proxy ainda sendo feito fica (e o proxy segue); a tela diz quantos ficaram.
+  route('POST', '/api/transfers/clear', () => ctx.manager.clearFinished() ?? {})
 
   // ── ajustes
   route('GET', '/api/settings', () => ({ settings: ctx.settings.get() }))
