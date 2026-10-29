@@ -299,7 +299,8 @@ test('converter: ProRes 422 HQ vira MP4 H.264 marcado BT.709, no navegador', asy
     '-t',
     '2',
     '-vf',
-    'scale=out_color_matrix=bt709:out_range=tv',
+    // o ffmpeg 8 tira a cor dos quadros (as opções -color_* sozinhas não bastam): marca cada quadro com setparams
+    'scale=out_color_matrix=bt709:out_range=tv,setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=tv',
     '-c:v',
     'prores_ks',
     '-profile:v',
@@ -316,7 +317,7 @@ test('converter: ProRes 422 HQ vira MP4 H.264 marcado BT.709, no navegador', asy
     'pcm_s24le',
     master,
   ])
-  // cabeçalho dos quadros em BT.601 (6) e contêiner em BT.709, o desencontro do ffmpeg 8 no CI: vale o contêiner
+  // cabeçalho dos quadros em BT.601 (6) contra o contêiner em BT.709: vale o contêiner, como no QuickTime
   const bruto = readFileSync(master)
   for (let i = bruto.indexOf('icpf'); i >= 0; i = bruto.indexOf('icpf', i + 4)) bruto.fill(6, i + 18, i + 21)
   writeFileSync(master, bruto)
