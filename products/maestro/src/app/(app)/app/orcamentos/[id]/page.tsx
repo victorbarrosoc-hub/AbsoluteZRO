@@ -51,10 +51,21 @@ export default async function FichaOrcamento({ params }: PageProps<"/app/orcamen
   const escreve = podeEscrever(sessao.papel);
   const editavel = escreve && o.status === "rascunho";
   const validade = avisoDeValidade(o.validade, hoje, o.status);
+  // A saída começa na cidade base (Ajustes → Empresa): com latitude e longitude já vale como lugar; só com o nome, a
+  // calculadora procura sozinha ao abrir.
   const base =
     empresa.lat != null && empresa.lon != null && empresa.cidade
-      ? { rotulo: empresa.cidade, detalhe: [empresa.cidade, empresa.uf].filter(Boolean).join(" · "), lat: empresa.lat, lon: empresa.lon }
+      ? {
+          rotulo: empresa.cidade,
+          detalhe: [empresa.cidade, empresa.uf].filter(Boolean).join(" · "),
+          lat: empresa.lat,
+          lon: empresa.lon,
+          cidade: empresa.cidade,
+          tipo: "cidade" as const,
+          ...(empresa.uf ? { uf: empresa.uf } : {}),
+        }
       : null;
+  const baseTexto = empresa.cidade ? [empresa.cidade, empresa.uf].filter(Boolean).join(", ") : null;
 
   return (
     <div className="pagina pagina--larga">
@@ -188,6 +199,7 @@ export default async function FichaOrcamento({ params }: PageProps<"/app/orcamen
         editavel={editavel}
         podeAprovar={aprova && (o.status === "enviado" || o.status === "rascunho")}
         base={base}
+        baseTexto={baseTexto}
         veiculos={veiculos}
         servicos={servicosAbertos()}
       />

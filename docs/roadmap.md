@@ -577,6 +577,15 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ⛔ Em produção: `CRON_SECRET` no projeto `absolutezro` (o do `maestro` já existe), migrações `0030` (HUB) e `0022`
   (Maestro) no próximo deploy autorizado. Primeira semana da ANP entra no primeiro sábado ou na primeira abertura da
   calculadora.
+- ✅ **Deslocamento sozinho** (Maestro, pedido do titular 29/10/2026, sem migração): Photon e OSRM **ligados**
+  (`MAESTRO_SERVICOS_ABERTOS=0` desliga); o texto digitado vira lugar sozinho (cidade com o mesmo nome, capital em
+  empate, UF dita; ao sair do campo, no Enter ou quando só uma cidade casa) e a dica diz o que foi entendido
+  ("São Paulo/SP"); a rota preenche "Km de uma ida" ("Pela estrada · ≈ 40h45 de carro"), km digitado vale com "Usar o
+  da rota". O preço do litro vem da **cidade de saída** (onde se abastece; senão a da produtora), município → estado →
+  Brasil, também com nome digitado sem acento/UF; sem semana guardada, pergunta de novo uma vez (coleta de reserva).
+  Veículos de partida (Compacto, Sedã, SUV compacto, SUV médio, Picape compacta, Picape diesel, Van, Micro-ônibus,
+  consumo de estrada por combustível; `src/lib/orcamento/veiculos.ts`) junto com os do inventário; consumo segue
+  digitável.
 
 ## Perfil profissional com @ (29/10/2026, [ADR 0029](decisions/0029-perfil-profissional-arroba.md))
 

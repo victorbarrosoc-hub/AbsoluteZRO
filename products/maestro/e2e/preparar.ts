@@ -21,6 +21,8 @@ export const ARQUIVO_SESSAO_ACESSOS = "test-results/e2e-sessao-acessos.json";
 export const PORTA_PONTE = Number(process.env.E2E_PONTE_PORT || 3219);
 /** A ANP falsa (tests/anp-fixture.mts, valores inventados) da calculadora de deslocamento: MAESTRO_ANP_URL no servidor. */
 export const PORTA_ANP = Number(process.env.E2E_ANP_PORT || 3221);
+/** Photon e OSRM falsos (tests/rota-fixture.mts) da calculadora de deslocamento: MAESTRO_PHOTON_URL e MAESTRO_OSRM_URL. */
+export const PORTA_ROTA = Number(process.env.E2E_ROTA_PORT || 3223);
 
 export default async function preparar() {
   const alvo = new URL(E2E_DB);
@@ -359,8 +361,11 @@ export default async function preparar() {
   const ponte = await iniciarPonteFalsa({ porta: PORTA_PONTE });
   const { iniciarAnpFalsa } = await import("../tests/anp-fixture.mts");
   const anp = await iniciarAnpFalsa(PORTA_ANP);
+  const { iniciarRotaFalsa } = await import("../tests/rota-fixture.mts");
+  const rota = await iniciarRotaFalsa(PORTA_ROTA);
   return async () => {
     await ponte.fechar();
     await anp.fechar();
+    await rota.fechar();
   };
 }

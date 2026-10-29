@@ -344,6 +344,26 @@ neste ambiente: PTAX de 28/10/2026 = venda 5,342 (Olinda); planilha `resumo_sema
   e na gaveta. Não verificado aqui: as telas do AEON (`tela.test.js` pede `npm run vendor`, que não roda neste
   ambiente; o teste do menu passou a contar a família de `src/familia.js`).
 
+### Deslocamento sozinho (Maestro, 29/10/2026)
+
+- Causa do relato do titular: (1) km — Photon e OSRM estavam desligados (`MAESTRO_SERVICOS_ABERTOS` ausente, dica
+  "Digite os km do trajeto.") e, ligados, a rota só media depois de escolher uma sugestão na lista; (2) preço — a
+  `0022` subiu às 16h35 de 29/10 e a primeira semana só foi guardada pela coleta de reserva (`buscado_em` 20h34),
+  disparada pela própria abertura da calculadora, que naquela vez já respondia "Sem preço"; o preço também olhava só a
+  cidade da produtora. Corrigido: serviços ligados, lugar escolhido sozinho, preço pela saída e nova pergunta depois da
+  coleta.
+- Maestro `npm test` **392/392**: `deslocamento.test.mts` (21: lugar com município/UF/tipo, "sao paulo"/"SAO PAULO"/
+  "São Paulo, SP" → São Paulo/SP e não o estado, "Natal, PI", capital em empate, preço município → estado → Brasil com
+  e sem UF, semana velha fora, nome em dois estados, veículos e troca de combustível), `combustivel.test.mts` (9: no
+  banco, nomes digitados) e o novo `rota.test.mts` (3, Photon/OSRM falsos em `tests/rota-fixture.mts`: ligados por
+  padrão, busca presa ao Brasil, memória de 12 h, fora do ar lança, `=0` não sai nada).
+- E2E `produtora.spec.ts` **14/14 + 2 pulados** (computador e iPhone 393 px): "sao paulo" → "Natal" digitados,
+  2923,1 km pela rota falsa, gasolina de São Paulo/SP 6,11, Compacto · 14 → R$ 2.551,45, Van troca para diesel,
+  consumo e km digitados com "Usar o da rota". Capturas claro/escuro, computador/393 px fora do repositório.
+- Conferido ao vivo neste ambiente (Photon e OSRM públicos): São Paulo → Natal 2.921,7 km (≈ 40h44), "natal, rn" e
+  Campinas → Mossoró ok. Não verificado: o comportamento em produção (deploy só com o titular) e o uso justo dos
+  serviços públicos com muitas produtoras (hoje: memória por servidor e busca só ao parar de digitar).
+
 ## E-mails da central com cara de e-mail de conta (29/10/2026)
 
 - Convite caiu em Promoções no Gmail (SPF, DKIM e DMARC conferidos no DNS: ok). `apps/hub-web/lib/email/modelos.ts`
