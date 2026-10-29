@@ -4,7 +4,7 @@
  * hoje (em dias), valores em centavos. Puro: só dados.
  */
 import type { StatusCliente, StatusProjeto } from "@/lib/db/schema";
-import type { ColunaKey, Prioridade } from "@/lib/quadro/metodo";
+import type { PapelColuna, Prioridade } from "@/lib/quadro/metodo";
 
 export type ClienteDemo = {
   nome: string;
@@ -31,7 +31,7 @@ export type ProjetoDemo = {
 export type CardDemo = {
   cliente: number;
   projeto: number | null;
-  coluna: ColunaKey;
+  coluna: PapelColuna;
   tema: string;
   prazo: number | null;
   prioridade?: Prioridade;

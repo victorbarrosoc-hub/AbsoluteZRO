@@ -58,7 +58,10 @@ export type NomeIcone =
   | "numeros"
   | "importar"
   | "retorno"
-  | "pessoas";
+  | "pessoas"
+  | "colunas"
+  | "alca"
+  | "arquivar";
 
 const CAMINHOS: Record<NomeIcone, React.ReactNode> = {
   alvo: (
@@ -308,6 +311,20 @@ const CAMINHOS: Record<NomeIcone, React.ReactNode> = {
     <>
       <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9" />
       <path d="M4.5 4.5V9H9M12 8.5V12l2.5 2" />
+    </>
+  ),
+  colunas: (
+    <>
+      <rect x="3.5" y="4" width="4.5" height="16" rx="1.5" />
+      <rect x="9.75" y="4" width="4.5" height="16" rx="1.5" />
+      <rect x="16" y="4" width="4.5" height="16" rx="1.5" />
+    </>
+  ),
+  alca: <path d="M9 6.5h.01M15 6.5h.01M9 12h.01M15 12h.01M9 17.5h.01M15 17.5h.01" strokeWidth={2.6} />,
+  arquivar: (
+    <>
+      <rect x="3.5" y="4.5" width="17" height="4.5" rx="1.5" />
+      <path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4" />
     </>
   ),
   pessoas: (

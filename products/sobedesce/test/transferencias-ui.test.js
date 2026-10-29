@@ -2,7 +2,7 @@
 // que falta (public/lib/format.js → aprox, o mesmo do celular).
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { FILTER_TESTS, batchLocal, integrity, integrityLabel, meterTotals, needsYou, sortRows } from '../public/lib/transferencias.js'
+import { FILTER_TESTS, batchLocal, integrity, integrityLabel, meterTotals, needsYou, rodada, sortRows } from '../public/lib/transferencias.js'
 import { aprox } from '../public/lib/format.js'
 
 const t = (status, extra = {}) => ({ status, ...extra })
@@ -81,4 +81,26 @@ test('batchLocal: a pasta do computador de um lote de download (durante e depois
   assert.equal(batchLocal([{ type: 'upload', status: 'completed', local: { path: '/x' } }]), null)
   assert.equal(batchLocal([d('/a/b.mp4', 'canceled')]), null)
   assert.equal(batchLocal([]), null)
+})
+
+test('número grande de "Agora": só a rodada de agora (lote velho concluído, cancelado e tentativa substituída ficam de fora)', () => {
+  const GB = 1e9
+  const r = (batchId, status, extra = {}) => ({ batchId, status, size: 50 * GB, createdAt: 10, startedAt: 10, ...extra })
+  // ontem: um lote de 100 GB concluído; hoje: um envio de 100 GB, metade já no Drive
+  const ontem = [r('ontem', 'completed', { createdAt: 1, startedAt: 1, finishedAt: 2 }), r('ontem', 'completed', { createdAt: 1, startedAt: 1, finishedAt: 2 })]
+  const hoje = [r('hoje', 'completed', { startedAt: 100, finishedAt: 150 }), r('hoje', 'running', { startedAt: 100, bytesDone: 10 * GB })]
+  // a primeira tentativa de hoje, substituída pelo motor (vira cancelada)
+  const velha = [r('tentativa1', 'canceled', { substituidaPor: 'x', bytesDone: 20 * GB })]
+  const g = rodada([...ontem, ...velha, ...hoje])
+  assert.deepEqual(g, { size: 100 * GB, done: 60 * GB, total: 2, feitos: 1 })
+
+  // terminou o último: a porcentagem não cai, fica 100% do envio de hoje
+  hoje[1] = r('hoje', 'completed', { startedAt: 100, finishedAt: 200 })
+  assert.deepEqual(rodada([...ontem, ...velha, ...hoje]), { size: 100 * GB, done: 100 * GB, total: 2, feitos: 2 })
+
+  // dois lotes ao mesmo tempo: um termina enquanto o outro anda e continua na conta
+  const a = [r('a', 'completed', { startedAt: 100, finishedAt: 120 })]
+  const b = [r('b', 'queued', { createdAt: 110, startedAt: undefined })]
+  assert.deepEqual(rodada([...ontem, ...a, ...b]), { size: 100 * GB, done: 50 * GB, total: 2, feitos: 1 })
+  assert.deepEqual(rodada([]), { size: 0, done: 0, total: 0, feitos: 0 })
 })

@@ -74,6 +74,51 @@ export function meterTotals(totals = {}) {
   return { moving, parked: Math.max(0, totals.parked || 0), parkedCount: totals.parkedCount || 0, problems: totals.problems || 0 }
 }
 
+const PODE_ANDAR = new Set(['queued', 'running', 'verifying', 'waiting', 'paused'])
+const FEITO = new Set(['completed', 'skipped'])
+
+/**
+ * O que conta no número grande de "Agora": a rodada de agora, não a lista inteira. Lotes que ainda andam (ou estão
+ * pausados), mais os que terminaram depois que o primeiro deles começou (terminar não faz a porcentagem cair). Nada
+ * andando: o último lote (mostra como ele terminou). Cancelado e envio substituído por uma nova tentativa não contam.
+ * Devolve { size, done, total, feitos } (bytes e arquivos).
+ */
+export function rodada(items) {
+  const vivas = (items || []).filter((t) => t.status !== 'canceled')
+  const lotes = new Map()
+  for (const t of vivas) {
+    const k = t.batchId || 'sem-lote'
+    let l = lotes.get(k)
+    if (!l) lotes.set(k, (l = { itens: [], anda: false, inicio: Infinity, fim: 0, criado: Infinity }))
+    l.itens.push(t)
+    if (PODE_ANDAR.has(t.status)) l.anda = true
+    l.inicio = Math.min(l.inicio, t.startedAt || t.createdAt || Infinity)
+    l.criado = Math.min(l.criado, t.createdAt || Infinity)
+    l.fim = Math.max(l.fim, t.finishedAt || 0)
+  }
+  const todos = [...lotes.values()]
+  const andando = todos.filter((l) => l.anda)
+  let escopo
+  if (andando.length) {
+    const inicio = Math.min(...andando.map((l) => l.inicio))
+    escopo = todos.filter((l) => l.anda || (Number.isFinite(inicio) && l.fim >= inicio))
+  } else {
+    const ultimo = todos.sort((a, b) => b.fim - a.fim || b.criado - a.criado)[0]
+    escopo = ultimo ? [ultimo] : []
+  }
+  const out = { size: 0, done: 0, total: 0, feitos: 0 }
+  for (const t of escopo.flatMap((l) => l.itens)) {
+    const size = t.size || 0
+    out.total++
+    out.size += size
+    if (FEITO.has(t.status)) {
+      out.feitos++
+      out.done += size
+    } else out.done += Math.min(size, t.bytesDone || 0)
+  }
+  return out
+}
+
 /**
  * A pasta do Drive para mandar o link de um envio concluído. Uma pasta enviada inteira ("CAM_A → Diária 02") vira a
  * própria pasta nova (CAM_A, criada no Drive); arquivos soltos, a pasta de destino. Só envios (download não tem pasta

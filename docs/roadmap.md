@@ -37,6 +37,10 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   e o conteúdo "pulava" por cima. Agora o topo (saudação, palco, atalhos) chega primeiro e os painéis vêm em streaming;
   todo esqueleto da área logada tem a forma da tela real e só aparece depois de 320 ms; quando aparece, o conteúdo
   dissolve por cima; com "reduzir movimento", troca seca. Falta: conferir no Safari do titular depois de publicar.
+- ✅ Página inicial no iPhone (29/10/2026, relato do titular): a cápsula do topo fica por cima de tudo, com faixa da cor
+  da página atrás da barra de status; grade de ícones como a Tela de Início, com "Em breve" curto e alinhado; Maestro e
+  Relay como "Em breve" pelo gate (o Relay aparece sozinho com a 0031). Falta: conferir num iPhone de verdade e regerar
+  a foto do app para computador quando o Relay entrar.
 - ✅ Página inicial de cinema (26/10/2026): paisagem com o símbolo esculpido sobre a rocha, faixa discreta das 7 ferramentas e cartão do Ciclo do O; sem selos de "em construção".
 - ✅ AEON (26/10/2026): a plataforma de edição ganha nome e ícone no catálogo, na home e no HUB (migration 0012); segue em desenvolvimento.
 - ✅ Página inicial com o símbolo como protagonista (26/10/2026): o anel se desenha a partir da centelha, a estrela
@@ -174,6 +178,12 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   pelo HUB, mesma permissão e cota da importação de descarga, sem duplicar). ⬜ Envio automático do app para o HUB:
   pede o HUB aceitar o token do login único com escopo próprio (decisão de arquitetura, ADR nova).
 - ⬜ SOBEDESCE · "Converter com a Revela" em Mac, Windows, iPhone e Android reais (roteiro em validation.md).
+- ✅ Central de apps atualiza o que não instalou (29/10/2026): lê o build de dentro do app (`build-info.json` no
+  `app.asar`) em vez de depender só do próprio registro. Antes, um SOBEDESCE instalado pelo Terminal ficava no build
+  antigo: o app esperava a central e a central não sabia o build dele.
+- ✅ SOBEDESCE · contador de "Agora" corrigido (29/10/2026): a porcentagem somava a lista inteira (lotes antigos
+  concluídos e a tentativa que falhou de novo junto com a nova), e um envio de 100 GB aparecia como "51% de 205 GB"
+  depois de terminado. Agora conta só a rodada de agora, e o envio mandado de novo substitui a tentativa que falhou.
 - ✅ SOBEDESCE · build do app de desktop de volta (26/10/2026): o download do SDK da Blackmagic devolvia 400 com o
   cadastro antigo; com o segredo `BRAW_SDK_CADASTRO` refeito, Mac e Windows passam (SDK, empacotamento e teste de fumaça).
 - ✅ TPeasy ↔ HUB pelo backup JSON do próprio app.
@@ -483,6 +493,15 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   `.github/workflows/maestro-desktop.yml` publica no Release de teste `maestro-versao-de-teste` (SHA-256,
   `versao.json`, três últimos builds). Falta: primeiro build no GitHub (sai no próximo push na main), instalar num Mac e
   num Windows de verdade, assinatura/notarização da Apple e certificado da Microsoft (decisão e conta do titular).
+- ✅ Maestro, **colunas do Quadro como no Trello** (pedido do titular, 29/10/2026; `drizzle/0024_colunas.sql`): cada
+  produtora renomeia no lugar (clique duplo no cabeçalho; no celular, tocar na aba já escolhida), recolore (paleta de
+  12 tons da Aurora), reordena (arrastar o cabeçalho; no celular, segurar a alça 280 ms na folha) e cria colunas
+  ("Captação", "Color"); a folha "Editar colunas" junta tudo, com arquivar perguntando para onde vão os cards,
+  arquivadas para restaurar e "Restaurar padrão". As 8 do método são de sistema (id = papel, cadeado com o porquê,
+  nunca arquivam): a aprovação do cliente, o Hoje, a agenda e a Z seguem pelo id, nunca pelo nome; as novas contam
+  como "em produção". Só administração e gestão mudam (RLS + funções `maestro.coluna_*`); organizações existentes
+  ficam com as 8 de hoje. Falta: aplicar a 0024 em produção (vai junto com o próximo deploy autorizado do Maestro) e
+  conferir num iPhone de verdade.
 - ⬜ Maestro, pendente do titular: ciência dos serviços abertos da calculadora; criar a chave de API do Google só do
   Maestro (restrita à Drive API e a `maestro.absolutezro.com`) e pôr em `MAESTRO_GOOGLE_API_KEY` na Vercel; pôr
   `CRON_SECRET` no projeto `maestro` da Vercel (agendamento que desliga o compartilhamento de revisão vencido).

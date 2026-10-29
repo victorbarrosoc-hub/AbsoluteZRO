@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { COLUNA, type ColunaKey } from "@/lib/quadro/metodo";
+import { nomeDaColuna } from "@/lib/quadro/colunas";
 import type { CardDisponivel } from "@/lib/revisao/equipe";
 import type { EstadoForm } from "@/components/form";
 
@@ -64,9 +64,9 @@ export function NovoLote({
             doCliente.map((c) => (
               <label key={c.id} className="ap-escolha__item">
                 <input type="checkbox" name="cards" value={c.id} defaultChecked={c.coluna === "revisao"} />
-                <i className="q-ponto" data-col={c.coluna} aria-hidden="true" />
+                <i className="q-ponto" data-col={c.coluna} data-cor={c.colunaCor ?? undefined} aria-hidden="true" />
                 <span>{c.tema}</span>
-                <small>{COLUNA[c.coluna as ColunaKey]?.nome ?? c.coluna}</small>
+                <small>{c.colunaNome ?? nomeDaColuna([], c.coluna)}</small>
               </label>
             ))
           ) : (

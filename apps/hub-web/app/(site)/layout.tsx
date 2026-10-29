@@ -1,9 +1,14 @@
 import Link from 'next/link'
+import type { Viewport } from 'next'
 import type { ReactNode } from 'react'
 import { Wordmark } from '@/components/brand'
 import { LinkIntencao, Transicao } from '@/components/movimento'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { getAuth } from '@/lib/session'
+
+// No iPhone a página vai até a borda de cima: a cápsula desce pela safe area e a faixa atrás dela cobre a barra de
+// status, para nada da página aparecer entre o relógio e o topo enquanto rola (globals.css, .capsule-wrap).
+export const viewport: Viewport = { viewportFit: 'cover' }
 
 export default async function SiteLayout({ children }: { children: ReactNode }) {
   const auth = await getAuth()

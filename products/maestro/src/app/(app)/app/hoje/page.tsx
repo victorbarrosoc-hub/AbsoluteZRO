@@ -236,7 +236,7 @@ export default async function Hoje() {
                 {r.vencendo.map((k) => (
                   <li key={k.id}>
                     <Link href={`/app/quadro?card=${encodeURIComponent(k.id)}`} className="hoje-item">
-                      <i className="hoje-item__ponto" data-col={k.coluna} aria-hidden="true" />
+                      <i className="hoje-item__ponto" data-col={k.coluna} data-cor={k.cor ?? undefined} aria-hidden="true" />
                       <span className="hoje-item__miolo">
                         <b>{k.tema}</b>
                         {k.cliente ? <small>{k.cliente}</small> : null}

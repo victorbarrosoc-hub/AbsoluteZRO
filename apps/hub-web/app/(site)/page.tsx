@@ -25,6 +25,12 @@ const LINE: Record<string, string> = {
   nossom: 'Tratamento de som',
   finishing: 'Cor e entrega',
   maestro: 'Gestão da produtora',
+  relay: 'Conversão e exportação',
+}
+
+/** A linha da ficha em "Conheça de perto", quando pede mais que a faixa do topo. */
+const LINHA_LONGA: Record<string, string> = {
+  relay: 'Converte e exporta para qualquer destino.',
 }
 
 /** Três fatos por ferramenta, tirados do que cada uma faz hoje (README de cada produto em products/). */
@@ -36,6 +42,7 @@ const FATOS: Record<string, string[]> = {
   'ai-edit': ['Transcrição na sua máquina', 'Cortes e zoom propostos para você aprovar', 'Linha do tempo para o seu editor'],
   nossom: ['Estúdio de áudio para criadores', 'Instala pelo navegador', 'App para Mac e Windows'],
   finishing: ['LUT criativa a partir de uma referência', 'LOG para Rec.709 por câmera', 'PowerGrade para o DaVinci Resolve'],
+  relay: ['YouTube, Reels, TikTok, WhatsApp e mais', 'Converte no aparelho, sem enviar o arquivo', 'Predefinição pronta para cada destino'],
 }
 
 /** Ferramentas com a tela no MacBook e no iPhone (public/brand/produto-<id>-{claro,escuro}.webp); as outras mostram o ícone. */
@@ -77,7 +84,8 @@ const SITE: Record<string, string> = {
 
 export default async function Landing() {
   // Gate de lançamento (ADR 0023): o que não está aberto ao público (ou liberado para a pessoa logada) aparece como
-  // "Em desenvolvimento", sem link, e fica fora dos números, das etapas e da órbita da Z.
+  // "Em breve", sem link, e fica fora dos números, das etapas e da órbita da Z. Produto novo no catálogo (o Relay, na
+  // 0031) entra sozinho aqui, fechado até a migration que o abre.
   const auth = await getAuth()
   const [{ products }, liberados, baixaveis] = await Promise.all([
     publicCatalog(),
@@ -93,6 +101,10 @@ export default async function Landing() {
       </span>,
     ])
   const aberto = (id: string) => liberados.has(id)
+  // Faixa das ferramentas: no computador todas numa linha até 8; com mais, duas linhas (a de baixo centrada) para o nome
+  // não cortar. No celular, 4 por linha (Tela de Início do iPhone); 3 quando o total fecha certinho em 3 e não em 4.
+  const porLinha = products.length > 8 ? Math.ceil(products.length / 2) : products.length
+  const colunas = products.length % 4 !== 0 && products.length % 3 === 0 ? 3 : 4
   const ativos = products.filter((p) => aberto(p.id) && (p.stage === 'active' || p.stage === 'beta'))
   const siteDe = (p: (typeof products)[number]) => (aberto(p.id) ? (p.external_url as string | null) || SITE[p.id as string] || null : null)
   // Só os eventos de quem está aberto: o fluxo e os números mostram o que roda hoje, não o que ainda está fechado.
@@ -106,11 +118,11 @@ export default async function Landing() {
     { valor: formatos, rotulo: 'formatos de linha do tempo', dica: 'OTIO, FCPXML, xmeml, EDL e AAF' },
     { valor: noComputador, rotulo: 'apps para Mac e Windows' },
   ].filter((n) => n.valor > 0)
-  // Conheça de perto: os lançados primeiro; os fechados vêm depois, com o selo e sem link.
+  // Conheça de perto: os lançados primeiro; os fechados vêm depois, com o selo "Em breve" e sem link.
   const destaques = [...ativos, ...products.filter((p) => !ativos.includes(p))].map((p) => ({
     id: p.id as string,
     nome: p.name as string,
-    linha: LINE[p.id as string] ?? (p.role_in_flow as string),
+    linha: LINHA_LONGA[p.id as string] ?? LINE[p.id as string] ?? (p.role_in_flow as string),
     fatos: FATOS[p.id as string] ?? [],
     site: siteDe(p),
     emDesenvolvimento: !aberto(p.id),
@@ -168,7 +180,7 @@ export default async function Landing() {
 
       {/* As ferramentas numa faixa só, discreta: ícone, nome e uma linha. */}
       <section className="pstrip" id="ecossistema" aria-label="Ferramentas">
-        <ul className="pstrip__list" style={{ '--n': products.length } as CSSProperties}>
+        <ul className="pstrip__list" style={{ '--n': porLinha, '--cols': colunas } as CSSProperties}>
           {products.map((p, i) => {
             const id = p.id as string
             const name = p.name as string
@@ -179,7 +191,7 @@ export default async function Landing() {
                 <span className="pstrip__text">
                   <span className="pstrip__name">{name}</span>
                   <span className="pstrip__line">{LINE[id] ?? (p.role_in_flow as string)}</span>
-                  {!aberto(id) && <span className="selo-dev">Em desenvolvimento</span>}
+                  {!aberto(id) && <span className="selo-dev">Em breve</span>}
                 </span>
                 {site && (
                   <span className="pstrip__go" aria-hidden="true">

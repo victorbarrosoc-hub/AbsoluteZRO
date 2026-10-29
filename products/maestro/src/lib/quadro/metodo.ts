@@ -1,27 +1,42 @@
 /**
- * O método do Quadro: 8 colunas, um estado só por card (`dados.coluna`). O método não muda; os nomes são os do
+ * O método do Quadro: 8 colunas de sistema, um estado só por card (`dados.coluna`). Os nomes de fábrica são os do
  * proprietário (28/10/2026): "Com o cliente" virou "Em aprovação" e "Publicado" virou "Entregue".
+ *
+ * Desde a 0024 (colunas como no Trello, titular 29/10/2026) cada produtora renomeia, recolore, reordena e cria colunas
+ * (`src/lib/quadro/colunas.ts`). O id de uma coluna de sistema É o papel dela (`pauta`, `revisao`…) e não muda com o
+ * nome: tudo o que o produto automatiza por coluna (próximo passo, prazo, aprovação do cliente, Hoje, agenda, Z) olha
+ * o id, nunca o nome. Coluna criada pela produtora tem id `x-…` e conta como "em produção".
  *
  * Porte do Quadro do Maestro antigo (via o porte do ZRO, `painel/quadro/metodo.ts`): o próximo passo de cada coluna,
  * a ordem entre vizinhos (mover não regrava a coluna inteira), os filtros e o rótulo do prazo. Puro: roda no
  * navegador, no servidor e nos testes.
  */
-export type ColunaKey = "pauta" | "afazer" | "fazendo" | "revisao" | "aprovacao" | "aprovado" | "agendado" | "entregue";
+/** Os papéis das 8 colunas do método (= o id delas). */
+export type PapelColuna = "pauta" | "afazer" | "fazendo" | "revisao" | "aprovacao" | "aprovado" | "agendado" | "entregue";
+/** Id de qualquer coluna: um papel ou `x-<acaso>` (coluna da produtora). */
+export type ColunaId = string;
 
-export const COLUNAS: { k: ColunaKey; nome: string; desc: string }[] = [
-  { k: "pauta", nome: "Pauta", desc: "Ideias sem responsável. Escolha quem faz." },
-  { k: "afazer", nome: "A fazer", desc: "Tem dono e prazo. Ainda não começou." },
-  { k: "fazendo", nome: "Fazendo", desc: "Em produção agora." },
-  { k: "revisao", nome: "Revisão", desc: "Alguém da casa confere antes do cliente." },
-  { k: "aprovacao", nome: "Em aprovação", desc: "Esperando a decisão do cliente." },
-  { k: "aprovado", nome: "Aprovado", desc: "O cliente aprovou. Falta agendar." },
-  { k: "agendado", nome: "Agendado", desc: "Programado para ir ao ar." },
-  { k: "entregue", nome: "Entregue", desc: "No ar, entregue ao cliente." },
+/** As colunas de fábrica (nome, cor e ordem; o banco semeia as mesmas em `maestro.colunas_padrao_lista()`). */
+export const COLUNAS: { k: PapelColuna; nome: string; desc: string; cor: string }[] = [
+  { k: "pauta", nome: "Pauta", desc: "Ideias sem responsável. Escolha quem faz.", cor: "pedra" },
+  { k: "afazer", nome: "A fazer", desc: "Tem dono e prazo. Ainda não começou.", cor: "lavanda" },
+  { k: "fazendo", nome: "Fazendo", desc: "Em produção agora.", cor: "ambar" },
+  { k: "revisao", nome: "Revisão", desc: "Alguém da casa confere antes do cliente.", cor: "laranja" },
+  { k: "aprovacao", nome: "Em aprovação", desc: "Esperando a decisão do cliente.", cor: "latao" },
+  { k: "aprovado", nome: "Aprovado", desc: "O cliente aprovou. Falta agendar.", cor: "verde" },
+  { k: "agendado", nome: "Agendado", desc: "Programado para ir ao ar.", cor: "turquesa" },
+  { k: "entregue", nome: "Entregue", desc: "No ar, entregue ao cliente.", cor: "oliva" },
 ];
-export const COLUNA = Object.fromEntries(COLUNAS.map((c) => [c.k, c])) as Record<ColunaKey, (typeof COLUNAS)[number]>;
-export const ehColuna = (v: unknown): v is ColunaKey => typeof v === "string" && v in COLUNA;
-/** Colunas em que o card ainda é trabalho da equipe (o prazo de entrega vale aqui). */
-export const EM_TRABALHO: ColunaKey[] = ["pauta", "afazer", "fazendo", "revisao"];
+export const COLUNA = Object.fromEntries(COLUNAS.map((c) => [c.k, c])) as Record<PapelColuna, (typeof COLUNAS)[number]>;
+export const ehPapel = (v: unknown): v is PapelColuna => typeof v === "string" && Object.hasOwn(COLUNA, v);
+/** Id de coluna da produtora (a 0024 gera `x-` + 12 hex). */
+export const ID_COLUNA_DA_PRODUTORA = /^x-[a-z0-9]{4,32}$/;
+/** Forma de um id de coluna (se a coluna existe e está viva, quem confere é o banco). */
+export const ehColuna = (v: unknown): v is ColunaId => ehPapel(v) || (typeof v === "string" && ID_COLUNA_DA_PRODUTORA.test(v));
+/** Colunas em que o card já não é trabalho da equipe. Fora delas (as 4 primeiras e as da produtora) o prazo vale. */
+export const FORA_DO_TRABALHO: PapelColuna[] = ["aprovacao", "aprovado", "agendado", "entregue"];
+/** O card ainda é trabalho da equipe? Coluna da produtora conta como "em produção". */
+export const emTrabalho = (coluna: ColunaId | null | undefined): boolean => !!coluna && !(FORA_DO_TRABALHO as string[]).includes(coluna);
 
 export type Prioridade = "baixa" | "normal" | "alta";
 export const PRIORIDADES: { k: Prioridade; nome: string }[] = [
@@ -33,7 +48,7 @@ export const PRIORIDADES: { k: Prioridade; nome: string }[] = [
 /** O documento do card (maestro.cards.dados). Ids de cliente, projeto e responsável são os do banco. */
 export type DadosCard = {
   tema: string;
-  coluna: ColunaKey;
+  coluna: ColunaId;
   ordem?: number;
   colunaEm?: number;
   cliente?: string;
@@ -108,9 +123,12 @@ export const ID_CARD = /^[A-Za-z0-9_-]{4,64}$/;
 
 /* ───────────── o próximo passo ───────────── */
 
-export type Passo = { acao: "mover"; para: ColunaKey; rotulo: string } | { acao: "atribuir"; rotulo: string };
+export type Passo = { acao: "mover"; para: PapelColuna; rotulo: string } | { acao: "atribuir"; rotulo: string };
 
-/** O próximo passo de cada coluna: atalho para mover, não trava (arrastar e "Mover para…" continuam valendo). */
+/**
+ * O próximo passo de cada coluna: atalho para mover, não trava (arrastar e "Mover para…" continuam valendo). Vai
+ * sempre para uma coluna de sistema (pelo papel; ela nunca é arquivada). Coluna da produtora segue como "Fazendo".
+ */
 export function proximoPasso(d: Pick<DadosCard, "coluna" | "resp">): { principal: Passo; outro?: Passo } | null {
   switch (d.coluna) {
     case "pauta":
@@ -127,8 +145,10 @@ export function proximoPasso(d: Pick<DadosCard, "coluna" | "resp">): { principal
       return { principal: { acao: "mover", para: "agendado", rotulo: "Agendar" } };
     case "agendado":
       return { principal: { acao: "mover", para: "entregue", rotulo: "Entreguei" } };
-    default:
+    case "entregue":
       return null;
+    default:
+      return ehColuna(d.coluna) ? { principal: { acao: "mover", para: "revisao", rotulo: "Mandar para revisão" } } : null;
   }
 }
 
@@ -142,7 +162,7 @@ export function ordemEntre(a: { ordem?: number } | null, b: { ordem?: number } |
 }
 
 /** A coluna em ordem: pela ordem; Entregue mostra o mais recente primeiro. */
-export function ordenarColuna(k: ColunaKey, l: CardQ[]): CardQ[] {
+export function ordenarColuna(k: ColunaId, l: CardQ[]): CardQ[] {
   const o = (c: CardQ) => (typeof c.dados.ordem === "number" ? c.dados.ordem : 0);
   if (k === "entregue") return [...l].sort((a, b) => (b.dados.colunaEm ?? 0) - (a.dados.colunaEm ?? 0));
   return [...l].sort((a, b) => o(a) - o(b) || a.id.localeCompare(b.id));
@@ -201,6 +221,6 @@ export function rotuloDia(s?: string, h = hoje()): string {
 /** Estado do prazo de entrega: atrasado ou hoje só enquanto o card é trabalho da equipe. */
 export function estadoPrazo(d: Pick<DadosCard, "prazo" | "coluna">, h = hoje()): "atrasado" | "hoje" | "ok" | null {
   if (!d.prazo) return null;
-  if (!EM_TRABALHO.includes(d.coluna)) return "ok";
+  if (!emTrabalho(d.coluna)) return "ok";
   return d.prazo < h ? "atrasado" : d.prazo === h ? "hoje" : "ok";
 }
