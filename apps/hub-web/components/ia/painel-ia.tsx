@@ -1,11 +1,14 @@
 'use client'
 /**
- * O painel da IA do ecossistema, a mesma em todas as plataformas: saudação com o Z (anel e estrela, com o ar em volta), sugestões, o campo de conversa e
+ * O painel da IA do ecossistema, a mesma em todas as plataformas: saudação com o Z (anel e estrela, com o ar em volta), o campo de conversa (que digita
+ * sozinho as sugestões, lib/ia/use-digitando.ts) e
  * "Conversas" (uma gaveta com as conversas de cada plataforma, cada grupo recolhível). No HUB aparecem todas; o app de
  * cada plataforma mostra as dele. Fala com /api/v1/ia (streaming NDJSON). Sem IA ligada ou sem crédito, diz isso.
  */
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent } from 'react'
 import { ProductMark, ZroSymbol } from '@zro/ui'
+import { descricaoSugestoes } from '@/public/ia/v1/digitando.js'
+import { useDigitando } from '@/lib/ia/use-digitando'
 import { Icon } from '../icons'
 import { PalcoZ, Z, type CenaZ } from './simbolo-z'
 import { TextoIa } from './texto-ia'
@@ -103,6 +106,7 @@ export function PainelIa({
   const [creditos, setCreditos] = useState<Creditos>(creditosIniciais)
   const [aviso, setAviso] = useState<string | null>(null)
   const campo = useRef<HTMLTextAreaElement>(null)
+  const fantasma = useRef<HTMLSpanElement>(null)
   const fim = useRef<HTMLDivElement>(null)
   const parar = useRef<AbortController | null>(null)
 
@@ -239,6 +243,9 @@ export function PainelIa({
   }
 
   const emConversa = mensagens.length > 0
+  // no início, as sugestões se escrevem sozinhas no campo vazio (no lugar dos botões); Tab ou → completa, nada é enviado
+  const digitando = !emConversa && podeEscrever && sugestoes.length > 0
+  useDigitando(campo, fantasma, sugestoes, digitando)
   const respondendo = pensando && !!mensagens[mensagens.length - 1]?.texto
   const cena: CenaZ = !ligada ? 'desligada' : pensando ? (respondendo ? 'respondendo' : 'pensando') : foco || texto ? 'ouvindo' : 'calma'
   const movimento = cena === 'pensando' ? 'pensando' : cena === 'respondendo' ? 'pronta' : 'parada'
@@ -306,34 +313,33 @@ export function PainelIa({
       </div>
 
       <div className="ia__base">
-        {!emConversa && podeEscrever && sugestoes.length > 0 && (
-          <ul className="ia-sugestoes" aria-label="Sugestões">
-            {sugestoes.map((s, i) => (
-              <li key={s} style={{ ['--i' as string]: i }}>
-                <button type="button" onClick={() => void enviar(s)}>
-                  {s}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
         <form className="ia-campo" onSubmit={onSubmit} data-desligado={podeEscrever ? undefined : 'sim'}>
-          <label htmlFor="ia-texto" className="zro-sr-only">
-            Mensagem para a Z
-          </label>
-          <textarea
-            id="ia-texto"
-            ref={campo}
-            rows={1}
-            value={texto}
-            maxLength={8000}
-            placeholder={!ligada ? 'A Z ainda não foi ligada' : semCredito ? 'Créditos do mês acabaram' : emConversa ? 'Continue…' : 'Pergunte à Z…'}
-            disabled={!podeEscrever}
-            onChange={(e) => setTexto(e.target.value)}
-            onKeyDown={onKey}
-            onFocus={() => setFoco(true)}
-            onBlur={() => setFoco(false)}
-          />
+          <span className="ia-entrada">
+            <textarea
+              id="ia-texto"
+              ref={campo}
+              rows={1}
+              value={texto}
+              maxLength={8000}
+              aria-label="Pergunte à Z"
+              aria-describedby={digitando ? 'ia-sugestoes' : undefined}
+              placeholder={
+                !ligada ? 'A Z ainda não foi ligada' : semCredito ? 'Créditos do mês acabaram' : emConversa ? 'Continue…' : digitando ? '' : 'Pergunte à Z…'
+              }
+              disabled={!podeEscrever}
+              onChange={(e) => setTexto(e.target.value)}
+              onKeyDown={onKey}
+              onFocus={() => setFoco(true)}
+              onBlur={() => setFoco(false)}
+            />
+            {/* a camada da sugestão (o conteúdo é montado por digitando.js; o React não mexe dentro) */}
+            {digitando && <span ref={fantasma} className="ia-fantasma" aria-hidden="true" />}
+          </span>
+          {digitando && (
+            <p id="ia-sugestoes" className="zro-sr-only">
+              {descricaoSugestoes(sugestoes)}
+            </p>
+          )}
           {pensando ? (
             <button type="button" className="ia-campo__enviar" onClick={() => parar.current?.abort()} aria-label="Parar a resposta" title="Parar">
               <span className="ia-campo__parar" aria-hidden="true" />
