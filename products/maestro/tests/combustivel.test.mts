@@ -118,6 +118,20 @@ describe("combustível automático", () => {
     assert.equal((await servicos.precoDoCombustivel(ctxA, { uf: "SP", cidade: "Natal" }, "gasolina"))?.base, "estado");
   });
 
+  test("a cidade de saída como foi digitada: sem acento, sem caixa, com ou sem UF", async () => {
+    const preco = (cidade: string | null, uf: string | null, c: "gasolina" | "etanol" = "gasolina") =>
+      servicos.precoDoCombustivel(ctxA, { cidade, uf }, c).then((p) => [p?.base, p?.onde, p?.litroCents]);
+    assert.deepEqual(await preco("São Paulo", "SP"), ["municipio", "São Paulo/SP", 611]);
+    assert.deepEqual(await preco("sao paulo", null), ["municipio", "Sao Paulo/SP", 611]);
+    assert.deepEqual(await preco("NATAL", null), ["municipio", "Natal/RN", 649]);
+    assert.deepEqual(await preco("natal, rn", null), ["municipio", "Natal/RN", 649]);
+    // Mossoró sem gasolina na planilha: o estado (com a UF) ou o Brasil (sem ela, não dá para saber o estado).
+    assert.deepEqual(await preco("Mossoró, RN", null), ["estado", "RN", 655]);
+    assert.deepEqual(await preco("mossoro", null, "etanol"), ["municipio", "Mossoro/RN", 539]);
+    assert.deepEqual(await preco("Campinas", "SP"), ["estado", "SP", 620]);
+    assert.deepEqual(await preco("Lugar Nenhum", null), ["brasil", "Brasil", 649]);
+  });
+
   test("dado de referência: as duas organizações leem o mesmo; maestro_app não grava, não muda, não apaga", async () => {
     assert.deepEqual(await servicos.precoDoCombustivel(ctxB, NATAL, "gasolina"), await servicos.precoDoCombustivel(ctxA, NATAL, "gasolina"));
     for (const q of [

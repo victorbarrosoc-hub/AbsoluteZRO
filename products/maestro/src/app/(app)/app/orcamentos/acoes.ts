@@ -1,8 +1,8 @@
 "use server";
 /**
  * Ações de orçamentos: sessão e acesso conferidos aqui; organização e pessoa vêm da sessão; o banco confere o papel
- * (RLS). A calculadora de deslocamento usa Photon e OSRM só se ligados (MAESTRO_SERVICOS_ABERTOS=1); o preço do litro
- * vem da semana da ANP guardada pelo agendamento (drizzle/0022).
+ * (RLS). A calculadora de deslocamento usa Photon e OSRM (ligados; MAESTRO_SERVICOS_ABERTOS=0 desliga); o preço do
+ * litro vem da semana da ANP guardada pelo agendamento (drizzle/0022), na cidade de saída.
  */
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
@@ -15,7 +15,7 @@ import type { StatusOrcamento } from "@/lib/orcamento/motor";
 import { lerEmpresa } from "@/lib/organizacao";
 import { buscarLugares, coletarSeAtrasado, medirRota, precoDoCombustivel } from "@/lib/orcamento/servicos";
 import { gerarLinkDoOrcamento, revogarLinkDoOrcamento } from "@/lib/orcamento/link";
-import { ehCombustivel, type Lugar, type PrecoCombustivel } from "@/lib/orcamento/deslocamento";
+import { ehCombustivel, ehUf, type Lugar, type PrecoCombustivel } from "@/lib/orcamento/deslocamento";
 import { hojeBr } from "@/lib/dinheiro";
 import { ligarContrato } from "@/lib/contrato/servidor";
 import type { EstadoForm } from "@/components/form";
@@ -138,20 +138,36 @@ export async function medirRotaAcao(de: unknown, para: unknown): Promise<{ ok: t
   }
 }
 
+/** O lugar do preço que a tela manda: cidade (texto, até 80) e UF (sigla). Qualquer outra coisa vira null. */
+function lugarDoPreco(l: unknown): { cidade: string | null; uf: string | null } | null {
+  const x = l as { cidade?: unknown; uf?: unknown } | null;
+  const cidade = typeof x?.cidade === "string" && x.cidade.trim() ? x.cidade.trim().slice(0, 80) : null;
+  const uf = ehUf(x?.uf) ? x.uf : null;
+  return cidade || uf ? { cidade, uf } : null;
+}
+
 /**
- * Preço médio da semana (ANP) do combustível no lugar da produtora (Ajustes → Empresa): município, estado ou Brasil.
- * `semLugar` = a produtora não disse a cidade/UF (a tela pede em Ajustes). Sem semana guardada, preco null e, depois
- * de responder, uma coleta de reserva se o agendamento atrasou.
+ * Preço médio da semana (ANP) do combustível na cidade de saída (onde se abastece), senão no lugar da produtora
+ * (Ajustes → Empresa): município, estado ou Brasil. `semLugar` = nem a saída nem a produtora dizem a UF (a tela pede
+ * em Ajustes). Sem semana guardada, preco null, `coletando` e, depois de responder, uma coleta de reserva se o
+ * agendamento atrasou (a tela pergunta de novo uma vez).
  */
-export async function precoCombustivelAcao(combustivel: unknown): Promise<{ preco: PrecoCombustivel | null; semLugar: boolean }> {
+export async function precoCombustivelAcao(
+  combustivel: unknown,
+  lugar?: unknown,
+): Promise<{ preco: PrecoCombustivel | null; semLugar: boolean; coletando: boolean }> {
   const s = await exigirAcessoNaAcao();
-  if (!ehCombustivel(combustivel)) return { preco: null, semLugar: false };
+  if (!ehCombustivel(combustivel)) return { preco: null, semLugar: false, coletando: false };
   const e = await lerEmpresa(ctxDe(s));
+  const saida = lugarDoPreco(lugar);
+  const onde = saida ?? { uf: e.uf, cidade: e.cidade };
+  const semLugar = !saida?.uf && !e.uf && !saida?.cidade;
   after(() => coletarSeAtrasado(hojeBr()).catch(() => {}));
   try {
-    return { preco: await precoDoCombustivel(ctxDe(s), { uf: e.uf, cidade: e.cidade }, combustivel), semLugar: !e.uf };
+    const preco = await precoDoCombustivel(ctxDe(s), onde, combustivel);
+    return { preco, semLugar, coletando: !preco };
   } catch {
-    return { preco: null, semLugar: !e.uf };
+    return { preco: null, semLugar, coletando: false };
   }
 }
 

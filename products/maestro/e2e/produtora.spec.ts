@@ -147,6 +147,85 @@ test.describe("produtora por dentro", () => {
     await expect(page.getByLabel("Detalhe").last()).toHaveValue(/20 L de etanol a R\$ 4,11\/L/);
   });
 
+  test("deslocamento sozinho: São Paulo → Natal digitados, km da rota, preço da saída, veículos", async ({ page, context, request, baseURL }, info) => {
+    // A semana da ANP de mentira (idempotente; o iPhone pode rodar antes do teste do combustível).
+    const r = await request.get("/api/cron/combustivel", { headers: { authorization: "Bearer segredo-do-cron-e2e" } });
+    expect(r.status()).toBe(200);
+    await page.goto("/app/orcamentos?status=rascunho");
+    await page.locator(".lista .item").first().click();
+    await page.getByRole("button", { name: "Deslocamento" }).click();
+    const dialogo = page.getByRole("dialog");
+    const km = dialogo.getByLabel("Km de uma ida");
+    const kml = dialogo.getByLabel("Consumo (km/L)");
+    const litro = dialogo.getByLabel("Preço do litro");
+    await dialogo.getByRole("radio", { name: "Gasolina" }).click();
+
+    // Digitado do jeito que vier: a cidade com o mesmo nome é escolhida sozinha e a dica diz o que foi entendido.
+    await dialogo.getByLabel("Saída").fill("sao paulo");
+    await expect(dialogo.locator("#desl-saida-dica")).toHaveText("São Paulo/SP");
+    await dialogo.getByLabel("Chegada").fill("Natal");
+    await expect(dialogo.locator("#desl-chegada-dica")).toHaveText("Natal/RN");
+    // A rota mede sozinha (Photon e OSRM falsos, tests/rota-fixture.mts).
+    await expect(km).toHaveValue("2923,1");
+    await expect(dialogo.getByText("Pela estrada · ≈ 40h45 de carro")).toBeVisible();
+    // O preço vem da cidade de saída (onde se abastece).
+    await expect(litro).toHaveValue("6,11");
+    await expect(dialogo.getByText("Preço médio da semana em São Paulo/SP · ANP, semana de 18/10")).toBeVisible();
+
+    // Veículos de partida: o compacto na gasolina.
+    await dialogo.getByRole("button", { name: "Compacto · 14" }).click();
+    await expect(dialogo.getByRole("button", { name: "Compacto · 14" })).toHaveAttribute("aria-pressed", "true");
+    await expect(kml).toHaveValue("14");
+    const resumo = dialogo.locator(".resumo-desl");
+    await expect(resumo.getByText("5.846 km")).toBeVisible();
+    await expect(resumo.getByText("R$ 2.551,45")).toBeVisible();
+    await expect(resumo.getByText("R$ 0,44")).toBeVisible();
+
+    // Captura da folha inteira (sem a rolagem dela): a janela cresce só para a foto.
+    const foto = async (tema: string) => {
+      if (!process.env.SHOTS_DIR) return;
+      const janela = page.viewportSize()!;
+      await page.setViewportSize({ width: janela.width, height: 1900 });
+      const nome = info.project.name === "computador" ? "computador" : String(janela.width);
+      await dialogo.screenshot({ path: `${process.env.SHOTS_DIR}/deslocamento-${tema}-${nome}.png` });
+      await page.setViewportSize(janela);
+    };
+    await foto("claro");
+
+    // A van é diesel: escolher troca o combustível e o preço (SP sem diesel na planilha de mentira: Brasil).
+    await dialogo.getByRole("button", { name: "Van · 9" }).click();
+    await expect(dialogo.getByRole("radio", { name: "Diesel S10" })).toHaveAttribute("aria-checked", "true");
+    await expect(kml).toHaveValue("9");
+    await expect(litro).toHaveValue("7,32");
+    // Consumo digitado continua valendo e solta o veículo.
+    await kml.fill("8,5");
+    await expect(dialogo.getByRole("button", { name: "Van · 9" })).toHaveAttribute("aria-pressed", "false");
+
+    // Km digitado vale; dá para voltar ao da rota.
+    await km.fill("2000");
+    await expect(dialogo.getByText("Km digitado.")).toBeVisible();
+    await dialogo.getByRole("button", { name: "Usar o da rota (2.923,1 km)" }).click();
+    await expect(km).toHaveValue("2923,1");
+
+    if (process.env.SHOTS_DIR) {
+      await dialogo.getByRole("radio", { name: "Gasolina" }).click();
+      await context.addCookies([{ name: "zro_theme", value: "dark", url: baseURL! }]);
+      await dialogo.getByRole("button", { name: "Fechar" }).click();
+      await page.reload();
+      await page.getByRole("button", { name: "Deslocamento" }).click();
+      await expect(dialogo.locator("#desl-saida-dica")).toHaveText("São Paulo/SP");
+      await dialogo.getByLabel("Chegada").fill("Natal");
+      await dialogo.getByRole("button", { name: "Compacto · 14" }).click();
+      await expect(km).toHaveValue("2923,1");
+      await expect(litro).toHaveValue("6,11");
+      await expect(resumo.getByText("R$ 2.551,45")).toBeVisible();
+      await foto("escuro");
+      await context.clearCookies({ name: "zro_theme" });
+    }
+
+    await semRolagemDeLado(page);
+  });
+
   test("marca de exemplo no timbrado e kit no perfil do freela", async ({ page }) => {
     await page.goto("/app/ajustes/marca");
     await expect(page.locator(".marca-logo__palco img")).toBeVisible();

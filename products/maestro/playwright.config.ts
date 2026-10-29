@@ -43,6 +43,9 @@ export default defineConfig({
       // A ANP de mentira (tests/anp-fixture.mts) e o segredo do agendamento: o combustível automático sem rede.
       MAESTRO_ANP_URL: `http://127.0.0.1:${Number(process.env.E2E_ANP_PORT || 3221)}/pagina`,
       CRON_SECRET: "segredo-do-cron-e2e",
+      // Photon e OSRM de mentira (tests/rota-fixture.mts): lugares e km sem rede.
+      MAESTRO_PHOTON_URL: `http://127.0.0.1:${Number(process.env.E2E_ROTA_PORT || 3223)}/photon/api/`,
+      MAESTRO_OSRM_URL: `http://127.0.0.1:${Number(process.env.E2E_ROTA_PORT || 3223)}/osrm`,
     },
   },
 });
