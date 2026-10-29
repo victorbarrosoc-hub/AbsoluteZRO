@@ -209,5 +209,7 @@ público → Pedidos → gerar orçamento → link → aceite → projeto → Ho
 (`visual.spec.ts`: contraste AA em cada hora e no escuro, luz parada com reduzir movimento) e o negócio
 (`negocio.spec.ts`: funil com Retornar hoje, importar, .ics e acesso por cliente, organização própria) e o Drive
 (`arquivos.spec.ts`: cadeado sem o SOBEDESCE, navegador, prévia com timecode, estrutura do projeto, Drive tocando na
-revisão e Escolher no Drive; `SHOTS_DIR` guarda as capturas). Unitário da hora em
+revisão e Escolher no Drive; `SHOTS_DIR` guarda as capturas) e nada cortado no celular (`sem-corte.spec.ts` com o
+detector `e2e/corte.ts`: todas as telas a 375 e 393 px, claro e escuro, Chromium e WebKit; tela nova entra na lista;
+faixa que rola de lado só com `data-rolagem`; regras de celular em `src/app/celular.css`). Unitário da hora em
 `hora.test.mts`.

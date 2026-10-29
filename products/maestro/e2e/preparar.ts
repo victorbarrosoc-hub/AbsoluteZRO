@@ -11,6 +11,7 @@ export const ARQUIVO_SESSAO_DEMO = "test-results/e2e-sessao-demo.json";
 export const ARQUIVO_SESSAO_COMERCIAL = "test-results/e2e-sessao-comercial.json";
 export const ARQUIVO_SESSAO_NEGOCIO = "test-results/e2e-sessao-negocio.json";
 export const ARQUIVO_SESSAO_DRIVE = "test-results/e2e-sessao-drive.json";
+export const ARQUIVO_SESSAO_CORTE = "test-results/e2e-sessao-corte.json";
 /** A ponte falsa (HUB + SOBEDESCE de mentira, tests/ponte-falsa.mts) do e2e de Arquivos: MAESTRO_PONTE_URL no servidor. */
 export const PORTA_PONTE = Number(process.env.E2E_PONTE_PORT || 3219);
 
@@ -171,6 +172,48 @@ export default async function preparar() {
       },
     });
     writeFileSync(ARQUIVO_SESSAO_DRIVE, JSON.stringify({ token: sDrv.token, lote: drv.lote }));
+    // Uma sexta organização só para o detector de corte (e2e/sem-corte.spec.ts): a demonstração inteira carregada e os
+    // tokens dos links que ela gera (aprovação, pedido e orçamento), para abrir cada tela pública sem passar pela UI.
+    const SUB_CORTE = "00000000-0000-4000-8000-0000000000a2";
+    const orgCorte = await getBanco().asSystem("e2e: semente do corte", async (tx) => {
+      const [org] = await tx
+        .insert(schema.organizations)
+        .values({ zroOrgId: "00000000-0000-4000-8000-0000000000a1", name: "Produtora Corte E2E", zroProducts: ["maestro"] })
+        .returning({ id: schema.organizations.id });
+      await tx.insert(schema.members).values({ orgId: org.id, zroSub: SUB_CORTE, displayName: "Diana Corte", hubRole: "owner", role: "admin" });
+      return org.id;
+    });
+    const ctxCorte = { sub: SUB_CORTE, orgId: orgCorte };
+    const { carregarDemonstracao } = await import("../src/lib/demo/demonstracao");
+    const carregou = await carregarDemonstracao(ctxCorte);
+    if (!carregou.ok) throw new Error(carregou.mensagem);
+    const { listarLotes, tokenDoLink } = await import("../src/lib/revisao/equipe");
+    const { lerLinkDePedido } = await import("../src/lib/pedidos/equipe");
+    const { lerLinkDoOrcamento } = await import("../src/lib/orcamento/link");
+    const lotes = await listarLotes(ctxCorte);
+    const comLink = lotes.find((l) => l.link);
+    const tokenLote = comLink ? await tokenDoLink(ctxCorte, comLink.id) : null;
+    const orcs = await getBanco().asUser(
+      ctxCorte,
+      async (tx) =>
+        (await tx.execute(q`select orcamento_id as id from maestro.links_publicos where tipo = 'orcamento' and revogado_em is null`)) as unknown as {
+          id: string;
+        }[],
+    );
+    let tokenOrc: string | null = null;
+    for (const o of orcs) tokenOrc ??= (await lerLinkDoOrcamento(ctxCorte, o.id))?.token ?? null;
+    const sCorte = await criarSessao({ orgId: orgCorte, sub: SUB_CORTE, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    writeFileSync(
+      ARQUIVO_SESSAO_CORTE,
+      JSON.stringify({
+        token: sCorte.token,
+        lote: comLink?.id ?? lotes[0]?.id ?? null,
+        lotes: lotes.map((l) => l.id),
+        a: tokenLote,
+        p: (await lerLinkDePedido(ctxCorte))?.token ?? null,
+        o: tokenOrc,
+      }),
+    );
   } finally {
     await fecharBanco();
   }

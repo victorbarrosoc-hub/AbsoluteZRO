@@ -406,6 +406,11 @@ Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   (hoje é a impressão do navegador), white-label no app inteiro (plano e preço pelo titular), retenção configurável dos
   pedidos, ligar o inventário do Carro do Freela quando ele tiver banco (endpoint assinado no Maestro e a rota sai de
   `DISABLED_ROUTES`).
+- ✅ Maestro, nada cortado no iPhone (29/10/2026; relato do titular no lote de Aprovações): detector de corte
+  (`e2e/corte.ts`) e `e2e/sem-corte.spec.ts` em todas as telas a 375 e 393 px, claro e escuro, Chromium e WebKit
+  (Safari); faixa com rolagem de lado só com `data-rolagem` e ponta esmaecida enquanto há mais; no lote, CSV/EDL/Fechar
+  em três colunas iguais, peças quebrando linha, o link da versão na linha inteira com os botões embaixo; no toque o
+  `<video>` fica sem a barra nativa (o transporte do Maestro controla; o tempo dela pisava no timecode do quadro).
 - ✅ Maestro v2, fases 7–10 (29/10/2026; decisões do titular de 28/10): **ponte com o SOBEDESCE** pelo HUB
   (`POST /api/v1/apps/pedidos` assina um `zro-pedido+jwt` e o próprio Maestro chama o SOBEDESCE; lista fechada, 403
   sem o SOBEDESCE no plano, limite e auditoria nos dois lados); ações novas no SOBEDESCE `drive.listar`,

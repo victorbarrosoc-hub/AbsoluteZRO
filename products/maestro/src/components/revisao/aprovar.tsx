@@ -431,7 +431,7 @@ export function AprovacaoCliente({
   return (
     <main className="cl" id="conteudo" style={estiloDaMarca(marca?.cor)}>
       {cabeca}
-      <nav className="cl-pecas" aria-label="O que aprovar">
+      <nav className="cl-pecas" aria-label="O que aprovar" data-rolagem>
         {pecas.map((p, i) => {
           const d = decidida(p);
           const e = rasc.escolhas[chaveEscolha(p)];

@@ -80,7 +80,7 @@ export default async function Financeiro({ searchParams }: PageProps<"/app/finan
         ) : null}
       </Cifras>
       <div className="filtros">
-        <Busca placeholder="Buscar descrição, projeto, cliente ou freela" />
+        <Busca placeholder="Buscar descrição, cliente, freela" />
         <Pilulas
           ativo={tipo ?? "todos"}
           itens={[

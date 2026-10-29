@@ -104,7 +104,7 @@ export default async function Pedidos({ searchParams }: PageProps<"/app/pedidos"
           ) : null}
         </EstadoVazio>
       ) : ver === "quadro" ? (
-        <div className="funil" aria-label="Funil de pedidos">
+        <div className="funil" aria-label="Funil de pedidos" data-rolagem>
           {ETAPAS.map((e) => {
             const daEtapa = todos.filter((p) => p.etapa === e.k);
             const soma = daEtapa.reduce((t, p) => t + (p.valor ?? 0), 0);

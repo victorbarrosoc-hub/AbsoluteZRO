@@ -58,5 +58,6 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
+      # WebKit: o detector de corte (e2e/sem-corte.spec.ts) roda também no motor do Safari do iPhone.
+      - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:e2e

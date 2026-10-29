@@ -16,7 +16,7 @@ export function Selo({ tom, children }: { tom: "ok" | "aviso" | "neutro"; childr
 /** Filtros em pílula (links): o ativo fica marcado. */
 export function Pilulas({ itens, ativo }: { itens: { valor: string; nome: string; href: string }[]; ativo: string }) {
   return (
-    <nav className="pilulas" aria-label="Filtro">
+    <nav className="pilulas" aria-label="Filtro" data-rolagem>
       {itens.map((i) => (
         <Link key={i.valor} href={i.href} aria-current={i.valor === ativo ? "true" : undefined} scroll={false}>
           {i.nome}

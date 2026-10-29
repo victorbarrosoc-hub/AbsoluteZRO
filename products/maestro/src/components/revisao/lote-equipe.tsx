@@ -24,6 +24,7 @@ import {
 } from "@/app/(app)/app/aprovacoes/acoes";
 import { Icone } from "@/components/icones";
 import { NavegadorDrive } from "@/components/arquivos/navegador";
+import { useMidia } from "@/components/use-midia";
 import { ComDriveDaEquipe } from "./drive-equipe";
 import { Revisor, type NovoComentario } from "./revisor";
 
@@ -65,6 +66,8 @@ function NovaVersao({ card, driveStream, sobedesce, aoFim }: { card: string; dri
   const [escolhendo, setEscolhendo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, iniciar] = useTransition();
+  // No celular a lista inteira de fontes não cabe no campo: o placeholder encurta (o resto aparece ao colar).
+  const celular = useMidia("(max-width: 600px)");
   const f = link.trim() ? detectarFonte(link) : null;
   function enviar(e: FormEvent) {
     e.preventDefault();
@@ -90,7 +93,7 @@ function NovaVersao({ card, driveStream, sobedesce, aoFim }: { card: string; dri
         <input
           type="url"
           inputMode="url"
-          placeholder="Cole o link: Drive, YouTube, Vimeo, Dropbox, mp4…"
+          placeholder={celular ? "Cole o link da versão" : "Cole o link: Drive, YouTube, Vimeo, Dropbox, mp4…"}
           aria-label="Link da nova versão"
           value={link}
           onChange={(e) => {

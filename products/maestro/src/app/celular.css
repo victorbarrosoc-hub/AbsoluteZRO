@@ -1,0 +1,55 @@
+/*
+ * Nada cortado no iPhone (e2e/sem-corte.spec.ts confere a 375 e 393 px, Safari e Chrome, claro e escuro).
+ * Regra: o que não cabe quebra linha ou empilha. Só rola de lado o que é faixa de propósito (chips, abas, o funil,
+ * tabelas largas), marcado com `data-rolagem` no JSX, e com a borda direita esmaecida para mostrar que continua.
+ * O computador fica como está: quase tudo aqui mora em media query de celular. As regras de celular das telas de
+ * revisão ficam no fim de `revisao.css` (ele carrega depois deste e ganharia no empate).
+ */
+
+/* campos de grade encolhem (um select com opção comprida não empurra a página) */
+.form__campo,
+.form__campo > :is(input, select, textarea) {
+  min-width: 0;
+}
+/* o WebKit deixa o texto da opção comprida vazar da caixa do select e alargar a página */
+select {
+  overflow: hidden;
+}
+.importar__arquivo {
+  min-width: 0;
+}
+.importar__arquivo input {
+  min-width: 0;
+  width: 100%;
+}
+
+/* faixas de propósito: rolam dentro, com a ponta direita esmaecida enquanto há mais para ver (some no fim e quando
+   tudo cabe: a animação segue a rolagem da própria faixa; sem rolagem, a linha do tempo fica inativa) */
+@property --rolagem-fade {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@keyframes rolagem-fade {
+  0%,
+  92% {
+    --rolagem-fade: 28px;
+  }
+  100% {
+    --rolagem-fade: 0px;
+  }
+}
+@media (max-width: 760px) {
+  [data-rolagem] {
+    overscroll-behavior-x: contain;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - var(--rolagem-fade)), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - var(--rolagem-fade)), transparent);
+    animation: rolagem-fade linear both;
+    animation-timeline: scroll(self inline);
+  }
+  @supports not (animation-timeline: scroll()) {
+    [data-rolagem] {
+      --rolagem-fade: 28px;
+    }
+  }
+}

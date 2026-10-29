@@ -141,7 +141,7 @@ export function ProximoContato({ alvo, id, data, nota }: { alvo: "pedido" | "cli
         </label>
         <label className="funil-retorno__nota">
           <span>Nota</span>
-          <input name="nota" defaultValue={nota ?? ""} maxLength={300} placeholder="Ligar sobre a data da diária" />
+          <input name="nota" defaultValue={nota ?? ""} maxLength={300} placeholder="Assunto do retorno" />
         </label>
       </div>
       <div className="acoes">

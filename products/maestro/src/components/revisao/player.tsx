@@ -11,6 +11,7 @@ import { capacidades, urlDrivePreview, type Capacidades } from "@/lib/revisao/fo
 import { FPS_PADRAO } from "@/lib/revisao/tempo";
 import type { VersaoVista } from "@/lib/revisao/tipos";
 import { Icone } from "@/components/icones";
+import { useMidia } from "@/components/use-midia";
 import { DriveEquipe } from "./drive-equipe";
 
 export type Controle = {
@@ -149,13 +150,17 @@ function VideoNativo({
       aoControle(null);
     };
   }, [src, hls, fps, aoControle, aoErro]);
+  // No toque e no celular (iPhone), a barra nativa cobre a imagem e o tempo dela pisa no timecode gravado no quadro: lá quem
+  // controla é o transporte do Maestro, embaixo do vídeo (tocar, quadro a quadro, régua); tocar na imagem pausa/toca.
+  const toque = useMidia("(hover: none), (pointer: coarse), (max-width: 600px)");
   return (
     <video
       ref={ref}
       className="rv-video"
       playsInline
       preload="metadata"
-      controls
+      controls={!toque}
+      onClick={toque ? (e) => (e.currentTarget.paused ? void e.currentTarget.play().catch(() => {}) : e.currentTarget.pause()) : undefined}
       controlsList="nodownload noremoteplayback"
       disablePictureInPicture
       onTimeUpdate={(e) => aoTempo?.(Math.round(e.currentTarget.currentTime * 1000))}
