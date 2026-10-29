@@ -2523,3 +2523,15 @@ sistema simulado), e o primeiro Release (sai no primeiro push na main com `produ
 - `test/transferencias-ui.test.js` (`rodada`): lote velho concluído, cancelado e tentativa substituída ficam de fora;
   terminar não faz a porcentagem cair; dois lotes ao mesmo tempo contam juntos até o fim.
 - Não validado: o painel num envio real de 100 GB no Mac do titular.
+
+## NOSSOM em nossom.absolutezro.com (29/10/2026)
+
+- `nossom.absolutezro.com` adicionado ao projeto Vercel `nossom` (zona `absolutezro.com` na DNS da Vercel; domínio
+  verificado na hora). O `nossom-teal.vercel.app` continua respondendo, sem redirecionar.
+- Migração `0031_nossom_dominio.sql`: retorno OIDC novo no cliente `nossom-web` (o antigo fica) e catálogo do HUB
+  (`external_url`, `sso_start_url`) no endereço novo, na mesma transação. O banco de produção está na 0024; a 0031
+  entra junto com as pendentes.
+- Links trocados: downloads e instalador no HUB, famílias da AEON e da Revela, metadados e página de apps do NOSSOM.
+  Ficam no endereço antigo o canal de atualização do app de computador e a documentação histórica.
+- Testes: `tests/integration/downloads.test.ts` (Postgres 16 local), `apps/hub-desktop` regras (6/6), e2e do gate
+  aceitando os dois endereços.

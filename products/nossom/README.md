@@ -2,7 +2,7 @@
 
 Estúdio de áudio para criadores, com aplicação web responsiva, instalação pelo navegador e aplicativo Electron para Mac/Windows.
 
-**Produção:** <https://nossom-teal.vercel.app> · **Downloads:** <https://nossom-teal.vercel.app/apps>
+**Produção:** <https://nossom.absolutezro.com> · **Downloads:** <https://nossom.absolutezro.com/apps>
 
 ## Continuar no Claude Code
 

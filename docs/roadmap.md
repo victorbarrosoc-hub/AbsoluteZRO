@@ -208,6 +208,7 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   endpoint de entrada no HUB, a entrega assinada ao Maestro e tirar a rota de `DISABLED_ROUTES`, com decisão do titular.
 - ✅ Eventos versionados, outbox, fila com retry/backoff, dead-letter, revisão, reprocessamento; fluxo ponta a ponta
   testado com fixtures gerados pelo código real do SOBEDESCE.
+- ✅ NOSSOM em `nossom.absolutezro.com` (29/10/2026, ADR 0025): domínio no projeto Vercel, links e migração 0031. Falta aplicar a 0031 no banco, liberar o endereço no Supabase Auth e, depois do app de computador aceitar os dois endereços, redirecionar o antigo.
 - 🟡 NOSSOM: link e contrato `edit.timeline.ready`; passagem automática ⬜ (precisa de mudança no NOSSOM, com autorização).
 - ⬜ HUB recebendo o recibo do Synquei (`synquei.preparo/1`, parser pronto em `parsePreparos`) no projeto; o Synquei
   segue lendo o manifesto local e o `OrganizationPlan` do HUB fica como prévia.

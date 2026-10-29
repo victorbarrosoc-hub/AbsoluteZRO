@@ -213,7 +213,7 @@ test('páginas públicas e mobile sem rolagem horizontal', async ({ page }) => {
 })
 
 test('gate de lançamento: anônimo não vê CTA, link nem instalador de produto fechado', async ({ page, request }) => {
-  const FECHADOS = /nossom-teal\.vercel\.app|aeon\.absolutezro\.com|revela\.absolutezro\.com|carrodofreela\.com\.br/
+  const FECHADOS = /nossom-teal\.vercel\.app|nossom\.absolutezro\.com|aeon\.absolutezro\.com|revela\.absolutezro\.com|carrodofreela\.com\.br/
   await page.goto('/')
   const strip = page.locator('.pstrip__list')
   await expect(strip.locator('.selo-dev').first()).toHaveText('Em breve')

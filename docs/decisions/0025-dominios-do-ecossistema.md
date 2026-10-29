@@ -21,6 +21,12 @@ titular pediu um padrão único, como um ecossistema só.
 - **Google Cloud.** Um projeto só para o ecossistema (`zro-site-511809`, "Absolute ZRO") e uma chave de navegador
   restrita por referenciador; `https://*.absolutezro.com/*` já cobre os apps que seguem o padrão.
 
+## Andamento
+
+- **NOSSOM** (29/10/2026): `nossom.absolutezro.com` no projeto Vercel, links do HUB e das famílias no endereço novo,
+  migração 0031 (retorno OIDC novo + catálogo). O `nossom-teal.vercel.app` continua respondendo sem redirecionar até o
+  app de computador aceitar os dois endereços.
+
 ## Consequências
 
 - App novo não pede domínio, chave ou cadastro novo no Google: nasce em `<app>.absolutezro.com`.
