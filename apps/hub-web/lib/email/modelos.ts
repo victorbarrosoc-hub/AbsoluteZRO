@@ -1,96 +1,68 @@
 /**
- * Os e-mails da Absolute ZRO (pedido do titular, 28/10/2026: experiência premium, identidade do ecossistema).
- * Padrão Apple em e-mail: fundo cinza-claro, um cartão branco, a marca pequena no topo, título Light × ExtraBold,
- * uma linha de apoio, um botão em pílula grafite e um rodapé discreto. HTML em tabelas e estilo inline (Gmail,
- * Outlook e Mail do iPhone), imagens em PNG servidas pelo próprio site e sempre uma versão em texto.
+ * Os e-mails da Absolute ZRO. Primeiro desenho (28/10/2026): cartão com marca em imagem e faixa do ecossistema; o
+ * Gmail mandava tudo para Promoções. Desde 29/10/2026 (pedido do titular): com cara de e-mail de conta, como os da
+ * Apple e do Google: fundo branco, a marca escrita (sem imagem), título curto, uma linha de apoio, um botão simples e
+ * o endereço por extenso. Nada de imagem anexada, texto escondido de prévia com preenchimento ou bloco de produtos.
+ * HTML em tabelas e estilo inline (Gmail, Outlook e Mail do iPhone) e sempre uma versão em texto.
  */
 import type { OutgoingEmail } from '@zro/auth'
-import { IMAGENS_EMAIL } from './imagens'
 
 const ORIGEM = 'https://absolutezro.com'
-const FONTE = "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Figtree', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+const FONTE = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
 const GRAFITE = '#1d1d1f'
-const APOIO = '#6e6e73'
-const SUTIL = '#86868b'
+const APOIO = '#424245'
+const SUTIL = '#6e6e73'
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 
 type Corpo = {
-  /** Texto escondido que aparece ao lado do assunto na caixa de entrada. */
+  /** Frase que aparece ao lado do assunto na caixa de entrada. */
   previa: string
-  /** Título em duas partes: a primeira fina, a segunda forte (ex.: "Boas-vindas," + "Victor."). */
+  /** Título em duas partes (ex.: "Boas-vindas," + "Victor."). */
   fino: string
   forte: string
   apoio: string
   botao: { texto: string; link: string }
   /** Linha pequena abaixo do botão (validade, segurança). */
   nota?: string
-  /** Faixa do ecossistema (só no e-mail de boas-vindas). */
-  ecossistema?: boolean
 }
 
 function html(c: Corpo): string {
-  const faixa = c.ecossistema
-    ? `<tr><td style="padding:40px 48px 0 48px;">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="z-linha" style="border-top:1px solid #e8e8ed;">
-          <tr><td style="padding-top:32px;font-family:${FONTE};">
-            <p style="margin:0 0 6px 0;font-size:13px;letter-spacing:.02em;color:${SUTIL};">Uma conta. Todas as ferramentas.</p>
-            <p class="z-titulo" style="margin:0 0 20px 0;font-size:20px;line-height:1.35;color:${GRAFITE};font-weight:300;">Do roteiro à entrega, <strong style="font-weight:800;">tudo conversa.</strong></p>
-            ${[
-              ['TPeasy', 'Roteiro e apoio na hora de gravar.'],
-              ['SOBEDESCE', 'Cópia e backup do cartão à nuvem, tudo conferido.'],
-              ['Synquei', 'Organiza, alinha e sincroniza o material.'],
-              ['Z', 'A IA do ecossistema, que conversa com tudo isso.'],
-            ]
-              .map(
-                ([nome, frase]) =>
-                  `<p class="z-apoio" style="margin:0 0 10px 0;font-size:15px;line-height:1.45;color:${APOIO};"><strong class="z-forte" style="color:${GRAFITE};font-weight:600;">${nome}</strong> &nbsp;${frase}</p>`,
-              )
-              .join('')}
-          </td></tr>
-        </table>
-      </td></tr>`
-    : ''
   return `<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark"><meta name="supported-color-schemes" content="light dark">
-<style>.zl-claro,.zl-escuro{display:none!important;max-height:0;overflow:hidden}@media (prefers-color-scheme: light){.zl-neutro{display:none!important}.zl-claro{display:block!important;max-height:none}}@media (prefers-color-scheme: dark){.zl-neutro{display:none!important}.zl-escuro{display:block!important;max-height:none}.z-fundo{background:#000!important}.z-cartao{background:#1c1c1e!important}.z-titulo,.z-titulo strong,.z-forte{color:#f5f5f7!important}.z-apoio{color:#a1a1a6!important}.z-sutil,.z-sutil a{color:#86868b!important}.z-botao{background:#f5f5f7!important}.z-botao a{color:#1d1d1f!important}.z-linha{border-top-color:#38383a!important}}</style>
+<style>@media (prefers-color-scheme: dark){.z-fundo{background:#1c1c1e!important}.z-titulo,.z-forte{color:#f5f5f7!important}.z-apoio{color:#d1d1d6!important}.z-sutil,.z-sutil a{color:#a1a1a6!important}.z-botao{background:#f5f5f7!important}.z-botao a{color:#1d1d1f!important}.z-linha{border-top-color:#38383a!important}}</style>
 <title>${esc(c.fino)} ${esc(c.forte)}</title></head>
-<body class="z-fundo" style="margin:0;padding:0;background:#f5f5f7;-webkit-font-smoothing:antialiased;">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${esc(c.previa)}&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>
-<table class="z-fundo" role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f7;">
-  <tr><td align="center" style="padding:48px 16px;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
-      <tr><td style="padding:0 8px 28px 8px;">
-        <a href="${ORIGEM}" style="text-decoration:none;"><img class="zl-neutro" src="cid:absolute-zro-cinza" width="151" height="14" alt="Absolute ZRO" style="display:block;border:0;width:151px;height:auto;"><img class="zl-claro" src="cid:absolute-zro-grafite" width="151" height="14" alt="" style="display:none;border:0;width:151px;height:auto;"><img class="zl-escuro" src="cid:absolute-zro-branco" width="151" height="14" alt="" style="display:none;border:0;width:151px;height:auto;"></a>
+<body class="z-fundo" style="margin:0;padding:0;background:#ffffff;">
+<div style="display:none;max-height:0;overflow:hidden;">${esc(c.previa)}</div>
+<table class="z-fundo" role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;">
+  <tr><td style="padding:32px 24px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
+      <tr><td class="z-forte" style="padding:0 0 28px 0;font-family:${FONTE};font-size:15px;font-weight:600;color:${GRAFITE};">
+        <a href="${ORIGEM}" class="z-forte" style="color:${GRAFITE};text-decoration:none;">Absolute ZRO</a>
       </td></tr>
-      <tr><td class="z-cartao" style="background:#ffffff;border-radius:28px;">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-          <tr><td style="padding:48px 48px 0 48px;">
-            <img class="zl-neutro" src="cid:absolute-zro-simbolo-cinza" width="40" height="40" alt="" style="display:block;border:0;width:40px;height:auto;"><img class="zl-claro" src="cid:absolute-zro-simbolo-grafite" width="40" height="40" alt="" style="display:none;border:0;width:40px;height:auto;"><img class="zl-escuro" src="cid:absolute-zro-simbolo-branco" width="40" height="40" alt="" style="display:none;border:0;width:40px;height:auto;">
-          </td></tr>
-          <tr><td style="padding:28px 48px 0 48px;font-family:${FONTE};">
-            <h1 class="z-titulo" style="margin:0;font-size:36px;line-height:1.12;letter-spacing:-.02em;color:${GRAFITE};font-weight:300;">${esc(c.fino)} <strong style="font-weight:800;">${esc(c.forte)}</strong></h1>
-            <p class="z-apoio" style="margin:16px 0 0 0;font-size:17px;line-height:1.5;color:${APOIO};">${esc(c.apoio)}</p>
-          </td></tr>
-          <tr><td style="padding:32px 48px 0 48px;">
-            <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-              <td class="z-botao" style="border-radius:999px;background:${GRAFITE};">
-                <a href="${esc(c.botao.link)}" style="display:inline-block;padding:15px 30px;font-family:${FONTE};font-size:16px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:999px;">${esc(c.botao.texto)}</a>
-              </td>
-            </tr></table>
-          </td></tr>
-          ${c.nota ? `<tr><td class="z-sutil" style="padding:20px 48px 0 48px;font-family:${FONTE};font-size:13px;line-height:1.5;color:${SUTIL};">${esc(c.nota)}</td></tr>` : ''}
-          ${faixa}
-          <tr><td class="z-sutil" style="padding:40px 48px 44px 48px;font-family:${FONTE};font-size:12px;line-height:1.55;color:${SUTIL};">
-            O botão não abre? Copie este endereço no navegador:<br>
-            <a href="${esc(c.botao.link)}" style="color:${APOIO};word-break:break-all;">${esc(c.botao.link)}</a>
-          </td></tr>
-        </table>
+      <tr><td style="font-family:${FONTE};">
+        <h1 class="z-titulo" style="margin:0;font-size:24px;line-height:1.25;color:${GRAFITE};font-weight:600;">${esc(c.fino)} ${esc(c.forte)}</h1>
+        <p class="z-apoio" style="margin:12px 0 0 0;font-size:16px;line-height:1.5;color:${APOIO};">${esc(c.apoio)}</p>
       </td></tr>
-      <tr><td class="z-sutil" align="center" style="padding:28px 8px 0 8px;font-family:${FONTE};font-size:12px;line-height:1.6;color:${SUTIL};">
-        O futuro começa do zero.<br>
-        Absolute ZRO · <a href="mailto:contato@absolutezro.com" style="color:${SUTIL};">contato@absolutezro.com</a>
+      <tr><td style="padding:24px 0 0 0;">
+        <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+          <td class="z-botao" style="border-radius:8px;background:${GRAFITE};">
+            <a href="${esc(c.botao.link)}" style="display:inline-block;padding:11px 20px;font-family:${FONTE};font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">${esc(c.botao.texto)}</a>
+          </td>
+        </tr></table>
+      </td></tr>
+      ${c.nota ? `<tr><td class="z-sutil" style="padding:16px 0 0 0;font-family:${FONTE};font-size:14px;line-height:1.5;color:${SUTIL};">${esc(c.nota)}</td></tr>` : ''}
+      <tr><td class="z-sutil" style="padding:24px 0 0 0;font-family:${FONTE};font-size:13px;line-height:1.5;color:${SUTIL};">
+        Se o botão não abrir, copie este endereço no navegador:<br>
+        <a href="${esc(c.botao.link)}" style="color:${SUTIL};word-break:break-all;">${esc(c.botao.link)}</a>
+      </td></tr>
+      <tr><td style="padding:32px 0 0 0;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+          <td class="z-sutil z-linha" style="padding:16px 0 0 0;border-top:1px solid #e8e8ed;font-family:${FONTE};font-size:12px;line-height:1.6;color:${SUTIL};">
+            Absolute ZRO · <a href="mailto:contato@absolutezro.com" style="color:${SUTIL};">contato@absolutezro.com</a>
+          </td>
+        </tr></table>
       </td></tr>
     </table>
   </td></tr>
@@ -115,7 +87,7 @@ function texto(c: Corpo): string {
 const primeiroNome = (nome?: string | null) => nome?.trim().split(/\s+/)[0] || ''
 
 function montar(to: string, subject: string, c: Corpo): OutgoingEmail {
-  return { to, subject, text: texto(c), html: html(c), imagens: IMAGENS_EMAIL }
+  return { to, subject, text: texto(c), html: html(c) }
 }
 
 /** Conta nova: boas-vindas + confirmar e-mail. No reenvio, só a confirmação. */
@@ -129,7 +101,6 @@ export function emailConfirmacao(to: string, link: string, opts: { nome?: string
       apoio: 'Sua conta Absolute ZRO está pronta. Confirme o e-mail para entrar em todas as ferramentas com ela.',
       botao: { texto: 'Confirmar e-mail', link },
       nota: 'Não foi você que criou a conta? É só ignorar este e-mail.',
-      ecossistema: true,
     })
   return montar(to, 'Confirme seu e-mail na Absolute ZRO', {
     previa: 'Um toque e sua conta fica confirmada.',

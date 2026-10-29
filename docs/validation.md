@@ -15,6 +15,14 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## E-mails da central com cara de e-mail de conta (29/10/2026)
+
+- Convite caiu em Promoções no Gmail (SPF, DKIM e DMARC conferidos no DNS: ok). `apps/hub-web/lib/email/modelos.ts`
+  passa a mandar fundo branco, marca escrita, título curto, um botão simples e o endereço por extenso, sem imagem
+  anexada (o `imagens.ts` saiu), sem preenchimento na prévia e sem a faixa de produtos. Lint, formatação, tipos e
+  `npm test` **260/260** (inclui `excluir-conta`: links só para a marca e o contato). Prévias renderizadas no claro e no
+  escuro conferidas no Chromium.
+
 ## Maestro v2, fases 7–10: ponte com o SOBEDESCE, Drive na revisão e Arquivos (29/10/2026)
 
 - HUB: `tests/integration/pedidos-entre-apps.test.ts` (6): pedido assinado com `aud` do SOBEDESCE, `sub` da pessoa,
