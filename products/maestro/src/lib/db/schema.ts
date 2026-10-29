@@ -191,6 +191,30 @@ export const cards = maestro.table(
   (t) => [primaryKey({ columns: [t.orgId, t.id] }), index("cards_org_coluna_idx").on(t.orgId, t.coluna), index("cards_org_prazo_idx").on(t.orgId, t.prazo)],
 );
 
+/**
+ * As colunas do Quadro de cada organização (0024): as 8 de sistema (id = papel) e as da produtora (`x-…`). Escrita só
+ * pelas funções `maestro.coluna_*` (administração e gestão); o card guarda o id em `dados.coluna`.
+ */
+export const colunas = maestro.table(
+  "colunas",
+  {
+    orgId: uuid()
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    id: text().notNull(),
+    papel: text(),
+    nome: text().notNull(),
+    cor: text().notNull(),
+    ordem: integer().notNull().default(0),
+    arquivadaEm: quando(),
+    arquivadaPor: uuid(),
+    criadaPor: uuid(),
+    createdAt: agora(),
+    updatedAt: agora(),
+  },
+  (t) => [primaryKey({ columns: [t.orgId, t.id] })],
+);
+
 export const cardHistory = maestro.table(
   "card_history",
   {

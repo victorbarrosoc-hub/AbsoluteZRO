@@ -30,6 +30,8 @@ function traduzir(e: unknown): Falha {
     const nome = (NOME_DO_CAMPO as Record<string, string>)[campo] ?? campo;
     return falha(409, "conflito", `Alguém mudou ${nome} antes de você. O card foi atualizado.`, { campo });
   }
+  if (codigo === PG.regra && msg === "coluna:nao_existe")
+    return falha(409, "coluna", "Essa coluna não existe mais. O Quadro foi atualizado.", { campo: "coluna" });
   if (codigo === PG.unicidade) return falha(409, "id_existe", "Já existe um card com esse número.");
   if (codigo === PG.checagem) return falha(400, "formato", "Um dos campos veio num formato que o Quadro não aceita.");
   throw e;
@@ -156,7 +158,7 @@ export async function mudarCard(ctx: Contexto, id: unknown, camposBrutos: unknow
     });
   } catch (e) {
     const f = traduzir(e);
-    if (f.erro === "conflito") f.card = await lerCard(ctx, id);
+    if (f.erro === "conflito" || f.erro === "coluna") f.card = await lerCard(ctx, id);
     return f;
   }
 }

@@ -1,15 +1,17 @@
 /**
  * /api/quadro: o endereço fixo do Quadro. GET carrega (ou, com ?desde=, só o que mudou); POST grava uma operação
- * (criar, mudar, apagar, restaurar). Sessão e acesso conferidos no servidor (401/403), Origin conferida nas
- * gravações (CSRF), papel conferido aqui e de novo pelo banco (RLS e funções card_*).
+ * (criar, mudar, apagar, restaurar) ou mexe nas colunas (coluna_*, só administração e gestão). Sessão e acesso
+ * conferidos no servidor (401/403), Origin conferida nas gravações (CSRF), papel conferido aqui e de novo pelo banco
+ * (RLS e funções card_* e coluna_*). As colunas vêm junto em toda leitura (outro aparelho renomeou: a tela acerta).
  * Só Web API: os testes chamam direto, sem servidor.
  */
 import { erro, json, lerJson, origemConfere } from "@/lib/http";
 import { exigirAcesso } from "@/lib/auth/requisicao";
-import { podeEscrever } from "@/lib/papeis";
+import { podeEditarColunas, podeEscrever } from "@/lib/papeis";
 import { origensDoSite } from "@/lib/site";
 import { sincronizarDepois } from "@/lib/agenda/depois";
 import { apagarCard, carregarCards, cardsDesde, criarCard, mudarCard, referenciasDoQuadro, type Falha } from "./servidor";
+import { carregarColunas, OPS_DE_COLUNA, operarColuna } from "./colunas-servidor";
 
 const responderFalha = (f: Falha) => json({ erro: f.erro, mensagem: f.mensagem, campo: f.campo, card: f.card ?? undefined }, f.status);
 
@@ -20,10 +22,11 @@ export async function getQuadro(req: Request): Promise<Response> {
   const desde = new URL(req.url).searchParams.get("desde");
   if (desde) {
     const r = await cardsDesde(ctx, desde);
-    return r.ok ? json({ cards: r.cards, cursor: r.cursor }) : responderFalha(r);
+    if (!r.ok) return responderFalha(r);
+    return json({ cards: r.cards, cursor: r.cursor, colunas: await carregarColunas(ctx) });
   }
-  const [cards, refs] = await Promise.all([carregarCards(ctx), referenciasDoQuadro(ctx)]);
-  return json({ ...cards, ...refs, eu: s.sub, podeEscrever: podeEscrever(s.papel) });
+  const [cards, refs, colunas] = await Promise.all([carregarCards(ctx), referenciasDoQuadro(ctx), carregarColunas(ctx)]);
+  return json({ ...cards, ...refs, colunas, eu: s.sub, podeEscrever: podeEscrever(s.papel), podeEditarColunas: podeEditarColunas(s.papel) });
 }
 
 export async function postQuadro(req: Request): Promise<Response> {
@@ -34,6 +37,11 @@ export async function postQuadro(req: Request): Promise<Response> {
   const corpo = await lerJson(req, 64 * 1024);
   if (!corpo) return erro(400, "formato", "Pedido inválido.");
   const ctx = { sub: s.sub, orgId: s.orgId };
+  if (typeof corpo.op === "string" && OPS_DE_COLUNA.has(corpo.op)) {
+    if (!podeEditarColunas(s.papel)) return erro(403, "sem_permissao", "Só administração e gestão mudam as colunas.");
+    const c = await operarColuna(ctx, corpo);
+    return c.ok ? json({ colunas: c.colunas, movidos: c.movidos }) : json({ erro: c.erro, mensagem: c.mensagem }, c.status);
+  }
   const r =
     corpo.op === "criar"
       ? await criarCard(ctx, corpo.id, corpo.dados)

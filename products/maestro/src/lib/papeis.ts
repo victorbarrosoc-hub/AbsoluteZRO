@@ -44,3 +44,8 @@ export function podeRemover(papel: Papel): boolean {
 export function podeVerDinheiro(papel: Papel): boolean {
   return papel === "admin" || papel === "gestor";
 }
+
+/** Quem renomeia, recolore, reordena, cria e arquiva as colunas do Quadro: administração e gestão (o banco confere de novo). */
+export function podeEditarColunas(papel: Papel): boolean {
+  return papel === "admin" || papel === "gestor";
+}
