@@ -11616,6 +11616,21 @@ button.tree-twisty:hover {
     transform: translateY(8px);
   }
 }
+/* vindo de outro item da barra: desliza do lado para onde a pessoa foi (o Synquei faz igual) */
+.tela-entra[data-dir='frente'] {
+  animation: tela-entra-lado 0.38s var(--ease) backwards;
+  --tela-x: 22px;
+}
+.tela-entra[data-dir='volta'] {
+  animation: tela-entra-lado 0.38s var(--ease) backwards;
+  --tela-x: -22px;
+}
+@keyframes tela-entra-lado {
+  from {
+    opacity: 0;
+    transform: translateX(var(--tela-x));
+  }
+}
 .nav-item {
   position: relative;
 }

@@ -39,7 +39,26 @@ function Splash({ error }) {
   </div>`
 }
 
+/**
+ * Frente ou volta, pela ordem da barra lateral (como no Synquei): a tela nova entra da direita quando a pessoa desce na
+ * barra e da esquerda quando sobe. A ordem vem dos próprios itens da barra (o DOM já desenhado).
+ */
+function sentido(de, para) {
+  if (!de || de === para) return null
+  const ordem = [...document.querySelectorAll('.sidebar .nav-item')].map((a) => (a.getAttribute('href') || '').replace('#/', ''))
+  const a = ordem.indexOf(de)
+  const b = ordem.indexOf(para)
+  if (a < 0 || b < 0) return null
+  return b > a ? 'frente' : 'volta'
+}
+
 function Shell({ route }) {
+  const anterior = useRef(route.name)
+  const dir = useRef(null)
+  if (anterior.current !== route.name) {
+    dir.current = sentido(anterior.current, route.name)
+    anterior.current = route.name
+  }
   let screen
   switch (route.name) {
     case 'drive':
@@ -76,7 +95,7 @@ function Shell({ route }) {
   // A Z entra sem o movimento: transform num ancestral prende a gaveta de Conversas (position: fixed) à caixa.
   return html`<div class="shell">
     <${Sidebar} current=${route.name} />
-    <main class="main" id="main"><div class=${route.name === 'z' ? null : 'tela-entra'} key=${route.name}>${screen}</div></main>
+    <main class="main" id="main"><div class=${route.name === 'z' ? null : 'tela-entra'} data-dir=${dir.current} key=${route.name}>${screen}</div></main>
   </div>`
 }
 
