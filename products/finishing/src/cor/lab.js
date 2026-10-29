@@ -48,7 +48,7 @@ export const AJUSTES_NEUTROS = Object.fromEntries(AJUSTES.map((a) => [a.id, 0]))
 /**
  * Lê o frame (`pixels`: Float32Array RGB no código da entrada, 0–1) e devolve a correção: exposição em stops para o
  * meio-tom ir na direção do cinza 18% e ganhos de branco (nos cones, como a câmera faria) a partir dos tons quase
- * neutros. Corrige 60% e no máximo 1,5 stop: contraluz e noite continuam escuros, a cor da cena continua.
+ * neutros. Clareia 60% (até 1,5 stop) e escurece só 35% (até 0,6): frame claro de propósito continua claro.
  */
 export function analisarFrame(pixels, { entrada = 'still', passo = 7 } = {}) {
   const cena = paraCena(entrada)
@@ -73,7 +73,10 @@ export function analisarFrame(pixels, { entrada = 'still', passo = 7 } = {}) {
   if (Ys.length < 20) return { exposicao: 0, ganhos: null, leitura: 'Pouca informação no frame.' }
   Ys.sort((x, y) => x - y)
   const mediana = Ys[Ys.length >> 1]
-  const exposicao = limitar(Math.log2(0.18 / mediana) * 0.6, -1.5, 1.5)
+  // assimétrica, como um colorista: clareia o que ficou escuro (60%, até +1,5), mas escurece pouco o que é claro de
+  // propósito (35%, até -0,6): vestido de noiva e cena clara não viram cinza médio
+  const desvio = Math.log2(0.18 / mediana)
+  const exposicao = desvio >= 0 ? Math.min(1.5, desvio * 0.6) : Math.max(-0.6, desvio * 0.35)
   let ganhos = null
   if (n > 40) {
     const media = (soma[0] + soma[1] + soma[2]) / 3

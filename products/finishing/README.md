@@ -92,7 +92,7 @@ quando esta pasta muda desde o último deploy: um "Redeploy" do mesmo commit é 
 - **Bases** em três grupos: Revela, **Película** (Negativo 250D, Negativo 500T, Positivo 50D, Reversível, Sem
   branqueamento) e **Clássicos** (Laranja e petróleo, Anos 70, Nórdico), com nomes genéricos.
 - **O frame**: still já tratado (Rec.709) ou log de câmera (as mesmas do CST). **Analisar e corrigir** mede na cena:
-  exposição (60%, no máximo ±1,5 stop) e branco nos cones, só pelos tons quase neutros.
+  exposição (clareia 60% até +1,5 stop; escurece só 35% até -0,6, para frame claro de propósito continuar claro) e branco nos cones, só pelos tons quase neutros.
 - **Ajustes** com nome de gente: Luz (±2 stops), Contraste (em log), Cor, Temperatura e Tint (adaptação cromática),
   Calor, Desbotar e Pele protegida. A intensidade dosa o look; a primária vale sempre.
 - **Saída**: LUT no tamanho do editor; **Pacote profissional** (.zip, num worker): LMT DWG/DI 65 e 33, CLF, LMT
