@@ -4,11 +4,13 @@ import { audioUsage } from './usage';
 import {
   CLOUD_PART_BYTES,
   type CloudReport,
+  type TranscriptReport,
+  type StemsReport,
   type CloudState,
   restorationD,
   type CloudPreset,
   outputParts,
-  validCloudReport,
+  validJobReport,
 } from '../restoration';
 
 const bucket = 'nossom-restoration';
@@ -20,7 +22,7 @@ export type RestorationJob = {
   input_bytes: number;
   duration: number;
   provider_id: string | null;
-  report: CloudReport | { preset: CloudPreset } | null;
+  report: CloudReport | TranscriptReport | StemsReport | { preset: CloudPreset } | null;
   created_at: string;
 };
 export class RestorationError extends Error {
@@ -240,7 +242,7 @@ export async function jobStatus(user: string, id: string) {
     }
     if (result.status === 'COMPLETED') {
       if (
-        !validCloudReport(result.output) ||
+        !validJobReport(result.output) ||
         (job.report?.preset && result.output.preset !== job.report.preset)
       ) {
         await jobAction('fail', user, id);
@@ -264,7 +266,7 @@ export async function jobStatus(user: string, id: string) {
     id,
     status: job.status,
     preset: job.report?.preset ?? restorationD.id,
-    ...(job.status === 'completed' && validCloudReport(job.report)
+    ...(job.status === 'completed' && validJobReport(job.report)
       ? {
           report: job.report,
           downloadUrls: await Promise.all(

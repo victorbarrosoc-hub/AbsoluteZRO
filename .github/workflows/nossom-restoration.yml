@@ -24,4 +24,4 @@ jobs:
           context: products/nossom
           file: products/nossom/Dockerfile
           push: true
-          tags: ghcr.io/victorbarrosoc-hub/nossom-restoration:${{ github.sha }}
+          tags: ghcr.io/victorbarrosoc-hub/absolutezro-nossom-worker:${{ github.sha }}
