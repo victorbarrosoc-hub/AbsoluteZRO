@@ -65,7 +65,7 @@ h1 strong{font-weight:800}
 .sug{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;padding:0;list-style:none}
 .sug button{padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:var(--surf);color:var(--mute);font-size:.86rem;cursor:pointer;transition:color .2s,border-color .2s,translate .2s}
 .sug button:hover{color:var(--ink);border-color:var(--line2);translate:0 -1px}
-@container (max-width:520px){.sug{flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;scrollbar-width:none}.sug button{white-space:nowrap}}
+@container (max-width:520px){.sug li:nth-child(n+4){display:none}.sug button{max-width:100%;white-space:normal;text-align:center}}
 .campo{display:flex;align-items:flex-end;gap:8px;padding:8px 8px 8px 20px;border:1px solid var(--line2);border-radius:28px;background:var(--surf);box-shadow:0 12px 34px rgb(0 0 0/.07);transition:box-shadow .25s,border-color .25s}
 .campo:focus-within{border-color:var(--faint);box-shadow:0 0 0 4px rgb(127 127 127/.12),0 12px 34px rgb(0 0 0/.08)}
 .campo[data-off]{opacity:.7}
@@ -448,9 +448,9 @@ class ZroIa extends HTMLElement {
     this.zp.mover('pensando')
     this.ar = new MotorAr(this.root.querySelector('.ar'), () => this.hasAttribute('data-escuro'))
     for (const a of [this.z, this.zp, this.ar]) animar(a)
-    this.tema()
+    this.aplicarTema()
     this.mq = matchMedia('(prefers-color-scheme: dark)')
-    this.mq.addEventListener?.('change', () => this.tema())
+    this.mq.addEventListener?.('change', () => this.aplicarTema())
     this.render()
     this.carregar()
   }
@@ -488,10 +488,20 @@ class ZroIa extends HTMLElement {
     return ['tema']
   }
   attributeChangedCallback() {
-    if (this.$) this.tema()
+    if (this.$) this.aplicarTema()
   }
 
-  tema() {
+  // `tema` também como propriedade: o React 19 grava propriedade (e não atributo) quando o elemento já tem uma com o
+  // mesmo nome; antes era um método e o tema escolhido se perdia (painel claro sobre página escura).
+  get tema() {
+    return this.getAttribute('tema') || 'auto'
+  }
+  set tema(v) {
+    if (v == null || v === '') this.removeAttribute('tema')
+    else this.setAttribute('tema', String(v))
+  }
+
+  aplicarTema() {
     const t = this.getAttribute('tema') || 'auto'
     const escuro = t === 'escuro' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches)
     this.toggleAttribute('data-escuro', escuro)
