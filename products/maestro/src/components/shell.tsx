@@ -14,6 +14,7 @@ import { Relogio } from "./ambiente";
 import { Barra, Capsula } from "./nav";
 import { abasOcultas } from "@/lib/navegacao";
 import { SeletorDeTema } from "./tema";
+import { SetZro } from "./set-zro";
 import { Transicao } from "./movimento";
 
 export function iniciais(nome: string | null, email: string | null): string {
@@ -90,6 +91,8 @@ export function Shell({
         <div className="capsula__fim">
           {selo}
           <Relogio />
+          {/* o Set da Absolute ZRO: quem está online e as conversas (discreto, como a Z) */}
+          <SetZro />
           <SeletorDeTema />
           <a className="assinatura" href={HUB_URL} title={marca ? "Powered by Absolute ZRO" : "Absolute ZRO"} target="_blank" rel="noreferrer">
             <ZroSimbolo size={18} />
@@ -113,6 +116,7 @@ export function Shell({
             <Icone nome="z" size={18} />
             <span className="sr-only">Z</span>
           </Link>
+          <SetZro />
           <SeletorDeTema />
           <Link className="conta" href="/app/ajustes" title={sessao.orgNome}>
             <Avatar sessao={sessao} />

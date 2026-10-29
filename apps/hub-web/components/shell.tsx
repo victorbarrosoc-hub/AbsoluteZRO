@@ -11,6 +11,7 @@ import { Wordmark } from './brand'
 import { Icon } from './icons'
 import { Transicao } from './movimento'
 import { BackPath, MobileMenu, Nav, NavToggle, type FamilyApp, type NavMode } from './nav'
+import { SetNaBarra } from './set'
 import { ThemeToggle } from './theme-toggle'
 
 function OrgSwitch({ orgs, id }: { orgs: OrganizationSummary[]; id: string }) {
@@ -127,6 +128,7 @@ export function Shell({
             )}
           </div>
           <div className="row topbar__end">
+            <SetNaBarra />
             <ThemeToggle />
             <Link className="icon-btn" href="/ferramentas" aria-label="Ferramentas" title="Ferramentas">
               <Icon name="apps" />

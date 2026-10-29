@@ -15,6 +15,25 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Set: presença e conversas (29/10/2026, ADR 0032)
+
+Migração `0035_set.sql` (renumerada de 0032: 0031–0034 já são de outros ramos). Banco de teste próprio
+(`TEST_DATABASE_URL=…/zro_set_test`, `E2E_DATABASE_URL=…/zro_set_e2e_test`, porta 3261).
+
+| Verificação                                    | Resultado                                                                                                                                                                                                                     |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lint, formatação, tipos, `scan-secrets` (raiz) | ok (3109 arquivos, nenhum segredo)                                                                                                                                                                                            |
+| `npm test` (raiz, Postgres real)               | **352/352** em 39 arquivos; `set.test.ts`: presença e app pelo token, invisível/quem vê, contatos, direta, projeto, bloqueio, denúncia, limites, RLS de toda tabela, exclusão da conta                                        |
+| `npm run build` (HUB)                          | ok (`/set`, `/admin/denuncias`, `/api/v1/set/*`)                                                                                                                                                                              |
+| `npm run test:e2e` (HUB)                       | **48/48** (um WebKit da página inicial caiu por falta de memória com outros testes na máquina e passou de novo sozinho); `set.spec.ts` em Chromium e WebKit, computador e iPhone, mais moderação no console e o 304 da ETag   |
+| Maestro: lint, formatação, tipos               | ok                                                                                                                                                                                                                            |
+| Maestro: `npm test`                            | **378/378** (um arquivo caiu com `checkpoint request failed` do Postgres com a máquina cheia e passou de novo sozinho; `set.test.mts`: caminhos fechados, Bearer só no servidor, ETag/304, outra origem, login sem `zro.set`) |
+| Maestro: `e2e/set.spec.ts`                     | **6/6** (computador, iPhone Chromium e Safari; banco próprio com o novo `E2E_DB_NAME`); a lista some quando a conversa abre na folha                                                                                          |
+
+Privacidade conferida nos testes: outra organização não aparece; invisível não grava presença; "quem vê" e "visto há"
+valem; perfil escondido não é achado pelo @; e-mail não aparece em nenhuma resposta nem no console; mensagem de
+bloqueado some nos dois sentidos; `zro_app` não escreve direto em nenhuma tabela do Set.
+
 ## Página inicial no iPhone: topo por cima de tudo e grade de ícones (29/10/2026)
 
 Relato do titular (Safari do iPhone, tema claro): texto das seções aparecia entre a barra de status e a cápsula do topo e

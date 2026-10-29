@@ -10,6 +10,7 @@ const SECTIONS: { href: string; label: string; icon: IconName; onlyAdmin?: boole
   { href: '/admin/custos', label: 'Custos', icon: 'pie', onlyAdmin: true },
   { href: '/admin/lancamento', label: 'Lançamento', icon: 'sparkle' },
   { href: '/admin/apps', label: 'Apps', icon: 'apps' },
+  { href: '/admin/denuncias', label: 'Denúncias', icon: 'chat' },
 ]
 
 /** Seções do console: coluna no computador, faixa de pílulas no celular. Custos só aparece para o papel admin. */
