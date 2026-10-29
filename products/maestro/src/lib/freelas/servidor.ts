@@ -71,6 +71,8 @@ export type FreelaFicha = {
   email: string | null;
   whatsapp: string | null;
   instagram: string | null;
+  /** O @ na Absolute ZRO quando o freela foi achado pela busca de pessoas (drizzle/0022). */
+  zroArroba: string | null;
   funcoes: string[];
   nichos: string[];
   whatsappMsg: string | null;
@@ -126,6 +128,7 @@ export async function obterFreela(ctx: Contexto, papel: Papel, id: string, hoje:
       email: f.email as string | null,
       whatsapp: f.whatsapp as string | null,
       instagram: f.instagram as string | null,
+      zroArroba: (f.zro_arroba as string | null) ?? null,
       funcoes: (f.funcoes as string[]) ?? [],
       nichos: (f.nichos as string[]) ?? [],
       whatsappMsg: f.whatsapp_msg as string | null,

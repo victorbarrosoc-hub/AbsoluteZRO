@@ -1,7 +1,7 @@
 /** Organizações, vínculos e convites (PRD §4.1 Equipe, §5.1). */
 import { randomBytes } from 'node:crypto'
 import { hashToken, newToken, normalizeEmail, setActiveOrganization, TOKEN_FORMAT, validateEmail, type Authenticated } from '@zro/auth'
-import { pgErrorCode, PG, type Database } from '@zro/db'
+import { pgErrorCode, PG, type Database, type Queryable } from '@zro/db'
 import { audit, DomainError } from '@zro/observability'
 import { ADMIN_ROLES, authorize, requireUser, type OrgRole } from './authz'
 
@@ -64,14 +64,17 @@ export async function listMembers(db: Database, auth: Authenticated | null) {
   const members = await db.asUser(
     { userId: actor.userId, orgId: actor.orgId },
     (tx) => tx`
-    select u.id, u.email, u.display_name, m.role, m.created_at from zro.memberships m join zro.users u on u.id = m.user_id
+    select u.id, u.email, u.display_name, m.role, m.created_at, p.arroba, a.updated_at as foto_em
+    from zro.memberships m join zro.users u on u.id = m.user_id
+    left join zro.perfis p on p.user_id = u.id left join zro.user_avatars a on a.user_id = u.id
     where m.org_id = ${actor.orgId} and m.status = 'active' order by m.created_at`,
   )
   const invitations = ADMIN_ROLES.includes(actor.role)
     ? await db.asUser(
         { userId: actor.userId, orgId: actor.orgId },
         (tx) => tx`
-        select id, email, role, expires_at, created_at from zro.invitations
+        select id, case when via_arroba is not null then '@' || via_arroba else email end as email, via_arroba is not null as por_arroba,
+               role, expires_at, created_at from zro.invitations
         where org_id = ${actor.orgId} and accepted_at is null and revoked_at is null and expires_at > now() order by created_at desc`,
       )
     : []
@@ -117,45 +120,96 @@ export async function revokeInvitation(db: Database, auth: Authenticated | null,
   })
 }
 
+type ConviteAberto = Record<string, unknown>
+
+/** Põe a pessoa na organização (e no projeto do convite) e fecha o convite. Roda no sistema, com o convite travado. */
+async function entrarPeloConvite(tx: Queryable, inv: ConviteAberto, userId: string): Promise<string> {
+  // Convite de convidado nunca rebaixa quem já é da organização: só entra no projeto.
+  await tx`
+    insert into zro.memberships (org_id, user_id, role) values (${inv.org_id as string}, ${userId}, ${inv.role as string})
+    on conflict (org_id, user_id) do update set status = 'active',
+      role = case when zro.memberships.role = 'owner' then 'owner'
+                  when excluded.role = 'guest' and zro.memberships.status = 'active' then zro.memberships.role
+                  else excluded.role end`
+  if (inv.project_id)
+    await tx`
+      insert into zro.project_members (project_id, user_id, role, function, added_by)
+      select p.id, ${userId}, ${inv.project_role as string}, ${(inv.project_function as string) ?? null}, ${inv.invited_by as string} from zro.projects p
+      where p.id = ${inv.project_id as string} and p.org_id = ${inv.org_id as string}
+      on conflict (project_id, user_id) do update set role = excluded.role, function = coalesce(excluded.function, zro.project_members.function)`
+  await tx`update zro.invitations set accepted_at = now(), accepted_by = ${userId} where id = ${inv.id as string}`
+  await audit(tx, {
+    orgId: inv.org_id as string,
+    actorUserId: userId,
+    action: 'member.joined',
+    targetType: 'invitation',
+    targetId: inv.id as string,
+    metadata: { role: inv.role, ...(inv.project_id ? { project_id: inv.project_id } : {}), ...(inv.via_arroba ? { via: 'arroba' } : {}) },
+  })
+  return inv.org_id as string
+}
+
+function conferirDono(inv: ConviteAberto, auth: Authenticated, userId: string) {
+  if (inv.email !== auth.user.email) throw new DomainError('forbidden_role', 'Este convite foi enviado para outro e-mail.')
+  if (inv.invitee_user_id && inv.invitee_user_id !== userId) throw new DomainError('forbidden_role', 'Este convite foi enviado para outra conta.')
+}
+
 /** Aceitar convite: e-mail confirmado e igual ao convidado. */
 export async function acceptInvitation(db: Database, auth: Authenticated | null, token: string): Promise<{ orgId: string }> {
   const { userId } = requireUser(auth, { verifiedEmail: true })
   if (!TOKEN_FORMAT.invite.test(token)) throw new DomainError('not_found', 'Convite inválido ou vencido.')
   const orgId = await db.asSystem('org: aceitar convite', async (tx) => {
     const [inv] = await tx`
-      select i.id, i.org_id, i.email, i.role, i.project_id, i.project_role, i.project_function, i.invitee_user_id, i.invited_by
+      select i.id, i.org_id, i.email, i.role, i.project_id, i.project_role, i.project_function, i.invitee_user_id, i.invited_by, i.via_arroba
       from zro.invitations i join zro.organizations o on o.id = i.org_id
       where i.token_hash = ${hashToken(token)} and i.accepted_at is null and i.revoked_at is null and i.expires_at > now() and o.status = 'active'
       for update of i`
     if (!inv) throw new DomainError('not_found', 'Convite inválido ou vencido.')
-    if (inv.email !== auth!.user.email) throw new DomainError('forbidden_role', 'Este convite foi enviado para outro e-mail.')
-    if (inv.invitee_user_id && inv.invitee_user_id !== userId) throw new DomainError('forbidden_role', 'Este convite foi enviado para outra conta.')
-    // Convite de convidado nunca rebaixa quem já é da organização: só entra no projeto.
-    await tx`
-      insert into zro.memberships (org_id, user_id, role) values (${inv.org_id as string}, ${userId}, ${inv.role as string})
-      on conflict (org_id, user_id) do update set status = 'active',
-        role = case when zro.memberships.role = 'owner' then 'owner'
-                    when excluded.role = 'guest' and zro.memberships.status = 'active' then zro.memberships.role
-                    else excluded.role end`
-    if (inv.project_id)
-      await tx`
-        insert into zro.project_members (project_id, user_id, role, function, added_by)
-        select p.id, ${userId}, ${inv.project_role as string}, ${(inv.project_function as string) ?? null}, ${inv.invited_by as string} from zro.projects p
-        where p.id = ${inv.project_id as string} and p.org_id = ${inv.org_id as string}
-        on conflict (project_id, user_id) do update set role = excluded.role, function = coalesce(excluded.function, zro.project_members.function)`
-    await tx`update zro.invitations set accepted_at = now(), accepted_by = ${userId} where id = ${inv.id as string}`
-    await audit(tx, {
-      orgId: inv.org_id as string,
-      actorUserId: userId,
-      action: 'member.joined',
-      targetType: 'invitation',
-      targetId: inv.id as string,
-      metadata: { role: inv.role, ...(inv.project_id ? { project_id: inv.project_id } : {}) },
-    })
-    return inv.org_id as string
+    conferirDono(inv, auth!, userId)
+    return entrarPeloConvite(tx, inv, userId)
   })
   await setActiveOrganization(db, auth!, orgId)
   auth!.session.activeOrgId = orgId
+  return { orgId }
+}
+
+/**
+ * Aceitar ou recusar pela central (Equipe › Convites para você), sem o link do e-mail: o convite precisa ser da conta
+ * da sessão (convite por @) ou do e-mail confirmado dela. Recusar fecha o convite; quem convidou vê que não está mais aberto.
+ */
+export async function respondInvitation(
+  db: Database,
+  auth: Authenticated | null,
+  invitationId: string,
+  resposta: 'aceitar' | 'recusar',
+): Promise<{ orgId: string }> {
+  const { userId } = requireUser(auth, { verifiedEmail: true })
+  if (!/^[0-9a-f-]{36}$/i.test(invitationId)) throw new DomainError('not_found', 'Convite inválido ou vencido.')
+  const orgId = await db.asSystem(`org: ${resposta} convite pela central`, async (tx) => {
+    const [inv] = await tx`
+      select i.id, i.org_id, i.email, i.role, i.project_id, i.project_role, i.project_function, i.invitee_user_id, i.invited_by, i.via_arroba
+      from zro.invitations i join zro.organizations o on o.id = i.org_id
+      where i.id = ${invitationId} and i.accepted_at is null and i.revoked_at is null and i.expires_at > now() and o.status = 'active'
+      for update of i`
+    if (!inv) throw new DomainError('not_found', 'Convite inválido ou vencido.')
+    if (!(inv.invitee_user_id === userId || (!inv.invitee_user_id && inv.email === auth!.user.email)))
+      throw new DomainError('not_found', 'Convite inválido ou vencido.')
+    conferirDono(inv, auth!, userId)
+    if (resposta === 'aceitar') return entrarPeloConvite(tx, inv, userId)
+    await tx`update zro.invitations set revoked_at = now() where id = ${invitationId}`
+    await audit(tx, {
+      orgId: inv.org_id as string,
+      actorUserId: userId,
+      action: 'member.invitation_declined',
+      targetType: 'invitation',
+      targetId: invitationId,
+    })
+    return inv.org_id as string
+  })
+  if (resposta === 'aceitar') {
+    await setActiveOrganization(db, auth!, orgId)
+    auth!.session.activeOrgId = orgId
+  }
   return { orgId }
 }
 

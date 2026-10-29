@@ -14,15 +14,28 @@ export const ESCOPO_IA = "zro.ia";
 export const ESCOPO_PROJETOS = "maestro.projects";
 /** O Google Agenda das Conexões da Absolute ZRO (ADR 0026 do HUB): ocupado e eventos pelo HUB. */
 export const ESCOPO_AGENDA = "zro.agenda";
+/** Pessoas da Absolute ZRO (ADR 0029 do HUB): busca por @ ou nome e convite pelo @. */
+export const ESCOPO_PESSOAS = "zro.pessoas";
 export const ESCOPOS_SEM_AGENDA = `${ESCOPOS_BASICOS} ${ESCOPO_IA} ${ESCOPO_PROJETOS}`;
-export const ESCOPOS_COMPLETOS = `${ESCOPOS_SEM_AGENDA} ${ESCOPO_AGENDA}`;
+export const ESCOPOS_SEM_PESSOAS = `${ESCOPOS_SEM_AGENDA} ${ESCOPO_AGENDA}`;
+export const ESCOPOS_COMPLETOS = `${ESCOPOS_SEM_PESSOAS} ${ESCOPO_PESSOAS}`;
 /**
- * Até onde pedir: `completo` (tudo); `sem_agenda` quando a Absolute ZRO ainda não conhece zro.agenda (recusou com
- * invalid_scope); `basico` quando recusou de novo.
+ * Até onde pedir: `completo` (tudo); `sem_pessoas` quando a Absolute ZRO ainda não conhece zro.pessoas (recusou com
+ * invalid_scope); `sem_agenda` quando recusou de novo (sem zro.agenda); `basico` por último.
  */
-export type NivelEscopo = "completo" | "sem_agenda" | "basico";
-export const ESCOPOS_DO_NIVEL: Record<NivelEscopo, string> = { completo: ESCOPOS_COMPLETOS, sem_agenda: ESCOPOS_SEM_AGENDA, basico: ESCOPOS_BASICOS };
-export const PROXIMO_NIVEL: Record<NivelEscopo, NivelEscopo | null> = { completo: "sem_agenda", sem_agenda: "basico", basico: null };
+export type NivelEscopo = "completo" | "sem_pessoas" | "sem_agenda" | "basico";
+export const ESCOPOS_DO_NIVEL: Record<NivelEscopo, string> = {
+  completo: ESCOPOS_COMPLETOS,
+  sem_pessoas: ESCOPOS_SEM_PESSOAS,
+  sem_agenda: ESCOPOS_SEM_AGENDA,
+  basico: ESCOPOS_BASICOS,
+};
+export const PROXIMO_NIVEL: Record<NivelEscopo, NivelEscopo | null> = {
+  completo: "sem_pessoas",
+  sem_pessoas: "sem_agenda",
+  sem_agenda: "basico",
+  basico: null,
+};
 
 export function emissor(): string {
   return (process.env.ZRO_ISSUER?.trim() || EMISSOR_PADRAO).replace(/\/$/, "");

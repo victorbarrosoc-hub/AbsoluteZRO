@@ -22,6 +22,7 @@
 | `zro-pedido+jwt` (resumo da Z)   | v1, pronto e desligado ([maestro-z.md](maestro-z.md))              | HUB → Maestro                                                   |
 | `maestro.agenda` (.ics)          | RFC 5545 ([maestro-z.md](maestro-z.md))                            | Maestro → calendário da pessoa                                  |
 | `zro.agenda` (Conexões)          | v1 ([agenda.md](agenda.md))                                        | Apps → HUB → Google Agenda da pessoa (Maestro primeiro)         |
+| `zro.pessoas` (perfil com @)     | v1 ([pessoas.md](pessoas.md))                                      | Apps → HUB: busca de perfis, @ e convite (Maestro primeiro)     |
 
 Regras: payload mínimo (IDs e resumos, sem mídia nem dados pessoais), `idempotency_key` obrigatória, mudança
 incompatível = nova versão.

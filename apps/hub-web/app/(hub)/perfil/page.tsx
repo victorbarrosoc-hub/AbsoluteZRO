@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { avatarVersion } from '@zro/core'
+import { avatarVersion, meuPerfil } from '@zro/core'
 import { Field } from '@zro/ui'
 import { AccountFrame } from '@/components/account-frame'
 import { ActionForm } from '@/components/action-form'
@@ -29,7 +29,7 @@ function Tile({ href, icon, title, value }: { href: string; icon: IconName; titl
 
 export default async function Perfil() {
   const auth = await requireOrgPage()
-  const [avatar, sum, plan] = await Promise.all([avatarVersion(db(), auth), accountSummary(auth), planCenterData(auth)])
+  const [avatar, sum, plan, perfil] = await Promise.all([avatarVersion(db(), auth), accountSummary(auth), planCenterData(auth), meuPerfil(db(), auth)])
   const name = auth.user.displayName || auth.user.email
   const planName = plan.canManage ? plan.subscriptions.map((s) => s.name as string).join(' + ') || 'Sem plano' : 'Visível para quem cuida da cobrança'
   return (
@@ -54,6 +54,12 @@ export default async function Perfil() {
         Nome, foto e e-mail valem para todas as ferramentas da Absolute ZRO.
       </p>
       <div className="account-tiles">
+        <Tile
+          href="/perfil/profissional"
+          icon="at"
+          title="Perfil profissional"
+          value={`@${perfil.arroba} · ${perfil.visivel ? 'Aparece na busca' : 'Escondido da busca'}`}
+        />
         <Tile
           href="/perfil/seguranca"
           icon="lock"

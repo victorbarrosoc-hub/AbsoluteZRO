@@ -2,34 +2,52 @@ import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { listarClientes } from "@/lib/crm/clientes";
 import { dataBr } from "@/lib/dinheiro";
 import { NOME_DO_PAPEL, podeRemover } from "@/lib/papeis";
-import { listarPessoas, PODE_RESTRINGIR } from "@/lib/pessoas";
+import { FUNCOES_NA_PRODUTORA, listarPessoas, PODE_RESTRINGIR } from "@/lib/pessoas";
 import { emissor } from "@/lib/zro/config";
 import { Alcance } from "@/components/alcance";
 import { CabecaForm } from "@/components/form";
+import { FuncaoProdutora } from "@/components/funcao-produtora";
 import { Monograma, Selo } from "@/components/crm";
 import { Icone } from "@/components/icones";
+import { PessoasZro } from "@/components/pessoas-zro";
+import { buscarNaZroAcao, convidarNaZroAcao } from "./acoes";
 
 export const metadata = { title: "Pessoas" };
 
+/** Papéis do convite pelo @ (a tabela de src/lib/papeis.ts ao contrário; administração só pelo HUB). */
+const PAPEIS_CONVITE = [
+  { valor: "equipe", nome: "Equipe" },
+  { valor: "gestor", nome: "Gestão" },
+  { valor: "leitura", nome: "Leitura" },
+];
+
 /**
- * Ajustes → Pessoas: quem é da organização (contas Absolute ZRO; o papel vem do HUB a cada login) e, para quem é da
- * equipe ou só lê, o acesso por cliente (drizzle/0018, a regra vale no banco). Convidar e mudar papel é no HUB.
+ * Ajustes → Pessoas: quem é da organização (contas Absolute ZRO; o papel vem do HUB a cada login), a função de cada
+ * uma na produtora (só descrição), o acesso por cliente (drizzle/0018, a regra vale no banco) e, para a administração,
+ * buscar pelo @ na Absolute ZRO e convidar (ADR 0029 do HUB: a pessoa aceita lá).
  */
 export default async function Pessoas() {
   const s = await exigirAcessoNaPagina("/app/ajustes/pessoas");
   const ctx = { sub: s.sub, orgId: s.orgId };
   const gestao = podeRemover(s.papel);
+  const admin = s.papel === "admin";
   const [pessoas, clientes] = await Promise.all([listarPessoas(ctx), gestao ? listarClientes(ctx) : Promise.resolve([])]);
   return (
     <div className="pagina">
       <CabecaForm voltar="/app/ajustes" titulo={<strong>Pessoas</strong>}>
-        <p className="apoio">Cada uma com a própria conta Absolute ZRO. Convites e papéis, no HUB.</p>
+        <p className="apoio">Cada uma com a própria conta Absolute ZRO.</p>
       </CabecaForm>
-      <div className="acoes">
-        <a className="glass-btn glass-btn--sm" href={`${emissor()}/equipe`} target="_blank" rel="noreferrer">
-          <Icone nome="externo" size={15} /> Convidar na Absolute ZRO
-        </a>
-      </div>
+      {admin ? (
+        <section aria-label="Convidar pela Absolute ZRO">
+          <PessoasZro buscar={buscarNaZroAcao} acao={convidarNaZroAcao} rotulo="Convidar" papeis={PAPEIS_CONVITE} perfilBase={emissor()} />
+        </section>
+      ) : (
+        <div className="acoes">
+          <a className="glass-btn glass-btn--sm" href={`${emissor()}/equipe`} target="_blank" rel="noreferrer">
+            <Icone nome="externo" size={15} /> Equipe na Absolute ZRO
+          </a>
+        </div>
+      )}
       <ul className="pessoas" aria-label="Pessoas da organização">
         {pessoas.map((p) => {
           const nome = p.nome ?? p.email ?? "Sem nome";
@@ -42,7 +60,11 @@ export default async function Pessoas() {
                     {nome}
                     {p.sub === s.sub ? <span className="sutil"> · você</span> : null}
                   </b>
-                  <small>{[p.email, p.ultimoLogin ? `entrou ${dataBr(p.ultimoLogin.slice(0, 10))}` : null].filter(Boolean).join(" · ")}</small>
+                  <small>
+                    {[p.arroba ? `@${p.arroba}` : null, p.funcao, p.ultimoLogin ? `entrou ${dataBr(p.ultimoLogin.slice(0, 10))}` : null]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </small>
                 </div>
                 <Selo tom={p.papel === "admin" || p.papel === "gestor" ? "ok" : "neutro"}>{NOME_DO_PAPEL[p.papel]}</Selo>
                 {PODE_RESTRINGIR.includes(p.papel) ? (
@@ -51,6 +73,12 @@ export default async function Pessoas() {
                   </Selo>
                 ) : null}
               </div>
+              {admin ? (
+                <details className="pessoa__alcance">
+                  <summary>Função na produtora</summary>
+                  <FuncaoProdutora sub={p.sub} nome={nome} funcao={p.funcao} sugestoes={FUNCOES_NA_PRODUTORA} />
+                </details>
+              ) : null}
               {gestao && PODE_RESTRINGIR.includes(p.papel) ? (
                 <details className="pessoa__alcance">
                   <summary>Clientes que vê</summary>

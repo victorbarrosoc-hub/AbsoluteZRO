@@ -1,4 +1,4 @@
-# ADR 0029 — Conversão e exportação de mídia viram um setor próprio; a Revela fica só com a cor
+# ADR 0030 — Conversão e exportação de mídia viram um setor próprio; a Revela fica só com a cor
 
 **Status:** aceita (29/10/2026, pedido do titular). Nome da plataforma: a definir pelo titular.
 

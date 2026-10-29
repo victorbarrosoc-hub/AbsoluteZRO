@@ -77,7 +77,7 @@ funcionalidades autorizadas.
 | AI Edit — nome provisório   | Decupagem, seleção e montagem assistida               | Mídias, transcrições, brief, referências e presets de linguagem     | Decupagem, selects, markers, edição preliminar/timeline editável    |
 | NOSSOM                      | Tratamento sonoro e SFX                               | Sequência/timeline, áudio, marcações da edição e bancos autorizados | Sugestões de efeitos, áudio limpo, mix, master e relatórios         |
 | Revela (ex-Finishing)       | Laboratório de cor: looks, espaço de cor, LUT, PowerGrade | Frames, referências, câmera e espaço de cor de origem           | LUTs, PowerGrades, looks e pacotes de cor                           |
-| Conversão — nome a definir  | Conversão e exportação de vídeo, áudio e imagem (ADR 0029) | Master ou arquivo, preset de destino                            | Versões de entrega ao lado do original, conferidas                  |
+| Conversão — nome a definir  | Conversão e exportação de vídeo, áudio e imagem (ADR 0030) | Master ou arquivo, preset de destino                            | Versões de entrega ao lado do original, conferidas                  |
 
 **Importante:** AI Edit e Finishing **ainda não existem**. São espaços
 de produto, com interfaces e contratos iniciais e implementação

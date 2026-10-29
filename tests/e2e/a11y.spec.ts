@@ -71,6 +71,7 @@ test('área logada e projeto sem violações WCAG A/AA (claro e escuro)', async 
       '/perfil',
       '/perfil/seguranca',
       '/perfil/plano',
+      '/perfil/profissional',
       '/perfil/acessos',
       '/perfil/excluir',
     ])

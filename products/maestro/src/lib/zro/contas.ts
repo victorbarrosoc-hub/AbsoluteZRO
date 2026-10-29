@@ -21,7 +21,15 @@ export async function entrarNaOrganizacao(perfil: PerfilZro, agora = new Date())
       .values({ zroOrgId: org.id, name: org.name, zroProducts: perfil.produtos, zroFeatures: perfil.recursos })
       .onConflictDoUpdate({ target: organizations.zroOrgId, set: { name: org.name, zroProducts: perfil.produtos, zroFeatures: perfil.recursos } })
       .returning({ id: organizations.id, name: organizations.name });
-    const pessoa = { displayName: perfil.nome, email: perfil.email, pictureUrl: perfil.foto, hubRole: org.role || null, role: papel, lastLoginAt: agora };
+    const pessoa = {
+      displayName: perfil.nome,
+      email: perfil.email,
+      pictureUrl: perfil.foto,
+      zroArroba: perfil.arroba,
+      hubRole: org.role || null,
+      role: papel,
+      lastLoginAt: agora,
+    };
     await tx
       .insert(members)
       .values({ orgId: o.id, zroSub: perfil.sub, ...pessoa })

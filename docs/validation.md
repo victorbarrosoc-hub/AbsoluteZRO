@@ -15,6 +15,41 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Perfil profissional com @ (29/10/2026, ADR 0029)
+
+Rodado neste ambiente (Postgres 16.15 local, Chromium do Playwright), máquina compartilhada e carregada (load 15–20).
+
+| Verificação                                                  | Resultado                                                                                                        |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| Lint, formatação, tipos (raiz e hub-web)                     | ok                                                                                                               |
+| `npm test` (raiz, Postgres real)                             | **292/292** em 35 arquivos; `tests/integration/perfis.test.ts` 18 novos                                          |
+| `npm run build` (HUB)                                        | ok (rotas novas `/perfil/profissional`, `/pessoas/[arroba]`, `/api/v1/pessoas/*`)                                |
+| `npm run test:e2e` (HUB)                                     | **31/31** (`pessoas.spec.ts` novo; a11y e admin estouraram o tempo com a máquina cheia e passaram sozinhos)      |
+| Maestro lint, formatação, tipos, build                       | ok                                                                                                               |
+| Maestro `npm test`                                           | **352/352** (`pessoas-zro.test.mts` 6 novos; `zro.test.mts` com o nível `sem_pessoas`)                           |
+| Maestro e2e (negócio, visual, sem corte, produtora, pessoas) | **39 ok**, 5 pulados (os mesmos de antes), 0 falhas                                                              |
+| Carro do Freela `npm run test:api`, `npm test` e build       | **44/44**; **88/88** (12 suítes de tela estouraram o tempo com a máquina cheia e passaram uma por vez); build ok |
+| `node scripts/scan-secrets.mjs`                              | nenhum segredo                                                                                                   |
+
+O que os testes cobrem: listas do @ iguais no TypeScript e no banco; formato, reservados (também com ponto/sublinhado),
+sugestão sem acento e com número; cadastro com @ ocupado (sem diferença de maiúsculas) não cria a conta; troca com
+limite (2/30 dias, sugestão não conta), @ antigo levando ao perfil por 90 dias e bloqueado para outros; RLS (cada um lê
+e muda só a própria linha, não muda o @ direto, não lê o histórico, sem sessão nada); busca só de visíveis, sem a própria
+pessoa, **nenhum e-mail em nenhuma resposta** (nem na lista de convites pendentes por @); escondido não aparece nem pelo
+@ (só a dona vê) e continua convidável pelo e-mail exato; e-mail confirmado e limite de buscas; selos só de app usado;
+perfil recusa e-mail, telefone, função fora da lista, http e bio longa; convite por @ (admin só pelo dono, editor não
+convida, nem direto no banco), recusar fecha o convite, aceitar pela central; `preferred_username` no id_token e no
+userinfo; API dos apps com o escopo certo, auditoria sem o texto buscado; conta excluída sai da busca e o @ fica
+guardado. Maestro: @ do login, busca/convite pelo HUB falso (sem escopo = entrar de novo; e-mail do HUB descartado),
+freela pelo @ (um por organização, isolado, leitura não adiciona), função na produtora só pela administração.
+
+Não verificado: o e-mail do convite por @ saindo de verdade (sem provedor aqui, o link aparece só fora de produção e a
+pessoa vê o convite na central); as migrações `0029`/`0022` contra o banco de produção; o Carro do Freela rodou com o
+Chromium desta máquina (`CHROME=/opt/pw-browsers/chromium-1243/...`), outra versão que a do padrão do arnês.
+
+Capturas (claro/escuro, computador/celular): aviso único, editor do perfil, busca no Convidar, menu de ações e a folha de
+remover em Equipe, e a busca em Pessoas do Maestro.
+
 ## Fluidez entre abas: HUB, Maestro e SOBEDESCE (29/10/2026)
 
 Pedido do titular: "abrir uma aba é lento e sem fluidez; o Synquei é instantâneo". O Synquei é uma SPA local: troca de
@@ -2233,7 +2268,7 @@ sistema simulado), e o primeiro Release (sai no primeiro push na main com `produ
 
 ## Conversão de mídia como setor próprio (29/10/2026)
 
-Só documentos ([ADR 0029](decisions/0029-conversao-como-setor.md), PRD §2, roadmap): nenhum código mudou. Mapa feito
+Só documentos ([ADR 0030](decisions/0030-relay-conversao.md), PRD §2, roadmap): nenhum código mudou. Mapa feito
 lendo o código de `products/finishing`, `products/sobedesce`, `products/ai-edit`, `products/nossom`,
 `products/synquei` e `products/maestro`. Synquei exporta projeto (XML, OTIO, EDL), não mídia; Maestro, TPeasy, Carro
 do Freela e HUB não convertem. `npm run format:check` e `node scripts/scan-secrets.mjs` ok.

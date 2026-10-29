@@ -9,6 +9,9 @@ import { Busca } from "@/components/busca";
 import { Monograma, Pilulas } from "@/components/crm";
 import { Icone } from "@/components/icones";
 import { EstadoVazio } from "@/components/vazio";
+import { PessoasZro } from "@/components/pessoas-zro";
+import { emissor } from "@/lib/zro/config";
+import { adicionarFreelaDaZroAcao, buscarFreelaNaZroAcao } from "./acoes";
 
 export const metadata = { title: "Freelas" };
 
@@ -47,6 +50,12 @@ export default async function Freelas({ searchParams }: PageProps<"/app/freelas"
           </Link>
         ) : null}
       </header>
+      {escreve ? (
+        <details className="pessoa__alcance freelas__zro">
+          <summary>Achar pelo @ na Absolute ZRO</summary>
+          <PessoasZro buscar={buscarFreelaNaZroAcao} acao={adicionarFreelaDaZroAcao} rotulo="Adicionar" irPara="/app/freelas/" perfilBase={emissor()} />
+        </details>
+      ) : null}
       {!todos.length ? (
         <EstadoVazio icone="freelas" titulo="Nenhum freela ainda" apoio="Funções, diárias e equipamento de quem trabalha com vocês, num lugar só.">
           {escreve ? (

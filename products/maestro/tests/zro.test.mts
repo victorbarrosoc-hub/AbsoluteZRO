@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { after, before, describe, test } from "node:test";
 import { eq } from "drizzle-orm";
 import { cookiesDe, pedido, prepararAmbiente, SITE, UUID } from "./ambiente.mts";
-import { ESCOPOS_BASICOS, ESCOPOS_COMPLETOS, ESCOPOS_SEM_AGENDA, type PessoaZro } from "./zro-falso.mts";
+import { ESCOPOS_BASICOS, ESCOPOS_COMPLETOS, ESCOPOS_SEM_AGENDA, ESCOPOS_SEM_PESSOAS, type PessoaZro } from "./zro-falso.mts";
 
 const amb = await prepararAmbiente("zro");
 const { zro, banco } = amb;
@@ -154,7 +154,7 @@ describe("entrar", () => {
     return { volta, escopo: u.searchParams.get("scope"), destino: new URL(volta.headers.get("location")!) };
   }
 
-  test("Absolute ZRO sem os escopos extras: tira a Agenda, depois a Z e projetos, e entra com os básicos", async () => {
+  test("Absolute ZRO sem os escopos extras: tira Pessoas, a Agenda, depois a Z e projetos, e entra com os básicos", async () => {
     zro.estado.recusarEscoposExtras = true;
     try {
       Object.assign(zro.estado.proximo, { pessoa: LIA, adulterar: null, negar: false });
@@ -162,8 +162,11 @@ describe("entrar", () => {
       assert.equal(r1.escopo, ESCOPOS_COMPLETOS);
       assert.equal(r1.volta.status, 303);
       assert.equal(r1.destino.pathname, "/api/zro/entrar");
-      assert.equal(r1.destino.searchParams.get("nivel"), "sem_agenda");
-      const r2 = await idaEVolta(r1.destino.pathname + r1.destino.search);
+      assert.equal(r1.destino.searchParams.get("nivel"), "sem_pessoas");
+      const r1b = await idaEVolta(r1.destino.pathname + r1.destino.search);
+      assert.equal(r1b.escopo, ESCOPOS_SEM_PESSOAS);
+      assert.equal(r1b.destino.searchParams.get("nivel"), "sem_agenda");
+      const r2 = await idaEVolta(r1b.destino.pathname + r1b.destino.search);
       assert.equal(r2.escopo, ESCOPOS_SEM_AGENDA);
       assert.equal(r2.destino.searchParams.get("nivel"), "basico");
       const r3 = await idaEVolta(r2.destino.pathname + r2.destino.search);
@@ -182,11 +185,26 @@ describe("entrar", () => {
     try {
       Object.assign(zro.estado.proximo, { pessoa: LIA, adulterar: null, negar: false });
       const r1 = await idaEVolta("/api/zro/entrar?volta=/app/z");
-      const r2 = await idaEVolta(r1.destino.pathname + r1.destino.search);
+      const r1b = await idaEVolta(r1.destino.pathname + r1.destino.search);
+      const r2 = await idaEVolta(r1b.destino.pathname + r1b.destino.search);
       assert.equal(r2.escopo, ESCOPOS_SEM_AGENDA);
       assert.equal(r2.destino.pathname, "/app/z");
     } finally {
       zro.estado.recusarAgenda = false;
+    }
+  });
+
+  test("Absolute ZRO que ainda não conhece só o zro.pessoas: entra com a Agenda, a Z e projetos (sem Pessoas)", async () => {
+    zro.estado.recusarPessoas = true;
+    try {
+      Object.assign(zro.estado.proximo, { pessoa: LIA, adulterar: null, negar: false });
+      const r1 = await idaEVolta("/api/zro/entrar?volta=/app/z");
+      assert.equal(r1.destino.searchParams.get("nivel"), "sem_pessoas");
+      const r2 = await idaEVolta(r1.destino.pathname + r1.destino.search);
+      assert.equal(r2.escopo, ESCOPOS_SEM_PESSOAS);
+      assert.equal(r2.destino.pathname, "/app/z");
+    } finally {
+      zro.estado.recusarPessoas = false;
     }
   });
 
