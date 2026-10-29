@@ -71,4 +71,20 @@ export default tseslint.config(
     files: ['apps/hub-desktop/scripts/**/*.mjs', 'apps/hub-desktop/test/**/*.mjs'],
     languageOptions: { globals: { fetch: 'readonly', AbortSignal: 'readonly', setInterval: 'readonly' } },
   },
+  // Núcleo do Drive (packages/drive-web): módulos de navegador e o service worker, sem build.
+  {
+    files: ['packages/drive-web/src/**/*.js'],
+    languageOptions: {
+      globals: {
+        self: 'readonly',
+        navigator: 'readonly',
+        document: 'readonly',
+        fetch: 'readonly',
+        MessageChannel: 'readonly',
+        clearTimeout: 'readonly',
+        URLSearchParams: 'readonly',
+        Intl: 'readonly',
+      },
+    },
+  },
 )
