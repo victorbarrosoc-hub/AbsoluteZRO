@@ -37,6 +37,23 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 - Produção **não** foi tocada: o schema `carro_do_freela` foi só lido (três tabelas antigas, 1/0/375 linhas, sem
   papéis do Carro). Passos para ligar em `products/carro-do-freela/db/PRODUCAO.md`.
 
+## Z lendo o Maestro, só leitura (29/10/2026)
+
+- HUB: `tests/integration/ia-maestro.test.ts` (novo, 8): Maestro liberado e no plano → um `POST` em
+  `/api/zro/maestro/resumo` com `zro-pedido+jwt` conferido pela JWKS (`alg` ES256, `iss`, `sub` da pessoa, `aud`
+  `maestro-web`, `zro_pedido` `maestro.resumo`, vida de 60 s, `jti` no formato que o Maestro aceita e novo a cada
+  leitura); resposta com fonte, `citar_como` e dinheiro em reais; auditoria `ia.maestro.leitura` sem conteúdo lido.
+  Gate fechado e Maestro fora do plano → **nenhum pedido sai** e a recusa fica na auditoria. Sem dinheiro (papel
+  equipe/leitura) → nada de R$. Falhas (`sem_vinculo`, `devagar`, 401, rede) viram frases e ficam na auditoria; link
+  estranho some, listas cortadas. `ia-plataformas.test.ts`: `ver_maestro` só com o Maestro `contracted`, guia diz "só
+  leitura". `ia-drive.test.ts` e `flows`/`findEventCycle` seguem passando. Raiz: `lint`, `format:check`, `typecheck`
+  ok; `npm test` **247/247** em 31 arquivos; `apps/hub-web` build ok.
+- Maestro: `resumo-z.test.mts` com 2 novos: o pedido como o HUB assina (`jti` uuid) aceito uma vez e recusado ao
+  reapresentar; ação de escrita (`maestro.pedido.criar`) recusada mesmo assinada para ela (`ACOES_ABERTAS`). Seguem
+  os de `aud` errado, ação errada, vida longa, assinatura errada e sem token. `lint`, `typecheck`, `npm test`
+  **291/291** e `build` ok. `node scripts/scan-secrets.mjs`: nenhum segredo.
+- **Não validado**: a chamada real entre os dois projetos Vercel em produção (sem deploy neste corte).
+
 ## Maestro: funil, Números, importar planilha, agenda .ics e acesso por cliente (28/10/2026)
 
 - `products/maestro`: `lint`, `format:check`, `typecheck` ok; `npm test` **289/289** (Postgres 16 local, migrations
@@ -65,7 +82,7 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
   quatro horas e no escuro; `produtora.spec.ts` com o quadro do funil e Números; `inicio.spec.ts` com os itens novos.
 - Capturas (claro a 1440 px, claro no iPhone, escuro a 1440 px) de Hoje, Pedidos, ficha do pedido, Números, Importar,
   Agenda no celular e Pessoas conferidas à mão.
-- **Não está no ar / não validado**: a Z lendo o Maestro (rota pronta, o HUB não chama; item 5); eventos no HUB
+- **Não está no ar / não validado**: eventos no HUB
   (desenhados em `docs/integration-contracts/maestro-z.md`); sincronia com o Google Agenda; o .ics num iPhone ou Google
   Agenda de verdade (validado pelo formato e pelo download).
 

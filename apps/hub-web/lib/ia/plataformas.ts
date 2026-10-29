@@ -47,9 +47,10 @@ export const PLATAFORMAS: Record<string, { nome: string; faz: string[] }> = {
     faz: ['Agenda e contratação de freelas do audiovisual (protótipo): quem contrata monta a escala, quem é freela mantém a própria agenda.'],
   },
   maestro: {
-    nome: 'Maestro',
+    nome: 'Maestro (maestro.absolutezro.com)',
     faz: [
-      'Em desenvolvimento, ainda fechado (nada no ar): a gestão da produtora num lugar só: CRM e cadastro de clientes, financeiro, controle de pauta (Quadro em 8 colunas) e aprovação do cliente por link sem conta, com projetos ligados ao projeto da Absolute ZRO. Não ofereça como disponível.',
+      'Em teste fechado (só a lista de acesso entra): a gestão da produtora num lugar só: funil de pedidos e CRM de clientes, orçamentos, financeiro, controle de pauta (Quadro em 8 colunas), agenda e aprovação do cliente por link sem conta, com projetos ligados ao projeto da Absolute ZRO.',
+      'A Z lê o dia da produtora no Maestro (ver_maestro): retornos de hoje, cards vencendo, peças com o cliente, contagens e, para administração e gestão, meta, faturado, caixa, a receber e a pagar. Só leitura: criar pedido, cliente ou despesa e mexer no Quadro é no próprio Maestro.',
     ],
   },
 }

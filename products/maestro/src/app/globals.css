@@ -682,20 +682,21 @@ h3 {
   align-items: center;
   gap: 10px;
 }
-/* a barra de baixo: uma cápsula de vidro flutuando sobre o conteúdo */
+/* a barra de baixo: presa ao rodapé como a barra de abas do iPhone (vidro quase opaco, filete em cima), nada vaza por
+   baixo dela; a área segura do aparelho entra no próprio fundo da barra */
 .barra {
   position: fixed;
-  left: 10px;
-  right: 10px;
-  bottom: max(10px, env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 30;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  padding: 6px;
-  border-radius: 26px;
-  background: var(--painel);
+  gap: 4px;
+  padding: 6px 10px max(6px, env(safe-area-inset-bottom));
+  background: var(--chrome-bg);
   -webkit-backdrop-filter: blur(24px) saturate(150%);
   backdrop-filter: blur(24px) saturate(150%);
-  box-shadow: var(--shadow-float);
+  box-shadow: 0 -1px 0 var(--line);
 }
 .barra a {
   position: relative;
@@ -849,7 +850,7 @@ h3 {
   }
   .conteudo {
     width: calc(100% - 32px);
-    padding: 20px 0 calc(104px + env(safe-area-inset-bottom));
+    padding: 20px 0 calc(84px + env(safe-area-inset-bottom));
   }
 }
 @media (max-width: 440px) {
