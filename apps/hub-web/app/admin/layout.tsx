@@ -22,7 +22,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
             {auth.user.platformRole === 'admin' ? 'Console' : 'Console · leitura'}
           </span>
         </div>
-        <AdminNav />
+        <AdminNav isAdmin={auth.user.platformRole === 'admin'} />
         <div className="adm-side__foot">
           <Link href="/inicio" className="adm-side__back">
             <Icon name="home" />
