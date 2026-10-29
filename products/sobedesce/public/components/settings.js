@@ -131,13 +131,15 @@ function Versao() {
   else if (pronto) note = `O build ${v.atualizacao.build} já foi baixado e conferido. Atualizar agora fecha o app, troca e abre de novo.`
   else if (prog?.erro) note = prog.label
   else if (v?.disponivel) note = `Saiu o build ${v.ultima.build}. ${installHint(v.plataforma, v.podeAtualizar)}`
+  // Instalado pelo Absolute ZRO: quem procura e instala a versão nova é ele (src/gerenciado.js), não este app.
+  else if (v?.gerenciado) note = 'Quem atualiza este app é o Absolute ZRO. Abra o Absolute ZRO para ver se saiu versão nova.'
   else if (checked && dev) note = 'A versão de desenvolvimento não procura atualização.'
   else if (checked && v?.falhou) note = 'Não consegui verificar agora. Confira a internet e tente de novo.'
   else if (checked) note = 'Você está na versão mais nova.'
 
   // "build 42 · 15 de out. de 2026" → número grande + a data
   const quando = buildLabel(atual).split(' · ')[1] || ''
-  const tom = prog?.erro && !andando && !baixando ? 'erro' : checked && !v?.disponivel && !dev && !v?.falhou ? 'ok' : 'grad'
+  const tom = prog?.erro && !andando && !baixando ? 'erro' : checked && !v?.disponivel && !v?.gerenciado && !dev && !v?.falhou ? 'ok' : 'grad'
   const mostrarBarra = andando || baixando
   const titulo = andando ? 'Atualizando agora' : baixando ? 'Baixando a versão nova' : pronto ? 'Versão nova pronta' : 'Versão deste computador'
 
@@ -162,7 +164,7 @@ function Versao() {
           : html`<${Button} variant="primary" icon="refresh" onClick=${installUpdate}>Atualizar</${Button}>`
         : null}
       ${v?.disponivel && !andando ? html`<${Button} variant=${v.podeAtualizar ? 'secondary' : 'primary'} icon="download" onClick=${downloadUpdate}>Baixar</${Button}>` : null}
-      ${andando ? null : html`<${Button} variant="ghost" icon="search" loading=${busy} onClick=${check}>Procurar atualização</${Button}>`}
+      ${andando || v?.gerenciado ? null : html`<${Button} variant="ghost" icon="search" loading=${busy} onClick=${check}>Procurar atualização</${Button}>`}
     </div>
     ${atual?.commit ? html`<p class="k-nota aj-commit" title=${`commit ${atual.commit}`}>commit ${String(atual.commit).slice(0, 7)}</p>` : null}
   </div>`

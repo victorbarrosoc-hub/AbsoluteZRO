@@ -62,12 +62,40 @@ function compararVersao(a, b) {
   return 0
 }
 
-/** Tem versão nova? Versão maior, ou mesma versão com build maior que o instalado pela central. */
+/**
+ * Tem versão nova? Versão maior, ou mesma versão com build maior que o instalado. O build instalado vem do próprio app
+ * (build-info.json dentro dele, `instalado.build`); sem ele, o que a central instalou (`registro.build`). As
+ * ferramentas mudam de build sem mudar de versão (0.1.0 b1034 → b1042): sem saber o build, não dá para comparar.
+ */
 function temAtualizacao(instalado, registro, disponivel) {
   if (!instalado || !disponivel) return false
   if (instalado.versao && compararVersao(disponivel.versao, instalado.versao) > 0) return true
   if (instalado.versao && compararVersao(disponivel.versao, instalado.versao) < 0) return false
-  return !!(registro && registro.build != null && disponivel.build != null && disponivel.build > registro.build)
+  const atual = instalado.build != null ? instalado.build : registro && registro.build != null ? registro.build : null
+  return atual != null && disponivel.build != null && disponivel.build > atual
+}
+
+// Onde cada ferramenta grava o build dentro do pacote: SOBEDESCE (scripts/build-info.mjs) e Synquei
+// (scripts/release.mjs build-info).
+const BUILD_INFO = [
+  ['src', 'build-info.json'],
+  ['desktop', 'build-info.json'],
+]
+
+/**
+ * O build gravado dentro do app instalado (o build-info.json no app.asar; no processo do Electron, o fs lê o .asar
+ * como uma pasta). Sem arquivo ou sem build (versão de desenvolvimento): null.
+ */
+function lerBuildInstalado(fs, asar, p = path) {
+  for (const partes of BUILD_INFO) {
+    try {
+      const b = Number(JSON.parse(fs.readFileSync(p.join(asar, ...partes), 'utf8')).build)
+      if (Number.isInteger(b) && b > 0) return b
+    } catch {
+      // tenta o próximo
+    }
+  }
+  return null
 }
 
 /**
@@ -198,7 +226,7 @@ class Central {
         } catch {
           versao = null
         }
-        return { caminho, versao }
+        return { caminho, versao, build: lerBuildInstalado(this.d.fs, path.join(caminho, 'Contents', 'Resources', 'app.asar')) }
       }
       return null
     }
@@ -216,7 +244,8 @@ class Central {
         if (!e) continue
         const icone = e.DisplayIcon ? e.DisplayIcon.replace(/,\d+$/, '').replace(/^"|"$/g, '') : null
         const exe = e.InstallLocation ? path.win32.join(e.InstallLocation, app.windows.exe) : icone
-        return { caminho: exe, versao: e.DisplayVersion || null, desinstalador: caminhoDoComando(e.UninstallString), escopo: raiz }
+        const build = exe ? lerBuildInstalado(this.d.fs, path.win32.join(path.win32.dirname(exe), 'resources', 'app.asar'), path.win32) : null
+        return { caminho: exe, versao: e.DisplayVersion || null, build, desinstalador: caminhoDoComando(e.UninstallString), escopo: raiz }
       }
     }
     return null
@@ -290,7 +319,7 @@ class Central {
         id: app.id,
         nome: app.nome,
         disponivel: disponivel ? { versao: disponivel.versao, build: disponivel.build, tamanho: disponivel.tamanho } : null,
-        instalado: instalado ? { versao: instalado.versao } : null,
+        instalado: instalado ? { versao: instalado.versao, build: instalado.build ?? null } : null,
         atualizar: temAtualizacao(instalado, registros[app.id], disponivel),
         gerenciavel: this.gerenciavel(instalado),
         ocupado: this.emAndamento.has(app.id),
@@ -465,4 +494,15 @@ class Central {
   }
 }
 
-module.exports = { Central, ErroCentral, validarCatalogo, arquivoPara, temAtualizacao, compararVersao, lerRegistro, caminhoDoComando, baixar }
+module.exports = {
+  Central,
+  ErroCentral,
+  validarCatalogo,
+  arquivoPara,
+  temAtualizacao,
+  lerBuildInstalado,
+  compararVersao,
+  lerRegistro,
+  caminhoDoComando,
+  baixar,
+}
