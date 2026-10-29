@@ -31,6 +31,18 @@ export async function iniciarPonteFalsa(o: { porta?: number; cliente?: { clientI
     /** arquivo → permissões "anyone" criadas (id). */
     publicos: new Map<string, string[]>(),
     pastas: new Map<string, { id: string; nome: string; pai: string }>(),
+    /**
+     * A Agenda das Conexões (/api/v1/agenda/*, ADR 0026 do HUB): conectada, Maestro ligado, ocupado e os eventos que o
+     * Maestro gravou (ref → corpo). `falhar` = o HUB fora do ar (503). No e2e, POST /__agenda muda e GET /__agenda lê.
+     */
+    agenda: {
+      conectada: true,
+      appLigado: true,
+      falhar: false,
+      ocupado: [] as { inicio: string; fim: string }[],
+      eventos: new Map<string, Record<string, unknown>>(),
+      chamadas: [] as { metodo: string; ref: string | null }[],
+    },
   };
   const emitidos = new Map<string, { acao: string; usado: boolean; sub: string | null }>();
 
@@ -51,7 +63,49 @@ export async function iniciarPonteFalsa(o: { porta?: number; cliente?: { clientI
   const servidor = http.createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", "http://127.0.0.1");
     const autorizacao = String(req.headers.authorization ?? "");
-    const corpo = req.method === "POST" ? await ler(req) : {};
+    const corpo = req.method === "POST" || req.method === "PUT" ? await ler(req) : {};
+    const ag = estado.agenda;
+    if (url.pathname === "/__agenda") {
+      if (req.method === "POST") Object.assign(ag, corpo);
+      return enviar(res, 200, { ...ag, eventos: Object.fromEntries(ag.eventos) });
+    }
+    if (url.pathname.startsWith("/api/v1/agenda/")) {
+      if (!/^Bearer \S+$/.test(autorizacao)) return enviar(res, 401, { error: "unauthenticated" });
+      const conectar = `http://127.0.0.1:${(servidor.address() as AddressInfo).port}/conexoes`;
+      const caminho = url.pathname.slice("/api/v1/agenda/".length);
+      if (caminho === "conexao" && req.method === "GET")
+        return enviar(res, 200, {
+          conectada: ag.conectada,
+          estado: ag.conectada ? "ativa" : null,
+          conta_email: ag.conectada ? "equipe@produtora.test" : null,
+          app_ligado: ag.appLigado,
+          calendarios: ag.conectada ? 1 : 0,
+          conectar,
+        });
+      if (ag.falhar) return enviar(res, 503, { error: "upstream_unavailable", message: "O Google não respondeu agora." });
+      if (!ag.conectada) return enviar(res, 409, { error: "sem_conexao", message: "Conecte o Google Agenda.", details: { motivo: "nenhuma", conectar } });
+      if (!ag.appLigado) return enviar(res, 403, { error: "app_desligado", message: "Desligado.", details: { conectar } });
+      if (caminho === "livre-ocupado" && req.method === "GET") {
+        const de = Date.parse(url.searchParams.get("de") ?? "");
+        const ate = Date.parse(url.searchParams.get("ate") ?? "");
+        if (Number.isNaN(de) || Number.isNaN(ate)) return enviar(res, 422, { error: "invalid_input" });
+        return enviar(res, 200, { ocupado: ag.ocupado.filter((o) => Date.parse(o.fim) > de && Date.parse(o.inicio) < ate), calendarios: 1, incompleta: false });
+      }
+      const m = /^eventos\/maestro\/([A-Za-z0-9._:-]{1,120})$/.exec(caminho);
+      if (m && req.method === "PUT") {
+        ag.chamadas.push({ metodo: "PUT", ref: m[1]! });
+        const novo = !ag.eventos.has(m[1]!);
+        ag.eventos.set(m[1]!, corpo);
+        return enviar(res, novo ? 201 : 200, { id: `g-${m[1]}`, criado: novo, link: null });
+      }
+      if (m && req.method === "DELETE") {
+        ag.chamadas.push({ metodo: "DELETE", ref: m[1]! });
+        ag.eventos.delete(m[1]!);
+        res.writeHead(204);
+        return res.end();
+      }
+      return enviar(res, 404, { error: "not_found" });
+    }
     if (url.pathname === "/api/v1/apps/pedidos" && req.method === "POST") {
       const acao = String(corpo.acao ?? "");
       if (!CAMINHOS[acao] || corpo.destino !== "sobedesce") return enviar(res, 403, { error: "action_not_allowed" });

@@ -4,7 +4,7 @@
  * aceito sem essa conferência. Os tokens (access de 10 min + refresh que roda) ficam cifrados na sessão (lib/auth/sessao.ts).
  */
 import { createPublicKey, randomBytes, verify, type JsonWebKey } from "node:crypto";
-import { credenciaisZro, emissor, ESCOPOS_BASICOS, ESCOPOS_COMPLETOS, retornoZro } from "./config";
+import { credenciaisZro, emissor, ESCOPOS_DO_NIVEL, retornoZro, type NivelEscopo } from "./config";
 
 export class ZroError extends Error {
   constructor(
@@ -55,7 +55,7 @@ export function novoValor(): string {
 
 /**
  * `criar`: a pessoa veio de "Criar conta"; `prompt=create` pede à Absolute ZRO para abrir direto a tela de criar conta.
- * `basico`: sem os escopos da Z e de projetos (a Absolute ZRO recusou com invalid_scope).
+ * `nivel`: até onde pedir escopos (`sem_agenda` e `basico` quando a Absolute ZRO recusou com invalid_scope).
  */
 export async function urlDeLogin(o: {
   state: string;
@@ -63,14 +63,14 @@ export async function urlDeLogin(o: {
   nonce: string;
   origem?: string | null;
   criar?: boolean;
-  basico?: boolean;
+  nivel?: NivelEscopo;
 }): Promise<string> {
   const d = await descobrir();
   const u = new URL(d.authorization_endpoint);
   u.searchParams.set("response_type", "code");
   u.searchParams.set("client_id", credenciaisZro().clientId);
   u.searchParams.set("redirect_uri", retornoZro(o.origem));
-  u.searchParams.set("scope", o.basico ? ESCOPOS_BASICOS : ESCOPOS_COMPLETOS);
+  u.searchParams.set("scope", ESCOPOS_DO_NIVEL[o.nivel ?? "completo"]);
   u.searchParams.set("state", o.state);
   u.searchParams.set("nonce", o.nonce);
   u.searchParams.set("code_challenge", o.desafio);

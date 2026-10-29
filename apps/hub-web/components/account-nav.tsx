@@ -8,6 +8,7 @@ const SECTIONS: { href: string; label: string; icon: IconName }[] = [
   { href: '/perfil/seguranca', label: 'Segurança', icon: 'lock' },
   { href: '/perfil/plano', label: 'Plano', icon: 'card' },
   { href: '/perfil/acessos', label: 'Acessos', icon: 'apps' },
+  { href: '/conexoes', label: 'Conexões', icon: 'link' },
 ]
 
 /** Seções da central da conta: coluna no computador, faixa rolável no celular. */

@@ -165,7 +165,22 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   - **Agenda no celular** (`0017`, `src/lib/agenda/{ics,feed,rotas}.ts`): `maestro.agenda_assinaturas` (um endereço
     ativo por pessoa, só o sha256, cada um vê o próprio); `GET /api/agenda/<token>.ics` passa pela porta
     `maestro.agenda_feed_dono` (pessoa ativa e último login com acesso, o mesmo `temAcesso`) e lê como a pessoa;
-    `GET /api/agenda/minha` baixa com a sessão. RFC 5545 com `TZID=America/Sao_Paulo`. Sem sincronia com o Google.
+    `GET /api/agenda/minha` baixa com a sessão. RFC 5545 com `TZID=America/Sao_Paulo`.
+  - **Google Agenda pelas Conexões** (ADR 0026 do HUB, `drizzle/0021`, `src/lib/agenda/{google,sincronia,depois}.ts`;
+    contrato em `docs/integration-contracts/agenda.md`): a pessoa conecta o Google Agenda UMA vez em
+    `absolutezro.com/conexoes`; o Maestro nunca vê token do Google e fala só com a API `/api/v1/agenda/*` do HUB
+    (`naAgendaDoHub`, base `basePonte()`), com o access token da sessão e o escopo `zro.agenda` (pedido no login; a ida
+    cai em `nivel=sem_agenda` e depois `basico` se a Absolute ZRO recusar com invalid_scope). Ajustes → Agenda: estado
+    da conexão, "Enviar para o Google" + tipos (`maestro.agenda_google`, cada um o seu) e "Sincronizar agora".
+    **Caixa de saída**: gatilhos em `eventos`, `escalas` e `cards` enfileiram `evento-<id>`/`card-<id>` em
+    `maestro.agenda_google_fila` para quem ligou, na transação do salvar (demonstração nunca); `sincronizarDepois(sessao)`
+    (`after()`) esvazia a fila da pessoa da sessão depois da resposta, lendo o item como ela (acesso por cliente vale):
+    vai (PUT, só se o hash mudou, `agenda_google_enviados`) ou sai (DELETE). Falha nunca desfaz o salvar: tentativas e
+    espera crescente; sem conexão, app desligado ou sem o escopo param a rodada e viram o estado da tela. A fila de quem
+    não abre o Maestro espera a próxima vez dessa pessoa. Ação nova que mexe em data/hora/lugar de item da agenda: chame
+    `sincronizarDepois`. "Ocupado no Google" (`components/ocupado-google.tsx`, `GET /api/agenda/google/ocupado`) ao
+    marcar e na ficha da diária. Testes: `tests/agenda-google.test.mts` (HUB falso em `tests/ponte-falsa.mts`, que o e2e
+    controla por `/__agenda`) e `e2e/agenda-google.spec.ts`.
   - **Acesso por cliente** (`0018`, `src/lib/pessoas.ts`, Ajustes → Pessoas): `acesso_restrito` + `acesso_clientes`
     para `equipe` e `leitura` (admin e gestão nunca); políticas RESTRITIVAS `<tabela>_cliente` (helpers
     `maestro.cliente_visivel`, `projeto_visivel`, `card_visivel`…) em toda tabela ligada a cliente, e os gatilhos

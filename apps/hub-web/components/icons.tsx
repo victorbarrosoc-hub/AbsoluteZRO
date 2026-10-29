@@ -38,6 +38,8 @@ const PATHS = {
   camera: 'M4 8h3l2-2.5h6L17 8h3v11H4zM12 16.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z',
   chevron: 'M9 6l6 6-6 6',
   terminal: 'M4 5h16v14H4zM7.5 9.5 10 12l-2.5 2.5M12.5 15h4',
+  calendar: 'M4 6h16v14H4zM4 10h16M8 3.5v4M16 3.5v4',
+  link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
 } as const
 
 export type IconName = keyof typeof PATHS

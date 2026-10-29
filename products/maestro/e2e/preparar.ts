@@ -13,6 +13,7 @@ export const ARQUIVO_SESSAO_NEGOCIO = "test-results/e2e-sessao-negocio.json";
 export const ARQUIVO_SESSAO_DRIVE = "test-results/e2e-sessao-drive.json";
 export const ARQUIVO_SESSAO_CORTE = "test-results/e2e-sessao-corte.json";
 export const ARQUIVO_SESSAO_CONTRATO = "test-results/e2e-sessao-contrato.json";
+export const ARQUIVO_SESSAO_AGENDA = "test-results/e2e-sessao-agenda.json";
 /** A ponte falsa (HUB + SOBEDESCE de mentira, tests/ponte-falsa.mts) do e2e de Arquivos: MAESTRO_PONTE_URL no servidor. */
 export const PORTA_PONTE = Number(process.env.E2E_PONTE_PORT || 3219);
 
@@ -243,6 +244,36 @@ export default async function preparar() {
     );
     const sCt = await criarSessao({ orgId: orgCt, sub: SUB_CT, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
     writeFileSync(ARQUIVO_SESSAO_CONTRATO, JSON.stringify({ token: sCt.token, rascunho: rasc?.id ?? null }));
+    // Uma organização para o Google Agenda pelas Conexões (e2e/agenda-google.spec.ts): a sessão tem o escopo zro.agenda e
+    // a Agenda do HUB é a da ponte falsa; uma diária com hora e um card com prazo.
+    const SUB_AG = "00000000-0000-4000-8000-0000000000a9";
+    const orgAg = await getBanco().asSystem("e2e: semente da agenda Google", async (tx) => {
+      const [org] = await tx
+        .insert(schema.organizations)
+        .values({ zroOrgId: "00000000-0000-4000-8000-0000000000a8", name: "Estúdio Agenda E2E", zroProducts: ["maestro"] })
+        .returning({ id: schema.organizations.id });
+      await tx.insert(schema.members).values({ orgId: org.id, zroSub: SUB_AG, displayName: "Diana Agenda", hubRole: "owner", role: "admin" });
+      await tx.execute(
+        q`insert into maestro.eventos (org_id, tipo, titulo, data, hora_ini, hora_fim, local) values (${org.id}, 'diaria', 'Campanha verão', '2026-11-24', '08:00', '18:00', 'Estúdio 2')`,
+      );
+      await tx.execute(
+        q`insert into maestro.cards (org_id, id, dados) values (${org.id}, 'e2e-agenda-1', ${JSON.stringify({ tema: "Reels de lançamento", coluna: "fazendo", prazo: "2026-11-26" })}::jsonb)`,
+      );
+      return org.id;
+    });
+    const sAg = await criarSessao({
+      orgId: orgAg,
+      sub: SUB_AG,
+      produtos: ["maestro"],
+      release: { maestro: "allowed" },
+      tokens: {
+        at: "at-e2e-agenda",
+        rt: "rt-e2e-agenda",
+        atExp: Math.floor(Date.now() / 1000) + 24 * 3600,
+        escopo: "openid email profile org offline_access zro.ia maestro.projects zro.agenda",
+      },
+    });
+    writeFileSync(ARQUIVO_SESSAO_AGENDA, JSON.stringify({ token: sAg.token }));
   } finally {
     await fecharBanco();
   }

@@ -1,6 +1,6 @@
 # Roadmap — o que foi entregue e o que falta
 
-Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
 ## Fase 0 — Auditoria
 
@@ -454,6 +454,22 @@ Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   Pendente do titular: ciência dos serviços abertos da calculadora; criar a
   chave de API do Google só do Maestro (restrita à Drive API e a `maestro.absolutezro.com`) e pôr em
   `MAESTRO_GOOGLE_API_KEY` na Vercel.
+
+## Conexões: Google Agenda conectado uma vez na conta (29/10/2026, [ADR 0026](decisions/0026-conexoes.md))
+
+- ✅ `/conexoes` na central da conta (menu Conta e seções da conta): Google Agenda (conectar, conta, agendas que contam
+  como ocupado, "Usado por" com interruptor por app, desconectar com revogação no Google) e Google Drive (caminho para o
+  SOBEDESCE). Estados vazio, conectado, reconectar, cancelado/permissão desmarcada e indisponível.
+- ✅ OAuth no servidor (PKCE S256, state e nonce em cookie cifrado, `access_type=offline`, `prompt=consent`) e tokens
+  cifrados (AES-256-GCM, HKDF de `ZRO_CONEXOES_KEY`) em `zro.conexoes`/`zro.conexao_apps` (migration `0026`, RLS por
+  pessoa). Renovação no servidor; `invalid_grant` vira "conectar de novo".
+- ✅ API `/api/v1/agenda/{conexao,livre-ocupado,eventos,eventos/{app}/{ref}}` com o escopo de família `zro.agenda`
+  ([contrato](integration-contracts/agenda.md)).
+- ✅ Maestro: diárias, entregas, reuniões e prazos no Google de quem liga (caixa de saída `drizzle/0021`), "Ocupado no
+  Google" ao marcar diária e Ajustes → Agenda.
+- ⛔ Em produção: `ZRO_CONEXOES_KEY` no projeto `absolutezro` (titular) e as migrations `0026` (HUB) e `0021` (Maestro) no
+  deploy. Não testado contra o Google de verdade (aviso de app não verificado esperado).
+- ⬜ Z, "Hoje" do HUB e Carro do Freela pelo mesmo contrato.
 
 ## Fase 6 — Escala
 

@@ -12,7 +12,17 @@ export const ESCOPOS_BASICOS = "openid email profile org offline_access";
 /** A Z (repasse /api/zro/ia) e a API de projetos do HUB (etapa 3). */
 export const ESCOPO_IA = "zro.ia";
 export const ESCOPO_PROJETOS = "maestro.projects";
-export const ESCOPOS_COMPLETOS = `${ESCOPOS_BASICOS} ${ESCOPO_IA} ${ESCOPO_PROJETOS}`;
+/** O Google Agenda das Conexões da Absolute ZRO (ADR 0026 do HUB): ocupado e eventos pelo HUB. */
+export const ESCOPO_AGENDA = "zro.agenda";
+export const ESCOPOS_SEM_AGENDA = `${ESCOPOS_BASICOS} ${ESCOPO_IA} ${ESCOPO_PROJETOS}`;
+export const ESCOPOS_COMPLETOS = `${ESCOPOS_SEM_AGENDA} ${ESCOPO_AGENDA}`;
+/**
+ * Até onde pedir: `completo` (tudo); `sem_agenda` quando a Absolute ZRO ainda não conhece zro.agenda (recusou com
+ * invalid_scope); `basico` quando recusou de novo.
+ */
+export type NivelEscopo = "completo" | "sem_agenda" | "basico";
+export const ESCOPOS_DO_NIVEL: Record<NivelEscopo, string> = { completo: ESCOPOS_COMPLETOS, sem_agenda: ESCOPOS_SEM_AGENDA, basico: ESCOPOS_BASICOS };
+export const PROXIMO_NIVEL: Record<NivelEscopo, NivelEscopo | null> = { completo: "sem_agenda", sem_agenda: "basico", basico: null };
 
 export function emissor(): string {
   return (process.env.ZRO_ISSUER?.trim() || EMISSOR_PADRAO).replace(/\/$/, "");

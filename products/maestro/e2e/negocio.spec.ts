@@ -115,7 +115,7 @@ test("importar planilha: prévia sem gravar, confirmar e reimportar igual", asyn
 test("agenda no celular: o endereço serve o .ics, baixar e desligar", async ({ page, context, baseURL }) => {
   await entrar(context, baseURL!);
   await page.goto("/app/ajustes/agenda");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Agenda no celular");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Agenda");
   await semRolagemDeLado(page);
   await page.getByRole("button", { name: /^(Gerar|Trocar) endereço$/ }).click();
   const endereco = page.getByTestId("endereco-agenda");

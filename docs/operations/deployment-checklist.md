@@ -25,6 +25,11 @@ https://absolutezro.com, com o projeto Supabase **novo** `AbsoluteZRO` (nenhum b
   em `zro.oidc_keys`.
 
 - `ZRO_IP_HASH_SECRET` (openssl rand -hex 32): sem ela, o IP não é guardado nem usado nos limites por IP.
+- `ZRO_CONEXOES_KEY` (openssl rand -base64 32, Production; ADR 0026): chave das Conexões. Dela saem, por HKDF, a chave
+  dos tokens do Google Agenda (AES-256-GCM) e a do cookie da ida ao Google. Sem ela, `/conexoes` mostra
+  "indisponível" e `/api/v1/agenda/*` responde 503. Trocar a chave invalida as conexões guardadas (cada pessoa conecta
+  de novo). O cliente Google é o mesmo do "Entrar com Google" (`GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`), com o retorno
+  `https://absolutezro.com/conexoes/google/retorno` e os escopos `calendar.events` e `calendar.calendarlist.readonly`.
 - Ambiente e origem saem da Vercel (`VERCEL_ENV`, `VERCEL_PROJECT_PRODUCTION_URL`); `ZRO_ENV`/`ZRO_APP_ORIGIN` só se
   quiser forçar.
 - Cobrança pelo Stripe (ADR 0019): `STRIPE_SECRET_KEY` e `STRIPE_WEBHOOK_SECRET` no projeto `absolutezro` (Production).

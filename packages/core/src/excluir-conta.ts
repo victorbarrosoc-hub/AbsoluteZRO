@@ -216,10 +216,11 @@ export async function excluirConta(db: Database, auth: Authenticated | null, con
     await tx`delete from zro.auth_tokens where user_id = ${userId}`
     await tx`update zro.product_release_access set revoked_at = now(), revoke_reason = 'conta excluída' where user_id = ${userId} and revoked_at is null`
 
-    // Dados pessoais: senha, Google, foto, conversas com a Z e tentativas de login guardadas pelo e-mail.
+    // Dados pessoais: senha, Google (login e Conexões, com os tokens cifrados), foto, conversas com a Z e tentativas de login guardadas pelo e-mail.
     const email = u.email as string
     await tx`delete from zro.auth_credentials where user_id = ${userId}`
     await tx`delete from zro.external_identities where user_id = ${userId}`
+    await tx`delete from zro.conexoes where user_id = ${userId}`
     await tx`delete from zro.user_avatars where user_id = ${userId}`
     await tx`delete from zro.ia_conversas where user_id = ${userId}`
     await tx`delete from zro.rate_limit_attempts

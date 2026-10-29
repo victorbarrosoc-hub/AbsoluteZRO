@@ -21,6 +21,7 @@
 | `zro-pedido+jwt` (ponte de apps) | v1 ([maestro-sobedesce.md](maestro-sobedesce.md))                  | Maestro → HUB (assina) → SOBEDESCE (Arquivos, Drive na revisão) |
 | `zro-pedido+jwt` (resumo da Z)   | v1, pronto e desligado ([maestro-z.md](maestro-z.md))              | HUB → Maestro                                                   |
 | `maestro.agenda` (.ics)          | RFC 5545 ([maestro-z.md](maestro-z.md))                            | Maestro → calendário da pessoa                                  |
+| `zro.agenda` (Conexões)          | v1 ([agenda.md](agenda.md))                                        | Apps → HUB → Google Agenda da pessoa (Maestro primeiro)         |
 
 Regras: payload mínimo (IDs e resumos, sem mídia nem dados pessoais), `idempotency_key` obrigatória, mudança
 incompatível = nova versão.

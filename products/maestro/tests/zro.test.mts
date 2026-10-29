@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { after, before, describe, test } from "node:test";
 import { eq } from "drizzle-orm";
 import { cookiesDe, pedido, prepararAmbiente, SITE, UUID } from "./ambiente.mts";
-import { ESCOPOS_BASICOS, ESCOPOS_COMPLETOS, type PessoaZro } from "./zro-falso.mts";
+import { ESCOPOS_BASICOS, ESCOPOS_COMPLETOS, ESCOPOS_SEM_AGENDA, type PessoaZro } from "./zro-falso.mts";
 
 const amb = await prepararAmbiente("zro");
 const { zro, banco } = amb;
@@ -145,26 +145,48 @@ describe("entrar", () => {
     assert.equal(r.sessao, undefined);
   });
 
-  test("Absolute ZRO sem os escopos extras: refaz só com os básicos e entra", async () => {
+  /** Ida e volta até a Absolute ZRO falsa; devolve a resposta do callback e o `scope` pedido. */
+  async function idaEVolta(caminho: string) {
+    const ida = await rotas.entrar(pedido(caminho));
+    const u = new URL(ida.headers.get("location")!);
+    const z = await fetch(u, { redirect: "manual" });
+    const volta = await rotas.callback(pedido(z.headers.get("location")!.replace(SITE, ""), { cookies: { mae_zro: cookiesDe(ida).get("mae_zro") } }));
+    return { volta, escopo: u.searchParams.get("scope"), destino: new URL(volta.headers.get("location")!) };
+  }
+
+  test("Absolute ZRO sem os escopos extras: tira a Agenda, depois a Z e projetos, e entra com os básicos", async () => {
     zro.estado.recusarEscoposExtras = true;
     try {
       Object.assign(zro.estado.proximo, { pessoa: LIA, adulterar: null, negar: false });
-      const ida = await rotas.entrar(pedido("/api/zro/entrar?volta=/app/z"));
-      const u = new URL(ida.headers.get("location")!);
-      const z = await fetch(u, { redirect: "manual" });
-      const volta = await rotas.callback(pedido(z.headers.get("location")!.replace(SITE, ""), { cookies: { mae_zro: cookiesDe(ida).get("mae_zro") } }));
-      assert.equal(volta.status, 303);
-      const denovo = new URL(volta.headers.get("location")!);
-      assert.equal(denovo.pathname, "/api/zro/entrar");
-      assert.equal(denovo.searchParams.get("basico"), "1");
-      const ida2 = await rotas.entrar(pedido(denovo.pathname + denovo.search));
-      const u2 = new URL(ida2.headers.get("location")!);
-      assert.equal(u2.searchParams.get("scope"), ESCOPOS_BASICOS);
-      const z2 = await fetch(u2, { redirect: "manual" });
-      const fim = await rotas.callback(pedido(z2.headers.get("location")!.replace(SITE, ""), { cookies: { mae_zro: cookiesDe(ida2).get("mae_zro") } }));
-      assert.equal(new URL(fim.headers.get("location")!).pathname, "/app/z");
+      const r1 = await idaEVolta("/api/zro/entrar?volta=/app/z");
+      assert.equal(r1.escopo, ESCOPOS_COMPLETOS);
+      assert.equal(r1.volta.status, 303);
+      assert.equal(r1.destino.pathname, "/api/zro/entrar");
+      assert.equal(r1.destino.searchParams.get("nivel"), "sem_agenda");
+      const r2 = await idaEVolta(r1.destino.pathname + r1.destino.search);
+      assert.equal(r2.escopo, ESCOPOS_SEM_AGENDA);
+      assert.equal(r2.destino.searchParams.get("nivel"), "basico");
+      const r3 = await idaEVolta(r2.destino.pathname + r2.destino.search);
+      assert.equal(r3.escopo, ESCOPOS_BASICOS);
+      assert.equal(r3.destino.pathname, "/app/z");
+      // O formato antigo (basico=1) continua valendo.
+      const antigo = await rotas.entrar(pedido("/api/zro/entrar?basico=1"));
+      assert.equal(new URL(antigo.headers.get("location")!).searchParams.get("scope"), ESCOPOS_BASICOS);
     } finally {
       zro.estado.recusarEscoposExtras = false;
+    }
+  });
+
+  test("Absolute ZRO que ainda não conhece só o zro.agenda: entra com a Z e projetos (sem a Agenda)", async () => {
+    zro.estado.recusarAgenda = true;
+    try {
+      Object.assign(zro.estado.proximo, { pessoa: LIA, adulterar: null, negar: false });
+      const r1 = await idaEVolta("/api/zro/entrar?volta=/app/z");
+      const r2 = await idaEVolta(r1.destino.pathname + r1.destino.search);
+      assert.equal(r2.escopo, ESCOPOS_SEM_AGENDA);
+      assert.equal(r2.destino.pathname, "/app/z");
+    } finally {
+      zro.estado.recusarAgenda = false;
     }
   });
 
