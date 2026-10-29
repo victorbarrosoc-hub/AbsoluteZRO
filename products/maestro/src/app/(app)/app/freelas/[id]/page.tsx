@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { linkDoPerfil } from "@/lib/zro/pessoas";
 import { notFound } from "next/navigation";
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { brl, dataCurta, hojeBr } from "@/lib/dinheiro";
@@ -42,6 +43,11 @@ export default async function FichaFreela({ params }: PageProps<"/app/freelas/[i
           <p className="apoio">{[f.funcoes.map(nomeFuncao).join(", "), f.cidade].filter(Boolean).join(" · ")}</p>
           <div className="perfil__selos">
             {!f.ativo ? <span className="selo">Inativo</span> : null}
+            {f.zroArroba ? (
+              <a className="chip" href={linkDoPerfil(f.zroArroba)} target="_blank" rel="noreferrer" title="Perfil na Absolute ZRO">
+                @{f.zroArroba}
+              </a>
+            ) : null}
             {f.nichos.map((n) => (
               <span key={n} className="chip">
                 {n}

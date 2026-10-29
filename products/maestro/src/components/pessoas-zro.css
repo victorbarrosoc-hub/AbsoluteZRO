@@ -1,0 +1,147 @@
+/* Pessoas da Absolute ZRO (ADR 0029 do HUB): busca por @ e ficha. Visual C1 · Aurora: ficha clara, texto grafite/branco. */
+.pzro {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0 0;
+}
+.pzro__barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+.pzro__campo {
+  max-width: 420px;
+}
+.pzro__papel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--text-faint);
+}
+.pzro__papel select {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  color: var(--text-strong);
+  background: var(--pill-fill);
+  box-shadow: var(--pill-rim);
+}
+.pzro__lista {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pzro__ficha {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-l);
+  background: var(--painel);
+  box-shadow: var(--shadow-float);
+}
+.pzro__foto {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.pzro__miolo {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.pzro__miolo b {
+  font-weight: 650;
+  color: var(--text-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pzro__miolo b a {
+  color: inherit;
+  text-decoration: none;
+}
+.pzro__miolo b a:hover {
+  text-decoration: underline;
+}
+.pzro__arroba {
+  font-weight: 500;
+  color: var(--text-faint);
+}
+.pzro__miolo small {
+  font-size: 0.84rem;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pzro__selos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.pzro__selo {
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--pill-fill);
+  box-shadow: var(--pill-rim);
+}
+.pzro__feito {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.pzro__vazio,
+.pzro__ok {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--text-faint);
+}
+.pzro__erro {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--danger-text);
+}
+.pessoa__funcao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.pessoa__funcao input {
+  min-height: 34px;
+  max-width: 220px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--text-strong);
+  background: var(--pill-fill);
+  box-shadow: var(--pill-rim);
+}
+@media (max-width: 560px) {
+  .pzro__ficha {
+    grid-template-columns: auto 1fr;
+  }
+  .pzro__ficha > button,
+  .pzro__ficha > .pzro__feito {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+}

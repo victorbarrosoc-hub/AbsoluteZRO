@@ -39,7 +39,18 @@ export async function signupAction(_: FormState, fd: FormData): Promise<FormStat
   let ok = false
   try {
     const email = str(fd, 'email')
-    const r = await signUp(db(), { email, password: String(fd.get('password') ?? ''), displayName: str(fd, 'name') }, await requestMeta())
+    const r = await signUp(
+      db(),
+      // O @ escolhido na conversa (0029); sugestão aceita sem mexer vira a do banco se alguém já tiver.
+      {
+        email,
+        password: String(fd.get('password') ?? ''),
+        displayName: str(fd, 'name'),
+        arroba: str(fd, 'arroba') || null,
+        arrobaFlexivel: str(fd, 'arroba_sugerida') === '1',
+      },
+      await requestMeta(),
+    )
     await setSessionCookie(r.session.token)
     await sendVerify(email, r.verifyToken, { nome: str(fd, 'name'), boasVindas: true })
     ok = true

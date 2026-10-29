@@ -190,6 +190,19 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
     com o pedido assinado `zro-pedido+jwt` do HUB (ação `maestro.resumo`, a única em `ACOES_ABERTAS`), lido como a
     pessoa, com fonte e hora. Quem chama é a ferramenta `ver_maestro` da Z do HUB (`packages/core/src/ia-maestro.ts`).
     Ação nova (escrita pela Z) só com nova decisão do titular e entrando em `ACOES_ABERTAS`.
+- **Pessoas da Absolute ZRO** (ADR 0029 do HUB, `drizzle/0022`, `src/lib/zro/pessoas.ts`; contrato em
+  `docs/integration-contracts/pessoas.md`): o login pede `zro.pessoas` (HUB sem a 0029 recusa e a ida cai em
+  `nivel=sem_pessoas`, depois `sem_agenda` e `basico`) e guarda o @ (`preferred_username`) em `members.zro_arroba`.
+  `buscarPessoas`/`pessoaPorArroba`/`convidarPessoa` falam só com `/api/v1/pessoas/*` do HUB (`basePonte()`) com o
+  token da sessão; o que vem é conferido em `pessoaDoHub` (e-mail e telefone nunca entram). Ajustes → Pessoas: a
+  **administração** busca pelo @ e convida (Equipe/Gestão/Leitura → editor/manager/viewer no HUB; a pessoa aceita lá);
+  cada pessoa mostra o @ e a **Função na produtora** (`members.funcao`, texto livre com sugestões
+  `FUNCOES_NA_PRODUTORA`, só administração muda, política `members_admin`; não mexe no papel). Freelas: "Achar pelo @"
+  (`PessoasZro` em `src/components/pessoas-zro.tsx`) relê o perfil no HUB e cria o freela ligado
+  (`src/lib/freelas/da-zro.ts`: `zro_sub` + `zro_arroba`, um por organização pelo índice único; nome, cidade e funções
+  mapeadas; contato nunca vem do perfil); a ficha mostra o @ com link para o perfil. O inventário do Carro chega pelo
+  mesmo `zro_sub` só quando `CARRO_SYNC_ATIVO` ligar. Testes: `tests/pessoas-zro.test.mts` e `e2e/pessoas-zro.spec.ts`
+  (HUB falso com perfis fictícios em `tests/ponte-falsa.mts`).
 - **Kit do freela** (`drizzle/0013`, `src/lib/freelas/{kit,equipamentos}.ts`): `freela_equipamentos` (origem `maestro`
   ou `carro-do-freela`) e `escala_equipamentos`; o aluguel (diária × dias) soma ao mesmo "a pagar" da escala (gatilho
   `escala_sincronizar` refeito na 0013). Itens do Carro do Freela são só leitura (gatilho barra `maestro_app`). A
@@ -244,7 +257,7 @@ kit do freela, aluguel na escala e sincronização desligada (`freela-equipament
 (`agenda-ics.test.mts`), acesso por cliente em toda tabela ligada a cliente (`acesso-cliente.test.mts`), as tabelas
 novas com duas organizações (`negocio-rls.test.mts`) e o resumo para a Z (`resumo-z.test.mts`), o contrato (preenchimento, versões, aceite com hash, imutável;
 `contrato.test.mts`), a marca própria (sinal ligado e desligado, contraste, duas organizações; `marca-propria.test.mts`), a ponte do Drive, Arquivos, compartilhar/recolher e o agendamento
-(`drive-sobedesce.test.mts`), a versão colada na ficha do card (`versoes-card.test.mts`). E2E: `npm run build && npm run test:e2e`
+(`drive-sobedesce.test.mts`), a versão colada na ficha do card (`versoes-card.test.mts`), pessoas da Absolute ZRO (`pessoas-zro.test.mts`). E2E: `npm run build && npm run test:e2e`
 (Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir movimento, navegação, a aprovação
 inteira (`aprovacao.spec.ts`, mp4 local e YouTube/Vimeo falsos em `e2e/falsos`) e a versão colada na ficha do card que aparece no lote (`versao-card.spec.ts`) e a produtora com a demonstração
 (`produtora.spec.ts`, organização própria criada em `e2e/preparar.ts`) e o ciclo comercial (`comercial.spec.ts`: pedido

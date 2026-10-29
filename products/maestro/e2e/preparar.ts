@@ -270,7 +270,7 @@ export default async function preparar() {
         at: "at-e2e-agenda",
         rt: "rt-e2e-agenda",
         atExp: Math.floor(Date.now() / 1000) + 24 * 3600,
-        escopo: "openid email profile org offline_access zro.ia maestro.projects zro.agenda",
+        escopo: "openid email profile org offline_access zro.ia maestro.projects zro.agenda zro.pessoas",
       },
     });
     writeFileSync(ARQUIVO_SESSAO_AGENDA, JSON.stringify({ token: sAg.token }));

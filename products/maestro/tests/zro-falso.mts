@@ -15,6 +15,8 @@ export type PessoaZro = {
   sub: string;
   email: string;
   nome: string;
+  /** O @ do perfil profissional (claim preferred_username, ADR 0029 do HUB). */
+  arroba?: string;
   verificado?: boolean;
   foto?: string | null;
   org?: OrgFalsa | null;
@@ -28,7 +30,8 @@ type Codigo = { desafio: string; redirectUri: string; pessoa: PessoaZro; nonce: 
 export type PedidoIa = { metodo: string; caminho: string; autorizacao: string | null; corpo: string };
 
 export const ESCOPOS_SEM_AGENDA = "openid email profile org offline_access zro.ia maestro.projects";
-export const ESCOPOS_COMPLETOS = `${ESCOPOS_SEM_AGENDA} zro.agenda`;
+export const ESCOPOS_SEM_PESSOAS = `${ESCOPOS_SEM_AGENDA} zro.agenda`;
+export const ESCOPOS_COMPLETOS = `${ESCOPOS_SEM_PESSOAS} zro.pessoas`;
 export const ESCOPOS_BASICOS = "openid email profile org offline_access";
 
 export async function iniciarZroFalsa(cliente: { clientId: string; clientSecret: string }) {
@@ -47,6 +50,8 @@ export async function iniciarZroFalsa(cliente: { clientId: string; clientSecret:
     recusarEscoposExtras: false,
     /** A Absolute ZRO ainda não conhece só o zro.agenda (HUB antes da migration 0026). */
     recusarAgenda: false,
+    /** A Absolute ZRO ainda não conhece só o zro.pessoas (HUB antes da migração 0029). */
+    recusarPessoas: false,
     /** Vida do access token (s); 0 obriga o Maestro a renovar antes de cada uso. */
     vidaAcesso: 600,
     renovacoes: 0,
@@ -84,6 +89,7 @@ export async function iniciarZroFalsa(cliente: { clientId: string; clientSecret:
     email: p.email,
     email_verified: p.verificado !== false,
     name: p.nome,
+    ...(p.arroba ? { preferred_username: p.arroba } : {}),
     ...(p.foto ? { picture: p.foto } : {}),
     updated_at: 1_790_000_000,
     zro_conta: `${base}/perfil`,
@@ -127,7 +133,8 @@ export async function iniciarZroFalsa(cliente: { clientId: string; clientSecret:
         volta.searchParams.set("error", "invalid_request");
       } else if (
         (estado.recusarEscoposExtras && escopo.split(" ").some((s) => !ESCOPOS_BASICOS.split(" ").includes(s))) ||
-        (estado.recusarAgenda && escopo.split(" ").includes("zro.agenda"))
+        (estado.recusarAgenda && escopo.split(" ").includes("zro.agenda")) ||
+        (estado.recusarPessoas && escopo.split(" ").includes("zro.pessoas"))
       ) {
         volta.searchParams.set("error", "invalid_scope");
       } else if (estado.proximo.negar || !estado.proximo.pessoa) {

@@ -2,6 +2,8 @@
  * O HUB e o SOBEDESCE de mentira para a ponte do Drive (src/lib/sobedesce/ponte.ts), nos testes e no e2e:
  * - POST /api/v1/apps/pedidos: Bearer (o access token da sessão) ou Basic (credencial do Maestro + sub, só recolher);
  *   devolve um pedido "assinado" de uso único e a url do SOBEDESCE falso. `negar` = sem o SOBEDESCE no plano (403).
+ * - /api/v1/pessoas/* (ADR 0029 do HUB): busca por @ ou nome nos perfis de `pessoas` (só os visíveis, nunca e-mail),
+ *   o perfil de um @ e o convite pelo @ (guardado em `convites`; `naEquipe` = 409). Gente de demonstração, fictícia.
  * - POST /api/zro/drive/*: confere o pedido (mesma ação, uso único) e responde com o Drive de mentira
  *   (tests/drive-fixture.mts): listar, miniatura, criar a estrutura do projeto, compartilhar e recolher (as permissões
  *   ficam na memória para o teste conferir) e o token curto. `semDrive` = a pessoa sem Drive conectado (409).
@@ -23,7 +25,49 @@ const CAMINHOS: Record<string, string> = {
 export type PedidoVisto = { acao: string; jeito: "pessoa" | "app"; autorizacao: string; sub: string | null };
 
 export async function iniciarPonteFalsa(o: { porta?: number; cliente?: { clientId: string; clientSecret: string } } = {}) {
+  /** Perfis da Absolute ZRO falsa (fictícios). `visivel: false` = escondido (a busca e o @ não acham). */
+  const pessoas = [
+    {
+      id: "6f1d2c3b-4a5e-4f60-8a7b-9c0d1e2f3a01",
+      arroba: "carla.drone",
+      nome: "Carla Nunes",
+      funcoes: [
+        { chave: "camera", nome: "Câmera" },
+        { chave: "drone", nome: "Drone" },
+      ],
+      cidade: "Natal",
+      selos: [{ produto: "carro-do-freela", texto: "Freela no Carro do Freela" }],
+      visivel: true,
+    },
+    {
+      id: "6f1d2c3b-4a5e-4f60-8a7b-9c0d1e2f3a02",
+      arroba: "rafa.edita",
+      nome: "Rafael Prado",
+      funcoes: [
+        { chave: "edicao", nome: "Edição" },
+        { chave: "color", nome: "Color" },
+      ],
+      cidade: "Recife",
+      selos: [],
+      visivel: true,
+    },
+    {
+      id: "6f1d2c3b-4a5e-4f60-8a7b-9c0d1e2f3a03",
+      arroba: "lu.som",
+      nome: "Luana Sá",
+      funcoes: [
+        { chave: "som", nome: "Som" },
+        { chave: "outra", nome: "Microfonista" },
+      ],
+      cidade: "Natal",
+      selos: [],
+      visivel: true,
+    },
+    { id: "6f1d2c3b-4a5e-4f60-8a7b-9c0d1e2f3a04", arroba: "oculta.pessoa", nome: "Pessoa Escondida", funcoes: [], cidade: null, selos: [], visivel: false },
+  ];
   const estado = {
+    /** Pessoas (ADR 0029 do HUB): os perfis, os convites feitos pelo @ e quem já está na equipe (convite = 409). */
+    pessoasZro: { lista: pessoas, convites: [] as { arroba: string; papel: string }[], naEquipe: new Set<string>() },
     negar: false,
     semDrive: false,
     pedidos: [] as PedidoVisto[],
@@ -44,6 +88,22 @@ export async function iniciarPonteFalsa(o: { porta?: number; cliente?: { clientI
       chamadas: [] as { metodo: string; ref: string | null }[],
     },
   };
+  const publicoDe = (p: (typeof pessoas)[number]) => ({
+    id: p.id,
+    arroba: p.arroba,
+    nome: p.nome,
+    foto: null,
+    funcoes: p.funcoes,
+    cidade: p.cidade,
+    portfolio: null,
+    bio: null,
+    selos: p.selos,
+  });
+  const semAcento = (t: string) =>
+    t
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
   const emitidos = new Map<string, { acao: string; usado: boolean; sub: string | null }>();
 
   const enviar = (res: http.ServerResponse, status: number, dados: unknown) => {
@@ -68,6 +128,33 @@ export async function iniciarPonteFalsa(o: { porta?: number; cliente?: { clientI
     if (url.pathname === "/__agenda") {
       if (req.method === "POST") Object.assign(ag, corpo);
       return enviar(res, 200, { ...ag, eventos: Object.fromEntries(ag.eventos) });
+    }
+    if (url.pathname.startsWith("/api/v1/pessoas/")) {
+      if (!/^Bearer \S+$/.test(autorizacao)) return enviar(res, 401, { error: "unauthenticated" });
+      const est = estado.pessoasZro;
+      const caminho = decodeURIComponent(url.pathname.slice("/api/v1/pessoas/".length));
+      if (caminho === "busca" && req.method === "GET") {
+        const q = semAcento((url.searchParams.get("q") ?? "").trim());
+        const a = q.replace(/^@/, "");
+        if (a.length < 2) return enviar(res, 200, { pessoas: [] });
+        const achou = pessoas.filter((p) => p.visivel && (p.arroba.startsWith(a) || (!q.startsWith("@") && semAcento(p.nome).includes(a))));
+        return enviar(res, 200, { pessoas: achou.map(publicoDe) });
+      }
+      if (caminho === "convites" && req.method === "POST") {
+        const a = String(corpo.arroba ?? "").replace(/^@/, "");
+        const p = pessoas.find((x) => x.arroba === a && x.visivel);
+        if (!p) return enviar(res, 404, { error: "not_found", message: "Não achamos esse @." });
+        if (est.naEquipe.has(a) || est.convites.some((c) => c.arroba === a))
+          return enviar(res, 409, { error: "conflict", message: `@${a} já tem um convite aberto.` });
+        est.convites.push({ arroba: a, papel: String(corpo.papel ?? "") });
+        return enviar(res, 201, { convite: { id: `conv-${a}`, arroba: a, papel: corpo.papel, aviso: "central" } });
+      }
+      const m = /^@([a-z0-9._]{3,30})$/.exec(caminho);
+      if (m && req.method === "GET") {
+        const p = pessoas.find((x) => x.arroba === m[1] && x.visivel);
+        return p ? enviar(res, 200, { pessoa: publicoDe(p), antiga: false }) : enviar(res, 404, { error: "not_found" });
+      }
+      return enviar(res, 404, { error: "not_found" });
     }
     if (url.pathname.startsWith("/api/v1/agenda/")) {
       if (!/^Bearer \S+$/.test(autorizacao)) return enviar(res, 401, { error: "unauthenticated" });

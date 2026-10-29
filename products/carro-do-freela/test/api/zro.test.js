@@ -143,6 +143,15 @@ test('direito de uso: conta na lista (allowed) sem "carro-do-freela" em zro_prod
   assert.equal(Z._interno.PRODUTO, 'carro-do-freela');
 });
 
+test('o @ do perfil da Absolute ZRO (preferred_username) chega no /eu; formato estranho não passa', async () => {
+  for (const [arroba, esperado] of [['lia.som', 'lia.som'], ['Lia Som!', null]]) {
+    const { cookies } = await fluxo({ pessoa: Object.assign({}, LIA, { arroba, produtos: ['carro-do-freela'] }) });
+    const eu = await (await pedir('/api/zro/eu', { cookie: cookieDe(cookies) })).json();
+    assert.equal(eu.arroba ?? null, esperado);
+    assert.equal(JSON.stringify(eu).includes('telefone'), false);
+  }
+});
+
 test('sessão antiga, de antes da lista de produtos, não vale: volta pelo HUB', async () => {
   const velha = Z._interno.selar({ sub: 'zro-111', nome: 'Lia', email: 'lia@produtora.com', org: null, exp: Math.floor(Date.now() / 1000) + 3600 }, CLIENTE.clientSecret, Z._interno.COOKIE_SESSAO);
   const r = await pedir('/api/zro/eu', { cookie: 'cdf_sessao=' + encodeURIComponent(velha) });

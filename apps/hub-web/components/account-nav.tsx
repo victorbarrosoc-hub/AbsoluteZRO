@@ -5,6 +5,7 @@ import { Icon, type IconName } from './icons'
 
 const SECTIONS: { href: string; label: string; icon: IconName }[] = [
   { href: '/perfil', label: 'Visão geral', icon: 'user' },
+  { href: '/perfil/profissional', label: 'Perfil profissional', icon: 'at' },
   { href: '/perfil/seguranca', label: 'Segurança', icon: 'lock' },
   { href: '/perfil/plano', label: 'Plano', icon: 'card' },
   { href: '/perfil/acessos', label: 'Acessos', icon: 'apps' },

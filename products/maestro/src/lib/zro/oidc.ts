@@ -86,6 +86,8 @@ export type PerfilZro = {
   email: string;
   emailVerificado: boolean;
   nome: string | null;
+  /** O @ do perfil profissional da Absolute ZRO (claim padrão preferred_username, ADR 0029 do HUB), sem o "@". */
+  arroba: string | null;
   foto: string | null;
   /** Organização ativa na Absolute ZRO (claim zro_org). null = a pessoa ainda não tem organização. */
   org: OrgZro | null;
@@ -123,6 +125,7 @@ export function perfilDeClaims(dados: Record<string, unknown>): PerfilZro {
     email: dados.email.trim().toLowerCase(),
     emailVerificado: dados.email_verified === true,
     nome: typeof dados.name === "string" && dados.name.trim() ? dados.name.trim().slice(0, 120) : null,
+    arroba: typeof dados.preferred_username === "string" && /^[a-z0-9._]{3,30}$/.test(dados.preferred_username) ? dados.preferred_username : null,
     foto,
     org,
     produtos,

@@ -46,6 +46,8 @@ export const members = maestro.table(
     displayName: text(),
     email: text(),
     pictureUrl: text(),
+    /** O @ da pessoa na Absolute ZRO (claim preferred_username, drizzle/0022), copiado a cada login. */
+    zroArroba: text(),
     /** Papel na organização da Absolute ZRO, copiado a cada login (owner, admin, manager, editor, viewer, guest). */
     hubRole: text(),
     role: text().$type<Papel>().notNull().default("leitura"),
