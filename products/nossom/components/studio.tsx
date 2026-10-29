@@ -9,13 +9,17 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { visitStudio } from '@/lib/studio-navigation';
 import StudioLink from './studio-link';
 import {
-  isVoiceToolPreset,
   restorationD,
   singingSeparation,
+  stemSeparation,
+  transcription,
   voiceIsolator,
   type CloudPreset,
 } from '@/lib/restoration';
-import { toolPath, routeOperation } from '@/lib/studio-routes';
+import { toolPath, routeOperation, presetOperation } from '@/lib/studio-routes';
+import { buildCues, toSrt, toText, toVtt } from '@/lib/transcript';
+import { mixLabel, renderMix, type StemSetting } from '@/lib/stems';
+import StemMixer from './stem-mixer';
 import { activateVersion, activeIndex, previousIndex, nextIndex } from '@/lib/history';
 import { EqualizerControls, BroadcastControls } from './preset-controls';
 import AssistantHome from './assistant-home';
@@ -35,7 +39,7 @@ import InstallApp from './install-app';
 import FamilyNav from './family-nav';
 import NavBadge from './nav-badge';
 import { studioPending } from '@/lib/studio-pending';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowUpRight,
   Gem,
@@ -90,6 +94,9 @@ import {
   decode,
   importAudio,
   processAudio,
+  encodeWav,
+  inspect,
+  measure,
   exportMp3,
   cloudSource,
   isVideoFile,
@@ -296,14 +303,22 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
     [advanced, setAdvanced] = useState(false),
     [search, setSearch] = useState('');
   const speechTool = operation === 'auto' || operation === 'denoise' || operation === 'clarity';
-  const cloudOperation = operation === 'auto' || operation === 'vocals';
+  const cloudOperation =
+    operation === 'auto' ||
+    operation === 'vocals' ||
+    operation === 'transcribe' ||
+    operation === 'remix';
   const [voiceMode, setVoiceMode] = useState<'speech' | 'singing'>('speech');
   const cloudPreset: CloudPreset =
-    operation !== 'vocals'
-      ? restorationD.id
-      : voiceMode === 'speech'
-        ? voiceIsolator.id
-        : singingSeparation.id;
+    operation === 'transcribe'
+      ? transcription.id
+      : operation === 'remix'
+        ? stemSeparation.id
+        : operation !== 'vocals'
+          ? restorationD.id
+          : voiceMode === 'speech'
+            ? voiceIsolator.id
+            : singingSeparation.id;
   const autoEnabled = operation === 'auto' || (speechTool && automatic);
   const [busy, setBusy] = useState(''),
     [progress, setProgress] = useState(0),
@@ -425,7 +440,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
       setVersionIndex(0);
       setRegion(null);
       setMusic(null);
-      const recoveredOperation = isVoiceToolPreset(pendingJob.preset) ? 'vocals' : 'auto';
+      const recoveredOperation = presetOperation(pendingJob.preset);
       setOperation(recoveredOperation);
       setView('editor');
       visitStudio(toolPath(recoveredOperation, recovered.id));
@@ -492,12 +507,20 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
     };
   }, [sidebar]);
   const version = project?.versions[versionIndex];
+  // GPU results and remixes keep float32 at their own rate; local tools write PCM16 at 48 kHz.
   const cloudOutput = !!(
-    version?.processing?.cloudRestoration || version?.processing?.vocalSeparation
+    version?.processing?.cloudRestoration ||
+    version?.processing?.vocalSeparation ||
+    version?.processing?.stems
   );
-  const cloudRate = (version?.processing?.vocalSeparation ?? version?.processing?.cloudRestoration)
-    ?.sampleRate;
+  const cloudRate = version?.processing?.stems
+    ? 44100
+    : (version?.processing?.vocalSeparation ?? version?.processing?.cloudRestoration)?.sampleRate;
   const selectedTool = operations.find((o) => o.id === operation)!;
+  const transcriptCues = useMemo(
+    () => (project?.transcript ? buildCues(project.transcript.words) : null),
+    [project?.transcript],
+  );
   useEffect(() => {
     let current = true;
     setSidebar(false);
@@ -771,10 +794,21 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
     }
     if (s.broadcast) setBroadcast(structuredClone(s.broadcast));
   }
+  /** After the result is saved locally: mark it saved, then free the private copies. */
+  async function finishCloudJob(id: string, projectId: string) {
+    localStorage.setItem(
+      'nossom-cloud:' + account.id,
+      JSON.stringify({ id, projectId, saved: true }),
+    );
+    await releaseCloudJob(id)
+      .then(() => localStorage.removeItem('nossom-cloud:' + account.id))
+      .catch(() => {});
+    setPendingJob(null);
+  }
   async function applyTreatment() {
     if (!project || !version) return;
     await run(async () => {
-      if (project.versions.length >= 9)
+      if (operation !== 'transcribe' && operation !== 'remix' && project.versions.length >= 9)
         throw new Error(
           'Limite de 8 tratamentos por projeto. Exporte o resultado para iniciar outro projeto.',
         );
@@ -833,6 +867,33 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
           },
         });
         cloudId = cloud.id;
+        cloudAbort.current = null;
+        if (cloud.kind === 'transcript') {
+          const transcribed = {
+            ...project,
+            updatedAt: Date.now(),
+            transcript: { ...cloud.transcript, createdAt: Date.now() },
+          };
+          await saveProject(transcribed, account.id);
+          setProject(transcribed);
+          await refresh();
+          await finishCloudJob(cloud.id, project.id);
+          notify('Legendas prontas. Baixe em SRT, VTT ou TXT.');
+          return;
+        }
+        if (cloud.kind === 'stems') {
+          const separated = {
+            ...project,
+            updatedAt: Date.now(),
+            stems: { files: cloud.files, gainDb: cloud.gainDb, createdAt: Date.now() },
+          };
+          await saveProject(separated, account.id);
+          setProject(separated);
+          await refresh();
+          await finishCloudJob(cloud.id, project.id);
+          notify('Faixas separadas. Mexa nos faders e ouça.');
+          return;
+        }
         result = {
           blob: cloud.blob,
           info: cloud.info,
@@ -921,14 +982,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
       setVersionIndex(updated.versions.length - 1);
       await refresh();
       if (cloudId) {
-        localStorage.setItem(
-          'nossom-cloud:' + account.id,
-          JSON.stringify({ id: cloudId, projectId: project.id, saved: true }),
-        );
-        await releaseCloudJob(cloudId)
-          .then(() => localStorage.removeItem('nossom-cloud:' + account.id))
-          .catch(() => {});
-        setPendingJob(null);
+        await finishCloudJob(cloudId, project.id);
         notify(
           operation === 'vocals'
             ? result.processing?.vocalSeparation?.preset === voiceIsolator.id
@@ -954,6 +1008,64 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
       download(blob, `${project.name}-v${versionIndex}.${format}`);
       notify('Seu download está pronto.');
     });
+  }
+  async function renderRemix(settings: StemSetting[]) {
+    if (!project?.stems) return;
+    const stems = project.stems;
+    await run(async () => {
+      if (project.versions.length >= 9)
+        throw new Error(
+          'Limite de 8 tratamentos por projeto. Exporte o resultado para iniciar outro projeto.',
+        );
+      setBusy('Mixando as faixas…');
+      const buffer = await renderMix(stems.files, settings, stems.gainDb);
+      const blob = encodeWav(buffer, true),
+        info = inspect(buffer),
+        metrics = await measure(blob, setBusy);
+      const created: Version = {
+        id: crypto.randomUUID(),
+        parentId: project.versions[0].id,
+        label: `${selectedTool.label} · V${project.versions.length}`,
+        createdAt: Date.now(),
+        operation: 'remix',
+        preset: mixLabel(settings),
+        blob,
+        info,
+        metrics,
+        processing: {
+          engine: 'Mel-Band RoFormer + HTDemucs 6s · remix local',
+          strength: 100,
+          noiseFloor: info.noiseFloor ?? -60,
+          mode: 'local',
+          stems: settings,
+        },
+      };
+      const updated = {
+        ...project,
+        updatedAt: Date.now(),
+        versions: [...project.versions, created],
+        activeVersionId: created.id,
+        redoVersionIds: [],
+      };
+      await saveProject(updated, account.id);
+      setProject(updated);
+      setVersionIndex(updated.versions.length - 1);
+      await refresh();
+      notify(`${mixLabel(settings)}: nova versão salva. Baixe em WAV ou MP3.`);
+    });
+  }
+  function exportTranscript(format: 'srt' | 'vtt' | 'txt') {
+    if (!project?.transcript || !transcriptCues) return;
+    const content =
+      format === 'srt'
+        ? toSrt(transcriptCues)
+        : format === 'vtt'
+          ? toVtt(transcriptCues)
+          : toText(project.transcript.words);
+    const type =
+      format === 'vtt' ? 'text/vtt' : format === 'srt' ? 'application/x-subrip' : 'text/plain';
+    download(new Blob([content], { type: type + ';charset=utf-8' }), `${project.name}.${format}`);
+    notify('Seu download está pronto.');
   }
   async function exportVideo() {
     if (!project || !version) return;
@@ -1409,10 +1521,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
               {pendingJob.projectId ? (
                 <StudioLink
                   className="button secondary"
-                  href={toolPath(
-                    isVoiceToolPreset(pendingJob.preset) ? 'vocals' : 'auto',
-                    pendingJob.projectId,
-                  )}
+                  href={toolPath(presetOperation(pendingJob.preset), pendingJob.projectId)}
                 >
                   Abrir áudio do pedido <ArrowRight size={15} />
                 </StudioLink>
@@ -2113,6 +2222,47 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                       </button>
                     </div>
                   )}
+                  {operation === 'transcribe' && transcriptCues && project.transcript && (
+                    <div className="transcript-card">
+                      <div className="transcript-meta">
+                        <strong>{transcriptCues.length} legendas</strong>
+                        <span>
+                          {project.transcript.words.length} palavras
+                          {project.transcript.language
+                            ? ` · ${project.transcript.language.toUpperCase()}`
+                            : ''}
+                        </span>
+                      </div>
+                      <ol className="transcript-cues" aria-label="Prévia das legendas">
+                        {transcriptCues.slice(0, 60).map((cue, i) => (
+                          <li key={i}>
+                            <time>{formatTime(cue.start)}</time>
+                            <span>{cue.text}</span>
+                          </li>
+                        ))}
+                      </ol>
+                      <div className="transcript-actions" role="group" aria-label="Baixar legendas">
+                        {(['srt', 'vtt', 'txt'] as const).map((format) => (
+                          <button
+                            key={format}
+                            className={`button ${format === 'srt' ? 'primary' : 'secondary'} small`}
+                            disabled={!!busy}
+                            onClick={() => exportTranscript(format)}
+                          >
+                            <Download size={14} /> {format.toUpperCase()}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {operation === 'remix' && project.stems && (
+                    <StemMixer
+                      files={project.stems.files}
+                      gainDb={project.stems.gainDb}
+                      busy={!!busy}
+                      onRender={(settings) => void renderRemix(settings)}
+                    />
+                  )}
                   {operation === 'vocals' && !pendingJob && (
                     <div
                       className="preset-grid voice-modes"
@@ -2148,25 +2298,40 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                                 uploading: 'Envio incompleto',
                                 submitting: 'Confirmando envio',
                                 queued: 'Na fila',
-                                running: 'Restaurando',
+                                running:
+                                  operation === 'transcribe'
+                                    ? 'Escrevendo'
+                                    : operation === 'remix'
+                                      ? 'Separando'
+                                      : 'Restaurando',
                                 completed: 'Resultado pronto',
                               } as Record<string, string>
                             )[pendingJob.status] || 'Em andamento'
                           : cloudReady === null
                             ? 'Preparando…'
                             : cloudReady
-                              ? operation === 'vocals'
-                                ? voiceMode === 'speech'
-                                  ? 'Pronto para isolar sua voz'
-                                  : 'Pronto para separar o cantor'
-                                : 'Pronto para melhorar sua voz'
+                              ? operation === 'remix'
+                                ? project.stems
+                                  ? 'Faixas prontas'
+                                  : 'Pronto para separar os instrumentos'
+                                : operation === 'transcribe'
+                                  ? 'Pronto para escrever o que foi dito'
+                                  : operation === 'vocals'
+                                    ? voiceMode === 'speech'
+                                      ? 'Pronto para isolar sua voz'
+                                      : 'Pronto para separar o cantor'
+                                    : 'Pronto para melhorar sua voz'
                               : 'A melhoria com IA está temporariamente indisponível'}
                       </strong>
                       {!pendingJob && (
                         <p>
                           {operation === 'vocals' && voiceMode === 'singing'
                             ? 'Uma cópia vai para a IA. Pode sobrar um pouco dos instrumentos.'
-                            : 'Uma cópia vai para a IA. Seu original fica salvo.'}
+                            : operation === 'remix'
+                              ? 'Uma cópia vai para a IA. Pode sobrar um pouco de um instrumento no outro.'
+                              : operation === 'transcribe'
+                                ? 'Uma cópia do som vai para a IA. Revise nomes antes de publicar.'
+                                : 'Uma cópia vai para a IA. Seu original fica salvo.'}
                         </p>
                       )}
                       {!cloudReady && operation !== 'vocals' && (
@@ -2210,7 +2375,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                             <StudioLink
                               className="text-link"
                               href={toolPath(
-                                isVoiceToolPreset(pendingJob.preset) ? 'vocals' : 'auto',
+                                presetOperation(pendingJob.preset),
                                 pendingJob.projectId,
                               )}
                             >
@@ -2878,12 +3043,24 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                           ? pendingJob?.projectId === project.id
                             ? operation === 'vocals'
                               ? 'Retomar separação'
-                              : 'Retomar restauração'
-                            : operation === 'vocals'
-                              ? voiceMode === 'speech'
-                                ? 'Isolar voz'
-                                : 'Separar vocal'
-                              : 'Restaurar com IA'
+                              : operation === 'transcribe' || operation === 'remix'
+                                ? operation === 'remix'
+                                  ? 'Retomar separação'
+                                  : 'Retomar legendas'
+                                : 'Retomar restauração'
+                            : operation === 'remix'
+                              ? project.stems
+                                ? 'Separar de novo'
+                                : 'Separar instrumentos'
+                              : operation === 'transcribe'
+                                ? project.transcript
+                                  ? 'Gerar de novo'
+                                  : 'Gerar legendas'
+                                : operation === 'vocals'
+                                  ? voiceMode === 'speech'
+                                    ? 'Isolar voz'
+                                    : 'Separar vocal'
+                                  : 'Restaurar com IA'
                           : autoEnabled
                             ? 'Analisar e tratar'
                             : 'Aplicar tratamento'}{' '}

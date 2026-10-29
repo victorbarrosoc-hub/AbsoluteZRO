@@ -33,6 +33,10 @@ export type Project = {
   originalName: string;
   /** The original is a video with a picture: the treated audio can go back under it. */
   hasVideo?: boolean;
+  /** Words with times from Legendas; subtitles are rebuilt from them on export. */
+  transcript?: import('./transcript').Transcript & { createdAt: number };
+  /** Remixer stems (FLAC, in STEM_NAMES order) that add back up to the original. */
+  stems?: { files: Blob[]; gainDb: number; createdAt: number };
   versions: Version[];
 };
 export type ProjectSummary = Omit<Project, 'versions' | 'originalFile'> & {

@@ -72,17 +72,18 @@ em tempo útil. A comparação com D e com o próprio ElevenLabs precisa de **au
 
 ## Plano, em ordem de impacto
 
-| Fase | Entrega                                                                                                          | Por quê                                                  |
-| ---- | ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| 0    | Publicar o worker, homologar na GPU (tempo, custo por minuto, cold start) e fazer audição cega contra ElevenLabs | Nada vira promessa antes disso                           |
-| 1 ✅ | **Vídeo de verdade** (feito em 29/10): só o som vai à GPU e o botão Vídeo devolve o original com o som novo      | Tira o teto de 100 MB do vídeo; é o uso do criador       |
-| 1    | Arquivos de até 1 h                                                                                              | Podcast e aula passam de 10 min                          |
-| 1    | Tirar eco: avaliar modelo de dereverberação (o melhor aberto é GPL-3.0; exige decisão de licença) ou treinar     | É o que falta para o "som de estúdio" em sala comum      |
-| 2    | **Transcrição e legendas** (Whisper large-v3-turbo, MIT): SRT/VTT, palavras com tempo                            | Segundo uso mais comum; abre edição por texto            |
-| 2    | **Editar pelo texto:** apagar a frase apaga o áudio; cortar silêncios e vícios ("é…", "tipo")                    | Diferencial que o Voice Isolator sozinho não tem         |
-| 2    | Lote e API para equipes (B2B)                                                                                    | Agências e estúdios processam dezenas de arquivos        |
-| 3    | Voz sintética e clone com **consentimento gravado** (Chatterbox multilíngue, MIT)                                | Correções de fala sem regravar; exige trava contra abuso |
-| 4    | Dublagem: transcrição + tradução (Claude) + voz clonada + mixagem                                                | Junta tudo; só depois das fases 2 e 3                    |
+| Fase | Entrega                                                                                                                                                                             | Por quê                                                                      |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 0    | Publicar o worker, homologar na GPU (tempo, custo por minuto, cold start) e fazer audição cega contra ElevenLabs                                                                    | Nada vira promessa antes disso                                               |
+| 1 ✅ | **Vídeo de verdade** (feito em 29/10): só o som vai à GPU e o botão Vídeo devolve o original com o som novo                                                                         | Tira o teto de 100 MB do vídeo; é o uso do criador                           |
+| 1    | Arquivos de até 1 h                                                                                                                                                                 | Podcast e aula passam de 10 min                                              |
+| 1    | Tirar eco: avaliar modelo de dereverberação (o melhor aberto é GPL-3.0; exige decisão de licença) ou treinar                                                                        | É o que falta para o "som de estúdio" em sala comum                          |
+| 2 ✅ | **Legendas** (feito em 29/10): Whisper large-v3-turbo, palavras com tempo, SRT/VTT/TXT                                                                                              | Segundo uso mais comum; abre edição por texto                                |
+| ✅   | **Remixar** (feito em 29/10, pedido do titular, como o AI Music Remixer do DaVinci e o UVR): voz, bateria, baixo, guitarra e outros com faders, mudo, Só instrumental e Só acapella | Separar voz e instrumental é o motivo nº 1 de quem procura essas ferramentas |
+| 2    | **Editar pelo texto:** apagar a frase apaga o áudio; cortar silêncios e vícios ("é…", "tipo")                                                                                       | Diferencial que o Voice Isolator sozinho não tem                             |
+| 2    | Lote e API para equipes (B2B)                                                                                                                                                       | Agências e estúdios processam dezenas de arquivos                            |
+| 3    | Voz sintética e clone com **consentimento gravado** (Chatterbox multilíngue, MIT)                                                                                                   | Correções de fala sem regravar; exige trava contra abuso                     |
+| 4    | Dublagem: transcrição + tradução (Claude) + voz clonada + mixagem                                                                                                                   | Junta tudo; só depois das fases 2 e 3                                        |
 
 Ecossistema: a voz limpa e a legenda seguem para o Synquei/Revela pelo HUB (`edit.timeline.ready` já existe), e o
 login é o da Absolute ZRO.

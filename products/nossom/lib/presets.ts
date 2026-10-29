@@ -12,7 +12,9 @@ export type Operation =
   | 'level'
   | 'master'
   | 'effects'
-  | 'mix';
+  | 'mix'
+  | 'transcribe'
+  | 'remix';
 export type Intensity = number | 'light' | 'balanced' | 'strong';
 export type DenoiseMode = 'studio' | 'voice' | 'general';
 export function strengthValue(value: Intensity): number {
@@ -45,6 +47,8 @@ export type FilterSettings = {
   effect?: EffectId;
   effectMix?: number;
   effectTailSeconds?: number;
+  /** Remixer faders used for this version, in STEM_NAMES order. */
+  stems?: import('./stems').StemSetting[];
   clippingRepair?: {
     method: 'autoregressive';
     detected: number;
@@ -98,6 +102,16 @@ export const operations: { id: Operation; label: string; description: string }[]
     label: 'Efeitos',
     description:
       'Crie ambientes, simule telefone e rádio ou dê outra textura à voz. Ajuste a intensidade e remova quando quiser.',
+  },
+  {
+    id: 'remix',
+    label: 'Remixar',
+    description: 'Escolha o que fica: voz, bateria, baixo, guitarra.',
+  },
+  {
+    id: 'transcribe',
+    label: 'Legendas',
+    description: 'O que foi dito, com o tempo de cada fala.',
   },
   {
     id: 'mix',
@@ -184,6 +198,8 @@ export function treatmentFilter(
 ): string {
   if (operation === 'vocals') throw new Error('Separar vocais requer o modelo musical na GPU.');
   if (operation === 'mix') throw new Error('Mixagem requer duas faixas.');
+  if (operation === 'transcribe') throw new Error('Legendas usam o modelo de fala na GPU.');
+  if (operation === 'remix') throw new Error('O remix mistura as faixas separadas na GPU.');
   const strength = strengthValue(intensity) / 100;
   if (operation === 'master' && settings.masterPreset === 'broadcast')
     return broadcastFilter(settings.broadcast, strength * 100);

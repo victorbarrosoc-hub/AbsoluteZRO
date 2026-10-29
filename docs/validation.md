@@ -2488,6 +2488,7 @@ sistema simulado), e o primeiro Release (sai no primeiro push na main com `produ
 - `test/transferencias-ui.test.js` (`rodada`): lote velho concluído, cancelado e tentativa substituída ficam de fora;
   terminar não faz a porcentagem cair; dois lotes ao mesmo tempo contam juntos até o fim.
 - Não validado: o painel num envio real de 100 GB no Mac do titular.
+
 ## NOSSOM: Isolar voz no nível do Voice Isolator (29/10/2026)
 
 - Nova cadeia no worker de GPU (`voice-isolator-v1`: Mel-Band RoFormer + MossFormer2 SE 48K, mono 48 kHz;
@@ -2501,3 +2502,6 @@ sistema simulado), e o primeiro Release (sai no primeiro push na main com `produ
 - Vídeo (29/10/2026): NOSSOM importa vídeo até 2 GB sem copiar para a memória, envia à GPU só FLAC do som e devolve
   o vídeo original com o som novo (vídeo copiado, AAC). E2E com MP4 sintético; ffprobe confere H.264 + AAC de 4,000 s.
   Build da imagem do worker passou com inferência real em CPU; publicação movida para `absolutezro-nossom-worker`.
+- Legendas e Remixar no NOSSOM (29/10/2026): Whisper turbo com WER 4,1% em 3 min de português (CPU) e janelas
+  cortadas em pausas depois de achar estouro de memória no modo em blocos; remixer com cinco faixas que somam o
+  original (erro 1e-7). `npm test` 115/115, e2e 61 + 26 pulados.

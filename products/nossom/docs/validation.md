@@ -156,3 +156,22 @@ Não execute duas suítes simultaneamente nas portas 3000/55440. Para investiga�
   repositório arquivado. O workflow passa a publicar `absolutezro-nossom-worker`.
 - Suítes: `npm test` 76/76, `npm run test:e2e` 76 passaram + 1 pulado.
 - Não validado: vídeo de celular real de 1–2 GB (memória do navegador no iPhone), HEVC e rotação no Safari.
+
+## 29/10/2026 · Legendas e Remixar
+
+- **Legendas** (`whisper-transcript-v1`): `transcribe.py` medido em CPU com o código de produção: WER 6,8% (20 frases
+  limpas), 5,4% (café a 5 dB), 4,1% num arquivo de 3 min; idioma `pt` detectado; silêncio não gera texto. O modo em
+  blocos do pipeline com tempo por palavra estourou a memória acima de 30 s; trocado por janelas cortadas em pausas
+  (pico estável de 10,3 GB em CPU de 56 s a 3 min). `test_handler.py`: decodificação a 16 kHz mono, JSON único,
+  limite de 4 MiB. `tests/transcript.test.ts`: contrato, linhas (pausa, fim de frase, 42 caracteres × 2 linhas, sem
+  sobreposição) e formatos SRT/VTT/TXT. `tests/e2e/transcribe.spec.ts`: um pedido, legendas salvas no projeto sem
+  criar versão de áudio, arquivos baixados exatos, recarregar mantém, mobile sem rolagem lateral e axe sem violações.
+- **Remixar** (`stems-v1`): `stems.py` em CPU com pesos reais: as cinco faixas somam a entrada (erro 1e-7), FLAC volta
+  idêntico, música instrumental dá voz a −93 dB, voz separada com SI-SDR 10,8 dB sem vazar para as outras.
+  `test_handler.py`: pacote em ordem e dividido nas partes assinadas, 10 min cabem em 40 partes, `output-40`
+  recusado. `tests/stems.test.ts` e contrato em `tests/cloud-restoration.test.ts`. `tests/e2e/remix.spec.ts` (cinco
+  tons como faixas): prévia ao vivo, Só instrumental sem o tom da voz (> 60 dB abaixo), Só acapella só com ele, Baixo
+  +6 dB dobra a amplitude, WAV float32 44,1 kHz.
+- Builds de teste das imagens: `smoke_transcribe.py` e `smoke_stems.py` passaram localmente com os pesos reais.
+- Suítes: `npm test` 115/115; `npm run test:e2e` 61 passaram + 26 pulados (produto fechado, padrão da `main`).
+- Não validado: GPU real (tempo, memória de vídeo, custo), músicas reais variadas e audição das faixas.

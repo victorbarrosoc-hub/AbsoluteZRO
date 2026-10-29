@@ -7,3 +7,5 @@ The browser test adds seeded white noise, checks 0% bypass, measures noise suppr
 `portuguese-voice.wav` is human Brazilian Portuguese speech from TTS-Portuguese Corpus, Edresson Casanova and collaborators, CC BY 4.0. Ground-truth source files `audio/Esperado/10.wav` and `8.wav` on https://github.com/Edresson/TTS-Portuguese-Corpus/tree/gh-pages. Concatenated with a 0.35 s pause, resampled to mono 48 kHz and level-adjusted. No noise added to this clean reference. License: `public/licenses/tts-portuguese-cc-by-4.0.txt`. This is not a private customer recording.
 
 `synthetic-video.mp4` is 4 s of the FFmpeg `testsrc2` pattern (96×64, H.264) with the first 4 s of `synthetic-speech.wav` as mono AAC, made locally with FFmpeg. No person was filmed or recorded.
+
+`stems/*.flac` are five 8.345 s stereo sine tones made with FFmpeg (voz 440 Hz, bateria 110 Hz, baixo 55 Hz, guitarra 330 Hz, outros 880 Hz), standing in for separated stems in the remixer test. They are not separated from any recording.

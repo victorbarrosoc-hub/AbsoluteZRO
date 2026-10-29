@@ -57,19 +57,38 @@ def recognizer(device):
     processor = WhisperProcessor.from_pretrained(folder, local_files_only=True)
     model = WhisperForConditionalGeneration.from_pretrained(
         folder, local_files_only=True, use_safetensors=True, torch_dtype=dtype).to(device).eval()
+    # No pipeline chunking: with word timestamps it keeps every window's attention in memory
+    # and runs out of it past 30 s. `windows` cuts the audio at pauses instead.
     return pipeline('automatic-speech-recognition', model=model, tokenizer=processor.tokenizer,
-                    feature_extractor=processor.feature_extractor, chunk_length_s=30,
-                    batch_size=8 if device == 'cuda' else 1, device=device, torch_dtype=dtype)
+                    feature_extractor=processor.feature_extractor, device=device, dtype=dtype)
+
+
+WINDOW = 28 * RATE
+SEARCH = 8 * RATE
+
+
+def windows(audio):
+    """(start, end) sample ranges under 30 s, each cut at the quietest 20 ms of its last 8 s."""
+    import numpy as np
+    bounds, start = [], 0
+    while len(audio) - start > WINDOW:
+        region = audio[start + WINDOW - SEARCH:start + WINDOW]
+        frames = region[: len(region) // 320 * 320].reshape(-1, 320)
+        cut = start + WINDOW - SEARCH + int(np.argmin((frames ** 2).mean(axis=1))) * 320 + 160
+        bounds.append((start, cut))
+        start = cut
+    bounds.append((start, len(audio)))
+    return bounds
 
 
 def speech_floor(audio):
-    """Level 35 dB under the loud frames: words entirely below it are taken as invented."""
+    """35 dB under the loud frames, and never under −60 dBFS: quieter words are invented."""
     import numpy as np
     frames = audio[: len(audio) // 320 * 320].reshape(-1, 320)
     if not len(frames):
-        return 0.0
+        return 1e-3
     levels = np.sqrt(np.mean(frames ** 2, axis=1) + 1e-12)
-    return float(np.percentile(levels, 95)) * 10 ** (-35 / 20)
+    return max(float(np.percentile(levels, 95)) * 10 ** (-35 / 20), 1e-3)
 
 
 def clean_words(chunks, audio):
@@ -79,9 +98,17 @@ def clean_words(chunks, audio):
     floor = speech_floor(audio)
     words, last = [], 0.0
     for chunk in chunks:
-        text = (chunk.get('text') or '').strip()
+        raw = chunk.get('text') or ''
+        # A cut-off start comes back as "...word"; keep the word, not the ellipsis.
+        text = raw.strip().lstrip('.…').strip()
         start, end = chunk.get('timestamp') or (None, None)
-        if not text:
+        if not any(ch.isalnum() for ch in text):
+            continue
+        # Without a leading space the token continues the previous word ("quinta" + "-feira").
+        if words and raw[:1] not in (' ', '') and not raw.startswith(('.', '…')):
+            words[-1][2] += text
+            if end is not None:
+                words[-1][1] = round(min(max(float(end), words[-1][0]), duration), 3)
             continue
         start = last if start is None else min(max(float(start), last), duration)
         end = duration if end is None else min(max(float(end), start), duration)
@@ -102,12 +129,40 @@ def transcribe(audio, device='cuda'):
     if audio.ndim != 1:
         raise ValueError('Mono input required')
     audio = np.ascontiguousarray(audio, dtype=np.float32)
-    result = recognizer(device)({'raw': audio, 'sampling_rate': RATE}, return_timestamps='word',
-                                return_language=True, generate_kwargs={'task': 'transcribe'})
-    chunks = result.get('chunks') or []
-    languages = [c.get('language') for c in chunks if c.get('language')]
-    language = max(set(languages), key=languages.count) if languages else None
-    return {'language': language, 'words': clean_words(chunks, audio)}
+    language = detect_language(audio, device)
+    pipe = recognizer(device)
+    chunks = []
+    for start, end in windows(audio):
+        if end - start < RATE // 10:
+            continue
+        result = pipe({'raw': audio[start:end], 'sampling_rate': RATE}, return_timestamps='word',
+                      generate_kwargs={'task': 'transcribe',
+                                       **({'language': language} if language else {})})
+        offset = start / RATE
+        for chunk in result.get('chunks') or []:
+            begin, finish = chunk.get('timestamp') or (None, None)
+            chunks.append({'text': chunk.get('text'), 'timestamp': (
+                None if begin is None else begin + offset,
+                None if finish is None else finish + offset)})
+    words = clean_words(chunks, audio)
+    return {'language': language if words else None, 'words': words}
+
+
+def detect_language(audio, device):
+    """Language of the loudest 30 s, decided once so every window is written in it."""
+    import numpy as np
+    import torch
+    pipe = recognizer(device)
+    window = 30 * RATE
+    if len(audio) > window:
+        seconds = (audio[: len(audio) // RATE * RATE].reshape(-1, RATE) ** 2).sum(axis=1)
+        start = int(np.argmax(np.convolve(seconds, np.ones(30), 'valid'))) * RATE
+        audio = audio[start:start + window]
+    features = pipe.feature_extractor(audio, sampling_rate=RATE, return_tensors='pt').input_features
+    with torch.inference_mode():
+        token = pipe.model.detect_language(features.to(device, pipe.model.dtype))[0]
+    code = pipe.tokenizer.decode(token).strip('<|>')
+    return code if code.isalpha() and 2 <= len(code) <= 3 else None
 
 
 if __name__ == '__main__':
