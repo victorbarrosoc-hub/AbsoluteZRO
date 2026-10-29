@@ -3,5 +3,5 @@
   "framework": "nextjs",
   "installCommand": "cd ../.. && npx -y npm@11.6.2 ci",
   "buildCommand": "npm run vercel-build",
-  "regions": ["cle1"]
+  "regions": ["gru1"]
 }

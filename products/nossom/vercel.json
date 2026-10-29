@@ -1,9 +1,17 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": [
+    "gru1"
+  ],
   "framework": "nextjs",
   "installCommand": "npm ci",
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
   "outputDirectory": ".next",
-  "crons": [{ "path": "/api/audio/cleanup", "schedule": "0 6 * * *" }]
+  "crons": [
+    {
+      "path": "/api/audio/cleanup",
+      "schedule": "0 6 * * *"
+    }
+  ]
 }
