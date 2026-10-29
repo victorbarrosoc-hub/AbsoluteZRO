@@ -8860,7 +8860,36 @@ select.input {
 }
 .rv-destino small {
   font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  text-align: center;
+}
+/* grupos do Relay (Redes, Trabalho, Tamanho, Áudio): pílulas acima dos cartões */
+.rv-grupos {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.rv-grupo {
+  flex: 1;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 10px;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
+}
+.rv-grupo.is-on {
+  background: var(--text);
+  color: var(--bg);
 }
 .rv-destino:active {
   transform: scale(0.97);

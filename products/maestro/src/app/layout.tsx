@@ -16,6 +16,7 @@ import "./equipe.css";
 import "./contrato.css";
 import "./marca-propria.css";
 import "./criacao.css";
+import "./lancamento.css";
 import "./celular.css";
 import "./motion.css";
 
@@ -30,9 +31,18 @@ export const metadata: Metadata = {
   openGraph: { type: "website", locale: "pt_BR", siteName: SITE_NOME, title: `${SITE_NOME} · ${SITE_FRASE}`, description: SITE_DESCRICAO },
   twitter: { card: "summary_large_image", title: `${SITE_NOME} · ${SITE_FRASE}`, description: SITE_DESCRICAO },
   formatDetection: { telephone: false },
+  // App na Tela de Início (manifest.ts): título curto e a barra de status padrão (texto escuro no claro). O
+  // apple-touch-icon é src/app/apple-icon.png; "apple-mobile-web-app-capable" vai junto do "mobile-web-app-capable"
+  // que o Next escreve, para Safari antigo.
+  appleWebApp: { capable: true, title: SITE_NOME, statusBarStyle: "default" },
+  other: { "apple-mobile-web-app-capable": "yes" },
 };
 
-export const viewport: Viewport = { themeColor: "#f7f3ee", width: "device-width", initialScale: 1 };
+/** A cor da barra do navegador e do app instalado segue o tema escolhido (cookie zro_theme; claro é o padrão). */
+export async function generateViewport(): Promise<Viewport> {
+  const escuro = (await cookies()).get("zro_theme")?.value === "dark";
+  return { themeColor: escuro ? "#0a0c16" : "#f7f3ee", width: "device-width", initialScale: 1 };
+}
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   // Claro é o tema da casa; o escuro é escolha de quem usa o seletor (fica no cookie).

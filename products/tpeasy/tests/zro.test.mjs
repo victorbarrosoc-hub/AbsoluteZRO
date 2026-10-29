@@ -712,10 +712,21 @@ describe('a Z (repasse /api/zro/ia)', () => {
     const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
     assert.match(sw, /tpeasy-v20/)
     assert.match(sw, /url\.pathname\.startsWith\("\/api\/"\)/)
-    // a família só lista plataformas abertas (NOSSOM, AEON, Revela, Carro do Freela e Maestro estão fechados)
+    // a família só lista plataformas abertas (NOSSOM, AEON, Revela e Carro do Freela estão fechados)
     const fam = /<nav class="familia"[\s\S]*?<\/nav>/.exec(readFileSync(new URL('../app/index.html', import.meta.url), 'utf8'))[0]
-    assert.doesNotMatch(fam + sw, /nossom|aeon|revela|carrodofreela|carro-do-freela|maestro/i)
+    assert.doesNotMatch(fam + sw, /nossom|aeon|revela|carrodofreela|carro-do-freela/i)
     for (const nome of ['Absolute ZRO', 'Sobedesce', 'Synquei']) assert.ok(fam.includes(`<span>${nome}</span>`), nome)
+    // o Maestro entra no lançamento: um bloco maestro-familia (aberto ou comentado), com o ícone dele no cache
+    const aberto = /<!--maestro-familia-->([\s\S]*?)<!--\/maestro-familia-->/.exec(fam)
+    const fechado = /<!--maestro-familia ([\s\S]*?) maestro-familia-->/.exec(fam)
+    assert.ok(!!aberto !== !!fechado, 'um bloco só do Maestro')
+    const bloco = (aberto ?? fechado)[1]
+    assert.match(bloco, /href="https:\/\/maestro\.absolutezro\.com"/)
+    assert.match(bloco, /src="\/icons\/familia\/maestro\.svg"/)
+    assert.ok(sw.includes('"/icons/familia/maestro.svg"'))
+    const { existsSync } = await import('node:fs')
+    assert.ok(existsSync(new URL('../icons/familia/maestro.svg', import.meta.url)))
+    assert.doesNotMatch(fam.replace((aberto ?? fechado)[0], ''), /maestro\.absolutezro/)
     const v = JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'))
     assert.ok(v.rewrites.some((r) => r.source === '/api/zro/ia/:caminho*' && r.destination === '/api/zro/ia?c=:caminho*'))
   })

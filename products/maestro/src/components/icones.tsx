@@ -68,9 +68,33 @@ export type NomeIcone =
   | "cena"
   | "camera"
   | "olho"
-  | "versoes";
+  | "versoes"
+  | "compartilhar"
+  | "adicionar"
+  | "celular"
+  | "computador";
 
 const CAMINHOS: Record<NomeIcone, React.ReactNode> = {
+  // o "Compartilhar" do Safari (quadrado aberto com a seta para cima) e o "Adicionar à Tela de Início"
+  compartilhar: <path d="M8.5 9H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1.5M12 3.5V14M8.5 7 12 3.5 15.5 7" />,
+  adicionar: (
+    <>
+      <rect x="4" y="4" width="16" height="16" rx="4" />
+      <path d="M12 8.5v7M8.5 12h7" />
+    </>
+  ),
+  celular: (
+    <>
+      <rect x="6.5" y="2.5" width="11" height="19" rx="3" />
+      <path d="M10.5 5.5h3" />
+    </>
+  ),
+  computador: (
+    <>
+      <rect x="4" y="5" width="16" height="11" rx="2" />
+      <path d="M2.5 19h19" />
+    </>
+  ),
   alvo: (
     <>
       <circle cx="12" cy="12" r="7" />

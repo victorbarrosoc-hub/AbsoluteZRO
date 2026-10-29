@@ -12446,3 +12446,65 @@ button.pn-cartao:hover .pn-seta {
     animation: none;
   }
 }
+
+/* "Máxima qualidade" do Relay (components/relay.js, RelayLocalDialog) */
+.rv-local {
+  display: grid;
+  gap: 14px;
+  justify-items: start;
+}
+.rv-local > .k-pilulas,
+.rv-local > .k-opcoes {
+  justify-self: stretch;
+}
+.rv-local-arquivos,
+.rv-local-jobs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  width: 100%;
+}
+.rv-local-arquivos li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rv-local-jobs li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-2, rgba(127, 127, 127, 0.08));
+}
+.rv-local-jobs .k-barra {
+  grid-column: 1 / -1;
+}
+.rv-local-nome {
+  display: grid;
+  min-width: 0;
+}
+.rv-local-nome b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+.rv-local-nome small,
+.rv-local-fase {
+  color: var(--text-2);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.rv-local-erro {
+  color: var(--danger, #c4261d);
+  font-size: 13px;
+}

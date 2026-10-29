@@ -319,6 +319,31 @@ neste ambiente: PTAX de 28/10/2026 = venda 5,342 (Olinda); planilha `resumo_sema
   produção; o e2e do Maestro no iPhone e no WebKit (o editor só roda no computador; o detector de corte não abre a
   calculadora).
 
+## Lançamento do Maestro em Beta grátis, pronto no ramo (29/10/2026, ADR 0027)
+
+- HUB: `tests/integration/maestro-lancamento.test.ts` (4): catálogo `beta` e gate `public_beta` com os cinco canais
+  abertos a qualquer um; conta comum só com o grátis, fora de lista, fica `contracted`, `authorize` passa e o login
+  único leva `maestro` em `zro_products` e `released` em `zro_release` (os fechados seguem `closed`); grátis e Completo
+  sem `maestro.marca_propria`, Pro v2 (rascunho) com o Maestro inteiro e o sinal, adicional só o sinal, nenhum plano
+  aposentado tocado; backfill idempotente (conta de antes ganha o entitlement uma vez; rodar a 0027 de novo não muda
+  plano, entitlement nem auditoria). `lancamento-maestro-chaves.test.ts` (2): as 11 chaves do código existem, viram
+  juntas e abrir + fechar devolve o arquivo idêntico; o ícone do Maestro em cada app é o oficial. Testes que diziam
+  "Maestro fechado" passam ao estado de lançamento (accounts, release-gate, ia-maestro, stripe, core, downloads, e2e
+  `hub.spec`). Lint, formatação, tipos, `npm test` **267/267**, build ok, e2e **26/26** (hub, a11y, admin, sso),
+  `scan-secrets` limpo.
+- Maestro: `npm test` **335/335** (inclui `lancamento.test.mts`: app de computador só com instalador publicado no
+  catálogo, nome de arquivo estranho não vira link, cache de 5 min e HUB fora do ar = nada; manifesto e ícones;
+  chave da vitrine). Build ok com a vitrine fechada e aberta. E2E com a vitrine **aberta** (todas as chaves em
+  `--abrir`): **80 passaram**, 12 pulados de propósito (inclui o detector de corte em Chromium e WebKit a 375/393 px,
+  claro e escuro, e `instalar.spec.ts`: manifesto, metas do Safari, `theme-color` pelo tema, a dica em Ajustes que some
+  aberto como app e o app instalado sem corte). Com a vitrine **fechada** (estado do ramo): `inicio.spec.ts` +
+  `instalar.spec.ts` **24/24**.
+- Outros apps (no estado aberto e no fechado): SOBEDESCE `test:fast` 777 ok/4 pulados (`familia.test.js` 4), Synquei
+  `npm test` 139 ok, TPeasy 53/53, NOSSOM `npm test` 105/105 + tipos e formatação, AEON `familia.test.js` 2/2, Revela
+  `npm test` 147/147 (menu em ordem alfabética com o Maestro), Carro do Freela `npm run build` com o ícone na lateral
+  e na gaveta. Não verificado aqui: as telas do AEON (`tela.test.js` pede `npm run vendor`, que não roda neste
+  ambiente; o teste do menu passou a contar a família de `src/familia.js`).
+
 ## E-mails da central com cara de e-mail de conta (29/10/2026)
 
 - Convite caiu em Promoções no Gmail (SPF, DKIM e DMARC conferidos no DNS: ok). `apps/hub-web/lib/email/modelos.ts`
@@ -2573,3 +2598,83 @@ foi conferido com toque sintético; `field-sizing` não existe no WebKit e os ca
   `npm test` 61/61 (caso b1034 → b1042 sem registro, build do app vale mais que o registro, Synquei em
   `desktop/build-info.json`, versão de desenvolvimento sem build).
 - Não validado: a leitura do `app.asar` de outro app pela central empacotada num Mac e num Windows reais.
+
+## Conversão de mídia como setor próprio (29/10/2026)
+
+Só documentos ([ADR 0030](decisions/0030-relay-conversao.md), PRD §2, roadmap): nenhum código mudou. Mapa feito
+lendo o código de `products/finishing`, `products/sobedesce`, `products/ai-edit`, `products/nossom`,
+`products/synquei` e `products/maestro`. Synquei exporta projeto (XML, OTIO, EDL), não mídia; Maestro, TPeasy, Carro
+do Freela e HUB não convertem. `npm run format:check` e `node scripts/scan-secrets.mjs` ok.
+
+## Relay: plataforma de conversão, SOBEDESCE e HUB (29/10/2026)
+
+- `products/relay`: `npm test` **38/38** (núcleo, presets da pessoa, ffmpeg de verdade, Chromium de verdade com
+  conversão real, Lanczos conferido com o ffmpeg em SSIM > 0,97 e sem virar, celular girado igual à rotação do ffmpeg,
+  tamanho exato cabendo, presets da pessoa ponta a ponta, nenhuma página rolando para o lado em 375 px, cópias nas
+  outras plataformas).
+- Qualidade: `npm run qualidade` com 4 masters ProRes contra presets x264 de referência e a referência no mesmo tamanho
+  ([QUALIDADE](../products/relay/docs/QUALIDADE.md)). No computador, empate (0,9469 × 0,9468 no grão; 0,9927 × 0,9923
+  no movimento; 0,9962 × 0,9966 na limpa; 0,9779 × 0,9798 no 4K → 1080p). No navegador do Linux (OpenH264) o x264
+  guarda mais no mesmo tamanho. Três correções de cor e a escala na placa saíram da medição.
+- SOBEDESCE: `npm run test:fast` 780 ok; 2 falhas na primeira rodada: a versão do app de celular (subiu com o cache:
+  2.8.54 / v69, corrigido, 9/9) e o limitador de metadados (tempo, 2,002 × 2; passa sozinho, sem relação com o Relay).
+  `test/relay.test.js` 8/8 e `test/relay-celular.test.js` 1/1 (Chromium com a CSP do app, Drive por pedaços, AAC).
+  Site: `npm run lint`, `typecheck` e `npm test` (291) ok.
+- HUB: migration `0031_relay.sql`; `npm test` 328 com 2 falhas que contavam os produtos dos planos e as etapas do
+  projeto, atualizadas (billing e core 41/41). Depois de juntar o `main`: `format:check`, `lint`, `typecheck`, `npm test`
+  **340/340** e `build` ok; e2e 38/41: o Ciclo do O passa a ter 9 etapas (teste atualizado, Relay indisponível); os
+  dois testes de WebKit do esqueleto (vindos do `main`) não rodam aqui (WebKit não instalado neste ambiente); o
+  "Escolha seu @" do SSO do Carro falhou uma vez e passa sozinho (tempo).
+
+## Relay: comparativo interno, laboratório de aparelhos e Máxima qualidade (29/10/2026)
+
+- `products/relay`: `npm test` **45/45** (link do Máxima qualidade com acentos e limite de 8 destinos; publicação:
+  produção fechada sem o laboratório, prévia com ele; laboratório no Chromium gerando, codificando e medindo).
+- Laboratório no Chromium deste ambiente (OpenH264, sem placa): 0,0116 de SSIM abaixo da referência x264 no mesmo
+  bitrate, em média (6 medidas, 56 s). Falta o Mac, o iPhone e o Windows de verdade.
+- SOBEDESCE: `test/relay.test.js` **12/12**: o link montado pelo Relay é o que o app aceita (e links tortos viram
+  nada), nome livre sem gravar por cima, conversão local de verdade (WhatsApp 1280×720 e MP3 da pessoa ao lado do
+  original, MD5 do original igual, nenhum parcial sobrando) e a rota `/api/relay/local` recusando caminho relativo,
+  extensão errada e destino inventado.
+
+## Relay liberado (29/10/2026)
+
+- Menções a outro conversor fora do repositório inteiro (Revela, ADR 0015, Synquei, laboratório); no Synquei, a regra
+  que separa arquivo de software de arquivo de câmera passou a reconhecer a versão no campo do fabricante (138/138).
+- Migration `0032_relay_aberto.sql`: `npm test` **340/340** (planos, etapas e acessos com o Relay aberto); e2e do HUB
+  16/16 (Ciclo do O com o Relay "Bloqueado por assinatura" sem plano, 4 acessos lançados no plano grátis).
+- Nenhum e-mail: o HUB só envia e-mail de login e de conta (`packages/auth/src/email.ts`); abrir produto e gate não
+  manda aviso.
+- Produção (`relay.absolutezro.com`, deploy `dpl_BSNVYA6bT95oHzNLh8JsrA6ivrhU`, commit `7d408bd`, `RELEASE=released`):
+  `/` e `/converter` 200 com o site de verdade, `/laboratorio` e `/qualidade` 404, `vendor/` servido. Chromium de
+  verdade contra a produção: um ProRes 1080p de 2 s virou "YouTube 1080p" (MP4, 3,9 MB), sem erro no console.
+- O deploy só de variável (mesmo commit da prévia) é cancelado pelo Ignored Build Step do projeto (`git diff` contra o
+  commit anterior). Contorno usado: a checagem foi trocada por `exit 1` só durante esse deploy e voltou igual depois.
+
+## Relay: presets de TV e leitura com plano B (29/10/2026)
+
+- Gravação de tela do Mac recusada ("Este navegador não lê H.264"): no Chromium do Linux, Retina 3024×1964, 5K, P3,
+  região e 4:4:4 abrem; a causa no aparelho do titular ainda não foi vista. `test/tela.test.js` simula um navegador que
+  recusa o nível 5.2: o Relay acha outra forma (nível menor), converte 1920×1200 a 60 fps para YouTube 1080p
+  (1728×1080, 60 quadros, SSIM > 0,9). Navegador que não lê H.264 nenhum: a mensagem mostra
+  `avc1.640034 · 1920×1200 · <navegador>`.
+- O preset Proxy para edição estava sem `id` desde o primeiro commit; corrigido e conferido em `test/plano.test.js`.
+- 23 destinos (Smart TV, Smart TV 4K, LinkedIn, X, Slides, Vídeo de fundo novos), cópias no SOBEDESCE iguais
+  (`test/relay.test.js`), app do celular 2.8.55 / v70.
+
+## NOSSOM: Isolar voz no nível do Voice Isolator (29/10/2026)
+
+- Nova cadeia no worker de GPU (`voice-isolator-v1`: Mel-Band RoFormer + MossFormer2 SE 48K, mono 48 kHz;
+  `roformer-vocals-v1`: vocal estéreo 44,1 kHz), pesos com revisão e SHA-256 fixos, `weights_only=True`.
+- Benchmark em CPU com fala real em português e ruído/música CC BY: SI-SDR médio 15,46 dB contra 11,13
+  (DeepFilterNet3, motor local) e 9,96 (HTDemucs, Isolar voz anterior); melhor também em PESQ, ESTOI e DNSMOS. O
+  código de produção reproduz o benchmark (14,72 × 14,74 dB). Detalhes em `products/nossom/docs/validation.md`.
+- `products/nossom`: `npm test` 76/76, `npm run test:e2e` 75 + 1 pulado, `typecheck`, `format:check` e `build` ok;
+  testes Python do worker no CI.
+- Não validado: imagem na GPU, custo por minuto, cold start, audição cega. Sem deploy.
+- Vídeo (29/10/2026): NOSSOM importa vídeo até 2 GB sem copiar para a memória, envia à GPU só FLAC do som e devolve
+  o vídeo original com o som novo (vídeo copiado, AAC). E2E com MP4 sintético; ffprobe confere H.264 + AAC de 4,000 s.
+  Build da imagem do worker passou com inferência real em CPU; publicação movida para `absolutezro-nossom-worker`.
+- Legendas e Remixar no NOSSOM (29/10/2026): Whisper turbo com WER 4,1% em 3 min de português (CPU) e janelas
+  cortadas em pausas depois de achar estouro de memória no modo em blocos; remixer com cinco faixas que somam o
+  original (erro 1e-7). `npm test` 115/115, e2e 61 + 26 pulados.

@@ -251,7 +251,7 @@ describe('consultas do painel', () => {
       ['manual', 'active'],
       ['free', 'canceled'],
     ])
-    expect(d.entitlements.map((e) => e.productId)).toEqual(['synquei'])
+    expect(d.entitlements.map((e) => e.productId)).toEqual(['synquei', 'relay']) // o Relay entra em todo plano (0031)
     expect(d.sessions).toHaveLength(1)
     expect(d.timeline.map((t) => t.action)).toContain('billing.plan_changed')
     expect(d.timeline.find((t) => t.action === 'billing.plan_changed')!.reason).toBe('cortesia')

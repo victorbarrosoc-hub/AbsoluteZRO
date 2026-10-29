@@ -16,6 +16,7 @@ const CORE = [
   '/app/familia/absolute-zro.webp',
   '/app/familia/sobedesce.svg',
   '/app/familia/tpeasy.svg',
+  '/app/familia/maestro.svg',
   '/app/js/atualizacao.js',
   '/app/js/conta.js',
   '/app/js/demo.js',

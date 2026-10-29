@@ -33,6 +33,7 @@ const FILES = [
   "/icons/familia/absolute-zro.webp",
   "/icons/familia/sobedesce.svg",
   "/icons/familia/synquei.svg",
+  "/icons/familia/maestro.svg",
 ];
 
 self.addEventListener("install", (e) => {

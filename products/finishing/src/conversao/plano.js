@@ -1,4 +1,4 @@
-// Conversor da Revela (o "Handbrake" do navegador): decide como converter um arquivo para um destino.
+// Conversor da Revela (no navegador): decide como converter um arquivo para um destino.
 //
 // Fluxo recomendado: o Resolve exporta UM master (ProRes, preset "Master de arquivo") e o conversor gera cada
 // versão de entrega a partir dele, no celular ou no computador, com o codificador de hardware do aparelho quando o

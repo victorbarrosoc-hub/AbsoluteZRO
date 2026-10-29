@@ -22,7 +22,8 @@ const securityHeaders = [
 // Aba Drive: miniaturas vêm de *.googleusercontent.com (direto no <img> ou, se o Google exigir o token, por fetch →
 // blob:). Vídeo, áudio e foto em tamanho real passam pelo service worker em /app/stream/ (mesma origem: 'self').
 // Em desenvolvimento, ?dev_api= aponta o Drive para um Drive falso em 127.0.0.1/localhost.
-const appConnect = ["'self'", "https://www.googleapis.com", "https://*.googleusercontent.com"];
+// data: e blob:: o codificador de AAC/MP3 do Relay (relay/vendor) carrega o WebAssembly embutido dentro do worker dele.
+const appConnect = ["'self'", "data:", "blob:", "https://www.googleapis.com", "https://*.googleusercontent.com"];
 // A Z (IA da Absolute ZRO, components/z.js): o script do painel e as imagens do Z vêm de absolutezro.com; a conversa
 // passa pelo próprio site (/api/zro/ia), então o connect-src não muda.
 const ZRO = "https://absolutezro.com";
@@ -33,8 +34,9 @@ if (process.env.NODE_ENV !== "production") {
 }
 const appCsp = [
   "default-src 'self'",
-  // 'wasm-unsafe-eval' e worker-src blob:: o "Converter com a Revela" decodifica ProRes em WebAssembly, em workers
-  // criados pela própria biblioteca (lib/revela.js, vendor/mediabunny*). Nenhum script de fora entra por aqui.
+  // 'wasm-unsafe-eval' e worker-src blob:: o "Converter com o Relay" decodifica ProRes e grava AAC/MP3 em
+  // WebAssembly, em workers criados pela própria biblioteca (lib/relay.js, relay/vendor/mediabunny*). Nenhum script de
+  // fora entra por aqui.
   "script-src 'self' 'wasm-unsafe-eval' https://absolutezro.com",
   // 'unsafe-inline' só no estilo: o painel da Z desenha num shadow root com <style> próprio. Estilo não executa código.
   "style-src 'self' 'unsafe-inline'",

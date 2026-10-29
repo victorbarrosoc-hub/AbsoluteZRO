@@ -280,9 +280,9 @@ export default function Assistant({
                 description: 'Reduzir ruído da gravação',
               },
               {
-                label: 'Isolar voz da música',
+                label: 'Isolar voz',
                 operation: 'vocals',
-                description: 'Separar o cantor dos instrumentos',
+                description: 'Tirar música e ruído de fundo',
               },
               {
                 label: 'Nivelar volumes',
@@ -353,7 +353,7 @@ export default function Assistant({
         )}
         <details className="assistant-details">
           <summary>Privacidade e formatos</summary>
-          <p>Até 100 MB e 10 minutos. WAV, MP3, M4A, FLAC, OGG, MP4 ou MOV.</p>
+          <p>Áudio ou vídeo, até 10 minutos.</p>
           <p>
             O assistente recebe seu texto e medições. Na restauração, uma cópia temporária do áudio
             é processada na nuvem. O original fica neste dispositivo.

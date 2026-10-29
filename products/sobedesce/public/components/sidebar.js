@@ -38,6 +38,11 @@ const FAMILIA = [
   { href: 'https://synquei.vercel.app', nome: 'Synquei', img: '/familia/synquei.svg' },
   { href: 'https://tpeasy.vercel.app', nome: 'TPEasy', img: '/familia/tpeasy.svg' },
 ]
+// Maestro na família (lançamento em Beta grátis, docs/operations/lancamento-maestro.md): fica de fora até o titular
+// abrir; vira com `node scripts/lancamento-maestro.mjs --abrir` (e volta com --fechar).
+const MAESTRO_NA_FAMILIA = true
+// em ordem alfabética, logo depois da Absolute ZRO
+if (MAESTRO_NA_FAMILIA) FAMILIA.splice(1, 0, { href: 'https://maestro.absolutezro.com', nome: 'Maestro', img: '/familia/maestro.svg' })
 
 /**
  * Os apps da família numa linha só ("Absolute ZRO", ícone de grade); o clique abre a lista num
