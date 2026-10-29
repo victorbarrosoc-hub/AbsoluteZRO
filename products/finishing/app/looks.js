@@ -193,8 +193,8 @@ async function iniciar() {
       pixels[j + 1] = vitrine.data[i + 1] / 255
       pixels[j + 2] = vitrine.data[i + 2] / 255
     }
-    const { exposicao, branco } = analisarFrame(pixels)
-    frame = { vitrine, capa: desenhar(bm, LADO_CAPA), correcao: { exposicao, branco } }
+    const { exposicao, ganhos } = analisarFrame(pixels)
+    frame = { vitrine, capa: desenhar(bm, LADO_CAPA), correcao: { exposicao, ganhos } }
   } catch {
     return avisar('Não deu para abrir o frame de exemplo agora.', true)
   }

@@ -5,7 +5,7 @@
 import './conta.js'
 import './menu.js'
 import { aplicar, assar, escreverCube } from '../src/cor/cube.js'
-import { AJUSTES, AJUSTES_NEUTROS, GRUPOS, analisarFrame, baseDoLab, criarLab, escreverReceita, lerReceita } from '../src/cor/lab.js'
+import { AJUSTES, AJUSTES_NEUTROS, ENTRADAS_LAB, GRUPOS, analisarFrame, baseDoLab, criarLab, escreverReceita, lerReceita } from '../src/cor/lab.js'
 import { MAX_LOOKS, PREFIXO, empacotar } from '../src/cor/meuslooks.js'
 import { cascata, escalonar, icones } from './visual.js'
 
@@ -21,7 +21,7 @@ const EDITORES = { resolve: 65, premiere: 33, fcp: 65, capcut: 33 }
 
 let frame = null // { previa: ImageData, mini: ImageData, pixels: Float32Array }
 let correcaoLida = null
-let receita = { nome: 'Meu look', base: 'revela', intensidade: 1, correcao: null, ajustes: { ...AJUSTES_NEUTROS } }
+let receita = { nome: 'Meu look', entrada: 'still', base: 'revela', intensidade: 1, correcao: null, ajustes: { ...AJUSTES_NEUTROS } }
 let grupo = 'revela'
 let corrigirSozinho = true // "Analisar e corrigir" começa ligado: quem não é colorista já ganha o frame equilibrado
 let camadas = null
@@ -63,8 +63,7 @@ async function receber(arquivo) {
     pixels[j + 2] = previa.data[i + 2] / 255
   }
   frame = { previa, mini, pixels }
-  correcaoLida = analisarFrame(pixels)
-  if (receita.correcao || corrigirSozinho) receita.correcao = { exposicao: correcaoLida.exposicao, branco: correcaoLida.branco }
+  lerFrame()
   $('lab').hidden = false
   $('lab-entrada').classList.add('compacta')
   mostrarCorrecao()
@@ -72,6 +71,23 @@ async function receber(arquivo) {
   refazer()
   avisar('')
 }
+
+/** Lê o frame na luz da cena (pela entrada escolhida) e liga a correção automática, se ela estiver ligada. */
+function lerFrame() {
+  correcaoLida = analisarFrame(frame.pixels, { entrada: receita.entrada })
+  if (receita.correcao || corrigirSozinho) receita.correcao = { exposicao: correcaoLida.exposicao, ganhos: correcaoLida.ganhos }
+}
+
+// de onde vem o frame: still já tratado ou o log de uma câmera
+$('entrada').replaceChildren(...ENTRADAS_LAB.map((e) => Object.assign(document.createElement('option'), { value: e.id, textContent: e.nome })))
+$('entrada').addEventListener('change', () => {
+  receita.entrada = $('entrada').value
+  if (!frame) return
+  lerFrame()
+  mostrarCorrecao()
+  desenharBases()
+  refazer()
+})
 
 $('arquivo-frame').addEventListener('change', (e) => receber(e.target.files[0]))
 const caixa = $('caixa-frame')
@@ -189,7 +205,7 @@ function desenharBases() {
       b.setAttribute('aria-label', l.nome)
       b.setAttribute('aria-checked', String(l.id === receita.base))
       // miniatura com a correção e a base, sem os ajustes: compara as bases entre si
-      const mini = pintarCom(frame.mini, criarLab({ base: l.id, correcao: receita.correcao }).aplicar, 17)
+      const mini = pintarCom(frame.mini, criarLab({ base: l.id, entrada: receita.entrada, correcao: receita.correcao }).aplicar, 17)
       const nome = document.createElement('span')
       nome.className = 'look-nome'
       nome.textContent = l.nome
@@ -222,7 +238,7 @@ function mostrarCorrecao() {
 }
 $('corrigir').addEventListener('change', () => {
   corrigirSozinho = false
-  receita.correcao = $('corrigir').checked && correcaoLida ? { exposicao: correcaoLida.exposicao, branco: correcaoLida.branco } : null
+  receita.correcao = $('corrigir').checked && correcaoLida ? { exposicao: correcaoLida.exposicao, ganhos: correcaoLida.ganhos } : null
   mostrarCorrecao()
   desenharBases()
   refazer()
@@ -318,9 +334,46 @@ $('baixar').addEventListener('click', async () => {
   const tamanho = Number(raiz.querySelector('input[name=tamanho]:checked').value)
   avisar(`Gerando a LUT de ${tamanho} pontos…`)
   await espera()
-  const texto = escreverCube(assar(lookAtual().aplicar, tamanho), `Revela Lab - ${nome()}`)
-  baixarTexto(texto, `revela-lab-${arquivoBase()}-${tamanho}.cube`)
-  avisar(`LUT de ${tamanho} pontos baixada. No Resolve: nó do grade › botão direito › LUT.`)
+  const de = ENTRADAS_LAB.find((e) => e.id === receita.entrada)?.nome ?? 'Rec.709'
+  const texto = escreverCube(assar(lookAtual().aplicar, tamanho), `Revela Lab - ${nome()}`, [
+    `Revela Lab · ${nome()}`,
+    `Entrada: ${receita.entrada === 'still' ? 'Rec.709 Gama 2.4 (material já tratado)' : de}`,
+    'Saída: Rec.709 Gama 2.4 (BT.1886). Faixa full. Interpolação tetraédrica.',
+  ])
+  baixarTexto(texto, `revela-lab-${arquivoBase()}${receita.entrada === 'still' ? '' : `-${receita.entrada}`}-${tamanho}.cube`)
+  avisar(`LUT de ${tamanho} pontos baixada. No Resolve: nó do grade › botão direito › LUT. Para finalizar em log, use o pacote profissional.`)
+})
+
+// o pacote profissional sai num worker (são 5 LUTs, 3 delas de 65 pontos, e o controle de qualidade)
+let fabrica = null
+$('baixar-pacote').addEventListener('click', () => {
+  const botao = $('baixar-pacote')
+  botao.disabled = true
+  avisar('Montando o pacote: look em log, LUT do monitor, CDL e controle de qualidade…')
+  fabrica ??= new Worker(new URL('./pacote-worker.js', import.meta.url), { type: 'module' })
+  fabrica.onmessage = ({ data }) => {
+    botao.disabled = false
+    if (!data.ok) return avisar(`Não deu para montar o pacote: ${data.erro}`, true)
+    const url = URL.createObjectURL(new Blob([data.zip], { type: 'application/zip' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${data.pasta}.zip`
+    document.body.append(a)
+    a.click()
+    a.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 30_000)
+    const qc = $('qc')
+    qc.hidden = false
+    qc.classList.toggle('reprovado', !data.qc.ok)
+    qc.textContent = data.qc.ok ? 'Controle de qualidade: aprovado' : 'Controle de qualidade: reprovado (veja o relatório)'
+    qc.title = data.qc.verificacoes.map((v) => `${v.ok ? '✓' : '✗'} ${v.nome}: ${v.valor}`).join('\n')
+    avisar('Pacote baixado. O LEIA-ME diz a ordem: correção (CDL) → look (LMT) → saída do projeto.')
+  }
+  fabrica.onerror = () => {
+    botao.disabled = false
+    avisar('Não deu para montar o pacote neste navegador.', true)
+  }
+  fabrica.postMessage({ receita: { ...receita, nome: nome() } })
 })
 
 $('baixar-receita').addEventListener('click', () => {
@@ -338,7 +391,8 @@ $('salvar').addEventListener('click', () => {
   }
   lista = lista.filter((l) => l?.id?.startsWith(PREFIXO))
   if (lista.length >= MAX_LOOKS) return avisar(`Já tem ${MAX_LOOKS} looks salvos. Apague um na tela de LUT para salvar outro.`, true)
-  lista.push(empacotar(lookAtual().aplicar, nome()))
+  // Meus looks vivem na tela de LUT, com frames Rec.709: o look entra pelo caminho do still
+  lista.push(empacotar(criarLab({ ...receita, entrada: 'still' }).aplicar, nome()))
   try {
     localStorage.setItem(CHAVE_MEUS, JSON.stringify(lista))
     avisar(`"${nome()}" está em Meus looks, na tela de LUT.`)
@@ -354,7 +408,8 @@ $('arquivo-receita').addEventListener('change', async (e) => {
   try {
     const lida = lerReceita(await arquivo.text())
     // a correção da receita era do frame de quem salvou: aqui vale a leitura deste frame
-    receita = { ...lida, correcao: lida.correcao && correcaoLida ? { exposicao: correcaoLida.exposicao, branco: correcaoLida.branco } : lida.correcao }
+    receita = { ...lida, correcao: lida.correcao && correcaoLida ? { exposicao: correcaoLida.exposicao, ganhos: correcaoLida.ganhos } : lida.correcao }
+    $('entrada').value = receita.entrada
     $('nome-look').value = lida.nome
     $('intensidade').value = String(Math.round(receita.intensidade * 100))
     $('valor-intensidade').textContent = `${$('intensidade').value}%`

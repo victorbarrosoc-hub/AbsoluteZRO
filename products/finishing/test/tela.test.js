@@ -1215,7 +1215,7 @@ test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks
 
   const [lut] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Baixar LUT' }).click()])
   assert.equal(lut.suggestedFilename(), 'revela-lab-noite-quente-33.cube')
-  assert.match(readFileSync(await lut.path(), 'utf8'), /^TITLE "Revela Lab - Noite quente"\nLUT_3D_SIZE 33\n/)
+  assert.match(readFileSync(await lut.path(), 'utf8'), /^# Revela Lab · Noite quente\n# Entrada: Rec.709[^\n]*\n# Saída: Rec.709[^\n]*\nTITLE "Revela Lab - Noite quente"\nLUT_3D_SIZE 33\n/)
   const [receita] = await Promise.all([pagina.waitForEvent('download'), pagina.getByRole('button', { name: 'Baixar receita' }).click()])
   assert.equal(receita.suggestedFilename(), 'noite-quente.revela')
   const r = JSON.parse(readFileSync(await receita.path(), 'utf8'))
@@ -1229,6 +1229,16 @@ test('Revela Lab: exemplo, película, ajuste, LUT, receita de volta e Meus looks
   await pagina.getByText('Receita "Noite quente" aberta.').waitFor()
   assert.equal(await pagina.locator('#aj-calor').inputValue(), '40')
   assert.equal(await pagina.locator('#bases [aria-checked=true]').getAttribute('data-look'), 'negativo-500t')
+
+  // pacote profissional (worker): zip com o look em log, a LUT do monitor, CDL e o controle de qualidade aprovado
+  assert.equal(await pagina.locator('#entrada option').first().textContent(), 'Still já tratado (Rec.709)')
+  const [pacote] = await Promise.all([pagina.waitForEvent('download', { timeout: 60_000 }), pagina.getByRole('button', { name: 'Pacote profissional' }).click()])
+  assert.equal(pacote.suggestedFilename(), 'REVELA_NOITE-QUENTE.zip')
+  const zip = readFileSync(await pacote.path())
+  assert.equal(zip.readUInt32LE(0), 0x04034b50)
+  assert.ok(zip.includes('REVELA_NOITE-QUENTE_DWG-DI-to-DWG-DI_v1_65.cube'))
+  assert.ok(zip.includes('REVELA_NOITE-QUENTE_ACEScct-AP1-to-ACEScct-AP1_v1_65.cube'))
+  assert.equal(await pagina.locator('#qc').textContent(), 'Controle de qualidade: aprovado')
 
   // salvo em Meus looks: aparece na grade da tela de LUT
   await pagina.getByRole('button', { name: 'Salvar em Meus looks' }).click()

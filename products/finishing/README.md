@@ -77,19 +77,33 @@ quando esta pasta muda desde o último deploy: um "Redeploy" do mesmo commit é 
 
 ## Revela Lab
 
-`lab.html` + `app/lab.js` + `src/cor/lab.js`: a pessoa monta o próprio look e leva a LUT.
+`lab.html` + `app/lab.js` + `src/cor/lab.js`: a pessoa monta o próprio look e leva um pacote profissional.
 
-- **Bases** em três grupos: Revela (os looks de sempre), **Película** (Negativo 250D, Negativo 500T, Positivo 50D,
-  Reversível, Sem branqueamento) e **Clássicos** (Laranja e petróleo, Anos 70, Nórdico). Todas feitas com o motor de
-  `src/cor/looks.js`, com nomes genéricos: nada imita película de marca nem copia LUT de terceiros.
-- **Analisar e corrigir** (ligado por padrão): lê o frame e acerta exposição (no máximo ±1,2 stop, sem apagar contraluz
-  ou noite) e branco (só o que domina os tons neutros) antes da base; mostra o que fez ("+0,8 stop · branco mais
-  quente"). O mesmo look fica igual em clipes diferentes.
-- **Ajustes** com nome de gente: Luz, Contraste, Cor, Temperatura, Tint (do centro), Calor, Desbotar e Pele protegida
-  (a pele volta para a cor de antes do look). Duplo toque volta ao neutro.
-- **Saída**: `.cube` 33/65 no tamanho do editor, **receita** `.revela` (JSON com base, intensidade, correção e ajustes,
-  para reabrir e continuar) e **Salvar em Meus looks** (aparece na grade da tela de LUT).
-- Grão de filme não entra: LUT não carrega grão.
+- **Motor na luz da cena** (`src/cor/pelicula.js`), como pedem Netflix, ACES, ARRI (ALF4) e RED (IPP2): o look é um
+  LMT em DaVinci Wide Gamut / Intermediate e a tela é outra etapa (`src/cor/cena.js`), trocável entre Rec.709 SDR,
+  P3-D65 PQ 1000 nits e Rec.2020 PQ. Mesmo look para SDR, HDR e qualquer câmera.
+- **Tela** no desenho do ACES 2.0 (curva de tom do Daniele: cinza 18% → 10 nits no SDR, 14,5 nits em 1000) e do
+  OpenDRT: a curva age na luminância, o matiz não gira com a luz, a cor vai para o branco perto do pico e o que sai do
+  gamut é comprimido (nunca cortado). No SDR tem inversa exata: um still Rec.709 volta para a cena e entra no motor.
+- **Película por densidade**: cada camada vê um pouco das vizinhas, tem a própria curva característica (pé e ombro em
+  log) e as camadas conversam (efeito entre camadas); depois, cor como no filme subtrativo (cor forte mais densa,
+  saturação menor nas altas e sombras, verde oliva, azul petróleo), separação de tons com a pele recortada e uma
+  âncora que mantém o matiz da pele quando a exposição muda.
+- **Bases** em três grupos: Revela, **Película** (Negativo 250D, Negativo 500T, Positivo 50D, Reversível, Sem
+  branqueamento) e **Clássicos** (Laranja e petróleo, Anos 70, Nórdico), com nomes genéricos.
+- **O frame**: still já tratado (Rec.709) ou log de câmera (as mesmas do CST). **Analisar e corrigir** mede na cena:
+  exposição (60%, no máximo ±1,5 stop) e branco nos cones, só pelos tons quase neutros.
+- **Ajustes** com nome de gente: Luz (±2 stops), Contraste (em log), Cor, Temperatura e Tint (adaptação cromática),
+  Calor, Desbotar e Pele protegida. A intensidade dosa o look; a primária vale sempre.
+- **Saída**: LUT no tamanho do editor; **Pacote profissional** (.zip, num worker): LMT DWG/DI 65 e 33, CLF, LMT
+  ACEScct 65, LUT do monitor (câmera → Rec.709), LUT Rec.709 → Rec.709, a correção em ASC CDL (antes do look), a
+  receita, o controle de qualidade e um LEIA-ME com a ordem. Nomes no padrão da ARRI.
+- **Controle de qualidade** (`src/cor/qc.js`, `node scripts/qc-looks.mjs`): cinza neutro (ou o tom declarado), luz que
+  só sobe, sem degrau (medido em duas resoluções), pele estável de -2 a +2 stops, preto e branco no lugar, cor extrema
+  finita e LUT 65 tetraédrica igual à conta (ΔE Oklab ≤ 0,012). Os 13 looks passam; `test/motor.test.js` cobra.
+- **Folha de contato** para revisão (`node scripts/folha-de-contato.mjs <pasta>`): cada look nos frames de exemplo e
+  numa cartela (ColorChecker, rampa de cinza, rampas de cor), pelo caminho inteiro.
+- Grão, halation e bloom não entram: dependem dos vizinhos do pixel e nenhuma LUT carrega.
 
 ## Meus looks
 

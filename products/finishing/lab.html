@@ -58,6 +58,9 @@
           <span class="acao">Escolher ou soltar</span>
           <input id="arquivo-frame" type="file" accept="image/*" />
         </label>
+        <label class="campo-log entrada-lab" title="Still já tratado ou o log da câmera: o Lab leva o frame até a luz da cena do jeito certo"
+          ><span data-icone="cst"></span><select id="entrada" aria-label="O frame é"></select
+        ></label>
         <div class="exemplo">
           <button id="lab-exemplo" class="vidro" type="button"><span data-icone="imagem"></span> Usar um exemplo</button>
           <label class="vidro" id="abrir-receita" title="Uma receita .revela salva antes"
@@ -119,6 +122,15 @@
             </div>
           </div>
           <button id="baixar" class="vidro vidro--tinta grande" type="button"><span data-icone="baixar"></span> Baixar LUT</button>
+          <button
+            id="baixar-pacote"
+            class="vidro grande"
+            type="button"
+            title="Look em DaVinci Wide Gamut/Intermediate e ACEScct (65, .cube e CLF), LUT do monitor, LUT Rec.709, CDL, receita e controle de qualidade"
+          >
+            <span data-icone="pasta"></span> Pacote profissional
+          </button>
+          <p id="qc" class="qc" role="status" hidden></p>
           <div class="lab-acoes">
             <button id="salvar" class="vidro" type="button" title="Entra em Meus looks, na tela de LUT, neste navegador"><span data-icone="brilho"></span> Salvar em Meus looks</button>
             <button id="baixar-receita" class="vidro" type="button" title="Arquivo .revela: reabre aqui com a base e os ajustes"><span data-icone="copiar"></span> Baixar receita</button>

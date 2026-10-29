@@ -1395,6 +1395,27 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   grade com 6 looks → baixar `revela-zro-filmes-33.cube` → apagar). `products/finishing`: `npm test` 96/96.
 - Não validado: o `.cube` do look novo e de um "meu look" no Resolve, em vídeo.
 
+## Revela: motor de cor profissional (29/10/2026)
+
+- Pedido do titular: resultado de cinema/Netflix, com testes internos e melhoria constante. Pesquisa (Netflix Partner
+  Help Center, ACES 2.0, ARRI ALF4, RED IPP2, OpenDRT, Cullen Kelly, Yedlin, Dehancer, Film Look Creator): o salto
+  é de arquitetura. O motor antigo aplicava o look sobre Rec.709 de tela (leitoso, preso ao SDR e à câmera).
+- Agora: look na luz da cena (LMT DWG/DI → DWG/DI), tela separada (curva de tom do ACES 2.0 com inversa exata no SDR,
+  gamut comprimido, HDR PQ), película por densidade e pacote com LMT 65 (.cube e CLF), ACEScct, LUT de monitor,
+  Rec.709, CDL, receita, controle de qualidade e LEIA-ME.
+- Controle de qualidade com limites (`src/cor/qc.js`). Primeira rodada: os 13 looks reprovaram (degrau perto do
+  preto, cor fora do gamut virando negativa, Oklab instável fora do lócus espectral, pele variando até 34° com a
+  exposição, LUT 65 errando até ΔE 0,16). Correções: log com base de filme, compressão de gamut no LMT, contas de cor
+  dentro do Rec.2020, pele recortada da separação de tons e com âncora de matiz, transições suaves perto do cinza.
+  Hoje os 13 passam; o pior caso de pele é 6,6° e o de LUT é 0,011.
+- Revisão visual (folha de contato nos três frames de exemplo e na cartela): sem banding nem degrau nas rampas de
+  matiz; ajustes de colorista no 250D e no 500T (estavam lavados) e no branco do Laranja e petróleo e do Dourado.
+- Testes: `test/motor.test.js` (tela, ida e volta, película neutra, os 13 looks no controle de qualidade, um look
+  quebrado reprovado, tetraédrica, pacote, CLF, CDL, zip) e `test/lab.test.js` reescrito; Chromium do Lab baixa o
+  pacote. `products/finishing`: `npm test` 163/163.
+- Não validado: as LUTs num Resolve real (DWG/DI e ACEScct), o CLF num leitor OCIO, a LUT do monitor num monitor de
+  set, material log real de cada câmera e telas HDR.
+
 ## Revela Lab (29/10/2026)
 
 - Pedido do titular depois do estudo do Shift (plugin de grade para quem não é colorista): um laboratório para criar o

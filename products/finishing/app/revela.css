@@ -2816,3 +2816,23 @@ html:not(.menu-aberto):not(.menu-gaveta) main.tela--z {
     transition: none;
   }
 }
+
+/* Lab · de onde vem o frame e o selo do controle de qualidade do pacote */
+.entrada-lab {
+  max-width: 360px;
+  width: 100%;
+}
+.qc {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgb(48 209 88 / 0.12);
+  color: var(--texto);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  cursor: help;
+}
+.qc.reprovado {
+  background: rgb(255 69 58 / 0.12);
+}
