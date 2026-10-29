@@ -16,7 +16,8 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
 3. O projeto do Maestro liga-se ao projeto do HUB **sozinho** ao nascer (idempotente; `link_status` pendente tenta de
    novo; o Maestro funciona sem o HUB).
 4. Peças ficam em pastas do Google Drive da organização via SOBEDESCE (`card_media` guarda só id e pasta); nada de
-   Storage próprio. WhatsApp: `wa.me` com texto pronto, sem API. Plano avulso: não mexa em `zro.plan_products`.
+   Storage próprio. WhatsApp: `wa.me` com texto pronto, sem API. Plano avulso: não mexa em `zro.plan_products` (exceção do
+   titular, 29/10/2026: o adicional da marca própria e o Pro v2, migração `0025` do HUB, em rascunho).
 5. Quadro: as 8 colunas do método (`src/lib/quadro/metodo.ts`); "Com o cliente" = **Em aprovação**, "Publicado" =
    **Entregue**. O método não muda.
 6. Logo: o gesto da pauta em latão (`public/brand/maestro-symbol*.svg`), colorido ao lado da marca flat da Absolute
@@ -100,7 +101,28 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   512 KB; sai por `GET /api/marca/<org>/<sha>` (porta `maestro.marca_logo`, cache imutável). A cor passa por contraste
   de 3:1 no papel e vira `--acento` (filete e ponto, nunca texto) no timbrado e em `/a`, `/p` e `/o`, para todos os
   planos. Nome, CNPJ, contato e endereço saíram de Ajustes → Empresa (a 0011 copiou uma vez); `lerEmpresa` junta os
-  dois. O app inteiro com a marca (white-label) não existe ainda.
+  dois.
+- **Maestro com a sua marca** (white-label, plano v2 §8, fase 20; titular 29/10/2026, `drizzle/0020`,
+  `src/lib/marca/propria.ts`): adicional R$ 89,90/mês ou R$ 899/ano, incluído no Pro (planos do HUB na migração `0025`,
+  em **rascunho** até o titular revisar os preços). O sinal chega na claim `zro_features` (`maestro.marca_propria`) no
+  login e no `/eu` e fica em `organizations.zro_features`; **`temMarcaPropria()`** (`acesso.ts`: acesso + sinal) é o
+  único ponto de decisão. Com o sinal: logo ou nome da produtora na cápsula e no topo, a cor como `--acento` no claro e
+  no escuro (`acentosDaMarca` em `cor.ts`: 3:1 nos dois; no escuro clareia até passar; sem cor, latão), aba "Página ·
+  Produtora · Maestro" e favicon do logo, "Powered by Absolute ZRO" discreto; `/a`, `/p` e `/o` sem a marca do Maestro
+  (`marca_publica.propria`). Sem o sinal, Ajustes → Marca mostra o cartão "Disponível no Pro ou como adicional" com link
+  para os planos do HUB (nada de compra falsa). Domínio próprio: depois, com autorização.
+- **Contrato** (estudo MakersHub §4 item 4; titular 29/10/2026; `drizzle/0020`, `src/lib/contrato`): modelo base de
+  "Contrato de prestação de serviços audiovisuais" em `modelo.ts` (puro: `{{variáveis}}`, números em `CAMPOS_CONFIG`,
+  `desenharContrato` escapa tudo; CPF/CNPJ com dígito). **"Modelo base; revise com um advogado antes de usar"** sempre
+  na tela; não dizemos mais que isso. Ajustes → Contrato (admin escreve, gestão lê): chips, prévia ao vivo, versões só de
+  inclusão (`contrato_modelos`, imutável) e restaurar. "Enviar contrato junto" por orçamento (`orcamentos.contrato`,
+  admin e gestão). Em `/o` o cliente lê o contrato preenchido, informa CPF/CNPJ e endereço, escolhe o portfólio e marca
+  "Li e aceito"; o servidor preenche o mesmo modelo e a porta `orcamento_link_aceitar_contrato` aceita o orçamento e
+  grava `maestro.contratos` (HTML, sha256 conferido por check, hora, IP em HMAC, navegador, nome, documento, endereço)
+  numa transação; o gatilho `orcamentos_exige_contrato` barra aceitar sem o contrato. Registro imutável (gatilho
+  `registro_imutavel`: só a linha demo sai), só admin e gestão leem, política `_cliente`. **Aceite eletrônico, não
+  ICP-Brasil** (`AVISO_ACEITE`). `/app/contratos/<id>` mostra o registro com o hash conferido e vira PDF; links no
+  orçamento, projeto e cliente. A demonstração aceita um orçamento com contrato (CNPJ de exemplo da Receita).
 - **Pedido público e aceite** (plano v2 §6.2–§6.3, fase 14, `drizzle/0012`): `maestro.links_publicos` (tipos `pedido`
   e `orcamento`, token só como sha256 + `token_enc`, revogação, validade, um ativo por organização/orçamento; só admin
   e gestão) e `maestro.pedidos`. Quem não tem conta passa só pela porta estreita (`src/lib/publico/porta.ts`, funções
@@ -200,15 +222,17 @@ duas organizações em toda tabela da produtora (`produtora-rls.test.mts`), logo
 kit do freela, aluguel na escala e sincronização desligada (`freela-equipamentos.test.mts`), funil e retornos
 (`funil.test.mts`), números (`numeros.test.mts`), importar planilha (`importar.test.mts`), agenda .ics
 (`agenda-ics.test.mts`), acesso por cliente em toda tabela ligada a cliente (`acesso-cliente.test.mts`), as tabelas
-novas com duas organizações (`negocio-rls.test.mts`) e o resumo para a Z (`resumo-z.test.mts`), a ponte do Drive, Arquivos, compartilhar/recolher e o agendamento
+novas com duas organizações (`negocio-rls.test.mts`) e o resumo para a Z (`resumo-z.test.mts`), o contrato (preenchimento, versões, aceite com hash, imutável;
+`contrato.test.mts`), a marca própria (sinal ligado e desligado, contraste, duas organizações; `marca-propria.test.mts`), a ponte do Drive, Arquivos, compartilhar/recolher e o agendamento
 (`drive-sobedesce.test.mts`). E2E: `npm run build && npm run test:e2e`
 (Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir movimento, navegação, a aprovação
 inteira (`aprovacao.spec.ts`, mp4 local e YouTube/Vimeo falsos em `e2e/falsos`) e a produtora com a demonstração
 (`produtora.spec.ts`, organização própria criada em `e2e/preparar.ts`) e o ciclo comercial (`comercial.spec.ts`: pedido
 público → Pedidos → gerar orçamento → link → aceite → projeto → Hoje, organização própria) e o visual
 (`visual.spec.ts`: contraste AA em cada hora e no escuro, luz parada com reduzir movimento) e o negócio
-(`negocio.spec.ts`: funil com Retornar hoje, importar, .ics e acesso por cliente, organização própria) e o Drive
-(`arquivos.spec.ts`: cadeado sem o SOBEDESCE, navegador, prévia com timecode, estrutura do projeto, Drive tocando na
+(`negocio.spec.ts`: funil com Retornar hoje, importar, .ics e acesso por cliente, organização própria) e o contrato
+(`contrato.spec.ts`: Ajustes → Contrato, enviar junto, o cliente aceita com CPF, o registro para a equipe, a marca
+própria ligada e o cartão do adicional; `SHOTS_DIR` guarda `ct-*`/`wl-*`) e o Drive (`arquivos.spec.ts`: cadeado sem o SOBEDESCE, navegador, prévia com timecode, estrutura do projeto, Drive tocando na
 revisão e Escolher no Drive; `SHOTS_DIR` guarda as capturas) e nada cortado no celular (`sem-corte.spec.ts` com o
 detector `e2e/corte.ts`: todas as telas a 375 e 393 px, claro e escuro, Chromium e WebKit; tela nova entra na lista;
 faixa que rola de lado só com `data-rolagem`; regras de celular em `src/app/celular.css`). Unitário da hora em

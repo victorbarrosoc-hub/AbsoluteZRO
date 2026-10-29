@@ -399,11 +399,28 @@ Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   `zro-pedido+jwt` (`aud` `maestro-web`, ação `maestro.resumo`, 60 s, `jti` novo); fonte e hora em toda resposta,
   dinheiro só quando o Maestro manda (administração e gestão); auditoria `ia.maestro.leitura`. No Maestro, a lista
   `ACOES_ABERTAS` aceita só `maestro.resumo`. Sem variável nova obrigatória.
-- ⬜ Maestro, do mesmo estudo e à espera do titular: contrato por modelo (item 4); a Z **escrevendo** no Maestro (criar
+- ✅ Maestro, contrato junto com o orçamento (29/10/2026; estudo MakersHub item 4, "Escreva" do titular): modelo base
+  de "Contrato de prestação de serviços audiovisuais" em português com `{{variáveis}}` e todos os números configuráveis
+  (revisões, multas, prazos, licença, foro), Ajustes → Contrato com chips, prévia ao vivo, versões só de inclusão e
+  restaurar; "Enviar contrato junto" por orçamento; em `/o` o cliente informa CPF/CNPJ e endereço, escolhe o portfólio e
+  aceita, e fica o registro imutável (HTML + sha256 conferido pelo banco, hora, IP em HMAC, navegador) com PDF pelo
+  navegador para os dois lados; links no orçamento, projeto e cliente; demonstração com um aceito. Migração `0020` do
+  Maestro. "Modelo base; revise com um advogado" e "aceite eletrônico, não ICP-Brasil" na tela. Falta: revisão
+  jurídica do texto pelo titular; assinatura com certificado (paga) só com nova decisão.
+- ✅ Maestro com a sua marca, fase 20 (29/10/2026; "pode aplicar" do titular): o logo no timbrado e nas páginas do
+  cliente segue grátis; o app inteiro com o logo e a cor da produtora e só "Powered by Absolute ZRO" é o adicional
+  R$ 89,90/mês ou R$ 899/ano, incluído no Pro. HUB: migração `0025` (planos `maestro-marca-propria`/`-anual` e Pro v2,
+  **em rascunho** até o titular revisar os preços; o adicional dá só o sinal, nunca a ferramenta), claim nova
+  `zro_features` (só os sinais do produto do app, com o gate). Maestro: sinal em `organizations.zro_features`, shell com
+  a marca, acento com 3:1 no claro e no escuro, páginas do cliente sem a marca do Maestro, cartão "Disponível no Pro ou
+  como adicional" com link para os planos. Falta: o titular revisar e publicar os planos no console (e conceder o sinal à
+  organização dele para testar: Concessão, produto Maestro, limite `maestro.marca_propria` = 1); domínio próprio
+  depois, com autorização.
+- ⬜ Maestro, do mesmo estudo e à espera do titular: a Z **escrevendo** no Maestro (criar
   pedido, despesa, marcar contato, sempre com a ação exata e o "sim"; cota e plano da Z); sincronia de duas vias com o Google Agenda (OAuth); eventos
   `maestro.pedido.ganho`, `maestro.orcamento.aceito` e `maestro.projeto.criado` no HUB (desenho no mapa).
 - ⬜ Maestro v2, depois: kits e modelos de projeto, etiquetas QR e manutenções do inventário, PDF gerado no servidor
-  (hoje é a impressão do navegador), white-label no app inteiro (plano e preço pelo titular), retenção configurável dos
+  (hoje é a impressão do navegador), domínio próprio da produtora, retenção configurável dos
   pedidos, ligar o inventário do Carro do Freela quando ele tiver banco (endpoint assinado no Maestro e a rota sai de
   `DISABLED_ROUTES`).
 - ✅ Maestro, nada cortado no iPhone (29/10/2026; relato do titular no lote de Aprovações): detector de corte

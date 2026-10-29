@@ -1969,3 +1969,38 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
   no select só valem quando algo transbordava).
 - Não validado: Safari num iPhone de verdade (WebKit do Playwright com emulação) e o iframe do Drive sem a chave (a
   barra dele é do Google).
+
+## Maestro: contrato junto com o orçamento e "Maestro com a sua marca" (29/10/2026)
+
+- HUB: migração `0025` (adicional `maestro-marca-propria` R$ 89,90/mês e `-anual` R$ 899/ano e o Pro v2 com o sinal,
+  tudo em rascunho). `packages/billing/test/stripe.test.ts` (+2): preços, rascunho fora da venda, Pro v2 com as 7
+  ferramentas e os créditos da v1 mais o sinal; o adicional sozinho não abre o Maestro (`checkEntitlement`
+  `entitlement_required`, `productAccessFor` sem contrato), o sinal só sai com o Maestro aberto para a pessoa e não
+  vaza para outra organização. `tests/integration/oidc.test.ts` (+1): `zro_features` no id_token, no access token e no
+  userinfo só para o cliente do Maestro; outro app recebe lista vazia; organização sem o sinal, vazia. Sinal fora dos
+  medidores (`isFeatureFlag`) e da vitrine. Raiz: `lint`, `format:check`, `typecheck` ok, `npm test` **260/260** (33
+  arquivos), `apps/hub-web` build ok, `node scripts/scan-secrets.mjs` sem segredo.
+- Maestro: migração `0020`. `tests/contrato.test.mts` (14): preenchimento e escape das variáveis, listas, o que falta,
+  modelo base só com variáveis conhecidas, números com limites, CPF/CNPJ com dígito, foro pela sede, parcelas que andam
+  com o aceite atrasado; versões só de inclusão (admin salva, gestão lê, equipe e a outra organização não, igual não
+  cria versão, restaurar vira versão); versão imutável até para o dono do banco; aceite com contrato: o banco recusa a
+  função antiga, documento inválido, sem "Li e aceito", hash trocado e modelo velho; aceita uma vez com projeto,
+  parcelas e o registro (hash = sha256 do HTML, CPF formatado, endereço, total, sede, portfólio, IP em HMAC, navegador,
+  auditoria); repetir não duplica; a equipe com dinheiro lê e confere, equipe/leitura/outra organização não; registro não
+  muda nem se apaga (nem como admin), check do hash, contrato de orçamento aprovado não desliga; sem contrato, o aceite
+  de sempre. `tests/marca-propria.test.mts` (4): claim filtrada, `temMarcaPropria` (acesso + sinal; fechado é fechado),
+  acento com 3:1 no claro e no escuro e fallback, login → sinal na organização → releitura apaga; `marca_publica.propria`
+  só na organização com o sinal. `acesso-cliente.test.mts` (+1, política `contratos_cliente`), `demo.test.mts` (o
+  contrato de exemplo sai com a demonstração). `npm test` **321/321**; `lint`, `format:check`, `typecheck`, `build` ok.
+- E2E `e2e/contrato.spec.ts` (computador e iPhone): Ajustes → Contrato salva versão com a prévia ao vivo; "Enviar
+  contrato junto"; o cliente lê o contrato com a marca da produtora e o rodapé só "Powered by Absolute ZRO", preenche
+  CPF e endereço (o texto se completa ao digitar) e aceita; reabre e vê o registro com o hash; a equipe abre "Ver
+  contrato" (aceito · conferido) e o projeto lista o contrato; marca própria: logo na cápsula/topo, título com a
+  produtora, `--acento` com a cor dela, "Powered by"; outra organização sem o sinal vê o cartão do adicional com o link
+  para os planos. `sem-corte.spec.ts` ganhou Ajustes → Contrato e o contrato aceito. `test:e2e` inteiro: **67 passaram,
+  6 pulados, 3 caíram por disco cheio no ambiente (ENOSPC, Chromium travado)**; os 3 rodados de novo passaram (o
+  `negocio` do iPhone e o sem-corte do iPhone no Chromium a 375 escuro e 393 claro e escuro). WebKit (Safari) sem corte
+  nas 4 combinações.
+- Capturas: `scratchpad/maestro-v2/shots/ct-*.png` e `wl-*.png` (claro, escuro e iPhone).
+- Não validado: revisão jurídica do texto do contrato (é modelo base); planos publicados e cobrança do adicional
+  (rascunho até o titular); concessão do sinal à organização do titular em produção; domínio próprio (fora do escopo).
