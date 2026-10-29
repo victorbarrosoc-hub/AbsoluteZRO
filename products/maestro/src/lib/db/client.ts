@@ -13,7 +13,7 @@
 import { sql } from "drizzle-orm";
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { databaseUrl, normalizarUrl, PAPEL_APP } from "./config";
+import { databaseUrl, normalizarUrl, PAPEL_APP, urlDeExecucao } from "./config";
 import * as schema from "./schema";
 
 export type DB = PostgresJsDatabase<typeof schema>;
@@ -72,7 +72,7 @@ export function getBanco(): Banco {
   if (g.__maestroBanco) return g.__maestroBanco;
   const url = databaseUrl();
   if (!url) throw new Error("MAESTRO_DATABASE_URL não configurada. Veja .env.example.");
-  g.__maestroBanco = criarBanco(url, { max: Number(process.env.MAESTRO_DATABASE_POOL_MAX || (process.env.VERCEL ? 3 : 5)) });
+  g.__maestroBanco = criarBanco(urlDeExecucao(url), { max: Number(process.env.MAESTRO_DATABASE_POOL_MAX || (process.env.VERCEL ? 3 : 5)) });
   return g.__maestroBanco;
 }
 
