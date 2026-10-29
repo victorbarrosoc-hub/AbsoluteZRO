@@ -15,6 +15,31 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Página inicial no iPhone: topo por cima de tudo e grade de ícones (29/10/2026)
+
+Relato do titular (Safari do iPhone, tema claro): texto das seções aparecia entre a barra de status e a cápsula do topo e
+lia através dela; selos "Em desenvolvimento" cortados e nomes desalinhados na grade; buraco depois de "Ferramentas que
+se conectam". Reproduzido no build de produção (WebKit e Chromium, 393 px): a cápsula era vidro com ~14% de
+transparência e nada cobria a faixa acima dela; o selo longo empurrava o nome de um ícone e o cartão esticava as linhas.
+
+Agora: `viewport-fit=cover` só no site, cápsula abaixo da safe area e faixa da cor da página atrás dela (some em
+degradê); vidro da cápsula quase opaco; `.public-main` isolado (nada da página sobe acima do topo); grade como a Tela de
+Início (4 por linha, 3 quando fecha a conta), nome alinhado pelo topo e "Em breve" em cinza; ícones fechados sem
+esmaecer; régua centrada e sem a margem extra. Maestro e Relay ("Em breve", pelo gate) com ícone e linha; o Relay entra
+sozinho quando a 0031 chegar (conferido aplicando a 0031 num banco local: 3×3 no celular, 5+4 no computador).
+
+| Verificação                             | Resultado                                                                                              |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Lint, formatação, tipos, `scan-secrets` | ok                                                                                                     |
+| `npm test` (raiz, Postgres real)        | **340/340** em 38 arquivos                                                                             |
+| `npm run build` (HUB)                   | ok                                                                                                     |
+| `npm run test:e2e` (HUB)                | **43/43**; novo `home-celular.spec.ts` (WebKit e Chromium, 375/393/430 px), que falha no código antigo |
+
+`home-celular.spec.ts` rola a página inteira e compara a faixa acima da cápsula e o meio dela com e sem o conteúdo da
+página (nada pode aparecer), confere nomes alinhados e selos inteiros na grade, o espaço até "Em números" e corte ou
+rolagem de lado em todas as seções. A foto do app para computador (`produto-hub-*.webp`) já mostra o catálogo atual;
+quando a 0031 entrar, regerar com `scripts/marca/aparelhos/capturar-hub.ts`. Falta conferir num iPhone de verdade.
+
 ## Início sem piscar cinza nem pular (29/10/2026)
 
 Vídeo do titular (Mac, absolutezro.com, recarregando o Início): 12 quadros (~200 ms) só com o esqueleto genérico de
