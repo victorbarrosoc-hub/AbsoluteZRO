@@ -15,7 +15,10 @@ const DB = process.env.E2E_DATABASE_URL || 'postgres://postgres:postgres@localho
 
 type Amostra = { esqMax: number; quadros: number; cls: number; hero: number[]; quick: number[] }
 
-/** Amostra cada quadro: a maior opacidade de esqueleto pintado e onde o palco e os atalhos de verdade estão. */
+/**
+ * Amostra cada quadro (e a cada 10 ms: o WebKit headless do CI chega a dar só 3 quadros por segundo) a maior opacidade
+ * de esqueleto pintado e onde o palco e os atalhos de verdade estão.
+ */
 function sonda() {
   const w = window as unknown as { __a: Amostra }
   w.__a = { esqMax: 0, quadros: 0, cls: 0, hero: [], quick: [] }
@@ -32,7 +35,7 @@ function sonda() {
     const el = [...document.querySelectorAll(sel)].find((e) => !e.closest('[data-esqueleto]') && e.getClientRects().length)
     return el ? Math.round(el.getBoundingClientRect().top + scrollY) : null
   }
-  const passo = () => {
+  const amostrar = () => {
     const a = w.__a
     a.quadros++
     for (const e of document.querySelectorAll<HTMLElement>('[data-esqueleto]')) {
@@ -46,9 +49,13 @@ function sonda() {
       const y = topo(sel)
       if (y != null && a[k].at(-1) !== y) a[k].push(y)
     }
+  }
+  const passo = () => {
+    amostrar()
     if (performance.now() - t0 < 3000) requestAnimationFrame(passo)
   }
   requestAnimationFrame(passo)
+  const relogio = setInterval(() => (performance.now() - t0 < 3000 ? amostrar() : clearInterval(relogio)), 10)
 }
 
 async function lerAmostra(page: Page): Promise<Amostra> {
@@ -140,12 +147,15 @@ async function comPaineisPresos(fn: (soltar: () => void) => Promise<void>) {
 
 type Lento = { linha: [number, number][]; copias: number; meio: number }
 
-/** Idade e opacidade do esqueleto a cada quadro, e as cópias que fazem a dissolvência (fim do body). */
+/**
+ * Idade e opacidade do esqueleto a cada quadro (e a cada 10 ms, como em `sonda`), e as cópias que fazem a dissolvência
+ * (fim do body), contadas quando entram: vivem 260 ms, menos que o intervalo entre quadros do WebKit headless do CI.
+ */
 function sondaLenta() {
   const w = window as unknown as { __l: Lento }
   w.__l = { linha: [], copias: 0, meio: 0 }
   let nasceu = 0
-  const passo = () => {
+  const amostrar = () => {
     const e = document.querySelector<HTMLElement>('#conteudo [data-esqueleto]')
     if (e) {
       nasceu ||= performance.now()
@@ -153,10 +163,18 @@ function sondaLenta() {
       w.__l.linha.push([Math.round(performance.now() - nasceu), op])
       if (op > 0.05 && op < 0.95) w.__l.meio++
     }
-    if (document.querySelector('body > [aria-hidden="true"].inicio-paineis')) w.__l.copias++
+  }
+  const passo = () => {
+    amostrar()
     requestAnimationFrame(passo)
   }
   requestAnimationFrame(passo)
+  setInterval(amostrar, 10)
+  new MutationObserver((ms) => {
+    for (const m of ms)
+      for (const n of m.addedNodes)
+        if (n instanceof HTMLElement && n.parentNode === document.body && n.matches('[aria-hidden="true"].inicio-paineis')) w.__l.copias++
+  }).observe(document, { childList: true, subtree: true })
 }
 
 const caixas = (page: Page, raiz: string) =>

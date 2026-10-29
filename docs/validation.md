@@ -38,7 +38,12 @@ Animations, sem mexer em atributo); "reduzir movimento" troca seco.
 | Banco rápido, Chromium e WebKit               | recarregar, menu e logo: nenhum quadro com esqueleto à vista; palco e atalhos nascem no lugar final; CLS 0 |
 | Banco preso (cotas travadas), Chromium/WebKit | topo chega antes; esqueleto invisível até 300 ms; números, painéis e apps no mesmo lugar do esqueleto      |
 | Reduzir movimento                             | esqueleto aparece seco aos 320 ms, sem cópia nem animação no conteúdo                                      |
-| Proxy de 12 ms (como o vídeo), depois         | Chromium: 0 quadros com esqueleto; WebKit (mais lento aqui): 0–1 quadro, já com a dissolvência             |
+
+CI com WebKit (29/10/2026, run 40943896316): o WebKit headless do runner dá ~3 quadros por segundo, e as sondas, só em
+`requestAnimationFrame`, contavam 3 quadros e perdiam a cópia que dissolve (vive 260 ms). Agora as sondas também amostram
+a cada 10 ms e a cópia é contada quando entra no body (MutationObserver). Reproduzido aqui atrasando os quadros das sondas
+para 400 ms: antes 2 falhas iguais às do CI; depois `esqueleto.spec.ts` 20/20 (4 rodadas sem atraso).
+| Proxy de 12 ms (como o vídeo), depois | Chromium: 0 quadros com esqueleto; WebKit (mais lento aqui): 0–1 quadro, já com a dissolvência |
 
 Não conferido: o Safari do titular em produção (precisa publicar).
 
