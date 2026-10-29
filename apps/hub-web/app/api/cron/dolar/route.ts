@@ -11,7 +11,8 @@ const sem = { 'Cache-Control': 'no-store' }
  * GET /api/cron/dolar: o agendamento da Vercel (vercel.json, uma vez por dia, depois da PTAX das 13 h) busca o dólar
  * do Banco Central para os Custos (migração 0030). Só com `Authorization: Bearer <CRON_SECRET>`; sem o segredo
  * configurado, 503 (nunca aberto). Falha do Banco Central = 502, e o último valor bom continua valendo.
- * CRON_SECRET em produção no projeto absolutezro desde 29/10/2026.
+ * CRON_SECRET em produção no projeto absolutezro desde 29/10/2026, sem espaço nem quebra de linha (com eles a Vercel
+ * recusa o build inteiro: INVALID_CRON_SECRET).
  */
 export async function GET(req: Request): Promise<Response> {
   const segredo = process.env.CRON_SECRET?.trim()
