@@ -66,9 +66,12 @@ jobs:
           test "$code" -eq 0
           grep -q '^SMOKE OK$' "$AIEDIT_SMOKE_SAIDA"
 
+  # Instaladores só pelo botão "Run workflow" (decisão do titular, 29/10/2026: AEON fechado, sem gerar instalador a
+  # cada push). Push e PR rodam só os testes.
   app:
     name: App (${{ matrix.label }})
     needs: testes
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
     permissions:
