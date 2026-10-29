@@ -299,6 +299,26 @@ export async function novaVersao(ctx: Contexto, cardId: string, link: string, ti
   }
 }
 
+/** Uma versão como a ficha do card mostra: número, nome, fonte e o link para abrir. */
+export type VersaoDoCard = { id: string; n: number; titulo: string | null; fonte: VersaoVista["fonte"]; url: string; em: string };
+
+/**
+ * As versões vivas de um card, da mais nova para a mais velha (a ficha do Quadro). Como a pessoa: o RLS e o acesso por
+ * cliente valem; card de outra organização ou fora do alcance dá lista vazia. São as mesmas linhas que o lote mostra.
+ */
+export async function versoesDoCard(ctx: Contexto, cardId: string): Promise<VersaoDoCard[]> {
+  if (!ID_CARD.test(cardId)) return [];
+  return getBanco().asUser(ctx, async (tx) => {
+    const r = (await tx.execute(sql`
+      select v.id, v.n, v.titulo, v.fonte, v.url, v.criado_em as em
+        from maestro.versoes v
+        join maestro.cards k on k.org_id = v.org_id and k.id = v.card_id and k.apagado_em is null
+       where v.card_id = ${cardId} and v.apagado_em is null
+       order by v.n desc limit 50`)) as unknown as (Omit<VersaoDoCard, "em"> & { em: Date | string })[];
+    return r.map((v) => ({ ...v, em: v.em instanceof Date ? v.em.toISOString() : String(v.em) }));
+  });
+}
+
 export async function apagarVersao(ctx: Contexto, versaoId: string): Promise<Res> {
   if (!UUID.test(versaoId)) return falha("formato", "Versão inválida.");
   try {

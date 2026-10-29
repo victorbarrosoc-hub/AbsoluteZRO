@@ -1,0 +1,154 @@
+/* Versões na ficha do card (src/components/quadro/versoes.tsx): a lista v1, v2… e o campo para colar o link. */
+
+.vc {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.vc__titulo {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+.vc__lista {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border-radius: 14px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.vc__versao {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  color: var(--text-strong);
+  text-decoration: none;
+  transition: background 0.2s var(--ease);
+}
+.vc__versao:hover {
+  background: var(--hover);
+}
+.vc__versao:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus);
+}
+.vc__n {
+  flex: none;
+  min-width: 2.2em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.vc__icone,
+.vc__abrir {
+  flex: none;
+  color: var(--text-faint);
+}
+.vc__nome {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.92rem;
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.vc__dia {
+  flex: none;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
+}
+.vc__vazio {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-faint);
+}
+
+.vc__colar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 5px 5px 5px 12px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text-faint);
+  transition: box-shadow 0.2s var(--ease);
+}
+.vc__colar:focus-within {
+  box-shadow:
+    inset 0 0 0 1px var(--line-strong),
+    0 0 0 2px var(--focus);
+}
+.vc__colar svg {
+  flex: none;
+}
+.vc__colar input {
+  flex: 1;
+  min-width: 0;
+  min-height: 34px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--text-strong);
+  outline: none;
+}
+.vc__colar input::placeholder {
+  color: var(--text-faint);
+}
+.vc__colar .glass-btn {
+  flex: none;
+  white-space: nowrap;
+}
+/* a fonte reconhecida: chip tingido + ponto, texto grafite/branco */
+.vc__fonte {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--st-ok) var(--chip-mix), var(--chip-base));
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-strong);
+  white-space: nowrap;
+}
+.vc__fonte i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--st-ok);
+}
+.vc__erro {
+  margin: 0;
+  padding: 0 6px;
+  font-size: 0.84rem;
+  color: var(--danger-text);
+}
+
+@media (max-width: 600px) {
+  /* 16 px: o Safari do iPhone não dá zoom ao focar */
+  .vc__colar input {
+    font-size: 16px;
+  }
+  /* no celular a fonte reconhecida sai da linha (o botão e o link precisam do espaço) */
+  .vc__colar .vc__fonte {
+    display: none;
+  }
+}

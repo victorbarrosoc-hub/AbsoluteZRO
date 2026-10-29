@@ -1970,6 +1970,21 @@ Anotar por aparelho: sistema, tamanho do arquivo, tempo, destino e o que falhou.
 - Não validado: Safari num iPhone de verdade (WebKit do Playwright com emulação) e o iframe do Drive sem a chave (a
   barra dele é do Google).
 
+## Maestro: versão colada na ficha do card (29/10/2026)
+
+- `tests/versoes-card.test.mts` (7): colada no card aparece na ficha (mais nova primeiro) e no lote que já tinha o card
+  (a volta sobe); lote criado depois começa na versão do card; link `http://` e pasta do Drive recusados com a mesma
+  mensagem do lote; leitura lê e não cola (`sem_permissao`); duas organizações; equipe com acesso restrito a outro
+  cliente não vê nem cola; id inválido não chega ao banco. `npm test` **330/330** (33 arquivos).
+- E2E `e2e/versao-card.spec.ts` (computador e iPhone): cola YouTube com Enter (a ficha não envia), pasta do Drive dá o
+  erro do lote e desliga "Adicionar", mp4 por "Adicionar" vira v2; o lote criado depois traz v2 e v1 com a v2 na mesa; a
+  versão colada no lote (Vimeo) aparece na ficha. `sem-corte.spec.ts` ganhou a ficha com Versões e com o erro (375 e
+  393 px, claro e escuro, Chromium e WebKit). `test:e2e` inteiro: **72 passaram, 6 pulados**. `lint`, `format:check`,
+  `typecheck`, `build` ok; `node scripts/scan-secrets.mjs` sem segredo.
+- Capturas: `scratchpad/maestro-versao-card/ficha-versoes-{desktop,phone}-{light,dark}.png`.
+- Não validado: Safari num iPhone de verdade; Drive real (a versão do Drive colada na ficha usa o mesmo
+  `compartilharVersaoSeComLink` do lote, coberto pelos testes do SOBEDESCE).
+
 ## Maestro: contrato junto com o orçamento e "Maestro com a sua marca" (29/10/2026)
 
 - HUB: migração `0025` (adicional `maestro-marca-propria` R$ 89,90/mês e `-anual` R$ 899/ano e o Pro v2 com o sinal,

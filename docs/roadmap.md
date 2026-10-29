@@ -423,6 +423,10 @@ Atualizado em 28/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   (hoje é a impressão do navegador), domínio próprio da produtora, retenção configurável dos
   pedidos, ligar o inventário do Carro do Freela quando ele tiver banco (endpoint assinado no Maestro e a rota sai de
   `DISABLED_ROUTES`).
+- ✅ Maestro, versão colada na ficha do card (29/10/2026, pedido do titular): o bloco "Versões" abaixo do Briefing
+  lista v1, v2… (fonte e link para abrir) e cola o próximo link (Enter ou "Adicionar") pelo mesmo caminho do lote
+  (`useNovaVersao` → `novaVersaoAcao` → `maestro.versao_criar`; mesmas fontes, mensagens e papéis; leitura vê sem o
+  campo). O lote que tem o card já mostra a versão. Apagar versão continua sem tela (nem no lote).
 - ✅ Maestro, nada cortado no iPhone (29/10/2026; relato do titular no lote de Aprovações): detector de corte
   (`e2e/corte.ts`) e `e2e/sem-corte.spec.ts` em todas as telas a 375 e 393 px, claro e escuro, Chromium e WebKit
   (Safari); faixa com rolagem de lado só com `data-rolagem` e ponta esmaecida enquanto há mais; no lote, CSV/EDL/Fechar
