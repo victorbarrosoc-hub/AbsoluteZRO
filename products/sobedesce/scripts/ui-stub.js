@@ -16,6 +16,8 @@
 //   STUB_PLATFORM=darwin  plataforma informada à interface (darwin | win32 | linux)
 //   STUB_VERSAO=42        aviso de versão nova: o site tem o build 42 e este app é o anterior (sem: build 0, sem aviso)
 //   STUB_VERSAO_PRONTA=1  com STUB_DESKTOP=1: a versão nova já baixada e conferida ("Atualizar agora")
+//   STUB_ZRO=folha|faixa  conta antiga sem vínculo com a Absolute ZRO ("Agora sua conta é Absolute ZRO"): `folha` sem
+//                         transferências (a folha cobre a interface), `faixa` com as transferências andando
 //   STUB_DESKTOP=1        simula o app de desktop: injeta uma ponte falsa `window.sobedesce` (seletores nativos
 //                         devolvem caminhos da pasta de demonstração, notify/setProgress/reveal só registram no
 //                         console, openExternal da tela de login conclui o OAuth sozinho depois de 2,5 s)
@@ -44,6 +46,8 @@ const DEMO_DIR = process.env.STUB_DEMO_DIR ? path.resolve(process.env.STUB_DEMO_
 const PLATFORM = process.env.STUB_PLATFORM || 'darwin'
 const DESKTOP = process.env.STUB_DESKTOP === '1'
 const VERSAO = Number(process.env.STUB_VERSAO) || 0
+const ZRO = ['folha', 'faixa'].includes(process.env.STUB_ZRO) ? process.env.STUB_ZRO : ''
+let zroEsperando = false
 let versaoDispensada = 0
 
 const KB = 1e3
@@ -425,7 +429,7 @@ function segDone(segs) {
 }
 
 function buildTransfers() {
-  if (FRESH) return
+  if (FRESH || ZRO === 'folha') return
   const t0 = now()
   const dl = state.settings.downloadDir
   // Lote 1: downloads de brutos (dois rodando com segmentos, alguns na fila, dois concluídos)
@@ -781,6 +785,23 @@ function snapshot() {
     transfers: [...transfers.values()].map(publicTransfer),
     batches,
     stats: stats(),
+    ...(ZRO ? { cloud: stubCloud() } : {}),
+  }
+}
+
+/** Conta SOBEDESCE neste computador, ainda sem vínculo com a Absolute ZRO (STUB_ZRO). */
+function stubCloud() {
+  return {
+    conectado: true,
+    site: 'https://sobedesce.com',
+    contaUrl: 'https://sobedesce.com/conta',
+    usuario: { id: 'u_victor', email: 'victor@exemplo.com', nome: 'Victor' },
+    contas: [{ id: 'nuvem:g1', email: 'victor@exemplo.com', name: 'Victor', photoUrl: null, addedAt: null, status: 'ok', source: 'nuvem' }],
+    login: { estado: 'nenhum' },
+    atualizadoEm: now(),
+    erro: null,
+    aviso: null,
+    zro: { ligada: false, pedir: true, esperando: zroEsperando },
   }
 }
 
@@ -1262,6 +1283,10 @@ async function route(req, res, url) {
   }
 
   if (method === 'GET' && pathname === '/api/state') return { ...snapshot() }
+  if (method === 'POST' && pathname === '/api/cloud/zro/ligar' && ZRO) {
+    zroEsperando = true
+    return { url: 'https://sobedesce.com/api/zro/entrar?modo=vincular&volta=%2Fconta', cloud: stubCloud() }
+  }
 
   if (method === 'GET' && pathname === '/api/versao') return { versao: versaoStatus() }
   if (method === 'POST' && pathname === '/api/versao/verificar') return { versao: versaoStatus() }

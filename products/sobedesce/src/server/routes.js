@@ -654,6 +654,17 @@ export function createApi(ctx) {
 
   route('POST', '/api/cloud/refresh', async () => ({ cloud: await cloud().refresh({ full: true }) }))
 
+  // "Agora sua conta é Absolute ZRO" (conta antiga sem vínculo): devolve o endereço do vincular de sempre no site; a
+  // interface abre no navegador do sistema e o motor confere a conta até ligar. A fila de transferências não para.
+  route('POST', '/api/cloud/zro/ligar', async () => {
+    try {
+      return await cloud().ligarZro()
+    } catch (err) {
+      if (err?.name === 'SobeDesceError') throw new HttpProblem(409, err.message)
+      throw err
+    }
+  })
+
   route('DELETE', '/api/accounts/:id', async ({ params }) => {
     account(params.id)
     return { accounts: await ctx.auth.removeAccount(params.id) }

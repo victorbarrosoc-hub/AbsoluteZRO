@@ -54,6 +54,8 @@ class MockCloud {
     // A Z (IA da Absolute ZRO): os pedidos repassados pelo motor a /api/zro/ia/*; `iaSemToken` = a conta não tem o token da Z.
     this.ia = [] // { metodo, caminho, autorizacao, corpo }
     this.iaSemToken = false
+    // Vínculo com a Absolute ZRO no /api/eu (web/src/lib/zro/ligar.ts). null = site antigo, sem o campo.
+    this.zro = null // { ligada, pedir, ligar }
     this.seq = 0
     this.server = null
     this.url = null
@@ -296,7 +298,7 @@ class MockCloud {
 
     if (method === 'GET' && p === '/api/eu') {
       this.stats.eu++
-      return this.#send(res, 200, { usuario: { ...this.user }, contas: this.contas.map(c => this.#conta(c)) })
+      return this.#send(res, 200, { usuario: { ...this.user }, contas: this.contas.map(c => this.#conta(c)), ...(this.zro ? { zro: { ...this.zro } } : {}) })
     }
 
     if (method === 'GET' && p === '/api/drive/contas') {

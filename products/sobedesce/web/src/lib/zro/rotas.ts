@@ -12,7 +12,8 @@ import { comParametro } from "@/lib/google/rotas";
 import { stateConfere } from "@/lib/google/estado";
 import { ipDe, lerCookie, lugarDe, origemDoPedido, redirecionar, serializarCookie } from "@/lib/http";
 import { cookieSeguro } from "@/lib/site";
-import { retornoZro, zroConfigurado } from "./config";
+import { liberadoPelaZro } from "./acesso";
+import { conexoesZro, retornoZro, zroConfigurado } from "./config";
 import { criarContaComZro, donoDaContaZro, vincularZro } from "./contas";
 import { abrirEstadoZro, COOKIE_ZRO, DURACAO_ZRO_S, selarEstadoZro, type ModoZro } from "./estado";
 import { guardarTokensIa } from "./ia";
@@ -108,6 +109,9 @@ export async function callback(req: Request, depois: Depois = depoisDaResposta):
     const r = await vincularZro(atual.usuario.id, quem);
     if (!r.ok) return falhar(r.erro);
     await guardarTokensIa(atual.usuario.id, ia);
+    // Ligou agora (conta antiga sem vínculo): segue para as Conexões da central (lib/zro/ligar.ts). Religar fica aqui.
+    // Sem a SOBEDESCE em zro_products, fica aqui também: a tela "Acesso ainda não liberado" explica o próximo passo.
+    if (r.novo && liberadoPelaZro(quem.produtos.join(" "))) return ir(conexoesZro());
     return ir(comParametro(volta, "zro", "ok"));
   }
 

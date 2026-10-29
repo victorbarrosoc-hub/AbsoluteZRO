@@ -55,7 +55,13 @@ describe("criar conta, entrar e sair", () => {
     assert.equal(res.status, 200);
     assert.equal(res.headers.get("cache-control"), "no-store");
     const corpo = await res.json();
-    assert.deepEqual(corpo, { usuario: { id: r.usuario.id, email: "victor@exemplo.com", nome: "Victor" }, contas: [], recursos: { referencias: true } });
+    // zro.pedir só com a Absolute ZRO configurada (aqui não está): conta antiga sem vínculo, nada a pedir.
+    assert.deepEqual(corpo, {
+      usuario: { id: r.usuario.id, email: "victor@exemplo.com", nome: "Victor" },
+      contas: [],
+      recursos: { referencias: true },
+      zro: { ligada: false, pedir: false, ligar: "/api/zro/entrar?modo=vincular&volta=%2Fconta" },
+    });
 
     const { db, schema } = amb.banco;
     const linhas = await db.select().from(schema.sessoes);

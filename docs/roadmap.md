@@ -524,6 +524,12 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   proxies."); a bandeja mostra "Gerando 3 proxies" e fechar o app pergunta antes. Lote terminado mostra "104 GB em 1 h
   12 min · 24,6 MB/s" (média pelo tempo transferindo), gravado em `queue.json` (`batch.stats`). Falta publicar o
   instalador (autorização do titular).
+- ✅ **SOBEDESCE: "Agora sua conta é Absolute ZRO" para contas antigas** (29/10/2026, decisão do titular): quem está
+  logado sem vínculo com a Absolute ZRO vê, uma vez, uma tela inteira com o símbolo e "Continuar com Absolute ZRO" (o
+  vincular de sempre) no site (`/conta`, `/z`), no app do celular e no do computador. Ninguém sai da conta: a API não
+  bloqueia, e no computador a folha só cobre a interface com o app parado (com transferência andando vira uma faixa
+  fixa e a fila continua). Ligou → Conexões da central (`ZRO_CONEXOES_URL`, padrão `${ZRO_ISSUER}/conexoes`). Falta o
+  titular autorizar o deploy do site e o instalador novo; a página de Conexões da central vem de outro deploy.
 - ⬜ Pastas dos quatro produtos fechados (`RELEASE=closed`, telas, `/api/zro/*` com 403, instaladores e Releases) —
   outros agentes, no mesmo branch.
 - ⛔ Em produção, só com autorização: inserir a conta do proprietário em `product_release_access` e rodar o

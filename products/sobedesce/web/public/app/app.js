@@ -10,7 +10,10 @@ import { Tabs } from './components/tabs.js'
 import { FolderSheet } from './components/folders.js'
 import { SettingsSheet } from './components/settings.js'
 import { ItemSheet } from './components/queue.js'
-import { SheetHost, Toasts } from './components/ui.js'
+import { SheetHost, Toasts, useEngine } from './components/ui.js'
+import { LigarZroFaixa, LigarZroTela } from './components/ligar-zro.js'
+import { filaAndando, modoLigar } from './lib/ligar-zro.js'
+import { useP2pAviso } from './components/p2p.js'
 import { engine } from './lib/uploader.js'
 import { startBridge } from './lib/stream.js'
 import { RefAtalhoSheet, RefDeleteSheet, RefItemSheet, RefLinkSheet, RefMenuSheet, RefNameSheet, RefSaveSheet } from './components/referencias.js'
@@ -146,11 +149,38 @@ function openComputer() {
   openSheet('computador')
 }
 
+// Volta do vincular da Absolute ZRO com erro (/app/?erro=zro_...): guarda o recado para a tela de ligar e limpa o endereço.
+function takeZroErro() {
+  if (LAN) return
+  const url = new URL(location.href)
+  const erro = url.searchParams.get('erro')
+  if (!erro?.startsWith('zro_')) return
+  setState({ zroErro: erro })
+  url.searchParams.delete('erro')
+  history.replaceState(null, '', url.pathname + url.search + url.hash)
+}
+takeZroErro()
+
+/**
+ * Conta antiga sem vínculo com a Absolute ZRO (lib/ligar-zro.js): a tela inteira no lugar das abas; com envio andando
+ * (fila ou Wi-Fi), só a faixa em cima e as abas continuam. Só este pedaço acompanha a fila, e só enquanto pede.
+ */
+function ComLigarZro({ children }) {
+  useEngine()
+  const p2p = useP2pAviso()
+  const temDrive = useApp((s) => (s.drives || []).length > 0)
+  const zroErro = useApp((s) => s.zroErro)
+  const modo = modoLigar(getState(), filaAndando(engine.items) || p2p === 'andando')
+  if (modo === 'tela') return html`<${LigarZroTela} temDrive=${temDrive} erro=${zroErro} />`
+  return html`<${LigarZroFaixa} />${children}`
+}
+
 function App() {
   const status = useApp((s) => s.auth.status)
+  const ligar = useApp((s) => !LAN && modoLigar(s, false) !== null)
   // A Z tem aba própria e aparece sempre (com o estado de login dela): só a abertura da conta fica sem abas.
   const view = LAN ? html`<${MainScreen} />` : status === 'loading' ? html`<${AccountScreen} />` : html`<${Tabs} pronto=${status === 'signedIn'} />`
-  return html`${view}<${SheetHost} registry=${SHEETS} /><${Toasts} />`
+  return html`${ligar ? html`<${ComLigarZro}>${view}</${ComLigarZro}>` : view}<${SheetHost} registry=${SHEETS} /><${Toasts} />`
 }
 
 // A abertura com o símbolo (Versão 1, lib/abertura.js): toda vez que o app abre e quando ele volta para a tela depois

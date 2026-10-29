@@ -18,6 +18,16 @@ export function emissor(): string {
   return (process.env.ZRO_ISSUER?.trim() || EMISSOR_PADRAO).replace(/\/$/, "");
 }
 
+/**
+ * Conexões da central Absolute ZRO: para onde vai quem acabou de ligar a conta (é lá que a pessoa vê o Google Drive
+ * da SOBEDESCE junto das outras ferramentas). ZRO_CONEXOES_URL troca; o padrão é `${ZRO_ISSUER}/conexoes`.
+ */
+export function conexoesZro(): string {
+  const env = process.env.ZRO_CONEXOES_URL?.trim();
+  if (env && /^https?:\/\//i.test(env)) return env;
+  return `${emissor()}/conexoes`;
+}
+
 export function zroConfigurado(): boolean {
   return Boolean(process.env.ZRO_CLIENT_ID?.trim() && process.env.ZRO_CLIENT_SECRET?.trim());
 }
