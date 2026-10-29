@@ -68,6 +68,11 @@ CI com WebKit (29/10/2026, run 40943896316): o WebKit headless do runner dá ~3 
 `requestAnimationFrame`, contavam 3 quadros e perdiam a cópia que dissolve (vive 260 ms). Agora as sondas também amostram
 a cada 10 ms e a cópia é contada quando entra no body (MutationObserver). Reproduzido aqui atrasando os quadros das sondas
 para 400 ms: antes 2 falhas iguais às do CI; depois `esqueleto.spec.ts` 20/20 (4 rodadas sem atraso).
+
+Segunda rodada no CI (run 40948422689): o runner levou mais de 3 s para pintar o Início, e a sonda (que parava 3 s depois
+de abrir) não viu o palco. Agora ela segue até 1,5 s depois de o palco aparecer (no máximo 20 s). E a regra conferida
+virou a do desenho, que vale em qualquer máquina: nenhum esqueleto à vista nos primeiros 300 ms de vida (numa máquina
+lenta ele pode viver mais e aparecer, de propósito). Local: 15/15, e 6/6 no WebKit com as sondas atrasadas.
 | Proxy de 12 ms (como o vídeo), depois | Chromium: 0 quadros com esqueleto; WebKit (mais lento aqui): 0–1 quadro, já com a dissolvência |
 
 Não conferido: o Safari do titular em produção (precisa publicar).
