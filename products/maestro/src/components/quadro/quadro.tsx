@@ -1,14 +1,24 @@
 "use client";
 /**
  * O Quadro: as colunas da produtora (as 8 do método e as que ela criou, drizzle/0024) com os cards de verdade. No
- * computador arrasta-se o card entre (e dentro das) colunas e o cabeçalho da coluna para reordenar; clique duplo no
- * nome renomeia. No celular uma coluna por vez, com as abas das colunas: desliza-se de lado para trocar de coluna e
+ * computador arrasta-se o card com o mouse entre (e dentro das) colunas (arrastar.ts) e o cabeçalho da coluna para
+ * reordenar; clique duplo no nome renomeia. No celular uma coluna por vez, com as abas das colunas: desliza-se de lado para trocar de coluna e
  * segura-se o card para arrastar (gestos.ts), além do "Mover para…"; tocar na aba já escolhida renomeia. "Colunas"
  * abre a folha "Editar colunas" (colunas.tsx). Mexer nas colunas é só administração e gestão. Filtro por cliente e
  * responsável, busca, ficha lateral e o próximo passo de cada coluna (porte do Maestro antigo).
  */
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { FILTRO_VAZIO, ordemEntre, ordenarColuna, passaFiltro, proximoPasso, type CardQ, type ColunaId, type Filtro } from "@/lib/quadro/metodo";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  FILTRO_VAZIO,
+  ordemEntre,
+  ordemPorChegada,
+  ordenarColuna,
+  passaFiltro,
+  proximoPasso,
+  type CardQ,
+  type ColunaId,
+  type Filtro,
+} from "@/lib/quadro/metodo";
 import { USO_DO_PAPEL, colunasVivas, descricaoDaColuna, moverNaLista, nomeDaColuna } from "@/lib/quadro/colunas";
 import type { Referencias } from "@/lib/quadro/servidor";
 import { Icone } from "@/components/icones";
@@ -17,6 +27,7 @@ import { AvatarPessoa, ChipPrazo, ChipPrioridade, MoverPara } from "./pecas";
 import { useQuadro, type Inicial } from "./estado";
 import { useFlip } from "./flip";
 import { useGestosCelular } from "./gestos";
+import { useArrastoComMouse } from "./arrastar";
 import { CampoNome, EditarColunas, NomeDaColuna, type AcoesDeColunas } from "./colunas";
 
 type Props = Inicial & {
@@ -27,7 +38,6 @@ type Props = Inicial & {
   /** Pauta vazia: o botão "Carregar demonstração" (só administração e gestão), ao lado de "Novo card". */
   demonstracao?: ReactNode;
 };
-type Alvo = { col: ColunaId; antes: string | null };
 type FichaAberta = { id: string; focar?: string | null } | { novo: { coluna: ColunaId; cliente?: string; projeto?: string } };
 /** Arrastar o cabeçalho (computador): a coluna e o lugar (índice entre as vivas) onde entraria. */
 type AlvoColuna = { id: ColunaId; lugar: number };
@@ -74,9 +84,6 @@ export function Quadro(props: Props) {
   );
   // a coluna escolhida foi arquivada (aqui ou em outro aparelho): fica a primeira
   const colMovel = ordemColunas.includes(colEscolhida) ? colEscolhida : (ordemColunas[0] ?? "pauta");
-  const [arrastando, setArrastando] = useState<string | null>(null);
-  const [alvo, setAlvo] = useState<Alvo | null>(null);
-  const arraste = useRef<string | null>(null);
   const quadro = useRef<HTMLDivElement>(null);
   const abas = useRef<HTMLElement>(null);
   const voo = useRef<{ id: string; de: DOMRect } | null>(null);
@@ -85,7 +92,7 @@ export function Quadro(props: Props) {
   const [renomeandoAba, setRenomeandoAba] = useState<ColunaId | null>(null);
   const [alvoColuna, setAlvoColuna] = useState<AlvoColuna | null>(null);
   const arrasteColuna = useRef<ColunaId | null>(null);
-  // arrastar do HTML só com mouse; no toque o arrastar é o de gestos.ts (o nativo do iOS demora e pinta de preto)
+  // reordenar colunas pelo cabeçalho (arrastar do HTML) só com mouse; o card arrasta com arrastar.ts (mouse) e gestos.ts (toque)
   const [mouse, setMouse] = useState(false);
   useEffect(() => {
     const m = window.matchMedia("(hover: hover) and (pointer: fine)");
@@ -162,12 +169,27 @@ export function Quadro(props: Props) {
     fixar,
   });
 
+  useArrastoComMouse({ quadro, podeArrastar: podeEscrever, mover: moverPara, fixar, ordemFixa: ordemPorChegada });
+
   const executar = (c: CardQ) => {
     const p = proximoPasso(c.dados)?.principal;
     if (!p) return;
     if (p.acao === "atribuir") setFicha({ id: c.id, focar: "resp" });
     else moverPara(c.id, p.para);
   };
+  // as ações do card são estáveis (o card só desenha de novo quando os dados dele mudam)
+  const executarAgora = useRef(executar);
+  const cardsAgora = useRef(cards);
+  useLayoutEffect(() => {
+    executarAgora.current = executar;
+    cardsAgora.current = cards;
+  });
+  const abrirCard = useCallback((id: string) => setFicha({ id }), []);
+  const passoDoCard = useCallback((id: string) => {
+    const c = cardsAgora.current[id];
+    if (c) executarAgora.current(c);
+  }, []);
+  const moverCard = useCallback((id: string) => setMover(id), []);
 
   const acoesColunas: AcoesDeColunas = {
     renomear: (id, nome) => void q.renomearColuna(id, nome),
@@ -208,35 +230,6 @@ export function Quadro(props: Props) {
   };
   // onde a marca de soltar aparece: antes da coluna `lugar` (entre as outras) ou depois da última
   const marcaColuna = marcaDeSoltar(ordemColunas, alvoColuna);
-
-  /* ───── arrastar (computador) ───── */
-  const aoArrastarSobre = (e: React.DragEvent<HTMLElement>, col: ColunaId) => {
-    if (!arraste.current) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    const corpo = e.currentTarget;
-    const els = [...corpo.querySelectorAll<HTMLElement>("[data-card]")].filter((x) => x.dataset.card !== arraste.current);
-    const depois = els.find((x) => {
-      const r = x.getBoundingClientRect();
-      return e.clientY < r.top + r.height / 2;
-    });
-    const novo = { col, antes: depois?.dataset.card ?? null };
-    if (!alvo || alvo.col !== novo.col || alvo.antes !== novo.antes) setAlvo(novo);
-  };
-  const aoSoltar = (e: React.DragEvent<HTMLElement>, col: ColunaId) => {
-    const id = arraste.current;
-    if (!id) return;
-    e.preventDefault();
-    moverPara(id, col, alvo?.col === col ? alvo.antes : null);
-    arraste.current = null;
-    setArrastando(null);
-    setAlvo(null);
-  };
-  const fimArraste = () => {
-    arraste.current = null;
-    setArrastando(null);
-    setAlvo(null);
-  };
 
   const cardFicha = ficha && "id" in ficha ? (cards[ficha.id] ?? null) : null;
   // card aberto que sumiu (apagado aqui ou em outro aparelho): a ficha fecha sozinha
@@ -399,10 +392,12 @@ export function Quadro(props: Props) {
 
           <div
             ref={quadro}
-            className={`q-quadro${arrastando ? " q-quadro--arrastando" : ""}${alvoColuna ? " q-quadro--colunas" : ""}`}
+            className={`q-quadro${alvoColuna ? " q-quadro--colunas" : ""}`}
             onDragLeave={(e) => {
-              if (e.currentTarget.contains(e.relatedTarget as Node)) return;
-              setAlvo(null);
+              if (!arrasteColuna.current || e.currentTarget.contains(e.relatedTarget as Node)) return;
+              // o Safari manda dragleave sem relatedTarget ao passar de um filho a outro: só vale saindo da área
+              const r = e.currentTarget.getBoundingClientRect();
+              if (e.clientX > r.left && e.clientX < r.right && e.clientY > r.top && e.clientY < r.bottom) return;
               setAlvoColuna(null);
             }}
             onDragOver={aoArrastarSobreQuadro}
@@ -410,12 +405,11 @@ export function Quadro(props: Props) {
           >
             {vivas.map((col) => {
               const l = visiveis[col.id] ?? [];
-              const sobre = alvo?.col === col.id;
               const desc = descricaoDaColuna(col);
               return (
                 <section
                   key={col.id}
-                  className={`q-col${col.id === colMovel ? " on" : ""}${sobre ? " q-col--alvo" : ""}${alvoColuna?.id === col.id ? " q-col--erguida" : ""}`}
+                  className={`q-col${col.id === colMovel ? " on" : ""}${alvoColuna?.id === col.id ? " q-col--erguida" : ""}`}
                   data-col={col.id}
                   data-cor={col.cor}
                   data-marca={marcaColuna?.col === col.id ? marcaColuna.lado : undefined}
@@ -444,34 +438,21 @@ export function Quadro(props: Props) {
                       </button>
                     ) : null}
                   </header>
-                  <div className="q-col__corpo" onDragOver={(e) => aoArrastarSobre(e, col.id)} onDrop={(e) => aoSoltar(e, col.id)}>
+                  <div className="q-col__corpo">
                     {l.map((c) => (
                       <div key={c.id} className="q-lugar">
-                        {sobre && alvo?.antes === c.id ? <div className="q-solta" aria-hidden="true" /> : null}
                         <Cartao
                           c={c}
                           cliente={nomeCliente(c.dados.cliente)}
                           projeto={codigoProjeto(c.dados.projeto)}
                           resp={pessoa(c.dados.resp)}
                           podeEscrever={podeEscrever}
-                          arrastavel={podeEscrever && mouse}
-                          arrastando={arrastando === c.id}
-                          abrir={() => setFicha({ id: c.id })}
-                          passo={() => executar(c)}
-                          mais={() => setMover(c.id)}
-                          aoArrastar={(e) => {
-                            arraste.current = c.id;
-                            e.dataTransfer.effectAllowed = "move";
-                            try {
-                              e.dataTransfer.setData("text/plain", c.id);
-                            } catch {}
-                            setTimeout(() => setArrastando(c.id), 0);
-                          }}
-                          aoSoltar={fimArraste}
+                          abrir={abrirCard}
+                          passo={passoDoCard}
+                          mais={moverCard}
                         />
                       </div>
                     ))}
-                    {sobre && alvo?.antes === null ? <div className="q-solta" aria-hidden="true" /> : null}
                     {!l.length ? <p className="q-col__vazio">{filtrando ? "Nada aqui com este filtro." : desc}</p> : null}
                   </div>
                 </section>
@@ -528,51 +509,43 @@ export function Quadro(props: Props) {
   );
 }
 
-function Cartao({
-  c,
-  cliente,
-  projeto,
-  resp,
-  podeEscrever,
-  arrastavel,
-  arrastando,
-  abrir,
-  passo,
-  mais,
-  aoArrastar,
-  aoSoltar,
-}: {
+type PropsCartao = {
   c: CardQ;
   cliente: string;
   projeto: string;
   resp: Referencias["pessoas"][number] | null;
   podeEscrever: boolean;
-  arrastavel: boolean;
-  arrastando: boolean;
-  abrir: () => void;
-  passo: () => void;
-  mais: () => void;
-  aoArrastar: (e: React.DragEvent<HTMLElement>) => void;
-  aoSoltar: () => void;
-}) {
+  abrir: (id: string) => void;
+  passo: (id: string) => void;
+  mais: (id: string) => void;
+};
+/** A pessoa é a mesma pelo conteúdo (a página renovada pelo servidor traz objetos novos com os mesmos dados). */
+const mesmoCartao = (a: PropsCartao, b: PropsCartao) =>
+  a.c === b.c &&
+  a.cliente === b.cliente &&
+  a.projeto === b.projeto &&
+  a.podeEscrever === b.podeEscrever &&
+  a.abrir === b.abrir &&
+  a.passo === b.passo &&
+  a.mais === b.mais &&
+  (a.resp === b.resp || (!!a.resp && !!b.resp && a.resp.sub === b.resp.sub && a.resp.nome === b.resp.nome && a.resp.foto === b.resp.foto));
+
+/**
+ * Um card. Só desenha de novo quando os dados dele mudam: arrastar, a volta de 5 s, a ficha e a página renovada pelo
+ * servidor depois de gravar não redesenham os outros.
+ */
+const Cartao = memo(function Cartao({ c, cliente, projeto, resp, podeEscrever, abrir, passo, mais }: PropsCartao) {
   const d = c.dados;
   const px = podeEscrever ? proximoPasso(d)?.principal : null;
   return (
-    <article
-      className={`q-card${arrastando ? " q-card--arrastando" : ""}${d.prioridade === "alta" ? " q-card--alta" : ""}`}
-      data-card={c.id}
-      data-col={d.coluna}
-      draggable={arrastavel}
-      onDragStart={aoArrastar}
-      onDragEnd={aoSoltar}
-    >
-      <button type="button" className="q-card__abrir" onClick={abrir} aria-label={`Abrir ${d.tema}`} />
+    <article className={`q-card${d.prioridade === "alta" ? " q-card--alta" : ""}`} data-card={c.id} data-col={d.coluna}>
+      <button type="button" className="q-card__abrir" onClick={() => abrir(c.id)} aria-label={`Abrir ${d.tema}`} />
       <div className="q-card__topo">
         <span className="q-card__cliente" title={projeto ? `${cliente || "Sem cliente"} · ${projeto}` : undefined}>
           {cliente || "Sem cliente"}
         </span>
         {podeEscrever ? (
-          <button type="button" className="q-icone-btn q-card__mais" aria-label="Mover para…" title="Mover para…" onClick={mais}>
+          <button type="button" className="q-icone-btn q-card__mais" aria-label="Mover para…" title="Mover para…" onClick={() => mais(c.id)}>
             <Icone nome="pontos" size={16} />
           </button>
         ) : null}
@@ -590,14 +563,14 @@ function Cartao({
         </div>
       ) : null}
       {px ? (
-        <button type="button" className="q-card__passo" onClick={passo} title={px.rotulo}>
+        <button type="button" className="q-card__passo" onClick={() => passo(c.id)} title={px.rotulo}>
           <span>{px.rotulo}</span>
           <Icone nome="seta" size={13} />
         </button>
       ) : null}
     </article>
   );
-}
+}, mesmoCartao);
 
 function Aviso({ texto, desfazer, fechar }: { texto: string; desfazer?: () => void; fechar: () => void }) {
   useEffect(() => {

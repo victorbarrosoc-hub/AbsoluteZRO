@@ -332,7 +332,9 @@ detector `e2e/corte.ts`: todas as telas a 375 e 393 px, claro e escuro, Chromium
 faixa que rola de lado só com `data-rolagem`; regras de celular em `src/app/celular.css`) e o Quadro com fluidez
 (`quadro.spec.ts`: folha na janela inteira, "Novo card", Mover para com Desfazer, troca de seção com View Transition),
 a troca de seção sem duas telas juntas (`transicao.spec.ts`, Chromium e WebKit: pelo relógio das animações e amostrando
-quadro a quadro) e os gestos do Quadro no celular (`gestos.spec.ts`, Chromium e WebKit, organização própria) e as colunas
+quadro a quadro) e os gestos do Quadro no celular (`gestos.spec.ts`, Chromium e WebKit, organização própria) e arrastar
+com o mouse (`arrastar.spec.ts`, Chromium e o projeto `computador-safari`: relógio por quadro, zero render/DOM/layout
+com o mouse andando, card sempre inteiro ao soltar; `E2E_DB_SUFIXO` separa o banco, `E2E_VIDEO=1` grava) e as colunas
 (`colunas.spec.ts`: renomear no lugar, reordenar, criar e recolorir, arquivar com destino e restaurar, sistema não
 arquiva, equipe não edita; computador e iPhone, organização própria).
 Movimento (29/10/2026): toda folha usa `Folha` (`src/components/folha.tsx`, portal no `<body>`). **Troca de seção**
@@ -345,10 +347,17 @@ de `ABAS`). Nada de `var()` nas regras dos pseudo-elementos da transição, e na
 durante a troca (no WebKit ele escapa da foto). **Gestos do Quadro no celular** (`src/components/quadro/gestos.ts`):
 deslizar de lado troca de coluna (segue o dedo, elástico nas pontas, mola pela velocidade, pílula de vidro que anda
 junto; `touch-action: pan-y`; começo a 20 px da borda é do Safari); segurar o card 280 ms ergue um fantasma do tamanho
-real (sem o arrastar nativo do HTML no toque: `draggable` só com mouse), os outros abrem espaço, a página rola perto das
+real (sem o arrastar nativo do HTML: os cards não são `draggable`), os outros abrem espaço, a página rola perto das
 bordas, segurar na borda da tela (0,42 s) passa de coluna, soltar na pílula manda para aquela coluna, soltar acima do
 Quadro desiste; grava pelo mesmo `moverPara` (aviso com Desfazer) e o FLIP é "fixado" antes (`useFlip` devolve
-`fixar`). Links da cápsula pré-buscam com a intenção; a barra do celular pré-busca inteira; `staleTimes` em
+`fixar`). **No computador** o card arrasta com o mouse pelo mesmo modelo (`src/components/quadro/arrastar.ts`;
+titular, 29/10/2026, "a animação dá uma travadinha"): 5 px viram arrasto, a coluna sob o mouse abre espaço, a de
+origem fecha o buraco, Esc/soltar fora/perder a janela devolvem, Entregue (`ordemPorChegada`) recebe no topo. Regras do
+movimento do Quadro: nada de estado do React nem leitura de layout por quadro (mede tudo ao erguer; rolagem guardada
+pelos eventos), só `transform`/`translate`; o fantasma (`fantasma.ts`) vai no `<body>` com as variáveis do card (no
+`.shell` o 1º quadro refazia a página); nada de classe no `<html>` durante o gesto; o FLIP mede pelo `.q-lugar` e não
+repete a entrada (`q-assenta`) de quem só trocou de coluna; `.q-col` não corta (o card passa por cima com `z-index`).
+Links da cápsula pré-buscam com a intenção; a barra do celular pré-busca inteira; `staleTimes` em
 `next.config.ts` (o Quadro chama `renovarSecoes` depois de gravar). Nada de `transform` que fique preso num ancestral
 de `position: fixed`. Unitário da hora em
 `hora.test.mts`.

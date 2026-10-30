@@ -507,6 +507,14 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   como "em produção". Só administração e gestão mudam (RLS + funções `maestro.coluna_*`); organizações existentes
   ficam com as 8 de hoje. Falta: aplicar a 0024 em produção (vai junto com o próximo deploy autorizado do Maestro) e
   conferir num iPhone de verdade.
+- ✅ Maestro, **arrastar o card no computador sem "travadinha"** (vídeo do titular no Safari do Mac, 29/10/2026): o
+  arrastar nativo do HTML saiu dos cards; o mouse usa o mesmo gesto do celular (`src/components/quadro/arrastar.ts`):
+  fantasma do tamanho real com camada própria seguindo o mouse só com `translate`, os outros cards abrem espaço com
+  `transform` (zero render do React e zero layout por quadro), o lugar de soltar não pisca mais (o `dragleave` sem
+  `relatedTarget` do Safari apagava e redesenhava tudo), e ao soltar o card pousa de onde foi solto, inteiro (a coluna
+  não corta mais, e o card que troca de coluna não "chega" de novo invisível). Esc e soltar fora devolvem; Entregue
+  recebe no topo; "reduzir movimento" vai direto. A volta de 5 s e a página renovada depois de gravar não redesenham
+  mais o Quadro inteiro. Falta: conferir no Safari de um Mac e num iPhone de verdade depois do próximo deploy autorizado.
 
 - 🟡 **Lançamento do Maestro em Beta grátis** (29/10/2026, decisão do titular, [ADR 0027](decisions/0027-lancamento-maestro-beta-gratis.md);
   pronto no ramo, vale no OK final): migration `0027_maestro_lancamento.sql` (gate `public_beta` em todos os canais; o

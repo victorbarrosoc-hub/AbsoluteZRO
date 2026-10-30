@@ -61,8 +61,11 @@
   border-radius: 22px;
   background: var(--coluna);
   box-shadow: var(--card-sombra);
+  /* nada corta o card que troca de coluna (o FLIP passa por cima) nem o que abre espaço embaixo; a barra de cor que
+     pedia o corte não existe aqui */
+  overflow: visible;
 }
-.q-col--alvo {
+.q-col[data-alvo] {
   background: color-mix(in srgb, var(--col) 10%, var(--coluna));
 }
 .q-col::before,

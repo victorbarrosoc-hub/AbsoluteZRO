@@ -161,10 +161,13 @@ export function ordemEntre(a: { ordem?: number } | null, b: { ordem?: number } |
   return 1;
 }
 
+/** Entregue não tem ordem manual: o mais recente fica em cima (arrastar para lá entra no topo). */
+export const ordemPorChegada = (k: ColunaId) => k === "entregue";
+
 /** A coluna em ordem: pela ordem; Entregue mostra o mais recente primeiro. */
 export function ordenarColuna(k: ColunaId, l: CardQ[]): CardQ[] {
   const o = (c: CardQ) => (typeof c.dados.ordem === "number" ? c.dados.ordem : 0);
-  if (k === "entregue") return [...l].sort((a, b) => (b.dados.colunaEm ?? 0) - (a.dados.colunaEm ?? 0));
+  if (ordemPorChegada(k)) return [...l].sort((a, b) => (b.dados.colunaEm ?? 0) - (a.dados.colunaEm ?? 0));
   return [...l].sort((a, b) => o(a) - o(b) || a.id.localeCompare(b.id));
 }
 

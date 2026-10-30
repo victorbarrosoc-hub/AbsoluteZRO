@@ -2631,3 +2631,45 @@ do Freela e HUB não convertem. `npm run format:check` e `node scripts/scan-secr
 - Legendas e Remixar no NOSSOM (29/10/2026): Whisper turbo com WER 4,1% em 3 min de português (CPU) e janelas
   cortadas em pausas depois de achar estouro de memória no modo em blocos; remixer com cinco faixas que somam o
   original (erro 1e-7). `npm test` 115/115, e2e 61 + 26 pulados.
+
+## Maestro: arrastar o card no computador sem "travadinha" (29/10/2026)
+
+Vídeo do titular (Safari do Mac, tema escuro, maestro.absolutezro.com, 5,8 s): card arrastado de Revisão para Em
+aprovação e de volta. Quadro a quadro (ffmpeg, linha do tempo de 60 fps):
+
+- **Parado sobre o destino** (0,83–1,17 s): o destino piscava a ~30 Hz. Em quadros alternados a linha de soltar sumia,
+  o conteúdo de Em aprovação descia e subia ~10 px e o encaixe de origem ganhava contorno; em 1,12–1,13 s a coluna de
+  destino chegou a esconder o cabeçalho. Na volta, o destaque da coluna também alternava.
+- **Ao soltar** (1,18 s): o card sumia por 2 quadros e entrava cortado pela borda da coluna até 1,32 s ("…la semana",
+  "ories da semana"); na volta (2,38–2,52 s), entrava pela direita, cortado e meio transparente.
+- **Causas** no código: (1) no Safari, `dragleave` chega sem `relatedTarget` a cada filho e o Quadro apagava o alvo,
+  redesenhava tudo e o recolocava no `dragover` seguinte (linha de soltar no DOM, ~11 px de layout por troca); (2) cada
+  troca de alvo desenhava as 8 colunas (card sem `memo`) e o FLIP media todos os cards, inclusive com o deslize ainda
+  andando (`composite: "add"` somava de novo), e a mira lia retângulos com esse transform; (3) ao trocar de coluna o
+  card é remontado e o CSS repetia a entrada (`q-assenta`, começa com `opacity: 0`), o FLIP saía do lugar de origem e
+  `.q-col { overflow: hidden }` cortava; (4) a pergunta de 5 s agendava render sempre (colunas) e trazia de volta os
+  próprios cards; a página renovada depois de gravar redesenhava todos os cards.
+- **Correção** (`src/components/quadro/arrastar.ts`, `fantasma.ts`, `flip.ts`, `quadro.tsx`, `estado.ts`, CSS): o card
+  arrasta com o ponteiro como no celular (fantasma com camada própria, só `translate`; espaço aberto por `transform`;
+  coluna de destino cresce uma vez por coluna; tudo medido de uma vez ao erguer e nada lido no meio do arrasto); pousa
+  onde vai ficar e só então o React grava, com o FLIP fixado; o FLIP mede pelo lugar (sem transform do próprio card),
+  não repete a entrada de quem já estava na tela e passa por cima das colunas (`z-index` durante o deslize, coluna sem
+  corte). Esc, soltar fora e perder a janela devolvem; Entregue recebe no topo; "reduzir movimento" vai direto. O
+  fantasma (celular inclusive) vai no `<body>`: no `.shell` o primeiro quadro custava a página inteira. A pergunta de
+  5 s e a página renovada não redesenham mais o Quadro à toa. Reordenar colunas pelo cabeçalho também não pisca mais.
+  O clique logo depois de abrir a página não é mais engolido (o "engolir" começava em 0 ms).
+- **Medidas** (`e2e/arrastar.spec.ts`, 1440×900, escuro, 32 cards; máquina dividida, carga ~18 em 4 núcleos; a luz
+  ambiente apagada nas medidas porque o headless não compõe na GPU). Antes → depois, Chromium: renders do React com o
+  mouse andando 3–4 → **0**; mudanças no DOM 6–8 → **0**; layout 1 → **0**; card invisível depois de soltar 7–8 quadros
+  → **0** (sempre inteiro); maior pulo ao soltar 290–332 px → **8–14 px** (menor que o caminho de 24 px até o lugar);
+  quadro p50 31 → **17 ms**, p95 59–63 → **34–54 ms**. WebKit: renders 1–2 → **0**, DOM 4 → **0**, card invisível →
+  **0**, pulo 217 px → **10–21 px**. Custo de erguer no WebKit: 50–85 ms → **2–7 ms** de JavaScript; primeiro quadro
+  depois de erguer ~0,5–0,9 s → ~0,06–0,09 s (o headless sem GPU exagera a pintura; no Mac é composição). Depois de
+  assentar: 1–2 renders (a resposta do banco e a página renovada) e nenhum card desliza nelas nem na volta de 5 s.
+- Testes: `e2e/arrastar.spec.ts` (computador e o novo projeto `computador-safari`, WebKit): sem render, DOM e layout
+  com o mouse andando, destino sem piscar, card sempre à vista e sem pulo ao soltar, nada desliza depois; clique abre a
+  ficha, reordenar na coluna, Esc e soltar fora sem gravar; Entregue no topo com reduzir movimento; "Mover para…"
+  desliza por cima das colunas, inteiro. `gestos.spec.ts` (iPhone, Chromium e WebKit), `quadro.spec.ts`,
+  `colunas.spec.ts`, `transicao.spec.ts`, `visual.spec.ts` e `sem-corte.spec.ts` passam. `E2E_DB_SUFIXO` separa o
+  banco do e2e quando duas cópias rodam juntas; `E2E_VIDEO=1` grava cada teste.
+- Não validado: Safari de um Mac e iPhone de verdade (sem deploy).
