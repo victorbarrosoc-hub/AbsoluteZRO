@@ -11171,7 +11171,7 @@ const cssUrl=u=>urlSegura(u,true).replace(/[()'"\\\s]/g,c=>"%"+c.charCodeAt(0).t
 const corOk=c=>/^#[0-9a-f]{6}$/i.test(String(c||""))?c:"#7FEBF7";
 /* ⚠️ ARQUIVO SUBIDO NÃO ABRE NA ORIGEM DO SITE. Um .html ou .svg anexado
    como material de job ou documento, aberto por "Abrir", rodava DENTRO do
-   carrodofreela.com.br — com acesso a tudo que este aparelho guarda.
+   carro.absolutezro.com — com acesso a tudo que este aparelho guarda.
    Abre na aba só o que o navegador mostra sem executar (PDF, imagem,
    áudio, vídeo, texto); o resto vira download. */
 const ABRE_NA_ABA=/^(application\/pdf|image\/(png|jpe?g|webp|gif|avif)|audio\/[\w.+-]+|video\/[\w.+-]+|text\/plain)$/i;
@@ -14416,7 +14416,7 @@ function abrirPerfil(id){
     ligarTrancas(v("p-ag-trancado"));
   }
   v("p-share").onclick=()=>{
-    const url="carrodofreela.com.br/"+(c.port&&c.port.startsWith("@")?c.port:"@"+titulo(c.nome).toLowerCase().replace(/\s+/g,""));
+    const url="carro.absolutezro.com/"+(c.port&&c.port.startsWith("@")?c.port:"@"+titulo(c.nome).toLowerCase().replace(/\s+/g,""));
     v("p-share").textContent="✓ "+url;
     try{navigator.clipboard&&navigator.clipboard.writeText("https://"+url)}catch(e){}
     setTimeout(()=>{v("p-share").textContent="Compartilhar"},2600);
@@ -24621,7 +24621,7 @@ function abrirProdutora(nome){
 
   v("q-share").onclick=()=>{
     v("q-share").textContent="✓ link copiado";
-    try{navigator.clipboard&&navigator.clipboard.writeText("https://carrodofreela.com.br/p/"+q.nome.toLowerCase().replace(/\s+/g,"-"))}catch(e){}
+    try{navigator.clipboard&&navigator.clipboard.writeText("https://carro.absolutezro.com/p/"+q.nome.toLowerCase().replace(/\s+/g,"-"))}catch(e){}
     setTimeout(()=>{v("q-share").textContent="Compartilhar"},2400);
   };
   show("produtora");

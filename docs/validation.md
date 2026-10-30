@@ -3104,3 +3104,6 @@ produção (deploy só com autorização).
   na lateral e no menu do site real, o quadro em `/app/?no=carro&tema=escuro`, o tema acompanha o Carro, o ponto de
   envio andando acende e apaga (recado de outra origem não acende), o selo do Sobedesce leva ao site dele, sem botão de
   "abrir", e a prévia segue com a demonstração. Conferido a 1440 e a 390 px, escuro e claro.
+- Carro: carrodofreela.com.br e www redirecionam (308, mesmo caminho) para carro.absolutezro.com, autorizado pelo
+  titular. `npm run test:api` 48/48 (a rota por host antes do filesystem, e nunca no subdomínio); `seguranca`,
+  `conta-zro`, `site-real` e `porta-malas-real` verdes com o emulador local respeitando o host.

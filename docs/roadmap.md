@@ -633,7 +633,7 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   confirmado) e só traz quem marcou "Mostrar meu perfil para quem contrata" no Carro; a agenda do freela mora no banco
   (`carro_do_freela.agenda_dias`, `/api/zro/agenda`). Visual: linha B "Natal à noite" (escuro fosco por padrão, o
   símbolo de sempre, foto de Natal na home e na entrada). Porta-malas é o SOBEDESCE embutido (Drive e Transferências,
-  no tema do Carro, com o selo dele). Falta: propostas e chamadas no banco, a
+  no tema do Carro, com o selo dele). O endereço é carro.absolutezro.com; carrodofreela.com.br redireciona. Falta: propostas e chamadas no banco, a
   revisão de dinheiro e garantias (sai Take e Pedágio) e os planos do ecossistema (ver a agenda pago).
 - ⛔ Em produção: migrações `0029` (HUB) e `0022` (Maestro) no deploy; o Maestro passa a pedir `zro.pessoas` (HUB sem a
   0029 cai em `nivel=sem_pessoas`, sem quebrar o login).

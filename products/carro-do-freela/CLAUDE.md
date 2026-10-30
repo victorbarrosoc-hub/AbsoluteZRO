@@ -153,8 +153,10 @@ sobedesce, e transferências"*; aberto a toda conta (Drive e Transferências sã
 - **Tema do Carro, nunca o do aparelho**: muda junto por mensagem (`temaCarro()` e o `MutationObserver`).
 - **Envio andando**: o recado `envios` (só da origem do Sobedesce) acende o ponto no Porta-malas (lateral, gaveta e
   MENU do celular) e liga o "sair?" do navegador ao fechar a aba.
-- ⚠️ Fora de carro.absolutezro.com (carrodofreela.com.br) o quadro não abre: o cookie do Sobedesce não vai para outro
-  site. O endereço principal passa a ser o subdomínio quando o titular autorizar o redirecionamento.
+- **O endereço é carro.absolutezro.com** (ADR 0025; o titular autorizou em 30/10/2026): carrodofreela.com.br e www
+  levam para lá com o mesmo caminho (308, `ANTIGOS` em `src/seguranca.js`, rota com `has: host` no `config.json`; o
+  `servir-saida.js` local respeita o host). Os links de compartilhar já saem no subdomínio. Isso também resolve o
+  porta-malas: fora de *.absolutezro.com o cookie do Sobedesce não iria junto.
 
 ## 30/out · 4 — a linha visual B, "Natal à noite" (aprovada pelo titular; `test/site-real.js`)
 
