@@ -82,15 +82,39 @@ export async function listProjects(owner: string): Promise<ProjectSummary[]> {
     }))
     .sort((a, b) => b.updatedAt - a.updatedAt);
 }
+/** A copy whose blobs live in memory, not as references to files on disk. */
+async function inMemory(project: Project): Promise<Project> {
+  const copy = async (blob: Blob) => new Blob([await blob.arrayBuffer()], { type: blob.type });
+  return {
+    ...project,
+    originalFile: await copy(project.originalFile),
+    versions: await Promise.all(
+      project.versions.map(async (v) => ({ ...v, blob: await copy(v.blob) })),
+    ),
+    ...(project.stems
+      ? { stems: { ...project.stems, files: await Promise.all(project.stems.files.map(copy)) } }
+      : {}),
+  };
+}
 export async function saveProject(project: Project, owner: string) {
+  const store = async (value: Project) => (await db(owner)).put('projects', value);
   try {
-    await (await db(owner)).put('projects', project);
+    await store(project);
   } catch (e) {
     if (e instanceof DOMException && e.name === 'QuotaExceededError')
       throw new Error(
         'O armazenamento deste navegador está cheio. Exclua projetos antigos e tente novamente.',
       );
-    throw e;
+    // Safari sometimes cannot copy a file-backed Blob into IndexedDB
+    // ("Error preparing Blob/File data"); the same bytes held in memory are stored fine.
+    if (!(e instanceof DOMException) || e.name === 'AbortError') throw e;
+    try {
+      await store(await inMemory(project));
+    } catch {
+      throw new Error(
+        'O navegador não conseguiu guardar este áudio. Confira o espaço livre no disco e, se o arquivo estiver no iCloud, baixe-o antes de importar.',
+      );
+    }
   }
 }
 export async function getProject(id: string, owner: string) {

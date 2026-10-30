@@ -3136,3 +3136,14 @@ administração e gestão pelo RLS).
   (guardado na memória). No Chrome de verdade, a pasta escolhida fica guardada; não conferido aqui com um seletor real.
 - SOBEDESCE `test/relay.test.js`: `sobedesce://looks` e `?trocar=1` aceitos; com caminho, outro parâmetro ou outro
   host, recusados. O Comparar com as duas pastas não foi exercitado com o app aberto (falta o desktop rodando aqui).
+
+## NOSSOM: falhas da GPU com motivo e Safari guardando o áudio (30/10/2026)
+
+- Primeiros pedidos reais no endpoint `nossom-v2` falharam em 50–166 ms, antes do processamento: o worker só dizia
+  "restoration failed". Agora ele devolve e registra um motivo curto e sem URL (mensagens próprias, como
+  `Source download failed (HTTP 400)`, ou só o tipo da exceção), e o site grava o motivo no log da Vercel. Causa
+  provável da primeira falha: `NOSSOM_STORAGE_ORIGIN` apontando para o banco anterior ao AbsoluteZRO-SP.
+- Safari recusava guardar o áudio importado ("Error preparing Blob/File data to be stored in object store"):
+  `saveProject` tenta de novo com os bytes em memória e, se ainda falhar, explica (espaço em disco, arquivo só no iCloud).
+- Worker `test_handler.py` 14/14 (motivo sem URL), NOSSOM `npm test` 115/115, `typecheck`, `lint`, `scan-secrets`.
+- Não validado: o Safari do titular com o arquivo que falhou.
