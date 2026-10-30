@@ -10,6 +10,7 @@ import { lerConta, linkEntrar, preencherAvatar, primeiroNome } from './conta.js'
 import { montarSet } from './set.js'
 import * as Historico from './historico.js'
 import * as Meus from './meus.js'
+import * as Nuvem from './nuvem.js'
 
 const $ = (id) => document.getElementById(id)
 const el = (tag, props = {}, ...filhos) => {
@@ -31,9 +32,11 @@ botaoTema?.addEventListener('click', () => {
 })
 pintarTema()
 
-const meus = Meus.carregar()
-const achar = (id) => meus.find((p) => p.id === id) ?? presetDoRelay(id)
+let meus = Meus.carregar()
+let daEquipe = Nuvem.presetsDaEquipe()
+const achar = (id) => meus.find((p) => p.id === id) ?? daEquipe.find((p) => p.id === id) ?? presetDoRelay(id)
 let conta = null
+let equipe = false // a pessoa tem organização e a conta está ligada: dá para liberar para a equipe
 let lista = []
 let projetos = []
 let verTudo = false
@@ -98,6 +101,7 @@ function desenharProjetos() {
       'button',
       { type: 'button', className: 'projeto cartao' },
       el('strong', { textContent: p.nome }),
+      p.meu === false ? ficha('Da equipe') : p.equipe ? ficha('Com a equipe') : null,
       el('span', { className: 'projeto-destinos' }, ...p.destinos.slice(0, 6).map((d) => icone(achar(d)?.icone ?? 'seta')), p.destinos.length > 6 ? el('small', { textContent: `+${p.destinos.length - 6}` }) : null),
       el('small', { className: 'apoio', textContent: c ? `${c.conversoes} ${c.conversoes === 1 ? 'conversão' : 'conversões'} · ${quando(c.ultima)}` : 'Nada convertido ainda' }),
     )
@@ -126,6 +130,7 @@ function chipDestino(p) {
 
 function abrirProjeto(p) {
   aberto = p
+  const soLer = p?.meu === false // da equipe: usa, não muda
   escolhidos = new Set(p?.destinos ?? [])
   $('t-projeto').textContent = p ? p.nome : 'Novo projeto'
   $('projeto-nome').value = p?.nome ?? ''
@@ -135,7 +140,12 @@ function abrirProjeto(p) {
   const delas = p ? lista.filter((c) => c.projeto === p.id) : []
   $('projeto-conversoes').replaceChildren(...delas.slice(0, 20).map((c) => linhaConversao(c, { comProjeto: false })))
   $('projeto-conversoes').hidden = !delas.length
-  $('projeto-apagar').hidden = !p
+  $('projeto-apagar').hidden = !p || soLer
+  $('projeto-guardar').hidden = soLer
+  $('projeto-nome').disabled = soLer
+  for (const b of $('projeto-destinos').querySelectorAll('button')) b.disabled = soLer
+  $('projeto-equipe-linha').hidden = !equipe || soLer
+  $('projeto-equipe').checked = Boolean(p?.equipe)
   $('projeto-converter').hidden = !p
   if (p) $('projeto-converter').href = `converter?projeto=${encodeURIComponent(p.id)}`
   $('folha-projeto').showModal()
@@ -146,8 +156,8 @@ $('form-projeto').addEventListener('submit', async (ev) => {
   ev.preventDefault()
   try {
     const agora = Date.now()
-    const p = validarProjeto({ id: aberto?.id, nome: $('projeto-nome').value, destinos: [...escolhidos], criado: aberto?.criado ?? agora, atualizado: agora }, (d) => Boolean(achar(d)))
-    await Historico.guardarProjeto(conta, p)
+    const p = validarProjeto({ id: aberto?.id ?? `pj-${crypto.randomUUID()}`, nome: $('projeto-nome').value, destinos: [...escolhidos], criado: aberto?.criado ?? agora, atualizado: agora }, (d) => Boolean(achar(d)))
+    await Nuvem.guardarProjeto(conta, { ...p, equipe: equipe && $('projeto-equipe').checked })
     projetos = await Historico.projetos(conta)
     desenharProjetos()
     desenharRecentes()
@@ -159,7 +169,7 @@ $('form-projeto').addEventListener('submit', async (ev) => {
 })
 $('projeto-apagar').addEventListener('click', async () => {
   if (!aberto || !confirm(`Apagar "${aberto.nome}"? As conversões ficam no histórico.`)) return
-  await Historico.apagarProjeto(conta, aberto.id)
+  await Nuvem.apagarProjeto(conta, aberto.id)
   ;[projetos, lista] = await Promise.all([Historico.projetos(conta), Historico.conversoes(conta)])
   desenharProjetos()
   desenharRecentes()
@@ -171,11 +181,29 @@ for (const b of document.querySelectorAll('[data-novo-projeto]')) b.addEventList
 // ─────────── meus presets ───────────
 
 function desenharMeus() {
+  const liberados = Nuvem.liberadosParaEquipe()
+  const chip = (p) => el('a', { className: 'chip-destino', href: `converter?preset=${encodeURIComponent(p.id)}`, title: `Converter com ${p.nome}` }, icone(p.icone ?? 'estrela'), el('span', { textContent: p.nome }))
   $('meus').replaceChildren(
-    ...meus.map((p) => el('li', {}, el('a', { className: 'chip-destino', href: `converter?preset=${encodeURIComponent(p.id)}`, title: `Converter com ${p.nome}` }, icone(p.icone ?? 'estrela'), el('span', { textContent: p.nome })))),
+    ...meus.map((p) => {
+      const li = el('li', { className: 'meu' }, chip(p))
+      if (equipe) {
+        const b = el('button', { type: 'button', className: 'chip-equipe', title: 'A equipe pode usar este preset' }, icone('camadas'))
+        b.setAttribute('aria-pressed', String(Boolean(liberados[p.id])))
+        b.setAttribute('aria-label', `Liberar ${p.nome} para a equipe`)
+        b.onclick = async () => {
+          const sim = b.getAttribute('aria-pressed') !== 'true'
+          b.setAttribute('aria-pressed', String(sim))
+          await Nuvem.liberarPreset(conta, p, sim).catch(() => b.setAttribute('aria-pressed', String(!sim)))
+        }
+        li.append(b)
+      }
+      return li
+    }),
   )
   $('meus').hidden = !meus.length
   $('meus-vazio').hidden = Boolean(meus.length)
+  $('meus-equipe').replaceChildren(...daEquipe.map((p) => el('li', {}, chip(p))))
+  $('bloco-equipe').hidden = !daEquipe.length
 }
 
 // ─────────── começo ───────────
@@ -185,8 +213,8 @@ $('ver-tudo').addEventListener('click', () => {
   desenharRecentes()
 })
 $('limpar').addEventListener('click', async () => {
-  if (!confirm('Limpar o histórico deste aparelho? Os arquivos convertidos não são apagados.')) return
-  await Historico.limpar(conta)
+  if (!confirm('Limpar o histórico? Os arquivos convertidos não são apagados.')) return
+  await Nuvem.limparHistorico(conta).catch((e) => alert(e.message))
   lista = []
   desenharRecentes()
   desenharProjetos()
@@ -206,10 +234,20 @@ if (c.estado !== 'dentro' || !c.pessoa?.id) {
   conta = c.pessoa.id
   preencherAvatar($('avatar'), c.pessoa)
   $('ola').textContent = `${primeiroNome(c.pessoa)}.`
-  ;[lista, projetos] = await Promise.all([Historico.conversoes(conta), Historico.projetos(conta)])
-  desenharRecentes()
-  desenharProjetos()
-  desenharMeus()
+  const desenharTudo = async () => {
+    ;[lista, projetos] = await Promise.all([Historico.conversoes(conta), Historico.projetos(conta)])
+    meus = Meus.carregar()
+    daEquipe = Nuvem.presetsDaEquipe()
+    desenharRecentes()
+    desenharProjetos()
+    desenharMeus()
+  }
+  // primeiro o que está no aparelho (abre na hora); depois a conta, e redesenha
+  await desenharTudo()
   $('dentro').hidden = false
+  const r = await Nuvem.sincronizar(conta)
+  equipe = r.nuvem && r.equipe
+  $('onde').textContent = r.nuvem ? 'Na sua conta, em todo aparelho.' : 'Fica neste aparelho.'
+  if (r.nuvem) await desenharTudo()
   window.painelPronto = true
 }

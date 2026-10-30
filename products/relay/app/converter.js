@@ -12,6 +12,7 @@ import { linkMaxima } from '../src/link.js'
 import { registro } from '../src/painel.js'
 import { lerConta } from './conta.js'
 import * as Historico from './historico.js'
+import * as Nuvem from './nuvem.js'
 
 const $ = (id) => document.getElementById(id)
 const el = (tag, props = {}, ...filhos) => {
@@ -26,7 +27,8 @@ const nomeCodec = (c) => NOMES_CODEC[c] ?? (String(c).startsWith('pcm') ? 'PCM' 
 // ─────────── estado ───────────
 
 let meus = Meus.carregar()
-const achar = (id) => meus.find((p) => p.id === id) ?? acharPreset(id)
+let daEquipe = Nuvem.presetsDaEquipe() // presets que a equipe liberou (só leitura; app/nuvem.js)
+const achar = (id) => meus.find((p) => p.id === id) ?? daEquipe.find((p) => p.id === id) ?? acharPreset(id)
 const ABAS = [...GRUPOS, 'Meus']
 /** Para a ficha ao vivo do editor: o primeiro arquivo da fila, ou um minuto de master 4K. */
 const origemDoEditor = () =>
@@ -97,8 +99,8 @@ function cartaoPreset(p) {
     desenharAbas()
     atualizarTudo()
   }
-  const personalizar = el('button', { type: 'button', className: 'personalizar', title: p.personalizado ? 'Editar' : 'Criar um preset a partir deste', ariaLabel: p.personalizado ? `Editar ${p.nome}` : `Personalizar ${p.nome}` }, icone(p.personalizado ? 'editar' : 'ficha'))
-  personalizar.onclick = (ev) => {
+  const personalizar = p.daEquipe ? null : el('button', { type: 'button', className: 'personalizar', title: p.personalizado ? 'Editar' : 'Criar um preset a partir deste', ariaLabel: p.personalizado ? `Editar ${p.nome}` : `Personalizar ${p.nome}` }, icone(p.personalizado ? 'editar' : 'ficha'))
+  if (personalizar) personalizar.onclick = (ev) => {
     ev.preventDefault()
     ev.stopPropagation()
     abrirEditor(p)
@@ -108,7 +110,7 @@ function cartaoPreset(p) {
     { className: 'preset cartao', title: p.dica ?? p.resumo },
     input,
     el('span', { className: 'preset-icone' }, icone(p.icone)),
-    el('span', { className: 'preset-texto' }, el('strong', { textContent: p.nome }), el('small', { textContent: p.resumo })),
+    el('span', { className: 'preset-texto' }, el('strong', { textContent: p.nome }), el('small', { textContent: p.daEquipe ? 'Da equipe' : p.resumo })),
     el('span', { className: 'marcado', ariaHidden: 'true' }, icone('ok')),
     personalizar,
   )
@@ -125,8 +127,10 @@ function desenharPresets() {
     if (!f) return
     try {
       const { presets, recusados } = await Meus.lerArquivo(f)
+      const antes = meus
       for (const p of presets) meus = [...meus.filter((x) => x.id !== p.id), p]
       Meus.guardar(meus)
+      contaDentro().then((c) => Nuvem.presetsMudaram(c, antes, meus))
       avisar(`${presets.length} ${presets.length === 1 ? 'preset trazido' : 'presets trazidos'}${recusados ? `, ${recusados} recusado${recusados > 1 ? 's' : ''}` : ''}.`)
       desenharPresets()
     } catch (e) {
@@ -136,7 +140,7 @@ function desenharPresets() {
   const trazer = el('label', { className: 'vidro', title: 'Trazer presets de um arquivo .relay.json' }, arquivo, icone('soltar'), 'Trazer')
   const levar = el('button', { type: 'button', className: 'vidro', title: 'Baixar seus presets como .relay.json', disabled: !meus.length }, icone('baixar'), 'Levar')
   levar.onclick = () => Meus.baixarArquivo(meus)
-  $('presets').replaceChildren(...meus.map(cartaoPreset), criar, el('div', { className: 'meus-acoes' }, trazer, levar, el('span', { className: 'apoio', id: 'aviso-meus', role: 'status' })))
+  $('presets').replaceChildren(...meus.map(cartaoPreset), ...daEquipe.map(cartaoPreset), criar, el('div', { className: 'meus-acoes' }, trazer, levar, el('span', { className: 'apoio', id: 'aviso-meus', role: 'status' })))
 }
 
 const avisar = (t) => {
@@ -148,6 +152,7 @@ async function abrirEditor(p) {
   const r = await Meus.editar(p, origemDoEditor(), Looks)
   if (!r) return
   const id = p?.personalizado ? p.id : null
+  const antes = meus
   if (r.acao === 'apagar') {
     meus = meus.filter((x) => x.id !== id)
     escolhidos.delete(id)
@@ -156,6 +161,7 @@ async function abrirEditor(p) {
     escolhidos.add(r.preset.id)
   }
   Meus.guardar(meus)
+  contaDentro().then((c) => Nuvem.presetsMudaram(c, antes, meus))
   lembrar()
   grupo = 'Meus'
   desenharAbas()
@@ -420,10 +426,31 @@ async function converterSaida(item, s) {
 const idProjeto = new URLSearchParams(location.search).get('projeto')
 let projetoAtual = null
 
-async function registrarNoPainel(item, s, r) {
+/** O id da conta neste aparelho (resumo do sub), ou null fora da conta. */
+const contaDentro = async () => {
   const c = await lerConta()
-  if (c.estado !== 'dentro' || !c.pessoa?.id) return
-  await Historico.registrar(c.pessoa.id, registro({ arquivo: item.arquivo, info: item.info, preset: s.preset, resultado: r, nome: s.nome, projeto: projetoAtual?.id })).catch(() => {})
+  return c.estado === 'dentro' && c.pessoa?.id ? c.pessoa.id : null
+}
+
+async function registrarNoPainel(item, s, r) {
+  const conta = await contaDentro()
+  if (!conta) return
+  const reg = { ...registro({ arquivo: item.arquivo, info: item.info, preset: s.preset, resultado: r, nome: s.nome, projeto: projetoAtual?.id }), nuvem: false }
+  await Historico.registrar(conta, reg).catch(() => {})
+  await Nuvem.enviarConversao(conta, reg)
+}
+
+/** Com a conta: traz os presets de outros aparelhos e os da equipe, e redesenha. */
+async function sincronizarConta() {
+  const conta = await contaDentro()
+  if (!conta) return
+  const r = await Nuvem.sincronizar(conta)
+  if (!r.nuvem) return
+  meus = Meus.carregar()
+  daEquipe = Nuvem.presetsDaEquipe()
+  desenharAbas()
+  desenharPresets()
+  atualizarTudo()
 }
 
 /** ?projeto=<id> (vindo do painel): marca os destinos do projeto e as conversões entram nele. */
@@ -553,7 +580,7 @@ desenharAbas()
 desenharPresets()
 atualizarTudo()
 window.relayPronto = true
-abrirProjeto()
+sincronizarConta().finally(abrirProjeto)
 
 // o Set, a aba em comum do ecossistema: "Set" no fim das páginas do topo (app/set.js)
 montarSet()

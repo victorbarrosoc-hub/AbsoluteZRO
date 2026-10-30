@@ -38,8 +38,10 @@ arquivo não é enviado. É a porta de entrada do ecossistema Absolute ZRO.
 - **Painel** (`/painel`, com a conta Absolute ZRO; quem entra cai nele): o que foi convertido neste aparelho (nome,
   destino, tamanho, quando, "converter de novo"), três números (conversões, duração, o que ficou a menos no disco),
   **projetos** (nome e destinos de sempre: "Converter" abre o conversor com eles marcados e as saídas entram no
-  projeto) e os presets da pessoa. Fica no IndexedDB do aparelho, por conta (`app/historico.js`). No topo de todas as
-  páginas, a foto da conta abre Painel, Sua conta Absolute ZRO e Sair.
+  projeto) e os presets da pessoa. Fica no aparelho e na conta (schema `relay`), em todo aparelho: o histórico de antes
+  sobe uma vez, o que mudou sem rede sobe depois. Projetos e presets podem ser liberados para a equipe (mesma
+  organização), que vê e usa sem mudar. No topo de todas as páginas, a foto da conta abre Painel, Sua conta Absolute
+  ZRO e Sair.
 - **Arquivo grande**: grava direto numa pasta (Chrome e Edge no computador).
 - **Máxima qualidade** (Mac e Windows): abre o app SOBEDESCE pelo link `sobedesce://relay` com os destinos escolhidos
   (inclusive os da pessoa); ele converte os arquivos do computador com o x264 e salva ao lado do original

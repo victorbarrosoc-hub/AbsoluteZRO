@@ -73,6 +73,20 @@ export async function registrar(conta, r) {
   if (lista.length > HISTORICO_MAX) await tirar('conversoes', lista.slice(HISTORICO_MAX).map((x) => x.id))
 }
 
+/** Troca o histórico da conta pela lista dada (a sincronização com a conta: app/nuvem.js). */
+export async function substituirConversoes(conta, lista) {
+  const ficam = new Set(lista.map((x) => x.id))
+  await tirar('conversoes', (await conversoes(conta)).filter((x) => !ficam.has(x.id)).map((x) => x.id))
+  for (const c of lista) await por('conversoes', { ...c, conta })
+}
+
+/** Troca os projetos da conta (os dela e os da equipe) pela lista dada. */
+export async function substituirProjetos(conta, lista) {
+  const ficam = new Set(lista.map((x) => x.id))
+  await tirar('projetos', (await projetos(conta)).filter((x) => !ficam.has(x.id)).map((x) => x.id))
+  for (const p of lista) await por('projetos', { ...p, conta })
+}
+
 export async function limpar(conta) {
   await tirar('conversoes', (await conversoes(conta)).map((x) => x.id))
 }

@@ -30,10 +30,15 @@ Relay. Decisão em [ADR 0030](../../docs/decisions/0030-relay-conversao.md); int
 - **O arquivo da pessoa não sai do aparelho.** Nenhum upload; o site é estático. A única parte com servidor é a conta,
   e ela só serve ao que toca a conta (`api/`, 30/10/2026): login com a Absolute ZRO (cliente `relay-web`), o "Set" no
   topo, o repasse `/api/zro/set/*` com o token no servidor e a foto da conta com o menu (Painel, Sua conta, Sair;
-  `app/conta.js`). O **painel** (`/painel`, `app/painel.js`) guarda o histórico e os projetos no IndexedDB do aparelho
-  (`app/historico.js`), separados pelo `id` da conta (resumo do sub); nada disso sobe. Sincronizar entre aparelhos (e
-  com o app de computador) pede o schema `relay` no Supabase: autorização do titular antes. Converter continua sem
-  conta, e com o site fechado (sem `RELEASE=released`) o login fica desligado (`siteFechado()` em `api/_zro.js`).
+  `app/conta.js`). O **painel** (`/painel`, `app/painel.js`) guarda no aparelho (`app/historico.js`) e na conta
+  (`app/nuvem.js` ↔ `api/relay/painel.js`, schema `relay`): só nomes e números das conversões, projetos e presets,
+  nunca o arquivo. Converter continua sem conta, e com o site fechado (sem `RELEASE=released`) o login fica desligado
+  (`siteFechado()` em `api/_zro.js`).
+- **Banco (schema `relay`, papel `relay_app`):** migração nova = arquivo novo em `db/migrations/`
+  (`scripts/migrar.mjs` recusa editar uma aplicada). Toda operação da pessoa passa por `comoPessoa` (`api/_banco.js`):
+  RLS sempre. Pessoa e organização vêm da sessão, nunca do pedido. Tabela nova precisa de RLS e de teste de isolamento
+  em `test/nuvem.test.js` (sobe um Postgres de verdade). Projetos e presets são da pessoa; a equipe (mesma
+  organização) vê e usa só o que quem criou liberou, sem mudar. Os looks não vão para o banco.
 - **Cor:** SDR sai marcado BT.709 (1-1-1). A cor de entrada vem do contêiner (o decodificador de ProRes erra a marca);
   10 bits vira 8 com arredondamento. HDR e gamut largo viram aviso, nunca silêncio.
 - **Nunca fingir:** sem codificador, sem decodificador ou sem caber no tamanho, a tela diz o porquê.

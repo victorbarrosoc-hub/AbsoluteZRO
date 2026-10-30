@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Painel · Relay</title>
-    <meta name="description" content="O que você converteu, seus projetos e seus presets." />
+    <meta name="description" content="O que você converteu, seus projetos e seus presets, em todo aparelho." />
     <meta name="robots" content="noindex" />
     <meta name="theme-color" content="#f5f5f7" />
     <link rel="icon" href="marca/relay-icone.svg" type="image/svg+xml" />
@@ -83,10 +83,14 @@
           </div>
           <ul class="meus" id="meus"></ul>
           <p class="apoio vazio-linha" id="meus-vazio" hidden>Crie no conversor, na aba Meus.</p>
+          <div class="da-equipe" id="bloco-equipe" hidden>
+            <span class="rotulo">Da equipe</span>
+            <ul class="meus" id="meus-equipe"></ul>
+          </div>
         </section>
 
         <footer class="painel-pe">
-          <span><i data-icone="cadeado"></i>Fica neste aparelho. Nada sobe.</span>
+          <span><i data-icone="cadeado"></i><span id="onde">Fica neste aparelho.</span></span>
           <button type="button" class="link" id="limpar" hidden>Limpar histórico</button>
         </footer>
       </div>
@@ -107,6 +111,11 @@
           <span class="rotulo">Destinos</span>
           <div class="escolha-destinos" id="projeto-destinos"></div>
         </div>
+        <label class="chave-linha" id="projeto-equipe-linha" hidden>
+          <input type="checkbox" id="projeto-equipe" />
+          <span class="chave-trilho" aria-hidden="true"></span>
+          <span>A equipe vê e usa</span>
+        </label>
         <ul class="recentes recentes--folha" id="projeto-conversoes"></ul>
         <p class="erro" id="projeto-erro" role="alert" hidden></p>
         <div class="folha-acoes">

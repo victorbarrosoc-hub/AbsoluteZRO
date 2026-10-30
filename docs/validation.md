@@ -3020,3 +3020,17 @@ produção (deploy só com autorização).
   as duas saídas aparecem nos recentes e no projeto, outra conta no mesmo aparelho não vê nada, Sair encerra; 375 px sem
   rolar para o lado. Relay `npm test`: 92/92. Lint, Prettier e `scan-secrets`: ok.
 - Não conferido aqui: o painel na produção com a conta do titular (depende do merge e do deploy pela main).
+
+## Relay: painel na conta e equipe (30/10/2026)
+
+- Schema `relay` (`products/relay/db/migrations/0000_fundacao.sql`): `projetos`, `presets`, `conversoes` com RLS
+  forçado; papel `relay_app` sem login, assumido por `comoPessoa` (`api/_banco.js`). Migrador próprio
+  (`scripts/migrar.mjs`) recusa editar migração aplicada.
+- `test/nuvem.test.js` num Postgres 16 de verdade (cluster temporário): pessoa B não vê, não grava em nome de A nem apaga
+  o de A; sem pessoa na transação, nada passa; equipe vê só o liberado, só na mesma organização, sem mudar nem apagar;
+  conversão em projeto da equipe pode, de outra organização não; projeto apagado deixa as conversões sem projeto; preset
+  da equipe exige organização. Rota: 401 sem sessão, 403 de outra origem e no id de outra pessoa, lote sem repetir,
+  corte em 500, ficha validada pelo conversor, sem `RELAY_DATABASE_URL` responde `nuvem: false`.
+- Chromium com o banco: o histórico e o preset de antes da nuvem sobem; o segundo aparelho da mesma pessoa vê tudo; a
+  colega da mesma organização vê o projeto e o preset liberados como "Da equipe" (só leitura) e não vê o histórico;
+  apagar num aparelho some no outro. Relay `npm test`: 101/101.

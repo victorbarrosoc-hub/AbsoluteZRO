@@ -780,7 +780,12 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
 - ✅ Painel da conta (pedido do titular, 30/10/2026): `/painel` com recentes, números, projetos (nome + destinos, abre o
   conversor com eles e as saídas entram no projeto) e meus presets; quem entra cai nele. Topo com a foto da conta e o
   menu (Painel, Sua conta, Sair); a página inicial mostra que a pessoa está dentro ("Seu painel").
-- ⬜ Painel entre aparelhos e no app de computador do Relay: API e schema `relay` no Supabase (autorização do titular).
+- ✅ Painel na conta (autorizado pelo titular, 30/10/2026): schema `relay` + papel `relay_app` com RLS, migrador
+  próprio, `/api/relay/painel`, sincronização (o de antes sobe uma vez; sem rede, pendências) e equipe (projetos e
+  presets liberados por quem criou, mesma organização, só leitura).
+- ⬜ Looks (`.cube`) no Drive pelo SOBEDESCE (pedido do titular: ficam no aparelho, sobem para o Drive).
+- ⬜ App de computador do Relay e SOBEDESCE gravando no painel (Bearer da conta em `/api/relay/painel`).
+- ⬜ Conta excluída na Absolute ZRO apagar o schema `relay` dela (hoje nenhum app recebe o aviso do HUB).
 - ⬜ "Baixar como…" das Referências e o pedido da Z no SOBEDESCE pelos presets do Relay.
 - ⬜ Computador: ProRes, DNxHR e HDR 10 bits de saída; loudness normalizado; legenda queimada; corte de trecho.
 - ⬜ Evento `media.conversion.completed` no HUB, quando a primeira integração passar por ele.
