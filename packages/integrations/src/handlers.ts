@@ -59,6 +59,8 @@ export const HANDLERS: Record<string, HandlerDef> = {
 /**
  * Rotas atuais. Os demais eventos ficam registrados no histórico do projeto: os consumidores são apps externos
  * (Synquei sync, NOSSOM) ou ferramentas futuras (AEON, Revela), e o HUB não finge processá-los.
+ * `script.version.sent` (Criação F8) também não tem rota: o roteiro já está na caixa de entrada do TPeasy
+ * (zro.app_entregas, migração 0040) quando o evento nasce, e quem consome é o próprio TPeasy ao abrir (entregas.ts).
  */
 export const ROUTES: RouteTable = {
   'media.manifest.ready': [{ handler: synqueiOrganizationPlan.name, productId: 'synquei', feature: 'organization_plan', maxAttempts: 5 }],

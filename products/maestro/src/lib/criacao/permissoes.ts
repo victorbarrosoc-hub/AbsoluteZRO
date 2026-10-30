@@ -34,6 +34,19 @@ export function podeMandarParaAeon(s: Acesso & { papel: Papel }): boolean {
   return podeEnviarCriacao(s.papel) && (r === "released" || r === "allowed") && temProduto(s, PRODUTO_AEON);
 }
 
+/** Id do TPeasy em zro_products e zro_release. */
+export const PRODUTO_TPEASY = "tpeasy";
+
+/**
+ * "Para o TPeasy" direto (Criação F8): a versão vai pela Absolute ZRO para a caixa de entrada do TPeasy da pessoa (ou de
+ * alguém da organização que usa o TPeasy). Só com o TPeasy no plano da organização e aberto no gate (`temProduto`), e
+ * para quem envia (admin e gestão). O HUB confere tudo de novo (`authorize`, TPeasy no plano). Sem o TPeasy, a folha
+ * continua com Compartilhar, Copiar, .txt e o backup, e diz por que não há o envio direto.
+ */
+export function podeMandarParaTpeasy(s: Acesso & { papel: Papel }): boolean {
+  return podeEnviarCriacao(s.papel) && temProduto(s, PRODUTO_TPEASY);
+}
+
 /** Os papéis que editam e que enviam (a mesma regra das políticas da 0030; `tests/roteiro.test.mts` confere). */
 const PAPEIS: readonly Papel[] = ["admin", "gestor", "equipe", "leitura"];
 export const PAPEIS_EDITAR_CRIACAO: readonly Papel[] = PAPEIS.filter(podeEditarCriacao);

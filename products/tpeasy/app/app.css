@@ -578,6 +578,53 @@ html.scrolled .topbar-title {
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
 }
+/* "Do Maestro · v3": o roteiro veio do Maestro pela Absolute ZRO (app/js/maestro.js) */
+.item-origem {
+  color: var(--text);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.item-origem img {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  margin-right: 4px;
+  vertical-align: -2px;
+}
+.editor-origem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 10px;
+  padding: 5px 10px 5px 7px;
+  border-radius: 999px;
+  background: var(--fill);
+  color: var(--text);
+  font-size: 13.5px;
+  font-weight: 500;
+  text-decoration: none;
+  width: max-content;
+  max-width: 100%;
+  justify-self: start;
+  align-self: flex-start;
+}
+.editor-origem[hidden] {
+  display: none;
+}
+.editor-origem img {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  flex: none;
+}
+.editor-origem .icon {
+  width: 12px;
+  height: 12px;
+  color: var(--text-2);
+}
+.editor-origem:not([href]) .icon {
+  display: none;
+}
 .row-prog {
   position: absolute;
   left: 72px;

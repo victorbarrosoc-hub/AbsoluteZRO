@@ -7,8 +7,11 @@ import { syncSettingsUI, setPref } from "./settings.js";
 import * as Sync from "./sync.js";
 import * as Zro from "./zro.js";
 import { pendencias, numeroBalao, rotuloBalao } from "./pendencias.js";
+import { rotuloOrigem, linkOrigem } from "./maestro.js";
 
 const VERSION = "2.2";
+/** O ícone do Maestro nos roteiros que vieram dele (Criação F8). */
+const ICONE_MAESTRO = '<img src="/icons/familia/maestro.svg" alt="" width="16" height="16" />';
 const wpm = () => D.S().wpm;
 const durOf = (s) => (D.countWords(s.body) / wpm()) * 60;
 const PALETTE = [
@@ -41,7 +44,7 @@ function rowHTML(s) {
       <span class="doc" style="--c1:${c1};--c2:${c2}">${icon("doc")}</span>
       <span class="item-text">
         <span class="item-title">${esc(s.title || "Sem título")}${s.fav ? icon("star-fill", "icon star") : ""}</span>
-        <span class="item-meta">${fmtDay(Math.max(s.updated, s.readAt || 0))} · ${mins(durOf(s))}</span>
+        <span class="item-meta">${rotuloOrigem(s) ? `<span class="item-origem">${ICONE_MAESTRO}${esc(rotuloOrigem(s))}</span> · ` : ""}${fmtDay(Math.max(s.updated, s.readAt || 0))} · ${mins(durOf(s))}</span>
       </span>
       ${prog}
     </button>
@@ -78,10 +81,12 @@ async function scriptMenu(s) {
       { label: s.fav ? "Remover dos favoritos" : "Favoritar", icon: "star", value: "fav" },
       { label: "Duplicar", icon: "copy", value: "dup" },
       { label: "Compartilhar", icon: "share", value: "share" },
+      ...(linkOrigem(s) ? [{ label: "Abrir no Maestro", icon: "share", value: "maestro" }] : []),
       { label: "Excluir", icon: "trash", value: "del", danger: true },
     ],
     s.title || "Sem título",
   );
+  if (v === "maestro") return void open(linkOrigem(s), "_blank", "noopener");
   if (v === "play") openPrompter(s.id);
   else if (v === "fav") D.updateScript(s.id, { fav: !s.fav });
   else if (v === "dup") D.duplicateScript(s.id);
@@ -442,6 +447,13 @@ function updateEditorMeta() {
     meter.classList.toggle("is-over", !!over);
   }
   $("#stats").innerHTML = `<b class="${over ? "is-over" : ""}">${fmtClock(secs)}</b><span>${plural(words, "palavra", "palavras")}</span>`;
+  const origem = $("#editorOrigem");
+  // o ícone do Maestro entra pelo app (o index.html só cita o Maestro no bloco da família, que a chave do lançamento vira)
+  if (rotuloOrigem(s) && !origem.querySelector("img")) origem.insertAdjacentHTML("afterbegin", ICONE_MAESTRO);
+  origem.hidden = !rotuloOrigem(s);
+  origem.querySelector("span").textContent = rotuloOrigem(s);
+  if (linkOrigem(s)) origem.href = linkOrigem(s);
+  else origem.removeAttribute("href");
   $("#editorFav").innerHTML = icon(s.fav ? "star-fill" : "star");
   $("#editorFav").classList.toggle("is-on", !!s.fav);
 }
@@ -505,8 +517,10 @@ $("#editorMore").addEventListener("click", async () => {
     { label: "Importar arquivo", icon: "import", value: "file" },
     { label: "Copiar texto", icon: "copy", value: "copy" },
     { label: "Compartilhar", icon: "share", value: "share" },
+    ...(linkOrigem(s) ? [{ label: "Abrir no Maestro", icon: "share", value: "maestro" }] : []),
     { label: "Excluir", icon: "trash", value: "del", danger: true },
   ]);
+  if (v === "maestro") return void open(linkOrigem(s), "_blank", "noopener");
   if (v === "file") {
     fileTarget = editingId;
     $("#fileInput").click();

@@ -9,6 +9,7 @@ import { on } from "./data.js";
 import { iniciarZ } from "./z.js";
 import { iniciarSet } from "./set.js";
 import { abaDeEntrada } from "./entrada.js";
+import { iniciarMaestro } from "./maestro.js";
 
 document.querySelector('meta[name="theme-color"]').content = matchMedia("(prefers-color-scheme: dark)").matches ? "#000000" : "#f5f5f7";
 mountSettingsForms();
@@ -58,6 +59,8 @@ on("tab", (t) => t === "z" && abrirZ());
 if (currentTab() === "z") abrirZ();
 // o Set, a aba em comum do ecossistema (a última da barra), liga depois de saber da conta; só a entrada aparece
 contaPronta.then(() => iniciarSet(zro, on));
+// os roteiros que o Maestro mandou chegam ao abrir (e ao voltar para o app), em cada aparelho
+contaPronta.then(() => iniciarMaestro(on));
 
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
   navigator.serviceWorker.register("/sw.js").catch(() => {});
