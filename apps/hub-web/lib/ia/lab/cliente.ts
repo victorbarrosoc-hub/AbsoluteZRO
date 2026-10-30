@@ -80,9 +80,13 @@ export async function falar(
 }
 
 /** Transcreve PCM 16 kHz (em pedaços de até 100 s) e junta o texto. */
-export async function transcrever(pedacos: Uint8Array[], opcoes: { idioma?: 'pt'; signal?: AbortSignal } = {}): Promise<{ texto: string; segundos: number }> {
+export async function transcrever(
+  pedacos: Uint8Array[],
+  opcoes: { idioma?: 'pt'; signal?: AbortSignal } = {},
+): Promise<{ texto: string; segundos: number; custoUsd: number }> {
   let texto = ''
   let segundos = 0
+  let custoUsd = 0
   for (const p of pedacos) {
     const q = new URLSearchParams({ chave: crypto.randomUUID() })
     if (opcoes.idioma) q.set('idioma', opcoes.idioma)
@@ -92,12 +96,13 @@ export async function transcrever(pedacos: Uint8Array[], opcoes: { idioma?: 'pt'
       body: p as BodyInit,
       signal: opcoes.signal,
     })
-    const d = (await r.json().catch(() => null)) as { texto?: string; segundos?: number; message?: string; error?: string } | null
+    const d = (await r.json().catch(() => null)) as { texto?: string; segundos?: number; custoUsd?: number; message?: string; error?: string } | null
     if (!r.ok) throw new ErroDoLab(d?.message ?? 'A transcrição não respondeu agora.', d?.error ?? null, r.status)
     texto += (texto && d?.texto ? ' ' : '') + (d?.texto ?? '')
     segundos += d?.segundos ?? 0
+    custoUsd += d?.custoUsd ?? 0
   }
-  return { texto: texto.trim(), segundos }
+  return { texto: texto.trim(), segundos, custoUsd }
 }
 
 export const usd = (v: number) =>

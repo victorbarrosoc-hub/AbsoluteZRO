@@ -1,7 +1,7 @@
 import 'server-only'
 /**
  * ElevenLabs no Laboratório da Z (ADR 0033): voz (texto → fala em streaming), transcrição de arquivo (Scribe v2) e o
- * token de uso único da escuta ao vivo (Scribe v2 Realtime, aberta pelo navegador). A chave é a do HUB
+ * token de uso único da escuta ao vivo (Scribe v2 Realtime, aberta pelo navegador; recusado, a voz segue por frase). A chave é a do HUB
  * (`ELEVENLABS_API_KEY`), só no servidor: nunca vai para o navegador, para o log ou para o banco.
  * Endpoints conferidos na documentação oficial (out/2026):
  *   GET  /v2/voices · POST /v1/text-to-speech/{voz}/stream · POST /v1/speech-to-text · POST /v1/single-use-token/realtime_scribe
@@ -40,13 +40,27 @@ const PERMISSAO: Record<Servico, string> = {
   'salvar-voz': 'Voices (escrever)',
 }
 
+/**
+ * O que a ElevenLabs disse ao recusar, sem nada do pedido: o código (`detail.code`, ou `detail.status` nas respostas
+ * antigas, ex. `missing_permissions`, `invalid_api_key`) e, quando a mensagem nomeia, a permissão que falta
+ * (ex. `speech_to_text`). Só palavras em minúsculas passam; o resto do corpo é ignorado.
+ */
+export async function motivoDaRecusa(r: Response): Promise<{ codigo: string | null; permissao: string | null }> {
+  const d = (await r.json().catch(() => null)) as { detail?: { code?: unknown; status?: unknown; message?: unknown } | unknown } | null
+  const det = d && typeof d.detail === 'object' && d.detail ? (d.detail as { code?: unknown; status?: unknown; message?: unknown }) : {}
+  const palavra = (v: unknown) => (typeof v === 'string' && /^[a-z][a-z0-9_]{1,59}$/.test(v) ? v : null)
+  const permissao = typeof det.message === 'string' ? palavra(/permission\s+([a-z][a-z0-9_]{1,59})/.exec(det.message)?.[1]) : null
+  return { codigo: palavra(det.code) ?? palavra(det.status), permissao }
+}
+
 async function falha(r: Response, servico: Servico): Promise<never> {
-  // Só o status: o corpo pode ecoar dados do pedido, e nada da chave vai para o log.
+  // Só o status e o código da recusa: o corpo pode ecoar dados do pedido, e nada da chave vai para o log.
   if (r.status === 401 || r.status === 403) {
-    console.warn(JSON.stringify({ scope: 'z-lab', event: 'elevenlabs.recusou', servico, status: r.status }))
+    const { codigo, permissao } = await motivoDaRecusa(r)
+    console.warn(JSON.stringify({ scope: 'z-lab', event: 'elevenlabs.recusou', servico, status: r.status, codigo, permissao }))
     throw new DomainError(
       'upstream_unavailable',
-      `A ElevenLabs recusou a chave para ${PERMISSAO[servico]} (${r.status}). Ligue essa permissão na chave ou confira ELEVENLABS_API_KEY.`,
+      `A ElevenLabs recusou a chave para ${PERMISSAO[servico]} (${r.status}${permissao ? `, falta ${permissao}` : ''}). Ligue essa permissão na chave ou confira ELEVENLABS_API_KEY.`,
     )
   }
   if (r.status === 429) throw new DomainError('rate_limited', 'A ElevenLabs pediu calma. Tente de novo em instantes.')
@@ -134,13 +148,30 @@ export async function transcrever(pcm: Uint8Array, signal?: AbortSignal, idioma?
   return { texto: (d.text ?? '').trim(), idioma: d.language_code ?? null }
 }
 
-/** Token de uso único (vale 15 min, uma conexão) para o navegador abrir a escuta ao vivo sem ver a chave. */
-export async function tokenDaEscuta(signal?: AbortSignal): Promise<string> {
-  const r = await fetch(`${base()}/v1/single-use-token/realtime_scribe`, { method: 'POST', headers: { 'xi-api-key': chave() }, signal })
-  if (!r.ok) await falha(r, 'escuta')
-  const d = (await r.json()) as { token?: string }
-  if (!d.token) throw new DomainError('upstream_unavailable', 'A ElevenLabs não devolveu o token da escuta.')
-  return d.token
+export type Escuta = { aoVivo: true; token: string } | { aoVivo: false; status: number; codigo: string | null }
+
+/**
+ * Token de uso único (vale 15 min, uma conexão) para o navegador abrir a escuta ao vivo sem ver a chave. Se a
+ * ElevenLabs recusar (em produção, chave restrita recebe 401 aqui mesmo com Speech to Text ligado) ou não responder,
+ * devolve `aoVivo: false` em vez de erro: o modo voz segue com a transcrição por frase (Scribe v2, pelo servidor).
+ */
+export async function tokenDaEscuta(signal?: AbortSignal): Promise<Escuta> {
+  const k = chave()
+  let r: Response
+  try {
+    r = await fetch(`${base()}/v1/single-use-token/realtime_scribe`, { method: 'POST', headers: { 'xi-api-key': k }, signal })
+  } catch (err) {
+    if (signal?.aborted) throw err
+    return { aoVivo: false, status: 0, codigo: null }
+  }
+  if (r.ok) {
+    const d = (await r.json().catch(() => null)) as { token?: unknown } | null
+    if (typeof d?.token === 'string' && d.token) return { aoVivo: true, token: d.token }
+    return { aoVivo: false, status: r.status, codigo: null }
+  }
+  const { codigo, permissao } = r.status === 401 || r.status === 403 ? await motivoDaRecusa(r) : { codigo: null, permissao: null }
+  console.warn(JSON.stringify({ scope: 'z-lab', event: 'elevenlabs.escuta_por_frase', servico: 'escuta', status: r.status, codigo, permissao }))
+  return { aoVivo: false, status: r.status, codigo }
 }
 
 export type Amostra = { id: string; audio: string; mime: string; segundos: number }

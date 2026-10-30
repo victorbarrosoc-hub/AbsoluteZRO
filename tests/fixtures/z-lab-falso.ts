@@ -6,6 +6,13 @@ import http from 'node:http'
 import type { Duplex } from 'node:stream'
 
 export type Registro = { caminho: string; corpo: unknown }
+/** O que a ElevenLabs falsa recusa (401, como a de produção com a chave restrita): o token da escuta ao vivo e a transcrição. */
+export type Recusa = 'token' | 'transcricao'
+
+/** A recusa no formato da ElevenLabs (`detail` com status e mensagem que nomeia a permissão). */
+const recusa = (permissao: string) => ({
+  detail: { status: 'missing_permissions', message: `The API key you used is missing the permission ${permissao} to execute this operation.` },
+})
 
 const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
 
@@ -115,6 +122,7 @@ function escuta(socket: Duplex, registro: Registro[]) {
 
 export function servidorFalso(porta: number) {
   const registro: Registro[] = []
+  const recusas = new Set<Recusa>()
   let arquivo = 0
   const servidor = http.createServer((req, res) => {
     const partes: Buffer[] = []
@@ -160,10 +168,12 @@ export function servidorFalso(porta: number) {
         })
       if (/^\/eleven\/v1\/text-to-speech\/[A-Za-z0-9]+\/stream$/.test(caminho)) return fala(res)
       if (caminho === '/eleven/v1/speech-to-text') {
+        if (recusas.has('transcricao')) return json(401, recusa('speech_to_text'))
         const ditado = bruto.toString('latin1').includes('name="language_code"')
         return json(200, { text: ditado ? 'Me conta uma novidade.' : 'Transcrição do vídeo de teste.', language_code: 'pt' })
       }
-      if (caminho === '/eleven/v1/single-use-token/realtime_scribe') return json(200, { token: 'sutkn_e2e' })
+      if (caminho === '/eleven/v1/single-use-token/realtime_scribe')
+        return recusas.has('token') ? json(401, { detail: { status: 'invalid_api_key', message: 'Invalid API key' } }) : json(200, { token: 'sutkn_e2e' })
       if (caminho === '/eleven/v1/text-to-voice/design')
         return json(200, {
           previews: [1, 2, 3].map((i) => ({ generated_voice_id: `gerada_e2e_${i}`, audio_base_64: 'SUQzBAAAAAAA', media_type: 'audio/mpeg', duration_secs: 4 })),
@@ -188,6 +198,8 @@ export function servidorFalso(porta: number) {
   })
   return {
     registro,
+    /** Liga ou desliga uma recusa (vale para os próximos pedidos). */
+    recusar: (o_que: Recusa, ligado = true) => void (ligado ? recusas.add(o_que) : recusas.delete(o_que)),
     abrir: () => new Promise<void>((ok) => servidor.listen(porta, '127.0.0.1', ok)),
     fechar: () =>
       new Promise<void>((ok) => {
