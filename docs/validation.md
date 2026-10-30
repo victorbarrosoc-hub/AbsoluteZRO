@@ -2777,6 +2777,29 @@ não vinha vazia); o e2e da exportação ganhou organização própria (`e2e/pre
 (7/7). Não validado: imprimir para PDF de verdade no Safari do iPhone (o e2e confere a página e o CSS, não o PDF gerado) e uma
 IA de verdade lendo `/f/<token>.md`.
 
+## Maestro · Criação: Roteiro e Fluxo num produto só (30/10/2026)
+
+Integração das frentes F1–F3 (Roteiro) e F1+F4–F6 (Fluxo) sobre a `main`: seletor Roteiros · Fluxos nas duas rotas
+irmãs, um bloco "Criação" na ficha do card (roteiros e fluxos), permissões do Fluxo pela capacidade `criacao`, e o
+proxy do e2e (nada sai para a internet) junto com as esperas determinísticas da `main`. Migrações do Maestro no
+journal: 0027, 0030, 0031, 0032 (`when` únicos).
+
+| Verificação                                                                                  | Comando                                                                                 | Resultado                                             |
+| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Maestro inteiro                                                                              | `npm run lint`, `format:check`, `typecheck`, `TEST_DB_SUFIXO=criacao npm test`, `build` | ok · ok · ok · **575/575** · ok                       |
+| Políticas da 0031/0032 com os papéis da capacidade `criacao`; migrador com migração atrasada | `npx tsx --test tests/fluxo.test.mts tests/migrador.test.mts`                           | ok                                                    |
+| E2E inteiro (computador, iPhone, iPhone Safari, computador Safari)                           | `E2E_DB_SUFIXO=criacao E2E_PORT=9917 … npm run test:e2e`                                | **179 passaram**, 50 pulados (por aparelho), 0 falhas |
+| Raiz                                                                                         | `npm run lint`, `format:check`, `typecheck`, `npm test`                                 | ok · ok · ok · **386/386**                            |
+| Contratos                                                                                    | `npm run contracts:export`                                                              | nenhum arquivo mudou                                  |
+| Segredos                                                                                     | `node scripts/scan-secrets.mjs`                                                         | nenhum                                                |
+
+Na primeira rodada inteira, o teste do Fluxo no iPhone falhou 3 de 3 (não era lentidão): a contagem já via o nó dentro
+do trecho que o streaming ainda não revelou (`<div hidden id="S:0">`) e a medida vinha vazia. O `caixa()` do spec
+agora espera o nó visível. Na raiz, `custos.test.ts` caiu uma vez (assinante de outro arquivo no mesmo banco, em
+paralelo); passou sozinho e na rodada seguinte inteira. Tour em vídeo (computador 1440×900 e iPhone 393×852) gravado
+com o mesmo servidor do e2e. Não validado: Safari de um iPhone de verdade; a miniatura do YouTube (o e2e não sai para a
+internet).
+
 ## SOBEDESCE: Atualizações quando o Absolute ZRO cuida do app (29/10/2026)
 
 - Relato do titular: o app no build 1034 dizia "Você está na versão mais nova" com o 1042 publicado. Instalado pela
