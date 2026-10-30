@@ -1,0 +1,409 @@
+/*
+ * Apagar na Criação (components/criacao/lixeira.tsx), igual em Roteiros e Fluxos: o "Apagar" vermelho por trás do
+ * cartão (deslizar no iPhone), o "•••" que aparece com o mouse, o menu, a folha de segurar, o "Apagado · Desfazer" e
+ * a lixeira. Só `transform` e opacidade se mexem; nada com "reduzir movimento". Prefixo `lx-`.
+ */
+
+:root {
+  /* o vermelho do sistema, um tom abaixo para o branco passar AA */
+  --lx-vermelho: #d70015;
+  --lx-vermelho-forte: #b0000f;
+}
+:root[data-theme="dark"] {
+  --lx-vermelho: #d4231a;
+  --lx-vermelho-forte: #ad1810;
+}
+
+/* ───────────── o cartão ───────────── */
+
+.lx-cartao {
+  position: relative;
+  min-width: 0;
+  --lx-raio: 22px;
+}
+.lx-cartao--fluxo {
+  --lx-raio: 24px;
+}
+.lx-frente {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  height: 100%;
+  min-width: 0;
+  border-radius: var(--lx-raio);
+  touch-action: pan-y;
+  transition: transform 0.34s var(--spring);
+}
+.lx-frente > * {
+  min-width: 0;
+}
+
+/* por trás: só aparece enquanto o cartão anda (nada de franja vermelha nos cantos parado) */
+.lx-fundo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: flex-end;
+  border-radius: var(--lx-raio);
+  background: var(--lx-vermelho);
+  opacity: 0;
+  overflow: hidden;
+}
+.lx-cartao[data-deslizando] .lx-fundo {
+  opacity: 1;
+}
+.lx-cartao[data-armado] .lx-fundo {
+  background: var(--lx-vermelho-forte);
+}
+.lx-fundo__apagar {
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 4px;
+  width: 92px;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.lx-fundo__apagar svg {
+  transition: transform 0.28s var(--spring);
+}
+.lx-cartao[data-armado] .lx-fundo__apagar svg {
+  transform: scale(1.18);
+}
+
+/* saindo da lista: encolhe e some */
+.lx-cartao[data-saindo],
+.lx-na-lixeira[data-saindo] {
+  pointer-events: none;
+  animation: lx-sai 0.22s var(--ease) both;
+}
+@keyframes lx-sai {
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+/* "•••": no computador, aparece com o mouse em cima ou no foco */
+.lx-mais {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  right: 12px;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--pill-fill);
+  box-shadow: var(--pill-rim);
+  color: var(--text);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.18s var(--ease);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+.lx-cartao--fluxo .lx-mais {
+  top: 20px;
+  right: 20px;
+}
+.lx-cartao:hover .lx-mais,
+.lx-cartao:focus-within .lx-mais,
+.lx-mais[aria-expanded="true"] {
+  opacity: 1;
+}
+.lx-mais:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+/* o formato do roteiro mora no mesmo canto: dá lugar ao "•••" */
+.lx-cartao .cr-cartao__formato {
+  transition: opacity 0.18s var(--ease);
+}
+.lx-cartao:hover .cr-cartao__formato,
+.lx-cartao:focus-within .cr-cartao__formato {
+  opacity: 0;
+}
+
+/* no toque: o gesto basta. O "•••" fica só para o leitor de tela (fora da vista, fora do dedo) */
+@media (hover: none) {
+  .lx-frente {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  .lx-mais {
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    opacity: 1;
+  }
+  .lx-cartao:hover .cr-cartao__formato,
+  .lx-cartao:focus-within .cr-cartao__formato {
+    opacity: 1;
+  }
+}
+
+/* ───────────── o menu do "•••" e do botão direito ───────────── */
+
+.lx-menu {
+  position: fixed;
+  z-index: 70;
+  display: grid;
+  min-width: 230px;
+  max-width: 280px;
+  padding: 6px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface) 97%, transparent);
+  box-shadow: var(--shadow-float), var(--lift);
+  animation: lx-abre 0.2s var(--spring) both;
+  transform-origin: top right;
+}
+.lx-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.lx-menu button:hover,
+.lx-menu button:focus-visible {
+  background: var(--hover);
+  outline: none;
+}
+.lx-menu__aviso {
+  margin: 0;
+  padding: 2px 12px 8px 38px;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--text-faint);
+}
+.lx-perigo {
+  color: var(--danger-text) !important;
+}
+@keyframes lx-abre {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+/* ───────────── a folha de segurar e a do "Apagar de vez" ───────────── */
+
+.lx-folha__corpo {
+  display: grid;
+  gap: 14px;
+  padding: 22px 20px 18px;
+}
+.lx-folha__cabeca {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.lx-folha__cabeca span {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+.lx-folha__cabeca h2 {
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--font-apple);
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--text-strong);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lx-folha__lista {
+  display: grid;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+.lx-folha__lista > a,
+.lx-folha__lista > button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.lx-folha__lista > * + * {
+  box-shadow: inset 0 1px 0 var(--line);
+}
+.lx-folha__lista > :active {
+  background: var(--hover);
+}
+.lx-folha__aviso {
+  margin: -4px 2px 0;
+  font-size: 0.86rem;
+  color: var(--text-mute);
+}
+.lx-folha__cancelar {
+  justify-content: center;
+  width: 100%;
+}
+.lx-folha__botoes {
+  display: flex;
+  gap: 10px;
+}
+.lx-folha__botoes > * {
+  flex: 1;
+  justify-content: center;
+}
+.lx-folha__sim {
+  --gbi-fill: var(--lx-vermelho);
+  --gbi-ink: #fff;
+}
+
+/* ───────────── "Apagado · Desfazer" ───────────── */
+
+.lx-aviso {
+  position: fixed;
+  z-index: 60;
+  left: 50%;
+  bottom: 24px;
+  translate: -50% 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: calc(100% - 32px);
+  padding: 10px 12px 10px 20px;
+  border-radius: 999px;
+  background: var(--gbi-fill);
+  color: var(--gbi-ink);
+  box-shadow: var(--gbi-shadow);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  font-size: 0.92rem;
+  animation: lx-aviso 0.36s var(--spring) both;
+}
+.lx-aviso__texto {
+  display: grid;
+  min-width: 0;
+  line-height: 1.25;
+}
+.lx-aviso__texto small {
+  font-size: 0.8rem;
+  opacity: 0.78;
+}
+.lx-aviso button {
+  flex: none;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.lx-aviso[data-tom="erro"] {
+  background: var(--danger-text);
+  color: #fff;
+}
+@keyframes lx-aviso {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+}
+/* no celular, acima da barra de baixo */
+@media (max-width: 900px) {
+  .lx-aviso {
+    bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ───────────── a lixeira ───────────── */
+
+.lx-entrada {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--pill-fill);
+  box-shadow: var(--pill-rim);
+  color: var(--text-mute);
+  text-decoration: none;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+.lx-entrada:hover {
+  color: var(--text);
+}
+.lx-na-lixeira {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+}
+.lx-parado,
+.lx-parado:hover {
+  transform: none;
+  cursor: default;
+  opacity: 0.86;
+}
+.lx-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.lx-acoes__perigo {
+  color: var(--danger-text);
+}
+.lx-acoes__nota {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lx-frente,
+  .lx-fundo__apagar svg,
+  .lx-mais,
+  .lx-cartao .cr-cartao__formato {
+    transition: none !important;
+  }
+  .lx-cartao[data-saindo],
+  .lx-na-lixeira[data-saindo],
+  .lx-menu,
+  .lx-aviso {
+    animation: none !important;
+  }
+}

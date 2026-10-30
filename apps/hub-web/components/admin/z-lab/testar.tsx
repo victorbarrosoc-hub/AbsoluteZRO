@@ -3,12 +3,15 @@
  * Testar a Z nova (Laboratório da Z, ADR 0033): conversa por texto com ditado e anexos, conversa por voz (ModoVoz) e
  * comparação lado a lado (rascunho × versão publicada ou padrão). Nada da conversa fica guardado: o navegador manda o
  * histórico a cada turno; anexos de imagem e PDF somem dos arquivos da Anthropic quando a conversa recomeça.
+ * Aprender conversando: no rascunho, a Z reconhece correções e mostra o cartão "Aprender"; só o "Guardar" (toque, ou
+ * "pode guardar" dito ou escrito) leva ao rascunho, e o próximo turno já usa.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import type { ZConfig, ZLabAnexo } from '@zro/core'
-import { api, conversar, ErroDoLab, usd, type UsoDoTurno } from '@/lib/ia/lab/cliente'
+import type { ZConfig, ZLabAnexo, ZProposta } from '@zro/core'
+import { api, conversar, ErroDoLab, usd, type EventoDeAprender, type UsoDoTurno } from '@/lib/ia/lab/cliente'
 import type { LabEstado } from '@/lib/ia/lab/estado'
 import { Icon } from '../../icons'
+import { CartaoDeAprender, guardarProposta, type Cartao } from './aprender'
 import { PalcoZ, Z } from '../../ia/simbolo-z'
 import { TextoIa } from '../../ia/texto-ia'
 import { Compositor, type AnexoPronto } from './compositor'
@@ -30,9 +33,21 @@ type Turno = {
   pergunta: { texto: string; anexos: ZLabAnexo[]; vista: { nome: string; tipo: string }[]; porVoz?: boolean }
   a: Resposta
   b?: Resposta
+  /** Cartões de aprendizado que a resposta da coluna A propôs. */
+  cartoes?: Cartao[]
 }
 
 const MAX_MENSAGENS = 40
+const MAX_PENDENTES = 5
+
+/** Cartões esperando o titular (os mais novos no fim): vão em cada turno para ele poder confirmar falando. */
+function pendentesDe(turnos: Turno[]): ZProposta[] {
+  return turnos
+    .flatMap((t) => t.cartoes ?? [])
+    .filter((c) => c.estado === 'pendente' || c.estado === 'erro' || c.estado === 'ajustando')
+    .map((c) => c.proposta)
+    .slice(-MAX_PENDENTES)
+}
 
 /** O histórico que vai para a Z de uma coluna: perguntas e as respostas daquela coluna (as que chegaram a ter texto). */
 function historicoDe(turnos: Turno[], col: Coluna) {
@@ -93,6 +108,69 @@ export function LabTestar({ estado, compararCom }: { estado: LabEstado; comparar
 
   const somarGasto = useCallback((custo: number) => setGasto((g) => ({ ...g, hoje: g.hoje + custo, mes: g.mes + custo })), [])
 
+  /** Muda um cartão, onde quer que ele esteja na conversa. */
+  const mudarCartao = useCallback((id: string, f: (c: Cartao) => Cartao) => {
+    setTurnos((ts) =>
+      ts.map((t) => (t.cartoes?.some((c) => c.proposta.id === id) ? { ...t, cartoes: t.cartoes.map((c) => (c.proposta.id === id ? f(c) : c)) } : t)),
+    )
+  }, [])
+
+  const aoAprender = useCallback(
+    (turnoId: string, e: EventoDeAprender) => {
+      if (e.acao === 'proposto')
+        setTurnos((ts) => ts.map((t) => (t.id === turnoId ? { ...t, cartoes: [...(t.cartoes ?? []), { proposta: e.proposta, estado: 'pendente' }] } : t)))
+      else if (e.acao === 'salvo')
+        mudarCartao(e.proposta, (c) => ({ ...c, estado: 'guardado', repetido: e.repetido, substituido: e.substituido?.texto ?? null, erro: undefined }))
+      else if (e.acao === 'ignorado') mudarCartao(e.proposta, (c) => ({ ...c, estado: 'ignorado' }))
+      else if (e.acao === 'recusado' && e.proposta) mudarCartao(e.proposta, (c) => ({ ...c, estado: 'erro', erro: e.motivo }))
+      else if (e.acao === 'recusado') setAviso(e.motivo)
+      else if (e.acao === 'repetido')
+        setTurnos((ts) =>
+          ts.map((t) =>
+            t.id === turnoId
+              ? {
+                  ...t,
+                  cartoes: [
+                    ...(t.cartoes ?? []),
+                    {
+                      proposta: { id: crypto.randomUUID(), tipo: 'regra', texto: e.texto, plataforma: null, exemplo: null, gatilho: '' },
+                      estado: 'guardado',
+                      repetido: true,
+                    },
+                  ],
+                }
+              : t,
+          ),
+        )
+    },
+    [mudarCartao],
+  )
+
+  /** O toque em Guardar (com o texto ajustado, se mudou). */
+  const guardarCartao = useCallback(
+    async (c: Cartao, texto?: string) => {
+      mudarCartao(c.proposta.id, (x) => ({ ...x, estado: 'guardando', erro: undefined }))
+      try {
+        const r = await guardarProposta(c.proposta, texto)
+        mudarCartao(c.proposta.id, (x) => ({
+          ...x,
+          proposta: { ...x.proposta, texto: r.aprendizado.texto },
+          estado: 'guardado',
+          repetido: r.repetido,
+          substituido: r.substituido?.texto ?? null,
+        }))
+      } catch (err) {
+        mudarCartao(c.proposta.id, (x) => ({ ...x, estado: 'erro', erro: err instanceof ErroDoLab ? err.message : 'Não deu para guardar agora.' }))
+      }
+    },
+    [mudarCartao],
+  )
+  const acoesDoCartao = (c: Cartao) => ({
+    onGuardar: (texto?: string) => void guardarCartao(c, texto),
+    onIgnorar: () => mudarCartao(c.proposta.id, (x) => ({ ...x, estado: 'ignorado' })),
+    onAjustar: (sim: boolean) => mudarCartao(c.proposta.id, (x) => ({ ...x, estado: sim ? 'ajustando' : 'pendente' })),
+  })
+
   /** Um turno numa coluna, em streaming. `aoTexto` recebe cada pedaço (a voz fala enquanto chega). */
   const responderColuna = useCallback(
     async (
@@ -105,11 +183,22 @@ export function LabTestar({ estado, compararCom }: { estado: LabEstado; comparar
       const t0 = performance.now()
       let primeiro = true
       let texto = ''
+      // Aprender só no rascunho e só na coluna principal (a comparação não propõe nada).
+      const aprender = v === 'rascunho' && col === 'a'
       try {
         await conversar(
-          { versao: v, modelo: opcoes.modelo || modelo || null, plataforma, voz: !!opcoes.porVoz, historico },
+          {
+            versao: v,
+            modelo: opcoes.modelo || modelo || null,
+            plataforma,
+            voz: !!opcoes.porVoz,
+            historico,
+            ...(aprender ? { aprender: true, pendentes: pendentesDe(turnosRef.current) } : {}),
+          },
           (e) => {
-            if (e.tipo === 'texto') {
+            if (e.tipo === 'aprendizado') {
+              if (aprender) aoAprender(id, e)
+            } else if (e.tipo === 'texto') {
               texto += e.t
               if (primeiro) {
                 primeiro = false
@@ -136,7 +225,7 @@ export function LabTestar({ estado, compararCom }: { estado: LabEstado; comparar
       }
       return texto
     },
-    [atualizar, modelo, plataforma, somarGasto],
+    [aoAprender, atualizar, modelo, plataforma, somarGasto],
   )
 
   const enviar = useCallback(
@@ -186,6 +275,12 @@ export function LabTestar({ estado, compararCom }: { estado: LabEstado; comparar
     for (const f of arquivos.current) void api(`/anexos/${f}`, { method: 'DELETE' }).catch(() => undefined)
     arquivos.current.clear()
   }
+
+  // Na voz, o cartão mais novo da conversa por voz (some quando ignorado).
+  const cartaoDaVoz = useMemo(() => {
+    const ultimo = [...turnos].reverse().find((t) => t.pergunta.porVoz && t.cartoes?.length)
+    return ultimo?.cartoes?.filter((c) => c.estado !== 'ignorado').at(-1) ?? null
+  }, [turnos])
 
   const opcoesVersao = useMemo<Versao[]>(() => ['rascunho', ...estado.versoes.map((v) => v.numero), 'padrao'], [estado.versoes])
   const vazio = turnos.length === 0
@@ -309,6 +404,9 @@ export function LabTestar({ estado, compararCom }: { estado: LabEstado; comparar
                 <RespostaVista r={t.a} rotulo={comparar || t.b ? nomeDaVersao(versao, publicada) : null} />
                 {t.b && <RespostaVista r={t.b} rotulo={nomeDaVersao(alvo, publicada)} />}
               </div>
+              {t.cartoes?.map((c) => (
+                <CartaoDeAprender key={c.proposta.id} cartao={c} {...acoesDoCartao(c)} />
+              ))}
             </li>
           ))}
           <div ref={fim} />
@@ -328,7 +426,15 @@ export function LabTestar({ estado, compararCom }: { estado: LabEstado; comparar
       />
 
       {voz && configA && (
-        <ModoVoz config={configA} catalogo={catalogo} modeloDoTeste={modelo} perguntar={perguntarPorVoz} onGasto={somarGasto} onFechar={() => setVoz(false)} />
+        <ModoVoz
+          config={configA}
+          catalogo={catalogo}
+          modeloDoTeste={modelo}
+          perguntar={perguntarPorVoz}
+          onGasto={somarGasto}
+          onFechar={() => setVoz(false)}
+          cartao={cartaoDaVoz ? <CartaoDeAprender cartao={cartaoDaVoz} compacto {...acoesDoCartao(cartaoDaVoz)} /> : null}
+        />
       )}
     </div>
   )

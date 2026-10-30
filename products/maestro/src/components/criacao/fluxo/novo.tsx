@@ -42,28 +42,3 @@ export function NovoFluxo({ className = "glass-btn glass-btn--ink" }: { classNam
     </>
   );
 }
-
-/** "Tirar da lixeira" na lista da lixeira. */
-export function RestaurarFluxo({ id }: { id: string }) {
-  const router = useRouter();
-  const [indo, setIndo] = useState(false);
-  return (
-    <button
-      type="button"
-      className="glass-btn glass-btn--sm"
-      disabled={indo}
-      onClick={async () => {
-        setIndo(true);
-        const r = await fetch("/api/criacao/fluxo", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ op: "restaurar", id }),
-        }).catch(() => null);
-        setIndo(false);
-        if (r?.ok) router.refresh();
-      }}
-    >
-      Tirar da lixeira
-    </button>
-  );
-}

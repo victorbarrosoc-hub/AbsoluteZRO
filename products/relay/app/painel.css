@@ -595,3 +595,19 @@
 .projeto .ficha {
   justify-self: start;
 }
+
+/* looks: a pasta e o Drive pelo SOBEDESCE */
+.looks-pasta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.looks-pasta .vidro {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+span.chip-destino {
+  cursor: default;
+}

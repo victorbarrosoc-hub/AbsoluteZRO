@@ -1,7 +1,8 @@
 /**
  * Chamadas do Laboratório da Z no navegador: JSON com a mensagem de erro do HUB, a resposta da Z em NDJSON (os mesmos
- * eventos da Z: `lendo`, `texto`, e no fim `fim` ou `erro`) e a fala em PCM.
+ * eventos da Z: `lendo`, `texto`, `aprendizado`, e no fim `fim` ou `erro`) e a fala em PCM.
  */
+import type { ZAprendizado, ZProposta } from '@zro/core'
 
 export class ErroDoLab extends Error {
   constructor(
@@ -28,7 +29,15 @@ export async function api<T>(caminho: string, init: RequestInit & { json?: unkno
 }
 
 export type UsoDoTurno = { modelo: string; entrada: number; saida: number; cache: number; custoUsd: number }
+/** Aprender conversando: o que a Z propôs e o que o servidor decidiu (o mesmo EventoDeAprender de lib/ia/lab/aprender.ts). */
+export type EventoDeAprender =
+  | { tipo: 'aprendizado'; acao: 'proposto'; proposta: ZProposta }
+  | { tipo: 'aprendizado'; acao: 'salvo'; proposta: string; aprendizado: ZAprendizado; substituido: { id: string; texto: string } | null; repetido: boolean }
+  | { tipo: 'aprendizado'; acao: 'ignorado'; proposta: string }
+  | { tipo: 'aprendizado'; acao: 'repetido'; texto: string }
+  | { tipo: 'aprendizado'; acao: 'recusado'; motivo: string; proposta?: string }
 export type EventoDoLab =
+  | EventoDeAprender
   | { tipo: 'lendo'; o_que: string; rotulo?: string }
   | { tipo: 'texto'; t: string }
   | { tipo: 'fim'; texto: boolean; uso: UsoDoTurno }

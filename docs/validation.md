@@ -21,6 +21,25 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
   sozinho e na rodada seguinte); `npm run lint` limpo. Carro `npm run test:api` **47/47** (origem `carro.absolutezro.com`
   aceita). SOBEDESCE: só a lista de origens do site mudou (`origensDoSite`).
 
+## Set: adicionar pelo @ no Online (30/10/2026)
+
+Achar a pessoa pelo @, adicionar, ver quando está online e abrir a conversa, tudo no Online do `<zro-set>` (antes
+escondido nos Ajustes). API: `POST /api/v1/set/contatos { ver }` (prévia; mesmas regras da busca de perfis) e "já são
+contatos" = 409; widget continua `v1` e nenhum repasse dos apps mudou (a prévia vai pelo POST que todos já passam).
+
+| Verificação    | Comando                                                                                                           | Resultado                                                                      |
+| -------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Raiz           | `npm run lint`, `format:check`, `typecheck`, `npm test` (`TEST_DATABASE_URL=…/zro_setadd_test`), `npm run build`  | ok, ok, ok, 395/395 (45 arquivos; 3 casos novos em `set.test.ts`), ok          |
+| E2E do HUB     | `tests/e2e/set.spec.ts` (`E2E_PORT=7017`, banco `zro_setadd_e2e_test`)                                            | 7/7 (Chromium e WebKit, computador e iPhone; limite e escondido no 1440 e 393) |
+| E2E do Maestro | `e2e/set.spec.ts` (`E2E_DB_SUFIXO=setadd E2E_PORT=7017 E2E_PONTE_PORT=7019 E2E_ANP_PORT=7021 E2E_ROTA_PORT=7023`) | 12/12 (computador, iPhone e Safari do iPhone)                                  |
+| Segredos       | `node scripts/scan-secrets.mjs`                                                                                   | nenhum segredo                                                                 |
+
+O que os testes cobrem: a prévia mostra nome, @ e foto só de perfil visível (escondido e inexistente com a mesma
+resposta, sem e-mail), não pede nem avisa ninguém, diz enviado/recebido/contato/bloqueado e nunca o bloqueio da outra
+pessoa; o pedido pelo @ aparece para a outra pessoa no topo do Online (número na aba), ela aceita ali, os dois se veem
+online ("na Absolute ZRO"/"no Maestro") e o toque na pessoa abre a conversa; já contatos = 409; o limite de 20 por dia
+aparece no campo (repetir o enviado e aceitar o recebido não gastam); Esc fecha só o campo.
+
 ## Integração: a Z discreta e o Set em todas as plataformas (30/10/2026)
 
 Os dois ramos de 30/10 juntos ("a Z nunca é a primeira tela" e "Set em todas as plataformas"). Em todo app a entrada
@@ -3030,6 +3049,28 @@ Não conferido aqui: voz, transcrição, Voice Design e o Claude com as chaves r
 da voz); microfone de verdade e o eco do alto-falante no barge-in; vídeos grandes no navegador; a migração `0036` em
 produção (deploy só com autorização).
 
+**Aprender conversando (30/10/2026, ADR 0033 § Aprender conversando).** Banco `zro_aprender_test` e
+`zro_aprender_e2e_test` (portas 3271–3274), Claude e ElevenLabs falsos (a Z falsa chama `propor_aprendizado` para uma
+correção e `confirmar_aprendizado` para "guarda e…").
+
+| O quê                                | Como                                                                                    | Resultado                                                                                                                                                                                                                    |
+| ------------------------------------ | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ferramentas, trava, repetido, cartão | `tests/integration/z-aprendizados-unidade.test.ts`                                      | 12/12: `strict` sem campo opcional; entrada do modelo conferida; trava (regra, ação, confirmação, senha, inventar, fingir, outra conta); repetido; contradição; "sim/pode guardar/ignora"; bloco por último; limites; pedido |
+| Quem pode, RLS, auditoria            | `tests/integration/z-lab.test.ts` (aprender conversando)                                | não admin e suporte: 403 em guardar, editar e remover; `asUser` direto: 0 linhas e update sem efeito no rascunho; cada gravação, edição, mudança de seção e remoção em `audit_logs`                                          |
+| Confirmar, repetido, contradição     | `tests/integration/z-lab.test.ts`                                                       | sem `confirmar: true` = 422; toque duplo e outras palavras não duplicam; a correção nova fica no lugar da contraditória; trava = 403; 41º = 409; Configurar salvando não apaga                                               |
+| Rascunho × versão × clientes         | `tests/integration/z-lab.test.ts`                                                       | a versão congela os aprendizados (gatilho imutável); clientes nulos até publicar; publicada traz o bloco; restaurar traz os da versão                                                                                        |
+| Turno com o Claude falso             | `tests/integration/z-lab.test.ts` (aprender no turno)                                   | correção → cartão, nada salvo, uso das duas voltas; "pode guardar" decidido antes do modelo e já no sistema; próxima resposta segue; "ignora"; frase longa pela ferramenta; o modelo não confirma sozinho; trava sem cartão  |
+| Tela (e2e)                           | `npx playwright test tests/e2e/z-lab-aprender.spec.ts`                                  | 1/1: correção → cartão → Guardar no toque → próxima resposta segue; na voz, cartão → "pode guardar" dito → guardado; Configurar › Aprendizados com origem; mover; salvar versão com os dois; remover; axe                    |
+| Rotas novas                          | `tests/e2e/z-lab.spec.ts` e `tests/integration/openapi.test.ts`                         | 403 para cliente e suporte em `POST /aprendizados`, `PATCH`/`DELETE /aprendizados/{id}`; as 22 rotas `/api/v1/admin/z-lab/*` no OpenAPI                                                                                      |
+| Suíte                                | `npm test` · lint, Prettier, tipos, build, `node scripts/scan-secrets.mjs` · e2e do lab | 412/412 · ok · ok · ok · ok · nenhum segredo · `z-lab*.spec.ts` 6/6 (z-lab.spec agora aceita o número da versão de quem rodou antes)                                                                                         |
+
+`npm run test:e2e` inteiro: 52/55; os 3 que caíram (`home-celular` WebKit, `hub` plano grátis, `sso` app da
+família) são de outras telas e passam sozinhos (4/4), tempo da máquina carregada.
+
+Fotos do cartão na conversa, guardado, na voz e da seção no Configurar (393 e 1440 px, claro e escuro): rodar o e2e com
+`ZLAB_FOTOS=<pasta>`. Não conferido aqui: o modelo real reconhecendo correções (a Z falsa decide por palavra-chave) e a
+transcrição real de "pode guardar".
+
 ## Relay: login único e Set ligados na produção (30/10/2026)
 
 - Cliente `relay-web` cadastrado pelo titular no console do HUB (Apps → Login único): confidencial, app da família,
@@ -3072,3 +3113,32 @@ produção (deploy só com autorização).
   RLS forçado; `anon` e `authenticated` não leem nada; `relay_app` lê. `RELAY_DATABASE_URL` (sensível, só produção do
   projeto Vercel `relay`, pooler de transação). A migração perdeu o `create schema if not exists` antes de ir para a
   produção: o papel `relay` não cria schema no banco (o migrador só cria quando falta, no Postgres local).
+
+## Maestro · Criação: apagar fácil, com Desfazer (30/10/2026)
+
+Deslizar/segurar no iPhone, "•••"/botão direito no computador, lixeira com Restaurar e Apagar de vez nas listas de
+Roteiros e Fluxos (`components/criacao/lixeira.tsx`, `lib/criacao/lixeira.ts`, `app/lixeira.css`).
+
+| Verificação                                                                                                                             | Comando                                                                              | Resultado                                                                                                                                                |
+| --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lixeira pura e pelas rotas (pedido, aviso, deslizar, papéis, de vez só da lixeira e só admin/gestão, versão fica, auditoria, link vivo) | `TEST_DB_SUFIXO=lixo npx tsx --test tests/lixeira.test.mts`                          | **9/9**                                                                                                                                                  |
+| Maestro inteiro                                                                                                                         | `npm run lint`, `format:check`, `typecheck`, `TEST_DB_SUFIXO=lixo npm test`, `build` | ok · ok · ok · **584/584** · ok                                                                                                                          |
+| E2E do apagar (computador, iPhone Chromium com toque de verdade, iPhone Safari)                                                         | `E2E_DB_SUFIXO=lixo E2E_PORT=6917 … npx playwright test e2e/criacao-apagar.spec.ts`  | **17 passaram**, 16 pulados (por aparelho)                                                                                                               |
+| E2E da Criação e nada cortado (lixeiras e a folha de segurar entraram no `sem-corte`)                                                   | `npx playwright test e2e/criacao-*.spec.ts e2e/sem-corte.spec.ts`                    | **43 passaram**, 35 pulados (por aparelho), 0 falhas (`sem-corte` com as duas lixeiras e a folha de segurar, Chromium e WebKit, 375/393, claro e escuro) |
+| Raiz                                                                                                                                    | `npm run lint`, `format:check`, `typecheck`                                          | ok · ok · ok                                                                                                                                             |
+| Segredos                                                                                                                                | `node scripts/scan-secrets.mjs`                                                      | nenhum                                                                                                                                                   |
+
+Não validado: o dedo de verdade num iPhone (o e2e usa toques sintéticos no WebKit e o toque do CDP no Chromium) e a
+vibração do segurar (`navigator.vibrate` não existe no Safari). Equipe não vê o aviso do link vivo (os links são só de
+administração e gestão pelo RLS).
+
+## Looks do Relay no Drive pelo SOBEDESCE (30/10/2026)
+
+- Relay `test/pasta-looks.test.js`: leva o que só está no aparelho, traz o que só está na pasta, deixa o igual, mesmo
+  nome com conteúdo diferente fica como está (avisa), arquivo que não é `.cube` 3D é recusado, nada é apagado; a
+  segunda vez não muda nada. `test/painel.test.js` no Chromium: a seção Looks (com a Revela ligada), escolher a pasta,
+  `1 levado para a pasta · 1 trazido da pasta.`, os dois arquivos de verdade na pasta e o link `sobedesce://looks`.
+  O Chromium de teste cai ao guardar no IndexedDB uma pasta do armazenamento privado; o teste usa um invólucro dela
+  (guardado na memória). No Chrome de verdade, a pasta escolhida fica guardada; não conferido aqui com um seletor real.
+- SOBEDESCE `test/relay.test.js`: `sobedesce://looks` e `?trocar=1` aceitos; com caminho, outro parâmetro ou outro
+  host, recusados. O Comparar com as duas pastas não foi exercitado com o app aberto (falta o desktop rodando aqui).

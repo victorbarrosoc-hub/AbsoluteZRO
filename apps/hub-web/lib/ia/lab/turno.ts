@@ -21,7 +21,8 @@ import {
   type ZPersonalizacao,
 } from '@zro/core'
 import type { Database } from '@zro/db'
-import { iaModelo } from '../modelo'
+import { iaModelo, type RespostaOpcoes } from '../modelo'
+import { Aprendiz, FERRAMENTAS_DE_APRENDER } from './aprender'
 
 /** Instrução do operador quando a resposta vai ser falada (modo voz). */
 export const FALADA =
@@ -75,4 +76,27 @@ export function opcoesDoTeste(pedido: ZLabPedido, config: ZConfig | null) {
     modelo: pedido.modelo ?? config?.modelo.id ?? iaModelo(),
     maxTokens: config ? Z_RESPOSTAS[config.modelo.resposta].maxTokens : 4000,
   }
+}
+
+/**
+ * Tudo que um turno do laboratório precisa antes de chamar o Claude: aprender conversando (um "pode guardar" com cartão
+ * esperando é decidido aqui, antes do modelo, e a configuração já sai com o que foi guardado), a configuração do teste,
+ * o turno e as opções da resposta (com as ferramentas de aprender, só no rascunho). `aprendiz.ligar` manda os eventos.
+ */
+export async function prepararTurno(db: Database, auth: Authenticated | null, pedido: ZLabPedido) {
+  const aprendiz = pedido.aprender && pedido.versao === 'rascunho' ? new Aprendiz(db, auth, pedido) : null
+  const decidido = aprendiz ? await aprendiz.antes() : null
+  const { config, personalizacao } = await configDoTeste(db, auth, pedido)
+  if (aprendiz && config) aprendiz.conhecer(config.aprendizados)
+  const turno = await turnoDoLab(db, auth, pedido)
+  const base = opcoesDoTeste(pedido, config)
+  const opcoes = (): RespostaOpcoes => ({
+    ...base,
+    personalizacao,
+    mensagens: mensagensDoLab(pedido.historico),
+    // A instrução do aprender sai na hora de responder: já sem os cartões decididos em `antes`.
+    instrucao: [pedido.voz ? FALADA : null, aprendiz?.instrucao(), decidido].filter(Boolean).join('\n\n') || undefined,
+    ...(aprendiz ? { ferramentasExtras: FERRAMENTAS_DE_APRENDER, usarExtra: (u) => aprendiz.usar(u) } : {}),
+  })
+  return { turno, aprendiz, config, opcoes }
 }

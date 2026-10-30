@@ -11,6 +11,9 @@ import { montarSet } from './set.js'
 import * as Historico from './historico.js'
 import * as Meus from './meus.js'
 import * as Nuvem from './nuvem.js'
+import * as Looks from './looks.js'
+import * as PastaLooks from './pasta-looks.js'
+import { RECURSOS } from './recursos.js'
 
 const $ = (id) => document.getElementById(id)
 const el = (tag, props = {}, ...filhos) => {
@@ -206,6 +209,50 @@ function desenharMeus() {
   $('bloco-equipe').hidden = !daEquipe.length
 }
 
+// ─────────── looks: no aparelho, numa pasta e no Drive pelo SOBEDESCE (app/pasta-looks.js) ───────────
+
+async function desenharLooks() {
+  if (!RECURSOS.revela) return
+  $('bloco-looks').hidden = false
+  const lista = await Looks.listar()
+  $('looks').replaceChildren(...lista.map((l) => el('li', {}, el('span', { className: 'chip-destino', title: `${l.pontos} pontos${l.pedeLog ? ' · sobre o log' : ''}` }, icone('cor'), el('span', { textContent: l.nome })))))
+  $('looks').hidden = !lista.length
+  $('looks-vazio').hidden = Boolean(lista.length)
+  if (!PastaLooks.temPasta()) {
+    $('looks-pasta').hidden = true
+    $('looks-aviso').textContent = 'Para levar ao Drive, abra no Chrome ou no Edge do computador.'
+    return
+  }
+  const pasta = await Looks.pasta()
+  $('looks-nome-pasta').hidden = !pasta
+  if (pasta) $('looks-nome-pasta').textContent = pasta.name
+  $('looks-escolher').lastChild.textContent = pasta ? 'Trocar a pasta' : 'Escolher a pasta'
+  $('looks-sincronizar').hidden = !pasta
+}
+
+async function sincronizarLooks(pasta) {
+  $('looks-aviso').textContent = 'Sincronizando…'
+  try {
+    $('looks-aviso').textContent = PastaLooks.resumo(await PastaLooks.sincronizar(Looks, pasta))
+  } catch (e) {
+    $('looks-aviso').textContent = e?.name === 'NotAllowedError' ? 'O navegador não deixou usar a pasta.' : 'Não deu para sincronizar com a pasta.'
+  }
+  await desenharLooks()
+}
+
+$('looks-escolher').addEventListener('click', async () => {
+  try {
+    await sincronizarLooks(await PastaLooks.escolherPasta(Looks))
+  } catch {
+    // cancelou a escolha
+  }
+})
+$('looks-sincronizar').addEventListener('click', async () => {
+  const pasta = await PastaLooks.pastaLiberada(Looks, { pedir: true })
+  if (pasta) await sincronizarLooks(pasta)
+  else $('looks-aviso').textContent = 'O navegador não deixou usar a pasta. Escolha de novo.'
+})
+
 // ─────────── começo ───────────
 
 $('ver-tudo').addEventListener('click', () => {
@@ -241,6 +288,7 @@ if (c.estado !== 'dentro' || !c.pessoa?.id) {
     desenharRecentes()
     desenharProjetos()
     desenharMeus()
+    await desenharLooks().catch(() => {})
   }
   // primeiro o que está no aparelho (abre na hora); depois a conta, e redesenha
   await desenharTudo()
