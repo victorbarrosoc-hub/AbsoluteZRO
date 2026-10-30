@@ -8,6 +8,7 @@ import 'server-only'
  *   POST /v1/text-to-voice/design (amostras) · POST /v1/text-to-voice (salva a amostra escolhida como voz da conta)
  *   wss://api.elevenlabs.io/v1/speech-to-text/realtime (com ?token=)
  * `ZRO_ELEVENLABS_URL` e `ZRO_ELEVENLABS_WS_URL` só existem nos testes (a ElevenLabs falsa do e2e).
+ * Trocou ELEVENLABS_API_KEY na Vercel? Só vale na próxima publicação do HUB.
  */
 import { classificarVoz } from '@zro/core'
 import { DomainError, zroEnv } from '@zro/observability'
