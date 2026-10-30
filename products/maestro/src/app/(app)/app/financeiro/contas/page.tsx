@@ -3,7 +3,7 @@ import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { brl, dataCurta, hojeBr } from "@/lib/dinheiro";
 import { aPagarEReceber, type Grupo } from "@/lib/financeiro/servidor";
 import { NOME_STATUS } from "@/lib/financeiro/contas";
-import { podeVerDinheiro } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
 import { BotaoAcao } from "@/components/acao";
 import { Secao } from "@/components/crm";
 import { CabecaFinanceiro, NovoLancamento, SemDinheiro } from "@/components/financeiro";
@@ -50,10 +50,9 @@ function Grupos({ grupos, vazio, rotuloBaixa }: { grupos: Grupo[]; vazio: string
 /** O que está em aberto, de qualquer mês: a receber por cliente, a pagar a freelas e as contas. Baixa em um toque. */
 export default async function Contas() {
   const sessao = await exigirAcessoNaPagina("/app/financeiro/contas");
-  if (!podeVerDinheiro(sessao.papel))
+  if (!podeArea(sessao, "financeiro"))
     return (
       <div className="pagina">
-        <CabecaFinanceiro ativa="/app/financeiro/contas" />
         <SemDinheiro />
       </div>
     );

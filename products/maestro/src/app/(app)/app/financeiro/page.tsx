@@ -2,7 +2,7 @@ import Link from "next/link";
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { brl, ehMes, hojeBr, mesPorExtenso, somarMeses } from "@/lib/dinheiro";
 import { gerarRecorrencias, listarLancamentos } from "@/lib/financeiro/servidor";
-import { podeVerDinheiro } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
 import { Busca } from "@/components/busca";
 import { Pilulas } from "@/components/crm";
 import { CabecaFinanceiro, LinhaLancamento, NovoLancamento, SemDinheiro } from "@/components/financeiro";
@@ -14,10 +14,9 @@ export const metadata = { title: "Financeiro" };
 /** Lançamentos do mês: entradas e saídas pelo vencimento, filtros, resumo e o mês ao lado. */
 export default async function Financeiro({ searchParams }: PageProps<"/app/financeiro">) {
   const sessao = await exigirAcessoNaPagina("/app/financeiro");
-  if (!podeVerDinheiro(sessao.papel))
+  if (!podeArea(sessao, "financeiro"))
     return (
       <div className="pagina">
-        <CabecaFinanceiro ativa="/app/financeiro" />
         <SemDinheiro />
       </div>
     );

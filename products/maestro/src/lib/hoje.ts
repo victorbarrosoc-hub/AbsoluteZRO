@@ -1,7 +1,7 @@
 /**
  * "Hoje" (plano v2 §3 e fase 19): a visão do dia da produtora, só com contagens e atalhos para cada painel. Uma leitura
- * como a pessoa (`asUser`, RLS): a organização vem da sessão e o dinheiro só aparece para administração e gestão (o
- * banco esconde os lançamentos dos outros papéis; a tela nem pergunta). Sem "server-only": os testes chamam direto.
+ * como a pessoa (`asUser`, RLS): a organização vem da sessão e o dinheiro só aparece com a área Financeiro
+ * (src/lib/acessos.ts; o banco esconde os lançamentos de quem não tem; a tela nem pergunta). Sem "server-only": os testes chamam direto.
  */
 import { sql } from "drizzle-orm";
 import { getBanco, type Contexto } from "@/lib/db/client";
@@ -109,7 +109,9 @@ export async function resumoDoDia(ctx: Contexto, verDinheiro: boolean, hoje: str
 
     let dinheiro: Dinheiro | null = null;
     let semanaCaixa: DiaDoCaixa[] | null = null;
-    if (verDinheiro) {
+    // Mesmo que quem chama peça, o dinheiro só sai para quem tem a área Financeiro (o RLS também esconde).
+    const [{ ve }] = (await tx.execute(sql`select maestro.pode(${ctx.orgId}::uuid, 'financeiro') as ve`)) as unknown as { ve: boolean }[];
+    if (verDinheiro && ve) {
       const [d] = (await tx.execute(sql`
         select count(*) filter (where tipo = 'entrada' and vencimento between ${hoje}::date and ${semana}::date)::int as rs_n,
                coalesce(sum(valor_cents - pago_cents) filter (where tipo = 'entrada' and vencimento between ${hoje}::date and ${semana}::date), 0)::float8 as rs_v,

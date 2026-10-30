@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { linkWhatsapp, NOME_STATUS_CLIENTE, obterCliente, whatsappLegivel } from "@/lib/crm/clientes";
 import { NOME_STATUS_PROJETO } from "@/lib/crm/projetos";
-import { podeEscrever, podeVerDinheiro } from "@/lib/papeis";
+import { podeEscrever } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
 import { contratosDe } from "@/lib/contrato/servidor";
 import { ListaContratos } from "@/components/contrato/lista";
 import { dataBr, LinhaCard, Monograma, Secao, Selo } from "@/components/crm";
@@ -20,7 +21,7 @@ export default async function FichaCliente({ params }: PageProps<"/app/clientes/
   const sessao = await exigirAcessoNaPagina(`/app/clientes/${id}`);
   const c = await obterCliente({ sub: sessao.sub, orgId: sessao.orgId }, id);
   if (!c) notFound();
-  const contratos = podeVerDinheiro(sessao.papel) ? await contratosDe({ sub: sessao.sub, orgId: sessao.orgId }, { clienteId: c.id }) : [];
+  const contratos = podeArea(sessao, "contratos") ? await contratosDe({ sub: sessao.sub, orgId: sessao.orgId }, { clienteId: c.id }) : [];
   const escreve = podeEscrever(sessao.papel);
   const abertos = c.cards.filter((k) => k.coluna !== "entregue");
   const entregues = c.cards.length - abertos.length;

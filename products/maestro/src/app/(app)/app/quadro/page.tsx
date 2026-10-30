@@ -1,5 +1,6 @@
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { podeEditarColunas, podeEscrever, podeRemover } from "@/lib/papeis";
+import { veTudo } from "@/lib/acessos";
 import { carregarCards, referenciasDoQuadro } from "@/lib/quadro/servidor";
 import { carregarColunas } from "@/lib/quadro/colunas-servidor";
 import { Quadro } from "@/components/quadro/quadro";
@@ -26,7 +27,7 @@ export default async function PaginaQuadro({ searchParams }: PageProps<"/app/qua
       colunas={colunas}
       podeEscrever={podeEscrever(sessao.papel)}
       podeEditarColunas={podeEditarColunas(sessao.papel)}
-      demonstracao={podeRemover(sessao.papel) ? <CarregarDemonstracao /> : null}
+      demonstracao={podeRemover(sessao.papel) && veTudo(sessao.acessos) ? <CarregarDemonstracao /> : null}
       cardInicial={card && cards.some((c) => c.id === card) ? card : null}
       clienteInicial={cliente}
       novoInicial={sp.novo === "1"}

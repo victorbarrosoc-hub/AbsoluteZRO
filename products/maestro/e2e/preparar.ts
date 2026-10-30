@@ -17,10 +17,13 @@ export const ARQUIVO_SESSAO_AGENDA = "test-results/e2e-sessao-agenda.json";
 export const ARQUIVO_SESSAO_GESTOS = "test-results/e2e-sessao-gestos.json";
 export const ARQUIVO_SESSAO_COLUNAS = "test-results/e2e-sessao-colunas.json";
 export const ARQUIVO_SESSAO_CRIACAO = "test-results/e2e-sessao-criacao.json";
+export const ARQUIVO_SESSAO_ACESSOS = "test-results/e2e-sessao-acessos.json";
 /** A ponte falsa (HUB + SOBEDESCE de mentira, tests/ponte-falsa.mts) do e2e de Arquivos: MAESTRO_PONTE_URL no servidor. */
 export const PORTA_PONTE = Number(process.env.E2E_PONTE_PORT || 3219);
 /** A ANP falsa (tests/anp-fixture.mts, valores inventados) da calculadora de deslocamento: MAESTRO_ANP_URL no servidor. */
 export const PORTA_ANP = Number(process.env.E2E_ANP_PORT || 3221);
+/** Photon e OSRM falsos (tests/rota-fixture.mts) da calculadora de deslocamento: MAESTRO_PHOTON_URL e MAESTRO_OSRM_URL. */
+export const PORTA_ROTA = Number(process.env.E2E_ROTA_PORT || 3223);
 
 export default async function preparar() {
   const alvo = new URL(E2E_DB);
@@ -277,7 +280,7 @@ export default async function preparar() {
         at: "at-e2e-agenda",
         rt: "rt-e2e-agenda",
         atExp: Math.floor(Date.now() / 1000) + 24 * 3600,
-        escopo: "openid email profile org offline_access zro.ia maestro.projects zro.agenda zro.pessoas",
+        escopo: "openid email profile org offline_access zro.ia maestro.projects zro.agenda zro.pessoas zro.set",
       },
     });
     writeFileSync(ARQUIVO_SESSAO_AGENDA, JSON.stringify({ token: sAg.token }));
@@ -330,6 +333,47 @@ export default async function preparar() {
     const sCr = await criarSessao({ orgId: orgCr, sub: SUB_CR, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
     const sCrLe = await criarSessao({ orgId: orgCr, sub: SUB_CR_LE, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
     writeFileSync(ARQUIVO_SESSAO_CRIACAO, JSON.stringify({ token: sCr.token, leitura: sCrLe.token, org: orgCr }));
+    // Uma organização para o que cada pessoa vê (e2e/acessos.spec.ts, drizzle/0027): administração, gestão e um editor
+    // (equipe), com dinheiro em cada área (lançamento, orçamento, diária do freela, valor do equipamento).
+    const SUB_AC = "00000000-0000-4000-8000-00000000ac02";
+    const SUB_AC_GE = "00000000-0000-4000-8000-00000000ac03";
+    const SUB_AC_ED = "00000000-0000-4000-8000-00000000ac04";
+    const ac = await getBanco().asSystem("e2e: semente das permissões", async (tx) => {
+      const [org] = await tx
+        .insert(schema.organizations)
+        .values({ zroOrgId: "00000000-0000-4000-8000-00000000ac01", name: "Lumen Filmes E2E", zroProducts: ["maestro"] })
+        .returning({ id: schema.organizations.id });
+      await tx.insert(schema.members).values([
+        { orgId: org.id, zroSub: SUB_AC, displayName: "Diana Lopes", hubRole: "owner", role: "admin", funcao: "Sócia" },
+        { orgId: org.id, zroSub: SUB_AC_GE, displayName: "Gil Prado", hubRole: "manager", role: "gestor", funcao: "Produção" },
+        { orgId: org.id, zroSub: SUB_AC_ED, displayName: "Edu Matos", hubRole: "editor", role: "equipe", funcao: "Editor" },
+      ]);
+      const um = async (x: ReturnType<typeof q>) => ((await tx.execute(x)) as unknown as { id: string }[])[0].id;
+      const cli = await um(q`insert into maestro.clients (org_id, name) values (${org.id}, 'Café Aurora') returning id`);
+      await tx.execute(q`insert into maestro.lancamentos (org_id, tipo, categoria, descricao, valor_cents, vencimento, cliente_id)
+        values (${org.id}, 'entrada', 'cliente', 'Parcela 1/2', 1250000, current_date, ${cli})`);
+      const orc = await um(
+        q`insert into maestro.orcamentos (org_id, numero, titulo, cliente_id, status) values (${org.id}, '2026-001', 'Filme institucional', ${cli}, 'enviado') returning id`,
+      );
+      await tx.execute(
+        q`insert into maestro.orcamento_itens (org_id, orcamento_id, descricao, preco_cents, custo_cents) values (${org.id}, ${orc}, 'Diária de captação', 450000, 180000)`,
+      );
+      const freela = await um(
+        q`insert into maestro.freelas (org_id, nome, funcoes, email, whatsapp) values (${org.id}, 'Rafa Lima', '{edicao}', 'rafa@exemplo.com', '5511912345678') returning id`,
+      );
+      await tx.execute(q`insert into maestro.freela_valores (org_id, freela_id, funcao, valor_cents) values (${org.id}, ${freela}, 'edicao', 65000)`);
+      const equip = await um(
+        q`insert into maestro.equipamentos (org_id, nome, chave, categoria, valor_cents) values (${org.id}, 'Sony FX6', 'sonyfx6', 'camera', 4500000) returning id`,
+      );
+      return { org: org.id, freela, equip, orc };
+    });
+    const sAc = await criarSessao({ orgId: ac.org, sub: SUB_AC, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    const sAcGe = await criarSessao({ orgId: ac.org, sub: SUB_AC_GE, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    const sAcEd = await criarSessao({ orgId: ac.org, sub: SUB_AC_ED, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    writeFileSync(
+      ARQUIVO_SESSAO_ACESSOS,
+      JSON.stringify({ admin: sAc.token, gestor: sAcGe.token, editor: sAcEd.token, freela: ac.freela, equip: ac.equip, orc: ac.orc }),
+    );
   } finally {
     await fecharBanco();
   }
@@ -338,8 +382,11 @@ export default async function preparar() {
   const ponte = await iniciarPonteFalsa({ porta: PORTA_PONTE });
   const { iniciarAnpFalsa } = await import("../tests/anp-fixture.mts");
   const anp = await iniciarAnpFalsa(PORTA_ANP);
+  const { iniciarRotaFalsa } = await import("../tests/rota-fixture.mts");
+  const rota = await iniciarRotaFalsa(PORTA_ROTA);
   return async () => {
     await ponte.fechar();
     await anp.fechar();
+    await rota.fechar();
   };
 }

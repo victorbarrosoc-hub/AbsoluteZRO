@@ -1,5 +1,6 @@
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
-import { podeVerDinheiro } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
+import { podeRemover } from "@/lib/papeis";
 import { lerLinkDePedido } from "@/lib/pedidos/equipe";
 import { lerConfig } from "@/lib/pedidos/formulario";
 import { siteUrl } from "@/lib/site";
@@ -14,7 +15,7 @@ export const metadata = { title: "Link de pedido" };
  */
 export default async function PaginaLinkDePedido() {
   const s = await exigirAcessoNaPagina("/app/ajustes/pedido");
-  const pode = podeVerDinheiro(s.papel);
+  const pode = podeArea(s, "orcamentos") && podeRemover(s.papel);
   const l = pode ? await lerLinkDePedido({ sub: s.sub, orgId: s.orgId }) : null;
   return (
     <div className="pagina pagina--estreita">
@@ -26,7 +27,7 @@ export default async function PaginaLinkDePedido() {
           </>
         }
       >
-        <p className="apoio">{pode ? "O cliente pede o orçamento sozinho, com a sua marca." : "Só administração e gestão mexem no link."}</p>
+        <p className="apoio">{pode ? "O cliente pede o orçamento sozinho, com a sua marca." : "Só a gestão mexe no link."}</p>
       </CabecaForm>
       {pode ? <LinkDePedido url={l?.token ? `${siteUrl()}/p/${l.token}` : null} config={l?.config ?? lerConfig({})} usos={l?.usos ?? 0} /> : null}
     </div>

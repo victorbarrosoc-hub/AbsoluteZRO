@@ -65,6 +65,9 @@ before(async () => {
       { orgId: orgA, zroSub: EVA, role: "equipe" },
       { orgId: orgB, zroSub: BIA, role: "admin" },
     ]);
+    // A demonstração preenche o Financeiro: a gestão que carrega precisa da área (drizzle/0027), ligada pela administração.
+    await tx.execute(sql`
+      insert into maestro.acessos (org_id, zro_sub, area, permitido, atualizado_por) values (${orgA}, ${ANA}, 'financeiro', true, ${ANA})`);
   });
 });
 after(() => amb.fechar());

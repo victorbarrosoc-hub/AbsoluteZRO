@@ -20,7 +20,7 @@ function Botao({ rotulo, classe = "glass-btn glass-btn--sm glass-btn--ink" }: { 
   );
 }
 
-function FormEquip({ freelaId, item, aoFim }: { freelaId: string; item?: EquipFreela; aoFim?: () => void }) {
+function FormEquip({ freelaId, item, aoFim, veValores = true }: { freelaId: string; item?: EquipFreela; aoFim?: () => void; veValores?: boolean }) {
   const [estado, enviar] = useActionState(async (a: Parameters<typeof salvarEquipFreelaAcao>[0], fd: FormData) => {
     const r = await salvarEquipFreelaAcao(a, fd);
     if (r?.aviso && aoFim) aoFim();
@@ -64,11 +64,13 @@ function FormEquip({ freelaId, item, aoFim }: { freelaId: string; item?: EquipFr
         <input name="quantidade" inputMode="numeric" className="num" maxLength={3} defaultValue={v.quantidade} />
         {erro("quantidade")}
       </label>
-      <label className="form__campo">
-        <span>Diária do aluguel</span>
-        <input name="diaria" inputMode="decimal" className="num" maxLength={14} defaultValue={v.diaria} placeholder="opcional" />
-        {erro("diaria")}
-      </label>
+      {veValores ? (
+        <label className="form__campo">
+          <span>Diária do aluguel</span>
+          <input name="diaria" inputMode="decimal" className="num" maxLength={14} defaultValue={v.diaria} placeholder="opcional" />
+          {erro("diaria")}
+        </label>
+      ) : null}
       <label className="form__campo kit-form__largo">
         <span>Observação</span>
         <input name="observacao" maxLength={500} defaultValue={v.observacao} />
@@ -103,7 +105,18 @@ function Remover({ id, freelaId }: { id: string; freelaId: string }) {
   );
 }
 
-export function KitDoFreela({ freelaId, itens, podeMudar }: { freelaId: string; itens: EquipFreela[]; podeMudar: boolean }) {
+/** `veValores` = a área "Diárias e cachês": sem ela, nada de diária na lista nem no formulário (o servidor já manda vazio). */
+export function KitDoFreela({
+  freelaId,
+  itens,
+  podeMudar,
+  veValores = true,
+}: {
+  freelaId: string;
+  itens: EquipFreela[];
+  podeMudar: boolean;
+  veValores?: boolean;
+}) {
   const [editando, setEditando] = useState<string | null>(null);
   const [novo, setNovo] = useState(false);
   return (
@@ -113,7 +126,7 @@ export function KitDoFreela({ freelaId, itens, podeMudar }: { freelaId: string; 
           {itens.map((e) =>
             editando === e.id ? (
               <li key={e.id} className="kit-item kit-item--aberto">
-                <FormEquip freelaId={freelaId} item={e} aoFim={() => setEditando(null)} />
+                <FormEquip freelaId={freelaId} item={e} aoFim={() => setEditando(null)} veValores={veValores} />
               </li>
             ) : (
               <li key={e.id} className="kit-item" data-inativo={!e.ativo || undefined}>
@@ -149,7 +162,7 @@ export function KitDoFreela({ freelaId, itens, podeMudar }: { freelaId: string; 
       )}
       {podeMudar ? (
         novo ? (
-          <FormEquip freelaId={freelaId} aoFim={() => setNovo(false)} />
+          <FormEquip freelaId={freelaId} aoFim={() => setNovo(false)} veValores={veValores} />
         ) : (
           <button type="button" className="glass-btn glass-btn--sm" onClick={() => setNovo(true)}>
             <Icone nome="mais" size={15} /> Adicionar equipamento
@@ -167,12 +180,14 @@ export function EquipNaEscala({
   marcados,
   dias,
   aluguelCents,
+  veValores = true,
 }: {
   escalaId: string;
   disponiveis: EquipFreela[];
   marcados: string[];
   dias: number;
   aluguelCents: number;
+  veValores?: boolean;
 }) {
   const [estado, enviar] = useActionState(equipNaEscalaAcao, undefined);
   const [sel, setSel] = useState<string[]>(marcados);
@@ -196,7 +211,7 @@ export function EquipNaEscala({
               onChange={(e) => setSel((x) => (e.target.checked ? [...x, d.id] : x.filter((i) => i !== d.id)))}
             />
             <span>{nomeDoEquip(d)}</span>
-            <span className="sutil num">{d.diariaCents != null ? `${brl(d.diariaCents)}/dia` : "sem aluguel"}</span>
+            {veValores ? <span className="sutil num">{d.diariaCents != null ? `${brl(d.diariaCents)}/dia` : "sem aluguel"}</span> : null}
           </label>
         ))}
         <div className="acoes">

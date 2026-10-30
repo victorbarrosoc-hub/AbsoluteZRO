@@ -81,11 +81,31 @@ describe("freelas", () => {
     }
     assert.equal((await fr.salvarFreela(o.leitura, v.entrada)).ok, false);
     assert.equal((await fr.listarFreelas(o.b)).length, 0);
+    // A equipe não tem "Diárias e cachês" (drizzle/0027): o cadastro dela entra sem valores; a gestão completa.
+    assert.deepEqual(
+      (await fr.listarFreelas(o.gestor, { funcao: "drone" })).map((x) => [x.nome, x.diaria]),
+      [["Rafael Moura", null]],
+    );
+    assert.ok((await fr.salvarFreela(o.gestor, v.entrada, rafael)).ok);
+    assert.deepEqual(
+      (await fr.listarFreelas(o.gestor, { funcao: "drone" })).map((x) => [x.nome, x.diaria]),
+      [["Rafael Moura", 70_000]],
+    );
+    // Quem não tem a área não vê a diária, nem na lista; e editar o freela não apaga os valores que não vê.
     const l = await fr.listarFreelas(o.leitura, { funcao: "drone" });
     assert.deepEqual(
       l.map((x) => [x.nome, x.diaria]),
+      [["Rafael Moura", null]],
+    );
+    assert.ok((await fr.salvarFreela(o.equipe, { ...v.entrada, valores: [], whatsapp: null }, rafael)).ok);
+    assert.deepEqual(
+      (await fr.listarFreelas(o.gestor, { funcao: "drone" })).map((x) => [x.nome, x.diaria]),
       [["Rafael Moura", 70_000]],
     );
+    const ficha = await fr.obterFreela(o.gestor, rafael, "2026-10-28");
+    assert.equal(ficha?.whatsapp, "5511912345678", "o WhatsApp que a equipe não vê fica");
+    const daEquipe = await fr.obterFreela(o.equipe, rafael, "2026-10-28");
+    assert.deepEqual([daEquipe?.whatsapp, daEquipe?.email, daEquipe?.valores.length], [null, null, 0]);
   });
 
   test("dados de pagamento: cifrados no banco, só a gestão lê, a cifra não abre em outro freela", async () => {
@@ -104,17 +124,17 @@ describe("freelas", () => {
     // A equipe não lê nem a cifra (RLS em todo comando) e a ficha não traz o campo.
     const n = await getBanco().asUser(o.equipe, (tx) => tx.execute(sql`select count(*)::int as n from maestro.freela_pagamento`));
     assert.equal((n[0] as { n: number }).n, 0);
-    const fichaEquipe = await fr.obterFreela(o.equipe, "equipe", rafael, "2026-10-28");
+    const fichaEquipe = await fr.obterFreela(o.equipe, rafael, "2026-10-28");
     assert.equal(fichaEquipe?.dadosPagamento, undefined);
-    const fichaGestor = await fr.obterFreela(o.gestor, "gestor", rafael, "2026-10-28");
+    const fichaGestor = await fr.obterFreela(o.gestor, rafael, "2026-10-28");
     assert.deepEqual(fichaGestor?.dadosPagamento, { documento: "52998224725", pix: "52998224725", pixTipo: "cpf", titular: "Rafael Moura", ilegivel: false });
     // Copiar a cifra para outro freela não abre (o contexto amarra organização, freela e campo).
     await getBanco().asSystem("adulterar", (tx) =>
       tx.execute(sql`insert into maestro.freela_pagamento (org_id, freela_id, documento_enc) values (${o.orgA}, ${caio}, ${cru.documento_enc})`),
     );
-    const outro = await fr.obterFreela(o.gestor, "gestor", caio, "2026-10-28");
+    const outro = await fr.obterFreela(o.gestor, caio, "2026-10-28");
     assert.deepEqual([outro?.dadosPagamento?.documento, outro?.dadosPagamento?.ilegivel], [null, true]);
-    assert.equal(await fr.obterFreela(o.b, "admin", rafael, "2026-10-28"), null);
+    assert.equal(await fr.obterFreela(o.b, rafael, "2026-10-28"), null);
   });
 });
 
@@ -228,7 +248,7 @@ describe("agenda e documentos", () => {
     assert.ok((await ag.escalarNaDiaria(o.equipe, diaria, caio, "", null)).ok);
     const dup = await ag.escalarNaDiaria(o.equipe, diaria, rafael, "drone", null);
     assert.ok(!dup.ok && dup.erro === "repetida");
-    const esc = await fr.escalasDoProjeto(o.gestor, "gestor", projeto, "2026-10-28");
+    const esc = await fr.escalasDoProjeto(o.gestor, projeto, "2026-10-28");
     const r1 = esc.find((e) => e.freelaId === rafael);
     assert.deepEqual([r1?.dias, r1?.diariaCents, r1?.valorCents], [2, 90_000, 180_000]);
     // Outra diária no mesmo dia com o Rafael: conflito nas duas.
@@ -245,7 +265,7 @@ describe("agenda e documentos", () => {
     assert.equal(fazenda?.equipe.find((p) => p.freelaId === caio)?.conflitos.length, 0);
     // Mudar a data da diária leva a escala junto.
     await ag.salvarEvento(o.equipe, { ...v.entrada, dataFim: "2026-11-03" }, diaria);
-    const depois = (await fr.escalasDoProjeto(o.gestor, "gestor", projeto, "2026-10-28")).find((e) => e.freelaId === rafael);
+    const depois = (await fr.escalasDoProjeto(o.gestor, projeto, "2026-10-28")).find((e) => e.freelaId === rafael);
     assert.deepEqual([depois?.fim, depois?.dias, depois?.valorCents], ["2026-11-03", 3, 270_000]);
     assert.equal((await ag.listarEventos(o.b, "2026-11-01", "2026-11-30")).length, 0);
   });

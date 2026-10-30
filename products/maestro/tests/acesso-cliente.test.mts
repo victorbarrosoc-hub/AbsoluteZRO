@@ -116,6 +116,11 @@ before(async () => {
     await tx.execute(sql`insert into maestro.cards (org_id, id, dados) values (${A}, 'card-solto', '{"tema":"Solto","coluna":"pauta"}'::jsonb)`);
     await tx.execute(sql`insert into maestro.eventos (org_id, titulo, data) values (${A}, 'Reunião interna', '2026-11-05')`);
   });
+  // Orçamentos são uma área (drizzle/0027): a administração liga para a Eva e para o Leo, para a restrição por cliente
+  // ser conferida também neles.
+  const { salvarAreas } = await import("../src/lib/acessos-servidor");
+  assert.equal((await salvarAreas(o.admin, o.equipe.sub, ["orcamentos"])).ok, true);
+  assert.equal((await salvarAreas(o.admin, o.leitura.sub, ["orcamentos"])).ok, true);
   // Eva (equipe) vê só o cliente Sim; Leo (leitura) restrito a nenhum. Quem decide é a gestão (Gil).
   assert.equal((await pessoas.salvarAcesso(o.gestor, o.equipe.sub, true, [ids.c_sim])).ok, true);
   assert.equal((await pessoas.salvarAcesso(o.admin, o.leitura.sub, true, [])).ok, true);

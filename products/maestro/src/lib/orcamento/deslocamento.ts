@@ -6,7 +6,18 @@
  * quem guarda a semana é o agendamento (drizzle/0022). Sempre há a saída manual.
  */
 
-export type Lugar = { rotulo: string; detalhe: string; lat: number; lon: number };
+export type Lugar = {
+  rotulo: string;
+  detalhe: string;
+  lat: number;
+  lon: number;
+  /** O município (para o preço da ANP); sem ele, o lugar é um estado ou não se sabe. */
+  cidade?: string;
+  /** A sigla da UF, quando o lugar é do Brasil e o estado é conhecido. */
+  uf?: string;
+  /** Cidade, estado ou outro lugar (rua, bairro, ponto). */
+  tipo?: "cidade" | "estado" | "lugar";
+};
 
 export type EntradaDeslocamento = {
   /** Km de uma ida. */
@@ -116,14 +127,17 @@ type PhotonFeature = {
   };
 };
 
-/** Resposta do Photon → até 6 lugares do Brasil, cidade antes de rua (a mesma regra do ZRO). */
+const TIPOS_CIDADE = ["city", "town", "municipality"];
+const TIPOS_LUGAREJO = ["village", "hamlet", "suburb", "district", "locality", "county", "state"];
+
+/** Resposta do Photon → até 6 lugares do Brasil, cidade antes de rua (a mesma regra do ZRO), com município e UF. */
 export function lugaresDoPhoton(dados: unknown): Lugar[] {
   const features = (((dados as { features?: PhotonFeature[] })?.features ?? []) as PhotonFeature[]).filter((f) => Array.isArray(f?.geometry?.coordinates));
   const rank = (f: PhotonFeature) => {
     const p = f.properties ?? {};
     const t = p.type ?? p.osm_value ?? "";
-    if (["city", "town", "municipality"].includes(t)) return 0;
-    if (["village", "hamlet", "suburb", "district", "locality", "county", "state"].includes(t)) return 1;
+    if (TIPOS_CIDADE.includes(t)) return 0;
+    if (TIPOS_LUGAREJO.includes(t)) return 1;
     if (p.osm_key && p.osm_key !== "highway" && t !== "street" && t !== "house") return 2;
     return 3;
   };
@@ -133,19 +147,77 @@ export function lugaresDoPhoton(dados: unknown): Lugar[] {
   for (const { f } of ordem) {
     const p = f.properties ?? {};
     if (p.countrycode && p.countrycode !== "BR") continue;
-    const uf = p.state ? (SIGLA_DO_ESTADO.get(semAcento(p.state)) ?? p.state) : "";
+    const t = p.type ?? p.osm_value ?? "";
+    const tipo: Lugar["tipo"] = TIPOS_CIDADE.includes(t) && !p.city ? "cidade" : t === "state" ? "estado" : "lugar";
+    const sigla = p.state ? SIGLA_DO_ESTADO.get(semAcento(p.state)) : tipo === "estado" && p.name ? SIGLA_DO_ESTADO.get(semAcento(p.name)) : undefined;
+    const uf = sigla ?? p.state ?? "";
     const rua = p.street ? [p.street, p.housenumber].filter(Boolean).join(", ") : "";
     const rotulo = p.name || rua || p.city || "";
     if (!rotulo) continue;
-    const detalhe = [p.name && rua && p.name !== rua ? rua : "", p.district, p.city !== rotulo ? p.city : "", uf].filter(Boolean).join(" · ");
+    const detalhe = [p.name && rua && p.name !== rua ? rua : "", p.district, p.city !== rotulo ? p.city : "", tipo === "estado" ? "" : uf]
+      .filter(Boolean)
+      .join(" · ");
     const [lon, lat] = f.geometry!.coordinates!;
-    const chave = `${rotulo}|${detalhe}`;
+    const chave = `${rotulo}|${detalhe}|${tipo}`;
     if (vistos.has(chave) || !Number.isFinite(lat) || !Number.isFinite(lon)) continue;
     vistos.add(chave);
-    out.push({ rotulo, detalhe, lat, lon });
+    const cidade = tipo === "cidade" ? rotulo : tipo === "estado" ? undefined : p.city || (TIPOS_CIDADE.includes(t) ? rotulo : undefined);
+    out.push({ rotulo, detalhe, lat, lon, tipo, ...(cidade ? { cidade } : {}), ...(sigla ? { uf: sigla } : {}) });
     if (out.length >= 6) break;
   }
   return out;
+}
+
+/**
+ * O que a pessoa digitou, separado em nome e UF: "Natal, RN", "natal/rn", "Natal - Rio Grande do Norte" e "Natal RN"
+ * dão { nome: "Natal", uf: "RN" }; só "São Paulo" dá { nome: "São Paulo", uf: null }.
+ */
+export function lerTextoDeLugar(texto: string): { nome: string; uf: string | null } {
+  const t = texto.replace(/\s+/g, " ").trim();
+  const partes = t.split(/\s*(?:,|\/|\s-\s)\s*/).filter(Boolean);
+  const ufDe = (s: string) => {
+    const k = semAcento(s);
+    return ehUf(k) ? k : (SIGLA_DO_ESTADO.get(k) ?? null);
+  };
+  if (partes.length > 1) {
+    const uf = ufDe(partes.at(-1)!);
+    if (uf) return { nome: partes.slice(0, -1).join(", "), uf };
+    return { nome: partes[0], uf: null };
+  }
+  const m = t.match(/^(.+?)\s+([A-Za-z]{2})$/);
+  if (m && ehUf(m[2].toUpperCase()) && !/^(de|do|da|em)$/i.test(m[2])) return { nome: m[1], uf: m[2].toUpperCase() };
+  return { nome: t, uf: null };
+}
+
+/**
+ * O melhor lugar para o que foi digitado, sem a pessoa escolher na lista: a cidade com o mesmo nome (e a UF, se veio),
+ * com a capital na frente quando há duas; senão o lugar com o mesmo nome; senão o primeiro da UF dita; senão o
+ * primeiro da lista. Lista vazia, null.
+ */
+export function melhorLugar(lugares: Lugar[], texto: string): Lugar | null {
+  if (!lugares.length) return null;
+  const { nome, uf } = lerTextoDeLugar(texto);
+  const alvo = chaveDoMunicipio(nome);
+  const daUf = (l: Lugar) => !uf || l.uf === uf;
+  const mesmoNome = (l: Lugar) => chaveDoMunicipio(l.rotulo) === alvo;
+  const cidades = lugares.filter((l) => l.tipo === "cidade" && mesmoNome(l) && daUf(l));
+  const capital = cidades.find((l) => l.uf && chaveDoMunicipio(UFS[l.uf]?.capital ?? "") === alvo);
+  return capital ?? cidades[0] ?? lugares.find((l) => mesmoNome(l) && daUf(l)) ?? (uf ? lugares.find((l) => l.uf === uf) : undefined) ?? lugares[0];
+}
+
+/** Cidade e UF numa linha curta, para dizer o que foi entendido: "Natal/RN", "Rua X · Natal/RN", "São Paulo (estado)". */
+export function nomeDoLugar(l: Lugar): string {
+  if (l.tipo === "estado") return `${l.rotulo} (estado)`;
+  const cidade = l.cidade ?? (l.tipo === "cidade" ? l.rotulo : "");
+  const onde = cidade ? `${cidade}${l.uf ? `/${l.uf}` : ""}` : (l.uf ?? "");
+  if (l.tipo === "cidade" || !onde) return onde || l.rotulo;
+  return l.rotulo === cidade ? onde : `${l.rotulo} · ${onde}`;
+}
+
+/** "≈ 40h45 de carro", "≈ 50 min de carro". */
+export function tempoDeCarro(minutos: number): string {
+  const m = Math.max(0, Math.round(minutos));
+  return `≈ ${m >= 60 ? `${Math.floor(m / 60)}h${String(m % 60).padStart(2, "0")}` : `${m} min`} de carro`;
 }
 
 /** Resposta do OSRM → km de uma ida (1 casa) e minutos; null sem rota. */
@@ -355,6 +427,56 @@ export type PrecoCombustivel = {
   onde: string;
   fonte: string;
 };
+
+/** Uma linha guardada em maestro.combustivel_precos, do jeito que a leitura traz. */
+export type PrecoGuardado = { semana: string; semanaFim: string; uf: string; municipio: string; preco: number; postos: number; fonte: string };
+
+const MINUSCULAS = new Set(["de", "da", "do", "das", "dos", "e", "d"]);
+/** Nome digitado todo em minúsculas ou maiúsculas fica com cara de nome: "sao paulo" → "Sao Paulo". */
+export function nomeBonito(s: string): string {
+  const t = s.replace(/\s+/g, " ").trim();
+  if (t !== t.toLowerCase() && t !== t.toUpperCase()) return t;
+  return t
+    .toLowerCase()
+    .split(" ")
+    .map((w, i) => (i > 0 && MINUSCULAS.has(w) ? w : w.charAt(0).toUpperCase() + w.slice(1)))
+    .join(" ");
+}
+
+/**
+ * Qual preço vale para o lugar (a cidade de saída, onde se abastece; senão a da produtora): a semana mais nova
+ * guardada e, nela, o município, senão o estado, senão o Brasil. A cidade casa sem acento e sem caixa ("sao paulo" =
+ * "SÃO PAULO"); sem UF, vale o município só se o nome existir em um estado (ou se for a capital de um deles). Nada
+ * guardado, null. Puro: a leitura do banco é `precoDoCombustivel` (servicos.ts).
+ */
+export function escolherPreco(linhas: PrecoGuardado[], lugar: { uf: string | null; cidade: string | null }, combustivel: Combustivel): PrecoCombustivel | null {
+  if (!linhas.length) return null;
+  const semana = linhas.reduce((m, l) => (l.semana > m ? l.semana : m), "");
+  const daSemana = linhas.filter((l) => l.semana === semana);
+  const chave = lugar.cidade ? chaveDoMunicipio(lerTextoDeLugar(lugar.cidade).nome) : "";
+  let uf = ehUf(lugar.uf) ? lugar.uf : lugar.cidade ? lerTextoDeLugar(lugar.cidade).uf : null;
+  if (!uf && chave) {
+    const ufs = [...new Set(daSemana.filter((l) => l.municipio === chave).map((l) => l.uf))];
+    uf = ufs.length === 1 ? ufs[0] : (ufs.find((u) => chaveDoMunicipio(UFS[u]?.capital ?? "") === chave) ?? null);
+  }
+  const municipio = uf && chave ? daSemana.find((l) => l.uf === uf && l.municipio === chave) : undefined;
+  const estado = uf ? daSemana.find((l) => l.uf === uf && l.municipio === "") : undefined;
+  const brasil = daSemana.find((l) => l.uf === "BR" && l.municipio === "");
+  const r = municipio ?? estado ?? brasil;
+  if (!r) return null;
+  const base = r === municipio ? "municipio" : r === estado ? "estado" : "brasil";
+  const cidade = lugar.cidade ? nomeBonito(lerTextoDeLugar(lugar.cidade).nome) : "";
+  return {
+    combustivel,
+    litroCents: Math.round(r.preco * 100),
+    semana: r.semana,
+    semanaFim: r.semanaFim,
+    postos: r.postos,
+    base,
+    onde: base === "municipio" ? `${cidade}/${r.uf}` : base === "estado" ? r.uf : "Brasil",
+    fonte: r.fonte,
+  };
+}
 
 /** "Preço médio da semana em Natal/RN · ANP, semana de 18/10". */
 export function rotuloDoPreco(p: Pick<PrecoCombustivel, "base" | "onde" | "semana">): string {
