@@ -36,6 +36,12 @@ components:
     CarroJob: { $ref: './schemas/carro-do-freela.job.v1.schema.json' }
     CarroCrew: { $ref: './schemas/carro-do-freela.crew.v1.schema.json' }
     TpeasyBackup: { $ref: './schemas/tpeasy.backup.v1.schema.json' }
+    AppEntregaEntrada: { $ref: './schemas/zro.app-entrega.entrada.v1.schema.json' }
+    AppEntregaEstado: { $ref: './schemas/zro.app-entrega.estado.v1.schema.json' }
+    AppEntregasEnviadas: { $ref: './schemas/zro.app-entrega.enviadas.v1.schema.json' }
+    AppEntregaDestinatarios: { $ref: './schemas/zro.app-entrega.destinatarios.v1.schema.json' }
+    AppEntregasRecebidas: { $ref: './schemas/zro.app-entrega.recebidas.v1.schema.json' }
+    AppEntregaRecebidasEntrada: { $ref: './schemas/zro.app-entrega.recebidas-entrada.v1.schema.json' }
   responses:
     Error: { description: Erro de domínio, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 security: [{ session: [] }]
@@ -450,6 +456,72 @@ paths:
           '404': { $ref: '#/components/responses/Error' },
           '422': { $ref: '#/components/responses/Error' },
           '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/apps/entregas:
+    get:
+      security: [{ appToken: [maestro.projects] }]
+      summary: 'Entregas entre apps (Criação F8): o que a pessoa mandou de um roteiro ao TPeasy (as 10 mais novas), para o "Enviado · v3 · Recebido". Contrato em docs/integration-contracts/maestro-tpeasy.md'
+      parameters:
+        - { name: roteiro, in: query, required: true, schema: { type: string, format: uuid } }
+      responses:
+        {
+          '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AppEntregasEnviadas' } } } },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+        }
+    post:
+      security: [{ appToken: [maestro.projects] }]
+      summary: 'Manda uma versão salva do roteiro do Maestro para a caixa de entrada do TPeasy da pessoa (ou de alguém da organização que usa o TPeasy). Exige o TPeasy no plano e papel de quem edita. A mesma versão de novo não duplica (situacao reenviada); evento script.version.sent com idempotency_key app.entrega:<id>'
+      requestBody:
+        content: { application/json: { schema: { $ref: '#/components/schemas/AppEntregaEntrada' } } }
+      responses:
+        {
+          '201': { description: 'Nova', content: { application/json: { schema: { $ref: '#/components/schemas/AppEntregaEstado' } } } },
+          '200': { description: 'Reenviada (a mesma entrega)', content: { application/json: { schema: { $ref: '#/components/schemas/AppEntregaEstado' } } } },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/apps/entregas/destinatarios:
+    get:
+      security: [{ appToken: [maestro.projects] }]
+      summary: 'Para quem dá para mandar: a própria pessoa e quem da organização ativa já usa o TPeasy (nome e foto; nunca e-mail). Exige o TPeasy no plano'
+      parameters:
+        - { name: destino, in: query, required: true, schema: { type: string, enum: [tpeasy] } }
+      responses:
+        {
+          '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AppEntregaDestinatarios' } } } },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/apps/entregas/recebidas:
+    get:
+      security: [{ appToken: [tpeasy.roteiros] }]
+      summary: 'A caixa de entrada do TPeasy: o que chegou para a pessoa nos últimos 30 dias (desde, se vier), mais antigo primeiro, até 50. Só o próprio TPeasy, com o token da pessoa; agora é o próximo desde'
+      parameters:
+        - { name: destino, in: query, required: false, schema: { type: string, enum: [tpeasy] } }
+        - { name: desde, in: query, required: false, schema: { type: string, format: date-time } }
+      responses:
+        {
+          '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AppEntregasRecebidas' } } } },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+        }
+    post:
+      security: [{ appToken: [tpeasy.roteiros] }]
+      summary: 'O aparelho conta o que gravou: quem mandou vê "Recebido"'
+      requestBody:
+        content: { application/json: { schema: { $ref: '#/components/schemas/AppEntregaRecebidasEntrada' } } }
+      responses:
+        {
+          '200': { description: '{ marcadas }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
         }
   /api/v1/agenda/conexao:
     get:

@@ -17,6 +17,7 @@ export const ARQUIVO_SESSAO_AGENDA = "test-results/e2e-sessao-agenda.json";
 export const ARQUIVO_SESSAO_GESTOS = "test-results/e2e-sessao-gestos.json";
 export const ARQUIVO_SESSAO_COLUNAS = "test-results/e2e-sessao-colunas.json";
 export const ARQUIVO_SESSAO_CRIACAO = "test-results/e2e-sessao-criacao.json";
+export const ARQUIVO_SESSAO_TPEASY = "test-results/e2e-sessao-tpeasy.json";
 export const ARQUIVO_SESSAO_ACESSOS = "test-results/e2e-sessao-acessos.json";
 export const ARQUIVO_SESSAO_ARRASTAR = "test-results/e2e-sessao-arrastar.json";
 export const ARQUIVO_SESSAO_FLUXO = "test-results/e2e-sessao-fluxo.json";
@@ -342,6 +343,32 @@ export default async function preparar() {
     const sCr = await criarSessao({ orgId: orgCr, sub: SUB_CR, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
     const sCrLe = await criarSessao({ orgId: orgCr, sub: SUB_CR_LE, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
     writeFileSync(ARQUIVO_SESSAO_CRIACAO, JSON.stringify({ token: sCr.token, leitura: sCrLe.token, org: orgCr }));
+    // Uma organização para "Para o TPeasy" direto (e2e/criacao-tpeasy.spec.ts, Criação F8): o TPeasy no plano e o token
+    // da Absolute ZRO (maestro.projects) na sessão; a caixa de entrada é a do HUB de mentira (tests/ponte-falsa.mts).
+    const SUB_TP = "00000000-0000-4000-8000-0000000008f8";
+    const orgTp = await getBanco().asSystem("e2e: semente do TPeasy", async (tx) => {
+      const [org] = await tx
+        .insert(schema.organizations)
+        .values({ zroOrgId: "00000000-0000-4000-8000-0000000008f7", name: "Café Filmes E2E", zroProducts: ["maestro", "tpeasy"] })
+        .returning({ id: schema.organizations.id });
+      await tx.insert(schema.members).values({ orgId: org.id, zroSub: SUB_TP, displayName: "Rita Roteiro", hubRole: "owner", role: "admin" });
+      return org.id;
+    });
+    const tp = await carregarDemonstracao({ sub: SUB_TP, orgId: orgTp });
+    if (!tp.ok) throw new Error(tp.mensagem);
+    const sTp = await criarSessao({
+      orgId: orgTp,
+      sub: SUB_TP,
+      produtos: ["maestro", "tpeasy"],
+      release: { maestro: "released", tpeasy: "released" },
+      tokens: {
+        at: `at-${SUB_TP}`,
+        rt: "rt-e2e-tpeasy",
+        atExp: Math.floor(Date.now() / 1000) + 24 * 3600,
+        escopo: "openid email profile org offline_access zro.ia maestro.projects zro.agenda zro.pessoas zro.set",
+      },
+    });
+    writeFileSync(ARQUIVO_SESSAO_TPEASY, JSON.stringify({ token: sTp.token, org: orgTp, sub: SUB_TP }));
     // Uma organização para o que cada pessoa vê (e2e/acessos.spec.ts, drizzle/0027): administração, gestão e um editor
     // (equipe), com dinheiro em cada área (lançamento, orçamento, diária do freela, valor do equipamento).
     const SUB_AC = "00000000-0000-4000-8000-00000000ac02";

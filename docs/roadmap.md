@@ -783,6 +783,24 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ⛔ Em produção: migração `0033` do Maestro no próximo deploy autorizado.
 - ⬜ Resposta da equipe dentro do trecho (hoje a equipe resolve; a conversa segue no lote); vista Técnico para o cliente.
 
+## Maestro · Criação: Para o TPeasy direto (F8, 30/10/2026)
+
+- ✅ "Enviar ▾ › Para o TPeasy" com o TPeasy no plano: **Enviar ao TPeasy** manda a versão salva (o texto da vista
+  Teleprompter montado no servidor, título, meta e o link de volta) pela Absolute ZRO para a caixa de entrada do TPeasy
+  da pessoa, ou de quem da organização já usa o TPeasy. A folha mostra "Enviado ao TPeasy · v3 · agora" e "Recebido"
+  quando o aparelho contou; a mesma versão de novo é "Reenviar" e não duplica. Sem o TPeasy: "Enviar direto pede o
+  TPeasy no plano." e os jeitos de antes (Compartilhar, Copiar, .txt, backup). AEON segue escondido pelo gate.
+- ✅ HUB: migração `0040` (`zro.app_entregas`, funções `app_entrega_enviar`/`app_entregas_recebidas`/
+  `app_destinatarios`, RLS por pessoa, 30 dias, escopo `tpeasy.roteiros` no cliente do TPeasy), rotas
+  `/api/v1/apps/entregas{,/recebidas,/destinatarios}` com `authorize()` (papel, gates, TPeasy no plano), evento
+  `script.version.sent` com `idempotency_key` (sem rota no worker), contratos `zro.app-entrega.*.v1` e OpenAPI.
+- ✅ TPeasy: busca ao abrir e ao voltar para o app (`/api/zro/entregas`), "Do Maestro · v3" na lista, selo no editor
+  que abre o Maestro, versão nova atualiza o mesmo roteiro e o que a pessoa mexeu vira cópia (nunca sobrescreve).
+- ⛔ Em produção: migração `0040` do HUB e o deploy de HUB, Maestro e TPeasy, só com autorização do titular. Depois
+  disso, quem já tinha entrado no TPeasy entra de novo uma vez (o token antigo não tem `tpeasy.roteiros`).
+- ⬜ Avisar no TPeasy aberto sem esperar a próxima abertura (hoje: ao abrir, ao voltar e a cada minuto no máximo);
+  mandar a versão aprovada sozinha quando o cliente aprovar.
+
 ## Maestro: página inicial nova (30/10/2026)
 
 - ✅ No ritmo da do SOBEDESCE: hero com o Quadro no MacBook e o Hoje no iPhone, faixa de números do produto, as

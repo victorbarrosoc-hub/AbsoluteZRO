@@ -29,7 +29,8 @@ Visual claro com modo escuro automático; o TP é sempre escuro.
 A conta do TPeasy é a mesma da Absolute ZRO (login único do HUB, ADR 0012). Os roteiros **continuam salvos só no
 aparelho**: entrar mostra quem você é, mas não liga sincronização.
 
-- **`api/zro/`** quatro funções da Vercel, só com módulos do Node (sem `package.json`, sem build):
+- **`api/zro/`** funções da Vercel, só com módulos do Node (sem `package.json`, sem build; a Z, o Set e a caixa de
+  entrada dos roteiros do Maestro também passam por aqui):
   - `entrar` (GET, `?volta=/app/...`): cria state, nonce e PKCE S256 num cookie assinado de 10 min (`tp_zro_ida`,
     HttpOnly, Secure, SameSite=Lax, só em `/api/zro`) e manda para o HUB. O botão **Abrir** do HUB usa este endereço.
     Com `&criar=1` é o **Criar conta**: o HUB abre o cadastro (`prompt=create`) e volta já logado.
@@ -76,6 +77,25 @@ TPeasy; sem conta, ele continua lá. Perfis de TP, roteiros, sons e backup conti
 O direito de uso vem do admin da Absolute ZRO: se a organização ativa não liberou o `tpeasy`, a pessoa entra, mas a
 conta mostra "Sua conta Absolute ZRO ainda não tem acesso ao TPeasy." com o botão **Ver na Absolute ZRO**
 (`/ferramentas`). O site e o teleprompter continuam abertos, com ou sem conta. A lista é reavaliada a cada entrada.
+
+## Roteiros do Maestro (Criação F8)
+
+O Maestro manda uma versão do roteiro **direto** para o TPeasy da pessoa ("Enviar ▾ › Para o TPeasy"). Como o TPeasy
+não tem banco, a caixa de entrada fica na Absolute ZRO (migração `0040` do HUB; contrato em
+`docs/integration-contracts/maestro-tpeasy.md` na raiz) e cada aparelho busca o que chegou:
+
+- **`api/zro/entregas`** (GET `?desde=`, POST `{ ids }`): repassa para `/api/v1/apps/entregas/recebidas` com o token da
+  sessão (escopo `tpeasy.roteiros`, pedido no login; HUB sem a 0040 recusa e o login refaz sem ele, `sem_roteiros=1`).
+  Sem sessão ou token antigo: 401 e nada muda; o cofre não é apagado.
+- **`app/js/maestro.js`**: busca ao abrir (depois do `/eu`), ao voltar para o app (no máximo uma vez por minuto) e ao
+  voltar a rede; conta ao HUB o que gravou (o Maestro mostra "Recebido").
+- **`app/js/entregas.js`** (puro): junta pelo `item` (`maestro-<roteiro>-<pessoa>`, o mesmo id do backup do Maestro).
+  Versão nova atualiza o mesmo roteiro; se a pessoa mexeu no texto, a versão nova vira **cópia** ("· v4") e nada é
+  sobrescrito; a mesma entrega duas vezes não muda nada; reenvio traz de volta o que foi apagado.
+- Na lista, "Do Maestro · v3" com o ícone do Maestro; no editor, o selo abre o roteiro no Maestro; no menu, "Abrir no
+  Maestro". Offline: o que já chegou fica no aparelho; o resto chega na próxima abertura com rede (até 30 dias).
+
+Testes: `tests/entregas.test.mjs` e o bloco "roteiros do Maestro" em `tests/zro.test.mjs`.
 
 ## Conta e nuvem (sincronização, desligada)
 
