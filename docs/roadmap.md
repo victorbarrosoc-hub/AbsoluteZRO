@@ -540,6 +540,21 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   chaves que viram juntas (`node scripts/lancamento-maestro.mjs --abrir`; checklist e reversão em
   [docs/operations/lancamento-maestro.md](operations/lancamento-maestro.md)). Falta: o OK do titular, publicar cada
   app e o app de computador do Maestro entrar na central (`APPS_DESKTOP`) quando tiver Release.
+- ✅ **Só o que está no ar é divulgado; Maestro e Relay no ar** (30/10/2026, decisões do titular: "AEON, REVELA E
+  NOSSOM não estão funcionando no ecossistema ainda, não pode divulgar … Quando for pro ar, aí divulga" e "Maestro e
+  Relay no ar"). Migration `0039_maestro_relay_no_ar.sql`: Maestro sai do Beta (`stage` `active`, gate `released`;
+  web, api e sso abertos, computador e download seguem fechados); o Relay já estava `released`. Páginas públicas
+  divulgam pelo gate (`apps/hub-web/lib/divulgacao.ts`: estado aberto e canal web ou download aberto), sem lista à mão
+  nem "Em breve": página inicial (faixa das ferramentas, números, "Conheça de perto", órbita da Z, fluxo) e `/baixar`
+  mostram só Maestro, SOBEDESCE, Synquei, TPeasy e Relay; AEON, Revela, NOSSOM e Carro do Freela somem e voltam
+  sozinhos quando uma migration abrir o gate. Fluxo novo, só com etapas reais: Pauta (Maestro) → Gravação (TPeasy) →
+  Cópia (SOBEDESCE) → Sincronia (Synquei) → Entrega (Relay) → Aprovação (Maestro), com a linha do centro da primeira
+  ao da última e "N de 6"; quem não manda evento ao HUB mostra o que faz ali, nunca um aviso inventado. Faixa sem linha
+  órfã (5 numa linha no computador, tablet e celular), números com uma coluna por item. Foto do app
+  (`produto-hub-*.webp`) refeita só com os cinco; no painel `/app` o Maestro e o Relay (só web) abrem na web em vez de
+  "Em desenvolvimento". `/baixar` e `/downloads`: o Maestro abre no navegador e no celular; Relay entrou. "Beta" saiu
+  da Z (`plataformas.ts`) e da descrição/OG do Maestro (`products/maestro/src/lib/site.ts`). Falta: o selo "Beta" da
+  página inicial do Maestro e as listas da família dentro dos apps (outros ramos), e aplicar a 0039 em produção.
 - ⬜ Maestro, pendente do titular: ciência dos serviços abertos da calculadora; criar a chave de API do Google só do
   Maestro (restrita à Drive API e a `maestro.absolutezro.com`) e pôr em `MAESTRO_GOOGLE_API_KEY` na Vercel; pôr
   `CRON_SECRET` no projeto `maestro` da Vercel (agendamento que desliga o compartilhamento de revisão vencido).

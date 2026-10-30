@@ -15,6 +15,21 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Divulgação só do que está no ar; Maestro e Relay no ar (30/10/2026)
+
+Banco local `zro_eco_a20d` (todas as migrations + 0039), testes em `zro_eco_a20d_test` e E2E em
+`zro_eco_a20d_e2e_test` (porta 3473). Máquina carregada (load ~25 em 4 núcleos, disco quase cheio).
+
+| Verificação                                                    | Resultado                                                                                    |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| lint, `format:check`, `typecheck`                              | ok                                                                                           |
+| `npm test`                                                     | 394/396; as 2 do `stripe.test.ts` caíram por disco cheio (53100) e passaram de novo sozinhas |
+| `divulgacao.test.ts` (novo), `maestro-lancamento`, `downloads` | ok: só os cinco no ar divulgados; abrir o gate do NOSSOM o divulga; 0027 + 0039 idempotentes |
+| Maestro `tests/lancamento.test.mts`                            | 5/5 (descrição sem "Beta")                                                                   |
+| E2E `hub.spec.ts`, `home-celular.spec.ts`, `z-entrada.spec.ts` | ok (novo: páginas públicas sem AEON/Revela/NOSSOM/Carro em 1440 e 390 px; painel com Abrir)  |
+| E2E `a11y.spec.ts`                                             | públicas ok; "área logada" estourou os 120 s pela carga da máquina (páginas não mudaram)     |
+| Capturas antes/depois (computador e iPhone, claro)             | fora do repositório (scratchpad da sessão)                                                   |
+
 ## Integração: a Z discreta e o Set em todas as plataformas (30/10/2026)
 
 Os dois ramos de 30/10 juntos ("a Z nunca é a primeira tela" e "Set em todas as plataformas"). Em todo app a entrada

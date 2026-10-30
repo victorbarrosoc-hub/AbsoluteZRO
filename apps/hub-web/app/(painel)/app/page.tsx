@@ -24,6 +24,7 @@ const LINHA: Record<string, string> = {
   nossom: 'Tratamento de som',
   finishing: 'Cor e entrega',
   maestro: 'Gestão da produtora',
+  relay: 'Conversão e exportação',
 }
 
 /** Site oficial quando o catálogo ainda não tem o endereço. */
@@ -37,21 +38,24 @@ const SITE: Record<string, string> = {
  * ferramentas em cartões grandes com Instalar, Abrir e Atualizar (central do app) ou Abrir no navegador (apps da web).
  * É a primeira tela do app (computador e Tela de Início do iPhone): a tarefa vem primeiro (titular, 29/10/2026; Plano
  * de Integração §7–8). A Z fica em /app/ia, num item discreto no pé da barra (no celular, no anel do topo).
- * Sem sessão, vai para o login do próprio app (/app/entrar). Produto fechado pelo gate de lançamento (ADR 0023, canal
- * desktop) fica só com o selo "Em desenvolvimento": sem Instalar e sem Abrir.
+ * Sem sessão, vai para o login do próprio app (/app/entrar). Gate de lançamento (ADR 0023) por canal: Instalar só com o
+ * canal desktop aberto; Abrir (na web) só com o canal web aberto. Fechado nos dois fica só com o selo "Em
+ * desenvolvimento". App só da web no ar (Maestro e Relay, sem app de computador ainda) abre na web, sem selo.
  */
 export default async function Painel() {
   const auth = await getAuth()
   if (!auth) redirect('/app/entrar')
   if (!auth.session.activeOrgId) redirect('/boas-vindas')
   const actor = await authorize(db(), auth)
-  const [access, avatar] = await Promise.all([
+  const [access, naWeb, avatar] = await Promise.all([
     db().asUser({ userId: actor.userId, orgId: actor.orgId }, (tx) => productAccessFor(tx, actor.orgId, { channel: 'desktop' })),
+    db().asUser({ userId: actor.userId, orgId: actor.orgId }, (tx) => productAccessFor(tx, actor.orgId, { channel: 'web' })),
     avatarVersion(db(), auth),
   ])
+  const web = new Map(naWeb.map((w) => [w.productId, w]))
   const nome = auth.user.displayName || auth.user.email
   const primeiro = nome.split(/\s+/)[0]
-  const liberados = access.filter((a) => a.access === 'contracted').map((a) => a.productId)
+  const liberados = access.filter((a) => a.access === 'contracted' || web.get(a.productId)?.access === 'contracted').map((a) => a.productId)
 
   return (
     <div className="painel">
@@ -68,9 +72,10 @@ export default async function Painel() {
 
         <ul className="painel__apps" aria-label="Ferramentas">
           {access.map((a, i) => {
-            const fechado = a.access === 'closed'
-            const instalavel = !fechado && hasDesktopInstaller(a.productId, new Set([a.productId]))
-            const abrir = fechado ? null : a.ssoStartUrl || a.externalUrl || SITE[a.productId] || null
+            const fechadoNaWeb = (web.get(a.productId)?.access ?? 'closed') === 'closed'
+            const fechado = a.access === 'closed' && fechadoNaWeb
+            const instalavel = a.access !== 'closed' && hasDesktopInstaller(a.productId, new Set([a.productId]))
+            const abrir = fechadoNaWeb ? null : a.ssoStartUrl || a.externalUrl || SITE[a.productId] || null
             return (
               <li key={a.productId} className="pcard" style={{ ...productColor(a.productId), '--i': i } as CSSProperties}>
                 <span className="pcard__luz" aria-hidden="true" />
