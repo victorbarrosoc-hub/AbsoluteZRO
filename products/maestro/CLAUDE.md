@@ -274,6 +274,47 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   `escala_sincronizar` refeito na 0013). Itens do Carro do Freela são só leitura (gatilho barra `maestro_app`). A
   sincronização (`aplicarInventarioDoCarro`, contrato `freela.inventario/1`, pelo `zro_sub`) está pronta e **desligada**:
   nada a chama enquanto o Carro não tem banco (`docs/integration-contracts/maestro-carro-do-freela.md`).
+- **Criação · Roteiro** (plano da Criação, fase F1 = só o núcleo, sem tela; `drizzle/0030_roteiros.sql`,
+  `src/lib/criacao/roteiro/**`): UM documento (`Roteiro`: formato, alvo min–max, wpm 150, pessoas, cenas → blocos
+  `fala`/`acao`/`plano`/`lettering`/`audio`/`observacao`/`nota`, ids estáveis) em `roteiros.conteudo`, conferido por
+  `lerRoteiro` (conserta; `null` só fora dos limites: 300 cenas, 3.000 blocos, 256 KB). `dica` é o cinza dos modelos e
+  nunca vira texto. Tempo em `tempo.ts` (fala = palavras ÷ wpm pela regra do `countWords` do TPeasy; plano + ações
+  = um plano; cena = `duracaoSeg` digitado ou o maior entre voz e imagem; medidor com 5% de folga). Vistas puras em
+  `vistas/` (Literário, Técnico, Teleprompter na marcação do TPeasy + `paraBackupTpeasy` com id
+  `maestro-<roteiro>-<pessoa>`, Edição, Markdown, `dadosImpressao`); 6 modelos em `modelos.ts`; documento antigo →
+  novo em `antigo.ts` (só leitura); `juntar.ts` junta por id no 409 do `rev`. Banco: `servidor.ts` (asUser; `rev` sobe
+  por gatilho; estado só admin/gestão pelo gatilho `roteiros_guarda`; `versao_atual`/`rev`/`demo` sem UPDATE para
+  `maestro_app`), versões só por `maestro.roteiro_versao_salvar` (sha256 por check, `registro_imutavel`), políticas
+  `_cliente` (sem vínculo fica escondido de quem é restrito). Papéis em `src/lib/criacao/permissoes.ts`
+  (`podeVerCriacao`/`podeEditarCriacao`/`podeEnviarCriacao`, desde a F3 pela capacidade `criacao` de `acessos.ts`,
+  `podeCriacao`; as políticas da 0030 têm os mesmos papéis e o `roteiro.test.mts` confere).
+  O migrador aplica qualquer migração do journal ainda não gravada (pelo `when` ou pelo hash), então números fora de
+  ordem entre frentes funcionam; `when` repetido para o deploy.
+- **Criação · editor do Roteiro** (fase F2): "Criação" no grupo Produção e em Mais (`navegacao.ts`; a barra do celular
+  não muda). `/app/criacao` (cartões; "Novo roteiro" em `components/criacao/roteiro/novo.tsx` pela Server Action
+  `criarRoteiroAcao`; `?novo=1&projeto=` abre a folha já ligada; aba Fluxos = "em breve" até a F5). Editor em
+  `/app/criacao/roteiros/[id]` (`editor.tsx`): as vistas puras da F1 (Técnico com `incluirVazios`, a `dica` é só
+  placeholder), operações puras em `lib/criacao/roteiro/editar.ts` (nunca mutam; o que não mudou fica o mesmo objeto) e
+  "Comparar" em `comparar.ts`. Gravação em `gravacao.ts`: 600 ms + ao sair do campo/aba, sempre com `rev`; 409 traz o
+  atual e a tela junta com `juntarRoteiros(base, meu, deles)` e grava de novo; poll de 5 s só adota sem mudança local.
+  Rota única `/api/criacao/roteiros/[id]` (`lib/criacao/roteiro/rota.ts`: GET `?rev=`/`?versoes`/`?versao=`, POST
+  `salvar|versao|restaurar|ligar|estado|lixeira`, Origin conferida, papéis por `permissoes.ts`). Folha A4 em
+  `roteiros/[id]/imprimir` (`dadosImpressao`). Estados e nomes sem banco em `nomes.ts` (a tela no navegador importa
+  dali, nunca de `servidor.ts`). Projeto: seção "Roteiros"; documento `roteiro`/`decupagem` antigo com "Abrir no editor
+  novo" (`abrirNoEditorNovoAcao`); os chips de Documentos não criam mais esses dois tipos. Demonstração: o roteiro
+  institucional com a v1 (`src/lib/demo/criacao.ts`). CSS em `criacao.css` (prefixo `cr-`).
+- **Criação · saídas do Roteiro** (fase F3; contrato em `docs/integration-contracts/maestro-roteiro.md`): "Enviar ▾"
+  (`components/criacao/roteiro/enviar.tsx`) só para `podeEnviarCriacao`; tudo sai de uma **versão salva** (a folha
+  oferece salvar a próxima quando o rascunho mudou, comparando com `mesmoConteudo`). Saídas puras em
+  `lib/criacao/roteiro/saidas.ts`: `saidaTpeasy` (texto, `.txt` com o título no nome, backup com id estável e `updated` =
+  hora da versão), `paraRoteiroMaestro` (`maestro.roteiro/1`, schema zod em `packages/media-contracts/src/roteiro.ts`;
+  mudou a forma, `npm run contracts:export` na raiz e `ATUALIZAR_EXEMPLOS=1` no `roteiro-saidas.test.mts` para o
+  exemplo em `docs/integration-contracts/exemplos/`). PDF para a edição = folha A4 `?vista=edicao&versao=n`. Cada envio
+  é `POST {op:"enviado"}` → `registrarEnvio` (auditoria `roteiro.enviado` com o sha256 do banco). A opção do AEON (o
+  arquivo) só com `podeMandarParaAeon` (claim `zro_release["ai-edit"]` released/allowed + produto + papel): hoje o AEON
+  está fechado e nada aparece; a rota recusa `aeon` também. O cliente não aparece no menu até a F7. Ficha do card:
+  bloco "Criação" (`components/criacao/roteiro/do-card.tsx`, `roteirosDoCardAcao`). Nome de arquivo com acento só sai
+  do navegador com locale UTF-8 (o `playwright.config.ts` força `C.UTF-8`).
 - **App na Tela de Início (PWA)**: `src/app/manifest.ts` (`/manifest.webmanifest`: Maestro, `start_url` `/app`, `scope`
   `/`, standalone, cores do claro), ícones em `public/pwa/` gerados do `src/app/icon.svg` por `scripts/icones-pwa.mjs`
   (nunca desenhar outro), `apple-icon.png` (180 px), `appleWebApp` + `apple-mobile-web-app-capable` no layout, barra de
@@ -345,9 +386,16 @@ kit do freela, aluguel na escala e sincronização desligada (`freela-equipament
 novas com duas organizações (`negocio-rls.test.mts`) e o resumo para a Z (`resumo-z.test.mts`), o contrato (preenchimento, versões, aceite com hash, imutável;
 `contrato.test.mts`), a marca própria (sinal ligado e desligado, contraste, duas organizações; `marca-propria.test.mts`), a ponte do Drive, Arquivos, compartilhar/recolher e o agendamento
 (`drive-sobedesce.test.mts`), a versão colada na ficha do card (`versoes-card.test.mts`), pessoas da Absolute ZRO (`pessoas-zro.test.mts`), colunas do Quadro (fábrica e backfill, duas organizações, papéis,
-automação pelo papel, arquivar com destino, paleta; `colunas.test.mts`), o lançamento (app de computador só com instalador
-publicado, manifesto e a chave da vitrine; `lancamento.test.mts`), quem vê o quê (padrão igual no TS e no banco,
-cada área por pessoa, máscaras, gatilhos, só a administração muda e audita, sessão, navegação e a Z; `acessos.test.mts`). E2E: `npm run build && npm run test:e2e`
+automação pelo papel, arquivar com destino, paleta; `colunas.test.mts`), o roteiro puro (modelo, tempo, cada vista, TPeasy
+contra o código do próprio app, modelos só com dica, documento antigo, junção; `roteiro.test.mts`), roteiros no banco
+(duas organizações, papéis, rev, versões imutáveis; `criacao-rls.test.mts`), as operações do editor e o comparar
+(`roteiro-editor.test.mts`), a rota do editor (Origin, papéis, poll, 409 com o atual e a junção, versões, restaurar;
+`criacao-rota.test.mts`; também o envio anotado e o AEON pelo gate), as saídas (`maestro.roteiro/1` contra o schema
+publicado com o conferidor `tests/esquema-json.mts`, TPeasy pelo código do próprio app, AEON escondido;
+`roteiro-saidas.test.mts`), o migrador com migração atrasada
+(`migrador.test.mts`) e o lançamento (app de computador só com instalador publicado, manifesto e a chave da vitrine;
+`lancamento.test.mts`), quem vê o quê (padrão igual no TS e no banco, cada área por pessoa, máscaras, gatilhos, só a
+administração muda e audita, sessão, navegação e a Z; `acessos.test.mts`). E2E: `npm run build && npm run test:e2e`
 (Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir movimento, navegação, a aprovação
 inteira (`aprovacao.spec.ts`, mp4 local e YouTube/Vimeo falsos em `e2e/falsos`) e a versão colada na ficha do card que aparece no lote (`versao-card.spec.ts`) e a produtora com a demonstração
 (`produtora.spec.ts`, organização própria criada em `e2e/preparar.ts`) e o ciclo comercial (`comercial.spec.ts`: pedido
@@ -365,9 +413,16 @@ quadro a quadro) e os gestos do Quadro no celular (`gestos.spec.ts`, Chromium e 
 com o mouse (`arrastar.spec.ts`, Chromium e o projeto `computador-safari`: relógio por quadro, zero render/DOM/layout
 com o mouse andando, card sempre inteiro ao soltar; `E2E_DB_SUFIXO` separa o banco, `E2E_VIDEO=1` grava) e as colunas
 (`colunas.spec.ts`: renomear no lugar, reordenar, criar e recolorir, arquivar com destino e restaurar, sistema não
-arquiva, equipe não edita; computador e iPhone, organização própria) e quem vê o quê (`acessos.spec.ts`: o editor sem
+arquiva, equipe não edita; computador e iPhone, organização própria), quem vê o quê (`acessos.spec.ts`: o editor sem
 dinheiro na navegação, no Hoje, nas fichas e no HTML; a administração liga o Financeiro e volta ao padrão; `SHOTS_DIR`
-guarda `pessoas-acesso-*`). `E2E_DB_SUFIXO` separa o banco do e2e quando duas cópias rodam ao mesmo tempo.
+guarda `pessoas-acesso-*`) e a Criação (`criacao-roteiro.spec.ts`: novo pelo
+modelo → teclado → vistas → grava sozinho → recarregar, versão e comparar, folha A4, junção com outra pessoa, documento
+antigo no editor novo, leitura; no iPhone uma cena por vez, "+", segurar para arrastar e o Teleprompter; e
+`criacao-enviar.spec.ts`: salvar a versão antes de enviar, o `.txt` e o backup do TPeasy iguais ao que o modelo gera,
+PDF para a edição, auditoria, AEON escondido e aparecendo com o gate aberto, o bloco do card, leitura sem Enviar;
+`SHOTS_DIR` guarda as capturas). Bancos por cópia do repositório: `TEST_DB_SUFIXO` (testes) e `E2E_DB_SUFIXO` (e2e).
+O navegador do e2e usa um proxy que não existe (`playwright.config.ts`): nada sai para a internet (o `<zro-set>` de
+absolutezro.com falha na hora em vez de segurar o "networkidle"); serviço de fora só com `route`.
 Movimento (29/10/2026): toda folha usa `Folha` (`src/components/folha.tsx`, portal no `<body>`). **Troca de seção**
 (`src/components/movimento.tsx` + `src/app/motion.css`): a View Transition é chamada por nós, não pelo
 `<ViewTransition>` do React (no Safari do iPhone o par sai/entra do React deixava a tela velha e a nova uma sobre a

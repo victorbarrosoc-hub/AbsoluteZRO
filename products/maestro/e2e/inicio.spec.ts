@@ -144,6 +144,7 @@ test.describe("navegação do app", () => {
         "/app/quadro",
         "/app/aprovacoes",
         "/app/projetos",
+        "/app/criacao",
         "/app/arquivos",
         "/app/agenda",
         "/app/pedidos",

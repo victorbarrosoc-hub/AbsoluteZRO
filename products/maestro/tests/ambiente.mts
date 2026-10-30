@@ -15,7 +15,9 @@ const BASE = process.env.TEST_DATABASE_URL || "postgres://postgres:postgres@loca
 /** Recria `maestro_test_<nome>` do zero e aplica drizzle/*.sql. Devolve o endereço. */
 export async function bancoDeTeste(nome: string): Promise<string> {
   if (!/^[a-z0-9_]{1,30}$/.test(nome)) throw new Error(`nome de banco de teste inválido: ${nome}`);
-  const db = `maestro_test_${nome}`;
+  // TEST_DB_SUFIXO separa os bancos quando duas cópias do repositório rodam os testes ao mesmo tempo.
+  const sufixo = (process.env.TEST_DB_SUFIXO ?? "").replace(/[^a-z0-9_]/g, "").slice(0, 12);
+  const db = `maestro_test_${nome}${sufixo ? `_${sufixo}` : ""}`;
   const u = new URL(BASE);
   u.pathname = "/postgres";
   const admin = postgres(u.toString(), { max: 1, onnotice: () => {} });

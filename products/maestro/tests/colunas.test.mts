@@ -72,7 +72,7 @@ describe("as colunas de fábrica", () => {
     const base = new URL(amb.url);
     base.pathname = "/postgres";
     const admin = postgres(base.toString(), { max: 1, onnotice: () => {} });
-    const db = "maestro_test_colunas_backfill";
+    const db = `maestro_test_colunas_backfill${process.env.TEST_DB_SUFIXO ? `_${process.env.TEST_DB_SUFIXO.replace(/[^a-z0-9_]/g, "").slice(0, 12)}` : ""}`;
     await admin.unsafe(`drop database if exists ${db} with (force)`);
     await admin.unsafe(`create database ${db}`);
     await admin.end();

@@ -25,6 +25,7 @@
 | `zro.pessoas` (perfil com @)     | v1 ([pessoas.md](pessoas.md))                                      | Apps → HUB: busca de perfis, @ e convite (Maestro primeiro)     |
 | `relay` (conversão e exportação) | v1 ([relay.md](relay.md)), no SOBEDESCE                            | Apps → Relay: núcleo embutido, link ou pedido ao computador     |
 | `zro.set` (presença e conversas) | v1 ([set.md](set.md))                                              | Apps → HUB: quem está online e as conversas (Maestro primeiro)  |
+| `maestro.roteiro`                | v1 ([maestro-roteiro.md](maestro-roteiro.md)), arquivo             | Maestro → edição (AEON na F8b); TPeasy por texto e backup       |
 
 Regras: payload mínimo (IDs e resumos, sem mídia nem dados pessoais), `idempotency_key` obrigatória, mudança
 incompatível = nova versão.

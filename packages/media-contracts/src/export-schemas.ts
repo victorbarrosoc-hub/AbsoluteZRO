@@ -29,6 +29,7 @@ import {
 } from './ponte'
 import { DriveDownloadSchema, PreparoSchema } from './preparo'
 import { ProjectCreateSchema, ZroProjectSchema } from './project'
+import { MaestroRoteiroSchema } from './roteiro'
 import { TimelineRefSchema } from './timeline'
 
 export const OUT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../docs/integration-contracts/schemas')
@@ -56,6 +57,7 @@ export function buildSchemas(): Record<string, unknown> {
     ),
     'synquei.preparo.v1': s(PreparoSchema, 'synquei.preparo.v1', 'Recibo de preparo do Synquei v1'),
     'freela.inventario.v1': s(FreelaInventarioSchema, 'freela.inventario.v1', 'Inventário do freela (Carro do Freela → Maestro) v1'),
+    'maestro.roteiro.v1': s(MaestroRoteiroSchema, 'maestro.roteiro.v1', 'Roteiro de uma versão salva do Maestro (para a edição) v1'),
   }
   // Ponte Maestro → SOBEDESCE pelo HUB (docs/integration-contracts/maestro-sobedesce.md).
   const ponte: [string, z.ZodType, string][] = [

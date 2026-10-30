@@ -39,6 +39,7 @@ async function ids() {
       evento: await um(sql`select id from maestro.eventos where org_id = ${org.id} order by created_at limit 1`),
       lancamento: await um(sql`select id from maestro.lancamentos where org_id = ${org.id} limit 1`),
       contrato: await um(sql`select id from maestro.contratos where org_id = ${org.id} limit 1`),
+      roteiro: await um(sql`select id from maestro.roteiros where org_id = ${org.id} and demo limit 1`),
       // Um card da demonstração com versões: a ficha mostra a lista e o campo de colar o link.
       cardComVersao:
         (await sql`select card_id from maestro.versoes where org_id = ${org.id} and apagado_em is null order by n desc limit 1`)[0]?.card_id ?? null,
@@ -95,6 +96,16 @@ async function telas(): Promise<Tela[]> {
     // O lote de quem tem o SOBEDESCE: a linha da versão ganha o "Escolher no Drive" (o caso do iPhone do titular).
     { nome: "lote-drive", rota: `/app/aprovacoes/${(JSON.parse(readFileSync(DRIVE, "utf8")) as { lote: string }).lote}`, drive: true },
     { nome: "projetos", rota: "/app/projetos" },
+    {
+      nome: "criacao",
+      rota: "/app/criacao",
+      depois: async (page, ver) => {
+        await page.getByRole("button", { name: "Novo roteiro" }).first().click();
+        await page.getByRole("dialog", { name: "Novo roteiro" }).waitFor();
+        await ver("criacao-novo");
+      },
+    },
+    { nome: "criacao-fluxos", rota: "/app/criacao?aba=fluxos" },
     { nome: "projetos-novo", rota: "/app/projetos/novo" },
     { nome: "clientes", rota: "/app/clientes" },
     { nome: "clientes-novo", rota: "/app/clientes/novo" },
@@ -141,6 +152,10 @@ async function telas(): Promise<Tela[]> {
   ficha("orcamento-aprovado", i.aprovado, (x) => `/app/orcamentos/${x}`);
   ficha("timbrado", i.aprovado, (x) => `/app/orcamentos/${x}/timbrado`);
   ficha("contrato", i.contrato, (x) => `/app/contratos/${x}`);
+  for (const v of ["literario", "tecnico", "teleprompter", "edicao"]) ficha(`roteiro-${v}`, i.roteiro, (x) => `/app/criacao/roteiros/${x}?vista=${v}`);
+  ficha("roteiro-imprimir", i.roteiro, (x) => `/app/criacao/roteiros/${x}/imprimir?vista=tecnico`);
+  // o "PDF para a edição" de uma versão salva (a demonstração tem a v1)
+  ficha("roteiro-imprimir-edicao", i.roteiro, (x) => `/app/criacao/roteiros/${x}/imprimir?vista=edicao&versao=1`);
   ficha("freela", i.freela, (x) => `/app/freelas/${x}`);
   ficha("freela-editar", i.freela, (x) => `/app/freelas/${x}/editar`);
   ficha("equipamento", i.equipamento, (x) => `/app/inventario/${x}`);

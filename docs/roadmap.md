@@ -626,6 +626,52 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   0029 cai em `nivel=sem_pessoas`, sem quebrar o login).
 - ⬜ Inventário do Carro no freela achado pelo @ (pronto atrás de `CARRO_SYNC_ATIVO`, desligado).
 
+## Maestro · Criação: núcleo do Roteiro (F1, 29/10/2026)
+
+- ✅ Modelo único do roteiro (cenas → blocos: fala on/OFF/sonora/passagem com pessoa, ação, plano, lettering
+  GC/título/legenda/CTA/legal, áudio trilha/efeito/BG/silêncio, observação, nota interna), tempo estimado (150 palavras
+  por minuto, regra de contagem do TPeasy) e alvo. Vistas puras: Literário, Técnico, Teleprompter (marcação e backup do
+  TPeasy, id estável por pessoa), Edição, Markdown e dados da impressão. 6 modelos só com dica cinza. Documento antigo
+  (roteiro/decupagem) abre no editor novo sem mudar o antigo. Junção por id no conflito de `rev`.
+- ✅ Banco: `drizzle/0030_roteiros.sql` (`roteiros`, `roteiro_versoes` só de inclusão com sha256 conferido), RLS por
+  organização e por cliente, papéis provisórios até a área `criacao` do acesso por área. O migrador do Maestro passa a
+  aplicar migração que entra fora de ordem (0025–0029 de outras frentes depois da 0030).
+- ✅ F3 (enviar: TPeasy, edição, roteiros na ficha do card), 30/10/2026: seção própria abaixo.
+- ⬜ F5 (Fluxo), F7 (aprovação pelo `/a`).
+- ⛔ Em produção: migração `0030` do Maestro no próximo deploy autorizado.
+
+## Maestro · Criação: editor do Roteiro (F2, 29/10/2026)
+
+- ✅ "Criação" no grupo Produção (computador) e em Mais (iPhone; a barra de baixo não muda). `/app/criacao`: roteiros
+  em cartões (vínculo, duração contra o alvo, estado, quando mudou), "Novo roteiro" com os 6 modelos, vínculo a
+  projeto/card e "Literário ou Técnico primeiro?"; seletor Roteiros · Fluxos (Fluxos com "em breve" honesto até a F5).
+- ✅ Editor `/app/criacao/roteiros/<id>`: Literário · Técnico (células editáveis, colunas escondíveis) · Teleprompter
+  (prévia no preto, por pessoa) · Edição (deixas em ordem de tempo). Teclado: Enter, Tab/⇧Tab, "/", ⌘1–6, "@",
+  ⌘⇧Enter, ⌥↑/⌥↓, ⌫. Grava sozinho (600 ms, `rev`, junção por id no 409, aviso "mudou ao mesmo tempo" com "Ficar com o
+  meu"), poll de 5 s, medidor contra o alvo, versões (salvar com nota, comparar por bloco, restaurar), folha A4 pelo
+  `dadosImpressao`. iPhone: uma cena por vez, "+" com os tipos em ícones grandes, segurar 280 ms para arrastar.
+- ✅ Projeto: seção "Roteiros" e "Novo"; roteiro e decupagem antigos com "Abrir no editor novo" (o antigo fica; os
+  dois tipos deixam de nascer pelos chips de Documentos). Demonstração com o roteiro institucional e a v1.
+
+## Maestro · Criação: saídas do Roteiro (F3, 30/10/2026)
+
+- ✅ "Enviar ▾" é a ação principal do editor para administração e gestão ("Salvar versão" ao lado e no menu; no iPhone,
+  o ícone no topo abre a folha). Tudo sai de uma **versão salva**: sem versão ou com o rascunho mudado, a folha oferece
+  salvar a próxima ou usar a última. Cada envio vai para a auditoria (`roteiro.enviado`: versão, sha256, destino,
+  formato, pessoa) e aparece em "Últimos envios".
+- ✅ TPeasy: só as falas, por pessoa; Compartilhar (folha do sistema, com o `.txt` quando dá), Copiar, `.txt` (o nome vira
+  o título no TPeasy) e o backup do TPeasy (id estável, hora da versão: a versão nova atualiza o mesmo roteiro lá). "Compartilha
+  o texto pronto", nunca "sincroniza".
+- ✅ PDF para a edição (folha A4 na vista Edição: cenas com tempo, lettering, áudio e falas) e PDF Literário, Técnico ou
+  Teleprompter, sempre de `?versao=n`.
+- ✅ Contrato `maestro.roteiro/1` em `packages/media-contracts` ([maestro-roteiro.md](integration-contracts/maestro-roteiro.md),
+  schema e exemplo gerado pelo Maestro). A opção do arquivo (AEON) **só aparece com o AEON aberto para a pessoa** (gate
+  do HUB, `zro_release["ai-edit"]`); hoje fechado, ninguém vê. O AEON ainda não importa (F8b).
+- ✅ Ficha do card: bloco "Criação" com os roteiros ligados (título, versão, duração, estado) e "Novo roteiro" já ligado.
+- ✅ Permissões da Criação pela capacidade `criacao` (ver/editar/enviar) do acesso por área (`podeCriacao`).
+- ⬜ Cliente aprovar (F7, fora do menu até lá); TPeasy lendo direto do Maestro (F8a); AEON abrindo o arquivo (F8b). Sem
+  migração nova.
+
 ## Relay: conversão de mídia como setor próprio (29/10/2026, [ADR 0030](decisions/0030-relay-conversao.md))
 
 A Revela fica só com a cor (looks, espaço de cor, LUT e PowerGrade). Codec, contêiner e formatos de vídeo e áudio vão

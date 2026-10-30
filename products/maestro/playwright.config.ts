@@ -26,6 +26,13 @@ export default defineConfig({
     trace: "retain-on-failure",
     // E2E_VIDEO=1 grava cada teste (test-results/<teste>/video.webm), para ver o movimento quadro a quadro.
     video: process.env.E2E_VIDEO ? { mode: "on", size: { width: 1440, height: 900 } } : "off",
+    // Nome de arquivo baixado com acento ("Café · Ana.txt"): o navegador só respeita com um locale UTF-8 (no POSIX ele
+    // troca por "download").
+    launchOptions: { env: { ...process.env, LANG: process.env.LANG?.includes("UTF-8") ? process.env.LANG : "C.UTF-8" } },
+    // Nada sai para a internet: o que não é o próprio servidor (ou um falso local) falha na hora, em vez de ficar
+    // pendurado (o `<zro-set>` de absolutezro.com deixava a página sem "networkidle" num ambiente sem rede). Quem
+    // precisa de um serviço de fora intercepta com `route` (que vem antes do proxy).
+    proxy: { server: "http://127.0.0.1:9", bypass: "localhost,127.0.0.1,::1" },
   },
   projects: [
     { name: "computador", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },

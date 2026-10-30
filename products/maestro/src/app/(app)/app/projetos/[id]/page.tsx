@@ -22,6 +22,10 @@ import { Icone } from "@/components/icones";
 import { SeloStatus } from "@/components/painel";
 import { removerEscalaAcao, salvarEscalaAcao } from "../../freelas/acoes";
 import { criarDocumentoAcao } from "./documentos/acoes";
+import { podeEditarCriacao } from "@/lib/criacao/permissoes";
+import { listarRoteiros, NOME_ESTADO_ROTEIRO } from "@/lib/criacao/roteiro/servidor";
+import { formatarTempo } from "@/lib/criacao/roteiro/tempo";
+import { STATUS_DO_ESTADO } from "@/components/criacao/roteiro/comum";
 
 export const metadata = { title: "Projeto" };
 
@@ -35,13 +39,14 @@ export default async function FichaProjeto({ params }: PageProps<"/app/projetos/
   const p = await obterProjeto(ctx, id);
   if (!p) notFound();
   const hoje = hojeBr();
-  const [escalas, freelas, eventos, reservas, docs, contratos] = await Promise.all([
+  const [escalas, freelas, eventos, reservas, docs, contratos, roteiros] = await Promise.all([
     escalasDoProjeto(ctx, id, hoje),
     listarFreelas(ctx),
     listarEventos(ctx, "2000-01-01", "2999-12-31", { projeto: id }),
     reservasDoProjeto(ctx, id),
     listarDocumentos(ctx, id),
     podeArea(sessao, "contratos") ? contratosDe(ctx, { projetoId: id }) : Promise.resolve([]),
+    listarRoteiros(ctx, { projetoId: id }),
   ]);
   const escreve = podeEscrever(sessao.papel);
   // Diárias e o custo da equipe só com "Diárias e cachês"; o status do pagamento só com "Financeiro" (o servidor já
@@ -181,6 +186,35 @@ export default async function FichaProjeto({ params }: PageProps<"/app/projetos/
               <p className="nada">Nada marcado daqui para a frente.</p>
             )}
           </Secao>
+          <Secao
+            titulo="Roteiros"
+            acao={
+              podeEditarCriacao(sessao.papel) ? (
+                <Link className="secao__link" href={`/app/criacao?novo=1&projeto=${p.id}`}>
+                  Novo
+                </Link>
+              ) : undefined
+            }
+          >
+            {roteiros.length ? (
+              <ul className="linhas">
+                {roteiros.map((r) => (
+                  <li key={r.id}>
+                    <Link className="linha" href={`/app/criacao/roteiros/${r.id}`}>
+                      <span className="linha__coluna num">{formatarTempo(r.duracaoSeg)}</span>
+                      <span className="linha__titulo">{r.titulo}</span>
+                      <span className="selo" data-status={STATUS_DO_ESTADO[r.estado]}>
+                        <i aria-hidden="true" />
+                        {NOME_ESTADO_ROTEIRO[r.estado]}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="nada">Nenhum roteiro. Escreva na Criação, com as vistas Literário e Técnico.</p>
+            )}
+          </Secao>
           <Secao titulo="Documentos">
             {docs.length ? (
               <ul className="linhas">
@@ -195,11 +229,12 @@ export default async function FichaProjeto({ params }: PageProps<"/app/projetos/
                 ))}
               </ul>
             ) : (
-              <p className="nada">Roteiro, decupagem, ordem do dia e checklist.</p>
+              <p className="nada">Ordem do dia e checklist.</p>
             )}
             {escreve ? (
               <div className="chips">
-                {TIPOS_DOC.map((t) => (
+                {/* Roteiro e decupagem agora nascem na Criação (os antigos continuam abrindo e vão para o editor novo). */}
+                {TIPOS_DOC.filter((t) => t.k !== "roteiro" && t.k !== "decupagem").map((t) => (
                   <BotaoAcao
                     key={t.k}
                     acao={criarDocumentoAcao}
