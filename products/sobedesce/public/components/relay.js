@@ -47,7 +47,8 @@ export function avisarRelay(job) {
   if (antes !== 'running' || job.status === 'running') return
   if (job.status === 'done' && job.accountId) invalidateAccount(job.accountId)
   if (janelas) return
-  if (job.status === 'done') toast('success', `Pronto: ${job.resultado?.nome || 'arquivo convertido'}`)
+  // as versões pedidas pelo Maestro (src/engine/pedidos-relay.js) avisam com o nome dele
+  if (job.status === 'done') toast('success', `${job.origem === 'maestro' ? 'Versão para o Maestro' : 'Pronto'}: ${job.resultado?.nome || 'arquivo convertido'}`)
   else if (job.status === 'error') toast('error', `Relay: ${job.error || 'não deu para converter.'}`)
 }
 

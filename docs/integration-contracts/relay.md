@@ -75,7 +75,7 @@ Nenhum arquivo passa pelo site: o link leva só os destinos.
 | **AEON**            | Exportar o vídeo final da timeline (hoje `app/render.js`, só H.264 no tamanho do projeto)                                                                                 | 1 (navegador)      | Na tela de exportar, a grade de presets do Relay; o render passa a pedir tamanho, cadência e bitrate ao `planejar` do Relay. O AEON continua desenhando os quadros (cortes, zoom, legenda); o Relay decide como gravar.                                                                                                                                                                              | A fazer                                                    |
 | **NOSSOM**          | Exportar o áudio tratado (hoje WAV PCM16 e MP3 320 em `lib/audio.ts`)                                                                                                     | 1 (navegador)      | Os formatos de saída pelos presets de áudio do Relay (MP3 320, AAC 256, WAV 48 kHz 24 bits). O NOSSOM mantém medição e loudness; o Relay só grava.                                                                                                                                                                                                                                                   | A fazer                                                    |
 | **Synquei**         | Depois da sincronia: "Deixar pronto para editar" nos clipes de celular (cadência variável) e proxies                                                                      | 3 (ou 2)           | Marcar no relatório os clipes com cadência variável; pedir ao computador a versão de cadência constante e o proxy pelo preset `proxy`. As exportações de projeto (XML, OTIO, EDL) continuam no Synquei.                                                                                                                                                                                              | A fazer (depende de preset de cadência constante no Relay) |
-| **Maestro**         | Versões de entrega do card: gerar as versões (YouTube, Reels, WhatsApp para o cliente) a partir do master aprovado                                                        | 3                  | Ver "Maestro → Relay" abaixo: ações `relay.converter`, `relay.pedido` e `relay.cancelar` pela ponte do HUB (destino `sobedesce`), cópia dos presets em `products/maestro/src/lib/relay/`.                                                                                                                                                                                                            | Maestro e HUB feitos; rotas do SOBEDESCE a fazer           |
+| **Maestro**         | Versões de entrega do card: gerar as versões (YouTube, Reels, WhatsApp para o cliente) a partir do master aprovado                                                        | 3                  | Ver "Maestro → Relay" abaixo: ações `relay.converter`, `relay.pedido` e `relay.cancelar` pela ponte do HUB (destino `sobedesce`), cópia dos presets em `products/maestro/src/lib/relay/`.                                                                                                                                                                                                            | Feito (Maestro, HUB e SOBEDESCE)                           |
 | **HUB e a Z**       | Catálogo (incluído em todos os planos), família no menu, e a Z: "me manda isso em MP4 720p"                                                                               | 3                  | Feito: produto `relay` no catálogo (migration `0031`, incluído em todo plano, sem limites, gate em `development`), ícone em `apps/hub-web/public/products/relay.svg`, `ProductId` com `relay`, o Relay no guia da Z. Na abertura: migration nova com `stage`, `external_url` e o gate.                                                                                                               | Feito (fechado até o deploy)                               |
 | **TPeasy**          | Gravações do teleprompter: "Exportar com o Relay" para mandar a gravação no formato da rede                                                                               | 2                  | Link com o preset; nada de conversão própria.                                                                                                                                                                                                                                                                                                                                                        | Futuro                                                     |
 | **Carro do Freela** | Portfólio e reel do freela: "Comprimir com o Relay" antes de subir                                                                                                        | 2                  | Link com o preset `tamanho` ou `vimeo`.                                                                                                                                                                                                                                                                                                                                                              | Futuro                                                     |
@@ -105,10 +105,15 @@ pessoa), para não gastar o do Drive. Nenhuma `relay.*` anda sem a pessoa (crede
 - **`Pedido`** = `{ id, preset, ref, status: 'pendente' | 'convertendo' | 'pronto' | 'erro' | 'cancelado', frac?,
 resultado?: { arquivoId, nome, tamanho, md5, pastaId }, erro?, criado_em, atualizado_em }`. "pronto" só com o MD5
   do Drive igual ao do arquivo convertido (regra do SOBEDESCE). O nome segue `nomeSaida`: `<original> (<preset>).<ext>`.
-- **Quem executa:** a fila `pedidos_proxy` do SOBEDESCE ganha o tipo `relay` (ajustes `{ preset, pastaId, ref }`); o
-  app de computador da conta pega (409 se outro levou), converte com `converterComRelay` (x264, qualidade constante)
-  e sobe em `pastaId`. Sem computador aberto, o pedido espera; `computador` na resposta diz se há um aberto agora ou
-  usado há pouco, para o Maestro dizer isso à pessoa sem prometer prazo.
+- **Quem executa:** a fila `pedidos_proxy` do SOBEDESCE ganha o tipo `relay` (ajustes `{ preset, pastaId, ref }`,
+  `chave = ref:preset` com índice único parcial; migração SOBEDESCE `0016_pedidos_relay`); o app de computador da conta
+  pega (409 se outro levou; `src/engine/pedidos-relay.js`), converte com `converterComRelay` (x264, qualidade
+  constante, os presets e o plano de `src/relay/`, cópias conferidas de `products/relay`) e sobe em `pastaId`, sempre
+  como arquivo novo (`<original> (<preset>).<ext>`, nome repetido ganha `… 2`, nunca por cima; o original não muda).
+  O site confere a pasta (existe, é pasta, mesmo Drive do original) antes de pôr na fila. Sem computador aberto, o
+  pedido espera; `computador` na resposta diz se há um aberto agora (notícia em 2 min) ou usado há pouco (15 min),
+  para o Maestro dizer isso à pessoa sem prometer prazo. Preset com a cor da Revela (`cor`) não entra (o computador
+  ainda não aplica a cor igual ao navegador). Até 100 versões esperando por pessoa (`429 fila_cheia`).
 - **Andamento:** o Maestro consulta `relay.pedido` enquanto a ficha da versão está aberta (a cada 5 s, como as prévias
   do celular; 15 s quando tudo está na fila e o computador está fechado) e guarda o resultado no próprio banco. O
   estado só anda para a frente: "pronto" é final; "erro" e "cancelado" são finais para aquele pedido (pedir de novo
@@ -132,14 +137,27 @@ resultado?: { arquivoId, nome, tamanho, md5, pastaId }, erro?, criado_em, atuali
 - **Quem pede no Maestro:** `podeEntregas` em `products/maestro/src/lib/acessos.ts` (administração, gestão e equipe
   pedem, conferem e cancelam; leitura acompanha o guardado e nunca pergunta ao SOBEDESCE), com as mesmas listas nas
   políticas de `maestro.entregaveis`. O acesso por cliente vale (card fora do alcance = nada).
+- **Do lado do SOBEDESCE, o estado só anda para a frente:** só o computador que pegou muda o pedido; o andamento
+  (`frac`) só cresce; `pronto` exige o resultado com o MD5 (sem MD5 do Drive para conferir é `erro`, e a versão fica na
+  pasta); `pronto`, `erro` e `cancelado` são finais. Computador que some no meio (30 min sem sinal) vira `erro` ("veja
+  na pasta se a versão chegou"), nunca volta sozinho para a fila nem vai para outro computador: ele pode ter subido a
+  versão antes de sumir. Cancelar marca `cancelado` na hora; o computador vê o 409 no sinal de vida (30 s) ou na
+  conferência logo antes de subir e para sem subir nada (o que já tinha subido fica no Drive: o SOBEDESCE nunca apaga
+  mídia). Fechar o app antes de subir devolve o pedido para a fila; no meio do envio, vira `erro`.
 - **Quem constrói o quê:** SOBEDESCE: as três rotas, o tipo `relay` na fila e o executor no app de computador. HUB:
   as ações na `PONTES` com teste (feito). Maestro: a ficha "Gerar versões", a cópia dos presets e o acompanhamento
   (feito).
-- **Estado (30/10/2026):** Maestro e HUB prontos; **faltam as rotas `/api/zro/relay/*` do SOBEDESCE, o tipo `relay`
-  na fila e o executor**. Folha, cópia conferida dos presets, `maestro.entregaveis` (migração Maestro `0034`), o
-  acompanhamento, Conferir e cancelar testados contra um HUB e um SOBEDESCE de mentira que seguem esta tabela
-  (`products/maestro/tests/ponte-falsa.mts`); a `PONTES` testada no HUB (`tests/integration/pedidos-entre-apps.test.ts`).
-  Até as rotas existirem, o SOBEDESCE de verdade responde 404 e a folha diz que ele não conseguiu agora (nada gravado).
+- **Estado (30/10/2026):** Maestro, HUB e SOBEDESCE prontos no código (sem deploy). SOBEDESCE: as rotas
+  `/api/zro/relay/{converter,pedido,cancelar}` (`products/sobedesce/web/src/lib/zro/relay.ts`), o tipo `relay` na fila
+  (migração `0016`, ainda não aplicada no banco de produção) e o executor no app de computador
+  (`src/engine/pedidos-relay.js`). Testes: `products/sobedesce/web/tests/zro-relay.test.mts` (rotas, fila, isolamento
+  entre pessoas), `tests/zro-relay-ciclo.test.mts` (o ciclo pedido → fila → executor → acompanhamento, cada corpo e
+  resposta conferidos contra os JSON Schemas deste contrato) e `products/sobedesce/test/pedidos-relay.test.js` (o
+  executor, com o ffmpeg de verdade e o Drive falso). Do lado do Maestro, o mesmo contrato contra o SOBEDESCE de
+  mentira (`products/maestro/tests/ponte-falsa.mts`). **Para funcionar de verdade falta:** o deploy do site do
+  SOBEDESCE com a `0016` aplicada e um app de computador SOBEDESCE com este executor instalado (build e release novos);
+  até lá, o site atual responde 404 e a folha do Maestro diz que ele não conseguiu agora (nada gravado), e um app de
+  computador antigo não pega o tipo `relay` (o pedido espera).
 
 ## Cor da Revela na exportação (no código desde 30/10/2026; aparece quando a Revela estiver no ar)
 

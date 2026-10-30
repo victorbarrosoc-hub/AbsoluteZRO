@@ -485,9 +485,15 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   SOBEDESCE ou Relay no plano: o porquê e o link; computador fechado: "Começa quando o computador com o SOBEDESCE
   abrir" e o Relay no navegador como saída (jeito 2, só o preset). Cópia de `presets.js`/`plano.js` (23 destinos) e do
   ícone conferida por teste, com os campos tipados. HUB: as ações `relay.*` na `PONTES` (exigem também o Relay no
-  plano; `relay.pedido` com limite próprio), schemas `sobedesce.relay-*` e o OpenAPI. **Falta (lado do SOBEDESCE):**
-  as rotas `/api/zro/relay/*`, o tipo `relay` na fila `pedidos_proxy` e o executor no app de computador; até lá o
-  SOBEDESCE de verdade responde 404 e a folha diz que ele não conseguiu agora. Depois: evento
+  plano; `relay.pedido` com limite próprio), schemas `sobedesce.relay-*` e o OpenAPI. SOBEDESCE (30/10/2026, pedido
+  do titular): as rotas `/api/zro/relay/{converter,pedido,cancelar}` (`web/src/lib/zro/relay.ts`: contrato estrito,
+  pasta conferida no mesmo Drive, idempotente por `ref:preset` com índice único, até 100 esperando), o tipo `relay` na
+  fila `pedidos_proxy` (migração SOBEDESCE `0016_pedidos_relay`: o estado só anda para a frente, computador sumido vira
+  erro e nunca nova conversão sozinha) e o executor no app de computador (`src/engine/pedidos-relay.js`, nos trabalhos
+  do Relay da tela, com o x264 e o MD5; cancelado no Maestro para antes de subir; preset com cor recusado; aviso
+  "Versão para o Maestro" na tela). **Falta para valer de verdade (com autorização):** aplicar a `0016` no banco do
+  SOBEDESCE e publicar o site; build e release novos do app de computador (quem tem o app antigo não pega o tipo
+  `relay`: o pedido espera); conferir com um Drive e um computador de verdade. Depois: evento
   `media.conversion.completed` quando o HUB receber resultado.
 - ⬜ Maestro, do mesmo estudo e à espera do titular: a Z **escrevendo** no Maestro (criar
   pedido, despesa, marcar contato, sempre com a ação exata e o "sim"; cota e plano da Z); sincronia de duas vias com o Google Agenda (OAuth); eventos
@@ -799,7 +805,8 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
   de integrações e a Z.
 - ⬜ Revela tira a aba Converter e aponta para o Relay (na conversa da Revela); AEON e NOSSOM exportam pelos presets do
   Relay; Synquei pede versões pela fila ([contrato](integration-contracts/relay.md)). Maestro: o lado dele e a
-  `PONTES` do HUB prontos (30/10/2026); faltam as rotas e o executor do SOBEDESCE.
+  `PONTES` do HUB prontos (30/10/2026); rotas, fila e executor do SOBEDESCE no código (30/10/2026; falta publicar o
+  site com a `0016` e lançar o app de computador novo).
 - ✅ Presets de TV e formatos específicos (pedido do titular, 29/10/2026): Smart TV (H.264 Full HD a 30 fps, pendrive) e
   Smart TV 4K (HEVC) num grupo TV; LinkedIn e X em Redes; Slides e Vídeo de fundo (sem som) em Trabalho. Entrega para
   emissora (MXF/XDCAM, ProRes, loudness) fica de fora até existir no computador.

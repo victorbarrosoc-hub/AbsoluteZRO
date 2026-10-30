@@ -78,10 +78,10 @@ export async function computadoresDa(usuarioId: string, agora = Date.now()): Pro
     .sort((a, b) => b.visto_em.localeCompare(a.visto_em));
 }
 
-type Original = { conta: Conta; arquivo: ArquivoAchado; pais: string[] };
+export type Original = { conta: Conta; arquivo: ArquivoAchado; pais: string[] };
 
 /** O arquivo pelo id, no Drive da pessoa que o tiver (fora da lixeira, não pasta). */
-async function acharOriginal(usuarioId: string, contas: Conta[], fileId: string): Promise<Original | null> {
+export async function acharOriginal(usuarioId: string, contas: Conta[], fileId: string): Promise<Original | null> {
   for (const conta of contas) {
     try {
       const f = await chamarDrive<FileDrive>(usuarioId, conta.id, `/files/${encodeURIComponent(fileId)}`, { query: { fields: `${CAMPOS_ARQUIVO},trashed` } });
