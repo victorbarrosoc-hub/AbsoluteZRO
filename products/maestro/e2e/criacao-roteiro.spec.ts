@@ -184,10 +184,20 @@ test.describe("Criação no computador", () => {
     await expect(page.getByRole("button", { name: "Versões" })).toBeVisible();
   });
 
-  test("Fluxos ainda não existe: estado honesto", async ({ page, baseURL }) => {
+  test("o seletor Roteiros · Fluxos leva às duas listas (e o endereço antigo vai para Fluxos)", async ({ page, baseURL }) => {
     await entrar(page, baseURL!);
+    await page.goto("/app/criacao");
+    const abas = page.getByRole("navigation", { name: "Criação" });
+    await expect(abas.getByRole("link", { name: "Roteiros" })).toHaveAttribute("aria-current", "page");
+    await abas.getByRole("link", { name: "Fluxos" }).click();
+    await page.waitForURL(/\/app\/criacao\/fluxos$/);
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Criação");
+    await expect(page.getByRole("navigation", { name: "Criação" }).getByRole("link", { name: "Fluxos" })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("button", { name: "Novo fluxo" }).first()).toBeVisible();
+    await page.getByRole("navigation", { name: "Criação" }).getByRole("link", { name: "Roteiros" }).click();
+    await page.waitForURL(/\/app\/criacao$/);
     await page.goto("/app/criacao?aba=fluxos");
-    await expect(page.getByRole("region", { name: "Fluxos chegam em breve." })).toBeVisible();
+    await page.waitForURL(/\/app\/criacao\/fluxos$/);
   });
 });
 

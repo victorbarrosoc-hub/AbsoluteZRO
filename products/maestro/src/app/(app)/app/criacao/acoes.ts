@@ -1,9 +1,10 @@
 "use server";
-/** Ações da Criação: sessão e papel aqui (`permissoes.ts`); o banco confere de novo (RLS e gatilhos da 0030). */
+/** Ações da Criação: sessão e papel aqui (`permissoes.ts`); o banco confere de novo (RLS e gatilhos da 0030/0031). */
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { exigirAcessoNaAcao } from "@/lib/auth/acao";
-import { podeEditarCriacao } from "@/lib/criacao/permissoes";
+import { podeEditarCriacao, podeVerCriacao } from "@/lib/criacao/permissoes";
+import { listarFluxos, type FluxoLista } from "@/lib/criacao/fluxo/servidor";
 import { ehModeloRoteiro, FICHAS_MODELOS } from "@/lib/criacao/roteiro/modelos";
 import { abrirDocumentoAntigo, criarRoteiro, listarRoteiros, type RoteiroLista } from "@/lib/criacao/roteiro/servidor";
 import type { EstadoForm } from "@/components/form";
@@ -42,14 +43,22 @@ export async function abrirNoEditorNovoAcao(_: EstadoForm, fd: FormData): Promis
   redirect(`/app/criacao/roteiros/${r.id}?vista=${texto(fd, "tipo") === "decupagem" ? "tecnico" : "literario"}`);
 }
 
-/** O bloco "Criação" da ficha do card: os roteiros ligados ao card (como a pessoa, RLS e acesso por cliente). */
-export async function roteirosDoCardAcao(
-  cardId: string,
-): Promise<{ ok: true; roteiros: Pick<RoteiroLista, "id" | "titulo" | "versaoAtual" | "duracaoSeg" | "estado" | "alvo">[] }> {
+/**
+ * O bloco "Criação" da ficha do card: os roteiros e os fluxos ligados ao card, num pedido só (como a pessoa, RLS e
+ * acesso por cliente). Quem não vê a Criação recebe as listas vazias.
+ */
+export async function criacaoDoCardAcao(cardId: string): Promise<{
+  ok: true;
+  roteiros: Pick<RoteiroLista, "id" | "titulo" | "versaoAtual" | "duracaoSeg" | "estado" | "alvo">[];
+  fluxos: Pick<FluxoLista, "id" | "titulo" | "itens">[];
+}> {
   const s = await exigirAcessoNaAcao();
-  const lista = await listarRoteiros({ sub: s.sub, orgId: s.orgId }, { cardId });
+  if (!podeVerCriacao(s.papel)) return { ok: true, roteiros: [], fluxos: [] };
+  const ctx = { sub: s.sub, orgId: s.orgId };
+  const [roteiros, fluxos] = await Promise.all([listarRoteiros(ctx, { cardId }), listarFluxos(ctx, { cardId })]);
   return {
     ok: true,
-    roteiros: lista.map((r) => ({ id: r.id, titulo: r.titulo, versaoAtual: r.versaoAtual, duracaoSeg: r.duracaoSeg, estado: r.estado, alvo: r.alvo })),
+    roteiros: roteiros.map((r) => ({ id: r.id, titulo: r.titulo, versaoAtual: r.versaoAtual, duracaoSeg: r.duracaoSeg, estado: r.estado, alvo: r.alvo })),
+    fluxos: fluxos.map((f) => ({ id: f.id, titulo: f.titulo, itens: f.itens })),
   };
 }

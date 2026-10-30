@@ -644,7 +644,7 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 
 - ✅ "Criação" no grupo Produção (computador) e em Mais (iPhone; a barra de baixo não muda). `/app/criacao`: roteiros
   em cartões (vínculo, duração contra o alvo, estado, quando mudou), "Novo roteiro" com os 6 modelos, vínculo a
-  projeto/card e "Literário ou Técnico primeiro?"; seletor Roteiros · Fluxos (Fluxos com "em breve" honesto até a F5).
+  projeto/card e "Literário ou Técnico primeiro?"; seletor Roteiros · Fluxos (desde a integração, Fluxos é a lista de verdade).
 - ✅ Editor `/app/criacao/roteiros/<id>`: Literário · Técnico (células editáveis, colunas escondíveis) · Teleprompter
   (prévia no preto, por pessoa) · Edição (deixas em ordem de tempo). Teclado: Enter, Tab/⇧Tab, "/", ⌘1–6, "@",
   ⌘⇧Enter, ⌥↑/⌥↓, ⌫. Grava sozinho (600 ms, `rev`, junção por id no 409, aviso "mudou ao mesmo tempo" com "Ficar com o
@@ -699,7 +699,7 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ✅ iPhone: segurar 280 ms ergue o nó, pinça, "+" com a folha Adicionar (Foto, Imagem, Link, Nota, Seção, Roteiro ·
   Card) e a Lista por seção; a barra Hoje · Quadro · Aprovar · Mais fica. Quem só lê anda e lê. Claro e escuro,
   reduzir movimento.
-- ⬜ Entrada "Criação" na navegação e o seletor Roteiros · Fluxos (F2, em paralelo); Exportar (F6).
+- ✅ Entrada "Criação" na navegação e o seletor Roteiros · Fluxos (integração, abaixo); Exportar (F6).
 
 ## Maestro · Criação: exportar e compartilhar o Fluxo (F6, 30/10/2026)
 
@@ -712,10 +712,22 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   revogar), só administração e gestão. `/f/<token>` só de leitura (a Lista), `/f/<token>.md` e `.json`, imagens pelo
   token; noindex, `X-Robots-Tag`, `no-referrer`, CSP própria, fora do robots.txt, limites por link e IP. Referência a
   roteiro/card: só o título, e só do que quem criou alcançava. App de computador abre `/f` no navegador.
-- ✅ "Mandar para um card" liga o fluxo ao card; a ficha do card mostra o bloco "Fluxos".
+- ✅ "Mandar para um card" liga o fluxo ao card; o bloco "Criação" da ficha do card mostra o fluxo.
 - ⛔ Em produção: migração `0032` do Maestro no deploy (com autorização).
-- ⬜ PNG do canvas; criar card novo em Pauta a partir do fluxo; trocar `permissoes.ts` pela área `criacao` quando o
-  acesso por área entrar.
+- ⬜ PNG do canvas; criar card novo em Pauta a partir do fluxo.
+
+## Maestro · Criação: Roteiro e Fluxo num produto só (30/10/2026)
+
+- ✅ Uma entrada "Criação" (Produção no computador, Mais no iPhone) com o seletor **Roteiros · Fluxos**: duas rotas
+  irmãs com o mesmo título (`/app/criacao` e `/app/criacao/fluxos`); o "em breve" saiu e o `?aba=fluxos` antigo leva à
+  lista de fluxos. Sem entrada repetida.
+- ✅ Ficha do card: um bloco **Criação** só, com os roteiros (versão, duração, estado) e os fluxos (itens) ligados, num
+  pedido só, e "Novo roteiro" já ligado. Quem só lê vê a lista; sem nada ligado, o bloco some para quem só lê.
+- ✅ Permissões: Roteiro e Fluxo pela mesma capacidade `criacao` (`podeCriacao`, ver/editar/enviar); as políticas da
+  0030, 0031 e 0032 usam os mesmos papéis (o `roteiro.test.mts` e o `fluxo.test.mts` conferem).
+- ✅ Migrações do Maestro na ordem do journal: 0027 (acessos), 0030 (roteiros), 0031 (fluxos), 0032 (links do fluxo),
+  `when` únicos; o migrador aplica as fora de ordem (`migrador.test.mts`).
+- ⛔ Em produção: 0027, 0030, 0031 e 0032 do Maestro no próximo deploy autorizado.
 
 ## Relay: conversão de mídia como setor próprio (29/10/2026, [ADR 0030](decisions/0030-relay-conversao.md))
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { podeEditarCriacao } from "@/lib/criacao/permissoes";
 import { listarFluxos } from "@/lib/criacao/fluxo/servidor";
+import { AbasCriacao } from "@/components/criacao/abas";
 import { Icone } from "@/components/icones";
 import { EstadoVazio } from "@/components/vazio";
 import { NovoFluxo, RestaurarFluxo } from "@/components/criacao/fluxo/novo";
@@ -17,7 +18,10 @@ function quando(t: string): string | null {
 }
 const itens = (n: number) => (n === 1 ? "1 item" : `${n} itens`);
 
-/** Os fluxos da produtora (plano da Criação §6): cartões grandes, do que mudou por último; a lixeira à parte. */
+/**
+ * Criação → Fluxos (plano da Criação §3 e §6): a aba irmã de Roteiros, com o mesmo título e o mesmo seletor; os fluxos
+ * da produtora em cartões grandes, do que mudou por último; a lixeira à parte.
+ */
 export default async function Fluxos({ searchParams }: PageProps<"/app/criacao/fluxos">) {
   const sessao = await exigirAcessoNaPagina("/app/criacao/fluxos");
   const sp = await searchParams;
@@ -27,24 +31,25 @@ export default async function Fluxos({ searchParams }: PageProps<"/app/criacao/f
   const edita = podeEditarCriacao(sessao.papel);
 
   return (
-    <div className="pagina fx-pagina">
+    <div className="pagina pagina--larga cr-pagina fx-pagina">
       <header className="pagina__cabeca pagina__cabeca--acao">
-        <h1 className="atitle">
-          {lixeira ? (
-            <>
-              Fluxos na <strong>lixeira.</strong>
-            </>
-          ) : (
-            <>
-              Ideias em <strong>fluxo.</strong>
-            </>
-          )}
-        </h1>
+        {lixeira ? (
+          <h1 className="atitle">
+            Fluxos na <strong>lixeira.</strong>
+          </h1>
+        ) : (
+          <div>
+            <h1 className="atitle">
+              <strong>Criação.</strong>
+            </h1>
+            <AbasCriacao atual="fluxos" />
+          </div>
+        )}
         {lixeira ? (
           <Link className="glass-btn glass-btn--sm" href="/app/criacao/fluxos">
             <Icone nome="voltar" size={16} /> Fluxos
           </Link>
-        ) : edita ? (
+        ) : edita && fluxos.length ? (
           <div className="fx-pagina__acao">
             <NovoFluxo />
           </div>
@@ -56,8 +61,8 @@ export default async function Fluxos({ searchParams }: PageProps<"/app/criacao/f
           <EstadoVazio icone="lixo" titulo="Lixeira vazia" />
         ) : (
           <EstadoVazio
-            icone="grade"
-            titulo="Nenhum fluxo ainda"
+            icone="fluxo"
+            titulo="Nenhum fluxo ainda."
             apoio={edita ? "Cole imagens, links e notas num canvas e ligue as ideias." : "Quando a equipe criar fluxos, eles aparecem aqui."}
           >
             {edita ? <NovoFluxo /> : null}

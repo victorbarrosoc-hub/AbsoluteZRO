@@ -1991,7 +1991,7 @@
   }
 }
 
-/* ───────────── bloco "Criação" na ficha do card (F3) ───────────── */
+/* ───────────── bloco "Criação" na ficha do card (roteiros e fluxos) ───────────── */
 
 .cr-card {
   display: grid;
@@ -2009,7 +2009,7 @@
   padding: 0;
   list-style: none;
 }
-.cr-card__roteiro {
+.cr-card__item {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -2021,10 +2021,10 @@
   color: var(--text-strong);
   text-decoration: none;
 }
-.cr-card__roteiro:hover {
+.cr-card__item:hover {
   background: var(--hover);
 }
-.cr-card__roteiro:focus-visible {
+.cr-card__item:focus-visible {
   outline: 2px solid var(--text-strong);
   outline-offset: 2px;
 }

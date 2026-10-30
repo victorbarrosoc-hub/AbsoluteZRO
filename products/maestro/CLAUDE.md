@@ -292,7 +292,9 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   ordem entre frentes funcionam; `when` repetido para o deploy.
 - **Criação · editor do Roteiro** (fase F2): "Criação" no grupo Produção e em Mais (`navegacao.ts`; a barra do celular
   não muda). `/app/criacao` (cartões; "Novo roteiro" em `components/criacao/roteiro/novo.tsx` pela Server Action
-  `criarRoteiroAcao`; `?novo=1&projeto=` abre a folha já ligada; aba Fluxos = "em breve" até a F5). Editor em
+  `criarRoteiroAcao`; `?novo=1&projeto=` abre a folha já ligada). O seletor Roteiros · Fluxos é
+  `components/criacao/abas.tsx`, nas duas rotas irmãs (`/app/criacao` e `/app/criacao/fluxos`, mesmo título; o
+  `?aba=fluxos` antigo redireciona). Editor em
   `/app/criacao/roteiros/[id]` (`editor.tsx`): as vistas puras da F1 (Técnico com `incluirVazios`, a `dica` é só
   placeholder), operações puras em `lib/criacao/roteiro/editar.ts` (nunca mutam; o que não mudou fica o mesmo objeto) e
   "Comparar" em `comparar.ts`. Gravação em `gravacao.ts`: 600 ms + ao sair do campo/aba, sempre com `rev`; 409 traz o
@@ -313,7 +315,8 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   é `POST {op:"enviado"}` → `registrarEnvio` (auditoria `roteiro.enviado` com o sha256 do banco). A opção do AEON (o
   arquivo) só com `podeMandarParaAeon` (claim `zro_release["ai-edit"]` released/allowed + produto + papel): hoje o AEON
   está fechado e nada aparece; a rota recusa `aeon` também. O cliente não aparece no menu até a F7. Ficha do card:
-  bloco "Criação" (`components/criacao/roteiro/do-card.tsx`, `roteirosDoCardAcao`). Nome de arquivo com acento só sai
+  bloco "Criação" (`components/criacao/do-card.tsx`, `criacaoDoCardAcao`: roteiros e fluxos do card num pedido só).
+  Nome de arquivo com acento só sai
   do navegador com locale UTF-8 (o `playwright.config.ts` força `C.UTF-8`).
 - **Criação · Fluxo** (plano da Criação §6, fase F4 = só o núcleo, sem tela; `drizzle/0031_fluxos.sql`,
   `src/lib/criacao/fluxo/**`): cada nó é uma linha de `fluxo_nos` (`nota`, `imagem`, `link`, `roteiro`, `card`,
@@ -359,7 +362,9 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   que quem criou alcançava ao criar (`refs_roteiros`/`refs_cards`); id interno nunca sai. Imagem para a IA só por
   link vivo **sem PIN** e só com "Imagens pelo link" marcado (`linkParaIa`). CSP, `X-Robots-Tag` e `no-referrer` de
   `/f` em `next.config.ts`; `/f/` fora do `robots.txt`; `DO_CLIENTE` do app de computador inclui `f`. "Mandar para um
-  card" = `ligar` (`ligarCard` em `estado.ts`); a ficha mostra o bloco "Fluxos" (`components/quadro/fluxos-card.tsx`).
+  card" = `ligar` (`ligarCard` em `estado.ts`); o fluxo aparece no bloco "Criação" da ficha (`components/criacao/do-card.tsx`).
+  Papéis do Fluxo pelas mesmas `permissoes.ts` do Roteiro (capacidade `criacao`); o `fluxo.test.mts` confere as
+  políticas da 0031/0032 contra `PAPEIS_EDITAR_CRIACAO`/`PAPEIS_ENVIAR_CRIACAO`.
   Testes: `tests/links-fluxo.test.mts`, `e2e/criacao-exportar.spec.ts` (`SHOTS_DIR` guarda `exp-*`), telas no
   `sem-corte.spec.ts`.
 - **App na Tela de Início (PWA)**: `src/app/manifest.ts` (`/manifest.webmanifest`: Maestro, `start_url` `/app`, `scope`

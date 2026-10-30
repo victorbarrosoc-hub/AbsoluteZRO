@@ -218,7 +218,7 @@ test.describe("Exportar no computador", () => {
     expect(fj.formato).toBe("maestro.fluxo/1");
     expect(fj.nos.find((n) => n.tipo === "imagem")?.imagem?.url).toBeNull();
 
-    // mandar para um card: a ficha do card mostra o fluxo
+    // mandar para um card: o bloco "Criação" da ficha do card mostra o fluxo
     await exportar(page).click();
     await menu(page)
       .getByRole("menuitem", { name: /Mandar para um card/ })
@@ -227,7 +227,7 @@ test.describe("Exportar no computador", () => {
     await cardFolha.getByRole("button", { name: /Gravação da cafeteria/ }).click();
     await expect(page.locator(".fx-aviso")).toContainText('No card "Gravação da cafeteria"');
     await page.goto("/app/quadro?card=ex-card-1");
-    const fluxos = page.getByRole("region", { name: "Fluxos" });
+    const fluxos = page.getByRole("dialog", { name: "Card: Gravação da cafeteria" }).getByRole("region", { name: "Criação" });
     await expect(fluxos).toContainText("Verão Café Aurora");
     await fluxos.getByRole("link", { name: /Verão Café Aurora/ }).click();
     await page.waitForURL(new RegExp(`/app/criacao/fluxos/${id}$`));

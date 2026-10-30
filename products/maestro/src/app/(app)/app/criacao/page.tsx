@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import type { CSSProperties } from "react";
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { podeEditarCriacao } from "@/lib/criacao/permissoes";
 import { formatarTempo } from "@/lib/criacao/roteiro/tempo";
 import { listarRoteiros, NOME_ESTADO_ROTEIRO, opcoesDeVinculo } from "@/lib/criacao/roteiro/servidor";
+import { AbasCriacao } from "@/components/criacao/abas";
 import { barra, quando, STATUS_DO_ESTADO, textoAlvo } from "@/components/criacao/roteiro/comum";
 import { NovoRoteiro } from "@/components/criacao/roteiro/novo";
 import { Icone } from "@/components/icones";
@@ -15,13 +17,13 @@ const um = (v: string | string[] | undefined) => (typeof v === "string" ? v : un
 
 /**
  * Produção → Criação (plano da Criação §3): os roteiros da produtora em cartões (título, vínculo, duração contra o
- * alvo, estado, quando mudou) e o "Novo roteiro" com os 6 modelos. O seletor Roteiros · Fluxos já mostra onde o Fluxo
- * vai morar; até a F5 ele diz "em breve" (nada fingido).
+ * alvo, estado, quando mudou) e o "Novo roteiro" com os 6 modelos. O seletor Roteiros · Fluxos leva à rota irmã
+ * `/app/criacao/fluxos` (o `?aba=fluxos` antigo vai para lá).
  */
 export default async function Criacao({ searchParams }: PageProps<"/app/criacao">) {
   const s = await exigirAcessoNaPagina("/app/criacao");
   const sp = await searchParams;
-  const aba = sp.aba === "fluxos" ? "fluxos" : "roteiros";
+  if (sp.aba === "fluxos") redirect("/app/criacao/fluxos");
   const ctx = { sub: s.sub, orgId: s.orgId };
   const edita = podeEditarCriacao(s.papel);
   const [roteiros, opcoes] = await Promise.all([listarRoteiros(ctx), edita ? opcoesDeVinculo(ctx) : Promise.resolve({ projetos: [], cards: [] })]);
@@ -33,21 +35,12 @@ export default async function Criacao({ searchParams }: PageProps<"/app/criacao"
           <h1 className="atitle">
             <strong>Criação.</strong>
           </h1>
-          <nav className="q-segmentos cr-abas" aria-label="Criação">
-            <Link href="/app/criacao" aria-current={aba === "roteiros" ? "page" : undefined}>
-              Roteiros
-            </Link>
-            <Link href="/app/criacao?aba=fluxos" aria-current={aba === "fluxos" ? "page" : undefined}>
-              Fluxos
-            </Link>
-          </nav>
+          <AbasCriacao atual="roteiros" />
         </div>
-        {aba === "roteiros" && roteiros.length ? <div className="acoes">{novo}</div> : null}
+        {roteiros.length ? <div className="acoes">{novo}</div> : null}
       </header>
 
-      {aba === "fluxos" ? (
-        <EstadoVazio icone="fluxo" titulo="Fluxos chegam em breve." apoio="Ideias e referências num quadro livre, ligadas ao roteiro." />
-      ) : roteiros.length ? (
+      {roteiros.length ? (
         <ul className="cr-lista">
           {roteiros.map((r, i) => {
             const b = barra(r.duracaoSeg, r.alvo);

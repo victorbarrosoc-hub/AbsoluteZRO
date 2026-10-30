@@ -158,7 +158,6 @@ async function telas(): Promise<Tela[]> {
         await ver("criacao-novo");
       },
     },
-    { nome: "criacao-fluxos", rota: "/app/criacao?aba=fluxos" },
     { nome: "projetos-novo", rota: "/app/projetos/novo" },
     { nome: "clientes", rota: "/app/clientes" },
     { nome: "clientes-novo", rota: "/app/clientes/novo" },

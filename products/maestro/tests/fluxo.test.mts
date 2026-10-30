@@ -3,6 +3,7 @@
 // exportação em Markdown e em JSON maestro.fluxo/1 (seções, notas, links, legendas, referências, sem URL de imagem sem
 // o link) e as contas da cota. Mais a imagem: conferida pelos bytes, reencodada em WebP ≤ 400 KB, sem metadados.
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, test } from "node:test";
 import sharp from "sharp";
 import { lerLink, referenciaDoMaestro, NOME_FONTE_LINK } from "../src/lib/criacao/fluxo/endereco";
@@ -10,6 +11,7 @@ import { lerDados, lerOps, notasDoTexto, LIMITES, TAMANHO_PADRAO, type NoFluxo, 
 import { fluxoParaJson, fluxoParaMarkdown, duracao, FORMATO_FLUXO } from "../src/lib/criacao/fluxo/exportar";
 import { cabeNaCota, COTA, formatarBytes, fracaoUsada, mensagemDaCota } from "../src/lib/criacao/fluxo/cota";
 import { prepararImagem, IMAGEM_SAIDA_MAX, MINI_SAIDA_MAX, IMAGEM_LADO_MAX } from "../src/lib/criacao/fluxo/imagem";
+import { PAPEIS_EDITAR_CRIACAO, PAPEIS_ENVIAR_CRIACAO } from "../src/lib/criacao/permissoes";
 
 const link = (u: string) => {
   const r = lerLink(u);
@@ -481,4 +483,22 @@ describe("imagem colada: conferida pelos bytes, WebP limpo", () => {
     const r3 = await prepararImagem(new Uint8Array(12 * 1024 * 1024 + 1));
     assert.ok(!r3.ok && r3.erro === "grande");
   });
+});
+
+test("permissões do Fluxo pela mesma capacidade `criacao` do Roteiro (acessos.ts), iguais às políticas da 0031 e 0032", () => {
+  const arr = (l: readonly string[]) => `array[${l.map((x) => `'${x}'`).join(", ")}]`;
+  const editar = arr(PAPEIS_EDITAR_CRIACAO);
+  const enviar = arr(PAPEIS_ENVIAR_CRIACAO);
+  const f31 = readFileSync(new URL("../drizzle/0031_fluxos.sql", import.meta.url), "utf8");
+  for (const t of ["fluxos", "fluxo_nos", "fluxo_ligacoes", "fluxo_imagens"]) {
+    assert.ok(f31.includes(`politicas_padrao('${t}', ${editar}, ${enviar})`), t);
+  }
+  // as guardas (gatilho dos nós e a imagem) pedem quem edita
+  const guardas = [...f31.matchAll(/has_role\(\w+(?:\.\w+)?, (array\[[^\]]*\])\)/g)].map((m) => m[1]);
+  assert.ok(guardas.length >= 2);
+  assert.deepEqual(new Set(guardas), new Set([editar]));
+  const f32 = readFileSync(new URL("../drizzle/0032_fluxo_links.sql", import.meta.url), "utf8");
+  // o link privado: só quem envia (administração e gestão) cria, lê, muda e revoga
+  assert.ok(f32.includes(`politicas_padrao('fluxo_links', ${enviar}, ${enviar}, ${enviar})`));
+  assert.ok(f32.includes(`has_role(new.org_id, ${enviar})`));
 });

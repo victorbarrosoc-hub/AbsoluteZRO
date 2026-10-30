@@ -48,7 +48,7 @@ export default async function PaginaFluxo({ params }: PageProps<"/app/criacao/fl
 function SemFluxo() {
   return (
     <div className="pagina">
-      <EstadoVazio icone="grade" titulo="Esse fluxo não existe mais" apoio="Ele pode ter sido apagado, ou é de outra produtora.">
+      <EstadoVazio icone="fluxo" titulo="Esse fluxo não existe mais" apoio="Ele pode ter sido apagado, ou é de outra produtora.">
         <Link className="glass-btn glass-btn--ink" href="/app/criacao/fluxos">
           <Icone nome="voltar" size={18} /> Fluxos
         </Link>
