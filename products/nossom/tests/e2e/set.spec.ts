@@ -10,7 +10,9 @@ import { allowedAccount, signIn } from './fixtures';
  * responderia com a conta conectada (o caminho até a Absolute ZRO tem os testes dele em tests/zro.test.ts).
  */
 const SCRIPT = 'https://absolutezro.com/set/v1/zro-set.js';
-const WIDGET = readFileSync(resolve(__dirname, '../../../../apps/hub-web/public/set/v1/zro-set.js'));
+const WIDGET = readFileSync(
+  resolve(__dirname, '../../../../apps/hub-web/public/set/v1/zro-set.js'),
+);
 const P = (n: number) => `00000000-0000-4000-8000-00000000000${n}`;
 const ESTADO = {
   eu: {
@@ -21,8 +23,22 @@ const ESTADO = {
     preferencias: { invisivel: false, quemVe: 'equipe_contatos', mostrarVisto: true },
   },
   pessoas: [
-    { id: P(2), arroba: 'rui', nome: 'Rui Tavares', foto: null, estado: 'online', app: { id: 'maestro', nome: 'Maestro' } },
-    { id: P(3), arroba: 'bia', nome: 'Bia Lemos', foto: null, estado: 'ausente', app: { id: 'hub', nome: 'Absolute ZRO' } },
+    {
+      id: P(2),
+      arroba: 'rui',
+      nome: 'Rui Tavares',
+      foto: null,
+      estado: 'online',
+      app: { id: 'maestro', nome: 'Maestro' },
+    },
+    {
+      id: P(3),
+      arroba: 'bia',
+      nome: 'Bia Lemos',
+      foto: null,
+      estado: 'ausente',
+      app: { id: 'hub', nome: 'Absolute ZRO' },
+    },
   ],
   naoLidas: 2,
   pedidos: 0,
@@ -46,7 +62,8 @@ async function enter(page: Page, o: { logado: boolean }) {
     if (!o.logado) return json(401, { erro: 'reconectar_zro' });
     if (caminho === '' || caminho === '/') return json(200, ESTADO);
     if (caminho === '/conversas') return json(200, { conversas: [], projetos: [] });
-    if (caminho === '/contatos') return json(200, { contatos: [], recebidos: [], enviados: [], bloqueados: [] });
+    if (caminho === '/contatos')
+      return json(200, { contatos: [], recebidos: [], enviados: [], bloqueados: [] });
     return json(200, { ok: true });
   });
   const email = 'set.' + crypto.randomUUID() + '@example.test';
@@ -54,7 +71,7 @@ async function enter(page: Page, o: { logado: boolean }) {
   expect((await signIn(page.request, email, 'valid-test-password')).status()).toBe(200);
 }
 
-test('Set is the last item of the studio navigation, shows up when the Set answers and opens the sheet without changing the view', async ({
+test('Set closes the studio navigation right before the Z, shows up when the Set answers and opens the sheet without changing the view', async ({
   page,
 }) => {
   await enter(page, { logado: true });
@@ -63,8 +80,9 @@ test('Set is the last item of the studio navigation, shows up when the Set answe
   const set = nav.locator('[data-set]');
   await expect(set).toBeVisible();
   await expect(set).toContainText('Set');
-  // A primeira aba e a tela de entrada não mudam; o Set fica no fim.
-  await expect(nav.locator('button').last()).toHaveAttribute('data-set', '');
+  // A primeira aba e a tela de entrada não mudam; o Set fica no fim, logo antes da Z (que é sempre a última).
+  await expect(nav.locator('button').first()).not.toHaveAttribute('data-set', '');
+  expect(await set.evaluate((b) => b.nextElementSibling?.textContent?.trim() ?? null)).toBe('Z');
   await expect(set).toHaveAttribute('aria-label', /Set, 1 online, 2 novidades/);
   await set.click();
   const folha = page.locator('zro-set-folha .folha[data-on] .painel');
@@ -75,7 +93,10 @@ test('Set is the last item of the studio navigation, shows up when the Set answe
   // A folha veste os tokens do estúdio (a tinta é a do estúdio, no tema escuro padrão).
   const [cor, tinta] = await page.evaluate(() => {
     const p = document.querySelector('zro-set-folha')!.shadowRoot!.querySelector('.painel')!;
-    return [getComputedStyle(p).color, getComputedStyle(document.querySelector('.studio-shell')!).color];
+    return [
+      getComputedStyle(p).color,
+      getComputedStyle(document.querySelector('.studio-shell')!).color,
+    ];
   });
   expect(cor).toBe(tinta);
   if (FOTOS) {
@@ -91,7 +112,10 @@ test('Set is the last item of the studio navigation, shows up when the Set answe
   await expect(folha).toBeVisible();
   const [corClara, tintaClara] = await page.evaluate(() => {
     const p = document.querySelector('zro-set-folha')!.shadowRoot!.querySelector('.painel')!;
-    return [getComputedStyle(p).color, getComputedStyle(document.querySelector('.studio-shell')!).color];
+    return [
+      getComputedStyle(p).color,
+      getComputedStyle(document.querySelector('.studio-shell')!).color,
+    ];
   });
   expect(corClara).toBe(tintaClara);
   expect(corClara).not.toBe(cor);
@@ -101,7 +125,9 @@ test('Set is the last item of the studio navigation, shows up when the Set answe
   }
 });
 
-test('on the phone Set is the last tab of the bottom bar and the sheet fills the screen', async ({ page }) => {
+test('on the phone Set is the last tab of the bottom bar and the sheet fills the screen', async ({
+  page,
+}) => {
   await enter(page, { logado: true });
   await page.setViewportSize({ width: 393, height: 852 });
   await page.goto('/studio/inicio');
@@ -119,7 +145,9 @@ test('on the phone Set is the last tab of the bottom bar and the sheet fills the
   if (FOTOS) await page.screenshot({ path: `${FOTOS}/nossom-393-escuro.png` });
 });
 
-test('without the Set scope (older login) there is no Set entry and the studio stays the same', async ({ page }) => {
+test('without the Set scope (older login) there is no Set entry and the studio stays the same', async ({
+  page,
+}) => {
   await enter(page, { logado: false });
   await page.goto('/studio/inicio');
   await expect(page.getByRole('heading', { name: 'Seu áudio, melhor.' })).toBeVisible();
