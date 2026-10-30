@@ -424,6 +424,9 @@ h3 {
 .topo nav a[data-set] {
   position: relative;
 }
+.topo nav a[hidden] {
+  display: none;
+}
 .topo nav a[data-set][aria-expanded='true'] {
   color: var(--texto);
 }
