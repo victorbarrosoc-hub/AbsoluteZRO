@@ -203,6 +203,8 @@ button{cursor:pointer}
 .achado .nome{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;letter-spacing:-.01em}
 .achado .sub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mute);font-size:.8rem}
 .achado[data-feito] .sub{color:var(--ink);font-weight:600}
+.sugs{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.achado.sug{cursor:pointer;background:transparent}.achado.sug:hover,.achado.sug[aria-selected=true]{background:var(--surf)}
 .achado[aria-busy=true] .av{background:var(--surf3)}
 .achado[aria-busy=true] .txt i{display:block;width:60%;height:10px;border-radius:5px;background:var(--surf3)}
 @media (prefers-reduced-motion:no-preference){.achado[aria-busy=true] .txt i,.achado[aria-busy=true] .av{animation:pulsa 1.4s ease-in-out infinite}.achado[data-feito]{animation:entra .28s var(--ease) both}}
@@ -331,10 +333,13 @@ class ZroSet extends HTMLElement {
       retorno: '',
       semLogin: false,
       // adicionar pelo @: o campo aberto, o que foi digitado e a prévia (procurando | achado | erro | feito)
-      add: { aberto: false, valor: '', busca: '', pessoa: null, situacao: '', msg: '', feito: '' },
+      add: { aberto: false, valor: '', busca: '', pessoa: null, situacao: '', msg: '', feito: '', sug: [], sel: -1 },
     }
     /** A Absolute ZRO de antes não tem a prévia do @ (POST /contatos { ver }): só "Adicionar", sem nome e foto. */
     this.semPrevia = false
+    /** …nem as sugestões enquanto digita (POST /contatos { buscar }). */
+    this.semSugestoes = false
+    this.sugN = 0
     this.verN = 0
     this.token = null
     this.etags = new Map()
@@ -930,6 +935,8 @@ class ZroSet extends HTMLElement {
           return s.aba === 'online' && s.add.aberto ? this.fecharAdicionar() : this.abrirAdicionar()
         case 'adicionar-enviar':
           return this.adicionar()
+        case 'sugestao':
+          return this.escolher(Number(alvo.dataset.i))
         case 'aceitar':
         case 'recusar': {
           alvo.disabled = true
@@ -950,6 +957,7 @@ class ZroSet extends HTMLElement {
           await this.req(`/bloqueios/${encodeURIComponent(alvo.dataset.id)}`, { method: 'DELETE' })
           this.carregarContatos()
           if (s.add.aberto && s.add.situacao === 'bloqueado') this.ver(true)
+          if (s.add.aberto && s.add.sug.length) this.sugerir(true)
           return this.batida(true)
       }
     } catch (e) {
@@ -991,13 +999,18 @@ class ZroSet extends HTMLElement {
     if (a.busca === 'feito' || a.busca === 'erro') Object.assign(a, { busca: '', msg: '', pessoa: null, situacao: '', feito: '' })
     if (this.s.estado?.pedidos) this.carregarContatos()
     this.render()
-    if (a.valor) this.ver(true)
+    if (a.valor) {
+      this.ver(true)
+      this.sugerir(true)
+    }
     setTimeout(() => this.r.querySelector('.adicionar input')?.focus(), 30)
   }
   fecharAdicionar() {
     clearTimeout(this.timers.ver)
     this.verN++
-    this.s.add = { aberto: false, valor: '', busca: '', pessoa: null, situacao: '', msg: '', feito: '' }
+    clearTimeout(this.timers.sug)
+    this.sugN++
+    this.s.add = { aberto: false, valor: '', busca: '', pessoa: null, situacao: '', msg: '', feito: '', sug: [], sel: -1 }
     this.render()
     this.r.querySelector('.cab [data-a=adicionar]')?.focus()
   }
@@ -1032,12 +1045,73 @@ class ZroSet extends HTMLElement {
           if (e.status === 422 && e.message === 'Diga o @ da pessoa.') {
             this.semPrevia = true
             Object.assign(a, { busca: 'achado', pessoa: null, situacao: '', msg: '' })
-          } else Object.assign(a, { busca: 'erro', pessoa: null, situacao: '', msg: e.message })
+          } else Object.assign(a, { busca: 'erro', pessoa: null, situacao: '', msg: e.message, naoAchou: e.status === 404 })
         }
         this.pintarAdd()
       },
       agora ? 0 : 350,
     )
+  }
+
+  /** Sugestões enquanto digita (a partir de 3 letras, até 5): pelo começo do @ ou pelo nome. */
+  sugerir(agora = false) {
+    clearTimeout(this.timers.sug)
+    const a = this.s.add
+    const q = a.valor.trim().replace(/^@/, '')
+    const n = ++this.sugN
+    a.sel = -1
+    if (q.length < 3 || this.semSugestoes) {
+      if (a.sug.length) {
+        a.sug = []
+        this.pintarAdd()
+      }
+      return
+    }
+    this.timers.sug = setTimeout(
+      async () => {
+        try {
+          const r = await this.req('/contatos', { method: 'POST', body: { buscar: q } })
+          if (n !== this.sugN) return
+          a.sug = Array.isArray(r.pessoas) ? r.pessoas.slice(0, 5) : []
+        } catch (e) {
+          if (n !== this.sugN || e.message === 'sem-login') return
+          // a Absolute ZRO de antes não conhece o campo: segue sem sugestões
+          if (e.status === 422) this.semSugestoes = true
+          a.sug = []
+        }
+        a.sel = -1
+        this.pintarAdd()
+      },
+      agora ? 0 : 250,
+    )
+  }
+
+  /** As sugestões que aparecem (sem repetir o @ exato, que fica no cartão de cima). */
+  get sugVisiveis() {
+    const a = this.s.add
+    if (a.busca === 'feito') return []
+    const exato = this.arrobaDigitada
+    return a.sug.filter((x) => x.pessoa.id !== a.pessoa?.id && x.pessoa.arroba !== exato)
+  }
+
+  /** Escolheu uma sugestão (toque ou Enter): conversa, desbloqueia ou pede o contato pelo @ dela. */
+  escolher(i) {
+    const a = this.s.add
+    const x = this.sugVisiveis[i]
+    if (!x) return
+    const p = x.pessoa
+    if (x.situacao === 'contato') return this.iniciar({ pessoa: p.id })
+    if (x.situacao === 'enviado') return
+    if (x.situacao === 'bloqueado') return this.acao('desbloquear', { dataset: { id: p.id } })
+    if (!p.arroba) return
+    clearTimeout(this.timers.sug)
+    clearTimeout(this.timers.ver)
+    this.sugN++
+    this.verN++
+    Object.assign(a, { valor: p.arroba, busca: 'achado', pessoa: p, situacao: x.situacao, msg: '', feito: '', sug: [], sel: -1 })
+    const input = this.r.querySelector('.adicionar input')
+    if (input) input.value = p.arroba
+    return this.adicionar()
   }
 
   /** "Adicionar" (ou Enter): pede o contato do @ digitado. */
@@ -1082,6 +1156,31 @@ class ZroSet extends HTMLElement {
   }
 
   htmlResultadoAdd() {
+    const sug = this.sugVisiveis
+    if (!sug.length) return this.htmlCartaoAdd()
+    const a = this.s.add
+    // o @ exato não existe, mas há sugestões: elas bastam
+    const topo = a.busca === 'erro' && a.naoAchou ? '' : this.htmlCartaoAdd()
+    const lado = (x, nome) => {
+      if (x.situacao === 'contato')
+        return `<button class="btn btn-p" data-a="sugestao" data-i="IDX" tabindex="-1" aria-label="Conversar com ${nome}">Conversar</button>`
+      if (x.situacao === 'enviado') return `<span class="selo">Pedido enviado</span>`
+      if (x.situacao === 'bloqueado')
+        return `<button class="btn btn-p" data-a="sugestao" data-i="IDX" tabindex="-1" aria-label="Desbloquear ${nome}">Desbloquear</button>`
+      const rot = x.situacao === 'recebido' ? 'Aceitar' : 'Adicionar'
+      return `<button class="btn btn-p" data-tinta data-a="sugestao" data-i="IDX" tabindex="-1" aria-label="${rot} ${nome}">${rot}</button>`
+    }
+    const itens = sug
+      .map((x, i) => {
+        const p = x.pessoa
+        const nome = esc(p.nome)
+        return `<li class="achado sug" id="zro-sug-${i}" role="option" aria-selected="${i === a.sel}" data-a="sugestao" data-i="${i}">${av(p)}<span class="txt"><span class="nome">${nome}</span>${p.arroba ? `<span class="sub">@${esc(p.arroba)}</span>` : ''}</span>${lado(x, nome).replace('IDX', String(i))}</li>`
+      })
+      .join('')
+    return `${topo}<ul class="sugs" role="listbox" aria-label="Sugestões">${itens}</ul>`
+  }
+
+  htmlCartaoAdd() {
     const a = this.s.add
     const arroba = this.arrobaDigitada
     const cartao = (p, lado, sub, o = '') =>
@@ -1135,7 +1234,7 @@ class ZroSet extends HTMLElement {
     const a = this.s.add
     if (!a.aberto) return ''
     return `<div class="adicionar" role="search" aria-label="Adicionar pelo @">
-        <form class="add add-arroba"><span class="add-campo"><input name="arroba" value="${esc(a.valor)}" placeholder="fulano" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="send" maxlength="31" aria-label="@ da pessoa" data-guarda></span><button class="ico" type="button" data-a="adicionar" aria-label="Fechar adicionar" title="Fechar">${I.fechar}</button></form>
+        <form class="add add-arroba"><span class="add-campo"><input name="arroba" value="${esc(a.valor)}" placeholder="fulano" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="send" maxlength="31" aria-label="@ da pessoa" aria-autocomplete="list" data-guarda></span><button class="ico" type="button" data-a="adicionar" aria-label="Fechar adicionar" title="Fechar">${I.fechar}</button></form>
         <div class="add-res" aria-live="polite">${this.htmlResultadoAdd()}</div>
       </div>`
   }
@@ -1247,11 +1346,34 @@ class ZroSet extends HTMLElement {
       if (limpo !== v) ev.target.value = limpo
       this.s.add.valor = limpo
       this.ver()
+      this.sugerir()
     })
     raiz.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Escape' && ev.target.matches?.('.add-arroba input')) {
-        ev.stopPropagation()
-        return this.fecharAdicionar()
+      if (ev.target.matches?.('.add-arroba input')) {
+        const a = this.s.add
+        const n = this.sugVisiveis.length
+        if (ev.key === 'Escape') {
+          ev.stopPropagation()
+          // primeiro some a lista de sugestões; o segundo Esc fecha o campo
+          if (n) {
+            clearTimeout(this.timers.sug)
+            this.sugN++
+            a.sug = []
+            a.sel = -1
+            return this.pintarAdd()
+          }
+          return this.fecharAdicionar()
+        }
+        if (n && (ev.key === 'ArrowDown' || ev.key === 'ArrowUp')) {
+          ev.preventDefault()
+          a.sel = ev.key === 'ArrowDown' ? (a.sel + 1) % n : a.sel <= 0 ? n - 1 : a.sel - 1
+          ev.target.setAttribute('aria-activedescendant', `zro-sug-${a.sel}`)
+          return this.pintarAdd()
+        }
+        if (ev.key === 'Enter' && n && a.sel >= 0 && !ev.isComposing) {
+          ev.preventDefault()
+          return this.escolher(a.sel)
+        }
       }
       if (ev.target.matches('.compor textarea') && ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing) {
         ev.preventDefault()

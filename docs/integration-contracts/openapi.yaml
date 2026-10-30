@@ -791,9 +791,13 @@ paths:
                 arroba: { type: string, description: 'com ou sem @' }
                 pessoa: { type: string, format: uuid }
                 ver: { type: string, description: 'só a prévia do @ (com ou sem @); nada é pedido' }
+                buscar: { type: string, description: 'sugestões enquanto digita (3+ letras): começo do @ ou nome; até 5, sem bloqueados nos dois sentidos' }
       responses:
         {
-          '200': { description: '{ ver }: { pessoa: { id, arroba, nome, foto }, situacao: nenhuma | contato | enviado | recebido | bloqueado }' },
+          '200':
+            {
+              description: '{ ver }: { pessoa: { id, arroba, nome, foto }, situacao: nenhuma | contato | enviado | recebido | bloqueado }; { buscar }: { pessoas: [{ pessoa, situacao }] }',
+            },
           '201': { description: '{ estado: pendente | aceito, pessoa: { id, arroba, nome, foto } }' },
           '401': { $ref: '#/components/responses/Error' },
           '403': { $ref: '#/components/responses/Error' },

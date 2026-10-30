@@ -1,4 +1,4 @@
-import { ESCOPO_SET, meusContatosSet, pedirContatoSet, verPessoaSet } from '@zro/core'
+import { ESCOPO_SET, meusContatosSet, pedirContatoSet, sugerirPessoasSet, verPessoaSet } from '@zro/core'
 import { DomainError } from '@zro/observability'
 import { json, route } from '@/lib/api'
 import { corpo, paraApi, texto } from '@/lib/set'
@@ -13,10 +13,14 @@ export const GET = route(async ({ db, auth }) => paraApi(await meusContatosSet(d
  * { ver: "@fulano" } só mostra quem é (nome, @, foto e a situação com a pessoa), sem pedir nada: o widget usa enquanto a
  * pessoa digita. Vai no POST (e não num GET novo) para passar pelos repasses dos apps sem mudar nenhum; a Absolute ZRO
  * de antes recusa o campo com 422 ("Diga o @ da pessoa.") e o widget só não mostra a prévia.
+ *
+ * { buscar: "ron" } devolve { pessoas: [{ pessoa, situacao }] }: até 5 sugestões pelo começo do @ ou pelo nome (a partir
+ * de 3 letras), com as regras da busca de perfis; ninguém bloqueado, nos dois sentidos.
  */
 export const POST = route(
   async ({ db, auth, req }) => {
     const b = await corpo(req)
+    if (typeof b.buscar === 'string') return json(paraApi({ pessoas: await sugerirPessoasSet(db, auth, b.buscar) }))
     const ver = texto(b.ver)
     if (ver) return json(paraApi(await verPessoaSet(db, auth, ver)))
     const arroba = texto(b.arroba)

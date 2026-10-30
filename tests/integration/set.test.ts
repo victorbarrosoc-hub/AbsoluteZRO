@@ -44,6 +44,7 @@ import {
   resolverDenunciaSet,
   responderContatoSet,
   salvarPreferenciasSet,
+  sugerirPessoasSet,
   trocarArroba,
   verPessoaSet,
 } from '@zro/core'
@@ -386,6 +387,42 @@ describe('adicionar pelo @ (a prévia e o pedido)', () => {
 
     await tentativas(`busca-perfis:${a.userId}`, LIMITE_BUSCA_PERFIS.max)
     await expectCode(verPessoaSet(db, a.auth, novo.arroba), 'rate_limited')
+  })
+
+  it('sugestões enquanto digita: começo do @ ou nome sem acento, até 5, sem escondido, bloqueado (nos dois sentidos) nem a própria pessoa', async () => {
+    const u = unico()
+    const com = async (nome: string, arroba: string) => {
+      const o = await newOrgWithOwner(db, 'sug')
+      await db.sql`update zro.users set display_name = ${nome} where id = ${o.userId}`
+      await trocarArroba(db, o.auth, arroba)
+      return { ...o, auth: await refresh(db, o.token), arroba, nome }
+    }
+    const eu = await com(`Eu ${u}`, `rn${u}eu`)
+    const ronny = await com(`Rônny Freitas ${u}`, `rn${u}freitas`)
+    const escondida = await com(`Oculta ${u}`, `rn${u}oculta`)
+    await definirVisibilidade(db, escondida.auth, false)
+    const bloqueei = await com(`Bloqueada ${u}`, `rn${u}bloq1`)
+    const meBloqueou = await com(`Bloqueou ${u}`, `rn${u}bloq2`)
+    await bloquearSet(db, eu.auth, bloqueei.userId)
+    await bloquearSet(db, meBloqueou.auth, eu.userId)
+    await pedirContatoSet(db, eu.auth, { arroba: ronny.arroba })
+
+    const r = await sugerirPessoasSet(db, eu.auth, `@RN${u}`)
+    expect(r).toEqual([{ pessoa: { id: ronny.userId, arroba: ronny.arroba, nome: ronny.nome, foto: null }, situacao: 'enviado' }])
+    // pelo nome, sem acento e sem caixa
+    expect((await sugerirPessoasSet(db, eu.auth, `RONNY FREITAS ${u}`)).map((x) => x.pessoa.id)).toEqual([ronny.userId])
+    // pelo @ não procura no nome
+    expect(await sugerirPessoasSet(db, eu.auth, `@ronny freitas ${u}`)).toEqual([])
+    expect(await sugerirPessoasSet(db, eu.auth, '@rn')).toEqual([])
+
+    for (let i = 0; i < 6; i++) await com(`Muitos ${u}`, `mx${u}${i}`)
+    expect(await sugerirPessoasSet(db, eu.auth, `mx${u}`)).toHaveLength(5)
+
+    await expectCode(sugerirPessoasSet(db, null, 'ronny'), 'unauthenticated')
+    await db.asSystem('teste', async (tx) => {
+      for (let i = 0; i < LIMITE_BUSCA_PERFIS.max; i++) await registerAttempt(tx, `busca-perfis:${eu.userId}`)
+    })
+    await expectCode(sugerirPessoasSet(db, eu.auth, `rn${u}`), 'rate_limited')
   })
 })
 
