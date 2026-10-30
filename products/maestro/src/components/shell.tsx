@@ -76,7 +76,7 @@ export function Shell({
   const selo = demo ? (
     <Link className="selo selo--demo" href="/app/ajustes#demonstracao" title="Dados de exemplo. Remova em Ajustes.">
       <i aria-hidden="true" />
-      Demonstração
+      <span>Demonstração</span>
     </Link>
   ) : null;
   return (

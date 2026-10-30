@@ -66,6 +66,29 @@ async function instalarSonda(page: Page) {
   });
 }
 
+/**
+ * A rede parada (500 ms sem pedido em aberto), sem contar o Set da barra de cima: o `<zro-set>` bate presença em
+ * /api/zro/set e, no 401 do e2e, não lê o corpo; o Chromium deixa esse pedido "em aberto" até o lixo ser coletado e o
+ * `networkidle` do Playwright pode nunca chegar. Conta só as seções pré-buscadas e o resto da página.
+ */
+function acompanharRede(page: Page) {
+  const abertos = new Set<object>();
+  page.on("request", (r) => {
+    if (!/\/api\/zro\/set/.test(r.url())) abertos.add(r);
+  });
+  page.on("requestfinished", (r) => abertos.delete(r));
+  page.on("requestfailed", (r) => abertos.delete(r));
+  return async function parada() {
+    const ate = Date.now() + 30_000;
+    let quieta = 0;
+    while (quieta < 500) {
+      if (Date.now() > ate) throw new Error(`rede não parou: ${abertos.size} pedido(s) em aberto`);
+      await page.waitForTimeout(50);
+      quieta = abertos.size ? 0 : quieta + 50;
+    }
+  };
+}
+
 async function ler(page: Page) {
   return page.evaluate(() => (window as unknown as { sonda: { amostras: Amostra[]; relogio: Relogio; vts: number } }).sonda);
 }
@@ -73,12 +96,13 @@ async function ler(page: Page) {
 test("troca de seção: a velha sai antes de a nova entrar, sem esqueleto na volta", async ({ page, context, baseURL }, info) => {
   const { token } = JSON.parse(readFileSync(ARQUIVO, "utf8")) as { token: string };
   await context.addCookies([{ name: "mae_sessao", value: token, url: baseURL! }]);
+  const redeParada = acompanharRede(page);
   await page.goto("/app/hoje");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   const celular = info.project.name !== "computador";
   const nav = celular ? page.locator(".barra") : page.locator(".capsula__nav");
   // a pré-busca das seções da barra/cápsula termina com a página parada
-  await page.waitForLoadState("networkidle");
+  await redeParada();
 
   const rota: { nome: RegExp; url: string; titulo: RegExp; volta?: true }[] = celular
     ? [
@@ -133,4 +157,21 @@ test("com reduzir movimento, a troca é na hora (sem View Transition)", async ({
   await link.click();
   await page.waitForURL(/\/app\/(quadro|financeiro)/);
   expect((await ler(page)).vts).toBe(0);
+});
+
+test("barra de baixo: as abas dividem a largura toda, sem coluna vazia", async ({ page, context, baseURL }, info) => {
+  test.skip(info.project.name === "computador", "só no celular");
+  const { token } = JSON.parse(readFileSync(ARQUIVO, "utf8")) as { token: string };
+  await context.addCookies([{ name: "mae_sessao", value: token, url: baseURL! }]);
+  await page.goto("/app/aprovacoes");
+  const abas = page.locator(".barra a");
+  await expect(abas.first()).toBeVisible();
+  const caixas = await abas.evaluateAll((els) => els.map((e) => e.getBoundingClientRect()).map((r) => ({ x: r.left, w: r.width })));
+  const largura = page.viewportSize()!.width;
+  const ultima = caixas.at(-1)!;
+  // a última aba (Mais) chega à borda direita, como a primeira chega à esquerda
+  expect(largura - (ultima.x + ultima.w)).toBeLessThan(20);
+  expect(caixas[0].x).toBeLessThan(20);
+  // todas da mesma largura
+  for (const c of caixas) expect(Math.abs(c.w - caixas[0].w)).toBeLessThan(2);
 });

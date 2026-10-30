@@ -53,6 +53,18 @@ async function colunaDoBanco(id: string) {
   }
 }
 
+/** A ordem gravada de uma coluna (só os cards do teste). */
+async function ordemDoBanco(col: string) {
+  const sql = postgres(E2E_DB, { max: 1, onnotice: () => {} });
+  try {
+    const l = await sql`select id from maestro.cards where org_id = ${sessao().org} and id like 'ge-%' and dados->>'coluna' = ${col}
+      order by (dados->>'ordem')::float8, id`;
+    return l.map((r) => r.id as string);
+  } finally {
+    await sql.end();
+  }
+}
+
 test.beforeEach(async ({ page, context, baseURL }, info) => {
   test.skip(info.project.name === "computador", "gestos de toque: só no celular");
   await semear();
@@ -261,7 +273,8 @@ test.describe("Quadro no celular: arrastar o card", () => {
     );
     await expect(page.locator(".q-fantasma")).toHaveCount(0);
     await expect.poll(() => ordemNaColuna(page, "pauta")).toEqual(["ge-p2", "ge-p1", "ge-p3", "ge-p4", "ge-p5", "ge-p6", "ge-p7"]);
-    await page.waitForLoadState("networkidle");
+    // gravada no banco (e não "rede parada": o Set da barra de cima bate presença o tempo todo)
+    await expect.poll(() => ordemDoBanco("pauta")).toEqual(["ge-p2", "ge-p1", "ge-p3", "ge-p4", "ge-p5", "ge-p6", "ge-p7"]);
     await page.reload();
     await expect.poll(() => ordemNaColuna(page, "pauta")).toEqual(["ge-p2", "ge-p1", "ge-p3", "ge-p4", "ge-p5", "ge-p6", "ge-p7"]);
   });

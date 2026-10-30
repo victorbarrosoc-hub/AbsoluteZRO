@@ -2743,3 +2743,15 @@ aprovação e de volta. Quadro a quadro (ffmpeg, linha do tempo de 60 fps):
   `colunas.spec.ts`, `transicao.spec.ts`, `visual.spec.ts` e `sem-corte.spec.ts` passam. `E2E_DB_SUFIXO` separa o
   banco do e2e quando duas cópias rodam juntas; `E2E_VIDEO=1` grava cada teste.
 - Não validado: Safari de um Mac e iPhone de verdade (sem deploy).
+
+## Maestro: barra de baixo com 4 abas e a barra de cima com o Set (30/10/2026)
+
+- Barra de baixo do iPhone: uma coluna por aba (`grid-auto-flow: column`), as 4 dividem a largura toda, sem a 5ª vazia
+  (`transicao.spec.ts`, Chromium e WebKit). Barra de cima: com o selo Demonstração, a Z, a pílula do Set, o tema e a
+  conta, a 393 px a conta saía 17 px da tela (a pílula veio com o Set); agora quem cede é o selo (reticências).
+- `transicao.spec.ts` e `gestos.spec.ts` não esperam mais `networkidle`: o `<zro-set>` não lê o corpo do 401 e o
+  Chromium deixa o pedido em aberto (CDP: resposta e 87 bytes recebidos, sem `loadingFinished`). Esperam a rede parada
+  sem o Set e a ordem gravada no banco. Resultado: transicao, gestos, arrastar, quadro, contrato, sem-corte e set
+  **61/61** (18 pulados por projeto); `npm test` **430/430**; lint, Prettier, tipos e build ok (Maestro e raiz);
+  `scan-secrets` sem segredo. Com carga ~16 em 4 núcleos, "segurar na borda" (WebKit) caiu 1 em 3: passou mais de 1 s
+  entre a troca e o próximo movimento do teste, e a borda já passava para a coluna seguinte (o código da borda não mudou).
