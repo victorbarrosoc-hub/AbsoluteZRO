@@ -54,13 +54,26 @@ sem_vinculo | nao_achou | sem_miniatura | conta_desconhecida` · `409 sem_drive 
 
 ## 3. No Maestro
 
-- **Arquivos** (`/app/arquivos`): só com `temProduto(sessao, 'sobedesce')`; sem ele, o cadeado e "Ver planos"
-  (HUB `/planos`), e `POST /api/arquivos/token` responde 403 sem pedir ao HUB. Com ele: `drive.token` → a aba (memória
-  só) → o navegador chama o Drive v3 direto (núcleo de `packages/drive-web`, o mesmo da aba Drive do SOBEDESCE): Meu
-  Drive, Comigo, Drives compartilhados, migalhas, busca, filtro por tipo, grade ou lista, miniaturas, prévia de vídeo e
-  áudio (stream), imagem e PDF, "Abrir no SOBEDESCE" (`#arquivo/<id>`, `#drive/<id>`). Projetos: "Estrutura no Drive"
-  (`drive.pasta.criar`) e "Ligar a um projeto" (`projects.drive_folder_id` e `drive_folder_nome`, migração `0019`).
-  Pessoa sem Drive conectado: "Conecte o Drive no SOBEDESCE" (nada é fingido).
+- **Arquivos é o SOBEDESCE** (`/app/arquivos`, desde 30/10/2026): só com `temProduto(sessao, 'sobedesce')`; sem ele, o
+  cadeado e "Ver planos" (HUB `/planos`), e `POST /api/arquivos/token` responde 403 sem pedir ao HUB. Com ele, a aba é o
+  próprio app do SOBEDESCE num quadro, no modo embutido (o mesmo do Porta-malas do Carro), sem token nenhum passando
+  pelo Maestro:
+
+  | Lado        | O quê                                                                                                                                                                                                    |
+  | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | Endereço    | `https://sobedesce.absolutezro.com/app/?no=maestro&tema=escuro\|claro`; `#drive/<id>` abre a pasta (só o `#` muda: não recarrega)                                                                        |
+  | SOBEDESCE → | `postMessage` só para `https://maestro.absolutezro.com`: `{fonte:'sobedesce', tipo:'pronto'}`, `{…, tipo:'envios', andando}`, `{…, tipo:'pasta', id, nome}`                                              |
+  | → SOBEDESCE | `{tipo:'tema', tema:'escuro'\|'claro'}` com destino `https://sobedesce.absolutezro.com`                                                                                                                  |
+  | Segurança   | SOBEDESCE: `frame-ancestors https://maestro.absolutezro.com` só em `/app/?no=maestro`. Maestro: `frame-src` do SOBEDESCE na CSP da equipe; recado só da origem exata e da janela do quadro (`lerRecado`) |
+
+  O quadro fica vivo no shell (o envio segue fora da aba; ponto em Arquivos e Mais; `beforeunload` com envio andando).
+  O cookie do SOBEDESCE é SameSite=Lax: o quadro só entra logado com o Maestro em `maestro.absolutezro.com`; sem conta
+  no SOBEDESCE, o próprio quadro mostra a entrada dele (abre em outra aba). Sem o recado `pronto` (SOBEDESCE fora do ar,
+  endereço que recusa o quadro), o Maestro mostra "O SOBEDESCE não abriu aqui." com o link. **Ordem do deploy**:
+  SOBEDESCE com o modo embutido (PR #71) antes do Maestro. Projetos: "Estrutura no Drive" (`drive.pasta.criar`, a pasta
+  nova abre no quadro), "Abrir" (o quadro vai à pasta) e "Ligar a um projeto" com a pasta aberta no quadro
+  (`projects.drive_folder_id` e `drive_folder_nome`, migração `0019`).
+
 - **Revisão, equipe**: com o SOBEDESCE no plano, a versão do Drive toca num `<video>` pelo service worker
   `/drive-sw.js` (escopo `/app/`, cópia de `packages/drive-web/src/sw.js`): `/app/stream/<id>?…&c=<conta>&k=<chave da
 aba>` → Google com o token curto, repassando o `Range` (206). Tempo e timecode de verdade, até em arquivo privado.

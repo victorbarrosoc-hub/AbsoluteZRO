@@ -2,8 +2,12 @@
 import type { NomeIcone } from "@/components/icones";
 import type { Acessos, Area } from "./acessos";
 
-/** `area`: a seção inteira é de uma área sensível (src/lib/acessos.ts); quem não tem a área nem vê o item. */
-export type Aba = { href: string; nome: string; icone: NomeIcone; curto?: string; area?: Area };
+/**
+ * `area`: a seção inteira é de uma área sensível (src/lib/acessos.ts); quem não tem a área nem vê o item.
+ * `sinal`: o ponto que acende no item (e no menu do grupo) enquanto algo anda fora da seção: `envios` = o SOBEDESCE
+ * embutido de Arquivos com envio andando (`data-envios` no `<html>`, components/arquivos/sobedesce-vivo.tsx).
+ */
+export type Aba = { href: string; nome: string; icone: NomeIcone; curto?: string; area?: Area; sinal?: "envios" };
 export type Grupo = { nome: string | null; abas: Aba[] };
 
 export const GRUPOS: Grupo[] = [
@@ -15,7 +19,7 @@ export const GRUPOS: Grupo[] = [
       { href: "/app/aprovacoes", nome: "Aprovações", icone: "aprovacoes", curto: "Aprovar" },
       { href: "/app/projetos", nome: "Projetos", icone: "projetos" },
       { href: "/app/criacao", nome: "Criação", icone: "criacao" },
-      { href: "/app/arquivos", nome: "Arquivos", icone: "arquivos" },
+      { href: "/app/arquivos", nome: "Arquivos", icone: "arquivos", sinal: "envios" },
       { href: "/app/agenda", nome: "Agenda", icone: "agenda" },
     ],
   },
@@ -49,7 +53,7 @@ export const Z: Aba = { href: "/app/z", nome: "Z", icone: "z" };
 export const ABAS: Aba[] = [...GRUPOS.flatMap((g) => g.abas), AJUSTES, Z];
 
 /** A barra de baixo do celular (plano v2 §3): o dia a dia (Hoje, Quadro, Aprovações) e "Mais" (todas as seções). */
-export const MAIS: Aba = { href: "/app/mais", nome: "Mais", icone: "grade" };
+export const MAIS: Aba = { href: "/app/mais", nome: "Mais", icone: "grade", sinal: "envios" };
 const aba = (href: string) => ABAS.find((a) => a.href === href)!;
 export const BARRA: Aba[] = [aba("/app/hoje"), aba("/app/quadro"), aba("/app/aprovacoes"), MAIS];
 

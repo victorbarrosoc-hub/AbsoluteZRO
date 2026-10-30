@@ -37,6 +37,30 @@ O `main` ficou vermelho em três workflows; cada falha foi reproduzida aqui ante
 - A correção do Relay mexe em `products/sobedesce/src/relay/`: na main, isso dispara o "SOBEDESCE · app de desktop"
   (build, Release de teste e `versao.json`).
 
+## Maestro: Arquivos é o SOBEDESCE (30/10/2026)
+
+Local, Postgres e Chromium desta máquina; o SOBEDESCE é a casca de mentira `e2e/falsos/sobedesce.ts` em
+https://sobedesce.absolutezro.com (interceptada no navegador, `serviceWorkers: 'block'`), com o contrato do modo
+embutido (`/app/?no=maestro`, recados `pronto`/`envios`/`pasta`, `{tipo:'tema'}`, `#drive/<id>`).
+
+- `tests/sobedesce-embutido.test.mts` (novo, 7): endereço e tema do quadro, troca de pasta só pelo `#` (id estranho não
+  entra), recados aceitos só da origem exata e na forma combinada (origem parecida, `http`, porta, subdomínio, tipo
+  desconhecido, número negativo ou texto, id com `/` ficam de fora), CSP da equipe com o `frame-src` do SOBEDESCE e os
+  links públicos sem, e o ponto só em Arquivos e Mais. `npm test` **657/657**.
+- `e2e/arquivos.spec.ts` reescrito, computador (1440) e iPhone (393), **8/8**: cadeado sem o produto; o quadro em
+  `/app/?no=maestro&tema=claro` com só Transferências e Drive, o selo (≤ 34 px, leva a sobedesce.com) e nenhum "Abrir no
+  SOBEDESCE"; o quadro até o fim da janela (computador) e até a barra (iPhone), também depois que "Ligar" aparece;
+  trocar o tema manda o recado e o quadro muda sem recarregar; a pasta aberta no quadro vira "Ligar a um projeto" e
+  liga; "Abrir" leva o quadro à pasta pelo `#` sem recarregar; "Estrutura no Drive" abre a pasta nova; recado de outra
+  origem não acende nada; envio andando acende o ponto (menu Produção, a opção Arquivos, Mais e o cartão de Mais),
+  segura o `beforeunload` e sobrevive à troca de seção (o quadro é pedido uma vez só); terminou, apaga; fechar a aba
+  com envio andando abre o diálogo do navegador; SOBEDESCE respondendo 404 vira "O SOBEDESCE não abriu aqui." com
+  "Abrir o SOBEDESCE" e "Tentar de novo". A revisão (Drive tocando com tempo e "Escolher no Drive") segue igual.
+- `sem-corte.spec.ts` com Arquivos e o quadro pronto (375 e 393 px, claro e escuro, Chromium e WebKit) e
+  `acessos.spec.ts` (computador e iPhone): **14/14** (4 do computador pulados de propósito no `sem-corte`). Lint,
+  `format:check`, typecheck e build do Maestro limpos; na raiz, `npm run lint`, `format:check` e
+  `node scripts/scan-secrets.mjs` limpos.
+
 ## Subdomínios do Carro e do SOBEDESCE (30/10/2026)
 
 - HUB `npm test` **392/392** com a migração 0037 (retornos novos, idempotente; numa rodada o `set.test.ts` falhou e passou
