@@ -3125,3 +3125,14 @@ Roteiros e Fluxos (`components/criacao/lixeira.tsx`, `lib/criacao/lixeira.ts`, `
 Não validado: o dedo de verdade num iPhone (o e2e usa toques sintéticos no WebKit e o toque do CDP no Chromium) e a
 vibração do segurar (`navigator.vibrate` não existe no Safari). Equipe não vê o aviso do link vivo (os links são só de
 administração e gestão pelo RLS).
+
+## Looks do Relay no Drive pelo SOBEDESCE (30/10/2026)
+
+- Relay `test/pasta-looks.test.js`: leva o que só está no aparelho, traz o que só está na pasta, deixa o igual, mesmo
+  nome com conteúdo diferente fica como está (avisa), arquivo que não é `.cube` 3D é recusado, nada é apagado; a
+  segunda vez não muda nada. `test/painel.test.js` no Chromium: a seção Looks (com a Revela ligada), escolher a pasta,
+  `1 levado para a pasta · 1 trazido da pasta.`, os dois arquivos de verdade na pasta e o link `sobedesce://looks`.
+  O Chromium de teste cai ao guardar no IndexedDB uma pasta do armazenamento privado; o teste usa um invólucro dela
+  (guardado na memória). No Chrome de verdade, a pasta escolhida fica guardada; não conferido aqui com um seletor real.
+- SOBEDESCE `test/relay.test.js`: `sobedesce://looks` e `?trocar=1` aceitos; com caminho, outro parâmetro ou outro
+  host, recusados. O Comparar com as duas pastas não foi exercitado com o app aberto (falta o desktop rodando aqui).
