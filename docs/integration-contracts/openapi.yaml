@@ -253,7 +253,7 @@ paths:
       responses: { '200': { description: ok }, default: { $ref: '#/components/responses/Error' } }
   /api/v1/admin/z-lab/escuta:
     post:
-      summary: Abre a escuta ao vivo (Scribe v2 Realtime). Devolve um token de uso único (15 min, uma conexão); a chave nunca sai do servidor
+      summary: Abre a escuta ao vivo (Scribe v2 Realtime). Devolve um token de uso único (15 min, uma conexão); a chave nunca sai do servidor. Se a ElevenLabs recusar o token, devolve `aoVivo` falso e o navegador usa a transcrição por frase
       security: [{ session: [] }]
       responses: { '200': { description: ok }, default: { $ref: '#/components/responses/Error' } }
   /api/v1/admin/z-lab/escuta/fim:

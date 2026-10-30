@@ -348,6 +348,175 @@ export class EscutaAoVivo {
   }
 }
 
+// ───────────── escuta por frase (quando a ao vivo não abre) ─────────────
+
+export type OpcoesDaFala = {
+  /** Silêncio que fecha a frase (ms). */
+  silencioMs?: number
+  /** Fala contínua que abre uma frase (ms): tira estalo, tosse curta e ruído. */
+  inicioMs?: number
+  /** Frase mais curta que vale transcrever (ms de fala). */
+  minFalaMs?: number
+  /** Frase mais longa (ms): fecha e manda, mesmo sem pausa. */
+  maxFalaMs?: number
+  /** Áudio de antes do início que entra junto (ms), para não comer a primeira sílaba. */
+  antesMs?: number
+  /** Energia mínima de fala (RMS de 0 a 1), além de 3× o ruído de fundo. */
+  limiar?: number
+}
+
+export type FraseFechada = {
+  /** PCM 16 bits, 16 kHz, mono: o que vai para a transcrição. */
+  pcm: Uint8Array
+  /** Há quanto tempo a pessoa parou de falar quando a frase fechou (ms): o silêncio que o detector esperou. */
+  silencioMs: number
+}
+
+const msDe = (amostras: number) => (amostras / TAXA_ESCUTA) * 1000
+const rms = (pcm: Int16Array) => {
+  let s = 0
+  for (let i = 0; i < pcm.length; i++) s += pcm[i]! * pcm[i]!
+  return Math.sqrt(s / Math.max(1, pcm.length)) / 0x8000
+}
+/** Quadro de análise: 20 ms (os pedaços do microfone têm ~3 ms, curtos demais para medir fala). */
+const QUADRO = TAXA_ESCUTA / 50
+
+export type EventoDaFala = { tipo: 'inicio' } | ({ tipo: 'frase' } & FraseFechada)
+
+/**
+ * Detector de voz (VAD) por energia, sem DOM e com teste: mede quadros de 20 ms, aprende o ruído de fundo, abre a frase
+ * com ~120 ms de fala, fecha com ~700 ms de silêncio (ou aos 30 s) e devolve o PCM com um pouco de antes e o silêncio do
+ * fim aparado. O tempo vem das amostras, não do relógio.
+ */
+export class DetectorDeFala {
+  private readonly o: Required<OpcoesDaFala>
+  private resto = new Int16Array(0)
+  private ruido = 0
+  private medidas = 0
+  private falando = false
+  private seguida = 0
+  private quieto = 0
+  private fala = 0
+  private antes: Int16Array[] = []
+  private frase: Int16Array[] = []
+  private fraseAmostras = 0
+  private ultimaVoz = 0
+
+  constructor(o: OpcoesDaFala = {}) {
+    this.o = { silencioMs: 700, inicioMs: 120, minFalaMs: 250, maxFalaMs: 30_000, antesMs: 300, limiar: 0.012, ...o }
+  }
+
+  get emFala(): boolean {
+    return this.falando
+  }
+
+  /** Um pedaço do microfone (qualquer tamanho). Devolve `inicio` quando a fala começa e cada frase que fechou. */
+  empurrar(pcm: Int16Array): EventoDaFala[] {
+    const tudo = new Int16Array(this.resto.length + pcm.length)
+    tudo.set(this.resto)
+    tudo.set(pcm, this.resto.length)
+    const eventos: EventoDaFala[] = []
+    let i = 0
+    for (; i + QUADRO <= tudo.length; i += QUADRO) {
+      const ev = this.quadro(tudo.slice(i, i + QUADRO))
+      if (ev) eventos.push(ev)
+    }
+    this.resto = tudo.slice(i)
+    return eventos
+  }
+
+  private quadro(q: Int16Array): EventoDaFala | null {
+    const dur = msDe(q.length)
+    const e = rms(q)
+    const voz = e > Math.max(this.o.limiar, this.ruido * 3)
+    if (!this.falando) {
+      // O ruído de fundo aprende só no silêncio e devagar (a própria fala não sobe o limiar); começa pela média.
+      this.medidas++
+      if (this.medidas <= 10) this.ruido += (e - this.ruido) / this.medidas
+      else if (!voz) this.ruido = this.ruido * 0.95 + e * 0.05
+      this.antes.push(q)
+      if (this.antes.length * dur > this.o.antesMs + this.o.inicioMs) this.antes.shift()
+      this.seguida = voz ? this.seguida + dur : Math.max(0, this.seguida - dur)
+      if (this.seguida < this.o.inicioMs) return null
+      this.falando = true
+      this.frase = this.antes
+      this.fraseAmostras = this.antes.length * q.length
+      this.antes = []
+      this.fala = this.seguida
+      this.quieto = 0
+      this.ultimaVoz = this.fraseAmostras
+      return { tipo: 'inicio' }
+    }
+    this.frase.push(q)
+    this.fraseAmostras += q.length
+    if (voz) {
+      this.fala += dur
+      this.quieto = 0
+      this.ultimaVoz = this.fraseAmostras
+    } else this.quieto += dur
+    const longa = msDe(this.fraseAmostras) >= this.o.maxFalaMs
+    if (this.quieto < this.o.silencioMs && !longa) return null
+    const silencioMs = this.quieto
+    const valeu = this.fala >= this.o.minFalaMs
+    const tudo = new Int16Array(this.fraseAmostras)
+    let o = 0
+    for (const p of this.frase) {
+      tudo.set(p, o)
+      o += p.length
+    }
+    // Fica só 200 ms do silêncio do fim (menos áudio, menos custo).
+    const fim = Math.min(tudo.length, this.ultimaVoz + Math.round(TAXA_ESCUTA * 0.2))
+    this.reiniciar()
+    return valeu ? { tipo: 'frase', pcm: bytesDoPcm(tudo.subarray(0, fim)), silencioMs } : null
+  }
+
+  /** Larga a frase em andamento (o ruído de fundo aprendido fica). */
+  reiniciar(): void {
+    this.falando = false
+    this.seguida = 0
+    this.quieto = 0
+    this.fala = 0
+    this.frase = []
+    this.fraseAmostras = 0
+    this.antes = []
+    this.ultimaVoz = 0
+  }
+}
+
+/**
+ * Mãos livres sem a escuta ao vivo: o microfone fica aberto aqui, o `DetectorDeFala` corta cada frase e quem usa manda
+ * a frase para a transcrição do HUB (Scribe v2 pelo servidor; a chave nunca vem para o navegador).
+ */
+export class EscutaPorFrase {
+  private mic: Microfone
+  private detector: DetectorDeFala
+  /** Microfone silenciado: nada vira frase. */
+  mudo = false
+
+  constructor(ev: { inicio?: () => void; frase: (f: FraseFechada & { fechouEm: number }) => void; nivel?: (n: number) => void }, opcoes?: OpcoesDaFala) {
+    this.detector = new DetectorDeFala(opcoes)
+    this.mic = new Microfone((pcm) => {
+      if (this.mudo) {
+        if (this.detector.emFala) this.detector.reiniciar()
+        return
+      }
+      for (const e of this.detector.empurrar(pcm)) {
+        if (e.tipo === 'inicio') ev.inicio?.()
+        else ev.frase({ pcm: e.pcm, silencioMs: e.silencioMs, fechouEm: performance.now() })
+      }
+    }, ev.nivel)
+  }
+
+  abrir(): Promise<void> {
+    return this.mic.abrir()
+  }
+
+  fechar(): void {
+    this.mic.fechar()
+    this.detector.reiniciar()
+  }
+}
+
 // ───────────── anexos de áudio e vídeo ─────────────
 
 /** Áudio de um arquivo de áudio ou vídeo, decodificado no navegador e convertido para PCM 16 kHz mono. */
