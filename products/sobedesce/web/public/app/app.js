@@ -2,6 +2,7 @@
 // A conta (e os Drives ligados a ela) vem do site da SOBEDESCE, na mesma origem; os arquivos vão direto ao Google.
 import { html, render } from './vendor/preact-htm.js'
 import { DEV, LAN } from './lib/config.js'
+import { EMBUTIDO, avisarAnfitriao, iniciarEmbutido } from './lib/embutido.js'
 import * as auth from './lib/auth.js'
 import { getState, openSheet, savedTab, setState, setTab, subscribe, useApp } from './lib/state.js'
 import { AccountScreen, DrivesSheet } from './components/account.js'
@@ -14,7 +15,7 @@ import { SheetHost, Toasts, useEngine } from './components/ui.js'
 import { LigarZroFaixa, LigarZroTela } from './components/ligar-zro.js'
 import { filaAndando, modoLigar } from './lib/ligar-zro.js'
 import { useP2pAviso } from './components/p2p.js'
-import { engine } from './lib/uploader.js'
+import { engine, summarize } from './lib/uploader.js'
 import { startBridge } from './lib/stream.js'
 import { RefAtalhoSheet, RefDeleteSheet, RefItemSheet, RefLinkSheet, RefMenuSheet, RefNameSheet, RefSaveSheet } from './components/referencias.js'
 import { findUrl } from './lib/referencias.js'
@@ -191,11 +192,43 @@ const contaPronta = new Promise((ok) => {
     ok()
   })
 })
-if (!LAN) {
+// No porta-malas do Carro (lib/embutido.js) a abertura fica com o Carro: o quadro entra direto.
+if (!LAN && !EMBUTIDO) {
   abertura({ tamanho: 92, sempre: true, pronto: contaPronta })
   aberturaAoVoltar({ tamanho: 92 })
 }
 render(html`<${App} />`, document.getElementById('app'))
+
+// No porta-malas do Carro: link que sairia do /app/ (entrar, criar conta, conectar o Drive, a conta) abre em outra
+// aba, porque o login da Absolute ZRO e o do Google não abrem dentro de um quadro.
+if (EMBUTIDO) {
+  iniciarEmbutido()
+  // Os envios andando, para o anfitrião acender o aviso no menu e segurar o fechar da aba.
+  let andandoAntes = -1
+  engine.subscribe(() => {
+    const s = summarize(engine.items)
+    if (s.pending === andandoAntes) return
+    andandoAntes = s.pending
+    avisarAnfitriao('envios', { andando: s.pending })
+  })
+  document.addEventListener(
+    'click',
+    (e) => {
+      const a = e.target instanceof Element ? e.target.closest('a[href]') : null
+      if (!a || a.target) return
+      const u = new URL(a.href, location.href)
+      if (u.origin === location.origin && u.pathname.startsWith('/app/')) return
+      a.target = '_blank'
+      a.rel = 'noopener'
+    },
+    true,
+  )
+  // Voltar da outra aba (a página do Carro fica visível de novo): sem conta ou sem Drive, confere de novo.
+  const esperaFora = new Set(['signedOut', 'noDrive', 'reconnect', 'error'])
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && esperaFora.has(getState().auth.status)) location.reload()
+  })
+}
 document.documentElement.classList.add('is-ready')
 
 // Service worker do app: guarda a casca (/app/) e faz a prévia e o download do Drive (/app/stream/). Também no modo

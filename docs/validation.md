@@ -3090,3 +3090,17 @@ produção (deploy só com autorização).
 - Linha visual B no site real (30/10/2026, aprovada pelo titular): `test/site-real.js` 26/26 — `html.real`, grafite
   fosco `#0e0e10`, o símbolo de sempre com o carrinho no topo da home, título sem degradê e a foto de Natal como fundo
   da home e da entrada. Conferido no Chromium a 1440 e a 390 px (home e entrar), sem erro de console.
+
+## O Sobedesce embutido: porta-malas do Carro e base para a aba Arquivos do Maestro (30/10/2026)
+
+- SOBEDESCE `/app/?no=carro|maestro` (`web/public/app/lib/embutido.js`): só Transferências e Drive, sem a Z e o Set;
+  tema do anfitrião (`?tema=` e mensagem); avisa os envios andando e a pasta aberta só para a origem do anfitrião;
+  links de conta abrem em outra aba. `test/porta-malas-carro.test.js` (Chromium, outra origem embutindo): abas, tema
+  que muda na hora, recado "pronto" e, sem `?no=`, nada embute. `web/tests/seguranca.test.mts`: frame-ancestors só do
+  endereço de cada anfitrião, o resto da CSP igual, o site sem quadro. `npm run test:fast` 788/788 (com `sw.js`
+  v73/2.8.58 e o módulo novo no cache); `web` `npm test` 301/302 (a falha "origens, retorno do Google e CSRF nos dois
+  endereços" já falha na base, sem estas mudanças); lint e typecheck limpos.
+- Carro `test/porta-malas-real.js` 18/18 (carro.absolutezro.com e sobedesce.absolutezro.com simulados): Porta-malas
+  na lateral e no menu do site real, o quadro em `/app/?no=carro&tema=escuro`, o tema acompanha o Carro, o ponto de
+  envio andando acende e apaga (recado de outra origem não acende), o selo do Sobedesce leva ao site dele, sem botão de
+  "abrir", e a prévia segue com a demonstração. Conferido a 1440 e a 390 px, escuro e claro.

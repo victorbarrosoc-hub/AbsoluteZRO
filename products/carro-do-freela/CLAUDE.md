@@ -141,6 +141,21 @@ repasse é `api/zro/set.js` (miolo em `_zro.js`, com `sessaoConferida`: claim re
 `zro.set` e, se o HUB recusar, refaz sem ele (`sem_set`) antes do `basico`. Um 401 do Set NÃO apaga a sessão. A folha
 veste os tokens dos dois temas (`--zro-set-*` no template). ⚠️ `var`/`function` no topo (o TDZ de 19/out · 2).
 
+## 30/out · 5 — o Porta-malas é o Sobedesce (`test/porta-malas-real.js`)
+
+Titular: *"O porta mala vira uma sessão onde o sobedesce está ali dentro, fazendo as mesmas coisas da aba Drive do
+sobedesce, e transferências"*; aberto a toda conta (Drive e Transferências são do grátis do Sobedesce).
+
+- No site real, `malasReal()` põe o próprio app em `https://sobedesce.absolutezro.com/app/?no=carro&tema=…` (o Sobedesce
+  só se deixa embutir em carro.absolutezro.com). Nada de cópia, nada passa pelo Carro: o arquivo vai do aparelho ao
+  Google. A demonstração antiga (`data-sem-real`) segue só na prévia.
+- **Sem botão de "abrir"**: a tela já é o Sobedesce, com o selo pequeno dele (`.ml-selo`, leva ao sobedesce.com).
+- **Tema do Carro, nunca o do aparelho**: muda junto por mensagem (`temaCarro()` e o `MutationObserver`).
+- **Envio andando**: o recado `envios` (só da origem do Sobedesce) acende o ponto no Porta-malas (lateral, gaveta e
+  MENU do celular) e liga o "sair?" do navegador ao fechar a aba.
+- ⚠️ Fora de carro.absolutezro.com (carrodofreela.com.br) o quadro não abre: o cookie do Sobedesce não vai para outro
+  site. O endereço principal passa a ser o subdomínio quando o titular autorizar o redirecionamento.
+
 ## 30/out · 4 — a linha visual B, "Natal à noite" (aprovada pelo titular; `test/site-real.js`)
 
 O titular escolheu, entre três linhas, a B: *"B, mas mantém a logo atual"*, com o neon *"em detalhes, como já é hoje"*.

@@ -6030,6 +6030,36 @@ html.real #v-entrar .lgn-logo>svg{display:none}
 html.real #v-entrar #lg-tit{font-family:"Figtree",system-ui,sans-serif;font-weight:300;letter-spacing:-.04em}
 html.real #v-entrar #lg-tit b{font-weight:800}
 
+/* ---- porta-malas no site real: o Sobedesce embutido ---- */
+/* sem o cabeçalho de cinema: o título e o selo numa linha, e o quadro com a tela quase toda */
+html.real #v-malas .pghero{display:none}
+html.real #v-malas>.wrap{padding-top:28px;padding-bottom:28px}
+.ml-cab{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ml-tit{margin:0;font-family:var(--display);font-size:clamp(26px,2.6vw,34px);font-weight:800;letter-spacing:-.03em;color:var(--cal)}
+.ml-selo{display:inline-flex;align-items:center;gap:7px;padding:5px 12px 5px 7px;border-radius:999px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--cal-fraco);font-size:13px;
+  font-weight:600;text-decoration:none;transition:background .2s,color .2s}
+.ml-selo:hover{background:rgba(255,255,255,.1);color:var(--cal)}
+.ml-selo img{width:18px;height:18px;border-radius:5px}
+html.app-light .ml-selo{background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.08)}
+.ml-sd{margin-top:16px;border-radius:20px;overflow:hidden;background:var(--grafite2);border:1px solid rgba(255,255,255,.08)}
+html.app-light .ml-sd{border-color:rgba(0,0,0,.08)}
+.ml-sd iframe{display:block;width:100%;height:calc(100dvh - 190px);min-height:480px;border:0;background:transparent}
+/* o ponto de envio andando (no celular, também no MENU, que é a porta do Porta-malas) */
+html[data-malas-envios] #bt-menu{position:relative}
+html[data-malas-envios] #bt-menu::after{content:"";position:absolute;top:6px;right:calc(50% - 30px);width:9px;height:9px;
+  border-radius:50%;background:var(--marca);box-shadow:0 0 0 2px var(--grafite)}
+html[data-malas-envios] .tabs .tab[data-tab="malas"]::after,html[data-malas-envios] [data-ir="malas"]::after{content:"";
+  display:inline-block;width:7px;height:7px;margin-left:8px;border-radius:50%;background:var(--marca);vertical-align:middle;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--marca) 22%,transparent)}
+@media (max-width:640px){
+  html.real #v-malas>.wrap{padding:12px 10px 0}
+  .ml-tit{font-size:22px}
+  .ml-selo{padding:4px 10px 4px 5px;font-size:12px}
+  .ml-sd{margin-top:10px;border-radius:16px}
+  /* cabe entre o topo e a barra de baixo do Carro: a barra Transferências/Drive do Sobedesce fica à vista */
+  .ml-sd iframe{height:calc(100dvh - 236px);min-height:400px}
+}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -6078,6 +6108,7 @@ html.real #v-entrar #lg-tit b{font-weight:800}
       <button class="tab" data-tab="equipe" data-modo="ambos" title="Montar equipe">Equipe</button>
       <button class="tab" data-tab="passar" data-modo="contratante">Passar o carro</button>
       <button class="tab" data-tab="jobs" data-modo="ambos" title="Meus jobs">Jobs</button>
+      <button class="tab" data-tab="malas" data-modo="ambos" data-so-real hidden title="Seus arquivos, com o Sobedesce">Porta-malas</button>
       <button class="tab" data-tab="orcar" data-modo="ambos">Orçamento</button>
       <button class="tab" data-tab="vagas" data-modo="ambos" title="Vagas e oportunidades">Vagas</button>
       <div class="ladog" aria-hidden="true">A praça</div>
@@ -8454,6 +8485,12 @@ html.real #v-entrar #lg-tit b{font-weight:800}
   <div class="wrap" style="padding:42px 22px 72px">
     <span class="lab">Arquivos do job</span>
     <h1>Porta-malas</h1>
+    <div class="ml-real" hidden data-so-real>
+      <div class="ml-cab"><h2 class="ml-tit">Porta-malas</h2>
+      <a class="ml-selo" href="https://sobedesce.com" target="_blank" rel="noopener" title="Conheça o Sobedesce"><img src="midia:familia-sobedesce.svg" alt="" width="18" height="18" decoding="async"><span>Sobedesce</span></a></div>
+      <div class="ml-sd" id="ml-sd"></div>
+    </div>
+    <div data-sem-real>
     <p class="lead explica" data-exp="malas" data-lead="Material do job sem o zip que trava, conferido por MD5." style="margin-top:12px">Suba e baixe material do seu Google Drive <b style="color:var(--cal)">sem o zip que trava e sem recomeçar do zero</b>: arquivo por arquivo, em pedaços que retomam de onde pararam, com a integridade conferida no fim. E veja um preview do RAW — <span style="font-family:var(--mono)">.braw</span>, <span style="font-family:var(--mono)">.R3D</span> — sem baixar o arquivo.</p>
     <p class="mlnota">Pela API oficial do Google Drive, na sua conta — a plataforma não guarda o seu material.</p>
     <div class="ml-conta">
@@ -8471,6 +8508,7 @@ html.real #v-entrar #lg-tit b{font-weight:800}
       <div><i>◉</i><div><b>Retoma de onde parou</b><span>Caiu a conexão? Continua do pedaço onde parou.</span></div></div>
       <div><i>◉</i><div><b>Conferido por MD5</b><span>Ou a soma bate, ou o pedaço desce de novo.</span></div></div>
       <div><i>◉</i><div><b>Preview sem baixar</b><span>Espie o RAW antes de decidir o que descer.</span></div></div>
+    </div>
     </div>
   </div>
 </section>
@@ -13153,7 +13191,7 @@ function aplicarModo(){
        função REESCREVE o hidden de toda aba a cada troca de chapéu, então
        esconder por fora dela durava até a primeira troca. Foi o que
        aconteceu — a Fase 1 abria mostrando Feed e Guilda na barra. */
-    el.hidden=!(m==="ambos"||m===MODO)||(el.dataset.tab&&!naFase(el.dataset.tab));
+    el.hidden=!(m==="ambos"||m===MODO)||(el.dataset.tab&&!naFase(el.dataset.tab))||(!REAL&&el.hasAttribute("data-so-real"));
   });
   if(FASE) document.querySelectorAll(".top .tab[data-tab],.bottombar .bt[data-tab]")
     .forEach(b=>{ if(!naFase(b.dataset.tab)) b.hidden=true });
@@ -25387,7 +25425,44 @@ function mlEnfileirar(arqs,dir,pasta){
   if(!mlTic) mlTic=setInterval(mlPasso,320);
   som("claquete"); drawMalas();
 }
+/* ============ O PORTA-MALAS É O SOBEDESCE (30/out · 5) ============
+   Victor: "O porta mala vira uma sessão onde o sobedesce está ali dentro, fazendo as mesmas coisas da aba Drive do
+   sobedesce, e transferências." Aberto para toda conta (Drive e Transferências são do plano grátis do Sobedesce).
+   É o próprio app do Sobedesce (/app/?no=carro), não uma cópia: o arquivo vai direto entre o aparelho e o Google,
+   nada passa pelo Carro. Só funciona dentro de *.absolutezro.com — o cookie de sessão do Sobedesce é SameSite=Lax e
+   o Sobedesce só se deixa embutir em carro.absolutezro.com (next.config.ts). Sem botão nem tela de "abrir": a tela
+   abre como a aba Drive do Sobedesce, e um selo pequeno diz de quem é o sistema (e leva ao site dele). */
+var SOBEDESCE_ORIGEM="https://sobedesce.absolutezro.com", SOBEDESCE_APP=SOBEDESCE_ORIGEM+"/app/";
+/* o tema é o do Carro, e muda junto (o Sobedesce embutido nunca segue o do aparelho) */
+function temaCarro(){ return document.documentElement.classList.contains("app-light")?"claro":"escuro" }
+/* envio andando no Sobedesce: o ponto no Porta-malas (lateral, gaveta e o MENU do celular) e o "sair?" do navegador
+   ao fechar a aba (o texto do aviso é do navegador; fechar pausa o envio, que retoma de onde parou). */
+var MALAS_ANDANDO=0;
+if(REAL){
+  window.addEventListener("message",function(e){
+    if(e.origin!==SOBEDESCE_ORIGEM||!e.data||e.data.fonte!=="sobedesce") return;
+    if(e.data.tipo!=="envios") return;
+    MALAS_ANDANDO=Math.max(0,Math.floor(+e.data.andando)||0);
+    if(MALAS_ANDANDO) document.documentElement.dataset.malasEnvios=String(MALAS_ANDANDO);
+    else delete document.documentElement.dataset.malasEnvios;
+  });
+  window.addEventListener("beforeunload",function(e){ if(MALAS_ANDANDO){ e.preventDefault(); e.returnValue="" } });
+}
+function malasReal(){
+  var box=v("ml-sd"); if(!box||box.dataset.pronto) return;
+  box.dataset.pronto="1";
+  var f=document.createElement("iframe"), tema=temaCarro();
+  f.src=SOBEDESCE_APP+"?no=carro&tema="+tema;
+  new MutationObserver(function(){
+    var t=temaCarro(); if(t===tema) return; tema=t;
+    if(f.contentWindow) f.contentWindow.postMessage({tipo:"tema",tema:t},SOBEDESCE_ORIGEM);
+  }).observe(document.documentElement,{attributes:true,attributeFilter:["class"]});
+  f.title="Sobedesce no porta-malas";
+  f.allow="clipboard-write; fullscreen";
+  box.appendChild(f);
+}
 function drawMalas(){
+  if(REAL){ malasReal(); return }
   const f=v("ml-fila"); if(!f) return;
   const andando=mlFila.filter(a=>a.est==="andando"&&!a.pausa).length;
   v("ml-fatos").innerHTML=[
@@ -25472,7 +25547,7 @@ function mlRecebeArrasto(files){
   if(!mlsPasta) mlsPasta=ML_DRIVE[0].p;
   drawMlSub(); v("ovl-mlsub").hidden=false;
 }
-zonaDrop(document.getElementById("v-malas"),mlRecebeArrasto);
+if(!REAL) zonaDrop(document.getElementById("v-malas"),mlRecebeArrasto);
 
 /* ---- BAIXAR: ver pasta e arquivo antes — e espiar RAW sem descer ---- */
 let mlbPasta=null, mlbSel=new Set();
@@ -26280,7 +26355,7 @@ const FASE_NOME={1:"A agenda e o brechó",2:"O dinheiro e o brechó completo",
    O RODANDO fica na 4 mesmo assim, e por um motivo próprio: é o anúncio
    mais visível e mais barato do calendário. Gastá-lo no lançamento é
    desperdiçar uma campanha pronta. */
-const FASE_DE={cofre:2,orcar:3,malas:3,guildas:4,salao:4,vagas:4};
+const FASE_DE={cofre:2,orcar:3,malas:REAL?1:3,guildas:4,salao:4,vagas:4};
 /* ⚠️ O BRECHÓ INTEIRO ENTRA NA FASE 2, e é decisão do Victor:
    "a segunda fase em diante já pode mandar a aba brechó completa".
    Faz sentido de encanamento — inventário e aluguel só ficam de pé com

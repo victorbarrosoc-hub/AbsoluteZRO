@@ -9165,3 +9165,76 @@ select.input {
   --zro-set-raio: var(--r-lg);
   --zro-set-fonte: var(--font);
 }
+/* O porta-malas do Carro do Freela (lib/embutido.js): só Transferências e Drive, numa pílula mais curta. */
+@media (min-width: 700px) {
+  .tabbar.n-2 {
+    width: min(300px, 100%);
+  }
+}
+
+/* ───── Embutido numa plataforma da Absolute ZRO (lib/embutido.js) ─────
+   O quadro é a tela inteira da aba: no computador a grade se abre e mostra mais arquivos; no celular tudo encolhe
+   (título, abas, cartões) para caber mais sem a tela ficar enorme. O tema vem do anfitrião (data-theme). */
+.is-embutido body {
+  background: var(--bg);
+}
+.is-embutido .screen {
+  max-width: 1280px;
+}
+@media (min-width: 700px) {
+  .is-embutido .tiles {
+    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+    gap: 14px 10px;
+  }
+}
+@media (max-width: 699px) {
+  .is-embutido {
+    --gutter: 12px;
+  }
+  .is-embutido .tiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px 8px;
+  }
+  .is-embutido .tile-name {
+    font-size: 11.5px;
+  }
+  .is-embutido .drive-screen .dtop-title {
+    font-size: 21px;
+  }
+  .is-embutido .segmented-opt {
+    height: 30px;
+    font-size: 13px;
+  }
+  .is-embutido .search {
+    height: 36px;
+    margin-top: 8px;
+    font-size: 14px;
+  }
+  .is-embutido .dchip {
+    --tap: 36px;
+    --chip-h: 30px;
+    font-size: 13px;
+  }
+  .is-embutido .tabbar {
+    height: calc(46px + var(--safe-b));
+  }
+  .is-embutido .tab {
+    min-height: 46px;
+    font-size: 10px;
+  }
+}
+.emb-grande {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 4px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  color: var(--text-2);
+  font-size: 13px;
+}
+.emb-grande b {
+  color: var(--text);
+  font-weight: 600;
+}
