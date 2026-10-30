@@ -4,13 +4,15 @@
  *
  * - Mãos livres: o microfone fica aberto numa escuta ao vivo (Scribe v2 Realtime, VAD da própria ElevenLabs). Quando a
  *   pessoa termina de falar, o trecho fechado vai para a Z. Falou por cima da Z, ela para na hora (barge-in).
+ *   Se a ElevenLabs recusar a escuta ao vivo (token ou WebSocket), segue por frase sem erro: o VAD daqui corta cada frase
+ *   (~700 ms de silêncio) e o HUB transcreve com o Scribe v2. Uma nota calma avisa; o custo e o teto seguem valendo.
  * - Segure para falar: grava enquanto o botão está apertado e transcreve ao soltar (Scribe v2, mais barato).
  * - A resposta chega em streaming; cada frase fechada já vira voz (ElevenLabs, PCM em streaming) enquanto o resto ainda
  *   está sendo escrito. Legenda ao vivo e o tempo de cada etapa: escuta, primeira palavra e primeira voz.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ZConfig } from '@zro/core'
-import { EscutaAoVivo, Gravador, Microfone, pedacosDoPcm, Tocador } from '@/lib/ia/lab/audio'
+import { EscutaAoVivo, EscutaPorFrase, Gravador, Microfone, pedacosDoPcm, Tocador } from '@/lib/ia/lab/audio'
 import { api, ErroDoLab, falar, transcrever } from '@/lib/ia/lab/cliente'
 import type { LabCatalogo } from '@/lib/ia/lab/estado'
 import { Frases } from '@/lib/ia/lab/frases'
@@ -47,6 +49,11 @@ const ROTULO: Record<Fase, string> = {
 }
 /** Escuta ao vivo: no máximo 15 min por sessão (o token da ElevenLabs vale isso). */
 const ESCUTA_MAX_MS = 15 * 60_000
+/** Abaixo disso, a frase dita por cima da Z é eco do alto-falante, não pergunta. */
+const MIN_POR_CIMA = 6
+export const NOTA_POR_FRASE = 'Escuta ao vivo indisponível: usando transcrição por frase'
+
+type Escuta = { tipo: 'vivo'; e: EscutaAoVivo; mic: Microfone; sessao: string } | { tipo: 'frase'; f: EscutaPorFrase }
 
 const ms = (n?: number) => (n == null ? '—' : n < 1000 ? `${Math.round(n)} ms` : `${(n / 1000).toFixed(1).replace('.', ',')} s`)
 
@@ -76,9 +83,12 @@ export function ModoVoz({
   const [nivel, setNivel] = useState(0)
   const [erro, setErro] = useState<string | null>(null)
   const [mudo, setMudo] = useState(false)
+  const [porFrase, setPorFrase] = useState(false)
 
   const tocador = useRef<Tocador | null>(null)
-  const escuta = useRef<{ e: EscutaAoVivo; mic: Microfone; sessao: string } | null>(null)
+  const escuta = useRef<Escuta | null>(null)
+  /** A escuta ao vivo foi recusada nesta conversa: não pede de novo, vai direto por frase. */
+  const semAoVivo = useRef(false)
   const gravador = useRef<Gravador | null>(null)
   const atual = useRef<AbortController | null>(null)
   const faseRef = useRef<Fase>('abrindo')
@@ -194,16 +204,57 @@ export function ModoVoz({
     const s = escuta.current
     if (!s) return
     escuta.current = null
+    setNivel(0)
+    if (s.tipo === 'frase') return s.f.fechar()
     const segundos = s.e.segundos()
     s.mic.fechar()
     s.e.fechar()
-    setNivel(0)
     void api('/escuta/fim', { method: 'POST', json: { sessao: s.sessao, segundos } }).catch(() => undefined)
   }, [])
 
+  /** Uma frase fechada pelo VAD daqui: o HUB transcreve (Scribe v2) e a Z responde. */
+  const ouvirFrase = useCallback(
+    async (pcm: Uint8Array, fimDaFala: number) => {
+      const f = faseRef.current
+      const porCima = f === 'falando' || f === 'pensando'
+      if (!porCima) mudarFase('transcrevendo')
+      try {
+        const r = await transcrever([pcm], { idioma: 'pt' })
+        onGasto(r.custoUsd)
+        if (escuta.current?.tipo !== 'frase') return
+        // Por cima da Z, trecho curtinho é eco: não vira pergunta (como na escuta ao vivo).
+        if (!r.texto || (porCima && r.texto.length < MIN_POR_CIMA)) {
+          if (faseRef.current === 'transcrevendo') emEscuta()
+          return
+        }
+        setLat({ escuta: performance.now() - fimDaFala })
+        void responderRef.current(r.texto)
+      } catch (err) {
+        if (escuta.current?.tipo !== 'frase') return
+        setErro(err instanceof ErroDoLab ? err.message : 'Não deu para entender agora.')
+        if (faseRef.current === 'transcrevendo') emEscuta()
+      }
+    },
+    [emEscuta, mudarFase, onGasto],
+  )
+
+  const abrirPorFrase = useCallback(async () => {
+    semAoVivo.current = true
+    setPorFrase(true)
+    const f = new EscutaPorFrase({
+      frase: ({ pcm, silencioMs, fechouEm }) => void ouvirFrase(pcm, fechouEm - silencioMs),
+      nivel: (n) => setNivel(n),
+    })
+    f.mudo = mudoRef.current
+    await f.abrir()
+    escuta.current = { tipo: 'frase', f }
+  }, [ouvirFrase])
+
   const abrirEscuta = useCallback(async () => {
     if (escuta.current) return
-    const r = await api<{ token: string; sessao: string; url: string }>('/escuta', { method: 'POST', json: {} })
+    if (semAoVivo.current) return abrirPorFrase()
+    const r = await api<{ aoVivo: false } | { aoVivo: true; token: string; sessao: string; url: string }>('/escuta', { method: 'POST', json: {} })
+    if (!r.aoVivo) return abrirPorFrase()
     const e = new EscutaAoVivo(
       { url: r.url, token: r.token },
       {
@@ -225,11 +276,17 @@ export function ModoVoz({
         },
         erro: (m) => setErro(m),
         fechou: () => {
-          if (escuta.current?.e === e) fecharEscuta()
+          if (escuta.current?.tipo === 'vivo' && escuta.current.e === e) fecharEscuta()
         },
       },
     )
-    await e.abrir()
+    try {
+      await e.abrir()
+    } catch {
+      // O WebSocket não abriu (token recusado na conexão, rede): fecha a sessão sem custo e segue por frase.
+      void api('/escuta/fim', { method: 'POST', json: { sessao: r.sessao, segundos: 0 } }).catch(() => undefined)
+      return abrirPorFrase()
+    }
     const mic = new Microfone(
       (pcm) => {
         if (!mudoRef.current) e.enviar(pcm)
@@ -242,13 +299,17 @@ export function ModoVoz({
       e.fechar()
       throw err
     }
-    escuta.current = { e, mic, sessao: r.sessao }
-  }, [fecharEscuta, interromper, mudarFase])
+    escuta.current = { tipo: 'vivo', e, mic, sessao: r.sessao }
+  }, [abrirPorFrase, fecharEscuta, interromper, mudarFase])
 
   // Abre: destrava o som, diz a saudação e começa a ouvir.
   useEffect(() => {
     const d = dialogo.current
-    if (d && !d.open) d.showModal()
+    if (d && !d.open) {
+      d.showModal()
+      // O foco vai para o microfone (a ação principal), não para o seletor de modelo com o anel de foco.
+      d.querySelector<HTMLElement>('.zl-voz__falar')?.focus()
+    }
     tocador.current = new Tocador()
     let vivo = true
     ;(async () => {
@@ -282,6 +343,8 @@ export function ModoVoz({
       }
     })()
     const limite = setTimeout(() => {
+      // Só a escuta ao vivo tem sessão de 15 min; por frase, cada frase é um pedido.
+      if (escuta.current?.tipo !== 'vivo') return
       fecharEscuta()
       setErro('A escuta fecha sozinha depois de 15 minutos. Abra de novo para continuar.')
       mudarFase('pronta')
@@ -346,6 +409,7 @@ export function ModoVoz({
     const t0 = performance.now()
     try {
       const r = await transcrever(pedacosDoPcm(pcm), { idioma: 'pt' })
+      onGasto(r.custoUsd)
       setLat({ escuta: performance.now() - t0 })
       if (!r.texto) {
         setErro('Não ouvi nada. Tente de novo.')
@@ -386,7 +450,7 @@ export function ModoVoz({
           </select>
         </label>
         {voz && (
-          <span className="zl-voz__nome" title="Troque a voz no Configurar">
+          <span className="zl-voz__nome" title={`${voz.nome} · troque a voz no Configurar`}>
             {voz.nome}
           </span>
         )}
@@ -402,6 +466,11 @@ export function ModoVoz({
         <p className="zl-voz__fase" role="status">
           {ROTULO[fase]}
         </p>
+        {porFrase && modo === 'livre' && (
+          <p className="zl-voz__nota" title="A ElevenLabs recusou a escuta ao vivo. Cada frase é transcrita quando você faz uma pausa.">
+            {NOTA_POR_FRASE}
+          </p>
+        )}
       </div>
 
       <div className="zl-voz__legendas" aria-live="polite">
@@ -471,7 +540,9 @@ export function ModoVoz({
             data-mudo={mudo ? '' : undefined}
             onClick={() => {
               if (fase === 'falando' || fase === 'pensando') interromper()
-              setMudo((m) => !m)
+              const m = !mudo
+              setMudo(m)
+              if (escuta.current?.tipo === 'frase') escuta.current.f.mudo = m
             }}
           >
             <Icon name={mudo ? 'stop' : 'mic'} size={28} />

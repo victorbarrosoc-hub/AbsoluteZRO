@@ -5,6 +5,7 @@ import { GRUPOS, PRESETS } from '../src/presets.js'
 import { planejar, tamanhoLegivel } from '../src/plano.js'
 import { icone, icones } from './icones.js'
 import { montarSet } from './set.js'
+import { lerConta } from './conta.js'
 
 const el = (tag, props = {}, ...filhos) => {
   const n = Object.assign(document.createElement(tag), props)
@@ -99,3 +100,11 @@ pintarTema()
 
 // o Set, a aba em comum do ecossistema: "Set" no fim das páginas do topo (app/set.js)
 montarSet()
+
+// com a conta: a segunda ação do topo da página leva ao painel (a foto da conta já está no topo)
+lerConta().then((c) => {
+  const a = document.querySelector('[data-heroi-segunda]')
+  if (c.estado !== 'dentro' || !a) return
+  a.href = '/painel'
+  a.textContent = 'Seu painel'
+})

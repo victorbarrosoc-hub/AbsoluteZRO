@@ -3016,6 +3016,15 @@ Claude e ElevenLabs **falsos** (`tests/fixtures/z-lab-falso.ts`), nenhuma chamad
 | Suíte inteira                        | `npm test` · `npm run test:e2e`                                                       | 383/383 · 48 ok + 2 por tempo da máquina carregada (`admin.spec` e `esqueleto` WebKit), que passam sozinhos                                      |
 | Lint, Prettier, tipos, build, chaves | `npm run lint`, `format:check`, `typecheck`, `build`, `node scripts/scan-secrets.mjs` | ok · ok · ok · ok · nenhum segredo                                                                                                               |
 
+**Voz por frase e iPhone (30/10/2026).** `tests/integration/z-lab-escuta.test.ts` 6/6 (ElevenLabs falsa com 401 no
+token: `aoVivo` falso, sem lançar, log sem a chave; transcrição por frase funciona; transcrição também recusada nomeia
+`speech_to_text`; VAD: frase com antes e fim aparado, estalo ignorado, corte aos 30 s). `npx playwright test
+tests/e2e/z-lab-voz-celular.spec.ts` 3/3: token recusado → nota calma, a frase do microfone (WAV falso do Chromium) é
+transcrita pelo HUB e a Z responde, tempos e gasto de transcrição; layout em 375/393/430 px e deitado (parada, ouvindo,
+erro) sem rolagem lateral e com os controles na tela, no Chromium e no WebKit. O mesmo e2e com o CSS anterior falha nos
+dois navegadores ("o diálogo rola de lado"). `tests/e2e/z-lab.spec.ts` segue 2/2; `npm test` 392/392; lint, Prettier,
+tipos, build e `scan-secrets` ok.
+
 Não conferido aqui: voz, transcrição, Voice Design e o Claude com as chaves reais (a latência de verdade e a qualidade
 da voz); microfone de verdade e o eco do alto-falante no barge-in; vídeos grandes no navegador; a migração `0036` em
 produção (deploy só com autorização).
@@ -3029,3 +3038,36 @@ produção (deploy só com autorização).
   sha256 do banco antes de gravar. Deploy de `e40b627` (main): `/api/zro/eu` responde `configurado: true` e
   `/api/zro/entrar` leva a `absolutezro.com/oauth/authorize` com `client_id=relay-web`, que segue para o login (sem
   `invalid_client`). Falta o titular entrar uma vez e ver o Set no topo.
+
+## Relay: painel da conta e Sair (30/10/2026)
+
+- `/painel` (`painel.html`, `app/painel.js`): fora da conta pede "Entrar" e volta para ele; dentro, olá com a foto da
+  conta, três números, recentes, projetos e meus presets. Histórico e projetos no IndexedDB do aparelho, por conta
+  (`pessoa.id` = resumo do sub, conferido no `set.test.js`: nunca o sub nem o e-mail).
+- Topo de todas as páginas com a conta: "Painel", a foto (iniciais sem foto) com o menu Painel, Converter, Sua conta
+  Absolute ZRO e **Sair** (`POST /api/zro/sair`, volta à inicial, que mostra "Entrar"). Login sem `volta` (o "Abrir" do
+  HUB) e o "Entrar" da inicial caem no painel.
+- `test/painel.test.js` no Chromium: cria projeto com dois destinos, abre o conversor por ele, converte um MP4 nos dois,
+  as duas saídas aparecem nos recentes e no projeto, outra conta no mesmo aparelho não vê nada, Sair encerra; 375 px sem
+  rolar para o lado. Relay `npm test`: 92/92. Lint, Prettier e `scan-secrets`: ok.
+- Não conferido aqui: o painel na produção com a conta do titular (depende do merge e do deploy pela main).
+
+## Relay: painel na conta e equipe (30/10/2026)
+
+- Schema `relay` (`products/relay/db/migrations/0000_fundacao.sql`): `projetos`, `presets`, `conversoes` com RLS
+  forçado; papel `relay_app` sem login, assumido por `comoPessoa` (`api/_banco.js`). Migrador próprio
+  (`scripts/migrar.mjs`) recusa editar migração aplicada.
+- `test/nuvem.test.js` num Postgres 16 de verdade (cluster temporário): pessoa B não vê, não grava em nome de A nem apaga
+  o de A; sem pessoa na transação, nada passa; equipe vê só o liberado, só na mesma organização, sem mudar nem apagar;
+  conversão em projeto da equipe pode, de outra organização não; projeto apagado deixa as conversões sem projeto; preset
+  da equipe exige organização. Rota: 401 sem sessão, 403 de outra origem e no id de outra pessoa, lote sem repetir,
+  corte em 500, ficha validada pelo conversor, sem `RELAY_DATABASE_URL` responde `nuvem: false`.
+- Chromium com o banco: o histórico e o preset de antes da nuvem sobem; o segundo aparelho da mesma pessoa vê tudo; a
+  colega da mesma organização vê o projeto e o preset liberados como "Da equipe" (só leitura) e não vê o histórico;
+  apagar num aparelho some no outro. Relay `npm test`: 101/101.
+- Produção (autorizado pelo titular, 30/10/2026), no Supabase AbsoluteZRO-SP: papel `relay` (login, dono do schema,
+  limite de 20 conexões), `relay_app` (sem login), schema `relay authorization relay` e `0000_fundacao.sql` aplicada
+  como `relay` (registrada em `relay.migracoes` com o sha256 do arquivo). Conferido: as três tabelas são do `relay`, com
+  RLS forçado; `anon` e `authenticated` não leem nada; `relay_app` lê. `RELAY_DATABASE_URL` (sensível, só produção do
+  projeto Vercel `relay`, pooler de transação). A migração perdeu o `create schema if not exists` antes de ir para a
+  produção: o papel `relay` não cria schema no banco (o migrador só cria quando falta, no Postgres local).

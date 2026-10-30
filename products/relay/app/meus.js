@@ -20,6 +20,12 @@ export function carregar() {
   }
 }
 
+/** Fichas (como a conta guarda: { id, ...especificação }) → presets do conversor. Pula as que não validam. */
+export const daFicha = (fichas) => importar(fichas).presets
+
+/** A ficha de um preset da pessoa, sem o id (o que a conta guarda). */
+export const fichaDe = (p) => especificacaoDe(p)
+
 export function guardar(lista) {
   try {
     localStorage.setItem(CHAVE, JSON.stringify(exportar(lista)))

@@ -797,6 +797,15 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
 - ⬜ Revela: looks pela conta (`/api/zro/looks`) e ligar `REVELA=released` no projeto `relay` quando abrir.
 - ⬜ Cor da Revela no computador: a mesma conta no ffmpeg e o SOBEDESCE assando a receita (hoje preset com cor fica
   no navegador).
+- ✅ Painel da conta (pedido do titular, 30/10/2026): `/painel` com recentes, números, projetos (nome + destinos, abre o
+  conversor com eles e as saídas entram no projeto) e meus presets; quem entra cai nele. Topo com a foto da conta e o
+  menu (Painel, Sua conta, Sair); a página inicial mostra que a pessoa está dentro ("Seu painel").
+- ✅ Painel na conta (autorizado pelo titular, 30/10/2026): schema `relay` + papel `relay_app` com RLS, migrador
+  próprio, `/api/relay/painel`, sincronização (o de antes sobe uma vez; sem rede, pendências) e equipe (projetos e
+  presets liberados por quem criou, mesma organização, só leitura).
+- ⬜ Looks (`.cube`) no Drive pelo SOBEDESCE (pedido do titular: ficam no aparelho, sobem para o Drive).
+- ⬜ App de computador do Relay e SOBEDESCE gravando no painel (Bearer da conta em `/api/relay/painel`).
+- ⬜ Conta excluída na Absolute ZRO apagar o schema `relay` dela (hoje nenhum app recebe o aviso do HUB).
 - ⬜ "Baixar como…" das Referências e o pedido da Z no SOBEDESCE pelos presets do Relay.
 - ⬜ Computador: ProRes, DNxHR e HDR 10 bits de saída; loudness normalizado; legenda queimada; corte de trecho.
 - ⬜ Evento `media.conversion.completed` no HUB, quando a primeira integração passar por ele.
@@ -867,6 +876,11 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
   fica na auditoria.
 - ⛔ Em produção: migração `0036` no deploy e o primeiro teste com as chaves reais (`IA_ANTHROPIC_KEY` e
   `ELEVENLABS_API_KEY`, já na Vercel).
+- ✅ Voz robusta (30/10/2026): com a escuta ao vivo recusada (401 no token de uso único, visto em produção com a chave
+  restrita), mãos livres segue **por frase**: VAD no navegador (~700 ms de silêncio) e Scribe v2 pelo HUB, com a nota
+  "Escuta ao vivo indisponível: usando transcrição por frase", custo e teto valendo. O log diz o código da recusa.
+- ✅ Modo voz no iPhone (30/10/2026): nada passa da largura em 375/393/430 px e deitado (coluna `minmax(0, 1fr)`,
+  topo em duas linhas, seletor a 16 px sem zoom do Safari, anel e tempos que encolhem); e2e no Chromium e no WebKit.
 - ⬜ Para os clientes: voz, ditado e anexos no painel `<zro-ia>` lendo `z_recurso_liberado`, quando os planos forem
   vendidos.
 

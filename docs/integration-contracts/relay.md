@@ -185,6 +185,12 @@ entradaNome, tom: 'suave' | 'nenhum', look: { id, nome } | null }`. Saída sempr
 - **Conta e acesso:** converter no aparelho não pede conta nem consome quota (nenhum custo de servidor). Fila do
   computador e Drive pedem a conta Absolute ZRO e passam por `authorize()` com o produto `relay`. Se um dia houver
   conversão em servidor, ela entra com `consumeQuota` (chave = id do pedido) e limite por plano.
+- **Painel da conta** (`/painel`, 30/10/2026): `GET/POST/PUT/DELETE /api/relay/painel` (sessão do Relay; schema
+  `relay`, papel `relay_app` com RLS). Conversões (só nomes e números, até 500 por pessoa, id do aparelho evita
+  repetir), projetos (nome, destinos, `equipe`) e presets (a ficha de `src/personalizado.js`, `equipe`). A equipe é a
+  organização ativa no login: vê e usa o que foi liberado, nunca muda nem vê o histórico de outra pessoa. O app de
+  computador do Relay e o SOBEDESCE gravam no mesmo formato (`origem`: `computador` ou `sobedesce`), com o token da
+  conta, quando ganharem login (rota com Bearer a fazer). Os looks (`.cube`) ficam no aparelho.
 - **Banco:** schema e papel próprios (`relay`) no Supabase `AbsoluteZRO`, nunca dentro de `zro` (ADR 0013).
 
 ## Presets (fonte: `products/relay/src/presets.js`)

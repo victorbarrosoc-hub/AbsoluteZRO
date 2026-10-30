@@ -16,13 +16,13 @@ import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 
 const raiz = fileURLToPath(new URL('..', import.meta.url))
-export const PUBLICO = ['index.html', 'converter.html', 'manifest.webmanifest', 'app', 'src', 'vendor', 'marca', 'fontes']
+export const PUBLICO = ['index.html', 'converter.html', 'painel.html', 'manifest.webmanifest', 'app', 'src', 'vendor', 'marca', 'fontes']
 /** Fechado: só o que a página "Em breve" usa. */
 export const FECHADO = ['app/relay.css', 'app/tema.js', 'marca/relay-icone.svg', 'marca/app', 'marca/og.png', 'fontes']
 /** Só nas prévias: o laboratório de aparelhos e o que ele carrega a mais. */
 export const LABORATORIO = ['laboratorio.html']
 const SO_NA_PREVIA = /laboratorio|src\/(cenas|ssim)\.js$/
-export const ROTAS_DO_SITE = ['index.html', 'converter.html', 'qualidade.html', 'marca/index.html', 'laboratorio.html', '404.html']
+export const ROTAS_DO_SITE = ['index.html', 'converter.html', 'painel.html', 'qualidade.html', 'marca/index.html', 'laboratorio.html', '404.html']
 
 const semOcultos = (f) => !/(^|\/)\.[^/]+$/.test(f) && !f.endsWith('.md')
 

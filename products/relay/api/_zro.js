@@ -29,7 +29,7 @@ export const COOKIE_CONTA = 'rl_conta'
 export const COOKIE_HUB = 'rl_hub'
 export const IDA_S = 600
 export const CONTA_S = 30 * 24 * 3600
-export const VOLTA_PADRAO = '/converter'
+export const VOLTA_PADRAO = '/painel'
 export const PRODUTO = 'relay'
 export const FERRAMENTAS = 'https://absolutezro.com/ferramentas'
 const CACHE_MS = 10 * 60_000
@@ -46,6 +46,9 @@ const segredo = () => (process.env.ZRO_CLIENT_SECRET || '').trim()
  */
 export const siteFechado = () => process.env.VERCEL === '1' && process.env.VERCEL_ENV !== 'preview' && process.env.RELEASE !== 'released'
 export const configurado = () => Boolean(clientId() && segredo()) && !siteFechado()
+
+/** Identificador da conta neste aparelho (painel): resumo do sub, sem revelar o sub nem o e-mail. */
+export const idLocal = (sub) => createHash('sha256').update(`relay-painel:${sub}`).digest('hex').slice(0, 24)
 
 /** A organização ativa tem o Relay liberado pelo admin da Absolute ZRO? */
 export const temAcesso = (produtos) => Array.isArray(produtos) && produtos.includes(PRODUTO)
