@@ -26,13 +26,13 @@ export const ROTAS_DO_SITE = ['index.html', 'converter.html', 'painel.html', 'qu
 
 const semOcultos = (f) => !/(^|\/)\.[^/]+$/.test(f) && !f.endsWith('.md')
 
-export function publicar({ saida = join(raiz, 'publico'), previa = process.env.VERCEL_ENV === 'preview', aberto = process.env.RELEASE === 'released' || previa, revela = process.env.REVELA === 'released' || previa } = {}) {
+export function publicar({ saida = join(raiz, 'publico'), previa = process.env.VERCEL_ENV === 'preview', aberto = process.env.RELEASE === 'released' || previa, revela = process.env.REVELA === 'released' || previa, drive = process.env.DRIVE === 'released' || previa } = {}) {
   rmSync(saida, { recursive: true, force: true })
   mkdirSync(saida)
   if (aberto) {
     for (const p of PUBLICO) cpSync(join(raiz, p), join(saida, p), { recursive: true, filter: (f) => semOcultos(f) && (previa || !SO_NA_PREVIA.test(f)) })
     if (previa) for (const p of LABORATORIO) cpSync(join(raiz, p), join(saida, p))
-    writeFileSync(join(saida, 'app/recursos.js'), `// Gerado por scripts/publicar-site.mjs\nexport const RECURSOS = ${JSON.stringify({ revela })}\n`)
+    writeFileSync(join(saida, 'app/recursos.js'), `// Gerado por scripts/publicar-site.mjs\nexport const RECURSOS = ${JSON.stringify({ revela, drive })}\n`)
   } else {
     for (const p of FECHADO) cpSync(join(raiz, p), join(saida, p), { recursive: true, filter: semOcultos })
     const pagina = readFileSync(join(raiz, 'em-breve.html'))

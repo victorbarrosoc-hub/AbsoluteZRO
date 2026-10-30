@@ -910,7 +910,9 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
   por grupo, a conta (painel, equipe e Set), o ecossistema só com o que está no ar (Maestro, SOBEDESCE, Synquei e
   TPeasy) e o fecho. Uma foto de exemplo (Higgsfield) vira o arquivo das telas e da
   demonstração; nenhuma interface gerada. ⬜ Conferir num iPhone de verdade depois do deploy.
-- ⬜ Looks (`.cube`) no Drive pelo SOBEDESCE (pedido do titular: ficam no aparelho, sobem para o Drive).
+- 🟡 "Escolher no Drive" no Relay (pedido do titular, 30/10/2026): lado do Relay pronto e testado (quadro, leitura aos
+  pedaços, "Para o Drive"), atrás de `RECURSOS.drive`. ⬜ Lado do SOBEDESCE (`?no=relay`, modo escolher, `ler`/`enviar`)
+  depois do embutido do Carro entrar na main; então `DRIVE=released` no projeto `relay`.
 - ⬜ App de computador do Relay e SOBEDESCE gravando no painel (Bearer da conta em `/api/relay/painel`).
 - ⬜ Conta excluída na Absolute ZRO apagar o schema `relay` dela (hoje nenhum app recebe o aviso do HUB).
 - ⬜ "Baixar como…" das Referências e o pedido da Z no SOBEDESCE pelos presets do Relay.

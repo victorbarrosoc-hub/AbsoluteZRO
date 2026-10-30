@@ -60,8 +60,9 @@ Nenhum arquivo passa pelo site: o link leva só os destinos.
   `@mediabunny/aac-encoder` (AAC onde o navegador não tem, como o Chromium no Linux) e `@mediabunny/mp3-encoder` (MP3
   pelo LAME). O `scripts/vendor.mjs` do Relay copia e reescreve o import.
 - **CSP:** `script-src 'self' 'wasm-unsafe-eval'`, `worker-src 'self' blob:`, `connect-src 'self' blob: data:`,
-  `media-src 'self' blob:`. Com isolamento de origem (`Cross-Origin-Opener-Policy: same-origin` e
-  `Cross-Origin-Embedder-Policy: require-corp`), como a Revela.
+  `media-src 'self' blob:`, `frame-src https://sobedesce.absolutezro.com` (o "Escolher no Drive").
+  `Cross-Origin-Opener-Policy: same-origin`; sem `Cross-Origin-Embedder-Policy` desde 30/10/2026: ele barraria o
+  SOBEDESCE embutido e nada do conversor usa SharedArrayBuffer (o Mediabunny só confere o tipo).
 - **Arquivo grande:** acima de 1,5 GB, salvar direto numa pasta (`showDirectoryPicker`); na memória, o celular não
   monta o arquivo.
 - **Uma conversão por vez** por aba (o codificador de hardware é um só).
@@ -156,6 +157,32 @@ entradaNome, tom: 'suave' | 'nenhum', look: { id, nome } | null }`. Saída sempr
 - **Ligar:** `products/relay/app/recursos.js` (`RECURSOS.revela`). Nas prévias da Vercel e no `npm run dev` já liga;
   na produção, `REVELA=released` no projeto Vercel `relay` + deploy novo (decisão do titular, quando a Revela abrir).
 - **Em lote:** o conversor já leva vários arquivos para vários destinos; um preset com a receita converte todos.
+
+## "Escolher no Drive" pelo SOBEDESCE embutido (pedido do titular, 30/10/2026)
+
+O conversor abre o SOBEDESCE num quadro (`https://sobedesce.absolutezro.com/app/?no=relay&modo=escolher&tema=…`,
+o embutido de `products/sobedesce/web/public/app/lib/embutido.js`, o mesmo do Carro e do Maestro). A pessoa escolhe o
+vídeo no Drive dela; o Relay lê o arquivo aos pedaços pelo quadro (Mediabunny `StreamSource`) e converte no aparelho.
+Pronto, "Para o Drive" devolve o resultado à mesma pasta, pela fila do SOBEDESCE (MD5 conferido lá). O token do Google
+nunca sai do SOBEDESCE; nenhum byte passa por servidor; o cookie do SOBEDESCE (SameSite=Lax) vale porque os dois são
+`*.absolutezro.com`.
+
+Protocolo (`products/relay/src/drive.js`), `postMessage` só entre as duas origens:
+
+| De → para      | Mensagem                                                                                        |
+| -------------- | ----------------------------------------------------------------------------------------------- |
+| quadro → Relay | `{ fonte: 'sobedesce', tipo: 'pronto' }` (a cada carga do quadro)                               |
+| Relay → quadro | `{ fonte: 'relay', tipo: 'canal' }` + `MessagePort` (transfer): os pedidos abaixo andam por ele |
+| quadro → Relay | `{ fonte: 'sobedesce', tipo: 'escolhido', arquivos: [{ id, nome, tamanho, mime, pasta }] }`     |
+| Relay → quadro | `{ fonte: 'relay', tipo: 'tema', tema: 'claro' \| 'escuro' }`                                   |
+| canal          | `{ pedido, tipo: 'ler', id, de, ate }` → `{ pedido, ok: true, dados: ArrayBuffer }` (até 32 MB) |
+| canal          | `{ pedido, tipo: 'enviar', nome, mime, dados: Blob, pasta }` → `{ pedido, ok: true, envio }`    |
+| canal (quadro) | `{ tipo: 'envio', envio, estado: 'enviando' \| 'conferido' \| 'erro', erro? }`                  |
+| canal          | erro: `{ pedido, ok: false, erro }`                                                             |
+
+Lado do SOBEDESCE (a fazer quando o embutido estiver na main): anfitrião `relay: ['https://relay.absolutezro.com']`,
+a `frame-ancestors` dele, o modo escolher (o toque no vídeo vira `escolhido`) e o atendimento de `ler`/`enviar`. No
+Relay o botão só aparece com `RECURSOS.drive` (`DRIVE=released` no projeto `relay`; nas prévias e no `npm run dev`, já).
 
 ## Eventos e conta
 
