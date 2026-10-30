@@ -29,6 +29,26 @@ const escalaAtual = () => (modoEscala === 'canvas' ? null : (escalas[modoEscala]
 let corAtual = null // a cor do arquivo em conversão (a escala sobe o quadro já com ela)
 MB.registerVideoSampleTransformer((amostra, d) => escalaAtual()?.transformar(amostra, d, (a) => comCor(a, corAtual, { fechar: false })) ?? null)
 
+// A cor da Revela tem a escala dela: na placa mesmo em WebGL de software (sem canvas de reserva: a LUT não existe lá)
+let escalaDaCor = null
+const escalaCor = () => (escalaDaCor ??= criarEscala(MB.VideoSample, { forcar: true }))
+
+/** Volume em dB num pedaço de áudio (cópia em ponto flutuante, com limite em ±1). */
+function comGanho(amostra, db) {
+  const fator = 10 ** (db / 20)
+  const n = amostra.numberOfFrames
+  const canais = amostra.numberOfChannels
+  const dados = new Float32Array(n * canais)
+  const plano = new Float32Array(n)
+  for (let c = 0; c < canais; c++) {
+    amostra.copyTo(plano, { planeIndex: c, format: 'f32-planar' })
+    for (let i = 0; i < n; i++) dados[c * n + i] = Math.max(-1, Math.min(1, plano[i] * fator))
+  }
+  const nova = new MB.AudioSample({ data: dados, format: 'f32-planar', numberOfChannels: canais, sampleRate: amostra.sampleRate, timestamp: amostra.timestamp })
+  amostra.close()
+  return nova
+}
+
 let aacPronto = null
 let mp3Pronto = null
 async function garantirCodificadorAudio(codec) {
@@ -288,7 +308,7 @@ function formatoSaida(formato, emDisco) {
 /**
  * Converte um arquivo (File/Blob ou { nome, fonte }) para um preset. `opcoes`: as do plano (resolucao, preencher,
  * tamanhoMB) e { info (de lerArquivo), destino: FileSystemDirectoryHandle | null, nome, aoProgredir(f),
- * aoComecar(conversao), sinal: AbortSignal }.
+ * aoComecar(conversao), sinal: AbortSignal, lerLook(id) → Promise<texto do .cube> (a receita de cor com look) }.
  * Devolve { blob | null (salvo na pasta), bytes, extensao, plano, avisos, codecVideo, codecAudio, segundos }.
  */
 export async function converterArquivo(arquivo, p, opcoes = {}) {
@@ -319,6 +339,15 @@ export async function converterArquivo(arquivo, p, opcoes = {}) {
     }
   }
 
+  // cor da Revela: a receita vira as etapas da placa (src/cor.js), uma vez por conversão
+  let etapasCor = null
+  if (plano.video && plano.receitaCor) {
+    const Cor = await import('../src/cor.js')
+    const r = plano.receitaCor
+    const look = r.look ? Cor.lerLook(await (opcoes.lerLook?.(r.look.id) ?? Promise.reject(Object.assign(new Error(`O look "${r.look.nome}" não está neste aparelho.`), { codigo: 'look' })))) : null
+    etapasCor = Cor.etapasParaPlaca(r, look)
+  }
+
   const executar = async (plano) => {
     const emDisco = Boolean(opcoes.destino)
     let gravavel = null
@@ -334,32 +363,66 @@ export async function converterArquivo(arquivo, p, opcoes = {}) {
     const corOrigem = corDoArquivo(info)
     corAtual = corOrigem
     const v = plano.video
+    // giro e espelho da pessoa somam aos do arquivo; o recorte é na imagem já girada (pixels de tela)
+    const giroArquivo = v ? await (await input.getPrimaryVideoTrack())?.getRotation?.() ?? 0 : 0
+    const [lw, lh] = v && v.giro % 180 ? [info.altura, info.largura] : [info.largura, info.altura]
+    const recorte = v?.recorte ? { left: v.recorte.esquerda, top: v.recorte.cima, width: lw - v.recorte.esquerda - v.recorte.direita, height: lh - v.recorte.cima - v.recorte.baixo } : undefined
+    const comum = v
+      ? {
+          codec: codecVideo,
+          frameRate: v.fps ?? undefined,
+          keyFrameInterval: v.gop,
+          quality: new MB.Quality({ bitrate: v.bitrate, bitrateMode: v.modo === 'constante' ? 'constant' : 'variable' }),
+          forceTranscode: true,
+          hardwareAcceleration: 'no-preference', // o navegador usa o hardware quando existe; exigir falha onde não há
+        }
+      : null
+    let video = { discard: true }
+    if (v && etapasCor) {
+      // cor da Revela: o Relay faz giro, recorte, escala e LUT de uma vez na placa, do quadro decodificado (10 bits em
+      // meia precisão) até o I420; o Mediabunny não mexe no quadro (o giro do arquivo é desfeito aqui e refeito lá)
+      const escala = escalaCor()
+      escala.definirCor(etapasCor, !corOrigem?.fullRange)
+      const d = { width: v.largura, height: v.altura, fit: v.encaixe ?? 'fill', flip: v.espelhar, crop: recorte ?? { left: 0, top: 0, width: lw, height: lh } }
+      video = {
+        ...comum,
+        rotate: (360 - giroArquivo) % 360,
+        processedWidth: v.largura,
+        processedHeight: v.altura,
+        process: async (amostra) => {
+          const r = await escala.transformar(amostra, { ...d, rotation: (((amostra.rotation ?? 0) + v.giro) % 360 + 360) % 360 }, (a) => comCor(a, corOrigem, { fechar: false }))
+          if (!r) throw Object.assign(new Error('Sem WebGL2 neste navegador: a cor da Revela não roda aqui.'), { codigo: 'cor' })
+          return r
+        },
+      }
+    } else if (v) {
+      video = {
+        ...comum,
+        width: v.largura,
+        height: v.altura,
+        fit: v.encaixe ?? 'fill',
+        ...(v.giro ? { rotate: v.giro } : {}),
+        ...(v.espelhar ? { flip: true } : {}),
+        ...(recorte ? { crop: recorte } : {}),
+        // o que não passou pela escala (mesmo tamanho) chega aqui como saiu do decodificador
+        process: async (amostra) => para8bits(await comCor(amostra, corOrigem), corOrigem),
+      }
+    }
+    const a = plano.audio
     const conversao = await MB.Conversion.init({
       input,
       output,
       tracks: 'primary',
-      video: v
-        ? {
-            codec: codecVideo,
-            width: v.largura,
-            height: v.altura,
-            fit: v.encaixe ?? 'fill',
-            frameRate: v.fps ?? undefined,
-            keyFrameInterval: v.gop,
-            quality: new MB.Quality({ bitrate: v.bitrate, bitrateMode: v.modo === 'constante' ? 'constant' : 'variable' }),
-            forceTranscode: true,
-            hardwareAcceleration: 'no-preference', // o navegador usa o hardware quando existe; exigir falha onde não há
-            // o que não passou pela escala (mesmo tamanho) chega aqui como saiu do decodificador
-            process: async (amostra) => para8bits(await comCor(amostra, corOrigem), corOrigem),
-          }
-        : { discard: true },
-      audio: plano.audio
+      ...(plano.trecho ? { trim: { ...(plano.trecho.inicio ? { start: plano.trecho.inicio } : {}), ...(plano.trecho.fim != null ? { end: plano.trecho.fim } : {}) } } : {}),
+      video,
+      audio: a
         ? {
             codec: codecAudio,
-            ...(plano.audio.bitrate ? { quality: new MB.Quality({ bitrate: plano.audio.bitrate }) } : {}),
-            sampleRate: plano.audio.taxa,
-            numberOfChannels: plano.audio.canais,
+            ...(a.bitrate ? { quality: new MB.Quality({ bitrate: a.bitrate }) } : {}),
+            sampleRate: a.taxa,
+            numberOfChannels: a.canais,
             forceTranscode: true,
+            ...(a.ganho ? { process: (amostra) => comGanho(amostra, a.ganho) } : {}),
           }
         : { discard: true },
     })
@@ -403,7 +466,7 @@ export async function converterArquivo(arquivo, p, opcoes = {}) {
     codecVideo,
     codecAudio,
     audioWasm: origemAudio === 'wasm',
-    escala: escalaAtual()?.usada() ?? 'canvas',
+    escala: etapasCor ? 'lanczos' : (escalaAtual()?.usada() ?? 'canvas'),
     segundos: (performance.now() - inicio) / 1000,
   }
 }

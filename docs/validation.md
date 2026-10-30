@@ -2665,6 +2665,16 @@ do Freela e HUB não convertem. `npm run format:check` e `node scripts/scan-secr
 - 23 destinos (Smart TV, Smart TV 4K, LinkedIn, X, Slides, Vídeo de fundo novos), cópias no SOBEDESCE iguais
   (`test/relay.test.js`), app do celular 2.8.55 / v70.
 
+## Relay: editor completo e cor da Revela (30/10/2026)
+
+- `products/relay`: `npm test` com os testes novos `editor.test.js` (cadência exata, recorte/giro, tela fixa, CBR, RF,
+  trecho, volume, computador, receita de cor, fichas da versão 1), `cor.test.js` (conta da placa × Revela em todas as
+  câmeras < 1,2/255; LUT do ffmpeg; S-Log3 de verdade no ffmpeg ≤ 3/255) e `editor-tela.test.js` no Chromium (30 fps →
+  23,976 com 48 quadros; recorte+giro+espelho SSIM > 0,95 contra o ffmpeg; trecho de 2 s com +6 dB medido; cor na placa
+  ≤ 4/255 e de ponta a ponta cinzas ≤ 2, cores ≤ 7; o editor salva 23,976, trecho e a receita).
+- Cópias conferidas: `src/revela/` = `products/finishing/src/cor/`; SOBEDESCE com o núcleo novo (2.8.56 / v71).
+- Medidas e limites em `products/relay/docs/QUALIDADE.md` ("Cor da Revela").
+
 ## NOSSOM: Isolar voz no nível do Voice Isolator (29/10/2026)
 
 - Nova cadeia no worker de GPU (`voice-isolator-v1`: Mel-Band RoFormer + MossFormer2 SE 48K, mono 48 kHz;

@@ -18,8 +18,9 @@ function base64url(texto) {
 
 /**
  * `ids`: presets escolhidos (do Relay e da pessoa, misturados); `meus`: os presets da pessoa. Fica de fora o que o app
- * não converte (o "Tamanho exato", que pede o MB na hora) e o que passa de 8 destinos. Se as fichas não couberem no
- * link, vão só os presets do Relay. Devolve { link, levados: nomes, fora: nomes }.
+ * não converte (o "Tamanho exato", que pede o MB na hora; a cor da Revela, que ainda só roda no navegador) e o que
+ * passa de 8 destinos. Se as fichas não couberem no link, vão só os presets do Relay. Devolve { link, levados: nomes,
+ * fora: nomes }.
  */
 export function linkMaxima(ids, meus = []) {
   const doRelay = []
@@ -30,7 +31,7 @@ export function linkMaxima(ids, meus = []) {
     const meu = meus.find((p) => p.id === id)
     const p = meu ?? presetDoRelay(id)
     if (!p) continue
-    if (p.ajustavel || levados.length >= MAX_DESTINOS) {
+    if (p.ajustavel || p.cor || levados.length >= MAX_DESTINOS) {
       fora.push(p.nome)
       continue
     }

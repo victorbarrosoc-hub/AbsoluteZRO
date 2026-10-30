@@ -7,6 +7,9 @@
 //
 // Prévias da Vercel (VERCEL_ENV=preview, protegidas pelo login da Vercel): o site inteiro e o laboratório de aparelhos
 // (/laboratorio, interno), para medir em Mac, iPhone e Windows de verdade. A produção nunca leva o laboratório.
+//
+// Recursos de outra plataforma (app/recursos.js): a cor da Revela aparece nas prévias e, na produção, só com
+// REVELA=released (quando a Revela estiver no ar).
 
 import { cpSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -23,12 +26,13 @@ export const ROTAS_DO_SITE = ['index.html', 'converter.html', 'qualidade.html', 
 
 const semOcultos = (f) => !/(^|\/)\.[^/]+$/.test(f) && !f.endsWith('.md')
 
-export function publicar({ saida = join(raiz, 'publico'), previa = process.env.VERCEL_ENV === 'preview', aberto = process.env.RELEASE === 'released' || previa } = {}) {
+export function publicar({ saida = join(raiz, 'publico'), previa = process.env.VERCEL_ENV === 'preview', aberto = process.env.RELEASE === 'released' || previa, revela = process.env.REVELA === 'released' || previa } = {}) {
   rmSync(saida, { recursive: true, force: true })
   mkdirSync(saida)
   if (aberto) {
     for (const p of PUBLICO) cpSync(join(raiz, p), join(saida, p), { recursive: true, filter: (f) => semOcultos(f) && (previa || !SO_NA_PREVIA.test(f)) })
     if (previa) for (const p of LABORATORIO) cpSync(join(raiz, p), join(saida, p))
+    writeFileSync(join(saida, 'app/recursos.js'), `// Gerado por scripts/publicar-site.mjs\nexport const RECURSOS = ${JSON.stringify({ revela })}\n`)
   } else {
     for (const p of FECHADO) cpSync(join(raiz, p), join(saida, p), { recursive: true, filter: semOcultos })
     const pagina = readFileSync(join(raiz, 'em-breve.html'))
