@@ -105,7 +105,13 @@ export default async function Projeto({ params }: { params: Promise<{ id: string
             {fmtDate(project.created_at as Date)} · origem {project.origin as string}
           </p>
         </div>
-        {canEdit ? <Pill tone="accent">Você pode editar</Pill> : <Pill>Somente leitura</Pill>}
+        <div className="row">
+          {/* a conversa do projeto no Set (ADR 0032): a mesma em todo app do projeto */}
+          <Link className="zro-btn zro-btn--small zro-btn--ghost" href={`/set?projeto=${id}`} data-set-projeto>
+            Conversa
+          </Link>
+          {canEdit ? <Pill tone="accent">Você pode editar</Pill> : <Pill>Somente leitura</Pill>}
+        </div>
       </div>
 
       <Card tone="stage" title="Ciclo do O" eyebrow="Estado real de cada etapa">

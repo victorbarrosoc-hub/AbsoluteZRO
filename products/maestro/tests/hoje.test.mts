@@ -140,16 +140,22 @@ describe("Hoje", () => {
       assert.deepEqual(r.cliente, { lotes: 0, pecas: 0 });
       assert.equal(r.pedidosNovos, 0);
       assert.equal(r.orcamentos.aguardando, 0);
-      assert.equal(r.dinheiro?.caixa, 0);
+      // A B (admin de lá) vê o próprio caixa zerado; a forjada nem é membro: sem a área, nada de dinheiro.
+      assert.equal(r.dinheiro?.caixa ?? 0, 0);
       assert.equal(r.vencendo.length + r.comCliente.length + r.retornos.length, 0);
     }
   });
 
   test("dinheiro: a tela não pede para a equipe, e o banco esconde mesmo se pedir", async () => {
     assert.equal((await resumoDoDia(o.equipe, false, HOJE)).dinheiro, null);
+    // Mesmo pedindo, sem a área Financeiro (drizzle/0027) o resumo nem monta o bloco; e o RLS esconde as linhas.
     const forcado = await resumoDoDia(o.equipe, true, HOJE);
-    assert.equal(forcado.dinheiro?.caixa, 0);
-    assert.equal(forcado.dinheiro?.receberSemana.n, 0);
+    assert.equal(forcado.dinheiro, null);
+    assert.equal(forcado.semana, null);
+    const n = await getBanco().asUser(o.equipe, (tx) => tx.execute(sql`select count(*)::int as n from maestro.lancamentos`));
+    assert.equal((n[0] as { n: number }).n, 0);
+    // E os orçamentos (área própria): a contagem e o valor zeram para a equipe.
+    assert.deepEqual([forcado.orcamentos.aguardando, forcado.orcamentos.valor], [0, 0]);
     assert.equal(forcado.pedidosNovos, 2, "pedidos a equipe vê");
   });
 });

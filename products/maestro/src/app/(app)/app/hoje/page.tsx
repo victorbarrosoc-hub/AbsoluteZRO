@@ -6,7 +6,8 @@ import { brl, brlCurto, dataCurta, dataPorExtenso, diasEntre, hojeBr } from "@/l
 import { quandoRetorno, situacaoRetorno } from "@/lib/funil/regras";
 import { resumoDoDia, type DiaDoCaixa } from "@/lib/hoje";
 import { metaDoMes } from "@/lib/numeros/servidor";
-import { podeEscrever, podeVerDinheiro } from "@/lib/papeis";
+import { podeEscrever } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
 import { Saudacao } from "@/components/ambiente";
 import { BotaoAcao } from "@/components/acao";
 import { Icone, type NomeIcone } from "@/components/icones";
@@ -120,13 +121,15 @@ function CaixaDaSemana({ dias, hoje }: { dias: DiaDoCaixa[]; hoje: string }) {
 /**
  * Hoje (plano v2 §3, fase 19; mockup C1-hoje): o dia da produtora. A agenda, o que vence, quem espera o cliente,
  * "Retornar hoje" (o funil, drizzle/0014) e o caixa da semana; embaixo, as contagens que levam a cada painel. Só dados
- * da organização da sessão (e do alcance da pessoa, se ela é restrita a alguns clientes); dinheiro só admin e gestão.
+ * da organização da sessão (e do alcance da pessoa, se ela é restrita a alguns clientes); o caixa, a receber e a pagar só
+ * com a área Financeiro e os orçamentos só com a área Orçamentos (src/lib/acessos.ts; o banco esconde de qualquer jeito).
  */
 export default async function Hoje() {
   const s = await exigirAcessoNaPagina("/app/hoje");
   const hoje = hojeBr();
-  const dinheiro = podeVerDinheiro(s.papel);
+  const dinheiro = podeArea(s, "financeiro");
   const escreve = podeEscrever(s.papel);
+  const orcamentos = podeArea(s, "orcamentos");
   const ctx = { sub: s.sub, orgId: s.orgId };
   const [r, meta] = await Promise.all([resumoDoDia(ctx, dinheiro, hoje), dinheiro ? metaDoMes(ctx, hoje.slice(0, 7)) : null]);
   const dia = SEMANA[new Date(`${hoje}T12:00:00Z`).getUTCDay()];
@@ -325,21 +328,19 @@ export default async function Hoje() {
           apoio={r.pedidosNovos ? "Esperando orçamento" : "Caixa em dia"}
           tom={r.pedidosNovos ? "aviso" : undefined}
         />
-        <Cartao
-          i={i++}
-          href="/app/orcamentos?status=enviado"
-          icone="orcamento"
-          n={r.orcamentos.aguardando}
-          rotulo="Orçamentos aguardando"
-          apoio={
-            r.orcamentos.comAjuste
-              ? `${r.orcamentos.comAjuste} com ajuste pedido`
-              : dinheiro && r.orcamentos.valor
-                ? brl(r.orcamentos.valor)
-                : "Sem resposta pendente"
-          }
-          tom={r.orcamentos.comAjuste ? "aviso" : undefined}
-        />
+        {orcamentos ? (
+          <Cartao
+            i={i++}
+            href="/app/orcamentos?status=enviado"
+            icone="orcamento"
+            n={r.orcamentos.aguardando}
+            rotulo="Orçamentos aguardando"
+            apoio={
+              r.orcamentos.comAjuste ? `${r.orcamentos.comAjuste} com ajuste pedido` : r.orcamentos.valor ? brl(r.orcamentos.valor) : "Sem resposta pendente"
+            }
+            tom={r.orcamentos.comAjuste ? "aviso" : undefined}
+          />
+        ) : null}
         {d ? (
           <>
             <Cartao

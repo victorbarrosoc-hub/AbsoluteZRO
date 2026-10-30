@@ -205,6 +205,15 @@ function mostrarAjustes() {
 
 // ─────────── fila ───────────
 
+/** Nome curto do navegador, para o detalhe de um erro de leitura. */
+function navegador() {
+  const ua = navigator.userAgent
+  const marca = navigator.userAgentData?.brands?.find((b) => !/Not|Chromium/i.test(b.brand))
+  if (marca) return `${marca.brand} ${marca.version}`
+  const m = /Firefox\/(\d+)/.exec(ua) ?? /Version\/(\d+(?:\.\d+)?).*Safari/.exec(ua)
+  return m ? `${ua.includes('Firefox') ? 'Firefox' : 'Safari'} ${m[1]}` : 'navegador'
+}
+
 async function adicionar(arquivos) {
   if (!arquivos.length) return
   $('soltar').classList.add('compacta')
@@ -215,12 +224,13 @@ async function adicionar(arquivos) {
     desenharItem(item)
     try {
       item.info = await lerArquivo(arquivo)
-      if (item.info.temVideo && !item.info.decodifica) throw Object.assign(new Error(`Este navegador não lê ${nomeCodec(item.info.codec)}.`), { codigo: 'decodificar' })
+      if (item.info.temVideo && !item.info.decodifica) throw Object.assign(new Error(`Este navegador não lê este ${nomeCodec(item.info.codec)}.`), { codigo: 'decodificar', detalhe: item.info.detalheCodec })
       item.estado = 'pronto'
       if (item.info.temVideo) miniatura(arquivo, $(`item-${item.id}`).querySelector('canvas'), item.info).catch(() => {})
     } catch (e) {
       item.estado = 'erro'
       item.erro = e.codigo ? e.message : 'Não abre como vídeo nem áudio.'
+      item.detalhe = e.detalhe ? `${e.detalhe} · ${navegador()}` : null
     }
     atualizarItem(item)
   }
@@ -317,7 +327,7 @@ function atualizarItem(item) {
   li.dataset.estado = item.estado
   const info = item.info
   const fichas = li.querySelector('.item-info .fichas')
-  if (item.estado === 'erro') fichas.replaceChildren(el('span', { className: 'erro', textContent: item.erro }))
+  if (item.estado === 'erro') fichas.replaceChildren(el('span', { className: 'erro', textContent: item.erro, title: item.detalhe ?? '' }), item.detalhe ? el('small', { className: 'erro-detalhe', textContent: item.detalhe }) : '')
   else if (item.estado === 'lendo') fichas.replaceChildren(ficha('Lendo…'))
   else
     fichas.replaceChildren(

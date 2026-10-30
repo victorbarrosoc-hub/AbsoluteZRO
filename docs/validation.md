@@ -15,6 +15,25 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Set: presença e conversas (29/10/2026, ADR 0032)
+
+Migração `0035_set.sql` (renumerada de 0032: 0031–0034 já são de outros ramos). Banco de teste próprio
+(`TEST_DATABASE_URL=…/zro_set_test`, `E2E_DATABASE_URL=…/zro_set_e2e_test`, porta 3261).
+
+| Verificação                                    | Resultado                                                                                                                                                                                                                     |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lint, formatação, tipos, `scan-secrets` (raiz) | ok (3109 arquivos, nenhum segredo)                                                                                                                                                                                            |
+| `npm test` (raiz, Postgres real)               | **352/352** em 39 arquivos; `set.test.ts`: presença e app pelo token, invisível/quem vê, contatos, direta, projeto, bloqueio, denúncia, limites, RLS de toda tabela, exclusão da conta                                        |
+| `npm run build` (HUB)                          | ok (`/set`, `/admin/denuncias`, `/api/v1/set/*`)                                                                                                                                                                              |
+| `npm run test:e2e` (HUB)                       | **48/48** (um WebKit da página inicial caiu por falta de memória com outros testes na máquina e passou de novo sozinho); `set.spec.ts` em Chromium e WebKit, computador e iPhone, mais moderação no console e o 304 da ETag   |
+| Maestro: lint, formatação, tipos               | ok                                                                                                                                                                                                                            |
+| Maestro: `npm test`                            | **378/378** (um arquivo caiu com `checkpoint request failed` do Postgres com a máquina cheia e passou de novo sozinho; `set.test.mts`: caminhos fechados, Bearer só no servidor, ETag/304, outra origem, login sem `zro.set`) |
+| Maestro: `e2e/set.spec.ts`                     | **6/6** (computador, iPhone Chromium e Safari; banco próprio com o novo `E2E_DB_NAME`); a lista some quando a conversa abre na folha                                                                                          |
+
+Privacidade conferida nos testes: outra organização não aparece; invisível não grava presença; "quem vê" e "visto há"
+valem; perfil escondido não é achado pelo @; e-mail não aparece em nenhuma resposta nem no console; mensagem de
+bloqueado some nos dois sentidos; `zro_app` não escreve direto em nenhuma tabela do Set.
+
 ## Synquei em synquei.absolutezro.com (29/10/2026, ADR 0025)
 
 - Vercel: `synquei.absolutezro.com` no projeto `synquei`, verificado (zona `absolutezro.com` na Vercel); `/`, `/app/`
@@ -354,6 +373,26 @@ neste ambiente: PTAX de 28/10/2026 = venda 5,342 (Olinda); planilha `resumo_sema
   `npm test` 147/147 (menu em ordem alfabética com o Maestro), Carro do Freela `npm run build` com o ícone na lateral
   e na gaveta. Não verificado aqui: as telas do AEON (`tela.test.js` pede `npm run vendor`, que não roda neste
   ambiente; o teste do menu passou a contar a família de `src/familia.js`).
+
+### Deslocamento sozinho (Maestro, 29/10/2026)
+
+- Causa do relato do titular: (1) km — Photon e OSRM estavam desligados (`MAESTRO_SERVICOS_ABERTOS` ausente, dica
+  "Digite os km do trajeto.") e, ligados, a rota só media depois de escolher uma sugestão na lista; (2) preço — a
+  `0022` subiu às 16h35 de 29/10 e a primeira semana só foi guardada pela coleta de reserva (`buscado_em` 20h34),
+  disparada pela própria abertura da calculadora, que naquela vez já respondia "Sem preço"; o preço também olhava só a
+  cidade da produtora. Corrigido: serviços ligados, lugar escolhido sozinho, preço pela saída e nova pergunta depois da
+  coleta.
+- Maestro `npm test` **392/392**: `deslocamento.test.mts` (21: lugar com município/UF/tipo, "sao paulo"/"SAO PAULO"/
+  "São Paulo, SP" → São Paulo/SP e não o estado, "Natal, PI", capital em empate, preço município → estado → Brasil com
+  e sem UF, semana velha fora, nome em dois estados, veículos e troca de combustível), `combustivel.test.mts` (9: no
+  banco, nomes digitados) e o novo `rota.test.mts` (3, Photon/OSRM falsos em `tests/rota-fixture.mts`: ligados por
+  padrão, busca presa ao Brasil, memória de 12 h, fora do ar lança, `=0` não sai nada).
+- E2E `produtora.spec.ts` **14/14 + 2 pulados** (computador e iPhone 393 px): "sao paulo" → "Natal" digitados,
+  2923,1 km pela rota falsa, gasolina de São Paulo/SP 6,11, Compacto · 14 → R$ 2.551,45, Van troca para diesel,
+  consumo e km digitados com "Usar o da rota". Capturas claro/escuro, computador/393 px fora do repositório.
+- Conferido ao vivo neste ambiente (Photon e OSRM públicos): São Paulo → Natal 2.921,7 km (≈ 40h44), "natal, rn" e
+  Campinas → Mossoró ok. Não verificado: o comportamento em produção (deploy só com o titular) e o uso justo dos
+  serviços públicos com muitas produtoras (hoje: memória por servidor e busca só ao parar de digitar).
 
 ## E-mails da central com cara de e-mail de conta (29/10/2026)
 
@@ -2626,6 +2665,17 @@ do Freela e HUB não convertem. `npm run format:check` e `node scripts/scan-secr
 - O deploy só de variável (mesmo commit da prévia) é cancelado pelo Ignored Build Step do projeto (`git diff` contra o
   commit anterior). Contorno usado: a checagem foi trocada por `exit 1` só durante esse deploy e voltou igual depois.
 
+## Relay: presets de TV e leitura com plano B (29/10/2026)
+
+- Gravação de tela do Mac recusada ("Este navegador não lê H.264"): no Chromium do Linux, Retina 3024×1964, 5K, P3,
+  região e 4:4:4 abrem; a causa no aparelho do titular ainda não foi vista. `test/tela.test.js` simula um navegador que
+  recusa o nível 5.2: o Relay acha outra forma (nível menor), converte 1920×1200 a 60 fps para YouTube 1080p
+  (1728×1080, 60 quadros, SSIM > 0,9). Navegador que não lê H.264 nenhum: a mensagem mostra
+  `avc1.640034 · 1920×1200 · <navegador>`.
+- O preset Proxy para edição estava sem `id` desde o primeiro commit; corrigido e conferido em `test/plano.test.js`.
+- 23 destinos (Smart TV, Smart TV 4K, LinkedIn, X, Slides, Vídeo de fundo novos), cópias no SOBEDESCE iguais
+  (`test/relay.test.js`), app do celular 2.8.55 / v70.
+
 ## NOSSOM: Isolar voz no nível do Voice Isolator (29/10/2026)
 
 - Nova cadeia no worker de GPU (`voice-isolator-v1`: Mel-Band RoFormer + MossFormer2 SE 48K, mono 48 kHz;
@@ -2642,3 +2692,43 @@ do Freela e HUB não convertem. `npm run format:check` e `node scripts/scan-secr
 - Legendas e Remixar no NOSSOM (29/10/2026): Whisper turbo com WER 4,1% em 3 min de português (CPU) e janelas
   cortadas em pausas depois de achar estouro de memória no modo em blocos; remixer com cinco faixas que somam o
   original (erro 1e-7). `npm test` 115/115, e2e 61 + 26 pulados.
+
+## Maestro: quem vê o quê (29/10/2026, [ADR 0031](decisions/0031-maestro-acesso-por-area.md))
+
+Seis áreas sensíveis com padrão por papel e ajuste da Administração (`products/maestro/drizzle/0027_acessos.sql`, mapa
+em `products/maestro/docs/permissoes.md`). Local, Postgres e Chromium/WebKit desta máquina.
+
+| O quê                           | Como                                                         | Resultado                                                                                                                                                            |
+| ------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unitários do Maestro            | `cd products/maestro && npm test`                            | **404/404** (27 novos em `acessos.test.mts`; testes antigos ajustados ao padrão novo)                                                                                |
+| Padrão igual no TS e no banco   | `acessos.test.mts`                                           | `PADRAO` = `maestro.area_padrao`; `CRIACAO_PADRAO` = `maestro.criacao_padrao`                                                                                        |
+| Cada área, cada pessoa          | `acessos.test.mts` (asUser direto nas tabelas)               | sem a área: 0 linhas em toda tabela dela; com a área: as linhas; gestão sem Financeiro                                                                               |
+| Máscaras e gatilhos             | `acessos.test.mts`                                           | freela, escala, kit, inventário, pedido, Hoje, Pessoas, tabela e timbrado vazios sem a área; quem não vê grava e o valor fica                                        |
+| Quem muda                       | `acessos.test.mts`                                           | só a Administração (nem direto na tabela), auditado com antes/depois; sessão traz o acesso                                                                           |
+| A Z                             | `acessos.test.mts` (rota com o pedido assinado)              | `dinheiro` null sem Financeiro (gestão inclusive); `orcamentos_aguardando` null sem a área                                                                           |
+| Tela                            | `npm run build && E2E_DB_SUFIXO=acessos npx playwright test` | **135 ok, 21 pulados (por desenho), 0 falhas**; `acessos.spec.ts` 6/6 (computador e iPhone)                                                                          |
+| Lint, Prettier, tipos (Maestro) | `npm run lint`, `format:check`, `typecheck`                  | ok · ok · ok                                                                                                                                                         |
+| Raiz                            | `npm run lint`, `format:check`                               | ok · ok (o `typecheck` da raiz acusa erros em pacotes do HUB não tocados aqui: `node_modules` da cópia principal, desatualizado; não reinstalado por falta de disco) |
+| Segredos                        | `node scripts/scan-secrets.mjs`                              | nenhum                                                                                                                                                               |
+
+Não conferido aqui: a migração `0027` no banco de produção (deploy só com autorização) e a tela com dados reais.
+
+## Laboratório da Z (30/10/2026, [ADR 0033](decisions/0033-laboratorio-da-z.md))
+
+Console › Laboratório da Z (só admin), migração `0036_laboratorio_z.sql`. Local, Postgres e Chromium desta máquina;
+Claude e ElevenLabs **falsos** (`tests/fixtures/z-lab-falso.ts`), nenhuma chamada real.
+
+| O quê                                | Como                                                                                  | Resultado                                                                                                                                        |
+| ------------------------------------ | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Anexos, custos, pedidos, voz, PCM    | `tests/integration/z-lab-unidade.test.ts`                                             | 18/18: tipo pelo conteúdo, Office por dentro, bomba de zip, senha, XML sem entidade externa, conta de custo, tom, filtro de voz, frases e PCM    |
+| Quem pode e RLS                      | `tests/integration/z-lab.test.ts`                                                     | não admin e suporte: 403 em todas as funções; `asUser` direto: 0 linhas nas 7 tabelas, insert 42501, update 0 linhas                             |
+| Teto, uso, versões, publicação       | `tests/integration/z-lab.test.ts`                                                     | sem teto = bloqueado; uso idempotente; passou = 429; versão imutável; restaurar; publicar só com a trava e confirmação; trava desligada = padrão |
+| Recursos por plano e auditoria       | `tests/integration/z-lab.test.ts`                                                     | tudo desligado; vale só para o plano da lista; cada mudança em `audit_logs` (`z_lab.*`)                                                          |
+| Rotas documentadas                   | `tests/integration/openapi.test.ts`                                                   | as 20 rotas `/api/v1/admin/z-lab/*` no OpenAPI                                                                                                   |
+| Tela (e2e)                           | `npx playwright test tests/e2e/z-lab.spec.ts`                                         | 2/2: 404/403 em tudo para cliente e suporte; teto, streaming, ditado, anexos (Word, PNG, WAV), comparar, voz ao vivo, Configurar, axe, Custos    |
+| Suíte inteira                        | `npm test` · `npm run test:e2e`                                                       | 383/383 · 48 ok + 2 por tempo da máquina carregada (`admin.spec` e `esqueleto` WebKit), que passam sozinhos                                      |
+| Lint, Prettier, tipos, build, chaves | `npm run lint`, `format:check`, `typecheck`, `build`, `node scripts/scan-secrets.mjs` | ok · ok · ok · ok · nenhum segredo                                                                                                               |
+
+Não conferido aqui: voz, transcrição, Voice Design e o Claude com as chaves reais (a latência de verdade e a qualidade
+da voz); microfone de verdade e o eco do alto-falante no barge-in; vídeos grandes no navegador; a migração `0036` em
+produção (deploy só com autorização).

@@ -119,21 +119,27 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   puro e faz as mesmas contas do `quoteTotals` do ZRO (não mude sem o teste); tabela de preços com faixas e
   multiplicadores por nicho, modelos com fórmula estruturada (nada de `eval`); só rascunho edita; aprovar cria projeto
   e entradas uma vez. Timbrado = página com CSS de impressão (`.imprimivel`, A4), sem custo nem margem; o PDF é o
-  "salvar PDF" do navegador. Deslocamento: contas em `deslocamento.ts`; Photon/OSRM em `servicos.ts` **desligados**
-  até a ciência do titular (`MAESTRO_SERVICOS_ABERTOS=1` liga); a tela sempre aceita km e litro digitados.
+  "salvar PDF" do navegador. Deslocamento: contas em `deslocamento.ts`; Photon/OSRM em `servicos.ts` **ligados**
+  desde 29/10/2026 (o titular pediu o km medido sozinho; `MAESTRO_SERVICOS_ABERTOS=0` desliga; só o servidor chama,
+  busca presa ao Brasil, memória de 12 h). O texto digitado vira lugar sozinho (`melhorLugar`: cidade com o mesmo
+  nome, capital em empate, UF dita) ao sair do campo, no Enter ou quando só uma cidade casa, e a dica mostra
+  "Cidade/UF"; a rota preenche o km, km digitado vale com "Usar o da rota". Veículos de partida em `veiculos.ts`
+  (consumo de estrada por combustível) junto com os do inventário. A tela sempre aceita km, consumo e litro
+  digitados. Teste com Photon/OSRM falsos (`tests/rota-fixture.mts`, `MAESTRO_PHOTON_URL`/`MAESTRO_OSRM_URL`).
   **Combustível automático** (titular 29/10/2026, `drizzle/0022`): gasolina, etanol ou diesel S10 com o preço médio da
-  semana da ANP (planilha semanal `resumo_semanal_lpc`, abas MUNICIPIOS/ESTADOS/BRASIL) no município da produtora
-  (Ajustes → Empresa), senão no estado, senão no Brasil, sempre com "· ANP, semana de dd/mm". Só o agendamento fala com
+  semana da ANP (planilha semanal `resumo_semanal_lpc`, abas MUNICIPIOS/ESTADOS/BRASIL) na **cidade de saída** (onde
+  se abastece; sem saída, a da produtora em Ajustes → Empresa), senão no estado, senão no Brasil (`escolherPreco`,
+  puro; nome digitado sem acento/caixa/UF casa), sempre com "· ANP, semana de dd/mm". Só o agendamento fala com
   a ANP: `GET /api/cron/combustivel` (Vercel Cron no sábado, `CRON_SECRET`, porta `src/lib/cron.ts`) guarda a semana em
   `maestro.combustivel_precos` (referência sem organização: `maestro_app` só SELECT; 8 semanas) e
   `coletarSeAtrasado` (`after()` na ação) cobre o agendamento atrasado, uma vez por hora. Preço digitado vale para
   aquele combustível naquele orçamento (localStorage); a linha grava o preço usado (orçamento salvo não muda). Sem
   semana guardada, campo vazio e "Digite o preço do posto"; nunca preço inventado. Teste com a ANP falsa
   (`tests/anp-fixture.mts`, `MAESTRO_ANP_URL`).
-  **Financeiro** (`src/lib/financeiro`) só admin e gestão (`podeVerDinheiro`), também no banco; baixas recalculam o
+  **Financeiro** (`src/lib/financeiro`) só com a área Financeiro (`pode(sessao, "financeiro")`, ver "Quem vê o quê"), também no banco; baixas recalculam o
   pago por gatilho; recorrência gera o mês uma vez; a escala vira "a pagar" pelo gatilho `escala_sincronizar`. Sem
   DAS/ISS. **Freelas**: CPF e PIX só em `freela_pagamento`, cifrados com `selar()` (`MAESTRO_KEY`, contexto
-  `freela_pagamento:<org>:<freela>:<campo>`), lidos só por admin e gestão; nunca em lista, log ou demonstração real.
+  `freela_pagamento:<org>:<freela>:<campo>`), lidos só com a área Dados da equipe; nunca em lista, log ou demonstração real.
   **Inventário**: reserva em conflito é barrada no banco (gatilho com trava, erro 23P01, e `exclude` com `btree_gist`
   quando existe). **Agenda** e documentos do projeto (checklist, ordem do dia, roteiro, decupagem). Navegação em
   `src/lib/navegacao.ts` (módulo sem "use client": o servidor também lê). Carro do Freela: só o mapa em
@@ -182,7 +188,20 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
 - **Hoje** (`/app/hoje`, `src/lib/hoje.ts`, desenho C1): agenda do dia, "Vencendo", "Com o cliente", **Retornar hoje**
   (com "Feito", "Amanhã" e "+1 sem.") e o caixa da semana (baixas de segunda a domingo), mais as contagens (cards no
   prazo, peças com o cliente, pedidos novos, orçamentos aguardando, a receber e a pagar, caixa, meta do mês); dinheiro
-  só admin e gestão (o RLS esconde de qualquer jeito). Primeiro item de Produção e na barra do celular.
+  só com a área Financeiro e orçamentos só com a área Orçamentos (o RLS esconde de qualquer jeito). Primeiro item de
+  Produção e na barra do celular.
+- **Quem vê o quê** (titular 29/10/2026, [ADR 0031](../../docs/decisions/0031-maestro-acesso-por-area.md), mapa e
+  auditoria em `docs/permissoes.md`; `drizzle/0027`, `src/lib/acessos.ts` puro, `src/lib/acessos-servidor.ts`): o papel
+  do HUB decide escrever/remover; por cima, seis **áreas** (`financeiro`, `orcamentos`, `contratos`, `diarias`,
+  `dados_equipe`, `inventario_valores`) com padrão por papel (`PADRAO` = `maestro.area_padrao`; Gestão sem Financeiro,
+  Equipe e Leitura sem nenhuma) e ajuste por pessoa em `maestro.acessos`, que **só a Administração** muda (Ajustes →
+  Pessoas → "O que vê", `salvarAreas`, auditado `acesso.areas`); a Administração vê tudo sempre. No banco:
+  `maestro.pode(org, área)` em política restritiva `<tabela>_area` (`maestro.politica_area`) nas tabelas de cada área;
+  colunas de dinheiro em tabelas de todos (escala, freela, kit, equipamento, pedido, projeto) mascaradas na consulta
+  (`case when maestro.pode(...)`, `areasNaTx`) e guardadas pelos gatilhos `*_guarda_area` (quem não vê não troca; a
+  escala nova pega a diária do cadastro). Na tela: `sessao.acessos` e `pode(sessao, área)`; a navegação esconde a seção
+  (`gruposPara`/`abasOcultas`, `Aba.area`); endereço digitado mostra `SemArea` ou 404. Tela, ação ou tabela nova com
+  dinheiro: escolha a área, ponha a política/máscara e um caso em `tests/acessos.test.mts`.
 - **O negócio por dentro** (estudo MakersHub §4, itens 1, 2, 3, 6 e 7; `drizzle/0014`–`0018`; mapa das ligações em
   `docs/integration-contracts/maestro-z.md`):
   - **Funil** (`0014`, `src/lib/funil`): `pedidos.etapa` (novo, conversa, orcamento, negociando, ganho, perdido) e o
@@ -242,6 +261,14 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   mapeadas; contato nunca vem do perfil); a ficha mostra o @ com link para o perfil. O inventário do Carro chega pelo
   mesmo `zro_sub` só quando `CARRO_SYNC_ATIVO` ligar. Testes: `tests/pessoas-zro.test.mts` e `e2e/pessoas-zro.spec.ts`
   (HUB falso com perfis fictícios em `tests/ponte-falsa.mts`).
+- **Set da Absolute ZRO** (ADR 0032 do HUB, contrato em `docs/integration-contracts/set.md`): quem da equipe e dos
+  contatos está online e as conversas (diretas e do projeto canônico). O widget `<zro-set>` vem de
+  `absolutezro.com/set/v1/zro-set.js` (`components/set-zro.tsx`, pílula discreta na cápsula e no topo do celular, como
+  a Z; nunca aba) e fala só com `/api/zro/set/*`, o repasse de `src/lib/zro/set.ts`: caminhos e métodos fechados
+  (`caminhoSet`), Origin conferido, JSON até 20 kB, Bearer da sessão com `zro.set` só no servidor, ETag/304 de ida e
+  volta. O login pede `zro.set` (HUB antigo recusa: `nivel=sem_set`); sem o escopo, 401 `reconectar_zro` e a pílula
+  some, sem apagar os tokens da Z. Testes: `tests/set.test.mts` e `e2e/set.spec.ts`. Duas baterias de e2e na mesma máquina:
+  `E2E_DB_NAME=maestro_test_<nome>` (com `E2E_PORT`, `E2E_PONTE_PORT` e `E2E_ANP_PORT` próprios).
 - **Kit do freela** (`drizzle/0013`, `src/lib/freelas/{kit,equipamentos}.ts`): `freela_equipamentos` (origem `maestro`
   ou `carro-do-freela`) e `escala_equipamentos`; o aluguel (diária × dias) soma ao mesmo "a pagar" da escala (gatilho
   `escala_sincronizar` refeito na 0013). Itens do Carro do Freela são só leitura (gatilho barra `maestro_app`). A
@@ -306,7 +333,8 @@ Cobertura mínima que não pode cair: isolamento RLS com duas organizações (`r
 isolamento e papel de leitura (`crm.test.mts`), demonstração idempotente que remove só o que é `demo` (`demo.test.mts`),
 lista de espera com RLS, limite e armadilha (`lista-espera.test.mts`), detector de fontes e tempo (`fontes.test.mts`),
 revisão com duas organizações, porta estreita, PIN, limites e decisão idempotente (`revisao.test.mts`), motor e fluxo
-do orçamento (`orcamento.test.mts`), deslocamento e a planilha da ANP (`deslocamento.test.mts`), combustível automático com a ANP falsa, agendamento,
+do orçamento (`orcamento.test.mts`), deslocamento, lugar entendido, preço pelo lugar, veículos e a planilha da ANP (`deslocamento.test.mts`), lugares e km
+com Photon/OSRM falsos (`rota.test.mts`), combustível automático com a ANP falsa, agendamento,
 fallbacks e só leitura (`combustivel.test.mts`), financeiro com baixas, recorrência e
 escala (`financeiro.test.mts`), freelas, pagamento cifrado, reservas sem conflito e documentos (`operacao.test.mts`),
 duas organizações em toda tabela da produtora (`produtora-rls.test.mts`), logo, cor e marca com duas organizações
@@ -318,7 +346,8 @@ novas com duas organizações (`negocio-rls.test.mts`) e o resumo para a Z (`res
 `contrato.test.mts`), a marca própria (sinal ligado e desligado, contraste, duas organizações; `marca-propria.test.mts`), a ponte do Drive, Arquivos, compartilhar/recolher e o agendamento
 (`drive-sobedesce.test.mts`), a versão colada na ficha do card (`versoes-card.test.mts`), pessoas da Absolute ZRO (`pessoas-zro.test.mts`), colunas do Quadro (fábrica e backfill, duas organizações, papéis,
 automação pelo papel, arquivar com destino, paleta; `colunas.test.mts`), o lançamento (app de computador só com instalador
-publicado, manifesto e a chave da vitrine; `lancamento.test.mts`). E2E: `npm run build && npm run test:e2e`
+publicado, manifesto e a chave da vitrine; `lancamento.test.mts`), quem vê o quê (padrão igual no TS e no banco,
+cada área por pessoa, máscaras, gatilhos, só a administração muda e audita, sessão, navegação e a Z; `acessos.test.mts`). E2E: `npm run build && npm run test:e2e`
 (Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir movimento, navegação, a aprovação
 inteira (`aprovacao.spec.ts`, mp4 local e YouTube/Vimeo falsos em `e2e/falsos`) e a versão colada na ficha do card que aparece no lote (`versao-card.spec.ts`) e a produtora com a demonstração
 (`produtora.spec.ts`, organização própria criada em `e2e/preparar.ts`) e o ciclo comercial (`comercial.spec.ts`: pedido
@@ -334,7 +363,9 @@ faixa que rola de lado só com `data-rolagem`; regras de celular em `src/app/cel
 a troca de seção sem duas telas juntas (`transicao.spec.ts`, Chromium e WebKit: pelo relógio das animações e amostrando
 quadro a quadro) e os gestos do Quadro no celular (`gestos.spec.ts`, Chromium e WebKit, organização própria) e as colunas
 (`colunas.spec.ts`: renomear no lugar, reordenar, criar e recolorir, arquivar com destino e restaurar, sistema não
-arquiva, equipe não edita; computador e iPhone, organização própria).
+arquiva, equipe não edita; computador e iPhone, organização própria) e quem vê o quê (`acessos.spec.ts`: o editor sem
+dinheiro na navegação, no Hoje, nas fichas e no HTML; a administração liga o Financeiro e volta ao padrão; `SHOTS_DIR`
+guarda `pessoas-acesso-*`). `E2E_DB_SUFIXO` separa o banco do e2e quando duas cópias rodam ao mesmo tempo.
 Movimento (29/10/2026): toda folha usa `Folha` (`src/components/folha.tsx`, portal no `<body>`). **Troca de seção**
 (`src/components/movimento.tsx` + `src/app/motion.css`): a View Transition é chamada por nós, não pelo
 `<ViewTransition>` do React (no Safari do iPhone o par sai/entra do React deixava a tela velha e a nova uma sobre a

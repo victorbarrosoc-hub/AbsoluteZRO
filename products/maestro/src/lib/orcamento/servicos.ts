@@ -1,9 +1,11 @@
 /**
  * Serviços de fora da calculadora de deslocamento.
  *
- * - Photon (lugares) e OSRM (km de carro), do OpenStreetMap: públicos, de uso justo e sem chave; ficam DESLIGADOS até
- *   o titular dar ciência (plano v2 §6.4/§11, fase 13): liga com MAESTRO_SERVICOS_ABERTOS=1. Desligados ou fora do ar,
- *   a tela pede os km à mão.
+ * - Photon (lugares) e OSRM (km de carro), do OpenStreetMap: públicos, de uso justo e sem chave. LIGADOS desde
+ *   29/10/2026 (o titular pediu o km medido sozinho; plano v2 §6.4/§11, fase 13); MAESTRO_SERVICOS_ABERTOS=0 desliga.
+ *   Só o servidor fala com eles (Server Actions, nada no navegador e nada na CSP), com o nome do Maestro no
+ *   user-agent, a busca presa ao Brasil e uma memória curta por servidor para não repetir a mesma pergunta. Desligados
+ *   ou fora do ar, a tela diz e pede os km à mão.
  * - ANP (preço do litro): ligada desde 29/10/2026 (pedido do titular, "combustível automático"). Quem fala com a ANP é
  *   só o agendamento semanal (`coletarSemanaAnp`, GET /api/cron/combustivel, CRON_SECRET), que guarda a planilha da
  *   semana em maestro.combustivel_precos (drizzle/0022); a calculadora só lê do banco (`precoDoCombustivel`). Sem
@@ -13,6 +15,8 @@ import { sql } from "drizzle-orm";
 import { getBanco, type Contexto } from "@/lib/db/client";
 import {
   chaveDoMunicipio,
+  escolherPreco,
+  lerTextoDeLugar,
   linkDaPlanilhaSemanal,
   lugaresDoPhoton,
   rotaDoOsrm,
@@ -20,6 +24,7 @@ import {
   type Combustivel,
   type Lugar,
   type PrecoCombustivel,
+  type PrecoGuardado,
 } from "./deslocamento";
 import { lerZip } from "./zip";
 
@@ -29,7 +34,12 @@ export const PAGINA_ANP =
 /** Semanas guardadas (a mais nova e as 7 anteriores). */
 export const SEMANAS_GUARDADAS = 8;
 
-export const servicosAbertos = () => process.env.MAESTRO_SERVICOS_ABERTOS === "1";
+export const servicosAbertos = () => process.env.MAESTRO_SERVICOS_ABERTOS !== "0";
+/** Photon e OSRM (trocam só em teste: MAESTRO_PHOTON_URL e MAESTRO_OSRM_URL apontam para os de mentira). */
+const photonUrl = () => process.env.MAESTRO_PHOTON_URL || "https://photon.komoot.io/api/";
+const osrmUrl = () => (process.env.MAESTRO_OSRM_URL || "https://router.project-osrm.org").replace(/\/$/, "");
+/** O Brasil inteiro (oeste, sul, leste, norte), para a busca não trazer Natal da África do Sul. */
+const BBOX_BRASIL = "-74.1,-34.0,-28.6,5.4";
 /** A página da ANP (troca só em teste: MAESTRO_ANP_URL aponta para uma ANP falsa). */
 const paginaAnp = () => process.env.MAESTRO_ANP_URL || PAGINA_ANP;
 
@@ -39,26 +49,56 @@ async function buscar(url: string | URL, ms: number) {
   return r;
 }
 
+/** Memória curta por servidor (uso justo dos serviços públicos): até 300 respostas, por 12 h. */
+const MEMORIA_MS = 12 * 60 * 60 * 1000;
+function memoria<T>() {
+  const m = new Map<string, { em: number; valor: T }>();
+  return {
+    ler(k: string): T | undefined {
+      const v = m.get(k);
+      if (!v) return undefined;
+      if (Date.now() - v.em > MEMORIA_MS) return void m.delete(k);
+      return v.valor;
+    },
+    gravar(k: string, valor: T) {
+      if (m.size >= 300) m.delete(m.keys().next().value!);
+      m.set(k, { em: Date.now(), valor });
+    },
+  };
+}
+const lugaresGuardados = memoria<Lugar[]>();
+const rotasGuardadas = memoria<{ km: number; minutos: number } | null>();
+
 /** Cidade ou endereço (Brasil), com preferência pelo que fica perto da base. */
 export async function buscarLugares(q: string, perto?: { lat: number; lon: number } | null): Promise<Lugar[]> {
   if (!servicosAbertos()) return [];
-  const texto = q.trim().slice(0, 120);
+  const texto = q.replace(/\s+/g, " ").trim().slice(0, 120);
   if (texto.length < 2) return [];
-  const url = new URL("https://photon.komoot.io/api/");
+  const url = new URL(photonUrl());
   url.searchParams.set("q", texto);
   url.searchParams.set("limit", "12");
+  url.searchParams.set("bbox", BBOX_BRASIL);
   if (perto) {
-    url.searchParams.set("lat", String(perto.lat));
-    url.searchParams.set("lon", String(perto.lon));
+    url.searchParams.set("lat", perto.lat.toFixed(2));
+    url.searchParams.set("lon", perto.lon.toFixed(2));
   }
-  return lugaresDoPhoton(await (await buscar(url, 8000)).json());
+  const chave = url.search.toLowerCase();
+  const guardado = lugaresGuardados.ler(chave);
+  if (guardado) return guardado;
+  const lugares = lugaresDoPhoton(await (await buscar(url, 8000)).json());
+  lugaresGuardados.gravar(chave, lugares);
+  return lugares;
 }
 
 /** Km de carro (uma ida) e minutos entre dois pontos. */
 export async function medirRota(de: { lat: number; lon: number }, para: { lat: number; lon: number }) {
   if (!servicosAbertos()) return null;
-  const c = `${de.lon},${de.lat};${para.lon},${para.lat}`;
-  return rotaDoOsrm(await (await buscar(`https://router.project-osrm.org/route/v1/driving/${c}?overview=false`, 10000)).json());
+  const c = `${de.lon.toFixed(5)},${de.lat.toFixed(5)};${para.lon.toFixed(5)},${para.lat.toFixed(5)}`;
+  const guardada = rotasGuardadas.ler(c);
+  if (guardada !== undefined) return guardada;
+  const rota = rotaDoOsrm(await (await buscar(`${osrmUrl()}/route/v1/driving/${c}?overview=false`, 10000)).json());
+  rotasGuardadas.gravar(c, rota);
+  return rota;
 }
 
 /* ───────────── ANP: o agendamento guarda, a calculadora lê ───────────── */
@@ -125,36 +165,23 @@ export async function coletarSeAtrasado(hoje: string): Promise<void> {
 }
 
 /**
- * O preço médio da semana mais nova guardada para o lugar da produtora: o município, senão o estado, senão o Brasil
- * (na mesma semana, o mais perto ganha; uma semana mais nova ganha de uma mais velha). Lido como a pessoa (maestro_app
- * só lê esta tabela). Sem nada guardado, null.
+ * O preço médio da semana mais nova guardada para o lugar (a cidade de saída; senão a da produtora): o município,
+ * senão o estado, senão o Brasil (regra em `escolherPreco`, deslocamento.ts). Lido como a pessoa (maestro_app só lê
+ * esta tabela). Sem nada guardado, null.
  */
 export async function precoDoCombustivel(
   ctx: Contexto,
   lugar: { uf: string | null; cidade: string | null },
   combustivel: Combustivel,
 ): Promise<PrecoCombustivel | null> {
-  const uf = lugar.uf ?? "";
-  const municipio = lugar.cidade ? chaveDoMunicipio(lugar.cidade) : "";
-  const [r] = (await getBanco().asUser(ctx, (tx) =>
+  const municipio = lugar.cidade ? chaveDoMunicipio(lerTextoDeLugar(lugar.cidade).nome) : "";
+  const linhas = (await getBanco().asUser(ctx, (tx) =>
     tx.execute(sql`
       select semana::text, semana_fim::text as "semanaFim", uf, municipio, preco_medio::float8 as preco, postos, fonte
       from maestro.combustivel_precos
       where combustivel = ${combustivel}
-        and ((uf = ${uf} and (municipio = '' or (municipio = ${municipio} and ${municipio} <> ''))) or (uf = 'BR' and municipio = ''))
-      order by semana desc, case when municipio <> '' then 0 when uf <> 'BR' then 1 else 2 end
-      limit 1`),
-  )) as unknown as { semana: string; semanaFim: string; uf: string; municipio: string; preco: number; postos: number; fonte: string }[];
-  if (!r) return null;
-  const base = r.municipio ? "municipio" : r.uf === "BR" ? "brasil" : "estado";
-  return {
-    combustivel,
-    litroCents: Math.round(r.preco * 100),
-    semana: r.semana,
-    semanaFim: r.semanaFim,
-    postos: r.postos,
-    base,
-    onde: base === "municipio" ? `${lugar.cidade}/${r.uf}` : base === "estado" ? r.uf : "Brasil",
-    fonte: r.fonte,
-  };
+        and semana = (select max(semana) from maestro.combustivel_precos where combustivel = ${combustivel})
+        and (municipio = '' or (municipio = ${municipio} and ${municipio} <> ''))`),
+  )) as unknown as PrecoGuardado[];
+  return escolherPreco(linhas, lugar, combustivel);
 }

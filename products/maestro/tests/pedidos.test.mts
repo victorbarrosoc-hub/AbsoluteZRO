@@ -193,7 +193,11 @@ describe("enviar o pedido", () => {
 
 describe("gerar orçamento a partir do pedido", () => {
   test("o motor monta as linhas com as respostas do cliente; o cliente nasce lead; idempotente", async () => {
-    const r = await eq.gerarOrcamentoDoPedido(o.equipe, ids.pedido, HOJE);
+    // A equipe não tem "Orçamentos e preços" (drizzle/0027): o banco recusa e nada muda; a gestão gera.
+    const semArea = await eq.gerarOrcamentoDoPedido(o.equipe, ids.pedido, HOJE);
+    assert.equal(semArea.ok, false);
+    assert.equal((await eq.obterPedido(o.admin, ids.pedido))?.orcamento, null);
+    const r = await eq.gerarOrcamentoDoPedido(o.gestor, ids.pedido, HOJE);
     assert.ok(r.ok && r.novo);
     if (!r.ok) return;
     ids.orc = r.orcamentoId;

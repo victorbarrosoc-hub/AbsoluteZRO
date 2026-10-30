@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { lerContrato } from "@/lib/contrato/servidor";
+import { pode as podeArea } from "@/lib/acessos";
 import { BotaoImprimir } from "@/components/acao";
 import { FolhaContrato } from "@/components/contrato/folha";
 import { Icone } from "@/components/icones";
@@ -11,19 +12,27 @@ export const metadata: Metadata = { title: "Contrato" };
 
 /**
  * O contrato aceito pelo cliente (registro imutável, drizzle/0020): o texto gravado no aceite, o registro e a
- * conferência do hash feita agora. Só administração e gestão (o RLS esconde do resto: 404). PDF pelo navegador.
+ * conferência do hash feita agora. Só com a área Contratos (src/lib/acessos.ts; o RLS esconde do resto: 404). PDF pelo
+ * navegador.
  */
 export default async function PaginaContratoAceito({ params }: PageProps<"/app/contratos/[id]">) {
   const { id } = await params;
   const sessao = await exigirAcessoNaPagina(`/app/contratos/${id}`);
+  if (!podeArea(sessao, "contratos")) notFound();
   const c = await lerContrato({ sub: sessao.sub, orgId: sessao.orgId }, id);
   if (!c) notFound();
   return (
     <div className="pagina pagina--larga">
       <div className="timbrado-barra">
-        <Link className="voltar" href={`/app/orcamentos/${c.orcamentoId}`}>
-          <Icone nome="voltar" size={16} /> Orçamento {c.orcamentoCodigo}
-        </Link>
+        {podeArea(sessao, "orcamentos") ? (
+          <Link className="voltar" href={`/app/orcamentos/${c.orcamentoId}`}>
+            <Icone nome="voltar" size={16} /> Orçamento {c.orcamentoCodigo}
+          </Link>
+        ) : (
+          <Link className="voltar" href="/app/hoje">
+            <Icone nome="voltar" size={16} /> Hoje
+          </Link>
+        )}
         <div className="acoes">
           {c.projetoId && c.projetoCodigo ? (
             <Link className="glass-btn glass-btn--sm" href={`/app/projetos/${c.projetoId}`}>

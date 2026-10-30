@@ -27,6 +27,16 @@ const config: NextConfig = {
     return [
       { source: '/:path*', headers: security },
       { source: '/api/:path*', headers: [{ key: 'Cache-Control', value: 'no-store' }] },
+      // Laboratório da Z (ADR 0033, só admin): o microfone vale nesta tela (voz e ditado), e só nela. Vem depois da regra
+      // geral, então vence.
+      {
+        source: '/admin/laboratorio/:path*',
+        headers: [{ key: 'Permissions-Policy', value: 'camera=(), microphone=(self), geolocation=(), payment=(), usb=()' }],
+      },
+      {
+        source: '/admin/laboratorio',
+        headers: [{ key: 'Permissions-Policy', value: 'camera=(), microphone=(self), geolocation=(), payment=(), usb=()' }],
+      },
       // o painel da IA (<zro-ia>) e as imagens do Z são carregados pelas plataformas, de outra origem: script módulo e
       // máscara CSS só funcionam com CORS. Arquivos públicos e estáticos, sem credencial.
       {
@@ -39,6 +49,16 @@ const config: NextConfig = {
       // o painel (zro-ia.js e o digitando.js que ele importa) muda no mesmo endereço: o navegador confere a cada carga,
       // e todas as plataformas recebem a versão nova (VERSAO, no data-versao do elemento) sem trocar o link.
       { source: '/ia/v1/:path*', headers: [{ key: 'Cache-Control', value: 'public, max-age=0, must-revalidate' }] },
+      // o Set (<zro-set>, ADR 0032): o mesmo script em todas as plataformas, carregado de outra origem; muda no mesmo
+      // endereço (VERSAO no data-versao). A API não tem CORS: cada app repassa pelo próprio servidor.
+      {
+        source: '/set/v1/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Cross-Origin-Resource-Policy', value: 'cross-origin' },
+          { key: 'Cache-Control', value: 'public, max-age=0, must-revalidate' },
+        ],
+      },
     ]
   },
 }

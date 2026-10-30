@@ -480,6 +480,11 @@
   color: var(--erro);
   font-size: 14px;
 }
+.erro-detalhe {
+  flex-basis: 100%;
+  color: var(--mudo);
+  font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
 .saida--impossivel {
   opacity: 0.75;
 }

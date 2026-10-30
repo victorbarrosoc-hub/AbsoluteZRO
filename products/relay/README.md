@@ -13,9 +13,14 @@ arquivo não é enviado. É a porta de entrada do ecossistema Absolute ZRO.
 
 ## O que faz
 
-- **16 destinos** com fonte e data (`src/presets.js`): YouTube 1080p, YouTube 1440p (o truque da nitidez), YouTube 4K,
-  Shorts, Reels · No Compress, Instagram Feed 4:5, TikTok, WhatsApp, Vimeo, Apple HEVC, Proxy para edição, Discord
-  (20 MB), E-mail (25 MB), Tamanho exato, MP3 320, AAC 256 e WAV 48 kHz.
+- **23 destinos** com fonte e data (`src/presets.js`), em cinco grupos:
+  - Redes: YouTube 1080p, YouTube 1440p (o truque da nitidez), YouTube 4K, Shorts, Reels · No Compress, Instagram
+    Feed 4:5, TikTok, WhatsApp, LinkedIn e X.
+  - Trabalho: Vimeo, Apple HEVC, Slides (PowerPoint, Keynote), Vídeo de fundo (site, sem som) e Proxy para edição.
+  - TV: Smart TV (Full HD H.264 a 30 fps, que abre pelo pendrive) e Smart TV 4K (HEVC).
+  - Tamanho: Discord (20 MB), E-mail (25 MB) e Tamanho exato. Áudio: MP3 320, AAC 256 e WAV 48 kHz.
+  - Entrega para emissora (MXF/XDCAM, ProRes, loudness -23) não entra: o navegador não grava esses formatos, e o
+    Relay não finge.
 - **Vários destinos de uma vez**, para vários arquivos, um por vez, com progresso no próprio relé.
 - **Ficha técnica** de cada saída (contêiner, codec, tamanho, cadência, bitrate, quadro-chave, cor, áudio).
 - **Meus presets**: a pessoa parte de um preset do Relay e muda codec, tamanho (proporção do arquivo ou tela fixa),
@@ -25,6 +30,9 @@ arquivo não é enviado. É a porta de entrada do ecossistema Absolute ZRO.
 - **Máxima qualidade** (Mac e Windows): abre o app SOBEDESCE pelo link `sobedesce://relay` com os destinos escolhidos
   (inclusive os da pessoa); ele converte os arquivos do computador com o x264 e salva ao lado do original
   (`src/link.js` monta o link; `products/sobedesce/desktop/links.js` lê).
+- **Leitura com plano B**: se o navegador recusa o H.264/HEVC como o arquivo descreve (gravação de tela do Mac, nível
+  alto), o Relay tenta outras formas e só usa a que devolveu um quadro de verdade. Sem jeito, o erro mostra o codec,
+  o tamanho e o navegador.
 - **Laboratório de aparelhos** (`/laboratorio`, interno: só nas prévias da Vercel e no `npm run dev`): mede o codificador
   do aparelho contra a referência x264 no mesmo bitrate, com cenas geradas no próprio aparelho.
 

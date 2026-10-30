@@ -1,6 +1,6 @@
 # Roadmap — o que foi entregue e o que falta
 
-Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
 ## Fase 0 — Auditoria
 
@@ -578,6 +578,15 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ⛔ Em produção: `CRON_SECRET` no projeto `absolutezro` (o do `maestro` já existe), migrações `0030` (HUB) e `0022`
   (Maestro) no próximo deploy autorizado. Primeira semana da ANP entra no primeiro sábado ou na primeira abertura da
   calculadora.
+- ✅ **Deslocamento sozinho** (Maestro, pedido do titular 29/10/2026, sem migração): Photon e OSRM **ligados**
+  (`MAESTRO_SERVICOS_ABERTOS=0` desliga); o texto digitado vira lugar sozinho (cidade com o mesmo nome, capital em
+  empate, UF dita; ao sair do campo, no Enter ou quando só uma cidade casa) e a dica diz o que foi entendido
+  ("São Paulo/SP"); a rota preenche "Km de uma ida" ("Pela estrada · ≈ 40h45 de carro"), km digitado vale com "Usar o
+  da rota". O preço do litro vem da **cidade de saída** (onde se abastece; senão a da produtora), município → estado →
+  Brasil, também com nome digitado sem acento/UF; sem semana guardada, pergunta de novo uma vez (coleta de reserva).
+  Veículos de partida (Compacto, Sedã, SUV compacto, SUV médio, Picape compacta, Picape diesel, Van, Micro-ônibus,
+  consumo de estrada por combustível; `src/lib/orcamento/veiculos.ts`) junto com os do inventário; consumo segue
+  digitável.
 
 ## Perfil profissional com @ (29/10/2026, [ADR 0029](decisions/0029-perfil-profissional-arroba.md))
 
@@ -607,7 +616,7 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
 - ✅ Nome: **Relay** (`relay`, relay.absolutezro.com), aberto. Contrato de integração por plataforma em
   [integration-contracts/relay.md](integration-contracts/relay.md).
 - ✅ Relay de pé em `products/relay/` (29/10/2026): identidade (o relé: trilho, sinal menta → limão e o anel do O;
-  guia em `marca/`), página inicial com o relé ligando e as entradas na rolagem, conversor com 16 destinos com fonte e
+  guia em `marca/`), página inicial com o relé ligando e as entradas na rolagem, conversor com 16 destinos (23 desde 29/10: TV, LinkedIn, X, Slides, Vídeo de fundo) com fonte e
   data, vários destinos e arquivos de uma vez, ficha técnica de cada saída, presets da pessoa ("Meus", editor com a
   ficha ao vivo, levar e trazer em `.relay.json`) e tamanho máximo que escolhe a resolução. 38 testes (unidade, ffmpeg
   e Chromium de verdade). ⛔ Projeto Vercel `relay` e domínio pedem autorização do titular.
@@ -631,9 +640,69 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
   de integrações e a Z.
 - ⬜ Revela tira a aba Converter e aponta para o Relay (na conversa da Revela); AEON e NOSSOM exportam pelos presets do
   Relay; Synquei e Maestro pedem versões pela fila ([contrato](integration-contracts/relay.md)).
+- ✅ Presets de TV e formatos específicos (pedido do titular, 29/10/2026): Smart TV (H.264 Full HD a 30 fps, pendrive) e
+  Smart TV 4K (HEVC) num grupo TV; LinkedIn e X em Redes; Slides e Vídeo de fundo (sem som) em Trabalho. Entrega para
+  emissora (MXF/XDCAM, ProRes, loudness) fica de fora até existir no computador.
+- ✅ Leitura com plano B: gravação de tela do Mac recusada pelo navegador ("Este navegador não lê H.264") é tentada de
+  outras formas, só vale a que devolve quadro; sem jeito, o erro mostra codec, tamanho e navegador.
+- ⬜ Confirmar no aparelho do titular qual navegador recusou a gravação de tela (o detalhe do erro agora diz).
 - ⬜ "Baixar como…" das Referências e o pedido da Z no SOBEDESCE pelos presets do Relay.
 - ⬜ Computador: ProRes, DNxHR e HDR 10 bits de saída; loudness normalizado; legenda queimada; corte de trecho.
 - ⬜ Evento `media.conversion.completed` no HUB, quando a primeira integração passar por ele.
+
+## Maestro: quem vê o quê (29/10/2026, [ADR 0031](decisions/0031-maestro-acesso-por-area.md))
+
+- ✅ Seis áreas sensíveis (Financeiro, Orçamentos e preços, Contratos, Diárias e cachês, Dados da equipe, Valores do
+  inventário) com padrão por papel e ajuste por pessoa só da Administração em Ajustes → Pessoas → "O que vê"
+  (interruptores, auditado). Regra no banco (`drizzle/0027`: RLS por área, máscara das colunas de dinheiro, gatilhos
+  que guardam o valor de antes), na navegação (sem link morto), no Hoje, nas fichas, nas ações e na Z. Mapa em
+  `products/maestro/docs/permissoes.md`.
+- ⛔ Em produção: migração `0027` do Maestro no próximo deploy autorizado. Avisar quem é Gestão e usa o Financeiro: a
+  Administração liga a área (a Gestão não vê o Financeiro por padrão).
+- ⬜ Perguntas ao titular: Gestão com Financeiro por padrão? Contato dos freelas separado de CPF/PIX? Restringir
+  clientes só com a Administração? Aprovar na tela pedir também o Financeiro?
+
+## Set: presença e conversas (29/10/2026, [ADR 0032](decisions/0032-set-presenca-e-conversas.md))
+
+- ✅ Fase 1, presença (migração `0035_set.sql`): quem da equipe (mesma organização ou projeto) e dos contatos aceitos
+  está online e em qual app ("na Absolute ZRO", "no Maestro"; o app vem do token). Invisível com um toque, "Quem vê
+  você online" e "Mostrar visto há". Ninguém de fora vê ninguém; e-mail e telefone nunca saem.
+- ✅ Fase 2, conversas: direta com quem trabalha junto ou é contato (pedido pelo @ de perfil visível; recusa sem aviso e
+  30 dias de espera), e a do projeto canônico para quem vê o projeto, de qualquer app. Não lidas, silenciar, editar
+  (24 h) e apagar com a versão anterior só para a moderação (90 dias), bloquear nos dois sentidos, denunciar.
+  Limites: 30 mensagens/min, 20 pedidos e 10 denúncias por dia. Exclusão da conta leva os dados do Set.
+- ✅ Tempo real sem serviço novo: poll curto com ETag (304 sem corpo) — batida 45 s, estado 12 s com a folha aberta,
+  conversa 4 s.
+- ✅ Central: "Set" no menu (não é aba principal), pílula discreta na barra de cima (rostos de quem está online e o
+  balão), página `/set` (lista e conversa lado a lado; no iPhone a conversa fica com a tela) e "Conversa" na página do
+  projeto. Console › Denúncias (admin ou suporte) para resolver.
+- ✅ Apps: escopo de família `zro.set` e o widget `<zro-set>` (`/set/v1/zro-set.js`, [contrato](integration-contracts/set.md)).
+  Maestro: pílula na cápsula e no topo do celular, repasse `/api/zro/set/*` com o token no servidor (ETag inclusive),
+  login pede `zro.set` (HUB antigo: `nivel=sem_set`).
+- ⛔ Em produção: migração `0035` no deploy e novo login no Maestro para o escopo `zro.set`.
+- ⬜ SOBEDESCE, Synquei e os demais apps com o widget; aviso fora do app (e-mail/push); anexos.
+- ⬜ Fase 3, salas abertas da comunidade: com o lançamento do Carro do Freela (novo tipo de conversa, mesma API).
+
+## Laboratório da Z (30/10/2026, [ADR 0033](decisions/0033-laboratorio-da-z.md))
+
+- ✅ Console › **Laboratório da Z** (só o admin da plataforma; suporte e clientes não veem): Testar e Configurar.
+  Migração `0036_laboratorio_z.sql` com RLS em todas as tabelas `z_*`.
+- ✅ Conversa por voz como a do ChatGPT: mãos livres (Scribe v2 Realtime, VAD) ou segure para falar (Scribe v2),
+  resposta do Claude em streaming falada frase a frase (ElevenLabs Flash v2.5 em PCM), barge-in, legenda ao vivo e o
+  tempo de cada etapa; modelo escolhido na hora (o da Z hoje ou um mais rápido).
+- ✅ A Z é uma mulher: personalidade feminina proposta no rascunho, vozes femininas pt-BR da conta pré-filtradas e o
+  Voice Design para criar uma (salva na conta só com confirmação).
+- ✅ Ditado no campo (o microfone escreve para editar antes de enviar) e anexos: imagem e PDF nativos no Claude;
+  Word, Excel, PowerPoint, texto e CSV lidos no servidor; áudio e vídeo transcritos (e quatro quadros do vídeo).
+- ✅ Configurar: personalidade, tom, regras, instrução por plataforma, textos de referência, voz e saudação, modelo e
+  tamanho da resposta, teto por dia; versões imutáveis com nota, diferenças, comparar lado a lado e restaurar.
+- ✅ Custo de cada chamada (tokens, caracteres, segundos) com teto por dia (sem teto = bloqueado) e o gasto nos Custos.
+- ✅ Liberação por plano (voz, ditado, anexos) e "Publicar para os clientes": tudo desligado, ligar pede confirmação e
+  fica na auditoria.
+- ⛔ Em produção: migração `0036` no deploy e o primeiro teste com as chaves reais (`IA_ANTHROPIC_KEY` e
+  `ELEVENLABS_API_KEY`, já na Vercel).
+- ⬜ Para os clientes: voz, ditado e anexos no painel `<zro-ia>` lendo `z_recurso_liberado`, quando os planos forem
+  vendidos.
 
 ## Fase 6 — Escala
 

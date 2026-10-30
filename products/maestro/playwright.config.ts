@@ -8,7 +8,9 @@ import { defineConfig, devices } from "@playwright/test";
 const PORT = Number(process.env.E2E_PORT || 3217);
 const BASE = process.env.TEST_DATABASE_URL || "postgres://postgres:postgres@localhost:5432/postgres";
 const u = new URL(BASE);
-u.pathname = "/maestro_test_e2e";
+// E2E_DB_SUFIXO separa o banco quando duas cópias do repositório rodam o e2e ao mesmo tempo (maestro_test_e2e_<sufixo>).
+const SUFIXO = (process.env.E2E_DB_SUFIXO ?? "").replace(/[^a-z0-9_]/g, "");
+u.pathname = `/maestro_test_e2e${SUFIXO ? `_${SUFIXO}` : ""}`;
 export const E2E_DB = u.toString();
 export const E2E_KEY = Buffer.alloc(32, 7).toString("base64");
 
@@ -24,7 +26,7 @@ export default defineConfig({
     { name: "computador", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
     { name: "iphone", use: { ...devices["iPhone 15 Pro"], browserName: "chromium" } },
     // O Safari de verdade (WebKit) para o detector de corte, a troca de seção e os gestos do Quadro.
-    { name: "iphone-safari", testMatch: /(sem-corte|transicao|gestos)\.spec\.ts/, use: { ...devices["iPhone 15 Pro"] } },
+    { name: "iphone-safari", testMatch: /(sem-corte|transicao|gestos|set)\.spec\.ts/, use: { ...devices["iPhone 15 Pro"] } },
   ],
   webServer: {
     command: `npx next start -p ${PORT}`,
@@ -45,6 +47,9 @@ export default defineConfig({
       // A ANP de mentira (tests/anp-fixture.mts) e o segredo do agendamento: o combustível automático sem rede.
       MAESTRO_ANP_URL: `http://127.0.0.1:${Number(process.env.E2E_ANP_PORT || 3221)}/pagina`,
       CRON_SECRET: "segredo-do-cron-e2e",
+      // Photon e OSRM de mentira (tests/rota-fixture.mts): lugares e km sem rede.
+      MAESTRO_PHOTON_URL: `http://127.0.0.1:${Number(process.env.E2E_ROTA_PORT || 3223)}/photon/api/`,
+      MAESTRO_OSRM_URL: `http://127.0.0.1:${Number(process.env.E2E_ROTA_PORT || 3223)}/osrm`,
     },
   },
 });
