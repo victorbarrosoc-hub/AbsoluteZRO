@@ -69,7 +69,13 @@ export function startFakes() {
     /** O escopo pedido no último authorize. */
     pedido: '',
     /** Pedidos que chegaram à API do Set: caminho, método, Authorization, If-None-Match e corpo. */
-    set: [] as { path: string; method: string; auth: string | null; inm: string | null; body: string | null }[],
+    set: [] as {
+      path: string;
+      method: string;
+      auth: string | null;
+      inm: string | null;
+      body: string | null;
+    }[],
     /** Vida do access token, em segundos. */
     accessLife: 600,
     refreshes: 0,
@@ -119,7 +125,8 @@ export function startFakes() {
     state.pedido = q.get('scope') || '';
     const completo = 'openid email profile org offline_access zro.ia zro.set';
     const semSet = 'openid email profile org offline_access zro.ia';
-    if (state.recusarSet && q.get('scope') === completo) back.searchParams.set('error', 'invalid_scope');
+    if (state.recusarSet && q.get('scope') === completo)
+      back.searchParams.set('error', 'invalid_scope');
     else if (
       q.get('client_id') !== CLIENT.clientId ||
       q.get('code_challenge_method') !== 'S256' ||
@@ -168,7 +175,9 @@ export function startFakes() {
       if ((init?.method || 'GET') === 'GET' && h.get('if-none-match') === 'W/"v1"')
         return new Response(null, { status: 304, headers: { etag: 'W/"v1"' } });
       return Response.json(
-        url.pathname === '/api/v1/set' ? { eu: { id: 'eu' }, pessoas: [], naoLidas: 1, pedidos: 0 } : { ok: true },
+        url.pathname === '/api/v1/set'
+          ? { eu: { id: 'eu' }, pessoas: [], naoLidas: 1, pedidos: 0 }
+          : { ok: true },
         { headers: (init?.method || 'GET') === 'GET' ? { etag: 'W/"v1"' } : {} },
       );
     }

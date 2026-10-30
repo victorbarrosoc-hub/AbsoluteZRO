@@ -11,7 +11,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 export const ZRO_SET_SCRIPT = 'https://absolutezro.com/set/v1/zro-set.js';
 
-type ZroSetElement = HTMLElement & { aberto?: boolean; abrirSet?: () => void; fecharSet?: () => void };
+type ZroSetElement = HTMLElement & {
+  aberto?: boolean;
+  abrirSet?: () => void;
+  fecharSet?: () => void;
+};
 declare module 'react' {
   namespace JSX {
     interface IntrinsicElements {
@@ -24,7 +28,13 @@ declare module 'react' {
   }
 }
 
-export type SetZro = { visivel: boolean; novidades: number; online: number; aberto: boolean; alternar: () => void };
+export type SetZro = {
+  visivel: boolean;
+  novidades: number;
+  online: number;
+  aberto: boolean;
+  alternar: () => void;
+};
 
 /** O estado do Set para as entradas da navegação, e o elemento (`elemento`) que vai uma vez no estúdio. */
 export function useSetZro(ligado: boolean, theme: 'system' | 'light' | 'dark') {
@@ -35,7 +45,12 @@ export function useSetZro(ligado: boolean, theme: 'system' | 'light' | 'dark') {
   const [aberto, setAberto] = useState(false);
 
   useEffect(() => {
-    if (!ligado || customElements.get('zro-set') || document.querySelector(`script[src="${ZRO_SET_SCRIPT}"]`)) return;
+    if (
+      !ligado ||
+      customElements.get('zro-set') ||
+      document.querySelector(`script[src="${ZRO_SET_SCRIPT}"]`)
+    )
+      return;
     const s = document.createElement('script');
     s.type = 'module';
     s.src = ZRO_SET_SCRIPT;
@@ -46,7 +61,8 @@ export function useSetZro(ligado: boolean, theme: 'system' | 'light' | 'dark') {
     const el = ref.current;
     if (!el) return;
     const estado = (e: Event) => {
-      const d = (e as CustomEvent<{ online?: number; naoLidas?: number; pedidos?: number }>).detail || {};
+      const d =
+        (e as CustomEvent<{ online?: number; naoLidas?: number; pedidos?: number }>).detail || {};
       setVisivel(true);
       setOnline(d.online || 0);
       setNovidades((d.naoLidas || 0) + (d.pedidos || 0));

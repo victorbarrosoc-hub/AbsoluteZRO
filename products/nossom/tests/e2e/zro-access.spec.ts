@@ -25,7 +25,14 @@ async function expectDevPage(page: Page, path: string) {
 async function expectProductDenied(page: Page) {
   await expectDevPage(page, '/studio');
   await expectDevPage(page, '/studio/z');
-  for (const path of ['/api/usage', '/api/plans', '/api/audio/jobs', '/api/admin', '/api/zro/set', '/api/zro/set/conversas'])
+  for (const path of [
+    '/api/usage',
+    '/api/plans',
+    '/api/audio/jobs',
+    '/api/admin',
+    '/api/zro/set',
+    '/api/zro/set/conversas',
+  ])
     expect((await page.request.get(path)).status(), path).toBe(403);
   for (const path of ['/baixar', '/baixar/mac', '/baixar/atualizacoes/latest.json'])
     expect((await page.request.get(path, { maxRedirects: 0 })).status(), path).toBe(404);

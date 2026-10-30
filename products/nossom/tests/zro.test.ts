@@ -622,7 +622,9 @@ test('signing in keeps the Z token only in an encrypted HttpOnly cookie scoped t
   // /api/zro: o repasse da Z e o do Set usam o mesmo token; o cookie antigo de /api/zro/ia sai junto
   assert.match(r.iaHeader!, /Path=\/api\/zro;/);
   assert.ok(
-    r.res.headers.getSetCookie().some((c) => /^nossom-zro-ia=;.*Path=\/api\/zro\/ia;.*Max-Age=0/.test(c)),
+    r.res.headers
+      .getSetCookie()
+      .some((c) => /^nossom-zro-ia=;.*Path=\/api\/zro\/ia;.*Max-Age=0/.test(c)),
     'o cookie de antes do Set é apagado',
   );
   assert.doesNotMatch(r.iaHeader!, /zat_|zrt_/, 'o token não aparece em claro no cookie');
@@ -775,12 +777,21 @@ const SET_ID = '3f2b8c1e-7d4a-4b9e-9c21-5a6f7e8d9c0b';
 const setCall = (
   r: Flow,
   path: string,
-  o: { method?: string; body?: string; origin?: string; headers?: Record<string, string>; ia?: string | null } = {},
+  o: {
+    method?: string;
+    body?: string;
+    origin?: string;
+    headers?: Record<string, string>;
+    ia?: string | null;
+  } = {},
 ) => {
   const method = o.method ?? 'GET';
   const [p, q] = path.split('?');
   const parts = p.split('/').filter(Boolean);
-  const cookie = [cookieFor(r.session!), ...(o.ia === null ? [] : ['nossom-zro-ia=' + (o.ia ?? r.ia)])].join('; ');
+  const cookie = [
+    cookieFor(r.session!),
+    ...(o.ia === null ? [] : ['nossom-zro-ia=' + (o.ia ?? r.ia)]),
+  ].join('; ');
   const request = new Request(SITE + '/api/zro/set' + (p ? '/' + p : '') + (q ? '?' + q : ''), {
     method,
     headers: {
@@ -792,7 +803,9 @@ const setCall = (
     ...(o.body ? { body: o.body } : {}),
   });
   const handler = method === 'POST' ? setPost : method === 'PUT' ? setPut : setGet;
-  return handler(request, { params: Promise.resolve({ caminho: parts.length ? parts : undefined }) });
+  return handler(request, {
+    params: Promise.resolve({ caminho: parts.length ? parts : undefined }),
+  });
 };
 
 test('Set: the proxy forwards the same Bearer token, passes the ETag and the 304, and never leaks the token', async () => {
@@ -817,7 +830,8 @@ test('Set: the proxy forwards the same Bearer token, passes the ETag and the 304
   assert.equal(sent.status, 200);
   assert.equal(fakes.state.set.at(-1)!.body, '{"texto":"Oi","chave":"abcdefgh12"}');
   assert.equal(
-    (await setCall(r, 'preferencias', { method: 'PUT', origin: SITE, body: '{"invisivel":true}' })).status,
+    (await setCall(r, 'preferencias', { method: 'PUT', origin: SITE, body: '{"invisivel":true}' }))
+      .status,
     200,
   );
 });
@@ -827,10 +841,17 @@ test('Set: closed doors (no session, other origin, unknown path or method) and a
   const before = fakes.state.set.length;
   assert.equal((await setCall(r, '', { ia: null })).status, 401);
   assert.equal(
-    (await setCall(r, '', { method: 'POST', origin: 'https://evil.example', body: '{"estado":"ativo"}' })).status,
+    (
+      await setCall(r, '', {
+        method: 'POST',
+        origin: 'https://evil.example',
+        body: '{"estado":"ativo"}',
+      })
+    ).status,
     403,
   );
-  for (const p of ['admin', 'conversas/x', 'ia/estado']) assert.equal((await setCall(r, p)).status, 404, p);
+  for (const p of ['admin', 'conversas/x', 'ia/estado'])
+    assert.equal((await setCall(r, p)).status, 404, p);
   assert.equal((await setCall(r, 'preferencias')).status, 404, 'GET em preferencias não existe');
   assert.equal(setTarget(['conversas', '..', 'admin'], 'GET'), null);
   assert.equal(fakes.state.set.length, before, 'nada disso chegou à Absolute ZRO');

@@ -14,7 +14,14 @@
 import { currentAccount } from '../account';
 import { allowRequest, cookieValue, privateHeaders, sameOrigin } from '../ai-access';
 import { ZRO_SET_SCOPE, zroConfigured, zroIssuer } from './config';
-import { iaCookies, openIaTokens, refreshOnce, sealIaTokens, secureRequest, ZRO_IA_COOKIE } from './ia';
+import {
+  iaCookies,
+  openIaTokens,
+  refreshOnce,
+  sealIaTokens,
+  secureRequest,
+  ZRO_IA_COOKIE,
+} from './ia';
 
 const MAX_BODY = 20_000;
 const ID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
@@ -63,7 +70,11 @@ const json = (status: number, body: Record<string, unknown>, cookies: string[] =
   return new Response(JSON.stringify(body), { status, headers });
 };
 const semSet = (cookies: string[] = []) =>
-  json(401, { error: 'zro_set_login', message: 'Entre com a conta Absolute ZRO para ver o Set.' }, cookies);
+  json(
+    401,
+    { error: 'zro_set_login', message: 'Entre com a conta Absolute ZRO para ver o Set.' },
+    cookies,
+  );
 
 /** /api/zro/set[/…] → <emissor>/api/v1/set[/…] com o token da conta, sem expor o token. */
 export async function proxySet(request: Request, parts: string[]): Promise<Response> {
@@ -91,7 +102,8 @@ export async function proxySet(request: Request, parts: string[]): Promise<Respo
     if (Number(request.headers.get('content-length') || 0) > MAX_BODY)
       return json(413, { error: 'grande', message: 'Mensagem grande demais.' });
     body = await request.text();
-    if (body.length > MAX_BODY) return json(413, { error: 'grande', message: 'Mensagem grande demais.' });
+    if (body.length > MAX_BODY)
+      return json(413, { error: 'grande', message: 'Mensagem grande demais.' });
   }
 
   const cookies: string[] = [];
@@ -108,7 +120,10 @@ export async function proxySet(request: Request, parts: string[]): Promise<Respo
     try {
       fresh = await refreshOnce(saved.refresh);
     } catch {
-      return json(503, { error: 'zro_rede', message: 'A Absolute ZRO não respondeu. Tente de novo.' });
+      return json(503, {
+        error: 'zro_rede',
+        message: 'A Absolute ZRO não respondeu. Tente de novo.',
+      });
     }
     if (!fresh) return semSet();
     saved = { ...fresh, scope: fresh.scope || saved.scope, user: account.id };
@@ -118,21 +133,30 @@ export async function proxySet(request: Request, parts: string[]): Promise<Respo
   const asked = request.headers.get('if-none-match') || '';
   let upstream: Response;
   try {
-    upstream = await fetch(zroIssuer() + '/api/v1/set' + (path ? '/' + path : '') + query(request, path, method), {
-      method,
-      cache: 'no-store',
-      redirect: 'manual',
-      signal: AbortSignal.any([request.signal, AbortSignal.timeout(20_000)]),
-      headers: {
-        Authorization: 'Bearer ' + saved.access,
-        Accept: 'application/json',
-        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-        ...(method === 'GET' && asked.length <= 200 && ETAG.test(asked) ? { 'If-None-Match': asked } : {}),
+    upstream = await fetch(
+      zroIssuer() + '/api/v1/set' + (path ? '/' + path : '') + query(request, path, method),
+      {
+        method,
+        cache: 'no-store',
+        redirect: 'manual',
+        signal: AbortSignal.any([request.signal, AbortSignal.timeout(20_000)]),
+        headers: {
+          Authorization: 'Bearer ' + saved.access,
+          Accept: 'application/json',
+          ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+          ...(method === 'GET' && asked.length <= 200 && ETAG.test(asked)
+            ? { 'If-None-Match': asked }
+            : {}),
+        },
+        ...(body !== undefined ? { body } : {}),
       },
-      ...(body !== undefined ? { body } : {}),
-    });
+    );
   } catch {
-    return json(503, { error: 'zro_rede', message: 'A Absolute ZRO não respondeu. Tente de novo.' }, cookies);
+    return json(
+      503,
+      { error: 'zro_rede', message: 'A Absolute ZRO não respondeu. Tente de novo.' },
+      cookies,
+    );
   }
   // Login de antes do Set (token sem zro.set) ou acesso recusado: o widget some; o cookie fica para a Z.
   if (upstream.status === 401) {
@@ -147,5 +171,8 @@ export async function proxySet(request: Request, parts: string[]): Promise<Respo
   for (const c of cookies) headers.append('Set-Cookie', c);
   const empty = upstream.status === 204 || upstream.status === 304;
   if (empty) await upstream.body?.cancel().catch(() => undefined);
-  return new Response(empty ? null : await upstream.arrayBuffer(), { status: upstream.status, headers });
+  return new Response(empty ? null : await upstream.arrayBuffer(), {
+    status: upstream.status,
+    headers,
+  });
 }
