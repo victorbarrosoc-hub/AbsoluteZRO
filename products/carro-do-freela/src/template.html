@@ -9580,6 +9580,9 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
    e o build troca o marcador abaixo pela leitura dessa meta. */
 const FASE=/*__FASE__*/0;
 const faseTem=n=>!FASE||FASE>=n;
+/* ⚠️ O SITE REAL (30/out): `node src/build.js --real` escreve <meta name="cdf-real"> e um CREW só com a conta de
+   quem abre. Nada é semeado: nem pessoa, nem job, nem post, nem anúncio. Quem aparece vem de /api/zro/pessoas. */
+const REAL=!!document.querySelector('meta[name="cdf-real"]');
 /* ⚠️ O PORTÃO DO LANÇAMENTO (28/out, adendo do PRD: acesso exclusivo do
    proprietário). No domínio o build marca <meta name="cdf-release"
    content="closed"> e a tela nasce FECHADA desde o primeiro quadro: a home
@@ -11061,9 +11064,9 @@ function rnd(s){const x=Math.sin(s*12.9898)*43758.5453;return x-Math.floor(x)}
 
 /* reputação de operação — comportamento, nunca nota de talento */
 CREW.forEach(c=>{
-  c.streak = c.me?9:Math.floor(rnd(c.id*17+3)*13);
-  c.resp   = c.me?12:Math.round(4+rnd(c.id*29+11)*170);
-  c.jobs   = c.me?14:Math.floor(rnd(c.id*41+5)*32);
+  c.streak = c.me?(REAL?0:9):Math.floor(rnd(c.id*17+3)*13);
+  c.resp   = c.me?(REAL?null:12):Math.round(4+rnd(c.id*29+11)*170);
+  c.jobs   = c.me?(REAL?0:14):Math.floor(rnd(c.id*41+5)*32);
   c.compl  = c.incompleto?Math.round(40+rnd(c.id*7)*22):Math.round(74+rnd(c.id*7)*26);
   c.ver    = c.jobs>=6 && c.compl>=85;
   /* ⚠️ SEGUIDORES é DERIVADO, no mesmo molde de c.jobs e c.resp logo
@@ -11127,7 +11130,7 @@ function garStatus(j){
 }
 const recebido=j=>j.pago||garStatus(j)==="pago";
 
-let JOBS=[
+let JOBS=REAL?[]:[
   {off:-13,cliente:"Produtora Maré",func:"Op. de câmera",valor:1200,hold:false,pago:true, gar:true},
   {off:-11,cliente:"Podcast Horizonte",func:"Op. de câmera",valor:900,hold:false,pago:true, gar:false},
   {off:-8, cliente:"Agência Vetor",func:"Colorista",valor:1100,hold:false,pago:false,gar:false},
@@ -11184,11 +11187,12 @@ const META_DIA={dia:"o dia todo",manha:"de manhã",tarde:"à tarde"};
 const OUTRA={manha:"tarde",tarde:"manha"};
 
 function declarar(k,e,p,h){
-  if(!e){ delete AGENDA[k]; return }
+  if(!e){ delete AGENDA[k]; realAgendaSalvar(k); return }
   AGENDA[k]={e:e,p:p||"dia"};
   if(h) AGENDA[k].h=h;
+  realAgendaSalvar(k);
 }
-const liberarDia=k=>{ delete AGENDA[k] };
+const liberarDia=k=>{ delete AGENDA[k]; realAgendaSalvar(k) };
 
 let gcal=false, zap=false;
 
@@ -11220,6 +11224,7 @@ function janelaEu(k){
 }
 function status(c,i){
   if(c.me) return statusEu(dateAt(i));
+  if(c.remoto) return realStatus(c,i);
   const d=dateAt(i),wk=d.getDay()===6||d.getDay()===0,r=rnd(c.id*97+i*13);
   if(wk) return r<.42?"livre":r<.58?"segura":"ocupado";
   return r<.60?"livre":r<.76?"segura":"ocupado";
@@ -12146,6 +12151,8 @@ function abrirPlanoFreela(qual){
   v("ovl27").hidden=false; document.body.style.overflow="hidden";
 }
 function abrirAssinatura(qual){
+  /* no site real não se assina nada de mentira: os planos são da Absolute ZRO e ainda não abriram */
+  if(REAL){ avisar({t:"Os planos ainda não abriram",sub:"Por enquanto, tudo aqui é de graça.",icone:"✓"}); return }
   v("as-form").hidden=false; v("as-ok2").hidden=true;
   planoEscolhido=PLANOS[qual]&&planoNaFase(qual)?qual:"volante";
   v("as-plano").querySelectorAll("[data-pl]").forEach(b=>b.hidden=!planoNaFase(b.dataset.pl));
@@ -12913,7 +12920,10 @@ function initAssinatura(){
 /* ver quem está livre é do degrau 3 (Volante). O MODO continua na conta
    porque agenda alheia é tela de quem contrata — o degrau diz SE abre,
    o modo diz ONDE. */
-const podeVerAgenda=()=>MODO==="contratante"&&temNivel(NIVEL.VOLANTE);
+/* ⚠️ no site real (30/out) a agenda de quem marcou "Mostrar meu perfil para quem contrata" abre para toda conta
+   liberada: o plano do ecossistema ainda não existe, e o servidor decide em `podeVerAgendas()` (_dados.js) —
+   quando o plano nascer, a tranca nasce lá e aqui juntas. Nada de assinatura simulada no domínio. */
+const podeVerAgenda=()=>REAL||(MODO==="contratante"&&temNivel(NIVEL.VOLANTE));
 
 /* Quantos profissionais existem, por função. É o número que vende a conta
    de contratante: antes de pagar, a pessoa precisa saber que a praça tem
@@ -13615,7 +13625,7 @@ function linhaDe(c){
       seloColetivos(c)+brasaoDe(c)+'</span>'+
     '<span class="fn">'+esc(c.principal[0]||c.func[0]||"")+' · '+esc(c.cidade)+'</span></span>'+
     '<span class="stk"><span class="disp s-'+st+'">'+ROT_CURTO[st]+'</span>'+
-    '<span class="rsp">responde em '+(c.resp<60?c.resp+" min":Math.round(c.resp/60)+" h")+'</span>'+
+    (c.resp==null?'':'<span class="rsp">responde em '+respTxt(c)+'</span>')+
     (jan?'<span class="jan">job '+jan.ini+'–'+jan.fim+(jan.txt?' · <b>'+jan.txt+'</b>':' nesse dia')+'</span>':"")+
     (decl?'<span class="jan decl'+(decl.tipo==="negociando"?" neg":"")+'"><b>'+esc(decl.txt)+'</b></span>':"")+
     rotuloDiaria(c)+'</span>';
@@ -13692,7 +13702,7 @@ function drawRows(){
 /* ================= PORTFÓLIO =================
    O perfil é o ativo do freela. Ele precisa poder mostrar trabalho, não só
    equipamento — e a lista de clientes se monta sozinha a partir dos jobs. */
-let TRABALHOS=[
+let TRABALHOS=REAL?[]:[
   {id:1,dono:EU.id,img:FRAMES.show,titulo:"Banda Litoral no Teatro",cliente:"Selo Norte",
    func:"Op. de câmera",ano:2025,tipo:"Show / DVD",link:"",
    desc:"Registro do show em duas câmeras, uma na plateia e uma no palco, com captação do multipista da mesa. Corte final entregue em quatro dias."},
@@ -13745,7 +13755,7 @@ function trabalhosDe(c){return TRABALHOS.filter(t=>t.dono===c.id)}
    vídeo ou álbum. Note a assimetria honesta: o álbum ABRE de verdade dentro
    da página, porque imagem é data URI e não pede requisição externa. O
    vídeo não abre, e a tela diz. Cada um faz o que o produto consegue fazer. */
-let REELS=[
+let REELS=REAL?[]:[
   {dono:EU.id,tipo:"video",capa:FRAMES.show,titulo:"Demoreel 2025",
    dur:"1min48",link:"",fotos:[],
    sobre:"Um corte de 2024 e 2025: show, casamento e publicidade. Câmera e cor."}
@@ -14197,7 +14207,7 @@ function abrirPerfil(id){
     '<div'+z(_segs)+'><b>'+_segs+'</b><span>seguidores</span></div>'+
     '<div'+z(_sg)+'><b>'+_sg+'</b><span>seguindo</span></div>'+
     '<div'+z(c.jobs)+'><b>'+c.jobs+'</b><span>jobs concluídos</span></div>'+
-    '<div><b>'+(c.resp<60?c.resp+" min":Math.round(c.resp/60)+" h")+'</b><span>responde em</span></div>'+
+    '<div><b>'+respTxt(c)+'</b><span>responde em</span></div>'+
     '<div'+z(ts.length)+'><b>'+ts.length+'</b><span>trabalhos</span></div>'+
     '<div'+z(cls.length)+'><b>'+cls.length+'</b><span>clientes</span></div>'+
     '<div class="pring'+(c.compl>=85?" full":"")+'" style="--pc:'+c.compl+'">'+
@@ -14211,7 +14221,7 @@ function abrirPerfil(id){
 
   v("p-rep").innerHTML=
     '<div class="rp"><span class="lab">Agenda em dia</span><b style="color:'+(c.streak>3?"var(--livre)":"var(--cal)")+'">'+c.streak+' sem</b><small>semanas seguidas atualizando</small></div>'+
-    '<div class="rp"><span class="lab">Responde em</span><b>'+(c.resp<60?c.resp+" min":Math.round(c.resp/60)+" h")+'</b><small>mediana das chamadas</small></div>'+
+    '<div class="rp"><span class="lab">Responde em</span><b>'+respTxt(c)+'</b><small>mediana das chamadas</small></div>'+
     '<div class="rp"><span class="lab">Jobs concluídos</span><b>'+c.jobs+'</b><small>fechados pela plataforma</small></div>'+
     '<div class="rp"><span class="lab">Perfil completo</span><b>'+c.compl+'%</b><small>'+(c.ver?"verificado":"ainda não verificado")+'</small></div>'+
     (fraseAval(c.id)?'<div class="rp"><span class="lab">Depois do job</span><b>'+fraseAval(c.id).split(" ")[0]+'/'+AVALIACOES.filter(a=>a.quem===c.id).length+'</b><small>'+fraseAval(c.id)+'</small></div>':'');
@@ -14427,7 +14437,7 @@ function drawPassar(){
   list.forEach(c=>{const r=document.createElement("div");r.className="sl";r.dataset.id=c.id;
     r.innerHTML='<input type="checkbox" checked aria-label="Incluir '+esc(titulo(c.nome))+'"><span class="nm">'+esc(titulo(c.nome))+
       (c.gar?' <span class="selog">'+ESCUDO+'</span>':"")+
-      ' <span style="color:var(--cal-fraco)">— '+esc(c.cidade)+' · responde em '+(c.resp<60?c.resp+" min":Math.round(c.resp/60)+" h")+'</span></span>'+
+      ' <span style="color:var(--cal-fraco)">— '+esc(c.cidade)+(c.resp==null?'':' · responde em '+respTxt(c))+'</span></span>'+
       '<span class="resp wait" data-r="'+c.id+'">'+(rodando?"aguardando":"")+'</span>';
     el.appendChild(r)});
   const cab=v("u-cab"); cab.hidden=!list.length;
@@ -14835,7 +14845,7 @@ v("ev-btn").onclick=e=>{e.target.textContent="Presença confirmada";e.target.dis
 /* ================= PROPOSTAS =================
    A outra ponta do negócio: a consulta que o contratante manda chega aqui,
    e é a resposta do freela que vira job na agenda. */
-let PROPOSTAS=[
+let PROPOSTAS=REAL?[]:[
   {off:6,  de:"Agência Vetor", contato:"Rafa, produção", func:"Op. de câmera", tipo:"Publicidade",
    ini:"07:00", fim:"19:00", local:"Natal — Praia de Ponta Negra",
    desc:"Filme de 60s para a campanha de verão. Dois setups de câmera, nascer do sol e fim de tarde. Entrega dos brutos no mesmo dia.",
@@ -14860,7 +14870,7 @@ let PROPOSTAS=[
 ].map((x,i)=>({...x,id:i+1,data:key(dateAt(x.off))}));
 
 const MOTIVOS=["já tenho job nessa data","valor abaixo da minha tabela","não atendo esse tipo de trabalho","não vou estar na cidade","não dá tempo de me preparar"];
-let RESPOSTAS=[8,12,18];
+let RESPOSTAS=REAL?[]:[8,12,18];
 function registrarResposta(pr){
   if(pr.respondida) return;
   pr.respondida=true;
@@ -15165,7 +15175,7 @@ function haQuanto(d){
 /* ⚠️ O CONTEÚDO SÓ FALA DE OFÍCIO. Nada de cliente com nome, valor de
    diária, nem juízo sobre outra pessoa — o post fala do trabalho e da
    praça, que é o que o cadastro já declara. */
-let POSTS=[
+let POSTS=REAL?[]:[
   {id:1,autor:_fdQuem("Op. de câmera",0),tipo:"entrega",q:hAtras(5),img:FRAMES.show,
    txt:"Show fechado com duas câmeras e multipista direto da mesa. Corte final saiu em quatro dias.\n\nQuem rodou junto: câmera, assistente e um editor que virou a noite. Valeu, time.",
    curtidas:14,coments:[{de:_fdQuem("Editor",0),txt:"Ficou muito bom o corte da plateia."}],compart:2},
@@ -15621,7 +15631,7 @@ const rdVivo=s2=>(Date.now()-s2.q)<RD_HORAS*3600000;
 /* ⚠️ MESMA REGRA DO FEED: o cadastro é real, o conteúdo é escrito aqui, e
    só fala de ofício. Nascem com horas diferentes para a fila ter ordem, e
    todos dentro das 24h — senão a fileira abriria vazia. */
-RODANDO=[
+RODANDO=REAL?[]:[
   {id:901,autor:POSTS[0].autor,tipo:"foto",src:FRAMES.show,q:Date.now()-2*3600000,
    txt:"Montagem começando. Duas câmeras hoje."},
   {id:902,autor:POSTS[0].autor,tipo:"foto",src:FRAMES.corporativo,q:Date.now()-1.5*3600000,
@@ -16258,7 +16268,7 @@ function drawPropostas(){
   v("pp-novas-s").textContent=!(nJ+nE)?"nada parado com você":
     [nJ?pl(nJ,"consulta de job","consultas de job"):"",nE?pl(nE,"oferta no brechó","ofertas no brechó"):""].filter(Boolean).join(" · ");
   v("pp-valor").textContent=brl(novas.reduce((a,x)=>a+x.valor,0));
-  v("pp-resp").textContent=EU.resp<60?EU.resp+" min":Math.round(EU.resp/60)+" h";
+  v("pp-resp").textContent=EU.resp==null?"—":EU.resp<60?EU.resp+" min":Math.round(EU.resp/60)+" h";
   v("pp-ok").textContent=aceitas.length;
   v("pp-ok-s").textContent=brl(aceitas.reduce((a,x)=>a+x.valor,0))+" em jobs que nasceram nesta caixa";
 
@@ -17395,7 +17405,7 @@ const _comPort=_pool.filter(c=>c.port);
 const _vend=(_comPort.length?_comPort:(_pool.length?_pool:CREW.slice()))
   .sort((a,b)=>b.jobs-a.jobs);
 const _v=i=>(_vend[i%_vend.length]||CREW[0]).id;
-let ANUNCIOS=[
+let ANUNCIOS=REAL?[]:[
   {t:"Sony 24-70mm f/2.8 GM II",cat:"lente",preco:9800,ref:14500,dono:"eu",gar:true,estado:"Seminovo",
    desc:"Comprada ano passado, saiu pouco. Vendo porque fechei com a linha Sigma Art.",
    f:{fungo:"Não tem",frontal:"Sem risco",traseiro:"Sem risco",haze:"Não tem",foco:"Macio",laminas:"Secas",baioneta:"Sem marcas",af:"Funciona"},
@@ -18500,7 +18510,7 @@ function initPortfolio(){
    fechava a venda e largava as pessoas sem informação, que é
    exatamente o que o grupo de WhatsApp faz de errado.
    ============================================================ */
-let ESCALAS=[
+let ESCALAS=REAL?[]:[
   {id:1,off:2,nome:"Institucional Cooperativa",cliente:"Cooperativa Potiguar",
    ini:"07:30",fim:"18:00",local:"Natal — sede da Cooperativa, Lagoa Nova",
    tipo:"Institucional",chamada:"07:00 no estacionamento",
@@ -20386,6 +20396,69 @@ function cfbPedir(metodo,caminho,corpo){
     return r.json().catch(function(){return null}).then(function(j){return {status:r.status,j:j}});
   }).catch(function(){return {status:0,j:null}});
 }
+/* ============ O SITE REAL FALA COM O SERVIDOR (30/out) ============
+   Só com REAL (build --real) e conta liberada (zroPodeEnviar). Duas coisas:
+   1. A MINHA AGENDA mora no banco: ao entrar, /api/zro/agenda preenche AGENDA; cada declarar()/liberarDia() manda o
+      dia (PUT) ou apaga (DELETE). Livre continua sendo a ausência de linha, igual ao app.
+   2. QUEM APARECE NA BUSCA vem de /api/zro/pessoas: gente da Absolute ZRO com o @ confirmado, e só quem marcou
+      "Mostrar meu perfil para quem contrata" no Carro (agenda !== null). Quem não divulgou a agenda NÃO entra na
+      busca: livre é a ausência de linha para quem usa a agenda, e dizer "livre" de quem nunca abriu o Carro seria
+      inventar. Nada de número de reputação: jobs, sequência e resposta nascem zerados até existirem de verdade.
+   ⚠️ Só var e function (o TDZ de 19/out · 2). */
+var REAL_PESSOAS_EM=0, REAL_AGENDA_OK=false;
+/* simular chamada e sirene são da prévia: no site real a chamada chega de gente, ou não chega */
+if(REAL){ var REAL_SIM=document.getElementById("pp-sim"); if(REAL_SIM&&REAL_SIM.closest(".eco")) REAL_SIM.closest(".eco").hidden=true }
+function realLigado(){ return REAL&&zroPodeEnviar() }
+function realAgendaSalvar(k){
+  if(!realLigado()||!REAL_AGENDA_OK) return;
+  var d=AGENDA[k];
+  var r=d?cfbPedir("PUT","/api/zro/agenda",{dia:k,estado:d.e,parte:d.p||"dia",hora:d.h||null})
+         :cfbPedir("DELETE","/api/zro/agenda?dia="+encodeURIComponent(k));
+  r.then(function(x){
+    if(x.status===200||x.status===204) return;
+    avisar({t:"A agenda não foi salva",sub:cfbMsg(x),tipo:"chama",icone:"⚠"});
+  });
+}
+/* sem mediana medida, o tempo de resposta não aparece: "—" na ficha, nada na linha (30/out) */
+function respTxt(c){ return c.resp==null?"—":c.resp<60?c.resp+" min":Math.round(c.resp/60)+" h" }
+function realStatus(c,i){
+  var d=c.agendaSrv&&c.agendaSrv[key(dateAt(i))];
+  if(!d) return "livre";
+  if(d.p!=="dia") return d.e==="negociando"?"segura":"livre";
+  return d.e==="negociando"?"segura":"ocupado";
+}
+function realPessoa(p,n){
+  var f=(p.funcoes||[]).filter(function(x){return FUNCOES.indexOf(x)>=0});
+  return {id:100000+n,sub:p.id,arroba:p.arroba,nome:p.nome||("@"+p.arroba),func:f,principal:f.slice(0,3),
+    cidade:p.cidade||"",extras:0,cam:"",lentes:"",gim:false,dro:false,transporte:"",nicho:p.nichos||[],
+    todosTipos:false,port:p.portfolio||null,obs:p.bio||"",tags:[],me:false,incompleto:!f.length,foto:p.foto||null,
+    streak:0,resp:null,jobs:0,compl:0,ver:false,segs:0,upd:0,gar:false,exige:false,viaja:false,
+    remoto:true,agendaSrv:p.agenda||{}};
+}
+function realRepintar(){
+  try{ render(); drawDatabar(); drawPracas(); drawAgenda(); drawHome() }catch(e){ console.warn("real: repintar",e) }
+}
+function realCarregar(){
+  if(!realLigado()) return;
+  if(Date.now()-REAL_PESSOAS_EM<60000) return;
+  REAL_PESSOAS_EM=Date.now();
+  var de=key(HOJE), ate=key(dateAt(42));
+  if(!EU.nome&&ZRO_CONTA&&ZRO_CONTA.nome) EU.nome=ZRO_CONTA.nome;
+  cfbPedir("GET","/api/zro/agenda?de="+de+"&ate="+ate).then(function(r){
+    if(r.status!==200||!r.j||!r.j.agenda) return;
+    for(var k in AGENDA) if(k>=de&&k<=ate) delete AGENDA[k];
+    for(var d in r.j.agenda) AGENDA[d]=r.j.agenda[d];
+    REAL_AGENDA_OK=true;
+    realRepintar();
+  });
+  cfbPedir("GET","/api/zro/pessoas?de="+de+"&ate="+ate).then(function(r){
+    if(r.status!==200||!r.j||!Array.isArray(r.j.pessoas)) return;
+    var eu=ZRO_CONTA&&String(ZRO_CONTA.sub||"").toLowerCase();
+    for(var i=CREW.length-1;i>=0;i--) if(CREW[i].remoto) CREW.splice(i,1);
+    r.j.pessoas.filter(function(p){return p&&p.agenda!==null&&p.id!==eu}).forEach(function(p,n){ CREW.push(realPessoa(p,n)) });
+    realRepintar();
+  });
+}
 function cfbMsg(r){ var e=r&&r.j&&r.j.erro; return CFB_ERRO[e]||"Não deu para salvar agora. Tente de novo." }
 function cfbReais(c){ return "R$ "+(c/100).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}) }
 function cfbPintar(){
@@ -20638,7 +20711,7 @@ addEventListener("resize",()=>posicionarDetJob());
    Ela nunca tem take vindo de depósito: cada job sai da conta dela em real,
    já amarrado àquele job. O que ela precisa é do espelho — quanto saiu, para
    quem, e o que ainda está retido esperando entrega. */
-const PAGOS=[
+const PAGOS=REAL?[]:[
   {off:-21,quem:_vend[0].id,func:"Op. de câmera",valor:1200,estado:"liberado"},
   {off:-16,quem:_vend[3].id,func:"Colorista",valor:1100,estado:"liberado"},
   {off:-9, quem:_vend[1].id,func:"Editor realtime",valor:850,estado:"liberado"},
@@ -24287,7 +24360,9 @@ function salvarAluguel(){
    A plataforma era assimétrica: o freela era perfilado, quem contrata era
    um nome numa proposta. Aqui quem contrata também presta contas — e são as
    mesmas quatro categorias de fato: paga, confirma, cancela, usa garantia. */
-let PRODUTORAS=[
+/* no site real a conta de quem contrata nasce em branco, como a de freela: nenhuma produtora de exemplo */
+let PRODUTORAS=REAL?[{id:1,nome:"",tipo:"",cidade:"—",desde:null,site:"",cnpj:false,gar:false,sobre:"",
+  jobs:0,comGar:0,atraso:0,confirma:0,cancel:0,cancelUlt:0,contrata:{}}]:[
   {id:1,nome:"Produtora Maré",tipo:"Produtora",cidade:"Natal/RN",desde:2019,site:"produtoramare.com.br",cnpj:true,gar:true,
    sobre:"Produtora de conteúdo institucional e publicitário. Equipe fixa de quatro pessoas e escala montada por job — costuma chamar as mesmas pessoas quando dá certo.",
    jobs:34,comGar:28,atraso:1,confirma:6,cancel:2,cancelUlt:0,
@@ -26424,7 +26499,7 @@ function vgpSemente(){
     {id:"vg6",de:"Bar Alecrim",tipo:"Institucional",titulo:"Vídeo de reabertura",func:"Op. de drone",qtd:1,dias:1,off:20,cidade:"Parnamirim/RN",desc:"Aéreas da fachada e da rua no fim de tarde."}
   ].map(x=>Object.assign({diaria:vgpDiaria(x.func),demo:true,int:[]},x));
 }
-let VGP=vgpSemente(), VGP_INT=[], VGP_SALVAS=[];
+let VGP=REAL?[]:vgpSemente(), VGP_INT=[], VGP_SALVAS=[];
 let vgpTipo="", vgpAberta=null;
 const podePublicarVaga=()=>MODO==="contratante"&&temNivel(NIVEL.VOLANTE);
 function vgpStatus(g){
@@ -27689,7 +27764,7 @@ const FBK_KEY=/*__WEB3FORMS_KEY__*/"";   /* Web3Forms → carrodofreela@gmail.co
    suporte: durante os testes a primeira pergunta de todo relato e "qual
    versao voce esta usando?", e sem ela nao da para saber se o defeito ja
    foi consertado ou se a pessoa esta com um arquivo velho no cache. */
-const VERSAO="30/out · 2";
+const VERSAO="30/out · 3";
 /* ?diag na URL faz a linha de contexto do suporte mostrar as medidas do
    aparelho. Existe porque daqui não dá para inspecionar o Safari do
    Victor: em vez de adivinhar uma quarta vez, ele abre com ?diag, toca no
@@ -28458,6 +28533,7 @@ v("z-entrar").onclick=()=>{ if(zroBloqueado()) return zroMostrarBloqueio(); marc
       setPintar();
       pintarFechado();
       cfbPintar();
+      realCarregar();
       /* a conta pode: a tela que o portão segurou abre agora */
       if(ZRO_LIBERADO&&S.tab==="fechado") show(FC_VOLTA&&FC_VOLTA!=="fechado"?FC_VOLTA:"home");
       /* quem abre o app já dentro fica na tela em que estava (29/out: a Z
