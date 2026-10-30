@@ -15,6 +15,7 @@ import { registerAttempt, withinLimit, type Authenticated, type Rule } from '@zr
 import { pgErrorCode, PG, type Database, type Tx } from '@zro/db'
 import { audit, DomainError } from '@zro/observability'
 import { authorize, type Actor } from './authz'
+import { LIMITE_BUSCA_PERFIS } from './perfis'
 
 /** Escopo de família para os apps usarem o Set (todo cliente com produto, migração 0035). */
 export const ESCOPO_SET = 'zro.set'
@@ -255,9 +256,49 @@ export async function meusContatosSet(db: Database, auth: Authenticated | null):
   return { contatos: de('contato'), recebidos: de('recebido'), enviados: de('enviado'), bloqueados: de('bloqueado') }
 }
 
+/** O que a pessoa já tem com outra (da `set_meus_contatos`, que esconde o bloqueio que a outra fez). */
+export type SituacaoContato = 'nenhuma' | 'contato' | 'enviado' | 'recebido' | 'bloqueado'
+
+async function situacaoCom(tx: Tx, id: string): Promise<{ situacao: SituacaoContato; pessoa: PessoaResumo | null }> {
+  const [r] = await tx`select user_id, arroba, nome, foto, situacao from zro.set_meus_contatos() where user_id = ${id} limit 1`
+  return r ? { situacao: r.situacao as SituacaoContato, pessoa: pessoa(r.user_id, r.arroba, r.nome, r.foto) } : { situacao: 'nenhuma', pessoa: null }
+}
+
+function arrobaDe(raw: unknown): string {
+  const a = String(raw ?? '')
+    .trim()
+    .replace(/^@/, '')
+    .toLowerCase()
+  if (!/^[a-z0-9._]{3,30}$/.test(a)) throw new DomainError('invalid_input', 'Escreva o @ da pessoa.')
+  return a
+}
+
+/** O perfil visível de um @ (o atual ou um antigo dos últimos 90 dias). Escondido ou inexistente: a mesma resposta. */
+async function perfilVisivel(db: Database, actor: Actor, a: string): Promise<PessoaResumo> {
+  const [p] = await db.asUser(ctx(actor), (tx) => tx`select user_id, arroba, nome, foto from zro.perfil_por_arroba(${a}) where visivel`)
+  if (!p) throw new DomainError('not_found', `Não achamos @${a}.`)
+  return pessoa(p.user_id, p.arroba, p.nome, p.foto)
+}
+
+/**
+ * Quem é o @ antes de pedir (o widget mostra nome, foto e @ enquanto a pessoa digita): só perfil visível, pelas mesmas
+ * regras da busca de perfis (e-mail confirmado, 60 a cada 10 minutos, o mesmo contador). Não pede nada nem avisa
+ * ninguém; diz só o que a própria pessoa já sabe (contato, enviado, recebido, bloqueado por ela).
+ */
+export async function verPessoaSet(db: Database, auth: Authenticated | null, arroba: string): Promise<{ pessoa: PessoaResumo; situacao: SituacaoContato }> {
+  const actor = await authorize(db, auth, { verifiedEmail: true })
+  const a = arrobaDe(arroba)
+  await limite(db, `busca-perfis:${actor.userId}`, LIMITE_BUSCA_PERFIS, 'Muitas buscas seguidas. Espere alguns minutos.')
+  const p = await perfilVisivel(db, actor, a)
+  if (p.id === actor.userId) throw new DomainError('invalid_input', 'Esse é você.')
+  const { situacao } = await db.asUser(ctx(actor), (tx) => situacaoCom(tx, p.id))
+  return { pessoa: p, situacao }
+}
+
 /**
  * Pede contato pelo @ (perfil visível) ou pelo id (alguém que a pessoa já vê no Set). Se a outra pessoa já tinha
- * pedido, vira contato na hora. Bloqueio da outra pessoa ou recusa recente: "pendente", sem avisar ninguém.
+ * pedido, vira contato na hora. Bloqueio da outra pessoa ou recusa recente: "pendente", sem avisar ninguém. Já são
+ * contatos: 409. Pedido já enviado volta "pendente" sem gastar o limite do dia; aceitar o pedido recebido também não gasta.
  */
 export async function pedirContatoSet(
   db: Database,
@@ -265,25 +306,21 @@ export async function pedirContatoSet(
   alvo: { arroba?: string; id?: string },
 ): Promise<{ estado: 'pendente' | 'aceito'; pessoa: PessoaResumo }> {
   const actor = await authorize(db, auth, { verifiedEmail: true })
-  let id = alvo.id ?? null
-  let resumo: PessoaResumo | null = null
-  if (!id) {
-    const a = String(alvo.arroba ?? '')
-      .trim()
-      .replace(/^@/, '')
-      .toLowerCase()
-    if (!/^[a-z0-9._]{3,30}$/.test(a)) throw new DomainError('invalid_input', 'Escreva o @ da pessoa.')
-    const [p] = await db.asUser(ctx(actor), (tx) => tx`select user_id, arroba, nome, foto from zro.perfil_por_arroba(${a}) where visivel`)
-    if (!p) throw new DomainError('not_found', `Não achamos @${a}.`)
-    id = p.user_id as string
-    resumo = pessoa(p.user_id, p.arroba, p.nome, p.foto)
-  }
-  exigirId(id)
+  let resumo: PessoaResumo | null = alvo.id ? null : await perfilVisivel(db, actor, arrobaDe(alvo.arroba))
+  const id = exigirId(resumo?.id ?? alvo.id ?? '')
   if (id === actor.userId) throw new DomainError('invalid_input', 'Esse é você.')
-  await limite(db, `set-contato:${actor.userId}`, LIMITE_PEDIDOS_CONTATO, 'Muitos pedidos hoje. Tente amanhã.')
+  const antes = await db.asUser(ctx(actor), (tx) => situacaoCom(tx, id))
+  resumo ??= antes.pessoa
+  if (antes.situacao === 'contato') throw new DomainError('conflict', 'Vocês já são contatos.')
+  if (antes.situacao === 'bloqueado') throw new DomainError('action_not_allowed', 'Você bloqueou essa pessoa. Desbloqueie antes.')
+  if (antes.situacao === 'enviado') return { estado: 'pendente', pessoa: resumo ?? { id, arroba: null, nome: 'Pessoa', foto: null } }
+  if (antes.situacao !== 'recebido') await limite(db, `set-contato:${actor.userId}`, LIMITE_PEDIDOS_CONTATO, 'Muitos pedidos hoje. Tente amanhã.')
   try {
-    const [r] = await db.asUser(ctx(actor), (tx) => tx`select zro.set_pedir_contato(${id}) as estado`)
-    return { estado: r!.estado as 'pendente' | 'aceito', pessoa: resumo ?? { id: id!, arroba: null, nome: 'Pessoa', foto: null } }
+    const r = await db.asUser(ctx(actor), async (tx) => {
+      const [x] = await tx`select zro.set_pedir_contato(${id}) as estado`
+      return { estado: x!.estado as 'pendente' | 'aceito', depois: resumo ? null : await situacaoCom(tx, id) }
+    })
+    return { estado: r.estado, pessoa: resumo ?? r.depois?.pessoa ?? { id, arroba: null, nome: 'Pessoa', foto: null } }
   } catch (e) {
     traduzir(e, { proibido: 'Você bloqueou essa pessoa. Desbloqueie antes.', invalido: 'Pessoa não encontrada.' })
   }

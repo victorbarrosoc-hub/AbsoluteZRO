@@ -12,7 +12,11 @@
  * Atributos: api (base, sem barra no fim; no HUB "/api/v1/set"), modo (botao|pagina|folha, padrão botao; folha: sem
  * pílula, o app tem a própria entrada, a "aba em comum", e chama abrirSet()), tema (claro|escuro|auto; auto segue o
  * html[data-theme], html[data-tema] ou a classe dark/light do app, senão o sistema), projeto (id do projeto canônico aberto no app: a
- * conversa dele fica no topo), abrir (pessoa:<id> | projeto:<id> | conversa:<id> | ajustes: abre direto).
+ * conversa dele fica no topo), abrir (pessoa:<id> | projeto:<id> | conversa:<id> | ajustes | adicionar[:<@>]: abre direto).
+ * Adicionar pelo @ (30/10/2026): o botão da pessoa com + no topo (e o "Adicionar alguém pelo @" quando ninguém está
+ * online) abre o campo no começo do Online; enquanto a pessoa digita, a prévia (POST /contatos { ver }) mostra nome, foto
+ * e @ do perfil visível, e "Adicionar" pede o contato. Os pedidos recebidos ficam no topo do Online (Aceitar, Recusar) e
+ * a aba ganha o número deles.
  * Eventos: zro-set:sem-login (401: o app pede login de novo; a pílula some), zro-set:estado (detail { online, naoLidas,
  * pedidos, invisivel }), zro-set:aberto e zro-set:fechado (a folha abriu ou fechou). Métodos: abrirSet(), fecharSet().
  * No modo página, o elemento ganha data-conversa enquanto uma conversa está aberta.
@@ -26,7 +30,7 @@
  * leitura repetida manda If-None-Match (ETag da API): sem mudança, 304 sem corpo. Nada de serviço pago de tempo real.
  * Sem dependências, sem cookies de terceiros, respeita "reduzir movimento". Mudou, suba VERSAO (vai no data-versao).
  */
-export const VERSAO = '2026.10.30-set'
+export const VERSAO = '2026.10.30-set-add'
 
 const BATIDA_MS = 45_000
 const BATIDA_ESCONDIDA_MS = 180_000
@@ -114,6 +118,7 @@ button{cursor:pointer}
 .ico{flex:none;display:grid;place-items:center;width:34px;height:34px;border:0;border-radius:50%;background:transparent;color:var(--mute)}
 .ico:hover{background:var(--surf3);color:var(--ink)}
 .ico[aria-pressed=true]{background:var(--ink);color:var(--surf2)}
+.ico[aria-expanded=true]{background:var(--surf3);color:var(--ink)}
 .abas{display:flex;gap:4px;margin:0 16px 8px;padding:3px;border-radius:12px;background:var(--surf3)}
 .abas button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;border:0;border-radius:9px;background:transparent;color:var(--mute);font-size:.84rem;font-weight:600}
 .abas button[aria-selected=true]{background:var(--surf);color:var(--ink);box-shadow:0 1px 3px rgb(0 0 0/.12)}
@@ -185,6 +190,28 @@ button{cursor:pointer}
 .add input{flex:1;min-width:0;height:36px;padding:0 14px;border:1px solid var(--line2);border-radius:999px;outline:0;background:var(--surf)}
 .add input:focus{border-color:var(--faint)}
 .retorno{padding:0 12px 8px;color:var(--mute);font-size:.8rem}
+/* adicionar pelo @ (no começo do Online) */
+.adicionar{display:grid;gap:6px;margin:4px 4px 6px;padding:6px;border-radius:16px;background:var(--surf2)}
+.adicionar .add{padding:0;align-items:center}
+.add-campo{position:relative;flex:1;min-width:0;display:flex}
+.add-campo input{flex:1;min-width:0;height:38px;padding:0 14px 0 30px;border:1px solid var(--line2);border-radius:999px;outline:0;background:var(--surf);font-size:16px}
+.add-campo input:focus{border-color:var(--faint)}
+.add-campo::before{content:"@";position:absolute;left:14px;top:50%;translate:0 -52%;color:var(--faint);font-weight:600;pointer-events:none}
+.add-res:empty{display:none}
+.achado{display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 6px 6px 8px;border-radius:12px;background:var(--surf)}
+.achado .txt{flex:1;min-width:0;display:grid;gap:1px}
+.achado .nome{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;letter-spacing:-.01em}
+.achado .sub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mute);font-size:.8rem}
+.achado[data-feito] .sub{color:var(--ink);font-weight:600}
+.achado[aria-busy=true] .av{background:var(--surf3)}
+.achado[aria-busy=true] .txt i{display:block;width:60%;height:10px;border-radius:5px;background:var(--surf3)}
+@media (prefers-reduced-motion:no-preference){.achado[aria-busy=true] .txt i,.achado[aria-busy=true] .av{animation:pulsa 1.4s ease-in-out infinite}.achado[data-feito]{animation:entra .28s var(--ease) both}}
+.feito-ok{flex:none;display:grid;place-items:center;width:28px;height:28px;margin-right:4px;border-radius:50%;background:var(--on);color:#fff}
+.selo{flex:none;padding:4px 10px;border-radius:999px;background:var(--surf3);color:var(--mute);font-size:.74rem;font-weight:600;white-space:nowrap}
+.add-msg{padding:4px 10px 6px;color:var(--ink);font-size:.84rem}
+.botoes{flex:none;display:flex;gap:6px}
+.linha.pedido{min-height:54px;cursor:default}.linha.pedido:hover{background:transparent}
+.vazio-p{gap:10px;padding:22px 20px 18px}
 /* folha de ações (como a action sheet do iOS) */
 .acoes{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;justify-content:flex-end;padding:10px;background:rgb(0 0 0/.18)}
 .acoes[hidden]{display:none}
@@ -213,6 +240,9 @@ const I = {
     '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>',
   seta: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>',
   olho: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 6.1A9.6 9.6 0 0 1 12 6c5 0 8.5 4.5 9.5 6-.5.8-1.6 2.3-3.2 3.6M6.4 7.6C4.6 8.9 3.3 10.7 2.5 12c1 1.5 4.5 6 9.5 6 1.5 0 2.9-.4 4.1-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>',
+  adicionar:
+    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="8" r="3.4"/><path d="M3.5 19.5c.7-3.4 3.3-5.4 6.5-5.4 1.6 0 3 .5 4.1 1.3M18.5 13v6M15.5 16h6"/></svg>',
+  ok: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
   mudo: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4zM22 9l-6 6M16 9l6 6"/></svg>',
 }
 
@@ -300,7 +330,12 @@ class ZroSet extends HTMLElement {
       editando: null,
       retorno: '',
       semLogin: false,
+      // adicionar pelo @: o campo aberto, o que foi digitado e a prévia (procurando | achado | erro | feito)
+      add: { aberto: false, valor: '', busca: '', pessoa: null, situacao: '', msg: '', feito: '' },
     }
+    /** A Absolute ZRO de antes não tem a prévia do @ (POST /contatos { ver }): só "Adicionar", sem nome e foto. */
+    this.semPrevia = false
+    this.verN = 0
     this.token = null
     this.etags = new Map()
     this.root = this.attachShadow({ mode: 'open' })
@@ -502,7 +537,7 @@ class ZroSet extends HTMLElement {
       // chegou mensagem: recarrega a lista (e a conversa aberta já se atualiza no ritmo dela)
       if (this.s.aberto && (!anterior || anterior.ultima !== this.s.estado.ultima || anterior.pedidos !== this.s.estado.pedidos)) {
         if (this.s.aba === 'conversas' || this.pagina) this.carregarConversas()
-        if (this.s.aba === 'ajustes') this.carregarContatos()
+        if (this.s.aba === 'ajustes' || (this.s.aba === 'online' && (this.s.estado.pedidos || this.s.contatos?.recebidos.length))) this.carregarContatos()
       }
       this.render()
     } catch {
@@ -570,10 +605,15 @@ class ZroSet extends HTMLElement {
     let a = this.getAttribute('abrir') || ''
     if (!a && this.pagina) {
       const q = new URLSearchParams(location.search)
-      a = q.has('ajustes') ? 'ajustes' : ['projeto', 'pessoa', 'conversa'].map((k) => (q.get(k) ? `${k}:${q.get(k)}` : '')).find(Boolean) || ''
+      a = q.has('ajustes')
+        ? 'ajustes'
+        : q.has('adicionar')
+          ? `adicionar:${q.get('adicionar') || ''}`
+          : ['projeto', 'pessoa', 'conversa'].map((k) => (q.get(k) ? `${k}:${q.get(k)}` : '')).find(Boolean) || ''
     }
     const [tipo, id] = a.split(':')
     if (tipo === 'ajustes') return this.irPara('ajustes')
+    if (tipo === 'adicionar') return this.abrirAdicionar(id || '')
     if (tipo === 'conversa' && id) return this.abrirConversa(id)
     if ((tipo === 'pessoa' || tipo === 'projeto') && id) return this.iniciar({ [tipo]: id })
   }
@@ -591,6 +631,7 @@ class ZroSet extends HTMLElement {
     this.dispatchEvent(new CustomEvent('zro-set:aberto', { bubbles: true, composed: true }))
     this.batida(true)
     if (this.s.aba === 'conversas') this.carregarConversas()
+    if (this.s.aba === 'online' && this.s.estado?.pedidos) this.carregarContatos()
     setTimeout(() => this.r.querySelector('.painel .abas [aria-selected=true]')?.focus(), 60)
   }
   fechar() {
@@ -609,7 +650,7 @@ class ZroSet extends HTMLElement {
     if (!this.pagina) this.s.conv = null
     clearTimeout(this.timers.conv)
     if (aba === 'conversas') this.carregarConversas()
-    if (aba === 'ajustes') this.carregarContatos()
+    if (aba === 'ajustes' || (aba === 'online' && this.s.estado?.pedidos)) this.carregarContatos()
     this.render()
   }
 
@@ -885,12 +926,22 @@ class ZroSet extends HTMLElement {
           return this.preferir({ quemVe: alvo.dataset.v })
         case 'visto':
           return this.preferir({ mostrarVisto: !s.estado?.eu.preferencias.mostrarVisto })
+        case 'adicionar':
+          return s.aba === 'online' && s.add.aberto ? this.fecharAdicionar() : this.abrirAdicionar()
+        case 'adicionar-enviar':
+          return this.adicionar()
         case 'aceitar':
-        case 'recusar':
+        case 'recusar': {
+          alvo.disabled = true
           await this.req(`/contatos/${encodeURIComponent(alvo.dataset.id)}`, { method: 'PUT', body: { acao: a } })
+          // some da lista na hora (a releitura confirma)
+          if (s.contatos) s.contatos.recebidos = s.contatos.recebidos.filter((x) => x.id !== alvo.dataset.id)
+          if (s.estado) s.estado.pedidos = Math.max(0, (s.estado.pedidos ?? 0) - 1)
           this.dizer(a === 'aceitar' ? 'Agora vocês são contatos.' : '')
+          this.render()
           this.carregarContatos()
           return this.batida(true)
+        }
         case 'remover':
           await this.req(`/contatos/${encodeURIComponent(alvo.dataset.id)}`, { method: 'DELETE' })
           this.carregarContatos()
@@ -898,6 +949,7 @@ class ZroSet extends HTMLElement {
         case 'desbloquear':
           await this.req(`/bloqueios/${encodeURIComponent(alvo.dataset.id)}`, { method: 'DELETE' })
           this.carregarContatos()
+          if (s.add.aberto && s.add.situacao === 'bloqueado') this.ver(true)
           return this.batida(true)
       }
     } catch (e) {
@@ -925,20 +977,186 @@ class ZroSet extends HTMLElement {
     }
   }
 
-  async pedirContato(form) {
-    const input = form.querySelector('input')
-    const arroba = input.value.trim()
-    if (!arroba) return
+  // ───────────── adicionar pelo @ ─────────────
+
+  /** Abre o campo no começo do Online (de qualquer aba) e põe o foco nele. `valor`: um @ já escrito. */
+  abrirAdicionar(valor = '') {
+    if (!this.s.aberto) this.abrir()
+    if (!this.pagina) this.s.conv = null
+    clearTimeout(this.timers.conv)
+    this.s.aba = 'online'
+    const a = this.s.add
+    a.aberto = true
+    if (valor) a.valor = String(valor).replace(/^@/, '')
+    if (a.busca === 'feito' || a.busca === 'erro') Object.assign(a, { busca: '', msg: '', pessoa: null, situacao: '', feito: '' })
+    if (this.s.estado?.pedidos) this.carregarContatos()
+    this.render()
+    if (a.valor) this.ver(true)
+    setTimeout(() => this.r.querySelector('.adicionar input')?.focus(), 30)
+  }
+  fecharAdicionar() {
+    clearTimeout(this.timers.ver)
+    this.verN++
+    this.s.add = { aberto: false, valor: '', busca: '', pessoa: null, situacao: '', msg: '', feito: '' }
+    this.render()
+    this.r.querySelector('.cab [data-a=adicionar]')?.focus()
+  }
+
+  /** O @ digitado, sem o @ e em minúsculas; null se ainda não é um @ que possa existir. */
+  get arrobaDigitada() {
+    const v = this.s.add.valor.trim().replace(/^@/, '').toLowerCase()
+    return /^[a-z0-9._]{3,30}$/.test(v) ? v : null
+  }
+
+  /** Enquanto a pessoa digita: espera um instante e mostra quem é o @ (nome, foto e @), sem pedir nada. */
+  ver(agora = false) {
+    clearTimeout(this.timers.ver)
+    const a = this.s.add
+    const arroba = this.arrobaDigitada
+    const n = ++this.verN
+    if (!arroba || this.semPrevia) {
+      Object.assign(a, { busca: arroba ? 'achado' : '', pessoa: null, situacao: '', msg: '', feito: '' })
+      return this.pintarAdd()
+    }
+    if (a.busca !== 'achado' || a.pessoa?.arroba !== arroba) Object.assign(a, { busca: 'procurando', pessoa: null, situacao: '', msg: '', feito: '' })
+    this.pintarAdd()
+    this.timers.ver = setTimeout(
+      async () => {
+        try {
+          const r = await this.req('/contatos', { method: 'POST', body: { ver: arroba } })
+          if (n !== this.verN) return
+          Object.assign(a, { busca: 'achado', pessoa: r.pessoa, situacao: r.situacao || 'nenhuma', msg: '' })
+        } catch (e) {
+          if (n !== this.verN || e.message === 'sem-login') return
+          // a Absolute ZRO de antes da prévia recusa o campo: segue só com "Adicionar"
+          if (e.status === 422 && e.message === 'Diga o @ da pessoa.') {
+            this.semPrevia = true
+            Object.assign(a, { busca: 'achado', pessoa: null, situacao: '', msg: '' })
+          } else Object.assign(a, { busca: 'erro', pessoa: null, situacao: '', msg: e.message })
+        }
+        this.pintarAdd()
+      },
+      agora ? 0 : 350,
+    )
+  }
+
+  /** "Adicionar" (ou Enter): pede o contato do @ digitado. */
+  async adicionar() {
+    const a = this.s.add
+    const arroba = this.arrobaDigitada
+    if (!arroba) {
+      Object.assign(a, { busca: 'erro', pessoa: null, msg: 'Escreva o @ da pessoa.' })
+      return this.pintarAdd()
+    }
+    if (a.busca === 'procurando' || this.adicionando) return
+    if (a.busca === 'achado' && a.situacao === 'contato' && a.pessoa) return this.iniciar({ pessoa: a.pessoa.id })
+    if (a.busca === 'achado' && (a.situacao === 'enviado' || a.situacao === 'bloqueado')) return
+    clearTimeout(this.timers.ver)
+    this.verN++
+    this.adicionando = true
+    const antes = a.pessoa
+    this.r.querySelector('.adicionar [data-a=adicionar-enviar]')?.setAttribute('disabled', '')
     try {
       const r = await this.req('/contatos', { method: 'POST', body: { arroba } })
-      input.value = ''
-      this.dizer(r.estado === 'aceito' ? `Agora vocês são contatos.` : `Pedido enviado para @${arroba.replace(/^@/, '')}.`)
+      const p = r.pessoa && r.pessoa.nome !== 'Pessoa' ? r.pessoa : antes || r.pessoa
+      Object.assign(a, { valor: '', busca: 'feito', pessoa: p, situacao: '', msg: '', feito: r.estado === 'aceito' ? 'aceito' : 'enviado' })
+      this.render()
+      this.r.querySelector('.adicionar input')?.focus()
       this.carregarContatos()
       this.batida(true)
     } catch (e) {
-      this.dizer(e.message)
-      this.render()
+      if (e.message !== 'sem-login') {
+        Object.assign(a, { busca: 'erro', msg: e.message, pessoa: e.status === 404 ? null : antes, situacao: '' })
+        this.pintarAdd()
+      }
+    } finally {
+      this.adicionando = false
     }
+  }
+
+  /** Só o resultado do campo (a lista em volta e o campo, com o foco e o cursor, ficam como estão). */
+  pintarAdd() {
+    const el = this.r?.querySelector('.add-res')
+    if (el) el.innerHTML = this.htmlResultadoAdd()
+    else this.render()
+  }
+
+  htmlResultadoAdd() {
+    const a = this.s.add
+    const arroba = this.arrobaDigitada
+    const cartao = (p, lado, sub, o = '') =>
+      `<div class="achado"${o}>${av(p)}<span class="txt"><span class="nome">${esc(p.nome)}</span>${sub ? `<span class="sub">${esc(sub)}</span>` : ''}</span>${lado}</div>`
+    if (a.busca === 'procurando')
+      return `<div class="achado" aria-busy="true"><span class="av"></span><span class="txt"><i></i></span><span class="sr">Procurando @${esc(arroba)}</span></div>`
+    if (a.busca === 'feito' && a.pessoa) {
+      const ok = a.feito === 'aceito'
+      return cartao(
+        a.pessoa,
+        ok ? `<button class="btn btn-p" data-a="pessoa" data-id="${esc(a.pessoa.id)}">Conversar</button>` : `<span class="feito-ok">${I.ok}</span>`,
+        ok ? 'Agora vocês são contatos' : 'Pedido enviado',
+        ' data-feito role="status"',
+      )
+    }
+    if (a.busca === 'erro') {
+      const msg = `<p class="add-msg" role="alert">${esc(a.msg)}</p>`
+      return a.pessoa ? `${cartao(a.pessoa, '', a.pessoa.arroba ? `@${a.pessoa.arroba}` : '')}${msg}` : msg
+    }
+    if (a.busca === 'achado' && !a.pessoa && arroba)
+      return cartao({ nome: `@${arroba}` }, `<button class="btn btn-p" data-tinta data-a="adicionar-enviar">Adicionar</button>`, '')
+    if (a.busca === 'achado' && a.pessoa) {
+      const p = a.pessoa
+      const sub = p.arroba ? `@${p.arroba}` : ''
+      const nome = esc(p.nome)
+      if (a.situacao === 'contato')
+        return cartao(
+          p,
+          `<button class="btn btn-p" data-a="pessoa" data-id="${esc(p.id)}" aria-label="Conversar com ${nome}">Conversar</button>`,
+          'Já são contatos',
+        )
+      if (a.situacao === 'enviado') return cartao(p, `<span class="selo">Pedido enviado</span>`, sub)
+      if (a.situacao === 'bloqueado')
+        return cartao(
+          p,
+          `<button class="btn btn-p" data-a="desbloquear" data-id="${esc(p.id)}" aria-label="Desbloquear ${nome}">Desbloquear</button>`,
+          'Você bloqueou',
+        )
+      if (a.situacao === 'recebido')
+        return cartao(
+          p,
+          `<button class="btn btn-p" data-tinta data-a="adicionar-enviar" aria-label="Aceitar ${nome}">Aceitar</button>`,
+          'Pediu para ser seu contato',
+        )
+      return cartao(p, `<button class="btn btn-p" data-tinta data-a="adicionar-enviar" aria-label="Adicionar ${nome}">Adicionar</button>`, sub)
+    }
+    return ''
+  }
+
+  htmlAdicionar() {
+    const a = this.s.add
+    if (!a.aberto) return ''
+    return `<div class="adicionar" role="search" aria-label="Adicionar pelo @">
+        <form class="add add-arroba"><span class="add-campo"><input name="arroba" value="${esc(a.valor)}" placeholder="fulano" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="send" maxlength="31" aria-label="@ da pessoa" data-guarda></span><button class="ico" type="button" data-a="adicionar" aria-label="Fechar adicionar" title="Fechar">${I.fechar}</button></form>
+        <div class="add-res" aria-live="polite">${this.htmlResultadoAdd()}</div>
+      </div>`
+  }
+
+  /** Os pedidos recebidos, no começo do Online: Aceitar e Recusar ali mesmo. */
+  htmlPedidos(e) {
+    const c = this.s.contatos
+    if (!c) {
+      if (e.pedidos && !this.carregandoContatos) {
+        this.carregandoContatos = true
+        queueMicrotask(() => this.carregarContatos().finally(() => (this.carregandoContatos = false)))
+      }
+      return ''
+    }
+    if (!c.recebidos.length) return ''
+    return `<p class="grupo">Pedidos</p><ul class="lista">${c.recebidos
+      .map((x) => {
+        const nome = esc(x.nome)
+        return `<li class="linha pedido">${av(x)}<span class="txt"><span class="nome">${nome}</span>${x.arroba ? `<span class="sub">@${esc(x.arroba)}</span>` : ''}</span><span class="botoes"><button class="btn btn-p" data-tinta data-a="aceitar" data-id="${esc(x.id)}" aria-label="Aceitar ${nome}">Aceitar</button><button class="btn btn-p" data-a="recusar" data-id="${esc(x.id)}" aria-label="Recusar ${nome}">Recusar</button></span></li>`
+      })
+      .join('')}</ul>`
   }
 
   /** Um aviso curto no topo da lista (erro ou confirmação). */
@@ -1016,9 +1234,25 @@ class ZroSet extends HTMLElement {
     raiz.addEventListener('submit', (ev) => {
       ev.preventDefault()
       if (ev.target.matches('.compor')) this.enviar()
-      else if (ev.target.matches('.add')) this.pedirContato(ev.target)
+      else if (ev.target.matches('.add-arroba')) this.adicionar()
+    })
+    raiz.addEventListener('input', (ev) => {
+      if (!ev.target.matches('.add-arroba input')) return
+      // colou "@Fulano" ou o endereço do perfil (…/@fulano): fica só o @
+      const v = ev.target.value
+      const limpo = v
+        .replace(/^.*\/(?=[^/]*$)/, '')
+        .replace(/\s+/g, '')
+        .replace(/^@+/, '')
+      if (limpo !== v) ev.target.value = limpo
+      this.s.add.valor = limpo
+      this.ver()
     })
     raiz.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape' && ev.target.matches?.('.add-arroba input')) {
+        ev.stopPropagation()
+        return this.fecharAdicionar()
+      }
       if (ev.target.matches('.compor textarea') && ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing) {
         ev.preventDefault()
         this.enviar()
@@ -1071,13 +1305,15 @@ class ZroSet extends HTMLElement {
     const nl = e?.naoLidas ?? 0
     const ped = e?.pedidos ?? 0
     const inv = e?.eu.preferencias.invisivel
+    const addAberto = s.aba === 'online' && s.add.aberto
     const cab = `<header class="cab"><h2>Set</h2>
+        <button class="ico" data-a="adicionar" aria-expanded="${addAberto}" aria-label="Adicionar pelo @" title="Adicionar pelo @">${I.adicionar}</button>
         <button class="ico" data-a="invisivel" aria-pressed="${!!inv}" title="${inv ? 'Você está invisível' : 'Ficar invisível'}" aria-label="Invisível">${I.olho}</button>
         ${this.pagina ? '' : `<button class="ico" data-a="fechar" aria-label="Fechar" title="Fechar">${I.fechar}</button>`}</header>
       <div class="abas" role="tablist">
-        <button role="tab" data-a="aba" data-aba="online" aria-selected="${s.aba === 'online'}">Online</button>
+        <button role="tab" data-a="aba" data-aba="online" aria-selected="${s.aba === 'online'}">Online${ped ? ` <b title="Pedidos de contato">${ped > 99 ? '99+' : ped}<span class="sr"> ${ped === 1 ? 'pedido' : 'pedidos'}</span></b>` : ''}</button>
         <button role="tab" data-a="aba" data-aba="conversas" aria-selected="${s.aba === 'conversas'}">Conversas${nl ? ` <b>${nl > 99 ? '99+' : nl}</b>` : ''}</button>
-        <button role="tab" data-a="aba" data-aba="ajustes" aria-selected="${s.aba === 'ajustes'}" aria-label="Contatos e ajustes" title="Contatos e ajustes">${I.ajustes}${ped ? ` <b>${ped}</b>` : ''}</button>
+        <button role="tab" data-a="aba" data-aba="ajustes" aria-selected="${s.aba === 'ajustes'}" aria-label="Contatos e ajustes" title="Contatos e ajustes">${I.ajustes}</button>
       </div>`
     // o aviso fica 5 s (as releituras que vêm logo depois não o apagam)
     if (s.retorno && Date.now() > s.retornoAte) s.retorno = ''
@@ -1091,18 +1327,23 @@ class ZroSet extends HTMLElement {
     const rolar = col.querySelector('.rolar')
     const topo = rolar?.scrollTop ?? 0
     const foco = this.r.activeElement
-    const valor = foco?.matches?.('.add input') ? foco.value : null
+    const guarda = foco?.matches?.('input[data-guarda]') ? { valor: foco.value, ini: foco.selectionStart, fim: foco.selectionEnd } : null
     col.innerHTML = `${cab}${retorno}<div class="rolar vista" data-aba="${s.aba}">${corpo}</div>`
     const r2 = col.querySelector('.rolar')
     if (rolar && rolar.dataset?.aba === s.aba) {
       r2.scrollTop = topo
       r2.classList.remove('vista')
     }
-    if (valor !== null) {
-      const i = col.querySelector('.add input')
+    if (guarda) {
+      const i = col.querySelector('input[data-guarda]')
       if (i) {
-        i.value = valor
-        i.focus()
+        i.value = guarda.valor
+        i.focus({ preventScroll: true })
+        try {
+          i.setSelectionRange(guarda.ini, guarda.fim)
+        } catch {
+          /* campo sem seleção */
+        }
       }
     }
   }
@@ -1112,9 +1353,11 @@ class ZroSet extends HTMLElement {
     const off = e.pessoas.filter((p) => p.estado === 'offline').slice(0, 60)
     const linha = (p) =>
       `<li><button class="linha" data-a="pessoa" data-id="${esc(p.id)}"${p.estado === 'offline' ? ' data-off' : ''}>${avComPonto(p)}<span class="txt"><span class="nome">${esc(p.nome)}</span>${subDaPessoa(p) ? `<span class="sub">${esc(subDaPessoa(p))}</span>` : ''}</span></button></li>`
+    const topo = `${this.htmlAdicionar()}${this.htmlPedidos(e)}`
+    const convite = this.s.add.aberto ? '' : `<button class="btn" data-a="adicionar">Adicionar alguém pelo @</button>`
     if (!e.pessoas.length)
-      return `<div class="vazio"><span class="sinal">${I.pessoas}</span><p>Sua equipe e seus contatos aparecem aqui.</p><button class="btn" data-a="aba" data-aba="ajustes">Adicionar pelo @</button></div>`
-    return `${on.length ? `<p class="grupo">Agora</p><ul class="lista">${on.map(linha).join('')}</ul>` : `<div class="vazio"><p>Ninguém online agora.</p></div>`}${off.length ? `<p class="grupo">Equipe e contatos</p><ul class="lista">${off.map(linha).join('')}</ul>` : ''}`
+      return `${topo}<div class="vazio"><span class="sinal">${I.pessoas}</span><p>Sua equipe e seus contatos aparecem aqui.</p>${convite}</div>`
+    return `${topo}${on.length ? `<p class="grupo">Agora</p><ul class="lista">${on.map(linha).join('')}</ul>` : `<div class="vazio vazio-p"><p>Ninguém online agora.</p>${convite}</div>`}${off.length ? `<p class="grupo">Equipe e contatos</p><ul class="lista">${off.map(linha).join('')}</ul>` : ''}`
   }
 
   htmlConversas() {
@@ -1154,8 +1397,7 @@ class ZroSet extends HTMLElement {
       <div class="secao"><div class="escolhas" role="radiogroup" aria-label="Quem vê você online">${QUEM.map(([k, t]) => `<button role="radio" aria-checked="${p.quemVe === k}" data-a="quem" data-v="${k}">${t}</button>`).join('')}</div>
         <div class="opcao"><span>Mostrar “visto há”</span><button class="chave" role="switch" aria-checked="${p.mostrarVisto}" data-a="visto" aria-label="Mostrar visto há"></button></div>
       </div>
-      <p class="grupo">Adicionar pelo @</p>
-      <form class="add secao"><input name="arroba" placeholder="@fulano" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="@ da pessoa"><button class="btn" data-tinta type="submit">Pedir</button></form>
+      <div class="secao"><div class="opcao"><span>Adicionar pelo @<small>Só perfis visíveis.</small></span><button class="btn btn-p" data-a="adicionar">Adicionar</button></div></div>
       ${
         !c
           ? '<div class="carregando" aria-busy="true"><i></i></div>'

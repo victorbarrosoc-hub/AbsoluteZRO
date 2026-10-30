@@ -15,6 +15,25 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Set: adicionar pelo @ no Online (30/10/2026)
+
+Achar a pessoa pelo @, adicionar, ver quando está online e abrir a conversa, tudo no Online do `<zro-set>` (antes
+escondido nos Ajustes). API: `POST /api/v1/set/contatos { ver }` (prévia; mesmas regras da busca de perfis) e "já são
+contatos" = 409; widget continua `v1` e nenhum repasse dos apps mudou (a prévia vai pelo POST que todos já passam).
+
+| Verificação    | Comando                                                                                                           | Resultado                                                                      |
+| -------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Raiz           | `npm run lint`, `format:check`, `typecheck`, `npm test` (`TEST_DATABASE_URL=…/zro_setadd_test`), `npm run build`  | ok, ok, ok, 395/395 (45 arquivos; 3 casos novos em `set.test.ts`), ok          |
+| E2E do HUB     | `tests/e2e/set.spec.ts` (`E2E_PORT=7017`, banco `zro_setadd_e2e_test`)                                            | 7/7 (Chromium e WebKit, computador e iPhone; limite e escondido no 1440 e 393) |
+| E2E do Maestro | `e2e/set.spec.ts` (`E2E_DB_SUFIXO=setadd E2E_PORT=7017 E2E_PONTE_PORT=7019 E2E_ANP_PORT=7021 E2E_ROTA_PORT=7023`) | 12/12 (computador, iPhone e Safari do iPhone)                                  |
+| Segredos       | `node scripts/scan-secrets.mjs`                                                                                   | nenhum segredo                                                                 |
+
+O que os testes cobrem: a prévia mostra nome, @ e foto só de perfil visível (escondido e inexistente com a mesma
+resposta, sem e-mail), não pede nem avisa ninguém, diz enviado/recebido/contato/bloqueado e nunca o bloqueio da outra
+pessoa; o pedido pelo @ aparece para a outra pessoa no topo do Online (número na aba), ela aceita ali, os dois se veem
+online ("na Absolute ZRO"/"no Maestro") e o toque na pessoa abre a conversa; já contatos = 409; o limite de 20 por dia
+aparece no campo (repetir o enviado e aceitar o recebido não gastam); Esc fecha só o campo.
+
 ## Integração: a Z discreta e o Set em todas as plataformas (30/10/2026)
 
 Os dois ramos de 30/10 juntos ("a Z nunca é a primeira tela" e "Set em todas as plataformas"). Em todo app a entrada
