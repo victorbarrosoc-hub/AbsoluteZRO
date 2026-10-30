@@ -3049,3 +3049,15 @@ produção (deploy só com autorização).
   RLS forçado; `anon` e `authenticated` não leem nada; `relay_app` lê. `RELAY_DATABASE_URL` (sensível, só produção do
   projeto Vercel `relay`, pooler de transação). A migração perdeu o `create schema if not exists` antes de ir para a
   produção: o papel `relay` não cria schema no banco (o migrador só cria quando falta, no Postgres local).
+
+## Relay: página inicial nova (30/10/2026)
+
+- `products/relay/index.html`, `app/home.css`, `app/home.js` e `app/vitrine.js` (as contas puras da página). Telas de
+  verdade em `app/inicio/telas/` (conversor, fila, editor de preset e painel; MacBook 1440×900 e iPhone 390×844, claro e
+  escuro, webp de 40 a 60 KB), regravadas por `node scripts/telas-inicio.mjs` com uma conta de exemplo servida no próprio
+  script. A foto `app/inicio/praia.webp` (Higgsfield, 0,5 crédito) é o arquivo de exemplo das telas e do "Experimente".
+- `test/inicio.test.js` (11): o "Experimente" e o "Cabe no limite" iguais ao plano do conversor; cada tela existe nos
+  dois temas; SEO e o topo com `<nav>`; no Chromium, montagem pelos dados (23 destinos, 5 grupos, 7 apps), nenhum
+  "grátis" nem em atributo, todo controle com nome, abas pelo teclado, tema escuro troca as telas, conta fora/dentro/
+  desligada (o "Seu painel" do herói continua), 390 e 1440 px sem rolar de lado, com e sem movimento.
+- Relay `npm test`: **112/112**. Raiz: `lint`, `format:check` e `scan-secrets` ok. Não conferido aqui: iPhone de verdade.
