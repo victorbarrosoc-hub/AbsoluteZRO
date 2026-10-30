@@ -312,7 +312,7 @@ export function fichaTecnica(plano, motor = plano.motor ?? 'navegador') {
       if (filtros.length) linhas.push(['Filtros', filtros.join(' · ')])
     }
     const r = plano.receitaCor
-    linhas.push(['Cor', r ? `${[r.entrada ? `${r.entradaNome ?? r.entrada} → Rec.709` : null, r.look ? `look ${r.look.nome}` : null].filter(Boolean).join(' · ')} (Revela), sai 1-1-1` : 'Rec.709 SDR, faixa de TV (H.273 1-1-1)'])
+    linhas.push(['Cor', r ? `${[r.entrada ? `${r.entradaNome ?? r.entrada} → Rec.709` : null, r.look ? `look ${r.look.nome}${r.look.sobre === 'log' ? ' sobre o log' : ''}` : null].filter(Boolean).join(' · ')} (Revela), sai 1-1-1` : 'Rec.709 SDR, faixa de TV (H.273 1-1-1)'])
     linhas.push(['Redução', 'Lanczos-3'])
   }
   const a = plano.audio

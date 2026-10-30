@@ -134,6 +134,7 @@ uniform mat3 matriz;
 uniform int temCst;
 uniform int tom;
 uniform int temLook;
+uniform int lookNoLog;
 uniform float nCurva;
 uniform float n;
 uniform int faixaVideo;
@@ -159,6 +160,7 @@ void main() {
     if (menor < 0.0) l = Y + (l - Y) * (Y / (Y - menor));
     c = pow(clamp(l, 0.0, 1.0), vec3(1.0 / 2.4));
   }
+  else if (lookNoLog == 1 && faixaVideo == 1) c = (c * 876.0 + 64.0) / 1023.0; // look de log: lê o código, como a CST
   if (temLook == 1) c = texture(lut, clamp(c, 0.0, 1.0) * ((n - 1.0) / n) + 0.5 / n).rgb;
   cor = vec4(c, 1.0);
 }`
@@ -236,7 +238,7 @@ export function criarEscala(VideoSample, { forcar = false } = {}) {
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog) || 'programa')
     const u = (n) => gl.getUniformLocation(prog, n)
     const loc = gl.getAttribLocation(prog, 'p')
-    return { prog, loc, fonte: u('fonte'), escala: u('escala'), desloc: u('desloc'), n: u('n'), giro: u('giro'), tamFonte: u('tamFonte'), alturaSaida: u('alturaSaida'), inverter: u('inverter'), canal: u('canal'), corte: u('corte'), espelho: u('espelho'), largGirada: u('largGirada'), lut: u('lut'), curva: u('curva'), matriz: u('matriz'), temCst: u('temCst'), tom: u('tom'), temLook: u('temLook'), nCurva: u('nCurva'), faixaVideo: u('faixaVideo') }
+    return { prog, loc, fonte: u('fonte'), escala: u('escala'), desloc: u('desloc'), n: u('n'), giro: u('giro'), tamFonte: u('tamFonte'), alturaSaida: u('alturaSaida'), inverter: u('inverter'), canal: u('canal'), corte: u('corte'), espelho: u('espelho'), largGirada: u('largGirada'), lut: u('lut'), curva: u('curva'), matriz: u('matriz'), temCst: u('temCst'), tom: u('tom'), temLook: u('temLook'), lookNoLog: u('lookNoLog'), nCurva: u('nCurva'), faixaVideo: u('faixaVideo') }
   }
 
   function textura() {
@@ -323,6 +325,7 @@ export function criarEscala(VideoSample, { forcar = false } = {}) {
       temCst: Boolean(etapas.curva),
       tom: Boolean(etapas.tom),
       temLook: Boolean(etapas.look),
+      lookNoLog: Boolean(etapas.lookNoLog),
       n: etapas.look?.tamanho ?? 2,
       nCurva: etapas.curva?.length ?? 2,
       matriz: new Float32Array([M[0][0], M[1][0], M[2][0], M[0][1], M[1][1], M[2][1], M[0][2], M[1][2], M[2][2]]), // por colunas
@@ -495,6 +498,7 @@ export function criarEscala(VideoSample, { forcar = false } = {}) {
         gl.uniform1i(pCor.temCst, corAtiva.temCst ? 1 : 0)
         gl.uniform1i(pCor.tom, corAtiva.tom ? 1 : 0)
         gl.uniform1i(pCor.temLook, corAtiva.temLook ? 1 : 0)
+        gl.uniform1i(pCor.lookNoLog, corAtiva.lookNoLog ? 1 : 0)
         gl.uniform1f(pCor.n, corAtiva.n)
         gl.uniform1f(pCor.nCurva, corAtiva.nCurva)
         gl.uniformMatrix3fv(pCor.matriz, false, corAtiva.matriz)

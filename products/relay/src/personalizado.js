@@ -150,6 +150,8 @@ function receita(r) {
   const entrada = typeof r.entrada === 'string' && /^[a-z0-9-]{2,40}$/.test(r.entrada) ? r.entrada : null
   const look = r.look && typeof r.look.id === 'string' && /^[a-z0-9-]{4,60}$/.test(r.look.id) ? { id: r.look.id, nome: String(r.look.nome ?? 'Look').slice(0, 60) } : null
   if (!entrada && !look) return null
+  // sem CST, o look pode ser de log (LUT de câmera, look feito para o log): ele lê o código, como a CST
+  if (look && !entrada && r.look.sobre === 'log') look.sobre = 'log'
   return { entrada, entradaNome: entrada ? String(r.entradaNome ?? entrada).slice(0, 80) : null, tom: r.tom === 'nenhum' ? 'nenhum' : 'suave', look }
 }
 

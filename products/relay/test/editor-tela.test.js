@@ -11,7 +11,7 @@ import { especificacaoDe, presetPersonalizado } from '../src/personalizado.js'
 import { preset } from '../src/presets.js'
 import { escreverCube } from '../src/revela/cube.js'
 import { abrir, ff, medirSsim, pasta, sondar, temFfmpeg } from './apoio.js'
-import { centros, esperado, maiorDiferenca, quadroRgb48 } from './carta.js'
+import { FAIXAS, centros, esperado, maiorDiferenca, quadroRgb48 } from './carta.js'
 import { funcaoDaReceita } from '../src/cor.js'
 
 const pular = !temFfmpeg && 'sem ffmpeg'
@@ -169,6 +169,36 @@ test('cor da Revela no navegador: S-Log3 sai Rec.709 com as cores da Revela, com
   const r2 = await converter(p, 'slog3.mov', meu({ lado: null, cor }), 'slog3-look.mp4', escreverCube(look, 'Teste'))
   const erroLook = maiorDiferenca(centros(rgbDoPrimeiro(r2.caminho), 640, 360), esperado({ ...cor, look: { id: 'look-teste', nome: 'Teste' } }, look))
   assert.ok(erroLook <= 7, `CST + look: diferença de ${erroLook.toFixed(1)}/255`)
+  assert.deepEqual(s.erros, [])
+  await p.close()
+})
+
+test('look de log no navegador (sem CST): a LUT lê o código da câmera, não o Rec.709 esticado', { skip: pular }, async () => {
+  const p = await s.nova('/converter')
+  // LUT identidade de 2 pontos com "# Entrada:" de log: a saída tem de ser o próprio código da câmera
+  const identidade = { tamanho: 2, dados: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1]) }
+  const cube = escreverCube(identidade, 'Câmera', ['Entrada: Sony S-Log3 / S-Gamut3.Cine', 'Saída: Rec.709 Gama 2.4'])
+  const r = await p.evaluate(
+    async ([cube]) => {
+      const m = await import('/app/motor.js')
+      const Looks = await import('/app/looks.js')
+      m.usarEscala('gpu')
+      const look = await Looks.guardar('Câmera', cube)
+      const P = await import('/src/personalizado.js')
+      const { preset } = await import('/src/presets.js')
+      const pr = P.presetPersonalizado({ ...P.especificacaoDe(preset('youtube-1080')), nome: 'x', lado: null, qualidade: 'bitrate', kbps: 20000, cor: { look: { id: look.id, nome: look.nome, ...(look.pedeLog ? { sobre: 'log' } : {}) } } })
+      const arquivo = new File([await (await fetch('/teste-arquivo/slog3.mov')).blob()], 'slog3.mov')
+      const out = await m.converterArquivo(arquivo, pr, { lerLook: Looks.ler })
+      await fetch('/teste-saida/look-log.mp4', { method: 'POST', body: out.blob })
+      return { pedeLog: look.pedeLog }
+    },
+    [cube],
+  )
+  assert.equal(r.pedeLog, true)
+  const medido = centros(rgbDoPrimeiro(join(pasta, 'look-log.mp4')), 640, 360)
+  const alvo = FAIXAS.map((c) => c.map((v) => v * 255))
+  // cinzas: o código da câmera (0,41 → 105), não o esticado (0,41 → ~98)
+  assert.ok(maiorDiferenca(medido.slice(0, 4), alvo.slice(0, 4)) <= 2, `${JSON.stringify(medido)} × ${JSON.stringify(alvo.map((x) => x.map(Math.round)))}`)
   assert.deepEqual(s.erros, [])
   await p.close()
 })

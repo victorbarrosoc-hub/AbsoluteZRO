@@ -139,6 +139,10 @@ test('cor da Revela: a receita viaja no preset e no .relay.json, o ffmpeg exige 
   // receita torta some; só o look vale
   assert.equal(meu({ cor: { entrada: '<script>' } }).cor, undefined)
   assert.deepEqual(meu({ cor: { look: { id: 'look-xyz789', nome: 'Noite' } } }).cor, { entrada: null, entradaNome: null, tom: 'suave', look: { id: 'look-xyz789', nome: 'Noite' } })
+  // look de log só sem CST
+  assert.equal(meu({ cor: { look: { id: 'look-xyz789', nome: 'Câmera', sobre: 'log' } } }).cor.look.sobre, 'log')
+  assert.equal(meu({ cor: { entrada: 'sony-slog3-cine', look: { id: 'look-xyz789', nome: 'X', sobre: 'log' } } }).cor.look.sobre, undefined)
+  assert.match(fichaTecnica(planejar(origem, meu({ cor: { look: { id: 'look-xyz789', nome: 'Câmera', sobre: 'log' } } }))).find(([r]) => r === 'Cor')[1], /look Câmera sobre o log/)
   // o app do computador ainda não assa a LUT: o preset com cor fica no navegador
   const { fora, levados } = linkMaxima([p.id, 'youtube-1080'], [p])
   assert.deepEqual([fora, levados], [['Teste'], ['YouTube 1080p']])

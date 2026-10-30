@@ -129,6 +129,11 @@ entradaNome, tom: 'suave' | 'nenhum', look: { id, nome } | null }`. Saída sempr
 - **Ordem:** CST (log → Rec.709 gama 2.4, com o mapa de tom e a compressão de gamut da Revela) e depois o look, sobre o
   Rec.709 de tela de 0 a 1 (o que o Resolve passa a um nó depois da CST). Convenção de nível da Revela na CST: código ÷
   1023 (o arquivo de faixa de vídeo é desesticado antes).
+- **Look de log** (LUT de câmera, look feito para o log; o Lab da Revela marca com `# Entrada:` no .cube): sem CST, a
+  receita leva `look.sobre: 'log'` e o look lê o código da câmera (mesma convenção da CST), não o Rec.709 esticado. O
+  Relay detecta pelo comentário e a pessoa troca em "O look recebe" (Rec.709 ou o log da câmera). Confirmado pela
+  Revela em 30/10: "Meus looks" e o still do Lab são Rec.709 → Rec.709 (depois da CST); a LUT de câmera do Lab entra
+  direto no log.
 - **No navegador:** a CST é a conta na placa de vídeo (curva da câmera, matriz, tom, gamut e curva 2.4, em ponto
   flutuante; espelho em JavaScript conferido com a Revela em todas as câmeras: abaixo de 1,2/255), do quadro
   decodificado (10 bits em meia precisão) até o I420; o look vai numa LUT 3D. Sem WebGL2, a conversão recusa com o

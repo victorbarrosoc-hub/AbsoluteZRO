@@ -7,7 +7,7 @@ import { execFileSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { ENTRADAS_COR, aplicarEtapas, assarParaFfmpeg, descreverReceita, etapasParaPlaca, funcaoDaReceita, lerLook, receitaDe } from '../src/cor.js'
+import { ENTRADAS_COR, aplicarEtapas, assarParaFfmpeg, descreverReceita, etapasParaPlaca, funcaoDaReceita, lerLook, lookPedeLog, receitaDe } from '../src/cor.js'
 import { criarCst } from '../src/revela/espacos.js'
 import { aplicar, assar, escreverCube, lerCube } from '../src/revela/cube.js'
 import { especificacaoDe, presetPersonalizado } from '../src/personalizado.js'
@@ -141,4 +141,23 @@ test('cube da Revela ida e volta (a cópia lê o que escreve)', () => {
   const lido = lerCube(escreverCube(lut, 'teste'))
   assert.equal(lido.tamanho, 17)
   assert.ok(Math.abs(lido.dados[100] - Math.min(1, Math.max(0, lut.dados[100]))) < 1e-5)
+})
+
+test('look de log (LUT de câmera do Lab da Revela): detectado pelo "# Entrada:" e lido no código, sem a CST', () => {
+  assert.equal(lookPedeLog('# Entrada: Sony S-Log3 / S-Gamut3.Cine\n# Saída: Rec.709 Gama 2.4\nLUT_3D_SIZE 2'), true)
+  assert.equal(lookPedeLog('# Entrada: Rec.709 Gama 2.4\nLUT_3D_SIZE 2'), false)
+  assert.equal(lookPedeLog('TITLE "Verão"\nLUT_3D_SIZE 2'), false)
+  // só vale sem CST: com CST o look é sempre de tela
+  assert.deepEqual(receitaDe({ look: { id: 'look-1234', nome: 'Câmera', sobre: 'log' } }).look, { id: 'look-1234', nome: 'Câmera', sobre: 'log' })
+  assert.equal(receitaDe({ entrada: 'sony-slog3-cine', look: { id: 'look-1234', nome: 'X', sobre: 'log' } }).look.sobre, undefined)
+  const r = { entrada: null, tom: 'suave', look: { id: 'look-1234', nome: 'Câmera', sobre: 'log' } }
+  assert.equal(descreverReceita(r), 'look Câmera (sobre o log)')
+  assert.equal(etapasParaPlaca(r, LOOK).lookNoLog, true)
+  assert.equal(etapasParaPlaca({ ...r, look: { id: 'look-1234', nome: 'X' } }, LOOK).lookNoLog, false)
+  // ffmpeg: o RGB esticado volta a código antes do look
+  const tv = lerCube(assarParaFfmpeg(r, LOOK, 'tv', 33))
+  const codigo = (0.5 * 876 + 64) / 1023
+  const alvo = aplicar(LOOK, codigo, codigo, codigo)
+  const medido = aplicar(tv, 0.5, 0.5, 0.5)
+  for (let c = 0; c < 3; c++) assert.ok(Math.abs(medido[c] - alvo[c]) < 0.004, `canal ${c}`)
 })

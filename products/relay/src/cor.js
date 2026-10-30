@@ -6,7 +6,9 @@
 // 1-1-1).
 //
 // Caminho: CST da Revela (log → Rec.709 gama 2.4) e depois o look (.cube) sobre o Rec.709 de tela de 0 a 1 (o que o
-// Resolve passa a um nó depois da CST; sem CST, o look recebe o próprio Rec.709 do arquivo, em faixa cheia).
+// Resolve passa a um nó depois da CST; sem CST, o look recebe o próprio Rec.709 do arquivo, em faixa cheia). Sem CST e
+// com `look.sobre: 'log'` (LUT de câmera ou look feito para o log, como as do Lab da Revela, que dizem "# Entrada:"
+// no .cube), o look lê o código da câmera, na mesma convenção da CST.
 //
 // Na placa de vídeo (app/escala.js) a CST é a CONTA, não uma LUT 3D: curva da câmera (1D, 2048 pontos), matriz de
 // gamut, mapa de tom, compressão de gamut e curva 2.4, em ponto flutuante (`etapasParaPlaca`). Medido: uma LUT 3D de
@@ -38,6 +40,7 @@ export function receitaDe(r) {
   const entrada = ENTRADAS_COR.some((e) => e.id === r.entrada) ? r.entrada : null
   const look = r.look && typeof r.look.id === 'string' && /^[a-z0-9-]{4,60}$/.test(r.look.id) ? { id: r.look.id, nome: String(r.look.nome ?? 'Look').slice(0, 60) } : null
   if (!entrada && !look) return null
+  if (look && !entrada && r.look.sobre === 'log') look.sobre = 'log'
   return { entrada, tom: r.tom === 'nenhum' ? 'nenhum' : 'suave', look }
 }
 
@@ -47,8 +50,17 @@ export function descreverReceita(r) {
   const e = ENTRADAS_COR.find((x) => x.id === r.entrada)
   const partes = []
   if (e) partes.push(`${e.nome.replace(/^[^·]+· /, '')} → Rec.709${r.tom === 'nenhum' ? ' (sem mapa de tom)' : ''}`)
-  if (r.look) partes.push(`look ${r.look.nome}`)
+  if (r.look) partes.push(`look ${r.look.nome}${r.look.sobre === 'log' ? ' (sobre o log)' : ''}`)
   return partes.join(' · ')
+}
+
+/**
+ * O look é de log? O .cube da Revela (e o padrão ARRI) diz a entrada num comentário "# Entrada: …"; sem ele, ou com
+ * Rec.709/sRGB, o look é de tela.
+ */
+export function lookPedeLog(texto) {
+  const entrada = /^#\s*(?:Entrada|Input)\s*:\s*(.+)$/im.exec(String(texto).slice(0, 4000))?.[1] ?? ''
+  return Boolean(entrada) && !/rec\.?\s*709|srgb|gama\s*2|gamma\s*2/i.test(entrada)
 }
 
 const prender = (c) => [Math.min(1, Math.max(0, c[0])), Math.min(1, Math.max(0, c[1])), Math.min(1, Math.max(0, c[2]))]
@@ -90,11 +102,11 @@ export function funcaoDaReceita(receita, look = null) {
 export function etapasParaPlaca(receita, look = null) {
   exigirLook(receita, look)
   const e = receita?.entrada ? ENTRADAS_COR.find((x) => x.id === receita.entrada) : null
-  if (!e) return { curva: null, matriz: null, tom: false, look: look ?? null }
+  if (!e) return { curva: null, matriz: null, tom: false, look: look ?? null, lookNoLog: Boolean(look && receita?.look?.sobre === 'log') }
   const paraLinear = CURVAS[e.curva].paraLinear
   const curva = new Float32Array(PONTOS_CURVA)
   for (let i = 0; i < PONTOS_CURVA; i++) curva[i] = paraLinear(i / (PONTOS_CURVA - 1))
-  return { curva, matriz: matrizGamut(e.gamut, 'rec709'), tom: receita.tom !== 'nenhum', look: look ?? null }
+  return { curva, matriz: matrizGamut(e.gamut, 'rec709'), tom: receita.tom !== 'nenhum', look: look ?? null, lookNoLog: false }
 }
 
 /**
@@ -131,8 +143,8 @@ export function aplicarEtapas(etapas, r, g, b) {
  */
 export function assarParaFfmpeg(receita, look = null, faixa = 'tv', pontos = PONTOS) {
   const f = funcaoDaReceita(receita, look)
-  const cst = Boolean(receita?.entrada)
-  const codigo = faixa === 'pc' || !cst ? (v) => v : (v) => (v * 876 + 64) / 1023
+  const leCodigo = Boolean(receita?.entrada) || receita?.look?.sobre === 'log'
+  const codigo = faixa === 'pc' || !leCodigo ? (v) => v : (v) => (v * 876 + 64) / 1023
   const lut = assar((r, g, b) => f(codigo(r), codigo(g), codigo(b)), pontos)
   return escreverCube(lut, `Relay · ${descreverReceita(receita)}`, ['Relay: receita de cor da Revela, RGB de entrada já na faixa cheia'])
 }

@@ -315,7 +315,8 @@ export function editar(p, origem, looks = null) {
           try {
             if (f.size > 20e6) throw new Error('Este .cube passa de 20 MB.')
             const novo = await looks.guardar(f.name, await f.text())
-            mudar({ look: novo })
+            listaLooks = await looks.listar()
+            mudar({ look: { id: novo.id, nome: novo.nome, ...(novo.pedeLog ? { sobre: 'log' } : {}) } })
           } catch (err) {
             erro.textContent = err.message
           }
@@ -331,10 +332,25 @@ export function editar(p, origem, looks = null) {
             'Look',
             escolha('Look', opcoesLook, cor.look?.id ?? null, (id) => {
               if (id === 'carregar') return arquivo.click()
-              mudar({ look: id ? listaLooks.find((l) => l.id === id) : null })
+              const l = listaLooks.find((x) => x.id === id)
+              mudar({ look: l ? { id: l.id, nome: l.nome, ...(l.pedeLog ? { sobre: 'log' } : {}) } : null })
             }),
             arquivo,
           ),
+          cor.look && !cor.entrada
+            ? linha(
+                'O look recebe',
+                segmentos(
+                  'O look recebe',
+                  [
+                    { valor: 'tela', nome: 'Rec.709' },
+                    { valor: 'log', nome: 'O log da câmera' },
+                  ],
+                  cor.look.sobre === 'log' ? 'log' : 'tela',
+                  (x) => mudar({ look: { id: cor.look.id, nome: cor.look.nome, ...(x === 'log' ? { sobre: 'log' } : {}) } }),
+                ),
+              )
+            : null,
           el('p', { className: 'apoio', textContent: 'Sai em Rec.709. O look entra depois da conversão.' }),
         )
       })().catch((err) => (corpoCor.textContent = err.message))
