@@ -300,7 +300,7 @@ test('endereço não cadastrado não começa login', async () => {
 
 test('nos três domínios: retorno cadastrado e cookie Secure', async () => {
   Z._interno.esquecer();
-  for (const host of ['carrodofreela.com.br', 'www.carrodofreela.com.br', 'carrodofreela-app.vercel.app']) {
+  for (const host of ['carrodofreela.com.br', 'www.carrodofreela.com.br', 'carro.absolutezro.com', 'carrodofreela-app.vercel.app']) {
     const r = await pedir('/api/zro/entrar', { headers: { 'x-forwarded-host': host, 'x-forwarded-proto': 'https' } });
     assert.equal(r.status, 302, host);
     assert.equal(new URL(r.headers.get('location')).searchParams.get('redirect_uri'), 'https://' + host + '/api/zro/callback');

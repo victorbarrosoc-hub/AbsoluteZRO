@@ -111,7 +111,8 @@ function acessoOk(quem) {
    cliente `carrodofreela-web`. Um Host que não está aqui não recebe login —
    é o que impede um domínio qualquer apontado para a Vercel de montar um
    redirect_uri em nome do Carro. Localhost fica para rodar na máquina. */
-const ORIGENS = ['https://carrodofreela.com.br', 'https://www.carrodofreela.com.br', 'https://carrodofreela-app.vercel.app'];
+/* (30/out) carro.absolutezro.com: o subdomínio da Absolute ZRO, decisão do titular — retorno cadastrado no HUB (0037) */
+const ORIGENS = ['https://carrodofreela.com.br', 'https://www.carrodofreela.com.br', 'https://carro.absolutezro.com', 'https://carrodofreela-app.vercel.app'];
 const LOCAL = /^http:\/\/(localhost|127\.0\.0\.1)(:\d{1,5})?$/;
 
 function config(env = process.env) {

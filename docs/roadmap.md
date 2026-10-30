@@ -206,6 +206,11 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   abre aquele projeto, só a mesma conta aceita e nunca rebaixa ninguém. O projeto mostra a seção Equipe.
 - ✅ Carro do Freela fechado até o lançamento (28/10/2026, adendo do PRD): só a conta listada como `allowed` no HUB
   entra (claim `zro_release` relida a cada pedido; `CARRO_RELEASE` padrão `closed`). O resto vê "Em desenvolvimento".
+- 🟡 Carro do Freela e SOBEDESCE no subdomínio da Absolute ZRO (30/10/2026, decisão do titular): `carro.absolutezro.com` e
+  `sobedesce.absolutezro.com`. Feito: o retorno do login cadastrado no HUB (migração 0037, ao lado dos antigos) e as
+  origens novas no Carro e no SOBEDESCE. Falta: domínios na Vercel e DNS (com o "pode subir"), retorno do Google do
+  SOBEDESCE no Google Cloud (o titular), e depois trocar o endereço principal (Abrir do HUB, links da família, redirecionar
+  os antigos).
 - ✅ Carro do Freela (27/10/2026): sem selo "Prévia" na barra de cima (a prévia segue dita no pé da home, no menu e
   no rodapé do app) e o "Continuar com Absolute ZRO" com o símbolo flat no lugar do feixe de luz antigo.
 - 🟡 Carro do Freela com banco próprio (29/10/2026, pedido do titular): schema `carro_do_freela` no Supabase
