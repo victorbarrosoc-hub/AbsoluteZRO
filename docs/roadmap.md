@@ -648,8 +648,9 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   schema e exemplo gerado pelo Maestro). A opção do arquivo (AEON) **só aparece com o AEON aberto para a pessoa** (gate
   do HUB, `zro_release["ai-edit"]`); hoje fechado, ninguém vê. O AEON ainda não importa (F8b).
 - ✅ Ficha do card: bloco "Criação" com os roteiros ligados (título, versão, duração, estado) e "Novo roteiro" já ligado.
-- ⬜ Cliente aprovar (F7, desligado no menu com "Em breve"); TPeasy lendo direto do Maestro (F8a); AEON abrindo o arquivo
-  (F8b). Sem migração nova.
+- ✅ Permissões da Criação pela capacidade `criacao` (ver/editar/enviar) do acesso por área (`podeCriacao`).
+- ⬜ Cliente aprovar (F7, fora do menu até lá); TPeasy lendo direto do Maestro (F8a); AEON abrindo o arquivo (F8b). Sem
+  migração nova.
 
 ## Relay: conversão de mídia como setor próprio (29/10/2026, [ADR 0030](decisions/0030-relay-conversao.md))
 

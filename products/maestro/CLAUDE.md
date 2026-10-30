@@ -285,8 +285,9 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   novo em `antigo.ts` (só leitura); `juntar.ts` junta por id no 409 do `rev`. Banco: `servidor.ts` (asUser; `rev` sobe
   por gatilho; estado só admin/gestão pelo gatilho `roteiros_guarda`; `versao_atual`/`rev`/`demo` sem UPDATE para
   `maestro_app`), versões só por `maestro.roteiro_versao_salvar` (sha256 por check, `registro_imutavel`), políticas
-  `_cliente` (sem vínculo fica escondido de quem é restrito). Papéis provisórios em `src/lib/criacao/permissoes.ts`
-  (`podeVerCriacao`/`podeEditarCriacao`/`podeEnviarCriacao`; trocar pela área `criacao` quando o acesso por área tiver).
+  `_cliente` (sem vínculo fica escondido de quem é restrito). Papéis em `src/lib/criacao/permissoes.ts`
+  (`podeVerCriacao`/`podeEditarCriacao`/`podeEnviarCriacao`, desde a F3 pela capacidade `criacao` de `acessos.ts`,
+  `podeCriacao`; as políticas da 0030 têm os mesmos papéis e o `roteiro.test.mts` confere).
   O migrador aplica qualquer migração do journal ainda não gravada (pelo `when` ou pelo hash), então números fora de
   ordem entre frentes funcionam; `when` repetido para o deploy.
 - **Criação · editor do Roteiro** (fase F2): "Criação" no grupo Produção e em Mais (`navegacao.ts`; a barra do celular
@@ -311,7 +312,7 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   exemplo em `docs/integration-contracts/exemplos/`). PDF para a edição = folha A4 `?vista=edicao&versao=n`. Cada envio
   é `POST {op:"enviado"}` → `registrarEnvio` (auditoria `roteiro.enviado` com o sha256 do banco). A opção do AEON (o
   arquivo) só com `podeMandarParaAeon` (claim `zro_release["ai-edit"]` released/allowed + produto + papel): hoje o AEON
-  está fechado e nada aparece; a rota recusa `aeon` também. "Cliente" no menu fica desligado até a F7. Ficha do card:
+  está fechado e nada aparece; a rota recusa `aeon` também. O cliente não aparece no menu até a F7. Ficha do card:
   bloco "Criação" (`components/criacao/roteiro/do-card.tsx`, `roteirosDoCardAcao`). Nome de arquivo com acento só sai
   do navegador com locale UTF-8 (o `playwright.config.ts` força `C.UTF-8`).
 - **App na Tela de Início (PWA)**: `src/app/manifest.ts` (`/manifest.webmanifest`: Maestro, `start_url` `/app`, `scope`
@@ -418,6 +419,8 @@ antigo no editor novo, leitura; no iPhone uma cena por vez, "+", segurar para ar
 `criacao-enviar.spec.ts`: salvar a versão antes de enviar, o `.txt` e o backup do TPeasy iguais ao que o modelo gera,
 PDF para a edição, auditoria, AEON escondido e aparecendo com o gate aberto, o bloco do card, leitura sem Enviar;
 `SHOTS_DIR` guarda as capturas). Bancos por cópia do repositório: `TEST_DB_SUFIXO` (testes) e `E2E_DB_SUFIXO` (e2e).
+O navegador do e2e usa um proxy que não existe (`playwright.config.ts`): nada sai para a internet (o `<zro-set>` de
+absolutezro.com falha na hora em vez de segurar o "networkidle"); serviço de fora só com `route`.
 Movimento (29/10/2026): toda folha usa `Folha` (`src/components/folha.tsx`, portal no `<body>`). **Troca de seção**
 (`src/components/movimento.tsx` + `src/app/motion.css`): a View Transition é chamada por nós, não pelo
 `<ViewTransition>` do React (no Safari do iPhone o par sai/entra do React deixava a tela velha e a nova uma sobre a

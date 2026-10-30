@@ -1,24 +1,19 @@
 /**
- * Quem pode o quê na Criação (plano da Criação §7). ÚNICO ponto de decisão na tela e nas rotas; o banco confere de novo
- * (políticas de `drizzle/0030_roteiros.sql` e a função `maestro.roteiro_versao_salvar`).
+ * Quem pode o quê na Criação (plano da Criação §7). ÚNICO ponto de decisão na tela e nas rotas da Criação; o banco
+ * confere de novo (políticas de `drizzle/0030_roteiros.sql` e a função `maestro.roteiro_versao_salvar`).
  *
- * PROVISÓRIO: enquanto o acesso por área (outra frente, "Quem vê o quê": `drizzle/0027_acessos.sql`,
- * `src/lib/acessos.ts` com `pode(sessao, área)` e `maestro.pode(org, área)` no banco, quando entrarem na main) não tem
- * a área `criacao`, decide pelo papel fixo da organização:
- *   ver    = todos (admin, gestor, equipe, leitura);
- *   editar = `podeEscrever` (admin, gestor, equipe): criar, mudar, salvar versão, mandar para a lixeira;
- *   enviar = admin e gestor (o mesmo corte do link de aprovação): mandar ao cliente, criar link de exportação, mudar o
- *            estado (o gatilho `roteiros_guarda_estado` confere no banco).
- * Quando a área existir, troque o corpo destas três funções pela checagem da área (ex.: ver = `pode(sessao, "criacao")`;
- * editar e enviar = a área mais o papel de hoje) e as políticas do banco pela equivalente (`maestro.pode(org_id,
- * 'criacao')` numa política `roteiros_area`), numa migração nova. Quem chama continua chamando estas três.
+ * A regra é a capacidade `criacao` do acesso por área (`podeCriacao` em `src/lib/acessos.ts`, igual a
+ * `maestro.pode_criacao` no banco, drizzle/0027): ver = todos; editar = administração, gestão e equipe (criar, mudar,
+ * salvar versão, lixeira); enviar = administração e gestão (Enviar, mudar o estado; o gatilho `roteiros_guarda_estado`
+ * confere no banco). Quem chama continua chamando estas três.
  */
+import { podeCriacao } from "@/lib/acessos";
 import { type Acesso, temProduto } from "@/lib/auth/acesso";
-import { type Papel, podeEscrever } from "@/lib/papeis";
+import type { Papel } from "@/lib/papeis";
 
-export const podeVerCriacao = (_papel: Papel): boolean => true;
-export const podeEditarCriacao = (papel: Papel): boolean => podeEscrever(papel);
-export const podeEnviarCriacao = (papel: Papel): boolean => papel === "admin" || papel === "gestor";
+export const podeVerCriacao = (papel: Papel): boolean => podeCriacao({ papel }, "ver");
+export const podeEditarCriacao = (papel: Papel): boolean => podeCriacao({ papel }, "editar");
+export const podeEnviarCriacao = (papel: Papel): boolean => podeCriacao({ papel }, "enviar");
 
 /** Id do AEON (edição) em zro_products e zro_release. */
 export const PRODUTO_AEON = "ai-edit";
@@ -34,6 +29,7 @@ export function podeMandarParaAeon(s: Acesso & { papel: Papel }): boolean {
   return podeEnviarCriacao(s.papel) && (r === "released" || r === "allowed") && temProduto(s, PRODUTO_AEON);
 }
 
-/** Os papéis do banco (mesma regra), para as políticas e os testes. */
-export const PAPEIS_EDITAR_CRIACAO: readonly Papel[] = ["admin", "gestor", "equipe"];
-export const PAPEIS_ENVIAR_CRIACAO: readonly Papel[] = ["admin", "gestor"];
+/** Os papéis que editam e que enviam (a mesma regra das políticas da 0030; `tests/roteiro.test.mts` confere). */
+const PAPEIS: readonly Papel[] = ["admin", "gestor", "equipe", "leitura"];
+export const PAPEIS_EDITAR_CRIACAO: readonly Papel[] = PAPEIS.filter(podeEditarCriacao);
+export const PAPEIS_ENVIAR_CRIACAO: readonly Papel[] = PAPEIS.filter(podeEnviarCriacao);

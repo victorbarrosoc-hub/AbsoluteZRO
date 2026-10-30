@@ -33,7 +33,10 @@ test("migração atrasada (when menor que a última aplicada) roda uma vez; when
     // outra frente entra depois com uma migração de número (e when) menor que a 0030
     const ultima = journal.entries.find((e) => e.tag === "0030_roteiros")!;
     writeFileSync(path.join(pasta, "0027_atrasada.sql"), "create table maestro.migracao_atrasada (id integer primary key);\n");
-    const atrasada: Entrada = { idx: 27, version: "7", when: ultima.when - 3 * 86_400_000, tag: "0027_atrasada", breakpoints: false };
+    const usados = new Set(journal.entries.map((e) => e.when));
+    let when = ultima.when - 3_600_000;
+    while (usados.has(when)) when -= 3_600_000;
+    const atrasada: Entrada = { idx: 27, version: "7", when, tag: "0027_atrasada", breakpoints: false };
     writeFileSync(arquivo, JSON.stringify({ ...journal, entries: [...journal.entries, atrasada] }));
     assert.deepEqual(await migrarNoSchema(banco, pasta), ["0027_atrasada"]);
     const [{ existe }] = await banco`select to_regclass('maestro.migracao_atrasada') is not null as existe`;

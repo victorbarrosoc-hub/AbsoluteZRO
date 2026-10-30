@@ -11,7 +11,7 @@
  * - AEON: o arquivo `maestro.roteiro/1`, SÓ quando o AEON está aberto para a pessoa (`podeMandarParaAeon`, gate do
  *   HUB). Hoje fechado: não aparece.
  * - PDF: Literário, Técnico ou Teleprompter.
- * - Cliente: chega com a aprovação pelo link do card (F7); até lá, desligado e dito assim.
+ * O cliente aprovar entra na F7 (pelo link do card); até lá, não há opção.
  */
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -26,16 +26,15 @@ import { PreviaTeleprompter } from "./leitura";
 
 export type DestinoEnvio = DestinoSaida;
 
-type Item = { k: DestinoEnvio | "cliente"; icone: NomeIcone; titulo: string; apoio: string; desligado?: boolean };
+type Item = { k: DestinoEnvio; icone: NomeIcone; titulo: string; apoio: string };
 
-/** As opções do menu, na ordem. AEON só com o gate aberto; Cliente desligado até a F7. */
+/** As opções do menu, na ordem. AEON só com o gate aberto (hoje fechado: não aparece). */
 export function itensEnviar(aeon: boolean): Item[] {
   return [
     { k: "tpeasy", icone: "celular", titulo: "TPeasy", apoio: "Só as falas, prontas para gravar" },
     { k: "edicao", icone: "filme", titulo: "PDF para a edição", apoio: "Cenas, tempos e deixas" },
     ...(aeon ? [{ k: "aeon" as const, icone: "documento" as const, titulo: "AEON", apoio: "Arquivo do roteiro" }] : []),
     { k: "pdf", icone: "imprimir", titulo: "PDF", apoio: "Literário, Técnico ou Teleprompter" },
-    { k: "cliente", icone: "clientes", titulo: "Cliente", apoio: "Em breve, pelo link de aprovação", desligado: true },
   ];
 }
 
@@ -43,15 +42,7 @@ function Itens({ aeon, escolher, salvarVersao }: { aeon: boolean; escolher: (d: 
   return (
     <>
       {itensEnviar(aeon).map((i) => (
-        <button
-          key={i.k}
-          type="button"
-          role="menuitem"
-          className="cr-enviar__item"
-          disabled={i.desligado}
-          aria-disabled={i.desligado || undefined}
-          onClick={() => i.k !== "cliente" && escolher(i.k)}
-        >
+        <button key={i.k} type="button" role="menuitem" className="cr-enviar__item" onClick={() => escolher(i.k)}>
           <span className="cr-enviar__icone" aria-hidden="true">
             <Icone nome={i.icone} size={18} />
           </span>

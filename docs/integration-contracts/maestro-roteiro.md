@@ -7,7 +7,8 @@ ainda**. Sem rede, sem evento, sem integração ligada: tudo sai como arquivo ou
 
 - Tudo sai de uma **versão salva** do roteiro (`maestro.roteiro_versoes`: imutável, `sha256` conferido pelo banco). Sem
   versão, ou com o rascunho mudado depois da última, a tela oferece salvar a próxima antes (ou mandar a última).
-- Só administração e gestão enviam (`podeEnviarCriacao`). Cada envio fica na auditoria do Maestro:
+- Só administração e gestão enviam (`podeEnviarCriacao`, a capacidade `criacao` no nível `enviar` de
+  `products/maestro/src/lib/acessos.ts`). Cada envio fica na auditoria do Maestro:
   `audit_log.action = 'roteiro.enviado'`, `metadata = { n, sha256, destino, formato, pessoa }`
   (`POST /api/criacao/roteiros/<id>` `{ op: "enviado" }`; destinos e formatos em `SAIDAS`,
   `products/maestro/src/lib/criacao/roteiro/saidas.ts`).

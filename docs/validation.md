@@ -2626,24 +2626,27 @@ foi conferido com toque sintético; `field-sizing` não existe no WebKit e os ca
 
 ## Maestro · Criação: saídas do Roteiro (F3, 30/10/2026)
 
-"Enviar ▾" (TPeasy, PDF para a edição, PDF; Cliente desligado até a F7), sempre de uma versão salva, com auditoria;
+"Enviar ▾" (TPeasy, PDF para a edição, PDF; o cliente entra na F7), sempre de uma versão salva, com auditoria;
 contrato `maestro.roteiro/1` (a opção do arquivo só com o AEON aberto pelo gate: hoje ninguém vê); bloco "Criação" na
 ficha do card. Sem migração nova.
 
-| Verificação                                                                                       | Comando                                                           | Resultado                       |
-| ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------- |
-| Saídas puras: contrato contra o schema publicado e o exemplo, TPeasy pelo código do app, AEON     | `cd products/maestro && npx tsx --test tests/roteiro-saidas.test.mts` | **12/12**                       |
-| Rota: envio só de versão salva, papéis, Origin, sha256 na auditoria, AEON só com o gate aberto    | `npx tsx --test tests/criacao-rota.test.mts`                      | **8/8**                         |
-| Contrato (zod) aceita o arquivo do Maestro e recusa dado pessoal, nota, id repetido, fora do elenco | `npx vitest run packages/media-contracts`                          | **7/7** (com a deriva do schema) |
-| Maestro inteiro                                                                                   | `npm run lint`, `format:check`, `typecheck`, `npm test`, `build`  | ok · ok · ok · **451/451** · ok |
-| E2E do Enviar (computador e iPhone)                                                               | `npx playwright test e2e/criacao-enviar.spec.ts`                  | **5/5**                         |
-| E2E inteiro                                                                                       | `npm run test:e2e`                                                | E2E_RESULTADO                   |
-| Raiz                                                                                              | `npm run lint`, `format:check`, `typecheck`, `npm test`           | ok · ok · ok · **349/349**      |
-| Segredos                                                                                          | `node scripts/scan-secrets.mjs`                                   | nenhum                          |
+| Verificação                                                                                         | Comando                                                               | Resultado                        |
+| --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------- |
+| Saídas puras: contrato contra o schema publicado e o exemplo, TPeasy pelo código do app, AEON       | `cd products/maestro && npx tsx --test tests/roteiro-saidas.test.mts` | **12/12**                        |
+| Rota: envio só de versão salva, papéis, Origin, sha256 na auditoria, AEON só com o gate aberto      | `npx tsx --test tests/criacao-rota.test.mts`                          | **8/8**                          |
+| Contrato (zod) aceita o arquivo do Maestro e recusa dado pessoal, nota, id repetido, fora do elenco | `npx vitest run packages/media-contracts`                             | **7/7** (com a deriva do schema) |
+| Maestro inteiro                                                                                     | `npm run lint`, `format:check`, `typecheck`, `npm test`, `build`      | ok · ok · ok · **499/499** · ok  |
+| E2E do Enviar (computador e iPhone)                                                                 | `npx playwright test e2e/criacao-enviar.spec.ts`                      | **5/5**                          |
+| E2E inteiro (Chromium e WebKit)                                                                     | `npm run test:e2e`                                                    | **162 ok**, 38 pulados           |
+| Raiz                                                                                                | `npm run lint`, `format:check`, `typecheck`, `npm test`               | ok · ok · ok · **361/361**       |
+| Segredos                                                                                            | `node scripts/scan-secrets.mjs`                                       | nenhum                           |
 
-Bancos próprios desta cópia (`TEST_DB_SUFIXO`, `E2E_DB_SUFIXO`, `TEST_DATABASE_URL=…/zro_f3_test`) e portas separadas.
-Não validado: a folha de compartilhar de um iPhone de verdade (o Chromium do e2e não tem `navigator.share`; Copiar,
-`.txt` e o backup foram conferidos) e o "Restaurar backup" no TPeasy instalado (o `importAll` do próprio app foi
+Bancos próprios desta cópia (`TEST_DB_SUFIXO=f3`, `E2E_DB_SUFIXO=f3`) e portas separadas. As permissões da Criação
+passam a vir da capacidade `criacao` do acesso por área (mesmo resultado; o teste confere com as políticas da 0030). O
+navegador do e2e ganhou um proxy inexistente: sem rede, o `<zro-set>` de absolutezro.com segurava o "networkidle"
+(transição, gestos e sem corte estouravam o tempo); agora falha na hora.
+Não validado: a folha de compartilhar de um iPhone de verdade (no e2e, um `navigator.share` de mentira confere o `.txt`
+entregue a ela) e o "Restaurar backup" no TPeasy instalado (o `importAll` do próprio app foi
 rodado no teste).
 
 ## SOBEDESCE: Atualizações quando o Absolute ZRO cuida do app (29/10/2026)

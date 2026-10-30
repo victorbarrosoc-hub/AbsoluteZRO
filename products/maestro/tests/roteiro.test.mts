@@ -20,7 +20,7 @@ import {
   vistaTecnico,
   vistaTeleprompter,
 } from "../src/lib/criacao/roteiro/vistas";
-import { podeEditarCriacao, podeEnviarCriacao, podeVerCriacao } from "../src/lib/criacao/permissoes";
+import { PAPEIS_EDITAR_CRIACAO, PAPEIS_ENVIAR_CRIACAO, podeEditarCriacao, podeEnviarCriacao, podeVerCriacao } from "../src/lib/criacao/permissoes";
 
 const contador = (prefixo = "id") => {
   let n = 0;
@@ -706,7 +706,7 @@ describe("juntar duas edições por id", () => {
   });
 });
 
-test("permissões provisórias da Criação (até a área `criacao`)", () => {
+test("permissões da Criação pela capacidade `criacao` (acessos.ts), iguais às políticas da 0030", () => {
   assert.deepEqual(
     (["admin", "gestor", "equipe", "leitura"] as const).map((p) => [podeVerCriacao(p), podeEditarCriacao(p), podeEnviarCriacao(p)]),
     [
@@ -716,4 +716,8 @@ test("permissões provisórias da Criação (até a área `criacao`)", () => {
       [true, false, false],
     ],
   );
+  const sql = readFileSync(new URL("../drizzle/0030_roteiros.sql", import.meta.url), "utf8");
+  const arr = (l: readonly string[]) => `array[${l.map((x) => `'${x}'`).join(", ")}]`;
+  assert.ok(sql.includes(`politicas_padrao('roteiros', ${arr(PAPEIS_EDITAR_CRIACAO)}, ${arr(PAPEIS_ENVIAR_CRIACAO)})`));
+  assert.ok(sql.includes(`has_role(new.org_id, ${arr(PAPEIS_ENVIAR_CRIACAO)})`));
 });

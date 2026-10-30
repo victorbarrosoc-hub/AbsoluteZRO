@@ -1982,6 +1982,7 @@
   .cr-enviar__acoes .glass-btn {
     flex: 1 1 calc(50% - 4px);
     justify-content: center;
+    white-space: nowrap;
   }
 }
 @media (prefers-reduced-motion: reduce) {

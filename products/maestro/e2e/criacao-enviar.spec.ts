@@ -109,11 +109,10 @@ test.describe("Enviar no computador", () => {
     const url = `/app/criacao/roteiros/${s.id}?vista=literario`;
     await page.goto(url);
 
-    // o menu: TPeasy, PDF para a edição, PDF e Cliente (desligado); Salvar versão continua ao alcance; AEON não aparece
+    // o menu: TPeasy, PDF para a edição e PDF; Salvar versão continua ao alcance; AEON e cliente (F7) não aparecem
     await page.getByRole("button", { name: "Enviar" }).click();
     const menu = page.getByRole("menu", { name: "Enviar" });
-    await expect(menu.getByRole("menuitem")).toHaveText([/TPeasy/, /PDF para a edição/, /^PDF/, /Cliente/, /Salvar versão/]);
-    await expect(menu.getByRole("menuitem", { name: /Cliente/ })).toBeDisabled();
+    await expect(menu.getByRole("menuitem")).toHaveText([/TPeasy/, /PDF para a edição/, /^PDF/, /Salvar versão/]);
     await expect(menu.getByRole("menuitem", { name: /AEON/ })).toHaveCount(0);
     await expect(page.getByText("AEON")).toHaveCount(0);
     await page.keyboard.press("Escape");
@@ -240,7 +239,7 @@ test.describe("Enviar no computador", () => {
     await expect(criacao.getByRole("link", { name: "Novo roteiro" })).toHaveAttribute("href", `/app/criacao?novo=1&card=${s.card}`);
     await fotos(page, context, baseURL!, "criacao-card", info.project.name, url, async () => {
       await expect(criacao).not.toHaveAttribute("aria-busy", "true");
-      await criacao.scrollIntoViewIfNeeded();
+      await criacao.evaluate((el) => el.scrollIntoView({ block: "center" }));
     });
     await link.click();
     await page.waitForURL(new RegExp(`/app/criacao/roteiros/${s.id}`));
@@ -271,16 +270,38 @@ test.describe("Enviar no iPhone", () => {
   test("o Enviar no topo abre a folha; TPeasy com a versão salva e os botões ao alcance; a ficha do card", async ({ page, context, baseURL }, info) => {
     const s = await semear(info.project.name);
     await entrar(context, baseURL!);
+    // a folha de compartilhar do sistema (o Chromium de teste não tem): guarda o que o Maestro entregou a ela
+    await page.addInitScript(() => {
+      const w = window as unknown as { __compartilhado: { nome: string; tipo: string; texto: string; titulo?: string }[] };
+      w.__compartilhado = [];
+      Object.defineProperty(navigator, "canShare", { value: (d: ShareData) => !!d.files?.length, configurable: true });
+      Object.defineProperty(navigator, "share", {
+        configurable: true,
+        value: async (d: ShareData) => {
+          for (const f of d.files ?? []) w.__compartilhado.push({ nome: f.name, tipo: f.type, texto: await f.text(), titulo: d.title });
+        },
+      });
+    });
     const url = `/app/criacao/roteiros/${s.id}`;
     await page.goto(url);
     await page.getByRole("button", { name: "Enviar" }).click();
     const menu = page.getByRole("dialog", { name: "Enviar" });
-    await expect(menu.getByRole("menuitem")).toHaveText([/TPeasy/, /PDF para a edição/, /^PDF/, /Cliente/, /Salvar versão/]);
+    await expect(menu.getByRole("menuitem")).toHaveText([/TPeasy/, /PDF para a edição/, /^PDF/, /Salvar versão/]);
+    await expect(page.getByText("AEON")).toHaveCount(0);
     await menu.getByRole("menuitem", { name: /TPeasy/ }).click();
     const folha = page.getByRole("dialog", { name: "TPeasy" });
     await folha.getByRole("button", { name: /^Salvar v\d+ e continuar$/ }).click();
     await expect(folha.locator(".cr-enviar__versao")).toBeVisible();
-    for (const nome of ["Copiar", ".txt", "Backup do TPeasy"]) {
+    // Compartilhar entrega o .txt (o título no nome) com o texto pronto da versão; fica na auditoria
+    const n = Number((await folha.locator(".cr-enviar__versao .selo").innerText()).replace(/\D/g, ""));
+    const v = await versaoDaApi(page, s.id, n);
+    const esperado = saidaTpeasy({ roteiroId: s.id, titulo: v.titulo, n, sha256: v.sha256, criadoEm: v.criadoEm, conteudo: v.conteudo });
+    await folha.getByRole("button", { name: "Compartilhar" }).click();
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as { __compartilhado: unknown[] }).__compartilhado))
+      .toEqual([{ nome: esperado.arquivoTxt, tipo: "text/plain", texto: esperado.texto, titulo: esperado.titulo }]);
+    await expect.poll(async () => (await envios(s.id)).some((e) => e.metadata.formato === "compartilhar" && e.metadata.n === n)).toBe(true);
+    for (const nome of ["Compartilhar", "Copiar", ".txt", "Backup do TPeasy"]) {
       const b = folha.getByRole("button", { name: nome });
       await b.scrollIntoViewIfNeeded();
       await expect(b).toBeInViewport();
@@ -301,7 +322,7 @@ test.describe("Enviar no iPhone", () => {
     await fotos(page, context, baseURL!, "criacao-card", info.project.name, card, async () => {
       const criacao = page.getByRole("dialog", { name: `Card: ${s.tema}` }).getByRole("region", { name: "Criação" });
       await expect(criacao).not.toHaveAttribute("aria-busy", "true");
-      await criacao.scrollIntoViewIfNeeded();
+      await criacao.evaluate((el) => el.scrollIntoView({ block: "center" }));
     });
   });
 });
