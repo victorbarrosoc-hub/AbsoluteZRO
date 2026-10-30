@@ -3,7 +3,7 @@
  * Números do ecossistema: cada valor conta do zero quando aparece na tela, uma vez só. O texto é trocado direto no
  * elemento (sem re-renderizar o React por quadro). Sem JavaScript ou com "reduzir movimento", mostra o valor final.
  */
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type CSSProperties } from 'react'
 
 export type Numero = { valor: number; rotulo: string; dica?: string }
 
@@ -40,7 +40,7 @@ export function Numeros({ itens }: { itens: Numero[] }) {
     }
   }, [])
   return (
-    <dl ref={ref} className="pnum__lista">
+    <dl ref={ref} className="pnum__lista" style={{ '--n': itens.length } as CSSProperties}>
       {itens.map((n) => (
         <div key={n.rotulo} className="pnum__item" title={n.dica}>
           <dt>{n.rotulo}</dt>

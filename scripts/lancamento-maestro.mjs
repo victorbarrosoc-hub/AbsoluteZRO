@@ -18,7 +18,7 @@ const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 /** Cada chave: arquivo, tipo e quantos blocos HTML o arquivo tem. */
 export const CHAVES = [
-  { arquivo: 'products/maestro/src/lib/site.ts', tipo: 'js', nome: 'MAESTRO_LANCADO', o_que: 'Maestro: página inicial em Beta' },
+  { arquivo: 'products/maestro/src/lib/site.ts', tipo: 'js', nome: 'MAESTRO_LANCADO', o_que: 'Maestro: página inicial lançada' },
   { arquivo: 'products/sobedesce/public/components/sidebar.js', tipo: 'js', nome: 'MAESTRO_NA_FAMILIA', o_que: 'SOBEDESCE (computador): família' },
   {
     arquivo: 'products/sobedesce/web/public/app/components/settings.js',

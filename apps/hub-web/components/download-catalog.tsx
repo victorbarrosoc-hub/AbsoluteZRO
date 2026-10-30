@@ -20,15 +20,22 @@ const HUB_TERMINAL = {
 const OS_ICON: Record<Os, IconName> = { mac: 'laptop', windows: 'monitor', mobile: 'phone', web: 'globe' }
 
 /**
- * As ferramentas do catálogo com o que cada uma tem para baixar, na ordem do fluxo (para o DownloadPicker). Só os
- * `liberados` (canal download, ADR 0023) trazem instalador; os outros aparecem como "Em desenvolvimento".
+ * As ferramentas do catálogo com o que cada uma tem para baixar, na ordem do fluxo (para o DownloadPicker). Os
+ * `liberados` (canal download, ADR 0023) trazem instalador; os de `naWeb` (web aberta, download fechado), só o navegador
+ * e o celular; os outros aparecem como "Em desenvolvimento", ou nem aparecem com `soDisponiveis` (página pública: o que
+ * não está no ar não é divulgado, titular 30/10/2026).
  */
-export function appsParaBaixar(products: CatalogProduct[], liberados: ReadonlySet<string>, extra?: (id: string) => Partial<PickerApp>): PickerApp[] {
+export function appsParaBaixar(
+  products: CatalogProduct[],
+  liberados: ReadonlySet<string>,
+  extra?: (id: string) => Partial<PickerApp>,
+  opcoes: { naWeb?: ReadonlySet<string>; soDisponiveis?: boolean } = {},
+): PickerApp[] {
   const byId = new Map(products.map((p) => [p.id, p]))
-  const downloads = downloadsLiberados(liberados)
+  const downloads = downloadsLiberados(liberados, opcoes.naWeb)
   return products
     .map((p) => downloads.find((d) => d.productId === p.id))
-    .filter((d): d is (typeof downloads)[number] => !!d && byId.has(d.productId))
+    .filter((d): d is (typeof downloads)[number] => !!d && byId.has(d.productId) && !(opcoes.soDisponiveis && d.status === 'soon'))
     .map((d) => ({
       ...d,
       name: byId.get(d.productId)!.name,
