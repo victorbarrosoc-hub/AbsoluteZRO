@@ -69,5 +69,8 @@ if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split(/[\\/]/).p
   // o painel importa ./digitando.js (a sugestão que se escreve sozinha no campo): vão os dois juntos
   for (const f of ['zro-ia.js', 'digitando.js']) copyFileSync(repo(`apps/hub-web/public/ia/v1/${f}`), destino(`ia/v1/${f}`))
   for (const f of ['anel.webp', 'estrela.webp']) copyFileSync(repo(`apps/hub-web/public/ia/z/${f}`), destino(`ia/z/${f}`))
+  // o Set (presença e conversas): o mesmo <zro-set> do HUB, pelo mesmo motivo (app/set.js)
+  mkdirSync(destino('set/v1'), { recursive: true })
+  copyFileSync(repo('apps/hub-web/public/set/v1/zro-set.js'), destino('set/v1/zro-set.js'))
   console.log('vendor/ atualizado')
 }

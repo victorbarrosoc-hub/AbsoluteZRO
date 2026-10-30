@@ -59,4 +59,6 @@ lançamento do Carro do Freela e não entra agora, mas nada aqui pode impedi-la.
 1. Padrão de "Quem vê você online": hoje **equipe e contatos**. Manter ou nascer mais fechado?
 2. Notificação fora do app (e-mail ou push de mensagem nova): não existe; só o balão dentro dos apps.
 3. Anexos (imagem, vídeo, arquivo do Drive) nas conversas: fora desta fase.
-4. SOBEDESCE, Synquei e os demais apps entram no Set quando cada um ganhar o repasse (`/api/zro/set/*`) e o widget.
+4. ~~SOBEDESCE, Synquei e os demais apps entram no Set quando cada um ganhar o repasse (`/api/zro/set/*`) e o
+   widget.~~ Feito em 30/10/2026: o Set é a aba em comum de todas as plataformas, cada uma no padrão de navegação dela e
+   com a própria identidade (`modo="folha"` e `--zro-set-*`); tabela no [contrato](../integration-contracts/set.md).

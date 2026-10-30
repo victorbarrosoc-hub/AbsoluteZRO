@@ -85,6 +85,7 @@
     }
   ],
   "rewrites": [
+    { "source": "/api/zro/set/:caminho*", "destination": "/api/zro/set?c=:caminho*" },
     { "source": "/app/:caminho*", "destination": "/api/app?caminho=app/:caminho*" },
     { "source": "/src/:caminho*", "destination": "/api/app?caminho=src/:caminho*" },
     { "source": "/presets/:caminho*", "destination": "/api/app?caminho=presets/:caminho*" }

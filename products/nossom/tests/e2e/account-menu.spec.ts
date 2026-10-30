@@ -39,7 +39,7 @@ guest(
         .violations,
     ).toEqual([]);
     await dialog.getByRole('button', { name: 'Entrar no estúdio', exact: true }).click();
-    await expect(page).toHaveURL(/\/studio\/z$/);
+    await expect(page).toHaveURL(/\/studio$/);
     await expect(
       page.getByRole('button', { name: 'Abrir menu da conta', exact: true }),
     ).toBeVisible();

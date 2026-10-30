@@ -1,5 +1,5 @@
-// A Z, a IA do ecossistema Absolute ZRO, numa aba só dela: a primeira, e a tela de entrada do app (no iPhone e no
-// computador). O
+// A Z, a IA do ecossistema Absolute ZRO, numa tela só dela (#z). Desde 29/10/2026 (titular; Plano de Integração §7–8)
+// não é aba da barra nem a tela de entrada (o app abre em Roteiros): abre pelo anel discreto do topo de Roteiros. O
 // painel é o <zro-ia> da Absolute ZRO; ele fala com /api/zro/ia, o repasse do próprio TPeasy (api/zro/ia.mjs), que
 // acrescenta o token da conta no servidor. O token nunca chega a esta página.
 // A Z conversa e lê os dados da conta; não mexe nos roteiros (eles continuam só neste aparelho). Sem as funções /api/zro

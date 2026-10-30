@@ -11,9 +11,11 @@ export default async function entrar(req, res) {
   const criar = q.get('criar') === '1'
   // sem_ia=1: a Absolute ZRO recusou o escopo da Z para este cliente (invalid_scope, ver callback.js); entra sem ele
   const semIa = q.get('sem_ia') === '1'
+  // sem_set=1: a Absolute ZRO recusou o escopo do Set (de antes dele); entra com a Z, sem o Set
+  const semSet = semIa || q.get('sem_set') === '1'
   // A Absolute ZRO volta para o endereço cadastrado: o cookie da ida precisa nascer nele.
   const origem = origemPermitida(req)
-  if (origemDoPedido(req) !== origem) return redirecionar(res, 307, `${origem}/api/zro/entrar?volta=${encodeURIComponent(volta)}${criar ? '&criar=1' : ''}${semIa ? '&sem_ia=1' : ''}`)
+  if (origemDoPedido(req) !== origem) return redirecionar(res, 307, `${origem}/api/zro/entrar?volta=${encodeURIComponent(volta)}${criar ? '&criar=1' : ''}${semIa ? '&sem_ia=1' : semSet ? '&sem_set=1' : ''}`)
   if (!configurado()) return redirecionar(res, 303, comAviso(volta, 'config'))
 
   const state = novoValor()
@@ -25,7 +27,7 @@ export default async function entrar(req, res) {
     u.searchParams.set('response_type', 'code')
     u.searchParams.set('client_id', clientId())
     u.searchParams.set('redirect_uri', retorno(origem))
-    u.searchParams.set('scope', semIa ? ESCOPOS.replace(/ ?zro\.ia/, '') : ESCOPOS)
+    u.searchParams.set('scope', ESCOPOS.replace(semSet ? / ?zro\.set/ : '', '').replace(semIa ? / ?zro\.ia/ : '', ''))
     u.searchParams.set('state', state)
     u.searchParams.set('nonce', nonce)
     u.searchParams.set('code_challenge', desafioPkce(verificador))
@@ -35,6 +37,6 @@ export default async function entrar(req, res) {
   } catch {
     return redirecionar(res, 303, comAviso(volta, 'erro'))
   }
-  const ida = selar(COOKIE_IDA, { state, nonce, verificador, volta, origem, ia: !semIa }, IDA_S)
+  const ida = selar(COOKIE_IDA, { state, nonce, verificador, volta, origem, ia: !semIa, set: !semSet, ...(criar ? { criar: true } : {}) }, IDA_S)
   return redirecionar(res, 302, destino, [cookie(COOKIE_IDA, ida, { maxAge: IDA_S, path: '/api/zro' })])
 }

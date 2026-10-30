@@ -4,6 +4,7 @@
  * e JWKS. Assina o id_token com uma chave ES256 de verdade. `adulterar` gera tokens ruins de propósito.
  * A Z (27/10/2026): com `offline_access zro.ia` no pedido, devolve access e refresh token (o refresh RODA: reapresentado,
  * derruba a família) e atende /api/v1/ia/* só com Bearer válido, como a API da IA do HUB (/mensagens em NDJSON).
+ * O Set (30/10/2026): /api/v1/set/* só com Bearer que tenha `zro.set` (sem ele, 401); leitura com ETag W/"v1" e 304.
  */
 import { createHash, generateKeyPairSync, randomBytes, sign } from "node:crypto";
 import http from "node:http";
@@ -26,6 +27,9 @@ export async function iniciarZroFalsa(cliente: { clientId: string; clientSecret:
     ultimoEscopo: null as string | null,
     /** A Absolute ZRO ainda não conhece zro.ia: responde invalid_scope a quem pedir. */
     recusarEscopoIa: false,
+    /** A Absolute ZRO de antes do Set: responde invalid_scope a quem pedir zro.set. */
+    recusarEscopoSet: false,
+    pedidosSet: [] as { metodo: string; caminho: string; autorizacao: string | null; corpo: string; seEtag: string | null }[],
     /** Vida do access token (s); 0 obriga o SOBEDESCE a renovar antes de cada uso. */
     vidaAcesso: 600,
     renovacoes: 0,
@@ -75,7 +79,10 @@ export async function iniciarZroFalsa(cliente: { clientId: string; clientSecret:
       volta.searchParams.set("state", q.get("state")!);
       if (q.get("client_id") !== cliente.clientId || q.get("code_challenge_method") !== "S256" || !q.get("nonce")) {
         volta.searchParams.set("error", "invalid_request");
-      } else if (estado.recusarEscopoIa && (q.get("scope") ?? "").split(" ").includes("zro.ia")) {
+      } else if (
+        (estado.recusarEscopoIa && (q.get("scope") ?? "").split(" ").includes("zro.ia")) ||
+        (estado.recusarEscopoSet && (q.get("scope") ?? "").split(" ").includes("zro.set"))
+      ) {
         volta.searchParams.set("error", "invalid_scope");
       } else if (estado.proximo.negar || !estado.proximo.pessoa) {
         volta.searchParams.set("error", "access_denied");
@@ -134,6 +141,21 @@ export async function iniciarZroFalsa(cliente: { clientId: string; clientSecret:
       const escopos = c.escopo.split(" ");
       const tokens = escopos.includes("offline_access") ? emitir(c.escopo, c.pessoa.nome) : { access_token: "at", expires_in: 600 };
       return responder(res, 200, { ...tokens, token_type: "Bearer", id_token: id, scope: c.escopo || "openid email profile org" });
+    }
+    if (url.pathname === "/api/v1/set" || url.pathname.startsWith("/api/v1/set/")) {
+      let corpo = "";
+      for await (const c of req) corpo += c;
+      const autorizacao = req.headers.authorization ?? null;
+      const caminho = url.pathname.slice("/api/v1/set".length).replace(/^\//, "") + url.search;
+      estado.pedidosSet.push({ metodo: req.method ?? "GET", caminho, autorizacao, corpo, seEtag: (req.headers["if-none-match"] as string) ?? null });
+      const a = acessos.get((autorizacao ?? "").replace(/^Bearer /, ""));
+      if (!a || a.exp < Date.now() || !a.escopo.split(" ").includes("zro.set")) return responder(res, 401, { error: "unauthenticated" });
+      if (req.method === "GET" && req.headers["if-none-match"] === 'W/"v1"') {
+        res.writeHead(304, { etag: 'W/"v1"' });
+        return res.end();
+      }
+      res.writeHead(200, { "content-type": "application/json", etag: 'W/"v1"' });
+      return res.end(JSON.stringify({ eu: { nome: a.nome }, pessoas: [], naoLidas: 0, pedidos: 0, porConversa: {} }));
     }
     if (url.pathname.startsWith("/api/v1/ia/")) {
       let corpo = "";

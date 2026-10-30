@@ -63,7 +63,7 @@ async function fluxo({ pessoa = LIA, volta, criar = false, adulterar = null, neg
   assert.equal(u.origin, zro.url)
   assert.equal(u.searchParams.get('code_challenge_method'), 'S256')
   assert.equal(u.searchParams.get('redirect_uri'), `${SITE}/api/zro/callback`)
-  assert.equal(u.searchParams.get('scope'), 'openid email profile org offline_access zro.ia')
+  assert.equal(u.searchParams.get('scope'), 'openid email profile org offline_access zro.ia zro.set')
   assert.ok(u.searchParams.get('nonce'))
   const setCookie = ida.headers.getSetCookie()[0]
   for (const a of ['HttpOnly', 'Secure', 'SameSite=Lax', 'Path=/api/zro', 'Max-Age=600']) assert.ok(setCookie.includes(a), `cookie da ida com ${a}`)

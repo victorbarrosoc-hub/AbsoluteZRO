@@ -52,6 +52,9 @@ async function iniciarZroFalsa(cliente) {
     atTtl: 600,
     semEscopoIa: false,
     pedidosIa: [],
+    /* o Set (30/out): `semEscopoSet` recusa zro.set no authorize; `pedidosSet` guarda o que chegou */
+    semEscopoSet: false,
+    pedidosSet: [],
     contas: new Map(),
     hubAntigo: false,
     userinfos: 0,
@@ -125,7 +128,7 @@ async function iniciarZroFalsa(cliente) {
       volta.searchParams.set('state', q.get('state'));
       if (q.get('client_id') !== cliente.clientId || q.get('code_challenge_method') !== 'S256' || !q.get('nonce') || q.get('response_type') !== 'code') {
         volta.searchParams.set('error', 'invalid_request');
-      } else if ((estado.semEscopoJobs && (q.get('scope') || '').includes('carro-do-freela.jobs')) || (estado.semEscopoIa && (q.get('scope') || '').split(' ').includes('zro.ia'))) {
+      } else if ((estado.semEscopoJobs && (q.get('scope') || '').includes('carro-do-freela.jobs')) || (estado.semEscopoIa && (q.get('scope') || '').split(' ').includes('zro.ia')) || (estado.semEscopoSet && (q.get('scope') || '').split(' ').includes('zro.set'))) {
         volta.searchParams.set('error', 'invalid_scope');
       } else if (estado.proximo.negar || !estado.proximo.pessoa) {
         volta.searchParams.set('error', 'access_denied');
@@ -254,6 +257,22 @@ async function iniciarZroFalsa(cliente) {
         return res.end(JSON.stringify({ tipo: 'fim', mensagem: 'm1', creditos: 1 }) + '\n');
       }
       return responder(res, 404, { error: 'not_found' });
+    }
+    /* o Set (/api/v1/set): Bearer com zro.set (sem ele, 401); leitura com ETag W/"v1" e 304 sem corpo */
+    if (url.pathname === '/api/v1/set' || url.pathname.startsWith('/api/v1/set/')) {
+      let corpo = '';
+      for await (const c of req) corpo += c;
+      const caminho = url.pathname.slice('/api/v1/set'.length).replace(/^\//, '');
+      estado.pedidosSet.push({ metodo: req.method, caminho, busca: url.search, autorizacao: req.headers.authorization || null, inm: req.headers['if-none-match'] || null, cookie: req.headers.cookie || null, corpo });
+      const a = acessos.get(String(req.headers.authorization || '').replace(/^Bearer /, ''));
+      if (!a || a.exp <= Date.now() || !a.escopo.split(' ').includes('zro.set')) return responder(res, 401, { error: 'unauthenticated' });
+      if (req.method === 'GET' && req.headers['if-none-match'] === 'W/"v1"') { res.writeHead(304, { etag: 'W/"v1"' }); return res.end() }
+      res.writeHead(200, Object.assign({ 'content-type': 'application/json' }, req.method === 'GET' ? { etag: 'W/"v1"' } : {}));
+      /* `setEstado` (a suíte da tela): o estado inteiro, com pessoas e não lidas */
+      if (caminho === '' && estado.setEstado) return res.end(JSON.stringify(estado.setEstado));
+      if (caminho === 'conversas' && estado.setEstado) return res.end(JSON.stringify({ conversas: [], projetos: [] }));
+      if (caminho === 'contatos' && estado.setEstado) return res.end(JSON.stringify({ contatos: [], recebidos: [], enviados: [], bloqueados: [] }));
+      return res.end(JSON.stringify(caminho === '' ? { eu: { id: 'eu' }, pessoas: [], naoLidas: 0, pedidos: 0 } : { ok: true }));
     }
     responder(res, 404, { error: 'not_found' });
   });

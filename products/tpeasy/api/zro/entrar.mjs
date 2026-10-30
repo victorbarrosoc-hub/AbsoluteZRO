@@ -1,5 +1,6 @@
 // GET /api/zro/entrar?volta=/app/ — começa o "Entrar com Absolute ZRO". O HUB também abre o app por aqui.
 // Com ?criar=1 é o "Criar conta": o HUB abre o cadastro (prompt=create). O TPeasy não cria contas próprias.
+// Com ?sem_set=1, o mesmo pedido sem o escopo do Set (a Absolute ZRO recusou zro.set; ver callback).
 import {
   COOKIE_IDA,
   DURACAO_IDA_S,
@@ -26,6 +27,7 @@ export default async function entrar(req, res) {
   const url = urlDoPedido(req)
   const volta = voltaSegura(url.searchParams.get('volta'))
   const criar = url.searchParams.get('criar') === '1'
+  const semSet = url.searchParams.get('sem_set') === '1'
 
   // O HUB só volta para o endereço cadastrado: o cookie da ida precisa nascer nele.
   const origem = origemDoPedido(req)
@@ -37,10 +39,10 @@ export default async function entrar(req, res) {
   const verificador = novoValor()
   let destino
   try {
-    destino = await urlDeLogin({ state, nonce, desafio: desafioDe(verificador), origem, criar })
+    destino = await urlDeLogin({ state, nonce, desafio: desafioDe(verificador), origem, criar, semSet })
   } catch {
     return redirecionar(res, 302, comAviso(volta, 'erro'))
   }
-  const ida = selar({ state, nonce, verificador, volta }, 'ida', DURACAO_IDA_S)
+  const ida = selar({ state, nonce, verificador, volta, ...(criar ? { criar: true } : {}), ...(semSet ? { semSet: true } : {}) }, 'ida', DURACAO_IDA_S)
   redirecionar(res, 302, destino, [serializarCookie(COOKIE_IDA, ida, { maxAge: DURACAO_IDA_S, path: '/api/zro', secure: seguro(req) })])
 }

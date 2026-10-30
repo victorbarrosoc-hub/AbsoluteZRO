@@ -15,7 +15,10 @@ import { createCipheriv, createDecipheriv, createHash, createHmac, createPublicK
 export const EMISSOR_PADRAO = 'https://absolutezro.com'
 // offline_access: o refresh token deixa o app reler o perfil (nome, e-mail, foto) a cada abertura
 // zro.ia: a Z (a IA do ecossistema) conversa com a pessoa no painel inicial, pelo repasse /api/zro/ia
-export const ESCOPOS = 'openid email profile org offline_access zro.ia'
+export const ESCOPOS = 'openid email profile org offline_access zro.ia zro.set'
+// zro.set: o Set (quem da equipe está online e as conversas), pelo repasse /api/zro/set. A Absolute ZRO de antes do Set
+// recusa o escopo (invalid_scope): o callback refaz o pedido com ESCOPOS_SEM_SET e o login segue, sem o Set.
+export const ESCOPOS_SEM_SET = 'openid email profile org offline_access zro.ia'
 export const SITE_OFICIAL = 'https://tpeasy.vercel.app'
 export const VOLTA_PADRAO = '/app/'
 /** Id do TPeasy na lista `zro_products` do HUB. Fora da lista: entra, mas a conta fica sem acesso ao app. */
@@ -227,13 +230,13 @@ export const desafioDe = (verificador) => createHash('sha256').update(verificado
 export const temAcesso = (produtos) => Array.isArray(produtos) && produtos.includes(PRODUTO)
 
 /** `criar`: "Criar conta" — o HUB abre o cadastro (prompt=create) e volta para cá já logado. */
-export async function urlDeLogin({ state, nonce, desafio, origem, criar = false }) {
+export async function urlDeLogin({ state, nonce, desafio, origem, criar = false, semSet = false }) {
   const d = await descobrir()
   const u = new URL(d.authorization_endpoint)
   u.searchParams.set('response_type', 'code')
   u.searchParams.set('client_id', config().clientId)
   u.searchParams.set('redirect_uri', retornoDe(origem))
-  u.searchParams.set('scope', ESCOPOS)
+  u.searchParams.set('scope', semSet ? ESCOPOS_SEM_SET : ESCOPOS)
   u.searchParams.set('state', state)
   u.searchParams.set('nonce', nonce)
   u.searchParams.set('code_challenge', desafio)

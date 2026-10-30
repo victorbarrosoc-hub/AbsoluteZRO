@@ -6,6 +6,7 @@
 
 import { paginaDe } from './navegar.js'
 import { ICONES, svg } from './visual.js'
+import { montarSet } from './set.js'
 
 const CHAVE = 'revela-menu'
 const LARGO = matchMedia('(min-width: 900px)')
@@ -63,10 +64,11 @@ const menu = el(
   el(
     'nav',
     { className: 'menu-corpo', ariaLabel: 'Revela e Absolute ZRO' },
-    item({ href: 'inicio.html', nome: 'Z', icone: 'z', pagina: 'inicio' }),
     item({ href: './', nome: 'Início', icone: 'casa', pagina: 'index' }),
     el('p', { className: 'menu-grupo', textContent: 'Ferramentas' }),
     ...FERRAMENTAS.map(item),
+    // a Z, discreta, depois das ferramentas (titular, 29/10/2026): nunca a primeira do menu nem a entrada
+    item({ href: 'inicio.html', nome: 'Z', icone: 'z', pagina: 'inicio' }),
     el('p', { className: 'menu-grupo', textContent: 'Absolute ZRO' }),
     ...FAMILIA.map(item),
   ),
@@ -137,6 +139,8 @@ alternarTopo.setAttribute('aria-controls', 'menu')
 alternarRail.setAttribute('aria-controls', 'menu')
 
 document.body.prepend(menu, fundo)
+// o Set, a aba em comum do ecossistema: o fim do dock (app/set.js)
+montarSet()
 document.querySelector('.topo')?.prepend(alternarTopo)
 document.documentElement.classList.add('com-menu')
 
