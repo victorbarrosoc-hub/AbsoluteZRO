@@ -2,6 +2,7 @@
 import { DomainError } from '@zro/observability'
 import { z } from 'zod'
 import { Z_APPS, Z_MODELOS, Z_VOZ_MODELOS } from './z-lab'
+import { Z_APRENDIZADO_MAX_PENDENTES, ZPropostaSchema } from './z-aprendizados'
 
 const ARQUIVO = /^file_[A-Za-z0-9_-]{6,80}$/
 const ZLabAnexoSchema = z.discriminatedUnion('tipo', [
@@ -22,6 +23,9 @@ const ZLabPedidoSchema = z.object({
   modelo: z.enum(Z_MODELOS.map((m) => m.id) as [string, ...string[]]).nullish(),
   plataforma: z.enum(Z_APPS.map((a) => a.id) as [string, ...string[]]).nullish(),
   voz: z.boolean().optional(),
+  /** Aprender conversando (só no rascunho): a Z pode propor aprendizados, e estes esperam o "Guardar" do titular. */
+  aprender: z.boolean().optional(),
+  pendentes: z.array(ZPropostaSchema).max(Z_APRENDIZADO_MAX_PENDENTES).optional(),
   historico: z
     .array(
       z.object({

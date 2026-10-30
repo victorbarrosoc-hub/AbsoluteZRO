@@ -772,6 +772,19 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   `when` únicos; o migrador aplica as fora de ordem (`migrador.test.mts`).
 - ⛔ Em produção: 0027, 0030, 0031 e 0032 do Maestro no próximo deploy autorizado.
 
+## Maestro · Criação: apagar fácil, com Desfazer (30/10/2026)
+
+- ✅ Pedido do titular ("bota uma opção fácil de excluir o projeto"): nas listas de Roteiros e de Fluxos, **deslizar o
+  cartão para a esquerda** no iPhone mostra o "Apagar" vermelho (até o fim apaga direto, como no Mail); **segurar** abre
+  a folha com Abrir e Apagar; no computador, o **"•••"** do cartão (com o mouse em cima) e o **botão direito** abrem
+  "Mandar para a lixeira".
+- ✅ Apagar = lixeira: some na hora com **"Apagado · Desfazer"** (6 s), sem pergunta; se está num card ou tem link vivo,
+  uma linha diz ("Sai do card até voltar da lixeira.", "O link para de abrir."). O "•••" do editor e do canvas faz o
+  mesmo e volta para a lista com o Desfazer.
+- ✅ **Lixeira** discreta nas duas abas ("Lixeira · N"): Restaurar (quem edita) e **Apagar de vez** com pergunta
+  (administração e gestão); roteiro com versão salva fica guardado. Leitura não vê nada disso.
+- Sem migração: as políticas da 0030/0031 já davam a remoção só a administração e gestão.
+
 ## Relay: conversão de mídia como setor próprio (29/10/2026, [ADR 0030](decisions/0030-relay-conversao.md))
 
 A Revela fica só com a cor (looks, espaço de cor, LUT e PowerGrade). Codec, contêiner e formatos de vídeo e áudio vão
@@ -881,6 +894,11 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
   Estúdio, Conta, Set) mantêm o Set como a última aba; no Carro e no NOSSOM a lateral termina em Set e Z (a Z
   sempre a última); no site do SOBEDESCE o Set fica no cabeçalho, ao lado do anel da Z.
 - ⛔ Em produção: cliente `relay-web` no console (para o Set do Relay) e deploy de cada app, com autorização.
+- ✅ Adicionar pelo @ no Online (30/10/2026, pedido do titular: "achar a pessoa pelo @, adicionar, ver quando está
+  online e abrir a conversa"; antes ficava escondido nos Ajustes): botão da pessoa com + no topo e "Adicionar alguém
+  pelo @" no vazio; prévia com foto, nome e @ enquanto digita (`POST /contatos { ver }`, só perfil visível, mesmo
+  limite da busca); "Pedido enviado" ou "Agora vocês são contatos" ali mesmo; pedidos recebidos no topo do Online com
+  Aceitar e Recusar e o número na aba; já contatos = 409. Mesmo `v1`, sem mexer em nenhum repasse dos apps.
 - ⬜ App de computador do SOBEDESCE com o Set (o motor local ainda não repassa); aviso fora do app (e-mail/push);
   anexos.
 - ⬜ Fase 3, salas abertas da comunidade: com o lançamento do Carro do Freela (novo tipo de conversa, mesma API).
@@ -908,6 +926,12 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
   "Escuta ao vivo indisponível: usando transcrição por frase", custo e teto valendo. O log diz o código da recusa.
 - ✅ Modo voz no iPhone (30/10/2026): nada passa da largura em 375/393/430 px e deitado (coluna `minmax(0, 1fr)`,
   topo em duas linhas, seletor a 16 px sem zoom do Safari, anel e tempos que encolhem); e2e no Chromium e no WebKit.
+- ✅ Aprender conversando (30/10/2026): no Testar (rascunho), o titular corrige a Z por voz ou texto ("não fala tão
+  formal", "a produtora se chama…") e ela propõe pela ferramenta `propor_aprendizado`; o cartão "Aprender · Guardar ·
+  Ajustar · Ignorar" pede a confirmação (toque, ou "pode guardar" dito, decidido no servidor). O guardado vai para a
+  seção `aprendizados` do rascunho e o próximo turno já usa; a versão numerada congela, os clientes só depois de
+  publicar. Trava de segurança, repetidos, contradições, limites, auditoria e Configurar › Aprendizados (editar, mover
+  de seção, remover, com a frase de origem). Sem migração: o rascunho e as versões imutáveis já tinham RLS.
 - ⬜ Para os clientes: voz, ditado e anexos no painel `<zro-ia>` lendo `z_recurso_liberado`, quando os planos forem
   vendidos.
 

@@ -10,6 +10,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { listaDepoisDeApagar } from "@/lib/criacao/lixeira";
 import { resumoDoBloco } from "@/lib/criacao/roteiro/comparar";
 import { acharBloco, inserirNoFim, novaCena } from "@/lib/criacao/roteiro/editar";
 import type { Conflito } from "@/lib/criacao/roteiro/juntar";
@@ -521,7 +522,8 @@ export function EditorRoteiro({ inicial, versoes, opcoes, editavel, podeEstado, 
                 await g.gravar();
                 const r = await post({ op: "lixeira", apagar: true });
                 if (r.ok) {
-                  router.push("/app/criacao");
+                  // a lista abre com o "Apagado · Desfazer"
+                  router.push(listaDepoisDeApagar("roteiro", inicial.id));
                   router.refresh();
                   return null;
                 }

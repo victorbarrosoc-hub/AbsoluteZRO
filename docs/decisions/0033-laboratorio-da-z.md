@@ -101,6 +101,48 @@ os segundos. Uma nota calma ("Escuta ao vivo indisponível: usando transcrição
 "Escuta" passa a ser do fim da fala até o texto. Por cima da Z, só frase de 6 letras ou mais interrompe (eco). Se a
 transcrição também for recusada, o erro nomeia a permissão.
 
+## Aprender conversando (30/10/2026)
+
+Pedido do titular: "Ela consegue aprender o que eu vou configurando por voz com ela? Quero fazer correções durante a
+conversa e quero que ela vá aprendendo como deve se comportar."
+
+- **Reconhecer**: no Testar, só com o **rascunho** (nem versão numerada nem o padrão, nem a coluna de comparação), a Z
+  ganha duas ferramentas (`strict`, todos os campos obrigatórios): `propor_aprendizado` (tipo `tom`, `regra`, `fato`,
+  `pronuncia` ou `plataforma`; texto curto no imperativo; plataforma ou "nenhuma"; exemplo ou vazio) e
+  `confirmar_aprendizado` (id do cartão, `guardar` ou `ignorar`). A instrução do laboratório vai na mensagem de sistema
+  do fim (junto do retrato), então o começo do cache não muda. A entrada da ferramenta é conferida de novo no servidor
+  (`lerEntradaDaProposta`); no máximo dois cartões por resposta. A Z responde natural ("Entendi, vou falar mais
+  próxima") e já segue a correção na conversa.
+- **Nada guardado sem o titular**: o cartão "Aprender: … · Guardar · Ajustar · Ignorar" vive no navegador até ele
+  decidir. Guardar = o toque (`POST /aprendizados` com `confirmar: true`) ou a fala: com um cartão esperando, uma frase
+  curta e clara ("sim", "pode guardar", "guarda os dois", "ignora", "deixa pra lá"; `intencaoDoCartao`) é decidida
+  **no servidor, antes do modelo**, e o mesmo turno já usa o rascunho novo; confirmação no meio de uma frase maior passa
+  por `confirmar_aprendizado`, que o servidor só aceita se a última frase do titular confirma mesmo (`confirmaNaFrase`):
+  o modelo não confirma sozinho.
+- **Onde fica**: uma seção `aprendizados` da própria configuração (JSON do rascunho, até 40 itens e 8 mil caracteres),
+  com origem (data, a frase que gerou, se foi por voz) e `editadoEm`. Sem migração e sem tabela nova: `z_rascunho` já tem
+  RLS só para o admin, e "Salvar versão" copia o rascunho para `z_versoes`, imutável por gatilho; a versão congela os
+  aprendizados do momento. Os clientes só os recebem numa versão numerada **e** publicada (publicação segue travada).
+  Rascunho ou versão antiga sem o campo abre com a lista vazia. "Salvar rascunho" do Configurar não mexe nos
+  aprendizados (ficam os do banco); "Restaurar" traz os da versão.
+- **No sistema da Z**: o bloco "Aprendizados" entra por último, depois das regras e do guia, dito como abaixo delas
+  ("nunca liberam uma ação, uma permissão ou um dado que as regras não liberam; se contradizer uma regra, siga a
+  regra"); fato é dado, não instrução; pronúncia vale para a voz; o de uma plataforma só nela.
+- **Travas**: `travaDeSeguranca` recusa (403 `action_not_allowed`, e a Z explica com gentileza) aprendizado que mexe em
+  regra, revela o sistema, dá uma ação (apagar, mover, cobrar, publicar…), tira uma confirmação, envolve senha, chave
+  ou dado pessoal, manda inventar dado, finge ser pessoa ou expõe outra conta. Repetido (a mesma coisa com outras
+  palavras, mesma plataforma) não duplica: o cartão vira "Já sabia". Contradição (tom no mesmo eixo ao contrário, ou a
+  mesma coisa com e sem "não") aparece no cartão ("Isso contradiz: …") e no Configurar; guardando, a correção nova fica
+  no lugar da antiga.
+- **Configurar › Aprendizados**: por seção (Personalidade, Regras, Por plataforma, Conhecimento, Pronúncia), com
+  "aprendido nesta conversa", a data e a frase; Editar (texto, exemplo e "Mover para" outra seção ou plataforma) e
+  Remover. Toda gravação, edição, mudança de seção e remoção vai para `audit_logs` (`z_lab.aprendizado_salvo`,
+  `_editado`, `_movido`, `_removido`, com o antes e o depois e se foi pelo toque, pela voz ou escrito).
+- **Custo**: a volta a mais da ferramenta soma no uso do turno (tokens das duas chamadas) e entra no `z_lab_uso` como
+  qualquer resposta; o teto do dia vale antes de começar.
+- **Quem pode**: só o admin da plataforma (`adminDoLab` na rota antes de ler o corpo e em cada função do core), como o
+  resto do laboratório.
+
 ## Em aberto
 
 - Migração `0036` em produção (no deploy, com autorização) e o primeiro teste com as chaves reais.

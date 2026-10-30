@@ -190,7 +190,28 @@ async function telas(): Promise<Tela[]> {
     { nome: "ajustes-pedido", rota: "/app/ajustes/pedido" },
     { nome: "ajustes-precos", rota: "/app/ajustes/precos" },
     { nome: "entrar", rota: "/entrar", publica: true },
-    { nome: "fluxos", rota: "/app/criacao/fluxos" },
+    {
+      nome: "fluxos",
+      rota: "/app/criacao/fluxos",
+      depois: async (page, ver) => {
+        // segurar o cartão abre a folha com "Apagar" (components/criacao/lixeira.tsx); nada é apagado aqui
+        const frente = page.locator("[data-item][data-pronto] .lx-frente").first();
+        if (!(await frente.count())) return;
+        await frente.evaluate(async (el) => {
+          const r = el.getBoundingClientRect();
+          const o = { bubbles: true, pointerId: 61, pointerType: "touch", isPrimary: true, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2 };
+          el.dispatchEvent(new PointerEvent("pointerdown", o));
+          await new Promise((ok) => setTimeout(ok, 650));
+          el.dispatchEvent(new PointerEvent("pointerup", o));
+        });
+        await page.locator(".lx-folha").waitFor();
+        await ver("fluxos-segurar");
+        await page.keyboard.press("Escape");
+        await page.locator(".lx-folha").waitFor({ state: "detached" });
+      },
+    },
+    { nome: "fluxos-lixeira", rota: "/app/criacao/fluxos?lixeira=1" },
+    { nome: "criacao-lixeira", rota: "/app/criacao?lixeira=1" },
     {
       nome: "fluxo",
       rota: `/app/criacao/fluxos/${i.fluxo}`,

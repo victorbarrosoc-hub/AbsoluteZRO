@@ -14,7 +14,7 @@ import { erro, json, lerJson, origemConfere } from "@/lib/http";
 import { exigirAcesso } from "@/lib/auth/requisicao";
 import { origensDoSite } from "@/lib/site";
 import type { Falha } from "@/lib/crm/comum";
-import { podeEditarCriacao, podeEnviarCriacao, podeVerCriacao } from "../permissoes";
+import { podeApagarDeVezCriacao, podeEditarCriacao, podeEnviarCriacao, podeVerCriacao } from "../permissoes";
 import { IMAGEM_ENTRADA_MAX } from "./imagem";
 import { lerOps } from "./modelo";
 import * as srv from "./servidor";
@@ -106,7 +106,7 @@ export async function postFluxo(req: Request): Promise<Response> {
       return r.ok ? json({ ok: true }) : responderFalha(r);
     }
     case "apagar_de_vez": {
-      if (!podeEnviarCriacao(s.papel)) return erro(403, "sem_permissao", "Só administração e gestão apagam de vez.");
+      if (!podeApagarDeVezCriacao(s.papel)) return erro(403, "sem_permissao", "Só administração e gestão apagam de vez.");
       const r = await srv.apagarFluxoDeVez(ctx, id);
       return r.ok ? json({ bytes: r.bytes }) : responderFalha(r);
     }

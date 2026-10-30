@@ -222,6 +222,12 @@ export type RespostaOpcoes = {
   mensagens?: Anthropic.MessageParam[]
   /** Instrução a mais do operador, junto do retrato (ex.: resposta para ser falada). */
   instrucao?: string
+  /**
+   * Ferramentas só do laboratório (aprender conversando). `usarExtra` responde a elas; devolve null para as outras, que
+   * seguem para as ferramentas da Z de sempre.
+   */
+  ferramentasExtras?: Anthropic.Tool[]
+  usarExtra?: (u: Anthropic.ToolUseBlock) => Promise<{ texto: string; erro: boolean } | null>
 }
 
 export async function responder(
@@ -253,7 +259,7 @@ export async function responder(
     personalizacao ?? undefined,
   )
   const referencia = personalizacao ? blocoDeConhecimento(personalizacao.conhecimento) : null
-  const ferramentas = maestro ? FERRAMENTAS : FERRAMENTAS.filter((f) => f.name !== 'ver_maestro')
+  const ferramentas = [...(maestro ? FERRAMENTAS : FERRAMENTAS.filter((f) => f.name !== 'ver_maestro')), ...(opcoes.ferramentasExtras ?? [])]
   const messages: Anthropic.MessageParam[] = opcoes.mensagens ?? turno.historico.map((m) => ({ role: m.papel, content: m.texto }))
   // O retrato muda a cada turno: vai como mensagem de sistema no fim, para não quebrar o cache do começo.
   messages.push({
@@ -296,7 +302,7 @@ export async function responder(
     messages.push({ role: 'assistant', content: msg.content })
     const resultados: Anthropic.ToolResultBlockParam[] = []
     for (const u of usos) {
-      const r = await usarFerramenta(db, turno, u, emitir, signal)
+      const r = (await opcoes.usarExtra?.(u)) ?? (await usarFerramenta(db, turno, u, emitir, signal))
       resultados.push({ type: 'tool_result', tool_use_id: u.id, content: r.texto, ...(r.erro ? { is_error: true } : {}) })
     }
     messages.push({ role: 'user', content: resultados })
