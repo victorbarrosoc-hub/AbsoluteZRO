@@ -3043,6 +3043,28 @@ Não conferido aqui: voz, transcrição, Voice Design e o Claude com as chaves r
 da voz); microfone de verdade e o eco do alto-falante no barge-in; vídeos grandes no navegador; a migração `0036` em
 produção (deploy só com autorização).
 
+**Aprender conversando (30/10/2026, ADR 0033 § Aprender conversando).** Banco `zro_aprender_test` e
+`zro_aprender_e2e_test` (portas 3271–3274), Claude e ElevenLabs falsos (a Z falsa chama `propor_aprendizado` para uma
+correção e `confirmar_aprendizado` para "guarda e…").
+
+| O quê                                | Como                                                                                    | Resultado                                                                                                                                                                                                                    |
+| ------------------------------------ | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ferramentas, trava, repetido, cartão | `tests/integration/z-aprendizados-unidade.test.ts`                                      | 12/12: `strict` sem campo opcional; entrada do modelo conferida; trava (regra, ação, confirmação, senha, inventar, fingir, outra conta); repetido; contradição; "sim/pode guardar/ignora"; bloco por último; limites; pedido |
+| Quem pode, RLS, auditoria            | `tests/integration/z-lab.test.ts` (aprender conversando)                                | não admin e suporte: 403 em guardar, editar e remover; `asUser` direto: 0 linhas e update sem efeito no rascunho; cada gravação, edição, mudança de seção e remoção em `audit_logs`                                          |
+| Confirmar, repetido, contradição     | `tests/integration/z-lab.test.ts`                                                       | sem `confirmar: true` = 422; toque duplo e outras palavras não duplicam; a correção nova fica no lugar da contraditória; trava = 403; 41º = 409; Configurar salvando não apaga                                               |
+| Rascunho × versão × clientes         | `tests/integration/z-lab.test.ts`                                                       | a versão congela os aprendizados (gatilho imutável); clientes nulos até publicar; publicada traz o bloco; restaurar traz os da versão                                                                                        |
+| Turno com o Claude falso             | `tests/integration/z-lab.test.ts` (aprender no turno)                                   | correção → cartão, nada salvo, uso das duas voltas; "pode guardar" decidido antes do modelo e já no sistema; próxima resposta segue; "ignora"; frase longa pela ferramenta; o modelo não confirma sozinho; trava sem cartão  |
+| Tela (e2e)                           | `npx playwright test tests/e2e/z-lab-aprender.spec.ts`                                  | 1/1: correção → cartão → Guardar no toque → próxima resposta segue; na voz, cartão → "pode guardar" dito → guardado; Configurar › Aprendizados com origem; mover; salvar versão com os dois; remover; axe                    |
+| Rotas novas                          | `tests/e2e/z-lab.spec.ts` e `tests/integration/openapi.test.ts`                         | 403 para cliente e suporte em `POST /aprendizados`, `PATCH`/`DELETE /aprendizados/{id}`; as 22 rotas `/api/v1/admin/z-lab/*` no OpenAPI                                                                                      |
+| Suíte                                | `npm test` · lint, Prettier, tipos, build, `node scripts/scan-secrets.mjs` · e2e do lab | 412/412 · ok · ok · ok · ok · nenhum segredo · `z-lab*.spec.ts` 6/6 (z-lab.spec agora aceita o número da versão de quem rodou antes)                                                                                         |
+
+`npm run test:e2e` inteiro: 52/55; os 3 que caíram (`home-celular` WebKit, `hub` plano grátis, `sso` app da
+família) são de outras telas e passam sozinhos (4/4), tempo da máquina carregada.
+
+Fotos do cartão na conversa, guardado, na voz e da seção no Configurar (393 e 1440 px, claro e escuro): rodar o e2e com
+`ZLAB_FOTOS=<pasta>`. Não conferido aqui: o modelo real reconhecendo correções (a Z falsa decide por palavra-chave) e a
+transcrição real de "pode guardar".
+
 ## Relay: login único e Set ligados na produção (30/10/2026)
 
 - Cliente `relay-web` cadastrado pelo titular no console do HUB (Apps → Login único): confidencial, app da família,
