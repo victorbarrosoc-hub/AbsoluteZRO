@@ -74,6 +74,21 @@ const RAIZ = path.resolve(__dirname, '..');
   t(!m.planosLink.includes('#h-planos') && !m.planosLink.includes('#h-rec') && m.planosLink.includes('#h-real'),
     'os links do topo e do pé apontam para o que está na página');
 
+  /* a linha visual B (30/out, aprovada): escuro fosco do ecossistema, o símbolo de sempre no topo e títulos sem degradê */
+  m = await p.evaluate(() => {
+    const raiz = getComputedStyle(document.documentElement);
+    const selo = document.querySelector('.hp-texto .zselo');
+    const r = selo && selo.getBoundingClientRect();
+    const hl = document.querySelector('#hh-t .hl');
+    return { classe: document.documentElement.classList.contains('real'), grafite: raiz.getPropertyValue('--grafite').trim().toLowerCase(),
+      selo: !!(selo && !selo.hidden && r.width > 60), carro: !!(selo && selo.querySelector('.selo-carro')),
+      degrade: hl ? getComputedStyle(hl).backgroundImage : '', foto: raiz.getPropertyValue('--real-foto').includes('home-poster') };
+  });
+  t(m.classe && m.grafite === '#0e0e10', 'o escuro é o grafite fosco do ecossistema (#0e0e10), nunca preto 100% (' + m.grafite + ')');
+  t(m.selo && m.carro, 'o símbolo de sempre (anel, barras e o carrinho) abre o topo da home');
+  t(m.degrade === 'none', 'o título é fino × pesado, sem texto em degradê');
+  t(m.foto, 'a foto de Natal à noite é o fundo da home e da entrada');
+
   m = await p.evaluate(() => { const antes = typeof ASSINANTE !== 'undefined' && ASSINANTE; abrirAssinatura('volante');
     const form = document.getElementById('as-form'); return { antes, depois: typeof ASSINANTE !== 'undefined' && ASSINANTE,
       aberto: !!(form && form.offsetParent) } });

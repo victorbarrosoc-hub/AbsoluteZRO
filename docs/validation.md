@@ -3328,3 +3328,7 @@ Local, Postgres e Chromium desta máquina; HUB e Absolute ZRO falsos (`tests/pon
   foi corrigido para 1). Bateria `npm test`: 88/90 com a máquina sob carga de outras sessões; as duas que caíram
   (`conta-zro` por tempo, `entrar` em medida de animação) passaram sozinhas: 149/149 e 103/103.
 - Prévias (fora do repositório): Carro e HUB em iPhone e computador, claro e escuro, e um vídeo de 56 s.
+
+- Linha visual B no site real (30/10/2026, aprovada pelo titular): `test/site-real.js` 26/26 — `html.real`, grafite
+  fosco `#0e0e10`, o símbolo de sempre com o carrinho no topo da home, título sem degradê e a foto de Natal como fundo
+  da home e da entrada. Conferido no Chromium a 1440 e a 390 px (home e entrar), sem erro de console.

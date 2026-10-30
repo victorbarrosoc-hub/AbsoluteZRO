@@ -359,7 +359,7 @@ const preloadPoster = posterVar.length ? '<link rel="preload" as="image" fetchpr
 const preload = PRELOAD.map(f => '<link rel="preload" href="' + f + '" as="font" type="font/woff2" crossorigin>').concat(preloadPoster ? [preloadPoster] : []).join('\n');
 /* o portão só na PÁGINA do domínio (o artifact mora num iframe e nunca é o domínio) */
 const metaRelease = release ? '<meta name="cdf-release" content="' + release + '">\n' : '';
-const pagina = '<!doctype html>\n<html lang="pt-BR">\n<head>\n' + META + '\n' + metaFase + '\n' + metaRelease + titulo + '\n' +
+const pagina = '<!doctype html>\n<html lang="pt-BR"' + (real ? ' class="real"' : '') + '>\n<head>\n' + META + '\n' + metaFase + '\n' + metaRelease + titulo + '\n' +
   preload + '\n' + folha + '\n</head>\n<body>\n' + corpo + '\n' + script + '\n</body>\n</html>\n';
 /* o artifact: o mesmo, sem <head> (o visualizador monta por fora) — e ele
    publica a pasta m/ junto, então os dois arquivos vão com ele */

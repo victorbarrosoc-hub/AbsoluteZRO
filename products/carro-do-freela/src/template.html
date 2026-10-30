@@ -5960,6 +5960,76 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
   .odmin input{width:76px}
   .inl{width:132px}
 }
+/* ============ O SITE REAL, LINHA B "Natal à noite" (30/out, aprovada pelo titular) ============
+   Só com html.real (build --real): a prévia e as suítes não mudam. O escuro é o padrão do Carro (decisão do
+   titular: "o estilo principal precisa ser o escuro, tendo a opção do claro"), em grafite FOSCO como o do
+   ecossistema (packages/ui/src/tokens.css: --zro-void #0e0e10), nunca preto 100%. Títulos em Figtree (fino ×
+   pesado, sem degradê), botões de vidro da família, e o neon só em detalhe: o símbolo de sempre, os pontos de
+   status e as luzes da própria foto de Natal. */
+html.real:not(.app-light){--grafite:#0E0E10;--grafite2:#17171A;--grafite3:#1E1E22;--cal:#F5F5F7;--cal-fraco:#AEAEB2;--cal-tenue:#8E8E93;
+  --nav-bg:rgba(20,20,24,.6)}
+html.real{--display:"Figtree",system-ui,sans-serif}
+/* o símbolo de sempre (o do véu de abertura e do botão Menu), parado: anel em degradê, disco escuro, as três
+   barras branco→ciano e o carrinho estacionado por fora, no alto à direita. --t é o tamanho. */
+.zselo{--t:96px;position:relative;display:inline-block;flex:none;width:var(--t);height:var(--t)}
+.zselo[hidden]{display:none!important}
+.zselo>i{position:absolute;display:block;border-radius:50%;width:auto!important;height:auto!important;margin:0!important}
+.zselo .zselo-luz{inset:calc(var(--t) * -.35);background:radial-gradient(closest-side,rgba(23,209,232,.22),rgba(176,76,255,.12) 64%,transparent)}
+.zselo .zselo-anel{inset:0;background:conic-gradient(from 210deg,#17D1E8,#3B8CFF 28%,#B04CFF 52%,#FF3D9A 70%,#17D1E8 100%);
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - var(--t) * .058),#000 calc(100% - var(--t) * .053));
+  mask:radial-gradient(farthest-side,transparent calc(100% - var(--t) * .058),#000 calc(100% - var(--t) * .053))}
+.zselo .zselo-disco{inset:calc(var(--t) * .068);display:grid;place-items:center;background:radial-gradient(circle at 34% 28%,#2B313C,#14171D 62%,#0D0F13);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 0 calc(var(--t) * .25) rgba(23,209,232,.18)}
+.zselo .zselo-disco svg{width:calc(var(--t) * .54);height:calc(var(--t) * .54);margin-left:calc(var(--t) * -.04);overflow:visible;
+  filter:drop-shadow(0 0 calc(var(--t) * .09) rgba(23,209,232,.55))}
+.zselo .zselo-carro{position:absolute;left:50%;top:50%;width:calc(var(--t) * .36);height:calc(var(--t) * .21);
+  transform:translate(-50%,-50%) rotate(40deg) translateY(calc(var(--t) * -.585));filter:drop-shadow(0 0 calc(var(--t) * .05) rgba(23,209,232,.7))}
+.zselo.sem-carro .zselo-carro,.zselo.sem-carro .zselo-luz{display:none}
+/* a home: a foto de Natal parada, o texto à esquerda, o símbolo em cima do título */
+html.real .hero.hprod{position:relative;background:#0E0E10 var(--real-foto,none) 62% 50%/cover no-repeat;min-height:min(860px,100svh)}
+html.real .hero.hprod::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(90deg,rgba(14,14,16,.94) 0%,rgba(14,14,16,.72) 36%,rgba(14,14,16,.05) 66%),linear-gradient(0deg,#0E0E10 0%,rgba(14,14,16,0) 24%)}
+html.real .hero.hprod>.wrap{position:relative}
+html.real .hprod .hp-arte{display:none}
+html.real .hprod .hp-grade{display:block;text-align:left;padding:clamp(120px,16vh,190px) 0 70px}
+html.real .hprod .hp-texto{text-align:left;max-width:700px;margin:0}
+html.real .hprod .hp-texto{padding:0 clamp(22px,7vw,130px);max-width:900px!important;display:flex;flex-direction:column;align-items:flex-start!important}
+html.real .hprod .hp-texto>*{margin-left:0!important;margin-right:0!important;text-align:left!important}
+html.real .hprod .hp-texto .hcta{justify-content:flex-start!important}
+html.real .homenav .hn-criar{background:linear-gradient(180deg,rgba(255,255,255,.6),rgba(255,255,255,0) 50%),rgba(245,245,247,.94);color:#1D1D1F;border:0;border-radius:999px}
+html.real .hprod .hp-texto .zselo{margin-bottom:34px}
+html.real .hprod .h1x{font-weight:300;font-size:clamp(46px,6vw,86px);line-height:1;letter-spacing:-.045em;max-width:none;color:#F5F5F7}
+html.real .hprod .h1x .hl{font-weight:800;background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#F5F5F7;-webkit-text-fill-color:#F5F5F7}
+html.real .hprod .hsub{color:#D1D1D6}
+html.real .hprod .hcta{justify-content:flex-start}
+html.real .hp-faixa{color:#D1D1D6}
+@media(max-width:720px){
+  html.real .hero.hprod{background-position:74% 50%}
+  html.real .hero.hprod::before{background:linear-gradient(0deg,#0E0E10 22%,rgba(14,14,16,.72) 58%,rgba(14,14,16,.25))}
+  html.real .hprod .hp-grade{padding:260px 0 40px}
+  html.real .hprod .hp-texto .zselo{--t:82px!important;margin-bottom:26px}
+}
+/* os botões da home e da entrada viram o vidro da família: a ação principal em vidro claro */
+html.real :is(#v-home,#v-entrar) .btn.entrar-cta:not(.gh),html.real #v-entrar .lgn-ok{background:linear-gradient(180deg,rgba(255,255,255,.6),rgba(255,255,255,0) 50%),rgba(245,245,247,.94);
+  color:#1D1D1F;border:0;border-radius:999px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(0,0,0,.25),0 10px 28px rgba(0,0,0,.35)}
+html.real :is(#v-home,#v-entrar) .btn.gh,html.real #v-entrar .blogin{background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,0) 55%),rgba(255,255,255,.1);
+  color:#F5F5F7;border:0;border-radius:999px;backdrop-filter:blur(12px);box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 0 0 1px rgba(255,255,255,.14),0 10px 28px rgba(0,0,0,.4)}
+html.real :is(#v-home,#v-entrar) :is(.btn,.lgn-ok,.blogin){font-family:"Figtree",system-ui,sans-serif;font-weight:600}
+/* a barra de cima vira a cápsula de vidro do ecossistema */
+html.real .homenav{background:transparent;backdrop-filter:none;border-bottom:0;box-shadow:none;position:fixed;left:0;right:0}
+html.real .homenav::after{display:none}
+html.real .homenav .wrap{margin-top:14px;height:56px;border-radius:999px;padding:0 8px 0 18px;background:rgba(20,20,24,.6);backdrop-filter:blur(20px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 0 0 1px rgba(255,255,255,.1)}
+html.real .homenav .brand .mk-marca{display:none}
+/* a entrada: a mesma foto, o símbolo e o título fino × pesado */
+html.real #v-entrar .lgn-cena>:not(.lgn-tese):not(.lgn-topo){display:none}
+html.real #v-entrar .lgn-cena{background:#0E0E10 var(--real-foto,none) 70% 50%/cover no-repeat!important;box-shadow:inset 0 0 0 4000px rgba(14,14,16,.38)}
+html.real #v-entrar .lgn-cena::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#0E0E10 0%,rgba(14,14,16,.45) 55%,rgba(14,14,16,.2))}
+html.real #v-entrar .lgn-tese{display:none}
+html.real #v-entrar .lgn-logo>svg{display:none}
+html.real #v-entrar #lg-tit{font-family:"Figtree",system-ui,sans-serif;font-weight:300;letter-spacing:-.04em}
+html.real #v-entrar #lg-tit b{font-weight:800}
+
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -6618,6 +6688,7 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
   <div class="wrap">
     <button class="brand brand-home" title="Ir para a página inicial">
       <svg viewBox="0 0 100 100" width="26" height="26" fill="var(--marca)" class="mk-marca"><use href="#mk"/></svg>
+      <span class="zselo sem-carro" style="--t:34px" hidden data-so-real aria-hidden="true"><i class="selo-luz"></i><i class="selo-anel"></i><i class="selo-disco"><svg viewBox="0 0 100 100"><defs><linearGradient id="selo-g2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#7FEBF7"/></linearGradient></defs><g transform="translate(16,0) skewX(-12)" fill="url(#selo-g2)"><rect x="14" y="24" width="7" height="52" rx="2" opacity=".34"/><rect x="29" y="24" width="13" height="52" rx="2.5" opacity=".64"/><rect x="50" y="24" width="26" height="52" rx="3.5"/></g></svg></i><svg class="selo-carro" viewBox="0 0 24 14"><path d="M3.2 9.6V7.4c0-.7.4-1.3 1-1.5l2.6-1 2-2.6c.4-.5 1-.8 1.6-.8h4.5c.6 0 1.2.3 1.6.8l2.2 2.7 1.9.5c.8.2 1.4.9 1.4 1.8v2.3c0 .5-.4.9-.9.9H4.1c-.5 0-.9-.4-.9-.9z" fill="#17D1E8"/><path d="M8.3 5.5 9.9 3.4h3v2.1zM14 5.5V3.4h1.5l1.7 2.1z" fill="#0E1B1E" opacity=".75"/><circle cx="7.4" cy="10.6" r="2.1" fill="#0E1B1E" stroke="#E9EEF0" stroke-width="1.1"/><circle cx="17" cy="10.6" r="2.1" fill="#0E1B1E" stroke="#E9EEF0" stroke-width="1.1"/></svg></span>
       <b>Carro do Freela</b>
     </button>
     <nav class="hlinks">
@@ -6654,6 +6725,7 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
   <div class="hero hprod">
     <div class="wrap hp-grade">
       <div class="hp-texto">
+        <span class="zselo" style="--t:112px" hidden data-so-real aria-hidden="true"><i class="selo-luz"></i><i class="selo-anel"></i><i class="selo-disco"><svg viewBox="0 0 100 100"><defs><linearGradient id="selo-g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#7FEBF7"/></linearGradient></defs><g transform="translate(16,0) skewX(-12)" fill="url(#selo-g1)"><rect x="14" y="24" width="7" height="52" rx="2" opacity=".34"/><rect x="29" y="24" width="13" height="52" rx="2.5" opacity=".64"/><rect x="50" y="24" width="26" height="52" rx="3.5"/></g></svg></i><svg class="selo-carro" viewBox="0 0 24 14"><path d="M3.2 9.6V7.4c0-.7.4-1.3 1-1.5l2.6-1 2-2.6c.4-.5 1-.8 1.6-.8h4.5c.6 0 1.2.3 1.6.8l2.2 2.7 1.9.5c.8.2 1.4.9 1.4 1.8v2.3c0 .5-.4.9-.9.9H4.1c-.5 0-.9-.4-.9-.9z" fill="#17D1E8"/><path d="M8.3 5.5 9.9 3.4h3v2.1zM14 5.5V3.4h1.5l1.7 2.1z" fill="#0E1B1E" opacity=".75"/><circle cx="7.4" cy="10.6" r="2.1" fill="#0E1B1E" stroke="#E9EEF0" stroke-width="1.1"/><circle cx="17" cy="10.6" r="2.1" fill="#0E1B1E" stroke="#E9EEF0" stroke-width="1.1"/></svg></span>
         <h1 class="h1x" id="hh-t">Ache freela de audiovisual livre na sua data.</h1>
         <p class="hsub" id="hh-s">Veja quem está livre e chame em um toque.</p>
         <!-- a busca no topo (17/out · 8, da prancha do Victor): praça,
@@ -7005,7 +7077,7 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
     <div class="lgn-tese"><p>Olha o carro<br>do freela <em>passando.</em></p></div>
     <div class="lgn-topo">
       <button class="lgn-volta" id="lg-back" aria-label="Voltar para a página inicial"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>Início</button>
-      <div class="lgn-logo" aria-hidden="true"><svg viewBox="0 0 100 100"><use href="#mk"/></svg>Carro do Freela</div>
+      <div class="lgn-logo" aria-hidden="true"><svg viewBox="0 0 100 100"><use href="#mk"/></svg><span class="zselo sem-carro" style="--t:30px;margin-right:10px" hidden data-so-real aria-hidden="true"><i class="selo-luz"></i><i class="selo-anel"></i><i class="selo-disco"><svg viewBox="0 0 100 100"><defs><linearGradient id="selo-g3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#7FEBF7"/></linearGradient></defs><g transform="translate(16,0) skewX(-12)" fill="url(#selo-g3)"><rect x="14" y="24" width="7" height="52" rx="2" opacity=".34"/><rect x="29" y="24" width="13" height="52" rx="2.5" opacity=".64"/><rect x="50" y="24" width="26" height="52" rx="3.5"/></g></svg></i><svg class="selo-carro" viewBox="0 0 24 14"><path d="M3.2 9.6V7.4c0-.7.4-1.3 1-1.5l2.6-1 2-2.6c.4-.5 1-.8 1.6-.8h4.5c.6 0 1.2.3 1.6.8l2.2 2.7 1.9.5c.8.2 1.4.9 1.4 1.8v2.3c0 .5-.4.9-.9.9H4.1c-.5 0-.9-.4-.9-.9z" fill="#17D1E8"/><path d="M8.3 5.5 9.9 3.4h3v2.1zM14 5.5V3.4h1.5l1.7 2.1z" fill="#0E1B1E" opacity=".75"/><circle cx="7.4" cy="10.6" r="2.1" fill="#0E1B1E" stroke="#E9EEF0" stroke-width="1.1"/><circle cx="17" cy="10.6" r="2.1" fill="#0E1B1E" stroke="#E9EEF0" stroke-width="1.1"/></svg></span>Carro do Freela</div>
       <div class="tema" role="group" aria-label="Tema da interface">
         <button type="button" data-tema="dark" aria-pressed="true" title="Tema escuro" aria-label="Tema escuro"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13.4A8.4 8.4 0 0 1 10.6 4a8.4 8.4 0 1 0 9.4 9.4z"/></svg></button>
         <button type="button" data-tema="light" aria-pressed="false" title="Tema claro" aria-label="Tema claro"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.6v2.1M12 19.3v2.1M4.3 4.3l1.5 1.5M18.2 18.2l1.5 1.5M2.6 12h2.1M19.3 12h2.1M4.3 19.7l1.5-1.5M18.2 5.8l1.5-1.5"/></svg></button>
@@ -9604,6 +9676,7 @@ const REAL=!!document.querySelector('meta[name="cdf-real"]');
    mensalidade que não estão no ar; o plano é o da conta Absolute ZRO), o "Passar o carro" (anúncio por WhatsApp, que
    não existe) e o Orçamento (taxa e sinal da plataforma, que são da fase 2). Saem do menu, da lateral e do show(). */
 const FORA_DO_REAL=new Set(["planos","aprender","passar","orcar"]);
+if(REAL) document.documentElement.classList.add("real");
 /* ⚠️ O PORTÃO DO LANÇAMENTO (28/out, adendo do PRD: acesso exclusivo do
    proprietário). No domínio o build marca <meta name="cdf-release"
    content="closed"> e a tela nasce FECHADA desde o primeiro quadro: a home
@@ -13156,6 +13229,8 @@ function lgAviso(txt,info){
 function pintarLogin(){
   const c=LG_COPY[LG_TIPO], criar=LG_MODO==="criar";
   v("lg-tit").textContent=criar?"Crie sua conta.":(lgJaEntrou()?"De volta à estrada.":"Sobe no carro.");
+  /* o site real (linha B, 30/out): "Entre no Carro.", fino × pesado como os títulos da família */
+  if(REAL&&!criar) v("lg-tit").innerHTML="Entre no <b>Carro.</b>";
   v("lg-sub").textContent=c[LG_MODO];
   v("lg-ok-t").textContent=criar?"Criar conta":"Entrar";
   v("lg-pergunta").textContent=criar?"Já tem conta?":"Ainda não tem conta?";
@@ -25692,6 +25767,9 @@ let hjEscala=[];
    Roda a cada drawHome (idempotente), depois do aplicarFase, que mexe no hidden de outras marcas. */
 function realHome(){
   if(!REAL) return;
+  /* a foto de Natal à noite (o pôster da carona, no degrau da tela) é o fundo da home e da entrada */
+  const foto=HOME_VIDEO.poster?qual(HOME_VIDEO.poster):"";
+  if(foto) document.documentElement.style.setProperty("--real-foto","url(\""+foto+"\")");
   document.querySelectorAll("[data-sem-real]").forEach(e=>{ e.hidden=true });
   document.querySelectorAll("[data-so-real]").forEach(e=>{ e.hidden=false });
 }
@@ -27828,7 +27906,7 @@ const FBK_KEY=/*__WEB3FORMS_KEY__*/"";   /* Web3Forms → carrodofreela@gmail.co
    suporte: durante os testes a primeira pergunta de todo relato e "qual
    versao voce esta usando?", e sem ela nao da para saber se o defeito ja
    foi consertado ou se a pessoa esta com um arquivo velho no cache. */
-const VERSAO="30/out · 3";
+const VERSAO="30/out · 4";
 /* ?diag na URL faz a linha de contexto do suporte mostrar as medidas do
    aparelho. Existe porque daqui não dá para inspecionar o Safari do
    Victor: em vez de adivinhar uma quarta vez, ele abre com ?diag, toca no

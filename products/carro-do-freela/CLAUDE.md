@@ -167,6 +167,23 @@ abre com `CARRO_RELEASE=released`. **Só no site real (`REAL`)**, sem mudar a pr
 - ⚠️ **Ainda moram no aparelho**: Propostas, Jobs, Feed e Brechó. No real eles nascem vazios e nada chega a outra
   conta — a consulta de quem contrata não chega ao freela. Decisão do titular: servidor ou fora do menu do real.
 
+## 30/out · 4 — a linha visual B, "Natal à noite" (aprovada pelo titular; `test/site-real.js`)
+
+O titular escolheu, entre três linhas, a B: *"B, mas mantém a logo atual"*, com o neon *"em detalhes, como já é hoje"*.
+Vale só no site real (`html.real`, escrito pelo `build.js --real` no `<html>` e pelo `REAL` no boot); a prévia e as
+suítes de sempre não mudam.
+
+- **Escuro é o padrão do Carro, o claro é opção** (titular). O escuro é o grafite FOSCO do ecossistema
+  (`--grafite:#0E0E10`, como `--zro-void` em `packages/ui/src/tokens.css`), nunca preto 100%.
+- **O símbolo é o de sempre** (`.zselo`, que não se mistura com o chip `.selo`; cópia parada do véu de abertura): anel cônico ciano→azul→roxo→rosa, disco
+  escuro, as três barras branco→ciano (#mk, .34/.64/1) e o carrinho estacionado no alto à direita. ⚠️ Não redesenhar:
+  o titular corrigiu uma proposta que pintou o logo de rosa ("ela é azul").
+- **Home**: a foto de Natal à noite (o pôster da carona, `--real-foto` no `realHome()`, no degrau da tela via
+  `qual()`), texto à esquerda, o símbolo grande em cima do título, título fino × pesado em Figtree sem degradê,
+  botões de vidro da família (vidro claro na ação principal) e a barra de cima em cápsula de vidro.
+- **Entrar**: a mesma foto, o símbolo pequeno e "Entre no **Carro.**".
+- **Neon só em detalhe**: o brilho do símbolo, os pontos de status e as luzes da própria foto.
+
 ## 30/out · 3 — o site real: o domínio sem os 109, a busca e a agenda no servidor (`test/site-real.js`)
 
 Pedido do titular: *"pode apagar esses 109 perfis fictícios, vamos começar com os usuários que já estão no
@@ -508,7 +525,7 @@ a cena da home e a tela de entrar abaixo da janela em todo monitor grande.
 Uma sonda de `100vh` dentro do corpo diz quanto o motor multiplica (Chromium:
 o zoom; Safari: 1), e `--zoom` vira esse número.
 
-⚠️ **A build se identifica** (`VERSAO`, hoje `30/out · 3`): aparece no rodapé do
+⚠️ **A build se identifica** (`VERSAO`, hoje `30/out · 4`): aparece no rodapé do
 menu e vai junto no recado de suporte. Sem isso, três rodadas foram gastas sem
 saber se o defeito relatado era do arquivo novo ou de um cache velho. **Suba a
 VERSAO em toda entrega que o Victor for subir.**
