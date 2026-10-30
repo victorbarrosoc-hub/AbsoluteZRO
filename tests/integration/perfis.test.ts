@@ -44,6 +44,7 @@ import {
   perfilPorArrobaParaApp,
   respondInvitation,
   salvarPerfil,
+  listarComunidade,
   trocarArroba,
   avisoDoPerfilPendente,
   marcarAvisoDoPerfil,
@@ -425,5 +426,44 @@ describe('excluir a conta', () => {
     expect(await perfilPorArroba(db, o.auth, p.arroba)).toBeNull()
     const outro = await pessoa('Imitador')
     await expectCode(trocarArroba(db, outro.auth, p.arroba), 'conflict')
+  })
+})
+
+describe('a comunidade (0037)', () => {
+  it('lista só visíveis com o @ confirmado, sem e-mail, por ordem de @, com cursor e filtro de função', async () => {
+    const marca = unico()
+    const quem = await newOrgWithOwner(db, `comunidade-${marca}`)
+    const conf = await pessoa(`Gabi Com${marca}`, `zz${marca}.gabi`)
+    const outra = await pessoa(`Hugo Com${marca}`, `zz${marca}.hugo`)
+    await salvarPerfil(db, outra.auth, { funcoes: ['camera'], cidade: 'Natal', bio: null, portfolio: null, funcaoOutra: null })
+    const escondida = await pessoa(`Iara Com${marca}`, `zz${marca}.iara`)
+    await definirVisibilidade(db, escondida.auth, false)
+    // conta sem @ escolhido: fica com a sugestão automática e não entra
+    const sugerida = await pessoa(`Joao Com${marca}`)
+    expect((await db.sql`select arroba_sugerida from zro.perfis where user_id = ${sugerida.userId}`)[0]!.arroba_sugerida).toBe(true)
+    const prefixo = `zz${marca}`
+    const todas: string[] = []
+    let depois: string | null = null
+    for (let i = 0; i < 50; i++) {
+      const r = await listarComunidade(db, quem.auth, { depois, limite: 200 })
+      todas.push(...r.pessoas.map((p) => p.arroba))
+      expect(JSON.stringify(r)).not.toMatch(/@(example|teste)\.|email/i)
+      if (!r.proximo) break
+      depois = r.proximo
+    }
+    const minhas = todas.filter((a) => a.startsWith(prefixo))
+    expect(minhas).toEqual([conf.arroba, outra.arroba].sort())
+    expect([...todas].sort()).toEqual(todas)
+    expect(todas).not.toContain(sugerida.arroba)
+    // cursor de verdade: uma por página
+    const p1 = await listarComunidade(db, quem.auth, { depois: `${prefixo}.`, limite: 1 })
+    expect(p1.pessoas.map((p) => p.arroba)).toEqual([conf.arroba])
+    expect(p1.proximo).toBe(conf.arroba)
+    const p2 = await listarComunidade(db, quem.auth, { depois: p1.proximo, limite: 1 })
+    expect(p2.pessoas[0]!.arroba).toBe(outra.arroba)
+    // filtro por função
+    const cam = await listarComunidade(db, quem.auth, { funcao: 'camera', depois: `${prefixo}.`, limite: 200 })
+    expect(cam.pessoas.filter((p) => p.arroba.startsWith(prefixo)).map((p) => p.arroba)).toEqual([outra.arroba])
+    await expectCode(listarComunidade(db, quem.auth, { funcao: 'astronauta' }), 'invalid_input')
   })
 })

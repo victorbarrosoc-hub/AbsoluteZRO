@@ -34,6 +34,8 @@ export const ESCOPO_PESSOAS = 'zro.pessoas'
 /** Buscas por pessoa: 60 a cada 10 minutos (na central e pelos apps, contadas juntas). */
 export const LIMITE_BUSCA_PERFIS: Rule = { max: 60, windowMs: 10 * 60_000 }
 export const LIMITE_CONVITE_ARROBA: Rule = { max: 30, windowMs: 60 * 60_000 }
+/** Páginas da comunidade por pessoa: 120 a cada 10 minutos (uma lista inteira é poucas páginas de 200). */
+export const LIMITE_COMUNIDADE: Rule = { max: 120, windowMs: 10 * 60_000 }
 
 export type SeloPublico = { produto: string; texto: string }
 export type PerfilPublico = {
@@ -235,6 +237,38 @@ export async function buscarPerfis(db: Database, auth: Authenticated | null, q: 
         metadata: { app: actor.auth.session.app.clientId, resultados: out.length },
       })
     return out
+  })
+}
+
+/**
+ * A comunidade (migração 0037, decisão do titular de 30/10/2026): a lista que os apps da família mostram, em vez de
+ * só buscar. Só perfis visíveis com o @ CONFIRMADO (a sugestão automática não entra) e conta ativa; filtro opcional
+ * por função; página ordenada pelo @ (`depois` = o último @ da página anterior), até 200. A própria pessoa entra se
+ * estiver visível (o app a marca como "você"). Pelos apps, a auditoria guarda o app e quantos vieram.
+ */
+export async function listarComunidade(
+  db: Database,
+  auth: Authenticated | null,
+  o: { funcao?: string | null; depois?: string | null; limite?: number } = {},
+): Promise<{ pessoas: PerfilPublico[]; proximo: string | null }> {
+  const actor = await authorize(db, auth, { verifiedEmail: true })
+  const funcao = o.funcao ? String(o.funcao) : null
+  if (funcao && !FUNCOES_PERFIL.some((f) => f.chave === funcao)) throw new DomainError('invalid_input', 'Função desconhecida.', { campo: 'funcao' })
+  const depois = o.depois ? normalizarArroba(String(o.depois)) : null
+  if (depois && !/^[a-z0-9._]{1,30}$/.test(depois)) throw new DomainError('invalid_input', 'Cursor inválido.', { campo: 'depois' })
+  const limite = Math.min(Math.max(Math.trunc(o.limite ?? 100) || 100, 1), 200)
+  await dentroDoLimite(db, `comunidade:${actor.userId}`, LIMITE_COMUNIDADE, 'Muitas páginas seguidas. Espere alguns minutos.')
+  return db.asUser({ userId: actor.userId, orgId: actor.orgId }, async (tx) => {
+    const rows = await tx`select * from zro.comunidade_perfis(${funcao}, ${depois}, ${limite + 1})`
+    const pessoas = rows.slice(0, limite).map(publico)
+    if (actor.auth.session.app)
+      await audit(tx, {
+        orgId: actor.orgId,
+        actorUserId: actor.userId,
+        action: 'perfil.comunidade',
+        metadata: { app: actor.auth.session.app.clientId, resultados: pessoas.length },
+      })
+    return { pessoas, proximo: rows.length > limite ? pessoas[pessoas.length - 1]!.arroba : null }
   })
 }
 
