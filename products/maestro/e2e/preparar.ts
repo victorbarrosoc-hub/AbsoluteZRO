@@ -17,6 +17,7 @@ export const ARQUIVO_SESSAO_AGENDA = "test-results/e2e-sessao-agenda.json";
 export const ARQUIVO_SESSAO_GESTOS = "test-results/e2e-sessao-gestos.json";
 export const ARQUIVO_SESSAO_COLUNAS = "test-results/e2e-sessao-colunas.json";
 export const ARQUIVO_SESSAO_ACESSOS = "test-results/e2e-sessao-acessos.json";
+export const ARQUIVO_SESSAO_ARRASTAR = "test-results/e2e-sessao-arrastar.json";
 /** A ponte falsa (HUB + SOBEDESCE de mentira, tests/ponte-falsa.mts) do e2e de Arquivos: MAESTRO_PONTE_URL no servidor. */
 export const PORTA_PONTE = Number(process.env.E2E_PONTE_PORT || 3219);
 /** A ANP falsa (tests/anp-fixture.mts, valores inventados) da calculadora de deslocamento: MAESTRO_ANP_URL no servidor. */
@@ -353,6 +354,18 @@ export default async function preparar() {
       ARQUIVO_SESSAO_ACESSOS,
       JSON.stringify({ admin: sAc.token, gestor: sAcGe.token, editor: sAcEd.token, freela: ac.freela, equip: ac.equip, orc: ac.orc }),
     );
+    // Uma organização para arrastar o card com o mouse (e2e/arrastar.spec.ts): os cards são semeados pelo próprio teste.
+    const SUB_AR = "00000000-0000-4000-8000-0000000000d8";
+    const orgAr = await getBanco().asSystem("e2e: semente do arrastar", async (tx) => {
+      const [org] = await tx
+        .insert(schema.organizations)
+        .values({ zroOrgId: "00000000-0000-4000-8000-0000000000d7", name: "Arrastar E2E", zroProducts: ["maestro"] })
+        .returning({ id: schema.organizations.id });
+      await tx.insert(schema.members).values({ orgId: org.id, zroSub: SUB_AR, displayName: "Ari Arrasta", hubRole: "owner", role: "admin" });
+      return org.id;
+    });
+    const sAr = await criarSessao({ orgId: orgAr, sub: SUB_AR, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    writeFileSync(ARQUIVO_SESSAO_ARRASTAR, JSON.stringify({ token: sAr.token, org: orgAr }));
   } finally {
     await fecharBanco();
   }

@@ -1082,7 +1082,7 @@ h3 {
     box-shadow 0.2s var(--ease),
     background 0.2s var(--ease);
 }
-.q-col--alvo {
+.q-col[data-alvo] {
   box-shadow: inset 0 0 0 1.5px var(--line-strong);
   background: var(--surface-3);
 }
@@ -1134,13 +1134,6 @@ h3 {
   gap: 8px;
   min-width: 0;
 }
-.q-solta {
-  height: 6px;
-  border-radius: 999px;
-  background: var(--text-strong);
-  opacity: 0.55;
-  margin: 2px 6px;
-}
 
 .q-icone-btn {
   display: inline-grid;
@@ -1179,17 +1172,11 @@ h3 {
     box-shadow 0.25s ease,
     opacity 0.2s ease;
 }
-.q-card[draggable="true"] {
-  cursor: grab;
-}
 .q-card:hover {
   box-shadow:
     0 0 0 1px var(--line-strong),
     0 8px 22px rgb(0 0 0 / 0.08);
   transform: translateY(-1px);
-}
-.q-card--arrastando {
-  opacity: 0.35;
 }
 .q-card--alta::before {
   content: "";
@@ -2322,40 +2309,10 @@ h3 {
     transform: translateY(6px) scale(0.985);
   }
 }
-/* ao pegar: leve inclinação e sombra alta (o navegador fotografa o card assim para o arraste) */
-.q-card[draggable="true"]:active {
-  cursor: grabbing;
-  transform: rotate(-1.6deg) scale(1.02);
-  box-shadow:
-    0 0 0 1px var(--line-strong),
-    0 22px 48px rgb(0 0 0 / 0.18);
-}
-/* o lugar de onde o card saiu fica como um encaixe tracejado */
-.q-card--arrastando {
-  opacity: 1;
-  background: transparent;
-  box-shadow: inset 0 0 0 1.5px var(--line-strong);
-  animation: none;
-}
-.q-card--arrastando > * {
-  visibility: hidden;
-}
-/* a coluna de destino acende no tom dela, e a marca de soltar é de latão */
-.q-col--alvo {
+/* a coluna de destino do arrastar acende no tom dela (arrastar.ts) */
+.q-col[data-alvo] {
   background: color-mix(in srgb, var(--col) 9%, var(--surface-2));
   box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--col) 55%, transparent);
-}
-.q-solta {
-  height: 4px;
-  background: var(--acento);
-  opacity: 1;
-  animation: q-solta 0.28s var(--spring) both;
-}
-@keyframes q-solta {
-  from {
-    transform: scaleX(0.4);
-    opacity: 0;
-  }
 }
 /* foco do Quadro: anel de latão no card */
 .q-card:has(.q-card__abrir:focus-visible) {
@@ -2525,13 +2482,9 @@ h3 {
 @media (prefers-reduced-motion: reduce) {
   .conteudo > *,
   .q-card,
-  .q-solta,
   .lista > li,
   .esq {
     animation: none;
-  }
-  .q-card[draggable="true"]:active {
-    transform: none;
   }
   .item::before {
     transition: none;

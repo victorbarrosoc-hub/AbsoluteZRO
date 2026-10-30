@@ -646,7 +646,7 @@
   }
 }
 
-/* ───────────── Quadro no celular: deslizar entre colunas e arrastar o card (src/components/quadro/gestos.ts) ───────────── */
+/* ───────────── Quadro: arrastar o card (mouse: src/components/quadro/arrastar.ts; toque: gestos.ts) ───────────── */
 
 .q-card--origem {
   visibility: hidden;
@@ -655,6 +655,8 @@
   z-index: 85;
   pointer-events: none;
   box-sizing: border-box;
+  /* camada própria: andar com o ponteiro é só composição (nem o card, nem a sombra, nem a página por baixo repintam) */
+  will-change: transform, translate;
   transition:
     transform 0.24s cubic-bezier(0.32, 0.72, 0, 1),
     box-shadow 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -666,6 +668,17 @@
     0 0 0 1px var(--line),
     0 18px 40px rgb(40 20 10 / 0.16),
     0 4px 12px rgb(40 20 10 / 0.08);
+}
+/* os outros cards abrem espaço só com transform (a mola do CSS anda no compositor); a coluna de destino cresce embaixo */
+.q-quadro[data-arrasto] .q-lugar {
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.q-quadro[data-arrasto] .q-col__corpo {
+  transition: padding-bottom 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.q-quadro[data-sem-mola] .q-lugar,
+.q-quadro[data-sem-mola] .q-col__corpo {
+  transition: none;
 }
 @media (max-width: 760px) {
   .q-quadro {
@@ -687,12 +700,6 @@
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
-  }
-  .q-quadro[data-arrasto] .q-lugar {
-    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-  }
-  .q-quadro[data-sem-mola] .q-lugar {
-    transition: none;
   }
   /* a pílula de vidro das colunas anda com o dedo */
   .q-abas {
@@ -788,6 +795,7 @@
   }
   .q-fantasma,
   .q-quadro[data-arrasto] .q-lugar,
+  .q-quadro[data-arrasto] .q-col__corpo,
   .q-abas > button,
   .q-abas__pilula {
     transition: none !important;
