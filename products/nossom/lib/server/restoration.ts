@@ -256,6 +256,12 @@ export async function jobStatus(user: string, id: string) {
       });
       job = updated.job ?? job;
     } else if (['FAILED', 'CANCELLED', 'TIMED_OUT'].includes(result.status)) {
+      // The worker reports only its own fixed reasons; keep the log free of anything else.
+      const reason =
+        typeof result.error === 'string'
+          ? result.error.match(/failed: ([\w .,()-]{1,120})$/)?.[1]
+          : undefined;
+      console.warn('NOSSOM job ' + id + ' ' + result.status + (reason ? ': ' + reason : ''));
       const failed = await jobAction('fail', user, id);
       job = failed.job ?? job;
     } else if (result.status === 'IN_PROGRESS' && job.status !== 'running') {
