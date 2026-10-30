@@ -54,6 +54,10 @@ jobs:
           cache: npm
           cache-dependency-path: products/sobedesce/web/package-lock.json
       - run: npm ci
+      # Alguns testes (Relay) importam o código do app de desktop (products/sobedesce/src), que resolve as
+      # dependências dele (undici) a partir de products/sobedesce. Sem scripts: não baixa o Electron.
+      - run: npm ci --ignore-scripts
+        working-directory: products/sobedesce
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
