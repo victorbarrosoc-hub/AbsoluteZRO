@@ -1,7 +1,7 @@
 // O Set da Absolute ZRO no app do celular (web/public/app/components/set.js), num Chromium de verdade com a CSP do /app/
-// (web/next.config.ts): com a conta neste aparelho e o Set respondendo, "Set" é a última aba da barra, com o balão das
-// novidades; o toque abre a folha do <zro-set modo="folha"> (tela cheia no iPhone) com a cara do app, sem trocar de
-// aba; sem o escopo (401), nada aparece. O widget é a cópia do repositório (apps/hub-web/public/set/v1) e o repasse
+// (web/next.config.ts): com a conta neste aparelho e o Set respondendo, "Set" aparece no topo, logo antes do anel da Z
+// (não é aba: a barra de baixo fica com a tarefa, no máximo cinco), com o balão das novidades; o toque abre a folha do
+// <zro-set modo="folha"> (tela cheia no iPhone) com a cara do app, sem trocar de aba; sem o escopo (401), nada aparece. O widget é a cópia do repositório (apps/hub-web/public/set/v1) e o repasse
 // /api/zro/set responde como o do site (web/src/lib/zro/set.ts, testado em web/tests/zro-set.test.mts).
 // Sem Playwright neste computador, fica de fora. SET_FOTOS=<pasta> grava as telas.
 import { test, after } from 'node:test'
@@ -112,7 +112,8 @@ test('app do celular: "Set" no topo, ao lado da Z (não é aba), abre a folha co
     assert.equal(await barra.locator('[data-set]').count(), 0, 'o Set não é aba')
     assert.ok((await barra.locator('button').count()) <= 5, 'no máximo cinco abas')
     assert.match(await barra.locator('[aria-current="page"]').textContent(), /Início/)
-    assert.equal(await pagina.locator('.topbar-acoes:visible > *').evaluateAll(es => es.map(e => e.matches('[data-set]') ? 'set' : e.matches('.z-botao') ? 'z' : 'conta')).then(l => l.join(' ')), 'set z conta')
+    // logo antes do anel da Z (aqui, a conta sem Drive pronto: o canto da tela da conta)
+    assert.match(await pagina.locator('.topbar-acoes:visible > *').evaluateAll(es => es.map(e => e.matches('[data-set]') ? 'set' : e.matches('.z-botao') ? 'z' : 'conta').join(' ')), /^set z( conta)?$/)
     assert.equal(await set.locator('.tab-balao').textContent(), '2')
     assert.match(await set.getAttribute('aria-label'), /Set, 1 online, 2 novidades/)
     // o app segue o tema do aparelho (sem data-theme): o widget também

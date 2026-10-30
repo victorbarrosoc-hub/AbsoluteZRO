@@ -9122,6 +9122,13 @@ select.input {
   top: 1px;
   right: -1px;
 }
+/* na tela da conta (sem Drive pronto) o Set e a Z ficam no canto de cima */
+.signin-eco {
+  position: absolute;
+  top: calc(var(--safe-t) + 10px);
+  right: 0;
+  z-index: 2;
+}
 .tab-balao {
   position: absolute;
   top: -4px;

@@ -1232,7 +1232,7 @@ test('Set: no topo, antes da Z (fora do dock), aparece quando o Set responde, ab
     // no topo, logo antes do anel da Z; o dock continua só com as ferramentas (no máximo cinco no iPhone)
     assert.equal(await dock.locator('[data-set]').count(), 0)
     assert.ok((await dock.locator('a').count()) <= 5)
-    assert.deepEqual(await pagina.locator('.topo > :not([hidden])').evaluateAll((es) => es.map((e) => e.className.split(' ')[0])), ['marca', 'topo-set', 'topo-z', 'conta'])
+    assert.deepEqual(await pagina.locator('.topo > :not([hidden])').evaluateAll((es) => es.map((e) => e.className.split(' ')[0])), ['menu-botao', 'marca', 'topo-set', 'topo-z', 'conta'])
     assert.equal(await entrada.locator('.balao').textContent(), '2')
     await entrada.click()
     const painel = pagina.locator('zro-set-folha .folha[data-on] .painel')
