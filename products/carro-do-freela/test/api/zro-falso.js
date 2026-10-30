@@ -55,6 +55,10 @@ async function iniciarZroFalsa(cliente) {
     /* o Set (30/out): `semEscopoSet` recusa zro.set no authorize; `pedidosSet` guarda o que chegou */
     semEscopoSet: false,
     pedidosSet: [],
+    /* a comunidade (30/out): os perfis que GET /api/v1/pessoas lista (objetos do HUB: id, arroba, nome, foto,
+       funcoes [{chave,nome}], cidade, portfolio, bio); `paginasPessoas` conta as páginas pedidas */
+    comunidade: [],
+    paginasPessoas: 0,
     contas: new Map(),
     hubAntigo: false,
     userinfos: 0,
@@ -258,6 +262,18 @@ async function iniciarZroFalsa(cliente) {
         return res.end(JSON.stringify({ tipo: 'fim', mensagem: 'm1', creditos: 1 }) + '\n');
       }
       return responder(res, 404, { error: 'not_found' });
+    }
+    /* a comunidade (/api/v1/pessoas): Bearer com zro.pessoas (sem ele, 403); ordem pelo @, cursor `depois` */
+    if (url.pathname === '/api/v1/pessoas' && req.method === 'GET') {
+      const a = acessos.get(String(req.headers.authorization || '').replace(/^Bearer /, ''));
+      if (!a || a.exp <= Date.now()) return responder(res, 401, { error: 'unauthenticated' });
+      if (!a.escopo.split(' ').includes('zro.pessoas')) return responder(res, 403, { error: 'insufficient_scope' });
+      estado.paginasPessoas++;
+      const limite = Math.min(200, Number(url.searchParams.get('limite') || 100));
+      const depois = url.searchParams.get('depois');
+      const ord = estado.comunidade.slice().sort((x, y) => (x.arroba < y.arroba ? -1 : 1)).filter(x => !depois || x.arroba > depois);
+      const pagina = ord.slice(0, limite);
+      return responder(res, 200, { pessoas: pagina, proximo: ord.length > limite ? pagina[pagina.length - 1].arroba : null });
     }
     /* o Set (/api/v1/set): Bearer com zro.set (sem ele, 401); leitura com ETag W/"v1" e 304 sem corpo */
     if (url.pathname === '/api/v1/set' || url.pathname.startsWith('/api/v1/set/')) {

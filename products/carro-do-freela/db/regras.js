@@ -192,12 +192,21 @@ function janelaDe(de, ate, hoje = new Date()) {
   if (dias < 0 || dias > 62) throw new Recusa('janela', 'ate');
   return { de: d, ate: a };
 }
-/** uma linha de carro_do_freela.pessoas() → o que a lista devolve (nada de contato, diária ou inventário) */
-function pessoaSaida(l) {
+/**
+ * Uma pessoa da comunidade (o objeto do HUB) + o que o Carro tem dela (`carro`: linha de carro_do_freela.agendas, só
+ * de quem consentiu) → o que a lista devolve. Nada de contato, diária ou inventário. `agenda: null` = não divulgada.
+ */
+function pessoaSaida(z, carro, funcaoDoHub = {}) {
+  if (!z || typeof z.id !== 'string' || typeof z.arroba !== 'string') return null;
+  const doHub = (Array.isArray(z.funcoes) ? z.funcoes : []).map(f => funcaoDoHub[f && f.chave]).filter(Boolean);
+  const funcoes = carro && carro.funcoes && carro.funcoes.length ? carro.funcoes : [...new Set(doHub)];
+  const foto = typeof z.foto === 'string' && /^https:\/\/[^\s]{1,290}$/.test(z.foto) ? z.foto : null;
+  const portfolio = typeof z.portfolio === 'string' && /^https:\/\//.test(z.portfolio) ? z.portfolio.slice(0, 300) : null;
   return {
-    id: l.sub, nome: l.nome, arroba: l.arroba, foto: l.foto, cidade: l.cidade, uf: l.uf,
-    funcoes: l.funcoes || [], nichos: l.nichos || [], bio: l.bio, portfolio: l.portfolio,
-    agenda: l.agenda || {}, agenda_atualizada_em: iso(l.agenda_atualizada_em),
+    id: z.id.toLowerCase(), arroba: z.arroba, nome: String(z.nome || '@' + z.arroba).slice(0, 120), foto,
+    cidade: typeof z.cidade === 'string' ? z.cidade.slice(0, 80) : null, funcoes,
+    nichos: carro && carro.nichos ? carro.nichos : [], bio: typeof z.bio === 'string' ? z.bio.slice(0, 280) : null, portfolio,
+    agenda: carro ? carro.agenda || {} : null, agenda_atualizada_em: carro ? iso(carro.agenda_atualizada_em) : null,
   };
 }
 

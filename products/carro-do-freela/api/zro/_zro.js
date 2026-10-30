@@ -77,8 +77,10 @@ const ESCOPOS_BASE = 'openid email profile org';
 const ESCOPO_JOBS = 'carro-do-freela.jobs';
 const ESCOPO_IA = 'zro.ia';
 const ESCOPO_SET = 'zro.set';
+/* (30/out) a comunidade: o Carro lista os perfis da Absolute ZRO com o @ confirmado (GET /api/v1/pessoas do HUB) */
+const ESCOPO_PESSOAS = 'zro.pessoas';
 const ESCOPOS_SEM_SET = ESCOPOS_BASE + ' offline_access ' + ESCOPO_JOBS + ' ' + ESCOPO_IA;
-const ESCOPOS = ESCOPOS_SEM_SET + ' ' + ESCOPO_SET;
+const ESCOPOS = ESCOPOS_SEM_SET + ' ' + ESCOPO_SET + ' ' + ESCOPO_PESSOAS;
 /* o pedido sem os escopos novos (HUB que ainda não os conhece): o refresh
    fica, porque é com ele que a claim é relida depois */
 const ESCOPOS_BASICO = ESCOPOS_BASE + ' offline_access';
@@ -952,6 +954,7 @@ module.exports = {
   set: protegido(set),
   /* para as rotas de dados (api/zro/_dados.js) */
   sessaoConferida,
+  config,
   lerCorpo,
   origemDe,
   /* para os testes */

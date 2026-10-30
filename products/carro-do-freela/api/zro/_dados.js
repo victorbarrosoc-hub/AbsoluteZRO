@@ -11,7 +11,7 @@
  *   GET    /api/zro/agenda?de=&ate=    → { agenda: { "YYYY-MM-DD": {e,p,h?} } }   (a própria)
  *   PUT    /api/zro/agenda             → { dia, declaracao }  (UM dia: fechado|negociando)
  *   DELETE /api/zro/agenda?dia=        → 204                  (o dia volta a livre)
- *   GET    /api/zro/pessoas?de=&ate=   → { pessoas: [...], de, ate }  (só quem consentiu, com a agenda da janela)
+ *   GET    /api/zro/pessoas?de=&ate=   → { pessoas: [...], de, ate }  (a comunidade da Absolute ZRO + a agenda de quem consentiu)
  *
  * Cada pedido passa, nesta ordem: método → limite de pedidos (por IP) →
  * mesma origem (escrita: Origin igual ao site e Sec-Fetch-Site same-origin
@@ -243,16 +243,57 @@ function podeVerAgendas(/* quem */) {
   return true;
 }
 
+/* as funções do perfil da Absolute ZRO (chaves do HUB) no catálogo do Carro, para a busca por função funcionar com
+   quem ainda não descreveu o ofício aqui; quem descreveu (e consentiu) aparece com as funções do Carro */
+const FUNCAO_DO_HUB = {
+  camera: 'Op. de câmera', edicao: 'Editor', color: 'Colorista', drone: 'Op. de drone', fotografia: 'Fotógrafo',
+  direcao: 'Direção', producao: 'Produtor', motion: 'Motion / VFX',
+};
+const PAGINAS_MAX = 10;
+
+/** a comunidade inteira no HUB (páginas de 200, até 2000), com o token da pessoa (escopo zro.pessoas) */
+async function comunidade(at) {
+  const cfg = Z.config();
+  const lista = [];
+  let depois = null;
+  for (let i = 0; i < PAGINAS_MAX; i++) {
+    const u = new URL(cfg.issuer + '/api/v1/pessoas');
+    u.searchParams.set('limite', '200');
+    if (depois) u.searchParams.set('depois', depois);
+    const r = await fetch(u, { headers: { authorization: 'Bearer ' + at, accept: 'application/json' }, signal: AbortSignal.timeout(8000) });
+    if (r.status === 401 || r.status === 403) return { recusado: true };
+    if (!r.ok) throw new Error('hub ' + r.status);
+    const corpo = await r.json();
+    for (const x of Array.isArray(corpo.pessoas) ? corpo.pessoas : []) lista.push(x);
+    if (!corpo.proximo) break;
+    depois = String(corpo.proximo);
+  }
+  return { lista };
+}
+
 async function pessoas(req, res) {
   const p = await preparar(req, res, { metodos: ['GET'], escrita: false });
   if (!p) return;
-  const { db, sub, quem, extra } = p;
+  const { db, sub, quem, extra, at } = p;
   try {
     const q = new URL(req.url, 'http://x').searchParams;
     const j = R.janelaDe(q.get('de'), q.get('ate'));
-    const rows = await db.asUser(sub, async c => (await c.query('select * from carro_do_freela.pessoas($1, $2)', [j.de, j.ate])).rows);
+    let c;
+    try {
+      c = at ? await comunidade(at) : { recusado: true };
+    } catch (e) {
+      return json(res, 503, { erro: 'hub' }, extra);
+    }
+    /* o token desta sessão não tem zro.pessoas (login de antes): a lista pede entrar de novo, nada quebra */
+    if (c.recusado) return json(res, 200, { pessoas: [], de: j.de, ate: j.ate, agendas: false, reconectar: true }, extra);
+    const subs = c.lista.map(x => String(x.id || '').toLowerCase()).filter(x => UUID.test(x));
+    const rows = subs.length
+      ? await db.asUser(sub, async cx => (await cx.query('select * from carro_do_freela.agendas($1::uuid[], $2, $3)', [subs, j.de, j.ate])).rows)
+      : [];
+    const doCarro = new Map(rows.map(l => [String(l.sub), l]));
     const ver = podeVerAgendas(quem);
-    const lista = rows.map(R.pessoaSaida).map(x => (ver || x.id === sub ? x : Object.assign(x, { agenda: null })));
+    const lista = c.lista.map(x => R.pessoaSaida(x, doCarro.get(String(x.id).toLowerCase()), FUNCAO_DO_HUB)).filter(Boolean)
+      .map(x => (ver || x.id === sub ? x : Object.assign(x, { agenda: null })));
     return json(res, 200, { pessoas: lista, de: j.de, ate: j.ate, agendas: ver }, extra);
   } catch (e) {
     return responderErro(res, e, extra);

@@ -113,7 +113,7 @@ test('a ida para o HUB: código + PKCE S256, escopos, nonce e retorno do própri
   assert.equal(destino.pathname, '/oauth/authorize');
   assert.equal(q.get('response_type'), 'code');
   assert.equal(q.get('client_id'), 'carrodofreela-web');
-  assert.equal(q.get('scope'), 'openid email profile org offline_access carro-do-freela.jobs zro.ia zro.set');
+  assert.equal(q.get('scope'), 'openid email profile org offline_access carro-do-freela.jobs zro.ia zro.set zro.pessoas');
   assert.equal(q.get('code_challenge_method'), 'S256');
   assert.match(q.get('code_challenge'), /^[A-Za-z0-9_-]{43}$/);
   assert.ok(q.get('nonce') && q.get('state') && q.get('nonce') !== q.get('state'));
