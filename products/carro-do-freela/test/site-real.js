@@ -54,6 +54,26 @@ const RAIZ = path.resolve(__dirname, '..');
   t(m.resp === null && m.jobsEu === 0 && m.streak === 0, 'nada de reputação inventada: resposta, jobs e sequência zerados');
   t(!m.sim, '"Simular uma chamada" não existe no site real');
 
+  /* a home (30/out, "refaz a homepage pra atualizar"): só o que existe — a manchete real, como funciona, os três
+     cartões, a Z e o fechamento; somem a prévia de busca, os recursos, a praça, os planos, o selo Prévia e a fase */
+  m = await p.evaluate(() => {
+    show('home');
+    const vis = e => !!e && !e.hidden && !e.closest('[hidden]');
+    const blocos = [...document.querySelectorAll('#v-home > *')].filter(vis).map(e => e.id || e.className.split(' ')[0]);
+    const txt = document.getElementById('v-home').innerText;
+    return { blocos, titulo: document.getElementById('hh-t').textContent, fim: document.getElementById('hf-t').textContent,
+      chip: vis(document.getElementById('fasechip')), previa: vis(document.querySelector('.fim-prev')),
+      planosLink: [...document.querySelectorAll('.hlinks a, .fim-links a')].filter(vis).map(a => a.getAttribute('href')),
+      dinheiro: /R\$|fictí|demonstra|Volante|Frota|take/i.test(txt), cartoes: document.querySelectorAll('#h-real .passo').length };
+  });
+  t(m.blocos.join(',') === 'hero,h-como,h-real,h-z,fim2', 'a home real tem só cinco blocos: topo, como funciona, os cartões, a Z e o fechamento (' + m.blocos.join(', ') + ')');
+  t(m.titulo === 'Quem está livre, na data certa.' && m.fim === m.titulo, 'a manchete é a do site real, em cima e no fechamento');
+  t(m.cartoes === 3, 'três cartões: marcar o dia, achar quem está livre, contato protegido');
+  t(!m.dinheiro, 'a home não fala de preço, plano, moeda nem dado de demonstração');
+  t(!m.chip && !m.previa, 'sem o chip de fase e sem o selo "Prévia": é o produto, não um teste');
+  t(!m.planosLink.includes('#h-planos') && !m.planosLink.includes('#h-rec') && m.planosLink.includes('#h-real'),
+    'os links do topo e do pé apontam para o que está na página');
+
   m = await p.evaluate(() => { const antes = typeof ASSINANTE !== 'undefined' && ASSINANTE; abrirAssinatura('volante');
     const form = document.getElementById('as-form'); return { antes, depois: typeof ASSINANTE !== 'undefined' && ASSINANTE,
       aberto: !!(form && form.offsetParent) } });

@@ -3079,6 +3079,10 @@ body.sem-rodape{padding-bottom:0}
 .hpassos .passo{display:flex;flex-direction:column;gap:22px;padding:26px 24px;border:1px solid var(--linha);
   border-radius:20px;background:var(--grafite2)}
 .hpassos .passo:last-child{border-bottom:1px solid var(--linha)}
+/* a home do site real (30/out): três cartões, o que existe de verdade */
+.hpassos.hrl-tres{grid-template-columns:repeat(3,minmax(0,1fr))}
+.hrl-tres .passo p{margin:0;font-size:14.5px}
+@media(max-width:900px){.hpassos.hrl-tres{grid-template-columns:minmax(0,1fr)}}
 .hpassos .passo .n{width:40px;height:40px;font-size:16px}
 .hpassos .passo b{font-family:var(--display);font-size:clamp(17px,1.7vw,21px);font-weight:800;letter-spacing:-.03em;line-height:1.15}
 @media(max-width:900px){.hpassos{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
@@ -6622,8 +6626,9 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
     </button>
     <nav class="hlinks">
       <a href="#h-como">Como funciona</a>
-      <a href="#h-rec">Recursos</a>
-      <a href="#h-planos">Planos</a>
+      <a href="#h-rec" data-sem-real>Recursos</a>
+      <a href="#h-planos" data-sem-real>Planos</a>
+      <a href="#h-real" hidden data-so-real>Recursos</a>
     </nav>
     <div class="tema" role="group" aria-label="Tema da interface">
       <button type="button" data-tema="dark" aria-pressed="true" title="Tema escuro" aria-label="Tema escuro"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13.4A8.4 8.4 0 0 1 10.6 4a8.4 8.4 0 1 0 9.4 9.4z"/></svg></button>
@@ -6658,7 +6663,7 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
         <!-- a busca no topo (17/out · 8, da prancha do Victor): praça,
              função e data, e a seta leva à prévia de baixo já filtrada.
              Só no desktop — no celular a prévia já está na primeira tela. -->
-        <div class="hp-busca" id="hp-busca" role="search" aria-label="Buscar quem está livre">
+        <div class="hp-busca" id="hp-busca" data-sem-real role="search" aria-label="Buscar quem está livre">
           <label class="hb-c"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><select id="hb-praca" aria-label="Praça"></select></label>
           <label class="hb-c"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg><select id="hb-func" aria-label="Função"></select></label>
           <label class="hb-c"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg><select id="hb-dia" aria-label="Data"></select></label>
@@ -6668,7 +6673,7 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
           <button class="btn entrar-cta" data-lg="contratante">Quero contratar<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
           <button class="btn gh entrar-cta" data-lg="freela">Sou freela</button>
         </div>
-        <div class="hp-prova" id="hp-prova"></div>
+        <div class="hp-prova" id="hp-prova" data-sem-real></div>
       </div>
       <!-- 17/out · 15: a cena do carro (HOME_VIDEO) no lugar do objeto 3D. 18/out: a CARONA. 18/out · 3: um vídeo só, em ciclo — cada cena uma vez por volta -->
       <div class="hp-arte" aria-hidden="true"><div class="hp-cena" id="hp-cena"><video id="hp-video" muted loop playsinline preload="none" hidden></video></div></div>
@@ -6676,11 +6681,12 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
     <div class="wrap">
       <ul class="hp-faixa" aria-label="O que a plataforma faz">
         <li><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M8.5 14.5l2 2 4-4"/></svg><span>Agenda<br>ao vivo</span></li>
-        <li><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10v4a1 1 0 0 0 1 1h2l5 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg><span>Uma chamada<br>para os livres</span></li>
-        <li><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M8.5 7h7M9 12h.01M12 12h.01M15 12h.01M9 16h.01M12 16h.01M15 16h.01"/></svg><span>Custo somando<br>na escala</span></li>
+        <li data-sem-real><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10v4a1 1 0 0 0 1 1h2l5 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg><span>Uma chamada<br>para os livres</span></li>
+        <li data-sem-real><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M8.5 7h7M9 12h.01M12 12h.01M15 12h.01M9 16h.01M12 16h.01M15 16h.01"/></svg><span>Custo somando<br>na escala</span></li>
         <li data-fase="2"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span>Sinal e<br>contrato</span></li>
         <li hidden data-fase-ate="1"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l4-4 4 2 3-2 4 1 3 3-6 6-2-2-2 2-3-3-1 1z"/><path d="M11 9l-3 3 2 2"/></svg><span>Acerto direto,<br>como sempre</span></li>
-        <li><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.4 1.8 3 .2.9 2.9 2.2 2-.9 2.9.9 2.9-2.2 2-.9 2.9-3 .2L12 21l-2.4-1.8-3-.2-.9-2.9-2.2-2 .9-2.9-.9-2.9 2.2-2 .9-2.9 3-.2z"/><path d="M9 12l2 2 4-4"/></svg><span>Verificado se<br>conquista</span></li>
+        <li hidden data-so-real><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg><span>Uma conta<br>Absolute ZRO</span></li>
+        <li data-sem-real><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.4 1.8 3 .2.9 2.9 2.2 2-.9 2.9.9 2.9-2.2 2-.9 2.9-3 .2L12 21l-2.4-1.8-3-.2-.9-2.9-2.2-2 .9-2.9-.9-2.9 2.2-2 .9-2.9 3-.2z"/><path d="M9 12l2 2 4-4"/></svg><span>Verificado se<br>conquista</span></li>
       </ul>
     </div>
   </div>
@@ -6688,7 +6694,7 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
   <!-- a busca de dentro, em miniatura e funcionando, logo embaixo do topo e
        na largura inteira (17/out · 3) — no desktop ela começa na primeira
        tela, como em 17/out · 1 -->
-  <div class="hp-jogo-w">
+  <div class="hp-jogo-w" data-sem-real>
     <div class="wrap">
       <div class="hp-prev" id="h-jogo">
         <div class="hp-topo">
@@ -6714,7 +6720,7 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
        (REFERENCIA), a semana da agenda da conta de demonstração, as fotos
        são as capas de categoria do brechó. `#h-gar`, `#hg-f1` e `#h-moeda`
        continuam com os ids que as suítes de fase e do take procuram. -->
-  <div class="sec hsec" id="h-rec">
+  <div class="sec hsec" id="h-rec" data-sem-real>
     <div class="wrap">
       <div class="hcab"><h2>Tudo que o set precisa.</h2><p>Num lugar só.</p></div>
       <div class="bento">
@@ -6777,11 +6783,25 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
     </div>
   </div>
 
+  <!-- ⚠️ A HOME DO SITE REAL (30/out, pedido do titular: "refaz a homepage pra atualizar"). Só o que existe de
+       verdade no domínio: a agenda no banco, quem está livre (gente do ecossistema que escolheu aparecer) e a conta
+       única. Nada de número, rosto ou preço: a base começa agora. Nasce hidden e só o REAL liga (realHome). -->
+  <div class="sec rvsec hsec" id="h-real" hidden data-so-real>
+    <div class="wrap">
+      <div class="hcab"><h2>Sua agenda fala por você.</h2><p>Quem contrata vê quando você está livre.</p></div>
+      <div class="hpassos hrl-tres">
+        <div class="passo"><span class="pi"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M8.5 14.5l2 2 4-4"/></svg></span><b>Marque o dia</b><p>Livre, negociando ou fechado. Dia inteiro ou meia diária.</p></div>
+        <div class="passo"><span class="pi"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20.5 20.5L16 16"/></svg></span><b>Ache quem está livre</b><p>Só aparece quem escolheu mostrar o perfil.</p></div>
+        <div class="passo"><span class="pi"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span><b>Seu contato é seu</b><p>Telefone nunca aparece. A conversa começa aqui.</p></div>
+      </div>
+    </div>
+  </div>
+
   <!-- A PRAÇA (17/out · 3), da segunda referência do Victor ("mais que
        vagas, um movimento"). Só entra o que EXISTE: o feed, os coletivos e
        — da Fase 4 em diante — as guildas. As imagens são as capas de
        ofício (sem rosto, sem marca), as mesmas do perfil sem trabalho. -->
-  <div class="sec rvsec hsec" id="h-praca">
+  <div class="sec rvsec hsec" id="h-praca" data-sem-real>
     <div class="wrap">
       <div class="pc-caixa">
         <div class="pc-foto" id="pc-foto" aria-hidden="true"></div>
@@ -6799,7 +6819,7 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
     </div>
   </div>
 
-  <div class="sec rvsec hsec" id="h-planos">
+  <div class="sec rvsec hsec" id="h-planos" data-sem-real>
     <div class="wrap">
       <div class="hcab"><h2>Os dois lados entram de graça.</h2><p>Paga quem quer saber quem está livre.</p></div>
       <!-- ⚠️ UM LADO DE CADA VEZ (17/out · 9 no celular, 18/out · 5 no
@@ -6940,7 +6960,7 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
       </div>
       <div class="fim-pe">
         <span class="fim-marca"><svg viewBox="0 0 100 100" width="24" height="24" aria-hidden="true"><use href="#mk"/></svg><b>Carro do Freela</b></span>
-        <nav class="fim-links"><a href="#h-como">Como funciona</a><a href="#h-rec">Recursos</a><a href="#h-planos">Planos</a><button class="fim-prev" type="button" data-previa title="O que é esta prévia">Prévia</button></nav>
+        <nav class="fim-links"><a href="#h-como">Como funciona</a><a href="#h-rec" data-sem-real>Recursos</a><a href="#h-planos" data-sem-real>Planos</a><a href="#h-real" hidden data-so-real>Recursos</a><button class="fim-prev" type="button" data-previa data-sem-real title="O que é esta prévia">Prévia</button></nav>
       </div>
     </div>
   </div>
@@ -25505,6 +25525,9 @@ const FASE_HERO={
      quando, numa frase só. */
   /* `d` é o pedaço da manchete que leva o destaque colorido (17/out · 3)
      — sempre o fim da frase, que é o que se acha aqui */
+  /* o site real (30/out): a mesma promessa, sem número nem cidade — a base começa agora */
+  real:{t:"Quem está livre, na data certa.",d:"na data certa.",
+     s:"A agenda do audiovisual, com a sua conta Absolute ZRO."},
   0:{t:"Ache freela de audiovisual livre na sua data.",d:"livre na sua data.",
      s:"Veja quem está livre e chame em um toque."},
   1:{t:"Quem tá livre sábado?",d:"sábado?",
@@ -25639,9 +25662,17 @@ function drawProva(){
     '</span><span><b>'+hoje.length+' livres hoje</b><small>em Natal e região</small></span>';
 }
 let hjEscala=[];
+/* o site real liga e desliga os blocos da home pelas marcas do markup: data-sem-real some, data-so-real aparece.
+   Roda a cada drawHome (idempotente), depois do aplicarFase, que mexe no hidden de outras marcas. */
+function realHome(){
+  if(!REAL) return;
+  document.querySelectorAll("[data-sem-real]").forEach(e=>{ e.hidden=true });
+  document.querySelectorAll("[data-so-real]").forEach(e=>{ e.hidden=false });
+}
 function drawHome(){
+  realHome();
   /* ---- topo por fase ---- */
-  const h=FASE_HERO[FASE]||FASE_HERO[0];
+  const h=REAL?FASE_HERO.real:(FASE_HERO[FASE]||FASE_HERO[0]);
   const ix=h.d?h.t.lastIndexOf(h.d):-1;
   v("hh-t").innerHTML=ix>-1?esc(h.t.slice(0,ix))+'<span class="hl">'+esc(h.d)+'</span>':esc(h.t);
   v("hh-s").textContent=h.s;
@@ -26275,7 +26306,8 @@ function aplicarFase(){
   }
   /* 4. o chip que diz em que versão a pessoa está */
   const chip=v("fasechip");
-  chip.hidden=false;
+  /* no site real a fase não aparece: é o produto, não uma versão de teste (fase é informação interna, 24/ago) */
+  chip.hidden=REAL;
   v("fasechip-v").textContent="V"+FASE;
   v("fasechip-n").textContent=FASE_NOME[FASE]||"";
   chip.onclick=abrirFase;
