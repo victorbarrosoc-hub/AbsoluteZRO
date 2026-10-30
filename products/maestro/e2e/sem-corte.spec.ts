@@ -17,7 +17,17 @@ const SHOTS = process.env.CORTE_SHOTS;
 type Sessao = { token: string; lote: string | null; lotes: string[]; a: string | null; p: string | null; o: string | null };
 const sessao = () => JSON.parse(readFileSync(CORTE, "utf8")) as Sessao;
 
-type Tela = { nome: string; rota: string; drive?: true; publica?: true; depois?: (page: Page, ver: (nome: string) => Promise<void>) => Promise<void> };
+type Tela = {
+  nome: string;
+  rota: string;
+  drive?: true;
+  publica?: true;
+  /** A área do freela (drizzle/0037): a sessão da Alice (com trabalhos) ou da Cora (ligada, sem trabalho). */
+  freela?: "alice" | "cora";
+  depois?: (page: Page, ver: (nome: string) => Promise<void>) => Promise<void>;
+};
+const AREA_FREELA = "test-results/e2e-sessao-area-freela.json";
+const areaFreela = () => JSON.parse(readFileSync(AREA_FREELA, "utf8")) as { alice: string; cora: string; aliceDiaria: string };
 
 /** Os ids das fichas da demonstração, lidos direto no banco do e2e. */
 async function ids() {
@@ -48,10 +58,25 @@ async function ids() {
         projeto_id: string;
       }[],
       fluxo: await fluxoDeExemplo(sql, org.id),
+      convite: await conviteDeExemplo(sql, org.id),
     };
   } finally {
     await sql.end();
   }
+}
+
+/** Token fixo do convite de um freela da demonstração (a página `/convite/<token>`, drizzle/0036). */
+const TOKEN_CONVITE = "corte-do-convite-do-freela-".padEnd(43, "x");
+
+/** Um freela sem conta com o convite aberto (só o sha256, como o app grava); criado uma vez. */
+async function conviteDeExemplo(sql: postgres.Sql, org: string): Promise<boolean> {
+  const [f] = await sql`select id from maestro.freelas where org_id = ${org} and zro_sub is null order by nome limit 1`;
+  if (!f) return false;
+  await sql`
+    insert into maestro.freela_convites (org_id, freela_id, token_hash, token_enc, expira_em)
+    values (${org}, ${f.id}, encode(sha256(convert_to(${TOKEN_CONVITE}, 'UTF8')), 'hex'), 'copia-cifrada-de-teste', now() + interval '7 days')
+    on conflict do nothing`;
+  return true;
 }
 
 /** Token fixo do link de exportação do fluxo de exemplo (a página `/f/<token>`, Criação F6). */
@@ -190,7 +215,28 @@ async function telas(): Promise<Tela[]> {
     { nome: "ajustes-pedido", rota: "/app/ajustes/pedido" },
     { nome: "ajustes-precos", rota: "/app/ajustes/precos" },
     { nome: "entrar", rota: "/entrar", publica: true },
-    { nome: "fluxos", rota: "/app/criacao/fluxos" },
+    {
+      nome: "fluxos",
+      rota: "/app/criacao/fluxos",
+      depois: async (page, ver) => {
+        // segurar o cartão abre a folha com "Apagar" (components/criacao/lixeira.tsx); nada é apagado aqui
+        const frente = page.locator("[data-item][data-pronto] .lx-frente").first();
+        if (!(await frente.count())) return;
+        await frente.evaluate(async (el) => {
+          const r = el.getBoundingClientRect();
+          const o = { bubbles: true, pointerId: 61, pointerType: "touch", isPrimary: true, clientX: r.x + r.width / 2, clientY: r.y + r.height / 2 };
+          el.dispatchEvent(new PointerEvent("pointerdown", o));
+          await new Promise((ok) => setTimeout(ok, 650));
+          el.dispatchEvent(new PointerEvent("pointerup", o));
+        });
+        await page.locator(".lx-folha").waitFor();
+        await ver("fluxos-segurar");
+        await page.keyboard.press("Escape");
+        await page.locator(".lx-folha").waitFor({ state: "detached" });
+      },
+    },
+    { nome: "fluxos-lixeira", rota: "/app/criacao/fluxos?lixeira=1" },
+    { nome: "criacao-lixeira", rota: "/app/criacao?lixeira=1" },
     {
       nome: "fluxo",
       rota: `/app/criacao/fluxos/${i.fluxo}`,
@@ -216,6 +262,19 @@ async function telas(): Promise<Tela[]> {
       },
     },
     { nome: "fluxo-publico", rota: `/f/${TOKEN_FLUXO}`, publica: true },
+    {
+      nome: "trabalhos",
+      rota: "/trabalhos",
+      freela: "alice",
+      depois: async (page, ver) => {
+        await page.locator("details.ft-anteriores summary").first().click();
+        await ver("trabalhos-anteriores");
+        await page.locator(".ft-conta summary").click();
+        await ver("trabalhos-conta");
+      },
+    },
+    { nome: "trabalho", rota: `/trabalhos/${areaFreela().aliceDiaria}`, freela: "alice" },
+    { nome: "trabalhos-vazio", rota: "/trabalhos", freela: "cora" },
   ];
   const ficha = (nome: string, id: string | null, rota: (id: string) => string) => {
     if (id) t.push({ nome, rota: rota(id) });
@@ -242,6 +301,7 @@ async function telas(): Promise<Tela[]> {
   ficha("lancamento", i.lancamento, (x) => `/app/financeiro/${x}`);
   ficha("lancamento-editar", i.lancamento, (x) => `/app/financeiro/${x}/editar`);
   i.documentos.forEach((d, n) => t.push({ nome: `documento-${n + 1}`, rota: `/app/projetos/${d.projeto_id}/documentos/${d.id}` }));
+  if (i.convite) t.push({ nome: "convite-freela", rota: `/convite/${TOKEN_CONVITE}`, publica: true });
   if (s.p) t.push({ nome: "pedido-publico", rota: `/p/${s.p}`, publica: true });
   if (s.o) t.push({ nome: "orcamento-publico", rota: `/o/${s.o}`, publica: true });
   if (s.a)
@@ -269,7 +329,7 @@ async function telas(): Promise<Tela[]> {
 }
 
 async function abrir(context: BrowserContext, baseURL: string, tela: Tela, tema: string) {
-  const token = tela.drive ? (JSON.parse(readFileSync(DRIVE, "utf8")) as { token: string }).token : sessao().token;
+  const token = tela.freela ? areaFreela()[tela.freela] : tela.drive ? (JSON.parse(readFileSync(DRIVE, "utf8")) as { token: string }).token : sessao().token;
   await context.clearCookies();
   await context.addCookies([...(tela.publica ? [] : [{ name: "mae_sessao", value: token, url: baseURL }]), { name: "zro_theme", value: tema, url: baseURL }]);
 }

@@ -27,7 +27,8 @@ ainda**. Sem rede, sem evento, sem integração ligada: tudo sai como arquivo ou
 Só as falas, por pessoa ("Todas" ou uma), uma seção `# Cena N · título` por cena; `**ênfase**`, `[pausa]` e a
 indicação como `((…))`. O TPeasy junta o backup pelo id e fica com o mais novo: mandar a v4 atualiza o roteiro que veio
 da v3, sem duplicar; a mesma versão de novo não muda nada. A tela diz "Compartilha o texto pronto" e nunca
-"sincroniza" (a leitura direta pelo TPeasy é a F8a, com a ponte do HUB).
+"sincroniza". Com o TPeasy no plano, a ação principal da folha é **Enviar ao TPeasy** (Criação F8): o mesmo texto vai
+pela caixa de entrada do HUB, com o mesmo id (`item`), e entra no TPeasy ao abrir ([maestro-tpeasy.md](maestro-tpeasy.md)).
 
 ## Edição: PDF e `maestro.roteiro/1`
 

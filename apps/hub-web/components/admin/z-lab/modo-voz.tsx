@@ -10,7 +10,7 @@
  * - A resposta chega em streaming; cada frase fechada já vira voz (ElevenLabs, PCM em streaming) enquanto o resto ainda
  *   está sendo escrito. Legenda ao vivo e o tempo de cada etapa: escuta, primeira palavra e primeira voz.
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { ZConfig } from '@zro/core'
 import { EscutaAoVivo, EscutaPorFrase, Gravador, Microfone, pedacosDoPcm, Tocador } from '@/lib/ia/lab/audio'
 import { api, ErroDoLab, falar, transcrever } from '@/lib/ia/lab/cliente'
@@ -64,6 +64,7 @@ export function ModoVoz({
   perguntar,
   onGasto,
   onFechar,
+  cartao,
 }: {
   config: ZConfig
   catalogo: LabCatalogo
@@ -71,6 +72,8 @@ export function ModoVoz({
   perguntar: Perguntar
   onGasto: (usd: number) => void
   onFechar: () => void
+  /** O cartão "Aprender" da conversa por voz (confirma tocando ou dizendo "pode guardar"). */
+  cartao?: ReactNode
 }) {
   const dialogo = useRef<HTMLDialogElement>(null)
   const [fase, setFase] = useState<Fase>('abrindo')
@@ -481,6 +484,7 @@ export function ModoVoz({
             {erro}
           </p>
         )}
+        {cartao}
       </div>
 
       <dl className="zl-voz__tempos" aria-label="Tempo de cada etapa">

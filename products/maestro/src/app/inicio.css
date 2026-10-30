@@ -1,7 +1,8 @@
 /*
- * Página inicial pública (plano v2 §10), no padrão das irmãs (apps/hub-web (site), SOBEDESCE): o símbolo grande
- * desenhando a pauta, o produto real em aparelhos, muito respiro. Títulos Figtree só em grafite/branco, Light × ExtraBold;
- * o latão é só superfície e traço. Motion só CSS e sempre sob "reduzir movimento".
+ * Página inicial pública (plano v2 §10), no ritmo da do SOBEDESCE e do HUB: o símbolo grande desenhando a pauta, o
+ * produto real em aparelhos, números do produto, as ferramentas numa aba cada, uma foto de set, os detalhes em cartões
+ * de mexer e o fechamento escuro. Títulos Figtree só em grafite/branco, Light × ExtraBold; o latão é só superfície,
+ * ponto e traço. Motion só CSS e sempre sob "reduzir movimento".
  */
 
 .inicio {
@@ -40,6 +41,26 @@
   letter-spacing: -0.01em;
   font-size: 1rem;
 }
+.site-topo__nav {
+  display: flex;
+  gap: 4px;
+  margin-left: 18px;
+}
+.site-topo__nav a {
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--text-mute);
+  text-decoration: none;
+  transition:
+    background-color 0.2s var(--ease),
+    color 0.2s var(--ease);
+}
+.site-topo__nav a:hover {
+  background: var(--surface-2);
+  color: var(--text-strong);
+}
 .site-topo .tema {
   background: transparent;
   box-shadow: none;
@@ -49,6 +70,13 @@
   display: flex;
   align-items: center;
   gap: 10px;
+}
+/* as âncoras não ficam escondidas atrás da cápsula */
+#ferramentas,
+#detalhes,
+#acesso,
+#celular {
+  scroll-margin-top: 84px;
 }
 
 /* ── topo da página ── */
@@ -220,12 +248,64 @@
   border-radius: 999px;
   background: #000;
 }
+/* um pedaço da tela, sem aparelho: a janela do app com o canto dele */
+.recorte {
+  margin: 0;
+  overflow: hidden;
+  border-radius: 22px;
+  background: var(--bg);
+  box-shadow:
+    0 0 0 1px var(--line),
+    0 24px 60px rgb(60 40 20 / 0.14);
+}
+:root[data-theme="dark"] .recorte {
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.08),
+    0 24px 60px rgb(0 0 0 / 0.5);
+}
+
+/* ── números ── */
+.inumeros {
+  width: min(1180px, 100% - 32px);
+  margin: clamp(72px, 10vw, 128px) auto 0;
+  border-block: 1px solid var(--line);
+}
+.inumeros dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+}
+.inumeros dl > div {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: clamp(24px, 4vw, 40px) 8px;
+  text-align: center;
+}
+.inumeros dl > div + div {
+  border-left: 1px solid var(--line);
+}
+.inumeros dt {
+  order: 2;
+  font-size: 0.92rem;
+  color: var(--text-faint);
+}
+.inumeros dd {
+  order: 1;
+  margin: 0;
+  font-family: var(--font-apple);
+  font-size: clamp(2.6rem, 1.8rem + 2.4vw, 3.8rem);
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--text-strong);
+}
 
 /* ── seções ── */
 .isecao {
   display: grid;
   justify-items: center;
-  gap: clamp(24px, 4vw, 40px);
+  gap: clamp(28px, 4vw, 48px);
   width: min(1180px, 100% - 32px);
   margin: 0 auto;
   padding: clamp(72px, 12vw, 160px) 0 0;
@@ -239,6 +319,13 @@
 .isecao__cabeca .apoio {
   text-align: center;
 }
+/* sobretítulo: cinza, como o resto do apoio (nada de texto colorido) */
+.isecao__sobre {
+  margin: 0;
+  font-size: clamp(0.95rem, 0.85rem + 0.3vw, 1.06rem);
+  font-weight: 600;
+  color: var(--text-faint);
+}
 .isecao__titulo {
   font-family: var(--font-apple);
   font-size: clamp(2.2rem, 1.2rem + 3.6vw, 4rem);
@@ -250,42 +337,255 @@
 .isecao__titulo strong {
   font-weight: 800;
 }
+.isecao__titulo--menor {
+  font-size: clamp(1.8rem, 1.2rem + 2vw, 2.6rem);
+}
+
+/* ── controle segmentado (abas) ── */
+.iabas {
+  display: grid;
+  justify-items: center;
+  gap: clamp(28px, 4vw, 44px);
+  width: 100%;
+  min-width: 0;
+}
+.iabas__lista {
+  position: relative;
+  display: flex;
+  gap: 2px;
+  max-width: 100%;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--painel);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  backdrop-filter: blur(24px) saturate(150%);
+  box-shadow: var(--shadow-float);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.iabas__lista::-webkit-scrollbar {
+  display: none;
+}
+.iabas__lista [role="tab"] {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  min-height: 40px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font-family: var(--font-apple);
+  font-size: 0.98rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-mute);
+  cursor: pointer;
+  transition: color 0.25s var(--ease);
+}
+.iabas__lista [role="tab"]:hover,
+.iabas__lista [role="tab"][aria-selected="true"] {
+  color: var(--text-strong);
+}
+.iabas__lista [role="tab"]:focus-visible {
+  outline-offset: -2px;
+  border-radius: 999px;
+}
+/* a pílula de vidro que anda até a aba escolhida (sem JavaScript, a aba escolhida ganha o fundo dela) */
+.iabas__pilula {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  width: var(--w, 0);
+  transform: translateX(var(--x, 0));
+  border-radius: 999px;
+  background: var(--gb-sheen), var(--surface);
+  box-shadow: var(--gb-shadow);
+  opacity: 0;
+}
+.iabas__pilula[data-pronta] {
+  opacity: 1;
+  transition:
+    transform 0.45s var(--spring),
+    width 0.45s var(--spring);
+}
+.iabas__painel {
+  width: 100%;
+  min-width: 0;
+  animation: i-painel 0.6s var(--spring) both;
+}
+.iabas__painel:focus-visible {
+  outline-offset: 8px;
+  border-radius: 28px;
+}
+@keyframes i-painel {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.99);
+  }
+}
+
+/* ── as ferramentas ── */
+.itour__painel {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.6fr);
+  align-items: center;
+  gap: clamp(28px, 4vw, 56px);
+  padding: clamp(24px, 3vw, 44px);
+  border-radius: 36px;
+  background: radial-gradient(80% 90% at 85% 100%, var(--acento-suave), transparent 70%), var(--surface);
+  box-shadow: var(--shadow-float);
+  overflow: hidden;
+}
+.itour__texto {
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+}
+.itour__icone {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  background: var(--surface-2);
+  color: var(--text-strong);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.itour__icone svg {
+  color: var(--acento);
+}
+.itour__texto h3 {
+  font-size: clamp(1.9rem, 1.2rem + 2vw, 2.9rem);
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  font-weight: 300;
+}
+.itour__texto h3 strong {
+  font-weight: 800;
+}
+.itour__texto > p {
+  margin: 0;
+  max-width: 30ch;
+  font-size: 1.06rem;
+  color: var(--text-faint);
+}
+.itour__pontos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.itour__pontos li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.itour__pontos svg {
+  color: var(--acento);
+}
+.itour__aparelhos {
+  position: relative;
+  padding-right: clamp(28px, 8%, 90px);
+  padding-bottom: 4%;
+}
+.itour__aparelhos .iphone {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: clamp(92px, 25%, 210px);
+}
 
 /* o método: as 8 colunas em pílulas, com a cor de cada uma */
 .metodo {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  max-width: 900px;
-  margin: 0;
+  gap: 6px;
+  max-width: 420px;
+  margin: 6px 0 0;
   padding: 0;
   list-style: none;
-  counter-reset: col;
 }
 .metodo li {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  min-height: 48px;
-  padding: 0 20px 0 16px;
+  gap: 7px;
+  min-height: 32px;
+  padding: 0 12px 0 10px;
   border-radius: 999px;
-  background: var(--surface);
+  background: var(--surface-2);
   box-shadow:
-    var(--shadow-float),
-    inset 0 -3px 0 color-mix(in srgb, var(--col) 70%, transparent);
-  font-family: var(--font-apple);
-  font-weight: 700;
-  font-size: 1.02rem;
+    inset 0 0 0 1px var(--line),
+    inset 0 -2px 0 color-mix(in srgb, var(--col) 70%, transparent);
+  font-size: 0.86rem;
+  font-weight: 600;
   color: var(--text-strong);
 }
 .metodo li .q-ponto {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
-/* já funciona */
-.ija {
+/* ── a foto de set ── */
+.ifoto {
+  position: relative;
+  display: grid;
+  align-items: end;
+  width: min(1280px, 100% - 32px);
+  min-height: clamp(420px, 56vw, 720px);
+  margin: clamp(72px, 12vw, 160px) auto 0;
+  border-radius: clamp(28px, 3vw, 44px);
+  overflow: hidden;
+  background: #2a2420;
+  isolation: isolate;
+}
+.ifoto__img {
+  object-fit: cover;
+  object-position: 50% 60%;
+  z-index: -2;
+}
+/* o véu que segura o texto branco (a foto, não o texto, leva o degradê) */
+.ifoto::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, rgb(0 0 0 / 0) 35%, rgb(10 8 6 / 0.72) 100%);
+}
+.ifoto__texto {
+  display: grid;
+  gap: 10px;
+  padding: clamp(24px, 5vw, 64px);
+}
+.ifoto h2 {
+  max-width: 14ch;
+  font-size: clamp(2.2rem, 1.2rem + 3.8vw, 4.4rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  font-weight: 300;
+  color: #fff;
+}
+.ifoto h2 strong {
+  font-weight: 800;
+}
+.ifoto p {
+  margin: 0;
+  font-size: clamp(1.02rem, 0.9rem + 0.4vw, 1.24rem);
+  color: rgb(255 255 255 / 0.82);
+}
+/* ── detalhes (cartões no estilo do SOBEDESCE) ── */
+.ibento {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
@@ -293,112 +593,267 @@
 }
 .icartao {
   display: grid;
-  gap: 18px;
+  align-content: start;
+  gap: clamp(20px, 3vw, 32px);
+  min-width: 0;
   padding: clamp(22px, 3vw, 36px);
   border-radius: 32px;
   background: var(--surface);
   box-shadow: var(--shadow-float);
   overflow: hidden;
+  transition:
+    transform 0.4s var(--spring),
+    box-shadow 0.4s var(--ease);
+}
+@media (hover: hover) {
+  .icartao:hover {
+    transform: translateY(-3px);
+  }
+}
+.icartao--largo {
+  grid-column: 1 / -1;
 }
 .icartao__texto {
   display: grid;
   justify-items: start;
-  gap: 6px;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
   color: var(--text-strong);
+}
+.icartao__sobre {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+.icartao__sobre svg {
+  color: var(--acento);
 }
 .icartao h3 {
   font-size: clamp(1.5rem, 1.1rem + 1vw, 2rem);
   font-weight: 800;
   letter-spacing: -0.03em;
+  line-height: 1.08;
 }
-.icartao p {
+.icartao__texto > p:not(.icartao__sobre) {
   margin: 0;
   color: var(--text-faint);
-  max-width: 32ch;
+  max-width: 36ch;
 }
-.icartao--tela {
-  grid-template-rows: auto 1fr;
-  background: radial-gradient(90% 70% at 50% 110%, var(--acento-suave), transparent 70%), var(--surface);
+
+/* viagem: o texto e a demonstração de um lado, a folha de verdade do outro */
+.icartao--viagem {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+  align-items: start;
+  padding-bottom: 0;
+  background: radial-gradient(70% 80% at 90% 100%, var(--acento-suave), transparent 70%), var(--surface);
 }
-.icartao--tela .iphone {
-  justify-self: center;
-  width: min(250px, 70%);
-  margin-bottom: calc(-1 * clamp(80px, 12vw, 160px));
-}
-/* A aprovação abre a seção, em largura inteira: o texto de um lado, o iPhone do outro. */
-.icartao--largo {
-  grid-column: 1 / -1;
-}
-@media (min-width: 761px) {
-  .icartao--largo {
-    grid-template-rows: none;
-    grid-template-columns: 1fr minmax(0, 300px);
-    align-items: center;
-    padding-bottom: 0;
-  }
-  .icartao--largo .icartao__texto {
-    align-self: center;
-    padding-bottom: clamp(22px, 3vw, 36px);
-  }
-  .icartao--largo .iphone {
-    align-self: end;
-    width: min(280px, 100%);
-    margin: 0;
-    margin-bottom: -120px;
-  }
-}
-.icartao--z {
-  grid-column: 1 / -1;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 22px;
-}
-.icartao__z {
-  display: grid;
-  place-items: center;
-  width: 84px;
-  height: 84px;
+.recorte--viagem {
+  margin-bottom: calc(-1 * clamp(80px, 12vw, 180px));
   border-radius: 26px;
-  background: var(--gbi-fill);
+}
+.icartao--viagem .icartao__texto {
+  align-self: center;
+  padding-bottom: clamp(22px, 3vw, 36px);
+}
+.dviagem {
+  display: grid;
+  gap: 18px;
+  width: 100%;
+  margin-top: 10px;
+}
+.dviagem__carros,
+.dacessos__papeis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.dchip {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-family: var(--font-apple);
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: var(--text-strong);
+  cursor: pointer;
+  transition:
+    background-color 0.25s var(--ease),
+    color 0.25s var(--ease),
+    transform 0.25s var(--spring);
+}
+.dchip:hover {
+  transform: translateY(-1px);
+}
+.dchip:active {
+  transform: scale(0.97);
+}
+.dchip[aria-pressed="true"] {
+  background: var(--gbi-sheen), var(--gbi-fill);
   color: var(--gbi-ink);
   box-shadow: var(--gbi-shadow);
 }
-
-/* a produtora por dentro: os módulos como forma, a dica fica no title */
-.icartao--produtora {
-  grid-column: 1 / -1;
-}
-.iproduto {
+.dviagem__conta {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.dviagem__conta dt {
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+.dviagem__conta dd {
+  margin: 2px 0 0;
+  font-family: var(--font-apple);
+  font-size: 1.2rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
+}
+.dviagem__conta strong {
+  font-weight: 800;
+}
+
+/* as quatro vistas do roteiro: o texto, o seletor e o recorte da tela */
+.icartao--vistas {
+  justify-items: center;
+  text-align: center;
+}
+.icartao--vistas .icartao__texto {
+  justify-items: center;
+}
+.iabas--vistas {
+  gap: 22px;
+}
+.iabas--vistas .recorte {
+  border-radius: 20px;
+}
+
+/* fluxo: o canvas inteiro, recortado */
+.icartao--fluxo .recorte {
+  margin: 0 calc(-1 * clamp(22px, 3vw, 36px)) calc(-1 * clamp(22px, 3vw, 36px));
+  border-radius: 0;
+  box-shadow: inset 0 1px 0 var(--line);
+}
+
+/* quem vê o quê: os papéis e as seis áreas com o interruptor */
+.dacessos {
+  display: grid;
+  gap: 16px;
+}
+.dacessos__areas {
+  display: grid;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  border-radius: 20px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.dacessos__areas li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 46px;
+  padding: 0 16px;
+  font-size: 0.95rem;
+  color: var(--text-strong);
+}
+.dacessos__areas li + li {
+  border-top: 1px solid var(--line);
+}
+.dacessos__chave {
+  position: relative;
+  flex: none;
+  width: 42px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  box-shadow: inset 0 0 0 1px var(--line);
+  transition: background-color 0.3s var(--ease);
+}
+.dacessos__chave::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+  transition: transform 0.35s var(--spring);
+}
+[data-ligada] > .dacessos__chave {
+  background: var(--col-aprovado);
+}
+[data-ligada] > .dacessos__chave::after {
+  transform: translateX(16px);
+}
+
+/* uma conta: os apps do ecossistema */
+.icartao--junto {
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 0.6fr) minmax(0, 2fr);
+  align-items: center;
+}
+.ijunto {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.iproduto li {
+.ijunto li {
   display: grid;
-  justify-items: center;
-  gap: 10px;
-  padding: 18px 8px;
+  align-content: start;
+  gap: 4px;
+  padding: 18px;
   border-radius: 22px;
   background: var(--surface-2);
   box-shadow: inset 0 0 0 1px var(--line);
-  font-family: var(--font-apple);
-  font-weight: 700;
-  color: var(--text-strong);
-  text-align: center;
 }
-.iproduto li svg {
+.ijunto__icone {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 6px;
+  border-radius: 12px;
+  background: var(--surface);
   color: var(--acento);
+  box-shadow: var(--shadow-float);
+}
+.ijunto strong {
+  font-family: var(--font-apple);
+  font-weight: 800;
+  color: var(--text-strong);
+}
+.ijunto li > span:last-child {
+  font-size: 0.9rem;
+  color: var(--text-faint);
 }
 
 /* vem aí */
 .ivem {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
-  width: 100%;
+  width: min(760px, 100%);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -420,10 +875,60 @@
   margin-left: auto;
 }
 
-/* acesso */
+/* ── o fechamento escuro (nos dois temas) ── */
 .iacesso {
-  padding-bottom: clamp(64px, 10vw, 120px);
+  width: min(1280px, 100% - 32px);
+  margin: clamp(72px, 12vw, 160px) auto clamp(48px, 8vw, 96px);
 }
+.iacesso__miolo {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  padding: clamp(56px, 9vw, 128px) 20px;
+  border-radius: clamp(28px, 3vw, 44px);
+  text-align: center;
+  color: rgb(255 255 255 / 0.72);
+  background: radial-gradient(60% 70% at 50% 0%, rgb(200 150 47 / 0.22), transparent 70%), #141416;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
+  /* os botões de vidro do escuro, também no tema claro */
+  --gb-fill: rgb(255 255 255 / 0.12);
+  --gb-ink: #ffffff;
+  --gb-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0) 55%);
+  --gb-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), 0 0 0 1px rgb(255 255 255 / 0.1), 0 8px 22px rgb(0 0 0 / 0.4);
+  --gb-shadow-hover: inset 0 1px 0 rgb(255 255 255 / 0.26), 0 0 0 1px rgb(255 255 255 / 0.16), 0 12px 30px rgb(0 0 0 / 0.45);
+  --gbi-fill: rgb(245 245 247 / 0.95);
+  --gbi-ink: #1d1d1f;
+  --gbi-sheen: linear-gradient(180deg, rgb(255 255 255 / 0.7), rgb(255 255 255 / 0) 55%);
+  --gbi-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgb(255 255 255 / 0.3), 0 8px 24px rgb(0 0 0 / 0.5);
+  --focus: #f5f5f7;
+}
+.iacesso__titulo {
+  font-family: var(--font-apple);
+  font-size: clamp(2.2rem, 1.2rem + 3.6vw, 4.2rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  font-weight: 300;
+  color: #fff;
+}
+.iacesso__titulo strong {
+  font-weight: 800;
+}
+.iacesso__miolo > p {
+  margin: 0;
+  font-size: 1.08rem;
+}
+.iacesso__miolo .acoes {
+  margin-top: 10px;
+}
+.iacesso__ja {
+  font-size: 0.9rem;
+}
+.iacesso__ja a {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* a lista de espera (antes do lançamento) */
 .espera {
   display: grid;
   gap: 16px;
@@ -537,11 +1042,6 @@
   font-weight: 800;
   color: var(--text-strong);
 }
-.iacesso__ja a {
-  color: var(--text-strong);
-  font-weight: 600;
-}
-
 /* ── rodapé ── */
 .site-rodape {
   display: flex;
@@ -582,19 +1082,74 @@
   }
 }
 
+@media (max-width: 960px) {
+  .site-topo__nav {
+    display: none;
+  }
+  .itour__painel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .icartao--viagem,
+  .icartao--junto {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .recorte--viagem {
+    width: min(420px, 100%);
+    justify-self: center;
+  }
+  .ijunto {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 760px) {
   .site-topo .tema {
     display: none;
   }
-  .ija,
+  .inumeros dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .inumeros dl > div:nth-child(3) {
+    border-left: 0;
+  }
+  .inumeros dl > div:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
+  }
+  .ibento,
   .ivem {
     grid-template-columns: minmax(0, 1fr);
   }
-  .icartao--z {
-    grid-template-columns: minmax(0, 1fr);
+  /* no celular a faixa das abas encosta nas bordas e rola de lado */
+  .iabas__lista {
+    justify-self: stretch;
   }
-  .iproduto {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .itour__painel {
+    padding: 22px 18px 0;
+    border-radius: 28px;
+  }
+  /* no celular a tela do celular manda: o iPhone sozinho, grande, saindo pela borda de baixo */
+  .itour__aparelhos {
+    padding: 0;
+  }
+  .itour__aparelhos .mac {
+    display: none;
+  }
+  .itour__aparelhos .iphone {
+    position: relative;
+    width: min(250px, 72%);
+    margin: 0 auto -18%;
+  }
+  .ihero__aparelhos {
+    padding-left: 14px;
+  }
+  .ijunto li {
+    padding: 14px;
+  }
+  .dviagem__conta {
+    padding: 14px;
+  }
+  .dviagem__conta dd {
+    font-size: 1.05rem;
   }
   .espera__campos {
     grid-template-columns: minmax(0, 1fr);
@@ -602,7 +1157,8 @@
   .espera .glass-btn {
     justify-self: stretch;
   }
-  .ihero__acoes {
+  .ihero__acoes,
+  .iacesso__miolo .acoes {
     flex-direction: column;
     align-items: stretch;
     width: min(340px, 100%);
@@ -614,7 +1170,18 @@
   .ihero__palavra,
   .ihero__aparelhos,
   .espera__selo,
+  .iabas__painel,
   .revela {
     animation: none !important;
+  }
+  .iabas__pilula[data-pronta],
+  .icartao,
+  .dchip,
+  .dacessos__chave,
+  .dacessos__chave::after {
+    transition: none !important;
+  }
+  .icartao:hover {
+    transform: none;
   }
 }

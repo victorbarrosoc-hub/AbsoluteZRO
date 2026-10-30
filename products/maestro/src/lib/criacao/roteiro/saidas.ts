@@ -36,7 +36,8 @@ export type VersaoDeOrigem = {
 
 /** Destinos e formatos que ficam registrados (auditoria `roteiro.enviado`). */
 export const SAIDAS = {
-  tpeasy: ["compartilhar", "copiar", "txt", "backup"],
+  /** `direto` (F8): pela Absolute ZRO para a caixa de entrada do TPeasy. Só `enviarAoTpeasy` anota (a rota recusa no "enviado"). */
+  tpeasy: ["compartilhar", "copiar", "txt", "backup", "direto"],
   edicao: ["pdf"],
   pdf: ["literario", "tecnico", "teleprompter"],
   aeon: ["json"],

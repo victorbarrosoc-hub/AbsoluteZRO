@@ -4,14 +4,19 @@
  *   devolve um pedido "assinado" de uso único e a url do SOBEDESCE falso. `negar` = sem o SOBEDESCE no plano (403).
  * - /api/v1/pessoas/* (ADR 0029 do HUB): busca por @ ou nome nos perfis de `pessoas` (só os visíveis, nunca e-mail),
  *   o perfil de um @ e o convite pelo @ (guardado em `convites`; `naEquipe` = 409). Gente de demonstração, fictícia.
+ * - /api/v1/apps/entregas* (Criação F8): a caixa de entrada do TPeasy na Absolute ZRO de mentira. POST confere o corpo
+ *   contra o contrato publicado (zro.app-entrega.entrada.v1) e guarda uma entrega por destinatário e chave (a mesma
+ *   versão de novo = "reenviada", nada duplica); GET ?roteiro= o que foi; /destinatarios você + `equipe`; /recebidas é o
+ *   que o TPeasy lê (e marca "Recebido"). `negar` = sem o TPeasy no plano (403). No e2e, /__entregas lê e muda.
  * - POST /api/zro/drive/*: confere o pedido (mesma ação, uso único) e responde com o Drive de mentira
  *   (tests/drive-fixture.mts): listar, miniatura, criar a estrutura do projeto, compartilhar e recolher (as permissões
  *   ficam na memória para o teste conferir) e o token curto. `semDrive` = a pessoa sem Drive conectado (409).
  */
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
 import { DRIVE_FIXO, listarFixo } from "./drive-fixture.mts";
+import { conferirEsquema, esquemaPublicado } from "./esquema-json.mts";
 
 const CAMINHOS: Record<string, string> = {
   "drive.listar": "/api/zro/drive/listar",
@@ -20,6 +25,32 @@ const CAMINHOS: Record<string, string> = {
   "drive.compartilhar_revisao": "/api/zro/drive/revisao/compartilhar",
   "drive.recolher_revisao": "/api/zro/drive/revisao/recolher",
   "drive.token": "/api/zro/drive/token",
+};
+
+/** Uma entrega guardada na caixa de mentira (a forma do HUB, migração 0040). */
+export type EntregaFalsa = {
+  id: string;
+  chave: string;
+  item: string;
+  versao: number;
+  titulo: string;
+  corpo: string;
+  link: string | null;
+  alvo_seg: number;
+  para: string;
+  de: string;
+  roteiro: string;
+  criada_em: string;
+  atualizada_em: string;
+  recebida_em: string | null;
+  vezes: number;
+};
+const EU_FALSO = "00000000-0000-4000-8000-00000000e0e0";
+/** O `sub` de quem chama: o token dos testes é `at-<sub>`; o resto é a mesma pessoa fixa. */
+const subDoToken = (autorizacao: string) => /^Bearer at-([0-9a-f-]{36})$/i.exec(autorizacao)?.[1] ?? EU_FALSO;
+const novoId = () => {
+  const h = randomBytes(16).toString("hex");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`;
 };
 
 export type PedidoVisto = { acao: string; jeito: "pessoa" | "app"; autorizacao: string; sub: string | null };
@@ -70,6 +101,13 @@ export async function iniciarPonteFalsa(o: { porta?: number; cliente?: { clientI
     pessoasZro: { lista: pessoas, convites: [] as { arroba: string; papel: string }[], naEquipe: new Set<string>() },
     negar: false,
     semDrive: false,
+    /** A caixa de entrada do TPeasy (F8): `negar` = sem o TPeasy no plano; `equipe` = quem da organização usa o TPeasy. */
+    entregas: {
+      negar: false,
+      equipe: [] as { id: string; nome: string }[],
+      lista: [] as EntregaFalsa[],
+      recusados: [] as string[][],
+    },
     pedidos: [] as PedidoVisto[],
     chamadas: [] as { acao: string; corpo: Record<string, unknown> }[],
     /** arquivo → permissões "anyone" criadas (id). */
@@ -128,6 +166,105 @@ export async function iniciarPonteFalsa(o: { porta?: number; cliente?: { clientI
     if (url.pathname === "/__agenda") {
       if (req.method === "POST") Object.assign(ag, corpo);
       return enviar(res, 200, { ...ag, eventos: Object.fromEntries(ag.eventos) });
+    }
+    const en = estado.entregas;
+    if (url.pathname === "/__entregas") {
+      if (req.method === "POST") Object.assign(en, corpo);
+      return enviar(res, 200, en);
+    }
+    if (url.pathname.startsWith("/api/v1/apps/entregas")) {
+      if (!/^Bearer \S+$/.test(autorizacao)) return enviar(res, 401, { error: "unauthenticated" });
+      const eu = subDoToken(autorizacao);
+      const caminho = url.pathname.slice("/api/v1/apps/entregas".length);
+      const estadoDe = (e: EntregaFalsa) => ({
+        id: e.id,
+        item: e.item,
+        versao: e.versao,
+        para: { id: e.para, nome: e.para === eu ? "Você" : (en.equipe.find((x) => x.id === e.para)?.nome ?? "Pessoa"), eu: e.para === eu },
+        criada_em: e.criada_em,
+        atualizada_em: e.atualizada_em,
+        recebida_em: e.recebida_em,
+      });
+      if (caminho === "/recebidas" && req.method === "GET")
+        return enviar(res, 200, {
+          agora: new Date().toISOString(),
+          entregas: en.lista
+            .filter((e) => e.para === eu)
+            .map((e) => ({
+              id: e.id,
+              origem: "maestro",
+              tipo: "roteiro",
+              item: e.item,
+              versao: e.versao,
+              titulo: e.titulo,
+              corpo: e.corpo,
+              sha256: createHash("sha256").update(e.corpo).digest("hex"),
+              link: e.link,
+              alvo_seg: e.alvo_seg,
+              de: e.de,
+              atualizada_em: e.atualizada_em,
+            })),
+        });
+      if (caminho === "/recebidas" && req.method === "POST") {
+        let n = 0;
+        for (const e of en.lista)
+          if (e.para === eu && Array.isArray(corpo.ids) && corpo.ids.includes(e.id) && !e.recebida_em) {
+            e.recebida_em = new Date().toISOString();
+            n++;
+          }
+        return enviar(res, 200, { marcadas: n });
+      }
+      if (en.negar) return enviar(res, 403, { error: "entitlement_required", message: "Seu plano não inclui o TPeasy." });
+      if (caminho === "/destinatarios" && req.method === "GET")
+        return enviar(res, 200, {
+          destinatarios: [{ id: eu, nome: "Você", foto: null, eu: true }, ...en.equipe.map((x) => ({ ...x, foto: null, eu: false }))],
+        });
+      if (caminho === "" && req.method === "GET") {
+        const roteiro = url.searchParams.get("roteiro") ?? "";
+        return enviar(res, 200, {
+          entregas: en.lista
+            .filter((e) => e.roteiro === roteiro)
+            .sort((a, b) => b.atualizada_em.localeCompare(a.atualizada_em))
+            .map(estadoDe),
+        });
+      }
+      if (caminho === "" && req.method === "POST") {
+        const erros = conferirEsquema(esquemaPublicado("zro.app-entrega.entrada.v1"), corpo);
+        if (erros.length) {
+          en.recusados.push(erros);
+          return enviar(res, 422, { error: "invalid_input", message: "Entrega fora do formato." });
+        }
+        const r = corpo.roteiro as { id: string; versao: number; pessoa: string | null };
+        const para = typeof corpo.para === "string" ? corpo.para : eu;
+        if (para !== eu && !en.equipe.some((x) => x.id === para)) return enviar(res, 404, { error: "not_found", message: "Essa pessoa não usa o TPeasy." });
+        const chave = `maestro:roteiro:${r.id}:${r.pessoa || "todas"}:v${r.versao}`;
+        const agora = new Date().toISOString();
+        const ja = en.lista.find((e) => e.para === para && e.chave === chave);
+        if (ja) {
+          Object.assign(ja, { atualizada_em: agora, recebida_em: null, vezes: ja.vezes + 1, corpo: String(corpo.corpo), titulo: String(corpo.titulo) });
+          return enviar(res, 200, { ...estadoDe(ja), situacao: "reenviada" });
+        }
+        const e: EntregaFalsa = {
+          id: novoId(),
+          chave,
+          item: `maestro-${r.id}-${r.pessoa || "todas"}`.slice(0, 100),
+          versao: r.versao,
+          titulo: String(corpo.titulo),
+          corpo: String(corpo.corpo),
+          link: typeof corpo.link === "string" ? corpo.link : null,
+          alvo_seg: Number(corpo.alvo_seg) || 0,
+          para,
+          de: "Rita Roteiro",
+          roteiro: r.id,
+          criada_em: agora,
+          atualizada_em: agora,
+          recebida_em: null,
+          vezes: 1,
+        };
+        en.lista.push(e);
+        return enviar(res, 201, { ...estadoDe(e), situacao: "nova" });
+      }
+      return enviar(res, 404, { error: "not_found" });
     }
     if (url.pathname.startsWith("/api/v1/pessoas/")) {
       if (!/^Bearer \S+$/.test(autorizacao)) return enviar(res, 401, { error: "unauthenticated" });

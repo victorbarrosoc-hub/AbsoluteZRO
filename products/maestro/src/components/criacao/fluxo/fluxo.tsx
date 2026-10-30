@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { linkParaIa, slug, urlImagemPeloLink } from "@/lib/criacao/fluxo/compartilhar";
+import { listaDepoisDeApagar } from "@/lib/criacao/lixeira";
 import type { LinkFluxo } from "@/lib/criacao/fluxo/endereco";
 import { fluxoParaJson, fluxoParaMarkdown } from "@/lib/criacao/fluxo/exportar";
 import {
@@ -913,7 +914,8 @@ export function Fluxo(props: Props) {
                     role="menuitem"
                     onClick={async () => {
                       if (await f.lixeira(true)) {
-                        router.push("/app/criacao/fluxos");
+                        // a lista abre com o "Apagado · Desfazer"
+                        router.push(listaDepoisDeApagar("fluxo", info.id));
                         router.refresh();
                       }
                     }}

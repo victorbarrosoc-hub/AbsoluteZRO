@@ -1953,6 +1953,38 @@
 .cr-enviar__como p {
   margin: 6px 0 0;
 }
+/* F8: "Enviar ao TPeasy" direto (para quem, a ação, o estado) e a linha curta sem o TPeasy no plano */
+.cr-tpd {
+  display: grid;
+  gap: 10px;
+}
+.cr-tpd__estado {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--text-mute);
+}
+.cr-tpd__estado svg {
+  flex: none;
+  color: var(--text-strong);
+}
+.cr-tpd__estado b {
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.cr-enviar__sem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-faint);
+}
+.cr-enviar__outros[open] > summary {
+  margin-bottom: 10px;
+}
 .cr-enviar__salvar {
   display: grid;
   gap: 12px;

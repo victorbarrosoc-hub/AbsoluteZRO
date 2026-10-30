@@ -10,7 +10,9 @@ import http from 'node:http'
 import { after, afterEach, before, beforeEach, describe, mock, test } from 'node:test'
 
 const CLIENTE = { clientId: 'tpeasy-web', clientSecret: 'zk_segredo_so_de_teste' }
-const ESCOPOS = 'openid email profile org offline_access zro.ia zro.set'
+const ESCOPOS = 'openid email profile org offline_access zro.ia zro.set tpeasy.roteiros'
+/** HUB de antes da 0040 (`recusarRoteiros`): recusa tpeasy.roteiros e aceita o pedido sem ele. */
+const ESCOPOS_SEM_ROTEIROS = 'openid email profile org offline_access zro.ia zro.set'
 /** HUB de antes do Set (`recusarSet`): recusa zro.set e aceita o pedido sem ele. */
 const ESCOPOS_SEM_SET = 'openid email profile org offline_access zro.ia'
 const LIA = { sub: 'zro-111', email: 'Lia@Produtora.com', nome: 'Lia Produtora', org: 'Produtora Lia', produtos: ['tpeasy', 'sobedesce'] }
@@ -34,6 +36,11 @@ function iniciarZroFalsa() {
     semIa: false,
     semSet: false,
     recusarSet: false,
+    recusarRoteiros: false,
+    semRoteiros: false,
+    /** A caixa de entrada do TPeasy (/api/v1/apps/entregas/recebidas): o que o HUB devolve e o que o app pediu. */
+    caixa: [],
+    entregasPedidos: [],
     escopos: null,
     setPedidos: [],
     iaPedidos: [],
@@ -99,9 +106,11 @@ function iniciarZroFalsa() {
       const volta = new URL(q.get('redirect_uri'))
       volta.searchParams.set('state', q.get('state'))
       zro.escopos = q.get('scope')
-      if (zro.recusarSet && q.get('scope') === ESCOPOS) {
+      const pedidos = (q.get('scope') || '').split(' ')
+      const esperado = zro.recusarSet ? ESCOPOS_SEM_SET : zro.recusarRoteiros ? ESCOPOS_SEM_ROTEIROS : ESCOPOS
+      if ((zro.recusarSet && pedidos.includes('zro.set')) || ((zro.recusarSet || zro.recusarRoteiros) && pedidos.includes('tpeasy.roteiros'))) {
         volta.searchParams.set('error', 'invalid_scope')
-      } else if (q.get('client_id') !== CLIENTE.clientId || q.get('code_challenge_method') !== 'S256' || !q.get('nonce') || q.get('scope') !== (zro.recusarSet ? ESCOPOS_SEM_SET : ESCOPOS)) {
+      } else if (q.get('client_id') !== CLIENTE.clientId || q.get('code_challenge_method') !== 'S256' || !q.get('nonce') || q.get('scope') !== esperado) {
         volta.searchParams.set('error', 'invalid_request')
       } else if (zro.proximo.negar) {
         volta.searchParams.set('error', 'access_denied')
@@ -212,6 +221,17 @@ function iniciarZroFalsa() {
       res.writeHead(200, { 'content-type': 'application/json', ...(req.method === 'GET' ? { etag: 'W/"v1"' } : {}) })
       return res.end(JSON.stringify(caminho === '' ? { eu: { id: 'eu' }, pessoas: [], naoLidas: 1, pedidos: 0 } : { ok: true }))
     }
+    // A caixa de entrada do TPeasy: Bearer válido; `semRoteiros` = token sem tpeasy.roteiros → 401.
+    if (url.pathname === '/api/v1/apps/entregas/recebidas') {
+      const auth = req.headers.authorization ?? ''
+      let corpo = ''
+      for await (const c of req) corpo += c
+      zro.entregasPedidos.push({ metodo: req.method, busca: url.search, auth, corpo, cookie: req.headers.cookie ?? null })
+      const a = acessos.get(auth.replace(/^Bearer /, ''))
+      if (!a || a.exp < Date.now() || zro.semRoteiros) return responder(res, 401, { error: 'unauthenticated' })
+      if (req.method === 'POST') return responder(res, 200, { marcadas: JSON.parse(corpo).ids.length })
+      return responder(res, 200, { entregas: zro.caixa, agora: new Date().toISOString() })
+    }
     responder(res, 404, { error: 'not_found' })
   })
   return new Promise((ok) =>
@@ -230,7 +250,7 @@ let lib
 
 async function iniciarApp() {
   const rotas = {}
-  for (const nome of ['entrar', 'callback', 'eu', 'sair', 'ia', 'set']) rotas[`/api/zro/${nome}`] = (await import(`../api/zro/${nome}.mjs`)).default
+  for (const nome of ['entrar', 'callback', 'eu', 'sair', 'ia', 'set', 'entregas']) rotas[`/api/zro/${nome}`] = (await import(`../api/zro/${nome}.mjs`)).default
   const server = http.createServer(async (req, res) => {
     const caminho = new URL(req.url, 'http://x').pathname
     const rota = rotas[caminho] || (caminho.startsWith('/api/zro/ia/') ? rotas['/api/zro/ia'] : caminho.startsWith('/api/zro/set/') ? rotas['/api/zro/set'] : null)
@@ -658,17 +678,20 @@ describe('o Set (repasse /api/zro/set e a aba em comum)', () => {
     return ir(z.headers.get('location'), { cookie: `tp_zro_ida=${encodeURIComponent(valorCookie(ida, 'tp_zro_ida'))}` })
   }
 
-  test('o login pede zro.set; HUB de antes do Set (invalid_scope) refaz sem ele e entra', async () => {
+  test('o login pede zro.set; HUB de antes do Set (invalid_scope) refaz sem os escopos novos, um degrau por vez, e entra', async () => {
     const ida = await ir('/api/zro/entrar')
     assert.equal(new URL(ida.headers.get('location')).searchParams.get('scope'), ESCOPOS)
     zro.recusarSet = true
     const volta = await idaEVolta('/api/zro/entrar?volta=%2Fapp%2F')
     assert.equal(volta.status, 303)
-    assert.equal(volta.headers.get('location'), '/api/zro/entrar?volta=%2Fapp%2F&sem_set=1')
+    assert.equal(volta.headers.get('location'), '/api/zro/entrar?volta=%2Fapp%2F&sem_roteiros=1')
     assert.equal(valorCookie(volta, 'tp_zro'), undefined, 'ainda não entrou')
-    const fim = await idaEVolta(volta.headers.get('location'))
+    const volta2 = await idaEVolta(volta.headers.get('location'))
+    assert.equal(volta2.headers.get('location'), '/api/zro/entrar?volta=%2Fapp%2F&sem_set=1')
+    const fim = await idaEVolta(volta2.headers.get('location'))
     assert.equal(zro.escopos, ESCOPOS_SEM_SET)
     assert.ok(valorCookie(fim, 'tp_zro') && valorCookie(fim, 'tp_zro_hub'))
+    zro.recusarSet = false
   })
 
   test('sem sessão: 401, e nada chega ao HUB', async () => {
@@ -852,7 +875,7 @@ describe('a Z (repasse /api/zro/ia)', () => {
     assert.match(z, /setAttribute\("api", "\/api\/zro\/ia"\)/)
     assert.ok(!/\.token\s*=/.test(z))
     const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
-    assert.match(sw, /tpeasy-v21/)
+    assert.match(sw, /tpeasy-v22/)
     assert.match(sw, /url\.pathname\.startsWith\("\/api\/"\)/)
     // a família só lista plataformas abertas (NOSSOM, AEON, Revela e Carro do Freela estão fechados)
     const fam = /<nav class="familia"[\s\S]*?<\/nav>/.exec(readFileSync(new URL('../app/index.html', import.meta.url), 'utf8'))[0]
@@ -886,5 +909,103 @@ describe('a Z (repasse /api/zro/ia)', () => {
     const roteiros = /data-tab="roteiros"[\s\S]*?<\/section>\s*<!--/.exec(html)[0]
     assert.ok(!/zPainel/.test(roteiros), 'a Z não fica empilhada em Roteiros')
     assert.match(/data-tab="z"[\s\S]*?<\/section>/.exec(html)[0], /id="zPainel"/)
+  })
+})
+
+describe('roteiros do Maestro (repasse /api/zro/entregas, Criação F8)', () => {
+  const ID = '3f2b8c1e-7d4a-4b9e-9c21-5a6f7e8d9c0b'
+  const entrega = {
+    id: ID,
+    origem: 'maestro',
+    tipo: 'roteiro',
+    item: 'maestro-6a1b2c3d-0000-4000-8000-000000000001-demo-ant',
+    versao: 3,
+    titulo: 'Café Aurora · Antônio',
+    corpo: '# Cena 1\nO café chega antes do sol.',
+    sha256: 'a'.repeat(64),
+    link: 'https://maestro.absolutezro.com/app/criacao/roteiros/6a1b2c3d-0000-4000-8000-000000000001',
+    alvo_seg: 60,
+    de: 'Rita Roteiro',
+    atualizada_em: '2026-10-30T12:00:00.000Z',
+  }
+  beforeEach(() => Object.assign(zro, { atTtl: 600, fora: false, semRoteiros: false, recusarRoteiros: false, recusarSet: false, caixa: [entrega], entregasPedidos: [] }))
+  const sessao = async () => {
+    const f = await fluxo()
+    return `tp_zro=${encodeURIComponent(f.sessao)}; tp_zro_hub=${encodeURIComponent(f.hub)}`
+  }
+  const idaEVolta = async (entrar) => {
+    const ida = await ir(entrar)
+    const z = await fetch(new URL(ida.headers.get('location')), { redirect: 'manual' })
+    return ir(z.headers.get('location'), { cookie: `tp_zro_ida=${encodeURIComponent(valorCookie(ida, 'tp_zro_ida'))}` })
+  }
+
+  test('o login pede tpeasy.roteiros; HUB de antes da 0040 (invalid_scope) refaz sem ele e entra com o Set', async () => {
+    const ida = await ir('/api/zro/entrar')
+    assert.equal(new URL(ida.headers.get('location')).searchParams.get('scope'), ESCOPOS)
+    zro.recusarRoteiros = true
+    const volta = await idaEVolta('/api/zro/entrar?volta=%2Fapp%2F')
+    assert.equal(volta.headers.get('location'), '/api/zro/entrar?volta=%2Fapp%2F&sem_roteiros=1')
+    const fim = await idaEVolta(volta.headers.get('location'))
+    assert.equal(zro.escopos, ESCOPOS_SEM_ROTEIROS)
+    assert.ok(valorCookie(fim, 'tp_zro'))
+  })
+
+  test('sem sessão: 401, e nada chega ao HUB', async () => {
+    const r = await ir('/api/zro/entregas')
+    assert.equal(r.status, 401)
+    assert.equal((await r.json()).reconectar, true)
+    assert.equal(zro.entregasPedidos.length, 0)
+  })
+
+  test('lê a caixa com o Bearer da sessão (sem cookie do app, token fora da resposta); desde só como data ISO', async () => {
+    const cookie = await sessao()
+    const r = await ir('/api/zro/entregas?desde=2026-10-30T11%3A00%3A00.000Z', { cookie })
+    assert.equal(r.status, 200)
+    assert.equal(r.headers.get('cache-control'), 'no-store')
+    const texto = await r.text()
+    assert.deepEqual(JSON.parse(texto).entregas, [entrega])
+    const p = zro.entregasPedidos.at(-1)
+    assert.match(p.auth, /^Bearer at_[0-9a-f]{32}$/)
+    assert.equal(p.cookie, null)
+    assert.equal(p.busca, '?destino=tpeasy&desde=2026-10-30T11%3A00%3A00.000Z')
+    assert.ok(!texto.includes(p.auth.slice(7)))
+    await ir('/api/zro/entregas?desde=ontem', { cookie })
+    assert.equal(zro.entregasPedidos.at(-1).busca, '?destino=tpeasy')
+  })
+
+  test('conta o que gravou (POST só com ids e JSON, do próprio site); outro método ou origem não', async () => {
+    const cookie = await sessao()
+    const post = (corpo, extra = {}) =>
+      fetch(`${APP}/api/zro/entregas`, { method: 'POST', redirect: 'manual', headers: { origin: APP, 'content-type': 'application/json', cookie, ...extra }, body: JSON.stringify(corpo) })
+    const r = await post({ ids: [ID, 'nao-e-id'] })
+    assert.equal(r.status, 200)
+    assert.deepEqual(await r.json(), { marcadas: 1 })
+    assert.deepEqual(JSON.parse(zro.entregasPedidos.at(-1).corpo), { ids: [ID] })
+    const n = zro.entregasPedidos.length
+    assert.equal((await post({ ids: ['x'] })).status, 400)
+    assert.equal((await post({ ids: [ID] }, { origin: 'https://malicioso.exemplo' })).status, 403)
+    assert.equal((await post({ ids: [ID] }, { 'sec-fetch-site': 'cross-site' })).status, 403)
+    assert.equal((await ir('/api/zro/entregas', { cookie, method: 'DELETE' })).status, 405)
+    assert.equal(zro.entregasPedidos.length, n)
+  })
+
+  test('login de antes da 0040 (token sem tpeasy.roteiros): 401 sem apagar o cofre', async () => {
+    const cookie = await sessao()
+    zro.semRoteiros = true
+    const r = await ir('/api/zro/entregas', { cookie })
+    assert.equal(r.status, 401)
+    assert.equal(valorCookie(r, 'tp_zro_hub'), undefined, 'o cofre da Z e do Set fica')
+  })
+
+  test('o app busca ao abrir e marca "Do Maestro": módulos no cache offline, a linha da lista e o editor', async () => {
+    const { readFileSync } = await import('node:fs')
+    const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
+    for (const f of ['maestro.js', 'entregas.js']) assert.ok(sw.includes(`"/app/js/${f}"`), f)
+    const main = readFileSync(new URL('../app/js/main.js', import.meta.url), 'utf8')
+    assert.match(main, /contaPronta\.then\(\(\) => iniciarMaestro\(on\)\)/)
+    const views = readFileSync(new URL('../app/js/views.js', import.meta.url), 'utf8')
+    assert.match(views, /item-origem/)
+    assert.match(views, /Abrir no Maestro/)
+    assert.match(readFileSync(new URL('../app/index.html', import.meta.url), 'utf8'), /id="editorOrigem"/)
   })
 })

@@ -96,8 +96,8 @@ const nextConfig: NextConfig = {
           { key: "Cache-Control", value: "no-store" },
         ],
       },
-      // Os links públicos da produtora (plano v2 §4.4): pedido (/p) e orçamento (/o). Sem player: nada de frame.
-      ...["/p/:path*", "/o/:path*"].map((source) => ({
+      // Os links públicos da produtora (plano v2 §4.4): pedido (/p), orçamento (/o) e o convite do freela (/convite). Sem player.
+      ...["/p/:path*", "/o/:path*", "/convite/:path*"].map((source) => ({
         source,
         headers: [
           { key: "Content-Security-Policy", value: csp() },

@@ -4,7 +4,9 @@ import { CAMPOS_FREELA } from "@/lib/freelas/formularios";
 import { podeEscrever } from "@/lib/papeis";
 import { pode as podeArea } from "@/lib/acessos";
 import { CabecaForm, Formulario } from "@/components/form";
-import { salvarFreelaAcao } from "../acoes";
+import { ArrobaZro } from "@/components/freelas/arroba-zro";
+import { emissor } from "@/lib/zro/config";
+import { salvarFreelaAcao, verArrobaAcao } from "../acoes";
 
 export const metadata = { title: "Novo freela" };
 
@@ -27,6 +29,7 @@ export default async function NovoFreela() {
         acao={salvarFreelaAcao}
         campos={CAMPOS_FREELA.filter((c) => c.nome !== "valores" || podeArea(s, "diarias"))}
         inicial={{ ativo: "sim" }}
+        antes={<ArrobaZro ver={verArrobaAcao} perfilBase={emissor()} convidar />}
         rotulo="Cadastrar"
         voltar="/app/freelas"
       />

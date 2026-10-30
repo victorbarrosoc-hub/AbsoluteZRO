@@ -1,5 +1,5 @@
-/* Lançamento em Beta (ADR 0027 do HUB): "No celular, como app." (components/instalar.tsx), o selo da página
-   inicial e a área do app de computador. Pouco texto: o ícone do Compartilhar e o do Adicionar falam por si. O latão
+/* Lançamento (ADR 0027 do HUB): "No celular, como app." (components/instalar.tsx) e a área do app de computador
+   na página inicial. Pouco texto: o ícone do Compartilhar e o do Adicionar falam por si. O latão
    só no ícone (nunca texto). */
 .instalar {
   display: flex;
@@ -76,14 +76,4 @@
 .idesktop small {
   color: var(--text-mute);
   font-weight: 400;
-}
-
-/* Selo "Beta" no topo da página inicial: fundo tingido e o ponto verde da coluna Entregue; texto grafite. */
-.selo--beta {
-  background: color-mix(in srgb, var(--col-entregue) 18%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--col-entregue) 45%, transparent);
-  color: var(--text-strong);
-}
-.selo--beta i {
-  background: var(--col-entregue);
 }

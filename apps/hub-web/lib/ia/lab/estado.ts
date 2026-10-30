@@ -1,6 +1,7 @@
 import 'server-only'
 import type { Authenticated } from '@zro/auth'
 import {
+  conflitosDaLista,
   custoMinutoDeVoz,
   estadoDoLab,
   Z_APPS,
@@ -45,6 +46,8 @@ export type LabEstado = ZLabEstado & {
   modeloPadrao: string
   planos: { code: string; name: string }[]
   catalogo: LabCatalogo
+  /** Aprendizado do rascunho que contradiz outro → o texto do outro (o Configurar marca "isso contradiz: …"). */
+  conflitos: Record<string, string>
 }
 
 export function catalogoDoLab(): LabCatalogo {
@@ -81,5 +84,6 @@ export async function estadoDaTela(db: Database, auth: Authenticated | null): Pr
     modeloPadrao: iaModelo(),
     planos: planos.map((p) => ({ code: p.code as string, name: p.name as string })),
     catalogo: catalogoDoLab(),
+    conflitos: conflitosDaLista(estado.rascunho.aprendizados),
   }
 }

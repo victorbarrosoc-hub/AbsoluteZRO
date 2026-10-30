@@ -66,6 +66,7 @@ export function Formulario({
   voltar,
   ocultos,
   compacto,
+  antes,
 }: {
   acao: Acao;
   campos: DefCampo[];
@@ -77,20 +78,30 @@ export function Formulario({
   ocultos?: Record<string, string>;
   /** Dentro de uma seção: sem o cartão em volta. */
   compacto?: boolean;
+  /** Um campo próprio no topo (ex.: o @ no Absolute ZRO do freela); fica montado entre um envio e outro. */
+  antes?: ReactNode;
 }) {
   const [estado, enviar] = useActionState(acao, undefined);
   const valores = estado?.valores ?? inicial;
+  // erro de um campo que não está na grade (o de `antes`): vai junto da mensagem
+  const errosFora = Object.entries(estado?.erros ?? {}).filter(([k]) => !campos.some((c) => c.nome === k));
   return (
     <form action={enviar} className={compacto ? "form form--compacto" : "form"} noValidate>
       {id ? <input type="hidden" name="id" value={id} /> : null}
       {Object.entries(ocultos ?? {}).map(([k, v]) => (
         <input key={k} type="hidden" name={k} value={v} />
       ))}
+      {antes}
       {estado?.mensagem ? (
         <p className="erro" role="alert">
           {estado.mensagem}
         </p>
       ) : null}
+      {errosFora.map(([k, v]) => (
+        <p key={k} className="erro" role="alert">
+          {v}
+        </p>
+      ))}
       {estado?.aviso ? (
         <p className="aviso-ok" role="status">
           <Icone nome="check" size={16} /> {estado.aviso}

@@ -211,6 +211,27 @@
       "when": 1795996800000,
       "tag": "0033_roteiro_na_revisao",
       "breakpoints": false
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1796169600000,
+      "tag": "0035_capas_do_quadro",
+      "breakpoints": false
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1796256000000,
+      "tag": "0036_freela_convites",
+      "breakpoints": false
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1796342400000,
+      "tag": "0037_area_do_freela",
+      "breakpoints": false
     }
   ]
 }

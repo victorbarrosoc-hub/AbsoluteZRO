@@ -18,6 +18,18 @@ import { audit, DomainError } from '@zro/observability'
 import { z } from 'zod'
 import { requirePlatformAdmin } from './authz'
 import { custoIaUsd } from './ia'
+import {
+  blocoDeAprendizados,
+  conferirLimites,
+  conflitoDe,
+  repetidoDe,
+  travaDeSeguranca,
+  Z_APRENDIZADO_MAX,
+  ZAprendizadoSchema,
+  ZPropostaSchema,
+  type ZAprendizado,
+  type ZAprendizadoTipo,
+} from './z-aprendizados'
 
 // ───────────── catálogo: modelos, vozes e preços ─────────────
 
@@ -177,6 +189,12 @@ export const ZConfigSchema = z
         resposta: z.enum(Object.keys(Z_RESPOSTAS) as [ZResposta, ...ZResposta[]]),
       })
       .strict(),
+    /** Aprendizados confirmados no Testar (ADR 0033 § Aprender conversando). Só mudam pelas rotas próprias, auditadas. */
+    aprendizados: z
+      .array(ZAprendizadoSchema)
+      .max(Z_APRENDIZADO_MAX, `Até ${Z_APRENDIZADO_MAX} aprendizados.`)
+      .refine((l) => l.every((a) => !a.plataforma || Z_APPS.some((x) => x.id === a.plataforma)), 'Plataforma desconhecida num aprendizado.')
+      .default([]),
   })
   .strict()
 export type ZConfig = z.infer<typeof ZConfigSchema>
@@ -195,6 +213,7 @@ export function zConfigPadrao(modelo: string = 'claude-opus-5-5'): ZConfig {
     conhecimento: [],
     voz: { id: null, nome: null, modelo: 'eleven_flash_v2_5', velocidade: 1, estabilidade: 0.5, saudacao: Z_SAUDACAO_PADRAO },
     modelo: { id: (Z_MODELOS.some((m) => m.id === modelo) ? modelo : 'claude-opus-5-5') as ZModeloId, resposta: 'media' },
+    aprendizados: [],
   }
 }
 
@@ -244,6 +263,9 @@ export function personalizacaoDe(config: ZConfig, plataforma: string | null, con
   const appId = (plataforma ?? 'hub') as ZAppId
   const doApp = config.apps[appId]?.trim()
   if (doApp) extras.push(`Nesta plataforma (${Z_APPS.find((a) => a.id === appId)?.nome ?? appId}): ${doApp}`)
+  // Por último, e abaixo das regras: o que o titular ensinou conversando.
+  const aprendidos = blocoDeAprendizados(config.aprendizados ?? [], appId)
+  if (aprendidos) extras.push(aprendidos)
   return { identidade: config.identidade, regras: config.regras || Z_REGRAS_PADRAO, extras, conhecimento }
 }
 
@@ -483,13 +505,18 @@ async function conferirConhecimento(tx: Queryable, ids: string[]) {
     throw new DomainError('invalid_input', `Os textos ativos passam de ${Z_CONHECIMENTO_MAX_TOTAL.toLocaleString('pt-BR')} caracteres.`)
 }
 
-/** Grava o rascunho (o que o laboratório testa). Não cria versão. */
+/**
+ * Grava o rascunho (o que o laboratório testa). Não cria versão. Os aprendizados não vêm do corpo: ficam os do banco
+ * (mudam só pelas rotas próprias, auditadas), então um Configurar aberto há tempo não apaga o que a Z aprendeu agora.
+ */
 export async function salvarRascunho(db: Database, auth: Authenticated | null, raw: unknown): Promise<ZConfig> {
   const a = adminDoLab(auth)
-  const config = lerZConfig(raw)
+  const lido = lerZConfig(raw)
+  let config = lido
   await comoAdmin(db, a, async (tx) => {
-    await conferirConhecimento(tx, config.conhecimento)
-    const [antes] = await tx`select config from zro.z_rascunho where id`
+    await conferirConhecimento(tx, lido.conhecimento)
+    const [antes] = await tx`select config from zro.z_rascunho where id for update`
+    config = { ...lido, aprendizados: (await lerRascunho(tx)).config.aprendizados }
     await tx`update zro.z_rascunho set config = ${tx.json(config as never)}, atualizado_em = now(), atualizado_por = ${a.userId} where id`
     const mudou = (Object.keys(config) as (keyof ZConfig)[]).filter((k) => JSON.stringify((antes?.config as ZConfig | null)?.[k]) !== JSON.stringify(config[k]))
     if (mudou.length) await auditar(tx, a, 'rascunho', { campos: mudou })
@@ -673,6 +700,164 @@ export async function arquivarConhecimento(db: Database, auth: Authenticated | n
       await tx`update zro.z_rascunho set config = ${tx.json(novo as never)}, atualizado_em = now(), atualizado_por = ${a.userId} where id`
     }
     await auditar(tx, a, 'conhecimento_arquivado', { titulo: k.titulo }, id)
+  })
+}
+
+// ───────────── aprendizados (aprender conversando) ─────────────
+
+/**
+ * Lê o rascunho travado para mudar a lista de aprendizados (um por vez: dois "Guardar" juntos não se perdem) e grava a
+ * lista nova. Versões não mudam: são cópias imutáveis.
+ */
+async function mudarAprendizados<T>(
+  tx: Queryable,
+  a: ZLabAdmin,
+  fn: (lista: ZAprendizado[], config: ZConfig) => { lista: ZAprendizado[]; volta: T },
+): Promise<T> {
+  await tx`select 1 from zro.z_rascunho where id for update`
+  const { config } = await lerRascunho(tx)
+  const { lista, volta } = fn(config.aprendizados, config)
+  conferirLimites(lista)
+  const novo = { ...config, aprendizados: lista }
+  // Confere a configuração inteira de novo (plataforma conhecida, formato): nada inválido entra no rascunho.
+  lerZConfig(novo)
+  await tx`update zro.z_rascunho set config = ${tx.json(novo as never)}, atualizado_em = now(), atualizado_por = ${a.userId} where id`
+  return volta
+}
+
+const PedidoGuardarSchema = z
+  .object({
+    proposta: ZPropostaSchema,
+    /** O titular tocou em Guardar (ou disse "pode guardar"): sem isto, nada é guardado. */
+    confirmar: z.literal(true, { message: 'Confirme antes de guardar.' }),
+    /** Texto ajustado no cartão antes de guardar. */
+    texto: z.string().optional(),
+    /** Como o titular confirmou: tocando no cartão, ou dizendo "pode guardar" (por voz ou escrito) na conversa. */
+    pela: z.enum(['toque', 'voz', 'conversa']).optional(),
+  })
+  .strict()
+
+export type ZGuardado = { aprendizado: ZAprendizado; repetido: boolean; substituido: { id: string; texto: string } | null }
+
+/**
+ * "Guardar" do cartão: o aprendizado entra no rascunho (o Testar usa no próximo turno). Igual a um que já existe = não
+ * duplica (devolve o existente). Contradiz um guardado = a correção nova fica no lugar dele (é o titular corrigindo de
+ * novo), e a auditoria diz qual saiu. Trava de segurança: aprendizado não mexe em regra, permissão nem dado.
+ */
+export async function guardarAprendizado(db: Database, auth: Authenticated | null, raw: unknown): Promise<ZGuardado> {
+  const a = adminDoLab(auth)
+  const p = PedidoGuardarSchema.safeParse(raw)
+  if (!p.success) throw new DomainError('invalid_input', p.error.issues[0]?.message ?? 'Aprendizado inválido.')
+  const ajuste = p.data.texto?.trim()
+  const prop = p.data.proposta
+  const texto = ajuste || prop.texto
+  if (texto.length < 3 || texto.length > 240) throw new DomainError('invalid_input', 'Aprendizado com tamanho inválido (de 3 a 240 caracteres).')
+  if (prop.plataforma && !Z_APPS.some((x) => x.id === prop.plataforma)) throw new DomainError('invalid_input', 'Plataforma desconhecida.')
+  const tipo: ZAprendizadoTipo = prop.plataforma ? 'plataforma' : prop.tipo === 'plataforma' ? 'regra' : prop.tipo
+  const motivo = travaDeSeguranca(`${texto} ${prop.exemplo ?? ''}`)
+  if (motivo) throw new DomainError('action_not_allowed', `Não dá para aprender isso: ${motivo}. Regras e permissões mudam só na configuração.`)
+  return comoAdmin(db, a, async (tx) => {
+    const r = await mudarAprendizados<ZGuardado>(tx, a, (lista) => {
+      const novo = { texto, plataforma: prop.plataforma }
+      const igual = lista.find((x) => x.id === prop.id) ?? repetidoDe(novo, lista)
+      if (igual) return { lista, volta: { aprendizado: igual, repetido: true, substituido: null } }
+      const conflito = conflitoDe(novo, lista)
+      const item: ZAprendizado = {
+        id: prop.id,
+        tipo,
+        texto,
+        plataforma: prop.plataforma,
+        exemplo: prop.exemplo,
+        origem: { em: new Date().toISOString(), frase: prop.gatilho.slice(0, 300), voz: !!prop.voz },
+        editadoEm: null,
+      }
+      return {
+        lista: [...lista.filter((x) => x.id !== conflito?.id), item],
+        volta: { aprendizado: item, repetido: false, substituido: conflito ? { id: conflito.id, texto: conflito.texto } : null },
+      }
+    })
+    if (!r.repetido)
+      await auditar(
+        tx,
+        a,
+        'aprendizado_salvo',
+        {
+          tipo: r.aprendizado.tipo,
+          texto: r.aprendizado.texto,
+          plataforma: r.aprendizado.plataforma,
+          pela: p.data.pela ?? 'toque',
+          ajustado: !!ajuste && ajuste !== prop.texto,
+          substituiu: r.substituido,
+        },
+        r.aprendizado.id,
+      )
+    return r
+  })
+}
+
+const EdicaoSchema = z
+  .object({
+    texto: z.string().optional(),
+    tipo: z.enum(['tom', 'regra', 'fato', 'pronuncia', 'plataforma']).optional(),
+    plataforma: z.string().nullable().optional(),
+    exemplo: z.string().nullable().optional(),
+  })
+  .strict()
+
+/**
+ * Editar ou mover (trocar a seção: personalidade, regras, plataforma, conhecimento, pronúncia). Auditado com o antes e o
+ * depois. Não pode virar igual a outro nem passar pela trava de segurança.
+ */
+export async function editarAprendizado(db: Database, auth: Authenticated | null, id: string, raw: unknown): Promise<ZAprendizado> {
+  const a = adminDoLab(auth)
+  if (!UUID.test(id)) throw new DomainError('not_found', 'Aprendizado não encontrado.')
+  const p = EdicaoSchema.safeParse(raw)
+  if (!p.success) throw new DomainError('invalid_input', 'Edição inválida.')
+  return comoAdmin(db, a, async (tx) => {
+    const { antes, depois } = await mudarAprendizados(tx, a, (lista) => {
+      const antes = lista.find((x) => x.id === id)
+      if (!antes) throw new DomainError('not_found', 'Aprendizado não encontrado.')
+      const tipo = p.data.tipo ?? antes.tipo
+      const plataforma = tipo === 'plataforma' ? (p.data.plataforma !== undefined ? p.data.plataforma : antes.plataforma) || null : null
+      if (tipo === 'plataforma' && !plataforma) throw new DomainError('invalid_input', 'Escolha a plataforma.')
+      const depois = ZAprendizadoSchema.safeParse({
+        ...antes,
+        tipo,
+        plataforma,
+        texto: p.data.texto ?? antes.texto,
+        exemplo: p.data.exemplo !== undefined ? p.data.exemplo : antes.exemplo,
+        editadoEm: new Date().toISOString(),
+      })
+      if (!depois.success) throw new DomainError('invalid_input', depois.error.issues[0]?.message ?? 'Edição inválida.')
+      const motivo = travaDeSeguranca(`${depois.data.texto} ${depois.data.exemplo ?? ''}`)
+      if (motivo) throw new DomainError('action_not_allowed', `Não dá para aprender isso: ${motivo}.`)
+      if (repetidoDe(depois.data, lista, id)) throw new DomainError('conflict', 'Já existe um aprendizado igual a este.')
+      return { lista: lista.map((x) => (x.id === id ? depois.data : x)), volta: { antes, depois: depois.data } }
+    })
+    const campos = (['texto', 'tipo', 'plataforma', 'exemplo'] as const).filter((k) => antes[k] !== depois[k])
+    if (campos.length)
+      await auditar(
+        tx,
+        a,
+        antes.tipo !== depois.tipo || antes.plataforma !== depois.plataforma ? 'aprendizado_movido' : 'aprendizado_editado',
+        { campos, de: Object.fromEntries(campos.map((k) => [k, antes[k]])), para: Object.fromEntries(campos.map((k) => [k, depois[k]])) },
+        id,
+      )
+    return depois
+  })
+}
+
+/** Tira do rascunho (as versões que já o têm continuam iguais). Auditado com o texto que saiu. */
+export async function removerAprendizado(db: Database, auth: Authenticated | null, id: string): Promise<void> {
+  const a = adminDoLab(auth)
+  if (!UUID.test(id)) throw new DomainError('not_found', 'Aprendizado não encontrado.')
+  await comoAdmin(db, a, async (tx) => {
+    const saiu = await mudarAprendizados(tx, a, (lista) => {
+      const x = lista.find((y) => y.id === id)
+      if (!x) throw new DomainError('not_found', 'Aprendizado não encontrado.')
+      return { lista: lista.filter((y) => y.id !== id), volta: x }
+    })
+    await auditar(tx, a, 'aprendizado_removido', { tipo: saiu.tipo, texto: saiu.texto, plataforma: saiu.plataforma }, id)
   })
 }
 
