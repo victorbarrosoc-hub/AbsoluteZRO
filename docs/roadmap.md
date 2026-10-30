@@ -747,6 +747,19 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   `when` únicos; o migrador aplica as fora de ordem (`migrador.test.mts`).
 - ⛔ Em produção: 0027, 0030, 0031 e 0032 do Maestro no próximo deploy autorizado.
 
+## Maestro · Criação: apagar fácil, com Desfazer (30/10/2026)
+
+- ✅ Pedido do titular ("bota uma opção fácil de excluir o projeto"): nas listas de Roteiros e de Fluxos, **deslizar o
+  cartão para a esquerda** no iPhone mostra o "Apagar" vermelho (até o fim apaga direto, como no Mail); **segurar** abre
+  a folha com Abrir e Apagar; no computador, o **"•••"** do cartão (com o mouse em cima) e o **botão direito** abrem
+  "Mandar para a lixeira".
+- ✅ Apagar = lixeira: some na hora com **"Apagado · Desfazer"** (6 s), sem pergunta; se está num card ou tem link vivo,
+  uma linha diz ("Sai do card até voltar da lixeira.", "O link para de abrir."). O "•••" do editor e do canvas faz o
+  mesmo e volta para a lista com o Desfazer.
+- ✅ **Lixeira** discreta nas duas abas ("Lixeira · N"): Restaurar (quem edita) e **Apagar de vez** com pergunta
+  (administração e gestão); roteiro com versão salva fica guardado. Leitura não vê nada disso.
+- Sem migração: as políticas da 0030/0031 já davam a remoção só a administração e gestão.
+
 ## Relay: conversão de mídia como setor próprio (29/10/2026, [ADR 0030](decisions/0030-relay-conversao.md))
 
 A Revela fica só com a cor (looks, espaço de cor, LUT e PowerGrade). Codec, contêiner e formatos de vídeo e áudio vão

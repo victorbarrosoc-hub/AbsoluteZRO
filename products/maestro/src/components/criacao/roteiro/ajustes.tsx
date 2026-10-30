@@ -78,7 +78,6 @@ function Alvo({ roteiro, mudar, editavel }: Pick<Props, "roteiro" | "mudar" | "e
 
 export function FolhaAjustes(p: Props) {
   const [msg, setMsg] = useState<string | null>(null);
-  const [certeza, setCerteza] = useState(false);
   const r = p.roteiro;
   const responder = async (x: Promise<string | null>) => setMsg(await x);
   return (
@@ -205,21 +204,10 @@ export function FolhaAjustes(p: Props) {
 
       {p.editavel ? (
         <div className="cr-ajustes__pe">
-          {certeza ? (
-            <span className="remover__certeza">
-              <span>Mandar para a lixeira?</span>
-              <button type="button" className="q-perigo" onClick={() => void responder(p.lixeira())}>
-                Sim
-              </button>
-              <button type="button" className="q-limpar" onClick={() => setCerteza(false)}>
-                Não
-              </button>
-            </span>
-          ) : (
-            <button type="button" className="q-limpar" onClick={() => setCerteza(true)}>
-              <Icone nome="lixo" size={15} /> Lixeira
-            </button>
-          )}
+          {/* sem pergunta: a lista abre com "Apagado · Desfazer" */}
+          <button type="button" className="q-perigo" onClick={() => void responder(p.lixeira())}>
+            <Icone nome="lixo" size={15} /> Mandar para a lixeira
+          </button>
         </div>
       ) : null}
     </Folha>
