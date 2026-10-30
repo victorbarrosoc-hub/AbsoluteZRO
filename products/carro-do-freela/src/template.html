@@ -3079,6 +3079,10 @@ body.sem-rodape{padding-bottom:0}
 .hpassos .passo{display:flex;flex-direction:column;gap:22px;padding:26px 24px;border:1px solid var(--linha);
   border-radius:20px;background:var(--grafite2)}
 .hpassos .passo:last-child{border-bottom:1px solid var(--linha)}
+/* a home do site real (30/out): três cartões, o que existe de verdade */
+.hpassos.hrl-tres{grid-template-columns:repeat(3,minmax(0,1fr))}
+.hrl-tres .passo p{margin:0;font-size:14.5px}
+@media(max-width:900px){.hpassos.hrl-tres{grid-template-columns:minmax(0,1fr)}}
 .hpassos .passo .n{width:40px;height:40px;font-size:16px}
 .hpassos .passo b{font-family:var(--display);font-size:clamp(17px,1.7vw,21px);font-weight:800;letter-spacing:-.03em;line-height:1.15}
 @media(max-width:900px){.hpassos{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
@@ -6622,8 +6626,9 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
     </button>
     <nav class="hlinks">
       <a href="#h-como">Como funciona</a>
-      <a href="#h-rec">Recursos</a>
-      <a href="#h-planos">Planos</a>
+      <a href="#h-rec" data-sem-real>Recursos</a>
+      <a href="#h-planos" data-sem-real>Planos</a>
+      <a href="#h-real" hidden data-so-real>Recursos</a>
     </nav>
     <div class="tema" role="group" aria-label="Tema da interface">
       <button type="button" data-tema="dark" aria-pressed="true" title="Tema escuro" aria-label="Tema escuro"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13.4A8.4 8.4 0 0 1 10.6 4a8.4 8.4 0 1 0 9.4 9.4z"/></svg></button>
@@ -6658,7 +6663,7 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
         <!-- a busca no topo (17/out · 8, da prancha do Victor): praça,
              função e data, e a seta leva à prévia de baixo já filtrada.
              Só no desktop — no celular a prévia já está na primeira tela. -->
-        <div class="hp-busca" id="hp-busca" role="search" aria-label="Buscar quem está livre">
+        <div class="hp-busca" id="hp-busca" data-sem-real role="search" aria-label="Buscar quem está livre">
           <label class="hb-c"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><select id="hb-praca" aria-label="Praça"></select></label>
           <label class="hb-c"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg><select id="hb-func" aria-label="Função"></select></label>
           <label class="hb-c"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg><select id="hb-dia" aria-label="Data"></select></label>
@@ -6668,7 +6673,7 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
           <button class="btn entrar-cta" data-lg="contratante">Quero contratar<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
           <button class="btn gh entrar-cta" data-lg="freela">Sou freela</button>
         </div>
-        <div class="hp-prova" id="hp-prova"></div>
+        <div class="hp-prova" id="hp-prova" data-sem-real></div>
       </div>
       <!-- 17/out · 15: a cena do carro (HOME_VIDEO) no lugar do objeto 3D. 18/out: a CARONA. 18/out · 3: um vídeo só, em ciclo — cada cena uma vez por volta -->
       <div class="hp-arte" aria-hidden="true"><div class="hp-cena" id="hp-cena"><video id="hp-video" muted loop playsinline preload="none" hidden></video></div></div>
@@ -6676,11 +6681,12 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
     <div class="wrap">
       <ul class="hp-faixa" aria-label="O que a plataforma faz">
         <li><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M8.5 14.5l2 2 4-4"/></svg><span>Agenda<br>ao vivo</span></li>
-        <li><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10v4a1 1 0 0 0 1 1h2l5 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg><span>Uma chamada<br>para os livres</span></li>
-        <li><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M8.5 7h7M9 12h.01M12 12h.01M15 12h.01M9 16h.01M12 16h.01M15 16h.01"/></svg><span>Custo somando<br>na escala</span></li>
+        <li data-sem-real><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10v4a1 1 0 0 0 1 1h2l5 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg><span>Uma chamada<br>para os livres</span></li>
+        <li data-sem-real><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M8.5 7h7M9 12h.01M12 12h.01M15 12h.01M9 16h.01M12 16h.01M15 16h.01"/></svg><span>Custo somando<br>na escala</span></li>
         <li data-fase="2"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span>Sinal e<br>contrato</span></li>
         <li hidden data-fase-ate="1"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l4-4 4 2 3-2 4 1 3 3-6 6-2-2-2 2-3-3-1 1z"/><path d="M11 9l-3 3 2 2"/></svg><span>Acerto direto,<br>como sempre</span></li>
-        <li><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.4 1.8 3 .2.9 2.9 2.2 2-.9 2.9.9 2.9-2.2 2-.9 2.9-3 .2L12 21l-2.4-1.8-3-.2-.9-2.9-2.2-2 .9-2.9-.9-2.9 2.2-2 .9-2.9 3-.2z"/><path d="M9 12l2 2 4-4"/></svg><span>Verificado se<br>conquista</span></li>
+        <li hidden data-so-real><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg><span>Uma conta<br>Absolute ZRO</span></li>
+        <li data-sem-real><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.4 1.8 3 .2.9 2.9 2.2 2-.9 2.9.9 2.9-2.2 2-.9 2.9-3 .2L12 21l-2.4-1.8-3-.2-.9-2.9-2.2-2 .9-2.9-.9-2.9 2.2-2 .9-2.9 3-.2z"/><path d="M9 12l2 2 4-4"/></svg><span>Verificado se<br>conquista</span></li>
       </ul>
     </div>
   </div>
@@ -6688,7 +6694,7 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
   <!-- a busca de dentro, em miniatura e funcionando, logo embaixo do topo e
        na largura inteira (17/out · 3) — no desktop ela começa na primeira
        tela, como em 17/out · 1 -->
-  <div class="hp-jogo-w">
+  <div class="hp-jogo-w" data-sem-real>
     <div class="wrap">
       <div class="hp-prev" id="h-jogo">
         <div class="hp-topo">
@@ -6714,7 +6720,7 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
        (REFERENCIA), a semana da agenda da conta de demonstração, as fotos
        são as capas de categoria do brechó. `#h-gar`, `#hg-f1` e `#h-moeda`
        continuam com os ids que as suítes de fase e do take procuram. -->
-  <div class="sec hsec" id="h-rec">
+  <div class="sec hsec" id="h-rec" data-sem-real>
     <div class="wrap">
       <div class="hcab"><h2>Tudo que o set precisa.</h2><p>Num lugar só.</p></div>
       <div class="bento">
@@ -6777,11 +6783,25 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
     </div>
   </div>
 
+  <!-- ⚠️ A HOME DO SITE REAL (30/out, pedido do titular: "refaz a homepage pra atualizar"). Só o que existe de
+       verdade no domínio: a agenda no banco, quem está livre (gente do ecossistema que escolheu aparecer) e a conta
+       única. Nada de número, rosto ou preço: a base começa agora. Nasce hidden e só o REAL liga (realHome). -->
+  <div class="sec rvsec hsec" id="h-real" hidden data-so-real>
+    <div class="wrap">
+      <div class="hcab"><h2>Sua agenda fala por você.</h2><p>Quem contrata vê quando você está livre.</p></div>
+      <div class="hpassos hrl-tres">
+        <div class="passo"><span class="pi"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M8.5 14.5l2 2 4-4"/></svg></span><b>Marque o dia</b><p>Livre, negociando ou fechado. Dia inteiro ou meia diária.</p></div>
+        <div class="passo"><span class="pi"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20.5 20.5L16 16"/></svg></span><b>Ache quem está livre</b><p>Só aparece quem escolheu mostrar o perfil.</p></div>
+        <div class="passo"><span class="pi"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span><b>Seu contato é seu</b><p>Telefone nunca aparece. A conversa começa aqui.</p></div>
+      </div>
+    </div>
+  </div>
+
   <!-- A PRAÇA (17/out · 3), da segunda referência do Victor ("mais que
        vagas, um movimento"). Só entra o que EXISTE: o feed, os coletivos e
        — da Fase 4 em diante — as guildas. As imagens são as capas de
        ofício (sem rosto, sem marca), as mesmas do perfil sem trabalho. -->
-  <div class="sec rvsec hsec" id="h-praca">
+  <div class="sec rvsec hsec" id="h-praca" data-sem-real>
     <div class="wrap">
       <div class="pc-caixa">
         <div class="pc-foto" id="pc-foto" aria-hidden="true"></div>
@@ -6799,7 +6819,7 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
     </div>
   </div>
 
-  <div class="sec rvsec hsec" id="h-planos">
+  <div class="sec rvsec hsec" id="h-planos" data-sem-real>
     <div class="wrap">
       <div class="hcab"><h2>Os dois lados entram de graça.</h2><p>Paga quem quer saber quem está livre.</p></div>
       <!-- ⚠️ UM LADO DE CADA VEZ (17/out · 9 no celular, 18/out · 5 no
@@ -6940,7 +6960,7 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
       </div>
       <div class="fim-pe">
         <span class="fim-marca"><svg viewBox="0 0 100 100" width="24" height="24" aria-hidden="true"><use href="#mk"/></svg><b>Carro do Freela</b></span>
-        <nav class="fim-links"><a href="#h-como">Como funciona</a><a href="#h-rec">Recursos</a><a href="#h-planos">Planos</a><button class="fim-prev" type="button" data-previa title="O que é esta prévia">Prévia</button></nav>
+        <nav class="fim-links"><a href="#h-como">Como funciona</a><a href="#h-rec" data-sem-real>Recursos</a><a href="#h-planos" data-sem-real>Planos</a><a href="#h-real" hidden data-so-real>Recursos</a><button class="fim-prev" type="button" data-previa data-sem-real title="O que é esta prévia">Prévia</button></nav>
       </div>
     </div>
   </div>
@@ -9580,6 +9600,9 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
    e o build troca o marcador abaixo pela leitura dessa meta. */
 const FASE=/*__FASE__*/0;
 const faseTem=n=>!FASE||FASE>=n;
+/* ⚠️ O SITE REAL (30/out): `node src/build.js --real` escreve <meta name="cdf-real"> e um CREW só com a conta de
+   quem abre. Nada é semeado: nem pessoa, nem job, nem post, nem anúncio. Quem aparece vem de /api/zro/pessoas. */
+const REAL=!!document.querySelector('meta[name="cdf-real"]');
 /* ⚠️ O PORTÃO DO LANÇAMENTO (28/out, adendo do PRD: acesso exclusivo do
    proprietário). No domínio o build marca <meta name="cdf-release"
    content="closed"> e a tela nasce FECHADA desde o primeiro quadro: a home
@@ -11061,9 +11084,9 @@ function rnd(s){const x=Math.sin(s*12.9898)*43758.5453;return x-Math.floor(x)}
 
 /* reputação de operação — comportamento, nunca nota de talento */
 CREW.forEach(c=>{
-  c.streak = c.me?9:Math.floor(rnd(c.id*17+3)*13);
-  c.resp   = c.me?12:Math.round(4+rnd(c.id*29+11)*170);
-  c.jobs   = c.me?14:Math.floor(rnd(c.id*41+5)*32);
+  c.streak = c.me?(REAL?0:9):Math.floor(rnd(c.id*17+3)*13);
+  c.resp   = c.me?(REAL?null:12):Math.round(4+rnd(c.id*29+11)*170);
+  c.jobs   = c.me?(REAL?0:14):Math.floor(rnd(c.id*41+5)*32);
   c.compl  = c.incompleto?Math.round(40+rnd(c.id*7)*22):Math.round(74+rnd(c.id*7)*26);
   c.ver    = c.jobs>=6 && c.compl>=85;
   /* ⚠️ SEGUIDORES é DERIVADO, no mesmo molde de c.jobs e c.resp logo
@@ -11127,7 +11150,7 @@ function garStatus(j){
 }
 const recebido=j=>j.pago||garStatus(j)==="pago";
 
-let JOBS=[
+let JOBS=REAL?[]:[
   {off:-13,cliente:"Produtora Maré",func:"Op. de câmera",valor:1200,hold:false,pago:true, gar:true},
   {off:-11,cliente:"Podcast Horizonte",func:"Op. de câmera",valor:900,hold:false,pago:true, gar:false},
   {off:-8, cliente:"Agência Vetor",func:"Colorista",valor:1100,hold:false,pago:false,gar:false},
@@ -11184,11 +11207,12 @@ const META_DIA={dia:"o dia todo",manha:"de manhã",tarde:"à tarde"};
 const OUTRA={manha:"tarde",tarde:"manha"};
 
 function declarar(k,e,p,h){
-  if(!e){ delete AGENDA[k]; return }
+  if(!e){ delete AGENDA[k]; realAgendaSalvar(k); return }
   AGENDA[k]={e:e,p:p||"dia"};
   if(h) AGENDA[k].h=h;
+  realAgendaSalvar(k);
 }
-const liberarDia=k=>{ delete AGENDA[k] };
+const liberarDia=k=>{ delete AGENDA[k]; realAgendaSalvar(k) };
 
 let gcal=false, zap=false;
 
@@ -11220,6 +11244,7 @@ function janelaEu(k){
 }
 function status(c,i){
   if(c.me) return statusEu(dateAt(i));
+  if(c.remoto) return realStatus(c,i);
   const d=dateAt(i),wk=d.getDay()===6||d.getDay()===0,r=rnd(c.id*97+i*13);
   if(wk) return r<.42?"livre":r<.58?"segura":"ocupado";
   return r<.60?"livre":r<.76?"segura":"ocupado";
@@ -12146,6 +12171,8 @@ function abrirPlanoFreela(qual){
   v("ovl27").hidden=false; document.body.style.overflow="hidden";
 }
 function abrirAssinatura(qual){
+  /* no site real não se assina nada de mentira: os planos são da Absolute ZRO e ainda não abriram */
+  if(REAL){ avisar({t:"Os planos ainda não abriram",sub:"Por enquanto, tudo aqui é de graça.",icone:"✓"}); return }
   v("as-form").hidden=false; v("as-ok2").hidden=true;
   planoEscolhido=PLANOS[qual]&&planoNaFase(qual)?qual:"volante";
   v("as-plano").querySelectorAll("[data-pl]").forEach(b=>b.hidden=!planoNaFase(b.dataset.pl));
@@ -12913,7 +12940,10 @@ function initAssinatura(){
 /* ver quem está livre é do degrau 3 (Volante). O MODO continua na conta
    porque agenda alheia é tela de quem contrata — o degrau diz SE abre,
    o modo diz ONDE. */
-const podeVerAgenda=()=>MODO==="contratante"&&temNivel(NIVEL.VOLANTE);
+/* ⚠️ no site real (30/out) a agenda de quem marcou "Mostrar meu perfil para quem contrata" abre para toda conta
+   liberada: o plano do ecossistema ainda não existe, e o servidor decide em `podeVerAgendas()` (_dados.js) —
+   quando o plano nascer, a tranca nasce lá e aqui juntas. Nada de assinatura simulada no domínio. */
+const podeVerAgenda=()=>REAL||(MODO==="contratante"&&temNivel(NIVEL.VOLANTE));
 
 /* Quantos profissionais existem, por função. É o número que vende a conta
    de contratante: antes de pagar, a pessoa precisa saber que a praça tem
@@ -13615,7 +13645,7 @@ function linhaDe(c){
       seloColetivos(c)+brasaoDe(c)+'</span>'+
     '<span class="fn">'+esc(c.principal[0]||c.func[0]||"")+' · '+esc(c.cidade)+'</span></span>'+
     '<span class="stk"><span class="disp s-'+st+'">'+ROT_CURTO[st]+'</span>'+
-    '<span class="rsp">responde em '+(c.resp<60?c.resp+" min":Math.round(c.resp/60)+" h")+'</span>'+
+    (c.resp==null?'':'<span class="rsp">responde em '+respTxt(c)+'</span>')+
     (jan?'<span class="jan">job '+jan.ini+'–'+jan.fim+(jan.txt?' · <b>'+jan.txt+'</b>':' nesse dia')+'</span>':"")+
     (decl?'<span class="jan decl'+(decl.tipo==="negociando"?" neg":"")+'"><b>'+esc(decl.txt)+'</b></span>':"")+
     rotuloDiaria(c)+'</span>';
@@ -13692,7 +13722,7 @@ function drawRows(){
 /* ================= PORTFÓLIO =================
    O perfil é o ativo do freela. Ele precisa poder mostrar trabalho, não só
    equipamento — e a lista de clientes se monta sozinha a partir dos jobs. */
-let TRABALHOS=[
+let TRABALHOS=REAL?[]:[
   {id:1,dono:EU.id,img:FRAMES.show,titulo:"Banda Litoral no Teatro",cliente:"Selo Norte",
    func:"Op. de câmera",ano:2025,tipo:"Show / DVD",link:"",
    desc:"Registro do show em duas câmeras, uma na plateia e uma no palco, com captação do multipista da mesa. Corte final entregue em quatro dias."},
@@ -13745,7 +13775,7 @@ function trabalhosDe(c){return TRABALHOS.filter(t=>t.dono===c.id)}
    vídeo ou álbum. Note a assimetria honesta: o álbum ABRE de verdade dentro
    da página, porque imagem é data URI e não pede requisição externa. O
    vídeo não abre, e a tela diz. Cada um faz o que o produto consegue fazer. */
-let REELS=[
+let REELS=REAL?[]:[
   {dono:EU.id,tipo:"video",capa:FRAMES.show,titulo:"Demoreel 2025",
    dur:"1min48",link:"",fotos:[],
    sobre:"Um corte de 2024 e 2025: show, casamento e publicidade. Câmera e cor."}
@@ -14197,7 +14227,7 @@ function abrirPerfil(id){
     '<div'+z(_segs)+'><b>'+_segs+'</b><span>seguidores</span></div>'+
     '<div'+z(_sg)+'><b>'+_sg+'</b><span>seguindo</span></div>'+
     '<div'+z(c.jobs)+'><b>'+c.jobs+'</b><span>jobs concluídos</span></div>'+
-    '<div><b>'+(c.resp<60?c.resp+" min":Math.round(c.resp/60)+" h")+'</b><span>responde em</span></div>'+
+    '<div><b>'+respTxt(c)+'</b><span>responde em</span></div>'+
     '<div'+z(ts.length)+'><b>'+ts.length+'</b><span>trabalhos</span></div>'+
     '<div'+z(cls.length)+'><b>'+cls.length+'</b><span>clientes</span></div>'+
     '<div class="pring'+(c.compl>=85?" full":"")+'" style="--pc:'+c.compl+'">'+
@@ -14211,7 +14241,7 @@ function abrirPerfil(id){
 
   v("p-rep").innerHTML=
     '<div class="rp"><span class="lab">Agenda em dia</span><b style="color:'+(c.streak>3?"var(--livre)":"var(--cal)")+'">'+c.streak+' sem</b><small>semanas seguidas atualizando</small></div>'+
-    '<div class="rp"><span class="lab">Responde em</span><b>'+(c.resp<60?c.resp+" min":Math.round(c.resp/60)+" h")+'</b><small>mediana das chamadas</small></div>'+
+    '<div class="rp"><span class="lab">Responde em</span><b>'+respTxt(c)+'</b><small>mediana das chamadas</small></div>'+
     '<div class="rp"><span class="lab">Jobs concluídos</span><b>'+c.jobs+'</b><small>fechados pela plataforma</small></div>'+
     '<div class="rp"><span class="lab">Perfil completo</span><b>'+c.compl+'%</b><small>'+(c.ver?"verificado":"ainda não verificado")+'</small></div>'+
     (fraseAval(c.id)?'<div class="rp"><span class="lab">Depois do job</span><b>'+fraseAval(c.id).split(" ")[0]+'/'+AVALIACOES.filter(a=>a.quem===c.id).length+'</b><small>'+fraseAval(c.id)+'</small></div>':'');
@@ -14427,7 +14457,7 @@ function drawPassar(){
   list.forEach(c=>{const r=document.createElement("div");r.className="sl";r.dataset.id=c.id;
     r.innerHTML='<input type="checkbox" checked aria-label="Incluir '+esc(titulo(c.nome))+'"><span class="nm">'+esc(titulo(c.nome))+
       (c.gar?' <span class="selog">'+ESCUDO+'</span>':"")+
-      ' <span style="color:var(--cal-fraco)">— '+esc(c.cidade)+' · responde em '+(c.resp<60?c.resp+" min":Math.round(c.resp/60)+" h")+'</span></span>'+
+      ' <span style="color:var(--cal-fraco)">— '+esc(c.cidade)+(c.resp==null?'':' · responde em '+respTxt(c))+'</span></span>'+
       '<span class="resp wait" data-r="'+c.id+'">'+(rodando?"aguardando":"")+'</span>';
     el.appendChild(r)});
   const cab=v("u-cab"); cab.hidden=!list.length;
@@ -14835,7 +14865,7 @@ v("ev-btn").onclick=e=>{e.target.textContent="Presença confirmada";e.target.dis
 /* ================= PROPOSTAS =================
    A outra ponta do negócio: a consulta que o contratante manda chega aqui,
    e é a resposta do freela que vira job na agenda. */
-let PROPOSTAS=[
+let PROPOSTAS=REAL?[]:[
   {off:6,  de:"Agência Vetor", contato:"Rafa, produção", func:"Op. de câmera", tipo:"Publicidade",
    ini:"07:00", fim:"19:00", local:"Natal — Praia de Ponta Negra",
    desc:"Filme de 60s para a campanha de verão. Dois setups de câmera, nascer do sol e fim de tarde. Entrega dos brutos no mesmo dia.",
@@ -14860,7 +14890,7 @@ let PROPOSTAS=[
 ].map((x,i)=>({...x,id:i+1,data:key(dateAt(x.off))}));
 
 const MOTIVOS=["já tenho job nessa data","valor abaixo da minha tabela","não atendo esse tipo de trabalho","não vou estar na cidade","não dá tempo de me preparar"];
-let RESPOSTAS=[8,12,18];
+let RESPOSTAS=REAL?[]:[8,12,18];
 function registrarResposta(pr){
   if(pr.respondida) return;
   pr.respondida=true;
@@ -15165,7 +15195,7 @@ function haQuanto(d){
 /* ⚠️ O CONTEÚDO SÓ FALA DE OFÍCIO. Nada de cliente com nome, valor de
    diária, nem juízo sobre outra pessoa — o post fala do trabalho e da
    praça, que é o que o cadastro já declara. */
-let POSTS=[
+let POSTS=REAL?[]:[
   {id:1,autor:_fdQuem("Op. de câmera",0),tipo:"entrega",q:hAtras(5),img:FRAMES.show,
    txt:"Show fechado com duas câmeras e multipista direto da mesa. Corte final saiu em quatro dias.\n\nQuem rodou junto: câmera, assistente e um editor que virou a noite. Valeu, time.",
    curtidas:14,coments:[{de:_fdQuem("Editor",0),txt:"Ficou muito bom o corte da plateia."}],compart:2},
@@ -15621,7 +15651,7 @@ const rdVivo=s2=>(Date.now()-s2.q)<RD_HORAS*3600000;
 /* ⚠️ MESMA REGRA DO FEED: o cadastro é real, o conteúdo é escrito aqui, e
    só fala de ofício. Nascem com horas diferentes para a fila ter ordem, e
    todos dentro das 24h — senão a fileira abriria vazia. */
-RODANDO=[
+RODANDO=REAL?[]:[
   {id:901,autor:POSTS[0].autor,tipo:"foto",src:FRAMES.show,q:Date.now()-2*3600000,
    txt:"Montagem começando. Duas câmeras hoje."},
   {id:902,autor:POSTS[0].autor,tipo:"foto",src:FRAMES.corporativo,q:Date.now()-1.5*3600000,
@@ -16258,7 +16288,7 @@ function drawPropostas(){
   v("pp-novas-s").textContent=!(nJ+nE)?"nada parado com você":
     [nJ?pl(nJ,"consulta de job","consultas de job"):"",nE?pl(nE,"oferta no brechó","ofertas no brechó"):""].filter(Boolean).join(" · ");
   v("pp-valor").textContent=brl(novas.reduce((a,x)=>a+x.valor,0));
-  v("pp-resp").textContent=EU.resp<60?EU.resp+" min":Math.round(EU.resp/60)+" h";
+  v("pp-resp").textContent=EU.resp==null?"—":EU.resp<60?EU.resp+" min":Math.round(EU.resp/60)+" h";
   v("pp-ok").textContent=aceitas.length;
   v("pp-ok-s").textContent=brl(aceitas.reduce((a,x)=>a+x.valor,0))+" em jobs que nasceram nesta caixa";
 
@@ -17395,7 +17425,7 @@ const _comPort=_pool.filter(c=>c.port);
 const _vend=(_comPort.length?_comPort:(_pool.length?_pool:CREW.slice()))
   .sort((a,b)=>b.jobs-a.jobs);
 const _v=i=>(_vend[i%_vend.length]||CREW[0]).id;
-let ANUNCIOS=[
+let ANUNCIOS=REAL?[]:[
   {t:"Sony 24-70mm f/2.8 GM II",cat:"lente",preco:9800,ref:14500,dono:"eu",gar:true,estado:"Seminovo",
    desc:"Comprada ano passado, saiu pouco. Vendo porque fechei com a linha Sigma Art.",
    f:{fungo:"Não tem",frontal:"Sem risco",traseiro:"Sem risco",haze:"Não tem",foco:"Macio",laminas:"Secas",baioneta:"Sem marcas",af:"Funciona"},
@@ -18500,7 +18530,7 @@ function initPortfolio(){
    fechava a venda e largava as pessoas sem informação, que é
    exatamente o que o grupo de WhatsApp faz de errado.
    ============================================================ */
-let ESCALAS=[
+let ESCALAS=REAL?[]:[
   {id:1,off:2,nome:"Institucional Cooperativa",cliente:"Cooperativa Potiguar",
    ini:"07:30",fim:"18:00",local:"Natal — sede da Cooperativa, Lagoa Nova",
    tipo:"Institucional",chamada:"07:00 no estacionamento",
@@ -20386,6 +20416,69 @@ function cfbPedir(metodo,caminho,corpo){
     return r.json().catch(function(){return null}).then(function(j){return {status:r.status,j:j}});
   }).catch(function(){return {status:0,j:null}});
 }
+/* ============ O SITE REAL FALA COM O SERVIDOR (30/out) ============
+   Só com REAL (build --real) e conta liberada (zroPodeEnviar). Duas coisas:
+   1. A MINHA AGENDA mora no banco: ao entrar, /api/zro/agenda preenche AGENDA; cada declarar()/liberarDia() manda o
+      dia (PUT) ou apaga (DELETE). Livre continua sendo a ausência de linha, igual ao app.
+   2. QUEM APARECE NA BUSCA vem de /api/zro/pessoas: gente da Absolute ZRO com o @ confirmado, e só quem marcou
+      "Mostrar meu perfil para quem contrata" no Carro (agenda !== null). Quem não divulgou a agenda NÃO entra na
+      busca: livre é a ausência de linha para quem usa a agenda, e dizer "livre" de quem nunca abriu o Carro seria
+      inventar. Nada de número de reputação: jobs, sequência e resposta nascem zerados até existirem de verdade.
+   ⚠️ Só var e function (o TDZ de 19/out · 2). */
+var REAL_PESSOAS_EM=0, REAL_AGENDA_OK=false;
+/* simular chamada e sirene são da prévia: no site real a chamada chega de gente, ou não chega */
+if(REAL){ var REAL_SIM=document.getElementById("pp-sim"); if(REAL_SIM&&REAL_SIM.closest(".eco")) REAL_SIM.closest(".eco").hidden=true }
+function realLigado(){ return REAL&&zroPodeEnviar() }
+function realAgendaSalvar(k){
+  if(!realLigado()||!REAL_AGENDA_OK) return;
+  var d=AGENDA[k];
+  var r=d?cfbPedir("PUT","/api/zro/agenda",{dia:k,estado:d.e,parte:d.p||"dia",hora:d.h||null})
+         :cfbPedir("DELETE","/api/zro/agenda?dia="+encodeURIComponent(k));
+  r.then(function(x){
+    if(x.status===200||x.status===204) return;
+    avisar({t:"A agenda não foi salva",sub:cfbMsg(x),tipo:"chama",icone:"⚠"});
+  });
+}
+/* sem mediana medida, o tempo de resposta não aparece: "—" na ficha, nada na linha (30/out) */
+function respTxt(c){ return c.resp==null?"—":c.resp<60?c.resp+" min":Math.round(c.resp/60)+" h" }
+function realStatus(c,i){
+  var d=c.agendaSrv&&c.agendaSrv[key(dateAt(i))];
+  if(!d) return "livre";
+  if(d.p!=="dia") return d.e==="negociando"?"segura":"livre";
+  return d.e==="negociando"?"segura":"ocupado";
+}
+function realPessoa(p,n){
+  var f=(p.funcoes||[]).filter(function(x){return FUNCOES.indexOf(x)>=0});
+  return {id:100000+n,sub:p.id,arroba:p.arroba,nome:p.nome||("@"+p.arroba),func:f,principal:f.slice(0,3),
+    cidade:p.cidade||"",extras:0,cam:"",lentes:"",gim:false,dro:false,transporte:"",nicho:p.nichos||[],
+    todosTipos:false,port:p.portfolio||null,obs:p.bio||"",tags:[],me:false,incompleto:!f.length,foto:p.foto||null,
+    streak:0,resp:null,jobs:0,compl:0,ver:false,segs:0,upd:0,gar:false,exige:false,viaja:false,
+    remoto:true,agendaSrv:p.agenda||{}};
+}
+function realRepintar(){
+  try{ render(); drawDatabar(); drawPracas(); drawAgenda(); drawHome() }catch(e){ console.warn("real: repintar",e) }
+}
+function realCarregar(){
+  if(!realLigado()) return;
+  if(Date.now()-REAL_PESSOAS_EM<60000) return;
+  REAL_PESSOAS_EM=Date.now();
+  var de=key(HOJE), ate=key(dateAt(42));
+  if(!EU.nome&&ZRO_CONTA&&ZRO_CONTA.nome) EU.nome=ZRO_CONTA.nome;
+  cfbPedir("GET","/api/zro/agenda?de="+de+"&ate="+ate).then(function(r){
+    if(r.status!==200||!r.j||!r.j.agenda) return;
+    for(var k in AGENDA) if(k>=de&&k<=ate) delete AGENDA[k];
+    for(var d in r.j.agenda) AGENDA[d]=r.j.agenda[d];
+    REAL_AGENDA_OK=true;
+    realRepintar();
+  });
+  cfbPedir("GET","/api/zro/pessoas?de="+de+"&ate="+ate).then(function(r){
+    if(r.status!==200||!r.j||!Array.isArray(r.j.pessoas)) return;
+    var eu=ZRO_CONTA&&String(ZRO_CONTA.sub||"").toLowerCase();
+    for(var i=CREW.length-1;i>=0;i--) if(CREW[i].remoto) CREW.splice(i,1);
+    r.j.pessoas.filter(function(p){return p&&p.agenda!==null&&p.id!==eu}).forEach(function(p,n){ CREW.push(realPessoa(p,n)) });
+    realRepintar();
+  });
+}
 function cfbMsg(r){ var e=r&&r.j&&r.j.erro; return CFB_ERRO[e]||"Não deu para salvar agora. Tente de novo." }
 function cfbReais(c){ return "R$ "+(c/100).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}) }
 function cfbPintar(){
@@ -20638,7 +20731,7 @@ addEventListener("resize",()=>posicionarDetJob());
    Ela nunca tem take vindo de depósito: cada job sai da conta dela em real,
    já amarrado àquele job. O que ela precisa é do espelho — quanto saiu, para
    quem, e o que ainda está retido esperando entrega. */
-const PAGOS=[
+const PAGOS=REAL?[]:[
   {off:-21,quem:_vend[0].id,func:"Op. de câmera",valor:1200,estado:"liberado"},
   {off:-16,quem:_vend[3].id,func:"Colorista",valor:1100,estado:"liberado"},
   {off:-9, quem:_vend[1].id,func:"Editor realtime",valor:850,estado:"liberado"},
@@ -24287,7 +24380,9 @@ function salvarAluguel(){
    A plataforma era assimétrica: o freela era perfilado, quem contrata era
    um nome numa proposta. Aqui quem contrata também presta contas — e são as
    mesmas quatro categorias de fato: paga, confirma, cancela, usa garantia. */
-let PRODUTORAS=[
+/* no site real a conta de quem contrata nasce em branco, como a de freela: nenhuma produtora de exemplo */
+let PRODUTORAS=REAL?[{id:1,nome:"",tipo:"",cidade:"—",desde:null,site:"",cnpj:false,gar:false,sobre:"",
+  jobs:0,comGar:0,atraso:0,confirma:0,cancel:0,cancelUlt:0,contrata:{}}]:[
   {id:1,nome:"Produtora Maré",tipo:"Produtora",cidade:"Natal/RN",desde:2019,site:"produtoramare.com.br",cnpj:true,gar:true,
    sobre:"Produtora de conteúdo institucional e publicitário. Equipe fixa de quatro pessoas e escala montada por job — costuma chamar as mesmas pessoas quando dá certo.",
    jobs:34,comGar:28,atraso:1,confirma:6,cancel:2,cancelUlt:0,
@@ -25430,6 +25525,9 @@ const FASE_HERO={
      quando, numa frase só. */
   /* `d` é o pedaço da manchete que leva o destaque colorido (17/out · 3)
      — sempre o fim da frase, que é o que se acha aqui */
+  /* o site real (30/out): a mesma promessa, sem número nem cidade — a base começa agora */
+  real:{t:"Quem está livre, na data certa.",d:"na data certa.",
+     s:"A agenda do audiovisual, com a sua conta Absolute ZRO."},
   0:{t:"Ache freela de audiovisual livre na sua data.",d:"livre na sua data.",
      s:"Veja quem está livre e chame em um toque."},
   1:{t:"Quem tá livre sábado?",d:"sábado?",
@@ -25564,9 +25662,17 @@ function drawProva(){
     '</span><span><b>'+hoje.length+' livres hoje</b><small>em Natal e região</small></span>';
 }
 let hjEscala=[];
+/* o site real liga e desliga os blocos da home pelas marcas do markup: data-sem-real some, data-so-real aparece.
+   Roda a cada drawHome (idempotente), depois do aplicarFase, que mexe no hidden de outras marcas. */
+function realHome(){
+  if(!REAL) return;
+  document.querySelectorAll("[data-sem-real]").forEach(e=>{ e.hidden=true });
+  document.querySelectorAll("[data-so-real]").forEach(e=>{ e.hidden=false });
+}
 function drawHome(){
+  realHome();
   /* ---- topo por fase ---- */
-  const h=FASE_HERO[FASE]||FASE_HERO[0];
+  const h=REAL?FASE_HERO.real:(FASE_HERO[FASE]||FASE_HERO[0]);
   const ix=h.d?h.t.lastIndexOf(h.d):-1;
   v("hh-t").innerHTML=ix>-1?esc(h.t.slice(0,ix))+'<span class="hl">'+esc(h.d)+'</span>':esc(h.t);
   v("hh-s").textContent=h.s;
@@ -26200,7 +26306,8 @@ function aplicarFase(){
   }
   /* 4. o chip que diz em que versão a pessoa está */
   const chip=v("fasechip");
-  chip.hidden=false;
+  /* no site real a fase não aparece: é o produto, não uma versão de teste (fase é informação interna, 24/ago) */
+  chip.hidden=REAL;
   v("fasechip-v").textContent="V"+FASE;
   v("fasechip-n").textContent=FASE_NOME[FASE]||"";
   chip.onclick=abrirFase;
@@ -26424,7 +26531,7 @@ function vgpSemente(){
     {id:"vg6",de:"Bar Alecrim",tipo:"Institucional",titulo:"Vídeo de reabertura",func:"Op. de drone",qtd:1,dias:1,off:20,cidade:"Parnamirim/RN",desc:"Aéreas da fachada e da rua no fim de tarde."}
   ].map(x=>Object.assign({diaria:vgpDiaria(x.func),demo:true,int:[]},x));
 }
-let VGP=vgpSemente(), VGP_INT=[], VGP_SALVAS=[];
+let VGP=REAL?[]:vgpSemente(), VGP_INT=[], VGP_SALVAS=[];
 let vgpTipo="", vgpAberta=null;
 const podePublicarVaga=()=>MODO==="contratante"&&temNivel(NIVEL.VOLANTE);
 function vgpStatus(g){
@@ -27689,7 +27796,7 @@ const FBK_KEY=/*__WEB3FORMS_KEY__*/"";   /* Web3Forms → carrodofreela@gmail.co
    suporte: durante os testes a primeira pergunta de todo relato e "qual
    versao voce esta usando?", e sem ela nao da para saber se o defeito ja
    foi consertado ou se a pessoa esta com um arquivo velho no cache. */
-const VERSAO="30/out · 2";
+const VERSAO="30/out · 3";
 /* ?diag na URL faz a linha de contexto do suporte mostrar as medidas do
    aparelho. Existe porque daqui não dá para inspecionar o Safari do
    Victor: em vez de adivinhar uma quarta vez, ele abre com ?diag, toca no
@@ -28458,6 +28565,7 @@ v("z-entrar").onclick=()=>{ if(zroBloqueado()) return zroMostrarBloqueio(); marc
       setPintar();
       pintarFechado();
       cfbPintar();
+      realCarregar();
       /* a conta pode: a tela que o portão segurou abre agora */
       if(ZRO_LIBERADO&&S.tab==="fechado") show(FC_VOLTA&&FC_VOLTA!=="fechado"?FC_VOLTA:"home");
       /* quem abre o app já dentro fica na tela em que estava (29/out: a Z

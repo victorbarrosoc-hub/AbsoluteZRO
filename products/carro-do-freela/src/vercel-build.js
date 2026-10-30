@@ -8,8 +8,8 @@
  * push no repositório antigo. Agora a Vercel gera tudo sozinha a cada
  * mudança desta pasta, e o resultado é o MESMO que o domínio servia:
  *
- *   /            index.html  — o app completo, ANÔNIMO
- *   /fase1…6     fase1…6.html — uma versão por fase, anônimas
+ *   /            index.html  — o SITE REAL (30/out): `build.js --real`, fase 1, nenhum perfil fictício; quem
+ *                aparece vem de /api/zro/pessoas. As páginas /fase1…6 (a prévia com os 109) saíram do domínio.
  *   /m/…         a mídia com hash no nome (cache longo)
  *   ícones, manifest e og.jpg na raiz
  *   cabeçalhos de segurança + CSP calculada destes HTML
@@ -45,7 +45,7 @@ const ESTATICOS = ['apple-touch-icon.png', 'icone-192.png', 'icone-512.png', 'ic
 const FUNCOES = ['entrar', 'callback', 'eu', 'sair', 'enviar', 'ia', 'set'];
 /* (28/out) as rotas de dados falam com o banco (pg): vão EMPACOTADAS pelo
    esbuild num arquivo só, com o `pg` dentro — as outras seguem copiadas */
-const FUNCOES_BANCO = ['perfil', 'inventario'];
+const FUNCOES_BANCO = ['perfil', 'inventario', 'agenda', 'pessoas'];
 const RUNTIME = 'nodejs22.x';
 /* ⚠️ O PORTÃO DO LANÇAMENTO (28/out, adendo do PRD): o domínio nasce
    FECHADO — só a conta do proprietário entra, e só com a claim relida no
@@ -108,20 +108,21 @@ if (String(process.env.CARRO_DATABASE_URL || '').trim() && !MIGRA) {
   }
 } else console.log('  · banco: sem CARRO_DATABASE_URL — perfil e inventário respondem 503 sem_banco');
 
-/* ===================== 2. OS SETE ANÔNIMOS ===================== */
-console.log('\nBUILDS ANÔNIMOS (é o que o domínio serve)');
+/* ===================== 2. O SITE REAL ===================== */
+/* ⚠️ (30/out, pedido do titular: "pode apagar esses 109 perfis fictícios") o domínio serve UMA página, a real:
+   fase 1, sem a base fictícia, sem job/post/anúncio semeado. A prévia com os 109 continua existindo fora do
+   domínio (npm run build, as fases, o artifact e as suítes), que é onde ela sempre foi útil. */
+console.log('\nSITE REAL (é o que o domínio serve)');
 fs.rmSync(SAIDA, { recursive: true, force: true });
 fs.mkdirSync(STATIC, { recursive: true });
-node(['src/build.js', '--anon', '--release=' + RELEASE]);
-fs.copyFileSync(path.join(RAIZ, 'public/index.html'), path.join(STATIC, 'index.html'));
-for (const f of FASES) {
-  node(['src/build.js', '--anon', '--release=' + RELEASE, '--fase=' + f]);
-  fs.copyFileSync(path.join(RAIZ, 'public/fase-' + f + '.html'), path.join(STATIC, 'fase' + f + '.html'));
-}
+node(['src/build.js', '--real', '--release=' + RELEASE]);
+fs.copyFileSync(path.join(RAIZ, 'public/real.html'), path.join(STATIC, 'index.html'));
 
 /* confere o que acabou de ser escrito, no arquivo mesmo — não na intenção */
 const VERSAO = (fs.readFileSync(path.join(RAIZ, 'src/template.html'), 'utf8').match(/const VERSAO="([^"]+)"/) || [, '?'])[1];
-const alvos = ['index'].concat(FASES.map(f => 'fase' + f));
+const alvos = ['index'];
+/* os nomes da base fictícia (a de convocação, selada): nenhum pode estar na página do domínio */
+const BASE_FICTICIA = JSON.parse(fs.readFileSync(path.join(RAIZ, 'src/crew.json'), 'utf8')).filter(c => !c.me).map(c => c.nome);
 const scripts = [];
 /* (26/out) o script e a folha saíram do HTML para m/: o que se confere é a
    página INTEIRA que o navegador recebe — o HTML mais os .js/.css que ele cita */
@@ -136,14 +137,15 @@ for (const nome of alvos) {
   const html = fs.readFileSync(path.join(STATIC, nome + '.html'), 'utf8');
   const txt = inteira(html);
   const fase = (html.match(/<meta name="cdf-fase" content="(\d)">/) || [, '?'])[1];
-  const esperada = nome === 'index' ? '0' : nome.replace('fase', '');
+  const esperada = '1';
   const ver = (txt.match(/VERSAO="([^"]+)"/) || [, '?'])[1];
   const problemas = [];
   if (fase !== esperada) problemas.push('FASE=' + fase + ', esperava ' + esperada);
   if (ver !== VERSAO) problemas.push('versão ' + ver);
-  /* (26/out) o script sai minificado: a lista vira objeto JS, com a chave
-     SEM aspas (nome:"Ana S."), então as duas formas valem */
-  if (!/"?nome"?:"[^"]+ [A-ZÀ-Ú]\."/.test(txt)) problemas.push('nomes NÃO estão reduzidos — build não é anônimo');
+  /* o site real não leva NENHUM perfil: a única entrada do CREW é a conta de quem abre, em branco */
+  if (!html.includes('<meta name="cdf-real" content="1">')) problemas.push('não é o site real (sem cdf-real)');
+  const ficticios = BASE_FICTICIA.filter(n => txt.includes(n));
+  if (ficticios.length) problemas.push('TEM perfil fictício dentro (' + ficticios.length + ', ex.: ' + ficticios[0] + ')');
   /* e a chave `tel` existe no código do app ("pelo grupo", campo vazio de
      formulário): o que reprova é ela com NÚMERO de telefone como valor */
   if (/whatsapp\.com\/send\?phone/.test(txt) || /"?tel(efone)?"?:\s*"[\d\s()+.-]{8,}"/.test(txt)) problemas.push('TEM TELEFONE dentro');
@@ -152,7 +154,7 @@ for (const nome of alvos) {
   if (/__(WEB3FORMS_KEY|SUPABASE_URL|SUPABASE_ANON_KEY)__/.test(txt)) problemas.push('marcador de chave sobrou no HTML');
   /* o portão: página do domínio sem a meta nasceria aberta ao público */
   if (!html.includes('<meta name="cdf-release" content="' + RELEASE + '">')) problemas.push('SEM o portão do lançamento (cdf-release=' + RELEASE + ')');
-  problemas.length ? nao(nome + '.html — ' + problemas.join(' · ')) : ok(nome + '.html — FASE=' + fase + ' · ' + ver + ' · anônimo · ' + (RELEASE === 'closed' ? 'fechado' : 'ABERTO') + ' · ' + Math.round(html.length / 1024) + ' KB de HTML');
+  problemas.length ? nao(nome + '.html — ' + problemas.join(' · ')) : ok(nome + '.html — FASE=' + fase + ' · ' + ver + ' · real, sem perfil fictício · ' + (RELEASE === 'closed' ? 'fechado' : 'ABERTO') + ' · ' + Math.round(html.length / 1024) + ' KB de HTML');
   scripts.push(...SEG.scriptsDoHtml(html));
 }
 

@@ -19,6 +19,7 @@ public/m/
 # é público e o build da Vercel gera tudo, com as chaves do ambiente.
 public/index.html
 public/artifact.html
+public/real.html
 public/fase-*.html
 landing/index.html
 # saída do build da Vercel (src/vercel-build.js)

@@ -546,6 +546,26 @@ paths:
           '409': { $ref: '#/components/responses/Error' },
           '429': { $ref: '#/components/responses/Error' },
         }
+  /api/v1/pessoas:
+    get:
+      security: [{ appToken: [zro.pessoas] }]
+      summary: 'A comunidade (migração 0038): perfis visíveis com o @ confirmado (a sugestão automática não entra), por ordem de @, até 200 por página. Sem e-mail nem telefone. Contrato em docs/integration-contracts/pessoas.md'
+      parameters:
+        - { name: funcao, in: query, required: false, schema: { type: string }, description: 'chave de função do perfil (camera, edicao, …)' }
+        - { name: depois, in: query, required: false, schema: { type: string, maxLength: 30 }, description: 'o `proximo` da página anterior' }
+        - { name: limite, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 200, default: 100 } }
+      responses:
+        {
+          '200':
+            {
+              description: '{ pessoas: [{ id (sub), arroba, nome, foto, funcoes: [{ chave, nome }], cidade, portfolio, bio, selos: [{ produto, texto }], perfil }], proximo: string | null }',
+            },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
   /api/v1/pessoas/busca:
     get:
       security: [{ appToken: [zro.pessoas] }]

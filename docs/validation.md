@@ -3298,3 +3298,18 @@ Local, Postgres e Chromium desta máquina; HUB e Absolute ZRO falsos (`tests/pon
   carga. O teste agora serve um `<zro-set>` mudo no lugar do widget (sem rede), confere os erros no próprio teste da
   conta e pede as imagens preguiçosas antes de conferir. Seis rodadas paralelas sem falha; `npm test` duas vezes
   seguidas: 114/114.
+
+## Carro do Freela: o site real e a comunidade do ecossistema (30/10/2026)
+
+- HUB `tests/integration/perfis.test.ts` (a comunidade, `0038`): 19/19 — só perfil visível, @ confirmado e conta ativa;
+  paginação por `depois`; limite de 200; `invalid_input` (422) fora disso; auditoria `perfil.comunidade`.
+- Carro `npm run test:api`: 47/47 (o escopo `zro.pessoas` no login, a foto da claim `picture`).
+- Carro `npm run test:banco` (Postgres 16 local): 27/27 — agenda própria por RLS, janela de -31 a +366 dias, hora só
+  na meia diária; `carro_do_freela.agendas()` só devolve quem consentiu e recusa janela acima de 62 dias; a lista
+  pagina o HUB (450 pessoas = 3 páginas) e devolve `reconectar` quando o HUB recusa o token.
+- Carro `test/site-real.js`: 16/16 — nenhum dos 108 nomes fictícios na página do domínio; o app abre com o CREW de uma
+  pessoa só; nada semeado nem simulado (sem produtora de exemplo, sem "Simular chamada", sem checkout de assinatura,
+  sem tempo de resposta inventado); com a conta liberada, a busca e a agenda vêm do servidor, só quem divulgou a agenda
+  entra, a própria conta não repete, e declarar/liberar um dia vira `PUT`/`DELETE`.
+- `node src/vercel-build.js` local: `index.html` FASE=1, real, sem perfil fictício, fechado; as páginas `/fase1…6`
+  saíram do domínio.
