@@ -32,6 +32,20 @@ const ManifestRef = z.object({
 export const EVENT_PAYLOADS = {
   'job.created': { 1: z.object({ product: z.literal('carro-do-freela'), external_job_id: z.string().max(200), title: z.string().max(160) }) },
   'script.ready': { 1: z.object({ document_id: Uuid, version: z.number().int().positive(), title: z.string().max(200) }) },
+  // Criação F8 (30/10/2026): uma versão salva do roteiro do Maestro foi entregue na caixa de entrada do TPeasy pelo HUB
+  // (zro.app_entregas, migração 0040). Registro do que saiu, sem o texto; o TPeasy lê a caixa (não há handler: o HUB
+  // não processa roteiro). idempotency_key = app.entrega:<entrega_id> (reenviar a mesma versão não gera outro).
+  'script.version.sent': {
+    1: z.object({
+      origem: z.literal('maestro'),
+      roteiro_id: Uuid,
+      versao: z.number().int().positive(),
+      sha256: z.string().regex(/^[0-9a-f]{64}$/),
+      titulo: z.string().max(200),
+      destino: z.literal('tpeasy'),
+      entrega_id: Uuid,
+    }),
+  },
   'ingest.started': { 1: z.object({ source: z.literal('sobedesce'), operation_id: z.string() }) },
   'ingest.completed': { 1: ManifestRef },
   'ingest.failed': { 1: ManifestRef.extend({ reason: z.string().max(300) }) },
@@ -88,6 +102,7 @@ export function validateEventPayload(type: string, version: number, payload: unk
 export const EVENT_PRODUCER: Record<EventType, z.infer<typeof ProductId> | 'hub'> = {
   'job.created': 'carro-do-freela',
   'script.ready': 'tpeasy',
+  'script.version.sent': 'maestro',
   'ingest.started': 'sobedesce',
   'ingest.completed': 'sobedesce',
   'ingest.failed': 'sobedesce',

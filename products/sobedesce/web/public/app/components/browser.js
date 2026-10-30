@@ -44,6 +44,7 @@ import { framesDoDrive } from './criar.js'
 import { engine } from '../lib/uploader.js'
 import { isIOS } from '../lib/platform.js'
 import { LAN } from '../lib/config.js'
+import { EMBUTIDO, avisarAnfitriao } from '../lib/embutido.js'
 import { driveCall, folderPath, myDriveId } from '../lib/drive.js'
 import { alvoDoLink } from '../lib/drive-link.js'
 
@@ -953,6 +954,10 @@ export function DriveScreen({ active }) {
   const folder = nav.path[nav.path.length - 1] || null
   const driveId = nav.scope === 'drives' && nav.path[0] ? nav.path[0].id : null
   const where = useMemo(() => ({ scope: nav.scope, folder: search ? null : folder, driveId, search }), [nav, search])
+  // Embutido (lib/embutido.js): a pasta aberta vai ao anfitrião (o Maestro liga a pasta a um projeto).
+  useEffect(() => {
+    if (EMBUTIDO) avisarAnfitriao('pasta', folder ? { id: folder.id, nome: folder.name } : { id: null, nome: null })
+  }, [folder?.id])
   const list = useListing(where, prefs, filter)
   useFolderSizes()
 

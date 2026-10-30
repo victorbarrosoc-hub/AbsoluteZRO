@@ -14,6 +14,11 @@ import type { Papel } from "@/lib/papeis";
 export const podeVerCriacao = (papel: Papel): boolean => podeCriacao({ papel }, "ver");
 export const podeEditarCriacao = (papel: Papel): boolean => podeCriacao({ papel }, "editar");
 export const podeEnviarCriacao = (papel: Papel): boolean => podeCriacao({ papel }, "enviar");
+/**
+ * Apagar de vez da lixeira (roteiro e fluxo): administração e gestão, os mesmos de "enviar" (as políticas de remoção da
+ * 0030/0031 dizem o mesmo). Mandar para a lixeira e tirar dela é de quem edita (`podeEditarCriacao`).
+ */
+export const podeApagarDeVezCriacao = (papel: Papel): boolean => podeCriacao({ papel }, "enviar");
 
 /** Id do AEON (edição) em zro_products e zro_release. */
 export const PRODUTO_AEON = "ai-edit";
@@ -27,6 +32,19 @@ export const PRODUTO_AEON = "ai-edit";
 export function podeMandarParaAeon(s: Acesso & { papel: Papel }): boolean {
   const r = s.release?.[PRODUTO_AEON];
   return podeEnviarCriacao(s.papel) && (r === "released" || r === "allowed") && temProduto(s, PRODUTO_AEON);
+}
+
+/** Id do TPeasy em zro_products e zro_release. */
+export const PRODUTO_TPEASY = "tpeasy";
+
+/**
+ * "Para o TPeasy" direto (Criação F8): a versão vai pela Absolute ZRO para a caixa de entrada do TPeasy da pessoa (ou de
+ * alguém da organização que usa o TPeasy). Só com o TPeasy no plano da organização e aberto no gate (`temProduto`), e
+ * para quem envia (admin e gestão). O HUB confere tudo de novo (`authorize`, TPeasy no plano). Sem o TPeasy, a folha
+ * continua com Compartilhar, Copiar, .txt e o backup, e diz por que não há o envio direto.
+ */
+export function podeMandarParaTpeasy(s: Acesso & { papel: Papel }): boolean {
+  return podeEnviarCriacao(s.papel) && temProduto(s, PRODUTO_TPEASY);
 }
 
 /** Os papéis que editam e que enviam (a mesma regra das políticas da 0030; `tests/roteiro.test.mts` confere). */

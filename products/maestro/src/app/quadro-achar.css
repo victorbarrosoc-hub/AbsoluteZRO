@@ -1,0 +1,348 @@
+/*
+ * Quadro: achar o job de relance (titular, 30/10/2026: "o card que estiver com o link precisa ser de fácil
+ * entendimento... uma miniatura também da mídia do card... não consigo localizar o job que quero achar").
+ * A imagem no topo (capa ou miniatura da peça), a marca do cliente na cor dele, o selo do link, o realce da busca e,
+ * no computador, o próximo passo só no gesto (no toque ele fica à vista). Texto sempre grafite/branco; a cor fica no
+ * fundo tingido e no ícone. Nada aqui anima por quadro; com "reduzir movimento", nada anima.
+ */
+
+/* ───────────── a imagem do topo ───────────── */
+
+/* sem posição própria e sem receber o ponteiro: o clique abre o card (o botão de abrir cobre o card inteiro) */
+.q-card__capa {
+  margin: -4px -4px 1px;
+  pointer-events: none;
+  aspect-ratio: 16 / 9;
+  border-radius: 11px;
+  overflow: hidden;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.q-card__capa[hidden] {
+  display: none;
+}
+.q-card__capa img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* no celular (uma coluna por vez, card na largura da tela) a imagem vira miniatura ao lado, como numa lista do iPhone:
+   o card continua baixo e cabem mais jobs na tela */
+@media (max-width: 760px) {
+  .q-card--imagem {
+    grid-template-columns: 92px minmax(0, 1fr);
+    column-gap: 12px;
+  }
+  .q-card--imagem > * {
+    grid-column: 2;
+  }
+  .q-card--imagem > .q-card__capa {
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    align-self: start;
+    margin: 0;
+    aspect-ratio: 4 / 3;
+    border-radius: 10px;
+  }
+  .q-card--imagem > .q-card__passo {
+    grid-column: 1 / -1;
+  }
+  /* o botão de abrir (absoluto) segue cobrindo o card inteiro: posição "auto" = a caixa do card */
+  .q-card--imagem > .q-card__abrir {
+    grid-column: auto;
+  }
+}
+
+/* ───────────── o cliente: sigla na cor dele e o nome mais firme ───────────── */
+
+.q-card__cliente {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-weight: 600;
+  color: var(--text-mute);
+}
+.q-card__cliente-nome {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.q-cli {
+  --cli: var(--cor-pedra);
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-style: normal;
+  font-family: var(--font-apple);
+  font-size: 0.54rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--text-strong);
+  background: color-mix(in srgb, var(--cli) 34%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cli) 60%, transparent);
+}
+.q-cli[data-cor="lavanda"] {
+  --cli: var(--cor-lavanda);
+}
+.q-cli[data-cor="ambar"] {
+  --cli: var(--cor-ambar);
+}
+.q-cli[data-cor="laranja"] {
+  --cli: var(--cor-laranja);
+}
+.q-cli[data-cor="latao"] {
+  --cli: var(--cor-latao);
+}
+.q-cli[data-cor="verde"] {
+  --cli: var(--cor-verde);
+}
+.q-cli[data-cor="turquesa"] {
+  --cli: var(--cor-turquesa);
+}
+.q-cli[data-cor="oliva"] {
+  --cli: var(--cor-oliva);
+}
+.q-cli[data-cor="rosa"] {
+  --cli: var(--cor-rosa);
+}
+.q-cli[data-cor="ceu"] {
+  --cli: var(--cor-ceu);
+}
+.q-cli[data-cor="ameixa"] {
+  --cli: var(--cor-ameixa);
+}
+.q-card__tema {
+  font-weight: 650;
+}
+
+/* ───────────── o selo do link ───────────── */
+
+.q-selo {
+  --tom: var(--text-faint);
+  position: relative;
+  cursor: pointer;
+  background: color-mix(in srgb, var(--tom) 14%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tom) 34%, transparent);
+  color: var(--text-strong);
+}
+.q-selo svg {
+  flex: none;
+  color: var(--tom);
+}
+.q-selo[data-tom="peca"] {
+  --tom: var(--text-mute);
+  background: var(--surface-2);
+}
+.q-selo[data-tom="enviado"] {
+  --tom: var(--st-cliente);
+}
+.q-selo[data-tom="aberto"] {
+  --tom: var(--cor-turquesa);
+}
+.q-selo[data-tom="aprovado"] {
+  --tom: var(--st-ok);
+}
+.q-selo[data-tom="ajuste"] {
+  --tom: var(--cor-laranja);
+}
+/* card estreito (8 colunas numa tela de 1440): o selo cabe numa linha */
+@container (max-width: 160px) {
+  .q-selo {
+    padding: 2px 7px;
+    font-size: 0.7rem;
+  }
+}
+
+/* ───────────── a busca ───────────── */
+
+.q-realce {
+  border-radius: 3px;
+  padding: 0 1px;
+  margin: 0 -1px;
+  background: color-mix(in srgb, var(--acento) 34%, transparent);
+  color: inherit;
+}
+.q-contagem[data-zero] {
+  color: var(--text-mute);
+  font-weight: 600;
+}
+.q-quadro[data-filtrando] .q-col[data-vazia] {
+  opacity: 0.55;
+}
+.q-quadro[data-filtrando] .q-col[data-vazia] .q-col__vazio {
+  border-style: solid;
+  border-color: transparent;
+}
+.q-nada {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 4px 0 18px;
+  padding: 22px 16px;
+  border-radius: 22px;
+  background: var(--coluna, var(--surface-2));
+  box-shadow: var(--card-sombra);
+  text-align: center;
+}
+.q-nada p {
+  margin: 0;
+  font-family: var(--font-apple);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+.q-nada__icone {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text-faint);
+}
+
+/* ───────────── o próximo passo: no computador, só no gesto ───────────── */
+
+@media (hover: hover) and (pointer: fine) {
+  .q-card__passo {
+    position: absolute;
+    right: 9px;
+    bottom: 9px;
+    z-index: 1;
+    max-width: calc(100% - 18px);
+    background: var(--gb-sheen), var(--surface);
+    box-shadow:
+      var(--gb-shadow),
+      0 6px 16px rgb(0 0 0 / 0.12);
+    opacity: 0;
+    transform: translateY(3px) scale(0.97);
+    transition:
+      opacity 0.16s var(--ease),
+      transform 0.22s var(--spring);
+  }
+  .q-card:hover .q-card__passo,
+  .q-card:focus-within .q-card__passo {
+    opacity: 1;
+    transform: none;
+  }
+  .q-card:hover .q-card__passo:hover {
+    transform: scale(1.03);
+  }
+  /* "Mover para…" também só no gesto, no canto: o nome do cliente ganha a linha inteira */
+  .q-card__mais {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 1;
+    margin: 0;
+    background: var(--surface);
+    box-shadow:
+      0 0 0 1px var(--line),
+      0 2px 8px rgb(0 0 0 / 0.1);
+    opacity: 0;
+    transition:
+      opacity 0.16s var(--ease),
+      background 0.2s var(--ease);
+  }
+  .q-card:hover .q-card__mais,
+  .q-card:focus-within .q-card__mais {
+    opacity: 1;
+  }
+  .q-fantasma .q-card__mais {
+    opacity: 0;
+  }
+  /* o fantasma do arrastar e o card de origem nunca mostram o passo */
+  .q-fantasma .q-card__passo {
+    opacity: 0;
+  }
+}
+
+/* ───────────── a capa na ficha ───────────── */
+
+.q-capa {
+  display: grid;
+  gap: 10px;
+  border-radius: 18px;
+  transition: box-shadow 0.2s var(--ease);
+}
+.q-capa[data-sobre] {
+  box-shadow: 0 0 0 2px var(--acento);
+}
+.q-capa[data-enviando] .q-capa__imagem {
+  opacity: 0.6;
+}
+.q-capa__imagem {
+  position: relative;
+  margin: 0;
+  aspect-ratio: 16 / 9;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  transition: opacity 0.2s var(--ease);
+}
+.q-capa__imagem img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.q-capa__imagem figcaption {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.55);
+  color: #fff;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+.q-capa__acoes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.q-capa__tirar {
+  border: 0;
+  background: none;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 0.86rem;
+  color: var(--text-mute);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.q-capa__erro {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--danger-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .q-card__passo,
+  .q-capa,
+  .q-capa__imagem {
+    transition: none !important;
+  }
+}
+
+/* o "x" da busca do sistema em grafite (o do WebKit vem azul) */
+.q-busca input::-webkit-search-cancel-button {
+  filter: grayscale(1);
+  opacity: 0.6;
+  cursor: pointer;
+}

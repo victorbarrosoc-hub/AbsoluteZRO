@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
-import { podeEditarCriacao, podeEnviarCriacao, podeMandarParaAeon } from "@/lib/criacao/permissoes";
+import { podeEditarCriacao, podeEnviarCriacao, podeMandarParaAeon, podeMandarParaTpeasy } from "@/lib/criacao/permissoes";
 import { listarVersoes, obterRoteiro, opcoesDeVinculo } from "@/lib/criacao/roteiro/servidor";
 import { VISTAS, type Vista } from "@/lib/criacao/roteiro/vistas";
 import { referenciasDoQuadro } from "@/lib/quadro/servidor";
@@ -10,7 +10,8 @@ export const metadata = { title: "Roteiro" };
 
 /**
  * O editor do Roteiro: as quatro vistas do mesmo documento, gravação sozinha com `rev`, versões, impressão e "Enviar"
- * (administração e gestão; a opção do AEON só com o produto aberto para a pessoa no gate do HUB).
+ * (administração e gestão; a opção do AEON só com o produto aberto para a pessoa no gate do HUB; "Enviar ao TPeasy"
+ * direto só com o TPeasy no plano, F8).
  */
 export default async function PaginaRoteiro({ params, searchParams }: PageProps<"/app/criacao/roteiros/[id]">) {
   const { id } = await params;
@@ -36,6 +37,7 @@ export default async function PaginaRoteiro({ params, searchParams }: PageProps<
       podeEstado={podeEnviarCriacao(s.papel)}
       podeEnviar={podeEnviarCriacao(s.papel)}
       aeon={podeMandarParaAeon(s)}
+      tpeasy={podeMandarParaTpeasy(s)}
       vistaInicial={vista}
       eu={s.sub}
       nomes={nomes}

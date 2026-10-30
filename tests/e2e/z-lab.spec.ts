@@ -109,6 +109,16 @@ const ROTAS: [string, string, unknown?][] = [
   ['POST', '/api/v1/admin/z-lab/escuta/fim', { sessao: randomUUID(), segundos: 1 }],
   ['POST', '/api/v1/admin/z-lab/anexos'],
   ['DELETE', '/api/v1/admin/z-lab/anexos/file_e2e000001'],
+  [
+    'POST',
+    '/api/v1/admin/z-lab/aprendizados',
+    {
+      proposta: { id: randomUUID(), tipo: 'tom', texto: 'Fale de um jeito próximo.', plataforma: null, exemplo: null, gatilho: 'menos formal' },
+      confirmar: true,
+    },
+  ],
+  ['PATCH', `/api/v1/admin/z-lab/aprendizados/${randomUUID()}`, { texto: 'Seja breve.' }],
+  ['DELETE', `/api/v1/admin/z-lab/aprendizados/${randomUUID()}`],
 ]
 
 test('o laboratório não existe para quem não é admin da plataforma (nem para o suporte)', async ({ page, baseURL }) => {
@@ -247,7 +257,8 @@ test('admin testa a Z nova: teto, conversa, anexos, ditado, comparar, voz, Confi
   await page.getByRole('button', { name: 'Salvar versão' }).click()
   await page.getByLabel('O que mudou').fill('Primeira Z do laboratório')
   await page.getByRole('dialog').getByRole('button', { name: 'Salvar versão' }).click()
-  await expect(page.getByText('Versão 1 salva.')).toBeVisible()
+  // O número depende de quem rodou antes (z-lab-aprender.spec.ts também salva versão; versão é imutável).
+  await expect(page.getByText(/^Versão \d+ salva\.$/)).toBeVisible()
   const linha = page.locator('.zl-versoes li').first()
   await expect(linha).toContainText('Primeira Z do laboratório')
   await expect(linha.getByRole('button', { name: 'Publicar' })).toBeDisabled()
@@ -276,7 +287,7 @@ test('admin testa a Z nova: teto, conversa, anexos, ditado, comparar, voz, Confi
   await expect(page.getByText('Rascunho salvo. O Testar já usa.')).toBeVisible()
 
   await linha.getByRole('button', { name: 'Diferenças' }).click()
-  const dif = page.getByRole('dialog', { name: 'Versão 1 × rascunho' })
+  const dif = page.getByRole('dialog', { name: /^Versão \d+ × rascunho$/ })
   await expect(dif.getByText('Voz', { exact: true })).toBeVisible()
   await foto(page, '06-configurar-diferencas')
   await dif.getByRole('button', { name: 'Fechar' }).click()

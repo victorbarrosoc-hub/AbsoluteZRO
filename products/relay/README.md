@@ -72,10 +72,10 @@ Detalhes, números e como repetir: [docs/QUALIDADE.md](docs/QUALIDADE.md). Em re
 | Pasta | O quê |
 | --- | --- |
 | `src/` | Núcleo puro e testado: presets, plano, ficha técnica, presets da pessoa, linha de comando do ffmpeg |
-| `app/` | O site: motor do navegador, escala na placa, conversor, editor de presets, página inicial |
+| `app/` | O site: motor do navegador, escala na placa, conversor, editor de presets, página inicial (telas de verdade em `app/inicio/`) |
 | `marca/` | Símbolo, ícone, PNGs, OG e o guia (`marca/index.html`) |
 | `vendor/` | Mediabunny e extensões (ProRes, AAC, MP3) |
-| `scripts/` | `servir.mjs` (dev e testes), `qualidade.mjs` (laboratório), `marca.mjs` (PNGs), `publicar-site.mjs` (build) |
+| `scripts/` | `servir.mjs` (dev e testes), `qualidade.mjs` (laboratório), `marca.mjs` (PNGs), `publicar-site.mjs` (build), `telas-inicio.mjs` (telas da página inicial) |
 | `test/` | Unidade, ffmpeg de verdade, Chromium de verdade, cópias nas outras plataformas |
 
 ## Rodar

@@ -6,7 +6,9 @@ import { nomeFuncao, nomeUnidadeValor } from "@/lib/freelas/funcoes";
 import { obterFreela } from "@/lib/freelas/servidor";
 import { podeEscrever, podeRemover } from "@/lib/papeis";
 import { CabecaForm, Formulario, Remover } from "@/components/form";
-import { removerFreelaAcao, salvarFreelaAcao } from "../../acoes";
+import { ArrobaZro } from "@/components/freelas/arroba-zro";
+import { emissor } from "@/lib/zro/config";
+import { removerFreelaAcao, salvarFreelaAcao, verArrobaAcao } from "../../acoes";
 
 export const metadata = { title: "Editar freela" };
 
@@ -31,6 +33,7 @@ export default async function EditarFreela({ params }: PageProps<"/app/freelas/[
         // Sem a área, o campo nem aparece (e o banco guarda o valor de antes: gatilho freelas_guarda_area).
         campos={CAMPOS_FREELA.filter((c) => (c.nome !== "valores" || f.ve.diarias) && ((c.nome !== "email" && c.nome !== "whatsapp") || f.ve.dados))}
         id={id}
+        antes={<ArrobaZro ver={verArrobaAcao} perfilBase={emissor()} atual={f.zroArroba ? { arroba: f.zroArroba, nome: f.nome } : null} />}
         inicial={{
           nome: f.nome,
           cidade: f.cidade ?? "",

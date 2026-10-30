@@ -22,12 +22,27 @@ import { AccountScreen } from './account.js'
 import { ZScreen } from './z.js'
 import { Calculadora } from './calculadora.js'
 import { useSet } from './set.js'
+import { ABAS_EMBUTIDO, EMBUTIDO } from '../lib/embutido.js'
 
 function TabBar({ tab, refsOn }) {
   useEngine()
   const sum = summarize(engine.items)
   const busy = sum.pending > 0
   const aviso = useP2pAviso()
+  if (EMBUTIDO)
+    return html`<nav class="tabbar n-2" aria-label="Seções">
+      <button type="button" class=${cx('tab', 'tab-up', tab === 'send' && 'is-on')} aria-current=${tab === 'send' ? 'page' : undefined} onClick=${() => setTab('send')}>
+        <span class="tab-icon">
+          <${Icon} name="upload" size=${24} strokeWidth=${tab === 'send' ? 2 : 1.7} />
+          ${busy ? html`<span class="tab-dot" aria-label="Enviando"></span>` : null}
+        </span>
+        <span class="tab-label">Transferências</span>
+      </button>
+      <button type="button" class=${cx('tab', 'tab-down', tab === 'drive' && 'is-on')} aria-current=${tab === 'drive' ? 'page' : undefined} onClick=${() => setTab('drive')}>
+        <span class="tab-icon"><${Icon} name="drive" size=${24} strokeWidth=${tab === 'drive' ? 2 : 1.7} /></span>
+        <span class="tab-label">Drive</span>
+      </button>
+    </nav>`
   return html`<nav class=${cx('tabbar', refsOn && 'n-6')} aria-label="Seções">
     <button type="button" class=${cx('tab', 'tab-up', tab === 'send' && 'is-on')} aria-current=${tab === 'send' ? 'page' : undefined} onClick=${() => setTab('send')}>
       <span class="tab-icon">
@@ -66,7 +81,7 @@ function TabBar({ tab, refsOn }) {
  */
 export function Tabs({ pronto = true }) {
   const { saved, refsOn } = useApp((s) => ({ saved: s.tab, refsOn: Boolean(s.recursos?.referencias) }))
-  const tab = saved === 'refs' && !refsOn ? 'send' : saved
+  const tab = EMBUTIDO ? (ABAS_EMBUTIDO.includes(saved) ? saved : 'send') : saved === 'refs' && !refsOn ? 'send' : saved
   const seen = useRef({})
   seen.current[tab] = true
   useSet()

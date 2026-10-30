@@ -17,6 +17,9 @@ import { isIOS } from '../lib/platform.js'
 import { ComputerCard } from './computador.js'
 import { Atalhos, Espaco, Recentes, Saudacao } from './inicio.js'
 import { P2pAndamentoCompacto } from './p2p.js'
+import { EMBUTIDO, GRANDE } from '../lib/embutido.js'
+
+const FINISHED_UI = new Set(['done', 'skipped'])
 
 export function Avatar({ user, size = 32 }) {
   const [broken, setBroken] = useState(false)
@@ -41,8 +44,7 @@ export function ZBotao() {
 /** O Set, a Z e a conta, à direita da barra do topo (o Set só aparece quando responde, components/set.js). */
 function TopoAcoes({ user }) {
   return html`<div class="topbar-acoes">
-    <${SetBotao} />
-    <${ZBotao} />
+    ${EMBUTIDO ? null : html`<${SetBotao} /><${ZBotao} />`}
     <button type="button" class="avatar-btn" onClick=${() => openSheet('settings')} aria-label="Conta e ajustes">
       <${Avatar} user=${user} size=${32} />
     </button>
@@ -347,7 +349,9 @@ export function MainScreen() {
   // Fila andando (ou pausada no meio): o topo encolhe para a fila aparecer sem rolar, até no iPhone SE.
   const compact = sum.pending + sum.paused > 0
   // Início completo (atalhos, espaço, recentes) só com a fila parada e fora do modo Wi-Fi.
-  const inicio = !LAN && !compact
+  // Embutido (lib/embutido.js): só a tarefa de mover arquivo, sem a saudação, os atalhos e o computador.
+  const inicio = !LAN && !compact && !EMBUTIDO
+  const grande = EMBUTIDO && items.some((it) => !FINISHED_UI.has(it.status) && Number(it.size) >= GRANDE)
 
   const waiting = issue === 'rede'
   const reconnect = issue === 'reconectar'
@@ -355,7 +359,12 @@ export function MainScreen() {
     <${Header} user=${user} sum=${sum} items=${items} waiting=${waiting} awake=${awake} />
     <main class=${cx('main-body', compact && 'is-compact', inicio && 'is-inicio')}>
       ${inicio ? html`<${Saudacao} user=${user} />` : null}
-      ${LAN ? null : html`<${ComputerCard} />`}
+      ${LAN || EMBUTIDO ? null : html`<${ComputerCard} />`}
+      ${grande
+        ? html`<a class="emb-grande" href="https://sobedesce.com/#baixar" target="_blank" rel="noopener">
+            <${Icon} name="upload" size=${16} /><span>Arquivo grande vai mais firme pelo <b>app do computador</b>.</span>
+          </a>`
+        : null}
       ${!LAN && compact ? html`<${P2pAndamentoCompacto} />` : null}
       ${compact
         ? html`<div class="sendbar">

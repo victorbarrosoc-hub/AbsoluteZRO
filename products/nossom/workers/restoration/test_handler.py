@@ -81,9 +81,17 @@ class PresetTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             worker.allowed_url(base + path + 'output-40.bin?token=w', 'write')
 
-    def test_unknown_preset_is_refused_without_details(self):
-        with self.assertRaisesRegex(RuntimeError, 'retry with the original file'):
+    def test_unknown_preset_is_refused_with_a_reason(self):
+        with self.assertRaisesRegex(RuntimeError, r'failed: Unknown preset$'):
             worker.handler({'input': {'preset': 'any-model-url'}})
+
+    def test_failure_reason_never_carries_a_url(self):
+        leak = ConnectionError('HTTPSConnectionPool(host=x): /storage/v1/object/sign/a?token=secret')
+        self.assertEqual(worker.failure_reason(leak), 'ConnectionError')
+        self.assertEqual(worker.failure_reason(ValueError('see https://x.supabase.co/a?token=t')),
+                         'ValueError')
+        self.assertEqual(worker.failure_reason(ValueError('Source download failed (HTTP 400)')),
+                         'Source download failed (HTTP 400)')
 
 
 class TranscriptTests(unittest.TestCase):
@@ -130,7 +138,7 @@ class TranscriptTests(unittest.TestCase):
 
     def test_oversized_transcript_is_refused(self):
         words = [[0.0, 0.001, 'x' * 200]] * 30000
-        with self.assertRaisesRegex(RuntimeError, 'retry with the original file'):
+        with self.assertRaisesRegex(RuntimeError, 'failed: Transcript too large'):
             self.run_job(words)
 
 

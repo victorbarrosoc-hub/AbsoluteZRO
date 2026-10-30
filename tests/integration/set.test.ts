@@ -12,6 +12,7 @@ import {
   issueCode,
   parseAuthorizeRequest,
   parseTokenRequest,
+  registerAttempt,
   registerClient,
   setIssuer,
   type AuthorizeRequest,
@@ -30,7 +31,9 @@ import {
   enviarMensagemSet,
   estadoSet,
   excluirConta,
+  LIMITE_BUSCA_PERFIS,
   LIMITE_MENSAGENS,
+  LIMITE_PEDIDOS_CONTATO,
   lerConversaSet,
   limparTexto,
   loadOidcClaims,
@@ -42,6 +45,7 @@ import {
   responderContatoSet,
   salvarPreferenciasSet,
   trocarArroba,
+  verPessoaSet,
 } from '@zro/core'
 import type { Database } from '@zro/db'
 import { testDatabase } from '@zro/db/testing'
@@ -309,6 +313,79 @@ describe('contatos e conversa direta', () => {
     expect(pagina.mensagens.at(-1)!.texto).toBe(`msg ${LIMITE_MENSAGENS.max - 1}`)
     const antes = await lerConversaSet(db, b.auth, c.id, { antes: pagina.mensagens[0]!.seq, limite: 10 })
     expect(antes.mensagens.at(-1)!.seq).toBeLessThan(pagina.mensagens[0]!.seq)
+  })
+})
+
+describe('adicionar pelo @ (a prévia e o pedido)', () => {
+  const tentativas = (chave: string, n: number) =>
+    db.asSystem('teste', async (tx) => {
+      for (let i = 0; i < n; i++) await registerAttempt(tx, chave)
+    })
+
+  it('a prévia mostra nome, @ e foto do perfil visível e a situação, sem pedir nada; escondido é igual a não existir', async () => {
+    const a = await pessoa('Vitor')
+    const b = await pessoa('Lia')
+    const r = await verPessoaSet(db, a.auth, `@${b.arroba.toUpperCase()}`)
+    expect(r).toEqual({ pessoa: { id: b.userId, arroba: b.arroba, nome: 'Lia', foto: null }, situacao: 'nenhuma' })
+    expect(JSON.stringify(r)).not.toContain('@teste.absolutezro.local')
+    // só olhar não pede contato nem avisa ninguém
+    expect((await estadoSet(db, b.auth)).pedidos).toBe(0)
+    expect((await meusContatosSet(db, a.auth)).enviados).toEqual([])
+
+    const escondida = await pessoa('Oculta')
+    await definirVisibilidade(db, escondida.auth, false)
+    const e1 = (await expectCode(verPessoaSet(db, a.auth, escondida.arroba), 'not_found')) as unknown as Error
+    const e2 = (await expectCode(verPessoaSet(db, a.auth, `ninguem.${unico()}`), 'not_found')) as unknown as Error
+    expect(e1.message).toBe(`Não achamos @${escondida.arroba}.`)
+    expect(e2.message).toMatch(/^Não achamos @ninguem\.[0-9a-f]+\.$/)
+    await expectCode(pedirContatoSet(db, a.auth, { arroba: escondida.arroba }), 'not_found')
+    await expectCode(verPessoaSet(db, a.auth, a.arroba), 'invalid_input')
+    await expectCode(verPessoaSet(db, a.auth, 'x'), 'invalid_input')
+    await expectCode(verPessoaSet(db, null, b.arroba), 'unauthenticated')
+  })
+
+  it('enviado, recebido, contato e bloqueado: a prévia diz e o pedido responde certo (já contatos = conflito)', async () => {
+    const a = await pessoa('Rui')
+    const b = await pessoa('Sol')
+    const p = await pedirContatoSet(db, a.auth, { arroba: b.arroba })
+    expect(p).toEqual({ estado: 'pendente', pessoa: { id: b.userId, arroba: b.arroba, nome: 'Sol', foto: null } })
+    expect((await verPessoaSet(db, a.auth, b.arroba)).situacao).toBe('enviado')
+    expect((await verPessoaSet(db, b.auth, a.arroba)).situacao).toBe('recebido')
+    // a outra pessoa vê o pedido (a bolinha do Online) e aceita adicionando de volta
+    expect((await estadoSet(db, b.auth)).pedidos).toBe(1)
+    expect(await pedirContatoSet(db, b.auth, { arroba: a.arroba })).toMatchObject({ estado: 'aceito', pessoa: { id: a.userId, nome: 'Rui' } })
+    expect((await verPessoaSet(db, a.auth, b.arroba)).situacao).toBe('contato')
+    const e = (await expectCode(pedirContatoSet(db, a.auth, { arroba: b.arroba }), 'conflict')) as unknown as Error
+    expect(e.message).toBe('Vocês já são contatos.')
+    // pelo id também traz o nome
+    const c = await pessoa('Teo')
+    expect((await pedirContatoSet(db, a.auth, { id: c.userId })).pessoa).toMatchObject({ id: c.userId, nome: 'Teo', arroba: c.arroba })
+
+    // bloqueio: quem bloqueou vê "bloqueado" e não pede; quem foi bloqueado não descobre (nenhuma, pendente)
+    await bloquearSet(db, a.auth, c.userId)
+    expect((await verPessoaSet(db, a.auth, c.arroba)).situacao).toBe('bloqueado')
+    await expectCode(pedirContatoSet(db, a.auth, { arroba: c.arroba }), 'action_not_allowed')
+    expect((await verPessoaSet(db, c.auth, a.arroba)).situacao).toBe('nenhuma')
+    expect((await pedirContatoSet(db, c.auth, { arroba: a.arroba })).estado).toBe('pendente')
+    expect((await meusContatosSet(db, a.auth)).recebidos).toEqual([])
+  })
+
+  it('20 pedidos por dia; repetir o enviado e aceitar o recebido não gastam; a prévia segue o limite da busca', async () => {
+    const a = await pessoa('Muito')
+    const b = await pessoa('Ja')
+    const c = await pessoa('Pede')
+    await pedirContatoSet(db, a.auth, { arroba: b.arroba })
+    await pedirContatoSet(db, c.auth, { arroba: a.arroba })
+    await tentativas(`set-contato:${a.userId}`, LIMITE_PEDIDOS_CONTATO.max)
+    const novo = await pessoa('Novo')
+    const e = (await expectCode(pedirContatoSet(db, a.auth, { arroba: novo.arroba }), 'rate_limited')) as unknown as Error
+    expect(e.message).toBe('Muitos pedidos hoje. Tente amanhã.')
+    expect((await pedirContatoSet(db, a.auth, { arroba: b.arroba })).estado).toBe('pendente')
+    expect((await pedirContatoSet(db, a.auth, { arroba: c.arroba })).estado).toBe('aceito')
+    expect((await meusContatosSet(db, novo.auth)).recebidos).toEqual([])
+
+    await tentativas(`busca-perfis:${a.userId}`, LIMITE_BUSCA_PERFIS.max)
+    await expectCode(verPessoaSet(db, a.auth, novo.arroba), 'rate_limited')
   })
 })
 

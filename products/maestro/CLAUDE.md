@@ -35,7 +35,7 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   `docs/operations/lancamento-maestro.md`): a migration `0027` abre o gate (`public_beta`, todos os canais) e põe o
   Maestro no grátis, no Completo e no Pro (o grátis nunca leva `maestro.marca_propria`); a vitrine vira com
   `MAESTRO_LANCADO` em `src/lib/site.ts` (`node scripts/lancamento-maestro.mjs --abrir` na raiz, junto com as listas
-  da família dos outros apps). A página inicial lançada mostra "Beta" (sem "grátis": posicionamento da marca, 29/10/2026), "Criar conta"/"Entrar com
+  da família dos outros apps). A página inicial lançada não mostra selo de "Beta" (no ar, titular 30/10/2026) nem "grátis" (posicionamento da marca, 29/10/2026); mostra "Criar conta"/"Entrar com
   Absolute ZRO" (`CRIAR_CONTA_ZRO`/`ENTRAR_ZRO`, direto no login único), "No celular, como app." e, só com instalador
   publicado no catálogo da central do HUB, o app de computador (`src/lib/desktop.ts`; `MAESTRO_CATALOGO_DESKTOP=desligado`
   no e2e). A lista de espera fica no código, sem aparecer. A vitrine nunca abre nada: quem entra é o gate. Páginas usam `exigirAcessoNaPagina()` (cada página
@@ -54,6 +54,19 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   (`src/lib/quadro/metodo.ts`); tempo real é poll de 5 s ("o que mudou desde"). Clientes e projetos em `src/lib/crm`
   (Server Actions conferem sessão e papel; o banco confere de novo). Remover cliente/projeto = `deleted_at`, só
   admin e gestão.
+- **Achar o job no Quadro** (titular 30/10/2026; `drizzle/0035_capas_do_quadro.sql`, `src/lib/quadro/{selos,capa,
+capa-regras}.ts`, `components/quadro/capa.tsx`, `src/app/quadro-achar.css`): o card mostra **um** selo do link, o
+  mais adiantado e só do que o banco registra (`selosDoQuadro`/`selosDesde` como a pessoa: versão mais nova, lote fora
+  de rascunho, link ativo aberto depois da versão, decisão desta volta), a imagem do topo (capa enviada > miniatura que
+  o endereço dá sem buscar: YouTube `mqdefault`, quadro `public/demo/*.webp` da demonstração; Drive/Vimeo não; sem
+  imagem nada) e a sigla do cliente na cor dele (`corDoCliente`, paleta `--cor-*`). A capa: `maestro.card_capas` (uma
+  por card, WebP ≤ 960 px/160 KB pelo `prepararCapa`, cota `card_capas_cota` = `COTA_CAPAS`, bytes só pela porta
+  `maestro.card_capa`, `_cliente` pelo card) e a referência em `dados.capa` gravada pelo `card_mudar` na mesma transação
+  (o poll leva); rotas `POST|DELETE /api/quadro/capa?card=` (quem escreve no Quadro) e `GET /api/quadro/capa/<card>/<sha>`
+  (cache privado imutável). Vídeo vira quadro no navegador. A imagem do card não recebe o ponteiro (o clique abre o
+  card) e tem a proporção reservada (carregar não mexe no layout do arrasto). No computador "Mover para…" e o próximo
+  passo só aparecem no gesto (`hover`/foco); no toque ficam à vista. Busca: título, briefing, cliente e código do
+  projeto, com realce (`pedacosDoRealce`), contagem e "Nada com …"; "/" foca a busca.
 - **Colunas do Quadro** (titular 29/10/2026, "como no Trello"; `drizzle/0024_colunas.sql`, `src/lib/quadro/colunas.ts`
   puro, `colunas-servidor.ts`, tela em `components/quadro/colunas.tsx`): `maestro.colunas` por organização (id, papel,
   nome 1–30, cor da paleta fechada `CORES_COLUNA`/`--cor-*`, ordem, arquivada). As 8 do método são de sistema: **id =
@@ -261,6 +274,43 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   mapeadas; contato nunca vem do perfil); a ficha mostra o @ com link para o perfil. O inventário do Carro chega pelo
   mesmo `zro_sub` só quando `CARRO_SYNC_ATIVO` ligar. Testes: `tests/pessoas-zro.test.mts` e `e2e/pessoas-zro.spec.ts`
   (HUB falso com perfis fictícios em `tests/ponte-falsa.mts`).
+- **O freela entra pela conta Absolute ZRO** (titular 30/10/2026, `drizzle/0036`, `src/lib/freelas/convite{,-servidor}.ts`,
+  `src/lib/zro/identidade.ts`, telas `components/freelas/{arroba-zro,conta-zro}.tsx` e `/convite/<token>`): o "Novo
+  freela" e a edição têm no topo o campo **"@ no Absolute ZRO"** (`ArrobaZro` via `antes` do `Formulario`): 450 ms
+  depois de digitar, a prévia (foto, nome, @) vem de `pessoaPorArroba` (o HUB decide visibilidade e limite: escondido
+  = inexistente); "Usar" preenche nome, cidade e funções e, ao salvar, o servidor relê o perfil e liga o freela
+  (`ligarNaTx`: `zro_sub` + `zro_arroba`; a mesma conta em outro freela da produtora é recusada e nada fica; tirar o @
+  na edição desliga). Avulso segue igual, com o interruptor **"Convidar para o Absolute ZRO"**. Convite =
+  `maestro.freela_convites` (um aberto por freela, 7 dias, só sha256 + `token_enc`, revogar para sempre, auditado por
+  gatilho; quem escreve freelas convida, todos veem o estado). **E-mail em espera** (titular): só "Copiar link" e
+  "Mandar no WhatsApp" (`wa.me` com o número e a mensagem do cadastro + o link; só para quem vê o contato). A ficha
+  mostra "Sem conta", "Convite enviado" ou "Conectado @fulano" (`ContaZro`, com Revogar e Desligar). Quem abre
+  `/convite/<token>` (fora do app de computador, CSP de `/p`, fora do `robots`) cria a conta ou entra: a volta do login
+  com `volta=/convite/…` **não cria sessão nem organização** no Maestro, pede só os escopos básicos, devolve o refresh
+  token e deixa a identidade do id_token no cookie cifrado `mae_conv` (30 min); quem já tem sessão no Maestro usa a
+  dela. "Aceitar" (`POST /api/publico/convite`, Origin conferido) passa pela porta `maestro.freela_convite_aceitar`
+  (maestro_app sem organização): liga uma vez; a mesma conta de novo = ok; outra conta, vencido, revogado ou
+  desconhecido = a tela neutra; pela porta só saem o primeiro nome e a marca. O vínculo é o `zro_sub` (o mesmo do
+  inventário do Carro do Freela e da área do freela, abaixo); "Pronto" leva a "Ver seus trabalhos". Testes:
+  `tests/freela-convite.test.mts`, `e2e/freela-convite.spec.ts` (`SHOTS_DIR` guarda `fc-*`) e a tela no `sem-corte`.
+- **A área do freela** (titular 30/10/2026, `drizzle/0037`, `src/lib/freelas/area.ts`, telas `src/app/trabalhos/**`,
+  `components/freelas/{area,para-freela}.tsx`, CSS `app/trabalhos.css` com prefixo `ft-`; mapa em
+  `docs/permissoes.md` § Freela): quem tem a conta ligada a freelas entra e cai em **"Seus trabalhos"** (`/trabalhos`):
+  por produtora (marca, cor como filete), as escalas dele, próximos primeiro e os que passaram recolhidos; a ficha
+  (`/trabalhos/<escala>`) traz quando, horário, onde (link do mapa), função, o valor dele, "Da produção" (o recado
+  `escalas.para_freela`), "Enviar material" (`entrega_url`, só https) e "Falar com a produção" (contato da marca);
+  "Confirmar"/"Recusar" (`maestro.escala_respostas`) enquanto não passou. **Escopo do freela**: `getBanco().asFreela(sub)`
+  = `maestro_app` sem organização; nenhuma tabela da produtora responde e só a porta `maestro.freela_*` (security
+  definer, pelo `zro_sub`, freela ativo, produtora com o Maestro e sem a pessoa ser da equipe dela) devolve a lista
+  fechada de campos; a resposta tem RLS própria (só o freela grava; a produtora lê, com o acesso por cliente). Página:
+  `exigirFreelaNaPagina()` (sem vínculo: `/app` ou `/sem-acesso`); a volta do login sem acesso vai para `/trabalhos`
+  quando há vínculo, e `/sem-acesso` também manda. Quem também é da equipe tem o atalho "Seus trabalhos como freela" no
+  topo (`Shell freela`) e, na área, "Produtora" de volta. A produtora escreve o recado e o link em "Para o freela" na
+  ficha do projeto e da diária (só freela com conta) e vê "Confirmou"/"Recusou"; Ajustes → Empresa → "O freela vê o
+  cliente" (`settings.empresa.freelaVeCliente`, padrão sim). Carro do Freela fica de fora até ele lançar. Testes:
+  `tests/area-freela.test.mts`, o caso do callback em `tests/zro.test.mts`, `e2e/area-freela.spec.ts` (semente em
+  `e2e/semente-area-freela.ts`; `SHOTS_DIR` guarda `af-*`, `AF_VIDEO=<pasta>` grava o passeio do iPhone) e as três
+  telas no `sem-corte`.
 - **Set da Absolute ZRO** (ADR 0032 do HUB, contrato em `docs/integration-contracts/set.md`): quem da equipe e dos
   contatos está online e as conversas (diretas e do projeto canônico). O widget `<zro-set>` vem de
   `absolutezro.com/set/v1/zro-set.js` (`components/set-zro.tsx`, pílula discreta na cápsula e no topo do celular, como
@@ -382,6 +432,34 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   nem pino. O player nunca recebe versão de roteiro (o lote da equipe mostra "Abrir no editor"; a ficha do card abre o
   editor). Editor: `?cliente=1` (comentários por bloco e versão + decisões, poll 20 s), `op: "resolver"` (quem edita).
   Testes: `tests/roteiro-cliente.test.mts`, `e2e/criacao-cliente.spec.ts` (`SHOTS_DIR` guarda `f7-*`).
+- **Criação · Para o TPeasy direto** (fase F8; pedido do titular 30/10/2026; contrato em
+  `docs/integration-contracts/maestro-tpeasy.md`, migração **0040** do HUB; nenhuma migração do Maestro): o TPeasy não
+  tem banco, então o HUB é a caixa de entrada. "Enviar ▾ › Para o TPeasy" com `podeMandarParaTpeasy` (admin e gestão +
+  `temProduto(s, 'tpeasy')`): a ação principal é **Enviar ao TPeasy** (`DiretoTpeasy` em `enviar.tsx`), os outros jeitos
+  (Compartilhar, Copiar, .txt, backup) recolhidos em "Outros jeitos"; sem o TPeasy, a linha "Enviar direto pede o TPeasy
+  no plano." e a folha de antes. `src/lib/criacao/roteiro/tpeasy.ts` monta o texto **no servidor** da versão salva
+  (`saidaTpeasy`, a mesma do .txt), com título, meta e link de volta, e manda `POST <HUB>/api/v1/apps/entregas`
+  (`basePonte()`, token da sessão com `maestro.projects`); para quem: você ou quem da organização já entrou no TPeasy
+  (`/api/v1/apps/entregas/destinatarios`, chips "Para quem" só com mais de uma pessoa). A mesma versão de novo é
+  "Reenviar" e não duplica (o HUB junta pela chave `maestro:roteiro:<id>:<pessoa>:v<n>`; o TPeasy pelo item
+  `idNoTpeasy`). A folha mostra "Enviado ao TPeasy · v3 · agora" e "· Recebido" quando o aparelho contou
+  (`GET ?tpeasy=1` → `estadoTpeasy`). Auditoria `roteiro.enviado` formato `direto` com o id da entrega (o `enviado` à mão
+  recusa `direto`). Rota: `POST {op:"tpeasy", n, pessoa?, para?}` (201 nova, 200 reenviada; 403 `sem_tpeasy`, 401
+  `reconectar_zro`, erros do HUB com mensagem curta). AEON segue escondido pelo gate (`podeMandarParaAeon`). Testes:
+  `tests/criacao-tpeasy.test.mts` (o HUB de mentira em `tests/ponte-falsa.mts` confere o corpo pelo schema publicado
+  `zro.app-entrega.entrada.v1`) e `e2e/criacao-tpeasy.spec.ts` (organização "Café Filmes E2E" com o TPeasy no plano; o
+  TPeasy de verdade servido no `E2E_TP_PORT`, padrão 3233; `SHOTS_DIR` guarda `f8-*`, `E2E_VIDEO=1` grava o passeio).
+- **Criação · apagar** (titular, 30/10/2026; `components/criacao/lixeira.tsx` + `deslizar.ts`, puro em
+  `lib/criacao/lixeira.ts`, CSS `app/lixeira.css`, prefixo `lx-`): as duas listas usam `ListaLixeira` +
+  `CartaoApagavel` (só com `podeEditarCriacao`). iPhone: deslizar para a esquerda (só `transform`, `touch-action: pan-y`;
+  55% da largura apaga direto) e segurar 450 ms (folha com Abrir/Apagar); computador: "•••" no hover/foco e botão
+  direito (menu no `<body>`). Apagar = lixeira, sem pergunta, com "Apagado · Desfazer" (6 s) e a linha de
+  `avisoAoApagar` (card ligado, link vivo do fluxo: `linksVivos` em `listarFluxos`). O clique depois do gesto é engolido
+  na captura da **janela** (antes do `movimento.tsx`). Editor e canvas voltam para `?apagou=<id>` (a lista abre com o
+  Desfazer). Lixeira em `?lixeira=1` nas duas rotas (`CartaoNaLixeira`: Restaurar; "Apagar de vez" com pergunta só
+  `podeApagarDeVezCriacao`; roteiro com versão salva não sai, `tem_versao`). Roteiro: `POST {op:"apagar_de_vez"}` →
+  `apagarRoteiroDeVez` (auditoria `roteiro.apagou`). Testes: `tests/lixeira.test.mts`, `e2e/criacao-apagar.spec.ts`
+  (iPhone Chromium + Safari, `SHOTS_DIR`/`APAGAR_TEMA`/`APAGAR_VIDEO`), telas no `sem-corte.spec.ts`.
 - **App na Tela de Início (PWA)**: `src/app/manifest.ts` (`/manifest.webmanifest`: Maestro, `start_url` `/app`, `scope`
   `/`, standalone, cores do claro), ícones em `public/pwa/` gerados do `src/app/icon.svg` por `scripts/icones-pwa.mjs`
   (nunca desenhar outro), `apple-icon.png` (180 px), `appleWebApp` + `apple-mobile-web-app-capable` no layout, barra de
@@ -389,9 +467,14 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   (`generateViewport`). "No celular, como app." (`components/instalar.tsx`, `lancamento.css`) em Ajustes e na página
   inicial lançada: Safari › Compartilhar › Adicionar à Tela de Início; "Instalar" só com `beforeinstallprompt`; some
   aberto como app. `e2e/instalar.spec.ts`: manifesto, metas, a dica e o app aberto como instalado sem corte a 375/393 px.
-- **Página inicial** (`src/app/page.tsx`, `inicio.css`, plano v2 §10, ADR 0024): pública, só o que existe, "Em breve"
-  para o resto, capturas reais da demonstração em `public/produto/*-{claro,escuro}.webp` (refazer com
-  `npm run db:seed:demo` quando a tela mudar; nunca mock). "Quero acesso" grava na lista de espera
+- **Página inicial** (`src/app/page.tsx`, `inicio.css`, plano v2 §10, ADR 0024; refeita em 30/10/2026 no ritmo da do
+  SOBEDESCE): pública, só o que existe, "Em breve" para o resto; ferramentas num controle segmentado
+  (`components/inicio/abas.tsx`, abas WAI-ARIA) e cartões de mexer com as regras puras do app
+  (`components/inicio/demos.tsx`: `veiculos.ts` e `acessos.ts`; nada de preço inventado). Classes com prefixo `i`
+  (`.abas` já é do Financeiro). Capturas reais da demonstração em `public/produto/<tela>-<mac|iphone>-<claro|escuro>.webp`:
+  refaça com `CAPTURAS_DIR=<pasta> npx playwright test e2e/capturas-inicio.spec.ts --project=computador --project=iphone`
+  e `node scripts/capturas-inicio.mjs <pasta>` quando a tela mudar; nunca mock. A foto de set (`public/inicio/`) e as
+  referências do Fluxo da captura (`docs/demonstracao/fluxo/`) vieram do Higgsfield: contexto, nunca tela. "Quero acesso" grava na lista de espera
   (`drizzle/0004`, `src/lib/lista-espera.ts`): `maestro_app` não tem privilégio na tabela, só a função
   `maestro.lista_espera_entrar()`; armadilha, 5/h por IP e consentimento obrigatório. A lista não libera ninguém.
 - **App de computador** (`desktop/`, Mac e Windows; [README](desktop/README.md)): Electron com pacote próprio (fora
@@ -459,13 +542,15 @@ contra o código do próprio app, modelos só com dica, documento antigo, junç�
 (`roteiro-editor.test.mts`), a rota do editor (Origin, papéis, poll, 409 com o atual e a junção, versões, restaurar;
 `criacao-rota.test.mts`; também o envio anotado e o AEON pelo gate), as saídas (`maestro.roteiro/1` contra o schema
 publicado com o conferidor `tests/esquema-json.mts`, TPeasy pelo código do próprio app, AEON escondido;
-`roteiro-saidas.test.mts`), o roteiro com o cliente (vista sem nada interno, mandar, `/a` por bloco, ajuste, versão nova, rotas públicas, limite, duas organizações e acesso por cliente; `roteiro-cliente.test.mts`), o fluxo puro (link, operações, exportação, cota, imagem; `fluxo.test.mts`), fluxos no banco
+`roteiro-saidas.test.mts`), o TPeasy direto pela Absolute ZRO (gate, texto do servidor, reenviar sem duplicar, para quem,
+auditoria, HUB sem o TPeasy; `criacao-tpeasy.test.mts`), o roteiro com o cliente (vista sem nada interno, mandar, `/a` por bloco, ajuste, versão nova, rotas públicas, limite, duas organizações e acesso por cliente; `roteiro-cliente.test.mts`), o fluxo puro (link, operações, exportação, cota, imagem; `fluxo.test.mts`), fluxos no banco
 (duas organizações, papéis, rev por nó, o que mudou, referências "sem acesso", porta da imagem, cota, limpeza;
 `fluxo-rls.test.mts`) e as rotas do fluxo e da imagem (`fluxo-rota.test.mts`), o link e a exportação do Fluxo
 (`links-fluxo.test.mts`), o migrador com migração atrasada
 (`migrador.test.mts`) e o lançamento (app de computador só com instalador publicado, manifesto e a chave da vitrine;
 `lancamento.test.mts`), quem vê o quê (padrão igual no TS e no banco, cada área por pessoa, máscaras, gatilhos, só a
-administração muda e audita, sessão, navegação e a Z; `acessos.test.mts`). E2E: `npm run build && npm run test:e2e`
+administração muda e audita, sessão, navegação e a Z; `acessos.test.mts`), achar o job no Quadro (selos, miniatura,
+cor do cliente, realce, capa com papéis, cota, duas organizações e acesso por cliente; `capas.test.mts`). E2E: `npm run build && npm run test:e2e`
 (Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir movimento, navegação, a aprovação
 inteira (`aprovacao.spec.ts`, mp4 local e YouTube/Vimeo falsos em `e2e/falsos`) e a versão colada na ficha do card que aparece no lote (`versao-card.spec.ts`) e a produtora com a demonstração
 (`produtora.spec.ts`, organização própria criada em `e2e/preparar.ts`) e o ciclo comercial (`comercial.spec.ts`: pedido
@@ -485,7 +570,8 @@ com o mouse andando, card sempre inteiro ao soltar; `E2E_DB_SUFIXO` separa o ban
 (`colunas.spec.ts`: renomear no lugar, reordenar, criar e recolorir, arquivar com destino e restaurar, sistema não
 arquiva, equipe não edita; computador e iPhone, organização própria), quem vê o quê (`acessos.spec.ts`: o editor sem
 dinheiro na navegação, no Hoje, nas fichas e no HTML; a administração liga o Financeiro e volta ao padrão; `SHOTS_DIR`
-guarda `pessoas-acesso-*`) e a Criação (`criacao-roteiro.spec.ts`: novo pelo
+guarda `pessoas-acesso-*`), achar o job (`quadro-achar.spec.ts`: selo, miniatura, capa pela ficha, busca com realce,
+passos só no gesto, leitura; `SHOTS_DIR` guarda `depois-*`, `E2E_VIDEO=1` grava o passeio) e a Criação (`criacao-roteiro.spec.ts`: novo pelo
 modelo → teclado → vistas → grava sozinho → recarregar, versão e comparar, folha A4, junção com outra pessoa, documento
 antigo no editor novo, leitura; no iPhone uma cena por vez, "+", segurar para arrastar e o Teleprompter; e
 `criacao-enviar.spec.ts`: salvar a versão antes de enviar, o `.txt` e o backup do TPeasy iguais ao que o modelo gera,

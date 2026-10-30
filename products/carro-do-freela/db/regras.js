@@ -138,7 +138,8 @@ function perfilSaida(l) {
   if (!l) return null;
   return {
     nome: l.nome_exibicao, cidade: l.cidade, uf: l.uf, funcoes: l.funcoes || [], nichos: l.nichos || [],
-    bio: l.bio, portfolio: l.portfolio_url, visibilidade: l.visibilidade, atualizado_em: iso(l.atualizado_em),
+    bio: l.bio, portfolio: l.portfolio_url, visibilidade: l.visibilidade, arroba: l.arroba || null,
+    atualizado_em: iso(l.atualizado_em),
   };
 }
 function itemSaida(l) {
@@ -149,4 +150,64 @@ function itemSaida(l) {
   };
 }
 
-module.exports = { FUNCOES, TIPOS, UFS, CATEGORIAS, VISIBILIDADES, TELEFONE, Recusa, perfilDe, itemDe, perfilSaida, itemSaida };
+/* ---------------- agenda ---------------- */
+
+const DIA = /^\d{4}-\d{2}-\d{2}$/;
+/** 'YYYY-MM-DD' de verdade (nada de 2026-02-31) */
+function diaDe(v, campo = 'dia') {
+  if (typeof v !== 'string' || !DIA.test(v)) throw new Recusa('dia', campo);
+  const d = new Date(v + 'T12:00:00Z');
+  if (isNaN(d) || d.toISOString().slice(0, 10) !== v) throw new Recusa('dia', campo);
+  return v;
+}
+/**
+ * PUT /api/zro/agenda — UM dia declarado: { dia, estado: fechado|negociando, parte?: dia|manha|tarde, hora?: "HH:MM" }.
+ * Livre não se declara: é o DELETE do dia (como `liberarDia()` no app). A hora só vale na meia diária.
+ */
+function agendaDe(corpo) {
+  corpo = objeto(corpo);
+  soEstes(corpo, ['dia', 'estado', 'parte', 'hora']);
+  const dia = diaDe(corpo.dia);
+  if (!['fechado', 'negociando'].includes(corpo.estado)) throw new Recusa('estado', 'estado');
+  const parte = corpo.parte === undefined || corpo.parte === null ? 'dia' : corpo.parte;
+  if (!['dia', 'manha', 'tarde'].includes(parte)) throw new Recusa('parte', 'parte');
+  let hora = corpo.hora === undefined || corpo.hora === null || corpo.hora === '' ? null : corpo.hora;
+  if (hora !== null) {
+    if (typeof hora !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(hora)) throw new Recusa('hora', 'hora');
+    if (parte === 'dia') throw new Recusa('hora', 'hora');
+  }
+  return { dia, estado: corpo.estado, parte, hora };
+}
+function agendaSaida(l) {
+  const s = { e: l.estado, p: l.parte };
+  if (l.hora) s.h = String(l.hora).slice(0, 5);
+  return s;
+}
+/** a janela de leitura: de/ate em 'YYYY-MM-DD', até 62 dias; sem nada, hoje + 42 */
+function janelaDe(de, ate, hoje = new Date()) {
+  const base = hoje.toISOString().slice(0, 10);
+  const d = de ? diaDe(de, 'de') : base;
+  const a = ate ? diaDe(ate, 'ate') : new Date(Date.parse(d + 'T12:00:00Z') + 42 * 864e5).toISOString().slice(0, 10);
+  const dias = (Date.parse(a) - Date.parse(d)) / 864e5;
+  if (dias < 0 || dias > 62) throw new Recusa('janela', 'ate');
+  return { de: d, ate: a };
+}
+/**
+ * Uma pessoa da comunidade (o objeto do HUB) + o que o Carro tem dela (`carro`: linha de carro_do_freela.agendas, só
+ * de quem consentiu) → o que a lista devolve. Nada de contato, diária ou inventário. `agenda: null` = não divulgada.
+ */
+function pessoaSaida(z, carro, funcaoDoHub = {}) {
+  if (!z || typeof z.id !== 'string' || typeof z.arroba !== 'string') return null;
+  const doHub = (Array.isArray(z.funcoes) ? z.funcoes : []).map(f => funcaoDoHub[f && f.chave]).filter(Boolean);
+  const funcoes = carro && carro.funcoes && carro.funcoes.length ? carro.funcoes : [...new Set(doHub)];
+  const foto = typeof z.foto === 'string' && /^https:\/\/[^\s]{1,290}$/.test(z.foto) ? z.foto : null;
+  const portfolio = typeof z.portfolio === 'string' && /^https:\/\//.test(z.portfolio) ? z.portfolio.slice(0, 300) : null;
+  return {
+    id: z.id.toLowerCase(), arroba: z.arroba, nome: String(z.nome || '@' + z.arroba).slice(0, 120), foto,
+    cidade: typeof z.cidade === 'string' ? z.cidade.slice(0, 80) : null, funcoes,
+    nichos: carro && carro.nichos ? carro.nichos : [], bio: typeof z.bio === 'string' ? z.bio.slice(0, 280) : null, portfolio,
+    agenda: carro ? carro.agenda || {} : null, agenda_atualizada_em: carro ? iso(carro.agenda_atualizada_em) : null,
+  };
+}
+
+module.exports = { diaDe, agendaDe, agendaSaida, janelaDe, pessoaSaida, FUNCOES, TIPOS, UFS, CATEGORIAS, VISIBILIDADES, TELEFONE, Recusa, perfilDe, itemDe, perfilSaida, itemSaida };

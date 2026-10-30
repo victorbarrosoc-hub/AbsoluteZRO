@@ -112,7 +112,11 @@ for (const navegador of NAVEGADORES) {
           grade.filter((g) => !g.nomeCabe || !g.seloCabe),
           `${onde}: nome ou selo cortado`,
         ).toEqual([])
-        for (const g of grade) if (g.selo) expect(g.selo, onde).toBe('Em breve')
+        // só o que está no ar: nenhum selo "Em breve" (titular, 30/10/2026)
+        expect(
+          grade.filter((g) => g.selo),
+          onde,
+        ).toEqual([])
 
         // "Ferramentas que se conectam" fica perto da grade e da seção seguinte: nada de tela vazia no meio.
         const buraco = await page.evaluate(() => {
