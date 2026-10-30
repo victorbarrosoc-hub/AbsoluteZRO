@@ -3,12 +3,13 @@ import { erro, json } from "@/lib/http";
 import { atenderPedidoDoMaestro, respostaDoMaestro } from "@/lib/zro/maestro-rota";
 import { ACAO_RELAY_CONVERTER, lerConverter, pedirVersoes } from "@/lib/zro/relay";
 
-const STATUS = { nao_achou: 404, pasta: 400, formato_incompativel: 400, fila_cheia: 429 } as const;
+const STATUS = { nao_achou: 404, pasta: 400, formato_incompativel: 400, fila_cheia: 429, sem_computador_relay: 409 } as const;
 
 /**
  * POST /api/zro/relay/converter `{ arquivoId, presets (1–8), pastaId?, ref, conta? }` (contrato "Maestro → Relay",
  * docs/integration-contracts/relay.md): uma versão na fila por preset, para o computador da conta converter e subir
- * na pasta. Idempotente pela chave `ref:preset`. 202 `{ pedidos: [{ id, preset, ref, status }] }`.
+ * na pasta. Idempotente pela chave `ref:preset`. 202 `{ pedidos: [{ id, preset, ref, status }] }`. Nenhum computador da
+ * conta com o app que converte (0.2.0 ou mais novo): 409 `sem_computador_relay`, nada entra na fila.
  */
 export async function POST(req: Request): Promise<Response> {
   return atenderPedidoDoMaestro(

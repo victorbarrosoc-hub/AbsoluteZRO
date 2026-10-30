@@ -152,3 +152,19 @@ export function intervaloDoAcompanhar(lista: readonly { status: string }[] | nul
   const convertendo = lista.some((e) => e.status === "convertendo");
   return convertendo || computador?.aberto_agora !== false ? 5000 : 15000;
 }
+
+/**
+ * O que mostrar no lugar do botão "Gerar versões": `sim` (o botão), `atualizar` (o pedido para atualizar o app do
+ * computador) ou `nao` (nada: sem plano, sem papel, sem computador, ou o SOBEDESCE não respondeu).
+ */
+export type Gerar = "sim" | "atualizar" | "nao";
+export const MSG_ATUALIZAR = "Atualize o SOBEDESCE no computador para gerar versões.";
+
+/**
+ * O botão só quando um computador da conta converte (SOBEDESCE 0.2.0+, `computador.relay` do `relay.pedido`); o aviso
+ * só para quem tem o SOBEDESCE com app antigo (`desatualizado`); sem computador ou sem resposta, nada.
+ */
+export function gerarCom(c: { relay?: boolean; desatualizado?: boolean } | null): Gerar {
+  if (c?.relay === true) return "sim";
+  return c?.desatualizado === true ? "atualizar" : "nao";
+}

@@ -281,7 +281,7 @@ describe("a ponte: converter, acompanhar, cancelar", () => {
         ["whatsapp", "pendente", "05 Entregas"],
       ],
     );
-    assert.deepEqual(r.dados.computador, { aberto_agora: false, usado_ha_pouco: false });
+    assert.deepEqual(r.dados.computador, { aberto_agora: false, usado_ha_pouco: false, relay: true, desatualizado: false });
     // o projeto ficou ligado à pasta criada
     const [p] = (await getBanco().asSystem("teste", (tx) =>
       tx.execute(sql`select drive_folder_id as id from maestro.projects where id = ${projeto}::uuid`),
@@ -315,7 +315,7 @@ describe("a ponte: converter, acompanhar, cancelar", () => {
     assert.equal(ponte.estado.chamadas.length, antes);
     assert.equal(quieto.entregaveis.length, 2);
     const r = await rel.entregaveisDoCard(s.ana, "relayAprovado", true);
-    assert.deepEqual(r.computador, { aberto_agora: false, usado_ha_pouco: false });
+    assert.deepEqual(r.computador, { aberto_agora: false, usado_ha_pouco: false, relay: true, desatualizado: false });
     assert.ok(r.entregaveis.every((e) => e.status === "pendente"));
   });
 
@@ -333,10 +333,10 @@ describe("a ponte: converter, acompanhar, cancelar", () => {
         assert.equal(e.arquivo?.abrir, `https://drive.google.com/file/d/${e.arquivo?.id}/view`);
       }
       assert.equal(dois.entregaveis[0].arquivo?.nome, "Filme manifesto v3 (YouTube 1080p).mp4");
-      // terminado: não pergunta mais
+      // terminado: não pergunta mais por eles, só pelos computadores (o botão "Gerar versões")
       const antes = ponte.estado.chamadas.length;
       await rel.entregaveisDoCard(s.ana, "relayAprovado", true);
-      assert.equal(ponte.estado.chamadas.length, antes);
+      assert.deepEqual(ponte.estado.chamadas.slice(antes), [{ acao: "relay.pedido", corpo: { ids: [] } }]);
     } finally {
       ponte.estado.relay.avancar = false;
     }
@@ -425,6 +425,58 @@ describe("a ponte: converter, acompanhar, cancelar", () => {
     assert.ok(!c.ok && c.erro === "sem_permissao");
     const antes = ponte.estado.chamadas.length;
     await rel.entregaveisDoCard(s.leo, "relayAprovado", true);
+    assert.equal(ponte.estado.chamadas.length, antes);
+  });
+
+  test("'Gerar versões' só quando funciona: computador que converte; app antigo pede para atualizar; sem computador, nada", async () => {
+    // puro: o que vem do SOBEDESCE (ausente = site antigo = false)
+    assert.equal(rel.gerarCom(null), "nao");
+    assert.equal(rel.gerarCom(rel.computadorConferido({ aberto_agora: true, usado_ha_pouco: true })), "nao", "site antigo, sem o campo");
+    assert.deepEqual(rel.computadorConferido({ aberto_agora: false, relay: true, desatualizado: true }), {
+      aberto_agora: false,
+      usado_ha_pouco: false,
+      relay: true,
+      desatualizado: false,
+    });
+    assert.equal(rel.gerarCom({ relay: false, desatualizado: true }), "atualizar");
+    const comp = ponte.estado.relay.computador;
+    const card = "relaySemNadaAndando";
+    const ultima = () => ponte.estado.chamadas.at(-1);
+    try {
+      // um computador da conta com o SOBEDESCE 0.2.0: o botão; sem nada andando, pergunta só pelos computadores
+      let r = await rel.entregaveisDoCard(s.ana, card, true);
+      assert.equal(r.gerar, "sim");
+      assert.deepEqual(ultima(), { acao: "relay.pedido", corpo: { ids: [] } });
+      // só app antigo: no lugar do botão, o pedido para atualizar; e se pedir assim mesmo, o SOBEDESCE recusa (409)
+      Object.assign(comp, { relay: false, desatualizado: true });
+      r = await rel.entregaveisDoCard(s.ana, card, true);
+      assert.equal(r.gerar, "atualizar");
+      const g = await rel.gerarVersoes(s.ana, { versaoId: versaoSolta, presets: ["linkedin"], destino: "original" });
+      assert.ok(!g.ok && g.status === 409 && g.erro === "sem_computador_relay" && g.mensagem === rel.MSG_ATUALIZAR);
+      const solto = await rel.entregaveisDoCard(s.ana, "relaySolto", false);
+      assert.equal(
+        solto.entregaveis.some((e) => e.preset === "linkedin"),
+        false,
+        "recusa clara: nada gravado",
+      );
+      // sem computador nenhum: nada (nem botão, nem aviso)
+      Object.assign(comp, { relay: false, desatualizado: false });
+      assert.equal((await rel.entregaveisDoCard(s.ana, card, true)).gerar, "nao");
+      // o SOBEDESCE sem responder: sem o botão (nada de botão morto), sem aviso (não há o que acompanhar)
+      Object.assign(comp, { relay: true });
+      ponte.estado.relay.pedidoFalha = "rede";
+      r = await rel.entregaveisDoCard(s.ana, card, true);
+      assert.deepEqual([r.gerar, r.aviso], ["nao", null]);
+    } finally {
+      Object.assign(comp, { relay: true, desatualizado: false });
+      ponte.estado.relay.pedidoFalha = null;
+    }
+    // sem acompanhar, quem só lê e quem não tem o Relay: nunca o botão, e o SOBEDESCE nem é perguntado
+    const antes = ponte.estado.chamadas.length;
+    assert.equal((await rel.entregaveisDoCard(s.ana, card, false)).gerar, "nao");
+    assert.equal((await rel.entregaveisDoCard(s.leo, card, true)).gerar, "nao");
+    assert.equal((await rel.entregaveisDoCard(s.semRelay, card, true)).gerar, "nao");
+    assert.equal((await rel.entregaveisDoCard(s.semSobedesce, card, true)).gerar, "nao");
     assert.equal(ponte.estado.chamadas.length, antes);
   });
 

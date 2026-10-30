@@ -11,6 +11,11 @@
  *   original). A pasta é conferida aqui (existe, é pasta, está no mesmo Drive) antes de entrar na fila.
  * - "pronto" só com o resultado e o MD5 do Drive igual ao do convertido (o computador confere; a rota PATCH exige).
  * - Estados do contrato: pendente, convertendo (o "gerando" da fila), pronto, erro, cancelado.
+ * - Só entra na fila se algum computador da conta sabe converter (o app manda `x-sobedesce-capacidades: relay`, desde
+ *   a 0.2.0). Sem ele, 409 `sem_computador_relay`: o pedido nunca andaria. `relay.pedido` diz o mesmo ao Maestro
+ *   (`computador.relay` e `computador.desatualizado`), que só mostra "Gerar versões" com `relay`. "Desatualizado" (o
+ *   Maestro pede para atualizar) só depois que o app que converte está para baixar (o instalador do /baixar é 0.2.0+):
+ *   ninguém é mandado atualizar para uma versão que ainda não saiu.
  */
 import { and, eq, inArray } from "drizzle-orm";
 import { novoId } from "@/lib/auth/tokens";
@@ -20,8 +25,9 @@ import type { Conta } from "@/lib/google/contas";
 import { chamarDrive, ErroDrive, PASTA_MIME } from "@/lib/google/drive";
 import { ID_DRIVE } from "@/lib/proxies/api";
 import { arrumar } from "@/lib/proxies/pedidos";
+import { versaoPublicada } from "@/lib/release";
 import { PRESETS } from "../../../public/app/relay/src/presets.js";
-import { acharOriginal, computadoresDa, type Original } from "./computador-da-z";
+import { acharOriginal, computadoresComCapacidades, type ComputadorComCapacidades, type Original } from "./computador-da-z";
 import { contasProntas, falhaDe, type FalhaDrive } from "./drive-da-z";
 
 export const ACAO_RELAY_CONVERTER = "relay.converter";
@@ -95,8 +101,64 @@ export function lerConverter(c: Record<string, unknown>): EntradaConverter | { e
 
 export type ResultadoConverter =
   | { ok: true; pedidos: { id: string; preset: string; ref: string; status: StatusRelay }[]; novos: number }
-  | { ok: false; erro: "nao_achou" | "pasta" | "formato_incompativel" | "fila_cheia"; mensagem: string }
+  | { ok: false; erro: "nao_achou" | "pasta" | "formato_incompativel" | "fila_cheia" | "sem_computador_relay"; mensagem: string }
   | FalhaDrive;
+
+export const CAPACIDADE_RELAY = "relay";
+export const MSG_ATUALIZAR = "Atualize o SOBEDESCE no computador para gerar versões.";
+export const MSG_SEM_COMPUTADOR = "Instale o SOBEDESCE no computador para gerar versões.";
+
+/** A primeira versão do app de computador que converte as versões do Relay. */
+export const VERSAO_COM_RELAY = [0, 2, 0] as const;
+
+/** A versão no nome do instalador do Release ("SOBEDESCE-0.2.0-b1057-mac-universal.dmg" → [0, 2, 0]); senão null. */
+export function versaoDoInstalador(nome: string | null | undefined): [number, number, number] | null {
+  const m = /^SOBEDESCE-(\d{1,4})\.(\d{1,4})\.(\d{1,4})-/.exec(nome ?? "");
+  return m ? [Number(m[1]), Number(m[2]), Number(m[3])] : null;
+}
+
+const peloMenos = (v: readonly number[], min: readonly number[]) => {
+  for (let i = 0; i < 3; i++) if (v[i] !== min[i]) return v[i] > min[i];
+  return true;
+};
+
+/**
+ * O app que converte já está para baixar? (o instalador que o /baixar entrega, pelo versao.json do Release, é 0.2.0+).
+ * Sem resposta do GitHub: não (melhor não pedir para atualizar do que mandar atrás de uma versão que não existe).
+ */
+export async function appComRelayParaBaixar(): Promise<boolean> {
+  try {
+    const v = await versaoPublicada();
+    return [v.arquivoMac, v.arquivoWindows].some((n) => {
+      const x = versaoDoInstalador(n);
+      return !!x && peloMenos(x, VERSAO_COM_RELAY);
+    });
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Os computadores da conta para o Maestro: um aberto agora ou usado há pouco; `relay` = algum sabe converter as versões
+ * (app 0.2.0 ou mais novo); `desatualizado` = há computador, nenhum sabe e o app novo já está para baixar (o Maestro
+ * pede para atualizar).
+ */
+export function resumoDosComputadores(cs: ComputadorComCapacidades[], paraBaixar: boolean) {
+  const relay = cs.some((c) => c.capacidades.includes(CAPACIDADE_RELAY));
+  return {
+    aberto_agora: cs.some((c) => c.aberto_agora),
+    usado_ha_pouco: cs.some((c) => c.usado_ha_pouco),
+    relay,
+    desatualizado: cs.length > 0 && !relay && paraBaixar,
+  };
+}
+
+/** Só pergunta ao GitHub quando importa (há computador e nenhum converte). */
+async function resumoDaConta(usuarioId: string) {
+  const cs = await computadoresComCapacidades(usuarioId);
+  const precisa = cs.length > 0 && !cs.some((c) => c.capacidades.includes(CAPACIDADE_RELAY));
+  return resumoDosComputadores(cs, precisa && (await appComRelayParaBaixar()));
+}
 
 /** A pasta de destino, no mesmo Drive do original: existe, é pasta e não está na lixeira. */
 async function conferirPasta(usuarioId: string, conta: Conta, pastaId: string): Promise<boolean> {
@@ -114,6 +176,9 @@ async function conferirPasta(usuarioId: string, conta: Conta, pastaId: string): 
  * confere quem pede (o Maestro, com a sessão da pessoa, o SOBEDESCE e o Relay no plano).
  */
 export async function pedirVersoes(usuarioId: string, e: EntradaConverter): Promise<ResultadoConverter> {
+  const cs = await computadoresComCapacidades(usuarioId);
+  if (!cs.some((c) => c.capacidades.includes(CAPACIDADE_RELAY)))
+    return { ok: false, erro: "sem_computador_relay", mensagem: cs.length ? MSG_ATUALIZAR : MSG_SEM_COMPUTADOR };
   const prontas = await contasProntas(usuarioId);
   if (!Array.isArray(prontas)) return prontas;
   const contas = e.conta ? prontas.filter((c) => c.id === e.conta) : prontas;
@@ -177,15 +242,17 @@ export async function pedirVersoes(usuarioId: string, e: EntradaConverter): Prom
   return { ok: true, pedidos: lista.map((l) => ({ id: l.id, preset: String(ajustesDe(l).preset), ref: e.ref, status: paraContrato(l).status })), novos: faltam.length };
 }
 
-/** `relay.pedido`: os pedidos desta pessoa (os de outra, ou que sumiram, não vêm) e se há computador por perto. */
+/**
+ * `relay.pedido`: os pedidos desta pessoa (os de outra, ou que sumiram, não vêm) e os computadores (por perto, e se
+ * algum converte). Sem ids, só os computadores: o Maestro pergunta ao abrir o card se pode mostrar "Gerar versões".
+ */
 export async function lerVersoes(usuarioId: string, ids: string[]) {
-  await arrumar(usuarioId);
+  if (ids.length) await arrumar(usuarioId);
   const linhas = ids.length ? await db.select().from(pedidos).where(and(eq(pedidos.usuarioId, usuarioId), eq(pedidos.tipo, "relay"), inArray(pedidos.id, ids))) : [];
   const porId = new Map(linhas.map((l) => [l.id, l]));
-  const computadores = await computadoresDa(usuarioId);
   return {
     pedidos: ids.map((i) => porId.get(i)).filter((l): l is Linha => Boolean(l)).map(paraContrato),
-    computador: { aberto_agora: computadores.some((c) => c.aberto_agora), usado_ha_pouco: computadores.some((c) => c.usado_ha_pouco) },
+    computador: await resumoDaConta(usuarioId),
   };
 }
 

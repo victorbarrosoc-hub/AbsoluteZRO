@@ -24,7 +24,7 @@ import {
 import { Icone } from "@/components/icones";
 import { NavegadorDrive } from "@/components/arquivos/navegador";
 import { useMidia } from "@/components/use-midia";
-import { BotaoGerar, ListaEntregaveis, useEntregaveis } from "@/components/relay/entregas";
+import { AvisoAtualizar, BotaoGerar, ListaEntregaveis, useEntregaveis } from "@/components/relay/entregas";
 import { GerarVersoes } from "@/components/relay/gerar-versoes";
 import { ComDriveDaEquipe } from "./drive-equipe";
 import { useNovaVersao } from "./nova-versao";
@@ -163,14 +163,15 @@ function EntregasDaPeca({ peca }: { peca: PecaDaEquipe }) {
   const ehAprovada =
     !!alvo && (alvo.id === aprovada?.versao || (["aprovado", "agendado", "entregue"].includes(peca.coluna) && alvo.id === peca.versoes[0]?.id));
   const itens = entregas.lista ?? [];
-  if (!alvo && !itens.length) return null;
-  if (!escreve && !itens.length) return null;
+  // o botão só quando funciona (um computador da conta converte); com app antigo, o pedido para atualizar
+  const gerar = alvo && escreve ? entregas.gerar : "nao";
+  if (gerar === "nao" && !itens.length) return null;
   const n = new Map(peca.versoes.map((v) => [v.id, v.n]));
   return (
     <section className="ap-entregas" aria-label="Versões de entrega">
       <div className="ap-entregas__cabeca">
         <h3>Entregas</h3>
-        {alvo && escreve ? <BotaoGerar aprovada={ehAprovada} aoAbrir={() => setAberta(true)} /> : null}
+        {gerar === "sim" ? <BotaoGerar aprovada={ehAprovada} aoAbrir={() => setAberta(true)} /> : gerar === "atualizar" ? <AvisoAtualizar /> : null}
       </div>
       <ListaEntregaveis
         itens={itens.map((e) => ({ ...e, nome: `v${n.get(e.versao) ?? "?"} · ${e.nome}` }))}

@@ -10,12 +10,15 @@
 import os from 'node:os'
 import { execFile } from 'node:child_process'
 import { EventEmitter } from 'node:events'
-import { dataPaths, cloudUrl } from '../config.js'
+import { CAPACIDADES_DO_APP, dataPaths, cloudUrl } from '../config.js'
 import { ArquivoSecreto } from '../util/segredos.js'
 import { httpRequest, HttpError } from '../net/http.js'
 import { backoffDelay, isAbortError, sleep } from '../util/backoff.js'
 import { classifyError, SobeDesceError } from './errors.js'
 import { readBuildInfo } from '../version.js'
+
+/** O cabeçalho x-sobedesce-capacidades ("relay"): o que este app sabe fazer. */
+const CAPACIDADES = CAPACIDADES_DO_APP.join(',')
 
 export const CLOUD_PREFIX = 'nuvem:'
 
@@ -147,7 +150,9 @@ export class CloudAuth extends EventEmitter {
     this.baseUrl = String(baseUrl || cloudUrl()).replace(/\/+$/, '')
     this.deviceName = deviceName
     this.platform = platform
-    // Vai em todo pedido ao site (x-sobedesce-build): o admin vê qual versão do app cada computador usa.
+    // Vai em todo pedido ao site (x-sobedesce-build): o admin vê qual versão do app cada computador usa. Junto, o que
+    // este app sabe fazer (x-sobedesce-capacidades, CAPACIDADES_DO_APP em src/config.js): o Maestro só oferece
+    // "Gerar versões" quando algum computador da conta diz "relay".
     this.build = Number.isSafeInteger(build) && build >= 0 ? build : 0
     this.refreshEveryMs = refreshEveryMs
     this.retryBaseMs = retryBaseMs
@@ -322,7 +327,7 @@ export class CloudAuth extends EventEmitter {
    * `auth: true` manda o Bearer do dispositivo; nunca manda cookie.
    */
   async #call(method, path, { body, auth = true, expect = [200], timeoutMs = REQUEST_TIMEOUT_MS, token } = {}) {
-    const headers = { accept: 'application/json', 'x-sobedesce-build': String(this.build) }
+    const headers = { accept: 'application/json', 'x-sobedesce-build': String(this.build), 'x-sobedesce-capacidades': CAPACIDADES }
     if (body !== undefined) headers['content-type'] = 'application/json'
     if (auth) {
       const t = token ?? this.session?.token
@@ -383,7 +388,7 @@ export class CloudAuth extends EventEmitter {
     await this.#ready()
     const s = this.session
     if (!s) return null
-    const headers = { accept: 'application/json, application/x-ndjson', authorization: `Bearer ${s.token}`, 'x-sobedesce-build': String(this.build) }
+    const headers = { accept: 'application/json, application/x-ndjson', authorization: `Bearer ${s.token}`, 'x-sobedesce-build': String(this.build), 'x-sobedesce-capacidades': CAPACIDADES }
     if (body !== undefined) headers['content-type'] = 'application/json'
     return fetch(`${this.baseUrl}/api/zro/ia/${caminho}`, { method, headers, body, signal, redirect: 'error', cache: 'no-store' })
   }

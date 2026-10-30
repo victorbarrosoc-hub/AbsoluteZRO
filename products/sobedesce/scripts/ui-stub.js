@@ -778,7 +778,7 @@ function versaoStatus() {
 function snapshot() {
   return {
     versao: versaoStatus(),
-    app: { name: 'SOBEDESCE', version: '0.1.0', platform: PLATFORM },
+    app: { name: 'SOBEDESCE', version: '0.2.0', platform: PLATFORM },
     setup: state.setup,
     accounts: state.accounts,
     settings: state.settings,

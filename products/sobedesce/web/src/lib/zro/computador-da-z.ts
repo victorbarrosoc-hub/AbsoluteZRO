@@ -51,11 +51,14 @@ export function ehVersao(a: ArquivoAchado, formato: FormatoReferencia): boolean 
 
 export type Computador = { nome: string; plataforma: string | null; aberto_agora: boolean; usado_ha_pouco: boolean; visto_em: string };
 
-/** Os computadores conectados à conta (sessões de dispositivo válidas), o mais recente primeiro. */
-export async function computadoresDa(usuarioId: string, agora = Date.now()): Promise<Computador[]> {
+/** Um computador com o que o app dele sabe fazer (`sessoes.capacidades`, cabeçalho x-sobedesce-capacidades). */
+export type ComputadorComCapacidades = Computador & { capacidades: string[] };
+
+/** Os computadores conectados à conta (sessões de dispositivo válidas), o mais recente primeiro, com as capacidades. */
+export async function computadoresComCapacidades(usuarioId: string, agora = Date.now()): Promise<ComputadorComCapacidades[]> {
   const s = schema.sessoes;
   const linhas = await db
-    .select({ id: s.id, nome: s.nome, plataforma: s.plataforma, ultimoUsoEm: s.ultimoUsoEm })
+    .select({ id: s.id, nome: s.nome, plataforma: s.plataforma, ultimoUsoEm: s.ultimoUsoEm, capacidades: s.capacidades })
     .from(s)
     .where(and(eq(s.usuarioId, usuarioId), eq(s.tipo, "dispositivo"), isNull(s.revogadaEm), gt(s.expiraEm, new Date(agora))));
   if (!linhas.length) return [];
@@ -73,9 +76,15 @@ export async function computadoresDa(usuarioId: string, agora = Date.now()): Pro
         aberto_agora: agora - (aviso.get(l.id) ?? 0) < ABERTO_MS,
         usado_ha_pouco: agora - visto < RECENTE_MS,
         visto_em: new Date(visto).toISOString(),
+        capacidades: l.capacidades ?? [],
       };
     })
     .sort((a, b) => b.visto_em.localeCompare(a.visto_em));
+}
+
+/** Os computadores conectados à conta (sessões de dispositivo válidas), o mais recente primeiro. */
+export async function computadoresDa(usuarioId: string, agora = Date.now()): Promise<Computador[]> {
+  return (await computadoresComCapacidades(usuarioId, agora)).map(({ capacidades: _c, ...c }) => (void _c, c));
 }
 
 export type Original = { conta: Conta; arquivo: ArquivoAchado; pais: string[] };

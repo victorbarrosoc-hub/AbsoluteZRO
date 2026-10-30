@@ -120,6 +120,13 @@
       "when": 1793365544556,
       "tag": "0016_pedidos_relay",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793370247886,
+      "tag": "0017_capacidades_do_computador",
+      "breakpoints": true
     }
   ]
 }

@@ -87,11 +87,11 @@ do projeto. Reaproveita a ponte que já existe (`maestro-sobedesce.md`): **o des
 tem a fila, o Drive e o ffmpeg), com três ações novas na lista fechada `PONTES` (`packages/core/src/pedidos-entre-apps.ts`).
 Pedir conversão exige o **Relay no plano** da organização (incluído em todo plano pela `0031`) além do SOBEDESCE.
 
-| Ação              | Rota (SOBEDESCE, `POST`)   | Corpo                                                                                                                                     | Resposta                                                              |
-| ----------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `relay.converter` | `/api/zro/relay/converter` | `{ arquivoId, presets: string[] (1–8, ids de src/presets.js), pastaId?: id (sem ele, a pasta do original), ref: string (≤ 120), conta? }` | `202 { pedidos: [{ id, preset, ref, status }] }`                      |
-| `relay.pedido`    | `/api/zro/relay/pedido`    | `{ ids: string[] (≤ 50) }`                                                                                                                | `{ pedidos: [Pedido], computador: { aberto_agora, usado_ha_pouco } }` |
-| `relay.cancelar`  | `/api/zro/relay/cancelar`  | `{ id }`                                                                                                                                  | `{ cancelado: true, ja_terminado }`                                   |
+| Ação              | Rota (SOBEDESCE, `POST`)   | Corpo                                                                                                                                     | Resposta                                                                                      |
+| ----------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `relay.converter` | `/api/zro/relay/converter` | `{ arquivoId, presets: string[] (1–8, ids de src/presets.js), pastaId?: id (sem ele, a pasta do original), ref: string (≤ 120), conta? }` | `202 { pedidos: [{ id, preset, ref, status }] }`                                              |
+| `relay.pedido`    | `/api/zro/relay/pedido`    | `{ ids: string[] (0 a 50; vazio = só os computadores) }`                                                                                  | `{ pedidos: [Pedido], computador: { aberto_agora, usado_ha_pouco, relay?, desatualizado? } }` |
+| `relay.cancelar`  | `/api/zro/relay/cancelar`  | `{ id }`                                                                                                                                  | `{ cancelado: true, ja_terminado }`                                                           |
 
 Corpos e respostas em zod (`packages/media-contracts/src/ponte.ts`, `Relay*Schema`) e em JSON Schema
 (`schemas/sobedesce.relay-*.v1.schema.json`, `npm run contracts:export`). No HUB, as três ações estão na `PONTES`
@@ -100,6 +100,14 @@ site, canal `web`, porque o Relay não tem API própria); sem o Relay, 403 `enti
 `details.product = relay` e nada assinado. `relay.pedido` (o acompanhamento) tem limite próprio (300 em 10 min por
 pessoa), para não gastar o do Drive. Nenhuma `relay.*` anda sem a pessoa (credencial do app).
 
+- **Só quando funciona (lançamento, 30/10/2026):** o app de computador diz ao site o que sabe fazer em todo pedido
+  (`x-sobedesce-capacidades: relay`, desde a 0.2.0; gravado em `sessoes.capacidades`, migração SOBEDESCE
+  `0017_capacidades_do_computador`, na hora em que muda). `relay.pedido` devolve `computador.relay` (algum computador
+  da conta converte) e `computador.desatualizado` (há computador, só com app antigo, e o instalador do `/baixar` já é 0.2.0+: ninguém é mandado atualizar para uma versão que ainda não saiu). O Maestro pergunta ao abrir o
+  card (`ids: []`) e só mostra "Gerar versões" com `relay`; com `desatualizado`, no lugar do botão, "Atualize o
+  SOBEDESCE no computador para gerar versões."; sem computador, sem SOBEDESCE ou sem o Relay no plano, nada. O site
+  confere de novo: `relay.converter` sem computador que converta é `409 sem_computador_relay` e nada entra na fila.
+  App antigo continua funcionando igual (sem o cabeçalho, nenhuma capacidade).
 - **Idempotência:** `ref` é do Maestro (sugestão: id da versão). Cada item da fila tem a chave `ref:preset`; pedir de
   novo a mesma chave devolve o pedido que já existe (pendente, em andamento ou pronto), nunca um segundo arquivo.
 - **`Pedido`** = `{ id, preset, ref, status: 'pendente' | 'convertendo' | 'pronto' | 'erro' | 'cancelado', frac?,

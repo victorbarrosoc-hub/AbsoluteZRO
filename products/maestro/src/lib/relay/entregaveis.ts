@@ -18,6 +18,9 @@
  * - Pedido que o SOBEDESCE não acha mais também vira `revisar` (nunca "pronto" nem "erro" inventado).
  * - Quem pede: `podeEntregas(sessao, "pedir")` (src/lib/acessos.ts: administração, gestão e equipe); leitura vê o que
  *   foi guardado e nunca pergunta ao SOBEDESCE.
+ * - "Gerar versões" só aparece quando funciona (`gerar` em `entregaveisDoCard`): o SOBEDESCE e o Relay no plano, o
+ *   papel que pede e um computador da conta com o app que converte (SOBEDESCE 0.2.0+, `computador.relay` no
+ *   `relay.pedido`). Só com app antigo, no lugar do botão, o pedido para atualizar; sem computador, nada.
  * - Sem o SOBEDESCE ou sem o Relay no plano, a folha mostra o porquê e o link; nada é pedido. Com o computador
  *   fechado, o pedido espera; a tela diz e oferece o Relay no navegador (`linkNoRelay`, jeito 2 do contrato), que não
  *   volta para o card sozinho.
@@ -30,7 +33,7 @@ import { podeEntregas } from "@/lib/acessos";
 import { HUB_URL } from "@/lib/site";
 import { criarEstrutura } from "@/lib/sobedesce/arquivos";
 import { noSobedesce, PRODUTO_RELAY, PRODUTO_SOBEDESCE, type Resultado } from "@/lib/sobedesce/ponte";
-import { formaDoPreset, normalizarPresets, ORDEM, type Forma } from "./escolha";
+import { formaDoPreset, gerarCom, normalizarPresets, ORDEM, type Forma, type Gerar } from "./escolha";
 import { preset as acharPreset } from "./presets.js";
 
 /** Os estados do SOBEDESCE (contrato) mais `revisar`, que é só do Maestro (despacho ambíguo ou pedido sumido). */
@@ -63,7 +66,12 @@ export type Entregavel = {
   em: string;
 };
 
-export type Computador = { aberto_agora: boolean; usado_ha_pouco: boolean };
+/**
+ * Os computadores da conta no SOBEDESCE: aberto agora, usado há pouco; `relay` = algum converte as versões (app
+ * 0.2.0+); `desatualizado` = há computador, só com app antigo. Ausentes (site antigo) valem `false`.
+ */
+export type Computador = { aberto_agora: boolean; usado_ha_pouco: boolean; relay: boolean; desatualizado: boolean };
+export { gerarCom, MSG_ATUALIZAR, type Gerar } from "./escolha";
 
 export type Disponibilidade =
   { ok: true } | { ok: false; erro: "sem_sobedesce" | "sem_relay"; titulo: string; mensagem: string; link: { rotulo: string; href: string } };
@@ -350,9 +358,16 @@ function podePedir(sessao: Sessao): Falha | null {
   return null;
 }
 
-const computadorConferido = (c: unknown): Computador | null => {
+export const computadorConferido = (c: unknown): Computador | null => {
   const o = c as Record<string, unknown> | null | undefined;
-  return o && typeof o.aberto_agora === "boolean" ? { aberto_agora: o.aberto_agora, usado_ha_pouco: o.usado_ha_pouco === true } : null;
+  return o && typeof o.aberto_agora === "boolean"
+    ? {
+        aberto_agora: o.aberto_agora,
+        usado_ha_pouco: o.usado_ha_pouco === true,
+        relay: o.relay === true,
+        desatualizado: o.relay !== true && o.desatualizado === true,
+      }
+    : null;
 };
 
 /**
@@ -456,8 +471,11 @@ export async function conferirEntregavel(sessao: Sessao, entregavelId: string): 
   return despachar(sessao, lido.v, [lido.l.preset], lido.l.pasta_id ? { id: lido.l.pasta_id, nome: lido.l.pasta_nome } : null, null);
 }
 
-/** `podePedir`: o papel da pessoa pede, confere e cancela (`podeEntregas`); a tela mostra os botões só com ele. */
-export type Andamento = { entregaveis: Entregavel[]; computador: Computador | null; aviso: string | null; podePedir: boolean };
+/**
+ * `podePedir`: o papel da pessoa pede, confere e cancela (`podeEntregas`); a tela mostra os botões só com ele.
+ * `gerar`: se "Gerar versões" aparece (`gerarCom`); só se sabe com `acompanhar` (senão `nao`).
+ */
+export type Andamento = { entregaveis: Entregavel[]; computador: Computador | null; aviso: string | null; podePedir: boolean; gerar: Gerar };
 
 /**
  * Aplica uma resposta de `relay.pedido` às linhas andando: o que veio entra se puder (`aplicavel`); o pedido que não
@@ -477,26 +495,31 @@ async function aplicarAndamento(tx: Tx, abertos: Linha[], pedidos: unknown[]) {
 
 /**
  * Os entregáveis de um card e, com `acompanhar` (a ficha ou o lote abertos e à vista), o andamento dos que ainda não
- * terminaram, lido no SOBEDESCE e guardado. Quem só acompanha (leitura) vê o que foi guardado (não pergunta nem grava).
+ * terminaram, lido no SOBEDESCE e guardado, e os computadores da conta (se "Gerar versões" pode aparecer: `gerar`).
+ * Sem nada andando, pergunta só pelos computadores (`ids: []`). Quem só acompanha (leitura), ou sem o SOBEDESCE e o
+ * Relay no plano, vê o que foi guardado (não pergunta nem grava) e nunca o botão.
  */
 export async function entregaveisDoCard(sessao: Sessao, cardId: string, acompanhar = false): Promise<Andamento> {
   const podePedir = podeEntregas(sessao, "pedir");
-  if (!ID_CARD.test(cardId)) return { entregaveis: [], computador: null, aviso: null, podePedir };
+  const nada = { computador: null, aviso: null, podePedir, gerar: "nao" as const };
+  if (!ID_CARD.test(cardId)) return { entregaveis: [], ...nada };
   const ctx = { sub: sessao.sub, orgId: sessao.orgId };
   const linhas = await getBanco().asUser(ctx, (tx) => linhasDoCard(tx, cardId));
   const abertos = linhas.filter((l) => EM_ANDAMENTO.includes(l.status) && l.pedido_id).slice(0, 50);
-  if (!acompanhar || !abertos.length || !disponibilidade(sessao).ok || !podePedir)
-    return { entregaveis: linhas.map(paraTela), computador: null, aviso: null, podePedir };
+  if (!acompanhar || !disponibilidade(sessao).ok || !podePedir) return { entregaveis: linhas.map(paraTela), ...nada };
   const r = await noSobedesce<{ pedidos?: unknown[]; computador?: Computador }>(sessao, "relay.pedido", { ids: abertos.map((l) => l.pedido_id!) });
-  // Sem resposta, nada muda: o que estava guardado continua, com o porquê.
-  if (!r.ok) return { entregaveis: linhas.map(paraTela), computador: null, aviso: r.mensagem, podePedir };
+  // Sem resposta, nada muda: o que estava guardado continua, com o porquê (só se há o que acompanhar); sem o botão.
+  if (!r.ok) return { entregaveis: linhas.map(paraTela), ...nada, aviso: abertos.length ? r.mensagem : null };
   const pedidos = r.dados.pedidos;
-  if (!Array.isArray(pedidos)) return { entregaveis: linhas.map(paraTela), computador: null, aviso: "O SOBEDESCE respondeu algo estranho agora.", podePedir };
+  if (!Array.isArray(pedidos))
+    return { entregaveis: linhas.map(paraTela), ...nada, aviso: abertos.length ? "O SOBEDESCE respondeu algo estranho agora." : null };
+  const computador = computadorConferido(r.dados.computador);
+  if (!abertos.length) return { entregaveis: linhas.map(paraTela), computador, aviso: null, podePedir, gerar: gerarCom(computador) };
   const novas = await getBanco().asUser(ctx, async (tx) => {
     await aplicarAndamento(tx, abertos, pedidos);
     return linhasDoCard(tx, cardId);
   });
-  return { entregaveis: novas.map(paraTela), computador: computadorConferido(r.dados.computador), aviso: null, podePedir };
+  return { entregaveis: novas.map(paraTela), computador, aviso: null, podePedir, gerar: gerarCom(computador) };
 }
 
 /** Cancelar um item que ainda não terminou. O que já terminou do outro lado fica com o estado de lá. */

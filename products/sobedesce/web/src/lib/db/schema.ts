@@ -50,6 +50,11 @@ export const sessoes = pgTable(
     revogadaEm: quando(),
     /** Build do app de computador (cabeçalho x-sobedesce-build), gravado junto com o ultimoUsoEm. 0 = desenvolvimento. */
     appBuild: integer(),
+    /**
+     * O que o app de computador sabe fazer (cabeçalho x-sobedesce-capacidades, ex.: ["relay"] = pega as versões do
+     * Relay pedidas pelo Maestro). null = app sem o cabeçalho (até a 0.1.0) ou sessão do site.
+     */
+    capacidades: text().array(),
   },
   (t) => [index("sessoes_usuario_idx").on(t.usuarioId)],
 );

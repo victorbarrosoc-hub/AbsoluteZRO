@@ -3,8 +3,9 @@
  * iPhone (Chromium e WebKit): a versão aprovada do Drive na ficha do card → a folha (destinos, pasta, prévia com o
  * nome e o peso pelo plano do Relay; "Mais" nos grupos do Relay) → "Gerar N versões" → na fila, com o computador
  * fechado (e o Relay no navegador como saída) → cancelar um → o computador abre → pronto com MD5 e o link do Drive, o
- * cancelado fica cancelado; o lote mostra as mesmas entregas. Despacho ambíguo: "Conferir" e a mesma fila. Sem o
- * Relay no plano: o porquê e o link. HUB e SOBEDESCE de mentira (tests/ponte-falsa.mts, controlados por /__relay);
+ * cancelado fica cancelado; o lote mostra as mesmas entregas. Despacho ambíguo: "Conferir" e a mesma fila. O botão
+ * só quando funciona: com o SOBEDESCE antigo no computador, o pedido para atualizar; sem computador ou sem o Relay no
+ * plano, nada. HUB e SOBEDESCE de mentira (tests/ponte-falsa.mts, controlados por /__relay);
  * Google interceptado no navegador. Com SHOTS_DIR, guarda as capturas `rl-*` (claro e escuro, 1440 e 393) e, no
  * computador, o vídeo do fluxo.
  */
@@ -21,6 +22,7 @@ const SESSAO_DRIVE = "test-results/e2e-sessao-drive.json";
 const SHOTS = process.env.SHOTS_DIR;
 const PONTE = `http://127.0.0.1:${PORTA_PONTE}`;
 const NA_FILA_FECHADO = "Começa quando o computador com o SOBEDESCE abrir.";
+const ATUALIZAR = "Atualize o SOBEDESCE no computador para gerar versões.";
 
 type Relay = { token: string; sub: string; org: string; cli: string; proj: string };
 const relay = () => JSON.parse(readFileSync(SESSAO_RELAY, "utf8")) as Relay;
@@ -216,7 +218,53 @@ test.describe("Gerar versões com o Relay", () => {
     expect(await daVersao()).toHaveLength(1);
   });
 
-  test("sem o Relay no plano: o porquê e o link, nada é pedido; Esc fecha só a folha de cima", async ({ page, context, baseURL }, info) => {
+  test("só quando funciona: app antigo no computador pede para atualizar; o app novo abre e o botão aparece; sem computador, nada", async ({
+    page,
+    context,
+    baseURL,
+  }, info) => {
+    test.setTimeout(90_000);
+    const nome = `${info.project.name}-capacidade`;
+    const s = await semear(nome);
+    await entrar(context, baseURL!, relay().token);
+    const antes = (await pedidosNaFila()).length;
+    const versoes = page.getByRole("dialog", { name: `Card: Manifesto ${nome}` }).getByRole("region", { name: "Versões" });
+    const gerar = versoes.getByRole("button", { name: "Gerar versões" });
+    const atualizar = versoes.getByRole("note").filter({ hasText: ATUALIZAR });
+    try {
+      // o computador da conta com o SOBEDESCE 0.1.0 (não converte): no lugar do botão, o pedido para atualizar
+      await fila({ computador: { aberto_agora: true, usado_ha_pouco: true, relay: false, desatualizado: true } });
+      await page.goto(`/app/quadro?card=${s.card}`);
+      await expect(versoes).not.toHaveAttribute("aria-busy", "true");
+      await expect(atualizar).toBeVisible();
+      await expect(gerar).toHaveCount(0);
+      await atualizar.scrollIntoViewIfNeeded();
+      await foto(page, "atualizar", info.project.name);
+      // no lote, o mesmo
+      await page.goto(`/app/aprovacoes/${s.lote}`);
+      const entregas = page.getByRole("region", { name: "Versões de entrega" });
+      await expect(entregas.getByRole("note").filter({ hasText: ATUALIZAR })).toBeVisible();
+      await expect(entregas.getByRole("button", { name: "Gerar versões" })).toHaveCount(0);
+      // sem computador nenhum: nada (nem botão, nem aviso)
+      await fila({ computador: { relay: false, desatualizado: false } });
+      await page.goto(`/app/quadro?card=${s.card}`);
+      await expect(versoes).not.toHaveAttribute("aria-busy", "true");
+      await expect(versoes.getByText("Master")).toBeVisible();
+      await page.waitForTimeout(800);
+      await expect(gerar).toHaveCount(0);
+      await expect(atualizar).toHaveCount(0);
+      // o app 0.2.0 abre (diz ao SOBEDESCE que converte): o botão aparece, sem o aviso
+      await fila({ computador: { relay: true, desatualizado: false } });
+      await page.reload();
+      await expect(gerar).toBeVisible();
+      await expect(atualizar).toHaveCount(0);
+    } finally {
+      await fila({ computador: { aberto_agora: false, usado_ha_pouco: false, relay: true, desatualizado: false } });
+    }
+    expect((await pedidosNaFila()).length).toBe(antes);
+  });
+
+  test("sem o Relay no plano: nem o botão nem o aviso, e nada é pedido", async ({ page, context, baseURL }) => {
     const { token } = JSON.parse(readFileSync(SESSAO_DRIVE, "utf8")) as { token: string };
     await entrar(context, baseURL!, token);
     const antes = (await pedidosNaFila()).length;
@@ -224,15 +272,10 @@ test.describe("Gerar versões com o Relay", () => {
     const ficha = page.getByRole("dialog", { name: /^Card: / });
     const versoes = ficha.getByRole("region", { name: "Versões" });
     await expect(versoes).not.toHaveAttribute("aria-busy", "true");
-    await versoes.getByRole("button", { name: "Gerar versões" }).first().click();
-    const folha = page.getByRole("dialog", { name: "Gerar versões" });
-    await expect(folha.getByRole("heading", { name: "O Relay ainda não está liberado" })).toBeVisible();
-    await expect(folha.getByRole("link", { name: "Conhecer o Relay" })).toHaveAttribute("href", "https://relay.absolutezro.com");
-    await expect(folha.getByRole("button", { name: /^Gerar \d/ })).toHaveCount(0);
-    await foto(page, "sem-relay", info.project.name);
-    await page.keyboard.press("Escape");
-    await expect(folha).toHaveCount(0);
-    await expect(ficha).toBeVisible();
+    await expect(versoes.locator(".vc__versao").first()).toBeVisible();
+    await page.waitForTimeout(800);
+    await expect(versoes.getByRole("button", { name: "Gerar versões" })).toHaveCount(0);
+    await expect(versoes.getByText(ATUALIZAR)).toHaveCount(0);
     expect((await pedidosNaFila()).length).toBe(antes);
   });
 });

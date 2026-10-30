@@ -14,6 +14,7 @@ import { after, before, describe, test } from "node:test";
 import { z } from "zod";
 import { CONTA_ANA, pedido, prepararAmbiente } from "./ambiente.mjs";
 import { iniciarZroFalsa } from "./zro-falso.mjs";
+import { CAPACIDADES_DO_APP } from "../../src/config.js";
 import { PedidosRelay } from "../../src/engine/pedidos-relay.js";
 import { RelayJobs } from "../../src/server/relay.js";
 
@@ -42,6 +43,8 @@ let macId = "";
 let entregas = "";
 let video = "";
 const SUB = "zro-ana-ciclo";
+/** O que o app de computador diz que sabe fazer (o mesmo cabeçalho de src/google/cloud-auth.js). */
+const CAPACIDADES = CAPACIDADES_DO_APP.join(",");
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Qualquer = any;
@@ -63,7 +66,9 @@ function nuvemDoComputador() {
     signedIn: true,
     async request(method: string, caminho: string, { body, expect = [200] }: { body?: unknown; expect?: number[] } = {}) {
       const id = decodeURIComponent(caminho.split("?")[0].split("/")[4] ?? "");
-      const req = pedido(caminho, { bearer: macToken, method, ...(body !== undefined && method !== "GET" ? { corpo: body } : {}) });
+      // os cabeçalhos que o app manda em todo pedido (src/google/cloud-auth.js): o build e o que ele sabe fazer
+      const headers = { "x-sobedesce-build": "1100", "x-sobedesce-capacidades": CAPACIDADES };
+      const req = pedido(caminho, { bearer: macToken, method, headers, ...(body !== undefined && method !== "GET" ? { corpo: body } : {}) });
       const res =
         method === "GET"
           ? await rLista.GET(req)
@@ -98,6 +103,9 @@ function conversor() {
 }
 
 before(async () => {
+  // Nada vai ao GitHub de verdade (o "atualize" confere o Release): aqui o GitHub fica fora do ar.
+  delete process.env.VERCEL;
+  process.env.SOBEDESCE_GITHUB_API = "http://127.0.0.1:9";
   amb = await prepararAmbiente();
   zro = await iniciarZroFalsa(CLIENTE);
   Object.assign(process.env, { ZRO_ISSUER: zro.url, ZRO_CLIENT_ID: CLIENTE.clientId, ZRO_CLIENT_SECRET: CLIENTE.clientSecret });
@@ -141,6 +149,18 @@ after(async () => {
 describe("Maestro → HUB → SOBEDESCE → computador → acompanhamento", () => {
   test("duas versões: uma fica pronta com o MD5, a outra é cancelada no meio e nada sobe; pedir de novo não duplica", async () => {
     const pedidoDaVersao = { arquivoId: video, presets: ["youtube-1080", "whatsapp"], pastaId: entregas, ref: "8a1f-versao-3" };
+    // o computador conectado ainda não disse o que sabe fazer (app até a 0.1.0): nada entra na fila, e o Maestro sabe
+    let antes = await maestro("pedido", { ids: [] });
+    assert.deepEqual(antes.b.pedidos, []);
+    assert.equal(antes.b.computador.relay, false);
+    const velho = await maestro("converter", pedidoDaVersao);
+    assert.equal(velho.status, 409);
+    assert.equal(velho.b.erro, "sem_computador_relay");
+    // o app 0.2.0 abre e fala com o site (o cabeçalho x-sobedesce-capacidades): agora converte
+    await nuvemDoComputador().request("GET", "/api/proxies/pedidos?status=pendente&tipo=relay");
+    antes = await maestro("pedido", { ids: [] });
+    assert.equal(antes.b.computador.relay, true);
+    assert.equal(antes.b.computador.desatualizado, false);
     const c = await maestro("converter", pedidoDaVersao);
     assert.equal(c.status, 202);
     const ids = Object.fromEntries(c.b.pedidos.map((p: Qualquer) => [p.preset, p.id])) as Record<string, string>;

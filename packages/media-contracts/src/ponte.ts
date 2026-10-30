@@ -201,12 +201,21 @@ export const PedidoRelaySchema = z
   .strict()
   .refine((p) => p.status !== 'pronto' || !!p.resultado, { message: 'pronto exige o resultado com o MD5', path: ['resultado'] })
 
-export const RelayPedidoEntradaSchema = z.object({ ids: z.array(PedidoRelayId).min(1).max(50) }).strict()
+/** Sem ids (`[]`): só os computadores (o Maestro pergunta ao abrir o card se pode mostrar "Gerar versões"). */
+export const RelayPedidoEntradaSchema = z.object({ ids: z.array(PedidoRelayId).max(50) }).strict()
 export const RelayPedidoRespostaSchema = z
   .object({
     pedidos: z.array(PedidoRelaySchema).max(50),
-    /** Há um app de computador da conta aberto agora, ou usado há pouco (o app que pede diz isso sem prometer prazo). */
-    computador: z.object({ aberto_agora: z.boolean(), usado_ha_pouco: z.boolean() }).strict(),
+    /**
+     * Há um app de computador da conta aberto agora, ou usado há pouco (o app que pede diz isso sem prometer prazo).
+     * `relay`: algum computador da conta converte as versões (app 0.2.0 ou mais novo, que manda
+     * `x-sobedesce-capacidades: relay`); sem ele, `relay.converter` é 409 `sem_computador_relay` e o Maestro não mostra
+     * o botão. `desatualizado`: há computador, só com app antigo, e o app novo já está para baixar (o Maestro pede para atualizar). Opcionais: o site
+     * de antes da 0017 não manda, e ausente vale como `false`.
+     */
+    computador: z
+      .object({ aberto_agora: z.boolean(), usado_ha_pouco: z.boolean(), relay: z.boolean().optional(), desatualizado: z.boolean().optional() })
+      .strict(),
   })
   .strict()
 

@@ -14,7 +14,8 @@
  *   `relay.*` na PONTES (403 `action_not_allowed`). `relay.converterFalha`: "rede" = guarda os pedidos e derruba a
  *   conexão sem responder (o despacho ambíguo), "recusa" = 400 sem guardar nada, "parcial" = guarda todos e responde
  *   só o primeiro. `relay.pedidoFalha` = "rede" derruba o `relay.pedido`; `relay.cancelarFalha` = "rede" cancela e
- *   derruba. Apagar de `relay.pedidos` = o SOBEDESCE não acha mais o pedido. No e2e, POST /__relay muda (com
+ *   derruba. Apagar de `relay.pedidos` = o SOBEDESCE não acha mais o pedido. `relay.computador.relay` = false: nenhum
+ *   computador converte (`relay.converter` 409 `sem_computador_relay`, como o site); com `desatualizado`, só app antigo. No e2e, POST /__relay muda (com
  *   `pronto: true`, todos os andando ficam prontos de uma vez) e GET /__relay lê.
  */
 import { randomBytes } from "node:crypto";
@@ -106,7 +107,8 @@ export async function iniciarPonteFalsa(o: { porta?: number; cliente?: { clientI
     /** A fila do Relay no SOBEDESCE de mentira (ver o topo). */
     relay: {
       pedidos: new Map<string, PedidoRelayFalso>(),
-      computador: { aberto_agora: false, usado_ha_pouco: false },
+      /** `relay`: algum computador da conta converte (app 0.2.0+); `desatualizado`: só app antigo. */
+      computador: { aberto_agora: false, usado_ha_pouco: false, relay: true, desatualizado: false },
       avancar: false,
       /** O próximo passo de quem converte: erro em vez de pronto. */
       falhar: false,
@@ -309,6 +311,9 @@ export async function iniciarPonteFalsa(o: { porta?: number; cliente?: { clientI
           if (!id || !ref || ref.length > 120 || presets.length < 1 || presets.length > 8 || presets.some((p) => !acharPreset(p)))
             return enviar(res, 400, { erro: "entrada", mensagem: "Pedido inválido." });
           if (rl.converterFalha === "recusa") return enviar(res, 400, { erro: "arquivo", mensagem: "O SOBEDESCE não acha este arquivo no Drive." });
+          // como o site: nenhum computador que converta, nada entra na fila
+          if (!rl.computador.relay)
+            return enviar(res, 409, { erro: "sem_computador_relay", mensagem: "Atualize o SOBEDESCE no computador para gerar versões." });
           const pedidos = presets.map((preset) => {
             const ja = [...rl.pedidos.values()].find((p) => p.ref === ref && p.preset === preset && p.status !== "erro" && p.status !== "cancelado");
             if (ja) return ja;

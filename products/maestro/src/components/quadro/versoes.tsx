@@ -4,7 +4,8 @@
  * o mesmo caminho do lote (`useNovaVersao` → `novaVersaoAcao` → `maestro.versao_criar`): a versão é do card, então o
  * lote que tiver o card já a mostra. Leitura vê a lista, sem o campo. Fica dentro do formulário da ficha, por isso não
  * tem <form> próprio: Enter no campo adiciona (e não envia a ficha). Versão do Drive: "Gerar versões" com o Relay
- * (em destaque quando aprovada) e os entregáveis dela embaixo (`components/relay`).
+ * (em destaque quando aprovada, só quando um computador da conta converte; com app antigo, o pedido para atualizar)
+ * e os entregáveis dela embaixo (`components/relay`).
  */
 import { useCallback, useEffect, useState } from "react";
 import { versoesDoCardAcao } from "@/app/(app)/app/aprovacoes/acoes";
@@ -12,7 +13,7 @@ import { NOME_DA_FONTE, type TipoFonte } from "@/lib/revisao/fontes/detectar";
 import type { VersaoDoCard } from "@/lib/revisao/equipe";
 import { Icone, type NomeIcone } from "@/components/icones";
 import { useNovaVersao } from "@/components/revisao/nova-versao";
-import { BotaoGerar, ListaEntregaveis, useEntregaveis } from "@/components/relay/entregas";
+import { AvisoAtualizar, BotaoGerar, ListaEntregaveis, useEntregaveis } from "@/components/relay/entregas";
 import { GerarVersoes } from "@/components/relay/gerar-versoes";
 
 const ICONE: Record<TipoFonte | "roteiro", NomeIcone> = {
@@ -83,9 +84,13 @@ export function VersoesDoCard({ card, podeEscrever }: { card: string; podeEscrev
                     <Icone nome="externo" size={14} className="vc__abrir" />
                   </a>
                 )}
-                {v.fonte === "drive" && v.driveId && (entregas.podePedir || daVersao.length) ? (
+                {v.fonte === "drive" && v.driveId && (entregas.gerar !== "nao" || daVersao.length) ? (
                   <div className="vc__relay">
-                    {entregas.podePedir ? <BotaoGerar aprovada={v.aprovada} aoAbrir={() => setGerando(v)} /> : null}
+                    {entregas.gerar === "sim" ? (
+                      <BotaoGerar aprovada={v.aprovada} aoAbrir={() => setGerando(v)} />
+                    ) : entregas.gerar === "atualizar" ? (
+                      <AvisoAtualizar />
+                    ) : null}
                     <ListaEntregaveis
                       itens={daVersao}
                       computador={entregas.computador}

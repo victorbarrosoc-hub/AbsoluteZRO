@@ -5,11 +5,13 @@
  * abertos): a cada 5 s com o computador aberto ou convertendo, a cada 15 s com tudo na fila e o computador fechado
  * (nada vai mudar até ele abrir). O servidor lê o andamento no SOBEDESCE e guarda (src/lib/relay/entregaveis.ts).
  * "Pronto" só com o MD5 conferido do lado do SOBEDESCE; o Maestro nunca promete prazo nem mostra progresso que não veio.
+ * O botão "Gerar versões" só aparece quando funciona (`gerar`: um computador da conta com o SOBEDESCE que converte);
+ * com app antigo, no lugar dele, o pedido para atualizar (`AvisoAtualizar`).
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cancelarEntregavelAcao, conferirEntregavelAcao, entregaveisDoCardAcao } from "@/app/(app)/app/aprovacoes/relay-acoes";
 import type { Computador, Entregavel } from "@/lib/relay/entregaveis";
-import { intervaloDoAcompanhar } from "@/lib/relay/escolha";
+import { intervaloDoAcompanhar, MSG_ATUALIZAR, type Gerar } from "@/lib/relay/escolha";
 import { Icone } from "@/components/icones";
 
 const ANDANDO = new Set(["pendente", "convertendo"]);
@@ -23,6 +25,8 @@ export type EstadoEntregas = {
   aviso: string | null;
   /** O papel pede, confere e cancela (o servidor decide por `podeEntregas`). */
   podePedir: boolean;
+  /** "Gerar versões" (`sim`), o pedido para atualizar o app do computador (`atualizar`) ou nada; `nao` até saber. */
+  gerar: Gerar;
   /** Depois de pedir ou conferir: os itens e o computador que o servidor devolveu. */
   aplicar: (lista: Entregavel[], computador: Computador | null) => void;
   trocar: (e: Entregavel) => void;
@@ -34,6 +38,7 @@ export function useEntregaveis(card: string): EstadoEntregas {
   const [computador, setComputador] = useState<Computador | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [podePedir, setPodePedir] = useState(false);
+  const [gerar, setGerar] = useState<Gerar>("nao");
   const vivo = useRef(true);
 
   const ler = useCallback(
@@ -45,6 +50,8 @@ export function useEntregaveis(card: string): EstadoEntregas {
           if (r.computador) setComputador(r.computador);
           setAviso(r.aviso);
           setPodePedir(r.podePedir);
+          // Na volta sem resposta do SOBEDESCE durante o acompanhamento, o botão que já estava fica (ele já funcionou).
+          setGerar((g) => (r.gerar !== "nao" || !r.aviso ? r.gerar : g));
         },
         () => vivo.current && setLista((l) => l ?? []),
       ),
@@ -80,7 +87,7 @@ export function useEntregaveis(card: string): EstadoEntregas {
     if (c) setComputador(c);
   }, []);
   const trocar = useCallback((e: Entregavel) => setLista((l) => (l ?? []).map((x) => (x.id === e.id ? e : x))), []);
-  return { lista, computador, aviso, podePedir, aplicar, trocar };
+  return { lista, computador, aviso, podePedir, gerar, aplicar, trocar };
 }
 
 const NOME_STATUS: Record<Entregavel["status"], string> = {
@@ -280,6 +287,15 @@ export function ListaEntregaveis({
         </p>
       ) : null}
     </section>
+  );
+}
+
+/** No lugar do botão, para quem tem o SOBEDESCE com app antigo no computador: discreto, sem botão morto. */
+export function AvisoAtualizar() {
+  return (
+    <p className="rl-atualizar" role="note">
+      <Icone nome="computador" size={14} /> {MSG_ATUALIZAR}
+    </p>
   );
 }
 

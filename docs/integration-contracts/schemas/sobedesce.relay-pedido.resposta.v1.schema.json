@@ -107,6 +107,12 @@
         },
         "usado_ha_pouco": {
           "type": "boolean"
+        },
+        "relay": {
+          "type": "boolean"
+        },
+        "desatualizado": {
+          "type": "boolean"
         }
       },
       "required": [

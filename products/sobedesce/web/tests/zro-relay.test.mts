@@ -7,6 +7,8 @@
  * nunca nova conversão sozinha); cancelar; e o isolamento entre pessoas (ninguém vê nem cancela o pedido de outra).
  */
 import assert from "node:assert/strict";
+import http from "node:http";
+import type { AddressInfo } from "node:net";
 import { after, before, describe, test } from "node:test";
 import { eq } from "drizzle-orm";
 import { CONTA_ANA, CONTA_BETO, pedido, prepararAmbiente } from "./ambiente.mjs";
@@ -19,6 +21,11 @@ let contas: typeof import("../src/lib/auth/contas");
 let sessao: typeof import("../src/lib/auth/sessao");
 let cripto: typeof import("../src/lib/google/cripto");
 let filaLib: typeof import("../src/lib/proxies/pedidos");
+let release: typeof import("../src/lib/release");
+let relayLib: typeof import("../src/lib/zro/relay");
+/** O GitHub de mentira: o Release de teste com o instalador da versão `publicada` (o que o /baixar entrega). */
+let github: http.Server;
+let publicada = "0.1.0";
 type Rota = { POST: (req: Request) => Promise<Response> };
 const rotas: Record<string, Rota> = {};
 let rLista: typeof import("../src/app/api/proxies/pedidos/route");
@@ -34,6 +41,7 @@ type Pessoa = { id: string; sub: string; cookie: string; mac: string; macId: str
 let ana: Pessoa;
 let beto: Pessoa;
 let semProduto: Pessoa;
+let dora: Pessoa;
 let pasta = "";
 let entregas = "";
 let video = "";
@@ -67,7 +75,14 @@ async function ligarDrive(p: Pessoa, id: string, conta: typeof CONTA_ANA) {
 
 const chamar = (acao: string, sub: string, c: Record<string, unknown> = {}, token?: string) =>
   rotas[acao].POST(pedido(CAMINHOS[acao], { corpo: c, bearer: token ?? zro.pedido({ sub, aud: CLIENTE.clientId, acao }), origin: null }));
-const listar = (bearer: string) => rLista.GET(pedido("/api/proxies/pedidos?status=pendente&tipo=relay", { bearer }));
+/** O app de computador pergunta pela fila; `capacidades` = o cabeçalho x-sobedesce-capacidades (null = app até a 0.1.0). */
+const listar = (bearer: string, capacidades: string | null = "relay") =>
+  rLista.GET(
+    pedido("/api/proxies/pedidos?status=pendente&tipo=relay", {
+      bearer,
+      headers: { "x-sobedesce-build": "1100", ...(capacidades === null ? {} : { "x-sobedesce-capacidades": capacidades }) },
+    }),
+  );
 const pegar = (bearer: string, id: string) => rPegar.POST(pedido(`/api/proxies/pedidos/${id}/pegar`, { bearer, method: "POST" }), ctx({ id }));
 const mudar = (id: string, b: Record<string, unknown>, quem: { bearer?: string; cookie?: string }) =>
   rPedido.PATCH(
@@ -77,7 +92,31 @@ const mudar = (id: string, b: Record<string, unknown>, quem: { bearer?: string; 
 const ler = async (sub: string, ids: string[]) => corpo(await chamar("relay.pedido", sub, { ids }));
 const md5 = "0123456789abcdef0123456789abcdef";
 
+async function publicar(versao: string) {
+  publicada = versao;
+  release.esquecerCache();
+}
+
 before(async () => {
+  github = http.createServer((req, res) => {
+    const base = `http://127.0.0.1:${(github.address() as AddressInfo).port}`;
+    const p = new URL(req.url ?? "/", base).pathname;
+    const mac = `SOBEDESCE-${publicada}-b1057-mac-universal.dmg`;
+    if (p === "/repos/victorbarrosoc-hub/AbsoluteZRO/releases/tags/sobedesce-versao-de-teste") {
+      res.writeHead(200, { "content-type": "application/json" });
+      return res.end(JSON.stringify({ assets: [{ id: 1, name: "versao.json", url: `${base}/a/1`, browser_download_url: `${base}/versao.json` }] }));
+    }
+    if (p === "/versao.json") {
+      res.writeHead(200, { "content-type": "application/json" });
+      return res.end(JSON.stringify({ build: 1057, commit: "abc1234", data: "2026-10-30T12:00:00Z", arquivoMac: mac }));
+    }
+    res.writeHead(404);
+    res.end();
+  });
+  await new Promise<void>((r) => github.listen(0, "127.0.0.1", r));
+  delete process.env.VERCEL;
+  delete process.env.GITHUB_TOKEN;
+  process.env.SOBEDESCE_GITHUB_API = `http://127.0.0.1:${(github.address() as AddressInfo).port}`;
   amb = await prepararAmbiente();
   zro = await iniciarZroFalsa(CLIENTE);
   Object.assign(process.env, { ZRO_ISSUER: zro.url, ZRO_CLIENT_ID: CLIENTE.clientId, ZRO_CLIENT_SECRET: CLIENTE.clientSecret });
@@ -85,6 +124,8 @@ before(async () => {
   sessao = await import("../src/lib/auth/sessao");
   cripto = await import("../src/lib/google/cripto");
   filaLib = await import("../src/lib/proxies/pedidos");
+  release = await import("../src/lib/release");
+  relayLib = await import("../src/lib/zro/relay");
   rotas["relay.converter"] = await import("../src/app/api/zro/relay/converter/route");
   rotas["relay.pedido"] = await import("../src/app/api/zro/relay/pedido/route");
   rotas["relay.cancelar"] = await import("../src/app/api/zro/relay/cancelar/route");
@@ -94,7 +135,12 @@ before(async () => {
   ana = await novaPessoa("Ana Relay", "ana@relay.com", "zro-ana-relay");
   beto = await novaPessoa("Beto Relay", "beto@relay.com", "zro-beto-relay");
   semProduto = await novaPessoa("Caio", "caio@relay.com", "zro-caio-relay", "maestro");
+  dora = await novaPessoa("Dora Antiga", "dora@relay.com", "zro-dora-relay");
   await ligarDrive(ana, "g-ana-r", CONTA_ANA);
+  // O Mac da Ana e o do Beto já estão com o app 0.2.0 (dizem "relay" ao falar com o site); o PC da Ana e os da Dora
+  // seguem com o app antigo.
+  assert.equal((await listar(ana.mac)).status, 200);
+  assert.equal((await listar(beto.mac)).status, 200);
   await ligarDrive(beto, "g-beto-r", CONTA_BETO);
   const g = amb.google;
   const PASTA = "application/vnd.google-apps.folder";
@@ -106,6 +152,7 @@ before(async () => {
 });
 
 after(async () => {
+  await new Promise((r) => github?.close(r));
   await zro?.fechar();
   await amb?.fechar();
 });
@@ -142,6 +189,7 @@ describe("o pedido do HUB", () => {
       assert.equal((await corpo(r)).erro, "entrada");
     }
     assert.equal((await chamar("relay.pedido", ana.sub, { ids: Array(51).fill("a") })).status, 400);
+    assert.equal((await chamar("relay.pedido", ana.sub, { ids: [] })).status, 200, "sem ids: só os computadores");
     assert.equal((await chamar("relay.pedido", ana.sub, { ids: ["a"], outro: 1 })).status, 400);
     assert.equal((await chamar("relay.cancelar", ana.sub, {})).status, 400);
   });
@@ -157,6 +205,80 @@ describe("o pedido do HUB", () => {
     assert.equal((await corpo(soAudio)).erro, "formato_incompativel");
     assert.equal((await chamar("relay.converter", ana.sub, { arquivoId: audio, presets: ["mp3"], ref: "a1" })).status, 202);
     assert.equal((await chamar("relay.converter", ana.sub, { arquivoId: video, presets: ["whatsapp"], ref: "v1", conta: "g-beto-r" })).status, 404, "conta de outra pessoa");
+  });
+});
+
+describe("o computador que converte (app 0.2.0: x-sobedesce-capacidades)", () => {
+  const capacidadesDe = async (sessaoId: string) => {
+    const { db, schema } = amb.banco;
+    const [l] = await db.select({ c: schema.sessoes.capacidades }).from(schema.sessoes).where(eq(schema.sessoes.id, sessaoId));
+    return l.c;
+  };
+
+  test("o cabeçalho: só as conhecidas entram; sem ele, nenhuma", () => {
+    assert.deepEqual(sessao.lerCapacidades("relay"), ["relay"]);
+    assert.deepEqual(sessao.lerCapacidades(" Relay , outra,relay"), ["relay"]);
+    assert.deepEqual(sessao.lerCapacidades("outra"), []);
+    assert.deepEqual(sessao.lerCapacidades(null), []);
+  });
+
+  test("a versão no nome do instalador do Release", () => {
+    assert.deepEqual(relayLib.versaoDoInstalador("SOBEDESCE-0.2.0-b1057-mac-universal.dmg"), [0, 2, 0]);
+    assert.deepEqual(relayLib.versaoDoInstalador("SOBEDESCE-1.10.3-b2000-windows-setup.exe"), [1, 10, 3]);
+    assert.equal(relayLib.versaoDoInstalador("SOBEDESCE-mac.dmg"), null);
+    assert.equal(relayLib.versaoDoInstalador(null), null);
+  });
+
+  test("só app antigo na conta: desatualizado só com o app novo para baixar; converter é 409, nada na fila", async () => {
+    // o app que converte ainda não saiu (o /baixar entrega a 0.1.0): ninguém é mandado atualizar
+    await publicar("0.1.0");
+    assert.deepEqual(await ler(dora.sub, []), { pedidos: [], computador: { aberto_agora: false, usado_ha_pouco: true, relay: false, desatualizado: false } });
+    // saiu a 0.2.0: agora sim, o pedido para atualizar
+    await publicar("0.2.0");
+    const b = await ler(dora.sub, []);
+    assert.deepEqual(b, { pedidos: [], computador: { aberto_agora: false, usado_ha_pouco: true, relay: false, desatualizado: true } });
+    // o GitHub fora do ar: sem o pedido para atualizar (não manda atrás do que não dá para conferir)
+    const api = process.env.SOBEDESCE_GITHUB_API;
+    process.env.SOBEDESCE_GITHUB_API = "http://127.0.0.1:9";
+    release.esquecerCache();
+    try {
+      assert.equal((await ler(dora.sub, [])).computador.desatualizado, false);
+    } finally {
+      process.env.SOBEDESCE_GITHUB_API = api;
+      release.esquecerCache();
+    }
+    // o app antigo fala com o site (com o build, sem as capacidades): continua funcionando e continua antigo
+    assert.equal((await listar(dora.mac, null)).status, 200);
+    assert.equal((await ler(dora.sub, [])).computador.relay, false);
+    const r = await chamar("relay.converter", dora.sub, { arquivoId: video, presets: ["whatsapp"], ref: "v-dora" });
+    assert.equal(r.status, 409);
+    assert.deepEqual(await corpo(r), { erro: "sem_computador_relay", mensagem: "Atualize o SOBEDESCE no computador para gerar versões." });
+    const { db, schema } = amb.banco;
+    assert.equal((await db.select().from(schema.pedidosProxy).where(eq(schema.pedidosProxy.usuarioId, dora.id))).length, 0);
+  });
+
+  test("o app novo abre: vale na hora (sem esperar o deslize de 10 min); voltar para o antigo desliga", async () => {
+    assert.equal(await capacidadesDe(dora.macId), null);
+    assert.equal((await listar(dora.mac)).status, 200);
+    assert.deepEqual(await capacidadesDe(dora.macId), ["relay"]);
+    assert.deepEqual((await ler(dora.sub, [])).computador, { aberto_agora: false, usado_ha_pouco: true, relay: true, desatualizado: false });
+    // de novo o app antigo (só o build): a sessão deixa de converter
+    assert.equal((await listar(dora.mac, null)).status, 200);
+    assert.equal(await capacidadesDe(dora.macId), null);
+    assert.equal((await ler(dora.sub, [])).computador.relay, false);
+    // pedido sem o build (não é o app de computador) não mexe no que o app disse
+    await listar(dora.mac);
+    assert.equal((await rLista.GET(pedido("/api/proxies/pedidos?status=pendente", { bearer: dora.mac }))).status, 200);
+    assert.deepEqual(await capacidadesDe(dora.macId), ["relay"]);
+  });
+
+  test("sem computador nenhum: nem relay nem desatualizado", async () => {
+    const { db, schema } = amb.banco;
+    await db.update(schema.sessoes).set({ revogadaEm: new Date() }).where(eq(schema.sessoes.usuarioId, dora.id));
+    assert.deepEqual((await ler(dora.sub, [])).computador, { aberto_agora: false, usado_ha_pouco: false, relay: false, desatualizado: false });
+    const r = await chamar("relay.converter", dora.sub, { arquivoId: video, presets: ["whatsapp"], ref: "v-dora" });
+    assert.equal(r.status, 409);
+    assert.equal((await corpo(r)).mensagem, "Instale o SOBEDESCE no computador para gerar versões.");
   });
 });
 
@@ -211,7 +333,7 @@ describe("a fila", () => {
     const [p] = b.pedidos;
     assert.deepEqual(Object.keys(p).sort(), ["atualizado_em", "criado_em", "id", "preset", "ref", "status"]);
     assert.equal(p.status, "pendente");
-    assert.deepEqual(b.computador, { aberto_agora: false, usado_ha_pouco: true });
+    assert.deepEqual(b.computador, { aberto_agora: false, usado_ha_pouco: true, relay: true, desatualizado: false });
     // Beto pede a mesma ref: outra fila, outro pedido; e não vê nem cancela os da Ana
     const deBeto = await corpo(await chamar("relay.converter", beto.sub, { arquivoId: doBeto, presets: ["whatsapp"], ref: "versao-1" }));
     assert.notEqual(deBeto.pedidos[0].id, ids.whatsapp);

@@ -491,10 +491,17 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   fila `pedidos_proxy` (migração SOBEDESCE `0016_pedidos_relay`: o estado só anda para a frente, computador sumido vira
   erro e nunca nova conversão sozinha) e o executor no app de computador (`src/engine/pedidos-relay.js`, nos trabalhos
   do Relay da tela, com o x264 e o MD5; cancelado no Maestro para antes de subir; preset com cor recusado; aviso
-  "Versão para o Maestro" na tela). **Falta para valer de verdade (com autorização):** aplicar a `0016` no banco do
-  SOBEDESCE e publicar o site; build e release novos do app de computador (quem tem o app antigo não pega o tipo
-  `relay`: o pedido espera); conferir com um Drive e um computador de verdade. Depois: evento
-  `media.conversion.completed` quando o HUB receber resultado.
+  "Versão para o Maestro" na tela). **Pronto para lançar (30/10/2026, "Publicar e lançar o app"):** o botão só
+  aparece quando funciona. O app de computador **0.2.0** diz ao site em todo pedido `x-sobedesce-capacidades: relay`
+  (gravado em `sessoes.capacidades`, migração SOBEDESCE `0017_capacidades_do_computador`, na hora em que muda);
+  `relay.pedido` (agora também com `ids: []`) devolve `computador.relay`/`desatualizado`; o Maestro pergunta ao abrir o
+  card e mostra "Gerar versões" só com `relay`, ou "Atualize o SOBEDESCE no computador para gerar versões." com app
+  antigo (só depois que o instalador do `/baixar` já é a 0.2.0); sem computador, sem SOBEDESCE ou sem o Relay no plano, nada. O site recusa `relay.converter` sem computador
+  que converta (409 `sem_computador_relay`). Novidades em `products/sobedesce/docs/NOVIDADES.md`; passos do lançamento
+  em [operations/lancamento-gerar-versoes.md](operations/lancamento-gerar-versoes.md). **Falta (com autorização):**
+  mesclar na main (publica o site com a `0016` e a `0017`, o Maestro e o build 0.2.0 do app de computador), conferir
+  com um Drive e um computador de verdade. Depois: evento `media.conversion.completed` quando o HUB receber
+  resultado.
 - ⬜ Maestro, do mesmo estudo e à espera do titular: a Z **escrevendo** no Maestro (criar
   pedido, despesa, marcar contato, sempre com a ação exata e o "sim"; cota e plano da Z); sincronia de duas vias com o Google Agenda (OAuth); eventos
   `maestro.pedido.ganho`, `maestro.orcamento.aceito` e `maestro.projeto.criado` no HUB (desenho no mapa).
