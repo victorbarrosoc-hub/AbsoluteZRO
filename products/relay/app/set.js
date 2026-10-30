@@ -8,16 +8,30 @@
 
 export const SCRIPT_SET = 'https://absolutezro.com/set/v1/zro-set.js'
 
+/** O que dizer quando a volta do login traz ?zro=<código> (api/zro/callback.js). "ok" e "config" não dizem nada. */
+export const AVISOS = {
+  erro: 'Não deu para entrar agora. Tente de novo.',
+  expirou: 'A entrada demorou demais. Tente de novo.',
+  recusado: 'Entrada cancelada.',
+  'sem-set': 'Você entrou, mas o Set ainda não abriu para o Relay.',
+}
+
 /**
  * Liga a entrada (o link "Set" do topo) ao widget: com o primeiro estado ela vira o botão da folha (com o balão das
- * não lidas e dos pedidos); sem login (401 do Set), volta a ser o link de entrar. Sem DOM de verdade (o teste usa
- * objetos simples).
+ * não lidas e dos pedidos); sem login (401 do Set), volta a ser o link de entrar. Com a conta já dentro (`dentro`) e
+ * o Set recusando o token (canal da API do produto fechado no HUB, por exemplo), entrar de novo não resolve: o clique
+ * avisa (`avisar`) em vez de refazer o login em volta. Sem DOM de verdade (o teste usa objetos simples).
  */
-export function ligarSet(el, entrada) {
+export function ligarSet(el, entrada, { dentro = false, avisar = () => {} } = {}) {
   let ligado = false
+  let recusou = false
   entrada.setAttribute('aria-haspopup', 'dialog')
   entrada.setAttribute('aria-expanded', 'false')
   entrada.addEventListener('click', (ev) => {
+    if (!ligado && dentro && recusou) {
+      ev.preventDefault?.()
+      return avisar(AVISOS['sem-set'])
+    }
     if (!ligado) return // sem o Set: o link leva a entrar
     ev.preventDefault?.()
     if (el.aberto) el.fecharSet?.()
@@ -39,6 +53,7 @@ export function ligarSet(el, entrada) {
   })
   el.addEventListener('zro-set:sem-login', () => {
     ligado = false
+    recusou = true
     balao(0)
     entrada.setAttribute('aria-label', 'Set: entrar com a Absolute ZRO')
   })
@@ -64,7 +79,31 @@ function entradaNoTopo() {
   return a
 }
 
+/** Aviso curto embaixo do topo (some sozinho). */
+function avisar(texto) {
+  let a = document.querySelector('.set-aviso')
+  if (!a) {
+    a = Object.assign(document.createElement('p'), { className: 'set-aviso', role: 'status' })
+    document.body.append(a)
+  }
+  a.textContent = texto
+  a.hidden = false
+  clearTimeout(avisar.t)
+  avisar.t = setTimeout(() => (a.hidden = true), 6000)
+}
+
+/** A volta do login (?zro=<código>): diz o que houve e limpa o endereço. */
+function avisoDaVolta() {
+  const u = new URL(location.href)
+  const codigo = u.searchParams.get('zro')
+  if (!codigo) return
+  u.searchParams.delete('zro')
+  history.replaceState(history.state, '', u.pathname + u.search + u.hash)
+  if (AVISOS[codigo] && codigo !== 'sem-set') avisar(AVISOS[codigo])
+}
+
 export async function montarSet() {
+  avisoDaVolta()
   if (document.querySelector('[data-set]')) return null
   let conta
   try {
@@ -92,7 +131,7 @@ export async function montarSet() {
   // versão antiga do widget (sem o modo folha) não aparece nem fala com ninguém: o link segue sendo o de entrar
   el.style.display = 'none'
   new MutationObserver(() => el.setAttribute('tema', temaDe())).observe(document.documentElement, { attributes: true, attributeFilter: ['data-tema'] })
-  ligarSet(el, entrada)
+  ligarSet(el, entrada, { dentro: conta === 'dentro', avisar })
   document.body.append(el)
   return el
 }
