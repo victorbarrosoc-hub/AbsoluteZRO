@@ -4,9 +4,10 @@ import { go, TABS, currentTab, enableSheetDrag, toast } from "./ui.js";
 import { mountSettingsForms, syncSettingsUI } from "./settings.js";
 import { renderAll, newFrom, startCalib } from "./views.js";
 import { handleRedirect } from "./sync.js";
-import { verificarZro, avisoDaVolta } from "./zro.js";
+import { verificarZro, avisoDaVolta, zro } from "./zro.js";
 import { on } from "./data.js";
 import { iniciarZ } from "./z.js";
+import { iniciarSet } from "./set.js";
 import { abaDeEntrada } from "./entrada.js";
 
 document.querySelector('meta[name="theme-color"]').content = matchMedia("(prefers-color-scheme: dark)").matches ? "#000000" : "#f5f5f7";
@@ -55,6 +56,8 @@ let zMontada = null;
 const abrirZ = () => (zMontada ??= contaPronta.then(iniciarZ));
 on("tab", (t) => t === "z" && abrirZ());
 if (currentTab() === "z") abrirZ();
+// o Set, a aba em comum do ecossistema (a última da barra), liga depois de saber da conta; só a entrada aparece
+contaPronta.then(() => iniciarSet(zro, on));
 
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
   navigator.serviceWorker.register("/sw.js").catch(() => {});

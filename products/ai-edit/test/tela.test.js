@@ -12,6 +12,7 @@ import { join } from 'node:path'
 import { after, before, test } from 'node:test'
 import { CABECALHOS_SITE, servir } from '../scripts/servidor.mjs'
 import { simularZ } from './z-falso.js'
+import { simularSet } from './set-falso.js'
 import { FAMILIA } from '../src/familia.js'
 
 const { chromium } = createRequire(import.meta.url)('playwright')
@@ -34,9 +35,11 @@ after(async () => {
 // sessão da Absolute ZRO falsa: o AEON só abre com conta (api/zro/eu); sem ela vai para entrar.html
 const PESSOA = { ok: true, pessoa: { nome: 'Lia Produtora', email: 'lia@produtora.com', produtos: ['ai-edit'] }, acesso: true }
 
-async function abrir(opts = {}, { logado = true, z = {} } = {}) {
+async function abrir(opts = {}, { logado = true, z = {}, set = { desligado: true } } = {}) {
   const pagina = await navegador.newPage({ viewport: { width: 1440, height: 900 }, acceptDownloads: true, ...opts })
   const pedidosZ = await simularZ(pagina, z)
+  // o Set: por padrão o widget não chega (a entrada não aparece); o teste do Set liga
+  const pedidosSet = await simularSet(pagina, set)
   await pagina.route('**/api/zro/eu', (r) => (logado ? r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(PESSOA) }) : r.fulfill({ status: 401, contentType: 'application/json', body: '{"ok":false}' })))
   const erros = []
   pagina.on('pageerror', (e) => erros.push(e.message))
@@ -49,7 +52,7 @@ async function abrir(opts = {}, { logado = true, z = {} } = {}) {
   assert.match(r.headers()['content-security-policy'], /default-src 'self'/)
   if (logado) await pagina.waitForFunction(() => document.documentElement.dataset.pronto === '1')
   // o app abre na Mídia (a tarefa); a Z só abre pelo ícone da barra
-  return { pagina, erros, pedidosZ }
+  return { pagina, erros, pedidosZ, pedidosSet }
 }
 
 test('só com conta: sem sessão o editor vai para entrar.html; com sessão mostra a pessoa no menu', async () => {
@@ -70,7 +73,10 @@ test('primeira tela: a Mídia (a tarefa); a Z não é aba do dock nem abre sozin
   assert.notEqual(await pagina.getAttribute('.dock [data-ir="midia"]', 'aria-current'), null)
   await pagina.locator('#escolher').waitFor()
   // o dock é só o editor, com a Mídia primeiro; a Z é um ícone discreto na barra
-  assert.deepEqual(await pagina.locator('.dock button').evaluateAll((bs) => bs.map((b) => b.dataset.ir)), ['midia', 'revisar', 'edicao', 'entrega'])
+  assert.deepEqual(await pagina.locator('.dock button[data-ir]').evaluateAll((bs) => bs.map((b) => b.dataset.ir)), ['midia', 'revisar', 'edicao', 'entrega'])
+  // o Set mora no fim do dock (escondido até o Set responder) e não é a entrada; a Z não está no dock
+  assert.equal(await pagina.locator('.dock button').last().getAttribute('data-set'), '')
+  assert.equal(await pagina.locator('.dock [data-ir="z"]').count(), 0)
   assert.equal(await pagina.locator('.barra #abrirZ').count(), 1)
   assert.equal(await pagina.getAttribute('#abrirZ', 'aria-current'), null)
   // nada da Z montou nem pediu nada ao abrir
@@ -118,6 +124,56 @@ test('a Z pelo ícone da barra: conversa pelo repasse e o editor segue a um toqu
   await pagina.locator('#escolher').waitFor()
   assert.deepEqual(erros, [])
   await pagina.close()
+})
+
+test('Set: a aba em comum no fim do dock aparece quando o Set responde e abre a folha com a cara do AEON', async () => {
+  // sem o escopo (login de antes do Set: 401): nada aparece
+  const sem = await abrir({}, { set: { logado: false } })
+  await sem.pagina.waitForTimeout(400)
+  assert.equal(await sem.pagina.locator('.dock [data-set]').isVisible(), false)
+  await sem.pagina.close()
+  for (const [tema, vp] of [
+    ['dark', { width: 1440, height: 900 }],
+    ['light', { width: 393, height: 852 }],
+  ]) {
+    const { pagina, erros, pedidosSet } = await abrir({ viewport: vp }, { set: { logado: true } })
+    await pagina.evaluate((t) => document.documentElement.setAttribute('data-theme', t), tema)
+    const entrada = pagina.locator('.dock [data-set]')
+    await entrada.waitFor()
+    assert.equal(await entrada.locator('[data-set-balao]').textContent(), '2')
+    assert.equal(await entrada.getAttribute('aria-expanded'), 'false')
+    await entrada.click()
+    const painel = pagina.locator('zro-set-folha .folha[data-on] .painel')
+    await painel.waitFor()
+    assert.equal(await entrada.getAttribute('aria-expanded'), 'true')
+    await pagina.locator('zro-set-folha .linha', { hasText: 'Rui Tavares' }).waitFor()
+    assert.match(await pagina.locator('zro-set-folha .linha', { hasText: 'Rui Tavares' }).textContent(), /no Maestro/)
+    // a identidade do AEON chega à folha (que mora no <body>): a tinta e a fonte do app
+    const [tinta, doApp, fonte] = await pagina.evaluate(() => {
+      const p = document.querySelector('zro-set-folha').shadowRoot.querySelector('.painel')
+      const h = getComputedStyle(document.documentElement)
+      return [getComputedStyle(p).color, h.getPropertyValue('--text-strong').trim(), getComputedStyle(p).fontFamily]
+    })
+    const rgb = await pagina.evaluate((c) => {
+      const d = document.createElement('div')
+      d.style.color = c
+      document.body.append(d)
+      const v = getComputedStyle(d).color
+      d.remove()
+      return v
+    }, doApp)
+    assert.equal(tinta, rgb, `tinta da folha no tema ${tema}`)
+    assert.match(fonte, /Figtree/)
+    // o widget só fala com o repasse do próprio site, sem token na página
+    assert.ok(pedidosSet.length > 0 && pedidosSet.every((p) => p.autorizacao === null))
+    // SET_FOTOS=<pasta>: as telas da entrega (a folha aberta)
+    if (process.env.SET_FOTOS) await pagina.screenshot({ path: join(process.env.SET_FOTOS, `aeon-${vp.width > 600 ? 'desktop' : '393'}-${tema === 'dark' ? 'escuro' : 'claro'}.png`) })
+    await pagina.keyboard.press('Escape')
+    await painel.waitFor({ state: 'detached' })
+    assert.equal(await entrada.getAttribute('aria-expanded'), 'false')
+    assert.deepEqual(erros, [])
+    await pagina.close()
+  }
 })
 
 test('a Z sem o escopo dela: oferece entrar de novo (que já pede zro.ia)', async () => {
@@ -182,7 +238,7 @@ test('caminho de uso: importar, analisar, revisar, editar com cor e etiqueta, ex
   assert.equal(await balao.innerText(), String(n))
   assert.equal(await balao.getAttribute('aria-label'), `${n} pendências`)
   assert.match(await pagina.getAttribute('.dock [data-ir="revisar"]', 'title'), /propostas para aprovar ou recusar/)
-  assert.equal(await pagina.locator('.dock .balao').count(), 1)
+  assert.equal(await pagina.locator('.dock [data-ir] .balao').count(), 1)
 
   // aprovar um, desfazer, aprovar todos (o balão acompanha ao vivo)
   const primeira = pagina.locator('.proposta').first()
@@ -195,7 +251,7 @@ test('caminho de uso: importar, analisar, revisar, editar com cor e etiqueta, ex
   assert.equal(await balao.innerText(), String(n))
   await pagina.click('#aprovarTodos')
   assert.equal(await pagina.locator('.proposta-pendente').count(), 0)
-  assert.equal(await pagina.locator('.dock .balao').count(), 0)
+  assert.equal(await pagina.locator('.dock [data-ir] .balao').count(), 0)
 
   // Edição: clipes depois dos cortes, cor e etiqueta, filtro, dividir e desfazer
   await pagina.click('.dock [data-ir="edicao"]')

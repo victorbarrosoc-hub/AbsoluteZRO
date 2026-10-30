@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LogOut, Shield, Upload } from "lucide-react";
 import { buttonClasses } from "@/components/ui/button";
 import { LinkZ } from "./abas";
+import { BotaoSet } from "./aba-set";
 
 /**
  * Ações da área logada, à direita do cabeçalho: enviar (o uso principal), baixar o app e sair. `admin`: link para /admin.
@@ -14,7 +15,8 @@ export function MenuConta({ admin = false, sair = true, naZ = false }: { admin?:
         <Upload aria-hidden="true" />
         Enviar
       </Link>
-      {/* a Z, discreta: um anel ao lado das ações, nunca a primeira tela (abas.tsx › LinkZ) */}
+      {/* o Set (aparece quando responde) e a Z, discretos, ao lado das ações; nunca a primeira tela (aba-set.tsx, abas.tsx) */}
+      <BotaoSet />
       <LinkZ atual={naZ} />
       {admin ? (
         <Link href="/admin" className={buttonClasses({ variant: "ghost", size: "sm", className: "px-3" })} aria-label="Admin">

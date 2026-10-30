@@ -81,6 +81,10 @@
       "destination": "/api/zro/ia?c=:caminho*"
     },
     {
+      "source": "/api/zro/set/:caminho*",
+      "destination": "/api/zro/set?c=:caminho*"
+    },
+    {
       "source": "/baixar/versao",
       "destination": "/api/baixar?p=versao"
     },

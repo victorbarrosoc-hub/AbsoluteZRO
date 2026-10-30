@@ -4,6 +4,7 @@
 import { GRUPOS, PRESETS } from '../src/presets.js'
 import { planejar, tamanhoLegivel } from '../src/plano.js'
 import { icone, icones } from './icones.js'
+import { montarSet } from './set.js'
 
 const el = (tag, props = {}, ...filhos) => {
   const n = Object.assign(document.createElement(tag), props)
@@ -95,3 +96,6 @@ botaoTema?.addEventListener('click', () => {
 })
 icones()
 pintarTema()
+
+// o Set, a aba em comum do ecossistema: "Set" no fim das páginas do topo (app/set.js)
+montarSet()

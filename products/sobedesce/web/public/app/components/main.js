@@ -10,6 +10,7 @@ import { MY_DRIVE, folderTrail, getRecents, getState, openSheet, pushRecent, set
 import { NET_MSG, engine, summarize } from '../lib/uploader.js'
 import { Icon, Wordmark } from './icons.js'
 import { Button, cx, useEngine } from './ui.js'
+import { SetBotao } from './set.js'
 import { BatchCards, FileName, QueueRow, SequenceBar } from './queue.js'
 import { InstallHint } from './install-hint.js'
 import { isIOS } from '../lib/platform.js'
@@ -37,9 +38,10 @@ export function ZBotao() {
   </button>`
 }
 
-/** A conta e a Z, à direita da barra do topo. */
+/** O Set, a Z e a conta, à direita da barra do topo (o Set só aparece quando responde, components/set.js). */
 function TopoAcoes({ user }) {
   return html`<div class="topbar-acoes">
+    <${SetBotao} />
     <${ZBotao} />
     <button type="button" class="avatar-btn" onClick=${() => openSheet('settings')} aria-label="Conta e ajustes">
       <${Avatar} user=${user} size=${32} />

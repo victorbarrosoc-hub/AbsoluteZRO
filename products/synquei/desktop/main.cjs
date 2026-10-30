@@ -124,8 +124,12 @@ const voltaSegura = (v) => (typeof v === 'string' && /^\/[^/\\]/.test(v) && v.le
 
 async function rotaConta(req, u) {
   // teste de fumaça: sem rede e sem sessão (aparece "Entrar com Absolute ZRO")
-  if (SMOKE) return u.pathname === '/api/zro/eu' || u.pathname.startsWith('/api/zro/ia/') ? jsonResp(401, { ok: false, configurado: true }) : jsonResp(404, { ok: false })
+  if (SMOKE) return u.pathname === '/api/zro/eu' || u.pathname.startsWith('/api/zro/ia/') || u.pathname === '/api/zro/set' || u.pathname.startsWith('/api/zro/set/') ? jsonResp(401, { ok: false, configurado: true }) : jsonResp(404, { ok: false })
   // a Z no painel inicial: o mesmo repasse do site (api/zro/ia.js); o token da conta fica neste processo
+  // o Set (presença e conversas): o mesmo repasse do site (api/zro/set.js), com o mesmo token
+  if (u.pathname === '/api/zro/set' || u.pathname.startsWith('/api/zro/set/')) {
+    return contaApp().repassarSet(req, decodeURIComponent(u.pathname.slice('/api/zro/set'.length)).replace(/^\/+|\/+$/g, ''), u.search)
+  }
   if (u.pathname.startsWith('/api/zro/ia/')) return contaApp().repassarIa(req, decodeURIComponent(u.pathname.slice('/api/zro/ia/'.length)).replace(/\/+$/, ''))
   if (u.pathname === '/api/zro/eu') {
     // perfil único: relê nome, e-mail, foto e produtos na Absolute ZRO a cada leitura (sem resposta em 3 s, vale a cópia)

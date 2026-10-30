@@ -45,6 +45,12 @@ export function servir({ porta = 8090, raiz = RAIZ, extra = null } = {}) {
   const servidor = createServer(async (req, res) => {
     try {
       if (extra && (await extra(req, res))) return
+      // a conta (só para o Set) mora nas funções da Vercel (api/); aqui o login não está ligado, como num site sem
+      // ZRO_CLIENT_ID: o /eu diz isso e o topo não monta o Set (app/set.js)
+      if (new URL(req.url, 'http://x').pathname === '/api/zro/eu') {
+        res.writeHead(200, { ...cabecalhos, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' })
+        return res.end('{"ok":false,"configurado":false}')
+      }
       const arquivo = await resolver(req.url, raiz)
       if (!arquivo) {
         res.writeHead(404, { ...cabecalhos, 'Content-Type': 'text/plain; charset=utf-8' })

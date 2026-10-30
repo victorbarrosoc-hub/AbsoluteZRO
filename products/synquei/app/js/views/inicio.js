@@ -213,10 +213,11 @@ function ilustracao() {
 }
 
 /**
- * A Z no celular (titular, 29/10/2026; Plano de Integração §7–8): um anel discreto no canto do Início, nunca uma aba da
- * barra de baixo nem a tela de entrada. No computador ela fica no pé da barra lateral (index.html), e o anel some.
+ * O Set e a Z no celular (titular, 29/10/2026; Plano de Integração §7–8): dois ícones discretos no canto do Início, nunca
+ * abas da barra de baixo (ela fica com as cinco da tarefa) nem a tela de entrada. O Set só aparece quando responde e
+ * abre a folha dele (app/js/set.js). No computador os dois ficam na barra lateral (index.html), e o canto some.
  */
-const Z_ATALHO = `<a class="icon-btn z-atalho" href="#/z" aria-label="Z, a IA da Absolute ZRO" title="Z, a IA da Absolute ZRO">${icon('z')}</a>`
+const Z_ATALHO = `<span class="eco-atalhos"><button class="icon-btn set-atalho" type="button" data-set hidden title="Set: quem está online e as conversas">${icon('set')}<span class="balao" data-set-balao hidden></span></button><a class="icon-btn z-atalho" href="#/z" aria-label="Z, a IA da Absolute ZRO" title="Z, a IA da Absolute ZRO">${icon('z')}</a></span>`
 
 export default {
   title: 'Início',

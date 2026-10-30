@@ -13,6 +13,7 @@
   <body>
     <svg width="0" height="0" style="position: absolute" aria-hidden="true">
       <defs>
+        <symbol id="i-set" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" /><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5" /><circle cx="17" cy="9" r="2.4" /><path d="M15.5 14.2c2.6-.4 4.6 1.2 5 4" /></symbol>
         <symbol id="i-z" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5" /><path d="M19.5 8.8l.8 2.4 2.4.8-2.4.8-.8 2.4-.8-2.4-2.4-.8 2.4-.8z" fill="currentColor" stroke="none" /></symbol>
         <symbol id="i-midia" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M10 9.5v5l4.5-2.5z" fill="currentColor" stroke="none" /></symbol>
         <symbol id="i-revisar" viewBox="0 0 24 24"><path d="M4 7l2 2 3.5-3.5M4 15l2 2 3.5-3.5M13 7.5h7M13 15.5h7" /></symbol>
@@ -212,6 +213,8 @@
       <button data-ir="revisar"><svg><use href="#i-revisar" /></svg><span>Revisar</span></button>
       <button data-ir="edicao"><svg><use href="#i-edicao" /></svg><span>Edição</span></button>
       <button data-ir="entrega"><svg><use href="#i-entrega" /></svg><span>Entrega</span></button>
+      <!-- o Set da Absolute ZRO (app/set.js): a aba em comum do ecossistema, aparece quando o Set responde -->
+      <button data-set hidden title="Quem está online e as conversas"><svg><use href="#i-set" /></svg><span>Set</span><span class="balao" data-set-balao hidden></span></button>
     </nav>
 
     <!-- o palco (vídeo + legenda) muda de vaga entre Revisar e Edição -->

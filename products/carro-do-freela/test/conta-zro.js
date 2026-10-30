@@ -43,6 +43,9 @@
  *      O script do painel vem do próprio repositório (apps/hub-web), por
  *      rota do Playwright: a suíte não sai para a internet.
  *
+ * O SET (30/out): no domínio fechado, a quem o portão nega, nada do Set
+ * (item 12a). O resto do Set na tela mora em test/set-zro.js.
+ *
  * O PORTÃO DO LANÇAMENTO (28/out, adendo do PRD: acesso exclusivo do
  * proprietário). O domínio como está HOJE é FECHADO: o build marca
  * cdf-release=closed e CARRO_RELEASE não existe. Então:
@@ -90,7 +93,7 @@ function montarSaida(o = {}) {
   fs.cpSync(path.join(RAIZ, 'public', 'm'), path.join(saida, 'static', 'm'), { recursive: true });
   for (const f of ['apple-touch-icon.png', 'icone-192.png', 'icone-512.png', 'icone-maskable.png', 'app.webmanifest', 'og.jpg'])
     fs.copyFileSync(path.join(RAIZ, 'public', f), path.join(saida, 'static', f));
-  if (!o.semFuncoes) for (const n of ['entrar', 'callback', 'eu', 'sair', 'enviar', 'ia']) {
+  if (!o.semFuncoes) for (const n of ['entrar', 'callback', 'eu', 'sair', 'enviar', 'ia', 'set']) {
     const dir = path.join(saida, 'functions', 'api', 'zro', n + '.func');
     fs.mkdirSync(path.join(dir, 'api', 'zro'), { recursive: true });
     for (const f of [n + '.js', '_zro.js']) fs.copyFileSync(path.join(RAIZ, 'api', 'zro', f), path.join(dir, 'api', 'zro', f));
@@ -448,6 +451,8 @@ function montarSaida(o = {}) {
   {
     /* 12a. anônimo no domínio fechado: a home é vitrine sem porta, e "Entrar" é a página "Em desenvolvimento" */
     const { ctx, p, erros, pedidos } = await abrir(FECHADO, { aceita401: true });
+    t(await p.evaluate(() => document.getElementById('tab-set').hidden && document.getElementById('g-set').hidden && !document.querySelector('zro-set')) && !pedidos.some(u => /\/api\/zro\/set/.test(u)),
+      'fechado: nada do Set (nem a entrada, nem o widget, nem pedido)');
     const home = await p.evaluate(() => { const bs = [...document.querySelectorAll('.hprod .hcta .entrar-cta')];
       return { tela: S.tab, classe: document.documentElement.classList.contains('fechado'), criar: document.getElementById('hn-criar').hidden,
         cta: bs.map(b => ({ txt: b.textContent.trim(), vis: !!b.offsetParent, ir: b.dataset.ir, lg: b.dataset.lg })),

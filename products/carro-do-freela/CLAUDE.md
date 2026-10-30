@@ -130,6 +130,17 @@ avaliação (de `linhaContrato`, só com `faseTem(2)`); **Brechó** = pedido de 
 ganha balão. ⚠️ `#g-msg-bg` (conversa não lida na gaveta de Propostas) e `#bg-gui` continuam como estavam. ⚠️ O
 `title` original do item (`Meus jobs`) é guardado em `data-tit-orig` e volta quando o balão apaga.
 
+## 30/out — o Set, a aba em comum do ecossistema (`conta-zro` §13, `npm run test:api`)
+
+Pedido do titular para todas as plataformas: o Set da Absolute ZRO (quem da equipe está online, em qual app, e as
+conversas). Aqui ele fecha a lateral (`#tab-set`, logo antes da Z, que é sempre o último item) e é o último da gaveta (`#g-set`); a barra de baixo
+não muda (3 + Menu + 3), sem `data-tab` nem `data-modo`
+de propósito: não abre tela, abre a folha do `<zro-set modo="folha">` (`setPintar()`). A MESMA régua da Z: só no
+domínio, com a conta liberada (`zAbaLigada() && zroPodeEnviar()`), e a entrada só aparece quando o Set responde. O
+repasse é `api/zro/set.js` (miolo em `_zro.js`, com `sessaoConferida`: claim relida, portão, plano); o login pede
+`zro.set` e, se o HUB recusar, refaz sem ele (`sem_set`) antes do `basico`. Um 401 do Set NÃO apaga a sessão. A folha
+veste os tokens dos dois temas (`--zro-set-*` no template). ⚠️ `var`/`function` no topo (o TDZ de 19/out · 2).
+
 ## 29/out — o banco do Carro: perfil e inventário do freela (`db/`, `api/zro/_dados.js`, `test/api/banco*.test.js`)
 
 Pedido do titular: *"ligar o banco de dados do Carro do Freela"*, começando pelo que o ecossistema precisa — o perfil do
@@ -437,7 +448,7 @@ a cena da home e a tela de entrar abaixo da janela em todo monitor grande.
 Uma sonda de `100vh` dentro do corpo diz quanto o motor multiplica (Chromium:
 o zoom; Safari: 1), e `--zoom` vira esse número.
 
-⚠️ **A build se identifica** (`VERSAO`, hoje `30/out · 1`): aparece no rodapé do
+⚠️ **A build se identifica** (`VERSAO`, hoje `30/out · 2`): aparece no rodapé do
 menu e vai junto no recado de suporte. Sem isso, três rodadas foram gastas sem
 saber se o defeito relatado era do arquivo novo ou de um cache velho. **Suba a
 VERSAO em toda entrega que o Victor for subir.**
@@ -8593,6 +8604,14 @@ discreta, nunca a primeira tela, nunca a primeira aba, nunca abre sozinha. Desfa
   toque.
 - Suítes: `conta-zro` §11 (cai na tarefa, nada da Z montado, anel apagado e não primeiro, `#tab-z` último; abre só com
   `show("z")`; reconectar volta para a Z) e §12e (o dono cai na tarefa e recarrega sem a Z). VERSAO `30/out · 1`.
+
+## 30/out · 2 — a Z discreta e o Set juntos (integração das duas levas de 30/out)
+
+A leva da Z (30/out · 1) e a do Set chegaram juntas. Ordem da lateral no computador: … Aprender · **Set** (`#tab-set`,
+aparece quando o Set responde) · **Z** (`#tab-z`, sempre o último). Na gaveta do celular o Set é o último item; a Z
+continua no anel do topo; a barra de baixo não muda (3 + Menu + 3). Nem a Z nem o Set são a entrada: quem entra cai no
+Feed (ou em Propostas). `set-zro` confere que a lateral termina em `tab-set tab-z` e que a tela de entrada é a tarefa;
+`conta-zro` §11 continua cobrando a Z como último item. VERSAO `30/out · 2`.
 
 ## 28/out · 1 — o portão do lançamento: só a conta do proprietário entra
 

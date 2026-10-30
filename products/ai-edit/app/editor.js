@@ -29,6 +29,7 @@ import { lerConta, ondeEditar, PAGINA_FECHADO } from '../site/conta.js'
 import { montarAtualizacao } from './atualizacao.js'
 import { pendencias, rotuloBalao } from '../src/pendencias.js'
 import { montarZ } from './z.js'
+import { montarSet } from './set.js'
 
 const $ = (id) => document.getElementById(id)
 // As etapas do editor no dock; a Z por último, fora do dock (ícone da barra), nunca a primeira (titular, 29/10/2026)
@@ -119,7 +120,8 @@ player.aoMudar(() => {
 })
 $('tocar').onclick = () => player.alternar()
 
-for (const b of document.querySelectorAll('.dock button, #abrirZ')) b.onclick = () => ir(b.dataset.ir)
+// o dock (as etapas) e o ícone da Z na barra; o Set também mora no dock, mas abre a folha dele (app/set.js)
+for (const b of document.querySelectorAll('.dock button[data-ir], #abrirZ')) b.onclick = () => ir(b.dataset.ir)
 
 // ───────── tema e páginas ─────────
 
@@ -156,7 +158,7 @@ function ir(pagina, animar = true) {
   document.documentElement.style.setProperty('--direcao', para >= de ? '1' : '-1')
   // saiu da Z aberta por link (/app/#z): o endereço deixa de apontar para ela, e recarregar volta à tarefa
   if (pagina !== 'z' && location.hash === '#z') history.replaceState(null, '', location.pathname + location.search)
-  for (const b of document.querySelectorAll('.dock button, #abrirZ')) b.toggleAttribute('aria-current', b.dataset.ir === pagina)
+  for (const b of document.querySelectorAll('.dock button[data-ir], #abrirZ')) b.toggleAttribute('aria-current', b.dataset.ir === pagina)
   // a Z só monta quando a pessoa abre (nada da Z carrega sozinho ao abrir o app)
   if (pagina === 'z' && !S.zMontada) S.zMontada = montarZ($('zPainel'))
   const vaga = document.querySelector(`.vaga-palco[data-vaga="${pagina}"]`)
@@ -178,7 +180,7 @@ $('barraExportar').onclick = () => ir('entrega')
  */
 function desenharBaloes() {
   const pend = pendencias(P(), { temArquivo: (id) => S.entradas.has(id) })
-  for (const b of document.querySelectorAll('.dock button')) {
+  for (const b of document.querySelectorAll('.dock button[data-ir]')) {
     const { n, dica } = pend[b.dataset.ir] || { n: 0, dica: '' }
     let balao = b.querySelector('.balao')
     if (!n) {
@@ -1279,6 +1281,8 @@ ir(location.hash === '#z' ? 'z' : 'midia', false)
 addEventListener('hashchange', () => location.hash === '#z' && ir('z'))
 desenharTudo()
 document.documentElement.dataset.pronto = '1'
+// o Set, a aba em comum do ecossistema: o fim do dock (app/set.js). Não é a entrada: só a entrada dele aparece
+montarSet()
 
 // ───────── aviso ─────────
 

@@ -20,6 +20,7 @@ const FILES = [
   "/app/js/link.js",
   "/app/js/zro.js",
   "/app/js/z.js",
+  "/app/js/set.js",
   "/app/js/entrada.js",
   "/app/js/pendencias.js",
   "/app/js/remote.js",

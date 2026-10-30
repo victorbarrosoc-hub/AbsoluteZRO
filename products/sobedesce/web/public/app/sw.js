@@ -94,6 +94,7 @@ const SHELL = [
   './components/relay.js',
   './components/scrub.js',
   './components/selecao.js',
+  './components/set.js',
   './components/settings.js',
   './components/tabs.js',
   './components/thumb.js',

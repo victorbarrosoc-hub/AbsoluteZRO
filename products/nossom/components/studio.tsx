@@ -24,6 +24,7 @@ import { activateVersion, activeIndex, previousIndex, nextIndex } from '@/lib/hi
 import { EqualizerControls, BroadcastControls } from './preset-controls';
 import AssistantHome from './assistant-home';
 import ZroIaPanel from './zro-ia-panel';
+import { rotuloSet, useSetZro } from './set-zro';
 import AIMotion from './ai-motion';
 import UserAvatar from './user-avatar';
 import AdminDashboard from './admin-dashboard';
@@ -75,6 +76,7 @@ import {
   Menu,
   PenLine,
   Info,
+  UsersRound,
 } from 'lucide-react';
 import { Brand } from './brand';
 import { useDialog } from '@/lib/use-dialog';
@@ -257,6 +259,8 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
   const [highpass, setHighpass] = useState(140);
   const [analysisNote, setAnalysisNote] = useState('');
   const [theme, setTheme] = useState<'system' | 'light' | 'dark'>('dark');
+  // o Set, a aba em comum do ecossistema: some sem a conta Absolute ZRO com o escopo dele
+  const { set: setZro, elemento: setElemento } = useSetZro(zroIa, theme);
   useEffect(() => {
     try {
       const saved = localStorage.getItem('nossom-theme');
@@ -1252,6 +1256,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
       className={`studio-shell ${collapsed ? 'nav-collapsed' : ''} ${routeTool ? `tool-editor tool-${routeTool}` : ''} ${view === 'z' ? 'view-z' : ''}`}
       data-theme={theme}
     >
+      {setElemento}
       <a className="skip-link" href="#studio-main">
         Pular para o estúdio
       </a>
@@ -1390,6 +1395,24 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
             >
               <Activity size={18} />
               Administração
+            </button>
+          )}
+          {/* o Set (a entrada em comum do ecossistema) abre a folha dele; não é tela nem a entrada */}
+          {setZro.visivel && (
+            <button
+              className={setZro.aberto ? 'active' : ''}
+              aria-haspopup="dialog"
+              aria-expanded={setZro.aberto}
+              aria-label={rotuloSet(setZro)}
+              title="Quem está online e as conversas"
+              data-set=""
+              onClick={() => {
+                setSidebar(false);
+                setZro.alternar();
+              }}
+            >
+              <UsersRound size={18} /> Set
+              {setZro.novidades ? <NavBadge count={setZro.novidades} /> : null}
             </button>
           )}
           {/* a Z, discreta (titular, 29/10/2026; Plano de Integração §7–8): por último, nunca a primeira nem a entrada */}
@@ -3154,6 +3177,20 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
           <MessageCircle size={19} />
           <span>Conta</span>
         </button>
+        {setZro.visivel && (
+          <button
+            className={setZro.aberto ? 'active' : ''}
+            aria-haspopup="dialog"
+            aria-expanded={setZro.aberto}
+            aria-label={rotuloSet(setZro)}
+            data-set=""
+            onClick={setZro.alternar}
+          >
+            <UsersRound size={19} />
+            <span>Set</span>
+            <NavBadge count={setZro.novidades} corner />
+          </button>
+        )}
       </nav>
       {assistant && (
         <Assistant

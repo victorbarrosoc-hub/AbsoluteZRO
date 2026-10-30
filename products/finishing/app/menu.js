@@ -6,6 +6,7 @@
 
 import { paginaDe } from './navegar.js'
 import { ICONES, svg } from './visual.js'
+import { montarSet } from './set.js'
 
 const CHAVE = 'revela-menu'
 const LARGO = matchMedia('(min-width: 900px)')
@@ -138,6 +139,8 @@ alternarTopo.setAttribute('aria-controls', 'menu')
 alternarRail.setAttribute('aria-controls', 'menu')
 
 document.body.prepend(menu, fundo)
+// o Set, a aba em comum do ecossistema: o fim do dock (app/set.js)
+montarSet()
 document.querySelector('.topo')?.prepend(alternarTopo)
 document.documentElement.classList.add('com-menu')
 

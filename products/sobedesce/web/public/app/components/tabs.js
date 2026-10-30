@@ -1,9 +1,12 @@
 // Abas do app (embaixo, como no iOS): Início (o botão de enviar, atalhos e a fila; violeta; a tela de entrada), Drive
 // (azul), Aparelhos (no meio e em destaque: mandar e receber pelo Wi-Fi), Referências (para quem tem o recurso) e Criar
-// (Frames e as outras ferramentas do computador, adaptadas ao celular).
+// (Frames e as outras ferramentas do computador, adaptadas ao celular). Nada além da tarefa: a barra fica em no máximo
+// cinco abas no iPhone.
 // No modo Wi-Fi não há abas: lá o celular não tem token do Google.
 // A Z não é aba (titular, 29/10/2026; Plano de Integração §7–8): abre pelo botão discreto do topo (ZBotao, main.js) ou
 // por /app/#z, e mostra o estado de login dela; sem Drive pronto (`pronto` falso), as abas mostram a tela da conta.
+// O Set da Absolute ZRO (components/set.js) também não é aba: é o botão ao lado da Z no topo, que abre a folha dele sem
+// trocar de tela. As abas monta o <zro-set> (useSet) para o app inteiro, com ou sem Drive pronto.
 import { html, useRef } from '../vendor/preact-htm.js'
 import { setTab, useApp } from '../lib/state.js'
 import { engine, summarize } from '../lib/uploader.js'
@@ -18,6 +21,7 @@ import { useP2pAviso } from './p2p.js'
 import { AccountScreen } from './account.js'
 import { ZScreen } from './z.js'
 import { Calculadora } from './calculadora.js'
+import { useSet } from './set.js'
 
 function TabBar({ tab, refsOn }) {
   useEngine()
@@ -65,6 +69,7 @@ export function Tabs({ pronto = true }) {
   const tab = saved === 'refs' && !refsOn ? 'send' : saved
   const seen = useRef({})
   seen.current[tab] = true
+  useSet()
   if (!pronto)
     return html`<div class="tabs">
       ${seen.current.z ? html`<div class="tab-pane" hidden=${tab !== 'z'}><${ZScreen} /></div>` : null}

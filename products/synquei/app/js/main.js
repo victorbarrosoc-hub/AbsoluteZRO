@@ -24,6 +24,7 @@ import { iniciarOrganizar, O as ORG } from './organizar.js'
 import { cartaoPlano, abrirPlanos } from './plano.js'
 import { iniciarConta } from './conta.js'
 import { abrirZ, ligarZ, telaZ } from './z.js'
+import { iniciarSet, pintarSet } from './set.js'
 import { pendencias, numeroBalao, rotuloBalao } from './pendencias.js'
 import { decidirEntrada } from './entrada.js'
 
@@ -77,6 +78,8 @@ function render() {
   } else root.classList.add('is-still')
   root.innerHTML = view.render()
   if (view.after) view.after(root)
+  // o Set no canto do Início (celular) nasce com a tela: ganha o estado e o clique do Set (app/js/set.js)
+  pintarSet()
   if (entering) {
     scrollTo(0, 0)
     document.title = `${view.title} · Synquei`
@@ -574,8 +577,11 @@ document.addEventListener('synquei:conta-mudou', () => {
   if (pc) pc.innerHTML = cartaoPlano()
   if (S.route === 'ajustes') render()
 })
-// a Z monta só quando a pessoa abre #/z, depois de saber da conta (app/js/z.js); nunca ao abrir o app
-ligarZ(iniciarConta(), S.route === 'z')
+// a Z monta só quando a pessoa abre #/z, depois de saber da conta (app/js/z.js); nunca ao abrir o app. O Set (a entrada
+// em comum do ecossistema, app/js/set.js) liga as entradas dele depois da conta: elas só aparecem quando ele responde.
+const contaPronta = iniciarConta()
+ligarZ(contaPronta, S.route === 'z')
+contaPronta.then(iniciarSet)
 
 if ('serviceWorker' in navigator && !window.synqueiDesktop && location.protocol === 'https:') {
   navigator.serviceWorker.register('/sw.js').catch(() => {})

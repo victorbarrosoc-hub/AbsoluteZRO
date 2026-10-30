@@ -756,6 +756,12 @@ body[data-pagina='z'] .paginas {
 .dock button[data-ir='revisar'][aria-current] svg { color: var(--cor-pagina-revisar); }
 .dock button[data-ir='edicao'][aria-current] svg { color: var(--cor-pagina-edicao); }
 .dock button[data-ir='entrega'][aria-current] svg { color: var(--cor-pagina-entrega); }
+/* o Set (app/set.js): marcado enquanto a folha está aberta; some quando não responde */
+.dock button[data-set][hidden] { display: none; }
+.dock button[data-set][aria-expanded='true'] {
+  background: var(--active);
+  color: var(--text-strong);
+}
 
 /* balão de pendências (src/pendencias.js), o mesmo desenho do SOBEDESCE e do HUB: pílula com o número em negrito
    tabular, na cor do texto invertida, no canto do ícone (o dock é uma barra de ícones, como a do celular) */
@@ -2470,4 +2476,23 @@ html:not([data-conta]) body {
   .z-painel {
     padding: 4px 14px 16px;
   }
+}
+
+/* ───────── o Set da Absolute ZRO (app/set.js): a folha com a cara do AEON ───────── */
+:root {
+  --zro-set-tinta: var(--text-strong);
+  --zro-set-apoio: var(--text-mute);
+  --zro-set-apagado: var(--text-faint);
+  --zro-set-linha: var(--line);
+  --zro-set-linha-forte: var(--line-strong);
+  --zro-set-superficie: var(--surface);
+  --zro-set-superficie-2: var(--surface-2);
+  --zro-set-superficie-3: var(--surface-3);
+  --zro-set-vidro: var(--glass-bg);
+  --zro-set-fundo: color-mix(in srgb, var(--surface) 92%, transparent);
+  --zro-set-acento: var(--text-strong);
+  --zro-set-acento-tinta: var(--bg);
+  --zro-set-raio: 22px;
+  --zro-set-raio-controle: 999px;
+  --zro-set-fonte: var(--fonte);
 }

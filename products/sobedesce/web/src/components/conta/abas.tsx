@@ -14,7 +14,8 @@ export function IconeZ({ className }: { className?: string }) {
 
 /**
  * A entrada da Z na área logada (titular, 29/10/2026; Plano de Integração §7–8): um anel pequeno no cabeçalho, ao lado
- * das ações. Não é aba nem a tela de entrada (quem entra cai em /conta); abre a Z só quando a pessoa toca.
+ * das ações. Não é aba nem a tela de entrada (quem entra cai em /conta); abre a Z só quando a pessoa toca. Ao lado dela
+ * fica o Set da Absolute ZRO (aba-set.tsx › BotaoSet), que abre a folha dele sem trocar de página.
  */
 export function LinkZ({ atual = false }: { atual?: boolean }) {
   return (

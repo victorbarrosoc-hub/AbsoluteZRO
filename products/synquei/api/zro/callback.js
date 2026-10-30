@@ -23,6 +23,10 @@ export default async function callback(req, res) {
 
   if (!igual(q.get('state'), ida.state)) return falhar('expirou')
   const erro = q.get('error')
+  // Absolute ZRO de antes do Set: recusa zro.set. Pede de novo sem ele (uma vez); o resto do login não muda.
+  if (erro === 'invalid_scope' && !ida.semSet) {
+    return redirecionar(res, 303, `/api/zro/entrar?volta=${encodeURIComponent(volta)}${ida.criar ? '&criar=1' : ''}&sem_set=1`, [limpar])
+  }
   if (erro) return falhar(erro === 'access_denied' ? 'recusado' : 'erro')
   // RFC 9207: quando a resposta diz quem a emitiu, tem que ser a Absolute ZRO configurada.
   if (q.has('iss') && q.get('iss') !== emissor()) return falhar('erro')
