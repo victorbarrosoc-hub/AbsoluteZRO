@@ -2701,3 +2701,23 @@ em `products/maestro/docs/permissoes.md`). Local, Postgres e Chromium/WebKit des
 | Segredos                        | `node scripts/scan-secrets.mjs`                              | nenhum                                                                                                                                                               |
 
 Não conferido aqui: a migração `0027` no banco de produção (deploy só com autorização) e a tela com dados reais.
+
+## Laboratório da Z (30/10/2026, [ADR 0033](decisions/0033-laboratorio-da-z.md))
+
+Console › Laboratório da Z (só admin), migração `0036_laboratorio_z.sql`. Local, Postgres e Chromium desta máquina;
+Claude e ElevenLabs **falsos** (`tests/fixtures/z-lab-falso.ts`), nenhuma chamada real.
+
+| O quê                                | Como                                                                                  | Resultado                                                                                                                                        |
+| ------------------------------------ | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Anexos, custos, pedidos, voz, PCM    | `tests/integration/z-lab-unidade.test.ts`                                             | 18/18: tipo pelo conteúdo, Office por dentro, bomba de zip, senha, XML sem entidade externa, conta de custo, tom, filtro de voz, frases e PCM    |
+| Quem pode e RLS                      | `tests/integration/z-lab.test.ts`                                                     | não admin e suporte: 403 em todas as funções; `asUser` direto: 0 linhas nas 7 tabelas, insert 42501, update 0 linhas                             |
+| Teto, uso, versões, publicação       | `tests/integration/z-lab.test.ts`                                                     | sem teto = bloqueado; uso idempotente; passou = 429; versão imutável; restaurar; publicar só com a trava e confirmação; trava desligada = padrão |
+| Recursos por plano e auditoria       | `tests/integration/z-lab.test.ts`                                                     | tudo desligado; vale só para o plano da lista; cada mudança em `audit_logs` (`z_lab.*`)                                                          |
+| Rotas documentadas                   | `tests/integration/openapi.test.ts`                                                   | as 20 rotas `/api/v1/admin/z-lab/*` no OpenAPI                                                                                                   |
+| Tela (e2e)                           | `npx playwright test tests/e2e/z-lab.spec.ts`                                         | 2/2: 404/403 em tudo para cliente e suporte; teto, streaming, ditado, anexos (Word, PNG, WAV), comparar, voz ao vivo, Configurar, axe, Custos    |
+| Suíte inteira                        | `npm test` · `npm run test:e2e`                                                       | 383/383 · 48 ok + 2 por tempo da máquina carregada (`admin.spec` e `esqueleto` WebKit), que passam sozinhos                                      |
+| Lint, Prettier, tipos, build, chaves | `npm run lint`, `format:check`, `typecheck`, `build`, `node scripts/scan-secrets.mjs` | ok · ok · ok · ok · nenhum segredo                                                                                                               |
+
+Não conferido aqui: voz, transcrição, Voice Design e o Claude com as chaves reais (a latência de verdade e a qualidade
+da voz); microfone de verdade e o eco do alto-falante no barge-in; vídeos grandes no navegador; a migração `0036` em
+produção (deploy só com autorização).

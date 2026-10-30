@@ -17,7 +17,8 @@ const VALIDADE_SEGUNDOS = 24 * 3600
 export const POST = route(
   async ({ req, auth }) => {
     adminDoLab(auth)
-    if (Number(req.headers.get('content-length') || 0) > Z_ANEXO_MAX_BYTES + 64_000) throw new DomainError('invalid_input', 'Arquivo grande demais (até 4 MB por aqui).')
+    if (Number(req.headers.get('content-length') || 0) > Z_ANEXO_MAX_BYTES + 64_000)
+      throw new DomainError('invalid_input', 'Arquivo grande demais (até 4 MB por aqui).')
     const form = await req.formData().catch(() => null)
     const f = form?.get('arquivo')
     if (!f || typeof f === 'string') throw new DomainError('invalid_input', 'Envie um arquivo no campo "arquivo".')

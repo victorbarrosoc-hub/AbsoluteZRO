@@ -60,8 +60,40 @@ export function lerPedidoDoLab(raw: unknown): ZLabPedido {
   const p = ZLabPedidoSchema.safeParse(raw)
   if (!p.success) throw new DomainError('invalid_input', p.error.issues[0]?.message ?? 'Pedido inválido.')
   const ultimo = p.data.historico[p.data.historico.length - 1]!
-  if (ultimo.papel !== 'user' || (!ultimo.texto.trim() && !ultimo.anexos?.length)) throw new DomainError('invalid_input', 'Escreva alguma coisa ou anexe um arquivo.')
+  if (ultimo.papel !== 'user' || (!ultimo.texto.trim() && !ultimo.anexos?.length))
+    throw new DomainError('invalid_input', 'Escreva alguma coisa ou anexe um arquivo.')
   const textos = p.data.historico.flatMap((m) => m.anexos ?? []).reduce((n, a) => n + (a.tipo === 'texto' ? a.texto.length : 0), 0)
   if (textos > Z_LAB_TEXTO_ANEXADO_MAX) throw new DomainError('invalid_input', 'Texto anexado demais nesta conversa. Comece uma nova.')
+  return p.data
+}
+
+/** Voice Design: a descrição (editável) e o texto das amostras (a API pede de 100 a 1.000 caracteres). */
+const ZDesignSchema = z.object({
+  descricao: z.string().trim().min(10, 'Descreva a voz em pelo menos 10 caracteres.').max(1000, 'Descrição longa demais (até 1.000 caracteres).'),
+  texto: z
+    .string()
+    .trim()
+    .min(100, 'O texto da amostra precisa de pelo menos 100 caracteres.')
+    .max(1000, 'Texto da amostra longo demais (até 1.000 caracteres).'),
+  chave: z.string().regex(/^[A-Za-z0-9-]{8,80}$/),
+})
+export type ZPedidoDeDesign = z.infer<typeof ZDesignSchema>
+export function lerPedidoDeDesign(raw: unknown): ZPedidoDeDesign {
+  const p = ZDesignSchema.safeParse(raw)
+  if (!p.success) throw new DomainError('invalid_input', p.error.issues[0]?.message ?? 'Pedido inválido.')
+  return p.data
+}
+
+/** Salvar a amostra escolhida como voz da conta: só com `confirmar: true` (o titular viu e escolheu). */
+const ZCriarVozSchema = z.object({
+  amostra: z.string().regex(/^[A-Za-z0-9_-]{6,80}$/),
+  nome: z.string().trim().min(1, 'Dê um nome para a voz.').max(60, 'Nome longo demais (até 60 caracteres).'),
+  descricao: z.string().trim().min(10).max(1000),
+  confirmar: z.literal(true, { message: 'Confirme antes de salvar a voz na conta.' }),
+})
+export type ZPedidoDeVoz = z.infer<typeof ZCriarVozSchema>
+export function lerPedidoDeVoz(raw: unknown): ZPedidoDeVoz {
+  const p = ZCriarVozSchema.safeParse(raw)
+  if (!p.success) throw new DomainError('invalid_input', p.error.issues[0]?.message ?? 'Pedido inválido.')
   return p.data
 }

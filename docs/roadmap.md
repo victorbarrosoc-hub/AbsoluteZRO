@@ -1,6 +1,6 @@
 # Roadmap — o que foi entregue e o que falta
 
-Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
 ## Fase 0 — Auditoria
 
@@ -681,6 +681,27 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
 - ⛔ Em produção: migração `0035` no deploy e novo login no Maestro para o escopo `zro.set`.
 - ⬜ SOBEDESCE, Synquei e os demais apps com o widget; aviso fora do app (e-mail/push); anexos.
 - ⬜ Fase 3, salas abertas da comunidade: com o lançamento do Carro do Freela (novo tipo de conversa, mesma API).
+
+## Laboratório da Z (30/10/2026, [ADR 0033](decisions/0033-laboratorio-da-z.md))
+
+- ✅ Console › **Laboratório da Z** (só o admin da plataforma; suporte e clientes não veem): Testar e Configurar.
+  Migração `0036_laboratorio_z.sql` com RLS em todas as tabelas `z_*`.
+- ✅ Conversa por voz como a do ChatGPT: mãos livres (Scribe v2 Realtime, VAD) ou segure para falar (Scribe v2),
+  resposta do Claude em streaming falada frase a frase (ElevenLabs Flash v2.5 em PCM), barge-in, legenda ao vivo e o
+  tempo de cada etapa; modelo escolhido na hora (o da Z hoje ou um mais rápido).
+- ✅ A Z é uma mulher: personalidade feminina proposta no rascunho, vozes femininas pt-BR da conta pré-filtradas e o
+  Voice Design para criar uma (salva na conta só com confirmação).
+- ✅ Ditado no campo (o microfone escreve para editar antes de enviar) e anexos: imagem e PDF nativos no Claude;
+  Word, Excel, PowerPoint, texto e CSV lidos no servidor; áudio e vídeo transcritos (e quatro quadros do vídeo).
+- ✅ Configurar: personalidade, tom, regras, instrução por plataforma, textos de referência, voz e saudação, modelo e
+  tamanho da resposta, teto por dia; versões imutáveis com nota, diferenças, comparar lado a lado e restaurar.
+- ✅ Custo de cada chamada (tokens, caracteres, segundos) com teto por dia (sem teto = bloqueado) e o gasto nos Custos.
+- ✅ Liberação por plano (voz, ditado, anexos) e "Publicar para os clientes": tudo desligado, ligar pede confirmação e
+  fica na auditoria.
+- ⛔ Em produção: migração `0036` no deploy e o primeiro teste com as chaves reais (`IA_ANTHROPIC_KEY` e
+  `ELEVENLABS_API_KEY`, já na Vercel).
+- ⬜ Para os clientes: voz, ditado e anexos no painel `<zro-ia>` lendo `z_recurso_liberado`, quando os planos forem
+  vendidos.
 
 ## Fase 6 — Escala
 

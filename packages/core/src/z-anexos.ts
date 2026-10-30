@@ -36,7 +36,10 @@ const comeca = (b: Uint8Array, ...sig: number[]) => sig.every((v, i) => b[i] ===
 
 /** Nome seguro para mostrar e mandar à IA: sem caminho, sem controle, até 120 caracteres. */
 export function nomeSeguro(nome: string): string {
-  const base = (nome.split(/[\\/]/).pop() ?? '').replace(/[\u0000-\u001f\u007f<>"]/g, '').trim()
+  const base = [...(nome.split(/[\\/]/).pop() ?? '')]
+    .filter((c) => c.charCodeAt(0) > 0x1f && c.charCodeAt(0) !== 0x7f && !'<>"'.includes(c))
+    .join('')
+    .trim()
   return (base || 'arquivo').slice(0, 120)
 }
 

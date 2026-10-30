@@ -5,13 +5,17 @@ import 'server-only'
  * (`ELEVENLABS_API_KEY`), só no servidor: nunca vai para o navegador, para o log ou para o banco.
  * Endpoints conferidos na documentação oficial (out/2026):
  *   GET  /v2/voices · POST /v1/text-to-speech/{voz}/stream · POST /v1/speech-to-text · POST /v1/single-use-token/realtime_scribe
+ *   POST /v1/text-to-voice/design (amostras) · POST /v1/text-to-voice (salva a amostra escolhida como voz da conta)
  *   wss://api.elevenlabs.io/v1/speech-to-text/realtime (com ?token=)
  * `ZRO_ELEVENLABS_URL` e `ZRO_ELEVENLABS_WS_URL` só existem nos testes (a ElevenLabs falsa do e2e).
  */
-import { DomainError } from '@zro/observability'
+import { classificarVoz } from '@zro/core'
+import { DomainError, zroEnv } from '@zro/observability'
 
-const base = () => (process.env.ZRO_ELEVENLABS_URL || 'https://api.elevenlabs.io').replace(/\/$/, '')
-export const urlDaEscuta = () => (process.env.ZRO_ELEVENLABS_WS_URL || 'wss://api.elevenlabs.io').replace(/\/$/, '') + '/v1/speech-to-text/realtime'
+// Endereço falso só fora de produção (a chave nunca vai para outro lugar).
+const teste = (v: string | undefined) => (zroEnv() !== 'production' ? v : undefined)
+const base = () => (teste(process.env.ZRO_ELEVENLABS_URL) || 'https://api.elevenlabs.io').replace(/\/$/, '')
+export const urlDaEscuta = () => (teste(process.env.ZRO_ELEVENLABS_WS_URL) || 'wss://api.elevenlabs.io').replace(/\/$/, '') + '/v1/speech-to-text/realtime'
 export const vozLigada = () => !!process.env.ELEVENLABS_API_KEY
 
 /** Amostragem da fala que o laboratório toca (PCM 16 bits, mono): começa a tocar no primeiro pedaço. */
@@ -33,7 +37,7 @@ async function falha(r: Response): Promise<never> {
   throw new DomainError('upstream_unavailable', `A ElevenLabs não respondeu agora (${r.status}).`)
 }
 
-export type Voz = { id: string; nome: string; categoria: string | null; previa: string | null; rotulos: string[] }
+export type Voz = { id: string; nome: string; categoria: string | null; previa: string | null; rotulos: string[]; feminina: boolean; ptBr: boolean }
 
 let cacheVozes: { em: number; vozes: Voz[] } | null = null
 
@@ -48,7 +52,14 @@ export async function listarVozes(signal?: AbortSignal): Promise<Voz[]> {
     const r = await fetch(`${base()}/v2/voices?${q}`, { headers: { 'xi-api-key': chave() }, signal, cache: 'no-store' })
     if (!r.ok) await falha(r)
     const d = (await r.json()) as {
-      voices: { voice_id: string; name?: string; category?: string; preview_url?: string | null; labels?: Record<string, string> }[]
+      voices: {
+        voice_id: string
+        name?: string
+        category?: string
+        preview_url?: string | null
+        labels?: Record<string, string>
+        verified_languages?: { language?: string; accent?: string | null; locale?: string | null }[]
+      }[]
       has_more?: boolean
       next_page_token?: string | null
     }
@@ -62,6 +73,7 @@ export async function listarVozes(signal?: AbortSignal): Promise<Voz[]> {
         rotulos: Object.values(v.labels ?? {})
           .filter((x) => typeof x === 'string')
           .slice(0, 4),
+        ...classificarVoz(v),
       })
     }
     if (!d.has_more || !d.next_page_token) break
@@ -92,11 +104,12 @@ export async function falar(f: Fala, signal?: AbortSignal): Promise<ReadableStre
 }
 
 /** Transcrição de um pedaço de áudio (PCM 16 kHz mono) pelo Scribe v2. */
-export async function transcrever(pcm: Uint8Array, signal?: AbortSignal): Promise<{ texto: string; idioma: string | null }> {
+export async function transcrever(pcm: Uint8Array, signal?: AbortSignal, idioma?: 'pt'): Promise<{ texto: string; idioma: string | null }> {
   const form = new FormData()
   form.set('model_id', 'scribe_v2')
   form.set('file_format', 'pcm_s16le_16')
   form.set('tag_audio_events', 'false')
+  if (idioma) form.set('language_code', idioma)
   form.set('file', new Blob([pcm as BlobPart], { type: 'application/octet-stream' }), 'audio.pcm')
   const r = await fetch(`${base()}/v1/speech-to-text`, { method: 'POST', headers: { 'xi-api-key': chave() }, body: form, signal })
   if (!r.ok) await falha(r)
@@ -111,4 +124,50 @@ export async function tokenDaEscuta(signal?: AbortSignal): Promise<string> {
   const d = (await r.json()) as { token?: string }
   if (!d.token) throw new DomainError('upstream_unavailable', 'A ElevenLabs não devolveu o token da escuta.')
   return d.token
+}
+
+export type Amostra = { id: string; audio: string; mime: string; segundos: number }
+
+/**
+ * Voice Design: três amostras de uma voz nova a partir da descrição. Nada é salvo na conta ainda; a amostra escolhida
+ * só vira voz com `criarVoz`, depois da confirmação do titular.
+ */
+export async function desenharVoz(descricao: string, texto: string, signal?: AbortSignal): Promise<Amostra[]> {
+  const r = await fetch(`${base()}/v1/text-to-voice/design?output_format=mp3_44100_128`, {
+    method: 'POST',
+    headers: { 'xi-api-key': chave(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ voice_description: descricao, text: texto, model_id: 'eleven_multilingual_ttv_v2' }),
+    signal,
+  })
+  if (!r.ok) await falha(r)
+  const d = (await r.json()) as { previews?: { generated_voice_id?: string; audio_base_64?: string; media_type?: string; duration_secs?: number }[] }
+  return (d.previews ?? [])
+    .filter((p) => typeof p.generated_voice_id === 'string' && /^[A-Za-z0-9_-]{6,80}$/.test(p.generated_voice_id) && typeof p.audio_base_64 === 'string')
+    .slice(0, 3)
+    .map((p) => ({
+      id: p.generated_voice_id!,
+      audio: p.audio_base_64!,
+      mime: /^audio\/[a-z0-9.+-]+$/.test(p.media_type ?? '') ? p.media_type! : 'audio/mpeg',
+      segundos: Number(p.duration_secs ?? 0),
+    }))
+}
+
+/** Salva a amostra escolhida como voz da conta da ElevenLabs. */
+export async function criarVoz(p: { amostra: string; nome: string; descricao: string }, signal?: AbortSignal): Promise<{ id: string; nome: string }> {
+  const r = await fetch(`${base()}/v1/text-to-voice`, {
+    method: 'POST',
+    headers: { 'xi-api-key': chave(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      voice_name: p.nome,
+      voice_description: p.descricao,
+      generated_voice_id: p.amostra,
+      labels: { gender: 'female', accent: 'brazilian', language: 'pt' },
+    }),
+    signal,
+  })
+  if (!r.ok) await falha(r)
+  const d = (await r.json()) as { voice_id?: string; name?: string }
+  if (!d.voice_id || !/^[A-Za-z0-9]{8,40}$/.test(d.voice_id)) throw new DomainError('upstream_unavailable', 'A ElevenLabs não devolveu a voz nova.')
+  cacheVozes = null
+  return { id: d.voice_id, nome: (d.name ?? p.nome).slice(0, 80) }
 }

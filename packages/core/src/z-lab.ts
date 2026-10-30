@@ -41,6 +41,13 @@ export type ZVozModeloId = (typeof Z_VOZ_MODELOS)[number]['id']
 export const Z_PRECO_TRANSCRICAO_HORA = 0.22
 export const Z_PRECO_ESCUTA_HORA = 0.39
 
+/**
+ * Voice Design (criar uma voz a partir de uma descrição): a ElevenLabs cobra os caracteres do texto das amostras.
+ * Estimativa: três amostras do texto, no preço do modelo mais caro (US$ 0,08 por mil caracteres).
+ */
+export const Z_DESIGN_AMOSTRAS = 3
+export const custoDesignUsd = (caracteresDoTexto: number) => ((Math.max(0, caracteresDoTexto) * Z_DESIGN_AMOSTRAS) / 1000) * 0.08
+
 export const custoVozUsd = (caracteres: number, modelo: string) =>
   (Math.max(0, caracteres) / 1000) * (Z_VOZ_MODELOS.find((m) => m.id === modelo)?.usdPorMilCaracteres ?? 0.08)
 export const custoTranscricaoUsd = (segundos: number) => (Math.max(0, segundos) / 3600) * Z_PRECO_TRANSCRICAO_HORA
@@ -52,9 +59,12 @@ export const custoClaudeUsd = custoIaUsd
  * escuta ao vivo fica aberta o minuto todo, a Z fala metade do minuto (~15 caracteres por segundo em português) e há
  * `turnos` respostas por minuto, cada uma lendo o sistema do cache e o resto como entrada nova.
  */
-export function custoMinutoDeVoz(
-  p: { modelo?: string; vozModelo?: string; turnos?: number; entradaNova?: number; cache?: number; saida?: number } = {},
-): { escuta: number; voz: number; claude: number; total: number } {
+export function custoMinutoDeVoz(p: { modelo?: string; vozModelo?: string; turnos?: number; entradaNova?: number; cache?: number; saida?: number } = {}): {
+  escuta: number
+  voz: number
+  claude: number
+  total: number
+} {
   const turnos = p.turnos ?? 4
   const escuta = custoEscutaUsd(60)
   const voz = custoVozUsd(30 * 15, p.vozModelo ?? 'eleven_flash_v2_5')
@@ -69,6 +79,43 @@ export const Z_IDENTIDADE_PADRAO =
   'Seu nome é Z e você fala de si no feminino ("obrigada", "estou pronta"), sem fingir ser uma pessoa. Fala português do Brasil, com tom humano, direto e curto: frases simples, sem jargão e sem clichês. Use listas curtas quando ajudar a ler rápido.'
 export const Z_REGRAS_PADRAO =
   'Você só lê. Não cria, apaga, move nem altera nada (nem arquivos de mídia). A única exceção é pedir ao computador da pessoa uma conversão (abaixo), e só depois do "sim" dela. Quando a pessoa pedir outra ação, explique em poucos passos onde fazer: no HUB (absolutezro.com) ou na plataforma certa. Projeto, mídia e cobrança mudam só pela pessoa, com confirmação.'
+
+/**
+ * A personalidade que o laboratório propõe para a Z nova (pedido do titular, 30/10/2026: "a Z é uma mulher"): calorosa,
+ * direta e leve, fala de si no feminino. Só vale para os clientes depois de publicada.
+ */
+export const Z_IDENTIDADE_LAB =
+  'Seu nome é Z. Você é uma mulher e fala de si no feminino ("estou pronta", "fiquei curiosa", "obrigada"), sem fingir ser uma pessoa de carne e osso. Fala português do Brasil, com calor humano, leveza e um sorriso na voz: direta, clara e curta, como alguém da equipe que gosta de ajudar. Frases simples, sem jargão, sem clichês e nunca robótica. Use listas curtas só quando ajudarem a ler rápido.'
+
+/** Saudação da voz e descrição para criar uma voz nova (Voice Design), as duas editáveis no Configurar. */
+export const Z_SAUDACAO_PADRAO = 'Oi! Aqui é a Z. Estou pronta, pode falar.'
+export const Z_VOZ_DESCRICAO_PADRAO = 'mulher brasileira, voz calorosa, natural e leve, fala clara, ritmo tranquilo, sorriso na voz'
+/** Texto das amostras do Voice Design (a API pede de 100 a 1.000 caracteres). */
+export const Z_VOZ_TEXTO_AMOSTRA =
+  'Oi, aqui é a Z. Estou pronta para te ajudar com os seus projetos, os seus arquivos e tudo o que acontece no ecossistema. Fiquei curiosa: por onde a gente começa hoje?'
+
+/**
+ * Uma voz da conta combina com a Z? Feminina (rótulo `gender`) e com português do Brasil (rótulos de sotaque ou idioma,
+ * ou um idioma verificado pt-BR). Serve para pré-filtrar a lista; a escolha é sempre do titular.
+ */
+export function classificarVoz(v: {
+  labels?: Record<string, unknown> | null
+  verified_languages?: { language?: string; accent?: string | null; locale?: string | null }[] | null
+}): {
+  feminina: boolean
+  ptBr: boolean
+} {
+  const l = Object.fromEntries(Object.entries(v.labels ?? {}).map(([k, x]) => [k.toLowerCase(), String(x ?? '').toLowerCase()]))
+  const feminina = /^(female|feminin[ao]|mulher|woman)$/.test(l.gender ?? '')
+  const rotulo = `${l.accent ?? ''} ${l.language ?? ''} ${l.locale ?? ''}`
+  const ptBr =
+    /brazil|brasil|pt-br|pt_br/.test(rotulo) ||
+    (v.verified_languages ?? []).some(
+      (x) =>
+        (x.locale ?? '').toLowerCase().replace('_', '-') === 'pt-br' || ((x.language ?? '').toLowerCase() === 'pt' && /brazil|brasil/i.test(x.accent ?? '')),
+    )
+  return { feminina, ptBr }
+}
 
 /** Onde a Z pode receber instrução própria. `hub` = o HUB; o resto, ids de zro.products. */
 export const Z_APPS = [
@@ -85,7 +132,11 @@ export const Z_APPS = [
 ] as const
 export type ZAppId = (typeof Z_APPS)[number]['id']
 
-export const Z_RESPOSTAS = { curta: { nome: 'Curta', maxTokens: 1500 }, media: { nome: 'Média', maxTokens: 4000 }, longa: { nome: 'Longa', maxTokens: 8000 } } as const
+export const Z_RESPOSTAS = {
+  curta: { nome: 'Curta', maxTokens: 1500 },
+  media: { nome: 'Média', maxTokens: 4000 },
+  longa: { nome: 'Longa', maxTokens: 8000 },
+} as const
 export type ZResposta = keyof typeof Z_RESPOSTAS
 
 export const Z_TOM_PADRAO = { formalidade: 30, detalhe: 20 } as const
@@ -130,15 +181,19 @@ export const ZConfigSchema = z
   .strict()
 export type ZConfig = z.infer<typeof ZConfigSchema>
 
-/** A configuração padrão: exatamente a Z de hoje (texto do código, Opus, resposta média de 4.000 tokens). */
+/**
+ * O primeiro rascunho do laboratório: as regras, o modelo e o tamanho de resposta da Z de hoje (resposta média de 4.000
+ * tokens), com a personalidade feminina proposta (`Z_IDENTIDADE_LAB`). A Z dos clientes não usa isto: sem versão
+ * publicada, ela segue o texto do código.
+ */
 export function zConfigPadrao(modelo: string = 'claude-opus-5-5'): ZConfig {
   return {
-    identidade: Z_IDENTIDADE_PADRAO,
+    identidade: Z_IDENTIDADE_LAB,
     regras: Z_REGRAS_PADRAO,
     tom: { ...Z_TOM_PADRAO },
     apps: {},
     conhecimento: [],
-    voz: { id: null, nome: null, modelo: 'eleven_flash_v2_5', velocidade: 1, estabilidade: 0.5, saudacao: 'Oi! Sou a Z. Em que posso ajudar?' },
+    voz: { id: null, nome: null, modelo: 'eleven_flash_v2_5', velocidade: 1, estabilidade: 0.5, saudacao: Z_SAUDACAO_PADRAO },
     modelo: { id: (Z_MODELOS.some((m) => m.id === modelo) ? modelo : 'claude-opus-5-5') as ZModeloId, resposta: 'media' },
   }
 }
@@ -217,7 +272,7 @@ const auditar = (tx: Queryable, a: ZLabAdmin, action: string, metadata: Record<s
 
 // ───────────── teto e uso ─────────────
 
-export type ZServico = 'claude' | 'voz' | 'transcricao' | 'escuta'
+export type ZServico = 'claude' | 'voz' | 'transcricao' | 'escuta' | 'design'
 export type ZUso = {
   servico: ZServico
   modelo?: string | null
@@ -243,7 +298,7 @@ async function lerGasto(tx: Queryable): Promise<ZGasto> {
       coalesce(sum(custo_usd), 0)::float8 as mes
     from zro.z_lab_uso where dia >= date_trunc('month', now() at time zone 'America/Fortaleza')::date
     group by servico`
-  const porServico: Record<ZServico, number> = { claude: 0, voz: 0, transcricao: 0, escuta: 0 }
+  const porServico: Record<ZServico, number> = { claude: 0, voz: 0, transcricao: 0, escuta: 0, design: 0 }
   let hoje = 0
   let mes = 0
   for (const r of rows) {
@@ -253,6 +308,9 @@ async function lerGasto(tx: Queryable): Promise<ZGasto> {
   }
   return { hoje, mes, teto: c?.teto == null ? null : Number(c.teto), porServico }
 }
+
+/** Para os Custos do console (quem chama já passou por requirePlatformAdmin e lê como sistema). */
+export const lerGastoDoLab = (tx: Queryable) => lerGasto(tx)
 
 export async function gastoDoLab(db: Database, auth: Authenticated | null): Promise<ZGasto> {
   const a = adminDoLab(auth)
@@ -313,7 +371,13 @@ export async function abrirEscuta(db: Database, a: ZLabAdmin, sessao: string): P
 export async function fecharEscuta(db: Database, auth: Authenticated | null, raw: unknown): Promise<{ segundos: number; custoUsd: number }> {
   const a = adminDoLab(auth)
   const p = z
-    .object({ sessao: z.string().regex(UUID), segundos: z.number().min(0).max(Z_ESCUTA_MAX_SEGUNDOS * 4) })
+    .object({
+      sessao: z.string().regex(UUID),
+      segundos: z
+        .number()
+        .min(0)
+        .max(Z_ESCUTA_MAX_SEGUNDOS * 4),
+    })
     .safeParse(raw)
   if (!p.success) throw new DomainError('invalid_input', 'Relato de escuta inválido.')
   const [r] = await comoAdmin(
@@ -332,9 +396,7 @@ export async function fecharEscuta(db: Database, auth: Authenticated | null, raw
 
 export async function definirTeto(db: Database, auth: Authenticated | null, raw: unknown): Promise<number | null> {
   const a = adminDoLab(auth)
-  const p = z
-    .object({ teto: z.number().min(0).max(9999).nullable() })
-    .safeParse(raw)
+  const p = z.object({ teto: z.number().min(0).max(9999).nullable() }).safeParse(raw)
   if (!p.success) throw new DomainError('invalid_input', 'Teto inválido (de US$ 0 a US$ 9.999 por dia).')
   const teto = p.data.teto == null ? null : Math.round(p.data.teto * 100) / 100
   await comoAdmin(db, a, async (tx) => {
@@ -381,7 +443,8 @@ export async function estadoDoLab(db: Database, auth: Authenticated | null, mode
     const versoes = await tx`select id, numero, nota, criada_em from zro.z_versoes order by numero desc limit 60`
     const conhecimento = await tx`
       select id, titulo, char_length(texto) as caracteres, criado_em from zro.z_conhecimento where arquivado_em is null order by criado_em desc`
-    const recursos = await tx`select recurso, ligado, planos, atualizado_em from zro.z_recursos order by array_position(array['voz', 'ditado', 'anexos', 'publicar_config'], recurso)`
+    const recursos =
+      await tx`select recurso, ligado, planos, atualizado_em from zro.z_recursos order by array_position(array['voz', 'ditado', 'anexos', 'publicar_config'], recurso)`
     return {
       rascunho: r.config,
       baseVersao: r.base,
@@ -394,7 +457,12 @@ export async function estadoDoLab(db: Database, auth: Authenticated | null, mode
         publicada: !!pub && pub.id === v.id,
       })),
       publicada: pub ? { numero: pub.numero as number, em: (pub.publicada_em as Date).toISOString() } : null,
-      conhecimento: conhecimento.map((k) => ({ id: k.id as string, titulo: k.titulo as string, caracteres: k.caracteres as number, criadoEm: (k.criado_em as Date).toISOString() })),
+      conhecimento: conhecimento.map((k) => ({
+        id: k.id as string,
+        titulo: k.titulo as string,
+        caracteres: k.caracteres as number,
+        criadoEm: (k.criado_em as Date).toISOString(),
+      })),
       recursos: recursos.map((x) => ({
         recurso: x.recurso as ZRecurso['recurso'],
         ligado: x.ligado as boolean,
@@ -411,7 +479,8 @@ async function conferirConhecimento(tx: Queryable, ids: string[]) {
   const rows = await tx`select id, char_length(texto) as n from zro.z_conhecimento where id = any(${ids}::uuid[])`
   if (rows.length !== new Set(ids).size) throw new DomainError('invalid_input', 'Um texto de referência não existe mais.')
   const total = rows.reduce((s, r) => s + (r.n as number), 0)
-  if (total > Z_CONHECIMENTO_MAX_TOTAL) throw new DomainError('invalid_input', `Os textos ativos passam de ${Z_CONHECIMENTO_MAX_TOTAL.toLocaleString('pt-BR')} caracteres.`)
+  if (total > Z_CONHECIMENTO_MAX_TOTAL)
+    throw new DomainError('invalid_input', `Os textos ativos passam de ${Z_CONHECIMENTO_MAX_TOTAL.toLocaleString('pt-BR')} caracteres.`)
 }
 
 /** Grava o rascunho (o que o laboratório testa). Não cria versão. */
@@ -536,9 +605,7 @@ export async function despublicar(db: Database, auth: Authenticated | null, raw:
 export async function mudarRecurso(db: Database, auth: Authenticated | null, recurso: string, raw: unknown): Promise<ZRecurso> {
   const a = adminDoLab(auth)
   if (!(recurso in Z_RECURSOS)) throw new DomainError('not_found', 'Recurso não encontrado.')
-  const p = z
-    .object({ ligado: z.boolean(), planos: z.array(z.string().regex(/^[a-z0-9-]{1,60}$/)).max(40), confirmar: z.literal(true) })
-    .safeParse(raw)
+  const p = z.object({ ligado: z.boolean(), planos: z.array(z.string().regex(/^[a-z0-9-]{1,60}$/)).max(40), confirmar: z.literal(true) }).safeParse(raw)
   if (!p.success) throw new DomainError('invalid_input', 'Confirme a mudança e escolha planos válidos.')
   return comoAdmin(db, a, async (tx) => {
     const planos = [...new Set(p.data.planos)].sort()
@@ -551,7 +618,12 @@ export async function mudarRecurso(db: Database, auth: Authenticated | null, rec
       update zro.z_recursos set ligado = ${p.data.ligado}, planos = ${planos}, atualizado_em = now(), atualizado_por = ${a.userId}
       where recurso = ${recurso} returning recurso, ligado, planos, atualizado_em`
     await auditar(tx, a, 'recurso', { recurso, de: { ligado: antes?.ligado, planos: antes?.planos }, para: { ligado: p.data.ligado, planos } })
-    return { recurso: r!.recurso as ZRecurso['recurso'], ligado: r!.ligado as boolean, planos: r!.planos as string[], atualizadoEm: (r!.atualizado_em as Date).toISOString() }
+    return {
+      recurso: r!.recurso as ZRecurso['recurso'],
+      ligado: r!.ligado as boolean,
+      planos: r!.planos as string[],
+      atualizadoEm: (r!.atualizado_em as Date).toISOString(),
+    }
   })
 }
 

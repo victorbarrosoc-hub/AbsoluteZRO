@@ -7,7 +7,8 @@
 -- - `z_lab_uso`: cada chamada paga do laboratório (Claude, voz, transcrição) com tokens, caracteres, segundos e o custo
 --   estimado. Chave única = idempotência (a mesma chamada nunca conta duas vezes). Entra nos Custos do console.
 -- - `z_rascunho`: o que o laboratório testa. `z_versoes`: cada "Salvar versão" vira um número imutável, com nota.
--- - `z_publicacao`: a versão que os clientes usam. Sem linha publicada, a Z dos clientes segue o padrão do código.
+-- - `z_publicacao`: a versão que os clientes usam. Sem versão publicada (ou com a trava desligada), a Z dos clientes
+--   segue o padrão do código.
 -- - `z_conhecimento`: textos de referência (FAQ, planos, manual) que a Z consulta. Texto só, com limite de tamanho.
 -- - `z_recursos`: o que pode ir para os clientes e para quais planos (voz, ditado, anexos, publicar a configuração).
 --   Tudo desligado. Ligar pede confirmação explícita e fica na auditoria.
@@ -32,7 +33,7 @@ insert into zro.z_lab_config (id) values (true) on conflict do nothing;
 create table if not exists zro.z_lab_uso (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references zro.users (id) on delete cascade,
-  servico text not null check (servico in ('claude', 'voz', 'transcricao', 'escuta')),
+  servico text not null check (servico in ('claude', 'voz', 'transcricao', 'escuta', 'design')),
   modelo text check (modelo is null or char_length(modelo) <= 80),
   tokens_entrada integer not null default 0 check (tokens_entrada >= 0),
   tokens_saida integer not null default 0 check (tokens_saida >= 0),
@@ -147,8 +148,8 @@ drop policy if exists z_recursos_admin on zro.z_recursos;
 create policy z_recursos_admin on zro.z_recursos for all to zro_app
   using (zro.is_platform_admin()) with check (zro.is_platform_admin() and atualizado_por = zro.current_user_id());
 
--- A Z dos clientes: só a versão publicada (com os textos de referência que ela cita), nunca o rascunho. Nulo = padrão
--- do código.
+-- A Z dos clientes: só a versão publicada (com os textos de referência que ela cita), nunca o rascunho, e só com a
+-- trava `publicar_config` ligada (desligou a trava, os clientes voltam na hora para o padrão). Nulo = padrão do código.
 create or replace function zro.z_config_publicada() returns jsonb
 language sql stable security definer set search_path = '' as $$
   select v.config || jsonb_build_object(
@@ -159,7 +160,7 @@ language sql stable security definer set search_path = '' as $$
       where k.id::text in (select jsonb_array_elements_text(coalesce(v.config -> 'conhecimento', '[]'::jsonb)))
     ), '[]'::jsonb))
   from zro.z_publicacao p join zro.z_versoes v on v.id = p.versao_id
-  where p.id
+  where p.id and exists (select 1 from zro.z_recursos r where r.recurso = 'publicar_config' and r.ligado)
 $$;
 
 -- Recurso novo da Z liberado para a organização: o recurso ligado E uma assinatura viva de um plano da lista.

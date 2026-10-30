@@ -31,13 +31,18 @@ import {
   type ZPersonalizacao,
 } from '@zro/core'
 import type { Database } from '@zro/db'
+import { zroEnv } from '@zro/observability'
 import { guiaDasPlataformas, nomesDasPlataformas } from './plataformas'
 
 export const iaModelo = () => process.env.IA_MODELO || 'claude-opus-5-5'
 export const iaLigada = () => !!process.env.IA_ANTHROPIC_KEY
 
-/** O cliente do Claude com a chave do HUB. `ZRO_ANTHROPIC_URL` só existe nos testes (o Claude falso do e2e). */
-export const clienteAnthropic = () => new Anthropic({ apiKey: process.env.IA_ANTHROPIC_KEY, baseURL: process.env.ZRO_ANTHROPIC_URL || undefined })
+/**
+ * O cliente do Claude com a chave do HUB. `ZRO_ANTHROPIC_URL` só existe nos testes (o Claude falso do e2e) e é
+ * ignorada em produção: a chave nunca vai para outro endereço.
+ */
+export const clienteAnthropic = () =>
+  new Anthropic({ apiKey: process.env.IA_ANTHROPIC_KEY, baseURL: (zroEnv() !== 'production' && process.env.ZRO_ANTHROPIC_URL) || undefined })
 
 /** Só entra no sistema de quem tem o Maestro (gate de lançamento + plano): para os outros, a Z nem sabe que lê. */
 export const MAESTRO_NA_Z = `Maestro: você lê o dia da produtora da pessoa no Maestro com ver_maestro (só leitura): retornos de \
@@ -234,7 +239,8 @@ export async function responder(
   let { personalizacao, modelo = iaModelo(), maxTokens = 4000 } = opcoes
   if (personalizacao === undefined) {
     // Versão publicada no laboratório (só a publicada, pela função do banco). Sem ela, o padrão do código.
-    const pub = await db.asUser({ userId: turno.actor.userId, orgId: turno.actor.orgId }, zConfigPublicada)
+    // Qualquer falha na leitura (banco sem a migração 0036, por exemplo) cai no padrão: a Z dos clientes nunca para por isso.
+    const pub = await db.asUser({ userId: turno.actor.userId, orgId: turno.actor.orgId }, zConfigPublicada).catch(() => null)
     personalizacao = pub ? personalizacaoDe(pub, turno.conversa.produto, pub.conhecimento_textos) : null
     if (pub) {
       modelo = pub.modelo.id
