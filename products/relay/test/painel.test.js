@@ -172,6 +172,44 @@ describe('painel no Chromium', () => {
     assert.deepEqual(erros, [])
   })
 
+  test('looks: escolhe a pasta, leva e traz os .cube, e o link abre o SOBEDESCE', { skip: pular }, async () => {
+    const ctx = await navegador.newContext()
+    const p = await nova(ctx, '/painel')
+    await p.waitForFunction(() => window.painelPronto)
+    await p.waitForSelector('#bloco-looks:not([hidden])') // o servidor local liga a Revela (RECURSOS_DEV)
+    assert.equal(await p.getAttribute('#looks-sobedesce', 'href'), 'sobedesce://looks')
+    await p.evaluate(async () => {
+      const cube = (tom) => ['LUT_3D_SIZE 2', ...Array.from({ length: 8 }, (_, i) => [i & 1, (i >> 1) & 1, (i >> 2) & 1].map((v) => Math.min(1, v + tom).toFixed(3)).join(' '))].join('\n')
+      const raiz = await navigator.storage.getDirectory()
+      const dir = await raiz.getDirectoryHandle('Looks do Relay', { create: true })
+      const w = await (await dir.getFileHandle('Da pasta.cube', { create: true })).createWritable()
+      await w.write(cube(0.2))
+      await w.close()
+      const Looks = await import('/app/looks.js')
+      await Looks.guardar('Meu look', cube(0.1))
+      // o Chromium de teste cai ao guardar no IndexedDB uma pasta do armazenamento privado (no Chrome de verdade, a
+      // pasta escolhida se guarda normal): um invólucro dela, que o Relay guarda na memória, com os arquivos de verdade
+      const pasta = { name: dir.name, values: () => dir.values(), getFileHandle: (n, o) => dir.getFileHandle(n, o) }
+      window.showDirectoryPicker = async () => pasta
+    })
+    await p.click('#looks-escolher')
+    await p.waitForFunction(() => /levado/.test(document.getElementById('looks-aviso').textContent))
+    assert.equal(await p.textContent('#looks-aviso'), '1 levado para a pasta · 1 trazido da pasta.')
+    assert.match(await p.textContent('#looks'), /Da pasta/)
+    assert.equal(await p.textContent('#looks-nome-pasta'), 'Looks do Relay')
+    const naPasta = await p.evaluate(async () => {
+      const dir = await (await navigator.storage.getDirectory()).getDirectoryHandle('Looks do Relay')
+      const nomes = []
+      for await (const e of dir.values()) nomes.push(e.name)
+      return nomes.sort()
+    })
+    assert.deepEqual(naPasta, ['Da pasta.cube', 'Meu look.cube'])
+    // de novo: nada muda
+    await p.click('#looks-sincronizar')
+    await p.waitForFunction(() => /Tudo igual/.test(document.getElementById('looks-aviso').textContent))
+    await ctx.close()
+  })
+
   test('celular (375 px): o painel não rola para o lado', { skip: pular }, async () => {
     const ctx = await navegador.newContext({ viewport: { width: 375, height: 800 } })
     const p = await nova(ctx, '/painel')

@@ -55,6 +55,8 @@ export type FluxoLista = FluxoInfo & {
   imagens: number;
   /** A última mudança no fluxo ou em qualquer nó/ligação. */
   mudouEm: string;
+  /** Links vivos (`/f/<token>`) que quem vê alcança (administração e gestão; para os outros, 0 pelo RLS). */
+  linksVivos: number;
 };
 export type FluxoCompleto = {
   fluxo: FluxoInfo;
@@ -287,7 +289,9 @@ export async function listarFluxos(ctx: Contexto, filtro: { projetoId?: string; 
     const r = await tx.execute(sql`
       select ${COLUNAS_FLUXO},
              coalesce(q.itens, 0)::int as itens, coalesce(q.imagens, 0)::int as imagens,
-             greatest(f.updated_at, q.mudou, lq.mudou)::text as "mudouEm"
+             greatest(f.updated_at, q.mudou, lq.mudou)::text as "mudouEm",
+             (select count(*) from maestro.fluxo_links fl
+               where fl.org_id = f.org_id and fl.fluxo_id = f.id and fl.revogado_em is null and fl.expira_em > now())::int as "linksVivos"
         ${JUNTAS_FLUXO}
         left join lateral (
           select count(*) filter (where n.apagado_em is null and n.tipo <> 'secao') as itens,

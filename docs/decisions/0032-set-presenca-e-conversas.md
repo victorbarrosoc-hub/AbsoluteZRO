@@ -41,6 +41,9 @@ lançamento do Carro do Freela e não entra agora, mas nada aqui pode impedi-la.
   dependência, como o `<zro-ia>`) é o mesmo na central e nos apps; o app repassa `/api/zro/set/*` com o token da sessão
   no servidor. **Maestro**: pílula discreta na cápsula (ao lado do relógio) e no topo do celular, pede `zro.set` no
   login (HUB antigo recusa: `nivel=sem_set`), 401 do Set não derruba os tokens da Z.
+- **Adicionar pelo @** (30/10/2026): fica no Online (botão da pessoa com +, prévia do perfil visível pelo
+  `POST /contatos { ver }`, pedidos recebidos no topo com Aceitar e Recusar), não nos Ajustes. A prévia segue as regras
+  da busca de perfis (ADR 0029) e não revela o perfil escondido nem o bloqueio da outra pessoa.
 - **Na central**: "Set" no menu lateral (grupo Trabalho, não é aba principal), a pílula na barra de cima e a página
   `/set` (lista e conversa lado a lado; uma coluna no celular). "Conversa" na página do projeto abre a do projeto.
 - **Conta excluída**: saem conversas diretas, mensagens que escreveu, presença, preferências, contatos, bloqueios,

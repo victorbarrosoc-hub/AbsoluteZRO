@@ -15,6 +15,7 @@
  * POST { op: "ligar", projetoId, cardId }          liga a projeto e/ou card (null desliga)
  * POST { op: "estado", estado }                    só administração e gestão
  * POST { op: "lixeira", apagar }                   manda para a lixeira ou tira dela
+ * POST { op: "apagar_de_vez" }                     só da lixeira, só administração e gestão, só sem versão salva
  * POST { op: "enviado", n, destino, formato, pessoa? }  anota o que saiu de qual versão (admin e gestão; AEON só aberto)
  * POST { op: "cliente", n, clienteId? }         a versão n vira peça do link de aprovação do card (admin e gestão; F7)
  * POST { op: "resolver", id, resolvido }        resolve ou reabre um comentário do cliente (quem edita)
@@ -22,10 +23,11 @@
 import { exigirAcesso } from "@/lib/auth/requisicao";
 import { erro, json, lerJson, origemConfere } from "@/lib/http";
 import { origemDoSite, origensDoSite } from "@/lib/site";
-import { podeEditarCriacao, podeEnviarCriacao, podeMandarParaAeon } from "../permissoes";
+import { podeApagarDeVezCriacao, podeEditarCriacao, podeEnviarCriacao, podeMandarParaAeon } from "../permissoes";
 import { clienteDoRoteiro, enviarAoCliente, paraOClienteEstado, resolverDoRoteiro } from "./cliente";
 import { ehSaida, type FormatoSaida } from "./saidas";
 import {
+  apagarRoteiroDeVez,
   type EstadoRoteiro,
   ligarRoteiro,
   listarEnvios,
@@ -44,7 +46,7 @@ import {
 const LIMITE_CORPO = 400 * 1024;
 
 type Falha = { ok: false; erro: string; mensagem: string };
-const STATUS: Record<string, number> = { nao_existe: 404, sem_permissao: 403, conflito: 409, ja_existe: 409, tem_versao: 409, sem_card: 409, sem_cliente: 409 };
+const STATUS: Record<string, number> = { nao_existe: 404, sem_permissao: 403, conflito: 409, ja_existe: 409, tem_versao: 409, sem_card: 409, sem_cliente: 409, fora_da_lixeira: 409 };
 const responder = (f: Falha & { atual?: unknown }) =>
   json({ erro: f.erro, mensagem: f.mensagem, ...(f.atual ? { atual: f.atual } : {}) }, STATUS[f.erro] ?? 400);
 
@@ -102,6 +104,11 @@ export async function postRoteiro(req: Request, id: string): Promise<Response> {
     const r = await enviarAoCliente(ctx, id, Number(corpo.n), { clienteId: typeof corpo.clienteId === "string" ? corpo.clienteId : null });
     if (!r.ok) return responder(r);
     return json({ ok: true, url: `${origemDoSite(req.headers.get("origin"))}/a/${r.token}`, novo: r.novo, n: r.n, loteId: r.loteId, loteNovo: r.loteNovo });
+  }
+  if (corpo.op === "apagar_de_vez") {
+    if (!podeApagarDeVezCriacao(s.papel)) return erro(403, "sem_permissao", "Só administração e gestão apagam de vez.");
+    const r = await apagarRoteiroDeVez(ctx, id);
+    return r.ok ? json({ ok: true }) : responder(r);
   }
   if (!podeEditarCriacao(s.papel)) return erro(403, "sem_permissao", "Seu papel nesta organização só lê.");
   switch (corpo.op) {

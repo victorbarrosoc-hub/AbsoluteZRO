@@ -401,6 +401,17 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   nem pino. O player nunca recebe versão de roteiro (o lote da equipe mostra "Abrir no editor"; a ficha do card abre o
   editor). Editor: `?cliente=1` (comentários por bloco e versão + decisões, poll 20 s), `op: "resolver"` (quem edita).
   Testes: `tests/roteiro-cliente.test.mts`, `e2e/criacao-cliente.spec.ts` (`SHOTS_DIR` guarda `f7-*`).
+- **Criação · apagar** (titular, 30/10/2026; `components/criacao/lixeira.tsx` + `deslizar.ts`, puro em
+  `lib/criacao/lixeira.ts`, CSS `app/lixeira.css`, prefixo `lx-`): as duas listas usam `ListaLixeira` +
+  `CartaoApagavel` (só com `podeEditarCriacao`). iPhone: deslizar para a esquerda (só `transform`, `touch-action: pan-y`;
+  55% da largura apaga direto) e segurar 450 ms (folha com Abrir/Apagar); computador: "•••" no hover/foco e botão
+  direito (menu no `<body>`). Apagar = lixeira, sem pergunta, com "Apagado · Desfazer" (6 s) e a linha de
+  `avisoAoApagar` (card ligado, link vivo do fluxo: `linksVivos` em `listarFluxos`). O clique depois do gesto é engolido
+  na captura da **janela** (antes do `movimento.tsx`). Editor e canvas voltam para `?apagou=<id>` (a lista abre com o
+  Desfazer). Lixeira em `?lixeira=1` nas duas rotas (`CartaoNaLixeira`: Restaurar; "Apagar de vez" com pergunta só
+  `podeApagarDeVezCriacao`; roteiro com versão salva não sai, `tem_versao`). Roteiro: `POST {op:"apagar_de_vez"}` →
+  `apagarRoteiroDeVez` (auditoria `roteiro.apagou`). Testes: `tests/lixeira.test.mts`, `e2e/criacao-apagar.spec.ts`
+  (iPhone Chromium + Safari, `SHOTS_DIR`/`APAGAR_TEMA`/`APAGAR_VIDEO`), telas no `sem-corte.spec.ts`.
 - **App na Tela de Início (PWA)**: `src/app/manifest.ts` (`/manifest.webmanifest`: Maestro, `start_url` `/app`, `scope`
   `/`, standalone, cores do claro), ícones em `public/pwa/` gerados do `src/app/icon.svg` por `scripts/icones-pwa.mjs`
   (nunca desenhar outro), `apple-icon.png` (180 px), `appleWebApp` + `apple-mobile-web-app-capable` no layout, barra de

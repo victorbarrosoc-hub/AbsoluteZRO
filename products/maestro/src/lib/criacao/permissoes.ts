@@ -14,6 +14,11 @@ import type { Papel } from "@/lib/papeis";
 export const podeVerCriacao = (papel: Papel): boolean => podeCriacao({ papel }, "ver");
 export const podeEditarCriacao = (papel: Papel): boolean => podeCriacao({ papel }, "editar");
 export const podeEnviarCriacao = (papel: Papel): boolean => podeCriacao({ papel }, "enviar");
+/**
+ * Apagar de vez da lixeira (roteiro e fluxo): administração e gestão, os mesmos de "enviar" (as políticas de remoção da
+ * 0030/0031 dizem o mesmo). Mandar para a lixeira e tirar dela é de quem edita (`podeEditarCriacao`).
+ */
+export const podeApagarDeVezCriacao = (papel: Papel): boolean => podeCriacao({ papel }, "enviar");
 
 /** Id do AEON (edição) em zro_products e zro_release. */
 export const PRODUTO_AEON = "ai-edit";

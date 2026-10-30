@@ -217,6 +217,14 @@ describe('"Máxima qualidade": link do site do Relay e arquivo deste computador'
       assert.equal(lerLinkSobedesce(ruim), null, String(ruim).slice(0, 40))
   })
 
+  test('sobedesce://looks: sem caminho vindo de fora; ?trocar=1 escolhe as pastas de novo', async () => {
+    const { lerLinkSobedesce } = await import('../desktop/links.js')
+    assert.deepEqual(lerLinkSobedesce('sobedesce://looks'), { tipo: 'looks' })
+    assert.deepEqual(lerLinkSobedesce('sobedesce://looks?trocar=1'), { tipo: 'looks', trocar: true })
+    for (const ruim of ['sobedesce://looks?pasta=/etc', 'sobedesce://looks/../x', 'sobedesce://looks?trocar=1&pasta=/', 'sobedesce://lookss'])
+      assert.equal(lerLinkSobedesce(ruim), null, ruim)
+  })
+
   test('nome livre ao lado do original: nunca grava por cima', async t => {
     const { caminhoLivre } = await import('../src/media/relay.js')
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'sobedesce-livre-'))
