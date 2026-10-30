@@ -47,6 +47,8 @@ const nos = (page: Page, tipo?: string) => page.locator(tipo ? `.fx-plano [data-
 const salvo = (page: Page) => expect(page.locator(".fx-salvo")).toHaveText("Salvo", { timeout: 10_000 });
 
 async function caixa(page: Page, sel: string) {
+  // visível de fato: a contagem já vê o nó no trecho que o streaming ainda não revelou (`<div hidden id="S:0">`)
+  await page.locator(sel).waitFor({ state: "visible" });
   const b = await page.locator(sel).boundingBox();
   if (!b) throw new Error(`sem caixa: ${sel}`);
   return b;
