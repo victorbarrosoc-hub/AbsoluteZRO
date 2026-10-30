@@ -8,6 +8,10 @@
  *   POST /api/zro/inventario           → 201 { item }
  *   PATCH  /api/zro/inventario?id=<id> → { item }             (só o que veio)
  *   DELETE /api/zro/inventario?id=<id> → 204
+ *   GET    /api/zro/agenda?de=&ate=    → { agenda: { "YYYY-MM-DD": {e,p,h?} } }   (a própria)
+ *   PUT    /api/zro/agenda             → { dia, declaracao }  (UM dia: fechado|negociando)
+ *   DELETE /api/zro/agenda?dia=        → 204                  (o dia volta a livre)
+ *   GET    /api/zro/pessoas?de=&ate=   → { pessoas: [...], de, ate }  (só quem consentiu, com a agenda da janela)
  *
  * Cada pedido passa, nesta ordem: método → limite de pedidos (por IP) →
  * mesma origem (escrita: Origin igual ao site e Sec-Fetch-Site same-origin
@@ -70,7 +74,7 @@ async function preparar(req, res, { metodos, escrita }) {
   if (!UUID.test(s.quem.sub)) { json(res, 403, { erro: 'conta' }, s.extra); return null }
   const db = banco();
   if (!db) { json(res, 503, { erro: 'sem_banco' }, s.extra); return null }
-  return { db, sub: s.quem.sub.toLowerCase(), extra: s.extra, at: s.at };
+  return { db, sub: s.quem.sub.toLowerCase(), quem: s.quem, extra: s.extra, at: s.at };
 }
 
 async function corpoDe(req, res, extra) {
@@ -88,6 +92,7 @@ function responderErro(res, e, extra) {
   if (e && e.code === '23514') return json(res, 400, { erro: /Limite/.test(e.message) ? 'limite' : 'regra' }, extra);
   if (e && e.code === '42501') return json(res, 403, { erro: 'proibido' }, extra);
   if (e && e.code === '22P02') return json(res, 400, { erro: 'pedido' }, extra);
+  if (e && e.code === '22023') return json(res, 400, { erro: 'janela' }, extra);
   throw e;
 }
 
@@ -96,7 +101,7 @@ function responderErro(res, e, extra) {
 async function perfil(req, res) {
   const p = await preparar(req, res, { metodos: ['GET', 'PUT'], escrita: req.method === 'PUT' });
   if (!p) return;
-  const { db, sub, extra } = p;
+  const { db, sub, quem, extra } = p;
   try {
     if (req.method === 'GET') {
       const l = await db.asUser(sub, async c => (await c.query('select * from carro_do_freela.perfis where sub = $1', [sub])).rows[0]);
@@ -107,13 +112,14 @@ async function perfil(req, res) {
     const v = R.perfilDe(corpo);
     const l = await db.asUser(sub, async c =>
       (await c.query(
-        `insert into carro_do_freela.perfis (sub, nome_exibicao, cidade, uf, funcoes, nichos, bio, portfolio_url, visibilidade)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `insert into carro_do_freela.perfis (sub, nome_exibicao, cidade, uf, funcoes, nichos, bio, portfolio_url, visibilidade, arroba, foto)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          on conflict (sub) do update set nome_exibicao = excluded.nome_exibicao, cidade = excluded.cidade, uf = excluded.uf,
            funcoes = excluded.funcoes, nichos = excluded.nichos, bio = excluded.bio, portfolio_url = excluded.portfolio_url,
-           visibilidade = excluded.visibilidade
+           visibilidade = excluded.visibilidade, arroba = excluded.arroba, foto = excluded.foto
          returning *`,
-        [sub, v.nome_exibicao, v.cidade, v.uf, v.funcoes, v.nichos, v.bio, v.portfolio_url, v.visibilidade],
+        /* o @ e a foto vêm da CONTA (claims relidas no HUB a cada pedido), nunca do corpo */
+        [sub, v.nome_exibicao, v.cidade, v.uf, v.funcoes, v.nichos, v.bio, v.portfolio_url, v.visibilidade, quem.arroba || null, quem.foto || null],
       )).rows[0]);
     return json(res, 200, { perfil: R.perfilSaida(l) }, extra);
   } catch (e) {
@@ -187,6 +193,72 @@ async function inventario(req, res) {
   }
 }
 
+/* ---------------- agenda ---------------- */
+
+async function agenda(req, res) {
+  const p = await preparar(req, res, { metodos: ['GET', 'PUT', 'DELETE'], escrita: req.method !== 'GET' });
+  if (!p) return;
+  const { db, sub, extra } = p;
+  try {
+    const q = new URL(req.url, 'http://x').searchParams;
+    if (req.method === 'GET') {
+      const j = R.janelaDe(q.get('de'), q.get('ate'));
+      const rows = await db.asUser(sub, async c =>
+        (await c.query("select to_char(dia, 'YYYY-MM-DD') as dia, estado, parte, hora from carro_do_freela.agenda_dias where dia between $1 and $2 order by dia", [j.de, j.ate])).rows);
+      const agenda = {};
+      for (const l of rows) agenda[l.dia] = R.agendaSaida(l);
+      return json(res, 200, { agenda, de: j.de, ate: j.ate }, extra);
+    }
+    if (req.method === 'DELETE') {
+      const dia = R.diaDe(q.get('dia'));
+      await db.asUser(sub, async c => c.query('delete from carro_do_freela.agenda_dias where dia = $1', [dia]));
+      res.writeHead(204, Object.assign({ 'Cache-Control': 'no-store' }, extra));
+      return res.end();
+    }
+    const corpo = await corpoDe(req, res, extra);
+    if (corpo === undefined) return;
+    const v = R.agendaDe(corpo);
+    const l = await db.asUser(sub, async c =>
+      (await c.query(
+        `insert into carro_do_freela.agenda_dias (sub, dia, estado, parte, hora) values ($1, $2, $3, $4, $5)
+         on conflict (sub, dia) do update set estado = excluded.estado, parte = excluded.parte, hora = excluded.hora
+         returning estado, parte, hora`,
+        [sub, v.dia, v.estado, v.parte, v.hora],
+      )).rows[0]);
+    return json(res, 200, { dia: v.dia, declaracao: R.agendaSaida(l) }, extra);
+  } catch (e) {
+    return responderErro(res, e, extra);
+  }
+}
+
+/* ---------------- quem está no Carro ---------------- */
+
+/**
+ * Ver a agenda de quem está no Carro. ⚠️ É AQUI que mora a tranca do plano quando ela vier ("só quem paga sabe quem
+ * está livre"): hoje o Carro está fechado (só as contas liberadas no portão entram) e o preço ainda não foi decidido,
+ * então toda conta que passou do portão vê. Decidido o plano, esta função lê o direito da sessão (zro_products /
+ * entitlements do HUB) e, sem ele, a lista sai SEM a agenda (as pessoas continuam achadas pelo nome, de graça).
+ */
+function podeVerAgendas(/* quem */) {
+  return true;
+}
+
+async function pessoas(req, res) {
+  const p = await preparar(req, res, { metodos: ['GET'], escrita: false });
+  if (!p) return;
+  const { db, sub, quem, extra } = p;
+  try {
+    const q = new URL(req.url, 'http://x').searchParams;
+    const j = R.janelaDe(q.get('de'), q.get('ate'));
+    const rows = await db.asUser(sub, async c => (await c.query('select * from carro_do_freela.pessoas($1, $2)', [j.de, j.ate])).rows);
+    const ver = podeVerAgendas(quem);
+    const lista = rows.map(R.pessoaSaida).map(x => (ver || x.id === sub ? x : Object.assign(x, { agenda: null })));
+    return json(res, 200, { pessoas: lista, de: j.de, ate: j.ate, agendas: ver }, extra);
+  } catch (e) {
+    return responderErro(res, e, extra);
+  }
+}
+
 const protegido = fn => async (req, res) => {
   try {
     await fn(req, res);
@@ -199,5 +271,7 @@ const protegido = fn => async (req, res) => {
 module.exports = {
   perfil: protegido(perfil),
   inventario: protegido(inventario),
+  agenda: protegido(agenda),
+  pessoas: protegido(pessoas),
   _interno: { passouDoLimite, mesmaOrigem, esquecerLimite: () => contagem.clear(), LIMITE },
 };

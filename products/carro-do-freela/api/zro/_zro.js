@@ -331,6 +331,8 @@ function contaDeClaims(dados) {
     /* o @ do perfil profissional da Absolute ZRO (claim preferred_username, ADR 0029 do HUB): o perfil da
        comunidade é o mesmo da conta, lido do HUB a cada /eu; o Carro não guarda outro @ */
     arroba: typeof dados.preferred_username === 'string' && /^[a-z0-9._]{3,30}$/.test(dados.preferred_username) ? dados.preferred_username : null,
+    /* a foto da conta (claim picture): só https, curta; a lista de pessoas do Carro mostra esta, não outra */
+    foto: typeof dados.picture === 'string' && /^https:\/\/[^\s]{1,290}$/.test(dados.picture) ? dados.picture : null,
     organizacao: org && typeof org.name === 'string' ? org.name.slice(0, 120) : null,
     produtos,
     /* o portão: released | closed | allowed — sem a claim, closed */

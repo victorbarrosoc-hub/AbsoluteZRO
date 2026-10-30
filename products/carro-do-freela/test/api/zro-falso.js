@@ -74,6 +74,7 @@ async function iniciarZroFalsa(cliente) {
     { zro_org: p.org ? { id: 'org-1', name: p.org, role: 'owner' } : null, zro_products: produtosDe(p) },
     /* o @ do perfil profissional (ADR 0029 do HUB) */
     p.arroba ? { preferred_username: p.arroba } : {},
+    p.foto ? { picture: p.foto } : {},
     p.semRelease ? {} : { zro_release: { 'carro-do-freela': liberacao(p) } },
   );
   const emitir = (pessoa, escopo) => {
