@@ -443,6 +443,19 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   como adicional" com link para os planos. Falta: o titular revisar e publicar os planos no console (e conceder o sinal à
   organização dele para testar: Concessão, produto Maestro, limite `maestro.marca_propria` = 1); domínio próprio
   depois, com autorização.
+- 🟡 Maestro, **"Gerar versões com o Relay"** (29/10/2026; contrato "Maestro → Relay" em
+  [relay.md](integration-contracts/relay.md), [ADR 0030](decisions/0030-relay-conversao.md)): na ficha do card (bloco
+  Versões) e no lote, a versão do Drive ganha "Gerar versões" com o ícone do Relay (em destaque quando aprovada). Folha
+  com os destinos de entrega ao cliente primeiro (o resto em "Mais", "Tamanho exato" fora, no máximo 8), pasta
+  "05 Entregas" do projeto (criada pela estrutura do Drive se faltar) ou ao lado do original, prévia com o nome
+  `<original> (<preset>).<ext>`, codec e peso pelo `planejar` do Relay com os metadados do Drive. Pede pela ponte do HUB
+  (`relay.converter`, ref = id da versão, idempotente por `ref:preset`), acompanha a cada 5 s só com a tela à vista
+  (`relay.pedido`) e cancela por item (`relay.cancelar`). Entregáveis em `maestro.entregaveis` (migração `0024`, RLS e
+  acesso por cliente): na fila, convertendo com %, pronto com MD5 ✓, erro, cancelado; abrir e copiar o link do Drive.
+  Sem SOBEDESCE ou Relay no plano: o porquê e o link; computador fechado: "Vai começar quando o computador com o
+  SOBEDESCE abrir". Cópia de `presets.js`/`plano.js` e do ícone em `products/maestro/` conferida por teste. **Falta (lado
+  do Relay/SOBEDESCE):** as ações `relay.*` na `PONTES` do HUB e as rotas `/api/zro/relay/*`, o tipo `relay` na fila e o
+  executor no app de computador; até lá o HUB responde 403 e a folha diz "O Relay ainda não está liberado".
 - ⬜ Maestro, do mesmo estudo e à espera do titular: a Z **escrevendo** no Maestro (criar
   pedido, despesa, marcar contato, sempre com a ação exata e o "sim"; cota e plano da Z); sincronia de duas vias com o Google Agenda (OAuth); eventos
   `maestro.pedido.ganho`, `maestro.orcamento.aceito` e `maestro.projeto.criado` no HUB (desenho no mapa).

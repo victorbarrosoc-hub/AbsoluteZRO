@@ -104,6 +104,9 @@ resultado?: { arquivoId, nome, tamanho, md5, pastaId }, erro?, criado_em, atuali
 - **Quem constrói o quê:** Relay/SOBEDESCE (este lado): as três rotas, o tipo `relay` na fila, o executor no app de
   computador e as ações na `PONTES` com teste. Maestro: a ficha "Gerar versões", a cópia dos presets e o
   acompanhamento. Estado: contrato definido; implementação a seguir.
+- **Estado do Maestro (29/10/2026):** Maestro pronto, aguardando rotas do SOBEDESCE (e as ações `relay.*` na `PONTES`).
+  Folha, cópia conferida dos presets, `maestro.entregaveis` (migração `0024`) e o acompanhamento testados contra um HUB e
+  um SOBEDESCE de mentira que seguem esta tabela (`products/maestro/tests/ponte-falsa.mts`).
 
 ## Eventos e conta
 

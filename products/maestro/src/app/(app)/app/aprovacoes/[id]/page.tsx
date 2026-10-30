@@ -7,6 +7,7 @@ import { LoteEquipe } from "@/components/revisao/lote-equipe";
 import { temArquivos } from "@/lib/sobedesce/arquivos";
 import "../../../../arquivos.css";
 import "../../../../revisao.css";
+import "../../../../relay.css";
 
 export const metadata = { title: "Lote" };
 

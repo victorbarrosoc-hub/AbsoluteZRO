@@ -37,6 +37,7 @@ const TABELAS = [
   "escalas",
   "documentos",
   "reservas",
+  "entregaveis",
 ] as const;
 
 const contar = async (ctx: { sub: string; orgId: string }, t: string) =>
@@ -75,6 +76,7 @@ before(async () => {
       await tx.execute(
         sql`insert into maestro.comentarios (org_id, versao_id, card_id, autor_tipo, autor_sub, texto, idem_key) values (${A}, ${v}, ${card}, 'equipe', ${o.ANA}, 'oi', ${`idem-${k}-1234`})`,
       );
+      await tx.execute(sql`insert into maestro.entregaveis (org_id, card_id, versao_id, preset) values (${A}, ${card}, ${v}, 'reels')`);
       const lote = await um(sql`insert into maestro.lotes (org_id, client_id, title) values (${A}, ${c}, 'Lote') returning id`);
       await tx.execute(sql`insert into maestro.lote_cards (lote_id, org_id, card_id) values (${lote}, ${A}, ${card})`);
       const link = await um(

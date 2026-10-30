@@ -15,6 +15,32 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Maestro: "Gerar versões com o Relay" (29/10/2026)
+
+Lado do Maestro do contrato "Maestro → Relay" ([relay.md](integration-contracts/relay.md)), sobre a branch do Relay.
+O lado do Relay/SOBEDESCE (ações `relay.*` na `PONTES`, rotas `/api/zro/relay/*`, fila e executor) ainda não existe:
+tudo abaixo roda contra o HUB e o SOBEDESCE de mentira (`products/maestro/tests/ponte-falsa.mts`), que seguem a tabela
+do contrato.
+
+- Maestro `lint`, `format:check`, `typecheck` e `build`: ok.
+- Maestro `npm test`: **385/385**. Novo `tests/relay.test.mts` (23): a cópia de `presets.js`, `plano.js` e do ícone é
+  igual à do Relay; a folha põe os 8 de entrega ao cliente primeiro, tira "Tamanho exato" e o preset sem id, para em 8;
+  a prévia dá `<original> (<preset>).mp4`, codec e peso pelo `planejar`; "pronto" sem resultado vira "convertendo";
+  `relay.converter` → 202 com `ref` = id da versão e a pasta "05 Entregas" criada pela estrutura do projeto; pedir de
+  novo não cria pedido nem linha; computador fechado fica "na fila"; abriu, convertendo 50% e pronto com MD5 e o link do
+  Drive; cancelar (o pronto fica pronto); erro com a mensagem; sem projeto vai ao lado do original; sem Relay ou sem
+  SOBEDESCE é 403 sem pedir ao HUB; o HUB negando (plano ou sem as ações na `PONTES`) vira `sem_relay`; leitura vê e
+  não pede; RLS com duas organizações, chave composta (versão de outro card) e acesso por cliente.
+  `tests/acesso-cliente.test.mts` inclui `entregaveis`.
+- Maestro e2e `relay.spec.ts`: **7 ok** (computador, iPhone Chromium e iPhone WebKit; o vídeo só com `SHOTS_DIR`): a
+  versão aprovada do Drive na ficha → folha com o ícone do Relay, destinos, pasta e prévia → "Gerar 4 versões" → na fila
+  com "Vai começar quando o computador com o SOBEDESCE abrir" → o computador abre → 4 prontos com MD5 → o lote mostra as
+  mesmas entregas; sem o Relay no plano, o porquê e o link e nada pedido; Esc fecha só a folha de cima. Detector de
+  corte na folha no iPhone (Chromium e WebKit) sem achados.
+- E2E completo do Maestro: RESULTADO_E2E.
+- Não verificado: o lado de verdade (HUB assinando `relay.*`, SOBEDESCE convertendo e conferindo o MD5), que ainda não
+  existe; metadados de vídeo reais do Drive (o Google é interceptado com `videoMediaMetadata` fixo).
+
 ## Início sem piscar cinza nem pular (29/10/2026)
 
 Vídeo do titular (Mac, absolutezro.com, recarregando o Início): 12 quadros (~200 ms) só com o esqueleto genérico de

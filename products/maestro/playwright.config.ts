@@ -23,8 +23,8 @@ export default defineConfig({
   projects: [
     { name: "computador", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
     { name: "iphone", use: { ...devices["iPhone 15 Pro"], browserName: "chromium" } },
-    // O Safari de verdade (WebKit) para o detector de corte, a troca de seção e os gestos do Quadro.
-    { name: "iphone-safari", testMatch: /(sem-corte|transicao|gestos)\.spec\.ts/, use: { ...devices["iPhone 15 Pro"] } },
+    // O Safari de verdade (WebKit) para o detector de corte, a troca de seção, os gestos do Quadro e o Relay.
+    { name: "iphone-safari", testMatch: /(sem-corte|transicao|gestos|relay)\.spec\.ts/, use: { ...devices["iPhone 15 Pro"] } },
   ],
   webServer: {
     command: `npx next start -p ${PORT}`,

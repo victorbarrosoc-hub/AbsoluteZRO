@@ -87,6 +87,27 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   pelo servidor. Demonstração sem Drive de verdade: o estado honesto "Conecte o Drive no SOBEDESCE" (nunca arquivo
   inventado); o e2e usa a ponte falsa (`tests/ponte-falsa.mts`, `MAESTRO_PONTE_URL`) e intercepta o Google no navegador
   (`e2e/falsos/google-drive.ts`, `tests/drive-fixture.mts`).
+- **Gerar versões com o Relay** (29/10/2026; contrato "Maestro → Relay" em `docs/integration-contracts/relay.md`, ADR
+  0030 do HUB; `src/lib/relay`, `drizzle/0024`): numa versão do **Drive** (ficha do card, bloco Versões, e o lote), o
+  botão "Gerar versões" com o ícone oficial do Relay (`public/brand/relay-icone.svg`), em destaque quando a versão está
+  aprovada (decisão do cliente nela, ou card em Aprovado/Agendado/Entregue e ela é a mais nova). A folha
+  (`components/relay/gerar-versoes.tsx`; puro em `escolha.ts`): os de `ENTREGA_AO_CLIENTE` primeiro, o resto em "Mais",
+  "Tamanho exato" fora, no máximo 8; pasta "05 Entregas" do projeto (lista a pasta ligada; sem pasta, cria a estrutura
+  com `drive.pasta.criar` na hora de pedir; pasta sem "Entregas" = a pasta do projeto; sem projeto = ao lado do
+  original); prévia `<original> (<preset>).<ext>` com codec e peso pelo `planejar` do Relay e os metadados do Drive lidos
+  no navegador (`contaQueVe`); sem metadados, "—". **`presets.js` e `plano.js` são cópias de `products/relay/src`**
+  (com o ícone, conferidas em `tests/relay.test.mts`; mude no Relay e copie; tipos em `*.d.ts`). Pede pela mesma ponte
+  do Drive (`noSobedesce`, que agora também exige `relay` em `zro_products` para as ações `relay.*`; 403 do HUB com
+  `details.product = relay` ou `action_not_allowed` vira `sem_relay`): `relay.converter` `{ arquivoId, presets,
+pastaId?, ref: <id da versão>, conta? }`, depois `relay.pedido` para o estado completo; `maestro.entregaveis` (uma
+  linha por versão e preset, RLS padrão + `_cliente`, chave composta para a versão do mesmo card, "pronto" só com
+  arquivo e MD5) é gravada pela pessoa. Acompanhar = `relay.pedido` a cada 5 s só com item andando e a aba à vista
+  (`useEntregaveis`); quem só lê vê o guardado e não pergunta. Cancelar por item (`relay.cancelar`; já terminado fica
+  como está). Sem SOBEDESCE ou Relay: o porquê e o link (Ver planos / Conhecer o Relay); computador fechado: "Vai
+  começar quando o computador com o SOBEDESCE abrir" (nunca prazo). Folha sobre folha: Esc e Tab só valem para a de
+  cima (`folha.tsx`). **Depende do lado do Relay**: as ações `relay.*` na `PONTES` do HUB e as rotas
+  `/api/zro/relay/*` do SOBEDESCE; até lá o HUB nega e a folha diz que o Relay não está liberado. O cliente (`/a`) não
+  recebe nada automaticamente.
 - **A produtora por dentro** (plano v2 §6–§7, o `/painel` do ZRO portado; migrations `0006`–`0010`): toda tabela tem
   `org_id` e RLS pelo helper `maestro.politicas_padrao(tabela, escrita, remocao, leitura)`; chaves compostas
   `(org_id, id)` impedem apontar para a linha de outra organização. **Orçamentos** (`src/lib/orcamento`): `motor.ts` é
@@ -283,7 +304,9 @@ kit do freela, aluguel na escala e sincronização desligada (`freela-equipament
 (`agenda-ics.test.mts`), acesso por cliente em toda tabela ligada a cliente (`acesso-cliente.test.mts`), as tabelas
 novas com duas organizações (`negocio-rls.test.mts`) e o resumo para a Z (`resumo-z.test.mts`), o contrato (preenchimento, versões, aceite com hash, imutável;
 `contrato.test.mts`), a marca própria (sinal ligado e desligado, contraste, duas organizações; `marca-propria.test.mts`), a ponte do Drive, Arquivos, compartilhar/recolher e o agendamento
-(`drive-sobedesce.test.mts`), a versão colada na ficha do card (`versoes-card.test.mts`), pessoas da Absolute ZRO (`pessoas-zro.test.mts`). E2E: `npm run build && npm run test:e2e`
+(`drive-sobedesce.test.mts`), a versão colada na ficha do card (`versoes-card.test.mts`), pessoas da Absolute ZRO (`pessoas-zro.test.mts`), "Gerar versões com o Relay" (cópia dos presets, folha, ponte com HUB
+e SOBEDESCE falsos, idempotência, sem plano, computador fechado, duas organizações e acesso por cliente;
+`relay.test.mts`). E2E: `npm run build && npm run test:e2e`
 (Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir movimento, navegação, a aprovação
 inteira (`aprovacao.spec.ts`, mp4 local e YouTube/Vimeo falsos em `e2e/falsos`) e a versão colada na ficha do card que aparece no lote (`versao-card.spec.ts`) e a produtora com a demonstração
 (`produtora.spec.ts`, organização própria criada em `e2e/preparar.ts`) e o ciclo comercial (`comercial.spec.ts`: pedido
@@ -297,7 +320,9 @@ detector `e2e/corte.ts`: todas as telas a 375 e 393 px, claro e escuro, Chromium
 faixa que rola de lado só com `data-rolagem`; regras de celular em `src/app/celular.css`) e o Quadro com fluidez
 (`quadro.spec.ts`: folha na janela inteira, "Novo card", Mover para com Desfazer, troca de seção com View Transition),
 a troca de seção sem duas telas juntas (`transicao.spec.ts`, Chromium e WebKit: pelo relógio das animações e amostrando
-quadro a quadro) e os gestos do Quadro no celular (`gestos.spec.ts`, Chromium e WebKit, organização própria).
+quadro a quadro) e os gestos do Quadro no celular (`gestos.spec.ts`, Chromium e WebKit, organização própria) e "Gerar versões com o Relay"
+(`relay.spec.ts`, computador e iPhone, Chromium e WebKit, organização própria: versão aprovada → folha → na fila com o
+computador fechado → pronto com MD5 → o lote mostra; sem o Relay no plano; a fila falsa é controlada por `/__relay`).
 Movimento (29/10/2026): toda folha usa `Folha` (`src/components/folha.tsx`, portal no `<body>`). **Troca de seção**
 (`src/components/movimento.tsx` + `src/app/motion.css`): a View Transition é chamada por nós, não pelo
 `<ViewTransition>` do React (no Safari do iPhone o par sai/entra do React deixava a tela velha e a nova uma sobre a

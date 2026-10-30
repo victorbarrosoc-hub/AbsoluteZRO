@@ -15,6 +15,7 @@ export const ARQUIVO_SESSAO_CORTE = "test-results/e2e-sessao-corte.json";
 export const ARQUIVO_SESSAO_CONTRATO = "test-results/e2e-sessao-contrato.json";
 export const ARQUIVO_SESSAO_AGENDA = "test-results/e2e-sessao-agenda.json";
 export const ARQUIVO_SESSAO_GESTOS = "test-results/e2e-sessao-gestos.json";
+export const ARQUIVO_SESSAO_RELAY = "test-results/e2e-sessao-relay.json";
 /** A ponte falsa (HUB + SOBEDESCE de mentira, tests/ponte-falsa.mts) do e2e de Arquivos: MAESTRO_PONTE_URL no servidor. */
 export const PORTA_PONTE = Number(process.env.E2E_PONTE_PORT || 3219);
 /** A ANP falsa (tests/anp-fixture.mts, valores inventados) da calculadora de deslocamento: MAESTRO_ANP_URL no servidor. */
@@ -289,6 +290,35 @@ export default async function preparar() {
     });
     const sGe = await criarSessao({ orgId: orgGe, sub: SUB_GE, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
     writeFileSync(ARQUIVO_SESSAO_GESTOS, JSON.stringify({ token: sGe.token, org: orgGe }));
+    // Uma organização com o SOBEDESCE e o Relay no plano (e2e/relay.spec.ts): "Gerar versões com o Relay" pela ponte
+    // falsa. Cliente e projeto (sem pasta no Drive: a folha cria 05 Entregas); os cards e versões são semeados pelo teste.
+    const SUB_RL = "00000000-0000-4000-8000-0000000000c9";
+    const rl = await getBanco().asSystem("e2e: semente do Relay", async (tx) => {
+      const [org] = await tx
+        .insert(schema.organizations)
+        .values({ zroOrgId: "00000000-0000-4000-8000-0000000000c8", name: "Relay E2E", zroProducts: ["maestro", "sobedesce", "relay"] })
+        .returning({ id: schema.organizations.id });
+      await tx.insert(schema.members).values({ orgId: org.id, zroSub: SUB_RL, displayName: "Rita Relay", hubRole: "owner", role: "admin" });
+      const um = async (x: ReturnType<typeof q>) => ((await tx.execute(x)) as unknown as { id: string }[])[0].id;
+      const cli = await um(q`insert into maestro.clients (org_id, name) values (${org.id}, 'Café Aurora') returning id`);
+      const proj = await um(
+        q`insert into maestro.projects (org_id, client_id, code, title) values (${org.id}, ${cli}, 'MAE-2026-021', 'Filme manifesto') returning id`,
+      );
+      return { org: org.id, cli, proj };
+    });
+    const sRl = await criarSessao({
+      orgId: rl.org,
+      sub: SUB_RL,
+      produtos: ["maestro", "sobedesce", "relay"],
+      release: { maestro: "allowed" },
+      tokens: {
+        at: "at-e2e-relay",
+        rt: "rt-e2e-relay",
+        atExp: Math.floor(Date.now() / 1000) + 24 * 3600,
+        escopo: "openid email profile org offline_access zro.ia maestro.projects",
+      },
+    });
+    writeFileSync(ARQUIVO_SESSAO_RELAY, JSON.stringify({ token: sRl.token, sub: SUB_RL, ...rl }));
   } finally {
     await fecharBanco();
   }

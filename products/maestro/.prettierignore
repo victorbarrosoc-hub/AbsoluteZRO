@@ -7,4 +7,6 @@ public/brand/
 next-env.d.ts
 src/lib/drive-web/
 public/drive-sw.js
+src/lib/relay/presets.js
+src/lib/relay/plano.js
 desktop/
