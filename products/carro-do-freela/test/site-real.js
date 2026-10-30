@@ -54,40 +54,45 @@ const RAIZ = path.resolve(__dirname, '..');
   t(m.resp === null && m.jobsEu === 0 && m.streak === 0, 'nada de reputação inventada: resposta, jobs e sequência zerados');
   t(!m.sim, '"Simular uma chamada" não existe no site real');
 
-  /* a home (30/out, "refaz a homepage pra atualizar"): só o que existe — a manchete real, como funciona, os três
-     cartões, a Z e o fechamento; somem a prévia de busca, os recursos, a praça, os planos, o selo Prévia e a fase */
+  /* a home (30/out · 6, titular: "a homepage antes tava muito melhor"): o vídeo no topo, a prévia de quem está livre
+     por data com perfis de EXEMPLO (inventados, sem rosto, ditos), os recursos com os objetos 3D, a praça (a rede do
+     audiovisual), como funciona, a Z e o fechamento. Nada de preço, plano, moeda, número de gente nem a fase. */
   m = await p.evaluate(() => {
     show('home');
     const vis = e => !!e && !e.hidden && !e.closest('[hidden]');
     const blocos = [...document.querySelectorAll('#v-home > *')].filter(vis).map(e => e.id || e.className.split(' ')[0]);
     const txt = document.getElementById('v-home').innerText;
+    const cards = [...document.querySelectorAll('#h-rec .bn-t')].filter(vis).map(e => e.id);
+    const lista = [...document.querySelectorAll('#hj-lista li b')].map(b => b.textContent);
     return { blocos, titulo: document.getElementById('hh-t').textContent, fim: document.getElementById('hf-t').textContent,
       chip: vis(document.getElementById('fasechip')), previa: vis(document.querySelector('.fim-prev')),
-      planosLink: [...document.querySelectorAll('.hlinks a, .fim-links a')].filter(vis).map(a => a.getAttribute('href')),
-      dinheiro: /R\$|fictí|demonstra|Volante|Frota|take/i.test(txt), cartoes: document.querySelectorAll('#h-real .passo').length };
+      links: [...document.querySelectorAll('.hlinks a, .fim-links a')].filter(vis).map(a => a.getAttribute('href')),
+      dinheiro: /R\$|grátis|fictí|Volante|Frota|\btake\b|AEON|Revela|NOSSOM/i.test(txt), cards, lista,
+      exemplo: vis(document.querySelector('.hp-exemplo')), aoVivo: vis(document.querySelector('.hp-vivo:not(.hp-exemplo)')),
+      prova: vis(document.getElementById('hp-prova')), rostos: document.querySelectorAll('#hj-lista .av:not(.av-ini)').length,
+      video: !!document.querySelector('#hp-video') && !document.querySelector('.hprod .hp-arte').closest('[hidden]') && getComputedStyle(document.querySelector('.hprod .hp-arte')).display !== 'none',
+      praca: [...document.querySelectorAll('#h-praca .pc-it b')].filter(vis).map(b => b.textContent) };
   });
-  t(m.blocos.join(',') === 'hero,h-como,h-real,h-z,fim2', 'a home real tem só cinco blocos: topo, como funciona, os cartões, a Z e o fechamento (' + m.blocos.join(', ') + ')');
+  t(m.blocos.join(',') === 'hero,hp-jogo-w,h-rec,h-como,h-praca,h-z,fim2', 'a home real: topo com vídeo, quem está livre, recursos, como funciona, a praça, a Z e o fechamento (' + m.blocos.join(', ') + ')');
+  t(m.video, '⟶⟶ o vídeo do carro voltou ao topo');
   t(m.titulo === 'Quem está livre, na data certa.' && m.fim === m.titulo, 'a manchete é a do site real, em cima e no fechamento');
-  t(m.cartoes === 3, 'três cartões: marcar o dia, achar quem está livre, contato protegido');
-  t(!m.dinheiro, 'a home não fala de preço, plano, moeda nem dado de demonstração');
+  t(m.lista.length > 0 && m.exemplo && !m.aoVivo && m.rostos === 0, '⟶⟶ a prévia por data usa perfis de EXEMPLO, sem rosto, e diz isso (não "agenda ao vivo")');
+  t(!m.prova, 'sem número de gente livre no topo (a base real começa agora)');
+  t(m.cards.join(',') === 'hb-feed,hb-equipe,hb-jobs,hb-malas,hb-agenda,hg-f1,hb-brecho', 'os recursos são só o que existe: feed, equipe, propostas e jobs, porta-malas, agenda, acerto direto e brechó (' + m.cards.join(', ') + ')');
+  t(m.praca.join(',') === 'Feed do set,Brechó do set,Equipe que se acha', '⟶⟶ a praça é a rede do audiovisual: feed, brechó e equipe (' + m.praca.join(', ') + ')');
+  t(!m.dinheiro, 'a home não fala de preço, grátis, moeda, base fictícia nem de AEON, Revela ou NOSSOM');
   t(!m.chip && !m.previa, 'sem o chip de fase e sem o selo "Prévia": é o produto, não um teste');
-  t(!m.planosLink.includes('#h-planos') && !m.planosLink.includes('#h-rec') && m.planosLink.includes('#h-real'),
-    'os links do topo e do pé apontam para o que está na página');
+  t(!m.links.includes('#h-planos') && m.links.includes('#h-rec') && m.links.includes('#h-praca'), 'os links do topo e do pé apontam para o que está na página (' + m.links.join(' ') + ')');
 
-  /* a linha visual B (30/out, aprovada): escuro fosco do ecossistema, o símbolo de sempre no topo e títulos sem degradê */
+  /* da linha B ficam o escuro fosco do ecossistema e os títulos finos × pesados sem degradê (topo e entrada) */
   m = await p.evaluate(() => {
     const raiz = getComputedStyle(document.documentElement);
-    const selo = document.querySelector('.hp-texto .zselo');
-    const r = selo && selo.getBoundingClientRect();
-    const hl = document.querySelector('#hh-t .hl');
+    const hl = document.querySelector('#hh-t .hl'), em = document.querySelector('#v-entrar .lgn-tese em');
     return { classe: document.documentElement.classList.contains('real'), grafite: raiz.getPropertyValue('--grafite').trim().toLowerCase(),
-      selo: !!(selo && !selo.hidden && r.width > 60), carro: !!(selo && selo.querySelector('.selo-carro')),
-      degrade: hl ? getComputedStyle(hl).backgroundImage : '', foto: raiz.getPropertyValue('--real-foto').includes('home-poster') };
+      degrade: hl ? getComputedStyle(hl).backgroundImage : '', degradeEntrar: em ? getComputedStyle(em).backgroundImage : '' };
   });
   t(m.classe && m.grafite === '#0e0e10', 'o escuro é o grafite fosco do ecossistema (#0e0e10), nunca preto 100% (' + m.grafite + ')');
-  t(m.selo && m.carro, 'o símbolo de sempre (anel, barras e o carrinho) abre o topo da home');
-  t(m.degrade === 'none', 'o título é fino × pesado, sem texto em degradê');
-  t(m.foto, 'a foto de Natal à noite é o fundo da home e da entrada');
+  t(m.degrade === 'none' && m.degradeEntrar === 'none', 'o título é fino × pesado, sem texto em degradê (topo e entrada)');
 
   m = await p.evaluate(() => { const antes = typeof ASSINANTE !== 'undefined' && ASSINANTE; abrirAssinatura('volante');
     const form = document.getElementById('as-form'); return { antes, depois: typeof ASSINANTE !== 'undefined' && ASSINANTE,

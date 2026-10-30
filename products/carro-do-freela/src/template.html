@@ -4257,6 +4257,8 @@ body.abriu .hprod .hsub,body.abriu .hprod .hcta,body.abriu .hp-prova{animation:f
 /* o foco do cinegrafista: entra desfocado e ganha nitidez */
 @keyframes foco{from{opacity:0;filter:blur(14px);transform:translateY(6px)}to{opacity:1;filter:blur(0);transform:none}}
 /* prova: quantos estão livres HOJE, com rosto — derivado de status() */
+.av.av-ini{display:grid;place-items:center;background:linear-gradient(140deg,var(--grafite3),var(--grafite2));color:var(--marca);font-weight:700;font-size:13px;letter-spacing:.02em}
+.hp-exemplo{color:var(--cal-tenue)}
 .hp-prova{display:flex;align-items:center;gap:14px;margin-top:26px;min-height:38px}
 .hp-prova .avs{display:flex;flex:none}
 .hp-prova .avs i{width:36px;height:36px;border-radius:50%;background:var(--grafite3) center/cover no-repeat;
@@ -5987,30 +5989,12 @@ html.real .fdpost .fdb,html.real [data-fdchamar],html.real .fdcoms{display:none!
 .zselo .zselo-carro{position:absolute;left:50%;top:50%;width:calc(var(--t) * .36);height:calc(var(--t) * .21);
   transform:translate(-50%,-50%) rotate(40deg) translateY(calc(var(--t) * -.585));filter:drop-shadow(0 0 calc(var(--t) * .05) rgba(23,209,232,.7))}
 .zselo.sem-carro .zselo-carro,.zselo.sem-carro .zselo-luz{display:none}
-/* a home: a foto de Natal parada, o texto à esquerda, o símbolo em cima do título */
-html.real .hero.hprod{position:relative;background:#0E0E10 var(--real-foto,none) 62% 50%/cover no-repeat;min-height:min(860px,100svh)}
-html.real .hero.hprod::before{content:"";position:absolute;inset:0;pointer-events:none;
-  background:linear-gradient(90deg,rgba(14,14,16,.94) 0%,rgba(14,14,16,.72) 36%,rgba(14,14,16,.05) 66%),linear-gradient(0deg,#0E0E10 0%,rgba(14,14,16,0) 24%)}
-html.real .hero.hprod>.wrap{position:relative}
-html.real .hprod .hp-arte{display:none}
-html.real .hprod .hp-grade{display:block;text-align:left;padding:clamp(120px,16vh,190px) 0 70px}
-html.real .hprod .hp-texto{text-align:left;max-width:700px;margin:0}
-html.real .hprod .hp-texto{padding:0 clamp(22px,7vw,130px);max-width:900px!important;display:flex;flex-direction:column;align-items:flex-start!important}
-html.real .hprod .hp-texto>*{margin-left:0!important;margin-right:0!important;text-align:left!important}
-html.real .hprod .hp-texto .hcta{justify-content:flex-start!important}
+/* a home: o vídeo no topo e os objetos 3D de sempre (titular, 30/out · 6: "a homepage antes tava muito melhor, só faz
+   as adaptações de fontes"). Da linha B ficam a fonte, o título fino × pesado sem degradê e os botões de vidro. */
+html.real .hprod .h1x{font-weight:300;letter-spacing:-.045em}
+html.real .hprod .h1x .hl{font-weight:800;background:none;-webkit-background-clip:border-box;background-clip:border-box;color:var(--cal);-webkit-text-fill-color:var(--cal)}
 html.real .homenav .hn-criar{background:linear-gradient(180deg,rgba(255,255,255,.6),rgba(255,255,255,0) 50%),rgba(245,245,247,.94);color:#1D1D1F;border:0;border-radius:999px}
-html.real .hprod .hp-texto .zselo{margin-bottom:34px}
-html.real .hprod .h1x{font-weight:300;font-size:clamp(46px,6vw,86px);line-height:1;letter-spacing:-.045em;max-width:none;color:#F5F5F7}
-html.real .hprod .h1x .hl{font-weight:800;background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#F5F5F7;-webkit-text-fill-color:#F5F5F7}
-html.real .hprod .hsub{color:#D1D1D6}
-html.real .hprod .hcta{justify-content:flex-start}
-html.real .hp-faixa{color:#D1D1D6}
-@media(max-width:720px){
-  html.real .hero.hprod{background-position:74% 50%}
-  html.real .hero.hprod::before{background:linear-gradient(0deg,#0E0E10 22%,rgba(14,14,16,.72) 58%,rgba(14,14,16,.25))}
-  html.real .hprod .hp-grade{padding:260px 0 40px}
-  html.real .hprod .hp-texto .zselo{--t:82px!important;margin-bottom:26px}
-}
+html.real .hprod .zselo,html.real #v-entrar .lgn-logo .zselo{display:none!important}
 /* os botões da home e da entrada viram o vidro da família: a ação principal em vidro claro */
 html.real :is(#v-home,#v-entrar) .btn.entrar-cta:not(.gh),html.real #v-entrar .lgn-ok{background:linear-gradient(180deg,rgba(255,255,255,.6),rgba(255,255,255,0) 50%),rgba(245,245,247,.94);
   color:#1D1D1F;border:0;border-radius:999px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(0,0,0,.25),0 10px 28px rgba(0,0,0,.35)}
@@ -6023,12 +6007,9 @@ html.real .homenav::after{display:none}
 html.real .homenav .wrap{margin-top:14px;height:56px;border-radius:999px;padding:0 8px 0 18px;background:rgba(20,20,24,.6);backdrop-filter:blur(20px);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 0 0 1px rgba(255,255,255,.1)}
 html.real .homenav .brand .mk-marca{display:none}
-/* a entrada: a mesma foto, o símbolo e o título fino × pesado */
-html.real #v-entrar .lgn-cena>:not(.lgn-tese):not(.lgn-topo){display:none}
-html.real #v-entrar .lgn-cena{background:#0E0E10 var(--real-foto,none) 70% 50%/cover no-repeat!important;box-shadow:inset 0 0 0 4000px rgba(14,14,16,.38)}
-html.real #v-entrar .lgn-cena::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#0E0E10 0%,rgba(14,14,16,.45) 55%,rgba(14,14,16,.2))}
-html.real #v-entrar .lgn-tese{display:none}
-html.real #v-entrar .lgn-logo>svg{display:none}
+/* a entrada: o vídeo de sempre, com o título fino × pesado */
+html.real #v-entrar .lgn-tese p{font-family:"Figtree",system-ui,sans-serif;font-weight:300;letter-spacing:-.045em}
+html.real #v-entrar .lgn-tese em{font-style:normal;font-weight:800;background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#F5F5F7;-webkit-text-fill-color:#F5F5F7}
 html.real #v-entrar #lg-tit{font-family:"Figtree",system-ui,sans-serif;font-weight:300;letter-spacing:-.04em}
 html.real #v-entrar #lg-tit b{font-weight:800}
 
@@ -6730,9 +6711,9 @@ html[data-malas-envios] .tabs .tab[data-tab="malas"]::after,html[data-malas-envi
     </button>
     <nav class="hlinks">
       <a href="#h-como">Como funciona</a>
-      <a href="#h-rec" data-sem-real>Recursos</a>
+      <a href="#h-rec">Recursos</a>
       <a href="#h-planos" data-sem-real>Planos</a>
-      <a href="#h-real" hidden data-so-real>Recursos</a>
+      <a href="#h-praca" hidden data-so-real>Comunidade</a>
     </nav>
     <div class="tema" role="group" aria-label="Tema da interface">
       <button type="button" data-tema="dark" aria-pressed="true" title="Tema escuro" aria-label="Tema escuro"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13.4A8.4 8.4 0 0 1 10.6 4a8.4 8.4 0 1 0 9.4 9.4z"/></svg></button>
@@ -6768,7 +6749,7 @@ html[data-malas-envios] .tabs .tab[data-tab="malas"]::after,html[data-malas-envi
         <!-- a busca no topo (17/out · 8, da prancha do Victor): praça,
              função e data, e a seta leva à prévia de baixo já filtrada.
              Só no desktop — no celular a prévia já está na primeira tela. -->
-        <div class="hp-busca" id="hp-busca" data-sem-real role="search" aria-label="Buscar quem está livre">
+        <div class="hp-busca" id="hp-busca" role="search" aria-label="Buscar quem está livre">
           <label class="hb-c"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><select id="hb-praca" aria-label="Praça"></select></label>
           <label class="hb-c"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg><select id="hb-func" aria-label="Função"></select></label>
           <label class="hb-c"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg><select id="hb-dia" aria-label="Data"></select></label>
@@ -6799,13 +6780,14 @@ html[data-malas-envios] .tabs .tab[data-tab="malas"]::after,html[data-malas-envi
   <!-- a busca de dentro, em miniatura e funcionando, logo embaixo do topo e
        na largura inteira (17/out · 3) — no desktop ela começa na primeira
        tela, como em 17/out · 1 -->
-  <div class="hp-jogo-w" data-sem-real>
+  <div class="hp-jogo-w">
     <div class="wrap">
       <div class="hp-prev" id="h-jogo">
         <div class="hp-topo">
           <div class="hp-tit">
             <h2>Quem está livre</h2>
-            <span class="hp-vivo"><i aria-hidden="true"></i>agenda ao vivo · experimente sem entrar</span>
+            <span class="hp-vivo" data-sem-real><i aria-hidden="true"></i>agenda ao vivo · experimente sem entrar</span>
+            <span class="hp-vivo hp-exemplo" hidden data-so-real>perfis de exemplo · experimente sem entrar</span>
           </div>
           <div class="hp-dias" id="hj-dias" role="group" aria-label="Escolha o dia"></div>
         </div>
@@ -6825,16 +6807,34 @@ html[data-malas-envios] .tabs .tab[data-tab="malas"]::after,html[data-malas-envi
        (REFERENCIA), a semana da agenda da conta de demonstração, as fotos
        são as capas de categoria do brechó. `#h-gar`, `#hg-f1` e `#h-moeda`
        continuam com os ids que as suítes de fase e do take procuram. -->
-  <div class="sec hsec" id="h-rec" data-sem-real>
+  <div class="sec rvsec hsec" id="h-rec">
     <div class="wrap">
       <div class="hcab"><h2>Tudo que o set precisa.</h2><p>Num lugar só.</p></div>
       <div class="bento">
-        <article class="bn-t bn-largo" id="hb-carro">
+        <!-- no site real (30/out · 6) só o que existe no domínio: agenda, achar por data, propostas, jobs, feed,
+             brechó, equipe e porta-malas. Passar o carro e o custo somando ficam na prévia. -->
+        <article class="bn-t bn-largo" id="hb-feed" hidden data-so-real>
+          <img class="bn-obj" data-obj="chat" alt="" decoding="async">
+          <div class="bn-tx"><h3>A rede do audiovisual.</h3><p>O feed do set: quem entregou o quê, quem precisa de gente, quem está livre.</p></div>
+        </article>
+        <article class="bn-t" id="hb-equipe" hidden data-so-real>
+          <img class="bn-obj" data-obj="grupo" alt="" decoding="async">
+          <div class="bn-tx"><h3>Monte a equipe.</h3><p>Ache pelo @ ou pela data e chame quem está livre.</p></div>
+        </article>
+        <article class="bn-t" id="hb-jobs" hidden data-so-real>
+          <img class="bn-obj" data-obj="envelope" alt="" decoding="async">
+          <div class="bn-tx"><h3>Propostas e jobs.</h3><p>A proposta chega aqui, o job fica registrado. Seu telefone nunca aparece.</p></div>
+        </article>
+        <article class="bn-t" id="hb-malas" hidden data-so-real>
+          <img class="bn-obj" data-obj="mala" alt="" decoding="async">
+          <div class="bn-tx"><h3>Porta-malas.</h3><p>O material do job no seu Drive, com o Sobedesce. Sobe e desce conferido.</p></div>
+        </article>
+        <article class="bn-t bn-largo" id="hb-carro" data-sem-real>
           <img class="bn-obj" data-obj="carro" alt="" decoding="async">
           <div class="bn-tx"><h3>Passe o carro.</h3><p>Uma chamada para todo mundo livre. Quem aceitar primeiro, leva.</p></div>
           <div class="vis-carro" aria-hidden="true"><div class="vc-passos" id="hb-carro-v"></div></div>
         </article>
-        <article class="bn-t" id="hb-custo">
+        <article class="bn-t" id="hb-custo" data-sem-real>
           <img class="bn-obj" data-obj="calc" alt="" decoding="async">
           <div class="bn-tx"><h3>Custo somando.</h3><p>Veja se a equipe cabe no orçamento antes de chamar.</p></div>
           <div class="vis-custo" id="hb-custo-v" aria-hidden="true"></div>
@@ -6891,7 +6891,7 @@ html[data-malas-envios] .tabs .tab[data-tab="malas"]::after,html[data-malas-envi
   <!-- ⚠️ A HOME DO SITE REAL (30/out, pedido do titular: "refaz a homepage pra atualizar"). Só o que existe de
        verdade no domínio: a agenda no banco, quem está livre (gente do ecossistema que escolheu aparecer) e a conta
        única. Nada de número, rosto ou preço: a base começa agora. Nasce hidden e só o REAL liga (realHome). -->
-  <div class="sec rvsec hsec" id="h-real" hidden data-so-real>
+  <div class="sec rvsec hsec" id="h-real" hidden>
     <div class="wrap">
       <div class="hcab"><h2>Sua agenda fala por você.</h2><p>Quem contrata vê quando você está livre.</p></div>
       <div class="hpassos hrl-tres">
@@ -6906,7 +6906,7 @@ html[data-malas-envios] .tabs .tab[data-tab="malas"]::after,html[data-malas-envi
        vagas, um movimento"). Só entra o que EXISTE: o feed, os coletivos e
        — da Fase 4 em diante — as guildas. As imagens são as capas de
        ofício (sem rosto, sem marca), as mesmas do perfil sem trabalho. -->
-  <div class="sec rvsec hsec" id="h-praca" data-sem-real>
+  <div class="sec rvsec hsec" id="h-praca">
     <div class="wrap">
       <div class="pc-caixa">
         <div class="pc-foto" id="pc-foto" aria-hidden="true"></div>
@@ -6918,7 +6918,9 @@ html[data-malas-envios] .tabs .tab[data-tab="malas"]::after,html[data-malas-envi
         <ul class="pc-lista">
           <li><button class="pc-it entrar-cta"><i data-capa="edicao" aria-hidden="true"></i><span><b>Feed do set</b><small>Quem entregou o quê, e quem precisa de gente.</small></span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button></li>
           <li data-fase="4"><button class="pc-it entrar-cta"><i data-capa="foto" aria-hidden="true"></i><span><b>Guildas</b><small>Quem sempre roda junto, com time em comum.</small></span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button></li>
-          <li><button class="pc-it entrar-cta"><i data-capa="drone" aria-hidden="true"></i><span><b>Coletivos</b><small>Grupos que se organizam. Entra quem quiser.</small></span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button></li>
+          <li hidden data-so-real><button class="pc-it entrar-cta"><i data-capa="foto" aria-hidden="true"></i><span><b>Brechó do set</b><small>Venda e compre equipamento de quem é do meio.</small></span></button></li>
+          <li hidden data-so-real><button class="pc-it entrar-cta"><i data-capa="som" aria-hidden="true"></i><span><b>Equipe que se acha</b><small>Ache gente pelo @, pela função e pela data.</small></span></button></li>
+          <li data-sem-real><button class="pc-it entrar-cta"><i data-capa="drone" aria-hidden="true"></i><span><b>Coletivos</b><small>Grupos que se organizam. Entra quem quiser.</small></span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button></li>
         </ul>
       </div>
     </div>
@@ -7065,7 +7067,7 @@ html[data-malas-envios] .tabs .tab[data-tab="malas"]::after,html[data-malas-envi
       </div>
       <div class="fim-pe">
         <span class="fim-marca"><svg viewBox="0 0 100 100" width="24" height="24" aria-hidden="true"><use href="#mk"/></svg><b>Carro do Freela</b></span>
-        <nav class="fim-links"><a href="#h-como">Como funciona</a><a href="#h-rec" data-sem-real>Recursos</a><a href="#h-planos" data-sem-real>Planos</a><a href="#h-real" hidden data-so-real>Recursos</a><button class="fim-prev" type="button" data-previa data-sem-real title="O que é esta prévia">Prévia</button></nav>
+        <nav class="fim-links"><a href="#h-como">Como funciona</a><a href="#h-rec">Recursos</a><a href="#h-planos" data-sem-real>Planos</a><a href="#h-praca" hidden data-so-real>Comunidade</a><button class="fim-prev" type="button" data-previa data-sem-real title="O que é esta prévia">Prévia</button></nav>
       </div>
     </div>
   </div>
@@ -26064,9 +26066,6 @@ let hjEscala=[];
    Roda a cada drawHome (idempotente), depois do aplicarFase, que mexe no hidden de outras marcas. */
 function realHome(){
   if(!REAL) return;
-  /* a foto de Natal à noite (o pôster da carona, no degrau da tela) é o fundo da home e da entrada */
-  const foto=HOME_VIDEO.poster?qual(HOME_VIDEO.poster):"";
-  if(foto) document.documentElement.style.setProperty("--real-foto","url(\""+foto+"\")");
   document.querySelectorAll("[data-sem-real]").forEach(e=>{ e.hidden=true });
   document.querySelectorAll("[data-so-real]").forEach(e=>{ e.hidden=false });
 }
@@ -26145,9 +26144,30 @@ function ligarBento(){
    demonstração, e o cartão diz isso. Sem diária e sem contato: isso fica
    do lado de dentro, onde está o resto da ficha. ---- */
 let hjDia=0, hjCidade="";
-const hjMostravel=c=>!c.me&&!!c.foto&&!(c.principal||[]).includes("Perfil incompleto")&&(!hjCidade||c.cidade===hjCidade);
+/* A DEMONSTRAÇÃO NO SITE REAL (30/out · 6). Titular: "a interação sobre resolver a dor que o mercado tem, de ver a
+   data dos freelas que estão disponíveis" e "pode usar perfis inventados". No domínio não há base fictícia, então a
+   prévia da home usa doze perfis INVENTADOS, sem rosto (iniciais), e o cartão diz "perfis de exemplo". A agenda
+   deles é um desenho fixo por dia e período (dia inteiro, manhã ou tarde). Nada disso sai da home. */
+var DEMO_HOME=null;
+function demoHome(){
+  if(DEMO_HOME) return DEMO_HOME;
+  const G=[["Lia Montes","Op. de câmera","Natal/RN"],["Caio Brito","Editor","Natal/RN"],["Nara Paiva","Op. de drone","Parnamirim/RN"],
+    ["Téo Rocha","Fotógrafo","Natal/RN"],["Bia Lemos","Direção de fotografia","Natal/RN"],["Rui Tavares","Colorista","Natal/RN"],
+    ["Duda Sena","Op. de câmera","Parnamirim/RN"],["Iago Melo","Editor","Natal/RN"],["Lara Dantas","Fotógrafo","Natal/RN"],
+    ["Davi Lins","Op. de drone","Natal/RN"],["Maya Freire","Editor","Parnamirim/RN"],["Ícaro Bastos","Op. de câmera","Natal/RN"]];
+  const PER=["dia inteiro","manhã","tarde"];
+  DEMO_HOME=G.map(([nome,f,cidade],k)=>({demo:true,nome,func:[f],principal:[f],cidade,foto:null,
+    dias:[0,1,2,3,4,5,6].map(d=>((k*5+d*3)%7<4)?PER[(k+d)%3]:null)}));
+  return DEMO_HOME;
+}
+const hjBase=()=>REAL?demoHome():CREW;
+const hjStatus=(c,i)=>c.demo?(c.dias[i]?"livre":"ocupado"):status(c,i);
+const hjIni=n=>String(n).split(" ").map(x=>x[0]).slice(0,2).join("");
+const hjAv=c=>c.foto?'<span class="av" style="background-image:url('+cssUrl(c.foto)+')" role="img" aria-label="Foto de '+esc(titulo(c.nome))+'"></span>'
+  :'<span class="av av-ini" aria-hidden="true">'+esc(hjIni(c.nome))+'</span>';
+const hjMostravel=c=>c.demo?(!hjCidade||c.cidade===hjCidade):!c.me&&!!c.foto&&!(c.principal||[]).includes("Perfil incompleto")&&(!hjCidade||c.cidade===hjCidade);
 function hjLivres(){
-  const dia=CREW.filter(c=>hjMostravel(c)&&status(c,hjDia)==="livre");
+  const dia=hjBase().filter(c=>hjMostravel(c)&&hjStatus(c,hjDia)==="livre");
   return hjEscala.length?dia.filter(c=>c.func.some(f=>hjEscala.includes(f))):dia;
 }
 /* sem filtro, a lista alterna as funções — quatro operadores de câmera
@@ -26171,11 +26191,11 @@ function drawJogo(){
   /* as seis funções que quem contrata procura primeiro; se a base não
      tiver alguma, completa com as mais cadastradas */
   const PREF=["Op. de câmera","Editor","Op. de drone","Fotógrafo","Direção de fotografia","Colorista"];
-  const tot=f=>CREW.filter(c=>c.func.includes(f)).length;
+  const tot=f=>hjBase().filter(c=>c.func.includes(f)).length;
   const escolha=PREF.filter(f=>FUNCOES.includes(f)&&tot(f))
     .concat(FUNCOES.filter(f=>!PREF.includes(f)).sort((a,b)=>tot(b)-tot(a))).slice(0,6);
   const funcs=escolha.map(f=>({f,
-      livres:CREW.filter(c=>hjMostravel(c)&&c.func.includes(f)&&status(c,hjDia)==="livre").length}));
+      livres:hjBase().filter(c=>hjMostravel(c)&&c.func.includes(f)&&hjStatus(c,hjDia)==="livre").length}));
   box.innerHTML=funcs.map(x=>'<button class="hj-chip" data-hjf="'+esc(x.f)+'" aria-pressed="'+
     hjEscala.includes(x.f)+'">'+esc(x.f)+' <b>'+x.livres+'</b></button>').join("");
   const livres=hjLivres(), d=dateAt(hjDia);
@@ -26183,9 +26203,8 @@ function drawJogo(){
     (livres.length===1?"pessoa livre":"pessoas livres")+(hjEscala.length?" em "+esc(hjEscala.join(", ")):"")+
     (hjCidade?" · "+esc(hjCidade.replace("/",", ")):"");
   v("hj-lista").innerHTML=livres.length
-    ? hjOrdem(livres).slice(0,4).map(({c,f})=>'<li><span class="av" style="background-image:url('+cssUrl(c.foto)+')" role="img" aria-label="Foto de '+
-        esc(titulo(c.nome))+'"></span><span><b>'+esc(titulo(c.nome))+'</b><small>'+esc(f)+' · '+
-        esc(String(c.cidade).split("/")[0])+'</small></span><span class="st">livre</span></li>').join("")
+    ? hjOrdem(livres).slice(0,4).map(({c,f})=>'<li>'+hjAv(c)+'<span><b>'+esc(titulo(c.nome))+'</b><small>'+esc(f)+' · '+
+        esc(String(c.cidade).split("/")[0])+'</small></span><span class="st">'+(c.demo&&c.dias[hjDia]!=="dia inteiro"?"livre · "+c.dias[hjDia]:"livre")+'</span></li>').join("")
     : '<li class="vazio">Ninguém livre com esse filtro neste dia. Tente outro dia ou tire uma função.</li>';
   v("hj-ver").textContent=livres.length>4?"Ver as "+livres.length+" e chamar":"Entrar e chamar";
   dias.querySelectorAll("[data-hjd]").forEach(b=>b.onclick=()=>{ hjDia=+b.dataset.hjd; som("leve"); drawJogo() });
@@ -26208,7 +26227,7 @@ function pintarBuscaTopo(escolha){
   const pr=v("hb-praca"), fu=v("hb-func"), di=v("hb-dia"), ir=v("hb-ir");
   if(!pr||!fu||!di||!ir) return;
   if(!pr.options.length){
-    const cids=statsCidade().filter(x=>x.cidade!=="Não informado").slice(0,6).map(x=>x.cidade);
+    const cids=REAL?[...new Set(demoHome().map(c=>c.cidade))]:statsCidade().filter(x=>x.cidade!=="Não informado").slice(0,6).map(x=>x.cidade);
     pr.innerHTML='<option value="">Natal e região</option>'+
       cids.map(c=>'<option value="'+esc(c)+'">'+esc(c.replace("/",", "))+'</option>').join("");
     /* as MESMAS seis funções dos chips da prévia: a busca do topo não
