@@ -3020,3 +3020,21 @@ produção (deploy só com autorização).
   as duas saídas aparecem nos recentes e no projeto, outra conta no mesmo aparelho não vê nada, Sair encerra; 375 px sem
   rolar para o lado. Relay `npm test`: 92/92. Lint, Prettier e `scan-secrets`: ok.
 - Não conferido aqui: o painel na produção com a conta do titular (depende do merge e do deploy pela main).
+
+## Maestro · Criação: apagar fácil, com Desfazer (30/10/2026)
+
+Deslizar/segurar no iPhone, "•••"/botão direito no computador, lixeira com Restaurar e Apagar de vez nas listas de
+Roteiros e Fluxos (`components/criacao/lixeira.tsx`, `lib/criacao/lixeira.ts`, `app/lixeira.css`).
+
+| Verificação                                                                                                                             | Comando                                                                              | Resultado                                                                                                                                                |
+| --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lixeira pura e pelas rotas (pedido, aviso, deslizar, papéis, de vez só da lixeira e só admin/gestão, versão fica, auditoria, link vivo) | `TEST_DB_SUFIXO=lixo npx tsx --test tests/lixeira.test.mts`                          | **9/9**                                                                                                                                                  |
+| Maestro inteiro                                                                                                                         | `npm run lint`, `format:check`, `typecheck`, `TEST_DB_SUFIXO=lixo npm test`, `build` | ok · ok · ok · **584/584** · ok                                                                                                                          |
+| E2E do apagar (computador, iPhone Chromium com toque de verdade, iPhone Safari)                                                         | `E2E_DB_SUFIXO=lixo E2E_PORT=6917 … npx playwright test e2e/criacao-apagar.spec.ts`  | **17 passaram**, 16 pulados (por aparelho)                                                                                                               |
+| E2E da Criação e nada cortado (lixeiras e a folha de segurar entraram no `sem-corte`)                                                   | `npx playwright test e2e/criacao-*.spec.ts e2e/sem-corte.spec.ts`                    | **43 passaram**, 35 pulados (por aparelho), 0 falhas (`sem-corte` com as duas lixeiras e a folha de segurar, Chromium e WebKit, 375/393, claro e escuro) |
+| Raiz                                                                                                                                    | `npm run lint`, `format:check`, `typecheck`                                          | ok · ok · ok                                                                                                                                             |
+| Segredos                                                                                                                                | `node scripts/scan-secrets.mjs`                                                      | nenhum                                                                                                                                                   |
+
+Não validado: o dedo de verdade num iPhone (o e2e usa toques sintéticos no WebKit e o toque do CDP no Chromium) e a
+vibração do segurar (`navigator.vibrate` não existe no Safari). Equipe não vê o aviso do link vivo (os links são só de
+administração e gestão pelo RLS).
