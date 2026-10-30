@@ -2978,6 +2978,29 @@ aprovação e de volta. Quadro a quadro (ffmpeg, linha do tempo de 60 fps):
   `scan-secrets` sem segredo. Com carga ~16 em 4 núcleos, "segurar na borda" (WebKit) caiu 1 em 3: passou mais de 1 s
   entre a troca e o próximo movimento do teste, e a borda já passava para a coluna seguinte (o código da borda não mudou).
 
+## Maestro: achar o job no Quadro (30/10/2026)
+
+Local (Postgres e Chromium/WebKit desta máquina), migração `drizzle/0035_capas_do_quadro.sql`. Nenhuma miniatura é
+buscada pelo servidor; o e2e não sai para a internet (a miniatura do YouTube falha e o lugar some, como deve).
+
+| O quê                                | Como                                                                                                                          | Resultado                                                                                                                                                                                                 |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Selos, miniatura, cor, realce, busca | `tests/capas.test.mts` (puro)                                                                                                 | só YouTube/demo/https guardado viram miniatura; enviado → aberto depois da versão → decisão; versão nova volta a "enviado"; cor estável; realce sem acento no índice certo; código do projeto             |
+| Capa no banco e na rota              | `tests/capas.test.mts`                                                                                                        | WebP ≤ 960 px/160 KB sem EXIF; SVG 415; uma por card; leitura 403 e vê; outra origem 403; sem sessão 401; outra organização e fora do alcance 404; bytes só pela porta; cota 413; tirar                   |
+| Acesso por cliente                   | `tests/acesso-cliente.test.mts` (`card_capas` na lista)                                                                       | a pessoa restrita vê só a capa do card do cliente dela                                                                                                                                                    |
+| Selos como a pessoa                  | `tests/capas.test.mts`                                                                                                        | lote em rascunho não conta; link gerado, aberto (`link_abrir`), ajuste (`link_enviar`), versão nova, revogado; `selosDesde` traz o que mudou; a outra organização não vê nada                             |
+| Tela                                 | `e2e/quadro-achar.spec.ts` (computador e iPhone)                                                                              | **12/12**: selo e miniatura da demonstração, sigla na mesma cor por cliente, capa pela ficha aparece no card e sai com "Tirar", busca com realce/contagem/"Nada com", passo só no gesto, leitura sem capa |
+| Arrastar com imagem                  | `e2e/arrastar.spec.ts` (primeiro card de cada coluna com capa), Chromium e WebKit                                             | **8/8**: sem render, DOM ou layout com o mouse andando; card inteiro ao soltar                                                                                                                            |
+| Vizinhos do Quadro                   | `quadro`, `arrastar`, `gestos`, `colunas`, `visual` (AA em cada hora e no escuro), `versao-card`, `aprovacao`, `quadro-achar` | **72 passaram**, 19 pulados por projeto; 1 queda do "segurar na borda" (WebKit, máquina carregada, a mesma já anotada em 30/10) que passou ao repetir (8/8)                                               |
+
+`sem-corte.spec.ts` (todas as telas, Quadro inclusive): Chromium 375/393 claro e escuro **4/4** e WebKit 375 claro ok;
+os outros três do WebKit não chegaram a rodar (limite de tempo da sessão, ~5 min cada).
+
+Maestro inteiro: `npm test` **592/592** (em lotes, disco apertado), lint, Prettier, tipos e build ok; raiz: lint,
+Prettier e tipos ok; `scan-secrets` sem segredo. Capturas antes/depois (1440 claro e escuro, iPhone 390) e o vídeo do passeio ficaram fora do repositório (scratchpad
+da sessão). Não conferido aqui: a migração `0035` no banco de produção (deploy só com autorização) e a miniatura do
+YouTube com rede de verdade.
+
 ## Laboratório da Z (30/10/2026, [ADR 0033](decisions/0033-laboratorio-da-z.md))
 
 Console › Laboratório da Z (só admin), migração `0036_laboratorio_z.sql`. Local, Postgres e Chromium desta máquina;

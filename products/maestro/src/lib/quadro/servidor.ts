@@ -7,6 +7,8 @@
 import { sql } from "drizzle-orm";
 import { codigoPg, getBanco, mensagemPg, PG, type Contexto, type Tx } from "@/lib/db/client";
 import { CAMPOS_EDITAVEIS, ID_CARD, NOME_DO_CAMPO, valorDoCampo, type CampoEditavel, type CardQ, type DadosCard } from "./metodo";
+import { seloDaLinha, type CapaDoCard, type LinhaSelo, type Selo, type Selos } from "./selos";
+import { prepararCapa } from "./capa";
 
 export type Falha = { ok: false; status: number; erro: string; mensagem: string; campo?: string; card?: CardQ | null };
 export type Res<T extends object = object> = ({ ok: true } & T) | Falha;
@@ -32,6 +34,8 @@ function traduzir(e: unknown): Falha {
   }
   if (codigo === PG.regra && msg === "coluna:nao_existe")
     return falha(409, "coluna", "Essa coluna não existe mais. O Quadro foi atualizado.", { campo: "coluna" });
+  if (codigo === PG.regra && msg === "capa:cota")
+    return falha(413, "cota", "As capas da produtora chegaram ao limite. Tire a capa de cards já entregues e tente de novo.");
   if (codigo === PG.unicidade) return falha(409, "id_existe", "Já existe um card com esse número.");
   if (codigo === PG.checagem) return falha(400, "formato", "Um dos campos veio num formato que o Quadro não aceita.");
   throw e;
@@ -178,6 +182,141 @@ export async function apagarCard(ctx: Contexto, id: unknown, restaurar = false):
   } catch (e) {
     return traduzir(e);
   }
+}
+
+/* ───────────── selos: a peça, o cliente (src/lib/quadro/selos.ts) ───────────── */
+
+/**
+ * Os selos dos cards vivos (todos, ou só `ids`), como a pessoa: o RLS e o acesso por cliente valem (lote, link e
+ * decisão que a pessoa não alcança não aparecem). A versão mais nova de cada card; o lote mais recente que já saiu de
+ * rascunho, com o link ativo e a decisão desta volta.
+ */
+async function selosNaTx(tx: Tx, ids: string[] | null): Promise<Selos> {
+  if (ids && !ids.length) return {};
+  const filtro = ids
+    ? sql`and k.id in (${sql.join(
+        ids.map((i) => sql`${i}`),
+        sql`, `,
+      )})`
+    : sql``;
+  const linhas = (await tx.execute(sql`
+    with alvo as (select k.id from maestro.cards k where k.apagado_em is null ${filtro}),
+    ult as (
+      select distinct on (v.card_id) v.card_id, v.n, v.fonte, v.url, v.miniatura_url, v.criado_em
+        from maestro.versoes v join alvo on alvo.id = v.card_id
+       where v.apagado_em is null
+       order by v.card_id, v.n desc),
+    lote as (
+      select distinct on (lc.card_id) lc.card_id, lc.lote_id, lc.volta
+        from maestro.lote_cards lc join alvo on alvo.id = lc.card_id
+        join maestro.lotes l on l.id = lc.lote_id and l.deleted_at is null and l.status <> 'rascunho'
+       order by lc.card_id, coalesce(l.sent_at, l.created_at) desc, l.id)
+    select alvo.id, ult.n, ult.fonte, ult.url, ult.miniatura_url as mini, ult.criado_em as "versaoEm",
+           d.decision as decisao, d.created_at as "decisaoEm", al.created_at as "linkCriado", al.last_used_at as "linkUsado"
+      from alvo
+      left join ult on ult.card_id = alvo.id
+      left join lote on lote.card_id = alvo.id
+      left join lateral (
+        select a.decision, a.created_at from maestro.approvals a
+         where a.lote_id = lote.lote_id and a.card_id = lote.card_id and coalesce(a.volta, 1) = lote.volta
+         order by a.created_at desc limit 1) d on true
+      left join lateral (
+        select a.created_at, a.last_used_at from maestro.approval_links a
+         where a.lote_id = lote.lote_id and a.kind = 'lote' and a.revoked_at is null and a.expires_at > now()
+         order by a.created_at desc limit 1) al on true
+     where ult.card_id is not null or d.decision is not null or al.created_at is not null`)) as unknown as LinhaSelo[];
+  const out: Selos = {};
+  for (const l of linhas) {
+    const s = seloDaLinha(l);
+    if (s) out[l.id] = s;
+  }
+  return out;
+}
+
+/** Os selos de todos os cards vivos (abrir o Quadro). */
+export async function selosDoQuadro(ctx: Contexto): Promise<Selos> {
+  return getBanco().asUser(ctx, (tx) => selosNaTx(tx, null));
+}
+
+/**
+ * Os selos que podem ter mudado desde o cursor (poll de 5 s): card mudado, versão nova ou tirada, decisão, lote mexido,
+ * link criado, revogado ou aberto. `null` = o card não tem mais selo (link revogado, versão tirada).
+ */
+export async function selosDesde(ctx: Contexto, cursor: string): Promise<Record<string, Selo | null>> {
+  const desde = new Date(cursor);
+  if (Number.isNaN(desde.getTime())) return {};
+  const d = new Date(desde.getTime() - 5000).toISOString();
+  return getBanco().asUser(ctx, async (tx) => {
+    const mudaram = (await tx.execute(sql`
+      select k.id from maestro.cards k
+       where k.apagado_em is null and (
+             k.updated_at > ${d}::timestamptz
+          or exists (select 1 from maestro.versoes v where v.card_id = k.id and (v.criado_em > ${d}::timestamptz or v.apagado_em > ${d}::timestamptz))
+          or exists (select 1 from maestro.approvals a where a.card_id = k.id and a.created_at > ${d}::timestamptz)
+          or exists (select 1 from maestro.lote_cards lc join maestro.lotes l on l.id = lc.lote_id
+                       left join maestro.approval_links al on al.lote_id = l.id
+                      where lc.card_id = k.id
+                        and (l.updated_at > ${d}::timestamptz or al.created_at > ${d}::timestamptz
+                             or al.revoked_at > ${d}::timestamptz or al.last_used_at > ${d}::timestamptz)))
+       limit 2000`)) as unknown as { id: string }[];
+    const ids = mudaram.map((r) => r.id);
+    const selos = await selosNaTx(tx, ids);
+    return Object.fromEntries(ids.map((id) => [id, selos[id] ?? null]));
+  });
+}
+
+/* ───────────── a capa do card (drizzle/0035, src/lib/quadro/capa.ts) ───────────── */
+
+const SHA = /^[0-9a-f]{64}$/;
+
+/**
+ * Põe (ou troca) a capa: a imagem limpa vai para `maestro.card_capas` e a referência para `dados.capa` pelo
+ * `card_mudar`, na mesma transação (a versão do card sobe; o poll leva às outras telas). Só quem escreve no Quadro.
+ */
+export async function porCapa(ctx: Contexto, id: unknown, bytes: Uint8Array): Promise<Res<{ card: CardQ }>> {
+  if (typeof id !== "string" || !ID_CARD.test(id)) return falha(400, "formato", "Número de card inválido.");
+  const p = await prepararCapa(bytes);
+  if (!p.ok) return falha(p.erro === "grande" ? 413 : p.erro === "tipo" ? 415 : 400, p.erro, p.mensagem);
+  const capa: CapaDoCard = { sha: p.sha256, l: p.largura, a: p.altura };
+  try {
+    return await getBanco().asUser(ctx, async (tx) => {
+      await tx.execute(sql`delete from maestro.card_capas where card_id = ${id}`);
+      await tx.execute(
+        sql`insert into maestro.card_capas (org_id, card_id, sha256, largura, altura, webp) values (${ctx.orgId}, ${id}, ${p.sha256}, ${p.largura}, ${p.altura}, ${p.webp})`,
+      );
+      const [l] = (await tx.execute(
+        sql`select id, dados, versao, versoes from maestro.card_mudar(${id}, ${JSON.stringify({ capa })}::jsonb)`,
+      )) as unknown as Linha[];
+      return { ok: true as const, card: paraCard(l) };
+    });
+  } catch (e) {
+    return traduzir(e);
+  }
+}
+
+/** Tira a capa (bytes e referência). Sem capa, devolve o card como está. */
+export async function tirarCapa(ctx: Contexto, id: unknown): Promise<Res<{ card: CardQ }>> {
+  if (typeof id !== "string" || !ID_CARD.test(id)) return falha(400, "formato", "Número de card inválido.");
+  try {
+    return await getBanco().asUser(ctx, async (tx) => {
+      await tx.execute(sql`delete from maestro.card_capas where card_id = ${id}`);
+      const [l] = (await tx.execute(
+        sql`select id, dados, versao, versoes from maestro.card_mudar(${id}, ${JSON.stringify({ capa: null })}::jsonb)`,
+      )) as unknown as Linha[];
+      return { ok: true as const, card: paraCard(l) };
+    });
+  } catch (e) {
+    return traduzir(e);
+  }
+}
+
+/** Os bytes da capa, como a pessoa: só com o card e o sha256 certos e o card no alcance (porta `maestro.card_capa`). */
+export async function lerCapa(ctx: Contexto, id: string, sha: string): Promise<Buffer | null> {
+  if (!ID_CARD.test(id) || !SHA.test(sha)) return null;
+  return getBanco().asUser(ctx, async (tx) => {
+    const [r] = (await tx.execute(sql`select maestro.card_capa(${id}, ${sha}) as bytes`)) as unknown as { bytes: Buffer | null }[];
+    return r?.bytes ? Buffer.from(r.bytes) : null;
+  });
 }
 
 /** Pessoas, clientes e projetos que o Quadro mostra nos filtros e na ficha. */

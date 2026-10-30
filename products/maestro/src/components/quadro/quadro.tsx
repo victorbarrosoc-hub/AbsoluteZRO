@@ -23,7 +23,8 @@ import { USO_DO_PAPEL, colunasVivas, descricaoDaColuna, moverNaLista, nomeDaColu
 import type { Referencias } from "@/lib/quadro/servidor";
 import { Icone } from "@/components/icones";
 import { Ficha } from "./ficha";
-import { AvatarPessoa, ChipPrazo, ChipPrioridade, MoverPara } from "./pecas";
+import { AvatarPessoa, ChipPrazo, ChipPrioridade, ImagemDoCard, MarcaCliente, MoverPara, Realce, SeloDoCard } from "./pecas";
+import { imagemDoCard, rotuloDoSelo, termosDaBusca, type Selo } from "@/lib/quadro/selos";
 import { useQuadro, type Inicial } from "./estado";
 import { useFlip } from "./flip";
 import { useGestosCelular } from "./gestos";
@@ -65,7 +66,7 @@ function comecarArrasteDeColuna(e: React.DragEvent<HTMLElement>, nome: string): 
 
 export function Quadro(props: Props) {
   const q = useQuadro(props);
-  const { cards, mudar, criar, apagar, aviso, avisar, fecharAviso, colunas } = q;
+  const { cards, selos, mudar, criar, apagar, aviso, avisar, fecharAviso, colunas } = q;
   const { pessoas, clientes, projetos, eu, podeEscrever, podeEditarColunas } = props;
   const vivas = useMemo(() => colunasVivas(colunas), [colunas]);
   const ordemColunas = useMemo(() => vivas.map((c) => c.id), [vivas]);
@@ -117,12 +118,27 @@ export function Quadro(props: Props) {
   }, [lista, ordemColunas]);
   const visiveis = useMemo(() => {
     const m = {} as Record<ColunaId, CardQ[]>;
-    for (const k of ordemColunas) m[k] = (porColuna[k] ?? []).filter((x) => passaFiltro(x, filtro, eu, nomeCliente));
+    for (const k of ordemColunas) m[k] = (porColuna[k] ?? []).filter((x) => passaFiltro(x, filtro, eu, nomeCliente, codigoProjeto));
     return m;
-  }, [porColuna, ordemColunas, filtro, eu, nomeCliente]);
+  }, [porColuna, ordemColunas, filtro, eu, nomeCliente, codigoProjeto]);
   const contagem = useMemo(() => Object.fromEntries(ordemColunas.map((k) => [k, porColuna[k]?.length ?? 0])), [ordemColunas, porColuna]);
   const filtrando = filtro.busca.trim() !== "" || filtro.cliente !== "todos" || filtro.resp !== "todos";
   const totalVisivel = ordemColunas.reduce((n, k) => n + (visiveis[k]?.length ?? 0), 0);
+  // os termos da busca, para o realce no card (a mesma string = o card não desenha de novo)
+  const realce = useMemo(() => termosDaBusca(filtro.busca).join(" "), [filtro.busca]);
+  const busca = useRef<HTMLInputElement>(null);
+  // "/" leva à busca (fora de campo de texto), como no Finder e nos apps da Apple na web
+  useEffect(() => {
+    const aoTeclar = (e: KeyboardEvent) => {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const alvo = e.target as HTMLElement | null;
+      if (alvo?.closest("input, textarea, select, [contenteditable='true'], [role='dialog']")) return;
+      e.preventDefault();
+      busca.current?.focus();
+    };
+    window.addEventListener("keydown", aoTeclar);
+    return () => window.removeEventListener("keydown", aoTeclar);
+  }, []);
 
   // o endereço acompanha a ficha aberta (link direto para um card)
   useEffect(() => {
@@ -296,7 +312,19 @@ export function Quadro(props: Props) {
             <label className="q-busca">
               <Icone nome="busca" size={16} />
               <span className="sr-only">Buscar</span>
-              <input type="search" placeholder="Buscar" value={filtro.busca} onChange={(e) => setFiltro({ ...filtro, busca: e.currentTarget.value })} />
+              <input
+                ref={busca}
+                type="search"
+                placeholder="Buscar job, cliente ou projeto"
+                value={filtro.busca}
+                onChange={(e) => setFiltro({ ...filtro, busca: e.currentTarget.value })}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape" && filtro.busca) {
+                    e.preventDefault();
+                    setFiltro({ ...filtro, busca: "" });
+                  }
+                }}
+              />
             </label>
             <label className="q-filtro">
               <span className="sr-only">Cliente</span>
@@ -337,8 +365,8 @@ export function Quadro(props: Props) {
               </button>
             ) : null}
             {filtrando ? (
-              <span className="q-contagem" aria-live="polite">
-                {totalVisivel === 1 ? "1 card" : `${totalVisivel} cards`}
+              <span className="q-contagem" aria-live="polite" data-zero={totalVisivel === 0 || undefined}>
+                {totalVisivel === 0 ? "Nenhum card" : totalVisivel === 1 ? "1 card" : `${totalVisivel} cards`}
               </span>
             ) : null}
             {podeEditarColunas ? (
@@ -390,9 +418,22 @@ export function Quadro(props: Props) {
             )}
           </nav>
 
+          {filtrando && totalVisivel === 0 ? (
+            <section className="q-nada" aria-live="polite">
+              <span className="q-nada__icone" aria-hidden="true">
+                <Icone nome="busca" size={20} />
+              </span>
+              <p>{filtro.busca.trim() ? `Nada com “${filtro.busca.trim()}”.` : "Nada com este filtro."}</p>
+              <button type="button" className="glass-btn glass-btn--sm" onClick={() => setFiltro(FILTRO_VAZIO)}>
+                {filtro.busca.trim() ? "Limpar busca" : "Limpar filtros"}
+              </button>
+            </section>
+          ) : null}
+
           <div
             ref={quadro}
             className={`q-quadro${alvoColuna ? " q-quadro--colunas" : ""}`}
+            data-filtrando={filtrando || undefined}
             onDragLeave={(e) => {
               if (!arrasteColuna.current || e.currentTarget.contains(e.relatedTarget as Node)) return;
               // o Safari manda dragleave sem relatedTarget ao passar de um filho a outro: só vale saindo da área
@@ -410,6 +451,7 @@ export function Quadro(props: Props) {
                 <section
                   key={col.id}
                   className={`q-col${col.id === colMovel ? " on" : ""}${alvoColuna?.id === col.id ? " q-col--erguida" : ""}`}
+                  data-vazia={(filtrando && !l.length) || undefined}
                   data-col={col.id}
                   data-cor={col.cor}
                   data-marca={marcaColuna?.col === col.id ? marcaColuna.lado : undefined}
@@ -446,6 +488,8 @@ export function Quadro(props: Props) {
                           cliente={nomeCliente(c.dados.cliente)}
                           projeto={codigoProjeto(c.dados.projeto)}
                           resp={pessoa(c.dados.resp)}
+                          selo={selos[c.id]}
+                          realce={realce}
                           podeEscrever={podeEscrever}
                           abrir={abrirCard}
                           passo={passoDoCard}
@@ -471,6 +515,8 @@ export function Quadro(props: Props) {
           refs={refs}
           colunas={vivas}
           podeEscrever={podeEscrever}
+          selo={"id" in ficha ? selos[ficha.id] : undefined}
+          adotar={q.adotar}
           mudar={mudar}
           criar={criar}
           apagar={(id) => {
@@ -514,6 +560,10 @@ type PropsCartao = {
   cliente: string;
   projeto: string;
   resp: Referencias["pessoas"][number] | null;
+  /** A peça e o cliente (src/lib/quadro/selos.ts); o mesmo objeto enquanto nada muda. */
+  selo: Selo | undefined;
+  /** Os termos da busca separados por espaço ("" = sem realce). */
+  realce: string;
   podeEscrever: boolean;
   abrir: (id: string) => void;
   passo: (id: string) => void;
@@ -524,6 +574,8 @@ const mesmoCartao = (a: PropsCartao, b: PropsCartao) =>
   a.c === b.c &&
   a.cliente === b.cliente &&
   a.projeto === b.projeto &&
+  a.selo === b.selo &&
+  a.realce === b.realce &&
   a.podeEscrever === b.podeEscrever &&
   a.abrir === b.abrir &&
   a.passo === b.passo &&
@@ -534,15 +586,20 @@ const mesmoCartao = (a: PropsCartao, b: PropsCartao) =>
  * Um card. Só desenha de novo quando os dados dele mudam: arrastar, a volta de 5 s, a ficha e a página renovada pelo
  * servidor depois de gravar não redesenham os outros.
  */
-const Cartao = memo(function Cartao({ c, cliente, projeto, resp, podeEscrever, abrir, passo, mais }: PropsCartao) {
+const Cartao = memo(function Cartao({ c, cliente, projeto, resp, selo, realce, podeEscrever, abrir, passo, mais }: PropsCartao) {
   const d = c.dados;
   const px = podeEscrever ? proximoPasso(d)?.principal : null;
+  const imagem = imagemDoCard(c.id, d.capa, selo);
+  const termos = realce ? realce.split(" ") : [];
+  const dica = rotuloDoSelo(selo)?.dica;
   return (
-    <article className={`q-card${d.prioridade === "alta" ? " q-card--alta" : ""}`} data-card={c.id} data-col={d.coluna}>
-      <button type="button" className="q-card__abrir" onClick={() => abrir(c.id)} aria-label={`Abrir ${d.tema}`} />
+    <article className={`q-card${d.prioridade === "alta" ? " q-card--alta" : ""}${imagem ? " q-card--imagem" : ""}`} data-card={c.id} data-col={d.coluna}>
+      <button type="button" className="q-card__abrir" onClick={() => abrir(c.id)} aria-label={`Abrir ${[d.tema, cliente, dica].filter(Boolean).join(", ")}`} />
+      {imagem ? <ImagemDoCard key={imagem.src} src={imagem.src} origem={imagem.origem} /> : null}
       <div className="q-card__topo">
-        <span className="q-card__cliente" title={projeto ? `${cliente || "Sem cliente"} · ${projeto}` : undefined}>
-          {cliente || "Sem cliente"}
+        <span className="q-card__cliente" title={projeto ? `${cliente || "Sem cliente"} · ${projeto}` : cliente || undefined}>
+          <MarcaCliente id={d.cliente} nome={cliente} />
+          <span className="q-card__cliente-nome">{cliente ? <Realce texto={cliente} termos={termos} /> : "Sem cliente"}</span>
         </span>
         {podeEscrever ? (
           <button type="button" className="q-icone-btn q-card__mais" aria-label="Mover para…" title="Mover para…" onClick={() => mais(c.id)}>
@@ -550,11 +607,14 @@ const Cartao = memo(function Cartao({ c, cliente, projeto, resp, podeEscrever, a
           </button>
         ) : null}
       </div>
-      <h3 className="q-card__tema">{d.tema}</h3>
-      {d.prazo || d.prioridade === "alta" || resp ? (
+      <h3 className="q-card__tema">
+        <Realce texto={d.tema} termos={termos} />
+      </h3>
+      {d.prazo || d.prioridade === "alta" || resp || selo ? (
         <div className="q-card__meta">
           <ChipPrazo d={d} />
           <ChipPrioridade p={d.prioridade} />
+          <SeloDoCard selo={selo} aoTocar={() => abrir(c.id)} />
           {resp ? (
             <span className="q-card__fim">
               <AvatarPessoa pessoa={resp} />

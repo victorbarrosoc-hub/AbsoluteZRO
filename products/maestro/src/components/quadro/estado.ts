@@ -13,6 +13,7 @@ import type { Referencias } from "@/lib/quadro/servidor";
 import { novoId, type CampoEditavel, type CardQ, type ColunaId, type DadosCard } from "@/lib/quadro/metodo";
 import { aplicarOrdem, colunasPadrao, colunasVivas, nomeDaColuna, type Coluna, type CorColuna } from "@/lib/quadro/colunas";
 import { renovarSecoes } from "@/lib/quadro/renovar";
+import { mesmoSelo, type Selo, type Selos } from "@/lib/quadro/selos";
 
 export type Inicial = Referencias & {
   cards: CardQ[];
@@ -21,6 +22,8 @@ export type Inicial = Referencias & {
   podeEscrever: boolean;
   colunas: Coluna[];
   podeEditarColunas: boolean;
+  /** A peça e o cliente de cada card (src/lib/quadro/selos.ts); o poll traz o que mudou. */
+  selos: Selos;
 };
 export type Aviso = { id: number; texto: string; desfazer?: () => void };
 type Resposta = { ok: true; card: CardQ } | { ok: false; status: number; erro: string; mensagem: string; card?: CardQ };
@@ -77,6 +80,8 @@ const porId = (l: CardQ[]) => Object.fromEntries(l.map((c) => [c.id, c])) as Rec
 export function useQuadro(ini: Inicial) {
   const [cards, setCards] = useState<Record<string, CardQ>>(() => porId(ini.cards));
   const [colunas, setColunas] = useState<Coluna[]>(() => (ini.colunas.length ? ini.colunas : colunasPadrao()));
+  const [selos, setSelos] = useState<Selos>(() => ini.selos ?? {});
+  const selosAgora = useRef(selos);
   const [aviso, setAviso] = useState<Aviso | null>(null);
   const cursor = useRef(ini.cursor);
   const emVoo = useRef(new Map<string, number>());
@@ -87,6 +92,7 @@ export function useQuadro(ini: Inicial) {
   useEffect(() => {
     atual.current = cards;
     colunasAgora.current = colunas;
+    selosAgora.current = selos;
   });
 
   // depois de gravar (com uma folga, para juntar várias mudanças), as outras seções guardadas no navegador caducam
@@ -136,6 +142,21 @@ export function useQuadro(ini: Inicial) {
     });
   }, []);
 
+  /** Junta os selos que chegaram (null = saiu). O que não mudou fica o mesmo objeto: o card não desenha à toa. */
+  const juntarSelos = useCallback((chegaram: Record<string, Selo | null>) => {
+    const agora = selosAgora.current;
+    const mudou = Object.entries(chegaram).filter(([id, s]) => !mesmoSelo(agora[id], s ?? undefined));
+    if (!mudou.length) return;
+    setSelos((m) => {
+      const n = { ...m };
+      for (const [id, s] of mudou) {
+        if (s) n[id] = s;
+        else delete n[id];
+      }
+      return n;
+    });
+  }, []);
+
   // tempo real simples: pergunta a cada 5 s com a aba à vista, e logo que a aba volta
   useEffect(() => {
     let parado = false;
@@ -149,9 +170,10 @@ export function useQuadro(ini: Inicial) {
         try {
           const r = await fetch(`${ENDERECO}?desde=${encodeURIComponent(cursor.current)}`, { cache: "no-store" });
           if (r.ok) {
-            const d = (await r.json()) as { cards: CardQ[]; cursor: string; colunas?: Coluna[] };
+            const d = (await r.json()) as { cards: CardQ[]; cursor: string; colunas?: Coluna[]; selos?: Record<string, Selo | null> };
             cursor.current = d.cursor;
             if (d.cards.length) juntar(d.cards);
+            if (d.selos) juntarSelos(d.selos);
             const novas = d.colunas;
             // as mesmas colunas: nem agenda render (a cada 5 s o Quadro inteiro desenharia e mediria de novo)
             if (novas?.length && colunasEmVoo.current === 0 && !mesmasColunas(colunasAgora.current, novas)) setColunas(novas);
@@ -176,7 +198,7 @@ export function useQuadro(ini: Inicial) {
       clearTimeout(t);
       document.removeEventListener("visibilitychange", aoVoltar);
     };
-  }, [juntar]);
+  }, [juntar, juntarSelos]);
 
   /** Muda campos de um card (otimista). Devolve false se o banco recusou. */
   const mudar = useCallback(
@@ -394,8 +416,19 @@ export function useQuadro(ini: Inicial) {
     if (r.ok) avisar("Colunas do método de volta.");
   }, [operarColunas, avisar]);
 
+  /** O card que voltou de outra gravação (a capa): entra como veio do banco. */
+  const adotar = useCallback(
+    (c: CardQ) => {
+      por(c);
+      renovar();
+    },
+    [por, renovar],
+  );
+
   return {
     cards,
+    selos,
+    adotar,
     mudar,
     criar,
     apagar,
