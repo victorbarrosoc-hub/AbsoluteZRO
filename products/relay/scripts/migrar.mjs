@@ -25,7 +25,9 @@ export async function migrar(url, { pasta = PASTA, log = () => {} } = {}) {
   const sql = postgres(url, { max: 1, prepare: false, onnotice: () => {} })
   const feitas = []
   try {
-    await sql`create schema if not exists relay`
+    // no Supabase o schema nasce com o administrador (authorization relay); `create schema if not exists` pediria
+    // permissão de criar no banco inteiro mesmo com ele já existindo
+    if (!(await sql`select 1 from pg_namespace where nspname = 'relay'`).length) await sql`create schema relay`
     await sql`create table if not exists relay.migracoes (nome text primary key, sha text not null, aplicada timestamptz not null default now())`
     const aplicadas = new Map((await sql`select nome, sha from relay.migracoes`).map((r) => [r.nome, r.sha]))
     for (const m of migracoes(pasta)) {

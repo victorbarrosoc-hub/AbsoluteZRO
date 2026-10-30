@@ -3043,3 +3043,9 @@ produção (deploy só com autorização).
 - Chromium com o banco: o histórico e o preset de antes da nuvem sobem; o segundo aparelho da mesma pessoa vê tudo; a
   colega da mesma organização vê o projeto e o preset liberados como "Da equipe" (só leitura) e não vê o histórico;
   apagar num aparelho some no outro. Relay `npm test`: 101/101.
+- Produção (autorizado pelo titular, 30/10/2026), no Supabase AbsoluteZRO-SP: papel `relay` (login, dono do schema,
+  limite de 20 conexões), `relay_app` (sem login), schema `relay authorization relay` e `0000_fundacao.sql` aplicada
+  como `relay` (registrada em `relay.migracoes` com o sha256 do arquivo). Conferido: as três tabelas são do `relay`, com
+  RLS forçado; `anon` e `authenticated` não leem nada; `relay_app` lê. `RELAY_DATABASE_URL` (sensível, só produção do
+  projeto Vercel `relay`, pooler de transação). A migração perdeu o `create schema if not exists` antes de ir para a
+  produção: o papel `relay` não cria schema no banco (o migrador só cria quando falta, no Postgres local).

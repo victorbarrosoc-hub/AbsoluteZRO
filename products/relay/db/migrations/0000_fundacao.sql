@@ -1,6 +1,7 @@
 -- Relay · 0000 · fundação do schema `relay` (painel na conta, pedido do titular, 30/10/2026).
 -- Roda só no banco do Relay (Supabase da Absolute ZRO, schema `relay`), nunca no schema `zro` nem nos dos outros apps
--- (ADR 0013). Quem roda: scripts/migrar.mjs, com o papel dono do schema.
+-- (ADR 0013). Quem roda: scripts/migrar.mjs, com o papel dono do schema. O schema nasce antes, com o administrador
+-- (`create schema relay authorization relay`): o papel `relay` não cria nada fora dele.
 --
 -- Papéis (mesmo desenho do Maestro, products/maestro/drizzle/0000_fundacao.sql):
 --   dono das tabelas = quem roda as migrações (no Supabase: o papel `relay`, com login, só no servidor do Relay).
@@ -12,8 +13,6 @@
 -- O que guarda: só nomes e números do que a pessoa converteu (nunca o arquivo), os projetos e os presets da pessoa.
 -- Projetos e presets são da pessoa; a equipe (mesma organização) vê e usa quando quem criou permite (`equipe`), sem
 -- poder mudar. As conversões são sempre só de quem converteu.
-
-create schema if not exists relay;
 
 do $$
 begin
