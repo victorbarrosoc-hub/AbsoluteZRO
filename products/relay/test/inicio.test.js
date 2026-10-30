@@ -13,6 +13,7 @@ import { planejar } from '../src/plano.js'
 import { caber, DEMO, demonstrar, ficha, LIMITES_MB, MASTER } from '../app/vitrine.js'
 import { servir } from '../scripts/servir.mjs'
 import { publicar } from '../scripts/publicar-site.mjs'
+import { SCRIPT_SET } from '../app/set.js'
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
 
@@ -113,9 +114,18 @@ describe('página inicial no Chromium', () => {
   const abrir = async (opcoes = {}, antes = null) => {
     const ctx = await navegador.newContext({ reducedMotion: 'reduce', ...opcoes })
     if (antes) await ctx.addInitScript(antes)
+    // o widget do Set vem de absolutezro.com: aqui, um <zro-set> mudo, para o teste não depender da rede nem do
+    // tempo que ele leva para chamar o /api/zro/set (o 401 do repasse falso virava erro no console)
+    await ctx.route(SCRIPT_SET, (r) =>
+      r.fulfill({
+        contentType: 'text/javascript',
+        headers: { 'Access-Control-Allow-Origin': '*', 'Cross-Origin-Resource-Policy': 'cross-origin' },
+        body: "customElements.define('zro-set', class extends HTMLElement {})",
+      }),
+    )
     const p = await ctx.newPage()
     p.on('pageerror', (e) => erros.push(e.message))
-    p.on('console', (m) => m.type() === 'error' && !/absolutezro\.com\/set/.test(m.text()) && erros.push(m.text()))
+    p.on('console', (m) => m.type() === 'error' && erros.push(m.text()))
     await p.goto(`${base}/`)
     await p.waitForSelector('.destino')
     return { ctx, p }
@@ -134,8 +144,10 @@ describe('página inicial no Chromium', () => {
     // todas as imagens visíveis carregaram e todo botão/link tem nome
     await p.evaluate(async () => {
       for (let y = 0; y < document.body.scrollHeight; y += 500) (scrollTo(0, y), await new Promise((r) => setTimeout(r, 20)))
+      // a rolagem rápida pode passar por uma imagem preguiçosa sem o navegador pedir: aqui pede todas as visíveis
+      for (const i of document.images) if (i.offsetParent) i.loading = 'eager'
     })
-    await p.waitForFunction(() => [...document.images].filter((i) => i.offsetParent).every((i) => i.complete && i.naturalWidth > 0), null, { timeout: 15_000 })
+    await p.waitForFunction(() => [...document.images].filter((i) => i.offsetParent).every((i) => i.complete && i.naturalWidth > 0), null, { timeout: 30_000 })
     const semNome = await p.evaluate(
       () =>
         [...document.querySelectorAll('a, button, input')].filter(
@@ -224,6 +236,7 @@ describe('página inicial no Chromium', () => {
     assert.equal(await p.isVisible('[data-conta-acao]'), false)
     await ctx.close()
     conta = 'fora'
+    assert.deepEqual(erros, [])
   })
 
   test('iPhone (390 px) e 1440 px: nada rola para o lado, com e sem movimento', async () => {

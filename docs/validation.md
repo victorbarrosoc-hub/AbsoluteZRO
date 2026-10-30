@@ -3064,3 +3064,8 @@ produção (deploy só com autorização).
   Revela e NOSSOM saem da página e o cartão da cor da Revela só nasce com a flag ligada. O teste publica o site como a
   produção (`publicar`, sem a flag) e confere o HTML e a página renderizada: nada de AEON, Revela, NOSSOM ou "beta".
 - Relay `npm test`: **114/114**. Raiz: `lint`, `format:check` e `scan-secrets` ok. Não conferido aqui: iPhone de verdade.
+- Falha intermitente da suíte (o último teste da página no Chromium): com a conta "dentro", o topo baixava o widget do
+  Set de verdade (absolutezro.com), que chamava o repasse falso e o 401 virava erro no console, conforme a rede e a
+  carga. O teste agora serve um `<zro-set>` mudo no lugar do widget (sem rede), confere os erros no próprio teste da
+  conta e pede as imagens preguiçosas antes de conferir. Seis rodadas paralelas sem falha; `npm test` duas vezes
+  seguidas: 114/114.
