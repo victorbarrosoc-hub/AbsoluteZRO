@@ -88,8 +88,18 @@ if (falhou) parar('NADA FOI GERADO. Conserte as travas acima.');
 /* Só com CARRO_DATABASE_URL: aplica as migrações de db/migrations ANTES de
    gerar qualquer coisa. Migração recusada (aplicada e editada, fora de
    ordem, erro no SQL) reprova o build — site novo com banco velho não sobe.
-   Sem a variável, segue sem banco, e as rotas de dados respondem 503. */
-if (String(process.env.CARRO_DATABASE_URL || '').trim()) {
+   Sem a variável, segue sem banco, e as rotas de dados respondem 503.
+   ⚠️ SÓ A PRODUÇÃO MIGRA (30/out). A prévia de um branch tem a mesma
+   CARRO_DATABASE_URL e aplicou uma migração ainda em revisão no banco real:
+   dali em diante todo build sem aquele arquivo (a main inclusive) era
+   recusado ("aplicada ... sumiu da pasta"). Na prévia (VERCEL_ENV diferente
+   de production) o banco não é tocado; quem migra é o deploy da main. */
+const AMBIENTE = String(process.env.VERCEL_ENV || '').trim();
+const MIGRA = !AMBIENTE || AMBIENTE === 'production';
+if (String(process.env.CARRO_DATABASE_URL || '').trim() && !MIGRA) {
+  console.log('\nBANCO');
+  console.log('  · prévia (' + AMBIENTE + '): o banco NÃO é migrado — só o deploy de produção migra');
+} else if (String(process.env.CARRO_DATABASE_URL || '').trim()) {
   console.log('\nBANCO');
   try {
     ok(node(['db/migrar.js']).trim());
