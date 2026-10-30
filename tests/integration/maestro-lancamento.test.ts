@@ -1,6 +1,6 @@
-// Lançamento do Maestro em Beta (migration 0027, ADR 0027): o gate abre para qualquer conta, em todos os
-// canais; o grátis, o Completo e o Pro trazem o Maestro inteiro; o sinal da marca própria nunca vem do grátis; e
-// rodar a migration de novo não duplica nada.
+// Lançamento do Maestro (migration 0027, ADR 0027; fora do Beta na 0039, titular 30/10/2026): o gate abre para
+// qualquer conta na web, na API e no login único; o grátis, o Completo e o Pro trazem o Maestro inteiro; o sinal da
+// marca própria nunca vem do grátis; e rodar as migrations de novo não duplica nada.
 import { readFileSync } from 'node:fs'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { checkEntitlement, featureFlagsFor, productAccessFor, releaseAllows, releaseState } from '@zro/billing'
@@ -17,27 +17,32 @@ afterAll(() => db.close())
 
 const sys = <T>(fn: (tx: Tx) => Promise<T>) => db.asSystem('teste', fn)
 const MIGRATION = readFileSync(new URL('../../infra/migrations/0027_maestro_lancamento.sql', import.meta.url), 'utf8')
+const NO_AR = readFileSync(new URL('../../infra/migrations/0039_maestro_relay_no_ar.sql', import.meta.url), 'utf8')
 const CANAIS = ['web', 'desktop', 'api', 'download', 'sso'] as const
 
-describe('Maestro em Beta (0027)', () => {
-  it('catálogo e gate: beta, endereço público, public_beta com web, api e sso abertos a qualquer um (computador e download ficam para depois)', async () => {
+describe('Maestro no ar (0027 + 0039)', () => {
+  it('catálogo e gate: active, endereço público, released com web, api e sso abertos a qualquer um (computador e download ficam para depois)', async () => {
     const [p] = await db.sql`select stage, external_url, sso_start_url, description from zro.products where id = 'maestro'`
     expect(p).toMatchObject({
-      stage: 'beta',
+      stage: 'active',
       external_url: 'https://maestro.absolutezro.com',
       sso_start_url: 'https://maestro.absolutezro.com/api/zro/entrar',
     })
     expect(p!.description).toMatch(/^A gestão da sua produtora/)
     expect(p!.description).not.toMatch(/desenvolvimento|fechado/i)
     const s = await sys((tx) => releaseState(tx, { fresh: true }))
-    expect(s.maestro).toMatchObject({ state: 'public_beta', open: true, channels: { web: true, desktop: false, api: true, download: false, sso: true } })
+    expect(s.maestro).toMatchObject({ state: 'released', open: true, channels: { web: true, desktop: false, api: true, download: false, sso: true } })
+    // o Relay também está no ar, só no site
+    const [r] = await db.sql`select stage from zro.products where id = 'relay'`
+    expect(r).toMatchObject({ stage: 'active' })
+    expect(s.relay).toMatchObject({ state: 'released', open: true, channels: { web: true, desktop: false, api: false, download: false, sso: false } })
     for (const ch of CANAIS) expect(await sys((tx) => releaseAllows(tx, 'maestro', null, ch)), ch).toBe(ch !== 'desktop' && ch !== 'download')
   })
 
   it('conta comum, só com o grátis e fora de qualquer lista: contratada, autorizada e no login único', async () => {
     const o = await newOrgWithOwner(db, 'maestro-lanc', { freePlan: true })
     const access = await db.asUser({ userId: o.userId, orgId: o.orgId }, (tx) => productAccessFor(tx, o.orgId))
-    expect(access.find((a) => a.productId === 'maestro')).toMatchObject({ access: 'contracted', stage: 'beta' })
+    expect(access.find((a) => a.productId === 'maestro')).toMatchObject({ access: 'contracted', stage: 'active' })
     await expect(authorize(db, o.auth, { product: { id: 'maestro' } })).resolves.toMatchObject({ orgId: o.orgId })
     const c = await sys((tx) => checkEntitlement(tx, o.orgId, 'maestro', null, { who: { userId: o.userId, channel: 'sso' } }))
     expect(c.ok).toBe(true)
@@ -85,7 +90,7 @@ describe('Maestro em Beta (0027)', () => {
     )
   })
 
-  it('backfill idempotente: conta de antes do lançamento ganha o Maestro uma vez; rodar a 0027 de novo não muda nada', async () => {
+  it('backfill idempotente: conta de antes do lançamento ganha o Maestro uma vez; rodar a 0027 e a 0039 de novo não muda nada', async () => {
     const o = await newOrgWithOwner(db, 'maestro-lanc-antiga', { freePlan: true })
     // como uma conta criada antes da 0027: sem o entitlement do Maestro
     await sys((tx) => tx`delete from zro.entitlements where org_id = ${o.orgId} and product_id = 'maestro'`)
@@ -98,14 +103,20 @@ describe('Maestro em Beta (0027)', () => {
     }
     const antes = await contar()
     expect(antes.ents).toBe(0)
+    // na ordem do runner: a 0027 (volta ao Beta da época) e depois a 0039 (no ar)
     await db.sql.unsafe(MIGRATION)
+    await db.sql.unsafe(NO_AR)
     const depois = await contar()
-    expect(depois).toEqual({ ...antes, ents: 1 })
-    await db.sql.unsafe(MIGRATION)
+    // a ida e volta do estado deixa duas linhas de auditoria (0027 e 0039); o resto, só o entitlement novo
+    expect(depois).toEqual({ ...antes, ents: 1, auditoria: antes.auditoria + 2 })
+    const [p] = await db.sql`select stage from zro.products where id = 'maestro'`
+    expect(p).toMatchObject({ stage: 'active' })
+    // a 0039 sozinha, de novo: nada muda, nem auditoria
+    await db.sql.unsafe(NO_AR)
     expect(await contar()).toEqual(depois)
     const [e] = await db.sql`select features, limits, source from zro.entitlements where org_id = ${o.orgId} and product_id = 'maestro' and status = 'active'`
     expect(e).toMatchObject({ features: null, limits: { 'zro.ai_credits': 50 }, source: 'subscription' })
     const s = await sys((tx) => releaseState(tx, { fresh: true }))
-    expect(s.maestro).toMatchObject({ state: 'public_beta', open: true })
+    expect(s.maestro).toMatchObject({ state: 'released', open: true })
   })
 })

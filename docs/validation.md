@@ -80,6 +80,12 @@ navegador com o computador fechado. Bancos e portas próprios: `zro_relay_test`,
 | `node scripts/scan-secrets.mjs`              | nenhum segredo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | Não verificado (o lado que ainda não existe) | as rotas `/api/zro/relay/*` do SOBEDESCE, o tipo `relay` na fila e o executor no app de computador (conversão e MD5 de verdade); metadados reais do Drive (o Google é interceptado com `videoMediaMetadata` fixo); um iPhone de verdade                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
+## Subdomínios do Carro e do SOBEDESCE (30/10/2026)
+
+- HUB `npm test` **392/392** com a migração 0037 (retornos novos, idempotente; numa rodada o `set.test.ts` falhou e passou
+  sozinho e na rodada seguinte); `npm run lint` limpo. Carro `npm run test:api` **47/47** (origem `carro.absolutezro.com`
+  aceita). SOBEDESCE: só a lista de origens do site mudou (`origensDoSite`).
+
 ## Set: adicionar pelo @ no Online (30/10/2026)
 
 Achar a pessoa pelo @, adicionar, ver quando está online e abrir a conversa, tudo no Online do `<zro-set>` (antes
@@ -98,6 +104,21 @@ resposta, sem e-mail), não pede nem avisa ninguém, diz enviado/recebido/contat
 pessoa; o pedido pelo @ aparece para a outra pessoa no topo do Online (número na aba), ela aceita ali, os dois se veem
 online ("na Absolute ZRO"/"no Maestro") e o toque na pessoa abre a conversa; já contatos = 409; o limite de 20 por dia
 aparece no campo (repetir o enviado e aceitar o recebido não gastam); Esc fecha só o campo.
+
+## Divulgação só do que está no ar; Maestro e Relay no ar (30/10/2026)
+
+Banco local `zro_eco_a20d` (todas as migrations + 0039), testes em `zro_eco_a20d_test` e E2E em
+`zro_eco_a20d_e2e_test` (porta 3473). Máquina carregada (load ~25 em 4 núcleos, disco quase cheio).
+
+| Verificação                                                    | Resultado                                                                                    |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| lint, `format:check`, `typecheck`                              | ok                                                                                           |
+| `npm test`                                                     | 394/396; as 2 do `stripe.test.ts` caíram por disco cheio (53100) e passaram de novo sozinhas |
+| `divulgacao.test.ts` (novo), `maestro-lancamento`, `downloads` | ok: só os cinco no ar divulgados; abrir o gate do NOSSOM o divulga; 0027 + 0039 idempotentes |
+| Maestro `tests/lancamento.test.mts`                            | 5/5 (descrição sem "Beta")                                                                   |
+| E2E `hub.spec.ts`, `home-celular.spec.ts`, `z-entrada.spec.ts` | ok (novo: páginas públicas sem AEON/Revela/NOSSOM/Carro em 1440 e 390 px; painel com Abrir)  |
+| E2E `a11y.spec.ts`                                             | públicas ok; "área logada" estourou os 120 s pela carga da máquina (páginas não mudaram)     |
+| Capturas antes/depois (computador e iPhone, claro)             | fora do repositório (scratchpad da sessão)                                                   |
 
 ## Integração: a Z discreta e o Set em todas as plataformas (30/10/2026)
 
@@ -3201,3 +3222,14 @@ administração e gestão pelo RLS).
   (guardado na memória). No Chrome de verdade, a pasta escolhida fica guardada; não conferido aqui com um seletor real.
 - SOBEDESCE `test/relay.test.js`: `sobedesce://looks` e `?trocar=1` aceitos; com caminho, outro parâmetro ou outro
   host, recusados. O Comparar com as duas pastas não foi exercitado com o app aberto (falta o desktop rodando aqui).
+
+## NOSSOM: falhas da GPU com motivo e Safari guardando o áudio (30/10/2026)
+
+- Primeiros pedidos reais no endpoint `nossom-v2` falharam em 50–166 ms, antes do processamento: o worker só dizia
+  "restoration failed". Agora ele devolve e registra um motivo curto e sem URL (mensagens próprias, como
+  `Source download failed (HTTP 400)`, ou só o tipo da exceção), e o site grava o motivo no log da Vercel. Causa
+  provável da primeira falha: `NOSSOM_STORAGE_ORIGIN` apontando para o banco anterior ao AbsoluteZRO-SP.
+- Safari recusava guardar o áudio importado ("Error preparing Blob/File data to be stored in object store"):
+  `saveProject` tenta de novo com os bytes em memória e, se ainda falhar, explica (espaço em disco, arquivo só no iCloud).
+- Worker `test_handler.py` 14/14 (motivo sem URL), NOSSOM `npm test` 115/115, `typecheck`, `lint`, `scan-secrets`.
+- Não validado: o Safari do titular com o arquivo que falhou.

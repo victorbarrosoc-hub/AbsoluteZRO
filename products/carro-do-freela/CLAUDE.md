@@ -141,6 +141,15 @@ repasse é `api/zro/set.js` (miolo em `_zro.js`, com `sessaoConferida`: claim re
 `zro.set` e, se o HUB recusar, refaz sem ele (`sem_set`) antes do `basico`. Um 401 do Set NÃO apaga a sessão. A folha
 veste os tokens dos dois temas (`--zro-set-*` no template). ⚠️ `var`/`function` no topo (o TDZ de 19/out · 2).
 
+## 30/out — ⚠️ a prévia migrou o banco de produção (e só a produção migra desde então)
+
+O build da prévia do branch `claude/carro-no-ar` rodou `db/migrar.js`: a Vercel dá a MESMA `CARRO_DATABASE_URL` à
+prévia, e a `0001_agenda_e_pessoas` (ainda em revisão) entrou no banco real. Dali em diante todo build sem o arquivo
+(a `main`, o PR #68) era recusado com "migração aplicada 0001_agenda_e_pessoas sumiu da pasta". Conserto: a 0001
+foi para a `main` **byte a byte como foi aplicada** (sha256 `c02a49bf…`; nada nela expõe dado: tabela nova, colunas
+novas e uma função só do papel do app), e o `vercel-build` só migra com `VERCEL_ENV=production` (ou fora da Vercel).
+⚠️ **A 0001 não se edita mais**: mudança na agenda ou na lista é migração nova (0002…).
+
 ## 29/out — o banco do Carro: perfil e inventário do freela (`db/`, `api/zro/_dados.js`, `test/api/banco*.test.js`)
 
 Pedido do titular: *"ligar o banco de dados do Carro do Freela"*, começando pelo que o ecossistema precisa — o perfil do

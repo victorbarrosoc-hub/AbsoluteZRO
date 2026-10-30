@@ -55,6 +55,9 @@ export async function publicCatalog() {
 /** Aberto ao público (released ou public_beta). O que não está assim é "Em desenvolvimento". */
 export const releaseOpen = (r: ReleasePublic) => r.state === 'released' || r.state === 'public_beta'
 
+/** Divulgado nas páginas públicas (lib/divulgacao.ts): no ar para qualquer um, na web ou nos downloads. */
+export { divulgado } from '../divulgacao'
+
 /**
  * Produtos que esta pessoa pode ver como disponíveis no canal: abertos ao público nesse canal ou com ela na lista de
  * acesso (zro.release_allows, sem cache). Anônimo (`null`) = só o que está aberto ao público.
