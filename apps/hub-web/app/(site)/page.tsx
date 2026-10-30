@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 
 /** Uma linha por ferramenta, curta, na faixa logo abaixo do topo. */
 const LINE: Record<string, string> = {
-  'carro-do-freela': 'Equipe e oportunidades',
+  'carro-do-freela': 'Agenda e equipe',
   tpeasy: 'Teleprompter',
   sobedesce: 'Cópia e backup conferidos',
   synquei: 'Organização e sincronia',
@@ -34,7 +34,7 @@ const LINHA_LONGA: Record<string, string> = {
 
 /** Três fatos por ferramenta, tirados do que cada uma faz hoje (README de cada produto em products/). */
 const FATOS: Record<string, string[]> = {
-  'carro-do-freela': ['Agenda de freelas por praça', 'Disponibilidade pública que sai da agenda', 'Escala da equipe sem adivinhar'],
+  'carro-do-freela': ['Quem está livre, na data certa', 'A agenda que o próprio freela marca', 'Só aparece quem escolheu mostrar'],
   tpeasy: ['Teleprompter no Safari do iPhone', 'Rola com a sua voz', 'Funciona sem internet'],
   sobedesce: ['Até 32 conexões por arquivo', 'MD5 conferido em cada arquivo', 'Pausa e continua de onde parou'],
   synquei: ['Sincroniza câmeras e gravadores pelo som', 'Exporta para Premiere, Resolve, Final Cut e Avid', 'Nada sai do seu computador'],
@@ -83,6 +83,9 @@ const EVENTO: Record<string, string> = {
 /** Eventos de bastidor que não entram no fluxo da página (começo e falha da cópia). */
 const SO_BASTIDOR = new Set(['ingest.started', 'ingest.failed'])
 
+/** Contratos prontos e DESLIGADOS (packages/integrations/src/handlers.ts): não contam nem aparecem até a rota ligar. */
+const DESLIGADOS = new Set(['freela.inventario.atualizado'])
+
 export default async function Landing() {
   // Só o que está no ar para qualquer um (divulgado, lib/data/catalog.ts): o que está fechado não aparece em lugar
   // nenhum da página, nem como "Em breve" (titular, 30/10/2026). Quando a migration abre um produto, ele entra sozinho.
@@ -106,7 +109,7 @@ export default async function Landing() {
   const ativos = products.filter((p) => p.stage === 'active' || p.stage === 'beta')
   const siteDe = (p: (typeof products)[number]) => p.external_url || null
   // Só os eventos de quem está no ar: o fluxo e os números mostram o que roda hoje.
-  const eventos = Object.keys(EVENT_PAYLOADS).filter((e) => noAr.has(EVENT_PRODUCER[e as keyof typeof EVENT_PRODUCER]))
+  const eventos = Object.keys(EVENT_PAYLOADS).filter((e) => noAr.has(EVENT_PRODUCER[e as keyof typeof EVENT_PRODUCER]) && !DESLIGADOS.has(e))
   const formatos = noAr.has(EVENT_PRODUCER['edit.timeline.ready']) ? EVENT_PAYLOADS['edit.timeline.ready'][1].shape.format.options.length : 0
   const baixaveis = new Set(products.filter((p) => p.release.canais.download).map((p) => p.id))
   const noComputador = ativos.filter((p) => hasDesktopInstaller(p.id, baixaveis)).length
@@ -132,7 +135,7 @@ export default async function Landing() {
     const p = porId.get(f.id)
     if (!p) return []
     const avisos = eventos
-      .filter((e) => EVENT_PRODUCER[e as keyof typeof EVENT_PRODUCER] === p.id && !SO_BASTIDOR.has(e))
+      .filter((e) => EVENT_PRODUCER[e as keyof typeof EVENT_PRODUCER] === p.id && !SO_BASTIDOR.has(e) && !DESLIGADOS.has(e))
       .map((e) => ({ id: e, nome: EVENTO[e] ?? e }))
     // Sem aviso ao HUB e sem o que contar, a etapa não entra (nada de etapa de fachada).
     const itens = f.faz ? f.faz.map((t) => ({ id: t, nome: t })) : avisos

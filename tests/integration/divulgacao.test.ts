@@ -27,10 +27,10 @@ async function divulgados() {
 }
 
 describe('divulgação nas páginas públicas', () => {
-  it('só as ferramentas no ar: Maestro, SOBEDESCE, Synquei, TPeasy e Relay; AEON, Revela, NOSSOM e Carro do Freela fora', async () => {
+  it('só as ferramentas no ar: Maestro, SOBEDESCE, Synquei, TPeasy, Relay e Carro do Freela (0041); AEON, Revela e NOSSOM fora', async () => {
     const ids = await divulgados()
-    expect(ids).toEqual(expect.arrayContaining(['maestro', 'relay', 'sobedesce', 'synquei', 'tpeasy']))
-    for (const id of ['ai-edit', 'finishing', 'nossom', 'carro-do-freela']) expect(ids, id).not.toContain(id)
+    expect(ids).toEqual(expect.arrayContaining(['carro-do-freela', 'maestro', 'relay', 'sobedesce', 'synquei', 'tpeasy']))
+    for (const id of ['ai-edit', 'finishing', 'nossom']) expect(ids, id).not.toContain(id)
   })
 
   it('a regra: estado aberto e canal web ou download aberto; beta fechado, lista de acesso ou canal só de API não divulgam', () => {

@@ -1039,6 +1039,29 @@ do card... não consigo localizar o job que quero achar".
 - ⬜ Para os clientes: voz, ditado e anexos no painel `<zro-ia>` lendo `z_recurso_liberado`, quando os planos forem
   vendidos.
 
+## Carro do Freela: lançamento preparado (30/10/2026, [checklist](operations/lancamento-carro.md))
+
+- ✅ **Migration `0041_carro_lancamento.sql`** (o titular autorizou preparar; sem e-mail, sem app de computador): catálogo
+  `active` em `carro.absolutezro.com` (`sso_start_url` `…/api/zro/entrar`), descrição sem "protótipo", gate `released`
+  com web, api e sso (desktop e download fechados), entitlement para assinatura vigente sem o Carro. Planos não mudam
+  (o Carro já estava no grátis vigente, no Completo, no Pro e nos avulsos). Idempotente; teste
+  `tests/integration/carro-lancamento.test.ts`. Os testes que usavam o Carro como exemplo de produto fechado passaram a
+  usar NOSSOM, AEON e Revela, ou a conferir o Carro aberto.
+- ✅ **Páginas públicas**: o Carro entra sozinho pela regra do gate (`lib/divulgacao.ts`) na faixa, no fluxo ("Equipe", 2
+  de 7), na órbita da Z e em "Conheça de perto", com a foto dos aparelhos refeita do site real; `/baixar` aponta para o
+  subdomínio (navegador e Tela de Início). O evento `freela.inventario.atualizado` (rota desligada) não aparece nem conta.
+- ✅ **Site real do Carro** (ramo `claude/carro-no-ar` mesclado, com a `0038_comunidade` do HUB) sem sobra de protótipo:
+  sem Prévia, Planos, Aprender, Passar o carro, Orçamento, escada de planos, "de graça", Google Agenda/WhatsApp de
+  mentira e sem falar com o Supabase do app original; família só com o que está no ar.
+- ⬜ No dia: `CARRO_RELEASE=released` no `carrodofreela-app` e mesclar o PR (o build aplica 0038 e 0041 no HUB e a
+  `0002_comunidade` no banco do Carro). DNS de `carro.absolutezro.com` já no ar.
+- ✅ **Propostas, Jobs, Feed e Brechó no servidor do Carro** (decisão do titular: construir antes de lançar). Migração
+  do Carro `0003_propostas_feed_brecho` (RLS pelo `sub` da Absolute ZRO), rotas `/api/zro/propostas|feed|brecho|denuncia`:
+  a consulta chega na caixa do freela dentro do Carro (sem e-mail nem WhatsApp), aceitar vira job, feed e brechó com
+  apagar o próprio e denúncia guardada; o que estava no aparelho só sobe se a pessoa tocar em "Enviar para a sua conta".
+- ⬜ Depois: curtida, comentário, foto e vídeo no servidor; tela de revisão das denúncias; agenda do Carro e do Maestro
+  separadas (a pessoa é a mesma pelo `sub`); inventário Carro → Maestro desligado; `noindex`.
+
 ## Fase 6 — Escala
 
 - ⬜ Observabilidade em produção (drain de logs, métricas da fila, alertas), backups e retenção definidos.

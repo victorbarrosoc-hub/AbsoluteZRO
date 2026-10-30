@@ -125,7 +125,7 @@ describe('código + PKCE', () => {
     expect((id.zro_org as { id: string }).id).toBe(o.orgId)
     expect(id.zro_products).toEqual(['sobedesce'])
     // zro_release (ADR 0023): lançado para o público e fechado para esta conta, em todos os tokens e no userinfo
-    expect(id.zro_release).toMatchObject({ sobedesce: 'released', synquei: 'released', nossom: 'closed', 'carro-do-freela': 'closed' })
+    expect(id.zro_release).toMatchObject({ sobedesce: 'released', synquei: 'released', nossom: 'closed', 'carro-do-freela': 'released' })
     const at = verifyJwt(signer, t.access_token, { typ: 'at+jwt', issuer: ISS })!
     expect(at.aud).toBe(c.clientId)
     expect((at.zro_release as Record<string, string>).sobedesce).toBe('released')

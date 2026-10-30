@@ -35,11 +35,10 @@ test('conta nova recebe as ferramentas do plano grátis', async ({ page }) => {
   const ent = await (await page.request.get('/api/v1/entitlements')).json()
   const access = (id: string) => ent.products.find((p: { productId: string }) => p.productId === id).access
   // Os lançados vêm contratados pelo plano grátis; os fechados por lançamento (ADR 0023) aparecem como closed, nunca contratados.
-  for (const id of ['sobedesce', 'synquei', 'tpeasy', 'maestro']) expect(access(id), id).toBe('contracted')
-  for (const id of ['carro-do-freela', 'nossom', 'ai-edit', 'finishing']) expect(access(id), id).toBe('closed')
-  // Com o Carro do Freela fechado, o Início não promete projeto "de um job".
-  await expect(page.locator('.quick')).toContainText('Comece do zero')
-  await expect(page.locator('main')).not.toContainText('de um job')
+  for (const id of ['sobedesce', 'synquei', 'tpeasy', 'maestro', 'carro-do-freela']) expect(access(id), id).toBe('contracted')
+  for (const id of ['nossom', 'ai-edit', 'finishing']) expect(access(id), id).toBe('closed')
+  // Com o Carro do Freela no ar (0041), o Início oferece o projeto "de um job".
+  await expect(page.locator('.quick')).toContainText('Do zero ou de um job')
 })
 
 test('área logada exige sessão', async ({ page }) => {
@@ -195,13 +194,13 @@ test('console de administração não existe para quem não é da plataforma', a
   expect(r?.status()).toBe(404)
 })
 
-test('páginas públicas não divulgam AEON, Revela, NOSSOM nem Carro do Freela enquanto não estão no ar', async ({ page }) => {
+test('páginas públicas não divulgam AEON, Revela nem NOSSOM enquanto não estão no ar', async ({ page }) => {
   for (const largura of [1440, 390]) {
     await page.setViewportSize({ width: largura, height: 900 })
     for (const path of ['/', '/baixar', '/planos']) {
       await page.goto(path)
       const texto = await page.locator('main').innerText()
-      expect(texto, `${path} ${largura}px`).not.toMatch(/AEON|Revela|NOSSOM|Carro do Freela/i)
+      expect(texto, `${path} ${largura}px`).not.toMatch(/AEON|Revela|NOSSOM/i)
       // nem o selo de fechado ("Em breve" / "Em desenvolvimento")
       await expect(page.locator('main .selo-dev'), `${path} ${largura}px`).toHaveCount(0)
       // nem o ícone (ProductMark) nem o título escondido
@@ -209,7 +208,7 @@ test('páginas públicas não divulgam AEON, Revela, NOSSOM nem Carro do Freela 
         .locator('main [aria-label], main [title], main img[src]')
         .evaluateAll((els) => els.map((e) => `${e.getAttribute('aria-label') ?? ''} ${e.getAttribute('title') ?? ''} ${e.getAttribute('src') ?? ''}`))
       expect(
-        marcas.filter((m) => /AEON|Revela|NOSSOM|Carro do Freela|(products\/|produto-)(ai-edit|finishing|nossom|carro-do-freela)/i.test(m)),
+        marcas.filter((m) => /AEON|Revela|NOSSOM|(products\/|produto-)(ai-edit|finishing|nossom)/i.test(m)),
         `${path} ${largura}px`,
       ).toEqual([])
     }
@@ -236,26 +235,27 @@ test('páginas públicas e mobile sem rolagem horizontal', async ({ page }) => {
 })
 
 test('gate de lançamento: anônimo não vê CTA, link nem instalador de produto fechado', async ({ page, request }) => {
-  const FECHADOS = /nossom-teal\.vercel\.app|aeon\.absolutezro\.com|revela\.absolutezro\.com|carrodofreela\.com\.br/
+  const FECHADOS = /nossom-teal\.vercel\.app|aeon\.absolutezro\.com|revela\.absolutezro\.com/
   await page.goto('/')
   // só o que está no ar, sem "Em breve" (titular, 30/10/2026: "Quando for pro ar, aí divulga")
   const strip = page.locator('.pstrip__list')
   await expect(strip.locator('.selo-dev')).toHaveCount(0)
-  await expect(strip.locator('.pstrip__name')).toHaveText(['TPeasy', 'SOBEDESCE', 'Synquei', 'Maestro', 'Relay'])
+  await expect(strip.locator('.pstrip__name')).toHaveText(['Carro do Freela', 'TPeasy', 'SOBEDESCE', 'Synquei', 'Maestro', 'Relay'])
+  // o Carro do Freela (0041) entra pelo subdomínio, com o ícone dele
+  await expect(strip.locator('a.pstrip__card[href="https://carro.absolutezro.com"]')).toHaveCount(1)
   await expect(strip.locator('a.pstrip__card[href*="synquei"]')).toHaveCount(1)
   await expect(strip.locator('a.pstrip__card[href="https://maestro.absolutezro.com"]')).toHaveCount(1)
   await expect(strip.locator('a.pstrip__card[href="https://relay.absolutezro.com"]')).toHaveCount(1)
   const hrefs = await page.locator('a[href]').evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''))
   expect(hrefs.filter((h) => FECHADOS.test(h))).toEqual([])
   // a órbita da Z só tem os do ar
-  await expect(page.locator('.pz__orbita li')).toHaveCount(5)
+  await expect(page.locator('.pz__orbita li')).toHaveCount(6)
   await expect(page.locator('.pz__orbita li[title="NOSSOM"], .pz__orbita li[title="AEON"]')).toHaveCount(0)
   await expect(page.locator('.pz__orbita li[title="Maestro"], .pz__orbita li[title="Relay"]')).toHaveCount(2)
   // o fluxo: da pauta (Maestro) à aprovação do cliente (Maestro), só com etapas que existem
   await expect(page.locator('#fluxo-title')).toHaveText(/Do roteiro\s*à entrega\./)
-  await expect(page.locator('.pfluxo__etapa')).toHaveText(['Pauta', 'Gravação', 'Cópia', 'Sincronia', 'Entrega', 'Aprovação'])
-  await expect(page.locator('.pfluxo__passo')).toHaveText(/1 de 6/)
-  await expect(page.locator('main')).not.toContainText(/do job/i)
+  await expect(page.locator('.pfluxo__etapa')).toHaveText(['Pauta', 'Equipe', 'Gravação', 'Cópia', 'Sincronia', 'Entrega', 'Aprovação'])
+  await expect(page.locator('.pfluxo__passo')).toHaveText(/1 de 7/)
 
   await page.goto('/baixar')
   // na página pública, o que está fechado nem aparece; o Maestro (no ar, sem o app de computador) abre no navegador
@@ -341,8 +341,8 @@ test('sua conta: nome, foto, pedido de upgrade e acessos', async ({ page }) => {
   await page.goto('/perfil/acessos')
   await expect(page.getByRole('heading', { name: 'Org conta' })).toBeVisible()
   // Plano grátis lista todas, mas só as abertas contam como acesso (gate de lançamento, ADR 0023): SOBEDESCE, Synquei,
-  // TPeasy, o Maestro em Beta (0027) e o Relay (0032).
-  await expect(page.locator('.access-org__apps li.is-on')).toHaveCount(5)
+  // TPeasy, o Maestro (0027/0039), o Relay (0032) e o Carro do Freela (0041).
+  await expect(page.locator('.access-org__apps li.is-on')).toHaveCount(6)
 })
 
 test('excluir a conta: senha, confirmação, sai da sessão e o e-mail volta a ficar livre', async ({ page }) => {

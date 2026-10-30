@@ -3421,3 +3421,48 @@ Local, Postgres e Chromium desta máquina; HUB e Absolute ZRO falsos (`tests/pon
   `https://relay.absolutezro.com`), `test/app-sw.test.js` (`embutido-relay.js` no cache, v74 / 2.8.59) e
   `test/porta-malas-carro.test.js` seguindo verde. O estado final do envio virou `enviado` ("No Drive"): a fila do
   celular confere o tamanho, não o MD5, e o SOBEDESCE só diz "conferido" com MD5. Relay `test/drive.test.js`: 5/5.
+
+## Carro do Freela: o site real e a comunidade do ecossistema (30/10/2026)
+
+- HUB `tests/integration/perfis.test.ts` (a comunidade, `0038`): 19/19 — só perfil visível, @ confirmado e conta ativa;
+  paginação por `depois`; limite de 200; `invalid_input` (422) fora disso; auditoria `perfil.comunidade`.
+- Carro `npm run test:api`: 47/47 (o escopo `zro.pessoas` no login, a foto da claim `picture`).
+- Carro `npm run test:banco` (Postgres 16 local): 27/27 — agenda própria por RLS, janela de -31 a +366 dias, hora só
+  na meia diária; `carro_do_freela.agendas()` só devolve quem consentiu e recusa janela acima de 62 dias; a lista
+  pagina o HUB (450 pessoas = 3 páginas) e devolve `reconectar` quando o HUB recusa o token.
+- Carro `test/site-real.js`: 16/16 — nenhum dos 108 nomes fictícios na página do domínio; o app abre com o CREW de uma
+  pessoa só; nada semeado nem simulado (sem produtora de exemplo, sem "Simular chamada", sem checkout de assinatura,
+  sem tempo de resposta inventado); com a conta liberada, a busca e a agenda vêm do servidor, só quem divulgou a agenda
+  entra, a própria conta não repete, e declarar/liberar um dia vira `PUT`/`DELETE`.
+- `node src/vercel-build.js` local: `index.html` FASE=1, real, sem perfil fictício, fechado; as páginas `/fase1…6`
+  saíram do domínio.
+
+## Carro do Freela: lançamento preparado (30/10/2026)
+
+- HUB `npm test` (Postgres local): 422 passaram e 2 puladas; `z-lab.test.ts` caiu uma vez sob carga e passou sozinho
+  (15/15). Novo `tests/integration/carro-lancamento.test.ts` (4/4): catálogo `active` em `carro.absolutezro.com`, gate
+  `released` com web/api/sso (desktop e download fechados), planos sem mudança, conta grátis contratada e no login
+  único, 0041 idempotente (só o entitlement novo, sem auditoria nova). `release-gate`, `carro-hub`, `accounts`, `oidc`,
+  `ia`, `divulgacao`, `downloads`, `maestro-lancamento` e `core` passaram a tratar o Carro como aberto.
+- HUB `npm run test:e2e`: 58/58 (faixa com o Carro primeiro, fluxo "Equipe" 1 de 7, órbita com 6, `/baixar` no
+  subdomínio, Sua conta com 6 acessos). `lint`, `format:check`, `typecheck`, `build` ok; `scan-secrets` sem achados.
+- Carro: `test:api` 47/47, `test:banco` 27/27, `banco-tela` 3/3, `test/site-real.js` 27/27 (inclui as cinco novas do
+  lançamento), `build:vercel` aberto e fechado, CSP provada no único HTML do domínio (o passo do CI esperava 7 HTML e
+  foi corrigido para 1). Bateria `npm test`: 88/90 com a máquina sob carga de outras sessões; as duas que caíram
+  (`conta-zro` por tempo, `entrar` em medida de animação) passaram sozinhas: 149/149 e 103/103.
+- Prévias (fora do repositório): Carro e HUB em iPhone e computador, claro e escuro, e um vídeo de 56 s.
+
+- Linha visual B no site real (30/10/2026, aprovada pelo titular): `test/site-real.js` 26/26 — `html.real`, grafite
+  fosco `#0e0e10`, o símbolo de sempre com o carrinho no topo da home, título sem degradê e a foto de Natal como fundo
+  da home e da entrada. Conferido no Chromium a 1440 e a 390 px (home e entrar), sem erro de console.
+
+## Carro do Freela: Propostas, Jobs, Feed e Brechó no servidor (30/10/2026)
+
+- Carro `test:banco` (Postgres 16 local): 3 testes novos da 0003 — a consulta chega na caixa do freela, só os dois
+  lados veem, a terceira conta não vê nem responde, quem mandou não aceita a própria, telefone/CPF/PIX recusados, aceitar
+  vira job e não volta; feed e brechó vistos por quem tem conta, só a dona apaga ou marca vendido, interesse no anúncio
+  chega ao dono, denúncia guardada (some só para quem denunciou); isolamento direto no papel `carro_do_freela_app`.
+- Carro `test/site-real.js`: 37/37 (a caixa vem do servidor, aceitar faz `PATCH` e vira job, feed e brechó do banco
+  com o nome certo, publicar é `POST`, o post antigo do aparelho não sobe sozinho e a tela oferece enviar).
+- Suítes da prévia que tocam essas telas, sem mudança: `feed` 96/96, `denuncia` 29/29, `anuncio-no-feed` 19/19,
+  `brecho`, `propostas`, `feedback`, `colisao`, `seguranca` 49/49. `build:vercel` com as 8 rotas de dados empacotadas.

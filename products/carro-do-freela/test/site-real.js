@@ -143,6 +143,72 @@ const RAIZ = path.resolve(__dirname, '..');
   t(m.pedidos.some(x => x === 'DELETE /api/zro/agenda?dia=' + m.am), 'liberar o dia apaga no servidor (DELETE)');
   t(!/responde em (null|undefined)/.test(m.busca) && /Pessoa Um/.test(m.busca), 'a busca mostra quem veio, sem tempo de resposta inventado');
 
+  /* (30/out · 4, o lançamento) nada de protótipo dentro do app: sem planos, cursos, anúncio por WhatsApp nem
+     orçamento com taxa; a escada de planos não tranca; sem "Prévia", sem simulação e sem o Supabase do original */
+  m = await p.evaluate(() => {
+    const vis = e => !!e && !e.hidden && !e.closest('[hidden]');
+    const menu = [...document.querySelectorAll('[data-tab],[data-ir]')].filter(vis).map(e => e.dataset.tab || e.dataset.ir);
+    show('planos'); const planos = S.tab; show('aprender'); const aprender = S.tab;
+    abrirGuia(); const portas = [...document.querySelectorAll('#qp-portas [data-porta]')].map(b => b.dataset.porta);
+    const guiaTxt = document.getElementById('qp-portas').innerText; fecharGuia();
+    return { menu, planos, aprender, portas, guiaTxt, nivel: temNivel(NIVEL.FROTA), vivo: vivoPode(), nuvem: nuvemLigada(),
+      previa: [...document.querySelectorAll('[data-previa]')].filter(vis).length,
+      zerar: vis(document.getElementById('g-zerar')), movimento: vis(document.getElementById('g-vivo')),
+      zap: vis(document.getElementById('ag-zap')) || vis(document.getElementById('cd-zap')) };
+  });
+  t(!['planos', 'aprender', 'passar', 'orcar'].some(x => m.menu.includes(x)) && m.planos === 'meu' && m.aprender === 'meu',
+    'Planos, Aprender, Passar o carro e Orçamento não existem no site real (nem pelo menu, nem pelo show) — '
+    + JSON.stringify({ menu: m.menu.filter(x => ['planos', 'aprender', 'passar', 'orcar'].includes(x)), planos: m.planos, aprender: m.aprender }));
+  t(m.nivel, 'a escada de planos do protótipo não tranca nada: o plano é o da conta Absolute ZRO');
+  t(m.portas.join(',') === 'agenda,meu,achar' && !/dinheiro|sinal|contrato/i.test(m.guiaTxt),
+    'o guia de entrada mostra só o que funciona: agenda, perfil e achar (' + m.portas.join(', ') + ')');
+  t(!m.previa && !m.zerar && !m.movimento && !m.zap,
+    'sem "Prévia", "Recomeçar do zero", "Movimento na praça" nem lembrete no WhatsApp');
+  t(!m.vivo && !m.nuvem, 'nada se simula e nada vai ao Supabase do app original');
+
+  /* (0003) Propostas, Jobs, Feed e Brechó vêm do servidor: a consulta vai para a caixa da pessoa, aceitar vira job,
+     o feed e o brechó são do banco, e o que estava só no aparelho NÃO sobe sozinho (a tela oferece) */
+  m = await p.evaluate(async () => {
+    const pedidos = [], hoje = key(HOJE), avisos = [];
+    const avOrig = avisar; avisar = o => { avisos.push(o.t); return avOrig(o) };
+    POSTS.push({ id: 77, autor: 'eu', tipo: 'nota', q: new Date(), txt: 'post antigo do aparelho', curtidas: 0, coments: [], compart: 0 });
+    window.fetch = async (u, o) => {
+      const met = (o && o.method) || 'GET';
+      pedidos.push(met + ' ' + u + (o && o.body ? ' ' + o.body : ''));
+      const J = (s, j) => new Response(JSON.stringify(j), { status: s, headers: { 'Content-Type': 'application/json' } });
+      if (u === '/api/zro/propostas' && met === 'GET') return J(200, { enviadas: [], recebidas: [
+        { id: '11111111-1111-4111-8111-111111111111', tipo: 'job', de_nome: 'Produtora Real', dia: hoje, ini: '08:00', fim: '18:00', funcao: 'Op. de câmera', mensagem: 'Clipe', valor_cents: 90000, estado: 'nova' }] });
+      if (u.startsWith('/api/zro/propostas?id=')) return J(200, { proposta: {} });
+      if (u === '/api/zro/propostas' && met === 'POST') return J(201, { proposta: {} });
+      if (u === '/api/zro/feed' && met === 'GET') return J(200, { posts: [
+        { id: '22222222-2222-4222-8222-222222222222', autor: { sub: 'cccccccc-0000-4000-8000-00000000000c', nome: 'Gente Real' }, eu: false, tipo: 'bastidor', texto: 'Set em Pipa', criado_em: new Date().toISOString() }] });
+      if (u === '/api/zro/feed' && met === 'POST') return J(201, { post: {} });
+      if (u === '/api/zro/brecho' && met === 'GET') return J(200, { anuncios: [
+        { id: '33333333-3333-4333-8333-333333333333', dono: { sub: 'cccccccc-0000-4000-8000-00000000000c', nome: 'Gente Real' }, eu: false, titulo: 'Sony FX3', categoria: 'camera', preco_cents: 1800000, situacao: 'disponivel', criado_em: new Date().toISOString() }] });
+      if (u === '/api/zro/denuncia') return new Response(null, { status: 204 });
+      return J(200, { agenda: {}, pessoas: [], agendas: true });
+    };
+    REAL_PESSOAS_EM = 0; REAL_LOCAIS = null; realCarregar();
+    await new Promise(r => setTimeout(r, 500));
+    const r = { prop: PROPOSTAS.map(x => [x.de, x.status, !!x.srv]), local: POSTS.filter(x => !x.srv).length,
+      oferta: avisos.some(t => /só neste aparelho/.test(t)), feed: POSTS.map(x => x.txt), feedAutor: autorPost(POSTS.find(x => x.srv).autor).nome,
+      brecho: ANUNCIOS.map(x => [x.t, donoDe(x).nome]) };
+    aceitar(PROPOSTAS[0].id);
+    await new Promise(x => setTimeout(x, 200));
+    r.jobs = JOBS.map(j => [j.cliente, !!j.srv]);
+    v('fdp-txt').value = 'Primeiro post de verdade'; FDP_TIPO = 'nota'; publicarPost();
+    await new Promise(x => setTimeout(x, 200));
+    r.pedidos = pedidos;
+    return r;
+  });
+  t(m.prop.length === 1 && m.prop[0][0] === 'Produtora Real' && m.prop[0][1] === 'novo' && m.prop[0][2], 'a consulta que chegou no servidor aparece na caixa (' + JSON.stringify(m.prop) + ')');
+  t(m.pedidos.some(x => /^PATCH \/api\/zro\/propostas\?id=11111111-1111-4111-8111-111111111111 \{"estado":"aceita"/.test(x)) && m.jobs.some(j => j[0] === 'Produtora Real' && j[1]),
+    'aceitar vai ao servidor e vira job');
+  t(m.feed.join('|') === 'Set em Pipa' && /^Gente/.test(m.feedAutor), 'o feed vem do servidor, com o nome de quem escreveu (' + m.feed.join('|') + ')');
+  t(m.brecho.length === 1 && m.brecho[0][0] === 'Sony FX3' && m.brecho[0][1] === 'Gente Real', 'o brechó vem do servidor, com o dono certo');
+  t(m.local === 0 && m.oferta && !m.pedidos.some(x => /post antigo/.test(x)), 'o post que estava só no aparelho não sobe sozinho: a tela oferece "Enviar para a sua conta"');
+  t(m.pedidos.some(x => x.startsWith('POST /api/zro/feed {"texto":"Primeiro post de verdade"')), 'publicar no feed é POST no servidor');
+
   t(errs.length === 0, 'zero erro de console/página' + (errs.length ? ' — ' + errs[0] : ''));
 
   console.log('SITE REAL');
