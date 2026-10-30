@@ -7,7 +7,8 @@ import fs from 'node:fs'
 const ler = (p) => fs.readFileSync(new URL(p, import.meta.url), 'utf8')
 // Só as plataformas abertas (28/10/2026): NOSSOM, AEON, Revela e Carro do Freela estão fechados e não aparecem. O
 // Maestro entra no lançamento em Beta grátis, atrás de MAESTRO_NA_FAMILIA (docs/operations/lancamento-maestro.md).
-const APPS = ['Absolute ZRO', 'Synquei', 'TPEasy']
+// O Relay está no ar desde a migration 0032 (30/10/2026).
+const APPS = ['Absolute ZRO', 'Relay', 'Synquei', 'TPeasy']
 const FECHADOS = /nossom|aeon|ai-edit|revela|finishing|carro|maestro/i
 
 /** O Maestro fora da lista fixa: chave única e a linha que o põe depois da Absolute ZRO (ordem alfabética), com o ícone dele. */

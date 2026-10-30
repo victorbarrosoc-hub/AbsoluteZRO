@@ -15,8 +15,9 @@ import { AceitarOutros } from './p2p.js'
 // Os outros apps da Absolute ZRO, cada um com o próprio ícone (cópias em icons/familia/). Abrem fora do app.
 const FAMILIA = [
   { href: 'https://absolutezro.com', nome: 'Absolute ZRO', img: 'icons/familia/absolute-zro.png' },
+  { href: 'https://relay.absolutezro.com', nome: 'Relay', img: 'icons/familia/relay.svg' },
   { href: 'https://synquei.vercel.app', nome: 'Synquei', img: 'icons/familia/synquei.svg' },
-  { href: 'https://tpeasy.vercel.app', nome: 'TPEasy', img: 'icons/familia/tpeasy.svg' },
+  { href: 'https://tpeasy.vercel.app', nome: 'TPeasy', img: 'icons/familia/tpeasy.svg' },
 ]
 // Maestro na família (lançamento em Beta grátis, docs/operations/lancamento-maestro.md): fica de fora até o titular
 // abrir; vira com `node scripts/lancamento-maestro.mjs --abrir` (e volta com --fechar).

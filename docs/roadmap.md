@@ -1035,6 +1035,14 @@ do card... não consigo localizar o job que quero achar".
   `web/public/app`, app 2.8.51 / `sobedesce-app-v66`), Synquei (`app/`, `synquei-v22`) e TPeasy (`app/`,
   `tpeasy-v19`) sem NOSSOM, Revela e Carro do Freela na lista da família; o SOBEDESCE chama a entrada de "conta
   Absolute ZRO" nos dois apps. Falta o titular autorizar os instaladores novos do SOBEDESCE e do Synquei.
+- ✅ **A família igual em todos os apps, com o Relay** (30/10/2026): Synquei, TPeasy, Carro do Freela (lateral e
+  gaveta) e SOBEDESCE (computador e celular, app 2.8.58 / `sobedesce-app-v73`) listam as mesmas plataformas no ar
+  (Maestro, Relay, SOBEDESCE, Synquei, TPeasy, sem o próprio app), com os nomes oficiais e o ícone oficial do Relay;
+  o Carro deixou de mostrar NOSSOM e Revela. A régua é `tests/integration/familia-menus.test.ts` (endereços de
+  produção e ícones byte a byte iguais a `apps/hub-web/public/products`): plataforma lançada entra em `NO_AR` e o teste
+  aponta cada menu que falta. Caches `synquei-v26` e `tpeasy-v22`. Relay, TPeasy e Synquei com funções em `gru1`.
+  Falta: o Synquei no celular não tem menu da família (a barra lateral some abaixo de 860px); AEON, Revela e NOSSOM
+  seguem com a lista antiga até lançarem.
 - ✅ **SOBEDESCE no Windows: bandeja e barra lateral** (28/10/2026, pedido de cliente): minimizar manda para a bandeja
   (padrão no Windows, ajuste "Minimizar para a bandeja" em Ajustes → Aparência), menu da bandeja com "Abrir SOBEDESCE",
   quantas transferências andam e "Sair"; fechar no X com transferência andando vai para a bandeja. Barra lateral cabe

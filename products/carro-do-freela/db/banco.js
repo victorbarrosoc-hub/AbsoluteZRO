@@ -11,7 +11,8 @@
  *    publicador da fila de sincronização (db/sync.js).
  *
  * Endereço: CARRO_DATABASE_URL (produção: pooler de SESSÃO do Supabase,
- * aws-0-us-east-2.pooler.supabase.com:5432, usuário `carro_do_freela.<project_ref>`).
+ * projeto AbsoluteZRO-SP, aws-<n>-sa-east-1.pooler.supabase.com:5432, usuário
+ * `carro_do_freela.<project_ref>`).
  * Nunca no fonte. Sem a variável, o banco está DESLIGADO e as rotas
  * respondem 503 `sem_banco` — o resto do Carro segue igual.
  */

@@ -1,4 +1,5 @@
 {
+  "regions": ["gru1"],
   "framework": null,
   "installCommand": "echo sem dependências para o site",
   "buildCommand": "echo sem build",

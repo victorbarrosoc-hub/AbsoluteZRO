@@ -1,5 +1,5 @@
 // TPeasy: funciona sem internet no set. Busca a versão nova quando há rede e cai na cópia guardada quando não há.
-const CACHE = "tpeasy-v21";
+const CACHE = "tpeasy-v22";
 const FILES = [
   "/",
   "/site.css",
@@ -35,6 +35,7 @@ const FILES = [
   "/icons/familia/sobedesce.svg",
   "/icons/familia/synquei.svg",
   "/icons/familia/maestro.svg",
+  "/icons/familia/relay.svg",
 ];
 
 self.addEventListener("install", (e) => {

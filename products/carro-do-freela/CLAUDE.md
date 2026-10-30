@@ -108,7 +108,10 @@ Tudo — envs, Root Directory, fluxo — em `ORIGEM.md`.
 Pedido do titular, do bloco que ele gostou no menu do Revela: ícone + nome de
 cada app da família, levando ao app, em ordem alfabética (pedido do titular,
 26/out): Absolute ZRO, Nossom, Revela, Sobedesce, Synquei, TPEasy — igual na
-lateral e na gaveta. O Carro do Freela fica de fora (é onde a pessoa
+lateral e na gaveta. ⚠️ **Desde 30/out só as plataformas no ar**, a mesma
+lista de todos os apps: Absolute ZRO, Maestro, Relay, SOBEDESCE, Synquei,
+TPeasy (NOSSOM, AEON e Revela voltam quando lançarem; a régua da raiz é
+`tests/integration/familia-menus.test.ts`). O Carro do Freela fica de fora (é onde a pessoa
 está); o AI Edit também (em desenvolvimento). No computador o bloco mora no
 pé da lateral (`.ladofam`, vira só ícone com a lateral recolhida); no
 celular, na gaveta (`#g-fam`, escondido no computador para não repetir).
