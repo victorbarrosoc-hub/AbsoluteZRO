@@ -75,6 +75,9 @@ Vercel. Agora o build da Vercel gera o mesmo conjunto a partir desta pasta.
 | `CARRO_RELEASE` | portão do lançamento (28/out): só o valor exato `released` abre ao público; sem a variável (o padrão) o Carro é **fechado** e só entra a conta que o HUB lista como `allowed`. No lançamento vira `released`, junto com a 0041 do HUB ([checklist](../../docs/operations/lancamento-carro.md)) | não (e só com autorização do titular) |
 | `ZRO_ISSUER` | opcional; padrão do código `https://absolutezro.com` | não |
 | `CARRO_DATABASE_URL` | banco do Carro (29/out): Supabase AbsoluteZRO, pooler de sessão `aws-0-us-east-2.pooler.supabase.com:5432`, usuário `carro_do_freela.<project_ref>`. Com ela o build aplica as migrações de `db/migrations`; sem ela as rotas de perfil e inventário respondem 503 `sem_banco`. Passos em `db/PRODUCAO.md` | **sim** |
+| `CARRO_RELEASE` | portão do lançamento (28/out): só o valor exato `released` abre ao público; sem a variável (o padrão) o Carro é **fechado** e só entra a conta que o HUB lista como `allowed` | não (e só com autorização do titular) |
+| `ZRO_ISSUER` | opcional; padrão `https://absolutezro.vercel.app` | não |
+| `CARRO_DATABASE_URL` | banco do Carro (29/out): Supabase AbsoluteZRO-SP (São Paulo, `sa-east-1`), pooler de sessão `aws-<n>-sa-east-1.pooler.supabase.com:5432` (o host exato está em Supabase › Connect › Session pooler), usuário `carro_do_freela.<project_ref>`. Com ela o build aplica as migrações de `db/migrations`; sem ela as rotas de perfil e inventário respondem 503 `sem_banco`. Passos em `db/PRODUCAO.md` | **sim** |
 | `CARRO_SYNC_ATIVO` | `1` liga a publicação do inventário ao HUB (`db/sync.js`). **Ausente = desligado**, e assim fica enquanto a rota `freela.inventario.atualizado` estiver desligada no HUB | não (e só com decisão do titular) |
 | `CARRO_SYNC_URL` | opcional; endpoint do HUB que recebe o evento (padrão `<ZRO_ISSUER>/api/v1/carro-do-freela/inventario`, que ainda não existe) | não |
 

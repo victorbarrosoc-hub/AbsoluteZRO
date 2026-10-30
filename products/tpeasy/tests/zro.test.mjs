@@ -880,7 +880,11 @@ describe('a Z (repasse /api/zro/ia)', () => {
     // a família só lista plataformas abertas (NOSSOM, AEON, Revela e Carro do Freela estão fechados)
     const fam = /<nav class="familia"[\s\S]*?<\/nav>/.exec(readFileSync(new URL('../app/index.html', import.meta.url), 'utf8'))[0]
     assert.doesNotMatch(fam + sw, /nossom|aeon|revela|carrodofreela|carro-do-freela/i)
-    for (const nome of ['Absolute ZRO', 'Sobedesce', 'Synquei']) assert.ok(fam.includes(`<span>${nome}</span>`), nome)
+    const nomes = [...fam.replace(/<!--maestro-familia ([\s\S]*?) maestro-familia-->/, '').matchAll(/<span>([^<]+)<\/span>/g)].map((m) => m[1])
+    assert.deepEqual(nomes.filter((n) => n !== 'Maestro'), ['Absolute ZRO', 'Relay', 'SOBEDESCE', 'Synquei'])
+    // o Relay, com o ícone oficial no cache
+    assert.match(fam, /href="https:\/\/relay\.absolutezro\.com"[^>]*><img src="\/icons\/familia\/relay\.svg"/)
+    assert.ok(sw.includes('"/icons/familia/relay.svg"'))
     // o Maestro entra no lançamento: um bloco maestro-familia (aberto ou comentado), com o ícone dele no cache
     const aberto = /<!--maestro-familia-->([\s\S]*?)<!--\/maestro-familia-->/.exec(fam)
     const fechado = /<!--maestro-familia ([\s\S]*?) maestro-familia-->/.exec(fam)

@@ -61,6 +61,30 @@ embutido (`/app/?no=maestro`, recados `pronto`/`envios`/`pasta`, `{tipo:'tema'}`
   `format:check`, typecheck e build do Maestro limpos; na raiz, `npm run lint`, `format:check` e
   `node scripts/scan-secrets.mjs` limpos.
 
+## A família igual em todos os apps, com o Relay (30/10/2026)
+
+Menus da família de Synquei, TPeasy, Carro do Freela e SOBEDESCE com Maestro, Relay, SOBEDESCE, Synquei e TPeasy
+(sem o próprio app; NOSSOM, AEON, Revela e Carro fora até lançarem); documentos do banco atualizados para o
+AbsoluteZRO-SP (`sa-east-1`) e funções em `gru1`; Relay, TPeasy e Synquei com `"regions": ["gru1"]`.
+
+| Verificação                  | Comando                                                                   | Resultado                                                             |
+| ---------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Régua da família (raiz)      | `vitest run tests/integration/familia-menus.test.ts` (+ chaves Maestro)   | **8/8** (6 menus, endereços e ícones byte a byte iguais aos oficiais) |
+| Synquei                      | `npm test`                                                                | **154/154** (6 pulados, como antes)                                   |
+| TPeasy                       | `node --test tests/*.test.mjs`                                            | **61/61**                                                             |
+| SOBEDESCE                    | `npm run test:fast`                                                       | **789/789** (4 pulados)                                               |
+| Relay                        | `npm test`                                                                | **117/117**                                                           |
+| Carro do Freela              | `npm run test:api` · `node test/run.js`                                   | **47/47** · 86/89 (ver abaixo)                                        |
+| Lint · formatação · segredos | `npm run lint` · `npm run format:check` · `node scripts/scan-secrets.mjs` | limpo · ok · nenhum segredo em 3604 arquivos                          |
+
+Fotos (computador 1440×900 e iPhone 390×844, tema claro) de cada menu conferidas: nomes e ícones na ordem
+alfabética. O Synquei no iPhone não tem menu da família (a barra lateral some abaixo de 860px).
+
+Carro: `mapa` (a família igual na lateral e na gaveta) **72/72**. As três suítes que não fecharam na bateria não
+dependem da família e se comportam igual no template da `main` neste ambiente: `abertura` ("o piso encolhe", medida
+de tempo) falha nos dois; `entrar` ("a partida do carro é uma cópia por cima") falha e passa nos dois, conforme a
+rodada; `conta-zro` passa sozinha, **149/149**, mas leva mais que o teto de 240 s do `run.js` nesta máquina.
+
 ## Subdomínios do Carro e do SOBEDESCE (30/10/2026)
 
 - HUB `npm test` **392/392** com a migração 0037 (retornos novos, idempotente; numa rodada o `set.test.ts` falhou e passou
