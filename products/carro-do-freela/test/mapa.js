@@ -73,7 +73,7 @@ const abrir=async p=>{ await p.locator('#menu-bt:visible, #bt-menu:visible').fir
      menus; o Carro do Freela fica de fora (é onde a pessoa está) */
   const fam=await p.evaluate(()=>['#g-fam','.top .ladofam'].map(s=>
     [...document.querySelectorAll(s+' .fam')].map(a=>a.textContent.trim()).join('|')));
-  t(fam[0]==='Absolute ZRO|Maestro|Nossom|Revela|Sobedesce|Synquei|TPEasy'&&fam[1]===fam[0],
+  t(fam[0]==='Absolute ZRO|Maestro|Sobedesce|Synquei|TPEasy'&&fam[1]===fam[0],
     'a família Absolute ZRO em ordem alfabética, igual na gaveta e na lateral: '+fam.join(' / '));
   /* Encontrar: o que é de graça vem antes da vitrine paga — a regra que a
      lateral já seguia ("a tela paga não vem na frente do que o freela usa

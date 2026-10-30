@@ -128,6 +128,29 @@ const RAIZ = path.resolve(__dirname, '..');
   t(m.pedidos.some(x => x === 'DELETE /api/zro/agenda?dia=' + m.am), 'liberar o dia apaga no servidor (DELETE)');
   t(!/responde em (null|undefined)/.test(m.busca) && /Pessoa Um/.test(m.busca), 'a busca mostra quem veio, sem tempo de resposta inventado');
 
+  /* (30/out · 4, o lançamento) nada de protótipo dentro do app: sem planos, cursos, anúncio por WhatsApp nem
+     orçamento com taxa; a escada de planos não tranca; sem "Prévia", sem simulação e sem o Supabase do original */
+  m = await p.evaluate(() => {
+    const vis = e => !!e && !e.hidden && !e.closest('[hidden]');
+    const menu = [...document.querySelectorAll('[data-tab],[data-ir]')].filter(vis).map(e => e.dataset.tab || e.dataset.ir);
+    show('planos'); const planos = S.tab; show('aprender'); const aprender = S.tab;
+    abrirGuia(); const portas = [...document.querySelectorAll('#qp-portas [data-porta]')].map(b => b.dataset.porta);
+    const guiaTxt = document.getElementById('qp-portas').innerText; fecharGuia();
+    return { menu, planos, aprender, portas, guiaTxt, nivel: temNivel(NIVEL.FROTA), vivo: vivoPode(), nuvem: nuvemLigada(),
+      previa: [...document.querySelectorAll('[data-previa]')].filter(vis).length,
+      zerar: vis(document.getElementById('g-zerar')), movimento: vis(document.getElementById('g-vivo')),
+      zap: vis(document.getElementById('ag-zap')) || vis(document.getElementById('cd-zap')) };
+  });
+  t(!['planos', 'aprender', 'passar', 'orcar'].some(x => m.menu.includes(x)) && m.planos === 'meu' && m.aprender === 'meu',
+    'Planos, Aprender, Passar o carro e Orçamento não existem no site real (nem pelo menu, nem pelo show) — '
+    + JSON.stringify({ menu: m.menu.filter(x => ['planos', 'aprender', 'passar', 'orcar'].includes(x)), planos: m.planos, aprender: m.aprender }));
+  t(m.nivel, 'a escada de planos do protótipo não tranca nada: o plano é o da conta Absolute ZRO');
+  t(m.portas.join(',') === 'agenda,meu,achar' && !/dinheiro|sinal|contrato/i.test(m.guiaTxt),
+    'o guia de entrada mostra só o que funciona: agenda, perfil e achar (' + m.portas.join(', ') + ')');
+  t(!m.previa && !m.zerar && !m.movimento && !m.zap,
+    'sem "Prévia", "Recomeçar do zero", "Movimento na praça" nem lembrete no WhatsApp');
+  t(!m.vivo && !m.nuvem, 'nada se simula e nada vai ao Supabase do app original');
+
   t(errs.length === 0, 'zero erro de console/página' + (errs.length ? ' — ' + errs[0] : ''));
 
   console.log('SITE REAL');

@@ -7,7 +7,7 @@ const OFFICIAL = new Set([
   'synquei.vercel.app',
   'nossom-teal.vercel.app',
   'tpeasy.vercel.app',
-  'carrodofreela.com.br',
+  'carro.absolutezro.com',
   'aeon.absolutezro.com',
   'revela.absolutezro.com',
   'maestro.absolutezro.com',
@@ -77,8 +77,11 @@ describe('downloads', () => {
     expect(hasDesktopInstaller('maestro', new Set(['maestro']))).toBe(true)
   })
 
-  it('no ar só na web (Maestro sem o app de computador, Relay): navegador e celular, sem instalador nem Terminal', () => {
-    const vistos = downloadsLiberados(new Set(['sobedesce']), new Set(['maestro', 'relay']))
+  it('no ar só na web (Maestro sem o app de computador, Relay, Carro do Freela): navegador e celular, sem instalador nem Terminal', () => {
+    const vistos = downloadsLiberados(new Set(['sobedesce']), new Set(['maestro', 'relay', 'carro-do-freela']))
+    const carro = vistos.find((x) => x.productId === 'carro-do-freela')!
+    expect(carro).toMatchObject({ status: 'web', site: 'https://carro.absolutezro.com' })
+    expect(carro.options.map((o) => o.os)).toEqual(['web', 'mobile'])
     const maestro = vistos.find((x) => x.productId === 'maestro')!
     expect(maestro.status).toBe('web')
     expect(maestro.options.map((o) => o.os)).toEqual(['web', 'mobile'])

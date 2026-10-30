@@ -3313,3 +3313,18 @@ Local, Postgres e Chromium desta máquina; HUB e Absolute ZRO falsos (`tests/pon
   entra, a própria conta não repete, e declarar/liberar um dia vira `PUT`/`DELETE`.
 - `node src/vercel-build.js` local: `index.html` FASE=1, real, sem perfil fictício, fechado; as páginas `/fase1…6`
   saíram do domínio.
+
+## Carro do Freela: lançamento preparado (30/10/2026)
+
+- HUB `npm test` (Postgres local): 422 passaram e 2 puladas; `z-lab.test.ts` caiu uma vez sob carga e passou sozinho
+  (15/15). Novo `tests/integration/carro-lancamento.test.ts` (4/4): catálogo `active` em `carro.absolutezro.com`, gate
+  `released` com web/api/sso (desktop e download fechados), planos sem mudança, conta grátis contratada e no login
+  único, 0041 idempotente (só o entitlement novo, sem auditoria nova). `release-gate`, `carro-hub`, `accounts`, `oidc`,
+  `ia`, `divulgacao`, `downloads`, `maestro-lancamento` e `core` passaram a tratar o Carro como aberto.
+- HUB `npm run test:e2e`: 58/58 (faixa com o Carro primeiro, fluxo "Equipe" 1 de 7, órbita com 6, `/baixar` no
+  subdomínio, Sua conta com 6 acessos). `lint`, `format:check`, `typecheck`, `build` ok; `scan-secrets` sem achados.
+- Carro: `test:api` 47/47, `test:banco` 27/27, `banco-tela` 3/3, `test/site-real.js` 27/27 (inclui as cinco novas do
+  lançamento), `build:vercel` aberto e fechado, CSP provada no único HTML do domínio (o passo do CI esperava 7 HTML e
+  foi corrigido para 1). Bateria `npm test`: 88/90 com a máquina sob carga de outras sessões; as duas que caíram
+  (`conta-zro` por tempo, `entrar` em medida de animação) passaram sozinhas: 149/149 e 103/103.
+- Prévias (fora do repositório): Carro e HUB em iPhone e computador, claro e escuro, e um vídeo de 56 s.

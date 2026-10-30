@@ -107,11 +107,21 @@ export const DOWNLOADS: DownloadEntry[] = [
     ],
   },
   {
+    // Carro do Freela (products/carro-do-freela): só na web, no subdomínio da Absolute ZRO desde o lançamento (0041).
     productId: 'carro-do-freela',
-    site: 'https://carrodofreela.com.br',
+    site: 'https://carro.absolutezro.com',
     status: 'web',
     note: 'Funciona no navegador, no computador e no celular.',
-    options: [{ os: 'web', label: 'Navegador', detail: 'Computador ou celular', href: 'https://carrodofreela.com.br', format: 'Sem instalar' }],
+    options: [
+      { os: 'web', label: 'Navegador', detail: 'Computador ou celular', href: 'https://carro.absolutezro.com', format: 'Sem instalar' },
+      {
+        os: 'mobile',
+        label: 'iPhone e Android',
+        detail: 'Safari › Compartilhar › Adicionar à Tela de Início',
+        href: 'https://carro.absolutezro.com',
+        format: 'App da web',
+      },
+    ],
   },
   {
     productId: 'ai-edit',

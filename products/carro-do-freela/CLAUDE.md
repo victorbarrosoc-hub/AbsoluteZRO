@@ -141,6 +141,32 @@ repasse é `api/zro/set.js` (miolo em `_zro.js`, com `sessaoConferida`: claim re
 `zro.set` e, se o HUB recusar, refaz sem ele (`sem_set`) antes do `basico`. Um 401 do Set NÃO apaga a sessão. A folha
 veste os tokens dos dois temas (`--zro-set-*` no template). ⚠️ `var`/`function` no topo (o TDZ de 19/out · 2).
 
+## 30/out · 4 — o lançamento preparado: o site real sem sobra de protótipo (checklist em `docs/operations/lancamento-carro.md`)
+
+O titular autorizou preparar o lançamento ("pode fazer o restante"); e-mail só quando ele pedir, nada de app de
+computador. O HUB abre o gate na `0041_carro_lancamento.sql` (web, api e sso; desktop e download fechados) e o Carro
+abre com `CARRO_RELEASE=released`. **Só no site real (`REAL`)**, sem mudar a prévia nem as suítes:
+- `FORA_DO_REAL` (perto de `REAL`): Planos, Aprender, Passar o carro e Orçamento saem do menu, da lateral e do
+  `show()` (que manda para "meu"). Eram preço, moeda, mensalidade e anúncio por WhatsApp do protótipo.
+- `temNivel()` é `true` no real: a escada Carona/Premium/Estrada/Volante/Frota não tranca nada. O direito de uso é o
+  do plano da conta Absolute ZRO (`liberado` do `/eu`), igual ao servidor (`podeVerAgendas`). Dinheiro, contrato e
+  seguro continuam fora pela FASE, não pelo plano. `pintarAssinatura()` some; `abrirAssinatura()` diz "Seu plano é o
+  da Absolute ZRO".
+- `data-sem-real` (o `realHome()` esconde): a etiqueta "Prévia" do menu, o "prévia" do rodapé do app, "Recomeçar do
+  zero", "Movimento na praça", o cartão "O que vem por aí" da agenda (planos pagos e "de graça"), os botões Google Agenda e lembrete no
+  WhatsApp (sem integração) da agenda e do cadastro, "Orçar antes de escalar" e "Anunciar a vaga" da equipe.
+- `PORTAS_REAL`: o guia de entrada mostra três portas que funcionam (agenda, perfil, achar / busca, equipe, achar), sem
+  "O dinheiro" nem "contrato e sinal".
+- `vivoPode()` é falso no real: a "plataforma viva" (chamada, pedido de aluguel e guilda que chegam sozinhos, com o selo
+  "simulação") não roda, e o interruptor "Movimento na praça" some. O outro lado no real é gente de verdade.
+- `nuvemLigada()` é falso no real: a contagem de passos e o convite "quando a plataforma abrir" (que pedia WhatsApp ou
+  e-mail) não falam mais com o Supabase do app original; `drawGuardar()` esconde as caixas.
+- Em todos os builds: a Z da home diz "Chegando ao Carro do Freela" só fechada e "No Carro do Freela" aberta
+  (`pintarSeloZ()` no `drawHome`); a família perdeu NOSSOM e Revela (só o que está no ar; `test/mapa.js`; os SVGs
+  ficam em `src/midia/` para quando voltarem); "Procurar alguém pelo nome" sem "— de graça".
+- ⚠️ **Ainda moram no aparelho**: Propostas, Jobs, Feed e Brechó. No real eles nascem vazios e nada chega a outra
+  conta — a consulta de quem contrata não chega ao freela. Decisão do titular: servidor ou fora do menu do real.
+
 ## 30/out · 3 — o site real: o domínio sem os 109, a busca e a agenda no servidor (`test/site-real.js`)
 
 Pedido do titular: *"pode apagar esses 109 perfis fictícios, vamos começar com os usuários que já estão no
