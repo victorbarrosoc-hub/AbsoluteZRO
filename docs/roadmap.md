@@ -804,6 +804,9 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
 - ✅ Looks (`.cube`) no Drive pelo SOBEDESCE (pedido do titular, 30/10/2026): pasta escolhida no painel do Relay (leva e
   traz, sem gravar por cima) e `sobedesce://looks` abre o Comparar do app com a pasta e o Drive dos looks. Aparece com
   a cor da Revela (`RECURSOS.revela`). ⬜ Sai no app do SOBEDESCE na próxima versão do desktop.
+- 🟡 "Escolher no Drive" no Relay (pedido do titular, 30/10/2026): lado do Relay pronto e testado (quadro, leitura aos
+  pedaços, "Para o Drive"), atrás de `RECURSOS.drive`. ⬜ Lado do SOBEDESCE (`?no=relay`, modo escolher, `ler`/`enviar`)
+  depois do embutido do Carro entrar na main; então `DRIVE=released` no projeto `relay`.
 - ⬜ App de computador do Relay e SOBEDESCE gravando no painel (Bearer da conta em `/api/relay/painel`).
 - ⬜ Conta excluída na Absolute ZRO apagar o schema `relay` dela (hoje nenhum app recebe o aviso do HUB).
 - ⬜ "Baixar como…" das Referências e o pedido da Z no SOBEDESCE pelos presets do Relay.

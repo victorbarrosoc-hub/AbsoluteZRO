@@ -3077,3 +3077,13 @@ produção (deploy só com autorização).
   (guardado na memória). No Chrome de verdade, a pasta escolhida fica guardada; não conferido aqui com um seletor real.
 - SOBEDESCE `test/relay.test.js`: `sobedesce://looks` e `?trocar=1` aceitos; com caminho, outro parâmetro ou outro
   host, recusados. O Comparar com as duas pastas não foi exercitado com o app aberto (falta o desktop rodando aqui).
+
+## Relay: "Escolher no Drive" pelo SOBEDESCE embutido (30/10/2026)
+
+- `test/drive.test.js`: endereço do quadro, arquivos escolhidos conferidos (id, nome, tamanho; pasta só com id
+  válido), intervalos de leitura, CSP com `frame-src` só do SOBEDESCE e sem COEP. No Chromium, um SOBEDESCE de mentira
+  noutra origem: escolher no quadro fecha a folha e põe o vídeo na fila, o motor lê por intervalos pelo canal
+  (`Range` no servidor de mentira), converte para WhatsApp e "Para o Drive" grava na mesma pasta até "No Drive,
+  conferido", sem erro na página. `test/publicar.test.js`: `RECURSOS.drive` só na prévia ou com `DRIVE=released`.
+  Relay `npm test`: 109/109 antes do interruptor; Drive, publicar e tela: 20/20 depois.
+- Não conferido: o SOBEDESCE de verdade no quadro (o lado dele ainda não existe) e arquivo grande do Drive.

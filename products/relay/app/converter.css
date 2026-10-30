@@ -862,3 +862,42 @@
 .folha .unidade input[type='number'] {
   width: 76px;
 }
+
+/* ─────────── Drive pelo SOBEDESCE (app/drive.js) ─────────── */
+.outras-fontes {
+  display: flex;
+  justify-content: center;
+  margin-top: -20px;
+}
+.outras-fontes .vidro {
+  min-height: 40px;
+  font-size: 14px;
+}
+.folha--drive {
+  width: min(960px, calc(100vw - 24px));
+  height: min(86vh, 760px);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+.folha--drive[open] {
+  display: flex;
+}
+.drive-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px 10px 24px;
+}
+.drive-quadro {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: var(--fundo);
+}
+@media (max-width: 720px) {
+  .folha--drive {
+    height: 92vh;
+  }
+}

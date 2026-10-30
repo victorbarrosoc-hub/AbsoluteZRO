@@ -40,6 +40,9 @@ Relay. Decisão em [ADR 0030](../../docs/decisions/0030-relay-conversao.md); int
   em `test/nuvem.test.js` (sobe um Postgres de verdade). Projetos e presets são da pessoa; a equipe (mesma
   organização) vê e usa só o que quem criou liberou, sem mudar. Os looks não vão para o banco: ficam no aparelho e
   vão ao Drive por uma pasta que o SOBEDESCE sobe (`app/pasta-looks.js`, `sobedesce://looks`), sem gravar por cima.
+- **Drive pelo SOBEDESCE embutido** (`app/drive.js`, protocolo em `src/drive.js`): o arquivo do Drive é lido aos
+  pedaços pelo quadro, nunca baixado inteiro antes; o token do Google não sai do SOBEDESCE. O site não usa COEP (ele
+  barraria o quadro). Botão só com `RECURSOS.drive`.
 - **Cor:** SDR sai marcado BT.709 (1-1-1). A cor de entrada vem do contêiner (o decodificador de ProRes erra a marca);
   10 bits vira 8 com arredondamento. HDR e gamut largo viram aviso, nunca silêncio.
 - **Nunca fingir:** sem codificador, sem decodificador ou sem caber no tamanho, a tela diz o porquê.

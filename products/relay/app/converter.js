@@ -13,6 +13,8 @@ import { registro } from '../src/painel.js'
 import { lerConta } from './conta.js'
 import * as Historico from './historico.js'
 import * as Nuvem from './nuvem.js'
+import { RECURSOS } from './recursos.js'
+import { enviarAoDrive, escolherNoDrive, mudarTema } from './drive.js'
 
 const $ = (id) => document.getElementById(id)
 const el = (tag, props = {}, ...filhos) => {
@@ -313,6 +315,12 @@ function linhaSaida(item, s) {
     a.setAttribute('aria-label', `Baixar ${s.nome}`)
     acoes.append(a)
   } else if (s.estado === 'feito') acoes.append(ficha('Salvo na pasta', 'ficha--sinal'))
+  if (s.estado === 'feito' && s.blob && !s.envio) {
+    const b = el('button', { type: 'button', className: 'vidro', title: 'Manda para a mesma pasta do Drive, pelo SOBEDESCE' }, icone('nuvem'), 'Para o Drive')
+    b.setAttribute('aria-label', `Mandar ${s.nome} para o Drive`)
+    b.onclick = () => mandarAoDrive(item, s)
+    acoes.prepend(b)
+  } else if (s.envio) acoes.prepend(ficha({ fila: 'Indo para o Drive…', enviando: 'Indo para o Drive…', conferido: 'No Drive, conferido', erro: 'Não foi para o Drive' }[s.envio] ?? 'Indo para o Drive…', s.envio === 'conferido' ? 'ficha--sinal' : ''))
   if (s.plano) {
     const ver = el('button', { type: 'button', className: 'vidro vidro--icone', title: 'Ficha técnica', ariaLabel: `Ficha técnica de ${p.nome}` }, icone('ficha'))
     ver.setAttribute('aria-expanded', String(Boolean(s.verFicha)))
@@ -405,6 +413,7 @@ async function converterSaida(item, s) {
     s.avisos = r.avisos
     s.bytes = r.bytes
     if (r.blob) s.url = URL.createObjectURL(r.blob)
+    if (r.blob && item.arquivo.drive) s.blob = r.blob // veio do Drive: pode voltar para lá
     const velocidade = item.info.duracao / r.segundos
     s.resumo = [
       r.codecVideo ? [nomeCodec(r.codecVideo), r.codecAudio && nomeCodec(r.codecAudio)].filter(Boolean).join(' + ') : null,
@@ -473,6 +482,29 @@ async function abrirProjeto() {
   const chip = el('a', { className: 'vindo', href: '/painel', title: 'Voltar ao painel' }, icone('camadas'), el('span', { textContent: p.nome }))
   chip.dataset.projeto = ''
   ;(document.querySelector('.vindo') ?? $('soltar')).after(chip)
+}
+
+// ─────────── Drive pelo SOBEDESCE (app/drive.js): escolher lá, ler aos pedaços, voltar o resultado ───────────
+
+$('outras-fontes').hidden = !RECURSOS.drive
+$('escolher-drive').addEventListener('click', () =>
+  escolherNoDrive({ tema: window.relayTema?.atual() ?? 'claro', escolheu: (arquivos) => adicionar(arquivos) }),
+)
+
+async function mandarAoDrive(item, s) {
+  s.envio = 'fila'
+  atualizarItem(item)
+  try {
+    await enviarAoDrive({ nome: s.nome, blob: s.blob, pasta: item.arquivo.drive.pasta }, (d) => {
+      s.envio = d.estado
+      s.erro = d.estado === 'erro' ? d.erro || 'O Drive recusou o envio.' : s.erro
+      atualizarItem(item)
+    })
+  } catch (e) {
+    s.envio = 'erro'
+    s.erro = e.message
+    atualizarItem(item)
+  }
 }
 
 $('converter').addEventListener('click', async () => {
@@ -572,6 +604,7 @@ const pintarTema = () => botaoTema?.replaceChildren(icone(window.relayTema?.atua
 botaoTema?.addEventListener('click', () => {
   window.relayTema?.alternar()
   pintarTema()
+  mudarTema(window.relayTema?.atual())
 })
 
 icones()
