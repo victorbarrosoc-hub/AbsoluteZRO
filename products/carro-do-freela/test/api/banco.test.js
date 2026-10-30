@@ -155,7 +155,7 @@ test('migrações: no schema que JÁ EXISTE em produção (tabelas antigas, anon
   const u = new URL(urlAdmin);
   u.username = PAPEL_MIG;
   u.password = senha;
-  assert.deepEqual(await admin(c => migrar(c), u.toString()), ['0000_fundacao']);
+  assert.deepEqual(await admin(c => migrar(c), u.toString()), lerMigracoes().map(m => m.tag));
   await admin(async c => {
     assert.deepEqual(await retratoLegado(c), antes, 'tabelas, colunas, permissões, políticas e linhas antigas iguais');
     const dono = await c.query("select tablename, tableowner from pg_tables where schemaname = 'carro_do_freela' order by 1");

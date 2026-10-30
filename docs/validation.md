@@ -15,6 +15,12 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Subdomínios do Carro e do SOBEDESCE (30/10/2026)
+
+- HUB `npm test` **392/392** com a migração 0037 (retornos novos, idempotente; numa rodada o `set.test.ts` falhou e passou
+  sozinho e na rodada seguinte); `npm run lint` limpo. Carro `npm run test:api` **47/47** (origem `carro.absolutezro.com`
+  aceita). SOBEDESCE: só a lista de origens do site mudou (`origensDoSite`).
+
 ## Set: adicionar pelo @ no Online (30/10/2026)
 
 Achar a pessoa pelo @, adicionar, ver quando está online e abrir a conversa, tudo no Online do `<zro-set>` (antes
@@ -3151,3 +3157,14 @@ administração e gestão pelo RLS).
   (guardado na memória). No Chrome de verdade, a pasta escolhida fica guardada; não conferido aqui com um seletor real.
 - SOBEDESCE `test/relay.test.js`: `sobedesce://looks` e `?trocar=1` aceitos; com caminho, outro parâmetro ou outro
   host, recusados. O Comparar com as duas pastas não foi exercitado com o app aberto (falta o desktop rodando aqui).
+
+## NOSSOM: falhas da GPU com motivo e Safari guardando o áudio (30/10/2026)
+
+- Primeiros pedidos reais no endpoint `nossom-v2` falharam em 50–166 ms, antes do processamento: o worker só dizia
+  "restoration failed". Agora ele devolve e registra um motivo curto e sem URL (mensagens próprias, como
+  `Source download failed (HTTP 400)`, ou só o tipo da exceção), e o site grava o motivo no log da Vercel. Causa
+  provável da primeira falha: `NOSSOM_STORAGE_ORIGIN` apontando para o banco anterior ao AbsoluteZRO-SP.
+- Safari recusava guardar o áudio importado ("Error preparing Blob/File data to be stored in object store"):
+  `saveProject` tenta de novo com os bytes em memória e, se ainda falhar, explica (espaço em disco, arquivo só no iCloud).
+- Worker `test_handler.py` 14/14 (motivo sem URL), NOSSOM `npm test` 115/115, `typecheck`, `lint`, `scan-secrets`.
+- Não validado: o Safari do titular com o arquivo que falhou.

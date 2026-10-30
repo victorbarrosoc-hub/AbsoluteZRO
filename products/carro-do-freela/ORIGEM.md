@@ -85,7 +85,8 @@ Trocar `ZRO_CLIENT_SECRET` derruba as sessões abertas (os cookies deixam de con
 
 - Cliente confidencial `carrodofreela-web`, app da família (sem tela de permissão). Retornos cadastrados no HUB:
   `https://carrodofreela.com.br/api/zro/callback`, `https://www.carrodofreela.com.br/api/zro/callback` e
-  `https://carrodofreela-app.vercel.app/api/zro/callback`. Endereço do Abrir do HUB (`sso_start_url`):
+  `https://carrodofreela-app.vercel.app/api/zro/callback`, e desde 30/out `https://carro.absolutezro.com/api/zro/callback`
+  (o subdomínio da Absolute ZRO, decisão do titular; migração 0037 do HUB). Endereço do Abrir do HUB (`sso_start_url`):
   `https://carrodofreela.com.br/api/zro/entrar`.
 - `GET /api/zro/entrar?volta=/caminho[&criar=1]`: gera state, nonce e verificador PKCE, guarda os três num cookie `cdf_zro`
   assinado (HMAC, 10 min, httpOnly, Secure, SameSite=Lax, só em `/api/zro`) e leva ao HUB com
