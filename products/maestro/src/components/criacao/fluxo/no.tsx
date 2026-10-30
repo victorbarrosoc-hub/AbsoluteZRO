@@ -16,7 +16,7 @@ import { LEGENDA_PX } from "./colar";
 export type Campo = "texto" | "legenda" | "titulo" | "nome";
 export const CAMPO_DO_TIPO: Partial<Record<NoFluxo["tipo"], Campo>> = { nota: "texto", imagem: "legenda", link: "titulo", secao: "nome" };
 
-const ESTADO_ROTEIRO: Record<string, string> = { rascunho: "Rascunho", com_cliente: "Com o cliente", aprovado: "Aprovado", ajuste: "Ajuste" };
+const ESTADO_ROTEIRO: Record<string, string> = { rascunho: "Rascunho", com_cliente: "Com o cliente", aprovado: "Aprovado", ajuste: "Ajustes pedidos" };
 
 export const enderecoDaRef = (n: NoFluxo) =>
   n.tipo === "roteiro" && n.roteiroId

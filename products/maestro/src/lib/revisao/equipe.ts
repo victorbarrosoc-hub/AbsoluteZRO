@@ -214,9 +214,11 @@ export async function carregarLote(ctx: Contexto, loteId: string): Promise<LoteD
     const ids = pecas.map((p) => p.card);
     const versoes = ids.length
       ? ((await tx.execute(sql`
-          select v.id, v.card_id as card, v.n, v.titulo, v.fonte, v.url, v.drive_file_id as "driveId", v.drive_resource_key as "driveChave",
-                 v.duracao_ms as "duracaoMs", v.fps::float8 as fps, v.criado_em as em
+          select v.id, v.card_id as card, v.n, v.titulo, v.fonte, coalesce(v.url, '') as url, v.drive_file_id as "driveId", v.drive_resource_key as "driveChave",
+                 v.duracao_ms as "duracaoMs", v.fps::float8 as fps, v.criado_em as em,
+                 case when rv.id is not null then jsonb_build_object('id', rv.roteiro_id, 'n', rv.n) end as "doRoteiro"
             from maestro.versoes v
+            left join maestro.roteiro_versoes rv on rv.org_id = v.org_id and rv.id = v.roteiro_versao_id
            where v.card_id in (${sql.join(
              ids.map((i) => sql`${i}`),
              sql`, `,
@@ -228,7 +230,7 @@ export async function carregarLote(ctx: Contexto, loteId: string): Promise<LoteD
       ? ((await tx.execute(sql`
           select k.id, k.versao_id as versao, k.pai_id as pai, k.autor_tipo as autor,
                  coalesce(k.autor_nome, nullif(m.display_name, ''), 'Equipe') as nome,
-                 k.t_ms as t, k.t_fim_ms as "tFim", k.tempo_digitado as digitado, k.x::float8 as x, k.y::float8 as y, k.texto,
+                 k.t_ms as t, k.t_fim_ms as "tFim", k.tempo_digitado as digitado, k.x::float8 as x, k.y::float8 as y, k.bloco_id as bloco, k.texto,
                  k.resolvido_em is not null as resolvido, k.criado_em as em
             from maestro.comentarios k left join maestro.members m on m.org_id = k.org_id and m.zro_sub = k.autor_sub
            where k.versao_id in (${sql.join(
@@ -257,7 +259,7 @@ export async function carregarLote(ctx: Contexto, loteId: string): Promise<LoteD
             return {
               ...v,
               em: iso(v.em),
-              stream: streamDoDrive(v.fonte, v.driveId, v.driveChave),
+              stream: v.fonte === "roteiro" ? null : streamDoDrive(v.fonte, v.driveId, v.driveChave),
               comentarios: comentarios
                 .filter((c) => c.versao === v.id)
                 .map(({ versao: _v, ...c }) => {
@@ -304,8 +306,11 @@ export async function novaVersao(ctx: Contexto, cardId: string, link: string, ti
   }
 }
 
-/** Uma versão como a ficha do card mostra: número, nome, fonte e o link para abrir. */
-export type VersaoDoCard = { id: string; n: number; titulo: string | null; fonte: VersaoVista["fonte"]; url: string; em: string };
+/**
+ * Uma versão como a ficha do card mostra: número, nome, fonte e o link para abrir. A versão de roteiro (0033) não tem
+ * URL: `url` é o editor do roteiro na versão dela.
+ */
+export type VersaoDoCard = { id: string; n: number; titulo: string | null; fonte: VersaoVista["fonte"]; url: string; em: string; roteiroN: number | null };
 
 /**
  * As versões vivas de um card, da mais nova para a mais velha (a ficha do Quadro). Como a pessoa: o RLS e o acesso por
@@ -315,9 +320,11 @@ export async function versoesDoCard(ctx: Contexto, cardId: string): Promise<Vers
   if (!ID_CARD.test(cardId)) return [];
   return getBanco().asUser(ctx, async (tx) => {
     const r = (await tx.execute(sql`
-      select v.id, v.n, v.titulo, v.fonte, v.url, v.criado_em as em
+      select v.id, v.n, v.titulo, v.fonte, v.criado_em as em, rv.n as "roteiroN",
+             coalesce(v.url, '/app/criacao/roteiros/' || rv.roteiro_id::text) as url
         from maestro.versoes v
         join maestro.cards k on k.org_id = v.org_id and k.id = v.card_id and k.apagado_em is null
+        left join maestro.roteiro_versoes rv on rv.org_id = v.org_id and rv.id = v.roteiro_versao_id
        where v.card_id = ${cardId} and v.apagado_em is null
        order by v.n desc limit 50`)) as unknown as (Omit<VersaoDoCard, "em"> & { em: Date | string })[];
     return r.map((v) => ({ ...v, em: v.em instanceof Date ? v.em.toISOString() : String(v.em) }));
@@ -433,17 +440,20 @@ export async function gerarLinkNaTx(tx: Tx, ctx: Contexto, loteId: string, o: { 
 /** O token do link ativo, para copiar de novo (só admin e gestão: quem pode gerar). */
 export async function tokenDoLink(ctx: Contexto, loteId: string): Promise<string | null> {
   if (!UUID.test(loteId)) return null;
-  return getBanco().asUser(ctx, async (tx) => {
-    const [a] = (await tx.execute(
-      sql`select a.id, a.token_enc from maestro.approval_links a where a.lote_id = ${loteId} and ${LINK_ATIVO} limit 1`,
-    )) as unknown as { id: string; token_enc: string | null }[];
-    if (!a?.token_enc) return null;
-    try {
-      return abrir(a.token_enc, contextoToken(a.id));
-    } catch {
-      return null;
-    }
-  });
+  return getBanco().asUser(ctx, (tx) => tokenDoLinkNaTx(tx, loteId));
+}
+
+/** O mesmo, dentro de uma transação já aberta como a pessoa (o roteiro mandado ao cliente usa). */
+export async function tokenDoLinkNaTx(tx: Tx, loteId: string): Promise<string | null> {
+  const [a] = (await tx.execute(
+    sql`select a.id, a.token_enc from maestro.approval_links a where a.lote_id = ${loteId} and ${LINK_ATIVO} limit 1`,
+  )) as unknown as { id: string; token_enc: string | null }[];
+  if (!a?.token_enc) return null;
+  try {
+    return abrir(a.token_enc, contextoToken(a.id));
+  } catch {
+    return null;
+  }
 }
 
 export async function revogarLink(ctx: Contexto, loteId: string): Promise<Res> {

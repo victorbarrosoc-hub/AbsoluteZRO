@@ -2052,3 +2052,211 @@
   font-size: 0.85rem;
   color: var(--text-faint);
 }
+
+/* ───────────── o cliente no editor (Criação, F7; components/criacao/roteiro/cliente.tsx) ───────────── */
+
+/* embaixo do bloco: o que o cliente disse dele (em aberto) */
+.cr-cli {
+  display: grid;
+  gap: 6px;
+  margin: 6px 0 2px;
+  padding: 0;
+  list-style: none;
+}
+.cr-cli__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px 8px 8px 10px;
+  border-radius: 12px;
+  background: var(--acento-suave);
+  box-shadow: inset 3px 0 0 var(--acento);
+  font-size: 0.9rem;
+  text-align: left;
+}
+.cr-cli__item[data-resolvido] {
+  background: var(--surface-2);
+  box-shadow: inset 3px 0 0 var(--line-strong);
+}
+.cr-cli__item[data-resolvido] .cr-cli__texto {
+  color: var(--text-faint);
+}
+.cr-cli__av {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface);
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+.cr-cli__miolo {
+  display: grid;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+.cr-cli__quem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  font-size: 0.8rem;
+}
+.cr-cli__texto {
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.cr-cli__resolver {
+  flex: none;
+}
+
+/* no topo: o número em aberto */
+.cr-cli-botao {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-strong);
+  cursor: pointer;
+}
+.cr-cli-botao[data-abertos] {
+  background: var(--acento-suave);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acento) 45%, transparent);
+}
+.cr-cli-botao:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
+
+/* a folha do cliente: decisões e todos os comentários */
+.m-folha.cr-cli-folha {
+  --m-folha-w: 560px;
+  padding: 24px 26px 26px;
+}
+.cr-cli-corpo {
+  display: grid;
+  gap: 16px;
+  margin-top: 12px;
+}
+.cr-cli-decisoes,
+.cr-cli-lista {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cr-cli-decisoes li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: var(--text-strong);
+}
+.cr-cli-decisoes li > svg {
+  flex: none;
+  margin-top: 3px;
+}
+.cr-cli-decisoes small {
+  display: block;
+  color: var(--text-mute);
+}
+.cr-cli-lista__grupo {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.cr-cli-lista__grupo .cr-cli {
+  margin: 0;
+}
+.cr-cli-lista__trecho {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-mute);
+  text-align: left;
+  cursor: pointer;
+}
+.cr-cli-lista__trecho span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.cr-cli-lista__trecho .sutil {
+  font-weight: 400;
+}
+.cr-cli-lista__trecho:hover:not(:disabled) {
+  background: var(--hover);
+}
+.cr-cli-lista__trecho:disabled {
+  cursor: default;
+}
+
+/* "Para o cliente aprovar" na folha do Enviar */
+.cr-cliente {
+  display: grid;
+  gap: 12px;
+}
+.cr-cliente__card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--text-strong);
+}
+.cr-cliente__campo select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  font: inherit;
+  font-size: 16px;
+  color: var(--text-strong);
+}
+.cr-cliente__feito {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--text-strong);
+}
+.cr-cliente__feito svg {
+  flex: none;
+  color: var(--ok-text);
+}
+.cr-cliente__link {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  font-size: 0.82rem;
+  color: var(--text-mute);
+  overflow-wrap: anywhere;
+  user-select: all;
+}

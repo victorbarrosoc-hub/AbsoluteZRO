@@ -5,5 +5,5 @@ export const NOME_ESTADO_ROTEIRO: Record<EstadoRoteiro, string> = {
   rascunho: "Rascunho",
   com_cliente: "Com o cliente",
   aprovado: "Aprovado",
-  ajuste: "Ajuste",
+  ajuste: "Ajustes pedidos",
 };
