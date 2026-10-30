@@ -43,7 +43,7 @@ arquivo não é enviado. É a porta de entrada do ecossistema Absolute ZRO.
   organização), que vê e usa sem mudar. No topo de todas as páginas, a foto da conta abre Painel, Sua conta Absolute
   ZRO e Sair.
 - **Escolher no Drive** (com `RECURSOS.drive`): o SOBEDESCE embutido escolhe o vídeo no Drive; o Relay lê aos pedaços,
-  converte no aparelho e "Para o Drive" devolve o resultado à mesma pasta (MD5 conferido pelo SOBEDESCE).
+  converte no aparelho e "Para o Drive" devolve o resultado à mesma pasta (pela fila de envios do SOBEDESCE).
 - **Arquivo grande**: grava direto numa pasta (Chrome e Edge no computador).
 - **Máxima qualidade** (Mac e Windows): abre o app SOBEDESCE pelo link `sobedesce://relay` com os destinos escolhidos
   (inclusive os da pessoa); ele converte os arquivos do computador com o x264 e salva ao lado do original

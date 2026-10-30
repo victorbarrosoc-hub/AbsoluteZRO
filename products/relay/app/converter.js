@@ -320,7 +320,7 @@ function linhaSaida(item, s) {
     b.setAttribute('aria-label', `Mandar ${s.nome} para o Drive`)
     b.onclick = () => mandarAoDrive(item, s)
     acoes.prepend(b)
-  } else if (s.envio) acoes.prepend(ficha({ fila: 'Indo para o Drive…', enviando: 'Indo para o Drive…', conferido: 'No Drive, conferido', erro: 'Não foi para o Drive' }[s.envio] ?? 'Indo para o Drive…', s.envio === 'conferido' ? 'ficha--sinal' : ''))
+  } else if (s.envio) acoes.prepend(ficha({ fila: 'Indo para o Drive…', enviando: 'Indo para o Drive…', enviado: 'No Drive', erro: 'Não foi para o Drive' }[s.envio] ?? 'Indo para o Drive…', s.envio === 'enviado' ? 'ficha--sinal' : ''))
   if (s.plano) {
     const ver = el('button', { type: 'button', className: 'vidro vidro--icone', title: 'Ficha técnica', ariaLabel: `Ficha técnica de ${p.nome}` }, icone('ficha'))
     ver.setAttribute('aria-expanded', String(Boolean(s.verFicha)))

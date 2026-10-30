@@ -3364,3 +3364,7 @@ Local, Postgres e Chromium desta máquina; HUB e Absolute ZRO falsos (`tests/pon
   carga. O teste agora serve um `<zro-set>` mudo no lugar do widget (sem rede), confere os erros no próprio teste da
   conta e pede as imagens preguiçosas antes de conferir. Seis rodadas paralelas sem falha; `npm test` duas vezes
   seguidas: 114/114.
+- Lado do SOBEDESCE: `web/tests/seguranca.test.mts` (o `frame-ancestors` de `?no=relay` só com
+  `https://relay.absolutezro.com`), `test/app-sw.test.js` (`embutido-relay.js` no cache, v74 / 2.8.59) e
+  `test/porta-malas-carro.test.js` seguindo verde. O estado final do envio virou `enviado` ("No Drive"): a fila do
+  celular confere o tamanho, não o MD5, e o SOBEDESCE só diz "conferido" com MD5. Relay `test/drive.test.js`: 5/5.
