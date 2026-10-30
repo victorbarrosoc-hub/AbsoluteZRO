@@ -618,6 +618,22 @@ button {
 .nav-item.is-on .icon {
   color: var(--blue-text);
 }
+/* o Set (app/js/set.js) é um botão no meio dos links do menu: mesma cara, e fica marcado com a folha aberta */
+button.nav-item {
+  width: 100%;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+button.nav-item[hidden] {
+  display: none;
+}
+button.nav-item[aria-expanded="true"] {
+  background: var(--fill-2);
+}
+button.nav-item[aria-expanded="true"] .icon {
+  color: var(--blue-text);
+}
 .nav-item[aria-disabled="true"] {
   opacity: 0.4;
   pointer-events: none;
@@ -789,14 +805,17 @@ button {
     right: 0;
     bottom: 0;
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    /* as cinco abas da tarefa (o Set e a Z ficam no canto do Início, app/js/views/inicio.js) */
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
     padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
     background: var(--glass);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
     backdrop-filter: saturate(180%) blur(20px);
     border-top: 0.5px solid var(--hairline-2);
   }
-  .tabbar a {
+  .tabbar a,
+  .tabbar button {
     display: grid;
     justify-items: center;
     gap: 2px;
@@ -805,14 +824,26 @@ button {
     font-weight: 500;
     color: var(--text-3);
   }
-  .tabbar a .icon {
+  .tabbar button {
+    border: 0;
+    background: none;
+  }
+  .tabbar [hidden] {
+    display: none;
+  }
+  .tabbar button[aria-expanded="true"] {
+    color: var(--blue-text);
+  }
+  .tabbar a .icon,
+  .tabbar button .icon {
     width: 22px;
     height: 22px;
   }
   .tabbar a.is-on {
     color: var(--blue-text);
   }
-  .tabbar a {
+  .tabbar a,
+  .tabbar button {
     position: relative;
   }
   .tabbar .balao {
@@ -1768,7 +1799,7 @@ button {
 }
 .nudge {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 4px;
 }
 .nudge button {
@@ -2379,6 +2410,50 @@ button {
 }
 .pn-ola {
   margin-bottom: 8px;
+}
+/* o Set e a Z no celular: dois ícones discretos no canto do Início (no computador ficam na barra lateral) */
+.eco-atalhos {
+  display: none;
+}
+@media (max-width: 860px) {
+  .pn-ola {
+    position: relative;
+    padding-right: 88px;
+  }
+  .eco-atalhos {
+    display: flex;
+    gap: 4px;
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+  .eco-atalhos .icon-btn {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+  }
+  .eco-atalhos [hidden] {
+    display: none;
+  }
+  .eco-atalhos .icon {
+    width: 21px;
+    height: 21px;
+  }
+  .set-atalho[aria-expanded="true"] {
+    background: var(--fill-2);
+    color: var(--blue-text);
+  }
+  .set-atalho .balao {
+    position: absolute;
+    top: 2px;
+    right: 0;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    font-size: 10px;
+    box-shadow: 0 0 0 2px var(--bg);
+  }
 }
 .pn-cartoes {
   display: grid;
@@ -4743,4 +4818,25 @@ html:not(.is-desktop) .so-desktop {
   .z-fora {
     min-height: calc(100dvh - 2 * var(--z-pad) - var(--z-tab));
   }
+}
+
+/* ───────────── o Set da Absolute ZRO (app/js/set.js): a folha com a cara do Synquei ───────────── */
+:root {
+  --zro-set-tinta: var(--text);
+  --zro-set-apoio: var(--text-2);
+  --zro-set-apagado: var(--text-3);
+  --zro-set-linha: var(--hairline);
+  --zro-set-linha-forte: var(--hairline-2);
+  --zro-set-superficie: var(--surface);
+  --zro-set-superficie-2: var(--surface-2);
+  --zro-set-superficie-3: var(--surface-3);
+  --zro-set-vidro: var(--glass);
+  --zro-set-fundo: color-mix(in srgb, var(--menu-bg) 97%, transparent);
+  --zro-set-acento: var(--primary-bg);
+  --zro-set-acento-tinta: var(--primary-fg);
+  --zro-set-online: var(--ok);
+  --zro-set-ausente: var(--warn);
+  --zro-set-perigo: var(--err-text);
+  --zro-set-raio: var(--r-xl);
+  --zro-set-fonte: var(--font);
 }

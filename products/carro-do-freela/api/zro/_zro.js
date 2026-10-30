@@ -59,6 +59,16 @@
  *      com o HUB fora do ar. "released" no HUB só abre se aqui também for.
  * Fechado: o callback não abre sessão (volta ?zro=fechado), /eu responde
  * 401/403 e apaga os cookies, /enviar e /ia respondem 403 `fechado`.
+ *
+ * O SET (30/out, ADR 0032 da Absolute ZRO): presença e conversas do
+ * ecossistema. O login pede também `zro.set`, e /api/zro/set/<caminho>
+ * repassa o <zro-set> para https://absolutezro.com/api/v1/set/<caminho> com
+ * o MESMO acesso do `cdf_hub` e a MESMA régua (sessaoConferida: claim
+ * relida, portão, plano). Só os caminhos do Set passam; a ETag do widget
+ * segue e o 304 volta sem corpo. Um 401 do HUB aqui (login de antes do Set)
+ * NÃO apaga a sessão: o Set some e o resto segue. HUB que ainda não conhece
+ * o escopo: o login refaz sem ele (`sem_set`) e, se ainda recusar, sem os
+ * escopos de API (`basico`).
  */
 const crypto = require('crypto');
 
@@ -66,7 +76,9 @@ const EMISSOR_PADRAO = 'https://absolutezro.com';
 const ESCOPOS_BASE = 'openid email profile org';
 const ESCOPO_JOBS = 'carro-do-freela.jobs';
 const ESCOPO_IA = 'zro.ia';
-const ESCOPOS = ESCOPOS_BASE + ' offline_access ' + ESCOPO_JOBS + ' ' + ESCOPO_IA;
+const ESCOPO_SET = 'zro.set';
+const ESCOPOS_SEM_SET = ESCOPOS_BASE + ' offline_access ' + ESCOPO_JOBS + ' ' + ESCOPO_IA;
+const ESCOPOS = ESCOPOS_SEM_SET + ' ' + ESCOPO_SET;
 /* o pedido sem os escopos novos (HUB que ainda não os conhece): o refresh
    fica, porque é com ele que a claim é relida depois */
 const ESCOPOS_BASICO = ESCOPOS_BASE + ' offline_access';
@@ -350,6 +362,7 @@ function acessoHub(corpo, sub) {
     exp: agora + SESSAO_S,
     jobs: escopos.includes(ESCOPO_JOBS),
     ia: escopos.includes(ESCOPO_IA),
+    set: escopos.includes(ESCOPO_SET),
   };
 }
 
@@ -381,6 +394,8 @@ async function entrar(req, res) {
   const criar = url.searchParams.get('criar') === '1';
   /* o HUB recusou o escopo de jobs (ainda não o conhece): entra sem ele */
   const basico = url.searchParams.get('basico') === '1';
+  /* o HUB recusou só o escopo do Set (de antes dele): entra com jobs e a Z */
+  const semSet = !basico && url.searchParams.get('sem_set') === '1';
   if (!cfg.ligado) return ir(res, 303, comMarca(volta, 'indisponivel'));
   const state = novoValor(), nonce = novoValor(), verificador = novoValor();
   const desafio = crypto.createHash('sha256').update(verificador).digest('base64url');
@@ -394,14 +409,14 @@ async function entrar(req, res) {
   u.searchParams.set('response_type', 'code');
   u.searchParams.set('client_id', cfg.clientId);
   u.searchParams.set('redirect_uri', origem + '/api/zro/callback');
-  u.searchParams.set('scope', basico ? ESCOPOS_BASICO : ESCOPOS);
+  u.searchParams.set('scope', basico ? ESCOPOS_BASICO : semSet ? ESCOPOS_SEM_SET : ESCOPOS);
   u.searchParams.set('state', state);
   u.searchParams.set('nonce', nonce);
   u.searchParams.set('code_challenge', desafio);
   u.searchParams.set('code_challenge_method', 'S256');
   if (criar) u.searchParams.set('prompt', 'create');
   const exp = Math.floor(Date.now() / 1000) + IDA_S;
-  const ida = selar({ state, nonce, verificador, volta, origem, basico, criar, exp }, cfg.clientSecret, COOKIE_IDA);
+  const ida = selar({ state, nonce, verificador, volta, origem, basico, semSet, criar, exp }, cfg.clientSecret, COOKIE_IDA);
   return ir(res, 302, u.toString(), [cookie(COOKIE_IDA, ida, { path: '/api/zro', maxAge: IDA_S, seguro: seguro(origem) })]);
 }
 
@@ -424,6 +439,9 @@ async function callback(req, res) {
   const iss = url.searchParams.get('iss');
   if (iss !== null && iss !== cfg.issuer) return falhar('erro');
   const erro = url.searchParams.get('error');
+  /* primeiro sem o Set (HUB de antes dele); recusou de novo, sem os escopos de API */
+  if (erro === 'invalid_scope' && !ida.basico && !ida.semSet)
+    return ir(res, 303, '/api/zro/entrar?sem_set=1&volta=' + encodeURIComponent(volta) + (ida.criar ? '&criar=1' : ''), [limpar]);
   if (erro === 'invalid_scope' && !ida.basico)
     return ir(res, 303, '/api/zro/entrar?basico=1&volta=' + encodeURIComponent(volta) + (ida.criar ? '&criar=1' : ''), [limpar]);
   if (erro) return falhar(erro === 'access_denied' ? 'recusado' : 'erro');
@@ -577,7 +595,7 @@ async function tokenDoHub(cfg, h) {
   if (novo) {
     if (!novo.rt) novo.rt = h.rt;
     /* resposta sem `scope`: o acesso continua servindo para o que servia */
-    if (corpo.scope === undefined) { novo.jobs = h.jobs; novo.ia = h.ia }
+    if (corpo.scope === undefined) { novo.jobs = h.jobs; novo.ia = h.ia; novo.set = h.set }
   }
   return { at: novo ? novo.at : null, novo, recusado: !novo };
 }
@@ -785,6 +803,104 @@ async function ia(req, res) {
   res.end();
 }
 
+/* ---------------- o Set (30/out) ---------------- */
+
+const ID_SET = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
+/** os caminhos e métodos da API do Set (docs/integration-contracts/set.md da Absolute ZRO); o resto é 404 */
+const ROTAS_SET = [
+  [/^$/, ['GET', 'POST']],
+  [/^preferencias$/, ['PUT']],
+  [/^contatos$/, ['GET', 'POST']],
+  [new RegExp('^contatos/' + ID_SET + '$', 'i'), ['PUT', 'DELETE']],
+  [/^bloqueios$/, ['POST']],
+  [new RegExp('^bloqueios/' + ID_SET + '$', 'i'), ['DELETE']],
+  [/^conversas$/, ['GET', 'POST']],
+  [new RegExp('^conversas/' + ID_SET + '$', 'i'), ['GET', 'PATCH']],
+  [new RegExp('^conversas/' + ID_SET + '/mensagens$', 'i'), ['POST']],
+  [new RegExp('^mensagens/' + ID_SET + '$', 'i'), ['PATCH', 'DELETE']],
+  [/^denuncias$/, ['POST']],
+];
+/** a ETag fraca da API do Set (W/"…"): só ela vai e volta */
+const ETAG_SET = /^W\/"[A-Za-z0-9_-]{1,64}"$/;
+/** o caminho vem de /api/zro/set/<caminho> (a rota manda com ?caminho=); /api/zro/set sozinho é a batida */
+function caminhoSet(req) {
+  const u = new URL(req.url, 'http://local');
+  const q = u.searchParams.get('caminho');
+  if (q !== null) return q.replace(/^\/+|\/+$/g, '');
+  const m = /^\/api\/zro\/set\/(.+)$/.exec(u.pathname);
+  return m ? decodeURIComponent(m[1]).replace(/^\/+|\/+$/g, '') : '';
+}
+/** só os números de leitura da conversa seguem */
+function buscaSet(req, caminho) {
+  if (req.method !== 'GET' || !/^conversas\/[^/]+$/.test(caminho)) return '';
+  const q = new URL(req.url, 'http://local').searchParams, out = new URLSearchParams();
+  for (const k of ['antes', 'depois', 'limite']) { const v = q.get(k); if (v && /^\d{1,15}$/.test(v)) out.set(k, v) }
+  const s = out.toString();
+  return s ? '?' + s : '';
+}
+
+/**
+ * GET/POST/PUT/PATCH/DELETE /api/zro/set[/<caminho>] — o <zro-set> fala com
+ * a API do Set do HUB pelo servidor do Carro, que acrescenta o Bearer da
+ * sessão. A MESMA régua das rotas de dados (sessaoConferida).
+ */
+async function set(req, res) {
+  const caminho = caminhoSet(req);
+  const rota = ROTAS_SET.find(([re]) => re.test(caminho));
+  if (!rota) return json(res, 404, { erro: 'nao_encontrado' });
+  if (!rota[1].includes(req.method)) return json(res, 405, { erro: 'metodo' }, { Allow: rota[1].join(', ') });
+  /* GET de outro site não lê nada (sem CORS); o que muda exige a própria origem */
+  const origem = origemDe(req);
+  if (req.method !== 'GET' && (!origem || req.headers.origin !== origem)) return json(res, 403, { erro: 'origem' });
+  let corpo;
+  if (req.method !== 'GET' && req.method !== 'DELETE') {
+    if (!/^application\/json\b/.test(String(req.headers['content-type'] || ''))) return json(res, 415, { erro: 'formato' });
+    try {
+      corpo = JSON.stringify(await lerCorpo(req, 20 * 1024));
+    } catch (e) {
+      return json(res, 400, { erro: 'pedido' });
+    }
+  }
+  const s = await sessaoConferida(req);
+  if (!s.quem) return json(res, s.status, s.corpo, s.headers || {});
+  const extra = Object.assign({ 'Cache-Control': 'no-store' }, s.extra);
+  const pedida = String(req.headers['if-none-match'] || '');
+  let r;
+  try {
+    r = await fetch(config().issuer + '/api/v1/set' + (caminho ? '/' + caminho : '') + buscaSet(req, caminho), {
+      method: req.method,
+      headers: Object.assign(
+        { Authorization: 'Bearer ' + s.at, Accept: 'application/json' },
+        corpo !== undefined ? { 'Content-Type': 'application/json' } : {},
+        req.method === 'GET' && pedida.length <= 200 && ETAG_SET.test(pedida) ? { 'If-None-Match': pedida } : {},
+      ),
+      body: corpo,
+      cache: 'no-store',
+      redirect: 'error',
+      signal: AbortSignal.timeout(20000),
+    });
+  } catch (e) {
+    return json(res, 502, { erro: 'hub' }, extra);
+  }
+  /* login de antes do Set (token sem zro.set): o Set some; a sessão FICA (vale para o resto) */
+  if (r.status === 401) {
+    try { await r.body.cancel() } catch (e) {}
+    return json(res, 401, { erro: 'sem_set' }, extra);
+  }
+  const h = Object.assign({}, extra);
+  const tipo = r.headers.get('content-type');
+  if (tipo) h['Content-Type'] = tipo;
+  const etag = r.headers.get('etag');
+  if (etag && ETAG_SET.test(etag)) h.ETag = etag;
+  if (r.status === 204 || r.status === 304) {
+    try { await r.body.cancel() } catch (e) {}
+    res.writeHead(r.status, h);
+    return res.end();
+  }
+  res.writeHead(r.status, h);
+  res.end(Buffer.from(await r.arrayBuffer()));
+}
+
 /* ---------------- a sessão das rotas de dados (perfil e inventário, 28/out) ---------------- */
 
 /**
@@ -831,10 +947,11 @@ module.exports = {
   sair: protegido(sair),
   enviar: protegido(enviar),
   ia: protegido(ia),
+  set: protegido(set),
   /* para as rotas de dados (api/zro/_dados.js) */
   sessaoConferida,
   lerCorpo,
   origemDe,
   /* para os testes */
-  _interno: { caminhoIa, abrir, selar, cifrar, decifrar, montarJob, montarEquipe, COOKIE_HUB, voltaSegura, origemDe, conferirIdToken, contaDeClaims, lerConta, release, liberacaoDe, acessoOk, config, esquecer: () => (cache = { descoberta: null, chaves: null }), COOKIE_IDA, COOKIE_SESSAO, ORIGENS, PRODUTO },
+  _interno: { caminhoIa, caminhoSet, abrir, selar, cifrar, decifrar, montarJob, montarEquipe, COOKIE_HUB, voltaSegura, origemDe, conferirIdToken, contaDeClaims, lerConta, release, liberacaoDe, acessoOk, config, esquecer: () => (cache = { descoberta: null, chaves: null }), COOKIE_IDA, COOKIE_SESSAO, ORIGENS, PRODUTO },
 };

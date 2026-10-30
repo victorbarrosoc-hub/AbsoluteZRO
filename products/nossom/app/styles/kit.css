@@ -57,6 +57,11 @@
   background: var(--surface-3);
   color: var(--text);
 }
+/* a Z no topo do estúdio: discreta; acesa só quando a pessoa está nela */
+.icon-button.z-top.active {
+  background: var(--surface-3);
+  color: var(--text);
+}
 .text-link {
   display: inline-flex;
   align-items: center;

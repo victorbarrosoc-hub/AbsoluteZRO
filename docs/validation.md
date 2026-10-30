@@ -15,6 +15,58 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Integração: a Z discreta e o Set em todas as plataformas (30/10/2026)
+
+Os dois ramos de 30/10 juntos ("a Z nunca é a primeira tela" e "Set em todas as plataformas"). Em todo app a entrada
+continua a tarefa, a Z segue discreta (nada dela carrega antes do toque) e o Set tem a entrada dele sem ser a entrada.
+Barras de baixo do iPhone com no máximo cinco itens. Bancos e portas próprios: `zro_integra_zset_test`,
+`zro_integra_zset_e2e_test` (porta 3281) e `maestro_test_e2e_integra` (porta 9717).
+
+| Plataforma        | Barra do iPhone (o Set e a Z)                                                                  | Verificação                                                         | Resultado                                                                      |
+| ----------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Raiz e HUB        | app: Apps, Projetos, Planos, Conta; Z no anel do topo (o `/app` não tem Set; o site tem)       | lint, `format:check`, `typecheck`, `npm test`, build, `test:e2e`    | ok; 358/358 (2 de banco cruzado caíram em paralelo e passaram sozinhas); 49/49 |
+| SOBEDESCE celular | Início, Drive, Aparelhos, (Referências), Criar; Set e Z no topo (e no canto da tela sem Drive) | `npm test` (motor e celular, com `set-celular.test.js`)             | 791/791 (+4 pulados)                                                           |
+| SOBEDESCE site    | Set no cabeçalho, antes do anel da Z; entrada em `/conta`                                      | `web`: lint, tipos, `npm test`                                      | ok, ok, 301/301                                                                |
+| Synquei           | Início, Mídia, Sincronizar, Linha, Exportar; Set e Z no canto do Início (Set no menu lateral)  | `npm test`                                                          | 153/153 (+6 pulados, Electron)                                                 |
+| TPeasy            | Roteiros, Teleprompter, Ajustes, Set; Z no anel do topo de Roteiros                            | `node --test tests/*.test.mjs`                                      | 61/61                                                                          |
+| Relay             | sem Z; Set no fim das páginas do topo                                                          | `npm test` (com `npm ci` só do Relay)                               | 57/57                                                                          |
+| Carro do Freela   | 3 + Menu + 3 (não mudou); Set no menu; Z no anel do topo; lateral termina em Set e Z           | `test:api`; bateria inteira (`run.js`)                              | 47/47; 89/89 (`conta-zro` e `sem-zoom` só sozinhas, pelo teto de tempo)        |
+| NOSSOM            | Início, Projetos, Estúdio, Conta, Set; Z no anel do topo; lateral termina em Set e Z           | `npm test`, tipos, `format:check`, build, e2e inteiro               | 124/124, ok, ok, ok; 65/65 (+26 pulados)                                       |
+| AEON              | dock: Mídia, Revisar, Edição, Entrega, Set; Z no ícone da barra                                | `npm test` (com `npm run vendor`)                                   | 140/140                                                                        |
+| Revela            | dock: LUT, Lab, CST, Entrega, Converter; Set e Z no topo                                       | `npm test`                                                          | 180/180                                                                        |
+| Maestro           | não mudou (Set na pílula do topo, Z discreta)                                                  | `npm test`; `e2e/set.spec.ts` (`E2E_DB_SUFIXO=integra`, porta 9717) | 430/430; 6/6 (computador, iPhone e Safari)                                     |
+
+Conflitos e como ficaram: SOBEDESCE celular (`tabs.js`), Synquei (`main.js`, `app.css`, `sw.js`) e Revela tinham seis
+itens na barra com o Set; o Set foi para o topo, ao lado da Z (o Synquei liga a entrada nova a cada desenho do Início,
+`pintarSet`). TPeasy e AEON: o Set fica como a última aba e a Z continua montando só no toque. Carro (`template.html`) e
+NOSSOM (`studio.tsx`): Set antes da Z na lateral. Site do SOBEDESCE (`abas.tsx`): o controle Z · Conta tinha saído; o
+Set virou botão do cabeçalho (`BotaoSet`). Testes que esperavam o Set como último item ou a Z como entrada foram
+acertados para a regra nova. Achado no caminho: o teste da família no NOSSOM e o `mapa` do Carro ainda esperavam a
+família sem o Maestro (lançado em 29/10). Capturas (claro, 1440 e 393 px) fora do repositório. Não rodou: o site do
+SOBEDESCE no navegador (precisa de sessão da Absolute ZRO e do banco), os apps de computador em Electron e iPhone de
+verdade.
+
+## A Z nunca é a primeira tela (30/10/2026)
+
+Regra do titular (29/10/2026; Plano de Integração §7–8): em todas as plataformas quem entra cai na tarefa; a Z é uma
+entrada discreta, nunca aba principal nem aberta sozinha, e nada dela carrega antes do toque. Banco e portas próprios
+no e2e do HUB (`zro_zentrada_e2e_test`, porta 3271).
+
+| Plataforma      | Verificação                                                                                             | Resultado                                                                                                                                                           |
+| --------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Raiz            | lint, `format:check`, `typecheck`, `scan-secrets`                                                       | ok                                                                                                                                                                  |
+| HUB             | `npm run build`; `tests/e2e/z-entrada.spec.ts` (novo) e `z-digitando.spec.ts`                           | build ok; 4/4 (HUB em `/inicio` com a IA no fim do grupo; `/app` nos apps, `/app/apps` redireciona, Z em `/app/ia` só no toque, 393 px com 4 abas e o anel no topo) |
+| HUB             | `npm run test:e2e` inteiro                                                                              | 46/49; as 3 que caíram (a11y, admin, sso) passaram de novo sozinhas — axe estourou os 120 s com outra build na máquina                                              |
+| SOBEDESCE       | `npm test` (computador e celular), `web: npm test`                                                      | 790/790 (+4 pulados) e web 293/293; `entrada.test.js`, `entrada-celular.test.js` e `web/tests/entrada.test.mts` cobrem a entrada sem a Z                            |
+| Synquei, TPeasy | `npm test` / `node --test tests/*.test.mjs`                                                             | 139/139 (+5 pulados, Electron) e 54/54                                                                                                                              |
+| Carro do Freela | `conta-zro` e `run.js colisao contraste movimento doca versoes seguranca menu-recolhivel feed feedback` | 148/148 (cai na tarefa, nada da Z montado, anel apagado, `#tab-z` último; reconectar volta à Z) e 9/9                                                               |
+| NOSSOM          | `npm test`, `tsc`, `next build --webpack`, e2e `zro-ia` e `install-navigation`                          | 120/120, ok, ok, 5/5 e 3/4 (a falha é anterior: a família agora tem o Maestro)                                                                                      |
+| AEON, Revela    | `node --test test/*.test.js`                                                                            | 126/126 e 167/167 (primeira tela Mídia / LUT; Z no ícone da barra / anel do topo; `#z` e `/inicio` diretos)                                                         |
+
+Capturas da primeira tela (claro, 1440 e 393 px) de HUB (site e app), SOBEDESCE (computador e celular), Synquei, TPeasy,
+Carro do Freela, NOSSOM, AEON e Revela: nenhuma monta `<zro-ia>` nem pede o script da Z ao abrir. Não rodou: o
+app de computador do SOBEDESCE/Synquei/AEON em Electron (`--smoke`), nem iPhone de verdade.
+
 ## Set: presença e conversas (29/10/2026, ADR 0032)
 
 Migração `0035_set.sql` (renumerada de 0032: 0031–0034 já são de outros ramos). Banco de teste próprio
@@ -33,6 +85,29 @@ Migração `0035_set.sql` (renumerada de 0032: 0031–0034 já são de outros ra
 Privacidade conferida nos testes: outra organização não aparece; invisível não grava presença; "quem vê" e "visto há"
 valem; perfil escondido não é achado pelo @; e-mail não aparece em nenhuma resposta nem no console; mensagem de
 bloqueado some nos dois sentidos; `zro_app` não escreve direto em nenhuma tabela do Set.
+
+## Set em todas as plataformas (30/10/2026)
+
+A aba em comum ("Set") em SOBEDESCE (site e celular), Synquei, TPeasy, Relay, Carro do Freela, NOSSOM, AEON e Revela;
+tabela em [set.md](integration-contracts/set.md). Telas (claro, computador e 393 px; escuro em Carro, NOSSOM, AEON,
+Revela, Relay, Synquei e TPeasy) gravadas fora do repositório.
+
+| Verificação                                 | Resultado                                                                                                                                                    |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Raiz: lint, formatação, tipos, build do HUB | ok                                                                                                                                                           |
+| Raiz: `npm test` (banco `zro_setall_test`)  | **358/358** em 41 arquivos; `e2e/set.spec.ts` do HUB 5/5 (Chromium e WebKit) com o widget novo                                                               |
+| SOBEDESCE site: lint, tipos, `npm test`     | ok; **299/299**; `zro-set.test.mts`: login com `zro.set` e sem ele, Bearer só no servidor, ETag/304, origem, caminhos                                        |
+| SOBEDESCE celular                           | `test/set-celular.test.js` (Chromium com a CSP do `/app/`): última aba, balão, folha tela cheia, tinta do app                                                |
+| Synquei / TPeasy                            | 153/153 (5 pulados sem Electron) / 60/60, com os testes do repasse e da entrada                                                                              |
+| Relay                                       | `set.test.js` 10/10 (login desligado com o site fechado); telas 5/5 com o servidor local sem login                                                           |
+| Carro do Freela                             | `test:api` 47/47; `conta-zro` 145/145 rodada direto (275 s: o teto de 240 s do `run.js` estoura com a máquina cheia); `set-zro` 20/20 (computador e celular) |
+| NOSSOM: tipos, `npm test`, e2e              | ok; 121/121; `set.spec.ts` 3/3, `zro-access` (o portão cobre `/api/zro/set`) e `zro-ia` 11/11                                                                |
+| AEON / Revela                               | 138/138 / 179/179 (repasse, 403 do portão, dock e folha com a identidade do app)                                                                             |
+
+Achado no caminho: no NOSSOM a folha não trocava de tema ao trocar o tema do estúdio (o React aplica o atributo `tema`
+do filho antes do `data-theme` do pai); o widget agora recopia a identidade depois da mudança e ao abrir.
+Não rodado: `vendor.test.js` do Relay (sem `node_modules` neste ambiente) e o site do SOBEDESCE no navegador (só o
+componente e a rota, pelos testes).
 
 ## Página inicial no iPhone: topo por cima de tudo e grade de ícones (29/10/2026)
 
@@ -2711,3 +2786,77 @@ em `products/maestro/docs/permissoes.md`). Local, Postgres e Chromium/WebKit des
 | Segredos                        | `node scripts/scan-secrets.mjs`                              | nenhum                                                                                                                                                               |
 
 Não conferido aqui: a migração `0027` no banco de produção (deploy só com autorização) e a tela com dados reais.
+
+## Maestro: arrastar o card no computador sem "travadinha" (29/10/2026)
+
+Vídeo do titular (Safari do Mac, tema escuro, maestro.absolutezro.com, 5,8 s): card arrastado de Revisão para Em
+aprovação e de volta. Quadro a quadro (ffmpeg, linha do tempo de 60 fps):
+
+- **Parado sobre o destino** (0,83–1,17 s): o destino piscava a ~30 Hz. Em quadros alternados a linha de soltar sumia,
+  o conteúdo de Em aprovação descia e subia ~10 px e o encaixe de origem ganhava contorno; em 1,12–1,13 s a coluna de
+  destino chegou a esconder o cabeçalho. Na volta, o destaque da coluna também alternava.
+- **Ao soltar** (1,18 s): o card sumia por 2 quadros e entrava cortado pela borda da coluna até 1,32 s ("…la semana",
+  "ories da semana"); na volta (2,38–2,52 s), entrava pela direita, cortado e meio transparente.
+- **Causas** no código: (1) no Safari, `dragleave` chega sem `relatedTarget` a cada filho e o Quadro apagava o alvo,
+  redesenhava tudo e o recolocava no `dragover` seguinte (linha de soltar no DOM, ~11 px de layout por troca); (2) cada
+  troca de alvo desenhava as 8 colunas (card sem `memo`) e o FLIP media todos os cards, inclusive com o deslize ainda
+  andando (`composite: "add"` somava de novo), e a mira lia retângulos com esse transform; (3) ao trocar de coluna o
+  card é remontado e o CSS repetia a entrada (`q-assenta`, começa com `opacity: 0`), o FLIP saía do lugar de origem e
+  `.q-col { overflow: hidden }` cortava; (4) a pergunta de 5 s agendava render sempre (colunas) e trazia de volta os
+  próprios cards; a página renovada depois de gravar redesenhava todos os cards.
+- **Correção** (`src/components/quadro/arrastar.ts`, `fantasma.ts`, `flip.ts`, `quadro.tsx`, `estado.ts`, CSS): o card
+  arrasta com o ponteiro como no celular (fantasma com camada própria, só `translate`; espaço aberto por `transform`;
+  coluna de destino cresce uma vez por coluna; tudo medido de uma vez ao erguer e nada lido no meio do arrasto); pousa
+  onde vai ficar e só então o React grava, com o FLIP fixado; o FLIP mede pelo lugar (sem transform do próprio card),
+  não repete a entrada de quem já estava na tela e passa por cima das colunas (`z-index` durante o deslize, coluna sem
+  corte). Esc, soltar fora e perder a janela devolvem; Entregue recebe no topo; "reduzir movimento" vai direto. O
+  fantasma (celular inclusive) vai no `<body>`: no `.shell` o primeiro quadro custava a página inteira. A pergunta de
+  5 s e a página renovada não redesenham mais o Quadro à toa. Reordenar colunas pelo cabeçalho também não pisca mais.
+  O clique logo depois de abrir a página não é mais engolido (o "engolir" começava em 0 ms).
+- **Medidas** (`e2e/arrastar.spec.ts`, 1440×900, escuro, 32 cards; máquina dividida, carga ~18 em 4 núcleos; a luz
+  ambiente apagada nas medidas porque o headless não compõe na GPU). Antes → depois, Chromium: renders do React com o
+  mouse andando 3–4 → **0**; mudanças no DOM 6–8 → **0**; layout 1 → **0**; card invisível depois de soltar 7–8 quadros
+  → **0** (sempre inteiro); maior pulo ao soltar 290–332 px → **8–14 px** (menor que o caminho de 24 px até o lugar);
+  quadro p50 31 → **17 ms**, p95 59–63 → **34–54 ms**. WebKit: renders 1–2 → **0**, DOM 4 → **0**, card invisível →
+  **0**, pulo 217 px → **10–21 px**. Custo de erguer no WebKit: 50–85 ms → **2–7 ms** de JavaScript; primeiro quadro
+  depois de erguer ~0,5–0,9 s → ~0,06–0,09 s (o headless sem GPU exagera a pintura; no Mac é composição). Depois de
+  assentar: 1–2 renders (a resposta do banco e a página renovada) e nenhum card desliza nelas nem na volta de 5 s.
+- Testes: `e2e/arrastar.spec.ts` (computador e o novo projeto `computador-safari`, WebKit): sem render, DOM e layout
+  com o mouse andando, destino sem piscar, card sempre à vista e sem pulo ao soltar, nada desliza depois; clique abre a
+  ficha, reordenar na coluna, Esc e soltar fora sem gravar; Entregue no topo com reduzir movimento; "Mover para…"
+  desliza por cima das colunas, inteiro. `gestos.spec.ts` (iPhone, Chromium e WebKit), `quadro.spec.ts`,
+  `colunas.spec.ts`, `transicao.spec.ts`, `visual.spec.ts` e `sem-corte.spec.ts` passam. `E2E_DB_SUFIXO` separa o
+  banco do e2e quando duas cópias rodam juntas; `E2E_VIDEO=1` grava cada teste.
+- Não validado: Safari de um Mac e iPhone de verdade (sem deploy).
+
+## Maestro: barra de baixo com 4 abas e a barra de cima com o Set (30/10/2026)
+
+- Barra de baixo do iPhone: uma coluna por aba (`grid-auto-flow: column`), as 4 dividem a largura toda, sem a 5ª vazia
+  (`transicao.spec.ts`, Chromium e WebKit). Barra de cima: com o selo Demonstração, a Z, a pílula do Set, o tema e a
+  conta, a 393 px a conta saía 17 px da tela (a pílula veio com o Set); agora quem cede é o selo (reticências).
+- `transicao.spec.ts` e `gestos.spec.ts` não esperam mais `networkidle`: o `<zro-set>` não lê o corpo do 401 e o
+  Chromium deixa o pedido em aberto (CDP: resposta e 87 bytes recebidos, sem `loadingFinished`). Esperam a rede parada
+  sem o Set e a ordem gravada no banco. Resultado: transicao, gestos, arrastar, quadro, contrato, sem-corte e set
+  **61/61** (18 pulados por projeto); `npm test` **430/430**; lint, Prettier, tipos e build ok (Maestro e raiz);
+  `scan-secrets` sem segredo. Com carga ~16 em 4 núcleos, "segurar na borda" (WebKit) caiu 1 em 3: passou mais de 1 s
+  entre a troca e o próximo movimento do teste, e a borda já passava para a coluna seguinte (o código da borda não mudou).
+
+## Laboratório da Z (30/10/2026, [ADR 0033](decisions/0033-laboratorio-da-z.md))
+
+Console › Laboratório da Z (só admin), migração `0036_laboratorio_z.sql`. Local, Postgres e Chromium desta máquina;
+Claude e ElevenLabs **falsos** (`tests/fixtures/z-lab-falso.ts`), nenhuma chamada real.
+
+| O quê                                | Como                                                                                  | Resultado                                                                                                                                        |
+| ------------------------------------ | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Anexos, custos, pedidos, voz, PCM    | `tests/integration/z-lab-unidade.test.ts`                                             | 18/18: tipo pelo conteúdo, Office por dentro, bomba de zip, senha, XML sem entidade externa, conta de custo, tom, filtro de voz, frases e PCM    |
+| Quem pode e RLS                      | `tests/integration/z-lab.test.ts`                                                     | não admin e suporte: 403 em todas as funções; `asUser` direto: 0 linhas nas 7 tabelas, insert 42501, update 0 linhas                             |
+| Teto, uso, versões, publicação       | `tests/integration/z-lab.test.ts`                                                     | sem teto = bloqueado; uso idempotente; passou = 429; versão imutável; restaurar; publicar só com a trava e confirmação; trava desligada = padrão |
+| Recursos por plano e auditoria       | `tests/integration/z-lab.test.ts`                                                     | tudo desligado; vale só para o plano da lista; cada mudança em `audit_logs` (`z_lab.*`)                                                          |
+| Rotas documentadas                   | `tests/integration/openapi.test.ts`                                                   | as 20 rotas `/api/v1/admin/z-lab/*` no OpenAPI                                                                                                   |
+| Tela (e2e)                           | `npx playwright test tests/e2e/z-lab.spec.ts`                                         | 2/2: 404/403 em tudo para cliente e suporte; teto, streaming, ditado, anexos (Word, PNG, WAV), comparar, voz ao vivo, Configurar, axe, Custos    |
+| Suíte inteira                        | `npm test` · `npm run test:e2e`                                                       | 383/383 · 48 ok + 2 por tempo da máquina carregada (`admin.spec` e `esqueleto` WebKit), que passam sozinhos                                      |
+| Lint, Prettier, tipos, build, chaves | `npm run lint`, `format:check`, `typecheck`, `build`, `node scripts/scan-secrets.mjs` | ok · ok · ok · ok · nenhum segredo                                                                                                               |
+
+Não conferido aqui: voz, transcrição, Voice Design e o Claude com as chaves reais (a latência de verdade e a qualidade
+da voz); microfone de verdade e o eco do alto-falante no barge-in; vídeos grandes no navegador; a migração `0036` em
+produção (deploy só com autorização).

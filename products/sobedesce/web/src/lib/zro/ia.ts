@@ -20,7 +20,7 @@ import { db, schema } from "@/lib/db";
 import { abrir, selar } from "@/lib/google/cripto";
 import { erro, origemConfere } from "@/lib/http";
 import { origensDoSite } from "@/lib/site";
-import { emissor } from "./config";
+import { emissor, ESCOPO_IA } from "./config";
 import { renovarTokensIa, type TokensIa } from "./oidc";
 
 const { contasZro } = schema;
@@ -54,15 +54,19 @@ function lerTokens(usuarioId: string, selado: string | null): TokensIa | null {
   }
 }
 
+/** Os tokens cobrem o escopo? Os de antes do Set não guardam o escopo: só valem para a Z. */
+const cobre = (tokens: TokensIa, escopo: string) => (tokens.escopo ?? ESCOPO_IA).split(" ").includes(escopo);
+
 /**
- * O access token da Z para esta conta: o guardado, se ainda vale um minuto; senão troca o refresh (com a linha
- * travada) e guarda o novo. `reconectar`: não há token ou a Absolute ZRO recusou. `rede`: a Absolute ZRO não respondeu.
+ * O access token da Absolute ZRO para esta conta (escopo da Z por padrão; o Set pede `zro.set`): o guardado, se ainda
+ * vale um minuto; senão troca o refresh (com a linha travada) e guarda o novo. `reconectar`: não há token, falta o
+ * escopo ou a Absolute ZRO recusou. `rede`: a Absolute ZRO não respondeu.
  */
-export async function acessoIa(usuarioId: string, agora = Date.now()): Promise<{ at: string } | { erro: "reconectar" | "rede" }> {
+export async function acessoIa(usuarioId: string, agora = Date.now(), escopo: string = ESCOPO_IA): Promise<{ at: string } | { erro: "reconectar" | "rede" }> {
   return db.transaction(async (t) => {
     const [linha] = await t.select({ ia: contasZro.ia }).from(contasZro).where(eq(contasZro.usuarioId, usuarioId)).for("update");
     const tokens = lerTokens(usuarioId, linha?.ia ?? null);
-    if (!tokens) return { erro: "reconectar" as const };
+    if (!tokens || !cobre(tokens, escopo)) return { erro: "reconectar" as const };
     if (tokens.atExp - 60 > Math.floor(agora / 1000)) return { at: tokens.at };
     let r: Awaited<ReturnType<typeof renovarTokensIa>>;
     try {
@@ -78,7 +82,7 @@ export async function acessoIa(usuarioId: string, agora = Date.now()): Promise<{
       .update(contasZro)
       .set({ ia: selar(JSON.stringify(r.ia), contexto(usuarioId)) })
       .where(eq(contasZro.usuarioId, usuarioId));
-    return { at: r.ia.at };
+    return cobre(r.ia, escopo) ? { at: r.ia.at } : { erro: "reconectar" as const };
   });
 }
 

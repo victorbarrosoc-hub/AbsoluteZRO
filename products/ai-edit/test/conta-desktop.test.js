@@ -166,10 +166,27 @@ test('cliente sem o escopo da Z (invalid_scope): entra de novo sem ele, sem queb
     const ir = navegador(false)
     const c = criarConta({ pasta, abrirNavegador: (u) => (idas++, ir(u)) })
     assert.equal(await c.entrar(), 'ok')
-    assert.equal(idas, 2)
+    // com o Set, sem o Set, sem a Z
+    assert.equal(idas, 3)
     assert.equal(zro.estado.escopo, 'openid email profile org offline_access')
     c.sair()
   } finally {
     zro.estado.recusarEscopoIa = false
+  }
+})
+
+test('cliente sem o escopo do Set (Absolute ZRO de antes dele): entra de novo sem ele, com a Z', async () => {
+  zro.estado.pessoa = LIA
+  zro.estado.recusarEscopoSet = true
+  try {
+    let idas = 0
+    const ir = navegador(false)
+    const c = criarConta({ pasta, abrirNavegador: (u) => (idas++, ir(u)) })
+    assert.equal(await c.entrar(), 'ok')
+    assert.equal(idas, 2)
+    assert.equal(zro.estado.escopo, 'openid email profile org offline_access zro.ia')
+    c.sair()
+  } finally {
+    zro.estado.recusarEscopoSet = false
   }
 })

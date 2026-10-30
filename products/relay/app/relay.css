@@ -419,3 +419,49 @@ h3 {
     scroll-behavior: auto !important;
   }
 }
+
+/* ─────────── o Set da Absolute ZRO (app/set.js): "Set" no topo e a folha com a cara do Relay ─────────── */
+.topo nav a[data-set] {
+  position: relative;
+}
+.topo nav a[data-set][aria-expanded='true'] {
+  color: var(--texto);
+}
+.set-balao {
+  position: absolute;
+  top: 1px;
+  right: -2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--texto);
+  color: var(--fundo);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.set-balao[hidden] {
+  display: none;
+}
+:root {
+  --zro-set-tinta: var(--texto);
+  --zro-set-apoio: var(--mudo);
+  --zro-set-apagado: var(--fraco);
+  --zro-set-linha: var(--linha);
+  --zro-set-linha-forte: var(--linha-forte);
+  --zro-set-superficie: var(--superficie);
+  --zro-set-superficie-2: var(--fundo);
+  --zro-set-superficie-3: var(--superficie-2);
+  --zro-set-vidro: var(--vidro-topo);
+  --zro-set-fundo: color-mix(in srgb, var(--fundo) 97%, transparent);
+  /* o sinal do Relay (menta) marca quem está online */
+  --zro-set-online: var(--menta);
+  --zro-set-acento: var(--btn-main-fill);
+  --zro-set-acento-tinta: var(--btn-main-ink);
+  --zro-set-perigo: var(--erro);
+  --zro-set-raio: var(--raio-g);
+  --zro-set-fonte: var(--fonte);
+}

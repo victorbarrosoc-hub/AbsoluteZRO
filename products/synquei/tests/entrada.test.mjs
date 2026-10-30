@@ -1,6 +1,6 @@
-// Tela de entrada (decisão do titular, 28/10/2026; app/js/entrada.js): a Z continua a primeira aba, mas aberto sem rota
-// com cartão na fila do Organizar (ou sincronia rodando) o app vai direto para a tarefa. Rota no endereço e o "Abrir no
-// Synquei" do SOBEDESCE são respeitados; depois da janela inicial, nada pula sozinho.
+// Tela de entrada (decisão do titular, 29/10/2026; app/js/entrada.js): sem rota o app abre no Início, nunca na Z; aberto
+// sem rota com cartão na fila do Organizar (ou sincronia rodando) vai direto para a tarefa. Rota no endereço (inclusive
+// #/z) e o "Abrir no Synquei" do SOBEDESCE são respeitados; depois da janela inicial, nada pula sozinho.
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
@@ -21,7 +21,7 @@ test('sem rota: endereço vazio ou desconhecido', () => {
   assert.equal(semRota('#/midia', ROTAS), false)
 })
 
-test('nada em curso: fica na Z', () => {
+test('nada em curso: fica no Início (o app não pula para lugar nenhum, muito menos a Z)', () => {
   assert.deepEqual(base(), { tela: null, idas: [] })
   assert.equal(telaDaTarefa({ sync: { running: false }, org: { atual: null, fila: [] } }), null)
 })
@@ -38,9 +38,10 @@ test('rota no endereço, a pessoa já navegou ou passou a janela: não mexe', ()
   assert.deepEqual(base({ agora: JANELA_MS + 1, estado: { org: fila } }).idas, [])
 })
 
-test('o app decide depois que o Organizar contou o pendente; a Z segue a primeira aba', () => {
+test('o app decide depois que o Organizar contou o pendente; sem rota é o Início, nunca a Z', () => {
   const main = readFileSync(new URL('../app/js/main.js', import.meta.url), 'utf8')
   assert.match(main, /iniciarOrganizar\(\)[\s\S]{0,200}\.then\(\(\) =>\s*decidirEntrada\(/)
-  assert.match(main, /const ORDER = \['z', 'inicio'/)
+  assert.match(main, /const ORDER = \['inicio', 'midia'/)
+  assert.match(main, /return VIEWS\[r\] \? r : 'inicio'/)
   assert.match(main, /onAbrir\?\.\(\(\) => go\('organizar', true\)\)/)
 })

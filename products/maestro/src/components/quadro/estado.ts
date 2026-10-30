@@ -116,12 +116,18 @@ export function useQuadro(ini: Inicial) {
 
   /** Junta o que veio do banco: card em gravação fica como está; versão mais velha não volta. */
   const juntar = useCallback((chegaram: CardQ[]) => {
+    // o mesmo card que já está na tela (a folga de 5 s do servidor devolve o que acabou de mudar): nada a desenhar
+    const igual = (local: CardQ | undefined, c: CardQ) => !!local && local.versao === c.versao && JSON.stringify(local.dados) === JSON.stringify(c.dados);
+    const pula = (m: Record<string, CardQ>, c: CardQ) => {
+      const local = m[c.id];
+      return emVoo.current.has(c.id) || (!!local && local.versao > c.versao) || igual(local, c) || (!local && !!c.dados.apagadoEm);
+    };
+    // nada novo: nem agenda render (senão o Quadro inteiro desenharia e mediria a cada 5 s, até no meio de um arrasto)
+    if (chegaram.every((c) => pula(atual.current, c))) return;
     setCards((m) => {
       let n = m;
       for (const c of chegaram) {
-        if (emVoo.current.has(c.id)) continue;
-        const local = m[c.id];
-        if (local && local.versao > c.versao) continue;
+        if (pula(m, c)) continue;
         if (n === m) n = { ...m };
         if (c.dados.apagadoEm) delete n[c.id];
         else n[c.id] = c;
@@ -147,7 +153,8 @@ export function useQuadro(ini: Inicial) {
             cursor.current = d.cursor;
             if (d.cards.length) juntar(d.cards);
             const novas = d.colunas;
-            if (novas?.length && colunasEmVoo.current === 0) setColunas((l) => (mesmasColunas(l, novas) ? l : novas));
+            // as mesmas colunas: nem agenda render (a cada 5 s o Quadro inteiro desenharia e mediria de novo)
+            if (novas?.length && colunasEmVoo.current === 0 && !mesmasColunas(colunasAgora.current, novas)) setColunas(novas);
           }
         } catch {
           // sem rede: tenta na próxima volta

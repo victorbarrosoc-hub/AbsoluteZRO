@@ -42,7 +42,8 @@ async function entrar(o: { pessoa: PessoaZro; modo?: "entrar" | "vincular"; sess
   const q = new URLSearchParams({ modo: o.modo ?? "entrar" });
   if (o.volta) q.set("volta", o.volta);
   let caminho = `/api/zro/entrar?${q}`;
-  for (let i = 0; i < 2; i++) {
+  // sem o Set e depois sem a Z: até duas voltas antes de entrar
+  for (let i = 0; i < 3; i++) {
     const ida = await rotaEntrar.GET(pedido(caminho, { cookies: { sd_sessao: o.sessao } }));
     assert.equal(ida.status, 302);
     const cookie = cookiesDe(ida).get("sd_zro");

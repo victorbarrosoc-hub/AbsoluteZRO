@@ -1,88 +1,37 @@
-// Aba de entrada do app do celular (decisão do titular, 28/10/2026; web/public/app/lib/entrada.js): abre na Z, mas se
-// logo ao abrir um computador estiver transferindo, vai para Início (o cartão do andamento). Uma vez, nos primeiros
-// segundos e só se a pessoa ainda não mexeu; link com # é respeitado.
+// Entrada do app do celular (decisão do titular, 29/10/2026; Plano de Integração §7–8: a tarefa principal vem primeiro).
+// Sem link, o app abre no Início (enviar, a fila e o cartão do computador transferindo). A Z não é aba da barra de baixo
+// nem abre sozinha: fica no anel discreto do topo (ZBotao) e em /app/#z. Os links com # continuam abrindo a aba deles.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
-import { computadorTransferindo, vigiarEntrada, JANELA_MS } from '../web/public/app/lib/entrada.js'
 
-/** Estado de mentira no mesmo molde de lib/state.js. */
-function loja(inicial) {
-  let s = { tab: 'z', sheet: null, pc: { status: 'idle', computadores: [] }, ...inicial }
-  const ouvintes = new Set()
-  return {
-    getState: () => s,
-    setState: (p) => {
-      s = { ...s, ...p }
-      for (const fn of [...ouvintes]) fn(s)
-    },
-    subscribe: (fn) => {
-      ouvintes.add(fn)
-      return () => ouvintes.delete(fn)
-    },
-    ouvintes,
-  }
-}
-const andando = { status: 'ok', computadores: [{ online: true, snapshot: { estado: 'baixando' } }] }
-const parado = { status: 'ok', computadores: [{ online: true, snapshot: { estado: 'concluido' } }, { online: false, snapshot: { estado: 'enviando' } }] }
+const ler = (p) => fs.readFileSync(new URL(`../web/public/app/${p}`, import.meta.url), 'utf8')
 
-test('computador ligado enviando ou baixando conta; desligado ou concluído não', () => {
-  assert.equal(computadorTransferindo(andando), true)
-  assert.equal(computadorTransferindo(parado), false)
-  assert.equal(computadorTransferindo(null), false)
+test('a aba inicial é o Início; a Z só por #z', () => {
+  const state = ler('lib/state.js')
+  assert.match(state, /\n {2}tab: 'send',/)
+  const saved = /export function savedTab\(\) \{([\s\S]*?)\n\}/.exec(state)[1]
+  assert.match(saved, /location\.hash === '#z'\) return 'z'/)
+  assert.match(saved.trim(), /return 'send'$/)
+  const app = ler('app.js')
+  assert.match(app, /setState\(\{ tab: savedTab\(\)/)
+  assert.match(app, /location\.hash === '#z'\) setState\(\{ tab: 'z' \}\)/)
+  assert.doesNotMatch(app, /vigiarEntrada/, 'nada leva à Z sozinho')
 })
 
-test('abre na Z e vai para Início quando o retrato chega com transferência andando', () => {
-  const l = loja()
-  vigiarEntrada(l)
-  assert.equal(l.getState().tab, 'z')
-  l.setState({ pc: andando })
-  assert.equal(l.getState().tab, 'send')
-  assert.equal(l.ouvintes.size, 0, 'para de vigiar')
+test('a barra de baixo não tem a Z; o Início é o primeiro', () => {
+  const tabs = ler('components/tabs.js')
+  const barra = /function TabBar[\s\S]*?<\/nav>`/.exec(tabs)[0]
+  assert.doesNotMatch(barra, /setTab\('z'\)/)
+  assert.ok(barra.indexOf("setTab('send')") < barra.indexOf("setTab('drive')"))
+  // a tela da Z só monta quando a pessoa toca no anel ou chega por #z (nada dela carrega ao abrir)
+  assert.match(tabs, /\$\{seen\.current\.z \? html`<div class="tab-pane" hidden=\$\{tab !== 'z'\}><\$\{ZScreen\}/)
+  assert.doesNotMatch(tabs, /\n\s*<div class="tab-pane" hidden=\$\{tab !== 'z'\}><\$\{ZScreen\}/)
 })
 
-test('sem tarefa em curso fica na Z', () => {
-  const l = loja()
-  vigiarEntrada(l)
-  l.setState({ pc: parado })
-  assert.equal(l.getState().tab, 'z')
-  // Depois, mesmo que algo comece a andar, a tela não pula sozinha.
-  l.setState({ pc: andando })
-  assert.equal(l.getState().tab, 'z')
-})
-
-test('a pessoa mexeu, abriu uma folha ou o retrato chegou tarde: não troca', () => {
-  const mexeu = loja()
-  vigiarEntrada(mexeu)
-  mexeu.setState({ tab: 'drive' })
-  mexeu.setState({ pc: andando })
-  assert.equal(mexeu.getState().tab, 'drive')
-
-  const folha = loja()
-  vigiarEntrada(folha)
-  folha.setState({ sheet: { name: 'refSave' } })
-  folha.setState({ pc: andando })
-  assert.equal(folha.getState().tab, 'z')
-
-  let t = 0
-  const tarde = loja()
-  vigiarEntrada({ ...tarde, agora: () => t })
-  t = JANELA_MS + 1
-  tarde.setState({ pc: andando })
-  assert.equal(tarde.getState().tab, 'z')
-})
-
-test('link com # (outra aba já escolhida) é respeitado', () => {
-  const l = loja({ tab: 'refs' })
-  vigiarEntrada(l)
-  l.setState({ pc: andando })
-  assert.equal(l.getState().tab, 'refs')
-  assert.equal(l.ouvintes.size, 0)
-})
-
-test('o app liga a vigia logo depois de escolher a aba inicial; a Z segue a primeira aba', () => {
-  const app = fs.readFileSync(new URL('../web/public/app/app.js', import.meta.url), 'utf8')
-  assert.match(app, /setState\(\{ tab: savedTab\(\)[^\n]*\n(?:\s*\/\/[^\n]*\n)*\s*vigiarEntrada\(\{ getState, setState, subscribe \}\)/)
-  const tabs = fs.readFileSync(new URL('../web/public/app/components/tabs.js', import.meta.url), 'utf8')
-  assert.ok(tabs.indexOf("setTab('z')") < tabs.indexOf("setTab('send')") || !tabs.includes("setTab('send')"))
+test('a Z fica no anel discreto do topo, ao lado da conta', () => {
+  const main = ler('components/main.js')
+  assert.match(main, /export function ZBotao\(\)[\s\S]*?onClick=\$\{\(\) => setTab\('z'\)\}/)
+  assert.match(main, /function TopoAcoes[\s\S]*?<\$\{ZBotao\} \/>/)
+  assert.equal((main.match(/<\$\{TopoAcoes\} user=\$\{user\} \/>/g) || []).length, 2, 'Início e as abas sem barra própria')
 })

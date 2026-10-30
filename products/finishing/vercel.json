@@ -51,6 +51,7 @@
     }
   ],
   "rewrites": [
+    { "source": "/api/zro/set/:caminho*", "destination": "/api/zro/set?c=:caminho*" },
     { "source": "/inicio", "destination": "/api/app?caminho=inicio.html" },
     { "source": "/lut", "destination": "/api/app?caminho=lut.html" },
     { "source": "/lab", "destination": "/api/app?caminho=lab.html" },

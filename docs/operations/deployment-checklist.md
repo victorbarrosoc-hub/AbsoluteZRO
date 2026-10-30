@@ -32,6 +32,13 @@ https://absolutezro.com, com o projeto Supabase **novo** `AbsoluteZRO` (nenhum b
   `https://absolutezro.com/conexoes/google/retorno` e os escopos `calendar.events` e `calendar.calendarlist.readonly`.
 - `CRON_SECRET` (openssl rand -hex 32, Production; sem espaço nem quebra de linha no fim, ou a Vercel recusa o build): o agendamento diário `GET /api/cron/dolar` (vercel.json) busca o dólar
   PTAX do Banco Central para os Custos (migração 0030). Sem ele, a rota responde 503 e só a página dos Custos atualiza.
+- A Z (Claude): `IA_ANTHROPIC_KEY` (e `IA_MODELO`, padrão `claude-opus-5-5`). Sem ela, a Z fica desligada.
+- Laboratório da Z (ADR 0033, migração `0036`): `ELEVENLABS_API_KEY` no projeto `absolutezro` (Production; o titular já
+  adicionou em 30/10/2026). Voz, ditado e transcrição só para o admin da plataforma em `/admin/laboratorio`. Sem a
+  chave, o laboratório mostra "Conecte a chave" com o nome da variável; a chave nunca vai para o navegador nem para o
+  log. Antes do primeiro teste, defina o **teto de gasto por dia** no Configurar (sem teto, nada que custa roda). Nada
+  da voz, do ditado ou dos anexos chega aos clientes até ligar o recurso por plano em "Para os clientes" (auditado).
+  `ZRO_ANTHROPIC_URL`, `ZRO_ELEVENLABS_URL` e `ZRO_ELEVENLABS_WS_URL` são só do e2e: nunca configure em produção.
 - Ambiente e origem saem da Vercel (`VERCEL_ENV`, `VERCEL_PROJECT_PRODUCTION_URL`); `ZRO_ENV`/`ZRO_APP_ORIGIN` só se
   quiser forçar.
 - Cobrança pelo Stripe (ADR 0019): `STRIPE_SECRET_KEY` e `STRIPE_WEBHOOK_SECRET` no projeto `absolutezro` (Production).

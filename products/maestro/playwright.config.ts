@@ -21,12 +21,19 @@ export default defineConfig({
   workers: 1,
   reporter: [["list"]],
   globalSetup: "./e2e/preparar.ts",
-  use: { baseURL: `http://localhost:${PORT}`, trace: "retain-on-failure" },
+  use: {
+    baseURL: `http://localhost:${PORT}`,
+    trace: "retain-on-failure",
+    // E2E_VIDEO=1 grava cada teste (test-results/<teste>/video.webm), para ver o movimento quadro a quadro.
+    video: process.env.E2E_VIDEO ? { mode: "on", size: { width: 1440, height: 900 } } : "off",
+  },
   projects: [
     { name: "computador", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
     { name: "iphone", use: { ...devices["iPhone 15 Pro"], browserName: "chromium" } },
     // O Safari de verdade (WebKit) para o detector de corte, a troca de seção e os gestos do Quadro.
     { name: "iphone-safari", testMatch: /(sem-corte|transicao|gestos|set)\.spec\.ts/, use: { ...devices["iPhone 15 Pro"] } },
+    // O Safari do Mac (WebKit) para arrastar o card com o mouse.
+    { name: "computador-safari", testMatch: /arrastar\.spec\.ts/, use: { ...devices["Desktop Safari"], viewport: { width: 1440, height: 900 } } },
   ],
   webServer: {
     command: `npx next start -p ${PORT}`,

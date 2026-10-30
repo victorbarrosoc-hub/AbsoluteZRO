@@ -20,7 +20,7 @@ export async function iniciarZroFalsa(cliente) {
   const acessos = new Map()
   const escoposDe = new Map()
   const renovaveis = new Map()
-  const estado = { pessoa: null, negar: false, adulterar: null, trocas: 0, prompt: null, escopo: null, expiraEm: 600, renovacoes: 0, leituras: 0, revogados: [], recusarRenovacao: false, ia: [], gate: null }
+  const estado = { pessoa: null, negar: false, adulterar: null, trocas: 0, prompt: null, escopo: null, expiraEm: 600, renovacoes: 0, leituras: 0, revogados: [], recusarRenovacao: false, ia: [], set: [], gate: null }
   let base = ''
   /** O gate do HUB barra esta pessoa? (produto fechado e a conta fora da lista) */
   const barrada = () => !!estado.gate && estado.pessoa?.release?.[estado.gate] !== 'allowed'
@@ -91,6 +91,9 @@ export async function iniciarZroFalsa(cliente) {
       const escopos = (q.get('scope') || '').split(' ')
       if (q.get('client_id') !== cliente.clientId || q.get('code_challenge_method') !== 'S256' || !q.get('code_challenge') || !q.get('nonce') || !escopos.includes('openid')) {
         volta.searchParams.set('error', 'invalid_request')
+      } else if (estado.recusarEscopoSet && escopos.includes('zro.set')) {
+        // Absolute ZRO de antes do Set (zro.set fora da lista do cliente)
+        volta.searchParams.set('error', 'invalid_scope')
       } else if (estado.recusarEscopoIa && escopos.includes('zro.ia')) {
         // cliente sem zro.ia na lista (o HUB devolve invalid_scope)
         volta.searchParams.set('error', 'invalid_scope')
@@ -181,6 +184,23 @@ export async function iniciarZroFalsa(cliente) {
       }
       if (/^\/conversas\/[\w-]+$/.test(caminho)) return responder(res, req.method === 'DELETE' ? 200 : 404, req.method === 'DELETE' ? { ok: true } : { message: 'Conversa não encontrada.' })
       return responder(res, 404, { error: 'not_found' })
+    }
+    // a API do Set (/api/v1/set): Bearer com o escopo zro.set, como no HUB (sem ele, 401). Leitura com ETag (W/"v1"):
+    // com If-None-Match igual, 304 sem corpo. Guarda o que chegou em estado.set.
+    if (url.pathname === '/api/v1/set' || url.pathname.startsWith('/api/v1/set/')) {
+      const at = String(req.headers.authorization || '').replace(/^Bearer /, '')
+      let corpo = ''
+      for await (const c of req) corpo += c
+      const caminho = url.pathname.slice('/api/v1/set'.length)
+      estado.set.push({ metodo: req.method, caminho, busca: url.search, autorizacao: req.headers.authorization || null, cookie: req.headers.cookie || null, inm: req.headers['if-none-match'] || null, corpo })
+      const sub = acessos.get(at)
+      if (!sub || !(escoposDe.get(at) || []).includes('zro.set') || barrada()) return responder(res, 401, { error: 'unauthenticated', message: 'Token inválido, vencido ou sem permissão para esta ação.' })
+      if (req.method === 'GET' && req.headers['if-none-match'] === 'W/"v1"') {
+        res.writeHead(304, { etag: 'W/"v1"' })
+        return res.end()
+      }
+      res.writeHead(200, { 'content-type': 'application/json', ...(req.method === 'GET' ? { etag: 'W/"v1"' } : {}) })
+      return res.end(JSON.stringify(caminho === '' ? { eu: { id: 'eu' }, pessoas: [], naoLidas: 1, pedidos: 0 } : { ok: true }))
     }
     responder(res, 404, { error: 'not_found' })
   })

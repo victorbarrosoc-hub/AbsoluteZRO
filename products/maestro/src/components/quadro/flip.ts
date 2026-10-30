@@ -10,15 +10,26 @@ import { useCallback, useLayoutEffect, useRef, type RefObject } from "react";
 type Pos = { x: number; y: number };
 const MOLA = "cubic-bezier(0.32, 0.72, 0, 1)";
 
+/**
+ * Onde cada card está, pelo lugar dele (`.q-lugar`): o lugar não leva o FLIP nem o "assentar" do card, então a medida é
+ * o layout (mais o espaço que o arrastar abriu com transform) e uma mudança no meio de outra não soma o deslize que
+ * ainda está andando (o `composite: "add"` já soma).
+ */
 function medir(raiz: HTMLElement): Map<string, Pos> {
   const base = raiz.getBoundingClientRect();
   const m = new Map<string, Pos>();
   for (const el of raiz.querySelectorAll<HTMLElement>("[data-card]")) {
-    const r = el.getBoundingClientRect();
+    const r = (el.parentElement?.classList.contains("q-lugar") ? el.parentElement : el).getBoundingClientRect();
     if (!r.width) continue;
     m.set(el.dataset.card!, { x: r.left - base.left + raiz.scrollLeft, y: r.top - base.top + raiz.scrollTop });
   }
   return m;
+}
+
+/** O card que já estava na tela não "chega" de novo: trocar de coluna remonta o elemento e o CSS repetiria a entrada
+ * (`q-assenta`, que começa invisível). */
+function semEntrada(card: HTMLElement) {
+  for (const a of card.getAnimations()) if (a instanceof CSSAnimation && a.animationName === "q-assenta") a.finish();
 }
 
 /**
@@ -27,6 +38,7 @@ function medir(raiz: HTMLElement): Map<string, Pos> {
  */
 export function useFlip(raizRef: RefObject<HTMLElement | null>, vooRef: RefObject<{ id: string; de: DOMRect } | null>) {
   const antes = useRef<Map<string, Pos>>(new Map());
+  const elementos = useRef<Map<string, HTMLElement>>(new Map());
   /**
    * Mede agora (com o que estiver na tela, transform incluso) e toma isso como "antes" do próximo render. O arrastar do
    * celular (gestos.ts) chama logo antes de gravar: os cards já estão onde vão ficar, então nada desliza de novo. `em`
@@ -52,21 +64,33 @@ export function useFlip(raizRef: RefObject<HTMLElement | null>, vooRef: RefObjec
     if (!el) return;
     const agora = medir(el);
     const calmo = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!calmo) {
-      for (const card of el.querySelectorAll<HTMLElement>("[data-card]")) {
-        const id = card.dataset.card!;
-        const a = antes.current.get(id);
-        const b = agora.get(id);
-        if (!a || !b) continue;
-        const dx = a.x - b.x;
-        const dy = a.y - b.y;
-        if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
-        card.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "translate(0, 0)" }], {
-          duration: Math.min(520, 300 + Math.hypot(dx, dy) / 6),
-          easing: MOLA,
-          composite: "add",
-        });
+    const vistos = new Map<string, HTMLElement>();
+    for (const card of el.querySelectorAll<HTMLElement>("[data-card]")) {
+      const id = card.dataset.card!;
+      vistos.set(id, card);
+      const era = elementos.current.get(id);
+      if (era && era !== card) semEntrada(card);
+      const a = antes.current.get(id);
+      const b = agora.get(id);
+      if (!a || !b) continue;
+      const dx = a.x - b.x;
+      const dy = a.y - b.y;
+      if (calmo || (Math.abs(dx) < 1 && Math.abs(dy) < 1)) continue;
+      const anim = card.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "translate(0, 0)" }], {
+        duration: Math.min(520, 300 + Math.hypot(dx, dy) / 6),
+        easing: MOLA,
+        composite: "add",
+      });
+      // de uma coluna para outra: passa por cima das colunas do caminho
+      if (Math.abs(dx) >= 1) {
+        card.style.zIndex = "2";
+        const solta = () => {
+          if (!card.getAnimations().some((x) => x !== anim && x.playState === "running" && !(x instanceof CSSAnimation))) card.style.zIndex = "";
+        };
+        anim.finished.then(solta, solta);
       }
+    }
+    if (!calmo) {
       const v = vooRef.current;
       if (v) {
         vooRef.current = null;
@@ -86,6 +110,7 @@ export function useFlip(raizRef: RefObject<HTMLElement | null>, vooRef: RefObjec
       }
     } else vooRef.current = null;
     antes.current = agora;
+    elementos.current = vistos;
   });
 
   // rolar e mudar o tamanho da janela mexem nas posições sem render: mede de novo (uma vez por quadro, no máximo)

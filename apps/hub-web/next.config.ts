@@ -27,6 +27,16 @@ const config: NextConfig = {
     return [
       { source: '/:path*', headers: security },
       { source: '/api/:path*', headers: [{ key: 'Cache-Control', value: 'no-store' }] },
+      // Laboratório da Z (ADR 0033, só admin): o microfone vale nesta tela (voz e ditado), e só nela. Vem depois da regra
+      // geral, então vence.
+      {
+        source: '/admin/laboratorio/:path*',
+        headers: [{ key: 'Permissions-Policy', value: 'camera=(), microphone=(self), geolocation=(), payment=(), usb=()' }],
+      },
+      {
+        source: '/admin/laboratorio',
+        headers: [{ key: 'Permissions-Policy', value: 'camera=(), microphone=(self), geolocation=(), payment=(), usb=()' }],
+      },
       // o painel da IA (<zro-ia>) e as imagens do Z são carregados pelas plataformas, de outra origem: script módulo e
       // máscara CSS só funcionam com CORS. Arquivos públicos e estáticos, sem credencial.
       {
