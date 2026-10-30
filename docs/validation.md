@@ -15,6 +15,25 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Versões de computador: Gerar versões, BT.709 e a família (30/10/2026)
+
+Branch `versoes-computador` sobre a main 581c84d: `relay-lancamento` (Maestro `0034`, SOBEDESCE web `0016`/`0017`,
+SOBEDESCE 0.2.0), o `setparams` do Relay de volta (Relay e a cópia do SOBEDESCE iguais byte a byte) e o Relay nos
+menus do Synquei (`app/`, cache `synquei-v27`) e do SOBEDESCE de computador; `test/app-sw.test.js` espera o app
+2.8.60 / `sobedesce-app-v75`. Conflitos só no journal do Maestro (0033 → 0037 em ordem, `when` únicos), no Quadro
+(os dois CSS), nos testes do Maestro (as duas tabelas; a caixa de entregas da F8 e a fila do Relay na ponte falsa) e
+neste arquivo.
+
+| Verificação          | Comando                                                    | Resultado                               |
+| -------------------- | ---------------------------------------------------------- | --------------------------------------- |
+| Raiz                 | `npm run lint` · `format:check` · `typecheck` · `npm test` | limpo · ok · ok · **443/443**           |
+| Régua da família     | `vitest run tests/integration/familia-menus.test.ts`       | **6/6** (os seis menus)                 |
+| Maestro              | lint · `format:check` · typecheck · `npm test` · build     | limpo · **694/694** · ok                |
+| Maestro e2e          | `npx playwright test e2e/relay.spec.ts`                    | **12/12** (6 pulados, vídeo e capturas) |
+| SOBEDESCE web        | lint · typecheck · `npm test`                              | limpo · **317/317**                     |
+| SOBEDESCE computador | `npm run test:fast`                                        | **799/799** (4 pulados)                 |
+| Relay · Synquei      | `npm test`                                                 | **122/122** · **155/155** (5 pulados)   |
+
 ## CI verde de novo: duas corridas nos testes e a cor no ffmpeg 8 (30/10/2026)
 
 O `main` ficou vermelho em três workflows; cada falha foi reproduzida aqui antes da correção.
@@ -84,6 +103,7 @@ Carro: `mapa` (a família igual na lateral e na gaveta) **72/72**. As três suí
 dependem da família e se comportam igual no template da `main` neste ambiente: `abertura` ("o piso encolhe", medida
 de tempo) falha nos dois; `entrar` ("a partida do carro é uma cópia por cima") falha e passa nos dois, conforme a
 rodada; `conta-zro` passa sozinha, **149/149**, mas leva mais que o teto de 240 s do `run.js` nesta máquina.
+
 ## Lançamento de "Gerar versões com o Relay": o botão só quando funciona e o SOBEDESCE 0.2.0 (30/10/2026)
 
 O `relay-sobedesce` sobre a main de 30/10 (Set @, apagar na Criação, aprendizados da Z, looks do Relay; conflitos só no

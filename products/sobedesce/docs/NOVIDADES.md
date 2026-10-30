@@ -11,6 +11,8 @@ O original nunca muda.
 - As versões aparecem na lista do Relay, como as que você converte aqui.
 - Cancelou no Maestro, o computador para antes de subir.
 - O botão "Gerar versões" do Maestro aparece quando um computador da conta está com esta versão.
+- O Relay entrou no menu da família, com o ícone oficial.
+- As versões convertidas saem marcadas em BT.709 também com o ffmpeg mais novo.
 
 ## 0.1.0
 

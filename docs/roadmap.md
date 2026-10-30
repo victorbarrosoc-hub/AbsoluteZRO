@@ -505,9 +505,10 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   card e mostra "Gerar versões" só com `relay`, ou "Atualize o SOBEDESCE no computador para gerar versões." com app
   antigo (só depois que o instalador do `/baixar` já é a 0.2.0); sem computador, sem SOBEDESCE ou sem o Relay no plano, nada. O site recusa `relay.converter` sem computador
   que converta (409 `sem_computador_relay`). Novidades em `products/sobedesce/docs/NOVIDADES.md`; passos do lançamento
-  em [operations/lancamento-gerar-versoes.md](operations/lancamento-gerar-versoes.md). **Falta (com autorização):**
-  mesclar na main (publica o site com a `0016` e a `0017`, o Maestro e o build 0.2.0 do app de computador), conferir
-  com um Drive e um computador de verdade. Depois: evento `media.conversion.completed` quando o HUB receber
+  em [operations/lancamento-gerar-versoes.md](operations/lancamento-gerar-versoes.md). **Versões de computador
+  autorizadas (30/10/2026):** a branch `versoes-computador` junta isto, o BT.709 no ffmpeg 8 e o Relay nos menus da
+  família do Synquei (`app/`) e do SOBEDESCE de computador; na main, publica o site com a `0016` e a `0017`, o Maestro e
+  os builds do SOBEDESCE 0.2.0 e do Synquei. **Falta:** conferir com um Drive e um computador de verdade. Depois: evento `media.conversion.completed` quando o HUB receber
   resultado.
 - ⬜ Maestro, do mesmo estudo e à espera do titular: a Z **escrevendo** no Maestro (criar
   pedido, despesa, marcar contato, sempre com a ação exata e o "sim"; cota e plano da Z); sincronia de duas vias com o Google Agenda (OAuth); eventos
@@ -1137,7 +1138,7 @@ do card... não consigo localizar o job que quero achar".
   (Maestro, Relay, SOBEDESCE, Synquei, TPeasy, sem o próprio app), com os nomes oficiais e o ícone oficial do Relay;
   o Carro deixou de mostrar NOSSOM e Revela. A régua é `tests/integration/familia-menus.test.ts` (endereços de
   produção e ícones byte a byte iguais a `apps/hub-web/public/products`): plataforma lançada entra em `NO_AR` e o teste
-  aponta cada menu que falta. Caches `synquei-v26` e `tpeasy-v22`. Relay, TPeasy e Synquei com funções em `gru1`.
+  aponta cada menu que falta. Caches `synquei-v26` (`v27` com o menu do `app/`, junto das versões de computador) e `tpeasy-v22`. Relay, TPeasy e Synquei com funções em `gru1`.
   Falta: o Synquei no celular não tem menu da família (a barra lateral some abaixo de 860px); AEON, Revela e NOSSOM
   seguem com a lista antiga até lançarem.
 - ✅ **SOBEDESCE no Windows: bandeja e barra lateral** (28/10/2026, pedido de cliente): minimizar manda para a bandeja
