@@ -241,7 +241,7 @@ export async function buscarPerfis(db: Database, auth: Authenticated | null, q: 
 }
 
 /**
- * A comunidade (migração 0037, decisão do titular de 30/10/2026): a lista que os apps da família mostram, em vez de
+ * A comunidade (migração 0038, decisão do titular de 30/10/2026): a lista que os apps da família mostram, em vez de
  * só buscar. Só perfis visíveis com o @ CONFIRMADO (a sugestão automática não entra) e conta ativa; filtro opcional
  * por função; página ordenada pelo @ (`depois` = o último @ da página anterior), até 200. A própria pessoa entra se
  * estiver visível (o app a marca como "você"). Pelos apps, a auditoria guarda o app e quantos vieram.

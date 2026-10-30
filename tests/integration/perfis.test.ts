@@ -429,7 +429,7 @@ describe('excluir a conta', () => {
   })
 })
 
-describe('a comunidade (0037)', () => {
+describe('a comunidade (0038)', () => {
   it('lista só visíveis com o @ confirmado, sem e-mail, por ordem de @, com cursor e filtro de função', async () => {
     const marca = unico()
     const quem = await newOrgWithOwner(db, `comunidade-${marca}`)

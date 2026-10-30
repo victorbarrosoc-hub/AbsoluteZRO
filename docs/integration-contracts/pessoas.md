@@ -18,7 +18,7 @@ Primeiro app: Maestro (Ajustes › Pessoas e Freelas). Carro do Freela lê o @ p
 - O convite por @ nunca devolve o e-mail da pessoa: o HUB manda o aviso direto a ela e o convite aparece em Equipe ›
   Convites para você. A pessoa sempre aceita antes de entrar.
 - Auditoria: a busca pelos apps grava o app e quantos resultados (`perfil.busca`), **nunca o texto buscado**.
-- **A comunidade** (`GET /api/v1/pessoas`, migração `0037`, decisão do titular de 30/10/2026): a lista que um app mostra
+- **A comunidade** (`GET /api/v1/pessoas`, migração `0038`, decisão do titular de 30/10/2026): a lista que um app mostra
   (o Carro do Freela é a comunidade do audiovisual). Só entra quem aparece na busca **e já confirmou o @** (escolheu no
   cadastro ou trocou depois; a sugestão automática não conta) e tem conta ativa. Filtro opcional `funcao` (chave),
   ordem pelo @, até 200 por página com `proximo` como cursor. A própria pessoa vem junto se estiver visível. Limite: 120

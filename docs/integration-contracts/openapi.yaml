@@ -499,7 +499,7 @@ paths:
   /api/v1/pessoas:
     get:
       security: [{ appToken: [zro.pessoas] }]
-      summary: 'A comunidade (migração 0037): perfis visíveis com o @ confirmado (a sugestão automática não entra), por ordem de @, até 200 por página. Sem e-mail nem telefone. Contrato em docs/integration-contracts/pessoas.md'
+      summary: 'A comunidade (migração 0038): perfis visíveis com o @ confirmado (a sugestão automática não entra), por ordem de @, até 200 por página. Sem e-mail nem telefone. Contrato em docs/integration-contracts/pessoas.md'
       parameters:
         - { name: funcao, in: query, required: false, schema: { type: string }, description: 'chave de função do perfil (camera, edicao, …)' }
         - { name: depois, in: query, required: false, schema: { type: string, maxLength: 30 }, description: 'o `proximo` da página anterior' }

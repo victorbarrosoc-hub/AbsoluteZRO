@@ -1,7 +1,7 @@
 -- Carro do Freela · 0001 · a agenda do freela e a lista de quem está no ecossistema (30/10/2026).
 -- Pedido do titular: "pode apagar esses 109 perfis fictícios, vamos começar com os usuários que já estão no
 -- ecossistema ... se não confirmou o próprio @, não precisa colocar". A base do Carro passa a ser a comunidade da
--- Absolute ZRO (HUB, migração 0037 de lá); o Carro guarda só o que é dele: a agenda declarada. Nenhuma linha semeada.
+-- Absolute ZRO (HUB, migração 0038 de lá); o Carro guarda só o que é dele: a agenda declarada. Nenhuma linha semeada.
 --
 -- O que entra:
 --   1. `perfis` ganha o @ e a foto da conta Absolute ZRO (claims preferred_username e picture). Quem escreve é o

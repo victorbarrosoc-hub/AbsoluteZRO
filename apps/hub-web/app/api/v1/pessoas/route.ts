@@ -3,7 +3,7 @@ import { route } from '@/lib/api'
 import { exigirApp, perfilParaApp } from '@/lib/pessoas'
 
 /**
- * GET /api/v1/pessoas?funcao=&depois=&limite= — a comunidade (migração 0037): perfis profissionais visíveis com o @
+ * GET /api/v1/pessoas?funcao=&depois=&limite= — a comunidade (migração 0038): perfis profissionais visíveis com o @
  * confirmado, por ordem de @, até 200 por página (`proximo` = cursor da página seguinte). Sem e-mail ou telefone.
  * Só com o token do app (Bearer, escopo zro.pessoas). Contrato: docs/integration-contracts/pessoas.md.
  */

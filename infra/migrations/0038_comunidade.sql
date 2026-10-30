@@ -1,4 +1,4 @@
--- Absolute ZRO HUB · 0037 · a comunidade: quem os apps da família podem listar (decisão do titular, 30/10/2026).
+-- Absolute ZRO HUB · 0038 · a comunidade: quem os apps da família podem listar (decisão do titular, 30/10/2026).
 -- "Pode usar os que estão cadastrados no ecossistema; se não confirmou o próprio @, não precisa colocar." O Carro do
 -- Freela (e qualquer app com o escopo zro.pessoas) passa a LISTAR os perfis profissionais, em vez de só buscar por
 -- @ ou nome: só quem aparece na busca (visivel) E já confirmou o @ (arroba_sugerida = false: escolheu no cadastro ou
