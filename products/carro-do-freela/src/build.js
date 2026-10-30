@@ -25,6 +25,12 @@ const OG_IMG = '/og.jpg?v=3';   /* v=3 em 19/out · 2: o carro do emblema passou
 const DESC = 'Veja quem está livre na data, monte a equipe e feche '
            + 'com contrato e sinal.';
 const anon = process.argv.includes('--anon');
+/* ⚠️ O SITE REAL (30/out, pedido do titular: "pode apagar esses 109 perfis fictícios, vamos começar com os usuários
+   que já estão no ecossistema"). `--real` gera a página do domínio SEM a base fictícia: o CREW leva só a conta de
+   quem abre, em branco, e quem aparece na busca vem do servidor (/api/zro/pessoas: gente da Absolute ZRO com o @
+   confirmado e que marcou "Mostrar meu perfil para quem contrata"). Escreve <meta name="cdf-real"> e a fase 1
+   (agenda e brechó, sem dinheiro). O catálogo de funções continua vindo do crew.json: é lista, não pessoa. */
+const real = process.argv.includes('--real');
 /* ⚠️ UM PROTÓTIPO POR FASE DO ROADMAP, do mesmo fonte.
      node src/build.js --fase=1   → public/fase-1.html (+ -artifact)
    Sem --fase, FASE vira 0 e TODO o sistema de fases do template é no-op:
@@ -32,7 +38,8 @@ const anon = process.argv.includes('--anon');
    testam. Um sistema de fases que mexesse no build normal viraria uma
    segunda verdade para manter. */
 const argFase = process.argv.find(a => a.startsWith('--fase='));
-const fase = argFase ? Math.max(1, Math.min(6, +argFase.split('=')[1] || 1)) : 0;
+const fase = argFase ? Math.max(1, Math.min(6, +argFase.split('=')[1] || 1)) : real ? 1 : 0;
+if (real && fase !== 1) throw new Error('--real só existe na fase 1 (agenda e brechó, sem dinheiro)');
 /* ⚠️ O PORTÃO DO LANÇAMENTO (28/out, adendo do PRD). `--release=closed`
    escreve <meta name="cdf-release" content="closed"> na página: no domínio
    a tela nasce fechada desde o primeiro quadro (zroFechado no template), e
@@ -202,6 +209,10 @@ const funcoes = [...new Set(crew.flatMap(c => c.func))]
   .filter(f => f !== 'Não informado')
   .sort((a, b) => a.localeCompare(b, 'pt'));
 
+/* a conta de quem abre, em branco: nome, funções e o resto ela preenche (ou vêm da conta Absolute ZRO) */
+if (real) crew = [{ id: 1, nome: '', func: [], principal: [], cidade: '', extras: 0, cam: '', lentes: '', gim: false,
+  dro: false, transporte: '', nicho: [], port: '', obs: '', tags: [], me: true, incompleto: true }];
+
 /* o template também cita mídia por "midia:<nome>" (os ícones da família
    Absolute ZRO no menu, 26/out): mesma regra, nome que falta reprova */
 const html = comMidia(tpl, 'template.html')
@@ -329,12 +340,13 @@ const iStyle = html.indexOf('<style>'), fStyle = html.indexOf('</style>');
 const iScript = html.lastIndexOf('<script>'), fScript = html.lastIndexOf('</script>');
 if (iStyle < 0 || fStyle < iStyle) throw new Error('template sem bloco <style>');
 if (iScript < fStyle || fScript < iScript) throw new Error('template sem o <script> do fim');
-const min = (codigo, loader) => esbuild.transformSync(codigo, { loader, minify: true, legalComments: 'none', charset: 'utf8' }).code;
+/* CDF_SEM_MIN=1: sem minificar, para a pilha de um erro apontar a linha do template */
+const min = (codigo, loader) => process.env.CDF_SEM_MIN ? codigo : esbuild.transformSync(codigo, { loader, minify: true, legalComments: 'none', charset: 'utf8' }).code;
 const CSS = paraM('app', '.css', Buffer.from(min(html.slice(iStyle + 7, fStyle), 'css')));
 const JS = paraM('app', '.js', Buffer.from(min(html.slice(iScript + 8, fScript), 'js')));
 const titulo = html.slice(0, iStyle).trim();
 const corpo = html.slice(fStyle + 8, iScript).trim();
-const metaFase = '<meta name="cdf-fase" content="' + fase + '">';
+const metaFase = '<meta name="cdf-fase" content="' + fase + '">' + (real ? '\n<meta name="cdf-real" content="1">' : '');
 const folha = '<link rel="stylesheet" href="' + CSS + '">';
 const script = '<script src="' + JS + '"></script>';
 /* ⚠️ O PÔSTER DA CARONA É O MAIOR QUADRO DA HOME (o LCP, medido): ele é
@@ -347,7 +359,7 @@ const preloadPoster = posterVar.length ? '<link rel="preload" as="image" fetchpr
 const preload = PRELOAD.map(f => '<link rel="preload" href="' + f + '" as="font" type="font/woff2" crossorigin>').concat(preloadPoster ? [preloadPoster] : []).join('\n');
 /* o portão só na PÁGINA do domínio (o artifact mora num iframe e nunca é o domínio) */
 const metaRelease = release ? '<meta name="cdf-release" content="' + release + '">\n' : '';
-const pagina = '<!doctype html>\n<html lang="pt-BR">\n<head>\n' + META + '\n' + metaFase + '\n' + metaRelease + titulo + '\n' +
+const pagina = '<!doctype html>\n<html lang="pt-BR"' + (real ? ' class="real"' : '') + '>\n<head>\n' + META + '\n' + metaFase + '\n' + metaRelease + titulo + '\n' +
   preload + '\n' + folha + '\n</head>\n<body>\n' + corpo + '\n' + script + '\n</body>\n</html>\n';
 /* o artifact: o mesmo, sem <head> (o visualizador monta por fora) — e ele
    publica a pasta m/ junto, então os dois arquivos vão com ele */
@@ -358,14 +370,16 @@ const artifact = metaFase + '\n<meta name="cdf-artifact" content="1">\n' + titul
    uma página com chaves de TESTE. A mídia continua indo para public/m/. */
 const DIR_SAIDA = argSaida ? path.resolve(argSaida.slice(8)) : path.join(ROOT, 'public');
 fs.mkdirSync(DIR_SAIDA, { recursive: true });
-const base = path.join(DIR_SAIDA, fase ? 'fase-' + fase : 'index');
+const base = path.join(DIR_SAIDA, real ? 'real' : fase ? 'fase-' + fase : 'index');
 fs.writeFileSync(base + '.html', pagina);
-fs.writeFileSync(fase ? base + '-artifact.html' : path.join(DIR_SAIDA, 'artifact.html'), artifact);
+if (!real) fs.writeFileSync(fase ? base + '-artifact.html' : path.join(DIR_SAIDA, 'artifact.html'), artifact);
 
 const kbDe = f => (fs.statSync(path.join(SAIDA_MIDIA, f.slice(2))).size / 1024).toFixed(0);
 const kb = (Buffer.byteLength(pagina) / 1024).toFixed(0) + ' KB + ' + JS + ' (' + kbDe(JS) + ' KB) + ' + CSS + ' (' + kbDe(CSS) + ' KB)'
   + (release ? ' · lançamento ' + (release === 'closed' ? 'FECHADO (só a conta do proprietário)' : 'ABERTO') : ' · prévia interna (sem portão)');
-if (fase) {
+if (real) {
+  console.log(`${base}.html — ${kb} · SITE REAL: nenhum perfil fictício, a base vem do servidor`);
+} else if (fase) {
   console.log(`${base}.html — ${kb} · Fase ${fase}: ${FASE_NOME[fase]}`);
   console.log(`${base}-artifact.html — o mesmo sem <head>, para publicar como artifact`);
 } else {

@@ -141,6 +141,48 @@ repasse é `api/zro/set.js` (miolo em `_zro.js`, com `sessaoConferida`: claim re
 `zro.set` e, se o HUB recusar, refaz sem ele (`sem_set`) antes do `basico`. Um 401 do Set NÃO apaga a sessão. A folha
 veste os tokens dos dois temas (`--zro-set-*` no template). ⚠️ `var`/`function` no topo (o TDZ de 19/out · 2).
 
+## 30/out · 4 — a linha visual B, "Natal à noite" (aprovada pelo titular; `test/site-real.js`)
+
+O titular escolheu, entre três linhas, a B: *"B, mas mantém a logo atual"*, com o neon *"em detalhes, como já é hoje"*.
+Vale só no site real (`html.real`, escrito pelo `build.js --real` no `<html>` e pelo `REAL` no boot); a prévia e as
+suítes de sempre não mudam.
+
+- **Escuro é o padrão do Carro, o claro é opção** (titular). O escuro é o grafite FOSCO do ecossistema
+  (`--grafite:#0E0E10`, como `--zro-void` em `packages/ui/src/tokens.css`), nunca preto 100%.
+- **O símbolo é o de sempre** (`.zselo`, que não se mistura com o chip `.selo`; cópia parada do véu de abertura): anel cônico ciano→azul→roxo→rosa, disco
+  escuro, as três barras branco→ciano (#mk, .34/.64/1) e o carrinho estacionado no alto à direita. ⚠️ Não redesenhar:
+  o titular corrigiu uma proposta que pintou o logo de rosa ("ela é azul").
+- **Home**: a foto de Natal à noite (o pôster da carona, `--real-foto` no `realHome()`, no degrau da tela via
+  `qual()`), texto à esquerda, o símbolo grande em cima do título, título fino × pesado em Figtree sem degradê,
+  botões de vidro da família (vidro claro na ação principal) e a barra de cima em cápsula de vidro.
+- **Entrar**: a mesma foto, o símbolo pequeno e "Entre no **Carro.**".
+- **Neon só em detalhe**: o brilho do símbolo, os pontos de status e as luzes da própria foto.
+
+## 30/out · 3 — o site real: o domínio sem os 109, a busca e a agenda no servidor (`test/site-real.js`)
+
+Pedido do titular: *"pode apagar esses 109 perfis fictícios, vamos começar com os usuários que já estão no
+ecossistema"*, e *"se não confirmou o próprio @, não precisa colocar"*.
+
+- **O domínio serve UMA página**: `node src/build.js --real` (o `vercel-build` só gera ela; `/fase1…6` saíram do ar).
+  `<meta name="cdf-real">` liga `REAL` no template; o CREW leva só a conta de quem abre, em branco; a fase é a 1
+  (agenda e brechó, sem dinheiro). O catálogo de funções continua vindo do `crew.json` (é lista, não pessoa).
+  ⚠️ **A prévia com os 109 continua existindo fora do domínio** (`npm run build`, fases, artifact, suítes): `REAL`
+  falso é no-op em tudo.
+- **Nada semeado com `REAL`**: `JOBS`, `POSTS`, `ANUNCIOS`, `PROPOSTAS`, `ESCALAS`, `TRABALHOS`, `REELS`, `RODANDO`,
+  `PAGOS`, `RESPOSTAS` e `VGP` nascem `REAL?[]:[…]` (o ternário não avalia a semente, que lia o CREW); a
+  `PRODUTORAS[0]` nasce em branco; a minha reputação (resposta, jobs, sequência) nasce zerada, e tempo de resposta
+  sem medida não aparece (`respTxt`). "Simular chamada/sirene" some. `abrirAssinatura()` não abre checkout: os planos
+  são do ecossistema e ainda não existem (decisão 2 do titular, pendente); `podeVerAgenda()` é `true` com `REAL`, a
+  mesma régua do servidor (`podeVerAgendas()` em `_dados.js`): quando o plano nascer, a tranca nasce nos dois.
+- **O servidor** (`realCarregar()`, junto do bloco `cfb`, só `var`/`function`): na volta do `/eu` com conta liberada,
+  `GET /api/zro/agenda` preenche `AGENDA` e `GET /api/zro/pessoas` põe no CREW quem divulgou a agenda
+  (`agenda !== null`), com `remoto:true` e `agendaSrv`; `status()` de remoto lê a agenda dela (`realStatus`), nunca
+  `rnd`. `declarar()`/`liberarDia()` mandam `PUT`/`DELETE`. ⚠️ **Quem nunca abriu o Carro não entra na busca**:
+  livre é a ausência de linha para quem USA a agenda; dizer "livre" de quem nunca declarou seria inventar.
+- ⚠️ **A home ainda vende o produto inteiro** (Passar o carro, custo somando com valores de exemplo): é vitrine com o
+  portão fechado, e refazê-la para o produto real é a próxima leva, junto com a revisão de dinheiro e planos.
+- `CDF_SEM_MIN=1 node src/build.js --real` gera sem minificar: a pilha de um erro aponta a linha do template.
+
 ## 30/out — ⚠️ a prévia migrou o banco de produção (e só a produção migra desde então)
 
 O build da prévia do branch `claude/carro-no-ar` rodou `db/migrar.js`: a Vercel dá a MESMA `CARRO_DATABASE_URL` à
@@ -457,7 +499,7 @@ a cena da home e a tela de entrar abaixo da janela em todo monitor grande.
 Uma sonda de `100vh` dentro do corpo diz quanto o motor multiplica (Chromium:
 o zoom; Safari: 1), e `--zoom` vira esse número.
 
-⚠️ **A build se identifica** (`VERSAO`, hoje `30/out · 2`): aparece no rodapé do
+⚠️ **A build se identifica** (`VERSAO`, hoje `30/out · 4`): aparece no rodapé do
 menu e vai junto no recado de suporte. Sem isso, três rodadas foram gastas sem
 saber se o defeito relatado era do arquivo novo ou de um cache velho. **Suba a
 VERSAO em toda entrega que o Victor for subir.**

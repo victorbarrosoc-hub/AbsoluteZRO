@@ -642,6 +642,13 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   ([contrato](integration-contracts/pessoas.md)): `authorize()`, limites, auditoria sem o texto buscado.
 - ✅ Maestro: busca e convite pelo @ em Ajustes › Pessoas, o @ e a "Função na produtora" de cada pessoa, e "Achar pelo @"
   em Freelas (freela ligado ao perfil, `drizzle/0023`). Carro do Freela: o @ no `/eu` e em "Meu perfil".
+- 🟡 Carro do Freela no ar com o ecossistema (30/10/2026, pedido do titular: "vamos começar com os usuários que já
+  estão no ecossistema"): o domínio serve só o site real (`build.js --real`, fase 1, sem os 109 fictícios e sem nada
+  semeado); a busca vem de `/api/zro/pessoas` (HUB `zro.comunidade_perfis`, migração `0038`: perfil visível e @
+  confirmado) e só traz quem marcou "Mostrar meu perfil para quem contrata" no Carro; a agenda do freela mora no banco
+  (`carro_do_freela.agenda_dias`, `/api/zro/agenda`). Visual: linha B "Natal à noite" (escuro fosco por padrão, o
+  símbolo de sempre, foto de Natal na home e na entrada). Falta: propostas e chamadas no banco, a
+  revisão de dinheiro e garantias (sai Take e Pedágio) e os planos do ecossistema (ver a agenda pago).
 - ⛔ Em produção: migrações `0029` (HUB) e `0022` (Maestro) no deploy; o Maestro passa a pedir `zro.pessoas` (HUB sem a
   0029 cai em `nivel=sem_pessoas`, sem quebrar o login).
 - ⬜ Inventário do Carro no freela achado pelo @ (pronto atrás de `CARRO_SYNC_ATIVO`, desligado).

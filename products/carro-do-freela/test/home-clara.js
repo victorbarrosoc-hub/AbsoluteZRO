@@ -79,7 +79,7 @@ const PRE=pg=>pg.addInitScript(()=>{ try{
          ("Agenda e contratação · audiovisual") saiu a pedido do Victor —
          "isso é muito cara de IA". O que ele dizia, a manchete já diz. */
       olho:!!document.querySelector('.hp-olho'),
-      primeiro:(()=>{ const tx=document.querySelector('.hp-texto'); const f=tx&&tx.firstElementChild; return f?f.id||f.tagName:'' })(),
+      primeiro:(()=>{ const tx=document.querySelector('.hp-texto'); const f=tx&&[...tx.children].find(e=>!e.hidden&&getComputedStyle(e).display!=='none'); return f?f.id||f.tagName:'' })(),
       h1:v('hh-t').textContent,
       ctas:[...document.querySelectorAll('.hprod .hcta .btn')].map(x=>x.textContent.trim()+'|'+x.dataset.lg),
       /* (17/out · 15) Victor: "a homepage também precisa ficar à altura da

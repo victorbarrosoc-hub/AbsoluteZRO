@@ -3187,6 +3187,24 @@ transcrição real de "pode guardar".
   projeto Vercel `relay`, pooler de transação). A migração perdeu o `create schema if not exists` antes de ir para a
   produção: o papel `relay` não cria schema no banco (o migrador só cria quando falta, no Postgres local).
 
+## Carro do Freela: o site real e a comunidade do ecossistema (30/10/2026)
+
+- HUB `tests/integration/perfis.test.ts` (a comunidade, `0038`): 19/19 — só perfil visível, @ confirmado e conta ativa;
+  paginação por `depois`; limite de 200; `invalid_input` (422) fora disso; auditoria `perfil.comunidade`.
+- Carro `npm run test:api`: 47/47 (o escopo `zro.pessoas` no login, a foto da claim `picture`).
+- Carro `npm run test:banco` (Postgres 16 local): 27/27 — agenda própria por RLS, janela de -31 a +366 dias, hora só
+  na meia diária; `carro_do_freela.agendas()` só devolve quem consentiu e recusa janela acima de 62 dias; a lista
+  pagina o HUB (450 pessoas = 3 páginas) e devolve `reconectar` quando o HUB recusa o token.
+- Carro `test/site-real.js`: 16/16 — nenhum dos 108 nomes fictícios na página do domínio; o app abre com o CREW de uma
+  pessoa só; nada semeado nem simulado (sem produtora de exemplo, sem "Simular chamada", sem checkout de assinatura,
+  sem tempo de resposta inventado); com a conta liberada, a busca e a agenda vêm do servidor, só quem divulgou a agenda
+  entra, a própria conta não repete, e declarar/liberar um dia vira `PUT`/`DELETE`.
+- `node src/vercel-build.js` local: `index.html` FASE=1, real, sem perfil fictício, fechado; as páginas `/fase1…6`
+  saíram do domínio.
+- Linha visual B no site real (30/10/2026, aprovada pelo titular): `test/site-real.js` 26/26 — `html.real`, grafite
+  fosco `#0e0e10`, o símbolo de sempre com o carrinho no topo da home, título sem degradê e a foto de Natal como fundo
+  da home e da entrada. Conferido no Chromium a 1440 e a 390 px (home e entrar), sem erro de console.
+
 ## Maestro: o freela entra pela conta Absolute ZRO (30/10/2026)
 
 Local, Postgres e Chromium desta máquina; HUB e Absolute ZRO falsos (`tests/ponte-falsa.mts`, `tests/zro-falso.mts`).
