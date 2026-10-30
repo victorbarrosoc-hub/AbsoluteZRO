@@ -22,6 +22,8 @@ export const ARQUIVO_SESSAO_ARRASTAR = "test-results/e2e-sessao-arrastar.json";
 export const ARQUIVO_SESSAO_FLUXO = "test-results/e2e-sessao-fluxo.json";
 export const ARQUIVO_SESSAO_EXPORTAR = "test-results/e2e-sessao-exportar.json";
 export const ARQUIVO_SESSAO_LIXEIRA = "test-results/e2e-sessao-lixeira.json";
+
+export const ARQUIVO_SESSAO_CONVITE = "test-results/e2e-sessao-convite.json";
 /** A ponte falsa (HUB + SOBEDESCE de mentira, tests/ponte-falsa.mts) do e2e de Arquivos: MAESTRO_PONTE_URL no servidor. */
 export const PORTA_PONTE = Number(process.env.E2E_PONTE_PORT || 3219);
 /** A ANP falsa (tests/anp-fixture.mts, valores inventados) da calculadora de deslocamento: MAESTRO_ANP_URL no servidor. */
@@ -453,6 +455,32 @@ export default async function preparar() {
     const sLxEq = await criarSessao({ orgId: orgLx, sub: SUB_LX_EQ, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
     const sLxLe = await criarSessao({ orgId: orgLx, sub: SUB_LX_LE, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
     writeFileSync(ARQUIVO_SESSAO_LIXEIRA, JSON.stringify({ token: sLx.token, equipe: sLxEq.token, leitura: sLxLe.token, org: orgLx }));
+
+    // Uma organização para o @ e o convite do freela (e2e/freela-convite.spec.ts): a sessão tem o escopo zro.pessoas
+    // (o HUB falso da ponte responde o @) e a marca da produtora aparece no convite.
+    const SUB_FC = "00000000-0000-4000-8000-0000000001f2";
+    const orgFc = await getBanco().asSystem("e2e: semente do convite de freela", async (tx) => {
+      const [org] = await tx
+        .insert(schema.organizations)
+        .values({ zroOrgId: "00000000-0000-4000-8000-0000000001f1", name: "Lumière Filmes", zroProducts: ["maestro"] })
+        .returning({ id: schema.organizations.id });
+      await tx.insert(schema.members).values({ orgId: org.id, zroSub: SUB_FC, displayName: "Clara Convite", hubRole: "owner", role: "admin" });
+      await tx.execute(q`insert into maestro.org_marca (org_id, nome, cor) values (${org.id}, 'Lumière Filmes', '#0f7b5f')`);
+      return org.id;
+    });
+    const sFc = await criarSessao({
+      orgId: orgFc,
+      sub: SUB_FC,
+      produtos: ["maestro"],
+      release: { maestro: "allowed" },
+      tokens: {
+        at: "at-e2e-convite",
+        rt: "rt-e2e-convite",
+        atExp: Math.floor(Date.now() / 1000) + 24 * 3600,
+        escopo: "openid email profile org offline_access zro.ia maestro.projects zro.agenda zro.pessoas zro.set",
+      },
+    });
+    writeFileSync(ARQUIVO_SESSAO_CONVITE, JSON.stringify({ token: sFc.token }));
   } finally {
     await fecharBanco();
   }

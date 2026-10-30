@@ -12,6 +12,11 @@ import { areasNaTx } from "@/lib/acessos-servidor";
 import { statusDe, type Status } from "@/lib/financeiro/contas";
 import { diasDoPeriodo, normalizarFuncao, UNIDADES_VALOR, type UnidadeValor } from "./funcoes";
 import { abrirCampo, cifrarCampo, lerDocumento, lerPix, type TipoPix } from "./pagamento";
+import { desligarNaTx, ligarNaTx } from "./convite-servidor";
+import type { PessoaZro } from "@/lib/zro/pessoas";
+
+/** A conta Absolute ZRO no salvar: ligar à pessoa do @ (perfil relido no HUB pelo servidor) ou desligar. */
+export type ContaNoSalvar = { pessoa: PessoaZro } | { desligar: true };
 
 /* ───────────── lista e ficha ───────────── */
 
@@ -239,14 +244,28 @@ export function validarFreela(f: Record<string, string>): { ok: true; entrada: E
   return { ok: true, entrada };
 }
 
-export async function salvarFreela(ctx: Contexto, e: EntradaFreela, id?: string, demo = false): Promise<Res<{ id: string }>> {
+export async function salvarFreela(ctx: Contexto, e: EntradaFreela, id?: string, demo = false, conta?: ContaNoSalvar): Promise<Res<{ id: string }>> {
   if (id && !ehUuid(id)) return falha("nao_existe", "Esse freela não existe.");
   try {
-    return await getBanco().asUser(ctx, (tx) => gravarFreela(tx, ctx, e, id, demo));
+    return await getBanco().asUser(ctx, async (tx) => {
+      const r = await gravarFreela(tx, ctx, e, id, demo);
+      if (!r.ok || !conta) return r;
+      if ("desligar" in conta) {
+        await desligarNaTx(tx, ctx, r.id);
+        return r;
+      }
+      const l = await ligarNaTx(tx, ctx, r.id, conta.pessoa);
+      // a conta já é de outro freela: nada do salvar fica (a tela mostra o erro no campo do @)
+      if (!l.ok) throw new ContaEmOutro(l.mensagem);
+      return r;
+    });
   } catch (err) {
+    if (err instanceof ContaEmOutro) return falha("conta_em_outro", err.message, { zro_arroba: err.message });
     return traduzirPg(err);
   }
 }
+
+class ContaEmOutro extends Error {}
 
 export async function gravarFreela(tx: Tx, ctx: Contexto, e: EntradaFreela, id?: string, demo = false): Promise<Res<{ id: string }>> {
   const arr = (a: string[]) => sql`${`{${a.map((x) => `"${x.replace(/["\\]/g, "")}"`).join(",")}}`}::text[]`;

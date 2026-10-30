@@ -16,23 +16,91 @@ import {
   validarPagamento,
 } from "@/lib/freelas/servidor";
 import { marcarEquipNaEscala, removerEquipFreela, salvarEquipFreela, validarEquipFreela } from "@/lib/freelas/equipamentos";
-import { adicionarFreelaDaZro } from "@/lib/freelas/da-zro";
+import { adicionarFreelaDaZro, funcoesDoPerfil } from "@/lib/freelas/da-zro";
+import { convidarFreela, desligarConta, revogarConvite } from "@/lib/freelas/convite-servidor";
+import { nomeFuncao } from "@/lib/freelas/funcoes";
+import type { ContaNoSalvar } from "@/lib/freelas/servidor";
+import { siteUrl } from "@/lib/site";
 import { buscarPessoas, pessoaPorArroba, type PessoaZro } from "@/lib/zro/pessoas";
 import type { EstadoForm } from "@/components/form";
 
 const valoresDe = (fd: FormData) => Object.fromEntries([...fd.entries()].map(([k, v]) => [k, String(v)]));
 const LE = "Seu papel nesta organização só lê.";
 
+const ARROBA = /^[a-z0-9._]{3,30}$/;
+const arrobaDe = (v: string | undefined) =>
+  String(v ?? "")
+    .trim()
+    .replace(/^@/, "")
+    .toLowerCase();
+
+/**
+ * Cadastrar ou editar o freela. `zro_arroba` (o campo "@ no Absolute ZRO"): o perfil é relido no HUB aqui, e o freela
+ * fica ligado à conta (o nome que veio da tela é o que a produtora digitou). Vazio onde antes havia (`zro_antes`) =
+ * desligar. `convidar=sim` no cadastro sem @: já sai com o convite para o Absolute ZRO (link na ficha).
+ */
 export async function salvarFreelaAcao(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
   const s = await exigirAcessoNaAcao();
   const valores = valoresDe(fd);
   if (!podeEscrever(s.papel)) return { mensagem: LE, valores };
   const v = validarFreela(valores);
   if (!v.ok) return { erros: v.erros, valores };
-  const r = await salvarFreela({ sub: s.sub, orgId: s.orgId }, v.entrada, valores.id || undefined);
-  if (!r.ok) return { mensagem: r.mensagem, valores };
+  const arroba = arrobaDe(valores.zro_arroba);
+  const antes = arrobaDe(valores.zro_antes);
+  let conta: ContaNoSalvar | undefined;
+  if (arroba && arroba !== antes) {
+    if (!ARROBA.test(arroba)) return { erros: { zro_arroba: "Esse @ não vale." }, valores };
+    const p = await pessoaPorArroba(s.id, arroba);
+    if (!p.ok) return { erros: { zro_arroba: p.mensagem }, valores };
+    conta = { pessoa: p.pessoa };
+  } else if (!arroba && antes && valores.id) conta = { desligar: true };
+  const ctx = { sub: s.sub, orgId: s.orgId };
+  const r = await salvarFreela(ctx, v.entrada, valores.id || undefined, false, conta);
+  if (!r.ok) return r.erros?.zro_arroba ? { erros: r.erros, valores } : { mensagem: r.mensagem, valores };
+  if (!valores.id && !arroba && valores.convidar === "sim") await convidarFreela(ctx, r.id, siteUrl());
   revalidatePath("/app/freelas");
   redirect(`/app/freelas/${r.id}`);
+}
+
+/** A prévia do "@ no Absolute ZRO" (foto, nome, @): escondido e inexistente dão a mesma resposta (o HUB decide). */
+export async function verArrobaAcao(arroba: string): Promise<{ pessoa?: PessoaZro; funcoes?: string; erro?: string }> {
+  const s = await exigirAcessoNaAcao();
+  if (!podeEscrever(s.papel)) return { erro: LE };
+  const a = arrobaDe(arroba);
+  if (!ARROBA.test(a)) return { erro: "Não achamos esse @." };
+  const p = await pessoaPorArroba(s.id, a);
+  if (!p.ok) return { erro: p.mensagem };
+  return { pessoa: p.pessoa, funcoes: funcoesDoPerfil(p.pessoa.funcoes).map(nomeFuncao).join(", ") };
+}
+
+/* ───────────── a conta Absolute ZRO na ficha (drizzle/0036) ───────────── */
+
+export async function convidarFreelaAcao(freelaId: string): Promise<{ url?: string; expira?: string; mensagem?: string }> {
+  const s = await exigirAcessoNaAcao();
+  if (!podeEscrever(s.papel)) return { mensagem: LE };
+  const r = await convidarFreela({ sub: s.sub, orgId: s.orgId }, freelaId, siteUrl());
+  if (!r.ok) return { mensagem: r.mensagem };
+  revalidatePath(`/app/freelas/${freelaId}`);
+  return { url: r.url, expira: r.expira };
+}
+
+export async function revogarConviteAcao(freelaId: string): Promise<{ ok?: boolean; mensagem?: string }> {
+  const s = await exigirAcessoNaAcao();
+  if (!podeEscrever(s.papel)) return { mensagem: LE };
+  const r = await revogarConvite({ sub: s.sub, orgId: s.orgId }, freelaId);
+  if (!r.ok) return { mensagem: r.mensagem };
+  revalidatePath(`/app/freelas/${freelaId}`);
+  return { ok: true };
+}
+
+export async function desligarContaAcao(freelaId: string): Promise<{ ok?: boolean; mensagem?: string }> {
+  const s = await exigirAcessoNaAcao();
+  if (!podeEscrever(s.papel)) return { mensagem: LE };
+  const r = await desligarConta({ sub: s.sub, orgId: s.orgId }, freelaId);
+  if (!r.ok) return { mensagem: r.mensagem };
+  revalidatePath(`/app/freelas/${freelaId}`);
+  revalidatePath("/app/freelas");
+  return { ok: true };
 }
 
 export async function removerFreelaAcao(_: EstadoForm, fd: FormData): Promise<EstadoForm> {

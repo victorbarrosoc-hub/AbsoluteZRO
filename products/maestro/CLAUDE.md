@@ -261,6 +261,25 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   mapeadas; contato nunca vem do perfil); a ficha mostra o @ com link para o perfil. O inventário do Carro chega pelo
   mesmo `zro_sub` só quando `CARRO_SYNC_ATIVO` ligar. Testes: `tests/pessoas-zro.test.mts` e `e2e/pessoas-zro.spec.ts`
   (HUB falso com perfis fictícios em `tests/ponte-falsa.mts`).
+- **O freela entra pela conta Absolute ZRO** (titular 30/10/2026, `drizzle/0036`, `src/lib/freelas/convite{,-servidor}.ts`,
+  `src/lib/zro/identidade.ts`, telas `components/freelas/{arroba-zro,conta-zro}.tsx` e `/convite/<token>`): o "Novo
+  freela" e a edição têm no topo o campo **"@ no Absolute ZRO"** (`ArrobaZro` via `antes` do `Formulario`): 450 ms
+  depois de digitar, a prévia (foto, nome, @) vem de `pessoaPorArroba` (o HUB decide visibilidade e limite: escondido
+  = inexistente); "Usar" preenche nome, cidade e funções e, ao salvar, o servidor relê o perfil e liga o freela
+  (`ligarNaTx`: `zro_sub` + `zro_arroba`; a mesma conta em outro freela da produtora é recusada e nada fica; tirar o @
+  na edição desliga). Avulso segue igual, com o interruptor **"Convidar para o Absolute ZRO"**. Convite =
+  `maestro.freela_convites` (um aberto por freela, 7 dias, só sha256 + `token_enc`, revogar para sempre, auditado por
+  gatilho; quem escreve freelas convida, todos veem o estado). **E-mail em espera** (titular): só "Copiar link" e
+  "Mandar no WhatsApp" (`wa.me` com o número e a mensagem do cadastro + o link; só para quem vê o contato). A ficha
+  mostra "Sem conta", "Convite enviado" ou "Conectado @fulano" (`ContaZro`, com Revogar e Desligar). Quem abre
+  `/convite/<token>` (fora do app de computador, CSP de `/p`, fora do `robots`) cria a conta ou entra: a volta do login
+  com `volta=/convite/…` **não cria sessão nem organização** no Maestro, pede só os escopos básicos, devolve o refresh
+  token e deixa a identidade do id_token no cookie cifrado `mae_conv` (30 min); quem já tem sessão no Maestro usa a
+  dela. "Aceitar" (`POST /api/publico/convite`, Origin conferido) passa pela porta `maestro.freela_convite_aceitar`
+  (maestro_app sem organização): liga uma vez; a mesma conta de novo = ok; outra conta, vencido, revogado ou
+  desconhecido = a tela neutra; pela porta só saem o primeiro nome e a marca. Não há (ainda) tela do freela dentro do
+  Maestro: o vínculo é o `zro_sub` (o mesmo do inventário do Carro do Freela e do que vier depois). Testes:
+  `tests/freela-convite.test.mts`, `e2e/freela-convite.spec.ts` (`SHOTS_DIR` guarda `fc-*`) e a tela no `sem-corte`.
 - **Set da Absolute ZRO** (ADR 0032 do HUB, contrato em `docs/integration-contracts/set.md`): quem da equipe e dos
   contatos está online e as conversas (diretas e do projeto canônico). O widget `<zro-set>` vem de
   `absolutezro.com/set/v1/zro-set.js` (`components/set-zro.tsx`, pílula discreta na cápsula e no topo do celular, como
