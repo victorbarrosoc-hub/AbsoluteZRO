@@ -33,8 +33,14 @@ export default defineConfig({
       // Dólar automático dos Custos: o Banco Central falso de tests/e2e/admin.spec.ts e o segredo do agendamento.
       ZRO_PTAX_URL: `http://127.0.0.1:${Number(process.env.E2E_PTAX_PORT || 3297)}`,
       CRON_SECRET: 'segredo-cron-e2e',
-      // A Z "ligada" para a tela (tests/e2e/z-digitando.spec.ts): chave falsa, nunca usada (nenhum teste envia mensagem).
+      // A Z "ligada" para a tela (tests/e2e/z-digitando.spec.ts): chave falsa. Só o Laboratório da Z envia mensagem, e
+      // para o Claude falso de tests/fixtures/z-lab-falso.ts (sobe no próprio teste), nunca para a Anthropic.
       IA_ANTHROPIC_KEY: 'chave-falsa-do-e2e',
+      ZRO_ANTHROPIC_URL: `http://127.0.0.1:${Number(process.env.E2E_ZLAB_PORT || 3296)}/anthropic`,
+      // Laboratório da Z: a ElevenLabs falsa do mesmo arquivo (HTTP e a escuta ao vivo por WebSocket) e uma chave só de teste.
+      ELEVENLABS_API_KEY: 'chave-falsa-elevenlabs-e2e',
+      ZRO_ELEVENLABS_URL: `http://127.0.0.1:${Number(process.env.E2E_ZLAB_PORT || 3296)}/eleven`,
+      ZRO_ELEVENLABS_WS_URL: `ws://127.0.0.1:${Number(process.env.E2E_ZLAB_PORT || 3296)}/eleven`,
     },
   },
 })
