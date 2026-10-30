@@ -3192,3 +3192,23 @@ Local, Postgres e Chromium desta máquina; HUB e Absolute ZRO falsos (`tests/pon
   convidar → revogar = tela neutra. Junto: `pessoas-zro`, `acessos`, `produtora` e `sem-corte` (iPhone, 375/393, claro
   e escuro, com `/convite`): **34 passaram**, 6 pulados por projeto. `scan-secrets` sem segredo.
 - Fica para depois: tela do freela dentro do Maestro e o aviso do convite por e-mail (em espera pelo titular).
+
+## Relay: página inicial nova (30/10/2026)
+
+- `products/relay/index.html`, `app/home.css`, `app/home.js` e `app/vitrine.js` (as contas puras da página). Telas de
+  verdade em `app/inicio/telas/` (conversor, fila, editor de preset e painel; MacBook 1440×900 e iPhone 390×844, claro e
+  escuro, webp de 40 a 60 KB), regravadas por `node scripts/telas-inicio.mjs` com uma conta de exemplo servida no próprio
+  script. A foto `app/inicio/praia.webp` (Higgsfield, 0,5 crédito) é o arquivo de exemplo das telas e do "Experimente".
+- `test/inicio.test.js` (13): o "Experimente" e o "Cabe no limite" iguais ao plano do conversor; cada tela existe nos
+  dois temas; SEO e o topo com `<nav>`; no Chromium, montagem pelos dados (23 destinos, 5 grupos, 7 apps), nenhum
+  "grátis" nem em atributo, todo controle com nome, abas pelo teclado, tema escuro troca as telas, conta fora/dentro/
+  desligada (o "Seu painel" do herói continua), 390 e 1440 px sem rolar de lado, com e sem movimento.
+- Só o que está no ar (decisão do titular, 30/10/2026): a órbita mostra Maestro, SOBEDESCE, Synquei e TPeasy; AEON,
+  Revela e NOSSOM saem da página e o cartão da cor da Revela só nasce com a flag ligada. O teste publica o site como a
+  produção (`publicar`, sem a flag) e confere o HTML e a página renderizada: nada de AEON, Revela, NOSSOM ou "beta".
+- Relay `npm test`: **114/114**. Raiz: `lint`, `format:check` e `scan-secrets` ok. Não conferido aqui: iPhone de verdade.
+- Falha intermitente da suíte (o último teste da página no Chromium): com a conta "dentro", o topo baixava o widget do
+  Set de verdade (absolutezro.com), que chamava o repasse falso e o 401 virava erro no console, conforme a rede e a
+  carga. O teste agora serve um `<zro-set>` mudo no lugar do widget (sem rede), confere os erros no próprio teste da
+  conta e pede as imagens preguiçosas antes de conferir. Seis rodadas paralelas sem falha; `npm test` duas vezes
+  seguidas: 114/114.

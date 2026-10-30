@@ -850,6 +850,14 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
 - ✅ Looks (`.cube`) no Drive pelo SOBEDESCE (pedido do titular, 30/10/2026): pasta escolhida no painel do Relay (leva e
   traz, sem gravar por cima) e `sobedesce://looks` abre o Comparar do app com a pasta e o Drive dos looks. Aparece com
   a cor da Revela (`RECURSOS.revela`). ⬜ Sai no app do SOBEDESCE na próxima versão do desktop.
+- ✅ Página inicial nova (pedido do titular, 30/10/2026, no ritmo da do SOBEDESCE): herói com o produto de verdade no
+  MacBook e no iPhone (telas capturadas do app por `scripts/telas-inicio.mjs`, claro e escuro), números que vêm do
+  código, "Experimente" (o destino muda a tela e a ficha, pelo mesmo plano do conversor), Ferramentas em abas
+  (Converter, Vários de uma vez, Meus presets, Painel), "Cabe no limite" com a conta do Tamanho exato, os 23 destinos
+  por grupo, a conta (painel, equipe e Set), o ecossistema só com o que está no ar (Maestro, SOBEDESCE, Synquei e
+  TPeasy) e o fecho. Uma foto de exemplo (Higgsfield) vira o arquivo das telas e da
+  demonstração; nenhuma interface gerada. ⬜ Conferir num iPhone de verdade depois do deploy.
+- ⬜ Looks (`.cube`) no Drive pelo SOBEDESCE (pedido do titular: ficam no aparelho, sobem para o Drive).
 - ⬜ App de computador do Relay e SOBEDESCE gravando no painel (Bearer da conta em `/api/relay/painel`).
 - ⬜ Conta excluída na Absolute ZRO apagar o schema `relay` dela (hoje nenhum app recebe o aviso do HUB).
 - ⬜ "Baixar como…" das Referências e o pedido da Z no SOBEDESCE pelos presets do Relay.
