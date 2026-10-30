@@ -141,7 +141,7 @@ repasse é `api/zro/set.js` (miolo em `_zro.js`, com `sessaoConferida`: claim re
 `zro.set` e, se o HUB recusar, refaz sem ele (`sem_set`) antes do `basico`. Um 401 do Set NÃO apaga a sessão. A folha
 veste os tokens dos dois temas (`--zro-set-*` no template). ⚠️ `var`/`function` no topo (o TDZ de 19/out · 2).
 
-## 30/out · 4 — o lançamento preparado: o site real sem sobra de protótipo (checklist em `docs/operations/lancamento-carro.md`)
+## 30/out · 6 — o lançamento preparado: o site real sem sobra de protótipo (checklist em `docs/operations/lancamento-carro.md`)
 
 O titular autorizou preparar o lançamento ("pode fazer o restante"); e-mail só quando ele pedir, nada de app de
 computador. O HUB abre o gate na `0041_carro_lancamento.sql` (web, api e sso; desktop e download fechados) e o Carro
@@ -166,6 +166,23 @@ abre com `CARRO_RELEASE=released`. **Só no site real (`REAL`)**, sem mudar a pr
   ficam em `src/midia/` para quando voltarem); "Procurar alguém pelo nome" sem "— de graça".
 - ⚠️ **Ainda moram no aparelho**: Propostas, Jobs, Feed e Brechó. No real eles nascem vazios e nada chega a outra
   conta — a consulta de quem contrata não chega ao freela. Decisão do titular: servidor ou fora do menu do real.
+
+## 30/out · 5 — o Porta-malas é o Sobedesce (`test/porta-malas-real.js`)
+
+Titular: *"O porta mala vira uma sessão onde o sobedesce está ali dentro, fazendo as mesmas coisas da aba Drive do
+sobedesce, e transferências"*; aberto a toda conta (Drive e Transferências são do grátis do Sobedesce).
+
+- No site real, `malasReal()` põe o próprio app em `https://sobedesce.absolutezro.com/app/?no=carro&tema=…` (o Sobedesce
+  só se deixa embutir em carro.absolutezro.com). Nada de cópia, nada passa pelo Carro: o arquivo vai do aparelho ao
+  Google. A demonstração antiga (`data-sem-real`) segue só na prévia.
+- **Sem botão de "abrir"**: a tela já é o Sobedesce, com o selo pequeno dele (`.ml-selo`, leva ao sobedesce.com).
+- **Tema do Carro, nunca o do aparelho**: muda junto por mensagem (`temaCarro()` e o `MutationObserver`).
+- **Envio andando**: o recado `envios` (só da origem do Sobedesce) acende o ponto no Porta-malas (lateral, gaveta e
+  MENU do celular) e liga o "sair?" do navegador ao fechar a aba.
+- **O endereço é carro.absolutezro.com** (ADR 0025; o titular autorizou em 30/10/2026): carrodofreela.com.br e www
+  levam para lá com o mesmo caminho (308, `ANTIGOS` em `src/seguranca.js`, rota com `has: host` no `config.json`; o
+  `servir-saida.js` local respeita o host). Os links de compartilhar já saem no subdomínio. Isso também resolve o
+  porta-malas: fora de *.absolutezro.com o cookie do Sobedesce não iria junto.
 
 ## 30/out · 4 — a linha visual B, "Natal à noite" (aprovada pelo titular; `test/site-real.js`)
 

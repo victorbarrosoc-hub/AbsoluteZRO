@@ -328,7 +328,7 @@ export type Envio = { destino: DestinoSaida; formato: FormatoSaida; n: number; p
 export async function registrarEnvio(
   ctx: Contexto,
   roteiroId: string,
-  e: { n: number; destino: DestinoSaida; formato: FormatoSaida; pessoa?: string | null },
+  e: { n: number; destino: DestinoSaida; formato: FormatoSaida; pessoa?: string | null; extra?: Record<string, string | boolean> },
 ): Promise<Res<{ sha256: string }>> {
   if (!ehUuid(roteiroId) || !Number.isInteger(e.n) || e.n < 1) return falha("nao_existe", "Essa versão não existe.");
   const pessoa = typeof e.pessoa === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(e.pessoa) ? e.pessoa : null;
@@ -342,7 +342,7 @@ export async function registrarEnvio(
       await tx.execute(sql`
         insert into maestro.audit_log (org_id, actor_sub, action, target_type, target_id, metadata)
         values (${ctx.orgId}, ${ctx.sub}, 'roteiro.enviado', 'roteiro', ${roteiroId},
-                ${JSON.stringify({ n: e.n, sha256: v.sha256, destino: e.destino, formato: e.formato, pessoa })}::jsonb)`);
+                ${JSON.stringify({ ...e.extra, n: e.n, sha256: v.sha256, destino: e.destino, formato: e.formato, pessoa })}::jsonb)`);
       return { ok: true as const, sha256: v.sha256 };
     });
   } catch (err) {

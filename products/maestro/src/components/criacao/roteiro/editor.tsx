@@ -43,6 +43,8 @@ type Props = {
   podeEnviar: boolean;
   /** O AEON está aberto para a pessoa (podeMandarParaAeon): só então a opção aparece. */
   aeon: boolean;
+  /** O TPeasy no plano (podeMandarParaTpeasy, F8): "Enviar ao TPeasy" direto pela Absolute ZRO. */
+  tpeasy?: boolean;
   vistaInicial: Vista;
   eu: string;
   nomes: Record<string, string>;
@@ -156,7 +158,7 @@ function FolhaConflitos({
   );
 }
 
-export function EditorRoteiro({ inicial, versoes, opcoes, editavel, podeEstado, podeEnviar, aeon, vistaInicial, nomes }: Props) {
+export function EditorRoteiro({ inicial, versoes, opcoes, editavel, podeEstado, podeEnviar, aeon, tpeasy = false, vistaInicial, nomes }: Props) {
   const router = useRouter();
   const url = `/api/criacao/roteiros/${inicial.id}`;
   const g = useGravacao(inicial.id, inicial, editavel);
@@ -388,7 +390,7 @@ export function EditorRoteiro({ inicial, versoes, opcoes, editavel, podeEstado, 
                 ))}
               </div>
               <div className="acoes cr-cabeca__acoes">
-                {podeEnviar ? <MenuEnviar aeon={aeon} escolher={setEnvio} salvarVersao={() => setFolha("versoes")} /> : null}
+                {podeEnviar ? <MenuEnviar aeon={aeon} tpeasy={tpeasy} escolher={setEnvio} salvarVersao={() => setFolha("versoes")} /> : null}
                 <button type="button" className={`glass-btn${podeEnviar ? "" : " glass-btn--ink"}`} onClick={() => setFolha("versoes")}>
                   <Icone nome="versoes" size={17} /> {editavel ? "Salvar versão" : "Versões"}
                 </button>
@@ -468,6 +470,7 @@ export function EditorRoteiro({ inicial, versoes, opcoes, editavel, podeEstado, 
           {folha === "menu" ? (
             <FolhaMenuEnviar
               aeon={aeon}
+              tpeasy={tpeasy}
               escolher={setEnvio}
               salvarVersao={() => setFolha("versoes")}
               aoFechar={() => setFolha((f) => (f === "menu" ? null : f))}
@@ -486,6 +489,7 @@ export function EditorRoteiro({ inicial, versoes, opcoes, editavel, podeEstado, 
               antes={() => g.gravar()}
               aoSalvar={(n) => g.setMeta((x) => ({ ...x, versaoAtual: n }))}
               pessoa={pessoaTp}
+              tpeasy={tpeasy}
               cards={opcoes.cards}
               ligar={ligarAoCard}
               aoCliente={() => {

@@ -6,6 +6,14 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
+import {
+  AppEntregaDestinatariosSchema,
+  AppEntregaEntradaSchema,
+  AppEntregaEstadoSchema,
+  AppEntregaRecebidasEntradaSchema,
+  AppEntregasEnviadasSchema,
+  AppEntregasRecebidasSchema,
+} from './entregas'
 import { EVENT_PAYLOADS, EventEnvelopeSchema } from './events'
 import { FreelaInventarioSchema } from './freela'
 import { CarroCrewSchema, CarroJobSchema, TpeasyBackupSchema } from './handoffs'
@@ -77,6 +85,16 @@ export function buildSchemas(): Record<string, unknown> {
     ['sobedesce.drive-token.resposta.v1', DriveTokenRespostaSchema, 'SOBEDESCE drive.token: resposta v1'],
   ]
   for (const [id, schema, title] of ponte) out[id] = s(schema, id, title)
+  // Entregas entre apps: o roteiro do Maestro na caixa de entrada do TPeasy (docs/integration-contracts/maestro-tpeasy.md).
+  const entregas: [string, z.ZodType, string][] = [
+    ['zro.app-entrega.entrada.v1', AppEntregaEntradaSchema, 'Entrega entre apps: Maestro → HUB v1'],
+    ['zro.app-entrega.estado.v1', AppEntregaEstadoSchema, 'Entrega entre apps: o estado de um envio v1'],
+    ['zro.app-entrega.enviadas.v1', AppEntregasEnviadasSchema, 'Entrega entre apps: o que a pessoa mandou de um roteiro v1'],
+    ['zro.app-entrega.destinatarios.v1', AppEntregaDestinatariosSchema, 'Entrega entre apps: para quem dá para mandar v1'],
+    ['zro.app-entrega.recebidas.v1', AppEntregasRecebidasSchema, 'Entrega entre apps: a caixa de entrada do TPeasy v1'],
+    ['zro.app-entrega.recebidas-entrada.v1', AppEntregaRecebidasEntradaSchema, 'Entrega entre apps: o aparelho conta o que gravou v1'],
+  ]
+  for (const [id, schema, title] of entregas) out[id] = s(schema, id, title)
   for (const [type, versions] of Object.entries(EVENT_PAYLOADS)) {
     for (const [v, schema] of Object.entries(versions as Record<string, z.ZodType>)) {
       out[`event.${type}.v${v}`] = s(schema, `event.${type}.v${v}`, `Payload de ${type} v${v}`)

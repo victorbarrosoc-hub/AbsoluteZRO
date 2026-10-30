@@ -1,0 +1,95 @@
+{
+  "$id": "https://absolutezro.local/schemas/zro.app-entrega.entrada.v1.json",
+  "title": "Entrega entre apps: Maestro → HUB v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "destino": {
+      "type": "string",
+      "const": "tpeasy"
+    },
+    "tipo": {
+      "type": "string",
+      "const": "roteiro"
+    },
+    "para": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "roteiro": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "versao": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "pessoa": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,40}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "id",
+        "versao",
+        "pessoa",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "titulo": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    },
+    "corpo": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200000
+    },
+    "link": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 500,
+          "pattern": "^https?:\\/\\/[^\\s\"<>]+$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "alvo_seg": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3600
+    }
+  },
+  "required": [
+    "destino",
+    "tipo",
+    "roteiro",
+    "titulo",
+    "corpo",
+    "link",
+    "alvo_seg"
+  ],
+  "additionalProperties": false
+}

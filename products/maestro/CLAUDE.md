@@ -432,6 +432,23 @@ capa-regras}.ts`, `components/quadro/capa.tsx`, `src/app/quadro-achar.css`): o c
   nem pino. O player nunca recebe versão de roteiro (o lote da equipe mostra "Abrir no editor"; a ficha do card abre o
   editor). Editor: `?cliente=1` (comentários por bloco e versão + decisões, poll 20 s), `op: "resolver"` (quem edita).
   Testes: `tests/roteiro-cliente.test.mts`, `e2e/criacao-cliente.spec.ts` (`SHOTS_DIR` guarda `f7-*`).
+- **Criação · Para o TPeasy direto** (fase F8; pedido do titular 30/10/2026; contrato em
+  `docs/integration-contracts/maestro-tpeasy.md`, migração **0040** do HUB; nenhuma migração do Maestro): o TPeasy não
+  tem banco, então o HUB é a caixa de entrada. "Enviar ▾ › Para o TPeasy" com `podeMandarParaTpeasy` (admin e gestão +
+  `temProduto(s, 'tpeasy')`): a ação principal é **Enviar ao TPeasy** (`DiretoTpeasy` em `enviar.tsx`), os outros jeitos
+  (Compartilhar, Copiar, .txt, backup) recolhidos em "Outros jeitos"; sem o TPeasy, a linha "Enviar direto pede o TPeasy
+  no plano." e a folha de antes. `src/lib/criacao/roteiro/tpeasy.ts` monta o texto **no servidor** da versão salva
+  (`saidaTpeasy`, a mesma do .txt), com título, meta e link de volta, e manda `POST <HUB>/api/v1/apps/entregas`
+  (`basePonte()`, token da sessão com `maestro.projects`); para quem: você ou quem da organização já entrou no TPeasy
+  (`/api/v1/apps/entregas/destinatarios`, chips "Para quem" só com mais de uma pessoa). A mesma versão de novo é
+  "Reenviar" e não duplica (o HUB junta pela chave `maestro:roteiro:<id>:<pessoa>:v<n>`; o TPeasy pelo item
+  `idNoTpeasy`). A folha mostra "Enviado ao TPeasy · v3 · agora" e "· Recebido" quando o aparelho contou
+  (`GET ?tpeasy=1` → `estadoTpeasy`). Auditoria `roteiro.enviado` formato `direto` com o id da entrega (o `enviado` à mão
+  recusa `direto`). Rota: `POST {op:"tpeasy", n, pessoa?, para?}` (201 nova, 200 reenviada; 403 `sem_tpeasy`, 401
+  `reconectar_zro`, erros do HUB com mensagem curta). AEON segue escondido pelo gate (`podeMandarParaAeon`). Testes:
+  `tests/criacao-tpeasy.test.mts` (o HUB de mentira em `tests/ponte-falsa.mts` confere o corpo pelo schema publicado
+  `zro.app-entrega.entrada.v1`) e `e2e/criacao-tpeasy.spec.ts` (organização "Café Filmes E2E" com o TPeasy no plano; o
+  TPeasy de verdade servido no `E2E_TP_PORT`, padrão 3233; `SHOTS_DIR` guarda `f8-*`, `E2E_VIDEO=1` grava o passeio).
 - **Criação · apagar** (titular, 30/10/2026; `components/criacao/lixeira.tsx` + `deslizar.ts`, puro em
   `lib/criacao/lixeira.ts`, CSS `app/lixeira.css`, prefixo `lx-`): as duas listas usam `ListaLixeira` +
   `CartaoApagavel` (só com `podeEditarCriacao`). iPhone: deslizar para a esquerda (só `transform`, `touch-action: pan-y`;
@@ -525,7 +542,8 @@ contra o código do próprio app, modelos só com dica, documento antigo, junç�
 (`roteiro-editor.test.mts`), a rota do editor (Origin, papéis, poll, 409 com o atual e a junção, versões, restaurar;
 `criacao-rota.test.mts`; também o envio anotado e o AEON pelo gate), as saídas (`maestro.roteiro/1` contra o schema
 publicado com o conferidor `tests/esquema-json.mts`, TPeasy pelo código do próprio app, AEON escondido;
-`roteiro-saidas.test.mts`), o roteiro com o cliente (vista sem nada interno, mandar, `/a` por bloco, ajuste, versão nova, rotas públicas, limite, duas organizações e acesso por cliente; `roteiro-cliente.test.mts`), o fluxo puro (link, operações, exportação, cota, imagem; `fluxo.test.mts`), fluxos no banco
+`roteiro-saidas.test.mts`), o TPeasy direto pela Absolute ZRO (gate, texto do servidor, reenviar sem duplicar, para quem,
+auditoria, HUB sem o TPeasy; `criacao-tpeasy.test.mts`), o roteiro com o cliente (vista sem nada interno, mandar, `/a` por bloco, ajuste, versão nova, rotas públicas, limite, duas organizações e acesso por cliente; `roteiro-cliente.test.mts`), o fluxo puro (link, operações, exportação, cota, imagem; `fluxo.test.mts`), fluxos no banco
 (duas organizações, papéis, rev por nó, o que mudou, referências "sem acesso", porta da imagem, cota, limpeza;
 `fluxo-rls.test.mts`) e as rotas do fluxo e da imagem (`fluxo-rota.test.mts`), o link e a exportação do Fluxo
 (`links-fluxo.test.mts`), o migrador com migração atrasada

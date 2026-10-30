@@ -335,6 +335,19 @@ test('sem ZRO_CLIENT_ID/SECRET: /eu responde 503 (o botão não aparece) e entra
   }
 });
 
+test('o domínio antigo leva ao carro.absolutezro.com, com o caminho (308); o subdomínio não redireciona', () => {
+  const SEG = require(path.join(RAIZ, 'src', 'seguranca.js'));
+  const rotas = SEG.rotasVercel("default-src 'self'", ['index']);
+  for (const host of ['carrodofreela.com.br', 'www.carrodofreela.com.br']) {
+    const r = rotas.find(x => x.has && x.has.some(h => h.type === 'host' && h.value === host));
+    assert.ok(r, host);
+    assert.equal(r.status, 308);
+    assert.equal(r.headers.Location, 'https://carro.absolutezro.com/$1');
+    assert.ok(rotas.indexOf(r) < rotas.findIndex(x => x.handle === 'filesystem'));
+  }
+  assert.ok(!rotas.some(x => x.has && x.has.some(h => /absolutezro\.com$/.test(h.value))), 'o subdomínio nunca redireciona para si');
+});
+
 test('as rotas do domínio (config.json): CSP, cleanUrls, /app fechado e as funções', async () => {
   const SEG = require(path.join(RAIZ, 'src', 'seguranca.js'));
   const { servirSaida } = require(path.join(RAIZ, 'src', 'servir-saida.js'));

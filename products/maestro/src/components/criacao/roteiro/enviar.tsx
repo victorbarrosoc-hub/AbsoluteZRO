@@ -4,9 +4,12 @@
  * de uma VERSÃO SALVA (imutável, com sha256): se ainda não há versão, ou o rascunho mudou depois da última, a folha
  * oferece salvar a próxima antes (ou mandar a última como está). Cada envio fica na auditoria (`roteiro.enviado`).
  *
- * - TPeasy: só as falas, por pessoa, prontas para gravar. Compartilhar (folha do sistema, com o `.txt` quando o
- *   aparelho aceita arquivo), Copiar, Baixar `.txt` e o backup do TPeasy (id estável: atualiza o mesmo roteiro lá).
- *   O texto diz o que acontece ("Compartilha o texto pronto"): nada de "sincroniza" (isso é a F8a).
+ * - Para o TPeasy: só as falas, por pessoa, prontas para gravar. Com o TPeasy no plano (`tpeasy`, F8), a ação principal
+ *   é **Enviar ao TPeasy**: pela Absolute ZRO direto na caixa de entrada do TPeasy da pessoa (ou de quem da organização
+ *   usa o TPeasy), que entra em Roteiros ao abrir o app, marcado "Do Maestro"; a folha mostra "Enviado ao TPeasy · v3 ·
+ *   agora" (e "Recebido") com Reenviar. Os outros jeitos ficam recolhidos. Sem o TPeasy, uma linha curta diz por quê e
+ *   ficam Compartilhar (folha do sistema, com o `.txt` quando o aparelho aceita arquivo), Copiar, Baixar `.txt` e o
+ *   backup do TPeasy (id estável: atualiza o mesmo roteiro lá).
  * - PDF para a edição: a folha A4 na vista Edição (cenas com tempo, lettering, áudio e falas).
  * - AEON: o arquivo `maestro.roteiro/1`, SÓ quando o AEON está aberto para a pessoa (`podeMandarParaAeon`, gate do
  *   HUB). Hoje fechado: não aparece.
@@ -19,6 +22,8 @@ import { useEffect, useRef, useState } from "react";
 import { lerRoteiro, type Roteiro } from "@/lib/criacao/roteiro/modelo";
 import { arquivoParaEdicao, type DestinoSaida, type FormatoSaida, mesmoConteudo, paraRoteiroMaestro, saidaTpeasy } from "@/lib/criacao/roteiro/saidas";
 import type { Envio, VersaoCompleta, VersaoLista } from "@/lib/criacao/roteiro/servidor";
+import type { EnvioTpeasy, EstadoTpeasy } from "@/lib/criacao/roteiro/tpeasy";
+import { idNoTpeasy } from "@/lib/criacao/roteiro/vistas/teleprompter";
 import { formatarTempo } from "@/lib/criacao/roteiro/tempo";
 import { Folha, useFecharFolha } from "@/components/folha";
 import { Icone, type NomeIcone } from "@/components/icones";
@@ -31,20 +36,20 @@ export type DestinoEnvio = DestinoSaida;
 type Item = { k: DestinoEnvio; icone: NomeIcone; titulo: string; apoio: string };
 
 /** As opções do menu, na ordem. AEON só com o gate aberto (hoje fechado: não aparece). */
-export function itensEnviar(aeon: boolean): Item[] {
+export function itensEnviar(aeon: boolean, tpeasy = false): Item[] {
   return [
     { k: "cliente", icone: "aprovacoes", titulo: "Para o cliente aprovar", apoio: "Pelo link de aprovação do card" },
-    { k: "tpeasy", icone: "celular", titulo: "TPeasy", apoio: "Só as falas, prontas para gravar" },
+    { k: "tpeasy", icone: "celular", titulo: "Para o TPeasy", apoio: tpeasy ? "Direto no app, pronto para gravar" : "Só as falas, prontas para gravar" },
     { k: "edicao", icone: "filme", titulo: "PDF para a edição", apoio: "Cenas, tempos e deixas" },
     ...(aeon ? [{ k: "aeon" as const, icone: "documento" as const, titulo: "AEON", apoio: "Arquivo do roteiro" }] : []),
     { k: "pdf", icone: "imprimir", titulo: "PDF", apoio: "Literário, Técnico ou Teleprompter" },
   ];
 }
 
-function Itens({ aeon, escolher, salvarVersao }: { aeon: boolean; escolher: (d: DestinoEnvio) => void; salvarVersao: () => void }) {
+function Itens({ aeon, tpeasy, escolher, salvarVersao }: { aeon: boolean; tpeasy: boolean; escolher: (d: DestinoEnvio) => void; salvarVersao: () => void }) {
   return (
     <>
-      {itensEnviar(aeon).map((i) => (
+      {itensEnviar(aeon, tpeasy).map((i) => (
         <button key={i.k} type="button" role="menuitem" className="cr-enviar__item" onClick={() => escolher(i.k)}>
           <span className="cr-enviar__icone" aria-hidden="true">
             <Icone nome={i.icone} size={18} />
@@ -69,7 +74,17 @@ function Itens({ aeon, escolher, salvarVersao }: { aeon: boolean; escolher: (d: 
 }
 
 /** O botão "Enviar" com o menu de vidro (computador). Esc ou clique fora fecha; setas andam entre as opções. */
-export function MenuEnviar({ aeon, escolher, salvarVersao }: { aeon: boolean; escolher: (d: DestinoEnvio) => void; salvarVersao: () => void }) {
+export function MenuEnviar({
+  aeon,
+  tpeasy = false,
+  escolher,
+  salvarVersao,
+}: {
+  aeon: boolean;
+  tpeasy?: boolean;
+  escolher: (d: DestinoEnvio) => void;
+  salvarVersao: () => void;
+}) {
   const [aberto, setAberto] = useState(false);
   const caixa = useRef<HTMLDivElement>(null);
   const botao = useRef<HTMLButtonElement>(null);
@@ -110,6 +125,7 @@ export function MenuEnviar({ aeon, escolher, salvarVersao }: { aeon: boolean; es
         <div className="cr-enviar__menu" role="menu" aria-label="Enviar">
           <Itens
             aeon={aeon}
+            tpeasy={tpeasy}
             escolher={(d) => {
               fechar(false);
               escolher(d);
@@ -128,11 +144,13 @@ export function MenuEnviar({ aeon, escolher, salvarVersao }: { aeon: boolean; es
 /** O mesmo menu numa folha (iPhone). */
 export function FolhaMenuEnviar({
   aeon,
+  tpeasy = false,
   escolher,
   salvarVersao,
   aoFechar,
 }: {
   aeon: boolean;
+  tpeasy?: boolean;
   escolher: (d: DestinoEnvio) => void;
   salvarVersao: () => void;
   aoFechar: () => void;
@@ -155,6 +173,7 @@ export function FolhaMenuEnviar({
           <div className="cr-enviar__lista" role="menu" aria-label="Enviar">
             <Itens
               aeon={aeon}
+              tpeasy={tpeasy}
               escolher={(d) => {
                 depois.current = () => escolher(d);
                 fechar();
@@ -174,13 +193,20 @@ function FecharDepois({ render }: { render: (fechar: () => void) => React.ReactN
   return <>{render(useFecharFolha())}</>;
 }
 
-const TITULO: Record<DestinoEnvio, string> = { cliente: "Para o cliente aprovar", tpeasy: "TPeasy", edicao: "PDF para a edição", aeon: "AEON", pdf: "PDF" };
+const TITULO: Record<DestinoEnvio, string> = {
+  cliente: "Para o cliente aprovar",
+  tpeasy: "Para o TPeasy",
+  edicao: "PDF para a edição",
+  aeon: "AEON",
+  pdf: "PDF",
+};
 const NOME_DESTINO: Record<DestinoEnvio, string> = { cliente: "Cliente", tpeasy: "TPeasy", edicao: "Edição", aeon: "AEON", pdf: "PDF" };
 const NOME_FORMATO: Record<string, string> = {
   compartilhar: "compartilhado",
   copiar: "copiado",
   txt: ".txt",
   backup: "backup",
+  direto: "no app",
   pdf: "PDF",
   json: "arquivo",
   link: "link do card",
@@ -219,6 +245,8 @@ type Props = {
   aoSalvar: (n: number) => void;
   /** Pessoa escolhida na vista Teleprompter (começa nela). */
   pessoa: string | null;
+  /** O TPeasy no plano (podeMandarParaTpeasy): "Enviar ao TPeasy" direto pela Absolute ZRO (F8). */
+  tpeasy?: boolean;
   /** Para o cliente: os cards que dá para ligar, ligar um, e o aviso de que foi (o estado vira "com o cliente"). */
   cards: { id: string; tema: string }[];
   ligar: (cardId: string) => Promise<string | null>;
@@ -340,6 +368,8 @@ export function FolhaEnviar(p: Props) {
           setPessoa={setPessoa}
           compartilhar={podeCompartilhar}
           registrar={registrar}
+          tpeasy={!!p.tpeasy}
+          anotar={(e) => setEnvios((l) => [e, ...l].slice(0, 5))}
           cliente={{ url: p.url, cards: p.cards, ligar: p.ligar, aoEnviar: p.aoCliente }}
         />
       )}
@@ -364,6 +394,8 @@ function Pronto({
   setPessoa,
   compartilhar,
   registrar,
+  tpeasy,
+  anotar,
   cliente,
 }: {
   v: VersaoCompleta;
@@ -373,6 +405,8 @@ function Pronto({
   setPessoa: (p: string | null) => void;
   compartilhar: boolean;
   registrar: (v: VersaoCompleta, formato: FormatoSaida, quem?: string | null, destino?: DestinoEnvio) => void;
+  tpeasy: boolean;
+  anotar: (e: Envio) => void;
   cliente: { url: string; cards: { id: string; tema: string }[]; ligar: (cardId: string) => Promise<string | null>; aoEnviar: () => void };
 }) {
   const [aviso, setAviso] = useState<string | null>(null);
@@ -411,55 +445,76 @@ function Pronto({
         if ((e as { name?: string })?.name !== "AbortError") setAviso("Não deu. Tente Copiar ou Baixar.");
       }
     };
+    const outros = (
+      <div className="cr-enviar__acoes">
+        {compartilhar ? (
+          <button
+            type="button"
+            className="glass-btn glass-btn--ink"
+            disabled={vazio}
+            onClick={fazer("compartilhar", async () => {
+              const arquivo = new File([s.texto], s.arquivoTxt, { type: "text/plain" });
+              const comArquivo = typeof navigator.canShare === "function" && navigator.canShare({ files: [arquivo] });
+              await navigator.share(comArquivo ? { files: [arquivo], title: s.titulo } : { title: s.titulo, text: s.texto });
+            })}
+          >
+            <Icone nome="compartilhar" size={16} /> Compartilhar
+          </button>
+        ) : null}
+        <button
+          type="button"
+          className={`glass-btn${compartilhar ? "" : " glass-btn--ink"}`}
+          disabled={vazio}
+          onClick={fazer("copiar", async () => {
+            await navigator.clipboard.writeText(s.texto);
+            setAviso("Copiado.");
+          })}
+        >
+          <Icone nome="copiar" size={16} /> Copiar
+        </button>
+        <button type="button" className="glass-btn" disabled={vazio} onClick={fazer("txt", () => baixar(s.arquivoTxt, s.texto, "text/plain;charset=utf-8"))}>
+          <Icone nome="baixar" size={16} /> .txt
+        </button>
+        <button
+          type="button"
+          className="glass-btn"
+          disabled={vazio}
+          title="Restaurar backup no TPeasy atualiza o mesmo roteiro"
+          onClick={fazer("backup", () => baixar(s.arquivoBackup, JSON.stringify(s.backup, null, 2), "application/json"))}
+        >
+          <Icone nome="baixar" size={16} /> Backup do TPeasy
+        </button>
+      </div>
+    );
+    const avisoLinha = aviso ? (
+      <p className="sutil" role="status">
+        {aviso}
+      </p>
+    ) : null;
+    if (tpeasy)
+      return (
+        <div className="cr-enviar__corpo">
+          {selo}
+          <p className="cr-enviar__apoio">Vai direto para o TPeasy: só as falas, por pessoa.</p>
+          <PreviaTeleprompter roteiro={v.conteudo} pessoa={pessoa} escolher={setPessoa} />
+          <DiretoTpeasy url={cliente.url} v={v} roteiroId={roteiroId} pessoa={pessoa} vazio={vazio} anotar={anotar} />
+          <details className="cr-enviar__como cr-enviar__outros">
+            <summary>Outros jeitos</summary>
+            {outros}
+            {avisoLinha}
+          </details>
+        </div>
+      );
     return (
       <div className="cr-enviar__corpo">
         {selo}
         <p className="cr-enviar__apoio">Compartilha o texto pronto: só as falas, por pessoa.</p>
         <PreviaTeleprompter roteiro={v.conteudo} pessoa={pessoa} escolher={setPessoa} />
-        <div className="cr-enviar__acoes">
-          {compartilhar ? (
-            <button
-              type="button"
-              className="glass-btn glass-btn--ink"
-              disabled={vazio}
-              onClick={fazer("compartilhar", async () => {
-                const arquivo = new File([s.texto], s.arquivoTxt, { type: "text/plain" });
-                const comArquivo = typeof navigator.canShare === "function" && navigator.canShare({ files: [arquivo] });
-                await navigator.share(comArquivo ? { files: [arquivo], title: s.titulo } : { title: s.titulo, text: s.texto });
-              })}
-            >
-              <Icone nome="compartilhar" size={16} /> Compartilhar
-            </button>
-          ) : null}
-          <button
-            type="button"
-            className={`glass-btn${compartilhar ? "" : " glass-btn--ink"}`}
-            disabled={vazio}
-            onClick={fazer("copiar", async () => {
-              await navigator.clipboard.writeText(s.texto);
-              setAviso("Copiado.");
-            })}
-          >
-            <Icone nome="copiar" size={16} /> Copiar
-          </button>
-          <button type="button" className="glass-btn" disabled={vazio} onClick={fazer("txt", () => baixar(s.arquivoTxt, s.texto, "text/plain;charset=utf-8"))}>
-            <Icone nome="baixar" size={16} /> .txt
-          </button>
-          <button
-            type="button"
-            className="glass-btn"
-            disabled={vazio}
-            title="Restaurar backup no TPeasy atualiza o mesmo roteiro"
-            onClick={fazer("backup", () => baixar(s.arquivoBackup, JSON.stringify(s.backup, null, 2), "application/json"))}
-          >
-            <Icone nome="baixar" size={16} /> Backup do TPeasy
-          </button>
-        </div>
-        {aviso ? (
-          <p className="sutil" role="status">
-            {aviso}
-          </p>
-        ) : null}
+        {outros}
+        {avisoLinha}
+        <p className="cr-enviar__sem" data-tpeasy="sem">
+          <Icone nome="cadeado" size={13} /> Enviar direto pede o TPeasy no plano.
+        </p>
         <details className="cr-enviar__como">
           <summary>No TPeasy</summary>
           <p>Novo › Colar texto, ou Importar arquivo com o .txt.</p>
@@ -517,6 +572,129 @@ function Pronto({
           </Link>
         ))}
       </div>
+    </div>
+  );
+}
+
+/** " · Ana" quando foi para outra pessoa; vazio quando foi para você. */
+const paraQuem = (e: EnvioTpeasy) => (e.para.eu ? "" : ` · ${e.para.nome.split(" ")[0]}`);
+
+/**
+ * Enviar ao TPeasy (F8): para quem (você, ou quem da organização usa o TPeasy), a ação principal e o estado
+ * "Enviado ao TPeasy · v3 · agora" (com "Recebido" quando o aparelho contou). A mesma versão de novo é "Reenviar" e
+ * não duplica nada lá (o HUB junta pela chave; o TPeasy pelo id).
+ */
+function DiretoTpeasy({
+  url,
+  v,
+  roteiroId,
+  pessoa,
+  vazio,
+  anotar,
+}: {
+  url: string;
+  v: VersaoCompleta;
+  roteiroId: string;
+  pessoa: string | null;
+  vazio: boolean;
+  anotar: (e: Envio) => void;
+}) {
+  const [estado, setEstado] = useState<EstadoTpeasy | null>(null);
+  const [para, setPara] = useState<string | null>(null);
+  const [indo, setIndo] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    fetch(`${url}?tpeasy=1`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d: EstadoTpeasy) => {
+        if (vivo) setEstado(d);
+      })
+      .catch(() => {
+        if (vivo) setEstado({ pode: false, motivo: "A Absolute ZRO não respondeu agora.", destinatarios: [], enviados: [] });
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [url]);
+
+  if (!estado)
+    return (
+      <p className="sutil cr-tpd__estado" role="status" aria-busy="true">
+        Vendo o TPeasy…
+      </p>
+    );
+  if (!estado.pode)
+    return (
+      <p className="cr-enviar__sem" data-tpeasy="sem">
+        <Icone nome="cadeado" size={13} /> {estado.motivo}
+      </p>
+    );
+
+  const eu = estado.destinatarios.find((d) => d.eu)?.id ?? null;
+  const alvo = para ?? eu;
+  const item = idNoTpeasy(roteiroId, pessoa);
+  const ultimo = estado.enviados.find((e) => e.item === item && (alvo ? e.para.id === alvo : e.para.eu));
+  const mesma = !!ultimo && ultimo.versao === v.n;
+
+  async function enviar() {
+    setIndo(true);
+    setMsg(null);
+    try {
+      const r = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ op: "tpeasy", n: v.n, pessoa, para: alvo && alvo !== eu ? alvo : null }),
+      });
+      const d = (await r.json().catch(() => ({}))) as { envio?: EnvioTpeasy & { situacao: string }; mensagem?: string };
+      if (!r.ok || !d.envio) throw new Error(d.mensagem ?? "Não deu para enviar agora.");
+      const novo = d.envio;
+      setEstado((x) => (x ? { ...x, enviados: [novo, ...x.enviados.filter((e) => e.id !== novo.id)] } : x));
+      anotar({ destino: "tpeasy", formato: "direto", n: v.n, pessoa, quem: null, em: new Date().toISOString() });
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "Não deu para enviar agora.");
+    } finally {
+      setIndo(false);
+    }
+  }
+
+  return (
+    <div className="cr-tpd">
+      {estado.destinatarios.length > 1 ? (
+        <div className="cr-chips cr-tpd__para" role="radiogroup" aria-label="Para quem" data-rolagem>
+          {estado.destinatarios.map((d) => (
+            <button key={d.id} type="button" role="radio" aria-checked={alvo === d.id} onClick={() => setPara(d.id)}>
+              {d.eu ? "Você" : d.nome.split(" ")[0]}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <div className="cr-enviar__acoes">
+        <button
+          type="button"
+          className="glass-btn glass-btn--ink"
+          disabled={vazio || indo}
+          onClick={() => void enviar()}
+          title="Aparece em Roteiros quando o TPeasy abrir, marcado Do Maestro"
+        >
+          <Icone nome="enviar" size={16} /> {indo ? "Enviando…" : mesma ? "Reenviar" : "Enviar ao TPeasy"}
+        </button>
+      </div>
+      {ultimo ? (
+        <p className="cr-tpd__estado" role="status" data-recebido={ultimo.recebida_em ? "sim" : "nao"}>
+          <Icone nome="check" size={14} />
+          <span>
+            Enviado ao TPeasy · v{ultimo.versao}
+            {paraQuem(ultimo)} · {quando(ultimo.atualizada_em)}
+            {ultimo.recebida_em ? <b> · Recebido</b> : null}
+          </span>
+        </p>
+      ) : null}
+      {msg ? (
+        <p className="sutil" role="alert">
+          {msg}
+        </p>
+      ) : null}
     </div>
   );
 }

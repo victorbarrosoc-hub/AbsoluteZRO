@@ -9,6 +9,7 @@
  * GET  ?envios=1       os últimos envios (só administração e gestão)
  * GET  ?cliente=1      os comentários do cliente (por bloco e versão) e as decisões (F7)
  * GET  ?para-cliente=1 o card, o lote e o cliente antes de mandar (só administração e gestão)
+ * GET  ?tpeasy=1       F8: dá para mandar direto ao TPeasy? Para quem? O que já foi (com "Recebido")?
  * POST { op: "salvar", rev, conteudo?, titulo? }   autosave com `rev`; 409 `conflito` traz o atual para juntar
  * POST { op: "versao", nota? }                     "Salvar versão" (congela o que está gravado)
  * POST { op: "restaurar", n, rev }                 o rascunho volta à versão n
@@ -18,6 +19,7 @@
  * POST { op: "apagar_de_vez" }                     só da lixeira, só administração e gestão, só sem versão salva
  * POST { op: "enviado", n, destino, formato, pessoa? }  anota o que saiu de qual versão (admin e gestão; AEON só aberto)
  * POST { op: "cliente", n, clienteId? }         a versão n vira peça do link de aprovação do card (admin e gestão; F7)
+ * POST { op: "tpeasy", n, pessoa?, para? }      F8: a versão n direto na caixa de entrada do TPeasy (admin e gestão + TPeasy no plano)
  * POST { op: "resolver", id, resolvido }        resolve ou reabre um comentário do cliente (quem edita)
  */
 import { exigirAcesso } from "@/lib/auth/requisicao";
@@ -26,6 +28,7 @@ import { origemDoSite, origensDoSite } from "@/lib/site";
 import { podeApagarDeVezCriacao, podeEditarCriacao, podeEnviarCriacao, podeMandarParaAeon } from "../permissoes";
 import { clienteDoRoteiro, enviarAoCliente, paraOClienteEstado, resolverDoRoteiro } from "./cliente";
 import { ehSaida, type FormatoSaida } from "./saidas";
+import { enviarAoTpeasy, estadoTpeasy } from "./tpeasy";
 import {
   apagarRoteiroDeVez,
   type EstadoRoteiro,
@@ -46,7 +49,16 @@ import {
 const LIMITE_CORPO = 400 * 1024;
 
 type Falha = { ok: false; erro: string; mensagem: string };
-const STATUS: Record<string, number> = { nao_existe: 404, sem_permissao: 403, conflito: 409, ja_existe: 409, tem_versao: 409, sem_card: 409, sem_cliente: 409, fora_da_lixeira: 409 };
+const STATUS: Record<string, number> = {
+  nao_existe: 404,
+  sem_permissao: 403,
+  conflito: 409,
+  ja_existe: 409,
+  tem_versao: 409,
+  sem_card: 409,
+  sem_cliente: 409,
+  fora_da_lixeira: 409,
+};
 const responder = (f: Falha & { atual?: unknown }) =>
   json({ erro: f.erro, mensagem: f.mensagem, ...(f.atual ? { atual: f.atual } : {}) }, STATUS[f.erro] ?? 400);
 
@@ -62,6 +74,10 @@ export async function getRoteiro(req: Request, id: string): Promise<Response> {
     if (!podeEnviarCriacao(s.papel)) return erro(403, "sem_permissao", "Só administração e gestão mandam o roteiro ao cliente.");
     const e = await paraOClienteEstado(ctx, id);
     return e ? json(e) : erro(404, "nao_existe", "Esse roteiro não existe mais.");
+  }
+  if (q.has("tpeasy")) {
+    if (!podeEnviarCriacao(s.papel)) return erro(403, "sem_permissao", "Só administração e gestão enviam o roteiro.");
+    return json(await estadoTpeasy(s, id));
   }
   if (q.has("versao")) {
     const v = await obterVersao(ctx, id, Number(q.get("versao")));
@@ -88,8 +104,9 @@ export async function postRoteiro(req: Request, id: string): Promise<Response> {
   }
   if (corpo.op === "enviado") {
     if (!podeEnviarCriacao(s.papel)) return erro(403, "sem_permissao", "Só administração e gestão enviam o roteiro.");
-    // "cliente" é anotado pelo banco ao mandar (op "cliente"), nunca à mão.
-    if (!ehSaida(corpo.destino, corpo.formato) || corpo.destino === "cliente") return erro(400, "formato", "Destino desconhecido.");
+    // "cliente" é anotado pelo banco ao mandar (op "cliente") e o TPeasy direto pelo envio (op "tpeasy"), nunca à mão.
+    if (!ehSaida(corpo.destino, corpo.formato) || corpo.destino === "cliente" || corpo.formato === "direto")
+      return erro(400, "formato", "Destino desconhecido.");
     if (corpo.destino === "aeon" && !podeMandarParaAeon(s)) return erro(403, "sem_permissao", "O AEON ainda não está aberto para a sua conta.");
     const r = await registrarEnvio(ctx, id, {
       n: Number(corpo.n),
@@ -104,6 +121,16 @@ export async function postRoteiro(req: Request, id: string): Promise<Response> {
     const r = await enviarAoCliente(ctx, id, Number(corpo.n), { clienteId: typeof corpo.clienteId === "string" ? corpo.clienteId : null });
     if (!r.ok) return responder(r);
     return json({ ok: true, url: `${origemDoSite(req.headers.get("origin"))}/a/${r.token}`, novo: r.novo, n: r.n, loteId: r.loteId, loteNovo: r.loteNovo });
+  }
+  if (corpo.op === "tpeasy") {
+    if (!podeEnviarCriacao(s.papel)) return erro(403, "sem_permissao", "Só administração e gestão enviam o roteiro.");
+    const r = await enviarAoTpeasy(s, id, {
+      n: Number(corpo.n),
+      pessoa: typeof corpo.pessoa === "string" ? corpo.pessoa : null,
+      para: typeof corpo.para === "string" && corpo.para ? corpo.para : null,
+      origem: req.headers.get("origin"),
+    });
+    return r.ok ? json({ ok: true, envio: r.envio }, r.envio.situacao === "nova" ? 201 : 200) : erro(r.status, r.erro, r.mensagem);
   }
   if (corpo.op === "apagar_de_vez") {
     if (!podeApagarDeVezCriacao(s.papel)) return erro(403, "sem_permissao", "Só administração e gestão apagam de vez.");

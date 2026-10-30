@@ -53,6 +53,8 @@ function servirSaida(saida) {
         res.writeHead(404, Object.assign({ 'Content-Type': 'text/plain; charset=utf-8' }, extra));
         return res.end('404');
       }
+      /* `has: [{ type: 'host' }]` (o domínio antigo, seguranca.js): só vale para aquele Host, como na Vercel */
+      if (r.has && !r.has.every(h => h.type === 'host' && String(req.headers.host || '').split(':')[0] === h.value)) continue;
       const m = new RegExp(r.src).exec(caminho);
       if (!m) continue;
       const troca = s => s.replace(/\$(\d)/g, (_, i) => m[+i] || '');

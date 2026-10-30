@@ -2834,6 +2834,27 @@ Na rodada inteira (carga ~5), `arrastar.spec.ts` "Mover para…" no Safari do co
 passou (4/4). O menu do Enviar ganhou "Para o cliente aprovar" e o `criacao-enviar.spec.ts` foi ajustado. Não validado:
 Safari de um iPhone de verdade no `/a` (o e2e do roteiro roda no Chromium com toque).
 
+## Maestro · Criação: Para o TPeasy direto (F8, 30/10/2026)
+
+Migração `0040_entregas_entre_apps` do HUB (só no banco de teste; produção pede o deploy autorizado). Nenhuma migração
+do Maestro. Nenhum e-mail sai. Bancos e portas próprios (`TEST_DATABASE_URL=…/zro_f8_test`, `TEST_DB_SUFIXO=f8`,
+`E2E_DB_SUFIXO=f8`, `E2E_PORT=3417`, `E2E_PONTE_PORT=3419`, `E2E_ANP_PORT=3421`, `E2E_ROTA_PORT=3423`,
+`E2E_TP_PORT=3433`).
+
+| Verificação                                                                                                                                                                                                                                                                                                                                                             | Comando                                                                                                                                                                   | Resultado                                                                                                                                                               |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| HUB: contrato, idempotência (reenviar = a mesma entrega; versão nova = outra no mesmo item), gate (TPeasy no plano, leitura não manda, só o Maestro manda e só o TPeasy lê), equipe que usa o TPeasy, isolamento entre organizações e pessoas (RLS e função), "Recebido", 30 dias, limite, evento sem rota e `findEventCycle`, auditoria sem o texto, escopo do cliente | `npx vitest run tests/integration/entregas-entre-apps.test.ts`                                                                                                            | **8/8**                                                                                                                                                                 |
+| Raiz inteira                                                                                                                                                                                                                                                                                                                                                            | `npm run lint`, `format:check`, `typecheck`, `npm test`, `contracts:export`                                                                                               | ok · ok · ok · **426/427** (a que falhou foi `custos.test.ts`, que conta assinaturas do banco inteiro e pegou a de outro arquivo rodando junto; sozinho **20/20**) · ok |
+| Maestro: gate, texto do servidor, reenviar sem duplicar, para quem, auditoria, HUB sem o TPeasy, login antigo                                                                                                                                                                                                                                                           | `cd products/maestro && TEST_DB_SUFIXO=f8 npx tsx --test tests/criacao-tpeasy.test.mts`                                                                                   | **7/7**                                                                                                                                                                 |
+| Maestro inteiro                                                                                                                                                                                                                                                                                                                                                         | `npm run lint`, `format:check`, `typecheck`, `TEST_DB_SUFIXO=f8 npm test`, `build`                                                                                        | ok · ok · ok · **650/650** · ok                                                                                                                                         |
+| E2E da Criação (computador e iPhone): Para o TPeasy (manda, reenviar não duplica, o TPeasy de verdade recebe "Do Maestro · v1", o Maestro vê "Recebido"; sem o TPeasy no plano), Enviar da F3, editor e cliente                                                                                                                                                         | `npx playwright test e2e/criacao-tpeasy.spec.ts e2e/criacao-enviar.spec.ts e2e/criacao-roteiro.spec.ts e2e/criacao-cliente.spec.ts --project=computador --project=iphone` | **17 passaram**, 17 pulados (por aparelho)                                                                                                                              |
+| TPeasy: regras de juntar (nova, atualiza, cópia se mexeu, reenvio, fora do contrato), repasse `/api/zro/entregas`, escopo e degraus do login                                                                                                                                                                                                                            | `cd products/tpeasy && node --test tests/*.test.mjs`                                                                                                                      | **75/75**                                                                                                                                                               |
+| Segredos                                                                                                                                                                                                                                                                                                                                                                | `node scripts/scan-secrets.mjs`                                                                                                                                           | nenhum                                                                                                                                                                  |
+
+Não rodado: o `test:e2e` inteiro do Maestro (só a Criação) e o e2e da raiz. Não validado: o Safari de um iPhone de
+verdade com o TPeasy instalado (o e2e serve o TPeasy de verdade, mas as funções `/api/zro/*` são trocadas pelo HUB de
+mentira; o repasse delas tem teste próprio).
+
 ## Maestro · Criação: Roteiro e Fluxo num produto só (30/10/2026)
 
 Integração das frentes F1–F3 (Roteiro) e F1+F4–F6 (Fluxo) sobre a `main`: seletor Roteiros · Fluxos nas duas rotas
@@ -3165,6 +3186,41 @@ transcrição real de "pode guardar".
   RLS forçado; `anon` e `authenticated` não leem nada; `relay_app` lê. `RELAY_DATABASE_URL` (sensível, só produção do
   projeto Vercel `relay`, pooler de transação). A migração perdeu o `create schema if not exists` antes de ir para a
   produção: o papel `relay` não cria schema no banco (o migrador só cria quando falta, no Postgres local).
+
+## Carro do Freela: o site real e a comunidade do ecossistema (30/10/2026)
+
+- HUB `tests/integration/perfis.test.ts` (a comunidade, `0038`): 19/19 — só perfil visível, @ confirmado e conta ativa;
+  paginação por `depois`; limite de 200; `invalid_input` (422) fora disso; auditoria `perfil.comunidade`.
+- Carro `npm run test:api`: 47/47 (o escopo `zro.pessoas` no login, a foto da claim `picture`).
+- Carro `npm run test:banco` (Postgres 16 local): 27/27 — agenda própria por RLS, janela de -31 a +366 dias, hora só
+  na meia diária; `carro_do_freela.agendas()` só devolve quem consentiu e recusa janela acima de 62 dias; a lista
+  pagina o HUB (450 pessoas = 3 páginas) e devolve `reconectar` quando o HUB recusa o token.
+- Carro `test/site-real.js`: 16/16 — nenhum dos 108 nomes fictícios na página do domínio; o app abre com o CREW de uma
+  pessoa só; nada semeado nem simulado (sem produtora de exemplo, sem "Simular chamada", sem checkout de assinatura,
+  sem tempo de resposta inventado); com a conta liberada, a busca e a agenda vêm do servidor, só quem divulgou a agenda
+  entra, a própria conta não repete, e declarar/liberar um dia vira `PUT`/`DELETE`.
+- `node src/vercel-build.js` local: `index.html` FASE=1, real, sem perfil fictício, fechado; as páginas `/fase1…6`
+  saíram do domínio.
+- Linha visual B no site real (30/10/2026, aprovada pelo titular): `test/site-real.js` 26/26 — `html.real`, grafite
+  fosco `#0e0e10`, o símbolo de sempre com o carrinho no topo da home, título sem degradê e a foto de Natal como fundo
+  da home e da entrada. Conferido no Chromium a 1440 e a 390 px (home e entrar), sem erro de console.
+
+## O Sobedesce embutido: porta-malas do Carro e base para a aba Arquivos do Maestro (30/10/2026)
+
+- SOBEDESCE `/app/?no=carro|maestro` (`web/public/app/lib/embutido.js`): só Transferências e Drive, sem a Z e o Set;
+  tema do anfitrião (`?tema=` e mensagem); avisa os envios andando e a pasta aberta só para a origem do anfitrião;
+  links de conta abrem em outra aba. `test/porta-malas-carro.test.js` (Chromium, outra origem embutindo): abas, tema
+  que muda na hora, recado "pronto" e, sem `?no=`, nada embute. `web/tests/seguranca.test.mts`: frame-ancestors só do
+  endereço de cada anfitrião, o resto da CSP igual, o site sem quadro. `npm run test:fast` 788/788 (com `sw.js`
+  v73/2.8.58 e o módulo novo no cache); `web` `npm test` 301/302 (a falha "origens, retorno do Google e CSRF nos dois
+  endereços" já falha na base, sem estas mudanças); lint e typecheck limpos.
+- Carro `test/porta-malas-real.js` 18/18 (carro.absolutezro.com e sobedesce.absolutezro.com simulados): Porta-malas
+  na lateral e no menu do site real, o quadro em `/app/?no=carro&tema=escuro`, o tema acompanha o Carro, o ponto de
+  envio andando acende e apaga (recado de outra origem não acende), o selo do Sobedesce leva ao site dele, sem botão de
+  "abrir", e a prévia segue com a demonstração. Conferido a 1440 e a 390 px, escuro e claro.
+- Carro: carrodofreela.com.br e www redirecionam (308, mesmo caminho) para carro.absolutezro.com, autorizado pelo
+  titular. `npm run test:api` 48/48 (a rota por host antes do filesystem, e nunca no subdomínio); `seguranca`,
+  `conta-zro`, `site-real` e `porta-malas-real` verdes com o emulador local respeitando o host.
 
 ## Maestro: o freela entra pela conta Absolute ZRO (30/10/2026)
 
