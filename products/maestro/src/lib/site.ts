@@ -5,14 +5,15 @@ export const SITE_OFICIAL = "https://maestro.absolutezro.com";
 /** A frase do Maestro (título da página inicial e do OG). */
 export const SITE_FRASE = "A produtora inteira num lugar só.";
 /**
- * Lançamento em Beta (ADR 0027 do HUB; checklist em docs/operations/lancamento-maestro.md). Liga só a vitrine
+ * Lançamento (ADR 0027 do HUB; checklist em docs/operations/lancamento-maestro.md; no ar sem selo de Beta desde
+ * 30/10/2026, decisão do titular). Liga só a vitrine
  * (página inicial, descrição): quem entra continua decidido pelo gate do HUB (migration 0027 + temAcesso). Vira com
  * `node scripts/lancamento-maestro.mjs --abrir` (e volta com `--fechar`), junto com as listas da família dos outros apps.
  */
 export const MAESTRO_LANCADO = true;
 
 export const SITE_DESCRICAO = MAESTRO_LANCADO
-  ? "Pauta, aprovação do cliente, orçamentos, financeiro, freelas, equipamento e agenda da sua produtora num lugar só, com a conta Absolute ZRO. Em Beta."
+  ? "Pauta, aprovação do cliente, orçamentos, financeiro, freelas, equipamento e agenda da sua produtora num lugar só, com a conta Absolute ZRO."
   : "Pauta, aprovação do cliente, orçamentos, financeiro, freelas, equipamento e agenda da sua produtora num lugar só, com a conta Absolute ZRO. Em teste fechado, por convite.";
 /** Fale com a gente (rodapé, lista de espera). */
 export const CONTATO = "contato@absolutezro.com";

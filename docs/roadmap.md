@@ -716,6 +716,17 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ⛔ Em produção: migração `0032` do Maestro no deploy (com autorização).
 - ⬜ PNG do canvas; criar card novo em Pauta a partir do fluxo.
 
+## Maestro: página inicial nova (30/10/2026)
+
+- ✅ No ritmo da do SOBEDESCE: hero com o Quadro no MacBook e o Hoje no iPhone, faixa de números do produto, as
+  ferramentas num controle segmentado (Quadro, Aprovação, Orçamento, Equipe, Financeiro, Criação; setas, Home e End),
+  uma foto de set, cartões de mexer (viagem pelos veículos de `veiculos.ts`, as 4 vistas do roteiro, o Fluxo, quem vê o
+  quê pelo `PADRAO` de `acessos.ts`, os apps da mesma conta) e o fechamento escuro. Sem Beta (no ar, titular
+  30/10/2026), sem "grátis", sem AEON/Revela/NOSSOM, a Z fora do palco.
+- ✅ Capturas reais refeitas pela demonstração (`e2e/capturas-inicio.spec.ts` + `scripts/capturas-inicio.mjs`), claro
+  e escuro; o Fluxo da captura usa 3 fotos de referência e a página uma foto de set feitas no Higgsfield (4,25 créditos).
+- ⛔ Em produção: só com o próximo deploy autorizado do Maestro.
+
 ## Maestro · Criação: Roteiro e Fluxo num produto só (30/10/2026)
 
 - ✅ Uma entrada "Criação" (Produção no computador, Mais no iPhone) com o seletor **Roteiros · Fluxos**: duas rotas

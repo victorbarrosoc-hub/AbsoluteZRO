@@ -35,7 +35,7 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   `docs/operations/lancamento-maestro.md`): a migration `0027` abre o gate (`public_beta`, todos os canais) e põe o
   Maestro no grátis, no Completo e no Pro (o grátis nunca leva `maestro.marca_propria`); a vitrine vira com
   `MAESTRO_LANCADO` em `src/lib/site.ts` (`node scripts/lancamento-maestro.mjs --abrir` na raiz, junto com as listas
-  da família dos outros apps). A página inicial lançada mostra "Beta" (sem "grátis": posicionamento da marca, 29/10/2026), "Criar conta"/"Entrar com
+  da família dos outros apps). A página inicial lançada não mostra selo de "Beta" (no ar, titular 30/10/2026) nem "grátis" (posicionamento da marca, 29/10/2026); mostra "Criar conta"/"Entrar com
   Absolute ZRO" (`CRIAR_CONTA_ZRO`/`ENTRAR_ZRO`, direto no login único), "No celular, como app." e, só com instalador
   publicado no catálogo da central do HUB, o app de computador (`src/lib/desktop.ts`; `MAESTRO_CATALOGO_DESKTOP=desligado`
   no e2e). A lista de espera fica no código, sem aparecer. A vitrine nunca abre nada: quem entra é o gate. Páginas usam `exigirAcessoNaPagina()` (cada página
@@ -374,9 +374,14 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   (`generateViewport`). "No celular, como app." (`components/instalar.tsx`, `lancamento.css`) em Ajustes e na página
   inicial lançada: Safari › Compartilhar › Adicionar à Tela de Início; "Instalar" só com `beforeinstallprompt`; some
   aberto como app. `e2e/instalar.spec.ts`: manifesto, metas, a dica e o app aberto como instalado sem corte a 375/393 px.
-- **Página inicial** (`src/app/page.tsx`, `inicio.css`, plano v2 §10, ADR 0024): pública, só o que existe, "Em breve"
-  para o resto, capturas reais da demonstração em `public/produto/*-{claro,escuro}.webp` (refazer com
-  `npm run db:seed:demo` quando a tela mudar; nunca mock). "Quero acesso" grava na lista de espera
+- **Página inicial** (`src/app/page.tsx`, `inicio.css`, plano v2 §10, ADR 0024; refeita em 30/10/2026 no ritmo da do
+  SOBEDESCE): pública, só o que existe, "Em breve" para o resto; ferramentas num controle segmentado
+  (`components/inicio/abas.tsx`, abas WAI-ARIA) e cartões de mexer com as regras puras do app
+  (`components/inicio/demos.tsx`: `veiculos.ts` e `acessos.ts`; nada de preço inventado). Classes com prefixo `i`
+  (`.abas` já é do Financeiro). Capturas reais da demonstração em `public/produto/<tela>-<mac|iphone>-<claro|escuro>.webp`:
+  refaça com `CAPTURAS_DIR=<pasta> npx playwright test e2e/capturas-inicio.spec.ts --project=computador --project=iphone`
+  e `node scripts/capturas-inicio.mjs <pasta>` quando a tela mudar; nunca mock. A foto de set (`public/inicio/`) e as
+  referências do Fluxo da captura (`docs/demonstracao/fluxo/`) vieram do Higgsfield: contexto, nunca tela. "Quero acesso" grava na lista de espera
   (`drizzle/0004`, `src/lib/lista-espera.ts`): `maestro_app` não tem privilégio na tabela, só a função
   `maestro.lista_espera_entrar()`; armadilha, 5/h por IP e consentimento obrigatório. A lista não libera ninguém.
 - **App de computador** (`desktop/`, Mac e Windows; [README](desktop/README.md)): Electron com pacote próprio (fora
