@@ -3166,6 +3166,55 @@ transcrição real de "pode guardar".
   projeto Vercel `relay`, pooler de transação). A migração perdeu o `create schema if not exists` antes de ir para a
   produção: o papel `relay` não cria schema no banco (o migrador só cria quando falta, no Postgres local).
 
+## Maestro: o freela entra pela conta Absolute ZRO (30/10/2026)
+
+Local, Postgres e Chromium desta máquina; HUB e Absolute ZRO falsos (`tests/ponte-falsa.mts`, `tests/zro-falso.mts`).
+
+- `tests/freela-convite.test.mts` (novo): o @ liga pelo perfil relido no HUB; a mesma conta em dois freelas é recusada e
+  nada do salvar fica; tirar o @ desliga; escondido e inexistente dão a mesma resposta. Convite idempotente (duas vezes e
+  em paralelo = um link só), 7 dias, um aberto por freela, hash ilegível pelo app, aceite/validade/apagar barrados,
+  revogar para sempre, auditoria sem o token; leitura não convida; a outra organização (e a forjada) não vê nem revoga;
+  freela já ligado não recebe convite e ligar pelo @ revoga o aberto. Porta estreita: só o primeiro nome e a marca
+  saem (nem e-mail, WhatsApp, sobrenome ou id); aceitar liga uma vez, a mesma conta de novo = ok, outra conta, vencido
+  e desconhecido = morto, conta já em outro freela = recusa com o convite aberto, a mesma pessoa em outra produtora
+  pode. Rota pública: Origin conferido, sem identidade 401, o `sub` do corpo é ignorado. Volta do login com
+  `volta=/convite/…`: escopos básicos, sem sessão, membro ou organização no Maestro, refresh token devolvido, cookie
+  `mae_conv` com a identidade do id_token.
+- `npm test` do Maestro **599/599**; lint, Prettier, tipos e build ok; `desktop/test/regras.test.mjs` com `/convite`.
+- E2E (`e2e/freela-convite.spec.ts`, computador 1440 e iPhone 393): prévia do @ (escondido = "Não achamos esse @."),
+  "Usar" preenche e liga, ficha "Conectado @fulano", a mesma conta recusada; avulso com "Convidar para o Absolute ZRO",
+  ficha "Convite enviado" com Copiar link (área de transferência conferida) e Mandar no WhatsApp (`wa.me/55…` com a
+  mensagem do cadastro e o link); o freela abre o link sem conta ("Criar conta" com `modo=criar` e a volta), volta
+  com a conta, aceita ("Pronto"), a produtora vê "Conectado"; outra conta no mesmo link = tela neutra; sem conta →
+  convidar → revogar = tela neutra. Junto: `pessoas-zro`, `acessos`, `produtora` e `sem-corte` (iPhone, 375/393, claro
+  e escuro, com `/convite`): **34 passaram**, 6 pulados por projeto. `scan-secrets` sem segredo.
+- Fica para depois: tela do freela dentro do Maestro e o aviso do convite por e-mail (em espera pelo titular).
+
+## Maestro: a área do freela (30/10/2026)
+
+Local, Postgres e Chromium/WebKit desta máquina; migração `0037_area_do_freela.sql` aplicada nos bancos de teste.
+
+- `tests/area-freela.test.mts` (novo, 17): duas produtoras com o Maestro, uma sem, e a conta pessoal do freela. A vê só
+  as escalas dele nas duas (não a da produtora sem o Maestro nem a de onde é da equipe; freela desativado sai); lista e
+  ficha sem nota interna, briefing, valor do projeto, CPF/PIX, nome, valor ou id do outro freela; a produtora que não
+  mostra o cliente; B não abre a de A (e vice-versa); no escopo do freela **toda** tabela do schema dá zero linhas ou
+  42501, e `card_criar` falha; com a organização ativa, a porta devolve nada. Confirmar/recusar: só a própria, auditado
+  (`escala.freela_confirmou`/`recusou`), a que passou = "passou", B não grava nem lê a de A, admin/equipe não gravam,
+  outra produtora não lê, acesso por cliente vale, mudou a data = volta a esperar. Recado e link: só https (banco e
+  servidor), leitura e outra produtora não gravam. A sessão do freela sem o Maestro: `GET /api/quadro` 403.
+- `tests/zro.test.mts`: a volta do login de quem não tem o Maestro mas é freela ligado vai para `/trabalhos`.
+- `npm test` do Maestro **626/626**; lint, tipos e build ok; Prettier ok nos arquivos desta mudança
+  (`src/lib/criacao/roteiro/rota.ts` já vinha fora do Prettier do `origin/main`).
+- E2E (`E2E_DB_SUFIXO=afr`, portas próprias): `area-freela` (computador 1440 e iPhone 393: lista, anteriores
+  recolhidos com "Pago", ficha com recado, entrega, WhatsApp e mapa, Recusar → Confirmar; HTML sem nada da lista
+  proibida; Bruno 404 na ficha da Alice; `/app/*` e `/sem-acesso` → `/trabalhos`, `/api/quadro`, `/api/agenda/minha` e
+  `/api/arquivos/token` 401/403; a Mia troca entre Produtora e Seus trabalhos; vazio calmo; sem vínculo → sem acesso; a
+  produtora vê "Confirmou" e salva o recado que o freela vê), `acessos`, `freela-convite` e `sem-corte` (com as três
+  telas novas, 375/393, claro e escuro, Chromium e WebKit): **32 passaram**, 6 pulados por projeto, 0 falhas.
+  `scan-secrets` sem segredo.
+- Não validado: num iPhone de verdade (só emulação) e contra o Supabase de produção (migração `0037` só no deploy
+  autorizado).
+
 ## Maestro · Criação: apagar fácil, com Desfazer (30/10/2026)
 
 Deslizar/segurar no iPhone, "•••"/botão direito no computador, lixeira com Restaurar e Apagar de vez nas listas de

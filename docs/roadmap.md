@@ -747,7 +747,23 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ✅ `/convite/<token>`: o freela cria a conta (ou entra) e aceita; o login do convite não cria sessão nem organização
   no Maestro. Migração `0036` do Maestro (`freela_convites` + porta estreita).
 - ⛔ Em produção: migração `0036` do Maestro no próximo deploy autorizado.
-- ⬜ Tela do freela dentro do Maestro (as escalas dele) e o aviso do convite por e-mail quando o titular liberar.
+- ✅ Tela do freela dentro do Maestro: a área do freela (abaixo).
+- ⬜ O aviso do convite por e-mail quando o titular liberar.
+
+## Maestro · a área do freela (30/10/2026)
+
+- ✅ O freela ligado à conta entra no Maestro e cai em **"Seus trabalhos"**: por produtora (com a marca), as escalas
+  dele com título, cliente (se a produtora deixa), datas, horário, lugar, função, o valor dele e se já foi pago;
+  próximos primeiro, os que passaram recolhidos. A ficha traz o recado da produção, o link de entrega e o contato da
+  produtora. **Confirmar/Recusar** enquanto não passou (auditado; mudou a data, volta a esperar).
+- ✅ Escopo do freela no banco (migração `0037` do Maestro): sem organização, nenhuma tabela da produtora responde; só a
+  porta `maestro.freela_*`, pelo `zro_sub`, com a lista fechada de campos. Freela A não vê o B; o freela não passa nas
+  telas nem nas rotas da produtora; produtora em que a pessoa é da equipe fica no Maestro normal (atalho "Seus
+  trabalhos" e volta "Produtora").
+- ✅ A produtora escreve "Para o freela" (recado e link) na escala do projeto e da diária, vê "Confirmou"/"Recusou" e
+  escolhe em Ajustes → Empresa se o freela vê o cliente. Vazio calmo para quem está ligado sem trabalho.
+- ⛔ Em produção: migrações `0036` e `0037` do Maestro no próximo deploy autorizado.
+- ⬜ Carro do Freela: quando lançar, o mesmo `zro_sub` (fora desta etapa).
 
 ## Maestro · Criação: o cliente aprova o roteiro (F7, 30/10/2026)
 

@@ -290,9 +290,27 @@ capa-regras}.ts`, `components/quadro/capa.tsx`, `src/app/quadro-achar.css`): o c
   token e deixa a identidade do id_token no cookie cifrado `mae_conv` (30 min); quem já tem sessão no Maestro usa a
   dela. "Aceitar" (`POST /api/publico/convite`, Origin conferido) passa pela porta `maestro.freela_convite_aceitar`
   (maestro_app sem organização): liga uma vez; a mesma conta de novo = ok; outra conta, vencido, revogado ou
-  desconhecido = a tela neutra; pela porta só saem o primeiro nome e a marca. Não há (ainda) tela do freela dentro do
-  Maestro: o vínculo é o `zro_sub` (o mesmo do inventário do Carro do Freela e do que vier depois). Testes:
+  desconhecido = a tela neutra; pela porta só saem o primeiro nome e a marca. O vínculo é o `zro_sub` (o mesmo do
+  inventário do Carro do Freela e da área do freela, abaixo); "Pronto" leva a "Ver seus trabalhos". Testes:
   `tests/freela-convite.test.mts`, `e2e/freela-convite.spec.ts` (`SHOTS_DIR` guarda `fc-*`) e a tela no `sem-corte`.
+- **A área do freela** (titular 30/10/2026, `drizzle/0037`, `src/lib/freelas/area.ts`, telas `src/app/trabalhos/**`,
+  `components/freelas/{area,para-freela}.tsx`, CSS `app/trabalhos.css` com prefixo `ft-`; mapa em
+  `docs/permissoes.md` § Freela): quem tem a conta ligada a freelas entra e cai em **"Seus trabalhos"** (`/trabalhos`):
+  por produtora (marca, cor como filete), as escalas dele, próximos primeiro e os que passaram recolhidos; a ficha
+  (`/trabalhos/<escala>`) traz quando, horário, onde (link do mapa), função, o valor dele, "Da produção" (o recado
+  `escalas.para_freela`), "Enviar material" (`entrega_url`, só https) e "Falar com a produção" (contato da marca);
+  "Confirmar"/"Recusar" (`maestro.escala_respostas`) enquanto não passou. **Escopo do freela**: `getBanco().asFreela(sub)`
+  = `maestro_app` sem organização; nenhuma tabela da produtora responde e só a porta `maestro.freela_*` (security
+  definer, pelo `zro_sub`, freela ativo, produtora com o Maestro e sem a pessoa ser da equipe dela) devolve a lista
+  fechada de campos; a resposta tem RLS própria (só o freela grava; a produtora lê, com o acesso por cliente). Página:
+  `exigirFreelaNaPagina()` (sem vínculo: `/app` ou `/sem-acesso`); a volta do login sem acesso vai para `/trabalhos`
+  quando há vínculo, e `/sem-acesso` também manda. Quem também é da equipe tem o atalho "Seus trabalhos como freela" no
+  topo (`Shell freela`) e, na área, "Produtora" de volta. A produtora escreve o recado e o link em "Para o freela" na
+  ficha do projeto e da diária (só freela com conta) e vê "Confirmou"/"Recusou"; Ajustes → Empresa → "O freela vê o
+  cliente" (`settings.empresa.freelaVeCliente`, padrão sim). Carro do Freela fica de fora até ele lançar. Testes:
+  `tests/area-freela.test.mts`, o caso do callback em `tests/zro.test.mts`, `e2e/area-freela.spec.ts` (semente em
+  `e2e/semente-area-freela.ts`; `SHOTS_DIR` guarda `af-*`, `AF_VIDEO=<pasta>` grava o passeio do iPhone) e as três
+  telas no `sem-corte`.
 - **Set da Absolute ZRO** (ADR 0032 do HUB, contrato em `docs/integration-contracts/set.md`): quem da equipe e dos
   contatos está online e as conversas (diretas e do projeto canônico). O widget `<zro-set>` vem de
   `absolutezro.com/set/v1/zro-set.js` (`components/set-zro.tsx`, pílula discreta na cápsula e no topo do celular, como

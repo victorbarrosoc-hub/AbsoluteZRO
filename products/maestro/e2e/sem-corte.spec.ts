@@ -17,7 +17,17 @@ const SHOTS = process.env.CORTE_SHOTS;
 type Sessao = { token: string; lote: string | null; lotes: string[]; a: string | null; p: string | null; o: string | null };
 const sessao = () => JSON.parse(readFileSync(CORTE, "utf8")) as Sessao;
 
-type Tela = { nome: string; rota: string; drive?: true; publica?: true; depois?: (page: Page, ver: (nome: string) => Promise<void>) => Promise<void> };
+type Tela = {
+  nome: string;
+  rota: string;
+  drive?: true;
+  publica?: true;
+  /** A área do freela (drizzle/0037): a sessão da Alice (com trabalhos) ou da Cora (ligada, sem trabalho). */
+  freela?: "alice" | "cora";
+  depois?: (page: Page, ver: (nome: string) => Promise<void>) => Promise<void>;
+};
+const AREA_FREELA = "test-results/e2e-sessao-area-freela.json";
+const areaFreela = () => JSON.parse(readFileSync(AREA_FREELA, "utf8")) as { alice: string; cora: string; aliceDiaria: string };
 
 /** Os ids das fichas da demonstração, lidos direto no banco do e2e. */
 async function ids() {
@@ -252,6 +262,19 @@ async function telas(): Promise<Tela[]> {
       },
     },
     { nome: "fluxo-publico", rota: `/f/${TOKEN_FLUXO}`, publica: true },
+    {
+      nome: "trabalhos",
+      rota: "/trabalhos",
+      freela: "alice",
+      depois: async (page, ver) => {
+        await page.locator("details.ft-anteriores summary").first().click();
+        await ver("trabalhos-anteriores");
+        await page.locator(".ft-conta summary").click();
+        await ver("trabalhos-conta");
+      },
+    },
+    { nome: "trabalho", rota: `/trabalhos/${areaFreela().aliceDiaria}`, freela: "alice" },
+    { nome: "trabalhos-vazio", rota: "/trabalhos", freela: "cora" },
   ];
   const ficha = (nome: string, id: string | null, rota: (id: string) => string) => {
     if (id) t.push({ nome, rota: rota(id) });
@@ -306,7 +329,7 @@ async function telas(): Promise<Tela[]> {
 }
 
 async function abrir(context: BrowserContext, baseURL: string, tela: Tela, tema: string) {
-  const token = tela.drive ? (JSON.parse(readFileSync(DRIVE, "utf8")) as { token: string }).token : sessao().token;
+  const token = tela.freela ? areaFreela()[tela.freela] : tela.drive ? (JSON.parse(readFileSync(DRIVE, "utf8")) as { token: string }).token : sessao().token;
   await context.clearCookies();
   await context.addCookies([...(tela.publica ? [] : [{ name: "mae_sessao", value: token, url: baseURL }]), { name: "zro_theme", value: tema, url: baseURL }]);
 }

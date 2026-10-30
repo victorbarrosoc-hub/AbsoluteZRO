@@ -5,6 +5,7 @@ import { abrirConvite } from "@/lib/freelas/convite-servidor";
 import { caminhoDoConvite } from "@/lib/freelas/convite";
 import { identidadeDosCookies } from "@/lib/zro/identidade";
 import { emissor } from "@/lib/zro/config";
+import { ROTAS } from "@/lib/site";
 import { CabecaMarca, estiloDaMarca, NeutroPublico, RodapeMaestro } from "@/components/publico/comum";
 import { ConviteDoFreela } from "@/components/publico/convite";
 import "../../revisao.css";
@@ -43,6 +44,7 @@ export default async function PaginaConvite({ params }: PageProps<"/convite/[tok
         criarConta={entrar("criar")}
         entrar={entrar()}
         perfil={`${emissor()}/perfil/profissional`}
+        trabalhos={`/api/zro/entrar?${new URLSearchParams({ volta: ROTAS.trabalhos })}`}
       />
       <RodapeMaestro propria={!!c.marca.propria} />
     </main>

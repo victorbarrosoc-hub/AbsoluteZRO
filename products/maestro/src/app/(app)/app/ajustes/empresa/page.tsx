@@ -25,6 +25,16 @@ const CAMPOS: DefCampo[] = [
   { nome: "validadeDias", rotulo: "Validade do orçamento (dias)", tipo: "numero", max: 3 },
   { nome: "condicoes", rotulo: "Condições padrão", tipo: "area", largo: true, max: 4000, dica: "Uma por linha. Entram em todo orçamento novo." },
   { nome: "fechamento", rotulo: "Fechamento do timbrado", tipo: "area", linhas: 2, largo: true, max: 500 },
+  {
+    nome: "freelaVeCliente",
+    rotulo: "O freela vê o cliente",
+    tipo: "segmentos",
+    opcoes: [
+      { valor: "sim", nome: "Sim" },
+      { valor: "nao", nome: "Não" },
+    ],
+    dica: "Nos trabalhos dele no Maestro.",
+  },
 ];
 
 /**
@@ -37,7 +47,7 @@ export default async function Empresa() {
   const inicial = Object.fromEntries(
     Object.entries(e)
       .filter(([k]) => k !== "nomeOrg")
-      .map(([k, v]) => [k, v == null ? "" : String(v)]),
+      .map(([k, v]) => [k, k === "freelaVeCliente" ? (v === false ? "nao" : "sim") : v == null ? "" : String(v)]),
   );
   return (
     <div className="pagina pagina--estreita">
