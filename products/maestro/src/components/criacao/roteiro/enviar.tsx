@@ -11,7 +11,8 @@
  * - AEON: o arquivo `maestro.roteiro/1`, SÓ quando o AEON está aberto para a pessoa (`podeMandarParaAeon`, gate do
  *   HUB). Hoje fechado: não aparece.
  * - PDF: Literário, Técnico ou Teleprompter.
- * O cliente aprovar entra na F7 (pelo link do card); até lá, não há opção.
+ * - Para o cliente aprovar (F7): a versão vira peça do link de aprovação do CARD (`ParaOCliente` em `cliente.tsx`);
+ *   sem card, a folha liga um; sem lote, nasce o do cliente do card; sem link, o link nasce. Copia o link no fim.
  */
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -22,6 +23,7 @@ import { formatarTempo } from "@/lib/criacao/roteiro/tempo";
 import { Folha, useFecharFolha } from "@/components/folha";
 import { Icone, type NomeIcone } from "@/components/icones";
 import { quando } from "./comum";
+import { ParaOCliente } from "./cliente";
 import { PreviaTeleprompter } from "./leitura";
 
 export type DestinoEnvio = DestinoSaida;
@@ -31,6 +33,7 @@ type Item = { k: DestinoEnvio; icone: NomeIcone; titulo: string; apoio: string }
 /** As opções do menu, na ordem. AEON só com o gate aberto (hoje fechado: não aparece). */
 export function itensEnviar(aeon: boolean): Item[] {
   return [
+    { k: "cliente", icone: "aprovacoes", titulo: "Para o cliente aprovar", apoio: "Pelo link de aprovação do card" },
     { k: "tpeasy", icone: "celular", titulo: "TPeasy", apoio: "Só as falas, prontas para gravar" },
     { k: "edicao", icone: "filme", titulo: "PDF para a edição", apoio: "Cenas, tempos e deixas" },
     ...(aeon ? [{ k: "aeon" as const, icone: "documento" as const, titulo: "AEON", apoio: "Arquivo do roteiro" }] : []),
@@ -171,8 +174,8 @@ function FecharDepois({ render }: { render: (fechar: () => void) => React.ReactN
   return <>{render(useFecharFolha())}</>;
 }
 
-const TITULO: Record<DestinoEnvio, string> = { tpeasy: "TPeasy", edicao: "PDF para a edição", aeon: "AEON", pdf: "PDF" };
-const NOME_DESTINO: Record<DestinoEnvio, string> = { tpeasy: "TPeasy", edicao: "Edição", aeon: "AEON", pdf: "PDF" };
+const TITULO: Record<DestinoEnvio, string> = { cliente: "Para o cliente aprovar", tpeasy: "TPeasy", edicao: "PDF para a edição", aeon: "AEON", pdf: "PDF" };
+const NOME_DESTINO: Record<DestinoEnvio, string> = { cliente: "Cliente", tpeasy: "TPeasy", edicao: "Edição", aeon: "AEON", pdf: "PDF" };
 const NOME_FORMATO: Record<string, string> = {
   compartilhar: "compartilhado",
   copiar: "copiado",
@@ -180,6 +183,7 @@ const NOME_FORMATO: Record<string, string> = {
   backup: "backup",
   pdf: "PDF",
   json: "arquivo",
+  link: "link do card",
   literario: "Literário",
   tecnico: "Técnico",
   teleprompter: "Teleprompter",
@@ -215,6 +219,10 @@ type Props = {
   aoSalvar: (n: number) => void;
   /** Pessoa escolhida na vista Teleprompter (começa nela). */
   pessoa: string | null;
+  /** Para o cliente: os cards que dá para ligar, ligar um, e o aviso de que foi (o estado vira "com o cliente"). */
+  cards: { id: string; tema: string }[];
+  ligar: (cardId: string) => Promise<string | null>;
+  aoCliente: () => void;
   aoFechar: () => void;
 };
 
@@ -332,6 +340,7 @@ export function FolhaEnviar(p: Props) {
           setPessoa={setPessoa}
           compartilhar={podeCompartilhar}
           registrar={registrar}
+          cliente={{ url: p.url, cards: p.cards, ligar: p.ligar, aoEnviar: p.aoCliente }}
         />
       )}
       {envios.length ? (
@@ -355,6 +364,7 @@ function Pronto({
   setPessoa,
   compartilhar,
   registrar,
+  cliente,
 }: {
   v: VersaoCompleta;
   destino: DestinoEnvio;
@@ -363,6 +373,7 @@ function Pronto({
   setPessoa: (p: string | null) => void;
   compartilhar: boolean;
   registrar: (v: VersaoCompleta, formato: FormatoSaida, quem?: string | null, destino?: DestinoEnvio) => void;
+  cliente: { url: string; cards: { id: string; tema: string }[]; ligar: (cardId: string) => Promise<string | null>; aoEnviar: () => void };
 }) {
   const [aviso, setAviso] = useState<string | null>(null);
   const origem = { roteiroId, titulo: v.titulo, n: v.n, sha256: v.sha256, criadoEm: v.criadoEm, conteudo: v.conteudo };
@@ -377,6 +388,16 @@ function Pronto({
       </span>
     </p>
   );
+
+  if (destino === "cliente") {
+    // O banco anota o envio (`roteiro.enviado`, destino cliente) ao mandar; aqui não há `registrar`.
+    return (
+      <div className="cr-enviar__corpo">
+        {selo}
+        <ParaOCliente url={cliente.url} n={v.n} cards={cliente.cards} ligar={cliente.ligar} aoEnviar={cliente.aoEnviar} />
+      </div>
+    );
+  }
 
   if (destino === "tpeasy") {
     const s = saidaTpeasy(origem, pessoa);

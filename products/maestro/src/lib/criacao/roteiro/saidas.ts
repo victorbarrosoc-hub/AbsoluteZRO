@@ -40,6 +40,8 @@ export const SAIDAS = {
   edicao: ["pdf"],
   pdf: ["literario", "tecnico", "teleprompter"],
   aeon: ["json"],
+  /** F7: a versão vira peça do link de aprovação do card. Só `maestro.roteiro_para_cliente` anota (a rota recusa no "enviado"). */
+  cliente: ["link"],
 } as const;
 export type DestinoSaida = keyof typeof SAIDAS;
 export type FormatoSaida = (typeof SAIDAS)[DestinoSaida][number];

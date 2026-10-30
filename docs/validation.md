@@ -2777,6 +2777,23 @@ não vinha vazia); o e2e da exportação ganhou organização própria (`e2e/pre
 (7/7). Não validado: imprimir para PDF de verdade no Safari do iPhone (o e2e confere a página e o CSS, não o PDF gerado) e uma
 IA de verdade lendo `/f/<token>.md`.
 
+## Maestro · Criação: o cliente aprova o roteiro (F7, 30/10/2026)
+
+Migração `0033_roteiro_na_revisao` do Maestro (só no banco de teste; produção pede o deploy autorizado). Nenhum e-mail
+sai: o link é copiado pela equipe.
+
+| Verificação                                                                                                                                                                                                                                                                                                                                        | Comando                                                                                        | Resultado                                                                                 |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Vista do cliente (pura), mandar (papéis, sem card, lote e link nascem, idempotente), `/a` sem nota/plano/observação/dica/ids, comentar por bloco (só blocos do cliente), token errado, outra origem, limite 60/h, pedir ajuste, editor (por bloco e versão, resolver), versão nova, auditoria, duas organizações, acesso por cliente, banco direto | `cd products/maestro && TEST_DB_SUFIXO=f7 npx tsx --test tests/roteiro-cliente.test.mts`       | **15/15**                                                                                 |
+| E2E: Enviar › Para o cliente aprovar → `/a` num navegador limpo → comentar num trecho → pedir ajuste → v2 → aprovar; leitura sem Enviar e 403; iPhone (folha do topo, `/a` sem corte claro e escuro, editor)                                                                                                                                       | `E2E_DB_SUFIXO=f7 E2E_PORT=6717 … npx playwright test e2e/criacao-cliente.spec.ts`             | **3/3** (computador e iPhone)                                                             |
+| Maestro inteiro                                                                                                                                                                                                                                                                                                                                    | `npm run lint`, `format:check`, `typecheck`, `TEST_DB_SUFIXO=f7 npm test`, `build`, `test:e2e` | ok · ok · ok · **590/590** · ok · **181 passaram**, 53 pulados, 1 falha de tempo (abaixo) |
+| Raiz                                                                                                                                                                                                                                                                                                                                               | `npm run lint`, `format:check`, `typecheck`                                                    | ok · ok · ok                                                                              |
+| Segredos                                                                                                                                                                                                                                                                                                                                           | `node scripts/scan-secrets.mjs`                                                                | nenhum                                                                                    |
+
+Na rodada inteira (carga ~5), `arrastar.spec.ts` "Mover para…" no Safari do computador não viu quadro andando; sozinho
+passou (4/4). O menu do Enviar ganhou "Para o cliente aprovar" e o `criacao-enviar.spec.ts` foi ajustado. Não validado:
+Safari de um iPhone de verdade no `/a` (o e2e do roteiro roda no Chromium com toque).
+
 ## Maestro · Criação: Roteiro e Fluxo num produto só (30/10/2026)
 
 Integração das frentes F1–F3 (Roteiro) e F1+F4–F6 (Fluxo) sobre a `main`: seletor Roteiros · Fluxos nas duas rotas

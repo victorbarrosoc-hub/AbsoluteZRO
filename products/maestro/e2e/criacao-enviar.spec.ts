@@ -109,10 +109,10 @@ test.describe("Enviar no computador", () => {
     const url = `/app/criacao/roteiros/${s.id}?vista=literario`;
     await page.goto(url);
 
-    // o menu: TPeasy, PDF para a edição e PDF; Salvar versão continua ao alcance; AEON e cliente (F7) não aparecem
+    // o menu: Para o cliente aprovar (F7), TPeasy, PDF para a edição e PDF; Salvar versão ao alcance; AEON não aparece
     await page.getByRole("button", { name: "Enviar" }).click();
     const menu = page.getByRole("menu", { name: "Enviar" });
-    await expect(menu.getByRole("menuitem")).toHaveText([/TPeasy/, /PDF para a edição/, /^PDF/, /Salvar versão/]);
+    await expect(menu.getByRole("menuitem")).toHaveText([/Para o cliente aprovar/, /TPeasy/, /PDF para a edição/, /^PDF/, /Salvar versão/]);
     await expect(menu.getByRole("menuitem", { name: /AEON/ })).toHaveCount(0);
     await expect(page.getByText("AEON")).toHaveCount(0);
     await page.keyboard.press("Escape");
@@ -286,7 +286,7 @@ test.describe("Enviar no iPhone", () => {
     await page.goto(url);
     await page.getByRole("button", { name: "Enviar" }).click();
     const menu = page.getByRole("dialog", { name: "Enviar" });
-    await expect(menu.getByRole("menuitem")).toHaveText([/TPeasy/, /PDF para a edição/, /^PDF/, /Salvar versão/]);
+    await expect(menu.getByRole("menuitem")).toHaveText([/Para o cliente aprovar/, /TPeasy/, /PDF para a edição/, /^PDF/, /Salvar versão/]);
     await expect(page.getByText("AEON")).toHaveCount(0);
     await menu.getByRole("menuitem", { name: /TPeasy/ }).click();
     const folha = page.getByRole("dialog", { name: "TPeasy" });
