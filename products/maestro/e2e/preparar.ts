@@ -17,6 +17,7 @@ export const ARQUIVO_SESSAO_AGENDA = "test-results/e2e-sessao-agenda.json";
 export const ARQUIVO_SESSAO_GESTOS = "test-results/e2e-sessao-gestos.json";
 export const ARQUIVO_SESSAO_COLUNAS = "test-results/e2e-sessao-colunas.json";
 export const ARQUIVO_SESSAO_FLUXO = "test-results/e2e-sessao-fluxo.json";
+export const ARQUIVO_SESSAO_EXPORTAR = "test-results/e2e-sessao-exportar.json";
 /** A ponte falsa (HUB + SOBEDESCE de mentira, tests/ponte-falsa.mts) do e2e de Arquivos: MAESTRO_PONTE_URL no servidor. */
 export const PORTA_PONTE = Number(process.env.E2E_PONTE_PORT || 3219);
 /** A ANP falsa (tests/anp-fixture.mts, valores inventados) da calculadora de deslocamento: MAESTRO_ANP_URL no servidor. */
@@ -330,6 +331,26 @@ export default async function preparar() {
     const sFx = await criarSessao({ orgId: orgFx, sub: SUB_FX, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
     const sFxLe = await criarSessao({ orgId: orgFx, sub: SUB_FX_LE, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
     writeFileSync(ARQUIVO_SESSAO_FLUXO, JSON.stringify({ token: sFx.token, leitura: sFxLe.token, org: orgFx }));
+    // Uma organização para exportar e compartilhar o Fluxo (e2e/criacao-exportar.spec.ts): administração e leitura.
+    const SUB_EX = "00000000-0000-4000-8000-0000000000e8";
+    const SUB_EX_LE = "00000000-0000-4000-8000-0000000000e9";
+    const orgEx = await getBanco().asSystem("e2e: semente da exportação", async (tx) => {
+      const [org] = await tx
+        .insert(schema.organizations)
+        .values({ zroOrgId: "00000000-0000-4000-8000-0000000000e7", name: "Estúdio Aurora", zroProducts: ["maestro"] })
+        .returning({ id: schema.organizations.id });
+      await tx.insert(schema.members).values([
+        { orgId: org.id, zroSub: SUB_EX, displayName: "Ester Exporta", hubRole: "owner", role: "admin" },
+        { orgId: org.id, zroSub: SUB_EX_LE, displayName: "Leo Leitura", hubRole: "viewer", role: "leitura" },
+      ]);
+      await tx.execute(
+        q`insert into maestro.cards (org_id, id, dados) values (${org.id}, 'ex-card-1', ${JSON.stringify({ tema: "Gravação da cafeteria", coluna: "fazendo" })}::jsonb)`,
+      );
+      return org.id;
+    });
+    const sEx = await criarSessao({ orgId: orgEx, sub: SUB_EX, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    const sExLe = await criarSessao({ orgId: orgEx, sub: SUB_EX_LE, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    writeFileSync(ARQUIVO_SESSAO_EXPORTAR, JSON.stringify({ token: sEx.token, leitura: sExLe.token, org: orgEx }));
   } finally {
     await fecharBanco();
   }

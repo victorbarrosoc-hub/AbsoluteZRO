@@ -296,3 +296,23 @@ describe("contratos (drizzle/0020)", () => {
     assert.equal(await contar(o.b, "contratos"), 0);
   });
 });
+
+describe("links do Fluxo (drizzle/0032)", () => {
+  test("ligados ao fluxo do cliente com a política _cliente; quem lê é só administração e gestão", async () => {
+    const [p] = (await getBanco().asSystem("teste", (tx) =>
+      tx.execute(sql`select permissive from pg_policies where schemaname = 'maestro' and tablename = 'fluxo_links' and policyname = 'fluxo_links_cliente'`),
+    )) as unknown as { permissive: string }[];
+    assert.equal(p?.permissive, "RESTRICTIVE");
+    await getBanco().asSystem("semente", async (tx) => {
+      for (const k of ["sim", "nao"])
+        await tx.execute(sql`
+          insert into maestro.fluxo_links (org_id, fluxo_id, token_hash, token_enc, expira_em)
+          values (${o.orgA}, ${ids[`f_${k}`]}, encode(sha256(convert_to(${k}, 'UTF8')), 'hex'), ${`cifrado-de-teste-${k}`}, now() + interval '7 days')`);
+    });
+    assert.equal(await contar(o.admin, "fluxo_links"), 2);
+    assert.equal(await contar(o.gestor, "fluxo_links"), 2);
+    assert.equal(await contar(o.equipe, "fluxo_links"), 0, "equipe não vê link (só administração e gestão criam)");
+    assert.equal(await contar(o.leitura, "fluxo_links"), 0);
+    assert.equal(await contar(o.b, "fluxo_links"), 0);
+  });
+});

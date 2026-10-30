@@ -6,11 +6,17 @@
  * leitura ou fluxo na lixeira) anda, aproxima, abre e lê; nada muda.
  *
  * Tudo que muda passa por `fazer` (estado.ts): na tela na hora, no banco em lote, com Desfazer.
+ *
+ * Exportar (fase F6, exportar.tsx): Copiar para IA, links (administração e gestão), Mandar para um card, pacote .zip,
+ * JSON e PDF (a Lista com o CSS de impressão).
  */
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import { linkParaIa, slug, urlImagemPeloLink } from "@/lib/criacao/fluxo/compartilhar";
 import type { LinkFluxo } from "@/lib/criacao/fluxo/endereco";
+import { fluxoParaJson, fluxoParaMarkdown } from "@/lib/criacao/fluxo/exportar";
 import {
   CORES_FLUXO,
   notasDoTexto,
@@ -30,20 +36,24 @@ import { useMidia } from "@/components/use-midia";
 import { Canvas, ZoomRotulo, type CanvasApi, type Ferramenta, type Movido, type Subida } from "./canvas";
 import { conferirImagem, oQueColar, tamanhoDaImagem } from "./colar";
 import { useFluxo, type Inicial } from "./estado";
+import { baixarTexto, copiarTexto, FolhaCard, FolhaExportar, FolhaLinks, PopoverExportar, useLinks, type AcaoExportar } from "./exportar";
 import { FolhaAdicionar, FolhaLink, FolhaReferencia, FolhaRotulo, type Adicionar, type CardEscolha, type RoteiroEscolha } from "./folhas";
 import { caixaDe, lugarLivre, secaoNoPonto, type Caixa, type Ponto } from "./geometria";
 import { IconeF } from "./icones";
+import { imprimirComImagens } from "./imprimir";
 import { ListaFluxo } from "./lista";
 import type { Campo } from "./no";
 import { novoId } from "./ops";
 
 type Props = Inicial & {
   podeEditar: boolean;
+  /** Criar e revogar links de exportação (administração e gestão). */
+  podeEnviar?: boolean;
   roteiros: RoteiroEscolha[];
   cards: CardEscolha[];
 };
 
-type Folhas = "link" | "ref" | "adicionar" | "rotulo" | null;
+type Folhas = "link" | "ref" | "adicionar" | "rotulo" | "exportar" | "links" | "card" | null;
 type Modo = "canvas" | "lista";
 
 const NOME_COR: Record<CorFluxo, string> = {
@@ -117,6 +127,10 @@ export function Fluxo(props: Props) {
   const [modo, setModo] = useState<Modo>("canvas");
   const [editandoTitulo, setEditandoTitulo] = useState(false);
   const [menu, setMenu] = useState(false);
+  const [exportando, setExportando] = useState(false);
+  const [incluirImagens, setIncluirImagens] = useState(false);
+  const podeEnviar = !!props.podeEnviar;
+  const L = useLinks(info.id, podeEnviar);
   const celular = useMidia("(max-width: 900px)");
   const margens = celular ? MARGENS_CELULAR : MARGENS_COMPUTADOR;
   const arquivo = useRef<HTMLInputElement>(null);
@@ -737,6 +751,70 @@ export function Fluxo(props: Props) {
   const vazio = vivos.length === 0 && subindo.length === 0;
   const ligacaoEscolhida = ligSel ? estado.ligacoes[ligSel] : null;
 
+  /* ───────────── exportar ───────────── */
+
+  const paraExportar = useCallback(() => ({ titulo: info.titulo, nos: vivos, ligacoes: ligacoesVivas, refs }), [info.titulo, vivos, ligacoesVivas, refs]);
+  const temImagens = vivos.some((n) => n.tipo === "imagem");
+
+  /** PDF: a Lista com o CSS de impressão (no canvas, ⌘P também troca para a Lista antes). */
+  const imprimir = useCallback(() => {
+    flushSync(() => setModo("lista"));
+    void imprimirComImagens();
+  }, []);
+  useEffect(() => {
+    const antes = () => flushSync(() => setModo("lista"));
+    window.addEventListener("beforeprint", antes);
+    return () => window.removeEventListener("beforeprint", antes);
+  }, []);
+
+  const aoExportar = useCallback(
+    async (a: AcaoExportar) => {
+      setExportando(false);
+      if (a === "ia") {
+        const link = incluirImagens && L.links ? linkParaIa(L.links, new Date()) : null;
+        const md = fluxoParaMarkdown(paraExportar(), {
+          agora: new Date(),
+          urlImagem: link?.token ? urlImagemPeloLink(window.location.origin, link.token) : null,
+        });
+        const ok = await copiarTexto(md);
+        avisar(
+          ok ? (temImagens && !link ? "Copiado. As imagens vão só pelo pacote ou por um link." : "Copiado. Cole na IA.") : "Não deu para copiar.",
+          ok ? undefined : { tom: "erro" },
+        );
+      } else if (a === "json") {
+        baixarTexto(
+          `fluxo-${slug(info.titulo)}.json`,
+          `${JSON.stringify(fluxoParaJson(paraExportar(), { agora: new Date() }), null, 2)}\n`,
+          "application/json",
+        );
+      } else if (a === "pacote") {
+        // o servidor monta e manda aos pedaços (Content-Disposition: attachment); a tela fica onde está
+        const a = document.createElement("a");
+        a.href = `/api/criacao/fluxo/pacote?id=${encodeURIComponent(info.id)}`;
+        a.download = `fluxo-${slug(info.titulo)}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        avisar("Montando o pacote…");
+      } else if (a === "pdf") imprimir();
+      else if (a === "link" || a === "links") setFolha("links");
+      else if (a === "card") setFolha("card");
+    },
+    [incluirImagens, L.links, paraExportar, avisar, temImagens, info.titulo, info.id, imprimir],
+  );
+
+  const menuExportar = {
+    podeEnviar,
+    podeEditar,
+    naLixeira: info.apagado,
+    temImagens,
+    links: L.links,
+    incluirImagens,
+    setIncluirImagens,
+    aoEscolher: (a: AcaoExportar) => void aoExportar(a),
+  };
+  const linksVivos = L.links?.length ?? 0;
+
   const salvamentoTexto =
     f.salvamento === "salvando" ? "Salvando…" : f.salvamento === "sem_rede" ? "Sem conexão" : f.salvamento === "erro" ? "Não salvou" : "Salvo";
 
@@ -795,6 +873,30 @@ export function Fluxo(props: Props) {
             <button type="button" role="tab" aria-selected={modo === "lista"} onClick={() => trocarModo("lista")}>
               Lista
             </button>
+          </div>
+          {podeEnviar ? (
+            <button
+              type="button"
+              className="fx-privado"
+              data-ativo={linksVivos > 0 || undefined}
+              onClick={() => setFolha("links")}
+              title={linksVivos ? "Quem tem o link vê o fluxo, só para ler." : "Ninguém de fora vê este fluxo."}
+            >
+              <Icone nome={linksVivos ? "link" : "cadeado"} size={15} />
+              {linksVivos === 0 ? "Privado" : linksVivos === 1 ? "Link ativo" : `${linksVivos} links`}
+            </button>
+          ) : null}
+          <div className="fx-exp">
+            <button
+              type="button"
+              className="glass-btn glass-btn--sm glass-btn--ink fx-exp__botao"
+              aria-haspopup="menu"
+              aria-expanded={exportando || folha === "exportar"}
+              onClick={() => (celular ? setFolha("exportar") : setExportando((v) => !v))}
+            >
+              <Icone nome="compartilhar" size={16} /> Exportar
+            </button>
+            {exportando && !celular ? <PopoverExportar {...menuExportar} fechar={() => setExportando(false)} /> : null}
           </div>
           <div className="fx-menu">
             <button type="button" className="fx-redondo" aria-label="Mais" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
@@ -1017,7 +1119,17 @@ export function Fluxo(props: Props) {
         ) : null}
       </div>
 
-      {modo === "lista" ? <ListaFluxo titulo={info.titulo} nos={vivos} ligacoes={ligacoesVivas} refs={refs} irPara={irPara} /> : null}
+      {modo === "lista" ? (
+        <div className="imprimivel fx-imprimir">
+          <div className="fx-imprimir__cabeca" aria-hidden="true">
+            <h1>
+              <TituloDesenhado t={info.titulo} />
+            </h1>
+            <p>Fluxo · Maestro · {new Date().toLocaleDateString("pt-BR")}</p>
+          </div>
+          <ListaFluxo titulo={info.titulo} nos={vivos} ligacoes={ligacoesVivas} refs={refs} irPara={irPara} />
+        </div>
+      ) : null}
 
       {folha === "link" ? <FolhaLink aoFechar={() => setFolha(null)} aoAdicionar={(l, t) => novoLink(l, t)} /> : null}
       {folha === "ref" ? (
@@ -1058,6 +1170,29 @@ export function Fluxo(props: Props) {
           aoFechar={() => setFolha(null)}
           aoSalvar={(v) => mudarRotulo(ligacaoEscolhida.id, v)}
           aoApagar={apagarSelecao}
+        />
+      ) : null}
+
+      {folha === "exportar" ? <FolhaExportar {...menuExportar} aoFechar={() => setFolha(null)} /> : null}
+      {folha === "links" ? (
+        <FolhaLinks
+          aoFechar={() => setFolha(null)}
+          links={L.links}
+          criar={L.criar}
+          revogar={L.revogar}
+          avisar={(t, tom) => avisar(t, tom ? { tom } : undefined)}
+          naLixeira={info.apagado}
+        />
+      ) : null}
+      {folha === "card" ? (
+        <FolhaCard
+          aoFechar={() => setFolha(null)}
+          cards={props.cards}
+          atual={info.cardId ? { id: info.cardId, titulo: info.card } : null}
+          aoEscolher={async (c) => {
+            if (await f.ligarCard(c ? { id: c.id, titulo: c.titulo } : null))
+              avisar(c ? `No card "${c.titulo || "sem título"}". A ficha mostra o fluxo.` : "Fluxo fora do card.");
+          }}
         />
       ) : null}
 

@@ -81,7 +81,9 @@ export type RefCard = {
 };
 /** "sem_acesso": existe, mas quem vê não alcança (nunca vai título); "removido": apagado de vez. */
 export type RefIndisponivel = { tipo: "roteiro" | "card"; estado: "sem_acesso" } | { tipo: "roteiro" | "card"; estado: "removido" };
-export type RefResolvida = RefRoteiro | RefCard | RefIndisponivel;
+/** Só o título (o link de exportação da F6: quem abre de fora nunca vê versão, coluna, prazo nem conteúdo). */
+export type RefTitulo = { tipo: "roteiro" | "card"; estado: "titulo"; titulo: string };
+export type RefResolvida = RefRoteiro | RefCard | RefIndisponivel | RefTitulo;
 
 export const urlDaImagem = (id: string, sha: string, mini = false) => `/api/criacao/img/${id}/${sha}${mini ? "?mini=1" : ""}`;
 

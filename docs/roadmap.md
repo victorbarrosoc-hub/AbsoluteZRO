@@ -639,6 +639,22 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   reduzir movimento.
 - ⬜ Entrada "Criação" na navegação e o seletor Roteiros · Fluxos (F2, em paralelo); Exportar (F6).
 
+## Maestro · Criação: exportar e compartilhar o Fluxo (F6, 30/10/2026)
+
+- ✅ Menu **Exportar** no canvas (popover no computador, folha no iPhone): Copiar para IA (Markdown; imagens pela
+  legenda, ou pelo link quando há um sem PIN e a pessoa marca "Imagens pelo link"), Criar link / Links, Mandar para um
+  card, Baixar pacote (.zip com `fluxo.md`, `fluxo.json` e `imagens/`, montado no servidor e enviado aos pedaços), JSON
+  (`maestro.fluxo/1`) e PDF (a Lista com CSS de impressão). "Privado" / "Link ativo" no topo.
+- ✅ Link privado (decisão do titular): migração `0032` do Maestro (`fluxo_links`: só o sha256 e a cópia cifrada do
+  token, 1 a 30 dias com 7 por padrão, PIN scrypt opcional, revogar para sempre, até 10 vivos, visitas, audit de criar e
+  revogar), só administração e gestão. `/f/<token>` só de leitura (a Lista), `/f/<token>.md` e `.json`, imagens pelo
+  token; noindex, `X-Robots-Tag`, `no-referrer`, CSP própria, fora do robots.txt, limites por link e IP. Referência a
+  roteiro/card: só o título, e só do que quem criou alcançava. App de computador abre `/f` no navegador.
+- ✅ "Mandar para um card" liga o fluxo ao card; a ficha do card mostra o bloco "Fluxos".
+- ⛔ Em produção: migração `0032` do Maestro no deploy (com autorização).
+- ⬜ PNG do canvas; criar card novo em Pauta a partir do fluxo; trocar `permissoes.ts` pela área `criacao` quando o
+  acesso por área entrar.
+
 ## Relay: conversão de mídia como setor próprio (29/10/2026, [ADR 0030](decisions/0030-relay-conversao.md))
 
 A Revela fica só com a cor (looks, espaço de cor, LUT e PowerGrade). Codec, contêiner e formatos de vídeo e áudio vão

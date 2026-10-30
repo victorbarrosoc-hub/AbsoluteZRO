@@ -309,6 +309,26 @@ export function useFluxo(inicial: Inicial) {
     [id, avisar],
   );
 
+  /** "Mandar para um card" (F6): liga o fluxo ao card (null desliga), mantendo o projeto. O card mostra o fluxo. */
+  const ligarCard = useCallback(
+    async (card: { id: string; titulo: string } | null) => {
+      const r = await fetch(ENDERECO, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ op: "ligar", id, projetoId: infoRef.current.projetoId, cardId: card?.id ?? null }),
+      }).catch(() => null);
+      if (!r?.ok) {
+        const c = (await r?.json().catch(() => null)) as { mensagem?: string } | null;
+        avisar(c?.mensagem ?? "Sem conexão. Tente de novo.", { tom: "erro" });
+        return false;
+      }
+      infoRef.current = { ...infoRef.current, cardId: card?.id ?? null, card: card?.titulo ?? null };
+      setInfo(infoRef.current);
+      return true;
+    },
+    [id, avisar],
+  );
+
   // ───── poll de 5 s: o que outras pessoas mudaram ─────
   useEffect(() => {
     vivo.current = true;
@@ -384,6 +404,7 @@ export function useFluxo(inicial: Inicial) {
     mudarTitulo,
     marcarEditandoTitulo,
     lixeira,
+    ligarCard,
   };
 }
 

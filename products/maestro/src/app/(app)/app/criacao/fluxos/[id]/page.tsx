@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
-import { podeEditarCriacao, podeVerCriacao } from "@/lib/criacao/permissoes";
+import { podeEditarCriacao, podeEnviarCriacao, podeVerCriacao } from "@/lib/criacao/permissoes";
 import { obterFluxo } from "@/lib/criacao/fluxo/servidor";
 import { listarRoteiros } from "@/lib/criacao/roteiro/servidor";
 import { carregarCards } from "@/lib/quadro/servidor";
@@ -10,6 +10,7 @@ import { Fluxo } from "@/components/criacao/fluxo/fluxo";
 import { Icone } from "@/components/icones";
 import { EstadoVazio } from "@/components/vazio";
 import "../../../../../fluxo.css";
+import "../../../../../fluxo-exportar.css";
 
 export const metadata = { title: "Fluxo" };
 
@@ -37,6 +38,7 @@ export default async function PaginaFluxo({ params }: PageProps<"/app/criacao/fl
       refs={f.refs}
       cursor={f.cursor}
       podeEditar={podeEditar}
+      podeEnviar={podeEnviarCriacao(sessao.papel)}
       roteiros={roteiros.map((r) => ({ id: r.id, titulo: r.titulo, estado: r.estado, versao: r.versaoAtual, duracaoSeg: r.duracaoSeg }))}
       cards={cards.map((c) => ({ id: c.id, titulo: c.dados.tema ?? "", coluna: c.dados.coluna ? nomeDaColuna(colunas, c.dados.coluna) : null }))}
     />

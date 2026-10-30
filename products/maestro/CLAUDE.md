@@ -289,6 +289,26 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   do shell some e a barra de abas fica; segurar 280 ms ergue o nó. Nó usa `scale` na entrada (o `transform` é do
   arrastar) e nada de `overflow: hidden` no próprio nó (a alça e a bolinha saem da borda). Testes:
   `tests/fluxo-tela.test.mts`, `e2e/criacao-fluxo.spec.ts`, telas no `sem-corte.spec.ts`.
+- **Criação · Fluxo, exportar e compartilhar** (fase F6; decisão do titular: privado por padrão; `drizzle/0032_fluxo_links.sql`,
+  `src/lib/criacao/fluxo/{compartilhar,link,link-rota,pacote}.ts`, `src/lib/zip.ts`, tela em
+  `components/criacao/fluxo/{exportar,imprimir}.tsx` + `fluxo-exportar.css`): menu **Exportar** (popover no computador,
+  `Folha` no iPhone). Copiar para IA, JSON e PDF saem no navegador do estado da tela; o pacote .zip
+  (`GET /api/criacao/fluxo/pacote`, quem vê o fluxo) é montado no servidor e enviado aos pedaços, com as imagens pela
+  porta `fluxo_imagem` e o Markdown apontando para `imagens/NN-legenda.webp`. **Links** (`/api/criacao/fluxo/links`,
+  só admin e gestão, `podeEnviarCriacao`): `maestro.fluxo_links` guarda só o sha256 e a cópia cifrada (`selar`) do
+  token, PIN scrypt (`hashPin`), 1 a 30 dias (7 padrão), até 10 vivos, revogar para sempre (gatilho), visitas; criar e
+  revogar caem no `audit_log` pelo gatilho; `maestro_app` não lê `token_hash`/`pin_hash`/`refs_*` e só muda
+  `revogado_em`. `/f/<token>` (página, a Lista com `publico`), `/f/<token>.md|.json` (reescrita `beforeFiles` para
+  `/f/<token>/fluxo.md|json`), `/f/<token>/i/<id>/<sha>.webp` e `POST /f/<token>/pin`: porta estreita
+  `maestro.fluxo_link_{pin,abrir,imagem}` como `maestro_app` sem organização (`comoLink`), limites `REGRAS.fluxo*`,
+  prova do PIN num cookie assinado preso ao hash do token (`Path=/f`, ≤ 12 h e ≤ validade). Morto, vencido, revogado
+  ou fluxo na lixeira = a mesma tela neutra. Referência no link: só o título (`RefTitulo`, estado `titulo`) e só do
+  que quem criou alcançava ao criar (`refs_roteiros`/`refs_cards`); id interno nunca sai. Imagem para a IA só por
+  link vivo **sem PIN** e só com "Imagens pelo link" marcado (`linkParaIa`). CSP, `X-Robots-Tag` e `no-referrer` de
+  `/f` em `next.config.ts`; `/f/` fora do `robots.txt`; `DO_CLIENTE` do app de computador inclui `f`. "Mandar para um
+  card" = `ligar` (`ligarCard` em `estado.ts`); a ficha mostra o bloco "Fluxos" (`components/quadro/fluxos-card.tsx`).
+  Testes: `tests/links-fluxo.test.mts`, `e2e/criacao-exportar.spec.ts` (`SHOTS_DIR` guarda `exp-*`), telas no
+  `sem-corte.spec.ts`.
 - **App na Tela de Início (PWA)**: `src/app/manifest.ts` (`/manifest.webmanifest`: Maestro, `start_url` `/app`, `scope`
   `/`, standalone, cores do claro), ícones em `public/pwa/` gerados do `src/app/icon.svg` por `scripts/icones-pwa.mjs`
   (nunca desenhar outro), `apple-icon.png` (180 px), `appleWebApp` + `apple-mobile-web-app-capable` no layout, barra de
@@ -364,7 +384,7 @@ contra o código do próprio app, modelos só com dica, documento antigo, junç�
 (duas organizações, papéis, rev, versões imutáveis; `criacao-rls.test.mts`), o fluxo puro (link, operações,
 exportação, cota, imagem; `fluxo.test.mts`), fluxos no banco (duas organizações, papéis, rev por nó, o que mudou,
 referências "sem acesso", porta da imagem, cota, limpeza; `fluxo-rls.test.mts`) e as rotas do fluxo e da imagem
-(`fluxo-rota.test.mts`), o migrador com migração atrasada (`migrador.test.mts`) e o lançamento (app de computador só
+(`fluxo-rota.test.mts`), o link e a exportação do Fluxo (`links-fluxo.test.mts`), o migrador com migração atrasada (`migrador.test.mts`) e o lançamento (app de computador só
 com instalador publicado, manifesto e a chave da vitrine; `lancamento.test.mts`). E2E: `npm run build && npm run test:e2e`
 (Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir movimento, navegação, a aprovação
 inteira (`aprovacao.spec.ts`, mp4 local e YouTube/Vimeo falsos em `e2e/falsos`) e a versão colada na ficha do card que aparece no lote (`versao-card.spec.ts`) e a produtora com a demonstração

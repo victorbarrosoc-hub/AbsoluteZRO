@@ -69,6 +69,7 @@ export function organizar(f: FluxoParaExportar): Organizado {
 function descreverRef(r: RefResolvida | undefined): string {
   if (!r || r.estado === "removido") return "(removido)";
   if (r.estado === "sem_acesso") return "(sem acesso)";
+  if (r.estado === "titulo") return `"${umaLinha(r.titulo)}"`;
   if (r.tipo === "roteiro") {
     const partes = [r.versao > 0 ? `v${r.versao}` : "rascunho", duracao(r.duracaoSeg)];
     if (r.naLixeira) partes.push("na lixeira");
@@ -169,6 +170,7 @@ export function fluxoParaMarkdown(f: FluxoParaExportar, o: OpcoesExportar): stri
 type RefJson =
   | { estado: "ok"; titulo: string; situacao: string; versao: number; duracaoSeg: number; naLixeira: boolean }
   | { estado: "ok"; titulo: string; coluna: string; colunaNome: string | null; prazo: string | null; naLixeira: boolean }
+  | { estado: "ok"; titulo: string }
   | { estado: "sem_acesso" | "removido" };
 
 export type NoJson = {
@@ -198,6 +200,7 @@ export type FluxoJson = {
 };
 
 function refJson(r: RefResolvida | undefined): RefJson {
+  if (r?.estado === "titulo") return { estado: "ok", titulo: r.titulo };
   if (!r || r.estado !== "ok") return { estado: r?.estado ?? "removido" };
   if (r.tipo === "roteiro") return { estado: "ok", titulo: r.titulo, situacao: r.situacao, versao: r.versao, duracaoSeg: r.duracaoSeg, naLixeira: r.naLixeira };
   return { estado: "ok", titulo: r.titulo, coluna: r.coluna, colunaNome: r.colunaNome, prazo: r.prazo, naLixeira: r.naLixeira };

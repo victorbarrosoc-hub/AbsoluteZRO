@@ -190,6 +190,13 @@
       "when": 1795824000000,
       "tag": "0031_fluxos",
       "breakpoints": false
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1795910400000,
+      "tag": "0032_fluxo_links",
+      "breakpoints": false
     }
   ]
 }
