@@ -1,5 +1,6 @@
-// Set (ADR 0032): duas pessoas da mesma equipe se veem online (e onde), invisível esconde, conversa direta só depois do
-// pedido aceito, a conversa do projeto aberta pela página do projeto, denunciar e bloquear. Em Chromium e WebKit, no
+// Set (ADR 0032): duas pessoas da mesma equipe se veem online (e onde), invisível esconde, adicionar pelo @ no Online
+// (prévia com nome e foto, o pedido aparece para a outra pessoa, aceitar ali mesmo, os dois se veem e o toque abre a
+// conversa), perfil escondido igual a não existir e o limite do dia, a conversa do projeto aberta pela página do projeto, denunciar e bloquear. Em Chromium e WebKit, no
 // computador e no iPhone; a moderação resolve no console; a leitura repetida volta 304 com a ETag. Com SHOTS_DIR, guarda capturas (claro e escuro) e vídeos de cada navegador.
 import { randomUUID } from 'node:crypto'
 import fs from 'node:fs'
@@ -111,40 +112,62 @@ for (const [nome, tipo, opts] of COMBOS) {
       await expect(folha(A.page).getByRole('button', { name: /Bia/ })).not.toContainText('Absolute ZRO')
       await folha(A.page).getByRole('button', { name: 'Fechar' }).click()
 
-      // 3. Caio (outra produtora) só conversa depois que o Victor aceita
-      await C.page.goto('/set?ajustes')
-      const pc = naPagina(C.page)
-      await pc.getByRole('textbox', { name: '@ da pessoa' }).fill(`@${victor.arroba}`)
-      await pc.getByRole('button', { name: 'Pedir' }).click()
-      await expect(pc.getByRole('status')).toContainText('Pedido enviado')
-      await A.page.goto('/set?ajustes')
-      const pa = naPagina(A.page)
-      await expect(pa.getByText('Pedidos')).toBeVisible()
-      if (fotos) await foto(A.page, `set-pedido-${nome}`)
-      await pa.getByRole('button', { name: 'Aceitar' }).click()
-      await expect(pa.getByRole('status')).toContainText('Agora vocês são contatos')
-      await pa.getByRole('button', { name: 'Conversar' }).click()
-      const campoA = pa.getByRole('textbox', { name: 'Mensagem' })
+      // 3. Caio (outra produtora) acha o Victor pelo @ no Online, o Victor aceita ali mesmo, os dois se veem online e o
+      // toque na pessoa abre a conversa
+      await pilula(A.page).click()
+      await expect(folha(A.page).getByText('Ninguém online agora.')).toBeVisible()
+      await expect(folha(A.page).getByRole('button', { name: 'Adicionar pelo @' })).toBeVisible()
+      if (fotos) await foto(A.page, `add-online-${nome}`)
+      await folha(A.page).getByRole('button', { name: 'Fechar', exact: true }).click()
+
+      await C.page.goto('/inicio')
+      await pilula(C.page).click()
+      const fc = folha(C.page)
+      // sem equipe nem contatos: o vazio já leva para o @
+      await fc.getByRole('button', { name: 'Adicionar alguém pelo @' }).click()
+      const campo = fc.getByRole('textbox', { name: '@ da pessoa' })
+      await expect(campo).toBeFocused()
+      await campo.fill(`@${victor.arroba}`)
+      await expect(fc.locator('.achado')).toContainText('Victor')
+      await expect(fc.locator('.achado')).toContainText(`@${victor.arroba}`)
+      if (fotos) await foto(C.page, `add-previa-${nome}`)
+      await fc.getByRole('button', { name: 'Adicionar Victor' }).click()
+      await expect(fc.getByRole('status')).toContainText('Pedido enviado')
+      await expect(fc.getByRole('status')).toContainText('Victor')
+      if (fotos) await foto(C.page, `add-enviado-${nome}`)
+
+      await A.page.reload()
+      await expect(pilula(A.page)).toHaveAttribute('aria-label', /1 pedido de contato/)
+      await pilula(A.page).click()
+      const fa = folha(A.page)
+      await expect(fa.getByRole('tab', { name: /Online/ })).toContainText('1')
+      await expect(fa.getByText('Pedidos')).toBeVisible()
+      if (fotos) await foto(A.page, `add-pedidos-${nome}`)
+      await fa.getByRole('button', { name: 'Aceitar Caio' }).click()
+      await expect(fa.getByRole('status')).toContainText('Agora vocês são contatos')
+      await expect(fa.getByText('Pedidos')).toHaveCount(0)
+      // o Caio está com a folha aberta: aparece no "Agora", com o ponto verde e o app
+      await expect(fa.getByRole('button', { name: /Caio/ })).toContainText('na Absolute ZRO', { timeout: 20_000 })
+      if (fotos) await foto(A.page, `add-contato-${nome}`)
+      await fa.getByRole('button', { name: /Caio/ }).click()
+      const campoA = fa.getByRole('textbox', { name: 'Mensagem' })
       await campoA.fill('Oi, Caio! Vê o corte em https://absolutezro.com')
       await campoA.press('Enter')
-      await expect(pa.getByRole('log')).toContainText('Oi, Caio!')
-      await expect(pa.getByRole('log').getByRole('link', { name: 'https://absolutezro.com' })).toBeVisible()
+      await expect(fa.getByRole('log')).toContainText('Oi, Caio!')
+      await expect(fa.getByRole('log').getByRole('link', { name: 'https://absolutezro.com' })).toBeVisible()
 
-      await C.page.goto('/set')
-      await naPagina(C.page)
-        .getByRole('tab', { name: /Conversas/ })
-        .click()
-      await expect(naPagina(C.page).getByRole('tab', { name: /Conversas/ })).toContainText('1')
-      await naPagina(C.page)
-        .getByRole('button', { name: /Victor/ })
-        .click()
-      await expect(naPagina(C.page).getByRole('log')).toContainText('Oi, Caio!')
-      const campoC = naPagina(C.page).getByRole('textbox', { name: 'Mensagem' })
+      // o Caio vê o Victor online sem recarregar (a folha relê a cada 12 s) e o toque abre a mesma conversa
+      await expect(fc.getByRole('button', { name: /Victor/ })).toContainText('na Absolute ZRO', { timeout: 25_000 })
+      await fc.getByRole('button', { name: /Victor/ }).click()
+      await expect(fc.getByRole('log')).toContainText('Oi, Caio!')
+      const campoC = fc.getByRole('textbox', { name: 'Mensagem' })
       await campoC.fill('Oi! Vi sim.')
       await campoC.press('Enter')
       // a conversa aberta do Victor recebe sozinha (a cada 4 s)
-      await expect(pa.getByRole('log')).toContainText('Oi! Vi sim.', { timeout: 15_000 })
+      await expect(fa.getByRole('log')).toContainText('Oi! Vi sim.', { timeout: 15_000 })
       if (fotos) await foto(A.page, `set-conversa-${nome}`)
+      await fa.getByRole('button', { name: 'Voltar' }).click()
+      await fa.getByRole('button', { name: 'Fechar', exact: true }).click()
 
       // 4. A conversa do projeto: a Bia escreve pelo /set?projeto, o Victor abre pela página do projeto
       const [pj] = await db.sql`insert into zro.projects (org_id, title, created_by) values (${victor.orgId}, 'Filme Safra', ${victor.userId}) returning id`
@@ -180,7 +203,7 @@ for (const [nome, tipo, opts] of COMBOS) {
       const [d] = await db.sql`select motivo from zro.set_denuncias where denunciante = ${victor.userId} and denunciado = ${caio.userId}`
       expect(d?.motivo).toBe('spam')
 
-      await C.page.reload()
+      await C.page.goto('/set')
       await naPagina(C.page)
         .getByRole('tab', { name: /Conversas/ })
         .click()
@@ -205,6 +228,59 @@ for (const [nome, tipo, opts] of COMBOS) {
       for (const x of [A, B, C]) await x.ctx.close()
       const v = await A.page.video()?.path()
       if (v && SHOTS) fs.renameSync(v, path.join(SHOTS, `set-${nome}.webm`))
+    } finally {
+      await b.close()
+    }
+  })
+}
+
+for (const [nome, viewport, movel] of [
+  ['computador', { width: 1440, height: 900 }, false],
+  ['iphone', { width: 393, height: 852 }, true],
+] as const) {
+  test(`Set (${nome}): adicionar pelo @ não acha perfil escondido e avisa o limite do dia`, async ({ baseURL }) => {
+    test.setTimeout(90_000)
+    const b = await chromium.launch()
+    try {
+      const ana = await conta('Ana')
+      const lia = await conta('Lia')
+      const rui = await conta('Rui')
+      await db.sql`update zro.perfis set visivel = false where user_id = ${lia.userId}`
+      const A = await aba(b, baseURL!, ana, { viewport, ...(movel ? { isMobile: true, hasTouch: true, deviceScaleFactor: 3 } : {}) }, false)
+      await A.page.goto('/inicio')
+      await pilula(A.page).click()
+      const f = folha(A.page)
+      await f.getByRole('button', { name: 'Adicionar pelo @' }).click()
+      const campo = f.getByRole('textbox', { name: '@ da pessoa' })
+      // escondido e inexistente: a mesma resposta neutra (só o @ digitado)
+      await campo.fill(lia.arroba)
+      await expect(f.getByRole('alert')).toHaveText(`Não achamos @${lia.arroba}.`)
+      await expect(f.locator('.achado')).toHaveCount(0)
+      await campo.fill(`ninguem.${marca()}`)
+      await expect(f.getByRole('alert')).toHaveText(/^Não achamos @ninguem\./)
+      // 20 pedidos hoje: o próximo avisa, com a pessoa ainda na tela
+      await db.sql`insert into zro.rate_limit_attempts (key) select ${`set-contato:${ana.userId}`} from generate_series(1, 20)`
+      await campo.fill(`@${rui.arroba}`)
+      await f.getByRole('button', { name: 'Adicionar Rui' }).click()
+      await expect(f.getByRole('alert')).toHaveText('Muitos pedidos hoje. Tente amanhã.')
+      await expect(f.locator('.achado')).toContainText('Rui')
+      if (SHOTS) await foto(A.page, `add-limite-${nome}`)
+      // Esc fecha só o campo; a folha fica
+      await campo.press('Escape')
+      await expect(campo).toHaveCount(0)
+      await expect(f).toBeVisible()
+      expect(await db.sql`select 1 from zro.set_contatos where pedido_por = ${ana.userId}`).toHaveLength(0)
+
+      // a API: a prévia do escondido é o mesmo 404 e nada de e-mail na prévia de quem existe
+      const headers = { cookie: `${SESSION_COOKIE}=${ana.token}`, origin: baseURL! }
+      const r1 = await A.ctx.request.post(`${baseURL}/api/v1/set/contatos`, { headers, data: { ver: `@${lia.arroba}` } })
+      expect(r1.status()).toBe(404)
+      const r2 = await A.ctx.request.post(`${baseURL}/api/v1/set/contatos`, { headers, data: { ver: rui.arroba } })
+      expect(r2.status()).toBe(200)
+      const j = await r2.json()
+      expect(j).toMatchObject({ pessoa: { id: rui.userId, arroba: rui.arroba, nome: 'Rui' }, situacao: 'nenhuma' })
+      expect(JSON.stringify(j)).not.toContain('@teste.absolutezro.local')
+      await A.ctx.close()
     } finally {
       await b.close()
     }

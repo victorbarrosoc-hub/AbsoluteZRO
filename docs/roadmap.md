@@ -834,6 +834,11 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
   Estúdio, Conta, Set) mantêm o Set como a última aba; no Carro e no NOSSOM a lateral termina em Set e Z (a Z
   sempre a última); no site do SOBEDESCE o Set fica no cabeçalho, ao lado do anel da Z.
 - ⛔ Em produção: cliente `relay-web` no console (para o Set do Relay) e deploy de cada app, com autorização.
+- ✅ Adicionar pelo @ no Online (30/10/2026, pedido do titular: "achar a pessoa pelo @, adicionar, ver quando está
+  online e abrir a conversa"; antes ficava escondido nos Ajustes): botão da pessoa com + no topo e "Adicionar alguém
+  pelo @" no vazio; prévia com foto, nome e @ enquanto digita (`POST /contatos { ver }`, só perfil visível, mesmo
+  limite da busca); "Pedido enviado" ou "Agora vocês são contatos" ali mesmo; pedidos recebidos no topo do Online com
+  Aceitar e Recusar e o número na aba; já contatos = 409. Mesmo `v1`, sem mexer em nenhum repasse dos apps.
 - ⬜ App de computador do SOBEDESCE com o Set (o motor local ainda não repassa); aviso fora do app (e-mail/push);
   anexos.
 - ⬜ Fase 3, salas abertas da comunidade: com o lançamento do Carro do Freela (novo tipo de conversa, mesma API).

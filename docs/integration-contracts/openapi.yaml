@@ -633,7 +633,12 @@ paths:
         }
     post:
       security: [{ session: [] }, { appToken: [zro.set] }]
-      summary: 'Pede contato pelo @ (perfil visível) ou pelo id de alguém do Set. Pedido mútuo vira contato na hora. 20 por dia'
+      summary: 'Pede contato pelo @ (perfil visível) ou pelo id de alguém do Set. Pedido mútuo vira contato na hora; já contatos, 409. 20 por dia. Com { ver }, só a prévia do @'
+      description: >-
+        { ver: "@fulano" } não pede nada: devolve 200 com quem é o perfil visível do @ e a situação com a pessoa
+        (nenhuma, contato, enviado, recebido, bloqueado; o bloqueio que a outra fez nunca aparece). Escondido ou
+        inexistente: o mesmo 404. Mesmo limite da busca de perfis (60 a cada 10 minutos). Repetir um pedido já enviado e
+        aceitar o recebido não gastam os 20 do dia.
       requestBody:
         required: true
         content:
@@ -643,8 +648,10 @@ paths:
               properties:
                 arroba: { type: string, description: 'com ou sem @' }
                 pessoa: { type: string, format: uuid }
+                ver: { type: string, description: 'só a prévia do @ (com ou sem @); nada é pedido' }
       responses:
         {
+          '200': { description: '{ ver }: { pessoa: { id, arroba, nome, foto }, situacao: nenhuma | contato | enviado | recebido | bloqueado }' },
           '201': { description: '{ estado: pendente | aceito, pessoa: { id, arroba, nome, foto } }' },
           '401': { $ref: '#/components/responses/Error' },
           '403': { $ref: '#/components/responses/Error' },
