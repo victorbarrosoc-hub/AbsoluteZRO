@@ -1,5 +1,6 @@
-// Tela de entrada (decisão do titular, 28/10/2026): "a Z continua como aba, mas o app abre na tarefa quando há algo em
-// andamento". Sem rota no endereço o app abre na Z; se, logo ao abrir, houver cartão na fila do Organizar (o que chegou
+// Tela de entrada (decisão do titular, 29/10/2026; Plano de Integração §7–8: a tarefa principal vem primeiro). Sem rota
+// no endereço o app abre no Início (a Z nunca é a entrada: fica discreta no pé da barra lateral e num anel no Início do
+// celular, em #/z); se, logo ao abrir, houver cartão na fila do Organizar (o que chegou
 // com o app fechado ou ficou pela metade) ou sincronia rodando, vai direto para a tela da tarefa. Uma vez, nos primeiros
 // segundos e só se a pessoa ainda não mexeu. Rota no endereço (#/midia, #/organizar...) e o "Abrir no Synquei" do
 // SOBEDESCE (synquei:org-abrir → Organizar) são respeitados sempre. Sem dependências: teste em tests/entrada.test.mjs.

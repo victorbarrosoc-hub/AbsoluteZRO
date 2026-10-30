@@ -1596,6 +1596,33 @@ html[data-sentido='volta'] {
   margin-top: 20px;
 }
 
+/* a Z, discreta (titular, 29/10/2026; Plano de Integração §7–8): um anel no topo, ao lado da conta; não é aba do dock
+   nem a tela de entrada (o login volta para /lut) */
+.topo-z {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin-left: auto;
+  border-radius: 999px;
+  color: var(--texto);
+  opacity: 0.72;
+  text-decoration: none;
+  transition: opacity 0.2s, background-color 0.2s;
+}
+.topo-z:hover,
+.topo-z[aria-current='page'] {
+  opacity: 1;
+  background: rgb(var(--t) / 0.08);
+}
+.topo-z .aba-icone svg {
+  width: 18px;
+  height: 18px;
+}
+.topo .topo-z + .conta {
+  margin-left: 0;
+}
+
 /* ─────────── dock de ferramentas (embaixo, como as páginas do DaVinci) ─────────── */
 
 .topo .conta {

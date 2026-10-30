@@ -13,7 +13,6 @@ const GROUPS: { label: string; items: Item[] }[] = [
     label: 'Trabalho',
     items: [
       { href: '/inicio', label: 'Início', icon: 'home' },
-      { href: '/ia', label: 'IA', icon: 'sparkle' },
       { href: '/set', label: 'Set', icon: 'chat' },
       { href: '/projetos', label: 'Meus projetos', icon: 'projects' },
       { href: '/ciclo', label: 'Ciclo do O', icon: 'cycle' },
@@ -21,6 +20,8 @@ const GROUPS: { label: string; items: Item[] }[] = [
       { href: '/downloads', label: 'Downloads', icon: 'download' },
       { href: '/arquivos', label: 'Arquivos', icon: 'files' },
       { href: '/atividades', label: 'Atividades', icon: 'activity' },
+      // a Z: página própria para consultas amplas, no fim do grupo (titular, 29/10/2026; Plano de Integração §7–8)
+      { href: '/ia', label: 'IA', icon: 'sparkle' },
     ],
   },
   {

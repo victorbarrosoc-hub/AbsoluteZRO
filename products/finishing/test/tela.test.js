@@ -1135,7 +1135,28 @@ test('meu look: o clone vira um look com nome, aparece na grade em outro frame, 
   await contexto.close()
 })
 
-test('painel inicial: a Z com a CSP de produção, conversa pelo repasse e as ferramentas a um toque no dock', async () => {
+test('a primeira ferramenta é a LUT: o login volta para /lut, a Z não está no dock nem abre sozinha', async () => {
+  const { VOLTA_PADRAO, voltaSegura } = await import('../api/_zro.js')
+  assert.equal(VOLTA_PADRAO, '/lut')
+  assert.equal(voltaSegura(undefined), '/lut')
+  for (const largura of [1440, 393]) {
+    const pagina = await navegador.newPage({ viewport: { width: largura, height: 900 } })
+    const pedidos = await simularZ(pagina)
+    await pagina.goto(endereco + 'lut.html')
+    await pagina.getByRole('heading', { name: 'Revela a cor que você quer.' }).waitFor()
+    const dock = pagina.getByRole('navigation', { name: 'Ferramentas da Revela' })
+    assert.equal(await dock.locator('a').first().textContent(), 'LUT')
+    assert.equal(await dock.locator('a[href^="inicio"]').count(), 0)
+    // a Z é só o anel discreto do topo; nada dela monta nem pede ao abrir
+    assert.equal(await pagina.locator('.topo .topo-z[href="inicio.html"]').count(), 1)
+    await pagina.waitForTimeout(300)
+    assert.equal(await pagina.locator('zro-ia').count(), 0)
+    assert.deepEqual(pedidos, [])
+    await pagina.close()
+  }
+})
+
+test('a Z (link direto /inicio) com a CSP de produção, conversa pelo repasse e as ferramentas a um toque no dock', async () => {
   const pagina = await navegador.newPage({ viewport: { width: 1440, height: 900 } })
   const erros = []
   pagina.on('pageerror', (e) => erros.push(e.message))
@@ -1164,13 +1185,16 @@ test('painel inicial: a Z com a CSP de produção, conversa pelo repasse e as fe
   await pagina.evaluate(() => window.revelaTema.alternar())
   assert.equal(await z.getAttribute('tema'), 'escuro')
   await pagina.evaluate(() => window.revelaTema.alternar())
-  // a aba Z é a primeira do dock e as ferramentas seguem a um toque, sem recarregar
+  // a Z não é aba do dock (titular, 29/10/2026): o dock começa na LUT, e o anel do topo volta à Z, sem recarregar
   const dock = pagina.getByRole('navigation', { name: 'Ferramentas da Revela' })
-  assert.equal(await dock.locator('a').first().textContent(), 'Z')
+  assert.equal(await dock.locator('a').first().textContent(), 'LUT')
+  assert.equal(await dock.locator('a[href^="inicio"]').count(), 0)
   await dock.getByRole('link', { name: 'LUT' }).click()
   await pagina.getByRole('heading', { name: 'Revela a cor que você quer.' }).waitFor()
-  await dock.getByRole('link', { name: 'Z', exact: true }).click()
+  assert.equal(await pagina.getAttribute('.topo-z', 'aria-current'), null)
+  await pagina.locator('.topo-z').click()
   await pagina.waitForURL(/inicio\.html$/)
+  assert.equal(await pagina.getAttribute('.topo-z', 'aria-current'), 'page')
   await pagina.locator('#zPainel zro-ia').waitFor({ state: 'attached' })
   assert.deepEqual(erros, [])
   await pagina.close()

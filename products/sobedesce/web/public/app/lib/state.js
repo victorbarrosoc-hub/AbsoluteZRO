@@ -21,7 +21,7 @@ let state = {
   awake: false, // trava de tela acesa ativa
   lan: null, // modo Wi-Fi: { mac, noAccount, deleteAfterUpload, error, badCode }
   sheet: null, // { name, props }
-  tab: 'z', // 'z' (a Z, a primeira aba; a entrada quando não há tarefa em curso, lib/entrada.js) | 'send' (envio) | 'drive' (navegar e baixar) | 'ap' (Aparelhos, Wi-Fi) | 'refs' (Referências) | 'criar' (Frames…); no modo Wi-Fi só 'send'
+  tab: 'send', // 'send' (Início, envio; a entrada) | 'z' (a Z, pelo botão discreto do topo, nunca a entrada) | 'drive' (navegar e baixar) | 'ap' (Aparelhos, Wi-Fi) | 'refs' (Referências) | 'criar' (Frames…); no modo Wi-Fi só 'send'
   criarTela: 'hub', // aba Criar: 'hub' | 'frames' | 'calc'
   abrirLink: null, // link profundo #drive/<id>, #arquivo/<id> ou #baixar/<id> (lib/drive-link.js): a aba Drive abre e zera
   escolher: null, // aba Drive escolhendo um arquivo para outra tela: { para: 'frames' } (tocar no vídeo leva para lá)
@@ -137,7 +137,9 @@ export function savedTab() {
   if (typeof location !== 'undefined' && location.hash === '#referencias') return 'refs'
   if (typeof location !== 'undefined' && location.hash === '#aparelhos') return 'ap'
   if (typeof location !== 'undefined' && linkDoHash(location.hash)) return 'drive'
-  // Quem abre o app cai na Z (pedido do titular, 27/10/2026), a não ser que haja tarefa em curso (lib/entrada.js,
-  // 28/10/2026); os links com # continuam abrindo a aba deles.
-  return 'z'
+  // /app/#z abre a Z (link direto); só por pedido, nunca sozinha.
+  if (typeof location !== 'undefined' && location.hash === '#z') return 'z'
+  // Quem abre o app cai no Início, a tarefa principal (titular, 29/10/2026; Plano de Integração §7–8): o envio, a fila
+  // e o cartão do computador transferindo. A Z fica num botão discreto no topo.
+  return 'send'
 }

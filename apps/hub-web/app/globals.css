@@ -5286,6 +5286,29 @@ a.pstrip__card:focus-visible .pstrip__go {
 .painel__item--ativo:hover {
   background: var(--text-strong);
 }
+/* a Z no app (titular, 29/10/2026; Plano de Integração §7–8): discreta, abaixo das abas, nunca a primeira tela */
+.painel__z {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  margin-top: -16px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  color: var(--text-faint);
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    color 0.2s var(--ease),
+    background 0.2s var(--ease);
+}
+.painel__z:hover,
+.painel__z--ativo {
+  color: var(--text-strong);
+  background: rgb(127 127 127 / 0.1);
+  text-decoration: none;
+}
 .painel__conta {
   margin-top: auto;
   display: grid;
@@ -6571,12 +6594,13 @@ a.pstrip__card:focus-visible .pstrip__go {
     animation: none !important;
   }
   .painel__marca,
-  .painel__conta {
+  .painel__conta,
+  .painel__z {
     display: none;
   }
   .painel__nav {
     width: 100%;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     grid-auto-flow: row;
     gap: 0;
     overflow: visible;
@@ -6625,6 +6649,24 @@ a.pstrip__card:focus-visible .pstrip__go {
   }
   .painel__movel-conta {
     border-radius: 50%;
+  }
+  .painel__movel-acoes {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  /* a Z no celular: um anel discreto ao lado da conta, nunca uma aba da barra de baixo */
+  .painel__movel-z {
+    display: inline-grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    color: var(--text-faint);
+  }
+  .painel__movel-z--ativo {
+    color: var(--text-strong);
+    background: rgb(127 127 127 / 0.12);
   }
   .painel__titulo {
     font-size: 2.2rem;

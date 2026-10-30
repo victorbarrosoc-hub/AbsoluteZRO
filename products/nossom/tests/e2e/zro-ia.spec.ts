@@ -3,7 +3,7 @@ import { allowedAccount, OPEN, signIn } from './fixtures';
 import { sealIaTokens } from '../../lib/server/zro/ia';
 
 /**
- * A Z na aba própria do estúdio (/studio/z). O painel de verdade vem de absolutezro.com; aqui ele é trocado por um <zro-ia> mínimo que
+ * A Z na tela própria do estúdio (/studio/z), nunca a entrada nem aba da barra (titular, 29/10/2026). O painel de verdade vem de absolutezro.com; aqui ele é trocado por um <zro-ia> mínimo que
  * faz o mesmo contrato (GET {api}/estado, 401 → zro-ia:sem-login). O caminho até a "Absolute ZRO" passa pelo
  * repasse /api/zro/ia de verdade e pela API falsa de scripts/test-server.mjs.
  */
@@ -43,19 +43,53 @@ async function enter(page: Page, o: { iaToken?: string } = {}) {
   }
 }
 
-test('the Z has its own first tab, is where /studio lands, asks to connect without a token and fills the screen', async ({
+test('/studio lands on the studio home (the task), never on the Z; the Z is a discreet entry, not the first tab', async ({
+  page,
+}) => {
+  const scripts: string[] = [];
+  await page.route(SCRIPT, (route) => {
+    scripts.push(route.request().url());
+    return route.fulfill({ contentType: 'text/javascript', body: STUB });
+  });
+  await enter(page);
+  for (const size of [
+    { width: 1440, height: 900 },
+    { width: 393, height: 852 },
+  ]) {
+    await page.setViewportSize(size);
+    // Quem entra em /studio (site, PWA, app de computador) cai no Início do estúdio; a busca fica.
+    await page.goto('/studio?zro=ok');
+    await expect(page).toHaveURL(/\/studio\?zro=ok$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Seu áudio, melhor.' })).toBeVisible();
+    await expect(page.locator('zro-ia')).toHaveCount(0);
+    // A Z é o ícone discreto do topo, apagado.
+    const top = page.locator('.studio-header .z-top');
+    await expect(top).toBeVisible();
+    await expect(top).not.toHaveClass(/active/);
+  }
+  // A barra do celular não tem a Z; a primeira é o Início.
+  const tabs = page.getByRole('navigation', { name: 'Navegação rápida', exact: true });
+  await expect(tabs.getByRole('button').first()).toHaveText('Início');
+  await expect(tabs.getByRole('button', { name: 'Z', exact: true })).toHaveCount(0);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  // Na barra lateral a Z vem por último, depois das seções do estúdio.
+  const nav = page.getByRole('navigation', { name: 'Navegação do estúdio', exact: true });
+  await expect(nav.getByRole('button').first()).toHaveText('Início');
+  await expect(nav.getByRole('button').last()).toHaveText('Z');
+  expect(scripts).toHaveLength(0);
+});
+
+test('the Z opens only when asked: top icon or /studio/z link, asks to connect without a token and fills the screen', async ({
   page,
 }) => {
   await page.route(SCRIPT, (route) =>
     route.fulfill({ contentType: 'text/javascript', body: STUB }),
   );
   await enter(page);
-  // Quem entra em /studio (site, PWA, app de computador) cai na aba da Z; a busca vai junto.
-  await page.goto('/studio?zro=ok');
-  await expect(page).toHaveURL(/\/studio\/z\?zro=ok$/);
+  await page.goto('/studio/z');
   const nav = page.getByRole('navigation', { name: 'Navegação do estúdio', exact: true });
-  await expect(nav.getByRole('button').first()).toHaveText('Z');
   await expect(nav.getByRole('button', { name: 'Z', exact: true })).toHaveClass(/active/);
+  await expect(page.locator('.studio-header .z-top')).toHaveClass(/active/);
   const z = page.locator('zro-ia');
   await expect(z).toHaveAttribute('api', '/api/zro/ia');
   await expect(z).toHaveAttribute('tema', 'escuro');
@@ -79,7 +113,7 @@ test('the Z has its own first tab, is where /studio lands, asks to connect witho
   await expect(page).toHaveURL(/\/studio\/inicio$/);
   await expect(page.locator('zro-ia')).toHaveCount(0);
   await expect(page.getByRole('heading', { level: 1, name: 'Seu áudio, melhor.' })).toBeVisible();
-  await nav.getByRole('button', { name: 'Z', exact: true }).click();
+  await page.locator('.studio-header .z-top').click();
   await expect(page).toHaveURL(/\/studio\/z$/);
   await expect(page.locator('zro-ia')).toHaveCount(1);
   await page.goto('/studio/ia');
@@ -95,11 +129,11 @@ test('with the Z token the panel talks to the Absolute ZRO through the proxy, to
   await enter(page, { iaToken: 'zat_e2e' });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/studio');
+  await expect(page.locator('zro-ia')).toHaveCount(0);
+  // No celular a Z abre pelo anel do topo (não é aba da barra de baixo).
+  await page.locator('.studio-header .z-top').click();
   await expect(page).toHaveURL(/\/studio\/z$/);
   await expect(page.locator('zro-ia .z-ola')).toHaveText('Olá, Teste.');
-  // No celular a Z é a primeira aba da barra de baixo.
-  const tabs = page.getByRole('navigation', { name: 'Navegação rápida', exact: true });
-  await expect(tabs.getByRole('button').first()).toHaveText('Z');
   await expect(page.getByRole('link', { name: 'Conectar com Absolute ZRO' })).toHaveCount(0);
   // A resposta chega em streaming pelo repasse.
   const answer = await page.evaluate(async () => {

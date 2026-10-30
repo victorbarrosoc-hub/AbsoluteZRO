@@ -1,6 +1,7 @@
-// Revela · painel inicial: a Z, a IA do ecossistema Absolute ZRO (pedido do titular, 27/10/2026: a IA no painel
-// inicial de todas as plataformas). É o mesmo <zro-ia> do HUB e de todos os apps, vindo de absolutezro.com. A Z
-// conversa e lê dados da conta; não gradua nem gera LUT (isso é a pessoa, nas abas do dock).
+// Revela · a página da Z, a IA do ecossistema Absolute ZRO (inicio.html, /inicio). Desde 29/10/2026 (titular; Plano de
+// Integração §7–8) ela não é a entrada nem aba do dock: o login volta para /lut, e a Z abre pelo anel discreto do topo
+// ou por link direto. É o mesmo <zro-ia> do HUB e de todos os apps, vindo de absolutezro.com. A Z conversa e lê dados
+// da conta; não gradua nem gera LUT (isso é a pessoa, nas abas do dock).
 //
 // O token nunca chega aqui: o <zro-ia> fala com /api/zro/ia/*, o repasse da Vercel (api/_ia.js), que põe o access
 // token da sessão (cookie cifrado) no Authorization. Sem conta ou sem o escopo da Z: "Entrar com Absolute ZRO".

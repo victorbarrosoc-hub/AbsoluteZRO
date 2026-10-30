@@ -9078,8 +9078,16 @@ select.input {
   letter-spacing: -0.02em;
   text-wrap: balance;
 }
-.tab-z.is-on {
-  color: var(--text);
+/* a Z no topo, discreta, ao lado da conta (não é aba nem a tela de entrada) */
+.topbar-acoes {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.z-botao {
+  width: 36px;
+  height: 36px;
+  color: var(--text-2);
 }
 /* seis abas (com Referências): no celular estreito o rótulo encolhe em vez de cortar */
 .tabbar .tab-label {

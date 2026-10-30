@@ -110,7 +110,7 @@ function App() {
   const backup = useStore((s) => s.backup)
   const rotaLida = useRoute()
   // Abriu sem rota no endereço: a entrada é decidida uma vez, com o estado do motor já carregado (a tarefa em curso,
-  // senão a Z), e vira rota de verdade. Depois disso a tela não pula sozinha quando a tarefa termina.
+  // senão o Início; nunca a Z), e vira rota de verdade. Depois disso a tela não pula sozinha quando a tarefa termina.
   const entrada = useRef(null)
   if (status === 'ready' && rotaLida.padrao && !entrada.current) entrada.current = telaDeEntrada({ transfers, backup })
   const route = rotaLida.padrao && entrada.current ? { ...rotaLida, name: entrada.current } : rotaLida

@@ -16,8 +16,6 @@ import { openExternal } from '../lib/desktop.js'
 
 // O que se usa todo dia em cima; Dispositivos e Ajustes embaixo. Frames e Cartões com item próprio (não ficam escondidos).
 const NAV = [
-  // a Z, a IA da Absolute ZRO: o primeiro item e a tela de entrada (pedido do titular, 27/10/2026)
-  { id: 'z', label: 'Z', icon: 'z', title: 'A Z, a IA da Absolute ZRO' },
   { id: 'painel', label: 'Início', icon: 'home' },
   { id: 'transferencias', label: 'Transferências', icon: 'transfers' },
   { id: 'drive', label: 'Drive', icon: 'cloud' },
@@ -26,9 +24,12 @@ const NAV = [
   { id: 'cartoes', label: 'Cartões', icon: 'sdcard' },
   { id: 'comparar', label: 'Comparar', icon: 'compare' },
 ]
+// A Z, a IA da Absolute ZRO (titular, 29/10/2026; Plano de Integração §7–8): discreta, no pé da barra, depois dos
+// Ajustes. Não é a primeira nem a tela de entrada; a tarefa do app vem primeiro.
 const NAV_BAIXO = [
   { id: 'computadores', label: 'Dispositivos', icon: 'laptop' },
   { id: 'ajustes', label: 'Ajustes', icon: 'sliders' },
+  { id: 'z', label: 'Z', icon: 'z', title: 'A Z, a IA da Absolute ZRO' },
 ]
 
 // Os outros apps da Absolute ZRO, cada um com o próprio ícone (cópias em public/familia/). Abrem no navegador do
@@ -205,7 +206,7 @@ function NavItem({ n, current }) {
 
 export function Sidebar({ current }) {
   return html`<aside class="sidebar">
-    <div class="sidebar-brand"><a href="#/z" aria-label="SOBEDESCE — início"><${Wordmark} size=${22} /></a></div>
+    <div class="sidebar-brand"><a href="#/painel" aria-label="SOBEDESCE — início"><${Wordmark} size=${22} /></a></div>
     <nav class="nav" aria-label="Principal">
       ${NAV.map((n) => html`<${NavItem} n=${n} current=${current} />`)}
     </nav>

@@ -6,7 +6,7 @@ import { ACCOUNT, DEV, LAN, local } from '../lib/config.js'
 import { about, isRetryable } from '../lib/drive.js'
 import { lanInfo } from '../lib/lan.js'
 import { bytes, initials, plural, speed, timecode } from '../lib/format.js'
-import { MY_DRIVE, folderTrail, getRecents, getState, openSheet, pushRecent, setState, toast, useApp } from '../lib/state.js'
+import { MY_DRIVE, folderTrail, getRecents, getState, openSheet, pushRecent, setState, setTab, toast, useApp } from '../lib/state.js'
 import { NET_MSG, engine, summarize } from '../lib/uploader.js'
 import { Icon, Wordmark } from './icons.js'
 import { Button, cx, useEngine } from './ui.js'
@@ -27,15 +27,33 @@ export function Avatar({ user, size = 32 }) {
   </span>`
 }
 
+/**
+ * A entrada da Z (titular, 29/10/2026; Plano de Integração §7–8): um anel pequeno ao lado da conta, nunca uma aba nem
+ * a tela de entrada. Abre a Z só quando a pessoa toca.
+ */
+export function ZBotao() {
+  return html`<button type="button" class="icon-btn z-botao" onClick=${() => setTab('z')} aria-label="Z, a IA da Absolute ZRO" title="Z, a IA da Absolute ZRO">
+    <${Icon} name="z" size=${20} strokeWidth=${1.7} />
+  </button>`
+}
+
+/** A conta e a Z, à direita da barra do topo. */
+function TopoAcoes({ user }) {
+  return html`<div class="topbar-acoes">
+    <${ZBotao} />
+    <button type="button" class="avatar-btn" onClick=${() => openSheet('settings')} aria-label="Conta e ajustes">
+      <${Avatar} user=${user} size=${32} />
+    </button>
+  </div>`
+}
+
 /** A barra do topo (marca e conta) nas abas sem barra própria (Referências, Criar), igual à do Início. */
 export function TopoMarca() {
   const user = useApp((s) => s.user)
   return html`<header class="topbar">
     <div class="topbar-row">
       <${Wordmark} size=${24} />
-      <button type="button" class="avatar-btn" onClick=${() => openSheet('settings')} aria-label="Conta e ajustes">
-        <${Avatar} user=${user} size=${32} />
-      </button>
+      <${TopoAcoes} user=${user} />
     </div>
   </header>`
 }
@@ -111,9 +129,7 @@ function Header({ user, sum, items, waiting, awake }) {
   return html`<header class=${cx('topbar', active && 'is-active')}>
     <div class="topbar-row">
       <${Wordmark} size=${24} />
-      <button type="button" class="avatar-btn" onClick=${() => openSheet('settings')} aria-label="Conta e ajustes">
-        <${Avatar} user=${user} size=${32} />
-      </button>
+      <${TopoAcoes} user=${user} />
     </div>
     ${active
       ? html`<div class="meter" aria-label="Progresso total">

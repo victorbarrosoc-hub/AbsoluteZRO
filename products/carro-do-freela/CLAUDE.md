@@ -437,7 +437,7 @@ a cena da home e a tela de entrar abaixo da janela em todo monitor grande.
 Uma sonda de `100vh` dentro do corpo diz quanto o motor multiplica (Chromium:
 o zoom; Safari: 1), e `--zoom` vira esse número.
 
-⚠️ **A build se identifica** (`VERSAO`, hoje `29/out · 1`): aparece no rodapé do
+⚠️ **A build se identifica** (`VERSAO`, hoje `30/out · 1`): aparece no rodapé do
 menu e vai junto no recado de suporte. Sem isso, três rodadas foram gastas sem
 saber se o defeito relatado era do arquivo novo ou de um cache velho. **Suba a
 VERSAO em toda entrega que o Victor for subir.**
@@ -8576,6 +8576,23 @@ ancestral prende a gaveta de Conversas).
   (`#z-sem`); sem o acesso da Z → "Reconectar com Absolute ZRO" (`#z-acao`).
 - Suítes: `conta-zro` §1 (fora do domínio a aba não aparece) e §11 (cai na Z, botão do topo aceso, primeiro da
   lateral, Feed limpo, reconectar dentro da aba). VERSAO `27/out · 5`.
+
+## 30/out · 1 — a Z deixa de ser a tela de entrada (titular, 29/out; Plano de Integração §7–8)
+
+Regra do titular para todas as plataformas: *a tarefa principal do aplicativo vem primeiro*; a Z é uma entrada
+discreta, nunca a primeira tela, nunca a primeira aba, nunca abre sozinha. Desfaz a parte "tela de entrada" do 27/out · 5.
+- **Botões:** no computador `#tab-z` é o **último** item da lateral (depois de Aprender, antes do bloco da família).
+  No celular `#z-top` virou um anel pequeno, sem rótulo, apagado (opacidade), **à direita, antes do menu** — não é
+  mais a pílula em destaque à esquerda da marca. A barra de baixo continua sem a Z (3 + Menu + 3).
+- **Entrada:** quem entra (`entrarNaConta`), quem termina o cadastro e quem abre o app já dentro cai no **Feed** (ou em
+  Propostas antes da Fase 4), como antes do 27/out · 5; a volta do portão fechado cai na home.
+- **Nada carrega sozinho:** `pintarAbaZ()` só mostra os botões; o `<zro-ia>` (e o script de absolutezro.com) nasce
+  em `pintarZ()` quando a pessoa abre a Z (`show("z")`).
+- **Volta para a Z:** "Entrar" ou "Reconectar com Absolute ZRO" dentro da Z marcam `cdf-volta-z` (sessionStorage); na
+  volta do HUB, depois do `zroEntrar`, a Z abre de novo — a pessoa tinha pedido. É o único caminho que abre a Z sem um
+  toque.
+- Suítes: `conta-zro` §11 (cai na tarefa, nada da Z montado, anel apagado e não primeiro, `#tab-z` último; abre só com
+  `show("z")`; reconectar volta para a Z) e §12e (o dono cai na tarefa e recarrega sem a Z). VERSAO `30/out · 1`.
 
 ## 28/out · 1 — o portão do lançamento: só a conta do proprietário entra
 
