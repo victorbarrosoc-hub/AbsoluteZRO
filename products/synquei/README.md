@@ -2,7 +2,8 @@
 
 **Sincronia de câmeras, celulares e gravadores pelo som, direto no navegador.** Solta as pastas dos cartões, o Synquei reconhece cada arquivo, separa por aparelho, acha onde cada clipe entra e exporta o projeto para o seu editor.
 
-- **Site:** [synquei.vercel.app](https://synquei.vercel.app) · **App:** [/app/](https://synquei.vercel.app/app/) · **Formatos:** [/formatos/](https://synquei.vercel.app/formatos/)
+- **Site:** [synquei.absolutezro.com](https://synquei.absolutezro.com) · **App:** [/app/](https://synquei.absolutezro.com/app/) · **Formatos:** [/formatos/](https://synquei.absolutezro.com/formatos/)
+- **Endereço antigo** (`synquei.vercel.app`): as páginas levam a pessoa ao novo e, uma vez por navegador, os projetos gravados lá vão junto (`app/mudanca.js` → `/mudanca/`, sem passar pelo servidor). `/api/` e `/baixar/` continuam respondendo lá para os apps de computador antigos.
 - Sem build e sem dependências: HTML, CSS e módulos ES. É só servir a pasta.
 - Nada sai do computador: os arquivos são lidos direto do disco pelo navegador.
 - Mora em `products/synquei` do repositório [AbsoluteZRO](https://github.com/victorbarrosoc-hub/AbsoluteZRO) (fonte oficial desde 25/10/2026, ver `ORIGEM.md`). Na Vercel, o projeto `synquei` usa **Root Directory = `products/synquei`**.
@@ -102,8 +103,8 @@ Distribuição (mesmo modelo do SOBEDESCE):
 2. `api/baixar.js` (função da Vercel) atende `/baixar/mac`, `/baixar/windows` e `/baixar/versao` e manda direto para o arquivo do GitHub. Procura primeiro no Release `synquei-app-desktop` do AbsoluteZRO; enquanto ele não tiver instalador, usa o Release `app-desktop` do repositório antigo `victorbarrosoc-hub/synquei` (arquivado). `?build=N` acha o build em qualquer dos dois. Os dois repositórios são privados (25/10/2026): o projeto Vercel `synquei` precisa da variável `GITHUB_TOKEN` (token fino, só leitura de *Contents*, com acesso a AbsoluteZRO e synquei; ver `docs/operations/downloads-privados.md` na raiz). `/baixar/diag` diz de onde está entregando.
    Tags `synquei-v*` também disparam o build e a publicação.
 3. `instalar.sh` e `instalar.ps1`: instalação de uma linha, sem os avisos do macOS/Windows, conferindo o SHA-256:
-   - Mac: `curl -fsSL https://synquei.vercel.app/instalar.sh | bash`
-   - Windows: `irm https://synquei.vercel.app/instalar.ps1 | iex`
+   - Mac: `curl -fsSL https://synquei.absolutezro.com/instalar.sh | bash`
+   - Windows: `irm https://synquei.absolutezro.com/instalar.ps1 | iex`
 
 Sem assinatura da Apple/Microsoft por enquanto (ad-hoc no Mac). O site ensina a abrir na primeira vez.
 
@@ -178,7 +179,7 @@ Funções da Vercel (só Node, sem dependências; código comum em `api/_zro.js`
 | `GET /api/zro/eu` | 200 com a pessoa (`nome`, `email`, `foto`, `conta`, organização, produtos) e `acesso` (Synquei em `zro_products`), 401 sem sessão (com os links `entrar` e `criar`), 503 se o login não estiver configurado. `no-store`. Relê o perfil em `/oauth/userinfo` (troca o refresh token, que roda, quando o access token venceu) e regrava os dois cookies; Absolute ZRO fora do ar mantém a última cópia; acesso removido no Perfil da Absolute ZRO encerra a sessão. |
 | `POST /api/zro/sair` | Revoga o refresh token na Absolute ZRO e apaga `sq_conta` e `sq_hub` (a sessão na Absolute ZRO continua). |
 
-Cookies `HttpOnly; Secure; SameSite=Lax`, assinados com HMAC-SHA256; a chave de cada cookie sai de `ZRO_CLIENT_SECRET` por HKDF (trocar o segredo derruba as sessões). O retorno só vale em `https://synquei.vercel.app` e `localhost`/`127.0.0.1`; qualquer outro endereço (prévia da Vercel) é mandado para o site oficial antes de começar.
+Cookies `HttpOnly; Secure; SameSite=Lax`, assinados com HMAC-SHA256; a chave de cada cookie sai de `ZRO_CLIENT_SECRET` por HKDF (trocar o segredo derruba as sessões). O retorno só vale em `https://synquei.absolutezro.com` e `localhost`/`127.0.0.1`; qualquer outro endereço (prévia da Vercel, o antigo `synquei.vercel.app`) é mandado para o site oficial antes de começar.
 
 Variáveis na Vercel (projeto `synquei`, Production):
 
@@ -188,7 +189,7 @@ Variáveis na Vercel (projeto `synquei`, Production):
 | `ZRO_CLIENT_SECRET` | o segredo do cliente `synquei-web` no console da Absolute ZRO (sensível) |
 | `ZRO_ISSUER` | opcional; padrão `https://absolutezro.com` |
 
-No console da Absolute ZRO, o cliente `synquei-web` precisa do retorno `https://synquei.vercel.app/api/zro/callback` e o produto Synquei do endereço de entrada `https://synquei.vercel.app/api/zro/entrar`. Sem `ZRO_CLIENT_ID`/`ZRO_CLIENT_SECRET`, o botão não aparece e o app segue como antes.
+No console da Absolute ZRO, o cliente `synquei-web` precisa do retorno `https://synquei.absolutezro.com/api/zro/callback` e o produto Synquei do endereço de entrada `https://synquei.absolutezro.com/api/zro/entrar` (migração 0032). Sem `ZRO_CLIENT_ID`/`ZRO_CLIENT_SECRET`, o botão não aparece e o app segue como antes.
 
 Testes: `tests/zro.test.mjs` com uma Absolute ZRO falsa local (`tests/zro-falso.mjs`, chave EC P-256 gerada no teste): fluxo completo, criar conta (`prompt=create`), Synquei fora de `zro_products` (sem acesso) e liberado depois, state, nonce, emissor e público errados, assinatura inválida, token vencido, cookies adulterados e volta para fora do site; perfil único (foto, mudança na conta aparece na abertura seguinte, refresh que roda, Absolute ZRO fora do ar, acesso removido, cofre cifrado, sair revoga). `tests/conta-ui.test.mjs`: o que a parte de conta do app mostra em cada caso (foto ou iniciais, Editar na conta Absolute ZRO).
 

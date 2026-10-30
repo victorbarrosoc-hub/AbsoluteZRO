@@ -15,7 +15,7 @@ const NO_AR: Record<string, string> = {
   maestro: 'https://maestro.absolutezro.com',
   relay: 'https://relay.absolutezro.com',
   sobedesce: 'https://sobedesce.vercel.app',
-  synquei: 'https://synquei.vercel.app',
+  synquei: 'https://synquei.absolutezro.com',
   tpeasy: 'https://tpeasy.vercel.app',
 }
 const HUB = 'https://absolutezro.com'

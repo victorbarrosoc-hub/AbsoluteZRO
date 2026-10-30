@@ -22,7 +22,7 @@ const FAMILY = [
     : []),
   { href: 'https://revela.absolutezro.com', name: 'Revela', icon: '/familia/revela.svg' },
   { href: 'https://sobedesce.vercel.app', name: 'Sobedesce', icon: '/familia/sobedesce.svg' },
-  { href: 'https://synquei.vercel.app', name: 'Synquei', icon: '/familia/synquei.svg' },
+  { href: 'https://synquei.absolutezro.com', name: 'Synquei', icon: '/familia/synquei.svg' },
   { href: 'https://tpeasy.vercel.app', name: 'TPEasy', icon: '/familia/tpeasy.svg' },
 ];
 

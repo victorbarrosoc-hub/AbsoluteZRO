@@ -8,7 +8,7 @@ const MAESTRO_NA_FAMILIA = true
 export const FAMILIA = [
   { id: 'hub', nome: 'Absolute ZRO', href: 'https://absolutezro.com', icone: 'absolute-zro', papel: 'Sua conta e seus projetos' },
   { id: 'sobedesce', nome: 'SOBEDESCE', href: 'https://sobedesce.vercel.app', icone: 'sobedesce.svg', papel: 'Descarga e subida conferidas' },
-  { id: 'synquei', nome: 'Synquei', href: 'https://synquei.vercel.app', icone: 'synquei.svg', papel: 'Câmeras sincronizadas pelo som' },
+  { id: 'synquei', nome: 'Synquei', href: 'https://synquei.absolutezro.com', icone: 'synquei.svg', papel: 'Câmeras sincronizadas pelo som' },
   { id: 'nossom', nome: 'NOSSOM', href: 'https://nossom-teal.vercel.app', icone: 'nossom.svg', papel: 'Voz limpa, mix e master' },
   { id: 'finishing', nome: 'Revela', href: 'https://revela.absolutezro.com', icone: 'revela.svg', papel: 'Cor, LUT e entrega' },
   { id: 'tpeasy', nome: 'TPeasy', href: 'https://tpeasy.vercel.app', icone: 'tpeasy.svg', papel: 'Teleprompter com o roteiro' },

@@ -439,7 +439,7 @@ test('central de apps: no navegador não aparece nada da central', async ({ page
   await page.goto('/downloads')
   // só os ícones; o toque abre a parte de download do app, com o "Conheça mais"
   await page.getByRole('button', { name: 'Synquei' }).click()
-  await expect(page.getByRole('link', { name: /Conheça mais/ })).toHaveAttribute('href', 'https://synquei.vercel.app')
+  await expect(page.getByRole('link', { name: /Conheça mais/ })).toHaveAttribute('href', 'https://synquei.absolutezro.com')
   await expect(page.locator('.app-actions')).toHaveCount(0)
   await expect(page.locator('#app-synquei .dl-opt[data-os="mac"]')).toBeVisible()
 })

@@ -310,6 +310,17 @@ do filho antes do `data-theme` do pai); o widget agora recopia a identidade depo
 Não rodado: `vendor.test.js` do Relay (sem `node_modules` neste ambiente) e o site do SOBEDESCE no navegador (só o
 componente e a rota, pelos testes).
 
+## Synquei em synquei.absolutezro.com (29/10/2026, ADR 0025)
+
+- Vercel: `synquei.absolutezro.com` no projeto `synquei`, verificado (zona `absolutezro.com` na Vercel); `/`, `/app/`
+  respondem 200 e `/api/zro/eu` 401 sem sessão.
+- Banco (Supabase de produção, `AbsoluteZRO-SP`): migração 0032 aplicada; `synquei-web` aceita a volta nos dois endereços.
+- `products/synquei`: `npm test` **146/146** (novos: `tests/mudanca.test.mjs`, login no endereço antigo recomeçando no novo).
+- Raiz: lint, formatação, tipos e build ok; `npm test` **340/340**; `npm run test:e2e` 40/43 (os 3 que faltam são WebKit,
+  que não está instalado neste ambiente; no CI rodam).
+- Chromium (Playwright, os dois endereços servidos pelos arquivos locais): projeto e tema gravados em `synquei.vercel.app`
+  aparecem no endereço novo; segunda visita só redireciona, mantendo caminho e busca.
+
 ## Página inicial no iPhone: topo por cima de tudo e grade de ícones (29/10/2026)
 
 Relato do titular (Safari do iPhone, tema claro): texto das seções aparecia entre a barra de status e a cápsula do topo e

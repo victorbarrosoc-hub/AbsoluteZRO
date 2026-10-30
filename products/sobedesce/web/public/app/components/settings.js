@@ -16,7 +16,7 @@ import { AceitarOutros } from './p2p.js'
 const FAMILIA = [
   { href: 'https://absolutezro.com', nome: 'Absolute ZRO', img: 'icons/familia/absolute-zro.png' },
   { href: 'https://relay.absolutezro.com', nome: 'Relay', img: 'icons/familia/relay.svg' },
-  { href: 'https://synquei.vercel.app', nome: 'Synquei', img: 'icons/familia/synquei.svg' },
+  { href: 'https://synquei.absolutezro.com', nome: 'Synquei', img: 'icons/familia/synquei.svg' },
   { href: 'https://tpeasy.vercel.app', nome: 'TPeasy', img: 'icons/familia/tpeasy.svg' },
 ]
 // Maestro na família (lançamento em Beta grátis, docs/operations/lancamento-maestro.md): fica de fora até o titular

@@ -254,7 +254,7 @@ function menu() {
     },
     { label: 'Visualizar', submenu: [{ label: 'Recolher ou abrir o menu lateral', accelerator: 'CmdOrCtrl+\\', click: () => run(`document.dispatchEvent(new CustomEvent('synquei:acao', { detail: 'recolher' }))`) }, { type: 'separator' }, { role: 'reload', label: 'Recarregar' }, { role: 'toggleDevTools', label: 'Ferramentas de desenvolvedor' }, { type: 'separator' }, { role: 'resetZoom', label: 'Tamanho real' }, { role: 'zoomIn', label: 'Aumentar' }, { role: 'zoomOut', label: 'Diminuir' }, { type: 'separator' }, { role: 'togglefullscreen', label: 'Tela cheia' }] },
     { label: 'Janela', role: 'window', submenu: [{ role: 'minimize', label: 'Minimizar' }, { role: 'zoom', label: 'Zoom' }, ...(mac ? [{ role: 'front', label: 'Trazer tudo para a frente' }] : [])] },
-    { label: 'Ajuda', role: 'help', submenu: [{ label: 'Site do Synquei', click: () => shell.openExternal('https://synquei.vercel.app') }, { label: 'Formatos aceitos', click: () => shell.openExternal('https://synquei.vercel.app/formatos/') }] },
+    { label: 'Ajuda', role: 'help', submenu: [{ label: 'Site do Synquei', click: () => shell.openExternal('https://synquei.absolutezro.com') }, { label: 'Formatos aceitos', click: () => shell.openExternal('https://synquei.absolutezro.com/formatos/') }] },
   ]
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
 }

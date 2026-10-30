@@ -22,7 +22,7 @@ export const EMISSOR_PADRAO = 'https://absolutezro.com'
 // Set recusa o escopo (invalid_scope): o callback refaz o pedido com ESCOPOS_SEM_SET e o login segue, sem o Set.
 export const ESCOPOS = 'openid email profile org offline_access zro.ia zro.set'
 export const ESCOPOS_SEM_SET = 'openid email profile org offline_access zro.ia'
-export const SITE = 'https://synquei.vercel.app'
+export const SITE = 'https://synquei.absolutezro.com'
 export const COOKIE_IDA = 'sq_zro'
 export const COOKIE_CONTA = 'sq_conta'
 export const COOKIE_HUB = 'sq_hub'
@@ -45,13 +45,14 @@ export const temAcesso = (produtos) => Array.isArray(produtos) && produtos.inclu
 
 // ───────── origem do site ─────────
 
-/** Só estes endereços recebem a volta da Absolute ZRO (cadastrados no console). Qualquer outro usa o site oficial. */
+/** Só estes endereços recebem a volta da Absolute ZRO (cadastrados no console). Qualquer outro, inclusive o antigo
+ * synquei.vercel.app, usa o site oficial (ADR 0025). */
 export function origemPermitida(req) {
   const host = String(req.headers['x-forwarded-host'] || req.headers.host || '')
     .split(',')[0]
     .trim()
     .toLowerCase()
-  if (host === 'synquei.vercel.app') return SITE
+  if (host === 'synquei.absolutezro.com') return SITE
   if (/^(localhost|127\.0\.0\.1)(:\d{1,5})?$/.test(host)) return `http://${host}`
   return SITE
 }

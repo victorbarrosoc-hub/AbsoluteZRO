@@ -1,7 +1,7 @@
 #!/bin/sh
 # Synquei · instalador para Mac, sem o aviso "A Apple não pôde verificar se o item Synquei está livre de malware".
 #
-#   curl -fsSL https://synquei.vercel.app/instalar.sh | bash
+#   curl -fsSL https://synquei.absolutezro.com/instalar.sh | bash
 #
 # Por que funciona: o aviso vem da "quarentena" que o navegador põe em tudo o que baixa. O curl não põe.
 # O que este script faz, nesta ordem (sem nada escondido: leia antes de rodar, se quiser):
@@ -15,7 +15,7 @@
 main() {
   set -eu
 
-  SITE="${SYNQUEI_SITE:-https://synquei.vercel.app}"
+  SITE="${SYNQUEI_SITE:-https://synquei.absolutezro.com}"
   DEST="/Applications/Synquei.app"
   NOVO="/Applications/.Synquei-instalando.app"
   ANTIGO="/Applications/.Synquei-antigo.app"
