@@ -65,6 +65,9 @@ export const config = {
     '/api/zro/conta',
     // Painel da Z: a sessão NOSSOM renovada antes do repasse.
     '/api/zro/ia/:path*',
+    // O Set (presença e conversas da Absolute ZRO): o mesmo portão da Z, fechado só para a conta liberada.
+    '/api/zro/set',
+    '/api/zro/set/:path*',
     // Fechado ao público (28/10/2026): GPU/jobs, catálogo de planos e administração só com conta autorizada.
     // O cron de limpeza (/api/audio/cleanup, CRON_SECRET) e o webhook assinado da Stripe ficam fora: não são
     // canais de uso.

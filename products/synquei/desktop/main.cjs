@@ -124,8 +124,12 @@ const voltaSegura = (v) => (typeof v === 'string' && /^\/[^/\\]/.test(v) && v.le
 
 async function rotaConta(req, u) {
   // teste de fumaça: sem rede e sem sessão (aparece "Entrar com Absolute ZRO")
-  if (SMOKE) return u.pathname === '/api/zro/eu' || u.pathname.startsWith('/api/zro/ia/') ? jsonResp(401, { ok: false, configurado: true }) : jsonResp(404, { ok: false })
+  if (SMOKE) return u.pathname === '/api/zro/eu' || u.pathname.startsWith('/api/zro/ia/') || u.pathname === '/api/zro/set' || u.pathname.startsWith('/api/zro/set/') ? jsonResp(401, { ok: false, configurado: true }) : jsonResp(404, { ok: false })
   // a Z no painel inicial: o mesmo repasse do site (api/zro/ia.js); o token da conta fica neste processo
+  // o Set (presença e conversas): o mesmo repasse do site (api/zro/set.js), com o mesmo token
+  if (u.pathname === '/api/zro/set' || u.pathname.startsWith('/api/zro/set/')) {
+    return contaApp().repassarSet(req, decodeURIComponent(u.pathname.slice('/api/zro/set'.length)).replace(/^\/+|\/+$/g, ''), u.search)
+  }
   if (u.pathname.startsWith('/api/zro/ia/')) return contaApp().repassarIa(req, decodeURIComponent(u.pathname.slice('/api/zro/ia/'.length)).replace(/\/+$/, ''))
   if (u.pathname === '/api/zro/eu') {
     // perfil único: relê nome, e-mail, foto e produtos na Absolute ZRO a cada leitura (sem resposta em 3 s, vale a cópia)
@@ -232,18 +236,20 @@ function menu() {
     {
       label: 'Ir',
       submenu: [
-        { label: 'Z', accelerator: 'CmdOrCtrl+1', click: tab('z') },
-        { label: 'Início', accelerator: 'CmdOrCtrl+2', click: tab('inicio') },
-        { label: 'Mídia', accelerator: 'CmdOrCtrl+3', click: tab('midia') },
-        { label: 'Sincronizar', accelerator: 'CmdOrCtrl+4', click: tab('sincronizar') },
-        { label: 'Linha do tempo', accelerator: 'CmdOrCtrl+5', click: tab('linha') },
-        { label: 'Exportar', accelerator: 'CmdOrCtrl+6', click: tab('exportar') },
+        // a tarefa primeiro; a Z por último, sem atalho de número (titular, 29/10/2026; Plano de Integração §7–8)
+        { label: 'Início', accelerator: 'CmdOrCtrl+1', click: tab('inicio') },
+        { label: 'Mídia', accelerator: 'CmdOrCtrl+2', click: tab('midia') },
+        { label: 'Sincronizar', accelerator: 'CmdOrCtrl+3', click: tab('sincronizar') },
+        { label: 'Linha do tempo', accelerator: 'CmdOrCtrl+4', click: tab('linha') },
+        { label: 'Exportar', accelerator: 'CmdOrCtrl+5', click: tab('exportar') },
         { type: 'separator' },
-        { label: 'Projetos', accelerator: 'CmdOrCtrl+7', click: tab('projetos') },
-        { label: 'Organizar (SOBEDESCE › DaVinci)', accelerator: 'CmdOrCtrl+8', click: tab('organizar') },
+        { label: 'Projetos', accelerator: 'CmdOrCtrl+6', click: tab('projetos') },
+        { label: 'Organizar (SOBEDESCE › DaVinci)', accelerator: 'CmdOrCtrl+7', click: tab('organizar') },
         { type: 'separator' },
         { label: 'Formatos', click: tab('formatos') },
         { label: 'Ajustes', accelerator: 'CmdOrCtrl+,', click: tab('ajustes') },
+        { type: 'separator' },
+        { label: 'Z, a IA da Absolute ZRO', click: tab('z') },
       ],
     },
     { label: 'Visualizar', submenu: [{ label: 'Recolher ou abrir o menu lateral', accelerator: 'CmdOrCtrl+\\', click: () => run(`document.dispatchEvent(new CustomEvent('synquei:acao', { detail: 'recolher' }))`) }, { type: 'separator' }, { role: 'reload', label: 'Recarregar' }, { role: 'toggleDevTools', label: 'Ferramentas de desenvolvedor' }, { type: 'separator' }, { role: 'resetZoom', label: 'Tamanho real' }, { role: 'zoomIn', label: 'Aumentar' }, { role: 'zoomOut', label: 'Diminuir' }, { type: 'separator' }, { role: 'togglefullscreen', label: 'Tela cheia' }] },
@@ -445,8 +451,8 @@ async function smoke() {
       await wait(() => window.__synquei, 15000)
       const aac = typeof AudioDecoder !== 'undefined' && (await AudioDecoder.isConfigSupported({ codec: 'mp4a.40.2', sampleRate: 48000, numberOfChannels: 2 })).supported
       const desk = !!(window.synqueiDesktop && window.synqueiDesktop.isDesktop)
-      // o app abre na aba da Z
-      const naZ = window.__synquei.S.route === 'z' && !document.getElementById('zPainel').hidden
+      // o app abre no Início, nunca na Z (a Z fica escondida até a pessoa pedir)
+      const noInicio = window.__synquei.S.route === 'inicio' && document.getElementById('zPainel').hidden
       location.hash = '#/exemplo'
       await wait(() => { const s = window.__synquei.S; return s.project && s.project.clips.length === 6 && !s.probe.active }, 60000)
       const st = await (await import('/app/js/store.js')).runSync()
@@ -455,12 +461,12 @@ async function smoke() {
       // conta Absolute ZRO: no app de desktop a barra lateral oferece entrar (o fumaça responde sem sessão)
       await wait(() => document.querySelector('#planoCard [data-entrar]'), 10000)
       const conta = /Entrar com Absolute ZRO/.test(document.getElementById('planoCard').textContent)
-      return { aac, desk, conta, naZ, total: st.total, audio: st.audio, unsynced: st.unsynced, zip: zip.length }
+      return { aac, desk, conta, noInicio, total: st.total, audio: st.audio, unsynced: st.unsynced, zip: zip.length }
     })()`)
-    log(`desktop: ${r.desk} · abre na Z: ${r.naZ} · AAC no navegador do app: ${r.aac} · conta Absolute ZRO: ${r.conta}`)
+    log(`desktop: ${r.desk} · abre no Início: ${r.noInicio} · AAC no navegador do app: ${r.aac} · conta Absolute ZRO: ${r.conta}`)
     log(`exemplo: ${r.audio}/${r.total} sincronizados pelo som, ${r.unsynced} de fora, zip com ${r.zip} bytes`)
     clearTimeout(timer)
-    done(r.desk && r.naZ && r.conta && r.total === 6 && r.audio === 6 && r.unsynced === 0 && r.zip > 1000)
+    done(r.desk && r.noInicio && r.conta && r.total === 6 && r.audio === 6 && r.unsynced === 0 && r.zip > 1000)
   } catch (err) {
     clearTimeout(timer)
     log(`erro: ${err && err.message ? err.message : err}`)

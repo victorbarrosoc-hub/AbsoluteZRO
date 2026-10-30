@@ -37,6 +37,7 @@ export async function entrar(req: Request): Promise<Response> {
   const modo: ModoZro = pedido === "vincular" ? "vincular" : "entrar";
   const criar = pedido === "criar";
   const basico = url.searchParams.get("basico") === "1";
+  const semSet = !basico && url.searchParams.get("sem_set") === "1";
   const volta = voltaSegura(url.searchParams.get("volta"));
 
   // A Absolute ZRO volta para o endereço cadastrado: o cookie do state precisa nascer nele.
@@ -57,11 +58,11 @@ export async function entrar(req: Request): Promise<Response> {
   const desafio = createHash("sha256").update(verificador).digest("base64url");
   let destino: string;
   try {
-    destino = await urlDeLogin({ state, desafio, nonce, origem: retorno.origin, criar, basico });
+    destino = await urlDeLogin({ state, desafio, nonce, origem: retorno.origin, criar, basico, semSet });
   } catch {
     return redirecionar(new URL(paginaDeErro(modo, volta, "zro_erro"), url.origin));
   }
-  const cookie = serializarCookie(COOKIE_ZRO, selarEstadoZro({ state, verificador, nonce, modo, usuarioId, volta, basico }), {
+  const cookie = serializarCookie(COOKIE_ZRO, selarEstadoZro({ state, verificador, nonce, modo, usuarioId, volta, basico, ...(semSet ? { semSet } : {}) }), {
     maxAge: DURACAO_ZRO_S,
     path: "/api/zro",
     secure: cookieSeguro(url.origin),
@@ -86,7 +87,12 @@ export async function callback(req: Request, depois: Depois = depoisDaResposta):
   if (!stateConfere(url.searchParams.get("state"), estado.state)) return falhar("zro_expirou");
   // RFC 9207: a resposta diz quem a emitiu; confere antes de usar o código.
   const erroZro = url.searchParams.get("error");
-  // A Absolute ZRO ainda não conhece o escopo da Z: refaz o pedido sem ele (o login nunca quebra por causa da Z).
+  // A Absolute ZRO de antes do Set recusa `zro.set`: primeiro refaz sem ele (a Z segue); recusou de novo, também sem
+  // o escopo da Z. O login nunca quebra por causa da Z nem do Set.
+  if (erroZro === "invalid_scope" && !estado.basico && !estado.semSet) {
+    const q = new URLSearchParams({ modo, volta, sem_set: "1" });
+    return ir(`/api/zro/entrar?${q}`);
+  }
   if (erroZro === "invalid_scope" && !estado.basico) {
     const q = new URLSearchParams({ modo, volta, basico: "1" });
     return ir(`/api/zro/entrar?${q}`);

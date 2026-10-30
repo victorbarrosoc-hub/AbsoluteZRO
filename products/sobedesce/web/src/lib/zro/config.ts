@@ -13,6 +13,13 @@ export const ESCOPOS_ZRO = "openid email profile org";
  */
 export const ESCOPO_IA = "zro.ia";
 export const ESCOPOS_ZRO_IA = `${ESCOPOS_ZRO} offline_access ${ESCOPO_IA}`;
+/**
+ * O Set (presença e conversas do ecossistema, ADR 0032 da Absolute ZRO, 30/10/2026): o login também pede `zro.set`,
+ * com os mesmos tokens da Z (contas_zro.ia), para o repasse /api/zro/set/*. A Absolute ZRO de antes do Set recusa o
+ * escopo (invalid_scope): o login refaz o pedido sem ele (ESCOPOS_ZRO_IA) e tudo segue, sem o Set.
+ */
+export const ESCOPO_SET = "zro.set";
+export const ESCOPOS_ZRO_IA_SET = `${ESCOPOS_ZRO_IA} ${ESCOPO_SET}`;
 
 export function emissor(): string {
   return (process.env.ZRO_ISSUER?.trim() || EMISSOR_PADRAO).replace(/\/$/, "");

@@ -54,6 +54,19 @@ A revisão ampla identificou expectativas antigas de texto/cor e o teste de aber
   `/studio/inicio`, sem a Z. `tests/e2e/zro-ia.spec.ts` cobre a aba, a entrada, a tela toda, o Início sem a Z e o aviso
   quando o painel não carrega; contagens da navegação em `install-navigation.spec.ts` (6 na lateral, 5 no celular).
 
+## 30/10/2026 · A Z deixa de ser a entrada (substitui a de 27/10)
+
+- Regra do titular (29/10/2026; Plano de Integração §7–8): `/studio` abre no Início do estúdio, sem redirecionar
+  para a Z; a Z é o anel discreto do topo (`.studio-header .z-top`), o último item da lateral e `/studio/z` (link
+  direto); não é aba da barra do celular (4 botões) e nada dela carrega antes do toque.
+- `npm test` 120/120 (`tests/z-entrada.test.ts`: contrato no código); `tsc --noEmit` ok; `next build --webpack` ok.
+- E2E (Chromium do Playwright 1243 via `CHROMIUM_PATH`): `zro-ia.spec.ts` 5/5 (1440 e 393: `/studio` no Início, sem
+  `<zro-ia>`, nenhum pedido ao script; abrir pelo anel e por `/studio/z`; conversa pelo repasse);
+  `install-navigation.spec.ts` 3/4 + 1 pulado — a falha é anterior e alheia: "the studio menu lists the Absolute ZRO
+  family" espera a família sem o Maestro, que entrou na lista com a chave do lançamento (`components/family-nav.tsx`).
+  As demais de `account*`/`homepage-demo` pulam com o estúdio fechado (`onlyWhenOpen`), e o redirecionamento depois de
+  entrar foi atualizado para `/studio`.
+
 ## 28/10/2026 · Conta no padrão Absolute ZRO
 
 - Menu "Sua conta": foto da conta Absolute ZRO (claim `picture`, só `https` do emissor em `/api/v1/foto/…`), nome,

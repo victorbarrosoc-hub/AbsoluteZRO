@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AbasConta, IconeZ } from "@/components/conta/abas";
+import { IconeZ, VoltarConta } from "@/components/conta/abas";
 import { Cabecalho } from "@/components/conta/cabecalho";
 import { MenuConta } from "@/components/conta/menu";
 import { PainelZ } from "@/components/conta/painel-z";
@@ -17,9 +17,10 @@ import { precisaLigarZro } from "@/lib/zro/ligar";
 export const metadata: Metadata = { title: "Z" };
 
 /**
- * A aba da Z, a IA da Absolute ZRO (pedido do titular, 27/10/2026: "uma aba só pra Z em todas as plataformas"). É a
- * primeira aba e a tela de entrada da área logada (lib/auth/volta.ts › destinoDeEntrada). A Z ocupa a tela; sem
- * login, o "Entrar" fica aqui mesmo, e sem o token da Z o painel mostra "Reconectar com Absolute ZRO".
+ * A página da Z, a IA da Absolute ZRO. Desde 29/10/2026 (titular; Plano de Integração §7–8) ela não é aba nem a tela
+ * de entrada: quem entra cai em /conta (lib/auth/volta.ts) e chega aqui pelo anel discreto do cabeçalho (LinkZ) ou por
+ * link direto. A Z ocupa a tela; sem login, o "Entrar" fica aqui mesmo, e sem o token da Z o painel mostra
+ * "Reconectar com Absolute ZRO".
  */
 export default async function PaginaZ({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const atual = await usuarioAtual();
@@ -36,7 +37,7 @@ export default async function PaginaZ({ searchParams }: { searchParams: Promise<
       <Cabecalho
         acao={
           atual ? (
-            <MenuConta admin={admin} />
+            <MenuConta admin={admin} naZ />
           ) : (
             <Link href="/entrar?volta=%2Fz" className={buttonClasses({ variant: "ghost", size: "sm" })}>
               Entrar
@@ -44,7 +45,7 @@ export default async function PaginaZ({ searchParams }: { searchParams: Promise<
           )
         }
       />
-      <AbasConta atual="z" />
+      {atual ? <VoltarConta /> : null}
       <main className="largura flex-1 pt-5 pb-8 sm:pt-8">
         <h1 className="sr-only">Z, a IA da Absolute ZRO</h1>
         {atual ? (

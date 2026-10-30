@@ -43,6 +43,9 @@
  *      O script do painel vem do próprio repositório (apps/hub-web), por
  *      rota do Playwright: a suíte não sai para a internet.
  *
+ * O SET (30/out): no domínio fechado, a quem o portão nega, nada do Set
+ * (item 12a). O resto do Set na tela mora em test/set-zro.js.
+ *
  * O PORTÃO DO LANÇAMENTO (28/out, adendo do PRD: acesso exclusivo do
  * proprietário). O domínio como está HOJE é FECHADO: o build marca
  * cdf-release=closed e CARRO_RELEASE não existe. Então:
@@ -90,7 +93,7 @@ function montarSaida(o = {}) {
   fs.cpSync(path.join(RAIZ, 'public', 'm'), path.join(saida, 'static', 'm'), { recursive: true });
   for (const f of ['apple-touch-icon.png', 'icone-192.png', 'icone-512.png', 'icone-maskable.png', 'app.webmanifest', 'og.jpg'])
     fs.copyFileSync(path.join(RAIZ, 'public', f), path.join(saida, 'static', f));
-  if (!o.semFuncoes) for (const n of ['entrar', 'callback', 'eu', 'sair', 'enviar', 'ia']) {
+  if (!o.semFuncoes) for (const n of ['entrar', 'callback', 'eu', 'sair', 'enviar', 'ia', 'set']) {
     const dir = path.join(saida, 'functions', 'api', 'zro', n + '.func');
     fs.mkdirSync(path.join(dir, 'api', 'zro'), { recursive: true });
     for (const f of [n + '.js', '_zro.js']) fs.copyFileSync(path.join(RAIZ, 'api', 'zro', f), path.join(dir, 'api', 'zro', f));
@@ -343,26 +346,38 @@ function montarSaida(o = {}) {
     await ctx.close();
   }
 
-  /* ============ 11. a Z, a IA da Absolute ZRO, na aba própria ============ */
+  /* ============ 11. a Z, a IA da Absolute ZRO: tela própria, nunca a de entrada (29/out) ============ */
   {
     zro.estado.proximo = { pessoa: Object.assign({}, RITA, { sub: 'zro-46' }), negar: false, adulterar: null };
     const { ctx, p, erros, deFora } = await abrir(DOMINIO, { aceita401: true });
     await telaEntrar(p);
     await Promise.all([p.waitForURL(/\/$/, { timeout: 15000 }).catch(() => {}), p.locator('#lg-zro').click()]);
     await p.waitForFunction(() => typeof ZRO_CONTA !== 'undefined' && ZRO_CONTA && MODO, null, { timeout: 15000 }).catch(() => {});
-    /* conta nova passa pelo cadastro; terminado, a primeira tela é a Z */
+    /* conta nova passa pelo cadastro; terminado, a primeira tela é a tarefa (Feed/Propostas), não a Z */
     await p.evaluate(() => { if (S.tab === 'cadastro') concluirCadastro() });
+    await p.waitForFunction(() => !document.getElementById('z-top').hidden || !document.getElementById('tab-z').hidden, null, { timeout: 15000 }).catch(() => {});
+    await p.waitForTimeout(400);
+    const antes = await p.evaluate(() => { const topo = document.getElementById('z-top'), abas = [...document.querySelectorAll('.top .tabs .tab')];
+      const primeiro = [...document.querySelector('.top .wrap').children].find(e => e.offsetParent);
+      return { tela: S.tab, ia: !!document.querySelector('zro-ia'), script: !!document.querySelector('script[src*="/ia/v1/zro-ia.js"]'),
+        zHidden: document.getElementById('v-z').hidden, topoVisivel: !topo.hidden, topoPrimeiro: primeiro === topo, topoAceso: topo.getAttribute('aria-current'),
+        topoTexto: topo.textContent.trim(), lateralPrimeiro: abas[0] && abas[0].id, lateralUltimo: abas.length && abas[abas.length - 1].id };
+    });
+    t(antes.tela !== 'z' && (antes.tela === 'feed' || antes.tela === 'propostas') && antes.zHidden, '⟶⟶ quem entra cai na tarefa, nunca na Z (' + antes.tela + ')');
+    t(!antes.ia && !antes.script, 'nada da Z monta nem carrega sozinho ao entrar');
+    t(antes.topoVisivel && !antes.topoPrimeiro && antes.topoAceso !== 'true' && antes.topoTexto === '', 'no celular a Z é um anel discreto, sem rótulo, à direita (não o primeiro do topo) e apagado');
+    t(antes.lateralPrimeiro !== 'tab-z' && antes.lateralUltimo === 'tab-z', 'no computador ela é o último item da lateral, nunca o primeiro (' + antes.lateralPrimeiro + ' … ' + antes.lateralUltimo + ')');
+    /* a Z abre só no toque */
+    await p.evaluate(() => show('z'));
     await p.waitForFunction(() => { const z = document.querySelector('zro-ia'); return z && z.shadowRoot && /Rita/.test(z.shadowRoot.textContent) }, null, { timeout: 15000 }).catch(() => {});
     const z = await p.evaluate(() => { const el = document.querySelector('zro-ia'), aba = document.getElementById('v-z'), topo = document.getElementById('z-top');
-      const primeiro = [...document.querySelector('.top .wrap').children].find(e => e.offsetParent);
-      return { existe: !!el, tela: S.tab, dentro: !!el && aba.contains(el) && !aba.hidden && !!aba.offsetParent, topo: !topo.hidden && !!topo.offsetParent && primeiro === topo,
-        atual: topo.getAttribute('aria-current'), lateral: document.querySelector('.top .tabs .tab').id === 'tab-z' && !document.getElementById('tab-z').hidden,
+      return { existe: !!el, tela: S.tab, dentro: !!el && aba.contains(el) && !aba.hidden && !!aba.offsetParent,
+        atual: topo.getAttribute('aria-current'),
         feedLimpo: !document.getElementById('v-feed').querySelector('zro-ia, #z-painel'), api: el && el.getAttribute('api'),
         tema: el && el.getAttribute('tema'), texto: el && el.shadowRoot ? el.shadowRoot.textContent : '', sug: el ? JSON.parse(el.getAttribute('sugestoes')) : [],
         alto: el ? el.getBoundingClientRect().height : 0, acao: !document.getElementById('z-acao').hidden, sem: !document.getElementById('z-sem').hidden } });
-    t(z.existe && z.tela === 'z' && z.dentro, '⟶⟶ quem entra cai na aba da Z, e o painel mora nela (' + z.tela + ')');
-    t(z.topo && z.atual === 'true', 'no celular a Z é o primeiro botão do topo, em destaque, aceso na aba dela');
-    t(z.lateral, 'e no computador é o primeiro item da lateral, antes de Planos');
+    t(z.existe && z.tela === 'z' && z.dentro, '⟶⟶ no toque, a Z abre na tela dela e o painel mora nela (' + z.tela + ')');
+    t(z.atual === 'true', 'e o anel do topo acende enquanto ela está aberta');
     t(z.feedLimpo, 'o Feed volta a ser só o Feed');
     t(z.alto >= 380, 'a Z ocupa a tela da aba (' + Math.round(z.alto) + 'px)');
     t(!z.sem, 'com a conta liberada, sem o "Entrar" da aba');
@@ -399,15 +414,22 @@ function montarSaida(o = {}) {
     await Promise.all([p.waitForURL(/\/$/, { timeout: 15000 }).catch(() => {}), p.locator('#lg-zro').click()]);
     await p.waitForFunction(() => typeof ZRO_CONTA !== 'undefined' && ZRO_CONTA && MODO, null, { timeout: 15000 }).catch(() => {});
     await p.evaluate(() => { if (S.tab === 'cadastro') concluirCadastro() });
+    await p.waitForTimeout(400);
+    t(await p.evaluate(() => S.tab !== 'z' && !document.querySelector('zro-ia')), 'entrou: a tarefa primeiro, a Z fechada');
+    await p.evaluate(() => show('z'));
     await p.waitForFunction(() => !document.getElementById('z-acao').hidden, null, { timeout: 15000 }).catch(() => {});
     const r = await p.evaluate(() => ({ acao: !document.getElementById('z-acao').hidden, texto: document.getElementById('z-reconectar').textContent, tela: S.tab,
       dentro: document.getElementById('v-z').contains(document.getElementById('z-reconectar')) }));
     t(r.acao && r.texto === 'Reconectar com Absolute ZRO' && r.tela === 'z' && r.dentro, '⟶⟶ sem o acesso da Z: "Reconectar com Absolute ZRO", dentro da aba dela (' + r.texto + ')');
     zro.estado.semEscopoIa = false;
+    /* a página de antes fica marcada: a espera é pela página que VOLTA do HUB, não pela que sai */
+    await p.evaluate(() => { window.__antesDoHub = true });
     await Promise.all([p.waitForURL(/\/$/, { timeout: 15000 }).catch(() => {}), p.locator('#z-reconectar').click()]);
-    await p.waitForFunction(() => { const z = document.querySelector('zro-ia'); return z && z.shadowRoot && /Rita/.test(z.shadowRoot.textContent) }, null, { timeout: 15000 }).catch(() => {});
+    await p.waitForFunction(() => !window.__antesDoHub && typeof ZRO_CONTA !== 'undefined' && ZRO_CONTA && typeof S !== 'undefined' && S.tab !== 'entrar', null, { timeout: 20000 }).catch(() => {});
     await p.evaluate(() => { if (S.tab === 'cadastro') concluirCadastro() });
-    t(await p.evaluate(() => { const z = document.querySelector('zro-ia'); return !!z && /Rita/.test(z.shadowRoot.textContent) && document.getElementById('z-acao').hidden && S.tab === 'z' }), 'reconectou pelo HUB e a Z abre de novo, na aba dela');
+    await p.waitForFunction(() => { const z = document.querySelector('zro-ia'); return z && z.shadowRoot && /Rita/.test(z.shadowRoot.textContent) }, null, { timeout: 15000 }).catch(() => {});
+    const volta = await p.evaluate(() => { const z = document.querySelector('zro-ia'); return { ok: !!z && !!z.shadowRoot && /Rita/.test(z.shadowRoot.textContent) && document.getElementById('z-acao').hidden && S.tab === 'z', tela: S.tab, z: !!z, acao: !document.getElementById('z-acao').hidden, url: location.href } });
+    t(volta.ok, 'reconectou pelo HUB e volta para a Z, que a pessoa tinha aberto (' + JSON.stringify(volta) + ')');
     await ctx.close();
   }
 
@@ -429,6 +451,8 @@ function montarSaida(o = {}) {
   {
     /* 12a. anônimo no domínio fechado: a home é vitrine sem porta, e "Entrar" é a página "Em desenvolvimento" */
     const { ctx, p, erros, pedidos } = await abrir(FECHADO, { aceita401: true });
+    t(await p.evaluate(() => document.getElementById('tab-set').hidden && document.getElementById('g-set').hidden && !document.querySelector('zro-set')) && !pedidos.some(u => /\/api\/zro\/set/.test(u)),
+      'fechado: nada do Set (nem a entrada, nem o widget, nem pedido)');
     const home = await p.evaluate(() => { const bs = [...document.querySelectorAll('.hprod .hcta .entrar-cta')];
       return { tela: S.tab, classe: document.documentElement.classList.contains('fechado'), criar: document.getElementById('hn-criar').hidden,
         cta: bs.map(b => ({ txt: b.textContent.trim(), vis: !!b.offsetParent, ir: b.dataset.ir, lg: b.dataset.lg })),
@@ -540,12 +564,12 @@ function montarSaida(o = {}) {
     const d = await p.evaluate(() => ({ tela: S.tab, liberado: ZRO_CONTA && ZRO_CONTA.liberado, entrou: localStorage.getItem('cdf-entrou'), classe: document.documentElement.classList.contains('fechado'),
       abaZ: !document.getElementById('tab-z').hidden, pode: zroPodeEnviar(), fechado: !document.getElementById('v-fechado').hidden }));
     t(d.liberado === true && d.entrou === '1' && !d.classe && !d.fechado, '⟶⟶ PERMITIDO — a conta da lista entra (' + d.tela + ')');
-    t(d.tela === 'z' && d.abaZ && d.pode, 'cai na Z, com a aba, e pode levar jobs ao HUB');
+    t(d.tela !== 'z' && d.abaZ && d.pode, 'cai na tarefa (não na Z), com a entrada da Z à mão, e pode levar jobs ao HUB (' + d.tela + ')');
     /* recarregar: a claim é relida e a tela guardada abre */
     await p.reload({ waitUntil: 'load' });
     await p.waitForFunction(() => !document.getElementById('splash') && typeof ZRO_CONTA !== 'undefined' && ZRO_CONTA, null, { timeout: 20000 }).catch(() => {});
     await p.waitForTimeout(600);
-    t(await p.evaluate(() => S.tab === 'z' && !document.documentElement.classList.contains('fechado')), 'recarregou: continua dentro, na Z');
+    t(await p.evaluate(() => S.tab !== 'z' && S.tab !== 'fechado' && !document.documentElement.classList.contains('fechado')), 'recarregou: continua dentro, na tela da tarefa (a Z não abre sozinha)');
     /* o acesso sai da lista no HUB: a sessão antiga deste aparelho não vale mais */
     zro.estado.contas.get('zro-dono').acesso = 'closed';
     await p.reload({ waitUntil: 'load' });

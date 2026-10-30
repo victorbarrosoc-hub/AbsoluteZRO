@@ -2473,3 +2473,25 @@
     min-height: calc(100dvh - 70px - 64px - env(safe-area-inset-bottom) - 24px);
   }
 }
+
+/* O Set da Absolute ZRO (components/set-zro.tsx): a folha veste os tokens do estúdio, nos três temas. As variáveis
+   ficam no .studio-shell (onde os tokens moram); o widget copia do <zro-set> para a folha, que mora no <body>. */
+.studio-shell {
+  --zro-set-tinta: var(--text);
+  --zro-set-apoio: var(--text-2);
+  --zro-set-apagado: var(--text-3);
+  --zro-set-linha: var(--hairline);
+  --zro-set-linha-forte: var(--hairline-strong);
+  --zro-set-superficie: var(--surface);
+  --zro-set-superficie-2: var(--surface-2);
+  --zro-set-superficie-3: var(--surface-3);
+  --zro-set-vidro: var(--glass);
+  --zro-set-fundo: color-mix(in srgb, var(--surface) 96%, transparent);
+  --zro-set-acento: var(--primary-bg);
+  --zro-set-acento-tinta: var(--primary-fg);
+  --zro-set-online: var(--ok);
+  --zro-set-ausente: var(--warn);
+  --zro-set-perigo: var(--err-text);
+  --zro-set-raio: var(--r-lg);
+  --zro-set-fonte: inherit;
+}

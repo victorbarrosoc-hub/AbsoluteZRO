@@ -74,6 +74,7 @@
         <symbol id="i-star-fill" viewBox="0 0 24 24"><path d="M12 3.8l2.5 5.1 5.6.8-4 3.9.9 5.6-5-2.6-5 2.6.9-5.6-4-3.9 5.6-.8z" fill="currentColor" /></symbol>
         <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" /></symbol>
         <symbol id="i-z" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /></symbol>
+        <symbol id="i-set" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2" /><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5" /><circle cx="17" cy="9" r="2.4" /><path d="M15.5 14.2c2.6-.4 4.6 1.2 5 4" /></symbol>
         <symbol id="i-scripts" viewBox="0 0 24 24"><rect x="4.5" y="3.5" width="15" height="17" rx="3" /><path d="M8.5 9h7M8.5 12.5h7M8.5 16h4" /></symbol>
         <symbol id="i-tp" viewBox="0 0 24 24"><path d="M7 5.8v12.4a1 1 0 0 0 1.5.86l9.8-6.2a1 1 0 0 0 0-1.72L8.5 4.94A1 1 0 0 0 7 5.8z" /></symbol>
         <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l2-1.6-2-3.4-2.4.9a7.5 7.5 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.4A7.5 7.5 0 0 0 7 6.4l-2.4-.9-2 3.4 2 1.6a7.6 7.6 0 0 0 0 3l-2 1.6 2 3.4 2.4-.9a7.5 7.5 0 0 0 2.6 1.5l.4 2.4h4l.4-2.4a7.5 7.5 0 0 0 2.6-1.5l2.4.9 2-3.4z" /></symbol>
@@ -88,7 +89,7 @@
       </defs>
     </svg>
 
-    <!-- ═════════ Z, a IA da Absolute ZRO: a primeira aba e a tela de entrada (app/js/z.js) ═════════ -->
+    <!-- ═════════ Z, a IA da Absolute ZRO (app/js/z.js): tela própria (#z), aberta pelo anel do topo de Roteiros ═════════ -->
     <section class="view view-z" data-tab="z" hidden>
       <section class="z-painel" id="zPainel" aria-label="Z, a IA da Absolute ZRO"></section>
     </section>
@@ -98,6 +99,8 @@
       <header class="topbar">
         <h2 class="topbar-title">Roteiros</h2>
         <div class="topbar-actions">
+          <!-- a Z, discreta (titular, 29/10/2026): um anel no topo de Roteiros, não uma aba nem a entrada -->
+          <button class="icon-btn z-atalho" data-go="z" aria-label="Z, a IA da Absolute ZRO" title="Z, a IA da Absolute ZRO"><svg class="icon"><use href="#i-z" /></svg></button>
           <button class="icon-btn" id="remoteMenu" aria-label="Controle remoto"><svg class="icon"><use href="#i-remote" /></svg></button>
           <button class="icon-btn" id="searchToggle" aria-label="Buscar"><svg class="icon"><use href="#i-search" /></svg></button>
           <button class="icon-btn is-blue" id="newScript" aria-label="Novo roteiro"><svg class="icon"><use href="#i-plus" /></svg></button>
@@ -186,10 +189,11 @@
 
     <!-- ═════════ Barra de abas ═════════ -->
     <nav class="tabbar" aria-label="Seções">
-      <button class="tab" data-go="z"><svg class="icon"><use href="#i-z" /></svg><span>Z</span></button>
       <button class="tab" data-go="roteiros"><svg class="icon"><use href="#i-scripts" /></svg><span>Roteiros</span></button>
       <button class="tab" data-go="tp"><svg class="icon"><use href="#i-tp" /></svg><span>Teleprompter</span></button>
       <button class="tab" data-go="ajustes"><svg class="icon"><use href="#i-gear" /></svg><span>Ajustes</span><span class="balao" data-balao="ajustes" hidden></span></button>
+      <!-- o Set da Absolute ZRO (app/js/set.js): a aba em comum do ecossistema, aparece quando o Set responde -->
+      <button class="tab" type="button" data-set hidden><svg class="icon"><use href="#i-set" /></svg><span>Set</span><span class="balao" data-set-balao hidden></span></button>
     </nav>
 
     <!-- ═════════ Editor ═════════ -->

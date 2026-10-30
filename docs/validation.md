@@ -15,6 +15,58 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## Integração: a Z discreta e o Set em todas as plataformas (30/10/2026)
+
+Os dois ramos de 30/10 juntos ("a Z nunca é a primeira tela" e "Set em todas as plataformas"). Em todo app a entrada
+continua a tarefa, a Z segue discreta (nada dela carrega antes do toque) e o Set tem a entrada dele sem ser a entrada.
+Barras de baixo do iPhone com no máximo cinco itens. Bancos e portas próprios: `zro_integra_zset_test`,
+`zro_integra_zset_e2e_test` (porta 3281) e `maestro_test_e2e_integra` (porta 9717).
+
+| Plataforma        | Barra do iPhone (o Set e a Z)                                                                  | Verificação                                                         | Resultado                                                                      |
+| ----------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Raiz e HUB        | app: Apps, Projetos, Planos, Conta; Z no anel do topo (o `/app` não tem Set; o site tem)       | lint, `format:check`, `typecheck`, `npm test`, build, `test:e2e`    | ok; 358/358 (2 de banco cruzado caíram em paralelo e passaram sozinhas); 49/49 |
+| SOBEDESCE celular | Início, Drive, Aparelhos, (Referências), Criar; Set e Z no topo (e no canto da tela sem Drive) | `npm test` (motor e celular, com `set-celular.test.js`)             | 791/791 (+4 pulados)                                                           |
+| SOBEDESCE site    | Set no cabeçalho, antes do anel da Z; entrada em `/conta`                                      | `web`: lint, tipos, `npm test`                                      | ok, ok, 301/301                                                                |
+| Synquei           | Início, Mídia, Sincronizar, Linha, Exportar; Set e Z no canto do Início (Set no menu lateral)  | `npm test`                                                          | 153/153 (+6 pulados, Electron)                                                 |
+| TPeasy            | Roteiros, Teleprompter, Ajustes, Set; Z no anel do topo de Roteiros                            | `node --test tests/*.test.mjs`                                      | 61/61                                                                          |
+| Relay             | sem Z; Set no fim das páginas do topo                                                          | `npm test` (com `npm ci` só do Relay)                               | 57/57                                                                          |
+| Carro do Freela   | 3 + Menu + 3 (não mudou); Set no menu; Z no anel do topo; lateral termina em Set e Z           | `test:api`; bateria inteira (`run.js`)                              | 47/47; 89/89 (`conta-zro` e `sem-zoom` só sozinhas, pelo teto de tempo)        |
+| NOSSOM            | Início, Projetos, Estúdio, Conta, Set; Z no anel do topo; lateral termina em Set e Z           | `npm test`, tipos, `format:check`, build, e2e inteiro               | 124/124, ok, ok, ok; 65/65 (+26 pulados)                                       |
+| AEON              | dock: Mídia, Revisar, Edição, Entrega, Set; Z no ícone da barra                                | `npm test` (com `npm run vendor`)                                   | 140/140                                                                        |
+| Revela            | dock: LUT, Lab, CST, Entrega, Converter; Set e Z no topo                                       | `npm test`                                                          | 180/180                                                                        |
+| Maestro           | não mudou (Set na pílula do topo, Z discreta)                                                  | `npm test`; `e2e/set.spec.ts` (`E2E_DB_SUFIXO=integra`, porta 9717) | 430/430; 6/6 (computador, iPhone e Safari)                                     |
+
+Conflitos e como ficaram: SOBEDESCE celular (`tabs.js`), Synquei (`main.js`, `app.css`, `sw.js`) e Revela tinham seis
+itens na barra com o Set; o Set foi para o topo, ao lado da Z (o Synquei liga a entrada nova a cada desenho do Início,
+`pintarSet`). TPeasy e AEON: o Set fica como a última aba e a Z continua montando só no toque. Carro (`template.html`) e
+NOSSOM (`studio.tsx`): Set antes da Z na lateral. Site do SOBEDESCE (`abas.tsx`): o controle Z · Conta tinha saído; o
+Set virou botão do cabeçalho (`BotaoSet`). Testes que esperavam o Set como último item ou a Z como entrada foram
+acertados para a regra nova. Achado no caminho: o teste da família no NOSSOM e o `mapa` do Carro ainda esperavam a
+família sem o Maestro (lançado em 29/10). Capturas (claro, 1440 e 393 px) fora do repositório. Não rodou: o site do
+SOBEDESCE no navegador (precisa de sessão da Absolute ZRO e do banco), os apps de computador em Electron e iPhone de
+verdade.
+
+## A Z nunca é a primeira tela (30/10/2026)
+
+Regra do titular (29/10/2026; Plano de Integração §7–8): em todas as plataformas quem entra cai na tarefa; a Z é uma
+entrada discreta, nunca aba principal nem aberta sozinha, e nada dela carrega antes do toque. Banco e portas próprios
+no e2e do HUB (`zro_zentrada_e2e_test`, porta 3271).
+
+| Plataforma      | Verificação                                                                                             | Resultado                                                                                                                                                           |
+| --------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Raiz            | lint, `format:check`, `typecheck`, `scan-secrets`                                                       | ok                                                                                                                                                                  |
+| HUB             | `npm run build`; `tests/e2e/z-entrada.spec.ts` (novo) e `z-digitando.spec.ts`                           | build ok; 4/4 (HUB em `/inicio` com a IA no fim do grupo; `/app` nos apps, `/app/apps` redireciona, Z em `/app/ia` só no toque, 393 px com 4 abas e o anel no topo) |
+| HUB             | `npm run test:e2e` inteiro                                                                              | 46/49; as 3 que caíram (a11y, admin, sso) passaram de novo sozinhas — axe estourou os 120 s com outra build na máquina                                              |
+| SOBEDESCE       | `npm test` (computador e celular), `web: npm test`                                                      | 790/790 (+4 pulados) e web 293/293; `entrada.test.js`, `entrada-celular.test.js` e `web/tests/entrada.test.mts` cobrem a entrada sem a Z                            |
+| Synquei, TPeasy | `npm test` / `node --test tests/*.test.mjs`                                                             | 139/139 (+5 pulados, Electron) e 54/54                                                                                                                              |
+| Carro do Freela | `conta-zro` e `run.js colisao contraste movimento doca versoes seguranca menu-recolhivel feed feedback` | 148/148 (cai na tarefa, nada da Z montado, anel apagado, `#tab-z` último; reconectar volta à Z) e 9/9                                                               |
+| NOSSOM          | `npm test`, `tsc`, `next build --webpack`, e2e `zro-ia` e `install-navigation`                          | 120/120, ok, ok, 5/5 e 3/4 (a falha é anterior: a família agora tem o Maestro)                                                                                      |
+| AEON, Revela    | `node --test test/*.test.js`                                                                            | 126/126 e 167/167 (primeira tela Mídia / LUT; Z no ícone da barra / anel do topo; `#z` e `/inicio` diretos)                                                         |
+
+Capturas da primeira tela (claro, 1440 e 393 px) de HUB (site e app), SOBEDESCE (computador e celular), Synquei, TPeasy,
+Carro do Freela, NOSSOM, AEON e Revela: nenhuma monta `<zro-ia>` nem pede o script da Z ao abrir. Não rodou: o
+app de computador do SOBEDESCE/Synquei/AEON em Electron (`--smoke`), nem iPhone de verdade.
+
 ## Set: presença e conversas (29/10/2026, ADR 0032)
 
 Migração `0035_set.sql` (renumerada de 0032: 0031–0034 já são de outros ramos). Banco de teste próprio
@@ -33,6 +85,29 @@ Migração `0035_set.sql` (renumerada de 0032: 0031–0034 já são de outros ra
 Privacidade conferida nos testes: outra organização não aparece; invisível não grava presença; "quem vê" e "visto há"
 valem; perfil escondido não é achado pelo @; e-mail não aparece em nenhuma resposta nem no console; mensagem de
 bloqueado some nos dois sentidos; `zro_app` não escreve direto em nenhuma tabela do Set.
+
+## Set em todas as plataformas (30/10/2026)
+
+A aba em comum ("Set") em SOBEDESCE (site e celular), Synquei, TPeasy, Relay, Carro do Freela, NOSSOM, AEON e Revela;
+tabela em [set.md](integration-contracts/set.md). Telas (claro, computador e 393 px; escuro em Carro, NOSSOM, AEON,
+Revela, Relay, Synquei e TPeasy) gravadas fora do repositório.
+
+| Verificação                                 | Resultado                                                                                                                                                    |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Raiz: lint, formatação, tipos, build do HUB | ok                                                                                                                                                           |
+| Raiz: `npm test` (banco `zro_setall_test`)  | **358/358** em 41 arquivos; `e2e/set.spec.ts` do HUB 5/5 (Chromium e WebKit) com o widget novo                                                               |
+| SOBEDESCE site: lint, tipos, `npm test`     | ok; **299/299**; `zro-set.test.mts`: login com `zro.set` e sem ele, Bearer só no servidor, ETag/304, origem, caminhos                                        |
+| SOBEDESCE celular                           | `test/set-celular.test.js` (Chromium com a CSP do `/app/`): última aba, balão, folha tela cheia, tinta do app                                                |
+| Synquei / TPeasy                            | 153/153 (5 pulados sem Electron) / 60/60, com os testes do repasse e da entrada                                                                              |
+| Relay                                       | `set.test.js` 10/10 (login desligado com o site fechado); telas 5/5 com o servidor local sem login                                                           |
+| Carro do Freela                             | `test:api` 47/47; `conta-zro` 145/145 rodada direto (275 s: o teto de 240 s do `run.js` estoura com a máquina cheia); `set-zro` 20/20 (computador e celular) |
+| NOSSOM: tipos, `npm test`, e2e              | ok; 121/121; `set.spec.ts` 3/3, `zro-access` (o portão cobre `/api/zro/set`) e `zro-ia` 11/11                                                                |
+| AEON / Revela                               | 138/138 / 179/179 (repasse, 403 do portão, dock e folha com a identidade do app)                                                                             |
+
+Achado no caminho: no NOSSOM a folha não trocava de tema ao trocar o tema do estúdio (o React aplica o atributo `tema`
+do filho antes do `data-theme` do pai); o widget agora recopia a identidade depois da mudança e ao abrir.
+Não rodado: `vendor.test.js` do Relay (sem `node_modules` neste ambiente) e o site do SOBEDESCE no navegador (só o
+componente e a rota, pelos testes).
 
 ## Synquei em synquei.absolutezro.com (29/10/2026, ADR 0025)
 

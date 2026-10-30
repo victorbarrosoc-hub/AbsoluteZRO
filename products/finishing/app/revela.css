@@ -1596,6 +1596,33 @@ html[data-sentido='volta'] {
   margin-top: 20px;
 }
 
+/* a Z, discreta (titular, 29/10/2026; Plano de Integração §7–8): um anel no topo, ao lado da conta; não é aba do dock
+   nem a tela de entrada (o login volta para /lut) */
+.topo-z {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin-left: auto;
+  border-radius: 999px;
+  color: var(--texto);
+  opacity: 0.72;
+  text-decoration: none;
+  transition: opacity 0.2s, background-color 0.2s;
+}
+.topo-z:hover,
+.topo-z[aria-current='page'] {
+  opacity: 1;
+  background: rgb(var(--t) / 0.08);
+}
+.topo-z .aba-icone svg {
+  width: 18px;
+  height: 18px;
+}
+.topo .topo-z + .conta {
+  margin-left: 0;
+}
+
 /* ─────────── dock de ferramentas (embaixo, como as páginas do DaVinci) ─────────── */
 
 .topo .conta {
@@ -2836,4 +2863,61 @@ html:not(.menu-aberto):not(.menu-gaveta) main.tela--z {
 }
 .qc.reprovado {
   background: rgb(255 69 58 / 0.12);
+}
+
+/* ─────────── o Set da Absolute ZRO (app/set.js): um ícone no topo, antes do anel da Z, e a folha com a cara da Revela ─────────── */
+.topo-set {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--texto);
+  opacity: 0.72;
+  cursor: pointer;
+  transition: opacity 0.2s, background-color 0.2s;
+}
+.topo-set[hidden] {
+  display: none;
+}
+.topo-set:hover,
+.topo-set[aria-expanded='true'] {
+  opacity: 1;
+  background: rgb(var(--t) / 0.08);
+}
+.topo-set .aba-icone svg {
+  width: 18px;
+  height: 18px;
+}
+/* com o Set à vista, ele empurra; a Z vem colada nele */
+.topo .topo-set:not([hidden]) + .topo-z {
+  margin-left: 0;
+}
+.topo-set .balao {
+  position: absolute;
+  box-shadow: 0 0 0 2px rgb(var(--chao));
+  top: -2px;
+  right: -4px;
+}
+:root {
+  --zro-set-tinta: var(--texto);
+  --zro-set-apoio: var(--mudo);
+  --zro-set-apagado: var(--fraco);
+  --zro-set-linha: var(--linha);
+  --zro-set-linha-forte: var(--linha-forte);
+  --zro-set-superficie: var(--superficie);
+  --zro-set-superficie-2: var(--fundo);
+  --zro-set-superficie-3: var(--superficie-2);
+  --zro-set-vidro: rgb(var(--chao) / 0.72);
+  --zro-set-fundo: rgb(var(--chao) / 0.97);
+  --zro-set-acento: var(--texto);
+  --zro-set-acento-tinta: var(--fundo);
+  --zro-set-perigo: var(--erro);
+  --zro-set-raio: var(--raio-g);
+  --zro-set-fonte: var(--fonte);
 }

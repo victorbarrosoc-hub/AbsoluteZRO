@@ -25,6 +25,8 @@ describe('o que o site publica', () => {
     assert.deepEqual(
       v.rewrites.map((r) => [r.source, r.destination]),
       [
+        // o repasse do Set (api/_set.js, que confere a liberação como a Z)
+        ['/api/zro/set/:caminho*', '/api/zro/set?c=:caminho*'],
         ['/app/:caminho*', '/api/app?caminho=app/:caminho*'],
         ['/src/:caminho*', '/api/app?caminho=src/:caminho*'],
         ['/presets/:caminho*', '/api/app?caminho=presets/:caminho*'],

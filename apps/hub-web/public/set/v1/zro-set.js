@@ -1,4 +1,4 @@
-/* global HTMLElement, document, location, URLSearchParams, customElements, CustomEvent, fetch, matchMedia, MutationObserver, addEventListener, removeEventListener, clearTimeout, structuredClone */
+/* global HTMLElement, document, location, URLSearchParams, customElements, CustomEvent, fetch, matchMedia, MutationObserver, addEventListener, removeEventListener, clearTimeout, structuredClone, getComputedStyle, navigator, AbortSignal, queueMicrotask */
 /*
  * <zro-set> · o Set da Absolute ZRO dentro de qualquer plataforma do ecossistema (29/10/2026, ADR 0032).
  * Quem da equipe e dos contatos está no Set agora (e em qual app), e as conversas: diretas pelo @ e do projeto. Uma
@@ -9,26 +9,57 @@
  *   <script type="module" src="https://absolutezro.com/set/v1/zro-set.js"></script>
  *   <zro-set api="/api/zro/set"></zro-set>
  *
- * Atributos: api (base, sem barra no fim; no HUB "/api/v1/set"), modo (botao|pagina, padrão botao), tema
- * (claro|escuro|auto; auto segue o html[data-theme] do app ou o sistema), projeto (id do projeto canônico aberto no app:
- * a conversa dele fica no topo), abrir (pessoa:<id> | projeto:<id> | conversa:<id> | ajustes: abre direto).
- * Eventos: zro-set:sem-login (401: o app pede login de novo; a pílula some), zro-set:estado (detail { online, naoLidas }).
+ * Atributos: api (base, sem barra no fim; no HUB "/api/v1/set"), modo (botao|pagina|folha, padrão botao; folha: sem
+ * pílula, o app tem a própria entrada, a "aba em comum", e chama abrirSet()), tema (claro|escuro|auto; auto segue o
+ * html[data-theme], html[data-tema] ou a classe dark/light do app, senão o sistema), projeto (id do projeto canônico aberto no app: a
+ * conversa dele fica no topo), abrir (pessoa:<id> | projeto:<id> | conversa:<id> | ajustes: abre direto).
+ * Eventos: zro-set:sem-login (401: o app pede login de novo; a pílula some), zro-set:estado (detail { online, naoLidas,
+ * pedidos, invisivel }), zro-set:aberto e zro-set:fechado (a folha abriu ou fechou). Métodos: abrirSet(), fecharSet().
  * No modo página, o elemento ganha data-conversa enquanto uma conversa está aberta.
+ * Identidade do app (30/10/2026): propriedades CSS herdadas, em :root ou no próprio <zro-set> (o widget copia para a
+ * folha, que mora no <body>): --zro-set-tinta, -apoio, -apagado, -linha, -linha-forte, -superficie, -superficie-2,
+ * -superficie-3, -vidro, -fundo, -acento, -acento-tinta, -online, -ausente, -perigo, -raio (folha), -raio-controle
+ * (pílula e botões) e -fonte. Sem elas, o visual da Absolute ZRO. Partes: zro-set::part(pilula|balao) e
+ * zro-set-folha::part(painel).
  * Presença: uma batida a cada 45 s com a aba visível ("ativo"), a cada 3 min escondida ("ausente") e "saiu" ao fechar.
  * Com a folha aberta, o estado é relido a cada 12 s; com uma conversa aberta, as mensagens novas a cada 4 s. Toda
  * leitura repetida manda If-None-Match (ETag da API): sem mudança, 304 sem corpo. Nada de serviço pago de tempo real.
  * Sem dependências, sem cookies de terceiros, respeita "reduzir movimento". Mudou, suba VERSAO (vai no data-versao).
  */
-export const VERSAO = '2026.10.29-set'
+export const VERSAO = '2026.10.30-set'
 
 const BATIDA_MS = 45_000
 const BATIDA_ESCONDIDA_MS = 180_000
 const ESTADO_ABERTO_MS = 12_000
 const CONVERSA_MS = 4_000
 
+/** As propriedades de identidade que o app pode dar (ver o cabeçalho): copiadas do <zro-set> para a folha. */
+const VARS_TEMA = [
+  'tinta',
+  'apoio',
+  'apagado',
+  'linha',
+  'linha-forte',
+  'superficie',
+  'superficie-2',
+  'superficie-3',
+  'vidro',
+  'fundo',
+  'acento',
+  'acento-tinta',
+  'online',
+  'ausente',
+  'perigo',
+  'raio',
+  'raio-controle',
+  'fonte',
+].map((n) => `--zro-set-${n}`)
+
 const CSS = `
-:host{--ink:#1d1d1f;--mute:#6e6e73;--faint:#8e8e93;--line:rgb(0 0 0/.08);--line2:rgb(0 0 0/.14);--surf:#fff;--surf2:#f5f5f7;--surf3:#ebebf0;--vidro:rgb(255 255 255/.72);--folha:rgb(250 250 252/.985);--eu:#1d1d1f;--euInk:#fff;--on:#30d158;--aus:#ff9f0a;--perigo:#d70015;--ease:cubic-bezier(.2,.8,.2,1);display:inline-block;position:relative;color:var(--ink);font:inherit;font-size:15px;line-height:1.4;-webkit-font-smoothing:antialiased}
-:host([data-escuro]){--ink:#f5f5f7;--mute:#aeaeb2;--faint:#8e8e93;--line:rgb(255 255 255/.1);--line2:rgb(255 255 255/.18);--surf:rgb(255 255 255/.06);--surf2:rgb(255 255 255/.08);--surf3:rgb(255 255 255/.14);--vidro:rgb(40 40 44/.6);--folha:rgb(24 24 27/.985);--eu:#f5f5f7;--euInk:#1d1d1f;--perigo:#ff453a}
+:host{--ink:var(--zro-set-tinta,#1d1d1f);--mute:var(--zro-set-apoio,#6e6e73);--faint:var(--zro-set-apagado,#8e8e93);--line:var(--zro-set-linha,rgb(0 0 0/.08));--line2:var(--zro-set-linha-forte,rgb(0 0 0/.14));--surf:var(--zro-set-superficie,#fff);--surf2:var(--zro-set-superficie-2,#f5f5f7);--surf3:var(--zro-set-superficie-3,#ebebf0);--vidro:var(--zro-set-vidro,rgb(255 255 255/.72));--folha:var(--zro-set-fundo,rgb(250 250 252/.985));--eu:var(--zro-set-acento,#1d1d1f);--euInk:var(--zro-set-acento-tinta,#fff);--on:var(--zro-set-online,#30d158);--aus:var(--zro-set-ausente,#ff9f0a);--perigo:var(--zro-set-perigo,#d70015);--raio:var(--zro-set-raio,22px);--raioC:var(--zro-set-raio-controle,999px);--ease:cubic-bezier(.2,.8,.2,1);display:inline-block;position:relative;color:var(--ink);font:inherit;font-family:var(--zro-set-fonte,inherit);font-size:15px;line-height:1.4;-webkit-font-smoothing:antialiased}
+:host([data-escuro]){--ink:var(--zro-set-tinta,#f5f5f7);--mute:var(--zro-set-apoio,#aeaeb2);--faint:var(--zro-set-apagado,#8e8e93);--line:var(--zro-set-linha,rgb(255 255 255/.1));--line2:var(--zro-set-linha-forte,rgb(255 255 255/.18));--surf:var(--zro-set-superficie,rgb(255 255 255/.06));--surf2:var(--zro-set-superficie-2,rgb(255 255 255/.08));--surf3:var(--zro-set-superficie-3,rgb(255 255 255/.14));--vidro:var(--zro-set-vidro,rgb(40 40 44/.6));--folha:var(--zro-set-fundo,rgb(24 24 27/.985));--eu:var(--zro-set-acento,#f5f5f7);--euInk:var(--zro-set-acento-tinta,#1d1d1f);--perigo:var(--zro-set-perigo,#ff453a)}
+/* modo folha: o app tem a própria entrada (aba, item do menu, botão do dock) e chama abrirSet(); o elemento não aparece */
+:host([modo=folha]){display:none!important}
 :host([modo=pagina]){display:block}
 :host([data-fora]){display:none!important}
 *{box-sizing:border-box;margin:0}
@@ -39,7 +70,7 @@ button{cursor:pointer}
 :focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 /* a pílula da barra de cima: vidro, rostos de quem está online e o balão */
-.pilula{position:relative;display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px 0 6px;border:1px solid var(--line2);border-radius:999px;background:var(--vidro);-webkit-backdrop-filter:blur(18px) saturate(1.6);backdrop-filter:blur(18px) saturate(1.6);box-shadow:inset 0 1px 0 rgb(255 255 255/.35);font-size:.8rem;font-weight:600;letter-spacing:-.01em;white-space:nowrap;transition:border-color .2s,transform .2s var(--ease)}
+.pilula{position:relative;display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 12px 0 6px;border:1px solid var(--line2);border-radius:var(--raioC);background:var(--vidro);-webkit-backdrop-filter:blur(18px) saturate(1.6);backdrop-filter:blur(18px) saturate(1.6);box-shadow:inset 0 1px 0 rgb(255 255 255/.35);font-size:.8rem;font-weight:600;letter-spacing:-.01em;white-space:nowrap;transition:border-color .2s,transform .2s var(--ease)}
 .pilula:hover{border-color:var(--faint)}.pilula:active{transform:scale(.97)}
 .pilula[data-vazia]{padding-left:10px}
 .rostos{display:inline-flex}.rostos .av{width:22px;height:22px;font-size:.6rem;margin-left:-7px;box-shadow:0 0 0 2px var(--surf2)}.rostos .av:first-child{margin-left:0}
@@ -56,19 +87,19 @@ button{cursor:pointer}
 .av-wrap i[data-e=ausente]{background:var(--aus)}.av-wrap i[data-e=offline]{display:none}
 .av[data-proj]{border-radius:10px;background:var(--ink);color:var(--surf2)}
 :host([data-escuro]) .av[data-proj]{background:var(--surf3);color:var(--ink)}
-/* a folha: lateral no computador, de baixo no celular */
+/* a folha: lateral no computador; no celular, a tela toda (como a folha grande do iOS, com o topo do app aparecendo) */
 .folha{position:fixed;inset:0;z-index:2147483000;pointer-events:none}
 .folha[data-on]{pointer-events:auto}
 .veu{position:absolute;inset:0;border:0;background:rgb(0 0 0/.22);opacity:0}
 .folha[data-on] .veu{opacity:1}
 .painel{display:flex;flex-direction:column;min-height:0;color:var(--ink)}
-.folha .painel{position:absolute;top:10px;right:10px;bottom:10px;width:min(420px,calc(100vw - 20px));border:1px solid var(--line);border-radius:22px;background:var(--folha);-webkit-backdrop-filter:blur(30px) saturate(1.8);backdrop-filter:blur(30px) saturate(1.8);box-shadow:0 30px 80px rgb(0 0 0/.18);overflow:hidden;translate:calc(100% + 20px) 0;visibility:hidden}
+.folha .painel{position:absolute;top:10px;right:10px;bottom:10px;width:min(420px,calc(100vw - 20px));border:1px solid var(--line);border-radius:var(--raio);background:var(--folha);-webkit-backdrop-filter:blur(30px) saturate(1.8);backdrop-filter:blur(30px) saturate(1.8);box-shadow:0 30px 80px rgb(0 0 0/.18);overflow:hidden;translate:calc(100% + 20px) 0;visibility:hidden}
 .folha[data-on] .painel{translate:0 0;visibility:visible}
-@media (max-width:600px){.folha .painel{top:auto;left:0;right:0;bottom:0;width:100%;height:min(92dvh,760px);border-radius:22px 22px 0 0;translate:0 102%;padding-bottom:env(safe-area-inset-bottom)}}
+@media (max-width:600px){.folha .painel{top:auto;left:0;right:0;bottom:0;width:100%;height:calc(100dvh - max(env(safe-area-inset-top),12px) - 8px);border-radius:var(--raio) var(--raio) 0 0;translate:0 102%;padding-bottom:env(safe-area-inset-bottom)}}
 @media (prefers-reduced-motion:no-preference){.veu{transition:opacity .3s var(--ease)}.folha .painel{transition:translate .42s var(--ease),visibility 0s .42s}.folha[data-on] .painel{transition:translate .42s var(--ease),visibility 0s}.vista{animation:entra .28s var(--ease) both}}
 @keyframes entra{from{opacity:0;translate:0 4px}}
 /* modo página (/set no HUB): lista e conversa lado a lado quando cabe */
-:host([modo=pagina]) .painel{min-height:min(720px,calc(100dvh - 160px));border:1px solid var(--line);border-radius:22px;background:var(--surf);overflow:hidden;container-type:inline-size}
+:host([modo=pagina]) .painel{min-height:min(720px,calc(100dvh - 160px));border:1px solid var(--line);border-radius:var(--raio);background:var(--surf);overflow:hidden;container-type:inline-size}
 .colunas{flex:1;display:grid;grid-template-columns:minmax(0,1fr);min-height:0}
 :host([modo=pagina]) .colunas{grid-template-columns:minmax(280px,360px) minmax(0,1fr)}
 :host([modo=pagina]) .col-lista{border-right:1px solid var(--line)}
@@ -103,7 +134,7 @@ button{cursor:pointer}
 .vazio{display:grid;justify-items:center;gap:12px;padding:36px 20px;color:var(--mute);text-align:center}
 .vazio .sinal{display:grid;place-items:center;width:56px;height:56px;border-radius:50%;background:var(--surf3);color:var(--faint)}
 /* botões de vidro (como a .glass-btn da central) */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:34px;padding:0 14px;border:1px solid var(--line2);border-radius:999px;background:var(--vidro);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:inset 0 1px 0 rgb(255 255 255/.3);font-size:.84rem;font-weight:600;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:34px;padding:0 14px;border:1px solid var(--line2);border-radius:var(--raioC);background:var(--vidro);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:inset 0 1px 0 rgb(255 255 255/.3);font-size:.84rem;font-weight:600;white-space:nowrap}
 .btn:hover{border-color:var(--faint)}
 .btn[data-tinta]{border-color:transparent;background:var(--eu);color:var(--euInk);box-shadow:inset 0 1px 0 rgb(255 255 255/.25),0 6px 16px rgb(0 0 0/.16)}
 .btn[data-perigo]{color:var(--perigo)}
@@ -207,7 +238,7 @@ function av(p, o = {}) {
   const t = o.proj ? `<span class="av" data-proj aria-hidden="true">${esc(iniciais(p.titulo || p.nome))}</span>` : ''
   if (t) return t
   const img = p.foto ? `<img src="${esc(p.foto)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-foto>` : esc(iniciais(p.nome))
-  return `<span class="av" aria-hidden="true">${img}</span>`
+  return `<span class="av" aria-hidden="true" data-ini="${esc(iniciais(p.nome))}">${img}</span>`
 }
 function avComPonto(p) {
   return `<span class="av-wrap">${av(p)}<i data-e="${esc(p.estado || 'offline')}"></i></span>`
@@ -302,6 +333,13 @@ class ZroSet extends HTMLElement {
   get pagina() {
     return this.getAttribute('modo') === 'pagina'
   }
+  /** Só a folha: a entrada é do app (a aba em comum), que chama abrirSet(). */
+  get soFolha() {
+    return this.getAttribute('modo') === 'folha'
+  }
+  get aberto() {
+    return this.s.aberto
+  }
 
   connectedCallback() {
     this.dataset.versao = VERSAO
@@ -312,7 +350,7 @@ class ZroSet extends HTMLElement {
     this.onTema = () => this.aplicarTema()
     this.mq.addEventListener?.('change', this.onTema)
     this.mo = new MutationObserver(this.onTema)
-    this.mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] })
+    this.mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-tema', 'class'] })
     this.onVis = () => this.batida(true)
     this.onSai = () => this.sair()
     this.onTecla = (e) => {
@@ -343,11 +381,34 @@ class ZroSet extends HTMLElement {
   aplicarTema() {
     const t = this.tema
     const h = document.documentElement
+    // o tema do app: html[data-theme] (dark|light), html[data-tema] (escuro|claro) ou a classe dark/light
     const doApp =
-      h.dataset.theme === 'dark' || h.classList.contains('dark') ? true : h.dataset.theme === 'light' || h.classList.contains('light') ? false : null
+      h.dataset.theme === 'dark' || h.dataset.tema === 'escuro' || h.classList.contains('dark')
+        ? true
+        : h.dataset.theme === 'light' || h.dataset.tema === 'claro' || h.classList.contains('light')
+          ? false
+          : null
     const escuro = t === 'escuro' || (t === 'auto' && (doApp ?? matchMedia('(prefers-color-scheme: dark)').matches))
     this.toggleAttribute('data-escuro', escuro)
-    this.folhaHost?.toggleAttribute('data-escuro', escuro)
+    const f = this.folhaHost
+    if (!f) return
+    f.toggleAttribute('data-escuro', escuro)
+    this.copiarIdentidade()
+    // o app pode trocar o tema dele depois de mudar o atributo tema (React aplica o filho antes do pai): copia de novo
+    // quando a mudança inteira terminar
+    queueMicrotask(() => this.copiarIdentidade())
+  }
+
+  /** A identidade do app pode estar no próprio <zro-set>: a folha (no <body>) não herda dele, então copia. */
+  copiarIdentidade() {
+    const f = this.folhaHost
+    if (!f || !this.isConnected) return
+    const cs = getComputedStyle(this)
+    for (const n of VARS_TEMA) {
+      const v = cs.getPropertyValue(n).trim()
+      if (v) f.style.setProperty(n, v)
+      else f.style.removeProperty(n)
+    }
   }
 
   // ───────────── rede ─────────────
@@ -362,13 +423,18 @@ class ZroSet extends HTMLElement {
       const t = await this.token()
       if (t) headers.Authorization = `Bearer ${t}`
     } else if (typeof this.token === 'string' && this.token) headers.Authorization = `Bearer ${this.token}`
-    const r = await fetch(this.api + caminho, {
-      ...init,
-      headers,
-      body: init.body ? JSON.stringify(init.body) : undefined,
-      credentials: this.api.startsWith('/') ? 'same-origin' : 'omit',
-      cache: 'no-store',
-    })
+    const pedir = () =>
+      fetch(this.api + caminho, {
+        ...init,
+        headers,
+        body: init.body ? JSON.stringify(init.body) : undefined,
+        credentials: this.api.startsWith('/') ? 'same-origin' : 'omit',
+        cache: 'no-store',
+        ...(typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? { signal: AbortSignal.timeout(30_000) } : {}),
+      })
+    // um pedido por vez entre as abas do mesmo app: o repasse do app pode renovar o token da sessão, e dois pedidos
+    // renovando juntos gastariam o mesmo refresh token (a Absolute ZRO derruba a família inteira)
+    const r = navigator.locks?.request ? await navigator.locks.request(`zro-set ${this.api}`, pedir) : await pedir()
     if (r.status === 401) {
       if (!this.s.semLogin) {
         this.s.semLogin = true
@@ -407,7 +473,14 @@ class ZroSet extends HTMLElement {
   /** A batida de presença (e o estado de volta). `agora`: fora do ritmo (abriu, voltou à aba). */
   /** Escondido pelo app (a barra do celular e a do computador podem ter um cada): este não fala com ninguém. */
   get calado() {
-    return !this.pagina && !this.s.aberto && typeof this.checkVisibility === 'function' && !this.hasAttribute('data-fora') && !this.checkVisibility()
+    return (
+      !this.pagina &&
+      !this.soFolha &&
+      !this.s.aberto &&
+      typeof this.checkVisibility === 'function' &&
+      !this.hasAttribute('data-fora') &&
+      !this.checkVisibility()
+    )
   }
 
   async batida(agora = false) {
@@ -447,7 +520,7 @@ class ZroSet extends HTMLElement {
         method: 'POST',
         keepalive: true,
         credentials: this.api.startsWith('/') ? 'same-origin' : 'omit',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(typeof this.token === 'string' && this.token ? { Authorization: `Bearer ${this.token}` } : {}) },
         body: '{"estado":"saiu"}',
       }).catch(() => {})
     } catch {
@@ -462,7 +535,12 @@ class ZroSet extends HTMLElement {
       new CustomEvent('zro-set:estado', {
         bubbles: true,
         composed: true,
-        detail: { online: e.pessoas.filter((p) => p.estado === 'online').length, naoLidas: e.naoLidas },
+        detail: {
+          online: e.pessoas.filter((p) => p.estado === 'online').length,
+          naoLidas: e.naoLidas,
+          pedidos: e.pedidos ?? 0,
+          invisivel: !!e.eu?.preferencias?.invisivel,
+        },
       }),
     )
   }
@@ -505,7 +583,12 @@ class ZroSet extends HTMLElement {
   abrir() {
     if (this.s.aberto) return
     this.s.aberto = true
+    // modo folha: o foco volta para a entrada do app que abriu
+    this.voltaFoco = this.soFolha ? document.activeElement : null
+    // a identidade como está agora (o app pode ter trocado o tema sem avisar o widget)
+    this.copiarIdentidade()
     this.render()
+    this.dispatchEvent(new CustomEvent('zro-set:aberto', { bubbles: true, composed: true }))
     this.batida(true)
     if (this.s.aba === 'conversas') this.carregarConversas()
     setTimeout(() => this.r.querySelector('.painel .abas [aria-selected=true]')?.focus(), 60)
@@ -516,7 +599,10 @@ class ZroSet extends HTMLElement {
     clearTimeout(this.timers.conv)
     this.render()
     this.batida()
-    this.root.querySelector('.pilula')?.focus()
+    this.dispatchEvent(new CustomEvent('zro-set:fechado', { bubbles: true, composed: true }))
+    if (this.soFolha) this.voltaFoco?.focus?.()
+    else this.root.querySelector('.pilula')?.focus()
+    this.voltaFoco = null
   }
   irPara(aba) {
     this.s.aba = aba
@@ -893,7 +979,7 @@ class ZroSet extends HTMLElement {
       this.ouvir(this.$)
       return
     }
-    this.$.innerHTML = `<button class="pilula" data-a="abrir" aria-haspopup="dialog"></button>`
+    this.$.innerHTML = this.soFolha ? '' : `<button class="pilula" part="pilula" data-a="abrir" aria-haspopup="dialog"></button>`
     this.ouvir(this.$)
     // a folha vai para o <body>: dentro da barra do app, um ancestral com transform ou backdrop-filter prenderia o
     // position: fixed (no Safari do iPhone ela abria fora da tela)
@@ -903,9 +989,10 @@ class ZroSet extends HTMLElement {
     host.toggleAttribute('data-escuro', this.hasAttribute('data-escuro'))
     host.style.cssText = 'display:contents'
     this.r = host.attachShadow({ mode: 'open' })
-    this.r.innerHTML = `<style>${CSS}</style><div class="raiz"><div class="folha" aria-hidden="true"><button class="veu" data-a="fechar" tabindex="-1" aria-label="Fechar"></button>${painel.replace('<section class="painel"', '<section class="painel" role="dialog" aria-modal="true"')}</div></div>`
+    this.r.innerHTML = `<style>${CSS}</style><div class="raiz"><div class="folha" aria-hidden="true"><button class="veu" data-a="fechar" tabindex="-1" aria-label="Fechar"></button>${painel.replace('<section class="painel"', '<section class="painel" part="painel" role="dialog" aria-modal="true"')}</div></div>`
     document.body.append(host)
     this.folhaHost = host
+    this.aplicarTema()
     this.ouvir(this.r.querySelector('.raiz'))
   }
 
@@ -940,7 +1027,11 @@ class ZroSet extends HTMLElement {
     raiz.addEventListener(
       'error',
       (ev) => {
-        if (ev.target.matches?.('img[data-foto]')) ev.target.remove()
+        // foto que não carrega (rede, ou a política de origem do app): ficam as iniciais
+        if (!ev.target.matches?.('img[data-foto]')) return
+        const a = ev.target.closest('.av')
+        ev.target.remove()
+        if (a && !a.textContent) a.textContent = a.dataset.ini || ''
       },
       true,
     )
@@ -959,7 +1050,7 @@ class ZroSet extends HTMLElement {
       .map((p) => av(p))
       .join('')
     b.toggleAttribute('data-vazia', !online.length)
-    b.innerHTML = `${online.length ? `<span class="rostos">${rostos}</span>` : I.pessoas}<span class="ponto"${online.length && !inv ? '' : ' data-off'}></span><span class="num">${online.length ? online.length : 'Set'}</span>${nl + ped ? `<span class="balao">${nl + ped > 99 ? '99+' : nl + ped}</span>` : ''}`
+    b.innerHTML = `${online.length ? `<span class="rostos">${rostos}</span>` : I.pessoas}<span class="ponto"${online.length && !inv ? '' : ' data-off'}></span><span class="num">${online.length ? online.length : 'Set'}</span>${nl + ped ? `<span class="balao" part="balao">${nl + ped > 99 ? '99+' : nl + ped}</span>` : ''}`
     b.setAttribute(
       'aria-label',
       `Set: ${online.length ? `${online.length} ${online.length === 1 ? 'pessoa online' : 'pessoas online'}` : 'ninguém online'}${nl ? `, ${nl} ${nl === 1 ? 'mensagem nova' : 'mensagens novas'}` : ''}${ped ? `, ${ped} ${ped === 1 ? 'pedido' : 'pedidos'} de contato` : ''}${inv ? ', você está invisível' : ''}`,
@@ -1133,6 +1224,9 @@ class ZroSet extends HTMLElement {
   // propriedades úteis para os apps
   abrirSet() {
     this.abrir()
+  }
+  fecharSet() {
+    if (this.s.aberto) this.fechar()
   }
 }
 

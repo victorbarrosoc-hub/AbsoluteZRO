@@ -1,20 +1,8 @@
 import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
-import { zroConfigured } from '@/lib/server/zro/config';
 export const metadata: Metadata = { title: 'Seu estúdio' };
-// A Z é a entrada do estúdio (site, celular/PWA e app de computador). Sem o login Absolute ZRO, o Início.
-export default async function Page({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  if (zroConfigured()) {
-    const query = new URLSearchParams();
-    for (const [key, value] of Object.entries(await searchParams))
-      for (const v of Array.isArray(value) ? value : value === undefined ? [] : [value])
-        query.append(key, v);
-    const search = query.toString();
-    redirect('/studio/z' + (search ? '?' + search : ''));
-  }
+// /studio abre no Início do estúdio, a tarefa (site, celular/PWA e app de computador). A Z nunca é a entrada
+// (titular, 29/10/2026; Plano de Integração §7–8): fica num ícone discreto no topo e em /studio/z, que segue valendo
+// como link direto. A tela é o <Studio> do layout; esta página não desenha nada.
+export default function Page() {
   return null;
 }

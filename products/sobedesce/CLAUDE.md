@@ -23,5 +23,11 @@ do SOBEDESCE. Arquitetura em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md); o sit
   e o teste dos dois (`products/synquei`, `packages/integrations`).
 - Número de velocidade na página ou no anúncio só com medição (`scripts/prova-velocidade.mjs`, docs/PROVA-VELOCIDADE.md).
 - Conta nova só pela Absolute ZRO (`prompt=create`); o Google é só a conexão do Drive.
+- **O Set da Absolute ZRO** (30/10/2026): "Set" no cabeçalho da área logada do site, ao lado do anel da Z
+  (`web/src/components/conta/aba-set.tsx`, em `menu.tsx`), e no topo do app do celular, ao lado da Z
+  (`web/public/app/components/set.js` › `SetBotao`; a barra de baixo fica só com a tarefa, no máximo cinco abas),
+  abrindo a folha do `<zro-set modo="folha">` sem trocar de tela. Nem a Z nem o Set são a entrada (site: `/conta`;
+  celular: Início). O repasse é `web/src/lib/zro/set.ts`, com os mesmos tokens da Z (`contas_zro.ia`, escopo
+  `zro.set`); um 401 do Set não apaga os tokens. O app de computador ainda não tem o Set.
 - O build do desktop baixa o SDK da Blackmagic com o segredo `BRAW_SDK_CADASTRO`; se a Blackmagic recusar (400), é o
   cadastro, não o código.

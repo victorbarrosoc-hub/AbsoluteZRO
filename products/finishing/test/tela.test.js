@@ -12,6 +12,7 @@ import { lerCube } from '../src/cor/cube.js'
 import { gravarPng } from '../src/imagem/png.js'
 import { aplicarEmImagem, cena, lookConhecido } from './apoio.js'
 import { simularZ } from './z-falso.js'
+import { simularSet } from './set-falso.js'
 
 // require (e não import) para achar o Playwright também pelo NODE_PATH do ambiente
 const { chromium } = createRequire(import.meta.url)('playwright')
@@ -46,6 +47,7 @@ before(async () => {
     const caminho = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(/^(\.\.[/\\])+/, '')
     // sem as funções da Vercel aqui: a conta responde como "sem sessão"
     if (caminho === '/api/zro/eu') return res.writeHead(401, { 'content-type': 'application/json' }).end('{"ok":false}')
+    if (caminho === '/api/zro/set' || caminho.startsWith('/api/zro/set/')) return res.writeHead(401, { 'content-type': 'application/json' }).end('{"ok":false}')
     const arquivo = join(RAIZ, caminho === '/' ? 'index.html' : caminho)
     if (!arquivo.startsWith(RAIZ)) return res.writeHead(403).end()
     try {
@@ -58,6 +60,17 @@ before(async () => {
   await new Promise((r) => servidor.listen(0, '127.0.0.1', r))
   endereco = `http://127.0.0.1:${servidor.address().port}/`
   navegador = await chromium.launch()
+  // o Set (app/set.js) carrega o <zro-set> de absolutezro.com: nos testes ele não chega (módulo vazio, sem rede), a
+  // não ser no teste do Set, que liga o widget de verdade (a rota registrada depois ganha)
+  const semSet = (alvo) => alvo.route('https://absolutezro.com/set/**', (r) => r.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*', 'cross-origin-resource-policy': 'cross-origin', 'content-type': 'text/javascript' }, body: 'export {}\n' }))
+  for (const m of ['newPage', 'newContext']) {
+    const original = navegador[m].bind(navegador)
+    navegador[m] = async (...a) => {
+      const x = await original(...a)
+      await semSet(x)
+      return x
+    }
+  }
   dir = mkdtempSync(join(tmpdir(), 'revela-tela-'))
   writeFileSync(join(dir, 'filme.png'), gravarPng(aplicarEmImagem(cena(21, 320, 180), lookConhecido)))
   writeFileSync(join(dir, 'meu-frame.png'), gravarPng(cena(22, 320, 180)))
@@ -1135,7 +1148,28 @@ test('meu look: o clone vira um look com nome, aparece na grade em outro frame, 
   await contexto.close()
 })
 
-test('painel inicial: a Z com a CSP de produção, conversa pelo repasse e as ferramentas a um toque no dock', async () => {
+test('a primeira ferramenta é a LUT: o login volta para /lut, a Z não está no dock nem abre sozinha', async () => {
+  const { VOLTA_PADRAO, voltaSegura } = await import('../api/_zro.js')
+  assert.equal(VOLTA_PADRAO, '/lut')
+  assert.equal(voltaSegura(undefined), '/lut')
+  for (const largura of [1440, 393]) {
+    const pagina = await navegador.newPage({ viewport: { width: largura, height: 900 } })
+    const pedidos = await simularZ(pagina)
+    await pagina.goto(endereco + 'lut.html')
+    await pagina.getByRole('heading', { name: 'Revela a cor que você quer.' }).waitFor()
+    const dock = pagina.getByRole('navigation', { name: 'Ferramentas da Revela' })
+    assert.equal(await dock.locator('a').first().textContent(), 'LUT')
+    assert.equal(await dock.locator('a[href^="inicio"]').count(), 0)
+    // a Z é só o anel discreto do topo; nada dela monta nem pede ao abrir
+    assert.equal(await pagina.locator('.topo .topo-z[href="inicio.html"]').count(), 1)
+    await pagina.waitForTimeout(300)
+    assert.equal(await pagina.locator('zro-ia').count(), 0)
+    assert.deepEqual(pedidos, [])
+    await pagina.close()
+  }
+})
+
+test('a Z (link direto /inicio) com a CSP de produção, conversa pelo repasse e as ferramentas a um toque no dock', async () => {
   const pagina = await navegador.newPage({ viewport: { width: 1440, height: 900 } })
   const erros = []
   pagina.on('pageerror', (e) => erros.push(e.message))
@@ -1164,16 +1198,70 @@ test('painel inicial: a Z com a CSP de produção, conversa pelo repasse e as fe
   await pagina.evaluate(() => window.revelaTema.alternar())
   assert.equal(await z.getAttribute('tema'), 'escuro')
   await pagina.evaluate(() => window.revelaTema.alternar())
-  // a aba Z é a primeira do dock e as ferramentas seguem a um toque, sem recarregar
+  // a Z não é aba do dock (titular, 29/10/2026): o dock começa na LUT, e o anel do topo volta à Z, sem recarregar
   const dock = pagina.getByRole('navigation', { name: 'Ferramentas da Revela' })
-  assert.equal(await dock.locator('a').first().textContent(), 'Z')
+  assert.equal(await dock.locator('a').first().textContent(), 'LUT')
+  assert.equal(await dock.locator('a[href^="inicio"]').count(), 0)
   await dock.getByRole('link', { name: 'LUT' }).click()
   await pagina.getByRole('heading', { name: 'Revela a cor que você quer.' }).waitFor()
-  await dock.getByRole('link', { name: 'Z', exact: true }).click()
+  assert.equal(await pagina.getAttribute('.topo-z', 'aria-current'), null)
+  await pagina.locator('.topo-z').click()
   await pagina.waitForURL(/inicio\.html$/)
+  assert.equal(await pagina.getAttribute('.topo-z', 'aria-current'), 'page')
   await pagina.locator('#zPainel zro-ia').waitFor({ state: 'attached' })
   assert.deepEqual(erros, [])
   await pagina.close()
+})
+
+test('Set: no topo, antes da Z (fora do dock), aparece quando o Set responde, abre a folha com a cara da Revela e segue o tema', async () => {
+  for (const [tema, vp] of [
+    ['claro', { viewport: { width: 1440, height: 900 } }],
+    ['escuro', { viewport: { width: 393, height: 852 }, isMobile: true, hasTouch: true }],
+  ]) {
+    const pagina = await navegador.newPage(vp)
+    const erros = []
+    pagina.on('pageerror', (e) => erros.push(e.message))
+    pagina.on('console', (m) => m.type() === 'error' && !SEM_SESSAO.test(m.text()) && erros.push(m.text()))
+    await simularZ(pagina)
+    const pedidos = await simularSet(pagina)
+    if (tema === 'escuro') await pagina.addInitScript(() => localStorage.setItem('revela-tema', 'escuro'))
+    await pagina.goto(endereco + 'lut.html')
+    const dock = pagina.getByRole('navigation', { name: 'Ferramentas da Revela' })
+    const entrada = pagina.locator('.topo [data-set]')
+    await entrada.waitFor()
+    // no topo, logo antes do anel da Z; o dock continua só com as ferramentas (no máximo cinco no iPhone)
+    assert.equal(await dock.locator('[data-set]').count(), 0)
+    assert.ok((await dock.locator('a').count()) <= 5)
+    assert.deepEqual(await pagina.locator('.topo > :not([hidden])').evaluateAll((es) => es.map((e) => e.className.split(' ')[0])), ['menu-botao', 'marca', 'topo-set', 'topo-z', 'conta'])
+    assert.equal(await entrada.locator('.balao').textContent(), '2')
+    await entrada.click()
+    const painel = pagina.locator('zro-set-folha .folha[data-on] .painel')
+    await painel.waitFor()
+    assert.equal(await entrada.getAttribute('aria-expanded'), 'true')
+    await pagina.locator('zro-set-folha .linha', { hasText: 'Rui Tavares' }).waitFor()
+    assert.equal(await pagina.locator('zro-set').getAttribute('tema'), tema)
+    const [cor, texto] = await pagina.evaluate(() => {
+      const p = document.querySelector('zro-set-folha').shadowRoot.querySelector('.painel')
+      const d = document.createElement('div')
+      d.style.color = 'var(--texto)'
+      document.body.append(d)
+      const t = getComputedStyle(d).color
+      d.remove()
+      return [getComputedStyle(p).color, t]
+    })
+    assert.equal(cor, texto, 'a tinta da folha é a da Revela')
+    assert.ok(pedidos.every((p) => p.autorizacao === null), 'a página nunca manda token')
+    // SET_FOTOS=<pasta>: as telas da entrega (a folha aberta)
+    if (process.env.SET_FOTOS) await pagina.screenshot({ path: join(process.env.SET_FOTOS, `revela-${tema === 'claro' ? 'desktop' : '393'}-${tema}.png`) })
+    // a troca de ferramenta pelo dock não recarrega: o Set continua lá
+    await pagina.keyboard.press('Escape')
+    await dock.getByRole('link', { name: 'CST' }).click()
+    await pagina.waitForURL(/cst(\.html)?$/)
+    assert.equal(await pagina.locator('zro-set').count(), 1)
+    assert.ok(await entrada.isVisible())
+    assert.deepEqual(erros, [])
+    await pagina.close()
+  }
 })
 
 test('painel inicial sem conta ou sem o escopo da Z: Entrar com Absolute ZRO (no celular também)', async () => {

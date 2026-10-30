@@ -86,6 +86,18 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - 🟡 A Z, Fase 1 (28/10/2026, só leitura): ferramenta `ver_transferencias` lê o último relato de cada computador no SOBEDESCE (`POST /api/zro/transferencias`, `transferencias.ler`, mesmo `zro-pedido+jwt`; sem caminho local nem token) e responde citando fonte e hora ("segundo o SOBEDESCE, às 14:02"), fato separado de estimativa, aviso de relato antigo; sem dado diz que não sabe; preparos do Synquei: diz que ainda não tem acesso. `pedir_ao_computador` (piloto da Fase 3, sem ações novas) mostra a ação exata antes do "sim" (o HUB confere que a oferta nomeou o formato), grava em `zro.audit_logs` (`ia.computador.pedido`: resultado e erro, sem nome de arquivo) e diz como cancelar (remover o pedido em `/app/#referencias`). Falta: publicar HUB e sobedesce.com (autorização do titular), conferir com conta real, fonte dos preparos do Synquei (recibo `synquei.preparo/1`).
 - 🟡 Entrada dos apps (decisão do titular, 28/10/2026): a Z segue aba própria e a primeira, mas o app abre na tarefa quando há algo em andamento. SOBEDESCE computador: sem rota, cartão na fila → Cartões, transferência andando → Transferências, senão Z (`public/lib/entrada.js`); celular: abre na Z e vai para Início se o retrato mostrar um computador transferindo nos primeiros 8 s (`web/public/app/lib/entrada.js`, SW v67, app 2.8.52); Synquei: cartão na fila do Organizar → Organizar (`app/js/entrada.js`, SW synquei-v23); TPeasy: link com # ou tarefa em curso, senão Z (nenhuma tarefa sobrevive ao fechar; SW tpeasy-v20); Maestro: `/app` abre sempre no Hoje (29/10/2026: no Maestro a Z deixou de ser a primeira aba; ícone discreto). Deep link sempre respeitado; a tela nunca pula depois de aberta. Falta: publicar e distribuir (autorização do titular; nenhum instalador gerado).
 - 🟡 Entrada dos apps (decisão do titular, 28/10/2026): a Z segue aba própria e a primeira, mas o app abre na tarefa quando há algo em andamento. SOBEDESCE computador: sem rota, cartão na fila → Cartões, transferência andando → Transferências, senão Z (`public/lib/entrada.js`); celular: abre na Z e vai para Início se o retrato mostrar um computador transferindo nos primeiros 8 s (`web/public/app/lib/entrada.js`, SW v67, app 2.8.52); Synquei: cartão na fila do Organizar → Organizar (`app/js/entrada.js`, SW synquei-v23); TPeasy: link com # ou tarefa em curso, senão Z (nenhuma tarefa sobrevive ao fechar; SW tpeasy-v20); Maestro: `/app` abre no Quadro com card seu em Fazendo/Revisão, senão na Z. Deep link sempre respeitado; a tela nunca pula depois de aberta. Falta: publicar e distribuir (autorização do titular; nenhum instalador gerado).
+- ✅ A Z nunca é a primeira tela (regra do titular, 29/10/2026; Plano de Integração §7–8: "a tarefa principal do
+  aplicativo vem primeiro"): substitui as entradas de 27 e 28/10. Em todas as plataformas quem entra cai na tarefa e a
+  Z é uma entrada discreta, nunca aba principal, nunca aberta sozinha, e nada dela carrega antes do toque; o link direto
+  continua valendo. HUB: site em `/inicio` (a IA no fim do grupo Trabalho) e o app (`/app`, computador e iPhone) nos
+  apps, Z em `/app/ia` (pé da barra; anel no topo do celular; `/app/apps` redireciona). SOBEDESCE: computador no Início
+  ou na tarefa em curso (Z no pé da barra, `#/z`), celular no Início (anel no topo, `/app/#z`, reconectar volta à Z),
+  site em `/conta` (anel no cabeçalho, `/z`). Synquei: Início (Z no pé da barra, anel no Início do celular, `#/z`, sem
+  ⌘ de número). TPeasy: Roteiros (anel no topo, `#z`). Carro do Freela: Feed/Propostas (Z no fim da lateral, anel
+  apagado no topo do celular). NOSSOM: `/studio` no Início (anel no topo, último item da lateral, `/studio/z`). AEON:
+  Mídia/Seus universos (ícone na barra, `/app/#z`, ⌘1–⌘4 só o editor). Revela: `/lut` (anel no topo, `/inicio`).
+  Maestro já seguia (Hoje); Relay não tem Z. Falta: conferir num iPhone de verdade depois de publicar (autorização do
+  titular).
 - 🟡 A Z digita as sugestões no campo (pedido do titular, 29/10/2026): os botões de sugestão saíram de todos os lugares
   onde a Z aparece; o campo vazio escreve uma sugestão da plataforma letra a letra (35–55 ms), segura 1,6 s, apaga e
   escreve a próxima. Começa com o campo à vista, pausa com a aba escondida, para no foco ou quando a pessoa escreve e
@@ -680,7 +692,22 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
   Maestro: pílula na cápsula e no topo do celular, repasse `/api/zro/set/*` com o token no servidor (ETag inclusive),
   login pede `zro.set` (HUB antigo: `nivel=sem_set`).
 - ⛔ Em produção: migração `0035` no deploy e novo login no Maestro para o escopo `zro.set`.
-- ⬜ SOBEDESCE, Synquei e os demais apps com o widget; aviso fora do app (e-mail/push); anexos.
+- ✅ Todas as plataformas (30/10/2026, "a aba em comum com todas as plataformas do ecossistema"): SOBEDESCE (site e
+  app do celular), Synquei (site e computador), TPeasy, Relay, Carro do Freela, NOSSOM, AEON e Revela ganharam a
+  entrada "Set" na própria navegação (nunca a tela de entrada) que abre a folha do `<zro-set modo="folha">`, o repasse
+  `/api/zro/set/*` com o token no servidor e o login com `zro.set` (Absolute ZRO antiga: refaz sem ele). A folha veste
+  a identidade de cada app (`--zro-set-*`). Fechados (Carro, NOSSOM, AEON, Revela) seguem o portão: a conta fora da lista
+  não vê a entrada e o repasse responde 403. O Relay ganhou um login só para o Set, desligado enquanto o site estiver
+  fechado. Tabela em [set.md](integration-contracts/set.md).
+- ✅ Integrado com "a Z nunca é a primeira tela" (30/10/2026): a entrada de cada app continua a tarefa, a Z segue
+  discreta (só carrega no toque) e o Set tem a entrada dele sem ser a entrada. Barra de baixo do iPhone com no máximo
+  cinco itens: no SOBEDESCE (celular), no Synquei (celular) e na Revela o Set foi para o topo, ao lado da Z; TPeasy
+  (Roteiros, Teleprompter, Ajustes, Set), AEON (Mídia, Revisar, Edição, Entrega, Set) e NOSSOM (Início, Projetos,
+  Estúdio, Conta, Set) mantêm o Set como a última aba; no Carro e no NOSSOM a lateral termina em Set e Z (a Z
+  sempre a última); no site do SOBEDESCE o Set fica no cabeçalho, ao lado do anel da Z.
+- ⛔ Em produção: cliente `relay-web` no console (para o Set do Relay) e deploy de cada app, com autorização.
+- ⬜ App de computador do SOBEDESCE com o Set (o motor local ainda não repassa); aviso fora do app (e-mail/push);
+  anexos.
 - ⬜ Fase 3, salas abertas da comunidade: com o lançamento do Carro do Freela (novo tipo de conversa, mesma API).
 
 ## Laboratório da Z (30/10/2026, [ADR 0033](decisions/0033-laboratorio-da-z.md))

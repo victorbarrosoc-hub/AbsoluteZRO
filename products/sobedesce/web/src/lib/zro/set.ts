@@ -1,0 +1,109 @@
+/**
+ * O Set da Absolute ZRO (ADR 0032 de lá, 30/10/2026) dentro do SOBEDESCE: quem da equipe e dos contatos está online, em
+ * qual app, e as conversas. O widget é o `<zro-set>` (absolutezro.com/set/v1/zro-set.js) com `api="/api/zro/set"`: o
+ * navegador (site e app do celular) fala só com o SOBEDESCE, e este repasse acrescenta no servidor o token da conta com
+ * o escopo `zro.set` (os mesmos tokens da Z, contas_zro.ia). Token nunca vai ao navegador nem a log; o texto das
+ * mensagens também não vai a log.
+ * - Só os caminhos e métodos da API do Set passam (`caminhoSet`); o resto é 404.
+ * - Sem token com o escopo (login de antes do Set): 401 `reconectar_zro` e o widget some sem alarde. Diferente da Z,
+ *   um 401 da Absolute ZRO aqui NÃO apaga os tokens (eles continuam valendo para a Z).
+ * - Sem a SOBEDESCE liberada pela Absolute ZRO: 403, como toda rota de dados. Pedido do site que muda algo confere a
+ *   origem.
+ * - Leitura com ETag: o If-None-Match do widget segue e o 304 (sem corpo) volta; o poll não traz o que não mudou.
+ */
+import { SEM_SESSAO, semAcesso, usuarioDaRequisicao } from "@/lib/auth/requisicao";
+import { erro, origemConfere } from "@/lib/http";
+import { origensDoSite } from "@/lib/site";
+import { emissor, ESCOPO_SET } from "./config";
+import { acessoIa } from "./ia";
+
+const MAX_CORPO = 20_000;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** A ETag fraca da API do Set (W/"…"): só ela vai e volta. */
+const ETAG = /^W\/"[A-Za-z0-9_-]{1,64}"$/;
+
+/** O caminho da API do Set (sem a barra do começo), se ele existe com este método; senão null. */
+export function caminhoSet(partes: string[], metodo: string): string | null {
+  const [a, b, c, ...resto] = partes;
+  if (resto.length) return null;
+  const id = b && UUID.test(b) ? b : null;
+  const ok = (m: string[], caminho: string) => (m.includes(metodo) ? caminho : null);
+  if (!a) return ok(["GET", "POST"], "");
+  if (a === "preferencias" && !b) return ok(["PUT"], a);
+  if (a === "contatos" && !b) return ok(["GET", "POST"], a);
+  if (a === "contatos" && id && !c) return ok(["PUT", "DELETE"], `${a}/${id}`);
+  if (a === "bloqueios" && !b) return ok(["POST"], a);
+  if (a === "bloqueios" && id && !c) return ok(["DELETE"], `${a}/${id}`);
+  if (a === "conversas" && !b) return ok(["GET", "POST"], a);
+  if (a === "conversas" && id && !c) return ok(["GET", "PATCH"], `${a}/${id}`);
+  if (a === "conversas" && id && c === "mensagens") return ok(["POST"], `${a}/${id}/mensagens`);
+  if (a === "mensagens" && id && !c) return ok(["PATCH", "DELETE"], `${a}/${id}`);
+  if (a === "denuncias" && !b) return ok(["POST"], a);
+  return null;
+}
+
+/** Só os parâmetros de leitura da conversa seguem (números). */
+function busca(req: Request, caminho: string): string {
+  if (!/^conversas\/[^/]+$/.test(caminho) || req.method !== "GET") return "";
+  const q = new URL(req.url).searchParams;
+  const out = new URLSearchParams();
+  for (const k of ["antes", "depois", "limite"]) {
+    const v = q.get(k);
+    if (v && /^\d{1,15}$/.test(v)) out.set(k, v);
+  }
+  const s = out.toString();
+  return s ? `?${s}` : "";
+}
+
+/** /api/zro/set/<caminho> → Absolute ZRO /api/v1/set/<caminho>, com o Bearer da conta. */
+export async function repassarSet(req: Request, partes: string[]): Promise<Response> {
+  const caminho = caminhoSet(partes, req.method);
+  if (caminho === null) return erro(404, "nao_encontrado", "Não encontrado.");
+  const atual = await usuarioDaRequisicao(req);
+  if (!atual) return SEM_SESSAO();
+  const bloqueio = semAcesso(atual);
+  if (bloqueio) return bloqueio;
+  if (req.method !== "GET" && atual.via === "cookie" && !origemConfere(req.headers, req.url, origensDoSite())) {
+    return erro(403, "origem", "Pedido de outra origem recusado.");
+  }
+  let corpo: string | undefined;
+  if (req.method === "POST" || req.method === "PUT" || req.method === "PATCH") {
+    if (!/^application\/json\b/i.test(req.headers.get("content-type") ?? "")) return erro(415, "formato", "Mande JSON.");
+    corpo = await req.text();
+    if (corpo.length > MAX_CORPO) return erro(413, "grande", "Mensagem grande demais.");
+  }
+  const acesso = await acessoIa(atual.usuario.id, Date.now(), ESCOPO_SET);
+  if ("erro" in acesso)
+    return acesso.erro === "reconectar"
+      ? erro(401, "reconectar_zro", "Entre de novo com a Absolute ZRO para ver o Set.")
+      : erro(502, "rede", "A Absolute ZRO não respondeu agora. Tente de novo.");
+  const pedida = req.headers.get("if-none-match");
+  const etagPedida = pedida && pedida.length <= 200 && ETAG.test(pedida) ? pedida : null;
+  let resposta: Response;
+  try {
+    resposta = await fetch(`${emissor()}/api/v1/set${caminho ? `/${caminho}` : ""}${busca(req, caminho)}`, {
+      method: req.method,
+      headers: {
+        Authorization: `Bearer ${acesso.at}`,
+        Accept: "application/json",
+        ...(corpo !== undefined ? { "Content-Type": "application/json" } : {}),
+        // o poll do widget: a ETag segue e o 304 volta sem corpo
+        ...(req.method === "GET" && etagPedida ? { "If-None-Match": etagPedida } : {}),
+      },
+      body: corpo,
+      cache: "no-store",
+      redirect: "error",
+      signal: req.signal,
+    });
+  } catch {
+    return erro(502, "rede", "A Absolute ZRO não respondeu agora. Tente de novo.");
+  }
+  const headers = new Headers({ "Cache-Control": "no-store" });
+  const tipo = resposta.headers.get("content-type");
+  if (tipo) headers.set("Content-Type", tipo);
+  const etag = resposta.headers.get("etag");
+  if (etag && ETAG.test(etag)) headers.set("ETag", etag);
+  const semCorpo = resposta.status === 204 || resposta.status === 304;
+  if (semCorpo) await resposta.body?.cancel().catch(() => {});
+  return new Response(semCorpo ? null : resposta.body, { status: resposta.status, headers });
+}
