@@ -15,6 +15,27 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## A Z nunca é a primeira tela (30/10/2026)
+
+Regra do titular (29/10/2026; Plano de Integração §7–8): em todas as plataformas quem entra cai na tarefa; a Z é uma
+entrada discreta, nunca aba principal nem aberta sozinha, e nada dela carrega antes do toque. Banco e portas próprios
+no e2e do HUB (`zro_zentrada_e2e_test`, porta 3271).
+
+| Plataforma      | Verificação                                                                                             | Resultado                                                                                                                                                           |
+| --------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Raiz            | lint, `format:check`, `typecheck`, `scan-secrets`                                                       | ok                                                                                                                                                                  |
+| HUB             | `npm run build`; `tests/e2e/z-entrada.spec.ts` (novo) e `z-digitando.spec.ts`                           | build ok; 4/4 (HUB em `/inicio` com a IA no fim do grupo; `/app` nos apps, `/app/apps` redireciona, Z em `/app/ia` só no toque, 393 px com 4 abas e o anel no topo) |
+| HUB             | `npm run test:e2e` inteiro                                                                              | 46/49; as 3 que caíram (a11y, admin, sso) passaram de novo sozinhas — axe estourou os 120 s com outra build na máquina                                              |
+| SOBEDESCE       | `npm test` (computador e celular), `web: npm test`                                                      | 790/790 (+4 pulados) e web 293/293; `entrada.test.js`, `entrada-celular.test.js` e `web/tests/entrada.test.mts` cobrem a entrada sem a Z                            |
+| Synquei, TPeasy | `npm test` / `node --test tests/*.test.mjs`                                                             | 139/139 (+5 pulados, Electron) e 54/54                                                                                                                              |
+| Carro do Freela | `conta-zro` e `run.js colisao contraste movimento doca versoes seguranca menu-recolhivel feed feedback` | 148/148 (cai na tarefa, nada da Z montado, anel apagado, `#tab-z` último; reconectar volta à Z) e 9/9                                                               |
+| NOSSOM          | `npm test`, `tsc`, `next build --webpack`, e2e `zro-ia` e `install-navigation`                          | 120/120, ok, ok, 5/5 e 3/4 (a falha é anterior: a família agora tem o Maestro)                                                                                      |
+| AEON, Revela    | `node --test test/*.test.js`                                                                            | 126/126 e 167/167 (primeira tela Mídia / LUT; Z no ícone da barra / anel do topo; `#z` e `/inicio` diretos)                                                         |
+
+Capturas da primeira tela (claro, 1440 e 393 px) de HUB (site e app), SOBEDESCE (computador e celular), Synquei, TPeasy,
+Carro do Freela, NOSSOM, AEON e Revela: nenhuma monta `<zro-ia>` nem pede o script da Z ao abrir. Não rodou: o
+app de computador do SOBEDESCE/Synquei/AEON em Electron (`--smoke`), nem iPhone de verdade.
+
 ## Set: presença e conversas (29/10/2026, ADR 0032)
 
 Migração `0035_set.sql` (renumerada de 0032: 0031–0034 já são de outros ramos). Banco de teste próprio

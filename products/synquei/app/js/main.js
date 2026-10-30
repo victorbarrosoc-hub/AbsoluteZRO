@@ -23,14 +23,15 @@ import sfxMontagem from './views/sfx.js'
 import { iniciarOrganizar, O as ORG } from './organizar.js'
 import { cartaoPlano, abrirPlanos } from './plano.js'
 import { iniciarConta } from './conta.js'
-import { iniciarZ, telaZ } from './z.js'
+import { abrirZ, ligarZ, telaZ } from './z.js'
 import { pendencias, numeroBalao, rotuloBalao } from './pendencias.js'
 import { decidirEntrada } from './entrada.js'
 
 const VIEWS = { z: telaZ, inicio, projetos, midia, sincronizar, linha, exportar, formatos, ajustes, organizar, sfx: sfxMontagem }
-const ORDER = ['z', 'inicio', 'midia', 'sincronizar', 'linha', 'exportar']
-// ordem da barra lateral: decide se a tela entra pela direita ou pela esquerda
-const SEQ = ['z', 'inicio', 'midia', 'sincronizar', 'linha', 'exportar', 'projetos', 'organizar', 'sfx', 'formatos', 'ajustes']
+// as abas de 1 a 5 no teclado: a tarefa do Synquei. A Z não é aba (titular, 29/10/2026; Plano de Integração §7–8)
+const ORDER = ['inicio', 'midia', 'sincronizar', 'linha', 'exportar']
+// ordem da barra lateral: decide se a tela entra pela direita ou pela esquerda (a Z, discreta, no pé depois de Ajustes)
+const SEQ = ['inicio', 'midia', 'sincronizar', 'linha', 'exportar', 'projetos', 'organizar', 'sfx', 'formatos', 'ajustes', 'z']
 const calm = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 
 export function go(route, force) {
@@ -51,8 +52,8 @@ function routeFromHash() {
     }
     return 'inicio'
   }
-  // a Z é a primeira aba e a entrada quando não há tarefa em curso (entrada.js decide logo ao abrir)
-  return VIEWS[r] ? r : 'z'
+  // sem rota, o Início (a tarefa); com tarefa em curso, entrada.js leva à tela dela logo ao abrir. A Z só por #/z.
+  return VIEWS[r] ? r : 'inicio'
 }
 
 let lastRoute = null
@@ -85,6 +86,7 @@ function render() {
   // a Z fica fora da tela que redesenha (a conversa não se perde): aparece só na aba dela
   const z = $('#zPainel')
   if (z) z.hidden = route !== 'z'
+  if (route === 'z') abrirZ()
   document.documentElement.classList.toggle('na-z', route === 'z')
   hideTip()
   chrome()
@@ -485,7 +487,7 @@ addEventListener('keydown', (e) => {
   if (typing || mod) return
   const v = VIEWS[S.route]
   if (v.keys && v.keys(e)) return e.preventDefault()
-  if (/^[1-6]$/.test(e.key)) go(ORDER[+e.key - 1])
+  if (/^[1-5]$/.test(e.key)) go(ORDER[+e.key - 1])
 })
 
 // ───────── início ─────────
@@ -572,8 +574,8 @@ document.addEventListener('synquei:conta-mudou', () => {
   if (pc) pc.innerHTML = cartaoPlano()
   if (S.route === 'ajustes') render()
 })
-// a Z entra na aba dela depois de saber da conta (app/js/z.js)
-iniciarConta().then(iniciarZ)
+// a Z monta só quando a pessoa abre #/z, depois de saber da conta (app/js/z.js); nunca ao abrir o app
+ligarZ(iniciarConta(), S.route === 'z')
 
 if ('serviceWorker' in navigator && !window.synqueiDesktop && location.protocol === 'https:') {
   navigator.serviceWorker.register('/sw.js').catch(() => {})

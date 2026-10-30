@@ -710,7 +710,7 @@ describe('a Z (repasse /api/zro/ia)', () => {
     assert.match(z, /setAttribute\("api", "\/api\/zro\/ia"\)/)
     assert.ok(!/\.token\s*=/.test(z))
     const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
-    assert.match(sw, /tpeasy-v20/)
+    assert.match(sw, /tpeasy-v21/)
     assert.match(sw, /url\.pathname\.startsWith\("\/api\/"\)/)
     // a família só lista plataformas abertas (NOSSOM, AEON, Revela e Carro do Freela estão fechados)
     const fam = /<nav class="familia"[\s\S]*?<\/nav>/.exec(readFileSync(new URL('../app/index.html', import.meta.url), 'utf8'))[0]
@@ -731,14 +731,15 @@ describe('a Z (repasse /api/zro/ia)', () => {
     assert.ok(v.rewrites.some((r) => r.source === '/api/zro/ia/:caminho*' && r.destination === '/api/zro/ia?c=:caminho*'))
   })
 
-  test('a Z tem aba própria: a primeira, e a tela de entrada; Roteiros volta a ser como era', async () => {
+  test('a Z tem tela própria (#z), fora da barra e da entrada (titular, 29/10/2026); Roteiros sem a Z empilhada', async () => {
     const { readFileSync } = await import('node:fs')
     const html = readFileSync(new URL('../app/index.html', import.meta.url), 'utf8')
     const ui = readFileSync(new URL('../app/js/ui.js', import.meta.url), 'utf8')
     const main = readFileSync(new URL('../app/js/main.js', import.meta.url), 'utf8')
     const abas = /<nav class="tabbar"[^>]*>([\s\S]*?)<\/nav>/.exec(html)[1]
-    assert.match(abas.trim(), /^<button class="tab" data-go="z">/)
-    assert.match(ui, /TABS = \["z", "roteiros", "tp", "ajustes"\]/)
+    assert.match(abas.trim(), /^<button class="tab" data-go="roteiros">/)
+    assert.doesNotMatch(abas, /data-go="z"/)
+    assert.match(ui, /TABS = \["roteiros", "tp", "ajustes", "z"\]/)
     assert.match(main, /go\(abaDeEntrada\(location\.hash, TABS\), \{ instant: true \}\)/)
     const roteiros = /data-tab="roteiros"[\s\S]*?<\/section>\s*<!--/.exec(html)[0]
     assert.ok(!/zPainel/.test(roteiros), 'a Z não fica empilhada em Roteiros')

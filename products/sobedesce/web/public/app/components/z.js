@@ -1,5 +1,5 @@
-// A Z, a IA da Absolute ZRO, na aba própria do app do celular (pedido do titular, 27/10/2026: "uma aba só pra Z em
-// todas as plataformas"). É a primeira aba e a tela de entrada, e aparece sempre, com ou sem Drive escolhido.
+// A Z, a IA da Absolute ZRO, na tela própria do app do celular. Desde 29/10/2026 (titular; Plano de Integração §7–8) ela
+// não é aba nem a tela de entrada: abre pelo anel discreto do topo (ZBotao, main.js) ou por /app/#z, com ou sem Drive.
 // O painel <zro-ia> (servido pela Absolute ZRO) fala com /api/zro/ia, no próprio site, que acrescenta o token da conta
 // no servidor (web/src/lib/zro/ia.ts). O celular nunca vê token. Sem conta SOBEDESCE neste aparelho: "Entrar", aqui
 // mesmo. Sem token ou sem o escopo da Z, o painel avisa (zro-ia:sem-login) e aparece "Reconectar com Absolute ZRO",
@@ -13,7 +13,8 @@ export const SCRIPT_ZRO_IA = 'https://absolutezro.com/ia/v1/zro-ia.js'
 // Só o que a Z consegue: conversar e ler o retrato da conta (projetos, pendências, entregas, consumo do mês).
 const SUGESTOES = ['Entregas pendentes', 'Resumo dos meus projetos', 'Como conferir uma descarga', 'Quanto usei este mês']
 const APOIO = 'Pergunte sobre seus projetos, entregas e descargas.'
-const RECONECTAR = '/api/zro/entrar?modo=vincular&volta=%2Fapp%2F'
+// reconectar volta para a Z (/app/#z), que a pessoa tinha aberto
+const RECONECTAR = '/api/zro/entrar?modo=vincular&volta=%2Fapp%2F%23z'
 
 function carregarScript() {
   if (document.querySelector(`script[src="${SCRIPT_ZRO_IA}"]`)) return

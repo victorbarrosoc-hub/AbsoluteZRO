@@ -789,7 +789,7 @@ button {
     right: 0;
     bottom: 0;
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
     background: var(--glass);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
@@ -1768,7 +1768,7 @@ button {
 }
 .nudge {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 4px;
 }
 .nudge button {
@@ -2379,6 +2379,29 @@ button {
 }
 .pn-ola {
   margin-bottom: 8px;
+}
+/* a Z no celular: um anel discreto no canto do Início (no computador ela fica no pé da barra lateral) */
+.z-atalho {
+  display: none;
+}
+@media (max-width: 860px) {
+  .pn-ola {
+    position: relative;
+    padding-right: 44px;
+  }
+  .z-atalho {
+    display: inline-grid;
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+  }
+  .z-atalho .icon {
+    width: 21px;
+    height: 21px;
+  }
 }
 .pn-cartoes {
   display: grid;

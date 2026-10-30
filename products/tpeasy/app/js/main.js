@@ -1,10 +1,11 @@
 // Ponto de partida do app: monta as telas, liga as abas e registra o modo offline.
 import { $, $$ } from "./util.js";
-import { go, TABS, enableSheetDrag, toast } from "./ui.js";
+import { go, TABS, currentTab, enableSheetDrag, toast } from "./ui.js";
 import { mountSettingsForms, syncSettingsUI } from "./settings.js";
 import { renderAll, newFrom, startCalib } from "./views.js";
 import { handleRedirect } from "./sync.js";
 import { verificarZro, avisoDaVolta } from "./zro.js";
+import { on } from "./data.js";
 import { iniciarZ } from "./z.js";
 import { abaDeEntrada } from "./entrada.js";
 
@@ -42,14 +43,18 @@ addEventListener(
 );
 
 renderAll();
-// link com #roteiros, #tp ou #ajustes abre a aba dele; tarefa em curso ganha da Z; senão, a Z (entrada.js)
+// link com #roteiros, #tp, #ajustes ou #z abre a aba dele; tarefa em curso a seguir; senão, Roteiros (entrada.js)
 go(abaDeEntrada(location.hash, TABS), { instant: true });
 document.documentElement.classList.add("ready");
 handleRedirect();
 const aviso = avisoDaVolta();
 if (aviso) toast(aviso, 3200);
-// a Z entra na aba dela depois de saber da conta
-verificarZro().then(iniciarZ);
+// a Z monta só quando a pessoa abre (o anel de Roteiros ou #z), depois de saber da conta; nunca ao abrir o app
+const contaPronta = verificarZro();
+let zMontada = null;
+const abrirZ = () => (zMontada ??= contaPronta.then(iniciarZ));
+on("tab", (t) => t === "z" && abrirZ());
+if (currentTab() === "z") abrirZ();
 
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
   navigator.serviceWorker.register("/sw.js").catch(() => {});

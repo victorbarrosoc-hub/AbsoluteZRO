@@ -31,7 +31,8 @@ import { pendencias, rotuloBalao } from '../src/pendencias.js'
 import { montarZ } from './z.js'
 
 const $ = (id) => document.getElementById(id)
-const PAGINAS = ['inicio', 'midia', 'revisar', 'edicao', 'entrega']
+// As etapas do editor no dock; a Z por último, fora do dock (ícone da barra), nunca a primeira (titular, 29/10/2026)
+const PAGINAS = ['midia', 'revisar', 'edicao', 'entrega', 'z']
 
 const S = {
   h: null, // Historico do projeto
@@ -39,7 +40,7 @@ const S = {
   dbs: new Map(), // midia → envelope de energia (para propostas e forma de onda)
   miniaturas: new Map(),
   preset: null,
-  pagina: 'inicio',
+  pagina: 'midia',
   selecao: null, // Set de mídias marcadas no modo Selecionar (null = fora do modo)
   filtro: 'tudo',
   selProposta: null,
@@ -118,7 +119,7 @@ player.aoMudar(() => {
 })
 $('tocar').onclick = () => player.alternar()
 
-for (const b of document.querySelectorAll('.dock button')) b.onclick = () => ir(b.dataset.ir)
+for (const b of document.querySelectorAll('.dock button, #abrirZ')) b.onclick = () => ir(b.dataset.ir)
 
 // ───────── tema e páginas ─────────
 
@@ -153,7 +154,11 @@ function ir(pagina, animar = true) {
     else sec.classList.remove('sem-mola')
   }
   document.documentElement.style.setProperty('--direcao', para >= de ? '1' : '-1')
-  for (const b of document.querySelectorAll('.dock button')) b.toggleAttribute('aria-current', b.dataset.ir === pagina)
+  // saiu da Z aberta por link (/app/#z): o endereço deixa de apontar para ela, e recarregar volta à tarefa
+  if (pagina !== 'z' && location.hash === '#z') history.replaceState(null, '', location.pathname + location.search)
+  for (const b of document.querySelectorAll('.dock button, #abrirZ')) b.toggleAttribute('aria-current', b.dataset.ir === pagina)
+  // a Z só monta quando a pessoa abre (nada da Z carrega sozinho ao abrir o app)
+  if (pagina === 'z' && !S.zMontada) S.zMontada = montarZ($('zPainel'))
   const vaga = document.querySelector(`.vaga-palco[data-vaga="${pagina}"]`)
   if (vaga && $('palco').parentElement !== vaga) vaga.append($('palco'))
   if (pagina !== 'revisar' && pagina !== 'edicao') player.pausar()
@@ -335,7 +340,7 @@ document.addEventListener('drop', async (e) => {
 /** Lê as informações e põe as mídias no projeto (cria o projeto na primeira vez). */
 async function adicionar(entradas) {
   // vídeo escolhido pelo menu (Arquivo › Adicionar) com a Z aberta: o projeto aparece na Mídia
-  if (S.pagina === 'inicio') ir('midia')
+  if (S.pagina === 'z') ir('midia')
   const novas = []
   for (const e of entradas) {
     // projeto reaberto no navegador: o arquivo de mesmo nome volta para a mídia que já estava no projeto
@@ -999,7 +1004,8 @@ addEventListener('keydown', (e) => {
     if (e.key === 'Escape') return modoSelecao(false)
     if ((e.key === 'Backspace' || e.key === 'Delete') && S.selecao.size) return $('tirarSel').click()
   }
-  if (mod && /^[1-5]$/.test(e.key)) {
+  // ⌘1–⌘4: as etapas do editor; a Z não tem número (fica no ícone da barra)
+  if (mod && /^[1-4]$/.test(e.key)) {
     e.preventDefault()
     return ir(PAGINAS[Number(e.key) - 1])
   }
@@ -1141,7 +1147,7 @@ $('folhaNovo').onclose = () => {
   S.miniaturaGuardada = null
   mudou()
   desenharTudo()
-  if (S.pagina === 'inicio') ir('midia')
+  if (S.pagina === 'z') ir('midia')
 }
 
 // renomear: clique no nome do projeto na barra
@@ -1267,11 +1273,12 @@ async function exportar({ marcados } = {}) {
 }
 S.exportar = exportar
 
-// o painel inicial é a Z (pedido do titular, 27/10/2026); o editor está a um toque no dock
-ir('inicio', false)
+// o app abre na Mídia (os projetos e o vídeo): a tarefa vem primeiro (titular, 29/10/2026; Plano de Integração §7–8).
+// A Z fica no ícone discreto da barra e em /app/#z (link direto); nunca abre sozinha.
+ir(location.hash === '#z' ? 'z' : 'midia', false)
+addEventListener('hashchange', () => location.hash === '#z' && ir('z'))
 desenharTudo()
 document.documentElement.dataset.pronto = '1'
-montarZ($('zPainel'))
 
 // ───────── aviso ─────────
 

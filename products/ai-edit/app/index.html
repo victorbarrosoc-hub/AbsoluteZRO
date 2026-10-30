@@ -61,6 +61,8 @@
         </div>
         <button class="icone-btn" id="desfazer" title="Desfazer (⌘Z)" aria-label="Desfazer" disabled><svg><use href="#i-desfazer" /></svg></button>
         <button class="icone-btn" id="refazer" title="Refazer (⇧⌘Z)" aria-label="Refazer" disabled><svg><use href="#i-refazer" /></svg></button>
+        <!-- a Z, discreta (titular, 29/10/2026; Plano de Integração §7–8): um ícone na barra, não a primeira página -->
+        <button class="icone-btn barra-z" id="abrirZ" data-ir="z" title="Z, a IA da Absolute ZRO" aria-label="Z, a IA da Absolute ZRO"><svg><use href="#i-z" /></svg></button>
         <button class="icone-btn" id="tema" title="Tema claro ou escuro" aria-label="Tema"><svg><use href="#i-sol" /></svg></button>
         <button class="glass-btn glass-btn--ink barra-exportar" id="barraExportar" hidden>Exportar</button>
         <img class="assinatura" src="../vendor/marca/absolute-zro-simbolo-branco.svg" alt="Absolute ZRO" title="Absolute ZRO" />
@@ -68,8 +70,9 @@
     </header>
 
     <main class="paginas" id="paginas">
-      <!-- INÍCIO: a Z, a IA do ecossistema (app/z.js). O editor fica nas outras páginas do dock. -->
-      <section class="pagina" data-pagina="inicio" aria-label="Início">
+      <!-- Z, a IA do ecossistema (app/z.js): página à parte, aberta pelo ícone da barra (#abrirZ) ou por /app/#z. O app
+           abre na Mídia (os projetos e o vídeo), a tarefa; a Z só monta quando a pessoa abre. -->
+      <section class="pagina" data-pagina="z" aria-label="Z, a IA da Absolute ZRO">
         <div class="z-painel" id="zPainel">
           <div class="z-aviso" role="status" hidden>
             <p></p>
@@ -205,8 +208,7 @@
     </main>
 
     <nav class="dock" aria-label="Páginas">
-      <button data-ir="inicio" aria-current="page" title="A Z, a IA da Absolute ZRO"><svg><use href="#i-z" /></svg><span>Z</span></button>
-      <button data-ir="midia"><svg><use href="#i-midia" /></svg><span>Mídia</span></button>
+      <button data-ir="midia" aria-current="page"><svg><use href="#i-midia" /></svg><span>Mídia</span></button>
       <button data-ir="revisar"><svg><use href="#i-revisar" /></svg><span>Revisar</span></button>
       <button data-ir="edicao"><svg><use href="#i-edicao" /></svg><span>Edição</span></button>
       <button data-ir="entrega"><svg><use href="#i-entrega" /></svg><span>Entrega</span></button>

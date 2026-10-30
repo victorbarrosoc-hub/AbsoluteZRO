@@ -7,7 +7,7 @@ import { Cabecalho } from "./cabecalho";
  * `larga`: a conta e o admin, que se espalham pela tela no desktop (até 2240 px, em colunas nas próprias páginas).
  * Padrão do kit (components/kit): título e conteúdo entram em cascata; nas estreitas, o ícone em gradiente em cima e o
  * formulário num cartão (`icone` troca o desenho; sem ele, as barras da marca).
- * `abas`: as abas da área logada (Z e Conta), logo abaixo do cabeçalho.
+ * `abas`: uma faixa opcional logo abaixo do cabeçalho (a Z não é aba: fica no anel do cabeçalho, conta/abas.tsx).
  */
 export function Moldura({
   titulo,

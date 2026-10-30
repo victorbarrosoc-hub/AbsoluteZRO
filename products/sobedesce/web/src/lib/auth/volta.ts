@@ -1,8 +1,10 @@
 /**
- * Aba da Z, a IA da Absolute ZRO: a tela de entrada da área logada (pedido do titular, 27/10/2026). Quem só entrou,
- * sem pedir outra página (volta padrão, "/conta"), cai nela; quem pediu uma página volta para ela.
+ * A tela de entrada da área logada: a conta (Drives, computadores, enviar), a tarefa do SOBEDESCE (titular, 29/10/2026;
+ * Plano de Integração §7–8: "a tarefa principal do aplicativo vem primeiro"). A Z nunca é a entrada: fica num anel
+ * discreto no cabeçalho (components/conta/abas.tsx › LinkZ) e em /z, que continua valendo como link direto.
+ * Quem só entrou (volta padrão, "/conta") cai na conta; quem pediu uma página (inclusive /z) volta para ela.
  */
-export const INICIO = "/z";
+export const INICIO = "/conta";
 export function destinoDeEntrada(volta: string): string {
   return volta === "/conta" ? INICIO : volta;
 }

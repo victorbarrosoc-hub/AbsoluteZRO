@@ -276,7 +276,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
   const [view, setView] = useState<
       'z' | 'home' | 'projects' | 'editor' | 'tool' | 'ai' | 'account' | 'plans' | 'admin'
     >(
-      pathname === '/studio/z' || (pathname === '/studio' && zroIa)
+      pathname === '/studio/z' && zroIa
         ? 'z'
         : pathname === '/studio/admin'
           ? 'admin'
@@ -524,7 +524,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
   useEffect(() => {
     let current = true;
     setSidebar(false);
-    if (pathname === '/studio/z' || (pathname === '/studio' && zroIa)) {
+    if (pathname === '/studio/z' && zroIa) {
       setView('z');
       return;
     }
@@ -1336,11 +1336,6 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
           <Plus size={17} /> Novo projeto
         </button>
         <nav aria-label="Navegação do estúdio">
-          {zroIa && (
-            <button className={view === 'z' ? 'active' : ''} onClick={() => navigate('z')}>
-              <Circle size={18} strokeWidth={1.5} /> Z
-            </button>
-          )}
           <button
             className={view === 'home' || view === 'ai' ? 'active' : ''}
             onClick={() => navigate('home')}
@@ -1395,6 +1390,12 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
             >
               <Activity size={18} />
               Administração
+            </button>
+          )}
+          {/* a Z, discreta (titular, 29/10/2026; Plano de Integração §7–8): por último, nunca a primeira nem a entrada */}
+          {zroIa && (
+            <button className={view === 'z' ? 'active' : ''} onClick={() => navigate('z')}>
+              <Circle size={18} strokeWidth={1.5} /> Z
             </button>
           )}
         </nav>
@@ -1483,6 +1484,18 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
           </div>
           <div className="studio-header-actions">
             <DesktopUpdates blocked={!!busy || recording || renaming || !!deleteId} />
+            {/* a Z no topo (computador e celular): um anel discreto, nunca uma aba nem a tela de entrada */}
+            {zroIa && (
+              <button
+                className={`icon-button z-top ${view === 'z' ? 'active' : ''}`}
+                aria-label="Z, a IA da Absolute ZRO"
+                title="Z, a IA da Absolute ZRO"
+                aria-current={view === 'z' ? 'page' : undefined}
+                onClick={() => navigate('z')}
+              >
+                <Circle size={17} strokeWidth={1.6} />
+              </button>
+            )}
             <AccountMenu account={account} usage={usage} disabled={!!busy || recording} />
             <label className="theme-control">
               <span className="sr-only">Tema do estúdio</span>
@@ -1751,7 +1764,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
               </div>
             </>
           )}
-          {/* A Z, a IA da Absolute ZRO, tem a aba própria e ocupa a tela toda. */}
+          {/* A Z, a IA da Absolute ZRO, tem tela própria (/studio/z, nunca a entrada) e ocupa a tela toda. */}
           {view === 'z' && zroIa && <ZroIaPanel theme={theme} />}
           {(view === 'home' || view === 'ai') && (
             <AssistantHome
@@ -3109,12 +3122,6 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
         </div>
       )}
       <nav className="studio-tabs" aria-label="Navegação rápida" inert={mobile && sidebar}>
-        {zroIa && (
-          <button className={view === 'z' ? 'active' : ''} onClick={() => navigate('z')}>
-            <Circle size={19} strokeWidth={1.5} />
-            <span>Z</span>
-          </button>
-        )}
         <button
           className={view === 'home' || view === 'ai' ? 'active' : ''}
           onClick={() => navigate('home')}

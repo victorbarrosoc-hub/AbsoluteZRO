@@ -88,7 +88,7 @@
       </defs>
     </svg>
 
-    <!-- ═════════ Z, a IA da Absolute ZRO: a primeira aba e a tela de entrada (app/js/z.js) ═════════ -->
+    <!-- ═════════ Z, a IA da Absolute ZRO (app/js/z.js): tela própria (#z), aberta pelo anel do topo de Roteiros ═════════ -->
     <section class="view view-z" data-tab="z" hidden>
       <section class="z-painel" id="zPainel" aria-label="Z, a IA da Absolute ZRO"></section>
     </section>
@@ -98,6 +98,8 @@
       <header class="topbar">
         <h2 class="topbar-title">Roteiros</h2>
         <div class="topbar-actions">
+          <!-- a Z, discreta (titular, 29/10/2026): um anel no topo de Roteiros, não uma aba nem a entrada -->
+          <button class="icon-btn z-atalho" data-go="z" aria-label="Z, a IA da Absolute ZRO" title="Z, a IA da Absolute ZRO"><svg class="icon"><use href="#i-z" /></svg></button>
           <button class="icon-btn" id="remoteMenu" aria-label="Controle remoto"><svg class="icon"><use href="#i-remote" /></svg></button>
           <button class="icon-btn" id="searchToggle" aria-label="Buscar"><svg class="icon"><use href="#i-search" /></svg></button>
           <button class="icon-btn is-blue" id="newScript" aria-label="Novo roteiro"><svg class="icon"><use href="#i-plus" /></svg></button>
@@ -186,7 +188,6 @@
 
     <!-- ═════════ Barra de abas ═════════ -->
     <nav class="tabbar" aria-label="Seções">
-      <button class="tab" data-go="z"><svg class="icon"><use href="#i-z" /></svg><span>Z</span></button>
       <button class="tab" data-go="roteiros"><svg class="icon"><use href="#i-scripts" /></svg><span>Roteiros</span></button>
       <button class="tab" data-go="tp"><svg class="icon"><use href="#i-tp" /></svg><span>Teleprompter</span></button>
       <button class="tab" data-go="ajustes"><svg class="icon"><use href="#i-gear" /></svg><span>Ajustes</span><span class="balao" data-balao="ajustes" hidden></span></button>

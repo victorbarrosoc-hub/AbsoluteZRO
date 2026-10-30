@@ -1,5 +1,5 @@
 /**
- * Capturas do HUB para `produto-hub-{claro,escuro}.webp` (MacBook com o painel /app/apps e iPhone com /inicio), feitas no
+ * Capturas do HUB para `produto-hub-{claro,escuro}.webp` (MacBook com o painel /app e iPhone com /inicio), feitas no
  * HUB local com uma conta de demonstração neutra. Os produtos aparecem como o gate de lançamento do banco diz (ADR
  * 0023): fechado = selo "Em desenvolvimento", sem Abrir. Nada é inventado na tela além da central do app de computador,
  * simulada com SOBEDESCE e Synquei instalados (no navegador ela não existe).
@@ -78,7 +78,7 @@ try {
     await mac.addCookies(cookies)
     await mac.addInitScript({ content: CENTRAL })
     const p = await mac.newPage()
-    await p.goto(`${hub}/app/apps`, { waitUntil: 'networkidle' })
+    await p.goto(`${hub}/app`, { waitUntil: 'networkidle' })
     await p.waitForTimeout(800)
     await p.screenshot({ path: `${pasta}/hub-mac-${tema}.png` })
     await mac.close()

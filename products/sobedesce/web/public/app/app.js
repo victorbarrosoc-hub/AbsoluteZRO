@@ -32,7 +32,6 @@ import { startP2p } from './lib/p2p.js'
 import { parseDriveLink } from './lib/copiar.js'
 import { abertura, aberturaAoVoltar } from './lib/abertura.js'
 import { linkDoHash } from './lib/drive-link.js'
-import { vigiarEntrada } from './lib/entrada.js'
 
 const SHEETS = {
   folders: FolderSheet,
@@ -107,16 +106,15 @@ function openShared(state) {
 // Modo Wi-Fi (servido pelo SOBEDESCE do computador): sem conta aqui, quem fala com o Drive é o computador.
 if (!LAN) {
   auth.boot()
+  // Sem link, o app abre no Início, a tarefa (titular, 29/10/2026); a Z fica no botão discreto do topo (lib/state.js).
   setState({ tab: savedTab(), abrirLink: linkDoHash(location.hash) })
-  // Abriu na Z sem link: se um computador estiver transferindo, vai para Início (o cartão do andamento) — uma vez,
-  // nos primeiros segundos (lib/entrada.js, decisão do titular de 28/10/2026).
-  vigiarEntrada({ getState, setState, subscribe })
   startBridge() // o service worker pede o token por aqui para a prévia e o download (/app/stream/)
   subscribe(openShared)
   // /app/#referencias (link de Sua conta): abre a aba, se a conta tiver o recurso.
   window.addEventListener('hashchange', () => {
     if (location.hash === '#referencias') setState({ tab: 'refs' })
     if (location.hash === '#aparelhos') setState({ tab: 'ap' })
+    if (location.hash === '#z') setState({ tab: 'z' })
     if (location.hash === '#computador') openComputer()
     // /app/#drive/<pasta>, #arquivo/<id>, #baixar/<id> (botões Abrir e Baixar da Z) com o app já aberto.
     const link = linkDoHash(location.hash)

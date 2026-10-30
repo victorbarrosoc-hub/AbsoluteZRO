@@ -15,7 +15,7 @@ async function create(page: Page, name: string, email: string) {
   await page.getByLabel('E-mail', { exact: true }).fill(email);
   await page.getByLabel('Senha', { exact: true }).fill('senha-de-teste');
   await page.getByRole('button', { name: 'Entrar no estúdio', exact: true }).click();
-  await expect(page).toHaveURL(/\/studio\/z(?:\?|$)/);
+  await expect(page).toHaveURL(/\/studio(?:\?|$)/);
   await expect(page.getByText(email, { exact: true })).toBeVisible();
 }
 test('every studio route and the paid assistant require an account; public sharing assets remain accessible', async ({
@@ -92,7 +92,7 @@ test('existing Supabase accounts sign in, sign out and sign in from another brow
   ).toContainText('E-mail ou senha inválidos');
   await page.getByLabel('Senha', { exact: true }).fill('senha-de-teste');
   await page.getByRole('button', { name: 'Entrar no estúdio', exact: true }).click();
-  await expect(page).toHaveURL(/\/studio\/z$/);
+  await expect(page).toHaveURL(/\/studio$/);
   await expect(page.getByText('pessoa.ficticia@example.test', { exact: true })).toBeVisible();
   const another = await page.context().browser()!.newContext();
   const elsewhere = await another.newPage();
@@ -101,7 +101,7 @@ test('existing Supabase accounts sign in, sign out and sign in from another brow
   await elsewhere.getByLabel('E-mail', { exact: true }).fill('pessoa.ficticia@example.test');
   await elsewhere.getByLabel('Senha', { exact: true }).fill('senha-de-teste');
   await elsewhere.getByRole('button', { name: 'Entrar no estúdio', exact: true }).click();
-  await expect(elsewhere).toHaveURL(/\/studio\/z$/);
+  await expect(elsewhere).toHaveURL(/\/studio$/);
   await another.close();
 });
 test('accounts keep separate project spaces and logging back in restores the first account workspace', async ({
@@ -141,7 +141,7 @@ test('accounts keep separate project spaces and logging back in restores the fir
   await page.getByLabel('E-mail', { exact: true }).fill('alice.demo@example.test');
   await page.getByLabel('Senha', { exact: true }).fill('senha-de-teste');
   await page.getByRole('button', { name: 'Entrar no estúdio', exact: true }).click();
-  await expect(page).toHaveURL(/\/studio\/z$/);
+  await expect(page).toHaveURL(/\/studio$/);
   await page.goto('/studio/projetos');
   await expect(page.getByText('synthetic-speech', { exact: true })).toBeVisible();
 });

@@ -1,6 +1,7 @@
-// A Z, a IA do ecossistema Absolute ZRO, no painel inicial do AEON (pedido do titular, 27/10/2026: a IA no painel
-// inicial de todas as plataformas). É o mesmo <zro-ia> do HUB e de todos os apps. Não confundir com a ajuda de edição
-// do próprio AEON (Whisper e regras do preset): a Z conversa e lê dados da conta; não edita nada.
+// A Z, a IA do ecossistema Absolute ZRO, numa página à parte do AEON. Desde 29/10/2026 (titular; Plano de Integração
+// §7–8) ela não é o painel inicial: o app abre na Mídia, e a Z abre pelo ícone discreto da barra (#abrirZ) ou por
+// /app/#z, e só monta quando a pessoa abre (editor.js › ir). É o mesmo <zro-ia> do HUB e de todos os apps. Não
+// confundir com a ajuda de edição do próprio AEON (Whisper e regras do preset): a Z conversa e lê dados da conta.
 //
 // O token nunca chega aqui: o <zro-ia> fala com /api/zro/ia/*, que no site é o repasse da Vercel (api/_ia.js, token
 // no cookie cifrado) e no app de computador é o próprio app (desktop/main.cjs, token na memória do processo principal).
@@ -15,7 +16,7 @@ const SUGESTOES = ['Como corto silêncios no AEON?', 'Qual formato uso para Reel
 
 const temaDe = () => (document.documentElement.dataset.theme === 'light' ? 'claro' : 'escuro')
 
-/** Monta a Z em `lugar` (a página Início). `volta`: para onde o "Entrar de novo" traz a pessoa. */
+/** Monta a Z em `lugar` (a página da Z).`volta`: para onde o "Entrar de novo" traz a pessoa. */
 export async function montarZ(lugar, { volta = '/app/' } = {}) {
   const aviso = lugar.querySelector('.z-aviso')
   const mostrar = (texto, entrar = false) => {

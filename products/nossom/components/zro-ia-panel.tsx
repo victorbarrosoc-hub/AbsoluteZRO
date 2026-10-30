@@ -1,7 +1,8 @@
 'use client';
 /**
- * A Z, a IA da Absolute ZRO, na aba própria do estúdio (/studio/z, a primeira da navegação e a entrada de /studio no
- * site, no celular/PWA e no app de computador, que abre o mesmo endereço). Ocupa a tela toda. O painel é o `<zro-ia>` publicado pela Absolute ZRO; ele fala com /api/zro/ia, o repasse do servidor que
+ * A Z, a IA da Absolute ZRO, na tela própria do estúdio (/studio/z). Desde 29/10/2026 (titular; Plano de Integração
+ * §7–8) não é a primeira da navegação nem a entrada: /studio abre no Início, e a Z abre pelo anel discreto do topo, pelo
+ * último item da barra lateral ou por link direto. Ocupa a tela toda. O painel é o `<zro-ia>` publicado pela Absolute ZRO; ele fala com /api/zro/ia, o repasse do servidor que
  * acrescenta o token da conta (nada de token no navegador). Sem a conta Absolute ZRO conectada (ou com um token antigo,
  * sem o escopo da IA), o painel avisa e aqui aparece "Conectar com Absolute ZRO".
  */

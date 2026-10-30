@@ -692,13 +692,13 @@ svg {
 .z-aviso a {
   text-decoration: none;
 }
-.dock button[data-ir='inicio'][aria-current] svg { color: var(--text-strong); }
+.barra-z[aria-current] { color: var(--text-strong); background: var(--hover); }
 /* a gaveta de Conversas da Z é position: fixed: na página atual nada de will-change (que prenderia a gaveta à página),
    e as páginas sobem acima da barra, do trilho e do dock (a caixa delas não encosta neles) para o véu cobrir a tela */
-.pagina[data-pagina='inicio'][data-lado='atual'] {
+.pagina[data-pagina='z'][data-lado='atual'] {
   will-change: auto;
 }
-body[data-pagina='inicio'] .paginas {
+body[data-pagina='z'] .paginas {
   z-index: 25;
 }
 

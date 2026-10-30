@@ -34,7 +34,7 @@ after(async () => {
 // sessão da Absolute ZRO falsa: o AEON só abre com conta (api/zro/eu); sem ela vai para entrar.html
 const PESSOA = { ok: true, pessoa: { nome: 'Lia Produtora', email: 'lia@produtora.com', produtos: ['ai-edit'] }, acesso: true }
 
-async function abrir(opts = {}, { logado = true, inicio = false, z = {} } = {}) {
+async function abrir(opts = {}, { logado = true, z = {} } = {}) {
   const pagina = await navegador.newPage({ viewport: { width: 1440, height: 900 }, acceptDownloads: true, ...opts })
   const pedidosZ = await simularZ(pagina, z)
   await pagina.route('**/api/zro/eu', (r) => (logado ? r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(PESSOA) }) : r.fulfill({ status: 401, contentType: 'application/json', body: '{"ok":false}' })))
@@ -48,8 +48,7 @@ async function abrir(opts = {}, { logado = true, inicio = false, z = {} } = {}) 
   const r = await pagina.goto(s.url + 'app/')
   assert.match(r.headers()['content-security-policy'], /default-src 'self'/)
   if (logado) await pagina.waitForFunction(() => document.documentElement.dataset.pronto === '1')
-  // o painel inicial é a Z; os testes do editor começam na Mídia, como quem toca nela no dock
-  if (logado && !inicio) await pagina.click('.dock [data-ir="midia"]')
+  // o app abre na Mídia (a tarefa); a Z só abre pelo ícone da barra
   return { pagina, erros, pedidosZ }
 }
 
@@ -65,9 +64,38 @@ test('só com conta: sem sessão o editor vai para entrar.html; com sessão most
   await dentro.close()
 })
 
-test('painel inicial: a Z abre primeiro, conversa pelo repasse e o editor segue a um toque', async () => {
-  const { pagina, erros, pedidosZ } = await abrir({}, { inicio: true })
-  assert.notEqual(await pagina.getAttribute('.dock [data-ir="inicio"]', 'aria-current'), null)
+test('primeira tela: a Mídia (a tarefa); a Z não é aba do dock nem abre sozinha', async () => {
+  const { pagina, erros, pedidosZ } = await abrir()
+  assert.equal(await pagina.evaluate(() => document.body.dataset.pagina), 'midia')
+  assert.notEqual(await pagina.getAttribute('.dock [data-ir="midia"]', 'aria-current'), null)
+  await pagina.locator('#escolher').waitFor()
+  // o dock é só o editor, com a Mídia primeiro; a Z é um ícone discreto na barra
+  assert.deepEqual(await pagina.locator('.dock button').evaluateAll((bs) => bs.map((b) => b.dataset.ir)), ['midia', 'revisar', 'edicao', 'entrega'])
+  assert.equal(await pagina.locator('.barra #abrirZ').count(), 1)
+  assert.equal(await pagina.getAttribute('#abrirZ', 'aria-current'), null)
+  // nada da Z montou nem pediu nada ao abrir
+  await pagina.waitForTimeout(300)
+  assert.equal(await pagina.locator('#zPainel zro-ia').count(), 0)
+  assert.deepEqual(pedidosZ, [])
+  assert.deepEqual(erros, [])
+  await pagina.close()
+})
+
+test('/app/#z abre a Z direto (link direto continua valendo)', async () => {
+  const pagina = await navegador.newPage({ viewport: { width: 1440, height: 900 } })
+  await simularZ(pagina, {})
+  await pagina.route('**/api/zro/eu', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(PESSOA) }))
+  await pagina.goto(s.url + 'app/#z')
+  await pagina.waitForFunction(() => document.documentElement.dataset.pronto === '1')
+  assert.equal(await pagina.evaluate(() => document.body.dataset.pagina), 'z')
+  await pagina.locator('#zPainel zro-ia').waitFor()
+  await pagina.close()
+})
+
+test('a Z pelo ícone da barra: conversa pelo repasse e o editor segue a um toque', async () => {
+  const { pagina, erros, pedidosZ } = await abrir()
+  await pagina.click('#abrirZ')
+  assert.notEqual(await pagina.getAttribute('#abrirZ', 'aria-current'), null)
   const z = pagina.locator('#zPainel zro-ia')
   await z.waitFor()
   assert.equal(await z.getAttribute('api'), '/api/zro/ia')
@@ -92,8 +120,9 @@ test('painel inicial: a Z abre primeiro, conversa pelo repasse e o editor segue 
   await pagina.close()
 })
 
-test('painel inicial sem o escopo da Z: oferece entrar de novo (que já pede zro.ia)', async () => {
-  const { pagina } = await abrir({}, { inicio: true, z: { logado: false } })
+test('a Z sem o escopo dela: oferece entrar de novo (que já pede zro.ia)', async () => {
+  const { pagina } = await abrir({}, { z: { logado: false } })
+  await pagina.click('#abrirZ')
   const entrar = pagina.locator('#zPainel .z-aviso a')
   await entrar.waitFor()
   assert.equal(await entrar.getAttribute('href'), '/api/zro/entrar?volta=%2Fapp%2F')
