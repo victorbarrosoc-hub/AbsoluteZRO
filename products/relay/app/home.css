@@ -1106,7 +1106,7 @@ main h2 {
   object-fit: cover;
   box-shadow: var(--sombra-cartao);
 }
-.revelando .orbita:not(.visivel) .orbita-app {
+.aparecendo .orbita:not(.visivel) .orbita-app {
   left: 50%;
   top: 50%;
   opacity: 0;
@@ -1186,33 +1186,33 @@ main h2 {
 }
 
 /* ─────────── revelar na rolagem ─────────── */
-[data-revelar] {
+[data-aparecer] {
   transition:
     opacity 0.9s var(--suave),
     translate 0.9s var(--suave);
 }
-.revelando [data-revelar]:not(.visivel) {
+.aparecendo [data-aparecer]:not(.visivel) {
   opacity: 0;
   translate: 0 32px;
 }
-.bento [data-revelar]:nth-child(2),
-.numeros [data-revelar]:nth-child(2) {
+.bento [data-aparecer]:nth-child(2),
+.numeros [data-aparecer]:nth-child(2) {
   transition-delay: 0.06s;
 }
-.bento [data-revelar]:nth-child(3),
-.numeros [data-revelar]:nth-child(3) {
+.bento [data-aparecer]:nth-child(3),
+.numeros [data-aparecer]:nth-child(3) {
   transition-delay: 0.12s;
 }
-.bento [data-revelar]:nth-child(4),
-.numeros [data-revelar]:nth-child(4) {
+.bento [data-aparecer]:nth-child(4),
+.numeros [data-aparecer]:nth-child(4) {
   transition-delay: 0.18s;
 }
-.bento [data-revelar]:nth-child(5) {
+.bento [data-aparecer]:nth-child(5) {
   transition-delay: 0.24s;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .revelando [data-revelar]:not(.visivel) {
+  .aparecendo [data-aparecer]:not(.visivel) {
     opacity: 1;
     translate: none;
   }

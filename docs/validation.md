@@ -3056,8 +3056,11 @@ produção (deploy só com autorização).
   verdade em `app/inicio/telas/` (conversor, fila, editor de preset e painel; MacBook 1440×900 e iPhone 390×844, claro e
   escuro, webp de 40 a 60 KB), regravadas por `node scripts/telas-inicio.mjs` com uma conta de exemplo servida no próprio
   script. A foto `app/inicio/praia.webp` (Higgsfield, 0,5 crédito) é o arquivo de exemplo das telas e do "Experimente".
-- `test/inicio.test.js` (11): o "Experimente" e o "Cabe no limite" iguais ao plano do conversor; cada tela existe nos
+- `test/inicio.test.js` (13): o "Experimente" e o "Cabe no limite" iguais ao plano do conversor; cada tela existe nos
   dois temas; SEO e o topo com `<nav>`; no Chromium, montagem pelos dados (23 destinos, 5 grupos, 7 apps), nenhum
   "grátis" nem em atributo, todo controle com nome, abas pelo teclado, tema escuro troca as telas, conta fora/dentro/
   desligada (o "Seu painel" do herói continua), 390 e 1440 px sem rolar de lado, com e sem movimento.
-- Relay `npm test`: **112/112**. Raiz: `lint`, `format:check` e `scan-secrets` ok. Não conferido aqui: iPhone de verdade.
+- Só o que está no ar (decisão do titular, 30/10/2026): a órbita mostra Maestro, SOBEDESCE, Synquei e TPeasy; AEON,
+  Revela e NOSSOM saem da página e o cartão da cor da Revela só nasce com a flag ligada. O teste publica o site como a
+  produção (`publicar`, sem a flag) e confere o HTML e a página renderizada: nada de AEON, Revela, NOSSOM ou "beta".
+- Relay `npm test`: **114/114**. Raiz: `lint`, `format:check` e `scan-secrets` ok. Não conferido aqui: iPhone de verdade.

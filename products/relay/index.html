@@ -70,20 +70,20 @@
       <!-- 2 · números que vêm do próprio código -->
       <section class="numeros-faixa" aria-label="Números">
         <dl class="numeros">
-          <div data-revelar><dt>destinos, com fonte e data</dt><dd data-contar="destinos">23</dd></div>
-          <div data-revelar><dt>grupos: redes, trabalho, TV, tamanho e áudio</dt><dd data-contar="grupos">5</dd></div>
-          <div data-revelar><dt>bytes enviados: converte aqui</dt><dd>0</dd></div>
-          <div data-revelar><dt>conta para o ecossistema</dt><dd>1</dd></div>
+          <div data-aparecer><dt>destinos, com fonte e data</dt><dd data-contar="destinos">23</dd></div>
+          <div data-aparecer><dt>grupos: redes, trabalho, TV, tamanho e áudio</dt><dd data-contar="grupos">5</dd></div>
+          <div data-aparecer><dt>bytes enviados: converte aqui</dt><dd>0</dd></div>
+          <div data-aparecer><dt>conta para o ecossistema</dt><dd>1</dd></div>
         </dl>
       </section>
 
       <!-- 3 · experimente: um master, o destino muda a tela, os números vêm do plano do conversor -->
       <section class="demo" id="experimente" aria-labelledby="t-demo">
-        <header class="cabeca-secao" data-revelar>
+        <header class="cabeca-secao" data-aparecer>
           <p class="sobretitulo">Experimente</p>
           <h2 id="t-demo"><span class="fino">Escolha para onde vai.</span> <span class="pesado">O resto é com ele.</span></h2>
         </header>
-        <div class="demo-corpo cartao" data-revelar>
+        <div class="demo-corpo cartao" data-aparecer>
           <div class="demo-escolha">
             <div class="demo-destinos" role="radiogroup" aria-label="Destino" data-demo-destinos></div>
             <label class="chave demo-preencher" data-demo-preencher-linha>
@@ -109,17 +109,17 @@
 
       <!-- 4 · as ferramentas, cada uma com a tela de verdade -->
       <section class="ferramentas" id="ferramentas" aria-labelledby="t-ferramentas">
-        <header class="cabeca-secao" data-revelar>
+        <header class="cabeca-secao" data-aparecer>
           <p class="sobretitulo">Ferramentas</p>
           <h2 id="t-ferramentas"><span class="fino">Tudo o que você exporta,</span> <span class="pesado">num lugar só.</span></h2>
         </header>
-        <div class="segmentos segmentos--grande" role="tablist" aria-label="Ferramentas" data-abas="ferramentas" data-revelar>
+        <div class="segmentos segmentos--grande" role="tablist" aria-label="Ferramentas" data-abas="ferramentas" data-aparecer>
           <button type="button" role="tab" id="aba-converter" aria-controls="painel-converter" aria-selected="true">Converter</button>
           <button type="button" role="tab" id="aba-fila" aria-controls="painel-fila" aria-selected="false" tabindex="-1">Vários de uma vez</button>
           <button type="button" role="tab" id="aba-meus" aria-controls="painel-meus" aria-selected="false" tabindex="-1">Meus presets</button>
           <button type="button" role="tab" id="aba-painel" aria-controls="painel-painel" aria-selected="false" tabindex="-1">Painel</button>
         </div>
-        <div class="ferramentas-paineis" data-revelar>
+        <div class="ferramentas-paineis" data-aparecer>
           <div class="ferramenta" role="tabpanel" id="painel-converter" aria-labelledby="aba-converter">
             <div class="ferramenta-texto">
               <h3>Um toque por destino.</h3>
@@ -191,12 +191,12 @@
 
       <!-- 5 · qualidade, em cartões; "cabe no limite" com a conta do conversor -->
       <section class="qualidade" id="qualidade" aria-labelledby="t-qualidade">
-        <header class="cabeca-secao" data-revelar>
+        <header class="cabeca-secao" data-aparecer>
           <p class="sobretitulo">Qualidade</p>
           <h2 id="t-qualidade"><span class="fino">Qualidade de</span> <span class="pesado">quem entrega.</span></h2>
         </header>
         <div class="bento">
-          <article class="cartao bloco bloco--limite" data-revelar>
+          <article class="cartao bloco bloco--limite" data-aparecer>
             <div class="bloco-cabeca">
               <p class="bloco-sobre">Tamanho exato</p>
               <h3>Cabe no limite.</h3>
@@ -213,48 +213,43 @@
               <p class="limite-nota">Master 4K de 2 min.</p>
             </div>
           </article>
-          <article class="cartao bloco" data-revelar>
+          <article class="cartao bloco" data-aparecer>
             <i data-icone="lupa"></i>
             <h3>Lanczos-3</h3>
             <p class="apoio">Redução nítida, na placa de vídeo.</p>
           </article>
-          <article class="cartao bloco" data-revelar>
+          <article class="cartao bloco" data-aparecer>
             <i data-icone="cor"></i>
             <h3>Cor certa</h3>
             <p class="apoio">BT.709 marcado. Igual em todo player.</p>
           </article>
-          <article class="cartao bloco" data-revelar>
+          <article class="cartao bloco" data-aparecer>
             <i data-icone="chip"></i>
             <h3>Chip do aparelho</h3>
             <p class="apoio">Usa o codificador de vídeo que ele tem.</p>
           </article>
-          <article class="cartao bloco bloco--maxima" data-revelar>
+          <article class="cartao bloco bloco--maxima" data-aparecer>
             <i data-icone="estrela"></i>
             <h3>Máxima qualidade</h3>
             <p class="apoio">No Mac e no Windows, o app SOBEDESCE converte com o x264.</p>
             <span class="ficha">App do Relay: depois</span>
-          </article>
-          <article class="cartao bloco bloco--cor" data-revelar data-so-revela hidden>
-            <i data-icone="cor"></i>
-            <h3>Cor da Revela</h3>
-            <p class="apoio">Log da câmera para Rec.709 e o seu look .cube, em lote.</p>
           </article>
         </div>
       </section>
 
       <!-- 6 · todos os destinos, por grupo -->
       <section class="destinos" id="destinos" aria-labelledby="t-destinos">
-        <header class="cabeca-secao" data-revelar>
+        <header class="cabeca-secao" data-aparecer>
           <p class="sobretitulo">Destinos</p>
           <h2 id="t-destinos"><span class="fino"><span data-contar="destinos">23</span> destinos.</span> <span class="pesado">Cada um com fonte e data.</span></h2>
         </header>
-        <div class="segmentos" role="tablist" aria-label="Grupos de destinos" data-abas="destinos" data-destinos-abas data-revelar></div>
-        <div class="grade-destinos" data-destinos data-revelar></div>
+        <div class="segmentos" role="tablist" aria-label="Grupos de destinos" data-abas="destinos" data-destinos-abas data-aparecer></div>
+        <div class="grade-destinos" data-destinos data-aparecer></div>
       </section>
 
       <!-- 7 · a conta: painel, equipe e o Set -->
       <section class="conta-secao" id="conta" aria-labelledby="t-conta">
-        <div class="conta-texto" data-revelar>
+        <div class="conta-texto" data-aparecer>
           <p class="sobretitulo">Conta Absolute ZRO</p>
           <h2 id="t-conta"><span class="fino">Uma conta.</span> <span class="pesado">Tudo junto.</span></h2>
           <p class="apoio">Converter não pede conta. Com ela, vêm o painel, a equipe e o Set.</p>
@@ -265,7 +260,7 @@
           </ul>
           <a class="vidro vidro--tinta vidro--grande" href="/api/zro/entrar?volta=%2Fpainel" data-conta-acao hidden>Entrar com a Absolute ZRO</a>
         </div>
-        <div class="conta-palco" data-revelar>
+        <div class="conta-palco" data-aparecer>
           <div class="iphone iphone--grande">
             <div class="iphone-tela"><img data-tela="painel-iphone" src="app/inicio/telas/painel-iphone-claro.webp" width="780" height="1688" alt="Painel do Relay no iPhone: olá, Lia, e os números da conta" loading="lazy" decoding="async" /></div>
           </div>
@@ -274,18 +269,18 @@
 
       <!-- 8 · família -->
       <section class="familia" id="familia" aria-labelledby="t-familia">
-        <header class="cabeca-secao" data-revelar>
+        <header class="cabeca-secao" data-aparecer>
           <h2 id="t-familia"><span class="fino">Mora no</span> <span class="pesado">ecossistema inteiro.</span></h2>
           <p class="apoio">O Relay aparece onde você precisa exportar.</p>
         </header>
-        <div class="orbita" data-familia data-revelar>
+        <div class="orbita" data-familia data-aparecer>
           <div class="orbita-centro"><img src="marca/relay-icone.svg" alt="Relay" /></div>
         </div>
       </section>
 
       <!-- 9 · fecho escuro: privacidade e a ação -->
       <section class="fecho" aria-labelledby="t-fecho">
-        <div class="fecho-caixa" data-revelar>
+        <div class="fecho-caixa" data-aparecer>
           <div class="cadeado" aria-hidden="true"><i data-icone="cadeado"></i></div>
           <h2 id="t-fecho"><span class="pesado">O arquivo não sai</span> <span class="fino">do seu aparelho.</span></h2>
           <p class="apoio">Nenhum upload. Converte aqui mesmo.</p>

@@ -4,12 +4,15 @@
 
 import { after, before, describe, test } from 'node:test'
 import assert from 'node:assert/strict'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { chromium } from 'playwright'
 import { GRUPOS, PRESETS, preset } from '../src/presets.js'
 import { planejar } from '../src/plano.js'
 import { caber, DEMO, demonstrar, ficha, LIMITES_MB, MASTER } from '../app/vitrine.js'
 import { servir } from '../scripts/servir.mjs'
+import { publicar } from '../scripts/publicar-site.mjs'
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
 
@@ -123,7 +126,7 @@ describe('página inicial no Chromium', () => {
     assert.equal(await p.locator('.destino').count(), PRESETS.length)
     assert.equal(await p.locator('[data-destinos-abas] [role="tab"]').count(), GRUPOS.length)
     assert.equal(await p.textContent('.numeros [data-contar="destinos"]'), String(PRESETS.length))
-    assert.equal(await p.locator('.orbita-app').count(), 7)
+    assert.deepEqual(await p.locator('.orbita-app span').allTextContents(), ['Maestro', 'SOBEDESCE', 'Synquei', 'TPeasy'])
     const tudo = await p.evaluate(
       () => document.body.innerText + [...document.querySelectorAll('*')].flatMap((n) => [...n.attributes].map((a) => a.value)).join(' '),
     )
@@ -141,7 +144,7 @@ describe('página inicial no Chromium', () => {
     )
     assert.equal(semNome, 0)
     // com "reduzir movimento", nada fica escondido esperando a rolagem
-    assert.equal(await p.locator('[data-revelar]:not(.visivel)').evaluateAll((ns) => ns.filter((n) => getComputedStyle(n).opacity !== '1').length), 0)
+    assert.equal(await p.locator('[data-aparecer]:not(.visivel)').evaluateAll((ns) => ns.filter((n) => getComputedStyle(n).opacity !== '1').length), 0)
     await ctx.close()
     assert.deepEqual(erros, [])
   })
@@ -238,6 +241,45 @@ describe('página inicial no Chromium', () => {
       }
       await ctx.close()
     }
+    assert.deepEqual(erros, [])
+  })
+})
+
+describe('a página que vai para a produção', () => {
+  // só o que está no ar (decisão do titular, 30/10/2026): AEON, Revela e NOSSOM ainda não; Maestro e Relay sem "beta"
+  const FORA = /\b(AEON|Revela|NOSSOM)\b|\bbeta\b/i
+  let saida, srv, navegador
+
+  before(async () => {
+    saida = mkdtempSync(join(tmpdir(), 'relay-producao-')) + '/'
+    publicar({ saida, aberto: true, previa: false, revela: false })
+    srv = await servir({ porta: 0, raiz: saida, recursos: null })
+    navegador = await chromium.launch({ args: ['--enable-unsafe-swiftshader'] })
+  })
+  after(async () => {
+    await navegador?.close()
+    srv?.close()
+    rmSync(saida, { recursive: true, force: true })
+  })
+
+  test('o HTML publicado não cita AEON, Revela nem NOSSOM, nem "beta"', () => {
+    const publicado = readFileSync(join(saida, 'index.html'), 'utf8')
+    assert.doesNotMatch(publicado, FORA)
+    assert.match(readFileSync(join(saida, 'app/recursos.js'), 'utf8'), /"revela":false/)
+  })
+
+  test('renderizada (com o JavaScript), também não; o Maestro aparece no ecossistema', async () => {
+    const p = await navegador.newPage({ reducedMotion: 'reduce' })
+    const erros = []
+    p.on('pageerror', (e) => erros.push(e.message))
+    await p.goto(`http://127.0.0.1:${srv.address().port}/`)
+    await p.waitForSelector('.orbita-app')
+    const tudo = await p.evaluate(() => document.documentElement.outerHTML + document.body.innerText)
+    assert.doesNotMatch(tudo, FORA)
+    assert.match(await p.textContent('[data-familia]'), /Maestro/)
+    assert.equal(await p.locator('.bloco--cor').count(), 0)
+    assert.ok(!(await p.$$eval('img', (is) => is.map((i) => i.getAttribute('src')))).some((s) => /revela|aeon|nossom/i.test(s)))
+    await p.close()
     assert.deepEqual(erros, [])
   })
 })

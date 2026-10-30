@@ -130,6 +130,7 @@ const PAINEL = {
 
 const servidor = await servir({
   porta: Number(process.env.PORT) || 0,
+  recursos: { revela: false }, // as telas mostram o que a produção mostra (sem a cor da Revela, desligada lá)
   extra: async (req, res) => {
     const u = new URL(req.url, 'http://x')
     const json = (o, s = 200) => (res.writeHead(s, { 'Content-Type': 'application/json' }), res.end(JSON.stringify(o)), true)

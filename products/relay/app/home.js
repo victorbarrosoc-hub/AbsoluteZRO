@@ -203,14 +203,12 @@ if (faixaLimite) {
 
 // ─────────── família: o Relay no centro, os apps em volta ───────────
 
-const FAMILIA = [
+// só as plataformas no ar (decisão do titular, 30/10/2026); as outras entram quando abrirem
+export const FAMILIA = [
+  { nome: 'Maestro', img: 'marca/familia/maestro.svg', href: 'https://maestro.absolutezro.com', uso: 'Versões da entrega' },
   { nome: 'SOBEDESCE', img: 'marca/familia/sobedesce.svg', href: 'https://sobedesce.vercel.app', uso: 'Converter do Drive' },
-  { nome: 'Revela', img: 'marca/familia/revela.svg', href: 'https://revela.absolutezro.com', uso: 'Exportar depois da cor' },
-  { nome: 'AEON', img: 'marca/familia/aeon.svg', href: 'https://aeon.absolutezro.com', uso: 'Exportar a edição' },
-  { nome: 'NOSSOM', img: 'marca/familia/nossom.svg', href: 'https://nossom-teal.vercel.app', uso: 'Exportar o áudio' },
   { nome: 'Synquei', img: 'marca/familia/synquei.svg', href: 'https://synquei.vercel.app', uso: 'Pronto para editar' },
   { nome: 'TPeasy', img: 'marca/familia/tpeasy.svg', href: 'https://tpeasy.vercel.app', uso: 'Gravação para a rede' },
-  { nome: 'Carro do Freela', img: 'marca/familia/carro-do-freela.png', href: 'https://carrodofreela.com.br', uso: 'Reel do portfólio' },
 ]
 const orbita = $('[data-familia]')
 if (orbita)
@@ -225,8 +223,19 @@ if (orbita)
     ),
   )
 
-// a cor da Revela só aparece quando a Revela abre a cor no Relay (app/recursos.js)
-if (RECURSOS.revela) for (const n of $$('[data-so-revela]')) n.hidden = false
+// a cor da Revela só existe na página quando a Revela abre a cor no Relay (app/recursos.js): fora disso, nem o texto
+// vai para o HTML
+const bento = $('.bento')
+if (RECURSOS.revela && bento)
+  bento.append(
+    el(
+      'article',
+      { className: 'cartao bloco bloco--cor' },
+      icone('cor'),
+      el('h3', { textContent: 'Cor da Revela' }),
+      el('p', { className: 'apoio', textContent: 'Log da câmera para Rec.709 e o seu look .cube, em lote.' }),
+    ),
+  )
 
 // ─────────── revelar na rolagem (uma vez) e os números contando ───────────
 
@@ -242,11 +251,11 @@ function contar(dd) {
   requestAnimationFrame(passo)
 }
 
-const revelar = $$('[data-revelar]')
+const aparecer = $$('[data-aparecer]')
 if ('IntersectionObserver' in window && !menosMovimento()) {
   // o que já está na tela aparece sem esperar; o resto, ao entrar
-  for (const n of revelar) if (n.getBoundingClientRect().top < innerHeight) n.classList.add('visivel')
-  document.documentElement.classList.add('revelando')
+  for (const n of aparecer) if (n.getBoundingClientRect().top < innerHeight) n.classList.add('visivel')
+  document.documentElement.classList.add('aparecendo')
   const io = new IntersectionObserver(
     (entradas) => {
       for (const e of entradas) {
@@ -259,7 +268,7 @@ if ('IntersectionObserver' in window && !menosMovimento()) {
     },
     { rootMargin: '0px 0px -8% 0px' },
   )
-  for (const n of revelar) if (!n.classList.contains('visivel')) io.observe(n)
+  for (const n of aparecer) if (!n.classList.contains('visivel')) io.observe(n)
 }
 
 icones()

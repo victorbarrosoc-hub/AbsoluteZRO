@@ -787,7 +787,8 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
   MacBook e no iPhone (telas capturadas do app por `scripts/telas-inicio.mjs`, claro e escuro), números que vêm do
   código, "Experimente" (o destino muda a tela e a ficha, pelo mesmo plano do conversor), Ferramentas em abas
   (Converter, Vários de uma vez, Meus presets, Painel), "Cabe no limite" com a conta do Tamanho exato, os 23 destinos
-  por grupo, a conta (painel, equipe e Set) e o fecho. Uma foto de exemplo (Higgsfield) vira o arquivo das telas e da
+  por grupo, a conta (painel, equipe e Set), o ecossistema só com o que está no ar (Maestro, SOBEDESCE, Synquei e
+  TPeasy) e o fecho. Uma foto de exemplo (Higgsfield) vira o arquivo das telas e da
   demonstração; nenhuma interface gerada. ⬜ Conferir num iPhone de verdade depois do deploy.
 - ⬜ Looks (`.cube`) no Drive pelo SOBEDESCE (pedido do titular: ficam no aparelho, sobem para o Drive).
 - ⬜ App de computador do Relay e SOBEDESCE gravando no painel (Bearer da conta em `/api/relay/painel`).
