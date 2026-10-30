@@ -27,7 +27,9 @@ export default async function callback(req, res) {
   if (!igual(q.get('state'), ida.state)) return falhar('expirou')
   const erro = q.get('error')
   // cliente ainda sem o escopo zro.ia na Absolute ZRO: o login não pode quebrar por causa da Z, entra sem ela
-  if (erro === 'invalid_scope' && ida.ia === true) return redirecionar(res, 303, `/api/zro/entrar?volta=${encodeURIComponent(volta)}&sem_ia=1`, [limpar])
+  // primeiro tenta sem o Set (Absolute ZRO de antes dele); depois, sem a Z também
+  if (erro === 'invalid_scope' && ida.set === true) return redirecionar(res, 303, `/api/zro/entrar?volta=${encodeURIComponent(volta)}${ida.criar ? '&criar=1' : ''}&sem_set=1`, [limpar])
+  if (erro === 'invalid_scope' && ida.ia === true) return redirecionar(res, 303, `/api/zro/entrar?volta=${encodeURIComponent(volta)}${ida.criar ? '&criar=1' : ''}&sem_ia=1`, [limpar])
   if (erro) return falhar(erro === 'access_denied' ? 'recusado' : 'erro')
   // RFC 9207: quando a resposta diz quem a emitiu, tem que ser a Absolute ZRO configurada.
   if (q.has('iss') && q.get('iss') !== emissor()) return falhar('erro')

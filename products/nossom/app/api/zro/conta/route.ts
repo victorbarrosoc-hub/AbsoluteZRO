@@ -72,7 +72,7 @@ export async function DELETE(request: Request) {
       );
     // Sem vínculo, a conta volta a ser como antes da Absolute ZRO.
     const headers = new Headers(privateHeaders);
-    headers.append('Set-Cookie', await forgetIaTokens(request));
+    for (const c of await forgetIaTokens(request)) headers.append('Set-Cookie', c);
     const session = decodeSession(accountToken(request));
     if (session?.zroProducts || session?.zroRelease || session?.zro) {
       const { zroProducts: _, zroRelease: _release, zro: _zro, ...rest } = session;

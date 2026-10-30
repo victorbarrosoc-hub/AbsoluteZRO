@@ -16,8 +16,6 @@ import { openExternal } from '../lib/desktop.js'
 
 // O que se usa todo dia em cima; Dispositivos e Ajustes embaixo. Frames e Cartões com item próprio (não ficam escondidos).
 const NAV = [
-  // a Z, a IA da Absolute ZRO: o primeiro item e a tela de entrada (pedido do titular, 27/10/2026)
-  { id: 'z', label: 'Z', icon: 'z', title: 'A Z, a IA da Absolute ZRO' },
   { id: 'painel', label: 'Início', icon: 'home' },
   { id: 'transferencias', label: 'Transferências', icon: 'transfers' },
   { id: 'drive', label: 'Drive', icon: 'cloud' },
@@ -26,9 +24,12 @@ const NAV = [
   { id: 'cartoes', label: 'Cartões', icon: 'sdcard' },
   { id: 'comparar', label: 'Comparar', icon: 'compare' },
 ]
+// A Z, a IA da Absolute ZRO (titular, 29/10/2026; Plano de Integração §7–8): discreta, no pé da barra, depois dos
+// Ajustes. Não é a primeira nem a tela de entrada; a tarefa do app vem primeiro.
 const NAV_BAIXO = [
   { id: 'computadores', label: 'Dispositivos', icon: 'laptop' },
   { id: 'ajustes', label: 'Ajustes', icon: 'sliders' },
+  { id: 'z', label: 'Z', icon: 'z', title: 'A Z, a IA da Absolute ZRO' },
 ]
 
 // Os outros apps da Absolute ZRO, cada um com o próprio ícone (cópias em public/familia/). Abrem no navegador do
@@ -38,6 +39,11 @@ const FAMILIA = [
   { href: 'https://synquei.vercel.app', nome: 'Synquei', img: '/familia/synquei.svg' },
   { href: 'https://tpeasy.vercel.app', nome: 'TPEasy', img: '/familia/tpeasy.svg' },
 ]
+// Maestro na família (lançamento em Beta grátis, docs/operations/lancamento-maestro.md): fica de fora até o titular
+// abrir; vira com `node scripts/lancamento-maestro.mjs --abrir` (e volta com --fechar).
+const MAESTRO_NA_FAMILIA = true
+// em ordem alfabética, logo depois da Absolute ZRO
+if (MAESTRO_NA_FAMILIA) FAMILIA.splice(1, 0, { href: 'https://maestro.absolutezro.com', nome: 'Maestro', img: '/familia/maestro.svg' })
 
 /**
  * Os apps da família numa linha só ("Absolute ZRO", ícone de grade); o clique abre a lista num
@@ -200,7 +206,7 @@ function NavItem({ n, current }) {
 
 export function Sidebar({ current }) {
   return html`<aside class="sidebar">
-    <div class="sidebar-brand"><a href="#/z" aria-label="SOBEDESCE — início"><${Wordmark} size=${22} /></a></div>
+    <div class="sidebar-brand"><a href="#/painel" aria-label="SOBEDESCE — início"><${Wordmark} size=${22} /></a></div>
     <nav class="nav" aria-label="Principal">
       ${NAV.map((n) => html`<${NavItem} n=${n} current=${current} />`)}
     </nav>

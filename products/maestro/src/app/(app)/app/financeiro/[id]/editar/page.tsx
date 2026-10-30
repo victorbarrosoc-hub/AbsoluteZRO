@@ -3,7 +3,7 @@ import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { centavosParaCampo } from "@/lib/dinheiro";
 import { camposLancamento } from "@/lib/financeiro/formularios";
 import { obterLancamento, opcoesFinanceiro } from "@/lib/financeiro/servidor";
-import { podeVerDinheiro } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
 import { CabecaForm, Formulario } from "@/components/form";
 import { salvarLancamentoAcao } from "../../acoes";
 
@@ -12,7 +12,7 @@ export const metadata = { title: "Editar lançamento" };
 export default async function EditarLancamento({ params }: PageProps<"/app/financeiro/[id]/editar">) {
   const { id } = await params;
   const s = await exigirAcessoNaPagina(`/app/financeiro/${id}/editar`);
-  if (!podeVerDinheiro(s.papel)) redirect("/app/financeiro");
+  if (!podeArea(s, "financeiro")) redirect("/app/financeiro");
   const ctx = { sub: s.sub, orgId: s.orgId };
   const [l, o] = await Promise.all([obterLancamento(ctx, id), opcoesFinanceiro(ctx)]);
   if (!l) notFound();

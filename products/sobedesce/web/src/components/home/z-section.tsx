@@ -13,9 +13,9 @@ const FICHAS = [
 ] as const
 
 /**
- * A Z, a IA do ecossistema Absolute ZRO. Desde 27/10/2026 ela tem aba própria, a primeira da área logada (/z,
- * components/conta/painel-z.tsx, repasse em lib/zro/ia.ts): a seção diz que está no SOBEDESCE e leva à aba;
- * "Conhecer a Z" fica como segunda ação.
+ * A Z, a IA do ecossistema Absolute ZRO, na página /z (components/conta/painel-z.tsx, repasse em lib/zro/ia.ts). Desde
+ * 29/10/2026 ela não é a primeira tela da área logada (quem entra cai em /conta; a Z fica num anel discreto no
+ * cabeçalho): esta seção da página pública só apresenta e leva a /z; "Conhecer a Z" fica como segunda ação.
  * Anel e estrela em public/z; a estrela fica sobre o tubo, às 3 horas, e contorna o anel como a Z do HUB (globals.css,
  * .z-orbita e .z-estrela). No celular o anel fica no centro da coluna; a estrela passa por fora, na margem do cartão.
  */

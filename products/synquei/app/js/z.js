@@ -1,5 +1,6 @@
-// A Z, a IA do ecossistema Absolute ZRO, numa aba só dela: a primeira, e a tela de entrada do app (site, celular e app
-// de desktop). O painel é o <zro-ia> da
+// A Z, a IA do ecossistema Absolute ZRO, numa tela só dela (#/z). Desde 29/10/2026 (titular; Plano de Integração §7–8)
+// não é a primeira nem a tela de entrada (site, celular e app de desktop abrem no Início): fica no pé da barra lateral
+// e num anel discreto no Início do celular, e nunca abre sozinha. O painel é o <zro-ia> da
 // Absolute ZRO; ele fala com /api/zro/ia, o repasse do próprio Synquei (api/zro/ia.js no site, desktop/conta.cjs no
 // app), que acrescenta o token da conta no servidor. O token nunca chega a esta página.
 // A Z conversa e lê os dados da conta; não mexe nos arquivos nem no projeto. O painel fica fora de #view (a conversa não
@@ -54,6 +55,21 @@ function criar(p) {
 function fora(p) {
   p.innerHTML = `<div class="z-fora"><span class="z-fora-anel" aria-hidden="true"></span><h2>A Z precisa de internet.</h2><p>O resto do Synquei funciona sem ela.</p><div class="z-fora-acoes"><button class="btn btn-primary" type="button" data-z="tentar">Tentar de novo</button><a class="btn btn-secondary" href="#/inicio">${icon('home')}Ir para o Início</a></div></div>`
   p.querySelector('[data-z="tentar"]').addEventListener('click', () => location.reload())
+}
+
+let contaPronta = null
+let montada = null
+/**
+ * main.js entrega a promessa da conta; a Z só monta na primeira vez que a pessoa abre #/z (abrirZ): nada dela carrega ao
+ * abrir o app (titular, 29/10/2026). `jaNaZ`: o app abriu direto em #/z (link direto).
+ */
+export function ligarZ(conta, jaNaZ = false) {
+  contaPronta = conta
+  if (jaNaZ) abrirZ()
+}
+/** A pessoa abriu a Z: monta uma vez, depois de saber da conta. */
+export function abrirZ() {
+  if (contaPronta) montada ??= contaPronta.then(iniciarZ)
 }
 
 /** Monta a Z na aba dela depois de saber da conta (o /eu já renovou o token: a Z não disputa o refresh token com ele). */

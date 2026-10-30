@@ -55,7 +55,9 @@ export async function abrir() {
   const navegador = await chromium.launch({ args: ['--enable-unsafe-swiftshader'] })
   const erros = []
   const nova = async (caminho, opcoes = {}) => {
-    const p = await navegador.newPage(opcoes)
+    const { antes, ...resto } = opcoes
+    const p = await navegador.newPage(resto)
+    if (antes) await p.addInitScript(antes)
     p.on('pageerror', (e) => erros.push(e.message))
     p.on('console', (m) => m.type() === 'error' && erros.push(m.text()))
     await p.goto(base + caminho)

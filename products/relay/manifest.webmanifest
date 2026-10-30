@@ -1,7 +1,7 @@
 {
   "name": "Relay",
   "short_name": "Relay",
-  "description": "Conversor de vídeo e áudio grátis da Absolute ZRO.",
+  "description": "Conversor de vídeo e áudio da Absolute ZRO.",
   "lang": "pt-BR",
   "start_url": "/converter",
   "scope": "/",

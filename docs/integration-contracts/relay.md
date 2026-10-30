@@ -5,8 +5,8 @@ plataformas o usam e o que cada uma precisa preparar para ele chegar. Vale para 
 plataforma da família. Se o INPI pedir, o nome vira **Relay Convert**; o id técnico `relay` não muda.
 
 **Estado (29/10/2026):** o Relay está pronto em `products/relay/` (site, conversor, presets da pessoa, laboratório de
-qualidade) e já embutido no SOBEDESCE (computador e celular). Nada publicado: o projeto Vercel `relay` e o domínio
-`relay.absolutezro.com` pedem autorização do titular; no HUB ele entra fechado (migration `0031`).
+qualidade) e já embutido no SOBEDESCE (computador e celular). Liberado aos usuários junto com o Maestro (29/10/2026, sem e-mail de lançamento):
+`relay.absolutezro.com` com `RELEASE=released`; no HUB, a migration `0032` abre o produto e o gate (canal web).
 
 ## O que é
 
@@ -14,15 +14,16 @@ O Relay é o setor da Absolute ZRO que **converte e exporta**: codec, contêiner
 Ele recebe um arquivo e entrega a versão certa para um destino (YouTube 1080p, YouTube 4K, Reels · No Compress,
 TikTok, WhatsApp, Vimeo, Apple HEVC, Proxy, Discord, E-mail, Tamanho exato, MP3, AAC, WAV).
 
-- **Grátis**, para trazer gente nova ao ecossistema: converter no aparelho não pede conta. A conta Absolute ZRO só
+- **Aberto**, para trazer gente nova ao ecossistema: converter no aparelho não pede conta. A conta Absolute ZRO só
   entra no que toca a conta (Drive, o computador da pessoa, histórico).
-- **Qualidade no nível do HandBrake, ou acima:** no computador, o mesmo x264 do HandBrake (CRF com o teto do
-  destino, duas passadas para tamanho exato); no navegador, redução em Lanczos na placa de vídeo, cor marcada BT.709
-  e bitrate com folga para os codificadores de hardware. Medição em `products/relay/docs/QUALIDADE.md`.
+- **Qualidade medida:** no computador, o x264 em `slow` e qualidade constante (duas passadas no tamanho exato); no
+  navegador, redução em Lanczos na placa de vídeo, cor marcada BT.709 e bitrate com folga para os codificadores de
+  hardware. Medição interna em `products/relay/docs/QUALIDADE.md`.
 - **Dono único dos presets de entrega.** Nenhuma outra plataforma mantém tabela própria de codec ou bitrate: copia
   do Relay, com teste que confere.
 - **O que não é do Relay:** cor e look (Revela: LUT, PowerGrade, espaço de cor), edição (AEON), tratamento de som
-  (NOSSOM), cópia e backup (SOBEDESCE).
+  (NOSSOM), cópia e backup (SOBEDESCE). O Relay **aplica** a cor da Revela na exportação (seção "Cor da Revela"), mas
+  a conta é da Revela.
 
 ## Os três jeitos de integrar
 
@@ -44,6 +45,15 @@ Regras que valem para os três:
   (`products/relay/marca/`). O app mantém a própria marca no resto.
 - **Mesmo preset, mesmo resultado:** quem embute não muda número de preset. Preset novo nasce no Relay.
 
+## "Máxima qualidade": do site do Relay para o app de computador
+
+No Mac e no Windows, o conversor do Relay oferece **Máxima qualidade**: abre o app SOBEDESCE pelo link
+`sobedesce://relay?presets=<ids>&meus=<base64url das fichas>` (`products/relay/src/link.js` monta, até 8 destinos e
+8 KB; `products/sobedesce/desktop/links.js` lê e recusa o resto). O app mostra a folha "Máxima qualidade", a pessoa
+escolhe os arquivos do computador e ele converte com o x264 (`POST /api/relay/local` no servidor local), salvando
+`<original> (<destino>).<ext>` na mesma pasta, sem gravar por cima (`… 2`) e com `.sobedesce-parcial` até terminar.
+Nenhum arquivo passa pelo site: o link leva só os destinos.
+
 ## Requisitos técnicos para o núcleo no navegador (jeito 1)
 
 - **Mediabunny 1.62.1** (MPL-2.0) em `vendor/`, com as extensões `@mediabunny/prores` (ler ProRes),
@@ -58,24 +68,24 @@ Regras que valem para os três:
 
 ## Onde cada plataforma recebe o Relay
 
-| Plataforma          | Onde aparece                                                                                                       | Jeito              | O que a plataforma prepara                                                                                                                                                                                                                                                                                                                                                      | Estado                                                     |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| **SOBEDESCE**       | Botão direito num vídeo ou áudio do Drive (computador) e menu do arquivo no celular: "Converter com o Relay"       | 1 (computador) e 3 | Feito: `src/relay/` e `web/public/app/relay/` são cópias conferidas por teste (`test/relay.test.js`; o Relay confere do lado dele em `test/copias.test.js`), com os 16 destinos menos "Tamanho exato". Falta: "Baixar como…" das Referências e o pedido da Z (`pedidos_proxy` tipo `formato`) passarem pelos presets do Relay. Proxy 720p e tira de quadros ficam no SOBEDESCE. | Feito (Converter); Baixar como e Z a fazer                 |
-| **Revela**          | A aba Converter sai; no lugar, "Exportar com o Relay" (jeito 2) depois do look aplicado                            | 2                  | Tirar `converter.html`, `app/converter.js` e `src/conversao/` do dock; o script do Deliver do Resolve lê os presets do Relay. Fica na Revela: LUT, PowerGrade, CST e looks (a cor de saída BT.709 continua decisão da Revela).                                                                                                                                                  | A fazer na conversa da Revela                              |
-| **AEON**            | Exportar o vídeo final da timeline (hoje `app/render.js`, só H.264 no tamanho do projeto)                          | 1 (navegador)      | Na tela de exportar, a grade de presets do Relay; o render passa a pedir tamanho, cadência e bitrate ao `planejar` do Relay. O AEON continua desenhando os quadros (cortes, zoom, legenda); o Relay decide como gravar.                                                                                                                                                         | A fazer                                                    |
-| **NOSSOM**          | Exportar o áudio tratado (hoje WAV PCM16 e MP3 320 em `lib/audio.ts`)                                              | 1 (navegador)      | Os formatos de saída pelos presets de áudio do Relay (MP3 320, AAC 256, WAV 48 kHz 24 bits). O NOSSOM mantém medição e loudness; o Relay só grava.                                                                                                                                                                                                                              | A fazer                                                    |
-| **Synquei**         | Depois da sincronia: "Deixar pronto para editar" nos clipes de celular (cadência variável) e proxies               | 3 (ou 2)           | Marcar no relatório os clipes com cadência variável; pedir ao computador a versão de cadência constante e o proxy pelo preset `proxy`. As exportações de projeto (XML, OTIO, EDL) continuam no Synquei.                                                                                                                                                                         | A fazer (depende de preset de cadência constante no Relay) |
-| **Maestro**         | Versões de entrega do card: gerar as versões (YouTube, Reels, WhatsApp para o cliente) a partir do master aprovado | 3                  | Ver "Maestro → Relay" abaixo: ações `relay.converter`, `relay.pedido` e `relay.cancelar` pela ponte do HUB (destino `sobedesce`), cópia dos presets em `products/maestro/src/lib/relay/`.                                                                                                                                                                                       | Contrato definido; lança junto com o Maestro               |
-| **HUB e a Z**       | Catálogo (grátis em todos os planos), família no menu, e a Z: "me manda isso em MP4 720p"                          | 3                  | Feito: produto `relay` no catálogo (migration `0031`, grátis em todo plano, sem limites, gate em `development`), ícone em `apps/hub-web/public/products/relay.svg`, `ProductId` com `relay`, o Relay no guia da Z. Na abertura: migration nova com `stage`, `external_url` e o gate.                                                                                            | Feito (fechado até o deploy)                               |
-| **TPeasy**          | Gravações do teleprompter: "Exportar com o Relay" para mandar a gravação no formato da rede                        | 2                  | Link com o preset; nada de conversão própria.                                                                                                                                                                                                                                                                                                                                   | Futuro                                                     |
-| **Carro do Freela** | Portfólio e reel do freela: "Comprimir com o Relay" antes de subir                                                 | 2                  | Link com o preset `tamanho` ou `vimeo`.                                                                                                                                                                                                                                                                                                                                         | Futuro                                                     |
+| Plataforma          | Onde aparece                                                                                                                                                              | Jeito              | O que a plataforma prepara                                                                                                                                                                                                                                                                                                                                                                           | Estado                                                     |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| **SOBEDESCE**       | Botão direito num vídeo ou áudio do Drive (computador) e menu do arquivo no celular: "Converter com o Relay"                                                              | 1 (computador) e 3 | Feito: `src/relay/` e `web/public/app/relay/` são cópias conferidas por teste (`test/relay.test.js`; o Relay confere do lado dele em `test/copias.test.js`), com os destinos do Relay (hoje 23) menos "Tamanho exato". Falta: "Baixar como…" das Referências e o pedido da Z (`pedidos_proxy` tipo `formato`) passarem pelos presets do Relay. Proxy 720p e tira de quadros ficam no SOBEDESCE.      | Feito (Converter); Baixar como e Z a fazer                 |
+| **Revela**          | A aba Converter sai; no lugar, "Exportar com o Relay" (jeito 2) depois do look aplicado. E o inverso: a receita de cor da Revela (CST + look) no preset do Relay, em lote | 2                  | Tirar `converter.html`, `app/converter.js` e `src/conversao/` do dock; o script do Deliver do Resolve lê os presets do Relay. Fica na Revela: LUT, PowerGrade, CST e looks (a cor de saída BT.709 continua decisão da Revela). Feito no Relay (30/10): a cor da Revela na exportação, desligada até a Revela abrir (seção "Cor da Revela"). Falta na Revela: os looks pela conta (`/api/zro/looks`). | Relay pronto (desligado); Revela a fazer                   |
+| **AEON**            | Exportar o vídeo final da timeline (hoje `app/render.js`, só H.264 no tamanho do projeto)                                                                                 | 1 (navegador)      | Na tela de exportar, a grade de presets do Relay; o render passa a pedir tamanho, cadência e bitrate ao `planejar` do Relay. O AEON continua desenhando os quadros (cortes, zoom, legenda); o Relay decide como gravar.                                                                                                                                                                              | A fazer                                                    |
+| **NOSSOM**          | Exportar o áudio tratado (hoje WAV PCM16 e MP3 320 em `lib/audio.ts`)                                                                                                     | 1 (navegador)      | Os formatos de saída pelos presets de áudio do Relay (MP3 320, AAC 256, WAV 48 kHz 24 bits). O NOSSOM mantém medição e loudness; o Relay só grava.                                                                                                                                                                                                                                                   | A fazer                                                    |
+| **Synquei**         | Depois da sincronia: "Deixar pronto para editar" nos clipes de celular (cadência variável) e proxies                                                                      | 3 (ou 2)           | Marcar no relatório os clipes com cadência variável; pedir ao computador a versão de cadência constante e o proxy pelo preset `proxy`. As exportações de projeto (XML, OTIO, EDL) continuam no Synquei.                                                                                                                                                                                              | A fazer (depende de preset de cadência constante no Relay) |
+| **Maestro**         | Versões de entrega do card: gerar as versões (YouTube, Reels, WhatsApp para o cliente) a partir do master aprovado                                                        | 3                  | Ver "Maestro → Relay" abaixo: ações `relay.converter`, `relay.pedido` e `relay.cancelar` pela ponte do HUB (destino `sobedesce`), cópia dos presets em `products/maestro/src/lib/relay/`.                                                                                                                                                                                                            | Contrato definido; lança junto com o Maestro               |
+| **HUB e a Z**       | Catálogo (incluído em todos os planos), família no menu, e a Z: "me manda isso em MP4 720p"                                                                               | 3                  | Feito: produto `relay` no catálogo (migration `0031`, incluído em todo plano, sem limites, gate em `development`), ícone em `apps/hub-web/public/products/relay.svg`, `ProductId` com `relay`, o Relay no guia da Z. Na abertura: migration nova com `stage`, `external_url` e o gate.                                                                                                               | Feito (fechado até o deploy)                               |
+| **TPeasy**          | Gravações do teleprompter: "Exportar com o Relay" para mandar a gravação no formato da rede                                                                               | 2                  | Link com o preset; nada de conversão própria.                                                                                                                                                                                                                                                                                                                                                        | Futuro                                                     |
+| **Carro do Freela** | Portfólio e reel do freela: "Comprimir com o Relay" antes de subir                                                                                                        | 2                  | Link com o preset `tamanho` ou `vimeo`.                                                                                                                                                                                                                                                                                                                                                              | Futuro                                                     |
 
 ## Maestro → Relay: "Gerar versões com o Relay" (lançam juntos; decisão do titular, 29/10/2026)
 
 O Maestro pede as versões de entrega de um master que está no Drive; o computador da conta converte e sobe na pasta
 do projeto. Reaproveita a ponte que já existe (`maestro-sobedesce.md`): **o destino continua `sobedesce`** (é ele quem
 tem a fila, o Drive e o ffmpeg), com três ações novas na lista fechada `PONTES` (`packages/core/src/pedidos-entre-apps.ts`).
-Pedir conversão exige o **Relay no plano** da organização (entra grátis em todo plano pela `0031`) além do SOBEDESCE.
+Pedir conversão exige o **Relay no plano** da organização (incluído em todo plano pela `0031`) além do SOBEDESCE.
 
 | Ação              | Rota (SOBEDESCE, `POST`)   | Corpo                                                                                                                                     | Resposta                                                              |
 | ----------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
@@ -108,6 +118,41 @@ resultado?: { arquivoId, nome, tamanho, md5, pastaId }, erro?, criado_em, atuali
   Folha, cópia conferida dos presets, `maestro.entregaveis` (migração `0024`) e o acompanhamento testados contra um HUB e
   um SOBEDESCE de mentira que seguem esta tabela (`products/maestro/tests/ponte-falsa.mts`).
 
+## Cor da Revela na exportação (no código desde 30/10/2026; aparece quando a Revela estiver no ar)
+
+Pedido do titular: exportar já convertendo o espaço de cor, em lote. Ex.: vários arquivos em S-Log3 / S-Gamut3.Cine
+saindo em Rec.709, com um look da pessoa, ou 709 + look, num preset só.
+
+- **Receita** (no preset da pessoa, campo `cor`, e no `.relay.json`): `{ entrada: id de câmera da Revela | null,
+entradaNome, tom: 'suave' | 'nenhum', look: { id, nome } | null }`. Saída sempre Rec.709 SDR, marcada 1-1-1. Sem
+  `entrada`, o arquivo já é Rec.709 e só o look entra.
+- **Quem faz a conta:** a Revela. `products/relay/src/revela/` é cópia de `products/finishing/src/cor/espacos.js` e
+  `cube.js`, conferida por `products/relay/test/copias.test.js`: **mudou a cor na Revela, copie para o Relay no mesmo
+  commit.** `products/relay/src/cor.js` monta a receita em cima dela.
+- **Ordem:** CST (log → Rec.709 gama 2.4, com o mapa de tom e a compressão de gamut da Revela) e depois o look, sobre o
+  Rec.709 de tela de 0 a 1 (o que o Resolve passa a um nó depois da CST). Convenção de nível da Revela na CST: código ÷
+  1023 (o arquivo de faixa de vídeo é desesticado antes).
+- **Look de log** (LUT de câmera, look feito para o log; o Lab da Revela marca com `# Entrada:` no .cube): sem CST, a
+  receita leva `look.sobre: 'log'` e o look lê o código da câmera (mesma convenção da CST), não o Rec.709 esticado. O
+  Relay detecta pelo comentário e a pessoa troca em "O look recebe" (Rec.709 ou o log da câmera). Confirmado pela
+  Revela em 30/10: "Meus looks" e o still do Lab são Rec.709 → Rec.709 (depois da CST); a LUT de câmera do Lab entra
+  direto no log.
+- **No navegador:** a CST é a conta na placa de vídeo (curva da câmera, matriz, tom, gamut e curva 2.4, em ponto
+  flutuante; espelho em JavaScript conferido com a Revela em todas as câmeras: abaixo de 1,2/255), do quadro
+  decodificado (10 bits em meia precisão) até o I420; o look vai numa LUT 3D. Sem WebGL2, a conversão recusa com o
+  motivo. Uma LUT 3D de 65 pontos para a CST foi descartada: erra até ~30/255 em cor saturada.
+- **No computador (ffmpeg):** `lut3d` tetraédrico com a receita assada em 65 pontos (`assarParaFfmpeg`), com o limite
+  acima. Por isso o "Máxima qualidade" ainda **não leva** preset com cor (fica no navegador, e a tela diz). A fazer:
+  a mesma conta no computador e o SOBEDESCE assando a receita.
+- **Looks:** hoje a pessoa carrega um `.cube` (fica no aparelho, IndexedDB, `app/looks.js`); o preset guarda só o id
+  e o nome. Sem o look no aparelho, a conversão diz qual falta (nunca sai sem ele). **Quando a Revela estiver no ar:**
+  os looks dela (`src/cor/meuslooks.js`, "Meus looks") entram nessa lista pela conta Absolute ZRO; a Revela expõe
+  `GET /api/zro/looks` (lista: id, nome, pontos) e `GET /api/zro/looks/:id` (o `.cube`), com `authorize()` no produto
+  `finishing`. O Relay chama com a sessão da conta e guarda no aparelho.
+- **Ligar:** `products/relay/app/recursos.js` (`RECURSOS.revela`). Nas prévias da Vercel e no `npm run dev` já liga;
+  na produção, `REVELA=released` no projeto Vercel `relay` + deploy novo (decisão do titular, quando a Revela abrir).
+- **Em lote:** o conversor já leva vários arquivos para vários destinos; um preset com a receita converte todos.
+
 ## Eventos e conta
 
 - **Evento** `media.conversion.completed` (fonte `relay`): só quando a primeira conversão passar pelo HUB (fila do
@@ -122,8 +167,16 @@ resultado?: { arquivoId, nome, tamanho, md5, pastaId }, erro?, criado_em, atuali
 ## Presets (fonte: `products/relay/src/presets.js`)
 
 Redes: YouTube 1080p, YouTube 1440p (o truque da nitidez), YouTube 4K, YouTube Shorts, Reels · No Compress, Instagram
-Feed 4:5, TikTok, WhatsApp. Trabalho: Vimeo, Apple HEVC, Proxy para edição. Tamanho: Discord (20 MB), E-mail (25 MB),
-Tamanho exato. Áudio: MP3 320, AAC 256, WAV 48 kHz.
+Feed 4:5, TikTok, WhatsApp, LinkedIn, X. Trabalho: Vimeo, Apple HEVC, Slides, Vídeo de fundo, Proxy para edição. TV:
+Smart TV, Smart TV 4K. Tamanho: Discord (20 MB), E-mail (25 MB), Tamanho exato. Áudio: MP3 320, AAC 256, WAV 48 kHz.
+
+**Presets da pessoa** (`src/personalizado.js`, ficha versão 2): codec; tamanho (lado menor ou tela fixa com faixas,
+preencher ou esticar); recorte; giro e espelho; cadência até um teto (divide por inteiro) ou exata (23,976, 29,97,
+59,94, 48, 120 e as inteiras; o ffmpeg recebe a fração NTSC); qualidade em bitrate médio, constante (CBR), qualidade
+constante (RF do x264; no navegador, a tabela do preset de partida) ou tamanho máximo; quadro-chave; trecho; áudio
+(codec, bitrate, taxa, canais, volume em dB); computador (velocidade e ajuste do x264, perfil, desentrelaçar, ruído,
+nitidez, volume normalizado em LUFS: só no "Máxima qualidade", e o navegador diz que ficaram de fora); cor da Revela.
+Fichas da versão 1 abrem iguais.
 
 Cada preset traz a fonte e a data da conferência (selo Oficial ou Mercado). No computador ainda virão ProRes, DNxHR e
 HDR 10 bits; no navegador eles não existem (o WebCodecs não grava ProRes nem DNxHR).

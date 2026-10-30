@@ -5,7 +5,10 @@ import { GRUPOS, PRESETS, VERIFICADO_EM, preset as acharPreset } from '../src/pr
 import { LIMITE_MEMORIA, RESOLUCOES, fichaTecnica, fmtDuracao, nomeSaida, planejar, tamanhoLegivel } from '../src/plano.js'
 import { capacidades, converterArquivo, lerArquivo, miniatura, MB } from './motor.js'
 import { icone, icones } from './icones.js'
+import { montarSet } from './set.js'
 import * as Meus from './meus.js'
+import * as Looks from './looks.js'
+import { linkMaxima } from '../src/link.js'
 
 const $ = (id) => document.getElementById(id)
 const el = (tag, props = {}, ...filhos) => {
@@ -139,7 +142,7 @@ const avisar = (t) => {
 }
 
 async function abrirEditor(p) {
-  const r = await Meus.editar(p, origemDoEditor())
+  const r = await Meus.editar(p, origemDoEditor(), Looks)
   if (!r) return
   const id = p?.personalizado ? p.id : null
   if (r.acao === 'apagar') {
@@ -204,6 +207,15 @@ function mostrarAjustes() {
 
 // ─────────── fila ───────────
 
+/** Nome curto do navegador, para o detalhe de um erro de leitura. */
+function navegador() {
+  const ua = navigator.userAgent
+  const marca = navigator.userAgentData?.brands?.find((b) => !/Not|Chromium/i.test(b.brand))
+  if (marca) return `${marca.brand} ${marca.version}`
+  const m = /Firefox\/(\d+)/.exec(ua) ?? /Version\/(\d+(?:\.\d+)?).*Safari/.exec(ua)
+  return m ? `${ua.includes('Firefox') ? 'Firefox' : 'Safari'} ${m[1]}` : 'navegador'
+}
+
 async function adicionar(arquivos) {
   if (!arquivos.length) return
   $('soltar').classList.add('compacta')
@@ -214,12 +226,13 @@ async function adicionar(arquivos) {
     desenharItem(item)
     try {
       item.info = await lerArquivo(arquivo)
-      if (item.info.temVideo && !item.info.decodifica) throw Object.assign(new Error(`Este navegador não lê ${nomeCodec(item.info.codec)}.`), { codigo: 'decodificar' })
+      if (item.info.temVideo && !item.info.decodifica) throw Object.assign(new Error(`Este navegador não lê este ${nomeCodec(item.info.codec)}.`), { codigo: 'decodificar', detalhe: item.info.detalheCodec })
       item.estado = 'pronto'
       if (item.info.temVideo) miniatura(arquivo, $(`item-${item.id}`).querySelector('canvas'), item.info).catch(() => {})
     } catch (e) {
       item.estado = 'erro'
       item.erro = e.codigo ? e.message : 'Não abre como vídeo nem áudio.'
+      item.detalhe = e.detalhe ? `${e.detalhe} · ${navegador()}` : null
     }
     atualizarItem(item)
   }
@@ -316,7 +329,7 @@ function atualizarItem(item) {
   li.dataset.estado = item.estado
   const info = item.info
   const fichas = li.querySelector('.item-info .fichas')
-  if (item.estado === 'erro') fichas.replaceChildren(el('span', { className: 'erro', textContent: item.erro }))
+  if (item.estado === 'erro') fichas.replaceChildren(el('span', { className: 'erro', textContent: item.erro, title: item.detalhe ?? '' }), item.detalhe ? el('small', { className: 'erro-detalhe', textContent: item.detalhe }) : '')
   else if (item.estado === 'lendo') fichas.replaceChildren(ficha('Lendo…'))
   else
     fichas.replaceChildren(
@@ -365,6 +378,7 @@ async function converterSaida(item, s) {
       info: item.info,
       destino: pasta,
       nome: s.nome,
+      lerLook: Looks.ler,
       aoComecar: (c) => (s.conversao = c),
       aoProgredir: (f) => {
         s.progresso = f
@@ -438,6 +452,41 @@ for (const alvo of [zona, document.body]) {
   })
 }
 
+// ─────────── "Máxima qualidade": o app SOBEDESCE converte com o x264 deste computador ───────────
+
+/** Computador (Mac ou Windows): onde o app SOBEDESCE existe. */
+const computador = !/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && /Mac|Win/i.test(navigator.platform || navigator.userAgent) && !('ontouchend' in document && /Mac/.test(navigator.platform))
+
+function abrirMaxima() {
+  const { link, levados, fora } = linkMaxima([...escolhidos], meus)
+  const d = el('dialog', { className: 'folha folha--curta', ariaLabel: 'Máxima qualidade' })
+  const fechar = () => (d.close(), d.remove())
+  d.addEventListener('click', (e) => e.target === d && fechar())
+  d.addEventListener('close', () => d.remove())
+  const abrir = el('a', { className: 'vidro vidro--tinta', href: link, textContent: 'Abrir no SOBEDESCE' })
+  abrir.addEventListener('click', () => setTimeout(fechar, 300))
+  const cancelar = el('button', { type: 'button', className: 'vidro', textContent: 'Agora não' })
+  cancelar.onclick = fechar
+  d.append(
+    el('div', { className: 'folha-topo' }, el('h2', {}, el('span', { className: 'fino', textContent: 'Máxima ' }), el('span', { className: 'pesado', textContent: 'qualidade' })), el('p', { className: 'apoio', textContent: 'O app SOBEDESCE converte com o x264 deste computador. O arquivo fica ao lado do original.' })),
+    el(
+      'div',
+      { className: 'folha-meio folha-meio--uma' },
+      el('div', { className: 'fichas' }, ...levados.map((n) => ficha(n, 'ficha--sinal'))),
+      fora.length ? el('p', { className: 'apoio', textContent: `Fica só aqui no navegador: ${fora.join(', ')}.` }) : null,
+      el('p', { className: 'apoio' }, 'Ainda não tem o app? ', el('a', { href: 'https://sobedesce.vercel.app', target: '_blank', rel: 'noopener', textContent: 'Baixar o SOBEDESCE' }), '.'),
+    ),
+    el('div', { className: 'folha-acoes' }, el('span', { className: 'espaco' }), cancelar, abrir),
+  )
+  document.body.append(d)
+  d.showModal()
+}
+
+if (computador) {
+  $('maxima').hidden = false
+  $('maxima').addEventListener('click', abrirMaxima)
+}
+
 // ─────────── aparelho e tema ───────────
 
 capacidades().then((c) =>
@@ -467,3 +516,6 @@ desenharAbas()
 desenharPresets()
 atualizarTudo()
 window.relayPronto = true
+
+// o Set, a aba em comum do ecossistema: "Set" no fim das páginas do topo (app/set.js)
+montarSet()

@@ -62,6 +62,7 @@ describe('presets: cópia do Relay', () => {
       ['src/relay/presets.js', 'src/presets.js'],
       ['src/relay/plano.js', 'src/plano.js'],
       ['src/relay/ffmpeg.js', 'src/ffmpeg.js'],
+      ['src/relay/personalizado.js', 'src/personalizado.js'],
       ['public/relay-icone.svg', 'marca/relay-icone.svg'],
       ['web/public/app/icons/relay.svg', 'marca/relay-icone.svg'],
       ['web/public/app/relay/src/presets.js', 'src/presets.js'],
@@ -197,5 +198,83 @@ describe('trabalhos da tela (SSE e parar)', () => {
     await sleep(5)
     assert.equal(jobs.view(jobs.jobs.get(id2)).status, 'canceled')
     assert.notEqual(id, id2)
+  })
+})
+
+describe('"Máxima qualidade": link do site do Relay e arquivo deste computador', () => {
+  test('o link sobedesce://relay que o Relay monta é o que o app aceita; o resto é ignorado', async () => {
+    const { lerLinkSobedesce } = await import('../desktop/links.js')
+    const { linkMaxima } = await import('../../relay/src/link.js')
+    const { presetPersonalizado } = await import('../../relay/src/personalizado.js')
+    const meu = presetPersonalizado({ nome: 'Cliente Ç', formato: 'mp3', audioKbps: 192 })
+    const { link } = linkMaxima(['youtube-1080', meu.id], [meu])
+    const lido = lerLinkSobedesce(link)
+    assert.equal(lido.tipo, 'relay')
+    assert.equal(lido.destinos[0], 'youtube-1080')
+    assert.equal(lido.destinos[1].nome, 'Cliente Ç')
+    assert.ok(destinoRelay(lido.destinos[1]), 'a ficha vira preset aqui também')
+    for (const ruim of ['https://relay', 'sobedesce://outro?presets=reels', 'sobedesce://relay?presets=../x', 'sobedesce://relay?meus=lixo', 'sobedesce://relay?presets=' + Array(9).fill('reels').join(','), `sobedesce://relay?presets=${'a'.repeat(9000)}`, null])
+      assert.equal(lerLinkSobedesce(ruim), null, String(ruim).slice(0, 40))
+  })
+
+  test('nome livre ao lado do original: nunca grava por cima', async t => {
+    const { caminhoLivre } = await import('../src/media/relay.js')
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'sobedesce-livre-'))
+    t.after(() => fs.rm(dir, { recursive: true, force: true }))
+    assert.equal(await caminhoLivre(dir, 'a (WhatsApp).mp4'), path.join(dir, 'a (WhatsApp).mp4'))
+    await fs.writeFile(path.join(dir, 'a (WhatsApp).mp4'), 'x')
+    assert.equal(await caminhoLivre(dir, 'a (WhatsApp).mp4'), path.join(dir, 'a (WhatsApp) 2.mp4'))
+  })
+
+  test('arquivo deste computador vira WhatsApp e o MP3 da pessoa, ao lado do original, sem tocar nele', { skip: (!ffmpegDoSistema || !ffprobe) && 'sem ffmpeg/ffprobe neste computador', timeout: 120_000 }, async t => {
+    const { converterLocal } = await import('../src/media/relay.js')
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'sobedesce-local-'))
+    t.after(() => fs.rm(dir, { recursive: true, force: true }))
+    const master = path.join(dir, 'Filme.mov')
+    const r = spawnSync('ffmpeg', ['-loglevel', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc2=size=1920x1080:rate=30', '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000', '-t', '1', '-c:v', 'prores_ks', '-profile:v', '1', '-c:a', 'pcm_s16le', master])
+    assert.equal(r.status, 0, r.stderr?.toString())
+    const antes = await md5File(master)
+    const motor = await detectarMotor({ candidates: [{ path: ffmpegDoSistema, origem: 'sistema' }], resourcesPath: undefined, braw: async () => null })
+    const gerador = new GeradorPrevias({ detect: async () => motor, tmpRoot: dir, selfCheck: false })
+    const zap = await converterLocal({ gerador, caminho: master, destino: 'whatsapp' })
+    assert.equal(zap.caminho, path.join(dir, 'Filme (WhatsApp).mp4'))
+    assert.equal(zap.encoder, 'libx264')
+    const v = JSON.parse(spawnSync('ffprobe', ['-v', 'error', '-show_streams', '-of', 'json', zap.caminho], { encoding: 'utf8' }).stdout).streams.find(s => s.codec_type === 'video')
+    assert.deepEqual([v.codec_name, v.width, v.height, v.color_primaries], ['h264', 1280, 720, 'bt709'])
+    const mp3 = await converterLocal({ gerador, caminho: master, destino: { v: 1, nome: 'Voz', formato: 'mp3', audioKbps: 192 } })
+    assert.equal(path.basename(mp3.caminho), 'Filme (Voz).mp3')
+    const de2 = await converterLocal({ gerador, caminho: master, destino: 'whatsapp' })
+    assert.equal(path.basename(de2.caminho), 'Filme (WhatsApp) 2.mp4', 'segunda vez não grava por cima')
+    assert.equal(await md5File(master), antes, 'o original não muda')
+    assert.deepEqual((await fs.readdir(dir)).filter(n => /parcial|sobedesce-relay-/.test(n)), [], 'nada pela metade')
+  })
+
+  test('a rota /api/relay/local confere caminhos e destinos antes de começar', async () => {
+    const { registerRelay } = await import('../src/server/relay.js')
+    const rotas = {}
+    class HttpProblem extends Error {
+      constructor(status, message) {
+        super(message)
+        this.status = status
+      }
+    }
+    const iniciados = []
+    const { jobs } = registerRelay({
+      route: (m, p, fn) => (rotas[`${m} ${p}`] = fn),
+      ctx: { manager: { previas: { emVaga: () => {} }, driveFor: () => ({}) }, hub: { send: () => {} }, log: () => {} },
+      account: () => ({}),
+      HttpProblem,
+      jobsOptions: { local: async o => (iniciados.push(o), { caminho: '/x' }) },
+    })
+    const local = rotas['POST /api/relay/local']
+    for (const body of [{}, { caminhos: ['relativo.mov'], destinos: ['reels'] }, { caminhos: ['/a/b.txt'], destinos: ['reels'] }, { caminhos: ['/a/b.mov'], destinos: ['inventado'] }, { caminhos: ['/a/b.mov'], destinos: [] }])
+      await assert.rejects(local({ body }), e => e.status === 400, JSON.stringify(body))
+    const r = await local({ body: { caminhos: ['/a/b.mov', '/a/c.wav'], destinos: ['reels', { nome: 'Meu', formato: 'mp3' }] } })
+    assert.equal(r.jobIds.length, 4)
+    await sleep(5)
+    assert.equal(iniciados.length, 4)
+    assert.deepEqual(iniciados.map(o => o.caminho), ['/a/b.mov', '/a/b.mov', '/a/c.wav', '/a/c.wav'])
+    assert.equal(jobs.list()[1].destino, 'Meu')
+    jobs.close()
   })
 })

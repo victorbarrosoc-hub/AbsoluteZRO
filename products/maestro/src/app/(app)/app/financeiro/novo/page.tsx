@@ -3,7 +3,7 @@ import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { hojeBr } from "@/lib/dinheiro";
 import { camposLancamento } from "@/lib/financeiro/formularios";
 import { opcoesFinanceiro } from "@/lib/financeiro/servidor";
-import { podeVerDinheiro } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
 import { CabecaForm, Formulario } from "@/components/form";
 import { salvarLancamentoAcao } from "../acoes";
 
@@ -11,7 +11,7 @@ export const metadata = { title: "Novo lançamento" };
 
 export default async function NovoLancamento({ searchParams }: PageProps<"/app/financeiro/novo">) {
   const s = await exigirAcessoNaPagina("/app/financeiro/novo");
-  if (!podeVerDinheiro(s.papel)) redirect("/app/financeiro");
+  if (!podeArea(s, "financeiro")) redirect("/app/financeiro");
   const sp = await searchParams;
   const o = await opcoesFinanceiro({ sub: s.sub, orgId: s.orgId });
   const tipo = sp.tipo === "entrada" ? "entrada" : "saida";

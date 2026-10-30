@@ -305,9 +305,12 @@ describe('API da Agenda para os apps', () => {
     // Token sem o escopo zro.agenda não autentica para a Agenda.
     const semEscopo = await tokenDoApp(await cliente(), o.userId, o.orgId, 'zro.ia')
     expect(await authenticateAccessToken(db, `Bearer ${semEscopo}`, 'zro.agenda')).toBeNull()
-    // Gate de lançamento: o Maestro fechado para a pessoa (acesso revogado) → o token deixa de valer.
-    const p = await pessoaComApp('api-gate')
-    await db.sql`update zro.product_release_access set revoked_at = now() where user_id = ${p.userId} and product_id = 'maestro'`
+    // Gate de lançamento: app fechado para a pessoa (acesso revogado) → o token deixa de valer. O Maestro abriu para
+    // todos (0027), então o teste usa o NOSSOM, que segue fechado.
+    const o2 = await newOrgWithOwner(db, 'api-gate')
+    const at2 = await tokenDoApp(await cliente('nossom'), o2.userId, o2.orgId, 'zro.agenda', 'nossom')
+    const p = { ...o2, app: (await authenticateAccessToken(db, `Bearer ${at2}`, 'zro.agenda'))! }
+    await db.sql`update zro.product_release_access set revoked_at = now() where user_id = ${p.userId} and product_id = 'nossom'`
     const de = '2026-11-01T00:00:00-03:00'
     const ate = '2026-11-02T00:00:00-03:00'
     await expect(livreOcupado(db, amb, p.app, { de, ate })).rejects.toMatchObject({ code: 'product_closed' })

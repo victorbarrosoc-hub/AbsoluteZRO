@@ -4,6 +4,7 @@
  */
 import { readFileSync } from "node:fs";
 import { expect, test, type BrowserContext } from "@playwright/test";
+import { CRIAR_CONTA_ZRO, ENTRAR_ZRO, MAESTRO_LANCADO } from "../src/lib/site";
 
 const ARQUIVO_SESSAO = "test-results/e2e-sessao.json";
 
@@ -13,14 +14,28 @@ async function entrar(context: BrowserContext, baseURL: string) {
 }
 
 test.describe("página inicial", () => {
-  test("mostra a frase, o selo de teste fechado, o produto real e as duas portas", async ({ page }) => {
+  test("mostra a frase, o selo (Beta ou teste fechado), o produto real e as duas portas", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveTitle("Maestro · A produtora inteira num lugar só.");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(/A produtora\s+inteira\s+num lugar só\./);
-    await expect(page.getByText("Em teste fechado")).toBeVisible();
-    // Entrar leva ao login Absolute ZRO; "Quero acesso" leva ao formulário da lista de espera.
-    await expect(page.getByRole("link", { name: "Entrar com Absolute ZRO" }).first()).toHaveAttribute("href", "/entrar");
-    await expect(page.getByRole("link", { name: "Quero acesso" })).toHaveAttribute("href", "#acesso");
+    if (MAESTRO_LANCADO) {
+      // Lançado: "Criar conta" e "Entrar com Absolute ZRO" direto no login único; nada de lista de espera.
+      await expect(page.locator(".ihero .selo")).toHaveText("Beta");
+      await expect(page.getByText("Em teste fechado")).toHaveCount(0);
+      await expect(page.getByRole("link", { name: "Criar conta" }).first()).toHaveAttribute("href", CRIAR_CONTA_ZRO);
+      await expect(page.getByRole("link", { name: "Entrar com Absolute ZRO" }).first()).toHaveAttribute("href", ENTRAR_ZRO);
+      await expect(page.getByRole("form", { name: "Quero acesso ao Maestro" })).toHaveCount(0);
+      await expect(page.getByRole("link", { name: "Quero acesso" })).toHaveCount(0);
+      await expect(page.locator(".instalar--pagina")).toContainText("Adicionar à Tela de Início");
+      // sem instalador publicado (no e2e o catálogo está desligado), nenhuma área de download
+      await expect(page.locator(".idesktop")).toHaveCount(0);
+    } else {
+      await expect(page.getByText("Em teste fechado")).toBeVisible();
+      // Entrar leva ao login Absolute ZRO; "Quero acesso" leva ao formulário da lista de espera.
+      await expect(page.getByRole("link", { name: "Entrar com Absolute ZRO" }).first()).toHaveAttribute("href", "/entrar");
+      await expect(page.getByRole("link", { name: "Quero acesso" })).toHaveAttribute("href", "#acesso");
+      await expect(page.locator(".instalar")).toHaveCount(0);
+    }
     // As capturas reais carregam (claro por padrão).
     const fotos = page.locator(".ihero__aparelhos img.tela--claro");
     await expect(fotos).toHaveCount(2);
@@ -54,6 +69,7 @@ test.describe("página inicial", () => {
   });
 
   test("Quero acesso: pede consentimento e guarda o e-mail", async ({ page }, info) => {
+    test.skip(MAESTRO_LANCADO, "lançado: a lista de espera fica guardada, sem aparecer");
     await page.goto("/#acesso");
     const form = page.getByRole("form", { name: "Quero acesso ao Maestro" });
     await form.getByLabel("E-mail").fill(`e2e-${info.project.name}@exemplo.com`);
@@ -128,6 +144,7 @@ test.describe("navegação do app", () => {
         "/app/quadro",
         "/app/aprovacoes",
         "/app/projetos",
+        "/app/criacao",
         "/app/arquivos",
         "/app/agenda",
         "/app/pedidos",

@@ -2,7 +2,7 @@ import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { hojeBr } from "@/lib/dinheiro";
 import { lerModeloVigente, listarVersoes } from "@/lib/contrato/servidor";
 import { lerEmpresa } from "@/lib/organizacao";
-import { podeVerDinheiro } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
 import { CabecaForm } from "@/components/form";
 import { EditorContrato } from "@/components/contrato/editor";
 import { Icone } from "@/components/icones";
@@ -31,11 +31,11 @@ export default async function PaginaContrato() {
       Seu <strong>contrato.</strong>
     </>
   );
-  if (!podeVerDinheiro(s.papel))
+  if (!podeArea(s, "contratos"))
     return (
       <div className="pagina">
         <CabecaForm voltar="/app/ajustes" titulo={titulo}>
-          <p className="apoio">Só administração e gestão veem o contrato.</p>
+          <p className="apoio">Sem acesso aos contratos.</p>
         </CabecaForm>
       </div>
     );

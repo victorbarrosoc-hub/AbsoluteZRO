@@ -40,7 +40,12 @@ export function podeRemover(papel: Papel): boolean {
   return papel === "admin" || papel === "gestor";
 }
 
-/** Quem vê e mexe no Financeiro, na tabela de preços e nos dados de pagamento dos freelas: administração e gestão. */
-export function podeVerDinheiro(papel: Papel): boolean {
+/*
+ * Dinheiro, contratos e dados da equipe não são mais do papel: são ÁREAS que a administração liga por pessoa
+ * (src/lib/acessos.ts, `pode(sessao, "financeiro")`; no banco, `maestro.pode`, drizzle/0027_acessos.sql).
+ */
+
+/** Quem renomeia, recolore, reordena, cria e arquiva as colunas do Quadro: administração e gestão (o banco confere de novo). */
+export function podeEditarColunas(papel: Papel): boolean {
   return papel === "admin" || papel === "gestor";
 }

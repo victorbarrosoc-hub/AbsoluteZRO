@@ -26,7 +26,10 @@ import { estadoDaClaim, PRODUTO } from './_release.js'
 export { PRODUTO }
 export const EMISSOR_PADRAO = 'https://absolutezro.com'
 // zro.ia: o token também fala com a Z (a IA do ecossistema, /api/v1/ia), pelo repasse em api/zro/ia/*
-export const ESCOPOS = 'openid email profile org offline_access zro.ia'
+// zro.set: o Set (quem da equipe está online e as conversas), pelo repasse /api/zro/set (api/_set.js). A Absolute ZRO
+// de antes do Set recusa o escopo (invalid_scope): o callback refaz o pedido sem ele (sem_set) e, se ainda recusar, sem
+// a Z também (sem_ia). O login nunca quebra por causa de um escopo novo.
+export const ESCOPOS = 'openid email profile org offline_access zro.ia zro.set'
 export const SITE = 'https://revela.absolutezro.com'
 export const COOKIE_IDA = 'rv_zro'
 export const COOKIE_CONTA = 'rv_conta'

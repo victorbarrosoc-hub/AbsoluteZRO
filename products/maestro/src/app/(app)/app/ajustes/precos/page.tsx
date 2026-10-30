@@ -3,7 +3,9 @@ import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { brl } from "@/lib/dinheiro";
 import { GRUPOS, UNIDADES, nomeUnidade } from "@/lib/orcamento/motor";
 import { carregarTabela, faixasEmTexto, opcoesEmTexto } from "@/lib/orcamento/precos";
-import { podeVerDinheiro } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
+import { podeRemover } from "@/lib/papeis";
+import { SemArea } from "@/components/sem-area";
 import { BotaoAcao } from "@/components/acao";
 import { Secao } from "@/components/crm";
 import { Formulario, type DefCampo } from "@/components/form";
@@ -66,8 +68,17 @@ const CAMPOS_VARIAVEL: DefCampo[] = [
 /** Ajustes → Tabela de preços: itens com faixas, variáveis (nicho, urgência…) e modelos de orçamento. */
 export default async function TabelaDePrecos() {
   const sessao = await exigirAcessoNaPagina("/app/ajustes/precos");
+  if (!podeArea(sessao, "orcamentos"))
+    return (
+      <div className="pagina">
+        <Link className="voltar" href="/app/ajustes">
+          <Icone nome="voltar" size={16} /> Ajustes
+        </Link>
+        <SemArea area="orcamentos" />
+      </div>
+    );
   const tabela = await carregarTabela({ sub: sessao.sub, orgId: sessao.orgId });
-  const muda = podeVerDinheiro(sessao.papel);
+  const muda = podeArea(sessao, "orcamentos") && podeRemover(sessao.papel);
   return (
     <div className="pagina">
       <Link className="voltar" href="/app/ajustes">
@@ -77,7 +88,7 @@ export default async function TabelaDePrecos() {
         <h1 className="atitle">
           Tabela de <strong>preços.</strong>
         </h1>
-        <p className="apoio">O orçamento nasce daqui. {muda ? "" : "Só administração e gestão mudam."}</p>
+        <p className="apoio">O orçamento nasce daqui. {muda ? "" : "Só a gestão muda."}</p>
       </header>
 
       {GRUPOS.map((g) => {

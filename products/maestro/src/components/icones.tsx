@@ -58,9 +58,43 @@ export type NomeIcone =
   | "numeros"
   | "importar"
   | "retorno"
-  | "pessoas";
+  | "pessoas"
+  | "colunas"
+  | "alca"
+  | "arquivar"
+  | "criacao"
+  | "fluxo"
+  | "letra"
+  | "cena"
+  | "camera"
+  | "olho"
+  | "versoes"
+  | "compartilhar"
+  | "adicionar"
+  | "celular"
+  | "computador";
 
 const CAMINHOS: Record<NomeIcone, React.ReactNode> = {
+  // o "Compartilhar" do Safari (quadrado aberto com a seta para cima) e o "Adicionar à Tela de Início"
+  compartilhar: <path d="M8.5 9H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1.5M12 3.5V14M8.5 7 12 3.5 15.5 7" />,
+  adicionar: (
+    <>
+      <rect x="4" y="4" width="16" height="16" rx="4" />
+      <path d="M12 8.5v7M8.5 12h7" />
+    </>
+  ),
+  celular: (
+    <>
+      <rect x="6.5" y="2.5" width="11" height="19" rx="3" />
+      <path d="M10.5 5.5h3" />
+    </>
+  ),
+  computador: (
+    <>
+      <rect x="4" y="5" width="16" height="11" rx="2" />
+      <path d="M2.5 19h19" />
+    </>
+  ),
   alvo: (
     <>
       <circle cx="12" cy="12" r="7" />
@@ -308,6 +342,59 @@ const CAMINHOS: Record<NomeIcone, React.ReactNode> = {
     <>
       <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9" />
       <path d="M4.5 4.5V9H9M12 8.5V12l2.5 2" />
+    </>
+  ),
+  colunas: (
+    <>
+      <rect x="3.5" y="4" width="4.5" height="16" rx="1.5" />
+      <rect x="9.75" y="4" width="4.5" height="16" rx="1.5" />
+      <rect x="16" y="4" width="4.5" height="16" rx="1.5" />
+    </>
+  ),
+  alca: <path d="M9 6.5h.01M15 6.5h.01M9 12h.01M15 12h.01M9 17.5h.01M15 17.5h.01" strokeWidth={2.6} />,
+  arquivar: (
+    <>
+      <rect x="3.5" y="4.5" width="17" height="4.5" rx="1.5" />
+      <path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4" />
+    </>
+  ),
+  criacao: (
+    <>
+      <path d="M4.5 19.5 5.6 15 15.3 5.3a2 2 0 0 1 2.8 0l.6.6a2 2 0 0 1 0 2.8L9 18.4l-4.5 1.1Z" />
+      <path d="M13.8 6.8l3.4 3.4M18.5 15.5c.3 1.6.9 2.2 2.5 2.5-1.6.3-2.2.9-2.5 2.5-.3-1.6-.9-2.2-2.5-2.5 1.6-.3 2.2-.9 2.5-2.5Z" />
+    </>
+  ),
+  fluxo: (
+    <>
+      <rect x="3" y="4" width="7" height="5.5" rx="1.6" />
+      <rect x="14" y="14.5" width="7" height="5.5" rx="1.6" />
+      <circle cx="18" cy="6.5" r="2.4" />
+      <path d="M10 6.8h5.6M6.5 9.5v5a2.5 2.5 0 0 0 2.5 2.5h5" />
+    </>
+  ),
+  letra: <path d="M5 6.5V5h14v1.5M12 5v14M9 19h6" />,
+  cena: (
+    <>
+      <rect x="3.5" y="9" width="17" height="11" rx="2" />
+      <path d="m3.8 9-.6-3.2 15.7-2.6.6 3.2M7.5 5.6 9.4 8.8M12.6 4.8l1.9 3.2" />
+    </>
+  ),
+  camera: (
+    <>
+      <path d="M4 8.5a2 2 0 0 1 2-2h1.8l1.4-2h5.6l1.4 2H18a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8.5Z" />
+      <circle cx="12" cy="12.5" r="3.4" />
+    </>
+  ),
+  olho: (
+    <>
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+      <circle cx="12" cy="12" r="2.8" />
+    </>
+  ),
+  versoes: (
+    <>
+      <rect x="7" y="7" width="13" height="13" rx="2.5" />
+      <path d="M4 15.5V6a2 2 0 0 1 2-2h9.5" />
     </>
   ),
   pessoas: (

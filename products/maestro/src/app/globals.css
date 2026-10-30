@@ -36,6 +36,19 @@
   --col-aprovado: #46a758;
   --col-agendado: #12a594;
   --col-entregue: #6e8b3d;
+  /* a paleta das colunas (0024: cada produtora escolhe a cor de cada coluna; TONS_COLUNA em src/lib/quadro/colunas.ts) */
+  --cor-pedra: var(--col-pauta);
+  --cor-lavanda: var(--col-afazer);
+  --cor-ambar: var(--col-fazendo);
+  --cor-laranja: var(--col-revisao);
+  --cor-latao: var(--col-aprovacao);
+  --cor-verde: var(--col-aprovado);
+  --cor-turquesa: var(--col-agendado);
+  --cor-oliva: var(--col-entregue);
+  --cor-rosa: #e0607e;
+  --cor-ceu: #3e8ed0;
+  --cor-ameixa: #9a62b8;
+  --cor-grafite: #6e6e73;
 
   /* estados (chips): fundo tingido com o tom, texto sempre grafite/branco (AA garantido) */
   --st-atrasado: #e5484d;
@@ -138,6 +151,10 @@
   --col-aprovado: #5bbf6e;
   --col-agendado: #2ec4b0;
   --col-entregue: #95b35c;
+  --cor-rosa: #f28ba3;
+  --cor-ceu: #6cb0ef;
+  --cor-ameixa: #c49be0;
+  --cor-grafite: #aeaeb2;
   --chip-base: #1a1c29;
   --chip-mix: 34%;
   --g-entra: #f5f5f7;
@@ -681,6 +698,18 @@ h3 {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+}
+/* no iPhone cabem a marca, o selo, a Z, o Set, o tema e a conta: quem cede é o selo (com reticências), nunca a conta
+   empurrada para fora da tela */
+.topo__fim .selo--demo {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.topo__fim .selo--demo span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 /* a Z no topo do celular: discreta, um ícone como o do tema (decisão do titular, 29/10/2026) */
 .topo__z {
@@ -704,7 +733,9 @@ h3 {
   right: 0;
   bottom: 0;
   z-index: 30;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  /* uma coluna por aba, quantas houver (são 4 desde que a Z saiu da barra) */
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: 4px;
   padding: 6px 10px max(6px, env(safe-area-inset-bottom));
   background: var(--chrome-bg);
@@ -1065,7 +1096,7 @@ h3 {
     box-shadow 0.2s var(--ease),
     background 0.2s var(--ease);
 }
-.q-col--alvo {
+.q-col[data-alvo] {
   box-shadow: inset 0 0 0 1.5px var(--line-strong);
   background: var(--surface-3);
 }
@@ -1117,13 +1148,6 @@ h3 {
   gap: 8px;
   min-width: 0;
 }
-.q-solta {
-  height: 6px;
-  border-radius: 999px;
-  background: var(--text-strong);
-  opacity: 0.55;
-  margin: 2px 6px;
-}
 
 .q-icone-btn {
   display: inline-grid;
@@ -1162,17 +1186,11 @@ h3 {
     box-shadow 0.25s ease,
     opacity 0.2s ease;
 }
-.q-card[draggable="true"] {
-  cursor: grab;
-}
 .q-card:hover {
   box-shadow:
     0 0 0 1px var(--line-strong),
     0 8px 22px rgb(0 0 0 / 0.08);
   transform: translateY(-1px);
-}
-.q-card--arrastando {
-  opacity: 0.35;
 }
 .q-card--alta::before {
   content: "";
@@ -2221,6 +2239,43 @@ h3 {
 [data-col="entregue"] {
   --col: var(--col-entregue);
 }
+/* a cor que a produtora escolheu para a coluna (vale mais que a de fábrica pelo id) */
+[data-cor="pedra"] {
+  --col: var(--cor-pedra);
+}
+[data-cor="lavanda"] {
+  --col: var(--cor-lavanda);
+}
+[data-cor="ambar"] {
+  --col: var(--cor-ambar);
+}
+[data-cor="laranja"] {
+  --col: var(--cor-laranja);
+}
+[data-cor="latao"] {
+  --col: var(--cor-latao);
+}
+[data-cor="verde"] {
+  --col: var(--cor-verde);
+}
+[data-cor="turquesa"] {
+  --col: var(--cor-turquesa);
+}
+[data-cor="oliva"] {
+  --col: var(--cor-oliva);
+}
+[data-cor="rosa"] {
+  --col: var(--cor-rosa);
+}
+[data-cor="ceu"] {
+  --col: var(--cor-ceu);
+}
+[data-cor="ameixa"] {
+  --col: var(--cor-ameixa);
+}
+[data-cor="grafite"] {
+  --col: var(--cor-grafite);
+}
 .q-ponto {
   flex: none;
   width: 8px;
@@ -2268,40 +2323,10 @@ h3 {
     transform: translateY(6px) scale(0.985);
   }
 }
-/* ao pegar: leve inclinação e sombra alta (o navegador fotografa o card assim para o arraste) */
-.q-card[draggable="true"]:active {
-  cursor: grabbing;
-  transform: rotate(-1.6deg) scale(1.02);
-  box-shadow:
-    0 0 0 1px var(--line-strong),
-    0 22px 48px rgb(0 0 0 / 0.18);
-}
-/* o lugar de onde o card saiu fica como um encaixe tracejado */
-.q-card--arrastando {
-  opacity: 1;
-  background: transparent;
-  box-shadow: inset 0 0 0 1.5px var(--line-strong);
-  animation: none;
-}
-.q-card--arrastando > * {
-  visibility: hidden;
-}
-/* a coluna de destino acende no tom dela, e a marca de soltar é de latão */
-.q-col--alvo {
+/* a coluna de destino do arrastar acende no tom dela (arrastar.ts) */
+.q-col[data-alvo] {
   background: color-mix(in srgb, var(--col) 9%, var(--surface-2));
   box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--col) 55%, transparent);
-}
-.q-solta {
-  height: 4px;
-  background: var(--acento);
-  opacity: 1;
-  animation: q-solta 0.28s var(--spring) both;
-}
-@keyframes q-solta {
-  from {
-    transform: scaleX(0.4);
-    opacity: 0;
-  }
 }
 /* foco do Quadro: anel de latão no card */
 .q-card:has(.q-card__abrir:focus-visible) {
@@ -2471,13 +2496,9 @@ h3 {
 @media (prefers-reduced-motion: reduce) {
   .conteudo > *,
   .q-card,
-  .q-solta,
   .lista > li,
   .esq {
     animation: none;
-  }
-  .q-card[draggable="true"]:active {
-    transform: none;
   }
   .item::before {
     transition: none;

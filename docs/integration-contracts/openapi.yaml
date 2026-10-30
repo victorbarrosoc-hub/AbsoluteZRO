@@ -127,6 +127,151 @@ paths:
         '429': { description: quota_exceeded (créditos do mês acabaram) }
         '503': { description: upstream_unavailable (IA ainda não ligada) }
         default: { $ref: '#/components/responses/Error' }
+  # Laboratório da Z (ADR 0033): só o papel admin da plataforma (403 platform_role_required para qualquer outra
+  # pessoa, suporte inclusive). Tudo que custa confere o teto do dia antes (403 quota_not_configured sem teto, 429
+  # quota_exceeded passou) e registra o uso com chave de idempotência. Chave ausente: 503 upstream_unavailable com o
+  # nome da variável (IA_ANTHROPIC_KEY ou ELEVENLABS_API_KEY).
+  /api/v1/admin/z-lab:
+    get:
+      summary: Estado do laboratório (chaves ligadas, rascunho, versões, publicada, conhecimento, recursos, gasto, catálogo)
+      security: [{ session: [] }]
+      responses: { '200': { description: ok }, '403': { description: platform_role_required }, default: { $ref: '#/components/responses/Error' } }
+  /api/v1/admin/z-lab/rascunho:
+    put:
+      summary: Grava o rascunho da configuração da Z (o corpo é a configuração inteira). Não cria versão nem muda os clientes
+      security: [{ session: [] }]
+      responses: { '200': { description: ok }, '400': { description: invalid_input }, default: { $ref: '#/components/responses/Error' } }
+  /api/v1/admin/z-lab/versoes:
+    post:
+      summary: Salvar versão (nota obrigatória; com `rascunho`, grava o rascunho antes). Número novo e imutável
+      security: [{ session: [] }]
+      requestBody:
+        {
+          content:
+            {
+              application/json:
+                { schema: { type: object, required: [nota], properties: { nota: { type: string, maxLength: 300 }, rascunho: { type: object } } } },
+            },
+        }
+      responses: { '201': { description: criada }, default: { $ref: '#/components/responses/Error' } }
+  /api/v1/admin/z-lab/versoes/{numero}:
+    get:
+      summary: Configuração de uma versão salva (para comparar)
+      security: [{ session: [] }]
+      parameters: [{ name: numero, in: path, required: true, schema: { type: integer, minimum: 1 } }]
+      responses: { '200': { description: ok }, '404': { description: not_found }, default: { $ref: '#/components/responses/Error' } }
+  /api/v1/admin/z-lab/versoes/{numero}/restaurar:
+    post:
+      summary: Traz a versão de volta para o rascunho (a versão continua igual)
+      security: [{ session: [] }]
+      parameters: [{ name: numero, in: path, required: true, schema: { type: integer, minimum: 1 } }]
+      responses: { '200': { description: ok }, '404': { description: not_found }, default: { $ref: '#/components/responses/Error' } }
+  /api/v1/admin/z-lab/versoes/{numero}/publicar:
+    post:
+      summary: Publicar para os clientes. Só com a trava publicar_config ligada e `confirmar = "publicar"`; auditado
+      security: [{ session: [] }]
+      parameters: [{ name: numero, in: path, required: true, schema: { type: integer, minimum: 1 } }]
+      requestBody:
+        { content: { application/json: { schema: { type: object, required: [confirmar], properties: { confirmar: { type: string, enum: [publicar] } } } } } }
+      responses:
+        { '200': { description: publicada }, '403': { description: action_not_allowed (trava desligada) }, default: { $ref: '#/components/responses/Error' } }
+  /api/v1/admin/z-lab/publicacao/padrao:
+    post:
+      summary: Volta a Z dos clientes para o padrão do código (`confirmar = "padrao"`; auditado)
+      security: [{ session: [] }]
+      responses: { '200': { description: ok }, default: { $ref: '#/components/responses/Error' } }
+  /api/v1/admin/z-lab/teto:
+    put:
+      summary: Teto de gasto por dia do laboratório, em US$ (null = sem teto = bloqueado). Auditado
+      security: [{ session: [] }]
+      requestBody:
+        {
+          content:
+            { application/json: { schema: { type: object, required: [teto], properties: { teto: { type: [number, 'null'], minimum: 0, maximum: 9999 } } } } },
+        }
+      responses: { '200': { description: ok }, default: { $ref: '#/components/responses/Error' } }
+  /api/v1/admin/z-lab/conhecimento:
+    post:
+      summary: Texto de referência novo (FAQ, planos, preços, manual), até 100 mil caracteres. Auditado
+      security: [{ session: [] }]
+      responses: { '201': { description: criado }, default: { $ref: '#/components/responses/Error' } }
+  /api/v1/admin/z-lab/conhecimento/{id}:
+    delete:
+      summary: Arquiva um texto de referência (sai do rascunho; versões antigas continuam iguais)
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: ok }, '404': { description: not_found }, default: { $ref: '#/components/responses/Error' } }
+  /api/v1/admin/z-lab/recursos/{recurso}:
+    put:
+      summary: Liga ou desliga para os clientes, por plano, voz, ditado, anexos ou publicar_config. Pede `confirmar = true`; auditado
+      security: [{ session: [] }]
+      parameters: [{ name: recurso, in: path, required: true, schema: { type: string, enum: [voz, ditado, anexos, publicar_config] } }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ligado, planos, confirmar]
+              properties: { ligado: { type: boolean }, planos: { type: array, items: { type: string } }, confirmar: { type: boolean, enum: [true] } }
+      responses: { '200': { description: ok }, default: { $ref: '#/components/responses/Error' } }
+  /api/v1/admin/z-lab/vozes:
+    get:
+      summary: Vozes da conta da ElevenLabs, marcadas feminina e pt-BR para o filtro
+      security: [{ session: [] }]
+      responses:
+        { '200': { description: ok }, '503': { description: upstream_unavailable (ELEVENLABS_API_KEY) }, default: { $ref: '#/components/responses/Error' } }
+    post:
+      summary: Salva na conta da ElevenLabs a amostra do Voice Design escolhida (`confirmar = true`; auditado)
+      security: [{ session: [] }]
+      responses: { '201': { description: voz criada }, default: { $ref: '#/components/responses/Error' } }
+  /api/v1/admin/z-lab/vozes/design:
+    post:
+      summary: Voice Design. Três amostras de uma voz nova pela descrição (nada é salvo na conta). Custo estimado no teto
+      security: [{ session: [] }]
+      responses: { '200': { description: amostras em base64 }, default: { $ref: '#/components/responses/Error' } }
+  /api/v1/admin/z-lab/mensagens:
+    post:
+      summary: Um turno do laboratório (rascunho, versão N ou padrão; modelo; plataforma; anexos; voz). Streaming NDJSON (lendo, texto, fim com uso e custo | erro)
+      security: [{ session: [] }]
+      responses:
+        {
+          '200': { description: 'application/x-ndjson' },
+          '403': { description: quota_not_configured },
+          '429': { description: quota_exceeded },
+          '503': { description: upstream_unavailable },
+          default: { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/admin/z-lab/fala:
+    post:
+      summary: Uma frase em voz (ElevenLabs em streaming), PCM 16 bits mono a 24 kHz. Custo pelos caracteres
+      security: [{ session: [] }]
+      responses: { '200': { description: audio/pcm }, default: { $ref: '#/components/responses/Error' } }
+  /api/v1/admin/z-lab/transcricao:
+    post:
+      summary: Transcreve um pedaço de PCM 16 bits 16 kHz mono (até ~2 min) pelo Scribe v2. `?chave=` (idempotência), `?idioma=pt`
+      security: [{ session: [] }]
+      responses: { '200': { description: ok }, default: { $ref: '#/components/responses/Error' } }
+  /api/v1/admin/z-lab/escuta:
+    post:
+      summary: Abre a escuta ao vivo (Scribe v2 Realtime). Devolve um token de uso único (15 min, uma conexão); a chave nunca sai do servidor
+      security: [{ session: [] }]
+      responses: { '200': { description: ok }, default: { $ref: '#/components/responses/Error' } }
+  /api/v1/admin/z-lab/escuta/fim:
+    post:
+      summary: Fecha a escuta com os segundos contados (nunca mais que o tempo real desde a abertura)
+      security: [{ session: [] }]
+      responses: { '200': { description: ok }, '404': { description: not_found }, default: { $ref: '#/components/responses/Error' } }
+  /api/v1/admin/z-lab/anexos:
+    post:
+      summary: Anexo (multipart `arquivo`, até 4 MB). Tipo pelo conteúdo. Imagem e PDF vão para os arquivos da Anthropic (24 h); Word, Excel, PowerPoint e texto voltam como texto
+      security: [{ session: [] }]
+      responses: { '200': { description: ok }, '400': { description: invalid_input }, default: { $ref: '#/components/responses/Error' } }
+  /api/v1/admin/z-lab/anexos/{id}:
+    delete:
+      summary: Tira um anexo dos arquivos da Anthropic antes das 24 h
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: ok }, default: { $ref: '#/components/responses/Error' } }
   /api/v1/organizations:
     get: { summary: Minhas organizações, responses: { '200': { description: ok } } }
     post: { summary: Criar organização (a pessoa vira dona), responses: { '201': { description: criada }, default: { $ref: '#/components/responses/Error' } } }
@@ -405,6 +550,350 @@ paths:
           '401': { $ref: '#/components/responses/Error' },
           '403': { $ref: '#/components/responses/Error' },
           '404': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/set:
+    get:
+      security: [{ session: [] }, { appToken: [zro.set] }]
+      summary: 'Set (ADR 0031): a pessoa e as preferências, quem da equipe e dos contatos está online (e em qual app; só para quem a pessoa deixou ver), não lidas e pedidos. Nunca e-mail nem telefone. Contrato em docs/integration-contracts/set.md'
+      parameters:
+        - { name: If-None-Match, in: header, required: false, description: 'a ETag da última leitura (o poll do widget)', schema: { type: string } }
+      responses:
+        {
+          '200':
+            {
+              description: '{ eu: { id, arroba, nome, foto, preferencias: { invisivel, quemVe, mostrarVisto } }, pessoas: [{ id, arroba, nome, foto, equipe, contato, estado: online | ausente | offline, app: { id, nome } | null, vistoEm }], naoLidas, pedidos, porConversa: { <conversa>: n }, ultima }',
+            },
+          '304': { description: 'nada mudou desde a ETag mandada (sem corpo; mesma ETag no cabeçalho)' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+    post:
+      security: [{ session: [] }, { appToken: [zro.set] }]
+      summary: 'Batida de presença do app (o app vem do token; pela central, hub). Invisível não grava nada. Devolve o mesmo estado do GET'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                estado: { type: string, enum: [ativo, ausente, saiu], default: ativo }
+      responses:
+        {
+          '200': { description: 'o estado (como no GET)' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/set/preferencias:
+    put:
+      security: [{ session: [] }, { appToken: [zro.set] }]
+      summary: 'Invisível, quem vê a presença e o "visto há". Ficar invisível (ou ninguém) apaga a presença na hora'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                invisivel: { type: boolean }
+                quemVe: { type: string, enum: [equipe_contatos, equipe, contatos, ninguem] }
+                mostrarVisto: { type: boolean }
+      responses:
+        {
+          '200': { description: '{ preferencias: { invisivel, quemVe, mostrarVisto } }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/set/contatos:
+    get:
+      security: [{ session: [] }, { appToken: [zro.set] }]
+      summary: Contatos, pedidos recebidos e enviados e bloqueados (nome, @ e foto)
+      responses:
+        {
+          '200': { description: '{ contatos: [pessoa], recebidos: [pessoa], enviados: [pessoa], bloqueados: [pessoa] }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+    post:
+      security: [{ session: [] }, { appToken: [zro.set] }]
+      summary: 'Pede contato pelo @ (perfil visível) ou pelo id de alguém do Set. Pedido mútuo vira contato na hora. 20 por dia'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                arroba: { type: string, description: 'com ou sem @' }
+                pessoa: { type: string, format: uuid }
+      responses:
+        {
+          '201': { description: '{ estado: pendente | aceito, pessoa: { id, arroba, nome, foto } }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/set/contatos/{id}:
+    put:
+      security: [{ session: [] }, { appToken: [zro.set] }]
+      summary: Aceita ou recusa o pedido recebido da pessoa {id} (quem pediu não fica sabendo da recusa)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [acao]
+              properties:
+                acao: { type: string, enum: [aceitar, recusar] }
+      responses:
+        {
+          '200': { description: '{ estado: aceito | recusado }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+    delete:
+      security: [{ session: [] }, { appToken: [zro.set] }]
+      summary: Tira o contato ou cancela o pedido enviado
+      responses:
+        {
+          '204': { description: feito },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/set/bloqueios:
+    post:
+      security: [{ session: [] }, { appToken: [zro.set] }]
+      summary: Bloqueia a pessoa (some presença, contato, pedido e mensagens nos dois sentidos; ninguém é avisado)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pessoa]
+              properties:
+                pessoa: { type: string, format: uuid }
+      responses:
+        {
+          '204': { description: feito },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/set/bloqueios/{id}:
+    delete:
+      security: [{ session: [] }, { appToken: [zro.set] }]
+      summary: Desbloqueia (o contato não volta sozinho)
+      responses:
+        {
+          '204': { description: feito },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/set/conversas:
+    get:
+      security: [{ session: [] }, { appToken: [zro.set] }]
+      summary: 'As conversas (diretas e dos projetos da organização ativa) e os projetos ainda sem conversa'
+      parameters:
+        - { name: If-None-Match, in: header, required: false, description: 'a ETag da última leitura (o poll do widget)', schema: { type: string } }
+      responses:
+        {
+          '200':
+            {
+              description: '{ conversas: [{ id, tipo: direta | projeto, pessoa, projeto: { id, titulo }, titulo, ultima, ultimaEm, previa, previaMinha, naoLidas, silenciada, podeEscrever }], projetos: [{ id, titulo }] }',
+            },
+          '304': { description: 'nada mudou desde a ETag mandada (sem corpo; mesma ETag no cabeçalho)' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+    post:
+      security: [{ session: [] }, { appToken: [zro.set] }]
+      summary: 'Abre (ou cria) a conversa direta com quem trabalha junto ou é contato aceito, ou a do projeto canônico (quem vê o projeto)'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pessoa: { type: string, format: uuid }
+                projeto: { type: string, format: uuid }
+      responses:
+        {
+          '200': { description: '{ conversa }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/set/conversas/{id}:
+    get:
+      security: [{ session: [] }, { appToken: [zro.set] }]
+      summary: A conversa e as mensagens (as 50 mais novas antes de `antes`, ou as que chegaram depois de `depois`), a mais antiga primeiro
+      parameters:
+        - { name: antes, in: query, required: false, schema: { type: integer } }
+        - { name: depois, in: query, required: false, schema: { type: integer } }
+        - { name: limite, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: If-None-Match, in: header, required: false, description: 'a ETag da última leitura (o poll do widget)', schema: { type: string } }
+      responses:
+        {
+          '200': { description: '{ conversa, mensagens: [{ id, seq, autor: { id, arroba, nome, foto }, minha, texto, criadaEm, editadaEm, apagada }], mais }' },
+          '304': { description: 'nada mudou desde a ETag mandada (sem corpo; mesma ETag no cabeçalho)' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+    patch:
+      security: [{ session: [] }, { appToken: [zro.set] }]
+      summary: Marca como lida até a sequência e liga ou desliga o silêncio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                lidaAte: { type: integer }
+                silenciada: { type: boolean }
+      responses:
+        {
+          '204': { description: feito },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/set/conversas/{id}/mensagens:
+    post:
+      security: [{ session: [] }, { appToken: [zro.set] }]
+      summary: 'Envia texto (com links), até 4000 caracteres. chave torna o envio idempotente (repetida: 200). 30 por minuto'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [texto]
+              properties:
+                texto: { type: string, maxLength: 4000 }
+                chave: { type: string, pattern: '^[A-Za-z0-9_-]{8,80}$' }
+      responses:
+        {
+          '201': { description: '{ mensagem: { id, seq, criadaEm, repetida } }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/set/mensagens/{id}:
+    patch:
+      security: [{ session: [] }, { appToken: [zro.set] }]
+      summary: Edita a própria mensagem nas primeiras 24 horas (a versão anterior fica para a moderação)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [texto]
+              properties:
+                texto: { type: string, maxLength: 4000 }
+      responses:
+        {
+          '204': { description: feito },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+    delete:
+      security: [{ session: [] }, { appToken: [zro.set] }]
+      summary: Apaga a própria mensagem (fica "Mensagem apagada")
+      responses:
+        {
+          '204': { description: feito },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/set/denuncias:
+    post:
+      security: [{ session: [] }, { appToken: [zro.set] }]
+      summary: Denuncia uma pessoa (e, se vier, uma mensagem dela que quem denuncia vê). 10 por dia
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pessoa, motivo]
+              properties:
+                pessoa: { type: string, format: uuid }
+                mensagem: { type: string, format: uuid }
+                motivo: { type: string, enum: [spam, assedio, ofensa, golpe, outro] }
+                detalhe: { type: string, maxLength: 300 }
+      responses:
+        {
+          '201': { description: '{ denuncia: { id } }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
           '429': { $ref: '#/components/responses/Error' },
         }
   /api/v1/desktop/apps:

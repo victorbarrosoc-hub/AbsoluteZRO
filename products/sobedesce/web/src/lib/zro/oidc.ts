@@ -3,7 +3,7 @@
  * (o client_id da SOBEDESCE), validade e nonce. Nada da Absolute ZRO é aceito sem essa conferência.
  */
 import { createPublicKey, randomBytes, verify, type JsonWebKey } from "node:crypto";
-import { credenciaisZro, emissor, ESCOPO_IA, ESCOPOS_ZRO, ESCOPOS_ZRO_IA, retornoZro } from "./config";
+import { credenciaisZro, emissor, ESCOPO_IA, ESCOPOS_ZRO, ESCOPOS_ZRO_IA, ESCOPOS_ZRO_IA_SET, retornoZro } from "./config";
 
 export class ZroError extends Error {
   constructor(readonly codigo: "rede" | "recusado" | "token_invalido", detalhe: string) {
@@ -43,15 +43,15 @@ export function novoValor(): string {
 
 /**
  * `criar`: a pessoa veio de "Criar conta"; `prompt=create` pede à Absolute ZRO para abrir direto a tela de criar conta.
- * `basico`: sem os escopos da Z (a Absolute ZRO recusou `zro.ia` com invalid_scope).
+ * `semSet`: sem o escopo do Set (a Absolute ZRO recusou `zro.set` com invalid_scope); `basico`: sem os da Z também.
  */
-export async function urlDeLogin(o: { state: string; desafio: string; nonce: string; origem?: string | null; criar?: boolean; basico?: boolean }): Promise<string> {
+export async function urlDeLogin(o: { state: string; desafio: string; nonce: string; origem?: string | null; criar?: boolean; basico?: boolean; semSet?: boolean }): Promise<string> {
   const d = await descobrir();
   const u = new URL(d.authorization_endpoint);
   u.searchParams.set("response_type", "code");
   u.searchParams.set("client_id", credenciaisZro().clientId);
   u.searchParams.set("redirect_uri", retornoZro(o.origem));
-  u.searchParams.set("scope", o.basico ? ESCOPOS_ZRO : ESCOPOS_ZRO_IA);
+  u.searchParams.set("scope", o.basico ? ESCOPOS_ZRO : o.semSet ? ESCOPOS_ZRO_IA : ESCOPOS_ZRO_IA_SET);
   u.searchParams.set("state", o.state);
   u.searchParams.set("nonce", o.nonce);
   u.searchParams.set("code_challenge", o.desafio);
@@ -123,15 +123,18 @@ export async function conferirIdToken(idToken: string, nonce: string, agora = Da
   };
 }
 
-/** Tokens da Z (escopo zro.ia): o access token de 10 minutos e o refresh token, que roda a cada troca. */
-export type TokensIa = { at: string; atExp: number; rt: string };
+/**
+ * Tokens da Z (escopo zro.ia): o access token de 10 minutos e o refresh token, que roda a cada troca. `escopo`: o que a
+ * Absolute ZRO deu (com `zro.set`, os mesmos tokens servem ao Set); tokens de antes do Set não têm o campo.
+ */
+export type TokensIa = { at: string; atExp: number; rt: string; escopo?: string };
 
 /** Só quando a Absolute ZRO deu `zro.ia` E o refresh token; senão a Z fica sem token (a tela pede para reconectar). */
 export function tokensIaDe(corpo: Record<string, unknown> | null, agora = Date.now()): TokensIa | null {
   if (!corpo || typeof corpo.access_token !== "string" || typeof corpo.refresh_token !== "string") return null;
   if (!String(corpo.scope ?? "").split(" ").includes(ESCOPO_IA)) return null;
   const vida = Math.min(Math.max(Number(corpo.expires_in) || 0, 0), 3600);
-  return { at: corpo.access_token, rt: corpo.refresh_token, atExp: Math.floor(agora / 1000) + vida };
+  return { at: corpo.access_token, rt: corpo.refresh_token, atExp: Math.floor(agora / 1000) + vida, escopo: String(corpo.scope) };
 }
 
 async function pedirToken(form: Record<string, string>) {

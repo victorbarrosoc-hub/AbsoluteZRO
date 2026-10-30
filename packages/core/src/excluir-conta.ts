@@ -223,6 +223,17 @@ export async function excluirConta(db: Database, auth: Authenticated | null, con
     await tx`delete from zro.conexoes where user_id = ${userId}`
     await tx`delete from zro.user_avatars where user_id = ${userId}`
     await tx`delete from zro.ia_conversas where user_id = ${userId}`
+    // Set (0035): as conversas diretas dela (a outra pessoa já não a veria), as mensagens que ela escreveu nos
+    // projetos (com as versões guardadas para a moderação), presença, preferências, contatos, pedidos, bloqueios,
+    // leituras e as denúncias que ela fez. Denúncias contra a conta continuam para a moderação.
+    await tx`delete from zro.set_conversas where tipo = 'direta' and (a = ${userId} or b = ${userId})`
+    await tx`delete from zro.set_mensagens where autor_id = ${userId}`
+    await tx`delete from zro.set_presenca where user_id = ${userId}`
+    await tx`delete from zro.set_preferencias where user_id = ${userId}`
+    await tx`delete from zro.set_contatos where a = ${userId} or b = ${userId}`
+    await tx`delete from zro.set_bloqueios where quem = ${userId} or bloqueado = ${userId}`
+    await tx`delete from zro.set_leituras where user_id = ${userId}`
+    await tx`delete from zro.set_denuncias where denunciante = ${userId}`
     // Perfil profissional (0029): sai da busca na hora; o @ fica guardado 90 dias para ninguém se passar pela pessoa.
     const [perfil] = await tx`delete from zro.perfis where user_id = ${userId} returning arroba`
     if (perfil)

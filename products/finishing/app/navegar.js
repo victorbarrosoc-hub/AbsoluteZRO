@@ -6,7 +6,8 @@
 // Cada módulo procura os elementos dentro do próprio <main> (ver `raiz` em revela.js, cst.js…), então os painéis
 // guardados fora da página não se misturam. Sem fetch, sem history ou com erro: vai pelo link, como sempre.
 
-const PAGINAS = ['inicio', 'lut', 'lab', 'looks', 'cst', 'entrega', 'converter']
+// a Z (inicio.html) por último: fora do dock, pelo anel do topo (titular, 29/10/2026)
+const PAGINAS = ['lut', 'lab', 'looks', 'cst', 'entrega', 'converter', 'inicio']
 
 /** Endereço → nome da ferramenta, ou null quando não é uma das abas (início, conta, outro site). */
 export function paginaDe(href) {
@@ -113,7 +114,7 @@ function iniciar() {
       const canon = document.querySelector('link[rel=canonical]')
       if (canon && novo.canonico) canon.href = novo.canonico
       if (empilhar) history.pushState({ revela: p }, '', url ?? novo.url)
-      for (const a of dock.querySelectorAll('a')) {
+      for (const a of document.querySelectorAll('.abas a, .topo-z')) {
         if (paginaDe(a.href) === p) a.setAttribute('aria-current', 'page')
         else a.removeAttribute('aria-current')
       }

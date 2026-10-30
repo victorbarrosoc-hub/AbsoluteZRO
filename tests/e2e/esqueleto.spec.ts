@@ -1,7 +1,8 @@
 /**
  * Início sem piscar cinza (titular, 29/10/2026, vídeo no Mac: ao recarregar, o esqueleto aparecia por ~200 ms com
- * outro formato e a tela pulava por cima). Com o banco rápido, nenhum quadro mostra esqueleto, nem na carga inteira
- * nem vindo de outra aba (menu com a troca animada, logo sem ela), no Chromium e no WebKit; a tela não se mexe depois
+ * outro formato e a tela pulava por cima). Nenhum esqueleto fica à vista antes de 300 ms de vida, nem na carga inteira
+ * nem vindo de outra aba (menu com a troca animada, logo sem ela), no Chromium e no WebKit. Com o banco rápido ele nem
+ * chega a aparecer; numa máquina lenta (o runner do CI) pode viver mais e aparecer, como manda o desenho. A tela não se mexe depois
  * de pintada (layout-shift < 0,05 no Chromium; no WebKit, o palco e os atalhos nascem no lugar final). O esqueleto
  * tem a forma da tela real (mesmas classes) e só aparece depois de 320 ms; com "reduzir movimento", nada anima.
  * components/esqueleto.tsx, lib/esqueleto-script.ts e o bloco "esqueleto" de app/globals.css.
@@ -15,7 +16,10 @@ const DB = process.env.E2E_DATABASE_URL || 'postgres://postgres:postgres@localho
 
 type Amostra = { esqMax: number; quadros: number; cls: number; hero: number[]; quick: number[] }
 
-/** Amostra cada quadro: a maior opacidade de esqueleto pintado e onde o palco e os atalhos de verdade estão. */
+/**
+ * Amostra cada quadro (e a cada 10 ms: o WebKit headless do CI chega a dar só 3 quadros por segundo) a maior opacidade
+ * de esqueleto pintado nos primeiros 300 ms de vida dele e onde o palco e os atalhos de verdade estão.
+ */
 function sonda() {
   const w = window as unknown as { __a: Amostra }
   w.__a = { esqMax: 0, quadros: 0, cls: 0, hero: [], quick: [] }
@@ -26,18 +30,27 @@ function sonda() {
   } catch {
     // WebKit não mede layout-shift: vale a posição do palco e dos atalhos
   }
+  // até 1,5 s depois de o palco aparecer (o WebKit do CI pode levar mais de 3 s para pintar a página), no máximo 20 s
   const t0 = performance.now()
+  let viu = 0
+  const vivo = () => {
+    if (!viu && w.__a.hero.length) viu = performance.now()
+    return performance.now() - t0 < 20_000 && (!viu || performance.now() - viu < 1500)
+  }
   const topo = (sel: string) => {
     // fora do esqueleto e já na tela (o HTML em streaming chega antes num <div hidden>, sem caixa)
     const el = [...document.querySelectorAll(sel)].find((e) => !e.closest('[data-esqueleto]') && e.getClientRects().length)
     return el ? Math.round(el.getBoundingClientRect().top + scrollY) : null
   }
-  const passo = () => {
+  const nascimento = new WeakMap<Element, number>()
+  const amostrar = () => {
     const a = w.__a
     a.quadros++
     for (const e of document.querySelectorAll<HTMLElement>('[data-esqueleto]')) {
       const r = e.getBoundingClientRect()
-      if (r.width && r.height) a.esqMax = Math.max(a.esqMax, Number(getComputedStyle(e).opacity))
+      if (!r.width || !r.height) continue
+      if (!nascimento.has(e)) nascimento.set(e, performance.now())
+      if (performance.now() - nascimento.get(e)! < 300) a.esqMax = Math.max(a.esqMax, Number(getComputedStyle(e).opacity))
     }
     for (const [k, sel] of [
       ['hero', '.home-hero'],
@@ -46,20 +59,24 @@ function sonda() {
       const y = topo(sel)
       if (y != null && a[k].at(-1) !== y) a[k].push(y)
     }
-    if (performance.now() - t0 < 3000) requestAnimationFrame(passo)
+  }
+  const passo = () => {
+    amostrar()
+    if (vivo()) requestAnimationFrame(passo)
   }
   requestAnimationFrame(passo)
+  const relogio = setInterval(() => (vivo() ? amostrar() : clearInterval(relogio)), 10)
 }
 
 async function lerAmostra(page: Page): Promise<Amostra> {
-  await page.waitForFunction(() => (window as unknown as { __a?: Amostra }).__a?.hero.length, null, { timeout: 15_000 })
+  await page.waitForFunction(() => (window as unknown as { __a?: Amostra }).__a?.hero.length, null, { timeout: 20_000, polling: 100 })
   await page.waitForTimeout(700)
   return page.evaluate(() => (window as unknown as { __a: Amostra }).__a)
 }
 
 function conferir(a: Amostra, onde: string) {
   expect(a.quadros, `${onde}: amostrou quadros`).toBeGreaterThan(3)
-  expect(a.esqMax, `${onde}: nenhum quadro com esqueleto à vista`).toBeLessThan(0.05)
+  expect(a.esqMax, `${onde}: esqueleto invisível nos primeiros 300 ms`).toBeLessThan(0.05)
   expect(a.hero, `${onde}: o palco nasce no lugar final`).toHaveLength(1)
   expect(a.quick, `${onde}: os atalhos nascem no lugar final`).toHaveLength(1)
   expect(a.cls, `${onde}: layout-shift`).toBeLessThan(0.05)
@@ -140,12 +157,15 @@ async function comPaineisPresos(fn: (soltar: () => void) => Promise<void>) {
 
 type Lento = { linha: [number, number][]; copias: number; meio: number }
 
-/** Idade e opacidade do esqueleto a cada quadro, e as cópias que fazem a dissolvência (fim do body). */
+/**
+ * Idade e opacidade do esqueleto a cada quadro (e a cada 10 ms, como em `sonda`), e as cópias que fazem a dissolvência
+ * (fim do body), contadas quando entram: vivem 260 ms, menos que o intervalo entre quadros do WebKit headless do CI.
+ */
 function sondaLenta() {
   const w = window as unknown as { __l: Lento }
   w.__l = { linha: [], copias: 0, meio: 0 }
   let nasceu = 0
-  const passo = () => {
+  const amostrar = () => {
     const e = document.querySelector<HTMLElement>('#conteudo [data-esqueleto]')
     if (e) {
       nasceu ||= performance.now()
@@ -153,10 +173,18 @@ function sondaLenta() {
       w.__l.linha.push([Math.round(performance.now() - nasceu), op])
       if (op > 0.05 && op < 0.95) w.__l.meio++
     }
-    if (document.querySelector('body > [aria-hidden="true"].inicio-paineis')) w.__l.copias++
+  }
+  const passo = () => {
+    amostrar()
     requestAnimationFrame(passo)
   }
   requestAnimationFrame(passo)
+  setInterval(amostrar, 10)
+  new MutationObserver((ms) => {
+    for (const m of ms)
+      for (const n of m.addedNodes)
+        if (n instanceof HTMLElement && n.parentNode === document.body && n.matches('[aria-hidden="true"].inicio-paineis')) w.__l.copias++
+  }).observe(document, { childList: true, subtree: true })
 }
 
 const caixas = (page: Page, raiz: string) =>

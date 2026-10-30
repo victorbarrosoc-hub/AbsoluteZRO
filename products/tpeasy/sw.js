@@ -1,5 +1,5 @@
 // TPeasy: funciona sem internet no set. Busca a versão nova quando há rede e cai na cópia guardada quando não há.
-const CACHE = "tpeasy-v20";
+const CACHE = "tpeasy-v21";
 const FILES = [
   "/",
   "/site.css",
@@ -20,6 +20,7 @@ const FILES = [
   "/app/js/link.js",
   "/app/js/zro.js",
   "/app/js/z.js",
+  "/app/js/set.js",
   "/app/js/entrada.js",
   "/app/js/pendencias.js",
   "/app/js/remote.js",
@@ -33,6 +34,7 @@ const FILES = [
   "/icons/familia/absolute-zro.webp",
   "/icons/familia/sobedesce.svg",
   "/icons/familia/synquei.svg",
+  "/icons/familia/maestro.svg",
 ];
 
 self.addEventListener("install", (e) => {

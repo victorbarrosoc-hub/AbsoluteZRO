@@ -84,15 +84,16 @@ export async function listarLotes(ctx: Contexto): Promise<LoteResumo[]> {
   });
 }
 
-export type CardDisponivel = { id: string; tema: string; coluna: string; cliente: string | null };
+export type CardDisponivel = { id: string; tema: string; coluna: string; colunaNome: string | null; colunaCor: string | null; cliente: string | null };
 
-/** Cards que podem entrar num lote (vivos, ainda não entregues), para escolher ao criar o lote. */
+/** Cards que podem entrar num lote (em produção, revisão ou aprovação; as colunas da produtora contam como produção). */
 export async function cardsDisponiveis(ctx: Contexto): Promise<CardDisponivel[]> {
   return getBanco().asUser(ctx, async (tx) => {
     const r = (await tx.execute(sql`
-      select id, dados ->> 'tema' as tema, coluna, cliente from maestro.cards
-       where apagado_em is null and coluna in ('fazendo', 'revisao', 'aprovacao')
-       order by case coluna when 'revisao' then 0 when 'aprovacao' then 1 else 2 end, updated_at desc limit 300`)) as unknown as CardDisponivel[];
+      select k.id, k.dados ->> 'tema' as tema, k.coluna, co.nome as "colunaNome", co.cor as "colunaCor", k.cliente
+        from maestro.cards k left join maestro.colunas co on co.org_id = k.org_id and co.id = k.coluna
+       where k.apagado_em is null and (k.coluna in ('fazendo', 'revisao', 'aprovacao') or (co.papel is null and co.id is not null))
+       order by case k.coluna when 'revisao' then 0 when 'aprovacao' then 1 else 2 end, k.updated_at desc limit 300`)) as unknown as CardDisponivel[];
     return [...r];
   });
 }
@@ -171,6 +172,8 @@ export type PecaDaEquipe = {
   card: string;
   titulo: string;
   coluna: string;
+  colunaNome: string | null;
+  colunaCor: string | null;
   ajustePedido: boolean;
   volta: number;
   versoes: VersaoVista[];
@@ -202,8 +205,10 @@ export async function carregarLote(ctx: Contexto, loteId: string): Promise<LoteD
        where l.id = ${loteId} and l.deleted_at is null`)) as unknown as (Omit<LoteDaEquipe, "pecas" | "termo"> & { term: Record<string, string> | null })[];
     if (!l) return null;
     const pecas = (await tx.execute(sql`
-      select k.id as card, k.dados ->> 'tema' as titulo, k.coluna, coalesce((k.dados ->> 'ajustePedido')::boolean, false) as "ajustePedido", lc.volta
+      select k.id as card, k.dados ->> 'tema' as titulo, k.coluna, co.nome as "colunaNome", co.cor as "colunaCor",
+             coalesce((k.dados ->> 'ajustePedido')::boolean, false) as "ajustePedido", lc.volta
         from maestro.lote_cards lc join maestro.cards k on k.org_id = lc.org_id and k.id = lc.card_id
+        left join maestro.colunas co on co.org_id = k.org_id and co.id = k.coluna
        where lc.lote_id = ${loteId} and k.apagado_em is null
        order by lc.posicao, k.id`)) as unknown as Omit<PecaDaEquipe, "versoes" | "decisoes">[];
     const ids = pecas.map((p) => p.card);

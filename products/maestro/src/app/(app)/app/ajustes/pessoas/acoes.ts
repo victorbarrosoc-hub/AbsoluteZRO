@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { exigirAcessoNaAcao } from "@/lib/auth/acao";
 import { podeRemover } from "@/lib/papeis";
-import { salvarAcesso, salvarFuncaoNaProdutora } from "@/lib/pessoas";
+import { listarPessoas, salvarAcesso, salvarFuncaoNaProdutora } from "@/lib/pessoas";
+import { AREAS, PADRAO, podeMudarAcessos } from "@/lib/acessos";
+import { salvarAreas } from "@/lib/acessos-servidor";
 import { buscarPessoas, convidarPessoa, PAPEL_DO_CONVITE, type PapelConvite, type PessoaZro } from "@/lib/zro/pessoas";
 import type { EstadoForm } from "@/components/form";
 
@@ -16,6 +18,31 @@ export async function salvarAcessoAcao(_: EstadoForm, fd: FormData): Promise<Est
   if (!r.ok) return { mensagem: r.mensagem };
   revalidatePath("/app", "layout");
   return { aviso: restrito ? `Vê ${clientes.length === 1 ? "1 cliente" : `${clientes.length} clientes`}.` : "Vê todos os clientes.", n: Date.now() };
+}
+
+/**
+ * O que cada pessoa vê (áreas sensíveis, src/lib/acessos.ts): só a administração muda; o banco confere de novo
+ * (políticas `acessos_*`) e a mudança vai para a auditoria. `padrao=1` volta ao padrão do papel.
+ */
+export async function salvarAreasAcao(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
+  const s = await exigirAcessoNaAcao();
+  if (!podeMudarAcessos(s.papel)) return { mensagem: "Só a administração muda o acesso." };
+  const sub = String(fd.get("sub") ?? "");
+  let ligadas = fd.getAll("area").map(String);
+  if (fd.get("padrao") === "1") {
+    const [m] = (await listarPessoas({ sub: s.sub, orgId: s.orgId })).filter((p) => p.sub === sub);
+    if (!m) return { mensagem: "Pessoa não encontrada." };
+    ligadas = AREAS.filter((a) => PADRAO[m.papel][a]);
+  }
+  const r = await salvarAreas({ sub: s.sub, orgId: s.orgId }, sub, ligadas);
+  if (!r.ok) return { mensagem: r.mensagem };
+  revalidatePath("/app", "layout");
+  // `valores.areas`: o que ficou valendo (a tela acerta os interruptores pelo que o banco gravou).
+  return {
+    aviso: fd.get("padrao") === "1" ? "Voltou ao padrão." : "Acesso salvo.",
+    valores: { areas: AREAS.filter((a) => r.acessos[a]).join(",") },
+    n: Date.now(),
+  };
 }
 
 /* ───────────── pessoas da Absolute ZRO (ADR 0029 do HUB) ───────────── */

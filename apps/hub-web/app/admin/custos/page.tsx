@@ -13,6 +13,7 @@ import {
   fmtMoeda,
   hojeNoFuso,
   lerConfigCustos,
+  lerGastoDoLab,
   listarCustos,
   mensalDoItem,
   pontoDeEquilibrio,
@@ -61,6 +62,8 @@ export default async function Custos() {
     config: await lerConfigCustos(tx),
     fin: await dadosFinanceiros(tx),
     produtos: (await tx`select id, name from zro.products order by step_order`).map((p) => ({ id: p.id as string, name: p.name as string })),
+    // Laboratório da Z (ADR 0033): o uso de cada chamada paga, registrado com o custo estimado.
+    lab: await lerGastoDoLab(tx),
   }))
   const hoje = hojeNoFuso()
   // Dólar do Banco Central com mais de 24 h: busca depois de responder (a página não espera). O próximo acesso já vê.
@@ -240,6 +243,37 @@ export default async function Custos() {
           )}
         </section>
       </div>
+
+      <section className="adm-card" aria-labelledby="laboratorio-z">
+        <h2 id="laboratorio-z">
+          Laboratório da Z <span className="adm-card__aside">uso estimado, US$</span>
+        </h2>
+        <div className="cst-lab">
+          <div className="kpi">
+            <span className="kpi__label">Hoje</span>
+            <span className="kpi__value">{fmtMoeda(d.lab.hoje, 'USD')}</span>
+            <span className="kpi__hint">{d.lab.teto == null ? 'sem teto: bloqueado' : `teto ${fmtMoeda(d.lab.teto, 'USD')}/dia`}</span>
+          </div>
+          <div className="kpi">
+            <span className="kpi__label">Este mês</span>
+            <span className="kpi__value">{fmtMoeda(d.lab.mes, 'USD')}</span>
+            <span className="kpi__hint">
+              {(
+                [
+                  ['claude', 'Claude'],
+                  ['voz', 'voz'],
+                  ['escuta', 'escuta'],
+                  ['transcricao', 'transcrição'],
+                  ['design', 'criar voz'],
+                ] as const
+              )
+                .filter(([k]) => d.lab.porServico[k] > 0)
+                .map(([k, nome]) => `${nome} ${fmtMoeda(d.lab.porServico[k], 'USD')}`)
+                .join(' · ') || 'nada ainda'}
+            </span>
+          </div>
+        </div>
+      </section>
 
       <CustosItens
         itens={d.custos.map(vista)}

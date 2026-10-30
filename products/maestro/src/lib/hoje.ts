@@ -1,13 +1,13 @@
 /**
  * "Hoje" (plano v2 §3 e fase 19): a visão do dia da produtora, só com contagens e atalhos para cada painel. Uma leitura
- * como a pessoa (`asUser`, RLS): a organização vem da sessão e o dinheiro só aparece para administração e gestão (o
- * banco esconde os lançamentos dos outros papéis; a tela nem pergunta). Sem "server-only": os testes chamam direto.
+ * como a pessoa (`asUser`, RLS): a organização vem da sessão e o dinheiro só aparece com a área Financeiro
+ * (src/lib/acessos.ts; o banco esconde os lançamentos de quem não tem; a tela nem pergunta). Sem "server-only": os testes chamam direto.
  */
 import { sql } from "drizzle-orm";
 import { getBanco, type Contexto } from "@/lib/db/client";
 import { somarDias } from "@/lib/dinheiro";
 import { listarRetornosNaTx, type Retorno } from "@/lib/funil/servidor";
-import { EM_TRABALHO } from "@/lib/quadro/metodo";
+import { FORA_DO_TRABALHO } from "@/lib/quadro/metodo";
 
 export type EventoDoDia = { id: string; titulo: string; tipo: string; hora: string | null; local: string | null; projeto: string | null };
 
@@ -21,7 +21,7 @@ export type Dinheiro = {
 };
 
 /** Um card que vence (prazo até amanhã) ou que está com o cliente. */
-export type CardDoDia = { id: string; tema: string; cliente: string | null; prazo: string | null; coluna: string; desde: string | null };
+export type CardDoDia = { id: string; tema: string; cliente: string | null; prazo: string | null; coluna: string; cor: string | null; desde: string | null };
 
 /** Um dia da semana no caixa: o que entrou e saiu de fato (baixas), em centavos. */
 export type DiaDoCaixa = { dia: string; entrou: number; saiu: number };
@@ -67,7 +67,10 @@ export async function resumoDoDia(ctx: Contexto, verDinheiro: boolean, hoje: str
              count(*) filter (where left(prazo, 10) < ${hoje})::int as atrasados,
              count(*) filter (where left(prazo, 10) <= ${hoje} and resp = ${ctx.sub})::int as meus
         from maestro.cards
-       where apagado_em is null and prazo is not null and coluna = any (${`{${EM_TRABALHO.join(",")}}`}::text[])`)) as unknown as Record<string, number>[];
+       where apagado_em is null and prazo is not null and coluna is not null and coluna <> all (${`{${FORA_DO_TRABALHO.join(",")}}`}::text[])`)) as unknown as Record<
+      string,
+      number
+    >[];
     const [cl] = (await tx.execute(sql`
       select count(distinct a.lote_id)::int as lotes,
              count(k.id) filter (where k.coluna = 'aprovacao')::int as pecas
@@ -90,21 +93,25 @@ export async function resumoDoDia(ctx: Contexto, verDinheiro: boolean, hoje: str
 
     const amanha = somarDias(hoje, 1);
     const vencendo = (await tx.execute(sql`
-      select k.id, coalesce(k.dados ->> 'tema', k.id) as tema, c.name as cliente, left(k.prazo, 10) as prazo, k.coluna, null as desde
+      select k.id, coalesce(k.dados ->> 'tema', k.id) as tema, c.name as cliente, left(k.prazo, 10) as prazo, k.coluna, co.cor, null as desde
         from maestro.cards k left join maestro.clients c on c.org_id = k.org_id and c.id::text = k.cliente
+        left join maestro.colunas co on co.org_id = k.org_id and co.id = k.coluna
        where k.apagado_em is null and k.prazo is not null and left(k.prazo, 10) <= ${amanha}
-         and k.coluna = any (${`{${EM_TRABALHO.join(",")}}`}::text[])
+         and k.coluna is not null and k.coluna <> all (${`{${FORA_DO_TRABALHO.join(",")}}`}::text[])
        order by k.prazo, k.id limit 5`)) as unknown as CardDoDia[];
     const comCliente = (await tx.execute(sql`
-      select k.id, coalesce(k.dados ->> 'tema', k.id) as tema, c.name as cliente, left(k.prazo, 10) as prazo, k.coluna, k.updated_at::date::text as desde
+      select k.id, coalesce(k.dados ->> 'tema', k.id) as tema, c.name as cliente, left(k.prazo, 10) as prazo, k.coluna, co.cor, k.updated_at::date::text as desde
         from maestro.cards k left join maestro.clients c on c.org_id = k.org_id and c.id::text = k.cliente
+        left join maestro.colunas co on co.org_id = k.org_id and co.id = k.coluna
        where k.apagado_em is null and k.coluna = 'aprovacao'
        order by k.updated_at limit 4`)) as unknown as CardDoDia[];
     const retornos = await listarRetornosNaTx(tx, hoje, 8);
 
     let dinheiro: Dinheiro | null = null;
     let semanaCaixa: DiaDoCaixa[] | null = null;
-    if (verDinheiro) {
+    // Mesmo que quem chama peça, o dinheiro só sai para quem tem a área Financeiro (o RLS também esconde).
+    const [{ ve }] = (await tx.execute(sql`select maestro.pode(${ctx.orgId}::uuid, 'financeiro') as ve`)) as unknown as { ve: boolean }[];
+    if (verDinheiro && ve) {
       const [d] = (await tx.execute(sql`
         select count(*) filter (where tipo = 'entrada' and vencimento between ${hoje}::date and ${semana}::date)::int as rs_n,
                coalesce(sum(valor_cents - pago_cents) filter (where tipo = 'entrada' and vencimento between ${hoje}::date and ${semana}::date), 0)::float8 as rs_v,

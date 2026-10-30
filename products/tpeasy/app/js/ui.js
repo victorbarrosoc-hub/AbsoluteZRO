@@ -15,14 +15,15 @@ export function toast(msg, ms = 1500) {
 }
 
 // ───────────── abas ─────────────
-// a Z é a primeira aba e a tela de entrada do app
-export const TABS = ["z", "roteiros", "tp", "ajustes"];
+// Roteiros é a primeira aba e a tela de entrada (titular, 29/10/2026). A Z tem tela própria (#z), mas não é aba da barra:
+// abre pelo anel discreto do topo de Roteiros e nunca sozinha.
+export const TABS = ["roteiros", "tp", "ajustes", "z"];
 let current = null;
 const scrollPos = {};
 export const currentTab = () => current;
 
 export function go(tab, { instant = false } = {}) {
-  if (!TABS.includes(tab)) tab = "z";
+  if (!TABS.includes(tab)) tab = "roteiros";
   if (pageOpen()) closePage();
   if (tab === current) {
     scrollTo({ top: 0, behavior: reducedMotion() ? "auto" : "smooth" });

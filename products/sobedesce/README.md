@@ -222,8 +222,8 @@ O Google Drive toca vídeo pesado sem travar porque usa uma cópia leve que ele 
 
 Botão direito num vídeo ou áudio do Drive → **Converter com o Relay…** → escolha o grupo (Redes, Trabalho, Tamanho,
 Áudio) e o destino (YouTube 1080p/1440p/4K, Shorts, Reels · No Compress, TikTok, WhatsApp, Vimeo, Apple HEVC, Proxy,
-Discord, E-mail, MP3, AAC, WAV) → **Converter**. O app converte com o x264 em qualidade constante (o mesmo do HandBrake;
-o chip de vídeo só sem x264) e sobe `<nome> (<destino>).<ext>` **na mesma pasta**, com o MD5 conferido. Tamanho,
+Discord, E-mail, MP3, AAC, WAV) → **Converter**. O app converte com o x264 em qualidade constante
+(o chip de vídeo só sem x264) e sobe `<nome> (<destino>).<ext>` **na mesma pasta**, com o MD5 conferido. Tamanho,
 cadência, bitrate, cor e áudio vêm dos presets do **Relay** (o conversor da Absolute ZRO). Pelo celular: no menu do
 arquivo, **Converter com o Relay**; o **próprio celular** converte com o motor do Relay (sem computador ligado) e envia
 o arquivo novo para a mesma pasta. Converte quem tocou no

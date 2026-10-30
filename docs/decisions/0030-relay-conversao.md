@@ -1,6 +1,6 @@
 # ADR 0030 — Relay: conversão e exportação de mídia viram um setor próprio; a Revela fica só com a cor
 
-**Status:** aceita (29/10/2026, pedido do titular). Nome: **Relay** (id técnico `relay`, domínio
+**Status:** aceita e em produção (29/10/2026, pedido do titular; liberado com o Maestro, sem e-mail). Nome: **Relay** (id técnico `relay`, domínio
 `relay.absolutezro.com`; se o INPI pedir, vira "Relay Convert" sem mudar o id). Contrato de integração com cada
 plataforma: [docs/integration-contracts/relay.md](../integration-contracts/relay.md).
 
@@ -8,7 +8,7 @@ plataforma: [docs/integration-contracts/relay.md](../integration-contracts/relay
 
 A Absolute ZRO é um produto completo de pós-produção desmontado em setores: cada setor é um app que funciona e se
 vende sozinho, e o conjunto se vende como integração (Ciclo do O, PRD §1 e §4.3). Até aqui a conversão de mídia (o
-"Handbrake" do ecossistema) não tinha dono e estava espalhada:
+conversor do ecossistema) não tinha dono e estava espalhada:
 
 | Onde                          | O que converte                                                                                                                                                                                                                                                                                                                                                                                           | Motor                                     |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
@@ -32,13 +32,14 @@ chamam.
   por destino (com fonte e data de verificação, regra do PRD §8) e do plano de conversão (decisão pura e testada).
   Funciona sozinha: solta o arquivo, escolhe o destino, sai a versão nova. Pasta `products/relay/`, domínio
   `relay.absolutezro.com` (ADR 0025), schema e papel próprios (`relay`) no Supabase `AbsoluteZRO` (ADR 0013).
-- **Grátis e aberto** (decisão do titular, 29/10/2026): o Relay é a porta de entrada do ecossistema. Converter no
+- **Aberto** (decisão do titular, 29/10/2026; sem "grátis" no posicionamento): o Relay é a porta de entrada do ecossistema. Converter no
   aparelho não pede conta e não consome quota (nenhum custo de servidor). A conta Absolute ZRO entra só no que toca a
-  conta (Drive, o computador da pessoa, histórico). Grátis em todos os planos do catálogo.
-- **Qualidade no nível do HandBrake, ou acima.** No computador, o mesmo x264 do HandBrake (CRF com o bitrate do
-  destino como teto, duas passadas no tamanho exato); no navegador, Lanczos na placa, cor marcada BT.709 e bitrate com
-  folga para os codificadores de hardware. Medido contra os presets do HandBrake em
-  `products/relay/docs/QUALIDADE.md`, sem esconder onde o navegador perde.
+  conta (Drive, o computador da pessoa, histórico). Incluído em todos os planos do catálogo.
+- **Qualidade medida, não prometida.** No computador, o x264 em `slow` e qualidade constante (duas passadas no
+  tamanho exato); no navegador, Lanczos na placa, cor marcada BT.709 e bitrate com folga para os codificadores de
+  hardware. O laboratório (`npm run qualidade`, `products/relay/docs/QUALIDADE.md`) mede contra uma referência x264
+  no mesmo tamanho de arquivo. O comparativo com outros conversores é interno: não vai para o site nem para
+  divulgação (decisão do titular, 29/10/2026).
 - **Dois motores, um plano.** Navegador (Mediabunny + WebCodecs, o arquivo não sai do aparelho) e computador (ffmpeg
   com o codificador do chip ou da placa). Os dois seguem o mesmo plano e os mesmos presets. No primeiro recorte, quem
   executa no computador continua sendo o app do SOBEDESCE, que já tem o ffmpeg, o Drive e a fila. Um app de computador

@@ -143,7 +143,7 @@ export async function DELETE(request: Request) {
   // A Z sai junto: o token da Absolute ZRO guardado para ela é apagado e revogado.
   const headers = new Headers({ ...privateHeaders });
   headers.append('Set-Cookie', sessionCookie(null));
-  headers.append('Set-Cookie', await forgetIaTokens(request));
+  for (const c of await forgetIaTokens(request)) headers.append('Set-Cookie', c);
   return Response.json({ signedOut: true }, { headers });
 }
 

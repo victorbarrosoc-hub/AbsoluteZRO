@@ -17,9 +17,12 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
    novo; o Maestro funciona sem o HUB).
 4. Peças ficam em pastas do Google Drive da organização via SOBEDESCE (`card_media` guarda só id e pasta); nada de
    Storage próprio. WhatsApp: `wa.me` com texto pronto, sem API. Plano avulso: não mexa em `zro.plan_products` (exceção do
-   titular, 29/10/2026: o adicional da marca própria e o Pro v2, migração `0025` do HUB, em rascunho).
+   titular, 29/10/2026: o adicional da marca própria e o Pro v2, migração `0025` do HUB, em rascunho; e o lançamento em
+   Beta grátis, migração `0027`: grátis, Completo e Pro).
 5. Quadro: as 8 colunas do método (`src/lib/quadro/metodo.ts`); "Com o cliente" = **Em aprovação**, "Publicado" =
-   **Entregue**. O método não muda.
+   **Entregue**. O método não muda: desde 29/10/2026 (colunas como no Trello) cada produtora renomeia, recolore e
+   reordena as 8 e cria as dela, mas as 8 nunca são arquivadas e tudo o que o produto automatiza olha o **id/papel** da
+   coluna, nunca o nome.
 6. Logo: o gesto da pauta em latão (`public/brand/maestro-symbol*.svg`), colorido ao lado da marca flat da Absolute
    ZRO; o resto é identidade Absolute ZRO (Figtree, grafite, Liquid Glass, tema claro padrão, pouco texto).
 
@@ -27,8 +30,15 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
 
 - **Acesso**: `temAcesso()` em `src/lib/auth/acesso.ts` é o ÚNICO ponto de decisão: `zro_release.maestro` released
   ou allowed (sem a claim = fechado) **e** `maestro` em `zro_products`. As duas claims ficam na sessão e são relidas
-  no `/eu`. **O Maestro está fechado**: só a lista de acesso do HUB entra (migration `0024` do HUB, `product_release`
-  em `development`); abrir a todos é a `0022` e só com o titular. Páginas usam `exigirAcessoNaPagina()` (cada página
+  no `/eu`. **Hoje o Maestro está fechado** (migration `0024` do HUB, `product_release` em `development`: só a lista
+  de acesso entra). **Lançamento em Beta** (ADR 0027 do HUB, no OK final do titular;
+  `docs/operations/lancamento-maestro.md`): a migration `0027` abre o gate (`public_beta`, todos os canais) e põe o
+  Maestro no grátis, no Completo e no Pro (o grátis nunca leva `maestro.marca_propria`); a vitrine vira com
+  `MAESTRO_LANCADO` em `src/lib/site.ts` (`node scripts/lancamento-maestro.mjs --abrir` na raiz, junto com as listas
+  da família dos outros apps). A página inicial lançada mostra "Beta" (sem "grátis": posicionamento da marca, 29/10/2026), "Criar conta"/"Entrar com
+  Absolute ZRO" (`CRIAR_CONTA_ZRO`/`ENTRAR_ZRO`, direto no login único), "No celular, como app." e, só com instalador
+  publicado no catálogo da central do HUB, o app de computador (`src/lib/desktop.ts`; `MAESTRO_CATALOGO_DESKTOP=desligado`
+  no e2e). A lista de espera fica no código, sem aparecer. A vitrine nunca abre nada: quem entra é o gate. Páginas usam `exigirAcessoNaPagina()` (cada página
   chama, além do layout: no Next 16 os dois renderizam em paralelo) e rotas de dados usam `exigirAcesso()`. Sem
   sessão 401, sem acesso 403; nunca só a tela. Outro produto (ex.: SOBEDESCE para Arquivos) só por `temProduto()`.
 - **Login único**: `api/zro/{entrar,callback,eu,sair}` (PKCE S256, `state`/`nonce` selados, `id_token` conferido pela
@@ -44,6 +54,22 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   (`src/lib/quadro/metodo.ts`); tempo real é poll de 5 s ("o que mudou desde"). Clientes e projetos em `src/lib/crm`
   (Server Actions conferem sessão e papel; o banco confere de novo). Remover cliente/projeto = `deleted_at`, só
   admin e gestão.
+- **Colunas do Quadro** (titular 29/10/2026, "como no Trello"; `drizzle/0024_colunas.sql`, `src/lib/quadro/colunas.ts`
+  puro, `colunas-servidor.ts`, tela em `components/quadro/colunas.tsx`): `maestro.colunas` por organização (id, papel,
+  nome 1–30, cor da paleta fechada `CORES_COLUNA`/`--cor-*`, ordem, arquivada). As 8 do método são de sistema: **id =
+  papel** (`pauta`…`entregue`), então renomear/reordenar não regrava card nem histórico e toda automação (`link_enviar`
+  → Aprovado/Revisão, gerar link → Em aprovação, Hoje, agenda, Z) segue pelo id; nunca compare pelo nome. As da
+  produtora (`x-<12 hex>`, até 24) contam como "em produção" (`emTrabalho`, `FORA_DO_TRABALHO`). Todos leem
+  (inclusive acesso por cliente); só admin e gestão mudam (`podeEditarColunas`), e só pelas funções `maestro.coluna_*`
+  (`maestro_app` sem insert/update/delete). Arquivar exige o destino e move cada card por `card_mudar` (apagados
+  inclusive; histórico só de inclusão); sistema não arquiva (check + função). O card só entra em coluna viva da própria
+  organização (gatilho `cards_coluna_valida`, que trocou o check fixo `cards_coluna_ok`). Organização nova ganha as 8
+  pelo gatilho em `organizations`. Na tela: clique duplo no cabeçalho renomeia e arrastar o cabeçalho reordena
+  (computador); no celular, tocar na aba já escolhida renomeia; "Colunas" abre a folha "Editar colunas" (`Folha`):
+  renomear, cor, alça (mouse na hora, toque segurando 280 ms, setas do teclado), arquivar com destino, "Nova coluna",
+  arquivadas com "Restaurar" e "Restaurar padrão". Tudo otimista, com volta se o banco recusar; o poll de 5 s traz as
+  colunas. `/api/quadro` aceita `coluna_criar|coluna_mudar|coluna_ordenar|coluna_arquivar|coluna_restaurar|colunas_padrao`.
+  Nome ou cor de coluna em outra tela: junte `maestro.colunas` pelo id (`colunaNome`/`colunaCor`, `data-cor`).
 - **Z**: `api/zro/ia/[...caminho]` repassa ao HUB com o token da sessão (NDJSON sem buffer). **A Z não é a primeira
   aba** (titular, 29/10/2026; PRD Maestro v1.1, Plano de Integração §7–8: presença discreta, central de comando no HUB,
   nunca abrir o chat sozinho): ícone discreto no fim da cápsula, no topo do celular e em "Mais" (`Z` em
@@ -114,21 +140,27 @@ pastaId?, ref: <id da versão>, conta? }`, depois `relay.pedido` para o estado c
   puro e faz as mesmas contas do `quoteTotals` do ZRO (não mude sem o teste); tabela de preços com faixas e
   multiplicadores por nicho, modelos com fórmula estruturada (nada de `eval`); só rascunho edita; aprovar cria projeto
   e entradas uma vez. Timbrado = página com CSS de impressão (`.imprimivel`, A4), sem custo nem margem; o PDF é o
-  "salvar PDF" do navegador. Deslocamento: contas em `deslocamento.ts`; Photon/OSRM em `servicos.ts` **desligados**
-  até a ciência do titular (`MAESTRO_SERVICOS_ABERTOS=1` liga); a tela sempre aceita km e litro digitados.
+  "salvar PDF" do navegador. Deslocamento: contas em `deslocamento.ts`; Photon/OSRM em `servicos.ts` **ligados**
+  desde 29/10/2026 (o titular pediu o km medido sozinho; `MAESTRO_SERVICOS_ABERTOS=0` desliga; só o servidor chama,
+  busca presa ao Brasil, memória de 12 h). O texto digitado vira lugar sozinho (`melhorLugar`: cidade com o mesmo
+  nome, capital em empate, UF dita) ao sair do campo, no Enter ou quando só uma cidade casa, e a dica mostra
+  "Cidade/UF"; a rota preenche o km, km digitado vale com "Usar o da rota". Veículos de partida em `veiculos.ts`
+  (consumo de estrada por combustível) junto com os do inventário. A tela sempre aceita km, consumo e litro
+  digitados. Teste com Photon/OSRM falsos (`tests/rota-fixture.mts`, `MAESTRO_PHOTON_URL`/`MAESTRO_OSRM_URL`).
   **Combustível automático** (titular 29/10/2026, `drizzle/0022`): gasolina, etanol ou diesel S10 com o preço médio da
-  semana da ANP (planilha semanal `resumo_semanal_lpc`, abas MUNICIPIOS/ESTADOS/BRASIL) no município da produtora
-  (Ajustes → Empresa), senão no estado, senão no Brasil, sempre com "· ANP, semana de dd/mm". Só o agendamento fala com
+  semana da ANP (planilha semanal `resumo_semanal_lpc`, abas MUNICIPIOS/ESTADOS/BRASIL) na **cidade de saída** (onde
+  se abastece; sem saída, a da produtora em Ajustes → Empresa), senão no estado, senão no Brasil (`escolherPreco`,
+  puro; nome digitado sem acento/caixa/UF casa), sempre com "· ANP, semana de dd/mm". Só o agendamento fala com
   a ANP: `GET /api/cron/combustivel` (Vercel Cron no sábado, `CRON_SECRET`, porta `src/lib/cron.ts`) guarda a semana em
   `maestro.combustivel_precos` (referência sem organização: `maestro_app` só SELECT; 8 semanas) e
   `coletarSeAtrasado` (`after()` na ação) cobre o agendamento atrasado, uma vez por hora. Preço digitado vale para
   aquele combustível naquele orçamento (localStorage); a linha grava o preço usado (orçamento salvo não muda). Sem
   semana guardada, campo vazio e "Digite o preço do posto"; nunca preço inventado. Teste com a ANP falsa
   (`tests/anp-fixture.mts`, `MAESTRO_ANP_URL`).
-  **Financeiro** (`src/lib/financeiro`) só admin e gestão (`podeVerDinheiro`), também no banco; baixas recalculam o
+  **Financeiro** (`src/lib/financeiro`) só com a área Financeiro (`pode(sessao, "financeiro")`, ver "Quem vê o quê"), também no banco; baixas recalculam o
   pago por gatilho; recorrência gera o mês uma vez; a escala vira "a pagar" pelo gatilho `escala_sincronizar`. Sem
   DAS/ISS. **Freelas**: CPF e PIX só em `freela_pagamento`, cifrados com `selar()` (`MAESTRO_KEY`, contexto
-  `freela_pagamento:<org>:<freela>:<campo>`), lidos só por admin e gestão; nunca em lista, log ou demonstração real.
+  `freela_pagamento:<org>:<freela>:<campo>`), lidos só com a área Dados da equipe; nunca em lista, log ou demonstração real.
   **Inventário**: reserva em conflito é barrada no banco (gatilho com trava, erro 23P01, e `exclude` com `btree_gist`
   quando existe). **Agenda** e documentos do projeto (checklist, ordem do dia, roteiro, decupagem). Navegação em
   `src/lib/navegacao.ts` (módulo sem "use client": o servidor também lê). Carro do Freela: só o mapa em
@@ -177,7 +209,20 @@ pastaId?, ref: <id da versão>, conta? }`, depois `relay.pedido` para o estado c
 - **Hoje** (`/app/hoje`, `src/lib/hoje.ts`, desenho C1): agenda do dia, "Vencendo", "Com o cliente", **Retornar hoje**
   (com "Feito", "Amanhã" e "+1 sem.") e o caixa da semana (baixas de segunda a domingo), mais as contagens (cards no
   prazo, peças com o cliente, pedidos novos, orçamentos aguardando, a receber e a pagar, caixa, meta do mês); dinheiro
-  só admin e gestão (o RLS esconde de qualquer jeito). Primeiro item de Produção e na barra do celular.
+  só com a área Financeiro e orçamentos só com a área Orçamentos (o RLS esconde de qualquer jeito). Primeiro item de
+  Produção e na barra do celular.
+- **Quem vê o quê** (titular 29/10/2026, [ADR 0031](../../docs/decisions/0031-maestro-acesso-por-area.md), mapa e
+  auditoria em `docs/permissoes.md`; `drizzle/0027`, `src/lib/acessos.ts` puro, `src/lib/acessos-servidor.ts`): o papel
+  do HUB decide escrever/remover; por cima, seis **áreas** (`financeiro`, `orcamentos`, `contratos`, `diarias`,
+  `dados_equipe`, `inventario_valores`) com padrão por papel (`PADRAO` = `maestro.area_padrao`; Gestão sem Financeiro,
+  Equipe e Leitura sem nenhuma) e ajuste por pessoa em `maestro.acessos`, que **só a Administração** muda (Ajustes →
+  Pessoas → "O que vê", `salvarAreas`, auditado `acesso.areas`); a Administração vê tudo sempre. No banco:
+  `maestro.pode(org, área)` em política restritiva `<tabela>_area` (`maestro.politica_area`) nas tabelas de cada área;
+  colunas de dinheiro em tabelas de todos (escala, freela, kit, equipamento, pedido, projeto) mascaradas na consulta
+  (`case when maestro.pode(...)`, `areasNaTx`) e guardadas pelos gatilhos `*_guarda_area` (quem não vê não troca; a
+  escala nova pega a diária do cadastro). Na tela: `sessao.acessos` e `pode(sessao, área)`; a navegação esconde a seção
+  (`gruposPara`/`abasOcultas`, `Aba.area`); endereço digitado mostra `SemArea` ou 404. Tela, ação ou tabela nova com
+  dinheiro: escolha a área, ponha a política/máscara e um caso em `tests/acessos.test.mts`.
 - **O negócio por dentro** (estudo MakersHub §4, itens 1, 2, 3, 6 e 7; `drizzle/0014`–`0018`; mapa das ligações em
   `docs/integration-contracts/maestro-z.md`):
   - **Funil** (`0014`, `src/lib/funil`): `pedidos.etapa` (novo, conversa, orcamento, negociando, ganho, perdido) e o
@@ -237,11 +282,119 @@ pastaId?, ref: <id da versão>, conta? }`, depois `relay.pedido` para o estado c
   mapeadas; contato nunca vem do perfil); a ficha mostra o @ com link para o perfil. O inventário do Carro chega pelo
   mesmo `zro_sub` só quando `CARRO_SYNC_ATIVO` ligar. Testes: `tests/pessoas-zro.test.mts` e `e2e/pessoas-zro.spec.ts`
   (HUB falso com perfis fictícios em `tests/ponte-falsa.mts`).
+- **Set da Absolute ZRO** (ADR 0032 do HUB, contrato em `docs/integration-contracts/set.md`): quem da equipe e dos
+  contatos está online e as conversas (diretas e do projeto canônico). O widget `<zro-set>` vem de
+  `absolutezro.com/set/v1/zro-set.js` (`components/set-zro.tsx`, pílula discreta na cápsula e no topo do celular, como
+  a Z; nunca aba) e fala só com `/api/zro/set/*`, o repasse de `src/lib/zro/set.ts`: caminhos e métodos fechados
+  (`caminhoSet`), Origin conferido, JSON até 20 kB, Bearer da sessão com `zro.set` só no servidor, ETag/304 de ida e
+  volta. O login pede `zro.set` (HUB antigo recusa: `nivel=sem_set`); sem o escopo, 401 `reconectar_zro` e a pílula
+  some, sem apagar os tokens da Z. Testes: `tests/set.test.mts` e `e2e/set.spec.ts`. Duas baterias de e2e na mesma máquina:
+  `E2E_DB_NAME=maestro_test_<nome>` (com `E2E_PORT`, `E2E_PONTE_PORT` e `E2E_ANP_PORT` próprios).
 - **Kit do freela** (`drizzle/0013`, `src/lib/freelas/{kit,equipamentos}.ts`): `freela_equipamentos` (origem `maestro`
   ou `carro-do-freela`) e `escala_equipamentos`; o aluguel (diária × dias) soma ao mesmo "a pagar" da escala (gatilho
   `escala_sincronizar` refeito na 0013). Itens do Carro do Freela são só leitura (gatilho barra `maestro_app`). A
   sincronização (`aplicarInventarioDoCarro`, contrato `freela.inventario/1`, pelo `zro_sub`) está pronta e **desligada**:
   nada a chama enquanto o Carro não tem banco (`docs/integration-contracts/maestro-carro-do-freela.md`).
+- **Criação · Roteiro** (plano da Criação, fase F1 = só o núcleo, sem tela; `drizzle/0030_roteiros.sql`,
+  `src/lib/criacao/roteiro/**`): UM documento (`Roteiro`: formato, alvo min–max, wpm 150, pessoas, cenas → blocos
+  `fala`/`acao`/`plano`/`lettering`/`audio`/`observacao`/`nota`, ids estáveis) em `roteiros.conteudo`, conferido por
+  `lerRoteiro` (conserta; `null` só fora dos limites: 300 cenas, 3.000 blocos, 256 KB). `dica` é o cinza dos modelos e
+  nunca vira texto. Tempo em `tempo.ts` (fala = palavras ÷ wpm pela regra do `countWords` do TPeasy; plano + ações
+  = um plano; cena = `duracaoSeg` digitado ou o maior entre voz e imagem; medidor com 5% de folga). Vistas puras em
+  `vistas/` (Literário, Técnico, Teleprompter na marcação do TPeasy + `paraBackupTpeasy` com id
+  `maestro-<roteiro>-<pessoa>`, Edição, Markdown, `dadosImpressao`); 6 modelos em `modelos.ts`; documento antigo →
+  novo em `antigo.ts` (só leitura); `juntar.ts` junta por id no 409 do `rev`. Banco: `servidor.ts` (asUser; `rev` sobe
+  por gatilho; estado só admin/gestão pelo gatilho `roteiros_guarda`; `versao_atual`/`rev`/`demo` sem UPDATE para
+  `maestro_app`), versões só por `maestro.roteiro_versao_salvar` (sha256 por check, `registro_imutavel`), políticas
+  `_cliente` (sem vínculo fica escondido de quem é restrito). Papéis em `src/lib/criacao/permissoes.ts`
+  (`podeVerCriacao`/`podeEditarCriacao`/`podeEnviarCriacao`, desde a F3 pela capacidade `criacao` de `acessos.ts`,
+  `podeCriacao`; as políticas da 0030 têm os mesmos papéis e o `roteiro.test.mts` confere).
+  O migrador aplica qualquer migração do journal ainda não gravada (pelo `when` ou pelo hash), então números fora de
+  ordem entre frentes funcionam; `when` repetido para o deploy.
+- **Criação · editor do Roteiro** (fase F2): "Criação" no grupo Produção e em Mais (`navegacao.ts`; a barra do celular
+  não muda). `/app/criacao` (cartões; "Novo roteiro" em `components/criacao/roteiro/novo.tsx` pela Server Action
+  `criarRoteiroAcao`; `?novo=1&projeto=` abre a folha já ligada). O seletor Roteiros · Fluxos é
+  `components/criacao/abas.tsx`, nas duas rotas irmãs (`/app/criacao` e `/app/criacao/fluxos`, mesmo título; o
+  `?aba=fluxos` antigo redireciona). Editor em
+  `/app/criacao/roteiros/[id]` (`editor.tsx`): as vistas puras da F1 (Técnico com `incluirVazios`, a `dica` é só
+  placeholder), operações puras em `lib/criacao/roteiro/editar.ts` (nunca mutam; o que não mudou fica o mesmo objeto) e
+  "Comparar" em `comparar.ts`. Gravação em `gravacao.ts`: 600 ms + ao sair do campo/aba, sempre com `rev`; 409 traz o
+  atual e a tela junta com `juntarRoteiros(base, meu, deles)` e grava de novo; poll de 5 s só adota sem mudança local.
+  Rota única `/api/criacao/roteiros/[id]` (`lib/criacao/roteiro/rota.ts`: GET `?rev=`/`?versoes`/`?versao=`, POST
+  `salvar|versao|restaurar|ligar|estado|lixeira`, Origin conferida, papéis por `permissoes.ts`). Folha A4 em
+  `roteiros/[id]/imprimir` (`dadosImpressao`). Estados e nomes sem banco em `nomes.ts` (a tela no navegador importa
+  dali, nunca de `servidor.ts`). Projeto: seção "Roteiros"; documento `roteiro`/`decupagem` antigo com "Abrir no editor
+  novo" (`abrirNoEditorNovoAcao`); os chips de Documentos não criam mais esses dois tipos. Demonstração: o roteiro
+  institucional com a v1 (`src/lib/demo/criacao.ts`). CSS em `criacao.css` (prefixo `cr-`).
+- **Criação · saídas do Roteiro** (fase F3; contrato em `docs/integration-contracts/maestro-roteiro.md`): "Enviar ▾"
+  (`components/criacao/roteiro/enviar.tsx`) só para `podeEnviarCriacao`; tudo sai de uma **versão salva** (a folha
+  oferece salvar a próxima quando o rascunho mudou, comparando com `mesmoConteudo`). Saídas puras em
+  `lib/criacao/roteiro/saidas.ts`: `saidaTpeasy` (texto, `.txt` com o título no nome, backup com id estável e `updated` =
+  hora da versão), `paraRoteiroMaestro` (`maestro.roteiro/1`, schema zod em `packages/media-contracts/src/roteiro.ts`;
+  mudou a forma, `npm run contracts:export` na raiz e `ATUALIZAR_EXEMPLOS=1` no `roteiro-saidas.test.mts` para o
+  exemplo em `docs/integration-contracts/exemplos/`). PDF para a edição = folha A4 `?vista=edicao&versao=n`. Cada envio
+  é `POST {op:"enviado"}` → `registrarEnvio` (auditoria `roteiro.enviado` com o sha256 do banco). A opção do AEON (o
+  arquivo) só com `podeMandarParaAeon` (claim `zro_release["ai-edit"]` released/allowed + produto + papel): hoje o AEON
+  está fechado e nada aparece; a rota recusa `aeon` também. O cliente não aparece no menu até a F7. Ficha do card:
+  bloco "Criação" (`components/criacao/do-card.tsx`, `criacaoDoCardAcao`: roteiros e fluxos do card num pedido só).
+  Nome de arquivo com acento só sai
+  do navegador com locale UTF-8 (o `playwright.config.ts` força `C.UTF-8`).
+- **Criação · Fluxo** (plano da Criação §6, fase F4 = só o núcleo, sem tela; `drizzle/0031_fluxos.sql`,
+  `src/lib/criacao/fluxo/**`): cada nó é uma linha de `fluxo_nos` (`nota`, `imagem`, `link`, `roteiro`, `card`,
+  `secao`; x/y/w/h/z, `secao_id` do mesmo fluxo, `dados` ≤ 16 KB conferidos por `lerDados`, `rev` subido pelo gatilho
+  `fluxo_nos_guarda`), ligações em `fluxo_ligacoes` (de → para, rótulo, `rev`); apagar = lápide (`apagado_em`) e a
+  limpeza (`maestro.fluxo_limpar`) tira de vez depois de 7 dias. Gravação por `aplicarOps` (lista conferida por
+  `lerOps`, até 500 por pedido, numa transação): `rev` velho = `conflito` só naquele item; sem `rev` (mover) o último
+  leva; erro de regra desfaz tudo. Poll de 5 s em `fluxoDesde` (índice por `updated_at`, lápides inclusive).
+  Referência guarda só o id (`roteiro_id`/`card_id`, chave composta): título e estado vêm de `resolverReferencias` com
+  o RLS de quem vê; fora do alcance = "sem acesso", nunca o título; criar referência ao que não se vê é barrado no
+  gatilho. Imagens (decisão do titular: no banco, WebP, cota por produtora): `prepararImagem` (bytes conferidos como no
+  logo, sharp, ≤ 2048 px e 400 KB, miniatura ≤ 40 KB, sem metadados) → `fluxo_imagens` (sha256 por check; cota em
+  `maestro.fluxo_cota`, 200 MB por produtora e 300 por fluxo, igual a `cota.ts`, conferida no insert com trava);
+  `maestro_app` não lê os bytes pela tabela, só pela porta `maestro.fluxo_imagem(id, sha, mini)`; rota
+  `GET /api/criacao/img/<id>/<sha>` com sessão (cache privado). Link colado: `endereco.ts` puro (YouTube, Vimeo, Drive
+  pelo endereço; nunca busca a página). "Copiar para IA": `exportar.ts` (Markdown e `maestro.fluxo/1`; imagem só leva
+  endereço com o link da F6). Rotas em `src/lib/criacao/fluxo/rota.ts` (`/api/criacao/fluxo`, `/api/criacao/img`).
+- **Criação · Fluxo, a tela** (fase F5; `src/components/criacao/fluxo/**`, `src/app/fluxo.css`, rotas
+  `/app/criacao/fluxos` e `/app/criacao/fluxos/[id]`): canvas feito à mão (DOM + SVG; tldraw não). O que acontece a cada
+  quadro (andar, zoom, arrastar, redimensionar, puxar ligação, laço) mexe só no estilo (`canvas.tsx`); o React recebe ao
+  soltar. Contas puras em `geometria.ts`, colar em `colar.ts` (referência do Maestro → link → notas), estado otimista
+  em `ops.ts` + `estado.ts` (fila juntada, `rev` só em mudança de conteúdo, conflito por item fica com a versão do
+  banco, recusa do pedido inteiro recarrega, poll de 5 s que não passa por cima do que está na fila ou em edição, nem
+  mexe na vista). Desfazer guarda volta e refazer (criar desfaz com lápide e refaz com restaurar). Apagar seção leva o
+  que mora nela; apagar nó leva as ligações. A vista fica por aparelho em `localStorage`. No celular (≤ 900 px) o topo
+  do shell some e a barra de abas fica; segurar 280 ms ergue o nó. Nó usa `scale` na entrada (o `transform` é do
+  arrastar) e nada de `overflow: hidden` no próprio nó (a alça e a bolinha saem da borda). Testes:
+  `tests/fluxo-tela.test.mts`, `e2e/criacao-fluxo.spec.ts`, telas no `sem-corte.spec.ts`.
+- **Criação · Fluxo, exportar e compartilhar** (fase F6; decisão do titular: privado por padrão; `drizzle/0032_fluxo_links.sql`,
+  `src/lib/criacao/fluxo/{compartilhar,link,link-rota,pacote}.ts`, `src/lib/zip.ts`, tela em
+  `components/criacao/fluxo/{exportar,imprimir}.tsx` + `fluxo-exportar.css`): menu **Exportar** (popover no computador,
+  `Folha` no iPhone). Copiar para IA, JSON e PDF saem no navegador do estado da tela; o pacote .zip
+  (`GET /api/criacao/fluxo/pacote`, quem vê o fluxo) é montado no servidor e enviado aos pedaços, com as imagens pela
+  porta `fluxo_imagem` e o Markdown apontando para `imagens/NN-legenda.webp`. **Links** (`/api/criacao/fluxo/links`,
+  só admin e gestão, `podeEnviarCriacao`): `maestro.fluxo_links` guarda só o sha256 e a cópia cifrada (`selar`) do
+  token, PIN scrypt (`hashPin`), 1 a 30 dias (7 padrão), até 10 vivos, revogar para sempre (gatilho), visitas; criar e
+  revogar caem no `audit_log` pelo gatilho; `maestro_app` não lê `token_hash`/`pin_hash`/`refs_*` e só muda
+  `revogado_em`. `/f/<token>` (página, a Lista com `publico`), `/f/<token>.md|.json` (reescrita `beforeFiles` para
+  `/f/<token>/fluxo.md|json`), `/f/<token>/i/<id>/<sha>.webp` e `POST /f/<token>/pin`: porta estreita
+  `maestro.fluxo_link_{pin,abrir,imagem}` como `maestro_app` sem organização (`comoLink`), limites `REGRAS.fluxo*`,
+  prova do PIN num cookie assinado preso ao hash do token (`Path=/f`, ≤ 12 h e ≤ validade). Morto, vencido, revogado
+  ou fluxo na lixeira = a mesma tela neutra. Referência no link: só o título (`RefTitulo`, estado `titulo`) e só do
+  que quem criou alcançava ao criar (`refs_roteiros`/`refs_cards`); id interno nunca sai. Imagem para a IA só por
+  link vivo **sem PIN** e só com "Imagens pelo link" marcado (`linkParaIa`). CSP, `X-Robots-Tag` e `no-referrer` de
+  `/f` em `next.config.ts`; `/f/` fora do `robots.txt`; `DO_CLIENTE` do app de computador inclui `f`. "Mandar para um
+  card" = `ligar` (`ligarCard` em `estado.ts`); o fluxo aparece no bloco "Criação" da ficha (`components/criacao/do-card.tsx`).
+  Papéis do Fluxo pelas mesmas `permissoes.ts` do Roteiro (capacidade `criacao`); o `fluxo.test.mts` confere as
+  políticas da 0031/0032 contra `PAPEIS_EDITAR_CRIACAO`/`PAPEIS_ENVIAR_CRIACAO`.
+  Testes: `tests/links-fluxo.test.mts`, `e2e/criacao-exportar.spec.ts` (`SHOTS_DIR` guarda `exp-*`), telas no
+  `sem-corte.spec.ts`.
+- **App na Tela de Início (PWA)**: `src/app/manifest.ts` (`/manifest.webmanifest`: Maestro, `start_url` `/app`, `scope`
+  `/`, standalone, cores do claro), ícones em `public/pwa/` gerados do `src/app/icon.svg` por `scripts/icones-pwa.mjs`
+  (nunca desenhar outro), `apple-icon.png` (180 px), `appleWebApp` + `apple-mobile-web-app-capable` no layout, barra de
+  status `default` (sem `viewport-fit=cover`: nada por baixo da barra) e `theme-color` pelo tema do cookie
+  (`generateViewport`). "No celular, como app." (`components/instalar.tsx`, `lancamento.css`) em Ajustes e na página
+  inicial lançada: Safari › Compartilhar › Adicionar à Tela de Início; "Instalar" só com `beforeinstallprompt`; some
+  aberto como app. `e2e/instalar.spec.ts`: manifesto, metas, a dica e o app aberto como instalado sem corte a 375/393 px.
 - **Página inicial** (`src/app/page.tsx`, `inicio.css`, plano v2 §10, ADR 0024): pública, só o que existe, "Em breve"
   para o resto, capturas reais da demonstração em `public/produto/*-{claro,escuro}.webp` (refazer com
   `npm run db:seed:demo` quando a tela mudar; nunca mock). "Quero acesso" grava na lista de espera
@@ -294,7 +447,8 @@ Cobertura mínima que não pode cair: isolamento RLS com duas organizações (`r
 isolamento e papel de leitura (`crm.test.mts`), demonstração idempotente que remove só o que é `demo` (`demo.test.mts`),
 lista de espera com RLS, limite e armadilha (`lista-espera.test.mts`), detector de fontes e tempo (`fontes.test.mts`),
 revisão com duas organizações, porta estreita, PIN, limites e decisão idempotente (`revisao.test.mts`), motor e fluxo
-do orçamento (`orcamento.test.mts`), deslocamento e a planilha da ANP (`deslocamento.test.mts`), combustível automático com a ANP falsa, agendamento,
+do orçamento (`orcamento.test.mts`), deslocamento, lugar entendido, preço pelo lugar, veículos e a planilha da ANP (`deslocamento.test.mts`), lugares e km
+com Photon/OSRM falsos (`rota.test.mts`), combustível automático com a ANP falsa, agendamento,
 fallbacks e só leitura (`combustivel.test.mts`), financeiro com baixas, recorrência e
 escala (`financeiro.test.mts`), freelas, pagamento cifrado, reservas sem conflito e documentos (`operacao.test.mts`),
 duas organizações em toda tabela da produtora (`produtora-rls.test.mts`), logo, cor e marca com duas organizações
@@ -304,9 +458,20 @@ kit do freela, aluguel na escala e sincronização desligada (`freela-equipament
 (`agenda-ics.test.mts`), acesso por cliente em toda tabela ligada a cliente (`acesso-cliente.test.mts`), as tabelas
 novas com duas organizações (`negocio-rls.test.mts`) e o resumo para a Z (`resumo-z.test.mts`), o contrato (preenchimento, versões, aceite com hash, imutável;
 `contrato.test.mts`), a marca própria (sinal ligado e desligado, contraste, duas organizações; `marca-propria.test.mts`), a ponte do Drive, Arquivos, compartilhar/recolher e o agendamento
-(`drive-sobedesce.test.mts`), a versão colada na ficha do card (`versoes-card.test.mts`), pessoas da Absolute ZRO (`pessoas-zro.test.mts`), "Gerar versões com o Relay" (cópia dos presets, folha, ponte com HUB
-e SOBEDESCE falsos, idempotência, sem plano, computador fechado, duas organizações e acesso por cliente;
-`relay.test.mts`). E2E: `npm run build && npm run test:e2e`
+(`drive-sobedesce.test.mts`), a versão colada na ficha do card (`versoes-card.test.mts`), pessoas da Absolute ZRO (`pessoas-zro.test.mts`), colunas do Quadro (fábrica e backfill, duas organizações, papéis,
+automação pelo papel, arquivar com destino, paleta; `colunas.test.mts`), o roteiro puro (modelo, tempo, cada vista, TPeasy
+contra o código do próprio app, modelos só com dica, documento antigo, junção; `roteiro.test.mts`), roteiros no banco
+(duas organizações, papéis, rev, versões imutáveis; `criacao-rls.test.mts`), as operações do editor e o comparar
+(`roteiro-editor.test.mts`), a rota do editor (Origin, papéis, poll, 409 com o atual e a junção, versões, restaurar;
+`criacao-rota.test.mts`; também o envio anotado e o AEON pelo gate), as saídas (`maestro.roteiro/1` contra o schema
+publicado com o conferidor `tests/esquema-json.mts`, TPeasy pelo código do próprio app, AEON escondido;
+`roteiro-saidas.test.mts`), o fluxo puro (link, operações, exportação, cota, imagem; `fluxo.test.mts`), fluxos no banco
+(duas organizações, papéis, rev por nó, o que mudou, referências "sem acesso", porta da imagem, cota, limpeza;
+`fluxo-rls.test.mts`) e as rotas do fluxo e da imagem (`fluxo-rota.test.mts`), o link e a exportação do Fluxo
+(`links-fluxo.test.mts`), o migrador com migração atrasada
+(`migrador.test.mts`) e o lançamento (app de computador só com instalador publicado, manifesto e a chave da vitrine;
+`lancamento.test.mts`), quem vê o quê (padrão igual no TS e no banco, cada área por pessoa, máscaras, gatilhos, só a
+administração muda e audita, sessão, navegação e a Z; `acessos.test.mts`). E2E: `npm run build && npm run test:e2e`
 (Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir movimento, navegação, a aprovação
 inteira (`aprovacao.spec.ts`, mp4 local e YouTube/Vimeo falsos em `e2e/falsos`) e a versão colada na ficha do card que aparece no lote (`versao-card.spec.ts`) e a produtora com a demonstração
 (`produtora.spec.ts`, organização própria criada em `e2e/preparar.ts`) e o ciclo comercial (`comercial.spec.ts`: pedido
@@ -320,9 +485,20 @@ detector `e2e/corte.ts`: todas as telas a 375 e 393 px, claro e escuro, Chromium
 faixa que rola de lado só com `data-rolagem`; regras de celular em `src/app/celular.css`) e o Quadro com fluidez
 (`quadro.spec.ts`: folha na janela inteira, "Novo card", Mover para com Desfazer, troca de seção com View Transition),
 a troca de seção sem duas telas juntas (`transicao.spec.ts`, Chromium e WebKit: pelo relógio das animações e amostrando
-quadro a quadro) e os gestos do Quadro no celular (`gestos.spec.ts`, Chromium e WebKit, organização própria) e "Gerar versões com o Relay"
-(`relay.spec.ts`, computador e iPhone, Chromium e WebKit, organização própria: versão aprovada → folha → na fila com o
-computador fechado → pronto com MD5 → o lote mostra; sem o Relay no plano; a fila falsa é controlada por `/__relay`).
+quadro a quadro) e os gestos do Quadro no celular (`gestos.spec.ts`, Chromium e WebKit, organização própria) e arrastar
+com o mouse (`arrastar.spec.ts`, Chromium e o projeto `computador-safari`: relógio por quadro, zero render/DOM/layout
+com o mouse andando, card sempre inteiro ao soltar; `E2E_DB_SUFIXO` separa o banco, `E2E_VIDEO=1` grava) e as colunas
+(`colunas.spec.ts`: renomear no lugar, reordenar, criar e recolorir, arquivar com destino e restaurar, sistema não
+arquiva, equipe não edita; computador e iPhone, organização própria), quem vê o quê (`acessos.spec.ts`: o editor sem
+dinheiro na navegação, no Hoje, nas fichas e no HTML; a administração liga o Financeiro e volta ao padrão; `SHOTS_DIR`
+guarda `pessoas-acesso-*`) e a Criação (`criacao-roteiro.spec.ts`: novo pelo
+modelo → teclado → vistas → grava sozinho → recarregar, versão e comparar, folha A4, junção com outra pessoa, documento
+antigo no editor novo, leitura; no iPhone uma cena por vez, "+", segurar para arrastar e o Teleprompter; e
+`criacao-enviar.spec.ts`: salvar a versão antes de enviar, o `.txt` e o backup do TPeasy iguais ao que o modelo gera,
+PDF para a edição, auditoria, AEON escondido e aparecendo com o gate aberto, o bloco do card, leitura sem Enviar;
+`SHOTS_DIR` guarda as capturas). Bancos por cópia do repositório: `TEST_DB_SUFIXO` (testes) e `E2E_DB_SUFIXO` (e2e).
+O navegador do e2e usa um proxy que não existe (`playwright.config.ts`): nada sai para a internet (o `<zro-set>` de
+absolutezro.com falha na hora em vez de segurar o "networkidle"); serviço de fora só com `route`.
 Movimento (29/10/2026): toda folha usa `Folha` (`src/components/folha.tsx`, portal no `<body>`). **Troca de seção**
 (`src/components/movimento.tsx` + `src/app/motion.css`): a View Transition é chamada por nós, não pelo
 `<ViewTransition>` do React (no Safari do iPhone o par sai/entra do React deixava a tela velha e a nova uma sobre a
@@ -333,10 +509,17 @@ de `ABAS`). Nada de `var()` nas regras dos pseudo-elementos da transição, e na
 durante a troca (no WebKit ele escapa da foto). **Gestos do Quadro no celular** (`src/components/quadro/gestos.ts`):
 deslizar de lado troca de coluna (segue o dedo, elástico nas pontas, mola pela velocidade, pílula de vidro que anda
 junto; `touch-action: pan-y`; começo a 20 px da borda é do Safari); segurar o card 280 ms ergue um fantasma do tamanho
-real (sem o arrastar nativo do HTML no toque: `draggable` só com mouse), os outros abrem espaço, a página rola perto das
+real (sem o arrastar nativo do HTML: os cards não são `draggable`), os outros abrem espaço, a página rola perto das
 bordas, segurar na borda da tela (0,42 s) passa de coluna, soltar na pílula manda para aquela coluna, soltar acima do
 Quadro desiste; grava pelo mesmo `moverPara` (aviso com Desfazer) e o FLIP é "fixado" antes (`useFlip` devolve
-`fixar`). Links da cápsula pré-buscam com a intenção; a barra do celular pré-busca inteira; `staleTimes` em
+`fixar`). **No computador** o card arrasta com o mouse pelo mesmo modelo (`src/components/quadro/arrastar.ts`;
+titular, 29/10/2026, "a animação dá uma travadinha"): 5 px viram arrasto, a coluna sob o mouse abre espaço, a de
+origem fecha o buraco, Esc/soltar fora/perder a janela devolvem, Entregue (`ordemPorChegada`) recebe no topo. Regras do
+movimento do Quadro: nada de estado do React nem leitura de layout por quadro (mede tudo ao erguer; rolagem guardada
+pelos eventos), só `transform`/`translate`; o fantasma (`fantasma.ts`) vai no `<body>` com as variáveis do card (no
+`.shell` o 1º quadro refazia a página); nada de classe no `<html>` durante o gesto; o FLIP mede pelo `.q-lugar` e não
+repete a entrada (`q-assenta`) de quem só trocou de coluna; `.q-col` não corta (o card passa por cima com `z-index`).
+Links da cápsula pré-buscam com a intenção; a barra do celular pré-busca inteira; `staleTimes` em
 `next.config.ts` (o Quadro chama `renovarSecoes` depois de gravar). Nada de `transform` que fique preso num ancestral
 de `position: fixed`. Unitário da hora em
 `hora.test.mts`.

@@ -222,7 +222,7 @@ function CloudWelcome() {
 
   const begin = async () => {
     await cloudCancel() // limpa o "pronto" do login
-    navigate('z')
+    navigate('painel') // a tarefa primeiro: o Início (a Z fica discreta no pé da barra)
   }
   const localPath = () => (setup.configured ? (location.href = '/api/auth/start') : navigate('inicio/local'))
 

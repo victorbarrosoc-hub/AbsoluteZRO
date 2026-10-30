@@ -44,6 +44,8 @@ export default async function callback(req, res) {
   const iss = url.searchParams.get('iss')
   if (iss !== null && iss !== config().emissor) return ir(comAviso(volta, 'erro'))
   const erro = url.searchParams.get('error')
+  // HUB de antes do Set: recusa zro.set. Pede de novo sem ele (uma vez); o resto do login não muda.
+  if (erro === 'invalid_scope' && !ida.semSet) return ir(`/api/zro/entrar?volta=${encodeURIComponent(volta)}${ida.criar ? '&criar=1' : ''}&sem_set=1`)
   if (erro) return ir(comAviso(volta, erro === 'access_denied' ? 'recusado' : 'erro'))
   const code = url.searchParams.get('code')
   if (!code) return ir(comAviso(volta, 'erro'))

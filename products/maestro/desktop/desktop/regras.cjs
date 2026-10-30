@@ -25,8 +25,9 @@ const LOGIN_DO_HUB = [
   /^\/em-desenvolvimento\/?$/,
 ]
 
-// Páginas do cliente no Maestro: abrem no navegador (é onde o cliente as vê; a sessão da equipe não entra nelas).
-const DO_CLIENTE = /^\/(a|o|p)(\/|$)/
+// Páginas do cliente no Maestro (aprovação, orçamento, pedido e o link do Fluxo): abrem no navegador (é onde o
+// cliente as vê; a sessão da equipe não entra nelas).
+const DO_CLIENTE = /^\/(a|o|p|f)(\/|$)/
 
 // Caminhos que um link maestro:// não abre: a API e o retorno do login (evita que um link de fora dispare uma ação).
 const FORA_DO_DEEP_LINK = [/^\/api(\/|$)/i, /^\/\.well-known(\/|$)/i]

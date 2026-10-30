@@ -11,7 +11,6 @@ import { listarDispositivos } from "@/lib/auth/sessao";
 import { NoComputador } from "@/components/conta/no-computador";
 import { InicioConta } from "@/components/conta/inicio";
 import { MenuConta } from "@/components/conta/menu";
-import { AbasConta } from "@/components/conta/abas";
 import { contaComSenha } from "@/lib/auth/contas";
 import { linksLigados } from "@/lib/auth/encerrar";
 import { ehAdmin } from "@/lib/admin";
@@ -64,7 +63,7 @@ export default async function Conta({ searchParams }: Props) {
   const drivesOk = contas.filter((c) => c.estado === "ok").length;
 
   return (
-    <Moldura larga abas={<AbasConta atual="conta" />} titulo={`Olá, ${primeiroNome}`} acao={<MenuConta admin={admin} sair={false} />}>
+    <Moldura larga titulo={`Olá, ${primeiroNome}`} acao={<MenuConta admin={admin} sair={false} />}>
       {q.aviso === "nao-fui-eu" ? (
         // "Não fui eu" dos e-mails de aviso: o passo a passo para tirar da conta quem não devia estar nela.
         <Aviso tom="erro" className="mb-10">

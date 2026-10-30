@@ -13,6 +13,8 @@ export const ICONES = {
   cst: traco('<circle cx="9" cy="12" r="5.5"/><circle cx="15" cy="12" r="5.5"/>'),
   tela: traco('<rect x="3.5" y="4.5" width="17" height="12" rx="2.5"/><path d="M9 20h6M12 16.5V20"/>'),
   // a Z: o anel com a estrela de 4 pontas às 3 horas
+  // o Set (pessoas da equipe): a aba em comum do ecossistema (app/set.js)
+  set: traco('<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2c2.6-.4 4.6 1.2 5 4"/>'),
   z: traco('<circle cx="12" cy="12" r="7.5"/><path d="M19.5 8.8l.8 2.4 2.4.8-2.4.8-.8 2.4-.8-2.4-2.4-.8 2.4-.8z" fill="currentColor" stroke="none"/>'),
   casa: traco('<path d="M4 10.5 12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-6h-6v6H5.5A1.5 1.5 0 0 1 4 19Z"/>'),
   menu: traco('<rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M9.5 4.5v15"/>'),

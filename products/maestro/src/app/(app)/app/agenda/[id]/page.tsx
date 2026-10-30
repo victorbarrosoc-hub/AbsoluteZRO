@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
+import { pode as podeArea } from "@/lib/acessos";
 import { camposEvento } from "@/lib/agenda/formularios";
 import { nomeTipoEvento, obterEvento } from "@/lib/agenda/servidor";
 import { listarProjetos } from "@/lib/crm/projetos";
@@ -119,7 +120,14 @@ export default async function FichaEvento({ params }: PageProps<"/app/agenda/[id
                     ? (() => {
                         const k = kits.find((x) => x.escalaId === p.escalaId);
                         return k ? (
-                          <EquipNaEscala escalaId={k.escalaId} disponiveis={k.disponiveis} marcados={k.marcados} dias={k.dias} aluguelCents={k.aluguelCents} />
+                          <EquipNaEscala
+                            escalaId={k.escalaId}
+                            disponiveis={k.disponiveis}
+                            marcados={k.marcados}
+                            dias={k.dias}
+                            aluguelCents={k.aluguelCents}
+                            veValores={k.veValores}
+                          />
                         ) : null;
                       })()
                     : null}
@@ -142,7 +150,10 @@ export default async function FichaEvento({ params }: PageProps<"/app/agenda/[id
                   opcoes: [{ valor: "", nome: "Escolha" }, ...freelas.map((f) => ({ valor: f.id, nome: f.nome }))],
                 },
                 { nome: "funcao", rotulo: "Função", max: 40, placeholder: "a primeira do cadastro" },
-                { nome: "valor", rotulo: "Diária", tipo: "dinheiro", placeholder: "a do cadastro", dica: "Vira o a pagar no Financeiro." },
+                // Sem a área "Diárias e cachês", a diária vem do cadastro (o banco decide: gatilho escalas_guarda_area).
+                ...(podeArea(s, "diarias")
+                  ? [{ nome: "valor", rotulo: "Diária", tipo: "dinheiro" as const, placeholder: "a do cadastro", dica: "Vira o a pagar no Financeiro." }]
+                  : []),
               ]}
               inicial={{}}
               rotulo="Escalar"

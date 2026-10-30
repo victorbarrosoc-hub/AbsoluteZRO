@@ -1,4 +1,4 @@
-// Relay · redução e ampliação em Lanczos-3 na placa de vídeo (WebGL2), o mesmo filtro do HandBrake e do ffmpeg.
+// Relay · redução e ampliação em Lanczos-3 na placa de vídeo (WebGL2), o mesmo filtro do ffmpeg.
 //
 // Por quê: o canvas do navegador reduz com mipmaps/bilinear, que borra (4K → 1080p perde a textura fina) ou
 // serrilha. Aqui são duas passadas separáveis (horizontal e vertical) com o núcleo alargado na redução (antialias,
@@ -10,8 +10,12 @@
 // volta): o navegador não converte RGB → YUV por conta própria (cada um usa uma matriz e marca a transferência como
 // sRGB). Largura que não divide por 8 sai pelo canvas, em RGBA.
 //
-// Sem WebGL2, com recorte ou espelho, ou em WebGL de software (SwiftShader, llvmpipe: lento demais), devolve null e o
-// Mediabunny segue pelo canvas dele. `forcar` usa a placa mesmo em software (testes e laboratório).
+// Recorte e espelho entram na primeira passada (a imagem girada, espelhada e recortada, nessa ordem, como no
+// Mediabunny). A cor da Revela (`definirCor`) entra depois da escala e antes do YUV: a CST como conta (curva da câmera,
+// matriz de gamut, tom, compressão de gamut e curva 2.4, a mesma de src/cor.js `aplicarEtapas`) e o look numa LUT 3D.
+//
+// Sem WebGL2 ou em WebGL de software (SwiftShader, llvmpipe: lento demais), devolve null e o Mediabunny segue pelo
+// canvas dele. `forcar` usa a placa mesmo em software (testes, laboratório e a cor da Revela, que não tem canvas).
 
 const VERT = `#version 300 es
 in vec2 p;
@@ -28,6 +32,9 @@ uniform float desloc;
 uniform int n;
 uniform int giro;        // só na passada 1: 0, 1, 2, 3 = 0°, 90°, 180°, 270° no sentido do relógio
 uniform ivec2 tamFonte;  // largura e altura da textura de origem
+uniform ivec2 corte;     // só na passada 1: onde o recorte começa na imagem girada e espelhada (texels)
+uniform int espelho;     // só na passada 1: 1 = espelhar na horizontal (depois do giro)
+uniform int largGirada;  // só na passada 1: largura da imagem girada (texels)
 uniform float alturaSaida; // passada 2 no canvas: ele conta as linhas de baixo para cima
 uniform float inverter;    // 1 = canvas (desvira), 0 = textura (linha k = linha k da imagem)
 out vec4 cor;
@@ -42,12 +49,15 @@ float lanczos(float x) {
 vec4 ler(int i, int j) {
   ${
     passada === 1
-      ? `// (i, j) na imagem girada → texel no quadro decodificado
+      ? `// (i, j) no recorte → (x, y) na imagem girada → texel no quadro decodificado
+  int x = i + corte.x;
+  int y = j + corte.y;
+  if (espelho == 1) x = largGirada - 1 - x;
   ivec2 t;
-  if (giro == 0) t = ivec2(i, j);
-  else if (giro == 1) t = ivec2(j, tamFonte.y - 1 - i);
-  else if (giro == 2) t = ivec2(tamFonte.x - 1 - i, tamFonte.y - 1 - j);
-  else t = ivec2(tamFonte.x - 1 - j, i);
+  if (giro == 0) t = ivec2(x, y);
+  else if (giro == 1) t = ivec2(y, tamFonte.y - 1 - x);
+  else if (giro == 2) t = ivec2(tamFonte.x - 1 - x, tamFonte.y - 1 - y);
+  else t = ivec2(tamFonte.x - 1 - y, x);
   return texelFetch(fonte, t, 0);`
       : `return texelFetch(fonte, ivec2(j, i), 0);`
   }
@@ -110,6 +120,51 @@ void main() {
   cor = r;
 }`
 
+// Cor da Revela (src/cor.js, `aplicarEtapas` é o espelho em JavaScript, conferido com a conta da Revela): o RGB da
+// imagem → código (desfaz a faixa de vídeo: a convenção da Revela, código ÷ 1023) → luz linear pela curva da câmera →
+// gamut Rec.709 → mapa de tom → compressão de gamut → curva 2.4 → look (LUT 3D). `inverter`: 1 quando o destino é o
+// canvas.
+const FRAG_COR = `#version 300 es
+precision highp float;
+precision highp sampler3D;
+uniform sampler2D fonte;
+uniform sampler2D curva;
+uniform sampler3D lut;
+uniform mat3 matriz;
+uniform int temCst;
+uniform int tom;
+uniform int temLook;
+uniform int lookNoLog;
+uniform float nCurva;
+uniform float n;
+uniform int faixaVideo;
+uniform float inverter;
+uniform float alturaSaida;
+out vec4 cor;
+const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
+const float JOELHO = 0.6;
+float linear(float v) { return texture(curva, vec2(clamp(v, 0.0, 1.0) * ((nCurva - 1.0) / nCurva) + 0.5 / nCurva, 0.5)).r; }
+void main() {
+  ivec2 o = ivec2(gl_FragCoord.xy);
+  int y = inverter > 0.5 ? int(alturaSaida) - 1 - o.y : o.y;
+  vec3 c = texelFetch(fonte, ivec2(o.x, y), 0).rgb;
+  if (temCst == 1) {
+    if (faixaVideo == 1) c = (c * 876.0 + 64.0) / 1023.0;
+    vec3 l = matriz * vec3(linear(c.r), linear(c.g), linear(c.b));
+    if (tom == 1) {
+      float Y = dot(l, LUMA);
+      if (Y > JOELHO) l *= (JOELHO + (1.0 - JOELHO) * (1.0 - exp(-(Y - JOELHO) / (1.0 - JOELHO)))) / Y;
+    }
+    float Y = max(0.0, dot(l, LUMA));
+    float menor = min(l.r, min(l.g, l.b));
+    if (menor < 0.0) l = Y + (l - Y) * (Y / (Y - menor));
+    c = pow(clamp(l, 0.0, 1.0), vec3(1.0 / 2.4));
+  }
+  else if (lookNoLog == 1 && faixaVideo == 1) c = (c * 876.0 + 64.0) / 1023.0; // look de log: lê o código, como a CST
+  if (temLook == 1) c = texture(lut, clamp(c, 0.0, 1.0) * ((n - 1.0) / n) + 0.5 / n).rgb;
+  cor = vec4(c, 1.0);
+}`
+
 /** A cor da saída em I420. */
 export const COR_SAIDA = { primaries: 'bt709', transfer: 'bt709', matrix: 'bt709', fullRange: false }
 
@@ -165,6 +220,15 @@ export function criarEscala(VideoSample, { forcar = false } = {}) {
   let tFinal = null
   let fbFinal = null
   let planos = null // { w, h, tY, tU, tV, fbY, fbU, fbV }
+  let finalTam = [0, 0]
+  let pCor = null
+  let tLut = null
+  let tCurva = null
+  let tCor = null
+  let fbCor = null
+  let corTam = [0, 0]
+  let corPedida = null // { etapas (src/cor.js etapasParaPlaca), faixaVideo } esperando a placa
+  let corPronta = null // o que já está nas texturas e nos uniformes
 
   function programa(fonteFrag) {
     const prog = gl.createProgram()
@@ -174,7 +238,7 @@ export function criarEscala(VideoSample, { forcar = false } = {}) {
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog) || 'programa')
     const u = (n) => gl.getUniformLocation(prog, n)
     const loc = gl.getAttribLocation(prog, 'p')
-    return { prog, loc, fonte: u('fonte'), escala: u('escala'), desloc: u('desloc'), n: u('n'), giro: u('giro'), tamFonte: u('tamFonte'), alturaSaida: u('alturaSaida'), inverter: u('inverter'), canal: u('canal') }
+    return { prog, loc, fonte: u('fonte'), escala: u('escala'), desloc: u('desloc'), n: u('n'), giro: u('giro'), tamFonte: u('tamFonte'), alturaSaida: u('alturaSaida'), inverter: u('inverter'), canal: u('canal'), corte: u('corte'), espelho: u('espelho'), largGirada: u('largGirada'), lut: u('lut'), curva: u('curva'), matriz: u('matriz'), temCst: u('temCst'), tom: u('tom'), temLook: u('temLook'), lookNoLog: u('lookNoLog'), nCurva: u('nCurva'), faixaVideo: u('faixaVideo') }
   }
 
   function textura() {
@@ -204,6 +268,7 @@ export function criarEscala(VideoSample, { forcar = false } = {}) {
     p2 = programa(FRAG(2))
     pY = programa(FRAG_Y)
     pUV = programa(FRAG_UV)
+    pCor = programa(FRAG_COR)
     gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW)
     tQuadro = textura()
@@ -211,7 +276,61 @@ export function criarEscala(VideoSample, { forcar = false } = {}) {
     fbMeio = gl.createFramebuffer()
     tFinal = textura()
     fbFinal = gl.createFramebuffer()
+    tCor = textura()
+    fbCor = gl.createFramebuffer()
     return true
+  }
+
+  /** Sobe a cor pedida: a curva da câmera (textura R16F na unidade 2) e o look (textura 3D RGB16F na unidade 1). */
+  function subirCor() {
+    const { etapas, faixaVideo } = corPedida
+    corPedida = null
+    if (!etapas || (!etapas.curva && !etapas.look)) {
+      corPronta = null
+      return
+    }
+    const filtros = (alvoTex, r = false) => {
+      for (const [k, v] of [
+        [gl.TEXTURE_MIN_FILTER, gl.LINEAR],
+        [gl.TEXTURE_MAG_FILTER, gl.LINEAR],
+        [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE],
+        [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE],
+        ...(r ? [[gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE]] : []),
+      ])
+        gl.texParameteri(alvoTex, k, v)
+    }
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1)
+    if (etapas.curva) {
+      tCurva ??= gl.createTexture()
+      gl.activeTexture(gl.TEXTURE2)
+      gl.bindTexture(gl.TEXTURE_2D, tCurva)
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.R16F, etapas.curva.length, 1, 0, gl.RED, gl.FLOAT, etapas.curva)
+      filtros(gl.TEXTURE_2D)
+    }
+    if (etapas.look) {
+      const n = etapas.look.tamanho
+      tLut ??= gl.createTexture()
+      gl.activeTexture(gl.TEXTURE1)
+      gl.bindTexture(gl.TEXTURE_3D, tLut)
+      gl.texImage3D(gl.TEXTURE_3D, 0, gl.RGB16F, n, n, n, 0, gl.RGB, gl.FLOAT, etapas.look.dados)
+      filtros(gl.TEXTURE_3D, true)
+    }
+    gl.activeTexture(gl.TEXTURE0)
+    const M = etapas.matriz ?? [
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 0, 1],
+    ]
+    corPronta = {
+      temCst: Boolean(etapas.curva),
+      tom: Boolean(etapas.tom),
+      temLook: Boolean(etapas.look),
+      lookNoLog: Boolean(etapas.lookNoLog),
+      n: etapas.look?.tamanho ?? 2,
+      nCurva: etapas.curva?.length ?? 2,
+      matriz: new Float32Array([M[0][0], M[1][0], M[2][0], M[0][1], M[1][1], M[2][1], M[0][2], M[1][2], M[2][2]]), // por colunas
+      faixaVideo,
+    }
   }
 
   /** Textura de `w × h` presa a um framebuffer (RGBA16F se der, para o meio; RGBA8 para os planos lidos de volta). */
@@ -223,8 +342,8 @@ export function criarEscala(VideoSample, { forcar = false } = {}) {
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0)
   }
 
-  /** Lê o quadro final (em tFinal) como I420: Y, Cb e Cr empacotados em RGBA8, um plano por passada. */
-  function lerI420(w, h) {
+  /** Lê o quadro final (em `fonte`: tFinal ou tCor) como I420: Y, Cb e Cr empacotados em RGBA8, um plano por passada. */
+  function lerI420(w, h, fonte) {
     if (!planos || planos.w !== w || planos.h !== h) {
       planos = { w, h, tY: textura(), tU: textura(), tV: textura(), fbY: gl.createFramebuffer(), fbU: gl.createFramebuffer(), fbV: gl.createFramebuffer() }
       alvo(planos.tY, planos.fbY, w / 4, h, false)
@@ -234,7 +353,7 @@ export function criarEscala(VideoSample, { forcar = false } = {}) {
     const dados = new Uint8Array((w * h * 3) / 2)
     gl.activeTexture(gl.TEXTURE0)
     usar(pY)
-    gl.bindTexture(gl.TEXTURE_2D, tFinal)
+    gl.bindTexture(gl.TEXTURE_2D, fonte)
     gl.bindFramebuffer(gl.FRAMEBUFFER, planos.fbY)
     gl.viewport(0, 0, w / 4, h)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
@@ -244,7 +363,7 @@ export function criarEscala(VideoSample, { forcar = false } = {}) {
       [0, planos.fbU, w * h],
       [1, planos.fbV, (w * h * 5) / 4],
     ]) {
-      gl.bindTexture(gl.TEXTURE_2D, tFinal)
+      gl.bindTexture(gl.TEXTURE_2D, fonte)
       gl.bindFramebuffer(gl.FRAMEBUFFER, fb)
       gl.viewport(0, 0, w / 8, h / 2)
       gl.uniform1i(pUV.canal, canal)
@@ -261,21 +380,28 @@ export function criarEscala(VideoSample, { forcar = false } = {}) {
     gl.uniform1i(p.fonte, 0)
   }
 
+  /** A cor da Revela para os próximos quadros (`etapasParaPlaca` de src/cor.js, ou null para tirar). */
+  resultado.definirCor = (etapas, faixaVideo = true) => {
+    corPedida = { etapas, faixaVideo }
+  }
+
   /**
    * `preparar(amostra)`: quem chama pode trocar a amostra antes de subir (a cor certa do arquivo); se devolver outra,
-   * ela é fechada aqui depois de usada.
+   * ela é fechada aqui depois de usada. `d`: { width, height, fit, rotation, flip, crop: { left, top, width, height } }
+   * (o recorte na imagem girada e espelhada, em pixels de tela).
    */
   resultado.transformar = async (amostra, d, preparar = null) => {
-    if (falhou || d.flip || !['contain', 'fill', 'cover'].includes(d.fit)) return null
+    if (falhou || !['contain', 'fill', 'cover'].includes(d.fit)) return null
     const giro = (((d.rotation % 360) + 360) % 360) / 90
     const [rw, rh] = giro % 2 === 0 ? [amostra.squarePixelWidth, amostra.squarePixelHeight] : [amostra.squarePixelHeight, amostra.squarePixelWidth]
-    if (d.crop.left !== 0 || d.crop.top !== 0 || d.crop.width !== rw || d.crop.height !== rh) return null
+    const crop = d.crop ?? { left: 0, top: 0, width: rw, height: rh }
     let usada = amostra
     try {
       if (!gl && !montarGl()) {
         falhou = true
         return null
       }
+      if (corPedida) subirCor()
       usada = (await preparar?.(amostra)) ?? amostra
       const fonte = usada.toCanvasImageSource()
       // o quadro decodificado sobe como textura (YUV → RGB na placa, com a cor do quadro); 10 bits sobe em meia
@@ -293,53 +419,97 @@ export function criarEscala(VideoSample, { forcar = false } = {}) {
       const th = fonte.displayHeight ?? fonte.height
       // largura/altura da imagem girada em texels (pode diferir de rw/rh se o pixel não for quadrado)
       const [gw, gh] = giro % 2 === 0 ? [tw, th] : [th, tw]
-      const m = mapa(gw, gh, d.width, d.height, d.fit)
+      // o recorte, de pixels de tela para texels
+      const cx = Math.max(0, Math.min(gw - 1, Math.round((crop.left * gw) / rw)))
+      const cy = Math.max(0, Math.min(gh - 1, Math.round((crop.top * gh) / rh)))
+      const cw = Math.max(1, Math.min(gw - cx, Math.round((crop.width * gw) / rw)))
+      const ch = Math.max(1, Math.min(gh - cy, Math.round((crop.height * gh) / rh)))
+      const m = mapa(cw, ch, d.width, d.height, d.fit)
 
-      // passada 1: largura final × altura da imagem girada
-      if (meioTam[0] !== d.width || meioTam[1] !== gh) {
-        alvo(tMeio, fbMeio, d.width, gh, flutuante)
-        meioTam = [d.width, gh]
+      // passada 1: largura final × altura do recorte
+      if (meioTam[0] !== d.width || meioTam[1] !== ch) {
+        alvo(tMeio, fbMeio, d.width, ch, flutuante)
+        meioTam = [d.width, ch]
       }
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbMeio)
-      gl.viewport(0, 0, d.width, gh)
+      gl.viewport(0, 0, d.width, ch)
       usar(p1)
       gl.bindTexture(gl.TEXTURE_2D, tQuadro)
       gl.uniform1f(p1.escala, m.ex)
       gl.uniform1f(p1.desloc, m.dx)
-      gl.uniform1i(p1.n, gw)
+      gl.uniform1i(p1.n, cw)
       gl.uniform1i(p1.giro, giro)
       gl.uniform2i(p1.tamFonte, tw, th)
+      gl.uniform2i(p1.corte, cx, cy)
+      gl.uniform1i(p1.espelho, d.flip ? 1 : 0)
+      gl.uniform1i(p1.largGirada, gw)
       // a linha k da textura do meio é a linha k da imagem (as duas contadas do mesmo jeito)
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
 
-      // passada 2: tamanho final, numa textura (I420) ou no canvas (RGBA, quando a largura não divide por 8)
+      // passada 2: tamanho final, numa textura (I420 ou a cor vem depois) ou no canvas (RGBA, largura que não divide
+      // por 8)
       const i420 = d.width % 8 === 0 && d.height % 2 === 0
-      if (i420) {
-        if (tela.width !== d.width || tela.height !== d.height) {
-          tela.width = d.width
-          tela.height = d.height
-          alvo(tFinal, fbFinal, d.width, d.height, flutuante)
-        }
-        gl.bindFramebuffer(gl.FRAMEBUFFER, fbFinal)
-      } else {
-        if (tela.width !== d.width || tela.height !== d.height) {
-          tela.width = d.width
-          tela.height = d.height
-        }
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+      const corAtiva = corPronta
+      const paraTextura = i420 || Boolean(corAtiva)
+      if (tela.width !== d.width || tela.height !== d.height) {
+        tela.width = d.width
+        tela.height = d.height
       }
+      if (paraTextura && (finalTam[0] !== d.width || finalTam[1] !== d.height)) {
+        alvo(tFinal, fbFinal, d.width, d.height, flutuante)
+        finalTam = [d.width, d.height]
+      }
+      gl.bindFramebuffer(gl.FRAMEBUFFER, paraTextura ? fbFinal : null)
       gl.viewport(0, 0, d.width, d.height)
       usar(p2)
       gl.bindTexture(gl.TEXTURE_2D, tMeio)
       gl.uniform1f(p2.escala, m.ey)
       gl.uniform1f(p2.desloc, m.dy)
-      gl.uniform1i(p2.n, gh)
+      gl.uniform1i(p2.n, ch)
       gl.uniform1f(p2.alturaSaida, d.height)
-      gl.uniform1f(p2.inverter, i420 ? 0 : 1)
+      gl.uniform1f(p2.inverter, paraTextura ? 0 : 1)
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+
+      // cor da Revela, numa textura (I420) ou no canvas
+      let final = tFinal
+      if (corAtiva) {
+        if (i420) {
+          if (corTam[0] !== d.width || corTam[1] !== d.height) {
+            alvo(tCor, fbCor, d.width, d.height, flutuante)
+            corTam = [d.width, d.height]
+          }
+          gl.bindFramebuffer(gl.FRAMEBUFFER, fbCor)
+          final = tCor
+        } else gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+        gl.viewport(0, 0, d.width, d.height)
+        usar(pCor)
+        gl.bindTexture(gl.TEXTURE_2D, tFinal)
+        if (corAtiva.temLook) {
+          gl.activeTexture(gl.TEXTURE1)
+          gl.bindTexture(gl.TEXTURE_3D, tLut)
+        }
+        if (corAtiva.temCst) {
+          gl.activeTexture(gl.TEXTURE2)
+          gl.bindTexture(gl.TEXTURE_2D, tCurva)
+        }
+        gl.activeTexture(gl.TEXTURE0)
+        gl.uniform1i(pCor.lut, 1)
+        gl.uniform1i(pCor.curva, 2)
+        gl.uniform1i(pCor.temCst, corAtiva.temCst ? 1 : 0)
+        gl.uniform1i(pCor.tom, corAtiva.tom ? 1 : 0)
+        gl.uniform1i(pCor.temLook, corAtiva.temLook ? 1 : 0)
+        gl.uniform1i(pCor.lookNoLog, corAtiva.lookNoLog ? 1 : 0)
+        gl.uniform1f(pCor.n, corAtiva.n)
+        gl.uniform1f(pCor.nCurva, corAtiva.nCurva)
+        gl.uniformMatrix3fv(pCor.matriz, false, corAtiva.matriz)
+        gl.uniform1i(pCor.faixaVideo, corAtiva.faixaVideo ? 1 : 0)
+        gl.uniform1f(pCor.inverter, i420 ? 0 : 1)
+        gl.uniform1f(pCor.alturaSaida, d.height)
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+      }
       const tempo = { timestamp: amostra.timestamp, duration: amostra.duration }
       const saida = i420
-        ? new VideoSample(lerI420(d.width, d.height), { format: 'I420', codedWidth: d.width, codedHeight: d.height, ...tempo, colorSpace: COR_SAIDA })
+        ? new VideoSample(lerI420(d.width, d.height, final), { format: 'I420', codedWidth: d.width, codedHeight: d.height, ...tempo, colorSpace: COR_SAIDA })
         : new VideoSample(tela, { ...tempo, rotation: 0, flip: false })
       usou = true
       return saida

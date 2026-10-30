@@ -13,6 +13,7 @@ import { handoffCommand, isHandoffScript } from '../src/updater.js'
 import { arquivoDaCentral } from '../src/gerenciado.js'
 import { aberturaSynquei } from '../src/backup/synquei.js'
 import { ligarZoom } from './zoom.js'
+import { lerLinkSobedesce } from './links.js'
 import { AVISO_BANDEJA, acaoAoFechar, acaoAoMinimizar, detalheSair, deveAvisar, dicaBandeja, gravarPrefs, iconeBandeja, lerPrefs, minimizarLigado, modeloMenuBandeja, padraoMinimizar } from './bandeja.js'
 
 const here = import.meta.dirname
@@ -28,6 +29,9 @@ app.commandLine.appendSwitch('disable-features', 'WebRtcHideLocalIpsWithMdns')
 let engine = null // utilityProcess do motor
 let engineUrl = null
 let win = null
+// links sobedesce:// à espera da janela (declarados aqui: o primeiro pode chegar antes do resto do arquivo rodar)
+let linkPendente = null
+let janelaPronta = false
 let celularWin = null // janela oculta do WebRTC com o celular (public/celular/p2p.html)
 let zoom = null // zoom automático pela largura da janela + o escolhido no menu (desktop/zoom.js)
 let quitting = false
@@ -53,8 +57,48 @@ if (SMOKE) {
 } else if (!app.requestSingleInstanceLock()) {
   app.quit()
 } else {
-  app.on('second-instance', () => showWindow())
+  // Links sobedesce:// (desktop/links.js): no Mac chegam pelo open-url; no Windows, na linha de comando (a primeira
+  // vez em process.argv, as seguintes na segunda instância).
+  app.on('open-url', (event, url) => {
+    event.preventDefault()
+    receberLink(url)
+  })
+  app.on('second-instance', (_event, argv) => {
+    const link = argv.find(a => typeof a === 'string' && a.startsWith('sobedesce://'))
+    if (link) receberLink(link)
+    else showWindow()
+  })
+  const linkInicial = process.argv.find(a => typeof a === 'string' && a.startsWith('sobedesce://'))
+  if (linkInicial) receberLink(linkInicial)
   app.whenReady().then(boot)
+}
+
+// ---- Links sobedesce:// ----
+
+/** Guarda o link (válido) e entrega quando a janela estiver carregada. */
+function receberLink(url) {
+  const link = lerLinkSobedesce(url)
+  if (!link) return
+  linkPendente = link
+  entregarLink()
+}
+
+function entregarLink() {
+  if (!linkPendente || !engineUrl) return
+  showWindow()
+  if (!janelaPronta) return // o did-finish-load da janela entrega
+  win.webContents.send('sobedesce:link', linkPendente)
+  linkPendente = null
+}
+
+function registrarLinks() {
+  try {
+    // rodando do código (electron .), o sistema precisa do caminho do script para reabrir o app pelo link
+    if (process.defaultApp && process.argv[1]) app.setAsDefaultProtocolClient('sobedesce', process.execPath, [path.resolve(process.argv[1])])
+    else app.setAsDefaultProtocolClient('sobedesce')
+  } catch {
+    // sem registro: o "Máxima qualidade" do site avisa para abrir o app à mão
+  }
 }
 
 function logFile() {
@@ -207,6 +251,7 @@ async function boot() {
       return app.quit()
     }
   }
+  registrarLinks()
   createWindow()
   criarBandeja()
   abrirJanelaCelular()
@@ -315,7 +360,14 @@ function createWindow() {
   win.on('minimize', () => {
     if (acaoAoMinimizar({ plataforma: process.platform, minimizar: minimizarParaBandeja(), temBandeja: temBandeja() }) === 'bandeja') irParaBandeja()
   })
+  // links sobedesce:// que chegaram antes da janela carregar (desktop/links.js)
+  janelaPronta = false
+  win.webContents.on('did-finish-load', () => {
+    janelaPronta = true
+    entregarLink()
+  })
   win.on('closed', () => {
+    janelaPronta = false
     win = null
     // A janela oculta do celular conta como janela aberta: sem isto, fechar a janela no Windows não fecharia o app.
     if (!isMac) app.quit()

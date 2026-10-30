@@ -11,6 +11,7 @@ const COPIAS = [
   ['sobedesce/src/relay/presets.js', 'src/presets.js'],
   ['sobedesce/src/relay/plano.js', 'src/plano.js'],
   ['sobedesce/src/relay/ffmpeg.js', 'src/ffmpeg.js'],
+  ['sobedesce/src/relay/personalizado.js', 'src/personalizado.js'],
   ['sobedesce/web/public/app/relay/src/presets.js', 'src/presets.js'],
   ['sobedesce/web/public/app/relay/src/plano.js', 'src/plano.js'],
   ['sobedesce/web/public/app/relay/app/motor.js', 'app/motor.js'],
@@ -24,6 +25,16 @@ const COPIAS = [
 
 test('o núcleo embutido no SOBEDESCE é igual ao do Relay', () => {
   for (const [copia, original] of COPIAS) assert.ok(outro(copia).equals(relay(original)), `products/${copia} diferente de products/relay/${original}: copie de novo`)
+})
+
+// O motor de cor é da Revela: o Relay usa uma cópia (src/revela/). Mudou lá, copie para cá no mesmo commit.
+const DA_REVELA = [
+  ['finishing/src/cor/espacos.js', 'src/revela/espacos.js'],
+  ['finishing/src/cor/cube.js', 'src/revela/cube.js'],
+]
+
+test('a cor do Relay é a da Revela (src/revela/ igual a products/finishing/src/cor/)', () => {
+  for (const [original, copia] of DA_REVELA) assert.ok(outro(original).equals(relay(copia)), `products/relay/${copia} diferente de products/${original}: copie de novo`)
 })
 
 test('o HUB mostra o ícone oficial', () => {

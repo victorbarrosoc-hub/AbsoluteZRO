@@ -20,15 +20,21 @@ import { salvarPagamentoAcao } from "../acoes";
 
 export const metadata = { title: "Freela" };
 
-/** A ficha do freela: funções e valores, escalas com o status do pagamento, equipamento e (gestão) dados de pagamento. */
+/**
+ * A ficha do freela: funções, escalas e equipamento para todos; valores e diárias só com "Diárias e cachês", status do
+ * pagamento só com "Financeiro", contato e dados de pagamento só com "Dados da equipe" (src/lib/acessos.ts; os campos já
+ * chegam vazios do servidor).
+ */
 export default async function FichaFreela({ params }: PageProps<"/app/freelas/[id]">) {
   const { id } = await params;
   const s = await exigirAcessoNaPagina(`/app/freelas/${id}`);
   const hoje = hojeBr();
-  const [f, kit] = await Promise.all([obterFreela({ sub: s.sub, orgId: s.orgId }, s.papel, id, hoje), listarEquipDoFreela({ sub: s.sub, orgId: s.orgId }, id)]);
+  const [f, kit] = await Promise.all([obterFreela({ sub: s.sub, orgId: s.orgId }, id, hoje), listarEquipDoFreela({ sub: s.sub, orgId: s.orgId }, id)]);
   if (!f) notFound();
   const wpp = f.whatsapp ? `https://wa.me/${f.whatsapp}?text=${encodeURIComponent(textoWhatsapp(f.whatsappMsg, f.nome, s.orgNome))}` : null;
-  const aPagar = f.escalas.filter((e) => e.pagamento && e.pagamento.status !== "pago").reduce((t, e) => t + e.valorCents - (e.pagamento?.pagoCents ?? 0), 0);
+  const aPagar = f.escalas
+    .filter((e) => e.pagamento && e.pagamento.status !== "pago")
+    .reduce((t, e) => t + (e.valorCents ?? 0) - (e.pagamento?.pagoCents ?? 0), 0);
   return (
     <div className="pagina">
       <Link className="voltar" href="/app/freelas">
@@ -83,7 +89,7 @@ export default async function FichaFreela({ params }: PageProps<"/app/freelas/[i
                     {e.projetoId ? <Link href={`/app/projetos/${e.projetoId}`}>{e.evento ?? e.projeto}</Link> : (e.evento ?? "Sem projeto")}
                     <span className="sutil"> · {nomeFuncao(e.funcao)}</span>
                   </span>
-                  <span className="linha__meta num">{brl(e.valorCents)}</span>
+                  {e.valorCents != null ? <span className="linha__meta num">{brl(e.valorCents)}</span> : null}
                   {e.pagamento ? <SeloStatus status={e.pagamento.status}>{NOME_STATUS[e.pagamento.status]}</SeloStatus> : null}
                 </li>
               ))}
@@ -91,28 +97,30 @@ export default async function FichaFreela({ params }: PageProps<"/app/freelas/[i
           ) : (
             <p className="nada">Ainda não foi escalado. Escale pela agenda ou pelo projeto.</p>
           )}
-          {f.dadosPagamento !== undefined && aPagar > 0 ? <p className="sutil">A pagar: {brl(aPagar)}</p> : null}
+          {f.ve.financeiro && f.ve.diarias && aPagar > 0 ? <p className="sutil">A pagar: {brl(aPagar)}</p> : null}
         </Secao>
         <Secao titulo="Equipamento próprio">
-          <KitDoFreela freelaId={f.id} itens={kit} podeMudar={podeEscrever(s.papel)} />
+          <KitDoFreela freelaId={f.id} itens={kit} podeMudar={podeEscrever(s.papel)} veValores={f.ve.diarias} />
         </Secao>
         <div className="painel__lado">
-          <Secao titulo="Valores">
-            {f.valores.length ? (
-              <dl className="dados">
-                {f.valores.map((v) => (
-                  <div key={`${v.funcao}${v.unidade}`} className="dados__par">
-                    <dt>{nomeFuncao(v.funcao)}</dt>
-                    <dd className="num">
-                      {brl(v.valorCents)} <span className="sutil">{nomeUnidadeValor(v.unidade)}</span>
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            ) : (
-              <p className="nada">Sem valores.</p>
-            )}
-          </Secao>
+          {f.ve.diarias ? (
+            <Secao titulo="Valores">
+              {f.valores.length ? (
+                <dl className="dados">
+                  {f.valores.map((v) => (
+                    <div key={`${v.funcao}${v.unidade}`} className="dados__par">
+                      <dt>{nomeFuncao(v.funcao)}</dt>
+                      <dd className="num">
+                        {brl(v.valorCents)} <span className="sutil">{nomeUnidadeValor(v.unidade)}</span>
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : (
+                <p className="nada">Sem valores.</p>
+              )}
+            </Secao>
+          ) : null}
           <Secao titulo="No inventário">
             {f.equipamentos.length ? (
               <ul className="linhas">
@@ -160,7 +168,7 @@ export default async function FichaFreela({ params }: PageProps<"/app/freelas/[i
                   rotulo="Guardar"
                 />
               </details>
-              <p className="sutil">Só administração e gestão veem. Guardados cifrados.</p>
+              <p className="sutil">Guardados cifrados. Só quem tem “Dados da equipe” vê.</p>
             </Secao>
           ) : null}
           {f.notas ? (

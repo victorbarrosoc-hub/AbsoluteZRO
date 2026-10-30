@@ -15,31 +15,124 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
-## Maestro: "Gerar versões com o Relay" (29/10/2026)
+## Integração: a Z discreta e o Set em todas as plataformas (30/10/2026)
 
-Lado do Maestro do contrato "Maestro → Relay" ([relay.md](integration-contracts/relay.md)), sobre a branch do Relay.
-O lado do Relay/SOBEDESCE (ações `relay.*` na `PONTES`, rotas `/api/zro/relay/*`, fila e executor) ainda não existe:
-tudo abaixo roda contra o HUB e o SOBEDESCE de mentira (`products/maestro/tests/ponte-falsa.mts`), que seguem a tabela
-do contrato.
+Os dois ramos de 30/10 juntos ("a Z nunca é a primeira tela" e "Set em todas as plataformas"). Em todo app a entrada
+continua a tarefa, a Z segue discreta (nada dela carrega antes do toque) e o Set tem a entrada dele sem ser a entrada.
+Barras de baixo do iPhone com no máximo cinco itens. Bancos e portas próprios: `zro_integra_zset_test`,
+`zro_integra_zset_e2e_test` (porta 3281) e `maestro_test_e2e_integra` (porta 9717).
 
-- Maestro `lint`, `format:check`, `typecheck` e `build`: ok.
-- Maestro `npm test`: **385/385**. Novo `tests/relay.test.mts` (23): a cópia de `presets.js`, `plano.js` e do ícone é
-  igual à do Relay; a folha põe os 8 de entrega ao cliente primeiro, tira "Tamanho exato" e o preset sem id, para em 8;
-  a prévia dá `<original> (<preset>).mp4`, codec e peso pelo `planejar`; "pronto" sem resultado vira "convertendo";
-  `relay.converter` → 202 com `ref` = id da versão e a pasta "05 Entregas" criada pela estrutura do projeto; pedir de
-  novo não cria pedido nem linha; computador fechado fica "na fila"; abriu, convertendo 50% e pronto com MD5 e o link do
-  Drive; cancelar (o pronto fica pronto); erro com a mensagem; sem projeto vai ao lado do original; sem Relay ou sem
-  SOBEDESCE é 403 sem pedir ao HUB; o HUB negando (plano ou sem as ações na `PONTES`) vira `sem_relay`; leitura vê e
-  não pede; RLS com duas organizações, chave composta (versão de outro card) e acesso por cliente.
-  `tests/acesso-cliente.test.mts` inclui `entregaveis`.
-- Maestro e2e `relay.spec.ts`: **7 ok** (computador, iPhone Chromium e iPhone WebKit; o vídeo só com `SHOTS_DIR`): a
-  versão aprovada do Drive na ficha → folha com o ícone do Relay, destinos, pasta e prévia → "Gerar 4 versões" → na fila
-  com "Vai começar quando o computador com o SOBEDESCE abrir" → o computador abre → 4 prontos com MD5 → o lote mostra as
-  mesmas entregas; sem o Relay no plano, o porquê e o link e nada pedido; Esc fecha só a folha de cima. Detector de
-  corte na folha no iPhone (Chromium e WebKit) sem achados.
-- E2E completo do Maestro: RESULTADO_E2E.
-- Não verificado: o lado de verdade (HUB assinando `relay.*`, SOBEDESCE convertendo e conferindo o MD5), que ainda não
-  existe; metadados de vídeo reais do Drive (o Google é interceptado com `videoMediaMetadata` fixo).
+| Plataforma        | Barra do iPhone (o Set e a Z)                                                                  | Verificação                                                         | Resultado                                                                      |
+| ----------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Raiz e HUB        | app: Apps, Projetos, Planos, Conta; Z no anel do topo (o `/app` não tem Set; o site tem)       | lint, `format:check`, `typecheck`, `npm test`, build, `test:e2e`    | ok; 358/358 (2 de banco cruzado caíram em paralelo e passaram sozinhas); 49/49 |
+| SOBEDESCE celular | Início, Drive, Aparelhos, (Referências), Criar; Set e Z no topo (e no canto da tela sem Drive) | `npm test` (motor e celular, com `set-celular.test.js`)             | 791/791 (+4 pulados)                                                           |
+| SOBEDESCE site    | Set no cabeçalho, antes do anel da Z; entrada em `/conta`                                      | `web`: lint, tipos, `npm test`                                      | ok, ok, 301/301                                                                |
+| Synquei           | Início, Mídia, Sincronizar, Linha, Exportar; Set e Z no canto do Início (Set no menu lateral)  | `npm test`                                                          | 153/153 (+6 pulados, Electron)                                                 |
+| TPeasy            | Roteiros, Teleprompter, Ajustes, Set; Z no anel do topo de Roteiros                            | `node --test tests/*.test.mjs`                                      | 61/61                                                                          |
+| Relay             | sem Z; Set no fim das páginas do topo                                                          | `npm test` (com `npm ci` só do Relay)                               | 57/57                                                                          |
+| Carro do Freela   | 3 + Menu + 3 (não mudou); Set no menu; Z no anel do topo; lateral termina em Set e Z           | `test:api`; bateria inteira (`run.js`)                              | 47/47; 89/89 (`conta-zro` e `sem-zoom` só sozinhas, pelo teto de tempo)        |
+| NOSSOM            | Início, Projetos, Estúdio, Conta, Set; Z no anel do topo; lateral termina em Set e Z           | `npm test`, tipos, `format:check`, build, e2e inteiro               | 124/124, ok, ok, ok; 65/65 (+26 pulados)                                       |
+| AEON              | dock: Mídia, Revisar, Edição, Entrega, Set; Z no ícone da barra                                | `npm test` (com `npm run vendor`)                                   | 140/140                                                                        |
+| Revela            | dock: LUT, Lab, CST, Entrega, Converter; Set e Z no topo                                       | `npm test`                                                          | 180/180                                                                        |
+| Maestro           | não mudou (Set na pílula do topo, Z discreta)                                                  | `npm test`; `e2e/set.spec.ts` (`E2E_DB_SUFIXO=integra`, porta 9717) | 430/430; 6/6 (computador, iPhone e Safari)                                     |
+
+Conflitos e como ficaram: SOBEDESCE celular (`tabs.js`), Synquei (`main.js`, `app.css`, `sw.js`) e Revela tinham seis
+itens na barra com o Set; o Set foi para o topo, ao lado da Z (o Synquei liga a entrada nova a cada desenho do Início,
+`pintarSet`). TPeasy e AEON: o Set fica como a última aba e a Z continua montando só no toque. Carro (`template.html`) e
+NOSSOM (`studio.tsx`): Set antes da Z na lateral. Site do SOBEDESCE (`abas.tsx`): o controle Z · Conta tinha saído; o
+Set virou botão do cabeçalho (`BotaoSet`). Testes que esperavam o Set como último item ou a Z como entrada foram
+acertados para a regra nova. Achado no caminho: o teste da família no NOSSOM e o `mapa` do Carro ainda esperavam a
+família sem o Maestro (lançado em 29/10). Capturas (claro, 1440 e 393 px) fora do repositório. Não rodou: o site do
+SOBEDESCE no navegador (precisa de sessão da Absolute ZRO e do banco), os apps de computador em Electron e iPhone de
+verdade.
+
+## A Z nunca é a primeira tela (30/10/2026)
+
+Regra do titular (29/10/2026; Plano de Integração §7–8): em todas as plataformas quem entra cai na tarefa; a Z é uma
+entrada discreta, nunca aba principal nem aberta sozinha, e nada dela carrega antes do toque. Banco e portas próprios
+no e2e do HUB (`zro_zentrada_e2e_test`, porta 3271).
+
+| Plataforma      | Verificação                                                                                             | Resultado                                                                                                                                                           |
+| --------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Raiz            | lint, `format:check`, `typecheck`, `scan-secrets`                                                       | ok                                                                                                                                                                  |
+| HUB             | `npm run build`; `tests/e2e/z-entrada.spec.ts` (novo) e `z-digitando.spec.ts`                           | build ok; 4/4 (HUB em `/inicio` com a IA no fim do grupo; `/app` nos apps, `/app/apps` redireciona, Z em `/app/ia` só no toque, 393 px com 4 abas e o anel no topo) |
+| HUB             | `npm run test:e2e` inteiro                                                                              | 46/49; as 3 que caíram (a11y, admin, sso) passaram de novo sozinhas — axe estourou os 120 s com outra build na máquina                                              |
+| SOBEDESCE       | `npm test` (computador e celular), `web: npm test`                                                      | 790/790 (+4 pulados) e web 293/293; `entrada.test.js`, `entrada-celular.test.js` e `web/tests/entrada.test.mts` cobrem a entrada sem a Z                            |
+| Synquei, TPeasy | `npm test` / `node --test tests/*.test.mjs`                                                             | 139/139 (+5 pulados, Electron) e 54/54                                                                                                                              |
+| Carro do Freela | `conta-zro` e `run.js colisao contraste movimento doca versoes seguranca menu-recolhivel feed feedback` | 148/148 (cai na tarefa, nada da Z montado, anel apagado, `#tab-z` último; reconectar volta à Z) e 9/9                                                               |
+| NOSSOM          | `npm test`, `tsc`, `next build --webpack`, e2e `zro-ia` e `install-navigation`                          | 120/120, ok, ok, 5/5 e 3/4 (a falha é anterior: a família agora tem o Maestro)                                                                                      |
+| AEON, Revela    | `node --test test/*.test.js`                                                                            | 126/126 e 167/167 (primeira tela Mídia / LUT; Z no ícone da barra / anel do topo; `#z` e `/inicio` diretos)                                                         |
+
+Capturas da primeira tela (claro, 1440 e 393 px) de HUB (site e app), SOBEDESCE (computador e celular), Synquei, TPeasy,
+Carro do Freela, NOSSOM, AEON e Revela: nenhuma monta `<zro-ia>` nem pede o script da Z ao abrir. Não rodou: o
+app de computador do SOBEDESCE/Synquei/AEON em Electron (`--smoke`), nem iPhone de verdade.
+
+## Set: presença e conversas (29/10/2026, ADR 0032)
+
+Migração `0035_set.sql` (renumerada de 0032: 0031–0034 já são de outros ramos). Banco de teste próprio
+(`TEST_DATABASE_URL=…/zro_set_test`, `E2E_DATABASE_URL=…/zro_set_e2e_test`, porta 3261).
+
+| Verificação                                    | Resultado                                                                                                                                                                                                                     |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lint, formatação, tipos, `scan-secrets` (raiz) | ok (3109 arquivos, nenhum segredo)                                                                                                                                                                                            |
+| `npm test` (raiz, Postgres real)               | **352/352** em 39 arquivos; `set.test.ts`: presença e app pelo token, invisível/quem vê, contatos, direta, projeto, bloqueio, denúncia, limites, RLS de toda tabela, exclusão da conta                                        |
+| `npm run build` (HUB)                          | ok (`/set`, `/admin/denuncias`, `/api/v1/set/*`)                                                                                                                                                                              |
+| `npm run test:e2e` (HUB)                       | **48/48** (um WebKit da página inicial caiu por falta de memória com outros testes na máquina e passou de novo sozinho); `set.spec.ts` em Chromium e WebKit, computador e iPhone, mais moderação no console e o 304 da ETag   |
+| Maestro: lint, formatação, tipos               | ok                                                                                                                                                                                                                            |
+| Maestro: `npm test`                            | **378/378** (um arquivo caiu com `checkpoint request failed` do Postgres com a máquina cheia e passou de novo sozinho; `set.test.mts`: caminhos fechados, Bearer só no servidor, ETag/304, outra origem, login sem `zro.set`) |
+| Maestro: `e2e/set.spec.ts`                     | **6/6** (computador, iPhone Chromium e Safari; banco próprio com o novo `E2E_DB_NAME`); a lista some quando a conversa abre na folha                                                                                          |
+
+Privacidade conferida nos testes: outra organização não aparece; invisível não grava presença; "quem vê" e "visto há"
+valem; perfil escondido não é achado pelo @; e-mail não aparece em nenhuma resposta nem no console; mensagem de
+bloqueado some nos dois sentidos; `zro_app` não escreve direto em nenhuma tabela do Set.
+
+## Set em todas as plataformas (30/10/2026)
+
+A aba em comum ("Set") em SOBEDESCE (site e celular), Synquei, TPeasy, Relay, Carro do Freela, NOSSOM, AEON e Revela;
+tabela em [set.md](integration-contracts/set.md). Telas (claro, computador e 393 px; escuro em Carro, NOSSOM, AEON,
+Revela, Relay, Synquei e TPeasy) gravadas fora do repositório.
+
+| Verificação                                 | Resultado                                                                                                                                                    |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Raiz: lint, formatação, tipos, build do HUB | ok                                                                                                                                                           |
+| Raiz: `npm test` (banco `zro_setall_test`)  | **358/358** em 41 arquivos; `e2e/set.spec.ts` do HUB 5/5 (Chromium e WebKit) com o widget novo                                                               |
+| SOBEDESCE site: lint, tipos, `npm test`     | ok; **299/299**; `zro-set.test.mts`: login com `zro.set` e sem ele, Bearer só no servidor, ETag/304, origem, caminhos                                        |
+| SOBEDESCE celular                           | `test/set-celular.test.js` (Chromium com a CSP do `/app/`): última aba, balão, folha tela cheia, tinta do app                                                |
+| Synquei / TPeasy                            | 153/153 (5 pulados sem Electron) / 60/60, com os testes do repasse e da entrada                                                                              |
+| Relay                                       | `set.test.js` 10/10 (login desligado com o site fechado); telas 5/5 com o servidor local sem login                                                           |
+| Carro do Freela                             | `test:api` 47/47; `conta-zro` 145/145 rodada direto (275 s: o teto de 240 s do `run.js` estoura com a máquina cheia); `set-zro` 20/20 (computador e celular) |
+| NOSSOM: tipos, `npm test`, e2e              | ok; 121/121; `set.spec.ts` 3/3, `zro-access` (o portão cobre `/api/zro/set`) e `zro-ia` 11/11                                                                |
+| AEON / Revela                               | 138/138 / 179/179 (repasse, 403 do portão, dock e folha com a identidade do app)                                                                             |
+
+Achado no caminho: no NOSSOM a folha não trocava de tema ao trocar o tema do estúdio (o React aplica o atributo `tema`
+do filho antes do `data-theme` do pai); o widget agora recopia a identidade depois da mudança e ao abrir.
+Não rodado: `vendor.test.js` do Relay (sem `node_modules` neste ambiente) e o site do SOBEDESCE no navegador (só o
+componente e a rota, pelos testes).
+
+## Página inicial no iPhone: topo por cima de tudo e grade de ícones (29/10/2026)
+
+Relato do titular (Safari do iPhone, tema claro): texto das seções aparecia entre a barra de status e a cápsula do topo e
+lia através dela; selos "Em desenvolvimento" cortados e nomes desalinhados na grade; buraco depois de "Ferramentas que
+se conectam". Reproduzido no build de produção (WebKit e Chromium, 393 px): a cápsula era vidro com ~14% de
+transparência e nada cobria a faixa acima dela; o selo longo empurrava o nome de um ícone e o cartão esticava as linhas.
+
+Agora: `viewport-fit=cover` só no site, cápsula abaixo da safe area e faixa da cor da página atrás dela (some em
+degradê); vidro da cápsula quase opaco; `.public-main` isolado (nada da página sobe acima do topo); grade como a Tela de
+Início (4 por linha, 3 quando fecha a conta), nome alinhado pelo topo e "Em breve" em cinza; ícones fechados sem
+esmaecer; régua centrada e sem a margem extra. Maestro e Relay ("Em breve", pelo gate) com ícone e linha; o Relay entra
+sozinho quando a 0031 chegar (conferido aplicando a 0031 num banco local: 3×3 no celular, 5+4 no computador).
+
+| Verificação                             | Resultado                                                                                              |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Lint, formatação, tipos, `scan-secrets` | ok                                                                                                     |
+| `npm test` (raiz, Postgres real)        | **340/340** em 38 arquivos                                                                             |
+| `npm run build` (HUB)                   | ok                                                                                                     |
+| `npm run test:e2e` (HUB)                | **43/43**; novo `home-celular.spec.ts` (WebKit e Chromium, 375/393/430 px), que falha no código antigo |
+
+`home-celular.spec.ts` rola a página inteira e compara a faixa acima da cápsula e o meio dela com e sem o conteúdo da
+página (nada pode aparecer), confere nomes alinhados e selos inteiros na grade, o espaço até "Em números" e corte ou
+rolagem de lado em todas as seções. A foto do app para computador (`produto-hub-*.webp`) já mostra o catálogo atual;
+quando a 0031 entrar, regerar com `scripts/marca/aparelhos/capturar-hub.ts`. Falta conferir num iPhone de verdade.
 
 ## Início sem piscar cinza nem pular (29/10/2026)
 
@@ -64,9 +157,58 @@ Animations, sem mexer em atributo); "reduzir movimento" troca seco.
 | Banco rápido, Chromium e WebKit               | recarregar, menu e logo: nenhum quadro com esqueleto à vista; palco e atalhos nascem no lugar final; CLS 0 |
 | Banco preso (cotas travadas), Chromium/WebKit | topo chega antes; esqueleto invisível até 300 ms; números, painéis e apps no mesmo lugar do esqueleto      |
 | Reduzir movimento                             | esqueleto aparece seco aos 320 ms, sem cópia nem animação no conteúdo                                      |
-| Proxy de 12 ms (como o vídeo), depois         | Chromium: 0 quadros com esqueleto; WebKit (mais lento aqui): 0–1 quadro, já com a dissolvência             |
+
+CI com WebKit (29/10/2026, run 40943896316): o WebKit headless do runner dá ~3 quadros por segundo, e as sondas, só em
+`requestAnimationFrame`, contavam 3 quadros e perdiam a cópia que dissolve (vive 260 ms). Agora as sondas também amostram
+a cada 10 ms e a cópia é contada quando entra no body (MutationObserver). Reproduzido aqui atrasando os quadros das sondas
+para 400 ms: antes 2 falhas iguais às do CI; depois `esqueleto.spec.ts` 20/20 (4 rodadas sem atraso).
+
+Segunda rodada no CI (run 40948422689): o runner levou mais de 3 s para pintar o Início, e a sonda (que parava 3 s depois
+de abrir) não viu o palco. Agora ela segue até 1,5 s depois de o palco aparecer (no máximo 20 s). E a regra conferida
+virou a do desenho, que vale em qualquer máquina: nenhum esqueleto à vista nos primeiros 300 ms de vida (numa máquina
+lenta ele pode viver mais e aparecer, de propósito). Local: 15/15, e 6/6 no WebKit com as sondas atrasadas.
+| Proxy de 12 ms (como o vídeo), depois | Chromium: 0 quadros com esqueleto; WebKit (mais lento aqui): 0–1 quadro, já com a dissolvência |
 
 Não conferido: o Safari do titular em produção (precisa publicar).
+
+## Maestro: colunas do Quadro como no Trello (29/10/2026)
+
+Pedido do titular: renomear, recolorir, reordenar, criar e arquivar colunas por organização, só administração e gestão.
+Rodado neste ambiente (Postgres 16 local próprio, Chromium e WebKit do Playwright 1.63), máquina compartilhada.
+
+- **Dados** (`products/maestro/drizzle/0024_colunas.sql`): `maestro.colunas` (org, id, papel, nome 1–30, cor da paleta,
+  ordem, arquivada). Escolha: o card continua guardando a coluna em `dados.coluna` e o **id das 8 colunas de sistema é o
+  próprio papel** (`pauta`…`entregue`, check `papel = id`). Assim nenhum card, histórico ou decisão do cliente é
+  regravado; as funções `card_*` e `link_enviar` seguem iguais e renomear/reordenar nunca quebra uma automação. Colunas
+  novas têm id `x-<12 hex>`. O check fixo `cards_coluna_ok` virou o gatilho `cards_coluna_valida` (só coluna viva da
+  própria organização, com trava contra arquivar ao mesmo tempo). Backfill das organizações existentes e gatilho para as
+  novas. Escrita só por `maestro.coluna_*` (security definer, papel conferido; `maestro_app` sem insert/update/delete);
+  arquivar move cada card por `card_mudar` (histórico só de inclusão, apagados inclusive); sistema não arquiva (check).
+- **Tela** (`src/components/quadro/colunas.tsx`, `quadro.tsx`, `estado.ts`, `src/app/colunas.css`): clique duplo no
+  cabeçalho renomeia (Enter/sair salva, Esc desiste, vazio não vale); arrastar o cabeçalho reordena com Desfazer; no
+  celular, tocar na aba já escolhida renomeia; "Colunas" abre a folha "Editar colunas" (`Folha`): alça (mouse na hora,
+  toque segurando 280 ms, setas do teclado), cor, arquivar com destino, "Nova coluna", arquivadas, "Restaurar padrão".
+  Otimista com volta e aviso; o poll de 5 s traz as colunas. Hoje, fichas de cliente/projeto e lotes mostram nome e cor
+  da organização; coluna nova conta como "em produção" (prazo, Vencendo, lote).
+- Testes novos: `tests/colunas.test.mts` (15: fábrica igual ao código, backfill migrando até a 0023 e depois a 0024,
+  equipe/leitura 403 no banco e na rota, `maestro_app` sem escrita direta, duas organizações, arquivar com destino e
+  histórico intacto, sistema não arquiva nem por fora da função, restaurar e padrão, limite, aprovação do cliente
+  depois de renomear e reordenar ainda leva a Aprovado/Revisão, Hoje e lote com coluna nova, acesso por cliente lê,
+  paleta do CSS = código com contraste) e `e2e/colunas.spec.ts` (computador e iPhone: renomear no lugar, reordenar
+  com Desfazer, criar/renomear/recolorir na folha, sistema não arquiva, arquivar com destino e restaurar, aba do
+  celular, alça segurando 280 ms, equipe não edita). `quadro.spec.ts`: a ajuda de trocar de aba não toca na aba já
+  marcada (agora renomeia).
+- No celular o botão "Colunas" fica ao lado da busca (o topo segue numa linha só: título e "Novo card"; com o topo em
+  duas linhas, o card descia e o `gestos.spec.ts` "soltar sobre a pílula" falhava).
+- Capturas e vídeos (claro e escuro, computador e iPhone) guardados fora do repositório. Falta conferir num iPhone de
+  verdade e aplicar a 0024 em produção (com o próximo deploy autorizado).
+
+| Verificação                            | Resultado                                                                                             |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Maestro lint, formatação, tipos, build | ok                                                                                                    |
+| Maestro `npm test`                     | **377/377** (`colunas.test.mts` 15 novos)                                                             |
+| Maestro `test:e2e` completo            | **129 ok**, 21 pulados (por aparelho), 0 falhas; inclui `sem-corte`, `transicao` e `gestos` no WebKit |
+| `node scripts/scan-secrets.mjs`        | nenhum segredo                                                                                        |
 
 ## A Z digita as sugestões no campo (29/10/2026)
 
@@ -270,6 +412,51 @@ neste ambiente: PTAX de 28/10/2026 = venda 5,342 (Olinda); planilha `resumo_sema
 - Não verificado: o Vercel Cron de verdade (precisa de `CRON_SECRET` no `absolutezro`) e as migrações `0030`/`0022` em
   produção; o e2e do Maestro no iPhone e no WebKit (o editor só roda no computador; o detector de corte não abre a
   calculadora).
+
+## Lançamento do Maestro em Beta grátis, pronto no ramo (29/10/2026, ADR 0027)
+
+- HUB: `tests/integration/maestro-lancamento.test.ts` (4): catálogo `beta` e gate `public_beta` com os cinco canais
+  abertos a qualquer um; conta comum só com o grátis, fora de lista, fica `contracted`, `authorize` passa e o login
+  único leva `maestro` em `zro_products` e `released` em `zro_release` (os fechados seguem `closed`); grátis e Completo
+  sem `maestro.marca_propria`, Pro v2 (rascunho) com o Maestro inteiro e o sinal, adicional só o sinal, nenhum plano
+  aposentado tocado; backfill idempotente (conta de antes ganha o entitlement uma vez; rodar a 0027 de novo não muda
+  plano, entitlement nem auditoria). `lancamento-maestro-chaves.test.ts` (2): as 11 chaves do código existem, viram
+  juntas e abrir + fechar devolve o arquivo idêntico; o ícone do Maestro em cada app é o oficial. Testes que diziam
+  "Maestro fechado" passam ao estado de lançamento (accounts, release-gate, ia-maestro, stripe, core, downloads, e2e
+  `hub.spec`). Lint, formatação, tipos, `npm test` **267/267**, build ok, e2e **26/26** (hub, a11y, admin, sso),
+  `scan-secrets` limpo.
+- Maestro: `npm test` **335/335** (inclui `lancamento.test.mts`: app de computador só com instalador publicado no
+  catálogo, nome de arquivo estranho não vira link, cache de 5 min e HUB fora do ar = nada; manifesto e ícones;
+  chave da vitrine). Build ok com a vitrine fechada e aberta. E2E com a vitrine **aberta** (todas as chaves em
+  `--abrir`): **80 passaram**, 12 pulados de propósito (inclui o detector de corte em Chromium e WebKit a 375/393 px,
+  claro e escuro, e `instalar.spec.ts`: manifesto, metas do Safari, `theme-color` pelo tema, a dica em Ajustes que some
+  aberto como app e o app instalado sem corte). Com a vitrine **fechada** (estado do ramo): `inicio.spec.ts` +
+  `instalar.spec.ts` **24/24**.
+- Outros apps (no estado aberto e no fechado): SOBEDESCE `test:fast` 777 ok/4 pulados (`familia.test.js` 4), Synquei
+  `npm test` 139 ok, TPeasy 53/53, NOSSOM `npm test` 105/105 + tipos e formatação, AEON `familia.test.js` 2/2, Revela
+  `npm test` 147/147 (menu em ordem alfabética com o Maestro), Carro do Freela `npm run build` com o ícone na lateral
+  e na gaveta. Não verificado aqui: as telas do AEON (`tela.test.js` pede `npm run vendor`, que não roda neste
+  ambiente; o teste do menu passou a contar a família de `src/familia.js`).
+
+### Deslocamento sozinho (Maestro, 29/10/2026)
+
+- Causa do relato do titular: (1) km — Photon e OSRM estavam desligados (`MAESTRO_SERVICOS_ABERTOS` ausente, dica
+  "Digite os km do trajeto.") e, ligados, a rota só media depois de escolher uma sugestão na lista; (2) preço — a
+  `0022` subiu às 16h35 de 29/10 e a primeira semana só foi guardada pela coleta de reserva (`buscado_em` 20h34),
+  disparada pela própria abertura da calculadora, que naquela vez já respondia "Sem preço"; o preço também olhava só a
+  cidade da produtora. Corrigido: serviços ligados, lugar escolhido sozinho, preço pela saída e nova pergunta depois da
+  coleta.
+- Maestro `npm test` **392/392**: `deslocamento.test.mts` (21: lugar com município/UF/tipo, "sao paulo"/"SAO PAULO"/
+  "São Paulo, SP" → São Paulo/SP e não o estado, "Natal, PI", capital em empate, preço município → estado → Brasil com
+  e sem UF, semana velha fora, nome em dois estados, veículos e troca de combustível), `combustivel.test.mts` (9: no
+  banco, nomes digitados) e o novo `rota.test.mts` (3, Photon/OSRM falsos em `tests/rota-fixture.mts`: ligados por
+  padrão, busca presa ao Brasil, memória de 12 h, fora do ar lança, `=0` não sai nada).
+- E2E `produtora.spec.ts` **14/14 + 2 pulados** (computador e iPhone 393 px): "sao paulo" → "Natal" digitados,
+  2923,1 km pela rota falsa, gasolina de São Paulo/SP 6,11, Compacto · 14 → R$ 2.551,45, Van troca para diesel,
+  consumo e km digitados com "Usar o da rota". Capturas claro/escuro, computador/393 px fora do repositório.
+- Conferido ao vivo neste ambiente (Photon e OSRM públicos): São Paulo → Natal 2.921,7 km (≈ 40h44), "natal, rn" e
+  Campinas → Mossoró ok. Não verificado: o comportamento em produção (deploy só com o titular) e o uso justo dos
+  serviços públicos com muitas produtoras (hoje: memória por servidor e busca só ao parar de digitar).
 
 ## E-mails da central com cara de e-mail de conta (29/10/2026)
 
@@ -2465,6 +2652,168 @@ catálogo de downloads da Absolute ZRO, atrás do gate.
 Não conferido aqui: instalar e abrir num Mac e num Windows de verdade, o "Atualizar" trocando o app (só nos testes com
 sistema simulado), e o primeiro Release (sai no primeiro push na main com `products/maestro/desktop/**`).
 
+## SOBEDESCE: contador de "Agora" (29/10/2026)
+
+- Relato do titular: pasta de 100,3 GB enviada de novo depois de uma falha; terminou e o painel mostrava "51% de 205 GB".
+  Causa: o número grande somava todas as transferências da lista (lotes antigos concluídos e a tentativa que falhou,
+  com o que já tinha subido) e o motor deixava a tentativa velha "com problema" ao lado da nova.
+- `test/manager.test.js`: envio que falhou e é mandado de novo entra; a tentativa antiga vira cancelada
+  (`substituidaPor`) e sai do total, do "parado" e dos problemas.
+- `test/transferencias-ui.test.js` (`rodada`): lote velho concluído, cancelado e tentativa substituída ficam de fora;
+  terminar não faz a porcentagem cair; dois lotes ao mesmo tempo contam juntos até o fim.
+- Não validado: o painel num envio real de 100 GB no Mac do titular.
+
+## Maestro · Criação: núcleo do Roteiro (F1, 29/10/2026)
+
+Sem tela nesta fase: modelo, tempo, vistas, modelos de criação, conversão do documento antigo, junção por id, a
+migração `0030_roteiros` e o migrador aceitando migração fora de ordem.
+
+| Verificação                                                  | Comando                                                          | Resultado                                                                                      |
+| ------------------------------------------------------------ | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Puro: modelo, tempo, vistas, modelos, antigo, junção, papéis | `cd products/maestro && npx tsx --test tests/roteiro.test.mts`   | **31/31**; Teleprompter byte a byte e contra `countWords`/`renderScript`/`importAll` do TPeasy |
+| Banco: duas organizações, papéis, rev, versões imutáveis     | `npx tsx --test tests/criacao-rls.test.mts`                      | **9/9**                                                                                        |
+| Acesso por cliente com `roteiros` e `roteiro_versoes`        | `npx tsx --test tests/acesso-cliente.test.mts`                   | ok                                                                                             |
+| Migrador: 0027 atrasada depois da 0030, `when` repetido      | `npx tsx --test tests/migrador.test.mts`                         | **2/2**                                                                                        |
+| Maestro inteiro                                              | `npm run lint`, `format:check`, `typecheck`, `npm test`, `build` | ok · ok · ok · **419/419** · ok                                                                |
+| Raiz                                                         | `npm run lint`, `format:check`, `typecheck`                      | ok · ok · ok                                                                                   |
+| Segredos                                                     | `node scripts/scan-secrets.mjs`                                  | nenhum                                                                                         |
+
+Não rodado: o e2e do Maestro (nenhuma tela mudou). A migração `0030` não foi aplicada em banco de verdade.
+
+## Maestro · Criação: editor do Roteiro (F2, 29/10/2026)
+
+`/app/criacao` (lista, "Novo roteiro", Fluxos "em breve"), o editor com as quatro vistas, a rota
+`/api/criacao/roteiros/[id]`, a folha A4, "Abrir no editor novo" e o roteiro da demonstração. Sem migração nova.
+
+| Verificação                                                             | Comando                                                               | Resultado                                   |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------- |
+| Operações do editor e comparar com a versão (puro)                      | `cd products/maestro && npx tsx --test tests/roteiro-editor.test.mts` | **7/7**                                     |
+| Rota: Origin, papéis, poll por `rev`, 409 com o atual e junção, versões | `npx tsx --test tests/criacao-rota.test.mts`                          | **7/7**                                     |
+| Maestro inteiro                                                         | `npm run lint`, `format:check`, `typecheck`, `npm test`, `build`      | ok · ok · ok · **433/433** · ok             |
+| E2E da Criação (computador e iPhone)                                    | `npx playwright test e2e/criacao-roteiro.spec.ts`                     | **6/6**                                     |
+| E2E inteiro (com as telas novas no `sem-corte`, Chromium e WebKit)      | `npm run test:e2e`                                                    | **135 passaram**, 27 pulados (por aparelho) |
+| Raiz                                                                    | `npm run lint`, `format:check`, `typecheck`                           | ok · ok · ok                                |
+| Segredos                                                                | `node scripts/scan-secrets.mjs`                                       | nenhum                                      |
+
+Rodado num Postgres local próprio (porta separada, `TEST_DATABASE_URL`, `E2E_PORT`/`E2E_PONTE_PORT`/`E2E_ANP_PORT`) para
+não disputar os bancos `maestro_test_*` com outras frentes. Não validado: Safari de um iPhone de verdade (o arrastar
+foi conferido com toque sintético; `field-sizing` não existe no WebKit e os campos curtos usam a largura fixa).
+
+## Maestro · Criação: saídas do Roteiro (F3, 30/10/2026)
+
+"Enviar ▾" (TPeasy, PDF para a edição, PDF; o cliente entra na F7), sempre de uma versão salva, com auditoria;
+contrato `maestro.roteiro/1` (a opção do arquivo só com o AEON aberto pelo gate: hoje ninguém vê); bloco "Criação" na
+ficha do card. Sem migração nova.
+
+| Verificação                                                                                         | Comando                                                               | Resultado                        |
+| --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------- |
+| Saídas puras: contrato contra o schema publicado e o exemplo, TPeasy pelo código do app, AEON       | `cd products/maestro && npx tsx --test tests/roteiro-saidas.test.mts` | **12/12**                        |
+| Rota: envio só de versão salva, papéis, Origin, sha256 na auditoria, AEON só com o gate aberto      | `npx tsx --test tests/criacao-rota.test.mts`                          | **8/8**                          |
+| Contrato (zod) aceita o arquivo do Maestro e recusa dado pessoal, nota, id repetido, fora do elenco | `npx vitest run packages/media-contracts`                             | **7/7** (com a deriva do schema) |
+| Maestro inteiro                                                                                     | `npm run lint`, `format:check`, `typecheck`, `npm test`, `build`      | ok · ok · ok · **499/499** · ok  |
+| E2E do Enviar (computador e iPhone)                                                                 | `npx playwright test e2e/criacao-enviar.spec.ts`                      | **5/5**                          |
+| E2E inteiro (Chromium e WebKit)                                                                     | `npm run test:e2e`                                                    | **162 ok**, 38 pulados           |
+| Raiz                                                                                                | `npm run lint`, `format:check`, `typecheck`, `npm test`               | ok · ok · ok · **361/361**       |
+| Segredos                                                                                            | `node scripts/scan-secrets.mjs`                                       | nenhum                           |
+
+Bancos próprios desta cópia (`TEST_DB_SUFIXO=f3`, `E2E_DB_SUFIXO=f3`) e portas separadas. As permissões da Criação
+passam a vir da capacidade `criacao` do acesso por área (mesmo resultado; o teste confere com as políticas da 0030). O
+navegador do e2e ganhou um proxy inexistente: sem rede, o `<zro-set>` de absolutezro.com segurava o "networkidle"
+(transição, gestos e sem corte estouravam o tempo); agora falha na hora.
+Não validado: a folha de compartilhar de um iPhone de verdade (no e2e, um `navigator.share` de mentira confere o `.txt`
+entregue a ela) e o "Restaurar backup" no TPeasy instalado (o `importAll` do próprio app foi
+rodado no teste).
+
+## Maestro · Criação: núcleo do Fluxo (F4, 29/10/2026)
+
+Sem tela nesta fase: migração `0031_fluxos`, operações por nó com `rev`, "o que mudou desde", referências vivas,
+imagens em WebP com cota, link colado sem rede e a exportação em Markdown/JSON.
+
+| Verificação                                                          | Comando                                                          | Resultado                       |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------- |
+| Puro: link, operações, notas coladas, exportação, cota, imagem limpa | `cd products/maestro && npx tsx --test tests/fluxo.test.mts`     | **20/20**                       |
+| Banco: duas organizações, papéis, rev, desde, referências, cota      | `npx tsx --test tests/fluxo-rls.test.mts`                        | **19/19**                       |
+| Rotas do fluxo e da imagem (401/403/404, cabeçalhos)                 | `npx tsx --test tests/fluxo-rota.test.mts`                       | **5/5**                         |
+| Acesso por cliente com as quatro tabelas do fluxo e a porta          | `npx tsx --test tests/acesso-cliente.test.mts`                   | **7/7**                         |
+| Maestro inteiro                                                      | `npm run lint`, `format:check`, `typecheck`, `npm test`, `build` | ok · ok · ok · **463/463** · ok |
+| Raiz                                                                 | `npm run lint`, `format:check`, `typecheck`                      | ok · ok · ok                    |
+| Segredos                                                             | `node scripts/scan-secrets.mjs`                                  | nenhum                          |
+
+Não rodado: o e2e do Maestro (nenhuma tela mudou). A migração `0031` não foi aplicada em banco de verdade; a cota de
+200 MB por produtora ainda depende do plano do Supabase `AbsoluteZRO`.
+
+## Maestro · Criação: o canvas do Fluxo (F5, 29/10/2026)
+
+Telas `/app/criacao/fluxos` e `/app/criacao/fluxos/[id]` sobre o núcleo da F4; nenhuma migração nova.
+
+| Verificação                                                                                                           | Comando                                                                      | Resultado                                                 |
+| --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Puro: vista, zoom, enquadrar, seção sob o ponto, ligação, colar, fila e poll                                          | `cd products/maestro && npx tsx --test tests/fluxo-tela.test.mts`            | **16/16**                                                 |
+| E2E: criar, nota, colar texto/imagem/link, ligar, mover, Desfazer, seção, recarregar; leitura; iPhone segurar e Lista | `E2E_DB_SUFIXO=f5 npx playwright test e2e/criacao-fluxo.spec.ts`             | **3/3**                                                   |
+| Nada cortado a 375/393 px (lista, canvas, Lista, folha Adicionar)                                                     | `npx playwright test e2e/sem-corte.spec.ts`                                  | ok (Chromium e WebKit, 375/393, claro e escuro)           |
+| Maestro inteiro                                                                                                       | `npm run lint`, `format:check`, `typecheck`, `npm test`, `build`, `test:e2e` | ok · ok · ok · **479/479** · ok · **132 ok** (24 pulados) |
+| Raiz                                                                                                                  | `npm run lint`, `format:check`, `typecheck`                                  | ok · ok · ok                                              |
+| Segredos                                                                                                              | `node scripts/scan-secrets.mjs`                                              | nenhum                                                    |
+
+`E2E_DB_SUFIXO` separa o banco do e2e quando duas cópias rodam juntas. Não validado: pinça do trackpad no Safari de
+verdade (`gesture*`) e o toque num iPhone físico (o e2e usa toques sintéticos no Chromium).
+
+## Maestro · Criação: exportar e compartilhar o Fluxo (F6, 30/10/2026)
+
+Migração `0032_fluxo_links` do Maestro (só no banco de teste; produção pede o deploy autorizado).
+
+| Verificação                                                                                                                                                                                                                                                                                      | Comando                                                                      | Resultado                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Puro (Markdown/JSON com e sem imagens pelo link, validade, PIN, nomes, zip), banco (RLS, duas organizações, papéis, hashes fora do alcance, revogar para sempre, 10 vivos, auditoria, só o título), rotas (.md, .json, imagem, PIN, vencido, revogado, limite, noindex, links da equipe, pacote) | `cd products/maestro && npx tsx --test tests/links-fluxo.test.mts`           | **14/14**                                                                         |
+| Acesso por cliente: `fluxo_links` com `_cliente`, só administração e gestão leem                                                                                                                                                                                                                 | `npx tsx --test tests/acesso-cliente.test.mts`                               | **8/8**                                                                           |
+| E2E: menu, Copiar para IA, link com PIN num navegador limpo, revogar, pacote, JSON, mandar para um card; leitura; iPhone (folha e página do link, claro e escuro)                                                                                                                                | `E2E_DB_SUFIXO=f6 npx playwright test e2e/criacao-exportar.spec.ts`          | **4/4**                                                                           |
+| App de computador: `/f` abre no navegador                                                                                                                                                                                                                                                        | `cd products/maestro/desktop && node --test test/regras.test.mjs`            | ok                                                                                |
+| Maestro inteiro                                                                                                                                                                                                                                                                                  | `npm run lint`, `format:check`, `typecheck`, `npm test`, `build`, `test:e2e` | ok · ok · ok · **499/499** · ok · **144 ok** (34 pulados; com `E2E_DB_SUFIXO=f6`) |
+| Raiz                                                                                                                                                                                                                                                                                             | `npm run lint`, `format:check`, `typecheck`                                  | ok · ok · ok                                                                      |
+| Segredos                                                                                                                                                                                                                                                                                         | `node scripts/scan-secrets.mjs`                                              | nenhum                                                                            |
+
+Na rodada inteira, os 2 testes de `criacao-fluxo.spec.ts` caíram porque o e2e novo usava a mesma organização (a lista
+não vinha vazia); o e2e da exportação ganhou organização própria (`e2e/preparar.ts`) e os dois specs passaram juntos
+(7/7). Não validado: imprimir para PDF de verdade no Safari do iPhone (o e2e confere a página e o CSS, não o PDF gerado) e uma
+IA de verdade lendo `/f/<token>.md`.
+
+## Maestro · Criação: Roteiro e Fluxo num produto só (30/10/2026)
+
+Integração das frentes F1–F3 (Roteiro) e F1+F4–F6 (Fluxo) sobre a `main`: seletor Roteiros · Fluxos nas duas rotas
+irmãs, um bloco "Criação" na ficha do card (roteiros e fluxos), permissões do Fluxo pela capacidade `criacao`, e o
+proxy do e2e (nada sai para a internet) junto com as esperas determinísticas da `main`. Migrações do Maestro no
+journal: 0027, 0030, 0031, 0032 (`when` únicos).
+
+| Verificação                                                                                  | Comando                                                                                 | Resultado                                             |
+| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Maestro inteiro                                                                              | `npm run lint`, `format:check`, `typecheck`, `TEST_DB_SUFIXO=criacao npm test`, `build` | ok · ok · ok · **575/575** · ok                       |
+| Políticas da 0031/0032 com os papéis da capacidade `criacao`; migrador com migração atrasada | `npx tsx --test tests/fluxo.test.mts tests/migrador.test.mts`                           | ok                                                    |
+| E2E inteiro (computador, iPhone, iPhone Safari, computador Safari)                           | `E2E_DB_SUFIXO=criacao E2E_PORT=9917 … npm run test:e2e`                                | **179 passaram**, 50 pulados (por aparelho), 0 falhas |
+| Raiz                                                                                         | `npm run lint`, `format:check`, `typecheck`, `npm test`                                 | ok · ok · ok · **386/386**                            |
+| Contratos                                                                                    | `npm run contracts:export`                                                              | nenhum arquivo mudou                                  |
+| Segredos                                                                                     | `node scripts/scan-secrets.mjs`                                                         | nenhum                                                |
+
+Na primeira rodada inteira, o teste do Fluxo no iPhone falhou 3 de 3 (não era lentidão): a contagem já via o nó dentro
+do trecho que o streaming ainda não revelou (`<div hidden id="S:0">`) e a medida vinha vazia. O `caixa()` do spec
+agora espera o nó visível. Na raiz, `custos.test.ts` caiu uma vez (assinante de outro arquivo no mesmo banco, em
+paralelo); passou sozinho e na rodada seguinte inteira. Tour em vídeo (computador 1440×900 e iPhone 393×852) gravado
+com o mesmo servidor do e2e. Não validado: Safari de um iPhone de verdade; a miniatura do YouTube (o e2e não sai para a
+internet).
+
+## SOBEDESCE: Atualizações quando o Absolute ZRO cuida do app (29/10/2026)
+
+- Relato do titular: o app no build 1034 dizia "Você está na versão mais nova" com o 1042 publicado. Instalado pela
+  central do Absolute ZRO, o SOBEDESCE não pergunta ao site (quem atualiza é a central, `src/gerenciado.js`) e a tela
+  caía no texto de "em dia". Agora diz que quem atualiza é o Absolute ZRO e some o "Procurar atualização" (que não
+  procurava nada nesse caso). O catálogo da central (`/api/v1/desktop/apps`) já oferecia o 1042.
+- E a central também não oferecia: ela só comparava o build com o que ela mesma tinha instalado (`registro`), e o
+  SOBEDESCE instalado pelo Terminal, pelo .dmg ou pela atualização própria dele não tem registro; como a versão é sempre
+  0.1.0, ninguém atualizava. Agora a central lê o build de dentro do app instalado (`build-info.json` no `app.asar`,
+  `lerBuildInstalado` em `apps/hub-desktop/desktop/central.cjs`) e compara com o catálogo. `apps/hub-desktop`:
+  `npm test` 61/61 (caso b1034 → b1042 sem registro, build do app vale mais que o registro, Synquei em
+  `desktop/build-info.json`, versão de desenvolvimento sem build).
+- Não validado: a leitura do `app.asar` de outro app pela central empacotada num Mac e num Windows reais.
+
 ## Conversão de mídia como setor próprio (29/10/2026)
 
 Só documentos ([ADR 0030](decisions/0030-relay-conversao.md), PRD §2, roadmap): nenhum código mudou. Mapa feito
@@ -2478,7 +2827,7 @@ do Freela e HUB não convertem. `npm run format:check` e `node scripts/scan-secr
   conversão real, Lanczos conferido com o ffmpeg em SSIM > 0,97 e sem virar, celular girado igual à rotação do ffmpeg,
   tamanho exato cabendo, presets da pessoa ponta a ponta, nenhuma página rolando para o lado em 375 px, cópias nas
   outras plataformas).
-- Qualidade: `npm run qualidade` com 4 masters ProRes contra os presets do HandBrake e o HandBrake no mesmo tamanho
+- Qualidade: `npm run qualidade` com 4 masters ProRes contra presets x264 de referência e a referência no mesmo tamanho
   ([QUALIDADE](../products/relay/docs/QUALIDADE.md)). No computador, empate (0,9469 × 0,9468 no grão; 0,9927 × 0,9923
   no movimento; 0,9962 × 0,9966 na limpa; 0,9779 × 0,9798 no 4K → 1080p). No navegador do Linux (OpenH264) o x264
   guarda mais no mesmo tamanho. Três correções de cor e a escala na placa saíram da medição.
@@ -2486,5 +2835,175 @@ do Freela e HUB não convertem. `npm run format:check` e `node scripts/scan-secr
   2.8.54 / v69, corrigido, 9/9) e o limitador de metadados (tempo, 2,002 × 2; passa sozinho, sem relação com o Relay).
   `test/relay.test.js` 8/8 e `test/relay-celular.test.js` 1/1 (Chromium com a CSP do app, Drive por pedaços, AAC).
   Site: `npm run lint`, `typecheck` e `npm test` (291) ok.
-- HUB: migration `0031_relay.sql`; `npm run lint`, `typecheck` ok; `npm test` 328 com 2 falhas que contavam os produtos
-  dos planos e as etapas do projeto, atualizadas (billing e core 41/41).
+- HUB: migration `0031_relay.sql`; `npm test` 328 com 2 falhas que contavam os produtos dos planos e as etapas do
+  projeto, atualizadas (billing e core 41/41). Depois de juntar o `main`: `format:check`, `lint`, `typecheck`, `npm test`
+  **340/340** e `build` ok; e2e 38/41: o Ciclo do O passa a ter 9 etapas (teste atualizado, Relay indisponível); os
+  dois testes de WebKit do esqueleto (vindos do `main`) não rodam aqui (WebKit não instalado neste ambiente); o
+  "Escolha seu @" do SSO do Carro falhou uma vez e passa sozinho (tempo).
+
+## Relay: comparativo interno, laboratório de aparelhos e Máxima qualidade (29/10/2026)
+
+- `products/relay`: `npm test` **45/45** (link do Máxima qualidade com acentos e limite de 8 destinos; publicação:
+  produção fechada sem o laboratório, prévia com ele; laboratório no Chromium gerando, codificando e medindo).
+- Laboratório no Chromium deste ambiente (OpenH264, sem placa): 0,0116 de SSIM abaixo da referência x264 no mesmo
+  bitrate, em média (6 medidas, 56 s). Falta o Mac, o iPhone e o Windows de verdade.
+- SOBEDESCE: `test/relay.test.js` **12/12**: o link montado pelo Relay é o que o app aceita (e links tortos viram
+  nada), nome livre sem gravar por cima, conversão local de verdade (WhatsApp 1280×720 e MP3 da pessoa ao lado do
+  original, MD5 do original igual, nenhum parcial sobrando) e a rota `/api/relay/local` recusando caminho relativo,
+  extensão errada e destino inventado.
+
+## Relay liberado (29/10/2026)
+
+- Menções a outro conversor fora do repositório inteiro (Revela, ADR 0015, Synquei, laboratório); no Synquei, a regra
+  que separa arquivo de software de arquivo de câmera passou a reconhecer a versão no campo do fabricante (138/138).
+- Migration `0032_relay_aberto.sql`: `npm test` **340/340** (planos, etapas e acessos com o Relay aberto); e2e do HUB
+  16/16 (Ciclo do O com o Relay "Bloqueado por assinatura" sem plano, 4 acessos lançados no plano grátis).
+- Nenhum e-mail: o HUB só envia e-mail de login e de conta (`packages/auth/src/email.ts`); abrir produto e gate não
+  manda aviso.
+- Produção (`relay.absolutezro.com`, deploy `dpl_BSNVYA6bT95oHzNLh8JsrA6ivrhU`, commit `7d408bd`, `RELEASE=released`):
+  `/` e `/converter` 200 com o site de verdade, `/laboratorio` e `/qualidade` 404, `vendor/` servido. Chromium de
+  verdade contra a produção: um ProRes 1080p de 2 s virou "YouTube 1080p" (MP4, 3,9 MB), sem erro no console.
+- O deploy só de variável (mesmo commit da prévia) é cancelado pelo Ignored Build Step do projeto (`git diff` contra o
+  commit anterior). Contorno usado: a checagem foi trocada por `exit 1` só durante esse deploy e voltou igual depois.
+
+## Relay: presets de TV e leitura com plano B (29/10/2026)
+
+- Gravação de tela do Mac recusada ("Este navegador não lê H.264"): no Chromium do Linux, Retina 3024×1964, 5K, P3,
+  região e 4:4:4 abrem; a causa no aparelho do titular ainda não foi vista. `test/tela.test.js` simula um navegador que
+  recusa o nível 5.2: o Relay acha outra forma (nível menor), converte 1920×1200 a 60 fps para YouTube 1080p
+  (1728×1080, 60 quadros, SSIM > 0,9). Navegador que não lê H.264 nenhum: a mensagem mostra
+  `avc1.640034 · 1920×1200 · <navegador>`.
+- O preset Proxy para edição estava sem `id` desde o primeiro commit; corrigido e conferido em `test/plano.test.js`.
+- 23 destinos (Smart TV, Smart TV 4K, LinkedIn, X, Slides, Vídeo de fundo novos), cópias no SOBEDESCE iguais
+  (`test/relay.test.js`), app do celular 2.8.55 / v70.
+
+## Relay: editor completo e cor da Revela (30/10/2026)
+
+- `products/relay`: `npm test` com os testes novos `editor.test.js` (cadência exata, recorte/giro, tela fixa, CBR, RF,
+  trecho, volume, computador, receita de cor, fichas da versão 1), `cor.test.js` (conta da placa × Revela em todas as
+  câmeras < 1,2/255; LUT do ffmpeg; S-Log3 de verdade no ffmpeg ≤ 3/255) e `editor-tela.test.js` no Chromium (30 fps →
+  23,976 com 48 quadros; recorte+giro+espelho SSIM > 0,95 contra o ffmpeg; trecho de 2 s com +6 dB medido; cor na placa
+  ≤ 4/255 e de ponta a ponta cinzas ≤ 2, cores ≤ 7; o editor salva 23,976, trecho e a receita).
+- Cópias conferidas: `src/revela/` = `products/finishing/src/cor/`; SOBEDESCE com o núcleo novo (2.8.56 / v71).
+- Medidas e limites em `products/relay/docs/QUALIDADE.md` ("Cor da Revela").
+
+## NOSSOM: Isolar voz no nível do Voice Isolator (29/10/2026)
+
+- Nova cadeia no worker de GPU (`voice-isolator-v1`: Mel-Band RoFormer + MossFormer2 SE 48K, mono 48 kHz;
+  `roformer-vocals-v1`: vocal estéreo 44,1 kHz), pesos com revisão e SHA-256 fixos, `weights_only=True`.
+- Benchmark em CPU com fala real em português e ruído/música CC BY: SI-SDR médio 15,46 dB contra 11,13
+  (DeepFilterNet3, motor local) e 9,96 (HTDemucs, Isolar voz anterior); melhor também em PESQ, ESTOI e DNSMOS. O
+  código de produção reproduz o benchmark (14,72 × 14,74 dB). Detalhes em `products/nossom/docs/validation.md`.
+- `products/nossom`: `npm test` 76/76, `npm run test:e2e` 75 + 1 pulado, `typecheck`, `format:check` e `build` ok;
+  testes Python do worker no CI.
+- Não validado: imagem na GPU, custo por minuto, cold start, audição cega. Sem deploy.
+- Vídeo (29/10/2026): NOSSOM importa vídeo até 2 GB sem copiar para a memória, envia à GPU só FLAC do som e devolve
+  o vídeo original com o som novo (vídeo copiado, AAC). E2E com MP4 sintético; ffprobe confere H.264 + AAC de 4,000 s.
+  Build da imagem do worker passou com inferência real em CPU; publicação movida para `absolutezro-nossom-worker`.
+- Legendas e Remixar no NOSSOM (29/10/2026): Whisper turbo com WER 4,1% em 3 min de português (CPU) e janelas
+  cortadas em pausas depois de achar estouro de memória no modo em blocos; remixer com cinco faixas que somam o
+  original (erro 1e-7). `npm test` 115/115, e2e 61 + 26 pulados.
+
+## Maestro: quem vê o quê (29/10/2026, [ADR 0031](decisions/0031-maestro-acesso-por-area.md))
+
+Seis áreas sensíveis com padrão por papel e ajuste da Administração (`products/maestro/drizzle/0027_acessos.sql`, mapa
+em `products/maestro/docs/permissoes.md`). Local, Postgres e Chromium/WebKit desta máquina.
+
+| O quê                           | Como                                                         | Resultado                                                                                                                                                            |
+| ------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unitários do Maestro            | `cd products/maestro && npm test`                            | **404/404** (27 novos em `acessos.test.mts`; testes antigos ajustados ao padrão novo)                                                                                |
+| Padrão igual no TS e no banco   | `acessos.test.mts`                                           | `PADRAO` = `maestro.area_padrao`; `CRIACAO_PADRAO` = `maestro.criacao_padrao`                                                                                        |
+| Cada área, cada pessoa          | `acessos.test.mts` (asUser direto nas tabelas)               | sem a área: 0 linhas em toda tabela dela; com a área: as linhas; gestão sem Financeiro                                                                               |
+| Máscaras e gatilhos             | `acessos.test.mts`                                           | freela, escala, kit, inventário, pedido, Hoje, Pessoas, tabela e timbrado vazios sem a área; quem não vê grava e o valor fica                                        |
+| Quem muda                       | `acessos.test.mts`                                           | só a Administração (nem direto na tabela), auditado com antes/depois; sessão traz o acesso                                                                           |
+| A Z                             | `acessos.test.mts` (rota com o pedido assinado)              | `dinheiro` null sem Financeiro (gestão inclusive); `orcamentos_aguardando` null sem a área                                                                           |
+| Tela                            | `npm run build && E2E_DB_SUFIXO=acessos npx playwright test` | **135 ok, 21 pulados (por desenho), 0 falhas**; `acessos.spec.ts` 6/6 (computador e iPhone)                                                                          |
+| Lint, Prettier, tipos (Maestro) | `npm run lint`, `format:check`, `typecheck`                  | ok · ok · ok                                                                                                                                                         |
+| Raiz                            | `npm run lint`, `format:check`                               | ok · ok (o `typecheck` da raiz acusa erros em pacotes do HUB não tocados aqui: `node_modules` da cópia principal, desatualizado; não reinstalado por falta de disco) |
+| Segredos                        | `node scripts/scan-secrets.mjs`                              | nenhum                                                                                                                                                               |
+
+Não conferido aqui: a migração `0027` no banco de produção (deploy só com autorização) e a tela com dados reais.
+
+## Maestro: arrastar o card no computador sem "travadinha" (29/10/2026)
+
+Vídeo do titular (Safari do Mac, tema escuro, maestro.absolutezro.com, 5,8 s): card arrastado de Revisão para Em
+aprovação e de volta. Quadro a quadro (ffmpeg, linha do tempo de 60 fps):
+
+- **Parado sobre o destino** (0,83–1,17 s): o destino piscava a ~30 Hz. Em quadros alternados a linha de soltar sumia,
+  o conteúdo de Em aprovação descia e subia ~10 px e o encaixe de origem ganhava contorno; em 1,12–1,13 s a coluna de
+  destino chegou a esconder o cabeçalho. Na volta, o destaque da coluna também alternava.
+- **Ao soltar** (1,18 s): o card sumia por 2 quadros e entrava cortado pela borda da coluna até 1,32 s ("…la semana",
+  "ories da semana"); na volta (2,38–2,52 s), entrava pela direita, cortado e meio transparente.
+- **Causas** no código: (1) no Safari, `dragleave` chega sem `relatedTarget` a cada filho e o Quadro apagava o alvo,
+  redesenhava tudo e o recolocava no `dragover` seguinte (linha de soltar no DOM, ~11 px de layout por troca); (2) cada
+  troca de alvo desenhava as 8 colunas (card sem `memo`) e o FLIP media todos os cards, inclusive com o deslize ainda
+  andando (`composite: "add"` somava de novo), e a mira lia retângulos com esse transform; (3) ao trocar de coluna o
+  card é remontado e o CSS repetia a entrada (`q-assenta`, começa com `opacity: 0`), o FLIP saía do lugar de origem e
+  `.q-col { overflow: hidden }` cortava; (4) a pergunta de 5 s agendava render sempre (colunas) e trazia de volta os
+  próprios cards; a página renovada depois de gravar redesenhava todos os cards.
+- **Correção** (`src/components/quadro/arrastar.ts`, `fantasma.ts`, `flip.ts`, `quadro.tsx`, `estado.ts`, CSS): o card
+  arrasta com o ponteiro como no celular (fantasma com camada própria, só `translate`; espaço aberto por `transform`;
+  coluna de destino cresce uma vez por coluna; tudo medido de uma vez ao erguer e nada lido no meio do arrasto); pousa
+  onde vai ficar e só então o React grava, com o FLIP fixado; o FLIP mede pelo lugar (sem transform do próprio card),
+  não repete a entrada de quem já estava na tela e passa por cima das colunas (`z-index` durante o deslize, coluna sem
+  corte). Esc, soltar fora e perder a janela devolvem; Entregue recebe no topo; "reduzir movimento" vai direto. O
+  fantasma (celular inclusive) vai no `<body>`: no `.shell` o primeiro quadro custava a página inteira. A pergunta de
+  5 s e a página renovada não redesenham mais o Quadro à toa. Reordenar colunas pelo cabeçalho também não pisca mais.
+  O clique logo depois de abrir a página não é mais engolido (o "engolir" começava em 0 ms).
+- **Medidas** (`e2e/arrastar.spec.ts`, 1440×900, escuro, 32 cards; máquina dividida, carga ~18 em 4 núcleos; a luz
+  ambiente apagada nas medidas porque o headless não compõe na GPU). Antes → depois, Chromium: renders do React com o
+  mouse andando 3–4 → **0**; mudanças no DOM 6–8 → **0**; layout 1 → **0**; card invisível depois de soltar 7–8 quadros
+  → **0** (sempre inteiro); maior pulo ao soltar 290–332 px → **8–14 px** (menor que o caminho de 24 px até o lugar);
+  quadro p50 31 → **17 ms**, p95 59–63 → **34–54 ms**. WebKit: renders 1–2 → **0**, DOM 4 → **0**, card invisível →
+  **0**, pulo 217 px → **10–21 px**. Custo de erguer no WebKit: 50–85 ms → **2–7 ms** de JavaScript; primeiro quadro
+  depois de erguer ~0,5–0,9 s → ~0,06–0,09 s (o headless sem GPU exagera a pintura; no Mac é composição). Depois de
+  assentar: 1–2 renders (a resposta do banco e a página renovada) e nenhum card desliza nelas nem na volta de 5 s.
+- Testes: `e2e/arrastar.spec.ts` (computador e o novo projeto `computador-safari`, WebKit): sem render, DOM e layout
+  com o mouse andando, destino sem piscar, card sempre à vista e sem pulo ao soltar, nada desliza depois; clique abre a
+  ficha, reordenar na coluna, Esc e soltar fora sem gravar; Entregue no topo com reduzir movimento; "Mover para…"
+  desliza por cima das colunas, inteiro. `gestos.spec.ts` (iPhone, Chromium e WebKit), `quadro.spec.ts`,
+  `colunas.spec.ts`, `transicao.spec.ts`, `visual.spec.ts` e `sem-corte.spec.ts` passam. `E2E_DB_SUFIXO` separa o
+  banco do e2e quando duas cópias rodam juntas; `E2E_VIDEO=1` grava cada teste.
+- Não validado: Safari de um Mac e iPhone de verdade (sem deploy).
+
+## Maestro: barra de baixo com 4 abas e a barra de cima com o Set (30/10/2026)
+
+- Barra de baixo do iPhone: uma coluna por aba (`grid-auto-flow: column`), as 4 dividem a largura toda, sem a 5ª vazia
+  (`transicao.spec.ts`, Chromium e WebKit). Barra de cima: com o selo Demonstração, a Z, a pílula do Set, o tema e a
+  conta, a 393 px a conta saía 17 px da tela (a pílula veio com o Set); agora quem cede é o selo (reticências).
+- `transicao.spec.ts` e `gestos.spec.ts` não esperam mais `networkidle`: o `<zro-set>` não lê o corpo do 401 e o
+  Chromium deixa o pedido em aberto (CDP: resposta e 87 bytes recebidos, sem `loadingFinished`). Esperam a rede parada
+  sem o Set e a ordem gravada no banco. Resultado: transicao, gestos, arrastar, quadro, contrato, sem-corte e set
+  **61/61** (18 pulados por projeto); `npm test` **430/430**; lint, Prettier, tipos e build ok (Maestro e raiz);
+  `scan-secrets` sem segredo. Com carga ~16 em 4 núcleos, "segurar na borda" (WebKit) caiu 1 em 3: passou mais de 1 s
+  entre a troca e o próximo movimento do teste, e a borda já passava para a coluna seguinte (o código da borda não mudou).
+
+## Laboratório da Z (30/10/2026, [ADR 0033](decisions/0033-laboratorio-da-z.md))
+
+Console › Laboratório da Z (só admin), migração `0036_laboratorio_z.sql`. Local, Postgres e Chromium desta máquina;
+Claude e ElevenLabs **falsos** (`tests/fixtures/z-lab-falso.ts`), nenhuma chamada real.
+
+| O quê                                | Como                                                                                  | Resultado                                                                                                                                        |
+| ------------------------------------ | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Anexos, custos, pedidos, voz, PCM    | `tests/integration/z-lab-unidade.test.ts`                                             | 18/18: tipo pelo conteúdo, Office por dentro, bomba de zip, senha, XML sem entidade externa, conta de custo, tom, filtro de voz, frases e PCM    |
+| Quem pode e RLS                      | `tests/integration/z-lab.test.ts`                                                     | não admin e suporte: 403 em todas as funções; `asUser` direto: 0 linhas nas 7 tabelas, insert 42501, update 0 linhas                             |
+| Teto, uso, versões, publicação       | `tests/integration/z-lab.test.ts`                                                     | sem teto = bloqueado; uso idempotente; passou = 429; versão imutável; restaurar; publicar só com a trava e confirmação; trava desligada = padrão |
+| Recursos por plano e auditoria       | `tests/integration/z-lab.test.ts`                                                     | tudo desligado; vale só para o plano da lista; cada mudança em `audit_logs` (`z_lab.*`)                                                          |
+| Rotas documentadas                   | `tests/integration/openapi.test.ts`                                                   | as 20 rotas `/api/v1/admin/z-lab/*` no OpenAPI                                                                                                   |
+| Tela (e2e)                           | `npx playwright test tests/e2e/z-lab.spec.ts`                                         | 2/2: 404/403 em tudo para cliente e suporte; teto, streaming, ditado, anexos (Word, PNG, WAV), comparar, voz ao vivo, Configurar, axe, Custos    |
+| Suíte inteira                        | `npm test` · `npm run test:e2e`                                                       | 383/383 · 48 ok + 2 por tempo da máquina carregada (`admin.spec` e `esqueleto` WebKit), que passam sozinhos                                      |
+| Lint, Prettier, tipos, build, chaves | `npm run lint`, `format:check`, `typecheck`, `build`, `node scripts/scan-secrets.mjs` | ok · ok · ok · ok · nenhum segredo                                                                                                               |
+
+Não conferido aqui: voz, transcrição, Voice Design e o Claude com as chaves reais (a latência de verdade e a qualidade
+da voz); microfone de verdade e o eco do alto-falante no barge-in; vídeos grandes no navegador; a migração `0036` em
+produção (deploy só com autorização).
+
+## Relay: login único e Set ligados na produção (30/10/2026)
+
+- Cliente `relay-web` cadastrado pelo titular no console do HUB (Apps → Login único): confidencial, app da família,
+  produto `relay`, retorno só em `https://relay.absolutezro.com/api/zro/callback`, escopos da família com `zro.set`.
+  Canal `sso` do Relay aberto (Lançamento); computador, download e API seguem fechados.
+- `ZRO_CLIENT_ID` e `ZRO_CLIENT_SECRET` (sensível) só na produção do projeto Vercel `relay`; o segredo conferido contra o
+  sha256 do banco antes de gravar. Deploy de `e40b627` (main): `/api/zro/eu` responde `configurado: true` e
+  `/api/zro/entrar` leva a `absolutezro.com/oauth/authorize` com `client_id=relay-web`, que segue para o login (sem
+  `invalid_client`). Falta o titular entrar uma vez e ver o Set no topo.

@@ -720,6 +720,22 @@ test('download que vai para o mesmo arquivo: repetido sai, outro vira "nome (2)"
   assert.ok(!m.snapshot().batches.some(b => b.id === 'b4'), 'lote sem nada novo não entra')
 })
 
+test('envio que falhou mandado de novo: a tentativa nova entra e a antiga sai da conta (o total não dobra)', async t => {
+  const ctl = fakeTasks()
+  const { m } = await makeManager(t, { ctl, settings: { maxConcurrentUploads: 0 } })
+  const velho = up('velho', { status: 'failed', bytesDone: 400, size: 1000 })
+  await m.add({ batch: batch('b-velho', 'upload'), records: [velho] })
+  const novo = up('novo', { local: { ...velho.local }, name: velho.name, batchId: 'b-novo' })
+  const res = await m.add({ batch: batch('b-novo', 'upload'), records: [novo] })
+  assert.deepEqual(res.records.map(r => r.id), ['novo'])
+  assert.equal(statusOf(m, 'velho'), 'canceled')
+  assert.equal(m.get('velho').substituidaPor, 'novo')
+  const tot = m.stats().totals
+  assert.equal(tot.bytes, 1000, 'só a tentativa nova conta')
+  assert.equal(tot.parked, 0, 'a antiga não fica "parada" nem com problema')
+  assert.equal(tot.problems, 0)
+})
+
 // ─────────── persistência ───────────
 
 test('fila gravada: reabrir retoma "running" (autoResume) ou pausa; "waiting" mantém o retryAt; gravação na hora quando precisa', async t => {

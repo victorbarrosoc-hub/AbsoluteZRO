@@ -60,7 +60,7 @@ test('human voice demo plays real files, preserves time on A/B, seeks and contro
   ).toBeCloseTo(4.25, 1);
   await page.getByText('Sobre esta demonstração', { exact: true }).click();
   await expect(page.getByText(/Gravação real em português/)).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Isolar cantor', exact: true })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: 'Isolar voz', exact: true })).toHaveAttribute(
     'href',
     '/studio/isolar-voz',
   );
@@ -72,7 +72,7 @@ test('human voice demo plays real files, preserves time on A/B, seeks and contro
       (window as any).__demoAudio = el;
     });
   await page.locator('.voice-player-try').click();
-  await expect(page).toHaveURL(/\/studio\/z$/);
+  await expect(page).toHaveURL(/\/studio$/);
   expect(await page.evaluate(() => (window as any).__demoAudio.paused)).toBe(true);
 });
 test('immersive homepage fits desktop and mobile, respects reduced motion and remains accessible', async ({

@@ -19,11 +19,11 @@ const temFfmpeg = (() => {
   }
 })()
 
-test('CRF do x264 slow sem teto (como o HandBrake), GOP de 2 s, marcado 1-1-1', () => {
+test('CRF do x264 slow sem teto, GOP de 2 s, marcado 1-1-1', () => {
   const plano = planejar(origem, 'youtube-1080', { motor: 'computador' })
   const [args] = argsFfmpeg(plano, { input: 'a.mov', output: 'b.mp4', origem })
   const s = args.join(' ')
-  assert.match(s, /-c:v libx264 -preset slow -crf 17 -profile:v high/) // CRF livre, sem teto, como o HandBrake
+  assert.match(s, /-c:v libx264 -preset slow -crf 17 -profile:v high/) // CRF livre, sem teto
   assert.doesNotMatch(s, /-maxrate/)
   const zap = argsFfmpeg(planejar(origem, 'whatsapp', { motor: 'computador' }), { input: 'a.mov', output: 'b.mp4', origem })[0].join(' ')
   assert.match(zap, /-crf 22 -maxrate 4500k -bufsize 9000k/) // WhatsApp: o tamanho importa

@@ -4,6 +4,7 @@ import { listarClientes } from "@/lib/crm/clientes";
 import { listarProjetos } from "@/lib/crm/projetos";
 import { carregarTabela } from "@/lib/orcamento/precos";
 import { podeEscrever } from "@/lib/papeis";
+import { pode as podeArea } from "@/lib/acessos";
 import { CabecaForm, Formulario, type DefCampo } from "@/components/form";
 import { criarOrcamentoAcao } from "../acoes";
 
@@ -12,7 +13,7 @@ export const metadata = { title: "Novo orçamento" };
 /** Novo orçamento: título, cliente e, se quiser, um modelo da tabela de preços com as respostas (nicho, diárias…). */
 export default async function NovoOrcamento({ searchParams }: PageProps<"/app/orcamentos/novo">) {
   const sessao = await exigirAcessoNaPagina("/app/orcamentos/novo");
-  if (!podeEscrever(sessao.papel)) redirect("/app/orcamentos");
+  if (!podeEscrever(sessao.papel) || !podeArea(sessao, "orcamentos")) redirect("/app/orcamentos");
   const sp = await searchParams;
   const ctx = { sub: sessao.sub, orgId: sessao.orgId };
   const [clientes, projetos, tabela] = await Promise.all([listarClientes(ctx), listarProjetos(ctx), carregarTabela(ctx)]);

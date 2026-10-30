@@ -57,6 +57,11 @@
   background: var(--surface-3);
   color: var(--text);
 }
+/* a Z no topo do estúdio: discreta; acesa só quando a pessoa está nela */
+.icon-button.z-top.active {
+  background: var(--surface-3);
+  color: var(--text);
+}
 .text-link {
   display: inline-flex;
   align-items: center;
@@ -2047,4 +2052,116 @@
     opacity: 0;
     transform: scale(0.4);
   }
+}
+.transcript-card {
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  background: var(--surface-2);
+  padding: 16px;
+  margin-bottom: 24px;
+}
+.transcript-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 14px;
+}
+.transcript-meta span {
+  color: var(--text-2);
+}
+.transcript-cues {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  display: grid;
+  gap: 10px;
+}
+.transcript-cues li {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+.transcript-cues time {
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.transcript-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.stem-mixer {
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  background: var(--surface-2);
+  padding: 16px;
+  margin-bottom: 24px;
+}
+.stem-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.stem-presets button {
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 13px;
+  background: transparent;
+}
+.stem-presets button.active {
+  background: var(--up-soft);
+  border-color: var(--up);
+}
+.stem-rows {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.stem-rows li {
+  display: grid;
+  grid-template-columns: 72px 1fr 58px 32px 32px;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.stem-rows li.muted .stem-name,
+.stem-rows li.muted output {
+  color: var(--text-2);
+}
+.stem-rows input[type='range'] {
+  width: 100%;
+  min-width: 0;
+}
+.stem-rows output {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+}
+.stem-rows .icon-button {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--hairline);
+  background: transparent;
+}
+.stem-rows .icon-button[aria-pressed='true'] {
+  background: var(--up-soft);
+  border-color: var(--up);
+}
+.stem-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }

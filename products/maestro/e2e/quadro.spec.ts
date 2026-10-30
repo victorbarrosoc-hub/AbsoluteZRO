@@ -37,9 +37,9 @@ async function verColuna(page: Page, col: string, projeto: string) {
   if (projeto === "computador") return;
   const aba = page.locator(`.q-abas button[data-col="${col}"]`);
   await expect(aba).toBeVisible();
-  // o clique só vale depois da hidratação: tenta de novo até a aba ficar marcada
+  // o clique só vale depois da hidratação: tenta de novo até a aba ficar marcada (tocar na aba já marcada renomeia)
   await expect(async () => {
-    await aba.click();
+    if ((await aba.getAttribute("aria-pressed")) !== "true") await aba.click();
     await expect(aba).toHaveAttribute("aria-pressed", "true", { timeout: 1000 });
   }).toPass();
 }
@@ -183,6 +183,8 @@ test.describe("troca de seção", () => {
 
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/app/quadro");
+    // hidratado (a pílula das colunas foi medida): antes disso o clique cai no HTML do servidor e não abre nada
+    await expect(page.locator(".q-abas[data-pilula]")).toHaveCount(1);
     await page.getByRole("button", { name: "Novo card", exact: true }).first().click();
     await expect(page.getByRole("dialog", { name: "Novo card" })).toBeVisible();
     expect(await page.locator(".m-folha").evaluate((el) => getComputedStyle(el).animationName)).toBe("none");

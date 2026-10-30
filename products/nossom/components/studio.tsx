@@ -8,12 +8,23 @@ import UpgradeOffer, { upgradeReason, upgradeTarget, type UpgradeReason } from '
 import { usePathname, useSearchParams } from 'next/navigation';
 import { visitStudio } from '@/lib/studio-navigation';
 import StudioLink from './studio-link';
-import { vocalSeparation, restorationD, type CloudPreset } from '@/lib/restoration';
-import { toolPath, routeOperation } from '@/lib/studio-routes';
+import {
+  restorationD,
+  singingSeparation,
+  stemSeparation,
+  transcription,
+  voiceIsolator,
+  type CloudPreset,
+} from '@/lib/restoration';
+import { toolPath, routeOperation, presetOperation } from '@/lib/studio-routes';
+import { buildCues, toSrt, toText, toVtt } from '@/lib/transcript';
+import { mixLabel, renderMix, type StemSetting } from '@/lib/stems';
+import StemMixer from './stem-mixer';
 import { activateVersion, activeIndex, previousIndex, nextIndex } from '@/lib/history';
 import { EqualizerControls, BroadcastControls } from './preset-controls';
 import AssistantHome from './assistant-home';
 import ZroIaPanel from './zro-ia-panel';
+import { rotuloSet, useSetZro } from './set-zro';
 import AIMotion from './ai-motion';
 import UserAvatar from './user-avatar';
 import AdminDashboard from './admin-dashboard';
@@ -29,7 +40,7 @@ import InstallApp from './install-app';
 import FamilyNav from './family-nav';
 import NavBadge from './nav-badge';
 import { studioPending } from '@/lib/studio-pending';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowUpRight,
   Gem,
@@ -65,6 +76,7 @@ import {
   Menu,
   PenLine,
   Info,
+  UsersRound,
 } from 'lucide-react';
 import { Brand } from './brand';
 import { useDialog } from '@/lib/use-dialog';
@@ -84,7 +96,13 @@ import {
   decode,
   importAudio,
   processAudio,
+  encodeWav,
+  inspect,
+  measure,
   exportMp3,
+  cloudSource,
+  isVideoFile,
+  muxVideo,
   makeDemo,
   download,
   formatTime,
@@ -241,6 +259,8 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
   const [highpass, setHighpass] = useState(140);
   const [analysisNote, setAnalysisNote] = useState('');
   const [theme, setTheme] = useState<'system' | 'light' | 'dark'>('dark');
+  // o Set, a aba em comum do ecossistema: some sem a conta Absolute ZRO com o escopo dele
+  const { set: setZro, elemento: setElemento } = useSetZro(zroIa, theme);
   useEffect(() => {
     try {
       const saved = localStorage.getItem('nossom-theme');
@@ -260,7 +280,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
   const [view, setView] = useState<
       'z' | 'home' | 'projects' | 'editor' | 'tool' | 'ai' | 'account' | 'plans' | 'admin'
     >(
-      pathname === '/studio/z' || (pathname === '/studio' && zroIa)
+      pathname === '/studio/z' && zroIa
         ? 'z'
         : pathname === '/studio/admin'
           ? 'admin'
@@ -287,7 +307,22 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
     [advanced, setAdvanced] = useState(false),
     [search, setSearch] = useState('');
   const speechTool = operation === 'auto' || operation === 'denoise' || operation === 'clarity';
-  const cloudOperation = operation === 'auto' || operation === 'vocals';
+  const cloudOperation =
+    operation === 'auto' ||
+    operation === 'vocals' ||
+    operation === 'transcribe' ||
+    operation === 'remix';
+  const [voiceMode, setVoiceMode] = useState<'speech' | 'singing'>('speech');
+  const cloudPreset: CloudPreset =
+    operation === 'transcribe'
+      ? transcription.id
+      : operation === 'remix'
+        ? stemSeparation.id
+        : operation !== 'vocals'
+          ? restorationD.id
+          : voiceMode === 'speech'
+            ? voiceIsolator.id
+            : singingSeparation.id;
   const autoEnabled = operation === 'auto' || (speechTool && automatic);
   const [busy, setBusy] = useState(''),
     [progress, setProgress] = useState(0),
@@ -385,7 +420,8 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
       if (original.size !== data.bytes)
         throw new Error('O original foi recebido incompleto. Tente novamente.');
       const file = new File([original], 'Áudio recuperado.wav');
-      const imported = await importAudio(file, setBusy);
+      const { blob, info, metrics } = await importAudio(file, setBusy);
+      const imported = { blob, info, metrics };
       if (Math.abs(imported.info.duration - data.duration) > 0.1)
         throw new Error('O original recebido não corresponde ao pedido.');
       const now = Date.now();
@@ -408,7 +444,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
       setVersionIndex(0);
       setRegion(null);
       setMusic(null);
-      const recoveredOperation = pendingJob.preset === vocalSeparation.id ? 'vocals' : 'auto';
+      const recoveredOperation = presetOperation(pendingJob.preset);
       setOperation(recoveredOperation);
       setView('editor');
       visitStudio(toolPath(recoveredOperation, recovered.id));
@@ -475,14 +511,24 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
     };
   }, [sidebar]);
   const version = project?.versions[versionIndex];
+  // GPU results and remixes keep float32 at their own rate; local tools write PCM16 at 48 kHz.
   const cloudOutput = !!(
-    version?.processing?.cloudRestoration || version?.processing?.vocalSeparation
+    version?.processing?.cloudRestoration ||
+    version?.processing?.vocalSeparation ||
+    version?.processing?.stems
   );
+  const cloudRate = version?.processing?.stems
+    ? 44100
+    : (version?.processing?.vocalSeparation ?? version?.processing?.cloudRestoration)?.sampleRate;
   const selectedTool = operations.find((o) => o.id === operation)!;
+  const transcriptCues = useMemo(
+    () => (project?.transcript ? buildCues(project.transcript.words) : null),
+    [project?.transcript],
+  );
   useEffect(() => {
     let current = true;
     setSidebar(false);
-    if (pathname === '/studio/z' || (pathname === '/studio' && zroIa)) {
+    if (pathname === '/studio/z' && zroIa) {
       setView('z');
       return;
     }
@@ -637,7 +683,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
           'Você chegou a 20 projetos locais. Exporte e exclua projetos antigos para liberar espaço.',
         );
       setBusy('Lendo seu áudio…');
-      const result = await importAudio(file, setBusy);
+      const { video, ...result } = await importAudio(file, setBusy);
       const now = Date.now();
       const created: Project = {
         id: crypto.randomUUID(),
@@ -646,6 +692,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
         updatedAt: now,
         originalFile: file,
         originalName: file.name,
+        ...(video ? { hasVideo: true } : {}),
         versions: [{ id: crypto.randomUUID(), label: 'Original', createdAt: now, ...result }],
       };
       await saveProject(created, account.id);
@@ -751,10 +798,21 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
     }
     if (s.broadcast) setBroadcast(structuredClone(s.broadcast));
   }
+  /** After the result is saved locally: mark it saved, then free the private copies. */
+  async function finishCloudJob(id: string, projectId: string) {
+    localStorage.setItem(
+      'nossom-cloud:' + account.id,
+      JSON.stringify({ id, projectId, saved: true }),
+    );
+    await releaseCloudJob(id)
+      .then(() => localStorage.removeItem('nossom-cloud:' + account.id))
+      .catch(() => {});
+    setPendingJob(null);
+  }
   async function applyTreatment() {
     if (!project || !version) return;
     await run(async () => {
-      if (project.versions.length >= 9)
+      if (operation !== 'transcribe' && operation !== 'remix' && project.versions.length >= 9)
         throw new Error(
           'Limite de 8 tratamentos por projeto. Exporte o resultado para iniciar outro projeto.',
         );
@@ -780,8 +838,14 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
           );
         const controller = new AbortController();
         cloudAbort.current = controller;
-        const cloud = await restoreCloud(project.originalFile, project.versions[0].info.duration, {
-          preset: operation === 'vocals' ? vocalSeparation.id : restorationD.id,
+        const original = project.versions[0];
+        const sendSource = () => {
+          if (project.hasVideo || isVideoFile(project.originalFile))
+            setBusy('Separando o áudio do vídeo para enviar só o som…');
+          return cloudSource(project.originalFile, original.blob, original.info.peak);
+        };
+        const cloud = await restoreCloud(sendSource, original.info.duration, {
+          preset: cloudPreset,
           resumeId: pendingJob?.id,
           signal: controller.signal,
           onStatus: setBusy,
@@ -794,19 +858,46 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                 JSON.stringify({
                   id,
                   projectId: project.id,
-                  preset: operation === 'vocals' ? vocalSeparation.id : restorationD.id,
+                  preset: cloudPreset,
                 }),
               );
               setPendingJob({
                 id,
                 projectId: project.id,
                 status: 'queued',
-                preset: operation === 'vocals' ? vocalSeparation.id : restorationD.id,
+                preset: cloudPreset,
               });
             }
           },
         });
         cloudId = cloud.id;
+        cloudAbort.current = null;
+        if (cloud.kind === 'transcript') {
+          const transcribed = {
+            ...project,
+            updatedAt: Date.now(),
+            transcript: { ...cloud.transcript, createdAt: Date.now() },
+          };
+          await saveProject(transcribed, account.id);
+          setProject(transcribed);
+          await refresh();
+          await finishCloudJob(cloud.id, project.id);
+          notify('Legendas prontas. Baixe em SRT, VTT ou TXT.');
+          return;
+        }
+        if (cloud.kind === 'stems') {
+          const separated = {
+            ...project,
+            updatedAt: Date.now(),
+            stems: { files: cloud.files, gainDb: cloud.gainDb, createdAt: Date.now() },
+          };
+          await saveProject(separated, account.id);
+          setProject(separated);
+          await refresh();
+          await finishCloudJob(cloud.id, project.id);
+          notify('Faixas separadas. Mexa nos faders e ouça.');
+          return;
+        }
         result = {
           blob: cloud.blob,
           info: cloud.info,
@@ -863,7 +954,9 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
         operation,
         preset:
           operation === 'vocals'
-            ? 'Vocais separados da música'
+            ? result.processing?.vocalSeparation?.preset === voiceIsolator.id
+              ? 'Voz isolada'
+              : 'Vocais separados da música'
             : operation === 'auto'
               ? 'Voz restaurada com IA'
               : operation === 'master'
@@ -893,17 +986,12 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
       setVersionIndex(updated.versions.length - 1);
       await refresh();
       if (cloudId) {
-        localStorage.setItem(
-          'nossom-cloud:' + account.id,
-          JSON.stringify({ id: cloudId, projectId: project.id, saved: true }),
-        );
-        await releaseCloudJob(cloudId)
-          .then(() => localStorage.removeItem('nossom-cloud:' + account.id))
-          .catch(() => {});
-        setPendingJob(null);
+        await finishCloudJob(cloudId, project.id);
         notify(
           operation === 'vocals'
-            ? 'Voz isolada. Compare com a música original e baixe o resultado.'
+            ? result.processing?.vocalSeparation?.preset === voiceIsolator.id
+              ? 'Voz isolada. Compare com o original e baixe.'
+              : 'Vocal separado. Compare com a música e baixe.'
             : 'Voz restaurada. Ouça e escolha o acabamento abaixo.',
         );
       } else notify('Nova versão salva. Compare com o original.');
@@ -923,6 +1011,74 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
       const blob = format === 'wav' ? version.blob : await exportMp3(version.blob);
       download(blob, `${project.name}-v${versionIndex}.${format}`);
       notify('Seu download está pronto.');
+    });
+  }
+  async function renderRemix(settings: StemSetting[]) {
+    if (!project?.stems) return;
+    const stems = project.stems;
+    await run(async () => {
+      if (project.versions.length >= 9)
+        throw new Error(
+          'Limite de 8 tratamentos por projeto. Exporte o resultado para iniciar outro projeto.',
+        );
+      setBusy('Mixando as faixas…');
+      const buffer = await renderMix(stems.files, settings, stems.gainDb);
+      const blob = encodeWav(buffer, true),
+        info = inspect(buffer),
+        metrics = await measure(blob, setBusy);
+      const created: Version = {
+        id: crypto.randomUUID(),
+        parentId: project.versions[0].id,
+        label: `${selectedTool.label} · V${project.versions.length}`,
+        createdAt: Date.now(),
+        operation: 'remix',
+        preset: mixLabel(settings),
+        blob,
+        info,
+        metrics,
+        processing: {
+          engine: 'Mel-Band RoFormer + HTDemucs 6s · remix local',
+          strength: 100,
+          noiseFloor: info.noiseFloor ?? -60,
+          mode: 'local',
+          stems: settings,
+        },
+      };
+      const updated = {
+        ...project,
+        updatedAt: Date.now(),
+        versions: [...project.versions, created],
+        activeVersionId: created.id,
+        redoVersionIds: [],
+      };
+      await saveProject(updated, account.id);
+      setProject(updated);
+      setVersionIndex(updated.versions.length - 1);
+      await refresh();
+      notify(`${mixLabel(settings)}: nova versão salva. Baixe em WAV ou MP3.`);
+    });
+  }
+  function exportTranscript(format: 'srt' | 'vtt' | 'txt') {
+    if (!project?.transcript || !transcriptCues) return;
+    const content =
+      format === 'srt'
+        ? toSrt(transcriptCues)
+        : format === 'vtt'
+          ? toVtt(transcriptCues)
+          : toText(project.transcript.words);
+    const type =
+      format === 'vtt' ? 'text/vtt' : format === 'srt' ? 'application/x-subrip' : 'text/plain';
+    download(new Blob([content], { type: type + ';charset=utf-8' }), `${project.name}.${format}`);
+    notify('Seu download está pronto.');
+  }
+  async function exportVideo() {
+    if (!project || !version) return;
+    await run(async () => {
+      setBusy('Colocando o som novo no vídeo…');
+      const blob = await muxVideo(project.originalFile, project.originalName, version.blob);
+      const extension = project.originalName.match(/\.([a-z0-9]+)$/i)?.[1] ?? 'mp4';
+      download(blob, `${project.name}-v${versionIndex}.${extension.toLowerCase()}`);
+      notify('Vídeo pronto, com o som novo.');
     });
   }
   function report() {
@@ -1036,7 +1192,8 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
     operationLock.current = true;
     setBusy('Preparando gravação…');
     try {
-      const result = await importAudio(file, setBusy);
+      const { blob, info, metrics } = await importAudio(file, setBusy);
+      const result = { blob, info, metrics };
       const now = Date.now();
       const p: Project = {
         id: crypto.randomUUID(),
@@ -1099,6 +1256,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
       className={`studio-shell ${collapsed ? 'nav-collapsed' : ''} ${routeTool ? `tool-editor tool-${routeTool}` : ''} ${view === 'z' ? 'view-z' : ''}`}
       data-theme={theme}
     >
+      {setElemento}
       <a className="skip-link" href="#studio-main">
         Pular para o estúdio
       </a>
@@ -1183,11 +1341,6 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
           <Plus size={17} /> Novo projeto
         </button>
         <nav aria-label="Navegação do estúdio">
-          {zroIa && (
-            <button className={view === 'z' ? 'active' : ''} onClick={() => navigate('z')}>
-              <Circle size={18} strokeWidth={1.5} /> Z
-            </button>
-          )}
           <button
             className={view === 'home' || view === 'ai' ? 'active' : ''}
             onClick={() => navigate('home')}
@@ -1242,6 +1395,30 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
             >
               <Activity size={18} />
               Administração
+            </button>
+          )}
+          {/* o Set (a entrada em comum do ecossistema) abre a folha dele; não é tela nem a entrada */}
+          {setZro.visivel && (
+            <button
+              className={setZro.aberto ? 'active' : ''}
+              aria-haspopup="dialog"
+              aria-expanded={setZro.aberto}
+              aria-label={rotuloSet(setZro)}
+              title="Quem está online e as conversas"
+              data-set=""
+              onClick={() => {
+                setSidebar(false);
+                setZro.alternar();
+              }}
+            >
+              <UsersRound size={18} /> Set
+              {setZro.novidades ? <NavBadge count={setZro.novidades} /> : null}
+            </button>
+          )}
+          {/* a Z, discreta (titular, 29/10/2026; Plano de Integração §7–8): por último, nunca a primeira nem a entrada */}
+          {zroIa && (
+            <button className={view === 'z' ? 'active' : ''} onClick={() => navigate('z')}>
+              <Circle size={18} strokeWidth={1.5} /> Z
             </button>
           )}
         </nav>
@@ -1330,6 +1507,18 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
           </div>
           <div className="studio-header-actions">
             <DesktopUpdates blocked={!!busy || recording || renaming || !!deleteId} />
+            {/* a Z no topo (computador e celular): um anel discreto, nunca uma aba nem a tela de entrada */}
+            {zroIa && (
+              <button
+                className={`icon-button z-top ${view === 'z' ? 'active' : ''}`}
+                aria-label="Z, a IA da Absolute ZRO"
+                title="Z, a IA da Absolute ZRO"
+                aria-current={view === 'z' ? 'page' : undefined}
+                onClick={() => navigate('z')}
+              >
+                <Circle size={17} strokeWidth={1.6} />
+              </button>
+            )}
             <AccountMenu account={account} usage={usage} disabled={!!busy || recording} />
             <label className="theme-control">
               <span className="sr-only">Tema do estúdio</span>
@@ -1368,10 +1557,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
               {pendingJob.projectId ? (
                 <StudioLink
                   className="button secondary"
-                  href={toolPath(
-                    pendingJob.preset === vocalSeparation.id ? 'vocals' : 'auto',
-                    pendingJob.projectId,
-                  )}
+                  href={toolPath(presetOperation(pendingJob.preset), pendingJob.projectId)}
                 >
                   Abrir áudio do pedido <ArrowRight size={15} />
                 </StudioLink>
@@ -1536,9 +1722,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                       {recording ? `Finalizar · ${formatTime(recordSeconds)}` : 'Gravar uma ideia'}
                     </button>
                   </div>
-                  <span className="upload-formats">
-                    WAV, MP3, M4A, FLAC, OGG, MP4 e MOV · até 100 MB / 10 min
-                  </span>
+                  <span className="upload-formats">Áudio ou vídeo · até 10 min</span>
                 </section>
                 <aside className="studio-start-guide">
                   <span className="eyebrow">DO ARQUIVO AO ÁUDIO PRONTO</span>
@@ -1603,7 +1787,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
               </div>
             </>
           )}
-          {/* A Z, a IA da Absolute ZRO, tem a aba própria e ocupa a tela toda. */}
+          {/* A Z, a IA da Absolute ZRO, tem tela própria (/studio/z, nunca a entrada) e ocupa a tela toda. */}
           {view === 'z' && zroIa && <ZroIaPanel theme={theme} />}
           {(view === 'home' || view === 'ai') && (
             <AssistantHome
@@ -2007,7 +2191,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                       <strong>Pronto para seguir com seu som?</strong>
                       <span>
                         {cloudOutput
-                          ? 'WAV 32-bit float · 44,1 kHz · MP3 disponível'
+                          ? `WAV 32-bit float · ${cloudRate === 48000 ? '48' : '44,1'} kHz · MP3 disponível`
                           : 'WAV 16-bit ou MP3 320 kbps · 48 kHz'}
                       </span>
                     </div>
@@ -2026,12 +2210,26 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                       <Download size={14} /> MP3
                     </button>
                     <button
-                      className="button primary small"
+                      className={`button ${project.hasVideo ? 'secondary' : 'primary'} small`}
                       onClick={() => exportAudio('wav')}
                       disabled={!!busy}
                     >
                       <Download size={14} /> WAV
                     </button>
+                    {project.hasVideo && (
+                      <button
+                        className="button primary small"
+                        onClick={() => void exportVideo()}
+                        disabled={!!busy || versionIndex === 0}
+                        title={
+                          versionIndex === 0
+                            ? 'Trate o áudio para baixar o vídeo com o som novo.'
+                            : 'O vídeo original, com o som desta versão.'
+                        }
+                      >
+                        <Download size={14} /> Vídeo
+                      </button>
+                    )}
                   </div>
                 </div>
                 <aside className="treatment-panel">
@@ -2060,6 +2258,73 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                       </button>
                     </div>
                   )}
+                  {operation === 'transcribe' && transcriptCues && project.transcript && (
+                    <div className="transcript-card">
+                      <div className="transcript-meta">
+                        <strong>{transcriptCues.length} legendas</strong>
+                        <span>
+                          {project.transcript.words.length} palavras
+                          {project.transcript.language
+                            ? ` · ${project.transcript.language.toUpperCase()}`
+                            : ''}
+                        </span>
+                      </div>
+                      <ol className="transcript-cues" aria-label="Prévia das legendas">
+                        {transcriptCues.slice(0, 60).map((cue, i) => (
+                          <li key={i}>
+                            <time>{formatTime(cue.start)}</time>
+                            <span>{cue.text}</span>
+                          </li>
+                        ))}
+                      </ol>
+                      <div className="transcript-actions" role="group" aria-label="Baixar legendas">
+                        {(['srt', 'vtt', 'txt'] as const).map((format) => (
+                          <button
+                            key={format}
+                            className={`button ${format === 'srt' ? 'primary' : 'secondary'} small`}
+                            disabled={!!busy}
+                            onClick={() => exportTranscript(format)}
+                          >
+                            <Download size={14} /> {format.toUpperCase()}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {operation === 'remix' && project.stems && (
+                    <StemMixer
+                      files={project.stems.files}
+                      gainDb={project.stems.gainDb}
+                      busy={!!busy}
+                      onRender={(settings) => void renderRemix(settings)}
+                    />
+                  )}
+                  {operation === 'vocals' && !pendingJob && (
+                    <div
+                      className="preset-grid voice-modes"
+                      role="group"
+                      aria-label="Tipo de áudio"
+                    >
+                      <button
+                        className={voiceMode === 'speech' ? 'active' : ''}
+                        aria-pressed={voiceMode === 'speech'}
+                        disabled={!!busy}
+                        onClick={() => setVoiceMode('speech')}
+                      >
+                        <strong>Fala</strong>
+                        <span>Podcast, vídeo, entrevista.</span>
+                      </button>
+                      <button
+                        className={voiceMode === 'singing' ? 'active' : ''}
+                        aria-pressed={voiceMode === 'singing'}
+                        disabled={!!busy}
+                        onClick={() => setVoiceMode('singing')}
+                      >
+                        <strong>Música</strong>
+                        <span>Só o vocal da canção, em estéreo.</span>
+                      </button>
+                    </div>
+                  )}
                   {cloudOperation && (
                     <div className="cloud-restoration-note">
                       <strong>
@@ -2069,23 +2334,40 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                                 uploading: 'Envio incompleto',
                                 submitting: 'Confirmando envio',
                                 queued: 'Na fila',
-                                running: 'Restaurando',
+                                running:
+                                  operation === 'transcribe'
+                                    ? 'Escrevendo'
+                                    : operation === 'remix'
+                                      ? 'Separando'
+                                      : 'Restaurando',
                                 completed: 'Resultado pronto',
                               } as Record<string, string>
                             )[pendingJob.status] || 'Em andamento'
                           : cloudReady === null
                             ? 'Preparando…'
                             : cloudReady
-                              ? operation === 'vocals'
-                                ? 'Pronto para separar o cantor'
-                                : 'Pronto para melhorar sua voz'
+                              ? operation === 'remix'
+                                ? project.stems
+                                  ? 'Faixas prontas'
+                                  : 'Pronto para separar os instrumentos'
+                                : operation === 'transcribe'
+                                  ? 'Pronto para escrever o que foi dito'
+                                  : operation === 'vocals'
+                                    ? voiceMode === 'speech'
+                                      ? 'Pronto para isolar sua voz'
+                                      : 'Pronto para separar o cantor'
+                                    : 'Pronto para melhorar sua voz'
                               : 'A melhoria com IA está temporariamente indisponível'}
                       </strong>
                       {!pendingJob && (
                         <p>
-                          {operation === 'vocals'
+                          {operation === 'vocals' && voiceMode === 'singing'
                             ? 'Uma cópia vai para a IA. Pode sobrar um pouco dos instrumentos.'
-                            : 'Uma cópia vai para a IA. Seu original fica salvo.'}
+                            : operation === 'remix'
+                              ? 'Uma cópia vai para a IA. Pode sobrar um pouco de um instrumento no outro.'
+                              : operation === 'transcribe'
+                                ? 'Uma cópia do som vai para a IA. Revise nomes antes de publicar.'
+                                : 'Uma cópia vai para a IA. Seu original fica salvo.'}
                         </p>
                       )}
                       {!cloudReady && operation !== 'vocals' && (
@@ -2129,7 +2411,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                             <StudioLink
                               className="text-link"
                               href={toolPath(
-                                pendingJob.preset === vocalSeparation.id ? 'vocals' : 'auto',
+                                presetOperation(pendingJob.preset),
                                 pendingJob.projectId,
                               )}
                             >
@@ -2395,7 +2677,7 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                           onChange={setNeuralAttenuation}
                         />
                       )}
-                    {operation !== 'effects' && (
+                    {operation !== 'effects' && !cloudOperation && (
                       <>
                         <RangeControl
                           label={
@@ -2797,10 +3079,24 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
                           ? pendingJob?.projectId === project.id
                             ? operation === 'vocals'
                               ? 'Retomar separação'
-                              : 'Retomar restauração'
-                            : operation === 'vocals'
-                              ? 'Isolar voz da música'
-                              : 'Restaurar com IA'
+                              : operation === 'transcribe' || operation === 'remix'
+                                ? operation === 'remix'
+                                  ? 'Retomar separação'
+                                  : 'Retomar legendas'
+                                : 'Retomar restauração'
+                            : operation === 'remix'
+                              ? project.stems
+                                ? 'Separar de novo'
+                                : 'Separar instrumentos'
+                              : operation === 'transcribe'
+                                ? project.transcript
+                                  ? 'Gerar de novo'
+                                  : 'Gerar legendas'
+                                : operation === 'vocals'
+                                  ? voiceMode === 'speech'
+                                    ? 'Isolar voz'
+                                    : 'Separar vocal'
+                                  : 'Restaurar com IA'
                           : autoEnabled
                             ? 'Analisar e tratar'
                             : 'Aplicar tratamento'}{' '}
@@ -2849,12 +3145,6 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
         </div>
       )}
       <nav className="studio-tabs" aria-label="Navegação rápida" inert={mobile && sidebar}>
-        {zroIa && (
-          <button className={view === 'z' ? 'active' : ''} onClick={() => navigate('z')}>
-            <Circle size={19} strokeWidth={1.5} />
-            <span>Z</span>
-          </button>
-        )}
         <button
           className={view === 'home' || view === 'ai' ? 'active' : ''}
           onClick={() => navigate('home')}
@@ -2887,6 +3177,20 @@ export default function Studio({ account, zroIa = false }: { account: Account; z
           <MessageCircle size={19} />
           <span>Conta</span>
         </button>
+        {setZro.visivel && (
+          <button
+            className={setZro.aberto ? 'active' : ''}
+            aria-haspopup="dialog"
+            aria-expanded={setZro.aberto}
+            aria-label={rotuloSet(setZro)}
+            data-set=""
+            onClick={setZro.alternar}
+          >
+            <UsersRound size={19} />
+            <span>Set</span>
+            <NavBadge count={setZro.novidades} corner />
+          </button>
+        )}
       </nav>
       {assistant && (
         <Assistant

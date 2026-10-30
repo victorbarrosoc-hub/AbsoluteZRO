@@ -157,12 +157,71 @@ test('meus presets: cria a partir de um do Relay, aparece na aba Meus, converte 
   await p.close()
 })
 
+// Navegador que recusa o H.264 como o arquivo descreve (aqui: nível 5.2, comum em gravação de tela do Mac), mas
+// decodifica se pedido de outro jeito. `aceita` decide o que o navegador simulado aceita.
+const recusar = (aceita) => `(() => {
+  const aceita = ${aceita}
+  const original = VideoDecoder.isConfigSupported.bind(VideoDecoder)
+  VideoDecoder.isConfigSupported = async (c) => (aceita(c) ? original(c) : { supported: false, config: c })
+  const configurar = VideoDecoder.prototype.configure
+  VideoDecoder.prototype.configure = function (c) {
+    if (!aceita(c)) throw new DOMException('recusado', 'NotSupportedError')
+    return configurar.call(this, c)
+  }
+})()`
+
+test('gravação de tela que o navegador recusa no nível declarado: o Relay acha outro jeito e converte', { skip: pular }, async () => {
+  ff('-f', 'lavfi', '-i', 'testsrc2=s=1920x1200:r=60:d=1', '-c:v', 'libx264', '-profile:v', 'high', '-level', '5.2', '-pix_fmt', 'yuv420p', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709', join(pasta, 'Gravacao de Tela.mov'))
+  const p = await s.nova('/converter?preset=youtube-1080', { antes: recusar("(c) => !/^avc1\\.[0-9a-f]{4}34$/i.test(c.codec)") })
+  await p.waitForFunction(() => window.relayPronto)
+  await p.setInputFiles('#arquivos', join(pasta, 'Gravacao de Tela.mov'))
+  await p.waitForSelector('.item[data-estado="pronto"]')
+  await p.click('#converter')
+  await p.waitForSelector('.saida--feito', { timeout: 120_000 })
+  const href = await p.locator('.saida--feito a[download]').getAttribute('href')
+  await p.evaluate(async (href) => fetch('/teste-saida/tela.mp4', { method: 'POST', body: await (await fetch(href)).blob() }), href)
+  const v = sondar(join(pasta, 'tela.mp4')).streams.find((x) => x.codec_type === 'video')
+  assert.deepEqual([v.codec_name, v.width, v.height], ['h264', 1728, 1080])
+  assert.ok(Number(v.nb_frames) >= 59, v.nb_frames)
+  assert.ok(medirSsim(join(pasta, 'tela.mp4'), join(pasta, 'Gravacao de Tela.mov'), 'scale=1728:1080:flags=lanczos') > 0.9)
+  assert.deepEqual(s.erros, [])
+  await p.close()
+})
+
+test('navegador que não lê H.264 de jeito nenhum: diz qual vídeo e qual navegador', { skip: pular }, async () => {
+  const p = await s.nova('/converter', { antes: recusar("(c) => !/^avc/.test(c.codec)") })
+  await p.waitForFunction(() => window.relayPronto)
+  await p.setInputFiles('#arquivos', join(pasta, 'Gravacao de Tela.mov'))
+  await p.waitForSelector('.item[data-estado="erro"]')
+  assert.equal(await p.locator('.item .erro').textContent(), 'Este navegador não lê este H.264.')
+  assert.match(await p.locator('.item .erro-detalhe').textContent(), /^avc1\.640034 · 1920×1200 · \S+/)
+  await p.close()
+})
+
 test('celular (375 px): nenhuma página rola para o lado', { skip: pular }, async () => {
-  for (const c of ['/', '/converter', '/qualidade', '/marca/']) {
+  for (const c of ['/', '/converter', '/marca/']) {
     const p = await s.nova(c, { viewport: { width: 375, height: 800 } })
     await p.waitForTimeout(400)
     const [largura, tela] = await p.evaluate(() => [document.documentElement.scrollWidth, innerWidth])
     assert.equal(largura, tela, `${c} rola para o lado`)
     await p.close()
   }
+})
+
+test('laboratório de aparelhos: gera, codifica, mede contra a referência e entrega o resultado para copiar', { skip: pular }, async () => {
+  const p = await s.nova('/laboratorio?rapido')
+  await p.waitForFunction(() => window.labPronto)
+  await p.click('#comecar')
+  await p.waitForFunction(() => window.labResultado, null, { timeout: 300_000 })
+  const r = await p.evaluate(() => window.labResultado)
+  assert.equal(r.relay, 'laboratorio')
+  assert.equal(r.linhas.length, 1)
+  const [l] = r.linhas
+  assert.equal(l.erro, undefined, l.erro)
+  assert.ok(l.ssim > 0.95 && l.ssim <= 1, `SSIM ${l.ssim}`)
+  assert.ok(l.referencia > 0.99, `referência ${l.referencia}`)
+  assert.ok(Math.abs(l.real - 16000) < 4000, `bitrate ${l.real}`)
+  assert.match(await p.inputValue('#json'), /"relay": "laboratorio"/)
+  assert.deepEqual(s.erros, [])
+  await p.close()
 })

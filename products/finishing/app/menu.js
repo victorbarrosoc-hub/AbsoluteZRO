@@ -6,6 +6,7 @@
 
 import { paginaDe } from './navegar.js'
 import { ICONES, svg } from './visual.js'
+import { montarSet } from './set.js'
 
 const CHAVE = 'revela-menu'
 const LARGO = matchMedia('(min-width: 900px)')
@@ -32,6 +33,11 @@ const FAMILIA = [
   { href: 'https://synquei.vercel.app', nome: 'Synquei', img: 'marca/familia/synquei.svg' },
   { href: 'https://tpeasy.vercel.app', nome: 'TPEasy', img: 'marca/familia/tpeasy.svg' },
 ]
+// Maestro na família (lançamento em Beta grátis, docs/operations/lancamento-maestro.md): fica de fora até o titular
+// abrir; vira com `node scripts/lancamento-maestro.mjs --abrir` (e volta com --fechar).
+const MAESTRO_NA_FAMILIA = true
+// em ordem alfabética, como em todas as plataformas: entre o Carro do Freela e o Nossom
+if (MAESTRO_NA_FAMILIA) FAMILIA.splice(3, 0, { href: 'https://maestro.absolutezro.com', nome: 'Maestro', img: 'marca/familia/maestro.svg' })
 
 const el = (tag, props = {}, ...filhos) => {
   const n = Object.assign(document.createElement(tag), props)
@@ -58,10 +64,11 @@ const menu = el(
   el(
     'nav',
     { className: 'menu-corpo', ariaLabel: 'Revela e Absolute ZRO' },
-    item({ href: 'inicio.html', nome: 'Z', icone: 'z', pagina: 'inicio' }),
     item({ href: './', nome: 'Início', icone: 'casa', pagina: 'index' }),
     el('p', { className: 'menu-grupo', textContent: 'Ferramentas' }),
     ...FERRAMENTAS.map(item),
+    // a Z, discreta, depois das ferramentas (titular, 29/10/2026): nunca a primeira do menu nem a entrada
+    item({ href: 'inicio.html', nome: 'Z', icone: 'z', pagina: 'inicio' }),
     el('p', { className: 'menu-grupo', textContent: 'Absolute ZRO' }),
     ...FAMILIA.map(item),
   ),
@@ -132,6 +139,8 @@ alternarTopo.setAttribute('aria-controls', 'menu')
 alternarRail.setAttribute('aria-controls', 'menu')
 
 document.body.prepend(menu, fundo)
+// o Set, a aba em comum do ecossistema: o fim do dock (app/set.js)
+montarSet()
 document.querySelector('.topo')?.prepend(alternarTopo)
 document.documentElement.classList.add('com-menu')
 

@@ -1,0 +1,701 @@
+{
+  "$id": "https://absolutezro.local/schemas/maestro.roteiro.v1.json",
+  "title": "Roteiro de uma versão salva do Maestro (para a edição) v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "contract": {
+      "type": "string",
+      "const": "maestro.roteiro/1"
+    },
+    "gerado_em": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+    },
+    "origem": {
+      "type": "object",
+      "properties": {
+        "app": {
+          "type": "string",
+          "const": "maestro"
+        },
+        "roteiro_id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "titulo": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "versao": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "salva_em": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        }
+      },
+      "required": [
+        "app",
+        "roteiro_id",
+        "titulo",
+        "versao",
+        "sha256",
+        "salva_em"
+      ],
+      "additionalProperties": false
+    },
+    "formato": {
+      "type": "string",
+      "enum": [
+        "16:9",
+        "9:16",
+        "1:1",
+        "4:5"
+      ]
+    },
+    "wpm": {
+      "type": "integer",
+      "minimum": 60,
+      "maximum": 320
+    },
+    "alvo_seg": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "min": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 14400
+            },
+            "max": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 14400
+            }
+          },
+          "required": [
+            "min",
+            "max"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "tempos": {
+      "type": "string",
+      "const": "estimados"
+    },
+    "duracao_seg": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1080000
+    },
+    "pessoas": {
+      "maxItems": 50,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,40}$"
+          },
+          "nome": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "papel": {
+            "type": "string",
+            "enum": [
+              "locutor",
+              "apresentador",
+              "entrevistado",
+              "ator",
+              "outro"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "nome",
+          "papel"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "cenas": {
+      "maxItems": 300,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,40}$"
+          },
+          "numero": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 300
+          },
+          "titulo": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "cabecalho": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          },
+          "int_ext": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "INT",
+                  "EXT"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "local": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "periodo": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "dia",
+                  "noite",
+                  "amanhecer",
+                  "entardecer"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "inicio_seg": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1080000
+          },
+          "fim_seg": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1080000
+          },
+          "duracao_digitada_seg": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 3600
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "voz_seg": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1080000
+          },
+          "blocos": {
+            "maxItems": 3000,
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9_-]{1,40}$"
+                    },
+                    "inicio_seg": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1080000
+                    },
+                    "fim_seg": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1080000
+                    },
+                    "duracao_digitada_seg": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 3600
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "tipo": {
+                      "type": "string",
+                      "const": "fala"
+                    },
+                    "pessoa_id": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9_-]{1,40}$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "pessoa": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 80
+                    },
+                    "modo": {
+                      "type": "string",
+                      "enum": [
+                        "on",
+                        "off",
+                        "sonora",
+                        "passagem"
+                      ]
+                    },
+                    "texto": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 5000
+                    },
+                    "texto_falado": {
+                      "type": "string",
+                      "maxLength": 5000
+                    },
+                    "palavras": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5000
+                    },
+                    "obs": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 300
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "inicio_seg",
+                    "fim_seg",
+                    "duracao_digitada_seg",
+                    "tipo",
+                    "pessoa_id",
+                    "pessoa",
+                    "modo",
+                    "texto",
+                    "texto_falado",
+                    "palavras",
+                    "obs"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9_-]{1,40}$"
+                    },
+                    "inicio_seg": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1080000
+                    },
+                    "fim_seg": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1080000
+                    },
+                    "duracao_digitada_seg": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 3600
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "tipo": {
+                      "type": "string",
+                      "const": "acao"
+                    },
+                    "texto": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 5000
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "inicio_seg",
+                    "fim_seg",
+                    "duracao_digitada_seg",
+                    "tipo",
+                    "texto"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9_-]{1,40}$"
+                    },
+                    "inicio_seg": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1080000
+                    },
+                    "fim_seg": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1080000
+                    },
+                    "duracao_digitada_seg": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 3600
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "tipo": {
+                      "type": "string",
+                      "const": "plano"
+                    },
+                    "tamanho": {
+                      "type": "string",
+                      "enum": [
+                        "GPG",
+                        "PG",
+                        "PA",
+                        "PM",
+                        "PP",
+                        "PD",
+                        "detalhe",
+                        "drone",
+                        "outro"
+                      ]
+                    },
+                    "sigla": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 20
+                    },
+                    "angulo": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 60
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "movimento": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 60
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "lente": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 60
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "fps": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 1000
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "texto": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 300
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "inicio_seg",
+                    "fim_seg",
+                    "duracao_digitada_seg",
+                    "tipo",
+                    "tamanho",
+                    "sigla",
+                    "angulo",
+                    "movimento",
+                    "lente",
+                    "fps",
+                    "texto"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9_-]{1,40}$"
+                    },
+                    "inicio_seg": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1080000
+                    },
+                    "fim_seg": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1080000
+                    },
+                    "duracao_digitada_seg": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 3600
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "tipo": {
+                      "type": "string",
+                      "const": "lettering"
+                    },
+                    "estilo": {
+                      "type": "string",
+                      "enum": [
+                        "gc",
+                        "titulo",
+                        "legenda",
+                        "cta",
+                        "legal"
+                      ]
+                    },
+                    "texto": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "inicio_seg",
+                    "fim_seg",
+                    "duracao_digitada_seg",
+                    "tipo",
+                    "estilo",
+                    "texto"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9_-]{1,40}$"
+                    },
+                    "inicio_seg": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1080000
+                    },
+                    "fim_seg": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1080000
+                    },
+                    "duracao_digitada_seg": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 3600
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "tipo": {
+                      "type": "string",
+                      "const": "audio"
+                    },
+                    "audio": {
+                      "type": "string",
+                      "enum": [
+                        "trilha",
+                        "efeito",
+                        "bg",
+                        "silencio"
+                      ]
+                    },
+                    "texto": {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "entra": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "corte",
+                            "fade"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "sai": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "corte",
+                            "fade"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "inicio_seg",
+                    "fim_seg",
+                    "duracao_digitada_seg",
+                    "tipo",
+                    "audio",
+                    "texto",
+                    "entra",
+                    "sai"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "numero",
+          "titulo",
+          "cabecalho",
+          "int_ext",
+          "local",
+          "periodo",
+          "inicio_seg",
+          "fim_seg",
+          "duracao_digitada_seg",
+          "voz_seg",
+          "blocos"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "contract",
+    "gerado_em",
+    "origem",
+    "formato",
+    "wpm",
+    "alvo_seg",
+    "tempos",
+    "duracao_seg",
+    "pessoas",
+    "cenas"
+  ],
+  "additionalProperties": false
+}

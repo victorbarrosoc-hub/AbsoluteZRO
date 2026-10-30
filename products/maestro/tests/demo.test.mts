@@ -65,6 +65,9 @@ before(async () => {
       { orgId: orgA, zroSub: EVA, role: "equipe" },
       { orgId: orgB, zroSub: BIA, role: "admin" },
     ]);
+    // A demonstração preenche o Financeiro: a gestão que carrega precisa da área (drizzle/0027), ligada pela administração.
+    await tx.execute(sql`
+      insert into maestro.acessos (org_id, zro_sub, area, permitido, atualizado_por) values (${orgA}, ${ANA}, 'financeiro', true, ${ANA})`);
   });
 });
 after(() => amb.fechar());
@@ -242,6 +245,7 @@ describe("demonstração da produtora por dentro", () => {
     "reservas",
     "eventos",
     "documentos",
+    "roteiros",
   ];
   const porTabela = (orgId: string) =>
     getBanco().asSystem("teste conta módulos", async (tx) => {
@@ -261,6 +265,7 @@ describe("demonstração da produtora por dentro", () => {
     assert.ok(n.reservas >= 20, "reservas");
     assert.ok(n.eventos >= 12, "agenda");
     assert.ok(n.documentos >= 5, "documentos");
+    assert.equal(n.roteiros, 1, "o roteiro de exemplo da Criação");
     assert.ok(n.freela_pagamento >= 1, "PIX de exemplo (cifrado)");
     const [r] = (await getBanco().asSystem("conferir", (tx) =>
       tx.execute(sql`

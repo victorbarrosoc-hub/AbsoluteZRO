@@ -8,6 +8,7 @@ const horizontal = (o = {}) => ({ largura: 3840, altura: 2160, fps: 23.976, dura
 test('todo preset tem grupo, formato, fonte com data (ou é conta do Relay) e áudio', () => {
   const ids = new Set()
   for (const p of PRESETS) {
+    assert.match(p.id ?? '', /^[a-z0-9-]+$/, `preset sem id: ${p.nome}`)
     assert.ok(!ids.has(p.id), `id repetido: ${p.id}`)
     ids.add(p.id)
     assert.ok(GRUPOS.includes(p.grupo), p.id)

@@ -314,26 +314,6 @@ main .apoio {
   font-size: 15px;
   margin: 0;
 }
-.mais {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 32px;
-  color: var(--mudo);
-  text-decoration: none;
-  font-weight: 500;
-}
-.mais:hover {
-  color: var(--texto);
-}
-.mais svg {
-  width: 16px;
-  height: 16px;
-  transition: translate 0.3s var(--mola);
-}
-.mais:hover svg {
-  translate: 4px 0;
-}
 @supports (animation-timeline: view()) {
   .q,
   .destino {

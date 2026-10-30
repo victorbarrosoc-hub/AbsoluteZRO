@@ -40,6 +40,7 @@ import {
 import { carregarRevisaoDemo } from "./revisao";
 import { montarKits, montarMarca, montarPedidos } from "./comercial";
 import { montarNegocio } from "./negocio";
+import { montarCriacao } from "./criacao";
 
 const { clients, projects, lotes, loteCards, auditLog } = schema;
 
@@ -58,6 +59,7 @@ export type Contagem = {
   documentos: number;
   pedidos: number;
   kits: number;
+  roteiros: number;
 };
 export const CONTAGEM_ZERO: Contagem = {
   clientes: 0,
@@ -74,6 +76,7 @@ export const CONTAGEM_ZERO: Contagem = {
   documentos: 0,
   pedidos: 0,
   kits: 0,
+  roteiros: 0,
 };
 const soma = (c: Contagem) => Object.values(c).reduce((s, n) => s + n, 0);
 
@@ -114,7 +117,19 @@ export async function temDemonstracao(ctx: Contexto): Promise<boolean> {
 /** A demonstração está completa (todos os módulos)? Falso = "Completar demonstração" faz sentido. */
 export async function demonstracaoCompleta(ctx: Contexto): Promise<boolean> {
   return getBanco().asUser(ctx, async (tx) => {
-    for (const t of ["clients", "precos_itens", "orcamentos", "freelas", "equipamentos", "eventos", "documentos", "pedidos", "freela_equipamentos", "contatos"])
+    for (const t of [
+      "clients",
+      "precos_itens",
+      "orcamentos",
+      "freelas",
+      "equipamentos",
+      "eventos",
+      "documentos",
+      "pedidos",
+      "freela_equipamentos",
+      "contatos",
+      "roteiros",
+    ])
       if (!(await tem(tx, t))) return false;
     return true;
   });
@@ -642,6 +657,8 @@ export async function carregarDemonstracao(ctx: Contexto, hoje = hojeBr()): Prom
       if (!(await tem(tx, "orcamentos"))) await montarOrcamentos(tx, ctx, c, refs, hoje);
       if (!(await tem(tx, "recorrencias"))) await montarFinanceiro(tx, ctx, c, refs, hoje);
       if (!(await tem(tx, "documentos"))) await montarDocumentos(tx, ctx, c, refs, hoje);
+      // Criação: o roteiro de exemplo com a v1 (plano da Criação §8).
+      if (!(await tem(tx, "roteiros"))) c.roteiros += await montarCriacao(tx, ctx, refs.projeto(0));
       // Kit dos freelas, pedidos pelo link (um orçado e um aceito que virou projeto e parcelas) e a marca (fases 11 e 14).
       if (!(await tem(tx, "freela_equipamentos"))) c.kits += await montarKits(tx, ctx);
       c.pedidos += await montarPedidos(tx, ctx, hoje);
@@ -683,6 +700,7 @@ export async function removerDemonstracao(ctx: Contexto): Promise<Res<{ contagem
       await apagar(tx, "links_publicos");
       const marca = await apagar(tx, "org_marca");
       c.kits = await apagar(tx, "freela_equipamentos");
+      c.roteiros = await apagar(tx, "roteiros");
       c.documentos = await apagar(tx, "documentos");
       c.reservas = await apagar(tx, "reservas");
       c.lancamentos = await apagar(tx, "lancamentos");

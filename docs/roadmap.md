@@ -1,6 +1,6 @@
 # Roadmap — o que foi entregue e o que falta
 
-Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
+Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não iniciado · ⛔ bloqueado por decisão/acesso.
 
 ## Fase 0 — Auditoria
 
@@ -37,6 +37,10 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   e o conteúdo "pulava" por cima. Agora o topo (saudação, palco, atalhos) chega primeiro e os painéis vêm em streaming;
   todo esqueleto da área logada tem a forma da tela real e só aparece depois de 320 ms; quando aparece, o conteúdo
   dissolve por cima; com "reduzir movimento", troca seca. Falta: conferir no Safari do titular depois de publicar.
+- ✅ Página inicial no iPhone (29/10/2026, relato do titular): a cápsula do topo fica por cima de tudo, com faixa da cor
+  da página atrás da barra de status; grade de ícones como a Tela de Início, com "Em breve" curto e alinhado; Maestro e
+  Relay como "Em breve" pelo gate (o Relay aparece sozinho com a 0031). Falta: conferir num iPhone de verdade e regerar
+  a foto do app para computador quando o Relay entrar.
 - ✅ Página inicial de cinema (26/10/2026): paisagem com o símbolo esculpido sobre a rocha, faixa discreta das 7 ferramentas e cartão do Ciclo do O; sem selos de "em construção".
 - ✅ AEON (26/10/2026): a plataforma de edição ganha nome e ícone no catálogo, na home e no HUB (migration 0012); segue em desenvolvimento.
 - ✅ Página inicial com o símbolo como protagonista (26/10/2026): o anel se desenha a partir da centelha, a estrela
@@ -82,6 +86,18 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - 🟡 A Z, Fase 1 (28/10/2026, só leitura): ferramenta `ver_transferencias` lê o último relato de cada computador no SOBEDESCE (`POST /api/zro/transferencias`, `transferencias.ler`, mesmo `zro-pedido+jwt`; sem caminho local nem token) e responde citando fonte e hora ("segundo o SOBEDESCE, às 14:02"), fato separado de estimativa, aviso de relato antigo; sem dado diz que não sabe; preparos do Synquei: diz que ainda não tem acesso. `pedir_ao_computador` (piloto da Fase 3, sem ações novas) mostra a ação exata antes do "sim" (o HUB confere que a oferta nomeou o formato), grava em `zro.audit_logs` (`ia.computador.pedido`: resultado e erro, sem nome de arquivo) e diz como cancelar (remover o pedido em `/app/#referencias`). Falta: publicar HUB e sobedesce.com (autorização do titular), conferir com conta real, fonte dos preparos do Synquei (recibo `synquei.preparo/1`).
 - 🟡 Entrada dos apps (decisão do titular, 28/10/2026): a Z segue aba própria e a primeira, mas o app abre na tarefa quando há algo em andamento. SOBEDESCE computador: sem rota, cartão na fila → Cartões, transferência andando → Transferências, senão Z (`public/lib/entrada.js`); celular: abre na Z e vai para Início se o retrato mostrar um computador transferindo nos primeiros 8 s (`web/public/app/lib/entrada.js`, SW v67, app 2.8.52); Synquei: cartão na fila do Organizar → Organizar (`app/js/entrada.js`, SW synquei-v23); TPeasy: link com # ou tarefa em curso, senão Z (nenhuma tarefa sobrevive ao fechar; SW tpeasy-v20); Maestro: `/app` abre sempre no Hoje (29/10/2026: no Maestro a Z deixou de ser a primeira aba; ícone discreto). Deep link sempre respeitado; a tela nunca pula depois de aberta. Falta: publicar e distribuir (autorização do titular; nenhum instalador gerado).
 - 🟡 Entrada dos apps (decisão do titular, 28/10/2026): a Z segue aba própria e a primeira, mas o app abre na tarefa quando há algo em andamento. SOBEDESCE computador: sem rota, cartão na fila → Cartões, transferência andando → Transferências, senão Z (`public/lib/entrada.js`); celular: abre na Z e vai para Início se o retrato mostrar um computador transferindo nos primeiros 8 s (`web/public/app/lib/entrada.js`, SW v67, app 2.8.52); Synquei: cartão na fila do Organizar → Organizar (`app/js/entrada.js`, SW synquei-v23); TPeasy: link com # ou tarefa em curso, senão Z (nenhuma tarefa sobrevive ao fechar; SW tpeasy-v20); Maestro: `/app` abre no Quadro com card seu em Fazendo/Revisão, senão na Z. Deep link sempre respeitado; a tela nunca pula depois de aberta. Falta: publicar e distribuir (autorização do titular; nenhum instalador gerado).
+- ✅ A Z nunca é a primeira tela (regra do titular, 29/10/2026; Plano de Integração §7–8: "a tarefa principal do
+  aplicativo vem primeiro"): substitui as entradas de 27 e 28/10. Em todas as plataformas quem entra cai na tarefa e a
+  Z é uma entrada discreta, nunca aba principal, nunca aberta sozinha, e nada dela carrega antes do toque; o link direto
+  continua valendo. HUB: site em `/inicio` (a IA no fim do grupo Trabalho) e o app (`/app`, computador e iPhone) nos
+  apps, Z em `/app/ia` (pé da barra; anel no topo do celular; `/app/apps` redireciona). SOBEDESCE: computador no Início
+  ou na tarefa em curso (Z no pé da barra, `#/z`), celular no Início (anel no topo, `/app/#z`, reconectar volta à Z),
+  site em `/conta` (anel no cabeçalho, `/z`). Synquei: Início (Z no pé da barra, anel no Início do celular, `#/z`, sem
+  ⌘ de número). TPeasy: Roteiros (anel no topo, `#z`). Carro do Freela: Feed/Propostas (Z no fim da lateral, anel
+  apagado no topo do celular). NOSSOM: `/studio` no Início (anel no topo, último item da lateral, `/studio/z`). AEON:
+  Mídia/Seus universos (ícone na barra, `/app/#z`, ⌘1–⌘4 só o editor). Revela: `/lut` (anel no topo, `/inicio`).
+  Maestro já seguia (Hoje); Relay não tem Z. Falta: conferir num iPhone de verdade depois de publicar (autorização do
+  titular).
 - 🟡 A Z digita as sugestões no campo (pedido do titular, 29/10/2026): os botões de sugestão saíram de todos os lugares
   onde a Z aparece; o campo vazio escreve uma sugestão da plataforma letra a letra (35–55 ms), segura 1,6 s, apaga e
   escreve a próxima. Começa com o campo à vista, pausa com a aba escondida, para no foco ou quando a pessoa escreve e
@@ -174,6 +190,12 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   pelo HUB, mesma permissão e cota da importação de descarga, sem duplicar). ⬜ Envio automático do app para o HUB:
   pede o HUB aceitar o token do login único com escopo próprio (decisão de arquitetura, ADR nova).
 - ⬜ SOBEDESCE · "Converter com a Revela" em Mac, Windows, iPhone e Android reais (roteiro em validation.md).
+- ✅ Central de apps atualiza o que não instalou (29/10/2026): lê o build de dentro do app (`build-info.json` no
+  `app.asar`) em vez de depender só do próprio registro. Antes, um SOBEDESCE instalado pelo Terminal ficava no build
+  antigo: o app esperava a central e a central não sabia o build dele.
+- ✅ SOBEDESCE · contador de "Agora" corrigido (29/10/2026): a porcentagem somava a lista inteira (lotes antigos
+  concluídos e a tentativa que falhou de novo junto com a nova), e um envio de 100 GB aparecia como "51% de 205 GB"
+  depois de terminado. Agora conta só a rodada de agora, e o envio mandado de novo substitui a tentativa que falhou.
 - ✅ SOBEDESCE · build do app de desktop de volta (26/10/2026): o download do SDK da Blackmagic devolvia 400 com o
   cadastro antigo; com o segredo `BRAW_SDK_CADASTRO` refeito, Mac e Windows passam (SDK, empacotamento e teste de fumaça).
 - ✅ TPeasy ↔ HUB pelo backup JSON do próprio app.
@@ -201,6 +223,11 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   endpoint de entrada no HUB, a entrega assinada ao Maestro e tirar a rota de `DISABLED_ROUTES`, com decisão do titular.
 - ✅ Eventos versionados, outbox, fila com retry/backoff, dead-letter, revisão, reprocessamento; fluxo ponta a ponta
   testado com fixtures gerados pelo código real do SOBEDESCE.
+- 🟡 NOSSOM · Isolar voz no nível do Voice Isolator do ElevenLabs (29/10/2026): Mel-Band RoFormer + MossFormer2 SE 48K, modos Fala e Música, medido em CPU ([estudo](../products/nossom/docs/estudo-elevenlabs.md)); falta build da imagem, homologação na GPU e audição cega (⛔ autorização de deploy e GPU).
+- ✅ NOSSOM · vídeo de verdade (29/10/2026): vídeo até 2 GB lido no aparelho, só o som (FLAC) vai à GPU, botão Vídeo devolve o original com o som novo (até 1 GB).
+- ✅ NOSSOM · Legendas (29/10/2026): Whisper large-v3-turbo com tempo por palavra, SRT/VTT/TXT no navegador.
+- ✅ NOSSOM · Remixar (29/10/2026, pedido do titular): voz, bateria, baixo, guitarra e outros com faders, mudo, Só instrumental e Só acapella; as faixas somam o original.
+- ⬜ NOSSOM · próximas fases do estudo: arquivos de 1 h, tirar eco, edição por texto, voz com consentimento, dublagem.
 - 🟡 NOSSOM: link e contrato `edit.timeline.ready`; passagem automática ⬜ (precisa de mudança no NOSSOM, com autorização).
 - ⬜ HUB recebendo o recibo do Synquei (`synquei.preparo/1`, parser pronto em `parsePreparos`) no projeto; o Synquei
   segue lendo o manifesto local e o `OrganizationPlan` do HUB fica como prévia.
@@ -496,6 +523,36 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   `.github/workflows/maestro-desktop.yml` publica no Release de teste `maestro-versao-de-teste` (SHA-256,
   `versao.json`, três últimos builds). Falta: primeiro build no GitHub (sai no próximo push na main), instalar num Mac e
   num Windows de verdade, assinatura/notarização da Apple e certificado da Microsoft (decisão e conta do titular).
+- ✅ Maestro, **colunas do Quadro como no Trello** (pedido do titular, 29/10/2026; `drizzle/0024_colunas.sql`): cada
+  produtora renomeia no lugar (clique duplo no cabeçalho; no celular, tocar na aba já escolhida), recolore (paleta de
+  12 tons da Aurora), reordena (arrastar o cabeçalho; no celular, segurar a alça 280 ms na folha) e cria colunas
+  ("Captação", "Color"); a folha "Editar colunas" junta tudo, com arquivar perguntando para onde vão os cards,
+  arquivadas para restaurar e "Restaurar padrão". As 8 do método são de sistema (id = papel, cadeado com o porquê,
+  nunca arquivam): a aprovação do cliente, o Hoje, a agenda e a Z seguem pelo id, nunca pelo nome; as novas contam
+  como "em produção". Só administração e gestão mudam (RLS + funções `maestro.coluna_*`); organizações existentes
+  ficam com as 8 de hoje. Falta: aplicar a 0024 em produção (vai junto com o próximo deploy autorizado do Maestro) e
+  conferir num iPhone de verdade.
+- ✅ Maestro, **arrastar o card no computador sem "travadinha"** (vídeo do titular no Safari do Mac, 29/10/2026): o
+  arrastar nativo do HTML saiu dos cards; o mouse usa o mesmo gesto do celular (`src/components/quadro/arrastar.ts`):
+  fantasma do tamanho real com camada própria seguindo o mouse só com `translate`, os outros cards abrem espaço com
+  `transform` (zero render do React e zero layout por quadro), o lugar de soltar não pisca mais (o `dragleave` sem
+  `relatedTarget` do Safari apagava e redesenhava tudo), e ao soltar o card pousa de onde foi solto, inteiro (a coluna
+  não corta mais, e o card que troca de coluna não "chega" de novo invisível). Esc e soltar fora devolvem; Entregue
+  recebe no topo; "reduzir movimento" vai direto. A volta de 5 s e a página renovada depois de gravar não redesenham
+  mais o Quadro inteiro. Falta: conferir no Safari de um Mac e num iPhone de verdade depois do próximo deploy autorizado.
+
+- 🟡 **Lançamento do Maestro em Beta grátis** (29/10/2026, decisão do titular, [ADR 0027](decisions/0027-lancamento-maestro-beta-gratis.md);
+  pronto no ramo, vale no OK final): migration `0027_maestro_lancamento.sql` (gate `public_beta` em todos os canais; o
+  Maestro inteiro no grátis, no Completo e no Pro com os créditos do plano; Pro v2 em rascunho abre o Maestro e mantém
+  a marca própria; o grátis nunca leva o sinal; entitlements das contas atuais, idempotente). HUB: "Conheça de perto"
+  com o Maestro no MacBook e no iPhone (`produto-maestro-*.webp`), `/baixar` com navegador e Tela de Início, a Z
+  sabendo que é Beta grátis; o fluxo só mostra quem manda evento. PWA do Maestro (manifesto, ícones do ícone oficial,
+  `apple-touch-icon`, metas do Safari, "No celular, como app." em Ajustes e na página inicial). Página inicial lançada
+  (Beta grátis, "Criar conta grátis", "Entrar com Absolute ZRO", app de computador só com instalador publicado) e o
+  Maestro nas listas da família de SOBEDESCE, Synquei, TPeasy, NOSSOM, AEON, Revela e Carro do Freela, tudo atrás de
+  chaves que viram juntas (`node scripts/lancamento-maestro.mjs --abrir`; checklist e reversão em
+  [docs/operations/lancamento-maestro.md](operations/lancamento-maestro.md)). Falta: o OK do titular, publicar cada
+  app e o app de computador do Maestro entrar na central (`APPS_DESKTOP`) quando tiver Release.
 - ⬜ Maestro, pendente do titular: ciência dos serviços abertos da calculadora; criar a chave de API do Google só do
   Maestro (restrita à Drive API e a `maestro.absolutezro.com`) e pôr em `MAESTRO_GOOGLE_API_KEY` na Vercel; pôr
   `CRON_SECRET` no projeto `maestro` da Vercel (agendamento que desliga o compartilhamento de revisão vencido).
@@ -553,6 +610,15 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 - ⛔ Em produção: `CRON_SECRET` no projeto `absolutezro` (o do `maestro` já existe), migrações `0030` (HUB) e `0022`
   (Maestro) no próximo deploy autorizado. Primeira semana da ANP entra no primeiro sábado ou na primeira abertura da
   calculadora.
+- ✅ **Deslocamento sozinho** (Maestro, pedido do titular 29/10/2026, sem migração): Photon e OSRM **ligados**
+  (`MAESTRO_SERVICOS_ABERTOS=0` desliga); o texto digitado vira lugar sozinho (cidade com o mesmo nome, capital em
+  empate, UF dita; ao sair do campo, no Enter ou quando só uma cidade casa) e a dica diz o que foi entendido
+  ("São Paulo/SP"); a rota preenche "Km de uma ida" ("Pela estrada · ≈ 40h45 de carro"), km digitado vale com "Usar o
+  da rota". O preço do litro vem da **cidade de saída** (onde se abastece; senão a da produtora), município → estado →
+  Brasil, também com nome digitado sem acento/UF; sem semana guardada, pergunta de novo uma vez (coleta de reserva).
+  Veículos de partida (Compacto, Sedã, SUV compacto, SUV médio, Picape compacta, Picape diesel, Van, Micro-ônibus,
+  consumo de estrada por combustível; `src/lib/orcamento/veiculos.ts`) junto com os do inventário; consumo segue
+  digitável.
 
 ## Perfil profissional com @ (29/10/2026, [ADR 0029](decisions/0029-perfil-profissional-arroba.md))
 
@@ -573,32 +639,229 @@ Atualizado em 29/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   0029 cai em `nivel=sem_pessoas`, sem quebrar o login).
 - ⬜ Inventário do Carro no freela achado pelo @ (pronto atrás de `CARRO_SYNC_ATIVO`, desligado).
 
+## Maestro · Criação: núcleo do Roteiro (F1, 29/10/2026)
+
+- ✅ Modelo único do roteiro (cenas → blocos: fala on/OFF/sonora/passagem com pessoa, ação, plano, lettering
+  GC/título/legenda/CTA/legal, áudio trilha/efeito/BG/silêncio, observação, nota interna), tempo estimado (150 palavras
+  por minuto, regra de contagem do TPeasy) e alvo. Vistas puras: Literário, Técnico, Teleprompter (marcação e backup do
+  TPeasy, id estável por pessoa), Edição, Markdown e dados da impressão. 6 modelos só com dica cinza. Documento antigo
+  (roteiro/decupagem) abre no editor novo sem mudar o antigo. Junção por id no conflito de `rev`.
+- ✅ Banco: `drizzle/0030_roteiros.sql` (`roteiros`, `roteiro_versoes` só de inclusão com sha256 conferido), RLS por
+  organização e por cliente, papéis provisórios até a área `criacao` do acesso por área. O migrador do Maestro passa a
+  aplicar migração que entra fora de ordem (0025–0029 de outras frentes depois da 0030).
+- ✅ F3 (enviar: TPeasy, edição, roteiros na ficha do card), 30/10/2026: seção própria abaixo.
+- ⬜ F5 (Fluxo), F7 (aprovação pelo `/a`).
+- ⛔ Em produção: migração `0030` do Maestro no próximo deploy autorizado.
+
+## Maestro · Criação: editor do Roteiro (F2, 29/10/2026)
+
+- ✅ "Criação" no grupo Produção (computador) e em Mais (iPhone; a barra de baixo não muda). `/app/criacao`: roteiros
+  em cartões (vínculo, duração contra o alvo, estado, quando mudou), "Novo roteiro" com os 6 modelos, vínculo a
+  projeto/card e "Literário ou Técnico primeiro?"; seletor Roteiros · Fluxos (desde a integração, Fluxos é a lista de verdade).
+- ✅ Editor `/app/criacao/roteiros/<id>`: Literário · Técnico (células editáveis, colunas escondíveis) · Teleprompter
+  (prévia no preto, por pessoa) · Edição (deixas em ordem de tempo). Teclado: Enter, Tab/⇧Tab, "/", ⌘1–6, "@",
+  ⌘⇧Enter, ⌥↑/⌥↓, ⌫. Grava sozinho (600 ms, `rev`, junção por id no 409, aviso "mudou ao mesmo tempo" com "Ficar com o
+  meu"), poll de 5 s, medidor contra o alvo, versões (salvar com nota, comparar por bloco, restaurar), folha A4 pelo
+  `dadosImpressao`. iPhone: uma cena por vez, "+" com os tipos em ícones grandes, segurar 280 ms para arrastar.
+- ✅ Projeto: seção "Roteiros" e "Novo"; roteiro e decupagem antigos com "Abrir no editor novo" (o antigo fica; os
+  dois tipos deixam de nascer pelos chips de Documentos). Demonstração com o roteiro institucional e a v1.
+
+## Maestro · Criação: saídas do Roteiro (F3, 30/10/2026)
+
+- ✅ "Enviar ▾" é a ação principal do editor para administração e gestão ("Salvar versão" ao lado e no menu; no iPhone,
+  o ícone no topo abre a folha). Tudo sai de uma **versão salva**: sem versão ou com o rascunho mudado, a folha oferece
+  salvar a próxima ou usar a última. Cada envio vai para a auditoria (`roteiro.enviado`: versão, sha256, destino,
+  formato, pessoa) e aparece em "Últimos envios".
+- ✅ TPeasy: só as falas, por pessoa; Compartilhar (folha do sistema, com o `.txt` quando dá), Copiar, `.txt` (o nome vira
+  o título no TPeasy) e o backup do TPeasy (id estável, hora da versão: a versão nova atualiza o mesmo roteiro lá). "Compartilha
+  o texto pronto", nunca "sincroniza".
+- ✅ PDF para a edição (folha A4 na vista Edição: cenas com tempo, lettering, áudio e falas) e PDF Literário, Técnico ou
+  Teleprompter, sempre de `?versao=n`.
+- ✅ Contrato `maestro.roteiro/1` em `packages/media-contracts` ([maestro-roteiro.md](integration-contracts/maestro-roteiro.md),
+  schema e exemplo gerado pelo Maestro). A opção do arquivo (AEON) **só aparece com o AEON aberto para a pessoa** (gate
+  do HUB, `zro_release["ai-edit"]`); hoje fechado, ninguém vê. O AEON ainda não importa (F8b).
+- ✅ Ficha do card: bloco "Criação" com os roteiros ligados (título, versão, duração, estado) e "Novo roteiro" já ligado.
+- ✅ Permissões da Criação pela capacidade `criacao` (ver/editar/enviar) do acesso por área (`podeCriacao`).
+- ⬜ Cliente aprovar (F7, fora do menu até lá); TPeasy lendo direto do Maestro (F8a); AEON abrindo o arquivo (F8b). Sem
+  migração nova.
+
+## Maestro · Criação: núcleo do Fluxo (F4, 29/10/2026)
+
+- ✅ Banco: `drizzle/0031_fluxos.sql` (`fluxos`, `fluxo_nos` com nota/imagem/link/roteiro/card/seção, `fluxo_ligacoes`,
+  `fluxo_imagens`), RLS por organização e por cliente (o fluxo segue o projeto/card; o solto some para quem é restrito),
+  `rev` por nó e por ligação, lápide em vez de apagar, limites de 2.000 nós e 4.000 ligações por fluxo.
+- ✅ Servidor (`src/lib/criacao/fluxo`): operações em lote com conflito por item, "o que mudou desde" para o poll de
+  5 s, referências vivas a roteiro e card ("sem acesso" sem título), imagens em WebP ≤ 400 KB + miniatura, sem
+  metadados, com cota por produtora (200 MB) e por fluxo (300) conferida no banco, rota autorizada
+  `/api/criacao/img/<id>/<sha>`. Link colado reconhecido pelo endereço (YouTube, Vimeo, Drive), sem buscar nada.
+  Markdown e JSON `maestro.fluxo/1` para "Copiar para IA" (sem endereço de imagem sem o link da F6).
+- ✅ F5 (canvas, abaixo). ⬜ F6 (exportar, link privado `/f`).
+- ⛔ Em produção: migração `0031` do Maestro no próximo deploy autorizado. A cota de 200 MB depende do plano do
+  Supabase `AbsoluteZRO` (conferir com o titular).
+
+## Maestro · Criação: o canvas do Fluxo (F5, 29/10/2026)
+
+- ✅ `/app/criacao/fluxos` (cartões, "Novo fluxo", lixeira) e `/app/criacao/fluxos/[id]`: canvas infinito feito à mão
+  (DOM + SVG, sem tldraw), grade de pontos, andar e aproximar (trackpad, ⌘/Ctrl + roda, pinça), laço e ⇧, mover,
+  redimensionar, seções coloridas que levam o que está dentro, ligações puxadas da bolinha com rótulo opcional, apagar
+  com Desfazer/Refazer, cores, duplicar, setas e atalhos; barra de vidro (Selecionar · Nota · Imagem · Link · Seção ·
+  Ligar · Roteiro · Card) e o zoom no pé.
+- ✅ Colar é o gesto principal: imagem sobe com progresso e mensagem de cota, link vira nó (YouTube/Vimeo/Drive pelo
+  endereço, sem buscar nada), texto vira notas, link de roteiro/card do Maestro vira referência viva; soltar arquivo
+  também. Gravação otimista em lote (`aplicarOps`), conflito por item, poll de 5 s que não mexe na vista.
+- ✅ iPhone: segurar 280 ms ergue o nó, pinça, "+" com a folha Adicionar (Foto, Imagem, Link, Nota, Seção, Roteiro ·
+  Card) e a Lista por seção; a barra Hoje · Quadro · Aprovar · Mais fica. Quem só lê anda e lê. Claro e escuro,
+  reduzir movimento.
+- ✅ Entrada "Criação" na navegação e o seletor Roteiros · Fluxos (integração, abaixo); Exportar (F6).
+
+## Maestro · Criação: exportar e compartilhar o Fluxo (F6, 30/10/2026)
+
+- ✅ Menu **Exportar** no canvas (popover no computador, folha no iPhone): Copiar para IA (Markdown; imagens pela
+  legenda, ou pelo link quando há um sem PIN e a pessoa marca "Imagens pelo link"), Criar link / Links, Mandar para um
+  card, Baixar pacote (.zip com `fluxo.md`, `fluxo.json` e `imagens/`, montado no servidor e enviado aos pedaços), JSON
+  (`maestro.fluxo/1`) e PDF (a Lista com CSS de impressão). "Privado" / "Link ativo" no topo.
+- ✅ Link privado (decisão do titular): migração `0032` do Maestro (`fluxo_links`: só o sha256 e a cópia cifrada do
+  token, 1 a 30 dias com 7 por padrão, PIN scrypt opcional, revogar para sempre, até 10 vivos, visitas, audit de criar e
+  revogar), só administração e gestão. `/f/<token>` só de leitura (a Lista), `/f/<token>.md` e `.json`, imagens pelo
+  token; noindex, `X-Robots-Tag`, `no-referrer`, CSP própria, fora do robots.txt, limites por link e IP. Referência a
+  roteiro/card: só o título, e só do que quem criou alcançava. App de computador abre `/f` no navegador.
+- ✅ "Mandar para um card" liga o fluxo ao card; o bloco "Criação" da ficha do card mostra o fluxo.
+- ⛔ Em produção: migração `0032` do Maestro no deploy (com autorização).
+- ⬜ PNG do canvas; criar card novo em Pauta a partir do fluxo.
+
+## Maestro · Criação: Roteiro e Fluxo num produto só (30/10/2026)
+
+- ✅ Uma entrada "Criação" (Produção no computador, Mais no iPhone) com o seletor **Roteiros · Fluxos**: duas rotas
+  irmãs com o mesmo título (`/app/criacao` e `/app/criacao/fluxos`); o "em breve" saiu e o `?aba=fluxos` antigo leva à
+  lista de fluxos. Sem entrada repetida.
+- ✅ Ficha do card: um bloco **Criação** só, com os roteiros (versão, duração, estado) e os fluxos (itens) ligados, num
+  pedido só, e "Novo roteiro" já ligado. Quem só lê vê a lista; sem nada ligado, o bloco some para quem só lê.
+- ✅ Permissões: Roteiro e Fluxo pela mesma capacidade `criacao` (`podeCriacao`, ver/editar/enviar); as políticas da
+  0030, 0031 e 0032 usam os mesmos papéis (o `roteiro.test.mts` e o `fluxo.test.mts` conferem).
+- ✅ Migrações do Maestro na ordem do journal: 0027 (acessos), 0030 (roteiros), 0031 (fluxos), 0032 (links do fluxo),
+  `when` únicos; o migrador aplica as fora de ordem (`migrador.test.mts`).
+- ⛔ Em produção: 0027, 0030, 0031 e 0032 do Maestro no próximo deploy autorizado.
+
 ## Relay: conversão de mídia como setor próprio (29/10/2026, [ADR 0030](decisions/0030-relay-conversao.md))
 
 A Revela fica só com a cor (looks, espaço de cor, LUT e PowerGrade). Codec, contêiner e formatos de vídeo e áudio vão
 para uma plataforma nova, vendida sozinha e chamada pelas outras.
 
 - ✅ Mapa do que já converte no ecossistema (Revela, SOBEDESCE, AEON, NOSSOM) e a divisão entre os setores, na ADR.
-- ✅ Nome: **Relay** (`relay`, relay.absolutezro.com), grátis e aberto. Contrato de integração por plataforma em
+- ✅ Nome: **Relay** (`relay`, relay.absolutezro.com), aberto. Contrato de integração por plataforma em
   [integration-contracts/relay.md](integration-contracts/relay.md).
 - ✅ Relay de pé em `products/relay/` (29/10/2026): identidade (o relé: trilho, sinal menta → limão e o anel do O;
-  guia em `marca/`), página inicial com o relé ligando e as entradas na rolagem, conversor com 16 destinos com fonte e
+  guia em `marca/`), página inicial com o relé ligando e as entradas na rolagem, conversor com 16 destinos (23 desde 29/10: TV, LinkedIn, X, Slides, Vídeo de fundo) com fonte e
   data, vários destinos e arquivos de uma vez, ficha técnica de cada saída, presets da pessoa ("Meus", editor com a
   ficha ao vivo, levar e trazer em `.relay.json`) e tamanho máximo que escolhe a resolução. 38 testes (unidade, ffmpeg
   e Chromium de verdade). ⛔ Projeto Vercel `relay` e domínio pedem autorização do titular.
-- ✅ Qualidade medida contra o HandBrake (`npm run qualidade`, [QUALIDADE](../products/relay/docs/QUALIDADE.md)): no
-  computador, o x264 em qualidade constante iguala ou passa o HandBrake no mesmo tamanho; no navegador, Lanczos e YUV
+- ✅ Qualidade medida contra uma referência x264 no mesmo tamanho (`npm run qualidade`,
+  [QUALIDADE](../products/relay/docs/QUALIDADE.md), interno): no computador, empata; no navegador, Lanczos e YUV
   BT.709 na placa, cor do ProRes corrigida e 10 bits arredondados. O Chromium do Linux (OpenH264) fica abaixo do x264.
   Falta: medir em Mac (VideoToolbox), Windows e iPhone reais.
+- ✅ Liberado aos usuários junto com o Maestro (29/10/2026, decisão do titular, sem e-mail): `RELEASE=released` no
+  projeto Vercel `relay` e a migration `0032` (produto ativo, gate web). Site sem "grátis" no texto (posicionamento da
+  marca, como a página inicial do HUB).
+- ✅ Comparativo com outros conversores fora do público (pedido do titular): sem a página de qualidade, sem citar marca
+  em texto ou código; o laboratório interno mede contra uma referência x264.
+- ✅ Laboratório de aparelhos (`/laboratorio`, só nas prévias da Vercel e no `npm run dev`): cenas geradas no aparelho,
+  codificadas pelo chip dele e medidas contra a referência x264 no mesmo bitrate. ⬜ Rodar no Mac, iPhone e Windows do
+  titular e ajustar os bitrates por aparelho.
+- ✅ Máxima qualidade: no Mac e no Windows, o Relay abre o app SOBEDESCE pelo link `sobedesce://relay` com os destinos
+  (inclusive os da pessoa); o app converte arquivos do computador com o x264 e salva ao lado do original.
 - ✅ SOBEDESCE: "Converter com o Relay" no computador e no celular, com o núcleo do Relay copiado e conferido por teste
   dos dois lados; a Revela sai do SOBEDESCE.
-- ✅ HUB: produto `relay` no catálogo (migration `0031`, grátis em todo plano, fechado pelo gate), `ProductId`, catálogo
+- ✅ HUB: produto `relay` no catálogo (migration `0031`, incluído em todo plano, fechado pelo gate), `ProductId`, catálogo
   de integrações e a Z.
 - ⬜ Revela tira a aba Converter e aponta para o Relay (na conversa da Revela); AEON e NOSSOM exportam pelos presets do
   Relay; Synquei e Maestro pedem versões pela fila ([contrato](integration-contracts/relay.md)).
+- ✅ Presets de TV e formatos específicos (pedido do titular, 29/10/2026): Smart TV (H.264 Full HD a 30 fps, pendrive) e
+  Smart TV 4K (HEVC) num grupo TV; LinkedIn e X em Redes; Slides e Vídeo de fundo (sem som) em Trabalho. Entrega para
+  emissora (MXF/XDCAM, ProRes, loudness) fica de fora até existir no computador.
+- ✅ Leitura com plano B: gravação de tela do Mac recusada pelo navegador ("Este navegador não lê H.264") é tentada de
+  outras formas, só vale a que devolve quadro; sem jeito, o erro mostra codec, tamanho e navegador.
+- ⬜ Confirmar no aparelho do titular qual navegador recusou a gravação de tela (o detalhe do erro agora diz).
+- ✅ Editor de preset completo (pedido do titular, 30/10/2026): cadência exata (23,976 e afins, em fração no ffmpeg),
+  recorte, giro e espelho, tela fixa com faixas/preencher/esticar, bitrate constante, qualidade constante (RF), trecho,
+  volume em dB, opções do computador (velocidade e ajuste do x264, perfil, desentrelaçar, ruído, nitidez, LUFS) e
+  fichas antigas abrindo iguais.
+- ✅ Cor da Revela na exportação, no código e desligada até a Revela abrir: receita (log da câmera → Rec.709 + look
+  `.cube`) no preset, em lote; CST como conta na placa (não LUT 3D: medido, a LUT erra até ~30/255 em cor saturada).
+- ⬜ Revela: looks pela conta (`/api/zro/looks`) e ligar `REVELA=released` no projeto `relay` quando abrir.
+- ⬜ Cor da Revela no computador: a mesma conta no ffmpeg e o SOBEDESCE assando a receita (hoje preset com cor fica
+  no navegador).
 - ⬜ "Baixar como…" das Referências e o pedido da Z no SOBEDESCE pelos presets do Relay.
 - ⬜ Computador: ProRes, DNxHR e HDR 10 bits de saída; loudness normalizado; legenda queimada; corte de trecho.
 - ⬜ Evento `media.conversion.completed` no HUB, quando a primeira integração passar por ele.
+
+## Maestro: quem vê o quê (29/10/2026, [ADR 0031](decisions/0031-maestro-acesso-por-area.md))
+
+- ✅ Seis áreas sensíveis (Financeiro, Orçamentos e preços, Contratos, Diárias e cachês, Dados da equipe, Valores do
+  inventário) com padrão por papel e ajuste por pessoa só da Administração em Ajustes → Pessoas → "O que vê"
+  (interruptores, auditado). Regra no banco (`drizzle/0027`: RLS por área, máscara das colunas de dinheiro, gatilhos
+  que guardam o valor de antes), na navegação (sem link morto), no Hoje, nas fichas, nas ações e na Z. Mapa em
+  `products/maestro/docs/permissoes.md`.
+- ⛔ Em produção: migração `0027` do Maestro no próximo deploy autorizado. Avisar quem é Gestão e usa o Financeiro: a
+  Administração liga a área (a Gestão não vê o Financeiro por padrão).
+- ⬜ Perguntas ao titular: Gestão com Financeiro por padrão? Contato dos freelas separado de CPF/PIX? Restringir
+  clientes só com a Administração? Aprovar na tela pedir também o Financeiro?
+
+## Set: presença e conversas (29/10/2026, [ADR 0032](decisions/0032-set-presenca-e-conversas.md))
+
+- ✅ Fase 1, presença (migração `0035_set.sql`): quem da equipe (mesma organização ou projeto) e dos contatos aceitos
+  está online e em qual app ("na Absolute ZRO", "no Maestro"; o app vem do token). Invisível com um toque, "Quem vê
+  você online" e "Mostrar visto há". Ninguém de fora vê ninguém; e-mail e telefone nunca saem.
+- ✅ Fase 2, conversas: direta com quem trabalha junto ou é contato (pedido pelo @ de perfil visível; recusa sem aviso e
+  30 dias de espera), e a do projeto canônico para quem vê o projeto, de qualquer app. Não lidas, silenciar, editar
+  (24 h) e apagar com a versão anterior só para a moderação (90 dias), bloquear nos dois sentidos, denunciar.
+  Limites: 30 mensagens/min, 20 pedidos e 10 denúncias por dia. Exclusão da conta leva os dados do Set.
+- ✅ Tempo real sem serviço novo: poll curto com ETag (304 sem corpo) — batida 45 s, estado 12 s com a folha aberta,
+  conversa 4 s.
+- ✅ Central: "Set" no menu (não é aba principal), pílula discreta na barra de cima (rostos de quem está online e o
+  balão), página `/set` (lista e conversa lado a lado; no iPhone a conversa fica com a tela) e "Conversa" na página do
+  projeto. Console › Denúncias (admin ou suporte) para resolver.
+- ✅ Apps: escopo de família `zro.set` e o widget `<zro-set>` (`/set/v1/zro-set.js`, [contrato](integration-contracts/set.md)).
+  Maestro: pílula na cápsula e no topo do celular, repasse `/api/zro/set/*` com o token no servidor (ETag inclusive),
+  login pede `zro.set` (HUB antigo: `nivel=sem_set`).
+- ⛔ Em produção: migração `0035` no deploy e novo login no Maestro para o escopo `zro.set`.
+- ✅ Todas as plataformas (30/10/2026, "a aba em comum com todas as plataformas do ecossistema"): SOBEDESCE (site e
+  app do celular), Synquei (site e computador), TPeasy, Relay, Carro do Freela, NOSSOM, AEON e Revela ganharam a
+  entrada "Set" na própria navegação (nunca a tela de entrada) que abre a folha do `<zro-set modo="folha">`, o repasse
+  `/api/zro/set/*` com o token no servidor e o login com `zro.set` (Absolute ZRO antiga: refaz sem ele). A folha veste
+  a identidade de cada app (`--zro-set-*`). Fechados (Carro, NOSSOM, AEON, Revela) seguem o portão: a conta fora da lista
+  não vê a entrada e o repasse responde 403. O Relay ganhou um login só para o Set, desligado enquanto o site estiver
+  fechado. Tabela em [set.md](integration-contracts/set.md).
+- ✅ Integrado com "a Z nunca é a primeira tela" (30/10/2026): a entrada de cada app continua a tarefa, a Z segue
+  discreta (só carrega no toque) e o Set tem a entrada dele sem ser a entrada. Barra de baixo do iPhone com no máximo
+  cinco itens: no SOBEDESCE (celular), no Synquei (celular) e na Revela o Set foi para o topo, ao lado da Z; TPeasy
+  (Roteiros, Teleprompter, Ajustes, Set), AEON (Mídia, Revisar, Edição, Entrega, Set) e NOSSOM (Início, Projetos,
+  Estúdio, Conta, Set) mantêm o Set como a última aba; no Carro e no NOSSOM a lateral termina em Set e Z (a Z
+  sempre a última); no site do SOBEDESCE o Set fica no cabeçalho, ao lado do anel da Z.
+- ⛔ Em produção: cliente `relay-web` no console (para o Set do Relay) e deploy de cada app, com autorização.
+- ⬜ App de computador do SOBEDESCE com o Set (o motor local ainda não repassa); aviso fora do app (e-mail/push);
+  anexos.
+- ⬜ Fase 3, salas abertas da comunidade: com o lançamento do Carro do Freela (novo tipo de conversa, mesma API).
+
+## Laboratório da Z (30/10/2026, [ADR 0033](decisions/0033-laboratorio-da-z.md))
+
+- ✅ Console › **Laboratório da Z** (só o admin da plataforma; suporte e clientes não veem): Testar e Configurar.
+  Migração `0036_laboratorio_z.sql` com RLS em todas as tabelas `z_*`.
+- ✅ Conversa por voz como a do ChatGPT: mãos livres (Scribe v2 Realtime, VAD) ou segure para falar (Scribe v2),
+  resposta do Claude em streaming falada frase a frase (ElevenLabs Flash v2.5 em PCM), barge-in, legenda ao vivo e o
+  tempo de cada etapa; modelo escolhido na hora (o da Z hoje ou um mais rápido).
+- ✅ A Z é uma mulher: personalidade feminina proposta no rascunho, vozes femininas pt-BR da conta pré-filtradas e o
+  Voice Design para criar uma (salva na conta só com confirmação).
+- ✅ Ditado no campo (o microfone escreve para editar antes de enviar) e anexos: imagem e PDF nativos no Claude;
+  Word, Excel, PowerPoint, texto e CSV lidos no servidor; áudio e vídeo transcritos (e quatro quadros do vídeo).
+- ✅ Configurar: personalidade, tom, regras, instrução por plataforma, textos de referência, voz e saudação, modelo e
+  tamanho da resposta, teto por dia; versões imutáveis com nota, diferenças, comparar lado a lado e restaurar.
+- ✅ Custo de cada chamada (tokens, caracteres, segundos) com teto por dia (sem teto = bloqueado) e o gasto nos Custos.
+- ✅ Liberação por plano (voz, ditado, anexos) e "Publicar para os clientes": tudo desligado, ligar pede confirmação e
+  fica na auditoria.
+- ⛔ Em produção: migração `0036` no deploy e o primeiro teste com as chaves reais (`IA_ANTHROPIC_KEY` e
+  `ELEVENLABS_API_KEY`, já na Vercel).
+- ⬜ Para os clientes: voz, ditado e anexos no painel `<zro-ia>` lendo `z_recurso_liberado`, quando os planos forem
+  vendidos.
 
 ## Fase 6 — Escala
 

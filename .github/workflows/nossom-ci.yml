@@ -43,3 +43,19 @@ jobs:
           name: nossom-browser-diagnostics
           path: products/nossom/test-results/
           retention-days: 7
+  worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: products/nossom/workers/restoration
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # Transport and preset contracts, with PyTorch stubbed out.
+      - run: pip install 'numpy==1.26.4' && python -m unittest test_handler.py
+      # Isolator windowing with stand-in models: CPU PyTorch, no weights, no GPU.
+      - run: pip install --index-url https://download.pytorch.org/whl/cpu 'torch==2.8.0' 'torchaudio==2.8.0'
+      - run: python -m unittest test_isolator.py

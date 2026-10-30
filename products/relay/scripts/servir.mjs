@@ -41,10 +41,23 @@ export async function resolver(url, raiz = RAIZ) {
   return null
 }
 
-export function servir({ porta = 8090, raiz = RAIZ, extra = null } = {}) {
+/** O que o desenvolvimento liga (como as prévias da Vercel): app/recursos.js com tudo ligado. */
+export const RECURSOS_DEV = { revela: true }
+
+export function servir({ porta = 8090, raiz = RAIZ, extra = null, recursos = RECURSOS_DEV } = {}) {
   const servidor = createServer(async (req, res) => {
     try {
       if (extra && (await extra(req, res))) return
+      if (new URL(req.url, 'http://x').pathname === '/app/recursos.js' && recursos) {
+        res.writeHead(200, { ...cabecalhos, 'Content-Type': TIPOS['.js'], 'Cache-Control': 'no-cache' })
+        return res.end(`export const RECURSOS = ${JSON.stringify(recursos)}\n`)
+      }
+      // a conta (só para o Set) mora nas funções da Vercel (api/); aqui o login não está ligado, como num site sem
+      // ZRO_CLIENT_ID: o /eu diz isso e o topo não monta o Set (app/set.js)
+      if (new URL(req.url, 'http://x').pathname === '/api/zro/eu') {
+        res.writeHead(200, { ...cabecalhos, 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' })
+        return res.end('{"ok":false,"configurado":false}')
+      }
       const arquivo = await resolver(req.url, raiz)
       if (!arquivo) {
         res.writeHead(404, { ...cabecalhos, 'Content-Type': 'text/plain; charset=utf-8' })

@@ -861,6 +861,29 @@ a.selo {
   font-family: var(--font-apple);
   font-size: 1.3rem;
 }
+/* Veículo: tipos de partida e os do inventário; o escolhido fica grafite (branco no escuro), como os filtros. */
+.desl-veiculos .chip {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 0.8rem;
+  transition:
+    background-color 0.18s var(--spring),
+    color 0.18s var(--spring);
+}
+.desl-veiculos .chip[aria-pressed="true"] {
+  background: var(--text-strong);
+  color: var(--bg);
+}
+.desl-veiculos .chip[data-origem="inventario"]::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--acento);
+}
+.lugar__dica:empty {
+  display: none;
+}
 /* De onde veio o preço do litro: ANP (semana e lugar) ou digitado, com a volta para o da ANP. */
 .desl-fonte__voltar {
   padding: 0;
@@ -1722,6 +1745,9 @@ details.secao.secao--abrir > summary {
   .fluxo__barra,
   .dialogo[open] {
     animation: none;
+  }
+  .desl-veiculos .chip {
+    transition: none;
   }
   .evento,
   .medidor i {

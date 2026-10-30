@@ -122,8 +122,12 @@ export default async function FichaEquipamento({ params }: PageProps<"/app/inven
               <dd>{e.serie ?? "—"}</dd>
               <dt>Compra</dt>
               <dd>{e.compraEm ? dataBr(e.compraEm) : "—"}</dd>
-              <dt>Valor</dt>
-              <dd>{e.valorCents != null ? brl(e.valorCents) : "—"}</dd>
+              {e.veValor ? (
+                <>
+                  <dt>Valor</dt>
+                  <dd>{e.valorCents != null ? brl(e.valorCents) : "—"}</dd>
+                </>
+              ) : null}
               <dt>Onde fica</dt>
               <dd>{e.local ?? "—"}</dd>
               {e.kmL != null ? (
