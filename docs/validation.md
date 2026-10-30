@@ -15,6 +15,28 @@ Mesmos passos do CI (`.github/workflows/ci.yml`). O CI do GitHub roda no primeir
 | Dependências                             | `npm audit`                          | 0 vulnerabilidades (Next 16.4.3)              |
 | Originais intactos                       | `node scripts/check-originals.mjs …` | 5/5: mesmo HEAD da cópia e `git status` limpo |
 
+## CI verde de novo: duas corridas nos testes e a cor no ffmpeg 8 (30/10/2026)
+
+O `main` ficou vermelho em três workflows; cada falha foi reproduzida aqui antes da correção.
+
+- **CI** (`people.test.ts`): `after.todas >= before.todas` caiu (213 → 212) porque outro arquivo excluiu uma conta
+  entre as duas leituras. Prova: ler, excluir por outra conexão e ler de novo derruba o total; numa transação em
+  leitura repetível fica igual. O teste lê e muda numa transação só, com a conta exata (Completo e avulso +1, grátis
+  -2). Raiz: `npm test` **428/428**, `npm run build` ok, `npm run test:e2e` **58/58**.
+- **Maestro** (`acessos.test.mts`, 23505 em `create role maestro_app`): os arquivos rodam em paralelo e a 0000
+  ("cria se não existe") corria num Postgres novo. Prova: 12 conexões com o bloco da 0000 num papel descartável, 1/12
+  passou; com o papel garantido antes, 12/12. `tests/ambiente.mts` garante o papel antes de migrar (a 0000 não muda).
+  O `format:check` das execuções anteriores já tinha saído na 72e5b58. Maestro: lint, formatação, tipos,
+  `npm test` **650/650**, build e `npm run test:e2e` (os 321 em três rodadas; nenhuma falha).
+- **Relay** (`ffmpeg.test.js`, `color_primaries` vazio): o `ubuntu-latest` passou para o 26.04, com ffmpeg 8.0.1, que
+  lê a cor dos quadros; as opções `-color_*` sozinhas não bastam e todos os presets saíam sem primárias e transferência
+  (o app do SOBEDESCE no Mac já leva o 9.0.2). Reproduzido com o ffmpeg 8.0.1 do Ubuntu 26.04 extraído à parte. O
+  filtro termina com `setparams` (como a Revela) e a cópia do SOBEDESCE foi junto. Relay `npm test` **117/117** no
+  ffmpeg 8.0.1 e **122/122** no 6.1.1 depois de juntar com a main; SOBEDESCE `npm run test:fast` 788/793 (4 pulados,
+  1 tempo esgotado no `set-celular.test.js` sob carga, que passa sozinho e não toca no Relay).
+- A correção do Relay mexe em `products/sobedesce/src/relay/`: na main, isso dispara o "SOBEDESCE · app de desktop"
+  (build, Release de teste e `versao.json`).
+
 ## Subdomínios do Carro e do SOBEDESCE (30/10/2026)
 
 - HUB `npm test` **392/392** com a migração 0037 (retornos novos, idempotente; numa rodada o `set.test.ts` falhou e passou
