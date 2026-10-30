@@ -67,6 +67,40 @@ comprados. Até lá, um **modelo teste** no perfil de administrador, para ele ap
 - Levar para os clientes é ligar o recurso por plano; a tela dos clientes ainda precisa ganhar voz, ditado e anexos
   (o painel `<zro-ia>`), lendo `z_recurso_liberado`.
 
+## Escuta ao vivo recusada (30/10/2026)
+
+Em produção, `POST /v1/single-use-token/realtime_scribe` devolveu **401** com a chave do titular, mesmo com Speech to
+Text (e TTS, Voices, Voice Generation, Models, User) ligados numa chave restrita; a fala (TTS) funcionou com a mesma
+chave. O que a documentação oficial diz (conferido em 30/10/2026):
+
+- A página do endpoint ([tokens/create](https://elevenlabs.io/docs/api-reference/tokens/create)) e o OpenAPI público
+  (`api.elevenlabs.io/openapi.json`) não pedem permissão nenhuma: só `xi-api-key` e `token_type` (`realtime_scribe`,
+  `batch_scribe`, `tts_websocket`). A lista de permissões de chave do OpenAPI (`PermissionType`) não tem item de
+  "token de uso único"; a página de chaves
+  ([api-keys](https://elevenlabs.io/docs/overview/administration/workspaces/api-keys)) só diz que a chave restrita
+  limita "quais endpoints" alcança, sem listar quais.
+- Pela tabela de erros ([errors](https://elevenlabs.io/docs/eleven-api/resources/errors)), permissão que falta é
+  **403** `insufficient_permissions`; **401** é autenticação (`invalid_api_key`, `unauthorized`, `sign_in_required`).
+  Respostas antigas da API, porém, mandam 401 com `detail.status = missing_permissions` e a permissão na mensagem.
+- A escuta ao vivo aceita a chave no cabeçalho `xi-api-key` no lugar do token
+  ([realtime](https://elevenlabs.io/docs/api-reference/speech-to-text/v-1-speech-to-text-realtime)), mas isso exige um
+  WebSocket aberto pelo servidor, que a função da Vercel não mantém; a chave nunca vai para o navegador.
+- Há servidores por região (`api.us.elevenlabs.io`, `api.eu.residency.elevenlabs.io`, …): conta com residência de
+  dados só autentica no servidor dela. Não é o caso provável aqui (a fala funciona em `api.elevenlabs.io`).
+- Desde 20/07/2026, `/v1/speech-to-text` também aceita token `batch_scribe`
+  ([changelog](https://elevenlabs.io/docs/changelog/2026/7/20)); não usamos, a transcrição já passa pelo HUB.
+
+Conclusão: o mais provável é que a chave restrita não alcance o endpoint de token (o painel não mostra essa permissão),
+ou que a chave usada não seja a que ganhou as permissões. Para confirmar, o log agora traz `codigo` e `permissao` da
+recusa (`elevenlabs.escuta_por_frase`), nunca a chave; testar com uma chave **sem restrição** separa os dois casos.
+
+**Decisão:** a voz não depende disso. Token recusado (ou WebSocket que não abre) → `/escuta` devolve `aoVivo: false`
+sem abrir sessão, e o modo mãos livres segue **por frase**: VAD por energia no navegador (quadros de 20 ms, ~700 ms de
+silêncio fecha a frase, até 30 s), cada frase em `/transcricao` (Scribe v2, português), que confere o teto e registra
+os segundos. Uma nota calma ("Escuta ao vivo indisponível: usando transcrição por frase") substitui o erro; o tempo de
+"Escuta" passa a ser do fim da fala até o texto. Por cima da Z, só frase de 6 letras ou mais interrompe (eco). Se a
+transcrição também for recusada, o erro nomeia a permissão.
+
 ## Em aberto
 
 - Migração `0036` em produção (no deploy, com autorização) e o primeiro teste com as chaves reais.

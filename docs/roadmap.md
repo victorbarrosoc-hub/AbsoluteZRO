@@ -856,6 +856,11 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
   fica na auditoria.
 - ⛔ Em produção: migração `0036` no deploy e o primeiro teste com as chaves reais (`IA_ANTHROPIC_KEY` e
   `ELEVENLABS_API_KEY`, já na Vercel).
+- ✅ Voz robusta (30/10/2026): com a escuta ao vivo recusada (401 no token de uso único, visto em produção com a chave
+  restrita), mãos livres segue **por frase**: VAD no navegador (~700 ms de silêncio) e Scribe v2 pelo HUB, com a nota
+  "Escuta ao vivo indisponível: usando transcrição por frase", custo e teto valendo. O log diz o código da recusa.
+- ✅ Modo voz no iPhone (30/10/2026): nada passa da largura em 375/393/430 px e deitado (coluna `minmax(0, 1fr)`,
+  topo em duas linhas, seletor a 16 px sem zoom do Safari, anel e tempos que encolhem); e2e no Chromium e no WebKit.
 - ⬜ Para os clientes: voz, ditado e anexos no painel `<zro-ia>` lendo `z_recurso_liberado`, quando os planos forem
   vendidos.
 

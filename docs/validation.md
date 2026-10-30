@@ -2994,6 +2994,15 @@ Claude e ElevenLabs **falsos** (`tests/fixtures/z-lab-falso.ts`), nenhuma chamad
 | Suíte inteira                        | `npm test` · `npm run test:e2e`                                                       | 383/383 · 48 ok + 2 por tempo da máquina carregada (`admin.spec` e `esqueleto` WebKit), que passam sozinhos                                      |
 | Lint, Prettier, tipos, build, chaves | `npm run lint`, `format:check`, `typecheck`, `build`, `node scripts/scan-secrets.mjs` | ok · ok · ok · ok · nenhum segredo                                                                                                               |
 
+**Voz por frase e iPhone (30/10/2026).** `tests/integration/z-lab-escuta.test.ts` 6/6 (ElevenLabs falsa com 401 no
+token: `aoVivo` falso, sem lançar, log sem a chave; transcrição por frase funciona; transcrição também recusada nomeia
+`speech_to_text`; VAD: frase com antes e fim aparado, estalo ignorado, corte aos 30 s). `npx playwright test
+tests/e2e/z-lab-voz-celular.spec.ts` 3/3: token recusado → nota calma, a frase do microfone (WAV falso do Chromium) é
+transcrita pelo HUB e a Z responde, tempos e gasto de transcrição; layout em 375/393/430 px e deitado (parada, ouvindo,
+erro) sem rolagem lateral e com os controles na tela, no Chromium e no WebKit. O mesmo e2e com o CSS anterior falha nos
+dois navegadores ("o diálogo rola de lado"). `tests/e2e/z-lab.spec.ts` segue 2/2; `npm test` 392/392; lint, Prettier,
+tipos, build e `scan-secrets` ok.
+
 Não conferido aqui: voz, transcrição, Voice Design e o Claude com as chaves reais (a latência de verdade e a qualidade
 da voz); microfone de verdade e o eco do alto-falante no barge-in; vídeos grandes no navegador; a migração `0036` em
 produção (deploy só com autorização).
