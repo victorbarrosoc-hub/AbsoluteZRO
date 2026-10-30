@@ -1,10 +1,15 @@
--- Maestro · 0024 · Entregáveis: as versões de entrega geradas pelo Relay (contrato "Maestro → Relay" em
--- docs/integration-contracts/relay.md; ADR 0030; decisão do titular de 29/10/2026). Só acrescenta.
+-- Maestro · 0034 · Entregáveis: as versões de entrega geradas pelo Relay (contrato "Maestro → Relay" em
+-- docs/integration-contracts/relay.md; ADR 0030; decisão do titular de 29/10/2026). Só acrescenta. (0033 fica com a
+-- frente F7 da Criação.)
 --
 -- Uma linha por (versão do card, preset): o pedido que o SOBEDESCE guardou na fila (`pedido_id`, idempotente por
 -- `ref:preset`, ref = id da versão) e o último estado que o Maestro leu de `relay.pedido`. Quem grava é a própria
 -- pessoa (asUser), ao pedir e ao acompanhar. "pronto" só com o resultado e o MD5 conferido do lado do SOBEDESCE. O
 -- arquivo nunca passa pelo Maestro: só id, nome, tamanho, MD5 e a pasta no Drive.
+--
+-- `revisar`: o pedido saiu e a resposta não voltou (rede, tempo, 5xx). Ninguém sabe se a fila guardou: a linha fica
+-- para a pessoa conferir (pedir de novo é seguro, a fila é idempotente por `ref:preset`); nunca há nova tentativa
+-- sozinha (regra da raiz: despacho ambíguo vai para revisão).
 
 -- A versão ganha a chave composta (org, card, id): o entregável não aponta para versão de outro card nem de outra
 -- organização.
@@ -24,7 +29,7 @@ create table if not exists maestro.entregaveis (
   preset text not null check (preset ~ '^[a-z0-9-]{1,40}$'),
   -- o id do pedido na fila do SOBEDESCE (null só enquanto o pedido não voltou)
   pedido_id text check (pedido_id is null or (char_length(pedido_id) between 1 and 120 and pedido_id ~ '^[A-Za-z0-9_.:-]+$')),
-  status text not null default 'pendente' check (status in ('pendente', 'convertendo', 'pronto', 'erro', 'cancelado')),
+  status text not null default 'pendente' check (status in ('pendente', 'convertendo', 'pronto', 'erro', 'cancelado', 'revisar')),
   frac numeric(4, 3) check (frac is null or (frac >= 0 and frac <= 1)),
   -- para onde vai: a pasta pedida (null = ao lado do original) e o nome dela para a tela
   pasta_id text check (pasta_id is null or pasta_id ~ '^[A-Za-z0-9_-]{1,200}$'),
@@ -46,10 +51,35 @@ create table if not exists maestro.entregaveis (
   foreign key (org_id, card_id) references maestro.cards (org_id, id) on delete cascade,
   foreign key (org_id, card_id, versao_id) references maestro.versoes (org_id, card_id, id) on delete cascade
 );
+-- O estado só anda para a frente: "pronto" é final (o arquivo e o MD5 não mudam) e, no mesmo pedido, erro e cancelado
+-- também. Um pedido novo (outro `pedido_id`, depois de erro ou cancelado, ou a conferência de um `revisar`) recomeça.
+-- Resposta atrasada ou repetida do SOBEDESCE nunca desfaz o que já terminou.
+create or replace function maestro.entregaveis_guarda() returns trigger
+language plpgsql set search_path = '' as $$
+begin
+  if new.org_id is distinct from old.org_id or new.card_id is distinct from old.card_id
+     or new.versao_id is distinct from old.versao_id or new.preset is distinct from old.preset
+     or new.criado_por is distinct from old.criado_por or new.criado_em is distinct from old.criado_em then
+    raise exception 'entregável: versão, preset e autoria não mudam' using errcode = '23514';
+  end if;
+  if old.status = 'pronto' and (new.status <> 'pronto' or new.arquivo_id is distinct from old.arquivo_id or new.md5 is distinct from old.md5) then
+    raise exception 'entregável pronto não muda' using errcode = '23514';
+  end if;
+  if old.status in ('erro', 'cancelado') and new.pedido_id is not distinct from old.pedido_id and new.status <> old.status then
+    raise exception 'entregável terminado não volta (peça de novo)' using errcode = '23514';
+  end if;
+  return new;
+end
+$$;
+revoke all on function maestro.entregaveis_guarda() from public;
+drop trigger if exists entregaveis_guarda on maestro.entregaveis;
+create trigger entregaveis_guarda before update on maestro.entregaveis for each row execute function maestro.entregaveis_guarda();
+
 create index if not exists entregaveis_versao_idx on maestro.entregaveis (org_id, versao_id, criado_em);
 create index if not exists entregaveis_card_idx on maestro.entregaveis (org_id, card_id);
 
--- RLS: organização ativa; quem escreve (admin, gestão e equipe) pede e acompanha; remover só admin e gestão; leitura vê.
+-- RLS: organização ativa; quem pede (admin, gestão e equipe: `ENTREGAS_PADRAO` em src/lib/acessos.ts, o teste
+-- confere) pede, acompanha e cancela; remover só admin e gestão; leitura vê.
 select maestro.politicas_padrao('entregaveis', array['admin', 'gestor', 'equipe'], array['admin', 'gestor']);
 
 -- Acesso por cliente (0018): o card precisa estar no alcance da pessoa, na leitura e na escrita.

@@ -10,7 +10,7 @@
  *   origem do Drive (largura, altura e duração do `videoMediaMetadata`); sem os metadados, "—" e nada de palpite.
  */
 import { planejar, nomeSaida, tamanhoLegivel } from "./plano.js";
-import { ENTREGA_AO_CLIENTE, PRESETS, type Preset } from "./presets.js";
+import { ENTREGA_AO_CLIENTE, GRUPOS, PRESETS, preset as acharPreset, type Preset } from "./presets.js";
 
 export const MAX_PRESETS = 8;
 
@@ -28,6 +28,23 @@ export function presetsDaFolha(): { principais: PresetMaestro[]; mais: PresetMae
   const principais = ENTREGA_AO_CLIENTE.map((id) => porId.get(id)).filter((p): p is PresetMaestro => !!p);
   const usados = new Set(principais.map((p) => p.id));
   return { principais, mais: todos.filter((p) => !usados.has(p.id)) };
+}
+
+/** "Mais", nos grupos do Relay (Redes, Trabalho, TV, Tamanho, Áudio), na ordem dele; grupo vazio some. */
+export function maisPorGrupo(): { grupo: string; presets: PresetMaestro[] }[] {
+  const { mais } = presetsDaFolha();
+  const grupos = [...GRUPOS, ...new Set(mais.map((p) => p.grupo).filter((g) => !GRUPOS.includes(g)))];
+  return grupos.map((grupo) => ({ grupo, presets: mais.filter((p) => p.grupo === grupo) })).filter((g) => g.presets.length);
+}
+
+export type Forma = "vertical" | "horizontal" | "audio";
+
+/** A forma de um preset do Relay (o desenho na lista): só som, em pé (tela 9:16 ou 4:5) ou deitado. */
+export function formaDoPreset(id: string): Forma {
+  const p = acharPreset(id);
+  if (!p?.video) return p ? "audio" : "horizontal";
+  const q = p.video.quadro;
+  return q && q.altura > q.largura ? "vertical" : "horizontal";
 }
 
 const ID_PRESET = /^[a-z0-9-]{1,40}$/;
@@ -124,4 +141,14 @@ export function previa(nomeOriginal: string, ids: readonly string[], origem: Ret
     }
   }
   return linhas;
+}
+
+/**
+ * De quanto em quanto tempo a ficha pergunta pelo andamento: nada andando, nunca; convertendo ou com o computador
+ * aberto (ou sem saber), 5 s; tudo na fila com o computador fechado, 15 s (nada muda até ele abrir).
+ */
+export function intervaloDoAcompanhar(lista: readonly { status: string }[] | null, computador: { aberto_agora: boolean } | null): number | null {
+  if (!lista?.some((e) => e.status === "pendente" || e.status === "convertendo")) return null;
+  const convertendo = lista.some((e) => e.status === "convertendo");
+  return convertendo || computador?.aberto_agora !== false ? 5000 : 15000;
 }

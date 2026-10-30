@@ -1,42 +1,50 @@
 "use client";
 /**
  * Entregáveis de um card (as versões de entrega que o Relay gerou ou está gerando) e o botão "Gerar versões" de uma
- * versão do Drive. A lista pergunta ao servidor a cada 5 s só enquanto há item andando e a aba está à vista (a ficha ou
- * o lote abertos); o servidor lê o andamento no SOBEDESCE e guarda (src/lib/relay/entregaveis.ts).
- * "Pronto" só com o MD5 conferido do lado do SOBEDESCE; o Maestro nunca promete prazo.
+ * versão do Drive. A lista pergunta ao servidor só enquanto há item andando e a aba está à vista (a ficha ou o lote
+ * abertos): a cada 5 s com o computador aberto ou convertendo, a cada 15 s com tudo na fila e o computador fechado
+ * (nada vai mudar até ele abrir). O servidor lê o andamento no SOBEDESCE e guarda (src/lib/relay/entregaveis.ts).
+ * "Pronto" só com o MD5 conferido do lado do SOBEDESCE; o Maestro nunca promete prazo nem mostra progresso que não veio.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { cancelarEntregavelAcao, entregaveisDoCardAcao } from "@/app/(app)/app/aprovacoes/relay-acoes";
+import { cancelarEntregavelAcao, conferirEntregavelAcao, entregaveisDoCardAcao } from "@/app/(app)/app/aprovacoes/relay-acoes";
 import type { Computador, Entregavel } from "@/lib/relay/entregaveis";
+import { intervaloDoAcompanhar } from "@/lib/relay/escolha";
 import { Icone } from "@/components/icones";
 
 const ANDANDO = new Set(["pendente", "convertendo"]);
-export const COMPUTADOR_FECHADO = "Vai começar quando o computador com o SOBEDESCE abrir.";
+export const COMPUTADOR_FECHADO = "Começa quando o computador com o SOBEDESCE abrir.";
+const NO_NAVEGADOR = "Converter no navegador com o Relay: baixe o original do Drive antes. O arquivo não volta para o card sozinho.";
+const RELAY_CONVERTER = "https://relay.absolutezro.com/converter";
 
 export type EstadoEntregas = {
   lista: Entregavel[] | null;
   computador: Computador | null;
   aviso: string | null;
-  /** Depois de pedir: a lista e o computador que o servidor devolveu. */
+  /** O papel pede, confere e cancela (o servidor decide por `podeEntregas`). */
+  podePedir: boolean;
+  /** Depois de pedir ou conferir: os itens e o computador que o servidor devolveu. */
   aplicar: (lista: Entregavel[], computador: Computador | null) => void;
   trocar: (e: Entregavel) => void;
 };
 
-/** A lista do card e o acompanhamento (5 s, só com item andando e a aba à vista). */
+/** A lista do card e o acompanhamento. */
 export function useEntregaveis(card: string): EstadoEntregas {
   const [lista, setLista] = useState<Entregavel[] | null>(null);
   const [computador, setComputador] = useState<Computador | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [podePedir, setPodePedir] = useState(false);
   const vivo = useRef(true);
 
   const ler = useCallback(
-    (acompanhar: boolean) =>
-      entregaveisDoCardAcao(card, acompanhar).then(
+    () =>
+      entregaveisDoCardAcao(card, true).then(
         (r) => {
           if (!vivo.current) return;
           setLista(r.entregaveis);
-          setComputador(r.computador);
+          if (r.computador) setComputador(r.computador);
           setAviso(r.aviso);
+          setPodePedir(r.podePedir);
         },
         () => vivo.current && setLista((l) => l ?? []),
       ),
@@ -45,50 +53,43 @@ export function useEntregaveis(card: string): EstadoEntregas {
 
   useEffect(() => {
     vivo.current = true;
-    entregaveisDoCardAcao(card, true).then(
-      (r) => {
-        if (!vivo.current) return;
-        setLista(r.entregaveis);
-        setComputador(r.computador);
-        setAviso(r.aviso);
-      },
-      () => vivo.current && setLista((l) => l ?? []),
-    );
+    void ler();
     return () => {
       vivo.current = false;
     };
-  }, [card]);
+  }, [ler]);
 
-  const andando = !!lista?.some((e) => ANDANDO.has(e.status));
+  const intervalo = intervaloDoAcompanhar(lista, computador);
   useEffect(() => {
-    if (!andando) return;
+    if (!intervalo) return;
     const id = window.setInterval(() => {
-      if (document.visibilityState === "visible") void ler(true);
-    }, 5000);
-    const voltou = () => document.visibilityState === "visible" && void ler(true);
+      if (document.visibilityState === "visible") void ler();
+    }, intervalo);
+    const voltou = () => document.visibilityState === "visible" && void ler();
     document.addEventListener("visibilitychange", voltou);
     return () => {
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", voltou);
     };
-  }, [andando, ler]);
+  }, [intervalo, ler]);
 
   const aplicar = useCallback((novas: Entregavel[], c: Computador | null) => {
     // o servidor devolve todos os entregáveis da versão pedida, na ordem da folha
     const versoes = new Set(novas.map((n) => n.versao));
     setLista((l) => [...(l ?? []).filter((x) => !versoes.has(x.versao)), ...novas]);
-    setComputador(c);
+    if (c) setComputador(c);
   }, []);
   const trocar = useCallback((e: Entregavel) => setLista((l) => (l ?? []).map((x) => (x.id === e.id ? e : x))), []);
-  return { lista, computador, aviso, aplicar, trocar };
+  return { lista, computador, aviso, podePedir, aplicar, trocar };
 }
 
 const NOME_STATUS: Record<Entregavel["status"], string> = {
   pendente: "Na fila",
   convertendo: "Convertendo",
   pronto: "Pronto",
-  erro: "Erro",
+  erro: "Não saiu",
   cancelado: "Cancelado",
+  revisar: "A conferir",
 };
 
 function tamanho(b: number | null) {
@@ -98,18 +99,39 @@ function tamanho(b: number | null) {
   return `${Math.max(1, Math.round(b / 1e3))} KB`;
 }
 
-function Item({ e, podeCancelar, aoTrocar }: { e: Entregavel; podeCancelar: boolean; aoTrocar: (e: Entregavel) => void }) {
+/** O desenho do formato: tela em pé, deitada ou só som (forma em vez de texto). */
+export function Forma({ forma }: { forma: Entregavel["forma"] }) {
+  return <span className="rl-forma" data-forma={forma} aria-hidden="true" />;
+}
+
+function Item({
+  e,
+  computador,
+  podePedir,
+  aoTrocar,
+  aoAplicar,
+}: {
+  e: Entregavel;
+  computador: Computador | null;
+  podePedir: boolean;
+  aoTrocar: (e: Entregavel) => void;
+  aoAplicar: (lista: Entregavel[], c: Computador | null) => void;
+}) {
   const [copiado, setCopiado] = useState(false);
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const pct = e.status === "convertendo" && e.frac !== null ? Math.round(e.frac * 100) : null;
+  const naFilaFechado = e.status === "pendente" && computador?.aberto_agora === false;
+  const dica =
+    e.status === "pronto" ? `MD5 ${e.arquivo?.md5} conferido no Drive` : e.status === "pendente" && naFilaFechado ? COMPUTADOR_FECHADO : (e.erro ?? undefined);
   return (
     <li className="rl-item" data-status={e.status}>
       <div className="rl-item__linha">
+        <Forma forma={e.forma} />
         <span className="rl-item__nome" title={e.arquivo?.nome ?? e.nome}>
           {e.nome}
         </span>
-        <span className="rl-chip" data-status={e.status} title={e.status === "pronto" ? `MD5 ${e.arquivo?.md5} conferido no Drive` : (e.erro ?? undefined)}>
+        <span className="rl-chip" data-status={e.status} title={dica}>
           <i aria-hidden="true" />
           {NOME_STATUS[e.status]}
           {pct !== null ? ` ${pct}%` : ""}
@@ -149,33 +171,66 @@ function Item({ e, podeCancelar, aoTrocar }: { e: Entregavel; podeCancelar: bool
               <Icone nome={copiado ? "check" : "copiar"} size={15} />
             </button>
           </>
-        ) : ANDANDO.has(e.status) && podeCancelar ? (
+        ) : e.status === "revisar" && podePedir ? (
           <button
             type="button"
-            className="rl-acao"
-            aria-label={`Cancelar ${e.nome}`}
-            title="Cancelar"
+            className="glass-btn glass-btn--sm rl-conferir"
             disabled={ocupado}
+            title="Pede de novo a mesma versão: se a fila já tem, ela devolve a que existe (nunca sai duas)."
             onClick={async () => {
               setOcupado(true);
-              const r = await cancelarEntregavelAcao(e.id).catch(() => null);
+              setErro(null);
+              const r = await conferirEntregavelAcao(e.id).catch(() => null);
               setOcupado(false);
-              if (r?.ok) aoTrocar(r.entregavel);
-              else setErro(r?.mensagem ?? "Não deu para cancelar agora.");
+              if (r?.ok) aoAplicar(r.entregaveis, r.computador);
+              else setErro(r?.mensagem ?? "Não deu para conferir agora.");
             }}
           >
-            <Icone nome="fechar" size={15} />
+            {ocupado ? "Conferindo…" : "Conferir"}
           </button>
+        ) : ANDANDO.has(e.status) && podePedir ? (
+          <>
+            {naFilaFechado ? (
+              <a
+                className="rl-acao"
+                href={`${RELAY_CONVERTER}?preset=${encodeURIComponent(e.preset)}&de=maestro`}
+                target="_blank"
+                rel="noreferrer noopener"
+                aria-label={`Converter ${e.nome} no navegador com o Relay`}
+                title={NO_NAVEGADOR}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/brand/relay-icone.svg" alt="" width={16} height={16} className="rl-marca" />
+              </a>
+            ) : null}
+            <button
+              type="button"
+              className="rl-acao"
+              aria-label={`Cancelar ${e.nome}`}
+              title="Cancelar"
+              disabled={ocupado}
+              onClick={async () => {
+                setOcupado(true);
+                setErro(null);
+                const r = await cancelarEntregavelAcao(e.id).catch(() => null);
+                setOcupado(false);
+                if (r?.ok) aoTrocar(r.entregavel);
+                else setErro(r?.mensagem ?? "Não deu para cancelar agora.");
+              }}
+            >
+              <Icone nome="fechar" size={15} />
+            </button>
+          </>
         ) : null}
       </div>
       {pct !== null ? (
-        <span className="rl-barra" aria-hidden="true">
+        <span className="rl-barra" role="progressbar" aria-label={`${e.nome}: ${pct}%`} aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
           <i style={{ width: `${pct}%` }} />
         </span>
       ) : null}
       {e.status === "pronto" && e.arquivo ? (
         <span className="rl-item__apoio">{[e.arquivo.nome, tamanho(e.arquivo.tamanho), e.pasta?.nome].filter(Boolean).join(" · ")}</span>
-      ) : e.status === "erro" && e.erro ? (
+      ) : (e.status === "erro" || e.status === "revisar") && e.erro ? (
         <span className="rl-item__apoio">{e.erro}</span>
       ) : null}
       {erro ? (
@@ -192,15 +247,17 @@ export function ListaEntregaveis({
   itens,
   computador,
   aviso,
-  podeCancelar,
+  podePedir,
   aoTrocar,
+  aoAplicar,
   rotulo = "Entregáveis",
 }: {
   itens: Entregavel[];
   computador: Computador | null;
   aviso: string | null;
-  podeCancelar: boolean;
+  podePedir: boolean;
   aoTrocar: (e: Entregavel) => void;
+  aoAplicar: (lista: Entregavel[], c: Computador | null) => void;
   rotulo?: string;
 }) {
   if (!itens.length) return null;
@@ -209,15 +266,19 @@ export function ListaEntregaveis({
     <section className="rl-lista" aria-label={rotulo}>
       <ul>
         {itens.map((e) => (
-          <Item key={e.id} e={e} podeCancelar={podeCancelar} aoTrocar={aoTrocar} />
+          <Item key={e.id} e={e} computador={computador} podePedir={podePedir} aoTrocar={aoTrocar} aoAplicar={aoAplicar} />
         ))}
       </ul>
       {esperando ? (
-        <p className="rl-lista__nota">
-          <Icone nome="relogio" size={14} /> {COMPUTADOR_FECHADO}
+        <p className="rl-lista__nota" role="status">
+          <Icone nome="computador" size={14} /> {COMPUTADOR_FECHADO}
         </p>
       ) : null}
-      {aviso ? <p className="rl-lista__nota">{aviso}</p> : null}
+      {aviso ? (
+        <p className="rl-lista__nota" role="status">
+          <Icone nome="alerta" size={14} /> {aviso}
+        </p>
+      ) : null}
     </section>
   );
 }

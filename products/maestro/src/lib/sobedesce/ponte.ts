@@ -37,7 +37,12 @@ export const CAMINHOS = {
 export type AcaoPonte = keyof typeof CAMINHOS;
 export const PRODUTO_RELAY = "relay";
 
-export type Falha = { ok: false; status: number; erro: string; mensagem: string };
+/**
+ * `ambiguo`: o pedido saiu para o SOBEDESCE e a resposta não voltou inteira (rede, tempo, 5xx, corpo estranho). Ninguém
+ * sabe se ele fez: quem chama manda para revisão e nunca tenta de novo sozinho (regra da raiz). Recusa do HUB nunca é
+ * ambígua (nada saiu).
+ */
+export type Falha = { ok: false; status: number; erro: string; mensagem: string; ambiguo?: true };
 export type Resultado<T> = { ok: true; dados: T } | Falha;
 
 const falha = (status: number, erro: string, mensagem: string): Falha => ({ ok: false, status, erro, mensagem });
@@ -124,13 +129,14 @@ async function chamarDestino<T>(p: Pedido, corpo: Record<string, unknown>): Prom
       signal: AbortSignal.timeout(20_000),
     });
   } catch {
-    return falha(502, "sobedesce_indisponivel", "O SOBEDESCE não respondeu agora. Tente de novo.");
+    return { ...falha(502, "sobedesce_indisponivel", "O SOBEDESCE não respondeu agora. Tente de novo."), ambiguo: true };
   }
   const j = (await res.json().catch(() => null)) as Record<string, unknown> | null;
   if (!res.ok || !j) {
     const erro = typeof j?.erro === "string" ? j.erro : "sobedesce";
     const mensagem = MENSAGENS[erro] ?? (typeof j?.mensagem === "string" ? j.mensagem.slice(0, 300) : "O SOBEDESCE não conseguiu agora.");
-    return falha(res.status === 403 ? 403 : res.status >= 500 ? 502 : res.status, erro, mensagem);
+    const f = falha(res.status === 403 ? 403 : res.status >= 500 ? 502 : res.status, erro, mensagem);
+    return res.status >= 500 || res.ok ? { ...f, ambiguo: true } : f;
   }
   return { ok: true, dados: j as T };
 }

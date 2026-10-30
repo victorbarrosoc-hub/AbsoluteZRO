@@ -114,6 +114,22 @@ describe("a cópia do Relay no Maestro", () => {
         `${copia}: copie de novo de products/relay/${original}`,
       );
   });
+
+  test("os campos de cada preset são os que presets.d.ts declara (preset novo no Relay com campo novo: tipe aqui)", () => {
+    const dts = readFileSync(new URL("../src/lib/relay/presets.d.ts", import.meta.url), "utf8");
+    const campos = (tipo: string) => {
+      const bloco = new RegExp(`export type ${tipo} = \\{([\\s\\S]*?)\\n\\};`).exec(dts)?.[1] ?? "";
+      return new Set([...bloco.matchAll(/^\s{2}([a-zA-Z]+)\??:/gm)].map((m) => m[1]));
+    };
+    const doPreset = campos("Preset");
+    const doVideo = campos("VideoDoPreset");
+    assert.ok(doPreset.size > 5 && doVideo.size > 3);
+    for (const p of presetsJs.PRESETS) {
+      for (const k of Object.keys(p)) assert.ok(doPreset.has(k), `${p.id}: campo ${k} sem tipo em presets.d.ts`);
+      for (const k of Object.keys(p.video ?? {})) assert.ok(doVideo.has(k), `${p.id}: video.${k} sem tipo em presets.d.ts`);
+    }
+    assert.ok(presetsJs.PRESETS.length >= 23, "o Relay tem 23 destinos ou mais");
+  });
 });
 
 describe("a folha: presets, no máximo 8 e a prévia", () => {
@@ -135,6 +151,30 @@ describe("a folha: presets, no máximo 8 e a prévia", () => {
     );
     assert.equal(new Set(todos).size, todos.length);
     assert.ok(mais.some((p) => p.id === "youtube-1440") && mais.some((p) => p.id === "mp3"));
+  });
+
+  test("'Mais' nos grupos do Relay, na ordem dele, sem repetir os principais; a forma de cada destino", () => {
+    const grupos = escolha.maisPorGrupo();
+    assert.deepEqual(
+      grupos.map((g) => g.grupo),
+      presetsJs.GRUPOS.filter((g) => grupos.some((x) => x.grupo === g)),
+    );
+    const principais = new Set(escolha.presetsDaFolha().principais.map((p) => p.id));
+    const todos = grupos.flatMap((g) => g.presets);
+    assert.ok(todos.every((p) => !principais.has(p.id)));
+    assert.equal(todos.length + principais.size, escolha.presetsOferecidos().length);
+    assert.ok(grupos.find((g) => g.grupo === "Áudio")?.presets.some((p) => p.id === "wav"));
+    assert.deepEqual(["reels", "youtube-1080", "mp3", "feed"].map(escolha.formaDoPreset), ["vertical", "horizontal", "audio", "vertical"]);
+  });
+
+  test("acompanhar: 5 s convertendo ou com o computador aberto, 15 s com tudo na fila e ele fechado, nada sem item andando", () => {
+    const fechado = { aberto_agora: false };
+    assert.equal(escolha.intervaloDoAcompanhar(null, null), null);
+    assert.equal(escolha.intervaloDoAcompanhar([{ status: "pronto" }, { status: "revisar" }], null), null);
+    assert.equal(escolha.intervaloDoAcompanhar([{ status: "pendente" }], fechado), 15000);
+    assert.equal(escolha.intervaloDoAcompanhar([{ status: "pendente" }], null), 5000);
+    assert.equal(escolha.intervaloDoAcompanhar([{ status: "pendente" }, { status: "convertendo" }], fechado), 5000);
+    assert.equal(escolha.intervaloDoAcompanhar([{ status: "pendente" }], { aberto_agora: true }), 5000);
   });
 
   test("marcar até 8; o nono não entra; desmarcar libera", () => {
@@ -398,6 +438,199 @@ describe("a ponte: converter, acompanhar, cancelar", () => {
   });
 });
 
+describe("o que volta da ponte: idempotente, só para a frente, ambíguo vai para revisão", () => {
+  const linha = async (preset: string, v = versaoSolta) =>
+    (
+      (await getBanco().asSystem("teste", (tx) =>
+        tx.execute(sql`select id, status, pedido_id, erro from maestro.entregaveis where versao_id = ${v}::uuid and preset = ${preset}`),
+      )) as unknown as { id: string; status: string; pedido_id: string | null; erro: string | null }[]
+    )[0];
+  const convertidos = () => ponte.estado.chamadas.filter((c) => c.acao === "relay.converter").length;
+
+  test("aplicavel (puro): pronto é final; erro e cancelado são finais no mesmo pedido; o resto anda", () => {
+    assert.equal(rel.aplicavel({ status: "pronto", pedido_id: "a" }, { id: "a", status: "convertendo" }), false);
+    assert.equal(rel.aplicavel({ status: "pronto", pedido_id: "a" }, { id: "b", status: "pendente" }), false);
+    assert.equal(rel.aplicavel({ status: "cancelado", pedido_id: "a" }, { id: "a", status: "convertendo" }), false);
+    assert.equal(rel.aplicavel({ status: "erro", pedido_id: "a" }, { id: "a", status: "pronto" }), false);
+    assert.equal(rel.aplicavel({ status: "cancelado", pedido_id: "a" }, { id: "b", status: "pendente" }), true, "pedido novo recomeça");
+    assert.equal(rel.aplicavel({ status: "convertendo", pedido_id: "a" }, { id: "a", status: "pronto" }), true);
+    assert.equal(rel.aplicavel({ status: "revisar", pedido_id: null }, { id: "a", status: "pendente" }), true);
+  });
+
+  test("despacho ambíguo: a fila guardou e a resposta não voltou → Conferir, sem tentar de novo sozinho", async () => {
+    const antes = convertidos();
+    const naFila = ponte.estado.relay.pedidos.size;
+    ponte.estado.relay.converterFalha = "rede";
+    let r;
+    try {
+      r = await rel.gerarVersoes(s.ana, { versaoId: versaoSolta, presets: ["feed", "linkedin"], destino: "original" });
+    } finally {
+      ponte.estado.relay.converterFalha = null;
+    }
+    assert.ok(r.ok, !r.ok ? r.mensagem : "");
+    assert.equal(r.dados.revisar, true);
+    assert.equal(convertidos(), antes + 1, "uma chamada só: nada de nova tentativa");
+    assert.equal(ponte.estado.relay.pedidos.size, naFila + 2, "a fila guardou os dois");
+    for (const p of ["feed", "linkedin"]) {
+      const l = await linha(p);
+      assert.deepEqual([l.status, l.pedido_id, l.erro], ["revisar", null, rel.MSG_AMBIGUO]);
+    }
+    // acompanhar não mexe no que está em revisão (não há pedido para perguntar)
+    const antesCh = ponte.estado.chamadas.length;
+    const a = await rel.entregaveisDoCard(s.ana, "relaySolto", true);
+    assert.ok(a.entregaveis.filter((e) => ["feed", "linkedin"].includes(e.preset)).every((e) => e.status === "revisar"));
+    assert.ok(ponte.estado.chamadas.slice(antesCh).every((c) => c.acao !== "relay.converter"));
+    // a pessoa confere: a mesma chave ref:preset devolve o pedido que a fila já tinha (nenhum segundo arquivo)
+    const c = await rel.conferirEntregavel(s.ana, (await linha("feed")).id);
+    assert.ok(c.ok);
+    assert.equal(ponte.estado.relay.pedidos.size, naFila + 2);
+    const feed = c.dados.entregaveis.find((e) => e.preset === "feed")!;
+    assert.equal(feed.status, "pendente");
+    const daFila = [...ponte.estado.relay.pedidos.values()].find((p) => p.ref === versaoSolta && p.preset === "feed")!;
+    assert.equal((await linha("feed")).pedido_id, daFila.id);
+    // o outro segue esperando a pessoa conferir
+    assert.equal((await linha("linkedin")).status, "revisar");
+    // quem só lê não confere
+    const leo = await rel.conferirEntregavel(s.leo, (await linha("linkedin")).id);
+    assert.ok(!leo.ok && leo.erro === "sem_permissao");
+    assert.ok((await rel.conferirEntregavel(s.ana, (await linha("linkedin")).id)).ok);
+    assert.equal((await linha("linkedin")).status, "pendente");
+  });
+
+  test("a fila respondeu só uma parte: o que não voltou fica para conferir", async () => {
+    ponte.estado.relay.converterFalha = "parcial";
+    try {
+      const r = await rel.gerarVersoes(s.ana, { versaoId: versaoSolta, presets: ["x", "slides"], destino: "original" });
+      assert.ok(r.ok);
+      assert.equal(r.dados.revisar, true);
+    } finally {
+      ponte.estado.relay.converterFalha = null;
+    }
+    // a ordem da folha: x vem antes de slides; a fila respondeu o primeiro
+    assert.equal((await linha("x")).status, "pendente");
+    assert.equal((await linha("slides")).status, "revisar");
+  });
+
+  test("recusa clara do SOBEDESCE (400): nada gravado, a mensagem dele", async () => {
+    ponte.estado.relay.converterFalha = "recusa";
+    try {
+      const r = await rel.gerarVersoes(s.ana, { versaoId: versaoSolta, presets: ["site"], destino: "original" });
+      assert.ok(!r.ok && r.status === 400);
+      assert.match(r.mensagem, /não acha/);
+    } finally {
+      ponte.estado.relay.converterFalha = null;
+    }
+    assert.equal(await linha("site"), undefined);
+  });
+
+  test("a mesma resposta duas vezes dá o mesmo estado; resposta atrasada não desfaz o pronto", async () => {
+    const ctx = { sub: ANA, orgId: org };
+    const dois = async () => (await rel.entregaveisDoCard(s.ana, "relaySolto", true)).entregaveis.map((e) => [e.preset, e.status, e.frac]);
+    const a = await dois();
+    assert.deepEqual(await dois(), a, "idempotente");
+    // o pronto vira "convertendo" do outro lado (resposta velha): o Maestro não volta
+    const reels = await linha("reels");
+    const p = ponte.estado.relay.pedidos.get(reels.pedido_id!)!;
+    Object.assign(p, { status: "convertendo", frac: 0.5 });
+    ponte.estado.relay.avancar = false;
+    // força o pronto do lado de cá pela própria ponte
+    Object.assign(p, {
+      status: "pronto",
+      resultado: { arquivoId: "out-reels", nome: "Teaser (Reels · No Compress).mp4", tamanho: 1, md5: "b".repeat(32), pastaId: "f-aurora" },
+    });
+    await rel.entregaveisDoCard(s.ana, "relaySolto", true);
+    assert.equal((await linha("reels")).status, "pronto");
+    Object.assign(p, { status: "convertendo", frac: 0.2, resultado: undefined });
+    await rel.entregaveisDoCard(s.ana, "relaySolto", true);
+    assert.equal((await linha("reels")).status, "pronto", "não volta");
+    // o banco confere de novo: pronto não muda, nem por fora da regra do código
+    const e = await getBanco()
+      .asUser(ctx, (tx) => tx.execute(sql`update maestro.entregaveis set status = 'convertendo' where id = ${reels.id}::uuid`))
+      .then(
+        () => null,
+        (x) => x,
+      );
+    assert.equal(codigoPg(e), "23514");
+    // e cancelado do mesmo pedido não volta a andar
+    const tk = (
+      (await getBanco().asSystem("teste", (tx) =>
+        tx.execute(sql`select id from maestro.entregaveis where status in ('erro', 'cancelado') limit 1`),
+      )) as unknown as { id: string }[]
+    )[0];
+    const e2 = await getBanco()
+      .asUser(ctx, (tx) => tx.execute(sql`update maestro.entregaveis set status = 'pendente' where id = ${tk.id}::uuid`))
+      .then(
+        () => null,
+        (x) => x,
+      );
+    assert.equal(codigoPg(e2), "23514");
+  });
+
+  test("o SOBEDESCE não acha mais o pedido: vai para conferir (nunca pronto nem erro inventado)", async () => {
+    const x = await linha("x");
+    assert.equal(x.status, "pendente");
+    ponte.estado.relay.pedidos.delete(x.pedido_id!);
+    await rel.entregaveisDoCard(s.ana, "relaySolto", true);
+    const depois = await linha("x");
+    assert.deepEqual([depois.status, depois.erro], ["revisar", rel.MSG_SUMIU]);
+  });
+
+  test("acompanhar sem resposta: nada muda e a tela diz o porquê", async () => {
+    const antes = (await rel.entregaveisDoCard(s.ana, "relaySolto", false)).entregaveis.map((e) => e.status);
+    ponte.estado.relay.pedidoFalha = "rede";
+    try {
+      const r = await rel.entregaveisDoCard(s.ana, "relaySolto", true);
+      assert.ok(r.aviso);
+      assert.deepEqual(
+        r.entregaveis.map((e) => e.status),
+        antes,
+      );
+    } finally {
+      ponte.estado.relay.pedidoFalha = null;
+    }
+  });
+
+  test("cancelar sem resposta: o estado fica, e o acompanhamento traz o de verdade", async () => {
+    const l = await linha("linkedin");
+    assert.equal(l.status, "pendente");
+    ponte.estado.relay.cancelarFalha = "rede";
+    try {
+      const c = await rel.cancelarEntregavel(s.ana, l.id);
+      assert.ok(!c.ok && c.erro === "cancelar_ambiguo");
+    } finally {
+      ponte.estado.relay.cancelarFalha = null;
+    }
+    assert.equal((await linha("linkedin")).status, "pendente");
+    await rel.entregaveisDoCard(s.ana, "relaySolto", true);
+    assert.equal((await linha("linkedin")).status, "cancelado");
+  });
+
+  test("o computador fechado: o link do Relay no navegador leva só o preset (jeito 2 do contrato)", () => {
+    assert.equal(rel.linkNoRelay("youtube-1080"), "https://relay.absolutezro.com/converter?preset=youtube-1080&de=maestro");
+  });
+});
+
+describe("quem pede: acessos.ts e o banco dizem o mesmo", () => {
+  test("administração, gestão e equipe pedem; leitura só acompanha", async () => {
+    const acessos = await import("../src/lib/acessos");
+    assert.deepEqual([...acessos.PAPEIS_PEDIR_ENTREGAS], ["admin", "gestor", "equipe"]);
+    for (const p of ["admin", "gestor", "equipe", "leitura"] as const) assert.equal(acessos.podeEntregas({ papel: p }, "ver"), true);
+    assert.equal(acessos.podeEntregas({ papel: "leitura" }, "pedir"), false);
+    const pol = (await getBanco().asSystem("teste", (tx) =>
+      tx.execute(sql`select policyname::text as nome, coalesce(with_check, qual)::text as regra from pg_policies
+                      where schemaname = 'maestro' and tablename = 'entregaveis' and policyname in ('entregaveis_escrita', 'entregaveis_mudanca')`),
+    )) as unknown as { nome: string; regra: string }[];
+    assert.equal(pol.length, 2);
+    for (const p of pol) {
+      const papeis = /\{([a-z,]+)\}/.exec(p.regra)?.[1].split(",");
+      assert.deepEqual(papeis, [...acessos.PAPEIS_PEDIR_ENTREGAS], p.nome);
+    }
+    // a ficha recebe a mesma decisão
+    assert.equal((await rel.entregaveisDoCard(s.leo, "relayAprovado")).podePedir, false);
+    assert.equal((await rel.entregaveisDoCard(s.eva, "relayAprovado")).podePedir, true);
+  });
+});
+
 describe("a url que o HUB devolve", () => {
   test("só a rota da ação pedida, em /api/zro/relay/", async () => {
     const ponteLib = await import("../src/lib/sobedesce/ponte");
@@ -501,6 +734,6 @@ describe("entregáveis: duas organizações e acesso por cliente", () => {
     } finally {
       assert.equal((await pessoas.salvarAcesso({ sub: ANA, orgId: org }, EVA, false, [])).ok, true);
     }
-    assert.equal(await um(sql`select id from maestro.entregaveis where preset = 'feed'`), undefined);
+    assert.equal(await um(sql`select id from maestro.entregaveis where preset = 'feed' and card_id = 'relayAprovado'`), undefined);
   });
 });

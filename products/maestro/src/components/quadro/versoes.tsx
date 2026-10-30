@@ -68,15 +68,16 @@ export function VersoesDoCard({ card, podeEscrever }: { card: string; podeEscrev
                   <span className="vc__dia">{dia(v.em)}</span>
                   <Icone nome="externo" size={14} className="vc__abrir" />
                 </a>
-                {v.fonte === "drive" && v.driveId && (podeEscrever || daVersao.length) ? (
+                {v.fonte === "drive" && v.driveId && (entregas.podePedir || daVersao.length) ? (
                   <div className="vc__relay">
-                    {podeEscrever ? <BotaoGerar aprovada={v.aprovada} aoAbrir={() => setGerando(v)} /> : null}
+                    {entregas.podePedir ? <BotaoGerar aprovada={v.aprovada} aoAbrir={() => setGerando(v)} /> : null}
                     <ListaEntregaveis
                       itens={daVersao}
                       computador={entregas.computador}
                       aviso={entregas.aviso}
-                      podeCancelar={podeEscrever}
+                      podePedir={entregas.podePedir}
                       aoTrocar={entregas.trocar}
+                      aoAplicar={entregas.aplicar}
                       rotulo={`Entregáveis da v${v.n}`}
                     />
                   </div>

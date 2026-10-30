@@ -470,19 +470,25 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   como adicional" com link para os planos. Falta: o titular revisar e publicar os planos no console (e conceder o sinal à
   organização dele para testar: Concessão, produto Maestro, limite `maestro.marca_propria` = 1); domínio próprio
   depois, com autorização.
-- 🟡 Maestro, **"Gerar versões com o Relay"** (29/10/2026; contrato "Maestro → Relay" em
+- 🟡 Maestro, **"Gerar versões com o Relay"** (29–30/10/2026; contrato "Maestro → Relay" em
   [relay.md](integration-contracts/relay.md), [ADR 0030](decisions/0030-relay-conversao.md)): na ficha do card (bloco
   Versões) e no lote, a versão do Drive ganha "Gerar versões" com o ícone do Relay (em destaque quando aprovada). Folha
-  com os destinos de entrega ao cliente primeiro (o resto em "Mais", "Tamanho exato" fora, no máximo 8), pasta
-  "05 Entregas" do projeto (criada pela estrutura do Drive se faltar) ou ao lado do original, prévia com o nome
-  `<original> (<preset>).<ext>`, codec e peso pelo `planejar` do Relay com os metadados do Drive. Pede pela ponte do HUB
-  (`relay.converter`, ref = id da versão, idempotente por `ref:preset`), acompanha a cada 5 s só com a tela à vista
-  (`relay.pedido`) e cancela por item (`relay.cancelar`). Entregáveis em `maestro.entregaveis` (migração `0024`, RLS e
-  acesso por cliente): na fila, convertendo com %, pronto com MD5 ✓, erro, cancelado; abrir e copiar o link do Drive.
-  Sem SOBEDESCE ou Relay no plano: o porquê e o link; computador fechado: "Vai começar quando o computador com o
-  SOBEDESCE abrir". Cópia de `presets.js`/`plano.js` e do ícone em `products/maestro/` conferida por teste. **Falta (lado
-  do Relay/SOBEDESCE):** as ações `relay.*` na `PONTES` do HUB e as rotas `/api/zro/relay/*`, o tipo `relay` na fila e o
-  executor no app de computador; até lá o HUB responde 403 e a folha diz "O Relay ainda não está liberado".
+  com os destinos de entrega ao cliente primeiro e o resto em "Mais" nos grupos do Relay (Redes, Trabalho, TV, Tamanho,
+  Áudio; "Tamanho exato" fora; no máximo 8), pasta "05 Entregas" do projeto (criada pela estrutura do Drive se faltar)
+  ou ao lado do original, prévia com o nome `<original> (<preset>).<ext>`, codec e peso pelo `planejar` do Relay com os
+  metadados do Drive. Pede pela ponte do HUB (`relay.converter`, ref = id da versão, idempotente por `ref:preset`),
+  acompanha só com a tela à vista (`relay.pedido`: 5 s, ou 15 s com tudo na fila e o computador fechado) e cancela por
+  item (`relay.cancelar`). Entregáveis em `maestro.entregaveis` (migração Maestro `0034`, RLS, acesso por cliente e o
+  gatilho `entregaveis_guarda`: o estado só anda para a frente): na fila, convertendo com %, pronto com MD5 ✓, não
+  saiu, cancelado e **Conferir** (despacho ambíguo ou pedido que sumiu da fila; só a pessoa pede de novo, nunca
+  sozinho). Quem pede: `podeEntregas` em `src/lib/acessos.ts` (administração, gestão e equipe; leitura acompanha). Sem
+  SOBEDESCE ou Relay no plano: o porquê e o link; computador fechado: "Começa quando o computador com o SOBEDESCE
+  abrir" e o Relay no navegador como saída (jeito 2, só o preset). Cópia de `presets.js`/`plano.js` (23 destinos) e do
+  ícone conferida por teste, com os campos tipados. HUB: as ações `relay.*` na `PONTES` (exigem também o Relay no
+  plano; `relay.pedido` com limite próprio), schemas `sobedesce.relay-*` e o OpenAPI. **Falta (lado do SOBEDESCE):**
+  as rotas `/api/zro/relay/*`, o tipo `relay` na fila `pedidos_proxy` e o executor no app de computador; até lá o
+  SOBEDESCE de verdade responde 404 e a folha diz que ele não conseguiu agora. Depois: evento
+  `media.conversion.completed` quando o HUB receber resultado.
 - ⬜ Maestro, do mesmo estudo e à espera do titular: a Z **escrevendo** no Maestro (criar
   pedido, despesa, marcar contato, sempre com a ação exata e o "sim"; cota e plano da Z); sincronia de duas vias com o Google Agenda (OAuth); eventos
   `maestro.pedido.ganho`, `maestro.orcamento.aceito` e `maestro.projeto.criado` no HUB (desenho no mapa).
@@ -774,7 +780,8 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
 - ✅ HUB: produto `relay` no catálogo (migration `0031`, incluído em todo plano, fechado pelo gate), `ProductId`, catálogo
   de integrações e a Z.
 - ⬜ Revela tira a aba Converter e aponta para o Relay (na conversa da Revela); AEON e NOSSOM exportam pelos presets do
-  Relay; Synquei e Maestro pedem versões pela fila ([contrato](integration-contracts/relay.md)).
+  Relay; Synquei pede versões pela fila ([contrato](integration-contracts/relay.md)). Maestro: o lado dele e a
+  `PONTES` do HUB prontos (30/10/2026); faltam as rotas e o executor do SOBEDESCE.
 - ✅ Presets de TV e formatos específicos (pedido do titular, 29/10/2026): Smart TV (H.264 Full HD a 30 fps, pendrive) e
   Smart TV 4K (HEVC) num grupo TV; LinkedIn e X em Redes; Slides e Vídeo de fundo (sem som) em Trabalho. Entrega para
   emissora (MXF/XDCAM, ProRes, loudness) fica de fora até existir no computador.

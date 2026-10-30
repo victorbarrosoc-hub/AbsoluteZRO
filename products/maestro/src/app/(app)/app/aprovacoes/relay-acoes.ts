@@ -1,7 +1,8 @@
 "use server";
 /**
  * "Gerar versões com o Relay" (src/lib/relay/entregaveis.ts): sessão e acesso conferidos aqui; organização, pessoa e
- * papel da sessão; o banco confere de novo (RLS e acesso por cliente) e o HUB confere o plano ao assinar o pedido.
+ * papel da sessão (`podeEntregas` em src/lib/acessos.ts); o banco confere de novo (RLS e acesso por cliente) e o HUB
+ * confere o plano (SOBEDESCE e Relay) ao assinar o pedido.
  */
 import { exigirAcessoNaAcao } from "@/lib/auth/acao";
 import * as rel from "@/lib/relay/entregaveis";
@@ -15,7 +16,7 @@ export async function prepararRelayAcao(versaoId: string): Promise<({ ok: true }
   return r.ok ? { ok: true, ...r.dados } : erro(r);
 }
 
-export async function gerarVersoesAcao(e: rel.Pedir): Promise<{ ok: true; entregaveis: rel.Entregavel[]; computador: rel.Computador | null } | Erro> {
+export async function gerarVersoesAcao(e: rel.Pedir): Promise<({ ok: true } & rel.Pedido) | Erro> {
   const s = await exigirAcessoNaAcao();
   const r = await rel.gerarVersoes(s, {
     versaoId: String(e?.versaoId ?? ""),
@@ -30,6 +31,13 @@ export async function gerarVersoesAcao(e: rel.Pedir): Promise<{ ok: true; entreg
 export async function entregaveisDoCardAcao(cardId: string, acompanhar: boolean): Promise<{ ok: true } & rel.Andamento> {
   const s = await exigirAcessoNaAcao();
   return { ok: true, ...(await rel.entregaveisDoCard(s, String(cardId), acompanhar === true)) };
+}
+
+/** "Conferir" um item em revisão: só com o toque da pessoa (pede de novo a mesma chave; a fila devolve o que existe). */
+export async function conferirEntregavelAcao(id: string): Promise<({ ok: true } & rel.Pedido) | Erro> {
+  const s = await exigirAcessoNaAcao();
+  const r = await rel.conferirEntregavel(s, String(id));
+  return r.ok ? { ok: true, ...r.dados } : erro(r);
 }
 
 export async function cancelarEntregavelAcao(id: string): Promise<{ ok: true; entregavel: rel.Entregavel } | Erro> {

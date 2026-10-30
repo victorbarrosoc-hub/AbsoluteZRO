@@ -26,6 +26,8 @@ export type Preset = {
   video: VideoDoPreset | null;
   audio: AudioDoPreset;
   tamanhoMax?: number;
+  /** Sai sem som mesmo com áudio na origem (Vídeo de fundo). */
+  semAudio?: boolean;
   ajustavel?: boolean;
   dica?: string;
   fontes: FonteDoPreset[];

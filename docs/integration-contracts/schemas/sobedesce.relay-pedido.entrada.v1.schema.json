@@ -1,0 +1,21 @@
+{
+  "$id": "https://absolutezro.local/schemas/sobedesce.relay-pedido.entrada.v1.json",
+  "title": "SOBEDESCE relay.pedido: corpo v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "ids": {
+      "minItems": 1,
+      "maxItems": 50,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9_.:-]{1,120}$"
+      }
+    }
+  },
+  "required": [
+    "ids"
+  ],
+  "additionalProperties": false
+}

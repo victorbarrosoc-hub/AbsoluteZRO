@@ -11,7 +11,11 @@
  *   a fila de mentira do SOBEDESCE, idempotente por `ref:preset`. Nada converte sozinho: com `relay.avancar`, cada
  *   leitura de `relay.pedido` anda um passo (pendente → convertendo 50% → pronto com resultado e MD5). `relay.negar` =
  *   o HUB sem o Relay no plano (403 com `details.product = relay`); `relay.semPonte` = o HUB ainda sem as ações
- *   `relay.*` na PONTES (403 `action_not_allowed`). No e2e, POST /__relay muda e GET /__relay lê.
+ *   `relay.*` na PONTES (403 `action_not_allowed`). `relay.converterFalha`: "rede" = guarda os pedidos e derruba a
+ *   conexão sem responder (o despacho ambíguo), "recusa" = 400 sem guardar nada, "parcial" = guarda todos e responde
+ *   só o primeiro. `relay.pedidoFalha` = "rede" derruba o `relay.pedido`; `relay.cancelarFalha` = "rede" cancela e
+ *   derruba. Apagar de `relay.pedidos` = o SOBEDESCE não acha mais o pedido. No e2e, POST /__relay muda (com
+ *   `pronto: true`, todos os andando ficam prontos de uma vez) e GET /__relay lê.
  */
 import { randomBytes } from "node:crypto";
 import http from "node:http";
@@ -108,6 +112,9 @@ export async function iniciarPonteFalsa(o: { porta?: number; cliente?: { clientI
       falhar: false,
       negar: false,
       semPonte: false,
+      converterFalha: null as null | "rede" | "recusa" | "parcial",
+      pedidoFalha: null as null | "rede",
+      cancelarFalha: null as null | "rede",
     },
     pastas: new Map<string, { id: string; nome: string; pai: string }>(),
     /**
@@ -141,6 +148,22 @@ export async function iniciarPonteFalsa(o: { porta?: number; cliente?: { clientI
       .toLowerCase();
   const emitidos = new Map<string, { acao: string; usado: boolean; sub: string | null }>();
 
+  /** Quem converte terminou: o arquivo novo no Drive, com o MD5 (conferido do lado do SOBEDESCE de verdade). */
+  const ficarPronto = (p: PedidoRelayFalso) => {
+    const original = DRIVE_FIXO.find((f) => f.id === p.arquivoId)?.name ?? "video.mp4";
+    Object.assign(p, {
+      status: "pronto",
+      frac: 1,
+      atualizado_em: new Date().toISOString(),
+      resultado: {
+        arquivoId: `out-${p.id.slice(3)}`,
+        nome: nomeSaida(original, p.preset),
+        tamanho: 12_345_678,
+        md5: randomBytes(16).toString("hex"),
+        pastaId: p.pastaId ?? "f-aurora",
+      },
+    });
+  };
   const enviar = (res: http.ServerResponse, status: number, dados: unknown) => {
     res.writeHead(status, { "Content-Type": "application/json" });
     res.end(JSON.stringify(dados));
@@ -168,7 +191,10 @@ export async function iniciarPonteFalsa(o: { porta?: number; cliente?: { clientI
       const rl = estado.relay;
       if (req.method === "POST") {
         for (const k of ["avancar", "falhar", "negar", "semPonte"] as const) if (typeof corpo[k] === "boolean") rl[k] = corpo[k] as boolean;
+        for (const k of ["converterFalha", "pedidoFalha", "cancelarFalha"] as const)
+          if (k in corpo) (rl as Record<string, unknown>)[k] = corpo[k] === null ? null : String(corpo[k]);
         if (corpo.computador && typeof corpo.computador === "object") Object.assign(rl.computador, corpo.computador);
+        if (corpo.pronto === true) for (const p of rl.pedidos.values()) if (p.status === "pendente" || p.status === "convertendo") ficarPronto(p);
       }
       return enviar(res, 200, { ...rl, pedidos: [...rl.pedidos.values()] });
     }
@@ -282,6 +308,7 @@ export async function iniciarPonteFalsa(o: { porta?: number; cliente?: { clientI
           const ref = String(corpo.ref ?? "");
           if (!id || !ref || ref.length > 120 || presets.length < 1 || presets.length > 8 || presets.some((p) => !acharPreset(p)))
             return enviar(res, 400, { erro: "entrada", mensagem: "Pedido inválido." });
+          if (rl.converterFalha === "recusa") return enviar(res, 400, { erro: "arquivo", mensagem: "O SOBEDESCE não acha este arquivo no Drive." });
           const pedidos = presets.map((preset) => {
             const ja = [...rl.pedidos.values()].find((p) => p.ref === ref && p.preset === preset && p.status !== "erro" && p.status !== "cancelado");
             if (ja) return ja;
@@ -299,32 +326,22 @@ export async function iniciarPonteFalsa(o: { porta?: number; cliente?: { clientI
             rl.pedidos.set(novo.id, novo);
             return novo;
           });
-          return enviar(res, 202, { pedidos: pedidos.map((p) => ({ id: p.id, preset: p.preset, ref: p.ref, status: p.status })) });
+          // guardou e a resposta não volta: o despacho ambíguo
+          if (rl.converterFalha === "rede") return void res.socket?.destroy();
+          const devolvidos = rl.converterFalha === "parcial" ? pedidos.slice(0, 1) : pedidos;
+          return enviar(res, 202, { pedidos: devolvidos.map((p) => ({ id: p.id, preset: p.preset, ref: p.ref, status: p.status })) });
         }
         case "relay.pedido": {
           const ids = Array.isArray(corpo.ids) ? corpo.ids.map(String) : [];
           if (ids.length > 50) return enviar(res, 400, { erro: "entrada", mensagem: "No máximo 50." });
+          if (rl.pedidoFalha === "rede") return void res.socket?.destroy();
           const lista = ids.map((i) => rl.pedidos.get(i)).filter((p): p is PedidoRelayFalso => !!p);
           if (rl.avancar)
             for (const p of lista) {
               if (p.status === "pendente") Object.assign(p, { status: "convertendo", frac: 0.5, atualizado_em: agora() });
               else if (p.status === "convertendo" && rl.falhar)
                 Object.assign(p, { status: "erro", erro: "O ffmpeg parou no meio.", frac: undefined, atualizado_em: agora() });
-              else if (p.status === "convertendo") {
-                const original = DRIVE_FIXO.find((f) => f.id === p.arquivoId)?.name ?? "video.mp4";
-                Object.assign(p, {
-                  status: "pronto",
-                  frac: 1,
-                  atualizado_em: agora(),
-                  resultado: {
-                    arquivoId: `out-${p.id.slice(3)}`,
-                    nome: nomeSaida(original, p.preset),
-                    tamanho: 12_345_678,
-                    md5: randomBytes(16).toString("hex"),
-                    pastaId: p.pastaId ?? "f-aurora",
-                  },
-                });
-              }
+              else if (p.status === "convertendo") ficarPronto(p);
             }
           return enviar(res, 200, {
             pedidos: lista.map(({ arquivoId: _a, pastaId: _p, conta: _c, ...p }) => (void _a, void _p, void _c, p)),
@@ -336,6 +353,7 @@ export async function iniciarPonteFalsa(o: { porta?: number; cliente?: { clientI
           if (!p) return enviar(res, 404, { erro: "nao_achou", mensagem: "Pedido não encontrado." });
           if (p.status === "pronto" || p.status === "erro" || p.status === "cancelado") return enviar(res, 200, { cancelado: false, ja_terminado: true });
           Object.assign(p, { status: "cancelado", atualizado_em: agora() });
+          if (rl.cancelarFalha === "rede") return void res.socket?.destroy();
           return enviar(res, 200, { cancelado: true, ja_terminado: false });
         }
         case "drive.token":

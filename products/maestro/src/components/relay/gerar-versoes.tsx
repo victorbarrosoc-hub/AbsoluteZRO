@@ -1,17 +1,28 @@
 "use client";
 /**
  * A folha "Gerar versões com o Relay" (contrato "Maestro → Relay" em docs/integration-contracts/relay.md): escolha de
- * até 8 destinos (primeiro os de entrega ao cliente, o resto em "Mais"), a pasta (05 Entregas do projeto ou ao lado do
+ * até 8 destinos (primeiro os de entrega ao cliente, o resto em "Mais", nos grupos do Relay), a pasta (05 Entregas do projeto ou ao lado do
  * original), a prévia de cada arquivo (nome, codec e peso pelo `planejar` do Relay com os metadados do Drive) e o
  * botão "Gerar N versões". Sem o SOBEDESCE ou sem o Relay no plano, só o porquê e o link; nada é pedido.
  */
 import { useEffect, useMemo, useState } from "react";
 import { gerarVersoesAcao, prepararRelayAcao } from "@/app/(app)/app/aprovacoes/relay-acoes";
 import type { Computador, Entregavel, Preparo } from "@/lib/relay/entregaveis";
-import { alternar, MAX_PRESETS, origemDoDrive, presetsDaFolha, previa, type MetadadosDrive, type PresetMaestro } from "@/lib/relay/escolha";
+import {
+  alternar,
+  formaDoPreset,
+  maisPorGrupo,
+  MAX_PRESETS,
+  origemDoDrive,
+  presetsDaFolha,
+  previa,
+  type MetadadosDrive,
+  type PresetMaestro,
+} from "@/lib/relay/escolha";
 import { contaQueVe } from "@/components/arquivos/drive-cliente";
 import { Folha, useFecharFolha } from "@/components/folha";
 import { Icone } from "@/components/icones";
+import { Forma } from "./entregas";
 
 type Origem = { nome: string; meta: MetadadosDrive; conta: string | null } | null;
 
@@ -24,6 +35,7 @@ function Opcao({ p, marcado, aoMudar }: { p: PresetMaestro; marcado: boolean; ao
         <span className="rl-opcao__caixa" aria-hidden="true">
           {marcado ? <Icone nome="check" size={13} /> : null}
         </span>
+        <Forma forma={formaDoPreset(p.id)} />
         <span className="rl-opcao__nome">{p.nome}</span>
       </label>
     </li>
@@ -40,7 +52,8 @@ function Corpo({ versaoId, aoPedir }: { versaoId: string; aoPedir: (lista: Entre
   const [destino, setDestino] = useState<"entregas" | "original">("entregas");
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
-  const { principais, mais } = useMemo(() => presetsDaFolha(), []);
+  const { principais } = useMemo(() => presetsDaFolha(), []);
+  const grupos = useMemo(() => maisPorGrupo(), []);
 
   useEffect(() => {
     let vivo = true;
@@ -111,7 +124,7 @@ function Corpo({ versaoId, aoPedir }: { versaoId: string; aoPedir: (lista: Entre
   if (!prep.podeGerar)
     return (
       <div className="rl-folha__corpo rl-folha__sem">
-        <p className="rl-apoio">Seu papel nesta organização só lê.</p>
+        <p className="rl-apoio">Seu papel nesta organização só acompanha as entregas.</p>
       </div>
     );
 
@@ -132,11 +145,16 @@ function Corpo({ versaoId, aoPedir }: { versaoId: string; aoPedir: (lista: Entre
         </ul>
         <details className="rl-mais">
           <summary>Mais</summary>
-          <ul className="rl-opcoes">
-            {mais.map((p) => (
-              <Opcao key={p.id} p={p} marcado={escolhidos.includes(p.id)} aoMudar={() => mudar(p.id)} />
-            ))}
-          </ul>
+          {grupos.map((g) => (
+            <div key={g.grupo} className="rl-mais__grupo" role="group" aria-label={g.grupo}>
+              <span className="rl-mais__titulo">{g.grupo}</span>
+              <ul className="rl-opcoes">
+                {g.presets.map((p) => (
+                  <Opcao key={p.id} p={p} marcado={escolhidos.includes(p.id)} aoMudar={() => mudar(p.id)} />
+                ))}
+              </ul>
+            </div>
+          ))}
         </details>
         {cheio ? (
           <p className="rl-apoio" role="status">
@@ -166,7 +184,7 @@ function Corpo({ versaoId, aoPedir }: { versaoId: string; aoPedir: (lista: Entre
           {linhas.map((l) => (
             <li key={l.preset} data-impossivel={l.impossivel ? true : undefined}>
               <span className="rl-previa__arquivo" title={l.arquivo}>
-                <Icone nome="filme" size={14} /> {l.arquivo}
+                <Icone nome={formaDoPreset(l.preset) === "audio" ? "musica" : "filme"} size={14} /> {l.arquivo}
               </span>
               <span className="rl-previa__meta">
                 {l.codec} · {l.peso}

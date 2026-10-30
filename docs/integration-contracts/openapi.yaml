@@ -390,7 +390,22 @@ paths:
               properties:
                 destino: { type: string, enum: [sobedesce] }
                 acao:
-                  { type: string, enum: [drive.listar, drive.miniatura, drive.pasta.criar, drive.compartilhar_revisao, drive.recolher_revisao, drive.token] }
+                  {
+                    type: string,
+                    enum:
+                      [
+                        drive.listar,
+                        drive.miniatura,
+                        drive.pasta.criar,
+                        drive.compartilhar_revisao,
+                        drive.recolher_revisao,
+                        drive.token,
+                        relay.converter,
+                        relay.pedido,
+                        relay.cancelar,
+                      ],
+                    description: 'relay.* (docs/integration-contracts/relay.md) exigem também o Relay no plano',
+                  }
                 sub: { type: string, format: uuid, description: 'Só com a credencial do app (Basic) e só para drive.recolher_revisao' }
       responses:
         {

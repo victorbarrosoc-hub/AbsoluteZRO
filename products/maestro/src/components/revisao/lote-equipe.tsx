@@ -130,8 +130,9 @@ function NovaVersao({ card, driveStream, sobedesce, aoFim }: { card: string; dri
  * "Gerar versões com o Relay" na peça: a versão do Drive que o cliente aprovou (senão a mais nova do Drive) e os
  * entregáveis do card, com o número da versão.
  */
-function EntregasDaPeca({ peca, escreve }: { peca: PecaDaEquipe; escreve: boolean }) {
+function EntregasDaPeca({ peca }: { peca: PecaDaEquipe }) {
   const entregas = useEntregaveis(peca.card);
+  const escreve = entregas.podePedir;
   const [aberta, setAberta] = useState(false);
   const aprovada = peca.decisoes.find((d) => d.decisao === "aprovado" && d.versao);
   const doDrive = peca.versoes.filter((v) => v.fonte === "drive" && v.driveId);
@@ -153,8 +154,9 @@ function EntregasDaPeca({ peca, escreve }: { peca: PecaDaEquipe; escreve: boolea
         itens={itens.map((e) => ({ ...e, nome: `v${n.get(e.versao) ?? "?"} · ${e.nome}` }))}
         computador={entregas.computador}
         aviso={entregas.aviso}
-        podeCancelar={escreve}
+        podePedir={escreve}
         aoTrocar={entregas.trocar}
+        aoAplicar={entregas.aplicar}
       />
       {aberta && alvo ? (
         <GerarVersoes versaoId={alvo.id} titulo={`${peca.titulo} · v${alvo.n}`} aoFechar={() => setAberta(false)} aoPedir={entregas.aplicar} />
@@ -464,7 +466,7 @@ export function LoteEquipe({
           </header>
           {ultimaDecisao?.nota ? <p className="ap-nota">“{ultimaDecisao.nota}”</p> : null}
           {escreve && lote.status !== "fechado" ? <NovaVersao card={peca.card} driveStream={driveStream} sobedesce={sobedesce} aoFim={atualizar} /> : null}
-          <EntregasDaPeca key={peca.card} peca={peca} escreve={escreve} />
+          <EntregasDaPeca key={peca.card} peca={peca} />
           {peca.versoes.length ? (
             <ComDriveDaEquipe ligado={!!sobedesce}>
               <Revisor

@@ -1,0 +1,41 @@
+{
+  "$id": "https://absolutezro.local/schemas/sobedesce.relay-converter.entrada.v1.json",
+  "title": "SOBEDESCE relay.converter: corpo v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "arquivoId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,200}$"
+    },
+    "presets": {
+      "minItems": 1,
+      "maxItems": 8,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9-]{1,40}$"
+      }
+    },
+    "pastaId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,200}$"
+    },
+    "ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "conta": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    }
+  },
+  "required": [
+    "arquivoId",
+    "presets",
+    "ref"
+  ],
+  "additionalProperties": false
+}

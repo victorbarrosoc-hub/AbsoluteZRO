@@ -26,6 +26,12 @@ import {
   DriveRecolherRespostaSchema,
   DriveTokenEntradaSchema,
   DriveTokenRespostaSchema,
+  RelayCancelarEntradaSchema,
+  RelayCancelarRespostaSchema,
+  RelayConverterEntradaSchema,
+  RelayConverterRespostaSchema,
+  RelayPedidoEntradaSchema,
+  RelayPedidoRespostaSchema,
 } from './ponte'
 import { DriveDownloadSchema, PreparoSchema } from './preparo'
 import { ProjectCreateSchema, ZroProjectSchema } from './project'
@@ -75,6 +81,13 @@ export function buildSchemas(): Record<string, unknown> {
     ['sobedesce.drive-recolher.resposta.v1', DriveRecolherRespostaSchema, 'SOBEDESCE drive.recolher_revisao: resposta v1'],
     ['sobedesce.drive-token.entrada.v1', DriveTokenEntradaSchema, 'SOBEDESCE drive.token: corpo v1'],
     ['sobedesce.drive-token.resposta.v1', DriveTokenRespostaSchema, 'SOBEDESCE drive.token: resposta v1'],
+    // "Gerar versões com o Relay" (docs/integration-contracts/relay.md, "Maestro → Relay").
+    ['sobedesce.relay-converter.entrada.v1', RelayConverterEntradaSchema, 'SOBEDESCE relay.converter: corpo v1'],
+    ['sobedesce.relay-converter.resposta.v1', RelayConverterRespostaSchema, 'SOBEDESCE relay.converter: resposta v1'],
+    ['sobedesce.relay-pedido.entrada.v1', RelayPedidoEntradaSchema, 'SOBEDESCE relay.pedido: corpo v1'],
+    ['sobedesce.relay-pedido.resposta.v1', RelayPedidoRespostaSchema, 'SOBEDESCE relay.pedido: resposta v1'],
+    ['sobedesce.relay-cancelar.entrada.v1', RelayCancelarEntradaSchema, 'SOBEDESCE relay.cancelar: corpo v1'],
+    ['sobedesce.relay-cancelar.resposta.v1', RelayCancelarRespostaSchema, 'SOBEDESCE relay.cancelar: resposta v1'],
   ]
   for (const [id, schema, title] of ponte) out[id] = s(schema, id, title)
   for (const [type, versions] of Object.entries(EVENT_PAYLOADS)) {

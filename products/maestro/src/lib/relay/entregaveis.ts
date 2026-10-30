@@ -6,27 +6,45 @@
  * - Pede pela mesma ponte do Drive (`noSobedesce`: token da pessoa → HUB assina `zro-pedido+jwt` → POST no
  *   SOBEDESCE): `relay.converter` `{ arquivoId, presets, pastaId?, ref: <id da versão>, conta? }`, `relay.pedido`
  *   `{ ids }` e `relay.cancelar` `{ id }`. Idempotente do lado de lá por `ref:preset`; do lado de cá, uma linha por
- *   (versão, preset) em `maestro.entregaveis` (drizzle/0024), gravada como a pessoa (asUser, RLS e acesso por cliente).
+ *   (versão, preset) em `maestro.entregaveis` (drizzle/0034), gravada como a pessoa (asUser, RLS e acesso por cliente).
  * - Pasta de destino: "05 Entregas" do projeto (a estrutura `Maestro/<Cliente>/<Projeto>/0x…` do `drive.pasta.criar`;
  *   criada se o projeto ainda não tem pasta). Projeto ligado a uma pasta sem "Entregas": a própria pasta do projeto.
  *   Sem projeto, ou se a pessoa escolher: ao lado do original.
  * - "pronto" só quando o SOBEDESCE diz pronto e manda o resultado com o MD5 (o banco também exige).
- * - Sem o SOBEDESCE ou sem o Relay no plano, a folha mostra o porquê e o link; nada é pedido.
+ * - O estado só anda para a frente (`aplicavel`, e o gatilho `entregaveis_guarda` no banco): resposta repetida ou
+ *   atrasada não desfaz "pronto", nem "erro"/"cancelado" do mesmo pedido.
+ * - Despacho ambíguo (o pedido saiu e a resposta não voltou) vira `revisar`: a pessoa toca em "Conferir", que pede de
+ *   novo a mesma chave `ref:preset` (a fila devolve o que já existe). Nada tenta de novo sozinho.
+ * - Pedido que o SOBEDESCE não acha mais também vira `revisar` (nunca "pronto" nem "erro" inventado).
+ * - Quem pede: `podeEntregas(sessao, "pedir")` (src/lib/acessos.ts: administração, gestão e equipe); leitura vê o que
+ *   foi guardado e nunca pergunta ao SOBEDESCE.
+ * - Sem o SOBEDESCE ou sem o Relay no plano, a folha mostra o porquê e o link; nada é pedido. Com o computador
+ *   fechado, o pedido espera; a tela diz e oferece o Relay no navegador (`linkNoRelay`, jeito 2 do contrato), que não
+ *   volta para o card sozinho.
  */
 import { sql } from "drizzle-orm";
 import { temProduto } from "@/lib/auth/acesso";
 import type { Sessao } from "@/lib/auth/sessao";
 import { getBanco, type Tx } from "@/lib/db/client";
-import { podeEscrever } from "@/lib/papeis";
+import { podeEntregas } from "@/lib/acessos";
 import { HUB_URL } from "@/lib/site";
 import { criarEstrutura } from "@/lib/sobedesce/arquivos";
 import { noSobedesce, PRODUTO_RELAY, PRODUTO_SOBEDESCE, type Resultado } from "@/lib/sobedesce/ponte";
-import { normalizarPresets, ORDEM } from "./escolha";
+import { formaDoPreset, normalizarPresets, ORDEM, type Forma } from "./escolha";
 import { preset as acharPreset } from "./presets.js";
 
-export const STATUS = ["pendente", "convertendo", "pronto", "erro", "cancelado"] as const;
+/** Os estados do SOBEDESCE (contrato) mais `revisar`, que é só do Maestro (despacho ambíguo ou pedido sumido). */
+export const STATUS_FILA = ["pendente", "convertendo", "pronto", "erro", "cancelado"] as const;
+export const STATUS = [...STATUS_FILA, "revisar"] as const;
 export type StatusEntregavel = (typeof STATUS)[number];
+type StatusFila = (typeof STATUS_FILA)[number];
 const EM_ANDAMENTO: StatusEntregavel[] = ["pendente", "convertendo"];
+
+export const MSG_AMBIGUO = "O pedido saiu, mas a resposta não voltou. Confira antes de pedir outro.";
+export const MSG_SUMIU = "O SOBEDESCE não achou mais este pedido. Confira para pedir de novo.";
+
+/** "Converter no navegador" pelo Relay (jeito 2 do contrato: só o preset; o arquivo do Drive ainda não vai junto). */
+export const linkNoRelay = (preset: string) => `https://relay.absolutezro.com/converter?preset=${encodeURIComponent(preset)}&de=maestro`;
 
 export type Entregavel = {
   id: string;
@@ -34,6 +52,8 @@ export type Entregavel = {
   preset: string;
   /** O nome do preset ("YouTube 1080p"). */
   nome: string;
+  /** Vertical, horizontal ou só som (o desenho do item). */
+  forma: Forma;
   status: StatusEntregavel;
   /** 0–1 enquanto converte. */
   frac: number | null;
@@ -107,6 +127,7 @@ function paraTela(l: Linha): Entregavel {
     versao: l.versao,
     preset: l.preset,
     nome: acharPreset(l.preset)?.nome ?? l.preset,
+    forma: formaDoPreset(l.preset),
     status: l.status,
     frac: l.frac === null ? null : Number(l.frac),
     pasta: l.pasta_id ? { id: l.pasta_id, nome: l.pasta_nome } : null,
@@ -134,11 +155,11 @@ async function linhasDoCard(tx: Tx, cardId: string): Promise<Linha[]> {
 
 // ───────────── o que a SOBEDESCE devolve ─────────────
 
-type PedidoRelay = {
+export type PedidoRelay = {
   id: string;
   preset: string;
   ref?: string;
-  status: StatusEntregavel;
+  status: StatusFila;
   frac?: number | null;
   resultado?: { arquivoId?: string; nome?: string; tamanho?: number; md5?: string; pastaId?: string } | null;
   erro?: string | null;
@@ -148,7 +169,7 @@ type PedidoRelay = {
 export function pedidoConferido(p: unknown): PedidoRelay | null {
   const o = p as Record<string, unknown> | null;
   if (!o || typeof o.id !== "string" || !ID_PEDIDO.test(o.id) || typeof o.preset !== "string") return null;
-  if (!STATUS.includes(o.status as StatusEntregavel)) return null;
+  if (!(STATUS_FILA as readonly string[]).includes(String(o.status))) return null;
   const frac = typeof o.frac === "number" && Number.isFinite(o.frac) ? Math.min(1, Math.max(0, o.frac)) : null;
   const r = o.resultado as Record<string, unknown> | null | undefined;
   const resultado =
@@ -161,14 +182,31 @@ export function pedidoConferido(p: unknown): PedidoRelay | null {
           pastaId: typeof r.pastaId === "string" && ID_DRIVE.test(r.pastaId) ? r.pastaId : undefined,
         }
       : null;
-  let status = o.status as StatusEntregavel;
+  let status = o.status as StatusFila;
   // "pronto" sem o resultado conferido não é pronto: segue convertendo até o SOBEDESCE mandar o arquivo e o MD5.
   if (status === "pronto" && !resultado) status = "convertendo";
   const erro = typeof o.erro === "string" && o.erro.trim() ? o.erro.trim().slice(0, 300) : null;
   return { id: o.id, preset: o.preset, ref: typeof o.ref === "string" ? o.ref : undefined, status, frac, resultado, erro };
 }
 
+/**
+ * O que veio do SOBEDESCE pode entrar na linha? O estado só anda para a frente: "pronto" é final; "erro" e
+ * "cancelado" são finais para aquele pedido (um pedido novo, com outro id, recomeça); o resto entra. Repetir a mesma
+ * resposta dá o mesmo estado (idempotente). O gatilho `entregaveis_guarda` confere de novo no banco.
+ */
+export function aplicavel(atual: { status: StatusEntregavel; pedido_id: string | null }, vindo: Pick<PedidoRelay, "id" | "status">): boolean {
+  if (atual.status === "pronto") return false;
+  if ((atual.status === "erro" || atual.status === "cancelado") && atual.pedido_id === vindo.id) return false;
+  return true;
+}
+
+/** Grava o que veio, se puder entrar (`aplicavel`, lido na mesma transação com trava na linha). */
 async function gravarPedido(tx: Tx, entregavelId: string, p: PedidoRelay) {
+  const [atual] = (await tx.execute(sql`select status, pedido_id from maestro.entregaveis where id = ${entregavelId}::uuid for update`)) as unknown as {
+    status: StatusEntregavel;
+    pedido_id: string | null;
+  }[];
+  if (!atual || !aplicavel(atual, p)) return;
   const r = p.resultado;
   await tx.execute(sql`
     update maestro.entregaveis set
@@ -179,6 +217,18 @@ async function gravarPedido(tx: Tx, entregavelId: string, p: PedidoRelay) {
       erro = ${p.status === "erro" ? (p.erro ?? "A conversão falhou no computador.") : null},
       atualizado_em = now()
     where id = ${entregavelId}::uuid`);
+}
+
+/**
+ * Para a pessoa conferir. Despacho ambíguo: só a linha nova, terminada ou já em revisão (um pedido que segue andando
+ * continua o mesmo). Pedido sumido (`sumiu`): a linha andando também. Pronto nunca.
+ */
+async function marcarRevisar(tx: Tx, entregavelId: string, motivo: string, sumiu = false) {
+  await tx.execute(sql`
+    update maestro.entregaveis set status = 'revisar', frac = null, erro = ${motivo}, atualizado_em = now(),
+           -- o pedido que já tinha terminado (erro, cancelado) não é o que está em dúvida
+           pedido_id = case when status in ('erro', 'cancelado') then null else pedido_id end
+     where id = ${entregavelId}::uuid and status <> 'pronto' and (${sumiu} or status not in ('pendente', 'convertendo'))`);
 }
 
 // ───────────── a versão ─────────────
@@ -265,7 +315,7 @@ export async function prepararRelay(sessao: Sessao, versaoId: string): Promise<R
   });
   if (!lido) return falha(404, "nao_existe", "Esta versão não está no Drive (ou não existe mais).");
   const disponivel = disponibilidade(sessao);
-  const podeGerar = disponivel.ok && podeEscrever(sessao.papel);
+  const podeGerar = disponivel.ok && podeEntregas(sessao, "pedir");
   let destino: Destino | null = null;
   let avisoDestino: string | null = null;
   if (podeGerar) {
@@ -289,55 +339,15 @@ async function pastaParaPedir(sessao: Sessao, v: VersaoRelay, conta: string | nu
 }
 
 export type Pedir = { versaoId: string; presets: unknown; destino: "entregas" | "original"; conta?: string | null };
+/** `revisar`: algum preset ficou sem confirmação (a tela diz e oferece "Conferir"). */
+export type Pedido = { entregaveis: Entregavel[]; computador: Computador | null; revisar: boolean };
 
-/** "Gerar N versões": pede ao SOBEDESCE e grava uma linha por preset (a mesma linha se já havia: idempotente). */
-export async function gerarVersoes(sessao: Sessao, e: Pedir): Promise<Resultado<{ entregaveis: Entregavel[]; computador: Computador | null }>> {
+/** Quem pode pedir agora (plano + papel). */
+function podePedir(sessao: Sessao): Falha | null {
   const disp = disponibilidade(sessao);
   if (!disp.ok) return falha(403, disp.erro, disp.mensagem);
-  if (!podeEscrever(sessao.papel)) return falha(403, "sem_permissao", "Seu papel nesta organização só lê.");
-  if (!UUID.test(e.versaoId)) return falha(400, "formato", "Versão inválida.");
-  const presets = normalizarPresets(e.presets);
-  if (!presets) return falha(400, "presets", "Escolha de 1 a 8 destinos da lista.");
-  const conta = typeof e.conta === "string" && /^[A-Za-z0-9_.@-]{1,64}$/.test(e.conta) ? e.conta : null;
-  const ctx = { sub: sessao.sub, orgId: sessao.orgId };
-  const v = await getBanco().asUser(ctx, (tx) => versaoDoDrive(tx, e.versaoId));
-  if (!v) return falha(404, "nao_existe", "Esta versão não está no Drive (ou não existe mais).");
-
-  const pasta = e.destino === "original" ? ({ ok: true, dados: null } as const) : await pastaParaPedir(sessao, v, conta);
-  if (!pasta.ok) return pasta;
-
-  const r = await noSobedesce<{ pedidos?: unknown[] }>(sessao, "relay.converter", {
-    arquivoId: v.driveId,
-    presets,
-    ...(pasta.dados ? { pastaId: pasta.dados.id } : {}),
-    ref: v.id,
-    ...(conta ? { conta } : {}),
-  });
-  if (!r.ok) return r;
-  const vindos = (r.dados.pedidos ?? []).map(pedidoConferido).filter((p): p is PedidoRelay => !!p && presets.includes(p.preset));
-  if (!vindos.length) return falha(502, "sobedesce", "O SOBEDESCE não confirmou os pedidos. Tente de novo.");
-
-  // O estado completo (resultado e MD5 de um pedido que já estava pronto) vem do relay.pedido; sem ele, o da criação.
-  const lidos = await noSobedesce<{ pedidos?: unknown[]; computador?: Computador }>(sessao, "relay.pedido", { ids: vindos.map((p) => p.id) });
-  const porId = new Map(vindos.map((p) => [p.id, p]));
-  if (lidos.ok) for (const p of (lidos.dados.pedidos ?? []).map(pedidoConferido)) if (p && porId.has(p.id)) porId.set(p.id, p);
-
-  const linhas = await getBanco().asUser(ctx, async (tx) => {
-    for (const p of porId.values()) {
-      const [l] = (await tx.execute(sql`
-        insert into maestro.entregaveis (org_id, card_id, versao_id, preset, pasta_id, pasta_nome, criado_por)
-        values (${sessao.orgId}::uuid, ${v.card}, ${v.id}::uuid, ${p.preset}, ${pasta.dados?.id ?? null}, ${pasta.dados?.nome ?? null}, ${sessao.sub}::uuid)
-        on conflict (org_id, versao_id, preset) do update
-          set pasta_id = excluded.pasta_id, pasta_nome = excluded.pasta_nome, atualizado_em = now()
-        returning id`)) as unknown as { id: string }[];
-      await gravarPedido(tx, l.id, p);
-    }
-    await tx.execute(
-      sql`insert into maestro.audit_log (org_id, actor_sub, action, target_type, target_id, metadata) values (${sessao.orgId}, ${sessao.sub}, 'relay.converter', 'versao', ${v.id}, ${JSON.stringify({ presets, pasta: pasta.dados?.id ?? null })}::jsonb)`,
-    );
-    return (await linhasDoCard(tx, v.card)).filter((l) => l.versao === v.id);
-  });
-  return { ok: true, dados: { entregaveis: linhas.map(paraTela), computador: lidos.ok ? computadorConferido(lidos.dados.computador) : null } };
+  if (!podeEntregas(sessao, "pedir")) return falha(403, "sem_permissao", "Seu papel nesta organização só acompanha as entregas.");
+  return null;
 }
 
 const computadorConferido = (c: unknown): Computador | null => {
@@ -345,51 +355,173 @@ const computadorConferido = (c: unknown): Computador | null => {
   return o && typeof o.aberto_agora === "boolean" ? { aberto_agora: o.aberto_agora, usado_ha_pouco: o.usado_ha_pouco === true } : null;
 };
 
-export type Andamento = { entregaveis: Entregavel[]; computador: Computador | null; aviso: string | null };
+/**
+ * Manda os presets ao SOBEDESCE e guarda uma linha por preset (a mesma linha se já havia: idempotente dos dois lados).
+ * Recusa clara (HUB, plano, 4xx): nada gravado. Ambíguo (saiu e não voltou): as linhas ficam em `revisar`.
+ */
+async function despachar(
+  sessao: Sessao,
+  v: VersaoRelay,
+  presets: string[],
+  pasta: { id: string; nome: string | null } | null,
+  conta: string | null,
+): Promise<Resultado<Pedido>> {
+  const ctx = { sub: sessao.sub, orgId: sessao.orgId };
+  const r = await noSobedesce<{ pedidos?: unknown[] }>(sessao, "relay.converter", {
+    arquivoId: v.driveId,
+    presets,
+    ...(pasta ? { pastaId: pasta.id } : {}),
+    ref: v.id,
+    ...(conta ? { conta } : {}),
+  });
+  const vindos = r.ok ? (r.dados.pedidos ?? []).map(pedidoConferido).filter((p): p is PedidoRelay => !!p && presets.includes(p.preset)) : [];
+  // 2xx sem pedido reconhecível também é ambíguo: a fila pode ter guardado.
+  const ambiguo = r.ok ? vindos.length === 0 : r.ambiguo === true;
+  if (!r.ok && !ambiguo) return r;
+
+  // O estado completo (resultado e MD5 de um pedido que já estava pronto) vem do relay.pedido; sem ele, o da criação.
+  const porId = new Map(vindos.map((p) => [p.id, p]));
+  let computador: Computador | null = null;
+  if (vindos.length) {
+    const lidos = await noSobedesce<{ pedidos?: unknown[]; computador?: Computador }>(sessao, "relay.pedido", { ids: vindos.map((p) => p.id) });
+    if (lidos.ok) {
+      for (const p of (lidos.dados.pedidos ?? []).map(pedidoConferido)) if (p && porId.has(p.id)) porId.set(p.id, p);
+      computador = computadorConferido(lidos.dados.computador);
+    }
+  }
+  const porPreset = new Map([...porId.values()].map((p) => [p.preset, p]));
+  const linhas = await getBanco().asUser(ctx, async (tx) => {
+    for (const preset of presets) {
+      const p = porPreset.get(preset);
+      // Sem confirmação deste preset (ambíguo, ou a fila respondeu só os outros): fica para conferir.
+      const [l] = (await tx.execute(sql`
+        insert into maestro.entregaveis (org_id, card_id, versao_id, preset, status, erro, pasta_id, pasta_nome, criado_por)
+        values (${sessao.orgId}::uuid, ${v.card}, ${v.id}::uuid, ${preset}, ${p ? "pendente" : "revisar"}, ${p ? null : MSG_AMBIGUO},
+                ${pasta?.id ?? null}, ${pasta?.nome ?? null}, ${sessao.sub}::uuid)
+        on conflict (org_id, versao_id, preset) do update
+          set pasta_id = excluded.pasta_id, pasta_nome = excluded.pasta_nome, atualizado_em = now()
+          where maestro.entregaveis.status <> 'pronto'
+        returning id`)) as unknown as { id: string }[];
+      const id =
+        l?.id ??
+        (
+          (await tx.execute(
+            sql`select id from maestro.entregaveis where org_id = ${sessao.orgId}::uuid and versao_id = ${v.id}::uuid and preset = ${preset}`,
+          )) as unknown as { id: string }[]
+        )[0].id;
+      if (p) await gravarPedido(tx, id, p);
+      else await marcarRevisar(tx, id, MSG_AMBIGUO);
+    }
+    await tx.execute(
+      sql`insert into maestro.audit_log (org_id, actor_sub, action, target_type, target_id, metadata) values (${sessao.orgId}, ${sessao.sub}, 'relay.converter', 'versao', ${v.id}, ${JSON.stringify({ presets, pasta: pasta?.id ?? null, ambiguo })}::jsonb)`,
+    );
+    return (await linhasDoCard(tx, v.card)).filter((l) => l.versao === v.id);
+  });
+  return { ok: true, dados: { entregaveis: linhas.map(paraTela), computador, revisar: porPreset.size < presets.length } };
+}
+
+/** "Gerar N versões": a pasta de entrega (criada se preciso) e o pedido ao SOBEDESCE. */
+export async function gerarVersoes(sessao: Sessao, e: Pedir): Promise<Resultado<Pedido>> {
+  const nao = podePedir(sessao);
+  if (nao) return nao;
+  if (!UUID.test(e.versaoId)) return falha(400, "formato", "Versão inválida.");
+  const presets = normalizarPresets(e.presets);
+  if (!presets) return falha(400, "presets", "Escolha de 1 a 8 destinos da lista.");
+  const conta = typeof e.conta === "string" && /^[A-Za-z0-9_.@-]{1,64}$/.test(e.conta) ? e.conta : null;
+  const ctx = { sub: sessao.sub, orgId: sessao.orgId };
+  const v = await getBanco().asUser(ctx, (tx) => versaoDoDrive(tx, e.versaoId));
+  if (!v) return falha(404, "nao_existe", "Esta versão não está no Drive (ou não existe mais).");
+  const pasta = e.destino === "original" ? ({ ok: true, dados: null } as const) : await pastaParaPedir(sessao, v, conta);
+  if (!pasta.ok) return pasta;
+  return despachar(sessao, v, presets, pasta.dados, conta);
+}
+
+/**
+ * "Conferir" um item em `revisar` (só com o toque da pessoa): pede de novo a mesma chave `ref:preset`, na mesma pasta.
+ * A fila devolve o pedido que já existe (ou cria, se o primeiro nunca chegou); nunca sai um segundo arquivo.
+ */
+export async function conferirEntregavel(sessao: Sessao, entregavelId: string): Promise<Resultado<Pedido>> {
+  const nao = podePedir(sessao);
+  if (nao) return nao;
+  if (!UUID.test(entregavelId)) return falha(400, "formato", "Item inválido.");
+  const ctx = { sub: sessao.sub, orgId: sessao.orgId };
+  const lido = await getBanco().asUser(ctx, async (tx) => {
+    const [l] = (await tx.execute(sql`${SELECT} where e.id = ${entregavelId}::uuid`)) as unknown as Linha[];
+    const v = l ? await versaoDoDrive(tx, l.versao) : null;
+    return l && v ? { l, v, daVersao: (await linhasDoCard(tx, v.card)).filter((x) => x.versao === v.id) } : null;
+  });
+  if (!lido) return falha(404, "nao_existe", "Este item não existe mais.");
+  // Já saiu da revisão (outra aba conferiu): só devolve como está.
+  if (lido.l.status !== "revisar") return { ok: true, dados: { entregaveis: lido.daVersao.map(paraTela), computador: null, revisar: false } };
+  return despachar(sessao, lido.v, [lido.l.preset], lido.l.pasta_id ? { id: lido.l.pasta_id, nome: lido.l.pasta_nome } : null, null);
+}
+
+/** `podePedir`: o papel da pessoa pede, confere e cancela (`podeEntregas`); a tela mostra os botões só com ele. */
+export type Andamento = { entregaveis: Entregavel[]; computador: Computador | null; aviso: string | null; podePedir: boolean };
+
+/**
+ * Aplica uma resposta de `relay.pedido` às linhas andando: o que veio entra se puder (`aplicavel`); o pedido que não
+ * veio (o SOBEDESCE não acha mais) vai para `revisar`. Repetir a mesma resposta não muda nada.
+ */
+async function aplicarAndamento(tx: Tx, abertos: Linha[], pedidos: unknown[]) {
+  const porPedido = new Map(abertos.map((l) => [l.pedido_id!, l]));
+  const vistos = new Set<string>();
+  for (const p of pedidos.map(pedidoConferido)) {
+    const l = p && porPedido.get(p.id);
+    if (!p || !l || l.preset !== p.preset) continue;
+    vistos.add(p.id);
+    await gravarPedido(tx, l.id, p);
+  }
+  for (const l of abertos) if (!vistos.has(l.pedido_id!)) await marcarRevisar(tx, l.id, MSG_SUMIU, true);
+}
 
 /**
  * Os entregáveis de um card e, com `acompanhar` (a ficha ou o lote abertos e à vista), o andamento dos que ainda não
- * terminaram, lido no SOBEDESCE e guardado. Quem só lê vê o que foi guardado (não grava).
+ * terminaram, lido no SOBEDESCE e guardado. Quem só acompanha (leitura) vê o que foi guardado (não pergunta nem grava).
  */
 export async function entregaveisDoCard(sessao: Sessao, cardId: string, acompanhar = false): Promise<Andamento> {
-  if (!ID_CARD.test(cardId)) return { entregaveis: [], computador: null, aviso: null };
+  const podePedir = podeEntregas(sessao, "pedir");
+  if (!ID_CARD.test(cardId)) return { entregaveis: [], computador: null, aviso: null, podePedir };
   const ctx = { sub: sessao.sub, orgId: sessao.orgId };
   const linhas = await getBanco().asUser(ctx, (tx) => linhasDoCard(tx, cardId));
-  const abertos = linhas.filter((l) => EM_ANDAMENTO.includes(l.status) && l.pedido_id);
-  if (!acompanhar || !abertos.length || !disponibilidade(sessao).ok || !podeEscrever(sessao.papel))
-    return { entregaveis: linhas.map(paraTela), computador: null, aviso: null };
-  const r = await noSobedesce<{ pedidos?: unknown[]; computador?: Computador }>(sessao, "relay.pedido", { ids: abertos.slice(0, 50).map((l) => l.pedido_id!) });
-  if (!r.ok) return { entregaveis: linhas.map(paraTela), computador: null, aviso: r.mensagem };
-  const porPedido = new Map(abertos.map((l) => [l.pedido_id!, l]));
+  const abertos = linhas.filter((l) => EM_ANDAMENTO.includes(l.status) && l.pedido_id).slice(0, 50);
+  if (!acompanhar || !abertos.length || !disponibilidade(sessao).ok || !podePedir)
+    return { entregaveis: linhas.map(paraTela), computador: null, aviso: null, podePedir };
+  const r = await noSobedesce<{ pedidos?: unknown[]; computador?: Computador }>(sessao, "relay.pedido", { ids: abertos.map((l) => l.pedido_id!) });
+  // Sem resposta, nada muda: o que estava guardado continua, com o porquê.
+  if (!r.ok) return { entregaveis: linhas.map(paraTela), computador: null, aviso: r.mensagem, podePedir };
+  const pedidos = r.dados.pedidos;
+  if (!Array.isArray(pedidos)) return { entregaveis: linhas.map(paraTela), computador: null, aviso: "O SOBEDESCE respondeu algo estranho agora.", podePedir };
   const novas = await getBanco().asUser(ctx, async (tx) => {
-    for (const p of (r.dados.pedidos ?? []).map(pedidoConferido)) {
-      const l = p && porPedido.get(p.id);
-      if (l && l.preset === p.preset) await gravarPedido(tx, l.id, p);
-    }
+    await aplicarAndamento(tx, abertos, pedidos);
     return linhasDoCard(tx, cardId);
   });
-  return { entregaveis: novas.map(paraTela), computador: computadorConferido(r.dados.computador), aviso: null };
+  return { entregaveis: novas.map(paraTela), computador: computadorConferido(r.dados.computador), aviso: null, podePedir };
 }
 
 /** Cancelar um item que ainda não terminou. O que já terminou do outro lado fica com o estado de lá. */
 export async function cancelarEntregavel(sessao: Sessao, entregavelId: string): Promise<Resultado<Entregavel>> {
-  const disp = disponibilidade(sessao);
-  if (!disp.ok) return falha(403, disp.erro, disp.mensagem);
-  if (!podeEscrever(sessao.papel)) return falha(403, "sem_permissao", "Seu papel nesta organização só lê.");
+  const nao = podePedir(sessao);
+  if (nao) return nao;
   if (!UUID.test(entregavelId)) return falha(400, "formato", "Item inválido.");
   const ctx = { sub: sessao.sub, orgId: sessao.orgId };
   const [l] = await getBanco().asUser(ctx, async (tx) => [...((await tx.execute(sql`${SELECT} where e.id = ${entregavelId}::uuid`)) as unknown as Linha[])]);
   if (!l) return falha(404, "nao_existe", "Este item não existe mais.");
   if (!EM_ANDAMENTO.includes(l.status) || !l.pedido_id) return { ok: true, dados: paraTela(l) };
   const r = await noSobedesce<{ cancelado?: boolean; ja_terminado?: boolean }>(sessao, "relay.cancelar", { id: l.pedido_id });
-  if (!r.ok) return r;
+  // Sem a resposta, ninguém sabe se cancelou: o estado fica, e o acompanhamento mostra o de verdade.
+  if (!r.ok) return r.ambiguo ? falha(502, "cancelar_ambiguo", "Não deu para confirmar o cancelamento. Veja de novo em instantes.") : r;
   let p: PedidoRelay | null = null;
-  if (r.dados.ja_terminado) {
+  if (r.dados.cancelado === true) p = { id: l.pedido_id, preset: l.preset, status: "cancelado" };
+  else {
     const lido = await noSobedesce<{ pedidos?: unknown[] }>(sessao, "relay.pedido", { ids: [l.pedido_id] });
     if (lido.ok) p = (lido.dados.pedidos ?? []).map(pedidoConferido).find((x) => x?.id === l.pedido_id) ?? null;
-  } else p = { id: l.pedido_id, preset: l.preset, status: "cancelado" };
+  }
   const final = await getBanco().asUser(ctx, async (tx) => {
     if (p) await gravarPedido(tx, l.id, p);
+    await tx.execute(
+      sql`insert into maestro.audit_log (org_id, actor_sub, action, target_type, target_id, metadata) values (${sessao.orgId}, ${sessao.sub}, 'relay.cancelar', 'entregavel', ${l.id}, ${JSON.stringify({ preset: l.preset, cancelado: r.dados.cancelado === true })}::jsonb)`,
+    );
     return [...((await tx.execute(sql`${SELECT} where e.id = ${entregavelId}::uuid`)) as unknown as Linha[])][0];
   });
   return { ok: true, dados: paraTela(final) };
