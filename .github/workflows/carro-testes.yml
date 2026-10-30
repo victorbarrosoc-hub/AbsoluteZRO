@@ -7,10 +7,12 @@ on:
     branches: [main]
     paths:
       - 'products/carro-do-freela/**'
+      - '!products/carro-do-freela/desktop/**'
       - '.github/workflows/carro-testes.yml'
   pull_request:
     paths:
       - 'products/carro-do-freela/**'
+      - '!products/carro-do-freela/desktop/**'
       - '.github/workflows/carro-testes.yml'
   workflow_dispatch:
 

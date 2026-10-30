@@ -51,7 +51,7 @@ describe('seed e regra do banco', () => {
     expect(s['carro-do-freela']).toMatchObject({
       state: 'released',
       open: true,
-      channels: { web: true, desktop: false, api: true, download: false, sso: true },
+      channels: { web: true, desktop: true, api: true, download: true, sso: true },
     })
     for (const id of FECHADOS) {
       expect(s[id]?.state, id).toBe('development')

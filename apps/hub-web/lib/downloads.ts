@@ -38,6 +38,13 @@ export type DownloadEntry = {
 const NOSSOM_BAIXAR = 'https://nossom-teal.vercel.app/baixar/'
 // Maestro: pela própria Absolute ZRO (apps/hub-web/app/(site)/baixar/app/[id]/[arquivo]), com o gate do canal download.
 const MAESTRO_BAIXAR = 'https://absolutezro.com/baixar/app/maestro/'
+// Relay e Carro do Freela para computador: a mesma rota e o mesmo gate (migração 0042).
+const RELAY_BAIXAR = 'https://absolutezro.com/baixar/app/relay/'
+const CARRO_BAIXAR = 'https://absolutezro.com/baixar/app/carro-do-freela/'
+const PRIMEIRA_VEZ = {
+  mac: 'Abra o .dmg e arraste para Aplicativos. Na primeira vez: botão direito › Abrir › Abrir.',
+  windows: 'Se o Windows avisar: Mais informações › Executar assim mesmo.',
+}
 
 export const DOWNLOADS: DownloadEntry[] = [
   {
@@ -107,12 +114,15 @@ export const DOWNLOADS: DownloadEntry[] = [
     ],
   },
   {
-    // Carro do Freela (products/carro-do-freela): só na web, no subdomínio da Absolute ZRO desde o lançamento (0041).
+    // Carro do Freela (products/carro-do-freela): no ar desde a 0041 e, com o app de computador, desde a 0042 (a mesma rota
+    // /baixar/app/carro-do-freela/<sistema>, com o gate). Com o download fechado só aparecem o navegador e o celular.
     productId: 'carro-do-freela',
     site: 'https://carro.absolutezro.com',
-    status: 'web',
+    status: 'test',
     note: 'Funciona no navegador, no computador e no celular.',
     options: [
+      { os: 'mac', label: 'Mac', detail: 'Apple Silicon e Intel', href: CARRO_BAIXAR + 'mac', format: 'Instalador .dmg' },
+      { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11', href: CARRO_BAIXAR + 'windows', format: 'Instalador .exe' },
       { os: 'web', label: 'Navegador', detail: 'Computador ou celular', href: 'https://carro.absolutezro.com', format: 'Sem instalar' },
       {
         os: 'mobile',
@@ -122,6 +132,7 @@ export const DOWNLOADS: DownloadEntry[] = [
         format: 'App da web',
       },
     ],
+    firstOpen: PRIMEIRA_VEZ,
   },
   {
     productId: 'ai-edit',
@@ -167,12 +178,18 @@ export const DOWNLOADS: DownloadEntry[] = [
     },
   },
   {
-    // Relay (products/relay): converte no próprio aparelho, no navegador do computador ou do celular. Sem instalador.
+    // Relay (products/relay): converte no próprio aparelho, no navegador ou no app de computador (a mesma página numa
+    // janela, products/relay/desktop). O instalador passa pela rota da Absolute ZRO, com o gate (0042).
     productId: 'relay',
     site: 'https://relay.absolutezro.com',
-    status: 'web',
+    status: 'test',
     note: 'Converte no próprio aparelho. Nada é enviado.',
-    options: [{ os: 'web', label: 'Navegador', detail: 'Computador ou celular', href: 'https://relay.absolutezro.com', format: 'Sem instalar' }],
+    options: [
+      { os: 'mac', label: 'Mac', detail: 'Apple Silicon e Intel', href: RELAY_BAIXAR + 'mac', format: 'Instalador .dmg' },
+      { os: 'windows', label: 'Windows', detail: 'Windows 10 e 11', href: RELAY_BAIXAR + 'windows', format: 'Instalador .exe' },
+      { os: 'web', label: 'Navegador', detail: 'Computador ou celular', href: 'https://relay.absolutezro.com', format: 'Sem instalar' },
+    ],
+    firstOpen: PRIMEIRA_VEZ,
   },
 ]
 

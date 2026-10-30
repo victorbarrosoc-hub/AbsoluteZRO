@@ -1,0 +1,228 @@
+# Carro do Freela para computador (products/carro-do-freela/desktop): gera o .dmg num Mac e o .exe num Windows do GitHub e publica no
+# Release de teste "Carro do Freela · versão de teste" (tag carro-versao-de-teste), como o SOBEDESCE. A Absolute ZRO entrega
+# por /baixar/app/carro-do-freela/<mac|windows|arquivo> e o aviso "Nova versão" lê /baixar/app/carro-do-freela/versao.json, as duas
+# com o gate de lançamento do Carro do Freela (canal download): fechado, só a lista de acesso baixa.
+# Mac e Windows só rodam na main quando o app muda, em tags carro-desktop-v* e pelo botão "Run workflow"; em pull
+# request, só os testes e o teste de fumaça em Ubuntu (minuto de Mac custa 10 vezes o de Linux). Na tag, os instaladores
+# vão para um Release próprio; o Release de teste e o versao.json são só da main.
+name: Carro do Freela · app para computador
+
+on:
+  push:
+    branches: [main]
+    tags: ['carro-desktop-v*']
+    paths:
+      - 'products/carro-do-freela/desktop/**'
+      - '!products/carro-do-freela/desktop/**/*.md'
+      # o que o app usa igual ao Absolute ZRO para computador (scripts/compartilhado.mjs) e o ícone oficial
+      - 'apps/hub-desktop/desktop/atualizador.cjs'
+      - 'apps/hub-desktop/desktop/janela.cjs'
+      - 'apps/hub-desktop/desktop/preload-barra.cjs'
+      - 'apps/hub-desktop/desktop/paginas/offline.css'
+      - 'products/carro-do-freela/public/icone-512.png'
+      - '.github/workflows/carro-desktop.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'products/carro-do-freela/desktop/**'
+      - 'apps/hub-desktop/desktop/**'
+      - 'apps/hub-web/lib/desktop-apps.ts'
+      - 'products/carro-do-freela/public/icone-512.png'
+      - '.github/workflows/carro-desktop.yml'
+  workflow_dispatch:
+
+# Só leitura por padrão; escrita só nos jobs que publicam no Release.
+# As actions de fora vão fixadas pelo SHA do commit (com a tag ao lado), como no SOBEDESCE e no Absolute ZRO.
+permissions:
+  contents: read
+
+concurrency:
+  group: carro-desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: products/carro-do-freela/desktop
+
+env:
+  CARRO_DESKTOP_TAG: carro-versao-de-teste
+  # Build = número da execução + base (o aviso "Nova versão" só aceita build maior). Base própria (o build só é comparado com o do mesmo app).
+  CARRO_DESKTOP_BUILD_BASE: '3000'
+
+jobs:
+  testes:
+    name: Testes (Ubuntu)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          # Ninguém aqui faz git push: o token não fica gravado no .git/config ao alcance do npm ci e dos scripts.
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: products/carro-do-freela/desktop/package-lock.json
+      - run: npm ci
+      # regras de navegação, aviso de versão, cópias do hub-desktop, ícones e nomes do Release
+      - run: npm test
+      # Teste de fumaça no Linux (Xvfb): abre a janela com a tela "Sem conexão" local e escreve "SMOKE OK".
+      - name: Teste de fumaça (Linux)
+        run: |
+          export CARRO_SMOKE_SAIDA="$RUNNER_TEMP/smoke.txt"
+          xvfb-run -a npx electron . --smoke --no-sandbox
+          cat "$CARRO_SMOKE_SAIDA"
+          grep -q '^SMOKE OK$' "$CARRO_SMOKE_SAIDA"
+
+  app:
+    name: App (${{ matrix.label }})
+    if: github.event_name != 'pull_request'
+    needs: testes
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    # Escrita para subir os instaladores no Release de teste (só a main publica, pelos if dos passos).
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            label: Mac
+            plataforma: mac
+            build: npm run dist:mac
+          - os: windows-latest
+            label: Windows
+            plataforma: windows
+            build: npm run dist:win
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: products/carro-do-freela/desktop/package-lock.json
+      - run: npm ci
+      # Identidade do build (desktop/build-info.json vai dentro do app): o aviso "Nova versão do Carro do Freela" compara com ela.
+      - run: node scripts/release.mjs build-info
+      - run: ${{ matrix.build }}
+      # Teste de fumaça do app empacotado: abre a janela de verdade com a tela "Sem conexão" local (sem rede), confere a
+      # ponte, o isolamento e as regras de navegação e escreve "SMOKE OK". Qualquer outra coisa falha antes de publicar.
+      - if: matrix.plataforma == 'mac'
+        name: Teste de fumaça (Mac)
+        timeout-minutes: 5
+        run: |
+          npx --no-install electron-fuses read --app "dist/mac-universal/Carro do Freela.app"
+          export CARRO_SMOKE_SAIDA="$RUNNER_TEMP/smoke.txt"
+          code=0
+          "dist/mac-universal/Carro do Freela.app/Contents/MacOS/Carro do Freela" --smoke || code=$?
+          echo "--- resultado (saída $code) ---"
+          cat "$CARRO_SMOKE_SAIDA" || true
+          test "$code" -eq 0
+          grep -q '^SMOKE OK$' "$CARRO_SMOKE_SAIDA"
+      - if: matrix.plataforma == 'windows'
+        name: Teste de fumaça (Windows)
+        timeout-minutes: 5
+        shell: pwsh
+        run: |
+          npx --no-install electron-fuses read --app "dist/win-unpacked/Carro do Freela.exe"
+          $env:CARRO_SMOKE_SAIDA = Join-Path $env:RUNNER_TEMP 'smoke.txt'
+          $p = Start-Process -FilePath 'dist\win-unpacked\Carro do Freela.exe' -ArgumentList '--smoke' -PassThru
+          $null = $p.Handle
+          if (-not $p.WaitForExit(180000)) { $p.Kill($true); Write-Error 'o teste de fumaça passou de 3 minutos'; exit 1 }
+          Write-Output "--- resultado (saída $($p.ExitCode)) ---"
+          Get-Content $env:CARRO_SMOKE_SAIDA -ErrorAction SilentlyContinue
+          if ($p.ExitCode -ne 0) { exit 1 }
+          if (-not (Select-String -Path $env:CARRO_SMOKE_SAIDA -Pattern '^SMOKE OK$' -Quiet)) { exit 1 }
+      # Nome com o build (CarroDoFreela-0.1.0-b12-…, o padrão que a Absolute ZRO reconhece em apps/hub-web/lib/desktop-apps.ts)
+      # e o SHA-256 ao lado. O build seguinte não troca este arquivo no Release, então o SHA-256 do versao.json sempre
+      # bate com o instalador entregue.
+      - run: node scripts/release.mjs nomear ${{ matrix.plataforma }} dist
+      - if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sha256-${{ matrix.plataforma }}
+          path: products/carro-do-freela/desktop/dist/CarroDoFreela-sha256-*.json
+          retention-days: 1
+          if-no-files-found: error
+      # Só a main publica no Release de teste: é de lá que a Absolute ZRO entrega e que o aviso "Nova versão" lê.
+      - if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        with:
+          tag_name: carro-versao-de-teste
+          name: Carro do Freela · versão de teste
+          prerelease: true
+          target_commitish: ${{ github.sha }}
+          files: |
+            products/carro-do-freela/desktop/dist/CarroDoFreela-*-b*-mac-universal.dmg
+            products/carro-do-freela/desktop/dist/CarroDoFreela-*-b*-windows-setup.exe
+          fail_on_unmatched_files: false
+          body: Instaladores gerados automaticamente a partir do último commit da main. Sem assinatura da Apple/Microsoft por enquanto (veja products/carro-do-freela/desktop/README.md). Baixe pela Absolute ZRO (absolutezro.com/baixar), que confere o acesso.
+      # Fora da main (tag carro-desktop-v* ou "Run workflow" noutra branch): os instaladores ficam como artefato do
+      # Actions (por poucos dias); a tag publica o próprio Release no job "release".
+      - if: github.ref != 'refs/heads/main'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: instalador-${{ matrix.label }}
+          path: |
+            products/carro-do-freela/desktop/dist/CarroDoFreela-*-b*-mac-universal.dmg
+            products/carro-do-freela/desktop/dist/CarroDoFreela-*-b*-windows-setup.exe
+          retention-days: 5
+          if-no-files-found: error
+
+  # Só depois dos DOIS instaladores no Release (needs espera o Mac e o Windows; se um falhar, este não roda): sobe o
+  # versao.json com o SHA-256 de cada um, que faz o app mostrar "Nova versão do Carro do Freela", e tira os builds antigos.
+  versao:
+    name: Avisar versão nova
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: app
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: sha256-*
+          path: products/carro-do-freela/desktop/sha256
+          merge-multiple: true
+      - run: node scripts/release.mjs versao sha256 versao.json
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        with:
+          tag_name: carro-versao-de-teste
+          name: Carro do Freela · versão de teste
+          prerelease: true
+          target_commitish: ${{ github.sha }}
+          files: products/carro-do-freela/desktop/versao.json
+          fail_on_unmatched_files: true
+          body: Instaladores gerados automaticamente a partir do último commit da main. Sem assinatura da Apple/Microsoft por enquanto (veja products/carro-do-freela/desktop/README.md). Baixe pela Absolute ZRO (absolutezro.com/baixar), que confere o acesso.
+      # Ficam o build atual e os dois anteriores (scripts/release.mjs limpar, o mesmo GITHUB_RUN_NUMBER + base).
+      - run: node scripts/release.mjs limpar
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  release:
+    name: Publicar release
+    if: startsWith(github.ref, 'refs/tags/carro-desktop-v')
+    needs: app
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: instalador-*
+          path: instaladores
+          merge-multiple: true
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        with:
+          files: instaladores/*
+          generate_release_notes: true

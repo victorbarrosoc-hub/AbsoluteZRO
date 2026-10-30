@@ -558,6 +558,17 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   `.github/workflows/maestro-desktop.yml` publica no Release de teste `maestro-versao-de-teste` (SHA-256,
   `versao.json`, três últimos builds). Falta: primeiro build no GitHub (sai no próximo push na main), instalar num Mac e
   num Windows de verdade, assinatura/notarização da Apple e certificado da Microsoft (decisão e conta do titular).
+- ✅ Relay e Carro do Freela para computador (30/10/2026, pedido do titular: "Precisa criar o do Carro do Freela também" e o
+  do Relay; `products/relay/desktop` e `products/carro-do-freela/desktop`, cada um com README): a mesma moldura do Maestro
+  para computador (janela que abre o site de produção, login único dentro da janela, links de fora no navegador, sem
+  Node, "Sem conexão" local, "Nova versão" com Atualizar, uma instância, `relay://` e `carrodofreela://`), cada um com o
+  ícone oficial do site (Relay: `products/relay/marca/relay-icone.svg`; Carro: `public/icone-512.png`, o anel com as três
+  barras e o carrinho) e o tema do site (Relay claro, Carro escuro). O Relay só ganhou a permissão de escolher a pasta de
+  saída; sem conversão nativa por enquanto. Registrados em `APPS_DESKTOP` (central e `/baixar/app/<id>/…`) e em `DOWNLOADS`
+  (botões Mac e Windows em `/baixar`); migração `0042_relay_carro_desktop.sql` (não aplicada) abre `desktop` e `download`
+  só para os dois. Workflows `relay-desktop.yml` e `carro-desktop.yml` (Release de teste `relay-versao-de-teste` e
+  `carro-versao-de-teste`, builds a partir de 2000 e 3000). Falta: primeiro build no GitHub (sai no push na main), aplicar
+  a 0042 depois dele, instalar num Mac e num Windows de verdade, assinatura/notarização (decisão e conta do titular).
 - ✅ Maestro, **colunas do Quadro como no Trello** (pedido do titular, 29/10/2026; `drizzle/0024_colunas.sql`): cada
   produtora renomeia no lugar (clique duplo no cabeçalho; no celular, tocar na aba já escolhida), recolore (paleta de
   12 tons da Aurora), reordena (arrastar o cabeçalho; no celular, segurar a alça 280 ms na folha) e cria colunas

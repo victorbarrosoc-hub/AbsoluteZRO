@@ -8748,3 +8748,12 @@ Nunca por e-mail, papel ou lista escrita aqui; outros admins, testers e assinant
   itens 2–11), sem funções e fechado (item 12: personas do PRD §11 negadas, a conta allowed permitida, sessão antiga
   negada quando o acesso sai, telas 390/1440 nos dois temas em `test/saida/fechado-*.png`).
 - VERSAO `28/out · 1`. Figtree entrou em `src/assets/fonts.json` (licença OFL em `src/assets/OFL-figtree.txt`).
+
+## 30/out · 7 — app de computador (`desktop/`, [README](desktop/README.md))
+
+Pedido do titular: o Carro do Freela para Mac e Windows, como o Maestro. Electron com pacote próprio (fora do `package.json`
+do site), o mesmo `carro.absolutezro.com` numa janela escura (o padrão do site), login único dentro dela, links de fora no
+navegador; nada nativo. Ícone = `public/icone-512.png` (`npm run icones` no `desktop/`; é o mesmo da Tela de Início).
+Workflow `.github/workflows/carro-desktop.yml` (Release de teste `carro-versao-de-teste`; arquivos `CarroDoFreela-…`, o
+app instalado é "Carro do Freela"); HUB: `APPS_DESKTOP`/`DOWNLOADS` e a migração `0042`. ⚠️ O `carro-testes.yml` ignora
+`desktop/**`.

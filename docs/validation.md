@@ -2853,6 +2853,24 @@ catálogo de downloads da Absolute ZRO, atrás do gate.
 Não conferido aqui: instalar e abrir num Mac e num Windows de verdade, o "Atualizar" trocando o app (só nos testes com
 sistema simulado), e o primeiro Release (sai no primeiro push na main com `products/maestro/desktop/**`).
 
+## Relay e Carro do Freela para computador (30/10/2026)
+
+Apps Electron em `products/relay/desktop` e `products/carro-do-freela/desktop` (Mac e Windows), copiados do Maestro para
+computador; Releases de teste `relay-versao-de-teste` e `carro-versao-de-teste`; os dois no catálogo e em `/baixar`, atrás
+do gate (migração `0042`, não aplicada em produção).
+
+| Verificação                              | Comando                                                                                                  | Resultado                                                                                      |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Regras, versão, cópias, ícones e Release | `cd products/<app>/desktop && npm test`                                                                  | **24/24** em cada um                                                                           |
+| Fumaça (dev)                             | `xvfb-run -a npx electron . --smoke --no-sandbox`                                                        | `SMOKE OK` nos dois (ponte, sem Node, Figtree, ícone, fundo do site, regras)                   |
+| Empacotar                                | `electron-builder --linux dir` (Carro)                                                                   | ok, fusíveis gravados; o .dmg e o .exe saem no GitHub Actions                                  |
+| Hub: catálogo, downloads e gate          | `npx vitest run tests/integration/{desktop-apps,downloads,relay-carro-desktop,carro-lancamento}.test.ts` | catálogo com Relay e Carro, mac/windows/versao.json pela rota, fechado = 404; 0042 idempotente |
+| Raiz                                     | `npm run lint`, `format:check`, `typecheck`, `npm test`                                                  | ok · ok · ok · **450/450** em 51 arquivos                                                      |
+| Segredos                                 | `node scripts/scan-secrets.mjs`                                                                          | nenhum                                                                                         |
+
+Não conferido aqui: instalar e abrir num Mac e num Windows de verdade, o login real dentro da janela, o "Atualizar"
+trocando o app, e o primeiro Release (sai no primeiro push na main com `products/<app>/desktop/**`).
+
 ## SOBEDESCE: contador de "Agora" (29/10/2026)
 
 - Relato do titular: pasta de 100,3 GB enviada de novo depois de uma falha; terminou e o painel mostrava "51% de 205 GB".

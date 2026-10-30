@@ -68,6 +68,33 @@ export const APPS_DESKTOP: AppDesktop[] = [
     mac: { arquivos: [{ arch: 'universal', re: /^Maestro-(\d+\.\d+\.\d+)-b(\d+)-mac-universal\.dmg$/ }], bundle: 'Maestro.app' },
     windows: { re: /^Maestro-(\d+\.\d+\.\d+)-b(\d+)-windows-setup\.exe$/, exe: 'Maestro.exe', nomeNoSistema: 'Maestro' },
   },
+  {
+    // Relay para computador (products/relay/desktop, .github/workflows/relay-desktop.yml): o mesmo site numa janela.
+    // Fechado pelo gate enquanto o canal desktop/download do Relay estiver fechado; a 0042 abre.
+    id: 'relay',
+    nome: 'Relay',
+    fontes: [{ repo: 'victorbarrosoc-hub/AbsoluteZRO', tag: 'relay-versao-de-teste' }],
+    versaoJson: true,
+    mac: { arquivos: [{ arch: 'universal', re: /^Relay-(\d+\.\d+\.\d+)-b(\d+)-mac-universal\.dmg$/ }], bundle: 'Relay.app' },
+    windows: { re: /^Relay-(\d+\.\d+\.\d+)-b(\d+)-windows-setup\.exe$/, exe: 'Relay.exe', nomeNoSistema: 'Relay' },
+  },
+  {
+    // Carro do Freela para computador (products/carro-do-freela/desktop, .github/workflows/carro-desktop.yml). O id é o
+    // do produto no HUB; os arquivos levam CarroDoFreela (sem espaço), o app instalado se chama "Carro do Freela".
+    id: 'carro-do-freela',
+    nome: 'Carro do Freela',
+    fontes: [{ repo: 'victorbarrosoc-hub/AbsoluteZRO', tag: 'carro-versao-de-teste' }],
+    versaoJson: true,
+    mac: {
+      arquivos: [{ arch: 'universal', re: /^CarroDoFreela-(\d+\.\d+\.\d+)-b(\d+)-mac-universal\.dmg$/ }],
+      bundle: 'Carro do Freela.app',
+    },
+    windows: {
+      re: /^CarroDoFreela-(\d+\.\d+\.\d+)-b(\d+)-windows-setup\.exe$/,
+      exe: 'Carro do Freela.exe',
+      nomeNoSistema: 'Carro do Freela',
+    },
+  },
 ]
 
 export type Asset = { name: string; url: string; browser_download_url: string; size?: number; digest?: string | null }

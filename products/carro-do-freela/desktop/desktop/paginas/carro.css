@@ -1,0 +1,35 @@
+/* O que muda do estilo comum (offline.css, igual ao do Absolute ZRO para computador): o Carro do Freela é escuro por
+   padrão (grafite fosco #0e0e10, o mesmo do site), então a tela "Sem conexão" também. */
+:root {
+  --papel: #0e0e10;
+  --grafite: #f5f5f7;
+  --cinza: #a1a1a6;
+  color-scheme: dark;
+}
+
+.simbolo {
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.5);
+}
+
+/* vidro no escuro */
+.vidro {
+  --fill: rgb(255 255 255 / 0.1);
+  --tinta: #f5f5f7;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    0 0 0 1px rgb(255 255 255 / 0.14),
+    0 8px 24px rgb(0 0 0 / 0.4);
+}
+
+.vidro--tinta {
+  --fill: rgb(245 245 247 / 0.94);
+  --tinta: #1d1d1f;
+}
+
+/* wordmark flat da Absolute ZRO (marca.svg, grafite): invertido para branco no escuro */
+.marca {
+  width: 150px;
+  opacity: 0.55;
+  filter: invert(1);
+}
