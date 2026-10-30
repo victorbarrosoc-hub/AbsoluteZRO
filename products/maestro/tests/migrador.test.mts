@@ -8,6 +8,7 @@ import path from "node:path";
 import { test } from "node:test";
 import postgres from "postgres";
 import { migrarNoSchema } from "../src/lib/db/migrador";
+import { garantirPapelDoApp } from "./ambiente.mts";
 
 const BASE = process.env.TEST_DATABASE_URL || "postgres://postgres:postgres@localhost:5432/postgres";
 type Entrada = { idx: number; version: string; when: number; tag: string; breakpoints: boolean };
@@ -19,6 +20,7 @@ test("migração atrasada (when menor que a última aplicada) roda uma vez; when
   const db = `maestro_test_migrador${process.env.TEST_DB_SUFIXO ? `_${process.env.TEST_DB_SUFIXO.replace(/[^a-z0-9_]/g, "").slice(0, 12)}` : ""}`;
   await admin.unsafe(`drop database if exists ${db} with (force)`);
   await admin.unsafe(`create database ${db}`);
+  await garantirPapelDoApp(admin);
   await admin.end();
   u.pathname = `/${db}`;
   const banco = postgres(u.toString(), { max: 1, onnotice: () => {} });
