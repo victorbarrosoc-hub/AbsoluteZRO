@@ -185,7 +185,7 @@ describe("cabeçalhos e endereços (A12 e site)", () => {
     const csp = (r?: { headers: { key: string; value: string }[] }) => r?.headers.find((h) => h.key === "Content-Security-Policy")?.value ?? "";
     const app = regras.findIndex((r) => r.source === "/app/:path*" && !r.has);
     assert.match(csp(regras[app]), /frame-ancestors 'none'/);
-    for (const [no, origem] of [["carro", "https://carro.absolutezro.com"], ["maestro", "https://maestro.absolutezro.com"]]) {
+    for (const [no, origem] of [["carro", "https://carro.absolutezro.com"], ["maestro", "https://maestro.absolutezro.com"], ["relay", "https://relay.absolutezro.com"]]) {
       const i = regras.findIndex((r) => r.source === "/app/" && r.has?.some((h) => h.type === "query" && h.key === "no" && h.value === no));
       assert.ok(i > app, `a regra de ${no} vem depois (a última vence)`);
       const fa = /frame-ancestors ([^;]*)/.exec(csp(regras[i]))?.[1] ?? "";

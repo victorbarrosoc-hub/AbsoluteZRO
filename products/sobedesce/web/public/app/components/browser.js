@@ -44,7 +44,7 @@ import { framesDoDrive } from './criar.js'
 import { engine } from '../lib/uploader.js'
 import { isIOS } from '../lib/platform.js'
 import { LAN } from '../lib/config.js'
-import { EMBUTIDO, avisarAnfitriao } from '../lib/embutido.js'
+import { EMBUTIDO, ESCOLHER, avisarAnfitriao } from '../lib/embutido.js'
 import { driveCall, folderPath, myDriveId } from '../lib/drive.js'
 import { alvoDoLink } from '../lib/drive-link.js'
 
@@ -1117,6 +1117,13 @@ export function DriveScreen({ active }) {
       })
   }, [abrirLink])
   const open = (f) => {
+    // Dentro do Relay (modo escolher): o vídeo vai para o conversor de lá, que lê aos pedaços pelo canal
+    if (ESCOLHER && !isFolder(f)) {
+      if (kindOf(f) !== 'video' || !(Number(f.size) > 0)) return toast('Escolha um vídeo', { ms: 2000 })
+      const pasta = f.parents?.[0] || nav.path[nav.path.length - 1]?.id || null
+      avisarAnfitriao('escolhido', { arquivos: [{ id: f.id, nome: f.name, tamanho: Number(f.size), mime: f.mimeType || '', pasta }] })
+      return
+    }
     // Escolhendo para os Frames (aba Criar → Do Drive): tocar no vídeo leva para lá.
     if (escolher && !isFolder(f)) {
       if (kindOf(f) === 'video') framesDoDrive(f)

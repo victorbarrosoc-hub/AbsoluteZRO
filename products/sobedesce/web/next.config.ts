@@ -61,6 +61,7 @@ const appCsp = [
 const ANFITRIOES: Record<string, string[]> = {
   carro: ["https://carro.absolutezro.com"],
   maestro: ["https://maestro.absolutezro.com"],
+  relay: ["https://relay.absolutezro.com"],
 };
 const anfitriaoLocal = process.env.NODE_ENV !== "production" ? ["http://127.0.0.1:*", "http://localhost:*"] : [];
 const embutidoHeaders = Object.entries(ANFITRIOES).map(([no, origens]) => ({

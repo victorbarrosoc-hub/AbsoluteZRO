@@ -163,7 +163,7 @@ entradaNome, tom: 'suave' | 'nenhum', look: { id, nome } | null }`. Saída sempr
 O conversor abre o SOBEDESCE num quadro (`https://sobedesce.absolutezro.com/app/?no=relay&modo=escolher&tema=…`,
 o embutido de `products/sobedesce/web/public/app/lib/embutido.js`, o mesmo do Carro e do Maestro). A pessoa escolhe o
 vídeo no Drive dela; o Relay lê o arquivo aos pedaços pelo quadro (Mediabunny `StreamSource`) e converte no aparelho.
-Pronto, "Para o Drive" devolve o resultado à mesma pasta, pela fila do SOBEDESCE (MD5 conferido lá). O token do Google
+Pronto, "Para o Drive" devolve o resultado à mesma pasta, pela fila do SOBEDESCE (o Drive confirma o tamanho). O token do Google
 nunca sai do SOBEDESCE; nenhum byte passa por servidor; o cookie do SOBEDESCE (SameSite=Lax) vale porque os dois são
 `*.absolutezro.com`.
 
@@ -177,12 +177,14 @@ Protocolo (`products/relay/src/drive.js`), `postMessage` só entre as duas orige
 | Relay → quadro | `{ fonte: 'relay', tipo: 'tema', tema: 'claro' \| 'escuro' }`                                   |
 | canal          | `{ pedido, tipo: 'ler', id, de, ate }` → `{ pedido, ok: true, dados: ArrayBuffer }` (até 32 MB) |
 | canal          | `{ pedido, tipo: 'enviar', nome, mime, dados: Blob, pasta }` → `{ pedido, ok: true, envio }`    |
-| canal (quadro) | `{ tipo: 'envio', envio, estado: 'enviando' \| 'conferido' \| 'erro', erro? }`                  |
+| canal (quadro) | `{ tipo: 'envio', envio, estado: 'enviando' \| 'enviado' \| 'erro', erro? }`                    |
 | canal          | erro: `{ pedido, ok: false, erro }`                                                             |
 
-Lado do SOBEDESCE (a fazer quando o embutido estiver na main): anfitrião `relay: ['https://relay.absolutezro.com']`,
-a `frame-ancestors` dele, o modo escolher (o toque no vídeo vira `escolhido`) e o atendimento de `ler`/`enviar`. No
-Relay o botão só aparece com `RECURSOS.drive` (`DRIVE=released` no projeto `relay`; nas prévias e no `npm run dev`, já).
+Lado do SOBEDESCE (30/10/2026): anfitrião `relay` em `web/public/app/lib/embutido.js` e `web/next.config.ts`
+(`frame-ancestors https://relay.absolutezro.com`), `ESCOLHER` (`?no=relay&modo=escolher`: o toque no vídeo vira
+`escolhido`, em `components/browser.js`) e `lib/embutido-relay.js` (atende `ler` com Range e o token de lá, e `enviar`
+pela fila de envios; o estado final é `enviado`, o Drive confirma o tamanho, não o MD5). No Relay o botão aparece com
+`RECURSOS.drive` (`DRIVE=released` no projeto `relay`; nas prévias e no `npm run dev`, já).
 
 ## Eventos e conta
 

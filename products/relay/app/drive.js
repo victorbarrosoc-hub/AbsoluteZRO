@@ -123,14 +123,14 @@ export function mudarTema(tema) {
 }
 
 /**
- * Manda o resultado para o Drive (a fila do SOBEDESCE, com o MD5 conferido lá). `pasta`: a pasta do arquivo de origem.
- * `aoEstado({ estado, erro })` acompanha: 'enviando' → 'conferido' (ou 'erro').
+ * Manda o resultado para o Drive (a fila de envios do SOBEDESCE). `pasta`: a pasta do arquivo de origem.
+ * `aoEstado({ estado, erro })` acompanha: 'enviando' → 'enviado' (ou 'erro').
  */
 export async function enviarAoDrive({ nome, blob, pasta }, aoEstado = () => {}) {
   const r = await pedir({ tipo: 'enviar', nome, mime: blob.type || 'application/octet-stream', dados: blob, pasta })
   envios.set(r.envio, (d) => {
     aoEstado(d)
-    if (d.estado === 'conferido' || d.estado === 'erro') envios.delete(r.envio)
+    if (d.estado === 'enviado' || d.estado === 'erro') envios.delete(r.envio)
   })
   return r.envio
 }
