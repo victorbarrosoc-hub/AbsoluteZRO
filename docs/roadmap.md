@@ -768,6 +768,15 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
 - ✅ Leitura com plano B: gravação de tela do Mac recusada pelo navegador ("Este navegador não lê H.264") é tentada de
   outras formas, só vale a que devolve quadro; sem jeito, o erro mostra codec, tamanho e navegador.
 - ⬜ Confirmar no aparelho do titular qual navegador recusou a gravação de tela (o detalhe do erro agora diz).
+- ✅ Editor de preset completo (pedido do titular, 30/10/2026): cadência exata (23,976 e afins, em fração no ffmpeg),
+  recorte, giro e espelho, tela fixa com faixas/preencher/esticar, bitrate constante, qualidade constante (RF), trecho,
+  volume em dB, opções do computador (velocidade e ajuste do x264, perfil, desentrelaçar, ruído, nitidez, LUFS) e
+  fichas antigas abrindo iguais.
+- ✅ Cor da Revela na exportação, no código e desligada até a Revela abrir: receita (log da câmera → Rec.709 + look
+  `.cube`) no preset, em lote; CST como conta na placa (não LUT 3D: medido, a LUT erra até ~30/255 em cor saturada).
+- ⬜ Revela: looks pela conta (`/api/zro/looks`) e ligar `REVELA=released` no projeto `relay` quando abrir.
+- ⬜ Cor da Revela no computador: a mesma conta no ffmpeg e o SOBEDESCE assando a receita (hoje preset com cor fica
+  no navegador).
 - ⬜ "Baixar como…" das Referências e o pedido da Z no SOBEDESCE pelos presets do Relay.
 - ⬜ Computador: ProRes, DNxHR e HDR 10 bits de saída; loudness normalizado; legenda queimada; corte de trecho.
 - ⬜ Evento `media.conversion.completed` no HUB, quando a primeira integração passar por ele.

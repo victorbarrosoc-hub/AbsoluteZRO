@@ -7,6 +7,7 @@ import { capacidades, converterArquivo, lerArquivo, miniatura, MB } from './moto
 import { icone, icones } from './icones.js'
 import { montarSet } from './set.js'
 import * as Meus from './meus.js'
+import * as Looks from './looks.js'
 import { linkMaxima } from '../src/link.js'
 
 const $ = (id) => document.getElementById(id)
@@ -141,7 +142,7 @@ const avisar = (t) => {
 }
 
 async function abrirEditor(p) {
-  const r = await Meus.editar(p, origemDoEditor())
+  const r = await Meus.editar(p, origemDoEditor(), Looks)
   if (!r) return
   const id = p?.personalizado ? p.id : null
   if (r.acao === 'apagar') {
@@ -377,6 +378,7 @@ async function converterSaida(item, s) {
       info: item.info,
       destino: pasta,
       nome: s.nome,
+      lerLook: Looks.ler,
       aoComecar: (c) => (s.conversao = c),
       aoProgredir: (f) => {
         s.progresso = f

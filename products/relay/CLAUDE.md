@@ -21,6 +21,12 @@ Relay. Decisão em [ADR 0030](../../docs/decisions/0030-relay-conversao.md); int
 - **Preset novo nasce aqui**, com fonte e data (`fontes`); as plataformas que embutem o núcleo copiam
   (`test/copias.test.js` falha até copiar). Hoje: `products/sobedesce/src/relay/` (com `personalizado.js`, para o "Máxima qualidade") e
   `products/sobedesce/web/public/app/relay/`.
+- **A cor é da Revela.** `src/revela/` é cópia de `products/finishing/src/cor/` (`test/copias.test.js`): não edite
+  aqui, copie de lá. `src/cor.js` só monta a receita; o shader `FRAG_COR` de `app/escala.js` e o espelho
+  `aplicarEtapas` mudam juntos (o teste confere com a conta da Revela em todas as câmeras). A tela só mostra a cor com
+  `RECURSOS.revela` (`app/recursos.js`, ligado nas prévias e com `REVELA=released`).
+- **Opção que só o computador faz** (velocidade, filtros, LUFS) fica no grupo "No computador" e a ficha do navegador
+  diz que ficou de fora. Nunca aceitar uma opção e ignorar calado.
 - **O arquivo da pessoa não sai do aparelho.** Nenhum upload; o site é estático. A única parte com servidor é a conta,
   e ela só serve ao Set da Absolute ZRO (`api/`, 30/10/2026): login com a Absolute ZRO (cliente `relay-web`), o "Set"
   no topo e o repasse `/api/zro/set/*` com o token no servidor. Converter continua sem conta, e com o site fechado

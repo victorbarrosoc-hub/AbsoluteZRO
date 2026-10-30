@@ -94,3 +94,21 @@ Todas as conversões (`resultado.json` do laboratório; o navegador do `uhd` tam
   Os presets compensam com bitrate generoso (16 Mbit/s no 1080p).
 - **Ainda falta medir**: Mac (VideoToolbox), iPhone e Windows com placa: o laboratório de aparelhos
   (`/laboratorio`, só nas prévias da Vercel) faz isso no próprio aparelho.
+
+## Cor da Revela (30/10/2026)
+
+A receita (CST log → Rec.709 e look) medida contra a conta da própria Revela (`funcaoDaReceita`), com uma carta de 8
+faixas em código de S-Log3 / S-Gamut3.Cine (`test/carta.js`):
+
+| Onde | Como | Diferença máxima (0–255) |
+| --- | --- | --- |
+| Espelho do shader (`aplicarEtapas`) × Revela, todas as câmeras, com e sem tom | 3.000 pontos do cubo inteiro | < 1,2 |
+| LUT 3D de 65 pontos × Revela (descartada na placa) | 20.000 pontos perto do cinza (±0,06) | p99 8, máx. ~33 (cor saturada, um canal no zero) |
+| LUT 3D de 65 pontos × Revela, perto do preto (código 0,1) | ponto | ~6 |
+| Placa (Chromium, quadro antes do codificador) × Revela sobre o RGB que o navegador decodificou | carta, medida em I420 de 8 bits | ≤ 4 (o próprio I420 de 8 bits da medida) |
+| De ponta a ponta no navegador (H.264 do OpenH264) | carta | cinzas ≤ 2; cores ≤ 7 |
+| De ponta a ponta no ffmpeg (LUT 65 tetraédrica, x264 RF 10) | carta | ≤ 3 |
+
+O que pesa e não é da cor: o codificador H.264 do navegador já desvia ~3/255 no croma sem cor nenhuma, e o navegador
+de teste (SwiftShader) converte o YUV de 10 bits do ProRes em RGB com ~2/255 de diferença do ffmpeg no vermelho. A CST
+amplia isso nas cores saturadas (a curva de log é íngreme). Medir em Mac e Windows de verdade no laboratório.

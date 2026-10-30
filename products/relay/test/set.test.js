@@ -193,4 +193,25 @@ describe('a aba em comum no topo', () => {
     assert.equal(el.aberto, true)
     assert.equal(attrs['aria-expanded'], 'true')
   })
+
+  test('conta dentro e o Set recusando: o clique avisa em vez de refazer o login em volta', async () => {
+    const { ligarSet, AVISOS } = await import('../app/set.js')
+    const el = new EventTarget()
+    const a = Object.assign(new EventTarget(), { setAttribute: () => {} })
+    a.querySelector = () => null
+    const ditos = []
+    ligarSet(el, a, { dentro: true, avisar: (t) => ditos.push(t) })
+    el.dispatchEvent(new Event('zro-set:sem-login'))
+    let evitou = false
+    a.dispatchEvent(Object.assign(new Event('click'), { preventDefault: () => (evitou = true) }))
+    assert.equal(evitou, true, 'não segue o link de entrar de novo')
+    assert.deepEqual(ditos, [AVISOS['sem-set']])
+    // fora da conta, o mesmo 401 segue levando a entrar
+    const b = Object.assign(new EventTarget(), { setAttribute: () => {} })
+    b.querySelector = () => null
+    ligarSet(new EventTarget(), b, { dentro: false })
+    let evitouFora = false
+    b.dispatchEvent(Object.assign(new Event('click'), { preventDefault: () => (evitouFora = true) }))
+    assert.equal(evitouFora, false)
+  })
 })
