@@ -285,6 +285,42 @@ for (const [nome, viewport, movel] of [
       await b.close()
     }
   })
+
+  test(`Set (${nome}): sugestões enquanto digita o @ ("@ron" acha Ronny Freitas) e Adicionar`, async ({ baseURL }) => {
+    test.setTimeout(60_000)
+    const b = await chromium.launch()
+    try {
+      const ana = await conta('Ana')
+      const ronny = await conta('Ronny')
+      const arroba = `ronnyfreitas${nome === 'iphone' ? 'i' : 'c'}`
+      await db.sql`update zro.perfis set arroba = ${arroba} where user_id = ${ronny.userId}`
+      await db.sql`update zro.users set display_name = 'Ronny Freitas' where id = ${ronny.userId}`
+      const A = await aba(b, baseURL!, ana, { viewport, ...(movel ? { isMobile: true, hasTouch: true, deviceScaleFactor: 3 } : {}) }, false)
+      await A.page.goto('/inicio')
+      await pilula(A.page).click()
+      const f = folha(A.page)
+      await f.getByRole('button', { name: 'Adicionar pelo @' }).click()
+      const campo = f.getByRole('textbox', { name: '@ da pessoa' })
+      await campo.pressSequentially('@ron')
+      const linha = f.getByRole('option').filter({ hasText: `@${arroba}` })
+      await expect(linha).toContainText('Ronny Freitas')
+      // "@ron" não existe, mas a sugestão basta: nada de "Não achamos"
+      await expect(f.getByRole('alert')).toHaveCount(0)
+      if (SHOTS) await foto(A.page, `add-sugestoes-${nome}`)
+      if (movel) await linha.getByRole('button', { name: 'Adicionar Ronny Freitas' }).tap()
+      else {
+        await campo.press('ArrowDown')
+        await expect(f.getByRole('option', { selected: true })).toHaveCount(1)
+        await campo.press('Enter')
+      }
+      await expect(f.locator('.achado[data-feito]')).toContainText('Pedido enviado')
+      await expect(f.locator('.achado[data-feito]')).toContainText('Ronny Freitas')
+      expect(await db.sql`select 1 from zro.set_contatos where pedido_por = ${ana.userId}`).toHaveLength(1)
+      await A.ctx.close()
+    } finally {
+      await b.close()
+    }
+  })
 }
 
 test('Set: a leitura repetida (o poll) volta 304 com a mesma ETag e 200 quando muda', async ({ baseURL, request }) => {

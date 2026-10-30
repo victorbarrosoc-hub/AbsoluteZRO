@@ -1001,6 +1001,8 @@ do card... não consigo localizar o job que quero achar".
   pelo @" no vazio; prévia com foto, nome e @ enquanto digita (`POST /contatos { ver }`, só perfil visível, mesmo
   limite da busca); "Pedido enviado" ou "Agora vocês são contatos" ali mesmo; pedidos recebidos no topo do Online com
   Aceitar e Recusar e o número na aba; já contatos = 409. Mesmo `v1`, sem mexer em nenhum repasse dos apps.
+- ✅ Sugestões enquanto digita o @ (30/10/2026): a partir de 3 letras, até 5 pessoas pelo começo do @ ou pelo nome
+  (`POST /contatos { buscar }`, mesmas regras da busca de perfis, sem bloqueados nos dois sentidos), com ↑/↓/Enter/Esc.
 - ⬜ App de computador do SOBEDESCE com o Set (o motor local ainda não repassa); aviso fora do app (e-mail/push);
   anexos.
 - ⬜ Fase 3, salas abertas da comunidade: com o lançamento do Carro do Freela (novo tipo de conversa, mesma API).

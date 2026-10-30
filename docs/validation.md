@@ -67,6 +67,13 @@ embutido (`/app/?no=maestro`, recados `pronto`/`envios`/`pasta`, `{tipo:'tema'}`
   sozinho e na rodada seguinte); `npm run lint` limpo. Carro `npm run test:api` **47/47** (origem `carro.absolutezro.com`
   aceita). SOBEDESCE: só a lista de origens do site mudou (`origensDoSite`).
 
+## Set: sugestões enquanto digita o @ (30/10/2026)
+
+`POST /api/v1/set/contatos { buscar }` e a lista no widget ("@ron" acha Ronny Freitas). Raiz `lint`, `format:check`,
+`typecheck`, `build` ok; `tests/integration/set.test.ts` 16/16 (prefixo, nome sem acento, escondido, bloqueado nos dois
+sentidos, até 5, limite) e `openapi.test.ts` ok; `tests/e2e/set.spec.ts` adicionar/sugestões 4/4 e Chromium completo
+3/3 (`E2E_PORT=3417`, banco `zro_e2e_sug_test`); `node scripts/scan-secrets.mjs` sem segredo.
+
 ## Set: adicionar pelo @ no Online (30/10/2026)
 
 Achar a pessoa pelo @, adicionar, ver quando está online e abrir a conversa, tudo no Online do `<zro-set>` (antes

@@ -295,6 +295,35 @@ export async function verPessoaSet(db: Database, auth: Authenticated | null, arr
   return { pessoa: p, situacao }
 }
 
+export type SugestaoSet = { pessoa: PessoaResumo; situacao: SituacaoContato }
+
+/**
+ * Sugestões enquanto a pessoa digita no "adicionar pelo @" (a partir de 3 letras, até 5): a mesma busca de perfis
+ * (`zro.buscar_perfis`: começo do @ ou nome sem acento, só perfis visíveis, e-mail confirmado, 60 a cada 10 minutos no
+ * mesmo contador). Ninguém bloqueado aparece, nos dois sentidos, nem a própria pessoa. Escondido e inexistente: igual.
+ */
+export async function sugerirPessoasSet(db: Database, auth: Authenticated | null, q: string): Promise<SugestaoSet[]> {
+  const actor = await authorize(db, auth, { verifiedEmail: true })
+  const texto = String(q ?? '')
+    .normalize('NFKC')
+    .trim()
+    .slice(0, 60)
+  if (texto.replace(/^@/, '').length < 3) return []
+  await limite(db, `busca-perfis:${actor.userId}`, LIMITE_BUSCA_PERFIS, 'Muitas buscas seguidas. Espere alguns minutos.')
+  return db.asUser(ctx(actor), async (tx) => {
+    const rows = await tx`
+      select b.user_id, b.arroba, b.nome, b.foto, zro.set_bloqueado(b.user_id) as bloqueio
+        from zro.buscar_perfis(${texto}, 20) b`
+    const achados = rows.filter((r) => r.user_id !== actor.userId && !r.bloqueio).slice(0, 5)
+    if (!achados.length) return []
+    const ids = achados.map((r) => r.user_id as string)
+    const sit = new Map<string, SituacaoContato>()
+    for (const r of await tx`select user_id, situacao from zro.set_meus_contatos() where user_id = any(${ids}::uuid[])`)
+      sit.set(r.user_id as string, r.situacao as SituacaoContato)
+    return achados.map((r) => ({ pessoa: pessoa(r.user_id, r.arroba, r.nome, r.foto), situacao: sit.get(r.user_id as string) ?? 'nenhuma' }))
+  })
+}
+
 /**
  * Pede contato pelo @ (perfil visível) ou pelo id (alguém que a pessoa já vê no Set). Se a outra pessoa já tinha
  * pedido, vira contato na hora. Bloqueio da outra pessoa ou recusa recente: "pendente", sem avisar ninguém. Já são
