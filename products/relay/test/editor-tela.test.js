@@ -59,7 +59,7 @@ test('cadência exata no navegador: 30 fps → 23,976 (24000/1001), quadros repe
   const r = await converter(p, 'trinta.mp4', meu({ fps: 23.976, fpsModo: 'constante' }), 'cad.mp4')
   const v = sondar(r.caminho).streams.find((x) => x.codec_type === 'video')
   const [a, b] = v.avg_frame_rate.split('/').map(Number)
-  assert.ok(Math.abs(a / b - 23.976) < 0.05, v.avg_frame_rate)
+  assert.ok(Math.abs(a / b - 24000 / 1001) < 1e-4, `${v.avg_frame_rate}: o 23,976 dos editores é 24000/1001`)
   assert.ok(Math.abs(Number(v.nb_frames) - 48) <= 2, v.nb_frames)
   assert.ok(r.avisos.some((x) => /23,976 fps exatos/.test(x)))
   assert.deepEqual(s.erros, [])

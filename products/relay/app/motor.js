@@ -33,6 +33,12 @@ MB.registerVideoSampleTransformer((amostra, d) => escalaAtual()?.transformar(amo
 let escalaDaCor = null
 const escalaCor = () => (escalaDaCor ??= criarEscala(MB.VideoSample, { forcar: true }))
 
+/** 23,976 → 24000/1001 (o 23,976 dos editores); cadência inteira fica como está. */
+const ntsc = (fps) => {
+  const n = Math.round(fps * 1.001)
+  return !Number.isInteger(fps) && Math.abs(fps * 1.001 - n) < 0.002 ? (n * 1000) / 1001 : fps
+}
+
 /** Volume em dB num pedaço de áudio (cópia em ponto flutuante, com limite em ±1). */
 function comGanho(amostra, db) {
   const fator = 10 ** (db / 20)
@@ -370,7 +376,7 @@ export async function converterArquivo(arquivo, p, opcoes = {}) {
     const comum = v
       ? {
           codec: codecVideo,
-          frameRate: v.fps ?? undefined,
+          frameRate: v.fps ? ntsc(v.fps) : undefined,
           keyFrameInterval: v.gop,
           quality: new MB.Quality({ bitrate: v.bitrate, bitrateMode: v.modo === 'constante' ? 'constant' : 'variable' }),
           forceTranscode: true,
