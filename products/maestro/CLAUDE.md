@@ -142,6 +142,36 @@ capa-regras}.ts`, `components/quadro/capa.tsx`, `src/app/quadro-achar.css`): o c
   pelo servidor. Demonstração sem Drive de verdade: o estado honesto "Conecte o Drive no SOBEDESCE" (nunca arquivo
   inventado); o e2e usa a ponte falsa (`tests/ponte-falsa.mts`, `MAESTRO_PONTE_URL`) e intercepta o Google no navegador
   (`e2e/falsos/google-drive.ts`, `tests/drive-fixture.mts`).
+- **Gerar versões com o Relay** (29–30/10/2026; contrato "Maestro → Relay" em `docs/integration-contracts/relay.md`,
+  ADR 0030 do HUB; `src/lib/relay`, `drizzle/0034`): numa versão do **Drive** (ficha do card, bloco Versões, e o lote),
+  o botão "Gerar versões" com o ícone oficial do Relay (`public/brand/relay-icone.svg`), em destaque quando a versão
+  está aprovada (decisão do cliente nela, ou card em Aprovado/Agendado/Entregue e ela é a mais nova). A folha
+  (`components/relay/gerar-versoes.tsx`; puro em `escolha.ts`): os de `ENTREGA_AO_CLIENTE` primeiro, o resto em "Mais"
+  nos grupos do Relay (`maisPorGrupo`), a forma de cada destino desenhada (em pé, deitado, som), "Tamanho exato" fora,
+  no máximo 8; pasta "05 Entregas" do projeto (lista a pasta ligada; sem pasta, cria a estrutura com
+  `drive.pasta.criar` na hora de pedir; pasta sem "Entregas" = a pasta do projeto; sem projeto = ao lado do original);
+  prévia `<original> (<preset>).<ext>` com codec e peso pelo `planejar` do Relay e os metadados do Drive lidos no
+  navegador (`contaQueVe`); sem metadados, "—". **`presets.js` e `plano.js` são cópias de `products/relay/src`** (com o
+  ícone, conferidas em `tests/relay.test.mts`, que também exige cada campo tipado em `presets.d.ts`; mude no Relay e
+  copie). Pede pela mesma ponte do Drive (`noSobedesce`, que também exige `relay` em `zro_products` para as `relay.*`;
+  403 do HUB com `details.product = relay` ou `action_not_allowed` vira `sem_relay`): `relay.converter` `{ arquivoId,
+presets, pastaId?, ref: <id da versão>, conta? }`, depois `relay.pedido` para o estado completo.
+  `maestro.entregaveis` (uma linha por versão e preset, RLS padrão + `_cliente`, chave composta para a versão do mesmo
+  card, "pronto" só com arquivo e MD5, gatilho `entregaveis_guarda`: pronto é final, erro/cancelado finais no mesmo
+  pedido, versão/preset/autoria não mudam) é gravada pela pessoa; `aplicavel` (puro) decide o mesmo antes. Estados:
+  pendente (Na fila), convertendo (%), pronto (MD5 ✓, abrir e copiar o link do Drive), erro (Não saiu), cancelado e
+  **revisar** ("Conferir"): o pedido saiu e a resposta não voltou (`Falha.ambiguo` em `ponte.ts`: rede, tempo, 5xx, 2xx
+  sem pedido) ou a fila não acha mais o pedido; só o toque em "Conferir" pede de novo a mesma chave (`conferirEntregavel`,
+  a fila devolve o que já tem). Nunca nova tentativa sozinha. Acompanhar = `relay.pedido` só com item andando e a aba à
+  vista (`useEntregaveis`, `intervaloDoAcompanhar`: 5 s; 15 s com tudo na fila e o computador fechado); sem resposta,
+  nada muda e a tela diz. Cancelar por item (`relay.cancelar`; já terminado fica como está; sem resposta, o estado
+  fica). **Quem pede**: `podeEntregas(sessao, "pedir")` em `src/lib/acessos.ts` (administração, gestão e equipe; a
+  leitura vê o guardado e nunca pergunta), igual às políticas da 0034 (o teste compara). Sem SOBEDESCE ou Relay: o
+  porquê e o link (Ver planos / Conhecer o Relay); computador fechado: "Começa quando o computador com o SOBEDESCE
+  abrir" (nunca prazo) e, por item na fila, o Relay no navegador (`converter?preset=<id>&de=maestro`, jeito 2 do
+  contrato; não volta para o card). Folha sobre folha: Esc e Tab só valem para a de cima (`folha.tsx`). O HUB já tem as
+  `relay.*` na `PONTES`; **depende do SOBEDESCE**: as rotas `/api/zro/relay/*`, o tipo `relay` na fila e o executor
+  (até lá, 404 e "o SOBEDESCE não conseguiu agora", nada gravado). O cliente (`/a`) não recebe nada automaticamente.
 - **A produtora por dentro** (plano v2 §6–§7, o `/painel` do ZRO portado; migrations `0006`–`0010`): toda tabela tem
   `org_id` e RLS pelo helper `maestro.politicas_padrao(tabela, escrita, remocao, leitura)`; chaves compostas
   `(org_id, id)` impedem apontar para a linha de outra organização. **Orçamentos** (`src/lib/orcamento`): `motor.ts` é
@@ -562,7 +592,9 @@ publicado com o conferidor `tests/esquema-json.mts`, TPeasy pelo código do pró
 auditoria, HUB sem o TPeasy; `criacao-tpeasy.test.mts`), o roteiro com o cliente (vista sem nada interno, mandar, `/a` por bloco, ajuste, versão nova, rotas públicas, limite, duas organizações e acesso por cliente; `roteiro-cliente.test.mts`), o fluxo puro (link, operações, exportação, cota, imagem; `fluxo.test.mts`), fluxos no banco
 (duas organizações, papéis, rev por nó, o que mudou, referências "sem acesso", porta da imagem, cota, limpeza;
 `fluxo-rls.test.mts`) e as rotas do fluxo e da imagem (`fluxo-rota.test.mts`), o link e a exportação do Fluxo
-(`links-fluxo.test.mts`), o migrador com migração atrasada
+(`links-fluxo.test.mts`), "Gerar versões com o Relay" (cópia e tipos dos presets, folha e grupos, ponte com HUB e
+SOBEDESCE falsos, idempotência, estado só para a frente, Conferir no despacho ambíguo, sem plano, computador fechado,
+quem pede, duas organizações e acesso por cliente; `relay.test.mts`), o migrador com migração atrasada
 (`migrador.test.mts`) e o lançamento (app de computador só com instalador publicado, manifesto e a chave da vitrine;
 `lancamento.test.mts`), quem vê o quê (padrão igual no TS e no banco, cada área por pessoa, máscaras, gatilhos, só a
 administração muda e audita, sessão, navegação e a Z; `acessos.test.mts`), achar o job no Quadro (selos, miniatura,
@@ -595,7 +627,10 @@ modelo → teclado → vistas → grava sozinho → recarregar, versão e compar
 antigo no editor novo, leitura; no iPhone uma cena por vez, "+", segurar para arrastar e o Teleprompter; e
 `criacao-enviar.spec.ts`: salvar a versão antes de enviar, o `.txt` e o backup do TPeasy iguais ao que o modelo gera,
 PDF para a edição, auditoria, AEON escondido e aparecendo com o gate aberto, o bloco do card, leitura sem Enviar;
-`SHOTS_DIR` guarda as capturas). Bancos por cópia do repositório: `TEST_DB_SUFIXO` (testes) e `E2E_DB_SUFIXO` (e2e).
+`SHOTS_DIR` guarda as capturas) e "Gerar versões com o Relay" (`relay.spec.ts`, computador e iPhone, Chromium e
+WebKit, organização própria: versão aprovada → folha com os grupos → na fila com o computador fechado e o Relay no
+navegador → cancelar um → pronto com MD5 → o lote mostra; despacho ambíguo → Conferir → o mesmo pedido; sem o Relay no
+plano; a fila falsa é controlada por `/__relay`; `SHOTS_DIR` guarda `rl-*` no claro e no escuro). Bancos por cópia do repositório: `TEST_DB_SUFIXO` (testes) e `E2E_DB_SUFIXO` (e2e).
 O navegador do e2e usa um proxy que não existe (`playwright.config.ts`): nada sai para a internet (o `<zro-set>` de
 absolutezro.com falha na hora em vez de segurar o "networkidle"); serviço de fora só com `route`.
 Movimento (29/10/2026): toda folha usa `Folha` (`src/components/folha.tsx`, portal no `<body>`). **Troca de seção**

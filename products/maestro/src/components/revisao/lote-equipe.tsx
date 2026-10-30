@@ -24,6 +24,8 @@ import {
 import { Icone } from "@/components/icones";
 import { NavegadorDrive } from "@/components/arquivos/navegador";
 import { useMidia } from "@/components/use-midia";
+import { AvisoAtualizar, BotaoGerar, ListaEntregaveis, useEntregaveis } from "@/components/relay/entregas";
+import { GerarVersoes } from "@/components/relay/gerar-versoes";
 import { ComDriveDaEquipe } from "./drive-equipe";
 import { useNovaVersao } from "./nova-versao";
 import { Revisor, type NovoComentario } from "./revisor";
@@ -143,6 +145,46 @@ function NovaVersao({ card, driveStream, sobedesce, aoFim }: { card: string; dri
         </p>
       ) : null}
     </form>
+  );
+}
+
+/**
+ * "Gerar versões com o Relay" na peça: a versão do Drive que o cliente aprovou (senão a mais nova do Drive) e os
+ * entregáveis do card, com o número da versão.
+ */
+function EntregasDaPeca({ peca }: { peca: PecaDaEquipe }) {
+  const entregas = useEntregaveis(peca.card);
+  const escreve = entregas.podePedir;
+  const [aberta, setAberta] = useState(false);
+  const aprovada = peca.decisoes.find((d) => d.decisao === "aprovado" && d.versao);
+  const doDrive = peca.versoes.filter((v) => v.fonte === "drive" && v.driveId);
+  const alvo = doDrive.find((v) => v.id === aprovada?.versao) ?? doDrive[0] ?? null;
+  // aprovada: o cliente aprovou esta versão, ou o card já passou de Aprovado e ela é a mais nova (como na ficha)
+  const ehAprovada =
+    !!alvo && (alvo.id === aprovada?.versao || (["aprovado", "agendado", "entregue"].includes(peca.coluna) && alvo.id === peca.versoes[0]?.id));
+  const itens = entregas.lista ?? [];
+  // o botão só quando funciona (um computador da conta converte); com app antigo, o pedido para atualizar
+  const gerar = alvo && escreve ? entregas.gerar : "nao";
+  if (gerar === "nao" && !itens.length) return null;
+  const n = new Map(peca.versoes.map((v) => [v.id, v.n]));
+  return (
+    <section className="ap-entregas" aria-label="Versões de entrega">
+      <div className="ap-entregas__cabeca">
+        <h3>Entregas</h3>
+        {gerar === "sim" ? <BotaoGerar aprovada={ehAprovada} aoAbrir={() => setAberta(true)} /> : gerar === "atualizar" ? <AvisoAtualizar /> : null}
+      </div>
+      <ListaEntregaveis
+        itens={itens.map((e) => ({ ...e, nome: `v${n.get(e.versao) ?? "?"} · ${e.nome}` }))}
+        computador={entregas.computador}
+        aviso={entregas.aviso}
+        podePedir={escreve}
+        aoTrocar={entregas.trocar}
+        aoAplicar={entregas.aplicar}
+      />
+      {aberta && alvo ? (
+        <GerarVersoes versaoId={alvo.id} titulo={`${peca.titulo} · v${alvo.n}`} aoFechar={() => setAberta(false)} aoPedir={entregas.aplicar} />
+      ) : null}
+    </section>
   );
 }
 
@@ -447,6 +489,7 @@ export function LoteEquipe({
           </header>
           {ultimaDecisao?.nota ? <p className="ap-nota">“{ultimaDecisao.nota}”</p> : null}
           {escreve && lote.status !== "fechado" ? <NovaVersao card={peca.card} driveStream={driveStream} sobedesce={sobedesce} aoFim={atualizar} /> : null}
+          <EntregasDaPeca key={peca.card} peca={peca} />
           {peca.versoes[0]?.fonte === "roteiro" ? (
             <RoteiroDaPeca v={peca.versoes[0]} />
           ) : peca.versoes.some((v) => v.fonte !== "roteiro") ? (

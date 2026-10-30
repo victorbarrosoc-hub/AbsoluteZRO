@@ -51,6 +51,11 @@ reader, allowFileDiscovery: false }` e devolve o id. `drive.recolher_revisao` s�
 - Erros `{ erro, mensagem }`: `401 nao_autorizado` · `400 entrada | nao_e_publico` · `403 sem_acesso_zro` · `404
 sem_vinculo | nao_achou | sem_miniatura | conta_desconhecida` · `409 sem_drive | reconectar_drive | sem_permissao` ·
   `429 devagar` · `502 drive_indisponivel`.
+- **As versões pelo Relay** (`relay.converter`, `relay.pedido`, `relay.cancelar` em `/api/zro/relay/*`, desde
+  30/10/2026): contrato completo em [relay.md](relay.md) ("Maestro → Relay"). Mesmo caminho (`atenderPedidoZro`), limite
+  `relay-maestro:<sub>` 120/10 min (converter e cancelar) e `relay-acompanhar:<sub>` 300/10 min (`relay.pedido`, que só
+  lê a fila e não grava auditoria). Erros a mais: `400 pasta | formato_incompativel`, `429 fila_cheia` (100 versões
+  esperando por pessoa).
 
 ## 3. No Maestro
 

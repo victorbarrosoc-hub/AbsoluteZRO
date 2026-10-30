@@ -38,6 +38,10 @@ export const REGRAS = {
   driveMaestro: { max: 240, janelaMs: 10 * 60_000 },
   /** O token curto do Drive para o Maestro (/api/zro/drive/token). */
   driveTokenMaestro: { max: 40, janelaMs: 10 * 60_000 },
+  /** As versões do Relay pedidas pelo Maestro (/api/zro/relay/{converter,cancelar}). */
+  relayMaestro: { max: 120, janelaMs: 10 * 60_000 },
+  /** O acompanhamento das versões (/api/zro/relay/pedido, a cada 5 s com a ficha à vista; o HUB também conta 300). */
+  relayAcompanharMaestro: { max: 300, janelaMs: 10 * 60_000 },
 } satisfies Record<string, Regra>;
 
 /** true = ainda pode tentar. */

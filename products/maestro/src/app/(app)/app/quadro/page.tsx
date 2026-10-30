@@ -8,6 +8,7 @@ import { CarregarDemonstracao } from "@/components/demonstracao";
 import "../../../versoes-card.css";
 import "../../../colunas.css";
 import "../../../quadro-achar.css";
+import "../../../relay.css";
 
 export const metadata = { title: "Quadro" };
 

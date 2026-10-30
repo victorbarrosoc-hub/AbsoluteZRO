@@ -1,0 +1,19 @@
+{
+  "$id": "https://absolutezro.local/schemas/sobedesce.relay-cancelar.resposta.v1.json",
+  "title": "SOBEDESCE relay.cancelar: resposta v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "cancelado": {
+      "type": "boolean"
+    },
+    "ja_terminado": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "cancelado",
+    "ja_terminado"
+  ],
+  "additionalProperties": false
+}

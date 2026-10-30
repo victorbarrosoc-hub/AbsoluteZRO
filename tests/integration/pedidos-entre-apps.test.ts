@@ -19,10 +19,21 @@ import {
   type AuthorizeRequest,
 } from '@zro/auth'
 import { grantEntitlement } from '@zro/billing'
-import { ACOES_SOBEDESCE, APP_PEDIDO_ACAO, LIMITE_PONTE_TOKEN, loadOidcClaims, pedidoEntreAppsDaPessoa, pedidoEntreAppsDoApp, PONTES } from '@zro/core'
+import {
+  ACOES_SOBEDESCE,
+  APP_PEDIDO_ACAO,
+  LIMITE_PONTE,
+  LIMITE_PONTE_ACOMPANHAR,
+  LIMITE_PONTE_TOKEN,
+  loadOidcClaims,
+  pedidoEntreAppsDaPessoa,
+  pedidoEntreAppsDoApp,
+  PONTES,
+  PRODUTO_DA_ACAO,
+} from '@zro/core'
 import type { Database } from '@zro/db'
 import { testDatabase } from '@zro/db/testing'
-import { ACOES_PONTE_SOBEDESCE, AppPedidoRespostaSchema } from '@zro/media-contracts'
+import { ACOES_PONTE_RELAY, ACOES_PONTE_SOBEDESCE, AppPedidoRespostaSchema } from '@zro/media-contracts'
 import { admin, allowRelease, expectCode, newOrgWithOwner } from './helpers'
 
 let db: Database
@@ -195,5 +206,73 @@ describe('ponte entre apps (Maestro → SOBEDESCE)', () => {
     await expectCode(pedidoEntreAppsDaPessoa(db, auth, { destino: 'sobedesce', acao: 'drive.token' }, CFG), 'rate_limited')
     // As outras ações seguem (contador separado).
     expect((await pedidoEntreAppsDaPessoa(db, auth, { destino: 'sobedesce', acao: 'drive.miniatura' }, CFG)).acao).toBe('drive.miniatura')
+  })
+})
+
+describe('ponte Maestro → SOBEDESCE para o Relay (Gerar versões)', () => {
+  it('relay.* com o SOBEDESCE e o Relay no plano: assinado para a rota exata da fila', async () => {
+    const o = await newOrgWithOwner(db, 'relay')
+    for (const p of ['maestro', 'sobedesce', 'relay']) await darProduto(o.orgId, p)
+    const c = await cliente()
+    const { at } = await tokenDoApp(c, o.userId, o.orgId)
+    const auth = await authenticateAccessToken(db, `Bearer ${at}`, SCOPE)
+    for (const acao of ACOES_PONTE_RELAY) {
+      const p = await pedidoEntreAppsDaPessoa(db, auth, { destino: 'sobedesce', acao }, CFG)
+      expect(AppPedidoRespostaSchema.safeParse(p).success).toBe(true)
+      expect(p.url).toBe(`https://sobedesce.teste${ACOES_SOBEDESCE[acao]}`)
+      expect((await conferir(p.token)).dados).toMatchObject({ aud: 'sobedesce-web', sub: o.userId, zro_pedido: acao })
+    }
+    expect(ACOES_SOBEDESCE['relay.converter']).toBe('/api/zro/relay/converter')
+    // O Relay só tem o site (gate do canal web, 0032): a ponte confere o plano dele sem exigir um canal de API.
+    expect(Object.keys(PRODUTO_DA_ACAO).sort()).toEqual([...ACOES_PONTE_RELAY].sort())
+  })
+
+  it('sem o Relay no plano: 403 com o produto que falta, e nada assinado nem auditado', async () => {
+    const o = await newOrgWithOwner(db, 'sem-relay')
+    await darProduto(o.orgId, 'maestro')
+    await darProduto(o.orgId, 'sobedesce')
+    const c = await cliente()
+    const { at } = await tokenDoApp(c, o.userId, o.orgId)
+    const auth = await authenticateAccessToken(db, `Bearer ${at}`, SCOPE)
+    const e = (await expectCode(pedidoEntreAppsDaPessoa(db, auth, { destino: 'sobedesce', acao: 'relay.converter' }, CFG), 'entitlement_required')) as {
+      status: number
+      details?: Record<string, unknown>
+    }
+    expect(e.status).toBe(403)
+    expect(e.details).toMatchObject({ product: 'relay' })
+    const log = await db.sql`select 1 from zro.audit_logs where action = ${APP_PEDIDO_ACAO} and actor_user_id = ${o.userId}`
+    expect(log).toHaveLength(0)
+    // O Drive segue sem o Relay.
+    expect((await pedidoEntreAppsDaPessoa(db, auth, { destino: 'sobedesce', acao: 'drive.listar' }, CFG)).acao).toBe('drive.listar')
+    // Sem o SOBEDESCE (o destino), o Relay sozinho não basta.
+    const o2 = await newOrgWithOwner(db, 'so-relay')
+    await darProduto(o2.orgId, 'maestro')
+    await darProduto(o2.orgId, 'relay')
+    const { at: at2 } = await tokenDoApp(await cliente(), o2.userId, o2.orgId)
+    const auth2 = await authenticateAccessToken(db, `Bearer ${at2}`, SCOPE)
+    const e2 = (await expectCode(pedidoEntreAppsDaPessoa(db, auth2, { destino: 'sobedesce', acao: 'relay.pedido' }, CFG), 'entitlement_required')) as {
+      details?: Record<string, unknown>
+    }
+    expect(e2.details).toMatchObject({ product: 'sobedesce' })
+  })
+
+  it('relay.* nunca anda sem a pessoa (credencial do app)', async () => {
+    const o = await newOrgWithOwner(db, 'relay-app')
+    for (const p of ['maestro', 'sobedesce', 'relay']) await darProduto(o.orgId, p)
+    const c = await cliente()
+    const { basic } = await tokenDoApp(c, o.userId, o.orgId)
+    const app = await authenticateAppClient(db, basic)
+    await expectCode(pedidoEntreAppsDoApp(db, app, { destino: 'sobedesce', acao: 'relay.converter', sub: o.userId }, CFG), 'action_not_allowed')
+  })
+
+  it('acompanhar (relay.pedido) tem contador próprio: não gasta o do Drive', async () => {
+    const o = await newOrgWithOwner(db, 'relay-limite')
+    for (const p of ['maestro', 'sobedesce', 'relay']) await darProduto(o.orgId, p)
+    const c = await cliente()
+    const { at } = await tokenDoApp(c, o.userId, o.orgId)
+    const auth = await authenticateAccessToken(db, `Bearer ${at}`, SCOPE)
+    for (let i = 0; i < LIMITE_PONTE.max + 5; i++) await pedidoEntreAppsDaPessoa(db, auth, { destino: 'sobedesce', acao: 'relay.pedido' }, CFG)
+    expect(LIMITE_PONTE_ACOMPANHAR.max).toBeGreaterThan(LIMITE_PONTE.max)
+    expect((await pedidoEntreAppsDaPessoa(db, auth, { destino: 'sobedesce', acao: 'drive.listar' }, CFG)).acao).toBe('drive.listar')
   })
 })
