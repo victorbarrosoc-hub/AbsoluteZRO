@@ -24,6 +24,7 @@ import { cookieSeguro, FERRAMENTAS_ZRO, origensDoSite, ROTAS } from "@/lib/site"
 import { emissor, PROXIMO_NIVEL, retornoZro, zroConfigurado, type NivelEscopo } from "./config";
 import { entrarNaOrganizacao } from "./contas";
 import { ehCaminhoDeConvite } from "@/lib/freelas/convite";
+import { produtorasDoFreela } from "@/lib/freelas/area";
 import { cookieDaIdentidade, selarIdentidade } from "./identidade";
 import { abrirEstadoZro, COOKIE_ZRO, DURACAO_ZRO_S, selarEstadoZro, type ModoZro } from "./estado";
 import { lerUserinfo, novoValor, renovarTokens, revogarToken, trocarCodigoZro, urlDeLogin, type PerfilZro, type TokensZro } from "./oidc";
@@ -135,8 +136,12 @@ export async function callback(req: Request): Promise<Response> {
     userAgent: req.headers.get("user-agent"),
   });
   const cookies = [serializarCookie(COOKIE_SESSAO, sessao.token, opcoesCookieSessao(seguro))];
-  // A sessão existe mesmo sem acesso: a tela "sem acesso" mostra quem é e oferece Sair.
-  if (!temAcesso(perfil)) return ir(ROTAS.semAcesso, cookies);
+  // A sessão existe mesmo sem acesso: a tela "sem acesso" mostra quem é e oferece Sair. Quem é freela ligado em alguma
+  // produtora (drizzle/0037) vai para "Seus trabalhos".
+  if (!temAcesso(perfil)) {
+    const freela = (await produtorasDoFreela(perfil.sub).catch(() => [])).length > 0;
+    return ir(freela ? ROTAS.trabalhos : ROTAS.semAcesso, cookies);
+  }
   return ir(volta, cookies);
 }
 

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { MENSAGEM_SEM_ACESSO, temAcesso } from "@/lib/auth/acesso";
 import { exigirSessaoNaPagina } from "@/lib/auth/pagina";
+import { produtorasDoFreela } from "@/lib/freelas/area";
 import { FERRAMENTAS_ZRO, HUB_URL, ROTAS } from "@/lib/site";
 import { MaestroSimbolo, ZroSimbolo } from "@/components/marca";
 import { Avatar, BotaoSair } from "@/components/shell";
@@ -14,6 +15,8 @@ export const metadata = { title: "Sem acesso" };
 export default async function SemAcesso() {
   const sessao = await exigirSessaoNaPagina(ROTAS.semAcesso);
   if (temAcesso(sessao)) redirect(ROTAS.app);
+  // Freela ligado em alguma produtora (drizzle/0037): "Seus trabalhos".
+  if ((await produtorasDoFreela(sessao.sub).catch(() => [])).length) redirect(ROTAS.trabalhos);
   return (
     <div className="abertura">
       <main id="conteudo" className="abertura__miolo">

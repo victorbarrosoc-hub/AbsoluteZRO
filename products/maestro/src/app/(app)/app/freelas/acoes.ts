@@ -11,9 +11,11 @@ import {
   salvarEscala,
   salvarFreela,
   salvarPagamento,
+  salvarParaFreela,
   validarEscala,
   validarFreela,
   validarPagamento,
+  validarParaFreela,
 } from "@/lib/freelas/servidor";
 import { marcarEquipNaEscala, removerEquipFreela, salvarEquipFreela, validarEquipFreela } from "@/lib/freelas/equipamentos";
 import { adicionarFreelaDaZro, funcoesDoPerfil } from "@/lib/freelas/da-zro";
@@ -137,6 +139,19 @@ export async function salvarEscalaAcao(_: EstadoForm, fd: FormData): Promise<Est
   revalidatePath("/app/agenda");
   revalidatePath("/app/financeiro", "layout");
   return { aviso: "Na escala. O pagamento entrou no Financeiro.", n: Date.now() };
+}
+
+/** O recado da produção e o link de entrega da escala (o freela vê em "Seus trabalhos", drizzle/0037). */
+export async function paraFreelaAcao(_: EstadoForm, fd: FormData): Promise<EstadoForm> {
+  const s = await exigirAcessoNaAcao();
+  const valores = valoresDe(fd);
+  if (!podeEscrever(s.papel)) return { mensagem: LE, valores };
+  const v = validarParaFreela(valores);
+  if (!v.ok) return { erros: v.erros, valores };
+  const r = await salvarParaFreela({ sub: s.sub, orgId: s.orgId }, valores.id ?? "", v.entrada);
+  if (!r.ok) return { mensagem: r.mensagem, valores };
+  revalidatePath("/app", "layout");
+  return { aviso: "O freela já vê.", valores };
 }
 
 export async function removerEscalaAcao(_: EstadoForm, fd: FormData): Promise<EstadoForm> {

@@ -23,6 +23,7 @@ export const ARQUIVO_SESSAO_FLUXO = "test-results/e2e-sessao-fluxo.json";
 export const ARQUIVO_SESSAO_EXPORTAR = "test-results/e2e-sessao-exportar.json";
 export const ARQUIVO_SESSAO_CONVITE = "test-results/e2e-sessao-convite.json";
 export const ARQUIVO_SESSAO_LIXEIRA = "test-results/e2e-sessao-lixeira.json";
+export const ARQUIVO_SESSAO_AREA_FREELA = "test-results/e2e-sessao-area-freela.json";
 /** A ponte falsa (HUB + SOBEDESCE de mentira, tests/ponte-falsa.mts) do e2e de Arquivos: MAESTRO_PONTE_URL no servidor. */
 export const PORTA_PONTE = Number(process.env.E2E_PONTE_PORT || 3219);
 /** A ANP falsa (tests/anp-fixture.mts, valores inventados) da calculadora de deslocamento: MAESTRO_ANP_URL no servidor. */
@@ -479,6 +480,9 @@ export default async function preparar() {
     const sLxEq = await criarSessao({ orgId: orgLx, sub: SUB_LX_EQ, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
     const sLxLe = await criarSessao({ orgId: orgLx, sub: SUB_LX_LE, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
     writeFileSync(ARQUIVO_SESSAO_LIXEIRA, JSON.stringify({ token: sLx.token, equipe: sLxEq.token, leitura: sLxLe.token, org: orgLx }));
+    // A área do freela (e2e/area-freela.spec.ts): duas produtoras, freelas ligados, um da equipe que também é freela.
+    const { sementeDaAreaDoFreela } = await import("./semente-area-freela");
+    writeFileSync(ARQUIVO_SESSAO_AREA_FREELA, JSON.stringify(await sementeDaAreaDoFreela()));
   } finally {
     await fecharBanco();
   }

@@ -2,7 +2,7 @@
 /**
  * A tela do convite do freela (`/convite/<token>`, drizzle/0036): a marca da produtora, uma frase e uma ação. Sem conta:
  * "Criar conta" (o login único abre direto no cadastro) e "Já tenho conta". Com a conta: "Aceitar" como @fulano, ou
- * "Trocar de conta". Aceitou: pronto, e o caminho para o perfil profissional.
+ * "Trocar de conta". Aceitou: pronto, "Ver seus trabalhos" (a área do freela) e o perfil profissional.
  */
 import { useState, useTransition, type ReactNode } from "react";
 import { Icone } from "@/components/icones";
@@ -20,6 +20,7 @@ export function ConviteDoFreela({
   criarConta,
   entrar,
   perfil,
+  trabalhos,
 }: {
   token: string;
   nome: string;
@@ -30,6 +31,8 @@ export function ConviteDoFreela({
   criarConta: string;
   entrar: string;
   perfil: string;
+  /** A área do freela no Maestro (drizzle/0037), pelo login único. */
+  trabalhos: string;
 }) {
   const [aceito, setAceito] = useState(jaAceito);
   const [erro, setErro] = useState<string | null>(null);
@@ -64,6 +67,9 @@ export function ConviteDoFreela({
           <h1 id="cv-titulo">Pronto, {nome}.</h1>
           <p>Você está no banco de freelas da {produtora}.</p>
           <div className="cv__acoes">
+            <a className="glass-btn glass-btn--ink" href={trabalhos}>
+              Ver seus trabalhos
+            </a>
             <a className="glass-btn" href={perfil}>
               Seu perfil
             </a>

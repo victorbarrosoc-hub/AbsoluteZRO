@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { exigirAcessoNaPagina, sessaoDaPagina } from "@/lib/auth/pagina";
 import { temDemonstracao } from "@/lib/demo/demonstracao";
+import { produtorasDoFreela } from "@/lib/freelas/area";
 import { marcaPropriaDaSessao } from "@/lib/marca/propria";
 import { ROTAS, SITE_NOME } from "@/lib/site";
 import { Shell } from "@/components/shell";
@@ -21,9 +22,16 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const sessao = await exigirAcessoNaPagina(ROTAS.app);
   // O selo "Demonstração" é só um aviso: se a consulta falhar, o app segue sem ele.
-  const [demo, marca] = await Promise.all([temDemonstracao({ sub: sessao.sub, orgId: sessao.orgId }).catch(() => false), marcaPropriaDaSessao(sessao)]);
+  // A área do freela (drizzle/0037): quem também é freela ligado em outra produtora ganha o atalho para "Seus trabalhos".
+  const [demo, marca, freela] = await Promise.all([
+    temDemonstracao({ sub: sessao.sub, orgId: sessao.orgId }).catch(() => false),
+    marcaPropriaDaSessao(sessao),
+    produtorasDoFreela(sessao.sub)
+      .then((p) => p.length > 0)
+      .catch(() => false),
+  ]);
   return (
-    <Shell sessao={sessao} demo={demo} marca={marca}>
+    <Shell sessao={sessao} demo={demo} marca={marca} freela={freela}>
       {children}
     </Shell>
   );
