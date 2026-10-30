@@ -54,6 +54,19 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   (`src/lib/quadro/metodo.ts`); tempo real é poll de 5 s ("o que mudou desde"). Clientes e projetos em `src/lib/crm`
   (Server Actions conferem sessão e papel; o banco confere de novo). Remover cliente/projeto = `deleted_at`, só
   admin e gestão.
+- **Achar o job no Quadro** (titular 30/10/2026; `drizzle/0035_capas_do_quadro.sql`, `src/lib/quadro/{selos,capa,
+capa-regras}.ts`, `components/quadro/capa.tsx`, `src/app/quadro-achar.css`): o card mostra **um** selo do link, o
+  mais adiantado e só do que o banco registra (`selosDoQuadro`/`selosDesde` como a pessoa: versão mais nova, lote fora
+  de rascunho, link ativo aberto depois da versão, decisão desta volta), a imagem do topo (capa enviada > miniatura que
+  o endereço dá sem buscar: YouTube `mqdefault`, quadro `public/demo/*.webp` da demonstração; Drive/Vimeo não; sem
+  imagem nada) e a sigla do cliente na cor dele (`corDoCliente`, paleta `--cor-*`). A capa: `maestro.card_capas` (uma
+  por card, WebP ≤ 960 px/160 KB pelo `prepararCapa`, cota `card_capas_cota` = `COTA_CAPAS`, bytes só pela porta
+  `maestro.card_capa`, `_cliente` pelo card) e a referência em `dados.capa` gravada pelo `card_mudar` na mesma transação
+  (o poll leva); rotas `POST|DELETE /api/quadro/capa?card=` (quem escreve no Quadro) e `GET /api/quadro/capa/<card>/<sha>`
+  (cache privado imutável). Vídeo vira quadro no navegador. A imagem do card não recebe o ponteiro (o clique abre o
+  card) e tem a proporção reservada (carregar não mexe no layout do arrasto). No computador "Mover para…" e o próximo
+  passo só aparecem no gesto (`hover`/foco); no toque ficam à vista. Busca: título, briefing, cliente e código do
+  projeto, com realce (`pedacosDoRealce`), contagem e "Nada com …"; "/" foca a busca.
 - **Colunas do Quadro** (titular 29/10/2026, "como no Trello"; `drizzle/0024_colunas.sql`, `src/lib/quadro/colunas.ts`
   puro, `colunas-servidor.ts`, tela em `components/quadro/colunas.tsx`): `maestro.colunas` por organização (id, papel,
   nome 1–30, cor da paleta fechada `CORES_COLUNA`/`--cor-*`, ordem, arquivada). As 8 do método são de sistema: **id =
@@ -495,7 +508,8 @@ publicado com o conferidor `tests/esquema-json.mts`, TPeasy pelo código do pró
 (`links-fluxo.test.mts`), o migrador com migração atrasada
 (`migrador.test.mts`) e o lançamento (app de computador só com instalador publicado, manifesto e a chave da vitrine;
 `lancamento.test.mts`), quem vê o quê (padrão igual no TS e no banco, cada área por pessoa, máscaras, gatilhos, só a
-administração muda e audita, sessão, navegação e a Z; `acessos.test.mts`). E2E: `npm run build && npm run test:e2e`
+administração muda e audita, sessão, navegação e a Z; `acessos.test.mts`), achar o job no Quadro (selos, miniatura,
+cor do cliente, realce, capa com papéis, cota, duas organizações e acesso por cliente; `capas.test.mts`). E2E: `npm run build && npm run test:e2e`
 (Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir movimento, navegação, a aprovação
 inteira (`aprovacao.spec.ts`, mp4 local e YouTube/Vimeo falsos em `e2e/falsos`) e a versão colada na ficha do card que aparece no lote (`versao-card.spec.ts`) e a produtora com a demonstração
 (`produtora.spec.ts`, organização própria criada em `e2e/preparar.ts`) e o ciclo comercial (`comercial.spec.ts`: pedido
@@ -515,7 +529,8 @@ com o mouse andando, card sempre inteiro ao soltar; `E2E_DB_SUFIXO` separa o ban
 (`colunas.spec.ts`: renomear no lugar, reordenar, criar e recolorir, arquivar com destino e restaurar, sistema não
 arquiva, equipe não edita; computador e iPhone, organização própria), quem vê o quê (`acessos.spec.ts`: o editor sem
 dinheiro na navegação, no Hoje, nas fichas e no HTML; a administração liga o Financeiro e volta ao padrão; `SHOTS_DIR`
-guarda `pessoas-acesso-*`) e a Criação (`criacao-roteiro.spec.ts`: novo pelo
+guarda `pessoas-acesso-*`), achar o job (`quadro-achar.spec.ts`: selo, miniatura, capa pela ficha, busca com realce,
+passos só no gesto, leitura; `SHOTS_DIR` guarda `depois-*`, `E2E_VIDEO=1` grava o passeio) e a Criação (`criacao-roteiro.spec.ts`: novo pelo
 modelo → teclado → vistas → grava sozinho → recarregar, versão e comparar, folha A4, junção com outra pessoa, documento
 antigo no editor novo, leitura; no iPhone uma cena por vez, "+", segurar para arrastar e o Teleprompter; e
 `criacao-enviar.spec.ts`: salvar a versão antes de enviar, o `.txt` e o backup do TPeasy iguais ao que o modelo gera,

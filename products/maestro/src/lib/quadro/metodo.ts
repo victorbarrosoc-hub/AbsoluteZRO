@@ -61,6 +61,8 @@ export type DadosCard = {
   criadoPor?: string;
   apagadoEm?: string;
   apagadoPor?: string;
+  /** A capa enviada (drizzle/0035): só o servidor grava, junto com os bytes em `maestro.card_capas`. */
+  capa?: { sha: string; l: number; a: number };
 };
 
 /** O card como a tela recebe: os dados, a versão do card e a versão de cada campo (para o conflito por campo). */
@@ -178,8 +180,11 @@ export const FILTRO_VAZIO: Filtro = { busca: "", cliente: "todos", resp: "todos"
 
 const semAcento = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-/** Passa no filtro? `resp`: todos | meus | ninguem | <sub>. `cliente`: todos | sem | <id>. Busca no título e no briefing. */
-export function passaFiltro(c: CardQ, f: Filtro, eu: string, nomeCliente?: (id?: string) => string): boolean {
+/**
+ * Passa no filtro? `resp`: todos | meus | ninguem | <sub>. `cliente`: todos | sem | <id>. A busca casa cada palavra (sem
+ * acento e sem caixa) no título, no briefing, no nome do cliente e no código do projeto.
+ */
+export function passaFiltro(c: CardQ, f: Filtro, eu: string, nomeCliente?: (id?: string) => string, codigoProjeto?: (id?: string) => string): boolean {
   const d = c.dados;
   if (f.resp === "meus" && d.resp !== eu) return false;
   if (f.resp === "ninguem" && d.resp) return false;
@@ -188,7 +193,7 @@ export function passaFiltro(c: CardQ, f: Filtro, eu: string, nomeCliente?: (id?:
   if (!["todos", "sem"].includes(f.cliente) && d.cliente !== f.cliente) return false;
   const q = semAcento(f.busca.trim());
   if (q) {
-    const alvo = semAcento([d.tema, d.briefing ?? "", nomeCliente?.(d.cliente) ?? ""].join(" "));
+    const alvo = semAcento([d.tema, d.briefing ?? "", nomeCliente?.(d.cliente) ?? "", codigoProjeto?.(d.projeto) ?? ""].join(" "));
     if (!q.split(/\s+/).every((p) => alvo.includes(p))) return false;
   }
   return true;

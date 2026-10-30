@@ -213,6 +213,13 @@
       "breakpoints": false
     },
     {
+      "idx": 35,
+      "version": "7",
+      "when": 1796169600000,
+      "tag": "0035_capas_do_quadro",
+      "breakpoints": false
+    },
+    {
       "idx": 36,
       "version": "7",
       "when": 1796256000000,

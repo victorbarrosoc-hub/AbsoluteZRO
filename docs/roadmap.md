@@ -876,6 +876,29 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
 - ⬜ Perguntas ao titular: Gestão com Financeiro por padrão? Contato dos freelas separado de CPF/PIX? Restringir
   clientes só com a Administração? Aprovar na tela pedir também o Financeiro?
 
+## Maestro: achar o job no Quadro (30/10/2026)
+
+Pedido do titular: "o card que estiver com o link precisa ser de fácil entendimento... uma miniatura também da mídia
+do card... não consigo localizar o job que quero achar".
+
+- ✅ Selo do link no card (`src/lib/quadro/selos.ts`): um só, o mais adiantado, só do que o banco registra: "Com link"
+  (a peça tem versão), "Link enviado" (lote fora de rascunho com link ativo), "Cliente viu" (o link foi aberto depois da
+  versão mais nova), "Aprovado" / "Pediu ajuste" (decisão desta volta). A frase inteira, com hora e versão, na dica e no
+  nome do botão do card. O poll de 5 s traz o que mudou (versão, decisão, link criado, aberto ou revogado).
+- ✅ Imagem no topo do card: a capa enviada pela ficha (imagem, ou um quadro de vídeo tirado no navegador; arrastar ou
+  colar também vale) ou, sem ela, a miniatura que o endereço já dá sem o servidor buscar nada (YouTube; o quadro do vídeo
+  da demonstração). Drive e Vimeo ficam sem (precisariam buscar a página ou a credencial do arquivo). Sem imagem, o card
+  fica compacto. No celular a imagem vira miniatura ao lado.
+- ✅ Capa no banco do Maestro (migração **`drizzle/0035_capas_do_quadro.sql`**; 0033 e 0034 ficam com outras frentes):
+  `maestro.card_capas`, uma por card, WebP limpo (≤ 960 px, ≤ 160 KB), cota de 100 MB por produtora, bytes só pela
+  porta `maestro.card_capa`, RLS + `_cliente`; a referência vai em `dados.capa` pelo `card_mudar`. Rotas
+  `POST|DELETE /api/quadro/capa?card=` e `GET /api/quadro/capa/<card>/<sha>`. Leitura só vê.
+- ✅ Achar: sigla do cliente na cor dele (a mesma em toda tela), nome do cliente inteiro (o "Mover para…" e o próximo
+  passo aparecem só no gesto no computador; no toque ficam à vista), busca também pelo código do projeto, com realce,
+  contagem, "Nenhum card" e "Nada com …" + "Limpar busca"; colunas sem resultado esmaecem; "/" leva à busca.
+- ⛔ Em produção: migração `0035` do Maestro no próximo deploy autorizado.
+- ⬜ Miniatura do Drive pelo SOBEDESCE (`drive.miniatura` na ponte), se o titular quiser.
+
 ## Set: presença e conversas (29/10/2026, [ADR 0032](decisions/0032-set-presenca-e-conversas.md))
 
 - ✅ Fase 1, presença (migração `0035_set.sql`): quem da equipe (mesma organização ou projeto) e dos contatos aceitos

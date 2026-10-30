@@ -24,6 +24,8 @@ export const ARQUIVO_SESSAO_EXPORTAR = "test-results/e2e-sessao-exportar.json";
 export const ARQUIVO_SESSAO_LIXEIRA = "test-results/e2e-sessao-lixeira.json";
 
 export const ARQUIVO_SESSAO_CONVITE = "test-results/e2e-sessao-convite.json";
+
+export const ARQUIVO_SESSAO_ACHAR = "test-results/e2e-sessao-achar.json";
 /** A ponte falsa (HUB + SOBEDESCE de mentira, tests/ponte-falsa.mts) do e2e de Arquivos: MAESTRO_PONTE_URL no servidor. */
 export const PORTA_PONTE = Number(process.env.E2E_PONTE_PORT || 3219);
 /** A ANP falsa (tests/anp-fixture.mts, valores inventados) da calculadora de deslocamento: MAESTRO_ANP_URL no servidor. */
@@ -481,6 +483,27 @@ export default async function preparar() {
       },
     });
     writeFileSync(ARQUIVO_SESSAO_CONVITE, JSON.stringify({ token: sFc.token }));
+
+    // Uma organização para achar o job no Quadro (e2e/quadro-achar.spec.ts): a demonstração inteira (peças com link,
+    // links enviados e decisões do cliente), administração e uma pessoa de leitura.
+    const SUB_QA = "00000000-0000-4000-8000-00000000aa02";
+    const SUB_QA_LE = "00000000-0000-4000-8000-00000000aa03";
+    const orgQa = await getBanco().asSystem("e2e: semente do achar no Quadro", async (tx) => {
+      const [org] = await tx
+        .insert(schema.organizations)
+        .values({ zroOrgId: "00000000-0000-4000-8000-00000000aa01", name: "Quadro Achar E2E", zroProducts: ["maestro"] })
+        .returning({ id: schema.organizations.id });
+      await tx.insert(schema.members).values([
+        { orgId: org.id, zroSub: SUB_QA, displayName: "Diana Lopes", hubRole: "owner", role: "admin" },
+        { orgId: org.id, zroSub: SUB_QA_LE, displayName: "Lia Leitura", hubRole: "viewer", role: "leitura" },
+      ]);
+      return org.id;
+    });
+    const qa = await carregarDemonstracao({ sub: SUB_QA, orgId: orgQa });
+    if (!qa.ok) throw new Error(qa.mensagem);
+    const sQa = await criarSessao({ orgId: orgQa, sub: SUB_QA, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    const sQaLe = await criarSessao({ orgId: orgQa, sub: SUB_QA_LE, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    writeFileSync(ARQUIVO_SESSAO_ACHAR, JSON.stringify({ token: sQa.token, leitura: sQaLe.token, org: orgQa }));
   } finally {
     await fecharBanco();
   }

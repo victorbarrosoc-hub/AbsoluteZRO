@@ -4,11 +4,13 @@
  * quantas vezes o React desenhou e o que mudou no DOM. Enquanto o mouse anda, nada de render do React nem de layout
  * (só `transform`); o lugar de soltar não pisca; ao soltar, o card assenta de onde foi solto, sempre inteiro e à vista
  * (sem sumir, sem ser cortado pela coluna, sem pulo); depois de o banco confirmar e da volta de 5 s, nada se mexe.
- * Com "reduzir movimento", o card vai direto. Os números de cada passada ficam em test-results/arrastar-<projeto>.json.
+ * Com "reduzir movimento", o card vai direto. O primeiro card de cada coluna tem capa (imagem no topo). Os números de cada passada ficam em test-results/arrastar-<projeto>.json.
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
+import { createHash } from "node:crypto";
 import postgres from "postgres";
+import sharp from "sharp";
 import { E2E_DB } from "../playwright.config";
 
 const ARQUIVO = "test-results/e2e-sessao-arrastar.json";
@@ -21,15 +23,26 @@ const CARDS: [string, string, string][] = COLUNAS.flatMap((col, i) =>
   ),
 );
 
+/** A capa (drizzle/0035) no primeiro card de cada coluna: arrastar com imagem também não pode travar. */
+const CAPA = sharp({ create: { width: 640, height: 360, channels: 3, background: "#c8962f" } })
+  .webp({ quality: 60 })
+  .toBuffer();
+
 async function semear() {
   const { org } = sessao();
   const sql = postgres(E2E_DB, { max: 1, onnotice: () => {} });
   try {
+    const webp = await CAPA;
+    const sha = createHash("sha256").update(webp).digest("hex");
     let i = 0;
     for (const [id, tema, coluna] of CARDS) {
       i++;
-      await sql`insert into maestro.cards (org_id, id, dados) values (${org}, ${id}, ${sql.json({ tema, coluna, ordem: i * 1000, prazo: "2026-11-03" })})
+      const capa = id.endsWith("0") ? { capa: { sha, l: 640, a: 360 } } : {};
+      await sql`insert into maestro.cards (org_id, id, dados) values (${org}, ${id}, ${sql.json({ tema, coluna, ordem: i * 1000, prazo: "2026-11-03", ...capa })})
         on conflict (org_id, id) do update set dados = excluded.dados, versao = maestro.cards.versao + 1, versoes = '{}'::jsonb`;
+      if (id.endsWith("0"))
+        await sql`insert into maestro.card_capas (org_id, card_id, sha256, largura, altura, webp) values (${org}, ${id}, ${sha}, 640, 360, ${webp})
+          on conflict (org_id, card_id) do nothing`;
     }
   } finally {
     await sql.end();
