@@ -28,6 +28,8 @@ export default async function Downloads() {
           access.map((a) => ({ id: a.productId, name: a.name, role: a.roleInFlow })),
           new Set(access.filter((a) => a.release.allowed).map((a) => a.productId)),
           (id) => ({ contratada: byId.get(id)?.access === 'contracted', liberado: byId.get(id)?.access === 'contracted' }),
+          // no ar na web sem o app de computador (o Maestro): mostra como abrir, sem "Em desenvolvimento"
+          { naWeb: new Set(access.filter((a) => a.release.open && a.release.channels.web).map((a) => a.productId)) },
         )}
       />
     </div>

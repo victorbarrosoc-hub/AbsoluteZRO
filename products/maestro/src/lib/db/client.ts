@@ -1,5 +1,5 @@
 /**
- * Acesso ao banco do Maestro. Duas portas, e só duas (mesmo desenho de packages/db do HUB):
+ * Acesso ao banco do Maestro. Duas portas, e só duas (mesmo desenho de packages/db do HUB), mais a estreita do freela:
  *
  * - `asUser(ctx, fn)`: toda operação de usuário. Abre a transação, informa a pessoa (sub da Absolute ZRO) e a
  *   organização ativa (set_config local) e assume o papel `maestro_app`, que não é dono das tabelas: o RLS de
@@ -7,6 +7,7 @@
  * - `asSystem(motivo, fn)`: autenticação (sessões), callback do login, link do cliente, migração e a lista de espera
  *   (que assume `maestro_app` na hora). Roda como dono
  *   (sem RLS); o motivo vai para o log.
+ * - `asFreela(sub, fn)`: a área do freela (drizzle/0037), `maestro_app` sem organização: só a porta `maestro.freela_*`.
  *
  * Este arquivo não importa "server-only" para poder ser usado pelos scripts e pelos testes.
  */
@@ -30,6 +31,7 @@ export type Banco = {
   sql: postgres.Sql;
   db: DB;
   asUser<T>(ctx: Contexto, fn: (tx: Tx) => Promise<T>): Promise<T>;
+  asFreela<T>(sub: string, fn: (tx: Tx) => Promise<T>): Promise<T>;
   asSystem<T>(motivo: string, fn: (tx: Tx) => Promise<T>): Promise<T>;
   close(): Promise<void>;
 };
@@ -57,12 +59,26 @@ export function criarBanco(url: string, opcoes: { max?: number; prepare?: boolea
     });
   }
 
+  /**
+   * A área do freela (drizzle/0037): a pessoa SEM organização ativa, como `maestro_app`. Nenhuma política de tabela da
+   * produtora deixa passar (todas pedem a organização e ser membro); só a porta `maestro.freela_*` e a resposta do
+   * freela (`escala_respostas`, RLS própria) respondem, conferindo `freelas.zro_sub` linha a linha.
+   */
+  async function asFreela<T>(sub: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
+    if (!UUID.test(sub)) throw new Error("asFreela: sub inválido");
+    return db.transaction(async (tx) => {
+      await tx.execute(sql`select set_config('maestro.user_sub', ${sub}, true), set_config('maestro.org_id', '', true)`);
+      await tx.execute(sql.raw(`set local role ${PAPEL_APP}`));
+      return fn(tx);
+    });
+  }
+
   async function asSystem<T>(motivo: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
     opcoes.aoSistema?.(motivo);
     return db.transaction((tx) => fn(tx));
   }
 
-  return { sql: client, db, asUser, asSystem, close: () => client.end({ timeout: 5 }) };
+  return { sql: client, db, asUser, asFreela, asSystem, close: () => client.end({ timeout: 5 }) };
 }
 
 const g = globalThis as unknown as { __maestroBanco?: Banco };

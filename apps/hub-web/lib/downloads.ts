@@ -4,8 +4,9 @@
  * repassa instaladores, e cada app continua com o próprio login.
  *
  * Gate de lançamento (ADR 0023): `DOWNLOADS` é o que existe; o que cada pessoa vê sai de `downloadsLiberados`, com os
- * produtos liberados para ela no canal `download` (vindos do banco). Produto fechado vira "Em desenvolvimento", sem
- * instalador, sem Terminal e sem link.
+ * produtos liberados para ela no canal `download` (vindos do banco). Produto com o download fechado mas a web aberta
+ * (o Maestro, no ar sem o app de computador) mostra só o jeito de abrir no navegador e no celular. Fechado nos dois
+ * vira "Em desenvolvimento", sem instalador, sem Terminal e sem link (na página pública /baixar, nem aparece).
  */
 export type Os = 'mac' | 'windows' | 'mobile' | 'web'
 
@@ -155,14 +156,31 @@ export const DOWNLOADS: DownloadEntry[] = [
       windows: 'Se o Windows avisar: Mais informações › Executar assim mesmo.',
     },
   },
+  {
+    // Relay (products/relay): converte no próprio aparelho, no navegador do computador ou do celular. Sem instalador.
+    productId: 'relay',
+    site: 'https://relay.absolutezro.com',
+    status: 'web',
+    note: 'Converte no próprio aparelho. Nada é enviado.',
+    options: [{ os: 'web', label: 'Navegador', detail: 'Computador ou celular', href: 'https://relay.absolutezro.com', format: 'Sem instalar' }],
+  },
 ]
 
 /** Como um produto fechado aparece: só o selo "Em desenvolvimento". */
 export const emDesenvolvimento = (productId: string): DownloadEntry => ({ productId, status: 'soon', options: [] })
 
-/** O catálogo de downloads como esta pessoa vê: o que não está liberado para ela vira "Em desenvolvimento". */
-export const downloadsLiberados = (liberados: ReadonlySet<string>): DownloadEntry[] =>
-  DOWNLOADS.map((d) => (liberados.has(d.productId) ? d : emDesenvolvimento(d.productId)))
+/** Só o que abre no navegador e no celular (sem instalador nem Terminal): download fechado com a web aberta. */
+const soNaWeb = (d: DownloadEntry): DownloadEntry | null => {
+  const options = d.options.filter((o) => o.os === 'web' || o.os === 'mobile')
+  return options.length ? { productId: d.productId, status: 'web', note: d.note, options, site: d.site } : null
+}
+
+/**
+ * O catálogo de downloads como esta pessoa vê: liberado no canal download, tudo; senão, liberado na web (`naWeb`), só o
+ * navegador e o celular; senão, "Em desenvolvimento".
+ */
+export const downloadsLiberados = (liberados: ReadonlySet<string>, naWeb: ReadonlySet<string> = new Set()): DownloadEntry[] =>
+  DOWNLOADS.map((d) => (liberados.has(d.productId) ? d : (naWeb.has(d.productId) && soNaWeb(d)) || emDesenvolvimento(d.productId)))
 
 export const downloadFor = (productId: string, liberados: ReadonlySet<string>) => {
   const d = DOWNLOADS.find((x) => x.productId === productId)

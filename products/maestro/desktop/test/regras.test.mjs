@@ -63,6 +63,8 @@ test('no navegador: o resto do HUB, as páginas do cliente e os outros sites', (
     `${M}/p/tok?x=1`,
     `${M}/f/tok`,
     `${M}/f/tok.md`,
+    // o convite do freela: quem abre ainda não está na produtora
+    `${M}/convite/tok`,
     // outros sites e apps da família
     'https://sobedesce.vercel.app/',
     'https://wa.me/5511999999999?text=oi',

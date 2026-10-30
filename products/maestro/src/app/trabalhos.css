@@ -1,0 +1,570 @@
+/* A área do freela (/trabalhos, drizzle/0037). iPhone primeiro: uma coluna, cartões que se tocam com o polegar, o
+   topo de vidro fino. A cor da produtora é só filete e ponto (--acento), nunca texto. Claro e escuro pelos tokens. */
+.ft {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+.ft-topo {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  padding-top: max(8px, env(safe-area-inset-top));
+  background: var(--chrome-bg);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  backdrop-filter: blur(24px) saturate(150%);
+  box-shadow: 0 1px 0 var(--line);
+}
+.ft-topo__marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 2px;
+  font-family: var(--font-apple);
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  color: var(--text-strong);
+  text-decoration: none;
+}
+.ft-topo__fim {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.ft-trocar {
+  gap: 6px;
+}
+.ft-conta {
+  position: relative;
+}
+.ft-conta summary {
+  list-style: none;
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  cursor: pointer;
+  border-radius: 999px;
+}
+.ft-conta summary::-webkit-details-marker {
+  display: none;
+}
+.ft-conta summary:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.ft-conta__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  display: grid;
+  gap: 10px;
+  min-width: 200px;
+  max-width: calc(100vw - 32px);
+  padding: 14px;
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow:
+    var(--lift),
+    0 0 0 1px var(--line);
+}
+.ft-conta__menu p {
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+.ft-miolo {
+  flex: 1;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px 16px 32px;
+}
+.ft-titulo {
+  margin: 8px 0 22px;
+  font-family: var(--font-apple);
+  font-weight: 300;
+  font-size: clamp(2.1rem, 9vw, 3rem);
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  color: var(--text-strong);
+}
+.ft-titulo strong {
+  font-weight: 800;
+}
+.ft-rodape {
+  display: flex;
+  justify-content: center;
+  padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+}
+.ft-rodape a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-faint);
+  text-decoration: none;
+}
+
+/* ───── a produtora ───── */
+.ft-produtora + .ft-produtora {
+  margin-top: 30px;
+}
+.ft-produtora__cabeca {
+  margin: 0 0 10px;
+  font-size: 1rem;
+}
+.ft-marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  max-width: 100%;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+.ft-marca > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ft-marca img {
+  flex: none;
+  max-width: 96px;
+  height: 28px;
+  object-fit: contain;
+}
+.ft-marca i {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: var(--surface);
+  box-shadow:
+    inset 0 -3px 0 var(--acento),
+    0 0 0 1px var(--line);
+  font-style: normal;
+  font-size: 0.85rem;
+  color: var(--text-strong);
+}
+
+/* ───── os cartões ───── */
+.ft-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.ft-cartao {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 14px 14px 16px;
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--card-sombra);
+  color: var(--text);
+  text-decoration: none;
+  overflow: hidden;
+  transition:
+    transform 0.25s var(--spring),
+    box-shadow 0.25s var(--ease);
+}
+.ft-cartao::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--acento);
+}
+.ft-cartao[data-passou] {
+  opacity: 0.78;
+}
+.ft-cartao[data-passou]::before {
+  background: var(--line-strong);
+}
+@media (hover: hover) {
+  .ft-cartao:hover {
+    box-shadow:
+      var(--lift),
+      0 0 0 1px var(--line);
+    transform: translateY(-1px);
+  }
+}
+.ft-cartao:active {
+  transform: scale(0.99);
+}
+.ft-cartao:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.ft-dia {
+  flex: none;
+  display: grid;
+  justify-items: center;
+  width: 46px;
+  padding: 6px 0 5px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  line-height: 1;
+}
+.ft-dia b {
+  font-family: var(--font-apple);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+.ft-dia span {
+  margin-top: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+}
+.ft-cartao__corpo {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.ft-cartao__titulo {
+  font-family: var(--font-apple);
+  font-size: 1.06rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+.ft-cartao__meta {
+  font-size: 0.88rem;
+  color: var(--text-faint);
+  overflow-wrap: anywhere;
+}
+.ft-cartao__meta b {
+  color: var(--text-strong);
+  font-weight: 650;
+}
+.ft-cartao__local {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+.ft-cartao__local svg {
+  flex: none;
+  transform: translateY(2px);
+}
+.ft-cartao__fim {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-top: 7px;
+}
+.ft-cartao__icone {
+  color: var(--text-faint);
+}
+.ft-cartao__seta {
+  flex: none;
+  align-self: center;
+  color: var(--text-faint);
+}
+.ft-valor {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-strong);
+}
+.ft-estado {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--text-mute);
+  white-space: nowrap;
+}
+.ft-estado i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+.ft-estado[data-status="ok"] i {
+  background: var(--st-ok);
+}
+.ft-estado[data-status="recusado"] i {
+  background: var(--st-atrasado);
+}
+.ft-estado[data-status="responder"] i {
+  background: var(--st-hoje);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--st-hoje) 25%, transparent);
+}
+.ft-nada {
+  margin: 0;
+  padding: 14px 4px;
+  color: var(--text-faint);
+}
+.ft-anteriores {
+  margin-top: 12px;
+}
+.ft-anteriores summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  list-style: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-mute);
+}
+.ft-anteriores summary::-webkit-details-marker {
+  display: none;
+}
+.ft-anteriores summary:hover {
+  background: var(--hover);
+}
+.ft-anteriores summary .num {
+  color: var(--text-faint);
+}
+.ft-anteriores summary svg {
+  transition: transform 0.25s var(--ease);
+}
+.ft-anteriores[open] summary svg {
+  transform: rotate(180deg);
+}
+.ft-anteriores > .ft-lista {
+  margin-top: 8px;
+}
+
+/* ───── vazio ───── */
+.ft-vazio {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 48px 12px 24px;
+  text-align: center;
+}
+.ft-vazio svg {
+  margin-bottom: 10px;
+  opacity: 0.9;
+}
+.ft-vazio__frase {
+  margin: 0;
+  font-family: var(--font-apple);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+.ft-vazio__apoio {
+  margin: 0;
+  color: var(--text-faint);
+}
+.ft-vazio__marcas {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 18px 0 0;
+  padding: 0;
+}
+.ft-vazio__marcas li {
+  max-width: 100%;
+  padding: 6px 14px 6px 6px;
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: var(--card-sombra);
+}
+
+/* ───── a ficha ───── */
+.ft-ficha {
+  display: grid;
+  gap: 14px;
+  justify-items: start;
+}
+.ft-ficha > .voltar {
+  margin-bottom: 4px;
+}
+.ft-ficha__titulo {
+  margin: 0;
+  font-family: var(--font-apple);
+  font-size: clamp(1.9rem, 8vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+.ft-ficha__apoio {
+  margin: -6px 0 0;
+  color: var(--text-faint);
+  overflow-wrap: anywhere;
+}
+.ft-ficha__estado {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ft-fatos {
+  justify-self: stretch;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 6px 0 0;
+}
+.ft-fatos > div {
+  min-width: 0;
+  padding: 14px;
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--card-sombra);
+}
+.ft-fatos__largo {
+  grid-column: 1 / -1;
+}
+.ft-fatos dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--text-faint);
+}
+.ft-fatos dd {
+  display: grid;
+  gap: 2px;
+  margin: 6px 0 0;
+  font-family: var(--font-apple);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+.ft-fatos dd small {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 0.82rem;
+  color: var(--text-faint);
+}
+.ft-fatos dd a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+}
+.ft-recado {
+  justify-self: stretch;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow:
+    inset 3px 0 0 var(--acento),
+    var(--card-sombra);
+}
+.ft-recado h2 {
+  margin: 0 0 6px;
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--text-faint);
+}
+.ft-recado p {
+  margin: 0;
+  white-space: pre-line;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.ft-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.ft-responder {
+  justify-self: stretch;
+  display: grid;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.ft-responder > p {
+  margin: 0;
+  font-weight: 650;
+  color: var(--text-strong);
+}
+.ft-responder__botoes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.ft-responder__botoes .glass-btn {
+  justify-content: center;
+  min-height: 46px;
+}
+.ft-responder__botoes .glass-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.ft-responder__erro {
+  margin: 0;
+  color: var(--danger-text);
+  font-size: 0.92rem;
+}
+
+/* No iPhone estreito o "Produtora" vira só o ícone. */
+@media (max-width: 400px) {
+  .ft-trocar span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .ft-trocar {
+    padding-inline: 10px;
+  }
+}
+@media (min-width: 720px) {
+  .ft-topo {
+    padding-inline: 28px;
+  }
+  .ft-miolo {
+    padding-top: 36px;
+  }
+  .ft-fatos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ft-cartao,
+  .ft-anteriores summary svg {
+    transition: none;
+  }
+}

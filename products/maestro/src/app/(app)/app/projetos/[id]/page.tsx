@@ -20,7 +20,8 @@ import { contratosDe } from "@/lib/contrato/servidor";
 import { Formulario } from "@/components/form";
 import { Icone } from "@/components/icones";
 import { SeloStatus } from "@/components/painel";
-import { removerEscalaAcao, salvarEscalaAcao } from "../../freelas/acoes";
+import { paraFreelaAcao, removerEscalaAcao, salvarEscalaAcao } from "../../freelas/acoes";
+import { ParaFreela } from "@/components/freelas/para-freela";
 import { criarDocumentoAcao } from "./documentos/acoes";
 import { podeEditarCriacao } from "@/lib/criacao/permissoes";
 import { listarRoteiros, NOME_ESTADO_ROTEIRO } from "@/lib/criacao/roteiro/servidor";
@@ -133,9 +134,16 @@ export default async function FichaProjeto({ params }: PageProps<"/app/projetos/
                       </span>
                     ) : null}
                     {e.pagamento ? <SeloStatus status={e.pagamento.status}>{NOME_STATUS[e.pagamento.status]}</SeloStatus> : null}
+                    {e.resposta ? (
+                      <span className="selo ef-resposta" data-status={e.resposta === "confirmado" ? "ok" : "recusado"} title="Resposta do freela">
+                        <i aria-hidden="true" />
+                        {e.resposta === "confirmado" ? "Confirmou" : "Recusou"}
+                      </span>
+                    ) : null}
                     {escreve && (!e.pagamento || e.pagamento.pagoCents === 0) ? (
                       <BotaoAcao acao={removerEscalaAcao} campos={{ id: e.id }} rotulo="Tirar" classe="q-limpar" confirmar="Tirar da escala?" />
                     ) : null}
+                    {escreve && e.conta ? <ParaFreela escala={e.id} recado={e.paraFreela} entrega={e.entregaUrl} acao={paraFreelaAcao} /> : null}
                   </li>
                 ))}
               </ul>

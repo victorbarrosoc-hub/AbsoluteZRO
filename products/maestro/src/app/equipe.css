@@ -329,3 +329,43 @@
 .importar__historico small {
   color: var(--text-faint);
 }
+
+/* A área do freela (drizzle/0037), do lado da produtora: a resposta do freela na escala e o recado/link para ele. */
+.ef-resposta[data-status="ok"] i {
+  background: var(--st-ok);
+}
+.ef-resposta[data-status="recusado"] i {
+  background: var(--st-atrasado);
+}
+.ef-para {
+  flex-basis: 100%;
+}
+.ef-para summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  list-style: none;
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+.ef-para summary::-webkit-details-marker {
+  display: none;
+}
+.ef-para[open] summary {
+  color: var(--text-strong);
+}
+.ef-para__ponto {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--st-ok);
+}
+.ef-para .form {
+  margin-top: 6px;
+}
+.linha:has(> .ef-para) {
+  flex-wrap: wrap;
+}

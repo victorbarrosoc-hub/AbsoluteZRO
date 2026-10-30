@@ -12,6 +12,11 @@ import { areasNaTx } from "@/lib/acessos-servidor";
 import { statusDe, type Status } from "@/lib/financeiro/contas";
 import { diasDoPeriodo, normalizarFuncao, UNIDADES_VALOR, type UnidadeValor } from "./funcoes";
 import { abrirCampo, cifrarCampo, lerDocumento, lerPix, type TipoPix } from "./pagamento";
+import { desligarNaTx, ligarNaTx } from "./convite-servidor";
+import type { PessoaZro } from "@/lib/zro/pessoas";
+
+/** A conta Absolute ZRO no salvar: ligar à pessoa do @ (perfil relido no HUB pelo servidor) ou desligar. */
+export type ContaNoSalvar = { pessoa: PessoaZro } | { desligar: true };
 
 /* ───────────── lista e ficha ───────────── */
 
@@ -239,14 +244,28 @@ export function validarFreela(f: Record<string, string>): { ok: true; entrada: E
   return { ok: true, entrada };
 }
 
-export async function salvarFreela(ctx: Contexto, e: EntradaFreela, id?: string, demo = false): Promise<Res<{ id: string }>> {
+export async function salvarFreela(ctx: Contexto, e: EntradaFreela, id?: string, demo = false, conta?: ContaNoSalvar): Promise<Res<{ id: string }>> {
   if (id && !ehUuid(id)) return falha("nao_existe", "Esse freela não existe.");
   try {
-    return await getBanco().asUser(ctx, (tx) => gravarFreela(tx, ctx, e, id, demo));
+    return await getBanco().asUser(ctx, async (tx) => {
+      const r = await gravarFreela(tx, ctx, e, id, demo);
+      if (!r.ok || !conta) return r;
+      if ("desligar" in conta) {
+        await desligarNaTx(tx, ctx, r.id);
+        return r;
+      }
+      const l = await ligarNaTx(tx, ctx, r.id, conta.pessoa);
+      // a conta já é de outro freela: nada do salvar fica (a tela mostra o erro no campo do @)
+      if (!l.ok) throw new ContaEmOutro(l.mensagem);
+      return r;
+    });
   } catch (err) {
+    if (err instanceof ContaEmOutro) return falha("conta_em_outro", err.message, { zro_arroba: err.message });
     return traduzirPg(err);
   }
 }
+
+class ContaEmOutro extends Error {}
 
 export async function gravarFreela(tx: Tx, ctx: Contexto, e: EntradaFreela, id?: string, demo = false): Promise<Res<{ id: string }>> {
   const arr = (a: string[]) => sql`${`{${a.map((x) => `"${x.replace(/["\\]/g, "")}"`).join(",")}}`}::text[]`;
@@ -423,6 +442,12 @@ export type EscalaDoProjeto = {
   evento: string | null;
   conflitos: { titulo: string; inicio: string }[];
   pagamento: { status: Status; pagoCents: number } | null;
+  /** O freela tem a conta Absolute ZRO ligada: vê o trabalho em "Seus trabalhos" (drizzle/0037). */
+  conta: boolean;
+  /** A resposta do freela para as datas de hoje da escala (mudou a data, volta a null). */
+  resposta: "confirmado" | "recusado" | null;
+  paraFreela: string | null;
+  entregaUrl: string | null;
 };
 
 /** Quem está escalado em outra escala que se cruza com o período (o aviso de conflito de agenda do ZRO). */
@@ -448,9 +473,12 @@ export async function escalasDoProjeto(ctx: Contexto, projetoId: string, hoje: s
     const r = (await tx.execute(sql`
       select e.id, e.freela_id as "freelaId", f.nome as freela, e.funcao, e.inicio::text, e.fim::text, e.dias,
              case when maestro.pode(e.org_id, 'diarias') then e.diaria_cents::float8 end as "diariaCents",
-             case when maestro.pode(e.org_id, 'diarias') then e.valor_cents::float8 end as "valorCents", ev.titulo as evento
+             case when maestro.pode(e.org_id, 'diarias') then e.valor_cents::float8 end as "valorCents", ev.titulo as evento,
+             f.zro_sub is not null as conta, case when r.inicio = e.inicio and r.fim = e.fim then r.resposta end as resposta,
+             e.para_freela as "paraFreela", e.entrega_url as "entregaUrl"
         from maestro.escalas e join maestro.freelas f on f.id = e.freela_id
         left join maestro.eventos ev on ev.id = e.evento_id
+        left join maestro.escala_respostas r on r.org_id = e.org_id and r.escala_id = e.id
        where e.projeto_id = ${projetoId} order by e.inicio, f.nome`)) as unknown as Omit<EscalaDoProjeto, "conflitos" | "pagamento">[];
     const c = await conflitos(
       tx,
@@ -477,3 +505,38 @@ export async function escalasDoProjeto(ctx: Contexto, projetoId: string, hoje: s
 }
 
 export { conflitos as conflitosDeEscala };
+
+/* ───────────── o que o freela vê (drizzle/0037) ───────────── */
+
+export type ParaFreela = { recado: string | null; entrega: string | null };
+
+/** O recado da produção e o link de entrega da escala: o freela vê os dois em "Seus trabalhos". */
+export function validarParaFreela(f: Record<string, string>): { ok: true; entrada: ParaFreela } | { ok: false; erros: Erros } {
+  const erros: Erros = {};
+  const recado = (f.recado ?? "").replace(/\r\n?/g, "\n").trim();
+  if (recado.length > 2000) erros.recado = "Até 2.000 caracteres.";
+  const entrega = (f.entrega ?? "").trim();
+  if (entrega) {
+    let ok = false;
+    try {
+      ok = new URL(entrega).protocol === "https:" && entrega.length <= 1000 && !/\s/.test(entrega);
+    } catch {
+      ok = false;
+    }
+    if (!ok) erros.entrega = "Cole um link que comece com https://";
+  }
+  if (Object.keys(erros).length) return { ok: false, erros };
+  return { ok: true, entrada: { recado: recado || null, entrega: entrega || null } };
+}
+
+export async function salvarParaFreela(ctx: Contexto, id: string, e: ParaFreela): Promise<Res> {
+  if (!ehUuid(id)) return falha("nao_existe", "Essa escala não existe.");
+  try {
+    return await getBanco().asUser(ctx, async (tx) => {
+      const r = await tx.execute(sql`update maestro.escalas set para_freela = ${e.recado}, entrega_url = ${e.entrega} where id = ${id} returning id`);
+      return r.length ? { ok: true as const } : falha("sem_permissao", "Seu papel nesta organização só lê.");
+    });
+  } catch (err) {
+    return traduzirPg(err);
+  }
+}

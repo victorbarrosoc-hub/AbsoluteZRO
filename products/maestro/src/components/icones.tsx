@@ -68,6 +68,7 @@ export type NomeIcone =
   | "cena"
   | "camera"
   | "olho"
+  | "enviar"
   | "versoes"
   | "compartilhar"
   | "adicionar"
@@ -385,6 +386,8 @@ const CAMINHOS: Record<NomeIcone, React.ReactNode> = {
       <circle cx="12" cy="12.5" r="3.4" />
     </>
   ),
+  // o avião de papel: o link foi para o cliente
+  enviar: <path d="M20.5 3.5 10 14M20.5 3.5l-6.5 17-4-6.5-6.5-4 17-6.5Z" />,
   olho: (
     <>
       <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />

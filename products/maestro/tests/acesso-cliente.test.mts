@@ -42,6 +42,7 @@ const TABELAS = [
   "fluxos",
   "fluxo_ligacoes",
   "fluxo_imagens",
+  "card_capas",
 ] as const;
 
 const contar = async (ctx: { sub: string; orgId: string }, t: string) =>
@@ -74,6 +75,10 @@ before(async () => {
       );
       await tx.execute(sql`insert into maestro.card_history (org_id, card_id, operacao) values (${A}, ${card}, 'criar')`);
       await tx.execute(sql`insert into maestro.card_media (org_id, card_id, nome, drive_file_id) values (${A}, ${card}, 'peça', ${`arq${k}`})`);
+      // capa do card (0035): os bytes só importam pelo sha256 conferido no banco
+      await tx.execute(
+        sql`insert into maestro.card_capas (org_id, card_id, sha256, largura, altura, webp) values (${A}, ${card}, encode(sha256(convert_to(${k}, 'UTF8')), 'hex'), 16, 9, convert_to(${k}, 'UTF8'))`,
+      );
       const v = await um(
         sql`insert into maestro.versoes (org_id, card_id, n, fonte, url) values (${A}, ${card}, 1, 'mp4', 'https://exemplo.com/a.mp4') returning id`,
       );

@@ -23,6 +23,9 @@ import { NOME_DO_PAPEL } from "@/lib/papeis";
 import { cookieSeguro, FERRAMENTAS_ZRO, origensDoSite, ROTAS } from "@/lib/site";
 import { emissor, PROXIMO_NIVEL, retornoZro, zroConfigurado, type NivelEscopo } from "./config";
 import { entrarNaOrganizacao } from "./contas";
+import { ehCaminhoDeConvite } from "@/lib/freelas/convite";
+import { produtorasDoFreela } from "@/lib/freelas/area";
+import { cookieDaIdentidade, selarIdentidade } from "./identidade";
 import { abrirEstadoZro, COOKIE_ZRO, DURACAO_ZRO_S, selarEstadoZro, type ModoZro } from "./estado";
 import { lerUserinfo, novoValor, renovarTokens, revogarToken, trocarCodigoZro, urlDeLogin, type PerfilZro, type TokensZro } from "./oidc";
 
@@ -51,6 +54,8 @@ export async function entrar(req: Request): Promise<Response> {
         ? "basico"
         : "completo";
   const volta = voltaSegura(url.searchParams.get("volta"), VOLTA_PADRAO);
+  // Convite de freela (drizzle/0036): só a identidade, então só os escopos básicos (sem a Z, a Agenda, Pessoas e o Set).
+  const nivelDaIda: NivelEscopo = ehCaminhoDeConvite(volta) ? "basico" : nivel;
 
   // A Absolute ZRO volta para o endereço cadastrado: o cookie do state precisa nascer nele.
   const retorno = new URL(retornoZro(url.origin));
@@ -66,11 +71,11 @@ export async function entrar(req: Request): Promise<Response> {
   const desafio = createHash("sha256").update(verificador).digest("base64url");
   let destino: string;
   try {
-    destino = await urlDeLogin({ state, desafio, nonce, origem: retorno.origin, criar: modo === "criar", nivel });
+    destino = await urlDeLogin({ state, desafio, nonce, origem: retorno.origin, criar: modo === "criar", nivel: nivelDaIda });
   } catch {
     return redirecionar(new URL(paginaDeErro(volta, "zro_erro"), url.origin));
   }
-  const cookie = serializarCookie(COOKIE_ZRO, selarEstadoZro({ state, verificador, nonce, modo, volta, nivel }), {
+  const cookie = serializarCookie(COOKIE_ZRO, selarEstadoZro({ state, verificador, nonce, modo, volta, nivel: nivelDaIda }), {
     maxAge: DURACAO_ZRO_S,
     path: "/api/zro",
     secure: cookieSeguro(url.origin),
@@ -112,6 +117,13 @@ export async function callback(req: Request): Promise<Response> {
   } catch {
     return falhar("zro_erro");
   }
+  // Convite de freela: quem chega não entra no Maestro (nem precisa de organização). Fica só a identidade conferida,
+  // por 30 minutos, para aceitar o convite; os tokens não servem para nada aqui e são devolvidos.
+  if (ehCaminhoDeConvite(volta)) {
+    if (tokens?.rt) await revogarToken(tokens.rt).catch(() => undefined);
+    const identidade = selarIdentidade({ sub: perfil.sub, arroba: perfil.arroba, nome: perfil.nome, foto: perfil.foto });
+    return ir(volta, [cookieDaIdentidade(identidade, seguro)]);
+  }
   // Entrar = entrar na organização da Absolute ZRO. Sem organização, não há onde entrar.
   const entrada = await entrarNaOrganizacao(perfil);
   if (!entrada) return falhar("zro_sem_org");
@@ -124,8 +136,12 @@ export async function callback(req: Request): Promise<Response> {
     userAgent: req.headers.get("user-agent"),
   });
   const cookies = [serializarCookie(COOKIE_SESSAO, sessao.token, opcoesCookieSessao(seguro))];
-  // A sessão existe mesmo sem acesso: a tela "sem acesso" mostra quem é e oferece Sair.
-  if (!temAcesso(perfil)) return ir(ROTAS.semAcesso, cookies);
+  // A sessão existe mesmo sem acesso: a tela "sem acesso" mostra quem é e oferece Sair. Quem é freela ligado em alguma
+  // produtora (drizzle/0037) vai para "Seus trabalhos".
+  if (!temAcesso(perfil)) {
+    const freela = (await produtorasDoFreela(perfil.sub).catch(() => [])).length > 0;
+    return ir(freela ? ROTAS.trabalhos : ROTAS.semAcesso, cookies);
+  }
   return ir(volta, cookies);
 }
 

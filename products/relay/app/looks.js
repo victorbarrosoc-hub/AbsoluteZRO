@@ -7,24 +7,30 @@ import { lerLook, lookPedeLog } from '../src/cor.js'
 
 const BANCO = 'relay-looks'
 const LOJA = 'looks'
+const CONFIG = 'config' // a pasta dos looks (FileSystemDirectoryHandle), app/pasta-looks.js
 const memoria = new Map() // janela privada ou sem IndexedDB: vale até fechar a aba
+let pastaNaMemoria = null
 
 function abrir() {
   return new Promise((ok, falha) => {
     if (typeof indexedDB === 'undefined') return falha(new Error('sem IndexedDB'))
-    const pedido = indexedDB.open(BANCO, 1)
-    pedido.onupgradeneeded = () => pedido.result.createObjectStore(LOJA, { keyPath: 'id' })
+    const pedido = indexedDB.open(BANCO, 2)
+    pedido.onupgradeneeded = () => {
+      const db = pedido.result
+      if (!db.objectStoreNames.contains(LOJA)) db.createObjectStore(LOJA, { keyPath: 'id' })
+      if (!db.objectStoreNames.contains(CONFIG)) db.createObjectStore(CONFIG)
+    }
     pedido.onsuccess = () => ok(pedido.result)
     pedido.onerror = () => falha(pedido.error)
   })
 }
 
-async function loja(modo, f) {
+async function loja(modo, f, nome = LOJA) {
   const db = await abrir()
   try {
     return await new Promise((ok, falha) => {
-      const t = db.transaction(LOJA, modo)
-      const r = f(t.objectStore(LOJA))
+      const t = db.transaction(nome, modo)
+      const r = f(t.objectStore(nome))
       t.oncomplete = () => ok(r?.result)
       t.onerror = () => falha(t.error)
     })
@@ -74,5 +80,22 @@ export async function apagar(id) {
     await loja('readwrite', (s) => s.delete(id))
   } catch {
     // sem IndexedDB: só a memória
+  }
+}
+
+/** A pasta dos looks escolhida neste navegador (ou null). */
+export async function pasta() {
+  try {
+    return (await loja('readonly', (s) => s.get('pasta'), CONFIG)) ?? pastaNaMemoria
+  } catch {
+    return pastaNaMemoria
+  }
+}
+
+export async function guardarPasta(handle) {
+  try {
+    await loja('readwrite', (s) => s.put(handle, 'pasta'), CONFIG)
+  } catch {
+    pastaNaMemoria = handle
   }
 }

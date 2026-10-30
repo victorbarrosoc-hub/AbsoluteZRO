@@ -3,7 +3,7 @@
 // state errado, nonce/aud/emissor/assinatura adulterados, cookie adulterado, volta para fora do site e sessão forjada.
 import assert from "node:assert/strict";
 import { after, before, describe, test } from "node:test";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { cookiesDe, pedido, prepararAmbiente, SITE, UUID } from "./ambiente.mts";
 import { ESCOPOS_BASICOS, ESCOPOS_COMPLETOS, ESCOPOS_SEM_AGENDA, ESCOPOS_SEM_PESSOAS, ESCOPOS_SEM_SET, type PessoaZro } from "./zro-falso.mts";
 
@@ -279,6 +279,29 @@ describe("sem acesso", () => {
     zro.contas.set(semMaestro.sub, { ...semMaestro, produtos: [] });
     await envelhecerPerfil(r.sessao!);
     assert.equal((await (await eu(r.sessao)).json()).acesso, false);
+  });
+});
+
+describe("freela ligado (drizzle/0037)", () => {
+  test("sem o Maestro na conta, mas freela ligado numa produtora: a volta vai para Seus trabalhos", async () => {
+    const freela: PessoaZro = {
+      sub: UUID(),
+      email: "rui@freela.exemplo",
+      nome: "Rui Freela",
+      org: { id: UUID(), name: "Conta do Rui", role: "owner" },
+      produtos: [],
+      release: { maestro: "closed" },
+    };
+    await banco.getBanco().asSystem("teste", async (tx) => {
+      const [o] = await tx
+        .insert(schema.organizations)
+        .values({ zroOrgId: UUID(), name: "Produtora do Rui", zroProducts: ["maestro"] })
+        .returning({ id: schema.organizations.id });
+      await tx.execute(sql`insert into maestro.freelas (org_id, nome, zro_sub) values (${o.id}, 'Rui', ${freela.sub})`);
+    });
+    const r = await fluxo({ pessoa: freela, volta: "/app/quadro" });
+    assert.equal(r.destino, "/trabalhos");
+    assert.ok(r.sessao);
   });
 });
 

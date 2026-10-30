@@ -46,6 +46,34 @@ Não é área sensível: é um nível por papel, pronto para a frente Criação 
 
 Ajuste por pessoa para a Criação ainda não existe (quando pedirem, entra em `maestro.acessos` como as áreas).
 
+## Freela (a área do freela, `/trabalhos`)
+
+Pedido do titular (30/10/2026): o freela ligado a uma conta (pelo @ ou pelo convite, `drizzle/0036`) entra no Maestro
+com a própria conta e vê o "quadro de freelas" dele. Não é papel nem área: é um **escopo** à parte
+(`drizzle/0037_area_do_freela.sql`, `src/lib/freelas/area.ts`, `getBanco().asFreela(sub)`): a transação assume
+`maestro_app` com a pessoa da sessão e **sem organização**. Toda política de toda tabela da produtora pede organização
+ativa e ser membro, então nada sai direto (o `tests/area-freela.test.mts` confere tabela por tabela). O que sai passa
+pela porta `maestro.freela_trabalhos()`/`freela_trabalho(id)`/`freela_produtoras()` (security definer), linha a linha
+por `freelas.zro_sub = a pessoa`, freela ativo, produtora com o Maestro e **sem** a pessoa ser da equipe dela.
+
+| O freela vê (só os dele)                                                          | O freela nunca vê                                                     |
+| --------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| título (diária ou projeto), datas, horário, local                                 | notas internas (escala, diária, projeto, freela), briefing do projeto |
+| cliente, se a produtora deixa (Ajustes → Empresa, padrão sim)                     | valor do projeto, orçamentos, contratos, financeiro, Quadro, Criação  |
+| a função, a diária e o total **dele** (com o aluguel do kit dele), se já foi pago | outros freelas (nome, valor, CPF, PIX, contato), outras produtoras    |
+| o recado da produção (`escalas.para_freela`) e o link de entrega (`entrega_url`)  | qualquer linha de outro freela, pelo endereço inclusive (404)         |
+| o contato público da marca (telefone/e-mail de Ajustes → Marca)                   | as telas e rotas da produtora (vão para `/trabalhos`, API 401/403)    |
+
+- **Confirmar ou recusar** (`maestro.escala_respostas`): só o freela grava (política `escala_respostas_freela`, RLS do
+  escopo dele), só enquanto a escala não passou; a resposta vale para as datas em que foi dada (mudou a data, volta a
+  "sem resposta"); toda resposta no `audit_log` (`escala.freela_confirmou`/`escala.freela_recusou`). A produtora lê
+  (política `escala_respostas_org`, que respeita o acesso por cliente) e não grava.
+- **Quem escreve a escala** (Administração, Gestão, Equipe) escreve o recado e o link (ficha do projeto e da diária,
+  "Para o freela", só para freela com conta). Leitura não.
+- **Entrada**: a volta do login sem acesso ao Maestro vai para `/trabalhos` quando há vínculo (senão `/sem-acesso`);
+  `/sem-acesso` também manda. Quem é da equipe de uma produtora e freela de outra tem o Maestro normal com o atalho
+  "Seus trabalhos" no topo, e na área do freela o botão "Produtora" de volta.
+
 ## Onde a regra vale (servidor, nunca só a tela)
 
 - **Tabela inteira de uma área**: política RESTRITIVA `<tabela>_area` com `maestro.pode(org_id, área)` em
@@ -84,6 +112,7 @@ Superfície → dado sensível → quem via → onde era conferido.
 | Projeto: status do pagamento da escala               | pago/pendente                                         | admin, gestão                        | papel                            | área Financeiro                                                |
 | Freelas (lista e ficha)                              | **diária e valores**, e-mail, WhatsApp                | **todos**                            | nada                             | Diárias / Dados da equipe                                      |
 | Freela: CPF e PIX                                    | documento e chave PIX (cifrados)                      | admin, gestão                        | RLS por papel                    | área Dados da equipe                                           |
+| Freela: convite para o Absolute ZRO (0036)           | link do convite; WhatsApp do convite                  | —                                    | —                                | link: quem escreve; WhatsApp: área Dados da equipe             |
 | Kit do freela / "leva equipamento"                   | diária do aluguel, aluguel na escala                  | **todos**                            | nada                             | área Diárias                                                   |
 | Agenda: escalar na diária                            | campo "Diária"                                        | quem escreve                         | nada                             | sem a área: some, vem do cadastro                              |
 | Inventário (ficha e edição)                          | **valor de compra**                                   | **todos**                            | nada                             | área Valores do inventário                                     |

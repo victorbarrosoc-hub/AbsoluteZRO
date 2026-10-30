@@ -251,6 +251,30 @@ export async function lixeiraRoteiro(ctx: Contexto, id: string, apagar: boolean)
   }
 }
 
+/**
+ * Apaga de vez um roteiro que está na lixeira. Só administração e gestão (política de remoção da 0030) e só sem versão
+ * salva: as versões são registro imutável, então o roteiro com versão fica guardado na lixeira (`tem_versao`).
+ */
+export async function apagarRoteiroDeVez(ctx: Contexto, id: string): Promise<Res> {
+  if (!ehUuid(id)) return falha("nao_existe", "Esse roteiro não existe mais.");
+  try {
+    return await getBanco().asUser(ctx, async (tx) => {
+      const atual = await lerCompleto(tx, id);
+      if (!atual) return falha("nao_existe", "Esse roteiro não existe mais.");
+      if (!atual.apagado) return falha("fora_da_lixeira", "Mande para a lixeira antes de apagar de vez.");
+      if (atual.versaoAtual > 0) return falha("tem_versao", "Esse roteiro tem versões salvas e não pode ser apagado de vez.");
+      const r = await tx.execute(sql`delete from maestro.roteiros where id = ${id} and apagado_em is not null returning id`);
+      if (!r.length) return falha("sem_permissao", "Só administração e gestão apagam de vez.");
+      await tx.execute(sql`
+        insert into maestro.audit_log (org_id, actor_sub, action, target_type, target_id, metadata)
+        values (${ctx.orgId}, ${ctx.sub}, 'roteiro.apagou', 'roteiro', ${id}, ${JSON.stringify({ titulo: atual.titulo })}::jsonb)`);
+      return { ok: true as const };
+    });
+  } catch (err) {
+    return traduzir(err);
+  }
+}
+
 /** "Salvar versão": congela o rascunho como está gravado (n = a anterior + 1). */
 export async function salvarVersao(ctx: Contexto, id: string, nota?: string | null): Promise<Res<{ id: string; n: number; sha256: string }>> {
   if (!ehUuid(id)) return falha("nao_existe", "Esse roteiro não existe mais.");
@@ -304,7 +328,7 @@ export type Envio = { destino: DestinoSaida; formato: FormatoSaida; n: number; p
 export async function registrarEnvio(
   ctx: Contexto,
   roteiroId: string,
-  e: { n: number; destino: DestinoSaida; formato: FormatoSaida; pessoa?: string | null },
+  e: { n: number; destino: DestinoSaida; formato: FormatoSaida; pessoa?: string | null; extra?: Record<string, string | boolean> },
 ): Promise<Res<{ sha256: string }>> {
   if (!ehUuid(roteiroId) || !Number.isInteger(e.n) || e.n < 1) return falha("nao_existe", "Essa versão não existe.");
   const pessoa = typeof e.pessoa === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(e.pessoa) ? e.pessoa : null;
@@ -318,7 +342,7 @@ export async function registrarEnvio(
       await tx.execute(sql`
         insert into maestro.audit_log (org_id, actor_sub, action, target_type, target_id, metadata)
         values (${ctx.orgId}, ${ctx.sub}, 'roteiro.enviado', 'roteiro', ${roteiroId},
-                ${JSON.stringify({ n: e.n, sha256: v.sha256, destino: e.destino, formato: e.formato, pessoa })}::jsonb)`);
+                ${JSON.stringify({ ...e.extra, n: e.n, sha256: v.sha256, destino: e.destino, formato: e.formato, pessoa })}::jsonb)`);
       return { ok: true as const, sha256: v.sha256 };
     });
   } catch (err) {

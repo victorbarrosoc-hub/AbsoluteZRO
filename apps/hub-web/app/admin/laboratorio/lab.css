@@ -1232,9 +1232,172 @@
   }
 }
 
+/* ───── aprender conversando: o cartão na conversa (e na voz) e a seção do Configurar ───── */
+.zl-aprender {
+  justify-self: start;
+  width: min(100%, 460px);
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow:
+    var(--pill-rim),
+    0 6px 20px rgb(0 0 0 / 0.06);
+  animation: zl-entra 0.35s var(--ease) both;
+}
+.zl-aprender[data-estado='guardado'] {
+  background: var(--surface-2);
+  box-shadow: var(--pill-rim);
+}
+.zl-aprender[data-compacto] {
+  justify-self: center;
+  width: min(100%, 420px);
+  text-align: left;
+}
+.zl-aprender__selo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.zl-aprender[data-estado='guardado'] .zl-aprender__selo {
+  color: var(--ok-text);
+}
+.zl-aprender__texto {
+  margin: 0;
+  color: var(--text-strong);
+  font-weight: 560;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.zl-aprender__conflito {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--warn-text);
+  font-weight: 560;
+}
+.zl-aprender__erro {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--warn-text);
+}
+.zl-aprender__acoes {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+.zl-aprender__guardar {
+  min-height: 36px;
+  padding: 0 18px;
+  font-size: 0.88rem;
+}
+.zl-aprender__link {
+  appearance: none;
+  border: 0;
+  padding: 8px 2px;
+  background: none;
+  color: var(--text-mute);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  justify-self: start;
+}
+.zl-aprender__link:hover:not(:disabled) {
+  color: var(--text-strong);
+}
+.zl-aprender__link:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.zl-aprender__link:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.zl-aprender__ajuste {
+  display: grid;
+  gap: 8px;
+}
+.zl-aprender__campo {
+  min-height: 0;
+  resize: vertical;
+  font-size: 1rem;
+}
+.zl-voz__legendas .zl-aprender {
+  margin-top: 4px;
+}
+
+.zl-aprendidos {
+  display: grid;
+  gap: var(--space-3);
+}
+.zl-aprendidos__titulo {
+  margin: 0 0 2px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.zl-aprendidos__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+.zl-aprendidos__lista li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  animation: zl-entra 0.4s var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+.zl-aprendidos__texto {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  overflow-wrap: anywhere;
+}
+.zl-aprendidos__texto strong {
+  color: var(--text-strong);
+  font-weight: 600;
+}
+.zl-aprendidos__frase {
+  font-size: 0.84rem;
+  color: var(--text-mute);
+  font-style: italic;
+}
+.zl-aprendidos__acoes {
+  display: inline-flex;
+  gap: 14px;
+  margin-left: auto;
+}
+.zl-aprendidos__mover {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .zl-turno,
-  .zl-versoes li {
+  .zl-versoes li,
+  .zl-aprender,
+  .zl-aprendidos__lista li {
     animation: none;
   }
   .zl-anexo__girando {

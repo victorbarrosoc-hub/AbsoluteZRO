@@ -12,6 +12,7 @@ import { api, usd } from '@/lib/ia/lab/cliente'
 import type { LabEstado } from '@/lib/ia/lab/estado'
 import { Icon } from '../../icons'
 import { Folha } from '../custos/folha'
+import { Aprendizados } from './aprender'
 import { Teto } from './teto'
 import { VozDaZ } from './vozes'
 
@@ -84,6 +85,7 @@ export function LabConfigurar({ estado }: { estado: LabEstado }) {
   const [salvando, setSalvando] = useState(false)
   const [msg, setMsg] = useState<{ tom: 'ok' | 'erro'; texto: string } | null>(null)
   const [folha, setFolha] = useState<ReactNode>(null)
+  const [conflitos, setConflitos] = useState(estado.conflitos)
 
   const sujo = !igual(cfg, salvo)
   const mudar = <K extends keyof ZConfig>(k: K, v: ZConfig[K]) => setCfg((c) => ({ ...c, [k]: v }))
@@ -195,6 +197,23 @@ export function LabConfigurar({ estado }: { estado: LabEstado }) {
           />
         </Cartao>
       </div>
+
+      <Cartao id="aprendizados" titulo="Aprendizados" aside={cfg.aprendizados.length ? `${cfg.aprendizados.length} no rascunho` : 'ensinados conversando'}>
+        <Aprendizados
+          lista={cfg.aprendizados}
+          conflitos={conflitos}
+          apps={catalogo.apps}
+          onMudou={(lista, c) => {
+            // Cada mudança já foi gravada (rota própria, auditada): o rascunho na tela e o salvo andam juntos.
+            setCfg((x) => ({ ...x, aprendizados: lista }))
+            setSalvo((x) => ({ ...x, aprendizados: lista }))
+            setConflitos(c)
+          }}
+          onErro={(m) => setMsg({ tom: 'erro', texto: m })}
+          abrirFolha={setFolha}
+          fecharFolha={fecharFolha}
+        />
+      </Cartao>
 
       <Cartao id="plataformas" titulo="Em cada plataforma" aside={`${Object.values(cfg.apps).filter(Boolean).length} com instrução`}>
         <div className="zl-apps">
@@ -739,6 +758,11 @@ function Diferencas({
       },
       { nome: 'Saudação', a: versao.voz.saudacao, b: rascunho.voz.saudacao },
       { nome: 'Textos ativos', a: String(versao.conhecimento.length), b: String(rascunho.conhecimento.length) },
+      {
+        nome: 'Aprendizados',
+        a: versao.aprendizados.map((x) => x.texto).join(' · '),
+        b: rascunho.aprendizados.map((x) => x.texto).join(' · '),
+      },
       ...catalogo.apps.map((app) => ({
         nome: app.nome,
         a: (versao.apps as Record<string, string | undefined>)[app.id] ?? '',
