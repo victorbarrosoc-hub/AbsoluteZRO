@@ -81,9 +81,12 @@ download = false, sso = false where product_id = 'carro-do-freela'`). Vale em at
 
 ## O que fica para depois (decisão do titular)
 
-- **Propostas, Jobs, Feed e Brechó ainda moram no aparelho** (localStorage): no site real eles nascem vazios e
-  funcionam para a própria pessoa, mas nada chega a outra conta. A consulta de um contratante não chega ao freela. Ou
-  ganham servidor (como a agenda), ou saem do menu do site real até lá.
+- ~~Propostas, Jobs, Feed e Brechó no aparelho~~: **feito** (decisão do titular: servidor antes de lançar). Migração
+  do Carro `0003_propostas_feed_brecho` (entra no build de produção junto com a 0002), rotas `/api/zro/propostas`,
+  `/feed`, `/brecho` e `/denuncia`. A consulta chega na caixa do freela dentro do Carro, aceitar vira job, feed e
+  brechó são de quem tem conta, com apagar o próprio e denúncia guardada. Ainda fora no real: curtida, comentário,
+  compartilhar, foto e vídeo (sem servidor), e a revisão das denúncias (ficam na tabela `carro_do_freela.denuncias`;
+  quem lê é o titular pelo SQL Editor até existir uma tela).
 - **A agenda do Carro e a do Maestro são duas**: o dia que o freela marca no Carro (`carro_do_freela.agenda_dias`) não
   aparece na escala do Maestro, e o inverso também não. A pessoa é a mesma nos dois (`sub` da Absolute ZRO =
   `maestro.freelas.zro_sub`), sem cadastro duplicado; falta ligar as agendas.

@@ -164,8 +164,19 @@ abre com `CARRO_RELEASE=released`. **Só no site real (`REAL`)**, sem mudar a pr
 - Em todos os builds: a Z da home diz "Chegando ao Carro do Freela" só fechada e "No Carro do Freela" aberta
   (`pintarSeloZ()` no `drawHome`); a família perdeu NOSSOM e Revela (só o que está no ar; `test/mapa.js`; os SVGs
   ficam em `src/midia/` para quando voltarem); "Procurar alguém pelo nome" sem "— de graça".
-- ⚠️ **Ainda moram no aparelho**: Propostas, Jobs, Feed e Brechó. No real eles nascem vazios e nada chega a outra
-  conta — a consulta de quem contrata não chega ao freela. Decisão do titular: servidor ou fora do menu do real.
+- **Propostas, Jobs, Feed e Brechó no servidor** (decisão do titular: construir antes de lançar, não esconder; migração
+  `db/migrations/0003_propostas_feed_brecho.sql`, rotas `/api/zro/propostas|feed|brecho|denuncia` em `_dados.js`,
+  regras em `db/regras.js`). A consulta (`realConsultar`, no `m-send`) vai para a caixa de quem foi chamado, DENTRO do
+  Carro (nada de e-mail ou WhatsApp); aceitar/recusar é `PATCH` (`realResponder`); o job é a proposta aceita
+  (`realPropostas` monta `PROPOSTAS` e `JOBS` com `srv`); "Você chamou" (`#pp-real-env`) lista o que eu mandei. Feed e
+  brechó vêm do banco (`realFeed`, `realBrecho`), com Apagar no que é meu, denúncia guardada (`realDenunciar`; quem
+  denunciou deixa de ver) e "Tenho interesse" no anúncio (proposta `tipo: brecho` para o dono). RLS: proposta só os
+  dois lados; feed/brechó para quem tem conta; só a dona apaga; denúncia invisível para os outros; o banco recusa texto
+  com jeito de telefone. Curtida, comentário, compartilhar, foto e vídeo ficam FORA no real (CSS `html.real .fdb`)
+  até terem servidor. ⚠️ Nada local sobe sozinho: post e anúncio que estavam no aparelho viram a oferta "Enviar para
+  a sua conta" (`realEnviarLocais`); proposta e job locais não têm destinatário e não sobem. `REAL_AUTORES` resolve
+  autor e dono que não estão no CREW (sem entrar na busca). Suítes: `test:banco` (§0003, entrega e isolamento) e
+  `site-real` (a caixa, aceitar vira job, feed, brechó, a oferta).
 
 ## 30/out · 5 — o Porta-malas é o Sobedesce (`test/porta-malas-real.js`)
 

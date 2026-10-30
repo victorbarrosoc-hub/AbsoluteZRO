@@ -3388,3 +3388,14 @@ Local, Postgres e Chromium desta máquina; HUB e Absolute ZRO falsos (`tests/pon
 - Linha visual B no site real (30/10/2026, aprovada pelo titular): `test/site-real.js` 26/26 — `html.real`, grafite
   fosco `#0e0e10`, o símbolo de sempre com o carrinho no topo da home, título sem degradê e a foto de Natal como fundo
   da home e da entrada. Conferido no Chromium a 1440 e a 390 px (home e entrar), sem erro de console.
+
+## Carro do Freela: Propostas, Jobs, Feed e Brechó no servidor (30/10/2026)
+
+- Carro `test:banco` (Postgres 16 local): 3 testes novos da 0003 — a consulta chega na caixa do freela, só os dois
+  lados veem, a terceira conta não vê nem responde, quem mandou não aceita a própria, telefone/CPF/PIX recusados, aceitar
+  vira job e não volta; feed e brechó vistos por quem tem conta, só a dona apaga ou marca vendido, interesse no anúncio
+  chega ao dono, denúncia guardada (some só para quem denunciou); isolamento direto no papel `carro_do_freela_app`.
+- Carro `test/site-real.js`: 37/37 (a caixa vem do servidor, aceitar faz `PATCH` e vira job, feed e brechó do banco
+  com o nome certo, publicar é `POST`, o post antigo do aparelho não sobe sozinho e a tela oferece enviar).
+- Suítes da prévia que tocam essas telas, sem mudança: `feed` 96/96, `denuncia` 29/29, `anuncio-no-feed` 19/19,
+  `brecho`, `propostas`, `feedback`, `colisao`, `seguranca` 49/49. `build:vercel` com as 8 rotas de dados empacotadas.

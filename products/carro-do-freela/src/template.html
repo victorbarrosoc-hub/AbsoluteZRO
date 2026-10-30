@@ -5969,6 +5969,8 @@ section[data-area] .pghero.cine .arcab .arico{color:#5FE6F4}
 html.real:not(.app-light){--grafite:#0E0E10;--grafite2:#17171A;--grafite3:#1E1E22;--cal:#F5F5F7;--cal-fraco:#AEAEB2;--cal-tenue:#8E8E93;
   --nav-bg:rgba(20,20,24,.6)}
 html.real{--display:"Figtree",system-ui,sans-serif}
+/* (0003) no site real o feed é só o que vai para o servidor: texto, apagar o meu e denunciar */
+html.real .fdpost .fdb,html.real [data-fdchamar],html.real .fdcoms{display:none!important}
 /* o símbolo de sempre (o do véu de abertura e do botão Menu), parado: anel em degradê, disco escuro, as três
    barras branco→ciano e o carrinho estacionado por fora, no alto à direita. --t é o tamanho. */
 .zselo{--t:96px;position:relative;display:inline-block;flex:none;width:var(--t);height:var(--t)}
@@ -9714,6 +9716,8 @@ const REAL=!!document.querySelector('meta[name="cdf-real"]');
    mensalidade que não estão no ar; o plano é o da conta Absolute ZRO), o "Passar o carro" (anúncio por WhatsApp, que
    não existe) e o Orçamento (taxa e sinal da plataforma, que são da fase 2). Saem do menu, da lateral e do show(). */
 const FORA_DO_REAL=new Set(["planos","aprender","passar","orcar"]);
+/* (0003) autores e donos que vêm do servidor e não estão no CREW (gente que posta ou anuncia sem divulgar a agenda) */
+var REAL_AUTORES={};
 if(REAL) document.documentElement.classList.add("real");
 /* ⚠️ O PORTÃO DO LANÇAMENTO (28/out, adendo do PRD: acesso exclusivo do
    proprietário). No domínio o build marca <meta name="cdf-release"
@@ -15274,7 +15278,7 @@ const _fdQuem=(func,i)=>{
   return c.id;
 };
 function autorPost(a){
-  const c=(a==="eu")?EU:(CREW.find(x=>x.id===a)||EU);
+  const c=(a==="eu")?EU:(CREW.find(x=>x.id===a)||REAL_AUTORES[a]||EU);
   return {nome:c.me?titulo(c.nome):nomeCurto(c.nome),
           func:(c.principal||[]).filter(f=>f&&f!=="Não informado")[0]||"",
           cidade:c.cidade||"",
@@ -15445,6 +15449,7 @@ function postHTML(pt){
       /* ⚠️ NÃO se denuncia o próprio post, e o botão nem aparece nele — não
          é caso de "desligado com o motivo", como o Me chama: ali a pessoa
          precisa VER o que os outros veem; aqui não há nada para ver. */
+      (pt.srv&&pt.autor==="eu"?'<button class="fdmais" data-fdapaga="'+pt.id+'" title="Apagar este post" aria-label="Apagar este post">Apagar</button>':"")+
       (pt.autor==="eu"?"":'<button class="fdmais" data-den="'+pt.id+'"'+
         (denunciei("post",pt.id)?' aria-pressed="true" title="Você já denunciou este post"':' title="Denunciar este post"')+
         ' aria-label="Denunciar este post">⋯</button>')+
@@ -16062,6 +16067,7 @@ function ligarComentario(box,pt){
   inp.onkeydown=e=>{if(e.key==="Enter")enviar()};
 }
 function publicarPost(){
+  if(REAL){ realPublicar(); return }
   const txt=(v("fdp-txt").value||"").trim();
   /* com foto ou vídeo, a imagem JÁ é o post — exigir legenda seria pedir
      texto para quem acabou de mostrar o trabalho */
@@ -16434,6 +16440,7 @@ function viraJob(pr){
 }
 function aceitar(id){
   const pr=PROPOSTAS.find(x=>x.id===id);
+  if(pr&&pr.srv){ realResponder(pr,"aceita"); return }
   if(pr.chamadaId){
     if(!CHAMADA||CHAMADA.id!==pr.chamadaId||CHAMADA.vencedor){
       pr.status="perdida";drawPropostas();return;
@@ -16454,6 +16461,7 @@ function formRecusa(id){
     '<div class="pacts" style="margin-top:0"><button class="btn sm" id="rcok-'+id+'">Enviar recusa</button>'+
     '<button class="btn sm gh" id="rcx-'+id+'">Voltar</button></div>';
   v("rcok-"+id).onclick=()=>{
+    if(pr.srv){ realResponder(pr,"recusada",v("rc-"+id).value); return }
     registrarResposta(pr);
     pr.motivo=v("rc-"+id).value;pr.status="recusada";
     drawPropostas();
@@ -16643,6 +16651,7 @@ v("m-close").onclick=fechar;
 v("ovl").addEventListener("click",e=>{if(e.target===v("ovl"))fechar()});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!v("ovl").hidden)fechar()});
 v("m-send").onclick=()=>{
+  if(REAL){ realConsultar(); return }
   const o=opcoes(),r=calcular(mAlvo,o);
   const d=new Date(v("m-data").value+"T00:00:00");
   v("mdl-form").hidden=true;v("mdl-ok").hidden=false;
@@ -17614,7 +17623,7 @@ let ANUNCIOS=REAL?[]:[
   cidade:(CREW.find(c=>c.id===(a.dono==="eu"?EU.id:a.dono))||EU).cidade,
   entrega:"Em mãos na minha praça",img:null,dias:Math.floor(rnd(i*17+5)*26)+1}));
 
-const donoDe=a=>CREW.find(c=>c.id===a.dono)||EU;
+const donoDe=a=>CREW.find(c=>c.id===a.dono)||REAL_AUTORES[a.dono]||EU;
 const fotosOk=a=>(a.fotos||[]).filter(Boolean).length;
 const fotosTot=a=>CATS[a.cat].fotos.length;
 function ressalvas(a){
@@ -20615,7 +20624,213 @@ function realCarregar(){
     for(var i=CREW.length-1;i>=0;i--) if(CREW[i].remoto) CREW.splice(i,1);
     r.j.pessoas.filter(function(p){return p&&p.agenda!==null&&p.id!==eu}).forEach(function(p,n){ CREW.push(realPessoa(p,n)) });
     realRepintar();
+    realSocial();
   });
+}
+/* ============ PROPOSTAS, JOBS, FEED E BRECHÓ NO SERVIDOR (0003, decisão do titular antes do lançamento) ============
+   No site real as quatro telas não moram mais no aparelho. A consulta vai para a caixa de quem foi chamado
+   (/api/zro/propostas; dentro do Carro, sem e-mail nem WhatsApp), o job é a proposta aceita, e o feed e o brechó são
+   de todo mundo que entrou (/api/zro/feed, /api/zro/brecho), com apagar o que é meu e denunciar (/api/zro/denuncia).
+   Nada local é mandado sozinho: post e anúncio de antes ficam guardados e a tela OFERECE "Enviar para a sua conta".
+   Curtida, comentário, compartilhar, foto e vídeo ficam fora no real até terem servidor.
+   ⚠️ Só var e function (o TDZ de 19/out · 2). */
+var REAL_IDS={}, REAL_SEQ=0, REAL_ENVIADAS=[], REAL_LOCAIS=null;
+function realNum(chave){ if(!REAL_IDS[chave]) REAL_IDS[chave]=900000000+(++REAL_SEQ); return REAL_IDS[chave] }
+function realAutor(p){
+  var c=CREW.find(function(x){return x.sub===p.sub}); if(c) return c.id;
+  var id=realNum("autor:"+p.sub);
+  REAL_AUTORES[id]={id:id,sub:p.sub,nome:p.nome||"Conta Absolute ZRO",principal:[],func:[],cidade:"",foto:null,me:false};
+  return id;
+}
+function realNomeDe(sub){ var c=CREW.find(function(x){return x.sub===sub}); return c?titulo(c.nome):"quem você chamou" }
+var REAL_EST={nova:"novo",aceita:"aceita",recusada:"recusada",cancelada:"recusada"};
+function realSocial(){
+  if(!realLigado()) return;
+  if(REAL_LOCAIS===null){
+    /* o que veio do aparelho e nunca foi ao servidor: só post e anúncio MEUS podem ir (proposta e job de antes não têm
+       destinatário de verdade); nada vai sozinho */
+    REAL_LOCAIS={posts:POSTS.filter(function(p){return !p.srv&&p.autor==="eu"&&p.txt}),
+                 anuncios:ANUNCIOS.filter(function(a){return !a.srv&&a.dono===EU.id})};
+    PROPOSTAS=PROPOSTAS.filter(function(x){return x.srv}); JOBS=JOBS.filter(function(x){return x.srv});
+    POSTS=POSTS.filter(function(x){return x.srv}); ANUNCIOS=ANUNCIOS.filter(function(x){return x.srv});
+    var n=REAL_LOCAIS.posts.length+REAL_LOCAIS.anuncios.length;
+    if(n) avisar({t:n===1?"1 item seu está só neste aparelho":n+" itens seus estão só neste aparelho",
+      sub:"Enviar para a sua conta — toque para publicar no Carro",icone:"↑",dur:15000,fazer:realEnviarLocais});
+  }
+  realPropostas(); realFeed(); realBrecho();
+}
+function realEnviarLocais(){
+  var L=REAL_LOCAIS||{posts:[],anuncios:[]}, fila=[];
+  L.posts.forEach(function(p){ fila.push(cfbPedir("POST","/api/zro/feed",{texto:String(p.txt).slice(0,1000),tipo:["nota","bastidor","entrega","procura"].indexOf(p.tipo)>=0?p.tipo:"nota"})) });
+  L.anuncios.forEach(function(a){ fila.push(cfbPedir("POST","/api/zro/brecho",realAnuncioCorpo(a.t,a.cat,a.estado,a.desc,a.preco))) });
+  Promise.all(fila).then(function(rs){
+    var ok=rs.filter(function(r){return r.status===201}).length;
+    REAL_LOCAIS={posts:[],anuncios:[]};
+    avisar({t:ok+" de "+rs.length+" enviados para a sua conta",sub:ok<rs.length?"O que não foi tinha telefone ou campo fora da regra.":"Agora estão no Carro.",icone:"✓"});
+    realFeed(); realBrecho();
+  });
+}
+function realPropostas(){
+  cfbPedir("GET","/api/zro/propostas").then(function(r){
+    if(r.status!==200||!r.j) return;
+    PROPOSTAS=PROPOSTAS.filter(function(x){return !x.srv}); JOBS=JOBS.filter(function(x){return !x.srv});
+    (r.j.recebidas||[]).forEach(function(p){
+      var pr={id:realNum(p.id),srv:p.id,srvTipo:p.tipo,de:p.de_nome,contato:"pelo Carro",data:p.dia||key(HOJE),ini:p.ini||"",fim:p.fim||"",
+        func:p.funcao||(p.tipo==="brecho"?"Brechó":""),tipo:p.tipo==="brecho"?"Interesse no brechó":"Consulta",local:p.local||"",
+        desc:p.mensagem||"",equip:false,fora:false,valor:(p.valor_cents||0)/100,gar:false,status:REAL_EST[p.estado]||"novo",
+        motivo:p.estado==="cancelada"?"cancelada por quem chamou":p.motivo,ha:0};
+      PROPOSTAS.push(pr);
+      if(p.tipo==="job"&&p.estado==="aceita") JOBS.push({id:realNum("job:"+p.id),srv:p.id,data:pr.data,cliente:pr.de,func:pr.func,valor:pr.valor,hold:false,pago:false,gar:false});
+    });
+    REAL_ENVIADAS=r.j.enviadas||[];
+    try{ drawPropostas(); realPintarEnviadas(); drawAgenda(); render(); drawBadge() }catch(e){ console.warn("real: propostas",e) }
+  });
+}
+/* o que EU mandei: uma lista curta embaixo da caixa, com o estado que a outra pessoa deu */
+function realPintarEnviadas(){
+  var lista=v("pp-lista"); if(!lista) return;
+  var el=v("pp-real-env");
+  if(!el){ el=document.createElement("div"); el.id="pp-real-env"; el.className="blk"; lista.parentNode.insertBefore(el,lista.nextSibling) }
+  if(!REAL_ENVIADAS.length){ el.hidden=true; el.innerHTML=""; return }
+  el.hidden=false;
+  var ROT={nova:"esperando resposta",aceita:"aceitou",recusada:"recusou",cancelada:"cancelada"};
+  el.innerHTML='<span class="lab">Você chamou</span>'+REAL_ENVIADAS.map(function(p){
+    return '<div class="li" style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;font-size:13.5px">'+
+      '<span>'+esc(realNomeDe(p.para))+' · '+esc(p.tipo==="brecho"?"brechó":(p.funcao||"consulta"))+(p.dia?' · '+esc(p.dia.split("-").reverse().slice(0,2).join("/")):"")+'</span>'+
+      '<b style="color:var(--cal)">'+esc(ROT[p.estado]||p.estado)+(p.motivo?' — '+esc(p.motivo):"")+'</b></div>'}).join("");
+}
+function realResponder(pr,estado,motivo){
+  cfbPedir("PATCH","/api/zro/propostas?id="+encodeURIComponent(pr.srv),{estado:estado,motivo:motivo||null}).then(function(r){
+    if(r.status!==200){ avisar({t:"A resposta não foi enviada",sub:cfbMsg(r),tipo:"chama",icone:"⚠"}); return }
+    registrarResposta(pr); pr.status=REAL_EST[estado]; pr.motivo=motivo||null;
+    if(estado==="aceita"&&pr.srvTipo==="job"){ JOBS.push({id:realNum("job:"+pr.srv),srv:pr.srv,data:pr.data,cliente:pr.de,func:pr.func,valor:pr.valor,hold:false,pago:false,gar:false}); tocou(); drawAgenda(); render() }
+    drawPropostas();
+    avisar({t:estado==="aceita"?"Aceito — quem chamou já vê":"Recusa enviada",icone:"✓"});
+  });
+}
+function realConsultar(){
+  if(!realLigado()||!mAlvo||!mAlvo.sub){ avisar({t:"Entre com a sua conta para chamar alguém",tipo:"chama",icone:"⚠"}); return }
+  var o=opcoes(), r=calcular(mAlvo,o);
+  var corpo={para:mAlvo.sub,dia:v("m-data").value||null,ini:v("m-ini").value||null,fim:v("m-fim").value||null,
+    funcao:o.func||null,local:(v("m-local").value||"").trim()||null,
+    mensagem:[v("m-tipo").value,(v("m-desc").value||"").trim()].filter(Boolean).join(" — ")||null,
+    valor_cents:r&&r.total?Math.round(r.total*100):null};
+  var bt=v("m-send"); bt.disabled=true;
+  cfbPedir("POST","/api/zro/propostas",corpo).then(function(x){
+    bt.disabled=false;
+    if(x.status!==201){ avisar({t:"A consulta não foi enviada",sub:cfbMsg(x),tipo:"chama",icone:"⚠"}); return }
+    v("mdl-form").hidden=true; v("mdl-ok").hidden=false;
+    v("ok-txt").textContent="Chegou na caixa de "+titulo(mAlvo.nome)+", dentro do Carro. A resposta aparece em Propostas.";
+    v("ok-res").innerHTML="";
+    realPropostas();
+  });
+}
+function realFeed(){
+  cfbPedir("GET","/api/zro/feed").then(function(r){
+    if(r.status!==200||!r.j) return;
+    POSTS=POSTS.filter(function(x){return !x.srv});
+    (r.j.posts||[]).forEach(function(p){
+      POSTS.push({id:realNum(p.id),srv:p.id,autor:p.eu?"eu":realAutor(p.autor),tipo:p.tipo,q:new Date(p.criado_em),
+        txt:p.texto,img:null,video:null,curtidas:0,coments:[],compart:0});
+    });
+    try{ drawFeed() }catch(e){ console.warn("real: feed",e) }
+  });
+}
+function realPublicar(){
+  var txt=(v("fdp-txt").value||"").trim();
+  if(FDP_ANEXO) avisar({t:"Foto e vídeo chegam numa próxima atualização",sub:"Por enquanto o post sai só com o texto.",icone:"i"});
+  if(!txt) return;
+  cfbPedir("POST","/api/zro/feed",{texto:txt,tipo:["nota","bastidor","entrega","procura"].indexOf(FDP_TIPO)>=0?FDP_TIPO:"nota"}).then(function(r){
+    if(r.status!==201){ avisar({t:"O post não foi publicado",sub:cfbMsg(r),tipo:"chama",icone:"⚠"}); return }
+    v("fdp-txt").value=""; try{ soltarAnexo() }catch(e){}
+    som("toque"); realFeed();
+  });
+}
+document.addEventListener("click",function(e){
+  var b=e.target.closest&&e.target.closest("[data-fdapaga]"); if(!b) return;
+  var pt=POSTS.find(function(x){return x.id===+b.dataset.fdapaga}); if(!pt||!pt.srv) return;
+  if(!confirm("Apagar este post? Ele sai do feed de todo mundo.")) return;
+  cfbPedir("DELETE","/api/zro/feed?id="+encodeURIComponent(pt.srv)).then(function(r){
+    if(r.status!==204){ avisar({t:"Não deu para apagar",sub:cfbMsg(r),tipo:"chama",icone:"⚠"}); return }
+    realFeed();
+  });
+});
+function realDenunciar(tipo,id,motivo,detalhe){
+  var alvo=tipo==="post"?POSTS.find(function(x){return x.id===id}):tipo==="anuncio"?ANUNCIOS.find(function(x){return x.id===id}):null;
+  if(!alvo||!alvo.srv||!realLigado()) return;
+  cfbPedir("POST","/api/zro/denuncia",{alvo:tipo,id:alvo.srv,motivo:String(motivo||"outro").slice(0,80),detalhe:detalhe||null});
+}
+function realAnuncioCorpo(t,cat,estado,desc,preco){
+  return {titulo:String(t).slice(0,120),categoria:String(cat||"outros").slice(0,40),estado_item:estado?String(estado).slice(0,40):null,
+    descricao:desc?String(desc).slice(0,1000):null,cidade:EU.cidade||null,preco_cents:Math.max(0,Math.round((+preco||0)*100))};
+}
+function realBrecho(){
+  cfbPedir("GET","/api/zro/brecho").then(function(r){
+    if(r.status!==200||!r.j) return;
+    ANUNCIOS=ANUNCIOS.filter(function(x){return !x.srv});
+    var cat0=Object.keys(CATS)[0];
+    (r.j.anuncios||[]).forEach(function(a){
+      var cat=CATS[a.categoria]?a.categoria:cat0, vendido=a.situacao==="vendido";
+      ANUNCIOS.push({id:realNum(a.id),srv:a.id,t:a.titulo,cat:cat,preco:a.preco_cents/100,ref:0,ano:HOJE.getFullYear(),gar:false,
+        estado:a.estado_item||"",desc:a.descricao||"",f:{},entrega:"Combinar com quem vende",
+        dono:a.eu?EU.id:realAutor(a.dono),fotos:CATS[cat].fotos.map(function(){return 0}),
+        estadoVenda:vendido?"vendido":"disponivel",vendido:vendido,cidade:a.cidade||"",img:null,
+        dias:Math.max(0,Math.floor((Date.now()-new Date(a.criado_em))/864e5))});
+    });
+    try{ drawBrecho() }catch(e){ console.warn("real: brechó",e) }
+  });
+}
+function realAnunciar(t){
+  if(!realLigado()){ avisar({t:"Entre com a sua conta para anunciar",tipo:"chama",icone:"⚠"}); return }
+  if(nvEditId){ avisar({t:"Para mudar um anúncio, apague e anuncie de novo",icone:"i"}); return }
+  if(typeof nvFotos!=="undefined"&&nvFotos.some(Boolean)) avisar({t:"Fotos chegam numa próxima atualização",sub:"O anúncio sai com a capa da categoria.",icone:"i"});
+  var corpo=realAnuncioCorpo(t,v("nv-cat").value,v("nv-estado").value,v("nv-desc").value.trim(),v("nv-preco").value);
+  cfbPedir("POST","/api/zro/brecho",corpo).then(function(r){
+    if(r.status!==201){ avisar({t:"O anúncio não foi publicado",sub:cfbMsg(r),tipo:"chama",icone:"⚠"}); return }
+    v("ovl4").hidden=true; document.body.style.overflow=""; nvEditId=null; nvItemId=null;
+    som("toque"); avisar({t:"Anúncio no ar",sub:"Quem tiver interesse fala com você pela sua caixa de propostas.",icone:"✓"});
+    realBrecho();
+  });
+}
+function realAcoesAnuncio(a,meu){
+  var el=v("a-acoes"); if(!el) return;
+  if(meu){
+    el.innerHTML='<p class="note" style="margin:0 0 12px">Este anúncio é seu. Quem tiver interesse chama você pela caixa de propostas; o acerto é direto com a pessoa.</p>'+
+      '<button class="btn gh" id="a-real-vend" style="width:100%">'+(a.vendido?"Voltar para a vitrine":"Marcar como vendido")+'</button>'+
+      '<button class="btn gh" id="a-real-apaga" style="width:100%;margin-top:9px">Apagar anúncio</button>';
+    v("a-real-vend").onclick=function(){
+      cfbPedir("PATCH","/api/zro/brecho?id="+encodeURIComponent(a.srv),{situacao:a.vendido?"disponivel":"vendido"}).then(function(r){
+        if(r.status!==200) return avisar({t:"Não deu para mudar",sub:cfbMsg(r),tipo:"chama",icone:"⚠"});
+        show("brecho"); realBrecho(); });
+    };
+    v("a-real-apaga").onclick=function(){
+      if(!confirm("Apagar este anúncio?")) return;
+      cfbPedir("DELETE","/api/zro/brecho?id="+encodeURIComponent(a.srv)).then(function(r){
+        if(r.status!==204) return avisar({t:"Não deu para apagar",sub:cfbMsg(r),tipo:"chama",icone:"⚠"});
+        show("brecho"); realBrecho(); });
+    };
+    return;
+  }
+  if(a.vendido){ el.innerHTML='<p class="note" style="margin:0">Já vendido.</p>'; return }
+  var dono=REAL_AUTORES[a.dono]||CREW.find(function(c){return c.id===a.dono});
+  el.innerHTML='<button class="btn" id="a-real-int" style="width:100%">Tenho interesse</button>'+
+    '<button class="linkc" id="a-real-den" style="margin-top:12px">Denunciar este anúncio</button>';
+  v("a-real-int").onclick=function(){
+    if(!dono||!dono.sub) return;
+    var b=v("a-real-int"); b.disabled=true;
+    cfbPedir("POST","/api/zro/propostas",{para:dono.sub,tipo:"brecho",anuncio:a.srv,mensagem:"Tenho interesse: "+a.t}).then(function(r){
+      b.disabled=false;
+      if(r.status!==201) return avisar({t:"Não foi enviado",sub:cfbMsg(r),tipo:"chama",icone:"⚠"});
+      b.textContent="Interesse enviado"; b.disabled=true;
+      avisar({t:"Chegou na caixa de quem vende",sub:"A resposta aparece em Propostas, em “Você chamou”.",icone:"✓"});
+      realPropostas();
+    });
+  };
+  v("a-real-den").onclick=function(){
+    if(!confirm("Denunciar este anúncio? Ele some para você, e uma pessoa da Absolute ZRO olha.")) return;
+    realDenunciar("anuncio",a.id,"anuncio_improprio",null); show("brecho");
+    ANUNCIOS=ANUNCIOS.filter(function(x){return x.id!==a.id}); drawBrecho();
+  };
 }
 function cfbMsg(r){ var e=r&&r.j&&r.j.erro; return CFB_ERRO[e]||"Não deu para salvar agora. Tente de novo." }
 function cfbReais(c){ return "R$ "+(c/100).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}) }
@@ -23873,7 +24088,7 @@ function abrirAnuncio(id){
   cap.style.backgroundImage="url("+(a.img||stillProd(a.cat,a.id*31+5,900,340))+")";
   cap.dataset.still="pr"+a.cat+(a.id*31+5)+"900";
   cap.innerHTML="";
-  v("a-gal").innerHTML=cat.fotos.map((f,i)=>{
+  v("a-gal").innerHTML=a.srv?"":cat.fotos.map((f,i)=>{
     const foto=(a.fotos||[])[i];
     return '<div class="g"'+(typeof foto==="string"?' style="background-image:url('+cssUrl(foto)+')"':'')+'>'+
       (typeof foto==="string"?"":'<span class="mini" style="text-align:center;padding:8px;line-height:1.4">'+(foto?"✓ enviada":"não enviada")+'</span>')+'</div>';
@@ -23940,6 +24155,7 @@ function abrirAnuncio(id){
      entrega outro — e é o caminho que a Fase 1 inteira usa, porque lá
      `anGar` é falso para todo anúncio. O conserto é o botão fazer o que
      ele diz: sem garantia, abre a CONVERSA com o dono. */
+  if(REAL&&a.srv) realAcoesAnuncio(a,meu);
   const bc=v("a-comprar");
   if(bc) bc.onclick=()=>anGar(a)?abrirCompra(a.id):abrirDM(a.dono);
   const bp2=v("a-propor"); if(bp2) bp2.onclick=()=>abrirProposta(a.id);
@@ -24317,6 +24533,7 @@ v("ovl4").addEventListener("click",e=>{if(e.target===v("ovl4")){v("ovl4").hidden
 v("nv-ok").onclick=()=>{
   const t=v("nv-titulo").value.trim();
   if(!t) return;
+  if(REAL){ realAnunciar(t); return }
   const cat=v("nv-cat").value,f={};
   v("nv-campos").querySelectorAll("[data-nc]").forEach(x=>{
     const c=CATS[cat].campos.find(y=>y.k===x.dataset.nc);
@@ -24576,6 +24793,7 @@ function leituraProd(q){
   return {t:(q.cancelUlt>0||q.atraso>1||q.comGar/q.jobs<.4)?"warn":"ok",s:b.join(" · ")+"."};
 }
 function tarjaProd(nome){
+  if(REAL) return '<div class="tarja novo" style="cursor:default"><i>'+esc(iniProd(nome))+'</i><span><b>'+esc(nome)+'</b><small>conta Absolute ZRO · o acerto é direto com a pessoa</small></span></div>';
   const q=prodDe(nome),l=leituraProd(q);
   return '<button class="tarja'+(q.novo?" novo":"")+'" data-q="'+esc(nome)+'">'+
     '<i'+(q.logo?' style="background-image:url('+cssUrl(q.logo)+')"':'')+'>'+(q.logo?"":esc(iniProd(nome)))+'</i>'+
@@ -26340,6 +26558,7 @@ function abrirDenuncia(tipo,id,paiId){
 function enviarDenuncia(){
   if(!denAlvo||!denMot) return;
   const {tipo,id,paiId}=denAlvo;
+  if(REAL) realDenunciar(tipo,id,denMot,v("dn-txt").value.trim());
   DENUNCIAS.push({tipo,alvo:id,pai:paiId||null,motivo:denMot,
     txt:v("dn-txt").value.trim(),quando:Date.now()});
   usoGravar();

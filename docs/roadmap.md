@@ -1041,8 +1041,12 @@ do card... não consigo localizar o job que quero achar".
   mentira e sem falar com o Supabase do app original; família só com o que está no ar.
 - ⬜ No dia: `CARRO_RELEASE=released` no `carrodofreela-app` e mesclar o PR (o build aplica 0038 e 0041 no HUB e a
   `0002_comunidade` no banco do Carro). DNS de `carro.absolutezro.com` já no ar.
-- ⬜ Decisão do titular: Propostas, Jobs, Feed e Brechó ainda moram no aparelho (nada chega a outra conta); agenda do
-  Carro e do Maestro separadas (a pessoa é a mesma pelo `sub`); inventário Carro → Maestro desligado; `noindex`.
+- ✅ **Propostas, Jobs, Feed e Brechó no servidor do Carro** (decisão do titular: construir antes de lançar). Migração
+  do Carro `0003_propostas_feed_brecho` (RLS pelo `sub` da Absolute ZRO), rotas `/api/zro/propostas|feed|brecho|denuncia`:
+  a consulta chega na caixa do freela dentro do Carro (sem e-mail nem WhatsApp), aceitar vira job, feed e brechó com
+  apagar o próprio e denúncia guardada; o que estava no aparelho só sobe se a pessoa tocar em "Enviar para a sua conta".
+- ⬜ Depois: curtida, comentário, foto e vídeo no servidor; tela de revisão das denúncias; agenda do Carro e do Maestro
+  separadas (a pessoa é a mesma pelo `sub`); inventário Carro → Maestro desligado; `noindex`.
 
 ## Fase 6 — Escala
 

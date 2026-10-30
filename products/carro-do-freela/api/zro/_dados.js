@@ -300,6 +300,177 @@ async function pessoas(req, res) {
   }
 }
 
+/* ---------------- propostas, feed, brechó e denúncia (0003) ----------------
+ * GET    /api/zro/propostas              → { recebidas: [...], enviadas: [...] }   (as minhas, dos dois lados)
+ * POST   /api/zro/propostas              → 201 { proposta }   (chega na caixa de `para`, dentro do Carro)
+ * PATCH  /api/zro/propostas?id=          → { proposta }       (aceitar/recusar quem recebeu; cancelar quem mandou)
+ * GET    /api/zro/feed                   → { posts: [...] }   (os 100 mais novos, sem os que EU denunciei)
+ * POST   /api/zro/feed                   → 201 { post }
+ * DELETE /api/zro/feed?id=               → 204                (só o próprio)
+ * GET    /api/zro/brecho                 → { anuncios: [...] } (disponíveis + os meus)
+ * POST   /api/zro/brecho                 → 201 { anuncio }
+ * PATCH  /api/zro/brecho?id=             → { anuncio }        (vendido/disponível, só o próprio)
+ * DELETE /api/zro/brecho?id=             → 204                (só o próprio)
+ * POST   /api/zro/denuncia               → 204                (guardada; ninguém de fora lê)
+ * O nome de quem escreve vem da CONTA (sessão conferida no HUB), nunca do pedido. */
+function nomeDaConta(quem) {
+  const n = String((quem && quem.nome) || '').trim().slice(0, 80);
+  return n && !R.TELEFONE.test(n) ? n : quem && quem.arroba ? '@' + quem.arroba : 'Conta Absolute ZRO';
+}
+const iso = d => (d instanceof Date ? d.toISOString() : d);
+const diaTxt = d => (d instanceof Date ? d.toISOString().slice(0, 10) : d || null);
+const horaTxt = h => (h ? String(h).slice(0, 5) : null);
+function propostaSaida(l, sub) {
+  return { id: l.id, recebida: l.para_sub === sub, de: l.de_sub, para: l.para_sub, de_nome: l.de_nome, tipo: l.tipo,
+    anuncio: l.anuncio_id, dia: diaTxt(l.dia), ini: horaTxt(l.ini), fim: horaTxt(l.fim), funcao: l.funcao, local: l.local,
+    mensagem: l.mensagem, valor_cents: l.valor_cents, estado: l.estado, motivo: l.motivo, criado_em: iso(l.criado_em) };
+}
+const postSaida = (l, sub) => ({ id: l.id, autor: { sub: l.sub, nome: l.autor_nome }, eu: l.sub === sub, tipo: l.tipo,
+  texto: l.texto, criado_em: iso(l.criado_em) });
+const anuncioSaida = (l, sub) => ({ id: l.id, dono: { sub: l.sub, nome: l.dono_nome }, eu: l.sub === sub, titulo: l.titulo,
+  categoria: l.categoria, estado_item: l.estado_item, descricao: l.descricao, cidade: l.cidade, preco_cents: l.preco_cents,
+  situacao: l.situacao, criado_em: iso(l.criado_em) });
+function semConteudo(res, extra) {
+  res.writeHead(204, Object.assign({ 'Cache-Control': 'no-store' }, extra));
+  return res.end();
+}
+
+async function propostas(req, res) {
+  const p = await preparar(req, res, { metodos: ['GET', 'POST', 'PATCH'], escrita: req.method !== 'GET' });
+  if (!p) return;
+  const { db, sub, quem, extra } = p;
+  try {
+    if (req.method === 'GET') {
+      const rows = await db.asUser(sub, async c =>
+        (await c.query('select * from carro_do_freela.propostas order by criado_em desc limit 300')).rows);
+      const todas = rows.map(l => propostaSaida(l, sub));
+      return json(res, 200, { recebidas: todas.filter(x => x.recebida), enviadas: todas.filter(x => !x.recebida) }, extra);
+    }
+    const corpo = await corpoDe(req, res, extra);
+    if (corpo === undefined) return;
+    if (req.method === 'POST') {
+      const v = R.propostaDe(corpo);
+      if (v.para === sub) return json(res, 400, { erro: 'para', campo: 'para' }, extra);
+      const l = await db.asUser(sub, async c => {
+        if (v.tipo === 'brecho') {
+          const an = (await c.query("select sub from carro_do_freela.anuncios where id = $1 and situacao = 'disponivel'", [v.anuncio])).rows[0];
+          if (!an || an.sub !== v.para) return null;
+        }
+        return (await c.query(
+          `insert into carro_do_freela.propostas (de_sub, para_sub, de_nome, tipo, anuncio_id, dia, ini, fim, funcao, local, mensagem, valor_cents)
+           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) returning *`,
+          [sub, v.para, nomeDaConta(quem), v.tipo, v.anuncio, v.dia, v.ini, v.fim, v.funcao, v.local, v.mensagem, v.valor_cents],
+        )).rows[0];
+      });
+      if (!l) return json(res, 404, { erro: 'nao_achado' }, extra);
+      return json(res, 201, { proposta: propostaSaida(l, sub) }, extra);
+    }
+    const id = idDe(req);
+    if (!id) return json(res, 400, { erro: 'id' }, extra);
+    const v = R.respostaDe(corpo);
+    const l = await db.asUser(sub, async c =>
+      (await c.query('update carro_do_freela.propostas set estado = $2, motivo = coalesce($3, motivo) where id = $1 returning *', [id, v.estado, v.motivo])).rows[0]);
+    if (!l) return json(res, 404, { erro: 'nao_achado' }, extra);
+    return json(res, 200, { proposta: propostaSaida(l, sub) }, extra);
+  } catch (e) {
+    return responderErro(res, e, extra);
+  }
+}
+
+async function feed(req, res) {
+  const p = await preparar(req, res, { metodos: ['GET', 'POST', 'DELETE'], escrita: req.method !== 'GET' });
+  if (!p) return;
+  const { db, sub, quem, extra } = p;
+  try {
+    if (req.method === 'GET') {
+      const rows = await db.asUser(sub, async c =>
+        (await c.query(
+          `select p.* from carro_do_freela.posts p
+            where not exists (select 1 from carro_do_freela.denuncias d where d.alvo = 'post' and d.alvo_id = p.id)
+            order by p.criado_em desc limit 100`)).rows);
+      return json(res, 200, { posts: rows.map(l => postSaida(l, sub)) }, extra);
+    }
+    if (req.method === 'DELETE') {
+      const id = idDe(req);
+      if (!id) return json(res, 400, { erro: 'id' }, extra);
+      const n = await db.asUser(sub, async c => (await c.query('delete from carro_do_freela.posts where id = $1', [id])).rowCount);
+      if (!n) return json(res, 404, { erro: 'nao_achado' }, extra);
+      return semConteudo(res, extra);
+    }
+    const corpo = await corpoDe(req, res, extra);
+    if (corpo === undefined) return;
+    const v = R.postDe(corpo);
+    const l = await db.asUser(sub, async c =>
+      (await c.query('insert into carro_do_freela.posts (sub, autor_nome, tipo, texto) values ($1, $2, $3, $4) returning *',
+        [sub, nomeDaConta(quem), v.tipo, v.texto])).rows[0]);
+    return json(res, 201, { post: postSaida(l, sub) }, extra);
+  } catch (e) {
+    return responderErro(res, e, extra);
+  }
+}
+
+async function brecho(req, res) {
+  const p = await preparar(req, res, { metodos: ['GET', 'POST', 'PATCH', 'DELETE'], escrita: req.method !== 'GET' });
+  if (!p) return;
+  const { db, sub, quem, extra } = p;
+  try {
+    if (req.method === 'GET') {
+      const rows = await db.asUser(sub, async c =>
+        (await c.query(
+          `select a.* from carro_do_freela.anuncios a
+            where not exists (select 1 from carro_do_freela.denuncias d where d.alvo = 'anuncio' and d.alvo_id = a.id)
+            order by a.criado_em desc limit 300`)).rows);
+      return json(res, 200, { anuncios: rows.map(l => anuncioSaida(l, sub)) }, extra);
+    }
+    let id = null;
+    if (req.method !== 'POST') {
+      id = idDe(req);
+      if (!id) return json(res, 400, { erro: 'id' }, extra);
+    }
+    if (req.method === 'DELETE') {
+      const n = await db.asUser(sub, async c => (await c.query('delete from carro_do_freela.anuncios where id = $1', [id])).rowCount);
+      if (!n) return json(res, 404, { erro: 'nao_achado' }, extra);
+      return semConteudo(res, extra);
+    }
+    const corpo = await corpoDe(req, res, extra);
+    if (corpo === undefined) return;
+    if (req.method === 'PATCH') {
+      const situacao = R.situacaoDe(corpo);
+      const l = await db.asUser(sub, async c =>
+        (await c.query('update carro_do_freela.anuncios set situacao = $2 where id = $1 returning *', [id, situacao])).rows[0]);
+      if (!l) return json(res, 404, { erro: 'nao_achado' }, extra);
+      return json(res, 200, { anuncio: anuncioSaida(l, sub) }, extra);
+    }
+    const v = R.anuncioDe(corpo);
+    const l = await db.asUser(sub, async c =>
+      (await c.query(
+        `insert into carro_do_freela.anuncios (sub, dono_nome, titulo, categoria, estado_item, descricao, cidade, preco_cents)
+         values ($1, $2, $3, $4, $5, $6, $7, $8) returning *`,
+        [sub, nomeDaConta(quem), v.titulo, v.categoria, v.estado_item, v.descricao, v.cidade, v.preco_cents])).rows[0]);
+    return json(res, 201, { anuncio: anuncioSaida(l, sub) }, extra);
+  } catch (e) {
+    return responderErro(res, e, extra);
+  }
+}
+
+async function denuncia(req, res) {
+  const p = await preparar(req, res, { metodos: ['POST'], escrita: true });
+  if (!p) return;
+  const { db, sub, extra } = p;
+  try {
+    const corpo = await corpoDe(req, res, extra);
+    if (corpo === undefined) return;
+    const v = R.denunciaDe(corpo);
+    await db.asUser(sub, async c =>
+      c.query(
+        `insert into carro_do_freela.denuncias (sub, alvo, alvo_id, motivo, detalhe) values ($1, $2, $3, $4, $5)
+         on conflict (sub, alvo, alvo_id) do nothing`, [sub, v.alvo, v.id, v.motivo, v.detalhe]));
+    return semConteudo(res, extra);
+  } catch (e) {
+    return responderErro(res, e, extra);
+  }
+}
+
 const protegido = fn => async (req, res) => {
   try {
     await fn(req, res);
@@ -314,5 +485,9 @@ module.exports = {
   inventario: protegido(inventario),
   agenda: protegido(agenda),
   pessoas: protegido(pessoas),
+  propostas: protegido(propostas),
+  feed: protegido(feed),
+  brecho: protegido(brecho),
+  denuncia: protegido(denuncia),
   _interno: { passouDoLimite, mesmaOrigem, esquecerLimite: () => contagem.clear(), LIMITE },
 };
