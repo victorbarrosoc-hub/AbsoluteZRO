@@ -15,7 +15,7 @@ import { useNovaVersao } from "@/components/revisao/nova-versao";
 import { BotaoGerar, ListaEntregaveis, useEntregaveis } from "@/components/relay/entregas";
 import { GerarVersoes } from "@/components/relay/gerar-versoes";
 
-const ICONE: Record<TipoFonte, NomeIcone> = {
+const ICONE: Record<TipoFonte | "roteiro", NomeIcone> = {
   drive: "nuvem",
   youtube: "tocar",
   vimeo: "tocar",
@@ -23,6 +23,7 @@ const ICONE: Record<TipoFonte, NomeIcone> = {
   mp4: "filme",
   hls: "filme",
   link: "link",
+  roteiro: "criacao",
 };
 
 const dia = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
@@ -55,19 +56,33 @@ export function VersoesDoCard({ card, podeEscrever }: { card: string; podeEscrev
             const daVersao = entregas.lista?.filter((e) => e.versao === v.id) ?? [];
             return (
               <li key={v.id} data-aprovada={v.aprovada || undefined}>
-                <a className="vc__versao" href={v.url} target="_blank" rel="noreferrer noopener" title={`${NOME_DA_FONTE[v.fonte]} · abrir em outra aba`}>
-                  <span className="vc__n">v{v.n}</span>
-                  <Icone nome={ICONE[v.fonte]} size={15} className="vc__icone" />
-                  <span className="vc__nome">{v.titulo ?? NOME_DA_FONTE[v.fonte]}</span>
-                  {v.aprovada ? (
-                    <span className="vc__aprovada">
-                      <i aria-hidden="true" />
-                      Aprovada
+                {v.fonte === "roteiro" ? (
+                  // A versão de roteiro (Criação, F7) abre o editor, aqui mesmo.
+                  <a className="vc__versao" href={v.url} title="Roteiro · abrir no editor">
+                    <span className="vc__n">v{v.n}</span>
+                    <Icone nome={ICONE.roteiro} size={15} className="vc__icone" />
+                    <span className="vc__nome">
+                      {v.titulo ?? "Roteiro"}
+                      {v.roteiroN ? ` · roteiro v${v.roteiroN}` : ""}
                     </span>
-                  ) : null}
-                  <span className="vc__dia">{dia(v.em)}</span>
-                  <Icone nome="externo" size={14} className="vc__abrir" />
-                </a>
+                    <span className="vc__dia">{dia(v.em)}</span>
+                    <Icone nome="seta" size={14} className="vc__abrir" />
+                  </a>
+                ) : (
+                  <a className="vc__versao" href={v.url} target="_blank" rel="noreferrer noopener" title={`${NOME_DA_FONTE[v.fonte]} · abrir em outra aba`}>
+                    <span className="vc__n">v{v.n}</span>
+                    <Icone nome={ICONE[v.fonte]} size={15} className="vc__icone" />
+                    <span className="vc__nome">{v.titulo ?? NOME_DA_FONTE[v.fonte]}</span>
+                    {v.aprovada ? (
+                      <span className="vc__aprovada">
+                        <i aria-hidden="true" />
+                        Aprovada
+                      </span>
+                    ) : null}
+                    <span className="vc__dia">{dia(v.em)}</span>
+                    <Icone nome="externo" size={14} className="vc__abrir" />
+                  </a>
+                )}
                 {v.fonte === "drive" && v.driveId && (entregas.podePedir || daVersao.length) ? (
                   <div className="vc__relay">
                     {entregas.podePedir ? <BotaoGerar aprovada={v.aprovada} aoAbrir={() => setGerando(v)} /> : null}

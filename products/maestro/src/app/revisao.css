@@ -1461,3 +1461,289 @@ li[data-decisao="ajuste"] .cl-resumo__marca {
     padding: 6px 9px;
   }
 }
+
+/* ───────────── o roteiro no link do cliente (Criação, F7; components/revisao/roteiro-cliente.tsx) ─────────────
+   Uma coluna de leitura (como o papel do Literário), o trecho é um botão: tocar abre o comentário dele. */
+.cl-rot {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.cl-rot__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 0.9rem;
+}
+.cl-rot__dica {
+  flex-basis: 100%;
+  font-size: 0.86rem;
+}
+.cl-rot__folha {
+  display: grid;
+  gap: 26px;
+  width: 100%;
+  max-width: 720px;
+  padding: 28px 22px;
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+  color: var(--text-strong);
+}
+.cl-rot__cena {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.cl-rot__cena h3 {
+  margin: 0 0 2px;
+  padding-inline: 10px;
+  font-family: var(--font-apple);
+  font-weight: 800;
+  font-size: 0.86rem;
+  letter-spacing: 0.04em;
+  color: var(--text-strong);
+}
+.cl-rot__sub {
+  margin: 0 0 6px;
+  padding-inline: 10px;
+  color: var(--text-faint);
+  font-size: 0.9rem;
+}
+.cl-rot__bloco {
+  display: grid;
+  min-width: 0;
+  border-radius: 14px;
+  transition: background 0.18s var(--ease);
+}
+.cl-rot__bloco[data-aberto] {
+  background: var(--acento-suave);
+}
+.cl-rot__alvo {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 14px;
+  background: none;
+  font: inherit;
+  font-size: 1.02rem;
+  line-height: 1.55;
+  color: inherit;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+button.cl-rot__alvo {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+@media (hover: hover) {
+  button.cl-rot__alvo:hover {
+    background: color-mix(in srgb, var(--acento) 8%, transparent);
+  }
+}
+button.cl-rot__alvo:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 1px;
+}
+.cl-rot__acao,
+.cl-rot__fala,
+.cl-rot__linha,
+.cl-rot__nome,
+.cl-rot__obs,
+.cl-rot__dito {
+  display: block;
+}
+.cl-rot__fala {
+  padding-inline: clamp(0px, 8%, 72px);
+  text-align: center;
+}
+.cl-rot__nome {
+  font-family: var(--font-apple);
+  font-weight: 800;
+  font-size: 0.86rem;
+  letter-spacing: 0.04em;
+}
+.cl-rot__obs {
+  color: var(--text-faint);
+  font-size: 0.92rem;
+}
+.cl-rot__dito strong {
+  font-weight: 700;
+}
+.cl-rot__dito .cr-tp__deixa {
+  color: var(--text-faint);
+}
+.cl-rot__linha {
+  color: var(--text-mute);
+  font-size: 0.94rem;
+}
+.cl-rot__linha b {
+  font-weight: 700;
+  color: var(--text-faint);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.cl-rot__n {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--acento-suave);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acento) 40%, transparent);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+.cl-rot__bloco:has(.cl-rot__n) .cl-rot__alvo {
+  padding-right: 52px;
+}
+.cl-rot__caixa {
+  display: grid;
+  gap: 10px;
+  padding: 4px 10px 12px;
+  animation: cl-rot-abre 0.22s var(--spring) both;
+}
+@keyframes cl-rot-abre {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.cl-rot__comentarios {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cl-rot__comentarios li {
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.cl-rot__comentarios li[data-resolvido] {
+  opacity: 0.66;
+}
+.cl-rot__av {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--acento-suave);
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--text-strong);
+}
+.cl-rot__comentarios li[data-autor="equipe"] .cl-rot__av {
+  background: var(--surface-3);
+}
+.cl-rot__corpo {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.cl-rot__quem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  font-size: 0.84rem;
+}
+.cl-rot__quem time,
+.cl-rot__ok {
+  color: var(--text-faint);
+  font-size: 0.78rem;
+}
+.cl-rot__texto {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.cl-rot__escrever {
+  display: grid;
+  gap: 8px;
+}
+.cl-rot__escrever textarea {
+  width: 100%;
+  min-height: 64px;
+  border: 0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font: inherit;
+  font-size: 16px;
+  color: var(--text-strong);
+  resize: vertical;
+  outline: none;
+}
+.cl-rot__escrever textarea:focus {
+  box-shadow: inset 0 0 0 2px var(--acento);
+}
+.cl-rot__nomecampo input {
+  font-size: 16px;
+}
+.cl-rot__acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+@media (max-width: 600px) {
+  .cl-rot__folha {
+    padding: 18px 8px;
+    gap: 22px;
+    border-radius: 20px;
+  }
+  .cl-rot__fala {
+    padding-inline: 4%;
+  }
+}
+
+/* A peça do lote que é um roteiro: o resumo e o caminho até o editor (components/revisao/lote-equipe.tsx). */
+.ap-roteiro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px 20px;
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+  color: var(--text-strong);
+}
+.ap-roteiro__miolo {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.ap-roteiro__miolo small {
+  color: var(--text-faint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cl-rot__caixa {
+    animation: none !important;
+  }
+  .cl-rot__bloco {
+    transition: none !important;
+  }
+}

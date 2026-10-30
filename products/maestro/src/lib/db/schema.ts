@@ -433,7 +433,10 @@ export const listaEspera = maestro.table(
   (t) => [uniqueIndex("lista_espera_email_uq").on(t.email)],
 );
 
-/** Versão de uma peça (0005): um link cadastrado pela equipe. Escrita só por maestro.versao_criar/versao_apagar. */
+/**
+ * Versão de uma peça (0005): um link cadastrado pela equipe, ou (0033) uma versão salva de roteiro, sem URL. Escrita só
+ * por maestro.versao_criar/versao_apagar e maestro.roteiro_para_cliente.
+ */
 export const versoes = maestro.table(
   "versoes",
   {
@@ -442,8 +445,9 @@ export const versoes = maestro.table(
     cardId: text().notNull(),
     n: integer().notNull(),
     titulo: text(),
-    fonte: text().$type<"drive" | "youtube" | "vimeo" | "dropbox" | "mp4" | "hls" | "link">().notNull(),
-    url: text().notNull(),
+    fonte: text().$type<"drive" | "youtube" | "vimeo" | "dropbox" | "mp4" | "hls" | "link" | "roteiro">().notNull(),
+    url: text(),
+    roteiroVersaoId: uuid(),
     driveFileId: text(),
     driveResourceKey: text(),
     duracaoMs: integer(),
@@ -458,7 +462,7 @@ export const versoes = maestro.table(
   (t) => [uniqueIndex("versoes_card_n_uq").on(t.orgId, t.cardId, t.n)],
 );
 
-/** Comentário numa versão (0005): tempo, intervalo e pino; o texto não muda. Escrita só por função. */
+/** Comentário numa versão (0005): tempo, intervalo e pino, ou o bloco do roteiro (0033); o texto não muda. Escrita só por função. */
 export const comentarios = maestro.table(
   "comentarios",
   {
@@ -474,6 +478,7 @@ export const comentarios = maestro.table(
     tMs: integer(),
     tFimMs: integer(),
     tempoDigitado: boolean().notNull().default(false),
+    blocoId: text(),
     resolvidoEm: quando(),
     resolvidoPor: uuid(),
     texto: text().notNull(),

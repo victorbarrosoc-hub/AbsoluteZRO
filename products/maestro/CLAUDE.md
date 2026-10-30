@@ -344,7 +344,7 @@ presets, pastaId?, ref: <id da versão>, conta? }`, depois `relay.pedido` para o
   exemplo em `docs/integration-contracts/exemplos/`). PDF para a edição = folha A4 `?vista=edicao&versao=n`. Cada envio
   é `POST {op:"enviado"}` → `registrarEnvio` (auditoria `roteiro.enviado` com o sha256 do banco). A opção do AEON (o
   arquivo) só com `podeMandarParaAeon` (claim `zro_release["ai-edit"]` released/allowed + produto + papel): hoje o AEON
-  está fechado e nada aparece; a rota recusa `aeon` também. O cliente não aparece no menu até a F7. Ficha do card:
+  está fechado e nada aparece; a rota recusa `aeon` também. "Para o cliente aprovar" é a F7 (abaixo). Ficha do card:
   bloco "Criação" (`components/criacao/do-card.tsx`, `criacaoDoCardAcao`: roteiros e fluxos do card num pedido só).
   Nome de arquivo com acento só sai
   do navegador com locale UTF-8 (o `playwright.config.ts` força `C.UTF-8`).
@@ -397,6 +397,21 @@ presets, pastaId?, ref: <id da versão>, conta? }`, depois `relay.pedido` para o
   políticas da 0031/0032 contra `PAPEIS_EDITAR_CRIACAO`/`PAPEIS_ENVIAR_CRIACAO`.
   Testes: `tests/links-fluxo.test.mts`, `e2e/criacao-exportar.spec.ts` (`SHOTS_DIR` guarda `exp-*`), telas no
   `sem-corte.spec.ts`.
+- **Criação · o cliente aprova o roteiro** (fase F7; decisão do titular nº 4: o MESMO link `/a` do card, o roteiro é
+  mais uma peça; `drizzle/0033_roteiro_na_revisao.sql`, `src/lib/criacao/roteiro/cliente.ts`, `src/lib/revisao/roteiro.ts`,
+  telas em `components/criacao/roteiro/cliente.tsx` e `components/revisao/roteiro-cliente.tsx`): a fonte de versão
+  `roteiro` presa a `roteiro_versao_id` e **sem URL** (check `versoes_roteiro_ok`; uma vez por card, índice
+  `versoes_roteiro_uq`); nasce só por `maestro.roteiro_para_cliente(roteiro, n)` (`pode_criacao(…, 'enviar')`, alcance do
+  roteiro, sobe a volta dos lotes abertos, estado `com_cliente`, audita `versao.criar` + `roteiro.enviado` destino
+  `cliente`; a rota recusa anotar `cliente` à mão). `enviarAoCliente` (op `cliente` em `/api/criacao/roteiros/[id]`)
+  numa transação: sem lote aberto cria o do cliente do card (ou o escolhido), sem link gera (30 dias), devolve o token.
+  O gatilho `approvals_roteiro` leva a decisão do cliente ao roteiro (`aprovado`/`ajuste`) e audita `roteiro.decisao`.
+  No `/a`, `link_abrir` traz o `conteudo` congelado e `paraTela` troca por `roteiroDoCliente` (vista Literário, sem
+  nota, plano, observação, dica, ids de pessoa nem `((…))`) antes de ir à tela; `comentarios.bloco_id` só em versão de
+  roteiro e só em bloco que o cliente vê (`maestro.roteiro_bloco_do_cliente`: fala, ação, lettering, áudio), sem tempo
+  nem pino. O player nunca recebe versão de roteiro (o lote da equipe mostra "Abrir no editor"; a ficha do card abre o
+  editor). Editor: `?cliente=1` (comentários por bloco e versão + decisões, poll 20 s), `op: "resolver"` (quem edita).
+  Testes: `tests/roteiro-cliente.test.mts`, `e2e/criacao-cliente.spec.ts` (`SHOTS_DIR` guarda `f7-*`).
 - **App na Tela de Início (PWA)**: `src/app/manifest.ts` (`/manifest.webmanifest`: Maestro, `start_url` `/app`, `scope`
   `/`, standalone, cores do claro), ícones em `public/pwa/` gerados do `src/app/icon.svg` por `scripts/icones-pwa.mjs`
   (nunca desenhar outro), `apple-icon.png` (180 px), `appleWebApp` + `apple-mobile-web-app-capable` no layout, barra de
@@ -474,7 +489,7 @@ contra o código do próprio app, modelos só com dica, documento antigo, junç�
 (`roteiro-editor.test.mts`), a rota do editor (Origin, papéis, poll, 409 com o atual e a junção, versões, restaurar;
 `criacao-rota.test.mts`; também o envio anotado e o AEON pelo gate), as saídas (`maestro.roteiro/1` contra o schema
 publicado com o conferidor `tests/esquema-json.mts`, TPeasy pelo código do próprio app, AEON escondido;
-`roteiro-saidas.test.mts`), o fluxo puro (link, operações, exportação, cota, imagem; `fluxo.test.mts`), fluxos no banco
+`roteiro-saidas.test.mts`), o roteiro com o cliente (vista sem nada interno, mandar, `/a` por bloco, ajuste, versão nova, rotas públicas, limite, duas organizações e acesso por cliente; `roteiro-cliente.test.mts`), o fluxo puro (link, operações, exportação, cota, imagem; `fluxo.test.mts`), fluxos no banco
 (duas organizações, papéis, rev por nó, o que mudou, referências "sem acesso", porta da imagem, cota, limpeza;
 `fluxo-rls.test.mts`) e as rotas do fluxo e da imagem (`fluxo-rota.test.mts`), o link e a exportação do Fluxo
 (`links-fluxo.test.mts`), "Gerar versões com o Relay" (cópia e tipos dos presets, folha e grupos, ponte com HUB e

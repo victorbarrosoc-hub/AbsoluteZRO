@@ -19,7 +19,8 @@ do SOBEDESCE. Arquitetura em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md); o sit
   conferência, a tela diz que não conferiu.
 - **Nunca grava por cima nem apaga mídia** sem a pessoa pedir; arquivo pela metade usa `.sobedesce-parcial`.
 - **Integração com a família só pelo que existe:** `descargas.jsonl` (Synquei e HUB), `synquei://organizar` (Abrir no
-  Synquei), comprovante `sobedesce.entrega/1` (entrega conferida → HUB). Mudou o formato, mude o leitor do outro lado
+  Synquei), comprovante `sobedesce.entrega/1` (entrega conferida → HUB), `sobedesce://relay` e `sobedesce://looks`
+  (Looks do Relay: abre o Comparar com a pasta dos looks e a do Drive; o link nunca traz caminho). Mudou o formato, mude o leitor do outro lado
   e o teste dos dois (`products/synquei`, `packages/integrations`).
 - Número de velocidade na página ou no anúncio só com medição (`scripts/prova-velocidade.mjs`, docs/PROVA-VELOCIDADE.md).
 - Conta nova só pela Absolute ZRO (`prompt=create`); o Google é só a conexão do Drive.

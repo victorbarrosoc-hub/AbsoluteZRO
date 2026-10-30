@@ -89,6 +89,22 @@
           </div>
         </section>
 
+        <!-- looks (.cube) da cor da Revela: no aparelho, numa pasta e no Drive pelo SOBEDESCE (só com RECURSOS.revela) -->
+        <section class="bloco" aria-labelledby="t-looks" id="bloco-looks" hidden>
+          <div class="bloco-cabeca">
+            <h2 id="t-looks">Looks</h2>
+            <a class="vidro" id="looks-sobedesce" href="sobedesce://looks" title="Abre o SOBEDESCE comparando a pasta dos looks com o Drive"><i data-icone="pasta"></i>Drive pelo SOBEDESCE</a>
+          </div>
+          <ul class="meus" id="looks"></ul>
+          <p class="apoio vazio-linha" id="looks-vazio" hidden>Carregue um .cube no editor de preset, em Cor.</p>
+          <div class="looks-pasta" id="looks-pasta">
+            <span class="ficha" id="looks-nome-pasta" hidden></span>
+            <button class="vidro" type="button" id="looks-escolher"><i data-icone="pasta"></i>Escolher a pasta</button>
+            <button class="vidro vidro--tinta" type="button" id="looks-sincronizar" hidden>Sincronizar com a pasta</button>
+          </div>
+          <p class="apoio vazio-linha" id="looks-aviso" role="status"></p>
+        </section>
+
         <footer class="painel-pe">
           <span><i data-icone="cadeado"></i><span id="onde">Fica neste aparelho.</span></span>
           <button type="button" class="link" id="limpar" hidden>Limpar histórico</button>

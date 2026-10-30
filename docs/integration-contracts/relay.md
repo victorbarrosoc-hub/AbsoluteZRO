@@ -172,6 +172,13 @@ entradaNome, tom: 'suave' | 'nenhum', look: { id, nome } | null }`. Saída sempr
   os looks dela (`src/cor/meuslooks.js`, "Meus looks") entram nessa lista pela conta Absolute ZRO; a Revela expõe
   `GET /api/zro/looks` (lista: id, nome, pontos) e `GET /api/zro/looks/:id` (o `.cube`), com `authorize()` no produto
   `finishing`. O Relay chama com a sessão da conta e guarda no aparelho.
+- **Looks no Drive pelo SOBEDESCE** (pedido do titular, 30/10/2026; os looks não vão para o banco do Relay): no
+  painel, "Escolher a pasta" (Chrome e Edge no computador, `app/pasta-looks.js`) e o Relay leva para ela os `.cube` que
+  só estão no aparelho e traz os que só estão nela; nunca grava por cima nem apaga (mesmo nome, conteúdo diferente: fica
+  e avisa). "Drive pelo SOBEDESCE" abre `sobedesce://looks` (`?trocar=1` escolhe as pastas de novo): o app abre o
+  Comparar com a pasta dos looks e a do Drive, escolhidas uma vez, e a pessoa sobe o que falta e baixa o que só está no
+  Drive. O link não leva caminho nenhum (`products/sobedesce/desktop/links.js`). No outro computador, o SOBEDESCE baixa
+  a pasta e o Relay traz os looks dela. Nenhum byte passa por servidor.
 - **Ligar:** `products/relay/app/recursos.js` (`RECURSOS.revela`). Nas prévias da Vercel e no `npm run dev` já liga;
   na produção, `REVELA=released` no projeto Vercel `relay` + deploy novo (decisão do titular, quando a Revela abrir).
 - **Em lote:** o conversor já leva vários arquivos para vários destinos; um preset com a receita converte todos.
@@ -190,7 +197,8 @@ entradaNome, tom: 'suave' | 'nenhum', look: { id, nome } | null }`. Saída sempr
   repetir), projetos (nome, destinos, `equipe`) e presets (a ficha de `src/personalizado.js`, `equipe`). A equipe é a
   organização ativa no login: vê e usa o que foi liberado, nunca muda nem vê o histórico de outra pessoa. O app de
   computador do Relay e o SOBEDESCE gravam no mesmo formato (`origem`: `computador` ou `sobedesce`), com o token da
-  conta, quando ganharem login (rota com Bearer a fazer). Os looks (`.cube`) ficam no aparelho.
+  conta, quando ganharem login (rota com Bearer a fazer). Os looks (`.cube`) ficam no aparelho e vão ao Drive pela
+  pasta + SOBEDESCE (seção "Cor da Revela").
 - **Banco:** schema e papel próprios (`relay`) no Supabase `AbsoluteZRO`, nunca dentro de `zro` (ADR 0013).
 
 ## Presets (fonte: `products/relay/src/presets.js`)
