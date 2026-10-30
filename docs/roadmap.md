@@ -856,6 +856,12 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
   "Escuta ao vivo indisponível: usando transcrição por frase", custo e teto valendo. O log diz o código da recusa.
 - ✅ Modo voz no iPhone (30/10/2026): nada passa da largura em 375/393/430 px e deitado (coluna `minmax(0, 1fr)`,
   topo em duas linhas, seletor a 16 px sem zoom do Safari, anel e tempos que encolhem); e2e no Chromium e no WebKit.
+- ✅ Aprender conversando (30/10/2026): no Testar (rascunho), o titular corrige a Z por voz ou texto ("não fala tão
+  formal", "a produtora se chama…") e ela propõe pela ferramenta `propor_aprendizado`; o cartão "Aprender · Guardar ·
+  Ajustar · Ignorar" pede a confirmação (toque, ou "pode guardar" dito, decidido no servidor). O guardado vai para a
+  seção `aprendizados` do rascunho e o próximo turno já usa; a versão numerada congela, os clientes só depois de
+  publicar. Trava de segurança, repetidos, contradições, limites, auditoria e Configurar › Aprendizados (editar, mover
+  de seção, remover, com a frase de origem). Sem migração: o rascunho e as versões imutáveis já tinham RLS.
 - ⬜ Para os clientes: voz, ditado e anexos no painel `<zro-ia>` lendo `z_recurso_liberado`, quando os planos forem
   vendidos.
 
