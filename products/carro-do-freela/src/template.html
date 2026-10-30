@@ -5997,8 +5997,9 @@ html.real .homenav .hn-criar{background:linear-gradient(180deg,rgba(255,255,255,
 /* a logo do Carro é o selo (anel, as três barras e o carrinho), no topo, no hero e na entrada; as barras soltas
    saem de onde o selo está (titular, 30/out · 6) */
 html.real .homenav .brand .mk-marca,html.real #v-entrar .lgn-logo>svg{display:none}
-html.real .hprod .hp-texto .zselo{display:block;margin:0 auto 26px}
-@media(max-width:720px){html.real .hprod .hp-texto .zselo{--t:76px!important;margin-bottom:18px}}
+/* no computador a logo fica só no topo; no celular ela abre o hero (titular, 30/out · 6) */
+html.real .hprod .hp-texto .zselo{display:none!important}
+@media(max-width:720px){html.real .hprod .hp-texto .zselo{display:block!important;--t:76px!important;margin:0 auto 18px}}
 /* os botões da home e da entrada viram o vidro da família: a ação principal em vidro claro */
 html.real :is(#v-home,#v-entrar) .btn.entrar-cta:not(.gh),html.real #v-entrar .lgn-ok{background:linear-gradient(180deg,rgba(255,255,255,.6),rgba(255,255,255,0) 50%),rgba(245,245,247,.94);
   color:#1D1D1F;border:0;border-radius:999px;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 0 0 1px rgba(0,0,0,.25),0 10px 28px rgba(0,0,0,.35)}

@@ -92,10 +92,10 @@ const RAIZ = path.resolve(__dirname, '..');
       degrade: hl ? getComputedStyle(hl).backgroundImage : '', degradeEntrar: em ? getComputedStyle(em).backgroundImage : '' };
   });
   t(m.classe && m.grafite === '#0e0e10', 'o escuro é o grafite fosco do ecossistema (#0e0e10), nunca preto 100% (' + m.grafite + ')');
-  m.selo = await p.evaluate(() => [...document.querySelectorAll('.homenav .zselo, .hprod .zselo')].map(e => {
-    const r = e.getBoundingClientRect(), anel = e.querySelector('.zselo-anel');
-    return r.width > 20 && !!anel && getComputedStyle(anel).backgroundImage.includes('conic') }));
-  t(m.selo.length === 2 && m.selo.every(Boolean), '⟶⟶ a logo do Carro é o selo (anel colorido, barras e carrinho) no topo e no hero, desenhado de verdade');
+  m.selo = await p.evaluate(() => { const ok = e => { const r = e && e.getBoundingClientRect(), anel = e && e.querySelector('.zselo-anel');
+    return !!e && r.width > 20 && !!anel && getComputedStyle(anel).backgroundImage.includes('conic') };
+    return { topo: ok(document.querySelector('.homenav .zselo')), hero: innerWidth > 720 ? !document.querySelector('.hprod .zselo').getBoundingClientRect().width : ok(document.querySelector('.hprod .zselo')) } });
+  t(m.selo.topo && m.selo.hero, '⟶⟶ a logo do Carro é o selo (anel colorido, barras e carrinho) desenhado de verdade no topo; no computador, não no centro');
   t(m.degrade === 'none' && m.degradeEntrar === 'none', 'o título é fino × pesado, sem texto em degradê (topo e entrada)');
 
   m = await p.evaluate(() => { const antes = typeof ASSINANTE !== 'undefined' && ASSINANTE; abrirAssinatura('volante');
