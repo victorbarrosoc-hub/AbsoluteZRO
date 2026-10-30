@@ -631,7 +631,8 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   estão no ecossistema"): o domínio serve só o site real (`build.js --real`, fase 1, sem os 109 fictícios e sem nada
   semeado); a busca vem de `/api/zro/pessoas` (HUB `zro.comunidade_perfis`, migração `0038`: perfil visível e @
   confirmado) e só traz quem marcou "Mostrar meu perfil para quem contrata" no Carro; a agenda do freela mora no banco
-  (`carro_do_freela.agenda_dias`, `/api/zro/agenda`). Falta: a home do produto real, propostas e chamadas no banco, a
+  (`carro_do_freela.agenda_dias`, `/api/zro/agenda`). Visual: linha B "Natal à noite" (escuro fosco por padrão, o
+  símbolo de sempre, foto de Natal na home e na entrada). Falta: propostas e chamadas no banco, a
   revisão de dinheiro e garantias (sai Take e Pedágio) e os planos do ecossistema (ver a agenda pago).
 - ⛔ Em produção: migrações `0029` (HUB) e `0022` (Maestro) no deploy; o Maestro passa a pedir `zro.pessoas` (HUB sem a
   0029 cai em `nivel=sem_pessoas`, sem quebrar o login).
