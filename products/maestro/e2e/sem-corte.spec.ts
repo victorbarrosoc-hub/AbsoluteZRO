@@ -154,6 +154,8 @@ async function telas(): Promise<Tela[]> {
   ficha("contrato", i.contrato, (x) => `/app/contratos/${x}`);
   for (const v of ["literario", "tecnico", "teleprompter", "edicao"]) ficha(`roteiro-${v}`, i.roteiro, (x) => `/app/criacao/roteiros/${x}?vista=${v}`);
   ficha("roteiro-imprimir", i.roteiro, (x) => `/app/criacao/roteiros/${x}/imprimir?vista=tecnico`);
+  // o "PDF para a edição" de uma versão salva (a demonstração tem a v1)
+  ficha("roteiro-imprimir-edicao", i.roteiro, (x) => `/app/criacao/roteiros/${x}/imprimir?vista=edicao&versao=1`);
   ficha("freela", i.freela, (x) => `/app/freelas/${x}`);
   ficha("freela-editar", i.freela, (x) => `/app/freelas/${x}/editar`);
   ficha("equipamento", i.equipamento, (x) => `/app/inventario/${x}`);

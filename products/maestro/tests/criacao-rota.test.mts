@@ -1,6 +1,7 @@
 // Criação · a rota do editor do Roteiro (/api/criacao/roteiros/<id>, fase F2): sessão e Origin, papéis (leitura só lê;
 // estado só administração e gestão), o poll pelo `rev`, a gravação com `rev` e o 409 que traz o atual (e a tela junta
 // por id e grava de novo), versões (salvar, listar, ler) e restaurar, ligar e lixeira; outra organização não vê nada.
+// F3: "enviado" anota na auditoria o que saiu de qual versão (só administração e gestão; o AEON só com o gate aberto).
 import assert from "node:assert/strict";
 import { after, before, describe, test } from "node:test";
 import { cookiesDe, pedido, prepararAmbiente, SITE, UUID } from "./ambiente.mts";
@@ -20,6 +21,8 @@ const ANA: PessoaZro = { sub: UUID(), email: "ana@a.exemplo", nome: "Ana", org: 
 const EDU: PessoaZro = { sub: UUID(), email: "edu@a.exemplo", nome: "Edu", org: { ...ORG_A, role: "editor" }, produtos: ["maestro"] };
 const LEO: PessoaZro = { sub: UUID(), email: "leo@a.exemplo", nome: "Leo", org: { ...ORG_A, role: "viewer" }, produtos: ["maestro"] };
 const BIA: PessoaZro = { sub: UUID(), email: "bia@b.exemplo", nome: "Bia", org: ORG_B, produtos: ["maestro"] };
+// A mesma Ana com o AEON aberto para ela (a claim do gate e o produto no plano).
+const ANA_AEON: PessoaZro = { ...ANA, produtos: ["maestro", "ai-edit"], release: { maestro: "released", "ai-edit": "allowed" } };
 
 after(() => amb.fechar());
 
@@ -43,7 +46,7 @@ const gravar = async (s: string | undefined, id: string, corpo: Corpo, origin?: 
   return { status: r.status, d: (await r.json()) as Json };
 };
 
-let ana: string, edu: string, leo: string, bia: string;
+let ana: string, edu: string, leo: string, bia: string, anaAeon: string;
 let id: string;
 
 before(async () => {
@@ -51,6 +54,7 @@ before(async () => {
   edu = await entrar(EDU);
   leo = await entrar(LEO);
   bia = await entrar(BIA);
+  anaAeon = await entrar(ANA_AEON);
   const [o] = await amb.banco.getBanco().sql`select id from maestro.organizations where zro_org_id = ${ORG_A.id}`;
   const r = await criarRoteiro({ sub: ANA.sub, orgId: o.id }, { titulo: "Institucional", modelo: "institucional" });
   assert.ok(r.ok);
@@ -149,5 +153,38 @@ describe("rota do Roteiro", () => {
     assert.equal((await ler(ana, id)).status, 404);
     assert.equal((await gravar(ana, id, { op: "lixeira", apagar: false })).status, 200);
     assert.equal((await ler(ana, id)).status, 200);
+  });
+
+  test("enviado: só de versão salva, só administração e gestão, anotado com o sha256; AEON só com o gate aberto", async () => {
+    const corpo = { op: "enviado", n: 1, destino: "tpeasy", formato: "backup", pessoa: "p1" };
+    assert.equal((await gravar(edu, id, corpo)).status, 403, "equipe não envia");
+    assert.equal((await gravar(leo, id, corpo)).status, 403, "leitura não envia");
+    assert.equal((await gravar(ana, id, corpo, "https://outro.exemplo")).status, 403, "Origin conferida");
+    assert.equal((await gravar(ana, id, { ...corpo, n: 99 })).status, 404, "versão que não existe");
+    assert.equal((await gravar(ana, id, { ...corpo, destino: "tpeasy", formato: "json" })).status, 400, "formato fora do destino");
+    assert.equal((await gravar(ana, id, { ...corpo, destino: "email", formato: "pdf" })).status, 400);
+    assert.equal((await gravar(bia, id, corpo)).status, 404, "outra organização");
+    const ok = await gravar(ana, id, corpo);
+    assert.equal(ok.status, 200);
+    const v1 = (await ler(ana, id, "?versao=1")).d.versao;
+    assert.equal(ok.d.sha256, v1.sha256);
+    assert.equal((await gravar(ana, id, { op: "enviado", n: 1, destino: "edicao", formato: "pdf" })).status, 200);
+    // o AEON está fechado para a Ana (sem a claim): a rota recusa mesmo que a tela mande
+    assert.equal((await gravar(ana, id, { op: "enviado", n: 1, destino: "aeon", formato: "json" })).status, 403);
+    assert.equal((await gravar(anaAeon, id, { op: "enviado", n: 1, destino: "aeon", formato: "json" })).status, 200);
+    const envios = (await ler(ana, id, "?envios=1")).d.envios;
+    assert.deepEqual(
+      envios.map((e: Json) => [e.destino, e.formato, e.n, e.pessoa]),
+      [
+        ["aeon", "json", 1, null],
+        ["edicao", "pdf", 1, null],
+        ["tpeasy", "backup", 1, "p1"],
+      ],
+    );
+    assert.deepEqual((await ler(edu, id, "?envios=1")).d.envios, [], "a auditoria é de administração e gestão");
+    const [linha] = await amb.banco.getBanco().sql`
+      select actor_sub::text as quem, metadata from maestro.audit_log where action = 'roteiro.enviado' and target_id = ${id} order by created_at limit 1`;
+    assert.equal(linha.quem, ANA.sub);
+    assert.equal(linha.metadata.sha256, v1.sha256);
   });
 });

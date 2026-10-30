@@ -5,25 +5,30 @@
  *
  * GET  ?rev=N          o poll de 5 s: `{ mudou: false, rev, estado, versaoAtual }` ou `{ mudou: true, roteiro }`
  * GET  ?versoes=1      as versões salvas
- * GET  ?versao=n       uma versão com o conteúdo (comparar)
+ * GET  ?versao=n       uma versão com o conteúdo (comparar e enviar)
+ * GET  ?envios=1       os últimos envios (só administração e gestão)
  * POST { op: "salvar", rev, conteudo?, titulo? }   autosave com `rev`; 409 `conflito` traz o atual para juntar
  * POST { op: "versao", nota? }                     "Salvar versão" (congela o que está gravado)
  * POST { op: "restaurar", n, rev }                 o rascunho volta à versão n
  * POST { op: "ligar", projetoId, cardId }          liga a projeto e/ou card (null desliga)
  * POST { op: "estado", estado }                    só administração e gestão
  * POST { op: "lixeira", apagar }                   manda para a lixeira ou tira dela
+ * POST { op: "enviado", n, destino, formato, pessoa? }  anota o que saiu de qual versão (admin e gestão; AEON só aberto)
  */
 import { exigirAcesso } from "@/lib/auth/requisicao";
 import { erro, json, lerJson, origemConfere } from "@/lib/http";
 import { origensDoSite } from "@/lib/site";
-import { podeEditarCriacao, podeEnviarCriacao } from "../permissoes";
+import { podeEditarCriacao, podeEnviarCriacao, podeMandarParaAeon } from "../permissoes";
+import { ehSaida, type FormatoSaida } from "./saidas";
 import {
   type EstadoRoteiro,
   ligarRoteiro,
+  listarEnvios,
   listarVersoes,
   lixeiraRoteiro,
   mudarEstadoRoteiro,
   obterRoteiro,
+  registrarEnvio,
   obterVersao,
   restaurarVersao,
   salvarRoteiro,
@@ -44,6 +49,7 @@ export async function getRoteiro(req: Request, id: string): Promise<Response> {
   const ctx = { sub: s.sub, orgId: s.orgId };
   const q = new URL(req.url).searchParams;
   if (q.has("versoes")) return json({ versoes: await listarVersoes(ctx, id) });
+  if (q.has("envios")) return json({ envios: podeEnviarCriacao(s.papel) ? await listarEnvios(ctx, id) : [] });
   if (q.has("versao")) {
     const v = await obterVersao(ctx, id, Number(q.get("versao")));
     return v ? json({ versao: v }) : erro(404, "nao_existe", "Essa versão não existe.");
@@ -66,6 +72,18 @@ export async function postRoteiro(req: Request, id: string): Promise<Response> {
     if (!podeEnviarCriacao(s.papel)) return erro(403, "sem_permissao", "Só administração e gestão mudam o estado do roteiro.");
     const r = await mudarEstadoRoteiro(ctx, id, corpo.estado as EstadoRoteiro);
     return r.ok ? json({ ok: true }) : responder(r);
+  }
+  if (corpo.op === "enviado") {
+    if (!podeEnviarCriacao(s.papel)) return erro(403, "sem_permissao", "Só administração e gestão enviam o roteiro.");
+    if (!ehSaida(corpo.destino, corpo.formato)) return erro(400, "formato", "Destino desconhecido.");
+    if (corpo.destino === "aeon" && !podeMandarParaAeon(s)) return erro(403, "sem_permissao", "O AEON ainda não está aberto para a sua conta.");
+    const r = await registrarEnvio(ctx, id, {
+      n: Number(corpo.n),
+      destino: corpo.destino,
+      formato: corpo.formato as FormatoSaida,
+      pessoa: typeof corpo.pessoa === "string" ? corpo.pessoa : null,
+    });
+    return r.ok ? json({ ok: true, sha256: r.sha256 }) : responder(r);
   }
   if (!podeEditarCriacao(s.papel)) return erro(403, "sem_permissao", "Seu papel nesta organização só lê.");
   switch (corpo.op) {

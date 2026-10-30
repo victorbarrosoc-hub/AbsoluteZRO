@@ -13,11 +13,26 @@
  * editar e enviar = a área mais o papel de hoje) e as políticas do banco pela equivalente (`maestro.pode(org_id,
  * 'criacao')` numa política `roteiros_area`), numa migração nova. Quem chama continua chamando estas três.
  */
+import { type Acesso, temProduto } from "@/lib/auth/acesso";
 import { type Papel, podeEscrever } from "@/lib/papeis";
 
 export const podeVerCriacao = (_papel: Papel): boolean => true;
 export const podeEditarCriacao = (papel: Papel): boolean => podeEscrever(papel);
 export const podeEnviarCriacao = (papel: Papel): boolean => papel === "admin" || papel === "gestor";
+
+/** Id do AEON (edição) em zro_products e zro_release. */
+export const PRODUTO_AEON = "ai-edit";
+
+/**
+ * "Para o AEON" (o arquivo `maestro.roteiro/1`) só aparece quando o AEON está ABERTO para a pessoa: a claim
+ * `zro_release["ai-edit"]` diz "released" ou "allowed" (sem a claim = fechado, como as listas da família) e a
+ * organização tem o produto. Hoje o AEON está em desenvolvimento (gate fechado): ninguém vê. Quando o HUB abrir, a
+ * opção aparece sozinha no próximo login ou releitura do perfil. Mais o papel de quem envia (admin e gestão).
+ */
+export function podeMandarParaAeon(s: Acesso & { papel: Papel }): boolean {
+  const r = s.release?.[PRODUTO_AEON];
+  return podeEnviarCriacao(s.papel) && (r === "released" || r === "allowed") && temProduto(s, PRODUTO_AEON);
+}
 
 /** Os papéis do banco (mesma regra), para as políticas e os testes. */
 export const PAPEIS_EDITAR_CRIACAO: readonly Papel[] = ["admin", "gestor", "equipe"];

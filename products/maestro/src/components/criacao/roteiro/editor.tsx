@@ -1,8 +1,9 @@
 "use client";
 /**
  * O editor do Roteiro (plano da Criação §4.3, fase F2): título, selo do estado, medidor de tempo contra o alvo, o
- * seletor de vistas (Literário · Técnico · Teleprompter · Edição, todas do mesmo documento) e uma ação principal,
- * "Salvar versão". Grava sozinho (`useGravacao`: 600 ms, `rev`, junção no conflito, poll de 5 s). No iPhone: uma cena por
+ * seletor de vistas (Literário · Técnico · Teleprompter · Edição, todas do mesmo documento) e uma ação principal:
+ * "Enviar" para administração e gestão (TPeasy, PDF para a edição, PDF; sempre de uma versão salva, `enviar.tsx`) e
+ * "Salvar versão" para o resto da equipe (e ao lado do Enviar). Grava sozinho (`useGravacao`: 600 ms, `rev`, junção no conflito, poll de 5 s). No iPhone: uma cena por
  * vez, o "+" abre os tipos em ícones grandes, segurar 280 ms arrasta; a prévia do Teleprompter lê bem no preto.
  * Trocar de vista é um cross-fade curto (nada com "reduzir movimento").
  */
@@ -23,6 +24,7 @@ import { FolhaAjustes } from "./ajustes";
 import { STATUS_DO_ESTADO, textoAlvo } from "./comum";
 import { Contexto, type EditorCtx, type Foco, ICONE_TIPO, type Operacoes } from "./contexto";
 import { useGravacao } from "./gravacao";
+import { type DestinoEnvio, FolhaEnviar, FolhaMenuEnviar, MenuEnviar } from "./enviar";
 import { ListaEdicao, PreviaTeleprompter } from "./leitura";
 import { VistaLiterarioEditor } from "./literario";
 import type { OpcoesVinculo } from "./novo";
@@ -35,6 +37,10 @@ type Props = {
   opcoes: OpcoesVinculo;
   editavel: boolean;
   podeEstado: boolean;
+  /** Administração e gestão: "Enviar" (podeEnviarCriacao). */
+  podeEnviar: boolean;
+  /** O AEON está aberto para a pessoa (podeMandarParaAeon): só então a opção aparece. */
+  aeon: boolean;
   vistaInicial: Vista;
   eu: string;
   nomes: Record<string, string>;
@@ -148,7 +154,7 @@ function FolhaConflitos({
   );
 }
 
-export function EditorRoteiro({ inicial, versoes, opcoes, editavel, podeEstado, vistaInicial, nomes }: Props) {
+export function EditorRoteiro({ inicial, versoes, opcoes, editavel, podeEstado, podeEnviar, aeon, vistaInicial, nomes }: Props) {
   const router = useRouter();
   const url = `/api/criacao/roteiros/${inicial.id}`;
   const g = useGravacao(inicial.id, inicial, editavel);
@@ -157,7 +163,8 @@ export function EditorRoteiro({ inicial, versoes, opcoes, editavel, podeEstado, 
   const [cena, setCena] = useState(0);
   const [pessoaTp, setPessoaTp] = useState<string | null>(null);
   const [ocultar, setOcultar] = useState<ColunaTecnico[]>([]);
-  const [folha, setFolha] = useState<null | "versoes" | "ajustes" | "adicionar" | "conflitos">(null);
+  const [folha, setFolha] = useState<null | "versoes" | "ajustes" | "adicionar" | "conflitos" | "menu">(null);
+  const [envio, setEnvio] = useState<DestinoEnvio | null>(null);
   const [lista, setLista] = useState(versoes);
   const [vinculo, setVinculo] = useState({ projetoId: inicial.projetoId, cardId: inicial.cardId, projeto: inicial.projeto, card: inicial.card });
   const foco = useRef<Foco | null>(null);
@@ -272,7 +279,7 @@ export function EditorRoteiro({ inicial, versoes, opcoes, editavel, podeEstado, 
 
   const imprimir = async () => {
     await g.gravar();
-    const v = vista === "edicao" ? "tecnico" : vista;
+    const v = vista;
     const q = new URLSearchParams({ vista: v });
     if (v === "teleprompter" && pessoaTp) q.set("pessoa", pessoaTp);
     if (v === "tecnico" && ocultar.length) q.set("ocultar", ocultar.join(","));
@@ -290,6 +297,11 @@ export function EditorRoteiro({ inicial, versoes, opcoes, editavel, podeEstado, 
             <Icone nome="voltar" size={16} /> Criação
           </Link>
           <span className="cr-topo__acoes">
+            {podeEnviar ? (
+              <button type="button" className="glass-btn glass-btn--icone glass-btn--ink cr-so-celular" onClick={() => setFolha("menu")} aria-label="Enviar">
+                <Icone nome="compartilhar" size={18} />
+              </button>
+            ) : null}
             <button
               type="button"
               className="glass-btn glass-btn--icone cr-so-celular"
@@ -364,7 +376,8 @@ export function EditorRoteiro({ inicial, versoes, opcoes, editavel, podeEstado, 
               ))}
             </div>
             <div className="acoes cr-cabeca__acoes">
-              <button type="button" className="glass-btn glass-btn--ink" onClick={() => setFolha("versoes")}>
+              {podeEnviar ? <MenuEnviar aeon={aeon} escolher={setEnvio} salvarVersao={() => setFolha("versoes")} /> : null}
+              <button type="button" className={`glass-btn${podeEnviar ? "" : " glass-btn--ink"}`} onClick={() => setFolha("versoes")}>
                 <Icone nome="versoes" size={17} /> {editavel ? "Salvar versão" : "Versões"}
               </button>
               <button
@@ -438,6 +451,30 @@ export function EditorRoteiro({ inicial, versoes, opcoes, editavel, podeEstado, 
             aoSalvar={(n) => g.setMeta((x) => ({ ...x, versaoAtual: n }))}
             nomes={nomes}
             aoFechar={() => setFolha(null)}
+          />
+        ) : null}
+        {folha === "menu" ? (
+          <FolhaMenuEnviar
+            aeon={aeon}
+            escolher={setEnvio}
+            salvarVersao={() => setFolha("versoes")}
+            aoFechar={() => setFolha((f) => (f === "menu" ? null : f))}
+          />
+        ) : null}
+        {envio ? (
+          <FolhaEnviar
+            key={envio}
+            destino={envio}
+            url={url}
+            roteiroId={inicial.id}
+            roteiro={roteiro}
+            titulo={g.titulo}
+            versoes={lista}
+            setVersoes={setLista}
+            antes={() => g.gravar()}
+            aoSalvar={(n) => g.setMeta((x) => ({ ...x, versaoAtual: n }))}
+            pessoa={pessoaTp}
+            aoFechar={() => setEnvio(null)}
           />
         ) : null}
         {folha === "ajustes" ? (

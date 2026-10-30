@@ -2585,6 +2585,28 @@ Rodado num Postgres local próprio (porta separada, `TEST_DATABASE_URL`, `E2E_PO
 não disputar os bancos `maestro_test_*` com outras frentes. Não validado: Safari de um iPhone de verdade (o arrastar
 foi conferido com toque sintético; `field-sizing` não existe no WebKit e os campos curtos usam a largura fixa).
 
+## Maestro · Criação: saídas do Roteiro (F3, 30/10/2026)
+
+"Enviar ▾" (TPeasy, PDF para a edição, PDF; Cliente desligado até a F7), sempre de uma versão salva, com auditoria;
+contrato `maestro.roteiro/1` (a opção do arquivo só com o AEON aberto pelo gate: hoje ninguém vê); bloco "Criação" na
+ficha do card. Sem migração nova.
+
+| Verificação                                                                                       | Comando                                                           | Resultado                       |
+| ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------- |
+| Saídas puras: contrato contra o schema publicado e o exemplo, TPeasy pelo código do app, AEON     | `cd products/maestro && npx tsx --test tests/roteiro-saidas.test.mts` | **12/12**                       |
+| Rota: envio só de versão salva, papéis, Origin, sha256 na auditoria, AEON só com o gate aberto    | `npx tsx --test tests/criacao-rota.test.mts`                      | **8/8**                         |
+| Contrato (zod) aceita o arquivo do Maestro e recusa dado pessoal, nota, id repetido, fora do elenco | `npx vitest run packages/media-contracts`                          | **7/7** (com a deriva do schema) |
+| Maestro inteiro                                                                                   | `npm run lint`, `format:check`, `typecheck`, `npm test`, `build`  | ok · ok · ok · **451/451** · ok |
+| E2E do Enviar (computador e iPhone)                                                               | `npx playwright test e2e/criacao-enviar.spec.ts`                  | **5/5**                         |
+| E2E inteiro                                                                                       | `npm run test:e2e`                                                | E2E_RESULTADO                   |
+| Raiz                                                                                              | `npm run lint`, `format:check`, `typecheck`, `npm test`           | ok · ok · ok · **349/349**      |
+| Segredos                                                                                          | `node scripts/scan-secrets.mjs`                                   | nenhum                          |
+
+Bancos próprios desta cópia (`TEST_DB_SUFIXO`, `E2E_DB_SUFIXO`, `TEST_DATABASE_URL=…/zro_f3_test`) e portas separadas.
+Não validado: a folha de compartilhar de um iPhone de verdade (o Chromium do e2e não tem `navigator.share`; Copiar,
+`.txt` e o backup foram conferidos) e o "Restaurar backup" no TPeasy instalado (o `importAll` do próprio app foi
+rodado no teste).
+
 ## SOBEDESCE: Atualizações quando o Absolute ZRO cuida do app (29/10/2026)
 
 - Relato do titular: o app no build 1034 dizia "Você está na versão mais nova" com o 1042 publicado. Instalado pela

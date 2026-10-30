@@ -24,6 +24,7 @@
 | `zro.agenda` (Conexões)          | v1 ([agenda.md](agenda.md))                                        | Apps → HUB → Google Agenda da pessoa (Maestro primeiro)         |
 | `zro.pessoas` (perfil com @)     | v1 ([pessoas.md](pessoas.md))                                      | Apps → HUB: busca de perfis, @ e convite (Maestro primeiro)     |
 | `relay` (conversão e exportação) | v1 ([relay.md](relay.md)), no SOBEDESCE                            | Apps → Relay: núcleo embutido, link ou pedido ao computador     |
+| `maestro.roteiro`                | v1 ([maestro-roteiro.md](maestro-roteiro.md)), arquivo             | Maestro → edição (AEON na F8b); TPeasy por texto e backup       |
 
 Regras: payload mínimo (IDs e resumos, sem mídia nem dados pessoais), `idempotency_key` obrigatória, mudança
 incompatível = nova versão.

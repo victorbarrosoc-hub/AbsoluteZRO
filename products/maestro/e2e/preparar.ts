@@ -28,8 +28,10 @@ export default async function preparar() {
   admin.pathname = "/postgres";
   const a = postgres(admin.toString(), { max: 1, onnotice: () => {} });
   try {
-    await a.unsafe("drop database if exists maestro_test_e2e with (force)");
-    await a.unsafe("create database maestro_test_e2e");
+    const nome = alvo.pathname.slice(1);
+    if (!/^maestro_test_e2e[a-z0-9_]*$/.test(nome)) throw new Error(`Banco do e2e inesperado: ${nome}`);
+    await a.unsafe(`drop database if exists ${nome} with (force)`);
+    await a.unsafe(`create database ${nome}`);
   } finally {
     await a.end();
   }

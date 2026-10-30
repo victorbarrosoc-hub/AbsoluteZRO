@@ -275,6 +275,18 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   dali, nunca de `servidor.ts`). Projeto: seção "Roteiros"; documento `roteiro`/`decupagem` antigo com "Abrir no editor
   novo" (`abrirNoEditorNovoAcao`); os chips de Documentos não criam mais esses dois tipos. Demonstração: o roteiro
   institucional com a v1 (`src/lib/demo/criacao.ts`). CSS em `criacao.css` (prefixo `cr-`).
+- **Criação · saídas do Roteiro** (fase F3; contrato em `docs/integration-contracts/maestro-roteiro.md`): "Enviar ▾"
+  (`components/criacao/roteiro/enviar.tsx`) só para `podeEnviarCriacao`; tudo sai de uma **versão salva** (a folha
+  oferece salvar a próxima quando o rascunho mudou, comparando com `mesmoConteudo`). Saídas puras em
+  `lib/criacao/roteiro/saidas.ts`: `saidaTpeasy` (texto, `.txt` com o título no nome, backup com id estável e `updated` =
+  hora da versão), `paraRoteiroMaestro` (`maestro.roteiro/1`, schema zod em `packages/media-contracts/src/roteiro.ts`;
+  mudou a forma, `npm run contracts:export` na raiz e `ATUALIZAR_EXEMPLOS=1` no `roteiro-saidas.test.mts` para o
+  exemplo em `docs/integration-contracts/exemplos/`). PDF para a edição = folha A4 `?vista=edicao&versao=n`. Cada envio
+  é `POST {op:"enviado"}` → `registrarEnvio` (auditoria `roteiro.enviado` com o sha256 do banco). A opção do AEON (o
+  arquivo) só com `podeMandarParaAeon` (claim `zro_release["ai-edit"]` released/allowed + produto + papel): hoje o AEON
+  está fechado e nada aparece; a rota recusa `aeon` também. "Cliente" no menu fica desligado até a F7. Ficha do card:
+  bloco "Criação" (`components/criacao/roteiro/do-card.tsx`, `roteirosDoCardAcao`). Nome de arquivo com acento só sai
+  do navegador com locale UTF-8 (o `playwright.config.ts` força `C.UTF-8`).
 - **App na Tela de Início (PWA)**: `src/app/manifest.ts` (`/manifest.webmanifest`: Maestro, `start_url` `/app`, `scope`
   `/`, standalone, cores do claro), ícones em `public/pwa/` gerados do `src/app/icon.svg` por `scripts/icones-pwa.mjs`
   (nunca desenhar outro), `apple-icon.png` (180 px), `appleWebApp` + `apple-mobile-web-app-capable` no layout, barra de
@@ -349,7 +361,9 @@ automação pelo papel, arquivar com destino, paleta; `colunas.test.mts`), o rot
 contra o código do próprio app, modelos só com dica, documento antigo, junção; `roteiro.test.mts`), roteiros no banco
 (duas organizações, papéis, rev, versões imutáveis; `criacao-rls.test.mts`), as operações do editor e o comparar
 (`roteiro-editor.test.mts`), a rota do editor (Origin, papéis, poll, 409 com o atual e a junção, versões, restaurar;
-`criacao-rota.test.mts`) o migrador com migração atrasada
+`criacao-rota.test.mts`; também o envio anotado e o AEON pelo gate), as saídas (`maestro.roteiro/1` contra o schema
+publicado com o conferidor `tests/esquema-json.mts`, TPeasy pelo código do próprio app, AEON escondido;
+`roteiro-saidas.test.mts`), o migrador com migração atrasada
 (`migrador.test.mts`) e o lançamento (app de computador só com instalador publicado, manifesto e a chave da vitrine;
 `lancamento.test.mts`). E2E: `npm run build && npm run test:e2e`
 (Playwright, banco `maestro_test_e2e`): página inicial, "Quero acesso", reduzir movimento, navegação, a aprovação
@@ -369,7 +383,10 @@ quadro a quadro) e os gestos do Quadro no celular (`gestos.spec.ts`, Chromium e 
 (`colunas.spec.ts`: renomear no lugar, reordenar, criar e recolorir, arquivar com destino e restaurar, sistema não
 arquiva, equipe não edita; computador e iPhone, organização própria) e a Criação (`criacao-roteiro.spec.ts`: novo pelo
 modelo → teclado → vistas → grava sozinho → recarregar, versão e comparar, folha A4, junção com outra pessoa, documento
-antigo no editor novo, leitura; no iPhone uma cena por vez, "+", segurar para arrastar e o Teleprompter).
+antigo no editor novo, leitura; no iPhone uma cena por vez, "+", segurar para arrastar e o Teleprompter; e
+`criacao-enviar.spec.ts`: salvar a versão antes de enviar, o `.txt` e o backup do TPeasy iguais ao que o modelo gera,
+PDF para a edição, auditoria, AEON escondido e aparecendo com o gate aberto, o bloco do card, leitura sem Enviar;
+`SHOTS_DIR` guarda as capturas). Bancos por cópia do repositório: `TEST_DB_SUFIXO` (testes) e `E2E_DB_SUFIXO` (e2e).
 Movimento (29/10/2026): toda folha usa `Folha` (`src/components/folha.tsx`, portal no `<body>`). **Troca de seção**
 (`src/components/movimento.tsx` + `src/app/motion.css`): a View Transition é chamada por nós, não pelo
 `<ViewTransition>` do React (no Safari do iPhone o par sai/entra do React deixava a tela velha e a nova uma sobre a

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { exigirAcessoNaAcao } from "@/lib/auth/acao";
 import { podeEditarCriacao } from "@/lib/criacao/permissoes";
 import { ehModeloRoteiro, FICHAS_MODELOS } from "@/lib/criacao/roteiro/modelos";
-import { abrirDocumentoAntigo, criarRoteiro } from "@/lib/criacao/roteiro/servidor";
+import { abrirDocumentoAntigo, criarRoteiro, listarRoteiros, type RoteiroLista } from "@/lib/criacao/roteiro/servidor";
 import type { EstadoForm } from "@/components/form";
 
 const SO_LE = "Seu papel nesta organização só lê.";
@@ -40,4 +40,16 @@ export async function abrirNoEditorNovoAcao(_: EstadoForm, fd: FormData): Promis
   if (!r.ok) return { mensagem: r.mensagem };
   revalidatePath("/app/criacao");
   redirect(`/app/criacao/roteiros/${r.id}?vista=${texto(fd, "tipo") === "decupagem" ? "tecnico" : "literario"}`);
+}
+
+/** O bloco "Criação" da ficha do card: os roteiros ligados ao card (como a pessoa, RLS e acesso por cliente). */
+export async function roteirosDoCardAcao(
+  cardId: string,
+): Promise<{ ok: true; roteiros: Pick<RoteiroLista, "id" | "titulo" | "versaoAtual" | "duracaoSeg" | "estado" | "alvo">[] }> {
+  const s = await exigirAcessoNaAcao();
+  const lista = await listarRoteiros({ sub: s.sub, orgId: s.orgId }, { cardId });
+  return {
+    ok: true,
+    roteiros: lista.map((r) => ({ id: r.id, titulo: r.titulo, versaoAtual: r.versaoAtual, duracaoSeg: r.duracaoSeg, estado: r.estado, alvo: r.alvo })),
+  };
 }

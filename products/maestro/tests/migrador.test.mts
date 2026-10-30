@@ -16,7 +16,7 @@ test("migração atrasada (when menor que a última aplicada) roda uma vez; when
   const u = new URL(BASE);
   u.pathname = "/postgres";
   const admin = postgres(u.toString(), { max: 1, onnotice: () => {} });
-  const db = "maestro_test_migrador";
+  const db = `maestro_test_migrador${process.env.TEST_DB_SUFIXO ? `_${process.env.TEST_DB_SUFIXO.replace(/[^a-z0-9_]/g, "").slice(0, 12)}` : ""}`;
   await admin.unsafe(`drop database if exists ${db} with (force)`);
   await admin.unsafe(`create database ${db}`);
   await admin.end();

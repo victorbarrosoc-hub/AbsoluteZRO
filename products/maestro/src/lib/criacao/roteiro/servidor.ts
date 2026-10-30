@@ -14,6 +14,7 @@ import { ehUuid, falha, traduzirPg, type Falha, type Res } from "@/lib/crm/comum
 import { roteiroDoDocumentoAntigo } from "./antigo";
 import { type Alvo, type Formato, lerRoteiro, type Roteiro } from "./modelo";
 import { ehModeloRoteiro, type ModeloRoteiro, roteiroDoModelo } from "./modelos";
+import type { DestinoSaida, FormatoSaida } from "./saidas";
 import { duracaoDoRoteiro } from "./tempo";
 
 import { ESTADOS_ROTEIRO, type EstadoRoteiro } from "./nomes";
@@ -291,6 +292,53 @@ export async function obterVersao(ctx: Contexto, roteiroId: string, n: number): 
     if (!v) return null;
     return { ...v, conteudo: lerRoteiro(v.conteudo) ?? roteiroDoModelo("branco") };
   });
+}
+
+export type Envio = { destino: DestinoSaida; formato: FormatoSaida; n: number; pessoa: string | null; quem: string | null; em: string };
+
+/**
+ * "Enviar" (F3): registra na auditoria (`roteiro.enviado`, só inclusão) o que saiu, para onde e de qual versão salva
+ * (n e sha256 do banco). O arquivo é montado na tela a partir da versão (`saidas.ts`); aqui só se confere que a versão
+ * existe e está no alcance da pessoa (RLS) e se anota. Papel e gate (AEON) ficam com a rota.
+ */
+export async function registrarEnvio(
+  ctx: Contexto,
+  roteiroId: string,
+  e: { n: number; destino: DestinoSaida; formato: FormatoSaida; pessoa?: string | null },
+): Promise<Res<{ sha256: string }>> {
+  if (!ehUuid(roteiroId) || !Number.isInteger(e.n) || e.n < 1) return falha("nao_existe", "Essa versão não existe.");
+  const pessoa = typeof e.pessoa === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(e.pessoa) ? e.pessoa : null;
+  try {
+    return await getBanco().asUser(ctx, async (tx) => {
+      const [v] = (await tx.execute(sql`
+        select v.sha256 from maestro.roteiro_versoes v
+          join maestro.roteiros r on r.org_id = v.org_id and r.id = v.roteiro_id and r.apagado_em is null
+         where v.roteiro_id = ${roteiroId} and v.n = ${e.n}`)) as unknown as { sha256: string }[];
+      if (!v) return falha("nao_existe", "Essa versão não existe.");
+      await tx.execute(sql`
+        insert into maestro.audit_log (org_id, actor_sub, action, target_type, target_id, metadata)
+        values (${ctx.orgId}, ${ctx.sub}, 'roteiro.enviado', 'roteiro', ${roteiroId},
+                ${JSON.stringify({ n: e.n, sha256: v.sha256, destino: e.destino, formato: e.formato, pessoa })}::jsonb)`);
+      return { ok: true as const, sha256: v.sha256 };
+    });
+  } catch (err) {
+    return traduzir(err);
+  }
+}
+
+/** Os últimos envios do roteiro (a auditoria só abre para administração e gestão; para os outros, lista vazia). */
+export async function listarEnvios(ctx: Contexto, roteiroId: string, limite = 5): Promise<Envio[]> {
+  if (!ehUuid(roteiroId)) return [];
+  return getBanco().asUser(ctx, async (tx) =>
+    Array.from(
+      (await tx.execute(sql`
+        select metadata ->> 'destino' as destino, metadata ->> 'formato' as formato, (metadata ->> 'n')::int as n,
+               metadata ->> 'pessoa' as pessoa, actor_sub as quem, created_at::text as em
+          from maestro.audit_log
+         where action = 'roteiro.enviado' and target_type = 'roteiro' and target_id = ${roteiroId}
+         order by created_at desc limit ${Math.max(1, Math.min(50, limite))}`)) as unknown as Envio[],
+    ),
+  );
 }
 
 /**
