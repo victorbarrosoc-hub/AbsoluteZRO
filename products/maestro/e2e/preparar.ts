@@ -19,6 +19,8 @@ export const ARQUIVO_SESSAO_COLUNAS = "test-results/e2e-sessao-colunas.json";
 export const ARQUIVO_SESSAO_CRIACAO = "test-results/e2e-sessao-criacao.json";
 export const ARQUIVO_SESSAO_ACESSOS = "test-results/e2e-sessao-acessos.json";
 export const ARQUIVO_SESSAO_ARRASTAR = "test-results/e2e-sessao-arrastar.json";
+export const ARQUIVO_SESSAO_FLUXO = "test-results/e2e-sessao-fluxo.json";
+export const ARQUIVO_SESSAO_EXPORTAR = "test-results/e2e-sessao-exportar.json";
 /** A ponte falsa (HUB + SOBEDESCE de mentira, tests/ponte-falsa.mts) do e2e de Arquivos: MAESTRO_PONTE_URL no servidor. */
 export const PORTA_PONTE = Number(process.env.E2E_PONTE_PORT || 3219);
 /** A ANP falsa (tests/anp-fixture.mts, valores inventados) da calculadora de deslocamento: MAESTRO_ANP_URL no servidor. */
@@ -316,12 +318,12 @@ export default async function preparar() {
     writeFileSync(ARQUIVO_SESSAO_COLUNAS, JSON.stringify({ token: sCo.token, equipe: sCoEq.token, org: orgCo }));
     // Uma organização para a Criação (e2e/criacao-roteiro.spec.ts): a demonstração inteira (o roteiro de exemplo e o
     // roteiro e a decupagem antigos do projeto), administração e uma pessoa de leitura.
-    const SUB_CR = "00000000-0000-4000-8000-0000000000d8";
-    const SUB_CR_LE = "00000000-0000-4000-8000-0000000000d9";
+    const SUB_CR = "00000000-0000-4000-8000-000000000cd8";
+    const SUB_CR_LE = "00000000-0000-4000-8000-000000000cd9";
     const orgCr = await getBanco().asSystem("e2e: semente da criação", async (tx) => {
       const [org] = await tx
         .insert(schema.organizations)
-        .values({ zroOrgId: "00000000-0000-4000-8000-0000000000d7", name: "Criação E2E", zroProducts: ["maestro"] })
+        .values({ zroOrgId: "00000000-0000-4000-8000-000000000cd7", name: "Criação E2E", zroProducts: ["maestro"] })
         .returning({ id: schema.organizations.id });
       await tx.insert(schema.members).values([
         { orgId: org.id, zroSub: SUB_CR, displayName: "Rita Roteiro", hubRole: "owner", role: "admin" },
@@ -387,6 +389,46 @@ export default async function preparar() {
     });
     const sAr = await criarSessao({ orgId: orgAr, sub: SUB_AR, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
     writeFileSync(ARQUIVO_SESSAO_ARRASTAR, JSON.stringify({ token: sAr.token, org: orgAr }));
+    // Uma organização para o Fluxo (e2e/criacao-fluxo.spec.ts): quem edita e quem só lê.
+    const SUB_FX = "00000000-0000-4000-8000-0000000000f8";
+    const SUB_FX_LE = "00000000-0000-4000-8000-0000000000f9";
+    const orgFx = await getBanco().asSystem("e2e: semente do fluxo", async (tx) => {
+      const [org] = await tx
+        .insert(schema.organizations)
+        .values({ zroOrgId: "00000000-0000-4000-8000-0000000000f7", name: "Fluxo E2E", zroProducts: ["maestro"] })
+        .returning({ id: schema.organizations.id });
+      await tx.insert(schema.members).values([
+        { orgId: org.id, zroSub: SUB_FX, displayName: "Flora Fluxo", hubRole: "owner", role: "admin" },
+        { orgId: org.id, zroSub: SUB_FX_LE, displayName: "Lia Leitura", hubRole: "viewer", role: "leitura" },
+      ]);
+      await tx.execute(
+        q`insert into maestro.cards (org_id, id, dados) values (${org.id}, 'fx-card-1', ${JSON.stringify({ tema: "Gravação da cafeteria", coluna: "fazendo" })}::jsonb)`,
+      );
+      return org.id;
+    });
+    const sFx = await criarSessao({ orgId: orgFx, sub: SUB_FX, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    const sFxLe = await criarSessao({ orgId: orgFx, sub: SUB_FX_LE, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    writeFileSync(ARQUIVO_SESSAO_FLUXO, JSON.stringify({ token: sFx.token, leitura: sFxLe.token, org: orgFx }));
+    // Uma organização para exportar e compartilhar o Fluxo (e2e/criacao-exportar.spec.ts): administração e leitura.
+    const SUB_EX = "00000000-0000-4000-8000-0000000000e8";
+    const SUB_EX_LE = "00000000-0000-4000-8000-0000000000e9";
+    const orgEx = await getBanco().asSystem("e2e: semente da exportação", async (tx) => {
+      const [org] = await tx
+        .insert(schema.organizations)
+        .values({ zroOrgId: "00000000-0000-4000-8000-0000000000e7", name: "Estúdio Aurora", zroProducts: ["maestro"] })
+        .returning({ id: schema.organizations.id });
+      await tx.insert(schema.members).values([
+        { orgId: org.id, zroSub: SUB_EX, displayName: "Ester Exporta", hubRole: "owner", role: "admin" },
+        { orgId: org.id, zroSub: SUB_EX_LE, displayName: "Leo Leitura", hubRole: "viewer", role: "leitura" },
+      ]);
+      await tx.execute(
+        q`insert into maestro.cards (org_id, id, dados) values (${org.id}, 'ex-card-1', ${JSON.stringify({ tema: "Gravação da cafeteria", coluna: "fazendo" })}::jsonb)`,
+      );
+      return org.id;
+    });
+    const sEx = await criarSessao({ orgId: orgEx, sub: SUB_EX, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    const sExLe = await criarSessao({ orgId: orgEx, sub: SUB_EX_LE, produtos: ["maestro"], release: { maestro: "allowed" }, tokens: null });
+    writeFileSync(ARQUIVO_SESSAO_EXPORTAR, JSON.stringify({ token: sEx.token, leitura: sExLe.token, org: orgEx }));
   } finally {
     await fecharBanco();
   }

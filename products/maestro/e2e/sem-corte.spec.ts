@@ -47,10 +47,63 @@ async function ids() {
         id: string;
         projeto_id: string;
       }[],
+      fluxo: await fluxoDeExemplo(sql, org.id),
     };
   } finally {
     await sql.end();
   }
+}
+
+/** Token fixo do link de exportação do fluxo de exemplo (a página `/f/<token>`, Criação F6). */
+const TOKEN_FLUXO = "corte-do-fluxo-de-exemplo-".padEnd(43, "x");
+
+/** O link do fluxo de exemplo (só o sha256 no banco, como o app grava; a cópia cifrada aqui não abre, e não precisa). */
+async function linkDeExemplo(sql: postgres.Sql, org: string, fluxo: string): Promise<void> {
+  await sql`
+    insert into maestro.fluxo_links (org_id, fluxo_id, token_hash, token_enc, expira_em)
+    values (${org}, ${fluxo}, encode(sha256(convert_to(${TOKEN_FLUXO}, 'UTF8')), 'hex'), 'copia-cifrada-de-teste', now() + interval '7 days')
+    on conflict (token_hash) do nothing`;
+}
+
+/** Um fluxo pequeno (seção, duas notas, link e ligação) para a tela do canvas e a Lista; criado uma vez. */
+async function fluxoDeExemplo(sql: postgres.Sql, org: string): Promise<string> {
+  const [ja] = await sql`select id from maestro.fluxos where org_id = ${org} and titulo = 'Verão Café Aurora' limit 1`;
+  if (ja) {
+    await linkDeExemplo(sql, org, ja.id as string);
+    return ja.id as string;
+  }
+  const [f] = await sql`insert into maestro.fluxos (org_id, titulo) values (${org}, 'Verão Café Aurora') returning id`;
+  const no = async (tipo: string, x: number, y: number, w: number, h: number, dados: Record<string, unknown>, secao: string | null = null) =>
+    (
+      await sql`insert into maestro.fluxo_nos (org_id, fluxo_id, tipo, x, y, w, h, z, secao_id, dados)
+        values (${org}, ${f.id}, ${tipo}, ${x}, ${y}, ${w}, ${h}, 1, ${secao}, ${sql.json(dados as never)}) returning id`
+    )[0].id as string;
+  const s = await no("secao", 0, 0, 520, 300, { nome: "Clima e luz", cor: "pessego" });
+  const a = await no("nota", 32, 64, 200, 120, { texto: "Paleta quente, nada de azul.", cor: "amarelo" }, s);
+  const b = await no("nota", 620, 80, 200, 120, { texto: "Trilha: violão e piano.", cor: "menta" });
+  await no(
+    "link",
+    268,
+    64,
+    220,
+    120,
+    {
+      url: "https://vimeo.com/76979871",
+      titulo: "Ritmo",
+      link: {
+        fonte: "vimeo",
+        url: "https://vimeo.com/76979871",
+        dominio: "vimeo.com",
+        id: "76979871",
+        embed: "https://player.vimeo.com/video/76979871",
+        miniatura: null,
+      },
+    },
+    s,
+  );
+  await sql`insert into maestro.fluxo_ligacoes (org_id, fluxo_id, de, para, rotulo) values (${org}, ${f.id}, ${a}, ${b}, 'clima')`;
+  await linkDeExemplo(sql, org, f.id as string);
+  return f.id as string;
 }
 
 async function telas(): Promise<Tela[]> {
@@ -138,6 +191,32 @@ async function telas(): Promise<Tela[]> {
     { nome: "ajustes-pedido", rota: "/app/ajustes/pedido" },
     { nome: "ajustes-precos", rota: "/app/ajustes/precos" },
     { nome: "entrar", rota: "/entrar", publica: true },
+    { nome: "fluxos", rota: "/app/criacao/fluxos" },
+    {
+      nome: "fluxo",
+      rota: `/app/criacao/fluxos/${i.fluxo}`,
+      depois: async (page, ver) => {
+        await page.getByRole("tab", { name: "Lista" }).click();
+        await page.locator(".fx-lista").waitFor();
+        await ver("fluxo-lista");
+        await page.getByRole("tab", { name: "Canvas" }).click();
+        await page.getByRole("button", { name: "Adicionar" }).click();
+        await page.getByRole("dialog", { name: "Adicionar" }).waitFor();
+        await ver("fluxo-adicionar");
+        await page.keyboard.press("Escape");
+        await page.getByRole("dialog", { name: "Adicionar" }).waitFor({ state: "detached" });
+        await page.getByRole("button", { name: "Exportar" }).click();
+        await page.getByRole("dialog", { name: "Exportar" }).waitFor();
+        await ver("fluxo-exportar");
+        await page
+          .getByRole("dialog", { name: "Exportar" })
+          .getByRole("menuitem", { name: /^Links/ })
+          .click();
+        await page.getByRole("dialog", { name: "Links do fluxo" }).waitFor();
+        await ver("fluxo-links");
+      },
+    },
+    { nome: "fluxo-publico", rota: `/f/${TOKEN_FLUXO}`, publica: true },
   ];
   const ficha = (nome: string, id: string | null, rota: (id: string) => string) => {
     if (id) t.push({ nome, rota: rota(id) });

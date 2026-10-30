@@ -68,7 +68,8 @@ export function LinkNeutro({ limite = false }: { limite?: boolean }) {
   );
 }
 
-export function PedirPin({ token }: { token: string }) {
+/** PIN do link: o do cliente (`/api/link/pin`, token no corpo) ou outro, como o do Fluxo (`/f/<token>/pin`). */
+export function PedirPin({ token, rota = "/api/link/pin" }: { token: string; rota?: string }) {
   const router = useRouter();
   const [pin, setPin] = useState("");
   const [erro, setErro] = useState<string | null>(null);
@@ -78,7 +79,7 @@ export function PedirPin({ token }: { token: string }) {
     setIndo(true);
     setErro(null);
     try {
-      const r = await fetch("/api/link/pin", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token, pin }) });
+      const r = await fetch(rota, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token, pin }) });
       if (r.ok) return router.refresh();
       const j = (await r.json().catch(() => ({}))) as { mensagem?: string };
       setErro(j.mensagem ?? "Não deu certo.");

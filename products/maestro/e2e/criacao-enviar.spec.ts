@@ -15,7 +15,7 @@ import type { Roteiro } from "../src/lib/criacao/roteiro/modelo";
 import { arquivoParaEdicao, saidaTpeasy } from "../src/lib/criacao/roteiro/saidas";
 
 const ARQUIVO = "test-results/e2e-sessao-criacao.json";
-const SUB = "00000000-0000-4000-8000-0000000000d8";
+const SUB = "00000000-0000-4000-8000-000000000cd8";
 const SHOTS = process.env.SHOTS_DIR;
 const sessao = () => JSON.parse(readFileSync(ARQUIVO, "utf8")) as { token: string; leitura: string; org: string };
 

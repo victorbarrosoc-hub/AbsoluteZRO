@@ -315,6 +315,53 @@ acrescenta. Leia `AGENTS.md` (Next 16) antes de mexer em rota ou página.
   está fechado e nada aparece; a rota recusa `aeon` também. O cliente não aparece no menu até a F7. Ficha do card:
   bloco "Criação" (`components/criacao/roteiro/do-card.tsx`, `roteirosDoCardAcao`). Nome de arquivo com acento só sai
   do navegador com locale UTF-8 (o `playwright.config.ts` força `C.UTF-8`).
+- **Criação · Fluxo** (plano da Criação §6, fase F4 = só o núcleo, sem tela; `drizzle/0031_fluxos.sql`,
+  `src/lib/criacao/fluxo/**`): cada nó é uma linha de `fluxo_nos` (`nota`, `imagem`, `link`, `roteiro`, `card`,
+  `secao`; x/y/w/h/z, `secao_id` do mesmo fluxo, `dados` ≤ 16 KB conferidos por `lerDados`, `rev` subido pelo gatilho
+  `fluxo_nos_guarda`), ligações em `fluxo_ligacoes` (de → para, rótulo, `rev`); apagar = lápide (`apagado_em`) e a
+  limpeza (`maestro.fluxo_limpar`) tira de vez depois de 7 dias. Gravação por `aplicarOps` (lista conferida por
+  `lerOps`, até 500 por pedido, numa transação): `rev` velho = `conflito` só naquele item; sem `rev` (mover) o último
+  leva; erro de regra desfaz tudo. Poll de 5 s em `fluxoDesde` (índice por `updated_at`, lápides inclusive).
+  Referência guarda só o id (`roteiro_id`/`card_id`, chave composta): título e estado vêm de `resolverReferencias` com
+  o RLS de quem vê; fora do alcance = "sem acesso", nunca o título; criar referência ao que não se vê é barrado no
+  gatilho. Imagens (decisão do titular: no banco, WebP, cota por produtora): `prepararImagem` (bytes conferidos como no
+  logo, sharp, ≤ 2048 px e 400 KB, miniatura ≤ 40 KB, sem metadados) → `fluxo_imagens` (sha256 por check; cota em
+  `maestro.fluxo_cota`, 200 MB por produtora e 300 por fluxo, igual a `cota.ts`, conferida no insert com trava);
+  `maestro_app` não lê os bytes pela tabela, só pela porta `maestro.fluxo_imagem(id, sha, mini)`; rota
+  `GET /api/criacao/img/<id>/<sha>` com sessão (cache privado). Link colado: `endereco.ts` puro (YouTube, Vimeo, Drive
+  pelo endereço; nunca busca a página). "Copiar para IA": `exportar.ts` (Markdown e `maestro.fluxo/1`; imagem só leva
+  endereço com o link da F6). Rotas em `src/lib/criacao/fluxo/rota.ts` (`/api/criacao/fluxo`, `/api/criacao/img`).
+- **Criação · Fluxo, a tela** (fase F5; `src/components/criacao/fluxo/**`, `src/app/fluxo.css`, rotas
+  `/app/criacao/fluxos` e `/app/criacao/fluxos/[id]`): canvas feito à mão (DOM + SVG; tldraw não). O que acontece a cada
+  quadro (andar, zoom, arrastar, redimensionar, puxar ligação, laço) mexe só no estilo (`canvas.tsx`); o React recebe ao
+  soltar. Contas puras em `geometria.ts`, colar em `colar.ts` (referência do Maestro → link → notas), estado otimista
+  em `ops.ts` + `estado.ts` (fila juntada, `rev` só em mudança de conteúdo, conflito por item fica com a versão do
+  banco, recusa do pedido inteiro recarrega, poll de 5 s que não passa por cima do que está na fila ou em edição, nem
+  mexe na vista). Desfazer guarda volta e refazer (criar desfaz com lápide e refaz com restaurar). Apagar seção leva o
+  que mora nela; apagar nó leva as ligações. A vista fica por aparelho em `localStorage`. No celular (≤ 900 px) o topo
+  do shell some e a barra de abas fica; segurar 280 ms ergue o nó. Nó usa `scale` na entrada (o `transform` é do
+  arrastar) e nada de `overflow: hidden` no próprio nó (a alça e a bolinha saem da borda). Testes:
+  `tests/fluxo-tela.test.mts`, `e2e/criacao-fluxo.spec.ts`, telas no `sem-corte.spec.ts`.
+- **Criação · Fluxo, exportar e compartilhar** (fase F6; decisão do titular: privado por padrão; `drizzle/0032_fluxo_links.sql`,
+  `src/lib/criacao/fluxo/{compartilhar,link,link-rota,pacote}.ts`, `src/lib/zip.ts`, tela em
+  `components/criacao/fluxo/{exportar,imprimir}.tsx` + `fluxo-exportar.css`): menu **Exportar** (popover no computador,
+  `Folha` no iPhone). Copiar para IA, JSON e PDF saem no navegador do estado da tela; o pacote .zip
+  (`GET /api/criacao/fluxo/pacote`, quem vê o fluxo) é montado no servidor e enviado aos pedaços, com as imagens pela
+  porta `fluxo_imagem` e o Markdown apontando para `imagens/NN-legenda.webp`. **Links** (`/api/criacao/fluxo/links`,
+  só admin e gestão, `podeEnviarCriacao`): `maestro.fluxo_links` guarda só o sha256 e a cópia cifrada (`selar`) do
+  token, PIN scrypt (`hashPin`), 1 a 30 dias (7 padrão), até 10 vivos, revogar para sempre (gatilho), visitas; criar e
+  revogar caem no `audit_log` pelo gatilho; `maestro_app` não lê `token_hash`/`pin_hash`/`refs_*` e só muda
+  `revogado_em`. `/f/<token>` (página, a Lista com `publico`), `/f/<token>.md|.json` (reescrita `beforeFiles` para
+  `/f/<token>/fluxo.md|json`), `/f/<token>/i/<id>/<sha>.webp` e `POST /f/<token>/pin`: porta estreita
+  `maestro.fluxo_link_{pin,abrir,imagem}` como `maestro_app` sem organização (`comoLink`), limites `REGRAS.fluxo*`,
+  prova do PIN num cookie assinado preso ao hash do token (`Path=/f`, ≤ 12 h e ≤ validade). Morto, vencido, revogado
+  ou fluxo na lixeira = a mesma tela neutra. Referência no link: só o título (`RefTitulo`, estado `titulo`) e só do
+  que quem criou alcançava ao criar (`refs_roteiros`/`refs_cards`); id interno nunca sai. Imagem para a IA só por
+  link vivo **sem PIN** e só com "Imagens pelo link" marcado (`linkParaIa`). CSP, `X-Robots-Tag` e `no-referrer` de
+  `/f` em `next.config.ts`; `/f/` fora do `robots.txt`; `DO_CLIENTE` do app de computador inclui `f`. "Mandar para um
+  card" = `ligar` (`ligarCard` em `estado.ts`); a ficha mostra o bloco "Fluxos" (`components/quadro/fluxos-card.tsx`).
+  Testes: `tests/links-fluxo.test.mts`, `e2e/criacao-exportar.spec.ts` (`SHOTS_DIR` guarda `exp-*`), telas no
+  `sem-corte.spec.ts`.
 - **App na Tela de Início (PWA)**: `src/app/manifest.ts` (`/manifest.webmanifest`: Maestro, `start_url` `/app`, `scope`
   `/`, standalone, cores do claro), ícones em `public/pwa/` gerados do `src/app/icon.svg` por `scripts/icones-pwa.mjs`
   (nunca desenhar outro), `apple-icon.png` (180 px), `appleWebApp` + `apple-mobile-web-app-capable` no layout, barra de
@@ -392,7 +439,10 @@ contra o código do próprio app, modelos só com dica, documento antigo, junç�
 (`roteiro-editor.test.mts`), a rota do editor (Origin, papéis, poll, 409 com o atual e a junção, versões, restaurar;
 `criacao-rota.test.mts`; também o envio anotado e o AEON pelo gate), as saídas (`maestro.roteiro/1` contra o schema
 publicado com o conferidor `tests/esquema-json.mts`, TPeasy pelo código do próprio app, AEON escondido;
-`roteiro-saidas.test.mts`), o migrador com migração atrasada
+`roteiro-saidas.test.mts`), o fluxo puro (link, operações, exportação, cota, imagem; `fluxo.test.mts`), fluxos no banco
+(duas organizações, papéis, rev por nó, o que mudou, referências "sem acesso", porta da imagem, cota, limpeza;
+`fluxo-rls.test.mts`) e as rotas do fluxo e da imagem (`fluxo-rota.test.mts`), o link e a exportação do Fluxo
+(`links-fluxo.test.mts`), o migrador com migração atrasada
 (`migrador.test.mts`) e o lançamento (app de computador só com instalador publicado, manifesto e a chave da vitrine;
 `lancamento.test.mts`), quem vê o quê (padrão igual no TS e no banco, cada área por pessoa, máscaras, gatilhos, só a
 administração muda e audita, sessão, navegação e a Z; `acessos.test.mts`). E2E: `npm run build && npm run test:e2e`

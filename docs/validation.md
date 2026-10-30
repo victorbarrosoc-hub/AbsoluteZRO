@@ -2724,6 +2724,59 @@ Não validado: a folha de compartilhar de um iPhone de verdade (no e2e, um `navi
 entregue a ela) e o "Restaurar backup" no TPeasy instalado (o `importAll` do próprio app foi
 rodado no teste).
 
+## Maestro · Criação: núcleo do Fluxo (F4, 29/10/2026)
+
+Sem tela nesta fase: migração `0031_fluxos`, operações por nó com `rev`, "o que mudou desde", referências vivas,
+imagens em WebP com cota, link colado sem rede e a exportação em Markdown/JSON.
+
+| Verificação                                                          | Comando                                                          | Resultado                       |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------- |
+| Puro: link, operações, notas coladas, exportação, cota, imagem limpa | `cd products/maestro && npx tsx --test tests/fluxo.test.mts`     | **20/20**                       |
+| Banco: duas organizações, papéis, rev, desde, referências, cota      | `npx tsx --test tests/fluxo-rls.test.mts`                        | **19/19**                       |
+| Rotas do fluxo e da imagem (401/403/404, cabeçalhos)                 | `npx tsx --test tests/fluxo-rota.test.mts`                       | **5/5**                         |
+| Acesso por cliente com as quatro tabelas do fluxo e a porta          | `npx tsx --test tests/acesso-cliente.test.mts`                   | **7/7**                         |
+| Maestro inteiro                                                      | `npm run lint`, `format:check`, `typecheck`, `npm test`, `build` | ok · ok · ok · **463/463** · ok |
+| Raiz                                                                 | `npm run lint`, `format:check`, `typecheck`                      | ok · ok · ok                    |
+| Segredos                                                             | `node scripts/scan-secrets.mjs`                                  | nenhum                          |
+
+Não rodado: o e2e do Maestro (nenhuma tela mudou). A migração `0031` não foi aplicada em banco de verdade; a cota de
+200 MB por produtora ainda depende do plano do Supabase `AbsoluteZRO`.
+
+## Maestro · Criação: o canvas do Fluxo (F5, 29/10/2026)
+
+Telas `/app/criacao/fluxos` e `/app/criacao/fluxos/[id]` sobre o núcleo da F4; nenhuma migração nova.
+
+| Verificação                                                                                                           | Comando                                                                      | Resultado                                                 |
+| --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Puro: vista, zoom, enquadrar, seção sob o ponto, ligação, colar, fila e poll                                          | `cd products/maestro && npx tsx --test tests/fluxo-tela.test.mts`            | **16/16**                                                 |
+| E2E: criar, nota, colar texto/imagem/link, ligar, mover, Desfazer, seção, recarregar; leitura; iPhone segurar e Lista | `E2E_DB_SUFIXO=f5 npx playwright test e2e/criacao-fluxo.spec.ts`             | **3/3**                                                   |
+| Nada cortado a 375/393 px (lista, canvas, Lista, folha Adicionar)                                                     | `npx playwright test e2e/sem-corte.spec.ts`                                  | ok (Chromium e WebKit, 375/393, claro e escuro)           |
+| Maestro inteiro                                                                                                       | `npm run lint`, `format:check`, `typecheck`, `npm test`, `build`, `test:e2e` | ok · ok · ok · **479/479** · ok · **132 ok** (24 pulados) |
+| Raiz                                                                                                                  | `npm run lint`, `format:check`, `typecheck`                                  | ok · ok · ok                                              |
+| Segredos                                                                                                              | `node scripts/scan-secrets.mjs`                                              | nenhum                                                    |
+
+`E2E_DB_SUFIXO` separa o banco do e2e quando duas cópias rodam juntas. Não validado: pinça do trackpad no Safari de
+verdade (`gesture*`) e o toque num iPhone físico (o e2e usa toques sintéticos no Chromium).
+
+## Maestro · Criação: exportar e compartilhar o Fluxo (F6, 30/10/2026)
+
+Migração `0032_fluxo_links` do Maestro (só no banco de teste; produção pede o deploy autorizado).
+
+| Verificação                                                                                                                                                                                                                                                                                      | Comando                                                                      | Resultado                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Puro (Markdown/JSON com e sem imagens pelo link, validade, PIN, nomes, zip), banco (RLS, duas organizações, papéis, hashes fora do alcance, revogar para sempre, 10 vivos, auditoria, só o título), rotas (.md, .json, imagem, PIN, vencido, revogado, limite, noindex, links da equipe, pacote) | `cd products/maestro && npx tsx --test tests/links-fluxo.test.mts`           | **14/14**                                                                         |
+| Acesso por cliente: `fluxo_links` com `_cliente`, só administração e gestão leem                                                                                                                                                                                                                 | `npx tsx --test tests/acesso-cliente.test.mts`                               | **8/8**                                                                           |
+| E2E: menu, Copiar para IA, link com PIN num navegador limpo, revogar, pacote, JSON, mandar para um card; leitura; iPhone (folha e página do link, claro e escuro)                                                                                                                                | `E2E_DB_SUFIXO=f6 npx playwright test e2e/criacao-exportar.spec.ts`          | **4/4**                                                                           |
+| App de computador: `/f` abre no navegador                                                                                                                                                                                                                                                        | `cd products/maestro/desktop && node --test test/regras.test.mjs`            | ok                                                                                |
+| Maestro inteiro                                                                                                                                                                                                                                                                                  | `npm run lint`, `format:check`, `typecheck`, `npm test`, `build`, `test:e2e` | ok · ok · ok · **499/499** · ok · **144 ok** (34 pulados; com `E2E_DB_SUFIXO=f6`) |
+| Raiz                                                                                                                                                                                                                                                                                             | `npm run lint`, `format:check`, `typecheck`                                  | ok · ok · ok                                                                      |
+| Segredos                                                                                                                                                                                                                                                                                         | `node scripts/scan-secrets.mjs`                                              | nenhum                                                                            |
+
+Na rodada inteira, os 2 testes de `criacao-fluxo.spec.ts` caíram porque o e2e novo usava a mesma organização (a lista
+não vinha vazia); o e2e da exportação ganhou organização própria (`e2e/preparar.ts`) e os dois specs passaram juntos
+(7/7). Não validado: imprimir para PDF de verdade no Safari do iPhone (o e2e confere a página e o CSS, não o PDF gerado) e uma
+IA de verdade lendo `/f/<token>.md`.
+
 ## SOBEDESCE: Atualizações quando o Absolute ZRO cuida do app (29/10/2026)
 
 - Relato do titular: o app no build 1034 dizia "Você está na versão mais nova" com o 1042 publicado. Instalado pela
