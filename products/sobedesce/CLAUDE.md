@@ -24,6 +24,11 @@ do SOBEDESCE. Arquitetura em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md); o sit
   e o teste dos dois (`products/synquei`, `packages/integrations`).
 - Número de velocidade na página ou no anúncio só com medição (`scripts/prova-velocidade.mjs`, docs/PROVA-VELOCIDADE.md).
 - Conta nova só pela Absolute ZRO (`prompt=create`); o Google é só a conexão do Drive.
+- **Embutido nas plataformas** (30/10/2026): `/app/?no=carro` (porta-malas do Carro do Freela) e `/app/?no=maestro`
+  (aba Arquivos do Maestro), em `web/public/app/lib/embutido.js`: só Transferências e Drive, tema do anfitrião,
+  recados `pronto`/`envios`/`pasta` só para a origem dele, nunca token. `frame-ancestors` por anfitrião em
+  `web/next.config.ts` (o resto do site e do app continua `'none'`). Testes: `test/porta-malas-carro.test.js` e
+  `web/tests/seguranca.test.mts`.
 - **O Set da Absolute ZRO** (30/10/2026): "Set" no cabeçalho da área logada do site, ao lado do anel da Z
   (`web/src/components/conta/aba-set.tsx`, em `menu.tsx`), e no topo do app do celular, ao lado da Z
   (`web/public/app/components/set.js` › `SetBotao`; a barra de baixo fica só com a tarefa, no máximo cinco abas),

@@ -54,6 +54,20 @@ const appCsp = [
   "form-action 'none'",
   "frame-ancestors 'none'",
 ].join("; ");
+// O Sobedesce embutido numa plataforma da Absolute ZRO (titular, 30/10/2026; public/app/lib/embutido.js): /app/?no=carro
+// (o porta-malas do Carro do Freela) e /app/?no=maestro (a aba Arquivos do Maestro) podem morar num quadro, cada um só
+// no endereço do seu anfitrião (mesmo site: o cookie de sessão, SameSite=Lax, vai junto). Sem ?no=, nada embute o
+// app. A frame-ancestors manda no lugar do X-Frame-Options (CSP nível 2).
+const ANFITRIOES: Record<string, string[]> = {
+  carro: ["https://carro.absolutezro.com"],
+  maestro: ["https://maestro.absolutezro.com"],
+};
+const anfitriaoLocal = process.env.NODE_ENV !== "production" ? ["http://127.0.0.1:*", "http://localhost:*"] : [];
+const embutidoHeaders = Object.entries(ANFITRIOES).map(([no, origens]) => ({
+  source: "/app/",
+  has: [{ type: "query" as const, key: "no", value: no }],
+  headers: [{ key: "Content-Security-Policy", value: appCsp.replace("frame-ancestors 'none'", `frame-ancestors ${[...origens, ...anfitriaoLocal].join(" ")}`) }],
+}));
 const appHeaders = [
   { key: "Content-Security-Policy", value: appCsp },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
@@ -88,6 +102,7 @@ const nextConfig: NextConfig = {
       { source: "/:path*", headers: securityHeaders },
       { source: "/app/:path*", headers: appHeaders },
       { source: "/app/", headers: noCache },
+      ...embutidoHeaders,
       { source: "/app/index.html", headers: noCache },
       { source: "/app/sw.js", headers: noCache },
       { source: "/app/icons/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
