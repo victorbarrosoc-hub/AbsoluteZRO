@@ -34,8 +34,10 @@ export class RelayJobs {
   /**
    * Começa um trabalho. Devolve o id. `local`: o original neste computador (ou null para baixar).
    * `modo: 'arquivo'`: "Máxima qualidade" (arquivo deste computador, sem Drive; o resultado fica ao lado dele).
+   * `extra`: vai para o converterComRelay (o pedido do Maestro manda parentId, antesDeSubir e pedido).
+   * `onAndamento(fase, frac)`: cada passo, sem o limite de 4×/s do SSE (quem chama limita).
    */
-  start({ accountId, item, destino, local = null, origem = 'tela', onFim = null, modo = 'drive' }) {
+  start({ accountId, item, destino, local = null, origem = 'tela', onFim = null, modo = 'drive', extra = null, onAndamento = null }) {
     const gerador = this.ctx.manager.previas
     if (!gerador?.emVaga) throw Object.assign(new Error('A conversão está desligada neste app.'), { status: 409 })
     const job = { id: newId('rly'), accountId, modo, arquivo: { id: item.id, name: item.name, size: item.size ?? null }, destino: typeof destino === 'string' ? destino : destino?.nome ?? 'meu preset', origem, status: 'running', fase: 'esperando', frac: null, resultado: null, error: null, ac: new AbortController(), lastSent: 0, timer: null }
@@ -44,11 +46,17 @@ export class RelayJobs {
     this.#emit(job)
     ;(async () => {
       try {
-        const comum = { destino, signal: job.ac.signal, log: (...a) => this.ctx.log?.(...a), onFase: (fase, frac) => this.#progress(job, fase, frac) }
+        const onFase = (fase, frac) => {
+          this.#progress(job, fase, frac)
+          try {
+            onAndamento?.(fase, frac ?? null)
+          } catch {}
+        }
+        const comum = { destino, signal: job.ac.signal, log: (...a) => this.ctx.log?.(...a), onFase }
         job.resultado =
           modo === 'arquivo'
             ? await this.local({ gerador, caminho: local, ...comum })
-            : await this.converter({ gerador, drive: this.ctx.manager.driveFor(accountId), item, localPath: local, ...comum })
+            : await this.converter({ gerador, drive: this.ctx.manager.driveFor(accountId), item, localPath: local, ...(extra ?? {}), ...comum })
         job.status = 'done'
       } catch (err) {
         if (job.ac.signal.aborted || isAbortError(err)) {
@@ -125,6 +133,8 @@ export class RelayJobs {
  */
 export function registerRelay({ route, ctx, account, HttpProblem, jobsOptions }) {
   const jobs = new RelayJobs(ctx, jobsOptions)
+  // As versões pedidas pelo Maestro (src/engine/pedidos-relay.js) entram nos mesmos trabalhos: aparecem na tela.
+  ctx.relay = jobs
 
   // Os destinos (a tela mostra os cartões) e se este computador converte.
   route('GET', '/api/relay', async () => {

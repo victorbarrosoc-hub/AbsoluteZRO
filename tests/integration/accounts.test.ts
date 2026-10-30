@@ -39,9 +39,9 @@ describe('plano grátis da organização nova', () => {
     expect(rows.map((r) => r.product_id)).toEqual(APPS)
     expect(rows.every((r) => r.provider === 'free' && r.code === 'conta-absolute-zro' && r.version === 2)).toBe(true)
     const claims = await db.asSystem('t', (tx) => loadOidcClaims(tx, o.userId, o.orgId))
-    // No login único só entram os abertos (gate de lançamento, ADR 0023): os lançados e o Maestro em Beta
-    // (0027); os fechados vão como "closed" em zro_release.
-    expect([...claims.products].sort()).toEqual(['maestro', 'sobedesce', 'synquei', 'tpeasy'])
+    // No login único só entram os abertos (gate de lançamento, ADR 0023): os lançados, o Maestro (0027/0039) e o
+    // Carro do Freela (0041); os fechados vão como "closed" em zro_release.
+    expect([...claims.products].sort()).toEqual(['carro-do-freela', 'maestro', 'sobedesce', 'synquei', 'tpeasy'])
     expect(claims.release).toMatchObject({
       maestro: 'released',
       sobedesce: 'released',
@@ -50,7 +50,7 @@ describe('plano grátis da organização nova', () => {
       nossom: 'closed',
       'ai-edit': 'closed',
       finishing: 'closed',
-      'carro-do-freela': 'closed',
+      'carro-do-freela': 'released',
     })
   })
 

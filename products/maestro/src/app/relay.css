@@ -1,0 +1,523 @@
+/* "Gerar versões com o Relay" (src/components/relay): o botão da versão do Drive, a folha e a lista de entregáveis.
+   Chips de estado = fundo tingido + ponto, texto sempre grafite/branco (regra do visual C1). */
+
+/* ───── o botão ───── */
+.rl-botao {
+  gap: 7px;
+  white-space: nowrap;
+}
+.rl-marca {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+}
+
+/* ───── a folha ───── */
+.m-folha.rl-folha {
+  --m-folha-w: 540px;
+}
+.rl-folha__topo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 24px 24px 6px;
+}
+.rl-folha__topo h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-strong);
+}
+.rl-folha__topo .rl-apoio {
+  max-width: 360px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.rl-folha__marca {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  box-shadow: 0 6px 18px rgb(12 12 14 / 0.18);
+}
+.rl-folha__corpo {
+  --rl-pad: 24px;
+  display: grid;
+  gap: 16px;
+  padding: 12px var(--rl-pad) var(--rl-pad);
+  min-width: 0;
+}
+.rl-folha__sem h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--text-strong);
+}
+.rl-folha__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+/* a ação fica à mão enquanto a folha rola (a prévia pode ser longa) */
+.rl-folha__corpo > .rl-folha__acoes:last-child {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin: -4px calc(-1 * var(--rl-pad, 24px)) calc(-1 * var(--rl-pad, 24px));
+  padding: 16px var(--rl-pad, 24px) var(--rl-pad, 24px);
+  background: linear-gradient(to bottom, transparent, var(--surface) 14px);
+}
+.rl-folha__acoes .glass-btn--ink {
+  flex: 1;
+  justify-content: center;
+}
+.rl-apoio {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--text-faint);
+}
+.rl-erro {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--danger-text);
+}
+
+.rl-grupo {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.rl-grupo legend {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+.rl-conta {
+  font-variant-numeric: tabular-nums;
+}
+.rl-opcoes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rl-opcao {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text-strong);
+  cursor: pointer;
+  transition:
+    background 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
+}
+.rl-opcao:hover {
+  background: var(--hover);
+}
+.rl-opcao[data-marcado] {
+  background: var(--surface);
+  box-shadow:
+    inset 0 0 0 1.5px var(--text-strong),
+    0 1px 3px rgb(0 0 0 / 0.06);
+}
+.rl-opcao input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.rl-opcao:has(input:focus-visible) {
+  box-shadow: 0 0 0 2px var(--focus);
+}
+.rl-opcao__caixa {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1.5px var(--line-strong);
+}
+.rl-opcao[data-marcado] .rl-opcao__caixa {
+  background: var(--text-strong);
+  box-shadow: none;
+  color: var(--surface);
+}
+.rl-opcao__nome {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.rl-mais summary {
+  width: max-content;
+  margin-bottom: 8px;
+  padding: 4px 2px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-mute);
+  cursor: pointer;
+}
+.rl-destino button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 0 10px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.rl-previa {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border-radius: 14px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.rl-previa li {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 10px;
+}
+.rl-previa__arquivo {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-strong);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.rl-previa__arquivo svg {
+  flex: none;
+  color: var(--text-faint);
+}
+.rl-previa__meta {
+  padding-left: 21px;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
+}
+.rl-previa__aviso {
+  padding-left: 21px;
+  overflow: hidden;
+  font-size: 0.78rem;
+  color: var(--text-mute);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.rl-previa li[data-impossivel] .rl-previa__aviso {
+  white-space: normal;
+  color: var(--danger-text);
+}
+
+/* ───── os entregáveis ───── */
+.rl-lista {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.rl-lista ul {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rl-item {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: 10px;
+}
+.rl-item__linha {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.rl-item__nome {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-strong);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.rl-item__apoio {
+  overflow: hidden;
+  font-size: 0.76rem;
+  color: var(--text-faint);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.rl-item__erro {
+  font-size: 0.78rem;
+  color: var(--danger-text);
+}
+.rl-chip {
+  --tinta: var(--text-faint);
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tinta) var(--chip-mix), var(--chip-base));
+  font-size: 0.74rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
+  white-space: nowrap;
+}
+.rl-chip > i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tinta);
+}
+.rl-chip[data-status="convertendo"] {
+  --tinta: var(--st-hoje);
+}
+.rl-chip[data-status="pronto"] {
+  --tinta: var(--st-ok);
+}
+.rl-chip[data-status="erro"] {
+  --tinta: var(--st-atrasado);
+}
+.rl-chip[data-status="cancelado"] {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+/* "Conferir": o pedido saiu e a resposta não voltou (nunca sozinho; a pessoa confere) */
+.rl-chip[data-status="revisar"] {
+  --tinta: var(--st-alta);
+}
+.rl-conferir {
+  flex: none;
+}
+
+/* A forma do destino, em vez de texto: tela em pé, deitada ou só som. */
+.rl-forma {
+  flex: none;
+  display: inline-block;
+  width: 16px;
+  height: 11px;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1.5px var(--text-mute);
+}
+.rl-forma[data-forma="vertical"] {
+  width: 10px;
+  height: 16px;
+}
+.rl-forma[data-forma="audio"] {
+  width: 14px;
+  height: 12px;
+  border-radius: 0;
+  box-shadow: none;
+  background:
+    linear-gradient(var(--text-mute), var(--text-mute)) 0 50% / 2px 6px no-repeat,
+    linear-gradient(var(--text-mute), var(--text-mute)) 4px 50% / 2px 12px no-repeat,
+    linear-gradient(var(--text-mute), var(--text-mute)) 8px 50% / 2px 8px no-repeat,
+    linear-gradient(var(--text-mute), var(--text-mute)) 12px 50% / 2px 4px no-repeat;
+}
+.rl-opcao[data-marcado] .rl-forma {
+  --text-mute: var(--text-strong);
+}
+.rl-mais__grupo + .rl-mais__grupo {
+  margin-top: 12px;
+}
+.rl-mais__titulo {
+  display: block;
+  margin: 0 0 6px 2px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-faint);
+}
+.rl-chip__md5 {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 2px;
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+}
+.rl-acao {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-mute);
+  cursor: pointer;
+  transition: background 0.2s var(--ease);
+}
+.rl-acao:hover {
+  background: var(--hover);
+  color: var(--text-strong);
+}
+.rl-acao:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--focus);
+}
+.rl-barra {
+  display: block;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--line);
+}
+.rl-barra i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--st-hoje);
+  transition: width 0.6s var(--ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  .rl-barra i,
+  .rl-opcao,
+  .rl-acao {
+    transition: none;
+  }
+}
+.rl-lista__nota {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0 8px;
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+/* No lugar do botão "Gerar versões", com o app antigo no computador: discreto, sem cara de botão. */
+.rl-atualizar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+
+/* ───── na ficha do card (versoes.tsx) ───── */
+.vc__lista > li[data-aprovada] .vc__n {
+  background: color-mix(in srgb, var(--st-ok) var(--chip-mix), var(--chip-base));
+}
+.vc__aprovada {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--st-ok) var(--chip-mix), var(--chip-base));
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.vc__aprovada i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--st-ok);
+}
+.vc__relay {
+  display: grid;
+  gap: 6px;
+  padding: 2px 10px 8px 52px;
+}
+.vc__relay > .rl-botao {
+  justify-self: start;
+}
+
+/* ───── no lote (lote-equipe.tsx) ───── */
+.ap-entregas {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.ap-entregas__cabeca {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ap-entregas__cabeca h3 {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+
+@media (max-width: 600px) {
+  .rl-opcoes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rl-folha__topo {
+    padding: 18px 18px 4px;
+  }
+  .rl-folha__corpo {
+    --rl-pad: 18px;
+  }
+  .rl-folha__topo .rl-apoio {
+    max-width: 240px;
+  }
+  .vc__relay {
+    padding-left: 10px;
+  }
+  .vc__aprovada {
+    display: none;
+  }
+  /* no celular o selo fica só com o ✓ (o nome do destino precisa do espaço) */
+  .rl-chip__md5 {
+    font-size: 0;
+  }
+  .rl-acao {
+    width: 28px;
+    height: 28px;
+  }
+  .rl-item__linha {
+    gap: 6px;
+  }
+}

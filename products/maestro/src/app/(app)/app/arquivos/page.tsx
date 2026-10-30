@@ -3,7 +3,7 @@ import { podeEscrever } from "@/lib/papeis";
 import { HUB_URL } from "@/lib/site";
 import { projetosComPasta, temArquivos } from "@/lib/sobedesce/arquivos";
 import { Icone } from "@/components/icones";
-import { TelaArquivos } from "@/components/arquivos/tela";
+import { SeloSobedesce, TelaArquivos } from "@/components/arquivos/tela";
 import { EstadoVazio } from "@/components/vazio";
 import "../../../arquivos.css";
 
@@ -12,8 +12,10 @@ export const metadata = { title: "Arquivos" };
 const SOBEDESCE = (process.env.MAESTRO_SOBEDESCE_URL?.trim() || "https://sobedesce.com").replace(/\/$/, "");
 
 /**
- * Arquivos (plano v2 §5): o Google Drive da pessoa pelo SOBEDESCE. Sem o SOBEDESCE no plano, o cadeado e o caminho
- * para os planos (a rota do token também nega, 403). Com ele, o navegador do Drive e os projetos com a pasta deles.
+ * Arquivos (plano v2 §5): o próprio SOBEDESCE aqui dentro (titular, 30/10/2026: Transferências e Drive, como a aba
+ * Drive do SOBEDESCE; nada de botão de "abrir", só o selo dele). Sem o SOBEDESCE no plano, o cadeado e o caminho para
+ * os planos (a rota do token também nega, 403). Com ele, os projetos com a pasta deles e o quadro do SOBEDESCE, que
+ * mora no shell (components/arquivos/sobedesce-vivo.tsx) para o envio seguir andando fora desta seção.
  */
 export default async function Arquivos() {
   const sessao = await exigirAcessoNaPagina("/app/arquivos");
@@ -44,12 +46,13 @@ export default async function Arquivos() {
   const projetos = await projetosComPasta(sessao);
   return (
     <div className="pagina pagina--arquivos">
-      <header className="pagina__cabeca">
+      <header className="pagina__cabeca sd-cabeca">
         <h1 className="atitle">
           Seus <strong>arquivos.</strong>
         </h1>
+        <SeloSobedesce site={SOBEDESCE} />
       </header>
-      <TelaArquivos projetos={projetos} escreve={podeEscrever(sessao.papel)} sobedesce={SOBEDESCE} />
+      <TelaArquivos projetos={projetos} escreve={podeEscrever(sessao.papel)} />
     </div>
   );
 }

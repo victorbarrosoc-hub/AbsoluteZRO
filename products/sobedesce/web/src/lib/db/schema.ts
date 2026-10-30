@@ -4,7 +4,7 @@
  * Colunas em camelCase aqui, snake_case no banco (casing do Drizzle).
  */
 import { sql } from "drizzle-orm";
-import { bigint, boolean, date, index, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { bigint, boolean, date, index, integer, jsonb, pgTable, primaryKey, real, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import type { StatusComputador } from "../acompanhar/formato";
 
 /** Data e hora com fuso. `agora()`: obrigatória, padrão now(). */
@@ -50,6 +50,11 @@ export const sessoes = pgTable(
     revogadaEm: quando(),
     /** Build do app de computador (cabeçalho x-sobedesce-build), gravado junto com o ultimoUsoEm. 0 = desenvolvimento. */
     appBuild: integer(),
+    /**
+     * O que o app de computador sabe fazer (cabeçalho x-sobedesce-capacidades, ex.: ["relay"] = pega as versões do
+     * Relay pedidas pelo Maestro). null = app sem o cabeçalho (até a 0.1.0) ou sessão do site.
+     */
+    capacidades: text().array(),
   },
   (t) => [index("sessoes_usuario_idx").on(t.usuarioId)],
 );
@@ -424,12 +429,14 @@ export const avisosAdmin = pgTable("avisos_admin", {
 });
 
 /** Pedido de proxy (docs/CONTAS.md §11): o celular pede, o app do computador gera o proxy e a tira de quadros. */
-export type StatusPedidoProxy = "pendente" | "gerando" | "pronto" | "erro";
+export type StatusPedidoProxy = "pendente" | "gerando" | "pronto" | "erro" | "cancelado";
 /**
  * "proxy": a cópia leve e a tira de quadros. "frames": frames, takes e posts do vídeo final (docs/FRAMES.md).
  * "formato": a referência em outro formato, ao lado dela (MP3 320, WAV, MP4 720p…; docs/REFERENCIAS.md §7).
+ * "relay": uma versão de entrega pedida pelo Maestro ("Gerar versões com o Relay", lib/zro/relay.ts), com um preset
+ * do Relay; é o único tipo que fica "cancelado" (os outros, cancelados, somem da fila).
  */
-export type TipoPedido = "proxy" | "frames" | "formato";
+export type TipoPedido = "proxy" | "frames" | "formato" | "relay";
 /** Ajustes de um pedido de Frames (o computador confere de novo antes de usar). */
 export type AjustesFrames = {
   frames: { quantidade: number; formato: "jpg" | "png" | "tiff" };
@@ -437,7 +444,11 @@ export type AjustesFrames = {
 };
 /** Ajustes de um pedido de formato. */
 export type AjustesFormato = { formato: FormatoReferencia };
-export type AjustesPedido = AjustesFrames | AjustesFormato;
+/** Ajustes de uma versão do Relay: o preset, a pasta de destino no Drive (já conferida) e a referência de quem pediu. */
+export type AjustesRelay = { preset: string; pastaId: string; ref: string };
+export type AjustesPedido = AjustesFrames | AjustesFormato | AjustesRelay;
+/** O arquivo que o computador subiu (só nos pedidos do Relay, e só com o MD5 do Drive igual ao do convertido). */
+export type SaidaRelay = { arquivoId: string; nome: string; tamanho: number; md5: string; pastaId: string };
 
 export const pedidosProxy = pgTable(
   "pedidos_proxy",
@@ -463,10 +474,22 @@ export const pedidosProxy = pgTable(
     proxyFileId: text(),
     /** Sessão (computador) que pegou o pedido. */
     dispositivoId: text(),
+    /** Relay: a chave de idempotência `ref:preset` (a mesma chave andando ou pronta devolve o pedido que existe). */
+    chave: text(),
+    /** Relay: o andamento (0 a 1) que o computador mandou; só cresce. */
+    frac: real(),
+    /** Relay: o arquivo novo no Drive, com o MD5 conferido. */
+    saida: jsonb().$type<SaidaRelay>(),
     criadoEm: agora(),
     atualizadoEm: agora(),
   },
-  (t) => [index("pedidos_proxy_usuario_status_idx").on(t.usuarioId, t.status), index("pedidos_proxy_arquivo_idx").on(t.usuarioId, t.fileId)],
+  (t) => [
+    index("pedidos_proxy_usuario_status_idx").on(t.usuarioId, t.status),
+    index("pedidos_proxy_arquivo_idx").on(t.usuarioId, t.fileId),
+    uniqueIndex("pedidos_proxy_chave_idx")
+      .on(t.usuarioId, t.chave)
+      .where(sql`${t.chave} is not null and ${t.status} in ('pendente', 'gerando', 'pronto')`),
+  ],
 );
 
 /**

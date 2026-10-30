@@ -16,6 +16,8 @@ import { abasOcultas } from "@/lib/navegacao";
 import { SeletorDeTema } from "./tema";
 import { SetZro } from "./set-zro";
 import { Transicao } from "./movimento";
+import { SobedesceVivo } from "./arquivos/sobedesce-vivo";
+import { temProduto } from "@/lib/auth/acesso";
 
 export function iniciais(nome: string | null, email: string | null): string {
   const base = (nome || email || "?").trim();
@@ -141,6 +143,8 @@ export function Shell({
       </header>
       <main id="conteudo" className="conteudo">
         <Transicao>{children}</Transicao>
+        {/* Arquivos: o SOBEDESCE embutido nasce na primeira visita e fica vivo (o envio segue em outra seção). */}
+        {temProduto(sessao, "sobedesce") ? <SobedesceVivo /> : null}
         {marca ? (
           <p className="powered">
             <ZroSimbolo size={14} /> Powered by Absolute ZRO

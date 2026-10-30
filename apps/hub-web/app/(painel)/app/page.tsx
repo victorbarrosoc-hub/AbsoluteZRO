@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 
 /** Uma linha por ferramenta, como na faixa da página inicial. */
 const LINHA: Record<string, string> = {
-  'carro-do-freela': 'Equipe e oportunidades',
+  'carro-do-freela': 'Agenda e equipe',
   tpeasy: 'Teleprompter',
   sobedesce: 'Cópia e backup conferidos',
   synquei: 'Organização e sincronia',

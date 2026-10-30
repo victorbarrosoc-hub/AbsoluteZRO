@@ -70,10 +70,11 @@ const abrir=async p=>{ await p.locator('#menu-bt:visible, #bt-menu:visible').fir
   const secs=await p.locator('#gaveta .mn-sec').allTextContents();
   t(secs.join('|')==='Encontrar|Ferramentas|A praça','⟶⟶ as seções são a intenção, na ordem do uso: '+secs.join(' · '));
   /* (26/out) a família Absolute ZRO, em ordem alfabética e igual nos dois
-     menus; o Carro do Freela fica de fora (é onde a pessoa está) */
+     menus; o Carro do Freela fica de fora (é onde a pessoa está). (30/out)
+     só as plataformas no ar: NOSSOM, AEON e Revela voltam quando lançarem */
   const fam=await p.evaluate(()=>['#g-fam','.top .ladofam'].map(s=>
     [...document.querySelectorAll(s+' .fam')].map(a=>a.textContent.trim()).join('|')));
-  t(fam[0]==='Absolute ZRO|Maestro|Nossom|Revela|Sobedesce|Synquei|TPEasy'&&fam[1]===fam[0],
+  t(fam[0]==='Absolute ZRO|Maestro|Relay|SOBEDESCE|Synquei|TPeasy'&&fam[1]===fam[0],
     'a família Absolute ZRO em ordem alfabética, igual na gaveta e na lateral: '+fam.join(' / '));
   /* Encontrar: o que é de graça vem antes da vitrine paga — a regra que a
      lateral já seguia ("a tela paga não vem na frente do que o freela usa

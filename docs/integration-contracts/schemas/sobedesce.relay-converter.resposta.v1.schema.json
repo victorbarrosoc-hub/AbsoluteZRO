@@ -1,0 +1,52 @@
+{
+  "$id": "https://absolutezro.local/schemas/sobedesce.relay-converter.resposta.v1.json",
+  "title": "SOBEDESCE relay.converter: resposta v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "pedidos": {
+      "minItems": 1,
+      "maxItems": 8,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.:-]{1,120}$"
+          },
+          "preset": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]{1,40}$"
+          },
+          "ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pendente",
+              "convertendo",
+              "pronto",
+              "erro",
+              "cancelado"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "preset",
+          "ref",
+          "status"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "pedidos"
+  ],
+  "additionalProperties": false
+}

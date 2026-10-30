@@ -13,6 +13,8 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
 ## Fase 1 — Fundação
 
 - ✅ Monorepo, CI (lint, formatação, tipos, testes com Postgres, build, E2E, varredura de segredos), Dependabot.
+  CI no Ubuntu 26.04 (30/10/2026): testes sem corrida entre arquivos (contagem do painel de pessoas, papel
+  `maestro_app`) e o Relay marcando BT.709 também no ffmpeg 8 ([validação](validation.md)).
 - ✅ Design system com a IDV oficial; landing, planos e telas essenciais do PRD §10; mobile sem rolagem horizontal.
 - ✅ Redesign na linguagem das ferramentas da família (preto fosco, suíte com grade de apps, cápsula de vidro, demos em CSS com motion pausável), tema claro completo e seletor claro/escuro em todas as telas — [ADR 0011](decisions/0011-linguagem-da-familia.md).
 - ✅ Downloads no estilo de central de apps (`/baixar` público e `/downloads` no HUB): instaladores oficiais de SOBEDESCE, Synquei e NOSSOM (Mac e Windows), TPeasy no iPhone, Carro do Freela no navegador; destaque do sistema de quem visita e instalação sem aviso pelo Terminal. Com os repositórios privados, todo instalador passa pela rota `/baixar` do site do app (endereço assinado do GitHub), nunca pelo `github.com` direto.
@@ -476,6 +478,39 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   como adicional" com link para os planos. Falta: o titular revisar e publicar os planos no console (e conceder o sinal à
   organização dele para testar: Concessão, produto Maestro, limite `maestro.marca_propria` = 1); domínio próprio
   depois, com autorização.
+- 🟡 Maestro, **"Gerar versões com o Relay"** (29–30/10/2026; contrato "Maestro → Relay" em
+  [relay.md](integration-contracts/relay.md), [ADR 0030](decisions/0030-relay-conversao.md)): na ficha do card (bloco
+  Versões) e no lote, a versão do Drive ganha "Gerar versões" com o ícone do Relay (em destaque quando aprovada). Folha
+  com os destinos de entrega ao cliente primeiro e o resto em "Mais" nos grupos do Relay (Redes, Trabalho, TV, Tamanho,
+  Áudio; "Tamanho exato" fora; no máximo 8), pasta "05 Entregas" do projeto (criada pela estrutura do Drive se faltar)
+  ou ao lado do original, prévia com o nome `<original> (<preset>).<ext>`, codec e peso pelo `planejar` do Relay com os
+  metadados do Drive. Pede pela ponte do HUB (`relay.converter`, ref = id da versão, idempotente por `ref:preset`),
+  acompanha só com a tela à vista (`relay.pedido`: 5 s, ou 15 s com tudo na fila e o computador fechado) e cancela por
+  item (`relay.cancelar`). Entregáveis em `maestro.entregaveis` (migração Maestro `0034`, RLS, acesso por cliente e o
+  gatilho `entregaveis_guarda`: o estado só anda para a frente): na fila, convertendo com %, pronto com MD5 ✓, não
+  saiu, cancelado e **Conferir** (despacho ambíguo ou pedido que sumiu da fila; só a pessoa pede de novo, nunca
+  sozinho). Quem pede: `podeEntregas` em `src/lib/acessos.ts` (administração, gestão e equipe; leitura acompanha). Sem
+  SOBEDESCE ou Relay no plano: o porquê e o link; computador fechado: "Começa quando o computador com o SOBEDESCE
+  abrir" e o Relay no navegador como saída (jeito 2, só o preset). Cópia de `presets.js`/`plano.js` (23 destinos) e do
+  ícone conferida por teste, com os campos tipados. HUB: as ações `relay.*` na `PONTES` (exigem também o Relay no
+  plano; `relay.pedido` com limite próprio), schemas `sobedesce.relay-*` e o OpenAPI. SOBEDESCE (30/10/2026, pedido
+  do titular): as rotas `/api/zro/relay/{converter,pedido,cancelar}` (`web/src/lib/zro/relay.ts`: contrato estrito,
+  pasta conferida no mesmo Drive, idempotente por `ref:preset` com índice único, até 100 esperando), o tipo `relay` na
+  fila `pedidos_proxy` (migração SOBEDESCE `0016_pedidos_relay`: o estado só anda para a frente, computador sumido vira
+  erro e nunca nova conversão sozinha) e o executor no app de computador (`src/engine/pedidos-relay.js`, nos trabalhos
+  do Relay da tela, com o x264 e o MD5; cancelado no Maestro para antes de subir; preset com cor recusado; aviso
+  "Versão para o Maestro" na tela). **Pronto para lançar (30/10/2026, "Publicar e lançar o app"):** o botão só
+  aparece quando funciona. O app de computador **0.2.0** diz ao site em todo pedido `x-sobedesce-capacidades: relay`
+  (gravado em `sessoes.capacidades`, migração SOBEDESCE `0017_capacidades_do_computador`, na hora em que muda);
+  `relay.pedido` (agora também com `ids: []`) devolve `computador.relay`/`desatualizado`; o Maestro pergunta ao abrir o
+  card e mostra "Gerar versões" só com `relay`, ou "Atualize o SOBEDESCE no computador para gerar versões." com app
+  antigo (só depois que o instalador do `/baixar` já é a 0.2.0); sem computador, sem SOBEDESCE ou sem o Relay no plano, nada. O site recusa `relay.converter` sem computador
+  que converta (409 `sem_computador_relay`). Novidades em `products/sobedesce/docs/NOVIDADES.md`; passos do lançamento
+  em [operations/lancamento-gerar-versoes.md](operations/lancamento-gerar-versoes.md). **Versões de computador
+  autorizadas (30/10/2026):** a branch `versoes-computador` junta isto, o BT.709 no ffmpeg 8 e o Relay nos menus da
+  família do Synquei (`app/`) e do SOBEDESCE de computador; na main, publica o site com a `0016` e a `0017`, o Maestro e
+  os builds do SOBEDESCE 0.2.0 e do Synquei. **Falta:** conferir com um Drive e um computador de verdade. Depois: evento `media.conversion.completed` quando o HUB receber
+  resultado.
 - ⬜ Maestro, do mesmo estudo e à espera do titular: a Z **escrevendo** no Maestro (criar
   pedido, despesa, marcar contato, sempre com a ação exata e o "sim"; cota e plano da Z); sincronia de duas vias com o Google Agenda (OAuth); eventos
   `maestro.pedido.ganho`, `maestro.orcamento.aceito` e `maestro.projeto.criado` no HUB (desenho no mapa).
@@ -505,6 +540,14 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   `packages/drive-web`, que o SOBEDESCE passou a usar), prévia de vídeo, imagem e PDF, "Abrir no SOBEDESCE",
   "Estrutura no Drive" por projeto e ligar pasta a projeto (migração 0019). Falta: upload pelo Maestro
   (`drive.enviar`), raiz do Drive compartilhado da organização em Ajustes, proxy 720p automático para ProRes.
+- 🟡 Maestro: **Arquivos é o SOBEDESCE** (30/10/2026, titular: "não precisa de botão, tem que abrir como a aba Drive
+  do Sobedesce funciona"): a aba é o próprio app do SOBEDESCE num quadro (`/app/?no=maestro`, Transferências e Drive,
+  subir e baixar ali mesmo), com o selo pequeno dele e sem botão de abrir; tema do Maestro (muda junto), cheio na tela
+  do computador e compacto no iPhone. O quadro mora no shell: sair de Arquivos não para o envio, o ponto acende em
+  Arquivos (e em Mais) e fechar a aba pede confirmação. "Abrir" leva o quadro à pasta do projeto pelo `#` e "Ligar a um
+  projeto" usa a pasta aberta no quadro. Sem o SOBEDESCE respondendo, um aviso curto com o link. Mesmo padrão do
+  Porta-malas do Carro. Falta: publicar o SOBEDESCE com o modo embutido antes do Maestro e conferir logado em
+  maestro.absolutezro.com (o cookie do SOBEDESCE é SameSite=Lax: só funciona no mesmo site).
 - ✅ Maestro para computador (29/10/2026, pedido do titular; `products/maestro/desktop`,
   [README](../products/maestro/desktop/README.md)): Electron no Mac e no Windows com a moldura do Absolute ZRO para
   computador (barra própria no Mac, papel claro do Maestro, menu em português, memória da janela, uma instância,
@@ -516,6 +559,17 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   `.github/workflows/maestro-desktop.yml` publica no Release de teste `maestro-versao-de-teste` (SHA-256,
   `versao.json`, três últimos builds). Falta: primeiro build no GitHub (sai no próximo push na main), instalar num Mac e
   num Windows de verdade, assinatura/notarização da Apple e certificado da Microsoft (decisão e conta do titular).
+- ✅ Relay e Carro do Freela para computador (30/10/2026, pedido do titular: "Precisa criar o do Carro do Freela também" e o
+  do Relay; `products/relay/desktop` e `products/carro-do-freela/desktop`, cada um com README): a mesma moldura do Maestro
+  para computador (janela que abre o site de produção, login único dentro da janela, links de fora no navegador, sem
+  Node, "Sem conexão" local, "Nova versão" com Atualizar, uma instância, `relay://` e `carrodofreela://`), cada um com o
+  ícone oficial do site (Relay: `products/relay/marca/relay-icone.svg`; Carro: `public/icone-512.png`, o anel com as três
+  barras e o carrinho) e o tema do site (Relay claro, Carro escuro). O Relay só ganhou a permissão de escolher a pasta de
+  saída; sem conversão nativa por enquanto. Registrados em `APPS_DESKTOP` (central e `/baixar/app/<id>/…`) e em `DOWNLOADS`
+  (botões Mac e Windows em `/baixar`); migração `0042_relay_carro_desktop.sql` (não aplicada) abre `desktop` e `download`
+  só para os dois. Workflows `relay-desktop.yml` e `carro-desktop.yml` (Release de teste `relay-versao-de-teste` e
+  `carro-versao-de-teste`, builds a partir de 2000 e 3000). Falta: primeiro build no GitHub (sai no push na main), aplicar
+  a 0042 depois dele, instalar num Mac e num Windows de verdade, assinatura/notarização (decisão e conta do titular).
 - ✅ Maestro, **colunas do Quadro como no Trello** (pedido do titular, 29/10/2026; `drizzle/0024_colunas.sql`): cada
   produtora renomeia no lugar (clique duplo no cabeçalho; no celular, tocar na aba já escolhida), recolore (paleta de
   12 tons da Aurora), reordena (arrastar o cabeçalho; no celular, segurar a alça 280 ms na folha) e cria colunas
@@ -879,7 +933,9 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
 - ✅ HUB: produto `relay` no catálogo (migration `0031`, incluído em todo plano, fechado pelo gate), `ProductId`, catálogo
   de integrações e a Z.
 - ⬜ Revela tira a aba Converter e aponta para o Relay (na conversa da Revela); AEON e NOSSOM exportam pelos presets do
-  Relay; Synquei e Maestro pedem versões pela fila ([contrato](integration-contracts/relay.md)).
+  Relay; Synquei pede versões pela fila ([contrato](integration-contracts/relay.md)). Maestro: o lado dele e a
+  `PONTES` do HUB prontos (30/10/2026); rotas, fila e executor do SOBEDESCE no código (30/10/2026; falta publicar o
+  site com a `0016` e lançar o app de computador novo).
 - ✅ Presets de TV e formatos específicos (pedido do titular, 29/10/2026): Smart TV (H.264 Full HD a 30 fps, pendrive) e
   Smart TV 4K (HEVC) num grupo TV; LinkedIn e X em Redes; Slides e Vídeo de fundo (sem som) em Trabalho. Entrega para
   emissora (MXF/XDCAM, ProRes, loudness) fica de fora até existir no computador.
@@ -911,9 +967,9 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
   por grupo, a conta (painel, equipe e Set), o ecossistema só com o que está no ar (Maestro, SOBEDESCE, Synquei e
   TPeasy) e o fecho. Uma foto de exemplo (Higgsfield) vira o arquivo das telas e da
   demonstração; nenhuma interface gerada. ⬜ Conferir num iPhone de verdade depois do deploy.
-- 🟡 "Escolher no Drive" no Relay (pedido do titular, 30/10/2026): lado do Relay pronto e testado (quadro, leitura aos
-  pedaços, "Para o Drive"), atrás de `RECURSOS.drive`. ⬜ Lado do SOBEDESCE (`?no=relay`, modo escolher, `ler`/`enviar`)
-  depois do embutido do Carro entrar na main; então `DRIVE=released` no projeto `relay`.
+- ✅ "Escolher no Drive" no Relay (pedido do titular, 30/10/2026): o SOBEDESCE embutido (`?no=relay&modo=escolher`)
+  escolhe o vídeo, o Relay lê aos pedaços pelo canal e "Para o Drive" devolve o resultado à mesma pasta.
+  `DRIVE=released` no projeto `relay`. ⬜ Conferir com o Drive de verdade e um arquivo grande.
 - ⬜ App de computador do Relay e SOBEDESCE gravando no painel (Bearer da conta em `/api/relay/painel`).
 - ⬜ Conta excluída na Absolute ZRO apagar o schema `relay` dela (hoje nenhum app recebe o aviso do HUB).
 - ⬜ "Baixar como…" das Referências e o pedido da Z no SOBEDESCE pelos presets do Relay.
@@ -992,6 +1048,8 @@ do card... não consigo localizar o job que quero achar".
   pelo @" no vazio; prévia com foto, nome e @ enquanto digita (`POST /contatos { ver }`, só perfil visível, mesmo
   limite da busca); "Pedido enviado" ou "Agora vocês são contatos" ali mesmo; pedidos recebidos no topo do Online com
   Aceitar e Recusar e o número na aba; já contatos = 409. Mesmo `v1`, sem mexer em nenhum repasse dos apps.
+- ✅ Sugestões enquanto digita o @ (30/10/2026): a partir de 3 letras, até 5 pessoas pelo começo do @ ou pelo nome
+  (`POST /contatos { buscar }`, mesmas regras da busca de perfis, sem bloqueados nos dois sentidos), com ↑/↓/Enter/Esc.
 - ⬜ App de computador do SOBEDESCE com o Set (o motor local ainda não repassa); aviso fora do app (e-mail/push);
   anexos.
 - ⬜ Fase 3, salas abertas da comunidade: com o lançamento do Carro do Freela (novo tipo de conversa, mesma API).
@@ -1027,6 +1085,29 @@ do card... não consigo localizar o job que quero achar".
   de seção, remover, com a frase de origem). Sem migração: o rascunho e as versões imutáveis já tinham RLS.
 - ⬜ Para os clientes: voz, ditado e anexos no painel `<zro-ia>` lendo `z_recurso_liberado`, quando os planos forem
   vendidos.
+
+## Carro do Freela: lançamento preparado (30/10/2026, [checklist](operations/lancamento-carro.md))
+
+- ✅ **Migration `0041_carro_lancamento.sql`** (o titular autorizou preparar; sem e-mail, sem app de computador): catálogo
+  `active` em `carro.absolutezro.com` (`sso_start_url` `…/api/zro/entrar`), descrição sem "protótipo", gate `released`
+  com web, api e sso (desktop e download fechados), entitlement para assinatura vigente sem o Carro. Planos não mudam
+  (o Carro já estava no grátis vigente, no Completo, no Pro e nos avulsos). Idempotente; teste
+  `tests/integration/carro-lancamento.test.ts`. Os testes que usavam o Carro como exemplo de produto fechado passaram a
+  usar NOSSOM, AEON e Revela, ou a conferir o Carro aberto.
+- ✅ **Páginas públicas**: o Carro entra sozinho pela regra do gate (`lib/divulgacao.ts`) na faixa, no fluxo ("Equipe", 2
+  de 7), na órbita da Z e em "Conheça de perto", com a foto dos aparelhos refeita do site real; `/baixar` aponta para o
+  subdomínio (navegador e Tela de Início). O evento `freela.inventario.atualizado` (rota desligada) não aparece nem conta.
+- ✅ **Site real do Carro** (ramo `claude/carro-no-ar` mesclado, com a `0038_comunidade` do HUB) sem sobra de protótipo:
+  sem Prévia, Planos, Aprender, Passar o carro, Orçamento, escada de planos, "de graça", Google Agenda/WhatsApp de
+  mentira e sem falar com o Supabase do app original; família só com o que está no ar.
+- ⬜ No dia: `CARRO_RELEASE=released` no `carrodofreela-app` e mesclar o PR (o build aplica 0038 e 0041 no HUB e a
+  `0002_comunidade` no banco do Carro). DNS de `carro.absolutezro.com` já no ar.
+- ✅ **Propostas, Jobs, Feed e Brechó no servidor do Carro** (decisão do titular: construir antes de lançar). Migração
+  do Carro `0003_propostas_feed_brecho` (RLS pelo `sub` da Absolute ZRO), rotas `/api/zro/propostas|feed|brecho|denuncia`:
+  a consulta chega na caixa do freela dentro do Carro (sem e-mail nem WhatsApp), aceitar vira job, feed e brechó com
+  apagar o próprio e denúncia guardada; o que estava no aparelho só sobe se a pessoa tocar em "Enviar para a sua conta".
+- ⬜ Depois: curtida, comentário, foto e vídeo no servidor; tela de revisão das denúncias; agenda do Carro e do Maestro
+  separadas (a pessoa é a mesma pelo `sub`); inventário Carro → Maestro desligado; `noindex`.
 
 ## Fase 6 — Escala
 
@@ -1064,6 +1145,14 @@ do card... não consigo localizar o job que quero achar".
   `web/public/app`, app 2.8.51 / `sobedesce-app-v66`), Synquei (`app/`, `synquei-v22`) e TPeasy (`app/`,
   `tpeasy-v19`) sem NOSSOM, Revela e Carro do Freela na lista da família; o SOBEDESCE chama a entrada de "conta
   Absolute ZRO" nos dois apps. Falta o titular autorizar os instaladores novos do SOBEDESCE e do Synquei.
+- ✅ **A família igual em todos os apps, com o Relay** (30/10/2026): Synquei, TPeasy, Carro do Freela (lateral e
+  gaveta) e SOBEDESCE (computador e celular, app 2.8.58 / `sobedesce-app-v73`) listam as mesmas plataformas no ar
+  (Maestro, Relay, SOBEDESCE, Synquei, TPeasy, sem o próprio app), com os nomes oficiais e o ícone oficial do Relay;
+  o Carro deixou de mostrar NOSSOM e Revela. A régua é `tests/integration/familia-menus.test.ts` (endereços de
+  produção e ícones byte a byte iguais a `apps/hub-web/public/products`): plataforma lançada entra em `NO_AR` e o teste
+  aponta cada menu que falta. Caches `synquei-v26` (`v27` com o menu do `app/`, junto das versões de computador) e `tpeasy-v22`. Relay, TPeasy e Synquei com funções em `gru1`.
+  Falta: o Synquei no celular não tem menu da família (a barra lateral some abaixo de 860px); AEON, Revela e NOSSOM
+  seguem com a lista antiga até lançarem.
 - ✅ **SOBEDESCE no Windows: bandeja e barra lateral** (28/10/2026, pedido de cliente): minimizar manda para a bandeja
   (padrão no Windows, ajuste "Minimizar para a bandeja" em Ajustes → Aparência), menu da bandeja com "Abrir SOBEDESCE",
   quantas transferências andam e "Sair"; fechar no X com transferência andando vai para a bandeja. Barra lateral cabe

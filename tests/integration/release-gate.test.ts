@@ -28,7 +28,8 @@ beforeAll(() => {
 afterAll(() => db.close())
 
 const LANCADOS = ['sobedesce', 'synquei', 'tpeasy']
-const FECHADOS = ['nossom', 'ai-edit', 'finishing', 'carro-do-freela']
+// O Carro do Freela saiu da lista dos fechados no lançamento (0041): no ar na web, na API e no login único.
+const FECHADOS = ['nossom', 'ai-edit', 'finishing']
 const sys = <T>(fn: (tx: Tx) => Promise<T>) => db.asSystem('teste', fn)
 
 /** A mesma pessoa chamando pelo token de um app da família (canal api). */
@@ -40,13 +41,18 @@ const viaApp = (auth: Authenticated, productId: string): Authenticated => ({
 const job = (id: string) => ({ contract: 'carro-do-freela.job/1', job_id: id, title: 'Job', production_type: 'show', crew_roles: [] })
 
 describe('seed e regra do banco', () => {
-  it('SOBEDESCE, Synquei e TPeasy lançados em todos os canais; NOSSOM, AEON, Revela e Carro em desenvolvimento', async () => {
+  it('SOBEDESCE, Synquei e TPeasy lançados em todos os canais; Carro no ar sem app de computador; NOSSOM, AEON e Revela em desenvolvimento', async () => {
     const s = await sys((tx) => releaseState(tx, { fresh: true }))
     for (const id of LANCADOS) {
       expect(s[id]?.state, id).toBe('released')
       expect(s[id]?.open, id).toBe(true)
       expect(Object.values(s[id]!.channels).every(Boolean), id).toBe(true)
     }
+    expect(s['carro-do-freela']).toMatchObject({
+      state: 'released',
+      open: true,
+      channels: { web: true, desktop: true, api: true, download: true, sso: true },
+    })
     for (const id of FECHADOS) {
       expect(s[id]?.state, id).toBe('development')
       expect(s[id]?.open, id).toBe(false)
@@ -89,7 +95,7 @@ describe('contas do PRD §11', () => {
     const o = await newOrgWithOwner(db, 'gate-gratis', { freePlan: true })
     const access = await db.asUser({ userId: o.userId, orgId: o.orgId }, (tx) => productAccessFor(tx, o.orgId))
     const by = Object.fromEntries(access.map((a) => [a.productId, a]))
-    for (const id of LANCADOS) expect(by[id]!.access, id).toBe('contracted')
+    for (const id of [...LANCADOS, 'carro-do-freela']) expect(by[id]!.access, id).toBe('contracted')
     for (const id of FECHADOS) {
       expect(by[id]!.access, id).toBe('closed')
       expect(by[id]!.release, id).toMatchObject({ state: 'development', open: false, allowed: false })
@@ -112,7 +118,8 @@ describe('contas do PRD §11', () => {
     await givePlan(db, o.orgId, 'ciclo-do-o')
     await expect(authorize(db, o.auth, { product: { id: 'synquei' } })).resolves.toBeTruthy()
     for (const id of FECHADOS) await expectCode(authorize(db, o.auth, { product: { id } }), 'product_closed')
-    await expectCode(importCarroJob(db, o.auth, job('job-gate-1')), 'product_closed')
+    // o Carro do Freela está no ar (0041): o Completo traz, e o job entra
+    expect((await importCarroJob(db, o.auth, job('job-gate-1'))).created).toBe(true)
   })
 
   it('usuário de outro produto: o token do SOBEDESCE abre a Z; a mesma chamada vinda de um app fechado é negada', async () => {
@@ -128,8 +135,8 @@ describe('contas do PRD §11', () => {
     const auth = { ...o.auth, user: { ...o.auth.user, platformRole: 'admin' as const } }
     for (const id of FECHADOS) await expectCode(authorize(db, auth, { product: { id } }), 'product_closed')
     const claims = await sys((tx) => loadOidcClaims(tx, o.userId, o.orgId))
-    // o Maestro está em Beta (0027): entra como qualquer aberto
-    expect(claims.products.sort()).toEqual([...LANCADOS, 'maestro'].sort())
+    // o Maestro (0027/0039) e o Carro do Freela (0041) estão no ar: entram como qualquer aberto
+    expect(claims.products.sort()).toEqual([...LANCADOS, 'maestro', 'carro-do-freela'].sort())
     for (const id of FECHADOS) expect(claims.release[id], id).toBe('closed')
   })
 
@@ -182,7 +189,7 @@ describe('contas do PRD §11', () => {
     expect(hist.find((a) => a.userId === o.userId)).toMatchObject({ active: false, kind: 'tester', channels: ['web'] })
   })
 
-  it('Carro do Freela: só a conta proprietária listada entra; outro admin da plataforma, assinante e membro da mesma organização, não', async () => {
+  it('Carro do Freela no ar (0041): a lista do proprietário deixa de ser a porta; qualquer conta com o Carro no plano entra, e sem plano não', async () => {
     const dono = await newOrgWithOwner(db, 'carro-dono', { freePlan: true })
     await allowRelease(db, 'carro-do-freela', dono.userId, { kind: 'owner' })
     const outroAdmin = await newOrgWithOwner(db, 'carro-outro-admin', { freePlan: true })
@@ -196,16 +203,21 @@ describe('contas do PRD §11', () => {
     })
     const colegaAuth = await refresh(db, colega.token)
     expect(colegaAuth.session.activeOrgId).toBe(dono.orgId)
+    const semPlano = await newOrgWithOwner(db, 'carro-sem-plano')
 
-    const r = await importCarroJob(db, dono.auth, job('job-dono'))
-    expect(r.created).toBe(true)
-    await expectCode(importCarroJob(db, outroAdmin.auth, job('job-outro-admin')), 'product_closed')
-    await expectCode(importCarroJob(db, assinante.auth, job('job-assinante')), 'product_closed')
-    // mesma organização do dono (cross-tenant dentro da org): a lista é por conta, o colega não herda
-    await expectCode(importCarroJob(db, colegaAuth, job('job-colega')), 'product_closed')
-    const claims = await sys((tx) => releaseClaimsFor(tx, dono.userId))
-    expect(claims['carro-do-freela']).toBe('allowed')
-    expect((await sys((tx) => releaseClaimsFor(tx, outroAdmin.userId)))['carro-do-freela']).toBe('closed')
+    for (const [quem, auth] of [
+      ['dono', dono.auth],
+      ['outro admin', outroAdmin.auth],
+      ['assinante', assinante.auth],
+      ['colega', colegaAuth],
+    ] as const) {
+      expect((await importCarroJob(db, auth, job(`job-${quem.replace(' ', '-')}`))).created, quem).toBe(true)
+    }
+    // aberto não é de graça para quem não tem plano: cai no entitlement, não no gate
+    await expectCode(importCarroJob(db, semPlano.auth, job('job-sem-plano')), 'entitlement_required')
+    // com o gate aberto, todo mundo vê o produto lançado (a linha do dono fica, inerte)
+    expect((await sys((tx) => releaseClaimsFor(tx, dono.userId)))['carro-do-freela']).toBe('released')
+    expect((await sys((tx) => releaseClaimsFor(tx, outroAdmin.userId)))['carro-do-freela']).toBe('released')
   })
 
   it('cross-tenant: a linha vale para a conta, mas o plano é da organização', async () => {

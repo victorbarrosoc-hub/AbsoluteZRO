@@ -11,6 +11,7 @@
 const ANFITRIOES = {
   carro: ['https://carro.absolutezro.com'],
   maestro: ['https://maestro.absolutezro.com'],
+  relay: ['https://relay.absolutezro.com'],
 }
 const params = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams()
 const no = params.get('no')
@@ -18,6 +19,8 @@ const no = params.get('no')
 /** Nome do anfitrião ('carro' | 'maestro') ou null fora de um quadro conhecido. */
 export const ANFITRIAO = Object.hasOwn(ANFITRIOES, no) ? no : null
 export const EMBUTIDO = ANFITRIAO !== null
+/** O Relay escolhendo um vídeo (/app/?no=relay&modo=escolher): o toque no arquivo vira o recado `escolhido`. */
+export const ESCOLHER = ANFITRIAO === 'relay' && params.get('modo') === 'escolher'
 
 /** Abas que existem no modo embutido. */
 export const ABAS_EMBUTIDO = ['send', 'drive']
@@ -63,6 +66,8 @@ export function iniciarEmbutido() {
     if (!ORIGEM || e.origin !== ORIGEM || e.source !== window.parent) return
     const d = e.data
     if (d && typeof d === 'object' && d.tipo === 'tema') aplicarTema(d.tema)
+    // o Relay abre um canal para ler o arquivo aos pedaços e mandar o resultado (lib/embutido-relay.js)
+    if (ESCOLHER && d && typeof d === 'object' && d.fonte === 'relay' && d.tipo === 'canal' && e.ports[0]) import('./embutido-relay.js').then((m) => m.atender(e.ports[0]))
   })
   avisarAnfitriao('pronto')
 }

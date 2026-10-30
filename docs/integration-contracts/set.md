@@ -65,6 +65,12 @@ situacao }`, com `situacao` = `nenhuma | contato | enviado | recebido | bloquead
   confirmado e 60 a cada 10 minutos, no mesmo contador. O bloqueio que a outra pessoa fez nunca aparece (`nenhuma`, e o
   pedido fica "pendente" sem avisar). Vai no POST, e não num GET novo, para passar pelos repasses de todos os apps sem
   mexer neles; a Absolute ZRO de antes responde 422 (`Diga o @ da pessoa.`) e o widget segue sem a prévia.
+- **Sugestões** (30/10/2026): `POST /contatos { buscar: "ron" }` → `200 { pessoas: [{ pessoa, situacao }] }`, até 5,
+  a partir de 3 letras, pelo começo do @ ou pelo nome (sem acento e sem caixa; com `@` na frente, só o @). Mesma busca
+  de perfis (`zro.buscar_perfis`, visíveis, e-mail confirmado, o mesmo contador de 60 a cada 10 minutos); ninguém
+  bloqueado aparece, nos dois sentidos, nem a própria pessoa. No widget: 250 ms depois de digitar, ↑/↓ escolhe, Enter
+  age (Adicionar, Aceitar, Conversar), o primeiro Esc fecha a lista e o segundo o campo. A Absolute ZRO de antes
+  responde 422 e o widget segue sem sugestões.
 - **Pedir**: `POST /contatos { arroba }` → `201 { estado: pendente | aceito, pessoa }` (aceito quando a outra pessoa já
   tinha pedido). Já contatos: **409** `Vocês já são contatos.`; quem você bloqueou: **403**; limite: **429**
   `Muitos pedidos hoje. Tente amanhã.`. Repetir um pedido já enviado e aceitar o recebido não gastam os 20 do dia.

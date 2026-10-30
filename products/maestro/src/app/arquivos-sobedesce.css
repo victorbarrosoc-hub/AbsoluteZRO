@@ -1,0 +1,259 @@
+/* Arquivos é o SOBEDESCE (titular, 30/10/2026): o quadro do próprio app (components/arquivos/sobedesce-vivo.tsx), que
+   mora no shell e só aparece em /app/arquivos; o selo pequeno dele ao lado do título; os projetos numa faixa só; o
+   ponto do envio andando na navegação. No computador o quadro ocupa a janela até embaixo; no celular, até a barra.
+   Carregado pelo shell (todas as seções), porque o ponto e o quadro escondido vivem fora de Arquivos. */
+
+/* a seção com o quadro: mais larga no computador, respiro de baixo medido (a barra do celular) */
+.conteudo:has(> .sd-vivo:not([hidden])) {
+  width: min(1680px, 100% - 48px);
+  padding-bottom: var(--sd-baixo, 20px);
+}
+
+.sd-vivo {
+  position: relative;
+  display: block;
+  margin-top: 16px;
+  height: max(420px, calc(100dvh - var(--sd-topo, 260px) - var(--sd-baixo, 20px)));
+}
+.sd-vivo[hidden] {
+  display: none;
+}
+.sd-quadro {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+
+/* abrindo: a superfície do quadro com um ponto, até o SOBEDESCE dizer "pronto" */
+.sd-abrindo {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-l);
+  background: var(--surface);
+  box-shadow: var(--shadow-float);
+}
+.sd-abrindo__ponto {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  opacity: 0.5;
+}
+
+/* o SOBEDESCE não abriu (fora do ar, endereço que recusa o quadro): curto, com o link */
+.sd-falhou {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  padding: 24px;
+  border-radius: var(--radius-l);
+  background: var(--painel);
+  box-shadow: var(--shadow-float);
+  color: var(--text-mute);
+  text-align: center;
+}
+.sd-falhou p {
+  margin: 0;
+  font-family: var(--font-apple);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+.sd-falhou__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* o título com o selo do SOBEDESCE ao lado */
+.sd-cabeca {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+}
+.sd-selo {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  padding: 4px 12px 4px 6px;
+  border-radius: 999px;
+  background: var(--pill-fill);
+  box-shadow: var(--pill-rim);
+  color: var(--text-mute);
+  text-decoration: none;
+  font-family: var(--font-apple);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  transition: color 0.2s var(--ease);
+}
+.sd-selo:hover {
+  color: var(--text-strong);
+}
+.sd-selo img {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+}
+
+/* os projetos numa faixa só (rola de lado) e, à direita, "Ligar a um projeto" com a pasta aberta no quadro */
+.pagina--arquivos {
+  gap: 14px;
+}
+.sd-barra {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.sd-projetos {
+  flex: 1;
+  min-width: 0;
+}
+.sd-projetos ul {
+  list-style: none;
+  margin: 0;
+  padding: 2px 2px 6px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.sd-projetos ul::-webkit-scrollbar {
+  display: none;
+}
+.sd-projeto {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 400px;
+  min-width: 0;
+  padding: 8px 8px 8px 10px;
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  box-shadow: var(--card-sombra);
+}
+.sd-projeto .glass-btn {
+  flex: none;
+}
+.sd-ligar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 5px 5px 5px 12px;
+  border-radius: 999px;
+  background: var(--painel);
+  box-shadow: var(--shadow-float);
+}
+.sd-ligar__pasta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 200px;
+  color: var(--text-strong);
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+.sd-ligar__pasta span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sd-ligar select {
+  min-height: 36px;
+  min-width: 0;
+  max-width: 220px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--pill-fill);
+  box-shadow: var(--pill-rim);
+  color: var(--text-strong);
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+/* o ponto do envio andando (data-envios no <html>): em Arquivos, no menu Produção, em "Mais" e no cartão de Mais */
+:root[data-envios] [data-sinal="envios"] {
+  position: relative;
+}
+:root[data-envios] [data-sinal="envios"]::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--acento);
+  box-shadow: 0 0 0 2px var(--surface);
+  pointer-events: none;
+}
+:root[data-envios] .barra a[data-sinal="envios"]::after {
+  top: 4px;
+  right: calc(50% - 18px);
+}
+:root[data-envios] .mais-item[data-sinal="envios"]::after {
+  top: 16px;
+  right: 16px;
+  width: 10px;
+  height: 10px;
+}
+
+@media (max-width: 900px) {
+  .conteudo:has(> .sd-vivo:not([hidden])) {
+    width: calc(100% - 24px);
+  }
+  .sd-vivo {
+    margin-top: 12px;
+    /* no iPhone pequeno (SE) o mínimo passa da barra e a página rola um pouco; o respiro de baixo deixa ver o fim */
+    height: max(300px, calc(100dvh - var(--sd-topo, 200px) - var(--sd-baixo, 84px)));
+  }
+  .sd-quadro,
+  .sd-abrindo,
+  .sd-falhou {
+    border-radius: 20px;
+  }
+  /* no iPhone: o título e o selo numa linha, a faixa mais baixa, "Ligar" embaixo da faixa */
+  .pagina--arquivos {
+    gap: 10px;
+  }
+  .sd-barra {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .sd-projeto {
+    max-width: 268px;
+    padding: 6px 6px 6px 8px;
+  }
+  .sd-projeto .dv-projeto__icone {
+    width: 30px;
+    height: 30px;
+  }
+  .sd-ligar {
+    align-self: flex-start;
+  }
+  .sd-ligar__pasta {
+    max-width: 110px;
+  }
+  .sd-ligar select {
+    max-width: 150px;
+  }
+}

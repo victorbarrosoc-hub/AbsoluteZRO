@@ -72,7 +72,7 @@ describe('no Chromium, com um SOBEDESCE de mentira', () => {
                 await fetch('/recebido/' + encodeURIComponent(d.nome) + '?pasta=' + d.pasta, { method: 'POST', body: d.dados })
                 porta.postMessage({ pedido: d.pedido, ok: true, envio: 'envio-1' })
                 setTimeout(() => porta.postMessage({ tipo: 'envio', envio: 'envio-1', estado: 'enviando' }), 20)
-                setTimeout(() => porta.postMessage({ tipo: 'envio', envio: 'envio-1', estado: 'conferido' }), 60)
+                setTimeout(() => porta.postMessage({ tipo: 'envio', envio: 'envio-1', estado: 'enviado' }), 60)
               }
             }
           })
@@ -126,7 +126,7 @@ describe('no Chromium, com um SOBEDESCE de mentira', () => {
     await p.waitForSelector('.saida--feito', { timeout: 120_000 })
     assert.ok(lidos > 0, 'leu pelo quadro')
     await p.click('button:has-text("Para o Drive")')
-    await p.waitForSelector('text=No Drive, conferido')
+    await p.waitForSelector('.ficha:text-is("No Drive")')
     const enviado = join(pasta, 'drive-pasta_0123456789-drive-origem (WhatsApp).mp4')
     assert.ok(existsSync(enviado), 'chegou na mesma pasta do Drive')
     assert.ok(statSync(enviado).size > 1000)

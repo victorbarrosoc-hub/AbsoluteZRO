@@ -73,7 +73,7 @@ test('Entrar com Absolute ZRO: cadastro, permissão, código e tokens', async ({
     zro_org: { name: 'Produtora SSO', role: 'owner' },
     // Organização nova entra no plano grátis (0007), mas o login único só traz o que está lançado (gate, ADR 0023).
     zro_products: expect.arrayContaining(['sobedesce', 'synquei', 'tpeasy']),
-    zro_release: expect.objectContaining({ sobedesce: 'released', nossom: 'closed', 'carro-do-freela': 'closed' }),
+    zro_release: expect.objectContaining({ sobedesce: 'released', nossom: 'closed', 'carro-do-freela': 'released' }),
   })
   expect(claims.zro_products).not.toContain('nossom')
 

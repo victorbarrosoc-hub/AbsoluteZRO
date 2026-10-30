@@ -11,7 +11,7 @@
 //   pelo canal:
 //     { pedido, tipo: 'ler', id, de, ate }                 → { pedido, ok: true, dados: ArrayBuffer (transfer) }
 //     { pedido, tipo: 'enviar', nome, mime, dados: Blob, pasta } → { pedido, ok: true, envio }   (entrou na fila)
-//     (do quadro, sem pedido) { tipo: 'envio', envio, estado: 'enviando' | 'conferido' | 'erro', erro? }
+//     (do quadro, sem pedido) { tipo: 'envio', envio, estado: 'enviando' | 'enviado' | 'erro' (enviado: o Drive confirmou o tamanho), erro? }
 //     qualquer erro: { pedido, ok: false, erro: 'texto curto' }
 
 export const ORIGEM_SOBEDESCE = 'https://sobedesce.absolutezro.com'

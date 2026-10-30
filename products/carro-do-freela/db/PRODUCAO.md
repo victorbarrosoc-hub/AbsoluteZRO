@@ -3,11 +3,12 @@
 Nada disto foi feito pelo código nem por agente. Sem estes passos o Carro segue igual a hoje: as rotas
 `/api/zro/perfil` e `/api/zro/inventario` respondem `503 sem_banco` e o bloco "Meu perfil / Meu inventário" não aparece.
 
-Banco: projeto Supabase **AbsoluteZRO**, schema **`carro_do_freela`** (o do ADR 0013), nunca dentro de `zro`.
+Banco: projeto Supabase **AbsoluteZRO-SP** (São Paulo, `sa-east-1`, desde 29/10/2026), schema **`carro_do_freela`** (o
+do ADR 0013), nunca dentro de `zro`.
 
-## O que já existe lá (lido em 29/10/2026, só leitura)
+## O que existia no projeto anterior (lido em 29/10/2026, só leitura, antes da mudança para São Paulo)
 
-O schema `carro_do_freela` **já existe** no AbsoluteZRO (us-east-2), dono `postgres`, com
+O schema `carro_do_freela` **já existia** no AbsoluteZRO anterior, dono `postgres`, com
 `anon` tendo `USAGE` no schema. Três tabelas do app antigo, todas do `postgres`, RLS ligada e uma política
 `insercao_publica` (INSERT para `anon`; nenhum SELECT):
 
@@ -44,7 +45,7 @@ As três primeiras linhas são o pedido de origem, com o nome do schema do ADR 0
 login não tem `CREATEROLE` (sem `carro_do_freela_app` a migração para com "Crie o papel carro_do_freela_app antes") e
 porque o schema já existe com outro dono (sem a última, o login não cria tabelas nem dá `usage` ao papel do app).
 
-**Projeto novo (a mudança para São Paulo):** os mesmos comandos; se o schema ainda não existir lá, pule o `alter
+**No AbsoluteZRO-SP (o projeto atual, desde a mudança para São Paulo):** os mesmos comandos; se o schema ainda não existir lá, pule o `alter
 schema` (o migrador cria o schema, com `carro_do_freela` como dono). Copie as tabelas antigas como manda o ADR 0013
 (contagem e checksum) antes ou depois, tanto faz: a 0000 não depende delas. Depois, troque a `CARRO_DATABASE_URL` pelo
 endereço do pooler do projeto novo e faça um build: as migrações rodam sozinhas.
@@ -53,9 +54,9 @@ endereço do pooler do projeto novo e faça um build: as migrações rodam sozin
 
 | Nome | Valor |
 | --- | --- |
-| `CARRO_DATABASE_URL` | URL `postgresql://` montada com: host `aws-0-us-east-2.pooler.supabase.com`, porta `5432`, banco `postgres`, usuário `carro_do_freela.<project_ref>` e a senha gerada no passo 1 |
+| `CARRO_DATABASE_URL` | URL `postgresql://` montada com: host do pooler de sessão do AbsoluteZRO-SP (`aws-<n>-sa-east-1.pooler.supabase.com`, copiado de Supabase › Connect › Session pooler), porta `5432`, banco `postgres`, usuário `carro_do_freela.<project_ref>` e a senha gerada no passo 1 |
 
-É o **pooler de sessão** (porta 5432), usuário `carro_do_freela.<project_ref>` (`<project_ref>` do AbsoluteZRO). Sensível:
+É o **pooler de sessão** (porta 5432), usuário `carro_do_freela.<project_ref>` (`<project_ref>` do AbsoluteZRO-SP). Sensível:
 marque como secreta. Com ela, o próximo build roda `node db/migrar.js` antes de gerar o site; migração recusada
 reprova o build.
 

@@ -446,7 +446,22 @@ paths:
               properties:
                 destino: { type: string, enum: [sobedesce] }
                 acao:
-                  { type: string, enum: [drive.listar, drive.miniatura, drive.pasta.criar, drive.compartilhar_revisao, drive.recolher_revisao, drive.token] }
+                  {
+                    type: string,
+                    enum:
+                      [
+                        drive.listar,
+                        drive.miniatura,
+                        drive.pasta.criar,
+                        drive.compartilhar_revisao,
+                        drive.recolher_revisao,
+                        drive.token,
+                        relay.converter,
+                        relay.pedido,
+                        relay.cancelar,
+                      ],
+                    description: 'relay.* (docs/integration-contracts/relay.md) exigem também o Relay no plano',
+                  }
                 sub: { type: string, format: uuid, description: 'Só com a credencial do app (Basic) e só para drive.recolher_revisao' }
       responses:
         {
@@ -791,9 +806,13 @@ paths:
                 arroba: { type: string, description: 'com ou sem @' }
                 pessoa: { type: string, format: uuid }
                 ver: { type: string, description: 'só a prévia do @ (com ou sem @); nada é pedido' }
+                buscar: { type: string, description: 'sugestões enquanto digita (3+ letras): começo do @ ou nome; até 5, sem bloqueados nos dois sentidos' }
       responses:
         {
-          '200': { description: '{ ver }: { pessoa: { id, arroba, nome, foto }, situacao: nenhuma | contato | enviado | recebido | bloqueado }' },
+          '200':
+            {
+              description: '{ ver }: { pessoa: { id, arroba, nome, foto }, situacao: nenhuma | contato | enviado | recebido | bloqueado }; { buscar }: { pessoas: [{ pessoa, situacao }] }',
+            },
           '201': { description: '{ estado: pendente | aceito, pessoa: { id, arroba, nome, foto } }' },
           '401': { $ref: '#/components/responses/Error' },
           '403': { $ref: '#/components/responses/Error' },

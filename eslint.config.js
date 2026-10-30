@@ -4,12 +4,21 @@ import tseslint from 'typescript-eslint'
 export default tseslint.config(
   {
     ignores: [
-      // products/ tem as regras de cada app; só o Maestro para computador entra aqui (as mesmas do hub-desktop, abaixo)
+      // products/ tem as regras de cada app; só os apps para computador (Maestro, Relay, Carro do Freela) entram aqui
+      // (as mesmas do hub-desktop, abaixo)
       'products/*',
       '!products/maestro/',
       'products/maestro/*',
       '!products/maestro/desktop/',
       'products/maestro/desktop/dist/**',
+      '!products/relay/',
+      'products/relay/*',
+      '!products/relay/desktop/',
+      'products/relay/desktop/dist/**',
+      '!products/carro-do-freela/',
+      'products/carro-do-freela/*',
+      '!products/carro-do-freela/desktop/',
+      'products/carro-do-freela/desktop/dist/**',
       'apps/hub-desktop/dist/**',
       '**/node_modules/**',
       '**/.next/**',
@@ -41,7 +50,15 @@ export default tseslint.config(
   },
   // App de desktop (Electron): CommonJS no processo principal e scripts de navegador nas páginas locais.
   {
-    files: ['apps/hub-desktop/desktop/**/*.cjs', 'products/maestro/desktop/desktop/**/*.cjs', 'products/maestro/desktop/scripts/**/*.cjs'],
+    files: [
+      'apps/hub-desktop/desktop/**/*.cjs',
+      'products/maestro/desktop/desktop/**/*.cjs',
+      'products/maestro/desktop/scripts/**/*.cjs',
+      'products/relay/desktop/desktop/**/*.cjs',
+      'products/relay/desktop/scripts/**/*.cjs',
+      'products/carro-do-freela/desktop/desktop/**/*.cjs',
+      'products/carro-do-freela/desktop/scripts/**/*.cjs',
+    ],
     languageOptions: {
       sourceType: 'commonjs',
       globals: {
@@ -59,7 +76,12 @@ export default tseslint.config(
     rules: { '@typescript-eslint/no-require-imports': 'off' },
   },
   {
-    files: ['apps/hub-desktop/desktop/paginas/**/*.js', 'products/maestro/desktop/desktop/paginas/**/*.js'],
+    files: [
+      'apps/hub-desktop/desktop/paginas/**/*.js',
+      'products/maestro/desktop/desktop/paginas/**/*.js',
+      'products/relay/desktop/desktop/paginas/**/*.js',
+      'products/carro-do-freela/desktop/desktop/paginas/**/*.js',
+    ],
     languageOptions: {
       sourceType: 'script',
       globals: {
@@ -78,6 +100,10 @@ export default tseslint.config(
       'apps/hub-desktop/test/**/*.mjs',
       'products/maestro/desktop/scripts/**/*.mjs',
       'products/maestro/desktop/test/**/*.mjs',
+      'products/relay/desktop/scripts/**/*.mjs',
+      'products/relay/desktop/test/**/*.mjs',
+      'products/carro-do-freela/desktop/scripts/**/*.mjs',
+      'products/carro-do-freela/desktop/test/**/*.mjs',
     ],
     languageOptions: { globals: { fetch: 'readonly', AbortSignal: 'readonly', setInterval: 'readonly' } },
   },

@@ -1,19 +1,22 @@
 # Deploy — Vercel + Supabase
 
 **Autorizado pelo titular em 25/10/2026** para o projeto Vercel `absolutezro` (team Victorbarrosoc) em
-https://absolutezro.com, com o projeto Supabase **novo** `AbsoluteZRO` (nenhum banco de app original).
+https://absolutezro.com, com o projeto Supabase **novo** `AbsoluteZRO` (nenhum banco de app original). Desde
+29/10/2026 o banco é o **`AbsoluteZRO-SP`**, em São Paulo (`sa-east-1`), e as funções da Vercel rodam ao lado dele, em
+`gru1`.
 
 ## 1. Projeto na Vercel (feito)
 
 - Root Directory `apps/hub-web`, framework Next.js, Node 22, arquivos fora da pasta liberados (monorepo).
-- O resto vem de `apps/hub-web/vercel.json`: instalação com npm 11 na raiz, `npm run vercel-build`, região `iad1` (perto do banco Supabase em us-east-2; cada consulta atravessaria o continente a partir de `gru1`).
+- O resto vem de `apps/hub-web/vercel.json`: instalação com npm 11 na raiz, `npm run vercel-build`, região `gru1` (São Paulo, ao lado do banco `AbsoluteZRO-SP` em `sa-east-1`: função longe do
+  banco paga a viagem em cada consulta). Todo app com função (`api/*`) segue a mesma região no próprio `vercel.json`.
 
 ## 2. Banco Supabase
 
 1. Tabelas: SQL Editor › colar o SQL das migrations 0001–0003 (ou deixar o build aplicar, passo 3). O runner registra
    cada migration em `zro.schema_migrations` com checksum; rodar de novo não duplica nada.
 2. Ligar o banco ao projeto: Vercel › `absolutezro` › Storage › Supabase › conectar o projeto existente
-   `AbsoluteZRO` em Production e Preview. A integração cria `POSTGRES_URL` (pooler) e `POSTGRES_URL_NON_POOLING`.
+   `AbsoluteZRO-SP` em Production e Preview. A integração cria `POSTGRES_URL` (pooler) e `POSTGRES_URL_NON_POOLING`.
    Alternativa manual: `DATABASE_URL` = Transaction pooler (porta 6543) e `DATABASE_URL_UNPOOLED` = Session pooler
    (porta 5432), copiadas de Supabase › Connect. Nunca cole a senha em issue, PR ou chat.
 3. O código lê `DATABASE_URL` ou `POSTGRES_URL`, tira parâmetros extras da URL (`supa=`, `pgbouncer=`) e exige TLS
