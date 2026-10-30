@@ -41,19 +41,40 @@ batida ativa nos últimos 2 min; ausente = até 6 min.
 
 ## Rotas (`/api/v1/set`, detalhe em [openapi.yaml](openapi.yaml))
 
-| Rota                                        | O quê                                                                                     |
-| ------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `GET /`                                     | eu + preferências, pessoas (online primeiro), `naoLidas`, `pedidos`, `porConversa`        |
-| `POST /` `{ estado }`                       | batida de presença (`ativo`, `ausente`, `saiu`) e o mesmo estado                          |
-| `PUT /preferencias`                         | `{ invisivel?, quemVe?, mostrarVisto? }`                                                  |
-| `GET/POST /contatos`                        | contatos, pedidos recebidos/enviados, bloqueados; pedir pelo `{ arroba }` ou `{ pessoa }` |
-| `PUT/DELETE /contatos/{id}`                 | `{ acao: aceitar \| recusar }`; remover ou cancelar                                       |
-| `POST /bloqueios`, `DELETE /bloqueios/{id}` | bloquear `{ pessoa }`, desbloquear                                                        |
-| `GET/POST /conversas`                       | lista (+ projetos sem conversa); abrir `{ pessoa }` ou `{ projeto }`                      |
-| `GET/PATCH /conversas/{id}`                 | mensagens (`antes`, `depois`, `limite`); `{ lidaAte?, silenciada? }`                      |
-| `POST /conversas/{id}/mensagens`            | `{ texto, chave? }`                                                                       |
-| `PATCH/DELETE /mensagens/{id}`              | editar (24 h, só a própria) e apagar                                                      |
-| `POST /denuncias`                           | `{ pessoa, mensagem?, motivo: spam \| assedio \| ofensa \| golpe \| outro, detalhe? }`    |
+| Rota                                        | O quê                                                                                                       |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `GET /`                                     | eu + preferências, pessoas (online primeiro), `naoLidas`, `pedidos`, `porConversa`                          |
+| `POST /` `{ estado }`                       | batida de presença (`ativo`, `ausente`, `saiu`) e o mesmo estado                                            |
+| `PUT /preferencias`                         | `{ invisivel?, quemVe?, mostrarVisto? }`                                                                    |
+| `GET/POST /contatos`                        | contatos, pedidos recebidos/enviados, bloqueados; pedir pelo `{ arroba }` ou `{ pessoa }`; prévia `{ ver }` |
+| `PUT/DELETE /contatos/{id}`                 | `{ acao: aceitar \| recusar }`; remover ou cancelar                                                         |
+| `POST /bloqueios`, `DELETE /bloqueios/{id}` | bloquear `{ pessoa }`, desbloquear                                                                          |
+| `GET/POST /conversas`                       | lista (+ projetos sem conversa); abrir `{ pessoa }` ou `{ projeto }`                                        |
+| `GET/PATCH /conversas/{id}`                 | mensagens (`antes`, `depois`, `limite`); `{ lidaAte?, silenciada? }`                                        |
+| `POST /conversas/{id}/mensagens`            | `{ texto, chave? }`                                                                                         |
+| `PATCH/DELETE /mensagens/{id}`              | editar (24 h, só a própria) e apagar                                                                        |
+| `POST /denuncias`                           | `{ pessoa, mensagem?, motivo: spam \| assedio \| ofensa \| golpe \| outro, detalhe? }`                      |
+
+### Adicionar pelo @ (30/10/2026)
+
+O caminho que a pessoa usa para achar alguém, adicionar e conversar fica **no Online**, não escondido nos Ajustes:
+
+- **Prévia**: `POST /contatos { ver: "@fulano" }` não pede nada e devolve `200 { pessoa: { id, arroba, nome, foto },
+situacao }`, com `situacao` = `nenhuma | contato | enviado | recebido | bloqueado`. Só perfil visível na busca (ADR
+  0029); escondido e inexistente dão o **mesmo 404** (`Não achamos @fulano.`). Mesmas regras da busca de perfis: e-mail
+  confirmado e 60 a cada 10 minutos, no mesmo contador. O bloqueio que a outra pessoa fez nunca aparece (`nenhuma`, e o
+  pedido fica "pendente" sem avisar). Vai no POST, e não num GET novo, para passar pelos repasses de todos os apps sem
+  mexer neles; a Absolute ZRO de antes responde 422 (`Diga o @ da pessoa.`) e o widget segue sem a prévia.
+- **Pedir**: `POST /contatos { arroba }` → `201 { estado: pendente | aceito, pessoa }` (aceito quando a outra pessoa já
+  tinha pedido). Já contatos: **409** `Vocês já são contatos.`; quem você bloqueou: **403**; limite: **429**
+  `Muitos pedidos hoje. Tente amanhã.`. Repetir um pedido já enviado e aceitar o recebido não gastam os 20 do dia.
+- **No widget**: o botão da pessoa com + no topo (ao lado do olho) e, com ninguém online, "Adicionar alguém pelo @"
+  abrem o campo no começo do Online. Enquanto digita, o cartão mostra foto, nome e @; "Adicionar" responde ali mesmo
+  ("Pedido enviado" ou "Agora vocês são contatos", com nome e foto) e os erros ficam embaixo do campo. Os **pedidos
+  recebidos** aparecem no topo do Online (Aceitar, Recusar) e a aba Online ganha o número deles. Tocar em qualquer
+  pessoa (online ou não) abre a conversa direta; online primeiro, com o ponto verde, e "visto há" quando a pessoa
+  deixa. `abrir="adicionar"` (ou `adicionar:<@>`; na página, `/set?adicionar`) abre direto no campo. Esc fecha só o
+  campo.
 
 A moderação vê as denúncias no console (`/admin/denuncias`, admin ou suporte) e resolve; suspender a conta segue em
 Pessoas.
@@ -95,7 +116,7 @@ os apps de computador do Maestro e do Relay (em espera).
 Atributos: `api`, `modo` (`botao` | `pagina` | `folha`: sem pílula, o app tem a entrada e chama `abrirSet()`), `tema`
 (`claro` | `escuro` | `auto`: segue `html[data-theme]`, `html[data-tema]` ou a classe `dark`/`light`, senão o
 sistema), `projeto` (id do projeto canônico aberto no app: a conversa dele fica no topo), `abrir` (`pessoa:<id>`,
-`projeto:<id>`, `conversa:<id>`, `ajustes`). Métodos: `abrirSet()`, `fecharSet()`, `aberto`. Eventos:
+`projeto:<id>`, `conversa:<id>`, `ajustes`, `adicionar` ou `adicionar:<@>`). Métodos: `abrirSet()`, `fecharSet()`, `aberto`. Eventos:
 `zro-set:sem-login` (401: a pílula some), `zro-set:estado` (`{ online, naoLidas, pedidos, invisivel }`),
 `zro-set:aberto` e `zro-set:fechado`.
 
@@ -106,3 +127,7 @@ Identidade (compatível com o que já existia: sem nada, o visual da Absolute ZR
 recopia quando o tema muda). Partes: `zro-set::part(pilula | balao)` e `zro-set-folha::part(painel)`. Sem dependências,
 sem cookie de terceiros, respeita "reduzir movimento"; um pedido por vez entre as abas (`navigator.locks`), para dois
 repasses não gastarem o mesmo refresh token. Mudou, suba `VERSAO`.
+
+> **Canal `api` do app precisa estar aberto.** O token de app só vale com o canal `api` do produto aberto no gate de
+> lançamento (`authenticateAccessToken`). Com `api` fechado o `/api/v1/set` responde 401 e o Set fica mudo naquele app
+> (caso do Relay em 30/10/2026, até o titular abrir o canal em Console › Lançamento).

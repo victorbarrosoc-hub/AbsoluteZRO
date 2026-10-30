@@ -77,8 +77,10 @@ const ESCOPOS_BASE = 'openid email profile org';
 const ESCOPO_JOBS = 'carro-do-freela.jobs';
 const ESCOPO_IA = 'zro.ia';
 const ESCOPO_SET = 'zro.set';
+/* (30/out) a comunidade: o Carro lista os perfis da Absolute ZRO com o @ confirmado (GET /api/v1/pessoas do HUB) */
+const ESCOPO_PESSOAS = 'zro.pessoas';
 const ESCOPOS_SEM_SET = ESCOPOS_BASE + ' offline_access ' + ESCOPO_JOBS + ' ' + ESCOPO_IA;
-const ESCOPOS = ESCOPOS_SEM_SET + ' ' + ESCOPO_SET;
+const ESCOPOS = ESCOPOS_SEM_SET + ' ' + ESCOPO_SET + ' ' + ESCOPO_PESSOAS;
 /* o pedido sem os escopos novos (HUB que ainda não os conhece): o refresh
    fica, porque é com ele que a claim é relida depois */
 const ESCOPOS_BASICO = ESCOPOS_BASE + ' offline_access';
@@ -109,7 +111,8 @@ function acessoOk(quem) {
    cliente `carrodofreela-web`. Um Host que não está aqui não recebe login —
    é o que impede um domínio qualquer apontado para a Vercel de montar um
    redirect_uri em nome do Carro. Localhost fica para rodar na máquina. */
-const ORIGENS = ['https://carrodofreela.com.br', 'https://www.carrodofreela.com.br', 'https://carrodofreela-app.vercel.app'];
+/* (30/out) carro.absolutezro.com: o subdomínio da Absolute ZRO, decisão do titular — retorno cadastrado no HUB (0037) */
+const ORIGENS = ['https://carrodofreela.com.br', 'https://www.carrodofreela.com.br', 'https://carro.absolutezro.com', 'https://carrodofreela-app.vercel.app'];
 const LOCAL = /^http:\/\/(localhost|127\.0\.0\.1)(:\d{1,5})?$/;
 
 function config(env = process.env) {
@@ -331,6 +334,8 @@ function contaDeClaims(dados) {
     /* o @ do perfil profissional da Absolute ZRO (claim preferred_username, ADR 0029 do HUB): o perfil da
        comunidade é o mesmo da conta, lido do HUB a cada /eu; o Carro não guarda outro @ */
     arroba: typeof dados.preferred_username === 'string' && /^[a-z0-9._]{3,30}$/.test(dados.preferred_username) ? dados.preferred_username : null,
+    /* a foto da conta (claim picture): só https, curta; a lista de pessoas do Carro mostra esta, não outra */
+    foto: typeof dados.picture === 'string' && /^https:\/\/[^\s]{1,290}$/.test(dados.picture) ? dados.picture : null,
     organizacao: org && typeof org.name === 'string' ? org.name.slice(0, 120) : null,
     produtos,
     /* o portão: released | closed | allowed — sem a claim, closed */
@@ -950,6 +955,7 @@ module.exports = {
   set: protegido(set),
   /* para as rotas de dados (api/zro/_dados.js) */
   sessaoConferida,
+  config,
   lerCorpo,
   origemDe,
   /* para os testes */

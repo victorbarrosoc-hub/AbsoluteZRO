@@ -195,6 +195,27 @@ test('console de administração não existe para quem não é da plataforma', a
   expect(r?.status()).toBe(404)
 })
 
+test('páginas públicas não divulgam AEON, Revela, NOSSOM nem Carro do Freela enquanto não estão no ar', async ({ page }) => {
+  for (const largura of [1440, 390]) {
+    await page.setViewportSize({ width: largura, height: 900 })
+    for (const path of ['/', '/baixar', '/planos']) {
+      await page.goto(path)
+      const texto = await page.locator('main').innerText()
+      expect(texto, `${path} ${largura}px`).not.toMatch(/AEON|Revela|NOSSOM|Carro do Freela/i)
+      // nem o selo de fechado ("Em breve" / "Em desenvolvimento")
+      await expect(page.locator('main .selo-dev'), `${path} ${largura}px`).toHaveCount(0)
+      // nem o ícone (ProductMark) nem o título escondido
+      const marcas = await page
+        .locator('main [aria-label], main [title], main img[src]')
+        .evaluateAll((els) => els.map((e) => `${e.getAttribute('aria-label') ?? ''} ${e.getAttribute('title') ?? ''} ${e.getAttribute('src') ?? ''}`))
+      expect(
+        marcas.filter((m) => /AEON|Revela|NOSSOM|Carro do Freela|(products\/|produto-)(ai-edit|finishing|nossom|carro-do-freela)/i.test(m)),
+        `${path} ${largura}px`,
+      ).toEqual([])
+    }
+  }
+})
+
 test('páginas públicas e mobile sem rolagem horizontal', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   for (const path of ['/', '/planos', '/entrar']) {
@@ -217,29 +238,40 @@ test('páginas públicas e mobile sem rolagem horizontal', async ({ page }) => {
 test('gate de lançamento: anônimo não vê CTA, link nem instalador de produto fechado', async ({ page, request }) => {
   const FECHADOS = /nossom-teal\.vercel\.app|aeon\.absolutezro\.com|revela\.absolutezro\.com|carrodofreela\.com\.br/
   await page.goto('/')
+  // só o que está no ar, sem "Em breve" (titular, 30/10/2026: "Quando for pro ar, aí divulga")
   const strip = page.locator('.pstrip__list')
-  await expect(strip.locator('.selo-dev').first()).toHaveText('Em breve')
+  await expect(strip.locator('.selo-dev')).toHaveCount(0)
+  await expect(strip.locator('.pstrip__name')).toHaveText(['TPeasy', 'SOBEDESCE', 'Synquei', 'Maestro', 'Relay'])
   await expect(strip.locator('a.pstrip__card[href*="synquei"]')).toHaveCount(1)
+  await expect(strip.locator('a.pstrip__card[href="https://maestro.absolutezro.com"]')).toHaveCount(1)
+  await expect(strip.locator('a.pstrip__card[href="https://relay.absolutezro.com"]')).toHaveCount(1)
   const hrefs = await page.locator('a[href]').evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''))
   expect(hrefs.filter((h) => FECHADOS.test(h))).toEqual([])
-  // a órbita da Z só tem lançados
+  // a órbita da Z só tem os do ar
+  await expect(page.locator('.pz__orbita li')).toHaveCount(5)
   await expect(page.locator('.pz__orbita li[title="NOSSOM"], .pz__orbita li[title="AEON"]')).toHaveCount(0)
-  await expect(page.locator('.pz__orbita li[title="Synquei"]')).toHaveCount(1)
-  // o fluxo começa no roteiro (o job é do Carro do Freela, fechado) e só mostra etapas lançadas
+  await expect(page.locator('.pz__orbita li[title="Maestro"], .pz__orbita li[title="Relay"]')).toHaveCount(2)
+  // o fluxo: da pauta (Maestro) à aprovação do cliente (Maestro), só com etapas que existem
   await expect(page.locator('#fluxo-title')).toHaveText(/Do roteiro\s*à entrega\./)
+  await expect(page.locator('.pfluxo__etapa')).toHaveText(['Pauta', 'Gravação', 'Cópia', 'Sincronia', 'Entrega', 'Aprovação'])
+  await expect(page.locator('.pfluxo__passo')).toHaveText(/1 de 6/)
   await expect(page.locator('main')).not.toContainText(/do job/i)
 
   await page.goto('/baixar')
-  await expect(page.getByRole('button', { name: 'NOSSOM' }).locator('.selo-dev')).toHaveText('Em desenvolvimento')
+  // na página pública, o que está fechado nem aparece; o Maestro (no ar, sem o app de computador) abre no navegador
+  await expect(page.getByRole('button', { name: 'NOSSOM' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Synquei' }).locator('.selo-dev')).toHaveCount(0)
-  await page.getByRole('button', { name: 'NOSSOM' }).click()
+  await expect(page.locator('.selo-dev')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Maestro' }).click()
   const painel = page.locator('#dl-painel')
-  await expect(painel.getByText('Em desenvolvimento')).toBeVisible()
-  await expect(painel.locator('a.dl-opt')).toHaveCount(0)
-  await expect(painel.getByText('Conheça mais')).toHaveCount(0)
+  await expect(painel.getByText('Em desenvolvimento')).toHaveCount(0)
+  await expect(painel.locator('a.dl-opt[data-os="web"]')).toHaveAttribute('href', 'https://maestro.absolutezro.com/app')
+  await expect(painel.locator('a.dl-opt[data-os="mac"], a.dl-opt[data-os="windows"]')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Relay' }).click()
+  await expect(painel.locator('a.dl-opt[data-os="web"]')).toHaveAttribute('href', 'https://relay.absolutezro.com')
   const hrefsBaixar = await page.locator('a[href]').evaluateAll((as) => as.map((a) => a.getAttribute('href') ?? ''))
   expect(hrefsBaixar.filter((h) => FECHADOS.test(h))).toEqual([])
-  // Maestro fechado (0024): nada do app de computador na página, no catálogo da central nem nas rotas
+  // Maestro sem o app de computador (download fechado): nada dele na central nem nas rotas
   expect(hrefsBaixar.filter((h) => /\/baixar\/app\/maestro\//.test(h))).toEqual([])
 
   const desktop = await (await request.get('/api/v1/desktop/apps')).json()

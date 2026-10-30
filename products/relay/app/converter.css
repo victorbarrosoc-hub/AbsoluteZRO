@@ -791,3 +791,113 @@
     border-radius: 28px 28px 0 0;
   }
 }
+
+/* ─────────── grupos recolhidos do editor ─────────── */
+.grupo {
+  border-top: 1px solid var(--linha);
+  padding-top: 12px;
+}
+.grupo summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+}
+.grupo summary::-webkit-details-marker {
+  display: none;
+}
+.grupo summary::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  margin-left: auto;
+  border-right: 1.8px solid var(--mudo);
+  border-bottom: 1.8px solid var(--mudo);
+  rotate: -45deg;
+  transition: rotate 0.3s var(--mola);
+}
+.grupo[open] summary::after {
+  rotate: 45deg;
+}
+.grupo-corpo {
+  display: grid;
+  gap: 14px;
+  padding: 14px 0 4px;
+}
+.grupo-corpo .apoio {
+  font-size: 13px;
+  margin: 0;
+}
+.marca-revela {
+  font: 600 11px/1 var(--fonte);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgb(var(--t) / 0.06);
+  color: var(--mudo);
+}
+.chave--folha {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  position: relative;
+}
+.folha input.tempo {
+  width: 90px;
+  padding: 7px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--linha-forte);
+  background: var(--superficie);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.folha input.tempo:invalid {
+  border-color: var(--erro);
+}
+.folha .unidade input[type='number'] {
+  width: 76px;
+}
+
+/* ─────────── Drive pelo SOBEDESCE (app/drive.js) ─────────── */
+.outras-fontes {
+  display: flex;
+  justify-content: center;
+  margin-top: -20px;
+}
+.outras-fontes .vidro {
+  min-height: 40px;
+  font-size: 14px;
+}
+.folha--drive {
+  width: min(960px, calc(100vw - 24px));
+  height: min(86vh, 760px);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+.folha--drive[open] {
+  display: flex;
+}
+.drive-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px 10px 24px;
+}
+.drive-quadro {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: var(--fundo);
+}
+@media (max-width: 720px) {
+  .folha--drive {
+    height: 92vh;
+  }
+}

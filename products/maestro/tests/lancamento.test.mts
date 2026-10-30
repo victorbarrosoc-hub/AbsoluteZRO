@@ -108,7 +108,9 @@ describe("app na Tela de Início", () => {
 
   test("a vitrine do lançamento é uma chave só, e a descrição acompanha", () => {
     assert.equal(typeof site.MAESTRO_LANCADO, "boolean");
-    assert.match(site.SITE_DESCRICAO, site.MAESTRO_LANCADO ? /Em Beta\.$/ : /Em teste fechado, por convite\.$/);
+    // no ar (0039 do HUB, 30/10/2026): nada de "Beta" na descrição nem no OG
+    assert.match(site.SITE_DESCRICAO, site.MAESTRO_LANCADO ? /com a conta Absolute ZRO\.$/ : /Em teste fechado, por convite\.$/);
+    assert.doesNotMatch(site.SITE_DESCRICAO, /beta/i);
     assert.equal(site.ENTRAR_ZRO, "/api/zro/entrar?volta=%2Fapp");
     assert.equal(site.CRIAR_CONTA_ZRO, "/api/zro/entrar?modo=criar&volta=%2Fapp");
   });

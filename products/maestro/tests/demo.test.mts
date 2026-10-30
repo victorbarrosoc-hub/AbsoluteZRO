@@ -245,6 +245,7 @@ describe("demonstração da produtora por dentro", () => {
     "reservas",
     "eventos",
     "documentos",
+    "roteiros",
   ];
   const porTabela = (orgId: string) =>
     getBanco().asSystem("teste conta módulos", async (tx) => {
@@ -264,6 +265,7 @@ describe("demonstração da produtora por dentro", () => {
     assert.ok(n.reservas >= 20, "reservas");
     assert.ok(n.eventos >= 12, "agenda");
     assert.ok(n.documentos >= 5, "documentos");
+    assert.equal(n.roteiros, 1, "o roteiro de exemplo da Criação");
     assert.ok(n.freela_pagamento >= 1, "PIX de exemplo (cifrado)");
     const [r] = (await getBanco().asSystem("conferir", (tx) =>
       tx.execute(sql`

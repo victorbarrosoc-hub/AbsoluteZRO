@@ -113,7 +113,7 @@ test('a ida para o HUB: código + PKCE S256, escopos, nonce e retorno do própri
   assert.equal(destino.pathname, '/oauth/authorize');
   assert.equal(q.get('response_type'), 'code');
   assert.equal(q.get('client_id'), 'carrodofreela-web');
-  assert.equal(q.get('scope'), 'openid email profile org offline_access carro-do-freela.jobs zro.ia zro.set');
+  assert.equal(q.get('scope'), 'openid email profile org offline_access carro-do-freela.jobs zro.ia zro.set zro.pessoas');
   assert.equal(q.get('code_challenge_method'), 'S256');
   assert.match(q.get('code_challenge'), /^[A-Za-z0-9_-]{43}$/);
   assert.ok(q.get('nonce') && q.get('state') && q.get('nonce') !== q.get('state'));
@@ -300,7 +300,7 @@ test('endereço não cadastrado não começa login', async () => {
 
 test('nos três domínios: retorno cadastrado e cookie Secure', async () => {
   Z._interno.esquecer();
-  for (const host of ['carrodofreela.com.br', 'www.carrodofreela.com.br', 'carrodofreela-app.vercel.app']) {
+  for (const host of ['carrodofreela.com.br', 'www.carrodofreela.com.br', 'carro.absolutezro.com', 'carrodofreela-app.vercel.app']) {
     const r = await pedir('/api/zro/entrar', { headers: { 'x-forwarded-host': host, 'x-forwarded-proto': 'https' } });
     assert.equal(r.status, 302, host);
     assert.equal(new URL(r.headers.get('location')).searchParams.get('redirect_uri'), 'https://' + host + '/api/zro/callback');
@@ -333,6 +333,19 @@ test('sem ZRO_CLIENT_ID/SECRET: /eu responde 503 (o botão não aparece) e entra
   } finally {
     process.env.ZRO_CLIENT_SECRET = guardado;
   }
+});
+
+test('o domínio antigo leva ao carro.absolutezro.com, com o caminho (308); o subdomínio não redireciona', () => {
+  const SEG = require(path.join(RAIZ, 'src', 'seguranca.js'));
+  const rotas = SEG.rotasVercel("default-src 'self'", ['index']);
+  for (const host of ['carrodofreela.com.br', 'www.carrodofreela.com.br']) {
+    const r = rotas.find(x => x.has && x.has.some(h => h.type === 'host' && h.value === host));
+    assert.ok(r, host);
+    assert.equal(r.status, 308);
+    assert.equal(r.headers.Location, 'https://carro.absolutezro.com/$1');
+    assert.ok(rotas.indexOf(r) < rotas.findIndex(x => x.handle === 'filesystem'));
+  }
+  assert.ok(!rotas.some(x => x.has && x.has.some(h => /absolutezro\.com$/.test(h.value))), 'o subdomínio nunca redireciona para si');
 });
 
 test('as rotas do domínio (config.json): CSP, cleanUrls, /app fechado e as funções', async () => {

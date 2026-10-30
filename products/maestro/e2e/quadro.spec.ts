@@ -183,6 +183,8 @@ test.describe("troca de seção", () => {
 
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/app/quadro");
+    // hidratado (a pílula das colunas foi medida): antes disso o clique cai no HTML do servidor e não abre nada
+    await expect(page.locator(".q-abas[data-pilula]")).toHaveCount(1);
     await page.getByRole("button", { name: "Novo card", exact: true }).first().click();
     await expect(page.getByRole("dialog", { name: "Novo card" })).toBeVisible();
     expect(await page.locator(".m-folha").evaluate((el) => getComputedStyle(el).animationName)).toBe("none");

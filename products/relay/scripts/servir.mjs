@@ -27,6 +27,8 @@ const TIPOS = {
 
 const config = JSON.parse(await readFile(join(RAIZ, 'vercel.json'), 'utf8'))
 const cabecalhos = Object.fromEntries(config.headers.find((h) => h.source === '/(.*)').headers.map((h) => [h.key, h.value]))
+// local: o quadro do "Escolher no Drive" pode ser um SOBEDESCE local (app/drive.js, testes)
+cabecalhos['Content-Security-Policy'] = cabecalhos['Content-Security-Policy'].replace('frame-src https://sobedesce.absolutezro.com', 'frame-src https://sobedesce.absolutezro.com http://127.0.0.1:* http://localhost:*')
 
 /** Caminho do arquivo para a URL (URL limpa: /converter → converter.html, / → index.html), ou null se sair da pasta. */
 export async function resolver(url, raiz = RAIZ) {
@@ -41,10 +43,17 @@ export async function resolver(url, raiz = RAIZ) {
   return null
 }
 
-export function servir({ porta = 8090, raiz = RAIZ, extra = null } = {}) {
+/** O que o desenvolvimento liga (como as prévias da Vercel): app/recursos.js com tudo ligado. */
+export const RECURSOS_DEV = { revela: true, drive: true }
+
+export function servir({ porta = 8090, raiz = RAIZ, extra = null, recursos = RECURSOS_DEV } = {}) {
   const servidor = createServer(async (req, res) => {
     try {
       if (extra && (await extra(req, res))) return
+      if (new URL(req.url, 'http://x').pathname === '/app/recursos.js' && recursos) {
+        res.writeHead(200, { ...cabecalhos, 'Content-Type': TIPOS['.js'], 'Cache-Control': 'no-cache' })
+        return res.end(`export const RECURSOS = ${JSON.stringify(recursos)}\n`)
+      }
       // a conta (só para o Set) mora nas funções da Vercel (api/); aqui o login não está ligado, como num site sem
       // ZRO_CLIENT_ID: o /eu diz isso e o topo não monta o Set (app/set.js)
       if (new URL(req.url, 'http://x').pathname === '/api/zro/eu') {

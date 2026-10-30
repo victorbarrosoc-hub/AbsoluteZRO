@@ -25,6 +25,8 @@ export type Empresa = {
   validadeDias: number;
   condicoes: string | null;
   fechamento: string | null;
+  /** O freela escalado vê o nome do cliente em "Seus trabalhos" (drizzle/0037). Padrão: sim. */
+  freelaVeCliente?: boolean;
   /** Da marca (Ajustes → Marca): logo, cor de destaque e linha de assinatura. */
   logo?: string | null;
   cor?: string | null;
@@ -47,6 +49,7 @@ export const EMPRESA_VAZIA: Empresa = {
   validadeDias: 15,
   condicoes: null,
   fechamento: null,
+  freelaVeCliente: true,
 };
 
 const LIMITES: Record<string, number> = {
@@ -83,6 +86,7 @@ export function lerEmpresaDe(settings: unknown): Empresa {
     validadeDias: Math.min(180, Math.max(1, n("validadeDias") ?? 15)),
     condicoes: t("condicoes"),
     fechamento: t("fechamento"),
+    freelaVeCliente: e.freelaVeCliente !== false,
   };
 }
 
@@ -132,6 +136,7 @@ export function validarEmpresa(f: Record<string, unknown>): { ok: true; empresa:
   const dias = Number(f.validadeDias ?? 15);
   if (!Number.isInteger(dias) || dias < 1 || dias > 180) erros.validadeDias = "Entre 1 e 180 dias.";
   out.validadeDias = dias;
+  out.freelaVeCliente = f.freelaVeCliente !== "nao" && f.freelaVeCliente !== false;
   for (const k of ["lat", "lon"] as const) {
     const v = f[k];
     const n = v === "" || v == null ? null : Number(v);

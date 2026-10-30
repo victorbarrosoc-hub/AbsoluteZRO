@@ -60,14 +60,27 @@ function MarcaDoTopo({ marca, largura }: { marca: MarcaPropria | null; largura: 
   );
 }
 
+/** A troca para a área do freela (drizzle/0037): só para quem também é freela ligado em outra produtora. */
+function IrParaTrabalhos() {
+  return (
+    <Link className="topo__z ir-trabalhos" href="/trabalhos" title="Seus trabalhos como freela">
+      <Icone nome="freelas" size={18} />
+      <span className="sr-only">Seus trabalhos como freela</span>
+    </Link>
+  );
+}
+
 export function Shell({
   sessao,
   demo = false,
   marca = null,
+  freela = false,
   children,
 }: {
   sessao: Sessao;
   demo?: boolean;
+  /** A pessoa também é freela ligada em outra produtora: o atalho para "Seus trabalhos". */
+  freela?: boolean;
   /** "Maestro com a sua marca" (src/lib/marca/propria.ts); null = a marca do Maestro. */
   marca?: MarcaPropria | null;
   children: ReactNode;
@@ -76,7 +89,7 @@ export function Shell({
   const selo = demo ? (
     <Link className="selo selo--demo" href="/app/ajustes#demonstracao" title="Dados de exemplo. Remova em Ajustes.">
       <i aria-hidden="true" />
-      Demonstração
+      <span>Demonstração</span>
     </Link>
   ) : null;
   return (
@@ -91,6 +104,7 @@ export function Shell({
         <div className="capsula__fim">
           {selo}
           <Relogio />
+          {freela ? <IrParaTrabalhos /> : null}
           {/* o Set da Absolute ZRO: quem está online e as conversas (discreto, como a Z) */}
           <SetZro />
           <SeletorDeTema />
@@ -116,6 +130,7 @@ export function Shell({
             <Icone nome="z" size={18} />
             <span className="sr-only">Z</span>
           </Link>
+          {freela ? <IrParaTrabalhos /> : null}
           <SetZro />
           <SeletorDeTema />
           <Link className="conta" href="/app/ajustes" title={sessao.orgNome}>

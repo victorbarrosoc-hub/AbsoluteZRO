@@ -36,6 +36,12 @@ components:
     CarroJob: { $ref: './schemas/carro-do-freela.job.v1.schema.json' }
     CarroCrew: { $ref: './schemas/carro-do-freela.crew.v1.schema.json' }
     TpeasyBackup: { $ref: './schemas/tpeasy.backup.v1.schema.json' }
+    AppEntregaEntrada: { $ref: './schemas/zro.app-entrega.entrada.v1.schema.json' }
+    AppEntregaEstado: { $ref: './schemas/zro.app-entrega.estado.v1.schema.json' }
+    AppEntregasEnviadas: { $ref: './schemas/zro.app-entrega.enviadas.v1.schema.json' }
+    AppEntregaDestinatarios: { $ref: './schemas/zro.app-entrega.destinatarios.v1.schema.json' }
+    AppEntregasRecebidas: { $ref: './schemas/zro.app-entrega.recebidas.v1.schema.json' }
+    AppEntregaRecebidasEntrada: { $ref: './schemas/zro.app-entrega.recebidas-entrada.v1.schema.json' }
   responses:
     Error: { description: Erro de domínio, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
 security: [{ session: [] }]
@@ -229,9 +235,59 @@ paths:
       summary: Voice Design. Três amostras de uma voz nova pela descrição (nada é salvo na conta). Custo estimado no teto
       security: [{ session: [] }]
       responses: { '200': { description: amostras em base64 }, default: { $ref: '#/components/responses/Error' } }
+  /api/v1/admin/z-lab/aprendizados:
+    post:
+      summary: Guardar um aprendizado (cartão "Aprender" do Testar). Só com `confirmar = true`; entra no rascunho, nunca numa versão. Repetido não duplica; contradição fica no lugar do antigo; a trava recusa regra, permissão, ação ou dado (403 action_not_allowed). Auditado
+      security: [{ session: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [proposta, confirmar]
+              properties:
+                proposta:
+                  type: object
+                  required: [id, tipo, texto, plataforma, exemplo, gatilho]
+                  properties:
+                    id: { type: string, format: uuid }
+                    tipo: { type: string, enum: [tom, regra, fato, pronuncia, plataforma] }
+                    texto: { type: string, minLength: 3, maxLength: 240 }
+                    plataforma: { type: [string, 'null'] }
+                    exemplo: { type: [string, 'null'], maxLength: 240 }
+                    gatilho: { type: string, maxLength: 300 }
+                    voz: { type: boolean }
+                confirmar: { type: boolean, enum: [true] }
+                texto: { type: string, description: texto ajustado no cartão }
+                pela: { type: string, enum: [toque, voz, conversa] }
+      responses:
+        {
+          '201': { description: 'aprendizado, repetido, substituido' },
+          '403': { description: platform_role_required | action_not_allowed },
+          '409': { description: conflict (mais de 40 aprendizados ou de 8 mil caracteres) },
+          '422': { description: invalid_input },
+          default: { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/admin/z-lab/aprendizados/{id}:
+    patch:
+      summary: Edita ou move um aprendizado do rascunho (texto, tipo = seção, plataforma, exemplo). Auditado com o antes e o depois; devolve os conflitos da lista
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses:
+        {
+          '200': { description: ok },
+          '404': { description: not_found },
+          '409': { description: conflict (igual a outro) },
+          default: { $ref: '#/components/responses/Error' },
+        }
+    delete:
+      summary: Tira um aprendizado do rascunho (as versões salvas continuam iguais). Auditado
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: ok }, '404': { description: not_found }, default: { $ref: '#/components/responses/Error' } }
   /api/v1/admin/z-lab/mensagens:
     post:
-      summary: Um turno do laboratório (rascunho, versão N ou padrão; modelo; plataforma; anexos; voz). Streaming NDJSON (lendo, texto, fim com uso e custo | erro)
+      summary: Um turno do laboratório (rascunho, versão N ou padrão; modelo; plataforma; anexos; voz). Streaming NDJSON (lendo, texto, aprendizado, fim com uso e custo | erro). Com `aprender` e `pendentes` (só no rascunho) a Z propõe aprendizados e um "pode guardar" com cartão esperando guarda antes do modelo
       security: [{ session: [] }]
       responses:
         {
@@ -253,7 +309,7 @@ paths:
       responses: { '200': { description: ok }, default: { $ref: '#/components/responses/Error' } }
   /api/v1/admin/z-lab/escuta:
     post:
-      summary: Abre a escuta ao vivo (Scribe v2 Realtime). Devolve um token de uso único (15 min, uma conexão); a chave nunca sai do servidor
+      summary: Abre a escuta ao vivo (Scribe v2 Realtime). Devolve um token de uso único (15 min, uma conexão); a chave nunca sai do servidor. Se a ElevenLabs recusar o token, devolve `aoVivo` falso e o navegador usa a transcrição por frase
       security: [{ session: [] }]
       responses: { '200': { description: ok }, default: { $ref: '#/components/responses/Error' } }
   /api/v1/admin/z-lab/escuta/fim:
@@ -401,6 +457,72 @@ paths:
           '422': { $ref: '#/components/responses/Error' },
           '429': { $ref: '#/components/responses/Error' },
         }
+  /api/v1/apps/entregas:
+    get:
+      security: [{ appToken: [maestro.projects] }]
+      summary: 'Entregas entre apps (Criação F8): o que a pessoa mandou de um roteiro ao TPeasy (as 10 mais novas), para o "Enviado · v3 · Recebido". Contrato em docs/integration-contracts/maestro-tpeasy.md'
+      parameters:
+        - { name: roteiro, in: query, required: true, schema: { type: string, format: uuid } }
+      responses:
+        {
+          '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AppEntregasEnviadas' } } } },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+        }
+    post:
+      security: [{ appToken: [maestro.projects] }]
+      summary: 'Manda uma versão salva do roteiro do Maestro para a caixa de entrada do TPeasy da pessoa (ou de alguém da organização que usa o TPeasy). Exige o TPeasy no plano e papel de quem edita. A mesma versão de novo não duplica (situacao reenviada); evento script.version.sent com idempotency_key app.entrega:<id>'
+      requestBody:
+        content: { application/json: { schema: { $ref: '#/components/schemas/AppEntregaEntrada' } } }
+      responses:
+        {
+          '201': { description: 'Nova', content: { application/json: { schema: { $ref: '#/components/schemas/AppEntregaEstado' } } } },
+          '200': { description: 'Reenviada (a mesma entrega)', content: { application/json: { schema: { $ref: '#/components/schemas/AppEntregaEstado' } } } },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '404': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/apps/entregas/destinatarios:
+    get:
+      security: [{ appToken: [maestro.projects] }]
+      summary: 'Para quem dá para mandar: a própria pessoa e quem da organização ativa já usa o TPeasy (nome e foto; nunca e-mail). Exige o TPeasy no plano'
+      parameters:
+        - { name: destino, in: query, required: true, schema: { type: string, enum: [tpeasy] } }
+      responses:
+        {
+          '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AppEntregaDestinatarios' } } } },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/apps/entregas/recebidas:
+    get:
+      security: [{ appToken: [tpeasy.roteiros] }]
+      summary: 'A caixa de entrada do TPeasy: o que chegou para a pessoa nos últimos 30 dias (desde, se vier), mais antigo primeiro, até 50. Só o próprio TPeasy, com o token da pessoa; agora é o próximo desde'
+      parameters:
+        - { name: destino, in: query, required: false, schema: { type: string, enum: [tpeasy] } }
+        - { name: desde, in: query, required: false, schema: { type: string, format: date-time } }
+      responses:
+        {
+          '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AppEntregasRecebidas' } } } },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+        }
+    post:
+      security: [{ appToken: [tpeasy.roteiros] }]
+      summary: 'O aparelho conta o que gravou: quem mandou vê "Recebido"'
+      requestBody:
+        content: { application/json: { schema: { $ref: '#/components/schemas/AppEntregaRecebidasEntrada' } } }
+      responses:
+        {
+          '200': { description: '{ marcadas }' },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
+        }
   /api/v1/agenda/conexao:
     get:
       security: [{ appToken: [zro.agenda] }]
@@ -494,6 +616,26 @@ paths:
           '401': { $ref: '#/components/responses/Error' },
           '403': { $ref: '#/components/responses/Error' },
           '409': { $ref: '#/components/responses/Error' },
+          '429': { $ref: '#/components/responses/Error' },
+        }
+  /api/v1/pessoas:
+    get:
+      security: [{ appToken: [zro.pessoas] }]
+      summary: 'A comunidade (migração 0038): perfis visíveis com o @ confirmado (a sugestão automática não entra), por ordem de @, até 200 por página. Sem e-mail nem telefone. Contrato em docs/integration-contracts/pessoas.md'
+      parameters:
+        - { name: funcao, in: query, required: false, schema: { type: string }, description: 'chave de função do perfil (camera, edicao, …)' }
+        - { name: depois, in: query, required: false, schema: { type: string, maxLength: 30 }, description: 'o `proximo` da página anterior' }
+        - { name: limite, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 200, default: 100 } }
+      responses:
+        {
+          '200':
+            {
+              description: '{ pessoas: [{ id (sub), arroba, nome, foto, funcoes: [{ chave, nome }], cidade, portfolio, bio, selos: [{ produto, texto }], perfil }], proximo: string | null }',
+            },
+          '401': { $ref: '#/components/responses/Error' },
+          '403': { $ref: '#/components/responses/Error' },
+          '409': { $ref: '#/components/responses/Error' },
+          '422': { $ref: '#/components/responses/Error' },
           '429': { $ref: '#/components/responses/Error' },
         }
   /api/v1/pessoas/busca:
@@ -633,7 +775,12 @@ paths:
         }
     post:
       security: [{ session: [] }, { appToken: [zro.set] }]
-      summary: 'Pede contato pelo @ (perfil visível) ou pelo id de alguém do Set. Pedido mútuo vira contato na hora. 20 por dia'
+      summary: 'Pede contato pelo @ (perfil visível) ou pelo id de alguém do Set. Pedido mútuo vira contato na hora; já contatos, 409. 20 por dia. Com { ver }, só a prévia do @'
+      description: >-
+        { ver: "@fulano" } não pede nada: devolve 200 com quem é o perfil visível do @ e a situação com a pessoa
+        (nenhuma, contato, enviado, recebido, bloqueado; o bloqueio que a outra fez nunca aparece). Escondido ou
+        inexistente: o mesmo 404. Mesmo limite da busca de perfis (60 a cada 10 minutos). Repetir um pedido já enviado e
+        aceitar o recebido não gastam os 20 do dia.
       requestBody:
         required: true
         content:
@@ -643,8 +790,10 @@ paths:
               properties:
                 arroba: { type: string, description: 'com ou sem @' }
                 pessoa: { type: string, format: uuid }
+                ver: { type: string, description: 'só a prévia do @ (com ou sem @); nada é pedido' }
       responses:
         {
+          '200': { description: '{ ver }: { pessoa: { id, arroba, nome, foto }, situacao: nenhuma | contato | enviado | recebido | bloqueado }' },
           '201': { description: '{ estado: pendente | aceito, pessoa: { id, arroba, nome, foto } }' },
           '401': { $ref: '#/components/responses/Error' },
           '403': { $ref: '#/components/responses/Error' },

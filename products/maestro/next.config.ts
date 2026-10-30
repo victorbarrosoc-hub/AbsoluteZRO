@@ -36,9 +36,42 @@ function csp(extrasScript: string[] = []): string {
   ].join("; ");
 }
 
+/**
+ * CSP do link do Fluxo (`/f`, Criação F6): só leitura, sem player e sem frame; imagens e dados só da própria origem.
+ * O token está no endereço, então nada de Referer para fora (`no-referrer`).
+ */
+const cspFluxo = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "connect-src 'self'",
+  "font-src 'self' data:",
+  "frame-src 'none'",
+  "object-src 'none'",
+  "base-uri 'none'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join("; ");
+
+/** Token do link do Fluxo (32 bytes em base64url) no `source` das reescritas. */
+const TOKEN_F = "[A-Za-z0-9_\\-]{43}";
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  // O link do Fluxo para IA que lê endereço: /f/<token>.md e /f/<token>.json. Antes das páginas (senão a página
+  // /f/[token] pegaria "<token>.md" como token).
+  async rewrites() {
+    return {
+      beforeFiles: [
+        { source: `/f/:token(${TOKEN_F})\\.md`, destination: "/f/:token/fluxo.md" },
+        { source: `/f/:token(${TOKEN_F})\\.json`, destination: "/f/:token/fluxo.json" },
+      ],
+      afterFiles: [],
+      fallback: [],
+    };
+  },
   // O logo da marca sobe por Server Action (até 4 MB; o servidor reencoda e grava no máximo 512 KB).
   experimental: {
     serverActions: { bodySizeLimit: "5mb" },
@@ -63,8 +96,8 @@ const nextConfig: NextConfig = {
           { key: "Cache-Control", value: "no-store" },
         ],
       },
-      // Os links públicos da produtora (plano v2 §4.4): pedido (/p) e orçamento (/o). Sem player: nada de frame.
-      ...["/p/:path*", "/o/:path*"].map((source) => ({
+      // Os links públicos da produtora (plano v2 §4.4): pedido (/p), orçamento (/o) e o convite do freela (/convite). Sem player.
+      ...["/p/:path*", "/o/:path*", "/convite/:path*"].map((source) => ({
         source,
         headers: [
           { key: "Content-Security-Policy", value: csp() },
@@ -73,6 +106,16 @@ const nextConfig: NextConfig = {
           { key: "Cache-Control", value: "no-store" },
         ],
       })),
+      // O link do Fluxo (Criação F6): página só de leitura, .md, .json e imagens pelo token.
+      {
+        source: "/f/:path*",
+        headers: [
+          { key: "Content-Security-Policy", value: cspFluxo },
+          { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "Cache-Control", value: "private, no-store" },
+        ],
+      },
       {
         source: "/api/publico/:path*",
         headers: [

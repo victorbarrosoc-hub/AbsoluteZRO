@@ -9,6 +9,12 @@ export const SITE_OFICIAL = "https://sobedesce.com";
  */
 export const SITE_ANTIGO = "https://sobedesce.vercel.app";
 
+/**
+ * O subdomínio da Absolute ZRO (decisão do titular, 30/10/2026). Entra como origem do próprio site (login, cookies,
+ * conferência de origem) ao lado dos outros; vira o endereço principal quando o DNS estiver no ar.
+ */
+export const SITE_ZRO = "https://sobedesce.absolutezro.com";
+
 export function siteUrl(): string {
   const v = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (v) {
@@ -23,7 +29,7 @@ export function siteUrl(): string {
 
 /** Origens que são o próprio site (o principal, o oficial e o antigo). */
 export function origensDoSite(): string[] {
-  return [...new Set([siteUrl(), SITE_OFICIAL, SITE_ANTIGO])];
+  return [...new Set([siteUrl(), SITE_OFICIAL, SITE_ZRO, SITE_ANTIGO])];
 }
 
 /** A origem do pedido, se for uma das do site; senão o endereço principal. */

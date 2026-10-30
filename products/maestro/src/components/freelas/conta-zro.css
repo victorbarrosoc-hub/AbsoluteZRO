@@ -1,0 +1,256 @@
+/* A conta Absolute ZRO do freela (drizzle/0036): o campo do @ no cadastro e o estado na ficha. C1 · Aurora: texto
+   grafite/branco, estado = ponto tingido, vidro só nos botões. */
+
+/* ───────────── o campo "@ no Absolute ZRO" ───────────── */
+.czro {
+  display: grid;
+  gap: 10px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+.czro__campo {
+  display: grid;
+  gap: 6px;
+  max-width: 420px;
+}
+.czro__rotulo {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+.czro__entrada {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 42px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text-faint);
+  font-size: 0.95rem;
+}
+.czro__entrada:focus-within {
+  box-shadow:
+    inset 0 0 0 1px var(--line),
+    0 0 0 3px color-mix(in srgb, var(--text-strong) 14%, transparent);
+}
+.czro__entrada input {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--text-strong);
+}
+.czro__girando {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  border-top-color: var(--text-faint);
+  animation: czro-gira 0.8s linear infinite;
+}
+@keyframes czro-gira {
+  to {
+    transform: rotate(1turn);
+  }
+}
+.czro__ficha {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  max-width: 520px;
+  padding: 10px 12px;
+  border-radius: var(--radius-l);
+  background: var(--painel);
+  box-shadow: var(--shadow-float);
+  animation: czro-entra 0.26s var(--g-entra, ease-out) both;
+}
+@keyframes czro-entra {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+.czro__foto {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.czro__miolo {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.czro__miolo b {
+  font-weight: 650;
+  color: var(--text-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.czro__arroba {
+  font-weight: 500;
+  color: var(--text-faint);
+  text-decoration: none;
+}
+a.czro__arroba:hover {
+  text-decoration: underline;
+}
+.czro__miolo small {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.84rem;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.czro__nada {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-faint);
+}
+/* "Convidar para o Absolute ZRO": um interruptor pequeno, como no Ajustes do iPhone */
+.czro__convite {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 0 4px 0 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-strong);
+  cursor: pointer;
+}
+.czro__chave {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  transition: background 0.2s ease;
+}
+.czro__chave::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.22);
+  transition: transform 0.2s ease;
+}
+.czro__convite[aria-checked="true"] .czro__chave {
+  background: var(--st-ok);
+  box-shadow: none;
+}
+.czro__convite[aria-checked="true"] .czro__chave::after {
+  transform: translateX(16px);
+}
+.czro__convite:focus-visible {
+  outline: 2px solid var(--text-strong);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+/* ───────────── a ficha: o estado da conta ───────────── */
+.czro-ficha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin: 18px 0 0;
+  padding: 10px 12px 10px 14px;
+  border-radius: var(--radius-l);
+  background: var(--painel);
+  box-shadow: var(--shadow-float);
+}
+.czro-ficha__estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.czro-ficha__arroba {
+  font-weight: 600;
+  color: var(--text-strong);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.czro-ficha__arroba:hover {
+  text-decoration: underline;
+}
+.czro-ficha__apoio {
+  font-size: 0.86rem;
+  color: var(--text-faint);
+}
+.czro-ficha__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.czro-ficha__texto {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+.czro-ficha__texto:hover {
+  background: var(--hover);
+  color: var(--text-strong);
+}
+.czro-ficha__erro {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--danger-text);
+}
+
+@media (max-width: 560px) {
+  .czro__ficha {
+    grid-template-columns: auto 1fr auto;
+  }
+  .czro-ficha__acoes {
+    width: 100%;
+  }
+  .czro-ficha__acoes .glass-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .czro__ficha {
+    animation: none;
+  }
+  .czro__girando {
+    animation-duration: 2.4s;
+  }
+  .czro__chave,
+  .czro__chave::after {
+    transition: none;
+  }
+}

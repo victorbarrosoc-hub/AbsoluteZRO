@@ -11,10 +11,11 @@ const OFFICIAL = new Set([
   'aeon.absolutezro.com',
   'revela.absolutezro.com',
   'maestro.absolutezro.com',
+  'relay.absolutezro.com',
   // instaladores que a própria Absolute ZRO entrega (rota /baixar/app/<id>/<sistema>, com o gate)
   'absolutezro.com',
 ])
-const CATALOG = ['carro-do-freela', 'tpeasy', 'sobedesce', 'synquei', 'ai-edit', 'nossom', 'finishing', 'maestro']
+const CATALOG = ['carro-do-freela', 'tpeasy', 'sobedesce', 'synquei', 'ai-edit', 'nossom', 'finishing', 'maestro', 'relay']
 
 describe('downloads', () => {
   it('cobre o catálogo inteiro, sem repetir', () => {
@@ -74,5 +75,18 @@ describe('downloads', () => {
       'https://maestro.absolutezro.com/app',
     ])
     expect(hasDesktopInstaller('maestro', new Set(['maestro']))).toBe(true)
+  })
+
+  it('no ar só na web (Maestro sem o app de computador, Relay): navegador e celular, sem instalador nem Terminal', () => {
+    const vistos = downloadsLiberados(new Set(['sobedesce']), new Set(['maestro', 'relay']))
+    const maestro = vistos.find((x) => x.productId === 'maestro')!
+    expect(maestro.status).toBe('web')
+    expect(maestro.options.map((o) => o.os)).toEqual(['web', 'mobile'])
+    expect(maestro.terminal).toBeUndefined()
+    expect(maestro.firstOpen).toBeUndefined()
+    expect(vistos.find((x) => x.productId === 'relay')!.options.map((o) => o.href)).toEqual(['https://relay.absolutezro.com'])
+    // fechado nos dois continua "Em desenvolvimento"
+    expect(vistos.find((x) => x.productId === 'nossom')).toEqual({ productId: 'nossom', status: 'soon', options: [] })
+    expect(hasDesktopInstaller('maestro', new Set(['sobedesce']))).toBe(false)
   })
 })

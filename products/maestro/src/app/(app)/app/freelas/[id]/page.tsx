@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { linkDoPerfil } from "@/lib/zro/pessoas";
 import { notFound } from "next/navigation";
 import { exigirAcessoNaPagina } from "@/lib/auth/pagina";
 import { brl, dataCurta, hojeBr } from "@/lib/dinheiro";
@@ -16,7 +15,11 @@ import { Monograma, Secao } from "@/components/crm";
 import { Formulario } from "@/components/form";
 import { Icone } from "@/components/icones";
 import { SeloStatus } from "@/components/painel";
-import { salvarPagamentoAcao } from "../acoes";
+import { ContaZro } from "@/components/freelas/conta-zro";
+import { contaDoFreela } from "@/lib/freelas/convite-servidor";
+import { emissor } from "@/lib/zro/config";
+import { siteUrl } from "@/lib/site";
+import { convidarFreelaAcao, desligarContaAcao, revogarConviteAcao, salvarPagamentoAcao } from "../acoes";
 
 export const metadata = { title: "Freela" };
 
@@ -29,7 +32,9 @@ export default async function FichaFreela({ params }: PageProps<"/app/freelas/[i
   const { id } = await params;
   const s = await exigirAcessoNaPagina(`/app/freelas/${id}`);
   const hoje = hojeBr();
-  const [f, kit] = await Promise.all([obterFreela({ sub: s.sub, orgId: s.orgId }, id, hoje), listarEquipDoFreela({ sub: s.sub, orgId: s.orgId }, id)]);
+  const ctx = { sub: s.sub, orgId: s.orgId };
+  const escreve = podeEscrever(s.papel);
+  const [f, kit, conta] = await Promise.all([obterFreela(ctx, id, hoje), listarEquipDoFreela(ctx, id), contaDoFreela(ctx, id, siteUrl(), escreve)]);
   if (!f) notFound();
   const wpp = f.whatsapp ? `https://wa.me/${f.whatsapp}?text=${encodeURIComponent(textoWhatsapp(f.whatsappMsg, f.nome, s.orgNome))}` : null;
   const aPagar = f.escalas
@@ -49,11 +54,6 @@ export default async function FichaFreela({ params }: PageProps<"/app/freelas/[i
           <p className="apoio">{[f.funcoes.map(nomeFuncao).join(", "), f.cidade].filter(Boolean).join(" · ")}</p>
           <div className="perfil__selos">
             {!f.ativo ? <span className="selo">Inativo</span> : null}
-            {f.zroArroba ? (
-              <a className="chip" href={linkDoPerfil(f.zroArroba)} target="_blank" rel="noreferrer" title="Perfil na Absolute ZRO">
-                @{f.zroArroba}
-              </a>
-            ) : null}
             {f.nichos.map((n) => (
               <span key={n} className="chip">
                 {n}
@@ -74,6 +74,19 @@ export default async function FichaFreela({ params }: PageProps<"/app/freelas/[i
           ) : null}
         </div>
       </header>
+      {conta ? (
+        <ContaZro
+          freelaId={f.id}
+          conta={conta}
+          podeMudar={escreve}
+          perfilBase={emissor()}
+          whatsapp={f.whatsapp}
+          modelo={f.whatsappMsg}
+          nome={f.nome}
+          produtora={s.orgNome}
+          acoes={{ convidar: convidarFreelaAcao, revogar: revogarConviteAcao, desligar: desligarContaAcao }}
+        />
+      ) : null}
 
       <div className="painel">
         <Secao titulo="Escalas">

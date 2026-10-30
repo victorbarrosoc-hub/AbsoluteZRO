@@ -33,10 +33,14 @@ export const MARGEM_TAMANHO = 0.92
 const par = (n) => Math.max(2, Math.round(n / 2) * 2)
 const ehVertical = (l, a) => a > l
 
-/** Cadência de saída: a do arquivo, ou a maior divisão inteira dela que cabe no teto. */
+/**
+ * Cadência de saída: a do arquivo, ou a maior divisão inteira dela que cabe no teto. 24 e 23,976 (e 30 e 29,97, 60 e
+ * 59,94) contam como a mesma: sem a folga de 0,2%, 24 fps num teto de 23,976 cairia para 12.
+ */
 export function cadencia(fps, fpsMax) {
-  if (!fps || !fpsMax || fps <= fpsMax + 0.01) return { fps: fps || null, dividiu: 1 }
-  for (let d = 2; d <= 8; d++) if (fps / d <= fpsMax + 0.01) return { fps: Math.round((fps / d) * 1000) / 1000, dividiu: d }
+  const cabe = (x) => x <= fpsMax * 1.002 + 0.01
+  if (!fps || !fpsMax || cabe(fps)) return { fps: fps || null, dividiu: 1 }
+  for (let d = 2; d <= 8; d++) if (cabe(fps / d)) return { fps: Math.round((fps / d) * 1000) / 1000, dividiu: d }
   return { fps: fpsMax, dividiu: null }
 }
 
@@ -71,8 +75,20 @@ export function planejar(origem, p, opcoes = {}) {
   if (!preset) throw new Error('Preset desconhecido.')
   const avisos = []
   const motor = opcoes.motor ?? 'navegador'
-  const duracao = origem.duracao || 0
   const tamanhoMax = preset.ajustavel && opcoes.tamanhoMB ? opcoes.tamanhoMB * 1e6 : (preset.tamanhoMax ?? null)
+
+  // ─── trecho ───
+  const t = preset.trecho ?? null
+  const inicio = t?.inicio ?? 0
+  if (t && origem.duracao && inicio >= origem.duracao) throw Object.assign(new Error(`O trecho começa em ${fmtTempo(inicio)}, depois do fim do arquivo.`), { codigo: 'trecho' })
+  const fimTrecho = t?.fim != null ? (origem.duracao ? Math.min(t.fim, origem.duracao) : t.fim) : (origem.duracao ?? 0)
+  const duracao = Math.max(0, (fimTrecho || 0) - inicio)
+  const trecho = t ? { inicio: inicio || null, fim: t.fim != null ? fimTrecho : null } : null
+
+  // ─── só no computador ───
+  const comp = preset.computador ?? null
+  const soComputador = comp ? ROTULOS_COMPUTADOR.filter(([k, , padrao]) => comp[k] != null && comp[k] !== padrao).map(([, nome]) => nome) : []
+  if (motor === 'navegador' && soComputador.length) avisos.push(`${primeiraMaiuscula(lista(soComputador))}: só na Máxima qualidade (app do computador).`)
 
   // ─── áudio ───
   let audio = null
@@ -83,42 +99,63 @@ export function planejar(origem, p, opcoes = {}) {
     if (a.codec === 'mp3' && ![32000, 44100, 48000].includes(taxa)) taxa = taxa > 44100 ? 48000 : 44100
     if ((a.codec === 'aac' || a.codec === 'mp3') && taxa > 48000) taxa = 48000
     audio = { codec: a.codec, bitrate: a.kbps ? a.kbps * 1000 : null, taxa, canais }
+    if (a.ganho) audio.ganho = a.ganho
+    if (comp?.loudness && motor === 'computador') audio.loudness = comp.loudness
   } else if (!preset.video) {
     throw Object.assign(new Error('Este arquivo não tem áudio.'), { codigo: 'sem-audio' })
   }
 
+  const extras = { trecho, computador: comp, receitaCor: preset.video ? (preset.cor ?? null) : null }
   if (!preset.video) {
     const bytes = audio.bitrate ? (audio.bitrate * duracao) / 8 : duracao * audio.taxa * audio.canais * 3
-    return { preset: preset.id, formato: preset.formato, video: null, audio, tamanhoEstimado: Math.round(bytes), avisos, motor }
+    return { preset: preset.id, formato: preset.formato, video: null, audio, tamanhoEstimado: Math.round(bytes), avisos, motor, ...extras }
   }
   if (origem.temVideo === false || !origem.largura) throw Object.assign(new Error('Este arquivo não tem vídeo.'), { codigo: 'sem-video' })
 
-  // ─── cadência ───
+  // ─── giro e recorte: a imagem que entra na escala ───
   const v = preset.video
-  const cad = cadencia(origem.fps, tamanhoMax ? Math.min(v.fpsMax, 30) : v.fpsMax)
+  const giro = v.giro ?? 0
+  let ow = giro % 180 ? origem.altura : origem.largura
+  let oh = giro % 180 ? origem.largura : origem.altura
+  if (v.recorte) {
+    ow -= v.recorte.esquerda + v.recorte.direita
+    oh -= v.recorte.cima + v.recorte.baixo
+    if (ow < 16 || oh < 16) throw Object.assign(new Error('O recorte come a imagem inteira.'), { codigo: 'recorte' })
+  }
+
+  // ─── cadência ───
+  let cad
+  if (v.fpsExato) {
+    cad = { fps: v.fpsExato, dividiu: 1 }
+    if (origem.fps && Math.abs(origem.fps - v.fpsExato) > 0.01)
+      avisos.push(`${fmtFps(origem.fps)} fps → ${fmtFps(v.fpsExato)} fps exatos: o Relay repete ou descarta quadros, e o movimento pode soluçar.`)
+  } else {
+    cad = cadencia(origem.fps, tamanhoMax ? Math.min(v.fpsMax, 30) : v.fpsMax)
+    if (cad.dividiu > 1) avisos.push(`${fmtFps(origem.fps)} fps → ${fmtFps(cad.fps)} fps, um quadro a cada ${cad.dividiu}: o movimento fica igual.`)
+    else if (cad.dividiu === null) avisos.push(`${fmtFps(origem.fps)} fps → ${fmtFps(cad.fps)} fps.`)
+  }
   const fps = cad.fps || 30
-  if (cad.dividiu > 1) avisos.push(`${fmt(origem.fps)} fps → ${fmt(fps)} fps, um quadro a cada ${cad.dividiu}: o movimento fica igual.`)
-  else if (cad.dividiu === null) avisos.push(`${fmt(origem.fps)} fps → ${fmt(fps)} fps.`)
 
   // ─── tamanho do quadro ───
   let largura
   let altura
-  let encaixe = null // null = escala direta; 'contain' (faixas) ou 'cover' (corta) numa tela fixa
+  let encaixe = null // null = escala direta; 'contain' (faixas), 'cover' (corta) ou 'fill' (estica) numa tela fixa
   let imagem = null // o tamanho da imagem dentro da tela fixa
-  const menorOrigem = Math.min(origem.largura, origem.altura)
+  const menorOrigem = Math.min(ow, oh)
 
   if (v.quadro) {
     largura = v.quadro.largura
     altura = v.quadro.altura
-    const mesmaForma = Math.abs(origem.largura / origem.altura - largura / altura) < 0.01
-    encaixe = mesmaForma ? null : opcoes.preencher ? 'cover' : 'contain'
+    const mesmaForma = Math.abs(ow / oh - largura / altura) < 0.01
+    encaixe = mesmaForma ? null : (v.encaixe ?? (opcoes.preencher ? 'cover' : 'contain'))
     if (encaixe === 'contain') {
-      const k = Math.min(largura / origem.largura, altura / origem.altura)
-      imagem = { largura: par(origem.largura * k), altura: par(origem.altura * k) }
-      if (ehVertical(largura, altura) && !ehVertical(origem.largura, origem.altura)) avisos.push('Vídeo deitado numa tela em pé: sai com faixas. "Preencher" corta as laterais.')
+      const k = Math.min(largura / ow, altura / oh)
+      imagem = { largura: par(ow * k), altura: par(oh * k) }
+      if (ehVertical(largura, altura) && !ehVertical(ow, oh)) avisos.push('Vídeo deitado numa tela em pé: sai com faixas. "Preencher" corta as laterais.')
       else avisos.push('Proporção diferente da tela: sai com faixas. "Preencher" corta as sobras.')
     } else if (encaixe === 'cover') avisos.push('Preenchendo a tela: as sobras da imagem são cortadas.')
-    const k = encaixe === 'contain' ? Math.min(largura / origem.largura, altura / origem.altura) : Math.max(largura / origem.largura, altura / origem.altura)
+    else if (encaixe === 'fill') avisos.push('Proporção diferente da tela: a imagem é esticada.')
+    const k = encaixe === 'contain' ? Math.min(largura / ow, altura / oh) : Math.max(largura / ow, altura / oh)
     if (k > 1.05) avisos.push(`Imagem ampliada (${Math.round(k * 100)}%): o arquivo é menor que ${largura}×${altura}.`)
   } else {
     let lado = v.ladoMenor ?? menorOrigem
@@ -131,7 +168,7 @@ export function planejar(origem, p, opcoes = {}) {
       if (menorOrigem < 1080) avisos.push(`Ampliar ${menorOrigem}p para ${lado}p não cria detalhe; o truque vale para 1080p.`)
       else avisos.push(`${menorOrigem}p ampliado para ${lado}p com Lanczos.`)
     }
-    ;({ largura, altura } = escalarPeloMenor(origem.largura, origem.altura, lado))
+    ;({ largura, altura } = escalarPeloMenor(ow, oh, lado))
   }
 
   // ─── bitrate ───
@@ -153,27 +190,31 @@ export function planejar(origem, p, opcoes = {}) {
     if (!degraus.length || degraus[0] !== teto) degraus.unshift(teto)
     let escolhido = degraus[degraus.length - 1]
     for (const l of degraus) {
-      const d = escalarPeloMenor(origem.largura, origem.altura, l)
+      const d = escalarPeloMenor(ow, oh, l)
       if ((kbpsVideo * 1000) / (d.largura * d.altura * fps) >= BPP_MINIMO[v.codec]) {
         escolhido = l
         break
       }
     }
-    ;({ largura, altura } = escalarPeloMenor(origem.largura, origem.altura, escolhido))
-    if (escolhido < teto) avisos.push(`Para caber em ${mb(tamanhoMax)}, sai em ${escolhido}p: mais nítido que ${teto}p espremido.`)
+    if (!v.quadro) ({ largura, altura } = escalarPeloMenor(ow, oh, escolhido))
+    if (escolhido < teto && !v.quadro) avisos.push(`Para caber em ${mb(tamanhoMax)}, sai em ${escolhido}p: mais nítido que ${teto}p espremido.`)
     const bpp = (kbpsVideo * 1000) / (largura * altura * fps)
     if (bpp < BPP_MINIMO[v.codec]) avisos.push(`Pouco espaço para ${fmtDuracao(duracao)}: a imagem vai perder detalhe.`)
     bitrate = Math.round(kbpsVideo * 1000)
     modo = 'constante'
   } else if (v.bitrateFixo) {
     bitrate = v.bitrateFixo * 1000 // preset da pessoa: o número que ela escolheu, sem ajuste pela área
+    if (v.cbr) modo = 'constante'
   } else {
     bitrate = bitrateTabela(v.kbps, largura, altura, fps) * 1000
   }
 
   // ─── cor ───
   const cor = origem.cor
-  if (cor && (cor.transfer === 'pq' || cor.transfer === 'hlg'))
+  const receitaCor = extras.receitaCor
+  if (receitaCor?.entrada) {
+    if (cor && (cor.transfer === 'pq' || cor.transfer === 'hlg')) avisos.push('Arquivo marcado HDR com conversão de log: confira se a entrada certa é mesmo o log da câmera.')
+  } else if (cor && (cor.transfer === 'pq' || cor.transfer === 'hlg'))
     avisos.push('Arquivo HDR: sai em SDR sem conversão de tom, com as cores lavadas. Faça a versão SDR no editor.')
   else if (cor?.primaries && !['bt709', 'bt470bg', 'smpte170m'].includes(cor.primaries)) avisos.push(`Cor em ${cor.primaries}, não Rec.709: confira depois.`)
 
@@ -189,11 +230,17 @@ export function planejar(origem, p, opcoes = {}) {
       altura,
       encaixe,
       imagem,
-      fps: cad.dividiu === 1 ? null : fps, // null = a cadência do arquivo
+      giro,
+      espelhar: Boolean(v.espelhar),
+      recorte: v.recorte ?? null,
+      fps: v.fpsExato ? v.fpsExato : cad.dividiu === 1 ? null : fps, // null = a cadência do arquivo
       fpsSaida: fps,
+      fpsModo: v.fpsExato ? 'constante' : 'pico',
       bitrate,
       modo,
       fixo: Boolean(v.bitrateFixo),
+      cbr: Boolean(v.cbr && !tamanhoMax),
+      rf: Boolean(v.rf),
       gop: v.gop,
       crf: v.crf,
       teto: v.teto ?? null,
@@ -203,8 +250,22 @@ export function planejar(origem, p, opcoes = {}) {
     tamanhoMax,
     tamanhoEstimado: Math.round(tamanhoMax ? Math.min(bytes, tamanhoMax) : bytes),
     avisos,
+    ...extras,
   }
 }
+
+/** [chave, nome, padrão] das opções que só o computador faz (o x264 e os filtros do ffmpeg). */
+const ROTULOS_COMPUTADOR = [
+  ['velocidade', 'velocidade do x264', 'slow'],
+  ['ajuste', 'ajuste do x264', null],
+  ['perfil', 'perfil', null],
+  ['desentrelacar', 'desentrelaçar', false],
+  ['ruido', 'redução de ruído', 0],
+  ['nitidez', 'nitidez', 0],
+  ['loudness', 'volume normalizado', null],
+]
+const lista = (itens) => (itens.length < 2 ? itens.join('') : `${itens.slice(0, -1).join(', ')} e ${itens[itens.length - 1]}`)
+const primeiraMaiuscula = (t) => t.charAt(0).toUpperCase() + t.slice(1)
 
 const MATRIZES = { bt709: 'bt709', smpte170m: 'bt601', bt470bg: 'bt601', bt601: 'bt601', 'bt2020-ncl': 'bt2020', bt2020nc: 'bt2020', bt2020: 'bt2020', smpte240m: 'smpte240m' }
 
@@ -223,28 +284,50 @@ const CONTEINER = { mp4: 'MP4 (início rápido)', m4a: 'M4A', mp3: 'MP3', wav: '
 
 /**
  * A ficha técnica do que vai sair, em linhas [rótulo, valor] (a tela mostra recolhida). `motor`: o que roda a
- * conversão muda o controle de bitrate.
+ * conversão muda o controle de bitrate e o que entra do computador.
  */
 export function fichaTecnica(plano, motor = plano.motor ?? 'navegador') {
   const linhas = [['Contêiner', CONTEINER[plano.formato] ?? plano.formato]]
   const v = plano.video
+  const c = plano.computador
+  const noComputador = motor === 'computador'
+  if (plano.trecho) linhas.push(['Trecho', `${fmtTempo(plano.trecho.inicio ?? 0)} → ${plano.trecho.fim != null ? fmtTempo(plano.trecho.fim) : 'o fim'}`])
   if (v) {
-    linhas.push(['Vídeo', NOME_CODEC[v.codec] ?? v.codec])
-    linhas.push(['Tamanho', `${v.largura}×${v.altura}${v.encaixe === 'contain' ? ' (com faixas)' : v.encaixe === 'cover' ? ' (preenchendo)' : ''}`])
-    linhas.push(['Cadência', v.fps ? `${String(v.fps).replace('.', ',')} fps` : 'a do arquivo'])
+    const perfil = noComputador && c?.perfil && v.codec === 'avc' ? `H.264 ${c.perfil[0].toUpperCase()}${c.perfil.slice(1)}` : null
+    linhas.push(['Vídeo', perfil ?? NOME_CODEC[v.codec] ?? v.codec])
+    linhas.push(['Tamanho', `${v.largura}×${v.altura}${v.encaixe === 'contain' ? ' (com faixas)' : v.encaixe === 'cover' ? ' (preenchendo)' : v.encaixe === 'fill' ? ' (esticado)' : ''}`])
+    if (v.recorte) linhas.push(['Recorte', Object.entries(v.recorte).filter(([, n]) => n).map(([lado, n]) => `${lado} ${n}`).join(' · ') + ' px'])
+    if (v.giro || v.espelhar) linhas.push(['Giro', [v.giro ? `${v.giro}°` : null, v.espelhar ? 'espelhado' : null].filter(Boolean).join(' · ')])
+    linhas.push(['Cadência', v.fps ? `${String(v.fps).replace('.', ',')} fps${v.fpsModo === 'constante' ? ' exatos' : ''}` : 'a do arquivo'])
     const mbps = (v.bitrate / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 })
-    if (motor === 'computador' && !plano.tamanhoMax && !v.fixo) linhas.push(['Qualidade', `constante (x264 RF ${v.crf})${v.teto ? `, até ${(v.bitrate * v.teto * 1e-6).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} Mbit/s` : ''}`])
-    else if (motor === 'computador') linhas.push(['Bitrate', `${mbps} Mbit/s médio, 2 passadas`])
-    else linhas.push(['Bitrate', `${mbps} Mbit/s ${v.modo === 'constante' ? 'constante' : 'variável'}`])
+    if (noComputador && !plano.tamanhoMax && !v.fixo) linhas.push(['Qualidade', `constante (x264 RF ${v.crf})${v.teto ? `, até ${(v.bitrate * v.teto * 1e-6).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} Mbit/s` : ''}`])
+    else if (noComputador && v.cbr) linhas.push(['Bitrate', `${mbps} Mbit/s constante (CBR)`])
+    else if (noComputador) linhas.push(['Bitrate', `${mbps} Mbit/s médio, 2 passadas`])
+    else linhas.push(['Bitrate', `${mbps} Mbit/s ${v.modo === 'constante' ? 'constante' : 'variável'}${v.rf ? ` (RF ${v.crf} no computador)` : ''}`])
     linhas.push(['Quadro-chave', `a cada ${String(v.gop).replace('.', ',')} s`])
-    linhas.push(['Cor', 'Rec.709 SDR, faixa de TV (H.273 1-1-1)'])
+    if (noComputador && c) {
+      const x264 = [NOME_VELOCIDADE[c.velocidade] ?? null, c.ajuste ? NOME_AJUSTE[c.ajuste] : null].filter(Boolean)
+      if (x264.length) linhas.push([v.codec === 'hevc' ? 'x265' : 'x264', x264.join(' · ')])
+      const filtros = [c.desentrelacar ? 'desentrelaçar' : null, c.ruido ? `ruído ${['', 'leve', 'médio', 'forte'][c.ruido]}` : null, c.nitidez ? `nitidez ${['', 'leve', 'média'][c.nitidez]}` : null].filter(Boolean)
+      if (filtros.length) linhas.push(['Filtros', filtros.join(' · ')])
+    }
+    const r = plano.receitaCor
+    linhas.push(['Cor', r ? `${[r.entrada ? `${r.entradaNome ?? r.entrada} → Rec.709` : null, r.look ? `look ${r.look.nome}${r.look.sobre === 'log' ? ' sobre o log' : ''}` : null].filter(Boolean).join(' · ')} (Revela), sai 1-1-1` : 'Rec.709 SDR, faixa de TV (H.273 1-1-1)'])
     linhas.push(['Redução', 'Lanczos-3'])
   }
   const a = plano.audio
-  linhas.push(['Áudio', a ? [NOME_CODEC[a.codec] ?? a.codec, a.bitrate ? `${Math.round(a.bitrate / 1000)} kbit/s` : null, a.taxa ? `${(a.taxa / 1000).toLocaleString('pt-BR')} kHz` : null, a.canais === 1 ? 'mono' : a.canais === 2 ? 'estéreo' : a.canais ? `${a.canais} canais` : null].filter(Boolean).join(' · ') : 'sem áudio'])
+  linhas.push(['Áudio', a ? [NOME_CODEC[a.codec] ?? a.codec, a.bitrate ? `${Math.round(a.bitrate / 1000)} kbit/s` : null, a.taxa ? `${(a.taxa / 1000).toLocaleString('pt-BR')} kHz` : null, a.canais === 1 ? 'mono' : a.canais === 2 ? 'estéreo' : a.canais ? `${a.canais} canais` : null, a.ganho ? `${a.ganho > 0 ? '+' : ''}${String(a.ganho).replace('.', ',')} dB` : null].filter(Boolean).join(' · ') : 'sem áudio'])
+  if (a?.loudness) linhas.push(['Volume', `${a.loudness} LUFS (EBU R128)`])
+  if (!noComputador && c) {
+    const so = ROTULOS_COMPUTADOR.filter(([k, , padrao]) => c[k] != null && c[k] !== padrao).map(([, nome]) => nome)
+    if (so.length) linhas.push(['Só no computador', lista(so)])
+  }
   if (plano.tamanhoMax) linhas.push(['Limite', `${Math.round(plano.tamanhoMax / 1e6)} MB`])
   return linhas
 }
+
+const NOME_VELOCIDADE = { veryslow: 'muito lenta', slower: 'mais lenta', slow: 'lenta', medium: 'média', fast: 'rápida', faster: 'mais rápida', veryfast: 'muito rápida' }
+const NOME_AJUSTE = { film: 'filme', grain: 'granulação', animation: 'animação' }
 
 /** Extensão do arquivo de saída. */
 export const extensao = (formato) => ({ mp4: 'mp4', mp3: 'mp3', wav: 'wav', m4a: 'm4a' })[formato] ?? 'mp4'
@@ -257,7 +340,18 @@ export function nomeSaida(nome, p) {
 }
 
 const fmt = (n) => Number(n).toLocaleString('pt-BR', { maximumFractionDigits: 2 })
+const fmtFps = (n) => Number(n).toLocaleString('pt-BR', { maximumFractionDigits: 3 })
 const mb = (b) => `${Math.round(b / 1e6)} MB`
+
+/** 65,5 → "1:05,5"; 3725 → "1:02:05". */
+export function fmtTempo(s) {
+  const inteiro = Math.floor(s)
+  const resto = Math.round((s - inteiro) * 10) / 10
+  const h = Math.floor(inteiro / 3600)
+  const m = Math.floor((inteiro % 3600) / 60)
+  const seg = String(inteiro % 60).padStart(2, '0') + (resto ? `,${String(resto).slice(2)}` : '')
+  return h ? `${h}:${String(m).padStart(2, '0')}:${seg}` : `${m}:${seg}`
+}
 
 export function fmtDuracao(s) {
   const t = Math.round(s)

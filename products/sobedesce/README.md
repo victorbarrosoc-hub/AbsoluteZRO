@@ -218,6 +218,14 @@ O Google Drive toca vídeo pesado sem travar porque usa uma cópia leve que ele 
 - **Espaço no Drive:** cada cópia ocupa cerca de **2 a 5% do original** (≈ 40 MB por minuto de vídeo). Uma diária de 500 GB em ProRes vira uns 10–20 GB de prévias.
 - O ffmpeg vem dentro do app (GPL v3; licença e fontes em `Resources/ffmpeg-licencas`). Sem ele (rodando do código), o app usa o ffmpeg do sistema (`brew install ffmpeg`), a variável `SOBEDESCE_FFMPEG`, ou `node scripts/ffmpeg-baixar.mjs` para baixar o mesmo do instalador.
 
+### Looks do Relay no Drive
+
+No site do Relay (painel, **Looks**), escolha uma pasta do computador (por exemplo `Absolute ZRO/Looks do Relay`): o
+Relay grava nela os seus looks `.cube`. **Drive pelo SOBEDESCE** abre este app no **Comparar**, com essa pasta e a pasta
+do Drive dos looks (escolhidas uma vez; o link `sobedesce://looks?trocar=1` escolhe de novo). **Subir o que falta**
+leva os looks novos; **Baixar o que só está no Drive** traz os de outro computador para a pasta, e o Relay os lê de
+lá. Nada é apagado nem gravado por cima.
+
 ### Converter com o Relay
 
 Botão direito num vídeo ou áudio do Drive → **Converter com o Relay…** → escolha o grupo (Redes, Trabalho, Tamanho,

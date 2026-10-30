@@ -14,6 +14,7 @@ import { Icone } from "@/components/icones";
 import { MaestroSimbolo, ZroSimbolo } from "@/components/marca";
 import { CabecaMarca, estiloDaMarca, type MarcaDaPagina } from "@/components/publico/comum";
 import { Revisor, type NovoComentario } from "./revisor";
+import { type ComentarioDeBloco, RoteiroParaAprovar } from "./roteiro-cliente";
 
 type Escolha = { decisao: "aprovado" | "ajuste"; nota: string };
 type Rascunho = { nome: string; escolhas: Record<string, Escolha> };
@@ -37,6 +38,8 @@ function guardarRascunho(chave: string, r: Rascunho) {
 }
 
 const chaveEscolha = (p: PecaVista) => `${p.card}:${p.volta}`;
+/** A peça cuja versão mais nova é um roteiro (Criação, F7): a tela mostra o texto no lugar do player. */
+const roteiroDa = (p: PecaVista | undefined) => (p?.versoes[0]?.fonte === "roteiro" ? p.versoes[0] : null);
 const decidida = (p: PecaVista) => (p.decisao && p.decisao.volta === p.volta ? p.decisao : null);
 
 function Rodape({ propria = false }: { propria?: boolean }) {
@@ -68,7 +71,8 @@ export function LinkNeutro({ limite = false }: { limite?: boolean }) {
   );
 }
 
-export function PedirPin({ token }: { token: string }) {
+/** PIN do link: o do cliente (`/api/link/pin`, token no corpo) ou outro, como o do Fluxo (`/f/<token>/pin`). */
+export function PedirPin({ token, rota = "/api/link/pin" }: { token: string; rota?: string }) {
   const router = useRouter();
   const [pin, setPin] = useState("");
   const [erro, setErro] = useState<string | null>(null);
@@ -78,7 +82,7 @@ export function PedirPin({ token }: { token: string }) {
     setIndo(true);
     setErro(null);
     try {
-      const r = await fetch("/api/link/pin", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token, pin }) });
+      const r = await fetch(rota, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ token, pin }) });
       if (r.ok) return router.refresh();
       const j = (await r.json().catch(() => ({}))) as { mensagem?: string };
       setErro(j.mensagem ?? "Não deu certo.");
@@ -202,7 +206,7 @@ export function AprovacaoCliente({
   const notaAberta = escolha?.decisao === "ajuste";
 
   const aoComentar = useCallback(
-    async (v: VersaoVista, c: NovoComentario): Promise<string | null> => {
+    async (v: VersaoVista, c: NovoComentario | ComentarioDeBloco): Promise<string | null> => {
       if (!peca) return "Escolha a peça.";
       try {
         const r = await fetch("/api/link/comentar", {
@@ -280,7 +284,7 @@ export function AprovacaoCliente({
         </div>
         {notaAberta ? (
           <label className="cl-campo">
-            <span>O que ajustar? {peca.versoes.length ? "(ou comente no vídeo)" : ""}</span>
+            <span>O que ajustar? {roteiroDa(peca) ? "(ou toque num trecho)" : peca.versoes.length ? "(ou comente no vídeo)" : ""}</span>
             <textarea
               rows={2}
               maxLength={2000}
@@ -457,9 +461,19 @@ export function AprovacaoCliente({
             <h2>{peca.titulo}</h2>
             {peca.versoes.length > 1 ? <span className="selo">Versão nova</span> : null}
           </header>
-          {peca.versoes.length ? (
+          {roteiroDa(peca)?.roteiro ? (
+            <RoteiroParaAprovar
+              key={roteiroDa(peca)!.id}
+              roteiro={roteiroDa(peca)!.roteiro!}
+              comentarios={roteiroDa(peca)!.comentarios}
+              podeComentar={!jaDecidida}
+              aoComentar={(c) => aoComentar(roteiroDa(peca)!, c)}
+              abaixo={decisao}
+              pedirNome={rasc.nome.trim().length >= 2 ? undefined : { valor: rasc.nome, mudar: (v) => mudarRasc((r) => ({ ...r, nome: v })) }}
+            />
+          ) : peca.versoes.some((v) => v.fonte !== "roteiro") ? (
             <Revisor
-              versoes={peca.versoes}
+              versoes={peca.versoes.filter((v) => v.fonte !== "roteiro")}
               modo="cliente"
               podeComentar={!jaDecidida}
               aoComentar={aoComentar}
@@ -472,7 +486,7 @@ export function AprovacaoCliente({
               <small>Sem vídeo: decida por esta peça como ela está no texto.</small>
             </div>
           )}
-          {peca.versoes.length ? null : decisao}
+          {roteiroDa(peca)?.roteiro || peca.versoes.some((v) => v.fonte !== "roteiro") ? null : decisao}
         </section>
       ) : (
         <p className="rv-vazio">Nada para aprovar neste link.</p>

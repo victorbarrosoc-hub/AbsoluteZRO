@@ -207,6 +207,11 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   abre aquele projeto, só a mesma conta aceita e nunca rebaixa ninguém. O projeto mostra a seção Equipe.
 - ✅ Carro do Freela fechado até o lançamento (28/10/2026, adendo do PRD): só a conta listada como `allowed` no HUB
   entra (claim `zro_release` relida a cada pedido; `CARRO_RELEASE` padrão `closed`). O resto vê "Em desenvolvimento".
+- 🟡 Carro do Freela e SOBEDESCE no subdomínio da Absolute ZRO (30/10/2026, decisão do titular): `carro.absolutezro.com` e
+  `sobedesce.absolutezro.com`. Feito: o retorno do login cadastrado no HUB (migração 0037, ao lado dos antigos) e as
+  origens novas no Carro e no SOBEDESCE. Falta: domínios na Vercel e DNS (com o "pode subir"), retorno do Google do
+  SOBEDESCE no Google Cloud (o titular), e depois trocar o endereço principal (Abrir do HUB, links da família, redirecionar
+  os antigos).
 - ✅ Carro do Freela (27/10/2026): sem selo "Prévia" na barra de cima (a prévia segue dita no pé da home, no menu e
   no rodapé do app) e o "Continuar com Absolute ZRO" com o símbolo flat no lugar do feixe de luz antigo.
 - 🟡 Carro do Freela com banco próprio (29/10/2026, pedido do titular): schema `carro_do_freela` no Supabase
@@ -520,6 +525,14 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   como "em produção". Só administração e gestão mudam (RLS + funções `maestro.coluna_*`); organizações existentes
   ficam com as 8 de hoje. Falta: aplicar a 0024 em produção (vai junto com o próximo deploy autorizado do Maestro) e
   conferir num iPhone de verdade.
+- ✅ Maestro, **arrastar o card no computador sem "travadinha"** (vídeo do titular no Safari do Mac, 29/10/2026): o
+  arrastar nativo do HTML saiu dos cards; o mouse usa o mesmo gesto do celular (`src/components/quadro/arrastar.ts`):
+  fantasma do tamanho real com camada própria seguindo o mouse só com `translate`, os outros cards abrem espaço com
+  `transform` (zero render do React e zero layout por quadro), o lugar de soltar não pisca mais (o `dragleave` sem
+  `relatedTarget` do Safari apagava e redesenhava tudo), e ao soltar o card pousa de onde foi solto, inteiro (a coluna
+  não corta mais, e o card que troca de coluna não "chega" de novo invisível). Esc e soltar fora devolvem; Entregue
+  recebe no topo; "reduzir movimento" vai direto. A volta de 5 s e a página renovada depois de gravar não redesenham
+  mais o Quadro inteiro. Falta: conferir no Safari de um Mac e num iPhone de verdade depois do próximo deploy autorizado.
 
 - 🟡 **Lançamento do Maestro em Beta grátis** (29/10/2026, decisão do titular, [ADR 0027](decisions/0027-lancamento-maestro-beta-gratis.md);
   pronto no ramo, vale no OK final): migration `0027_maestro_lancamento.sql` (gate `public_beta` em todos os canais; o
@@ -533,6 +546,21 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   chaves que viram juntas (`node scripts/lancamento-maestro.mjs --abrir`; checklist e reversão em
   [docs/operations/lancamento-maestro.md](operations/lancamento-maestro.md)). Falta: o OK do titular, publicar cada
   app e o app de computador do Maestro entrar na central (`APPS_DESKTOP`) quando tiver Release.
+- ✅ **Só o que está no ar é divulgado; Maestro e Relay no ar** (30/10/2026, decisões do titular: "AEON, REVELA E
+  NOSSOM não estão funcionando no ecossistema ainda, não pode divulgar … Quando for pro ar, aí divulga" e "Maestro e
+  Relay no ar"). Migration `0039_maestro_relay_no_ar.sql`: Maestro sai do Beta (`stage` `active`, gate `released`;
+  web, api e sso abertos, computador e download seguem fechados); o Relay já estava `released`. Páginas públicas
+  divulgam pelo gate (`apps/hub-web/lib/divulgacao.ts`: estado aberto e canal web ou download aberto), sem lista à mão
+  nem "Em breve": página inicial (faixa das ferramentas, números, "Conheça de perto", órbita da Z, fluxo) e `/baixar`
+  mostram só Maestro, SOBEDESCE, Synquei, TPeasy e Relay; AEON, Revela, NOSSOM e Carro do Freela somem e voltam
+  sozinhos quando uma migration abrir o gate. Fluxo novo, só com etapas reais: Pauta (Maestro) → Gravação (TPeasy) →
+  Cópia (SOBEDESCE) → Sincronia (Synquei) → Entrega (Relay) → Aprovação (Maestro), com a linha do centro da primeira
+  ao da última e "N de 6"; quem não manda evento ao HUB mostra o que faz ali, nunca um aviso inventado. Faixa sem linha
+  órfã (5 numa linha no computador, tablet e celular), números com uma coluna por item. Foto do app
+  (`produto-hub-*.webp`) refeita só com os cinco; no painel `/app` o Maestro e o Relay (só web) abrem na web em vez de
+  "Em desenvolvimento". `/baixar` e `/downloads`: o Maestro abre no navegador e no celular; Relay entrou. "Beta" saiu
+  da Z (`plataformas.ts`) e da descrição/OG do Maestro (`products/maestro/src/lib/site.ts`). Falta: o selo "Beta" da
+  página inicial do Maestro e as listas da família dentro dos apps (outros ramos), e aplicar a 0039 em produção.
 - ⬜ Maestro, pendente do titular: ciência dos serviços abertos da calculadora; criar a chave de API do Google só do
   Maestro (restrita à Drive API e a `maestro.absolutezro.com`) e pôr em `MAESTRO_GOOGLE_API_KEY` na Vercel; pôr
   `CRON_SECRET` no projeto `maestro` da Vercel (agendamento que desliga o compartilhamento de revisão vencido).
@@ -615,9 +643,209 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   ([contrato](integration-contracts/pessoas.md)): `authorize()`, limites, auditoria sem o texto buscado.
 - ✅ Maestro: busca e convite pelo @ em Ajustes › Pessoas, o @ e a "Função na produtora" de cada pessoa, e "Achar pelo @"
   em Freelas (freela ligado ao perfil, `drizzle/0023`). Carro do Freela: o @ no `/eu` e em "Meu perfil".
+- 🟡 Carro do Freela no ar com o ecossistema (30/10/2026, pedido do titular: "vamos começar com os usuários que já
+  estão no ecossistema"): o domínio serve só o site real (`build.js --real`, fase 1, sem os 109 fictícios e sem nada
+  semeado); a busca vem de `/api/zro/pessoas` (HUB `zro.comunidade_perfis`, migração `0038`: perfil visível e @
+  confirmado) e só traz quem marcou "Mostrar meu perfil para quem contrata" no Carro; a agenda do freela mora no banco
+  (`carro_do_freela.agenda_dias`, `/api/zro/agenda`). Visual: linha B "Natal à noite" (escuro fosco por padrão, o
+  símbolo de sempre, foto de Natal na home e na entrada). Porta-malas é o SOBEDESCE embutido (Drive e Transferências,
+  no tema do Carro, com o selo dele). O endereço é carro.absolutezro.com; carrodofreela.com.br redireciona. Falta: propostas e chamadas no banco, a
+  revisão de dinheiro e garantias (sai Take e Pedágio) e os planos do ecossistema (ver a agenda pago).
 - ⛔ Em produção: migrações `0029` (HUB) e `0022` (Maestro) no deploy; o Maestro passa a pedir `zro.pessoas` (HUB sem a
   0029 cai em `nivel=sem_pessoas`, sem quebrar o login).
 - ⬜ Inventário do Carro no freela achado pelo @ (pronto atrás de `CARRO_SYNC_ATIVO`, desligado).
+
+## Maestro · Criação: núcleo do Roteiro (F1, 29/10/2026)
+
+- ✅ Modelo único do roteiro (cenas → blocos: fala on/OFF/sonora/passagem com pessoa, ação, plano, lettering
+  GC/título/legenda/CTA/legal, áudio trilha/efeito/BG/silêncio, observação, nota interna), tempo estimado (150 palavras
+  por minuto, regra de contagem do TPeasy) e alvo. Vistas puras: Literário, Técnico, Teleprompter (marcação e backup do
+  TPeasy, id estável por pessoa), Edição, Markdown e dados da impressão. 6 modelos só com dica cinza. Documento antigo
+  (roteiro/decupagem) abre no editor novo sem mudar o antigo. Junção por id no conflito de `rev`.
+- ✅ Banco: `drizzle/0030_roteiros.sql` (`roteiros`, `roteiro_versoes` só de inclusão com sha256 conferido), RLS por
+  organização e por cliente, papéis provisórios até a área `criacao` do acesso por área. O migrador do Maestro passa a
+  aplicar migração que entra fora de ordem (0025–0029 de outras frentes depois da 0030).
+- ✅ F3 (enviar: TPeasy, edição, roteiros na ficha do card), 30/10/2026: seção própria abaixo.
+- ⬜ F5 (Fluxo), F7 (aprovação pelo `/a`).
+- ⛔ Em produção: migração `0030` do Maestro no próximo deploy autorizado.
+
+## Maestro · Criação: editor do Roteiro (F2, 29/10/2026)
+
+- ✅ "Criação" no grupo Produção (computador) e em Mais (iPhone; a barra de baixo não muda). `/app/criacao`: roteiros
+  em cartões (vínculo, duração contra o alvo, estado, quando mudou), "Novo roteiro" com os 6 modelos, vínculo a
+  projeto/card e "Literário ou Técnico primeiro?"; seletor Roteiros · Fluxos (desde a integração, Fluxos é a lista de verdade).
+- ✅ Editor `/app/criacao/roteiros/<id>`: Literário · Técnico (células editáveis, colunas escondíveis) · Teleprompter
+  (prévia no preto, por pessoa) · Edição (deixas em ordem de tempo). Teclado: Enter, Tab/⇧Tab, "/", ⌘1–6, "@",
+  ⌘⇧Enter, ⌥↑/⌥↓, ⌫. Grava sozinho (600 ms, `rev`, junção por id no 409, aviso "mudou ao mesmo tempo" com "Ficar com o
+  meu"), poll de 5 s, medidor contra o alvo, versões (salvar com nota, comparar por bloco, restaurar), folha A4 pelo
+  `dadosImpressao`. iPhone: uma cena por vez, "+" com os tipos em ícones grandes, segurar 280 ms para arrastar.
+- ✅ Projeto: seção "Roteiros" e "Novo"; roteiro e decupagem antigos com "Abrir no editor novo" (o antigo fica; os
+  dois tipos deixam de nascer pelos chips de Documentos). Demonstração com o roteiro institucional e a v1.
+
+## Maestro · Criação: saídas do Roteiro (F3, 30/10/2026)
+
+- ✅ "Enviar ▾" é a ação principal do editor para administração e gestão ("Salvar versão" ao lado e no menu; no iPhone,
+  o ícone no topo abre a folha). Tudo sai de uma **versão salva**: sem versão ou com o rascunho mudado, a folha oferece
+  salvar a próxima ou usar a última. Cada envio vai para a auditoria (`roteiro.enviado`: versão, sha256, destino,
+  formato, pessoa) e aparece em "Últimos envios".
+- ✅ TPeasy: só as falas, por pessoa; Compartilhar (folha do sistema, com o `.txt` quando dá), Copiar, `.txt` (o nome vira
+  o título no TPeasy) e o backup do TPeasy (id estável, hora da versão: a versão nova atualiza o mesmo roteiro lá). "Compartilha
+  o texto pronto", nunca "sincroniza".
+- ✅ PDF para a edição (folha A4 na vista Edição: cenas com tempo, lettering, áudio e falas) e PDF Literário, Técnico ou
+  Teleprompter, sempre de `?versao=n`.
+- ✅ Contrato `maestro.roteiro/1` em `packages/media-contracts` ([maestro-roteiro.md](integration-contracts/maestro-roteiro.md),
+  schema e exemplo gerado pelo Maestro). A opção do arquivo (AEON) **só aparece com o AEON aberto para a pessoa** (gate
+  do HUB, `zro_release["ai-edit"]`); hoje fechado, ninguém vê. O AEON ainda não importa (F8b).
+- ✅ Ficha do card: bloco "Criação" com os roteiros ligados (título, versão, duração, estado) e "Novo roteiro" já ligado.
+- ✅ Permissões da Criação pela capacidade `criacao` (ver/editar/enviar) do acesso por área (`podeCriacao`).
+- ⬜ Cliente aprovar (F7, fora do menu até lá); TPeasy lendo direto do Maestro (F8a); AEON abrindo o arquivo (F8b). Sem
+  migração nova.
+
+## Maestro · Criação: núcleo do Fluxo (F4, 29/10/2026)
+
+- ✅ Banco: `drizzle/0031_fluxos.sql` (`fluxos`, `fluxo_nos` com nota/imagem/link/roteiro/card/seção, `fluxo_ligacoes`,
+  `fluxo_imagens`), RLS por organização e por cliente (o fluxo segue o projeto/card; o solto some para quem é restrito),
+  `rev` por nó e por ligação, lápide em vez de apagar, limites de 2.000 nós e 4.000 ligações por fluxo.
+- ✅ Servidor (`src/lib/criacao/fluxo`): operações em lote com conflito por item, "o que mudou desde" para o poll de
+  5 s, referências vivas a roteiro e card ("sem acesso" sem título), imagens em WebP ≤ 400 KB + miniatura, sem
+  metadados, com cota por produtora (200 MB) e por fluxo (300) conferida no banco, rota autorizada
+  `/api/criacao/img/<id>/<sha>`. Link colado reconhecido pelo endereço (YouTube, Vimeo, Drive), sem buscar nada.
+  Markdown e JSON `maestro.fluxo/1` para "Copiar para IA" (sem endereço de imagem sem o link da F6).
+- ✅ F5 (canvas, abaixo). ⬜ F6 (exportar, link privado `/f`).
+- ⛔ Em produção: migração `0031` do Maestro no próximo deploy autorizado. A cota de 200 MB depende do plano do
+  Supabase `AbsoluteZRO` (conferir com o titular).
+
+## Maestro · Criação: o canvas do Fluxo (F5, 29/10/2026)
+
+- ✅ `/app/criacao/fluxos` (cartões, "Novo fluxo", lixeira) e `/app/criacao/fluxos/[id]`: canvas infinito feito à mão
+  (DOM + SVG, sem tldraw), grade de pontos, andar e aproximar (trackpad, ⌘/Ctrl + roda, pinça), laço e ⇧, mover,
+  redimensionar, seções coloridas que levam o que está dentro, ligações puxadas da bolinha com rótulo opcional, apagar
+  com Desfazer/Refazer, cores, duplicar, setas e atalhos; barra de vidro (Selecionar · Nota · Imagem · Link · Seção ·
+  Ligar · Roteiro · Card) e o zoom no pé.
+- ✅ Colar é o gesto principal: imagem sobe com progresso e mensagem de cota, link vira nó (YouTube/Vimeo/Drive pelo
+  endereço, sem buscar nada), texto vira notas, link de roteiro/card do Maestro vira referência viva; soltar arquivo
+  também. Gravação otimista em lote (`aplicarOps`), conflito por item, poll de 5 s que não mexe na vista.
+- ✅ iPhone: segurar 280 ms ergue o nó, pinça, "+" com a folha Adicionar (Foto, Imagem, Link, Nota, Seção, Roteiro ·
+  Card) e a Lista por seção; a barra Hoje · Quadro · Aprovar · Mais fica. Quem só lê anda e lê. Claro e escuro,
+  reduzir movimento.
+- ✅ Entrada "Criação" na navegação e o seletor Roteiros · Fluxos (integração, abaixo); Exportar (F6).
+
+## Maestro · Criação: exportar e compartilhar o Fluxo (F6, 30/10/2026)
+
+- ✅ Menu **Exportar** no canvas (popover no computador, folha no iPhone): Copiar para IA (Markdown; imagens pela
+  legenda, ou pelo link quando há um sem PIN e a pessoa marca "Imagens pelo link"), Criar link / Links, Mandar para um
+  card, Baixar pacote (.zip com `fluxo.md`, `fluxo.json` e `imagens/`, montado no servidor e enviado aos pedaços), JSON
+  (`maestro.fluxo/1`) e PDF (a Lista com CSS de impressão). "Privado" / "Link ativo" no topo.
+- ✅ Link privado (decisão do titular): migração `0032` do Maestro (`fluxo_links`: só o sha256 e a cópia cifrada do
+  token, 1 a 30 dias com 7 por padrão, PIN scrypt opcional, revogar para sempre, até 10 vivos, visitas, audit de criar e
+  revogar), só administração e gestão. `/f/<token>` só de leitura (a Lista), `/f/<token>.md` e `.json`, imagens pelo
+  token; noindex, `X-Robots-Tag`, `no-referrer`, CSP própria, fora do robots.txt, limites por link e IP. Referência a
+  roteiro/card: só o título, e só do que quem criou alcançava. App de computador abre `/f` no navegador.
+- ✅ "Mandar para um card" liga o fluxo ao card; o bloco "Criação" da ficha do card mostra o fluxo.
+- ⛔ Em produção: migração `0032` do Maestro no deploy (com autorização).
+- ⬜ PNG do canvas; criar card novo em Pauta a partir do fluxo.
+
+## Maestro · o freela entra pela conta Absolute ZRO (30/10/2026)
+
+- ✅ "Novo freela" e a edição com o campo **"@ no Absolute ZRO"** no topo: prévia (foto, nome, @) depois de uma pausa,
+  "Usar" preenche nome, cidade e funções e liga o freela à conta (perfil relido no HUB; escondido = inexistente; a mesma
+  conta não entra em dois freelas da produtora).
+- ✅ Avulso continua igual, com **"Convidar para o Absolute ZRO"**: link de 7 dias (um aberto por freela, revogável),
+  **Copiar link** e **Mandar no WhatsApp** com a mensagem do cadastro. E-mail em espera (decisão do titular): nada sai
+  sozinho. A ficha mostra "Sem conta", "Convite enviado" ou "Conectado @fulano".
+- ✅ `/convite/<token>`: o freela cria a conta (ou entra) e aceita; o login do convite não cria sessão nem organização
+  no Maestro. Migração `0036` do Maestro (`freela_convites` + porta estreita).
+- ⛔ Em produção: migração `0036` do Maestro no próximo deploy autorizado.
+- ✅ Tela do freela dentro do Maestro: a área do freela (abaixo).
+- ⬜ O aviso do convite por e-mail quando o titular liberar.
+
+## Maestro · a área do freela (30/10/2026)
+
+- ✅ O freela ligado à conta entra no Maestro e cai em **"Seus trabalhos"**: por produtora (com a marca), as escalas
+  dele com título, cliente (se a produtora deixa), datas, horário, lugar, função, o valor dele e se já foi pago;
+  próximos primeiro, os que passaram recolhidos. A ficha traz o recado da produção, o link de entrega e o contato da
+  produtora. **Confirmar/Recusar** enquanto não passou (auditado; mudou a data, volta a esperar).
+- ✅ Escopo do freela no banco (migração `0037` do Maestro): sem organização, nenhuma tabela da produtora responde; só a
+  porta `maestro.freela_*`, pelo `zro_sub`, com a lista fechada de campos. Freela A não vê o B; o freela não passa nas
+  telas nem nas rotas da produtora; produtora em que a pessoa é da equipe fica no Maestro normal (atalho "Seus
+  trabalhos" e volta "Produtora").
+- ✅ A produtora escreve "Para o freela" (recado e link) na escala do projeto e da diária, vê "Confirmou"/"Recusou" e
+  escolhe em Ajustes → Empresa se o freela vê o cliente. Vazio calmo para quem está ligado sem trabalho.
+- ⛔ Em produção: migrações `0036` e `0037` do Maestro no próximo deploy autorizado.
+- ⬜ Carro do Freela: quando lançar, o mesmo `zro_sub` (fora desta etapa).
+
+## Maestro · Criação: o cliente aprova o roteiro (F7, 30/10/2026)
+
+- ✅ "Enviar ▾ › Para o cliente aprovar" (administração e gestão, `podeCriacao(…, 'enviar')`): de uma versão salva, a
+  versão vira **mais uma peça do link de aprovação do card** (`/a`; decisão do titular nº 4, nada de segundo sistema).
+  Sem card, a folha liga um; sem lote aberto, nasce o lote do cliente do card; sem link, o link nasce; copia o link.
+  Mandar a mesma versão de novo devolve a mesma peça e o mesmo link.
+- ✅ No `/a`: o roteiro na vista Literário (montada no servidor: sem nota interna, plano, observação, dica, ids nem a
+  nota `((…))` da fala), versão e duração; tocar num trecho comenta nele; Aprovar / Pedir ajuste com nome e hora como
+  as outras peças. Token, PIN, validade e limites de sempre (nenhuma rota pública nova).
+- ✅ No editor: o comentário embaixo do bloco (id estável: o da v1 continua no mesmo trecho da v2), resolver/reabrir,
+  o número em aberto no topo e a folha "Cliente" com as decisões; o estado vira "Com o cliente" / "Aprovado" /
+  "Ajustes pedidos" sozinho e aparece na ficha do card; versão nova troca a peça (a volta sobe) e os comentários
+  antigos ficam na versão deles; auditoria `roteiro.enviado` (destino cliente) e `roteiro.decisao`.
+- ✅ Migração `0033` do Maestro (`versoes.fonte = 'roteiro'` + `roteiro_versao_id` sem URL, `comentarios.bloco_id`,
+  `maestro.roteiro_para_cliente`, gatilho em `approvals`, `link_abrir`/`link_comentar` com o roteiro e o bloco).
+- ⛔ Em produção: migração `0033` do Maestro no próximo deploy autorizado.
+- ⬜ Resposta da equipe dentro do trecho (hoje a equipe resolve; a conversa segue no lote); vista Técnico para o cliente.
+
+## Maestro · Criação: Para o TPeasy direto (F8, 30/10/2026)
+
+- ✅ "Enviar ▾ › Para o TPeasy" com o TPeasy no plano: **Enviar ao TPeasy** manda a versão salva (o texto da vista
+  Teleprompter montado no servidor, título, meta e o link de volta) pela Absolute ZRO para a caixa de entrada do TPeasy
+  da pessoa, ou de quem da organização já usa o TPeasy. A folha mostra "Enviado ao TPeasy · v3 · agora" e "Recebido"
+  quando o aparelho contou; a mesma versão de novo é "Reenviar" e não duplica. Sem o TPeasy: "Enviar direto pede o
+  TPeasy no plano." e os jeitos de antes (Compartilhar, Copiar, .txt, backup). AEON segue escondido pelo gate.
+- ✅ HUB: migração `0040` (`zro.app_entregas`, funções `app_entrega_enviar`/`app_entregas_recebidas`/
+  `app_destinatarios`, RLS por pessoa, 30 dias, escopo `tpeasy.roteiros` no cliente do TPeasy), rotas
+  `/api/v1/apps/entregas{,/recebidas,/destinatarios}` com `authorize()` (papel, gates, TPeasy no plano), evento
+  `script.version.sent` com `idempotency_key` (sem rota no worker), contratos `zro.app-entrega.*.v1` e OpenAPI.
+- ✅ TPeasy: busca ao abrir e ao voltar para o app (`/api/zro/entregas`), "Do Maestro · v3" na lista, selo no editor
+  que abre o Maestro, versão nova atualiza o mesmo roteiro e o que a pessoa mexeu vira cópia (nunca sobrescreve).
+- ⛔ Em produção: migração `0040` do HUB e o deploy de HUB, Maestro e TPeasy, só com autorização do titular. Depois
+  disso, quem já tinha entrado no TPeasy entra de novo uma vez (o token antigo não tem `tpeasy.roteiros`).
+- ⬜ Avisar no TPeasy aberto sem esperar a próxima abertura (hoje: ao abrir, ao voltar e a cada minuto no máximo);
+  mandar a versão aprovada sozinha quando o cliente aprovar.
+
+## Maestro: página inicial nova (30/10/2026)
+
+- ✅ No ritmo da do SOBEDESCE: hero com o Quadro no MacBook e o Hoje no iPhone, faixa de números do produto, as
+  ferramentas num controle segmentado (Quadro, Aprovação, Orçamento, Equipe, Financeiro, Criação; setas, Home e End),
+  uma foto de set, cartões de mexer (viagem pelos veículos de `veiculos.ts`, as 4 vistas do roteiro, o Fluxo, quem vê o
+  quê pelo `PADRAO` de `acessos.ts`, os apps da mesma conta) e o fechamento escuro. Sem Beta (no ar, titular
+  30/10/2026), sem "grátis", sem AEON/Revela/NOSSOM, a Z fora do palco.
+- ✅ Capturas reais refeitas pela demonstração (`e2e/capturas-inicio.spec.ts` + `scripts/capturas-inicio.mjs`), claro
+  e escuro; o Fluxo da captura usa 3 fotos de referência e a página uma foto de set feitas no Higgsfield (4,25 créditos).
+- ⛔ Em produção: só com o próximo deploy autorizado do Maestro.
+
+## Maestro · Criação: Roteiro e Fluxo num produto só (30/10/2026)
+
+- ✅ Uma entrada "Criação" (Produção no computador, Mais no iPhone) com o seletor **Roteiros · Fluxos**: duas rotas
+  irmãs com o mesmo título (`/app/criacao` e `/app/criacao/fluxos`); o "em breve" saiu e o `?aba=fluxos` antigo leva à
+  lista de fluxos. Sem entrada repetida.
+- ✅ Ficha do card: um bloco **Criação** só, com os roteiros (versão, duração, estado) e os fluxos (itens) ligados, num
+  pedido só, e "Novo roteiro" já ligado. Quem só lê vê a lista; sem nada ligado, o bloco some para quem só lê.
+- ✅ Permissões: Roteiro e Fluxo pela mesma capacidade `criacao` (`podeCriacao`, ver/editar/enviar); as políticas da
+  0030, 0031 e 0032 usam os mesmos papéis (o `roteiro.test.mts` e o `fluxo.test.mts` conferem).
+- ✅ Migrações do Maestro na ordem do journal: 0027 (acessos), 0030 (roteiros), 0031 (fluxos), 0032 (links do fluxo),
+  `when` únicos; o migrador aplica as fora de ordem (`migrador.test.mts`).
+- ⛔ Em produção: 0027, 0030, 0031 e 0032 do Maestro no próximo deploy autorizado.
+
+## Maestro · Criação: apagar fácil, com Desfazer (30/10/2026)
+
+- ✅ Pedido do titular ("bota uma opção fácil de excluir o projeto"): nas listas de Roteiros e de Fluxos, **deslizar o
+  cartão para a esquerda** no iPhone mostra o "Apagar" vermelho (até o fim apaga direto, como no Mail); **segurar** abre
+  a folha com Abrir e Apagar; no computador, o **"•••"** do cartão (com o mouse em cima) e o **botão direito** abrem
+  "Mandar para a lixeira".
+- ✅ Apagar = lixeira: some na hora com **"Apagado · Desfazer"** (6 s), sem pergunta; se está num card ou tem link vivo,
+  uma linha diz ("Sai do card até voltar da lixeira.", "O link para de abrir."). O "•••" do editor e do canvas faz o
+  mesmo e volta para a lista com o Desfazer.
+- ✅ **Lixeira** discreta nas duas abas ("Lixeira · N"): Restaurar (quem edita) e **Apagar de vez** com pergunta
+  (administração e gestão); roteiro com versão salva fica guardado. Leitura não vê nada disso.
+- Sem migração: as políticas da 0030/0031 já davam a remoção só a administração e gestão.
 
 ## Relay: conversão de mídia como setor próprio (29/10/2026, [ADR 0030](decisions/0030-relay-conversao.md))
 
@@ -658,6 +886,36 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
 - ✅ Leitura com plano B: gravação de tela do Mac recusada pelo navegador ("Este navegador não lê H.264") é tentada de
   outras formas, só vale a que devolve quadro; sem jeito, o erro mostra codec, tamanho e navegador.
 - ⬜ Confirmar no aparelho do titular qual navegador recusou a gravação de tela (o detalhe do erro agora diz).
+- ✅ Editor de preset completo (pedido do titular, 30/10/2026): cadência exata (23,976 e afins, em fração no ffmpeg),
+  recorte, giro e espelho, tela fixa com faixas/preencher/esticar, bitrate constante, qualidade constante (RF), trecho,
+  volume em dB, opções do computador (velocidade e ajuste do x264, perfil, desentrelaçar, ruído, nitidez, LUFS) e
+  fichas antigas abrindo iguais.
+- ✅ Cor da Revela na exportação, no código e desligada até a Revela abrir: receita (log da câmera → Rec.709 + look
+  `.cube`) no preset, em lote; CST como conta na placa (não LUT 3D: medido, a LUT erra até ~30/255 em cor saturada).
+- ⬜ Revela: looks pela conta (`/api/zro/looks`) e ligar `REVELA=released` no projeto `relay` quando abrir.
+- ⬜ Cor da Revela no computador: a mesma conta no ffmpeg e o SOBEDESCE assando a receita (hoje preset com cor fica
+  no navegador).
+- ✅ Painel da conta (pedido do titular, 30/10/2026): `/painel` com recentes, números, projetos (nome + destinos, abre o
+  conversor com eles e as saídas entram no projeto) e meus presets; quem entra cai nele. Topo com a foto da conta e o
+  menu (Painel, Sua conta, Sair); a página inicial mostra que a pessoa está dentro ("Seu painel").
+- ✅ Painel na conta (autorizado pelo titular, 30/10/2026): schema `relay` + papel `relay_app` com RLS, migrador
+  próprio, `/api/relay/painel`, sincronização (o de antes sobe uma vez; sem rede, pendências) e equipe (projetos e
+  presets liberados por quem criou, mesma organização, só leitura).
+- ✅ Looks (`.cube`) no Drive pelo SOBEDESCE (pedido do titular, 30/10/2026): pasta escolhida no painel do Relay (leva e
+  traz, sem gravar por cima) e `sobedesce://looks` abre o Comparar do app com a pasta e o Drive dos looks. Aparece com
+  a cor da Revela (`RECURSOS.revela`). ⬜ Sai no app do SOBEDESCE na próxima versão do desktop.
+- ✅ Página inicial nova (pedido do titular, 30/10/2026, no ritmo da do SOBEDESCE): herói com o produto de verdade no
+  MacBook e no iPhone (telas capturadas do app por `scripts/telas-inicio.mjs`, claro e escuro), números que vêm do
+  código, "Experimente" (o destino muda a tela e a ficha, pelo mesmo plano do conversor), Ferramentas em abas
+  (Converter, Vários de uma vez, Meus presets, Painel), "Cabe no limite" com a conta do Tamanho exato, os 23 destinos
+  por grupo, a conta (painel, equipe e Set), o ecossistema só com o que está no ar (Maestro, SOBEDESCE, Synquei e
+  TPeasy) e o fecho. Uma foto de exemplo (Higgsfield) vira o arquivo das telas e da
+  demonstração; nenhuma interface gerada. ⬜ Conferir num iPhone de verdade depois do deploy.
+- 🟡 "Escolher no Drive" no Relay (pedido do titular, 30/10/2026): lado do Relay pronto e testado (quadro, leitura aos
+  pedaços, "Para o Drive"), atrás de `RECURSOS.drive`. ⬜ Lado do SOBEDESCE (`?no=relay`, modo escolher, `ler`/`enviar`)
+  depois do embutido do Carro entrar na main; então `DRIVE=released` no projeto `relay`.
+- ⬜ App de computador do Relay e SOBEDESCE gravando no painel (Bearer da conta em `/api/relay/painel`).
+- ⬜ Conta excluída na Absolute ZRO apagar o schema `relay` dela (hoje nenhum app recebe o aviso do HUB).
 - ⬜ "Baixar como…" das Referências e o pedido da Z no SOBEDESCE pelos presets do Relay.
 - ⬜ Computador: ProRes, DNxHR e HDR 10 bits de saída; loudness normalizado; legenda queimada; corte de trecho.
 - ⬜ Evento `media.conversion.completed` no HUB, quando a primeira integração passar por ele.
@@ -673,6 +931,29 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
   Administração liga a área (a Gestão não vê o Financeiro por padrão).
 - ⬜ Perguntas ao titular: Gestão com Financeiro por padrão? Contato dos freelas separado de CPF/PIX? Restringir
   clientes só com a Administração? Aprovar na tela pedir também o Financeiro?
+
+## Maestro: achar o job no Quadro (30/10/2026)
+
+Pedido do titular: "o card que estiver com o link precisa ser de fácil entendimento... uma miniatura também da mídia
+do card... não consigo localizar o job que quero achar".
+
+- ✅ Selo do link no card (`src/lib/quadro/selos.ts`): um só, o mais adiantado, só do que o banco registra: "Com link"
+  (a peça tem versão), "Link enviado" (lote fora de rascunho com link ativo), "Cliente viu" (o link foi aberto depois da
+  versão mais nova), "Aprovado" / "Pediu ajuste" (decisão desta volta). A frase inteira, com hora e versão, na dica e no
+  nome do botão do card. O poll de 5 s traz o que mudou (versão, decisão, link criado, aberto ou revogado).
+- ✅ Imagem no topo do card: a capa enviada pela ficha (imagem, ou um quadro de vídeo tirado no navegador; arrastar ou
+  colar também vale) ou, sem ela, a miniatura que o endereço já dá sem o servidor buscar nada (YouTube; o quadro do vídeo
+  da demonstração). Drive e Vimeo ficam sem (precisariam buscar a página ou a credencial do arquivo). Sem imagem, o card
+  fica compacto. No celular a imagem vira miniatura ao lado.
+- ✅ Capa no banco do Maestro (migração **`drizzle/0035_capas_do_quadro.sql`**; 0033 e 0034 ficam com outras frentes):
+  `maestro.card_capas`, uma por card, WebP limpo (≤ 960 px, ≤ 160 KB), cota de 100 MB por produtora, bytes só pela
+  porta `maestro.card_capa`, RLS + `_cliente`; a referência vai em `dados.capa` pelo `card_mudar`. Rotas
+  `POST|DELETE /api/quadro/capa?card=` e `GET /api/quadro/capa/<card>/<sha>`. Leitura só vê.
+- ✅ Achar: sigla do cliente na cor dele (a mesma em toda tela), nome do cliente inteiro (o "Mover para…" e o próximo
+  passo aparecem só no gesto no computador; no toque ficam à vista), busca também pelo código do projeto, com realce,
+  contagem, "Nenhum card" e "Nada com …" + "Limpar busca"; colunas sem resultado esmaecem; "/" leva à busca.
+- ⛔ Em produção: migração `0035` do Maestro no próximo deploy autorizado.
+- ⬜ Miniatura do Drive pelo SOBEDESCE (`drive.miniatura` na ponte), se o titular quiser.
 
 ## Set: presença e conversas (29/10/2026, [ADR 0032](decisions/0032-set-presenca-e-conversas.md))
 
@@ -706,6 +987,11 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
   Estúdio, Conta, Set) mantêm o Set como a última aba; no Carro e no NOSSOM a lateral termina em Set e Z (a Z
   sempre a última); no site do SOBEDESCE o Set fica no cabeçalho, ao lado do anel da Z.
 - ⛔ Em produção: cliente `relay-web` no console (para o Set do Relay) e deploy de cada app, com autorização.
+- ✅ Adicionar pelo @ no Online (30/10/2026, pedido do titular: "achar a pessoa pelo @, adicionar, ver quando está
+  online e abrir a conversa"; antes ficava escondido nos Ajustes): botão da pessoa com + no topo e "Adicionar alguém
+  pelo @" no vazio; prévia com foto, nome e @ enquanto digita (`POST /contatos { ver }`, só perfil visível, mesmo
+  limite da busca); "Pedido enviado" ou "Agora vocês são contatos" ali mesmo; pedidos recebidos no topo do Online com
+  Aceitar e Recusar e o número na aba; já contatos = 409. Mesmo `v1`, sem mexer em nenhum repasse dos apps.
 - ⬜ App de computador do SOBEDESCE com o Set (o motor local ainda não repassa); aviso fora do app (e-mail/push);
   anexos.
 - ⬜ Fase 3, salas abertas da comunidade: com o lançamento do Carro do Freela (novo tipo de conversa, mesma API).
@@ -728,6 +1014,17 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
   fica na auditoria.
 - ⛔ Em produção: migração `0036` no deploy e o primeiro teste com as chaves reais (`IA_ANTHROPIC_KEY` e
   `ELEVENLABS_API_KEY`, já na Vercel).
+- ✅ Voz robusta (30/10/2026): com a escuta ao vivo recusada (401 no token de uso único, visto em produção com a chave
+  restrita), mãos livres segue **por frase**: VAD no navegador (~700 ms de silêncio) e Scribe v2 pelo HUB, com a nota
+  "Escuta ao vivo indisponível: usando transcrição por frase", custo e teto valendo. O log diz o código da recusa.
+- ✅ Modo voz no iPhone (30/10/2026): nada passa da largura em 375/393/430 px e deitado (coluna `minmax(0, 1fr)`,
+  topo em duas linhas, seletor a 16 px sem zoom do Safari, anel e tempos que encolhem); e2e no Chromium e no WebKit.
+- ✅ Aprender conversando (30/10/2026): no Testar (rascunho), o titular corrige a Z por voz ou texto ("não fala tão
+  formal", "a produtora se chama…") e ela propõe pela ferramenta `propor_aprendizado`; o cartão "Aprender · Guardar ·
+  Ajustar · Ignorar" pede a confirmação (toque, ou "pode guardar" dito, decidido no servidor). O guardado vai para a
+  seção `aprendizados` do rascunho e o próximo turno já usa; a versão numerada congela, os clientes só depois de
+  publicar. Trava de segurança, repetidos, contradições, limites, auditoria e Configurar › Aprendizados (editar, mover
+  de seção, remover, com a frase de origem). Sem migração: o rascunho e as versões imutáveis já tinham RLS.
 - ⬜ Para os clientes: voz, ditado e anexos no painel `<zro-ia>` lendo `z_recurso_liberado`, quando os planos forem
   vendidos.
 

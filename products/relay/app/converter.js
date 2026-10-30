@@ -7,7 +7,14 @@ import { capacidades, converterArquivo, lerArquivo, miniatura, MB } from './moto
 import { icone, icones } from './icones.js'
 import { montarSet } from './set.js'
 import * as Meus from './meus.js'
+import * as Looks from './looks.js'
 import { linkMaxima } from '../src/link.js'
+import { registro } from '../src/painel.js'
+import { lerConta } from './conta.js'
+import * as Historico from './historico.js'
+import * as Nuvem from './nuvem.js'
+import { RECURSOS } from './recursos.js'
+import { enviarAoDrive, escolherNoDrive, mudarTema } from './drive.js'
 
 const $ = (id) => document.getElementById(id)
 const el = (tag, props = {}, ...filhos) => {
@@ -22,7 +29,8 @@ const nomeCodec = (c) => NOMES_CODEC[c] ?? (String(c).startsWith('pcm') ? 'PCM' 
 // ─────────── estado ───────────
 
 let meus = Meus.carregar()
-const achar = (id) => meus.find((p) => p.id === id) ?? acharPreset(id)
+let daEquipe = Nuvem.presetsDaEquipe() // presets que a equipe liberou (só leitura; app/nuvem.js)
+const achar = (id) => meus.find((p) => p.id === id) ?? daEquipe.find((p) => p.id === id) ?? acharPreset(id)
 const ABAS = [...GRUPOS, 'Meus']
 /** Para a ficha ao vivo do editor: o primeiro arquivo da fila, ou um minuto de master 4K. */
 const origemDoEditor = () =>
@@ -51,7 +59,7 @@ if (FAMILIA[de]) {
 }
 const escolhidos = new Set((pedido && achar(pedido) ? [pedido] : lembrados).filter((id) => achar(id)))
 if (!escolhidos.size) escolhidos.add('youtube-1080')
-let grupo = achar([...escolhidos][0])?.grupo ?? GRUPOS[0]
+let grupo = new URLSearchParams(location.search).get('aba') === 'Meus' ? 'Meus' : (achar([...escolhidos][0])?.grupo ?? GRUPOS[0])
 let resolucao = 'original'
 const fila = [] // { id, arquivo, info, estado, erro, saidas: [{ preset, estado, plano, url, bytes, conversao, avisos }] }
 let pasta = null
@@ -93,8 +101,8 @@ function cartaoPreset(p) {
     desenharAbas()
     atualizarTudo()
   }
-  const personalizar = el('button', { type: 'button', className: 'personalizar', title: p.personalizado ? 'Editar' : 'Criar um preset a partir deste', ariaLabel: p.personalizado ? `Editar ${p.nome}` : `Personalizar ${p.nome}` }, icone(p.personalizado ? 'editar' : 'ficha'))
-  personalizar.onclick = (ev) => {
+  const personalizar = p.daEquipe ? null : el('button', { type: 'button', className: 'personalizar', title: p.personalizado ? 'Editar' : 'Criar um preset a partir deste', ariaLabel: p.personalizado ? `Editar ${p.nome}` : `Personalizar ${p.nome}` }, icone(p.personalizado ? 'editar' : 'ficha'))
+  if (personalizar) personalizar.onclick = (ev) => {
     ev.preventDefault()
     ev.stopPropagation()
     abrirEditor(p)
@@ -104,7 +112,7 @@ function cartaoPreset(p) {
     { className: 'preset cartao', title: p.dica ?? p.resumo },
     input,
     el('span', { className: 'preset-icone' }, icone(p.icone)),
-    el('span', { className: 'preset-texto' }, el('strong', { textContent: p.nome }), el('small', { textContent: p.resumo })),
+    el('span', { className: 'preset-texto' }, el('strong', { textContent: p.nome }), el('small', { textContent: p.daEquipe ? 'Da equipe' : p.resumo })),
     el('span', { className: 'marcado', ariaHidden: 'true' }, icone('ok')),
     personalizar,
   )
@@ -121,8 +129,10 @@ function desenharPresets() {
     if (!f) return
     try {
       const { presets, recusados } = await Meus.lerArquivo(f)
+      const antes = meus
       for (const p of presets) meus = [...meus.filter((x) => x.id !== p.id), p]
       Meus.guardar(meus)
+      contaDentro().then((c) => Nuvem.presetsMudaram(c, antes, meus))
       avisar(`${presets.length} ${presets.length === 1 ? 'preset trazido' : 'presets trazidos'}${recusados ? `, ${recusados} recusado${recusados > 1 ? 's' : ''}` : ''}.`)
       desenharPresets()
     } catch (e) {
@@ -132,7 +142,7 @@ function desenharPresets() {
   const trazer = el('label', { className: 'vidro', title: 'Trazer presets de um arquivo .relay.json' }, arquivo, icone('soltar'), 'Trazer')
   const levar = el('button', { type: 'button', className: 'vidro', title: 'Baixar seus presets como .relay.json', disabled: !meus.length }, icone('baixar'), 'Levar')
   levar.onclick = () => Meus.baixarArquivo(meus)
-  $('presets').replaceChildren(...meus.map(cartaoPreset), criar, el('div', { className: 'meus-acoes' }, trazer, levar, el('span', { className: 'apoio', id: 'aviso-meus', role: 'status' })))
+  $('presets').replaceChildren(...meus.map(cartaoPreset), ...daEquipe.map(cartaoPreset), criar, el('div', { className: 'meus-acoes' }, trazer, levar, el('span', { className: 'apoio', id: 'aviso-meus', role: 'status' })))
 }
 
 const avisar = (t) => {
@@ -141,9 +151,10 @@ const avisar = (t) => {
 }
 
 async function abrirEditor(p) {
-  const r = await Meus.editar(p, origemDoEditor())
+  const r = await Meus.editar(p, origemDoEditor(), Looks)
   if (!r) return
   const id = p?.personalizado ? p.id : null
+  const antes = meus
   if (r.acao === 'apagar') {
     meus = meus.filter((x) => x.id !== id)
     escolhidos.delete(id)
@@ -152,6 +163,7 @@ async function abrirEditor(p) {
     escolhidos.add(r.preset.id)
   }
   Meus.guardar(meus)
+  contaDentro().then((c) => Nuvem.presetsMudaram(c, antes, meus))
   lembrar()
   grupo = 'Meus'
   desenharAbas()
@@ -303,6 +315,12 @@ function linhaSaida(item, s) {
     a.setAttribute('aria-label', `Baixar ${s.nome}`)
     acoes.append(a)
   } else if (s.estado === 'feito') acoes.append(ficha('Salvo na pasta', 'ficha--sinal'))
+  if (s.estado === 'feito' && s.blob && !s.envio) {
+    const b = el('button', { type: 'button', className: 'vidro', title: 'Manda para a mesma pasta do Drive, pelo SOBEDESCE' }, icone('nuvem'), 'Para o Drive')
+    b.setAttribute('aria-label', `Mandar ${s.nome} para o Drive`)
+    b.onclick = () => mandarAoDrive(item, s)
+    acoes.prepend(b)
+  } else if (s.envio) acoes.prepend(ficha({ fila: 'Indo para o Drive…', enviando: 'Indo para o Drive…', conferido: 'No Drive, conferido', erro: 'Não foi para o Drive' }[s.envio] ?? 'Indo para o Drive…', s.envio === 'conferido' ? 'ficha--sinal' : ''))
   if (s.plano) {
     const ver = el('button', { type: 'button', className: 'vidro vidro--icone', title: 'Ficha técnica', ariaLabel: `Ficha técnica de ${p.nome}` }, icone('ficha'))
     ver.setAttribute('aria-expanded', String(Boolean(s.verFicha)))
@@ -377,6 +395,7 @@ async function converterSaida(item, s) {
       info: item.info,
       destino: pasta,
       nome: s.nome,
+      lerLook: Looks.ler,
       aoComecar: (c) => (s.conversao = c),
       aoProgredir: (f) => {
         s.progresso = f
@@ -394,12 +413,14 @@ async function converterSaida(item, s) {
     s.avisos = r.avisos
     s.bytes = r.bytes
     if (r.blob) s.url = URL.createObjectURL(r.blob)
+    if (r.blob && item.arquivo.drive) s.blob = r.blob // veio do Drive: pode voltar para lá
     const velocidade = item.info.duracao / r.segundos
     s.resumo = [
       r.codecVideo ? [nomeCodec(r.codecVideo), r.codecAudio && nomeCodec(r.codecAudio)].filter(Boolean).join(' + ') : null,
       `${velocidade.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}× tempo real`,
     ].filter(Boolean)
     s.estado = 'feito'
+    registrarNoPainel(item, s, r)
   } catch (e) {
     s.estado = e instanceof MB.ConversionCanceledError ? 'cancelado' : 'erro'
     s.erro = s.estado === 'erro' ? (e.codigo ? e.message : `Não deu para converter: ${e.message}`) : null
@@ -407,6 +428,83 @@ async function converterSaida(item, s) {
   }
   s.conversao = null
   atualizarItem(item)
+}
+
+// ─────────── painel: com conta, cada saída pronta entra no histórico do aparelho (app/painel.js) ───────────
+
+const idProjeto = new URLSearchParams(location.search).get('projeto')
+let projetoAtual = null
+
+/** O id da conta neste aparelho (resumo do sub), ou null fora da conta. */
+const contaDentro = async () => {
+  const c = await lerConta()
+  return c.estado === 'dentro' && c.pessoa?.id ? c.pessoa.id : null
+}
+
+async function registrarNoPainel(item, s, r) {
+  const conta = await contaDentro()
+  if (!conta) return
+  const reg = { ...registro({ arquivo: item.arquivo, info: item.info, preset: s.preset, resultado: r, nome: s.nome, projeto: projetoAtual?.id }), nuvem: false }
+  await Historico.registrar(conta, reg).catch(() => {})
+  await Nuvem.enviarConversao(conta, reg)
+}
+
+/** Com a conta: traz os presets de outros aparelhos e os da equipe, e redesenha. */
+async function sincronizarConta() {
+  const conta = await contaDentro()
+  if (!conta) return
+  const r = await Nuvem.sincronizar(conta)
+  if (!r.nuvem) return
+  meus = Meus.carregar()
+  daEquipe = Nuvem.presetsDaEquipe()
+  desenharAbas()
+  desenharPresets()
+  atualizarTudo()
+}
+
+/** ?projeto=<id> (vindo do painel): marca os destinos do projeto e as conversões entram nele. */
+async function abrirProjeto() {
+  if (!idProjeto) return
+  const c = await lerConta()
+  if (c.estado !== 'dentro' || !c.pessoa?.id) return
+  const p = await Historico.projetoPorId(c.pessoa.id, idProjeto).catch(() => null)
+  if (!p) return
+  projetoAtual = p
+  const destinos = p.destinos.filter((d) => achar(d))
+  if (!pedido && destinos.length) {
+    escolhidos.clear()
+    for (const d of destinos) escolhidos.add(d)
+    grupo = achar(destinos[0])?.grupo ?? grupo
+    desenharAbas()
+    desenharPresets()
+    atualizarTudo()
+  }
+  const chip = el('a', { className: 'vindo', href: '/painel', title: 'Voltar ao painel' }, icone('camadas'), el('span', { textContent: p.nome }))
+  chip.dataset.projeto = ''
+  ;(document.querySelector('.vindo') ?? $('soltar')).after(chip)
+}
+
+// ─────────── Drive pelo SOBEDESCE (app/drive.js): escolher lá, ler aos pedaços, voltar o resultado ───────────
+
+$('outras-fontes').hidden = !RECURSOS.drive
+$('escolher-drive').addEventListener('click', () =>
+  escolherNoDrive({ tema: window.relayTema?.atual() ?? 'claro', escolheu: (arquivos) => adicionar(arquivos) }),
+)
+
+async function mandarAoDrive(item, s) {
+  s.envio = 'fila'
+  atualizarItem(item)
+  try {
+    await enviarAoDrive({ nome: s.nome, blob: s.blob, pasta: item.arquivo.drive.pasta }, (d) => {
+      s.envio = d.estado
+      s.erro = d.estado === 'erro' ? d.erro || 'O Drive recusou o envio.' : s.erro
+      atualizarItem(item)
+    })
+  } catch (e) {
+    s.envio = 'erro'
+    s.erro = e.message
+    atualizarItem(item)
+  }
 }
 
 $('converter').addEventListener('click', async () => {
@@ -506,6 +604,7 @@ const pintarTema = () => botaoTema?.replaceChildren(icone(window.relayTema?.atua
 botaoTema?.addEventListener('click', () => {
   window.relayTema?.alternar()
   pintarTema()
+  mudarTema(window.relayTema?.atual())
 })
 
 icones()
@@ -514,6 +613,7 @@ desenharAbas()
 desenharPresets()
 atualizarTudo()
 window.relayPronto = true
+sincronizarConta().finally(abrirProjeto)
 
 // o Set, a aba em comum do ecossistema: "Set" no fim das páginas do topo (app/set.js)
 montarSet()

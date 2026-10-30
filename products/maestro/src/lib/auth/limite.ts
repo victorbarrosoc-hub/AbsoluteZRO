@@ -2,7 +2,7 @@
  * Limite de tentativas (tabela maestro.rate_limit_attempts, só pela porta de sistema): conta linhas da chave numa
  * janela de tempo. Chaves: "entrar:<ip>" (idas ao login), "pedido-zro:<jti>" (uso único dos pedidos do HUB, etapa 3),
  * "link-*:<hash do token ou do ip>" (links do cliente, src/lib/revisao/link.ts), "pedido-*" e "orcamento-*" (links públicos,
- * src/lib/publico), "espera:<hash do ip>" e "espera" (lista de espera). Limpeza preguiçosa do que tem mais de um dia.
+ * src/lib/publico), "fluxo-*" (link do Fluxo, src/lib/criacao/fluxo/link.ts), "espera:<hash do ip>" e "espera" (lista de espera). Limpeza preguiçosa do que tem mais de um dia.
  */
 import { and, count, eq, gte, lt } from "drizzle-orm";
 import { getBanco, schema } from "@/lib/db/client";
@@ -37,6 +37,16 @@ export const REGRAS = {
   /** Orçamento público: abrir 120/h por link; aceitar ou pedir ajuste 20/h por link (o aceite vale uma vez). */
   orcamentoAbrir: { max: 120, janelaMs: 60 * 60_000 },
   orcamentoDecidir: { max: 20, janelaMs: 60 * 60_000 },
+  /**
+   * Link do Fluxo (Criação F6, `/f/<token>`): abrir (página, .md, .json) 120/h por link e 300/h por IP; link que não
+   * existe 30/h por IP; PIN 5 a cada 15 min por link e IP, 20 por link; imagens 2.000/h por IP (uma página tem até 300).
+   */
+  fluxoAbrir: { max: 120, janelaMs: 60 * 60_000 },
+  fluxoIp: { max: 300, janelaMs: 60 * 60_000 },
+  fluxoMortoIp: { max: 30, janelaMs: 60 * 60_000 },
+  fluxoPinIp: { max: 5, janelaMs: 15 * 60_000 },
+  fluxoPin: { max: 20, janelaMs: 15 * 60_000 },
+  fluxoImagemIp: { max: 2000, janelaMs: 60 * 60_000 },
 } satisfies Record<string, Regra>;
 
 /** true = ainda pode tentar. */

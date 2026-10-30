@@ -66,6 +66,11 @@ describe('conta (só para o Set; converter segue sem conta)', () => {
     assert.equal(volta.headers.get('location'), '/converter?zro=ok')
   })
 
+  test('sem volta (o "Abrir" do HUB, por exemplo), o login cai no painel', async () => {
+    const { volta } = await entrar('/api/zro/entrar')
+    assert.equal(volta.headers.get('location'), '/painel?zro=ok')
+  })
+
   test('Absolute ZRO de antes do Set (invalid_scope): entra sem zro.set', async () => {
     zro.estado.recusarSet = true
     const { cookies } = await entrar()
@@ -82,6 +87,9 @@ describe('conta (só para o Set; converter segue sem conta)', () => {
     const j = await r.json()
     assert.equal(j.ok, true)
     assert.equal(j.pessoa.nome, LIA.nome)
+    // o id separa o histórico do painel por conta no aparelho: um resumo, nunca o sub nem o e-mail
+    assert.match(j.pessoa.id, /^[0-9a-f]{24}$/)
+    assert.ok(!j.pessoa.id.includes(LIA.sub))
     const id = process.env.ZRO_CLIENT_ID
     delete process.env.ZRO_CLIENT_ID
     try {
@@ -152,7 +160,7 @@ describe('a aba em comum no topo', () => {
   const ler = (p) => readFileSync(new URL(p, import.meta.url), 'utf8')
 
   test('o topo das páginas monta "Set"; a folha é o <zro-set modo="folha"> da Absolute ZRO, pelo repasse', () => {
-    for (const p of ['../app/home.js', '../app/converter.js']) assert.match(ler(p), /montarSet\(\)/, p)
+    for (const p of ['../app/home.js', '../app/converter.js', '../app/painel.js']) assert.match(ler(p), /montarSet\(\)/, p)
     const js = ler('../app/set.js')
     assert.match(js, /https:\/\/absolutezro\.com\/set\/v1\/zro-set\.js/)
     assert.match(js, /setAttribute\('modo', 'folha'\)/)
@@ -192,5 +200,26 @@ describe('a aba em comum no topo', () => {
     assert.equal(evitou, true)
     assert.equal(el.aberto, true)
     assert.equal(attrs['aria-expanded'], 'true')
+  })
+
+  test('conta dentro: o "Set" nasce escondido, aparece com o Set respondendo e some no 401 (sem refazer o login)', async () => {
+    const { ligarSet } = await import('../app/set.js')
+    const el = new EventTarget()
+    const a = Object.assign(new EventTarget(), { hidden: true, setAttribute: () => {} })
+    a.querySelector = () => null
+    ligarSet(el, a, { dentro: true })
+    el.dispatchEvent(Object.assign(new Event('zro-set:estado'), { detail: { online: 2 } }))
+    assert.equal(a.hidden, false)
+    el.dispatchEvent(new Event('zro-set:sem-login'))
+    assert.equal(a.hidden, true, 'Set recusou o token: some')
+    let evitou = false
+    a.dispatchEvent(Object.assign(new Event('click'), { preventDefault: () => (evitou = true) }))
+    assert.equal(evitou, true, 'não segue o link de entrar de novo')
+  })
+
+  test('fora da conta o topo mostra "Entrar", não o "Set"', () => {
+    const js = readFileSync(new URL('../app/set.js', import.meta.url), 'utf8')
+    assert.match(js, /if \(conta === 'fora'\) \{\s*linkNoTopo\('entrar'\)\s*return null/)
+    assert.match(js, /a\.dataset\.set = ''\s*a\.hidden = true/)
   })
 })

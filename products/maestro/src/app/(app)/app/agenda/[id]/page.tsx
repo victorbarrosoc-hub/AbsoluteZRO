@@ -17,7 +17,8 @@ import { Secao } from "@/components/crm";
 import { Formulario } from "@/components/form";
 import { Icone } from "@/components/icones";
 import { OcupadoNoGoogle } from "@/components/ocupado-google";
-import { removerEscalaAcao } from "../../freelas/acoes";
+import { paraFreelaAcao, removerEscalaAcao } from "../../freelas/acoes";
+import { ParaFreela } from "@/components/freelas/para-freela";
 import { mudarReservaAcao } from "../../inventario/acoes";
 import { criarDocumentoAcao } from "../../projetos/[id]/documentos/acoes";
 import { escalarAcao, removerEventoAcao, reservarNaDiariaAcao, salvarEventoAcao } from "../acoes";
@@ -113,6 +114,12 @@ export default async function FichaEvento({ params }: PageProps<"/app/agenda/[id
                       Conflito
                     </span>
                   ) : null}
+                  {p.resposta ? (
+                    <span className="selo ef-resposta" data-status={p.resposta === "confirmado" ? "ok" : "recusado"} title="Resposta do freela">
+                      <i aria-hidden="true" />
+                      {p.resposta === "confirmado" ? "Confirmou" : "Recusou"}
+                    </span>
+                  ) : null}
                   {escreve ? (
                     <BotaoAcao acao={removerEscalaAcao} campos={{ id: p.escalaId }} rotulo="Tirar" classe="q-limpar" confirmar="Tirar da diária?" />
                   ) : null}
@@ -131,6 +138,7 @@ export default async function FichaEvento({ params }: PageProps<"/app/agenda/[id
                         ) : null;
                       })()
                     : null}
+                  {escreve && p.conta ? <ParaFreela escala={p.escalaId} recado={p.paraFreela} entrega={p.entregaUrl} acao={paraFreelaAcao} /> : null}
                 </li>
               ))}
             </ul>

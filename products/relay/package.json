@@ -19,5 +19,8 @@
     "@mediabunny/prores": "1.62.1",
     "mediabunny": "1.62.1",
     "playwright": "1.63.0"
+  },
+  "dependencies": {
+    "postgres": "^3.4.9"
   }
 }

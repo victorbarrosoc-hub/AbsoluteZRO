@@ -9,6 +9,7 @@
 import { html, useEffect, useState } from '../vendor/preact-htm.js'
 import { LAN } from '../lib/config.js'
 import { useApp } from '../lib/state.js'
+import { EMBUTIDO } from '../lib/embutido.js'
 import { cx } from './ui.js'
 
 export const SCRIPT_SET = 'https://absolutezro.com/set/v1/zro-set.js'
@@ -64,7 +65,8 @@ function desmontar() {
 export function useSet() {
   const comConta = useApp((s) => COM_CONTA.has(s.auth.status))
   useEffect(() => {
-    if (comConta) montar()
+    // Embutido numa plataforma (lib/embutido.js): o Set não monta, a plataforma tem o dela.
+    if (comConta && !EMBUTIDO) montar()
     else desmontar()
   }, [comConta])
 }

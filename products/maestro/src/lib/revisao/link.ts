@@ -17,6 +17,7 @@ import { PAPEL_APP } from "@/lib/db/config";
 import { assinar, assinaturaConfere, hashComChave, hashToken } from "@/lib/auth/cripto";
 import { dentroDoLimite, registrarTentativa, REGRAS } from "@/lib/auth/limite";
 import { streamDoDrive } from "./fontes/player";
+import { roteiroDoCliente } from "./roteiro";
 import type { ComentarioVisto, DecisaoVista, VersaoVista } from "./tipos";
 
 export const TOKEN_LINK = /^[A-Za-z0-9_-]{43}$/;
@@ -109,18 +110,29 @@ export type LoteDoCliente = {
 
 export type Abertura = { estado: "morto" } | { estado: "limite" } | { estado: "pin" } | { estado: "ok"; dados: LoteDoCliente };
 
-type VersaoBruta = Omit<VersaoVista, "stream" | "comentarios"> & { comentarios: ComentarioVisto[] };
+type VersaoBruta = Omit<VersaoVista, "stream" | "comentarios" | "url" | "roteiro"> & {
+  url: string | null;
+  comentarios: ComentarioVisto[];
+  /** Versão de roteiro: o texto congelado como o banco guarda (vira a vista do cliente aqui, nunca vai cru à tela). */
+  roteiro?: unknown;
+};
 
+/**
+ * O que o banco devolve vira o que a tela recebe. Na versão de roteiro, o `conteudo` cru (com nota interna, plano,
+ * observação e dicas) troca pela vista do cliente (`roteiroDoCliente`) aqui, no servidor.
+ */
 function paraTela(bruto: Omit<LoteDoCliente, "pecas"> & { pecas: (Omit<PecaVista, "versoes"> & { versoes: VersaoBruta[] })[] }): LoteDoCliente {
   return {
     ...bruto,
     pecas: bruto.pecas.map((p) => ({
       ...p,
-      versoes: p.versoes.map((v) => ({
+      versoes: p.versoes.map(({ roteiro, ...v }) => ({
         ...v,
+        url: v.url ?? "",
         fps: v.fps === null ? null : Number(v.fps),
-        stream: streamDoDrive(v.fonte, v.driveId, v.driveChave),
-        comentarios: v.comentarios.map((c) => ({ ...c, x: c.x === null ? null : Number(c.x), y: c.y === null ? null : Number(c.y) })),
+        stream: v.fonte === "roteiro" ? null : streamDoDrive(v.fonte, v.driveId, v.driveChave),
+        comentarios: v.comentarios.map((c) => ({ ...c, bloco: c.bloco ?? null, x: c.x === null ? null : Number(c.x), y: c.y === null ? null : Number(c.y) })),
+        ...(v.fonte === "roteiro" ? { roteiro: roteiroDoCliente(roteiro) } : {}),
       })),
     })),
   };
@@ -204,7 +216,8 @@ const MENSAGENS: Record<string, [number, string]> = {
   decisoes: [400, "Escolha ao menos uma peça."],
   decisao: [400, "Decisão inválida."],
   nota: [400, "A observação passou de 2.000 caracteres."],
-  ajuste_sem_nota: [400, "Diga o que ajustar: comente no vídeo ou escreva uma observação."],
+  ajuste_sem_nota: [400, "Diga o que ajustar: comente na peça ou escreva uma observação."],
+  bloco: [400, "Esse trecho não está mais no roteiro."],
 };
 
 function erroDoBanco(r: { erro: string; card?: string }): ErroLink & { card?: string } {
@@ -246,6 +259,8 @@ export type DadosComentario = {
   y?: number | null;
   nome?: string | null;
   pai?: string | null;
+  /** O bloco do roteiro (só em versão de roteiro). */
+  bloco?: string | null;
   idem: string;
 };
 
@@ -259,6 +274,9 @@ export function lerComentario(c: Record<string, unknown>): DadosComentario | nul
   const texto = s(c.texto, 4000);
   const idem = s(c.idem, 64);
   if (!card || !versao || !texto || !idem) return null;
+  // Bloco de roteiro: a forma do id do modelo (src/lib/criacao/roteiro/modelo.ts); outra forma é pedido inválido.
+  const bloco = c.bloco === undefined || c.bloco === null ? null : typeof c.bloco === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(c.bloco) ? c.bloco : undefined;
+  if (bloco === undefined) return null;
   const t = numeroOuNull(c.t, 0, 86_400_000);
   const tFim = numeroOuNull(c.tFim, 0, 86_400_000);
   const x = numeroOuNull(c.x, 0, 100);
@@ -275,6 +293,7 @@ export function lerComentario(c: Record<string, unknown>): DadosComentario | nul
     y: x !== null && y !== null ? Math.round(y * 100) / 100 : null,
     nome: s(c.nome, 200),
     pai: s(c.pai, 36),
+    bloco,
   };
 }
 
@@ -290,7 +309,7 @@ export async function comentarComoCliente(
     { ok: true; comentario: ComentarioVisto } | { erro: string };
   if ("erro" in r) return erroDoBanco(r);
   const c = r.comentario;
-  return { ok: true, comentario: { ...c, x: c.x === null ? null : Number(c.x), y: c.y === null ? null : Number(c.y) } };
+  return { ok: true, comentario: { ...c, bloco: c.bloco ?? null, x: c.x === null ? null : Number(c.x), y: c.y === null ? null : Number(c.y) } };
 }
 
 export type Envio = {

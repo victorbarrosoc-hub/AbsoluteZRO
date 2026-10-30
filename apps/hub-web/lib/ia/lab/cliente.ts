@@ -1,7 +1,8 @@
 /**
  * Chamadas do Laboratório da Z no navegador: JSON com a mensagem de erro do HUB, a resposta da Z em NDJSON (os mesmos
- * eventos da Z: `lendo`, `texto`, e no fim `fim` ou `erro`) e a fala em PCM.
+ * eventos da Z: `lendo`, `texto`, `aprendizado`, e no fim `fim` ou `erro`) e a fala em PCM.
  */
+import type { ZAprendizado, ZProposta } from '@zro/core'
 
 export class ErroDoLab extends Error {
   constructor(
@@ -28,7 +29,15 @@ export async function api<T>(caminho: string, init: RequestInit & { json?: unkno
 }
 
 export type UsoDoTurno = { modelo: string; entrada: number; saida: number; cache: number; custoUsd: number }
+/** Aprender conversando: o que a Z propôs e o que o servidor decidiu (o mesmo EventoDeAprender de lib/ia/lab/aprender.ts). */
+export type EventoDeAprender =
+  | { tipo: 'aprendizado'; acao: 'proposto'; proposta: ZProposta }
+  | { tipo: 'aprendizado'; acao: 'salvo'; proposta: string; aprendizado: ZAprendizado; substituido: { id: string; texto: string } | null; repetido: boolean }
+  | { tipo: 'aprendizado'; acao: 'ignorado'; proposta: string }
+  | { tipo: 'aprendizado'; acao: 'repetido'; texto: string }
+  | { tipo: 'aprendizado'; acao: 'recusado'; motivo: string; proposta?: string }
 export type EventoDoLab =
+  | EventoDeAprender
   | { tipo: 'lendo'; o_que: string; rotulo?: string }
   | { tipo: 'texto'; t: string }
   | { tipo: 'fim'; texto: boolean; uso: UsoDoTurno }
@@ -80,9 +89,13 @@ export async function falar(
 }
 
 /** Transcreve PCM 16 kHz (em pedaços de até 100 s) e junta o texto. */
-export async function transcrever(pedacos: Uint8Array[], opcoes: { idioma?: 'pt'; signal?: AbortSignal } = {}): Promise<{ texto: string; segundos: number }> {
+export async function transcrever(
+  pedacos: Uint8Array[],
+  opcoes: { idioma?: 'pt'; signal?: AbortSignal } = {},
+): Promise<{ texto: string; segundos: number; custoUsd: number }> {
   let texto = ''
   let segundos = 0
+  let custoUsd = 0
   for (const p of pedacos) {
     const q = new URLSearchParams({ chave: crypto.randomUUID() })
     if (opcoes.idioma) q.set('idioma', opcoes.idioma)
@@ -92,12 +105,13 @@ export async function transcrever(pedacos: Uint8Array[], opcoes: { idioma?: 'pt'
       body: p as BodyInit,
       signal: opcoes.signal,
     })
-    const d = (await r.json().catch(() => null)) as { texto?: string; segundos?: number; message?: string; error?: string } | null
+    const d = (await r.json().catch(() => null)) as { texto?: string; segundos?: number; custoUsd?: number; message?: string; error?: string } | null
     if (!r.ok) throw new ErroDoLab(d?.message ?? 'A transcrição não respondeu agora.', d?.error ?? null, r.status)
     texto += (texto && d?.texto ? ' ' : '') + (d?.texto ?? '')
     segundos += d?.segundos ?? 0
+    custoUsd += d?.custoUsd ?? 0
   }
-  return { texto: texto.trim(), segundos }
+  return { texto: texto.trim(), segundos, custoUsd }
 }
 
 export const usd = (v: number) =>

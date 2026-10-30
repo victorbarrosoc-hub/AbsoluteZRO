@@ -12,7 +12,7 @@ import type { VersaoDoCard } from "@/lib/revisao/equipe";
 import { Icone, type NomeIcone } from "@/components/icones";
 import { useNovaVersao } from "@/components/revisao/nova-versao";
 
-const ICONE: Record<TipoFonte, NomeIcone> = {
+const ICONE: Record<TipoFonte | "roteiro", NomeIcone> = {
   drive: "nuvem",
   youtube: "tocar",
   vimeo: "tocar",
@@ -20,6 +20,7 @@ const ICONE: Record<TipoFonte, NomeIcone> = {
   mp4: "filme",
   hls: "filme",
   link: "link",
+  roteiro: "criacao",
 };
 
 const dia = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
@@ -48,13 +49,27 @@ export function VersoesDoCard({ card, podeEscrever }: { card: string; podeEscrev
         <ul className="vc__lista">
           {versoes.map((v) => (
             <li key={v.id}>
-              <a className="vc__versao" href={v.url} target="_blank" rel="noreferrer noopener" title={`${NOME_DA_FONTE[v.fonte]} · abrir em outra aba`}>
-                <span className="vc__n">v{v.n}</span>
-                <Icone nome={ICONE[v.fonte]} size={15} className="vc__icone" />
-                <span className="vc__nome">{v.titulo ?? NOME_DA_FONTE[v.fonte]}</span>
-                <span className="vc__dia">{dia(v.em)}</span>
-                <Icone nome="externo" size={14} className="vc__abrir" />
-              </a>
+              {v.fonte === "roteiro" ? (
+                // A versão de roteiro (Criação, F7) abre o editor, aqui mesmo.
+                <a className="vc__versao" href={v.url} title="Roteiro · abrir no editor">
+                  <span className="vc__n">v{v.n}</span>
+                  <Icone nome={ICONE.roteiro} size={15} className="vc__icone" />
+                  <span className="vc__nome">
+                    {v.titulo ?? "Roteiro"}
+                    {v.roteiroN ? ` · roteiro v${v.roteiroN}` : ""}
+                  </span>
+                  <span className="vc__dia">{dia(v.em)}</span>
+                  <Icone nome="seta" size={14} className="vc__abrir" />
+                </a>
+              ) : (
+                <a className="vc__versao" href={v.url} target="_blank" rel="noreferrer noopener" title={`${NOME_DA_FONTE[v.fonte]} · abrir em outra aba`}>
+                  <span className="vc__n">v{v.n}</span>
+                  <Icone nome={ICONE[v.fonte]} size={15} className="vc__icone" />
+                  <span className="vc__nome">{v.titulo ?? NOME_DA_FONTE[v.fonte]}</span>
+                  <span className="vc__dia">{dia(v.em)}</span>
+                  <Icone nome="externo" size={14} className="vc__abrir" />
+                </a>
+              )}
             </li>
           ))}
         </ul>

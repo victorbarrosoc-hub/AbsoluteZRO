@@ -63,7 +63,8 @@ t(vj.buildCommand === 'node src/vercel-build.js' && !vj.headers && !vj.redirects
   t(!/execFileSync|git|push/.test(pub.replace(/\/\*[\s\S]*?\*\//g, '')) && /process\.exit\(1\)/.test(pub),
     '⟶⟶ o publicar.js está aposentado: não dá push em repositório nenhum');
   const vb = fs.readFileSync(path.join(RAIZ, 'src', 'vercel-build.js'), 'utf8');
-  t(/sem-nome-real\.js/.test(vb) && /nomes NÃO estão reduzidos/.test(vb) && /TEM TELEFONE/.test(vb), 'o build da Vercel herdou as travas do publicar (selo, anonimato, telefone)');
+  /* (30/out) o domínio serve o site real: a trava do anonimato virou "nenhum perfil fictício na página" */
+  t(/sem-nome-real\.js/.test(vb) && /TEM perfil fictício dentro/.test(vb) && /TEM TELEFONE/.test(vb), 'o build da Vercel herdou as travas do publicar (selo, nenhum perfil fictício, telefone)');
   t(/scriptsDoHtml/.test(vb) && /rotasVercel/.test(vb), 'e calcula a CSP do que acabou de gerar');
   const tpl = fs.readFileSync(path.join(RAIZ, 'src', 'template.html'), 'utf8');
   /* (26/out) o build é o HTML MAIS o script e a folha em m/ — é lá que as chaves entram */

@@ -155,7 +155,7 @@ test('migrações: no schema que JÁ EXISTE em produção (tabelas antigas, anon
   const u = new URL(urlAdmin);
   u.username = PAPEL_MIG;
   u.password = senha;
-  assert.deepEqual(await admin(c => migrar(c), u.toString()), ['0000_fundacao']);
+  assert.deepEqual(await admin(c => migrar(c), u.toString()), lerMigracoes().map(m => m.tag));
   await admin(async c => {
     assert.deepEqual(await retratoLegado(c), antes, 'tabelas, colunas, permissões, políticas e linhas antigas iguais');
     const dono = await c.query("select tablename, tableowner from pg_tables where schemaname = 'carro_do_freela' order by 1");
@@ -368,6 +368,8 @@ test('rotas: preparar a Absolute ZRO falsa e o servidor', async () => {
     '/api/zro/callback': require(path.join(RAIZ, 'api', 'zro', 'callback.js')),
     '/api/zro/perfil': require(path.join(RAIZ, 'api', 'zro', 'perfil.js')),
     '/api/zro/inventario': require(path.join(RAIZ, 'api', 'zro', 'inventario.js')),
+    '/api/zro/agenda': require(path.join(RAIZ, 'api', 'zro', 'agenda.js')),
+    '/api/zro/pessoas': require(path.join(RAIZ, 'api', 'zro', 'pessoas.js')),
   };
   app = http.createServer((req, res) => {
     const fn = rotas[new URL(req.url, 'http://x').pathname];
@@ -386,7 +388,7 @@ after(async () => {
 });
 
 test('rotas: sem sessão é 401, sem cache; método errado é 405', async () => {
-  for (const c of ['/api/zro/perfil', '/api/zro/inventario']) {
+  for (const c of ['/api/zro/perfil', '/api/zro/inventario', '/api/zro/agenda', '/api/zro/pessoas']) {
     const r = await pedir(c);
     assert.equal(r.status, 401);
     assert.equal(r.headers.get('cache-control'), 'no-store');
@@ -406,7 +408,7 @@ test('rotas: o perfil — nasce vazio, grava, e devolve só o que é do perfil',
   assert.equal(perfil.uf, 'RN');
   assert.deepEqual(perfil.funcoes, ['Op. de câmera', 'Editor']);
   assert.equal(perfil.visibilidade, 'privado', 'caixa desmarcada não é consentimento: nasce privado');
-  assert.deepEqual(Object.keys(perfil).sort(), ['atualizado_em', 'bio', 'cidade', 'funcoes', 'nichos', 'nome', 'portfolio', 'uf', 'visibilidade']);
+  assert.deepEqual(Object.keys(perfil).sort(), ['arroba', 'atualizado_em', 'bio', 'cidade', 'funcoes', 'nichos', 'nome', 'portfolio', 'uf', 'visibilidade']);
   assert.equal((await (await pedir('/api/zro/perfil', { cookies: c })).json()).perfil.cidade, 'Natal');
   /* a outra conta não vê este perfil */
   const o = await entrar(OUTRA);
@@ -481,6 +483,92 @@ test('rotas: o inventário — lista, cria, muda, apaga, e a outra conta não al
   const ev = (await eventosDe(FREELA.sub)).pop().payload;
   assert.deepEqual(ev.inventario.itens.map(i => i.modelo), ['Tripé']);
   assert.deepEqual(conferir(esquemaEv, ev), []);
+});
+
+const hojeMais = n => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
+
+test('rotas: a agenda — declara, lê, libera; livre é ausência; a outra conta não vê nem mexe', async () => {
+  const c = await entrar(FREELA);
+  const d1 = hojeMais(2), d2 = hojeMais(3);
+  assert.deepEqual((await (await pedir('/api/zro/agenda', { cookies: c })).json()).agenda, {}, 'nasce toda livre');
+  let r = await pedir('/api/zro/agenda', { cookies: c, method: 'PUT', corpo: { dia: d1, estado: 'fechado' } });
+  assert.equal(r.status, 200);
+  assert.deepEqual((await r.json()).declaracao, { e: 'fechado', p: 'dia' });
+  r = await pedir('/api/zro/agenda', { cookies: c, method: 'PUT', corpo: { dia: d2, estado: 'negociando', parte: 'manha', hora: '13:30' } });
+  assert.deepEqual((await r.json()).declaracao, { e: 'negociando', p: 'manha', h: '13:30' });
+  /* o mesmo dia de novo troca a declaração (não duplica) */
+  await pedir('/api/zro/agenda', { cookies: c, method: 'PUT', corpo: { dia: d1, estado: 'negociando' } });
+  const ag = (await (await pedir('/api/zro/agenda', { cookies: c })).json()).agenda;
+  assert.deepEqual(ag, { [d1]: { e: 'negociando', p: 'dia' }, [d2]: { e: 'negociando', p: 'manha', h: '13:30' } });
+  /* recusas: dia que não existe, estado livre (livre é DELETE), hora no dia inteiro, campo de fora */
+  for (const corpo of [{ dia: '2026-02-31', estado: 'fechado' }, { dia: d1, estado: 'livre' }, { dia: d1, estado: 'fechado', hora: '10:00' },
+    { dia: d1, estado: 'fechado', telefone: '84999990000' }, { dia: d1, estado: 'fechado', parte: 'noite' }]) {
+    assert.equal((await pedir('/api/zro/agenda', { cookies: c, method: 'PUT', corpo })).status, 400, JSON.stringify(corpo));
+  }
+  assert.equal((await pedir('/api/zro/agenda', { cookies: c, method: 'PUT', corpo: { dia: hojeMais(400), estado: 'fechado' } })).status, 400, 'fora da janela de um ano');
+  assert.equal((await pedir('/api/zro/agenda?de=' + hojeMais(0) + '&ate=' + hojeMais(90), { cookies: c })).status, 400, 'janela de leitura até 62 dias');
+  /* a outra conta: agenda própria vazia, e apagar o dia da primeira não alcança nada */
+  const o = await entrar(OUTRA);
+  assert.deepEqual((await (await pedir('/api/zro/agenda', { cookies: o })).json()).agenda, {});
+  assert.equal((await pedir('/api/zro/agenda?dia=' + d1, { cookies: o, method: 'DELETE' })).status, 204);
+  assert.ok((await (await pedir('/api/zro/agenda', { cookies: c })).json()).agenda[d1], 'o dia da primeira continua lá');
+  /* liberar = apagar a linha */
+  assert.equal((await pedir('/api/zro/agenda?dia=' + d1, { cookies: c, method: 'DELETE' })).status, 204);
+  assert.equal((await (await pedir('/api/zro/agenda', { cookies: c })).json()).agenda[d1], undefined);
+  assert.equal((await pedir('/api/zro/agenda', { cookies: c, method: 'PUT', corpo: { dia: d1, estado: 'fechado' }, headers: { origin: 'https://outro.site' } })).status, 403, 'escrita só da própria origem');
+});
+
+test('rotas: as pessoas — a comunidade da Absolute ZRO, com a agenda só de quem consentiu no Carro', async () => {
+  const freela = Object.assign({}, FREELA, { arroba: 'freela.teste', foto: 'https://absolutezro.com/api/v1/foto/abc' });
+  const privada = { sub: crypto.randomUUID(), email: 'privada@exemplo.com', nome: 'Privada', org: 'Org P', arroba: 'privada' };
+  const contratante = { sub: crypto.randomUUID(), email: 'quem.contrata@exemplo.com', nome: 'Quem Contrata', org: 'Produtora' };
+  const z = (p, funcoes) => ({ id: p.sub, arroba: p.arroba, nome: p.nome, foto: p.foto || null, funcoes, cidade: 'Natal', portfolio: null, bio: null, selos: [], perfil: 'https://absolutezro.com/pessoas/@' + p.arroba });
+  /* a comunidade vem do HUB (já filtrada lá: visível e com o @ confirmado) */
+  zro.estado.comunidade = [z(freela, [{ chave: 'camera', nome: 'Câmera' }]), z(privada, [{ chave: 'edicao', nome: 'Edição' }])];
+  const cf = await entrar(freela), cp = await entrar(privada), cc = await entrar(contratante);
+  /* o corpo nunca escolhe o @ nem a foto: vêm da conta */
+  assert.equal((await pedir('/api/zro/perfil', { cookies: cf, method: 'PUT', corpo: { nome: 'Freela Teste', arroba: 'outro' } })).status, 400);
+  await pedir('/api/zro/perfil', { cookies: cf, method: 'PUT', corpo: { nome: 'Freela Teste', cidade: 'Natal', uf: 'RN', funcoes: ['Editor', 'Colorista'], visibilidade: 'contratantes' } });
+  await pedir('/api/zro/perfil', { cookies: cp, method: 'PUT', corpo: { nome: 'Privada', funcoes: ['Editor'] } });
+  const d = hojeMais(5);
+  await pedir('/api/zro/agenda', { cookies: cf, method: 'PUT', corpo: { dia: d, estado: 'fechado', parte: 'tarde' } });
+  await pedir('/api/zro/agenda', { cookies: cp, method: 'PUT', corpo: { dia: d, estado: 'fechado' } });
+  const r = await pedir('/api/zro/pessoas', { cookies: cc });
+  assert.equal(r.status, 200);
+  const corpo = await r.json();
+  assert.deepEqual(corpo.pessoas.map(p => p.arroba), ['freela.teste', 'privada'], 'quem está na comunidade aparece, por ordem de @');
+  const f = corpo.pessoas.find(p => p.arroba === 'freela.teste');
+  assert.equal(f.id, freela.sub);
+  assert.equal(f.foto, 'https://absolutezro.com/api/v1/foto/abc');
+  assert.deepEqual(f.funcoes, ['Editor', 'Colorista'], 'quem descreveu o ofício no Carro aparece com as funções do Carro');
+  assert.deepEqual(f.agenda[d], { e: 'fechado', p: 'tarde' });
+  const pv = corpo.pessoas.find(p => p.arroba === 'privada');
+  assert.equal(pv.agenda, null, 'sem "mostrar para quem contrata", a agenda não é divulgada');
+  assert.deepEqual(pv.funcoes, ['Editor'], 'e as funções vêm do perfil da Absolute ZRO, no catálogo do Carro');
+  assert.deepEqual(Object.keys(f).sort(), ['agenda', 'agenda_atualizada_em', 'arroba', 'bio', 'cidade', 'foto', 'funcoes', 'id', 'nichos', 'nome', 'portfolio']);
+  assert.ok(!/@exemplo\.com|telefone|diaria/.test(JSON.stringify(corpo)), 'nem e-mail, nem telefone, nem diária saem');
+  /* fora da janela, a agenda vem vazia; janela longa é recusada */
+  const longe = await (await pedir('/api/zro/pessoas?de=' + hojeMais(10) + '&ate=' + hojeMais(20), { cookies: cc })).json();
+  assert.deepEqual(longe.pessoas.find(p => p.arroba === 'freela.teste').agenda, {});
+  assert.equal((await pedir('/api/zro/pessoas?de=' + hojeMais(0) + '&ate=' + hojeMais(100), { cookies: cc })).status, 400);
+  /* desmarcou: continua na lista (é da comunidade), sem a agenda */
+  await pedir('/api/zro/perfil', { cookies: cf, method: 'PUT', corpo: { nome: 'Freela Teste', visibilidade: 'privado' } });
+  assert.equal((await (await pedir('/api/zro/pessoas', { cookies: cc })).json()).pessoas.find(p => p.arroba === 'freela.teste').agenda, null);
+  /* paginação: 450 pessoas = 3 páginas de 200 */
+  zro.estado.comunidade = Array.from({ length: 450 }, (_, i) => z({ sub: crypto.randomUUID(), arroba: 'p' + String(i).padStart(3, '0'), nome: 'P ' + i }, []));
+  zro.estado.paginasPessoas = 0;
+  assert.equal((await (await pedir('/api/zro/pessoas', { cookies: cc })).json()).pessoas.length, 450);
+  assert.equal(zro.estado.paginasPessoas, 3);
+  zro.estado.comunidade = [];
+});
+
+test('banco: a agenda alheia só sai pela função, que exige pessoa e janela curta', async () => {
+  await assert.rejects(db.asUser(A, c => c.query("select * from carro_do_freela.agendas(array[$1]::uuid[], current_date, current_date + 90)", [BB])), /62 dias/);
+  await assert.rejects(db.asSystem('teste: função sem pessoa', async c => { await c.query('set local role carro_do_freela_app'); await c.query("select * from carro_do_freela.agendas('{}'::uuid[], current_date, current_date + 5)") }), /Sem pessoa/);
+  /* a agenda alheia não se lê direto: a política só deixa a própria */
+  await db.asUser(BB, c => c.query("insert into carro_do_freela.agenda_dias (sub, dia, estado) values ($1, current_date + 1, 'fechado') on conflict do nothing", [BB]));
+  const visto = await db.asUser(A, async c => (await c.query('select count(*)::int as n from carro_do_freela.agenda_dias')).rows[0].n);
+  assert.equal(visto, 0);
 });
 
 test('rotas: o portão — acesso removido no HUB, conta fechada e sem o Carro no plano não passam', async () => {

@@ -42,3 +42,25 @@ test('aberto (RELEASE=released): o site inteiro', () => {
     rmSync(saida, { recursive: true, force: true })
   }
 })
+
+test('recursos: a cor da Revela só aparece na prévia ou com REVELA=released', () => {
+  const recursos = (opcoes) => {
+    const saida = mkdtempSync(join(tmpdir(), 'relay-publico-'))
+    try {
+      publicar({ saida, ...opcoes })
+      return readFileSync(join(saida, 'app/recursos.js'), 'utf8')
+    } finally {
+      rmSync(saida, { recursive: true, force: true })
+    }
+  }
+  assert.match(recursos({ aberto: true, previa: false, revela: false }), /"revela":false/)
+  assert.match(recursos({ previa: true }), /"revela":true/)
+  assert.match(recursos({ aberto: true, previa: false, revela: true }), /"revela":true/)
+  // no código, desligado: quem abre o arquivo sem publicar não vê a Revela
+  assert.match(readFileSync(new URL('../app/recursos.js', import.meta.url), 'utf8'), /revela: false/)
+  // "Escolher no Drive": só com DRIVE=released (ou na prévia), quando o SOBEDESCE embutido aceitar o Relay
+  assert.match(recursos({ aberto: true, previa: false, revela: false }), /"drive":false/)
+  assert.match(recursos({ previa: true }), /"drive":true/)
+  assert.match(recursos({ aberto: true, previa: false, drive: true }), /"drive":true/)
+  assert.match(readFileSync(new URL('../app/recursos.js', import.meta.url), 'utf8'), /drive: false/)
+})
