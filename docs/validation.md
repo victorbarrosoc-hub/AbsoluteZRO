@@ -3023,6 +3023,20 @@ aprovação e de volta. Quadro a quadro (ffmpeg, linha do tempo de 60 fps):
   banco do e2e quando duas cópias rodam juntas; `E2E_VIDEO=1` grava cada teste.
 - Não validado: Safari de um Mac e iPhone de verdade (sem deploy).
 
+## Maestro: página inicial nova (30/10/2026)
+
+Local, Postgres e Chromium/WebKit desta máquina; banco `maestro_test_e2e_mae_vitrine_a3f`, porta 4817.
+
+- `e2e/inicio.spec.ts` (computador e iPhone): sem Beta nem "grátis" (página, `description` e OG), sem AEON/Revela/NOSSOM,
+  capturas carregadas, abas por clique e teclado (setas, Home, End, um só `tabindex=0`), as vistas do roteiro, a viagem
+  pelos veículos do app (litros, sem R$) e o padrão de cada papel; reduzir movimento para tudo. Com `instalar.spec.ts`:
+  **26/26**. `visual.spec.ts` (contraste AA em cada hora e no escuro) e `sem-corte.spec.ts` (375 e 393 px, Chromium e
+  WebKit) junto com o `inicio.spec.ts`: **32/32** (6 pulados por projeto). A foto de set não cresce com a rolagem: o
+  detector de corte do WebKit via a imagem ampliada saindo da margem.
+- `npm test` **575/575**; lint, Prettier, tipos e build ok (Maestro e raiz); `scan-secrets` sem segredo.
+- Capturas pela demonstração (`e2e/capturas-inicio.spec.ts`, só com `CAPTURAS_DIR`): 5/5; WebP de 34 a 140 KB.
+- Higgsfield: 4 imagens (`gpt_image_2_5`), 4,25 créditos.
+
 ## Maestro: barra de baixo com 4 abas e a barra de cima com o Set (30/10/2026)
 
 - Barra de baixo do iPhone: uma coluna por aba (`grid-auto-flow: column`), as 4 dividem a largura toda, sem a 5ª vazia
