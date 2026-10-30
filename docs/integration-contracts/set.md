@@ -106,3 +106,7 @@ Identidade (compatível com o que já existia: sem nada, o visual da Absolute ZR
 recopia quando o tema muda). Partes: `zro-set::part(pilula | balao)` e `zro-set-folha::part(painel)`. Sem dependências,
 sem cookie de terceiros, respeita "reduzir movimento"; um pedido por vez entre as abas (`navigator.locks`), para dois
 repasses não gastarem o mesmo refresh token. Mudou, suba `VERSAO`.
+
+> **Canal `api` do app precisa estar aberto.** O token de app só vale com o canal `api` do produto aberto no gate de
+> lançamento (`authenticateAccessToken`). Com `api` fechado o `/api/v1/set` responde 401 e o Set fica mudo naquele app
+> (caso do Relay em 30/10/2026, até o titular abrir o canal em Console › Lançamento).
