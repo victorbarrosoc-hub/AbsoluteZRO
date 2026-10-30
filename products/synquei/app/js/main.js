@@ -24,6 +24,7 @@ import { iniciarOrganizar, O as ORG } from './organizar.js'
 import { cartaoPlano, abrirPlanos } from './plano.js'
 import { iniciarConta } from './conta.js'
 import { iniciarZ, telaZ } from './z.js'
+import { iniciarSet } from './set.js'
 import { pendencias, numeroBalao, rotuloBalao } from './pendencias.js'
 import { decidirEntrada } from './entrada.js'
 
@@ -572,8 +573,8 @@ document.addEventListener('synquei:conta-mudou', () => {
   if (pc) pc.innerHTML = cartaoPlano()
   if (S.route === 'ajustes') render()
 })
-// a Z entra na aba dela depois de saber da conta (app/js/z.js)
-iniciarConta().then(iniciarZ)
+// a Z entra na aba dela depois de saber da conta (app/js/z.js); o Set, a aba em comum do ecossistema, também
+iniciarConta().then(() => Promise.all([iniciarZ(), iniciarSet()]))
 
 if ('serviceWorker' in navigator && !window.synqueiDesktop && location.protocol === 'https:') {
   navigator.serviceWorker.register('/sw.js').catch(() => {})

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { UserRound } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { AbaSet } from "./aba-set";
 
 /** O anel da Z, fino, no traço dos ícones do site (o mesmo desenho da aba Z no app do celular e no de computador). */
 export function IconeZ({ className }: { className?: string }) {
@@ -18,7 +19,8 @@ const ABAS = [
 
 /**
  * As abas da área logada (pedido do titular, 27/10/2026): a Z é a primeira e a tela de entrada; a conta vem ao lado.
- * Controle segmentado, como os do iOS: uma pílula só, a aba aberta em destaque.
+ * Controle segmentado, como os do iOS: uma pílula só, a aba aberta em destaque. "Set" (o Set da Absolute ZRO, a aba
+ * em comum do ecossistema) entra no fim quando o Set responde e abre a folha dele, sem trocar de página (aba-set.tsx).
  */
 export function AbasConta({ atual }: { atual: "z" | "conta" }) {
   return (
@@ -42,6 +44,7 @@ export function AbasConta({ atual }: { atual: "z" | "conta" }) {
             </Link>
           );
         })}
+        <AbaSet />
       </div>
     </nav>
   );

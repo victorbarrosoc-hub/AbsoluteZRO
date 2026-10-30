@@ -679,7 +679,16 @@ para uma plataforma nova, vendida sozinha e chamada pelas outras.
   Maestro: pílula na cápsula e no topo do celular, repasse `/api/zro/set/*` com o token no servidor (ETag inclusive),
   login pede `zro.set` (HUB antigo: `nivel=sem_set`).
 - ⛔ Em produção: migração `0035` no deploy e novo login no Maestro para o escopo `zro.set`.
-- ⬜ SOBEDESCE, Synquei e os demais apps com o widget; aviso fora do app (e-mail/push); anexos.
+- ✅ Todas as plataformas (30/10/2026, "a aba em comum com todas as plataformas do ecossistema"): SOBEDESCE (site e
+  app do celular), Synquei (site e computador), TPeasy, Relay, Carro do Freela, NOSSOM, AEON e Revela ganharam a
+  entrada "Set" na própria navegação (nunca a tela de entrada) que abre a folha do `<zro-set modo="folha">`, o repasse
+  `/api/zro/set/*` com o token no servidor e o login com `zro.set` (Absolute ZRO antiga: refaz sem ele). A folha veste
+  a identidade de cada app (`--zro-set-*`). Fechados (Carro, NOSSOM, AEON, Revela) seguem o portão: a conta fora da lista
+  não vê a entrada e o repasse responde 403. O Relay ganhou um login só para o Set, desligado enquanto o site estiver
+  fechado. Tabela em [set.md](integration-contracts/set.md).
+- ⛔ Em produção: cliente `relay-web` no console (para o Set do Relay) e deploy de cada app, com autorização.
+- ⬜ App de computador do SOBEDESCE com o Set (o motor local ainda não repassa); aviso fora do app (e-mail/push);
+  anexos.
 - ⬜ Fase 3, salas abertas da comunidade: com o lançamento do Carro do Freela (novo tipo de conversa, mesma API).
 
 ## Fase 6 — Escala

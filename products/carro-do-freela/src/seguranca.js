@@ -179,6 +179,8 @@ function rotasVercel(csp, paginas) {
     { src: '^/index(?:\\.html)?/?$', status: 308, headers: { Location: '/' } },
     /* a Z: /api/zro/ia/<caminho> vai para a função ia, que confere o caminho */
     { src: '^/api/zro/ia/(.+)$', dest: '/api/zro/ia?caminho=$1' },
+    /* o Set: /api/zro/set/<caminho> vai para a função set, que confere o caminho */
+    { src: '^/api/zro/set/(.+)$', dest: '/api/zro/set?caminho=$1' },
     { src: '^/(' + limpas.join('|') + ')\\.html/?$', status: 308, headers: { Location: '/$1' } },
     { src: '^/$', dest: '/index.html' },
     { src: '^/(' + limpas.join('|') + ')/?$', dest: '/$1.html' },

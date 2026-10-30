@@ -5,7 +5,14 @@
  */
 import { createPublicKey, randomBytes, verify, type JsonWebKey } from 'node:crypto';
 import { readZroRelease, type ZroRelease } from '../release';
-import { zroCredentials, zroIssuer, zroManageUrl, zroPictureUrl, ZRO_SCOPES } from './config';
+import {
+  zroCredentials,
+  zroIssuer,
+  zroManageUrl,
+  zroPictureUrl,
+  ZRO_SCOPES,
+  ZRO_SCOPES_SEM_SET,
+} from './config';
 
 export class ZroError extends Error {
   constructor(
@@ -68,13 +75,15 @@ export async function authorizationUrl(o: {
   redirectUri: string;
   /** 'create': o HUB abre direto a tela de criar conta (contas novas só nascem pela ZRO). */
   prompt?: 'create';
+  /** A Absolute ZRO recusou `zro.set` (de antes do Set): o mesmo pedido sem ele. */
+  semSet?: boolean;
 }) {
   const d = await discover();
   const url = new URL(d.authorization_endpoint);
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('client_id', zroCredentials().clientId);
   url.searchParams.set('redirect_uri', o.redirectUri);
-  url.searchParams.set('scope', ZRO_SCOPES);
+  url.searchParams.set('scope', o.semSet ? ZRO_SCOPES_SEM_SET : ZRO_SCOPES);
   url.searchParams.set('state', o.state);
   url.searchParams.set('nonce', o.nonce);
   url.searchParams.set('code_challenge', o.challenge);

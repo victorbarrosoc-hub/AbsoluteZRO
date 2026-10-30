@@ -62,8 +62,14 @@ export function startFakes() {
     tamper: null as Tamper,
     exchanges: 0,
     created: 0,
-    /** Escopo devolvido no token (um token antigo vinha sem `zro.ia`). */
-    scope: 'openid email profile org offline_access zro.ia',
+    /** Escopo devolvido no token (um token antigo vinha sem `zro.ia`, ou sem `zro.set`). */
+    scope: 'openid email profile org offline_access zro.ia zro.set',
+    /** Absolute ZRO de antes do Set: recusa `zro.set` no authorize (invalid_scope) e aceita o pedido sem ele. */
+    recusarSet: false,
+    /** O escopo pedido no último authorize. */
+    pedido: '',
+    /** Pedidos que chegaram à API do Set: caminho, método, Authorization, If-None-Match e corpo. */
+    set: [] as { path: string; method: string; auth: string | null; inm: string | null; body: string | null }[],
     /** Vida do access token, em segundos. */
     accessLife: 600,
     refreshes: 0,
@@ -110,11 +116,15 @@ export function startFakes() {
       'iss',
       state.tamper === 'redirect-iss' ? 'https://outro.example' : ISSUER,
     );
-    if (
+    state.pedido = q.get('scope') || '';
+    const completo = 'openid email profile org offline_access zro.ia zro.set';
+    const semSet = 'openid email profile org offline_access zro.ia';
+    if (state.recusarSet && q.get('scope') === completo) back.searchParams.set('error', 'invalid_scope');
+    else if (
       q.get('client_id') !== CLIENT.clientId ||
       q.get('code_challenge_method') !== 'S256' ||
       !q.get('nonce') ||
-      q.get('scope') !== 'openid email profile org offline_access zro.ia'
+      q.get('scope') !== (state.recusarSet ? semSet : completo)
     )
       back.searchParams.set('error', 'invalid_request');
     else if (state.deny || !state.person) back.searchParams.set('error', 'access_denied');
@@ -141,6 +151,27 @@ export function startFakes() {
         jwks_uri: ISSUER + '/oauth/jwks',
       });
     if (url.pathname === '/oauth/jwks') return Response.json({ keys: [jwk] });
+    // O Set: Bearer com `zro.set` no escopo do token (sem ele, 401); leitura com ETag W/"v1" e 304 sem corpo.
+    if (url.pathname === '/api/v1/set' || url.pathname.startsWith('/api/v1/set/')) {
+      const h = new Headers(init?.headers);
+      const auth = h.get('authorization');
+      state.set.push({
+        path: url.pathname.slice('/api/v1/set'.length) + url.search,
+        method: init?.method || 'GET',
+        auth,
+        inm: h.get('if-none-match'),
+        body: init?.body ? String(init.body) : null,
+      });
+      const person = access.get((auth || '').replace(/^Bearer /, ''));
+      if (!person || !state.scope.split(' ').includes('zro.set'))
+        return Response.json({ error: 'unauthenticated' }, { status: 401 });
+      if ((init?.method || 'GET') === 'GET' && h.get('if-none-match') === 'W/"v1"')
+        return new Response(null, { status: 304, headers: { etag: 'W/"v1"' } });
+      return Response.json(
+        url.pathname === '/api/v1/set' ? { eu: { id: 'eu' }, pessoas: [], naoLidas: 1, pedidos: 0 } : { ok: true },
+        { headers: (init?.method || 'GET') === 'GET' ? { etag: 'W/"v1"' } : {} },
+      );
+    }
     if (url.pathname.startsWith('/api/v1/ia/')) {
       const auth = new Headers(init?.headers).get('authorization');
       state.ia.push({

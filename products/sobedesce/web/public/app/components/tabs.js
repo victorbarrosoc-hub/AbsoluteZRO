@@ -1,7 +1,8 @@
 // Abas do app (embaixo, como no iOS): Z (a IA da Absolute ZRO, a primeira e a tela de entrada; pedido do titular,
 // 27/10/2026), Início (o botão de enviar, atalhos e a fila; violeta), Drive (azul), Aparelhos (no
 // meio e em destaque: mandar e receber pelo Wi-Fi), Referências (para quem tem o recurso) e Criar (Frames e as outras
-// ferramentas do computador, adaptadas ao celular).
+// ferramentas do computador, adaptadas ao celular). Por último o Set da Absolute ZRO (a aba em comum do ecossistema,
+// components/set.js): aparece quando o Set responde e abre a folha dele, sem trocar de tela.
 // No modo Wi-Fi não há abas: lá o celular não tem token do Google.
 // A aba Z aparece sempre, com o estado de login dela; sem Drive pronto (`pronto` falso), as outras abas mostram a tela
 // da conta (entrar, conectar, escolher ou reconectar o Drive).
@@ -19,13 +20,15 @@ import { useP2pAviso } from './p2p.js'
 import { AccountScreen } from './account.js'
 import { ZScreen } from './z.js'
 import { Calculadora } from './calculadora.js'
+import { AbaSet, useSetVisivel } from './set.js'
 
 function TabBar({ tab, refsOn }) {
   useEngine()
   const sum = summarize(engine.items)
   const busy = sum.pending > 0
   const aviso = useP2pAviso()
-  return html`<nav class=${cx('tabbar', refsOn && 'n-6')} aria-label="Seções">
+  const abas = 5 + (refsOn ? 1 : 0) + (useSetVisivel() ? 1 : 0)
+  return html`<nav class=${cx('tabbar', abas >= 6 && 'n-6', abas >= 7 && 'n-7')} aria-label="Seções">
     <button type="button" class=${cx('tab', 'tab-z', tab === 'z' && 'is-on')} aria-current=${tab === 'z' ? 'page' : undefined} onClick=${() => setTab('z')} title="A Z, a IA da Absolute ZRO">
       <span class="tab-icon"><${Icon} name="z" size=${24} strokeWidth=${tab === 'z' ? 1.9 : 1.6} /></span>
       <span class="tab-label">Z</span>
@@ -58,6 +61,7 @@ function TabBar({ tab, refsOn }) {
       <span class="tab-icon"><${Icon} name="sparkle" size=${24} strokeWidth=${tab === 'criar' ? 2 : 1.7} /></span>
       <span class="tab-label">Criar</span>
     </button>
+    <${AbaSet} />
   </nav>`
 }
 

@@ -46,10 +46,11 @@ before(async () => {
     '/api/zro/sair': require(path.join(RAIZ, 'api', 'zro', 'sair.js')),
     '/api/zro/enviar': require(path.join(RAIZ, 'api', 'zro', 'enviar.js')),
     '/api/zro/ia': require(path.join(RAIZ, 'api', 'zro', 'ia.js')),
+    '/api/zro/set': require(path.join(RAIZ, 'api', 'zro', 'set.js')),
   };
   app = http.createServer((req, res) => {
     const p = new URL(req.url, 'http://x').pathname;
-    const fn = rotas[p.startsWith('/api/zro/ia/') ? '/api/zro/ia' : p];
+    const fn = rotas[p.startsWith('/api/zro/ia/') ? '/api/zro/ia' : p.startsWith('/api/zro/set/') ? '/api/zro/set' : p];
     if (fn) return fn(req, res);
     res.writeHead(404);
     res.end();
@@ -112,7 +113,7 @@ test('a ida para o HUB: código + PKCE S256, escopos, nonce e retorno do própri
   assert.equal(destino.pathname, '/oauth/authorize');
   assert.equal(q.get('response_type'), 'code');
   assert.equal(q.get('client_id'), 'carrodofreela-web');
-  assert.equal(q.get('scope'), 'openid email profile org offline_access carro-do-freela.jobs zro.ia');
+  assert.equal(q.get('scope'), 'openid email profile org offline_access carro-do-freela.jobs zro.ia zro.set');
   assert.equal(q.get('code_challenge_method'), 'S256');
   assert.match(q.get('code_challenge'), /^[A-Za-z0-9_-]{43}$/);
   assert.ok(q.get('nonce') && q.get('state') && q.get('nonce') !== q.get('state'));
@@ -451,8 +452,15 @@ test('o login guarda o acesso ao HUB cifrado, httpOnly e só em /api/zro', async
 test('HUB que ainda não conhece o escopo de jobs: o login refaz o pedido sem ele e entra igual', async () => {
   zro.estado.semEscopoJobs = true;
   try {
-    const { local, res } = await fluxo({ volta: '/fase1' });
+    const { local: semSet, res } = await fluxo({ volta: '/fase1' });
     assert.equal(res.status, 303);
+    /* primeiro sem o Set (HUB de antes dele); recusou de novo, sem os escopos de API */
+    assert.match(semSet, /^\/api\/zro\/entrar\?sem_set=1&volta=%2Ffase1$/);
+    const ida0 = await pedir(semSet);
+    assert.equal(new URL(ida0.headers.get('location')).searchParams.get('scope'), 'openid email profile org offline_access carro-do-freela.jobs zro.ia');
+    const z0 = await fetch(new URL(ida0.headers.get('location')), { redirect: 'manual' });
+    const v0 = new URL(z0.headers.get('location'));
+    const local = (await pedir(v0.pathname + v0.search, { cookie: 'cdf_zro=' + encodeURIComponent(cookiesDe(ida0).get('cdf_zro')) })).headers.get('location');
     assert.match(local, /^\/api\/zro\/entrar\?basico=1&volta=%2Ffase1$/);
     const ida = await pedir(local);
     const destino = new URL(ida.headers.get('location'));
@@ -666,7 +674,8 @@ test('a Z: portas fechadas (sem sessão, outra origem, caminho fora, sem o escop
   zro.estado.semEscopoIa = true;
   try {
     const { local } = await fluxo({ pessoa: Object.assign({}, LIA, { produtos: ['carro-do-freela'] }), volta: '/' });
-    assert.match(local, /^\/api\/zro\/entrar\?basico=1/);
+    /* primeiro tenta sem o Set; o HUB segue recusando (zro.ia), e aí vai o básico */
+    assert.match(local, /^\/api\/zro\/entrar\?sem_set=1/);
   } finally {
     zro.estado.semEscopoIa = false;
   }
@@ -913,4 +922,85 @@ test('o portão: CARRO_RELEASE — só "released" exato abre, e só junto com o 
     delete process.env.CARRO_RELEASE;
   }
   assert.equal(Z._interno.release(), 'closed');
+});
+
+/* ---------------- o Set (30/out, ADR 0032 da Absolute ZRO) ---------------- */
+
+const SET_ID = '3f2b8c1e-7d4a-4b9e-9c21-5a6f7e8d9c0b';
+const noSet = (caminho, cookies, o = {}) =>
+  fetch(SITE + '/api/zro/set' + (caminho ? '/' + caminho : ''), {
+    method: o.method || 'GET',
+    redirect: 'manual',
+    headers: Object.assign({ cookie: cookieDe(cookies) }, o.corpo !== undefined ? { 'content-type': 'application/json' } : {}, o.method && o.method !== 'GET' ? { origin: SITE } : {}, o.headers || {}),
+    body: o.corpo !== undefined ? JSON.stringify(o.corpo) : undefined,
+  });
+
+test('o Set: o repasse leva o Bearer da sessão, a ETag vai e o 304 volta sem corpo, sem token na resposta', async () => {
+  const { cookies } = await fluxo({ pessoa: Object.assign({}, LIA, { produtos: ['carro-do-freela'] }) });
+  zro.estado.pedidosSet.length = 0;
+  const r = await noSet('', cookies);
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get('etag'), 'W/"v1"');
+  assert.equal(r.headers.get('cache-control'), 'no-store');
+  const txt = await r.text();
+  assert.doesNotMatch(txt, /at_|zt_/);
+  const p = zro.estado.pedidosSet[0];
+  assert.match(p.autorizacao, /^Bearer at_/);
+  assert.equal(p.cookie, null, 'cookie do Carro não vai ao HUB');
+  const r2 = await noSet('', cookies, { headers: { 'if-none-match': 'W/"v1"' } });
+  assert.equal(r2.status, 304);
+  assert.equal(await r2.text(), '');
+  await noSet('conversas/' + SET_ID + '?depois=5&limite=x', cookies);
+  assert.equal(zro.estado.pedidosSet.at(-1).busca, '?depois=5');
+  assert.equal((await noSet('conversas/' + SET_ID + '/mensagens', cookies, { method: 'POST', corpo: { texto: 'oi', chave: 'abcdefgh12' } })).status, 200);
+  assert.equal(zro.estado.pedidosSet.at(-1).corpo, JSON.stringify({ texto: 'oi', chave: 'abcdefgh12' }));
+});
+
+test('o Set: portas fechadas (sem sessão, outra origem, caminho e método fora, plano) e o 401 do HUB não derruba a sessão', async () => {
+  const antes = zro.estado.pedidosSet.length;
+  assert.equal((await noSet('', new Map())).status, 401, 'sem sessão');
+  const { cookies } = await fluxo({ pessoa: Object.assign({}, LIA, { produtos: ['carro-do-freela'] }) });
+  assert.equal((await noSet('', cookies, { method: 'POST', corpo: { estado: 'ativo' }, headers: { origin: 'https://evil.example' } })).status, 403);
+  for (const c of ['admin', 'conversas/x', '../oauth/token', 'ia/estado']) assert.equal((await noSet(c, cookies)).status, 404, c);
+  assert.equal((await noSet('preferencias', cookies)).status, 405);
+  assert.equal(zro.estado.pedidosSet.length, antes, 'nada disso chegou ao HUB');
+  const sem = await fluxo({ pessoa: Object.assign({}, LIA, { sub: 'zro-334', produtos: [] }) });
+  assert.equal((await noSet('', sem.cookies)).status, 403, 'sem o Carro no plano');
+  /* HUB de antes do Set: o login refaz sem zro.set, entra com jobs e a Z, e o Set responde 401 sem apagar nada */
+  zro.estado.semEscopoSet = true;
+  try {
+    const { local } = await fluxo({ pessoa: Object.assign({}, LIA, { produtos: ['carro-do-freela'] }), volta: '/' });
+    assert.match(local, /^\/api\/zro\/entrar\?sem_set=1/);
+    const ida = await pedir(local);
+    const destino = new URL(ida.headers.get('location'));
+    assert.equal(destino.searchParams.get('scope'), 'openid email profile org offline_access carro-do-freela.jobs zro.ia');
+    const z = await fetch(destino, { redirect: 'manual' });
+    const v = new URL(z.headers.get('location'));
+    const fim = await pedir(v.pathname + v.search, { cookie: 'cdf_zro=' + encodeURIComponent(cookiesDe(ida).get('cdf_zro')) });
+    const c = cookiesDe(fim);
+    assert.ok(c.get('cdf_sessao') && c.get('cdf_hub'));
+    const r = await noSet('', c);
+    assert.equal(r.status, 401);
+    assert.ok(!r.headers.getSetCookie().some(x => /Max-Age=0/.test(x)), 'a sessão fica');
+    const eu = await (await pedir('/api/zro/eu', { cookie: cookieDe(c) })).json();
+    assert.equal(eu.ia, true, 'a Z segue');
+  } finally {
+    zro.estado.semEscopoSet = false;
+  }
+});
+
+test('o Set: a aba em comum no Carro — "Set" na lateral e na gaveta, só com a sessão liberada, e a folha com a cara da casa', () => {
+  const t = fs.readFileSync(path.join(RAIZ, 'src', 'template.html'), 'utf8');
+  assert.match(t, /<button class="tab tabset" id="tab-set" type="button" data-set hidden/);
+  assert.match(t, /<button class="gitem" id="g-set" type="button" data-set hidden/);
+  assert.match(t, /var SET_SCRIPT="https:\/\/absolutezro\.com\/set\/v1\/zro-set\.js"/);
+  assert.match(t, /setAttribute\("modo","folha"\)/);
+  assert.match(t, /setAttribute\("api","\/api\/zro\/set"\)/);
+  assert.doesNotMatch(t, /zro-set[^\n]*\.token\s*=/);
+  for (const v of ['tinta', 'superficie', 'fundo', 'acento', 'raio', 'fonte']) assert.match(t, new RegExp('--zro-set-' + v + ':'), v);
+  /* a mesma régua da Z: só no domínio e com a conta liberada */
+  assert.match(t, /function setLigavel\(\)\{ return zAbaLigada\(\)&&zroPodeEnviar\(\) \}/);
+  const vb = fs.readFileSync(path.join(RAIZ, 'src', 'vercel-build.js'), 'utf8');
+  assert.match(vb, /'ia', 'set'\]/);
+  assert.match(fs.readFileSync(path.join(RAIZ, 'src', 'seguranca.js'), 'utf8'), /\^\/api\/zro\/set\/\(\.\+\)\$/);
 });

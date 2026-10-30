@@ -130,6 +130,16 @@ avaliação (de `linhaContrato`, só com `faseTem(2)`); **Brechó** = pedido de 
 ganha balão. ⚠️ `#g-msg-bg` (conversa não lida na gaveta de Propostas) e `#bg-gui` continuam como estavam. ⚠️ O
 `title` original do item (`Meus jobs`) é guardado em `data-tit-orig` e volta quando o balão apaga.
 
+## 30/out — o Set, a aba em comum do ecossistema (`conta-zro` §13, `npm run test:api`)
+
+Pedido do titular para todas as plataformas: o Set da Absolute ZRO (quem da equipe está online, em qual app, e as
+conversas). Aqui ele é o **último item da lateral** (`#tab-set`) e da gaveta (`#g-set`), sem `data-tab` nem `data-modo`
+de propósito: não abre tela, abre a folha do `<zro-set modo="folha">` (`setPintar()`). A MESMA régua da Z: só no
+domínio, com a conta liberada (`zAbaLigada() && zroPodeEnviar()`), e a entrada só aparece quando o Set responde. O
+repasse é `api/zro/set.js` (miolo em `_zro.js`, com `sessaoConferida`: claim relida, portão, plano); o login pede
+`zro.set` e, se o HUB recusar, refaz sem ele (`sem_set`) antes do `basico`. Um 401 do Set NÃO apaga a sessão. A folha
+veste os tokens dos dois temas (`--zro-set-*` no template). ⚠️ `var`/`function` no topo (o TDZ de 19/out · 2).
+
 ## 29/out — o banco do Carro: perfil e inventário do freela (`db/`, `api/zro/_dados.js`, `test/api/banco*.test.js`)
 
 Pedido do titular: *"ligar o banco de dados do Carro do Freela"*, começando pelo que o ecossistema precisa — o perfil do
@@ -437,7 +447,7 @@ a cena da home e a tela de entrar abaixo da janela em todo monitor grande.
 Uma sonda de `100vh` dentro do corpo diz quanto o motor multiplica (Chromium:
 o zoom; Safari: 1), e `--zoom` vira esse número.
 
-⚠️ **A build se identifica** (`VERSAO`, hoje `29/out · 1`): aparece no rodapé do
+⚠️ **A build se identifica** (`VERSAO`, hoje `30/out · 1`): aparece no rodapé do
 menu e vai junto no recado de suporte. Sem isso, três rodadas foram gastas sem
 saber se o defeito relatado era do arquivo novo ou de um cache velho. **Suba a
 VERSAO em toda entrega que o Victor for subir.**

@@ -362,3 +362,24 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* O Set da Absolute ZRO (components/conta/aba-set.tsx e o app do celular): a folha do <zro-set> veste as cores do
+   SOBEDESCE, nos dois temas (as cores acima mudam com o tema e o widget copia o resultado para a folha). */
+:root {
+  --zro-set-tinta: var(--color-ink);
+  --zro-set-apoio: var(--color-ink-2);
+  --zro-set-apagado: var(--color-ink-3);
+  --zro-set-linha: var(--color-line);
+  --zro-set-linha-forte: var(--color-line-strong);
+  --zro-set-superficie: var(--color-surface);
+  --zro-set-superficie-2: var(--color-surface-2);
+  --zro-set-superficie-3: var(--color-line);
+  --zro-set-fundo: color-mix(in srgb, var(--color-bg) 97%, transparent);
+  --zro-set-acento: var(--color-primary);
+  --zro-set-acento-tinta: var(--color-primary-fg);
+  --zro-set-online: var(--color-ok);
+  --zro-set-ausente: var(--color-warn);
+  --zro-set-perigo: var(--color-err-text);
+  --zro-set-raio: 24px;
+  --zro-set-fonte: var(--font-sans);
+}

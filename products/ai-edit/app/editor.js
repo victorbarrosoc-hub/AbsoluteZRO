@@ -29,6 +29,7 @@ import { lerConta, ondeEditar, PAGINA_FECHADO } from '../site/conta.js'
 import { montarAtualizacao } from './atualizacao.js'
 import { pendencias, rotuloBalao } from '../src/pendencias.js'
 import { montarZ } from './z.js'
+import { montarSet } from './set.js'
 
 const $ = (id) => document.getElementById(id)
 const PAGINAS = ['inicio', 'midia', 'revisar', 'edicao', 'entrega']
@@ -118,7 +119,7 @@ player.aoMudar(() => {
 })
 $('tocar').onclick = () => player.alternar()
 
-for (const b of document.querySelectorAll('.dock button')) b.onclick = () => ir(b.dataset.ir)
+for (const b of document.querySelectorAll('.dock button[data-ir]')) b.onclick = () => ir(b.dataset.ir)
 
 // ───────── tema e páginas ─────────
 
@@ -153,7 +154,7 @@ function ir(pagina, animar = true) {
     else sec.classList.remove('sem-mola')
   }
   document.documentElement.style.setProperty('--direcao', para >= de ? '1' : '-1')
-  for (const b of document.querySelectorAll('.dock button')) b.toggleAttribute('aria-current', b.dataset.ir === pagina)
+  for (const b of document.querySelectorAll('.dock button[data-ir]')) b.toggleAttribute('aria-current', b.dataset.ir === pagina)
   const vaga = document.querySelector(`.vaga-palco[data-vaga="${pagina}"]`)
   if (vaga && $('palco').parentElement !== vaga) vaga.append($('palco'))
   if (pagina !== 'revisar' && pagina !== 'edicao') player.pausar()
@@ -173,7 +174,7 @@ $('barraExportar').onclick = () => ir('entrega')
  */
 function desenharBaloes() {
   const pend = pendencias(P(), { temArquivo: (id) => S.entradas.has(id) })
-  for (const b of document.querySelectorAll('.dock button')) {
+  for (const b of document.querySelectorAll('.dock button[data-ir]')) {
     const { n, dica } = pend[b.dataset.ir] || { n: 0, dica: '' }
     let balao = b.querySelector('.balao')
     if (!n) {
@@ -1272,6 +1273,8 @@ ir('inicio', false)
 desenharTudo()
 document.documentElement.dataset.pronto = '1'
 montarZ($('zPainel'))
+// o Set, a aba em comum do ecossistema: o fim do dock (app/set.js)
+montarSet()
 
 // ───────── aviso ─────────
 

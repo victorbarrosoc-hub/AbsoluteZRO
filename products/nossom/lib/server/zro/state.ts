@@ -16,6 +16,10 @@ export type ZroState = {
   mode: ZroMode;
   userId: string | null;
   next: string;
+  /** O pedido já saiu sem `zro.set` (a Absolute ZRO recusou o escopo uma vez). */
+  semSet?: boolean;
+  /** "Criar conta" (prompt=create), para refazer o mesmo pedido sem `zro.set`. */
+  create?: boolean;
   expires: number;
 };
 

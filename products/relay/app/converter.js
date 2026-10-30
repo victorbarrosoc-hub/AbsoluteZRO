@@ -5,6 +5,7 @@ import { GRUPOS, PRESETS, VERIFICADO_EM, preset as acharPreset } from '../src/pr
 import { LIMITE_MEMORIA, RESOLUCOES, fichaTecnica, fmtDuracao, nomeSaida, planejar, tamanhoLegivel } from '../src/plano.js'
 import { capacidades, converterArquivo, lerArquivo, miniatura, MB } from './motor.js'
 import { icone, icones } from './icones.js'
+import { montarSet } from './set.js'
 import * as Meus from './meus.js'
 import { linkMaxima } from '../src/link.js'
 
@@ -513,3 +514,6 @@ desenharAbas()
 desenharPresets()
 atualizarTudo()
 window.relayPronto = true
+
+// o Set, a aba em comum do ecossistema: "Set" no fim das páginas do topo (app/set.js)
+montarSet()

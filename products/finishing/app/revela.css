@@ -123,7 +123,8 @@ h2 {
   background: rgb(var(--t) / 0.05);
   box-shadow: inset 0 0 0 1px var(--linha);
 }
-.abas a {
+.abas a,
+.abas .aba-set {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -137,7 +138,8 @@ h2 {
     color 0.2s,
     background 0.3s var(--mola);
 }
-.abas a:hover {
+.abas a:hover,
+.abas .aba-set:hover {
   color: var(--texto);
 }
 .abas a[aria-current='page'] {
@@ -1619,7 +1621,8 @@ html[data-sentido='volta'] {
     0 0 0 1px rgb(var(--t) / 0.08),
     0 24px 60px -16px rgb(0 0 0 / 0.85);
 }
-.abas a {
+.abas a,
+.abas .aba-set {
   flex-direction: column;
   gap: 4px;
   min-width: 78px;
@@ -1673,13 +1676,15 @@ html[data-sentido='volta'] {
   .abas a[aria-current='page'] .aba-icone {
     transform: translateY(-1px) scale(1.06);
   }
-  .abas a {
+  .abas a,
+  .abas .aba-set {
     transition:
       color 0.2s,
       background 0.3s var(--mola),
       transform 0.25s var(--mola);
   }
-  .abas a:active {
+  .abas a:active,
+  .abas .aba-set:active {
     transform: scale(0.94);
   }
 }
@@ -1702,7 +1707,8 @@ html[data-sentido='volta'] {
       inset 0 1px 0 rgb(255 255 255 / 0.08),
       0 -12px 40px -20px rgb(0 0 0 / 0.9);
   }
-  .abas a {
+  .abas a,
+  .abas .aba-set {
     flex: 1;
     min-width: 0;
     padding: 7px 4px 5px;
@@ -2373,6 +2379,7 @@ html.abrindo::before {
   pointer-events: none;
 }
 .abas a,
+.abas .aba-set,
 .menu-item {
   position: relative;
 }
@@ -2836,4 +2843,41 @@ html:not(.menu-aberto):not(.menu-gaveta) main.tela--z {
 }
 .qc.reprovado {
   background: rgb(255 69 58 / 0.12);
+}
+
+/* ─────────── o Set da Absolute ZRO (app/set.js): a aba em comum no fim do dock e a folha com a cara da Revela ─────────── */
+.abas .aba-set {
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.abas .aba-set[hidden] {
+  display: none;
+}
+.abas .aba-set[aria-expanded='true'] {
+  color: var(--texto);
+  background: linear-gradient(180deg, rgb(var(--t) / 0.14), rgb(var(--t) / 0.04));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    0 0 0 1px rgb(var(--t) / 0.08);
+}
+:root {
+  --zro-set-tinta: var(--texto);
+  --zro-set-apoio: var(--mudo);
+  --zro-set-apagado: var(--fraco);
+  --zro-set-linha: var(--linha);
+  --zro-set-linha-forte: var(--linha-forte);
+  --zro-set-superficie: var(--superficie);
+  --zro-set-superficie-2: var(--fundo);
+  --zro-set-superficie-3: var(--superficie-2);
+  --zro-set-vidro: rgb(var(--chao) / 0.72);
+  --zro-set-fundo: rgb(var(--chao) / 0.97);
+  --zro-set-acento: var(--texto);
+  --zro-set-acento-tinta: var(--fundo);
+  --zro-set-perigo: var(--erro);
+  --zro-set-raio: var(--raio-g);
+  --zro-set-fonte: var(--fonte);
 }

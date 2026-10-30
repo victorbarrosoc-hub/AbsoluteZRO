@@ -34,6 +34,29 @@ Privacidade conferida nos testes: outra organização não aparece; invisível n
 valem; perfil escondido não é achado pelo @; e-mail não aparece em nenhuma resposta nem no console; mensagem de
 bloqueado some nos dois sentidos; `zro_app` não escreve direto em nenhuma tabela do Set.
 
+## Set em todas as plataformas (30/10/2026)
+
+A aba em comum ("Set") em SOBEDESCE (site e celular), Synquei, TPeasy, Relay, Carro do Freela, NOSSOM, AEON e Revela;
+tabela em [set.md](integration-contracts/set.md). Telas (claro, computador e 393 px; escuro em Carro, NOSSOM, AEON,
+Revela, Relay, Synquei e TPeasy) gravadas fora do repositório.
+
+| Verificação                                 | Resultado                                                                                                                                                    |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Raiz: lint, formatação, tipos, build do HUB | ok                                                                                                                                                           |
+| Raiz: `npm test` (banco `zro_setall_test`)  | **358/358** em 41 arquivos; `e2e/set.spec.ts` do HUB 5/5 (Chromium e WebKit) com o widget novo                                                               |
+| SOBEDESCE site: lint, tipos, `npm test`     | ok; **299/299**; `zro-set.test.mts`: login com `zro.set` e sem ele, Bearer só no servidor, ETag/304, origem, caminhos                                        |
+| SOBEDESCE celular                           | `test/set-celular.test.js` (Chromium com a CSP do `/app/`): última aba, balão, folha tela cheia, tinta do app                                                |
+| Synquei / TPeasy                            | 153/153 (5 pulados sem Electron) / 60/60, com os testes do repasse e da entrada                                                                              |
+| Relay                                       | `set.test.js` 10/10 (login desligado com o site fechado); telas 5/5 com o servidor local sem login                                                           |
+| Carro do Freela                             | `test:api` 47/47; `conta-zro` 145/145 rodada direto (275 s: o teto de 240 s do `run.js` estoura com a máquina cheia); `set-zro` 20/20 (computador e celular) |
+| NOSSOM: tipos, `npm test`, e2e              | ok; 121/121; `set.spec.ts` 3/3, `zro-access` (o portão cobre `/api/zro/set`) e `zro-ia` 11/11                                                                |
+| AEON / Revela                               | 138/138 / 179/179 (repasse, 403 do portão, dock e folha com a identidade do app)                                                                             |
+
+Achado no caminho: no NOSSOM a folha não trocava de tema ao trocar o tema do estúdio (o React aplica o atributo `tema`
+do filho antes do `data-theme` do pai); o widget agora recopia a identidade depois da mudança e ao abrir.
+Não rodado: `vendor.test.js` do Relay (sem `node_modules` neste ambiente) e o site do SOBEDESCE no navegador (só o
+componente e a rota, pelos testes).
+
 ## Página inicial no iPhone: topo por cima de tudo e grade de ícones (29/10/2026)
 
 Relato do titular (Safari do iPhone, tema claro): texto das seções aparecia entre a barra de status e a cápsula do topo e

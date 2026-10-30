@@ -197,10 +197,71 @@ async function repassarIa(req, u) {
   return new Response(r.body, { status: r.status, headers: cabecalhos({ 'content-type': r.headers.get('content-type') || 'application/json; charset=utf-8', 'cache-control': 'no-store' }) })
 }
 
+// O Set (presença e conversas do ecossistema): /api/zro/set/<caminho> → <Absolute ZRO>/api/v1/set/<caminho> com o
+// mesmo access token (tokenDeAcesso: uma renovação por vez). Os mesmos caminhos do site (api/_set.js); a ETag do widget
+// segue e o 304 volta sem corpo. Um 401 de lá (login de antes do Set) não derruba a sessão: o widget só some.
+const ID_SET = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+const ROTAS_SET = [
+  [/^$/, ['GET', 'POST']],
+  [/^preferencias$/, ['PUT']],
+  [/^contatos$/, ['GET', 'POST']],
+  [new RegExp(`^contatos/${ID_SET}$`, 'i'), ['PUT', 'DELETE']],
+  [/^bloqueios$/, ['POST']],
+  [new RegExp(`^bloqueios/${ID_SET}$`, 'i'), ['DELETE']],
+  [/^conversas$/, ['GET', 'POST']],
+  [new RegExp(`^conversas/${ID_SET}$`, 'i'), ['GET', 'PATCH']],
+  [new RegExp(`^conversas/${ID_SET}/mensagens$`, 'i'), ['POST']],
+  [new RegExp(`^mensagens/${ID_SET}$`, 'i'), ['PATCH', 'DELETE']],
+  [/^denuncias$/, ['POST']],
+]
+const ETAG_SET = /^W\/"[A-Za-z0-9_-]{1,64}"$/
+async function repassarSet(req, u) {
+  const caminho = decodeURIComponent(u.pathname.slice('/api/zro/set'.length)).replace(/^\/+|\/+$/g, '')
+  const rota = ROTAS_SET.find(([re]) => re.test(caminho))
+  if (!rota) return jsonResp(404, { ok: false })
+  if (!rota[1].includes(req.method)) return jsonResp(405, { ok: false })
+  const comCorpo = req.method !== 'GET' && req.method !== 'DELETE'
+  if (comCorpo && !/^application\/json\b/i.test(req.headers.get('content-type') || '')) return jsonResp(415, { ok: false })
+  const corpo = comCorpo ? await req.text() : undefined
+  if (corpo !== undefined && corpo.length > 20_000) return jsonResp(413, { ok: false, message: 'Mensagem grande demais.' })
+  let token
+  try {
+    token = await contaApp().tokenDeAcesso()
+  } catch {
+    return jsonResp(502, { ok: false, message: 'A Absolute ZRO não respondeu agora.' })
+  }
+  if (!token) return jsonResp(401, { ok: false, message: 'Entre com a conta Absolute ZRO para ver o Set.' })
+  const q = new URLSearchParams()
+  if (req.method === 'GET' && /^conversas\/[^/]+$/.test(caminho)) for (const k of ['antes', 'depois', 'limite']) if (/^\d{1,15}$/.test(u.searchParams.get(k) || '')) q.set(k, u.searchParams.get(k))
+  const pedida = req.headers.get('if-none-match') || ''
+  let r
+  try {
+    r = await net.fetch(`${EMISSOR}/api/v1/set${caminho ? `/${caminho}` : ''}${q.size ? `?${q}` : ''}`, {
+      method: req.method,
+      headers: {
+        authorization: `Bearer ${token}`,
+        accept: 'application/json',
+        ...(corpo !== undefined ? { 'content-type': 'application/json' } : {}),
+        ...(req.method === 'GET' && pedida.length <= 200 && ETAG_SET.test(pedida) ? { 'if-none-match': pedida } : {}),
+      },
+      body: corpo,
+      redirect: 'manual',
+    })
+  } catch {
+    return jsonResp(502, { ok: false, message: 'A Absolute ZRO não respondeu agora.' })
+  }
+  const extra = { 'cache-control': 'no-store' }
+  if (r.headers.get('content-type')) extra['content-type'] = r.headers.get('content-type')
+  if (ETAG_SET.test(r.headers.get('etag') || '')) extra.etag = r.headers.get('etag')
+  const semCorpo = r.status === 204 || r.status === 304
+  return new Response(semCorpo ? null : await r.arrayBuffer(), { status: r.status, headers: cabecalhos(extra) })
+}
+
 async function rotaConta(req, u) {
-  // teste de fumaça e medição (janela escondida, o app fecha no fim): uma sessão de teste, sem rede (nem a Z)
-  if ((SMOKE || MEDIR) && u.pathname.startsWith('/api/zro/ia/')) return jsonResp(401, { ok: false })
+  // teste de fumaça e medição (janela escondida, o app fecha no fim): uma sessão de teste, sem rede (nem a Z, nem o Set)
+  if ((SMOKE || MEDIR) && (u.pathname.startsWith('/api/zro/ia/') || u.pathname === '/api/zro/set' || u.pathname.startsWith('/api/zro/set/'))) return jsonResp(401, { ok: false })
   if (u.pathname.startsWith('/api/zro/ia/')) return repassarIa(req, u)
+  if (u.pathname === '/api/zro/set' || u.pathname.startsWith('/api/zro/set/')) return repassarSet(req, u)
   if (SMOKE || MEDIR) return u.pathname === '/api/zro/eu' ? jsonResp(200, { ok: true, pessoa: { nome: 'Teste', email: 'teste@absolutezro.com', produtos: ['ai-edit'] }, acesso: true }) : jsonResp(404, { ok: false })
   if (u.pathname === '/api/zro/eu') {
     // perfil único: relê nome, e-mail e foto na Absolute ZRO a cada abertura (sem resposta em 3 s, vale a cópia)

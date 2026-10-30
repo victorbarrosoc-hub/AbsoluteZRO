@@ -18,7 +18,10 @@ import { createCipheriv, createDecipheriv, createHash, createHmac, createPublicK
 export const EMISSOR_PADRAO = 'https://absolutezro.com'
 // offline_access: o refresh token deixa o app reler o perfil (nome, e-mail, foto) a cada abertura
 // zro.ia: a Z (a IA do ecossistema) conversa com a pessoa no painel inicial, pelo repasse /api/zro/ia
-export const ESCOPOS = 'openid email profile org offline_access zro.ia'
+// zro.set: o Set (quem da equipe está online e as conversas), pelo repasse /api/zro/set. A Absolute ZRO de antes do
+// Set recusa o escopo (invalid_scope): o callback refaz o pedido com ESCOPOS_SEM_SET e o login segue, sem o Set.
+export const ESCOPOS = 'openid email profile org offline_access zro.ia zro.set'
+export const ESCOPOS_SEM_SET = 'openid email profile org offline_access zro.ia'
 export const SITE = 'https://synquei.vercel.app'
 export const COOKIE_IDA = 'sq_zro'
 export const COOKIE_CONTA = 'sq_conta'

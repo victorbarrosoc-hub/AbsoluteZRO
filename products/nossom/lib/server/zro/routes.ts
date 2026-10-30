@@ -71,6 +71,7 @@ export async function startZro(request: Request): Promise<Response> {
   const requested = url.searchParams.get('modo');
   const mode: ZroMode = requested === 'ligar' ? 'link' : 'login';
   const create = requested === 'criar';
+  const semSet = url.searchParams.get('sem_set') === '1';
   const next = zroReturnPath(url.searchParams.get('volta') ?? (mode === 'link' ? SETTINGS : null));
   if (!zroConfigured()) return redirect(request, errorPath(mode, next, 'zro_config'), 303);
   const ip = (request.headers.get('x-forwarded-for') || 'local').split(',')[0].trim();
@@ -94,11 +95,21 @@ export async function startZro(request: Request): Promise<Response> {
       challenge,
       redirectUri: zroRedirectUri(request),
       ...(create ? { prompt: 'create' as const } : {}),
+      ...(semSet ? { semSet: true } : {}),
     });
   } catch {
     return redirect(request, errorPath(mode, next, 'zro_erro'), 303);
   }
-  const sealed = sealZroState({ state, verifier, nonce, mode, userId, next });
+  const sealed = sealZroState({
+    state,
+    verifier,
+    nonce,
+    mode,
+    userId,
+    next,
+    ...(semSet ? { semSet: true } : {}),
+    ...(create ? { create: true } : {}),
+  });
   return redirect(request, destination, 302, [zroStateCookie(sealed, secureCookie(request))]);
 }
 
@@ -116,6 +127,14 @@ export async function finishZro(request: Request): Promise<Response> {
   // RFC 9207: a resposta diz quem a emitiu; confere antes de usar o código.
   if (url.searchParams.get('iss') !== zroIssuer()) return fail('zro_erro');
   const providerError = url.searchParams.get('error');
+  // Absolute ZRO de antes do Set: recusa `zro.set`. O mesmo pedido sem ele, uma vez; o login não quebra.
+  if (providerError === 'invalid_scope' && !saved.semSet) {
+    const modo = mode === 'link' ? 'ligar' : saved.create ? 'criar' : null;
+    return go(
+      '/api/zro/entrar?' +
+        new URLSearchParams({ ...(modo ? { modo } : {}), volta: next, sem_set: '1' }).toString(),
+    );
+  }
   if (providerError) return fail(providerError === 'access_denied' ? 'zro_recusado' : 'zro_erro');
   const code = url.searchParams.get('code');
   if (!code || code.length > 2000) return fail('zro_erro');

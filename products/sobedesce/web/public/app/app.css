@@ -9099,3 +9099,51 @@ select.input {
     font-size: 9px;
   }
 }
+/* sete abas (com Referências e o Set): o rótulo encolhe mais um pouco no celular estreito */
+@media (max-width: 400px) {
+  .tabbar.n-7 .tab {
+    font-size: 9.5px;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* O Set da Absolute ZRO (components/set.js): a última aba, acesa com a folha aberta, com o balão das novidades */
+.tab-set.is-on {
+  color: var(--text);
+}
+.tab-balao {
+  position: absolute;
+  top: -4px;
+  right: -9px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--err);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+/* a folha do <zro-set> veste as cores do app nos dois temas (o widget copia o resultado para a folha) */
+:root {
+  --zro-set-tinta: var(--text);
+  --zro-set-apoio: var(--text-2);
+  --zro-set-apagado: var(--text-3);
+  --zro-set-linha: var(--hairline);
+  --zro-set-linha-forte: var(--hairline-2);
+  --zro-set-superficie: var(--surface);
+  --zro-set-superficie-2: var(--surface-2);
+  --zro-set-superficie-3: var(--fill-2);
+  --zro-set-vidro: var(--glass);
+  --zro-set-fundo: color-mix(in srgb, var(--sheet-bg) 97%, transparent);
+  --zro-set-acento: var(--primary-bg);
+  --zro-set-acento-tinta: var(--primary-fg);
+  --zro-set-online: var(--ok);
+  --zro-set-ausente: var(--warn);
+  --zro-set-perigo: var(--err-text);
+  --zro-set-raio: var(--r-lg);
+  --zro-set-fonte: var(--font);
+}

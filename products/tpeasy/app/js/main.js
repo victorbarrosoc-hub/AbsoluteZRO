@@ -4,8 +4,10 @@ import { go, TABS, enableSheetDrag, toast } from "./ui.js";
 import { mountSettingsForms, syncSettingsUI } from "./settings.js";
 import { renderAll, newFrom, startCalib } from "./views.js";
 import { handleRedirect } from "./sync.js";
-import { verificarZro, avisoDaVolta } from "./zro.js";
+import { verificarZro, avisoDaVolta, zro } from "./zro.js";
+import { on } from "./data.js";
 import { iniciarZ } from "./z.js";
+import { iniciarSet } from "./set.js";
 import { abaDeEntrada } from "./entrada.js";
 
 document.querySelector('meta[name="theme-color"]').content = matchMedia("(prefers-color-scheme: dark)").matches ? "#000000" : "#f5f5f7";
@@ -48,8 +50,8 @@ document.documentElement.classList.add("ready");
 handleRedirect();
 const aviso = avisoDaVolta();
 if (aviso) toast(aviso, 3200);
-// a Z entra na aba dela depois de saber da conta
-verificarZro().then(iniciarZ);
+// a Z entra na aba dela depois de saber da conta; o Set, a aba em comum do ecossistema, também
+verificarZro().then(() => Promise.all([iniciarZ(), iniciarSet(zro, on)]));
 
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
   navigator.serviceWorker.register("/sw.js").catch(() => {});
