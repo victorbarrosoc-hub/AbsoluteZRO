@@ -114,12 +114,28 @@ capa-regras}.ts`, `components/quadro/capa.tsx`, `src/app/quadro-achar.css`): o c
   `docs/integration-contracts/maestro-sobedesce.md`): só com `temProduto(sessao, 'sobedesce')`. A ponte
   (`ponte.ts`) pede ao HUB um `zro-pedido+jwt` (`POST <HUB>/api/v1/apps/pedidos`, Bearer da sessão com escopo
   `maestro.projects`) e o próprio Maestro chama o SOBEDESCE na `url` devolvida (https; http só em loopback de teste);
-  desfazer sem a pessoa usa a credencial do Maestro (Basic) + `sub`. **Arquivos** (`/app/arquivos`): sem o produto,
-  cadeado e 403 em `POST /api/arquivos/token`; com ele, o token curto do Drive (`drive.token`) só vai para a memória da
-  aba (`components/arquivos/drive-cliente.ts`), o navegador (`navegador.tsx`) usa o núcleo de `packages/drive-web`
-  (cópias idênticas em `src/lib/drive-web/` e `public/drive-sw.js`; `tests/drive-sobedesce.test.mts` confere; mude no
-  pacote e copie) e chama o Google direto; "Estrutura no Drive" e "Ligar a um projeto" gravam só
-  `projects.drive_folder_id`/`drive_folder_nome`. **Revisão**: a equipe toca o Drive pelo SW (`/app/stream/<id>`,
+  desfazer sem a pessoa usa a credencial do Maestro (Basic) + `sub`. **Arquivos é o SOBEDESCE** (`/app/arquivos`;
+  titular 30/10/2026: "não precisa de botão, tem que abrir como a aba Drive do Sobedesce funciona"): sem o produto,
+  cadeado e 403 em `POST /api/arquivos/token`; com ele, a aba é o **próprio app do SOBEDESCE num quadro**
+  (`https://sobedesce.absolutezro.com/app/?no=maestro&tema=escuro|claro`, contrato do lado de lá em
+  `products/sobedesce/web/public/app/lib/embutido.js`; do lado de cá em `src/lib/sobedesce/embutido.ts`, puro):
+  Transferências e Drive, subir e baixar ali, sem botão de "abrir", só o selo pequeno (`SeloSobedesce`, ícone do próprio
+  SOBEDESCE em `public/brand/sobedesce.svg`, leva a sobedesce.com). O quadro **mora no shell**
+  (`components/arquivos/sobedesce-vivo.tsx`, só com `temProduto(sessao, 'sobedesce')`): nasce na primeira visita a
+  Arquivos e fica vivo escondido nas outras seções (o envio segue). Recados só por `lerRecado` (origem exata do
+  SOBEDESCE + forma) e da janela do quadro: `pronto`, `envios` (o `<html>` ganha `data-envios`: o ponto em
+  `Aba.sinal = "envios"`, Arquivos e Mais, e o `beforeunload`) e `pasta` (a pasta aberta vira "Ligar a um projeto"). O
+  tema vai por recado `{tipo:'tema'}` (nunca recarrega); "Abrir" troca só o `#drive/<id>` do `src` (`abrirPasta`).
+  Sem `pronto` 4 s depois do `load` (ou 25 s), o aviso "O SOBEDESCE não abriu aqui." com o link e "Tentar de novo".
+  O quadro preenche a janela até embaixo (computador) ou até a barra (iPhone) pelas medidas `--sd-topo`/`--sd-baixo`
+  no `#conteudo` (`src/app/arquivos-sobedesce.css`). O SOBEDESCE só se deixa embutir em `https://maestro.absolutezro.com`
+  e o cookie dele é SameSite=Lax: fora desse endereço (prévia da Vercel, localhost) aparece o aviso. **Ordem do deploy**:
+  o SOBEDESCE com o modo embutido primeiro (PR #71, já na main), depois o Maestro. `frame-src` do SOBEDESCE só na CSP da
+  equipe (`/app/aprovacoes`, que segue na navegação); links públicos, nunca. "Estrutura no Drive" e "Ligar a um projeto"
+  gravam só `projects.drive_folder_id`/`drive_folder_nome`. O navegador do Drive do Maestro (`navegador.tsx`, núcleo de
+  `packages/drive-web` em cópias idênticas em `src/lib/drive-web/` e `public/drive-sw.js`; `tests/drive-sobedesce.test.mts`
+  confere; mude no pacote e copie) ficou só no "Escolher no Drive" da revisão, com o token curto só na memória da aba
+  (`components/arquivos/drive-cliente.ts`). **Revisão**: a equipe toca o Drive pelo SW (`/app/stream/<id>`,
   Range, contexto `DriveEquipe` no player) e tem "Escolher no Drive"; gerar o link e versão nova com link ativo ligam
   "qualquer pessoa com o link" (`revisao.ts`, `versoes.compartilhamento` por `maestro.versao_compartilhamento`);
   revogar e fechar desligam; vencido, o `GET /api/cron/revisao` (Vercel Cron, `CRON_SECRET`) desliga. Nenhum byte passa
@@ -558,8 +574,11 @@ público → Pedidos → gerar orçamento → link → aceite → projeto → Ho
 (`visual.spec.ts`: contraste AA em cada hora e no escuro, luz parada com reduzir movimento) e o negócio
 (`negocio.spec.ts`: funil com Retornar hoje, importar, .ics e acesso por cliente, organização própria) e o contrato
 (`contrato.spec.ts`: Ajustes → Contrato, enviar junto, o cliente aceita com CPF, o registro para a equipe, a marca
-própria ligada e o cartão do adicional; `SHOTS_DIR` guarda `ct-*`/`wl-*`) e o Drive (`arquivos.spec.ts`: cadeado sem o SOBEDESCE, navegador, prévia com timecode, estrutura do projeto, Drive tocando na
-revisão e Escolher no Drive; `SHOTS_DIR` guarda as capturas) e nada cortado no celular (`sem-corte.spec.ts` com o
+própria ligada e o cartão do adicional; `SHOTS_DIR` guarda `ct-*`/`wl-*`) e Arquivos é o SOBEDESCE (`arquivos.spec.ts`: cadeado sem o SOBEDESCE; o quadro com o SOBEDESCE de mentira
+`e2e/falsos/sobedesce.ts` em `serviceWorkers: 'block'`: endereço, selo, altura, tema por recado, pasta → "Ligar", "Abrir"
+pelo `#`, estrutura, origem falsa, ponto e `beforeunload` do envio andando que sobrevive à troca de seção, o aviso com o
+SOBEDESCE fora do ar; e o Drive tocando na revisão e Escolher no Drive; `SHOTS_DIR` guarda `sd-*`; unitário em
+`tests/sobedesce-embutido.test.mts`) e nada cortado no celular (`sem-corte.spec.ts` com o
 detector `e2e/corte.ts`: todas as telas a 375 e 393 px, claro e escuro, Chromium e WebKit; tela nova entra na lista;
 faixa que rola de lado só com `data-rolagem`; regras de celular em `src/app/celular.css`) e o Quadro com fluidez
 (`quadro.spec.ts`: folha na janela inteira, "Novo card", Mover para com Desfazer, troca de seção com View Transition),

@@ -22,7 +22,7 @@ export default async function Mais() {
             <h2 className="lado__rotulo">{g.nome}</h2>
             <div className="mais-grade">
               {g.abas.map((a) => (
-                <Link key={a.href} href={a.href} className="mais-item">
+                <Link key={a.href} href={a.href} className="mais-item" data-sinal={a.sinal}>
                   <Icone nome={a.icone} size={24} />
                   <span>{a.nome}</span>
                 </Link>

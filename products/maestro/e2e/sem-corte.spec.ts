@@ -10,6 +10,7 @@ import postgres from "postgres";
 import { E2E_DB } from "../playwright.config";
 import { achadosDeCorte } from "./corte";
 import { googleDeMentira } from "./falsos/google-drive";
+import { sobedesceDeMentira } from "./falsos/sobedesce";
 
 const CORTE = "test-results/e2e-sessao-corte.json";
 const DRIVE = "test-results/e2e-sessao-drive.json";
@@ -204,7 +205,16 @@ async function telas(): Promise<Tela[]> {
     { nome: "agenda", rota: "/app/agenda" },
     { nome: "agenda-novo", rota: "/app/agenda/novo" },
     { nome: "arquivos-cadeado", rota: "/app/arquivos" },
-    { nome: "arquivos-drive", rota: "/app/arquivos", drive: true },
+    {
+      nome: "arquivos-sobedesce",
+      rota: "/app/arquivos",
+      drive: true,
+      // o quadro do SOBEDESCE pronto (o selo, a faixa de projetos e o quadro até a barra)
+      depois: async (page, ver) => {
+        await page.locator('.sd-vivo[data-fase="pronto"]').waitFor();
+        await ver("arquivos-sobedesce-pronto");
+      },
+    },
     { nome: "ajustes", rota: "/app/ajustes" },
     { nome: "ajustes-empresa", rota: "/app/ajustes/empresa" },
     { nome: "ajustes-importar", rota: "/app/ajustes/importar" },
@@ -363,6 +373,8 @@ for (const largura of [375, 393]) {
         test.skip(info.project.name === "computador", "o detector é do celular");
         test.setTimeout(420_000);
         await googleDeMentira(context);
+        // Arquivos com o SOBEDESCE: o quadro do app de mentira (e2e/falsos/sobedesce.ts), como no arquivos.spec.ts.
+        await sobedesceDeMentira(context);
         const achados: string[] = [];
         for (const tela of await telas()) {
           await abrir(context, baseURL!, tela, tema);

@@ -504,6 +504,14 @@ Atualizado em 30/10/2026. Legenda: ✅ entregue · 🟡 parcial · ⬜ não inic
   `packages/drive-web`, que o SOBEDESCE passou a usar), prévia de vídeo, imagem e PDF, "Abrir no SOBEDESCE",
   "Estrutura no Drive" por projeto e ligar pasta a projeto (migração 0019). Falta: upload pelo Maestro
   (`drive.enviar`), raiz do Drive compartilhado da organização em Ajustes, proxy 720p automático para ProRes.
+- 🟡 Maestro: **Arquivos é o SOBEDESCE** (30/10/2026, titular: "não precisa de botão, tem que abrir como a aba Drive
+  do Sobedesce funciona"): a aba é o próprio app do SOBEDESCE num quadro (`/app/?no=maestro`, Transferências e Drive,
+  subir e baixar ali mesmo), com o selo pequeno dele e sem botão de abrir; tema do Maestro (muda junto), cheio na tela
+  do computador e compacto no iPhone. O quadro mora no shell: sair de Arquivos não para o envio, o ponto acende em
+  Arquivos (e em Mais) e fechar a aba pede confirmação. "Abrir" leva o quadro à pasta do projeto pelo `#` e "Ligar a um
+  projeto" usa a pasta aberta no quadro. Sem o SOBEDESCE respondendo, um aviso curto com o link. Mesmo padrão do
+  Porta-malas do Carro. Falta: publicar o SOBEDESCE com o modo embutido antes do Maestro e conferir logado em
+  maestro.absolutezro.com (o cookie do SOBEDESCE é SameSite=Lax: só funciona no mesmo site).
 - ✅ Maestro para computador (29/10/2026, pedido do titular; `products/maestro/desktop`,
   [README](../products/maestro/desktop/README.md)): Electron no Mac e no Windows com a moldura do Absolute ZRO para
   computador (barra própria no Mac, papel claro do Maestro, menu em português, memória da janela, uma instância,
